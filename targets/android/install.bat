@@ -1,0 +1,6 @@
+@echo off
+echo Removing old dEQP Ondevice Package...
+adb %* uninstall com.drawelements.deqp.execserver
+
+echo Installing dEQP Ondevice Package...
+adb %* install -r dEQP-ondevice.apk

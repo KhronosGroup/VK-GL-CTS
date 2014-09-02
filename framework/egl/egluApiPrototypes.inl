@@ -1,0 +1,38 @@
+/* WARNING! THIS IS A PROGRAMMATICALLY GENERATED CODE. DO NOT MODIFY THE CODE,
+ * SINCE THE CHANGES WILL BE LOST! MODIFY THE GENERATING PYTHON INSTEAD.
+ */
+
+EGLint										eglGetError							();
+EGLDisplay									eglGetDisplay						(EGLNativeDisplayType display_id);
+EGLBoolean									eglInitialize						(EGLDisplay dpy, EGLint* major, EGLint* minor);
+EGLBoolean									eglTerminate						(EGLDisplay dpy);
+const char*									eglQueryString						(EGLDisplay dpy, EGLint name);
+EGLBoolean									eglGetConfigs						(EGLDisplay dpy, EGLConfig* configs, EGLint config_size, EGLint* num_config);
+EGLBoolean									eglChooseConfig						(EGLDisplay dpy, const EGLint* attrib_list, EGLConfig* configs, EGLint config_size, EGLint* num_config);
+EGLBoolean									eglGetConfigAttrib					(EGLDisplay dpy, EGLConfig config, EGLint attribute, EGLint* value);
+EGLSurface									eglCreateWindowSurface				(EGLDisplay dpy, EGLConfig config, EGLNativeWindowType win, const EGLint* attrib_list);
+EGLSurface									eglCreatePbufferSurface				(EGLDisplay dpy, EGLConfig config, const EGLint* attrib_list);
+EGLSurface									eglCreatePixmapSurface				(EGLDisplay dpy, EGLConfig config, EGLNativePixmapType pixmap, const EGLint* attrib_list);
+EGLBoolean									eglDestroySurface					(EGLDisplay dpy, EGLSurface surface);
+EGLBoolean									eglQuerySurface						(EGLDisplay dpy, EGLSurface surface, EGLint attribute, EGLint* value);
+EGLBoolean									eglBindAPI							(EGLenum api);
+EGLenum										eglQueryAPI							();
+EGLBoolean									eglWaitClient						();
+EGLBoolean									eglReleaseThread					();
+EGLSurface									eglCreatePbufferFromClientBuffer	(EGLDisplay dpy, EGLenum buftype, EGLClientBuffer buffer, EGLConfig config, const EGLint* attrib_list);
+EGLBoolean									eglSurfaceAttrib					(EGLDisplay dpy, EGLSurface surface, EGLint attribute, EGLint value);
+EGLBoolean									eglBindTexImage						(EGLDisplay dpy, EGLSurface surface, EGLint buffer);
+EGLBoolean									eglReleaseTexImage					(EGLDisplay dpy, EGLSurface surface, EGLint buffer);
+EGLBoolean									eglSwapInterval						(EGLDisplay dpy, EGLint interval);
+EGLContext									eglCreateContext					(EGLDisplay dpy, EGLConfig config, EGLContext share_context, const EGLint* attrib_list);
+EGLBoolean									eglDestroyContext					(EGLDisplay dpy, EGLContext ctx);
+EGLBoolean									eglMakeCurrent						(EGLDisplay dpy, EGLSurface draw, EGLSurface read, EGLContext ctx);
+EGLContext									eglGetCurrentContext				();
+EGLSurface									eglGetCurrentSurface				(EGLint readdraw);
+EGLDisplay									eglGetCurrentDisplay				();
+EGLBoolean									eglQueryContext						(EGLDisplay dpy, EGLContext ctx, EGLint attribute, EGLint* value);
+EGLBoolean									eglWaitGL							();
+EGLBoolean									eglWaitNative						(EGLint engine);
+EGLBoolean									eglSwapBuffers						(EGLDisplay dpy, EGLSurface surface);
+EGLBoolean									eglCopyBuffers						(EGLDisplay dpy, EGLSurface surface, EGLNativePixmapType target);
+__eglMustCastToProperFunctionPointerType	eglGetProcAddress					(const char* procname);

@@ -1,0 +1,313 @@
+/*-------------------------------------------------------------------------
+ * drawElements Quality Program OpenGL ES 3.1 Module
+ * -------------------------------------------------
+ *
+ * Copyright 2014 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ *//*!
+ * \file
+ * \brief Internal format query tests
+ *//*--------------------------------------------------------------------*/
+
+#include "es31fInternalFormatQueryTests.hpp"
+#include "tcuTestLog.hpp"
+#include "gluRenderContext.hpp"
+#include "gluStrUtil.hpp"
+#include "gluContextInfo.hpp"
+#include "glwFunctions.hpp"
+#include "glwEnums.hpp"
+
+namespace deqp
+{
+namespace gles31
+{
+namespace Functional
+{
+namespace
+{
+
+class FormatSamplesCase : public TestCase
+{
+public:
+	enum FormatType
+	{
+		FORMAT_COLOR,
+		FORMAT_INT,
+		FORMAT_DEPTH_STENCIL
+	};
+
+						FormatSamplesCase	(Context& ctx, const char* name, const char* desc, glw::GLenum texTarget, glw::GLenum internalFormat, FormatType type);
+private:
+	void				init				(void);
+	IterateResult		iterate				(void);
+
+	void				testMultisample		(void);
+	void				testSinglesample	(void);
+
+	const glw::GLenum	m_texTarget;
+	const glw::GLenum	m_internalFormat;
+	const FormatType	m_type;
+};
+
+FormatSamplesCase::FormatSamplesCase (Context& ctx, const char* name, const char* desc, glw::GLenum texTarget, glw::GLenum internalFormat, FormatType type)
+	: TestCase			(ctx, name, desc)
+	, m_texTarget		(texTarget)
+	, m_internalFormat	(internalFormat)
+	, m_type			(type)
+{
+}
+
+void FormatSamplesCase::init (void)
+{
+	if (m_texTarget == GL_TEXTURE_2D_MULTISAMPLE_ARRAY && !m_context.getContextInfo().isExtensionSupported("GL_OES_texture_storage_multisample_2d_array"))
+		throw tcu::NotSupportedError("Test requires OES_texture_storage_multisample_2d_array extension");
+}
+
+FormatSamplesCase::IterateResult FormatSamplesCase::iterate (void)
+{
+	if (m_texTarget == GL_TEXTURE_2D_MULTISAMPLE || m_texTarget == GL_TEXTURE_2D_MULTISAMPLE_ARRAY || m_texTarget == GL_RENDERBUFFER)
+		testMultisample();
+	else
+		testSinglesample();
+
+	return STOP;
+}
+
+void FormatSamplesCase::testMultisample (void)
+{
+	const glw::Functions&	gl				= m_context.getRenderContext().getFunctions();
+	bool					error			= false;
+	glw::GLint				maxSamples		= 0;
+	glw::GLint				numSampleCounts	= 0;
+
+	// Lowest limit
+	{
+		const glw::GLenum samplesEnum = (m_type == FORMAT_COLOR) ? (GL_MAX_COLOR_TEXTURE_SAMPLES) : (m_type == FORMAT_INT) ? (GL_MAX_INTEGER_SAMPLES) : (GL_MAX_DEPTH_TEXTURE_SAMPLES);
+		m_testCtx.getLog() << tcu::TestLog::Message << "Format must support sample count of " << glu::getGettableStateStr(samplesEnum) << tcu::TestLog::EndMessage;
+
+		gl.getIntegerv(samplesEnum, &maxSamples);
+		GLU_EXPECT_NO_ERROR(gl.getError(), "get MAX_*_SAMPLES");
+
+		m_testCtx.getLog() << tcu::TestLog::Message << glu::getGettableStateStr(samplesEnum) << " = " << maxSamples << tcu::TestLog::EndMessage;
+
+		if (maxSamples < 1)
+		{
+			m_testCtx.getLog() << tcu::TestLog::Message << "ERROR: minimum value of "  << glu::getGettableStateStr(samplesEnum) << " is 1" << tcu::TestLog::EndMessage;
+			error = true;
+		}
+	}
+
+	// Number of sample counts
+	{
+		gl.getInternalformativ(m_texTarget, m_internalFormat, GL_NUM_SAMPLE_COUNTS, 1, &numSampleCounts);
+		GLU_EXPECT_NO_ERROR(gl.getError(), "get GL_NUM_SAMPLE_COUNTS");
+
+		m_testCtx.getLog() << tcu::TestLog::Message << "GL_NUM_SAMPLE_COUNTS = " << numSampleCounts << tcu::TestLog::EndMessage;
+
+		if (numSampleCounts < 1)
+		{
+			m_testCtx.getLog() << tcu::TestLog::Message << "ERROR: Format MUST support some multisample configuration, got GL_NUM_SAMPLE_COUNTS = " << numSampleCounts << tcu::TestLog::EndMessage;
+			error = true;
+		}
+	}
+
+	// Sample counts
+	{
+		tcu::MessageBuilder		samplesMsg(&m_testCtx.getLog());
+		std::vector<glw::GLint>	samples;
+
+		if (numSampleCounts > 0)
+		{
+			samples.resize(numSampleCounts, -1);
+
+			gl.getInternalformativ(m_texTarget, m_internalFormat, GL_SAMPLES, numSampleCounts, &samples[0]);
+			GLU_EXPECT_NO_ERROR(gl.getError(), "get GL_SAMPLES");
+		}
+		else
+			TCU_FAIL("glGetInternalFormativ() reported 0 supported sample counts");
+
+		// make a pretty log
+
+		samplesMsg << "GL_SAMPLES = [";
+		for (int ndx = 0; ndx < numSampleCounts; ++ndx)
+		{
+			if (ndx)
+				samplesMsg << ", ";
+			samplesMsg << samples[ndx];
+		}
+		samplesMsg << "]" << tcu::TestLog::EndMessage;
+
+		// Samples are in order
+		for (int ndx = 1; ndx < numSampleCounts; ++ndx)
+		{
+			if (samples[ndx-1] <= samples[ndx])
+			{
+				m_testCtx.getLog() << tcu::TestLog::Message << "ERROR: Samples must be ordered descending." << tcu::TestLog::EndMessage;
+				error = true;
+				break;
+			}
+		}
+
+		// samples are positive
+		for (int ndx = 1; ndx < numSampleCounts; ++ndx)
+		{
+			if (samples[ndx-1] <= 0)
+			{
+				m_testCtx.getLog() << tcu::TestLog::Message << "ERROR: Only positive SAMPLES allowed." << tcu::TestLog::EndMessage;
+				error = true;
+				break;
+			}
+		}
+
+		// maxSamples must be supported
+		if (samples[0] < maxSamples)
+		{
+			m_testCtx.getLog() << tcu::TestLog::Message << "ERROR: MAX_*_SAMPLES must be supported." << tcu::TestLog::EndMessage;
+			error = true;
+		}
+	}
+
+	// Result
+	if (!error)
+		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+	else
+		m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Invalid value");
+}
+
+void FormatSamplesCase::testSinglesample (void)
+{
+	const glw::Functions&	gl				= m_context.getRenderContext().getFunctions();
+	const int				defValue		= -123;
+	glw::GLint				numSampleCounts	= defValue;
+
+	m_testCtx.getLog()
+		<< tcu::TestLog::Message
+		<< "Quering GL_NUM_SAMPLE_COUNTS with target = " << glu::getInternalFormatTargetName(m_texTarget) << ", internal format = " << glu::getPixelFormatName(m_internalFormat) << "\n"
+		<< "Expecting 0."
+		<< tcu::TestLog::EndMessage;
+
+	gl.getInternalformativ(m_texTarget, m_internalFormat, GL_NUM_SAMPLE_COUNTS, 1, &numSampleCounts);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "get GL_NUM_SAMPLE_COUNTS");
+
+	if (numSampleCounts == 0)
+	{
+		m_testCtx.getLog() << tcu::TestLog::Message << "GL_NUM_SAMPLE_COUNTS = " << numSampleCounts << tcu::TestLog::EndMessage;
+		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+	}
+	else if (numSampleCounts == defValue)
+	{
+		m_testCtx.getLog() << tcu::TestLog::Message << "getInternalformativ did not return a value." << tcu::TestLog::EndMessage;
+		m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "No value");
+	}
+	else
+	{
+		m_testCtx.getLog() << tcu::TestLog::Message << "GL_NUM_SAMPLE_COUNTS = " << numSampleCounts << ", expected 0" << tcu::TestLog::EndMessage;
+		m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Invalid value");
+	}
+}
+
+} // anonymous
+
+InternalFormatQueryTests::InternalFormatQueryTests (Context& context)
+	: TestCaseGroup(context, "internal_format", "Internal format queries")
+{
+}
+
+InternalFormatQueryTests::~InternalFormatQueryTests (void)
+{
+}
+
+void InternalFormatQueryTests::init (void)
+{
+	static const struct InternalFormat
+	{
+		const char*						name;
+		glw::GLenum						format;
+		FormatSamplesCase::FormatType	type;
+	} internalFormats[] =
+	{
+		// color renderable
+		{ "r8",						GL_R8,					FormatSamplesCase::FORMAT_COLOR			},
+		{ "rg8",					GL_RG8,					FormatSamplesCase::FORMAT_COLOR			},
+		{ "rgb8",					GL_RGB8,				FormatSamplesCase::FORMAT_COLOR			},
+		{ "rgb565",					GL_RGB565,				FormatSamplesCase::FORMAT_COLOR			},
+		{ "rgba4",					GL_RGBA4,				FormatSamplesCase::FORMAT_COLOR			},
+		{ "rgb5_a1",				GL_RGB5_A1,				FormatSamplesCase::FORMAT_COLOR			},
+		{ "rgba8",					GL_RGBA8,				FormatSamplesCase::FORMAT_COLOR			},
+		{ "rgb10_a2",				GL_RGB10_A2,			FormatSamplesCase::FORMAT_COLOR			},
+		{ "rgb10_a2ui",				GL_RGB10_A2UI,			FormatSamplesCase::FORMAT_INT			},
+		{ "srgb8_alpha8",			GL_SRGB8_ALPHA8,		FormatSamplesCase::FORMAT_COLOR			},
+		{ "r8i",					GL_R8I,					FormatSamplesCase::FORMAT_INT			},
+		{ "r8ui",					GL_R8UI,				FormatSamplesCase::FORMAT_INT			},
+		{ "r16i",					GL_R16I,				FormatSamplesCase::FORMAT_INT			},
+		{ "r16ui",					GL_R16UI,				FormatSamplesCase::FORMAT_INT			},
+		{ "r32i",					GL_R32I,				FormatSamplesCase::FORMAT_INT			},
+		{ "r32ui",					GL_R32UI,				FormatSamplesCase::FORMAT_INT			},
+		{ "rg8i",					GL_RG8I,				FormatSamplesCase::FORMAT_INT			},
+		{ "rg8ui",					GL_RG8UI,				FormatSamplesCase::FORMAT_INT			},
+		{ "rg16i",					GL_RG16I,				FormatSamplesCase::FORMAT_INT			},
+		{ "rg16ui",					GL_RG16UI,				FormatSamplesCase::FORMAT_INT			},
+		{ "rg32i",					GL_RG32I,				FormatSamplesCase::FORMAT_INT			},
+		{ "rg32ui",					GL_RG32UI,				FormatSamplesCase::FORMAT_INT			},
+		{ "rgba8i",					GL_RGBA8I,				FormatSamplesCase::FORMAT_INT			},
+		{ "rgba8ui",				GL_RGBA8UI,				FormatSamplesCase::FORMAT_INT			},
+		{ "rgba16i",				GL_RGBA16I,				FormatSamplesCase::FORMAT_INT			},
+		{ "rgba16ui",				GL_RGBA16UI,			FormatSamplesCase::FORMAT_INT			},
+		{ "rgba32i",				GL_RGBA32I,				FormatSamplesCase::FORMAT_INT			},
+		{ "rgba32ui",				GL_RGBA32UI,			FormatSamplesCase::FORMAT_INT			},
+
+		// depth renderable
+		{ "depth_component16",		GL_DEPTH_COMPONENT16,	FormatSamplesCase::FORMAT_DEPTH_STENCIL	},
+		{ "depth_component24",		GL_DEPTH_COMPONENT24,	FormatSamplesCase::FORMAT_DEPTH_STENCIL	},
+		{ "depth_component32f",		GL_DEPTH_COMPONENT32F,	FormatSamplesCase::FORMAT_DEPTH_STENCIL	},
+		{ "depth24_stencil8",		GL_DEPTH24_STENCIL8,	FormatSamplesCase::FORMAT_DEPTH_STENCIL	},
+		{ "depth32f_stencil8",		GL_DEPTH32F_STENCIL8,	FormatSamplesCase::FORMAT_DEPTH_STENCIL	},
+
+		// stencil renderable
+		{ "stencil_index8",			GL_STENCIL_INDEX8,		FormatSamplesCase::FORMAT_DEPTH_STENCIL	}
+		// DEPTH24_STENCIL8,  duplicate
+		// DEPTH32F_STENCIL8  duplicate
+	};
+
+	static const struct
+	{
+		const char*	name;
+		deUint32	target;
+	} textureTargets[] =
+	{
+		{ "texture_2d_multisample",			GL_TEXTURE_2D_MULTISAMPLE		},
+		{ "texture_2d_multisample_array",	GL_TEXTURE_2D_MULTISAMPLE_ARRAY	},
+	};
+
+	for (int groupNdx = 0; groupNdx < DE_LENGTH_OF_ARRAY(textureTargets); ++groupNdx)
+	{
+		tcu::TestCaseGroup* const	group		= new tcu::TestCaseGroup(m_testCtx, textureTargets[groupNdx].name, glu::getInternalFormatTargetName(textureTargets[groupNdx].target));
+		const glw::GLenum			texTarget	= textureTargets[groupNdx].target;
+
+		addChild(group);
+
+		for (int caseNdx = 0; caseNdx < DE_LENGTH_OF_ARRAY(internalFormats); ++caseNdx)
+		{
+			const std::string name = std::string(internalFormats[caseNdx].name) + "_samples";
+			const std::string desc = std::string("Verify GL_SAMPLES of ") + internalFormats[caseNdx].name;
+
+			group->addChild(new FormatSamplesCase(m_context, name.c_str(), desc.c_str(), texTarget, internalFormats[caseNdx].format, internalFormats[caseNdx].type));
+		}
+	}
+}
+
+} // Functional
+} // gles31
+} // deqp

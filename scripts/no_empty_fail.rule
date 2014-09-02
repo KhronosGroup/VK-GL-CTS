@@ -1,0 +1,9 @@
+<?xml version="2.0"?>
+<rule version="1">
+<pattern>setTestResult \( QP_TEST_RESULT_FAIL , (\"\"|\"Fail\") \)</pattern>
+<message>
+<id>emptyFailureMessage</id>
+<severity>style</severity>
+<summary>Test result set to FAIL with empty message or with "Fail".</summary>
+</message>
+</rule>

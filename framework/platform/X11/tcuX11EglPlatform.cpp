@@ -1,0 +1,257 @@
+/*-------------------------------------------------------------------------
+ * drawElements Quality Program Tester Core
+ * ----------------------------------------
+ *
+ * Copyright 2014 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ *//*!
+ * \file
+ * \brief X11Egl Platform.
+ *//*--------------------------------------------------------------------*/
+
+#include "tcuX11EglPlatform.hpp"
+
+#include "egluGLContextFactory.hpp"
+
+namespace tcu
+{
+namespace x11
+{
+namespace egl
+{
+
+using std::string;
+
+using de::MovePtr;
+using de::UniquePtr;
+using glu::ContextFactory;
+using eglu::GLContextFactory;
+using eglu::NativeDisplay;
+using eglu::NativeDisplayFactory;
+using eglu::NativeWindow;
+using eglu::NativeWindowFactory;
+using eglu::NativePixmap;
+using eglu::NativePixmapFactory;
+using eglu::WindowParams;
+using tcu::TextureLevel;
+
+#ifndef EGL_PLATFORM_X11_EXT
+#	define EGL_PLATFORM_X11_EXT			0x31D5
+#endif
+#ifndef EGL_PLATFORM_X11_SCREEN_EXT
+#	define EGL_PLATFORM_X11_SCREEN_EXT	0x31D6
+#endif
+
+class Display : public NativeDisplay
+{
+public:
+	static const Capability CAPABILITIES 		= Capability(CAPABILITY_GET_DISPLAY_LEGACY |
+															 CAPABILITY_GET_DISPLAY_PLATFORM);
+
+							Display				(MovePtr<x11::Display> x11Display)
+								: NativeDisplay	(CAPABILITIES,
+												 EGL_PLATFORM_X11_EXT,
+												 "EGL_EXT_platform_x11")
+								, m_display		(x11Display) {}
+
+	void*					getPlatformNative	(void) 	{ return m_display->getXDisplay(); }
+	EGLNativeDisplayType	getLegacyNative		(void)	{ return m_display->getXDisplay(); }
+
+	x11::Display&			getX11Display		(void)	{ return *m_display; }
+
+private:
+	UniquePtr<x11::Display>	m_display;
+};
+
+
+class Window : public NativeWindow
+{
+public:
+	static const Capability	CAPABILITIES		= Capability(CAPABILITY_CREATE_SURFACE_LEGACY |
+															 CAPABILITY_CREATE_SURFACE_PLATFORM |
+															 CAPABILITY_GET_SURFACE_SIZE |
+															 CAPABILITY_SET_SURFACE_SIZE |
+															 CAPABILITY_GET_SCREEN_SIZE);
+
+							Window				(Display&				display,
+												 const WindowParams&	params,
+												 Visual*				visual);
+
+	EGLNativeWindowType		getLegacyNative		(void) { return m_window.getXID(); }
+	void*					getPlatformNative	(void) { return &m_window.getXID(); }
+	IVec2					getSurfaceSize		(void) const;
+	void					setSurfaceSize		(IVec2 size);
+	IVec2					getScreenSize		(void) const { return getSurfaceSize(); }
+
+private:
+	x11::Window				m_window;
+};
+
+Window::Window(Display& display, const WindowParams& params, Visual* visual)
+	: NativeWindow	(CAPABILITIES)
+	, m_window		(display.getX11Display(), params.width, params.height, visual)
+{
+	m_window.setVisibility((params.visibility != WindowParams::VISIBILITY_HIDDEN));
+}
+
+IVec2 Window::getSurfaceSize (void) const
+{
+	IVec2 ret;
+	m_window.getDimensions(&ret.x(), &ret.y());
+	return ret;
+}
+
+void Window::setSurfaceSize (IVec2 size)
+{
+	m_window.setDimensions(size.x(), size.y());
+}
+
+class WindowFactory : public NativeWindowFactory
+{
+public:
+						WindowFactory		(void);
+
+	NativeWindow*		createWindow		(NativeDisplay*			nativeDisplay,
+											 const WindowParams&	params) const;
+
+	NativeWindow*		createWindow		(NativeDisplay*			nativeDisplay,
+											 EGLDisplay				display,
+											 EGLConfig				config,
+											 const EGLAttrib*		attribList,
+											 const WindowParams&	params) const;
+};
+
+WindowFactory::WindowFactory (void)
+	: NativeWindowFactory ("window", "X11 Window", Window::CAPABILITIES)
+{
+}
+
+NativeWindow* WindowFactory::createWindow (NativeDisplay*		nativeDisplay,
+										   const WindowParams&	params) const
+{
+	Display&	display	= *dynamic_cast<Display*>(nativeDisplay);
+
+	return new Window(display, params, DE_NULL);
+}
+
+NativeWindow* WindowFactory::createWindow (NativeDisplay*			nativeDisplay,
+										   EGLDisplay				eglDisplay,
+										   EGLConfig				config,
+										   const EGLAttrib*			attribList,
+										   const WindowParams&		params) const
+{
+	DE_UNREF(attribList);
+
+	Display&	display		= *dynamic_cast<Display*>(nativeDisplay);
+	EGLint		visualID	= 0;
+	::Visual*	visual		= DE_NULL;
+	eglGetConfigAttrib(eglDisplay, config, EGL_NATIVE_VISUAL_ID, &visualID);
+
+	if (visualID != 0)
+		visual = display.getX11Display().getVisual(visualID);
+
+	return new Window(display, params, visual);
+}
+
+#if 0
+class Pixmap : public NativePixmap
+{
+public:
+	enum {
+		CAPABILITIES = (CAPABILITY_CREATE_SURFACE_LEGACY |
+						CAPABILITY_CREATE_SURFACE_PLATFORM |
+						CAPABILITY_READ_PIXELS)
+	};
+
+							Pixmap				(MovePtr<x11::Pixmap> x11Pixmap)
+								: NativePixmap	(CAPABILITIES)
+								, m_pixmap		(x11Pixmap) {}
+
+	void*					getPlatformNative	(void) { return &m_pixmap.getXID(); }
+	void					readPixels			(TextureLevel* dst);
+
+private:
+	UniquePtr<x11::Pixmap>	m_pixmap;
+};
+
+class PixmapFactory : public NativePixmapFactory
+{
+public:
+					PixmapFactory	(void)
+						: NativePixmapFactory ("pixmap", "X11 Pixmap", Pixmap::CAPABILITIES) {}
+
+	NativePixmap*	createPixmap	(NativeDisplay* nativeDisplay,
+									 int			width,
+									 int			height) const;
+};
+
+NativePixmap* PixmapFactory::createPixmap (NativeDisplay* nativeDisplay,
+										   int			width,
+										   int			height) const
+
+{
+	Display*				display		= dynamic_cast<Display*>(nativeDisplay);
+	MovePtr<x11::Pixmap>	x11Pixmap	(new x11::Pixmap(display->getX11Display(),
+														 width, height));
+	return new Pixmap(x11Pixmap);
+}
+#endif
+
+class DisplayFactory : public NativeDisplayFactory
+{
+public:
+						DisplayFactory		(EventState& eventState);
+
+	NativeDisplay*		createDisplay		(const EGLAttrib* attribList) const;
+
+private:
+	EventState&			m_eventState;
+};
+
+DisplayFactory::DisplayFactory (EventState& eventState)
+	: NativeDisplayFactory	("x11", "Native X11 Display",
+							 Display::CAPABILITIES,
+							 EGL_PLATFORM_X11_SCREEN_EXT,
+							 "EGL_EXT_platform_x11")
+	, m_eventState			(eventState)
+{
+	m_nativeWindowRegistry.registerFactory(new WindowFactory());
+	// m_nativePixmapRegistry.registerFactory(new PixmapFactory());
+}
+
+NativeDisplay* DisplayFactory::createDisplay (const EGLAttrib* attribList) const
+{
+	DE_UNREF(attribList);
+
+	//! \todo [2014-03-18 lauri] Somehow make the display configurable from command line
+	MovePtr<x11::Display>	x11Display	(new x11::Display(m_eventState, DE_NULL));
+
+	return new Display(x11Display);
+}
+
+Platform::Platform (EventState& eventState)
+{
+	m_nativeDisplayFactoryRegistry.registerFactory(new DisplayFactory(eventState));
+}
+
+MovePtr<ContextFactory> Platform::createContextFactory (void)
+{
+	return MovePtr<ContextFactory>(new GLContextFactory(m_nativeDisplayFactoryRegistry));
+}
+
+
+} // egl
+} // x11
+} // tcu

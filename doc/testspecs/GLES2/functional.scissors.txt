@@ -1,0 +1,60 @@
+-------------------------------------------------------------------------
+drawElements Quality Program Test Specification
+-----------------------------------------------
+
+Copyright 2014 The Android Open Source Project
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-------------------------------------------------------------------------
+    Scissoring Tests
+
+Tests:
+ + dEQP-GLES2.functional.scissor.*
+ + dEQP-GLES3.functional.scissor.*
+
+Includes:
+ + Primitives
+   - Points
+   - Lines
+   - Triangles
+ + Clears (including GLES 3 only ones)
+ + Framebuffer blits (GLES 3)
+ + Scissor configurations
+   - Enclosing rendered area
+   - Enclosed by rendered area (if applicable)
+   - Partially containing rendered area
+   - (Partially) outside render target
+
+
+Excludes:
+ + Blits to/from multiple buffers
+ + Partially clipped points
+
+Description:
+
+This test set compares images rendered by a reference software
+rasterizer to images rendered by the target.
+
+Primitives are tested one at a time with the scissor area in one of the
+above configurations.
+
+Color clears are tested by clearing to a color with the scissor test disabled
+and then clearing to a different color with the scissor test enabled in each
+of the above scissor area configurations.
+
+Depth & stencil clears are tested by clearing only the scissor area to a value
+that will permit a subsequent primitive to be rendered in the presence of
+depth/stencil testing.
+
+Framebuffer blitting is tested like clearing but with the last clear replaced
+by a blit.

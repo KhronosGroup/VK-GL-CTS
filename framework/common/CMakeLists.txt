@@ -1,0 +1,85 @@
+# Common test utilities and framework (tcutil)
+
+set(TCUTIL_SRCS
+	tcuApp.cpp
+	tcuApp.hpp
+	tcuBilinearImageCompare.cpp
+	tcuBilinearImageCompare.hpp
+	tcuCommandLine.cpp
+	tcuCommandLine.hpp
+	tcuCompressedTexture.cpp
+	tcuCompressedTexture.hpp
+	tcuDefs.cpp
+	tcuDefs.hpp
+	tcuFloat.hpp
+	tcuFloatFormat.hpp
+	tcuFloatFormat.cpp
+	tcuFormatUtil.hpp
+	tcuFuzzyImageCompare.cpp
+	tcuFuzzyImageCompare.hpp
+	tcuImageCompare.cpp
+	tcuImageCompare.hpp
+	tcuImageIO.cpp
+	tcuImageIO.hpp
+	tcuInterval.cpp
+	tcuInterval.hpp
+	tcuMatrix.hpp
+	tcuMatrixUtil.hpp
+	tcuPixelFormat.hpp
+	tcuPlatform.cpp
+	tcuPlatform.hpp
+	tcuRGBA.cpp
+	tcuRGBA.hpp
+	tcuRandomValueIterator.cpp
+	tcuRandomValueIterator.hpp
+	tcuRenderTarget.cpp
+	tcuRenderTarget.hpp
+	tcuResource.cpp
+	tcuResource.hpp
+	tcuSurface.cpp
+	tcuSurface.hpp
+	tcuTestCase.cpp
+	tcuTestCase.hpp
+	tcuTestCaseWrapper.cpp
+	tcuTestCaseWrapper.hpp
+	tcuTestContext.cpp
+	tcuTestContext.hpp
+	tcuTestExecutor.cpp
+	tcuTestExecutor.hpp
+	tcuTestLog.cpp
+	tcuTestLog.hpp
+	tcuTestPackage.cpp
+	tcuTestPackage.hpp
+	tcuTexture.cpp
+	tcuTexture.hpp
+	tcuTextureUtil.cpp
+	tcuTextureUtil.hpp
+	tcuVector.hpp
+	tcuVectorType.hpp
+	tcuVectorUtil.hpp
+	tcuFunctionLibrary.hpp
+	tcuFunctionLibrary.cpp
+	tcuThreadUtil.hpp
+	tcuThreadUtil.cpp
+	tcuStringTemplate.hpp
+	tcuStringTemplate.cpp
+	tcuTexLookupVerifier.cpp
+	tcuTexLookupVerifier.hpp
+	tcuTexCompareVerifier.cpp
+	tcuTexCompareVerifier.hpp
+	tcuTexVerifierUtil.cpp
+	tcuTexVerifierUtil.hpp
+	tcuCPUWarmup.cpp
+	tcuCPUWarmup.hpp
+	tcuFactoryRegistry.hpp
+	tcuFactoryRegistry.cpp
+	)
+
+set(TCUTIL_LIBS
+	decpp
+	qphelper
+	dethread
+	)
+
+add_library(tcutil STATIC ${TCUTIL_SRCS})
+target_link_libraries(tcutil ${TCUTIL_LIBS} ${DEQP_PLATFORM_LIBRARIES})

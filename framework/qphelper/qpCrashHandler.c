@@ -1,0 +1,519 @@
+/*-------------------------------------------------------------------------
+ * drawElements Quality Program Helper Library
+ * -------------------------------------------
+ *
+ * Copyright 2014 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ *//*!
+ * \file
+ * \brief System handler handler override
+ *//*--------------------------------------------------------------------*/
+
+#include "qpCrashHandler.h"
+#include "qpDebugOut.h"
+
+#include "deThread.h"
+#include "deMemory.h"
+#include "deString.h"
+#include "deMutex.h"
+
+#include <stdio.h>
+#include <stdarg.h>
+
+#if 0
+#	define DBGPRINT(X) qpPrintf X
+#else
+#	define DBGPRINT(X)
+#endif
+
+/* Crash info write helper. */
+static void writeInfoFormat (qpWriteCrashInfoFunc writeFunc, void* userPtr, const char* format, ...)
+{
+	char		buf[256];
+	va_list		ap;
+
+	va_start(ap, format);
+	vsnprintf(buf, sizeof(buf), format, ap);
+	va_end(ap);
+
+	writeFunc(userPtr, buf);
+}
+
+/* Shared crash info. */
+typedef enum qpCrashType_e
+{
+	QP_CRASHTYPE_SEGMENTATION_FAULT = 0,
+	QP_CRASHTYPE_ASSERT,
+	QP_CRASHTYPE_UNHANDLED_EXCEPTION,
+	QP_CRASHTYPE_OTHER,
+
+	QP_CRASHTYPE_LAST
+} qpCrashType;
+
+typedef struct qpCrashInfo_s
+{
+	qpCrashType						type;
+	const char*						message;
+	const char*						file;
+	int								line;
+} qpCrashInfo;
+
+static void qpCrashInfo_init (qpCrashInfo* info)
+{
+	info->type		= QP_CRASHTYPE_LAST;
+	info->message	= DE_NULL;
+	info->file		= DE_NULL;
+	info->line		= 0;
+}
+
+static void qpCrashInfo_set (qpCrashInfo* info, qpCrashType type, const char* message, const char* file, int line)
+{
+	info->type		= type;
+	info->message	= message;
+	info->file		= file;
+	info->line		= line;
+}
+
+static void qpCrashInfo_write (qpCrashInfo* info, qpWriteCrashInfoFunc writeInfo, void* userPtr)
+{
+	switch (info->type)
+	{
+		case QP_CRASHTYPE_SEGMENTATION_FAULT:
+			writeInfoFormat(writeInfo, userPtr, "Segmentation fault: '%s'\n", info->message);
+			break;
+
+		case QP_CRASHTYPE_UNHANDLED_EXCEPTION:
+			writeInfoFormat(writeInfo, userPtr, "Unhandled exception: '%s'\n", info->message);
+			break;
+
+		case QP_CRASHTYPE_ASSERT:
+			writeInfoFormat(writeInfo, userPtr, "Assertion '%s' failed at %s:%d\n",
+							info->message,
+							info->file,
+							info->line);
+			break;
+
+		case QP_CRASHTYPE_OTHER:
+		default:
+			writeInfoFormat(writeInfo, userPtr, "Crash: '%s'\n", info->message);
+			break;
+	}
+}
+
+static void defaultWriteInfo (void* userPtr, const char* infoString)
+{
+	DE_UNREF(userPtr);
+	qpPrintf("%s", infoString);
+}
+
+static void defaultCrashHandler (qpCrashHandler* crashHandler, void* userPtr)
+{
+	DE_UNREF(userPtr);
+	qpCrashHandler_writeCrashInfo(crashHandler, defaultWriteInfo, DE_NULL);
+	qpDief("Test process crashed");
+}
+
+#if (DE_OS == DE_OS_WIN32) && (DE_COMPILER == DE_COMPILER_MSC)
+
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#include <DbgHelp.h>
+
+struct qpCrashHandler_s
+{
+	qpCrashHandlerFunc				crashHandlerFunc;
+	void*							handlerUserPointer;
+
+	deMutex							crashHandlerLock;
+	qpCrashInfo						crashInfo;
+	deUintptr						crashAddress;
+
+	LPTOP_LEVEL_EXCEPTION_FILTER	oldExceptionFilter;
+};
+
+qpCrashHandler*		g_crashHandler = DE_NULL;
+
+static LONG WINAPI unhandledExceptionFilter (struct _EXCEPTION_POINTERS* info)
+{
+	qpCrashType crashType	= QP_CRASHTYPE_LAST;
+	const char*	reason		= DE_NULL;
+
+	/* Skip breakpoints. */
+	if (info->ExceptionRecord->ExceptionCode == EXCEPTION_BREAKPOINT)
+	{
+		DBGPRINT(("qpCrashHandler::unhandledExceptionFilter(): breakpoint\n"));
+		return EXCEPTION_CONTINUE_SEARCH;
+	}
+
+	/* If no handler present (how could that be?), don't handle. */
+	if (g_crashHandler == DE_NULL)
+	{
+		DBGPRINT(("qpCrashHandler::unhandledExceptionFilter(): no crash handler registered\n"));
+		return EXCEPTION_CONTINUE_SEARCH;
+	}
+
+	/* If we have a debugger, let it handle the exception. */
+	if (IsDebuggerPresent())
+	{
+		DBGPRINT(("qpCrashHandler::unhandledExceptionFilter(): debugger present\n"));
+		return EXCEPTION_CONTINUE_SEARCH;
+	}
+
+	/* Acquire crash handler lock. Otherwise we might get strange behavior when multiple threads enter crash handler simultaneously. */
+	deMutex_lock(g_crashHandler->crashHandlerLock);
+
+	/* Map crash type. */
+	switch (info->ExceptionRecord->ExceptionCode)
+	{
+		case EXCEPTION_ACCESS_VIOLATION:
+			crashType	= QP_CRASHTYPE_SEGMENTATION_FAULT;
+			reason		= "Access violation";
+			break;
+
+		case EXCEPTION_ARRAY_BOUNDS_EXCEEDED:
+			crashType	= QP_CRASHTYPE_SEGMENTATION_FAULT;
+			reason		= "Array bounds exceeded";
+			break;
+
+		case EXCEPTION_ILLEGAL_INSTRUCTION:
+			crashType	= QP_CRASHTYPE_OTHER;
+			reason		= "Illegal instruction";
+			break;
+
+		case EXCEPTION_STACK_OVERFLOW:
+			crashType	= QP_CRASHTYPE_OTHER;
+			reason		= "Stack overflow";
+			break;
+
+		default:
+			/* \todo [pyry] Others. */
+			crashType	= QP_CRASHTYPE_OTHER;
+			reason		= "";
+			break;
+	}
+
+	/* Store reason. */
+	qpCrashInfo_set(&g_crashHandler->crashInfo, crashType, reason, __FILE__, __LINE__);
+
+	/* Store win32-specific crash info. */
+	g_crashHandler->crashAddress = (deUintptr)info->ExceptionRecord->ExceptionAddress;
+
+	/* Handle the crash. */
+	DBGPRINT(("qpCrashHandler::unhandledExceptionFilter(): handled quietly\n"));
+	if (g_crashHandler->crashHandlerFunc != DE_NULL)
+		g_crashHandler->crashHandlerFunc(g_crashHandler, g_crashHandler->handlerUserPointer);
+
+	/* Release lock. */
+	deMutex_unlock(g_crashHandler->crashHandlerLock);
+
+	return EXCEPTION_EXECUTE_HANDLER;
+}
+
+static void assertFailureCallback (const char* expr, const char* file, int line)
+{
+	/* Don't execute crash handler function if debugger is present. */
+	if (IsDebuggerPresent())
+	{
+		DBGPRINT(("qpCrashHandler::assertFailureCallback(): debugger present\n"));
+		return;
+	}
+
+	/* Acquire crash handler lock. */
+	deMutex_lock(g_crashHandler->crashHandlerLock);
+
+	/* Store info. */
+	qpCrashInfo_set(&g_crashHandler->crashInfo, QP_CRASHTYPE_ASSERT, expr, file, line);
+	g_crashHandler->crashAddress = 0;
+
+	/* Handle the crash. */
+	if (g_crashHandler->crashHandlerFunc != DE_NULL)
+		g_crashHandler->crashHandlerFunc(g_crashHandler, g_crashHandler->handlerUserPointer);
+
+	/* Release lock. */
+	deMutex_unlock(g_crashHandler->crashHandlerLock);
+}
+
+qpCrashHandler* qpCrashHandler_create (qpCrashHandlerFunc handlerFunc, void* userPointer)
+{
+	/* Allocate & initialize. */
+	qpCrashHandler* handler = (qpCrashHandler*)deCalloc(sizeof(qpCrashHandler));
+	DBGPRINT(("qpCrashHandler::create() -- Win32\n"));
+	if (!handler)
+		return handler;
+
+	DE_ASSERT(g_crashHandler == DE_NULL);
+
+	handler->crashHandlerFunc	= handlerFunc ? handlerFunc : defaultCrashHandler;
+	handler->handlerUserPointer	= userPointer;
+
+	/* Create lock for crash handler. \note Has to be recursive or otherwise crash in assert failure causes deadlock. */
+	{
+		deMutexAttributes attr;
+		attr.flags = DE_MUTEX_RECURSIVE;
+		handler->crashHandlerLock = deMutex_create(&attr);
+
+		if (!handler->crashHandlerLock)
+		{
+			deFree(handler);
+			return DE_NULL;
+		}
+	}
+
+	qpCrashInfo_init(&handler->crashInfo);
+	handler->crashAddress		= 0;
+
+	/* Unhandled exception filter. */
+	handler->oldExceptionFilter = SetUnhandledExceptionFilter(unhandledExceptionFilter);
+
+	/* Prevent nasty error dialog. */
+	SetErrorMode(SEM_FAILCRITICALERRORS|SEM_NOGPFAULTERRORBOX);
+
+	/* DE_ASSERT callback. */
+	deSetAssertFailureCallback(assertFailureCallback);
+
+	g_crashHandler = handler;
+	return handler;
+}
+
+void qpCrashHandler_destroy (qpCrashHandler* handler)
+{
+	DBGPRINT(("qpCrashHandler::destroy()\n"));
+
+	DE_ASSERT(g_crashHandler == handler);
+
+	deSetAssertFailureCallback(DE_NULL);
+	SetUnhandledExceptionFilter(handler->oldExceptionFilter);
+
+	g_crashHandler = DE_NULL;
+	deFree(handler);
+}
+
+enum
+{
+	MAX_NAME_LENGTH = 64
+};
+
+void qpCrashHandler_writeCrashInfo (qpCrashHandler* handler, qpWriteCrashInfoFunc writeInfo, void* userPtr)
+{
+	void*			addresses[32];
+	HANDLE			process;
+
+	/* Symbol info struct. */
+	deUint8			symInfoStorage[sizeof(SYMBOL_INFO)+MAX_NAME_LENGTH];
+	SYMBOL_INFO*	symInfo			= (SYMBOL_INFO*)symInfoStorage;
+
+	DE_STATIC_ASSERT(sizeof(TCHAR) == sizeof(deUint8));
+
+	/* Write basic info. */
+	qpCrashInfo_write(&handler->crashInfo, writeInfo, userPtr);
+
+	/* Acquire process handle and initialize symbols. */
+	process = GetCurrentProcess();
+
+	/* Write backtrace. */
+	if (SymInitialize(process, NULL, TRUE))
+	{
+		int batchStart		= 0;
+		int globalFrameNdx	= 0;
+
+		/* Initialize symInfo. */
+		deMemset(symInfo, 0, sizeof(symInfoStorage));
+		symInfo->SizeOfStruct	= sizeof(SYMBOL_INFO);
+		symInfo->MaxNameLen		= MAX_NAME_LENGTH;
+
+		/* Print address and symbol where crash happened. */
+		if (handler->crashAddress != 0)
+		{
+			BOOL symInfoOk = SymFromAddr(process, (DWORD64)handler->crashAddress, 0, symInfo);
+
+			writeInfoFormat(writeInfo, userPtr, "  at %p %s%s\n", handler->crashAddress,
+							symInfoOk ? symInfo->Name : "(unknown)",
+							symInfoOk ? "()" : "");
+		}
+
+		writeInfo(userPtr, "Backtrace:\n");
+
+		for (;;)
+		{
+			int curFrame;
+			int numInBatch;
+
+			/* Get one batch. */
+			numInBatch = CaptureStackBackTrace(batchStart, DE_LENGTH_OF_ARRAY(addresses), addresses, NULL);
+
+			for (curFrame = 0; curFrame < numInBatch; curFrame++)
+			{
+				BOOL symInfoOk = SymFromAddr(process, (DWORD64)addresses[curFrame], 0, symInfo);
+
+				writeInfoFormat(writeInfo, userPtr, "  %2d: %p %s%s\n", globalFrameNdx++, addresses[curFrame],
+								symInfoOk ? symInfo->Name : "(unknown)",
+								symInfoOk ? "()" : "");
+			}
+
+			batchStart += numInBatch;
+
+			/* Check if we hit end of stack trace. */
+			if (numInBatch == 0 || numInBatch < DE_LENGTH_OF_ARRAY(addresses))
+				break;
+		}
+	}
+}
+
+#else /* posix / generic implementation */
+
+#if (DE_OS == DE_OS_UNIX) || (DE_OS == DE_OS_ANDROID) || (DE_OS == DE_OS_OSX) || (DE_OS == DE_OS_IOS)
+#	define USE_SIGNAL_HANDLER 1
+#	include <signal.h>
+#endif
+
+#if defined(USE_SIGNAL_HANDLER)
+
+typedef struct SignalInfo_s
+{
+	int				signalNum;
+	qpCrashType		type;
+	const char*		name;
+} SignalInfo;
+
+static const SignalInfo s_signals[] =
+{
+	{ SIGABRT,		QP_CRASHTYPE_UNHANDLED_EXCEPTION,	"SIGABRT"	},
+	{ SIGILL,		QP_CRASHTYPE_OTHER,					"SIGILL"	},
+	{ SIGSEGV,		QP_CRASHTYPE_SEGMENTATION_FAULT,	"SIGSEGV"	},
+	{ SIGFPE,		QP_CRASHTYPE_OTHER,					"SIGFPE"	},
+	{ SIGBUS,		QP_CRASHTYPE_SEGMENTATION_FAULT,	"SIGBUS"	},
+	{ SIGPIPE,		QP_CRASHTYPE_OTHER,					"SIGPIPE"	}
+};
+
+#endif /* USE_SIGNAL_HANDLER */
+
+struct qpCrashHandler_s
+{
+	qpCrashHandlerFunc		crashHandlerFunc;
+	void*					handlerUserPointer;
+
+	qpCrashInfo				crashInfo;
+	int						crashSignal;
+
+#if defined(USE_SIGNAL_HANDLER)
+	struct sigaction		oldHandlers[DE_LENGTH_OF_ARRAY(s_signals)];
+#endif
+};
+
+qpCrashHandler* g_crashHandler = DE_NULL;
+
+static void assertFailureCallback (const char* expr, const char* file, int line)
+{
+	/* Store info. */
+	qpCrashInfo_set(&g_crashHandler->crashInfo, QP_CRASHTYPE_ASSERT, expr, file, line);
+
+	/* Handle the crash. */
+	if (g_crashHandler->crashHandlerFunc != DE_NULL)
+		g_crashHandler->crashHandlerFunc(g_crashHandler, g_crashHandler->handlerUserPointer);
+}
+
+#if defined(USE_SIGNAL_HANDLER)
+
+static const SignalInfo* getSignalInfo (int sigNum)
+{
+	int ndx;
+	for (ndx = 0; ndx < DE_LENGTH_OF_ARRAY(s_signals); ndx++)
+	{
+		if (s_signals[ndx].signalNum == sigNum)
+			return &s_signals[ndx];
+	}
+	return DE_NULL;
+}
+
+static void signalHandler (int sigNum)
+{
+	const SignalInfo*	info	= getSignalInfo(sigNum);
+	qpCrashType			type	= info ? info->type : QP_CRASHTYPE_OTHER;
+	const char*			name	= info ? info->name : "Unknown signal";
+
+	qpCrashInfo_set(&g_crashHandler->crashInfo, type, name, DE_NULL, 0);
+
+	if (g_crashHandler->crashHandlerFunc != DE_NULL)
+		g_crashHandler->crashHandlerFunc(g_crashHandler, g_crashHandler->handlerUserPointer);
+}
+
+#endif /* USE_SIGNAL_HANDLER */
+
+qpCrashHandler* qpCrashHandler_create (qpCrashHandlerFunc handlerFunc, void* userPointer)
+{
+	/* Allocate & initialize. */
+	qpCrashHandler* handler = (qpCrashHandler*)deCalloc(sizeof(qpCrashHandler));
+	DBGPRINT(("qpCrashHandler::create()\n"));
+	if (!handler)
+		return handler;
+
+	DE_ASSERT(g_crashHandler == DE_NULL);
+
+	handler->crashHandlerFunc	= handlerFunc ? handlerFunc : defaultCrashHandler;
+	handler->handlerUserPointer	= userPointer;
+
+	qpCrashInfo_init(&handler->crashInfo);
+
+	g_crashHandler = handler;
+
+	/* DE_ASSERT callback. */
+	deSetAssertFailureCallback(assertFailureCallback);
+
+#if defined(USE_SIGNAL_HANDLER)
+	/* Register signal handlers. */
+	{
+		struct sigaction	action;
+		int					sigNdx;
+
+		sigemptyset(&action.sa_mask);
+		action.sa_handler	= signalHandler;
+		action.sa_flags		= 0;
+
+		for (sigNdx = 0; sigNdx < DE_LENGTH_OF_ARRAY(s_signals); sigNdx++)
+			sigaction(s_signals[sigNdx].signalNum, &action, &handler->oldHandlers[sigNdx]);
+	}
+#endif
+
+	return handler;
+}
+
+void qpCrashHandler_destroy (qpCrashHandler* handler)
+{
+	DBGPRINT(("qpCrashHandler::destroy()\n"));
+
+	DE_ASSERT(g_crashHandler == handler);
+
+	deSetAssertFailureCallback(DE_NULL);
+
+#if defined(USE_SIGNAL_HANDLER)
+	/* Restore old handlers. */
+	{
+		int sigNdx;
+		for (sigNdx = 0; sigNdx < DE_LENGTH_OF_ARRAY(s_signals); sigNdx++)
+			sigaction(s_signals[sigNdx].signalNum, &handler->oldHandlers[sigNdx], DE_NULL);
+	}
+#endif
+
+	g_crashHandler = DE_NULL;
+
+	deFree(handler);
+}
+
+void qpCrashHandler_writeCrashInfo (qpCrashHandler* crashHandler, qpWriteCrashInfoFunc writeInfo, void* userPtr)
+{
+	qpCrashInfo_write(&crashHandler->crashInfo, writeInfo, userPtr);
+}
+
+#endif /* generic */

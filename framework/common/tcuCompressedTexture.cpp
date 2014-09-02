@@ -1,0 +1,2680 @@
+/*-------------------------------------------------------------------------
+ * drawElements Quality Program Tester Core
+ * ----------------------------------------
+ *
+ * Copyright 2014 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ *//*!
+ * \file
+ * \brief Compressed Texture Utilities.
+ *//*--------------------------------------------------------------------*/
+
+#include "tcuCompressedTexture.hpp"
+#include "tcuTextureUtil.hpp"
+#include "deStringUtil.hpp"
+#include "deFloat16.h"
+
+#include <algorithm>
+
+namespace tcu
+{
+
+enum { ASTC_BLOCK_SIZE_BYTES = 128/8 };
+
+template <typename T, typename Y>
+struct isSameType			{ enum { V = 0 }; };
+template <typename T>
+struct isSameType<T, T>		{ enum { V = 1 }; };
+
+CompressedTexture::CompressedTexture (void)
+	: m_format	(FORMAT_LAST)
+	, m_width	(0)
+	, m_height	(0)
+	, m_depth	(0)
+{
+}
+
+CompressedTexture::CompressedTexture (Format format, int width, int height, int depth)
+	: m_format	(FORMAT_LAST)
+	, m_width	(0)
+	, m_height	(0)
+	, m_depth	(0)
+{
+	setStorage(format, width, height, depth);
+}
+
+CompressedTexture::~CompressedTexture (void)
+{
+}
+
+static inline int divRoundUp (int a, int b)
+{
+	return a/b + ((a%b) ? 1 : 0);
+}
+
+bool isEtcFormat (CompressedTexture::Format fmt)
+{
+	switch (fmt)
+	{
+		case CompressedTexture::ETC1_RGB8:
+		case CompressedTexture::EAC_R11:
+		case CompressedTexture::EAC_SIGNED_R11:
+		case CompressedTexture::EAC_RG11:
+		case CompressedTexture::EAC_SIGNED_RG11:
+		case CompressedTexture::ETC2_RGB8:
+		case CompressedTexture::ETC2_SRGB8:
+		case CompressedTexture::ETC2_RGB8_PUNCHTHROUGH_ALPHA1:
+		case CompressedTexture::ETC2_SRGB8_PUNCHTHROUGH_ALPHA1:
+		case CompressedTexture::ETC2_EAC_RGBA8:
+		case CompressedTexture::ETC2_EAC_SRGB8_ALPHA8:
+			return true;
+
+		default:
+			return false;
+	}
+}
+
+bool isASTCFormat (CompressedTexture::Format fmt)
+{
+	switch (fmt)
+	{
+		case CompressedTexture::ASTC_4x4_RGBA:
+		case CompressedTexture::ASTC_5x4_RGBA:
+		case CompressedTexture::ASTC_5x5_RGBA:
+		case CompressedTexture::ASTC_6x5_RGBA:
+		case CompressedTexture::ASTC_6x6_RGBA:
+		case CompressedTexture::ASTC_8x5_RGBA:
+		case CompressedTexture::ASTC_8x6_RGBA:
+		case CompressedTexture::ASTC_8x8_RGBA:
+		case CompressedTexture::ASTC_10x5_RGBA:
+		case CompressedTexture::ASTC_10x6_RGBA:
+		case CompressedTexture::ASTC_10x8_RGBA:
+		case CompressedTexture::ASTC_10x10_RGBA:
+		case CompressedTexture::ASTC_12x10_RGBA:
+		case CompressedTexture::ASTC_12x12_RGBA:
+		case CompressedTexture::ASTC_4x4_SRGB8_ALPHA8:
+		case CompressedTexture::ASTC_5x4_SRGB8_ALPHA8:
+		case CompressedTexture::ASTC_5x5_SRGB8_ALPHA8:
+		case CompressedTexture::ASTC_6x5_SRGB8_ALPHA8:
+		case CompressedTexture::ASTC_6x6_SRGB8_ALPHA8:
+		case CompressedTexture::ASTC_8x5_SRGB8_ALPHA8:
+		case CompressedTexture::ASTC_8x6_SRGB8_ALPHA8:
+		case CompressedTexture::ASTC_8x8_SRGB8_ALPHA8:
+		case CompressedTexture::ASTC_10x5_SRGB8_ALPHA8:
+		case CompressedTexture::ASTC_10x6_SRGB8_ALPHA8:
+		case CompressedTexture::ASTC_10x8_SRGB8_ALPHA8:
+		case CompressedTexture::ASTC_10x10_SRGB8_ALPHA8:
+		case CompressedTexture::ASTC_12x10_SRGB8_ALPHA8:
+		case CompressedTexture::ASTC_12x12_SRGB8_ALPHA8:
+			return true;
+
+		default:
+			return false;
+	}
+}
+
+bool isASTCSRGBFormat (CompressedTexture::Format fmt)
+{
+	switch (fmt)
+	{
+		case CompressedTexture::ASTC_4x4_SRGB8_ALPHA8:
+		case CompressedTexture::ASTC_5x4_SRGB8_ALPHA8:
+		case CompressedTexture::ASTC_5x5_SRGB8_ALPHA8:
+		case CompressedTexture::ASTC_6x5_SRGB8_ALPHA8:
+		case CompressedTexture::ASTC_6x6_SRGB8_ALPHA8:
+		case CompressedTexture::ASTC_8x5_SRGB8_ALPHA8:
+		case CompressedTexture::ASTC_8x6_SRGB8_ALPHA8:
+		case CompressedTexture::ASTC_8x8_SRGB8_ALPHA8:
+		case CompressedTexture::ASTC_10x5_SRGB8_ALPHA8:
+		case CompressedTexture::ASTC_10x6_SRGB8_ALPHA8:
+		case CompressedTexture::ASTC_10x8_SRGB8_ALPHA8:
+		case CompressedTexture::ASTC_10x10_SRGB8_ALPHA8:
+		case CompressedTexture::ASTC_12x10_SRGB8_ALPHA8:
+		case CompressedTexture::ASTC_12x12_SRGB8_ALPHA8:
+			return true;
+
+		default:
+			return false;
+	}
+}
+
+IVec3 getASTCBlockSize (CompressedTexture::Format fmt)
+{
+	switch (fmt)
+	{
+		case CompressedTexture::ASTC_4x4_RGBA:				return IVec3(4,  4,  1);
+		case CompressedTexture::ASTC_5x4_RGBA:				return IVec3(5,  4,  1);
+		case CompressedTexture::ASTC_5x5_RGBA:				return IVec3(5,  5,  1);
+		case CompressedTexture::ASTC_6x5_RGBA:				return IVec3(6,  5,  1);
+		case CompressedTexture::ASTC_6x6_RGBA:				return IVec3(6,  6,  1);
+		case CompressedTexture::ASTC_8x5_RGBA:				return IVec3(8,  5,  1);
+		case CompressedTexture::ASTC_8x6_RGBA:				return IVec3(8,  6,  1);
+		case CompressedTexture::ASTC_8x8_RGBA:				return IVec3(8,  8,  1);
+		case CompressedTexture::ASTC_10x5_RGBA:				return IVec3(10, 5,  1);
+		case CompressedTexture::ASTC_10x6_RGBA:				return IVec3(10, 6,  1);
+		case CompressedTexture::ASTC_10x8_RGBA:				return IVec3(10, 8,  1);
+		case CompressedTexture::ASTC_10x10_RGBA:			return IVec3(10, 10, 1);
+		case CompressedTexture::ASTC_12x10_RGBA:			return IVec3(12, 10, 1);
+		case CompressedTexture::ASTC_12x12_RGBA:			return IVec3(12, 12, 1);
+		case CompressedTexture::ASTC_4x4_SRGB8_ALPHA8:		return IVec3(4,  4,  1);
+		case CompressedTexture::ASTC_5x4_SRGB8_ALPHA8:		return IVec3(5,  4,  1);
+		case CompressedTexture::ASTC_5x5_SRGB8_ALPHA8:		return IVec3(5,  5,  1);
+		case CompressedTexture::ASTC_6x5_SRGB8_ALPHA8:		return IVec3(6,  5,  1);
+		case CompressedTexture::ASTC_6x6_SRGB8_ALPHA8:		return IVec3(6,  6,  1);
+		case CompressedTexture::ASTC_8x5_SRGB8_ALPHA8:		return IVec3(8,  5,  1);
+		case CompressedTexture::ASTC_8x6_SRGB8_ALPHA8:		return IVec3(8,  6,  1);
+		case CompressedTexture::ASTC_8x8_SRGB8_ALPHA8:		return IVec3(8,  8,  1);
+		case CompressedTexture::ASTC_10x5_SRGB8_ALPHA8:		return IVec3(10, 5,  1);
+		case CompressedTexture::ASTC_10x6_SRGB8_ALPHA8:		return IVec3(10, 6,  1);
+		case CompressedTexture::ASTC_10x8_SRGB8_ALPHA8:		return IVec3(10, 8,  1);
+		case CompressedTexture::ASTC_10x10_SRGB8_ALPHA8:	return IVec3(10, 10, 1);
+		case CompressedTexture::ASTC_12x10_SRGB8_ALPHA8:	return IVec3(12, 10, 1);
+		case CompressedTexture::ASTC_12x12_SRGB8_ALPHA8:	return IVec3(12, 12, 1);
+
+		default:
+			DE_ASSERT(false);
+			return IVec3();
+	}
+}
+
+CompressedTexture::Format getASTCFormatByBlockSize (int width, int height, int depth, bool isSRGB)
+{
+	if (depth > 1)
+		throw tcu::InternalError("3D ASTC textures not currently supported");
+
+	const tcu::IVec3 size(width, height, depth);
+
+	for (int fmtI = 0; fmtI < CompressedTexture::FORMAT_LAST; fmtI++)
+	{
+		const CompressedTexture::Format fmt = (CompressedTexture::Format)fmtI;
+
+		if (isASTCFormat(fmt) && getASTCBlockSize(fmt) == size && isASTCSRGBFormat(fmt) == isSRGB)
+			return fmt;
+	}
+
+	throw tcu::InternalError("Invalid ASTC block size " + de::toString(width) + "x" + de::toString(height) + "x" + de::toString(depth));
+}
+
+void CompressedTexture::setStorage (Format format, int width, int height, int depth)
+{
+	m_format	= format;
+	m_width		= width;
+	m_height	= height;
+	m_depth		= depth;
+
+	if (isEtcFormat(m_format))
+	{
+		DE_ASSERT(m_depth == 1);
+
+		int blockSizeMultiplier = 0; // How many 64-bit parts each compressed block contains.
+
+		switch (m_format)
+		{
+			case ETC1_RGB8:							blockSizeMultiplier = 1;	break;
+			case EAC_R11:							blockSizeMultiplier = 1;	break;
+			case EAC_SIGNED_R11:					blockSizeMultiplier = 1;	break;
+			case EAC_RG11:							blockSizeMultiplier = 2;	break;
+			case EAC_SIGNED_RG11:					blockSizeMultiplier = 2;	break;
+			case ETC2_RGB8:							blockSizeMultiplier = 1;	break;
+			case ETC2_SRGB8:						blockSizeMultiplier = 1;	break;
+			case ETC2_RGB8_PUNCHTHROUGH_ALPHA1:		blockSizeMultiplier = 1;	break;
+			case ETC2_SRGB8_PUNCHTHROUGH_ALPHA1:	blockSizeMultiplier = 1;	break;
+			case ETC2_EAC_RGBA8:					blockSizeMultiplier = 2;	break;
+			case ETC2_EAC_SRGB8_ALPHA8:				blockSizeMultiplier = 2;	break;
+
+			default:
+				DE_ASSERT(false);
+				break;
+		}
+
+		m_data.resize(blockSizeMultiplier * sizeof(deUint64) * divRoundUp(m_width, 4) * divRoundUp(m_height, 4));
+	}
+	else if (isASTCFormat(m_format))
+	{
+		if (m_depth > 1)
+			throw tcu::InternalError("3D ASTC textures not currently supported");
+
+		const IVec3 blockSize = getASTCBlockSize(m_format);
+		m_data.resize(ASTC_BLOCK_SIZE_BYTES * divRoundUp(m_width, blockSize.x()) * divRoundUp(m_height, blockSize.y()) * divRoundUp(m_depth, blockSize.z()));
+	}
+	else
+	{
+		DE_ASSERT(m_format == FORMAT_LAST);
+		DE_ASSERT(m_width == 0 && m_height == 0 && m_depth == 0);
+		m_data.resize(0);
+	}
+}
+
+/*--------------------------------------------------------------------*//*!
+ * \brief Get uncompressed texture format
+ *//*--------------------------------------------------------------------*/
+TextureFormat CompressedTexture::getUncompressedFormat (void) const
+{
+	if (isEtcFormat(m_format))
+	{
+		switch (m_format)
+		{
+			case ETC1_RGB8:							return TextureFormat(TextureFormat::RGB,	TextureFormat::UNORM_INT8);
+			case EAC_R11:							return TextureFormat(TextureFormat::R,		TextureFormat::UNORM_INT16);
+			case EAC_SIGNED_R11:					return TextureFormat(TextureFormat::R,		TextureFormat::SNORM_INT16);
+			case EAC_RG11:							return TextureFormat(TextureFormat::RG,		TextureFormat::UNORM_INT16);
+			case EAC_SIGNED_RG11:					return TextureFormat(TextureFormat::RG,		TextureFormat::SNORM_INT16);
+			case ETC2_RGB8:							return TextureFormat(TextureFormat::RGB,	TextureFormat::UNORM_INT8);
+			case ETC2_SRGB8:						return TextureFormat(TextureFormat::sRGB,	TextureFormat::UNORM_INT8);
+			case ETC2_RGB8_PUNCHTHROUGH_ALPHA1:		return TextureFormat(TextureFormat::RGBA,	TextureFormat::UNORM_INT8);
+			case ETC2_SRGB8_PUNCHTHROUGH_ALPHA1:	return TextureFormat(TextureFormat::sRGBA,	TextureFormat::UNORM_INT8);
+			case ETC2_EAC_RGBA8:					return TextureFormat(TextureFormat::RGBA,	TextureFormat::UNORM_INT8);
+			case ETC2_EAC_SRGB8_ALPHA8:				return TextureFormat(TextureFormat::sRGBA,	TextureFormat::UNORM_INT8);
+			default:
+				DE_ASSERT(false);
+				return TextureFormat();
+		}
+	}
+	else if (isASTCFormat(m_format))
+	{
+		if (isASTCSRGBFormat(m_format))
+			return TextureFormat(TextureFormat::sRGBA, TextureFormat::UNORM_INT8);
+		else
+			return TextureFormat(TextureFormat::RGBA, TextureFormat::HALF_FLOAT);
+	}
+	else
+	{
+		DE_ASSERT(false);
+		return TextureFormat();
+	}
+}
+
+// \todo [2013-08-06 nuutti] ETC and ASTC decompression codes are rather unrelated, and are already in their own "private" namespaces - should this be split to multiple files?
+
+namespace EtcDecompressInternal
+{
+
+enum
+{
+	ETC2_BLOCK_WIDTH					= 4,
+	ETC2_BLOCK_HEIGHT					= 4,
+	ETC2_UNCOMPRESSED_PIXEL_SIZE_A8		= 1,
+	ETC2_UNCOMPRESSED_PIXEL_SIZE_R11	= 2,
+	ETC2_UNCOMPRESSED_PIXEL_SIZE_RG11	= 4,
+	ETC2_UNCOMPRESSED_PIXEL_SIZE_RGB8	= 3,
+	ETC2_UNCOMPRESSED_PIXEL_SIZE_RGBA8	= 4,
+	ETC2_UNCOMPRESSED_BLOCK_SIZE_A8		= ETC2_BLOCK_WIDTH*ETC2_BLOCK_HEIGHT*ETC2_UNCOMPRESSED_PIXEL_SIZE_A8,
+	ETC2_UNCOMPRESSED_BLOCK_SIZE_R11	= ETC2_BLOCK_WIDTH*ETC2_BLOCK_HEIGHT*ETC2_UNCOMPRESSED_PIXEL_SIZE_R11,
+	ETC2_UNCOMPRESSED_BLOCK_SIZE_RG11	= ETC2_BLOCK_WIDTH*ETC2_BLOCK_HEIGHT*ETC2_UNCOMPRESSED_PIXEL_SIZE_RG11,
+	ETC2_UNCOMPRESSED_BLOCK_SIZE_RGB8	= ETC2_BLOCK_WIDTH*ETC2_BLOCK_HEIGHT*ETC2_UNCOMPRESSED_PIXEL_SIZE_RGB8,
+	ETC2_UNCOMPRESSED_BLOCK_SIZE_RGBA8	= ETC2_BLOCK_WIDTH*ETC2_BLOCK_HEIGHT*ETC2_UNCOMPRESSED_PIXEL_SIZE_RGBA8
+};
+
+static inline deUint64 get64BitBlock (const deUint8* src, int blockNdx)
+{
+	// Stored in big-endian form.
+	deUint64 block = 0;
+	for (int i = 0; i < 8; i++)
+		block = (block << 8ull) | (deUint64)(src[blockNdx*8+i]);
+	return block;
+}
+
+// Return the first 64 bits of a 128 bit block.
+static inline deUint64 get128BitBlockStart (const deUint8* src, int blockNdx)
+{
+	return get64BitBlock(src, 2*blockNdx);
+}
+
+// Return the last 64 bits of a 128 bit block.
+static inline deUint64 get128BitBlockEnd (const deUint8* src, int blockNdx)
+{
+	return get64BitBlock(src, 2*blockNdx + 1);
+}
+
+static inline deUint32 getBit (deUint64 src, int bit)
+{
+	return (src >> bit) & 1;
+}
+
+static inline deUint32 getBits (deUint64 src, int low, int high)
+{
+	const int numBits = (high-low) + 1;
+	DE_ASSERT(de::inRange(numBits, 1, 32));
+	return (src >> low) & ((1<<numBits)-1);
+}
+
+static inline deUint8 extend4To8 (deUint8 src)
+{
+	DE_ASSERT((src & ~((1<<4)-1)) == 0);
+	return (src << 4) | src;
+}
+
+static inline deUint8 extend5To8 (deUint8 src)
+{
+	DE_ASSERT((src & ~((1<<5)-1)) == 0);
+	return (src << 3) | (src >> 2);
+}
+
+static inline deUint8 extend6To8 (deUint8 src)
+{
+	DE_ASSERT((src & ~((1<<6)-1)) == 0);
+	return (src << 2) | (src >> 4);
+}
+
+static inline deUint8 extend7To8 (deUint8 src)
+{
+	DE_ASSERT((src & ~((1<<7)-1)) == 0);
+	return (src << 1) | (src >> 6);
+}
+
+static inline deInt8 extendSigned3To8 (deUint8 src)
+{
+	const bool isNeg = (src & (1<<2)) != 0;
+	return (deInt8)((isNeg ? ~((1<<3)-1) : 0) | src);
+}
+
+static inline deUint8 extend5Delta3To8 (deUint8 base5, deUint8 delta3)
+{
+	const deUint8 t = (deUint8)((deInt8)base5 + extendSigned3To8(delta3));
+	return extend5To8(t);
+}
+
+static inline deUint16 extend11To16 (deUint16 src)
+{
+	DE_ASSERT((src & ~((1<<11)-1)) == 0);
+	return (src << 5) | (src >> 6);
+}
+
+static inline deInt16 extend11To16WithSign (deInt16 src)
+{
+	if (src < 0)
+		return -(deInt16)extend11To16(-src);
+	else
+		return (deInt16)extend11To16(src);
+}
+
+static void decompressETC1Block (deUint8 dst[ETC2_UNCOMPRESSED_BLOCK_SIZE_RGB8], deUint64 src)
+{
+	const int		diffBit		= (int)getBit(src, 33);
+	const int		flipBit		= (int)getBit(src, 32);
+	const deUint32	table[2]	= { getBits(src, 37, 39), getBits(src, 34, 36) };
+	deUint8			baseR[2];
+	deUint8			baseG[2];
+	deUint8			baseB[2];
+
+	if (diffBit == 0)
+	{
+		// Individual mode.
+		baseR[0] = extend4To8((deUint8)getBits(src, 60, 63));
+		baseR[1] = extend4To8((deUint8)getBits(src, 56, 59));
+		baseG[0] = extend4To8((deUint8)getBits(src, 52, 55));
+		baseG[1] = extend4To8((deUint8)getBits(src, 48, 51));
+		baseB[0] = extend4To8((deUint8)getBits(src, 44, 47));
+		baseB[1] = extend4To8((deUint8)getBits(src, 40, 43));
+	}
+	else
+	{
+		// Differential mode (diffBit == 1).
+		deUint8 bR = (deUint8)getBits(src, 59, 63); // 5b
+		deUint8 dR = (deUint8)getBits(src, 56, 58); // 3b
+		deUint8 bG = (deUint8)getBits(src, 51, 55);
+		deUint8 dG = (deUint8)getBits(src, 48, 50);
+		deUint8 bB = (deUint8)getBits(src, 43, 47);
+		deUint8 dB = (deUint8)getBits(src, 40, 42);
+
+		baseR[0] = extend5To8(bR);
+		baseG[0] = extend5To8(bG);
+		baseB[0] = extend5To8(bB);
+
+		baseR[1] = extend5Delta3To8(bR, dR);
+		baseG[1] = extend5Delta3To8(bG, dG);
+		baseB[1] = extend5Delta3To8(bB, dB);
+	}
+
+	static const int modifierTable[8][4] =
+	{
+	//	  00   01   10    11
+		{  2,   8,  -2,   -8 },
+		{  5,  17,  -5,  -17 },
+		{  9,  29,  -9,  -29 },
+		{ 13,  42, -13,  -42 },
+		{ 18,  60, -18,  -60 },
+		{ 24,  80, -24,  -80 },
+		{ 33, 106, -33, -106 },
+		{ 47, 183, -47, -183 }
+	};
+
+	// Write final pixels.
+	for (int pixelNdx = 0; pixelNdx < ETC2_BLOCK_HEIGHT*ETC2_BLOCK_WIDTH; pixelNdx++)
+	{
+		const int		x				= pixelNdx / ETC2_BLOCK_HEIGHT;
+		const int		y				= pixelNdx % ETC2_BLOCK_HEIGHT;
+		const int		dstOffset		= (y*ETC2_BLOCK_WIDTH + x)*ETC2_UNCOMPRESSED_PIXEL_SIZE_RGB8;
+		const int		subBlock		= ((flipBit ? y : x) >= 2) ? 1 : 0;
+		const deUint32	tableNdx		= table[subBlock];
+		const deUint32	modifierNdx		= (getBit(src, 16+pixelNdx) << 1) | getBit(src, pixelNdx);
+		const int		modifier		= modifierTable[tableNdx][modifierNdx];
+
+		dst[dstOffset+0] = (deUint8)deClamp32((int)baseR[subBlock] + modifier, 0, 255);
+		dst[dstOffset+1] = (deUint8)deClamp32((int)baseG[subBlock] + modifier, 0, 255);
+		dst[dstOffset+2] = (deUint8)deClamp32((int)baseB[subBlock] + modifier, 0, 255);
+	}
+}
+
+// if alphaMode is true, do PUNCHTHROUGH and store alpha to alphaDst; otherwise do ordinary ETC2 RGB8.
+static void decompressETC2Block (deUint8 dst[ETC2_UNCOMPRESSED_BLOCK_SIZE_RGB8], deUint64 src, deUint8 alphaDst[ETC2_UNCOMPRESSED_BLOCK_SIZE_A8], bool alphaMode)
+{
+	enum Etc2Mode
+	{
+		MODE_INDIVIDUAL = 0,
+		MODE_DIFFERENTIAL,
+		MODE_T,
+		MODE_H,
+		MODE_PLANAR,
+
+		MODE_LAST
+	};
+
+	const int		diffOpaqueBit	= (int)getBit(src, 33);
+	const deInt8	selBR			= (deInt8)getBits(src, 59, 63);	// 5 bits.
+	const deInt8	selBG			= (deInt8)getBits(src, 51, 55);
+	const deInt8	selBB			= (deInt8)getBits(src, 43, 47);
+	const deInt8	selDR			= extendSigned3To8((deUint8)getBits(src, 56, 58)); // 3 bits.
+	const deInt8	selDG			= extendSigned3To8((deUint8)getBits(src, 48, 50));
+	const deInt8	selDB			= extendSigned3To8((deUint8)getBits(src, 40, 42));
+	Etc2Mode		mode;
+
+	if (!alphaMode && diffOpaqueBit == 0)
+		mode = MODE_INDIVIDUAL;
+	else if (!de::inRange(selBR + selDR, 0, 31))
+		mode = MODE_T;
+	else if (!de::inRange(selBG + selDG, 0, 31))
+		mode = MODE_H;
+	else if (!de::inRange(selBB + selDB, 0, 31))
+		mode = MODE_PLANAR;
+	else
+		mode = MODE_DIFFERENTIAL;
+
+	if (mode == MODE_INDIVIDUAL || mode == MODE_DIFFERENTIAL)
+	{
+		// Individual and differential modes have some steps in common, handle them here.
+		static const int modifierTable[8][4] =
+		{
+		//	  00   01   10    11
+			{  2,   8,  -2,   -8 },
+			{  5,  17,  -5,  -17 },
+			{  9,  29,  -9,  -29 },
+			{ 13,  42, -13,  -42 },
+			{ 18,  60, -18,  -60 },
+			{ 24,  80, -24,  -80 },
+			{ 33, 106, -33, -106 },
+			{ 47, 183, -47, -183 }
+		};
+
+		const int		flipBit		= (int)getBit(src, 32);
+		const deUint32	table[2]	= { getBits(src, 37, 39), getBits(src, 34, 36) };
+		deUint8			baseR[2];
+		deUint8			baseG[2];
+		deUint8			baseB[2];
+
+		if (mode == MODE_INDIVIDUAL)
+		{
+			// Individual mode, initial values.
+			baseR[0] = extend4To8((deUint8)getBits(src, 60, 63));
+			baseR[1] = extend4To8((deUint8)getBits(src, 56, 59));
+			baseG[0] = extend4To8((deUint8)getBits(src, 52, 55));
+			baseG[1] = extend4To8((deUint8)getBits(src, 48, 51));
+			baseB[0] = extend4To8((deUint8)getBits(src, 44, 47));
+			baseB[1] = extend4To8((deUint8)getBits(src, 40, 43));
+		}
+		else
+		{
+			// Differential mode, initial values.
+			baseR[0] = extend5To8(selBR);
+			baseG[0] = extend5To8(selBG);
+			baseB[0] = extend5To8(selBB);
+
+			baseR[1] = extend5To8((deUint8)(selBR + selDR));
+			baseG[1] = extend5To8((deUint8)(selBG + selDG));
+			baseB[1] = extend5To8((deUint8)(selBB + selDB));
+		}
+
+		// Write final pixels for individual or differential mode.
+		for (int pixelNdx = 0; pixelNdx < ETC2_BLOCK_HEIGHT*ETC2_BLOCK_WIDTH; pixelNdx++)
+		{
+			const int		x				= pixelNdx / ETC2_BLOCK_HEIGHT;
+			const int		y				= pixelNdx % ETC2_BLOCK_HEIGHT;
+			const int		dstOffset		= (y*ETC2_BLOCK_WIDTH + x)*ETC2_UNCOMPRESSED_PIXEL_SIZE_RGB8;
+			const int		subBlock		= ((flipBit ? y : x) >= 2) ? 1 : 0;
+			const deUint32	tableNdx		= table[subBlock];
+			const deUint32	modifierNdx		= (getBit(src, 16+pixelNdx) << 1) | getBit(src, pixelNdx);
+			const int		alphaDstOffset	= (y*ETC2_BLOCK_WIDTH + x)*ETC2_UNCOMPRESSED_PIXEL_SIZE_A8; // Only needed for PUNCHTHROUGH version.
+
+			// If doing PUNCHTHROUGH version (alphaMode), opaque bit may affect colors.
+			if (alphaMode && diffOpaqueBit == 0 && modifierNdx == 2)
+			{
+				dst[dstOffset+0]			= 0;
+				dst[dstOffset+1]			= 0;
+				dst[dstOffset+2]			= 0;
+				alphaDst[alphaDstOffset]	= 0;
+			}
+			else
+			{
+				int modifier;
+
+				// PUNCHTHROUGH version and opaque bit may also affect modifiers.
+				if (alphaMode && diffOpaqueBit == 0 && (modifierNdx == 0 || modifierNdx == 2))
+					modifier = 0;
+				else
+					modifier = modifierTable[tableNdx][modifierNdx];
+
+				dst[dstOffset+0] = (deUint8)deClamp32((int)baseR[subBlock] + modifier, 0, 255);
+				dst[dstOffset+1] = (deUint8)deClamp32((int)baseG[subBlock] + modifier, 0, 255);
+				dst[dstOffset+2] = (deUint8)deClamp32((int)baseB[subBlock] + modifier, 0, 255);
+
+				if (alphaMode)
+					alphaDst[alphaDstOffset] = 255;
+			}
+		}
+	}
+	else if (mode == MODE_T || mode == MODE_H)
+	{
+		// T and H modes have some steps in common, handle them here.
+		static const int distTable[8] = { 3, 6, 11, 16, 23, 32, 41, 64 };
+
+		deUint8 paintR[4];
+		deUint8 paintG[4];
+		deUint8 paintB[4];
+
+		if (mode == MODE_T)
+		{
+			// T mode, calculate paint values.
+			const deUint8	R1a			= (deUint8)getBits(src, 59, 60);
+			const deUint8	R1b			= (deUint8)getBits(src, 56, 57);
+			const deUint8	G1			= (deUint8)getBits(src, 52, 55);
+			const deUint8	B1			= (deUint8)getBits(src, 48, 51);
+			const deUint8	R2			= (deUint8)getBits(src, 44, 47);
+			const deUint8	G2			= (deUint8)getBits(src, 40, 43);
+			const deUint8	B2			= (deUint8)getBits(src, 36, 39);
+			const deUint32	distNdx		= (getBits(src, 34, 35) << 1) | getBit(src, 32);
+			const int		dist		= distTable[distNdx];
+
+			paintR[0] = extend4To8((R1a << 2) | R1b);
+			paintG[0] = extend4To8(G1);
+			paintB[0] = extend4To8(B1);
+			paintR[2] = extend4To8(R2);
+			paintG[2] = extend4To8(G2);
+			paintB[2] = extend4To8(B2);
+			paintR[1] = (deUint8)deClamp32((int)paintR[2] + dist, 0, 255);
+			paintG[1] = (deUint8)deClamp32((int)paintG[2] + dist, 0, 255);
+			paintB[1] = (deUint8)deClamp32((int)paintB[2] + dist, 0, 255);
+			paintR[3] = (deUint8)deClamp32((int)paintR[2] - dist, 0, 255);
+			paintG[3] = (deUint8)deClamp32((int)paintG[2] - dist, 0, 255);
+			paintB[3] = (deUint8)deClamp32((int)paintB[2] - dist, 0, 255);
+		}
+		else
+		{
+			// H mode, calculate paint values.
+			const deUint8	R1		= (deUint8)getBits(src, 59, 62);
+			const deUint8	G1a		= (deUint8)getBits(src, 56, 58);
+			const deUint8	G1b		= (deUint8)getBit(src, 52);
+			const deUint8	B1a		= (deUint8)getBit(src, 51);
+			const deUint8	B1b		= (deUint8)getBits(src, 47, 49);
+			const deUint8	R2		= (deUint8)getBits(src, 43, 46);
+			const deUint8	G2		= (deUint8)getBits(src, 39, 42);
+			const deUint8	B2		= (deUint8)getBits(src, 35, 38);
+			deUint8			baseR[2];
+			deUint8			baseG[2];
+			deUint8			baseB[2];
+			deUint32		baseValue[2];
+			deUint32		distNdx;
+			int				dist;
+
+			baseR[0]		= extend4To8(R1);
+			baseG[0]		= extend4To8((G1a << 1) | G1b);
+			baseB[0]		= extend4To8((B1a << 3) | B1b);
+			baseR[1]		= extend4To8(R2);
+			baseG[1]		= extend4To8(G2);
+			baseB[1]		= extend4To8(B2);
+			baseValue[0]	= (((deUint32)baseR[0]) << 16) | (((deUint32)baseG[0]) << 8) | baseB[0];
+			baseValue[1]	= (((deUint32)baseR[1]) << 16) | (((deUint32)baseG[1]) << 8) | baseB[1];
+			distNdx			= (getBit(src, 34) << 2) | (getBit(src, 32) << 1) | (deUint32)(baseValue[0] >= baseValue[1]);
+			dist			= distTable[distNdx];
+
+			paintR[0]		= (deUint8)deClamp32((int)baseR[0] + dist, 0, 255);
+			paintG[0]		= (deUint8)deClamp32((int)baseG[0] + dist, 0, 255);
+			paintB[0]		= (deUint8)deClamp32((int)baseB[0] + dist, 0, 255);
+			paintR[1]		= (deUint8)deClamp32((int)baseR[0] - dist, 0, 255);
+			paintG[1]		= (deUint8)deClamp32((int)baseG[0] - dist, 0, 255);
+			paintB[1]		= (deUint8)deClamp32((int)baseB[0] - dist, 0, 255);
+			paintR[2]		= (deUint8)deClamp32((int)baseR[1] + dist, 0, 255);
+			paintG[2]		= (deUint8)deClamp32((int)baseG[1] + dist, 0, 255);
+			paintB[2]		= (deUint8)deClamp32((int)baseB[1] + dist, 0, 255);
+			paintR[3]		= (deUint8)deClamp32((int)baseR[1] - dist, 0, 255);
+			paintG[3]		= (deUint8)deClamp32((int)baseG[1] - dist, 0, 255);
+			paintB[3]		= (deUint8)deClamp32((int)baseB[1] - dist, 0, 255);
+		}
+
+		// Write final pixels for T or H mode.
+		for (int pixelNdx = 0; pixelNdx < ETC2_BLOCK_HEIGHT*ETC2_BLOCK_WIDTH; pixelNdx++)
+		{
+			const int		x				= pixelNdx / ETC2_BLOCK_HEIGHT;
+			const int		y				= pixelNdx % ETC2_BLOCK_HEIGHT;
+			const int		dstOffset		= (y*ETC2_BLOCK_WIDTH + x)*ETC2_UNCOMPRESSED_PIXEL_SIZE_RGB8;
+			const deUint32	paintNdx		= (getBit(src, 16+pixelNdx) << 1) | getBit(src, pixelNdx);
+			const int		alphaDstOffset	= (y*ETC2_BLOCK_WIDTH + x)*ETC2_UNCOMPRESSED_PIXEL_SIZE_A8; // Only needed for PUNCHTHROUGH version.
+
+			if (alphaMode && diffOpaqueBit == 0 && paintNdx == 2)
+			{
+				dst[dstOffset+0]			= 0;
+				dst[dstOffset+1]			= 0;
+				dst[dstOffset+2]			= 0;
+				alphaDst[alphaDstOffset]	= 0;
+			}
+			else
+			{
+				dst[dstOffset+0] = (deUint8)deClamp32((int)paintR[paintNdx], 0, 255);
+				dst[dstOffset+1] = (deUint8)deClamp32((int)paintG[paintNdx], 0, 255);
+				dst[dstOffset+2] = (deUint8)deClamp32((int)paintB[paintNdx], 0, 255);
+
+				if (alphaMode)
+					alphaDst[alphaDstOffset] = 255;
+			}
+		}
+	}
+	else
+	{
+		// Planar mode.
+		const deUint8 GO1	= (deUint8)getBit(src, 56);
+		const deUint8 GO2	= (deUint8)getBits(src, 49, 54);
+		const deUint8 BO1	= (deUint8)getBit(src, 48);
+		const deUint8 BO2	= (deUint8)getBits(src, 43, 44);
+		const deUint8 BO3	= (deUint8)getBits(src, 39, 41);
+		const deUint8 RH1	= (deUint8)getBits(src, 34, 38);
+		const deUint8 RH2	= (deUint8)getBit(src, 32);
+		const deUint8 RO	= extend6To8((deUint8)getBits(src, 57, 62));
+		const deUint8 GO	= extend7To8((GO1 << 6) | GO2);
+		const deUint8 BO	= extend6To8((BO1 << 5) | (BO2 << 3) | BO3);
+		const deUint8 RH	= extend6To8((RH1 << 1) | RH2);
+		const deUint8 GH	= extend7To8((deUint8)getBits(src, 25, 31));
+		const deUint8 BH	= extend6To8((deUint8)getBits(src, 19, 24));
+		const deUint8 RV	= extend6To8((deUint8)getBits(src, 13, 18));
+		const deUint8 GV	= extend7To8((deUint8)getBits(src, 6, 12));
+		const deUint8 BV	= extend6To8((deUint8)getBits(src, 0, 5));
+
+		// Write final pixels for planar mode.
+		for (int y = 0; y < 4; y++)
+		{
+			for (int x = 0; x < 4; x++)
+			{
+				const int dstOffset			= (y*ETC2_BLOCK_WIDTH + x)*ETC2_UNCOMPRESSED_PIXEL_SIZE_RGB8;
+				const int unclampedR		= (x * ((int)RH-(int)RO) + y * ((int)RV-(int)RO) + 4*(int)RO + 2) >> 2;
+				const int unclampedG		= (x * ((int)GH-(int)GO) + y * ((int)GV-(int)GO) + 4*(int)GO + 2) >> 2;
+				const int unclampedB		= (x * ((int)BH-(int)BO) + y * ((int)BV-(int)BO) + 4*(int)BO + 2) >> 2;
+				const int alphaDstOffset	= (y*ETC2_BLOCK_WIDTH + x)*ETC2_UNCOMPRESSED_PIXEL_SIZE_A8; // Only needed for PUNCHTHROUGH version.
+
+				dst[dstOffset+0] = (deUint8)deClamp32(unclampedR, 0, 255);
+				dst[dstOffset+1] = (deUint8)deClamp32(unclampedG, 0, 255);
+				dst[dstOffset+2] = (deUint8)deClamp32(unclampedB, 0, 255);
+
+				if (alphaMode)
+					alphaDst[alphaDstOffset] = 255;
+			}
+		}
+	}
+}
+
+static void decompressEAC8Block (deUint8 dst[ETC2_UNCOMPRESSED_BLOCK_SIZE_A8], deUint64 src)
+{
+	static const int modifierTable[16][8] =
+	{
+		{-3,  -6,  -9, -15,  2,  5,  8, 14},
+		{-3,  -7, -10, -13,  2,  6,  9, 12},
+		{-2,  -5,  -8, -13,  1,  4,  7, 12},
+		{-2,  -4,  -6, -13,  1,  3,  5, 12},
+		{-3,  -6,  -8, -12,  2,  5,  7, 11},
+		{-3,  -7,  -9, -11,  2,  6,  8, 10},
+		{-4,  -7,  -8, -11,  3,  6,  7, 10},
+		{-3,  -5,  -8, -11,  2,  4,  7, 10},
+		{-2,  -6,  -8, -10,  1,  5,  7,  9},
+		{-2,  -5,  -8, -10,  1,  4,  7,  9},
+		{-2,  -4,  -8, -10,  1,  3,  7,  9},
+		{-2,  -5,  -7, -10,  1,  4,  6,  9},
+		{-3,  -4,  -7, -10,  2,  3,  6,  9},
+		{-1,  -2,  -3, -10,  0,  1,  2,  9},
+		{-4,  -6,  -8,  -9,  3,  5,  7,  8},
+		{-3,  -5,  -7,  -9,  2,  4,  6,  8}
+	};
+
+	const deUint8	baseCodeword	= (deUint8)getBits(src, 56, 63);
+	const deUint8	multiplier		= (deUint8)getBits(src, 52, 55);
+	const deUint32	tableNdx		= getBits(src, 48, 51);
+
+	for (int pixelNdx = 0; pixelNdx < ETC2_BLOCK_HEIGHT*ETC2_BLOCK_WIDTH; pixelNdx++)
+	{
+		const int		x				= pixelNdx / ETC2_BLOCK_HEIGHT;
+		const int		y				= pixelNdx % ETC2_BLOCK_HEIGHT;
+		const int		dstOffset		= (y*ETC2_BLOCK_WIDTH + x)*ETC2_UNCOMPRESSED_PIXEL_SIZE_A8;
+		const int		pixelBitNdx		= 45 - 3*pixelNdx;
+		const deUint32	modifierNdx		= (getBit(src, pixelBitNdx + 2) << 2) | (getBit(src, pixelBitNdx + 1) << 1) | getBit(src, pixelBitNdx);
+		const int		modifier		= modifierTable[tableNdx][modifierNdx];
+
+		dst[dstOffset] = (deUint8)deClamp32((int)baseCodeword + (int)multiplier*modifier, 0, 255);
+	}
+}
+
+static void decompressEAC11Block (deUint8 dst[ETC2_UNCOMPRESSED_BLOCK_SIZE_R11], deUint64 src, bool signedMode)
+{
+	static const int modifierTable[16][8] =
+	{
+		{-3,  -6,  -9, -15,  2,  5,  8, 14},
+		{-3,  -7, -10, -13,  2,  6,  9, 12},
+		{-2,  -5,  -8, -13,  1,  4,  7, 12},
+		{-2,  -4,  -6, -13,  1,  3,  5, 12},
+		{-3,  -6,  -8, -12,  2,  5,  7, 11},
+		{-3,  -7,  -9, -11,  2,  6,  8, 10},
+		{-4,  -7,  -8, -11,  3,  6,  7, 10},
+		{-3,  -5,  -8, -11,  2,  4,  7, 10},
+		{-2,  -6,  -8, -10,  1,  5,  7,  9},
+		{-2,  -5,  -8, -10,  1,  4,  7,  9},
+		{-2,  -4,  -8, -10,  1,  3,  7,  9},
+		{-2,  -5,  -7, -10,  1,  4,  6,  9},
+		{-3,  -4,  -7, -10,  2,  3,  6,  9},
+		{-1,  -2,  -3, -10,  0,  1,  2,  9},
+		{-4,  -6,  -8,  -9,  3,  5,  7,  8},
+		{-3,  -5,  -7,  -9,  2,  4,  6,  8}
+	};
+
+	const deInt32 multiplier	= (deInt32)getBits(src, 52, 55);
+	const deInt32 tableNdx		= (deInt32)getBits(src, 48, 51);
+	deInt32 baseCodeword		= (deInt32)getBits(src, 56, 63);
+
+	if (signedMode)
+	{
+		if (baseCodeword > 127)
+			baseCodeword -= 256;
+		if (baseCodeword == -128)
+			baseCodeword = -127;
+	}
+
+	for (int pixelNdx = 0; pixelNdx < ETC2_BLOCK_HEIGHT*ETC2_BLOCK_WIDTH; pixelNdx++)
+	{
+		const int		x				= pixelNdx / ETC2_BLOCK_HEIGHT;
+		const int		y				= pixelNdx % ETC2_BLOCK_HEIGHT;
+		const int		dstOffset		= (y*ETC2_BLOCK_WIDTH + x)*ETC2_UNCOMPRESSED_PIXEL_SIZE_R11;
+		const int		pixelBitNdx		= 45 - 3*pixelNdx;
+		const deUint32	modifierNdx		= (getBit(src, pixelBitNdx + 2) << 2) | (getBit(src, pixelBitNdx + 1) << 1) | getBit(src, pixelBitNdx);
+		const int		modifier		= modifierTable[tableNdx][modifierNdx];
+
+		if (signedMode)
+		{
+			if (multiplier != 0)
+				*(deInt16*)&dst[dstOffset] = (deInt16)deClamp32(baseCodeword*8 + multiplier*modifier*8, -1023, 1023);
+			else
+				*(deInt16*)&dst[dstOffset] = (deInt16)deClamp32(baseCodeword*8 + modifier, -1023, 1023);
+		}
+		else
+		{
+			if (multiplier != 0)
+				*(deUint16*)&dst[dstOffset] = (deUint16)deClamp32(baseCodeword*8 + 4 + multiplier*modifier*8, 0, 2047);
+			else
+				*(deUint16*)&dst[dstOffset] = (deUint16)deClamp32(baseCodeword*8 + 4 + modifier, 0, 2047);
+		}
+	}
+}
+
+} // EtcDecompressInternal
+
+static void decompressETC1 (const tcu::PixelBufferAccess& dst, int width, int height, const deUint8* src)
+{
+	using namespace EtcDecompressInternal;
+
+	DE_ASSERT(dst.getWidth() == width && dst.getHeight() == height && dst.getDepth() == 1);
+	DE_ASSERT(dst.getFormat() == TextureFormat(TextureFormat::RGB, TextureFormat::UNORM_INT8));
+
+	const int		numBlocksX		= divRoundUp(width, 4);
+	const int		numBlocksY		= divRoundUp(height, 4);
+	deUint8* const	dstPtr			= (deUint8*)dst.getDataPtr();
+	const int		dstRowPitch		= dst.getRowPitch();
+	const int		dstPixelSize	= ETC2_UNCOMPRESSED_PIXEL_SIZE_RGB8;
+
+	for (int blockY = 0; blockY < numBlocksY; blockY++)
+	{
+		for (int blockX = 0; blockX < numBlocksX; blockX++)
+		{
+			const deUint64	compressedBlock = get64BitBlock(src, blockY*numBlocksX + blockX);
+			deUint8			uncompressedBlock[ETC2_UNCOMPRESSED_BLOCK_SIZE_RGB8];
+
+			// Decompress.
+			decompressETC1Block(uncompressedBlock, compressedBlock);
+
+			// Write to dst.
+			const int baseX = blockX*ETC2_BLOCK_WIDTH;
+			const int baseY = blockY*ETC2_BLOCK_HEIGHT;
+			for (int y = 0; y < de::min((int)ETC2_BLOCK_HEIGHT, height-baseY); y++)
+			{
+				for (int x = 0; x < de::min((int)ETC2_BLOCK_WIDTH, width-baseX); x++)
+				{
+					const deUint8* const	srcPixel = &uncompressedBlock[(y*ETC2_BLOCK_WIDTH + x)*ETC2_UNCOMPRESSED_PIXEL_SIZE_RGB8];
+					deUint8* const			dstPixel = dstPtr + (baseY+y)*dstRowPitch + (baseX+x)*dstPixelSize;
+
+					DE_STATIC_ASSERT(ETC2_UNCOMPRESSED_PIXEL_SIZE_RGB8 == 3);
+					dstPixel[0] = srcPixel[0];
+					dstPixel[1] = srcPixel[1];
+					dstPixel[2] = srcPixel[2];
+				}
+			}
+		}
+	}
+}
+
+static void decompressETC2 (const tcu::PixelBufferAccess& dst, int width, int height, const deUint8* src)
+{
+	using namespace EtcDecompressInternal;
+
+	const int		numBlocksX		= divRoundUp(width, 4);
+	const int		numBlocksY		= divRoundUp(height, 4);
+	deUint8* const	dstPtr			= (deUint8*)dst.getDataPtr();
+	const int		dstRowPitch		= dst.getRowPitch();
+	const int		dstPixelSize	= ETC2_UNCOMPRESSED_PIXEL_SIZE_RGB8;
+
+	for (int blockY = 0; blockY < numBlocksY; blockY++)
+	{
+		for (int blockX = 0; blockX < numBlocksX; blockX++)
+		{
+			const deUint64	compressedBlock = get64BitBlock(src, blockY*numBlocksX + blockX);
+			deUint8			uncompressedBlock[ETC2_UNCOMPRESSED_BLOCK_SIZE_RGB8];
+
+			// Decompress.
+			decompressETC2Block(uncompressedBlock, compressedBlock, NULL, false);
+
+			// Write to dst.
+			const int baseX = blockX*ETC2_BLOCK_WIDTH;
+			const int baseY = blockY*ETC2_BLOCK_HEIGHT;
+			for (int y = 0; y < de::min((int)ETC2_BLOCK_HEIGHT, height-baseY); y++)
+			{
+				for (int x = 0; x < de::min((int)ETC2_BLOCK_WIDTH, width-baseX); x++)
+				{
+					const deUint8* const	srcPixel = &uncompressedBlock[(y*ETC2_BLOCK_WIDTH + x)*ETC2_UNCOMPRESSED_PIXEL_SIZE_RGB8];
+					deUint8* const			dstPixel = dstPtr + (baseY+y)*dstRowPitch + (baseX+x)*dstPixelSize;
+
+					DE_STATIC_ASSERT(ETC2_UNCOMPRESSED_PIXEL_SIZE_RGB8 == 3);
+					dstPixel[0] = srcPixel[0];
+					dstPixel[1] = srcPixel[1];
+					dstPixel[2] = srcPixel[2];
+				}
+			}
+		}
+	}
+}
+
+static void decompressETC2_EAC_RGBA8 (const tcu::PixelBufferAccess& dst, int width, int height, const deUint8* src)
+{
+	using namespace EtcDecompressInternal;
+
+	const int		numBlocksX		= divRoundUp(width, 4);
+	const int		numBlocksY		= divRoundUp(height, 4);
+	deUint8* const	dstPtr			= (deUint8*)dst.getDataPtr();
+	const int		dstRowPitch		= dst.getRowPitch();
+	const int		dstPixelSize	= ETC2_UNCOMPRESSED_PIXEL_SIZE_RGBA8;
+
+	for (int blockY = 0; blockY < numBlocksY; blockY++)
+	{
+		for (int blockX = 0; blockX < numBlocksX; blockX++)
+		{
+			const deUint64	compressedBlockAlpha	= get128BitBlockStart(src, blockY*numBlocksX + blockX);
+			const deUint64	compressedBlockRGB		= get128BitBlockEnd(src, blockY*numBlocksX + blockX);
+			deUint8			uncompressedBlockAlpha[ETC2_UNCOMPRESSED_BLOCK_SIZE_A8];
+			deUint8			uncompressedBlockRGB[ETC2_UNCOMPRESSED_BLOCK_SIZE_RGB8];
+
+			// Decompress.
+			decompressETC2Block(uncompressedBlockRGB, compressedBlockRGB, NULL, false);
+			decompressEAC8Block(uncompressedBlockAlpha, compressedBlockAlpha);
+
+			// Write to dst.
+			const int baseX = blockX*ETC2_BLOCK_WIDTH;
+			const int baseY = blockY*ETC2_BLOCK_HEIGHT;
+			for (int y = 0; y < de::min((int)ETC2_BLOCK_HEIGHT, height-baseY); y++)
+			{
+				for (int x = 0; x < de::min((int)ETC2_BLOCK_WIDTH, width-baseX); x++)
+				{
+					const deUint8* const	srcPixelRGB		= &uncompressedBlockRGB[(y*ETC2_BLOCK_WIDTH + x)*ETC2_UNCOMPRESSED_PIXEL_SIZE_RGB8];
+					const deUint8* const	srcPixelAlpha	= &uncompressedBlockAlpha[(y*ETC2_BLOCK_WIDTH + x)*ETC2_UNCOMPRESSED_PIXEL_SIZE_A8];
+					deUint8* const			dstPixel		= dstPtr + (baseY+y)*dstRowPitch + (baseX+x)*dstPixelSize;
+
+					DE_STATIC_ASSERT(ETC2_UNCOMPRESSED_PIXEL_SIZE_RGBA8 == 4);
+					dstPixel[0] = srcPixelRGB[0];
+					dstPixel[1] = srcPixelRGB[1];
+					dstPixel[2] = srcPixelRGB[2];
+					dstPixel[3] = srcPixelAlpha[0];
+				}
+			}
+		}
+	}
+}
+
+static void decompressETC2_RGB8_PUNCHTHROUGH_ALPHA1 (const tcu::PixelBufferAccess& dst, int width, int height, const deUint8* src)
+{
+	using namespace EtcDecompressInternal;
+
+	const int		numBlocksX		= divRoundUp(width, 4);
+	const int		numBlocksY		= divRoundUp(height, 4);
+	deUint8* const	dstPtr			= (deUint8*)dst.getDataPtr();
+	const int		dstRowPitch		= dst.getRowPitch();
+	const int		dstPixelSize	= ETC2_UNCOMPRESSED_PIXEL_SIZE_RGBA8;
+
+	for (int blockY = 0; blockY < numBlocksY; blockY++)
+	{
+		for (int blockX = 0; blockX < numBlocksX; blockX++)
+		{
+			const deUint64	compressedBlockRGBA	= get64BitBlock(src, blockY*numBlocksX + blockX);
+			deUint8			uncompressedBlockRGB[ETC2_UNCOMPRESSED_BLOCK_SIZE_RGB8];
+			deUint8			uncompressedBlockAlpha[ETC2_UNCOMPRESSED_BLOCK_SIZE_A8];
+
+			// Decompress.
+			decompressETC2Block(uncompressedBlockRGB, compressedBlockRGBA, uncompressedBlockAlpha, DE_TRUE);
+
+			// Write to dst.
+			const int baseX = blockX*ETC2_BLOCK_WIDTH;
+			const int baseY = blockY*ETC2_BLOCK_HEIGHT;
+			for (int y = 0; y < de::min((int)ETC2_BLOCK_HEIGHT, height-baseY); y++)
+			{
+				for (int x = 0; x < de::min((int)ETC2_BLOCK_WIDTH, width-baseX); x++)
+				{
+					const deUint8* const	srcPixel		= &uncompressedBlockRGB[(y*ETC2_BLOCK_WIDTH + x)*ETC2_UNCOMPRESSED_PIXEL_SIZE_RGB8];
+					const deUint8* const	srcPixelAlpha	= &uncompressedBlockAlpha[(y*ETC2_BLOCK_WIDTH + x)*ETC2_UNCOMPRESSED_PIXEL_SIZE_A8];
+					deUint8* const			dstPixel		= dstPtr + (baseY+y)*dstRowPitch + (baseX+x)*dstPixelSize;
+
+					DE_STATIC_ASSERT(ETC2_UNCOMPRESSED_PIXEL_SIZE_RGBA8 == 4);
+					dstPixel[0] = srcPixel[0];
+					dstPixel[1] = srcPixel[1];
+					dstPixel[2] = srcPixel[2];
+					dstPixel[3] = srcPixelAlpha[0];
+				}
+			}
+		}
+	}
+}
+
+static void decompressEAC_R11 (const tcu::PixelBufferAccess& dst, int width, int height, const deUint8* src, bool signedMode)
+{
+	using namespace EtcDecompressInternal;
+
+	const int		numBlocksX		= divRoundUp(width, 4);
+	const int		numBlocksY		= divRoundUp(height, 4);
+	deUint8* const	dstPtr			= (deUint8*)dst.getDataPtr();
+	const int		dstRowPitch		= dst.getRowPitch();
+	const int		dstPixelSize	= ETC2_UNCOMPRESSED_PIXEL_SIZE_R11;
+
+	for (int blockY = 0; blockY < numBlocksY; blockY++)
+	{
+		for (int blockX = 0; blockX < numBlocksX; blockX++)
+		{
+			const deUint64	compressedBlock = get64BitBlock(src, blockY*numBlocksX + blockX);
+			deUint8			uncompressedBlock[ETC2_UNCOMPRESSED_BLOCK_SIZE_R11];
+
+			// Decompress.
+			decompressEAC11Block(uncompressedBlock, compressedBlock, signedMode);
+
+			// Write to dst.
+			const int baseX = blockX*ETC2_BLOCK_WIDTH;
+			const int baseY = blockY*ETC2_BLOCK_HEIGHT;
+			for (int y = 0; y < de::min((int)ETC2_BLOCK_HEIGHT, height-baseY); y++)
+			{
+				for (int x = 0; x < de::min((int)ETC2_BLOCK_WIDTH, width-baseX); x++)
+				{
+					DE_STATIC_ASSERT(ETC2_UNCOMPRESSED_PIXEL_SIZE_R11 == 2);
+
+					if (signedMode)
+					{
+						const deInt16* const	srcPixel = (deInt16*)&uncompressedBlock[(y*ETC2_BLOCK_WIDTH + x)*ETC2_UNCOMPRESSED_PIXEL_SIZE_R11];
+						deInt16* const			dstPixel = (deInt16*)(dstPtr + (baseY+y)*dstRowPitch + (baseX+x)*dstPixelSize);
+
+						dstPixel[0] = extend11To16WithSign(srcPixel[0]);
+					}
+					else
+					{
+						const deUint16* const	srcPixel = (deUint16*)&uncompressedBlock[(y*ETC2_BLOCK_WIDTH + x)*ETC2_UNCOMPRESSED_PIXEL_SIZE_R11];
+						deUint16* const			dstPixel = (deUint16*)(dstPtr + (baseY+y)*dstRowPitch + (baseX+x)*dstPixelSize);
+
+						dstPixel[0] = extend11To16(srcPixel[0]);
+					}
+				}
+			}
+		}
+	}
+}
+
+static void decompressEAC_RG11 (const tcu::PixelBufferAccess& dst, int width, int height, const deUint8* src, bool signedMode)
+{
+	using namespace EtcDecompressInternal;
+
+	const int		numBlocksX		= divRoundUp(width, 4);
+	const int		numBlocksY		= divRoundUp(height, 4);
+	deUint8* const	dstPtr			= (deUint8*)dst.getDataPtr();
+	const int		dstRowPitch		= dst.getRowPitch();
+	const int		dstPixelSize	= ETC2_UNCOMPRESSED_PIXEL_SIZE_RG11;
+
+	for (int blockY = 0; blockY < numBlocksY; blockY++)
+	{
+		for (int blockX = 0; blockX < numBlocksX; blockX++)
+		{
+			const deUint64	compressedBlockR = get128BitBlockStart(src, blockY*numBlocksX + blockX);
+			const deUint64	compressedBlockG = get128BitBlockEnd(src, blockY*numBlocksX + blockX);
+			deUint8			uncompressedBlockR[ETC2_UNCOMPRESSED_BLOCK_SIZE_R11];
+			deUint8			uncompressedBlockG[ETC2_UNCOMPRESSED_BLOCK_SIZE_R11];
+
+			// Decompress.
+			decompressEAC11Block(uncompressedBlockR, compressedBlockR, signedMode);
+			decompressEAC11Block(uncompressedBlockG, compressedBlockG, signedMode);
+
+			// Write to dst.
+			const int baseX = blockX*ETC2_BLOCK_WIDTH;
+			const int baseY = blockY*ETC2_BLOCK_HEIGHT;
+			for (int y = 0; y < de::min((int)ETC2_BLOCK_HEIGHT, height-baseY); y++)
+			{
+				for (int x = 0; x < de::min((int)ETC2_BLOCK_WIDTH, width-baseX); x++)
+				{
+					DE_STATIC_ASSERT(ETC2_UNCOMPRESSED_PIXEL_SIZE_RG11 == 4);
+
+					if (signedMode)
+					{
+						const deInt16* const	srcPixelR	= (deInt16*)&uncompressedBlockR[(y*ETC2_BLOCK_WIDTH + x)*ETC2_UNCOMPRESSED_PIXEL_SIZE_R11];
+						const deInt16* const	srcPixelG	= (deInt16*)&uncompressedBlockG[(y*ETC2_BLOCK_WIDTH + x)*ETC2_UNCOMPRESSED_PIXEL_SIZE_R11];
+						deInt16* const			dstPixel	= (deInt16*)(dstPtr + (baseY+y)*dstRowPitch + (baseX+x)*dstPixelSize);
+
+						dstPixel[0] = extend11To16WithSign(srcPixelR[0]);
+						dstPixel[1] = extend11To16WithSign(srcPixelG[0]);
+					}
+					else
+					{
+						const deUint16* const	srcPixelR	= (deUint16*)&uncompressedBlockR[(y*ETC2_BLOCK_WIDTH + x)*ETC2_UNCOMPRESSED_PIXEL_SIZE_R11];
+						const deUint16* const	srcPixelG	= (deUint16*)&uncompressedBlockG[(y*ETC2_BLOCK_WIDTH + x)*ETC2_UNCOMPRESSED_PIXEL_SIZE_R11];
+						deUint16* const			dstPixel	= (deUint16*)(dstPtr + (baseY+y)*dstRowPitch + (baseX+x)*dstPixelSize);
+
+						dstPixel[0] = extend11To16(srcPixelR[0]);
+						dstPixel[1] = extend11To16(srcPixelG[0]);
+					}
+				}
+			}
+		}
+	}
+}
+
+namespace ASTCDecompressInternal
+{
+
+enum
+{
+	ASTC_MAX_BLOCK_WIDTH	= 12,
+	ASTC_MAX_BLOCK_HEIGHT	= 12
+};
+
+static inline deUint32 getBit (deUint32 src, int ndx)
+{
+	DE_ASSERT(de::inBounds(ndx, 0, 32));
+	return (src >> ndx) & 1;
+}
+
+static inline deUint32 getBits (deUint32 src, int low, int high)
+{
+	const int numBits = (high-low) + 1;
+	DE_ASSERT(de::inRange(numBits, 1, 32));
+	return (src >> low) & ((1u<<numBits)-1);
+}
+
+static inline bool isBitSet (deUint32 src, int ndx)
+{
+	return getBit(src, ndx) != 0;
+}
+
+static inline deUint32 reverseBits (deUint32 src, int numBits)
+{
+	DE_ASSERT(de::inRange(numBits, 0, 32));
+	deUint32 result = 0;
+	for (int i = 0; i < numBits; i++)
+		result |= ((src >> i) & 1) << (numBits-1-i);
+	return result;
+}
+
+static inline deUint32 bitReplicationScale (deUint32 src, int numSrcBits, int numDstBits)
+{
+	DE_ASSERT(numSrcBits <= numDstBits);
+	DE_ASSERT((src & ((1<<numSrcBits)-1)) == src);
+	deUint32 dst = 0;
+	for (int shift = numDstBits-numSrcBits; shift > -numSrcBits; shift -= numSrcBits)
+		dst |= shift >= 0 ? src << shift : src >> -shift;
+	return dst;
+}
+
+static inline deInt32 signExtend (deInt32 src, int numSrcBits)
+{
+	DE_ASSERT(de::inRange(numSrcBits, 2, 31));
+	const bool negative = (src & (1 << (numSrcBits-1))) != 0;
+	return src | (negative ? ~((1 << numSrcBits) - 1) : 0);
+}
+
+static inline bool isFloat16InfOrNan (deFloat16 v)
+{
+	return getBits(v, 10, 14) == 31;
+}
+
+// A helper for getting bits from a 128-bit block.
+class Block128
+{
+private:
+	typedef deUint64 Word;
+
+	enum
+	{
+		WORD_BYTES	= sizeof(Word),
+		WORD_BITS	= 8*WORD_BYTES,
+		NUM_WORDS	= 128 / WORD_BITS
+	};
+
+	DE_STATIC_ASSERT(128 % WORD_BITS == 0);
+
+public:
+	Block128 (const deUint8* src)
+	{
+		for (int wordNdx = 0; wordNdx < NUM_WORDS; wordNdx++)
+		{
+			m_words[wordNdx] = 0;
+			for (int byteNdx = 0; byteNdx < WORD_BYTES; byteNdx++)
+				m_words[wordNdx] |= (Word)src[wordNdx*WORD_BYTES + byteNdx] << (8*byteNdx);
+		}
+	}
+
+	deUint32 getBit (int ndx) const
+	{
+		DE_ASSERT(de::inBounds(ndx, 0, 128));
+		return (m_words[ndx / WORD_BITS] >> (ndx % WORD_BITS)) & 1;
+	}
+
+	deUint32 getBits (int low, int high) const
+	{
+		DE_ASSERT(de::inBounds(low, 0, 128));
+		DE_ASSERT(de::inBounds(high, 0, 128));
+		DE_ASSERT(de::inRange(high-low+1, 0, 32));
+
+		if (high-low+1 == 0)
+			return 0;
+
+		const int word0Ndx = low / WORD_BITS;
+		const int word1Ndx = high / WORD_BITS;
+
+		// \note "foo << bar << 1" done instead of "foo << (bar+1)" to avoid overflow, i.e. shift amount being too big.
+
+		if (word0Ndx == word1Ndx)
+			return (m_words[word0Ndx] & ((((Word)1 << high%WORD_BITS << 1) - 1))) >> ((Word)low % WORD_BITS);
+		else
+		{
+			DE_ASSERT(word1Ndx == word0Ndx + 1);
+
+			return (deUint32)(m_words[word0Ndx] >> (low%WORD_BITS)) |
+				   (deUint32)((m_words[word1Ndx] & (((Word)1 << high%WORD_BITS << 1) - 1)) << (high-low - high%WORD_BITS));
+		}
+	}
+
+	bool isBitSet (int ndx) const
+	{
+		DE_ASSERT(de::inBounds(ndx, 0, 128));
+		return getBit(ndx) != 0;
+	}
+
+private:
+	Word m_words[NUM_WORDS];
+};
+
+// A helper for sequential access into a Block128.
+class BitAccessStream
+{
+public:
+	BitAccessStream (const Block128& src, int startNdxInSrc, int length, bool forward)
+		: m_src				(src)
+		, m_startNdxInSrc	(startNdxInSrc)
+		, m_length			(length)
+		, m_forward			(forward)
+		, m_ndx				(0)
+	{
+	}
+
+	// Get the next num bits. Bits at positions greater than or equal to m_length are zeros.
+	deUint32 getNext (int num)
+	{
+		if (num == 0 || m_ndx >= m_length)
+			return 0;
+
+		const int end				= m_ndx + num;
+		const int numBitsFromSrc	= de::max(0, de::min(m_length, end) - m_ndx);
+		const int low				= m_ndx;
+		const int high				= m_ndx + numBitsFromSrc - 1;
+
+		m_ndx += num;
+
+		return m_forward ?			   m_src.getBits(m_startNdxInSrc + low,  m_startNdxInSrc + high)
+						 : reverseBits(m_src.getBits(m_startNdxInSrc - high, m_startNdxInSrc - low), numBitsFromSrc);
+	}
+
+private:
+	const Block128&		m_src;
+	const int			m_startNdxInSrc;
+	const int			m_length;
+	const bool			m_forward;
+
+	int					m_ndx;
+};
+
+enum ISEMode
+{
+	ISEMODE_TRIT = 0,
+	ISEMODE_QUINT,
+	ISEMODE_PLAIN_BIT,
+
+	ISEMODE_LAST
+};
+
+struct ISEParams
+{
+	ISEMode		mode;
+	int			numBits;
+
+	ISEParams (ISEMode mode_, int numBits_) : mode(mode_), numBits(numBits_) {}
+};
+
+static inline int computeNumRequiredBits (const ISEParams& iseParams, int numValues)
+{
+	switch (iseParams.mode)
+	{
+		case ISEMODE_TRIT:			return divRoundUp(numValues*8, 5) + numValues*iseParams.numBits;
+		case ISEMODE_QUINT:			return divRoundUp(numValues*7, 3) + numValues*iseParams.numBits;
+		case ISEMODE_PLAIN_BIT:		return numValues*iseParams.numBits;
+		default:
+			DE_ASSERT(false);
+			return -1;
+	}
+}
+
+struct ISEDecodedResult
+{
+	deUint32 m;
+	deUint32 tq; //!< Trit or quint value, depending on ISE mode.
+	deUint32 v;
+};
+
+// Data from an ASTC block's "block mode" part (i.e. bits [0,10]).
+struct ASTCBlockMode
+{
+	bool		isError;
+	// \note Following fields only relevant if !isError.
+	bool		isVoidExtent;
+	// \note Following fields only relevant if !isVoidExtent.
+	bool		isDualPlane;
+	int			weightGridWidth;
+	int			weightGridHeight;
+	ISEParams	weightISEParams;
+
+	ASTCBlockMode (void)
+		: isError			(true)
+		, isVoidExtent		(true)
+		, isDualPlane		(true)
+		, weightGridWidth	(-1)
+		, weightGridHeight	(-1)
+		, weightISEParams	(ISEMODE_LAST, -1)
+	{
+	}
+};
+
+static inline int computeNumWeights (const ASTCBlockMode& mode)
+{
+	return mode.weightGridWidth * mode.weightGridHeight * (mode.isDualPlane ? 2 : 1);
+}
+
+struct ColorEndpointPair
+{
+	UVec4 e0;
+	UVec4 e1;
+};
+
+struct TexelWeightPair
+{
+	deUint32 w[2];
+};
+
+static ASTCBlockMode getASTCBlockMode (deUint32 blockModeData)
+{
+	ASTCBlockMode blockMode;
+	blockMode.isError = true; // \note Set to false later, if not error.
+
+	blockMode.isVoidExtent = getBits(blockModeData, 0, 8) == 0x1fc;
+
+	if (!blockMode.isVoidExtent)
+	{
+		if ((getBits(blockModeData, 0, 1) == 0 && getBits(blockModeData, 6, 8) == 7) || getBits(blockModeData, 0, 3) == 0)
+			return blockMode; // Invalid ("reserved").
+
+		deUint32 r = (deUint32)-1; // \note Set in the following branches.
+
+		if (getBits(blockModeData, 0, 1) == 0)
+		{
+			const deUint32 r0	= getBit(blockModeData, 4);
+			const deUint32 r1	= getBit(blockModeData, 2);
+			const deUint32 r2	= getBit(blockModeData, 3);
+			const deUint32 i78	= getBits(blockModeData, 7, 8);
+
+			r = (r2 << 2) | (r1 << 1) | (r0 << 0);
+
+			if (i78 == 3)
+			{
+				const bool i5 = isBitSet(blockModeData, 5);
+				blockMode.weightGridWidth	= i5 ? 10 : 6;
+				blockMode.weightGridHeight	= i5 ? 6  : 10;
+			}
+			else
+			{
+				const deUint32 a = getBits(blockModeData, 5, 6);
+				switch (i78)
+				{
+					case 0:		blockMode.weightGridWidth = 12;		blockMode.weightGridHeight = a + 2;									break;
+					case 1:		blockMode.weightGridWidth = a + 2;	blockMode.weightGridHeight = 12;									break;
+					case 2:		blockMode.weightGridWidth = a + 6;	blockMode.weightGridHeight = getBits(blockModeData, 9, 10) + 6;		break;
+					default: DE_ASSERT(false);
+				}
+			}
+		}
+		else
+		{
+			const deUint32 r0	= getBit(blockModeData, 4);
+			const deUint32 r1	= getBit(blockModeData, 0);
+			const deUint32 r2	= getBit(blockModeData, 1);
+			const deUint32 i23	= getBits(blockModeData, 2, 3);
+			const deUint32 a	= getBits(blockModeData, 5, 6);
+
+			r = (r2 << 2) | (r1 << 1) | (r0 << 0);
+
+			if (i23 == 3)
+			{
+				const deUint32	b	= getBit(blockModeData, 7);
+				const bool		i8	= isBitSet(blockModeData, 8);
+				blockMode.weightGridWidth	= i8 ? b+2 : a+2;
+				blockMode.weightGridHeight	= i8 ? a+2 : b+6;
+			}
+			else
+			{
+				const deUint32 b = getBits(blockModeData, 7, 8);
+
+				switch (i23)
+				{
+					case 0:		blockMode.weightGridWidth = b + 4;	blockMode.weightGridHeight = a + 2;	break;
+					case 1:		blockMode.weightGridWidth = b + 8;	blockMode.weightGridHeight = a + 2;	break;
+					case 2:		blockMode.weightGridWidth = a + 2;	blockMode.weightGridHeight = b + 8;	break;
+					default: DE_ASSERT(false);
+				}
+			}
+		}
+
+		const bool	zeroDH		= getBits(blockModeData, 0, 1) == 0 && getBits(blockModeData, 7, 8) == 2;
+		const bool	h			= zeroDH ? 0 : isBitSet(blockModeData, 9);
+		blockMode.isDualPlane	= zeroDH ? 0 : isBitSet(blockModeData, 10);
+
+		{
+			ISEMode&	m	= blockMode.weightISEParams.mode;
+			int&		b	= blockMode.weightISEParams.numBits;
+			m = ISEMODE_PLAIN_BIT;
+			b = 0;
+
+			if (h)
+			{
+				switch (r)
+				{
+					case 2:							m = ISEMODE_QUINT;	b = 1;	break;
+					case 3:		m = ISEMODE_TRIT;						b = 2;	break;
+					case 4:												b = 4;	break;
+					case 5:							m = ISEMODE_QUINT;	b = 2;	break;
+					case 6:		m = ISEMODE_TRIT;						b = 3;	break;
+					case 7:												b = 5;	break;
+					default: DE_ASSERT(false);
+				}
+			}
+			else
+			{
+				switch (r)
+				{
+					case 2: 											b = 1;	break;
+					case 3: 	m = ISEMODE_TRIT;								break;
+					case 4: 											b = 2;	break;
+					case 5: 						m = ISEMODE_QUINT;			break;
+					case 6: 	m = ISEMODE_TRIT;						b = 1;	break;
+					case 7: 											b = 3;	break;
+					default: DE_ASSERT(false);
+				}
+			}
+		}
+	}
+
+	blockMode.isError = false;
+	return blockMode;
+}
+
+static inline void setASTCErrorColorBlock (void* dst, int blockWidth, int blockHeight, bool isSRGB)
+{
+	if (isSRGB)
+	{
+		deUint8* const dstU = (deUint8*)dst;
+
+		for (int i = 0; i < blockWidth*blockHeight; i++)
+		{
+			dstU[4*i + 0] = 0xff;
+			dstU[4*i + 1] = 0;
+			dstU[4*i + 2] = 0xff;
+			dstU[4*i + 3] = 0xff;
+		}
+	}
+	else
+	{
+		float* const dstF = (float*)dst;
+
+		for (int i = 0; i < blockWidth*blockHeight; i++)
+		{
+			dstF[4*i + 0] = 1.0f;
+			dstF[4*i + 1] = 0.0f;
+			dstF[4*i + 2] = 1.0f;
+			dstF[4*i + 3] = 1.0f;
+		}
+	}
+}
+
+static void decodeVoidExtentBlock (void* dst, const Block128& blockData, int blockWidth, int blockHeight, bool isSRGB, bool isLDRMode)
+{
+	const deUint32	minSExtent			= blockData.getBits(12, 24);
+	const deUint32	maxSExtent			= blockData.getBits(25, 37);
+	const deUint32	minTExtent			= blockData.getBits(38, 50);
+	const deUint32	maxTExtent			= blockData.getBits(51, 63);
+	const bool		allExtentsAllOnes	= minSExtent == 0x1fff && maxSExtent == 0x1fff && minTExtent == 0x1fff && maxTExtent == 0x1fff;
+	const bool		isHDRBlock			= blockData.isBitSet(9);
+
+	if ((isLDRMode && isHDRBlock) || (!allExtentsAllOnes && (minSExtent >= maxSExtent || minTExtent >= maxTExtent)))
+	{
+		setASTCErrorColorBlock(dst, blockWidth, blockHeight, isSRGB);
+		return;
+	}
+
+	const deUint32 rgba[4] =
+	{
+		blockData.getBits(64,  79),
+		blockData.getBits(80,  95),
+		blockData.getBits(96,  111),
+		blockData.getBits(112, 127)
+	};
+
+	if (isSRGB)
+	{
+		deUint8* const dstU = (deUint8*)dst;
+		for (int i = 0; i < blockWidth*blockHeight; i++)
+		for (int c = 0; c < 4; c++)
+			dstU[i*4 + c] = (rgba[c] & 0xff00) >> 8;
+	}
+	else
+	{
+		float* const dstF = (float*)dst;
+
+		if (isHDRBlock)
+		{
+			for (int c = 0; c < 4; c++)
+			{
+				if (isFloat16InfOrNan(rgba[c]))
+					throw tcu::InternalError("Infinity or NaN color component in HDR void extent block in ASTC texture (behavior undefined by ASTC specification)");
+			}
+
+			for (int i = 0; i < blockWidth*blockHeight; i++)
+			for (int c = 0; c < 4; c++)
+				dstF[i*4 + c] = deFloat16To32((deFloat16)rgba[c]);
+		}
+		else
+		{
+			for (int i = 0; i < blockWidth*blockHeight; i++)
+			for (int c = 0; c < 4; c++)
+				dstF[i*4 + c] = rgba[c] == 65535 ? 1.0f : (float)rgba[c] / 65536.0f;
+		}
+	}
+
+	return;
+}
+
+static void decodeColorEndpointModes (deUint32* endpointModesDst, const Block128& blockData, int numPartitions, int extraCemBitsStart)
+{
+	if (numPartitions == 1)
+		endpointModesDst[0] = blockData.getBits(13, 16);
+	else
+	{
+		const deUint32 highLevelSelector = blockData.getBits(23, 24);
+
+		if (highLevelSelector == 0)
+		{
+			const deUint32 mode = blockData.getBits(25, 28);
+			for (int i = 0; i < numPartitions; i++)
+				endpointModesDst[i] = mode;
+		}
+		else
+		{
+			for (int partNdx = 0; partNdx < numPartitions; partNdx++)
+			{
+				const deUint32 cemClass		= highLevelSelector - (blockData.isBitSet(25 + partNdx) ? 0 : 1);
+				const deUint32 lowBit0Ndx	= numPartitions + 2*partNdx;
+				const deUint32 lowBit1Ndx	= numPartitions + 2*partNdx + 1;
+				const deUint32 lowBit0		= blockData.getBit(lowBit0Ndx < 4 ? 25+lowBit0Ndx : extraCemBitsStart+lowBit0Ndx-4);
+				const deUint32 lowBit1		= blockData.getBit(lowBit1Ndx < 4 ? 25+lowBit1Ndx : extraCemBitsStart+lowBit1Ndx-4);
+
+				endpointModesDst[partNdx] = (cemClass << 2) | (lowBit1 << 1) | lowBit0;
+			}
+		}
+	}
+}
+
+static inline int computeNumColorEndpointValues (deUint32 endpointMode)
+{
+	DE_ASSERT(endpointMode < 16);
+	return (endpointMode/4 + 1) * 2;
+}
+
+static int computeNumColorEndpointValues (const deUint32* endpointModes, int numPartitions)
+{
+	int result = 0;
+	for (int i = 0; i < numPartitions; i++)
+		result += computeNumColorEndpointValues(endpointModes[i]);
+	return result;
+}
+
+static void decodeISETritBlock (ISEDecodedResult* dst, int numValues, BitAccessStream& data, int numBits)
+{
+	DE_ASSERT(de::inRange(numValues, 1, 5));
+
+	deUint32 m[5];
+
+	m[0]			= data.getNext(numBits);
+	deUint32 T01	= data.getNext(2);
+	m[1]			= data.getNext(numBits);
+	deUint32 T23	= data.getNext(2);
+	m[2]			= data.getNext(numBits);
+	deUint32 T4		= data.getNext(1);
+	m[3]			= data.getNext(numBits);
+	deUint32 T56	= data.getNext(2);
+	m[4]			= data.getNext(numBits);
+	deUint32 T7		= data.getNext(1);
+
+	switch (numValues)
+	{
+		// \note Fall-throughs.
+		case 1: T23		= 0;
+		case 2: T4		= 0;
+		case 3: T56		= 0;
+		case 4: T7		= 0;
+		case 5: break;
+		default:
+			DE_ASSERT(false);
+	}
+
+	const deUint32 T = (T7 << 7) | (T56 << 5) | (T4 << 4) | (T23 << 2) | (T01 << 0);
+
+	static const deUint32 tritsFromT[256][5] =
+	{
+		{ 0,0,0,0,0 }, { 1,0,0,0,0 }, { 2,0,0,0,0 }, { 0,0,2,0,0 }, { 0,1,0,0,0 }, { 1,1,0,0,0 }, { 2,1,0,0,0 }, { 1,0,2,0,0 }, { 0,2,0,0,0 }, { 1,2,0,0,0 }, { 2,2,0,0,0 }, { 2,0,2,0,0 }, { 0,2,2,0,0 }, { 1,2,2,0,0 }, { 2,2,2,0,0 }, { 2,0,2,0,0 },
+		{ 0,0,1,0,0 }, { 1,0,1,0,0 }, { 2,0,1,0,0 }, { 0,1,2,0,0 }, { 0,1,1,0,0 }, { 1,1,1,0,0 }, { 2,1,1,0,0 }, { 1,1,2,0,0 }, { 0,2,1,0,0 }, { 1,2,1,0,0 }, { 2,2,1,0,0 }, { 2,1,2,0,0 }, { 0,0,0,2,2 }, { 1,0,0,2,2 }, { 2,0,0,2,2 }, { 0,0,2,2,2 },
+		{ 0,0,0,1,0 }, { 1,0,0,1,0 }, { 2,0,0,1,0 }, { 0,0,2,1,0 }, { 0,1,0,1,0 }, { 1,1,0,1,0 }, { 2,1,0,1,0 }, { 1,0,2,1,0 }, { 0,2,0,1,0 }, { 1,2,0,1,0 }, { 2,2,0,1,0 }, { 2,0,2,1,0 }, { 0,2,2,1,0 }, { 1,2,2,1,0 }, { 2,2,2,1,0 }, { 2,0,2,1,0 },
+		{ 0,0,1,1,0 }, { 1,0,1,1,0 }, { 2,0,1,1,0 }, { 0,1,2,1,0 }, { 0,1,1,1,0 }, { 1,1,1,1,0 }, { 2,1,1,1,0 }, { 1,1,2,1,0 }, { 0,2,1,1,0 }, { 1,2,1,1,0 }, { 2,2,1,1,0 }, { 2,1,2,1,0 }, { 0,1,0,2,2 }, { 1,1,0,2,2 }, { 2,1,0,2,2 }, { 1,0,2,2,2 },
+		{ 0,0,0,2,0 }, { 1,0,0,2,0 }, { 2,0,0,2,0 }, { 0,0,2,2,0 }, { 0,1,0,2,0 }, { 1,1,0,2,0 }, { 2,1,0,2,0 }, { 1,0,2,2,0 }, { 0,2,0,2,0 }, { 1,2,0,2,0 }, { 2,2,0,2,0 }, { 2,0,2,2,0 }, { 0,2,2,2,0 }, { 1,2,2,2,0 }, { 2,2,2,2,0 }, { 2,0,2,2,0 },
+		{ 0,0,1,2,0 }, { 1,0,1,2,0 }, { 2,0,1,2,0 }, { 0,1,2,2,0 }, { 0,1,1,2,0 }, { 1,1,1,2,0 }, { 2,1,1,2,0 }, { 1,1,2,2,0 }, { 0,2,1,2,0 }, { 1,2,1,2,0 }, { 2,2,1,2,0 }, { 2,1,2,2,0 }, { 0,2,0,2,2 }, { 1,2,0,2,2 }, { 2,2,0,2,2 }, { 2,0,2,2,2 },
+		{ 0,0,0,0,2 }, { 1,0,0,0,2 }, { 2,0,0,0,2 }, { 0,0,2,0,2 }, { 0,1,0,0,2 }, { 1,1,0,0,2 }, { 2,1,0,0,2 }, { 1,0,2,0,2 }, { 0,2,0,0,2 }, { 1,2,0,0,2 }, { 2,2,0,0,2 }, { 2,0,2,0,2 }, { 0,2,2,0,2 }, { 1,2,2,0,2 }, { 2,2,2,0,2 }, { 2,0,2,0,2 },
+		{ 0,0,1,0,2 }, { 1,0,1,0,2 }, { 2,0,1,0,2 }, { 0,1,2,0,2 }, { 0,1,1,0,2 }, { 1,1,1,0,2 }, { 2,1,1,0,2 }, { 1,1,2,0,2 }, { 0,2,1,0,2 }, { 1,2,1,0,2 }, { 2,2,1,0,2 }, { 2,1,2,0,2 }, { 0,2,2,2,2 }, { 1,2,2,2,2 }, { 2,2,2,2,2 }, { 2,0,2,2,2 },
+		{ 0,0,0,0,1 }, { 1,0,0,0,1 }, { 2,0,0,0,1 }, { 0,0,2,0,1 }, { 0,1,0,0,1 }, { 1,1,0,0,1 }, { 2,1,0,0,1 }, { 1,0,2,0,1 }, { 0,2,0,0,1 }, { 1,2,0,0,1 }, { 2,2,0,0,1 }, { 2,0,2,0,1 }, { 0,2,2,0,1 }, { 1,2,2,0,1 }, { 2,2,2,0,1 }, { 2,0,2,0,1 },
+		{ 0,0,1,0,1 }, { 1,0,1,0,1 }, { 2,0,1,0,1 }, { 0,1,2,0,1 }, { 0,1,1,0,1 }, { 1,1,1,0,1 }, { 2,1,1,0,1 }, { 1,1,2,0,1 }, { 0,2,1,0,1 }, { 1,2,1,0,1 }, { 2,2,1,0,1 }, { 2,1,2,0,1 }, { 0,0,1,2,2 }, { 1,0,1,2,2 }, { 2,0,1,2,2 }, { 0,1,2,2,2 },
+		{ 0,0,0,1,1 }, { 1,0,0,1,1 }, { 2,0,0,1,1 }, { 0,0,2,1,1 }, { 0,1,0,1,1 }, { 1,1,0,1,1 }, { 2,1,0,1,1 }, { 1,0,2,1,1 }, { 0,2,0,1,1 }, { 1,2,0,1,1 }, { 2,2,0,1,1 }, { 2,0,2,1,1 }, { 0,2,2,1,1 }, { 1,2,2,1,1 }, { 2,2,2,1,1 }, { 2,0,2,1,1 },
+		{ 0,0,1,1,1 }, { 1,0,1,1,1 }, { 2,0,1,1,1 }, { 0,1,2,1,1 }, { 0,1,1,1,1 }, { 1,1,1,1,1 }, { 2,1,1,1,1 }, { 1,1,2,1,1 }, { 0,2,1,1,1 }, { 1,2,1,1,1 }, { 2,2,1,1,1 }, { 2,1,2,1,1 }, { 0,1,1,2,2 }, { 1,1,1,2,2 }, { 2,1,1,2,2 }, { 1,1,2,2,2 },
+		{ 0,0,0,2,1 }, { 1,0,0,2,1 }, { 2,0,0,2,1 }, { 0,0,2,2,1 }, { 0,1,0,2,1 }, { 1,1,0,2,1 }, { 2,1,0,2,1 }, { 1,0,2,2,1 }, { 0,2,0,2,1 }, { 1,2,0,2,1 }, { 2,2,0,2,1 }, { 2,0,2,2,1 }, { 0,2,2,2,1 }, { 1,2,2,2,1 }, { 2,2,2,2,1 }, { 2,0,2,2,1 },
+		{ 0,0,1,2,1 }, { 1,0,1,2,1 }, { 2,0,1,2,1 }, { 0,1,2,2,1 }, { 0,1,1,2,1 }, { 1,1,1,2,1 }, { 2,1,1,2,1 }, { 1,1,2,2,1 }, { 0,2,1,2,1 }, { 1,2,1,2,1 }, { 2,2,1,2,1 }, { 2,1,2,2,1 }, { 0,2,1,2,2 }, { 1,2,1,2,2 }, { 2,2,1,2,2 }, { 2,1,2,2,2 },
+		{ 0,0,0,1,2 }, { 1,0,0,1,2 }, { 2,0,0,1,2 }, { 0,0,2,1,2 }, { 0,1,0,1,2 }, { 1,1,0,1,2 }, { 2,1,0,1,2 }, { 1,0,2,1,2 }, { 0,2,0,1,2 }, { 1,2,0,1,2 }, { 2,2,0,1,2 }, { 2,0,2,1,2 }, { 0,2,2,1,2 }, { 1,2,2,1,2 }, { 2,2,2,1,2 }, { 2,0,2,1,2 },
+		{ 0,0,1,1,2 }, { 1,0,1,1,2 }, { 2,0,1,1,2 }, { 0,1,2,1,2 }, { 0,1,1,1,2 }, { 1,1,1,1,2 }, { 2,1,1,1,2 }, { 1,1,2,1,2 }, { 0,2,1,1,2 }, { 1,2,1,1,2 }, { 2,2,1,1,2 }, { 2,1,2,1,2 }, { 0,2,2,2,2 }, { 1,2,2,2,2 }, { 2,2,2,2,2 }, { 2,1,2,2,2 }
+	};
+
+	const deUint32 (& trits)[5] = tritsFromT[T];
+
+	for (int i = 0; i < numValues; i++)
+	{
+		dst[i].m	= m[i];
+		dst[i].tq	= trits[i];
+		dst[i].v	= (trits[i] << numBits) + m[i];
+	}
+}
+
+static void decodeISEQuintBlock (ISEDecodedResult* dst, int numValues, BitAccessStream& data, int numBits)
+{
+	DE_ASSERT(de::inRange(numValues, 1, 3));
+
+	deUint32 m[3];
+
+	m[0]			= data.getNext(numBits);
+	deUint32 Q012	= data.getNext(3);
+	m[1]			= data.getNext(numBits);
+	deUint32 Q34	= data.getNext(2);
+	m[2]			= data.getNext(numBits);
+	deUint32 Q56	= data.getNext(2);
+
+	switch (numValues)
+	{
+		// \note Fall-throughs.
+		case 1: Q34		= 0;
+		case 2: Q56		= 0;
+		case 3: break;
+		default:
+			DE_ASSERT(false);
+	}
+
+	const deUint32 Q = (Q56 << 5) | (Q34 << 3) | (Q012 << 0);
+
+	static const deUint32 quintsFromQ[256][3] =
+	{
+		{ 0,0,0 }, { 1,0,0 }, { 2,0,0 }, { 3,0,0 }, { 4,0,0 }, { 0,4,0 }, { 4,4,0 }, { 4,4,4 }, { 0,1,0 }, { 1,1,0 }, { 2,1,0 }, { 3,1,0 }, { 4,1,0 }, { 1,4,0 }, { 4,4,1 }, { 4,4,4 },
+		{ 0,2,0 }, { 1,2,0 }, { 2,2,0 }, { 3,2,0 }, { 4,2,0 }, { 2,4,0 }, { 4,4,2 }, { 4,4,4 }, { 0,3,0 }, { 1,3,0 }, { 2,3,0 }, { 3,3,0 }, { 4,3,0 }, { 3,4,0 }, { 4,4,3 }, { 4,4,4 },
+		{ 0,0,1 }, { 1,0,1 }, { 2,0,1 }, { 3,0,1 }, { 4,0,1 }, { 0,4,1 }, { 4,0,4 }, { 0,4,4 }, { 0,1,1 }, { 1,1,1 }, { 2,1,1 }, { 3,1,1 }, { 4,1,1 }, { 1,4,1 }, { 4,1,4 }, { 1,4,4 },
+		{ 0,2,1 }, { 1,2,1 }, { 2,2,1 }, { 3,2,1 }, { 4,2,1 }, { 2,4,1 }, { 4,2,4 }, { 2,4,4 }, { 0,3,1 }, { 1,3,1 }, { 2,3,1 }, { 3,3,1 }, { 4,3,1 }, { 3,4,1 }, { 4,3,4 }, { 3,4,4 },
+		{ 0,0,2 }, { 1,0,2 }, { 2,0,2 }, { 3,0,2 }, { 4,0,2 }, { 0,4,2 }, { 2,0,4 }, { 3,0,4 }, { 0,1,2 }, { 1,1,2 }, { 2,1,2 }, { 3,1,2 }, { 4,1,2 }, { 1,4,2 }, { 2,1,4 }, { 3,1,4 },
+		{ 0,2,2 }, { 1,2,2 }, { 2,2,2 }, { 3,2,2 }, { 4,2,2 }, { 2,4,2 }, { 2,2,4 }, { 3,2,4 }, { 0,3,2 }, { 1,3,2 }, { 2,3,2 }, { 3,3,2 }, { 4,3,2 }, { 3,4,2 }, { 2,3,4 }, { 3,3,4 },
+		{ 0,0,3 }, { 1,0,3 }, { 2,0,3 }, { 3,0,3 }, { 4,0,3 }, { 0,4,3 }, { 0,0,4 }, { 1,0,4 }, { 0,1,3 }, { 1,1,3 }, { 2,1,3 }, { 3,1,3 }, { 4,1,3 }, { 1,4,3 }, { 0,1,4 }, { 1,1,4 },
+		{ 0,2,3 }, { 1,2,3 }, { 2,2,3 }, { 3,2,3 }, { 4,2,3 }, { 2,4,3 }, { 0,2,4 }, { 1,2,4 }, { 0,3,3 }, { 1,3,3 }, { 2,3,3 }, { 3,3,3 }, { 4,3,3 }, { 3,4,3 }, { 0,3,4 }, { 1,3,4 }
+	};
+
+	const deUint32 (& quints)[3] = quintsFromQ[Q];
+
+	for (int i = 0; i < numValues; i++)
+	{
+		dst[i].m	= m[i];
+		dst[i].tq	= quints[i];
+		dst[i].v	= (quints[i] << numBits) + m[i];
+	}
+}
+
+static inline void decodeISEBitBlock (ISEDecodedResult* dst, BitAccessStream& data, int numBits)
+{
+	dst[0].m = data.getNext(numBits);
+	dst[0].v = dst[0].m;
+}
+
+static void decodeISE (ISEDecodedResult* dst, int numValues, BitAccessStream& data, const ISEParams& params)
+{
+	if (params.mode == ISEMODE_TRIT)
+	{
+		const int numBlocks = divRoundUp(numValues, 5);
+		for (int blockNdx = 0; blockNdx < numBlocks; blockNdx++)
+		{
+			const int numValuesInBlock = blockNdx == numBlocks-1 ? numValues - 5*(numBlocks-1) : 5;
+			decodeISETritBlock(&dst[5*blockNdx], numValuesInBlock, data, params.numBits);
+		}
+	}
+	else if (params.mode == ISEMODE_QUINT)
+	{
+		const int numBlocks = divRoundUp(numValues, 3);
+		for (int blockNdx = 0; blockNdx < numBlocks; blockNdx++)
+		{
+			const int numValuesInBlock = blockNdx == numBlocks-1 ? numValues - 3*(numBlocks-1) : 3;
+			decodeISEQuintBlock(&dst[3*blockNdx], numValuesInBlock, data, params.numBits);
+		}
+	}
+	else
+	{
+		DE_ASSERT(params.mode == ISEMODE_PLAIN_BIT);
+		for (int i = 0; i < numValues; i++)
+			decodeISEBitBlock(&dst[i], data, params.numBits);
+	}
+}
+
+static ISEParams computeMaximumRangeISEParams (int numAvailableBits, int numValuesInSequence)
+{
+	int curBitsForTritMode		= 6;
+	int curBitsForQuintMode		= 5;
+	int curBitsForPlainBitMode	= 8;
+
+	while (true)
+	{
+		DE_ASSERT(curBitsForTritMode > 0 || curBitsForQuintMode > 0 || curBitsForPlainBitMode > 0);
+
+		const int tritRange			= curBitsForTritMode > 0		? (3 << curBitsForTritMode) - 1			: -1;
+		const int quintRange		= curBitsForQuintMode > 0		? (5 << curBitsForQuintMode) - 1		: -1;
+		const int plainBitRange		= curBitsForPlainBitMode > 0	? (1 << curBitsForPlainBitMode) - 1		: -1;
+		const int maxRange			= de::max(de::max(tritRange, quintRange), plainBitRange);
+
+		if (maxRange == tritRange)
+		{
+			const ISEParams params(ISEMODE_TRIT, curBitsForTritMode);
+			if (computeNumRequiredBits(params, numValuesInSequence) <= numAvailableBits)
+				return ISEParams(ISEMODE_TRIT, curBitsForTritMode);
+			curBitsForTritMode--;
+		}
+		else if (maxRange == quintRange)
+		{
+			const ISEParams params(ISEMODE_QUINT, curBitsForQuintMode);
+			if (computeNumRequiredBits(params, numValuesInSequence) <= numAvailableBits)
+				return ISEParams(ISEMODE_QUINT, curBitsForQuintMode);
+			curBitsForQuintMode--;
+		}
+		else
+		{
+			const ISEParams params(ISEMODE_PLAIN_BIT, curBitsForPlainBitMode);
+			DE_ASSERT(maxRange == plainBitRange);
+			if (computeNumRequiredBits(params, numValuesInSequence) <= numAvailableBits)
+				return ISEParams(ISEMODE_PLAIN_BIT, curBitsForPlainBitMode);
+			curBitsForPlainBitMode--;
+		}
+	}
+}
+
+static void unquantizeColorEndpoints (deUint32* dst, const ISEDecodedResult* iseResults, int numEndpoints, const ISEParams& iseParams)
+{
+	if (iseParams.mode == ISEMODE_TRIT || iseParams.mode == ISEMODE_QUINT)
+	{
+		const int rangeCase				= iseParams.numBits*2 - (iseParams.mode == ISEMODE_TRIT ? 2 : 1);
+		DE_ASSERT(de::inRange(rangeCase, 0, 10));
+		static const deUint32	Ca[11]	= { 204, 113, 93, 54, 44, 26, 22, 13, 11, 6, 5 };
+		const deUint32			C		= Ca[rangeCase];
+
+		for (int endpointNdx = 0; endpointNdx < numEndpoints; endpointNdx++)
+		{
+			const deUint32 a = getBit(iseResults[endpointNdx].m, 0);
+			const deUint32 b = getBit(iseResults[endpointNdx].m, 1);
+			const deUint32 c = getBit(iseResults[endpointNdx].m, 2);
+			const deUint32 d = getBit(iseResults[endpointNdx].m, 3);
+			const deUint32 e = getBit(iseResults[endpointNdx].m, 4);
+			const deUint32 f = getBit(iseResults[endpointNdx].m, 5);
+
+			const deUint32 A = a == 0 ? 0 : (1<<9)-1;
+			const deUint32 B = rangeCase == 0	? 0
+							 : rangeCase == 1	? 0
+							 : rangeCase == 2	? (b << 8) |									(b << 4) |				(b << 2) |	(b << 1)
+							 : rangeCase == 3	? (b << 8) |												(b << 3) |	(b << 2)
+							 : rangeCase == 4	? (c << 8) | (b << 7) |										(c << 3) |	(b << 2) |	(c << 1) |	(b << 0)
+							 : rangeCase == 5	? (c << 8) | (b << 7) |													(c << 2) |	(b << 1) |	(c << 0)
+							 : rangeCase == 6	? (d << 8) | (c << 7) | (b << 6) |										(d << 2) |	(c << 1) |	(b << 0)
+							 : rangeCase == 7	? (d << 8) | (c << 7) | (b << 6) |													(d << 1) |	(c << 0)
+							 : rangeCase == 8	? (e << 8) | (d << 7) | (c << 6) | (b << 5) |										(e << 1) |	(d << 0)
+							 : rangeCase == 9	? (e << 8) | (d << 7) | (c << 6) | (b << 5) |													(e << 0)
+							 : rangeCase == 10	? (f << 8) | (e << 7) | (d << 6) | (c << 5) |	(b << 4) |										(f << 0)
+							 : (deUint32)-1;
+			DE_ASSERT(B != (deUint32)-1);
+
+			dst[endpointNdx] = (((iseResults[endpointNdx].tq*C + B) ^ A) >> 2) | (A & 0x80);
+		}
+	}
+	else
+	{
+		DE_ASSERT(iseParams.mode == ISEMODE_PLAIN_BIT);
+
+		for (int endpointNdx = 0; endpointNdx < numEndpoints; endpointNdx++)
+			dst[endpointNdx] = bitReplicationScale(iseResults[endpointNdx].v, iseParams.numBits, 8);
+	}
+}
+
+static inline void bitTransferSigned (deInt32& a, deInt32& b)
+{
+	b >>= 1;
+	b |= a & 0x80;
+	a >>= 1;
+	a &= 0x3f;
+	if (isBitSet(a, 5))
+		a -= 0x40;
+}
+
+static inline UVec4 clampedRGBA (const tcu::IVec4& rgba)
+{
+	return UVec4(de::clamp(rgba.x(), 0, 0xff),
+				 de::clamp(rgba.y(), 0, 0xff),
+				 de::clamp(rgba.z(), 0, 0xff),
+				 de::clamp(rgba.w(), 0, 0xff));
+}
+
+static inline tcu::IVec4 blueContract (int r, int g, int b, int a)
+{
+	return tcu::IVec4((r+b)>>1, (g+b)>>1, b, a);
+}
+
+static inline bool isColorEndpointModeHDR (deUint32 mode)
+{
+	return mode == 2	||
+		   mode == 3	||
+		   mode == 7	||
+		   mode == 11	||
+		   mode == 14	||
+		   mode == 15;
+}
+
+static void decodeHDREndpointMode7 (UVec4& e0, UVec4& e1, deUint32 v0, deUint32 v1, deUint32 v2, deUint32 v3)
+{
+	const deUint32 m10		= getBit(v1, 7) | (getBit(v2, 7) << 1);
+	const deUint32 m23		= getBits(v0, 6, 7);
+	const deUint32 majComp	= m10 != 3	? m10
+							: m23 != 3	? m23
+							:			  0;
+	const deUint32 mode		= m10 != 3	? m23
+							: m23 != 3	? 4
+							:			  5;
+
+	deInt32			red		= (deInt32)getBits(v0, 0, 5);
+	deInt32			green	= (deInt32)getBits(v1, 0, 4);
+	deInt32			blue	= (deInt32)getBits(v2, 0, 4);
+	deInt32			scale	= (deInt32)getBits(v3, 0, 4);
+
+	{
+#define SHOR(DST_VAR, SHIFT, BIT_VAR) (DST_VAR) |= (BIT_VAR) << (SHIFT)
+#define ASSIGN_X_BITS(V0,S0, V1,S1, V2,S2, V3,S3, V4,S4, V5,S5, V6,S6) do { SHOR(V0,S0,x0); SHOR(V1,S1,x1); SHOR(V2,S2,x2); SHOR(V3,S3,x3); SHOR(V4,S4,x4); SHOR(V5,S5,x5); SHOR(V6,S6,x6); } while (false)
+
+		const deUint32	x0	= getBit(v1, 6);
+		const deUint32	x1	= getBit(v1, 5);
+		const deUint32	x2	= getBit(v2, 6);
+		const deUint32	x3	= getBit(v2, 5);
+		const deUint32	x4	= getBit(v3, 7);
+		const deUint32	x5	= getBit(v3, 6);
+		const deUint32	x6	= getBit(v3, 5);
+
+		deInt32&		R	= red;
+		deInt32&		G	= green;
+		deInt32&		B	= blue;
+		deInt32&		S	= scale;
+
+		switch (mode)
+		{
+			case 0: ASSIGN_X_BITS(R,9,  R,8,  R,7,  R,10,  R,6,  S,6,   S,5); break;
+			case 1: ASSIGN_X_BITS(R,8,  G,5,  R,7,  B,5,   R,6,  R,10,  R,9); break;
+			case 2: ASSIGN_X_BITS(R,9,  R,8,  R,7,  R,6,   S,7,  S,6,   S,5); break;
+			case 3: ASSIGN_X_BITS(R,8,  G,5,  R,7,  B,5,   R,6,  S,6,   S,5); break;
+			case 4: ASSIGN_X_BITS(G,6,  G,5,  B,6,  B,5,   R,6,  R,7,   S,5); break;
+			case 5: ASSIGN_X_BITS(G,6,  G,5,  B,6,  B,5,   R,6,  S,6,   S,5); break;
+			default:
+				DE_ASSERT(false);
+		}
+
+#undef ASSIGN_X_BITS
+#undef SHOR
+	}
+
+	static const int shiftAmounts[] = { 1, 1, 2, 3, 4, 5 };
+	DE_ASSERT(mode < DE_LENGTH_OF_ARRAY(shiftAmounts));
+
+	red		<<= shiftAmounts[mode];
+	green	<<= shiftAmounts[mode];
+	blue	<<= shiftAmounts[mode];
+	scale	<<= shiftAmounts[mode];
+
+	if (mode != 5)
+	{
+		green	= red - green;
+		blue	= red - blue;
+	}
+
+	if (majComp == 1)
+		std::swap(red, green);
+	else if (majComp == 2)
+		std::swap(red, blue);
+
+	e0 = UVec4(de::clamp(red	- scale,	0, 0xfff),
+			   de::clamp(green	- scale,	0, 0xfff),
+			   de::clamp(blue	- scale,	0, 0xfff),
+			   0x780);
+
+	e1 = UVec4(de::clamp(red,				0, 0xfff),
+			   de::clamp(green,				0, 0xfff),
+			   de::clamp(blue,				0, 0xfff),
+			   0x780);
+}
+
+static void decodeHDREndpointMode11 (UVec4& e0, UVec4& e1, deUint32 v0, deUint32 v1, deUint32 v2, deUint32 v3, deUint32 v4, deUint32 v5)
+{
+	const deUint32 major = (getBit(v5, 7) << 1) | getBit(v4, 7);
+
+	if (major == 3)
+	{
+		e0 = UVec4(v0<<4, v2<<4, getBits(v4,0,6)<<5, 0x780);
+		e1 = UVec4(v1<<4, v3<<4, getBits(v5,0,6)<<5, 0x780);
+	}
+	else
+	{
+		const deUint32 mode = (getBit(v3, 7) << 2) | (getBit(v2, 7) << 1) | getBit(v1, 7);
+
+		deInt32 a	= (deInt32)((getBit(v1, 6) << 8) | v0);
+		deInt32 c	= (deInt32)(getBits(v1, 0, 5));
+		deInt32 b0	= (deInt32)(getBits(v2, 0, 5));
+		deInt32 b1	= (deInt32)(getBits(v3, 0, 5));
+		deInt32 d0	= (deInt32)(getBits(v4, 0, 4));
+		deInt32 d1	= (deInt32)(getBits(v5, 0, 4));
+
+		{
+#define SHOR(DST_VAR, SHIFT, BIT_VAR) (DST_VAR) |= (BIT_VAR) << (SHIFT)
+#define ASSIGN_X_BITS(V0,S0, V1,S1, V2,S2, V3,S3, V4,S4, V5,S5) do { SHOR(V0,S0,x0); SHOR(V1,S1,x1); SHOR(V2,S2,x2); SHOR(V3,S3,x3); SHOR(V4,S4,x4); SHOR(V5,S5,x5); } while (false)
+
+			const deUint32 x0 = getBit(v2, 6);
+			const deUint32 x1 = getBit(v3, 6);
+			const deUint32 x2 = getBit(v4, 6);
+			const deUint32 x3 = getBit(v5, 6);
+			const deUint32 x4 = getBit(v4, 5);
+			const deUint32 x5 = getBit(v5, 5);
+
+			switch (mode)
+			{
+				case 0: ASSIGN_X_BITS(b0,6,  b1,6,   d0,6,  d1,6,  d0,5,  d1,5); break;
+				case 1: ASSIGN_X_BITS(b0,6,  b1,6,   b0,7,  b1,7,  d0,5,  d1,5); break;
+				case 2: ASSIGN_X_BITS(a,9,   c,6,    d0,6,  d1,6,  d0,5,  d1,5); break;
+				case 3: ASSIGN_X_BITS(b0,6,  b1,6,   a,9,   c,6,   d0,5,  d1,5); break;
+				case 4: ASSIGN_X_BITS(b0,6,  b1,6,   b0,7,  b1,7,  a,9,   a,10); break;
+				case 5: ASSIGN_X_BITS(a,9,   a,10,   c,7,   c,6,   d0,5,  d1,5); break;
+				case 6: ASSIGN_X_BITS(b0,6,  b1,6,   a,11,  c,6,   a,9,   a,10); break;
+				case 7: ASSIGN_X_BITS(a,9,   a,10,   a,11,  c,6,   d0,5,  d1,5); break;
+				default:
+					DE_ASSERT(false);
+			}
+
+#undef ASSIGN_X_BITS
+#undef SHOR
+		}
+
+		static const int numDBits[] = { 7, 6, 7, 6, 5, 6, 5, 6 };
+		DE_ASSERT(mode < DE_LENGTH_OF_ARRAY(numDBits));
+
+		d0 = signExtend(d0, numDBits[mode]);
+		d1 = signExtend(d1, numDBits[mode]);
+
+		const int shiftAmount = (mode >> 1) ^ 3;
+		a	<<= shiftAmount;
+		c	<<= shiftAmount;
+		b0	<<= shiftAmount;
+		b1	<<= shiftAmount;
+		d0	<<= shiftAmount;
+		d1	<<= shiftAmount;
+
+		e0 = UVec4(de::clamp(a-c,			0, 0xfff),
+				   de::clamp(a-b0-c-d0,		0, 0xfff),
+				   de::clamp(a-b1-c-d1,		0, 0xfff),
+				   0x780);
+
+		e1 = UVec4(de::clamp(a,				0, 0xfff),
+				   de::clamp(a-b0,			0, 0xfff),
+				   de::clamp(a-b1,			0, 0xfff),
+				   0x780);
+
+		if (major == 1)
+		{
+			std::swap(e0.x(), e0.y());
+			std::swap(e1.x(), e1.y());
+		}
+		else if (major == 2)
+		{
+			std::swap(e0.x(), e0.z());
+			std::swap(e1.x(), e1.z());
+		}
+	}
+}
+
+static void decodeHDREndpointMode15(UVec4& e0, UVec4& e1, deUint32 v0, deUint32 v1, deUint32 v2, deUint32 v3, deUint32 v4, deUint32 v5, deUint32 v6In, deUint32 v7In)
+{
+	decodeHDREndpointMode11(e0, e1, v0, v1, v2, v3, v4, v5);
+
+	const deUint32	mode	= (getBit(v7In, 7) << 1) | getBit(v6In, 7);
+	deInt32			v6		= (deInt32)getBits(v6In, 0, 6);
+	deInt32			v7		= (deInt32)getBits(v7In, 0, 6);
+
+	if (mode == 3)
+	{
+		e0.w() = v6 << 5;
+		e1.w() = v7 << 5;
+	}
+	else
+	{
+		v6 |= (v7 << (mode+1)) & 0x780;
+		v7 &= (0x3f >> mode);
+		v7 ^= 0x20 >> mode;
+		v7 -= 0x20 >> mode;
+		v6 <<= 4-mode;
+		v7 <<= 4-mode;
+
+		v7 += v6;
+		v7 = de::clamp(v7, 0, 0xfff);
+		e0.w() = v6;
+		e1.w() = v7;
+	}
+}
+
+static void decodeColorEndpoints (ColorEndpointPair* dst, const deUint32* unquantizedEndpoints, const deUint32* endpointModes, int numPartitions)
+{
+	int unquantizedNdx = 0;
+
+	for (int partitionNdx = 0; partitionNdx < numPartitions; partitionNdx++)
+	{
+		const deUint32		endpointMode	= endpointModes[partitionNdx];
+		const deUint32*		v				= &unquantizedEndpoints[unquantizedNdx];
+		UVec4&				e0				= dst[partitionNdx].e0;
+		UVec4&				e1				= dst[partitionNdx].e1;
+
+		unquantizedNdx += computeNumColorEndpointValues(endpointMode);
+
+		switch (endpointMode)
+		{
+			case 0:
+				e0 = UVec4(v[0], v[0], v[0], 0xff);
+				e1 = UVec4(v[1], v[1], v[1], 0xff);
+				break;
+
+			case 1:
+			{
+				const deUint32 L0 = (v[0] >> 2) | (getBits(v[1], 6, 7) << 6);
+				const deUint32 L1 = de::min(0xffu, L0 + getBits(v[1], 0, 5));
+				e0 = UVec4(L0, L0, L0, 0xff);
+				e1 = UVec4(L1, L1, L1, 0xff);
+				break;
+			}
+
+			case 2:
+			{
+				const deUint32 v1Gr		= v[1] >= v[0];
+				const deUint32 y0		= v1Gr ? v[0]<<4 : (v[1]<<4) + 8;
+				const deUint32 y1		= v1Gr ? v[1]<<4 : (v[0]<<4) - 8;
+
+				e0 = UVec4(y0, y0, y0, 0x780);
+				e1 = UVec4(y1, y1, y1, 0x780);
+				break;
+			}
+
+			case 3:
+			{
+				const bool		m	= isBitSet(v[0], 7);
+				const deUint32	y0	= m ? (getBits(v[1], 5, 7) << 9) | (getBits(v[0], 0, 6) << 2)
+										: (getBits(v[1], 4, 7) << 8) | (getBits(v[0], 0, 6) << 1);
+				const deUint32	d	= m ? getBits(v[1], 0, 4) << 2
+										: getBits(v[1], 0, 3) << 1;
+				const deUint32	y1	= de::min(0xfffu, y0+d);
+
+				e0 = UVec4(y0, y0, y0, 0x780);
+				e1 = UVec4(y1, y1, y1, 0x780);
+				break;
+			}
+
+			case 4:
+				e0 = UVec4(v[0], v[0], v[0], v[2]);
+				e1 = UVec4(v[1], v[1], v[1], v[3]);
+				break;
+
+			case 5:
+			{
+				deInt32 v0 = (deInt32)v[0];
+				deInt32 v1 = (deInt32)v[1];
+				deInt32 v2 = (deInt32)v[2];
+				deInt32 v3 = (deInt32)v[3];
+				bitTransferSigned(v1, v0);
+				bitTransferSigned(v3, v2);
+
+				e0 = clampedRGBA(tcu::IVec4(v0,		v0,		v0,		v2));
+				e1 = clampedRGBA(tcu::IVec4(v0+v1,	v0+v1,	v0+v1,	v2+v3));
+				break;
+			}
+
+			case 6:
+				e0 = UVec4((v[0]*v[3]) >> 8,	(v[1]*v[3]) >> 8,	(v[2]*v[3]) >> 8,	0xff);
+				e1 = UVec4(v[0],				v[1],				v[2],				0xff);
+				break;
+
+			case 7:
+				decodeHDREndpointMode7(e0, e1, v[0], v[1], v[2], v[3]);
+				break;
+
+			case 8:
+				if (v[1]+v[3]+v[5] >= v[0]+v[2]+v[4])
+				{
+					e0 = UVec4(v[0], v[2], v[4], 0xff);
+					e1 = UVec4(v[1], v[3], v[5], 0xff);
+				}
+				else
+				{
+					e0 = blueContract(v[1], v[3], v[5], 0xff).asUint();
+					e1 = blueContract(v[0], v[2], v[4], 0xff).asUint();
+				}
+				break;
+
+			case 9:
+			{
+				deInt32 v0 = (deInt32)v[0];
+				deInt32 v1 = (deInt32)v[1];
+				deInt32 v2 = (deInt32)v[2];
+				deInt32 v3 = (deInt32)v[3];
+				deInt32 v4 = (deInt32)v[4];
+				deInt32 v5 = (deInt32)v[5];
+				bitTransferSigned(v1, v0);
+				bitTransferSigned(v3, v2);
+				bitTransferSigned(v5, v4);
+
+				if (v1+v3+v5 >= 0)
+				{
+					e0 = clampedRGBA(tcu::IVec4(v0,		v2,		v4,		0xff));
+					e1 = clampedRGBA(tcu::IVec4(v0+v1,	v2+v3,	v4+v5,	0xff));
+				}
+				else
+				{
+					e0 = clampedRGBA(blueContract(v0+v1,	v2+v3,	v4+v5,	0xff));
+					e1 = clampedRGBA(blueContract(v0,		v2,		v4,		0xff));
+				}
+				break;
+			}
+
+			case 10:
+				e0 = UVec4((v[0]*v[3]) >> 8,	(v[1]*v[3]) >> 8,	(v[2]*v[3]) >> 8,	v[4]);
+				e1 = UVec4(v[0],				v[1],				v[2],				v[5]);
+				break;
+
+			case 11:
+				decodeHDREndpointMode11(e0, e1, v[0], v[1], v[2], v[3], v[4], v[5]);
+				break;
+
+			case 12:
+				if (v[1]+v[3]+v[5] >= v[0]+v[2]+v[4])
+				{
+					e0 = UVec4(v[0], v[2], v[4], v[6]);
+					e1 = UVec4(v[1], v[3], v[5], v[7]);
+				}
+				else
+				{
+					e0 = clampedRGBA(blueContract(v[1], v[3], v[5], v[7]));
+					e1 = clampedRGBA(blueContract(v[0], v[2], v[4], v[6]));
+				}
+				break;
+
+			case 13:
+			{
+				deInt32 v0 = (deInt32)v[0];
+				deInt32 v1 = (deInt32)v[1];
+				deInt32 v2 = (deInt32)v[2];
+				deInt32 v3 = (deInt32)v[3];
+				deInt32 v4 = (deInt32)v[4];
+				deInt32 v5 = (deInt32)v[5];
+				deInt32 v6 = (deInt32)v[6];
+				deInt32 v7 = (deInt32)v[7];
+				bitTransferSigned(v1, v0);
+				bitTransferSigned(v3, v2);
+				bitTransferSigned(v5, v4);
+				bitTransferSigned(v7, v6);
+
+				if (v1+v3+v5 >= 0)
+				{
+					e0 = clampedRGBA(tcu::IVec4(v0,		v2,		v4,		v6));
+					e1 = clampedRGBA(tcu::IVec4(v0+v1,	v2+v3,	v4+v5,	v6+v7));
+				}
+				else
+				{
+					e0 = clampedRGBA(blueContract(v0+v1,	v2+v3,	v4+v5,	v6+v7));
+					e1 = clampedRGBA(blueContract(v0,		v2,		v4,		v6));
+				}
+
+				break;
+			}
+
+			case 14:
+				decodeHDREndpointMode11(e0, e1, v[0], v[1], v[2], v[3], v[4], v[5]);
+				e0.w() = v[6];
+				e1.w() = v[7];
+				break;
+
+			case 15:
+				decodeHDREndpointMode15(e0, e1, v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7]);
+				break;
+
+			default:
+				DE_ASSERT(false);
+		}
+	}
+}
+
+static void computeColorEndpoints (ColorEndpointPair* dst, const Block128& blockData, const deUint32* endpointModes, int numPartitions, int numColorEndpointValues, const ISEParams& iseParams, int numBitsAvailable)
+{
+	const int			colorEndpointDataStart = numPartitions == 1 ? 17 : 29;
+	ISEDecodedResult	colorEndpointData[18];
+
+	{
+		BitAccessStream dataStream(blockData, colorEndpointDataStart, numBitsAvailable, true);
+		decodeISE(&colorEndpointData[0], numColorEndpointValues, dataStream, iseParams);
+	}
+
+	{
+		deUint32 unquantizedEndpoints[18];
+		unquantizeColorEndpoints(&unquantizedEndpoints[0], &colorEndpointData[0], numColorEndpointValues, iseParams);
+		decodeColorEndpoints(dst, &unquantizedEndpoints[0], &endpointModes[0], numPartitions);
+	}
+}
+
+static void unquantizeWeights (deUint32* dst, const ISEDecodedResult* weightGrid, const ASTCBlockMode& blockMode)
+{
+	const int			numWeights	= computeNumWeights(blockMode);
+	const ISEParams&	iseParams	= blockMode.weightISEParams;
+
+	if (iseParams.mode == ISEMODE_TRIT || iseParams.mode == ISEMODE_QUINT)
+	{
+		const int rangeCase = iseParams.numBits*2 + (iseParams.mode == ISEMODE_QUINT ? 1 : 0);
+
+		if (rangeCase == 0 || rangeCase == 1)
+		{
+			static const deUint32 map0[3]	= { 0, 32, 63 };
+			static const deUint32 map1[5]	= { 0, 16, 32, 47, 63 };
+			const deUint32* const map		= rangeCase == 0 ? &map0[0] : &map1[0];
+			for (int i = 0; i < numWeights; i++)
+			{
+				DE_ASSERT(weightGrid[i].v < (rangeCase == 0 ? 3u : 5u));
+				dst[i] = map[weightGrid[i].v];
+			}
+		}
+		else
+		{
+			DE_ASSERT(rangeCase <= 6);
+			static const deUint32	Ca[5]	= { 50, 28, 23, 13, 11 };
+			const deUint32			C		= Ca[rangeCase-2];
+
+			for (int weightNdx = 0; weightNdx < numWeights; weightNdx++)
+			{
+				const deUint32 a = getBit(weightGrid[weightNdx].m, 0);
+				const deUint32 b = getBit(weightGrid[weightNdx].m, 1);
+				const deUint32 c = getBit(weightGrid[weightNdx].m, 2);
+
+				const deUint32 A = a == 0 ? 0 : (1<<7)-1;
+				const deUint32 B = rangeCase == 2 ? 0
+								 : rangeCase == 3 ? 0
+								 : rangeCase == 4 ? (b << 6) |					(b << 2) |				(b << 0)
+								 : rangeCase == 5 ? (b << 6) |								(b << 1)
+								 : rangeCase == 6 ? (c << 6) | (b << 5) |					(c << 1) |	(b << 0)
+								 : (deUint32)-1;
+
+				dst[weightNdx] = (((weightGrid[weightNdx].tq*C + B) ^ A) >> 2) | (A & 0x20);
+			}
+		}
+	}
+	else
+	{
+		DE_ASSERT(iseParams.mode == ISEMODE_PLAIN_BIT);
+
+		for (int weightNdx = 0; weightNdx < numWeights; weightNdx++)
+			dst[weightNdx] = bitReplicationScale(weightGrid[weightNdx].v, iseParams.numBits, 6);
+	}
+
+	for (int weightNdx = 0; weightNdx < numWeights; weightNdx++)
+		dst[weightNdx] += dst[weightNdx] > 32 ? 1 : 0;
+}
+
+static void interpolateWeights (TexelWeightPair* dst, const deUint32* unquantizedWeights, int blockWidth, int blockHeight, const ASTCBlockMode& blockMode)
+{
+	const int		numWeightsPerTexel	= blockMode.isDualPlane ? 2 : 1;
+	const deUint32	scaleX				= (1024 + blockWidth/2) / (blockWidth-1);
+	const deUint32	scaleY				= (1024 + blockHeight/2) / (blockHeight-1);
+
+	for (int texelY = 0; texelY < blockHeight; texelY++)
+	{
+		for (int texelX = 0; texelX < blockWidth; texelX++)
+		{
+			const deUint32 gX	= (scaleX*texelX*(blockMode.weightGridWidth-1) + 32) >> 6;
+			const deUint32 gY	= (scaleY*texelY*(blockMode.weightGridHeight-1) + 32) >> 6;
+			const deUint32 jX	= gX >> 4;
+			const deUint32 jY	= gY >> 4;
+			const deUint32 fX	= gX & 0xf;
+			const deUint32 fY	= gY & 0xf;
+			const deUint32 w11	= (fX*fY + 8) >> 4;
+			const deUint32 w10	= fY - w11;
+			const deUint32 w01	= fX - w11;
+			const deUint32 w00	= 16 - fX - fY + w11;
+			const deUint32 v0	= jY*blockMode.weightGridWidth + jX;
+
+			for (int texelWeightNdx = 0; texelWeightNdx < numWeightsPerTexel; texelWeightNdx++)
+			{
+				const deUint32 p00	= unquantizedWeights[(v0)									* numWeightsPerTexel + texelWeightNdx];
+				const deUint32 p01	= unquantizedWeights[(v0 + 1)								* numWeightsPerTexel + texelWeightNdx];
+				const deUint32 p10	= unquantizedWeights[(v0 + blockMode.weightGridWidth)		* numWeightsPerTexel + texelWeightNdx];
+				const deUint32 p11	= unquantizedWeights[(v0 + blockMode.weightGridWidth + 1)	* numWeightsPerTexel + texelWeightNdx];
+
+				dst[texelY*blockWidth + texelX].w[texelWeightNdx] = (p00*w00 + p01*w01 + p10*w10 + p11*w11 + 8) >> 4;
+			}
+		}
+	}
+}
+
+static void computeTexelWeights (TexelWeightPair* dst, const Block128& blockData, int blockWidth, int blockHeight, const ASTCBlockMode& blockMode)
+{
+	ISEDecodedResult weightGrid[64];
+
+	{
+		BitAccessStream dataStream(blockData, 127, computeNumRequiredBits(blockMode.weightISEParams, computeNumWeights(blockMode)), false);
+		decodeISE(&weightGrid[0], computeNumWeights(blockMode), dataStream, blockMode.weightISEParams);
+	}
+
+	{
+		deUint32 unquantizedWeights[64];
+		unquantizeWeights(&unquantizedWeights[0], &weightGrid[0], blockMode);
+		interpolateWeights(dst, &unquantizedWeights[0], blockWidth, blockHeight, blockMode);
+	}
+}
+
+static inline deUint32 hash52 (deUint32 v)
+{
+	deUint32 p = v;
+	p ^= p >> 15;	p -= p << 17;	p += p << 7;	p += p << 4;
+	p ^= p >>  5;	p += p << 16;	p ^= p >> 7;	p ^= p >> 3;
+	p ^= p <<  6;	p ^= p >> 17;
+	return p;
+}
+
+static int computeTexelPartition (deUint32 seedIn, deUint32 xIn, deUint32 yIn, deUint32 zIn, int numPartitions, bool smallBlock)
+{
+	DE_ASSERT(zIn == 0);
+	const deUint32	x		= smallBlock ? xIn << 1 : xIn;
+	const deUint32	y		= smallBlock ? yIn << 1 : yIn;
+	const deUint32	z		= smallBlock ? zIn << 1 : zIn;
+	const deUint32	seed	= seedIn + 1024*(numPartitions-1);
+	const deUint32	rnum	= hash52(seed);
+	deUint8			seed1	=  rnum							& 0xf;
+	deUint8			seed2	= (rnum >>  4)					& 0xf;
+	deUint8			seed3	= (rnum >>  8)					& 0xf;
+	deUint8			seed4	= (rnum >> 12)					& 0xf;
+	deUint8			seed5	= (rnum >> 16)					& 0xf;
+	deUint8			seed6	= (rnum >> 20)					& 0xf;
+	deUint8			seed7	= (rnum >> 24)					& 0xf;
+	deUint8			seed8	= (rnum >> 28)					& 0xf;
+	deUint8			seed9	= (rnum >> 18)					& 0xf;
+	deUint8			seed10	= (rnum >> 22)					& 0xf;
+	deUint8			seed11	= (rnum >> 26)					& 0xf;
+	deUint8			seed12	= ((rnum >> 30) | (rnum << 2))	& 0xf;
+
+	seed1 *= seed1;		seed5 *= seed5;		seed9  *= seed9;
+	seed2 *= seed2;		seed6 *= seed6;		seed10 *= seed10;
+	seed3 *= seed3;		seed7 *= seed7;		seed11 *= seed11;
+	seed4 *= seed4;		seed8 *= seed8;		seed12 *= seed12;
+
+	const int shA = (seed & 2) != 0		? 4		: 5;
+	const int shB = numPartitions == 3	? 6		: 5;
+	const int sh1 = (seed & 1) != 0		? shA	: shB;
+	const int sh2 = (seed & 1) != 0		? shB	: shA;
+	const int sh3 = (seed & 0x10) != 0	? sh1	: sh2;
+
+	seed1 >>= sh1;		seed2  >>= sh2;		seed3  >>= sh1;		seed4  >>= sh2;
+	seed5 >>= sh1;		seed6  >>= sh2;		seed7  >>= sh1;		seed8  >>= sh2;
+	seed9 >>= sh3;		seed10 >>= sh3;		seed11 >>= sh3;		seed12 >>= sh3;
+
+	const int a =						0x3f & (seed1*x + seed2*y + seed11*z + (rnum >> 14));
+	const int b =						0x3f & (seed3*x + seed4*y + seed12*z + (rnum >> 10));
+	const int c = numPartitions >= 3 ?	0x3f & (seed5*x + seed6*y + seed9*z  + (rnum >>  6))	: 0;
+	const int d = numPartitions >= 4 ?	0x3f & (seed7*x + seed8*y + seed10*z + (rnum >>  2))	: 0;
+
+	return a >= b && a >= c && a >= d	? 0
+		 : b >= c && b >= d				? 1
+		 : c >= d						? 2
+		 :								  3;
+}
+
+static void setTexelColors (void* dst, ColorEndpointPair* colorEndpoints, TexelWeightPair* texelWeights, int ccs, deUint32 partitionIndexSeed,
+							int numPartitions, int blockWidth, int blockHeight, bool isSRGB, bool isLDRMode, const deUint32* colorEndpointModes)
+{
+	const bool	smallBlock = blockWidth*blockHeight < 31;
+	bool		isHDREndpoint[4];
+
+	for (int i = 0; i < numPartitions; i++)
+		isHDREndpoint[i] = isColorEndpointModeHDR(colorEndpointModes[i]);
+
+	for (int texelY = 0; texelY < blockHeight; texelY++)
+	for (int texelX = 0; texelX < blockWidth; texelX++)
+	{
+		const int				texelNdx			= texelY*blockWidth + texelX;
+		const int				colorEndpointNdx	= numPartitions == 1 ? 0 : computeTexelPartition(partitionIndexSeed, texelX, texelY, 0, numPartitions, smallBlock);
+		DE_ASSERT(colorEndpointNdx < numPartitions);
+		const UVec4&			e0					= colorEndpoints[colorEndpointNdx].e0;
+		const UVec4&			e1					= colorEndpoints[colorEndpointNdx].e1;
+		const TexelWeightPair&	weight				= texelWeights[texelNdx];
+
+		if (isLDRMode && isHDREndpoint[colorEndpointNdx])
+		{
+			if (isSRGB)
+			{
+				((deUint8*)dst)[texelNdx*4 + 0] = 0xff;
+				((deUint8*)dst)[texelNdx*4 + 1] = 0;
+				((deUint8*)dst)[texelNdx*4 + 2] = 0xff;
+				((deUint8*)dst)[texelNdx*4 + 3] = 0xff;
+			}
+			else
+			{
+				((float*)dst)[texelNdx*4 + 0] = 1.0f;
+				((float*)dst)[texelNdx*4 + 1] = 0;
+				((float*)dst)[texelNdx*4 + 2] = 1.0f;
+				((float*)dst)[texelNdx*4 + 3] = 1.0f;
+			}
+		}
+		else
+		{
+			for (int channelNdx = 0; channelNdx < 4; channelNdx++)
+			{
+				if (!isHDREndpoint[colorEndpointNdx] || (channelNdx == 3 && colorEndpointModes[colorEndpointNdx] == 14)) // \note Alpha for mode 14 is treated the same as LDR.
+				{
+					const deUint32 c0	= (e0[channelNdx] << 8) | (isSRGB ? 0x80 : e0[channelNdx]);
+					const deUint32 c1	= (e1[channelNdx] << 8) | (isSRGB ? 0x80 : e1[channelNdx]);
+					const deUint32 w	= weight.w[ccs == channelNdx ? 1 : 0];
+					const deUint32 c	= (c0*(64-w) + c1*w + 32) / 64;
+
+					if (isSRGB)
+						((deUint8*)dst)[texelNdx*4 + channelNdx] = (c & 0xff00) >> 8;
+					else
+						((float*)dst)[texelNdx*4 + channelNdx] = c == 65535 ? 1.0f : (float)c / 65536.0f;
+				}
+				else
+				{
+					DE_STATIC_ASSERT((isSameType<deFloat16, deUint16>::V));
+					const deUint32		c0	= e0[channelNdx] << 4;
+					const deUint32		c1	= e1[channelNdx] << 4;
+					const deUint32		w	= weight.w[ccs == channelNdx ? 1 : 0];
+					const deUint32		c	= (c0*(64-w) + c1*w + 32) / 64;
+					const deUint32		e	= getBits(c, 11, 15);
+					const deUint32		m	= getBits(c, 0, 10);
+					const deUint32		mt	= m < 512		? 3*m
+											: m >= 1536		? 5*m - 2048
+											:				  4*m - 512;
+					const deFloat16		cf	= (e << 10) + (mt >> 3);
+
+					((float*)dst)[texelNdx*4 + channelNdx] = deFloat16To32(isFloat16InfOrNan(cf) ? 0x7bff : cf);
+				}
+			}
+		}
+	}
+}
+
+static void decompressASTCBlock (void* dst, const Block128& blockData, int blockWidth, int blockHeight, bool isSRGB, bool isLDR)
+{
+	DE_ASSERT(isLDR || !isSRGB);
+
+	// Decode block mode.
+
+	const ASTCBlockMode blockMode = getASTCBlockMode(blockData.getBits(0, 10));
+
+	// Check for block mode errors.
+
+	if (blockMode.isError)
+	{
+		setASTCErrorColorBlock(dst, blockWidth, blockHeight, isSRGB);
+		return;
+	}
+
+	// Separate path for void-extent.
+
+	if (blockMode.isVoidExtent)
+	{
+		decodeVoidExtentBlock(dst, blockData, blockWidth, blockHeight, isSRGB, isLDR);
+		return;
+	}
+
+	// Compute weight grid values.
+
+	const int numWeights			= computeNumWeights(blockMode);
+	const int numWeightDataBits		= computeNumRequiredBits(blockMode.weightISEParams, numWeights);
+	const int numPartitions			= (int)blockData.getBits(11, 12) + 1;
+
+	// Check for errors in weight grid, partition and dual-plane parameters.
+
+	if (numWeights > 64								||
+		numWeightDataBits > 96						||
+		numWeightDataBits < 24						||
+		blockMode.weightGridWidth > blockWidth		||
+		blockMode.weightGridHeight > blockHeight	||
+		(numPartitions == 4 && blockMode.isDualPlane))
+	{
+		setASTCErrorColorBlock(dst, blockWidth, blockHeight, isSRGB);
+		return;
+	}
+
+	// Compute number of bits available for color endpoint data.
+
+	const bool	isSingleUniqueCem			= numPartitions == 1 || blockData.getBits(23, 24) == 0;
+	const int	numConfigDataBits			= (numPartitions == 1 ? 17 : isSingleUniqueCem ? 29 : 25 + 3*numPartitions) +
+											  (blockMode.isDualPlane ? 2 : 0);
+	const int	numBitsForColorEndpoints	= 128 - numWeightDataBits - numConfigDataBits;
+	const int	extraCemBitsStart			= 127 - numWeightDataBits - (isSingleUniqueCem		? -1
+																		: numPartitions == 4	? 7
+																		: numPartitions == 3	? 4
+																		: numPartitions == 2	? 1
+																		: 0);
+	// Decode color endpoint modes.
+
+	deUint32 colorEndpointModes[4];
+	decodeColorEndpointModes(&colorEndpointModes[0], blockData, numPartitions, extraCemBitsStart);
+
+	const int numColorEndpointValues = computeNumColorEndpointValues(colorEndpointModes, numPartitions);
+
+	// Check for errors in color endpoint value count.
+
+	if (numColorEndpointValues > 18 || numBitsForColorEndpoints < divRoundUp(13*numColorEndpointValues, 5))
+	{
+		setASTCErrorColorBlock(dst, blockWidth, blockHeight, isSRGB);
+		return;
+	}
+
+	// Compute color endpoints.
+
+	ColorEndpointPair colorEndpoints[4];
+	computeColorEndpoints(&colorEndpoints[0], blockData, &colorEndpointModes[0], numPartitions, numColorEndpointValues,
+						  computeMaximumRangeISEParams(numBitsForColorEndpoints, numColorEndpointValues), numBitsForColorEndpoints);
+
+	// Compute texel weights.
+
+	TexelWeightPair texelWeights[ASTC_MAX_BLOCK_WIDTH*ASTC_MAX_BLOCK_HEIGHT];
+	computeTexelWeights(&texelWeights[0], blockData, blockWidth, blockHeight, blockMode);
+
+	// Set texel colors.
+
+	const int		ccs						= blockMode.isDualPlane ? (int)blockData.getBits(extraCemBitsStart-2, extraCemBitsStart-1) : -1;
+	const deUint32	partitionIndexSeed		= numPartitions > 1 ? blockData.getBits(13, 22) : (deUint32)-1;
+
+	setTexelColors(dst, &colorEndpoints[0], &texelWeights[0], ccs, partitionIndexSeed, numPartitions, blockWidth, blockHeight, isSRGB, isLDR, &colorEndpointModes[0]);
+}
+
+} // ASTCDecompressInternal
+
+static void decompressASTC (const tcu::PixelBufferAccess& dst, int width, int height, const deUint8* data, int blockWidth, int blockHeight, bool isSRGB, bool isLDR)
+{
+	using namespace ASTCDecompressInternal;
+
+	DE_ASSERT(isLDR || !isSRGB);
+
+	const int numBlocksX		= divRoundUp(width,  blockWidth);
+	const int numBlocksY		= divRoundUp(height, blockHeight);
+	union
+	{
+		deUint8		sRGB[ASTC_MAX_BLOCK_WIDTH*ASTC_MAX_BLOCK_HEIGHT*4];
+		float		linear[ASTC_MAX_BLOCK_WIDTH*ASTC_MAX_BLOCK_HEIGHT*4];
+	} decompressedBuffer;
+
+	for (int blockY = 0; blockY < numBlocksY; blockY++)
+	for (int blockX = 0; blockX < numBlocksX; blockX++)
+	{
+		const int baseX = blockX * blockWidth;
+		const int baseY = blockY * blockHeight;
+
+		const Block128 blockData(&data[(blockY*numBlocksX + blockX) * ASTC_BLOCK_SIZE_BYTES]);
+		decompressASTCBlock(isSRGB ? (void*)&decompressedBuffer.sRGB[0] : (void*)&decompressedBuffer.linear[0],
+							blockData, blockWidth, blockHeight, isSRGB, isLDR);
+
+		if (isSRGB)
+		{
+			for (int i = 0; i < blockHeight; i++)
+			for (int j = 0; j < blockWidth; j++)
+			{
+				if (baseX + j < dst.getWidth() && baseY + i < dst.getHeight())
+					dst.setPixel(tcu::IVec4(decompressedBuffer.sRGB[(i*blockWidth + j) * 4 + 0],
+											decompressedBuffer.sRGB[(i*blockWidth + j) * 4 + 1],
+											decompressedBuffer.sRGB[(i*blockWidth + j) * 4 + 2],
+											decompressedBuffer.sRGB[(i*blockWidth + j) * 4 + 3]),
+								 baseX + j,
+								 baseY + i);
+			}
+		}
+		else
+		{
+			for (int i = 0; i < blockHeight; i++)
+			for (int j = 0; j < blockWidth; j++)
+			{
+				if (baseX + j < dst.getWidth() && baseY + i < dst.getHeight())
+				{
+					dst.setPixel(tcu::Vec4(decompressedBuffer.linear[(i*blockWidth + j) * 4 + 0],
+										   decompressedBuffer.linear[(i*blockWidth + j) * 4 + 1],
+										   decompressedBuffer.linear[(i*blockWidth + j) * 4 + 2],
+										   decompressedBuffer.linear[(i*blockWidth + j) * 4 + 3]),
+								 baseX + j,
+								 baseY + i);
+				}
+			}
+		}
+	}
+}
+
+/*--------------------------------------------------------------------*//*!
+ * \brief Decode to uncompressed pixel data
+ * \param dst Destination buffer
+ *//*--------------------------------------------------------------------*/
+void CompressedTexture::decompress (const tcu::PixelBufferAccess& dst, const DecompressionParams& params) const
+{
+	DE_ASSERT(dst.getWidth() == m_width && dst.getHeight() == m_height && dst.getDepth() == 1);
+	DE_ASSERT(dst.getFormat() == getUncompressedFormat());
+
+	if (isEtcFormat(m_format))
+	{
+		switch (m_format)
+		{
+			case ETC1_RGB8:							decompressETC1								(dst, m_width, m_height, &m_data[0]);			break;
+			case EAC_R11:							decompressEAC_R11							(dst, m_width, m_height, &m_data[0], false);	break;
+			case EAC_SIGNED_R11:					decompressEAC_R11							(dst, m_width, m_height, &m_data[0], true);		break;
+			case EAC_RG11:							decompressEAC_RG11							(dst, m_width, m_height, &m_data[0], false);	break;
+			case EAC_SIGNED_RG11:					decompressEAC_RG11							(dst, m_width, m_height, &m_data[0], true);		break;
+			case ETC2_RGB8:							decompressETC2								(dst, m_width, m_height, &m_data[0]);			break;
+			case ETC2_SRGB8:						decompressETC2								(dst, m_width, m_height, &m_data[0]);			break;
+			case ETC2_RGB8_PUNCHTHROUGH_ALPHA1:		decompressETC2_RGB8_PUNCHTHROUGH_ALPHA1		(dst, m_width, m_height, &m_data[0]);			break;
+			case ETC2_SRGB8_PUNCHTHROUGH_ALPHA1:	decompressETC2_RGB8_PUNCHTHROUGH_ALPHA1		(dst, m_width, m_height, &m_data[0]);			break;
+			case ETC2_EAC_RGBA8:					decompressETC2_EAC_RGBA8					(dst, m_width, m_height, &m_data[0]);			break;
+			case ETC2_EAC_SRGB8_ALPHA8:				decompressETC2_EAC_RGBA8					(dst, m_width, m_height, &m_data[0]);			break;
+
+			default:
+				DE_ASSERT(false);
+				break;
+		}
+	}
+	else if (isASTCFormat(m_format))
+	{
+		const tcu::IVec3	blockSize		= getASTCBlockSize(m_format);
+		const bool			isSRGBFormat	= isASTCSRGBFormat(m_format);
+
+		if (blockSize.z() > 1)
+			throw tcu::InternalError("3D ASTC textures not currently supported");
+
+		decompressASTC(dst, m_width, m_height, &m_data[0], blockSize.x(), blockSize.y(), isSRGBFormat, isSRGBFormat || params.isASTCModeLDR);
+	}
+	else
+		DE_ASSERT(false);
+}
+
+} // tcu
