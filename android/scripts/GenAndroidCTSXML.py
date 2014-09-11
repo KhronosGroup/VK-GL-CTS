@@ -98,7 +98,6 @@ def loadTestHierarchy (input):
 		groupName	= line[len("GROUP: "):-1]
 		rootGroup	= TestGroup(groupName)
 	else:
-		print(line)
 		assert False
 
 	for line in input:
@@ -112,6 +111,34 @@ def loadTestHierarchy (input):
 			assert False
 
 	return rootGroup
+
+def hasFilteredCases(group, includeTests):
+    for child in group.getTestCases():
+        if child.getPath() in includeTests:
+            return True
+
+    for child in group.getTestGroups():
+        if hasFilteredCases(child, includeTests):
+            return True
+
+    return False
+
+def addFilteredTest(parent, group, includeTests):
+    for child in group.getTestGroups():
+        if hasFilteredCases(child, includeTests):
+            newChild = TestGroup(child.getName(), parent)
+            addFilteredTest(newChild, child, includeTests)
+
+    for child in group.getTestCases():
+        if child.getPath() in includeTests:
+            TestCase(child.getName(), parent)
+
+def filterTests(includeTests, group):
+    root = TestGroup(group.getName())
+
+    addFilteredTest(root, group, includeTests)
+
+    return root
 
 def writeAndroidCTSTest(test, output):
 	output.write('<Test name="%s" />\n' % test.getName())
@@ -128,15 +155,9 @@ def writeAndroidCTSTestCase(group, output):
 	output.write('</TestCase>\n')
 
 def writeAndroidCTSTestSuite(group, output):
-	if group.getName() == "performance":
-		return;
-
 	output.write('<TestSuite name="%s">\n' % group.getName())
 
 	for childGroup in group.getTestGroups():
-		if group.getName() == "performance":
-			continue;
-
 		if childGroup.hasTestCases():
 			assert not childGroup.hasTestGroups()
 			writeAndroidCTSTestCase(childGroup, output)
@@ -146,23 +167,24 @@ def writeAndroidCTSTestSuite(group, output):
 
 	output.write('</TestSuite>\n')
 
-def writeAndroidCTSFile(rootGroup, output, name="dEQP-GLES3", targetBinaryName="com.drawelements.deqp", appPackageName="com.drawelements.deqp.gles3"):
+def writeAndroidCTSFile(rootGroup, output, mustpass, name="dEQP-GLES3", targetBinaryName="com.drawelements.deqp", appPackageName="com.drawelements.deqp.gles3"):
 	output.write('<?xml version="1.0" encoding="UTF-8"?>\n')
 	output.write('<TestPackage name="%s" targetBinaryName="%s" appPackageName="%s" testType="deqpTest">\n' % (name, targetBinaryName, appPackageName))
 
-	writeAndroidCTSTestSuite(rootGroup, output)
+	writeAndroidCTSTestSuite(filterTests(mustpass, rootGroup), output)
 
 	output.write('</TestPackage>\n')
 
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
-	parser.add_argument('input',                      type=argparse.FileType('r'),    help="Input dEQP test hierarchy in txt format.")
-	parser.add_argument('output',                     type=argparse.FileType('w'),    help="Output file for Android CTS test file.")
-        parser.add_argument('--name',     dest="name",    type=str,                       required=True, help="Name of the test package")
-        parser.add_argument('--binary',   dest="binary",  type=str,   default="com.drawelements.deqp",   help="Target binary name")
-        parser.add_argument('--package',  dest="package", type=str,                       required=True, help="Name of the app package")
+	parser.add_argument('input',	    type=argparse.FileType('r'),	help="Input dEQP test hierarchy in txt format.")
+	parser.add_argument('output',       type=argparse.FileType('w'),	help="Output file for Android CTS test file.")
+	parser.add_argument('--name',       dest="name",    type=str,	        required=True, help="Name of the test package")
+	parser.add_argument('--package',    dest="package", type=str,		required=True, help="Name of the app package")
+        parser.add_argument('--must-pass',  dest="mustpass", type=argparse.FileType('r'), required=True, help="Must pass file")
+	parser.add_argument('--binary',     dest="binary",  type=str,   default="com.drawelements.deqp",   help="Target binary name")
 
 	args = parser.parse_args()
 
 	rootGroup = loadTestHierarchy(args.input)
-	writeAndroidCTSFile(rootGroup, args.output, name=args.name, targetBinaryName=args.binary, appPackageName=args.package)
+	writeAndroidCTSFile(rootGroup, args.output, name=args.name, targetBinaryName=args.binary, appPackageName=args.package, mustpass=set(map(lambda x : x.rstrip(), args.mustpass.readlines())))
