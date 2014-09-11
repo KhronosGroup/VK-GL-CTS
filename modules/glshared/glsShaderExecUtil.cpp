@@ -563,20 +563,29 @@ VertexShaderExecutor::VertexShaderExecutor (const glu::RenderContext& renderCtx,
 
 // GeometryShaderExecutor
 
-class GeometryShaderExecutor : public VertexProcessorExecutor
+class CheckGeomSupport
+{
+public:
+	inline CheckGeomSupport (const glu::RenderContext& renderCtx)
+	{
+		if (renderCtx.getType().getAPI().getProfile() == glu::PROFILE_ES)
+			checkExtension(renderCtx, "GL_EXT_geometry_shader");
+	}
+};
+
+class GeometryShaderExecutor : private CheckGeomSupport, public VertexProcessorExecutor
 {
 public:
 								GeometryShaderExecutor	(const glu::RenderContext& renderCtx, const ShaderSpec& shaderSpec);
 };
 
 GeometryShaderExecutor::GeometryShaderExecutor (const glu::RenderContext& renderCtx, const ShaderSpec& shaderSpec)
-	: VertexProcessorExecutor	(renderCtx, shaderSpec,
+	: CheckGeomSupport			(renderCtx)
+	, VertexProcessorExecutor	(renderCtx, shaderSpec,
 								 glu::ProgramSources() << glu::VertexSource(generatePassthroughVertexShader(shaderSpec, "", "geom_"))
 													   << glu::GeometrySource(generateGeometryShader(shaderSpec))
 													   << glu::FragmentSource(generateEmptyFragmentSource(shaderSpec.version)))
 {
-	if (renderCtx.getType().getAPI() == glu::ApiType::es(3,1))
-		checkExtension(renderCtx, "GL_EXT_geometry_shader");
 }
 
 // FragmentShaderExecutor
@@ -1270,9 +1279,19 @@ static std::string generateVertexShaderForTess (glu::GLSLVersion version)
 	return src.str();
 }
 
+class CheckTessSupport
+{
+public:
+	inline CheckTessSupport (const glu::RenderContext& renderCtx)
+	{
+		if (renderCtx.getType().getAPI().getProfile() == glu::PROFILE_ES)
+			checkExtension(renderCtx, "GL_EXT_tessellation_shader");
+	}
+};
+
 // TessControlExecutor
 
-class TessControlExecutor : public BufferIoExecutor
+class TessControlExecutor : private CheckTessSupport, public BufferIoExecutor
 {
 public:
 						TessControlExecutor			(const glu::RenderContext& renderCtx, const ShaderSpec& shaderSpec);
@@ -1337,14 +1356,13 @@ static std::string generateEmptyTessEvalShader (glu::GLSLVersion version)
 }
 
 TessControlExecutor::TessControlExecutor (const glu::RenderContext& renderCtx, const ShaderSpec& shaderSpec)
-	: BufferIoExecutor	(renderCtx, shaderSpec, glu::ProgramSources()
+	: CheckTessSupport	(renderCtx)
+	, BufferIoExecutor	(renderCtx, shaderSpec, glu::ProgramSources()
 							<< glu::VertexSource(generateVertexShaderForTess(shaderSpec.version))
 							<< glu::TessellationControlSource(generateTessControlShader(shaderSpec))
 							<< glu::TessellationEvaluationSource(generateEmptyTessEvalShader(shaderSpec.version))
 							<< glu::FragmentSource(generateEmptyFragmentSource(shaderSpec.version)))
 {
-	if (renderCtx.getType().getAPI() == glu::ApiType::es(3,1))
-		checkExtension(renderCtx, "GL_EXT_tessellation_shader");
 }
 
 TessControlExecutor::~TessControlExecutor (void)
@@ -1375,7 +1393,7 @@ void TessControlExecutor::execute (int numValues, const void* const* inputs, voi
 
 // TessEvaluationExecutor
 
-class TessEvaluationExecutor : public BufferIoExecutor
+class TessEvaluationExecutor : private CheckTessSupport, public BufferIoExecutor
 {
 public:
 						TessEvaluationExecutor	(const glu::RenderContext& renderCtx, const ShaderSpec& shaderSpec);
@@ -1441,14 +1459,13 @@ std::string TessEvaluationExecutor::generateTessEvalShader (const ShaderSpec& sh
 }
 
 TessEvaluationExecutor::TessEvaluationExecutor (const glu::RenderContext& renderCtx, const ShaderSpec& shaderSpec)
-	: BufferIoExecutor	(renderCtx, shaderSpec, glu::ProgramSources()
+	: CheckTessSupport	(renderCtx)
+	, BufferIoExecutor	(renderCtx, shaderSpec, glu::ProgramSources()
 							<< glu::VertexSource(generateVertexShaderForTess(shaderSpec.version))
 							<< glu::TessellationControlSource(generatePassthroughTessControlShader(shaderSpec.version))
 							<< glu::TessellationEvaluationSource(generateTessEvalShader(shaderSpec))
 							<< glu::FragmentSource(generateEmptyFragmentSource(shaderSpec.version)))
 {
-	if (renderCtx.getType().getAPI() == glu::ApiType::es(3,1))
-		checkExtension(renderCtx, "GL_EXT_tessellation_shader");
 }
 
 TessEvaluationExecutor::~TessEvaluationExecutor (void)

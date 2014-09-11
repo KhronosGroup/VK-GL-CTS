@@ -120,6 +120,13 @@ static const FormatKey s_extColorBufferFloatFormats[] =
 	GL_RGBA32F, GL_RGBA16F, GL_R11F_G11F_B10F, GL_RG32F, GL_RG16F, GL_R32F, GL_R16F,
 };
 
+// GL_OES_texture_stencil8
+static const FormatKey s_extOESTextureStencil8[] =
+{
+	GL_STENCIL_INDEX8,
+};
+
+
 static const FormatExtEntry s_es3ExtFormats[] =
 {
 	{ "GL_EXT_color_buffer_float",
@@ -127,6 +134,11 @@ static const FormatExtEntry s_es3ExtFormats[] =
 	  // support and makes them color-renderable.
 	  REQUIRED_RENDERABLE | COLOR_RENDERABLE | RENDERBUFFER_VALID,
 	  GLS_ARRAY_RANGE(s_extColorBufferFloatFormats) },
+	{ "GL_OES_texture_stencil8",
+	  // Note: es3 RBO tests actually cover the first two requirements
+      // - kept here for completeness
+      REQUIRED_RENDERABLE | STENCIL_RENDERABLE | TEXTURE_VALID,
+	  GLS_ARRAY_RANGE(s_extOESTextureStencil8) }
 };
 
 class ES3Checker : public Checker

@@ -37,6 +37,10 @@ namespace rr
 namespace
 {
 
+typedef double ClipFloat; // floating point type used in clipping
+
+typedef tcu::Vector<ClipFloat, 4> ClipVec4;
+
 struct RasterizationInternalBuffers
 {
 	std::vector<FragmentPacket>		fragmentPackets;
@@ -148,25 +152,17 @@ namespace cliputil
 /*--------------------------------------------------------------------*//*!
  * \brief Get clipped portion of the second endpoint
  *
- * Calculate the intersection of line segment v0-v1 and a positive clip plane
- * of component componentNdx.
+ * Calculate the intersection of line segment v0-v1 and a given plane. Line
+ * segment is defined by a pair of one-dimensional homogeneous coordinates.
  *
  *//*--------------------------------------------------------------------*/
-float getEdgeEndPositiveClipping (const tcu::Vec4& v0, const tcu::Vec4& v1, int componentNdx)
+ClipFloat getSegmentVolumeEdgeClip (const ClipFloat v0,
+									const ClipFloat w0,
+									const ClipFloat v1,
+									const ClipFloat w1,
+									const ClipFloat plane)
 {
-	return (v0[componentNdx] - v0.w()) / (-v0.w() + v1.w() + v0[componentNdx] - v1[componentNdx]);
-}
-
-/*--------------------------------------------------------------------*//*!
- * \brief Get clipped portion of the second endpoint
- *
- * Calculate the intersection of line segment v0-v1 and a negative clip plane
- * of component componentNdx.
- *
- *//*--------------------------------------------------------------------*/
-float getEdgeEndNegativeClipping (const tcu::Vec4& v0, const tcu::Vec4& v1, int componentNdx)
-{
-	return (v0[componentNdx] + v0.w()) / (v0.w() - v1.w() + v0[componentNdx] - v1[componentNdx]);
+	return (plane*w0 - v0) / ((v1 - v0) - plane*(w1 - w0));
 }
 
 /*--------------------------------------------------------------------*//*!
@@ -175,111 +171,130 @@ float getEdgeEndNegativeClipping (const tcu::Vec4& v0, const tcu::Vec4& v1, int 
  * How much (in [0-1] range) of a line segment v0-v1 would be clipped
  * of the v0 end of the line segment by clipping.
  *//*--------------------------------------------------------------------*/
-float getLineEndpointClipping (const tcu::Vec4& v0, const tcu::Vec4& v1)
+ClipFloat getLineEndpointClipping (const ClipVec4& v0, const ClipVec4& v1)
 {
+	const ClipFloat clipVolumeSize = (ClipFloat)1.0;
+
 	if (v0.z() > v0.w())
 	{
 		// Clip +Z
-		return getEdgeEndPositiveClipping(v0, v1, 2);
+		return getSegmentVolumeEdgeClip(v0.z(), v0.w(), v1.z(), v1.w(), clipVolumeSize);
 	}
 	else if (v0.z() < -v0.w())
 	{
 		// Clip -Z
-		return getEdgeEndNegativeClipping(v0, v1, 2);
+		return getSegmentVolumeEdgeClip(v0.z(), v0.w(), v1.z(), v1.w(), -clipVolumeSize);
 	}
 	else
 	{
 		// no clipping
-		return 0;
+		return (ClipFloat)0.0;
 	}
 }
 
-tcu::Vec2 to2DCartesian(const tcu::Vec4& p)
+ClipVec4 vec4ToClipVec4 (const tcu::Vec4& v)
 {
-	return tcu::Vec2(p.x(), p.y()) / p.w();
+	return ClipVec4((ClipFloat)v.x(), (ClipFloat)v.y(), (ClipFloat)v.z(), (ClipFloat)v.w());
 }
 
-float cross2D(const tcu::Vec2& a, const tcu::Vec2& b)
+tcu::Vec4 clipVec4ToVec4 (const ClipVec4& v)
 {
-	return tcu::cross(tcu::Vec3(a.x(), a.y(), 0), tcu::Vec3(b.x(), b.y(), 0)).z();
+	return tcu::Vec4((float)v.x(), (float)v.y(), (float)v.z(), (float)v.w());
 }
 
 class ClipVolumePlane
 {
 public:
-	virtual bool inClipVolume (const tcu::Vec4& p) const = DE_NULL;
-	virtual float clipEdgeEnd (const tcu::Vec4& v0, const tcu::Vec4& v1) const = DE_NULL;
-	virtual tcu::Vec4 moveToPlane (tcu::Vec4 v) const = DE_NULL;
+	virtual bool		pointInClipVolume			(const ClipVec4& p) const						= 0;
+	virtual ClipFloat	clipLineSegmentEnd			(const ClipVec4& v0, const ClipVec4& v1) const	= 0;
+	virtual ClipVec4	getLineIntersectionPoint	(const ClipVec4& v0, const ClipVec4& v1) const	= 0;
 };
 
-template <int CompNdx>
-class PosComponentPlane : public ClipVolumePlane
+template <int Sign, int CompNdx>
+class ComponentPlane : public ClipVolumePlane
 {
+	DE_STATIC_ASSERT(Sign == +1 || Sign == -1);
+
 public:
-	bool inClipVolume (const tcu::Vec4& p) const
-	{
-		return p[CompNdx] <= p.w();
-	}
-	float clipEdgeEnd (const tcu::Vec4& v0, const tcu::Vec4& v1) const
-	{
-		return getEdgeEndPositiveClipping(v0, v1, CompNdx);
-	}
-	tcu::Vec4 moveToPlane (tcu::Vec4 p) const
-	{
-		p[CompNdx] = p.w();
-		return p;
-	}
+	bool		pointInClipVolume			(const ClipVec4& p) const;
+	ClipFloat	clipLineSegmentEnd			(const ClipVec4& v0, const ClipVec4& v1) const;
+	ClipVec4	getLineIntersectionPoint	(const ClipVec4& v0, const ClipVec4& v1) const;
 };
 
-template <int CompNdx>
-class NegComponentPlane : public ClipVolumePlane
+template <int Sign, int CompNdx>
+bool ComponentPlane<Sign, CompNdx>::pointInClipVolume (const ClipVec4& p) const
 {
-public:
-	bool inClipVolume (const tcu::Vec4& p) const
-	{
-		return p[CompNdx] >= -p.w();
-	}
-	float clipEdgeEnd (const tcu::Vec4& v0, const tcu::Vec4& v1) const
-	{
-		return getEdgeEndNegativeClipping(v0, v1, CompNdx);
-	}
-	tcu::Vec4 moveToPlane (tcu::Vec4 p) const
-	{
-		p[CompNdx] = -p.w();
-		return p;
-	}
-};
+	const ClipFloat clipVolumeSize = (ClipFloat)1.0;
 
-typedef PosComponentPlane<0> PosXPlane;
-typedef NegComponentPlane<0> NegXPlane;
-typedef PosComponentPlane<1> PosYPlane;
-typedef NegComponentPlane<1> NegYPlane;
-typedef PosComponentPlane<2> PosZPlane;
-typedef NegComponentPlane<2> NegZPlane;
+	return (ClipFloat)(Sign * p[CompNdx]) <= clipVolumeSize * p.w();
+}
+
+template <int Sign, int CompNdx>
+ClipFloat ComponentPlane<Sign, CompNdx>::clipLineSegmentEnd (const ClipVec4& v0, const ClipVec4& v1) const
+{
+	const ClipFloat clipVolumeSize = (ClipFloat)1.0;
+
+	return getSegmentVolumeEdgeClip(v0[CompNdx], v0.w(),
+									v1[CompNdx], v1.w(),
+									(ClipFloat)Sign * clipVolumeSize);
+}
+
+template <int Sign, int CompNdx>
+ClipVec4 ComponentPlane<Sign, CompNdx>::getLineIntersectionPoint (const ClipVec4& v0, const ClipVec4& v1) const
+{
+	// A point on line might be far away, causing clipping ratio (clipLineSegmentEnd) to become extremely close to 1.0
+	// even if the another point is not on the plane. Prevent clipping ratio from saturating by using points on line
+	// that are (nearly) on this and (nearly) on the opposite plane.
+	const ClipVec4 clippedV0 = tcu::mix(v0, v1, ComponentPlane<+1, CompNdx>().clipLineSegmentEnd(v0, v1));
+	const ClipVec4 clippedV1 = tcu::mix(v0, v1, ComponentPlane<-1, CompNdx>().clipLineSegmentEnd(v0, v1));
+
+	// Find intersection point of line from v0 to v1 and the current plane.
+	return tcu::mix(clippedV0, clippedV1, clipLineSegmentEnd(clippedV0, clippedV1));
+}
 
 struct TriangleVertex
 {
-	tcu::Vec4	position;
-	float		weight[3];		//!< barycentrics
+	ClipVec4	position;
+	ClipFloat	weight[3];		//!< barycentrics
+};
+
+struct SubTriangle
+{
+	TriangleVertex vertices[3];
 };
 
 void clipTriangleOneVertex (std::vector<TriangleVertex>& clippedEdges, const ClipVolumePlane& plane, const TriangleVertex& clipped, const TriangleVertex& v1, const TriangleVertex& v2)
 {
+	const ClipFloat	degenerateLimit = (ClipFloat)1.0;
+
 	// calc clip pos
-	TriangleVertex mid1, mid2;
+	TriangleVertex	mid1;
+	TriangleVertex	mid2;
+	bool			outputDegenerate = false;
 
 	{
-		const TriangleVertex& inside = v1;
-		const TriangleVertex& outside = clipped;
-		      TriangleVertex& middle = mid1;
+		const TriangleVertex& inside	= v1;
+		const TriangleVertex& outside	= clipped;
+		      TriangleVertex& middle	= mid1;
 
-		const float hitDist = plane.clipEdgeEnd(inside.position, outside.position);
-		DE_ASSERT(de::inRange(hitDist, 0.0f, 1.0f));
+		const ClipFloat hitDist = plane.clipLineSegmentEnd(inside.position, outside.position);
+		DE_ASSERT(hitDist >= (ClipFloat)0.0);
 
-		middle.position = plane.moveToPlane(tcu::mix(inside.position, outside.position, hitDist));
-		middle.weight[0] = tcu::mix(inside.weight[0], outside.weight[0], hitDist);
-		middle.weight[1] = tcu::mix(inside.weight[1], outside.weight[1], hitDist);
-		middle.weight[2] = tcu::mix(inside.weight[2], outside.weight[2], hitDist);
+		if (hitDist >= degenerateLimit)
+		{
+			// do not generate degenerate triangles
+			outputDegenerate = true;
+		}
+		else
+		{
+			const ClipVec4 approximatedClipPoint	= tcu::mix(inside.position, outside.position, hitDist);
+			const ClipVec4 anotherPointOnLine		= (hitDist > (ClipFloat)0.5) ? (inside.position) : (outside.position);
+
+			middle.position = plane.getLineIntersectionPoint(approximatedClipPoint, anotherPointOnLine);
+			middle.weight[0] = tcu::mix(inside.weight[0], outside.weight[0], hitDist);
+			middle.weight[1] = tcu::mix(inside.weight[1], outside.weight[1], hitDist);
+			middle.weight[2] = tcu::mix(inside.weight[2], outside.weight[2], hitDist);
+		}
 	}
 
 	{
@@ -287,39 +302,75 @@ void clipTriangleOneVertex (std::vector<TriangleVertex>& clippedEdges, const Cli
 		const TriangleVertex& outside = clipped;
 		      TriangleVertex& middle = mid2;
 
-		const float hitDist = plane.clipEdgeEnd(inside.position, outside.position);
-		DE_ASSERT(de::inRange(hitDist, 0.0f, 1.0f));
+		const ClipFloat hitDist = plane.clipLineSegmentEnd(inside.position, outside.position);
+		DE_ASSERT(hitDist >= (ClipFloat)0.0);
 
-		middle.position = plane.moveToPlane(tcu::mix(inside.position, outside.position, hitDist));
-		middle.weight[0] = tcu::mix(inside.weight[0], outside.weight[0], hitDist);
-		middle.weight[1] = tcu::mix(inside.weight[1], outside.weight[1], hitDist);
-		middle.weight[2] = tcu::mix(inside.weight[2], outside.weight[2], hitDist);
+		if (hitDist >= degenerateLimit)
+		{
+			// do not generate degenerate triangles
+			outputDegenerate = true;
+		}
+		else
+		{
+			const ClipVec4 approximatedClipPoint	= tcu::mix(inside.position, outside.position, hitDist);
+			const ClipVec4 anotherPointOnLine		= (hitDist > (ClipFloat)0.5) ? (inside.position) : (outside.position);
+
+			middle.position = plane.getLineIntersectionPoint(approximatedClipPoint, anotherPointOnLine);
+			middle.weight[0] = tcu::mix(inside.weight[0], outside.weight[0], hitDist);
+			middle.weight[1] = tcu::mix(inside.weight[1], outside.weight[1], hitDist);
+			middle.weight[2] = tcu::mix(inside.weight[2], outside.weight[2], hitDist);
+		}
 	}
 
-	// gen quad (v1) -> mid1 -> mid2 -> (v2)
-	clippedEdges.push_back(v1);
-	clippedEdges.push_back(mid1);
-	clippedEdges.push_back(mid2);
-	clippedEdges.push_back(v2);
+	if (!outputDegenerate)
+	{
+		// gen quad (v1) -> mid1 -> mid2 -> (v2)
+		clippedEdges.push_back(v1);
+		clippedEdges.push_back(mid1);
+		clippedEdges.push_back(mid2);
+		clippedEdges.push_back(v2);
+	}
+	else
+	{
+		// don't modify
+		clippedEdges.push_back(v1);
+		clippedEdges.push_back(clipped);
+		clippedEdges.push_back(v2);
+	}
 }
 
 void clipTriangleTwoVertices (std::vector<TriangleVertex>& clippedEdges, const ClipVolumePlane& plane, const TriangleVertex& v0, const TriangleVertex& clipped1, const TriangleVertex& clipped2)
 {
+	const ClipFloat	degenerateLimit = (ClipFloat)1.0;
+
 	// calc clip pos
-	TriangleVertex mid1, mid2;
+	TriangleVertex	mid1;
+	TriangleVertex	mid2;
+	bool			outputDegenerate = false;
 
 	{
 		const TriangleVertex& inside = v0;
 		const TriangleVertex& outside = clipped1;
 		      TriangleVertex& middle = mid1;
 
-		const float hitDist = plane.clipEdgeEnd(inside.position, outside.position);
-		DE_ASSERT(de::inRange(hitDist, 0.0f, 1.0f));
+		const ClipFloat hitDist = plane.clipLineSegmentEnd(inside.position, outside.position);
+		DE_ASSERT(hitDist >= (ClipFloat)0.0);
 
-		middle.position = plane.moveToPlane(tcu::mix(inside.position, outside.position, hitDist));
-		middle.weight[0] = tcu::mix(inside.weight[0], outside.weight[0], hitDist);
-		middle.weight[1] = tcu::mix(inside.weight[1], outside.weight[1], hitDist);
-		middle.weight[2] = tcu::mix(inside.weight[2], outside.weight[2], hitDist);
+		if (hitDist >= degenerateLimit)
+		{
+			// do not generate degenerate triangles
+			outputDegenerate = true;
+		}
+		else
+		{
+			const ClipVec4 approximatedClipPoint	= tcu::mix(inside.position, outside.position, hitDist);
+			const ClipVec4 anotherPointOnLine		= (hitDist > (ClipFloat)0.5) ? (inside.position) : (outside.position);
+
+			middle.position = plane.getLineIntersectionPoint(approximatedClipPoint, anotherPointOnLine);
+			middle.weight[0] = tcu::mix(inside.weight[0], outside.weight[0], hitDist);
+			middle.weight[1] = tcu::mix(inside.weight[1], outside.weight[1], hitDist);
+			middle.weight[2] = tcu::mix(inside.weight[2], outside.weight[2], hitDist);
+		}
 	}
 
 	{
@@ -327,26 +378,47 @@ void clipTriangleTwoVertices (std::vector<TriangleVertex>& clippedEdges, const C
 		const TriangleVertex& outside = clipped2;
 		      TriangleVertex& middle = mid2;
 
-		const float hitDist = plane.clipEdgeEnd(inside.position, outside.position);
-		DE_ASSERT(de::inRange(hitDist, 0.0f, 1.0f));
+		const ClipFloat hitDist = plane.clipLineSegmentEnd(inside.position, outside.position);
+		DE_ASSERT(hitDist >= (ClipFloat)0.0);
 
-		middle.position = plane.moveToPlane(tcu::mix(inside.position, outside.position, hitDist));
-		middle.weight[0] = tcu::mix(inside.weight[0], outside.weight[0], hitDist);
-		middle.weight[1] = tcu::mix(inside.weight[1], outside.weight[1], hitDist);
-		middle.weight[2] = tcu::mix(inside.weight[2], outside.weight[2], hitDist);
+		if (hitDist >= degenerateLimit)
+		{
+			// do not generate degenerate triangles
+			outputDegenerate = true;
+		}
+		else
+		{
+			const ClipVec4 approximatedClipPoint	= tcu::mix(inside.position, outside.position, hitDist);
+			const ClipVec4 anotherPointOnLine		= (hitDist > (ClipFloat)0.5) ? (inside.position) : (outside.position);
+
+			middle.position = plane.getLineIntersectionPoint(approximatedClipPoint, anotherPointOnLine);
+			middle.weight[0] = tcu::mix(inside.weight[0], outside.weight[0], hitDist);
+			middle.weight[1] = tcu::mix(inside.weight[1], outside.weight[1], hitDist);
+			middle.weight[2] = tcu::mix(inside.weight[2], outside.weight[2], hitDist);
+		}
 	}
 
-	// gen triangle (v0) -> mid1 -> mid2
-	clippedEdges.push_back(v0);
-	clippedEdges.push_back(mid1);
-	clippedEdges.push_back(mid2);
+	if (!outputDegenerate)
+	{
+		// gen triangle (v0) -> mid1 -> mid2
+		clippedEdges.push_back(v0);
+		clippedEdges.push_back(mid1);
+		clippedEdges.push_back(mid2);
+	}
+	else
+	{
+		// don't modify
+		clippedEdges.push_back(v0);
+		clippedEdges.push_back(clipped1);
+		clippedEdges.push_back(clipped2);
+	}
 }
 
 void clipTriangleToPlane (std::vector<TriangleVertex>& clippedEdges, const TriangleVertex* vertices, const ClipVolumePlane& plane)
 {
-	const bool v0Clipped = !plane.inClipVolume(vertices[0].position);
-	const bool v1Clipped = !plane.inClipVolume(vertices[1].position);
-	const bool v2Clipped = !plane.inClipVolume(vertices[2].position);
+	const bool v0Clipped = !plane.pointInClipVolume(vertices[0].position);
+	const bool v1Clipped = !plane.pointInClipVolume(vertices[1].position);
+	const bool v2Clipped = !plane.pointInClipVolume(vertices[2].position);
 	const int  clipCount = ((v0Clipped) ? (1) : (0)) + ((v1Clipped) ? (1) : (0)) + ((v2Clipped) ? (1) : (0));
 
 	if (clipCount == 0)
@@ -379,6 +451,16 @@ void clipTriangleToPlane (std::vector<TriangleVertex>& clippedEdges, const Trian
 }
 
 } // cliputil
+
+tcu::Vec2 to2DCartesian (const tcu::Vec4& p)
+{
+	return tcu::Vec2(p.x(), p.y()) / p.w();
+}
+
+float cross2D (const tcu::Vec2& a, const tcu::Vec2& b)
+{
+	return tcu::cross(tcu::Vec3(a.x(), a.y(), 0.0f), tcu::Vec3(b.x(), b.y(), 0.0f)).z();
+}
 
 void flatshadePrimitiveVertices (pa::Triangle& target, size_t outputNdx)
 {
@@ -413,123 +495,203 @@ void flatshadeVertices (const Program& program, ContainerType& list)
 				flatshadePrimitiveVertices(*it, inputNdx);
 }
 
-void clipPrimitives (std::vector<pa::Triangle>& list, const Program& program, bool clipWithZPlanes, VertexPacketAllocator& vpalloc)
+/*--------------------------------------------------------------------*//*!
+ * Clip triangles to the clip volume.
+ *//*--------------------------------------------------------------------*/
+void clipPrimitives (std::vector<pa::Triangle>&		list,
+					 const Program&					program,
+					 bool							clipWithZPlanes,
+					 VertexPacketAllocator&			vpalloc)
 {
 	using namespace cliputil;
 
-	PosXPlane clipPosX;
-	NegXPlane clipNegX;
-	PosYPlane clipPosY;
-	NegYPlane clipNegY;
-	PosZPlane clipPosZ;
-	NegZPlane clipNegZ;
+	cliputil::ComponentPlane<+1, 0> clipPosX;
+	cliputil::ComponentPlane<-1, 0> clipNegX;
+	cliputil::ComponentPlane<+1, 1> clipPosY;
+	cliputil::ComponentPlane<-1, 1> clipNegY;
+	cliputil::ComponentPlane<+1, 2> clipPosZ;
+	cliputil::ComponentPlane<-1, 2> clipNegZ;
 
 	const std::vector<rr::VertexVaryingInfo>&	fragInputs			= (program.geometryShader) ? (program.geometryShader->getOutputs()) : (program.vertexShader->getOutputs());
-	ClipVolumePlane*							planes[]			= { &clipPosX, &clipNegX, &clipPosY, &clipNegY, &clipPosZ, &clipNegZ };
+	const ClipVolumePlane*						planes[]			= { &clipPosX, &clipNegX, &clipPosY, &clipNegY, &clipPosZ, &clipNegZ };
 	const int									numPlanes			= (clipWithZPlanes) ? (6) : (4);
-	std::vector<pa::Triangle>					currentTriangles;
 
-	// Move input triangles to modifiable vector
-	currentTriangles.swap(list);
+	std::vector<pa::Triangle>					outputTriangles;
 
-	// Clip triangles with every active plane
-	for (int planeNdx = 0; planeNdx < numPlanes; ++planeNdx)
+	for (int inputTriangleNdx = 0; inputTriangleNdx < (int)list.size(); ++inputTriangleNdx)
 	{
-		const ClipVolumePlane* plane = planes[planeNdx];
-		std::vector<pa::Triangle> clipped;
+		bool clippedByPlane[6];
 
-		for (size_t ndx = 0; ndx < currentTriangles.size(); ++ndx)
+		// Needs clipping?
 		{
-			pa::Triangle& tri = currentTriangles[ndx];
-			std::vector<TriangleVertex> clippedVertices;
+			bool discardPrimitive	= false;
+			bool fullyInClipVolume	= true;
 
-			// All vertices clipped by the this clip plane?
-			if (!plane->inClipVolume(tri.v0->position) &&
-				!plane->inClipVolume(tri.v1->position) &&
-				!plane->inClipVolume(tri.v2->position))
-				continue; // discard
-			// All vertices not clipped by the this clip plane?
-			if (plane->inClipVolume(tri.v0->position) &&
-				plane->inClipVolume(tri.v1->position) &&
-				plane->inClipVolume(tri.v2->position))
+			for (int planeNdx = 0; planeNdx < numPlanes; ++planeNdx)
 			{
-				clipped.push_back(tri);
-				continue; // don't modify
-			}
+				const ClipVolumePlane*	plane			= planes[planeNdx];
+				const bool				v0InsidePlane	= plane->pointInClipVolume(vec4ToClipVec4(list[inputTriangleNdx].v0->position));
+				const bool				v1InsidePlane	= plane->pointInClipVolume(vec4ToClipVec4(list[inputTriangleNdx].v1->position));
+				const bool				v2InsidePlane	= plane->pointInClipVolume(vec4ToClipVec4(list[inputTriangleNdx].v2->position));
 
-			// Clip triangle to the plane
-			{
-				TriangleVertex vertices[3];
-				vertices[0].position	= tri.v0->position;	vertices[0].weight[0] = 1;	vertices[0].weight[1] = 0;	vertices[0].weight[2] = 0;
-				vertices[1].position	= tri.v1->position;	vertices[1].weight[0] = 0;	vertices[1].weight[1] = 1;	vertices[1].weight[2] = 0;
-				vertices[2].position	= tri.v2->position;	vertices[2].weight[0] = 0;	vertices[2].weight[1] = 0;	vertices[2].weight[2] = 1;
-				clipTriangleToPlane(clippedVertices, vertices, *plane);
-			}
-
-			// Triangulate planar convex n-gon
-			{
-				DE_ASSERT(clippedVertices.size() == 3 || clippedVertices.size() == 4);
-
-				TriangleVertex& v0 = clippedVertices[0];
-				for (int triNdx = 1; triNdx + 1 < (int)clippedVertices.size(); ++triNdx)
+				// Fully outside
+				if (!v0InsidePlane && !v1InsidePlane && !v2InsidePlane)
 				{
-					const float degenerateEpsilon = 1.0e-6f;
-
-					TriangleVertex& v1 = clippedVertices[triNdx];
-					TriangleVertex& v2 = clippedVertices[triNdx + 1];
-
-					// is a degenerate?
-					if (de::abs(cross2D(to2DCartesian(v1.position) - to2DCartesian(v0.position), to2DCartesian(v2.position) - to2DCartesian(v0.position))) < degenerateEpsilon)
-						continue;
-
-					// Gen clipped triangle
-					{
-						VertexPacket* p0 = vpalloc.alloc();
-						VertexPacket* p1 = vpalloc.alloc();
-						VertexPacket* p2 = vpalloc.alloc();
-
-						pa::Triangle ngonFragment(p0, p1, p2, -1);
-
-						p0->position = v0.position;
-						p1->position = v1.position;
-						p2->position = v2.position;
-
-						for (size_t outputNdx = 0; outputNdx < fragInputs.size(); ++outputNdx)
-						{
-							if (fragInputs[outputNdx].type == GENERICVECTYPE_FLOAT)
-							{
-								const tcu::Vec4 out0 = tri.v0->outputs[outputNdx].get<float>();
-								const tcu::Vec4 out1 = tri.v1->outputs[outputNdx].get<float>();
-								const tcu::Vec4 out2 = tri.v2->outputs[outputNdx].get<float>();
-
-								p0->outputs[outputNdx] = v0.weight[0] * out0 + v0.weight[1] * out1 + v0.weight[2] * out2;
-								p1->outputs[outputNdx] = v1.weight[0] * out0 + v1.weight[1] * out1 + v1.weight[2] * out2;
-								p2->outputs[outputNdx] = v2.weight[0] * out0 + v2.weight[1] * out1 + v2.weight[2] * out2;
-							}
-							else
-							{
-								// only floats are interpolated, all others must be flatshaded then
-								p0->outputs[outputNdx] = tri.getProvokingVertex()->outputs[outputNdx];
-								p1->outputs[outputNdx] = tri.getProvokingVertex()->outputs[outputNdx];
-								p2->outputs[outputNdx] = tri.getProvokingVertex()->outputs[outputNdx];
-							}
-						}
-
-						clipped.push_back(ngonFragment);
-					}
+					discardPrimitive = true;
+					break;
 				}
+				// Partially outside
+				else if (!v0InsidePlane || !v1InsidePlane || !v2InsidePlane)
+				{
+					clippedByPlane[planeNdx] = true;
+					fullyInClipVolume = false;
+				}
+				// Fully inside
+				else
+					clippedByPlane[planeNdx] = false;
+			}
+
+			if (discardPrimitive)
+				continue;
+
+			if (fullyInClipVolume)
+			{
+				outputTriangles.push_back(list[inputTriangleNdx]);
+				continue;
 			}
 		}
 
-		// Clipped triangles are input triangles for next plane
-		currentTriangles.swap(clipped);
+		// Clip
+		{
+			std::vector<SubTriangle>	subTriangles	(1);
+			SubTriangle&				initialTri		= subTriangles[0];
+
+			initialTri.vertices[0].position = vec4ToClipVec4(list[inputTriangleNdx].v0->position);
+			initialTri.vertices[0].weight[0] = (ClipFloat)1.0;
+			initialTri.vertices[0].weight[1] = (ClipFloat)0.0;
+			initialTri.vertices[0].weight[2] = (ClipFloat)0.0;
+
+			initialTri.vertices[1].position = vec4ToClipVec4(list[inputTriangleNdx].v1->position);
+			initialTri.vertices[1].weight[0] = (ClipFloat)0.0;
+			initialTri.vertices[1].weight[1] = (ClipFloat)1.0;
+			initialTri.vertices[1].weight[2] = (ClipFloat)0.0;
+
+			initialTri.vertices[2].position = vec4ToClipVec4(list[inputTriangleNdx].v2->position);
+			initialTri.vertices[2].weight[0] = (ClipFloat)0.0;
+			initialTri.vertices[2].weight[1] = (ClipFloat)0.0;
+			initialTri.vertices[2].weight[2] = (ClipFloat)1.0;
+
+			// Clip all subtriangles to all relevant planes
+			for (int planeNdx = 0; planeNdx < numPlanes; ++planeNdx)
+			{
+				std::vector<SubTriangle> nextPhaseSubTriangles;
+
+				if (!clippedByPlane[planeNdx])
+					continue;
+
+				for (int subTriangleNdx = 0; subTriangleNdx < (int)subTriangles.size(); ++subTriangleNdx)
+				{
+					std::vector<TriangleVertex> convexPrimitive;
+
+					// Clip triangle and form a convex n-gon ( n c {2, 3} )
+					clipTriangleToPlane(convexPrimitive, subTriangles[subTriangleNdx].vertices, *planes[planeNdx]);
+
+					// Subtriangle completely discarded
+					if (convexPrimitive.empty())
+						continue;
+
+					DE_ASSERT(convexPrimitive.size() == 3 || convexPrimitive.size() == 4);
+
+					//Triangulate planar convex n-gon
+					{
+						TriangleVertex& v0 = convexPrimitive[0];
+
+						for (int subsubTriangleNdx = 1; subsubTriangleNdx + 1 < (int)convexPrimitive.size(); ++subsubTriangleNdx)
+						{
+							const float				degenerateEpsilon	= 1.0e-6f;
+							const TriangleVertex&	v1					= convexPrimitive[subsubTriangleNdx];
+							const TriangleVertex&	v2					= convexPrimitive[subsubTriangleNdx + 1];
+							const float				visibleArea			= de::abs(cross2D(to2DCartesian(clipVec4ToVec4(v1.position)) - to2DCartesian(clipVec4ToVec4(v0.position)),
+																						  to2DCartesian(clipVec4ToVec4(v2.position)) - to2DCartesian(clipVec4ToVec4(v0.position))));
+
+							// has surface area (is not a degenerate)
+							if (visibleArea >= degenerateEpsilon)
+							{
+								SubTriangle subsubTriangle;
+
+								subsubTriangle.vertices[0] = v0;
+								subsubTriangle.vertices[1] = v1;
+								subsubTriangle.vertices[2] = v2;
+
+								nextPhaseSubTriangles.push_back(subsubTriangle);
+							}
+						}
+					}
+				}
+
+				subTriangles.swap(nextPhaseSubTriangles);
+			}
+
+			// Rebuild pa::Triangles from subtriangles
+			for (int subTriangleNdx = 0; subTriangleNdx < (int)subTriangles.size(); ++subTriangleNdx)
+			{
+				VertexPacket*	p0				= vpalloc.alloc();
+				VertexPacket*	p1				= vpalloc.alloc();
+				VertexPacket*	p2				= vpalloc.alloc();
+				pa::Triangle	ngonFragment	(p0, p1, p2, -1);
+
+				p0->position = clipVec4ToVec4(subTriangles[subTriangleNdx].vertices[0].position);
+				p1->position = clipVec4ToVec4(subTriangles[subTriangleNdx].vertices[1].position);
+				p2->position = clipVec4ToVec4(subTriangles[subTriangleNdx].vertices[2].position);
+
+				for (size_t outputNdx = 0; outputNdx < fragInputs.size(); ++outputNdx)
+				{
+					if (fragInputs[outputNdx].type == GENERICVECTYPE_FLOAT)
+					{
+						const tcu::Vec4 out0 = list[inputTriangleNdx].v0->outputs[outputNdx].get<float>();
+						const tcu::Vec4 out1 = list[inputTriangleNdx].v1->outputs[outputNdx].get<float>();
+						const tcu::Vec4 out2 = list[inputTriangleNdx].v2->outputs[outputNdx].get<float>();
+
+						p0->outputs[outputNdx] = (float)subTriangles[subTriangleNdx].vertices[0].weight[0] * out0
+											   + (float)subTriangles[subTriangleNdx].vertices[0].weight[1] * out1
+											   + (float)subTriangles[subTriangleNdx].vertices[0].weight[2] * out2;
+
+						p1->outputs[outputNdx] = (float)subTriangles[subTriangleNdx].vertices[1].weight[0] * out0
+											   + (float)subTriangles[subTriangleNdx].vertices[1].weight[1] * out1
+											   + (float)subTriangles[subTriangleNdx].vertices[1].weight[2] * out2;
+
+						p2->outputs[outputNdx] = (float)subTriangles[subTriangleNdx].vertices[2].weight[0] * out0
+											   + (float)subTriangles[subTriangleNdx].vertices[2].weight[1] * out1
+											   + (float)subTriangles[subTriangleNdx].vertices[2].weight[2] * out2;
+					}
+					else
+					{
+						// only floats are interpolated, all others must be flatshaded then
+						p0->outputs[outputNdx] = list[inputTriangleNdx].getProvokingVertex()->outputs[outputNdx];
+						p1->outputs[outputNdx] = list[inputTriangleNdx].getProvokingVertex()->outputs[outputNdx];
+						p2->outputs[outputNdx] = list[inputTriangleNdx].getProvokingVertex()->outputs[outputNdx];
+					}
+				}
+
+				outputTriangles.push_back(ngonFragment);
+			}
+		}
 	}
 
-	// return clipped in list
-	std::swap(currentTriangles, list);
+	// output result
+	list.swap(outputTriangles);
 }
 
-void clipPrimitives (std::vector<pa::Line>& list, const Program& program, bool clipWithZPlanes, VertexPacketAllocator& vpalloc)
+/*--------------------------------------------------------------------*//*!
+ * Clip lines to the near and far clip planes.
+ *
+ * Clipping to other planes is a by-product of the viewport test  (i.e.
+ * rasterization area selection).
+ *//*--------------------------------------------------------------------*/
+void clipPrimitives (std::vector<pa::Line>& 		list,
+					 const Program& 				program,
+					 bool 							clipWithZPlanes,
+					 VertexPacketAllocator&			vpalloc)
 {
 	DE_UNREF(vpalloc);
 
@@ -555,26 +717,21 @@ void clipPrimitives (std::vector<pa::Line>& list, const Program& program, bool c
 
 		// Something is visible
 
-		const float		t0	= getLineEndpointClipping(l.v0->position, l.v1->position);
-		const float		t1	= getLineEndpointClipping(l.v1->position, l.v0->position);
-		const tcu::Vec4 vt0	= tcu::Vec4(t0);
-		const tcu::Vec4 vt1	= tcu::Vec4(t1);
+		const ClipVec4	p0	= vec4ToClipVec4(l.v0->position);
+		const ClipVec4	p1	= vec4ToClipVec4(l.v1->position);
+		const ClipFloat	t0	= getLineEndpointClipping(p0, p1);
+		const ClipFloat	t1	= getLineEndpointClipping(p1, p0);
 
 		// Not clipped at all?
-		if (t0 == 0.0f && t1 == 0.0f)
+		if (t0 == (ClipFloat)0.0 && t1 == (ClipFloat)0.0)
 		{
 			visibleLines.push_back(pa::Line(l.v0, l.v1, -1));
 		}
 		else
 		{
 			// Clip position
-			{
-				const tcu::Vec4 p0 = l.v0->position;
-				const tcu::Vec4 p1 = l.v1->position;
-
-				l.v0->position = tcu::mix(p0, p1, vt0);
-				l.v1->position = tcu::mix(p1, p0, vt1);
-			}
+			l.v0->position = clipVec4ToVec4(tcu::mix(p0, p1, t0));
+			l.v1->position = clipVec4ToVec4(tcu::mix(p1, p0, t1));
 
 			// Clip attributes
 			for (size_t outputNdx = 0; outputNdx < fragInputs.size(); ++outputNdx)
@@ -582,11 +739,11 @@ void clipPrimitives (std::vector<pa::Line>& list, const Program& program, bool c
 				// only floats are clipped, other types are flatshaded
 				if (fragInputs[outputNdx].type == GENERICVECTYPE_FLOAT)
 				{
-					const tcu::Vec4 p0 = l.v0->outputs[outputNdx].get<float>();
-					const tcu::Vec4 p1 = l.v1->outputs[outputNdx].get<float>();
+					const tcu::Vec4 a0 = l.v0->outputs[outputNdx].get<float>();
+					const tcu::Vec4 a1 = l.v1->outputs[outputNdx].get<float>();
 
-					l.v0->outputs[outputNdx] = tcu::mix(p0, p1, vt0);
-					l.v1->outputs[outputNdx] = tcu::mix(p1, p0, vt1);
+					l.v0->outputs[outputNdx] = tcu::mix(a0, a1, (float)t0);
+					l.v1->outputs[outputNdx] = tcu::mix(a1, a0, (float)t1);
 				}
 			}
 
@@ -598,7 +755,14 @@ void clipPrimitives (std::vector<pa::Line>& list, const Program& program, bool c
 	std::swap(visibleLines, list);
 }
 
-void clipPrimitives (std::vector<pa::Point>& list, const Program& program, bool clipWithZPlanes, VertexPacketAllocator& vpalloc)
+/*--------------------------------------------------------------------*//*!
+ * Discard points not within clip volume. Clipping is a by-product
+ * of the viewport test.
+ *//*--------------------------------------------------------------------*/
+void clipPrimitives (std::vector<pa::Point>&		list,
+					 const Program&					program,
+					 bool							clipWithZPlanes,
+					 VertexPacketAllocator&			vpalloc)
 {
 	DE_UNREF(vpalloc);
 	DE_UNREF(program);
@@ -839,7 +1003,15 @@ static float findPrimitiveMinimumResolvableDifference (const pa::Triangle& trian
 	return 0.0f;
 }
 
-void writeFragmentPackets (const RenderState& state, const RenderTarget& renderTarget, const Program& program, const FragmentPacket* fragmentPackets, int numRasterizedPackets, rr::FaceType facetype, const std::vector<rr::GenericVec4>& fragmentOutputArray, const float* depthValues, std::vector<Fragment>& fragmentBuffer)
+void writeFragmentPackets (const RenderState&					state,
+						   const RenderTarget&					renderTarget,
+						   const Program&						program,
+						   const FragmentPacket*				fragmentPackets,
+						   int									numRasterizedPackets,
+						   rr::FaceType							facetype,
+						   const std::vector<rr::GenericVec4>&	fragmentOutputArray,
+						   const float*							depthValues,
+						   std::vector<Fragment>&				fragmentBuffer)
 {
 	const int			numSamples		= renderTarget.colorBuffers[0].getNumSamples();
 	const size_t		numOutputs		= program.fragmentShader->getOutputs().size();
@@ -904,7 +1076,12 @@ void writeFragmentPackets (const RenderState& state, const RenderTarget& renderT
 	}
 }
 
-void rasterizePrimitive (const RenderState& state, const RenderTarget& renderTarget, const Program& program, const pa::Triangle& triangle, const tcu::IVec4& renderTargetRect, RasterizationInternalBuffers& buffers)
+void rasterizePrimitive (const RenderState&					state,
+						 const RenderTarget&				renderTarget,
+						 const Program&						program,
+						 const pa::Triangle&				triangle,
+						 const tcu::IVec4&					renderTargetRect,
+						 RasterizationInternalBuffers&		buffers)
 {
 	const int			numSamples		= renderTarget.colorBuffers[0].getNumSamples();
 	const float			depthClampMin	= de::min(state.viewport.zn, state.viewport.zf);
@@ -967,7 +1144,12 @@ void rasterizePrimitive (const RenderState& state, const RenderTarget& renderTar
 	}
 }
 
-void rasterizePrimitive (const RenderState& state, const RenderTarget& renderTarget, const Program& program, const pa::Line& line, const tcu::IVec4& renderTargetRect, RasterizationInternalBuffers& buffers)
+void rasterizePrimitive (const RenderState&					state,
+						 const RenderTarget&				renderTarget,
+						 const Program&						program,
+						 const pa::Line&					line,
+						 const tcu::IVec4&					renderTargetRect,
+						 RasterizationInternalBuffers&		buffers)
 {
 	const int					numSamples			= renderTarget.colorBuffers[0].getNumSamples();
 	const float					depthClampMin		= de::min(state.viewport.zn, state.viewport.zf);
@@ -1015,7 +1197,12 @@ void rasterizePrimitive (const RenderState& state, const RenderTarget& renderTar
 	}
 }
 
-void rasterizePrimitive (const RenderState& state, const RenderTarget& renderTarget, const Program& program, const pa::Point& point, const tcu::IVec4& renderTargetRect, RasterizationInternalBuffers& buffers)
+void rasterizePrimitive (const RenderState&					state,
+						 const RenderTarget&				renderTarget,
+						 const Program&						program,
+						 const pa::Point&					point,
+						 const tcu::IVec4&					renderTargetRect,
+						 RasterizationInternalBuffers&		buffers)
 {
 	const int			numSamples		= renderTarget.colorBuffers[0].getNumSamples();
 	const float			depthClampMin	= de::min(state.viewport.zn, state.viewport.zf);
@@ -1076,7 +1263,10 @@ void rasterizePrimitive (const RenderState& state, const RenderTarget& renderTar
 }
 
 template <typename ContainerType>
-void rasterize (const RenderState& state, const RenderTarget& renderTarget, const Program& program, const ContainerType& list)
+void rasterize (const RenderState&					state,
+				const RenderTarget&					renderTarget,
+				const Program&						program,
+				const ContainerType&				list)
 {
 	const int						numSamples			= renderTarget.colorBuffers[0].getNumSamples();
 	const int						numFragmentOutputs	= (int)program.fragmentShader->getOutputs().size();
@@ -1095,7 +1285,7 @@ void rasterize (const RenderState& state, const RenderTarget& renderTarget, cons
 
 	RasterizationInternalBuffers	buffers;
 
-	// don't calculate depth if it is not used
+	// calculate depth only if we have a depth buffer
 	if (!isEmpty(renderTarget.depthBuffer))
 	{
 		depthValues.resize(maxFragmentPackets*4*numSamples);
@@ -1174,7 +1364,7 @@ void copyVertexPacketPointers(const VertexPacket** dst, const pa::TriangleAdjace
 }
 
 template <PrimitiveType DrawPrimitiveType> // \note DrawPrimitiveType  can only be Points, line_strip, or triangle_strip
-void drawGeometryShaderOutputAsPrimitives(const RenderState& state, const RenderTarget& renderTarget, const Program& program, VertexPacket* const* vertices, size_t numVertices, VertexPacketAllocator& vpalloc)
+void drawGeometryShaderOutputAsPrimitives (const RenderState& state, const RenderTarget& renderTarget, const Program& program, VertexPacket* const* vertices, size_t numVertices, VertexPacketAllocator& vpalloc)
 {
 	// Run primitive assembly for generated stream
 

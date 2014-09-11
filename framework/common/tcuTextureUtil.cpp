@@ -846,4 +846,22 @@ void computePixelScaleBias (const ConstPixelBufferAccess& access, Vec4& scale, V
 	}
 }
 
+int getCubeArrayFaceIndex (CubeFace face)
+{
+	DE_ASSERT((int)face >= 0 && face < CUBEFACE_LAST);
+
+	switch (face)
+	{
+		case CUBEFACE_POSITIVE_X:	return 0;
+		case CUBEFACE_NEGATIVE_X:	return 1;
+		case CUBEFACE_POSITIVE_Y:	return 2;
+		case CUBEFACE_NEGATIVE_Y:	return 3;
+		case CUBEFACE_POSITIVE_Z:	return 4;
+		case CUBEFACE_NEGATIVE_Z:	return 5;
+
+		default:
+			return -1;
+	}
+}
+
 } // tcu

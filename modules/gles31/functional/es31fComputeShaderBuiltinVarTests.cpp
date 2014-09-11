@@ -325,8 +325,8 @@ public:
 		m_subCases.push_back(SubCase(UVec3(1,3,1), UVec3(1,1,1)));
 		m_subCases.push_back(SubCase(UVec3(1,1,7), UVec3(1,1,1)));
 		m_subCases.push_back(SubCase(UVec3(1,1,7), UVec3(3,3,1)));
-		m_subCases.push_back(SubCase(UVec3(11,3,8), UVec3(1,1,1)));
-		m_subCases.push_back(SubCase(UVec3(11,3,8), UVec3(3,1,2)));
+		m_subCases.push_back(SubCase(UVec3(10,3,4), UVec3(1,1,1)));
+		m_subCases.push_back(SubCase(UVec3(10,3,4), UVec3(3,1,2)));
 	}
 
 	UVec3 computeReference (const UVec3& numWorkGroups, const UVec3& workGroupSize, const UVec3& workGroupID, const UVec3& localInvocationID) const
@@ -374,8 +374,8 @@ public:
 		m_subCases.push_back(SubCase(UVec3(1,3,1), UVec3(1,1,1)));
 		m_subCases.push_back(SubCase(UVec3(1,1,7), UVec3(1,1,1)));
 		m_subCases.push_back(SubCase(UVec3(1,1,7), UVec3(3,3,1)));
-		m_subCases.push_back(SubCase(UVec3(11,3,8), UVec3(1,1,1)));
-		m_subCases.push_back(SubCase(UVec3(11,3,8), UVec3(3,1,2)));
+		m_subCases.push_back(SubCase(UVec3(10,3,4), UVec3(1,1,1)));
+		m_subCases.push_back(SubCase(UVec3(10,3,4), UVec3(3,1,2)));
 	}
 
 	UVec3 computeReference (const UVec3& numWorkGroups, const UVec3& workGroupSize, const UVec3& workGroupID, const UVec3& localInvocationID) const
@@ -399,8 +399,8 @@ public:
 		m_subCases.push_back(SubCase(UVec3(1,1,1), UVec3(1,1,78)));
 		m_subCases.push_back(SubCase(UVec3(1,1,1), UVec3(4,7,11)));
 		m_subCases.push_back(SubCase(UVec3(2,3,4), UVec3(4,7,11)));
-		m_subCases.push_back(SubCase(UVec3(11,3,8), UVec3(1,1,1)));
-		m_subCases.push_back(SubCase(UVec3(11,3,8), UVec3(3,1,2)));
+		m_subCases.push_back(SubCase(UVec3(10,3,4), UVec3(1,1,1)));
+		m_subCases.push_back(SubCase(UVec3(10,3,4), UVec3(3,1,2)));
 	}
 
 	UVec3 computeReference (const UVec3& numWorkGroups, const UVec3& workGroupSize, const UVec3& workGroupID, const UVec3& localInvocationID) const
@@ -420,8 +420,8 @@ public:
 		m_subCases.push_back(SubCase(UVec3(1,1,1), UVec3(1,39,1)));
 		m_subCases.push_back(SubCase(UVec3(1,1,1), UVec3(4,7,11)));
 		m_subCases.push_back(SubCase(UVec3(2,3,4), UVec3(4,7,11)));
-		m_subCases.push_back(SubCase(UVec3(11,3,8), UVec3(1,1,1)));
-		m_subCases.push_back(SubCase(UVec3(11,3,8), UVec3(3,1,2)));
+		m_subCases.push_back(SubCase(UVec3(10,3,4), UVec3(1,1,1)));
+		m_subCases.push_back(SubCase(UVec3(10,3,4), UVec3(3,1,2)));
 	}
 
 	UVec3 computeReference (const UVec3& numWorkGroups, const UVec3& workGroupSize, const UVec3& workGroupID, const UVec3& localInvocationID) const

@@ -305,7 +305,6 @@ dst->getActiveAtomicCounterBufferiv			= src.getActiveAtomicCounterBufferiv;
 dst->bindImageTexture						= src.bindImageTexture;
 dst->memoryBarrier							= src.memoryBarrier;
 dst->texStorage2DMultisample				= src.texStorage2DMultisample;
-dst->texStorage3DMultisample				= src.texStorage3DMultisample;
 dst->getMultisamplefv						= src.getMultisamplefv;
 dst->sampleMaski							= src.sampleMaski;
 dst->getTexLevelParameteriv					= src.getTexLevelParameteriv;

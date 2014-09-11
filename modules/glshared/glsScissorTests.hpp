@@ -45,63 +45,62 @@ namespace gls
 {
 namespace Functional
 {
-
-// Wrapper class, provides iterator & reporting logic
-class ScissorCase : public tcu::TestCase
+namespace ScissorTestInternal
 {
-public:
-	enum PrimitiveType
-	{
-		POINT = 0,
-		LINE,
-		TRIANGLE,
-		QUAD,
 
-		PRIMITIVETYPE_LAST
-	};
+using tcu::Vec4;
 
-								ScissorCase				(glu::RenderContext& context, tcu::TestContext& testContext, const tcu::Vec4& scissorArea, const char* name, const char* description);
-	virtual						~ScissorCase			(void) {}
+enum PrimitiveType
+{
+	POINT = 0,
+	LINE,
+	TRIANGLE,
 
-	virtual IterateResult		iterate					(void);
-
-	// Areas are of the form (x,y,widht,height) in the range [0,1]. Vertex counts 1-3 result in single point/line/tri, higher ones result in the indicated number of quads in pseudorandom locations.
-	static tcu::TestNode*		createPrimitiveTest		(glu::RenderContext&	context,
-														 tcu::TestContext&		testContext,
-														 const tcu::Vec4&		scissorArea,
-														 const tcu::Vec4&		renderArea,
-														 PrimitiveType			type,
-														 int					primitiveCount,
-														 const char*			name,
-														 const char*			description);
-	static tcu::TestNode*		createClearTest			(glu::RenderContext&	context,
-														 tcu::TestContext&		testContext,
-														 const tcu::Vec4&		scissorArea,
-														 deUint32				clearMode,
-														 const char*			name,
-														 const char*			description);
-
-protected:
-	virtual void				render					(sglr::Context& context, const tcu::IVec4& viewport) = 0;
-
-	glu::RenderContext&			m_renderContext;
-	const tcu::Vec4				m_scissorArea;
+	PRIMITIVETYPE_LAST
 };
 
-class ScissorTestShader : public sglr::ShaderProgram
+enum ClearType
 {
-public:
-								ScissorTestShader	(void);
+	CLEAR_COLOR_FIXED = 0,
+	CLEAR_COLOR_FLOAT,
+	CLEAR_COLOR_INT,
+	CLEAR_COLOR_UINT,
+	CLEAR_DEPTH,
+	CLEAR_STENCIL,
+	CLEAR_DEPTH_STENCIL,
 
-	void						setColor			(sglr::Context& ctx, deUint32 programID, const tcu::Vec4& color);
-
-private:
-	void						shadeVertices		(const rr::VertexAttrib* inputs, rr::VertexPacket* const* packets, const int numPackets) const;
-	void						shadeFragments		(rr::FragmentPacket* packets, const int numPackets, const rr::FragmentShadingContext& context) const;
-
-	const sglr::UniformSlot&	u_color;
+	CLEAR_LAST
 };
 
+// Areas are of the form (x,y,widht,height) in the range [0,1]
+tcu::TestNode*	createPrimitiveTest	(tcu::TestContext&		testCtx,
+									 glu::RenderContext&	renderCtx,
+									 const char*			name,
+									 const char*			desc,
+									 const Vec4&			scissorArea,
+									 const Vec4&			renderArea,
+									 PrimitiveType			type,
+									 int					primitiveCount);
+tcu::TestNode*	createClearTest		(tcu::TestContext&		testCtx,
+									 glu::RenderContext&	renderCtx,
+									 const char*			name,
+									 const char*			desc,
+									 const Vec4&			scissorArea,
+									 deUint32				clearMode);
+
+tcu::TestNode* createFramebufferClearTest (tcu::TestContext&	testCtx,
+										   glu::RenderContext&	renderCtx,
+										   const char*			name,
+										   const char*			desc,
+										   ClearType			clearType);
+
+tcu::TestNode* createFramebufferBlitTest (tcu::TestContext&		testCtx,
+										  glu::RenderContext&	renderCtx,
+										  const char*			name,
+										  const char*			desc,
+										  const Vec4&			scissorArea);
+
+} // ScissorTestInternal
 } // Functional
 } // gls
 } // deqp

@@ -1023,9 +1023,9 @@ class TextureCubeArrayView
 public:
 									TextureCubeArrayView	(int numLevels, const ConstPixelBufferAccess* levels);
 
-	int								getWidth				(void) const	{ return m_numLevels > 0 ? m_levels[0].getWidth()	: 0;	}
-	int								getHeight				(void) const	{ return m_numLevels > 0 ? m_levels[0].getHeight()	: 0;	}
-	int								getNumLayers			(void) const	{ return m_numLevels > 0 ? m_levels[0].getDepth()	: 0;	}
+	int								getSize					(void) const	{ return m_numLevels > 0 ? m_levels[0].getWidth()	: 0;	}
+	int								getDepth				(void) const	{ return m_numLevels > 0 ? m_levels[0].getDepth()	: 0;	}
+	int								getNumLayers			(void) const	{ return getDepth()	/ 6;	}
 	int								getNumLevels			(void) const	{ return m_numLevels;										}
 	const ConstPixelBufferAccess&	getLevel				(int ndx) const	{ DE_ASSERT(de::inBounds(ndx, 0, m_numLevels)); return m_levels[ndx];	}
 	const ConstPixelBufferAccess*	getLevels				(void) const	{ return m_levels;											}
@@ -1036,7 +1036,7 @@ public:
 	float							sampleCompareOffset		(const Sampler& sampler, float ref, float s, float t, float r, float q, float lod, const IVec2& offset) const;
 
 protected:
-	int								selectSlice				(float q) const;
+	int								selectLayer				(float q) const;
 
 	int								m_numLevels;
 	const ConstPixelBufferAccess*	m_levels;
@@ -1048,12 +1048,12 @@ protected:
 class TextureCubeArray : private TextureLevelPyramid
 {
 public:
-									TextureCubeArray	(const TextureFormat& format, int size, int numLayers);
+									TextureCubeArray	(const TextureFormat& format, int size, int depth);
 									TextureCubeArray	(const TextureCubeArray& other);
 									~TextureCubeArray	(void);
 
-	int								getSize				(void) const	{ return m_size;		}
-	int								getNumLayers		(void) const	{ return m_numLayers;	}
+	int								getSize				(void) const	{ return m_size;	}
+	int								getDepth			(void) const	{ return m_depth;	}
 
 	void							allocLevel			(int levelNdx);
 
@@ -1074,7 +1074,7 @@ public:
 
 private:
 	int								m_size;
-	int								m_numLayers;
+	int								m_depth;
 	TextureCubeArrayView			m_view;
 };
 

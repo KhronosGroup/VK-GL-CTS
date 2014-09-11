@@ -61,6 +61,7 @@ static int testResultSeverity (qpTestResult testResult)
 {
 	switch (testResult)
 	{
+		case QP_TEST_RESULT_LAST:					return -1;
 		case QP_TEST_RESULT_PASS:					return 0;
 		case QP_TEST_RESULT_PENDING:				return 10;
 		case QP_TEST_RESULT_NOT_SUPPORTED:			return 20;
@@ -79,7 +80,7 @@ static int testResultSeverity (qpTestResult testResult)
 ResultCollector::ResultCollector (void)
 	: m_log		(DE_NULL)
 	, m_prefix	("")
-	, m_result	(QP_TEST_RESULT_PASS)
+	, m_result	(QP_TEST_RESULT_LAST)
 	, m_message ("Pass")
 {
 }
@@ -87,7 +88,7 @@ ResultCollector::ResultCollector (void)
 ResultCollector::ResultCollector (TestLog& log, const std::string& prefix)
 	: m_log		(&log)
 	, m_prefix	(prefix)
-	, m_result	(QP_TEST_RESULT_PASS)
+	, m_result	(QP_TEST_RESULT_LAST)
 	, m_message ("Pass")
 {
 }
@@ -123,7 +124,10 @@ bool ResultCollector::check (bool condition, const std::string& msg)
 
 void ResultCollector::setTestContextResult (TestContext& testCtx)
 {
-	testCtx.setTestResult(m_result, m_message.c_str());
+	if (m_result == QP_TEST_RESULT_LAST)
+		testCtx.setTestResult(QP_TEST_RESULT_PASS, m_message.c_str());
+	else
+		testCtx.setTestResult(m_result, m_message.c_str());
 }
 
 } // tcu

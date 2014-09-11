@@ -31,6 +31,8 @@ set(DEQP_GLES3_PERFORMANCE_SRCS
 	es3pBufferDataUploadTests.hpp
 	es3pShaderOperatorTests.cpp
 	es3pShaderOperatorTests.hpp
+	es3pDepthTests.hpp
+	es3pDepthTests.cpp
 	)
 
 add_library(deqp-gles3-performance STATIC ${DEQP_GLES3_PERFORMANCE_SRCS})

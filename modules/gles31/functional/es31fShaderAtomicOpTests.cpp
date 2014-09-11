@@ -150,9 +150,9 @@ void ShaderAtomicOpCase::init (void)
 	{
 		src << "	if (gl_LocalInvocationIndex == 0u)\n"
 			<< "		s_var = " << typeName << "(" << tcu::toHex(m_initialValue) << "u);\n"
-			<< "	memoryBarrierShared();\n"
+			<< "	barrier();\n"
 			<< "	sb_inout.outputValues[offset] = " << m_funcName << "(s_var, sb_inout.inputValues[offset]);\n"
-			<< "	memoryBarrierShared();\n"
+			<< "	barrier();\n"
 			<< "	if (gl_LocalInvocationIndex == 0u)\n"
 			<< "		sb_inout.groupValues[globalNdx] = s_var;\n";
 	}
@@ -846,26 +846,30 @@ void ShaderAtomicCompSwapCase::init (void)
 	{
 		src << "	if (gl_LocalInvocationIndex == 0u)\n"
 			<< "		s_var = " << typeName << "(" << 0 << ");\n"
-			<< "	memoryBarrierShared();\n"
 			<< "\n";
 	}
 
 	src << "	" << precName << " " << typeName << " compare = sb_inout.compareValues[offset];\n"
 		<< "	" << precName << " " << typeName << " exchange = sb_inout.exchangeValues[offset];\n"
 		<< "	" << precName << " " << typeName << " result;\n"
+		<< "	bool swapDone = false;\n"
 		<< "\n"
 		<< "	for (uint ndx = 0u; ndx < localSize; ndx++)\n"
 		<< "	{\n"
-		<< "		result = atomicCompSwap(" << (isSSBO ? "sb_inout.groupValues[globalNdx]" : "s_var") << ", compare, exchange);\n"
-		<< "		if (result == compare)\n"
-		<< "			break;\n"
+		<< "		barrier();\n"
+		<< "		if (!swapDone)\n"
+		<< "		{\n"
+		<< "			result = atomicCompSwap(" << (isSSBO ? "sb_inout.groupValues[globalNdx]" : "s_var") << ", compare, exchange);\n"
+		<< "			if (result == compare)\n"
+		<< "				swapDone = true;\n"
+		<< "		}\n"
 		<< "	}\n"
 		<< "\n"
 		<< "	sb_inout.outputValues[offset] = result;\n";
 
 	if (!isSSBO)
 	{
-		src << "	memoryBarrierShared();\n"
+		src << "	barrier();\n"
 			<< "	if (gl_LocalInvocationIndex == 0u)\n"
 			<< "		sb_inout.groupValues[globalNdx] = s_var;\n";
 	}

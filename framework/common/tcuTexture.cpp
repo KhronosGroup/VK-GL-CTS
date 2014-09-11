@@ -2709,24 +2709,6 @@ static float sampleLevelArrayCubeSeamlessCompare (const ConstPixelBufferAccess* 
 
 // Cube map array sampling
 
-static inline int getCubeArrayFaceIndex (CubeFace face)
-{
-	DE_ASSERT((int)face >= 0 && face < CUBEFACE_LAST);
-
-	switch (face)
-	{
-		case CUBEFACE_POSITIVE_X:	return 0;
-		case CUBEFACE_NEGATIVE_X:	return 1;
-		case CUBEFACE_POSITIVE_Y:	return 2;
-		case CUBEFACE_NEGATIVE_Y:	return 3;
-		case CUBEFACE_POSITIVE_Z:	return 4;
-		case CUBEFACE_NEGATIVE_Z:	return 5;
-
-		default:
-			return -1;
-	}
-}
-
 static inline ConstPixelBufferAccess getCubeArrayFaceAccess (const ConstPixelBufferAccess* const levels, int levelNdx, int slice, CubeFace face)
 {
 	const ConstPixelBufferAccess&	level	= levels[levelNdx];
@@ -3515,7 +3497,7 @@ TextureCubeArrayView::TextureCubeArrayView (int numLevels, const ConstPixelBuffe
 {
 }
 
-inline int TextureCubeArrayView::selectSlice (float q) const
+inline int TextureCubeArrayView::selectLayer (float q) const
 {
 	DE_ASSERT(m_numLevels > 0 && m_levels);
 	DE_ASSERT((m_levels[0].getDepth() % 6) == 0);
@@ -3526,13 +3508,13 @@ inline int TextureCubeArrayView::selectSlice (float q) const
 tcu::Vec4 TextureCubeArrayView::sample (const Sampler& sampler, float s, float t, float r, float q, float lod) const
 {
 	const CubeFaceFloatCoords	coords		= getCubeFaceCoords(Vec3(s, t, r));
-	const int					slice		= selectSlice(q);
-	const int					faceDepth	= (slice * 6) + getCubeArrayFaceIndex(coords.face);
+	const int					layer		= selectLayer(q);
+	const int					faceDepth	= (layer * 6) + getCubeArrayFaceIndex(coords.face);
 
 	DE_ASSERT(sampler.compare == Sampler::COMPAREMODE_NONE);
 
 	if (sampler.seamlessCubeMap)
-		return sampleCubeArraySeamless(m_levels, m_numLevels, slice, coords.face, sampler, coords.s, coords.t, lod);
+		return sampleCubeArraySeamless(m_levels, m_numLevels, layer, coords.face, sampler, coords.s, coords.t, lod);
 	else
 		return sampleLevelArray2D(m_levels, m_numLevels, sampler, coords.s, coords.t, faceDepth, lod);
 }
@@ -3540,35 +3522,35 @@ tcu::Vec4 TextureCubeArrayView::sample (const Sampler& sampler, float s, float t
 float TextureCubeArrayView::sampleCompare (const Sampler& sampler, float ref, float s, float t, float r, float q, float lod) const
 {
 	const CubeFaceFloatCoords	coords		= getCubeFaceCoords(Vec3(s, t, r));
-	const int					slice		= selectSlice(q);
-	const int					faceDepth	= (slice * 6) + getCubeArrayFaceIndex(coords.face);
+	const int					layer		= selectLayer(q);
+	const int					faceDepth	= (layer * 6) + getCubeArrayFaceIndex(coords.face);
 
 	DE_ASSERT(sampler.compare != Sampler::COMPAREMODE_NONE);
 
 	if (sampler.seamlessCubeMap)
-		return sampleCubeArraySeamlessCompare(m_levels, m_numLevels, slice, coords.face, sampler, ref, coords.s, coords.t, lod);
+		return sampleCubeArraySeamlessCompare(m_levels, m_numLevels, layer, coords.face, sampler, ref, coords.s, coords.t, lod);
 	else
 		return sampleLevelArray2DCompare(m_levels, m_numLevels, sampler, ref, coords.s, coords.t, lod, IVec3(0, 0, faceDepth));
 }
 
 // TextureCubeArray
 
-TextureCubeArray::TextureCubeArray (const TextureFormat& format, int size, int numLayers)
+TextureCubeArray::TextureCubeArray (const TextureFormat& format, int size, int depth)
 	: TextureLevelPyramid	(format, computeMipPyramidLevels(size))
 	, m_size				(size)
-	, m_numLayers			(numLayers)
+	, m_depth				(depth)
 	, m_view				(getNumLevels(), getLevels())
 {
-	DE_ASSERT(m_numLayers % 6 == 0);
+	DE_ASSERT(m_depth % 6 == 0);
 }
 
 TextureCubeArray::TextureCubeArray (const TextureCubeArray& other)
 	: TextureLevelPyramid	(other)
 	, m_size				(other.m_size)
-	, m_numLayers			(other.m_numLayers)
+	, m_depth				(other.m_depth)
 	, m_view				(getNumLevels(), getLevels())
 {
-	DE_ASSERT(m_numLayers % 6 == 0);
+	DE_ASSERT(m_depth % 6 == 0);
 }
 
 TextureCubeArray& TextureCubeArray::operator= (const TextureCubeArray& other)
@@ -3578,11 +3560,11 @@ TextureCubeArray& TextureCubeArray::operator= (const TextureCubeArray& other)
 
 	TextureLevelPyramid::operator=(other);
 
-	m_size		= other.m_size;
-	m_numLayers	= other.m_numLayers;
-	m_view		= TextureCubeArrayView(getNumLevels(), getLevels());
+	m_size	= other.m_size;
+	m_depth	= other.m_depth;
+	m_view	= TextureCubeArrayView(getNumLevels(), getLevels());
 
-	DE_ASSERT(m_numLayers % 6 == 0);
+	DE_ASSERT(m_depth % 6 == 0);
 
 	return *this;
 }
@@ -3597,7 +3579,7 @@ void TextureCubeArray::allocLevel (int levelNdx)
 
 	const int size = getMipPyramidLevelSize(m_size, levelNdx);
 
-	TextureLevelPyramid::allocLevel(levelNdx, size, size, m_numLayers);
+	TextureLevelPyramid::allocLevel(levelNdx, size, size, m_depth);
 }
 
 std::ostream& operator<< (std::ostream& str, TextureFormat::ChannelOrder order)

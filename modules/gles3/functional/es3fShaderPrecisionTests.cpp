@@ -288,8 +288,8 @@ bool ShaderFloatPrecisionCase::compare (float in0, float in1, double reference, 
 	// Comparison is done using 64-bit reference value to accurately evaluate rounding mode error.
 	// If 32-bit reference value is used, 2 bits of rounding error must be allowed.
 
-	// For mediump and lowp types the comparison currently allows 2 bits of rounding error:
-	// one bit from conversion and another from actual operation.
+	// For mediump and lowp types the comparison currently allows 3 bits of rounding error:
+	// two bits from conversions and one from actual operation.
 
 	// \todo [2013-09-30 pyry] Make this more strict: determine if rounding can actually happen.
 
@@ -301,7 +301,7 @@ bool ShaderFloatPrecisionCase::compare (float in0, float in1, double reference, 
 	const int		resExp				= tcu::Float32(result).exponent();
 	const int		numLostBits			= de::max(de::max(in0Exp-resExp, in1Exp-resExp), 0); // Lost due to mantissa shift.
 
-	const int		roundingUlpError	= m_precision == glu::PRECISION_HIGHP ? 1 : 2;
+	const int		roundingUlpError	= m_precision == glu::PRECISION_HIGHP ? 1 : 3;
 	const int		maskBits			= numLostBits + numPrecBits;
 
 	m_testCtx.getLog() << TestLog::Message << "Assuming " << mantissaBits << " mantissa bits, " << numLostBits << " bits lost in operation, and " << roundingUlpError << " ULP rounding error."

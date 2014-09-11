@@ -55,7 +55,7 @@ using namespace glu;
 
 enum
 {
-	MAX_VALUE_ARRAY_LENGTH	= 16	// * 2 * sizeof(mat4) = 512
+	MAX_VALUE_ARRAY_LENGTH	= 15	// * 2 * sizeof(mat4) + sizeof(int) = 481 uniform components (limit 512)
 };
 
 template<typename T, int Size>
@@ -141,7 +141,7 @@ void SharedBasicVarCase::init (void)
 		<< "		if (ndx == gl_LocalInvocationIndex)\n"
 		<< "			s_var = u_val[ndx%uint(u_val.length())];\n"
 		<< "\n"
-		<< "		memoryBarrierShared();\n"
+		<< "		barrier();\n"
 		<< "\n"
 		<< "		if (s_var != u_ref[ndx%uint(u_ref.length())])\n"
 		<< "			allOk = false;\n"
@@ -391,25 +391,25 @@ void ShaderSharedVarTests::init (void)
 		workGroupSizeGroup->addChild(new SharedBasicVarCase(m_context, "float_64_1_1",		TYPE_FLOAT,			PRECISION_HIGHP,	tcu::UVec3(64,1,1)));
 		workGroupSizeGroup->addChild(new SharedBasicVarCase(m_context, "float_1_64_1",		TYPE_FLOAT,			PRECISION_HIGHP,	tcu::UVec3(1,64,1)));
 		workGroupSizeGroup->addChild(new SharedBasicVarCase(m_context, "float_1_1_64",		TYPE_FLOAT,			PRECISION_HIGHP,	tcu::UVec3(1,1,64)));
-		workGroupSizeGroup->addChild(new SharedBasicVarCase(m_context, "float_256_1_1",		TYPE_FLOAT,			PRECISION_HIGHP,	tcu::UVec3(256,1,1)));
-		workGroupSizeGroup->addChild(new SharedBasicVarCase(m_context, "float_1_256_1",		TYPE_FLOAT,			PRECISION_HIGHP,	tcu::UVec3(1,256,1)));
-		workGroupSizeGroup->addChild(new SharedBasicVarCase(m_context, "float_17_5_9",		TYPE_FLOAT,			PRECISION_HIGHP,	tcu::UVec3(17,5,9)));
+		workGroupSizeGroup->addChild(new SharedBasicVarCase(m_context, "float_128_1_1",		TYPE_FLOAT,			PRECISION_HIGHP,	tcu::UVec3(128,1,1)));
+		workGroupSizeGroup->addChild(new SharedBasicVarCase(m_context, "float_1_128_1",		TYPE_FLOAT,			PRECISION_HIGHP,	tcu::UVec3(1,128,1)));
+		workGroupSizeGroup->addChild(new SharedBasicVarCase(m_context, "float_13_2_4",		TYPE_FLOAT,			PRECISION_HIGHP,	tcu::UVec3(13,2,4)));
 
 		workGroupSizeGroup->addChild(new SharedBasicVarCase(m_context, "vec4_1_1_1",		TYPE_FLOAT_VEC4,	PRECISION_HIGHP,	tcu::UVec3(1,1,1)));
 		workGroupSizeGroup->addChild(new SharedBasicVarCase(m_context, "vec4_64_1_1",		TYPE_FLOAT_VEC4,	PRECISION_HIGHP,	tcu::UVec3(64,1,1)));
 		workGroupSizeGroup->addChild(new SharedBasicVarCase(m_context, "vec4_1_64_1",		TYPE_FLOAT_VEC4,	PRECISION_HIGHP,	tcu::UVec3(1,64,1)));
 		workGroupSizeGroup->addChild(new SharedBasicVarCase(m_context, "vec4_1_1_64",		TYPE_FLOAT_VEC4,	PRECISION_HIGHP,	tcu::UVec3(1,1,64)));
-		workGroupSizeGroup->addChild(new SharedBasicVarCase(m_context, "vec4_256_1_1",		TYPE_FLOAT_VEC4,	PRECISION_HIGHP,	tcu::UVec3(256,1,1)));
-		workGroupSizeGroup->addChild(new SharedBasicVarCase(m_context, "vec4_1_256_1",		TYPE_FLOAT_VEC4,	PRECISION_HIGHP,	tcu::UVec3(1,256,1)));
-		workGroupSizeGroup->addChild(new SharedBasicVarCase(m_context, "vec4_17_5_9",		TYPE_FLOAT_VEC4,	PRECISION_HIGHP,	tcu::UVec3(17,5,9)));
+		workGroupSizeGroup->addChild(new SharedBasicVarCase(m_context, "vec4_128_1_1",		TYPE_FLOAT_VEC4,	PRECISION_HIGHP,	tcu::UVec3(128,1,1)));
+		workGroupSizeGroup->addChild(new SharedBasicVarCase(m_context, "vec4_1_128_1",		TYPE_FLOAT_VEC4,	PRECISION_HIGHP,	tcu::UVec3(1,128,1)));
+		workGroupSizeGroup->addChild(new SharedBasicVarCase(m_context, "vec4_13_2_4",		TYPE_FLOAT_VEC4,	PRECISION_HIGHP,	tcu::UVec3(13,2,4)));
 
 		workGroupSizeGroup->addChild(new SharedBasicVarCase(m_context, "mat4_1_1_1",		TYPE_FLOAT_MAT4,	PRECISION_HIGHP,	tcu::UVec3(1,1,1)));
 		workGroupSizeGroup->addChild(new SharedBasicVarCase(m_context, "mat4_64_1_1",		TYPE_FLOAT_MAT4,	PRECISION_HIGHP,	tcu::UVec3(64,1,1)));
 		workGroupSizeGroup->addChild(new SharedBasicVarCase(m_context, "mat4_1_64_1",		TYPE_FLOAT_MAT4,	PRECISION_HIGHP,	tcu::UVec3(1,64,1)));
 		workGroupSizeGroup->addChild(new SharedBasicVarCase(m_context, "mat4_1_1_64",		TYPE_FLOAT_MAT4,	PRECISION_HIGHP,	tcu::UVec3(1,1,64)));
-		workGroupSizeGroup->addChild(new SharedBasicVarCase(m_context, "mat4_256_1_1",		TYPE_FLOAT_MAT4,	PRECISION_HIGHP,	tcu::UVec3(256,1,1)));
-		workGroupSizeGroup->addChild(new SharedBasicVarCase(m_context, "mat4_1_256_1",		TYPE_FLOAT_MAT4,	PRECISION_HIGHP,	tcu::UVec3(1,256,1)));
-		workGroupSizeGroup->addChild(new SharedBasicVarCase(m_context, "mat4_17_5_9",		TYPE_FLOAT_MAT4,	PRECISION_HIGHP,	tcu::UVec3(17,5,9)));
+		workGroupSizeGroup->addChild(new SharedBasicVarCase(m_context, "mat4_128_1_1",		TYPE_FLOAT_MAT4,	PRECISION_HIGHP,	tcu::UVec3(128,1,1)));
+		workGroupSizeGroup->addChild(new SharedBasicVarCase(m_context, "mat4_1_128_1",		TYPE_FLOAT_MAT4,	PRECISION_HIGHP,	tcu::UVec3(1,128,1)));
+		workGroupSizeGroup->addChild(new SharedBasicVarCase(m_context, "mat4_13_2_4",		TYPE_FLOAT_MAT4,	PRECISION_HIGHP,	tcu::UVec3(13,2,4)));
 	}
 
 	// .atomic

@@ -190,9 +190,10 @@ bool TextureCubeArrayFormatCase::testLayerFace (int layerFaceNdx)
 	renderParams.colorBias					= spec.lookupBias;
 
 	// Layer here specifies the cube slice
-	computeQuadTexCoordCubeArray(texCoord, layerNdx, face, tcu::Vec2(0.0f, 0.0f), tcu::Vec2(1.0f, 1.0f));
+	computeQuadTexCoordCubeArray(texCoord, face, tcu::Vec2(0.0f, 0.0f), tcu::Vec2(1.0f, 1.0f), tcu::Vec2((float)layerNdx));
 
 	// Setup base viewport.
+	gl.clear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
 	gl.viewport(viewport.x, viewport.y, viewport.width, viewport.height);
 
 	// Upload texture data to GL.
@@ -234,7 +235,7 @@ TextureCubeArrayFormatCase::IterateResult TextureCubeArrayFormatCase::iterate (v
 
 	m_curLayerFace += 1;
 
-	return m_curLayerFace < m_texture->getRefTexture().getNumLayers() ? CONTINUE : STOP;
+	return m_curLayerFace < m_texture->getRefTexture().getDepth() ? CONTINUE : STOP;
 }
 
 // TextureBufferFormatCase
@@ -329,6 +330,7 @@ TextureBufferFormatCase::IterateResult TextureBufferFormatCase::iterate (void)
 	gl.clear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
 
 	// Setup base viewport.
+	gl.clear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
 	gl.viewport(viewport.x, viewport.y, viewport.width, viewport.height);
 
 	// Upload texture data to GL.

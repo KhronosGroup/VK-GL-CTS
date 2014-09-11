@@ -454,29 +454,32 @@ static void initFunctions (glw::Functions* dst, const glw::Functions& src)
 		const ExtFuncLoader					extFuncLoader	(extFuncMap);
 
 		// OES_sample_shading
-		extFuncMap["glMinSampleShadingOES"]		= (glw::GenericFuncType)src.minSampleShading;
+		extFuncMap["glMinSampleShadingOES"]			= (glw::GenericFuncType)src.minSampleShading;
+
+		// OES_texture_storage_multisample_2d_array
+		extFuncMap["glTexStorage3DMultisampleOES"]	= (glw::GenericFuncType)src.texStorage3DMultisample;
 
 		// KHR_blend_equation_advanced
-		extFuncMap["glBlendBarrierKHR"]			= (glw::GenericFuncType)blendBarrierKHR;
+		extFuncMap["glBlendBarrierKHR"]				= (glw::GenericFuncType)blendBarrierKHR;
 
 		// EXT_tessellation_shader
-		extFuncMap["glPatchParameteriEXT"]		= (glw::GenericFuncType)src.patchParameteri;
+		extFuncMap["glPatchParameteriEXT"]			= (glw::GenericFuncType)src.patchParameteri;
 
 		// EXT_geometry_shader
-		extFuncMap["glFramebufferTextureEXT"]	= (glw::GenericFuncType)src.framebufferTexture;
+		extFuncMap["glFramebufferTextureEXT"]		= (glw::GenericFuncType)src.framebufferTexture;
 
 		// KHR_debug
-		extFuncMap["glDebugMessageControlKHR"]	= (glw::GenericFuncType)src.debugMessageControl;
-		extFuncMap["glDebugMessageInsertKHR"]	= (glw::GenericFuncType)src.debugMessageInsert;
-		extFuncMap["glDebugMessageCallbackKHR"]	= (glw::GenericFuncType)src.debugMessageCallback;
-		extFuncMap["glGetDebugMessageLogKHR"]	= (glw::GenericFuncType)src.getDebugMessageLog;
-		extFuncMap["glGetPointervKHR"] 			= (glw::GenericFuncType)src.getPointerv;
-		extFuncMap["glPushDebugGroupKHR"]		= (glw::GenericFuncType)src.pushDebugGroup;
-		extFuncMap["glPopDebugGroupKHR"] 		= (glw::GenericFuncType)src.popDebugGroup;
-		extFuncMap["glObjectLabelKHR"] 			= (glw::GenericFuncType)src.objectLabel;
-		extFuncMap["glGetObjectLabelKHR"]		= (glw::GenericFuncType)src.getObjectLabel;
-		extFuncMap["glObjectPtrLabelKHR"]		= (glw::GenericFuncType)src.objectPtrLabel;
-		extFuncMap["glGetObjectPtrLabelKHR"]	= (glw::GenericFuncType)src.getObjectPtrLabel;
+		extFuncMap["glDebugMessageControlKHR"]		= (glw::GenericFuncType)src.debugMessageControl;
+		extFuncMap["glDebugMessageInsertKHR"]		= (glw::GenericFuncType)src.debugMessageInsert;
+		extFuncMap["glDebugMessageCallbackKHR"]		= (glw::GenericFuncType)src.debugMessageCallback;
+		extFuncMap["glGetDebugMessageLogKHR"]		= (glw::GenericFuncType)src.getDebugMessageLog;
+		extFuncMap["glGetPointervKHR"] 				= (glw::GenericFuncType)src.getPointerv;
+		extFuncMap["glPushDebugGroupKHR"]			= (glw::GenericFuncType)src.pushDebugGroup;
+		extFuncMap["glPopDebugGroupKHR"] 			= (glw::GenericFuncType)src.popDebugGroup;
+		extFuncMap["glObjectLabelKHR"] 				= (glw::GenericFuncType)src.objectLabel;
+		extFuncMap["glGetObjectLabelKHR"]			= (glw::GenericFuncType)src.getObjectLabel;
+		extFuncMap["glObjectPtrLabelKHR"]			= (glw::GenericFuncType)src.objectPtrLabel;
+		extFuncMap["glGetObjectPtrLabelKHR"]		= (glw::GenericFuncType)src.getObjectPtrLabel;
 
 		{
 			int	numExts	= 0;

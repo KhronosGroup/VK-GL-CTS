@@ -825,7 +825,7 @@ public:
 			<< "    uint localOffs  = gl_WorkGroupSize.x*gl_WorkGroupSize.y*gl_LocalInvocationID.z + gl_WorkGroupSize.x*gl_LocalInvocationID.y + gl_LocalInvocationID.x;\n"
 			<< "\n"
 			<< "    offsets[localSize-localOffs-1u] = globalOffs + localOffs*localOffs;\n"
-			<< "    memoryBarrierShared();\n"
+			<< "    barrier();\n"
 			<< "    sb_out.values[globalOffs + localOffs] = offsets[localOffs];\n"
 			<< "}\n";
 
@@ -916,7 +916,7 @@ public:
 			<< "    uint globalOffs = localSize*globalNdx;\n"
 			<< "\n"
 			<< "    count = 0u;\n"
-			<< "    memoryBarrierShared();\n"
+			<< "    barrier();\n"
 			<< "    uint oldVal = atomicAdd(count, 1u);\n"
 			<< "    sb_out.values[globalOffs+oldVal] = oldVal+1u;\n"
 			<< "}\n";
@@ -1029,6 +1029,8 @@ public:
 		gl.bindTexture(GL_TEXTURE_2D, *inputTexture);
 		gl.texStorage2D(GL_TEXTURE_2D, 1, GL_R32UI, m_imageSize[0], m_imageSize[1]);
 		gl.texSubImage2D(GL_TEXTURE_2D, 0, 0, 0, m_imageSize[0], m_imageSize[1], GL_RED_INTEGER, GL_UNSIGNED_INT, &inputValues[0]);
+		gl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		gl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "Uploading image data failed");
 
 		// Bind to unit 1
@@ -1153,6 +1155,8 @@ public:
 		// Output image setup
 		gl.bindTexture(GL_TEXTURE_2D, *outputTexture);
 		gl.texStorage2D(GL_TEXTURE_2D, 1, GL_R32UI, m_imageSize[0], m_imageSize[1]);
+		gl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		gl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "Uploading image data failed");
 
 		// Bind to unit 1
@@ -1229,7 +1233,7 @@ public:
 			<< "\n"
 			<< "    if (gl_LocalInvocationIndex == 0u)\n"
 			<< "        imageStore(u_dstImg, ivec2(gl_WorkGroupID.xy), uvec4(0));\n"
-			<< "    memoryBarrierImage();\n"
+			<< "    barrier();\n"
 			<< "    imageAtomicAdd(u_dstImg, ivec2(gl_WorkGroupID.xy), value);\n"
 			<< "}\n";
 
@@ -1278,6 +1282,8 @@ public:
 		// Output image setup
 		gl.bindTexture(GL_TEXTURE_2D, *outputTexture);
 		gl.texStorage2D(GL_TEXTURE_2D, 1, GL_R32UI, m_imageSize[0], m_imageSize[1]);
+		gl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		gl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "Uploading image data failed");
 
 		// Bind to unit 1
@@ -1370,6 +1376,8 @@ public:
 		// Temp texture setup
 		gl.bindTexture(GL_TEXTURE_2D, *tempTexture);
 		gl.texStorage2D(GL_TEXTURE_2D, 1, GL_R32UI, m_workSize[0], m_workSize[1]);
+		gl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		gl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "Uploading image data failed");
 
 		// Bind to unit 2

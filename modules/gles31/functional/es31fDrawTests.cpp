@@ -2611,7 +2611,7 @@ BadDrawModeCase::IterateResult BadDrawModeCase::iterate (void)
 		0, 2, 1,
 	};
 
-	sglr::GLContext gl(m_context.getRenderContext(), m_testCtx.getLog(), sglr::GLCONTEXT_LOG_CALLS, tcu::IVec4(0, 0, 1, 1));
+	sglr::GLContext		gl				(m_context.getRenderContext(), m_testCtx.getLog(), sglr::GLCONTEXT_LOG_CALLS, tcu::IVec4(0, 0, 1, 1));
 
 	deUint32			error;
 	glu::ShaderProgram	program			(m_context.getRenderContext(), glu::ProgramSources() << glu::VertexSource(s_commonVertexShaderSource) << glu::FragmentSource(s_commonFragmentShaderSource));
@@ -2643,7 +2643,7 @@ BadDrawModeCase::IterateResult BadDrawModeCase::iterate (void)
 
 	// index
 
-	if (m_drawType == DRAW_ELEMENTS)
+	if (m_drawType == DRAW_ELEMENTS || m_drawType == DRAW_ELEMENTS_BAD_INDEX)
 	{
 		gl.genBuffers(1, &indexBufferID);
 		gl.bindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBufferID);

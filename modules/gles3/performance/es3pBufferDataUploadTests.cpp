@@ -22,6 +22,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "es3pBufferDataUploadTests.hpp"
+#include "glsCalibration.hpp"
 #include "tcuTestLog.hpp"
 #include "tcuVectorUtil.hpp"
 #include "tcuSurface.hpp"
@@ -53,6 +54,9 @@ namespace Performance
 {
 namespace
 {
+
+using gls::theilSenSiegelLinearRegression;
+using gls::LineParametersWithConfidence;
 
 static const char* const s_dummyVertexShader =		"#version 300 es\n"
 													"in highp vec4 a_position;\n"
@@ -497,16 +501,6 @@ struct SampleTypeTraits<RenderUploadRenderReadDuration>
 	enum { LOG_UNRELATED_UPLOAD_SIZE	= 1 };
 };
 
-struct TheilSenLineFit
-{
-	float coefficient;
-	float coefficient60ConfidenceUpper;
-	float coefficient60ConfidenceLower;
-	float offset;
-	float offset60ConfidenceUpper;
-	float offset60ConfidenceLower;
-};
-
 struct UploadSampleAnalyzeResult
 {
 	float transferRateMedian;
@@ -689,63 +683,6 @@ static float linearSample (const std::vector<T>& values, float position)
 	return tcu::mix((float)values[lowerNdx], (float)values[higherNdx], interpolationFactor);
 }
 
-static TheilSenLineFit theilSenLinearRegression (const std::vector<tcu::Vec2>& dataPoints)
-{
-	DE_ASSERT(!dataPoints.empty());
-
-	// \note Based on gls::theilSenEstimator()
-	// Siegel's variation
-
-	const float			epsilon					= 1e-6f;
-	int					numDataPoints			= (int)dataPoints.size();
-	std::vector<float>	medianSlopes;
-	std::vector<float>	pointwiseOffsets;
-	TheilSenLineFit		result;
-
-	// Compute the median slope via each element
-	for (int i = 0; i < numDataPoints; i++)
-	{
-		const tcu::Vec2&	ptA		= dataPoints[i];
-		std::vector<float>	slopes;
-
-		for (int j = 0; j < numDataPoints; j++)
-		{
-			const tcu::Vec2& ptB = dataPoints[j];
-
-			if (de::abs(ptA.x() - ptB.x()) > epsilon)
-				slopes.push_back((ptA.y() - ptB.y()) / (ptA.x() - ptB.x()));
-		}
-
-		std::sort(slopes.begin(), slopes.end());
-		medianSlopes.push_back(linearSample(slopes, 0.5f));
-	}
-
-	DE_ASSERT(!medianSlopes.empty());
-
-	// Find the median of the pairwise coefficients.
-	std::sort(medianSlopes.begin(), medianSlopes.end());
-	result.coefficient = linearSample(medianSlopes, 0.5f);
-
-	// Compute the offsets corresponding to the median coefficient, for all data points.
-	for (int i = 0; i < numDataPoints; i++)
-		pointwiseOffsets.push_back(dataPoints[i].y() - result.coefficient*dataPoints[i].x());
-
-	// Find the median of the offsets.
-	std::sort(pointwiseOffsets.begin(), pointwiseOffsets.end());
-	result.offset = linearSample(pointwiseOffsets, 0.5f);
-
-	// calculate 60% confidence intervals
-	{
-		result.coefficient60ConfidenceLower = linearSample(medianSlopes, 0.2f);
-		result.coefficient60ConfidenceUpper = linearSample(medianSlopes, 0.8f);
-
-		result.offset60ConfidenceLower = linearSample(pointwiseOffsets, 0.2f);
-		result.offset60ConfidenceUpper = linearSample(pointwiseOffsets, 0.8f);
-	}
-
-	return result;
-}
-
 template <typename T>
 SingleOperationStatistics calculateSingleOperationStatistics (const std::vector<T>& samples, deUint64 T::SampleType::*target)
 {
@@ -767,7 +704,7 @@ SingleOperationStatistics calculateSingleOperationStatistics (const std::vector<
 }
 
 template <typename StatisticsType, typename SampleType>
-void calculateBasicStatistics (StatisticsType& stats, const TheilSenLineFit& fit, const std::vector<SampleType>& samples, int SampleType::*predictor)
+void calculateBasicStatistics (StatisticsType& stats, const LineParametersWithConfidence& fit, const std::vector<SampleType>& samples, int SampleType::*predictor)
 {
 	std::vector<deUint64> values(samples.size());
 
@@ -842,18 +779,18 @@ void calculateBasicStatistics (StatisticsType& stats, const TheilSenLineFit& fit
 }
 
 template <typename StatisticsType, typename SampleType>
-void calculateBasicTransferStatistics (StatisticsType& stats, const TheilSenLineFit& fit, const std::vector<SampleType>& samples)
+void calculateBasicTransferStatistics (StatisticsType& stats, const LineParametersWithConfidence& fit, const std::vector<SampleType>& samples)
 {
 	calculateBasicStatistics(stats, fit, samples, &SampleType::writtenSize);
 }
 
 template <typename StatisticsType, typename SampleType>
-void calculateBasicRenderStatistics (StatisticsType& stats, const TheilSenLineFit& fit, const std::vector<SampleType>& samples)
+void calculateBasicRenderStatistics (StatisticsType& stats, const LineParametersWithConfidence& fit, const std::vector<SampleType>& samples)
 {
 	calculateBasicStatistics(stats, fit, samples, &SampleType::renderDataSize);
 }
 
-static SingleCallStatistics calculateSampleStatistics (const TheilSenLineFit& fit, const std::vector<UploadSampleResult<SingleOperationDuration> >& samples)
+static SingleCallStatistics calculateSampleStatistics (const LineParametersWithConfidence& fit, const std::vector<UploadSampleResult<SingleOperationDuration> >& samples)
 {
 	SingleCallStatistics stats;
 
@@ -862,7 +799,7 @@ static SingleCallStatistics calculateSampleStatistics (const TheilSenLineFit& fi
 	return stats;
 }
 
-static MapCallStatistics calculateSampleStatistics (const TheilSenLineFit& fit, const std::vector<UploadSampleResult<MapBufferRangeDuration> >& samples)
+static MapCallStatistics calculateSampleStatistics (const LineParametersWithConfidence& fit, const std::vector<UploadSampleResult<MapBufferRangeDuration> >& samples)
 {
 	MapCallStatistics stats;
 
@@ -876,7 +813,7 @@ static MapCallStatistics calculateSampleStatistics (const TheilSenLineFit& fit, 
 	return stats;
 }
 
-static MapFlushCallStatistics calculateSampleStatistics (const TheilSenLineFit& fit, const std::vector<UploadSampleResult<MapBufferRangeFlushDuration> >& samples)
+static MapFlushCallStatistics calculateSampleStatistics (const LineParametersWithConfidence& fit, const std::vector<UploadSampleResult<MapBufferRangeFlushDuration> >& samples)
 {
 	MapFlushCallStatistics stats;
 
@@ -891,7 +828,7 @@ static MapFlushCallStatistics calculateSampleStatistics (const TheilSenLineFit& 
 	return stats;
 }
 
-static MapCallStatistics calculateSampleStatistics (const TheilSenLineFit& fit, const std::vector<UploadSampleResult<MapBufferRangeDurationNoAlloc> >& samples)
+static MapCallStatistics calculateSampleStatistics (const LineParametersWithConfidence& fit, const std::vector<UploadSampleResult<MapBufferRangeDurationNoAlloc> >& samples)
 {
 	MapCallStatistics stats;
 
@@ -904,7 +841,7 @@ static MapCallStatistics calculateSampleStatistics (const TheilSenLineFit& fit, 
 	return stats;
 }
 
-static MapFlushCallStatistics calculateSampleStatistics (const TheilSenLineFit& fit, const std::vector<UploadSampleResult<MapBufferRangeFlushDurationNoAlloc> >& samples)
+static MapFlushCallStatistics calculateSampleStatistics (const LineParametersWithConfidence& fit, const std::vector<UploadSampleResult<MapBufferRangeFlushDurationNoAlloc> >& samples)
 {
 	MapFlushCallStatistics stats;
 
@@ -918,7 +855,7 @@ static MapFlushCallStatistics calculateSampleStatistics (const TheilSenLineFit& 
 	return stats;
 }
 
-static RenderReadStatistics calculateSampleStatistics (const TheilSenLineFit& fit, const std::vector<RenderSampleResult<RenderReadDuration> >& samples)
+static RenderReadStatistics calculateSampleStatistics (const LineParametersWithConfidence& fit, const std::vector<RenderSampleResult<RenderReadDuration> >& samples)
 {
 	RenderReadStatistics stats;
 
@@ -931,7 +868,7 @@ static RenderReadStatistics calculateSampleStatistics (const TheilSenLineFit& fi
 	return stats;
 }
 
-static RenderReadStatistics calculateSampleStatistics (const TheilSenLineFit& fit, const std::vector<RenderSampleResult<UnrelatedUploadRenderReadDuration> >& samples)
+static RenderReadStatistics calculateSampleStatistics (const LineParametersWithConfidence& fit, const std::vector<RenderSampleResult<UnrelatedUploadRenderReadDuration> >& samples)
 {
 	RenderReadStatistics stats;
 
@@ -944,7 +881,7 @@ static RenderReadStatistics calculateSampleStatistics (const TheilSenLineFit& fi
 	return stats;
 }
 
-static UploadRenderReadStatistics calculateSampleStatistics (const TheilSenLineFit& fit, const std::vector<RenderSampleResult<UploadRenderReadDuration> >& samples)
+static UploadRenderReadStatistics calculateSampleStatistics (const LineParametersWithConfidence& fit, const std::vector<RenderSampleResult<UploadRenderReadDuration> >& samples)
 {
 	UploadRenderReadStatistics stats;
 
@@ -958,7 +895,7 @@ static UploadRenderReadStatistics calculateSampleStatistics (const TheilSenLineF
 	return stats;
 }
 
-static UploadRenderReadStatistics calculateSampleStatistics (const TheilSenLineFit& fit, const std::vector<RenderSampleResult<UploadRenderReadDurationWithUnrelatedUploadSize> >& samples)
+static UploadRenderReadStatistics calculateSampleStatistics (const LineParametersWithConfidence& fit, const std::vector<RenderSampleResult<UploadRenderReadDurationWithUnrelatedUploadSize> >& samples)
 {
 	UploadRenderReadStatistics stats;
 
@@ -972,7 +909,7 @@ static UploadRenderReadStatistics calculateSampleStatistics (const TheilSenLineF
 	return stats;
 }
 
-static RenderUploadRenderReadStatistics calculateSampleStatistics (const TheilSenLineFit& fit, const std::vector<RenderSampleResult<RenderUploadRenderReadDuration> >& samples)
+static RenderUploadRenderReadStatistics calculateSampleStatistics (const LineParametersWithConfidence& fit, const std::vector<RenderSampleResult<RenderUploadRenderReadDuration> >& samples)
 {
 	RenderUploadRenderReadStatistics stats;
 
@@ -988,7 +925,7 @@ static RenderUploadRenderReadStatistics calculateSampleStatistics (const TheilSe
 }
 
 template <typename DurationType>
-static TheilSenLineFit fitLineToSamples (const std::vector<UploadSampleResult<DurationType> >& samples, int beginNdx, int endNdx, int step, deUint64 DurationType::*target = &DurationType::fitResponseDuration)
+static LineParametersWithConfidence fitLineToSamples (const std::vector<UploadSampleResult<DurationType> >& samples, int beginNdx, int endNdx, int step, deUint64 DurationType::*target = &DurationType::fitResponseDuration)
 {
 	std::vector<tcu::Vec2> samplePoints;
 
@@ -1002,11 +939,11 @@ static TheilSenLineFit fitLineToSamples (const std::vector<UploadSampleResult<Du
 		samplePoints.push_back(point);
 	}
 
-	return theilSenLinearRegression(samplePoints);
+	return theilSenSiegelLinearRegression(samplePoints, 0.6f);
 }
 
 template <typename DurationType>
-static TheilSenLineFit fitLineToSamples (const std::vector<RenderSampleResult<DurationType> >& samples, int beginNdx, int endNdx, int step, deUint64 DurationType::*target = &DurationType::fitResponseDuration)
+static LineParametersWithConfidence fitLineToSamples (const std::vector<RenderSampleResult<DurationType> >& samples, int beginNdx, int endNdx, int step, deUint64 DurationType::*target = &DurationType::fitResponseDuration)
 {
 	std::vector<tcu::Vec2> samplePoints;
 
@@ -1020,17 +957,17 @@ static TheilSenLineFit fitLineToSamples (const std::vector<RenderSampleResult<Du
 		samplePoints.push_back(point);
 	}
 
-	return theilSenLinearRegression(samplePoints);
+	return theilSenSiegelLinearRegression(samplePoints, 0.6f);
 }
 
 template <typename T>
-static TheilSenLineFit fitLineToSamples (const std::vector<T>& samples, int beginNdx, int endNdx, deUint64 T::SampleType::*target = &T::SampleType::fitResponseDuration)
+static LineParametersWithConfidence fitLineToSamples (const std::vector<T>& samples, int beginNdx, int endNdx, deUint64 T::SampleType::*target = &T::SampleType::fitResponseDuration)
 {
 	return fitLineToSamples(samples, beginNdx, endNdx, 1, target);
 }
 
 template <typename T>
-static TheilSenLineFit fitLineToSamples (const std::vector<T>& samples, deUint64 T::SampleType::*target = &T::SampleType::fitResponseDuration)
+static LineParametersWithConfidence fitLineToSamples (const std::vector<T>& samples, deUint64 T::SampleType::*target = &T::SampleType::fitResponseDuration)
 {
 	return fitLineToSamples(samples, 0, (int)samples.size(), target);
 }
@@ -1083,8 +1020,8 @@ static float calculateSampleFitLinearity (const std::vector<T>& samples, int T::
 
 	const float				epsilon				= 1.e-6f;
 	const int				midPoint			= (int)samples.size() / 2;
-	const TheilSenLineFit	startApproximation	= fitLineToSamples(samples, 0, midPoint, &T::SampleType::fitResponseDuration);
-	const TheilSenLineFit	endApproximation	= fitLineToSamples(samples, midPoint, (int)samples.size(), &T::SampleType::fitResponseDuration);
+	const LineParametersWithConfidence	startApproximation	= fitLineToSamples(samples, 0, midPoint, &T::SampleType::fitResponseDuration);
+	const LineParametersWithConfidence	endApproximation	= fitLineToSamples(samples, midPoint, (int)samples.size(), &T::SampleType::fitResponseDuration);
 
 	const float				aabbMinX			= (float)(samples.front().*predictor);
 	const float				aabbMinY			= de::min(startApproximation.offset + startApproximation.coefficient*aabbMinX, endApproximation.offset + endApproximation.coefficient*aabbMinX);
@@ -1119,8 +1056,8 @@ static float calculateSampleTemporalStability (const std::vector<T>& samples, in
 	// the lines and the AABB.
 
 	const float				epsilon				= 1.e-6f;
-	const TheilSenLineFit	evenApproximation	= fitLineToSamples(samples, 0, (int)samples.size(), 2, &T::SampleType::fitResponseDuration);
-	const TheilSenLineFit	oddApproximation	= fitLineToSamples(samples, 1, (int)samples.size(), 2, &T::SampleType::fitResponseDuration);
+	const LineParametersWithConfidence	evenApproximation	= fitLineToSamples(samples, 0, (int)samples.size(), 2, &T::SampleType::fitResponseDuration);
+	const LineParametersWithConfidence	oddApproximation	= fitLineToSamples(samples, 1, (int)samples.size(), 2, &T::SampleType::fitResponseDuration);
 
 	const float				aabbMinX			= (float)(samples.front().*predictor);
 	const float				aabbMinY			= de::min(evenApproximation.offset + evenApproximation.coefficient*aabbMinX, oddApproximation.offset + oddApproximation.coefficient*aabbMinX);
@@ -1259,7 +1196,7 @@ static typename EnableIfNot<void, SampleTypeTraits<SampleType>::HAS_ALLOC_STATS>
 template <typename SampleType>
 static typename EnableIf<void, SampleTypeTraits<SampleType>::HAS_MAP_STATS>::Type logMapContribution (tcu::TestLog& log, const std::vector<UploadSampleResult<SampleType> >& samples, const typename SampleTypeTraits<SampleType>::StatsType& stats)
 {
-	const TheilSenLineFit contributionFitting = fitLineToSamples(samples, &SampleType::mapDuration);
+	const LineParametersWithConfidence contributionFitting = fitLineToSamples(samples, &SampleType::mapDuration);
 	log	<< tcu::TestLog::Float("MapConstantCost", "Map: Approximated contant cost", "us", QP_KEY_TAG_TIME, contributionFitting.offset)
 		<< tcu::TestLog::Float("MapLinearCost", "Map: Approximated linear cost", "us / MB", QP_KEY_TAG_TIME, contributionFitting.coefficient * 1024.0f * 1024.0f)
 		<< tcu::TestLog::Float("MapMedianCost", "Map: Median cost", "us", QP_KEY_TAG_TIME, stats.map.medianTime);
@@ -1268,7 +1205,7 @@ static typename EnableIf<void, SampleTypeTraits<SampleType>::HAS_MAP_STATS>::Typ
 template <typename SampleType>
 static typename EnableIf<void, SampleTypeTraits<SampleType>::HAS_UNMAP_STATS>::Type logUnmapContribution (tcu::TestLog& log, const std::vector<UploadSampleResult<SampleType> >& samples, const typename SampleTypeTraits<SampleType>::StatsType& stats)
 {
-	const TheilSenLineFit contributionFitting = fitLineToSamples(samples, &SampleType::unmapDuration);
+	const LineParametersWithConfidence contributionFitting = fitLineToSamples(samples, &SampleType::unmapDuration);
 	log	<< tcu::TestLog::Float("UnmapConstantCost", "Unmap: Approximated contant cost", "us", QP_KEY_TAG_TIME, contributionFitting.offset)
 		<< tcu::TestLog::Float("UnmapLinearCost", "Unmap: Approximated linear cost", "us / MB", QP_KEY_TAG_TIME, contributionFitting.coefficient * 1024.0f * 1024.0f)
 		<< tcu::TestLog::Float("UnmapMedianCost", "Unmap: Median cost", "us", QP_KEY_TAG_TIME, stats.unmap.medianTime);
@@ -1277,7 +1214,7 @@ static typename EnableIf<void, SampleTypeTraits<SampleType>::HAS_UNMAP_STATS>::T
 template <typename SampleType>
 static typename EnableIf<void, SampleTypeTraits<SampleType>::HAS_WRITE_STATS>::Type logWriteContribution (tcu::TestLog& log, const std::vector<UploadSampleResult<SampleType> >& samples, const typename SampleTypeTraits<SampleType>::StatsType& stats)
 {
-	const TheilSenLineFit contributionFitting = fitLineToSamples(samples, &SampleType::writeDuration);
+	const LineParametersWithConfidence contributionFitting = fitLineToSamples(samples, &SampleType::writeDuration);
 	log	<< tcu::TestLog::Float("WriteConstantCost", "Write: Approximated contant cost", "us", QP_KEY_TAG_TIME, contributionFitting.offset)
 		<< tcu::TestLog::Float("WriteLinearCost", "Write: Approximated linear cost", "us / MB", QP_KEY_TAG_TIME, contributionFitting.coefficient * 1024.0f * 1024.0f)
 		<< tcu::TestLog::Float("WriteMedianCost", "Write: Median cost", "us", QP_KEY_TAG_TIME, stats.write.medianTime);
@@ -1286,7 +1223,7 @@ static typename EnableIf<void, SampleTypeTraits<SampleType>::HAS_WRITE_STATS>::T
 template <typename SampleType>
 static typename EnableIf<void, SampleTypeTraits<SampleType>::HAS_FLUSH_STATS>::Type logFlushContribution (tcu::TestLog& log, const std::vector<UploadSampleResult<SampleType> >& samples, const typename SampleTypeTraits<SampleType>::StatsType& stats)
 {
-	const TheilSenLineFit contributionFitting = fitLineToSamples(samples, &SampleType::flushDuration);
+	const LineParametersWithConfidence contributionFitting = fitLineToSamples(samples, &SampleType::flushDuration);
 	log	<< tcu::TestLog::Float("FlushConstantCost", "Flush: Approximated contant cost", "us", QP_KEY_TAG_TIME, contributionFitting.offset)
 		<< tcu::TestLog::Float("FlushLinearCost", "Flush: Approximated linear cost", "us / MB", QP_KEY_TAG_TIME, contributionFitting.coefficient * 1024.0f * 1024.0f)
 		<< tcu::TestLog::Float("FlushMedianCost", "Flush: Median cost", "us", QP_KEY_TAG_TIME, stats.flush.medianTime);
@@ -1295,7 +1232,7 @@ static typename EnableIf<void, SampleTypeTraits<SampleType>::HAS_FLUSH_STATS>::T
 template <typename SampleType>
 static typename EnableIf<void, SampleTypeTraits<SampleType>::HAS_ALLOC_STATS>::Type logAllocContribution (tcu::TestLog& log, const std::vector<UploadSampleResult<SampleType> >& samples, const typename SampleTypeTraits<SampleType>::StatsType& stats)
 {
-	const TheilSenLineFit contributionFitting = fitLineToSamples(samples, &SampleType::allocDuration);
+	const LineParametersWithConfidence contributionFitting = fitLineToSamples(samples, &SampleType::allocDuration);
 	log	<< tcu::TestLog::Float("AllocConstantCost", "Alloc: Approximated contant cost", "us", QP_KEY_TAG_TIME, contributionFitting.offset)
 		<< tcu::TestLog::Float("AllocLinearCost", "Alloc: Approximated linear cost", "us / MB", QP_KEY_TAG_TIME, contributionFitting.coefficient * 1024.0f * 1024.0f)
 		<< tcu::TestLog::Float("AllocMedianCost", "Alloc: Median cost", "us", QP_KEY_TAG_TIME, stats.alloc.medianTime);
@@ -1304,7 +1241,7 @@ static typename EnableIf<void, SampleTypeTraits<SampleType>::HAS_ALLOC_STATS>::T
 template <typename SampleType>
 static typename EnableIf<void, SampleTypeTraits<SampleType>::HAS_RENDER_STATS>::Type logRenderContribution (tcu::TestLog& log, const std::vector<RenderSampleResult<SampleType> >& samples, const typename SampleTypeTraits<SampleType>::StatsType& stats)
 {
-	const TheilSenLineFit contributionFitting = fitLineToSamples(samples, &SampleType::renderDuration);
+	const LineParametersWithConfidence contributionFitting = fitLineToSamples(samples, &SampleType::renderDuration);
 	log	<< tcu::TestLog::Float("DrawCallConstantCost", "DrawCall: Approximated contant cost", "us", QP_KEY_TAG_TIME, contributionFitting.offset)
 		<< tcu::TestLog::Float("DrawCallLinearCost", "DrawCall: Approximated linear cost", "us / MB", QP_KEY_TAG_TIME, contributionFitting.coefficient * 1024.0f * 1024.0f)
 		<< tcu::TestLog::Float("DrawCallMedianCost", "DrawCall: Median cost", "us", QP_KEY_TAG_TIME, stats.render.medianTime);
@@ -1313,7 +1250,7 @@ static typename EnableIf<void, SampleTypeTraits<SampleType>::HAS_RENDER_STATS>::
 template <typename SampleType>
 static typename EnableIf<void, SampleTypeTraits<SampleType>::HAS_READ_STATS>::Type logReadContribution (tcu::TestLog& log, const std::vector<RenderSampleResult<SampleType> >& samples, const typename SampleTypeTraits<SampleType>::StatsType& stats)
 {
-	const TheilSenLineFit contributionFitting = fitLineToSamples(samples, &SampleType::readDuration);
+	const LineParametersWithConfidence contributionFitting = fitLineToSamples(samples, &SampleType::readDuration);
 	log	<< tcu::TestLog::Float("ReadConstantCost", "Read: Approximated contant cost", "us", QP_KEY_TAG_TIME, contributionFitting.offset)
 		<< tcu::TestLog::Float("ReadLinearCost", "Read: Approximated linear cost", "us / MB", QP_KEY_TAG_TIME, contributionFitting.coefficient * 1024.0f * 1024.0f)
 		<< tcu::TestLog::Float("ReadMedianCost", "Read: Median cost", "us", QP_KEY_TAG_TIME, stats.read.medianTime);
@@ -1322,7 +1259,7 @@ static typename EnableIf<void, SampleTypeTraits<SampleType>::HAS_READ_STATS>::Ty
 template <typename SampleType>
 static typename EnableIf<void, SampleTypeTraits<SampleType>::HAS_UPLOAD_STATS>::Type logUploadContribution (tcu::TestLog& log, const std::vector<RenderSampleResult<SampleType> >& samples, const typename SampleTypeTraits<SampleType>::StatsType& stats)
 {
-	const TheilSenLineFit contributionFitting = fitLineToSamples(samples, &SampleType::uploadDuration);
+	const LineParametersWithConfidence contributionFitting = fitLineToSamples(samples, &SampleType::uploadDuration);
 	log	<< tcu::TestLog::Float("UploadConstantCost", "Upload: Approximated contant cost", "us", QP_KEY_TAG_TIME, contributionFitting.offset)
 		<< tcu::TestLog::Float("UploadLinearCost", "Upload: Approximated linear cost", "us / MB", QP_KEY_TAG_TIME, contributionFitting.coefficient * 1024.0f * 1024.0f)
 		<< tcu::TestLog::Float("UploadMedianCost", "Upload: Median cost", "us", QP_KEY_TAG_TIME, stats.upload.medianTime);
@@ -1331,7 +1268,7 @@ static typename EnableIf<void, SampleTypeTraits<SampleType>::HAS_UPLOAD_STATS>::
 template <typename SampleType>
 static typename EnableIf<void, SampleTypeTraits<SampleType>::HAS_TOTAL_STATS>::Type logTotalContribution (tcu::TestLog& log, const std::vector<RenderSampleResult<SampleType> >& samples, const typename SampleTypeTraits<SampleType>::StatsType& stats)
 {
-	const TheilSenLineFit contributionFitting = fitLineToSamples(samples, &SampleType::totalDuration);
+	const LineParametersWithConfidence contributionFitting = fitLineToSamples(samples, &SampleType::totalDuration);
 	log	<< tcu::TestLog::Float("TotalConstantCost", "Total: Approximated contant cost", "us", QP_KEY_TAG_TIME, contributionFitting.offset)
 		<< tcu::TestLog::Float("TotalLinearCost", "Total: Approximated linear cost", "us / MB", QP_KEY_TAG_TIME, contributionFitting.coefficient * 1024.0f * 1024.0f)
 		<< tcu::TestLog::Float("TotalMedianCost", "Total: Median cost", "us", QP_KEY_TAG_TIME, stats.total.medianTime);
@@ -1340,7 +1277,7 @@ static typename EnableIf<void, SampleTypeTraits<SampleType>::HAS_TOTAL_STATS>::T
 template <typename SampleType>
 static typename EnableIf<void, SampleTypeTraits<SampleType>::HAS_FIRST_RENDER_STATS>::Type logFirstRenderContribution (tcu::TestLog& log, const std::vector<RenderSampleResult<SampleType> >& samples, const typename SampleTypeTraits<SampleType>::StatsType& stats)
 {
-	const TheilSenLineFit contributionFitting = fitLineToSamples(samples, &SampleType::firstRenderDuration);
+	const LineParametersWithConfidence contributionFitting = fitLineToSamples(samples, &SampleType::firstRenderDuration);
 	log	<< tcu::TestLog::Float("FirstDrawCallConstantCost", "First DrawCall: Approximated contant cost", "us", QP_KEY_TAG_TIME, contributionFitting.offset)
 		<< tcu::TestLog::Float("FirstDrawCallLinearCost", "First DrawCall: Approximated linear cost", "us / MB", QP_KEY_TAG_TIME, contributionFitting.coefficient * 1024.0f * 1024.0f)
 		<< tcu::TestLog::Float("FirstDrawCallMedianCost", "First DrawCall: Median cost", "us", QP_KEY_TAG_TIME, stats.firstRender.medianTime);
@@ -1349,7 +1286,7 @@ static typename EnableIf<void, SampleTypeTraits<SampleType>::HAS_FIRST_RENDER_ST
 template <typename SampleType>
 static typename EnableIf<void, SampleTypeTraits<SampleType>::HAS_SECOND_RENDER_STATS>::Type logSecondRenderContribution (tcu::TestLog& log, const std::vector<RenderSampleResult<SampleType> >& samples, const typename SampleTypeTraits<SampleType>::StatsType& stats)
 {
-	const TheilSenLineFit contributionFitting = fitLineToSamples(samples, &SampleType::secondRenderDuration);
+	const LineParametersWithConfidence contributionFitting = fitLineToSamples(samples, &SampleType::secondRenderDuration);
 	log	<< tcu::TestLog::Float("SecondDrawCallConstantCost", "Second DrawCall: Approximated contant cost", "us", QP_KEY_TAG_TIME, contributionFitting.offset)
 		<< tcu::TestLog::Float("SecondDrawCallLinearCost", "Second DrawCall: Approximated linear cost", "us / MB", QP_KEY_TAG_TIME, contributionFitting.coefficient * 1024.0f * 1024.0f)
 		<< tcu::TestLog::Float("SecondDrawCallMedianCost", "Second DrawCall: Median cost", "us", QP_KEY_TAG_TIME, stats.secondRender.medianTime);
@@ -1443,7 +1380,7 @@ static typename EnableIfNot<void, SampleTypeTraits<SampleType>::HAS_SECOND_RENDE
 	DE_UNREF(stats);
 }
 
-void logSampleList (tcu::TestLog& log, const TheilSenLineFit& theilSenFitting, const std::vector<UploadSampleResult<SingleOperationDuration> >& samples)
+void logSampleList (tcu::TestLog& log, const LineParametersWithConfidence& theilSenFitting, const std::vector<UploadSampleResult<SingleOperationDuration> >& samples)
 {
 	log << tcu::TestLog::SampleList("Samples", "Samples")
 		<< tcu::TestLog::SampleInfo
@@ -1467,7 +1404,7 @@ void logSampleList (tcu::TestLog& log, const TheilSenLineFit& theilSenFitting, c
 	log << tcu::TestLog::EndSampleList;
 }
 
-void logSampleList (tcu::TestLog& log, const TheilSenLineFit& theilSenFitting, const std::vector<UploadSampleResult<MapBufferRangeDuration> >& samples)
+void logSampleList (tcu::TestLog& log, const LineParametersWithConfidence& theilSenFitting, const std::vector<UploadSampleResult<MapBufferRangeDuration> >& samples)
 {
 	log << tcu::TestLog::SampleList("Samples", "Samples")
 		<< tcu::TestLog::SampleInfo
@@ -1499,7 +1436,7 @@ void logSampleList (tcu::TestLog& log, const TheilSenLineFit& theilSenFitting, c
 	log << tcu::TestLog::EndSampleList;
 }
 
-void logSampleList (tcu::TestLog& log, const TheilSenLineFit& theilSenFitting, const std::vector<UploadSampleResult<MapBufferRangeDurationNoAlloc> >& samples)
+void logSampleList (tcu::TestLog& log, const LineParametersWithConfidence& theilSenFitting, const std::vector<UploadSampleResult<MapBufferRangeDurationNoAlloc> >& samples)
 {
 	log << tcu::TestLog::SampleList("Samples", "Samples")
 		<< tcu::TestLog::SampleInfo
@@ -1529,7 +1466,7 @@ void logSampleList (tcu::TestLog& log, const TheilSenLineFit& theilSenFitting, c
 	log << tcu::TestLog::EndSampleList;
 }
 
-void logSampleList (tcu::TestLog& log, const TheilSenLineFit& theilSenFitting, const std::vector<UploadSampleResult<MapBufferRangeFlushDuration> >& samples)
+void logSampleList (tcu::TestLog& log, const LineParametersWithConfidence& theilSenFitting, const std::vector<UploadSampleResult<MapBufferRangeFlushDuration> >& samples)
 {
 	log << tcu::TestLog::SampleList("Samples", "Samples")
 		<< tcu::TestLog::SampleInfo
@@ -1563,7 +1500,7 @@ void logSampleList (tcu::TestLog& log, const TheilSenLineFit& theilSenFitting, c
 	log << tcu::TestLog::EndSampleList;
 }
 
-void logSampleList (tcu::TestLog& log, const TheilSenLineFit& theilSenFitting, const std::vector<UploadSampleResult<MapBufferRangeFlushDurationNoAlloc> >& samples)
+void logSampleList (tcu::TestLog& log, const LineParametersWithConfidence& theilSenFitting, const std::vector<UploadSampleResult<MapBufferRangeFlushDurationNoAlloc> >& samples)
 {
 	log << tcu::TestLog::SampleList("Samples", "Samples")
 		<< tcu::TestLog::SampleInfo
@@ -1595,7 +1532,7 @@ void logSampleList (tcu::TestLog& log, const TheilSenLineFit& theilSenFitting, c
 	log << tcu::TestLog::EndSampleList;
 }
 
-void logSampleList (tcu::TestLog& log, const TheilSenLineFit& theilSenFitting, const std::vector<RenderSampleResult<RenderReadDuration> >& samples)
+void logSampleList (tcu::TestLog& log, const LineParametersWithConfidence& theilSenFitting, const std::vector<RenderSampleResult<RenderReadDuration> >& samples)
 {
 	log << tcu::TestLog::SampleList("Samples", "Samples")
 		<< tcu::TestLog::SampleInfo
@@ -1623,7 +1560,7 @@ void logSampleList (tcu::TestLog& log, const TheilSenLineFit& theilSenFitting, c
 	log << tcu::TestLog::EndSampleList;
 }
 
-void logSampleList (tcu::TestLog& log, const TheilSenLineFit& theilSenFitting, const std::vector<RenderSampleResult<UnrelatedUploadRenderReadDuration> >& samples)
+void logSampleList (tcu::TestLog& log, const LineParametersWithConfidence& theilSenFitting, const std::vector<RenderSampleResult<UnrelatedUploadRenderReadDuration> >& samples)
 {
 	log << tcu::TestLog::SampleList("Samples", "Samples")
 		<< tcu::TestLog::SampleInfo
@@ -1653,7 +1590,7 @@ void logSampleList (tcu::TestLog& log, const TheilSenLineFit& theilSenFitting, c
 	log << tcu::TestLog::EndSampleList;
 }
 
-void logSampleList (tcu::TestLog& log, const TheilSenLineFit& theilSenFitting, const std::vector<RenderSampleResult<UploadRenderReadDuration> >& samples)
+void logSampleList (tcu::TestLog& log, const LineParametersWithConfidence& theilSenFitting, const std::vector<RenderSampleResult<UploadRenderReadDuration> >& samples)
 {
 	log << tcu::TestLog::SampleList("Samples", "Samples")
 		<< tcu::TestLog::SampleInfo
@@ -1687,7 +1624,7 @@ void logSampleList (tcu::TestLog& log, const TheilSenLineFit& theilSenFitting, c
 	log << tcu::TestLog::EndSampleList;
 }
 
-void logSampleList (tcu::TestLog& log, const TheilSenLineFit& theilSenFitting, const std::vector<RenderSampleResult<UploadRenderReadDurationWithUnrelatedUploadSize> >& samples)
+void logSampleList (tcu::TestLog& log, const LineParametersWithConfidence& theilSenFitting, const std::vector<RenderSampleResult<UploadRenderReadDurationWithUnrelatedUploadSize> >& samples)
 {
 	log << tcu::TestLog::SampleList("Samples", "Samples")
 		<< tcu::TestLog::SampleInfo
@@ -1723,7 +1660,7 @@ void logSampleList (tcu::TestLog& log, const TheilSenLineFit& theilSenFitting, c
 	log << tcu::TestLog::EndSampleList;
 }
 
-void logSampleList (tcu::TestLog& log, const TheilSenLineFit& theilSenFitting, const std::vector<RenderSampleResult<RenderUploadRenderReadDuration> >& samples)
+void logSampleList (tcu::TestLog& log, const LineParametersWithConfidence& theilSenFitting, const std::vector<RenderSampleResult<RenderUploadRenderReadDuration> >& samples)
 {
 	log << tcu::TestLog::SampleList("Samples", "Samples")
 		<< tcu::TestLog::SampleInfo
@@ -1763,7 +1700,7 @@ template <typename SampleType>
 static UploadSampleAnalyzeResult analyzeSampleResults (tcu::TestLog& log, const std::vector<UploadSampleResult<SampleType> >& samples, bool logBucketPerformance)
 {
 	// Assume data is linear with some outliers, fit a line
-	const TheilSenLineFit									theilSenFitting						= fitLineToSamples(samples);
+	const LineParametersWithConfidence									theilSenFitting						= fitLineToSamples(samples);
 	const typename SampleTypeTraits<SampleType>::StatsType	resultStats							= calculateSampleStatistics(theilSenFitting, samples);
 	float													approximatedTransferRate;
 	float													approximatedTransferRateNoConstant;
@@ -1845,11 +1782,11 @@ static UploadSampleAnalyzeResult analyzeSampleResults (tcu::TestLog& log, const 
 		log	<< tcu::TestLog::Float("ResultLinearity", "Sample linearity", "%", QP_KEY_TAG_QUALITY, sampleLinearity * 100.0f)
 			<< tcu::TestLog::Float("SampleTemporalStability", "Sample temporal stability", "%", QP_KEY_TAG_QUALITY, sampleTemporalStability * 100.0f)
 			<< tcu::TestLog::Float("ApproximatedConstantCost", "Approximated contant cost", "us", QP_KEY_TAG_TIME, theilSenFitting.offset)
-			<< tcu::TestLog::Float("ApproximatedConstantCostConfidence60Lower", "Approximated contant cost 60% confidence lower limit", "us", QP_KEY_TAG_TIME, theilSenFitting.offset60ConfidenceLower)
-			<< tcu::TestLog::Float("ApproximatedConstantCostConfidence60Upper", "Approximated contant cost 60% confidence upper limit", "us", QP_KEY_TAG_TIME, theilSenFitting.offset60ConfidenceUpper)
+			<< tcu::TestLog::Float("ApproximatedConstantCostConfidence60Lower", "Approximated contant cost 60% confidence lower limit", "us", QP_KEY_TAG_TIME, theilSenFitting.offsetConfidenceLower)
+			<< tcu::TestLog::Float("ApproximatedConstantCostConfidence60Upper", "Approximated contant cost 60% confidence upper limit", "us", QP_KEY_TAG_TIME, theilSenFitting.offsetConfidenceUpper)
 			<< tcu::TestLog::Float("ApproximatedLinearCost", "Approximated linear cost", "us / MB", QP_KEY_TAG_TIME, theilSenFitting.coefficient * 1024.0f * 1024.0f)
-			<< tcu::TestLog::Float("ApproximatedLinearCostConfidence60Lower", "Approximated linear cost 60% confidence lower limit", "us / MB", QP_KEY_TAG_TIME, theilSenFitting.coefficient60ConfidenceLower * 1024.0f * 1024.0f)
-			<< tcu::TestLog::Float("ApproximatedLinearCostConfidence60Upper", "Approximated linear cost 60% confidence upper limit", "us / MB", QP_KEY_TAG_TIME, theilSenFitting.coefficient60ConfidenceUpper * 1024.0f * 1024.0f)
+			<< tcu::TestLog::Float("ApproximatedLinearCostConfidence60Lower", "Approximated linear cost 60% confidence lower limit", "us / MB", QP_KEY_TAG_TIME, theilSenFitting.coefficientConfidenceLower * 1024.0f * 1024.0f)
+			<< tcu::TestLog::Float("ApproximatedLinearCostConfidence60Upper", "Approximated linear cost 60% confidence upper limit", "us / MB", QP_KEY_TAG_TIME, theilSenFitting.coefficientConfidenceUpper * 1024.0f * 1024.0f)
 			<< tcu::TestLog::Float("ApproximatedTransferRate", "Approximated transfer rate", "MB / s", QP_KEY_TAG_PERFORMANCE, approximatedTransferRate / 1024.0f / 1024.0f)
 			<< tcu::TestLog::Float("ApproximatedTransferRateNoConstant", "Approximated transfer rate without constant cost", "MB / s", QP_KEY_TAG_PERFORMANCE, approximatedTransferRateNoConstant / 1024.0f / 1024.0f)
 			<< tcu::TestLog::Float("SampleMedianTime", "Median sample time", "us", QP_KEY_TAG_TIME, resultStats.result.medianTime)
@@ -1872,7 +1809,7 @@ template <typename SampleType>
 static RenderSampleAnalyzeResult analyzeSampleResults (tcu::TestLog& log, const std::vector<RenderSampleResult<SampleType> >& samples)
 {
 	// Assume data is linear with some outliers, fit a line
-	const TheilSenLineFit									theilSenFitting						= fitLineToSamples(samples);
+	const LineParametersWithConfidence									theilSenFitting						= fitLineToSamples(samples);
 	const typename SampleTypeTraits<SampleType>::StatsType	resultStats							= calculateSampleStatistics(theilSenFitting, samples);
 	float													approximatedProcessingRate;
 	float													approximatedProcessingRateNoConstant;
@@ -1912,11 +1849,11 @@ static RenderSampleAnalyzeResult analyzeSampleResults (tcu::TestLog& log, const 
 		log	<< tcu::TestLog::Float("ResultLinearity", "Sample linearity", "%", QP_KEY_TAG_QUALITY, sampleLinearity * 100.0f)
 			<< tcu::TestLog::Float("SampleTemporalStability", "Sample temporal stability", "%", QP_KEY_TAG_QUALITY, sampleTemporalStability * 100.0f)
 			<< tcu::TestLog::Float("ApproximatedConstantCost", "Approximated contant cost", "us", QP_KEY_TAG_TIME, theilSenFitting.offset)
-			<< tcu::TestLog::Float("ApproximatedConstantCostConfidence60Lower", "Approximated contant cost 60% confidence lower limit", "us", QP_KEY_TAG_TIME, theilSenFitting.offset60ConfidenceLower)
-			<< tcu::TestLog::Float("ApproximatedConstantCostConfidence60Upper", "Approximated contant cost 60% confidence upper limit", "us", QP_KEY_TAG_TIME, theilSenFitting.offset60ConfidenceUpper)
+			<< tcu::TestLog::Float("ApproximatedConstantCostConfidence60Lower", "Approximated contant cost 60% confidence lower limit", "us", QP_KEY_TAG_TIME, theilSenFitting.offsetConfidenceLower)
+			<< tcu::TestLog::Float("ApproximatedConstantCostConfidence60Upper", "Approximated contant cost 60% confidence upper limit", "us", QP_KEY_TAG_TIME, theilSenFitting.offsetConfidenceUpper)
 			<< tcu::TestLog::Float("ApproximatedLinearCost", "Approximated linear cost", "us / MB", QP_KEY_TAG_TIME, theilSenFitting.coefficient * 1024.0f * 1024.0f)
-			<< tcu::TestLog::Float("ApproximatedLinearCostConfidence60Lower", "Approximated linear cost 60% confidence lower limit", "us / MB", QP_KEY_TAG_TIME, theilSenFitting.coefficient60ConfidenceLower * 1024.0f * 1024.0f)
-			<< tcu::TestLog::Float("ApproximatedLinearCostConfidence60Upper", "Approximated linear cost 60% confidence upper limit", "us / MB", QP_KEY_TAG_TIME, theilSenFitting.coefficient60ConfidenceUpper * 1024.0f * 1024.0f)
+			<< tcu::TestLog::Float("ApproximatedLinearCostConfidence60Lower", "Approximated linear cost 60% confidence lower limit", "us / MB", QP_KEY_TAG_TIME, theilSenFitting.coefficientConfidenceLower * 1024.0f * 1024.0f)
+			<< tcu::TestLog::Float("ApproximatedLinearCostConfidence60Upper", "Approximated linear cost 60% confidence upper limit", "us / MB", QP_KEY_TAG_TIME, theilSenFitting.coefficientConfidenceUpper * 1024.0f * 1024.0f)
 			<< tcu::TestLog::Float("ApproximatedProcessRate", "Approximated processing rate", "MB / s", QP_KEY_TAG_PERFORMANCE, approximatedProcessingRate / 1024.0f / 1024.0f)
 			<< tcu::TestLog::Float("ApproximatedProcessRateNoConstant", "Approximated processing rate without constant cost", "MB / s", QP_KEY_TAG_PERFORMANCE, approximatedProcessingRateNoConstant / 1024.0f / 1024.0f)
 			<< tcu::TestLog::Float("SampleMedianTime", "Median sample time", "us", QP_KEY_TAG_TIME, resultStats.result.medianTime)
@@ -6233,9 +6170,9 @@ bool UploadWaitDrawCase::checkSampleTemporalStability (deUint64 (UploadWaitDrawC
 {
 	// Try to find correlation with sample order and sample times
 
-	const int				numDataPoints	= (int)m_iterationOrder.size();
-	std::vector<tcu::Vec2>	dataPoints		(m_iterationOrder.size());
-	TheilSenLineFit			lineFit;
+	const int						numDataPoints	= (int)m_iterationOrder.size();
+	std::vector<tcu::Vec2>			dataPoints		(m_iterationOrder.size());
+	LineParametersWithConfidence	lineFit;
 
 	for (int ndx = 0; ndx < (int)m_iterationOrder.size(); ++ndx)
 	{
@@ -6243,7 +6180,7 @@ bool UploadWaitDrawCase::checkSampleTemporalStability (deUint64 (UploadWaitDrawC
 		dataPoints[m_iterationOrder[ndx]].y() = (float)(m_results[m_iterationOrder[ndx]].*target);
 	}
 
-	lineFit = theilSenLinearRegression(dataPoints);
+	lineFit = theilSenSiegelLinearRegression(dataPoints, 0.6f);
 
 	// Difference of more than 25% of the offset along the whole sample range
 	if (de::abs(lineFit.coefficient) * numDataPoints > de::abs(lineFit.offset) * 0.25f)

@@ -679,7 +679,7 @@ std::string SingleSampleInterpolateAtSampleCase::genVertexSource (int numTargetS
 			"void main (void)\n"
 			"{\n"
 			"	gl_Position = a_position;\n"
-			"	v_position = (a_position.xy + vec2(1.0, 1.0)) / 2.0 * vec2(" << RENDER_SIZE << ".0, " << RENDER_SIZE << ".0);\n"
+			"	v_position = (a_position.xy + vec2(1.0, 1.0)) / 2.0 * vec2(" << (int)RENDER_SIZE << ".0, " << (int)RENDER_SIZE << ".0);\n"
 			"}\n";
 
 	return buf.str();
@@ -966,7 +966,7 @@ std::string InterpolateAtSampleIDCase::genVertexSource (int numTargetSamples) co
 			"void main (void)\n"
 			"{\n"
 			"	gl_Position = a_position;\n"
-			"	v_screenPosition = (a_position.xy + vec2(1.0, 1.0)) / 2.0 * vec2(" << RENDER_SIZE << ".0, " << RENDER_SIZE << ".0);\n"
+			"	v_screenPosition = (a_position.xy + vec2(1.0, 1.0)) / 2.0 * vec2(" << (int)RENDER_SIZE << ".0, " << (int)RENDER_SIZE << ".0);\n"
 			"}\n";
 
 	return buf.str();
@@ -977,6 +977,7 @@ std::string InterpolateAtSampleIDCase::genFragmentSource (int numTargetSamples) 
 	DE_UNREF(numTargetSamples);
 
 	return	"#version 310 es\n"
+			"#extension GL_OES_sample_variables : require\n"
 			"#extension GL_OES_shader_multisample_interpolation : require\n"
 			"sample in highp vec2 v_screenPosition;\n"
 			"layout(location = 0) out mediump vec4 fragColor;\n"
@@ -1241,10 +1242,10 @@ std::string InterpolateAtOffsetCase::genVertexSource (int numTargetSamples) cons
 		<< "	gl_Position = a_position;\n";
 
 	if (m_testType != TEST_ARRAY_ELEMENT)
-		buf	<< "	v_screenPosition = (a_position.xy + vec2(1.0, 1.0)) / 2.0 * vec2(" << RENDER_SIZE << ".0, " << RENDER_SIZE << ".0);\n";
+		buf	<< "	v_screenPosition = (a_position.xy + vec2(1.0, 1.0)) / 2.0 * vec2(" << (int)RENDER_SIZE << ".0, " << (int)RENDER_SIZE << ".0);\n";
 	else
 		buf	<< "	v_screenPosition[0] = a_position.xy; // not used\n"
-				"	v_screenPosition[1] = (a_position.xy + vec2(1.0, 1.0)) / 2.0 * vec2(" << RENDER_SIZE << ".0, " << RENDER_SIZE << ".0);\n";
+				"	v_screenPosition[1] = (a_position.xy + vec2(1.0, 1.0)) / 2.0 * vec2(" << (int)RENDER_SIZE << ".0, " << (int)RENDER_SIZE << ".0);\n";
 
 	buf	<< "	v_offset = a_position.xy * 0.5f;\n"
 		<< "}\n";
@@ -1359,7 +1360,7 @@ std::string InterpolateAtSamplePositionCase::genVertexSource (int numTargetSampl
 			"void main (void)\n"
 			"{\n"
 			"	gl_Position = a_position;\n"
-			"	v_screenPosition = (a_position.xy + vec2(1.0, 1.0)) / 2.0 * vec2(" << RENDER_SIZE << ".0, " << RENDER_SIZE << ".0);\n"
+			"	v_screenPosition = (a_position.xy + vec2(1.0, 1.0)) / 2.0 * vec2(" << (int)RENDER_SIZE << ".0, " << (int)RENDER_SIZE << ".0);\n"
 			"}\n";
 
 	return buf.str();
@@ -1370,6 +1371,7 @@ std::string InterpolateAtSamplePositionCase::genFragmentSource (int numTargetSam
 	DE_UNREF(numTargetSamples);
 
 	return	"#version 310 es\n"
+			"#extension GL_OES_sample_variables : require\n"
 			"#extension GL_OES_shader_multisample_interpolation : require\n"
 			"sample in highp vec2 v_screenPosition;\n"
 			"layout(location = 0) out mediump vec4 fragColor;\n"

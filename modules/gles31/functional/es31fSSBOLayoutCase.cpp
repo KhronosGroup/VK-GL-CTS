@@ -180,42 +180,10 @@ struct BufferVarLayoutEntry
 	bool				isRowMajor;
 };
 
-// \note For arrays of basic types (not aggregate types), TOP_LEVEL_ARRAY_SIZE = 1,
-//		 but for practical reasons these functions report ARRAY_SIZE as top level
-//		 array size for such arrays (and 1 as array size).
-//		 See Khronos bug 11753
-
-static bool isBasicTypeArray (const BufferVarLayoutEntry& entry)
+static bool isUnsizedArray (const BufferVarLayoutEntry& entry)
 {
-	// \note Fails to differentiate cases like a[1][1] where implementation assigns
-	//		 0 as both top-level and bottom-level array stride (which is valid for
-	//		 impl-dependent layouts) but this doesn't matter in practice.
-	return entry.topLevelArraySize == 1 && entry.topLevelArrayStride == 0 && (entry.arraySize != 1 || entry.arrayStride != 0);
-}
-
-static int getTopLevelArraySize (const BufferVarLayoutEntry& entry)
-{
-	return isBasicTypeArray(entry) ? entry.arraySize : entry.topLevelArraySize;
-}
-
-static int getTopLevelArrayStride (const BufferVarLayoutEntry& entry)
-{
-	return isBasicTypeArray(entry) ? entry.arrayStride : entry.topLevelArrayStride;
-}
-
-static int getArraySize (const BufferVarLayoutEntry& entry)
-{
-	return isBasicTypeArray(entry) ? 1 : entry.arraySize;
-}
-
-static int getArrayStride (const BufferVarLayoutEntry& entry)
-{
-	return isBasicTypeArray(entry) ? 0 : entry.arrayStride;
-}
-
-static bool isUnsizedTopLevelArray (const BufferVarLayoutEntry& entry)
-{
-	return getTopLevelArraySize(entry) == 0;
+	DE_ASSERT(entry.arraySize != 0 || entry.topLevelArraySize != 0);
+	return entry.arraySize == 0 || entry.topLevelArraySize == 0;
 }
 
 std::ostream& operator<< (std::ostream& stream, const BufferVarLayoutEntry& entry)
@@ -760,23 +728,24 @@ void computeReferenceLayout (BufferLayout& layout, const ShaderInterface& interf
 
 // Value generator.
 
-void generateValue (const BufferVarLayoutEntry& entry, int topLevelArraySize, void* basePtr, de::Random& rnd)
+void generateValue (const BufferVarLayoutEntry& entry, int unsizedArraySize, void* basePtr, de::Random& rnd)
 {
 	const glu::DataType	scalarType		= glu::getDataTypeScalarType(entry.type);
 	const int			scalarSize		= glu::getDataTypeScalarSize(entry.type);
-	const int			arraySize		= getArraySize(entry);
-	const int			topLevelStride	= getTopLevelArrayStride(entry);
-	const int			arrayStride		= getArrayStride(entry);
+	const int			arraySize		= entry.arraySize == 0 ? unsizedArraySize : entry.arraySize;
+	const int			arrayStride		= entry.arrayStride;
+	const int			topLevelSize	= entry.topLevelArraySize == 0 ? unsizedArraySize : entry.topLevelArraySize;
+	const int			topLevelStride	= entry.topLevelArrayStride;
 	const bool			isMatrix		= glu::isDataTypeMatrix(entry.type);
 	const int			numVecs			= isMatrix ? (entry.isRowMajor ? glu::getDataTypeMatrixNumRows(entry.type) : glu::getDataTypeMatrixNumColumns(entry.type)) : 1;
 	const int			vecSize			= scalarSize / numVecs;
 	const int			compSize		= sizeof(deUint32);
 
 	DE_ASSERT(scalarSize%numVecs == 0);
-	DE_ASSERT(topLevelArraySize >= 0);
-	DE_ASSERT(arraySize > 0);
+	DE_ASSERT(topLevelSize >= 0);
+	DE_ASSERT(arraySize >= 0);
 
-	for (int topElemNdx = 0; topElemNdx < topLevelArraySize; topElemNdx++)
+	for (int topElemNdx = 0; topElemNdx < topLevelSize; topElemNdx++)
 	{
 		deUint8* const topElemPtr = (deUint8*)basePtr + entry.offset + topElemNdx*topLevelStride;
 
@@ -824,12 +793,10 @@ void generateValues (const BufferLayout& layout, const vector<BlockDataPtr>& blo
 
 		for (int entryNdx = 0; entryNdx < numEntries; entryNdx++)
 		{
-			const int					varNdx				= blockLayout.activeVarIndices[entryNdx];
-			const BufferVarLayoutEntry&	varEntry			= layout.bufferVars[varNdx];
-			const bool					unsizedArray		= (entryNdx+1 == numEntries) && isUnsizedTopLevelArray(varEntry);
-			const int					topLevelArraySize	= unsizedArray ? blockPtr.lastUnsizedArraySize : getTopLevelArraySize(varEntry);
+			const int					varNdx		= blockLayout.activeVarIndices[entryNdx];
+			const BufferVarLayoutEntry&	varEntry	= layout.bufferVars[varNdx];
 
-			generateValue(varEntry, topLevelArraySize, blockPtr.ptr, rnd);
+			generateValue(varEntry, blockPtr.lastUnsizedArraySize, blockPtr.ptr, rnd);
 		}
 	}
 }
@@ -1143,10 +1110,10 @@ string getShaderName (const BufferBlock& block, int instanceNdx, const BufferVar
 
 int computeOffset (const BufferVarLayoutEntry& varLayout, const glu::TypeComponentVector& accessPath)
 {
-	const int	topLevelNdx		= (!accessPath.empty() && accessPath.front().type == glu::VarTypeComponent::ARRAY_ELEMENT) ? accessPath.front().index : 0;
-	const int	bottomLevelNdx	= (accessPath.size() > 1 && accessPath.back().type == glu::VarTypeComponent::ARRAY_ELEMENT) ? accessPath.back().index : 0;
+	const int	topLevelNdx		= (accessPath.size() > 1 && accessPath.front().type == glu::VarTypeComponent::ARRAY_ELEMENT) ? accessPath.front().index : 0;
+	const int	bottomLevelNdx	= (!accessPath.empty() && accessPath.back().type == glu::VarTypeComponent::ARRAY_ELEMENT) ? accessPath.back().index : 0;
 
-	return varLayout.offset + getTopLevelArrayStride(varLayout)*topLevelNdx + getArrayStride(varLayout)*bottomLevelNdx;
+	return varLayout.offset + varLayout.topLevelArrayStride*topLevelNdx + varLayout.arrayStride*bottomLevelNdx;
 }
 
 void generateCompareSrc (
@@ -1512,14 +1479,14 @@ void copyBufferVarData (const BufferVarLayoutEntry& dstEntry, const BlockDataPtr
 	const int				scalarSize			= glu::getDataTypeScalarSize(dstEntry.type);
 	const bool				isMatrix			= glu::isDataTypeMatrix(dstEntry.type);
 	const int				compSize			= sizeof(deUint32);
-	const int				dstArraySize		= getArraySize(dstEntry);
-	const int				dstArrayStride		= getArrayStride(dstEntry);
-	const int				dstTopLevelSize		= isUnsizedTopLevelArray(dstEntry) ? dstBlockPtr.lastUnsizedArraySize : getTopLevelArraySize(dstEntry);
-	const int				dstTopLevelStride	= getTopLevelArrayStride(dstEntry);
-	const int				srcArraySize		= getArraySize(srcEntry);
-	const int				srcArrayStride		= getArrayStride(srcEntry);
-	const int				srcTopLevelSize		= isUnsizedTopLevelArray(srcEntry) ? srcBlockPtr.lastUnsizedArraySize : getTopLevelArraySize(srcEntry);
-	const int				srcTopLevelStride	= getTopLevelArrayStride(srcEntry);
+	const int				dstArraySize		= dstEntry.arraySize == 0 ? dstBlockPtr.lastUnsizedArraySize : dstEntry.arraySize;
+	const int				dstArrayStride		= dstEntry.arrayStride;
+	const int				dstTopLevelSize		= dstEntry.topLevelArraySize == 0 ? dstBlockPtr.lastUnsizedArraySize : dstEntry.topLevelArraySize;
+	const int				dstTopLevelStride	= dstEntry.topLevelArrayStride;
+	const int				srcArraySize		= srcEntry.arraySize == 0 ? srcBlockPtr.lastUnsizedArraySize : srcEntry.arraySize;
+	const int				srcArrayStride		= srcEntry.arrayStride;
+	const int				srcTopLevelSize		= srcEntry.topLevelArraySize == 0 ? srcBlockPtr.lastUnsizedArraySize : srcEntry.topLevelArraySize;
+	const int				srcTopLevelStride	= srcEntry.topLevelArrayStride;
 
 	DE_ASSERT(dstArraySize <= srcArraySize && dstTopLevelSize <= srcTopLevelSize);
 	DE_UNREF(srcArraySize && srcTopLevelSize);
@@ -1722,14 +1689,14 @@ bool compareBufferVarData (tcu::TestLog& log, const BufferVarLayoutEntry& refEnt
 	const int				maxPrints			= 3;
 	int						numFailed			= 0;
 
-	const int				resArraySize		= getArraySize(resEntry);
-	const int				resArrayStride		= getArrayStride(resEntry);
-	const int				resTopLevelSize		= isUnsizedTopLevelArray(resEntry) ? resBlockPtr.lastUnsizedArraySize : getTopLevelArraySize(resEntry);
-	const int				resTopLevelStride	= getTopLevelArrayStride(resEntry);
-	const int				refArraySize		= getArraySize(refEntry);
-	const int				refArrayStride		= getArrayStride(refEntry);
-	const int				refTopLevelSize		= isUnsizedTopLevelArray(refEntry) ? refBlockPtr.lastUnsizedArraySize : getTopLevelArraySize(refEntry);
-	const int				refTopLevelStride	= getTopLevelArrayStride(refEntry);
+	const int				resArraySize		= resEntry.arraySize == 0 ? resBlockPtr.lastUnsizedArraySize : resEntry.arraySize;
+	const int				resArrayStride		= resEntry.arrayStride;
+	const int				resTopLevelSize		= resEntry.topLevelArraySize == 0 ? resBlockPtr.lastUnsizedArraySize : resEntry.topLevelArraySize;
+	const int				resTopLevelStride	= resEntry.topLevelArrayStride;
+	const int				refArraySize		= refEntry.arraySize == 0 ? refBlockPtr.lastUnsizedArraySize : refEntry.arraySize;
+	const int				refArrayStride		= refEntry.arrayStride;
+	const int				refTopLevelSize		= refEntry.topLevelArraySize == 0 ? refBlockPtr.lastUnsizedArraySize : refEntry.topLevelArraySize;
+	const int				refTopLevelStride	= refEntry.topLevelArrayStride;
 
 	DE_ASSERT(resArraySize <= refArraySize && resTopLevelSize <= refTopLevelSize);
 	DE_UNREF(refArraySize && refTopLevelSize);
@@ -1852,6 +1819,37 @@ string getBlockAPIName (const BufferBlock& block, int instanceNdx)
 	return block.getBlockName() + (block.isArray() ? ("[" + de::toString(instanceNdx) + "]") : string());
 }
 
+// \note Some implementations don't report block members in the order they are declared.
+//		 For checking whether size has to be adjusted by some top-level array actual size,
+//		 we only need to know a) whether there is a unsized top-level array, and b)
+//		 what is stride of that array.
+
+static bool hasUnsizedArray (const BufferLayout& layout, const BlockLayoutEntry& entry)
+{
+	for (vector<int>::const_iterator varNdx = entry.activeVarIndices.begin(); varNdx != entry.activeVarIndices.end(); ++varNdx)
+	{
+		if (isUnsizedArray(layout.bufferVars[*varNdx]))
+			return true;
+	}
+
+	return false;
+}
+
+static int getUnsizedArrayStride (const BufferLayout& layout, const BlockLayoutEntry& entry)
+{
+	for (vector<int>::const_iterator varNdx = entry.activeVarIndices.begin(); varNdx != entry.activeVarIndices.end(); ++varNdx)
+	{
+		const BufferVarLayoutEntry& varEntry = layout.bufferVars[*varNdx];
+
+		if (varEntry.arraySize == 0)
+			return varEntry.arrayStride;
+		else if (varEntry.topLevelArraySize == 0)
+			return varEntry.topLevelArrayStride;
+	}
+
+	return 0;
+}
+
 vector<int> computeBufferSizes (const ShaderInterface& interface, const BufferLayout& layout)
 {
 	vector<int> sizes(layout.blocks.size());
@@ -1871,11 +1869,9 @@ vector<int> computeBufferSizes (const ShaderInterface& interface, const BufferLa
 			{
 				const BlockLayoutEntry&		blockLayout		= layout.blocks[blockNdx];
 				const int					baseSize		= blockLayout.size;
-				const int					lastVarNdx		= !layout.bufferVars.empty() ? blockLayout.activeVarIndices.back() : -1;
-				const BufferVarLayoutEntry*	lastEntry		= lastVarNdx >= 0 ? &layout.bufferVars[lastVarNdx] : DE_NULL;
-				const bool					isLastUnsized	= lastEntry && isUnsizedTopLevelArray(*lastEntry);
+				const bool					isLastUnsized	= hasUnsizedArray(layout, blockLayout);
 				const int					lastArraySize	= isLastUnsized ? block.getLastUnsizedArraySize(instanceNdx) : 0;
-				const int					stride			= isLastUnsized ? getTopLevelArrayStride(*lastEntry) : 0;
+				const int					stride			= isLastUnsized ? getUnsizedArrayStride(layout, blockLayout) : 0;
 
 				sizes[blockNdx] = baseSize + lastArraySize*stride;
 			}
@@ -1887,14 +1883,12 @@ vector<int> computeBufferSizes (const ShaderInterface& interface, const BufferLa
 
 BlockDataPtr getBlockDataPtr (const BufferLayout& layout, const BlockLayoutEntry& blockLayout, void* ptr, int bufferSize)
 {
-	const int							lastVarNdx		= !blockLayout.activeVarIndices.empty() ? blockLayout.activeVarIndices.back() : -1;
-	const BufferVarLayoutEntry* const	lastEntry		= lastVarNdx >= 0 ? &layout.bufferVars[lastVarNdx] : DE_NULL;
-	const bool							isLastUnsized	= lastEntry && isUnsizedTopLevelArray(*lastEntry);
-	const int							baseSize		= blockLayout.size;
+	const bool	isLastUnsized	= hasUnsizedArray(layout, blockLayout);
+	const int	baseSize		= blockLayout.size;
 
 	if (isLastUnsized)
 	{
-		const int		lastArrayStride	= getTopLevelArrayStride(*lastEntry);
+		const int		lastArrayStride	= getUnsizedArrayStride(layout, blockLayout);
 		const int		lastArraySize	= (bufferSize-baseSize) / (lastArrayStride ? lastArrayStride : 1);
 
 		DE_ASSERT(baseSize + lastArraySize*lastArrayStride == bufferSize);
@@ -2247,7 +2241,9 @@ SSBOLayoutCase::IterateResult SSBOLayoutCase::iterate (void)
 				if (layoutNdx >= 0)
 				{
 					const BlockLocation& blockLoc = blockLocations[layoutNdx];
-					gl.bindBufferRange(GL_SHADER_STORAGE_BUFFER, bindingPoint, buffers[blockLoc.index].buffer, blockLoc.offset, blockLoc.size);
+
+					if (blockLoc.size > 0)
+						gl.bindBufferRange(GL_SHADER_STORAGE_BUFFER, bindingPoint, buffers[blockLoc.index].buffer, blockLoc.offset, blockLoc.size);
 				}
 
 				bindingPoint += 1;
@@ -2540,17 +2536,17 @@ bool SSBOLayoutCase::checkLayoutBounds (const BufferLayout& layout) const
 	{
 		const BufferVarLayoutEntry& var = layout.bufferVars[varNdx];
 
-		if (var.blockNdx < 0 || isUnsizedTopLevelArray(var))
+		if (var.blockNdx < 0 || isUnsizedArray(var))
 			continue;
 
 		const BlockLayoutEntry&		block			= layout.blocks[var.blockNdx];
 		const bool					isMatrix		= glu::isDataTypeMatrix(var.type);
 		const int					numVecs			= isMatrix ? (var.isRowMajor ? glu::getDataTypeMatrixNumRows(var.type) : glu::getDataTypeMatrixNumColumns(var.type)) : 1;
 		const int					numComps		= isMatrix ? (var.isRowMajor ? glu::getDataTypeMatrixNumColumns(var.type) : glu::getDataTypeMatrixNumRows(var.type)) : glu::getDataTypeScalarSize(var.type);
-		const int					numElements		= getArraySize(var);
-		const int					topLevelSize	= getTopLevelArraySize(var);
-		const int					arrayStride		= getArrayStride(var);
-		const int					topLevelStride	= getTopLevelArrayStride(var);
+		const int					numElements		= var.arraySize;
+		const int					topLevelSize	= var.topLevelArraySize;
+		const int					arrayStride		= var.arrayStride;
+		const int					topLevelStride	= var.topLevelArrayStride;
 		const int					compSize		= sizeof(deUint32);
 		const int					vecSize			= numComps*compSize;
 

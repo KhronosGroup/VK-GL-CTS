@@ -1211,7 +1211,9 @@ protected:
 		const tcu::TextureFormatInfo	colorFmtInfo			= tcu::getTextureFormatInfo(colorFmt);
 		const tcu::Vec4&				cBias					= colorFmtInfo.valueMin;
 		const tcu::Vec4					cScale					= colorFmtInfo.valueMax-colorFmtInfo.valueMin;
-		const bool						isDiscarded				= (m_invalidateTarget == GL_FRAMEBUFFER && m_boundTarget == GL_DRAW_FRAMEBUFFER) || (m_invalidateTarget == m_boundTarget);
+		const bool						isDiscarded				= (m_boundTarget == GL_FRAMEBUFFER) ||
+																  (m_invalidateTarget == GL_FRAMEBUFFER && m_boundTarget == GL_DRAW_FRAMEBUFFER) ||
+																  (m_invalidateTarget == m_boundTarget);
 		const bool						isColorDiscarded		= isDiscarded && hasAttachment(m_invalidateAttachments, GL_COLOR_ATTACHMENT0);
 		const bool						isDepthDiscarded		= isDiscarded && (hasAttachment(m_invalidateAttachments, GL_DEPTH_ATTACHMENT) || hasAttachment(m_invalidateAttachments, GL_DEPTH_STENCIL_ATTACHMENT));
 		const bool						isStencilDiscarded		= isDiscarded && (hasAttachment(m_invalidateAttachments, GL_STENCIL_ATTACHMENT) || hasAttachment(m_invalidateAttachments, GL_DEPTH_STENCIL_ATTACHMENT));

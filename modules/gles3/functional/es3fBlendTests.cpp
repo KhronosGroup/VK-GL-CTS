@@ -319,7 +319,7 @@ BlendCase::IterateResult BlendCase::iterate (void)
 	// \note In sRGB cases, convert to linear space for comparison.
 
 	UVec4 compareThreshold = (m_useSrgbFbo ? tcu::PixelFormat(8, 8, 8, 8) : m_context.getRenderTarget().getPixelFormat()).getColorThreshold().toIVec().asUint()
-							 * UVec4(5) / UVec4(2) + UVec4(m_useSrgbFbo ? 4 : 2); // \note Non-scientific ad hoc formula. Need big threshold when few color bits; blending brings extra inaccuracy.
+							 * UVec4(5) / UVec4(2) + UVec4(m_useSrgbFbo ? 5 : 2); // \note Non-scientific ad hoc formula. Need big threshold when few color bits; blending brings extra inaccuracy.
 
 	bool comparePass = tcu::intThresholdCompare(m_testCtx.getLog(), "CompareResult", "Image Comparison Result",
 												(m_useSrgbFbo ? sRGBATextureLevelToLinear(*m_refColorBuffer) : *m_refColorBuffer).getAccess(),

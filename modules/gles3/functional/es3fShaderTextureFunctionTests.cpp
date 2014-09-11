@@ -690,7 +690,19 @@ void ShaderTextureFunctionCase::initTexture (void)
 					Vec4			colorB	= cBias + cScale*f.swizzle(swzB[0], swzB[1], swzB[2], swzB[3]);
 
 					m_textureCube->getRefTexture().allocLevel((tcu::CubeFace)face, level);
-					tcu::fillWithGrid(m_textureCube->getRefTexture().getLevelFace(level, (tcu::CubeFace)face), de::max(1, baseCellSize>>level), colorA, colorB);
+
+					{
+						const tcu::PixelBufferAccess	access		= m_textureCube->getRefTexture().getLevelFace(level, (tcu::CubeFace)face);
+						const int						lastPix		= access.getWidth()-1;
+
+						tcu::fillWithGrid(access, de::max(1, baseCellSize>>level), colorA, colorB);
+
+						// Ensure all corners have identical colors in order to avoid dealing with ambiguous corner texel filtering
+						access.setPixel(colorA, 0, 0);
+						access.setPixel(colorA, 0, lastPix);
+						access.setPixel(colorA, lastPix, 0);
+						access.setPixel(colorA, lastPix, lastPix);
+					}
 				}
 			}
 			m_textureCube->upload();

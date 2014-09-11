@@ -174,7 +174,8 @@ DE_INLINE float		deFloatSmoothStep	(float e0, float e1, float v)
 	return t * t * (3.0f - 2.0f * t);
 }
 
-
+DE_INLINE double	deMix				(double a, double b, double t)	{ return a*(1.0-t) + b*t; }
+DE_INLINE double	deStep				(double limit, double val)		{ return (val < limit) ? 0.0 : 1.0; }
 
 /* Comparison functions. */
 

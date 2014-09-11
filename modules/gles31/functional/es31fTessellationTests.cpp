@@ -1660,10 +1660,10 @@ void CommonEdgeCase::init (void)
 													 "	// Offset the position slightly, based on the parity of the bits in the float representation.\n"
 													 "	// This is done to detect possible small differences in edge vertex positions between patches.\n"
 													 "	uvec2 bits = floatBitsToUint(pos);\n"
-													 "	uint numBits = 0;\n"
-													 "	for (int i = 0; i < 32; i++)\n"
-													 "		numBits += ((bits[0] >> i) & 1) + ((bits[1] >> i) & 1);\n"
-													 "	pos += float(numBits&1)*0.04;\n"
+													 "	uint numBits = 0u;\n"
+													 "	for (uint i = 0u; i < 32u; i++)\n"
+													 "		numBits += ((bits[0] >> i) & 1u) + ((bits[1] >> i) & 1u);\n"
+													 "	pos += float(numBits&1u)*0.04;\n"
 													 "\n"
 													 "	gl_Position = vec4(pos, 0.0, 1.0);\n"
 													 "}\n")
@@ -3376,7 +3376,7 @@ void BarrierCase::init (void)
 													 "	highp float x = gl_TessCoord.x*2.0 - 1.0;\n"
 													 "	highp float y = gl_TessCoord.y - in_te_attr[int(round(gl_TessCoord.x*float(" + numVertsStr + "-1)))];\n"
 													 "	gl_Position = vec4(x, y, 0.0, 1.0);\n"
-													 "	in_f_blue = abs(in_te_patchAttr - (" + numVertsStr + "-1));\n"
+													 "	in_f_blue = abs(in_te_patchAttr - float(" + numVertsStr + "-1));\n"
 													 "}\n")
 
 			<< glu::FragmentSource					("#version 310 es\n"

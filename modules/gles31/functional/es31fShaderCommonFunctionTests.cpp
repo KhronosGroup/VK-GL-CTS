@@ -838,26 +838,28 @@ public:
 			for (int compNdx = 0; compNdx < scalarSize; compNdx++)
 			{
 				const float		in0		= ((const float*)inputs[0])[compNdx];
-				const deUint32	out0	= ((const deUint32*)outputs[0])[compNdx];
-				const deUint32	ref		= tcu::Float32(in0).isNaN() ? 1u : 0u;
+				const bool		out0	= ((const deUint32*)outputs[0])[compNdx] != 0;
+				const bool		ref		= tcu::Float32(in0).isNaN();
 
 				if (out0 != ref)
 				{
-					m_failMsg << "Expected [" << compNdx << "] = " << HexBool(ref);
+					m_failMsg << "Expected [" << compNdx << "] = " << (ref ? "true" : "false");
 					return false;
 				}
 			}
 		}
-		else
+		else if (precision == glu::PRECISION_MEDIUMP || precision == glu::PRECISION_LOWP)
 		{
-			// Value can be either 0 or 1
+			// NaN support is optional, check that inputs that are not NaN don't result in true.
 			for (int compNdx = 0; compNdx < scalarSize; compNdx++)
 			{
-				const int out0 = ((const int*)outputs[0])[compNdx];
+				const float		in0		= ((const float*)inputs[0])[compNdx];
+				const bool		out0	= ((const deUint32*)outputs[0])[compNdx] != 0;
+				const bool		ref		= tcu::Float32(in0).isNaN();
 
-				if (out0 != 0 && out0 != 1)
+				if (!ref && out0)
 				{
-					m_failMsg << "Expected [" << compNdx << "] = 0 / 1";
+					m_failMsg << "Expected [" << compNdx << "] = " << (ref ? "true" : "false");
 					return false;
 				}
 			}
@@ -919,8 +921,8 @@ public:
 			for (int compNdx = 0; compNdx < scalarSize; compNdx++)
 			{
 				const float		in0		= ((const float*)inputs[0])[compNdx];
-				const deUint32	out0	= ((const deUint32*)outputs[0])[compNdx];
-				const deUint32	ref		= tcu::Float32(in0).isInf() ? 1u : 0u;
+				const bool		out0	= ((const deUint32*)outputs[0])[compNdx] != 0;
+				const bool		ref		= tcu::Float32(in0).isInf();
 
 				if (out0 != ref)
 				{
@@ -929,20 +931,23 @@ public:
 				}
 			}
 		}
-		else
+		else if (precision == glu::PRECISION_MEDIUMP)
 		{
-			// Value can be either 0 or 1
+			// Inf support is optional, check that inputs that are not Inf in mediump don't result in true.
 			for (int compNdx = 0; compNdx < scalarSize; compNdx++)
 			{
-				const int out0 = ((const int*)outputs[0])[compNdx];
+				const float		in0		= ((const float*)inputs[0])[compNdx];
+				const bool		out0	= ((const deUint32*)outputs[0])[compNdx] != 0;
+				const bool		ref		= tcu::Float16(in0).isInf();
 
-				if (out0 != 0 && out0 != 1)
+				if (!ref && out0)
 				{
-					m_failMsg << "Expected [" << compNdx << "] = 0 / 1";
+					m_failMsg << "Expected [" << compNdx << "] = " << (ref ? "true" : "false");
 					return false;
 				}
 			}
 		}
+		// else: no verification can be performed
 
 		return true;
 	}

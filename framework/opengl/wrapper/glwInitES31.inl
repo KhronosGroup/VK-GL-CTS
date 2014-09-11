@@ -305,7 +305,6 @@ gl->getActiveAtomicCounterBufferiv		= (glGetActiveAtomicCounterBufferivFunc)		lo
 gl->bindImageTexture					= (glBindImageTextureFunc)						loader->get("glBindImageTexture");
 gl->memoryBarrier						= (glMemoryBarrierFunc)							loader->get("glMemoryBarrier");
 gl->texStorage2DMultisample				= (glTexStorage2DMultisampleFunc)				loader->get("glTexStorage2DMultisample");
-gl->texStorage3DMultisample				= (glTexStorage3DMultisampleFunc)				loader->get("glTexStorage3DMultisample");
 gl->getMultisamplefv					= (glGetMultisamplefvFunc)						loader->get("glGetMultisamplefv");
 gl->sampleMaski							= (glSampleMaskiFunc)							loader->get("glSampleMaski");
 gl->getTexLevelParameteriv				= (glGetTexLevelParameterivFunc)				loader->get("glGetTexLevelParameteriv");

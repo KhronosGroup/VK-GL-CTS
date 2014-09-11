@@ -106,7 +106,7 @@ static tcu::Texture1DView getSubView (const tcu::Texture1DView& view, int baseLe
 {
 	const int	clampedBase	= de::clamp(baseLevel, 0, view.getNumLevels()-1);
 	const int	clampedMax	= de::clamp(maxLevel, clampedBase, view.getNumLevels()-1);
-	const int	numLevels	= de::min(clampedMax-clampedBase+1, view.getNumLevels()-clampedBase);
+	const int	numLevels	= clampedMax-clampedBase+1;
 	return tcu::Texture1DView(numLevels, view.getLevels()+clampedBase);
 }
 
@@ -114,7 +114,7 @@ static tcu::Texture2DView getSubView (const tcu::Texture2DView& view, int baseLe
 {
 	const int	clampedBase	= de::clamp(baseLevel, 0, view.getNumLevels()-1);
 	const int	clampedMax	= de::clamp(maxLevel, clampedBase, view.getNumLevels()-1);
-	const int	numLevels	= de::min(clampedMax-clampedBase+1, view.getNumLevels()-clampedBase);
+	const int	numLevels	= clampedMax-clampedBase+1;
 	return tcu::Texture2DView(numLevels, view.getLevels()+clampedBase);
 }
 
@@ -122,7 +122,7 @@ static tcu::TextureCubeView getSubView (const tcu::TextureCubeView& view, int ba
 {
 	const int							clampedBase	= de::clamp(baseLevel, 0, view.getNumLevels()-1);
 	const int							clampedMax	= de::clamp(maxLevel, clampedBase, view.getNumLevels()-1);
-	const int							numLevels	= de::min(clampedMax-clampedBase+1, view.getNumLevels()-clampedBase);
+	const int							numLevels	= clampedMax-clampedBase+1;
 	const tcu::ConstPixelBufferAccess*	levels[tcu::CUBEFACE_LAST];
 
 	for (int face = 0; face < tcu::CUBEFACE_LAST; face++)
@@ -135,8 +135,16 @@ static tcu::Texture3DView getSubView (const tcu::Texture3DView& view, int baseLe
 {
 	const int	clampedBase	= de::clamp(baseLevel, 0, view.getNumLevels()-1);
 	const int	clampedMax	= de::clamp(maxLevel, clampedBase, view.getNumLevels()-1);
-	const int	numLevels	= de::min(clampedMax-clampedBase+1, view.getNumLevels()-clampedBase);
+	const int	numLevels	= clampedMax-clampedBase+1;
 	return tcu::Texture3DView(numLevels, view.getLevels()+clampedBase);
+}
+
+static tcu::TextureCubeArrayView getSubView (const tcu::TextureCubeArrayView& view, int baseLevel, int maxLevel)
+{
+	const int	clampedBase	= de::clamp(baseLevel, 0, view.getNumLevels()-1);
+	const int	clampedMax	= de::clamp(maxLevel, clampedBase, view.getNumLevels()-1);
+	const int	numLevels	= clampedMax-clampedBase+1;
+	return tcu::TextureCubeArrayView(numLevels, view.getLevels()+clampedBase);
 }
 
 inline float linearInterpolate (float t, float minVal, float maxVal)
@@ -904,7 +912,7 @@ static void sampleTexture (const SurfaceAccess& dst, const tcu::TextureCubeArray
 									 triDerivateY(triT[triNdx], triW[triNdx], wy, dstH, triNx),
 									 triDerivateY(triR[triNdx], triW[triNdx], wy, dstH, triNx));
 
-			const float		lod			= de::clamp(computeCubeLodFromDerivates(params.lodMode, coord, coordDx, coordDy, src.getWidth()) + lodBias, params.minLod, params.maxLod);
+			const float		lod		= de::clamp(computeCubeLodFromDerivates(params.lodMode, coord, coordDx, coordDy, src.getSize()) + lodBias, params.minLod, params.maxLod);
 
 			dst.setPixel(execSample(src, params, coord.x(), coord.y(), coord.z(), coordQ, lod) * params.colorScale + params.colorBias, px, py);
 		}
@@ -1084,6 +1092,7 @@ glu::ShaderProgram* ProgramLibrary::getProgram (Program program)
 
 	bool	is3D		= de::inRange<int>(program, PROGRAM_3D_FLOAT, PROGRAM_3D_UINT_BIAS);
 	bool	isCubeArray	= de::inRange<int>(program, PROGRAM_CUBE_ARRAY_FLOAT, PROGRAM_CUBE_ARRAY_SHADOW);
+	bool	isBuffer	= de::inRange<int>(program, PROGRAM_BUFFER_FLOAT, PROGRAM_BUFFER_UINT);
 
 	if (m_glslVersion == glu::GLSL_VERSION_100_ES)
 	{
@@ -1096,11 +1105,16 @@ glu::ShaderProgram* ProgramLibrary::getProgram (Program program)
 	}
 	else if (m_glslVersion == glu::GLSL_VERSION_300_ES || m_glslVersion == glu::GLSL_VERSION_310_ES || m_glslVersion == glu::GLSL_VERSION_330)
 	{
-		const string version	= glu::getGLSLVersionDeclaration(m_glslVersion);
-		const string ext		= (isCubeArray && glu::glslVersionIsES(m_glslVersion)) ? "\n#extension GL_EXT_texture_cube_map_array : require" : "";
+		const string	version	= glu::getGLSLVersionDeclaration(m_glslVersion);
+		const char*		ext		= DE_NULL;
 
-		params["FRAG_HEADER"]	= version + ext + "\nlayout(location = 0) out mediump vec4 dEQP_FragColor;\n";
-		params["VTX_HEADER"]	= version + ext + "\n";
+		if (isCubeArray && glu::glslVersionIsES(m_glslVersion))
+			ext = "GL_EXT_texture_cube_map_array";
+		else if (isBuffer && glu::glslVersionIsES(m_glslVersion))
+			ext = "GL_EXT_texture_buffer";
+
+		params["FRAG_HEADER"]	= version + (ext ? string("\n#extension ") + ext + " : require" : string()) + "\nlayout(location = 0) out mediump vec4 dEQP_FragColor;\n";
+		params["VTX_HEADER"]	= version + "\n";
 		params["VTX_IN"]		= "in";
 		params["VTX_OUT"]		= "out";
 		params["FRAG_IN"]		= "in";
@@ -1592,7 +1606,7 @@ void computeQuadTexCoordCube (std::vector<float>& dst, tcu::CubeFace face, const
 	dst[9+tRow] = tSign * topRight.y();
 }
 
-void computeQuadTexCoordCubeArray (std::vector<float>& dst, int sliceNdx, tcu::CubeFace face, const tcu::Vec2& bottomLeft, const tcu::Vec2& topRight)
+void computeQuadTexCoordCubeArray (std::vector<float>& dst, tcu::CubeFace face, const tcu::Vec2& bottomLeft, const tcu::Vec2& topRight, const tcu::Vec2& layerRange)
 {
 	int			sRow	= 0;
 	int			tRow	= 0;
@@ -1601,7 +1615,8 @@ void computeQuadTexCoordCubeArray (std::vector<float>& dst, int sliceNdx, tcu::C
 	float		sSign	= 1.0f;
 	float		tSign	= 1.0f;
 	float		mSign	= 1.0f;
-	const float	q		= (float)sliceNdx;
+	const float	l0		= layerRange.x();
+	const float	l1		= layerRange.y();
 
 	switch (face)
 	{
@@ -1633,10 +1648,20 @@ void computeQuadTexCoordCubeArray (std::vector<float>& dst, int sliceNdx, tcu::C
 	dst[ 8+tRow] = tSign * bottomLeft.y();
 	dst[12+tRow] = tSign * topRight.y();
 
-	dst[ 0+qRow] = q;
-	dst[ 4+qRow] = q;
-	dst[ 8+qRow] = q;
-	dst[12+qRow] = q;
+	if (l0 != l1)
+	{
+		dst[ 0+qRow] = l0;
+		dst[ 4+qRow] = l0*0.5f + l1*0.5f;
+		dst[ 8+qRow] = l0*0.5f + l1*0.5f;
+		dst[12+qRow] = l1;
+	}
+	else
+	{
+		dst[ 0+qRow] = l0;
+		dst[ 4+qRow] = l0;
+		dst[ 8+qRow] = l0;
+		dst[12+qRow] = l0;
+	}
 }
 
 // Texture result verification
@@ -2536,6 +2561,191 @@ bool verifyTextureResult (tcu::TestContext&						testCtx,
 
 	sampleTexture(SurfaceAccess(reference, pixelFormat), src, texCoord, sampleParams);
 	numFailedPixels = computeTextureLookupDiff(result, reference.getAccess(), errorMask.getAccess(), src, texCoord, sampleParams, lookupPrec, lodPrec, testCtx.getWatchDog());
+
+	if (numFailedPixels > 0)
+		log << TestLog::Message << "ERROR: Result verification failed, got " << numFailedPixels << " invalid pixels!" << TestLog::EndMessage;
+
+	log << TestLog::ImageSet("VerifyResult", "Verification result")
+		<< TestLog::Image("Rendered", "Rendered image", result);
+
+	if (numFailedPixels > 0)
+	{
+		log << TestLog::Image("Reference", "Ideal reference image", reference)
+			<< TestLog::Image("ErrorMask", "Error mask", errorMask);
+	}
+
+	log << TestLog::EndImageSet;
+
+	return numFailedPixels == 0;
+}
+
+//! Verifies texture lookup results and returns number of failed pixels.
+int computeTextureLookupDiff (const tcu::ConstPixelBufferAccess&	result,
+							  const tcu::ConstPixelBufferAccess&	reference,
+							  const tcu::PixelBufferAccess&			errorMask,
+							  const tcu::TextureCubeArrayView&		baseView,
+							  const float*							texCoord,
+							  const ReferenceParams&				sampleParams,
+							  const tcu::LookupPrecision&			lookupPrec,
+							  const tcu::IVec4&						coordBits,
+							  const tcu::LodPrecision&				lodPrec,
+							  qpWatchDog*							watchDog)
+{
+	DE_ASSERT(result.getWidth() == reference.getWidth() && result.getHeight() == reference.getHeight());
+	DE_ASSERT(result.getWidth() == errorMask.getWidth() && result.getHeight() == errorMask.getHeight());
+
+	const tcu::TextureCubeArrayView	src	= getSubView(baseView, sampleParams.baseLevel, sampleParams.maxLevel);
+
+	// What is the 'q' in all these names? Also a two char name for something that is in scope for ~120 lines and only used twice each seems excessive
+	const tcu::Vec4		sq				= tcu::Vec4(texCoord[0+0], texCoord[4+0], texCoord[8+0], texCoord[12+0]);
+	const tcu::Vec4		tq				= tcu::Vec4(texCoord[0+1], texCoord[4+1], texCoord[8+1], texCoord[12+1]);
+	const tcu::Vec4		rq				= tcu::Vec4(texCoord[0+2], texCoord[4+2], texCoord[8+2], texCoord[12+2]);
+	const tcu::Vec4		qq				= tcu::Vec4(texCoord[0+3], texCoord[4+3], texCoord[8+3], texCoord[12+3]);
+
+	const tcu::IVec2	dstSize			= tcu::IVec2(result.getWidth(), result.getHeight());
+	const float			dstW			= float(dstSize.x());
+	const float			dstH			= float(dstSize.y());
+	const int			srcSize			= src.getSize();
+
+	// Coordinates per triangle.
+	const tcu::Vec3		triS[2]			= { sq.swizzle(0, 1, 2), sq.swizzle(3, 2, 1) };
+	const tcu::Vec3		triT[2]			= { tq.swizzle(0, 1, 2), tq.swizzle(3, 2, 1) };
+	const tcu::Vec3		triR[2]			= { rq.swizzle(0, 1, 2), rq.swizzle(3, 2, 1) };
+	const tcu::Vec3		triQ[2]			= { qq.swizzle(0, 1, 2), qq.swizzle(3, 2, 1) };
+	const tcu::Vec3		triW[2]			= { sampleParams.w.swizzle(0, 1, 2), sampleParams.w.swizzle(3, 2, 1) };
+
+	const tcu::Vec2		lodBias			((sampleParams.flags & ReferenceParams::USE_BIAS) ? sampleParams.bias : 0.0f);
+
+	const float			posEps			= 1.0f / float((1<<4) + 1); // ES3 requires at least 4 subpixel bits.
+
+	int					numFailed		= 0;
+
+	const tcu::Vec2 lodOffsets[] =
+	{
+		tcu::Vec2(-1,  0),
+		tcu::Vec2(+1,  0),
+		tcu::Vec2( 0, -1),
+		tcu::Vec2( 0, +1),
+
+		// \note Not strictly allowed by spec, but implementations do this in practice.
+		tcu::Vec2(-1, -1),
+		tcu::Vec2(-1, +1),
+		tcu::Vec2(+1, -1),
+		tcu::Vec2(+1, -1),
+	};
+
+	tcu::clear(errorMask, tcu::RGBA::green.toVec());
+
+	for (int py = 0; py < result.getHeight(); py++)
+	{
+		// Ugly hack, validation can take way too long at the moment.
+		if (watchDog)
+			qpWatchDog_touch(watchDog);
+
+		for (int px = 0; px < result.getWidth(); px++)
+		{
+			const tcu::Vec4	resPix	= (result.getPixel(px, py)		- sampleParams.colorBias) / sampleParams.colorScale;
+			const tcu::Vec4	refPix	= (reference.getPixel(px, py)	- sampleParams.colorBias) / sampleParams.colorScale;
+
+			// Try comparison to ideal reference first, and if that fails use slower verificator.
+			if (!tcu::boolAll(tcu::lessThanEqual(tcu::abs(resPix - refPix), lookupPrec.colorThreshold)))
+			{
+				const float		wx		= (float)px + 0.5f;
+				const float		wy		= (float)py + 0.5f;
+				const float		nx		= wx / dstW;
+				const float		ny		= wy / dstH;
+
+				const bool		tri0	= nx + ny - posEps <= 1.0f;
+				const bool		tri1	= nx + ny + posEps >= 1.0f;
+
+				bool			isOk	= false;
+
+				DE_ASSERT(tri0 || tri1);
+
+				// Pixel can belong to either of the triangles if it lies close enough to the edge.
+				for (int triNdx = (tri0?0:1); triNdx <= (tri1?1:0); triNdx++)
+				{
+					const float		triWx		= triNdx ? dstW - wx : wx;
+					const float		triWy		= triNdx ? dstH - wy : wy;
+					const float		triNx		= triNdx ? 1.0f - nx : nx;
+					const float		triNy		= triNdx ? 1.0f - ny : ny;
+
+					const tcu::Vec4	coord		(projectedTriInterpolate(triS[triNdx], triW[triNdx], triNx, triNy),
+												 projectedTriInterpolate(triT[triNdx], triW[triNdx], triNx, triNy),
+												 projectedTriInterpolate(triR[triNdx], triW[triNdx], triNx, triNy),
+												 projectedTriInterpolate(triQ[triNdx], triW[triNdx], triNx, triNy));
+					const tcu::Vec3	coordDx		(triDerivateX(triS[triNdx], triW[triNdx], wx, dstW, triNy),
+												 triDerivateX(triT[triNdx], triW[triNdx], wx, dstW, triNy),
+												 triDerivateX(triR[triNdx], triW[triNdx], wx, dstW, triNy));
+					const tcu::Vec3	coordDy		(triDerivateY(triS[triNdx], triW[triNdx], wy, dstH, triNx),
+												 triDerivateY(triT[triNdx], triW[triNdx], wy, dstH, triNx),
+												 triDerivateY(triR[triNdx], triW[triNdx], wy, dstH, triNx));
+
+					tcu::Vec2		lodBounds	= tcu::computeCubeLodBoundsFromDerivates(coord.toWidth<3>(), coordDx, coordDy, srcSize, lodPrec);
+
+					// Compute lod bounds across lodOffsets range.
+					for (int lodOffsNdx = 0; lodOffsNdx < DE_LENGTH_OF_ARRAY(lodOffsets); lodOffsNdx++)
+					{
+						const float		wxo			= triWx + lodOffsets[lodOffsNdx].x();
+						const float		wyo			= triWy + lodOffsets[lodOffsNdx].y();
+						const float		nxo			= wxo/dstW;
+						const float		nyo			= wyo/dstH;
+
+						const tcu::Vec3	coordO		(projectedTriInterpolate(triS[triNdx], triW[triNdx], nxo, nyo),
+													 projectedTriInterpolate(triT[triNdx], triW[triNdx], nxo, nyo),
+													 projectedTriInterpolate(triR[triNdx], triW[triNdx], nxo, nyo));
+						const tcu::Vec3	coordDxo	(triDerivateX(triS[triNdx], triW[triNdx], wxo, dstW, nyo),
+													 triDerivateX(triT[triNdx], triW[triNdx], wxo, dstW, nyo),
+													 triDerivateX(triR[triNdx], triW[triNdx], wxo, dstW, nyo));
+						const tcu::Vec3	coordDyo	(triDerivateY(triS[triNdx], triW[triNdx], wyo, dstH, nxo),
+													 triDerivateY(triT[triNdx], triW[triNdx], wyo, dstH, nxo),
+													 triDerivateY(triR[triNdx], triW[triNdx], wyo, dstH, nxo));
+						const tcu::Vec2	lodO		= tcu::computeCubeLodBoundsFromDerivates(coordO, coordDxo, coordDyo, srcSize, lodPrec);
+
+						lodBounds.x() = de::min(lodBounds.x(), lodO.x());
+						lodBounds.y() = de::max(lodBounds.y(), lodO.y());
+					}
+
+					const tcu::Vec2	clampedLod	= tcu::clampLodBounds(lodBounds + lodBias, tcu::Vec2(sampleParams.minLod, sampleParams.maxLod), lodPrec);
+
+					if (tcu::isLookupResultValid(src, sampleParams.sampler, lookupPrec, coordBits, coord, clampedLod, resPix))
+					{
+						isOk = true;
+						break;
+					}
+				}
+
+				if (!isOk)
+				{
+					errorMask.setPixel(tcu::RGBA::red.toVec(), px, py);
+					numFailed += 1;
+				}
+			}
+		}
+	}
+
+	return numFailed;
+}
+
+bool verifyTextureResult (tcu::TestContext&						testCtx,
+						  const tcu::ConstPixelBufferAccess&	result,
+						  const tcu::TextureCubeArrayView&		src,
+						  const float*							texCoord,
+						  const ReferenceParams&				sampleParams,
+						  const tcu::LookupPrecision&			lookupPrec,
+						  const tcu::IVec4&						coordBits,
+						  const tcu::LodPrecision&				lodPrec,
+						  const tcu::PixelFormat&				pixelFormat)
+{
+	tcu::TestLog&	log				= testCtx.getLog();
+	tcu::Surface	reference		(result.getWidth(), result.getHeight());
+	tcu::Surface	errorMask		(result.getWidth(), result.getHeight());
+	int				numFailedPixels;
+
+	DE_ASSERT(getCompareMask(pixelFormat) == lookupPrec.colorMask);
+
+	sampleTexture(SurfaceAccess(reference, pixelFormat), src, texCoord, sampleParams);
+	numFailedPixels = computeTextureLookupDiff(result, reference.getAccess(), errorMask.getAccess(), src, texCoord, sampleParams, lookupPrec, coordBits, lodPrec, testCtx.getWatchDog());
 
 	if (numFailedPixels > 0)
 		log << TestLog::Message << "ERROR: Result verification failed, got " << numFailedPixels << " invalid pixels!" << TestLog::EndMessage;

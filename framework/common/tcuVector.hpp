@@ -256,7 +256,7 @@ inline Vector<T, NewSize> Vector<T, Size>::toWidth (void) const
 	for (i = 0; i < deMin32(Size, NewSize); i++)
 		res.m_data[i] = m_data[i];
 	for (; i < NewSize; i++)
-		res.m_data[i] = 0.0f;
+		res.m_data[i] = T(0);
 	return res;
 }
 

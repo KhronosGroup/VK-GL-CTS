@@ -1386,14 +1386,13 @@ bool isLookupResultValid (const Texture1DView& texture, const Sampler& sampler, 
 	return false;
 }
 
-static bool isSeamlessLinearSampleResultValid (const TextureCubeView&		texture,
-											   const int					levelNdx,
+static bool isSeamlessLinearSampleResultValid (const ConstPixelBufferAccess (&faces)[CUBEFACE_LAST],
 											   const Sampler&				sampler,
 											   const LookupPrecision&		prec,
 											   const CubeFaceFloatCoords&	coords,
 											   const Vec4&					result)
 {
-	const int					size			= texture.getLevelFace(levelNdx, coords.face).getWidth();
+	const int					size			= faces[coords.face].getWidth();
 
 	const Vec2					uBounds			= computeNonNormalizedCoordBounds(sampler.normalizedCoords, size, coords.s, prec.coordBits.x(), prec.uvwBits.x());
 	const Vec2					vBounds			= computeNonNormalizedCoordBounds(sampler.normalizedCoords, size, coords.t, prec.coordBits.y(), prec.uvwBits.y());
@@ -1404,15 +1403,10 @@ static bool isSeamlessLinearSampleResultValid (const TextureCubeView&		texture,
 	const int					minJ			= deFloorFloatToInt32(vBounds.x()-0.5f);
 	const int					maxJ			= deFloorFloatToInt32(vBounds.y()-0.5f);
 
-	const TextureChannelClass	texClass		= getTextureChannelClass(texture.getLevelFace(levelNdx, coords.face).getFormat().type);
+	const TextureChannelClass	texClass		= getTextureChannelClass(faces[coords.face].getFormat().type);
 	float						searchStep		= texClass == TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT	? computeBilinearSearchStepForUnorm(prec) :
 												  texClass == TEXTURECHANNELCLASS_SIGNED_FIXED_POINT	? computeBilinearSearchStepForSnorm(prec) :
 												  0.0f; // Step is computed for floating-point quads based on texel values.
-
-	// Face accesses
-	ConstPixelBufferAccess faces[CUBEFACE_LAST];
-	for (int face = 0; face < CUBEFACE_LAST; face++)
-		faces[face] = texture.getLevelFace(levelNdx, CubeFace(face));
 
 	for (int j = minJ; j <= maxJ; j++)
 	{
@@ -1451,8 +1445,8 @@ static bool isSeamlessLinearSampleResultValid (const TextureCubeView&		texture,
 	return false;
 }
 
-static bool isSeamplessLinearMipmapLinearSampleResultValid (const TextureCubeView&			texture,
-															const int						baseLevelNdx,
+static bool isSeamplessLinearMipmapLinearSampleResultValid (const ConstPixelBufferAccess	(&faces0)[CUBEFACE_LAST],
+															const ConstPixelBufferAccess	(&faces1)[CUBEFACE_LAST],
 															const Sampler&					sampler,
 															const LookupPrecision&			prec,
 															const CubeFaceFloatCoords&		coords,
@@ -1462,8 +1456,8 @@ static bool isSeamplessLinearMipmapLinearSampleResultValid (const TextureCubeVie
 	// \todo [2013-07-04 pyry] This is strictly not correct as coordinates between levels should be dependent.
 	//						   Right now this allows pairing any two valid bilinear quads.
 
-	const int					size0			= texture.getLevelFace(baseLevelNdx,	coords.face).getWidth();
-	const int					size1			= texture.getLevelFace(baseLevelNdx+1,	coords.face).getWidth();
+	const int					size0			= faces0[coords.face].getWidth();
+	const int					size1			= faces1[coords.face].getWidth();
 
 	const Vec2					uBounds0		= computeNonNormalizedCoordBounds(sampler.normalizedCoords, size0,	coords.s, prec.coordBits.x(), prec.uvwBits.x());
 	const Vec2					uBounds1		= computeNonNormalizedCoordBounds(sampler.normalizedCoords, size1,	coords.s, prec.coordBits.x(), prec.uvwBits.x());
@@ -1480,19 +1474,10 @@ static bool isSeamplessLinearMipmapLinearSampleResultValid (const TextureCubeVie
 	const int					minJ1			= deFloorFloatToInt32(vBounds1.x()-0.5f);
 	const int					maxJ1			= deFloorFloatToInt32(vBounds1.y()-0.5f);
 
-	const TextureChannelClass	texClass		= getTextureChannelClass(texture.getLevelFace(baseLevelNdx, coords.face).getFormat().type);
+	const TextureChannelClass	texClass		= getTextureChannelClass(faces0[coords.face].getFormat().type);
 	const float					cSearchStep		= texClass == TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT	? computeBilinearSearchStepForUnorm(prec) :
 												  texClass == TEXTURECHANNELCLASS_SIGNED_FIXED_POINT	? computeBilinearSearchStepForSnorm(prec) :
 												  0.0f; // Step is computed for floating-point quads based on texel values.
-
-	tcu::ConstPixelBufferAccess faces0[CUBEFACE_LAST];
-	tcu::ConstPixelBufferAccess faces1[CUBEFACE_LAST];
-
-	for (int face = 0; face < CUBEFACE_LAST; face++)
-	{
-		faces0[face] = texture.getLevelFace(baseLevelNdx,	CubeFace(face));
-		faces1[face] = texture.getLevelFace(baseLevelNdx+1,	CubeFace(face));
-	}
 
 	for (int j0 = minJ0; j0 <= maxJ0; j0++)
 	{
@@ -1571,8 +1556,7 @@ static bool isSeamplessLinearMipmapLinearSampleResultValid (const TextureCubeVie
 	return false;
 }
 
-static bool isCubeLevelSampleResultValid (const TextureCubeView&			texture,
-										  const int							levelNdx,
+static bool isCubeLevelSampleResultValid (const ConstPixelBufferAccess		(&level)[CUBEFACE_LAST],
 										  const Sampler&					sampler,
 										  const Sampler::FilterMode			filterMode,
 										  const LookupPrecision&			prec,
@@ -1582,36 +1566,38 @@ static bool isCubeLevelSampleResultValid (const TextureCubeView&			texture,
 	if (filterMode == Sampler::LINEAR)
 	{
 		if (sampler.seamlessCubeMap)
-			return isSeamlessLinearSampleResultValid(texture, levelNdx, sampler, prec, coords, result);
+			return isSeamlessLinearSampleResultValid(level, sampler, prec, coords, result);
 		else
-			return isLinearSampleResultValid(texture.getLevelFace(levelNdx, coords.face), sampler, prec, Vec2(coords.s, coords.t), 0, result);
+			return isLinearSampleResultValid(level[coords.face], sampler, prec, Vec2(coords.s, coords.t), 0, result);
 	}
 	else
-		return isNearestSampleResultValid(texture.getLevelFace(levelNdx, coords.face), sampler, prec, Vec2(coords.s, coords.t), 0, result);
+		return isNearestSampleResultValid(level[coords.face], sampler, prec, Vec2(coords.s, coords.t), 0, result);
 }
 
-static bool isCubeMipmapLinearSampleResultValid (const TextureCubeView&		texture,
-												 const int					baseLevelNdx,
-												 const Sampler&				sampler,
-												 const Sampler::FilterMode	levelFilter,
-												 const LookupPrecision&		prec,
-												 const CubeFaceFloatCoords&	coords,
-												 const Vec2&				fBounds,
-												 const Vec4&				result)
+static bool isCubeMipmapLinearSampleResultValid (const ConstPixelBufferAccess	(&faces0)[CUBEFACE_LAST],
+												const ConstPixelBufferAccess	(&faces1)[CUBEFACE_LAST],
+												 const Sampler&					sampler,
+												 const Sampler::FilterMode		levelFilter,
+												 const LookupPrecision&			prec,
+												 const CubeFaceFloatCoords&		coords,
+												 const Vec2&					fBounds,
+												 const Vec4&					result)
 {
 	if (levelFilter == Sampler::LINEAR)
 	{
 		if (sampler.seamlessCubeMap)
-			return isSeamplessLinearMipmapLinearSampleResultValid(texture, baseLevelNdx, sampler, prec, coords, fBounds, result);
+			return isSeamplessLinearMipmapLinearSampleResultValid(faces0, faces1, sampler, prec, coords, fBounds, result);
 		else
-			return isLinearMipmapLinearSampleResultValid(texture.getLevelFace(baseLevelNdx,		coords.face),
-														 texture.getLevelFace(baseLevelNdx+1,	coords.face),
-														 sampler, prec, Vec2(coords.s, coords.t), 0, fBounds, result);
+			return isLinearMipmapLinearSampleResultValid(faces0[coords.face], faces1[coords.face], sampler, prec, Vec2(coords.s, coords.t), 0, fBounds, result);
 	}
 	else
-		return isNearestMipmapLinearSampleResultValid(texture.getLevelFace(baseLevelNdx,	coords.face),
-													  texture.getLevelFace(baseLevelNdx+1,	coords.face),
-													  sampler, prec, Vec2(coords.s, coords.t), 0, fBounds, result);
+		return isNearestMipmapLinearSampleResultValid(faces0[coords.face], faces1[coords.face], sampler, prec, Vec2(coords.s, coords.t), 0, fBounds, result);
+}
+
+static void getCubeLevelFaces (const TextureCubeView& texture, const int levelNdx, ConstPixelBufferAccess (&out)[CUBEFACE_LAST])
+{
+	for (int faceNdx = 0; faceNdx < CUBEFACE_LAST; faceNdx++)
+		out[faceNdx] = texture.getLevelFace(levelNdx, (CubeFace)faceNdx);
 }
 
 bool isLookupResultValid (const TextureCubeView& texture, const Sampler& sampler, const LookupPrecision& prec, const Vec3& coord, const Vec2& lodBounds, const Vec4& result)
@@ -1636,7 +1622,10 @@ bool isLookupResultValid (const TextureCubeView& texture, const Sampler& sampler
 
 		if (canBeMagnified)
 		{
-			if (isCubeLevelSampleResultValid(texture, 0, sampler, sampler.magFilter, prec, faceCoords, result))
+			ConstPixelBufferAccess faces[CUBEFACE_LAST];
+			getCubeLevelFaces(texture, 0, faces);
+
+			if (isCubeLevelSampleResultValid(faces, sampler, sampler.magFilter, prec, faceCoords, result))
 				return true;
 		}
 
@@ -1651,17 +1640,23 @@ bool isLookupResultValid (const TextureCubeView& texture, const Sampler& sampler
 
 			if (isLinearMipmap && minTexLevel < maxTexLevel)
 			{
-				const int		minLevel		= de::clamp((int)deFloatFloor(minLod), minTexLevel, maxTexLevel-1);
-				const int		maxLevel		= de::clamp((int)deFloatFloor(maxLod), minTexLevel, maxTexLevel-1);
+				const int	minLevel	= de::clamp((int)deFloatFloor(minLod), minTexLevel, maxTexLevel-1);
+				const int	maxLevel	= de::clamp((int)deFloatFloor(maxLod), minTexLevel, maxTexLevel-1);
 
 				DE_ASSERT(minLevel <= maxLevel);
 
-				for (int level = minLevel; level <= maxLevel; level++)
+				for (int levelNdx = minLevel; levelNdx <= maxLevel; levelNdx++)
 				{
-					const float		minF	= de::clamp(minLod - float(level), 0.0f, 1.0f);
-					const float		maxF	= de::clamp(maxLod - float(level), 0.0f, 1.0f);
+					const float				minF	= de::clamp(minLod - float(levelNdx), 0.0f, 1.0f);
+					const float				maxF	= de::clamp(maxLod - float(levelNdx), 0.0f, 1.0f);
 
-					if (isCubeMipmapLinearSampleResultValid(texture, level, sampler, getLevelFilter(sampler.minFilter), prec, faceCoords, Vec2(minF, maxF), result))
+					ConstPixelBufferAccess	faces0[CUBEFACE_LAST];
+					ConstPixelBufferAccess	faces1[CUBEFACE_LAST];
+
+					getCubeLevelFaces(texture, levelNdx,		faces0);
+					getCubeLevelFaces(texture, levelNdx + 1,	faces1);
+
+					if (isCubeMipmapLinearSampleResultValid(faces0, faces1, sampler, getLevelFilter(sampler.minFilter), prec, faceCoords, Vec2(minF, maxF), result))
 						return true;
 				}
 			}
@@ -1669,20 +1664,26 @@ bool isLookupResultValid (const TextureCubeView& texture, const Sampler& sampler
 			{
 				// \note The accurate formula for nearest mipmapping is level = ceil(lod + 0.5) - 1 but Khronos has made
 				//		 decision to allow floor(lod + 0.5) as well.
-				const int		minLevel		= de::clamp((int)deFloatCeil(minLod + 0.5f) - 1,	minTexLevel, maxTexLevel);
-				const int		maxLevel		= de::clamp((int)deFloatFloor(maxLod + 0.5f),		minTexLevel, maxTexLevel);
+				const int	minLevel	= de::clamp((int)deFloatCeil(minLod + 0.5f) - 1,	minTexLevel, maxTexLevel);
+				const int	maxLevel	= de::clamp((int)deFloatFloor(maxLod + 0.5f),		minTexLevel, maxTexLevel);
 
 				DE_ASSERT(minLevel <= maxLevel);
 
-				for (int level = minLevel; level <= maxLevel; level++)
+				for (int levelNdx = minLevel; levelNdx <= maxLevel; levelNdx++)
 				{
-					if (isCubeLevelSampleResultValid(texture, level, sampler, getLevelFilter(sampler.minFilter), prec, faceCoords, result))
+					ConstPixelBufferAccess faces[CUBEFACE_LAST];
+					getCubeLevelFaces(texture, levelNdx, faces);
+
+					if (isCubeLevelSampleResultValid(faces, sampler, getLevelFilter(sampler.minFilter), prec, faceCoords, result))
 						return true;
 				}
 			}
 			else
 			{
-				if (isCubeLevelSampleResultValid(texture, 0, sampler, sampler.minFilter, prec, faceCoords, result))
+				ConstPixelBufferAccess faces[CUBEFACE_LAST];
+				getCubeLevelFaces(texture, 0, faces);
+
+				if (isCubeLevelSampleResultValid(faces, sampler, sampler.minFilter, prec, faceCoords, result))
 					return true;
 			}
 		}
@@ -1929,6 +1930,115 @@ bool isLookupResultValid (const Texture3DView& texture, const Sampler& sampler, 
 		{
 			if (isLevelSampleResultValid(texture.getLevel(0), sampler, sampler.minFilter, prec, coord, result))
 				return true;
+		}
+	}
+
+	return false;
+}
+
+static void getCubeArrayLevelFaces (const TextureCubeArrayView& texture, const int levelNdx, const int layerNdx, ConstPixelBufferAccess (&out)[CUBEFACE_LAST])
+{
+	const ConstPixelBufferAccess&	level		= texture.getLevel(levelNdx);
+	const int						layerDepth	= layerNdx * 6;
+
+	for (int faceNdx = 0; faceNdx < CUBEFACE_LAST; faceNdx++)
+	{
+		const CubeFace face = (CubeFace)faceNdx;
+		out[faceNdx] = getSubregion(level, 0, 0, layerDepth + getCubeArrayFaceIndex(face), level.getWidth(), level.getHeight(), 1);
+	}
+}
+
+bool isLookupResultValid (const TextureCubeArrayView& texture, const Sampler& sampler, const LookupPrecision& prec, const IVec4& coordBits, const Vec4& coord, const Vec2& lodBounds, const Vec4& result)
+{
+	const IVec2	layerRange						= computeLayerRange(texture.getNumLayers(), coordBits.w(), coord.w());
+	const Vec3	layerCoord						= coord.toWidth<3>();
+	int			numPossibleFaces				= 0;
+	CubeFace	possibleFaces[CUBEFACE_LAST];
+
+	DE_ASSERT(isSamplerSupported(sampler));
+
+	getPossibleCubeFaces(layerCoord, prec.coordBits, &possibleFaces[0], numPossibleFaces);
+
+	if (numPossibleFaces == 0)
+		return true; // Result is undefined.
+
+	for (int layerNdx = layerRange.x(); layerNdx <= layerRange.y(); layerNdx++)
+	{
+		for (int tryFaceNdx = 0; tryFaceNdx < numPossibleFaces; tryFaceNdx++)
+		{
+			const CubeFaceFloatCoords	faceCoords		(possibleFaces[tryFaceNdx], projectToFace(possibleFaces[tryFaceNdx], layerCoord));
+			const float					minLod			= lodBounds.x();
+			const float					maxLod			= lodBounds.y();
+			const bool					canBeMagnified	= minLod <= sampler.lodThreshold;
+			const bool					canBeMinified	= maxLod > sampler.lodThreshold;
+
+			if (canBeMagnified)
+			{
+				ConstPixelBufferAccess faces[CUBEFACE_LAST];
+				getCubeArrayLevelFaces(texture, 0, layerNdx, faces);
+
+				if (isCubeLevelSampleResultValid(faces, sampler, sampler.magFilter, prec, faceCoords, result))
+					return true;
+			}
+
+			if (canBeMinified)
+			{
+				const bool	isNearestMipmap	= isNearestMipmapFilter(sampler.minFilter);
+				const bool	isLinearMipmap	= isLinearMipmapFilter(sampler.minFilter);
+				const int	minTexLevel		= 0;
+				const int	maxTexLevel		= texture.getNumLevels()-1;
+
+				DE_ASSERT(minTexLevel <= maxTexLevel);
+
+				if (isLinearMipmap && minTexLevel < maxTexLevel)
+				{
+					const int	minLevel	= de::clamp((int)deFloatFloor(minLod), minTexLevel, maxTexLevel-1);
+					const int	maxLevel	= de::clamp((int)deFloatFloor(maxLod), minTexLevel, maxTexLevel-1);
+
+					DE_ASSERT(minLevel <= maxLevel);
+
+					for (int levelNdx = minLevel; levelNdx <= maxLevel; levelNdx++)
+					{
+						const float		minF	= de::clamp(minLod - float(levelNdx), 0.0f, 1.0f);
+						const float		maxF	= de::clamp(maxLod - float(levelNdx), 0.0f, 1.0f);
+
+						ConstPixelBufferAccess	faces0[CUBEFACE_LAST];
+						ConstPixelBufferAccess	faces1[CUBEFACE_LAST];
+
+						getCubeArrayLevelFaces(texture, levelNdx,		layerNdx,	faces0);
+						getCubeArrayLevelFaces(texture, levelNdx + 1,	layerNdx,	faces1);
+
+						if (isCubeMipmapLinearSampleResultValid(faces0, faces1, sampler, getLevelFilter(sampler.minFilter), prec, faceCoords, Vec2(minF, maxF), result))
+							return true;
+					}
+				}
+				else if (isNearestMipmap)
+				{
+					// \note The accurate formula for nearest mipmapping is level = ceil(lod + 0.5) - 1 but Khronos has made
+					//		 decision to allow floor(lod + 0.5) as well.
+					const int	minLevel	= de::clamp((int)deFloatCeil(minLod + 0.5f) - 1,	minTexLevel, maxTexLevel);
+					const int	maxLevel	= de::clamp((int)deFloatFloor(maxLod + 0.5f),		minTexLevel, maxTexLevel);
+
+					DE_ASSERT(minLevel <= maxLevel);
+
+					for (int levelNdx = minLevel; levelNdx <= maxLevel; levelNdx++)
+					{
+						ConstPixelBufferAccess faces[CUBEFACE_LAST];
+						getCubeArrayLevelFaces(texture, levelNdx, layerNdx, faces);
+
+						if (isCubeLevelSampleResultValid(faces, sampler, getLevelFilter(sampler.minFilter), prec, faceCoords, result))
+							return true;
+					}
+				}
+				else
+				{
+					ConstPixelBufferAccess faces[CUBEFACE_LAST];
+					getCubeArrayLevelFaces(texture, 0, layerNdx, faces);
+
+					if (isCubeLevelSampleResultValid(faces, sampler, sampler.minFilter, prec, faceCoords, result))
+						return true;
+				}
+			}
 		}
 	}
 

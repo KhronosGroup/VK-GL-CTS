@@ -38,7 +38,31 @@ Win32Platform::Win32Platform (void)
 	// Set process priority to lower.
 	SetPriorityClass(GetCurrentProcess(), BELOW_NORMAL_PRIORITY_CLASS);
 
-	m_contextFactoryRegistry.registerFactory(new WGLContextFactory(m_instance));
+	{
+		WGLContextFactory* factory = DE_NULL;
+
+		try
+		{
+			factory = new WGLContextFactory(m_instance);
+		}
+		catch (const std::exception& e)
+		{
+			print("Warning: WGL not supported: %s\n", e.what());
+		}
+
+		if (factory)
+		{
+			try
+			{
+				m_contextFactoryRegistry.registerFactory(factory);
+			}
+			catch (...)
+			{
+				delete factory;
+				throw;
+			}
+		}
+	}
 
 #if defined(DEQP_SUPPORT_EGL)
 	m_nativeDisplayFactoryRegistry.registerFactory(new Win32EGLNativeDisplayFactory(m_instance));

@@ -1149,6 +1149,7 @@ std::string BuiltinVariableShader::genFragmentSource (VariableTest test) const
 	else if (test == TEST_PRIMITIVE_ID)
 	{
 		return	"#version 310 es\n"
+				"#extension GL_EXT_geometry_shader : require\n"
 				"layout(location = 0) out mediump vec4 fragColor;\n"
 				"void main (void)\n"
 				"{\n"

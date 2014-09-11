@@ -1024,6 +1024,32 @@ static int findMSB (deUint32 value)
 		return -1;
 }
 
+static int toPrecision (deUint32 value, glu::Precision precision)
+{
+	switch (precision)
+	{
+		case glu::PRECISION_LOWP:		return value&0xffu;
+		case glu::PRECISION_MEDIUMP:	return value&0xffffu;
+		case glu::PRECISION_HIGHP:		return value;
+		default:
+			DE_ASSERT(false);
+			return 0;
+	}
+}
+
+static int toPrecision (int value, glu::Precision precision)
+{
+	switch (precision)
+	{
+		case glu::PRECISION_LOWP:		return (deInt8)value;
+		case glu::PRECISION_MEDIUMP:	return (deInt16)value;
+		case glu::PRECISION_HIGHP:		return value;
+		default:
+			DE_ASSERT(false);
+			return 0;
+	}
+}
+
 class FindMSBCase : public IntegerFunctionCase
 {
 public:
@@ -1057,19 +1083,17 @@ public:
 
 	bool compare (const void* const* inputs, const void* const* outputs)
 	{
-		const deUint32			masks[]			= { 0xffu, 0xffffu, 0xffffffffu };
 		const glu::DataType		type			= m_spec.inputs[0].varType.getBasicType();
 		const glu::Precision	precision		= m_spec.inputs[0].varType.getPrecision();
 		const bool				isSigned		= glu::isDataTypeIntOrIVec(type);
 		const int				scalarSize		= glu::getDataTypeScalarSize(type);
-		const deUint32			mask			= masks[precision];
 
 		for (int compNdx = 0; compNdx < scalarSize; compNdx++)
 		{
 			const deUint32	value	= ((const deUint32*)inputs[0])[compNdx];
 			const int		out		= ((const int*)outputs[0])[compNdx];
-			const int		minRef	= isSigned ? findMSB(int(value&mask))	: findMSB(value&mask);
-			const int		maxRef	= isSigned ? findMSB(int(value))		: findMSB(value);
+			const int		minRef	= isSigned ? findMSB(toPrecision(int(value), precision))	: findMSB(toPrecision(value, precision));
+			const int		maxRef	= isSigned ? findMSB(int(value))							: findMSB(value);
 
 			if (!de::inRange(out, minRef, maxRef))
 			{

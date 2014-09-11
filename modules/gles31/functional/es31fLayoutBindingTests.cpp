@@ -1263,7 +1263,7 @@ glu::ShaderProgram* ImageBindingRenderCase::generateShaders (void) const
 	// Generate the uniform declarations for the vertex and fragment shaders
 	for (int declNdx = 0; declNdx < numDeclarations; ++declNdx)
 	{
-		shaderUniformDecl << "layout(rgba8, binding = " << m_bindings[declNdx] << ") uniform readonly " << imageType
+		shaderUniformDecl << "layout(rgba8, binding = " << m_bindings[declNdx] << ") uniform readonly highp " << imageType
 			<< " " << (arrayInstance ? getUniformName(m_uniformName, declNdx, m_numBindings) : getUniformName(m_uniformName, declNdx)) << ";\n";
 	}
 
@@ -1353,9 +1353,9 @@ glu::ShaderProgram* ImageBindingNegativeCase::generateShaders (void) const
 	// Generate the uniform declarations for the vertex and fragment shaders
 	for (int declNdx = 0; declNdx < numDeclarations; ++declNdx)
 	{
-		vertexUniformDecl << "layout(rgba8, binding = " << m_vertexShaderBinding[declNdx] << ") uniform readonly " << imageType
+		vertexUniformDecl << "layout(rgba8, binding = " << m_vertexShaderBinding[declNdx] << ") uniform readonly highp " << imageType
 			<< " " << (arrayInstance ? getUniformName(m_uniformName, declNdx, m_numBindings) : getUniformName(m_uniformName, declNdx)) << ";\n";
-		fragmentUniformDecl << "layout(rgba8, binding = " << m_fragmentShaderBinding[declNdx] << ") uniform readonly " << imageType
+		fragmentUniformDecl << "layout(rgba8, binding = " << m_fragmentShaderBinding[declNdx] << ") uniform readonly highp " << imageType
 			<< " " << (arrayInstance ? getUniformName(m_uniformName, declNdx, m_numBindings) : getUniformName(m_uniformName, declNdx)) << ";\n";
 	}
 

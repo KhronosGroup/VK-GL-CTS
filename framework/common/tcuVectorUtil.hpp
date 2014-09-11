@@ -77,6 +77,9 @@ inline float smoothStep		(float edge0, float edge1, float x)
 	return t * t * (3.0f - 2.0f * t);
 }
 
+inline double mix			(double x, double y, double a) { return x * (1.0 - a) + y * a; }
+inline double step			(double edge, double x) { return (x < edge) ? 0.0 : 1.0; }
+
 inline float length			(float f) { return deFloatAbs(f); }
 inline float distance		(float x, float y) { return deFloatAbs(x - y); }
 inline float dot			(float x, float y) { return (x * y); }
@@ -206,6 +209,15 @@ Vector<float, Size> mix (const Vector<float, Size>& x, const Vector<float, Size>
 	Vector<float, Size> res;
 	for (int i = 0; i < Size; i++)
 		res.m_data[i] = deFloatMix(x.m_data[i], y.m_data[i], a);
+	return res;
+}
+
+template <int Size>
+Vector<double, Size> mix (const Vector<double, Size>& x, const Vector<double, Size>& y, double a)
+{
+	Vector<double, Size> res;
+	for (int i = 0; i < Size; i++)
+		res.m_data[i] = deMix(x.m_data[i], y.m_data[i], a);
 	return res;
 }
 

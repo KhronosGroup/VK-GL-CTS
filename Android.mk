@@ -235,7 +235,9 @@ LOCAL_SRC_FILES := \
 	modules/gles31/functional/es31fComputeShaderBuiltinVarTests.cpp \
 	modules/gles31/functional/es31fDebugTests.cpp \
 	modules/gles31/functional/es31fDrawTests.cpp \
+	modules/gles31/functional/es31fFboColorbufferTests.cpp \
 	modules/gles31/functional/es31fFboNoAttachmentTests.cpp \
+	modules/gles31/functional/es31fFboTestCase.cpp \
 	modules/gles31/functional/es31fFboTestUtil.cpp \
 	modules/gles31/functional/es31fFunctionalTests.cpp \
 	modules/gles31/functional/es31fGeometryShaderTests.cpp \
@@ -281,6 +283,7 @@ LOCAL_SRC_FILES := \
 	modules/gles31/functional/es31fTessellationGeometryInteractionTests.cpp \
 	modules/gles31/functional/es31fTessellationTests.cpp \
 	modules/gles31/functional/es31fTextureBufferTests.cpp \
+	modules/gles31/functional/es31fTextureFilteringTests.cpp \
 	modules/gles31/functional/es31fTextureFormatTests.cpp \
 	modules/gles31/functional/es31fTextureGatherTests.cpp \
 	modules/gles31/functional/es31fTextureLevelStateQueryTests.cpp \
@@ -409,6 +412,7 @@ LOCAL_SRC_FILES := \
 	modules/gles3/functional/es3fVertexTextureTests.cpp \
 	modules/gles3/performance/es3pBlendTests.cpp \
 	modules/gles3/performance/es3pBufferDataUploadTests.cpp \
+	modules/gles3/performance/es3pDepthTests.cpp \
 	modules/gles3/performance/es3pPerformanceTests.cpp \
 	modules/gles3/performance/es3pRedundantStateChangeTests.cpp \
 	modules/gles3/performance/es3pShaderCompilationCases.cpp \

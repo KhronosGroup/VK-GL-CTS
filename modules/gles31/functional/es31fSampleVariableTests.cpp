@@ -389,7 +389,7 @@ std::string MaxSamplesCase::genFragmentSource (int numTargetSamples) const
 			"void main (void)\n"
 			"{\n"
 			"	fragColor = vec4(1.0, 0.0, 0.0, 1.0);\n"
-			"	if (gl_MaxSamples != u_maxSamples)\n"
+			"	if (gl_MaxSamples == u_maxSamples)\n"
 			"		fragColor = vec4(0.0, 1.0, 0.0, 1.0);\n"
 			"}\n";
 
@@ -503,7 +503,7 @@ std::string SampleIDCase::genFragmentSource (int numTargetSamples) const
 					"void main (void)\n"
 					"{\n"
 					"	highp vec2 relPosition = (v_position.xy + vec2(1.0, 1.0)) / 2.0;\n"
-					"	highp ivec2 pixelPos = ivec2(floor(relPosition * " << RENDER_SIZE << ".0));\n"
+					"	highp ivec2 pixelPos = ivec2(floor(relPosition * " << (int)RENDER_SIZE << ".0));\n"
 					"	highp int selectedID = abs(pixelPos.x + 17 * pixelPos.y) % " << numTargetSamples << ";\n"
 					"\n"
 					"	if (gl_SampleID == selectedID)\n"
@@ -951,8 +951,8 @@ std::string SamplePosCorrectnessCase::genVertexSource (int numTargetSamples) con
 	std::ostringstream buf;
 
 	buf <<	"#version 310 es\n"
-			"in highp vec4 a_position;\n"
 		<<	((m_useSampleQualifier) ? ("#extension GL_OES_shader_multisample_interpolation : require\n") : (""))
+		<<	"in highp vec4 a_position;\n"
 		<<	((m_useSampleQualifier) ? ("sample ") : ("")) << "out highp vec4 v_position;\n"
 			"void main (void)\n"
 			"{\n"
@@ -979,7 +979,7 @@ std::string SamplePosCorrectnessCase::genFragmentSource (int numTargetSamples) c
 			"{\n"
 			"	const highp float maxDistance = 0.15625; // 4 subpixel bits. Assume 3 accurate bits + 0.03125 for other errors\n" // 0.03125 = mediump epsilon when value = 32 (RENDER_SIZE)
 			"\n"
-			"	highp vec2 screenSpacePosition = (v_position.xy + vec2(1.0, 1.0)) / 2.0 * " << RENDER_SIZE << ".0;\n"
+			"	highp vec2 screenSpacePosition = (v_position.xy + vec2(1.0, 1.0)) / 2.0 * " << (int)RENDER_SIZE << ".0;\n"
 			"	highp ivec2 nearbyPixel = ivec2(floor(screenSpacePosition));\n"
 			"	bool allOk = false;\n"
 			"\n"

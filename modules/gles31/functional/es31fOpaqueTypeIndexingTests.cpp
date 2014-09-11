@@ -68,6 +68,7 @@ typedef de::UniquePtr<ShaderExecutor> ShaderExecutorPtr;
 enum IndexExprType
 {
 	INDEX_EXPR_TYPE_CONST_LITERAL	= 0,
+	INDEX_EXPR_TYPE_CONST_EXPRESSION,
 	INDEX_EXPR_TYPE_UNIFORM,
 	INDEX_EXPR_TYPE_DYNAMIC_UNIFORM,
 
@@ -364,6 +365,9 @@ void SamplerIndexingCase::getShaderSpec (ShaderSpec* spec, int numSamplers, int 
 	if (m_indexExprType != INDEX_EXPR_TYPE_CONST_LITERAL)
 		global << "#extension GL_EXT_gpu_shader5 : require\n";
 
+	if (m_indexExprType == INDEX_EXPR_TYPE_CONST_EXPRESSION)
+		global << "const highp int indexBase = 1;\n";
+
 	global <<
 		"uniform highp " << getDataTypeName(m_samplerType) << " " << samplersName << "[" << numSamplers << "];\n";
 
@@ -390,6 +394,8 @@ void SamplerIndexingCase::getShaderSpec (ShaderSpec* spec, int numSamplers, int 
 
 		if (m_indexExprType == INDEX_EXPR_TYPE_CONST_LITERAL)
 			code << lookupIndices[lookupNdx];
+		else if (m_indexExprType == INDEX_EXPR_TYPE_CONST_EXPRESSION)
+			code << "indexBase + " << (lookupIndices[lookupNdx]-1);
 		else
 			code << indicesPrefix << lookupNdx;
 
@@ -656,6 +662,8 @@ private:
 	const BlockType				m_blockType;
 	const IndexExprType			m_indexExprType;
 	const ShaderType			m_shaderType;
+
+	const int					m_numInstances;
 };
 
 BlockArrayIndexingCase::BlockArrayIndexingCase (Context& context, const char* name, const char* description, BlockType blockType, IndexExprType indexExprType, ShaderType shaderType)
@@ -663,6 +671,7 @@ BlockArrayIndexingCase::BlockArrayIndexingCase (Context& context, const char* na
 	, m_blockType		(blockType)
 	, m_indexExprType	(indexExprType)
 	, m_shaderType		(shaderType)
+	, m_numInstances	(4)
 {
 }
 
@@ -677,6 +686,28 @@ void BlockArrayIndexingCase::init (void)
 	if (m_indexExprType != INDEX_EXPR_TYPE_CONST_LITERAL &&
 		!m_context.getContextInfo().isExtensionSupported(extName))
 		throw tcu::NotSupportedError(string(extName) + " extension is required for dynamic indexing of interface blocks");
+
+	if (m_blockType == BLOCKTYPE_BUFFER)
+	{
+		const deUint32 limitPnames[] =
+		{
+			GL_MAX_VERTEX_SHADER_STORAGE_BLOCKS,
+			GL_MAX_FRAGMENT_SHADER_STORAGE_BLOCKS,
+			GL_MAX_GEOMETRY_SHADER_STORAGE_BLOCKS,
+			GL_MAX_TESS_CONTROL_SHADER_STORAGE_BLOCKS,
+			GL_MAX_TESS_EVALUATION_SHADER_STORAGE_BLOCKS,
+			GL_MAX_COMPUTE_SHADER_STORAGE_BLOCKS
+		};
+
+		const glw::Functions&	gl			= m_context.getRenderContext().getFunctions();
+		int						maxBlocks	= 0;
+
+		gl.getIntegerv(limitPnames[m_shaderType], &maxBlocks);
+		GLU_EXPECT_NO_ERROR(gl.getError(), "glGetIntegerv()");
+
+		if (maxBlocks < m_numInstances)
+			throw tcu::NotSupportedError("Not enough shader storage blocks supported for shader type");
+	}
 }
 
 void BlockArrayIndexingCase::getShaderSpec (ShaderSpec* spec, int numInstances, int numReads, const int* readIndices) const
@@ -692,6 +723,9 @@ void BlockArrayIndexingCase::getShaderSpec (ShaderSpec* spec, int numInstances, 
 
 	if (m_indexExprType != INDEX_EXPR_TYPE_CONST_LITERAL)
 		global << "#extension GL_EXT_gpu_shader5 : require\n";
+
+	if (m_indexExprType == INDEX_EXPR_TYPE_CONST_EXPRESSION)
+		global << "const highp int indexBase = 1;\n";
 
 	global <<
 		"layout(" << layout << ", binding = " << binding << ") " << interfaceName << " " << blockName << "\n"
@@ -722,6 +756,8 @@ void BlockArrayIndexingCase::getShaderSpec (ShaderSpec* spec, int numInstances, 
 
 		if (m_indexExprType == INDEX_EXPR_TYPE_CONST_LITERAL)
 			code << readIndices[readNdx];
+		else if (m_indexExprType == INDEX_EXPR_TYPE_CONST_EXPRESSION)
+			code << "indexBase + " << (readIndices[readNdx]-1);
 		else
 			code << indicesPrefix << readNdx;
 
@@ -736,7 +772,7 @@ void BlockArrayIndexingCase::getShaderSpec (ShaderSpec* spec, int numInstances, 
 BlockArrayIndexingCase::IterateResult BlockArrayIndexingCase::iterate (void)
 {
 	const int			numInvocations		= 32;
-	const int			numInstances		= 4;
+	const int			numInstances		= m_numInstances;
 	const int			numReads			= 4;
 	vector<int>			readIndices			(numReads);
 	vector<deUint32>	inValues			(numInstances);
@@ -885,6 +921,9 @@ void AtomicCounterIndexingCase::getShaderSpec (ShaderSpec* spec, int numCounters
 	if (m_indexExprType != INDEX_EXPR_TYPE_CONST_LITERAL)
 		global << "#extension GL_EXT_gpu_shader5 : require\n";
 
+	if (m_indexExprType == INDEX_EXPR_TYPE_CONST_EXPRESSION)
+		global << "const highp int indexBase = 1;\n";
+
 	global <<
 		"layout(binding = 0) uniform atomic_uint counter[" << numCounters << "];\n";
 
@@ -911,6 +950,8 @@ void AtomicCounterIndexingCase::getShaderSpec (ShaderSpec* spec, int numCounters
 
 		if (m_indexExprType == INDEX_EXPR_TYPE_CONST_LITERAL)
 			code << opIndices[opNdx];
+		else if (m_indexExprType == INDEX_EXPR_TYPE_CONST_EXPRESSION)
+			code << "indexBase + " << (opIndices[opNdx]-1);
 		else
 			code << indicesPrefix << opNdx;
 
@@ -1110,7 +1151,8 @@ void OpaqueTypeIndexingTests::init (void)
 		const char*		description;
 	} indexingTypes[] =
 	{
-		{ INDEX_EXPR_TYPE_CONST_LITERAL,	"const_literal",		"Indexing by constant literal expression"		},
+		{ INDEX_EXPR_TYPE_CONST_LITERAL,	"const_literal",		"Indexing by constant literal"					},
+		{ INDEX_EXPR_TYPE_CONST_EXPRESSION,	"const_expression",		"Indexing by constant expression"				},
 		{ INDEX_EXPR_TYPE_UNIFORM,			"uniform",				"Indexing by uniform value"						},
 		{ INDEX_EXPR_TYPE_DYNAMIC_UNIFORM,	"dynamically_uniform",	"Indexing by dynamically uniform expression"	}
 	};
@@ -1200,8 +1242,10 @@ void OpaqueTypeIndexingTests::init (void)
 				const string			name			= string(indexExprName) + "_" + shaderTypes[shaderTypeNdx].name;
 
 				uboGroup->addChild	(new BlockArrayIndexingCase		(m_context, name.c_str(), indexExprDesc, BlockArrayIndexingCase::BLOCKTYPE_UNIFORM,	indexExprType, shaderType));
-				ssboGroup->addChild	(new BlockArrayIndexingCase		(m_context, name.c_str(), indexExprDesc, BlockArrayIndexingCase::BLOCKTYPE_BUFFER,	indexExprType, shaderType));
 				acGroup->addChild	(new AtomicCounterIndexingCase	(m_context, name.c_str(), indexExprDesc, indexExprType, shaderType));
+
+				if (indexExprType == INDEX_EXPR_TYPE_CONST_LITERAL || indexExprType == INDEX_EXPR_TYPE_CONST_EXPRESSION)
+					ssboGroup->addChild	(new BlockArrayIndexingCase		(m_context, name.c_str(), indexExprDesc, BlockArrayIndexingCase::BLOCKTYPE_BUFFER,	indexExprType, shaderType));
 			}
 		}
 	}

@@ -55,8 +55,14 @@ set(DEQP_GLES31_FUNCTIONAL_SRCS
 	es31fShaderTextureSizeTests.cpp
 	es31fSynchronizationTests.hpp
 	es31fSynchronizationTests.cpp
-	es31fFboTestUtil.hpp
+	es31fFboColorbufferTests.cpp
+	es31fFboColorbufferTests.hpp
+	es31fFboTestCase.cpp
+	es31fFboTestCase.hpp
 	es31fFboTestUtil.cpp
+	es31fFboTestUtil.hpp
+	es31fTextureFilteringTests.cpp
+	es31fTextureFilteringTests.hpp
 	es31fTextureFormatTests.hpp
 	es31fTextureFormatTests.cpp
 	es31fTextureLevelStateQueryTests.hpp

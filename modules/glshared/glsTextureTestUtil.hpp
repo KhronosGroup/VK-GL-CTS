@@ -374,7 +374,7 @@ void			computeQuadTexCoord2DArray		(std::vector<float>& dst, int layerNdx, const
 void			computeQuadTexCoord3D			(std::vector<float>& dst, const tcu::Vec3& p0, const tcu::Vec3& p1, const tcu::IVec3& dirSwz);
 void			computeQuadTexCoordCube			(std::vector<float>& dst, tcu::CubeFace face);
 void			computeQuadTexCoordCube			(std::vector<float>& dst, tcu::CubeFace face, const tcu::Vec2& bottomLeft, const tcu::Vec2& topRight);
-void			computeQuadTexCoordCubeArray	(std::vector<float>& dst, int sliceNdx, tcu::CubeFace face, const tcu::Vec2& bottomLeft, const tcu::Vec2& topRight);
+void			computeQuadTexCoordCubeArray	(std::vector<float>& dst, tcu::CubeFace face, const tcu::Vec2& bottomLeft, const tcu::Vec2& topRight, const tcu::Vec2& layerRange);
 
 bool			compareImages				(tcu::TestLog& log, const char* name, const char* desc, const tcu::Surface& reference, const tcu::Surface& rendered, tcu::RGBA threshold);
 bool			compareImages				(tcu::TestLog& log, const tcu::Surface& reference, const tcu::Surface& rendered, tcu::RGBA threshold);
@@ -440,6 +440,17 @@ int				computeTextureLookupDiff	(const tcu::ConstPixelBufferAccess&	result,
 											 const tcu::LodPrecision&			lodPrec,
 											 qpWatchDog*						watchDog);
 
+int				computeTextureLookupDiff	(const tcu::ConstPixelBufferAccess&	result,
+											 const tcu::ConstPixelBufferAccess&	reference,
+											 const tcu::PixelBufferAccess&		errorMask,
+											 const tcu::TextureCubeArrayView&	src,
+											 const float*						texCoord,
+											 const ReferenceParams&				sampleParams,
+											 const tcu::LookupPrecision&		lookupPrec,
+											 const tcu::IVec4&					coordBits,
+											 const tcu::LodPrecision&			lodPrec,
+											 qpWatchDog*						watchDog);
+
 bool			verifyTextureResult			(tcu::TestContext&					testCtx,
 											 const tcu::ConstPixelBufferAccess&	result,
 											 const tcu::Texture1DView&			src,
@@ -491,6 +502,16 @@ bool			verifyTextureResult			(tcu::TestContext&					testCtx,
 											 const float*						texCoord,
 											 const ReferenceParams&				sampleParams,
 											 const tcu::LookupPrecision&		lookupPrec,
+											 const tcu::LodPrecision&			lodPrec,
+											 const tcu::PixelFormat&			pixelFormat);
+
+bool			verifyTextureResult			(tcu::TestContext&					testCtx,
+											 const tcu::ConstPixelBufferAccess&	result,
+											 const tcu::TextureCubeArrayView&	src,
+											 const float*						texCoord,
+											 const ReferenceParams&				sampleParams,
+											 const tcu::LookupPrecision&		lookupPrec,
+											 const tcu::IVec4&					coordBits,
 											 const tcu::LodPrecision&			lodPrec,
 											 const tcu::PixelFormat&			pixelFormat);
 

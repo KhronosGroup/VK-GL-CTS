@@ -86,6 +86,7 @@ template<ObjectType Type> class TypedObjectWrapper : public ObjectWrapper
 {
 public:
 	explicit	TypedObjectWrapper (const RenderContext& context) : ObjectWrapper(context.getFunctions(), objectTraits(Type)) {}
+	explicit	TypedObjectWrapper (const glw::Functions& gl) : ObjectWrapper(gl, objectTraits(Type)) {}
 };
 
 /*--------------------------------------------------------------------*//*!
@@ -120,6 +121,7 @@ template<ObjectType Type> class TypedObjectVector : public ObjectVector
 {
 public:
 	explicit	TypedObjectVector (const RenderContext& context, size_t numObjects = 0) : ObjectVector(context.getFunctions(), objectTraits(Type), numObjects) {}
+	explicit	TypedObjectVector (const glw::Functions& gl, size_t numObjects = 0) : ObjectVector(gl, objectTraits(Type), numObjects) {}
 };
 
 // Typedefs for simple wrappers without functionality.

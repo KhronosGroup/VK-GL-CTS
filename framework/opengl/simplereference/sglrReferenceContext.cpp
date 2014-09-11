@@ -130,6 +130,17 @@ static tcu::CubeFace texTargetToFace (Framebuffer::TexTarget target)
 	}
 }
 
+static Framebuffer::TexTarget texLayeredTypeToTarget (Texture::Type type)
+{
+	switch (type)
+	{
+		case Texture::TYPE_2D_ARRAY:		return Framebuffer::TEXTARGET_2D_ARRAY;
+		case Texture::TYPE_3D:				return Framebuffer::TEXTARGET_3D;
+		case Texture::TYPE_CUBE_MAP_ARRAY:	return Framebuffer::TEXTARGET_CUBE_MAP_ARRAY;
+		default:							return Framebuffer::TEXTARGET_LAST;
+	}
+}
+
 static tcu::CubeFace mapGLCubeFace (deUint32 face)
 {
 	switch (face)
@@ -2029,10 +2040,11 @@ void ReferenceContext::framebufferTextureLayer (deUint32 target, deUint32 attach
 			RC_IF_ERROR(!texObj,		GL_INVALID_OPERATION,	RC_RET_VOID);
 			RC_IF_ERROR(level != 0,		GL_INVALID_VALUE,		RC_RET_VOID); // \todo [2012-03-19 pyry] We should allow other levels as well.
 
-			RC_IF_ERROR(texObj->getType() != Texture::TYPE_2D_ARRAY	&&
-						texObj->getType() != Texture::TYPE_3D,					GL_INVALID_OPERATION,	RC_RET_VOID);
+			RC_IF_ERROR(texObj->getType() != Texture::TYPE_2D_ARRAY			&&
+						texObj->getType() != Texture::TYPE_3D				&&
+						texObj->getType() != Texture::TYPE_CUBE_MAP_ARRAY,				GL_INVALID_OPERATION,	RC_RET_VOID);
 
-			if (texObj->getType() == Texture::TYPE_2D_ARRAY)
+			if (texObj->getType() == Texture::TYPE_2D_ARRAY || texObj->getType() == Texture::TYPE_CUBE_MAP_ARRAY)
 			{
 				RC_IF_ERROR((layer < 0) || (layer >= GL_MAX_ARRAY_TEXTURE_LAYERS),		GL_INVALID_VALUE,		RC_RET_VOID);
 				RC_IF_ERROR((level < 0) || (level > tcu::log2(GL_MAX_TEXTURE_SIZE)),	GL_INVALID_VALUE,		RC_RET_VOID);
@@ -2053,9 +2065,11 @@ void ReferenceContext::framebufferTextureLayer (deUint32 target, deUint32 attach
 		{
 			fboAttachment.type			= Framebuffer::ATTACHMENTTYPE_TEXTURE;
 			fboAttachment.name			= texObj->getName();
-			fboAttachment.texTarget		= texObj->getType() == Texture::TYPE_2D_ARRAY ? Framebuffer::TEXTARGET_2D_ARRAY : Framebuffer::TEXTARGET_3D;
+			fboAttachment.texTarget		= texLayeredTypeToTarget(texObj->getType());
 			fboAttachment.level			= level;
 			fboAttachment.layer			= layer;
+
+			DE_ASSERT(fboAttachment.texTarget != Framebuffer::TEXTARGET_LAST);
 
 			for (int ndx = 0; ndx < bindingRefCount; ndx++)
 				acquireFboAttachmentReference(fboAttachment);
@@ -2181,6 +2195,14 @@ deUint32 ReferenceContext::checkFramebufferStatus (deUint32 target)
 				if (tex3D->hasLevel(attachment.level))
 					level = tex3D->getLevel(attachment.level); // \note Slice doesn't matter here.
 			}
+			else if (attachment.texTarget == Framebuffer::TEXTARGET_CUBE_MAP_ARRAY)
+			{
+				DE_ASSERT(texture->getType() == Texture::TYPE_CUBE_MAP_ARRAY);
+				const TextureCubeArray* texCubeArr = static_cast<const TextureCubeArray*>(texture);
+
+				if (texCubeArr->hasLevel(attachment.level))
+					level = texCubeArr->getLevel(attachment.level); // \note Slice doesn't matter here.
+			}
 			else
 				TCU_FAIL("Framebuffer attached to a texture but no valid target specified");
 
@@ -2299,11 +2321,18 @@ tcu::PixelBufferAccess ReferenceContext::getFboAttachment (const rc::Framebuffer
 				return dynamic_cast<Texture2D*>(texture)->getLevel(attachment.level);
 			else if (texture->getType() == Texture::TYPE_CUBE_MAP)
 				return dynamic_cast<TextureCube*>(texture)->getFace(attachment.level, texTargetToFace(attachment.texTarget));
-			else if (texture->getType() == Texture::TYPE_2D_ARRAY || texture->getType() == Texture::TYPE_3D)
+			else if (texture->getType() == Texture::TYPE_2D_ARRAY	||
+					 texture->getType() == Texture::TYPE_3D			||
+					 texture->getType() == Texture::TYPE_CUBE_MAP_ARRAY)
 			{
-				tcu::PixelBufferAccess level = (texture->getType() == Texture::TYPE_2D_ARRAY)
-											 ? dynamic_cast<Texture2DArray*>(texture)->getLevel(attachment.level)
-											 : dynamic_cast<Texture3D*>(texture)->getLevel(attachment.level);
+				tcu::PixelBufferAccess level;
+
+				if (texture->getType() == Texture::TYPE_2D_ARRAY)
+					level = dynamic_cast<Texture2DArray*>(texture)->getLevel(attachment.level);
+				else if (texture->getType() == Texture::TYPE_3D)
+					level = dynamic_cast<Texture3D*>(texture)->getLevel(attachment.level);
+				else if (texture->getType() == Texture::TYPE_CUBE_MAP_ARRAY)
+					level = dynamic_cast<TextureCubeArray*>(texture)->getLevel(attachment.level);
 
 				void* layerData = static_cast<deUint8*>(level.getDataPtr()) + level.getSlicePitch() * attachment.layer;
 
@@ -3794,6 +3823,9 @@ void ReferenceContext::uniform1iv (deInt32 location, deInt32 count, const deInt3
 		case glu::TYPE_SAMPLER_3D:
 		case glu::TYPE_UINT_SAMPLER_3D:
 		case glu::TYPE_INT_SAMPLER_3D:
+		case glu::TYPE_SAMPLER_CUBE_ARRAY:
+		case glu::TYPE_UINT_SAMPLER_CUBE_ARRAY:
+		case glu::TYPE_INT_SAMPLER_CUBE_ARRAY:
 			uniforms[location].value.i = *v;
 			return;
 
@@ -5223,7 +5255,7 @@ tcu::Vec4 TextureCubeArray::sample (float s, float t, float r, float q, float lo
 
 void TextureCubeArray::sample4 (tcu::Vec4 output[4], const tcu::Vec4 packetTexcoords[4], float lodBias) const
 {
-	const int		cubeSide		= m_view.getWidth();
+	const int		cubeSide		= m_view.getSize();
 	const tcu::Vec3	cubeCoords[4]	=
 	{
 		packetTexcoords[0].toWidth<3>(),

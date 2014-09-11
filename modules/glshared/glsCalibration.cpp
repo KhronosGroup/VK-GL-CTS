@@ -23,6 +23,7 @@
 
 #include "glsCalibration.hpp"
 #include "tcuTestLog.hpp"
+#include "tcuVectorUtil.hpp"
 #include "deStringUtil.hpp"
 #include "deMath.h"
 #include "deClock.h"
@@ -42,7 +43,21 @@ namespace deqp
 namespace gls
 {
 
-LineParameters theilSenEstimator (const std::vector<tcu::Vec2>& dataPoints)
+// Reorders input arbitrarily, linear complexity and no allocations
+template<typename T>
+float destructiveMedian (vector<T>& data)
+{
+	const typename vector<T>::iterator mid = data.begin()+data.size()/2;
+
+	std::nth_element(data.begin(), mid, data.end());
+
+	if (data.size()%2 == 0) // Even number of elements, need average of two centermost elements
+		return (*mid + *std::max_element(data.begin(), mid))*0.5f; // Data is partially sorted around mid, mid is half an item after center
+	else
+		return *mid;
+}
+
+LineParameters theilSenLinearRegression (const std::vector<tcu::Vec2>& dataPoints)
 {
 	const float		epsilon					= 1e-6f;
 
@@ -67,12 +82,8 @@ LineParameters theilSenEstimator (const std::vector<tcu::Vec2>& dataPoints)
 
 	// Find the median of the pairwise coefficients.
 	// \note If there are no data point pairs with differing x values, the coefficient variable will stay zero as initialized.
-	std::sort(pairwiseCoefficients.begin(), pairwiseCoefficients.end());
-	int numCoeffs = (int)pairwiseCoefficients.size();
-	if (numCoeffs > 0)
-		result.coefficient = numCoeffs % 2 == 0
-						   ? (pairwiseCoefficients[numCoeffs/2 - 1] + pairwiseCoefficients[numCoeffs/2]) / 2
-						   : pairwiseCoefficients[numCoeffs/2];
+	if (!pairwiseCoefficients.empty())
+		result.coefficient = destructiveMedian(pairwiseCoefficients);
 
 	// Compute the offsets corresponding to the median coefficient, for all data points.
 	for (int i = 0; i < numDataPoints; i++)
@@ -80,12 +91,86 @@ LineParameters theilSenEstimator (const std::vector<tcu::Vec2>& dataPoints)
 
 	// Find the median of the offsets.
 	// \note If there are no data points, the offset variable will stay zero as initialized.
+	if (!pointwiseOffsets.empty())
+		result.offset = destructiveMedian(pointwiseOffsets);
+
+	return result;
+}
+
+// Sample from given values using linear interpolation at a given position as if values were laid to range [0, 1]
+template <typename T>
+static float linearSample (const std::vector<T>& values, float position)
+{
+	DE_ASSERT(position >= 0.0f);
+	DE_ASSERT(position <= 1.0f);
+
+	const int	maxNdx				= (int)values.size() - 1;
+	const float	floatNdx			= maxNdx * position;
+	const int	lowerNdx			= (int)deFloatFloor(floatNdx);
+	const int	higherNdx			= lowerNdx + (lowerNdx == maxNdx ? 0 : 1); // Use only last element if position is 1.0
+	const float	interpolationFactor = floatNdx - (float)lowerNdx;
+
+	DE_ASSERT(lowerNdx >= 0 && lowerNdx < (int)values.size());
+	DE_ASSERT(higherNdx >= 0 && higherNdx < (int)values.size());
+	DE_ASSERT(interpolationFactor >= 0 && interpolationFactor < 1.0f);
+
+	return tcu::mix((float)values[lowerNdx], (float)values[higherNdx], interpolationFactor);
+}
+
+LineParametersWithConfidence theilSenSiegelLinearRegression (const std::vector<tcu::Vec2>& dataPoints, float reportedConfidence)
+{
+	DE_ASSERT(!dataPoints.empty());
+
+	// Siegel's variation
+
+	const float						epsilon				= 1e-6f;
+	const int						numDataPoints		= (int)dataPoints.size();
+	std::vector<float>				medianSlopes;
+	std::vector<float>				pointwiseOffsets;
+	LineParametersWithConfidence	result;
+
+	// Compute the median slope via each element
+	for (int i = 0; i < numDataPoints; i++)
+	{
+		const tcu::Vec2&	ptA		= dataPoints[i];
+		std::vector<float>	slopes;
+
+		slopes.reserve(numDataPoints);
+
+		for (int j = 0; j < numDataPoints; j++)
+		{
+			const tcu::Vec2& ptB = dataPoints[j];
+
+			if (de::abs(ptA.x() - ptB.x()) > epsilon)
+				slopes.push_back((ptA.y() - ptB.y()) / (ptA.x() - ptB.x()));
+		}
+
+		// Add median of slopes through point i
+		medianSlopes.push_back(destructiveMedian(slopes));
+	}
+
+	DE_ASSERT(!medianSlopes.empty());
+
+	// Find the median of the pairwise coefficients.
+	std::sort(medianSlopes.begin(), medianSlopes.end());
+	result.coefficient = linearSample(medianSlopes, 0.5f);
+
+	// Compute the offsets corresponding to the median coefficient, for all data points.
+	for (int i = 0; i < numDataPoints; i++)
+		pointwiseOffsets.push_back(dataPoints[i].y() - result.coefficient*dataPoints[i].x());
+
+	// Find the median of the offsets.
 	std::sort(pointwiseOffsets.begin(), pointwiseOffsets.end());
-	int numOffsets = (int)pointwiseOffsets.size();
-	if (numOffsets > 0)
-		result.offset = numOffsets % 2 == 0
-					  ? (pointwiseOffsets[numOffsets/2 - 1] + pointwiseOffsets[numOffsets/2]) / 2
-					  : pointwiseOffsets[numOffsets/2];
+	result.offset = linearSample(pointwiseOffsets, 0.5f);
+
+	// calculate confidence intervals
+	result.coefficientConfidenceLower = linearSample(medianSlopes, 0.5f - reportedConfidence*0.5f);
+	result.coefficientConfidenceUpper = linearSample(medianSlopes, 0.5f + reportedConfidence*0.5f);
+
+	result.offsetConfidenceLower = linearSample(pointwiseOffsets, 0.5f - reportedConfidence*0.5f);
+	result.offsetConfidenceUpper = linearSample(pointwiseOffsets, 0.5f + reportedConfidence*0.5f);
+
+	result.confidence = reportedConfidence;
 
 	return result;
 }
@@ -277,7 +362,7 @@ void TheilSenCalibrator::recomputeParameters (void)
 				const float				targetFrameTimeUs	= m_params.targetFrameTimeUs;
 				const float				coeffEpsilon		= 0.001f; // Coefficient must be large enough (and positive) to be considered sensible.
 
-				const LineParameters	estimatorLine		= theilSenEstimator(dataPoints);
+				const LineParameters	estimatorLine		= theilSenLinearRegression(dataPoints);
 
 				int						prevMaxCalls		= 0;
 

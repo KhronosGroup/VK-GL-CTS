@@ -110,6 +110,12 @@ static string arrayStr (const T (&arr)[Size])
 	return result;
 }
 
+template <typename T, int N>
+static int arrayIndexOf (const T (&arr)[N], const T& e)
+{
+	return (int)(std::find(DE_ARRAY_BEGIN(arr), DE_ARRAY_END(arr), e) - DE_ARRAY_BEGIN(arr));
+}
+
 static const char* getTextureTypeName (TextureType type)
 {
 	switch (type)
@@ -1421,7 +1427,7 @@ ImageLoadAndStoreCase::IterateResult ImageLoadAndStoreCase::iterate (void)
 														"{\n"
 														+ (shaderImageType == TEXTURETYPE_BUFFER ?
 															"	int pos = int(gl_GlobalInvocationID.x);\n"
-															"	imageStore(u_image1, pos, imageLoad(u_image0, " + toString(imageSize.x()-1) + "-pos.x));\n"
+															"	imageStore(u_image1, pos, imageLoad(u_image0, " + toString(imageSize.x()-1) + "-pos));\n"
 														 : shaderImageType == TEXTURETYPE_2D ?
 															"	ivec2 pos = ivec2(gl_GlobalInvocationID.xy);\n"
 															"	imageStore(u_image1, pos, imageLoad(u_image0, ivec2(" + toString(imageSize.x()-1) + "-pos.x, pos.y)));\n"
@@ -2247,47 +2253,48 @@ public:
 			// Due to the way the compare and assign arguments to the atomic calls are organized
 			// among the different invocations contributing to the same pixel -- i.e. one invocation
 			// compares to A and assigns B, another compares to B and assigns C, and so on, where
-			// A<B<C etc -- the return value sequence must be (assuming 4 invocations operating
-			// on one result image pixel, for example) A A A A, A B B B, A B C C or A B C D
-			// depending on the execution order.
+			// A<B<C etc -- the first value in the return value sequence must be A, and each following
+			// value must be either the same as or the smallest value (among A, B, C, ...) bigger than
+			// the one just before it. E.g. sequences A A A A A A A A, A B C D E F G H and
+			// A A B B B C D E are all valid sequences (if there were 8 invocations contributing
+			// to each pixel).
 
 			{
-				bool success = true;
+				int failingNdx = -1;
 
 				{
-					bool flatPartStarted = false;
-
-					for (int i = 0; i < NUM_INVOCATIONS_PER_PIXEL && success; i++)
+					int currentAtomicValueNdx = 0;
+					for (int i = 0; i < NUM_INVOCATIONS_PER_PIXEL; i++)
 					{
-						if (returnValues[i] == compareArgs[i])
-							success = !flatPartStarted;
-						else
+						if (returnValues[i] == compareArgs[currentAtomicValueNdx])
+							continue;
+						if (i > 0 && returnValues[i] == compareArgs[currentAtomicValueNdx+1])
 						{
-							success = i > 0 && returnValues[i] == returnValues[i-1];
-							flatPartStarted = true;
+							currentAtomicValueNdx++;
+							continue;
 						}
+						failingNdx = i;
+						break;
 					}
 				}
 
-				if (!success)
+				if (failingNdx >= 0)
 				{
 					log << TestLog::Message << "// Failure: intermediate return values at pixels " << arrayStr(pixelCoords) << " of current layer are "
 											<< arrayStr(returnValues) << TestLog::EndMessage
 						<< TestLog::Message << "// Note: relevant shader invocation global IDs are " << arrayStr(invocationGlobalIDs) << TestLog::EndMessage
-						<< TestLog::Message << "// Note: 'compare' argument values for the IDs are " << arrayStr(compareArgs) << TestLog::EndMessage;
-
-					{
-						std::ostringstream validReturnValueSequences;
-						for (int flatPartStartNdx = 0; flatPartStartNdx < NUM_INVOCATIONS_PER_PIXEL; flatPartStartNdx++)
-						{
-							int curSeq[NUM_INVOCATIONS_PER_PIXEL];
-							for (int i = 0; i < NUM_INVOCATIONS_PER_PIXEL; i++)
-								curSeq[i] = compareArgs[de::min(i, flatPartStartNdx)];
-							validReturnValueSequences << "// " << arrayStr(curSeq) << "\n";
-						}
-
-						log << TestLog::Message << "// Note: expected one of the following return value sequences:\n" << validReturnValueSequences.str() << TestLog::EndMessage;
-					}
+						<< TestLog::Message << "// Note: 'compare' argument values for the IDs are " << arrayStr(compareArgs) << TestLog::EndMessage
+						<< TestLog::Message << "// Note: expected the return value sequence to fulfill the following conditions:\n"
+											<< "// - first value is " << compareArgs[0] << "\n"
+											<< "// - each value other than the first is either the same as the one just before it, or the smallest value (in the sequence "
+											<< arrayStr(compareArgs) << ") bigger than the one just before it" << TestLog::EndMessage;
+					if (failingNdx == 0)
+						log << TestLog::Message << "// Note: the first return value (" << returnValues[0] << ") isn't " << compareArgs[0] << TestLog::EndMessage;
+					else
+						log << TestLog::Message << "// Note: the return value at index " << failingNdx << " (value " << returnValues[failingNdx] << ") "
+												<< "is neither " << returnValues[failingNdx-1] << " (the one just before it) "
+												<< "nor " << compareArgs[arrayIndexOf(compareArgs, returnValues[failingNdx-1])+1] << " (the smallest value bigger than the one just before it)"
+												<< TestLog::EndMessage;
 
 					return false;
 				}

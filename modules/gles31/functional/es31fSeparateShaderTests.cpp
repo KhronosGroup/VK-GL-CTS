@@ -676,6 +676,10 @@ bool paramsValid (const TestParams& params)
 		// CreateShaderProgram would never get called
 		if (!params.switchVtx && !params.switchFrg && params.useCreateHelper)
 			return false;
+
+		// Must switch either all or nothing
+		if (params.switchVtx != params.switchFrg)
+			return false;
 	}
 
 	// ProgramUniform would never get called
@@ -756,6 +760,7 @@ TestParams genParams (deUint32 seed)
 {
 	Random		rnd		(seed);
 	TestParams	params;
+	int			tryNdx	= 0;
 
 	do
 	{
@@ -784,7 +789,11 @@ TestParams genParams (deUint32 seed)
 			params.varyings.vtxInterp	= glu::INTERPOLATION_LAST;
 			params.varyings.frgInterp	= glu::INTERPOLATION_LAST;
 		}
-	} while (!paramsValid(params));
+
+		tryNdx += 1;
+	} while (!paramsValid(params) && tryNdx < 16);
+
+	DE_ASSERT(paramsValid(params));
 
 	return params;
 }
@@ -963,6 +972,7 @@ SeparateShaderTest::SeparateShaderTest (Context&			ctx,
 	, m_status			(log(), "// ")
 	, m_varyings		(genVaryingInterface(params.varyings, m_rnd))
 {
+	DE_ASSERT(paramsValid(params));
 }
 
 MovePtr<ProgramWrapper> SeparateShaderTest::createShaderProgram (const string*	vtxSource,
@@ -1419,12 +1429,24 @@ enum ParamFlags
 	PARAMFLAGS_MASK				= PARAMFLAGS_LAST - 1
 };
 
+bool areCaseParamFlagsValid (ParamFlags flags)
+{
+	const ParamFlags switchAll = ParamFlags(PARAMFLAGS_SWITCH_VERTEX|PARAMFLAGS_SWITCH_FRAGMENT);
+
+	if ((flags & PARAMFLAGS_INIT_SINGLE) != 0)
+		return (flags & switchAll) == 0 ||
+			   (flags & switchAll) == switchAll;
+	else
+		return true;
+}
 
 bool addRenderTest (TestCaseGroup& group, const string& namePrefix, const string& descPrefix,
 					int numIterations, ParamFlags flags, TestParams params)
 {
 	ostringstream	name;
 	ostringstream	desc;
+
+	DE_ASSERT(areCaseParamFlagsValid(flags));
 
 	name << namePrefix;
 	desc << descPrefix;
@@ -1516,6 +1538,9 @@ TestCaseGroup* createSeparateShaderTests (Context& ctx)
 		ostringstream	name;
 		ostringstream	desc;
 
+		if (!areCaseParamFlagsValid(ParamFlags(flags & PARAMFLAGS_MASK)))
+			continue;
+
 		if (flags & (PARAMFLAGS_LAST << 1))
 		{
 			params.useSameName = true;
@@ -1552,6 +1577,9 @@ TestCaseGroup* createSeparateShaderTests (Context& ctx)
 	{
 		TestParams		params			= defaultParams;
 
+		if (!areCaseParamFlagsValid(ParamFlags(flags)))
+			continue;
+
 		params.useUniform = true;
 		params.useProgramUniform = true;
 
@@ -1565,6 +1593,9 @@ TestCaseGroup* createSeparateShaderTests (Context& ctx)
 	for (deUint32 flags = 0; flags < PARAMFLAGS_LAST; ++flags)
 	{
 		TestParams		params			= defaultParams;
+
+		if (!areCaseParamFlagsValid(ParamFlags(flags)))
+			continue;
 
 		params.useCreateHelper = true;
 

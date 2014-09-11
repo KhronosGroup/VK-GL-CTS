@@ -127,7 +127,8 @@ void TextureSizeCase::init (void)
 		tcu::IVec2(4,	8),
 		tcu::IVec2(21,	11),
 		tcu::IVec2(107,	254),
-		tcu::IVec2(-1,	-1),
+		tcu::IVec2(-1,	3),
+		tcu::IVec2(3,	-1),
 	};
 	static const tcu::IVec3 testSizes3D[] =
 	{
@@ -136,9 +137,9 @@ void TextureSizeCase::init (void)
 		tcu::IVec3(4,	8,		12),
 		tcu::IVec3(21,	11,		9),
 		tcu::IVec3(107,	254,	2),
-		tcu::IVec3(-1,	-1,		3),
+		tcu::IVec3(-1,	3,		3),
+		tcu::IVec3(3,	-1,		3),
 		tcu::IVec3(4,	4,		-1),
-		tcu::IVec3(-1,	-1,		-1),
 	};
 	static const tcu::Vec4 fullscreenQuad[] =
 	{

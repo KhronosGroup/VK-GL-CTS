@@ -994,6 +994,42 @@ std::vector<std::string> getProgramInterfaceResourceList (const ProgramInterface
 				}
 			}
 
+			// built-ins
+			if (interface == PROGRAMINTERFACE_PROGRAM_INPUT)
+			{
+				if (shaderType == glu::SHADERTYPE_VERTEX && resources.empty())
+					resources.push_back("gl_VertexID"); // only read from when there are no other inputs
+				else if (shaderType == glu::SHADERTYPE_FRAGMENT && resources.empty())
+					resources.push_back("gl_FragCoord"); // only read from when there are no other inputs
+				else if (shaderType == glu::SHADERTYPE_GEOMETRY && resources.empty())
+					resources.push_back("gl_in[0].gl_Position");
+				else if (shaderType == glu::SHADERTYPE_TESSELLATION_CONTROL)
+				{
+					const bool noInputs = resources.empty();
+					resources.push_back("gl_InvocationID");
+
+					if (noInputs)
+						resources.push_back("gl_in[0].gl_Position"); // only read from when there are no other inputs
+				}
+				else if (shaderType == glu::SHADERTYPE_TESSELLATION_EVALUATION && resources.empty())
+					resources.push_back("gl_in[0].gl_Position"); // only read from when there are no other inputs
+				else if (shaderType == glu::SHADERTYPE_COMPUTE && resources.empty())
+					resources.push_back("gl_NumWorkGroups"); // only read from when there are no other inputs
+			}
+			else if (interface == PROGRAMINTERFACE_PROGRAM_OUTPUT)
+			{
+				if (shaderType == glu::SHADERTYPE_VERTEX)
+					resources.push_back("gl_Position");
+				else if (shaderType == glu::SHADERTYPE_FRAGMENT && resources.empty())
+					resources.push_back("gl_FragDepth"); // only written to when there are no other outputs
+				else if (shaderType == glu::SHADERTYPE_GEOMETRY)
+					resources.push_back("gl_Position");
+				else if (shaderType == glu::SHADERTYPE_TESSELLATION_CONTROL)
+					resources.push_back("gl_out[0].gl_Position");
+				else if (shaderType == glu::SHADERTYPE_TESSELLATION_EVALUATION)
+					resources.push_back("gl_Position");
+			}
+
 			break;
 		}
 

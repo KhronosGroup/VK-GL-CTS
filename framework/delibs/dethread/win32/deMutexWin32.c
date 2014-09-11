@@ -64,6 +64,7 @@ deMutex deMutex_create (const deMutexAttributes* attributes)
 
 void deMutex_destroy (deMutex mutex)
 {
+	DeleteCriticalSection((CRITICAL_SECTION*)mutex);
 	deFree((CRITICAL_SECTION*)mutex);
 }
 

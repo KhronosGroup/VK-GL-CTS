@@ -98,6 +98,8 @@ void	scale							(const PixelBufferAccess& dst, const ConstPixelBufferAccess& sr
 void	estimatePixelValueRange			(const ConstPixelBufferAccess& access, Vec4& minVal, Vec4& maxVal);
 void	computePixelScaleBias			(const ConstPixelBufferAccess& access, Vec4& scale, Vec4& bias);
 
+int		getCubeArrayFaceIndex			(CubeFace face);
+
 //! FP32->U8 with RTE rounding (extremely fast, always accurate).
 inline deUint8 floatToU8 (float fv)
 {

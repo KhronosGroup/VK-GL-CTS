@@ -35,6 +35,7 @@
 #include "es3pStateChangeCallTests.hpp"
 #include "es3pStateChangeTests.hpp"
 #include "es3pBufferDataUploadTests.hpp"
+#include "es3pDepthTests.hpp"
 
 namespace deqp
 {
@@ -131,6 +132,7 @@ void PerformanceTests::init (void)
 	addChild(new ShaderCompilerTests	(m_context));
 	addChild(new APITests				(m_context));
 	addChild(new BufferTestGroup		(m_context));
+	addChild(new DepthTests				(m_context));
 }
 
 } // Performance

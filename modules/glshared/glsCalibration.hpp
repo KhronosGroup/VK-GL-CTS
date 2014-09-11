@@ -44,7 +44,26 @@ struct LineParameters
 	LineParameters (float offset_, float coefficient_) : offset(offset_), coefficient(coefficient_) {}
 };
 
-LineParameters theilSenEstimator (const std::vector<tcu::Vec2>& dataPoints);
+// Basic Theil-Sen linear estimate. Calculates median of all possible slope coefficients through two of the data points
+// and median of offsets corresponding with the median slope
+LineParameters theilSenLinearRegression (const std::vector<tcu::Vec2>& dataPoints);
+
+struct LineParametersWithConfidence
+{
+	float offset;
+	float offsetConfidenceUpper;
+	float offsetConfidenceLower;
+
+	float coefficient;
+	float coefficientConfidenceUpper;
+	float coefficientConfidenceLower;
+
+	float confidence;
+};
+
+// Median-of-medians version of Theil-Sen estimate. Calculates median of medians of slopes through a point and all other points.
+// Confidence interval is given as the range that contains the given fraction of all slopes/offsets
+LineParametersWithConfidence theilSenSiegelLinearRegression (const std::vector<tcu::Vec2>& dataPoints, float reportedConfidence);
 
 struct MeasureState
 {

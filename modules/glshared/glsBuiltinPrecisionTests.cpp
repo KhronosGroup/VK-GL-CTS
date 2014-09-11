@@ -840,14 +840,19 @@ template <typename T>
 typename Traits<T>::IVal Expr<T>::evaluate (const EvalContext& ctx) const
 {
 #ifdef GLS_ENABLE_TRACE
-	EvalContext			newCtx	(ctx.format, ctx.floatPrecision, ctx.env, ctx.callDepth + 1);
-	const IVal			ret		= this->doEvaluate(newCtx);
+	static const FloatFormat	highpFmt	(-126, 127, 23, true,
+											 tcu::MAYBE,
+											 tcu::YES,
+											 tcu::MAYBE);
+	EvalContext					newCtx		(ctx.format, ctx.floatPrecision,
+											 ctx.env, ctx.callDepth + 1);
+	const IVal					ret			= this->doEvaluate(newCtx);
 
 	if (isTypeValid<T>())
 	{
 		std::cerr << string(ctx.callDepth, ' ');
 		this->printExpr(std::cerr);
-		std::cerr << " -> " << intervalToString<T>(ctx.format, ret) << std::endl;
+		std::cerr << " -> " << intervalToString<T>(highpFmt, ret) << std::endl;
 	}
 	return ret;
 #else
@@ -3637,7 +3642,7 @@ public:
 
 	string			getRequiredExtension	(void) const
 	{
-		return "GL_EXT_gpu_ shader5";
+		return "GL_EXT_gpu_shader5";
 	}
 
 protected:
@@ -3900,9 +3905,9 @@ template <typename T>
 class Sampling
 {
 public:
-	virtual void	genFixeds	(const FloatFormat&, vector<T>&)	const {}
-	virtual T		genRandom	(const FloatFormat&, Random&)		const { return T(); }
-	virtual double	getWeight	(void)								const { return 0.0; }
+	virtual void	genFixeds	(const FloatFormat&, vector<T>&)			const {}
+	virtual T		genRandom	(const FloatFormat&, Precision, Random&)	const { return T(); }
+	virtual double	getWeight	(void)										const { return 0.0; }
 };
 
 template <>
@@ -3927,9 +3932,9 @@ template <>
 class DefaultSampling<int> : public Sampling<int>
 {
 public:
-	int		genRandom	(const FloatFormat&, Random& rnd) const
+	int		genRandom	(const FloatFormat&, Precision prec, Random& rnd) const
 	{
-		const int	exp		= rnd.getInt(0, 30);
+		const int	exp		= rnd.getInt(0, getNumBits(prec)-2);
 		const int	sign	= rnd.getBool() ? -1 : 1;
 
 		return sign * rnd.getInt(0, 1L << exp);
@@ -3942,19 +3947,34 @@ public:
 		dst.push_back(1);
 	}
 	double	getWeight	(void) const { return 1.0; }
+
+private:
+	static inline int getNumBits (Precision prec)
+	{
+		switch (prec)
+		{
+			case glu::PRECISION_LOWP:		return 8;
+			case glu::PRECISION_MEDIUMP:	return 16;
+			case glu::PRECISION_HIGHP:		return 32;
+			default:
+				DE_ASSERT(false);
+				return 0;
+		}
+	}
 };
 
 template <>
 class DefaultSampling<float> : public Sampling<float>
 {
 public:
-	float	genRandom	(const FloatFormat& format, Random& rnd) const;
+	float	genRandom	(const FloatFormat& format, Precision prec, Random& rnd) const;
 	void	genFixeds	(const FloatFormat& format, vector<float>& dst) const;
 	double	getWeight	(void) const { return 1.0; }
 };
 
 //! Generate a random float from a reasonable general-purpose distribution.
 float DefaultSampling<float>::genRandom (const FloatFormat& format,
+										 Precision,
 										 Random&			rnd) const
 {
 	const int		minExp			= format.getMinExp();
@@ -4066,12 +4086,12 @@ class DefaultSampling<Vector<T, Size> > : public Sampling<Vector<T, Size> >
 public:
 	typedef Vector<T, Size>		Value;
 
-	Value	genRandom	(const FloatFormat& fmt, Random& rnd) const
+	Value	genRandom	(const FloatFormat& fmt, Precision prec, Random& rnd) const
 	{
 		Value ret;
 
 		for (int ndx = 0; ndx < Size; ++ndx)
-			ret[ndx] = instance<DefaultSampling<T> >().genRandom(fmt, rnd);
+			ret[ndx] = instance<DefaultSampling<T> >().genRandom(fmt, prec, rnd);
 
 		return ret;
 	}
@@ -4098,13 +4118,13 @@ class DefaultSampling<Matrix<T, Rows, Columns> > : public Sampling<Matrix<T, Row
 public:
 	typedef Matrix<T, Rows, Columns>		Value;
 
-	Value	genRandom	(const FloatFormat& fmt, Random& rnd) const
+	Value	genRandom	(const FloatFormat& fmt, Precision prec, Random& rnd) const
 	{
 		Value ret;
 
 		for (int rowNdx = 0; rowNdx < Rows; ++rowNdx)
 			for (int colNdx = 0; colNdx < Columns; ++colNdx)
-				ret(rowNdx, colNdx) = instance<DefaultSampling<T> >().genRandom(fmt, rnd);
+				ret(rowNdx, colNdx) = instance<DefaultSampling<T> >().genRandom(fmt, prec, rnd);
 
 		return ret;
 	}
@@ -4262,14 +4282,16 @@ public:
 
 protected:
 						PrecisionCase	(const Context&		context,
-										 const string&		name)
-							: TestCase	(context.testContext,
-										 name.c_str(),
-										 name.c_str())
-							, m_ctx		(context)
-							, m_status	()
-							, m_rnd		(0xdeadbeefu +
-										 context.testContext.getCommandLine().getBaseSeed())
+										 const string&		name,
+										 const string&		extension	= "")
+							: TestCase		(context.testContext,
+											 name.c_str(),
+											 name.c_str())
+							, m_ctx			(context)
+							, m_status		()
+							, m_rnd			(0xdeadbeefu +
+											 context.testContext.getCommandLine().getBaseSeed())
+							, m_extension	(extension)
 	{
 	}
 
@@ -4295,6 +4317,7 @@ protected:
 	Context				m_ctx;
 	ResultCollector		m_status;
 	Random				m_rnd;
+	const string		m_extension;
 };
 
 IterateResult PrecisionCase::iterate (void)
@@ -4362,6 +4385,10 @@ void PrecisionCase::testStatement (const Variables<In, Out>&	variables,
 	}
 
 	spec.version = getContextTypeGLSLVersion(getRenderContext().getType());
+
+	if (!m_extension.empty())
+		spec.globalDeclarations = "#extension " + m_extension + " : require\n";
+
 	spec.inputs.resize(inCount);
 
 	switch (inCount)
@@ -4630,6 +4657,7 @@ struct InputLess<InTuple<In> >
 template<typename In>
 Inputs<In> generateInputs (const Samplings<In>&	samplings,
 						   const FloatFormat&	floatFormat,
+						   Precision			intPrecision,
 						   size_t				numSamples,
 						   Random&				rnd)
 {
@@ -4667,10 +4695,10 @@ Inputs<In> generateInputs (const Samplings<In>&	samplings,
 
 	for (size_t ndx = 0; ndx < numSamples; ++ndx)
 	{
-		const typename In::In0	in0		= samplings.in0.genRandom(floatFormat, rnd);
-		const typename In::In1	in1		= samplings.in1.genRandom(floatFormat, rnd);
-		const typename In::In2	in2		= samplings.in2.genRandom(floatFormat, rnd);
-		const typename In::In3	in3		= samplings.in3.genRandom(floatFormat, rnd);
+		const typename In::In0	in0		= samplings.in0.genRandom(floatFormat, intPrecision, rnd);
+		const typename In::In1	in1		= samplings.in1.genRandom(floatFormat, intPrecision, rnd);
+		const typename In::In2	in2		= samplings.in2.genRandom(floatFormat, intPrecision, rnd);
+		const typename In::In3	in3		= samplings.in3.genRandom(floatFormat, intPrecision, rnd);
 		const InTuple<In>		tuple	(in0, in1, in2, in3);
 
 		if (de::contains(seenInputs, tuple))
@@ -4695,10 +4723,7 @@ protected:
 					FuncCaseBase	(const Context&		context,
 									 const string&		name,
 									 const FuncBase&	func)
-						: PrecisionCase	(context, name)
-						, m_extension	(func.getRequiredExtension()) {}
-
-	const string	m_extension;
+						: PrecisionCase	(context, name, func.getRequiredExtension()) {}
 };
 
 IterateResult FuncCaseBase::iterate (void)
@@ -4750,6 +4775,7 @@ void FuncCase<Sig>::runTest (void)
 {
 	const Inputs<In>	inputs	(generateInputs(getSamplings(),
 												m_ctx.floatFormat,
+												m_ctx.precision,
 												m_ctx.numRandoms,
 												m_rnd));
 	Variables<In, Out>	variables;
@@ -4807,6 +4833,7 @@ void InOutFuncCase<Sig>::runTest (void)
 {
 	const Inputs<In>	inputs	(generateInputs(getSamplings(),
 												m_ctx.floatFormat,
+												m_ctx.precision,
 												m_ctx.numRandoms,
 												m_rnd));
 	Variables<In, Out>	variables;

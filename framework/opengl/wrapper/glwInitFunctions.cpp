@@ -142,7 +142,12 @@ void initExtensionsES (Functions* gl, const FunctionLoader* loader, int numExten
 
 	if (de::contains(extSet, "GL_OES_sample_shading"))
 	{
-		gl->minSampleShading	= (glMinSampleShadingFunc)		loader->get("glMinSampleShadingOES");
+		gl->minSampleShading		= (glMinSampleShadingFunc)			loader->get("glMinSampleShadingOES");
+	}
+
+	if (de::contains(extSet, "GL_OES_texture_storage_multisample_2d_array"))
+	{
+		gl->texStorage3DMultisample	= (glTexStorage3DMultisampleFunc)	loader->get("glTexStorage3DMultisampleOES");
 	}
 
 	if (de::contains(extSet, "GL_KHR_debug"))
@@ -153,33 +158,33 @@ void initExtensionsES (Functions* gl, const FunctionLoader* loader, int numExten
 				by this extension must have a "KHR" suffix. When implemented in an
 				OpenGL context, all entry points must have NO suffix, as shown below.
 		*/
-		gl->debugMessageControl = (glDebugMessageControlFunc)	loader->get("glDebugMessageControlKHR");
-		gl->debugMessageInsert	= (glDebugMessageInsertFunc)	loader->get("glDebugMessageInsertKHR");
-		gl->debugMessageCallback= (glDebugMessageCallbackFunc)	loader->get("glDebugMessageCallbackKHR");
-		gl->getDebugMessageLog	= (glGetDebugMessageLogFunc)	loader->get("glGetDebugMessageLogKHR");
-		gl->getPointerv			= (glGetPointervFunc)			loader->get("glGetPointervKHR");
-		gl->pushDebugGroup		= (glPushDebugGroupFunc)		loader->get("glPushDebugGroupKHR");
-		gl->popDebugGroup		= (glPopDebugGroupFunc)			loader->get("glPopDebugGroupKHR");
-		gl->objectLabel			= (glObjectLabelFunc)			loader->get("glObjectLabelKHR");
-		gl->getObjectLabel		= (glGetObjectLabelFunc)		loader->get("glGetObjectLabelKHR");
-		gl->objectPtrLabel		= (glObjectPtrLabelFunc)		loader->get("glObjectPtrLabelKHR");
-		gl->getObjectPtrLabel	= (glGetObjectPtrLabelFunc)		loader->get("glGetObjectPtrLabelKHR");
+		gl->debugMessageControl		= (glDebugMessageControlFunc)		loader->get("glDebugMessageControlKHR");
+		gl->debugMessageInsert		= (glDebugMessageInsertFunc)		loader->get("glDebugMessageInsertKHR");
+		gl->debugMessageCallback	= (glDebugMessageCallbackFunc)		loader->get("glDebugMessageCallbackKHR");
+		gl->getDebugMessageLog		= (glGetDebugMessageLogFunc)		loader->get("glGetDebugMessageLogKHR");
+		gl->getPointerv				= (glGetPointervFunc)				loader->get("glGetPointervKHR");
+		gl->pushDebugGroup			= (glPushDebugGroupFunc)			loader->get("glPushDebugGroupKHR");
+		gl->popDebugGroup			= (glPopDebugGroupFunc)				loader->get("glPopDebugGroupKHR");
+		gl->objectLabel				= (glObjectLabelFunc)				loader->get("glObjectLabelKHR");
+		gl->getObjectLabel			= (glGetObjectLabelFunc)			loader->get("glGetObjectLabelKHR");
+		gl->objectPtrLabel			= (glObjectPtrLabelFunc)			loader->get("glObjectPtrLabelKHR");
+		gl->getObjectPtrLabel		= (glGetObjectPtrLabelFunc)			loader->get("glGetObjectPtrLabelKHR");
 	}
 
 	if (de::contains(extSet, "GL_EXT_tessellation_shader"))
 	{
-		gl->patchParameteri		= (glPatchParameteriFunc)		loader->get("glPatchParameteriEXT");
+		gl->patchParameteri			= (glPatchParameteriFunc)			loader->get("glPatchParameteriEXT");
 	}
 
 	if (de::contains(extSet, "GL_EXT_geometry_shader"))
 	{
-		gl->framebufferTexture	= (glFramebufferTextureFunc)	loader->get("glFramebufferTextureEXT");
+		gl->framebufferTexture		= (glFramebufferTextureFunc)		loader->get("glFramebufferTextureEXT");
 	}
 
 	if (de::contains(extSet, "GL_EXT_texture_buffer"))
 	{
-		gl->texBuffer			= (glTexBufferFunc)				loader->get("glTexBufferEXT");
-		gl->texBufferRange		= (glTexBufferRangeFunc)		loader->get("glTexBufferRangeEXT");
+		gl->texBuffer				= (glTexBufferFunc)					loader->get("glTexBufferEXT");
+		gl->texBufferRange			= (glTexBufferRangeFunc)			loader->get("glTexBufferRangeEXT");
 	}
 }
 

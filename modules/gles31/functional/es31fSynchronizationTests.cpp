@@ -221,16 +221,24 @@ void InterInvocationTestCase::init (void)
 	{
 		const int				bufferElements	= m_workWidth * m_workHeight * m_elementsPerInvocation;
 		const int				bufferSize		= bufferElements * sizeof(deUint32);
-		std::vector<deUint32>	zeroBuffer		(bufferElements, 0);
 
-		m_testCtx.getLog() << tcu::TestLog::Message << "Allocating zero-filled image for storage, size " << m_workWidth << "x" << m_workHeight * m_elementsPerInvocation << ", " << bufferSize << " bytes." << tcu::TestLog::EndMessage;
+		m_testCtx.getLog() << tcu::TestLog::Message << "Allocating image for storage, size " << m_workWidth << "x" << m_workHeight * m_elementsPerInvocation << ", " << bufferSize << " bytes." << tcu::TestLog::EndMessage;
 
 		gl.genTextures(1, &m_storageTex);
 		gl.bindTexture(GL_TEXTURE_2D, m_storageTex);
-		gl.texImage2D(GL_TEXTURE_2D, 0, GL_R32I, m_workWidth, m_workHeight * m_elementsPerInvocation, 0, GL_RED_INTEGER, GL_INT, &zeroBuffer[0]);
+		gl.texStorage2D(GL_TEXTURE_2D, 1, GL_R32I, m_workWidth, m_workHeight * m_elementsPerInvocation);
 		gl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		gl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "gen storage image");
+
+		// Zero-fill
+		m_testCtx.getLog() << tcu::TestLog::Message << "Filling image with 0." << tcu::TestLog::EndMessage;
+
+		{
+			const std::vector<deInt32> zeroBuffer(m_workWidth * m_workHeight * m_elementsPerInvocation, 0);
+			gl.texSubImage2D(GL_TEXTURE_2D, 0, 0, 0, m_workWidth, m_workHeight * m_elementsPerInvocation, GL_RED_INTEGER, GL_INT, &zeroBuffer[0]);
+			GLU_EXPECT_NO_ERROR(gl.getError(), "specify image contents");
+		}
 	}
 	else
 		DE_ASSERT(DE_FALSE);
@@ -1659,19 +1667,31 @@ glw::GLuint InterCallTestCase::genStorage (int friendlyName)
 		gl.bindTexture(GL_TEXTURE_2D, retVal);
 
 		if (m_formatInteger)
-		{
-			const std::vector<deUint32> zeroBuffer(imageWidth * imageHeight, 0);
-			gl.texImage2D(GL_TEXTURE_2D, 0, GL_R32I, imageWidth, imageHeight, 0, GL_RED_INTEGER, GL_INT, &zeroBuffer[0]);
-		}
+			gl.texStorage2D(GL_TEXTURE_2D, 1, GL_R32I, imageWidth, imageHeight);
 		else
-		{
-			const std::vector<float> zeroBuffer(imageWidth * imageHeight, 0.0f);
-			gl.texImage2D(GL_TEXTURE_2D, 0, GL_R32F, imageWidth, imageHeight, 0, GL_RED, GL_FLOAT, &zeroBuffer[0]);
-		}
+			gl.texStorage2D(GL_TEXTURE_2D, 1, GL_R32F, imageWidth, imageHeight);
 
 		gl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		gl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "gen image");
+
+		m_testCtx.getLog()
+			<< tcu::TestLog::Message
+			<< "Filling image with 0"
+			<< tcu::TestLog::EndMessage;
+
+		if (m_formatInteger)
+		{
+			const std::vector<deInt32> zeroBuffer(imageWidth * imageHeight, 0);
+			gl.texSubImage2D(GL_TEXTURE_2D, 0, 0, 0, imageWidth, imageHeight, GL_RED_INTEGER, GL_INT, &zeroBuffer[0]);
+		}
+		else
+		{
+			const std::vector<float> zeroBuffer(imageWidth * imageHeight, 0.0f);
+			gl.texSubImage2D(GL_TEXTURE_2D, 0, 0, 0, imageWidth, imageHeight, GL_RED, GL_FLOAT, &zeroBuffer[0]);
+		}
+
+		GLU_EXPECT_NO_ERROR(gl.getError(), "specify image contents");
 
 		return retVal;
 	}
@@ -1801,16 +1821,30 @@ glu::ShaderProgram* InterCallTestCase::genReadProgram (int seed)
 	if (m_storage == STORAGE_BUFFER)
 	{
 		for (int readNdx = 0; readNdx < m_perInvocationSize; ++readNdx)
-			buf << "	allOk = allOk && ("
-				<< ((m_useAtomic) ? ("atomicExchange(") : ("")) << "sb_in.values[(groupNdx + " << seed + readNdx*m_invocationGridSize*m_invocationGridSize << ") % " << m_invocationGridSize*m_invocationGridSize*m_perInvocationSize << "]"
-				<< ((m_useAtomic) ? (", zero)") : ("")) << " == " << ((m_formatInteger) ? ("int") : ("float")) << "(groupNdx));\n";
+		{
+			if (!m_useAtomic)
+				buf << "	allOk = allOk && (sb_in.values[(groupNdx + "
+					<< seed + readNdx*m_invocationGridSize*m_invocationGridSize << ") % " << m_invocationGridSize*m_invocationGridSize*m_perInvocationSize << "] == "
+					<< ((m_formatInteger) ? ("int") : ("float")) << "(groupNdx));\n";
+			else
+				buf << "	allOk = allOk && (atomicExchange(sb_in.values[(groupNdx + "
+					<< seed + readNdx*m_invocationGridSize*m_invocationGridSize << ") % " << m_invocationGridSize*m_invocationGridSize*m_perInvocationSize << "], zero) == "
+					<< ((m_formatInteger) ? ("int") : ("float")) << "(groupNdx));\n";
+		}
 	}
 	else if (m_storage == STORAGE_IMAGE)
 	{
 		for (int readNdx = 0; readNdx < m_perInvocationSize; ++readNdx)
-			buf << "	allOk = allOk && ("
-			<< ((m_useAtomic) ? ("imageAtomicExchange") : ("imageLoad")) << "(u_imageIn, ivec2((gl_GlobalInvocationID.x + " << (seed + readNdx*100) << "u) % " << m_invocationGridSize << "u, gl_GlobalInvocationID.y + " << readNdx*m_invocationGridSize << "u)"
-			<< ((m_useAtomic) ? (", zero") : ("")) << ").x == " << ((m_formatInteger) ? ("int") : ("float")) << "(groupNdx));\n";
+		{
+			if (!m_useAtomic)
+				buf	<< "	allOk = allOk && (imageLoad(u_imageIn, ivec2((gl_GlobalInvocationID.x + "
+					<< (seed + readNdx*100) << "u) % " << m_invocationGridSize << "u, gl_GlobalInvocationID.y + " << readNdx*m_invocationGridSize << "u)).x == "
+					<< ((m_formatInteger) ? ("int") : ("float")) << "(groupNdx));\n";
+			else
+				buf << "	allOk = allOk && (imageAtomicExchange(u_imageIn, ivec2((gl_GlobalInvocationID.x + "
+					<< (seed + readNdx*100) << "u) % " << m_invocationGridSize << "u, gl_GlobalInvocationID.y + " << readNdx*m_invocationGridSize << "u), zero) == "
+					<< ((m_formatInteger) ? ("int") : ("float")) << "(groupNdx));\n";
+		}
 	}
 	else
 		DE_ASSERT(DE_FALSE);
@@ -1869,8 +1903,8 @@ glu::ShaderProgram* InterCallTestCase::genReadMultipleProgram (int seed0, int se
 	else if (m_storage == STORAGE_IMAGE)
 	{
 		for (int readNdx = 0; readNdx < m_perInvocationSize; ++readNdx)
-			buf << "	allOk = allOk && (" << ((m_useAtomic) ? ("imageAtomicExchange") : ("imageLoad")) << "(u_imageIn0, ivec2((gl_GlobalInvocationID.x + " << (seed0 + readNdx*100) << "u) % " << m_invocationGridSize << "u, gl_GlobalInvocationID.y + " << readNdx*m_invocationGridSize << "u)" << ((m_useAtomic) ? (", zero") : ("")) << ").x == " << ((m_formatInteger) ? ("int") : ("float")) << "(groupNdx));\n"
-				<< "	allOk = allOk && (" << ((m_useAtomic) ? ("imageAtomicExchange") : ("imageLoad")) << "(u_imageIn1, ivec2((gl_GlobalInvocationID.x + " << (seed1 + readNdx*100) << "u) % " << m_invocationGridSize << "u, gl_GlobalInvocationID.y + " << readNdx*m_invocationGridSize << "u)" << ((m_useAtomic) ? (", zero") : ("")) << ").x == " << ((m_formatInteger) ? ("int") : ("float")) << "(groupNdx));\n";
+			buf << "	allOk = allOk && (" << ((m_useAtomic) ? ("imageAtomicExchange") : ("imageLoad")) << "(u_imageIn0, ivec2((gl_GlobalInvocationID.x + " << (seed0 + readNdx*100) << "u) % " << m_invocationGridSize << "u, gl_GlobalInvocationID.y + " << readNdx*m_invocationGridSize << "u)" << ((m_useAtomic) ? (", zero)") : (").x")) << " == " << ((m_formatInteger) ? ("int") : ("float")) << "(groupNdx));\n"
+				<< "	allOk = allOk && (" << ((m_useAtomic) ? ("imageAtomicExchange") : ("imageLoad")) << "(u_imageIn1, ivec2((gl_GlobalInvocationID.x + " << (seed1 + readNdx*100) << "u) % " << m_invocationGridSize << "u, gl_GlobalInvocationID.y + " << readNdx*m_invocationGridSize << "u)" << ((m_useAtomic) ? (", zero)") : (").x")) << " == " << ((m_formatInteger) ? ("int") : ("float")) << "(groupNdx));\n";
 	}
 	else
 		DE_ASSERT(DE_FALSE);
@@ -2010,7 +2044,7 @@ glu::ShaderProgram* InterCallTestCase::genReadInterleavedProgram (int seed0, int
 			buf << "		allOk = allOk && ("
 				<< ((m_useAtomic) ? ("imageAtomicExchange") : ("imageLoad"))
 				<< "(u_imageIn, ivec2(((int(gl_GlobalInvocationID.x >> 1U) + " << (seed0 + readNdx*100) << ") % " << m_invocationGridSize / 2 << ") * 2 + 0, int(gl_GlobalInvocationID.y) + " << readNdx*m_invocationGridSize << ")"
-				<< ((m_useAtomic) ? (", zero") : ("")) << ").x == " << ((m_formatInteger) ? ("int") : ("float")) << "(interleavedGroupNdx));\n";
+				<< ((m_useAtomic) ? (", zero)") : (").x")) << " == " << ((m_formatInteger) ? ("int") : ("float")) << "(interleavedGroupNdx));\n";
 		buf << "	}\n"
 			<< "	else\n"
 			<< "	{\n";
@@ -2018,7 +2052,7 @@ glu::ShaderProgram* InterCallTestCase::genReadInterleavedProgram (int seed0, int
 			buf << "		allOk = allOk && ("
 				<< ((m_useAtomic) ? ("imageAtomicExchange") : ("imageLoad"))
 				<< "(u_imageIn, ivec2(((int(gl_GlobalInvocationID.x >> 1U) + " << (seed1 + readNdx*100) << ") % " << m_invocationGridSize / 2 << ") * 2 + 1, int(gl_GlobalInvocationID.y) + " << readNdx*m_invocationGridSize << ")"
-				<< ((m_useAtomic) ? (", zero") : ("")) << ").x == " << ((m_formatInteger) ? ("int") : ("float")) << "(interleavedGroupNdx));\n";
+				<< ((m_useAtomic) ? (", zero)") : (").x")) << " == " << ((m_formatInteger) ? ("int") : ("float")) << "(interleavedGroupNdx));\n";
 		buf << "	}\n";
 	}
 	else
@@ -2076,7 +2110,7 @@ glu::ShaderProgram*	InterCallTestCase::genReadZeroProgram (void)
 		for (int readNdx = 0; readNdx < m_perInvocationSize; ++readNdx)
 			buf << "	allOk = allOk && ("
 			<< ((m_useAtomic) ? ("imageAtomicExchange") : ("imageLoad")) << "(u_imageIn, ivec2(gl_GlobalInvocationID.x, gl_GlobalInvocationID.y + " << (readNdx*m_invocationGridSize) << "u)"
-			<< ((m_useAtomic) ? (", anything") : ("")) << ").x == " << ((m_formatInteger) ? ("0") : ("0.0")) << ");\n";
+			<< ((m_useAtomic) ? (", anything)") : (").x")) << " == " << ((m_formatInteger) ? ("0") : ("0.0")) << ");\n";
 	}
 	else
 		DE_ASSERT(DE_FALSE);
@@ -2595,6 +2629,8 @@ void ConcurrentImageAtomicCase::init (void)
 	gl.genTextures(1, &m_imageID);
 	gl.bindTexture(GL_TEXTURE_2D, m_imageID);
 	gl.texStorage2D(GL_TEXTURE_2D, 1, GL_R32UI, m_workSize, m_workSize);
+	gl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	gl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "gen tex");
 
 	// gen buffers
@@ -2855,7 +2891,7 @@ std::string ConcurrentImageAtomicCase::genComputeSource (void) const
 		<< "	highp uint values[" << m_workSize * m_workSize << "];\n"
 		<< "} sb_ires;\n"
 		<< "\n"
-		<< "layout (binding = 2, r32ui) volatile uniform uimage2D u_workImage;\n"
+		<< "layout (binding = 2, r32ui) volatile uniform highp uimage2D u_workImage;\n"
 		<< "uniform highp uint u_atomicDelta;\n"
 		<< "\n"
 		<< "void main ()\n"
@@ -2879,7 +2915,7 @@ std::string ConcurrentImageAtomicCase::genImageReadSource (void) const
 		<< "	highp uint values[" << m_workSize * m_workSize << "];\n"
 		<< "} sb_res;\n"
 		<< "\n"
-		<< "layout (binding = 2, r32ui) readonly uniform uimage2D u_workImage;\n"
+		<< "layout (binding = 2, r32ui) readonly uniform highp uimage2D u_workImage;\n"
 		<< "\n"
 		<< "void main ()\n"
 		<< "{\n"
@@ -2897,7 +2933,7 @@ std::string ConcurrentImageAtomicCase::genImageClearSource (void) const
 	buf	<< "#version 310 es\n"
 		<< "\n"
 		<< "layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
-		<< "layout (binding = 2, r32ui) writeonly uniform uimage2D u_workImage;\n"
+		<< "layout (binding = 2, r32ui) writeonly uniform highp uimage2D u_workImage;\n"
 		<< "\n"
 		<< "void main ()\n"
 		<< "{\n"

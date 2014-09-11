@@ -105,12 +105,13 @@ Vec2		computeCubeLodBoundsFromDerivates	(const Vec3& coord, const Vec3& coordDx,
 
 Vec2		clampLodBounds						(const Vec2& lodBounds, const Vec2& lodMinMax, const LodPrecision& prec);
 
-bool		isLookupResultValid					(const Texture1DView&		texture, const Sampler& sampler, const LookupPrecision& prec, const float coord, const Vec2& lodBounds, const Vec4& result);
-bool		isLookupResultValid					(const Texture2DView&		texture, const Sampler& sampler, const LookupPrecision& prec, const Vec2& coord, const Vec2& lodBounds, const Vec4& result);
-bool		isLookupResultValid					(const TextureCubeView&		texture, const Sampler& sampler, const LookupPrecision& prec, const Vec3& coord, const Vec2& lodBounds, const Vec4& result);
-bool		isLookupResultValid					(const Texture1DArrayView&	texture, const Sampler& sampler, const LookupPrecision& prec, const Vec2& coord, const Vec2& lodBounds, const Vec4& result);
-bool		isLookupResultValid					(const Texture2DArrayView&	texture, const Sampler& sampler, const LookupPrecision& prec, const Vec3& coord, const Vec2& lodBounds, const Vec4& result);
-bool		isLookupResultValid					(const Texture3DView&		texture, const Sampler& sampler, const LookupPrecision& prec, const Vec3& coord, const Vec2& lodBounds, const Vec4& result);
+bool		isLookupResultValid					(const Texture1DView&			texture, const Sampler& sampler, const LookupPrecision& prec, const float coord, const Vec2& lodBounds, const Vec4& result);
+bool		isLookupResultValid					(const Texture2DView&			texture, const Sampler& sampler, const LookupPrecision& prec, const Vec2& coord, const Vec2& lodBounds, const Vec4& result);
+bool		isLookupResultValid					(const TextureCubeView&			texture, const Sampler& sampler, const LookupPrecision& prec, const Vec3& coord, const Vec2& lodBounds, const Vec4& result);
+bool		isLookupResultValid					(const Texture1DArrayView&		texture, const Sampler& sampler, const LookupPrecision& prec, const Vec2& coord, const Vec2& lodBounds, const Vec4& result);
+bool		isLookupResultValid					(const Texture2DArrayView&		texture, const Sampler& sampler, const LookupPrecision& prec, const Vec3& coord, const Vec2& lodBounds, const Vec4& result);
+bool		isLookupResultValid					(const Texture3DView&			texture, const Sampler& sampler, const LookupPrecision& prec, const Vec3& coord, const Vec2& lodBounds, const Vec4& result);
+bool		isLookupResultValid					(const TextureCubeArrayView&	texture, const Sampler& sampler, const LookupPrecision& prec, const IVec4& coordBits, const Vec4& coord, const Vec2& lodBounds, const Vec4& result);
 
 bool		isLevel1DLookupResultValid			(const ConstPixelBufferAccess& access, const Sampler& sampler, TexLookupScaleMode scaleMode, const LookupPrecision& prec, const float coordX, const int coordY, const Vec4& result);
 bool		isLevel1DLookupResultValid			(const ConstPixelBufferAccess& access, const Sampler& sampler, TexLookupScaleMode scaleMode, const IntLookupPrecision& prec, const float coordX, const int coordY, const IVec4& result);

@@ -436,7 +436,7 @@ static glu::Precision getDataTypeDefaultPrecision (const glu::DataType& type)
 	else if (glu::isDataTypeSampler(type))
 		return glu::PRECISION_HIGHP;
 	else if (glu::isDataTypeImage(type))
-		return glu::PRECISION_LAST;
+		return glu::PRECISION_HIGHP;
 	else if (type == glu::TYPE_UINT_ATOMIC_COUNTER)
 		return glu::PRECISION_HIGHP;
 
@@ -922,11 +922,16 @@ bool ResourceListTestCase::verifyResourceList (const std::vector<std::string>& r
 
 	for (int ndx = 0; ndx < (int)resourceList.size(); ++ndx)
 	{
-		// Ignore all builtin variables
-		if (deStringBeginsWith(resourceList[ndx].c_str(), "gl_") == DE_FALSE && !de::contains(expectedResources.begin(), expectedResources.end(), resourceList[ndx]))
+		if (!de::contains(expectedResources.begin(), expectedResources.end(), resourceList[ndx]))
 		{
-			m_testCtx.getLog() << tcu::TestLog::Message << "Error, resource list contains unexpected resource name " << resourceList[ndx] << tcu::TestLog::EndMessage;
-			error = true;
+			// Ignore all builtin variables, mismatch causes errors otherwise
+			if (deStringBeginsWith(resourceList[ndx].c_str(), "gl_") == DE_FALSE)
+			{
+				m_testCtx.getLog() << tcu::TestLog::Message << "Error, resource list contains unexpected resource name " << resourceList[ndx] << tcu::TestLog::EndMessage;
+				error = true;
+			}
+			else
+				m_testCtx.getLog() << tcu::TestLog::Message << "Note, resource list contains unknown built-in " << resourceList[ndx] << ". This variable is ignored." << tcu::TestLog::EndMessage;
 		}
 	}
 
@@ -1007,7 +1012,7 @@ bool ResourceListTestCase::verifyMaxNameLength (const std::vector<std::string>& 
 	for (int ndx = 0; ndx < (int)resourceList.size(); ++ndx)
 		expectedMaxNameLength = de::max(expectedMaxNameLength, (int)resourceList[ndx].size() + 1);
 
-	m_testCtx.getLog() << tcu::TestLog::Message << "Verifying MAX_NAME_LENGTH, expecting " << expectedMaxNameLength << tcu::TestLog::EndMessage;
+	m_testCtx.getLog() << tcu::TestLog::Message << "Verifying MAX_NAME_LENGTH, expecting " << expectedMaxNameLength << " (i.e. consistent with the queried resource list)" << tcu::TestLog::EndMessage;
 
 	if (expectedMaxNameLength != maxNameLength)
 	{

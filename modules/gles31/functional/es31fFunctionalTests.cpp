@@ -44,6 +44,7 @@
 #include "es31fTextureLevelStateQueryTests.hpp"
 #include "es31fIntegerStateQueryTests.hpp"
 #include "es31fInternalFormatQueryTests.hpp"
+#include "es31fTextureFilteringTests.hpp"
 #include "es31fTextureFormatTests.hpp"
 #include "es31fTextureSpecificationTests.hpp"
 #include "es31fTextureMultisampleTests.hpp"
@@ -66,6 +67,7 @@
 #include "es31fTessellationGeometryInteractionTests.hpp"
 #include "es31fUniformBlockTests.hpp"
 #include "es31fDebugTests.hpp"
+#include "es31fFboColorbufferTests.hpp"
 #include "es31fFboNoAttachmentTests.hpp"
 #include "es31fProgramInterfaceQueryTests.hpp"
 #include "es31fTextureGatherTests.hpp"
@@ -226,6 +228,7 @@ public:
 
 	void init (void)
 	{
+		addChild(new TextureFilteringTests		(m_context));
 		addChild(new TextureFormatTests			(m_context));
 		addChild(new TextureSpecificationTests	(m_context));
 		addChild(new TextureMultisampleTests	(m_context));
@@ -263,6 +266,7 @@ public:
 
 	void init (void)
 	{
+		addChild(new FboColorTests						(m_context));
 		addChild(createFboNoAttachmentTests				(m_context));
 		addChild(createFboNoAttachmentCompletenessTests	(m_context));
 	}

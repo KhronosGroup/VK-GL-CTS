@@ -52,6 +52,36 @@ struct DataTypes
 
 // Shaders.
 
+class Texture2DShader : public sglr::ShaderProgram
+{
+public:
+					Texture2DShader			(const DataTypes& samplerTypes, glu::DataType outputType, const tcu::Vec4& outScale = tcu::Vec4(1.0f), const tcu::Vec4& outBias = tcu::Vec4(0.0f));
+					~Texture2DShader		(void) {}
+
+	void			setUnit					(int samplerNdx, int unitNdx);
+	void			setTexScaleBias			(int samplerNdx, const tcu::Vec4& scale, const tcu::Vec4& bias);
+	void			setOutScaleBias			(const tcu::Vec4& scale, const tcu::Vec4& bias);
+
+	void			setUniforms				(sglr::Context& context, deUint32 program) const;
+
+	void			shadeVertices			(const rr::VertexAttrib* inputs, rr::VertexPacket* const* packets, const int numPackets) const;
+	void			shadeFragments			(rr::FragmentPacket* packets, const int numPackets, const rr::FragmentShadingContext& context) const;
+
+private:
+	struct Input
+	{
+		int			unitNdx;
+		tcu::Vec4	scale;
+		tcu::Vec4	bias;
+	};
+
+	std::vector<Input>	m_inputs;
+	tcu::Vec4			m_outScale;
+	tcu::Vec4			m_outBias;
+
+	const glu::DataType	m_outputType;
+};
+
 class TextureCubeArrayShader : public sglr::ShaderProgram
 {
 public:
@@ -75,6 +105,32 @@ private:
 
 	const glu::DataType	m_outputType;
 };
+
+// Framebuffer incomplete exception.
+class FboIncompleteException : public tcu::TestError
+{
+public:
+						FboIncompleteException		(deUint32 reason, const char* file, int line);
+	virtual				~FboIncompleteException		(void) throw() {}
+
+	deUint32			getReason					(void) const { return m_reason; }
+
+private:
+	deUint32			m_reason;
+};
+
+// Utility functions
+
+glu::DataType			getFragmentOutputType				(const tcu::TextureFormat& format);
+tcu::TextureFormat		getFramebufferReadFormat			(const tcu::TextureFormat& format);
+
+const char*				getFormatName						(deUint32 format);
+
+void					clearColorBuffer					(sglr::Context& ctx, const tcu::TextureFormat& format, const tcu::Vec4& value);
+void					readPixels							(sglr::Context& ctx, tcu::Surface& dst, int x, int y, int width, int height, const tcu::TextureFormat& format, const tcu::Vec4& scale, const tcu::Vec4& bias);
+
+tcu::RGBA				getFormatThreshold					(const tcu::TextureFormat& format);
+tcu::RGBA				getFormatThreshold					(const deUint32 glFormat);
 
 } // FboTestUtil
 } // Functional

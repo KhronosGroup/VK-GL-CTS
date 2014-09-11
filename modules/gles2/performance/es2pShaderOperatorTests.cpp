@@ -545,13 +545,13 @@ static SegmentedEstimator computeSegmentedEstimator (const vector<Vec2>& data)
 	}
 
 	{
-		const gls::LineParameters leftLine		= gls::theilSenEstimator(leftData);
-		const gls::LineParameters rightLine		= gls::theilSenEstimator(rightData);
+		const gls::LineParameters leftLine		= gls::theilSenLinearRegression(leftData);
+		const gls::LineParameters rightLine		= gls::theilSenLinearRegression(rightData);
 
 		if (numDistinctX(leftData) < 2 || leftLine.coefficient > rightLine.coefficient*0.5f)
 		{
 			// Left data doesn't seem credible; assume the data is just a single line.
-			const gls::LineParameters entireLine = gls::theilSenEstimator(data);
+			const gls::LineParameters entireLine = gls::theilSenLinearRegression(data);
 			return SegmentedEstimator(gls::LineParameters(entireLine.offset, 0.0f), entireLine, -std::numeric_limits<float>::infinity());
 		}
 		else

@@ -350,25 +350,48 @@ void TypeValidator::validateSingleVariable (const std::vector<VariablePathCompon
 
 	DE_UNREF(resource);
 
+	m_testCtx.getLog() << tcu::TestLog::Message << "Verifying type, expecting " << glu::getDataTypeName(variable->getBasicType()) << tcu::TestLog::EndMessage;
+
 	if (variable->getBasicType() != glu::getDataTypeFromGLType(propValue))
 	{
-		m_testCtx.getLog() << tcu::TestLog::Message << "\tError, got " << glu::getDataTypeFromGLType(propValue) << tcu::TestLog::EndMessage;
+		m_testCtx.getLog() << tcu::TestLog::Message << "\tError, got " << glu::getDataTypeName(glu::getDataTypeFromGLType(propValue)) << tcu::TestLog::EndMessage;
 		setError("resource type invalid");
 	}
 }
 
 void TypeValidator::validateBuiltinVariable (const std::string& resource, glw::GLint propValue) const
 {
-	if (resource == "gl_Position")
+	static const struct
 	{
-		if (glu::getDataTypeFromGLType(propValue) != glu::TYPE_FLOAT_VEC4)
+		const char*		name;
+		glu::DataType	type;
+	} builtins[] =
+	{
+		{ "gl_Position",			glu::TYPE_FLOAT_VEC4	},
+		{ "gl_FragCoord",			glu::TYPE_FLOAT_VEC4	},
+		{ "gl_in[0].gl_Position",	glu::TYPE_FLOAT_VEC4	},
+		{ "gl_VertexID",			glu::TYPE_INT			},
+		{ "gl_InvocationID",		glu::TYPE_INT			},
+		{ "gl_NumWorkGroups",		glu::TYPE_UINT_VEC3		},
+		{ "gl_FragDepth",			glu::TYPE_FLOAT			},
+	};
+
+	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(builtins); ++ndx)
+	{
+		if (resource == builtins[ndx].name)
 		{
-			m_testCtx.getLog() << tcu::TestLog::Message << "\tError, got " << glu::getDataTypeFromGLType(propValue) << tcu::TestLog::EndMessage;
-			setError("resource type invalid");
+			m_testCtx.getLog() << tcu::TestLog::Message << "Verifying type, expecting " << glu::getDataTypeName(builtins[ndx].type) << tcu::TestLog::EndMessage;
+
+			if (glu::getDataTypeFromGLType(propValue) != builtins[ndx].type)
+			{
+				m_testCtx.getLog() << tcu::TestLog::Message << "\tError, got " << glu::getDataTypeName(glu::getDataTypeFromGLType(propValue)) << tcu::TestLog::EndMessage;
+				setError("resource type invalid");
+			}
+			return;
 		}
 	}
-	else
-		DE_ASSERT(false);
+
+	DE_ASSERT(false);
 }
 
 class ArraySizeValidator : public SingleVariableValidator
@@ -376,6 +399,7 @@ class ArraySizeValidator : public SingleVariableValidator
 public:
 				ArraySizeValidator				(Context& context, glw::GLuint programID, const VariableSearchFilter& filter);
 	void		validateSingleVariable			(const std::vector<VariablePathComponent>& path, const std::string& resource, glw::GLint propValue) const;
+	void		validateBuiltinVariable			(const std::string& resource, glw::GLint propValue) const;
 };
 
 ArraySizeValidator::ArraySizeValidator (Context& context, glw::GLuint programID, const VariableSearchFilter& filter)
@@ -401,6 +425,29 @@ void ArraySizeValidator::validateSingleVariable (const std::vector<VariablePathC
 		m_testCtx.getLog() << tcu::TestLog::Message << "\tError, got " << propValue << tcu::TestLog::EndMessage;
 		setError("resource array size invalid");
 	}
+}
+
+void ArraySizeValidator::validateBuiltinVariable (const std::string& resource, glw::GLint propValue) const
+{
+	// support all built-ins that getProgramInterfaceResourceList supports
+	if (resource == "gl_Position"			||
+		resource == "gl_VertexID"			||
+		resource == "gl_FragCoord"			||
+		resource == "gl_in[0].gl_Position"	||
+		resource == "gl_InvocationID"		||
+		resource == "gl_NumWorkGroups"		||
+		resource == "gl_FragDepth")
+	{
+		m_testCtx.getLog() << tcu::TestLog::Message << "Verifying array size, expecting 1" << tcu::TestLog::EndMessage;
+
+		if (propValue != 1)
+		{
+			m_testCtx.getLog() << tcu::TestLog::Message << "\tError, got " << propValue << tcu::TestLog::EndMessage;
+			setError("resource array size invalid");
+		}
+	}
+	else
+		DE_ASSERT(false);
 }
 
 class ArrayStrideValidator : public SingleVariableValidator
@@ -672,6 +719,7 @@ class LocationValidator : public SingleVariableValidator
 public:
 				LocationValidator		(Context& context, glw::GLuint programID, const VariableSearchFilter& filter);
 	void		validateSingleVariable	(const std::vector<VariablePathComponent>& path, const std::string& resource, glw::GLint propValue) const;
+	void		validateBuiltinVariable	(const std::string& resource, glw::GLint propValue) const;
 };
 
 LocationValidator::LocationValidator (Context& context, glw::GLuint programID, const VariableSearchFilter& filter)
@@ -902,6 +950,21 @@ void LocationValidator::validateSingleVariable (const std::vector<VariablePathCo
 			}
 
 		}
+	}
+}
+
+void LocationValidator::validateBuiltinVariable (const std::string& resource, glw::GLint propValue) const
+{
+	DE_UNREF(resource);
+
+	// built-ins have no location
+
+	m_testCtx.getLog() << tcu::TestLog::Message << "Verifying location, expecting -1" << tcu::TestLog::EndMessage;
+
+	if (propValue != -1)
+	{
+		m_testCtx.getLog() << tcu::TestLog::Message << "\tError, got " << propValue << tcu::TestLog::EndMessage;
+		setError("resource location invalid");
 	}
 }
 

@@ -54,7 +54,7 @@ using std::vector;
 using std::string;
 using tcu::TestLog;
 using tcu::Vec2;
-using deqp::gls::theilSenEstimator;
+using deqp::gls::theilSenLinearRegression;
 using deqp::gls::LineParameters;
 
 namespace
@@ -427,8 +427,8 @@ void FlushFinishCase::analyzeResults (const std::vector<Sample>& samples, const 
 {
 	const vector<Vec2>		waitTimes		= getPointsFromSamples(samples, &Sample::waitTime);
 	const vector<Vec2>		readTimes		= getPointsFromSamples(samples, &Sample::readPixelsTime);
-	const LineParameters	waitLine		= theilSenEstimator(waitTimes);
-	const LineParameters	readLine		= theilSenEstimator(readTimes);
+	const LineParameters	waitLine		= theilSenLinearRegression(waitTimes);
+	const LineParameters	readLine		= theilSenLinearRegression(readTimes);
 	const float				normWaitCoef	= waitLine.coefficient * float(calibrationParams.maxDrawCalls) / float(MAX_SAMPLE_DURATION_US);
 	const float				normReadCoef	= readLine.coefficient * float(calibrationParams.maxDrawCalls) / float(MAX_SAMPLE_DURATION_US);
 	bool					allOk			= true;
