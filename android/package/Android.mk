@@ -8,5 +8,6 @@ LOCAL_JNI_SHARED_LIBRARIES := libtestercore
 
 LOCAL_ASSET_DIR := $(LOCAL_PATH)/../../data
 LOCAL_PACKAGE_NAME := com.drawelements.deqp
+LOCAL_MULTILIB := both
 
 include $(BUILD_PACKAGE)
