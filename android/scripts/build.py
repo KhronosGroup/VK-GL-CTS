@@ -26,7 +26,7 @@ def getStoreKeyPasswords (filename):
 
 def getNativeBuildDir (nativeLib, buildType):
 	deqpDir = os.path.normpath(os.path.join(common.ANDROID_DIR, ".."))
-	return os.path.normpath(os.path.join(deqpDir, "..", "deqp-build-android-%d-%s-%s" % (nativeLib.apiVersion, nativeLib.abiVersion, buildType.lower())))
+	return os.path.normpath(os.path.join(deqpDir, "android", "build", "%s-%d-%s" % (buildType.lower(), nativeLib.apiVersion, nativeLib.abiVersion)))
 
 def buildNative (nativeLib, buildType):
 	deqpDir		= os.path.normpath(os.path.join(common.ANDROID_DIR, ".."))

@@ -79,6 +79,7 @@ set(TCUTIL_LIBS
 	decpp
 	qphelper
 	dethread
+	${PNG_LIBRARY}
 	)
 
 add_library(tcutil STATIC ${TCUTIL_SRCS})

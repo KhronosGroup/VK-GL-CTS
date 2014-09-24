@@ -22,7 +22,7 @@ set(QPHELPER_LIBS
 	depool
 	dethread
 	deutil
-	libpng
+	${PNG_LIBRARY}
 	)
 
 if (DE_OS_IS_UNIX)

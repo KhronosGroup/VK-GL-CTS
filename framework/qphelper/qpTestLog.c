@@ -33,7 +33,7 @@
 #include "deMutex.h"
 
 #if defined(QP_SUPPORT_PNG)
-#	include "png.h"
+#	include <png.h>
 #endif
 
 #include <stdio.h>

@@ -56,6 +56,30 @@ include_directories(
 # Include target-specific definitions
 include(targets/${DEQP_TARGET}/${DEQP_TARGET}.cmake)
 
+# zlib
+find_path(ZLIB_INCLUDE_PATH	zlib.h)
+find_library(ZLIB_LIBRARY	z)
+
+if (NOT ZLIB_INCLUDE_PATH OR NOT ZLIB_LIBRARY)
+	message(STATUS "System version of zlib not found, using external/zlib")
+	add_subdirectory(external/zlib)
+	# \note ZLIB_LIBRARY and ZLIB_INCLUDE_PATH are promoted from external/zlib/CMakeLists.txt
+endif ()
+
+include_directories(${ZLIB_INCLUDE_PATH})
+
+# libpng
+find_path(PNG_INCLUDE_PATH	libpng.h)
+find_library(PNG_LIBRARY	png)
+
+if (NOT PNG_INCLUDE_PATH OR NOT PNG_LIBRARY)
+	message(STATUS "System version of libpng not found, using external/libpng")
+	add_subdirectory(external/libpng)
+	# \note PNG_LIBRARY and PNG_INCLUDE_PATH are promoted from external/libpng/CMakeLists.txt
+endif ()
+
+include_directories(${PNG_INCLUDE_PATH})
+
 # \todo [2013-04-14 pyry] Remove once we've got dynamic loading of GL libraries figured out
 if (DEQP_RUNTIME_LINK)
 	include_directories(wrappers/dynlib/inc)
