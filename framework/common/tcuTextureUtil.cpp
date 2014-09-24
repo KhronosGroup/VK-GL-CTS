@@ -356,6 +356,74 @@ IVec4 getTextureFormatBitDepth (const TextureFormat& format)
 	return select(chnBits.swizzle(chnSwz.x(), chnSwz.y(), chnSwz.z(), chnSwz.w()), IVec4(0), chnMask);
 }
 
+static IVec4 getChannelMantissaBitDepth (TextureFormat::ChannelType channelType)
+{
+	switch (channelType)
+	{
+		case TextureFormat::SNORM_INT8:
+		case TextureFormat::SNORM_INT16:
+		case TextureFormat::SNORM_INT32:
+		case TextureFormat::UNORM_INT8:
+		case TextureFormat::UNORM_INT16:
+		case TextureFormat::UNORM_INT32:
+		case TextureFormat::UNORM_SHORT_565:
+		case TextureFormat::UNORM_SHORT_4444:
+		case TextureFormat::UNORM_SHORT_555:
+		case TextureFormat::UNORM_SHORT_5551:
+		case TextureFormat::UNORM_INT_101010:
+		case TextureFormat::UNORM_INT_1010102_REV:
+		case TextureFormat::SIGNED_INT8:
+		case TextureFormat::SIGNED_INT16:
+		case TextureFormat::SIGNED_INT32:
+		case TextureFormat::UNSIGNED_INT8:
+		case TextureFormat::UNSIGNED_INT16:
+		case TextureFormat::UNSIGNED_INT32:
+		case TextureFormat::UNSIGNED_INT_1010102_REV:
+		case TextureFormat::UNSIGNED_INT_24_8:
+		case TextureFormat::UNSIGNED_INT_999_E5_REV:
+			return getChannelBitDepth(channelType);
+
+		case TextureFormat::HALF_FLOAT:						return IVec4(10);
+		case TextureFormat::FLOAT:							return IVec4(23);
+		case TextureFormat::UNSIGNED_INT_11F_11F_10F_REV:	return IVec4(6,6,5,0);
+		case TextureFormat::FLOAT_UNSIGNED_INT_24_8_REV:	return IVec4(23,0,0,8);
+		default:
+			DE_ASSERT(false);
+			return IVec4(0);
+	}
+}
+
+IVec4 getTextureFormatMantissaBitDepth (const TextureFormat& format)
+{
+	IVec4	chnBits		= getChannelMantissaBitDepth(format.type);
+	BVec4	chnMask		= BVec4(false);
+	IVec4	chnSwz		(0,1,2,3);
+
+	switch (format.order)
+	{
+		case TextureFormat::R:		chnMask = BVec4(true,	false,	false,	false);		break;
+		case TextureFormat::A:		chnMask = BVec4(false,	false,	false,	true);		break;
+		case TextureFormat::RA:		chnMask = BVec4(true,	false,	false,	true);		break;
+		case TextureFormat::L:		chnMask = BVec4(true,	true,	true,	false);		break;
+		case TextureFormat::I:		chnMask = BVec4(true,	true,	true,	true);		break;
+		case TextureFormat::LA:		chnMask = BVec4(true,	true,	true,	true);		break;
+		case TextureFormat::RG:		chnMask = BVec4(true,	true,	false,	false);		break;
+		case TextureFormat::RGB:	chnMask = BVec4(true,	true,	true,	false);		break;
+		case TextureFormat::RGBA:	chnMask = BVec4(true,	true,	true,	true);		break;
+		case TextureFormat::BGRA:	chnMask = BVec4(true,	true,	true,	true);		chnSwz = IVec4(2, 1, 0, 3);	break;
+		case TextureFormat::ARGB:	chnMask = BVec4(true,	true,	true,	true);		chnSwz = IVec4(1, 2, 3, 0);	break;
+		case TextureFormat::sRGB:	chnMask = BVec4(true,	true,	true,	false);		break;
+		case TextureFormat::sRGBA:	chnMask = BVec4(true,	true,	true,	true);		break;
+		case TextureFormat::D:		chnMask = BVec4(true,	false,	false,	false);		break;
+		case TextureFormat::DS:		chnMask = BVec4(true,	false,	false,	true);		break;
+		case TextureFormat::S:		chnMask = BVec4(false,	false,	false,	true);		break;
+		default:
+			DE_ASSERT(false);
+	}
+
+	return select(chnBits.swizzle(chnSwz.x(), chnSwz.y(), chnSwz.z(), chnSwz.w()), IVec4(0), chnMask);
+}
+
 static inline float linearInterpolate (float t, float minVal, float maxVal)
 {
 	return minVal + (maxVal - minVal) * t;

@@ -1053,7 +1053,7 @@ static int calculateU8ConversionError (int srcBits)
 
 tcu::RGBA getFormatThreshold (const tcu::TextureFormat& format)
 {
-	const tcu::IVec4 bits = tcu::getTextureFormatBitDepth(format);
+	const tcu::IVec4 bits = tcu::getTextureFormatMantissaBitDepth(format);
 
 	return tcu::RGBA(calculateU8ConversionError(bits.x()),
 					 calculateU8ConversionError(bits.y()),
@@ -1101,7 +1101,7 @@ tcu::RGBA getToSRGBConversionThreshold (const tcu::TextureFormat& src, const tcu
 	// Only SRGB8 and SRGB8_ALPHA8 formats are supported.
 	DE_ASSERT(dst.type == tcu::TextureFormat::UNORM_INT8 && (dst.order == tcu::TextureFormat::sRGB || dst.order == tcu::TextureFormat::sRGBA));
 
-	const tcu::IVec4	bits		= tcu::getTextureFormatBitDepth(src);
+	const tcu::IVec4	bits		= tcu::getTextureFormatMantissaBitDepth(src);
 	const bool			dstHasAlpha	= dst.order == tcu::TextureFormat::sRGBA;
 
 	return tcu::RGBA(getToSRGB8ConversionError(bits.x()),

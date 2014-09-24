@@ -160,6 +160,32 @@ static int getMinMantissaBits (glu::Precision precision)
 	return bits[precision];
 }
 
+static int getMaxNormalizedValueExponent (glu::Precision precision)
+{
+	const int exponent[] =
+	{
+		0,		// lowp
+		13,		// mediump
+		127		// highp
+	};
+	DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(exponent) == glu::PRECISION_LAST);
+	DE_ASSERT(de::inBounds<int>(precision, 0, DE_LENGTH_OF_ARRAY(exponent)));
+	return exponent[precision];
+}
+
+static int getMinNormalizedValueExponent (glu::Precision precision)
+{
+	const int exponent[] =
+	{
+		-7,		// lowp
+		-13,	// mediump
+		-126	// highp
+	};
+	DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(exponent) == glu::PRECISION_LAST);
+	DE_ASSERT(de::inBounds<int>(precision, 0, DE_LENGTH_OF_ARRAY(exponent)));
+	return exponent[precision];
+}
+
 // CommonFunctionCase
 
 class CommonFunctionCase : public TestCase
@@ -1226,7 +1252,6 @@ public:
 	{
 		const glu::DataType		type			= m_spec.inputs[0].varType.getBasicType();
 		const glu::Precision	precision		= m_spec.inputs[0].varType.getPrecision();
-		const bool				hasSignedZero	= supportsSignedZero(precision);
 		const int				scalarSize		= glu::getDataTypeScalarSize(type);
 
 		if (precision == glu::PRECISION_HIGHP || precision == glu::PRECISION_MEDIUMP)
@@ -1239,7 +1264,8 @@ public:
 				const bool		isNeg		= tcu::Float32(in0).sign() < 0;
 				const float		ref			= isNeg ? (-float(int(-in0))) : float(int(in0));
 
-				const deUint32	ulpDiff		= hasSignedZero ? getUlpDiff(out0, ref) : getUlpDiffIgnoreZeroSign(out0, ref);
+				// \note: trunc() function definition is a bit broad on negative zeros. Ignore result sign if zero.
+				const deUint32	ulpDiff		= getUlpDiffIgnoreZeroSign(out0, ref);
 
 				if (ulpDiff > 0)
 				{
@@ -1909,11 +1935,15 @@ public:
 			Vec2(-1e7f,		1e7f)	// highp
 		};
 
-		de::Random				rnd				(deStringHash(getName()) ^ 0xac23fu);
-		const glu::DataType		type			= m_spec.inputs[0].varType.getBasicType();
-		const glu::Precision	precision		= m_spec.inputs[0].varType.getPrecision();
-		const int				scalarSize		= glu::getDataTypeScalarSize(type);
-		const float				specialCases[][3] =
+		de::Random				rnd							(deStringHash(getName()) ^ 0xac23fu);
+		const glu::DataType		type						= m_spec.inputs[0].varType.getBasicType();
+		const glu::Precision	precision					= m_spec.inputs[0].varType.getPrecision();
+		const int				scalarSize					= glu::getDataTypeScalarSize(type);
+		const int				numMantissaBits				= getMinMantissaBits(precision);
+		const int				maxNormalizedValueExponent	= getMaxNormalizedValueExponent(precision);
+		const int				minNormalizedValueExponent	= getMinNormalizedValueExponent(precision);
+		const deUint32			representableMantissaMask	= ((deUint32(1) << numMantissaBits) - 1) << (23 - (deUint32)numMantissaBits);
+		const float				specialCases[][3]			=
 		{
 			// a		b		c
 			{ 0.0f,		0.0f,	0.0f },
@@ -1927,7 +1957,7 @@ public:
 			{ -0.0f,	1.0f,	0.0f },
 			{ 1.0f,		-0.0f,	0.0f }
 		};
-		const int				numSpecialCases	= DE_LENGTH_OF_ARRAY(specialCases);
+		const int				numSpecialCases				= DE_LENGTH_OF_ARRAY(specialCases);
 
 		// Special cases
 		for (int caseNdx = 0; caseNdx < numSpecialCases; caseNdx++)
@@ -1946,6 +1976,47 @@ public:
 
 			for (int inputNdx = 0; inputNdx < 3; inputNdx++)
 				fillRandomScalars(rnd, ranges[precision].x(), ranges[precision].y(), (float*)values[inputNdx] + offs, numScalars);
+		}
+
+		// Make sure the values are representable in the target format
+		if (precision != glu::PRECISION_HIGHP)
+		{
+			const float	largestRepresentableValue	= tcu::Float32::constructBits(+1, maxNormalizedValueExponent, ((1u << numMantissaBits) - 1u) << (23u - (deUint32)numMantissaBits)).asFloat();
+
+			// zero is not required to be representable, use smallest positive non-subnormal value
+			const float zeroReplacement				= tcu::Float32::constructBits(+1, minNormalizedValueExponent, 1).asFloat();
+
+			for (int inputNdx = 0; inputNdx < 3; inputNdx++)
+			{
+				for (int caseNdx = 0; caseNdx < numValues; ++caseNdx)
+				{
+					for (int scalarNdx = 0; scalarNdx < scalarSize; scalarNdx++)
+					{
+						float&				value					= ((float*)values[inputNdx])[caseNdx * scalarSize + scalarNdx];
+						const tcu::Float32	float32Representation	(value);
+
+						// flush too small values to zero
+						if (float32Representation.exponent() < minNormalizedValueExponent)
+						{
+							value = zeroReplacement;
+						}
+						// clamp too large values
+						else if (float32Representation.exponent() > maxNormalizedValueExponent)
+						{
+							value = (float32Representation.sign() == +1) ? (largestRepresentableValue) : (-largestRepresentableValue);
+						}
+						// remove unrepresentable mantissa bits
+						else
+						{
+							const tcu::Float32	targetRepresentation	(tcu::Float32::constructBits(float32Representation.sign(),
+																									 float32Representation.exponent(),
+																									 float32Representation.mantissaBits() & representableMantissaMask));
+
+							value = targetRepresentation.asFloat();
+						}
+					}
+				}
+			}
 		}
 	}
 
@@ -1966,9 +2037,7 @@ public:
 			const float		res			= ((const float*)outputs[0])[compNdx];
 			const float		ref			= a*b + c;
 
-			const int		numBitsLost	= precision != glu::PRECISION_HIGHP
-										? de::max(de::max(numBitsLostInOp(a, res), numBitsLostInOp(b, res)), numBitsLostInOp(c, res))+1
-										: 1;
+			const int		numBitsLost	= 1; // allow last bit to vary
 			const deUint32	maxUlpDiff	= getMaxUlpDiffFromBits(de::max(0, mantissaBits-numBitsLost));
 
 			const deUint32	ulpDiff		= signedZero ? getUlpDiff(res, ref) : getUlpDiffIgnoreZeroSign(res, ref);

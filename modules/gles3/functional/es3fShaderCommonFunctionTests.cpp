@@ -1216,7 +1216,6 @@ public:
 	{
 		const glu::DataType		type			= m_spec.inputs[0].varType.getBasicType();
 		const glu::Precision	precision		= m_spec.inputs[0].varType.getPrecision();
-		const bool				hasSignedZero	= supportsSignedZero(precision);
 		const int				scalarSize		= glu::getDataTypeScalarSize(type);
 
 		if (precision == glu::PRECISION_HIGHP || precision == glu::PRECISION_MEDIUMP)
@@ -1229,7 +1228,8 @@ public:
 				const bool		isNeg		= tcu::Float32(in0).sign() < 0;
 				const float		ref			= isNeg ? (-float(int(-in0))) : float(int(in0));
 
-				const deUint32	ulpDiff		= hasSignedZero ? getUlpDiff(out0, ref) : getUlpDiffIgnoreZeroSign(out0, ref);
+				// \note: trunc() function definition is a bit broad on negative zeros. Ignore result sign if zero.
+				const deUint32	ulpDiff		= getUlpDiffIgnoreZeroSign(out0, ref);
 
 				if (ulpDiff > 0)
 				{

@@ -632,9 +632,7 @@ protected:
 
 		{
 			glu::TransferFormat		transferFmt		= glu::getTransferFormat(texFmt);
-			bool					isFilterable	= glu::isGLInternalColorFormatFilterable(m_format);
 			const IVec3&			size			= m_texSize;
-
 
 			glGenTextures(1, &tex);
 
@@ -642,8 +640,8 @@ protected:
 			glTexParameteri(GL_TEXTURE_3D,	GL_TEXTURE_WRAP_S,		GL_CLAMP_TO_EDGE);
 			glTexParameteri(GL_TEXTURE_3D,	GL_TEXTURE_WRAP_T,		GL_CLAMP_TO_EDGE);
 			glTexParameteri(GL_TEXTURE_3D,	GL_TEXTURE_WRAP_R,		GL_CLAMP_TO_EDGE);
-			glTexParameteri(GL_TEXTURE_3D,	GL_TEXTURE_MIN_FILTER,	isFilterable ? GL_LINEAR : GL_NEAREST);
-			glTexParameteri(GL_TEXTURE_3D,	GL_TEXTURE_MAG_FILTER,	isFilterable ? GL_LINEAR : GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_3D,	GL_TEXTURE_MIN_FILTER,	GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_3D,	GL_TEXTURE_MAG_FILTER,	GL_NEAREST);
 			glTexImage3D(GL_TEXTURE_3D, 0, m_format, size.x(), size.y(), size.z(), 0, transferFmt.format, transferFmt.dataType, DE_NULL);
 
 			// Generate an FBO for each layer
@@ -706,7 +704,7 @@ protected:
 				glActiveTexture(GL_TEXTURE0);
 				glBindTexture(GL_TEXTURE_3D, tex);
 
-				tdTexShader.setDepth((float(layer) + 0.5f) / float(m_texSize.z()));
+				tdTexShader.setDepth(float(layer) / float(m_texSize.z()-1));
 				tdTexShader.setUniforms(*getCurrentContext(), tdTexShaderID);
 
 				sglr::drawQuad(*getCurrentContext(), tdTexShaderID, p0, p1);

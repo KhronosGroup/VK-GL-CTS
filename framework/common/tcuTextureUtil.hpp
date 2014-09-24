@@ -78,8 +78,9 @@ struct TextureFormatInfo
 	}
 };
 
-TextureFormatInfo	getTextureFormatInfo		(const TextureFormat& format);
-IVec4				getTextureFormatBitDepth	(const TextureFormat& format);
+TextureFormatInfo	getTextureFormatInfo				(const TextureFormat& format);
+IVec4				getTextureFormatBitDepth			(const TextureFormat& format);
+IVec4				getTextureFormatMantissaBitDepth	(const TextureFormat& format);
 
 // Texture fill.
 void	clear							(const PixelBufferAccess& access, const Vec4& color);

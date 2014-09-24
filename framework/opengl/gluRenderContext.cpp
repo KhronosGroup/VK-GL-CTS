@@ -257,6 +257,21 @@ void initCoreFunctions (glw::Functions* dst, const glw::FunctionLoader* loader, 
 	throw tcu::InternalError(std::string("Don't know how to load functions for ") + de::toString(apiType));
 }
 
+void initExtensionFunctions (glw::Functions* dst, const glw::FunctionLoader* loader, ApiType apiType)
+{
+	std::vector<std::string> extensions = getExtensions(*dst, apiType);
+
+	if (!extensions.empty())
+	{
+		std::vector<const char*> extStr(extensions.size());
+
+		for (size_t ndx = 0; ndx < extensions.size(); ndx++)
+			extStr[ndx] = extensions[ndx].c_str();
+
+		initExtensionFunctions(dst, loader, apiType, (int)extStr.size(), &extStr[0]);
+	}
+}
+
 void initExtensionFunctions (glw::Functions* dst, const glw::FunctionLoader* loader, ApiType apiType, int numExtensions, const char* const* extensions)
 {
 	if (apiType.getProfile() == PROFILE_ES)
@@ -268,20 +283,7 @@ void initExtensionFunctions (glw::Functions* dst, const glw::FunctionLoader* loa
 void initFunctions (glw::Functions* dst, const glw::FunctionLoader* loader, ApiType apiType)
 {
 	initCoreFunctions(dst, loader, apiType);
-
-	{
-		std::vector<std::string> extensions = getExtensions(*dst, apiType);
-
-		if (!extensions.empty())
-		{
-			std::vector<const char*> extStr(extensions.size());
-
-			for (size_t ndx = 0; ndx < extensions.size(); ndx++)
-				extStr[ndx] = extensions[ndx].c_str();
-
-			initExtensionFunctions(dst, loader, apiType, (int)extStr.size(), &extStr[0]);
-		}
-	}
+	initExtensionFunctions(dst, loader, apiType);
 }
 
 } // glu

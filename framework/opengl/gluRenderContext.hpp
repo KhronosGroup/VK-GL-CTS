@@ -221,8 +221,10 @@ RenderContext*		createDefaultRenderContext		(tcu::Platform& platform, const tcu:
 void				initCoreFunctions				(glw::Functions* dst, const glw::FunctionLoader* loader, ApiType apiType);
 void				initExtensionFunctions			(glw::Functions* dst, const glw::FunctionLoader* loader, ApiType apiType, int numExtensions, const char* const* extensions);
 
-// \note initFunctions() uses glGetString* to query list of extensions, so it needs current GL context.
+// \note initFunctions() and initExtensionFunctions() without explicit extension list
+//		 use glGetString* to query list of extensions, so it needs current GL context.
 void				initFunctions					(glw::Functions* dst, const glw::FunctionLoader* loader, ApiType apiType);
+void				initExtensionFunctions			(glw::Functions* dst, const glw::FunctionLoader* loader, ApiType apiType);
 
 } // glu
 

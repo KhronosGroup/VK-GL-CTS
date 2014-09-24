@@ -89,6 +89,7 @@ set(LIBCPP "${ANDROID_NDK_PATH}/sources/cxx-stl/gnu-libstdc++/4.8/libs/${ANDROID
 include(CMakeForceCompiler)
 
 if (ANDROID_NDK_HOST_OS STREQUAL "linux-x86" OR
+	ANDROID_NDK_HOST_OS STREQUAL "linux-x86_64" OR
 	ANDROID_NDK_HOST_OS STREQUAL "darwin-x86")
 	cmake_force_c_compiler("${CROSS_COMPILE}gcc"		GNU)
 	cmake_force_cxx_compiler("${CROSS_COMPILE}g++"		GNU)

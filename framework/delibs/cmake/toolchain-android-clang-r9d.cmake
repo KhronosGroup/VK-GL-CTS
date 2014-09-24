@@ -93,6 +93,7 @@ include(CMakeForceCompiler)
 
 # Compiler binaries
 if (ANDROID_NDK_HOST_OS STREQUAL "linux-x86" OR
+	ANDROID_NDK_HOST_OS STREQUAL "linux-x86_64" OR
 	ANDROID_NDK_HOST_OS STREQUAL "darwin-x86")
 	cmake_force_c_compiler("${LLVM_PATH}bin/clang"			Clang)
 	cmake_force_cxx_compiler("${LLVM_PATH}bin/clang++"		Clang)

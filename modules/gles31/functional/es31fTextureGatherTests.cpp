@@ -163,12 +163,100 @@ static std::ostream& operator<< (std::ostream& stream, TextureSwizzleComponent c
 	}
 }
 
-typedef tcu::Vector<TextureSwizzleComponent, 4> TextureSwizzle;
+struct MaybeTextureSwizzle
+{
+public:
+	static MaybeTextureSwizzle						createNoneTextureSwizzle	(void);
+	static MaybeTextureSwizzle						createSomeTextureSwizzle	(void);
 
-static const TextureSwizzle s_identityTextureSwizzle(TEXTURESWIZZLECOMPONENT_R,
-													 TEXTURESWIZZLECOMPONENT_G,
-													 TEXTURESWIZZLECOMPONENT_B,
-													 TEXTURESWIZZLECOMPONENT_A);
+	bool											isSome						(void) const;
+	bool											isNone						(void) const;
+	bool											isIdentitySwizzle			(void) const;
+
+	tcu::Vector<TextureSwizzleComponent, 4>&		getSwizzle					(void);
+	const tcu::Vector<TextureSwizzleComponent, 4>&	getSwizzle					(void) const;
+
+private:
+													MaybeTextureSwizzle			(void);
+
+	tcu::Vector<TextureSwizzleComponent, 4>			m_swizzle;
+	bool											m_isSome;
+};
+
+static std::ostream& operator<< (std::ostream& stream, const MaybeTextureSwizzle& comp)
+{
+	if (comp.isNone())
+		stream << "[default swizzle state]";
+	else
+		stream << "(" << comp.getSwizzle()[0]
+			   << ", " << comp.getSwizzle()[1]
+			   << ", " << comp.getSwizzle()[2]
+			   << ", " << comp.getSwizzle()[3]
+			   << ")";
+
+	return stream;
+}
+
+MaybeTextureSwizzle MaybeTextureSwizzle::createNoneTextureSwizzle (void)
+{
+	MaybeTextureSwizzle swizzle;
+
+	swizzle.m_swizzle[0] = TEXTURESWIZZLECOMPONENT_LAST;
+	swizzle.m_swizzle[1] = TEXTURESWIZZLECOMPONENT_LAST;
+	swizzle.m_swizzle[2] = TEXTURESWIZZLECOMPONENT_LAST;
+	swizzle.m_swizzle[3] = TEXTURESWIZZLECOMPONENT_LAST;
+	swizzle.m_isSome = false;
+
+	return swizzle;
+}
+
+MaybeTextureSwizzle MaybeTextureSwizzle::createSomeTextureSwizzle (void)
+{
+	MaybeTextureSwizzle swizzle;
+
+	swizzle.m_swizzle[0] = TEXTURESWIZZLECOMPONENT_R;
+	swizzle.m_swizzle[1] = TEXTURESWIZZLECOMPONENT_G;
+	swizzle.m_swizzle[2] = TEXTURESWIZZLECOMPONENT_B;
+	swizzle.m_swizzle[3] = TEXTURESWIZZLECOMPONENT_A;
+	swizzle.m_isSome = true;
+
+	return swizzle;
+}
+
+bool MaybeTextureSwizzle::isSome (void) const
+{
+	return m_isSome;
+}
+
+bool MaybeTextureSwizzle::isNone (void) const
+{
+	return !m_isSome;
+}
+
+bool MaybeTextureSwizzle::isIdentitySwizzle (void) const
+{
+	return	m_isSome									&&
+			m_swizzle[0] == TEXTURESWIZZLECOMPONENT_R	&&
+			m_swizzle[1] == TEXTURESWIZZLECOMPONENT_G	&&
+			m_swizzle[2] == TEXTURESWIZZLECOMPONENT_B	&&
+			m_swizzle[3] == TEXTURESWIZZLECOMPONENT_A;
+}
+
+tcu::Vector<TextureSwizzleComponent, 4>& MaybeTextureSwizzle::getSwizzle (void)
+{
+	return m_swizzle;
+}
+
+const tcu::Vector<TextureSwizzleComponent, 4>& MaybeTextureSwizzle::getSwizzle (void) const
+{
+	return m_swizzle;
+}
+
+MaybeTextureSwizzle::MaybeTextureSwizzle (void)
+	: m_swizzle	(TEXTURESWIZZLECOMPONENT_LAST, TEXTURESWIZZLECOMPONENT_LAST, TEXTURESWIZZLECOMPONENT_LAST, TEXTURESWIZZLECOMPONENT_LAST)
+	, m_isSome	(false)
+{
+}
 
 static deUint32 getGLTextureSwizzleComponent (TextureSwizzleComponent c)
 {
@@ -200,16 +288,18 @@ static inline T swizzleColorChannel (const tcu::Vector<T, 4>& src, TextureSwizzl
 }
 
 template <typename T>
-static inline tcu::Vector<T, 4> swizzleColor (const tcu::Vector<T, 4>& src, const TextureSwizzle& swizzle)
+static inline tcu::Vector<T, 4> swizzleColor (const tcu::Vector<T, 4>& src, const MaybeTextureSwizzle& swizzle)
 {
+	DE_ASSERT(swizzle.isSome());
+
 	tcu::Vector<T, 4> result;
 	for (int i = 0; i < 4; i++)
-		result[i] = swizzleColorChannel(src, swizzle[i]);
+		result[i] = swizzleColorChannel(src, swizzle.getSwizzle()[i]);
 	return result;
 }
 
 template <typename T>
-static void swizzlePixels (const PixelBufferAccess& dst, const ConstPixelBufferAccess& src, const TextureSwizzle& swizzle)
+static void swizzlePixels (const PixelBufferAccess& dst, const ConstPixelBufferAccess& src, const MaybeTextureSwizzle& swizzle)
 {
 	DE_ASSERT(dst.getWidth()  == src.getWidth()  &&
 			  dst.getHeight() == src.getHeight() &&
@@ -220,13 +310,13 @@ static void swizzlePixels (const PixelBufferAccess& dst, const ConstPixelBufferA
 		dst.setPixel(swizzleColor(src.getPixelT<T>(x, y, z), swizzle), x, y, z);
 }
 
-static void swizzlePixels (const PixelBufferAccess& dst, const ConstPixelBufferAccess& src, const TextureSwizzle& swizzle)
+static void swizzlePixels (const PixelBufferAccess& dst, const ConstPixelBufferAccess& src, const MaybeTextureSwizzle& swizzle)
 {
 	if (isDepthFormat(dst.getFormat()))
-	{
-		DE_ASSERT(swizzle == s_identityTextureSwizzle);
+		DE_ASSERT(swizzle.isNone() || swizzle.isIdentitySwizzle());
+
+	if (swizzle.isNone() || swizzle.isIdentitySwizzle())
 		tcu::copy(dst, src);
-	}
 	else if (isUnormFormatType(dst.getFormat().type))
 		swizzlePixels<float>(dst, src, swizzle);
 	else if (isUIntFormatType(dst.getFormat().type))
@@ -237,7 +327,7 @@ static void swizzlePixels (const PixelBufferAccess& dst, const ConstPixelBufferA
 		DE_ASSERT(false);
 }
 
-static void swizzleTexture (tcu::Texture2D& dst, const tcu::Texture2D& src, const TextureSwizzle& swizzle)
+static void swizzleTexture (tcu::Texture2D& dst, const tcu::Texture2D& src, const MaybeTextureSwizzle& swizzle)
 {
 	dst = tcu::Texture2D(src.getFormat(), src.getWidth(), src.getHeight());
 	for (int levelNdx = 0; levelNdx < src.getNumLevels(); levelNdx++)
@@ -249,7 +339,7 @@ static void swizzleTexture (tcu::Texture2D& dst, const tcu::Texture2D& src, cons
 	}
 }
 
-static void swizzleTexture (tcu::Texture2DArray& dst, const tcu::Texture2DArray& src, const TextureSwizzle& swizzle)
+static void swizzleTexture (tcu::Texture2DArray& dst, const tcu::Texture2DArray& src, const MaybeTextureSwizzle& swizzle)
 {
 	dst = tcu::Texture2DArray(src.getFormat(), src.getWidth(), src.getHeight(), src.getNumLayers());
 	for (int levelNdx = 0; levelNdx < src.getNumLevels(); levelNdx++)
@@ -261,7 +351,7 @@ static void swizzleTexture (tcu::Texture2DArray& dst, const tcu::Texture2DArray&
 	}
 }
 
-static void swizzleTexture (tcu::TextureCube& dst, const tcu::TextureCube& src, const TextureSwizzle& swizzle)
+static void swizzleTexture (tcu::TextureCube& dst, const tcu::TextureCube& src, const MaybeTextureSwizzle& swizzle)
 {
 	dst = tcu::TextureCube(src.getFormat(), src.getSize());
 	for (int faceI = 0; faceI < tcu::CUBEFACE_LAST; faceI++)
@@ -825,7 +915,7 @@ public:
 																 tcu::Sampler::CompareMode	shadowCompareMode, //!< Should be COMPAREMODE_NONE iff textureFormat is a depth format.
 																 tcu::Sampler::WrapMode		wrapS,
 																 tcu::Sampler::WrapMode		wrapT,
-																 const TextureSwizzle&		texSwizzle,
+																 const MaybeTextureSwizzle&	texSwizzle,
 																 // \note Filter modes have no effect on gather (except when it comes to
 																 //		  texture completeness); these are supposed to test just that.
 																 tcu::Sampler::FilterMode	minFilter,
@@ -859,7 +949,7 @@ protected:
 	const tcu::Sampler::CompareMode		m_shadowCompareMode;
 	const tcu::Sampler::WrapMode		m_wrapS;
 	const tcu::Sampler::WrapMode		m_wrapT;
-	const TextureSwizzle				m_textureSwizzle;
+	const MaybeTextureSwizzle			m_textureSwizzle;
 	const tcu::Sampler::FilterMode		m_minFilter;
 	const tcu::Sampler::FilterMode		m_magFilter;
 	const int							m_baseLevel;
@@ -901,7 +991,7 @@ TextureGatherCase::TextureGatherCase (Context&						context,
 									  tcu::Sampler::CompareMode		shadowCompareMode, //!< Should be COMPAREMODE_NONE iff textureType == TEXTURETYPE_NORMAL.
 									  tcu::Sampler::WrapMode		wrapS,
 									  tcu::Sampler::WrapMode		wrapT,
-									  const TextureSwizzle&			textureSwizzle,
+									  const MaybeTextureSwizzle&	textureSwizzle,
 									  tcu::Sampler::FilterMode		minFilter,
 									  tcu::Sampler::FilterMode		magFilter,
 									  int							baseLevel,
@@ -1161,6 +1251,7 @@ void TextureGatherCase::init (void)
 		gl.texParameteri(texTypeGL, GL_TEXTURE_COMPARE_FUNC, glu::getGLCompareFunc(m_shadowCompareMode));
 	}
 
+	if (m_textureSwizzle.isSome())
 	{
 		const deUint32 swizzleNamesGL[4] =
 		{
@@ -1169,13 +1260,11 @@ void TextureGatherCase::init (void)
 			GL_TEXTURE_SWIZZLE_B,
 			GL_TEXTURE_SWIZZLE_A
 		};
-		const deUint32 initialGLTexSwizzles[4]	= { GL_RED, GL_GREEN, GL_BLUE, GL_ALPHA };
 
 		for (int i = 0; i < 4; i++)
 		{
-			const deUint32 curGLSwizzle = getGLTextureSwizzleComponent(m_textureSwizzle[i]);
-			if (curGLSwizzle != initialGLTexSwizzles[i])
-				gl.texParameteri(texTypeGL, swizzleNamesGL[i], curGLSwizzle);
+			const deUint32 curGLSwizzle = getGLTextureSwizzleComponent(m_textureSwizzle.getSwizzle()[i]);
+			gl.texParameteri(texTypeGL, swizzleNamesGL[i], curGLSwizzle);
 		}
 	}
 
@@ -1501,7 +1590,7 @@ public:
 						 tcu::Sampler::CompareMode	shadowCompareMode,
 						 tcu::Sampler::WrapMode		wrapS,
 						 tcu::Sampler::WrapMode		wrapT,
-						 const TextureSwizzle&		texSwizzle,
+						 const MaybeTextureSwizzle&	texSwizzle,
 						 tcu::Sampler::FilterMode	minFilter,
 						 tcu::Sampler::FilterMode	magFilter,
 						 int						baseLevel,
@@ -1591,7 +1680,7 @@ public:
 							  tcu::Sampler::CompareMode		shadowCompareMode,
 							  tcu::Sampler::WrapMode		wrapS,
 							  tcu::Sampler::WrapMode		wrapT,
-							  const TextureSwizzle&			texSwizzle,
+							  const MaybeTextureSwizzle&	texSwizzle,
 							  tcu::Sampler::FilterMode		minFilter,
 							  tcu::Sampler::FilterMode		magFilter,
 							  int							baseLevel,
@@ -1723,7 +1812,7 @@ public:
 						   tcu::Sampler::CompareMode	shadowCompareMode,
 						   tcu::Sampler::WrapMode		wrapS,
 						   tcu::Sampler::WrapMode		wrapT,
-						   const TextureSwizzle&		texSwizzle,
+						   const MaybeTextureSwizzle&	texSwizzle,
 						   tcu::Sampler::FilterMode		minFilter,
 						   tcu::Sampler::FilterMode		magFilter,
 						   int							baseLevel,
@@ -1860,7 +1949,7 @@ static inline TextureGatherCase* makeTextureGatherCase (TextureType					textureT
 														tcu::Sampler::CompareMode	shadowCompareMode,
 														tcu::Sampler::WrapMode		wrapS,
 														tcu::Sampler::WrapMode		wrapT,
-														const TextureSwizzle&		texSwizzle,
+														const MaybeTextureSwizzle&	texSwizzle,
 														tcu::Sampler::FilterMode	minFilter,
 														tcu::Sampler::FilterMode	magFilter,
 														int							baseLevel,
@@ -2034,7 +2123,7 @@ void TextureGatherTests::init (void)
 								const string caseName = string() + wrapModes[wrapSNdx].name + "_" + wrapModes[wrapTNdx].name;
 
 								compareModeGroup->addChild(makeTextureGatherCase(textureType, m_context, caseName.c_str(), "", gatherType, offsetSize, format, compareMode, wrapS, wrapT,
-																				 s_identityTextureSwizzle, tcu::Sampler::NEAREST, tcu::Sampler::NEAREST, 0, textureSize));
+																				 MaybeTextureSwizzle::createNoneTextureSwizzle(), tcu::Sampler::NEAREST, tcu::Sampler::NEAREST, 0, textureSize));
 							}
 						}
 					}
@@ -2049,17 +2138,14 @@ void TextureGatherTests::init (void)
 							DE_STATIC_ASSERT(TEXTURESWIZZLECOMPONENT_R == 0);
 							for (int swizzleCaseNdx = 0; swizzleCaseNdx < TEXTURESWIZZLECOMPONENT_LAST; swizzleCaseNdx++)
 							{
-								TextureSwizzle	swizzle;
-								string			caseName;
+								MaybeTextureSwizzle	swizzle	= MaybeTextureSwizzle::createSomeTextureSwizzle();
+								string				caseName;
 
 								for (int i = 0; i < 4; i++)
 								{
-									swizzle[i] = (TextureSwizzleComponent)((swizzleCaseNdx + i) % (int)TEXTURESWIZZLECOMPONENT_LAST);
-									caseName += (i > 0 ? "_" : "") + de::toLower(de::toString(swizzle[i]));
+									swizzle.getSwizzle()[i] = (TextureSwizzleComponent)((swizzleCaseNdx + i) % (int)TEXTURESWIZZLECOMPONENT_LAST);
+									caseName += (i > 0 ? "_" : "") + de::toLower(de::toString(swizzle.getSwizzle()[i]));
 								}
-
-								if (swizzle == s_identityTextureSwizzle)
-									continue; // Already tested in above cases.
 
 								swizzleGroup->addChild(makeTextureGatherCase(textureType, m_context, caseName.c_str(), "", gatherType, offsetSize, format,
 																			 tcu::Sampler::COMPAREMODE_NONE, tcu::Sampler::REPEAT_GL, tcu::Sampler::REPEAT_GL,
@@ -2111,7 +2197,8 @@ void TextureGatherTests::init (void)
 								const string caseName = string() + "min_" + minFilters[minFilterNdx].name + "_mag_" + magFilters[magFilterNdx].name;
 
 								filterModeGroup->addChild(makeTextureGatherCase(textureType, m_context, caseName.c_str(), "", gatherType, offsetSize, format, compareMode,
-																				tcu::Sampler::REPEAT_GL, tcu::Sampler::REPEAT_GL, s_identityTextureSwizzle, minFilter, magFilter, 0, IVec3(64, 64, 3)));
+																				tcu::Sampler::REPEAT_GL, tcu::Sampler::REPEAT_GL, MaybeTextureSwizzle::createNoneTextureSwizzle(),
+																				minFilter, magFilter, 0, IVec3(64, 64, 3)));
 							}
 						}
 
@@ -2125,7 +2212,8 @@ void TextureGatherTests::init (void)
 								const tcu::Sampler::CompareMode		compareMode		= isDepthFormat(format) ? tcu::Sampler::COMPAREMODE_LESS : tcu::Sampler::COMPAREMODE_NONE;
 								baseLevelGroup->addChild(makeTextureGatherCase(textureType, m_context, caseName.c_str(), "", gatherType, offsetSize, format,
 																			   compareMode, tcu::Sampler::REPEAT_GL, tcu::Sampler::REPEAT_GL,
-																			   s_identityTextureSwizzle, tcu::Sampler::NEAREST, tcu::Sampler::NEAREST, baseLevel, IVec3(64, 64, 3)));
+																			   MaybeTextureSwizzle::createNoneTextureSwizzle(), tcu::Sampler::NEAREST, tcu::Sampler::NEAREST,
+																			   baseLevel, IVec3(64, 64, 3)));
 							}
 						}
 
@@ -2137,8 +2225,8 @@ void TextureGatherTests::init (void)
 							const tcu::Sampler::CompareMode compareMode = isDepthFormat(format) ? tcu::Sampler::COMPAREMODE_LESS : tcu::Sampler::COMPAREMODE_NONE;
 							incompleteGroup->addChild(makeTextureGatherCase(textureType, m_context, "mipmap_incomplete", "", gatherType, offsetSize, format,
 																			compareMode, tcu::Sampler::REPEAT_GL, tcu::Sampler::REPEAT_GL,
-																			s_identityTextureSwizzle, tcu::Sampler::NEAREST_MIPMAP_NEAREST, tcu::Sampler::NEAREST, 0, IVec3(64, 64, 3),
-																			true /* Mipmap-incomplete */));
+																			MaybeTextureSwizzle::createNoneTextureSwizzle(), tcu::Sampler::NEAREST_MIPMAP_NEAREST, tcu::Sampler::NEAREST,
+																			0, IVec3(64, 64, 3), true /* Mipmap-incomplete */));
 						}
 					}
 				}

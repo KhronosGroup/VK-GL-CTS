@@ -36,7 +36,7 @@ end
 
 case mismatch_order
 	version 310 es
-	desc "Shader io block mismatch: different number of declarations"
+	desc "Shader io block mismatch: different member declaration order"
 	require extension { "GL_OES_shader_io_blocks" | "GL_EXT_shader_io_blocks" } in { vertex, fragment }
 	expect link_fail
 	vertex ""
@@ -73,7 +73,7 @@ end
 
 case mismatch_type
 	version 310 es
-	desc "Shader io block mismatch: different number of declarations"
+	desc "Shader io block mismatch: different member type"
 	require extension { "GL_OES_shader_io_blocks" | "GL_EXT_shader_io_blocks" } in { vertex, fragment }
 	expect link_fail
 	vertex ""
@@ -109,7 +109,7 @@ end
 
 case mismatch_member_name
 	version 310 es
-	desc "Shader io block mismatch: different number of declarations"
+	desc "Shader io block mismatch: different member name"
 	require extension { "GL_OES_shader_io_blocks" | "GL_EXT_shader_io_blocks" } in { vertex, fragment }
 	expect link_fail
 	vertex ""
@@ -144,7 +144,7 @@ end
 
 case mismatch_member_array_size
 	version 310 es
-	desc "Shader io block mismatch: different number of declarations"
+	desc "Shader io block mismatch: different member array size"
 	require extension { "GL_OES_shader_io_blocks" | "GL_EXT_shader_io_blocks" } in { vertex, fragment }
 	expect link_fail
 	vertex ""
@@ -177,11 +177,15 @@ case mismatch_member_array_size
 	""
 end
 
-case mismatch_with_and_without_instance_name
+case with_and_without_instance_name
 	version 310 es
-	desc "Shader io block mismatch: different number of declarations"
+	desc "Shader io block: with and without instance name"
 	require extension { "GL_OES_shader_io_blocks" | "GL_EXT_shader_io_blocks" } in { vertex, fragment }
-	expect link_fail
+	values
+	{
+		input float in0 = 1.0;
+		output float out0 = 1.0;
+	}
 	vertex ""
 		#version 310 es
 		${VERTEX_DECLARATIONS}
@@ -192,7 +196,7 @@ case mismatch_with_and_without_instance_name
 
 		void main()
 		{
-			instanceName.variable = float(gl_VertexID);
+			instanceName.variable = in0;
 			${VERTEX_OUTPUT}
 		}
 	""
@@ -207,14 +211,15 @@ case mismatch_with_and_without_instance_name
 
 		void main()
 		{
-			${FRAG_COLOR} = vec4(variable);
+			out0 = variable;
+			${FRAGMENT_OUTPUT}
 		}
 	""
 end
 
 case mismatch_block_array_size
 	version 310 es
-	desc "Shader io block mismatch: different number of declarations"
+	desc "Shader io block mismatch: different array size"
 	require extension { "GL_OES_shader_io_blocks" | "GL_EXT_shader_io_blocks" } in { vertex, fragment }
 	expect link_fail
 	vertex ""

@@ -5902,7 +5902,7 @@ void UserDefinedIOCase::init (void)
 
 		tesDeclarations += de::toString(glu::declare(structType)) + ";\n";
 		tesStatements += "\tbool allOk = true;\n"
-						 "\thighp uint firstFailedInputIndex = 0;\n"
+						 "\thighp uint firstFailedInputIndex = 0u;\n"
 						 "\t{\n"
 						 "\t\thighp float v = 1.3;\n";
 		for (int tesInputNdx = 0; tesInputNdx < (int)m_tesInputs.size(); tesInputNdx++)

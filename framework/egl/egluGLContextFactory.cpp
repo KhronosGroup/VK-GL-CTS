@@ -537,11 +537,13 @@ void RenderContext::create (const NativeDisplayFactory* displayFactory, const Na
 
 	EGLU_CHECK_CALL(eglMakeCurrent(m_eglDisplay, m_eglSurface, m_eglSurface, m_eglContext));
 
+	// Init core functions
+
 	if (isClientExtensionSupported(m_eglDisplay, "EGL_KHR_get_all_proc_addresses"))
 	{
-		// Use eglGetProcAddress() as default
+		// Use eglGetProcAddress() for core functions
 		GetProcFuncLoader funcLoader;
-		glu::initFunctions(&m_glFunctions, &funcLoader, config.type.getAPI());
+		glu::initCoreFunctions(&m_glFunctions, &funcLoader, config.type.getAPI());
 	}
 #if !defined(DEQP_GLES2_RUNTIME_LOAD)
 	else if (config.type.getAPI() == glu::ApiType::es(2,0))
@@ -572,7 +574,13 @@ void RenderContext::create (const NativeDisplayFactory* displayFactory, const Na
 		m_dynamicGLLibrary = new de::DynamicLibrary(libraryPath);
 
 		DynamicFuncLoader funcLoader(m_dynamicGLLibrary);
-		glu::initFunctions(&m_glFunctions, &funcLoader, config.type.getAPI());
+		glu::initCoreFunctions(&m_glFunctions, &funcLoader, config.type.getAPI());
+	}
+
+	// Init extension functions
+	{
+		GetProcFuncLoader extLoader;
+		glu::initExtensionFunctions(&m_glFunctions, &extLoader, config.type.getAPI());
 	}
 
 	{
