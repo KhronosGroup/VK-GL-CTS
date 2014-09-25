@@ -836,8 +836,6 @@ dEQP-GLES3.functional.shaders.preprocessor.object_redefinitions.redefine_object_
 dEQP-GLES3.functional.shaders.preprocessor.object_redefinitions.redefine_object_comment_fragment
 dEQP-GLES3.functional.shaders.preprocessor.object_redefinitions.redefine_object_multiline_comment_vertex
 dEQP-GLES3.functional.shaders.preprocessor.object_redefinitions.redefine_object_multiline_comment_fragment
-dEQP-GLES3.functional.shaders.preprocessor.invalid_redefinitions.invalid_identifier_1_vertex
-dEQP-GLES3.functional.shaders.preprocessor.invalid_redefinitions.invalid_identifier_1_fragment
 dEQP-GLES3.functional.shaders.preprocessor.invalid_redefinitions.invalid_identifier_2_vertex
 dEQP-GLES3.functional.shaders.preprocessor.invalid_redefinitions.invalid_identifier_2_fragment
 dEQP-GLES3.functional.shaders.preprocessor.comments.multiline_comment_define_vertex
@@ -4037,12 +4035,6 @@ dEQP-GLES3.functional.shaders.keywords.reserved_keywords.namespace_vertex
 dEQP-GLES3.functional.shaders.keywords.reserved_keywords.namespace_fragment
 dEQP-GLES3.functional.shaders.keywords.reserved_keywords.using_vertex
 dEQP-GLES3.functional.shaders.keywords.reserved_keywords.using_fragment
-dEQP-GLES3.functional.shaders.keywords.invalid_identifiers.two_underscores_begin_vertex
-dEQP-GLES3.functional.shaders.keywords.invalid_identifiers.two_underscores_begin_fragment
-dEQP-GLES3.functional.shaders.keywords.invalid_identifiers.two_underscores_middle_vertex
-dEQP-GLES3.functional.shaders.keywords.invalid_identifiers.two_underscores_middle_fragment
-dEQP-GLES3.functional.shaders.keywords.invalid_identifiers.two_underscores_end_vertex
-dEQP-GLES3.functional.shaders.keywords.invalid_identifiers.two_underscores_end_fragment
 dEQP-GLES3.functional.shaders.keywords.invalid_identifiers.gl_begin_vertex
 dEQP-GLES3.functional.shaders.keywords.invalid_identifiers.gl_begin_fragment
 dEQP-GLES3.functional.shaders.keywords.invalid_identifiers.digit_vertex
@@ -14440,8 +14432,6 @@ dEQP-GLES3.functional.shaders.texture_functions.texturelod.isampler2d_vertex
 dEQP-GLES3.functional.shaders.texture_functions.texturelod.isampler2d_fragment
 dEQP-GLES3.functional.shaders.texture_functions.texturelod.usampler2d_vertex
 dEQP-GLES3.functional.shaders.texture_functions.texturelod.usampler2d_fragment
-dEQP-GLES3.functional.shaders.texture_functions.texturelod.samplercube_fixed_vertex
-dEQP-GLES3.functional.shaders.texture_functions.texturelod.samplercube_fixed_fragment
 dEQP-GLES3.functional.shaders.texture_functions.texturelod.isamplercube_vertex
 dEQP-GLES3.functional.shaders.texture_functions.texturelod.isamplercube_fragment
 dEQP-GLES3.functional.shaders.texture_functions.texturelod.usamplercube_vertex
@@ -15750,10 +15740,6 @@ dEQP-GLES3.functional.shaders.builtin_functions.precision.min.mediump_fragment.s
 dEQP-GLES3.functional.shaders.builtin_functions.precision.min.mediump_fragment.vec2
 dEQP-GLES3.functional.shaders.builtin_functions.precision.min.mediump_fragment.vec3
 dEQP-GLES3.functional.shaders.builtin_functions.precision.min.mediump_fragment.vec4
-dEQP-GLES3.functional.shaders.builtin_functions.precision.min.highp_vertex.scalar
-dEQP-GLES3.functional.shaders.builtin_functions.precision.min.highp_vertex.vec2
-dEQP-GLES3.functional.shaders.builtin_functions.precision.min.highp_vertex.vec3
-dEQP-GLES3.functional.shaders.builtin_functions.precision.min.highp_vertex.vec4
 dEQP-GLES3.functional.shaders.builtin_functions.precision.max.lowp_vertex.scalar
 dEQP-GLES3.functional.shaders.builtin_functions.precision.max.lowp_vertex.vec2
 dEQP-GLES3.functional.shaders.builtin_functions.precision.max.lowp_vertex.vec3
