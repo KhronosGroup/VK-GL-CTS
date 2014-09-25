@@ -58,8 +58,9 @@ public:
 	YesNoMaybe			hasSubnormal	(void) const { return m_hasSubnormal; }
 
 	double				ulp				(double x, double count = 1.0) const;
-	Interval			roundOut		(const Interval& x) const;
+	Interval			roundOut		(const Interval& x, bool roundUnderOverflow) const;
 	double				round			(double d, bool upward) const;
+	double				roundOut		(double d, bool upward, bool roundUnderOverflow) const;
 	Interval			convert			(const Interval& x) const;
 
 	std::string			floatToHex		(double x) const;

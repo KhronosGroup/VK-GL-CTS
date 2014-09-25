@@ -103,14 +103,14 @@ void ObjectVector::resize (size_t newSize)
 	}
 	else if (oldSize > newSize)
 	{
-		(m_gl.*m_traits.genFunc)(glw::GLsizei(oldSize - newSize), &m_objects[newSize]);
+		(m_gl.*m_traits.deleteFunc)(glw::GLsizei(oldSize - newSize), &m_objects[newSize]);
 		m_objects.resize(newSize);
 	}
 }
 
 void ObjectVector::clear (void)
 {
-	(m_gl.*m_traits.genFunc)(glw::GLsizei(m_objects.size()), &m_objects.front());
+	(m_gl.*m_traits.deleteFunc)(glw::GLsizei(m_objects.size()), &m_objects.front());
 	m_objects.clear();
 }
 

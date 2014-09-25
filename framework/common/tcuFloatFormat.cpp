@@ -199,12 +199,27 @@ Interval FloatFormat::convert (const Interval& x) const
 	return ret;
 }
 
-Interval FloatFormat::roundOut (const Interval& x) const
+double FloatFormat::roundOut (double d, bool upward, bool roundUnderOverflow) const
+{
+	int	exp	= 0;
+	deFractExp(d, &exp);
+
+	if (roundUnderOverflow && exp > m_maxExp && (upward == (d < 0.0)))
+		return deSign(d) * getMaxValue();
+	else
+		return round(d, upward);
+}
+
+//! Round output of an operation.
+//! \param roundUnderOverflow Can +/-inf rounded to min/max representable;
+//!							  should be false if any of operands was inf, true otherwise.
+Interval FloatFormat::roundOut (const Interval& x, bool roundUnderOverflow) const
 {
 	Interval ret = x.nan();
 
 	if (!x.empty())
-		ret |= Interval(round(x.lo(), false), round(x.hi(), true));
+		ret |= Interval(roundOut(x.lo(), false, roundUnderOverflow),
+						roundOut(x.hi(), true, roundUnderOverflow));
 
 	return ret;
 }

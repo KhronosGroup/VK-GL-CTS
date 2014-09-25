@@ -672,6 +672,7 @@ void ShaderTextureFunctionCase::initTexture (void)
 			float	levelStep		= isAutoLod ? 0.0f : 1.0f / (float)de::max(1, m_textureSpec.numLevels-1);
 			Vec4	cScale			= fmtInfo.valueMax-fmtInfo.valueMin;
 			Vec4	cBias			= fmtInfo.valueMin;
+			Vec4	cCorner			= cBias + cScale*0.5f;
 			int		baseCellSize	= de::min(m_textureSpec.width/4, m_textureSpec.height/4);
 
 			DE_ASSERT(m_textureSpec.width == m_textureSpec.height);
@@ -698,10 +699,10 @@ void ShaderTextureFunctionCase::initTexture (void)
 						tcu::fillWithGrid(access, de::max(1, baseCellSize>>level), colorA, colorB);
 
 						// Ensure all corners have identical colors in order to avoid dealing with ambiguous corner texel filtering
-						access.setPixel(colorA, 0, 0);
-						access.setPixel(colorA, 0, lastPix);
-						access.setPixel(colorA, lastPix, 0);
-						access.setPixel(colorA, lastPix, lastPix);
+						access.setPixel(cCorner, 0, 0);
+						access.setPixel(cCorner, 0, lastPix);
+						access.setPixel(cCorner, lastPix, 0);
+						access.setPixel(cCorner, lastPix, lastPix);
 					}
 				}
 			}

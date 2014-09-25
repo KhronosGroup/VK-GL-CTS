@@ -309,7 +309,7 @@ struct ScalarTraits
 
 	static Interval		doRound			(const FloatFormat& fmt, T value)
 	{
-		return fmt.roundOut(double(value));
+		return fmt.roundOut(double(value), false);
 	}
 };
 
@@ -1784,7 +1784,7 @@ protected:
 
 		// Allow either representable number on both sides of the exact value,
 		// but require exactly representable values to be preserved.
-		return ctx.format.roundOut(exact);
+		return ctx.format.roundOut(exact, !deIsInf(x) && !deIsInf(y));
 	}
 
 	double			precision		(const EvalContext&, double, double, double) const
@@ -1859,7 +1859,7 @@ public:
 			TCU_SET_INTERVAL_BOUNDS(ret, sum,
 									sum = iargs.a.lo() + iargs.b.lo(),
 									sum = iargs.a.hi() + iargs.b.hi());
-			return ctx.format.convert(ctx.format.roundOut(ret));
+			return ctx.format.convert(ctx.format.roundOut(ret, true));
 		}
 		return this->applyMonotone(ctx, iargs.a, iargs.b);
 	}
@@ -1893,14 +1893,14 @@ public:
 				TCU_SET_INTERVAL_BOUNDS(ret, prod,
 										prod = iargs.a.lo() * iargs.b.lo(),
 										prod = iargs.a.hi() * iargs.b.hi());
-				return ctx.format.convert(ctx.format.roundOut(ret));
+				return ctx.format.convert(ctx.format.roundOut(ret, true));
 			}
 			if (a.lo() >= 0 && b.hi() <= 0)
 			{
 				TCU_SET_INTERVAL_BOUNDS(ret, prod,
 										prod = iargs.a.hi() * iargs.b.lo(),
 										prod = iargs.a.lo() * iargs.b.hi());
-				return ctx.format.convert(ctx.format.roundOut(ret));
+				return ctx.format.convert(ctx.format.roundOut(ret, true));
 			}
 		}
 		return this->applyMonotone(ctx, iargs.a, iargs.b);
@@ -1935,7 +1935,7 @@ public:
 			TCU_SET_INTERVAL_BOUNDS(ret, diff,
 									diff = iargs.a.lo() - iargs.b.hi(),
 									diff = iargs.a.hi() - iargs.b.lo());
-			return ctx.format.convert(ctx.format.roundOut(ret));
+			return ctx.format.convert(ctx.format.roundOut(ret, true));
 
 		}
 		else
