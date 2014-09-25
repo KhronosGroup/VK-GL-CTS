@@ -136,7 +136,6 @@ static bool isTheCenterOfTheFragment (const tcu::Vector<deInt64,2>& a)
 	return	((a.x() & (pixelSize-1)) == halfPixel &&
 				(a.y() & (pixelSize-1)) == halfPixel);
 }
-#endif // DE_DEBUG
 
 static bool inViewport (const tcu::IVec2& p, const tcu::IVec4& viewport)
 {
@@ -145,6 +144,7 @@ static bool inViewport (const tcu::IVec2& p, const tcu::IVec4& viewport)
 			p.x() <  viewport.x() + viewport.z() &&
 			p.y() <  viewport.y() + viewport.w();
 }
+#endif // DE_DEBUG
 
 // returns true if vertex is on the left side of the line
 static bool vertexOnLeftSideOfLine (const tcu::Vector<deInt64,2>& p, const SubpixelLineSegment& l)
@@ -825,39 +825,47 @@ SingleSampleLineRasterizer::~SingleSampleLineRasterizer	()
 
 void SingleSampleLineRasterizer::init (const tcu::Vec4& v0, const tcu::Vec4& v1, float lineWidth)
 {
-	// Bounding box
-	const deInt64	x0		= toSubpixelCoord(v0.x());
-	const deInt64	y0		= toSubpixelCoord(v0.y());
-	const deInt64	x1		= toSubpixelCoord(v1.x());
-	const deInt64	y1		= toSubpixelCoord(v1.y());
-	const deInt64	xMin	= de::min(x0, x1);
-	const deInt64	xMax	= de::max(x0, x1);
-	const deInt64	yMin	= de::min(y0, y1);
-	const deInt64	yMax	= de::max(y0, y1);
+	const bool						isXMajor		= de::abs((v1 - v0).x()) >= de::abs((v1 - v0).y());
 
-	// Clamp to viewport
-	const deInt64	wX0		= toSubpixelCoord(m_viewport.x());
-	const deInt64	wY0		= toSubpixelCoord(m_viewport.y());
-	const deInt64	wX1		= toSubpixelCoord(m_viewport.x() + m_viewport.z() - 1);
-	const deInt64	wY1		= toSubpixelCoord(m_viewport.y() + m_viewport.w() - 1);
+	// Bounding box \note: with wide lines, the line is actually moved as in the spec
+	const deInt32					lineWidthPixels	= (lineWidth > 1.0f) ? (deInt32)floor(lineWidth + 0.5f) : 1;
 
-	tcu::Vector<deInt64, 2> bboxMin, bboxMax;
-	bboxMin.x() = de::clamp(xMin, wX0, wX1);
-	bboxMin.y() = de::clamp(yMin, wY0, wY1);
-	bboxMax.x() = de::clamp(xMax, wX0, wX1);
-	bboxMax.y() = de::clamp(yMax, wY0, wY1);
+	const tcu::IVec2				minorDirection	= (isXMajor ? tcu::IVec2(0, 1) : tcu::IVec2(1, 0));
+	const tcu::Vector<deInt64,2>	widthOffset		= (isXMajor ? tcu::Vector<deInt64,2>(0, -1) : tcu::Vector<deInt64,2>(-1, 0)) * (toSubpixelCoord(lineWidthPixels - 1) / 2);
 
-	// line will be moved (linewidth-1)/2 so take that into accound
-	bboxMin.x() -= toSubpixelCoord(lineWidth);
-	bboxMax.x() += toSubpixelCoord(lineWidth);
-	bboxMin.y() -= toSubpixelCoord(lineWidth);
-	bboxMax.y() += toSubpixelCoord(lineWidth);
+	const deInt64					x0				= toSubpixelCoord(v0.x()) + widthOffset.x();
+	const deInt64					y0				= toSubpixelCoord(v0.y()) + widthOffset.y();
+	const deInt64					x1				= toSubpixelCoord(v1.x()) + widthOffset.x();
+	const deInt64					y1				= toSubpixelCoord(v1.y()) + widthOffset.y();
 
-	// subpixels to pixels, set m_bbox*
-	m_bboxMin.x() = floorSubpixelToPixelCoord	(bboxMin.x(), true);
-	m_bboxMin.y() = floorSubpixelToPixelCoord	(bboxMin.y(), true);
-	m_bboxMax.x() = ceilSubpixelToPixelCoord	(bboxMax.x(), true);
-	m_bboxMax.y() = ceilSubpixelToPixelCoord	(bboxMax.y(), true);
+	// line endpoints might be perturbed, add some margin
+	const deInt64					xMin			= de::min(x0, x1) - toSubpixelCoord(1);
+	const deInt64					xMax			= de::max(x0, x1) + toSubpixelCoord(1);
+	const deInt64					yMin			= de::min(y0, y1) - toSubpixelCoord(1);
+	const deInt64					yMax			= de::max(y0, y1) + toSubpixelCoord(1);
+
+	// Remove invisible area
+
+	if (isXMajor)
+	{
+		// clamp to viewport in major direction
+		m_bboxMin.x() = de::clamp(floorSubpixelToPixelCoord(xMin, true), m_viewport.x(), m_viewport.x() + m_viewport.z() - 1);
+		m_bboxMax.x() = de::clamp(ceilSubpixelToPixelCoord (xMax, true), m_viewport.x(), m_viewport.x() + m_viewport.z() - 1);
+
+		// clamp to padded viewport in minor direction (wide lines might bleed over viewport in minor direction)
+		m_bboxMin.y() = de::clamp(floorSubpixelToPixelCoord(yMin, true), m_viewport.y() - lineWidthPixels, m_viewport.y() + m_viewport.w() - 1);
+		m_bboxMax.y() = de::clamp(ceilSubpixelToPixelCoord (yMax, true), m_viewport.y() - lineWidthPixels, m_viewport.y() + m_viewport.w() - 1);
+	}
+	else
+	{
+		// clamp to viewport in major direction
+		m_bboxMin.y() = de::clamp(floorSubpixelToPixelCoord(yMin, true), m_viewport.y(), m_viewport.y() + m_viewport.w() - 1);
+		m_bboxMax.y() = de::clamp(ceilSubpixelToPixelCoord (yMax, true), m_viewport.y(), m_viewport.y() + m_viewport.w() - 1);
+
+		// clamp to padded viewport in minor direction (wide lines might bleed over viewport in minor direction)
+		m_bboxMin.x() = de::clamp(floorSubpixelToPixelCoord(xMin, true), m_viewport.x() - lineWidthPixels, m_viewport.x() + m_viewport.z() - 1);
+		m_bboxMax.x() = de::clamp(ceilSubpixelToPixelCoord (xMax, true), m_viewport.x() - lineWidthPixels, m_viewport.x() + m_viewport.z() - 1);
+	}
 
 	m_lineWidth = lineWidth;
 
@@ -881,7 +889,8 @@ void SingleSampleLineRasterizer::rasterize (FragmentPacket* const fragmentPacket
 	const tcu::Vector<deInt64,2>				pb				= LineRasterUtil::toSubpixelVector(m_v1.xy()) + widthOffset;
 	const LineRasterUtil::SubpixelLineSegment	line			= LineRasterUtil::SubpixelLineSegment(pa, pb);
 
-	int	packetNdx = 0;
+	int											packetNdx 		= 0;
+
 	while (m_curPos.y() <= m_bboxMax.y() && packetNdx < maxFragmentPackets)
 	{
 		const tcu::Vector<deInt64,2> diamondPosition = LineRasterUtil::toSubpixelVector(m_curPos) + tcu::Vector<deInt64,2>(halfPixel,halfPixel);
@@ -889,17 +898,24 @@ void SingleSampleLineRasterizer::rasterize (FragmentPacket* const fragmentPacket
 		// Should current fragment be drawn? == does the segment exit this diamond?
 		if (LineRasterUtil::doesLineSegmentExitDiamond(line, diamondPosition))
 		{
-			const tcu::Vector<deInt64,2> pr	= diamondPosition;
-			const float t					= tcu::dot((pr - pa).asFloat(), (pb - pa).asFloat()) / tcu::lengthSquared(pb.asFloat() - pa.asFloat());
+			const tcu::Vector<deInt64,2> 	pr					= diamondPosition;
+			const float 					t					= tcu::dot((pr - pa).asFloat(), (pb - pa).asFloat()) / tcu::lengthSquared(pb.asFloat() - pa.asFloat());
+
+			// Rasterize on only fragments that are would end up in the viewport (i.e. visible)
+			const int						minViewportLimit	= (isXMajor) ? (m_viewport.y())                  : (m_viewport.x());
+			const int						maxViewportLimit	= (isXMajor) ? (m_viewport.y() + m_viewport.w()) : (m_viewport.x() + m_viewport.z());
+			const int						fragmentLocation	= (isXMajor) ? (m_curPos.y())                    : (m_curPos.x());
+
+			const int						rowFragBegin		= de::max(0, minViewportLimit - fragmentLocation);
+			const int						rowFragEnd			= de::min(maxViewportLimit - fragmentLocation, lineWidth);
 
 			// Wide lines require multiple fragments.
-			for (; m_curRowFragment < lineWidth; m_curRowFragment++)
+			for (; rowFragBegin + m_curRowFragment < rowFragEnd; m_curRowFragment++)
 			{
-				const tcu::IVec2 fragmentPos = m_curPos + minorDirection * m_curRowFragment;
+				const tcu::IVec2 fragmentPos = m_curPos + minorDirection * (rowFragBegin + m_curRowFragment);
 
-				// Is visible?
-				if (!LineRasterUtil::inViewport(fragmentPos, m_viewport))
-					continue;
+				// We only rasterize visible area
+				DE_ASSERT(LineRasterUtil::inViewport(fragmentPos, m_viewport));
 
 				// Compute depth values.
 				if (depthValues)
