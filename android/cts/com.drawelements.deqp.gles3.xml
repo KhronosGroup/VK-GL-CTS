@@ -1,8 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <TestPackage name="dEQP-GLES3" targetBinaryName="com.drawelements.deqp" appPackageName="com.drawelements.deqp.gles3" testType="deqpTest">
 <TestSuite name="dEQP-GLES3">
+<TestCase name="info">
+<Test name="renderer" />
+<Test name="version" />
+<Test name="shading_language_version" />
+<Test name="extensions" />
+<Test name="render_target" />
+</TestCase>
 <TestSuite name="functional">
 <TestCase name="prerequisite">
+<Test name="state_reset" />
 <Test name="clear_color" />
 <Test name="read_pixels" />
 </TestCase>
@@ -633,7 +641,6 @@
 <Test name="pixel_unpack_full" />
 <Test name="pixel_unpack_partial" />
 <Test name="transform_feedback_full" />
-<Test name="transform_feedback_partial" />
 <Test name="uniform_full" />
 <Test name="uniform_partial" />
 </TestCase>
@@ -3846,8 +3853,6 @@
 <Test name="in_return_type_fragment" />
 <Test name="out_return_type_vertex" />
 <Test name="out_return_type_fragment" />
-<Test name="inout_return_type_vertex" />
-<Test name="inout_return_type_fragment" />
 <Test name="main_invalid_return_type_vertex" />
 <Test name="main_invalid_return_type_fragment" />
 <Test name="main_has_arguments_vertex" />
@@ -15058,10 +15063,6 @@
 <Test name="sampler2d_fixed_fragment" />
 <Test name="sampler2d_float_vertex" />
 <Test name="sampler2d_float_fragment" />
-<Test name="isampler2d_vertex" />
-<Test name="isampler2d_fragment" />
-<Test name="usampler2d_vertex" />
-<Test name="usampler2d_fragment" />
 <Test name="isamplercube_vertex" />
 <Test name="isamplercube_fragment" />
 <Test name="usamplercube_vertex" />
@@ -15070,18 +15071,10 @@
 <Test name="sampler2darray_fixed_fragment" />
 <Test name="sampler2darray_float_vertex" />
 <Test name="sampler2darray_float_fragment" />
-<Test name="isampler2darray_vertex" />
-<Test name="isampler2darray_fragment" />
-<Test name="usampler2darray_vertex" />
-<Test name="usampler2darray_fragment" />
 <Test name="sampler3d_fixed_vertex" />
 <Test name="sampler3d_fixed_fragment" />
 <Test name="sampler3d_float_vertex" />
 <Test name="sampler3d_float_fragment" />
-<Test name="isampler3d_vertex" />
-<Test name="isampler3d_fragment" />
-<Test name="usampler3d_vertex" />
-<Test name="usampler3d_fragment" />
 <Test name="sampler2dshadow_vertex" />
 <Test name="sampler2dshadow_fragment" />
 </TestCase>
@@ -15090,26 +15083,14 @@
 <Test name="sampler2d_vec3_fixed_fragment" />
 <Test name="sampler2d_vec3_float_vertex" />
 <Test name="sampler2d_vec3_float_fragment" />
-<Test name="isampler2d_vec3_vertex" />
-<Test name="isampler2d_vec3_fragment" />
-<Test name="usampler2d_vec3_vertex" />
-<Test name="usampler2d_vec3_fragment" />
 <Test name="sampler2d_vec4_fixed_vertex" />
 <Test name="sampler2d_vec4_fixed_fragment" />
 <Test name="sampler2d_vec4_float_vertex" />
 <Test name="sampler2d_vec4_float_fragment" />
-<Test name="isampler2d_vec4_vertex" />
-<Test name="isampler2d_vec4_fragment" />
-<Test name="usampler2d_vec4_vertex" />
-<Test name="usampler2d_vec4_fragment" />
 <Test name="sampler3d_fixed_vertex" />
 <Test name="sampler3d_fixed_fragment" />
 <Test name="sampler3d_float_vertex" />
 <Test name="sampler3d_float_fragment" />
-<Test name="isampler3d_vertex" />
-<Test name="isampler3d_fragment" />
-<Test name="usampler3d_vertex" />
-<Test name="usampler3d_fragment" />
 <Test name="sampler2dshadow_vertex" />
 <Test name="sampler2dshadow_fragment" />
 </TestCase>
@@ -15323,11 +15304,6 @@
 <Test name="float_highp" />
 <Test name="vec2_highp" />
 </TestCase>
-<TestCase name="uniform_loop">
-<Test name="float_mediump" />
-<Test name="float_highp" />
-<Test name="vec2_highp" />
-</TestCase>
 <TestCase name="uniform_switch">
 <Test name="float_mediump" />
 <Test name="float_highp" />
@@ -15410,7 +15386,6 @@
 </TestCase>
 <TestCase name="uniform_loop">
 <Test name="float_highp" />
-<Test name="vec2_highp" />
 </TestCase>
 <TestCase name="uniform_switch">
 <Test name="float_highp" />
@@ -15469,7 +15444,6 @@
 <Test name="float_highp" />
 <Test name="vec2_mediump" />
 <Test name="vec2_highp" />
-<Test name="vec4_mediump" />
 </TestCase>
 <TestCase name="static_switch">
 <Test name="float_mediump" />
@@ -15479,13 +15453,6 @@
 <Test name="vec4_mediump" />
 </TestCase>
 <TestCase name="uniform_if">
-<Test name="float_mediump" />
-<Test name="float_highp" />
-<Test name="vec2_mediump" />
-<Test name="vec2_highp" />
-<Test name="vec4_mediump" />
-</TestCase>
-<TestCase name="uniform_loop">
 <Test name="float_mediump" />
 <Test name="float_highp" />
 <Test name="vec2_mediump" />
@@ -15903,6 +15870,18 @@
 <Test name="vec3" />
 <Test name="vec4" />
 </TestCase>
+<TestCase name="highp_vertex">
+<Test name="scalar" />
+<Test name="vec2" />
+<Test name="vec3" />
+<Test name="vec4" />
+</TestCase>
+<TestCase name="highp_fragment">
+<Test name="scalar" />
+<Test name="vec2" />
+<Test name="vec3" />
+<Test name="vec4" />
+</TestCase>
 </TestSuite>
 <TestSuite name="sub">
 <TestCase name="lowp_vertex">
@@ -15929,6 +15908,18 @@
 <Test name="vec3" />
 <Test name="vec4" />
 </TestCase>
+<TestCase name="highp_vertex">
+<Test name="scalar" />
+<Test name="vec2" />
+<Test name="vec3" />
+<Test name="vec4" />
+</TestCase>
+<TestCase name="highp_fragment">
+<Test name="scalar" />
+<Test name="vec2" />
+<Test name="vec3" />
+<Test name="vec4" />
+</TestCase>
 </TestSuite>
 <TestSuite name="mul">
 <TestCase name="lowp_vertex">
@@ -15950,6 +15941,18 @@
 <Test name="vec4" />
 </TestCase>
 <TestCase name="mediump_fragment">
+<Test name="scalar" />
+<Test name="vec2" />
+<Test name="vec3" />
+<Test name="vec4" />
+</TestCase>
+<TestCase name="highp_vertex">
+<Test name="scalar" />
+<Test name="vec2" />
+<Test name="vec3" />
+<Test name="vec4" />
+</TestCase>
+<TestCase name="highp_fragment">
 <Test name="scalar" />
 <Test name="vec2" />
 <Test name="vec3" />
@@ -16040,6 +16043,18 @@
 <Test name="vec4" />
 </TestCase>
 <TestCase name="mediump_fragment">
+<Test name="scalar" />
+<Test name="vec2" />
+<Test name="vec3" />
+<Test name="vec4" />
+</TestCase>
+<TestCase name="highp_vertex">
+<Test name="scalar" />
+<Test name="vec2" />
+<Test name="vec3" />
+<Test name="vec4" />
+</TestCase>
+<TestCase name="highp_fragment">
 <Test name="scalar" />
 <Test name="vec2" />
 <Test name="vec3" />
@@ -16146,12 +16161,6 @@
 <Test name="vec4" />
 </TestCase>
 <TestCase name="lowp_fragment">
-<Test name="scalar" />
-<Test name="vec2" />
-<Test name="vec3" />
-<Test name="vec4" />
-</TestCase>
-<TestCase name="mediump_vertex">
 <Test name="scalar" />
 <Test name="vec2" />
 <Test name="vec3" />
@@ -17139,12 +17148,22 @@
 <Test name="vec3" />
 <Test name="vec4" />
 </TestCase>
+<TestCase name="highp_vertex">
+<Test name="vec3" />
+<Test name="vec4" />
+</TestCase>
+<TestCase name="highp_fragment">
+<Test name="vec3" />
+<Test name="vec4" />
+</TestCase>
 </TestSuite>
 <TestCase name="cross">
 <Test name="lowp_vertex" />
 <Test name="lowp_fragment" />
 <Test name="mediump_vertex" />
 <Test name="mediump_fragment" />
+<Test name="highp_vertex" />
+<Test name="highp_fragment" />
 </TestCase>
 <TestSuite name="normalize">
 <TestCase name="lowp_vertex">
@@ -22196,7 +22215,6 @@
 <Test name="linear_linear" />
 </TestCase>
 <TestCase name="projected">
-<Test name="nearest_nearest" />
 <Test name="linear_nearest" />
 </TestCase>
 <TestCase name="bias">
@@ -22227,9 +22245,7 @@
 </TestCase>
 <TestCase name="max_lod">
 <Test name="nearest_nearest" />
-<Test name="linear_nearest" />
 <Test name="nearest_linear" />
-<Test name="linear_linear" />
 </TestCase>
 </TestSuite>
 <TestSuite name="3d">
@@ -28029,8 +28045,6 @@
 <Test name="rgba16f" />
 <Test name="depth24_stencil8" />
 <Test name="r11f_g11f_b10f" />
-<Test name="srgb_unsigned_byte" />
-<Test name="srgb_alpha_unsigned_byte" />
 <Test name="srgb8_alpha8" />
 <Test name="depth_component32f" />
 <Test name="depth32f_stencil8" />
@@ -28094,8 +28108,6 @@
 <Test name="rgb16f" />
 <Test name="depth24_stencil8" />
 <Test name="r11f_g11f_b10f" />
-<Test name="srgb_unsigned_byte" />
-<Test name="srgb_alpha_unsigned_byte" />
 <Test name="srgb8_alpha8" />
 <Test name="depth_component32f" />
 <Test name="depth32f_stencil8" />
@@ -28158,8 +28170,6 @@
 <Test name="rgb16f" />
 <Test name="depth24_stencil8" />
 <Test name="r11f_g11f_b10f" />
-<Test name="srgb_unsigned_byte" />
-<Test name="srgb_alpha_unsigned_byte" />
 <Test name="srgb8_alpha8" />
 <Test name="depth_component32f" />
 <Test name="depth32f_stencil8" />
@@ -28947,7 +28957,6 @@
 <Test name="rgba4_to_rgba4" />
 <Test name="rgba4_to_rgb5_a1" />
 <Test name="rgba4_to_rgb8" />
-<Test name="rgba4_to_rgb565" />
 <Test name="rgba4_to_rg8" />
 <Test name="rgba4_to_r8" />
 <Test name="rgba4_to_rgba32f" />
@@ -36001,23 +36010,13 @@
 <Test name="triangles" />
 <Test name="triangle_strip" />
 <Test name="triangle_fan" />
-<Test name="lines" />
-<Test name="line_strip" />
 <Test name="line_loop" />
-<Test name="lines_wide" />
-<Test name="line_strip_wide" />
-<Test name="line_loop_wide" />
 </TestCase>
 <TestCase name="projected">
 <Test name="triangles" />
 <Test name="triangle_strip" />
 <Test name="triangle_fan" />
-<Test name="lines" />
 <Test name="line_strip" />
-<Test name="line_loop" />
-<Test name="lines_wide" />
-<Test name="line_strip_wide" />
-<Test name="line_loop_wide" />
 </TestCase>
 </TestSuite>
 <TestCase name="flatshading">
