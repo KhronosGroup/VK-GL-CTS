@@ -575,7 +575,7 @@ CallbackErrorCase::IterateResult CallbackErrorCase::iterate (void)
 
 	const glw::Functions&	gl		= m_context.getRenderContext().getFunctions();
 	tcu::TestLog&			log		= m_testCtx.getLog();
-	NegativeTestContext		context	= NegativeTestContext(*this, m_context.getRenderContext(), log, m_results, true);
+	NegativeTestContext		context	= NegativeTestContext(*this, m_context.getRenderContext(), m_context.getContextInfo(), log, m_results, true);
 
 	gl.enable(GL_DEBUG_OUTPUT);
 	gl.enable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
@@ -640,7 +640,7 @@ LogErrorCase::IterateResult LogErrorCase::iterate (void)
 
 	const glw::Functions&	gl		= m_context.getRenderContext().getFunctions();
 	tcu::TestLog&			log		= m_testCtx.getLog();
-	NegativeTestContext		context	= NegativeTestContext(*this, m_context.getRenderContext(), log, m_results, true);
+	NegativeTestContext		context	= NegativeTestContext(*this, m_context.getRenderContext(), m_context.getContextInfo(), log, m_results, true);
 	GLint					numMsg	= 0;
 
 	gl.enable(GL_DEBUG_OUTPUT);
@@ -741,7 +741,7 @@ GetErrorCase::GetErrorCase (Context&	ctx,
 GetErrorCase::IterateResult GetErrorCase::iterate (void)
 {
 	tcu::TestLog&			log		= m_testCtx.getLog();
-	NegativeTestContext		context	= NegativeTestContext(*this, m_context.getRenderContext(), log, m_results, true);
+	NegativeTestContext		context	= NegativeTestContext(*this, m_context.getRenderContext(), m_context.getContextInfo(), log, m_results, true);
 
 	m_errorFunc(context);
 
@@ -887,7 +887,7 @@ void FilterCase::callback (GLenum source, GLenum type, GLuint id, GLenum severit
 vector<MessageData> FilterCase::genMessages (bool uselog, const string& desc)
 {
 	tcu::TestLog&			log			= m_testCtx.getLog();
-	NegativeTestContext		context		= NegativeTestContext(*this, m_context.getRenderContext(), log, m_results, uselog);
+	NegativeTestContext		context		= NegativeTestContext(*this, m_context.getRenderContext(), m_context.getContextInfo(), log, m_results, uselog);
 	tcu::ScopedLogSection	section		(log, "message gen", desc);
 	vector<MessageData>		messages;
 
@@ -1354,7 +1354,7 @@ AsyncCase::IterateResult AsyncCase::iterate (void)
 
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
 	tcu::TestLog&		log			= m_testCtx.getLog();
-	NegativeTestContext	context		= NegativeTestContext(*this, m_context.getRenderContext(), log, m_results, true);
+	NegativeTestContext	context		= NegativeTestContext(*this, m_context.getRenderContext(), m_context.getContextInfo(), log, m_results, true);
 	const int			maxWait		= 10000; // ms
 	const int			warnWait	= 100;
 

@@ -24,6 +24,7 @@
 #include "es31fNegativeVertexArrayApiTests.hpp"
 
 #include "gluCallLogWrapper.hpp"
+#include "gluContextInfo.hpp"
 #include "gluShaderProgram.hpp"
 
 #include "glwDefs.hpp"
@@ -381,34 +382,37 @@ void draw_elements (NegativeTestContext& ctx)
 	ctx.glDeleteFramebuffers(1, &fbo);
 	ctx.endSection();
 
-	ctx.beginSection("GL_INVALID_OPERATION is generated if transform feedback is active and not paused.");
-	const char* tfVarying		= "gl_Position";
+	if (!ctx.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader")) // GL_EXT_geometry_shader removes error
+	{
+		ctx.beginSection("GL_INVALID_OPERATION is generated if transform feedback is active and not paused.");
+		const char* tfVarying		= "gl_Position";
 
-	ctx.glGenBuffers				(1, &buf);
-	ctx.glGenTransformFeedbacks		(1, &tfID);
+		ctx.glGenBuffers				(1, &buf);
+		ctx.glGenTransformFeedbacks		(1, &tfID);
 
-	ctx.glUseProgram				(program.getProgram());
-	ctx.glTransformFeedbackVaryings	(program.getProgram(), 1, &tfVarying, GL_INTERLEAVED_ATTRIBS);
-	ctx.glLinkProgram				(program.getProgram());
-	ctx.glBindTransformFeedback		(GL_TRANSFORM_FEEDBACK, tfID);
-	ctx.glBindBuffer				(GL_TRANSFORM_FEEDBACK_BUFFER, buf);
-	ctx.glBufferData				(GL_TRANSFORM_FEEDBACK_BUFFER, 32, DE_NULL, GL_DYNAMIC_DRAW);
-	ctx.glBindBufferBase			(GL_TRANSFORM_FEEDBACK_BUFFER, 0, buf);
-	ctx.glBeginTransformFeedback	(GL_POINTS);
-	ctx.expectError				(GL_NO_ERROR);
+		ctx.glUseProgram				(program.getProgram());
+		ctx.glTransformFeedbackVaryings	(program.getProgram(), 1, &tfVarying, GL_INTERLEAVED_ATTRIBS);
+		ctx.glLinkProgram				(program.getProgram());
+		ctx.glBindTransformFeedback		(GL_TRANSFORM_FEEDBACK, tfID);
+		ctx.glBindBuffer				(GL_TRANSFORM_FEEDBACK_BUFFER, buf);
+		ctx.glBufferData				(GL_TRANSFORM_FEEDBACK_BUFFER, 32, DE_NULL, GL_DYNAMIC_DRAW);
+		ctx.glBindBufferBase			(GL_TRANSFORM_FEEDBACK_BUFFER, 0, buf);
+		ctx.glBeginTransformFeedback	(GL_POINTS);
+		ctx.expectError				(GL_NO_ERROR);
 
-	ctx.glDrawElements				(GL_POINTS, 1, GL_UNSIGNED_BYTE, vertices);
-	ctx.expectError				(GL_INVALID_OPERATION);
+		ctx.glDrawElements				(GL_POINTS, 1, GL_UNSIGNED_BYTE, vertices);
+		ctx.expectError				(GL_INVALID_OPERATION);
 
-	ctx.glPauseTransformFeedback();
-	ctx.glDrawElements				(GL_POINTS, 1, GL_UNSIGNED_BYTE, vertices);
-	ctx.expectError				(GL_NO_ERROR);
+		ctx.glPauseTransformFeedback();
+		ctx.glDrawElements				(GL_POINTS, 1, GL_UNSIGNED_BYTE, vertices);
+		ctx.expectError				(GL_NO_ERROR);
 
-	ctx.glEndTransformFeedback		();
-	ctx.glDeleteBuffers				(1, &buf);
-	ctx.glDeleteTransformFeedbacks	(1, &tfID);
-	ctx.expectError				(GL_NO_ERROR);
-	ctx.endSection();
+		ctx.glEndTransformFeedback		();
+		ctx.glDeleteBuffers				(1, &buf);
+		ctx.glDeleteTransformFeedbacks	(1, &tfID);
+		ctx.expectError				(GL_NO_ERROR);
+		ctx.endSection();
+	}
 
 	ctx.glUseProgram(0);
 }
@@ -483,34 +487,37 @@ void draw_elements_incomplete_primitive (NegativeTestContext& ctx)
 	ctx.glDeleteFramebuffers(1, &fbo);
 	ctx.endSection();
 
-	ctx.beginSection("GL_INVALID_OPERATION is generated if transform feedback is active and not paused.");
-	const char* tfVarying		= "gl_Position";
+	if (!ctx.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader")) // GL_EXT_geometry_shader removes error
+	{
+		ctx.beginSection("GL_INVALID_OPERATION is generated if transform feedback is active and not paused.");
+		const char* tfVarying		= "gl_Position";
 
-	ctx.glGenBuffers				(1, &buf);
-	ctx.glGenTransformFeedbacks		(1, &tfID);
+		ctx.glGenBuffers				(1, &buf);
+		ctx.glGenTransformFeedbacks		(1, &tfID);
 
-	ctx.glUseProgram				(program.getProgram());
-	ctx.glTransformFeedbackVaryings	(program.getProgram(), 1, &tfVarying, GL_INTERLEAVED_ATTRIBS);
-	ctx.glLinkProgram				(program.getProgram());
-	ctx.glBindTransformFeedback		(GL_TRANSFORM_FEEDBACK, tfID);
-	ctx.glBindBuffer				(GL_TRANSFORM_FEEDBACK_BUFFER, buf);
-	ctx.glBufferData				(GL_TRANSFORM_FEEDBACK_BUFFER, 32, DE_NULL, GL_DYNAMIC_DRAW);
-	ctx.glBindBufferBase			(GL_TRANSFORM_FEEDBACK_BUFFER, 0, buf);
-	ctx.glBeginTransformFeedback	(GL_TRIANGLES);
-	ctx.expectError				(GL_NO_ERROR);
+		ctx.glUseProgram				(program.getProgram());
+		ctx.glTransformFeedbackVaryings	(program.getProgram(), 1, &tfVarying, GL_INTERLEAVED_ATTRIBS);
+		ctx.glLinkProgram				(program.getProgram());
+		ctx.glBindTransformFeedback		(GL_TRANSFORM_FEEDBACK, tfID);
+		ctx.glBindBuffer				(GL_TRANSFORM_FEEDBACK_BUFFER, buf);
+		ctx.glBufferData				(GL_TRANSFORM_FEEDBACK_BUFFER, 32, DE_NULL, GL_DYNAMIC_DRAW);
+		ctx.glBindBufferBase			(GL_TRANSFORM_FEEDBACK_BUFFER, 0, buf);
+		ctx.glBeginTransformFeedback	(GL_TRIANGLES);
+		ctx.expectError					(GL_NO_ERROR);
 
-	ctx.glDrawElements				(GL_TRIANGLES, 1, GL_UNSIGNED_BYTE, vertices);
-	ctx.expectError				(GL_INVALID_OPERATION);
+		ctx.glDrawElements				(GL_TRIANGLES, 1, GL_UNSIGNED_BYTE, vertices);
+		ctx.expectError					(GL_INVALID_OPERATION);
 
-	ctx.glPauseTransformFeedback();
-	ctx.glDrawElements				(GL_TRIANGLES, 1, GL_UNSIGNED_BYTE, vertices);
-	ctx.expectError				(GL_NO_ERROR);
+		ctx.glPauseTransformFeedback	();
+		ctx.glDrawElements				(GL_TRIANGLES, 1, GL_UNSIGNED_BYTE, vertices);
+		ctx.expectError					(GL_NO_ERROR);
 
-	ctx.glEndTransformFeedback		();
-	ctx.glDeleteBuffers				(1, &buf);
-	ctx.glDeleteTransformFeedbacks	(1, &tfID);
-	ctx.expectError				(GL_NO_ERROR);
-	ctx.endSection();
+		ctx.glEndTransformFeedback		();
+		ctx.glDeleteBuffers				(1, &buf);
+		ctx.glDeleteTransformFeedbacks	(1, &tfID);
+		ctx.expectError					(GL_NO_ERROR);
+		ctx.endSection					();
+	}
 
 	ctx.glUseProgram(0);
 }
@@ -651,34 +658,37 @@ void draw_elements_instanced (NegativeTestContext& ctx)
 	ctx.glDeleteFramebuffers(1, &fbo);
 	ctx.endSection();
 
-	ctx.beginSection("GL_INVALID_OPERATION is generated if transform feedback is active and not paused.");
-	const char* tfVarying		= "gl_Position";
+	if (!ctx.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader")) // GL_EXT_geometry_shader removes error
+	{
+		ctx.beginSection("GL_INVALID_OPERATION is generated if transform feedback is active and not paused.");
+		const char* tfVarying		= "gl_Position";
 
-	ctx.glGenBuffers				(1, &buf);
-	ctx.glGenTransformFeedbacks		(1, &tfID);
+		ctx.glGenBuffers				(1, &buf);
+		ctx.glGenTransformFeedbacks		(1, &tfID);
 
-	ctx.glUseProgram				(program.getProgram());
-	ctx.glTransformFeedbackVaryings	(program.getProgram(), 1, &tfVarying, GL_INTERLEAVED_ATTRIBS);
-	ctx.glLinkProgram				(program.getProgram());
-	ctx.glBindTransformFeedback		(GL_TRANSFORM_FEEDBACK, tfID);
-	ctx.glBindBuffer				(GL_TRANSFORM_FEEDBACK_BUFFER, buf);
-	ctx.glBufferData				(GL_TRANSFORM_FEEDBACK_BUFFER, 32, DE_NULL, GL_DYNAMIC_DRAW);
-	ctx.glBindBufferBase			(GL_TRANSFORM_FEEDBACK_BUFFER, 0, buf);
-	ctx.glBeginTransformFeedback	(GL_POINTS);
-	ctx.expectError				(GL_NO_ERROR);
+		ctx.glUseProgram				(program.getProgram());
+		ctx.glTransformFeedbackVaryings	(program.getProgram(), 1, &tfVarying, GL_INTERLEAVED_ATTRIBS);
+		ctx.glLinkProgram				(program.getProgram());
+		ctx.glBindTransformFeedback		(GL_TRANSFORM_FEEDBACK, tfID);
+		ctx.glBindBuffer				(GL_TRANSFORM_FEEDBACK_BUFFER, buf);
+		ctx.glBufferData				(GL_TRANSFORM_FEEDBACK_BUFFER, 32, DE_NULL, GL_DYNAMIC_DRAW);
+		ctx.glBindBufferBase			(GL_TRANSFORM_FEEDBACK_BUFFER, 0, buf);
+		ctx.glBeginTransformFeedback	(GL_POINTS);
+		ctx.expectError				(GL_NO_ERROR);
 
-	ctx.glDrawElementsInstanced		(GL_POINTS, 1, GL_UNSIGNED_BYTE, vertices, 1);
-	ctx.expectError				(GL_INVALID_OPERATION);
+		ctx.glDrawElementsInstanced		(GL_POINTS, 1, GL_UNSIGNED_BYTE, vertices, 1);
+		ctx.expectError				(GL_INVALID_OPERATION);
 
-	ctx.glPauseTransformFeedback();
-	ctx.glDrawElementsInstanced		(GL_POINTS, 1, GL_UNSIGNED_BYTE, vertices, 1);
-	ctx.expectError				(GL_NO_ERROR);
+		ctx.glPauseTransformFeedback();
+		ctx.glDrawElementsInstanced		(GL_POINTS, 1, GL_UNSIGNED_BYTE, vertices, 1);
+		ctx.expectError				(GL_NO_ERROR);
 
-	ctx.glEndTransformFeedback		();
-	ctx.glDeleteBuffers				(1, &buf);
-	ctx.glDeleteTransformFeedbacks	(1, &tfID);
-	ctx.expectError				(GL_NO_ERROR);
-	ctx.endSection();
+		ctx.glEndTransformFeedback		();
+		ctx.glDeleteBuffers				(1, &buf);
+		ctx.glDeleteTransformFeedbacks	(1, &tfID);
+		ctx.expectError				(GL_NO_ERROR);
+		ctx.endSection();
+	}
 
 	ctx.glUseProgram(0);
 }
@@ -761,34 +771,37 @@ void draw_elements_instanced_incomplete_primitive (NegativeTestContext& ctx)
 	ctx.glDeleteFramebuffers(1, &fbo);
 	ctx.endSection();
 
-	ctx.beginSection("GL_INVALID_OPERATION is generated if transform feedback is active and not paused.");
-	const char* tfVarying		= "gl_Position";
+	if (!ctx.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader")) // GL_EXT_geometry_shader removes error
+	{
+		ctx.beginSection("GL_INVALID_OPERATION is generated if transform feedback is active and not paused.");
+		const char* tfVarying		= "gl_Position";
 
-	ctx.glGenBuffers				(1, &buf);
-	ctx.glGenTransformFeedbacks		(1, &tfID);
+		ctx.glGenBuffers				(1, &buf);
+		ctx.glGenTransformFeedbacks		(1, &tfID);
 
-	ctx.glUseProgram				(program.getProgram());
-	ctx.glTransformFeedbackVaryings	(program.getProgram(), 1, &tfVarying, GL_INTERLEAVED_ATTRIBS);
-	ctx.glLinkProgram				(program.getProgram());
-	ctx.glBindTransformFeedback		(GL_TRANSFORM_FEEDBACK, tfID);
-	ctx.glBindBuffer				(GL_TRANSFORM_FEEDBACK_BUFFER, buf);
-	ctx.glBufferData				(GL_TRANSFORM_FEEDBACK_BUFFER, 32, DE_NULL, GL_DYNAMIC_DRAW);
-	ctx.glBindBufferBase			(GL_TRANSFORM_FEEDBACK_BUFFER, 0, buf);
-	ctx.glBeginTransformFeedback	(GL_TRIANGLES);
-	ctx.expectError				(GL_NO_ERROR);
+		ctx.glUseProgram				(program.getProgram());
+		ctx.glTransformFeedbackVaryings	(program.getProgram(), 1, &tfVarying, GL_INTERLEAVED_ATTRIBS);
+		ctx.glLinkProgram				(program.getProgram());
+		ctx.glBindTransformFeedback		(GL_TRANSFORM_FEEDBACK, tfID);
+		ctx.glBindBuffer				(GL_TRANSFORM_FEEDBACK_BUFFER, buf);
+		ctx.glBufferData				(GL_TRANSFORM_FEEDBACK_BUFFER, 32, DE_NULL, GL_DYNAMIC_DRAW);
+		ctx.glBindBufferBase			(GL_TRANSFORM_FEEDBACK_BUFFER, 0, buf);
+		ctx.glBeginTransformFeedback	(GL_TRIANGLES);
+		ctx.expectError					(GL_NO_ERROR);
 
-	ctx.glDrawElementsInstanced		(GL_TRIANGLES, 1, GL_UNSIGNED_BYTE, vertices, 1);
-	ctx.expectError				(GL_INVALID_OPERATION);
+		ctx.glDrawElementsInstanced		(GL_TRIANGLES, 1, GL_UNSIGNED_BYTE, vertices, 1);
+		ctx.expectError					(GL_INVALID_OPERATION);
 
-	ctx.glPauseTransformFeedback();
-	ctx.glDrawElementsInstanced		(GL_TRIANGLES, 1, GL_UNSIGNED_BYTE, vertices, 1);
-	ctx.expectError				(GL_NO_ERROR);
+		ctx.glPauseTransformFeedback();
+		ctx.glDrawElementsInstanced		(GL_TRIANGLES, 1, GL_UNSIGNED_BYTE, vertices, 1);
+		ctx.expectError					(GL_NO_ERROR);
 
-	ctx.glEndTransformFeedback		();
-	ctx.glDeleteBuffers				(1, &buf);
-	ctx.glDeleteTransformFeedbacks	(1, &tfID);
-	ctx.expectError				(GL_NO_ERROR);
-	ctx.endSection();
+		ctx.glEndTransformFeedback		();
+		ctx.glDeleteBuffers				(1, &buf);
+		ctx.glDeleteTransformFeedbacks	(1, &tfID);
+		ctx.expectError					(GL_NO_ERROR);
+		ctx.endSection();
+	}
 
 	ctx.glUseProgram(0);
 }
@@ -834,34 +847,37 @@ void draw_range_elements (NegativeTestContext& ctx)
 	ctx.glDeleteFramebuffers(1, &fbo);
 	ctx.endSection();
 
-	ctx.beginSection("GL_INVALID_OPERATION is generated if transform feedback is active and not paused.");
-	const char* tfVarying		= "gl_Position";
+	if (!ctx.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader")) // GL_EXT_geometry_shader removes error
+	{
+		ctx.beginSection("GL_INVALID_OPERATION is generated if transform feedback is active and not paused.");
+		const char* tfVarying		= "gl_Position";
 
-	ctx.glGenBuffers				(1, &buf);
-	ctx.glGenTransformFeedbacks		(1, &tfID);
+		ctx.glGenBuffers				(1, &buf);
+		ctx.glGenTransformFeedbacks		(1, &tfID);
 
-	ctx.glUseProgram				(program.getProgram());
-	ctx.glTransformFeedbackVaryings	(program.getProgram(), 1, &tfVarying, GL_INTERLEAVED_ATTRIBS);
-	ctx.glLinkProgram				(program.getProgram());
-	ctx.glBindTransformFeedback		(GL_TRANSFORM_FEEDBACK, tfID);
-	ctx.glBindBuffer				(GL_TRANSFORM_FEEDBACK_BUFFER, buf);
-	ctx.glBufferData				(GL_TRANSFORM_FEEDBACK_BUFFER, 32, DE_NULL, GL_DYNAMIC_DRAW);
-	ctx.glBindBufferBase			(GL_TRANSFORM_FEEDBACK_BUFFER, 0, buf);
-	ctx.glBeginTransformFeedback	(GL_POINTS);
-	ctx.expectError				(GL_NO_ERROR);
+		ctx.glUseProgram				(program.getProgram());
+		ctx.glTransformFeedbackVaryings	(program.getProgram(), 1, &tfVarying, GL_INTERLEAVED_ATTRIBS);
+		ctx.glLinkProgram				(program.getProgram());
+		ctx.glBindTransformFeedback		(GL_TRANSFORM_FEEDBACK, tfID);
+		ctx.glBindBuffer				(GL_TRANSFORM_FEEDBACK_BUFFER, buf);
+		ctx.glBufferData				(GL_TRANSFORM_FEEDBACK_BUFFER, 32, DE_NULL, GL_DYNAMIC_DRAW);
+		ctx.glBindBufferBase			(GL_TRANSFORM_FEEDBACK_BUFFER, 0, buf);
+		ctx.glBeginTransformFeedback	(GL_POINTS);
+		ctx.expectError					(GL_NO_ERROR);
 
-	ctx.glDrawRangeElements			(GL_POINTS, 0, 1, 1, GL_UNSIGNED_BYTE, vertices);
-	ctx.expectError				(GL_INVALID_OPERATION);
+		ctx.glDrawRangeElements			(GL_POINTS, 0, 1, 1, GL_UNSIGNED_BYTE, vertices);
+		ctx.expectError					(GL_INVALID_OPERATION);
 
-	ctx.glPauseTransformFeedback();
-	ctx.glDrawRangeElements			(GL_POINTS, 0, 1, 1, GL_UNSIGNED_BYTE, vertices);
-	ctx.expectError				(GL_NO_ERROR);
+		ctx.glPauseTransformFeedback();
+		ctx.glDrawRangeElements			(GL_POINTS, 0, 1, 1, GL_UNSIGNED_BYTE, vertices);
+		ctx.expectError					(GL_NO_ERROR);
 
-	ctx.glEndTransformFeedback		();
-	ctx.glDeleteBuffers				(1, &buf);
-	ctx.glDeleteTransformFeedbacks	(1, &tfID);
-	ctx.expectError				(GL_NO_ERROR);
-	ctx.endSection();
+		ctx.glEndTransformFeedback		();
+		ctx.glDeleteBuffers				(1, &buf);
+		ctx.glDeleteTransformFeedbacks	(1, &tfID);
+		ctx.expectError					(GL_NO_ERROR);
+		ctx.endSection();
+	}
 
 	ctx.glUseProgram(0);
 }
@@ -946,34 +962,37 @@ void draw_range_elements_incomplete_primitive (NegativeTestContext& ctx)
 	ctx.glDeleteFramebuffers(1, &fbo);
 	ctx.endSection();
 
-	ctx.beginSection("GL_INVALID_OPERATION is generated if transform feedback is active and not paused.");
-	const char* tfVarying		= "gl_Position";
+	if (!ctx.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader")) // GL_EXT_geometry_shader removes error
+	{
+		ctx.beginSection("GL_INVALID_OPERATION is generated if transform feedback is active and not paused.");
+		const char* tfVarying		= "gl_Position";
 
-	ctx.glGenBuffers				(1, &buf);
-	ctx.glGenTransformFeedbacks		(1, &tfID);
+		ctx.glGenBuffers				(1, &buf);
+		ctx.glGenTransformFeedbacks		(1, &tfID);
 
-	ctx.glUseProgram				(program.getProgram());
-	ctx.glTransformFeedbackVaryings	(program.getProgram(), 1, &tfVarying, GL_INTERLEAVED_ATTRIBS);
-	ctx.glLinkProgram				(program.getProgram());
-	ctx.glBindTransformFeedback		(GL_TRANSFORM_FEEDBACK, tfID);
-	ctx.glBindBuffer				(GL_TRANSFORM_FEEDBACK_BUFFER, buf);
-	ctx.glBufferData				(GL_TRANSFORM_FEEDBACK_BUFFER, 32, DE_NULL, GL_DYNAMIC_DRAW);
-	ctx.glBindBufferBase			(GL_TRANSFORM_FEEDBACK_BUFFER, 0, buf);
-	ctx.glBeginTransformFeedback	(GL_TRIANGLES);
-	ctx.expectError				(GL_NO_ERROR);
+		ctx.glUseProgram				(program.getProgram());
+		ctx.glTransformFeedbackVaryings	(program.getProgram(), 1, &tfVarying, GL_INTERLEAVED_ATTRIBS);
+		ctx.glLinkProgram				(program.getProgram());
+		ctx.glBindTransformFeedback		(GL_TRANSFORM_FEEDBACK, tfID);
+		ctx.glBindBuffer				(GL_TRANSFORM_FEEDBACK_BUFFER, buf);
+		ctx.glBufferData				(GL_TRANSFORM_FEEDBACK_BUFFER, 32, DE_NULL, GL_DYNAMIC_DRAW);
+		ctx.glBindBufferBase			(GL_TRANSFORM_FEEDBACK_BUFFER, 0, buf);
+		ctx.glBeginTransformFeedback	(GL_TRIANGLES);
+		ctx.expectError				(GL_NO_ERROR);
 
-	ctx.glDrawRangeElements			(GL_TRIANGLES, 0, 1, 1, GL_UNSIGNED_BYTE, vertices);
-	ctx.expectError				(GL_INVALID_OPERATION);
+		ctx.glDrawRangeElements			(GL_TRIANGLES, 0, 1, 1, GL_UNSIGNED_BYTE, vertices);
+		ctx.expectError				(GL_INVALID_OPERATION);
 
-	ctx.glPauseTransformFeedback();
-	ctx.glDrawRangeElements			(GL_TRIANGLES, 0, 1, 1, GL_UNSIGNED_BYTE, vertices);
-	ctx.expectError				(GL_NO_ERROR);
+		ctx.glPauseTransformFeedback();
+		ctx.glDrawRangeElements			(GL_TRIANGLES, 0, 1, 1, GL_UNSIGNED_BYTE, vertices);
+		ctx.expectError				(GL_NO_ERROR);
 
-	ctx.glEndTransformFeedback		();
-	ctx.glDeleteBuffers				(1, &buf);
-	ctx.glDeleteTransformFeedbacks	(1, &tfID);
-	ctx.expectError				(GL_NO_ERROR);
-	ctx.endSection();
+		ctx.glEndTransformFeedback		();
+		ctx.glDeleteBuffers				(1, &buf);
+		ctx.glDeleteTransformFeedbacks	(1, &tfID);
+		ctx.expectError				(GL_NO_ERROR);
+		ctx.endSection();
+	}
 
 	ctx.glUseProgram(0);
 }

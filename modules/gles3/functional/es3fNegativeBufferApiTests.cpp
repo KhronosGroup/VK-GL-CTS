@@ -1022,8 +1022,13 @@ void NegativeBufferApiTests::init (void)
 			m_log << TestLog::Section("", "GL_INVALID_ENUM is generated if internalformat is not a color-renderable, depth-renderable, or stencil-renderable format.");
 			glRenderbufferStorage	(GL_RENDERBUFFER, -1, 1, 1);
 			expectError				(GL_INVALID_ENUM);
-			glRenderbufferStorage	(GL_RENDERBUFFER, GL_RGB16F, 1, 1);
-			expectError				(GL_INVALID_ENUM);
+
+			if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_color_buffer_half_float")) // GL_EXT_color_buffer_half_float disables error
+			{
+				glRenderbufferStorage	(GL_RENDERBUFFER, GL_RGB16F, 1, 1);
+				expectError				(GL_INVALID_ENUM);
+			}
+
 			glRenderbufferStorage	(GL_RENDERBUFFER, GL_RGBA8_SNORM, 1, 1);
 			expectError				(GL_INVALID_ENUM);
 			m_log << TestLog::EndSection;
@@ -1350,8 +1355,13 @@ void NegativeBufferApiTests::init (void)
 			m_log << TestLog::Section("", "GL_INVALID_ENUM is generated if internalformat is not a color-renderable, depth-renderable, or stencil-renderable format.");
 			glRenderbufferStorageMultisample	(GL_RENDERBUFFER, 2, -1, 1, 1);
 			expectError							(GL_INVALID_ENUM);
-			glRenderbufferStorageMultisample	(GL_RENDERBUFFER, 2, GL_RGB16F, 1, 1);
-			expectError							(GL_INVALID_ENUM);
+
+			if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_color_buffer_half_float")) // GL_EXT_color_buffer_half_float disables error
+			{
+				glRenderbufferStorageMultisample	(GL_RENDERBUFFER, 2, GL_RGB16F, 1, 1);
+				expectError							(GL_INVALID_ENUM);
+			}
+
 			glRenderbufferStorageMultisample	(GL_RENDERBUFFER, 2, GL_RGBA8_SNORM, 1, 1);
 			expectError							(GL_INVALID_ENUM);
 			m_log << TestLog::EndSection;
