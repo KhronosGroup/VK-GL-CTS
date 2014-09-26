@@ -1655,6 +1655,8 @@ char* RandomArrayGenerator::generateBasicArray (int seed, int elementCount, int 
 template<typename T, typename GLType>
 char* RandomArrayGenerator::createBasicArray (int seed, int elementCount, int componentCount, int offset, int stride)
 {
+	DE_ASSERT(componentCount >= 1 && componentCount <= 4);
+
 	const GLType min = extractGLValue<GLType>(GLValue::getMinValue(GLValueTypeTraits<GLType>::Type));
 	const GLType max = extractGLValue<GLType>(GLValue::getMaxValue(GLValueTypeTraits<GLType>::Type));
 
@@ -1700,6 +1702,7 @@ char* RandomArrayGenerator::createBasicArray (int seed, int elementCount, int co
 
 char* RandomArrayGenerator::generatePackedArray (int seed, int elementCount, int componentCount, int offset, int stride)
 {
+	DE_ASSERT(componentCount == 4);
 	DE_UNREF(componentCount);
 
 	const deUint32 limit10		= (1 << 10);
