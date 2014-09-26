@@ -614,8 +614,10 @@ public:
 			<< "\n"
 			<< "    sb_out.values[globalOffs + localOffs] = globalOffs;\n"
 			<< "    memoryBarrierBuffer();\n"
+			<< "    barrier();\n"
 			<< "    sb_out.values[globalOffs + ((localOffs+1u)%localSize)] += localOffs;\n"
 			<< "    memoryBarrierBuffer();\n"
+			<< "    barrier();\n"
 			<< "    sb_out.values[globalOffs + ((localOffs+2u)%localSize)] += localOffs;\n"
 			<< "}\n";
 

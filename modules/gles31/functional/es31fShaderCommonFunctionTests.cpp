@@ -1931,7 +1931,7 @@ public:
 		const Vec2 ranges[] =
 		{
 			Vec2(-2.0f,		2.0f),	// lowp
-			Vec2(-1e3f,		1e3f),	// mediump
+			Vec2(-127.f,	127.f),	// mediump
 			Vec2(-1e7f,		1e7f)	// highp
 		};
 

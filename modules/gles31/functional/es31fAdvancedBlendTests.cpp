@@ -335,10 +335,11 @@ static tcu::Vec4 randomColor (de::Random* rnd)
 	const float rgbValues[]		= { 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f };
 	const float alphaValues[]	= { 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f };
 
-	const float r = rnd->choose<float>(DE_ARRAY_BEGIN(rgbValues), DE_ARRAY_END(rgbValues));
-	const float g = rnd->choose<float>(DE_ARRAY_BEGIN(rgbValues), DE_ARRAY_END(rgbValues));
-	const float b = rnd->choose<float>(DE_ARRAY_BEGIN(rgbValues), DE_ARRAY_END(rgbValues));
+	// \note Spec assumes premultiplied inputs.
 	const float a = rnd->choose<float>(DE_ARRAY_BEGIN(alphaValues), DE_ARRAY_END(alphaValues));
+	const float r = a * rnd->choose<float>(DE_ARRAY_BEGIN(rgbValues), DE_ARRAY_END(rgbValues));
+	const float g = a * rnd->choose<float>(DE_ARRAY_BEGIN(rgbValues), DE_ARRAY_END(rgbValues));
+	const float b = a * rnd->choose<float>(DE_ARRAY_BEGIN(rgbValues), DE_ARRAY_END(rgbValues));
 	return tcu::Vec4(r, g, b, a);
 }
 
