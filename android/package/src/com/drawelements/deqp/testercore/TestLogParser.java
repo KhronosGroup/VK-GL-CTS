@@ -32,12 +32,7 @@ import java.io.IOException;
 public class TestLogParser
 {
 	static {
-		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.GINGERBREAD) {
-			System.loadLibrary("testercore");
-		} else {
-			// Pre-gingerbread version without EGL tests.
-			System.loadLibrary("testercore_legacy");
-		}
+		System.loadLibrary("testercore");
 	}
 
 	private long				m_nativePointer;
@@ -94,21 +89,22 @@ public class TestLogParser
 		assert m_log != null;
 
 		boolean	gotData	= false;
-		int		size	= 0;
 
 		while (true)
 		{
-			if (m_log.available() == 0)
+			final int numAvailable = m_log.available();
+
+			if (numAvailable <= 0)
 				break;
 
-			size = m_log.read(m_buffer, 0, m_log.available());
+			final int numRead = m_log.read(m_buffer, 0, Math.min(numAvailable, m_buffer.length));
 
-			assert size != -1;
+			assert numRead > 0;
 
-			m_logRead += size;
+			m_logRead += numRead;
 
 			gotData = true;
-			nativeParse(m_nativePointer, m_instrumentation, m_buffer, size);
+			nativeParse(m_nativePointer, m_instrumentation, m_buffer, numRead);
 		}
 
 		return gotData;

@@ -43,8 +43,10 @@ import java.io.IOException;
 
 public class DeqpInstrumentation extends Instrumentation
 {
-	private static final String	LOG_TAG		= "dEQP/Instrumentation";
-	private static final long	TIMEOUT_MS	= 40000; // 40s Timeouts if no log is produced.
+	private static final String	LOG_TAG					= "dEQP/Instrumentation";
+	private static final long	LAUNCH_TIMEOUT_MS		= 10000;
+	private static final long	NO_DATA_TIMEOUT_MS		= 1000;
+	private static final long	NO_ACTIVITY_SLEEP_MS	= 100;
 
 	private String				m_cmdLine;
 	private String				m_logFileName;
@@ -79,60 +81,83 @@ public class DeqpInstrumentation extends Instrumentation
 	public void onStart () {
 		super.onStart();
 
+		final RemoteAPI		remoteApi	= new RemoteAPI(getTargetContext(), m_logFileName);
+		final TestLogParser	parser		= new TestLogParser();
+
 		try
 		{
 			Log.d(LOG_TAG, "onStart");
 
-			String			testerName		= "";
-			RemoteAPI		remoteApi		= new RemoteAPI(getTargetContext(), m_logFileName);
-			TestLogParser	parser			= null;
-			long			lastMoreLogMs	= 0;
+			final String	testerName		= "";
+			final File		logFile			= new File(m_logFileName);
 
-			{
-				File log = new File(m_logFileName);
-				if (log.exists())
-					log.delete();
-			}
+			if (logFile.exists())
+				logFile.delete(); // Remove log file left by previous session
 
 			remoteApi.start(testerName, m_cmdLine, null);
 
-			// Wait for execution to start
-			Thread.sleep(1000); // 1s
-
-			parser = new TestLogParser();
-			parser.init(this, m_logFileName, m_logData);
-
-			lastMoreLogMs = System.currentTimeMillis();
-
-			while (remoteApi.isRunning())
 			{
-				if (parser.parse())
-					lastMoreLogMs = System.currentTimeMillis();
-				else
-				{
-					long currentTimeMs = System.currentTimeMillis();
+				final long startTimeMs = System.currentTimeMillis();
 
-					if (currentTimeMs - lastMoreLogMs >= TIMEOUT_MS)
+				while (true)
+				{
+					final long timeSinceStartMs = System.currentTimeMillis()-startTimeMs;
+
+					if (logFile.exists())
+						break;
+					else if (timeSinceStartMs > LAUNCH_TIMEOUT_MS)
 					{
 						remoteApi.kill();
-						break;
+						throw new Exception("Timeout while waiting for log file");
 					}
-
-					Thread.sleep(100); // Wait 100ms
+					else
+						Thread.sleep(NO_ACTIVITY_SLEEP_MS);
 				}
 			}
 
-			parser.parse();
-			parser.deinit();
+			parser.init(this, m_logFileName, m_logData);
+
+			{
+				long lastDataMs = System.currentTimeMillis();
+
+				while (true)
+				{
+					if (parser.parse())
+						lastDataMs = System.currentTimeMillis();
+					else if (!remoteApi.isRunning())
+					{
+						final long timeSinceLastDataMs = System.currentTimeMillis()-lastDataMs;
+
+						if (timeSinceLastDataMs > NO_DATA_TIMEOUT_MS)
+							break; // Assume no data is available for reading any more
+					}
+					else
+						Thread.sleep(NO_ACTIVITY_SLEEP_MS);
+				}
+			}
 
 			finish(0, new Bundle());
 		}
 		catch (Exception e)
 		{
+			Log.e(LOG_TAG, "Exception", e);
+
 			Bundle info = new Bundle();
 
 			info.putString("Exception", e.getMessage());
 			finish(1, new Bundle());
+		}
+		finally
+		{
+			try
+			{
+				parser.deinit();
+			}
+			catch (Exception e)
+			{
+				Log.w(LOG_TAG, "Got exception while closing log", e);
+			}
+			remoteApi.kill();
 		}
 	}
 
