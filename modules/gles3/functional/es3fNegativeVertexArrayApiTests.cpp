@@ -376,34 +376,37 @@ void NegativeVertexArrayApiTests::init (void)
 			glDeleteFramebuffers(1, &fbo);
 			m_log << tcu::TestLog::EndSection;
 
-			m_log << tcu::TestLog::Section("", "GL_INVALID_OPERATION is generated if transform feedback is active and not paused.");
-			const char* tfVarying		= "gl_Position";
+			if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader")) // GL_EXT_geometry_shader removes error
+			{
+				m_log << tcu::TestLog::Section("", "GL_INVALID_OPERATION is generated if transform feedback is active and not paused.");
+				const char* tfVarying		= "gl_Position";
 
-			glGenBuffers				(1, &buf);
-			glGenTransformFeedbacks		(1, &tfID);
+				glGenBuffers				(1, &buf);
+				glGenTransformFeedbacks		(1, &tfID);
 
-			glUseProgram				(program.getProgram());
-			glTransformFeedbackVaryings	(program.getProgram(), 1, &tfVarying, GL_INTERLEAVED_ATTRIBS);
-			glLinkProgram				(program.getProgram());
-			glBindTransformFeedback		(GL_TRANSFORM_FEEDBACK, tfID);
-			glBindBuffer				(GL_TRANSFORM_FEEDBACK_BUFFER, buf);
-			glBufferData				(GL_TRANSFORM_FEEDBACK_BUFFER, 32, DE_NULL, GL_DYNAMIC_DRAW);
-			glBindBufferBase			(GL_TRANSFORM_FEEDBACK_BUFFER, 0, buf);
-			glBeginTransformFeedback	(GL_POINTS);
-			expectError					(GL_NO_ERROR);
+				glUseProgram				(program.getProgram());
+				glTransformFeedbackVaryings	(program.getProgram(), 1, &tfVarying, GL_INTERLEAVED_ATTRIBS);
+				glLinkProgram				(program.getProgram());
+				glBindTransformFeedback		(GL_TRANSFORM_FEEDBACK, tfID);
+				glBindBuffer				(GL_TRANSFORM_FEEDBACK_BUFFER, buf);
+				glBufferData				(GL_TRANSFORM_FEEDBACK_BUFFER, 32, DE_NULL, GL_DYNAMIC_DRAW);
+				glBindBufferBase			(GL_TRANSFORM_FEEDBACK_BUFFER, 0, buf);
+				glBeginTransformFeedback	(GL_POINTS);
+				expectError					(GL_NO_ERROR);
 
-			glDrawElements				(GL_POINTS, 1, GL_UNSIGNED_BYTE, vertices);
-			expectError					(GL_INVALID_OPERATION);
+				glDrawElements				(GL_POINTS, 1, GL_UNSIGNED_BYTE, vertices);
+				expectError					(GL_INVALID_OPERATION);
 
-			glPauseTransformFeedback();
-			glDrawElements				(GL_POINTS, 1, GL_UNSIGNED_BYTE, vertices);
-			expectError					(GL_NO_ERROR);
+				glPauseTransformFeedback();
+				glDrawElements				(GL_POINTS, 1, GL_UNSIGNED_BYTE, vertices);
+				expectError					(GL_NO_ERROR);
 
-			glEndTransformFeedback		();
-			glDeleteBuffers				(1, &buf);
-			glDeleteTransformFeedbacks	(1, &tfID);
-			expectError					(GL_NO_ERROR);
-			m_log << tcu::TestLog::EndSection;
+				glEndTransformFeedback		();
+				glDeleteBuffers				(1, &buf);
+				glDeleteTransformFeedbacks	(1, &tfID);
+				expectError					(GL_NO_ERROR);
+				m_log << tcu::TestLog::EndSection;
+			}
 
 			glUseProgram(0);
 		});
@@ -476,34 +479,37 @@ void NegativeVertexArrayApiTests::init (void)
 			glDeleteFramebuffers(1, &fbo);
 			m_log << tcu::TestLog::EndSection;
 
-			m_log << tcu::TestLog::Section("", "GL_INVALID_OPERATION is generated if transform feedback is active and not paused.");
-			const char* tfVarying		= "gl_Position";
+			if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader")) // GL_EXT_geometry_shader removes error
+			{
+				m_log << tcu::TestLog::Section("", "GL_INVALID_OPERATION is generated if transform feedback is active and not paused.");
+				const char* tfVarying		= "gl_Position";
 
-			glGenBuffers				(1, &buf);
-			glGenTransformFeedbacks		(1, &tfID);
+				glGenBuffers				(1, &buf);
+				glGenTransformFeedbacks		(1, &tfID);
 
-			glUseProgram				(program.getProgram());
-			glTransformFeedbackVaryings	(program.getProgram(), 1, &tfVarying, GL_INTERLEAVED_ATTRIBS);
-			glLinkProgram				(program.getProgram());
-			glBindTransformFeedback		(GL_TRANSFORM_FEEDBACK, tfID);
-			glBindBuffer				(GL_TRANSFORM_FEEDBACK_BUFFER, buf);
-			glBufferData				(GL_TRANSFORM_FEEDBACK_BUFFER, 32, DE_NULL, GL_DYNAMIC_DRAW);
-			glBindBufferBase			(GL_TRANSFORM_FEEDBACK_BUFFER, 0, buf);
-			glBeginTransformFeedback	(GL_TRIANGLES);
-			expectError					(GL_NO_ERROR);
+				glUseProgram				(program.getProgram());
+				glTransformFeedbackVaryings	(program.getProgram(), 1, &tfVarying, GL_INTERLEAVED_ATTRIBS);
+				glLinkProgram				(program.getProgram());
+				glBindTransformFeedback		(GL_TRANSFORM_FEEDBACK, tfID);
+				glBindBuffer				(GL_TRANSFORM_FEEDBACK_BUFFER, buf);
+				glBufferData				(GL_TRANSFORM_FEEDBACK_BUFFER, 32, DE_NULL, GL_DYNAMIC_DRAW);
+				glBindBufferBase			(GL_TRANSFORM_FEEDBACK_BUFFER, 0, buf);
+				glBeginTransformFeedback	(GL_TRIANGLES);
+				expectError					(GL_NO_ERROR);
 
-			glDrawElements				(GL_TRIANGLES, 1, GL_UNSIGNED_BYTE, vertices);
-			expectError					(GL_INVALID_OPERATION);
+				glDrawElements				(GL_TRIANGLES, 1, GL_UNSIGNED_BYTE, vertices);
+				expectError					(GL_INVALID_OPERATION);
 
-			glPauseTransformFeedback();
-			glDrawElements				(GL_TRIANGLES, 1, GL_UNSIGNED_BYTE, vertices);
-			expectError					(GL_NO_ERROR);
+				glPauseTransformFeedback();
+				glDrawElements				(GL_TRIANGLES, 1, GL_UNSIGNED_BYTE, vertices);
+				expectError					(GL_NO_ERROR);
 
-			glEndTransformFeedback		();
-			glDeleteBuffers				(1, &buf);
-			glDeleteTransformFeedbacks	(1, &tfID);
-			expectError					(GL_NO_ERROR);
-			m_log << tcu::TestLog::EndSection;
+				glEndTransformFeedback		();
+				glDeleteBuffers				(1, &buf);
+				glDeleteTransformFeedbacks	(1, &tfID);
+				expectError					(GL_NO_ERROR);
+				m_log << tcu::TestLog::EndSection;
+			}
 
 			glUseProgram(0);
 		});
@@ -640,34 +646,37 @@ void NegativeVertexArrayApiTests::init (void)
 			glDeleteFramebuffers(1, &fbo);
 			m_log << tcu::TestLog::EndSection;
 
-			m_log << tcu::TestLog::Section("", "GL_INVALID_OPERATION is generated if transform feedback is active and not paused.");
-			const char* tfVarying		= "gl_Position";
+			if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader")) // GL_EXT_geometry_shader removes error
+			{
+				m_log << tcu::TestLog::Section("", "GL_INVALID_OPERATION is generated if transform feedback is active and not paused.");
+				const char* tfVarying		= "gl_Position";
 
-			glGenBuffers				(1, &buf);
-			glGenTransformFeedbacks		(1, &tfID);
+				glGenBuffers				(1, &buf);
+				glGenTransformFeedbacks		(1, &tfID);
 
-			glUseProgram				(program.getProgram());
-			glTransformFeedbackVaryings	(program.getProgram(), 1, &tfVarying, GL_INTERLEAVED_ATTRIBS);
-			glLinkProgram				(program.getProgram());
-			glBindTransformFeedback		(GL_TRANSFORM_FEEDBACK, tfID);
-			glBindBuffer				(GL_TRANSFORM_FEEDBACK_BUFFER, buf);
-			glBufferData				(GL_TRANSFORM_FEEDBACK_BUFFER, 32, DE_NULL, GL_DYNAMIC_DRAW);
-			glBindBufferBase			(GL_TRANSFORM_FEEDBACK_BUFFER, 0, buf);
-			glBeginTransformFeedback	(GL_POINTS);
-			expectError					(GL_NO_ERROR);
+				glUseProgram				(program.getProgram());
+				glTransformFeedbackVaryings	(program.getProgram(), 1, &tfVarying, GL_INTERLEAVED_ATTRIBS);
+				glLinkProgram				(program.getProgram());
+				glBindTransformFeedback		(GL_TRANSFORM_FEEDBACK, tfID);
+				glBindBuffer				(GL_TRANSFORM_FEEDBACK_BUFFER, buf);
+				glBufferData				(GL_TRANSFORM_FEEDBACK_BUFFER, 32, DE_NULL, GL_DYNAMIC_DRAW);
+				glBindBufferBase			(GL_TRANSFORM_FEEDBACK_BUFFER, 0, buf);
+				glBeginTransformFeedback	(GL_POINTS);
+				expectError					(GL_NO_ERROR);
 
-			glDrawElementsInstanced		(GL_POINTS, 1, GL_UNSIGNED_BYTE, vertices, 1);
-			expectError					(GL_INVALID_OPERATION);
+				glDrawElementsInstanced		(GL_POINTS, 1, GL_UNSIGNED_BYTE, vertices, 1);
+				expectError					(GL_INVALID_OPERATION);
 
-			glPauseTransformFeedback();
-			glDrawElementsInstanced		(GL_POINTS, 1, GL_UNSIGNED_BYTE, vertices, 1);
-			expectError					(GL_NO_ERROR);
+				glPauseTransformFeedback();
+				glDrawElementsInstanced		(GL_POINTS, 1, GL_UNSIGNED_BYTE, vertices, 1);
+				expectError					(GL_NO_ERROR);
 
-			glEndTransformFeedback		();
-			glDeleteBuffers				(1, &buf);
-			glDeleteTransformFeedbacks	(1, &tfID);
-			expectError					(GL_NO_ERROR);
-			m_log << tcu::TestLog::EndSection;
+				glEndTransformFeedback		();
+				glDeleteBuffers				(1, &buf);
+				glDeleteTransformFeedbacks	(1, &tfID);
+				expectError					(GL_NO_ERROR);
+				m_log << tcu::TestLog::EndSection;
+			}
 
 			glUseProgram(0);
 		});
@@ -748,34 +757,37 @@ void NegativeVertexArrayApiTests::init (void)
 			glDeleteFramebuffers(1, &fbo);
 			m_log << tcu::TestLog::EndSection;
 
-			m_log << tcu::TestLog::Section("", "GL_INVALID_OPERATION is generated if transform feedback is active and not paused.");
-			const char* tfVarying		= "gl_Position";
+			if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader")) // GL_EXT_geometry_shader removes error
+			{
+				m_log << tcu::TestLog::Section("", "GL_INVALID_OPERATION is generated if transform feedback is active and not paused.");
+				const char* tfVarying		= "gl_Position";
 
-			glGenBuffers				(1, &buf);
-			glGenTransformFeedbacks		(1, &tfID);
+				glGenBuffers				(1, &buf);
+				glGenTransformFeedbacks		(1, &tfID);
 
-			glUseProgram				(program.getProgram());
-			glTransformFeedbackVaryings	(program.getProgram(), 1, &tfVarying, GL_INTERLEAVED_ATTRIBS);
-			glLinkProgram				(program.getProgram());
-			glBindTransformFeedback		(GL_TRANSFORM_FEEDBACK, tfID);
-			glBindBuffer				(GL_TRANSFORM_FEEDBACK_BUFFER, buf);
-			glBufferData				(GL_TRANSFORM_FEEDBACK_BUFFER, 32, DE_NULL, GL_DYNAMIC_DRAW);
-			glBindBufferBase			(GL_TRANSFORM_FEEDBACK_BUFFER, 0, buf);
-			glBeginTransformFeedback	(GL_TRIANGLES);
-			expectError					(GL_NO_ERROR);
+				glUseProgram				(program.getProgram());
+				glTransformFeedbackVaryings	(program.getProgram(), 1, &tfVarying, GL_INTERLEAVED_ATTRIBS);
+				glLinkProgram				(program.getProgram());
+				glBindTransformFeedback		(GL_TRANSFORM_FEEDBACK, tfID);
+				glBindBuffer				(GL_TRANSFORM_FEEDBACK_BUFFER, buf);
+				glBufferData				(GL_TRANSFORM_FEEDBACK_BUFFER, 32, DE_NULL, GL_DYNAMIC_DRAW);
+				glBindBufferBase			(GL_TRANSFORM_FEEDBACK_BUFFER, 0, buf);
+				glBeginTransformFeedback	(GL_TRIANGLES);
+				expectError					(GL_NO_ERROR);
 
-			glDrawElementsInstanced		(GL_TRIANGLES, 1, GL_UNSIGNED_BYTE, vertices, 1);
-			expectError					(GL_INVALID_OPERATION);
+				glDrawElementsInstanced		(GL_TRIANGLES, 1, GL_UNSIGNED_BYTE, vertices, 1);
+				expectError					(GL_INVALID_OPERATION);
 
-			glPauseTransformFeedback();
-			glDrawElementsInstanced		(GL_TRIANGLES, 1, GL_UNSIGNED_BYTE, vertices, 1);
-			expectError					(GL_NO_ERROR);
+				glPauseTransformFeedback();
+				glDrawElementsInstanced		(GL_TRIANGLES, 1, GL_UNSIGNED_BYTE, vertices, 1);
+				expectError					(GL_NO_ERROR);
 
-			glEndTransformFeedback		();
-			glDeleteBuffers				(1, &buf);
-			glDeleteTransformFeedbacks	(1, &tfID);
-			expectError					(GL_NO_ERROR);
-			m_log << tcu::TestLog::EndSection;
+				glEndTransformFeedback		();
+				glDeleteBuffers				(1, &buf);
+				glDeleteTransformFeedbacks	(1, &tfID);
+				expectError					(GL_NO_ERROR);
+				m_log << tcu::TestLog::EndSection;
+			}
 
 			glUseProgram(0);
 		});
@@ -820,34 +832,37 @@ void NegativeVertexArrayApiTests::init (void)
 			glDeleteFramebuffers(1, &fbo);
 			m_log << tcu::TestLog::EndSection;
 
-			m_log << tcu::TestLog::Section("", "GL_INVALID_OPERATION is generated if transform feedback is active and not paused.");
-			const char* tfVarying		= "gl_Position";
+			if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader")) // GL_EXT_geometry_shader removes error
+			{
+				m_log << tcu::TestLog::Section("", "GL_INVALID_OPERATION is generated if transform feedback is active and not paused.");
+				const char* tfVarying		= "gl_Position";
 
-			glGenBuffers				(1, &buf);
-			glGenTransformFeedbacks		(1, &tfID);
+				glGenBuffers				(1, &buf);
+				glGenTransformFeedbacks		(1, &tfID);
 
-			glUseProgram				(program.getProgram());
-			glTransformFeedbackVaryings	(program.getProgram(), 1, &tfVarying, GL_INTERLEAVED_ATTRIBS);
-			glLinkProgram				(program.getProgram());
-			glBindTransformFeedback		(GL_TRANSFORM_FEEDBACK, tfID);
-			glBindBuffer				(GL_TRANSFORM_FEEDBACK_BUFFER, buf);
-			glBufferData				(GL_TRANSFORM_FEEDBACK_BUFFER, 32, DE_NULL, GL_DYNAMIC_DRAW);
-			glBindBufferBase			(GL_TRANSFORM_FEEDBACK_BUFFER, 0, buf);
-			glBeginTransformFeedback	(GL_POINTS);
-			expectError					(GL_NO_ERROR);
+				glUseProgram				(program.getProgram());
+				glTransformFeedbackVaryings	(program.getProgram(), 1, &tfVarying, GL_INTERLEAVED_ATTRIBS);
+				glLinkProgram				(program.getProgram());
+				glBindTransformFeedback		(GL_TRANSFORM_FEEDBACK, tfID);
+				glBindBuffer				(GL_TRANSFORM_FEEDBACK_BUFFER, buf);
+				glBufferData				(GL_TRANSFORM_FEEDBACK_BUFFER, 32, DE_NULL, GL_DYNAMIC_DRAW);
+				glBindBufferBase			(GL_TRANSFORM_FEEDBACK_BUFFER, 0, buf);
+				glBeginTransformFeedback	(GL_POINTS);
+				expectError					(GL_NO_ERROR);
 
-			glDrawRangeElements			(GL_POINTS, 0, 1, 1, GL_UNSIGNED_BYTE, vertices);
-			expectError					(GL_INVALID_OPERATION);
+				glDrawRangeElements			(GL_POINTS, 0, 1, 1, GL_UNSIGNED_BYTE, vertices);
+				expectError					(GL_INVALID_OPERATION);
 
-			glPauseTransformFeedback();
-			glDrawRangeElements			(GL_POINTS, 0, 1, 1, GL_UNSIGNED_BYTE, vertices);
-			expectError					(GL_NO_ERROR);
+				glPauseTransformFeedback();
+				glDrawRangeElements			(GL_POINTS, 0, 1, 1, GL_UNSIGNED_BYTE, vertices);
+				expectError					(GL_NO_ERROR);
 
-			glEndTransformFeedback		();
-			glDeleteBuffers				(1, &buf);
-			glDeleteTransformFeedbacks	(1, &tfID);
-			expectError					(GL_NO_ERROR);
-			m_log << tcu::TestLog::EndSection;
+				glEndTransformFeedback		();
+				glDeleteBuffers				(1, &buf);
+				glDeleteTransformFeedbacks	(1, &tfID);
+				expectError					(GL_NO_ERROR);
+				m_log << tcu::TestLog::EndSection;
+			}
 
 			glUseProgram(0);
 		});
@@ -930,34 +945,37 @@ void NegativeVertexArrayApiTests::init (void)
 			glDeleteFramebuffers(1, &fbo);
 			m_log << tcu::TestLog::EndSection;
 
-			m_log << tcu::TestLog::Section("", "GL_INVALID_OPERATION is generated if transform feedback is active and not paused.");
-			const char* tfVarying		= "gl_Position";
+			if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader")) // GL_EXT_geometry_shader removes error
+			{
+				m_log << tcu::TestLog::Section("", "GL_INVALID_OPERATION is generated if transform feedback is active and not paused.");
+				const char* tfVarying		= "gl_Position";
 
-			glGenBuffers				(1, &buf);
-			glGenTransformFeedbacks		(1, &tfID);
+				glGenBuffers				(1, &buf);
+				glGenTransformFeedbacks		(1, &tfID);
 
-			glUseProgram				(program.getProgram());
-			glTransformFeedbackVaryings	(program.getProgram(), 1, &tfVarying, GL_INTERLEAVED_ATTRIBS);
-			glLinkProgram				(program.getProgram());
-			glBindTransformFeedback		(GL_TRANSFORM_FEEDBACK, tfID);
-			glBindBuffer				(GL_TRANSFORM_FEEDBACK_BUFFER, buf);
-			glBufferData				(GL_TRANSFORM_FEEDBACK_BUFFER, 32, DE_NULL, GL_DYNAMIC_DRAW);
-			glBindBufferBase			(GL_TRANSFORM_FEEDBACK_BUFFER, 0, buf);
-			glBeginTransformFeedback	(GL_TRIANGLES);
-			expectError					(GL_NO_ERROR);
+				glUseProgram				(program.getProgram());
+				glTransformFeedbackVaryings	(program.getProgram(), 1, &tfVarying, GL_INTERLEAVED_ATTRIBS);
+				glLinkProgram				(program.getProgram());
+				glBindTransformFeedback		(GL_TRANSFORM_FEEDBACK, tfID);
+				glBindBuffer				(GL_TRANSFORM_FEEDBACK_BUFFER, buf);
+				glBufferData				(GL_TRANSFORM_FEEDBACK_BUFFER, 32, DE_NULL, GL_DYNAMIC_DRAW);
+				glBindBufferBase			(GL_TRANSFORM_FEEDBACK_BUFFER, 0, buf);
+				glBeginTransformFeedback	(GL_TRIANGLES);
+				expectError					(GL_NO_ERROR);
 
-			glDrawRangeElements			(GL_TRIANGLES, 0, 1, 1, GL_UNSIGNED_BYTE, vertices);
-			expectError					(GL_INVALID_OPERATION);
+				glDrawRangeElements			(GL_TRIANGLES, 0, 1, 1, GL_UNSIGNED_BYTE, vertices);
+				expectError					(GL_INVALID_OPERATION);
 
-			glPauseTransformFeedback();
-			glDrawRangeElements			(GL_TRIANGLES, 0, 1, 1, GL_UNSIGNED_BYTE, vertices);
-			expectError					(GL_NO_ERROR);
+				glPauseTransformFeedback();
+				glDrawRangeElements			(GL_TRIANGLES, 0, 1, 1, GL_UNSIGNED_BYTE, vertices);
+				expectError					(GL_NO_ERROR);
 
-			glEndTransformFeedback		();
-			glDeleteBuffers				(1, &buf);
-			glDeleteTransformFeedbacks	(1, &tfID);
-			expectError					(GL_NO_ERROR);
-			m_log << tcu::TestLog::EndSection;
+				glEndTransformFeedback		();
+				glDeleteBuffers				(1, &buf);
+				glDeleteTransformFeedbacks	(1, &tfID);
+				expectError					(GL_NO_ERROR);
+				m_log << tcu::TestLog::EndSection;
+			}
 
 			glUseProgram(0);
 		});

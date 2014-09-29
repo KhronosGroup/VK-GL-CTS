@@ -24,6 +24,7 @@
 #include "es31fNegativeBufferApiTests.hpp"
 
 #include "gluCallLogWrapper.hpp"
+#include "gluContextInfo.hpp"
 
 #include "glwDefs.hpp"
 #include "glwEnums.hpp"
@@ -1046,8 +1047,13 @@ void renderbuffer_storage (NegativeTestContext& ctx)
 	ctx.beginSection("GL_INVALID_ENUM is generated if internalformat is not a color-renderable, depth-renderable, or stencil-renderable format.");
 	ctx.glRenderbufferStorage	(GL_RENDERBUFFER, -1, 1, 1);
 	ctx.expectError				(GL_INVALID_ENUM);
-	ctx.glRenderbufferStorage	(GL_RENDERBUFFER, GL_RGB16F, 1, 1);
-	ctx.expectError				(GL_INVALID_ENUM);
+
+	if (!ctx.getContextInfo().isExtensionSupported("GL_EXT_color_buffer_half_float")) // GL_EXT_color_buffer_half_float disables error
+	{
+		ctx.glRenderbufferStorage	(GL_RENDERBUFFER, GL_RGB16F, 1, 1);
+		ctx.expectError				(GL_INVALID_ENUM);
+	}
+
 	ctx.glRenderbufferStorage	(GL_RENDERBUFFER, GL_RGBA8_SNORM, 1, 1);
 	ctx.expectError				(GL_INVALID_ENUM);
 	ctx.endSection();
@@ -1380,8 +1386,13 @@ void renderbuffer_storage_multisample (NegativeTestContext& ctx)
 	ctx.beginSection("GL_INVALID_ENUM is generated if internalformat is not a color-renderable, depth-renderable, or stencil-renderable format.");
 	ctx.glRenderbufferStorageMultisample	(GL_RENDERBUFFER, 2, -1, 1, 1);
 	ctx.expectError							(GL_INVALID_ENUM);
-	ctx.glRenderbufferStorageMultisample	(GL_RENDERBUFFER, 2, GL_RGB16F, 1, 1);
-	ctx.expectError							(GL_INVALID_ENUM);
+
+	if (!ctx.getContextInfo().isExtensionSupported("GL_EXT_color_buffer_half_float")) // GL_EXT_color_buffer_half_float disables error
+	{
+		ctx.glRenderbufferStorageMultisample	(GL_RENDERBUFFER, 2, GL_RGB16F, 1, 1);
+		ctx.expectError							(GL_INVALID_ENUM);
+	}
+
 	ctx.glRenderbufferStorageMultisample	(GL_RENDERBUFFER, 2, GL_RGBA8_SNORM, 1, 1);
 	ctx.expectError							(GL_INVALID_ENUM);
 	ctx.endSection();

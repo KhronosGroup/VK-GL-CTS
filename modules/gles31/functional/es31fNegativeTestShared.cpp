@@ -44,13 +44,15 @@ ErrorCase::ErrorCase (Context& ctx, const char* name, const char* desc)
 {
 }
 
-NegativeTestContext::NegativeTestContext (ErrorCase&			host,
-										  glu::RenderContext&	renderCtx,
-										  tcu::TestLog&			log,
-										  tcu::ResultCollector&	results,
-										  bool					enableLogging_)
+NegativeTestContext::NegativeTestContext (ErrorCase&				host,
+										  glu::RenderContext&		renderCtx,
+										  const glu::ContextInfo&	ctxInfo,
+										  tcu::TestLog&				log,
+										  tcu::ResultCollector&		results,
+										  bool						enableLogging_)
 	: glu::CallLogWrapper	(renderCtx.getFunctions(), log)
 	, m_renderCtx			(renderCtx)
+	, m_ctxInfo				(ctxInfo)
 	, m_host				(host)
 	, m_results				(results)
 	, m_openSections		(0)

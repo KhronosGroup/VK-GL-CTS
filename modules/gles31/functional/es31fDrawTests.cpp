@@ -1076,16 +1076,18 @@ void ComputeShaderGeneratedCase::init (void)
 
 	// check the SSBO buffers are of legal size
 	{
-		const int	commandBufferSize	= m_commandSize * m_numDrawCmds;
-		deInt64		maxSSBOSize			= 0;
+		const deUint64	drawBufferElementSize	= sizeof(tcu::Vec4);
+		const deUint64	indexBufferElementSize	= sizeof(deUint32);
+		const int		commandBufferSize		= m_commandSize * m_numDrawCmds;
+		deInt64			maxSSBOSize				= 0;
 
 		gl.getInteger64v(GL_MAX_SHADER_STORAGE_BLOCK_SIZE, &maxSSBOSize);
 
-		if (m_computeData && (deInt64)calcDrawBufferSize() > maxSSBOSize)
+		if (m_computeData && (deUint64)calcDrawBufferSize()*drawBufferElementSize > (deUint64)maxSSBOSize)
 			throw tcu::NotSupportedError("GL_MAX_SHADER_STORAGE_BLOCK_SIZE is too small for vertex attrib buffers");
-		if (m_computeIndices && (deInt64)calcIndexBufferSize() > maxSSBOSize)
+		if (m_computeIndices && (deUint64)calcIndexBufferSize()*indexBufferElementSize > (deUint64)maxSSBOSize)
 			throw tcu::NotSupportedError("GL_MAX_SHADER_STORAGE_BLOCK_SIZE is too small for index buffers");
-		if (m_computeCmd && (deInt64)commandBufferSize > maxSSBOSize)
+		if (m_computeCmd && (deUint64)commandBufferSize > (deUint64)maxSSBOSize)
 			throw tcu::NotSupportedError("GL_MAX_SHADER_STORAGE_BLOCK_SIZE is too small for command buffers");
 	}
 }

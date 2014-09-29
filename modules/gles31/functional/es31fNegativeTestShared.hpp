@@ -50,7 +50,7 @@ public:
 class NegativeTestContext : public glu::CallLogWrapper
 {
 public:
-								NegativeTestContext		(ErrorCase& host, glu::RenderContext& renderCtx, tcu::TestLog& log,  tcu::ResultCollector& results, bool enableLog);
+								NegativeTestContext		(ErrorCase& host, glu::RenderContext& renderCtx, const glu::ContextInfo& ctxInfo, tcu::TestLog& log, tcu::ResultCollector& results, bool enableLog);
 								~NegativeTestContext	();
 
 	const tcu::ResultCollector&	getResults				(void) const;
@@ -58,6 +58,7 @@ public:
 	void						fail					(const std::string& msg);
 	int							getInteger				(glw::GLenum pname) const;
 	const glu::RenderContext&	getRenderContext		(void) const { return m_renderCtx; }
+	const glu::ContextInfo& 	getContextInfo			(void) const { return m_ctxInfo; }
 	void						beginSection			(const std::string& desc);
 	void						endSection				(void);
 
@@ -67,6 +68,7 @@ public:
 
 private:
 	glu::RenderContext&			m_renderCtx;
+	const glu::ContextInfo& 	m_ctxInfo;
 	ErrorCase&					m_host;
 	tcu::ResultCollector&		m_results;
 	int							m_openSections;
