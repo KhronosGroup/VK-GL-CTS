@@ -1057,6 +1057,8 @@ void get_synciv (NegativeTestContext& ctx)
 	ctx.glGetSynciv	(sync, -1, 32, &length, &values[0]);
 	ctx.expectError	(GL_INVALID_ENUM);
 	ctx.endSection();
+
+	ctx.glDeleteSync(sync);
 }
 
 // Enumerated boolean state queries
