@@ -104,13 +104,6 @@ static void fillWithRandomColorTiles (const PixelBufferAccess& dst, const Vec4& 
 	}
 }
 
-static tcu::TextureLevel getPixels (const glu::RenderContext& renderCtx, const IVec2& size, const tcu::TextureFormat& colorBufferFormat)
-{
-	tcu::TextureLevel result(colorBufferFormat, size.x(), size.y());
-	glu::readPixels(renderCtx, 0, 0, result.getAccess());
-	return result;
-}
-
 static inline bool isDepthFormat (const tcu::TextureFormat& fmt)
 {
 	return fmt.order == tcu::TextureFormat::D || fmt.order == tcu::TextureFormat::DS;
@@ -135,6 +128,42 @@ static inline bool isUIntFormatType (tcu::TextureFormat::ChannelType type)
 	return type == tcu::TextureFormat::UNSIGNED_INT8	||
 		   type == tcu::TextureFormat::UNSIGNED_INT16	||
 		   type == tcu::TextureFormat::UNSIGNED_INT32;
+}
+
+static tcu::TextureLevel getPixels (const glu::RenderContext& renderCtx, const IVec2& size, const tcu::TextureFormat& colorBufferFormat)
+{
+	tcu::TextureLevel result(colorBufferFormat, size.x(), size.y());
+
+	// only a few pixel formats are guaranteed to be valid targets for readPixels, convert the rest
+	if (colorBufferFormat.order == tcu::TextureFormat::RGBA &&
+		(colorBufferFormat.type == tcu::TextureFormat::UNORM_INT8	||
+		 colorBufferFormat.type == tcu::TextureFormat::SIGNED_INT32	||
+		 colorBufferFormat.type == tcu::TextureFormat::UNSIGNED_INT32))
+	{
+		// valid as is
+		glu::readPixels(renderCtx, 0, 0, result.getAccess());
+	}
+	else if (colorBufferFormat.order == tcu::TextureFormat::RGBA &&
+			 (isSIntFormatType(colorBufferFormat.type) ||
+			  isUIntFormatType(colorBufferFormat.type)))
+	{
+		// signed and unsigned integers must be read using 32-bit values
+		const bool 			isSigned 	= isSIntFormatType(colorBufferFormat.type);
+		tcu::TextureLevel	readResult	(tcu::TextureFormat(tcu::TextureFormat::RGBA,
+														    (isSigned) ? (tcu::TextureFormat::SIGNED_INT32) : (tcu::TextureFormat::UNSIGNED_INT32)),
+										 size.x(),
+										 size.y());
+
+		glu::readPixels(renderCtx, 0, 0, readResult.getAccess());
+		tcu::copy(result.getAccess(), readResult.getAccess());
+	}
+	else
+	{
+		// unreadable format
+		DE_ASSERT(false);
+	}
+
+	return result;
 }
 
 enum TextureSwizzleComponent
