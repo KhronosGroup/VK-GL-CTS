@@ -245,11 +245,19 @@ ClipVec4 ComponentPlane<Sign, CompNdx>::getLineIntersectionPoint (const ClipVec4
 	// A point on line might be far away, causing clipping ratio (clipLineSegmentEnd) to become extremely close to 1.0
 	// even if the another point is not on the plane. Prevent clipping ratio from saturating by using points on line
 	// that are (nearly) on this and (nearly) on the opposite plane.
-	const ClipVec4 clippedV0 = tcu::mix(v0, v1, ComponentPlane<+1, CompNdx>().clipLineSegmentEnd(v0, v1));
-	const ClipVec4 clippedV1 = tcu::mix(v0, v1, ComponentPlane<-1, CompNdx>().clipLineSegmentEnd(v0, v1));
 
-	// Find intersection point of line from v0 to v1 and the current plane.
-	return tcu::mix(clippedV0, clippedV1, clipLineSegmentEnd(clippedV0, clippedV1));
+	const ClipVec4 	clippedV0	= tcu::mix(v0, v1, ComponentPlane<+1, CompNdx>().clipLineSegmentEnd(v0, v1));
+	const ClipVec4 	clippedV1	= tcu::mix(v0, v1, ComponentPlane<-1, CompNdx>().clipLineSegmentEnd(v0, v1));
+	const ClipFloat	clipRatio	= clipLineSegmentEnd(clippedV0, clippedV1);
+
+	// Find intersection point of line from v0 to v1 and the current plane. Avoid ratios near 1.0
+	if (clipRatio <= (ClipFloat)0.5)
+		return tcu::mix(clippedV0, clippedV1, clipRatio);
+	else
+	{
+		const ClipFloat complementClipRatio = clipLineSegmentEnd(clippedV1, clippedV0);
+		return tcu::mix(clippedV1, clippedV0, complementClipRatio);
+	}
 }
 
 struct TriangleVertex
@@ -273,12 +281,11 @@ void clipTriangleOneVertex (std::vector<TriangleVertex>& clippedEdges, const Cli
 	bool			outputDegenerate = false;
 
 	{
-		const TriangleVertex& inside	= v1;
-		const TriangleVertex& outside	= clipped;
-		      TriangleVertex& middle	= mid1;
+		const TriangleVertex&	inside	= v1;
+		const TriangleVertex&	outside	= clipped;
+		      TriangleVertex&	middle	= mid1;
 
-		const ClipFloat hitDist = plane.clipLineSegmentEnd(inside.position, outside.position);
-		DE_ASSERT(hitDist >= (ClipFloat)0.0);
+		const ClipFloat			hitDist	= plane.clipLineSegmentEnd(inside.position, outside.position);
 
 		if (hitDist >= degenerateLimit)
 		{
@@ -298,12 +305,11 @@ void clipTriangleOneVertex (std::vector<TriangleVertex>& clippedEdges, const Cli
 	}
 
 	{
-		const TriangleVertex& inside = v2;
-		const TriangleVertex& outside = clipped;
-		      TriangleVertex& middle = mid2;
+		const TriangleVertex&	inside	= v2;
+		const TriangleVertex&	outside	= clipped;
+		      TriangleVertex&	middle	= mid2;
 
-		const ClipFloat hitDist = plane.clipLineSegmentEnd(inside.position, outside.position);
-		DE_ASSERT(hitDist >= (ClipFloat)0.0);
+		const ClipFloat			hitDist	= plane.clipLineSegmentEnd(inside.position, outside.position);
 
 		if (hitDist >= degenerateLimit)
 		{
@@ -341,25 +347,25 @@ void clipTriangleOneVertex (std::vector<TriangleVertex>& clippedEdges, const Cli
 
 void clipTriangleTwoVertices (std::vector<TriangleVertex>& clippedEdges, const ClipVolumePlane& plane, const TriangleVertex& v0, const TriangleVertex& clipped1, const TriangleVertex& clipped2)
 {
-	const ClipFloat	degenerateLimit = (ClipFloat)1.0;
+	const ClipFloat	unclippableLimit = (ClipFloat)1.0;
 
 	// calc clip pos
 	TriangleVertex	mid1;
 	TriangleVertex	mid2;
-	bool			outputDegenerate = false;
+	bool			unclippableVertex1 = false;
+	bool			unclippableVertex2 = false;
 
 	{
-		const TriangleVertex& inside = v0;
-		const TriangleVertex& outside = clipped1;
-		      TriangleVertex& middle = mid1;
+		const TriangleVertex&	inside	= v0;
+		const TriangleVertex&	outside	= clipped1;
+		      TriangleVertex&	middle	= mid1;
 
-		const ClipFloat hitDist = plane.clipLineSegmentEnd(inside.position, outside.position);
-		DE_ASSERT(hitDist >= (ClipFloat)0.0);
+		const ClipFloat			hitDist	= plane.clipLineSegmentEnd(inside.position, outside.position);
 
-		if (hitDist >= degenerateLimit)
+		if (hitDist >= unclippableLimit)
 		{
-			// do not generate degenerate triangles
-			outputDegenerate = true;
+			// this edge cannot be clipped because the edge is really close to the volume boundary
+			unclippableVertex1 = true;
 		}
 		else
 		{
@@ -374,17 +380,16 @@ void clipTriangleTwoVertices (std::vector<TriangleVertex>& clippedEdges, const C
 	}
 
 	{
-		const TriangleVertex& inside = v0;
-		const TriangleVertex& outside = clipped2;
-		      TriangleVertex& middle = mid2;
+		const TriangleVertex&	inside	= v0;
+		const TriangleVertex&	outside	= clipped2;
+		      TriangleVertex&	middle	= mid2;
 
-		const ClipFloat hitDist = plane.clipLineSegmentEnd(inside.position, outside.position);
-		DE_ASSERT(hitDist >= (ClipFloat)0.0);
+		const ClipFloat			hitDist	= plane.clipLineSegmentEnd(inside.position, outside.position);
 
-		if (hitDist >= degenerateLimit)
+		if (hitDist >= unclippableLimit)
 		{
-			// do not generate degenerate triangles
-			outputDegenerate = true;
+			// this edge cannot be clipped because the edge is really close to the volume boundary
+			unclippableVertex2 = true;
 		}
 		else
 		{
@@ -398,11 +403,25 @@ void clipTriangleTwoVertices (std::vector<TriangleVertex>& clippedEdges, const C
 		}
 	}
 
-	if (!outputDegenerate)
+	if (!unclippableVertex1 && !unclippableVertex2)
 	{
 		// gen triangle (v0) -> mid1 -> mid2
 		clippedEdges.push_back(v0);
 		clippedEdges.push_back(mid1);
+		clippedEdges.push_back(mid2);
+	}
+	else if (!unclippableVertex1 && unclippableVertex2)
+	{
+		// clip just vertex 1
+		clippedEdges.push_back(v0);
+		clippedEdges.push_back(mid1);
+		clippedEdges.push_back(clipped2);
+	}
+	else if (unclippableVertex1 && !unclippableVertex2)
+	{
+		// clip just vertex 2
+		clippedEdges.push_back(v0);
+		clippedEdges.push_back(clipped1);
 		clippedEdges.push_back(mid2);
 	}
 	else
@@ -593,7 +612,7 @@ void clipPrimitives (std::vector<pa::Triangle>&		list,
 				{
 					std::vector<TriangleVertex> convexPrimitive;
 
-					// Clip triangle and form a convex n-gon ( n c {2, 3} )
+					// Clip triangle and form a convex n-gon ( n c {3, 4} )
 					clipTriangleToPlane(convexPrimitive, subTriangles[subTriangleNdx].vertices, *planes[planeNdx]);
 
 					// Subtriangle completely discarded
