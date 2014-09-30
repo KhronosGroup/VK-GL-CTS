@@ -318,7 +318,7 @@ void throwJNIException (JNIEnv* env, const std::exception& e)
 
 DE_BEGIN_EXTERN_C
 
-JNIEXPORT jlong JNICALL Java_com_drawelements_deqp_testercore_TestLogParser_nativeCreate (JNIEnv* env, jboolean logData)
+JNIEXPORT jlong JNICALL Java_com_drawelements_deqp_testercore_TestLogParser_nativeCreate (JNIEnv* env, jclass, jboolean logData)
 {
 	DE_UNREF(env);
 
@@ -335,7 +335,7 @@ JNIEXPORT jlong JNICALL Java_com_drawelements_deqp_testercore_TestLogParser_nati
 	}
 }
 
-JNIEXPORT void JNICALL Java_com_drawelements_deqp_testercore_TestLogParser_nativeDestroy (JNIEnv* env, jlong nativePointer)
+JNIEXPORT void JNICALL Java_com_drawelements_deqp_testercore_TestLogParser_nativeDestroy (JNIEnv* env, jclass, jlong nativePointer)
 {
 	DE_UNREF(env);
 
@@ -351,7 +351,7 @@ JNIEXPORT void JNICALL Java_com_drawelements_deqp_testercore_TestLogParser_nativ
 	}
 }
 
-JNIEXPORT void JNICALL Java_com_drawelements_deqp_testercore_TestLogParser_nativeParse (JNIEnv* env, jlong nativePointer, jobject instrumentation, jbyteArray buffer, jint size)
+JNIEXPORT void JNICALL Java_com_drawelements_deqp_testercore_TestLogParser_nativeParse (JNIEnv* env, jclass, jlong nativePointer, jobject instrumentation, jbyteArray buffer, jint size)
 {
 	jbyte* logData = DE_NULL;
 
