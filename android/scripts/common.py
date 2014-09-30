@@ -77,7 +77,7 @@ NATIVE_LIBS				= [
 		NativeLib("testercore",			9,	"armeabi-v7a"),		# ARM v7a ABI
 #		NativeLib("testercore",			9,	"x86"),				# x86
 	]
-ANDROID_JAVA_API		= "android-10"
+ANDROID_JAVA_API		= "android-13"
 
 # NDK paths
 ANDROID_NDK_HOST_OS		= getCfg({
