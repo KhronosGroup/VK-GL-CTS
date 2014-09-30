@@ -118,43 +118,43 @@ void RenderThread::processMessage (const Message& message)
 			if (m_windowState != WINDOWSTATE_NOT_CREATED && m_windowState != WINDOWSTATE_DESTROYED)
 				throw InternalError("Got unexpected onNativeWindowCreated() event from system");
 			m_windowState	= WINDOWSTATE_NOT_INITIALIZED;
-			m_window		= (ANativeWindow*)message.data;
+			m_window		= message.payload.window;
 			break;
 
 		case MESSAGE_WINDOW_RESIZED:
-			DE_ASSERT(m_window == message.data);
+			DE_ASSERT(m_window == message.payload.window);
 			if (m_windowState == WINDOWSTATE_NOT_INITIALIZED)
 			{
 				// Got first resize event, window is ready for use.
 				m_windowState = WINDOWSTATE_READY;
-				onWindowCreated((ANativeWindow*)message.data);
+				onWindowCreated(message.payload.window);
 			}
 			else if (m_windowState == WINDOWSTATE_READY)
-				onWindowResized((ANativeWindow*)message.data);
+				onWindowResized(message.payload.window);
 			else
 				throw InternalError("Got unexpected onNativeWindowResized() event from system");
 			break;
 
 		case MESSAGE_WINDOW_DESTROYED:
-			DE_ASSERT(m_window == message.data);
+			DE_ASSERT(m_window == message.payload.window);
 			if (m_windowState != WINDOWSTATE_NOT_INITIALIZED && m_windowState != WINDOWSTATE_READY)
 				throw InternalError("Got unexpected onNativeWindowDestroyed() event from system");
 
-			onWindowDestroyed((ANativeWindow*)message.data);
+			onWindowDestroyed(message.payload.window);
 			m_windowState	= WINDOWSTATE_DESTROYED;
 			m_window		= DE_NULL;
 			break;
 
 		case MESSAGE_INPUT_QUEUE_CREATED:
-			m_inputQueue = (AInputQueue*)message.data;
+			m_inputQueue = message.payload.inputQueue;
 			break;
 
 		case MESSAGE_INPUT_QUEUE_DESTROYED:
-			m_inputQueue = (AInputQueue*)message.data;
+			m_inputQueue = message.payload.inputQueue;
 			break;
 
 		case MESSAGE_SYNC:
-			static_cast<de::Semaphore*>(message.data)->increment();
+			message.payload.semaphore->increment();
 			break;
 
 		default:

@@ -56,19 +56,52 @@ enum MessageType
 
 struct Message
 {
-	MessageType		type;			//!< Message type.
-	void*			data;			//!< Optional data argument.
+	MessageType			type;			//!< Message type.
+	union
+	{
+		ANativeWindow*	window;
+		AInputQueue*	inputQueue;
+		de::Semaphore*	semaphore;
+	} payload;							//!< Optional data argument.
 
 	Message (void)
-		: type	(MESSAGETYPE_LAST)
-		, data	(DE_NULL)
+		: type(MESSAGETYPE_LAST)
 	{
 	}
 
-	explicit Message (MessageType type_, void* data_ = DE_NULL)
-		: type	(type_)
-		, data	(data_)
+	explicit Message (MessageType type_)
+		: type(type_)
 	{
+		DE_ASSERT(type_ == MESSAGE_RESUME	||
+				  type_ == MESSAGE_PAUSE	||
+				  type_ == MESSAGE_FINISH);
+	}
+
+	Message (MessageType type_, ANativeWindow* window)
+		: type(type_)
+	{
+		DE_ASSERT(type_ == MESSAGE_WINDOW_CREATED	||
+				  type_ == MESSAGE_WINDOW_DESTROYED	||
+				  type_ == MESSAGE_WINDOW_RESIZED);
+		DE_ASSERT(window);
+		payload.window = window;
+	}
+
+	Message (MessageType type_, AInputQueue* inputQueue)
+		: type(type_)
+	{
+		DE_ASSERT(type_ == MESSAGE_INPUT_QUEUE_CREATED	||
+				  type_ == MESSAGE_INPUT_QUEUE_DESTROYED);
+		DE_ASSERT(inputQueue);
+		payload.inputQueue = inputQueue;
+	}
+
+	Message (MessageType type_, de::Semaphore* semaphore)
+		: type(type_)
+	{
+		DE_ASSERT(type_ == MESSAGE_SYNC);
+		DE_ASSERT(semaphore);
+		payload.semaphore = semaphore;
 	}
 };
 
