@@ -26,6 +26,16 @@ set(PNG_SRCS
 	${PNG_SRC_PATH}/pngpread.c
 	)
 
+if (DE_CPU_IS_ARM_64)
+	# armv8-a has always neon
+	set(PNG_SRCS
+		${PNG_SRCS}
+		${PNG_SRC_PATH}/arm/arm_init.c
+		${PNG_SRC_PATH}/arm/filter_neon_intrinsics.c
+		${PNG_SRC_PATH}/arm/filter_neon.S
+		)
+endif ()
+
 if (DE_DEBUG EQUAL 1)
 	add_definitions(-DPNG_DEBUG)
 endif ()

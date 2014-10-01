@@ -71,11 +71,11 @@ ANDROID_DIR				= os.path.realpath(os.path.join(os.path.dirname(os.path.abspath(_
 
 # Build configuration
 NATIVE_LIBS				= [
-		#		  library name          API  ABI
-#		NativeLib("testercore_legacy",	5,	"armeabi-v7a"),		# Pre-gingerbread
-#		NativeLib("testercore_legacy",	5,	"armeabi"),			# ARM v5 ABI / pre-gingerbread
-		NativeLib("testercore",			9,	"armeabi-v7a"),		# ARM v7a ABI
-#		NativeLib("testercore",			9,	"x86"),				# x86
+		#		  library name		API		ABI
+#		NativeLib("testercore",		13,		"armeabi"),			# ARM v5 ABI
+		NativeLib("testercore",		13,		"armeabi-v7a"),		# ARM v7a ABI
+		NativeLib("testercore",		13,		"x86"),				# x86
+#		NativeLib("testercore",		21,		"arm64-v8a"),		# ARM64 v8a ABI
 	]
 ANDROID_JAVA_API		= "android-13"
 
