@@ -473,7 +473,16 @@ LOCAL_SRC_FILES := \
 	modules/glshared/glsTextureBufferCase.cpp \
 	modules/glshared/glsTextureTestUtil.cpp \
 	modules/glshared/glsUniformBlockCase.cpp \
-	modules/glshared/glsVertexArrayTests.cpp
+	modules/glshared/glsVertexArrayTests.cpp \
+	modules/internal/ditBuildInfoTests.cpp \
+	modules/internal/ditDelibsTests.cpp \
+	modules/internal/ditFrameworkTests.cpp \
+	modules/internal/ditImageCompareTests.cpp \
+	modules/internal/ditImageIOTests.cpp \
+	modules/internal/ditTestCase.cpp \
+	modules/internal/ditTestLogTests.cpp \
+	modules/internal/ditTestPackage.cpp \
+	modules/internal/ditTestPackageEntry.cpp
 
 LOCAL_C_INCLUDES := \
 	frameworks/native/opengl/include \
