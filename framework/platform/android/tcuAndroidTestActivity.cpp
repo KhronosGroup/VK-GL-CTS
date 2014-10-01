@@ -36,33 +36,15 @@ namespace tcu
 namespace Android
 {
 
-// TestApp
-
-TestApp::TestApp (NativeActivity& activity, ANativeWindow* window, const CommandLine& cmdLine)
-	: m_cmdLine		(cmdLine)
-	, m_platform	(window)
-	, m_archive		(activity.getNativeActivity()->assetManager)
-	, m_log			(m_cmdLine.getLogFileName())
-	, m_app			(m_platform, m_archive, m_log, m_cmdLine)
-{
-}
-
-TestApp::~TestApp (void)
-{
-}
-
-bool TestApp::iterate (void)
-{
-	return m_app.iterate();
-}
-
 // TestThread
 
 TestThread::TestThread (NativeActivity& activity, const CommandLine& cmdLine)
 	: RenderThread	(activity)
 	, m_cmdLine		(cmdLine)
-	, m_testApp		(DE_NULL)
-	, m_done		(false)
+	, m_archive		(activity.getNativeActivity()->assetManager)
+	, m_log			(m_cmdLine.getLogFileName())
+	, m_app			(m_platform, m_archive, m_log, m_cmdLine)
+	, m_finished	(false)
 {
 }
 
@@ -74,45 +56,29 @@ TestThread::~TestThread (void)
 void TestThread::run (void)
 {
 	RenderThread::run();
-
-	delete m_testApp;
-	m_testApp = DE_NULL;
 }
 
 void TestThread::onWindowCreated (ANativeWindow* window)
 {
-	DE_ASSERT(!m_testApp);
-	m_testApp = new TestApp(getNativeActivity(), window, m_cmdLine);
+	m_platform.getWindowRegistry().addWindow(window);
 }
 
 void TestThread::onWindowDestroyed (ANativeWindow* window)
 {
-	DE_UNREF(window);
-	DE_ASSERT(m_testApp);
-	delete m_testApp;
-	m_testApp = DE_NULL;
-
-	if (!m_done)
-	{
-		// \note We could just throw exception here and RenderThread would gracefully terminate.
-		//		 However, native window is often destroyed when app is closed and android may not
-		//		 end up calling onStop().
-		die("Window was destroyed during execution");
-	}
+	m_platform.getWindowRegistry().destroyWindow(window);
 }
 
 void TestThread::onWindowResized (ANativeWindow* window)
 {
-	// \todo [2013-05-12 pyry] Handle this in some sane way.
 	DE_UNREF(window);
 	print("Warning: Native window was resized, results may be undefined");
 }
 
 bool TestThread::render (void)
 {
-	DE_ASSERT(m_testApp);
-	m_done = !m_testApp->iterate();
-	return !m_done;
+	if (!m_finished)
+		m_finished = !m_app.iterate();
+	return !m_finished;
 }
 
 // TestActivity
@@ -121,10 +87,8 @@ TestActivity::TestActivity (ANativeActivity* activity)
 	: RenderActivity	(activity)
 	, m_cmdLine			(getIntentStringExtra(activity, "cmdLine"))
 	, m_testThread		(*this, m_cmdLine)
+	, m_started			(false)
 {
-	// Provide RenderThread
-	setThread(&m_testThread);
-
 	// Set initial orientation.
 	setRequestedOrientation(getNativeActivity(), mapScreenRotation(m_cmdLine.getScreenRotation()));
 
@@ -139,9 +103,28 @@ TestActivity::~TestActivity (void)
 {
 }
 
-void TestActivity::onStop (void)
+void TestActivity::onStart (void)
 {
-	RenderActivity::onStop();
+	if (!m_started)
+	{
+		setThread(&m_testThread);
+		m_testThread.start();
+		m_started = true;
+	}
+
+	RenderActivity::onStart();
+}
+
+void TestActivity::onDestroy (void)
+{
+	if (m_started)
+	{
+		setThread(DE_NULL);
+		m_testThread.stop();
+		m_started = false;
+	}
+
+	RenderActivity::onDestroy();
 
 	// Kill this process.
 	print("Done, killing process");

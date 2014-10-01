@@ -36,22 +36,6 @@ namespace tcu
 namespace Android
 {
 
-class TestApp
-{
-public:
-							TestApp						(NativeActivity& activity, ANativeWindow* window, const CommandLine& cmdLine);
-							~TestApp					(void);
-
-	bool					iterate						(void);
-
-private:
-	const CommandLine&		m_cmdLine;
-	Platform				m_platform;
-	AssetArchive			m_archive;
-	TestLog					m_log;
-	App						m_app;
-};
-
 class TestThread : public RenderThread
 {
 public:
@@ -67,8 +51,11 @@ private:
 	virtual bool			render						(void);
 
 	const CommandLine&		m_cmdLine;
-	TestApp*				m_testApp;
-	bool					m_done;						//!< Is execution finished.
+	Platform				m_platform;
+	AssetArchive			m_archive;
+	TestLog					m_log;
+	App						m_app;
+	bool					m_finished;					//!< Is execution finished.
 };
 
 class TestActivity : public RenderActivity
@@ -77,12 +64,14 @@ public:
 							TestActivity				(ANativeActivity* nativeActivity);
 							~TestActivity				(void);
 
-	virtual void			onStop						(void);
+	virtual void			onStart						(void);
+	virtual void			onDestroy					(void);
 	virtual void			onConfigurationChanged		(void);
 
 private:
 	CommandLine				m_cmdLine;
 	TestThread				m_testThread;
+	bool					m_started;
 };
 
 } // Android

@@ -37,14 +37,18 @@ namespace Android
 class Platform : public tcu::Platform, private eglu::Platform, private glu::Platform
 {
 public:
-									Platform			(ANativeWindow* window);
+									Platform			(void);
 	virtual							~Platform			(void);
+
+	virtual bool					processEvents		(void);
 
 	virtual const glu::Platform&	getGLPlatform		(void) const { return static_cast<const glu::Platform&>(*this);		}
 	virtual const eglu::Platform&	getEGLPlatform		(void) const { return static_cast<const eglu::Platform&>(*this);	}
 
+	WindowRegistry&					getWindowRegistry	(void) { return m_windowRegistry; }
+
 private:
-	Window							m_window;
+	WindowRegistry					m_windowRegistry;
 };
 
 } // Android

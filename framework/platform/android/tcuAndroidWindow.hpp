@@ -26,6 +26,9 @@
 #include "tcuDefs.hpp"
 #include "tcuVector.hpp"
 #include "deSemaphore.hpp"
+#include "deMutex.hpp"
+
+#include <vector>
 
 #include <android/native_window.h>
 
@@ -34,28 +37,62 @@ namespace tcu
 namespace Android
 {
 
+// \note Window is thread-safe, WindowRegistry is not
+
 class Window
 {
 public:
-						Window						(ANativeWindow* window);
-						~Window						(void);
+	enum State
+	{
+		STATE_AVAILABLE	= 0,
+		STATE_IN_USE,
+		STATE_PENDING_DESTROY,
+		STATE_READY_FOR_DESTROY,
+		STATE_ACQUIRED_FOR_DESTROY,
 
-	void				acquire						(void)	{ m_semaphore.decrement();				}
-	bool				tryAcquire					(void)	{ return m_semaphore.tryDecrement();	}
-	void				release						(void)	{ m_semaphore.increment();				}
+		STATE_LAST
+	};
 
-	ANativeWindow*		getNativeWindow				(void)	{ return m_window;						}
+							Window				(ANativeWindow* window);
+							~Window				(void);
 
-	void				setBuffersGeometry			(int width, int height, int32_t format);
+	bool					tryAcquire			(void);
+	void					release				(void);
 
-	IVec2				getSize						(void) const;
+	void					markForDestroy		(void);
+	bool					isPendingDestroy	(void) const;
+	bool					tryAcquireForDestroy(bool onlyMarked);
+
+	ANativeWindow*			getNativeWindow		(void)	{ return m_window;	}
+
+	void					setBuffersGeometry	(int width, int height, int32_t format);
+
+	IVec2					getSize				(void) const;
 
 private:
-						Window						(const Window& other);
-	Window&				operator=					(const Window& other);
+							Window				(const Window& other);
+	Window&					operator=			(const Window& other);
 
-	ANativeWindow*		m_window;
-	de::Semaphore		m_semaphore;
+	ANativeWindow*			m_window;
+	mutable de::Mutex		m_stateLock;
+	State					m_state;
+};
+
+class WindowRegistry
+{
+public:
+							WindowRegistry		(void);
+							~WindowRegistry		(void);
+
+	void					addWindow			(ANativeWindow* window);
+	void					destroyWindow		(ANativeWindow* window);
+
+	Window*					tryAcquireWindow	(void);
+
+	void					garbageCollect		(void);
+
+private:
+	std::vector<Window*>	m_windows;
 };
 
 } // Android

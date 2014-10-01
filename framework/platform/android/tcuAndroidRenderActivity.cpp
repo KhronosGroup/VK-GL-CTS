@@ -47,6 +47,26 @@ enum
 	MESSAGE_QUEUE_SIZE = 8 //!< Length of RenderThread message queue.
 };
 
+#if defined(DE_DEBUG)
+static const char* getMessageTypeName (MessageType type)
+{
+	static const char* s_names[] =
+	{
+		"RESUME",
+		"PAUSE",
+		"FINISH",
+		"WINDOW_CREATED",
+		"WINDOW_RESIZED",
+		"WINDOW_DESTROYED",
+		"INPUT_QUEUE_CREATED",
+		"INPUT_QUEUE_DESTROYED",
+		"SYNC"
+	};
+	DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(s_names) == MESSAGETYPE_LAST);
+	return s_names[type];
+}
+#endif
+
 // RenderThread
 
 RenderThread::RenderThread (NativeActivity& activity)
@@ -71,7 +91,7 @@ void RenderThread::start (void)
 	Thread::start();
 }
 
-void RenderThread::destroy (void)
+void RenderThread::stop (void)
 {
 	// Queue finish command
 	enqueue(Message(MESSAGE_FINISH));
@@ -108,21 +128,29 @@ void RenderThread::sync (void)
 
 void RenderThread::processMessage (const Message& message)
 {
+	DBG_PRINT(("RenderThread::processMessage(): message = { %s, %p }\n", getMessageTypeName(message.type), message.payload.window));
+
 	switch (message.type)
 	{
 		case MESSAGE_RESUME:	m_paused = false;	break;
 		case MESSAGE_PAUSE:		m_paused = true;	break;
 		case MESSAGE_FINISH:	m_finish = true;	break;
 
+		// \note While Platform / WindowRegistry are currently multi-window -capable,
+		//		 the fact that platform gives us windows too late / at unexpected times
+		//		 forces us to do some sanity checking and limit system to one window here.
 		case MESSAGE_WINDOW_CREATED:
 			if (m_windowState != WINDOWSTATE_NOT_CREATED && m_windowState != WINDOWSTATE_DESTROYED)
 				throw InternalError("Got unexpected onNativeWindowCreated() event from system");
+
 			m_windowState	= WINDOWSTATE_NOT_INITIALIZED;
 			m_window		= message.payload.window;
 			break;
 
 		case MESSAGE_WINDOW_RESIZED:
-			DE_ASSERT(m_window == message.payload.window);
+			if (m_window != message.payload.window)
+				throw InternalError("Got onNativeWindowResized() event targeting different window");
+
 			if (m_windowState == WINDOWSTATE_NOT_INITIALIZED)
 			{
 				// Got first resize event, window is ready for use.
@@ -133,14 +161,19 @@ void RenderThread::processMessage (const Message& message)
 				onWindowResized(message.payload.window);
 			else
 				throw InternalError("Got unexpected onNativeWindowResized() event from system");
+
 			break;
 
 		case MESSAGE_WINDOW_DESTROYED:
-			DE_ASSERT(m_window == message.payload.window);
+			if (m_window != message.payload.window)
+				throw InternalError("Got onNativeWindowDestroyed() event targeting different window");
+
 			if (m_windowState != WINDOWSTATE_NOT_INITIALIZED && m_windowState != WINDOWSTATE_READY)
 				throw InternalError("Got unexpected onNativeWindowDestroyed() event from system");
 
-			onWindowDestroyed(message.payload.window);
+			if (m_windowState == WINDOWSTATE_READY)
+				onWindowDestroyed(message.payload.window);
+
 			m_windowState	= WINDOWSTATE_DESTROYED;
 			m_window		= DE_NULL;
 			break;
@@ -207,15 +240,10 @@ void RenderThread::run (void)
 
 			// Everything set up - safe to render.
 			if (!render())
+			{
+				DBG_PRINT(("RenderThread::run(): render\n"));
 				break;
-		}
-
-		if (m_windowState == WINDOWSTATE_READY)
-		{
-			// Clean up window use
-			onWindowDestroyed(m_window);
-			m_windowState	= WINDOWSTATE_DESTROYED;
-			m_window		= DE_NULL;
+			}
 		}
 	}
 	catch (const std::exception& e)
@@ -270,9 +298,6 @@ void RenderActivity::setThread (RenderThread* thread)
 void RenderActivity::onStart (void)
 {
 	DBG_PRINT(("RenderActivity::onStart()"));
-
-	// Launch tester thread when activity is created. It will remain in paused state until resume() is called.
-	m_thread->start();
 }
 
 void RenderActivity::onResume (void)
@@ -294,7 +319,6 @@ void RenderActivity::onPause (void)
 void RenderActivity::onStop (void)
 {
 	DBG_PRINT(("RenderActivity::onStop()"));
-	m_thread->destroy();
 }
 
 void RenderActivity::onDestroy (void)

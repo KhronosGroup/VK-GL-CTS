@@ -126,7 +126,8 @@ public:
 	void					start						(void);
 	void					resume						(void);
 	void					pause						(void);
-	void					destroy						(void);
+	void					stop						(void);
+
 	void					enqueue						(const Message& message);
 	void					sync						(void);
 

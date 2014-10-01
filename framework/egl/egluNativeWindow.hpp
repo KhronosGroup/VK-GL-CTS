@@ -64,6 +64,12 @@ struct WindowParams
 	WindowParams (int width_, int height_, Visibility visibility_) : width(width_), height(height_), visibility(visibility_) {}
 };
 
+class WindowDestroyedError : public tcu::ResourceError
+{
+public:
+	WindowDestroyedError (const std::string& message) : tcu::ResourceError(message) {}
+};
+
 class NativeWindow
 {
 public:

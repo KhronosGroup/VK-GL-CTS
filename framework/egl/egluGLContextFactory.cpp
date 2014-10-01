@@ -133,19 +133,20 @@ public:
 										RenderContext			(const NativeDisplayFactory* displayFactory, const NativeWindowFactory* windowFactory, const NativePixmapFactory* pixmapFactory, const glu::RenderConfig& config);
 	virtual								~RenderContext			(void);
 
-	virtual glu::ContextType			getType					(void) const { return m_glContextType;	}
-	virtual const glw::Functions&		getFunctions			(void) const { return m_glFunctions;	}
-	virtual const tcu::RenderTarget&	getRenderTarget			(void) const { return m_glRenderTarget;	}
+	virtual glu::ContextType			getType					(void) const { return m_renderConfig.type;	}
+	virtual const glw::Functions&		getFunctions			(void) const { return m_glFunctions;		}
+	virtual const tcu::RenderTarget&	getRenderTarget			(void) const { return m_glRenderTarget;		}
 	virtual void						postIterate				(void);
 
-	virtual EGLDisplay					getEGLDisplay			(void) const { return m_eglDisplay;		}
-	virtual EGLContext					getEGLContext			(void) const { return m_eglContext;		}
+	virtual EGLDisplay					getEGLDisplay			(void) const { return m_eglDisplay;			}
+	virtual EGLContext					getEGLContext			(void) const { return m_eglContext;			}
 
 private:
 	void								create					(const NativeDisplayFactory* displayFactory, const NativeWindowFactory* windowFactory, const NativePixmapFactory* pixmapFactory, const glu::RenderConfig& config);
 	void								destroy					(void);
 
-	const glu::ContextType				m_glContextType;
+	const glu::RenderConfig				m_renderConfig;
+	const NativeWindowFactory* const	m_nativeWindowFactory;	// Stored in case window must be re-created
 
 	NativeDisplay*						m_display;
 	NativeWindow*						m_window;
@@ -162,7 +163,8 @@ private:
 };
 
 RenderContext::RenderContext (const NativeDisplayFactory* displayFactory, const NativeWindowFactory* windowFactory, const NativePixmapFactory* pixmapFactory, const glu::RenderConfig& config)
-	: m_glContextType		(config.type)
+	: m_renderConfig		(config)
+	, m_nativeWindowFactory	(windowFactory)
 	, m_display				(DE_NULL)
 	, m_window				(DE_NULL)
 	, m_pixmap				(DE_NULL)
@@ -639,8 +641,89 @@ void RenderContext::postIterate (void)
 {
 	if (m_window)
 	{
-		EGLU_CHECK_CALL(eglSwapBuffers(m_eglDisplay, m_eglSurface));
-		m_window->processEvents();
+		EGLBoolean	swapOk	= eglSwapBuffers(m_eglDisplay, m_eglSurface);
+		EGLint		error	= eglGetError();
+
+		if (!swapOk && error != EGL_BAD_SURFACE)
+		{
+			if (error == EGL_BAD_ALLOC)
+				throw BadAllocError("eglSwapBuffers()");
+			else if (error == EGL_CONTEXT_LOST)
+				throw tcu::ResourceError("eglSwapBuffers() failed, context lost");
+			else
+				throw Error(error, "eglSwapBuffers()");
+		}
+
+		try
+		{
+			m_window->processEvents();
+		}
+		catch (const WindowDestroyedError&)
+		{
+			tcu::print("Warning: Window destroyed, recreating...\n");
+
+			EGLU_CHECK_CALL(eglMakeCurrent(m_eglDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT));
+			EGLU_CHECK_CALL(eglDestroySurface(m_eglDisplay, m_eglSurface));
+			m_eglSurface = EGL_NO_SURFACE;
+
+			delete m_window;
+			m_window = DE_NULL;
+
+			try
+			{
+				WindowSurfacePair windowSurface = createWindow(m_display, m_nativeWindowFactory, m_eglDisplay, m_eglConfig, m_renderConfig);
+				m_window		= windowSurface.first;
+				m_eglSurface	= windowSurface.second;
+
+				EGLU_CHECK_CALL(eglMakeCurrent(m_eglDisplay, m_eglSurface, m_eglSurface, m_eglContext));
+
+				swapOk	= EGL_TRUE;
+				error	= EGL_SUCCESS;
+			}
+			catch (const std::exception& e)
+			{
+				if (m_eglSurface)
+				{
+					eglMakeCurrent(m_eglDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+					eglDestroySurface(m_eglDisplay, m_eglSurface);
+					m_eglSurface = EGL_NO_SURFACE;
+				}
+
+				delete m_window;
+				m_window = DE_NULL;
+
+				throw tcu::ResourceError(string("Failed to re-create window: ") + e.what());
+			}
+		}
+
+		if (!swapOk)
+		{
+			DE_ASSERT(error == EGL_BAD_SURFACE);
+			throw Error(error, "eglSwapBuffers()");
+		}
+
+		// Refresh dimensions
+		{
+			int	newWidth	= 0;
+			int	newHeight	= 0;
+
+			eglQuerySurface(m_eglDisplay, m_eglSurface, EGL_WIDTH,	&newWidth);
+			eglQuerySurface(m_eglDisplay, m_eglSurface, EGL_HEIGHT,	&newHeight);
+			EGLU_CHECK_MSG("Failed to query window size");
+
+			if (newWidth	!= m_glRenderTarget.getWidth() ||
+				newHeight	!= m_glRenderTarget.getHeight())
+			{
+				tcu::print("Warning: Window size changed (%dx%d -> %dx%d), test results might be invalid!\n",
+						   m_glRenderTarget.getWidth(), m_glRenderTarget.getHeight(), newWidth, newHeight);
+
+				m_glRenderTarget = tcu::RenderTarget(newWidth, newHeight,
+													 m_glRenderTarget.getPixelFormat(),
+													 m_glRenderTarget.getDepthBits(),
+													 m_glRenderTarget.getStencilBits(),
+													 m_glRenderTarget.getNumSamples());
+			}
+		}
 	}
 	else
 	{

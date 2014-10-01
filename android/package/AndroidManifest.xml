@@ -5,7 +5,6 @@
 	      android:versionName="1.0">
     <application android:label="dEQP Tests"
 				 android:icon="@drawable/deqp_app">
-	
 		<activity android:name="com.drawelements.deqp.execserver.ExecServerActivity"
 				  android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
 				  android:label="dEQP ExecServer"
@@ -27,12 +26,10 @@
 				 android:label="dEQP ExecServer Service"
 				 android:exported="true"
 				 android:process=":execserver" />
-
-		<!-- Tester process -->
 		<activity android:name="android.app.NativeActivity"
 				  android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
 				  android:label="dEQP Test Process"
-				  android:configChanges="orientation|screenSize|keyboardHidden"
+				  android:configChanges="keyboardHidden|orientation|screenSize"
 				  android:exported="true"
 				  android:process=":testercore">
 			<meta-data android:name="android.app.lib_name"
@@ -40,9 +37,10 @@
 			<meta-data android:name="android.app.func_name"
 					   android:value="createTestActivity" />
 		</activity>
-    </application>
-	
-    <uses-sdk android:minSdkVersion="13"/>
+	</application>
+
+ 	<uses-sdk android:minSdkVersion="13"/>
+ 	<uses-sdk android:targetSdkVersion="19"/>
     <uses-feature android:glEsVersion="0x00020000"/>
 	<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 	<uses-permission android:name="android.permission.GET_TASKS" />

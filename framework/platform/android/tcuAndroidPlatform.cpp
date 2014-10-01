@@ -50,7 +50,7 @@ public:
 class NativeDisplayFactory : public eglu::NativeDisplayFactory
 {
 public:
-									NativeDisplayFactory	(Window& window);
+									NativeDisplayFactory	(WindowRegistry& windowRegistry);
 									~NativeDisplayFactory	(void) {}
 
 	virtual eglu::NativeDisplay*	createDisplay			(const EGLAttrib* attribList) const;
@@ -59,70 +59,70 @@ public:
 class NativeWindow : public eglu::NativeWindow
 {
 public:
-									NativeWindow			(Window& window, int width, int height, int32_t format);
+									NativeWindow			(Window* window, int width, int height, int32_t format);
 	virtual							~NativeWindow			(void);
 
-	virtual EGLNativeWindowType		getLegacyNative			(void)			{ return m_window.getNativeWindow();	}
-	IVec2							getScreenSize			(void) const	{ return m_window.getSize();			}
+	virtual EGLNativeWindowType		getLegacyNative			(void)			{ return m_window->getNativeWindow();	}
+	IVec2							getScreenSize			(void) const	{ return m_window->getSize();			}
 
 	void							setSurfaceSize			(IVec2 size);
 
 	virtual void					processEvents			(void);
 
 private:
-	Window&							m_window;
+	Window*							m_window;
 	int32_t							m_format;
 };
 
 class NativeWindowFactory : public eglu::NativeWindowFactory
 {
 public:
-									NativeWindowFactory		(Window& window);
+									NativeWindowFactory		(WindowRegistry& windowRegistry);
 									~NativeWindowFactory	(void);
 
 	virtual eglu::NativeWindow*		createWindow			(eglu::NativeDisplay* nativeDisplay, const eglu::WindowParams& params) const;
 	virtual eglu::NativeWindow*		createWindow			(eglu::NativeDisplay* nativeDisplay, EGLDisplay display, EGLConfig config, const EGLAttrib* attribList, const eglu::WindowParams& params) const;
 
 private:
-	Window&							m_window;
+	virtual eglu::NativeWindow*		createWindow			(const eglu::WindowParams& params, int32_t format) const;
+
+	WindowRegistry&					m_windowRegistry;
 };
 
 // NativeWindow
 
-NativeWindow::NativeWindow (Window& window, int width, int height, int32_t format)
+NativeWindow::NativeWindow (Window* window, int width, int height, int32_t format)
 	: eglu::NativeWindow	(WINDOW_CAPABILITIES)
 	, m_window				(window)
 	, m_format				(format)
 {
-	// Try to acquire window.
-	if (!m_window.tryAcquire())
-		throw ResourceError("Native window is not available", "", __FILE__, __LINE__);
-
 	// Set up buffers.
 	setSurfaceSize(IVec2(width, height));
 }
 
 NativeWindow::~NativeWindow (void)
 {
-	m_window.release();
+	m_window->release();
 }
 
 void NativeWindow::processEvents (void)
 {
+	if (m_window->isPendingDestroy())
+		throw eglu::WindowDestroyedError("Window has been destroyed");
 }
 
 void NativeWindow::setSurfaceSize (tcu::IVec2 size)
 {
-	m_window.setBuffersGeometry(size.x() != eglu::WindowParams::SIZE_DONT_CARE ? size.x() : 0,
-								size.y() != eglu::WindowParams::SIZE_DONT_CARE ? size.y() : 0,
-								m_format);
+	m_window->setBuffersGeometry(size.x() != eglu::WindowParams::SIZE_DONT_CARE ? size.x() : 0,
+								 size.y() != eglu::WindowParams::SIZE_DONT_CARE ? size.y() : 0,
+								 m_format);
 }
 
 // NativeWindowFactory
 
-NativeWindowFactory::NativeWindowFactory (Window& window)
+NativeWindowFactory::NativeWindowFactory (WindowRegistry& windowRegistry)
 	: eglu::NativeWindowFactory	("default", "Default display", WINDOW_CAPABILITIES)
-	, m_window					(window)
+	, m_windowRegistry			(windowRegistry)
 {
 }
 
@@ -133,22 +133,33 @@ NativeWindowFactory::~NativeWindowFactory (void)
 eglu::NativeWindow* NativeWindowFactory::createWindow (eglu::NativeDisplay* nativeDisplay, const eglu::WindowParams& params) const
 {
 	DE_UNREF(nativeDisplay);
-	return new NativeWindow(m_window, params.width, params.height, WINDOW_FORMAT_RGBA_8888);
+	return createWindow(params, WINDOW_FORMAT_RGBA_8888);
 }
 
 eglu::NativeWindow* NativeWindowFactory::createWindow (eglu::NativeDisplay* nativeDisplay, EGLDisplay display, EGLConfig config, const EGLAttrib* attribList, const eglu::WindowParams& params) const
 {
 	const int32_t format = (int32_t)eglu::getConfigAttribInt(display, config, EGL_NATIVE_VISUAL_ID);
 	DE_UNREF(nativeDisplay && attribList);
-	return new NativeWindow(m_window, params.width, params.height, format);
+	return createWindow(params, format);
+}
+
+
+eglu::NativeWindow* NativeWindowFactory::createWindow (const eglu::WindowParams& params, int32_t format) const
+{
+	Window* window = m_windowRegistry.tryAcquireWindow();
+
+	if (!window)
+		throw ResourceError("Native window is not available", DE_NULL, __FILE__, __LINE__);
+
+	return new NativeWindow(window, params.width, params.height, format);
 }
 
 // NativeDisplayFactory
 
-NativeDisplayFactory::NativeDisplayFactory (Window& window)
+NativeDisplayFactory::NativeDisplayFactory (WindowRegistry& windowRegistry)
 	: eglu::NativeDisplayFactory("default", "Default display", DISPLAY_CAPABILITIES)
 {
-	m_nativeWindowRegistry.registerFactory(new NativeWindowFactory(window));
+	m_nativeWindowRegistry.registerFactory(new NativeWindowFactory(windowRegistry));
 }
 
 eglu::NativeDisplay* NativeDisplayFactory::createDisplay (const EGLAttrib* attribList) const
@@ -159,15 +170,20 @@ eglu::NativeDisplay* NativeDisplayFactory::createDisplay (const EGLAttrib* attri
 
 // Platform
 
-Platform::Platform (ANativeWindow* window)
-	: m_window(window)
+Platform::Platform (void)
 {
-	m_nativeDisplayFactoryRegistry.registerFactory(new NativeDisplayFactory(m_window));
+	m_nativeDisplayFactoryRegistry.registerFactory(new NativeDisplayFactory(m_windowRegistry));
 	m_contextFactoryRegistry.registerFactory(new eglu::GLContextFactory(m_nativeDisplayFactoryRegistry));
 }
 
 Platform::~Platform (void)
 {
+}
+
+bool Platform::processEvents (void)
+{
+	m_windowRegistry.garbageCollect();
+	return true;
 }
 
 } // Android
