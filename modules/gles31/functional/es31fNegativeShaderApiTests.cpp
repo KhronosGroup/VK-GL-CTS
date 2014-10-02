@@ -473,9 +473,9 @@ void program_parameteri (NegativeTestContext& ctx)
 {
 	GLuint	program	= ctx.glCreateProgram();
 
-	ctx.beginSection("GL_INVALID_OPERATION is generated if program is not the name of an existing program object.");
+	ctx.beginSection("GL_INVALID_VALUE is generated if program is not the name of an existing program object.");
 	ctx.glProgramParameteri		(0, GL_PROGRAM_BINARY_RETRIEVABLE_HINT, GL_TRUE);
-	ctx.expectError			(GL_INVALID_OPERATION);
+	ctx.expectError			(GL_INVALID_VALUE);
 	ctx.endSection();
 
 	ctx.beginSection("GL_INVALID_ENUM is generated if pname is not GL_PROGRAM_BINARY_RETRIEVABLE_HINT.");

@@ -2156,54 +2156,6 @@ group varying "Varying linkage"
 				}
 			""
 		end
-
-		case float_vec3_struct_array
-			version 300 es
-			desc "varyings of type float and vec3 inside struct"
-			values
-			{
-				input float in0		= [ -1.25 | -25.65 | 1.0 | 2.25 | 3.4 | 16.0 ];
-				output float out0	= [ -1.25 | -25.65 | 1.0 | 2.25 | 3.4 | 16.0 ];
-				input float in1		= [ 1.5 | -5.5 | -2.0 | 3.25 | 3.0 | -16.0 ];
-				output float out1	= [ 1.5 | -5.5 | -2.0 | 3.25 | 3.0 | -16.0 ];
-				input vec3 in2		= [ vec3(-1.25, 1.25, -9.5) | vec3(-25.65, -7.25, 14.21) | vec3(0.0, 1.0, -1.0) | vec3(2.25, 2.25, 22.5) | vec3(3.4, 9.5, 19.5) | vec3(16.0, 32.0, -64.0) ];
-				output vec3 out2	= [ vec3(-1.25, 1.25, -9.5) | vec3(-25.65, -7.25, 14.21) | vec3(0.0, 1.0, -1.0) | vec3(2.25, 2.25, 22.5) | vec3(3.4, 9.5, 19.5) | vec3(16.0, 32.0, -64.0) ];
-				input vec3 in3		= [ vec3(-1.0, 0.5, 0.0) | vec3(-2.5, 1.5, 14.0) | vec3(0.2, 1.9, -2.0) | vec3(2.6, -0.2, 2.5) | vec3(3.0, -9.5, 1.9) | vec3(8.0, -32.0, 64.0) ];
-				output vec3 out3	= [ vec3(-1.0, 0.5, 0.0) | vec3(-2.5, 1.5, 14.0) | vec3(0.2, 1.9, -2.0) | vec3(2.6, -0.2, 2.5) | vec3(3.0, -9.5, 1.9) | vec3(8.0, -32.0, 64.0) ];
-			}
-			vertex ""
-				#version 300 es
-				${VERTEX_DECLARATIONS}
-				struct S { mediump float a; highp vec3 b; };
-				out S var[2];
-				void main()
-				{
-					${VERTEX_SETUP}
-					var[0].a = in0;
-					var[1].a = in1;
-
-					var[0].b = in2;
-					var[1].b = in3;
-					${VERTEX_OUTPUT}
-				}
-			""
-			fragment ""
-				#version 300 es
-				precision mediump float;
-				${FRAGMENT_DECLARATIONS}
-				struct S { mediump float a; highp vec3 b; };
-				in S var[2];
-				void main()
-				{
-					out0 = var[0].a;
-					out1 = var[1].a;
-
-					out2 = var[0].b;
-					out3 = var[1].b;
-					${FRAGMENT_OUTPUT}
-				}
-			""
-		end
 	end
 
 	group interpolation "Varying interpolation modes"

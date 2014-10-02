@@ -454,9 +454,9 @@ void NegativeShaderApiTests::init (void)
 		{
 			GLuint	program	= glCreateProgram();
 
-			m_log << TestLog::Section("", "GL_INVALID_OPERATION is generated if program is not the name of an existing program object.");
+			m_log << TestLog::Section("", "GL_INVALID_VALUE is generated if program is not the name of an existing program object.");
 			glProgramParameteri		(0, GL_PROGRAM_BINARY_RETRIEVABLE_HINT, GL_TRUE);
-			expectError				(GL_INVALID_OPERATION);
+			expectError				(GL_INVALID_VALUE);
 			m_log << TestLog::EndSection;
 
 			m_log << TestLog::Section("", "GL_INVALID_ENUM is generated if pname is not GL_PROGRAM_BINARY_RETRIEVABLE_HINT.");
