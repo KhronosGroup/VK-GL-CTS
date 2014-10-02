@@ -1,5 +1,5 @@
-# Android native ES2
-message("*** Using Android ES2")
+# Android
+message("*** Using Android")
 set(DEQP_TARGET_NAME	"Android")
 set(DEQP_SUPPORT_GLES1	ON)
 set(DEQP_SUPPORT_GLES2	ON)

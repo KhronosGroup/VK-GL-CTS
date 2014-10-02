@@ -114,6 +114,7 @@ endif ()
 DE_MAKE_ENV_BOOL("DE_CPU" "VANILLA")
 DE_MAKE_ENV_BOOL("DE_CPU" "X86")
 DE_MAKE_ENV_BOOL("DE_CPU" "ARM")
+DE_MAKE_ENV_BOOL("DE_CPU" "ARM_64")
 
 # \note [petri] Re-wrote in this ugly manner, because CMake 2.6 seems to
 #               barf about the parenthesis in the previous way. Ugh.
