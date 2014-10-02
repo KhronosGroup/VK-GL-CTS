@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<TestPackage name="dEQP-GLES31" targetBinaryName="com.drawelements.deqp" appPackageName="com.drawelements.deqp.gles31" testType="deqpTest">
+<TestPackage name="dEQP-GLES31" appPackageName="com.drawelements.deqp.gles31" testType="deqpTest">
 <TestSuite name="dEQP-GLES31">
 <TestCase name="info">
 <Test name="renderer" />
