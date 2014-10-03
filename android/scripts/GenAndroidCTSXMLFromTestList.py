@@ -137,9 +137,9 @@ def writeAndroidCTSTestSuite(group, output):
 
 	output.write('</TestSuite>\n')
 
-def writeAndroidCTSFile(rootGroup, output, name, targetBinaryName, appPackageName):
+def writeAndroidCTSFile(rootGroup, output, name, appPackageName):
 	output.write('<?xml version="1.0" encoding="UTF-8"?>\n')
-	output.write('<TestPackage name="%s" targetBinaryName="%s" appPackageName="%s" testType="deqpTest">\n' % (name, targetBinaryName, appPackageName))
+	output.write('<TestPackage name="%s" appPackageName="%s" testType="deqpTest">\n' % (name, appPackageName))
 
 	writeAndroidCTSTestSuite(rootGroup, output)
 
@@ -149,11 +149,10 @@ if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
 	parser.add_argument('input',                      type=argparse.FileType('r'),    help="Input file containing dEQP test names.")
 	parser.add_argument('output',                     type=argparse.FileType('w'),    help="Output file for Android CTS test file.")
-        parser.add_argument('--name',     dest="name",    type=str,                       required=True, help="Name of the test package")
-        parser.add_argument('--binary',   dest="binary",  type=str,   default="com.drawelements.deqp",   help="Target binary name")
-        parser.add_argument('--package',  dest="package", type=str,                       required=True, help="Name of the app package")
+	parser.add_argument('--name',     dest="name",    type=str,                       required=True, help="Name of the test package")
+	parser.add_argument('--package',  dest="package", type=str,                       required=True, help="Name of the app package")
 
 	args = parser.parse_args()
 
 	rootGroup = loadTestHierarchy(args.input, args.name)
-	writeAndroidCTSFile(rootGroup, args.output, name=args.name, targetBinaryName=args.binary, appPackageName=args.package)
+	writeAndroidCTSFile(rootGroup, args.output, name=args.name, appPackageName=args.package)
