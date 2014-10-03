@@ -17385,7 +17385,6 @@
 <TestSuite name="invariance">
 <TestCase name="highp">
 <Test name="common_subexpression_0" />
-<Test name="common_subexpression_2" />
 <Test name="subexpression_precision_lowp" />
 <Test name="subexpression_precision_mediump" />
 <Test name="subexpression_precision_highp" />
@@ -17395,7 +17394,6 @@
 </TestCase>
 <TestCase name="mediump">
 <Test name="common_subexpression_0" />
-<Test name="common_subexpression_2" />
 <Test name="subexpression_precision_lowp" />
 <Test name="subexpression_precision_mediump" />
 <Test name="subexpression_precision_highp" />
@@ -17405,7 +17403,6 @@
 </TestCase>
 <TestCase name="lowp">
 <Test name="common_subexpression_0" />
-<Test name="common_subexpression_2" />
 <Test name="subexpression_precision_lowp" />
 <Test name="subexpression_precision_mediump" />
 <Test name="subexpression_precision_highp" />
@@ -18805,7 +18802,6 @@
 <Test name="36" />
 <Test name="38" />
 <Test name="39" />
-<Test name="40" />
 <Test name="41" />
 <Test name="42" />
 <Test name="43" />
@@ -22242,10 +22238,6 @@
 <Test name="linear_nearest" />
 <Test name="nearest_linear" />
 <Test name="linear_linear" />
-</TestCase>
-<TestCase name="max_lod">
-<Test name="nearest_nearest" />
-<Test name="nearest_linear" />
 </TestCase>
 </TestSuite>
 <TestSuite name="3d">
@@ -28822,19 +28814,10 @@
 <Test name="scale_reverse_src_dst_x_linear" />
 <Test name="scale_reverse_src_dst_y_nearest" />
 <Test name="scale_reverse_src_dst_y_linear" />
-<Test name="nearest_consistency_mag" />
-<Test name="nearest_consistency_mag_reverse_src_x" />
-<Test name="nearest_consistency_mag_reverse_src_y" />
-<Test name="nearest_consistency_mag_reverse_dst_x" />
 <Test name="nearest_consistency_mag_reverse_dst_y" />
-<Test name="nearest_consistency_mag_reverse_src_dst_x" />
 <Test name="nearest_consistency_mag_reverse_src_dst_y" />
-<Test name="nearest_consistency_min" />
-<Test name="nearest_consistency_min_reverse_src_x" />
 <Test name="nearest_consistency_min_reverse_src_y" />
-<Test name="nearest_consistency_min_reverse_dst_x" />
 <Test name="nearest_consistency_min_reverse_dst_y" />
-<Test name="nearest_consistency_min_reverse_src_dst_x" />
 <Test name="nearest_consistency_min_reverse_src_dst_y" />
 </TestCase>
 <TestCase name="conversion">

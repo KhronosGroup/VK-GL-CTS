@@ -2855,7 +2855,6 @@
 <Test name="scalar" />
 <Test name="vec2" />
 <Test name="vec3" />
-<Test name="vec4" />
 </TestCase>
 </TestSuite>
 <TestCase name="cross">
@@ -5487,6 +5486,8 @@
 <Test name="write_multiple_unsized_arr_single_invocation" />
 <Test name="write_multiple_unsized_arr_multiple_groups" />
 <Test name="ssbo_local_barrier_single_invocation" />
+<Test name="ssbo_local_barrier_single_group" />
+<Test name="ssbo_local_barrier_multiple_groups" />
 <Test name="ssbo_cmd_barrier_single" />
 <Test name="ssbo_cmd_barrier_multiple" />
 <Test name="shared_var_single_invocation" />
@@ -5604,7 +5605,6 @@
 <Test name="highp_int" />
 </TestCase>
 <TestCase name="min">
-<Test name="lowp_uint" />
 <Test name="highp_uint" />
 <Test name="highp_int" />
 </TestCase>
@@ -5613,36 +5613,22 @@
 <Test name="highp_int" />
 </TestCase>
 <TestCase name="and">
-<Test name="mediump_uint" />
 <Test name="highp_uint" />
 <Test name="highp_int" />
 </TestCase>
 <TestCase name="or">
-<Test name="lowp_uint" />
-<Test name="lowp_int" />
-<Test name="mediump_uint" />
 <Test name="highp_uint" />
 <Test name="highp_int" />
 </TestCase>
 <TestCase name="xor">
-<Test name="lowp_uint" />
-<Test name="lowp_int" />
-<Test name="mediump_uint" />
-<Test name="mediump_int" />
 <Test name="highp_uint" />
 <Test name="highp_int" />
 </TestCase>
 <TestCase name="exchange">
-<Test name="mediump_uint" />
-<Test name="mediump_int" />
 <Test name="highp_uint" />
 <Test name="highp_int" />
 </TestCase>
 <TestCase name="compswap">
-<Test name="lowp_uint" />
-<Test name="lowp_int" />
-<Test name="mediump_uint" />
-<Test name="mediump_int" />
 <Test name="highp_uint" />
 <Test name="highp_int" />
 </TestCase>
@@ -9947,7 +9933,6 @@
 <Test name="comp_swap_r32i_return_value" />
 </TestCase>
 <TestCase name="qualifiers">
-<Test name="coherent_r32f" />
 <Test name="volatile_r32f" />
 <Test name="coherent_r32ui" />
 <Test name="volatile_r32ui" />
@@ -13315,7 +13300,6 @@
 <Test name="ssbo_read_write" />
 <Test name="ssbo_overwrite" />
 <Test name="ssbo_alias_write" />
-<Test name="ssbo_alias_overwrite" />
 <Test name="ssbo_atomic_write_read" />
 <Test name="ssbo_atomic_read_write" />
 <Test name="ssbo_atomic_overwrite" />
@@ -16386,8 +16370,6 @@
 </TestCase>
 <TestCase name="error_groups">
 <Test name="case_4" />
-<Test name="case_6" />
-<Test name="case_14" />
 </TestCase>
 <TestCase name="async">
 <Test name="case_0_log" />
@@ -18125,7 +18107,6 @@
 <TestCase name="separable_fragment">
 <Test name="empty" />
 <Test name="var" />
-<Test name="var_array" />
 </TestCase>
 <TestCase name="compute">
 <Test name="empty" />
