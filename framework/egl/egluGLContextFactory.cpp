@@ -34,6 +34,7 @@
 #include "egluUtil.hpp"
 #include "egluNativeWindow.hpp"
 #include "egluNativePixmap.hpp"
+#include "egluStrUtil.hpp"
 
 #include "glwInitFunctions.hpp"
 #include "glwInitES20Direct.hpp"
@@ -641,18 +642,12 @@ void RenderContext::postIterate (void)
 {
 	if (m_window)
 	{
-		EGLBoolean	swapOk	= eglSwapBuffers(m_eglDisplay, m_eglSurface);
-		EGLint		error	= eglGetError();
+		EGLBoolean	swapOk		= eglSwapBuffers(m_eglDisplay, m_eglSurface);
+		EGLint		error		= eglGetError();
+		const bool	badWindow	= error == EGL_BAD_SURFACE || error == EGL_BAD_NATIVE_WINDOW;
 
-		if (!swapOk && error != EGL_BAD_SURFACE)
-		{
-			if (error == EGL_BAD_ALLOC)
-				throw BadAllocError("eglSwapBuffers()");
-			else if (error == EGL_CONTEXT_LOST)
-				throw tcu::ResourceError("eglSwapBuffers() failed, context lost");
-			else
-				throw Error(error, "eglSwapBuffers()");
-		}
+		if (!swapOk && !badWindow)
+			throw tcu::ResourceError(string("eglSwapBuffers() failed: ") + getErrorStr(error).toString());
 
 		try
 		{
@@ -698,8 +693,8 @@ void RenderContext::postIterate (void)
 
 		if (!swapOk)
 		{
-			DE_ASSERT(error == EGL_BAD_SURFACE);
-			throw Error(error, "eglSwapBuffers()");
+			DE_ASSERT(badWindow);
+			throw tcu::ResourceError(string("eglSwapBuffers() failed: ") + getErrorStr(error).toString());
 		}
 
 		// Refresh dimensions
