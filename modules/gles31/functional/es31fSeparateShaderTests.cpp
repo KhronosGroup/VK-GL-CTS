@@ -692,6 +692,10 @@ bool paramsValid (const TestParams& params)
 		  params.varyings.frgInterp == INTERPOLATION_LAST))
 		return false;
 
+	// Mismatch by flat / smooth is not allowed. See Khronos bug #12630
+	if ((params.varyings.vtxInterp == INTERPOLATION_FLAT) != (params.varyings.frgInterp == INTERPOLATION_FLAT))
+		return false;
+
 	return true;
 }
 

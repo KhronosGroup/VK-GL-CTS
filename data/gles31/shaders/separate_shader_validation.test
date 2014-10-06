@@ -629,6 +629,166 @@ group varying "Default block varying matching"
 			""
 		end
 	end
+
+	case mismatch_qualifier_vertex_flat_fragment_none
+		version 310 es
+		desc "Interpolation qualifier mismatch"
+		expect validation_fail
+
+		pipeline_program
+			active_stages {vertex}
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				out flat highp vec4 v_val;
+				void main()
+				{
+					v_val = vec4(float(gl_VertexID));
+					${VERTEX_OUTPUT}
+				}
+			""
+		end
+		pipeline_program
+			active_stages {fragment}
+			fragment ""
+				#version 310 es
+				${FRAGMENT_DECLARATIONS}
+				in highp vec4 v_val;
+				void main()
+				{
+					${FRAG_COLOR} = v_val;
+				}
+			""
+		end
+	end
+
+	case mismatch_qualifier_vertex_flat_fragment_smooth
+		version 310 es
+		desc "Interpolation qualifier mismatch"
+		expect validation_fail
+
+		pipeline_program
+			active_stages {vertex}
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				out flat highp vec4 v_val;
+				void main()
+				{
+					v_val = vec4(float(gl_VertexID));
+					${VERTEX_OUTPUT}
+				}
+			""
+		end
+		pipeline_program
+			active_stages {fragment}
+			fragment ""
+				#version 310 es
+				${FRAGMENT_DECLARATIONS}
+				in smooth highp vec4 v_val;
+				void main()
+				{
+					${FRAG_COLOR} = v_val;
+				}
+			""
+		end
+	end
+
+	case mismatch_qualifier_vertex_flat_fragment_centroid
+		version 310 es
+		desc "Interpolation qualifier mismatch"
+		expect validation_fail
+
+		pipeline_program
+			active_stages {vertex}
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				out flat highp vec4 v_val;
+				void main()
+				{
+					v_val = vec4(float(gl_VertexID));
+					${VERTEX_OUTPUT}
+				}
+			""
+		end
+		pipeline_program
+			active_stages {fragment}
+			fragment ""
+				#version 310 es
+				${FRAGMENT_DECLARATIONS}
+				in centroid highp vec4 v_val;
+				void main()
+				{
+					${FRAG_COLOR} = v_val;
+				}
+			""
+		end
+	end
+
+	case mismatch_qualifier_vertex_smooth_fragment_flat
+		version 310 es
+		desc "Interpolation qualifier mismatch"
+		expect validation_fail
+
+		pipeline_program
+			active_stages {vertex}
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				out smooth highp vec4 v_val;
+				void main()
+				{
+					v_val = vec4(float(gl_VertexID));
+					${VERTEX_OUTPUT}
+				}
+			""
+		end
+		pipeline_program
+			active_stages {fragment}
+			fragment ""
+				#version 310 es
+				${FRAGMENT_DECLARATIONS}
+				in flat highp vec4 v_val;
+				void main()
+				{
+					${FRAG_COLOR} = v_val;
+				}
+			""
+		end
+	end
+
+	case mismatch_qualifier_vertex_centroid_fragment_flat
+		version 310 es
+		desc "Interpolation qualifier mismatch"
+		expect validation_fail
+
+		pipeline_program
+			active_stages {vertex}
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				out centroid highp vec4 v_val;
+				void main()
+				{
+					v_val = vec4(float(gl_VertexID));
+					${VERTEX_OUTPUT}
+				}
+			""
+		end
+		pipeline_program
+			active_stages {fragment}
+			fragment ""
+				#version 310 es
+				${FRAGMENT_DECLARATIONS}
+				in flat highp vec4 v_val;
+				void main()
+				{
+					${FRAG_COLOR} = v_val;
+				}
+			""
+		end
+	end
 end
 
 group io_blocks "shader io blocks"
