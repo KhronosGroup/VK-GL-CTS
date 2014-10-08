@@ -5897,7 +5897,6 @@
 <Test name="command_bad_alignment_3" />
 <Test name="command_offset_partially_in_buffer" />
 <Test name="command_offset_not_in_buffer" />
-<Test name="command_offset_not_in_buffer_unsigned32_wrap" />
 <Test name="client_vertex_attrib_array" />
 <Test name="client_command_array" />
 <Test name="default_vao" />

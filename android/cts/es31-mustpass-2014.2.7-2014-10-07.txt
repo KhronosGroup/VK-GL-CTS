@@ -5016,7 +5016,6 @@ dEQP-GLES31.functional.draw_indirect.negative.command_bad_alignment_2
 dEQP-GLES31.functional.draw_indirect.negative.command_bad_alignment_3
 dEQP-GLES31.functional.draw_indirect.negative.command_offset_partially_in_buffer
 dEQP-GLES31.functional.draw_indirect.negative.command_offset_not_in_buffer
-dEQP-GLES31.functional.draw_indirect.negative.command_offset_not_in_buffer_unsigned32_wrap
 dEQP-GLES31.functional.draw_indirect.negative.client_vertex_attrib_array
 dEQP-GLES31.functional.draw_indirect.negative.client_command_array
 dEQP-GLES31.functional.draw_indirect.negative.default_vao
