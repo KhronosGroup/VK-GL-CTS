@@ -16173,26 +16173,6 @@
 <Test name="vec4" />
 </TestCase>
 </TestSuite>
-<TestSuite name="atan">
-<TestCase name="lowp_vertex">
-<Test name="scalar" />
-<Test name="vec2" />
-<Test name="vec3" />
-<Test name="vec4" />
-</TestCase>
-<TestCase name="lowp_fragment">
-<Test name="scalar" />
-<Test name="vec2" />
-<Test name="vec3" />
-<Test name="vec4" />
-</TestCase>
-<TestCase name="mediump_vertex">
-<Test name="scalar" />
-<Test name="vec2" />
-<Test name="vec3" />
-<Test name="vec4" />
-</TestCase>
-</TestSuite>
 <TestSuite name="sinh">
 <TestCase name="lowp_vertex">
 <Test name="scalar" />
@@ -17043,16 +17023,10 @@
 <Test name="vec4" />
 </TestCase>
 <TestCase name="highp_vertex">
-<Test name="scalar" />
 <Test name="vec2" />
-<Test name="vec3" />
-<Test name="vec4" />
 </TestCase>
 <TestCase name="highp_fragment">
-<Test name="scalar" />
 <Test name="vec2" />
-<Test name="vec3" />
-<Test name="vec4" />
 </TestCase>
 </TestSuite>
 <TestSuite name="length">
@@ -17154,7 +17128,6 @@
 </TestCase>
 <TestCase name="highp_fragment">
 <Test name="vec3" />
-<Test name="vec4" />
 </TestCase>
 </TestSuite>
 <TestCase name="cross">

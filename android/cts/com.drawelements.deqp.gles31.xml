@@ -18295,12 +18295,10 @@
 <TestCase name="vertex_fragment">
 <Test name="builtin_gl_position" />
 <Test name="default_block_basic_type" />
-<Test name="default_block_array_element" />
 </TestCase>
 <TestCase name="separable_vertex">
 <Test name="builtin_gl_position" />
 <Test name="default_block_basic_type" />
-<Test name="default_block_array_element" />
 </TestCase>
 </TestSuite>
 <TestSuite name="array_size">
