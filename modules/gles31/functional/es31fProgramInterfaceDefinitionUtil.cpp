@@ -72,25 +72,41 @@ static bool incrementMultiDimensionIndex (std::vector<int>& index, const std::ve
 	return (incrementDimensionNdx != -1);
 }
 
-void generateVariableTypeResourceNames (std::vector<std::string>& resources, const std::string& name, const glu::VarType& type, bool isTopLevelBufferVariable)
+void generateVariableTypeResourceNames (std::vector<std::string>& resources, const std::string& name, const glu::VarType& type, deUint32 resourceNameGenerationFlags)
 {
+	DE_ASSERT((resourceNameGenerationFlags & (~RESOURCE_NAME_GENERATION_FLAG_MASK)) == 0);
+
+	// remove top-level flag from children
+	const deUint32 childFlags = resourceNameGenerationFlags & ~((deUint32)RESOURCE_NAME_GENERATION_FLAG_TOP_LEVEL_BUFFER_VARIABLE);
+
 	if (type.isBasicType())
 		resources.push_back(name);
 	else if (type.isStructType())
 	{
 		const glu::StructType* structType = type.getStructPtr();
 		for (int ndx = 0; ndx < structType->getNumMembers(); ++ndx)
-			generateVariableTypeResourceNames(resources, name + "." + structType->getMember(ndx).getName(), structType->getMember(ndx).getType(), false);
+			generateVariableTypeResourceNames(resources, name + "." + structType->getMember(ndx).getName(), structType->getMember(ndx).getType(), childFlags);
 	}
 	else if (type.isArrayType())
 	{
+		// Bottom-level arrays of basic types of a transform feedback variable will produce only the first
+		// element but without the trailing "[0]"
+		if (type.getElementType().isBasicType() &&
+			(resourceNameGenerationFlags & RESOURCE_NAME_GENERATION_FLAG_TRANSFORM_FEEDBACK_VARIABLE) != 0)
+		{
+			resources.push_back(name);
+		}
 		// Bottom-level arrays of basic types and SSBO top-level arrays of any type procude only first element
-		if (type.getElementType().isBasicType() || isTopLevelBufferVariable)
-			generateVariableTypeResourceNames(resources, name + "[0]", type.getElementType(), false);
+		else if (type.getElementType().isBasicType() ||
+				 (resourceNameGenerationFlags & RESOURCE_NAME_GENERATION_FLAG_TOP_LEVEL_BUFFER_VARIABLE) != 0)
+		{
+			generateVariableTypeResourceNames(resources, name + "[0]", type.getElementType(), childFlags);
+		}
+		// Other arrays of aggregate types are expanded
 		else
 		{
 			for (int ndx = 0; ndx < type.getArraySize(); ++ndx)
-				generateVariableTypeResourceNames(resources, name + "[" + de::toString(ndx) + "]", type.getElementType(), false);
+				generateVariableTypeResourceNames(resources, name + "[" + de::toString(ndx) + "]", type.getElementType(), childFlags);
 		}
 	}
 	else
@@ -370,9 +386,9 @@ static void writeInterfaceWriteExpression (std::ostringstream& buf, const std::s
 	}
 }
 
-static bool traverseVariablePath (std::vector<VariablePathComponent>& typePath, const char* pathWithoutName, const glu::VarType& type)
+static bool traverseVariablePath (std::vector<VariablePathComponent>& typePath, const char* subPath, const glu::VarType& type)
 {
-	glu::VarTokenizer tokenizer(pathWithoutName);
+	glu::VarTokenizer tokenizer(subPath);
 
 	typePath.push_back(VariablePathComponent(&type));
 
@@ -389,7 +405,7 @@ static bool traverseVariablePath (std::vector<VariablePathComponent>& typePath, 
 
 		for (int memberNdx = 0; memberNdx < type.getStructPtr()->getNumMembers(); ++memberNdx)
 			if (type.getStructPtr()->getMember(memberNdx).getName() == tokenizer.getIdentifier())
-				return traverseVariablePath(typePath, pathWithoutName + tokenizer.getCurrentTokenEndLocation(), type.getStructPtr()->getMember(memberNdx).getType());
+				return traverseVariablePath(typePath, subPath + tokenizer.getCurrentTokenEndLocation(), type.getStructPtr()->getMember(memberNdx).getType());
 
 		// malformed path, no such member
 		return false;
@@ -406,7 +422,7 @@ static bool traverseVariablePath (std::vector<VariablePathComponent>& typePath, 
 		if (tokenizer.getToken() != glu::VarTokenizer::TOKEN_RIGHT_BRACKET)
 			return false;
 
-		return traverseVariablePath(typePath, pathWithoutName + tokenizer.getCurrentTokenEndLocation(), type.getElementType());
+		return traverseVariablePath(typePath, subPath + tokenizer.getCurrentTokenEndLocation(), type.getElementType());
 	}
 
 	return false;
@@ -886,7 +902,12 @@ std::vector<std::string> getProgramInterfaceBlockMemberResourceList (const glu::
 	std::vector<std::string>	resources;
 
 	for (int variableNdx = 0; variableNdx < (int)interfaceBlock.variables.size(); ++variableNdx)
-		generateVariableTypeResourceNames(resources, namePrefix + interfaceBlock.variables[variableNdx].name, interfaceBlock.variables[variableNdx].varType, isTopLevelBufferVariable);
+		generateVariableTypeResourceNames(resources,
+										  namePrefix + interfaceBlock.variables[variableNdx].name,
+										  interfaceBlock.variables[variableNdx].varType,
+										  (isTopLevelBufferVariable) ?
+											(RESOURCE_NAME_GENERATION_FLAG_TOP_LEVEL_BUFFER_VARIABLE) :
+											(RESOURCE_NAME_GENERATION_FLAG_DEFAULT));
 
 	return resources;
 }
@@ -913,7 +934,10 @@ std::vector<std::string> getProgramInterfaceResourceList (const ProgramInterface
 
 				for (int variableNdx = 0; variableNdx < (int)shader->getDefaultBlock().variables.size(); ++variableNdx)
 					if (shader->getDefaultBlock().variables[variableNdx].storage == storage)
-						generateVariableTypeResourceNames(resources, shader->getDefaultBlock().variables[variableNdx].name, shader->getDefaultBlock().variables[variableNdx].varType, false);
+						generateVariableTypeResourceNames(resources,
+														  shader->getDefaultBlock().variables[variableNdx].name,
+														  shader->getDefaultBlock().variables[variableNdx].varType,
+														  RESOURCE_NAME_GENERATION_FLAG_DEFAULT);
 
 				for (int interfaceNdx = 0; interfaceNdx < (int)shader->getDefaultBlock().interfaceBlocks.size(); ++interfaceNdx)
 				{
@@ -981,7 +1005,10 @@ std::vector<std::string> getProgramInterfaceResourceList (const ProgramInterface
 
 				for (int variableNdx = 0; variableNdx < (int)shader->getDefaultBlock().variables.size(); ++variableNdx)
 					if (shader->getDefaultBlock().variables[variableNdx].storage == storage)
-						generateVariableTypeResourceNames(resources, shader->getDefaultBlock().variables[variableNdx].name, shader->getDefaultBlock().variables[variableNdx].varType, false);
+						generateVariableTypeResourceNames(resources,
+														  shader->getDefaultBlock().variables[variableNdx].name,
+														  shader->getDefaultBlock().variables[variableNdx].varType,
+														  RESOURCE_NAME_GENERATION_FLAG_DEFAULT);
 
 				for (int interfaceNdx = 0; interfaceNdx < (int)shader->getDefaultBlock().interfaceBlocks.size(); ++interfaceNdx)
 				{
@@ -1037,15 +1064,22 @@ std::vector<std::string> getProgramInterfaceResourceList (const ProgramInterface
 		{
 			for (int varyingNdx = 0; varyingNdx < (int)program->getTransformFeedbackVaryings().size(); ++varyingNdx)
 			{
-				const std::string					varyingName = program->getTransformFeedbackVaryings()[varyingNdx];
-				std::vector<VariablePathComponent>	path;
+				const std::string& varyingName = program->getTransformFeedbackVaryings()[varyingNdx];
 
 				if (deStringBeginsWith(varyingName.c_str(), "gl_"))
 					resources.push_back(varyingName); // builtin
-				else if (traverseProgramVariablePath(path, program, varyingName, VariableSearchFilter(glu::SHADERTYPE_VERTEX, glu::STORAGE_OUT)))
-					generateVariableTypeResourceNames(resources, varyingName, *path.back().getVariableType(), false);
 				else
-					DE_ASSERT(false); // Program failed validate, invalid operation
+				{
+					std::vector<VariablePathComponent> path;
+
+					if (!traverseProgramVariablePath(path, program, varyingName, VariableSearchFilter(glu::SHADERTYPE_VERTEX, glu::STORAGE_OUT)))
+						DE_ASSERT(false); // Program failed validate, invalid operation
+
+					generateVariableTypeResourceNames(resources,
+													  varyingName,
+													  *path.back().getVariableType(),
+													  RESOURCE_NAME_GENERATION_FLAG_TRANSFORM_FEEDBACK_VARIABLE);
+				}
 			}
 
 			break;

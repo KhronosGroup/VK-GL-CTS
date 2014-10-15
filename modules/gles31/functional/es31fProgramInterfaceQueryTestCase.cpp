@@ -1323,49 +1323,39 @@ void TopLevelArrayStrideValidator::validateSingleVariable (const std::vector<Var
 	}
 }
 
-class TransformFeedbackArraySizeValidator : public PropValidator
+class TransformFeedbackResourceValidator : public PropValidator
 {
 public:
-				TransformFeedbackArraySizeValidator	(Context& context);
-	void		validate							(const ProgramInterfaceDefinition::Program* program, const std::string& resource, glw::GLint propValue) const;
+					TransformFeedbackResourceValidator	(Context& context, ProgramResourcePropFlags validationProp);
+	void			validate							(const ProgramInterfaceDefinition::Program* program, const std::string& resource, glw::GLint propValue) const;
+
+private:
+	virtual void	validateBuiltinVariable				(const std::string& resource, glw::GLint propValue) const = 0;
+	virtual void	validateSingleVariable				(const std::vector<VariablePathComponent>& path, const std::string& resource, glw::GLint propValue) const = 0;
 };
 
-TransformFeedbackArraySizeValidator::TransformFeedbackArraySizeValidator (Context& context)
-	: PropValidator(context, PROGRAMRESOURCEPROP_ARRAY_SIZE)
+
+TransformFeedbackResourceValidator::TransformFeedbackResourceValidator (Context& context, ProgramResourcePropFlags validationProp)
+	: PropValidator(context, validationProp)
 {
 }
 
-void TransformFeedbackArraySizeValidator::validate (const ProgramInterfaceDefinition::Program* program, const std::string& resource, glw::GLint propValue) const
+void TransformFeedbackResourceValidator::validate (const ProgramInterfaceDefinition::Program* program, const std::string& resource, glw::GLint propValue) const
 {
-	int arraySize = 0;
-
 	if (deStringBeginsWith(resource.c_str(), "gl_"))
 	{
-		if (resource == "gl_Position")
-			arraySize = 1;
-		else
-			DE_ASSERT(false);
-	}
-	else if (!stringEndsWith(resource, "[0]"))
-	{
-		// user-defined non-array. Just check it exists
-		std::vector<VariablePathComponent> path;
-		if (!findProgramVariablePathByPathName(path, program, resource, VariableSearchFilter(glu::SHADERTYPE_VERTEX, glu::STORAGE_OUT)))
-		{
-			DE_ASSERT(false);
-			return;
-		}
-
-		arraySize = 1;
+		validateBuiltinVariable(resource, propValue);
 	}
 	else
 	{
+		// Check resource name is a xfb output. (sanity check)
+#if defined(DE_DEBUG)
 		bool generatorFound = false;
 
-		// user-defined, array or array element. Find the generating varying declaration
+		// Check the resource name is a valid transform feedback resource and find the name generating resource
 		for (int varyingNdx = 0; varyingNdx < (int)program->getTransformFeedbackVaryings().size(); ++varyingNdx)
 		{
-			const std::string					varyingName	= program->getTransformFeedbackVaryings()[varyingNdx];
+			const std::string					varyingName = program->getTransformFeedbackVaryings()[varyingNdx];
 			std::vector<VariablePathComponent>	path;
 			std::vector<std::string>			resources;
 
@@ -1376,28 +1366,164 @@ void TransformFeedbackArraySizeValidator::validate (const ProgramInterfaceDefini
 				return;
 			}
 
-			generateVariableTypeResourceNames(resources, varyingName, *path.back().getVariableType(), false);
+			generateVariableTypeResourceNames(resources, varyingName, *path.back().getVariableType(), RESOURCE_NAME_GENERATION_FLAG_TRANSFORM_FEEDBACK_VARIABLE);
 
 			if (de::contains(resources.begin(), resources.end(), resource))
 			{
-				arraySize = (path.back().getVariableType()->isArrayType()) ? (path.back().getVariableType()->getArraySize()) : (1);
 				generatorFound = true;
 				break;
 			}
 		}
 
-		if (!generatorFound)
+		// resource name was not found, should never happen
+		DE_ASSERT(generatorFound);
+		DE_UNREF(generatorFound);
+#endif
+
+		// verify resource
 		{
-			DE_ASSERT(false);
-			return;
+			std::vector<VariablePathComponent> path;
+
+			if (!findProgramVariablePathByPathName(path, program, resource, VariableSearchFilter(glu::SHADERTYPE_VERTEX, glu::STORAGE_OUT)))
+				DE_ASSERT(false);
+
+			validateSingleVariable(path, resource, propValue);
 		}
 	}
+}
+
+class TransformFeedbackArraySizeValidator : public TransformFeedbackResourceValidator
+{
+public:
+				TransformFeedbackArraySizeValidator	(Context& context);
+
+	void		validateBuiltinVariable				(const std::string& resource, glw::GLint propValue) const;
+	void		validateSingleVariable				(const std::vector<VariablePathComponent>& path, const std::string& resource, glw::GLint propValue) const;
+};
+
+TransformFeedbackArraySizeValidator::TransformFeedbackArraySizeValidator (Context& context)
+	: TransformFeedbackResourceValidator(context, PROGRAMRESOURCEPROP_ARRAY_SIZE)
+{
+}
+
+void TransformFeedbackArraySizeValidator::validateBuiltinVariable (const std::string& resource, glw::GLint propValue) const
+{
+	int arraySize = 0;
+
+	if (resource == "gl_Position")
+		arraySize = 1;
+	else
+		DE_ASSERT(false);
 
 	m_testCtx.getLog() << tcu::TestLog::Message << "Verifying array size, expecting " << arraySize << tcu::TestLog::EndMessage;
 	if (arraySize != propValue)
 	{
 		m_testCtx.getLog() << tcu::TestLog::Message << "\tError, got " << propValue << tcu::TestLog::EndMessage;
 		setError("resource array size invalid");
+	}
+}
+
+void TransformFeedbackArraySizeValidator::validateSingleVariable (const std::vector<VariablePathComponent>& path, const std::string& resource, glw::GLint propValue) const
+{
+	DE_UNREF(resource);
+
+	const int arraySize = (path.back().getVariableType()->isArrayType()) ? (path.back().getVariableType()->getArraySize()) : (1);
+
+	m_testCtx.getLog() << tcu::TestLog::Message << "Verifying array size, expecting " << arraySize << tcu::TestLog::EndMessage;
+	if (arraySize != propValue)
+	{
+		m_testCtx.getLog() << tcu::TestLog::Message << "\tError, got " << propValue << tcu::TestLog::EndMessage;
+		setError("resource array size invalid");
+	}
+}
+
+class TransformFeedbackNameLengthValidator : public TransformFeedbackResourceValidator
+{
+public:
+				TransformFeedbackNameLengthValidator	(Context& context);
+
+private:
+	void		validateBuiltinVariable					(const std::string& resource, glw::GLint propValue) const;
+	void		validateSingleVariable					(const std::vector<VariablePathComponent>& path, const std::string& resource, glw::GLint propValue) const;
+	void		validateVariable						(const std::string& resource, glw::GLint propValue) const;
+};
+
+TransformFeedbackNameLengthValidator::TransformFeedbackNameLengthValidator (Context& context)
+	: TransformFeedbackResourceValidator(context, PROGRAMRESOURCEPROP_NAME_LENGTH)
+{
+}
+
+void TransformFeedbackNameLengthValidator::validateBuiltinVariable (const std::string& resource, glw::GLint propValue) const
+{
+	validateVariable(resource, propValue);
+}
+
+void TransformFeedbackNameLengthValidator::validateSingleVariable (const std::vector<VariablePathComponent>& path, const std::string& resource, glw::GLint propValue) const
+{
+	DE_UNREF(path);
+	validateVariable(resource, propValue);
+}
+
+void TransformFeedbackNameLengthValidator::validateVariable (const std::string& resource, glw::GLint propValue) const
+{
+	const int expected = (int)resource.length() + 1; // includes null byte
+	m_testCtx.getLog() << tcu::TestLog::Message << "Verifying name length, expecting " << expected << " (" << (int)resource.length() << " for \"" << resource << "\" + 1 byte for terminating null character)" << tcu::TestLog::EndMessage;
+
+	if (propValue != expected)
+	{
+		m_testCtx.getLog() << tcu::TestLog::Message << "\tError, invalid name length, got " << propValue << tcu::TestLog::EndMessage;
+		setError("name length invalid");
+	}
+}
+
+class TransformFeedbackTypeValidator : public TransformFeedbackResourceValidator
+{
+public:
+				TransformFeedbackTypeValidator		(Context& context);
+
+	void		validateBuiltinVariable				(const std::string& resource, glw::GLint propValue) const;
+	void		validateSingleVariable				(const std::vector<VariablePathComponent>& path, const std::string& resource, glw::GLint propValue) const;
+};
+
+TransformFeedbackTypeValidator::TransformFeedbackTypeValidator (Context& context)
+	: TransformFeedbackResourceValidator(context, PROGRAMRESOURCEPROP_TYPE)
+{
+}
+
+void TransformFeedbackTypeValidator::validateBuiltinVariable (const std::string& resource, glw::GLint propValue) const
+{
+	glu::DataType varType = glu::TYPE_INVALID;
+
+	if (resource == "gl_Position")
+		varType = glu::TYPE_FLOAT_VEC4;
+	else
+		DE_ASSERT(false);
+
+	m_testCtx.getLog() << tcu::TestLog::Message << "Verifying type, expecting " << glu::getDataTypeName(varType) << tcu::TestLog::EndMessage;
+	if (glu::getDataTypeFromGLType(propValue) != varType)
+	{
+		m_testCtx.getLog() << tcu::TestLog::Message << "\tError, got " << glu::getDataTypeName(glu::getDataTypeFromGLType(propValue)) << tcu::TestLog::EndMessage;
+		setError("resource type invalid");
+	}
+	return;
+}
+
+void TransformFeedbackTypeValidator::validateSingleVariable (const std::vector<VariablePathComponent>& path, const std::string& resource, glw::GLint propValue) const
+{
+	DE_UNREF(resource);
+
+	// Unlike other interfaces, xfb program interface uses just variable name to refer to arrays of basic types. (Others use "variable[0]")
+	// Thus we might end up querying a type for an array. In this case, return the type of an array element.
+	const glu::VarType& variable    = *path.back().getVariableType();
+	const glu::VarType& elementType = (variable.isArrayType()) ? (variable.getElementType()) : (variable);
+
+	DE_ASSERT(elementType.isBasicType());
+
+	m_testCtx.getLog() << tcu::TestLog::Message << "Verifying type, expecting " << glu::getDataTypeName(elementType.getBasicType()) << tcu::TestLog::EndMessage;
+	if (elementType.getBasicType() != glu::getDataTypeFromGLType(propValue))
+	{
+		m_testCtx.getLog() << tcu::TestLog::Message << "\tError, got " << glu::getDataTypeName(glu::getDataTypeFromGLType(propValue)) << tcu::TestLog::EndMessage;
+		setError("resource type invalid");
 	}
 }
 
@@ -1807,9 +1933,9 @@ ProgramInterfaceQueryTestCase::IterateResult ProgramInterfaceQueryTestCase::iter
 
 		case PROGRAMINTERFACE_TRANSFORM_FEEDBACK_VARYING:
 		{
-			const TypeValidator							typeValidator			(m_context, program.getProgram(), VariableSearchFilter(glu::SHADERTYPE_VERTEX, glu::STORAGE_OUT));
+			const TransformFeedbackTypeValidator		typeValidator			(m_context);
 			const TransformFeedbackArraySizeValidator	arraySizeValidator		(m_context);
-			const VariableNameLengthValidator			nameLengthValidator		(m_context, program.getProgram(), VariableSearchFilter(glu::SHADERTYPE_VERTEX, glu::STORAGE_OUT));
+			const TransformFeedbackNameLengthValidator	nameLengthValidator		(m_context);
 
 			const TestProperty allProperties[] =
 			{
