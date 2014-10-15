@@ -53,9 +53,6 @@ private:
 	void				init				(void);
 	IterateResult		iterate				(void);
 
-	void				testMultisample		(void);
-	void				testSinglesample	(void);
-
 	const glw::GLenum	m_texTarget;
 	const glw::GLenum	m_internalFormat;
 	const FormatType	m_type;
@@ -67,25 +64,20 @@ FormatSamplesCase::FormatSamplesCase (Context& ctx, const char* name, const char
 	, m_internalFormat	(internalFormat)
 	, m_type			(type)
 {
+	DE_ASSERT(m_texTarget == GL_TEXTURE_2D_MULTISAMPLE || m_texTarget == GL_TEXTURE_2D_MULTISAMPLE_ARRAY);
 }
 
 void FormatSamplesCase::init (void)
 {
 	if (m_texTarget == GL_TEXTURE_2D_MULTISAMPLE_ARRAY && !m_context.getContextInfo().isExtensionSupported("GL_OES_texture_storage_multisample_2d_array"))
 		throw tcu::NotSupportedError("Test requires OES_texture_storage_multisample_2d_array extension");
+
+	// stencil8 textures are not supported without GL_OES_texture_stencil8 extension
+	if (m_internalFormat == GL_STENCIL_INDEX8 && !m_context.getContextInfo().isExtensionSupported("GL_OES_texture_stencil8"))
+		throw tcu::NotSupportedError("Test requires GL_OES_texture_stencil8 extension");
 }
 
 FormatSamplesCase::IterateResult FormatSamplesCase::iterate (void)
-{
-	if (m_texTarget == GL_TEXTURE_2D_MULTISAMPLE || m_texTarget == GL_TEXTURE_2D_MULTISAMPLE_ARRAY || m_texTarget == GL_RENDERBUFFER)
-		testMultisample();
-	else
-		testSinglesample();
-
-	return STOP;
-}
-
-void FormatSamplesCase::testMultisample (void)
 {
 	const glw::Functions&	gl				= m_context.getRenderContext().getFunctions();
 	bool					error			= false;
@@ -184,38 +176,8 @@ void FormatSamplesCase::testMultisample (void)
 		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
 	else
 		m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Invalid value");
-}
 
-void FormatSamplesCase::testSinglesample (void)
-{
-	const glw::Functions&	gl				= m_context.getRenderContext().getFunctions();
-	const int				defValue		= -123;
-	glw::GLint				numSampleCounts	= defValue;
-
-	m_testCtx.getLog()
-		<< tcu::TestLog::Message
-		<< "Quering GL_NUM_SAMPLE_COUNTS with target = " << glu::getInternalFormatTargetName(m_texTarget) << ", internal format = " << glu::getPixelFormatName(m_internalFormat) << "\n"
-		<< "Expecting 0."
-		<< tcu::TestLog::EndMessage;
-
-	gl.getInternalformativ(m_texTarget, m_internalFormat, GL_NUM_SAMPLE_COUNTS, 1, &numSampleCounts);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "get GL_NUM_SAMPLE_COUNTS");
-
-	if (numSampleCounts == 0)
-	{
-		m_testCtx.getLog() << tcu::TestLog::Message << "GL_NUM_SAMPLE_COUNTS = " << numSampleCounts << tcu::TestLog::EndMessage;
-		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
-	}
-	else if (numSampleCounts == defValue)
-	{
-		m_testCtx.getLog() << tcu::TestLog::Message << "getInternalformativ did not return a value." << tcu::TestLog::EndMessage;
-		m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "No value");
-	}
-	else
-	{
-		m_testCtx.getLog() << tcu::TestLog::Message << "GL_NUM_SAMPLE_COUNTS = " << numSampleCounts << ", expected 0" << tcu::TestLog::EndMessage;
-		m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Invalid value");
-	}
+	return STOP;
 }
 
 } // anonymous
