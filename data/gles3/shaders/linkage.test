@@ -464,54 +464,68 @@ group varying "Varying linkage"
 			""
 		end
 
-		# mismatched interpolation
-		case interpolation_mismatch_1
+		# different interpolation
+		case differing_interpolation_1
 			version 300 es
-			desc "varying interpolation mismatch (flat vs. smooth)"
-			expect link_fail
+			desc "varying interpolation different (flat vs. smooth)"
+			values
+			{
+				input float in0		= [ -1.25 | -25.0 | 1.0 | 2.25 | 3.4 | 16.0 ];
+				output float out0	= [ -1.25 | -25.0 | 1.0 | 2.25 | 3.4 | 16.0 ];
+			}
+
 			vertex ""
 				#version 300 es
 				${VERTEX_DECLARATIONS}
 				flat out mediump float var;
 				void main()
 				{
-					var = 2.0;
+					var = in0;
 					${VERTEX_OUTPUT}
 				}
 			""
 			fragment ""
 				#version 300 es
+				precision mediump float;
 				${FRAGMENT_DECLARATIONS}
 				in mediump float var;
 				void main()
 				{
-					${FRAG_COLOR} = vec4(var);
+					out0 = var;
+					${FRAGMENT_OUTPUT}
 				}
 			""
 		end
 
-		# mismatched interpolation
-		case interpolation_mismatch_2
+		# different interpolation
+		case differing_interpolation_2
 			version 300 es
-			desc "varying interpolation mismatch (smooth vs. centroid)"
-			expect link_fail
+			desc "varying interpolation different (smooth vs. centroid)"
+			values
+			{
+				input float in0		= [ -1.25 | -25.0 | 1.0 | 2.25 | 3.4 | 16.0 ];
+				output float out0	= [ -1.25 | -25.0 | 1.0 | 2.25 | 3.4 | 16.0 ];
+			}
+
 			vertex ""
 				#version 300 es
 				${VERTEX_DECLARATIONS}
 				smooth out mediump float var;
 				void main()
 				{
-					var = 2.0;
+					var = in0;
 					${VERTEX_OUTPUT}
 				}
 			""
 			fragment ""
 				#version 300 es
+				precision mediump float;
 				${FRAGMENT_DECLARATIONS}
 				centroid in mediump float var;
 				void main()
 				{
-					${FRAG_COLOR} = vec4(var);
+					out0 = var;
+					${FRAGMENT_OUTPUT}
 				}
 			""
 		end

@@ -5304,7 +5304,14 @@ static void generateTransformFeedbackVariableTypeBlockContents (Context& context
 	const ResourceDefinition::Node::SharedPtr	output			(new ResourceDefinition::StorageQualifier(defaultBlock, glu::STORAGE_OUT));
 	const ResourceDefinition::Node::SharedPtr	flatShading		(new ResourceDefinition::InterpolationQualifier(output, glu::INTERPOLATION_FLAT));
 
-	// Only basic types, arrays of basic types, struct of basic types (and no booleans)
+	// Only builtins, basic types, arrays of basic types, struct of basic types (and no booleans)
+	{
+		const ResourceDefinition::Node::SharedPtr	xfbTarget		(new ResourceDefinition::TransformFeedbackTarget(defaultBlock, "gl_Position"));
+		tcu::TestCaseGroup* const					blockGroup		= new TestCaseGroup(context, "builtin", "Built-in outputs");
+
+		targetGroup->addChild(blockGroup);
+		blockGroup->addChild(new ResourceTestCase(context, xfbTarget, ProgramResourceQueryTestTarget(PROGRAMINTERFACE_TRANSFORM_FEEDBACK_VARYING, PROGRAMRESOURCEPROP_TYPE), "gl_position"));
+	}
 	{
 		const ResourceDefinition::Node::SharedPtr	xfbTarget		(new ResourceDefinition::TransformFeedbackTarget(flatShading));
 		tcu::TestCaseGroup* const					blockGroup		= new TestCaseGroup(context, "basic_type", "Basic types");
@@ -5319,6 +5326,14 @@ static void generateTransformFeedbackVariableTypeBlockContents (Context& context
 
 		targetGroup->addChild(blockGroup);
 		generateTransformFeedbackVariableBasicTypeCases(context, xfbTarget, blockGroup);
+	}
+	{
+		const ResourceDefinition::Node::SharedPtr	xfbTarget		(new ResourceDefinition::TransformFeedbackTarget(flatShading));
+		const ResourceDefinition::Node::SharedPtr	arrayElement	(new ResourceDefinition::ArrayElement(xfbTarget));
+		tcu::TestCaseGroup* const					blockGroup		= new TestCaseGroup(context, "whole_array", "Whole array");
+
+		targetGroup->addChild(blockGroup);
+		generateTransformFeedbackVariableBasicTypeCases(context, arrayElement, blockGroup);
 	}
 	{
 		const ResourceDefinition::Node::SharedPtr	structMember	(new ResourceDefinition::StructMember(flatShading));
