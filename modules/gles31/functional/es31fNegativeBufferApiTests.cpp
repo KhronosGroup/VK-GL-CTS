@@ -812,9 +812,9 @@ void map_buffer_range (NegativeTestContext& ctx)
 
 void read_buffer (NegativeTestContext& ctx)
 {
-	deUint32				fbo = 0x1234;
-	deUint32				texture = 0x1234;
-	int						maxColorAttachments = 0x1234;
+	deUint32	fbo					= 0x1234;
+	deUint32	texture				= 0x1234;
+	int			maxColorAttachments	= 0x1234;
 
 	ctx.glGetIntegerv			(GL_MAX_COLOR_ATTACHMENTS, &maxColorAttachments);
 	ctx.glGenTextures			(1, &texture);
@@ -826,13 +826,43 @@ void read_buffer (NegativeTestContext& ctx)
 	ctx.glCheckFramebufferStatus(GL_FRAMEBUFFER);
 	ctx.expectError				(GL_NO_ERROR);
 
-	ctx.beginSection("GL_INVALID_ENUM is generated if mode is not GL_BACK, GL_NONE, or GL_COLOR_ATTACHMENTi, where i is less than GL_MAX_COLOR_ATTACHMENTS.");
-	ctx.glReadBuffer			(-1);
+	ctx.beginSection("GL_INVALID_ENUM is generated if mode is not GL_BACK, GL_NONE, or GL_COLOR_ATTACHMENTi.");
+	ctx.glReadBuffer			(GL_NONE);
+	ctx.expectError				(GL_NO_ERROR);
+	ctx.glReadBuffer			(1);
 	ctx.expectError				(GL_INVALID_ENUM);
 	ctx.glReadBuffer			(GL_FRAMEBUFFER);
 	ctx.expectError				(GL_INVALID_ENUM);
-	ctx.glReadBuffer			(GL_COLOR_ATTACHMENT0 + maxColorAttachments);
+	ctx.glReadBuffer			(GL_COLOR_ATTACHMENT0 - 1);
 	ctx.expectError				(GL_INVALID_ENUM);
+	ctx.glReadBuffer			(GL_FRONT);
+	ctx.expectError				(GL_INVALID_ENUM);
+
+	// \ note Spec isn't actually clear here, but it is safe to assume that
+	//		  GL_DEPTH_ATTACHMENT can't be interpreted as GL_COLOR_ATTACHMENTm
+	//		  where m = (GL_DEPTH_ATTACHMENT - GL_COLOR_ATTACHMENT0).
+	ctx.glReadBuffer			(GL_DEPTH_ATTACHMENT);
+	ctx.expectError				(GL_INVALID_ENUM);
+	ctx.glReadBuffer			(GL_STENCIL_ATTACHMENT);
+	ctx.expectError				(GL_INVALID_ENUM);
+	ctx.glReadBuffer			(GL_STENCIL_ATTACHMENT+1);
+	ctx.expectError				(GL_INVALID_ENUM);
+	ctx.glReadBuffer			(0xffffffffu);
+	ctx.expectError				(GL_INVALID_ENUM);
+	ctx.endSection();
+
+	ctx.beginSection("GL_INVALID_OPERATION error is generated if src is GL_BACK or if src is GL_COLOR_ATTACHMENTm where m is greater than or equal to the value of GL_MAX_COLOR_ATTACHMENTS.");
+	ctx.glReadBuffer			(GL_BACK);
+	ctx.expectError				(GL_INVALID_OPERATION);
+	ctx.glReadBuffer			(GL_COLOR_ATTACHMENT0 + maxColorAttachments);
+	ctx.expectError				(GL_INVALID_OPERATION);
+
+	if (GL_COLOR_ATTACHMENT0+maxColorAttachments < GL_DEPTH_ATTACHMENT-1)
+	{
+		ctx.glReadBuffer			(GL_DEPTH_ATTACHMENT - 1);
+		ctx.expectError				(GL_INVALID_OPERATION);
+	}
+
 	ctx.endSection();
 
 	ctx.beginSection("GL_INVALID_OPERATION is generated if the current framebuffer is the default framebuffer and mode is not GL_NONE or GL_BACK.");

@@ -12564,7 +12564,6 @@ dEQP-GLES31.functional.separate_shader.interface.same_name
 dEQP-GLES31.functional.separate_shader.interface.same_location_vertex_smooth_fragment_smooth
 dEQP-GLES31.functional.separate_shader.interface.same_location_vertex_flat_fragment_flat
 dEQP-GLES31.functional.separate_shader.interface.same_location_vertex_centroid_fragment_centroid
-dEQP-GLES31.functional.separate_shader.interface.same_location_fragment_flat
 dEQP-GLES31.functional.separate_shader.random.4
 dEQP-GLES31.functional.separate_shader.random.5
 dEQP-GLES31.functional.separate_shader.random.7
@@ -13039,7 +13038,6 @@ dEQP-GLES31.functional.debug.negative_coverage.callbacks.buffer.copy_buffer_sub_
 dEQP-GLES31.functional.debug.negative_coverage.callbacks.buffer.draw_buffers
 dEQP-GLES31.functional.debug.negative_coverage.callbacks.buffer.flush_mapped_buffer_range
 dEQP-GLES31.functional.debug.negative_coverage.callbacks.buffer.map_buffer_range
-dEQP-GLES31.functional.debug.negative_coverage.callbacks.buffer.read_buffer
 dEQP-GLES31.functional.debug.negative_coverage.callbacks.buffer.unmap_buffer
 dEQP-GLES31.functional.debug.negative_coverage.callbacks.buffer.bind_framebuffer
 dEQP-GLES31.functional.debug.negative_coverage.callbacks.buffer.bind_renderbuffer
@@ -13330,7 +13328,6 @@ dEQP-GLES31.functional.debug.negative_coverage.log.buffer.copy_buffer_sub_data
 dEQP-GLES31.functional.debug.negative_coverage.log.buffer.draw_buffers
 dEQP-GLES31.functional.debug.negative_coverage.log.buffer.flush_mapped_buffer_range
 dEQP-GLES31.functional.debug.negative_coverage.log.buffer.map_buffer_range
-dEQP-GLES31.functional.debug.negative_coverage.log.buffer.read_buffer
 dEQP-GLES31.functional.debug.negative_coverage.log.buffer.unmap_buffer
 dEQP-GLES31.functional.debug.negative_coverage.log.buffer.bind_framebuffer
 dEQP-GLES31.functional.debug.negative_coverage.log.buffer.bind_renderbuffer

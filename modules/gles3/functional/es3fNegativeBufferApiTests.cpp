@@ -816,13 +816,43 @@ void NegativeBufferApiTests::init (void)
 			glCheckFramebufferStatus(GL_FRAMEBUFFER);
 			expectError				(GL_NO_ERROR);
 
-			m_log << TestLog::Section("", "GL_INVALID_ENUM is generated if mode is not GL_BACK, GL_NONE, or GL_COLOR_ATTACHMENTi, where i is less than GL_MAX_COLOR_ATTACHMENTS.");
-			glReadBuffer			(-1);
+			m_log << TestLog::Section("", "GL_INVALID_ENUM is generated if mode is not GL_BACK, GL_NONE, or GL_COLOR_ATTACHMENTi.");
+			glReadBuffer			(GL_NONE);
+			expectError				(GL_NO_ERROR);
+			glReadBuffer			(1);
 			expectError				(GL_INVALID_ENUM);
 			glReadBuffer			(GL_FRAMEBUFFER);
 			expectError				(GL_INVALID_ENUM);
-			glReadBuffer			(GL_COLOR_ATTACHMENT0 + maxColorAttachments);
+			glReadBuffer			(GL_COLOR_ATTACHMENT0 - 1);
 			expectError				(GL_INVALID_ENUM);
+			glReadBuffer			(GL_FRONT);
+			expectError				(GL_INVALID_ENUM);
+
+			// \ note Spec isn't actually clear here, but it is safe to assume that
+			//		  GL_DEPTH_ATTACHMENT can't be interpreted as GL_COLOR_ATTACHMENTm
+			//		  where m = (GL_DEPTH_ATTACHMENT - GL_COLOR_ATTACHMENT0).
+			glReadBuffer			(GL_DEPTH_ATTACHMENT);
+			expectError				(GL_INVALID_ENUM);
+			glReadBuffer			(GL_STENCIL_ATTACHMENT);
+			expectError				(GL_INVALID_ENUM);
+			glReadBuffer			(GL_STENCIL_ATTACHMENT+1);
+			expectError				(GL_INVALID_ENUM);
+			glReadBuffer			(0xffffffffu);
+			expectError				(GL_INVALID_ENUM);
+			m_log << TestLog::EndSection;
+
+			m_log << TestLog::Section("", "GL_INVALID_OPERATION error is generated if src is GL_BACK or if src is GL_COLOR_ATTACHMENTm where m is greater than or equal to the value of GL_MAX_COLOR_ATTACHMENTS.");
+			glReadBuffer			(GL_BACK);
+			expectError				(GL_INVALID_OPERATION);
+			glReadBuffer			(GL_COLOR_ATTACHMENT0 + maxColorAttachments);
+			expectError				(GL_INVALID_OPERATION);
+
+			if (GL_COLOR_ATTACHMENT0+maxColorAttachments < GL_DEPTH_ATTACHMENT-1)
+			{
+				glReadBuffer			(GL_DEPTH_ATTACHMENT - 1);
+				expectError				(GL_INVALID_OPERATION);
+			}
+
 			m_log << TestLog::EndSection;
 
 			m_log << TestLog::Section("", "GL_INVALID_OPERATION is generated if the current framebuffer is the default framebuffer and mode is not GL_NONE or GL_BACK.");

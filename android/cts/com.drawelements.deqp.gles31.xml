@@ -14947,7 +14947,6 @@
 <Test name="same_location_vertex_smooth_fragment_smooth" />
 <Test name="same_location_vertex_flat_fragment_flat" />
 <Test name="same_location_vertex_centroid_fragment_centroid" />
-<Test name="same_location_fragment_flat" />
 </TestCase>
 <TestCase name="random">
 <Test name="4" />
@@ -15470,7 +15469,6 @@
 <Test name="draw_buffers" />
 <Test name="flush_mapped_buffer_range" />
 <Test name="map_buffer_range" />
-<Test name="read_buffer" />
 <Test name="unmap_buffer" />
 <Test name="bind_framebuffer" />
 <Test name="bind_renderbuffer" />
@@ -15775,7 +15773,6 @@
 <Test name="draw_buffers" />
 <Test name="flush_mapped_buffer_range" />
 <Test name="map_buffer_range" />
-<Test name="read_buffer" />
 <Test name="unmap_buffer" />
 <Test name="bind_framebuffer" />
 <Test name="bind_renderbuffer" />
