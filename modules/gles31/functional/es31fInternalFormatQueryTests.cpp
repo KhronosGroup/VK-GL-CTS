@@ -180,6 +180,158 @@ FormatSamplesCase::IterateResult FormatSamplesCase::iterate (void)
 	return STOP;
 }
 
+class NumSampleCountsBufferCase : public TestCase
+{
+public:
+					NumSampleCountsBufferCase 	(Context& ctx, const char* name, const char* desc);
+
+private:
+	IterateResult	iterate						(void);
+};
+
+NumSampleCountsBufferCase::NumSampleCountsBufferCase (Context& ctx, const char* name, const char* desc)
+	: TestCase(ctx, name, desc)
+{
+}
+
+NumSampleCountsBufferCase::IterateResult NumSampleCountsBufferCase::iterate (void)
+{
+	const glw::GLint 		defaultValue 	= -123; // queries always return positive values
+	const glw::Functions&	gl				= m_context.getRenderContext().getFunctions();
+	bool					error			= false;
+
+	// Query to larger buffer
+	{
+		glw::GLint buffer[2] = { defaultValue, defaultValue };
+
+		m_testCtx.getLog() << tcu::TestLog::Message << "Querying GL_NUM_SAMPLE_COUNTS to larger-than-needed buffer." << tcu::TestLog::EndMessage;
+		gl.getInternalformativ(GL_TEXTURE_2D_MULTISAMPLE, GL_RGBA8, GL_NUM_SAMPLE_COUNTS, 2, buffer);
+		GLU_EXPECT_NO_ERROR(gl.getError(), "get GL_NUM_SAMPLE_COUNTS");
+
+		if (buffer[1] != defaultValue)
+		{
+			m_testCtx.getLog() << tcu::TestLog::Message << "ERROR: trailing values were modified." << tcu::TestLog::EndMessage;
+			error = true;
+		}
+	}
+
+	// Query to empty buffer
+	{
+		glw::GLint buffer[1] = { defaultValue };
+
+		m_testCtx.getLog() << tcu::TestLog::Message << "Querying GL_NUM_SAMPLE_COUNTS to zero-sized buffer." << tcu::TestLog::EndMessage;
+		gl.getInternalformativ(GL_TEXTURE_2D_MULTISAMPLE, GL_RGBA8, GL_NUM_SAMPLE_COUNTS, 0, buffer);
+		GLU_EXPECT_NO_ERROR(gl.getError(), "get GL_NUM_SAMPLE_COUNTS");
+
+		if (buffer[0] != defaultValue)
+		{
+			m_testCtx.getLog() << tcu::TestLog::Message << "ERROR: Query wrote over buffer bounds." << tcu::TestLog::EndMessage;
+			error = true;
+		}
+	}
+
+	// Result
+	if (!error)
+		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+	else
+		m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Unexpected buffer modification");
+
+	return STOP;
+}
+
+class SamplesBufferCase : public TestCase
+{
+public:
+					SamplesBufferCase 	(Context& ctx, const char* name, const char* desc);
+
+private:
+	IterateResult	iterate				(void);
+};
+
+SamplesBufferCase::SamplesBufferCase (Context& ctx, const char* name, const char* desc)
+	: TestCase(ctx, name, desc)
+{
+}
+
+SamplesBufferCase::IterateResult SamplesBufferCase::iterate (void)
+{
+	const glw::GLint 		defaultValue 	= -123; // queries always return positive values
+	const glw::Functions&	gl				= m_context.getRenderContext().getFunctions();
+	bool					error			= false;
+
+	glw::GLint				numSampleCounts	= 0;
+
+	// Number of sample counts
+	{
+		gl.getInternalformativ(GL_TEXTURE_2D_MULTISAMPLE, GL_RGBA8, GL_NUM_SAMPLE_COUNTS, 1, &numSampleCounts);
+		GLU_EXPECT_NO_ERROR(gl.getError(), "get GL_NUM_SAMPLE_COUNTS");
+
+		m_testCtx.getLog() << tcu::TestLog::Message << "GL_NUM_SAMPLE_COUNTS = " << numSampleCounts << tcu::TestLog::EndMessage;
+	}
+
+	if (numSampleCounts < 1)
+	{
+		m_testCtx.getLog() << tcu::TestLog::Message << "ERROR: Format MUST support some multisample configuration, got GL_NUM_SAMPLE_COUNTS = " << numSampleCounts << tcu::TestLog::EndMessage;
+		error = true;
+	}
+	else
+	{
+		// Query to larger buffer
+		{
+			std::vector<glw::GLint> buffer(numSampleCounts + 1, defaultValue);
+
+			m_testCtx.getLog() << tcu::TestLog::Message << "Querying GL_SAMPLES to larger-than-needed buffer." << tcu::TestLog::EndMessage;
+			gl.getInternalformativ(GL_TEXTURE_2D_MULTISAMPLE, GL_RGBA8, GL_SAMPLES, (glw::GLsizei)buffer.size(), &buffer[0]);
+			GLU_EXPECT_NO_ERROR(gl.getError(), "get GL_SAMPLES");
+
+			if (buffer.back() != defaultValue)
+			{
+				m_testCtx.getLog() << tcu::TestLog::Message << "ERROR: trailing value was modified." << tcu::TestLog::EndMessage;
+				error = true;
+			}
+		}
+
+		// Query to smaller buffer
+		if (numSampleCounts > 2)
+		{
+			glw::GLint buffer[3] = { defaultValue, defaultValue, defaultValue };
+
+			m_testCtx.getLog() << tcu::TestLog::Message << "Querying GL_SAMPLES to buffer with bufSize=2." << tcu::TestLog::EndMessage;
+			gl.getInternalformativ(GL_TEXTURE_2D_MULTISAMPLE, GL_RGBA8, GL_SAMPLES, 2, buffer);
+			GLU_EXPECT_NO_ERROR(gl.getError(), "get GL_SAMPLES");
+
+			if (buffer[2] != defaultValue)
+			{
+				m_testCtx.getLog() << tcu::TestLog::Message << "ERROR: Query wrote over buffer bounds." << tcu::TestLog::EndMessage;
+				error = true;
+			}
+		}
+
+		// Query to empty buffer
+		{
+			glw::GLint buffer[1] = { defaultValue };
+
+			m_testCtx.getLog() << tcu::TestLog::Message << "Querying GL_SAMPLES to zero-sized buffer." << tcu::TestLog::EndMessage;
+			gl.getInternalformativ(GL_TEXTURE_2D_MULTISAMPLE, GL_RGBA8, GL_SAMPLES, 0, buffer);
+			GLU_EXPECT_NO_ERROR(gl.getError(), "get GL_SAMPLES");
+
+			if (buffer[0] != defaultValue)
+			{
+				m_testCtx.getLog() << tcu::TestLog::Message << "ERROR: Query wrote over buffer bounds." << tcu::TestLog::EndMessage;
+				error = true;
+			}
+		}
+	}
+
+	// Result
+	if (!error)
+		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+	else
+		m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Unexpected buffer modification");
+
+	return STOP;
+}
+
 } // anonymous
 
 InternalFormatQueryTests::InternalFormatQueryTests (Context& context)
@@ -267,6 +419,16 @@ void InternalFormatQueryTests::init (void)
 
 			group->addChild(new FormatSamplesCase(m_context, name.c_str(), desc.c_str(), texTarget, internalFormats[caseNdx].format, internalFormats[caseNdx].type));
 		}
+	}
+
+	// Check buffer sizes are honored
+	{
+		tcu::TestCaseGroup* const group = new tcu::TestCaseGroup(m_testCtx, "partial_query", "Query data to too short a buffer");
+
+		addChild(group);
+
+		group->addChild(new NumSampleCountsBufferCase	(m_context, "num_sample_counts", 	"Query GL_NUM_SAMPLE_COUNTS to too short a buffer"));
+		group->addChild(new SamplesBufferCase			(m_context, "samples", 				"Query GL_SAMPLES to too short a buffer"));
 	}
 }
 
