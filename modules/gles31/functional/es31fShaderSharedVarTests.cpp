@@ -145,6 +145,8 @@ void SharedBasicVarCase::init (void)
 		<< "\n"
 		<< "		if (s_var != u_ref[ndx%uint(u_ref.length())])\n"
 		<< "			allOk = false;\n"
+		<< "\n"
+		<< "		barrier();\n"
 		<< "	}\n"
 		<< "\n"
 		<< "	isOk[gl_LocalInvocationIndex] = allOk;\n"
