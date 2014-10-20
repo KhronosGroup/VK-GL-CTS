@@ -76,7 +76,8 @@ enum SurfaceType
  *//*--------------------------------------------------------------------*/
 enum ScreenRotation
 {
-	SCREENROTATION_0,
+	SCREENROTATION_UNSPECIFIED,		//!< Use default / current orientation.
+	SCREENROTATION_0,				//!< Set rotation to 0 degrees from baseline.
 	SCREENROTATION_90,
 	SCREENROTATION_180,
 	SCREENROTATION_270,

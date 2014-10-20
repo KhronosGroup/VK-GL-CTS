@@ -125,6 +125,7 @@ void registerOptions (de::cmdline::Parser& parser)
 	};
 	static const NamedValue<tcu::ScreenRotation> s_screenRotations[] =
 	{
+		{ "unspecified",	SCREENROTATION_UNSPECIFIED	},
 		{ "0",				SCREENROTATION_0			},
 		{ "90",				SCREENROTATION_90			},
 		{ "180",			SCREENROTATION_180			},
