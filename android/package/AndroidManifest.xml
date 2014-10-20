@@ -33,7 +33,7 @@
 				  android:exported="true"
 				  android:process=":testercore">
 			<meta-data android:name="android.app.lib_name"
-					   android:value="testercore" />
+					   android:value="deqp" />
 			<meta-data android:name="android.app.func_name"
 					   android:value="createTestActivity" />
 		</activity>
