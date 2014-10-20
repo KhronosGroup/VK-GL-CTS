@@ -33,12 +33,24 @@ def getNativeBuildDir (nativeLib, buildType):
 def getAssetsDir (nativeLib, buildType):
 	return os.path.join(getNativeBuildDir(nativeLib, buildType), "assets")
 
+def getPrebuiltsDirName (abiName):
+	PREBUILT_DIRS = {
+			'x86':			'android-x86',
+			'armeabi-v7a':	'android-arm',
+			'arm64-v8a':	'android-arm64'
+		}
+
+	if not abiName in PREBUILT_DIRS:
+		raise Exception("Unknown ABI %s, don't know where prebuilts are" % abiName)
+
+	return PREBUILT_DIRS[abiName]
+
 def buildNative (nativeLib, buildType):
 	deqpDir		= os.path.normpath(os.path.join(common.ANDROID_DIR, ".."))
 	buildDir	= getNativeBuildDir(nativeLib, buildType)
 	libsDir		= os.path.join(BASE_LIBS_DIR, nativeLib.abiVersion)
-	srcLibFile	= os.path.join(buildDir, "libtestercore.so")
-	dstLibFile	= os.path.join(libsDir, "lib%s.so" % nativeLib.libName)
+	srcLibFile	= os.path.join(buildDir, common.NATIVE_LIB_NAME)
+	dstLibFile	= os.path.join(libsDir, common.NATIVE_LIB_NAME)
 
 	# Make build directory if necessary
 	if not os.path.exists(buildDir):
@@ -63,20 +75,15 @@ def buildNative (nativeLib, buildType):
 	if not os.path.exists(libsDir):
 		os.makedirs(libsDir)
 
-	# Copy libtestercore.so
 	shutil.copyfile(srcLibFile, dstLibFile)
 
 	# Copy gdbserver for debugging
 	if buildType.lower() == "debug":
-		if nativeLib.abiVersion == "x86":
-			shutil.copyfile(os.path.join(common.ANDROID_NDK_PATH, "prebuilt/android-x86/gdbserver/gdbserver"), os.path.join(libsDir, "gdbserver"))
-		elif nativeLib.abiVersion == "armeabi-v7a":
-			shutil.copyfile(os.path.join(common.ANDROID_NDK_PATH, "prebuilt/android-arm/gdbserver/gdbserver"), os.path.join(libsDir, "gdbserver"))
-		else:
-			print("Unknown ABI. Won't copy gdbserver to package")
-	elif os.path.exists(os.path.join(libsDir, "gdbserver")):
-		# Make sure there is no gdbserver if build is not debug build
-		os.unlink(os.path.join(libsDir, "gdbserver"))
+		srcGdbserverPath	= os.path.join(common.ANDROID_NDK_PATH, 'prebuilt', getPrebuiltsDirName(nativeLib.abiVersion), 'gdbserver', 'gdbserver')
+		dstGdbserverPath	= os.path.join(libsDir, 'gdbserver')
+		shutil.copyfile(srcGdbserverPath, dstGdbserverPath)
+	else:
+		assert not os.path.exists(os.path.join(libsDir, "gdbserver"))
 
 def buildApp (isRelease):
 	appDir	= os.path.join(common.ANDROID_DIR, "package")

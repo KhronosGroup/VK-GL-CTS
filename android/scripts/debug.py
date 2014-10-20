@@ -117,8 +117,8 @@ def debug(
 			print("Pull library %s from device" % lib)
 			common.execute("%s pull %s" % (adbCmd, lib))
 
-		print("Copy libtestercore.so from build dir")
-		shutil.copyfile(os.path.join(buildDir, "libtestercore.so"), "libtestercore.so")
+		print("Copy %s from build dir" % common.NATIVE_LIB_NAME)
+		shutil.copyfile(os.path.join(buildDir, common.NATIVE_LIB_NAME), common.NATIVE_LIB_NAME)
 
 		# Forward local port for jdb
 		print("Forward local port to jdb port")

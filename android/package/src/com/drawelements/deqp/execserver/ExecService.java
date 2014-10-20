@@ -38,12 +38,7 @@ import com.drawelements.deqp.R;
 
 public class ExecService extends Service {
 	static {
-		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.GINGERBREAD) {
-			System.loadLibrary("testercore");
-		} else {
-			// Pre-gingerbread version without EGL tests.
-			System.loadLibrary("testercore_legacy");
-		}
+		System.loadLibrary("deqp");
 	}
 
 	long m_server = 0; //!< Server pointer.
