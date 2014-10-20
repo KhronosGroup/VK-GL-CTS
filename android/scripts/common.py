@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 
 import os
+import re
 import sys
 import shlex
 import subprocess
+import multiprocessing
 
 class NativeLib:
 	def __init__ (self, libName, apiVersion, abiVersion):
@@ -17,7 +19,7 @@ def getPlatform ():
 	else:
 		return sys.platform
 
-def getCfg (variants):
+def selectByOS (variants):
 	platform = getPlatform()
 	if platform in variants:
 		return variants[platform]
@@ -41,12 +43,19 @@ def which (binName):
 def isBinaryInPath (binName):
 	return which(binName) != None
 
-def selectBin (basePaths, relBinPath):
-	for basePath in basePaths:
-		fullPath = os.path.normpath(os.path.join(basePath, relBinPath))
-		if isExecutable(fullPath):
-			return fullPath
-	return which(os.path.basename(relBinPath))
+def selectFirstExistingBinary (filenames):
+	for filename in filenames:
+		if filename != None and isExecutable(filename):
+			return filename
+
+	return None
+
+def selectFirstExistingDir (paths):
+	for path in paths:
+		if path != None and os.path.isdir(path):
+			return path
+
+	return None
 
 def die (msg):
 	print msg
@@ -66,31 +75,36 @@ def execArgs (args):
 	if retcode != 0:
 		raise Exception("Failed to execute '%s', got %d" % (str(args), retcode))
 
-# deqp/android path
-ANDROID_DIR				= os.path.realpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+class Device:
+	def __init__(self, serial, product, model, device):
+		self.serial		= serial
+		self.product	= product
+		self.model		= model
+		self.device		= device
 
-# Build configuration
-NATIVE_LIBS				= [
-		#		  library name		API		ABI
-#		NativeLib("testercore",		13,		"armeabi"),			# ARM v5 ABI
-		NativeLib("testercore",		13,		"armeabi-v7a"),		# ARM v7a ABI
-		NativeLib("testercore",		13,		"x86"),				# x86
-#		NativeLib("testercore",		21,		"arm64-v8a"),		# ARM64 v8a ABI
-	]
-ANDROID_JAVA_API		= "android-13"
+	def __str__ (self):
+		return "%s: {product: %s, model: %s, device: %s}" % (self.serial, self.product, self.model, self.device)
 
-# NDK paths
-ANDROID_NDK_HOST_OS		= getCfg({
-		'win32':	"windows",
-		'darwin':	"darwin-x86",
-		'linux':	"linux-x86"
-	})
-ANDROID_NDK_PATH		= getCfg({
-		'win32':	"C:/android/android-ndk-r9d",
-		'darwin':	os.path.expanduser("~/android-ndk-r9d"),
-		'linux':	os.path.expanduser("~/android-ndk-r9d")
-	})
-ANDROID_NDK_TOOLCHAIN_VERSION = "clang-r9d" # Toolchain file is selected based on this
+def getDevices (adb):
+	proc = subprocess.Popen([adb, 'devices', '-l'], stdout=subprocess.PIPE)
+	(stdout, stderr) = proc.communicate()
+
+	if proc.returncode != 0:
+		raise Exception("adb devices -l failed, got %d" % retcode)
+
+	ptrn = re.compile(r'^([a-zA-Z0-9]+)\s+.*product:([^\s]+)\s+model:([^\s]+)\s+device:([^\s]+)')
+	devices = []
+	for line in stdout.splitlines()[1:]:
+		if len(line.strip()) == 0:
+			continue
+
+		m = ptrn.match(line)
+		if m == None:
+			raise Exception("Failed to parse device info '%s'" % line)
+
+		devices.append(Device(m.group(1), m.group(2), m.group(3), m.group(4)))
+
+	return devices
 
 def getWin32Generator ():
 	if which("jom.exe") != None:
@@ -98,46 +112,92 @@ def getWin32Generator ():
 	else:
 		return "NMake Makefiles"
 
+def isNinjaSupported ():
+	return which("ninja") != None
+
+def getUnixGenerator ():
+	if isNinjaSupported():
+		return "Ninja"
+	else:
+		return "Unix Makefiles"
+
+def getExtraBuildArgs (generator):
+	if generator == "Unix Makefiles":
+		return ["--", "-j%d" % multiprocessing.cpu_count()]
+	else:
+		return []
+
+NDK_HOST_OS_NAMES = [
+	"windows",
+	"windows_x86-64",
+	"darwin-x86",
+	"darwin-x86-64",
+	"linux-x86",
+	"linux-x86_64"
+]
+
+def getNDKHostOsName (ndkPath):
+	for name in NDK_HOST_OS_NAMES:
+		if os.path.exists(os.path.join(ndkPath, "prebuilt", name)):
+			return name
+
+	raise Exception("Couldn't determine NDK host OS")
+
+# deqp/android path
+ANDROID_DIR				= os.path.realpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+
+# Build configuration
+NATIVE_LIBS				= [
+		#		  library name		API		ABI
+		NativeLib("testercore",		13,		"armeabi-v7a"),		# ARM v7a ABI
+		NativeLib("testercore",		13,		"x86"),				# x86
+		NativeLib("testercore",		21,		"arm64-v8a"),		# ARM64 v8a ABI
+	]
+ANDROID_JAVA_API		= "android-13"
+
+# NDK paths
+ANDROID_NDK_PATH		= selectFirstExistingDir([
+		os.path.expanduser("~/android-ndk-r10c"),
+		"C:/android/android-ndk-r10c",
+	])
+ANDROID_NDK_HOST_OS				= getNDKHostOsName(ANDROID_NDK_PATH)
+ANDROID_NDK_TOOLCHAIN_VERSION	= "r10c" # Toolchain file is selected based on this
+
 # Native code build settings
-CMAKE_GENERATOR			= getCfg({
+CMAKE_GENERATOR			= selectByOS({
 		'win32':	getWin32Generator(),
-		'darwin':	"Unix Makefiles",
-		'linux':	"Unix Makefiles"
+		'other':	getUnixGenerator()
 	})
-BUILD_CMD				= getCfg({
-		'win32':	"cmake --build .",
-		'darwin':	"cmake --build . -- -j 4",
-		'linux':	"cmake --build . -- -j 4"
-	})
+EXTRA_BUILD_ARGS		= getExtraBuildArgs(CMAKE_GENERATOR)
 
 # SDK paths
-ANDROID_SDK_PATHS		= [
-	"C:/android/android-sdk-windows",
-	os.path.expanduser("~/android-sdk-mac_x86"),
-	os.path.expanduser("~/android-sdk-linux")
-	]
-ANDROID_BIN				= getCfg({
-		'win32':	selectBin(ANDROID_SDK_PATHS, "tools/android.bat"),
-		'other':	selectBin(ANDROID_SDK_PATHS, "tools/android"),
-	})
-ADB_BIN					= getCfg({
-		'win32':	selectBin(ANDROID_SDK_PATHS, "platform-tools/adb.exe"),
-		'other':	selectBin(ANDROID_SDK_PATHS, "platform-tools/adb"),
-	})
-ZIPALIGN_BIN			= getCfg({
-		'win32':	selectBin(ANDROID_SDK_PATHS, "tools/zipalign.exe"),
-		'other':	selectBin(ANDROID_SDK_PATHS, "tools/zipalign"),
-	})
-JARSIGNER_BIN			= "jarsigner"
+ANDROID_SDK_PATH		= selectFirstExistingDir([
+		os.path.expanduser("~/android-sdk-linux"),
+		os.path.expanduser("~/android-sdk-mac_x86"),
+		"C:/android/android-sdk-windows",
+	])
+ANDROID_BIN				= selectFirstExistingBinary([
+		os.path.join(ANDROID_SDK_PATH, "tools", "android"),
+		os.path.join(ANDROID_SDK_PATH, "tools", "android.bat"),
+		which('android'),
+	])
+ADB_BIN					= selectFirstExistingBinary([
+		which('adb'), # \note Prefer adb in path to avoid version issues on dev machines
+		os.path.join(ANDROID_SDK_PATH, "platform-tools", "adb"),
+		os.path.join(ANDROID_SDK_PATH, "platform-tools", "adb.exe"),
+	])
+ZIPALIGN_BIN			= selectFirstExistingBinary([
+		os.path.join(ANDROID_SDK_PATH, "tools", "zipalign"),
+		os.path.join(ANDROID_SDK_PATH, "tools", "zipalign.exe"),
+		which('zipalign'),
+	])
+JARSIGNER_BIN			= which('jarsigner')
 
 # Apache ant
-ANT_PATHS				= [
-	"C:/android/apache-ant-1.8.4",
-	"C:/android/apache-ant-1.9.2",
-	"C:/android/apache-ant-1.9.3",
-	"C:/android/apache-ant-1.9.4",
-	]
-ANT_BIN					= getCfg({
-		'win32':	selectBin(ANT_PATHS, "bin/ant.bat"),
-		'other':	selectBin(ANT_PATHS, "bin/ant")
-	})
+ANT_BIN					= selectFirstExistingBinary([
+		which('ant'),
+		"C:/android/apache-ant-1.8.4/bin/ant.bat",
+		"C:/android/apache-ant-1.9.2/bin/ant.bat",
+		"C:/android/apache-ant-1.9.3/bin/ant.bat",
+		"C:/android/apache-ant-1.9.4/bin/ant.bat",
+	])
