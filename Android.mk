@@ -5,7 +5,7 @@ delibs_dir := $(LOCAL_PATH)/framework/delibs
 deqp_dir := $(LOCAL_PATH)/
 
 LOCAL_MODULE_TAGS := tests
-LOCAL_MODULE := libtestercore
+LOCAL_MODULE := libdeqp
 LOCAL_SRC_FILES := \
 	execserver/xsDefs.cpp \
 	execserver/xsExecutionServer.cpp \
