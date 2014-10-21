@@ -2791,12 +2791,6 @@
 <Test name="vec3" />
 <Test name="vec4" />
 </TestCase>
-<TestCase name="mediump_compute">
-<Test name="scalar" />
-<Test name="vec2" />
-<Test name="vec3" />
-<Test name="vec4" />
-</TestCase>
 </TestSuite>
 <TestSuite name="length">
 <TestCase name="lowp_compute">
@@ -11401,11 +11395,9 @@
 <TestSuite name="size_pot">
 <TestCase name="compare_less">
 <Test name="clamp_to_edge_repeat" />
-<Test name="mirrored_repeat_clamp_to_edge" />
 </TestCase>
 <TestCase name="compare_greater">
 <Test name="clamp_to_edge_repeat" />
-<Test name="mirrored_repeat_clamp_to_edge" />
 </TestCase>
 </TestSuite>
 <TestSuite name="size_npot">
@@ -15741,7 +15733,6 @@
 <Test name="get_buffer_parameteriv" />
 <Test name="get_buffer_parameteri64v" />
 <Test name="get_buffer_pointerv" />
-<Test name="get_framebuffer_attachment_parameteriv" />
 <Test name="get_renderbuffer_parameteriv" />
 <Test name="get_internalformativ" />
 <Test name="get_queryiv" />
@@ -16045,7 +16036,6 @@
 <Test name="get_buffer_parameteriv" />
 <Test name="get_buffer_parameteri64v" />
 <Test name="get_buffer_pointerv" />
-<Test name="get_framebuffer_attachment_parameteriv" />
 <Test name="get_renderbuffer_parameteriv" />
 <Test name="get_internalformativ" />
 <Test name="get_queryiv" />
@@ -16330,7 +16320,6 @@
 <Test name="get_buffer_parameteriv" />
 <Test name="get_buffer_parameteri64v" />
 <Test name="get_buffer_pointerv" />
-<Test name="get_framebuffer_attachment_parameteriv" />
 <Test name="get_renderbuffer_parameteriv" />
 <Test name="get_queryiv" />
 <Test name="get_query_objectuiv" />
