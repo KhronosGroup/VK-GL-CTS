@@ -2438,10 +2438,6 @@ dEQP-GLES31.functional.shaders.builtin_functions.precision.smoothstep.lowp_compu
 dEQP-GLES31.functional.shaders.builtin_functions.precision.smoothstep.lowp_compute.vec2
 dEQP-GLES31.functional.shaders.builtin_functions.precision.smoothstep.lowp_compute.vec3
 dEQP-GLES31.functional.shaders.builtin_functions.precision.smoothstep.lowp_compute.vec4
-dEQP-GLES31.functional.shaders.builtin_functions.precision.smoothstep.mediump_compute.scalar
-dEQP-GLES31.functional.shaders.builtin_functions.precision.smoothstep.mediump_compute.vec2
-dEQP-GLES31.functional.shaders.builtin_functions.precision.smoothstep.mediump_compute.vec3
-dEQP-GLES31.functional.shaders.builtin_functions.precision.smoothstep.mediump_compute.vec4
 dEQP-GLES31.functional.shaders.builtin_functions.precision.length.lowp_compute.scalar
 dEQP-GLES31.functional.shaders.builtin_functions.precision.length.lowp_compute.vec2
 dEQP-GLES31.functional.shaders.builtin_functions.precision.length.lowp_compute.vec3
@@ -10009,9 +10005,7 @@ dEQP-GLES31.functional.texture.gather.basic.2d.rgba8i.texture_swizzle.one_red_gr
 dEQP-GLES31.functional.texture.gather.basic.2d.rgba8i.base_level.level_1
 dEQP-GLES31.functional.texture.gather.basic.2d.rgba8i.base_level.level_2
 dEQP-GLES31.functional.texture.gather.basic.2d.depth32f.size_pot.compare_less.clamp_to_edge_repeat
-dEQP-GLES31.functional.texture.gather.basic.2d.depth32f.size_pot.compare_less.mirrored_repeat_clamp_to_edge
 dEQP-GLES31.functional.texture.gather.basic.2d.depth32f.size_pot.compare_greater.clamp_to_edge_repeat
-dEQP-GLES31.functional.texture.gather.basic.2d.depth32f.size_pot.compare_greater.mirrored_repeat_clamp_to_edge
 dEQP-GLES31.functional.texture.gather.basic.2d.depth32f.size_npot.compare_less.clamp_to_edge_repeat
 dEQP-GLES31.functional.texture.gather.basic.2d.depth32f.size_npot.compare_greater.clamp_to_edge_repeat
 dEQP-GLES31.functional.texture.gather.basic.2d.depth32f.filter_mode.min_linear_mag_linear
@@ -13300,7 +13294,6 @@ dEQP-GLES31.functional.debug.negative_coverage.callbacks.state.get_frag_data_loc
 dEQP-GLES31.functional.debug.negative_coverage.callbacks.state.get_buffer_parameteriv
 dEQP-GLES31.functional.debug.negative_coverage.callbacks.state.get_buffer_parameteri64v
 dEQP-GLES31.functional.debug.negative_coverage.callbacks.state.get_buffer_pointerv
-dEQP-GLES31.functional.debug.negative_coverage.callbacks.state.get_framebuffer_attachment_parameteriv
 dEQP-GLES31.functional.debug.negative_coverage.callbacks.state.get_renderbuffer_parameteriv
 dEQP-GLES31.functional.debug.negative_coverage.callbacks.state.get_internalformativ
 dEQP-GLES31.functional.debug.negative_coverage.callbacks.state.get_queryiv
@@ -13590,7 +13583,6 @@ dEQP-GLES31.functional.debug.negative_coverage.log.state.get_frag_data_location
 dEQP-GLES31.functional.debug.negative_coverage.log.state.get_buffer_parameteriv
 dEQP-GLES31.functional.debug.negative_coverage.log.state.get_buffer_parameteri64v
 dEQP-GLES31.functional.debug.negative_coverage.log.state.get_buffer_pointerv
-dEQP-GLES31.functional.debug.negative_coverage.log.state.get_framebuffer_attachment_parameteriv
 dEQP-GLES31.functional.debug.negative_coverage.log.state.get_renderbuffer_parameteriv
 dEQP-GLES31.functional.debug.negative_coverage.log.state.get_internalformativ
 dEQP-GLES31.functional.debug.negative_coverage.log.state.get_queryiv
@@ -13861,7 +13853,6 @@ dEQP-GLES31.functional.debug.negative_coverage.get_error.state.get_frag_data_loc
 dEQP-GLES31.functional.debug.negative_coverage.get_error.state.get_buffer_parameteriv
 dEQP-GLES31.functional.debug.negative_coverage.get_error.state.get_buffer_parameteri64v
 dEQP-GLES31.functional.debug.negative_coverage.get_error.state.get_buffer_pointerv
-dEQP-GLES31.functional.debug.negative_coverage.get_error.state.get_framebuffer_attachment_parameteriv
 dEQP-GLES31.functional.debug.negative_coverage.get_error.state.get_renderbuffer_parameteriv
 dEQP-GLES31.functional.debug.negative_coverage.get_error.state.get_queryiv
 dEQP-GLES31.functional.debug.negative_coverage.get_error.state.get_query_objectuiv
