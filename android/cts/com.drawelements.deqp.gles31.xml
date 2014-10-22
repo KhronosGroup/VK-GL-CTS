@@ -9755,12 +9755,6 @@
 <Test name="comp_swap_r32i_return_value" />
 </TestCase>
 <TestCase name="qualifiers">
-<Test name="coherent_r32f" />
-<Test name="volatile_r32f" />
-<Test name="coherent_r32ui" />
-<Test name="volatile_r32ui" />
-<Test name="coherent_r32i" />
-<Test name="volatile_r32i" />
 <Test name="restrict" />
 </TestCase>
 <TestCase name="format_reinterpret">
@@ -9926,11 +9920,6 @@
 <Test name="comp_swap_r32i_return_value" />
 </TestCase>
 <TestCase name="qualifiers">
-<Test name="volatile_r32f" />
-<Test name="coherent_r32ui" />
-<Test name="volatile_r32ui" />
-<Test name="coherent_r32i" />
-<Test name="volatile_r32i" />
 <Test name="restrict" />
 </TestCase>
 <TestCase name="format_reinterpret">

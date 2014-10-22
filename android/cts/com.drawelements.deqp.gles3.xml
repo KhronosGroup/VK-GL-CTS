@@ -3703,7 +3703,6 @@
 <Test name="user_func_arguments_vertex" />
 <Test name="user_func_arguments_fragment" />
 <Test name="array_size_vertex" />
-<Test name="array_size_fragment" />
 </TestCase>
 <TestCase name="array_arguments">
 <Test name="local_in_float_vertex" />
@@ -22505,9 +22504,6 @@
 <Test name="never_depth24_stencil8" />
 </TestCase>
 <TestCase name="linear">
-<Test name="less_or_equal_depth_component16" />
-<Test name="less_or_equal_depth_component32f" />
-<Test name="less_or_equal_depth24_stencil8" />
 <Test name="greater_or_equal_depth_component16" />
 <Test name="greater_or_equal_depth_component32f" />
 <Test name="greater_or_equal_depth24_stencil8" />
@@ -38367,7 +38363,6 @@
 <Test name="is_query" />
 <Test name="is_sampler" />
 <Test name="is_sync" />
-<Test name="is_transform_feedback" />
 <Test name="is_vertex_array" />
 </TestCase>
 </TestSuite>
@@ -38527,7 +38522,6 @@
 </TestSuite>
 <TestSuite name="state_query">
 <TestCase name="boolean">
-<Test name="primitive_restart_fixed_index_isenabled" />
 <Test name="primitive_restart_fixed_index_getboolean" />
 <Test name="primitive_restart_fixed_index_getinteger" />
 <Test name="primitive_restart_fixed_index_getinteger64" />
@@ -38562,7 +38556,6 @@
 <Test name="stencil_test_getinteger" />
 <Test name="stencil_test_getinteger64" />
 <Test name="stencil_test_getfloat" />
-<Test name="depth_test_isenabled" />
 <Test name="depth_test_getboolean" />
 <Test name="depth_test_getinteger" />
 <Test name="depth_test_getinteger64" />
@@ -38572,7 +38565,6 @@
 <Test name="blend_getinteger" />
 <Test name="blend_getinteger64" />
 <Test name="blend_getfloat" />
-<Test name="dither_isenabled" />
 <Test name="dither_getboolean" />
 <Test name="dither_getinteger" />
 <Test name="dither_getinteger64" />
@@ -40527,7 +40519,6 @@
 <Test name="shader" />
 <Test name="program" />
 <Test name="query" />
-<Test name="transform_feedback" />
 <Test name="vertex_array" />
 <Test name="sampler" />
 </TestCase>
