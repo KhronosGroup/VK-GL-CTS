@@ -2266,6 +2266,35 @@ protected:
 	Interval		m_hiExtremum;
 };
 
+#if (DE_CPU == DE_CPU_ARM) && (DE_OS == DE_OS_ANDROID)
+// This is a workaround for Intel ARM->x86 translator (houdini) bug.
+// sin() & cos() return garbage for very large inputs. The outcome is
+// that when codomain is applied the result interval becomes empty.
+//
+// Workaround is to bring the input value to the base range via modulo if
+// sin/cos returns an invalid value.
+
+double deSin (double v)
+{
+	const double r = ::deSin(v);
+
+	if (deAbs(r) <= 1.0)
+		return r;
+	else
+		return ::deSin(deSign(v) * deMod(deAbs(v), DE_PI_DOUBLE * 2.0));
+}
+
+double deCos (double v)
+{
+	const double r = ::deCos(v);
+
+	if (deAbs(r) <= 1.0)
+		return r;
+	else
+		return ::deCos(deMod(deAbs(v), DE_PI_DOUBLE * 2.0));
+}
+#endif
+
 class Sin : public TrigFunc
 {
 public:
