@@ -291,7 +291,6 @@ RenderActivity::~RenderActivity (void)
 
 void RenderActivity::setThread (RenderThread* thread)
 {
-	DE_ASSERT(!m_thread && thread);
 	m_thread = thread;
 }
 
