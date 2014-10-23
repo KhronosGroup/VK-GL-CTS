@@ -3513,7 +3513,6 @@ dEQP-GLES3.functional.shaders.functions.overloading.user_func_arg_complex_types_
 dEQP-GLES3.functional.shaders.functions.overloading.user_func_arguments_vertex
 dEQP-GLES3.functional.shaders.functions.overloading.user_func_arguments_fragment
 dEQP-GLES3.functional.shaders.functions.overloading.array_size_vertex
-dEQP-GLES3.functional.shaders.functions.overloading.array_size_fragment
 dEQP-GLES3.functional.shaders.functions.array_arguments.local_in_float_vertex
 dEQP-GLES3.functional.shaders.functions.array_arguments.local_in_float_fragment
 dEQP-GLES3.functional.shaders.functions.array_arguments.global_in_float_vertex
@@ -20842,9 +20841,6 @@ dEQP-GLES3.functional.texture.shadow.cube.nearest.always_depth24_stencil8
 dEQP-GLES3.functional.texture.shadow.cube.nearest.never_depth_component16
 dEQP-GLES3.functional.texture.shadow.cube.nearest.never_depth_component32f
 dEQP-GLES3.functional.texture.shadow.cube.nearest.never_depth24_stencil8
-dEQP-GLES3.functional.texture.shadow.cube.linear.less_or_equal_depth_component16
-dEQP-GLES3.functional.texture.shadow.cube.linear.less_or_equal_depth_component32f
-dEQP-GLES3.functional.texture.shadow.cube.linear.less_or_equal_depth24_stencil8
 dEQP-GLES3.functional.texture.shadow.cube.linear.greater_or_equal_depth_component16
 dEQP-GLES3.functional.texture.shadow.cube.linear.greater_or_equal_depth_component32f
 dEQP-GLES3.functional.texture.shadow.cube.linear.greater_or_equal_depth24_stencil8
@@ -35316,7 +35312,6 @@ dEQP-GLES3.functional.negative_api.state.is_texture
 dEQP-GLES3.functional.negative_api.state.is_query
 dEQP-GLES3.functional.negative_api.state.is_sampler
 dEQP-GLES3.functional.negative_api.state.is_sync
-dEQP-GLES3.functional.negative_api.state.is_transform_feedback
 dEQP-GLES3.functional.negative_api.state.is_vertex_array
 dEQP-GLES3.functional.multisample.default_framebuffer.num_samples_polygon
 dEQP-GLES3.functional.multisample.default_framebuffer.num_samples_line
@@ -35448,7 +35443,6 @@ dEQP-GLES3.functional.dither.enabled.unicolored_quad_red
 dEQP-GLES3.functional.dither.enabled.unicolored_quad_green
 dEQP-GLES3.functional.dither.enabled.unicolored_quad_blue
 dEQP-GLES3.functional.dither.enabled.unicolored_quad_alpha
-dEQP-GLES3.functional.state_query.boolean.primitive_restart_fixed_index_isenabled
 dEQP-GLES3.functional.state_query.boolean.primitive_restart_fixed_index_getboolean
 dEQP-GLES3.functional.state_query.boolean.primitive_restart_fixed_index_getinteger
 dEQP-GLES3.functional.state_query.boolean.primitive_restart_fixed_index_getinteger64
@@ -35483,7 +35477,6 @@ dEQP-GLES3.functional.state_query.boolean.stencil_test_getboolean
 dEQP-GLES3.functional.state_query.boolean.stencil_test_getinteger
 dEQP-GLES3.functional.state_query.boolean.stencil_test_getinteger64
 dEQP-GLES3.functional.state_query.boolean.stencil_test_getfloat
-dEQP-GLES3.functional.state_query.boolean.depth_test_isenabled
 dEQP-GLES3.functional.state_query.boolean.depth_test_getboolean
 dEQP-GLES3.functional.state_query.boolean.depth_test_getinteger
 dEQP-GLES3.functional.state_query.boolean.depth_test_getinteger64
@@ -35493,7 +35486,6 @@ dEQP-GLES3.functional.state_query.boolean.blend_getboolean
 dEQP-GLES3.functional.state_query.boolean.blend_getinteger
 dEQP-GLES3.functional.state_query.boolean.blend_getinteger64
 dEQP-GLES3.functional.state_query.boolean.blend_getfloat
-dEQP-GLES3.functional.state_query.boolean.dither_isenabled
 dEQP-GLES3.functional.state_query.boolean.dither_getboolean
 dEQP-GLES3.functional.state_query.boolean.dither_getinteger
 dEQP-GLES3.functional.state_query.boolean.dither_getinteger64
@@ -37248,7 +37240,6 @@ dEQP-GLES3.functional.lifetime.gen.framebuffer
 dEQP-GLES3.functional.lifetime.gen.shader
 dEQP-GLES3.functional.lifetime.gen.program
 dEQP-GLES3.functional.lifetime.gen.query
-dEQP-GLES3.functional.lifetime.gen.transform_feedback
 dEQP-GLES3.functional.lifetime.gen.vertex_array
 dEQP-GLES3.functional.lifetime.gen.sampler
 dEQP-GLES3.functional.lifetime.delete.buffer
