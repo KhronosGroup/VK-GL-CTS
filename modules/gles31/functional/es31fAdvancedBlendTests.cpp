@@ -419,9 +419,14 @@ AdvancedBlendCase::IterateResult AdvancedBlendCase::iterate (void)
 
 		GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to set render state");
 
+		gl.clear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
+
 		gl.disable(GL_BLEND);
 		gl.drawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, DE_NULL);
 		gl.enable(GL_BLEND);
+
+		if (!m_coherentBlending)
+			gl.blendBarrierKHR();
 
 		if (m_coherentBlending)
 		{
