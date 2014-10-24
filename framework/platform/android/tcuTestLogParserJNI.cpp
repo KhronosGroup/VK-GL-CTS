@@ -107,12 +107,12 @@ TestLogListener::~TestLogListener (void)
 
 void TestLogListener::beginSession (void)
 {
-	m_env->CallObjectMethod(m_object, m_beginSessionID);
+	m_env->CallVoidMethod(m_object, m_beginSessionID);
 }
 
 void TestLogListener::endSession (void)
 {
-	m_env->CallObjectMethod(m_object, m_endSessionID);
+	m_env->CallVoidMethod(m_object, m_endSessionID);
 }
 
 void TestLogListener::sessionInfo (const char* name, const char* value)
@@ -120,26 +120,30 @@ void TestLogListener::sessionInfo (const char* name, const char* value)
 	jstring jName	= m_env->NewStringUTF(name);
 	jstring jValue	= m_env->NewStringUTF(value);
 
-	m_env->CallObjectMethod(m_object, m_sessionInfoID, jName, jValue);
+	m_env->CallVoidMethod(m_object, m_sessionInfoID, jName, jValue);
+	m_env->DeleteLocalRef(jName);
+	m_env->DeleteLocalRef(jValue);
 }
 
 void TestLogListener::beginTestCase (const char* testCasePath)
 {
 	jstring jTestCasePath = m_env->NewStringUTF(testCasePath);
 
-	m_env->CallObjectMethod(m_object, m_beginTestCaseID, jTestCasePath);
+	m_env->CallVoidMethod(m_object, m_beginTestCaseID, jTestCasePath);
+	m_env->DeleteLocalRef(jTestCasePath);
 }
 
 void TestLogListener::endTestCase (void)
 {
-	m_env->CallObjectMethod(m_object, m_endTestCaseID);
+	m_env->CallVoidMethod(m_object, m_endTestCaseID);
 }
 
 void TestLogListener::terminateTestCase (const char* reason)
 {
 	jstring	 jReason = m_env->NewStringUTF(reason);
 
-	m_env->CallObjectMethod(m_object, m_terminateTestCaseID, jReason);
+	m_env->CallVoidMethod(m_object, m_terminateTestCaseID, jReason);
+	m_env->DeleteLocalRef(jReason);
 }
 
 void TestLogListener::testCaseResult (const char* statusCode, const char* details)
@@ -147,14 +151,17 @@ void TestLogListener::testCaseResult (const char* statusCode, const char* detail
 	jstring	 jStatusCode	= m_env->NewStringUTF(statusCode);
 	jstring	 jDetails		= m_env->NewStringUTF(details);
 
-	m_env->CallObjectMethod(m_object, m_testCaseResultID, jStatusCode, jDetails);
+	m_env->CallVoidMethod(m_object, m_testCaseResultID, jStatusCode, jDetails);
+	m_env->DeleteLocalRef(jStatusCode);
+	m_env->DeleteLocalRef(jDetails);
 }
 
 void TestLogListener::testLogData (const char* data)
 {
 	jstring logData = m_env->NewStringUTF(data);
 
-	m_env->CallObjectMethod(m_object, m_testLogData, logData);
+	m_env->CallVoidMethod(m_object, m_testLogData, logData);
+	m_env->DeleteLocalRef(logData);
 }
 
 class TestLogParser
