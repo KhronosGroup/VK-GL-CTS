@@ -404,7 +404,8 @@ public:
 		{
 			const EGLint	clientVersion	= getContextAttrib(display, context, EGL_CONTEXT_CLIENT_VERSION);
 
-			if (info.clientType == EGL_OPENGL_ES_API && clientVersion != info.clientVersion)
+			// \todo [2014-10-21 mika] Query actual supported api version from client api to make this check stricter.
+			if (info.clientType == EGL_OPENGL_ES_API && ((info.clientVersion == 1 && clientVersion != 1) || clientVersion < info.clientVersion))
 			{
 				log << TestLog::Message << "  Fail, client API version doesn't match." << TestLog::EndMessage;
 				m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Invalid client API version");
