@@ -93,6 +93,14 @@ static const FormatKey s_es3TextureFloatFormats[] =
 	GL_RGBA16F, GL_RGB16F, GL_RG16F, GL_R16F,
 };
 
+static const FormatKey s_es3NotRenderableTextureFormats[] =
+{
+	GL_R8_SNORM, GL_RG8_SNORM, GL_RGB8_SNORM, GL_RGBA8_SNORM,
+	GL_RGB9_E5, GL_SRGB8,
+	GL_RGB8I, GL_RGB16I, GL_RGB32I,
+	GL_RGB8UI, GL_RGB16UI,GL_RGB32UI,
+};
+
 static const FormatEntry s_es3Formats[] =
 {
 	// Renderbuffers don't support unsized formats
@@ -106,6 +114,8 @@ static const FormatEntry s_es3Formats[] =
 	  GLS_ARRAY_RANGE(s_es3StencilRboRenderables) },
 	{ REQUIRED_RENDERABLE | STENCIL_RENDERABLE | RENDERBUFFER_VALID | TEXTURE_VALID,
 	  GLS_ARRAY_RANGE(s_es3StencilRenderables) },
+	{ TEXTURE_VALID,
+	  GLS_ARRAY_RANGE(s_es3NotRenderableTextureFormats) },
 
 	// These are not color-renderable in vanilla ES3, but we need to mark them
 	// as valid for textures, since EXT_color_buffer_(half_)float brings in
