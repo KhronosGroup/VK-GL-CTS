@@ -147,6 +147,7 @@ struct ProgramResourceUsage
 	int numXFBInterleavedComponents;
 	int numXFBSeparateAttribs;
 	int numXFBSeparateComponents;
+	int fragmentOutputMaxBinding;
 };
 
 } // ProgramInterfaceDefinition
