@@ -2117,7 +2117,7 @@ static bool checkProgramCombinedResourceUsage (const ProgramInterfaceDefinition:
 		{ GL_MAX_ATOMIC_COUNTER_BUFFER_SIZE,					usage.atomicCounterBufferMaxSize			},
 		{ GL_MAX_COMBINED_ATOMIC_COUNTER_BUFFERS,				usage.numAtomicCounterBuffers				},
 		{ GL_MAX_COMBINED_ATOMIC_COUNTERS,						usage.numAtomicCounters						},
-		{ GL_MAX_IMAGE_UNITS,									usage.maxImageBinding						},
+		{ GL_MAX_IMAGE_UNITS,									usage.maxImageBinding+1						},
 		{ GL_MAX_COMBINED_IMAGE_UNIFORMS,						usage.numCombinedImages						},
 		{ GL_MAX_SHADER_STORAGE_BUFFER_BINDINGS,				usage.shaderStorageBufferMaxBinding+1		},
 		{ GL_MAX_SHADER_STORAGE_BLOCK_SIZE,						usage.shaderStorageBufferMaxSize			},
@@ -2125,6 +2125,7 @@ static bool checkProgramCombinedResourceUsage (const ProgramInterfaceDefinition:
 		{ GL_MAX_TRANSFORM_FEEDBACK_INTERLEAVED_COMPONENTS,		usage.numXFBInterleavedComponents			},
 		{ GL_MAX_TRANSFORM_FEEDBACK_SEPARATE_ATTRIBS,			usage.numXFBSeparateAttribs					},
 		{ GL_MAX_TRANSFORM_FEEDBACK_SEPARATE_COMPONENTS,		usage.numXFBSeparateComponents				},
+		{ GL_MAX_DRAW_BUFFERS,									usage.fragmentOutputMaxBinding+1			},
 	};
 
 	bool allOk = true;
