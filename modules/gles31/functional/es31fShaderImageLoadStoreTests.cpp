@@ -2874,10 +2874,21 @@ public:
 		TESTTYPE_LAST
 	};
 
-	EarlyFragmentTestsCase (Context& context, const char* name, const char* description, TestType type, bool useEarlyTests)
+	enum RenderTargetType
+	{
+		RENDERTARGET_DEFAULT = 0,
+		RENDERTARGET_FBO,
+		RENDERTARGET_FBO_WITHOUT_TEST_ATTACHMENT,
+
+		RENDERTARGET_LAST
+	};
+
+
+	EarlyFragmentTestsCase (Context& context, const char* name, const char* description, TestType type, bool useEarlyTests, RenderTargetType renderTarget)
 		: TestCase			(context, name, description)
 		, m_type			(type)
 		, m_useEarlyTests	(useEarlyTests)
+		, m_renderTarget	(renderTarget)
 	{
 	}
 
@@ -2889,33 +2900,53 @@ public:
 		if (!m_context.getContextInfo().isExtensionSupported("GL_OES_shader_image_atomic"))
 			throw tcu::NotSupportedError("Test requires OES_shader_image_atomic extension");
 
-		if (m_context.getRenderTarget().getWidth() < RENDER_SIZE || m_context.getRenderTarget().getHeight() < RENDER_SIZE)
+		if (m_type == TESTTYPE_DEPTH 				&&
+			m_renderTarget == RENDERTARGET_DEFAULT	&&
+			m_context.getRenderTarget().getDepthBits() == 0)
+		{
+			throw tcu::NotSupportedError("Test requires depth buffer");
+		}
+
+		if (m_type == TESTTYPE_STENCIL 				&&
+			m_renderTarget == RENDERTARGET_DEFAULT	&&
+			m_context.getRenderTarget().getStencilBits() == 0)
+		{
+			throw tcu::NotSupportedError("Test requires stencil buffer");
+		}
+
+		if (m_renderTarget == RENDERTARGET_DEFAULT	&&
+			(m_context.getRenderTarget().getWidth() < RENDER_SIZE || m_context.getRenderTarget().getHeight() < RENDER_SIZE))
 			throw tcu::NotSupportedError("Render target must have at least " + toString(RENDER_SIZE) + " width and height");
 	}
 
 	IterateResult iterate (void);
 
 private:
-	static const int RENDER_SIZE;
+	static const int 		RENDER_SIZE;
 
-	const TestType	m_type;
-	const bool		m_useEarlyTests;
+	const TestType			m_type;
+	const bool				m_useEarlyTests;
+	const RenderTargetType 	m_renderTarget;
 };
 
 const int EarlyFragmentTestsCase::RENDER_SIZE = 32;
 
 EarlyFragmentTestsCase::IterateResult EarlyFragmentTestsCase::iterate (void)
 {
-	const RenderContext&		renderCtx		= m_context.getRenderContext();
-	TestLog&					log				(m_testCtx.getLog());
-	glu::CallLogWrapper			glLog			(renderCtx.getFunctions(), log);
-	de::Random					rnd				(deStringHash(getName()));
-	const int					viewportWidth	= RENDER_SIZE;
-	const int					viewportHeight	= RENDER_SIZE;
-	const int					viewportX		= rnd.getInt(0, renderCtx.getRenderTarget().getWidth() - viewportWidth);
-	const int					viewportY		= rnd.getInt(0, renderCtx.getRenderTarget().getHeight() - viewportHeight);
-	const IVec3					imageSize		= defaultImageSize(TEXTURETYPE_2D);
-	const glu::Texture			texture			(renderCtx);
+	const RenderContext&			renderCtx			= m_context.getRenderContext();
+	TestLog&						log					(m_testCtx.getLog());
+	glu::CallLogWrapper				glLog				(renderCtx.getFunctions(), log);
+	de::Random						rnd					(deStringHash(getName()));
+	const bool						expectPartialResult	= m_useEarlyTests && m_renderTarget != RENDERTARGET_FBO_WITHOUT_TEST_ATTACHMENT;
+	const int						viewportWidth		= RENDER_SIZE;
+	const int						viewportHeight		= RENDER_SIZE;
+	const int						viewportX			= (m_renderTarget == RENDERTARGET_DEFAULT) ? (rnd.getInt(0, renderCtx.getRenderTarget().getWidth() - viewportWidth))	: (0);
+	const int						viewportY			= (m_renderTarget == RENDERTARGET_DEFAULT) ? (rnd.getInt(0, renderCtx.getRenderTarget().getHeight() - viewportHeight))	: (0);
+	const IVec3						imageSize			= defaultImageSize(TEXTURETYPE_2D);
+	const glu::Texture				texture				(renderCtx);
+	de::MovePtr<glu::Framebuffer>	fbo;
+	de::MovePtr<glu::Renderbuffer> 	colorAttachment;
+	de::MovePtr<glu::Renderbuffer> 	testAttachment;
 
 	glLog.enableLogging(true);
 
@@ -2933,6 +2964,46 @@ EarlyFragmentTestsCase::IterateResult EarlyFragmentTestsCase::iterate (void)
 	}
 	glLog.glBindImageTexture(0, *texture, 0, GL_TRUE, 0, GL_READ_WRITE, GL_R32UI);
 	GLU_EXPECT_NO_ERROR(renderCtx.getFunctions().getError(), "glBindImageTexture");
+
+	// Set up framebuffer
+	if (m_renderTarget == RENDERTARGET_FBO ||
+		m_renderTarget == RENDERTARGET_FBO_WITHOUT_TEST_ATTACHMENT)
+	{
+		fbo 			= de::MovePtr<glu::Framebuffer>(new glu::Framebuffer(renderCtx));
+		colorAttachment	= de::MovePtr<glu::Renderbuffer>(new glu::Renderbuffer(renderCtx));
+		testAttachment	= de::MovePtr<glu::Renderbuffer>(new glu::Renderbuffer(renderCtx));
+
+		glLog.glBindRenderbuffer(GL_RENDERBUFFER, **colorAttachment);
+		glLog.glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA8, RENDER_SIZE, RENDER_SIZE);
+		GLU_EXPECT_NO_ERROR(renderCtx.getFunctions().getError(), "gen color attachment rb");
+
+		glLog.glBindFramebuffer(GL_FRAMEBUFFER, **fbo);
+		glLog.glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, **colorAttachment);
+		GLU_EXPECT_NO_ERROR(renderCtx.getFunctions().getError(), "set fbo color attachment");
+
+		if (m_renderTarget == RENDERTARGET_FBO && m_type == TESTTYPE_DEPTH)
+		{
+			glLog.glBindRenderbuffer(GL_RENDERBUFFER, **testAttachment);
+			glLog.glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, RENDER_SIZE, RENDER_SIZE);
+			GLU_EXPECT_NO_ERROR(renderCtx.getFunctions().getError(), "gen depth attachment rb");
+
+			glLog.glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, **testAttachment);
+			GLU_EXPECT_NO_ERROR(renderCtx.getFunctions().getError(), "set fbo depth attachment");
+		}
+		else if (m_renderTarget == RENDERTARGET_FBO && m_type == TESTTYPE_STENCIL)
+		{
+			glLog.glBindRenderbuffer(GL_RENDERBUFFER, **testAttachment);
+			glLog.glRenderbufferStorage(GL_RENDERBUFFER, GL_STENCIL_INDEX8, RENDER_SIZE, RENDER_SIZE);
+			GLU_EXPECT_NO_ERROR(renderCtx.getFunctions().getError(), "gen stencil attachment rb");
+
+			glLog.glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, **testAttachment);
+			GLU_EXPECT_NO_ERROR(renderCtx.getFunctions().getError(), "set fbo stencil attachment");
+		}
+
+		glLog.glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, **colorAttachment);
+		GLU_EXPECT_NO_ERROR(renderCtx.getFunctions().getError(), "setup fbo");
+		TCU_CHECK(glLog.glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
+	}
 
 	// Set up appropriate conditions for the test.
 
@@ -3040,8 +3111,8 @@ EarlyFragmentTestsCase::IterateResult EarlyFragmentTestsCase::iterate (void)
 	// Read counter value and check.
 	{
 		const int numSamples		= de::max(1, renderCtx.getRenderTarget().getNumSamples());
-		const int expectedCounter	= m_useEarlyTests ? viewportWidth*viewportHeight/2				: viewportWidth*viewportHeight;
-		const int tolerance			= m_useEarlyTests ? de::max(viewportWidth, viewportHeight)*3	: 0;
+		const int expectedCounter	= expectPartialResult ? viewportWidth*viewportHeight/2				: viewportWidth*viewportHeight;
+		const int tolerance			= expectPartialResult ? de::max(viewportWidth, viewportHeight)*3	: 0;
 		const int expectedMin		= de::max(0, expectedCounter - tolerance);
 		const int expectedMax		= (expectedCounter + tolerance) * numSamples;
 
@@ -3252,25 +3323,31 @@ void ShaderImageLoadStoreTests::init (void)
 		TestCaseGroup* const earlyTestsGroup = new TestCaseGroup(m_context, "early_fragment_tests", "");
 		addChild(earlyTestsGroup);
 
+		for (int testRenderTargetI = 0; testRenderTargetI < EarlyFragmentTestsCase::RENDERTARGET_LAST; testRenderTargetI++)
 		for (int useEarlyTestsI = 0; useEarlyTestsI <= 1; useEarlyTestsI++)
+		for (int testTypeI = 0; testTypeI < EarlyFragmentTestsCase::TESTTYPE_LAST; testTypeI++)
 		{
-			const bool useEarlyTests = useEarlyTestsI != 0;
+			const EarlyFragmentTestsCase::RenderTargetType	targetType		= (EarlyFragmentTestsCase::RenderTargetType)testRenderTargetI;
+			const bool 										useEarlyTests 	= useEarlyTestsI != 0;
+			const EarlyFragmentTestsCase::TestType			testType		= (EarlyFragmentTestsCase::TestType)testTypeI;
 
-			for (int testTypeI = 0; testTypeI < EarlyFragmentTestsCase::TESTTYPE_LAST; testTypeI++)
-			{
-				const EarlyFragmentTestsCase::TestType		testType		= (EarlyFragmentTestsCase::TestType)testTypeI;
+			const string									testTypeName	= testType == EarlyFragmentTestsCase::TESTTYPE_DEPTH	? "depth"
+																			: testType == EarlyFragmentTestsCase::TESTTYPE_STENCIL	? "stencil"
+																			: DE_NULL;
 
-				const string								testTypeName	= testType == EarlyFragmentTestsCase::TESTTYPE_DEPTH		? "depth"
-																			  : testType == EarlyFragmentTestsCase::TESTTYPE_STENCIL	? "stencil"
-																			  : DE_NULL;
+			const string									targetName		= targetType == EarlyFragmentTestsCase::RENDERTARGET_FBO 							? (std::string("_fbo"))
+																			: targetType == EarlyFragmentTestsCase::RENDERTARGET_FBO_WITHOUT_TEST_ATTACHMENT	? (std::string("_fbo_with_no_") + testTypeName)
+																			: std::string("");
 
-				const string								caseName		= string(useEarlyTests ? "" : "no_") + "early_fragment_tests_" + testTypeName;
+			const string									caseName		= string(useEarlyTests ? "" : "no_") + "early_fragment_tests_" + testTypeName + targetName;
 
-				const string								caseDesc		= string(useEarlyTests ? "Specify" : "Don't specify")
-																			+ " early_fragment_tests, target the " + testTypeName + " test";
+			const string									caseDesc		= string(useEarlyTests ? "Specify" : "Don't specify")
+																			+ " early_fragment_tests, use the " + testTypeName + " test"
+																			+ ((targetType == EarlyFragmentTestsCase::RENDERTARGET_FBO) 							? (", render to fbo")
+																			   : (targetType == EarlyFragmentTestsCase::RENDERTARGET_FBO_WITHOUT_TEST_ATTACHMENT) 	? (", render to fbo without relevant buffer")
+																			   : (""));
 
-				earlyTestsGroup->addChild(new EarlyFragmentTestsCase(m_context, caseName.c_str(), caseDesc.c_str(), testType, useEarlyTests));
-			}
+			earlyTestsGroup->addChild(new EarlyFragmentTestsCase(m_context, caseName.c_str(), caseDesc.c_str(), testType, useEarlyTests, targetType));
 		}
 	}
 }
