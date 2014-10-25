@@ -1396,8 +1396,11 @@ void renderbuffer_storage_multisample (NegativeTestContext& ctx)
 {
 	deUint32							rbo = 0x1234;
 	int									maxSamplesSupportedRGBA4 = -1;
+	int									maxSamplesSupportedRGBA8UI = -1;
 
 	ctx.glGetInternalformativ				(GL_RENDERBUFFER, GL_RGBA4, GL_SAMPLES, 1, &maxSamplesSupportedRGBA4);
+	ctx.glGetInternalformativ				(GL_RENDERBUFFER, GL_RGBA8UI, GL_SAMPLES, 1, &maxSamplesSupportedRGBA8UI);
+
 	ctx.glGenRenderbuffers					(1, &rbo);
 	ctx.glBindRenderbuffer					(GL_RENDERBUFFER, rbo);
 
@@ -1427,8 +1430,8 @@ void renderbuffer_storage_multisample (NegativeTestContext& ctx)
 	ctx.expectError							(GL_INVALID_ENUM);
 	ctx.endSection();
 
-	ctx.beginSection("GL_INVALID_OPERATION is generated if internalformat is a signed or unsigned integer format and samples is greater than 0.");
-	ctx.glRenderbufferStorageMultisample	(GL_RENDERBUFFER, 1, GL_RGBA8UI, 1, 1);
+	ctx.beginSection("GL_INVALID_OPERATION is generated if samples is greater than the maximum number of samples supported for internalformat. (Unsigned integer format)");
+	ctx.glRenderbufferStorageMultisample	(GL_RENDERBUFFER, maxSamplesSupportedRGBA8UI+1, GL_RGBA8UI, 1, 1);
 	ctx.expectError							(GL_INVALID_OPERATION);
 	ctx.endSection();
 
