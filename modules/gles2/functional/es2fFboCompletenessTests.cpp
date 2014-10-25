@@ -96,6 +96,12 @@ static const FormatKey s_oesTextureHalfFloatFormats[] =
 	GLS_UNSIZED_FORMATKEY(GL_RGB,	GL_HALF_FLOAT_OES),
 };
 
+// GL_EXT_sRGB_write_control
+static const FormatKey s_extSrgbWriteControlFormats[] =
+{
+	GL_SRGB8_ALPHA8
+};
+
 static const FormatExtEntry s_es2ExtFormats[] =
 {
 	// The extension does not specify these to be color-renderable.
@@ -108,6 +114,13 @@ static const FormatExtEntry s_es2ExtFormats[] =
 		"GL_OES_texture_half_float",
 		TEXTURE_VALID,
 		GLS_ARRAY_RANGE(s_oesTextureHalfFloatFormats)
+	},
+
+	// GL_EXT_sRGB_write_control makes SRGB8_ALPHA8 color-renderable
+	{
+		"GL_EXT_sRGB_write_control",
+		REQUIRED_RENDERABLE | TEXTURE_VALID | COLOR_RENDERABLE | RENDERBUFFER_VALID,
+		GLS_ARRAY_RANGE(s_extSrgbWriteControlFormats)
 	},
 };
 

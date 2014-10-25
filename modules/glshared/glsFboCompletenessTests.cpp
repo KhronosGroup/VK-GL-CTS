@@ -175,10 +175,20 @@ static const FormatKey s_extSrgbRboFormats[] =
 	GL_SRGB8_ALPHA8,
 };
 
-static const FormatKey s_extSrgbTexFormats[] =
+static const FormatKey s_extSrgbRenderableTexFormats[] =
+{
+	GLS_UNSIZED_FORMATKEY(GL_SRGB_ALPHA,	GL_UNSIGNED_BYTE),
+};
+
+static const FormatKey s_extSrgbNonRenderableTexFormats[] =
 {
 	GLS_UNSIZED_FORMATKEY(GL_SRGB,			GL_UNSIGNED_BYTE),
-	GLS_UNSIZED_FORMATKEY(GL_SRGB_ALPHA,	GL_UNSIGNED_BYTE),
+	GL_SRGB8,
+};
+
+static const FormatKey s_nvSrgbFormatsFormats[] =
+{
+	GL_SRGB8,
 };
 
 static const FormatKey s_oesRgb8Rgba8TexFormats[] =
@@ -282,12 +292,22 @@ static const FormatExtEntry s_esExtFormats[] =
 	{
 		"GL_EXT_sRGB",
 		COLOR_RENDERABLE | TEXTURE_VALID,
-		GLS_ARRAY_RANGE(s_extSrgbTexFormats)
+		GLS_ARRAY_RANGE(s_extSrgbRenderableTexFormats)
+	},
+	{
+		"GL_EXT_sRGB",
+		TEXTURE_VALID,
+		GLS_ARRAY_RANGE(s_extSrgbNonRenderableTexFormats)
 	},
 	{
 		"GL_EXT_sRGB",
 		REQUIRED_RENDERABLE | COLOR_RENDERABLE | RENDERBUFFER_VALID,
 		GLS_ARRAY_RANGE(s_extSrgbRboFormats)
+	},
+	{
+		"GL_NV_sRGB_formats",
+		REQUIRED_RENDERABLE | COLOR_RENDERABLE | TEXTURE_VALID | RENDERBUFFER_VALID,
+		GLS_ARRAY_RANGE(s_nvSrgbFormatsFormats)
 	},
 
 	 // In Khronos bug 7333 discussion, the consensus is that these texture
