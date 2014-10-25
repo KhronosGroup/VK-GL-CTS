@@ -4839,7 +4839,7 @@ static void generateProgramOutputLocationBlockContents (Context& context, const 
 		}
 		// .var_array_explicit_location
 		{
-			const ResourceDefinition::Node::SharedPtr layout	(new ResourceDefinition::LayoutQualifier(output, glu::Layout(2)));
+			const ResourceDefinition::Node::SharedPtr layout	(new ResourceDefinition::LayoutQualifier(output, glu::Layout(1)));
 			const ResourceDefinition::Node::SharedPtr arrayElem	(new ResourceDefinition::ArrayElement(layout));
 			const ResourceDefinition::Node::SharedPtr variable	(new ResourceDefinition::Variable(arrayElem, glu::TYPE_FLOAT_VEC4));
 			targetGroup->addChild(new ResourceTestCase(context, variable, ProgramResourceQueryTestTarget(PROGRAMINTERFACE_PROGRAM_OUTPUT, PROGRAMRESOURCEPROP_LOCATION), "var_array_explicit_location"));

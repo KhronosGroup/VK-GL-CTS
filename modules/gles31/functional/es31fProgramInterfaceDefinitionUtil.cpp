@@ -893,6 +893,35 @@ static int getNumMaxXFBOutputComponents (const ProgramInterfaceDefinition::Progr
 	return numComponents;
 }
 
+static int getFragmentOutputMaxLocation (const ProgramInterfaceDefinition::Shader* shader)
+{
+	DE_ASSERT(shader->getType() == glu::SHADERTYPE_FRAGMENT);
+
+	int maxOutputLocation = -1;
+
+	for (int ndx = 0; ndx < (int)shader->getDefaultBlock().variables.size(); ++ndx)
+	{
+		if (shader->getDefaultBlock().variables[ndx].storage == glu::STORAGE_OUT)
+		{
+			// missing location qualifier means location == 0
+			const int outputLocation 		= (shader->getDefaultBlock().variables[ndx].layout.location == -1)
+												? (0)
+												: (shader->getDefaultBlock().variables[ndx].layout.location);
+
+			// only basic types or arrays of basic types possible
+			DE_ASSERT(!shader->getDefaultBlock().variables[ndx].varType.isStructType());
+
+			const int locationSlotsTaken	= (shader->getDefaultBlock().variables[ndx].varType.isArrayType())
+												? (shader->getDefaultBlock().variables[ndx].varType.getArraySize())
+												: (1);
+
+			maxOutputLocation = de::max(maxOutputLocation, outputLocation + locationSlotsTaken - 1);
+		}
+	}
+
+	return maxOutputLocation;
+}
+
 } // anonymous
 
 std::vector<std::string> getProgramInterfaceBlockMemberResourceList (const glu::InterfaceBlock& interfaceBlock)
@@ -1315,27 +1344,28 @@ ProgramInterfaceDefinition::ProgramResourceUsage getCombinedProgramResourceUsage
 {
 	ProgramInterfaceDefinition::ProgramResourceUsage retVal;
 
-	retVal.uniformBufferMaxBinding				= 0;
+	retVal.uniformBufferMaxBinding				= -1; // max binding is inclusive upper bound. Allow 0 bindings by using negative value
 	retVal.uniformBufferMaxSize					= 0;
 	retVal.numUniformBlocks						= 0;
 	retVal.numCombinedVertexUniformComponents	= 0;
 	retVal.numCombinedFragmentUniformComponents	= 0;
-	retVal.shaderStorageBufferMaxBinding		= 0;
+	retVal.shaderStorageBufferMaxBinding		= -1; // see above
 	retVal.shaderStorageBufferMaxSize			= 0;
 	retVal.numShaderStorageBlocks				= 0;
 	retVal.numVaryingComponents					= 0;
 	retVal.numVaryingVectors					= 0;
 	retVal.numCombinedSamplers					= 0;
-	retVal.atomicCounterBufferMaxBinding		= 0;
+	retVal.atomicCounterBufferMaxBinding		= -1; // see above
 	retVal.atomicCounterBufferMaxSize			= 0;
 	retVal.numAtomicCounterBuffers				= 0;
 	retVal.numAtomicCounters					= 0;
-	retVal.maxImageBinding						= 0;
+	retVal.maxImageBinding						= -1; // see above
 	retVal.numCombinedImages					= 0;
 	retVal.numCombinedOutputResources			= 0;
 	retVal.numXFBInterleavedComponents			= 0;
 	retVal.numXFBSeparateAttribs				= 0;
 	retVal.numXFBSeparateComponents				= 0;
+	retVal.fragmentOutputMaxBinding				= -1; // see above
 
 	for (int shaderNdx = 0; shaderNdx < (int)program->getShaders().size(); ++shaderNdx)
 	{
@@ -1372,8 +1402,12 @@ ProgramInterfaceDefinition::ProgramResourceUsage getCombinedProgramResourceUsage
 
 		retVal.numCombinedOutputResources		+= getNumTypeInstances(shader, glu::STORAGE_UNIFORM, glu::isDataTypeImage);
 		retVal.numCombinedOutputResources		+= getNumShaderBlocks(shader, glu::STORAGE_BUFFER);
+
 		if (shader->getType() == glu::SHADERTYPE_FRAGMENT)
+		{
 			retVal.numCombinedOutputResources += getNumVectors(shader, glu::STORAGE_OUT);
+			retVal.fragmentOutputMaxBinding = de::max(retVal.fragmentOutputMaxBinding, getFragmentOutputMaxLocation(shader));
+		}
 	}
 
 	if (program->getTransformFeedbackMode() == GL_INTERLEAVED_ATTRIBS)
