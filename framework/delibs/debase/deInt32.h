@@ -337,6 +337,20 @@ DE_INLINE int dePop32 (int a)
 	return (int)t;
 }
 
+/*--------------------------------------------------------------------*//*!
+ * \brief Reverse bytes in 32-bit integer (for example MSB -> LSB).
+ * \param a	Input value.
+ * \return The input with bytes reversed
+ *//*--------------------------------------------------------------------*/
+DE_INLINE deUint32 deReverseBytes32 (deUint32 v)
+{
+	deUint32 b0 = v << 24;
+	deUint32 b1 = (v & 0x0000ff00) << 8;
+	deUint32 b2 = (v & 0x00ff0000) >> 8;
+	deUint32 b3 = v >> 24;
+	return b0|b1|b2|b3;
+}
+
 DE_INLINE deInt32 deSafeMul32 (deInt32 a, deInt32 b)
 {
 	deInt32 res = a * b;
