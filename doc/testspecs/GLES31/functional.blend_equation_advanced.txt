@@ -32,6 +32,7 @@ Includes:
 Excludes (will be added later):
  + Use of blend_support_all qualifier
  + Interaction with other per-fragment operations
+ + Non-premultiplied / invalid color inputs
  + Negative tests
 
 Description:
