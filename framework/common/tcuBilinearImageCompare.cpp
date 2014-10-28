@@ -37,7 +37,8 @@ enum
 	NUM_SUBPIXEL_BITS	= 8	//!< Number of subpixel bits used when doing bilinear interpolation.
 };
 
-// \todo [2013-03-26 pyry] Big-endian architectures?
+// \note Algorithm assumes that colors are packed to 32-bit values as dictated by
+//		 tcu::RGBA::*_SHIFT values.
 
 template<int Channel>
 static inline deUint8 getChannel (deUint32 color)
@@ -45,10 +46,17 @@ static inline deUint8 getChannel (deUint32 color)
 	return (deUint8)((color >> (Channel*8)) & 0xff);
 }
 
+#if (DE_ENDIANNESS == DE_LITTLE_ENDIAN)
 inline deUint32 readRGBA8Raw (const ConstPixelBufferAccess& src, deUint32 x, deUint32 y)
 {
 	return *(const deUint32*)((const deUint8*)src.getDataPtr() + y*src.getRowPitch() + x*4);
 }
+#else
+inline deUint32 readRGBA8Raw (const ConstPixelBufferAccess& src, deUint32 x, deUint32 y)
+{
+	return deReverseBytes32(*(const deUint32*)((const deUint8*)src.getDataPtr() + y*src.getRowPitch() + x*4));
+}
+#endif
 
 inline RGBA readRGBA8 (const ConstPixelBufferAccess& src, deUint32 x, deUint32 y)
 {
