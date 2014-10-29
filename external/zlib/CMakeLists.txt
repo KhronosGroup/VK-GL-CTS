@@ -4,35 +4,48 @@ if (NOT DE_DEFS)
 	message(FATAL_ERROR "Include Defs.cmake")
 endif ()
 
-set(ZLIB_SRC_PATH "../../../zlib/src" CACHE STRING "Path to zlib source tree")
+if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/zlib.h")
+	set(DEFAULT_ZLIB_SRC_PATH ${CMAKE_CURRENT_SOURCE_DIR})
+else ()
+	# Assume build inside Android source tree
+	set(DEFAULT_ZLIB_SRC_PATH "../zlib/src")
+endif ()
+
+set(ZLIB_SRC_PATH ${DEFAULT_ZLIB_SRC_PATH} CACHE STRING "Path to zlib source tree")
+
+if (IS_ABSOLUTE ${ZLIB_SRC_PATH})
+	set(ZLIB_ABS_PATH ${ZLIB_SRC_PATH})
+else ()
+	set(ZLIB_ABS_PATH "${CMAKE_SOURCE_DIR}/${ZLIB_SRC_PATH}")
+endif ()
 
 set(ZLIB_SRCS
-	${ZLIB_SRC_PATH}/adler32.c
-	${ZLIB_SRC_PATH}/compress.c
-	${ZLIB_SRC_PATH}/crc32.c
-	${ZLIB_SRC_PATH}/crc32.h
-	${ZLIB_SRC_PATH}/deflate.c
-	${ZLIB_SRC_PATH}/deflate.h
-	${ZLIB_SRC_PATH}/gzclose.c
-	${ZLIB_SRC_PATH}/gzguts.h
-	${ZLIB_SRC_PATH}/gzlib.c
-	${ZLIB_SRC_PATH}/gzread.c
-	${ZLIB_SRC_PATH}/gzwrite.c
-	${ZLIB_SRC_PATH}/infback.c
-	${ZLIB_SRC_PATH}/inffast.c
-	${ZLIB_SRC_PATH}/inffast.h
-	${ZLIB_SRC_PATH}/inffixed.h
-	${ZLIB_SRC_PATH}/inflate.c
-	${ZLIB_SRC_PATH}/inflate.h
-	${ZLIB_SRC_PATH}/inftrees.c
-	${ZLIB_SRC_PATH}/inftrees.h
-	${ZLIB_SRC_PATH}/trees.c
-	${ZLIB_SRC_PATH}/trees.h
-	${ZLIB_SRC_PATH}/uncompr.c
-	${ZLIB_SRC_PATH}/zconf.h
-	${ZLIB_SRC_PATH}/zlib.h
-	${ZLIB_SRC_PATH}/zutil.c
-	${ZLIB_SRC_PATH}/zutil.h
+	${ZLIB_ABS_PATH}/adler32.c
+	${ZLIB_ABS_PATH}/compress.c
+	${ZLIB_ABS_PATH}/crc32.c
+	${ZLIB_ABS_PATH}/crc32.h
+	${ZLIB_ABS_PATH}/deflate.c
+	${ZLIB_ABS_PATH}/deflate.h
+	${ZLIB_ABS_PATH}/gzclose.c
+	${ZLIB_ABS_PATH}/gzguts.h
+	${ZLIB_ABS_PATH}/gzlib.c
+	${ZLIB_ABS_PATH}/gzread.c
+	${ZLIB_ABS_PATH}/gzwrite.c
+	${ZLIB_ABS_PATH}/infback.c
+	${ZLIB_ABS_PATH}/inffast.c
+	${ZLIB_ABS_PATH}/inffast.h
+	${ZLIB_ABS_PATH}/inffixed.h
+	${ZLIB_ABS_PATH}/inflate.c
+	${ZLIB_ABS_PATH}/inflate.h
+	${ZLIB_ABS_PATH}/inftrees.c
+	${ZLIB_ABS_PATH}/inftrees.h
+	${ZLIB_ABS_PATH}/trees.c
+	${ZLIB_ABS_PATH}/trees.h
+	${ZLIB_ABS_PATH}/uncompr.c
+	${ZLIB_ABS_PATH}/zconf.h
+	${ZLIB_ABS_PATH}/zlib.h
+	${ZLIB_ABS_PATH}/zutil.c
+	${ZLIB_ABS_PATH}/zutil.h
 	)
 
 if (DE_COMPILER_IS_MSC)
@@ -41,6 +54,10 @@ if (DE_COMPILER_IS_MSC)
 	# 4242, 4244: conversion from 'x' to 'y', possible loss of data
 	# 4996: deprecated POSIX name
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /Wall /wd4127 /wd4131 /wd4242 /wd4244 /wd4996")
+
+elseif (DE_COMPILER_IS_GCC OR DE_COMPILER_IS_CLANG)
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-implicit-function-declaration")
+
 endif ()
 
 if (DE_OS_IS_UNIX)
@@ -49,10 +66,5 @@ endif ()
 
 add_library(z STATIC ${ZLIB_SRCS})
 
-if (IS_ABSOLUTE ${ZLIB_SRC_PATH})
-	set(ZLIB_INCLUDE_PATH ${ZLIB_SRC_PATH} PARENT_SCOPE)
-else ()
-	set(ZLIB_INCLUDE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/${ZLIB_SRC_PATH}" PARENT_SCOPE)
-endif ()
-
-set(ZLIB_LIBRARY z PARENT_SCOPE)
+set(ZLIB_INCLUDE_PATH	${ZLIB_ABS_PATH}	PARENT_SCOPE)
+set(ZLIB_LIBRARY		z					PARENT_SCOPE)
