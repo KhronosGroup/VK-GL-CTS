@@ -309,7 +309,7 @@ void NegativeApiTests::init (void)
 				EGLConfig glOnlyConfig;
 				if (getConfig(&glOnlyConfig, FilterList() << (ConfigRenderableType() & EGL_OPENGL_BIT) << (ConfigRenderableType() ^ EGL_OPENVG_BIT)))
 				{
-					expectTrue(eglBindAPI(EGL_OPENGL_ES_API));
+					expectTrue(eglBindAPI(EGL_OPENVG_API));
 					expectNoContext(eglCreateContext(display, glOnlyConfig, EGL_NO_CONTEXT, s_emptyAttribList));
 					expectError(EGL_BAD_CONFIG);
 				}
@@ -317,7 +317,7 @@ void NegativeApiTests::init (void)
 				EGLConfig es1OnlyConfig;
 				if (getConfig(&es1OnlyConfig, FilterList() << (ConfigRenderableType() & EGL_OPENGL_ES_BIT) << (ConfigRenderableType() ^ EGL_OPENVG_BIT)))
 				{
-					expectTrue(eglBindAPI(EGL_OPENGL_API));
+					expectTrue(eglBindAPI(EGL_OPENVG_API));
 					expectNoContext(eglCreateContext(display, es1OnlyConfig, EGL_NO_CONTEXT, s_es1ContextAttribList));
 					expectError(EGL_BAD_CONFIG);
 				}
@@ -325,7 +325,7 @@ void NegativeApiTests::init (void)
 				EGLConfig es2OnlyConfig;
 				if (getConfig(&es2OnlyConfig, FilterList() << (ConfigRenderableType() & EGL_OPENGL_ES2_BIT) << (ConfigRenderableType() ^ EGL_OPENVG_BIT)))
 				{
-					expectTrue(eglBindAPI(EGL_OPENGL_API));
+					expectTrue(eglBindAPI(EGL_OPENVG_API));
 					expectNoContext(eglCreateContext(display, es2OnlyConfig, EGL_NO_CONTEXT, s_es2ContextAttribList));
 					expectError(EGL_BAD_CONFIG);
 				}
@@ -434,10 +434,13 @@ void NegativeApiTests::init (void)
 
 			log << TestLog::Section("Test3", "EGL_BAD_PARAMETER is generated if buftype is not EGL_OPENVG_IMAGE");
 
+			log << TestLog::EndSection;
+
 			expectTrue(eglGetConfigs(display, &anyConfig, 1, &unused));
 
+			log << TestLog::Section("Test4", "EGL_BAD_PARAMETER is generated if buffer is not valid OpenVG image");
 			expectNoSurface(eglCreatePbufferFromClientBuffer(display, EGL_OPENVG_IMAGE, (EGLClientBuffer)-1, anyConfig, DE_NULL));
-			expectError(EGL_BAD_CONFIG);
+			expectError(EGL_BAD_PARAMETER);
 
 			log << TestLog::EndSection;
 		});
@@ -642,10 +645,10 @@ void NegativeApiTests::init (void)
 			if (getConfig(&windowConfig, FilterList() << (ConfigSurfaceType() & EGL_WINDOW_BIT)))
 			{
 				expectNoSurface(eglCreateWindowSurface(display, windowConfig, DE_NULL, s_emptyAttribList));
-				expectError(EGL_BAD_NATIVE_PIXMAP);
+				expectError(EGL_BAD_NATIVE_WINDOW);
 
 				expectNoSurface(eglCreateWindowSurface(display, windowConfig, (EGLNativeWindowType)-1, s_emptyAttribList));
-				expectError(EGL_BAD_NATIVE_PIXMAP);
+				expectError(EGL_BAD_NATIVE_WINDOW);
 			}
 
 			log << TestLog::EndSection;
@@ -838,9 +841,6 @@ void NegativeApiTests::init (void)
 
 			if (surface)
 			{
-				expectFalse(eglMakeCurrent(display, surface, surface, DE_NULL));
-				expectError(EGL_BAD_CONTEXT);
-
 				expectFalse(eglMakeCurrent(display, surface, surface, (EGLContext)-1));
 				expectError(EGL_BAD_CONTEXT);
 			}
