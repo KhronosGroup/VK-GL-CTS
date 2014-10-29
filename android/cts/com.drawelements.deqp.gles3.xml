@@ -17066,7 +17066,6 @@
 </TestCase>
 <TestCase name="highp_vertex">
 <Test name="vec3" />
-<Test name="vec4" />
 </TestCase>
 <TestCase name="highp_fragment">
 <Test name="vec3" />
