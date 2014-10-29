@@ -1,8 +1,8 @@
-#ifndef _TEGLIMAGEFORMATTESTS_HPP
-#define _TEGLIMAGEFORMATTESTS_HPP
+#ifndef _EGLUEXTENSIONS_HPP
+#define _EGLUEXTENSIONS_HPP
 /*-------------------------------------------------------------------------
- * drawElements Quality Program EGL Module
- * ---------------------------------------
+ * drawElements Quality Program Tester Core
+ * ----------------------------------------
  *
  * Copyright 2014 The Android Open Source Project
  *
@@ -20,24 +20,31 @@
  *
  *//*!
  * \file
- * \brief EGL image tests.
+ * \brief EGL extension resolving.
  *//*--------------------------------------------------------------------*/
 
-#include "tcuDefs.hpp"
-#include "teglTestCase.hpp"
+#include "deDefs.hpp"
+#include "egluHeaderWrapper.hpp"
 
-namespace deqp
-{
-namespace egl
-{
-namespace Image
+namespace eglu
 {
 
-TestCaseGroup* createSimpleCreationTests 		(EglTestContext& eglTestCtx, const std::string& name, const std::string& desc);
-TestCaseGroup* createModifyTests				(EglTestContext& eglTestCtx, const std::string& name, const std::string& desc);
-TestCaseGroup* createMultiContextRenderTests	(EglTestContext& eglTestCtx, const std::string& name, const std::string& desc);
+deFunctionPtr getProcAddressChecked (const char* procName);
 
-} // Image
-} // egl
-} // deqp
-#endif // _TEGLIMAGEFORMATTESTS_HPP
+template <typename FUNC>
+inline FUNC getFunction (const char* procName)
+{
+	return reinterpret_cast<FUNC>(getProcAddressChecked(procName));
+}
+
+struct ImageFunctions
+{
+	PFNEGLCREATEIMAGEKHRPROC	createImage;
+	PFNEGLDESTROYIMAGEKHRPROC	destroyImage;
+};
+
+ImageFunctions getImageFunctions (EGLDisplay dpy);
+
+} // eglu
+
+#endif // _EGLUEXTENSIONS_HPP

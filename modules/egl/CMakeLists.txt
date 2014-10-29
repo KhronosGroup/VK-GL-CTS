@@ -29,6 +29,8 @@ set(DEQP_EGL_SRCS
 	teglGLES1RenderUtil.hpp
 	teglGLES2RenderUtil.cpp
 	teglGLES2RenderUtil.hpp
+	teglImageUtil.cpp
+	teglImageUtil.hpp
 	teglImageTests.cpp
 	teglImageTests.hpp
 	teglInfoTests.cpp

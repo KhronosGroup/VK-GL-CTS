@@ -38,29 +38,34 @@ namespace glu
 // Shader
 
 Shader::Shader (const RenderContext& renderCtx, ShaderType shaderType)
-	: m_renderCtx	(renderCtx)
-	, m_shader		(0)
+	: m_gl		(renderCtx.getFunctions())
+	, m_shader	(0)
 {
-	const glw::Functions& gl = m_renderCtx.getFunctions();
-
 	m_info.type	= shaderType;
-	m_shader	= gl.createShader(getGLShaderType(shaderType));
-	GLU_EXPECT_NO_ERROR(gl.getError(), "glCreateShader()");
+	m_shader	= m_gl.createShader(getGLShaderType(shaderType));
+	GLU_EXPECT_NO_ERROR(m_gl.getError(), "glCreateShader()");
+	TCU_CHECK(m_shader);
+}
+
+Shader::Shader (const glw::Functions& gl, ShaderType shaderType)
+	: m_gl		(gl)
+	, m_shader	(0)
+{
+	m_info.type	= shaderType;
+	m_shader	= m_gl.createShader(getGLShaderType(shaderType));
+	GLU_EXPECT_NO_ERROR(m_gl.getError(), "glCreateShader()");
 	TCU_CHECK(m_shader);
 }
 
 Shader::~Shader (void)
 {
-	const glw::Functions& gl = m_renderCtx.getFunctions();
-	gl.deleteShader(m_shader);
+	m_gl.deleteShader(m_shader);
 }
 
 void Shader::setSources (int numSourceStrings, const char* const* sourceStrings, const int* lengths)
 {
-	const glw::Functions& gl = m_renderCtx.getFunctions();
-
-	gl.shaderSource(m_shader, numSourceStrings, sourceStrings, lengths);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "glShaderSource()");
+	m_gl.shaderSource(m_shader, numSourceStrings, sourceStrings, lengths);
+	GLU_EXPECT_NO_ERROR(m_gl.getError(), "glShaderSource()");
 
 	m_info.source.clear();
 	for (int ndx = 0; ndx < numSourceStrings; ndx++)
@@ -72,19 +77,17 @@ void Shader::setSources (int numSourceStrings, const char* const* sourceStrings,
 
 void Shader::compile (void)
 {
-	const glw::Functions& gl = m_renderCtx.getFunctions();
-
 	m_info.compileOk		= false;
 	m_info.compileTimeUs	= 0;
 	m_info.infoLog.clear();
 
 	{
 		deUint64 compileStart = deGetMicroseconds();
-		gl.compileShader(m_shader);
+		m_gl.compileShader(m_shader);
 		m_info.compileTimeUs = deGetMicroseconds() - compileStart;
 	}
 
-	GLU_EXPECT_NO_ERROR(gl.getError(), "glCompileShader()");
+	GLU_EXPECT_NO_ERROR(m_gl.getError(), "glCompileShader()");
 
 	// Query status & log.
 	{
@@ -92,16 +95,16 @@ void Shader::compile (void)
 		int	infoLogLen		= 0;
 		int	unusedLen;
 
-		gl.getShaderiv(m_shader, GL_COMPILE_STATUS,		&compileStatus);
-		gl.getShaderiv(m_shader, GL_INFO_LOG_LENGTH,	&infoLogLen);
-		GLU_EXPECT_NO_ERROR(gl.getError(), "glGetShaderiv()");
+		m_gl.getShaderiv(m_shader, GL_COMPILE_STATUS,		&compileStatus);
+		m_gl.getShaderiv(m_shader, GL_INFO_LOG_LENGTH,	&infoLogLen);
+		GLU_EXPECT_NO_ERROR(m_gl.getError(), "glGetShaderiv()");
 
 		m_info.compileOk = compileStatus != GL_FALSE;
 
 		if (infoLogLen > 0)
 		{
 			std::vector<char> infoLog(infoLogLen);
-			gl.getShaderInfoLog(m_shader, (int)infoLog.size(), &unusedLen, &infoLog[0]);
+			m_gl.getShaderInfoLog(m_shader, (int)infoLog.size(), &unusedLen, &infoLog[0]);
 			m_info.infoLog = std::string(&infoLog[0], infoLogLen);
 		}
 	}
@@ -109,9 +112,8 @@ void Shader::compile (void)
 
 // Program
 
-static bool getProgramLinkStatus (const RenderContext& renderCtx, deUint32 program)
+static bool getProgramLinkStatus (const glw::Functions& gl, deUint32 program)
 {
-	const glw::Functions& gl	= renderCtx.getFunctions();
 	int	linkStatus				= 0;
 
 	gl.getProgramiv(program, GL_LINK_STATUS, &linkStatus);
@@ -119,10 +121,8 @@ static bool getProgramLinkStatus (const RenderContext& renderCtx, deUint32 progr
 	return (linkStatus != GL_FALSE);
 }
 
-static std::string getProgramInfoLog (const RenderContext& renderCtx, deUint32 program)
+static std::string getProgramInfoLog (const glw::Functions& gl, deUint32 program)
 {
-	const glw::Functions& gl = renderCtx.getFunctions();
-
 	int	infoLogLen	= 0;
 	int	unusedLen;
 
@@ -139,141 +139,133 @@ static std::string getProgramInfoLog (const RenderContext& renderCtx, deUint32 p
 }
 
 Program::Program (const RenderContext& renderCtx)
-	: m_renderCtx	(renderCtx)
-	, m_program		(0)
+	: m_gl		(renderCtx.getFunctions())
+	, m_program	(0)
 {
-	const glw::Functions& gl = m_renderCtx.getFunctions();
+	m_program = m_gl.createProgram();
+	GLU_EXPECT_NO_ERROR(m_gl.getError(), "glCreateProgram()");
+}
 
-	m_program = gl.createProgram();
-	GLU_EXPECT_NO_ERROR(gl.getError(), "glCreateProgram()");
+Program::Program (const glw::Functions& gl)
+	: m_gl		(gl)
+	, m_program	(0)
+{
+	m_program = m_gl.createProgram();
+	GLU_EXPECT_NO_ERROR(m_gl.getError(), "glCreateProgram()");
 }
 
 Program::Program (const RenderContext& renderCtx, deUint32 program)
-	: m_renderCtx	(renderCtx)
-	, m_program		(program)
+	: m_gl		(renderCtx.getFunctions())
+	, m_program	(program)
 {
-	m_info.linkOk	= getProgramLinkStatus(renderCtx, program);
-	m_info.infoLog	= getProgramInfoLog(renderCtx, program);
+	m_info.linkOk	= getProgramLinkStatus(m_gl, program);
+	m_info.infoLog	= getProgramInfoLog(m_gl, program);
 }
 
 Program::~Program (void)
 {
-	const glw::Functions& gl = m_renderCtx.getFunctions();
-	gl.deleteProgram(m_program);
+	m_gl.deleteProgram(m_program);
 }
 
 void Program::attachShader (deUint32 shader)
 {
-	const glw::Functions& gl = m_renderCtx.getFunctions();
-
-	gl.attachShader(m_program, shader);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "glAttachShader()");
+	m_gl.attachShader(m_program, shader);
+	GLU_EXPECT_NO_ERROR(m_gl.getError(), "glAttachShader()");
 }
 
 void Program::detachShader (deUint32 shader)
 {
-	const glw::Functions& gl = m_renderCtx.getFunctions();
-
-	gl.detachShader(m_program, shader);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "glDetachShader()");
+	m_gl.detachShader(m_program, shader);
+	GLU_EXPECT_NO_ERROR(m_gl.getError(), "glDetachShader()");
 }
 
 void Program::bindAttribLocation (deUint32 location, const char* name)
 {
-	const glw::Functions& gl = m_renderCtx.getFunctions();
-
-	gl.bindAttribLocation(m_program, location, name);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "glBindAttribLocation()");
+	m_gl.bindAttribLocation(m_program, location, name);
+	GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindAttribLocation()");
 }
 
 void Program::transformFeedbackVaryings (int count, const char* const* varyings, deUint32 bufferMode)
 {
-	const glw::Functions& gl = m_renderCtx.getFunctions();
-
-	gl.transformFeedbackVaryings(m_program, count, varyings, bufferMode);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "glTransformFeedbackVaryings()");
+	m_gl.transformFeedbackVaryings(m_program, count, varyings, bufferMode);
+	GLU_EXPECT_NO_ERROR(m_gl.getError(), "glTransformFeedbackVaryings()");
 }
 
 void Program::link (void)
 {
-	const glw::Functions& gl = m_renderCtx.getFunctions();
-
 	m_info.linkOk		= false;
 	m_info.linkTimeUs	= 0;
 	m_info.infoLog.clear();
 
 	{
 		deUint64 linkStart = deGetMicroseconds();
-		gl.linkProgram(m_program);
+		m_gl.linkProgram(m_program);
 		m_info.linkTimeUs = deGetMicroseconds() - linkStart;
 	}
-	GLU_EXPECT_NO_ERROR(gl.getError(), "glLinkProgram()");
+	GLU_EXPECT_NO_ERROR(m_gl.getError(), "glLinkProgram()");
 
-	m_info.linkOk	= getProgramLinkStatus(m_renderCtx, m_program);
-	m_info.infoLog	= getProgramInfoLog(m_renderCtx, m_program);
+	m_info.linkOk	= getProgramLinkStatus(m_gl, m_program);
+	m_info.infoLog	= getProgramInfoLog(m_gl, m_program);
 }
 
 bool Program::isSeparable (void) const
 {
-	const glw::Functions& gl = m_renderCtx.getFunctions();
 	int separable = GL_FALSE;
 
-	gl.getProgramiv(m_program, GL_PROGRAM_SEPARABLE, &separable);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "glGetProgramiv()");
+	m_gl.getProgramiv(m_program, GL_PROGRAM_SEPARABLE, &separable);
+	GLU_EXPECT_NO_ERROR(m_gl.getError(), "glGetProgramiv()");
 
 	return (separable != GL_FALSE);
 }
 
 void Program::setSeparable (bool separable)
 {
-	const glw::Functions& gl = m_renderCtx.getFunctions();
-
-	gl.programParameteri(m_program, GL_PROGRAM_SEPARABLE, separable);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "glProgramParameteri()");
+	m_gl.programParameteri(m_program, GL_PROGRAM_SEPARABLE, separable);
+	GLU_EXPECT_NO_ERROR(m_gl.getError(), "glProgramParameteri()");
 }
 
 // ProgramPipeline
 
 ProgramPipeline::ProgramPipeline (const RenderContext& renderCtx)
-	: m_renderCtx	(renderCtx)
+	: m_gl			(renderCtx.getFunctions())
 	, m_pipeline	(0)
 {
-	const glw::Functions& gl = m_renderCtx.getFunctions();
+	m_gl.genProgramPipelines(1, &m_pipeline);
+	GLU_EXPECT_NO_ERROR(m_gl.getError(), "glGenProgramPipelines()");
+}
 
-	gl.genProgramPipelines(1, &m_pipeline);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "glGenProgramPipelines()");
+ProgramPipeline::ProgramPipeline (const glw::Functions& gl)
+	: m_gl			(gl)
+	, m_pipeline	(0)
+{
+	m_gl.genProgramPipelines(1, &m_pipeline);
+	GLU_EXPECT_NO_ERROR(m_gl.getError(), "glGenProgramPipelines()");
 }
 
 ProgramPipeline::~ProgramPipeline (void)
 {
-	const glw::Functions& gl = m_renderCtx.getFunctions();
-	gl.deleteProgramPipelines(1, &m_pipeline);
+	m_gl.deleteProgramPipelines(1, &m_pipeline);
 }
 
 void ProgramPipeline::useProgramStages (deUint32 stages, deUint32 program)
 {
-	const glw::Functions& gl = m_renderCtx.getFunctions();
-
-	gl.useProgramStages(m_pipeline, stages, program);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "glUseProgramStages()");
+	m_gl.useProgramStages(m_pipeline, stages, program);
+	GLU_EXPECT_NO_ERROR(m_gl.getError(), "glUseProgramStages()");
 }
 
 void ProgramPipeline::activeShaderProgram (deUint32 program)
 {
-	const glw::Functions& gl = m_renderCtx.getFunctions();
-
-	gl.activeShaderProgram(m_pipeline, program);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "glActiveShaderProgram()");
+	m_gl.activeShaderProgram(m_pipeline, program);
+	GLU_EXPECT_NO_ERROR(m_gl.getError(), "glActiveShaderProgram()");
 }
 
 bool ProgramPipeline::isValid (void)
 {
-	const glw::Functions& gl = m_renderCtx.getFunctions();
 	glw::GLint status = GL_FALSE;
-	gl.validateProgramPipeline(m_pipeline);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "glValidateProgramPipeline()");
+	m_gl.validateProgramPipeline(m_pipeline);
+	GLU_EXPECT_NO_ERROR(m_gl.getError(), "glValidateProgramPipeline()");
 
-	gl.getProgramPipelineiv(m_pipeline, GL_VALIDATE_STATUS, &status);
+	m_gl.getProgramPipelineiv(m_pipeline, GL_VALIDATE_STATUS, &status);
 
 	return (status != GL_FALSE);
 }
@@ -281,7 +273,18 @@ bool ProgramPipeline::isValid (void)
 // ShaderProgram
 
 ShaderProgram::ShaderProgram (const RenderContext& renderCtx, const ProgramSources& sources)
-	: m_program(renderCtx)
+	: m_program(renderCtx.getFunctions())
+{
+	init(renderCtx.getFunctions(), sources);
+}
+
+ShaderProgram::ShaderProgram (const glw::Functions& gl, const ProgramSources& sources)
+	: m_program(gl)
+{
+	init(gl, sources);
+}
+
+void ShaderProgram::init (const glw::Functions& gl, const ProgramSources& sources)
 {
 	try
 	{
@@ -296,7 +299,7 @@ ShaderProgram::ShaderProgram (const RenderContext& renderCtx, const ProgramSourc
 
 				m_shaders[shaderType].reserve(m_shaders[shaderType].size() + 1);
 
-				m_shaders[shaderType].push_back(new Shader(renderCtx, ShaderType(shaderType)));
+				m_shaders[shaderType].push_back(new Shader(gl, ShaderType(shaderType)));
 				m_shaders[shaderType].back()->setSources(1, &source, &length);
 				m_shaders[shaderType].back()->compile();
 

@@ -54,6 +54,14 @@ ObjectWrapper::ObjectWrapper (const glw::Functions& gl, const ObjectTraits& trai
 	}
 }
 
+ObjectWrapper::ObjectWrapper (const glw::Functions& gl, const ObjectTraits& traits, deUint32 object)
+	: m_gl		(gl)
+	, m_traits	(traits)
+	, m_object	(object)
+{
+	DE_ASSERT(object != 0);
+}
+
 ObjectWrapper::~ObjectWrapper (void)
 {
 	(m_gl.*m_traits.deleteFunc)(1, &m_object);

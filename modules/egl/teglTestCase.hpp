@@ -30,6 +30,7 @@
 #include "egluConfigInfo.hpp"
 #include "tcuFunctionLibrary.hpp"
 #include "gluRenderContext.hpp"
+#include "deSTLUtil.hpp"
 
 #include <set>
 #include <map>
@@ -55,21 +56,24 @@ public:
 												EglTestContext			(tcu::TestContext& testCtx, const eglu::NativeDisplayFactory& displayFactory, const eglu::NativeWindowFactory* windowFactory, const eglu::NativePixmapFactory* pixmapFactory);
 												~EglTestContext			(void);
 
-	tcu::TestContext&							getTestContext			(void) 			{ return m_testCtx;													}
-	eglu::NativeDisplay&						getNativeDisplay		(void)			{ return *m_defaultNativeDisplay;									}
-	tcu::egl::Display&							getDisplay				(void)			{ return *m_defaultEGLDisplay;										}
+	tcu::TestContext&							getTestContext			(void) const	{ return m_testCtx;													}
+	eglu::NativeDisplay&						getNativeDisplay		(void) const	{ return *m_defaultNativeDisplay;									}
+	tcu::egl::Display&							getDisplay				(void) const	{ return *m_defaultEGLDisplay;										}
+	EGLDisplay									getEGLDisplay			(void) const	{ return getDisplay().getEGLDisplay();								}
 	const std::vector<eglu::ConfigInfo>&		getConfigs				(void) const	{ return m_configs;													}
 
 	const eglu::NativeWindowFactory&			getNativeWindowFactory	(void) const;
 	const eglu::NativePixmapFactory&			getNativePixmapFactory	(void) const;
 
 	eglu::NativeWindow*							createNativeWindow		(EGLDisplay display, EGLConfig config, const EGLAttrib* attribList, int width, int height, eglu::WindowParams::Visibility visibility);
+	eglu::NativeWindow*							createNativeWindow		(EGLDisplay display, EGLConfig config, const EGLAttrib* attribList, int width, int height);
 	eglu::NativePixmap*							createNativePixmap		(EGLDisplay display, EGLConfig config, const EGLAttrib* attribList, int width, int height);
 
 	deFunctionPtr								getGLFunction			(glu::ApiType apiType, const char* name) const;
-	void										getGLFunctions			(glw::Functions& gl, glu::ApiType apiType) const;
+	void										getGLFunctions			(glw::Functions& gl, glu::ApiType apiType, const std::vector<const char*>& extensions) const;
+	void										getGLFunctions			(glw::Functions& gl, glu::ApiType apiType) const	{ getGLFunctions(gl, apiType, std::vector<const char*>()); }
 
-	bool										isAPISupported			(EGLint api)	{ return m_supportedAPIs.find(api) != m_supportedAPIs.end();		}
+	bool										isAPISupported			(EGLint api) const { return de::contains(m_supportedAPIs, api);						}
 
 	// Test case wrapper will instruct test context to create display upon case init and destroy it in deinit
 	void										createDefaultDisplay	(void);

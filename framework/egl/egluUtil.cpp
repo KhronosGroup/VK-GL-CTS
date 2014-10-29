@@ -26,6 +26,10 @@
 #include "egluNativeDisplay.hpp"
 #include "tcuCommandLine.hpp"
 #include "deSTLUtil.hpp"
+#include "deStringUtil.hpp"
+#include "glwEnums.hpp"
+
+#include <EGL/eglext.h>
 
 #include <algorithm>
 #include <sstream>
@@ -43,46 +47,56 @@ using std::vector;
 namespace eglu
 {
 
+vector<EGLint> attribMapToVector (const AttribMap& attribs)
+{
+	vector<EGLint> attribList;
+
+	for (AttribMap::const_iterator it = attribs.begin(); it != attribs.end(); ++it)
+	{
+		attribList.push_back(it->first);
+		attribList.push_back(it->second);
+	}
+
+	attribList.push_back(EGL_NONE);
+
+	return attribList;
+}
+
+Version getVersion (EGLDisplay display)
+{
+	EGLint major, minor;
+
+	// eglInitialize on already initialized displays just returns the version.
+	EGLU_CHECK_CALL(eglInitialize(display, &major, &minor));
+
+	return Version(major, minor);
+}
+
+vector<string> getExtensions (EGLDisplay display)
+{
+	const char*	const extensionStr = eglQueryString(display, EGL_EXTENSIONS);
+
+	EGLU_CHECK_MSG("Querying extensions failed");
+
+	return de::splitString(extensionStr, ' ');
+}
+
+bool hasExtension (EGLDisplay display, const string& str)
+{
+	const vector<string> extensions = getExtensions(display);
+	return de::contains(extensions.begin(), extensions.end(), str);
+}
+
 vector<string> getPlatformExtensions (void)
 {
-	const char* const	extensionStr	= eglQueryString(EGL_NO_DISPLAY, EGL_EXTENSIONS);
-	const EGLint		result			= eglGetError();
-
-	if (result == EGL_SUCCESS)
-	{
-		std::istringstream	stream			(extensionStr);
-		string				currentExtension;
-		vector<string>		extensions;
-
-		while (std::getline(stream, currentExtension, ' '))
-			extensions.push_back(currentExtension);
-
-		return extensions;
-	}
-	else if (result != EGL_BAD_DISPLAY)
-		throw Error(result, "eglQueryString(EGL_NO_DISPLAY, EGL_EXTENSIONS)", DE_NULL, __FILE__, __LINE__);
-	else
-		return vector<string>();
+	return getExtensions(EGL_NO_DISPLAY);
 }
 
 vector<string> getClientExtensions (EGLDisplay display)
 {
-	const char* const	extensionStr	= eglQueryString(display, EGL_EXTENSIONS);
-	const EGLint		result			= eglGetError();
+	DE_ASSERT(display != EGL_NO_DISPLAY);
 
-	if (result == EGL_SUCCESS)
-	{
-		std::istringstream	stream			(extensionStr);
-		string				currentExtension;
-		vector<string>		extensions;
-
-		while (std::getline(stream, currentExtension, ' '))
-			extensions.push_back(currentExtension);
-
-		return extensions;
-	}
-	else
-		throw Error(result, "eglQueryString(display, EGL_EXTENSIONS)", DE_NULL, __FILE__, __LINE__);
+	return getExtensions(display);
 }
 
 vector<EGLConfig> getConfigs (EGLDisplay display)
@@ -141,6 +155,11 @@ EGLint getConfigAttribInt (EGLDisplay display, EGLConfig config, EGLint attrib)
 	EGLint value = 0;
 	EGLU_CHECK_CALL(eglGetConfigAttrib(display, config, attrib, &value));
 	return value;
+}
+
+EGLint getConfigID (EGLDisplay display, EGLConfig config)
+{
+	return getConfigAttribInt (display, config, EGL_CONFIG_ID);
 }
 
 EGLint querySurfaceInt (EGLDisplay display, EGLSurface surface, EGLint attrib)

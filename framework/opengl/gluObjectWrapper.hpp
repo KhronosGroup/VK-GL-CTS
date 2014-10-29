@@ -64,6 +64,7 @@ class ObjectWrapper
 {
 public:
 							ObjectWrapper		(const glw::Functions& gl, const ObjectTraits& traits);
+							ObjectWrapper		(const glw::Functions& gl, const ObjectTraits& traits, deUint32 object);
 							~ObjectWrapper		(void);
 
 	inline deUint32			get					(void) const { return m_object; }
@@ -85,6 +86,7 @@ private:
 template<ObjectType Type> class TypedObjectWrapper : public ObjectWrapper
 {
 public:
+				TypedObjectWrapper (const glw::Functions& gl, deUint32 object) : ObjectWrapper(gl, objectTraits(Type), object) {}
 	explicit	TypedObjectWrapper (const RenderContext& context) : ObjectWrapper(context.getFunctions(), objectTraits(Type)) {}
 	explicit	TypedObjectWrapper (const glw::Functions& gl) : ObjectWrapper(gl, objectTraits(Type)) {}
 };

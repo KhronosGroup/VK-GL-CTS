@@ -1,8 +1,8 @@
-#ifndef _TEGLIMAGEFORMATTESTS_HPP
-#define _TEGLIMAGEFORMATTESTS_HPP
+#ifndef _EGLUGLUTIL_HPP
+#define _EGLUGLUTIL_HPP
 /*-------------------------------------------------------------------------
- * drawElements Quality Program EGL Module
- * ---------------------------------------
+ * drawElements Quality Program Tester Core
+ * ----------------------------------------
  *
  * Copyright 2014 The Android Open Source Project
  *
@@ -20,24 +20,22 @@
  *
  *//*!
  * \file
- * \brief EGL image tests.
+ * \brief EGL utilities for interfacing with GL APIs.
  *//*--------------------------------------------------------------------*/
 
-#include "tcuDefs.hpp"
-#include "teglTestCase.hpp"
+#include "egluDefs.hpp"
+#include "egluHeaderWrapper.hpp"
 
-namespace deqp
-{
-namespace egl
-{
-namespace Image
+#include "gluRenderConfig.hpp"
+#include "glwDefs.hpp"
+
+namespace eglu
 {
 
-TestCaseGroup* createSimpleCreationTests 		(EglTestContext& eglTestCtx, const std::string& name, const std::string& desc);
-TestCaseGroup* createModifyTests				(EglTestContext& eglTestCtx, const std::string& name, const std::string& desc);
-TestCaseGroup* createMultiContextRenderTests	(EglTestContext& eglTestCtx, const std::string& name, const std::string& desc);
+glw::GLenum		getImageGLTarget		(EGLenum source);
+EGLint			apiRenderableType 		(glu::ApiType apiType);
+EGLContext		createGLContext			(EGLDisplay display, EGLConfig config, const glu::ContextType& contextType);
 
-} // Image
-} // egl
-} // deqp
-#endif // _TEGLIMAGEFORMATTESTS_HPP
+}
+
+#endif // _EGLUGLUTIL_HPP

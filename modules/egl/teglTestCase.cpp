@@ -221,6 +221,11 @@ eglu::NativeWindow* EglTestContext::createNativeWindow (EGLDisplay display, EGLC
 	return m_windowFactory->createWindow(m_defaultNativeDisplay, display, config, attribList, eglu::WindowParams(width, height, visibility));
 }
 
+eglu::NativeWindow* EglTestContext::createNativeWindow (EGLDisplay display, EGLConfig config, const EGLAttrib* attribList, int width, int height)
+{
+	return createNativeWindow(display, config, attribList, width, height, eglu::parseWindowVisibility(getTestContext().getCommandLine()));
+}
+
 eglu::NativePixmap* EglTestContext::createNativePixmap (EGLDisplay display, EGLConfig config, const EGLAttrib* attribList, int width, int height)
 {
 	if (!m_pixmapFactory)
@@ -259,13 +264,14 @@ deFunctionPtr EglTestContext::getGLFunction (glu::ApiType apiType, const char* n
 	return library->getFunction(name);
 }
 
-void EglTestContext::getGLFunctions (glw::Functions& gl, glu::ApiType apiType) const
+void EglTestContext::getGLFunctions (glw::Functions& gl, glu::ApiType apiType, const std::vector<const char*>& extensions) const
 {
 	const tcu::FunctionLibrary* const	library		= getGLLibrary(apiType);
 	const eglu::GLFunctionLoader		loader		(library);
 
 	// \note There may not be current context, so we can't use initFunctions().
 	glu::initCoreFunctions(&gl, &loader, apiType);
+	glu::initExtensionFunctions(&gl, &loader, apiType, extensions.size(), &extensions.front());
 }
 
 TestCaseGroup::TestCaseGroup (EglTestContext& eglTestCtx, const char* name, const char* description)
