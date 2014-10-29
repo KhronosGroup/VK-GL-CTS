@@ -50,6 +50,7 @@
 #include "glwFunctions.hpp"
 
 #include "teglImageUtil.hpp"
+#include "teglAndroidUtil.hpp"
 
 #include <vector>
 #include <string>
@@ -883,9 +884,11 @@ protected:
 
 	void			addCreateTexture				(const string& name, EGLenum source, GLenum format, GLenum type);
 	void			addCreateRenderbuffer			(const string& name, GLenum format);
+	void			addCreateAndroidNative			(const string& name, GLenum format);
 	void			addCreateTexture2DActions		(const string& prefix);
 	void			addCreateTextureCubemapActions	(const string& suffix, GLenum format, GLenum type);
 	void			addCreateRenderbufferActions	(void);
+	void			addCreateAndroidNativeActions	(void);
 
 	LabeledActions	m_createActions;
 };
@@ -898,6 +901,11 @@ void ImageTests::addCreateTexture (const string& name, EGLenum source, GLenum fo
 void ImageTests::addCreateRenderbuffer (const string& name, GLenum format)
 {
 	m_createActions.add(name, MovePtr<Action>(new GLES2ImageApi::Create(createRenderbufferImageSource(format))));
+}
+
+void ImageTests::addCreateAndroidNative (const string& name, GLenum format)
+{
+	m_createActions.add(name, MovePtr<Action>(new GLES2ImageApi::Create(createAndroidNativeImageSource(format))));
 }
 
 void ImageTests::addCreateTexture2DActions (const string& prefix)
@@ -926,6 +934,15 @@ void ImageTests::addCreateRenderbufferActions (void)
 	addCreateRenderbuffer("renderbuffer_rgb565",	GL_RGB565);
 	addCreateRenderbuffer("renderbuffer_depth16",	GL_DEPTH_COMPONENT16);
 	addCreateRenderbuffer("renderbuffer_stencil",	GL_STENCIL_INDEX8);
+}
+
+void ImageTests::addCreateAndroidNativeActions (void)
+{
+	addCreateAndroidNative("android_native_rgb565",		GL_RGB565);
+	addCreateAndroidNative("android_native_rgb8",		GL_RGB8);
+	addCreateAndroidNative("android_native_rgba4",		GL_RGBA4);
+	addCreateAndroidNative("android_native_rgb5_a1",	GL_RGB5_A1);
+	addCreateAndroidNative("android_native_rgba8",		GL_RGBA8);
 }
 
 class RenderTests : public ImageTests
@@ -958,6 +975,7 @@ void SimpleCreationTests::init (void)
 	addCreateTextureCubemapActions("_rgba", GL_RGBA, GL_UNSIGNED_BYTE);
 	addCreateTextureCubemapActions("_rgb", GL_RGB, GL_UNSIGNED_BYTE);
 	addCreateRenderbufferActions();
+	addCreateAndroidNativeActions();
 	addRenderActions();
 
 	for (int createNdx = 0; createNdx < m_createActions.size(); createNdx++)
@@ -1003,6 +1021,7 @@ void MultiContextRenderTests::init (void)
 	addCreateTextureCubemapActions("_rgba8", GL_RGBA, GL_UNSIGNED_BYTE);
 	addCreateTextureCubemapActions("_rgb8", GL_RGB, GL_UNSIGNED_BYTE);
 	addCreateRenderbufferActions();
+	addCreateAndroidNativeActions();
 	addRenderActions();
 
 	for (int createNdx = 0; createNdx < m_createActions.size(); createNdx++)
@@ -1067,6 +1086,7 @@ void ModifyTests::init (void)
 {
 	addCreateTexture2DActions("tex_");
 	addCreateRenderbufferActions();
+	addCreateAndroidNativeActions();
 	addModifyActions();
 
 	for (int createNdx = 0; createNdx < m_createActions.size(); createNdx++)

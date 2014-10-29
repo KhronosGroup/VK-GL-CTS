@@ -117,7 +117,15 @@ MovePtr<ManagedSurface> createSurface (EglTestContext& eglTestCtx, EGLConfig con
 		TCU_FAIL("No valid surface types supported in config");
 }
 
-class TextureClientBuffer : public ClientBuffer
+class GLClientBuffer : public ClientBuffer
+{
+	EGLClientBuffer	get		(void) const { return reinterpret_cast<EGLClientBuffer>(static_cast<deUintptr>(getName())); }
+
+protected:
+	virtual GLuint	getName	(void) const = 0;
+};
+
+class TextureClientBuffer : public GLClientBuffer
 {
 public:
 						TextureClientBuffer	(const glw::Functions& gl) : m_texture (gl) {}
@@ -127,24 +135,39 @@ private:
 	glu::Texture		m_texture;
 };
 
-EGLImageKHR ImageSource::createImage	 (const eglu::ImageFunctions& imgExt, EGLDisplay dpy, EGLContext ctx, EGLClientBuffer clientBuffer) const
+class GLImageSource : public ImageSource
 {
-	const vector<EGLint> 	attribs	= eglu::attribMapToVector(getCreateAttribs());
-	const EGLImageKHR		image 	= imgExt.createImage(dpy, ctx, getSource(), clientBuffer,
-														 &attribs.front());
-	EGLU_CHECK_MSG("eglCreateImageKHR()");
+public:
+	EGLImageKHR			createImage			(const eglu::ImageFunctions& imgExt, EGLDisplay dpy, EGLContext ctx, EGLClientBuffer clientBuffer) const;
 
-	return image;
+protected:
+	virtual AttribMap	getCreateAttribs	(void) const = 0;
+	virtual EGLenum		getSource			(void) const = 0;
+};
+
+EGLImageKHR GLImageSource::createImage	 (const eglu::ImageFunctions& imgExt, EGLDisplay dpy, EGLContext ctx, EGLClientBuffer clientBuffer) const
+{
+	AttribMap				attribMap	= getCreateAttribs();
+
+	attribMap[EGL_IMAGE_PRESERVED_KHR] = EGL_TRUE;
+
+	{
+		const vector<EGLint> 	attribs	= eglu::attribMapToVector(attribMap);
+		const EGLImageKHR		image 	= imgExt.createImage(dpy, ctx, getSource(),
+															 clientBuffer, &attribs.front());
+		EGLU_CHECK_MSG("eglCreateImageKHR()");
+		return image;
+	}
 }
 
-class TextureImageSource : public ImageSource
+class TextureImageSource : public GLImageSource
 {
 public:
 							TextureImageSource	(GLenum format, GLenum type, bool useTexLevel0) : m_format(format), m_type(type), m_useTexLevel0(useTexLevel0) {}
-	AttribMap				getCreateAttribs	(void) const;
 	MovePtr<ClientBuffer>	createBuffer		(const glw::Functions& gl, Texture2D* reference) const;
 
 protected:
+	AttribMap				getCreateAttribs	(void) const;
 	virtual void			initTexture			(const glw::Functions& gl) const = 0;
 	virtual GLenum			getGLTarget			(void) const = 0;
 
@@ -161,7 +184,6 @@ AttribMap TextureImageSource::getCreateAttribs (void) const
 
 	return ret;
 }
-
 
 MovePtr<ClientBuffer> TextureImageSource::createBuffer (const glw::Functions& gl, Texture2D* ref) const
 {
@@ -251,7 +273,7 @@ void TextureCubeMapImageSource::initTexture (const glw::Functions& gl) const
 		GLU_CHECK_GLW_CALL(gl, texImage2D(faces[faceNdx], 0, m_format, IMAGE_WIDTH, IMAGE_HEIGHT, 0, m_format, m_type, DE_NULL));
 }
 
-class RenderbufferClientBuffer : public ClientBuffer
+class RenderbufferClientBuffer : public GLClientBuffer
 {
 public:
 						RenderbufferClientBuffer	(const glw::Functions& gl) : m_rbo (gl) {}
@@ -261,17 +283,18 @@ private:
 	glu::Renderbuffer	m_rbo;
 };
 
-class RenderbufferImageSource : public ImageSource
+class RenderbufferImageSource : public GLImageSource
 {
 public:
 							RenderbufferImageSource	(GLenum format) : m_format(format) {}
 
-	EGLenum					getSource				(void) const	{ return EGL_GL_RENDERBUFFER_KHR; }
 	string					getRequiredExtension	(void) const 	{ return "EGL_KHR_gl_renderbuffer_image"; }
-	AttribMap				getCreateAttribs		(void) const	{ return AttribMap(); }
 	MovePtr<ClientBuffer>	createBuffer			(const glw::Functions& gl, Texture2D* reference) const;
 
-private:
+protected:
+	EGLenum					getSource				(void) const	{ return EGL_GL_RENDERBUFFER_KHR; }
+	AttribMap				getCreateAttribs		(void) const	{ return AttribMap(); }
+
 	GLenum					m_format;
 };
 
@@ -357,6 +380,26 @@ MovePtr<ClientBuffer> RenderbufferImageSource::createBuffer (const glw::Function
 	return MovePtr<ClientBuffer>(buffer);
 }
 
+class UnsupportedImageSource : public ImageSource
+{
+public:
+							UnsupportedImageSource	(const string& message) : m_message(message) {}
+	string					getRequiredExtension	(void) const { fail(); return ""; }
+	MovePtr<ClientBuffer>	createBuffer			(const glw::Functions&, tcu::Texture2D*) const { fail(); return de::MovePtr<ClientBuffer>(); }
+	EGLImageKHR				createImage				(const eglu::ImageFunctions& imgExt, EGLDisplay dpy, EGLContext ctx, EGLClientBuffer clientBuffer) const;
+
+private:
+	const string			m_message;
+
+	void					fail					(void) const { TCU_THROW(NotSupportedError, m_message.c_str()); }
+};
+
+EGLImageKHR	UnsupportedImageSource::createImage (const eglu::ImageFunctions&, EGLDisplay, EGLContext, EGLClientBuffer) const
+{
+	fail();
+	return EGL_NO_IMAGE_KHR;
+}
+
 MovePtr<ImageSource> createTextureImageSource (EGLenum source, GLenum format, GLenum type, bool useTexLevel0)
 {
 	if (source == EGL_GL_TEXTURE_2D_KHR)
@@ -368,6 +411,11 @@ MovePtr<ImageSource> createTextureImageSource (EGLenum source, GLenum format, GL
 MovePtr<ImageSource> createRenderbufferImageSource (GLenum format)
 {
 	return MovePtr<ImageSource>(new RenderbufferImageSource(format));
+}
+
+MovePtr<ImageSource> createUnsupportedImageSource (const string& message)
+{
+	return MovePtr<ImageSource>(new UnsupportedImageSource(message));
 }
 
 } // Image

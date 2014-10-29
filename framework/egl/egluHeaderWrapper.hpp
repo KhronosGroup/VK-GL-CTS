@@ -62,4 +62,10 @@
 	#define EGL_OPENGL_ES3_BIT_KHR								0x00000040
 #endif // EGL_KHR_create_context
 
+#if !defined(EGL_ANDROID_image_native_buffer)
+#define EGL_ANDROID_image_native_buffer 1
+struct ANativeWindowBuffer;
+#define EGL_NATIVE_BUFFER_ANDROID								0x3140
+#endif
+
 #endif // _EGLUHEADERWRAPPER_HPP
