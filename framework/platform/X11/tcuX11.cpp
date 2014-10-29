@@ -128,9 +128,21 @@ Window::Window (Display& display, int width, int height, ::Visual* visual)
 	, m_visible		(false)
 {
 	XSetWindowAttributes	swa;
-	::Display*				dpy	= m_display.getXDisplay();
-	::Window				root = DefaultRootWindow(dpy);
-	unsigned long			mask = CWBorderPixel | CWEventMask;
+	::Display* const		dpy					= m_display.getXDisplay();
+	::Window				root				= DefaultRootWindow(dpy);
+	unsigned long			mask				= CWBorderPixel | CWEventMask;
+
+	// If redirect is enabled, window size can't be guaranteed and it is up to
+	// the window manager to decide whether to honor sizing requests. However,
+	// overriding that causes window to appear as an overlay, which causes
+	// other issues, so this is disabled by default.
+	const bool				overrideRedirect	= false;
+
+	if (overrideRedirect)
+	{
+		mask |= CWOverrideRedirect;
+		swa.override_redirect = true;
+	}
 
 	if (visual == DE_NULL)
 		visual = CopyFromParent;
@@ -150,9 +162,6 @@ Window::Window (Display& display, int width, int height, ::Visual* visual)
 	swa.border_pixel	= 0;
 	swa.event_mask		= ExposureMask|KeyPressMask|KeyReleaseMask|StructureNotifyMask;
 
-	mask |= CWOverrideRedirect;
-	swa.override_redirect = true;
-
 	if (width == glu::RenderConfig::DONT_CARE)
 		width = DEFAULT_WINDOW_WIDTH;
 	if (height == glu::RenderConfig::DONT_CARE)
@@ -164,7 +173,6 @@ Window::Window (Display& display, int width, int height, ::Visual* visual)
 
 	Atom deleteAtom = m_display.getDeleteAtom();
 	XSetWMProtocols(dpy, m_window, &deleteAtom, 1);
-
 }
 
 void Window::setVisibility (bool visible)
