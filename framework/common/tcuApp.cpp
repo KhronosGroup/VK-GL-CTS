@@ -66,9 +66,6 @@ App::App (Platform& platform, Archive& archive, TestLog& log, const CommandLine&
 	print("dEQP Core %s (0x%08x) starting..\n", qpGetReleaseName(), qpGetReleaseId());
 	print("  target implementation = '%s'\n", qpGetTargetName());
 
-	if (!qpIsLicenseValid())
-		qpPrintf("WARNING: License has expired!\n");
-
 	if (!deSetRoundingMode(DE_ROUNDINGMODE_TO_NEAREST))
 		qpPrintf("WARNING: Failed to set floating-point rounding mode!\n");
 
