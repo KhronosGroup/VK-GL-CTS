@@ -476,14 +476,25 @@ void SurfaceAttribCase::testAttributes (tcu::egl::Surface& surface, const Config
 	// Mipmap level
 	if (info.renderableType & EGL_OPENGL_ES_BIT || info.renderableType & EGL_OPENGL_ES2_BIT)
 	{
-		const EGLint	value	= surface.getAttribute(EGL_MIPMAP_LEVEL);
+		const EGLint initialValue = 0xDEADBAAD;
+		EGLint value = initialValue;
+
+		TCU_CHECK_EGL_CALL(eglQuerySurface(surface.getDisplay().getEGLDisplay(), surface.getEGLSurface(), EGL_MIPMAP_LEVEL, &value));
 
 		logSurfaceAttribute(log, EGL_MIPMAP_LEVEL, value);
 
-		if (value != 0)
+		if (dynamic_cast<tcu::egl::PbufferSurface*>(&surface))
 		{
-			log << TestLog::Message << "    Fail, initial mipmap level value should be 0, is " << value << TestLog::EndMessage;
-			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Invalid default mipmap level");
+			if (value != 0)
+			{
+				log << TestLog::Message << "    Fail, initial mipmap level value should be 0, is " << value << TestLog::EndMessage;
+				m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Invalid default mipmap level");
+			}
+		}
+		else if (value != initialValue)
+		{
+			log << TestLog::Message << "    Fail, eglQuerySurface changed value when querying EGL_MIPMAP_LEVEL for non-pbuffer surface. Result: " << value << ". Expected: " << initialValue << TestLog::EndMessage;
+			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "EGL_MIPMAP_LEVEL query modified result for non-pbuffer surface.");
 		}
 
 		eglSurfaceAttrib(display.getEGLDisplay(), surface.getEGLSurface(), EGL_MIPMAP_LEVEL, 1);
