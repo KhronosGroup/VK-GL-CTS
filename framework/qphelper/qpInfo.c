@@ -23,14 +23,10 @@
 
 #include "qpInfo.h"
 
-#include <time.h>
-
 DE_BEGIN_EXTERN_C
 
 #define DEQP_RELEASE_NAME	"2014.x"
 #define DEQP_RELEASE_ID		0xcafebabe
-#define DEQP_LICENSE_BEGIN	0
-#define DEQP_LICENSE_END	0xffffffffu
 
 const char* qpGetTargetName (void)
 {
@@ -49,15 +45,6 @@ const char* qpGetReleaseName (void)
 deUint32 qpGetReleaseId (void)
 {
 	return DEQP_RELEASE_ID;
-}
-
-deBool qpIsLicenseValid (void)
-{
-	deUint64	begin	= (deUint64)DEQP_LICENSE_BEGIN;
-	deUint64	end		= (deUint64)DEQP_LICENSE_END;
-	deUint64	curTime	= (deUint64)time(DE_NULL);
-
-	return begin <= curTime && curTime <= end;
 }
 
 DE_END_EXTERN_C
