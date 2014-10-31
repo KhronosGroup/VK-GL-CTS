@@ -81,19 +81,19 @@ void registerOptions (de::cmdline::Parser& parser)
 		{ "no",		false	}
 	};
 
-	parser << Option<StartServer>	("s",		"start-server",	"Start local execserver")
-		   << Option<Host>			("c",		"connect",		"Connect to host",							"127.0.0.1")
-		   << Option<Port>			("p",		"port",			"Select TCP port to use",					"50016")
-		   << Option<CaseListDir>	("cd",		"caselistdir",	"Path to test case XML files",				".")
-		   << Option<TestSet>		("t",		"testset",		"Test set",									parseCommaSeparatedList)
-		   << Option<ExcludeSet>	("e",		"exclude",		"Comma-separated list of exclude filters",	parseCommaSeparatedList)
+	parser << Option<StartServer>	("s",		"start-server",	"Start local execserver",								"")
+		   << Option<Host>			("c",		"connect",		"Connect to host",										"127.0.0.1")
+		   << Option<Port>			("p",		"port",			"Select TCP port to use",								"50016")
+		   << Option<CaseListDir>	("cd",		"caselistdir",	"Path to test case XML files",							".")
+		   << Option<TestSet>		("t",		"testset",		"Test set",												parseCommaSeparatedList,	"")
+		   << Option<ExcludeSet>	("e",		"exclude",		"Comma-separated list of exclude filters",				parseCommaSeparatedList,	"")
 		   << Option<ContinueFile>	(DE_NULL,	"continue",		"Continue execution by initializing results from existing test log")
-		   << Option<TestLogFile>	("o",		"out",			"Output test log filename")
-		   << Option<InfoLogFile>	("i",		"info",			"Output info log filename")
-		   << Option<Summary>		(DE_NULL,	"summary",		"Print summary at the end",					s_yesNo,	"yes")
-		   << Option<BinaryName>	("b",		"binaryname",	"Test binary path, relative to working directory")
-		   << Option<WorkingDir>	("wd",		"workdir",		"Working directory for test execution")
-		   << Option<CmdLineArgs>	(DE_NULL,	"cmdline",		"Additional command line arguments for test binary");
+		   << Option<TestLogFile>	("o",		"out",			"Output test log filename",								"")
+		   << Option<InfoLogFile>	("i",		"info",			"Output info log filename",								"")
+		   << Option<Summary>		(DE_NULL,	"summary",		"Print summary at the end",								s_yesNo,	"yes")
+		   << Option<BinaryName>	("b",		"binaryname",	"Test binary path, relative to working directory",		"")
+		   << Option<WorkingDir>	("wd",		"workdir",		"Working directory for test execution",					"")
+		   << Option<CmdLineArgs>	(DE_NULL,	"cmdline",		"Additional command line arguments for test binary",	"");
 }
 
 } // opt

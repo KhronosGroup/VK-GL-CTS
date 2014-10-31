@@ -58,7 +58,7 @@ struct Option
 	const char*						shortName;
 	const char*						longName;
 	const char*						description;
-	const char*						defaultValue;		//!< Default value (parsed from string), or null if default should be T()
+	const char*						defaultValue;		//!< Default value (parsed from string), or null if should not be set
 
 	// \note Either parse or namedValues must be null.
 	ParseFunc						parse;				//!< Custom parsing function or null.
@@ -165,7 +165,7 @@ public:
 						~TypedFieldMap			(void);
 
 	bool				empty					(void) const	{ return m_fields.empty();	}
-	void				clear					(void)			{ m_fields.clear();			}
+	void				clear					(void);
 
 	template<typename Name>
 	void				set						(typename TypedFieldTraits<Name>::ValueType* value);
@@ -262,7 +262,7 @@ private:
 	struct OptInfo;
 
 	typedef void		(*DispatchParseFunc)		(const OptInfo* info, const char* src, TypedFieldMap* dst);
-	typedef void		(*GetDefaultFunc)			(TypedFieldMap* dst);
+	typedef void		(*SetDefaultFunc)			(TypedFieldMap* dst);
 
 	struct OptInfo
 	{
@@ -279,7 +279,7 @@ private:
 		size_t					namedValueStride;
 
 		DispatchParseFunc		dispatchParse;
-		GetDefaultFunc			getDefault;
+		SetDefaultFunc			setDefault;
 
 		OptInfo (void)
 			: shortName			(DE_NULL)
@@ -292,7 +292,7 @@ private:
 			, namedValuesEnd	(DE_NULL)
 			, namedValueStride	(0)
 			, dispatchParse		(DE_NULL)
-			, getDefault		(DE_NULL)
+			, setDefault		(DE_NULL)
 		{}
 	};
 
@@ -340,7 +340,7 @@ void Parser::dispatchParse (const OptInfo* info, const char* src, TypedFieldMap*
 }
 
 template<typename OptType>
-void dispatchGetDefault (TypedFieldMap* dst)
+void dispatchSetDefault (TypedFieldMap* dst)
 {
 	typename OptTraits<OptType>::ValueType* value = new typename OptTraits<OptType>::ValueType();
 	try
@@ -384,7 +384,9 @@ void Parser::addOption (const Option<OptType>& option)
 	opt.namedValuesEnd		= (const void*)option.namedValuesEnd;
 	opt.namedValueStride	= sizeof(*option.namedValues);
 	opt.dispatchParse		= dispatchParse<OptType>;
-	opt.getDefault			= dispatchGetDefault<OptType>;
+
+	if (opt.isFlag)
+		opt.setDefault		= dispatchSetDefault<OptType>;
 
 	addOption(opt);
 }
@@ -401,8 +403,11 @@ public:
 	const vector<string>&		getArgs			(void) const	{ return m_args;	}
 
 	template<typename Option>
+	bool						hasOption		(void) const	{ return m_options.contains<Option>();	}
+
+	template<typename Option>
 	const typename TypedFieldTraits<Option>::ValueType&
-								getOption		(void) const	{ return m_options.get<Option>(); }
+								getOption		(void) const	{ return m_options.get<Option>();		}
 
 private:
 	TypedFieldMap				m_options;

@@ -742,7 +742,7 @@ namespace
 template<typename Factory>
 const Factory* selectFactory (const tcu::FactoryRegistry<Factory>& registry, const char* objectTypeName, const char* cmdLineArg)
 {
-	if (cmdLineArg[0] != 0)
+	if (cmdLineArg)
 	{
 		const Factory* factory = registry.getFactoryByName(cmdLineArg);
 

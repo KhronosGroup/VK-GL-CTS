@@ -23,6 +23,7 @@
 
 #include "tcuCommandLine.hpp"
 #include "tcuPlatform.hpp"
+#include "tcuTestCase.hpp"
 #include "deFilePath.hpp"
 #include "deStringUtil.hpp"
 #include "deString.h"
@@ -139,22 +140,22 @@ void registerOptions (de::cmdline::Parser& parser)
 		<< Option<StdinCaseList>		(DE_NULL,	"deqp-stdin-caselist",			"Read case list (in trie format) from stdin")
 		<< Option<LogFilename>			(DE_NULL,	"deqp-log-filename",			"Write test results to given file",					"TestResults.qpa")
 		<< Option<RunMode>				(DE_NULL,	"deqp-runmode",					"Execute tests, or write list of test cases into a file",
-																					s_runModes, "execute")
+																																		s_runModes,			"execute")
 		<< Option<WatchDog>				(DE_NULL,	"deqp-watchdog",				"Enable test watchdog",								s_enableNames,		"disable")
 		<< Option<CrashHandler>			(DE_NULL,	"deqp-crashhandler",			"Enable crash handling",							s_enableNames,		"disable")
-		<< Option<BaseSeed>				(DE_NULL,	"deqp-base-seed",				"Base seed for test cases that use randomization")
-		<< Option<TestIterationCount>	(DE_NULL,	"deqp-test-iteration-count",	"Iteration count for cases that support variable number of iterations")
+		<< Option<BaseSeed>				(DE_NULL,	"deqp-base-seed",				"Base seed for test cases that use randomization",						"0")
+		<< Option<TestIterationCount>	(DE_NULL,	"deqp-test-iteration-count",	"Iteration count for cases that support variable number of iterations",	"0")
 		<< Option<Visibility>			(DE_NULL,	"deqp-visibility",				"Default test window visibility",					s_visibilites,		"windowed")
-		<< Option<SurfaceWidth>			(DE_NULL,	"deqp-surface-width",			"Use given surface width if possible",	"-1")
-		<< Option<SurfaceHeight>		(DE_NULL,	"deqp-surface-height",			"Use given surface height if possible",	"-1")
+		<< Option<SurfaceWidth>			(DE_NULL,	"deqp-surface-width",			"Use given surface width if possible",									"-1")
+		<< Option<SurfaceHeight>		(DE_NULL,	"deqp-surface-height",			"Use given surface height if possible",									"-1")
 		<< Option<SurfaceType>			(DE_NULL,	"deqp-surface-type",			"Use given surface type",							s_surfaceTypes,		"window")
 		<< Option<ScreenRotation>		(DE_NULL,	"deqp-screen-rotation",			"Screen rotation for platforms that support it",	s_screenRotations,	"0")
 		<< Option<GLContextType>		(DE_NULL,	"deqp-gl-context-type",			"OpenGL context type for platforms that support multiple")
-		<< Option<GLConfigID>			(DE_NULL,	"deqp-gl-config-id",			"OpenGL (ES) render config ID (EGL config id on EGL platforms)",	"-1")
+		<< Option<GLConfigID>			(DE_NULL,	"deqp-gl-config-id",			"OpenGL (ES) render config ID (EGL config id on EGL platforms)",		"-1")
 		<< Option<GLConfigName>			(DE_NULL,	"deqp-gl-config-name",			"Symbolic OpenGL (ES) render config name")
 		<< Option<GLContextFlags>		(DE_NULL,	"deqp-gl-context-flags",		"OpenGL context flags (comma-separated, supports debug and robust)")
-		<< Option<CLPlatformID>			(DE_NULL,	"deqp-cl-platform-id",			"Execute tests on given OpenCL platform (IDs start from 1)",		"1")
-		<< Option<CLDeviceIDs>			(DE_NULL,	"deqp-cl-device-ids",			"Execute tests on given CL devices (comma-separated, IDs start from 1)",	parseIntList)
+		<< Option<CLPlatformID>			(DE_NULL,	"deqp-cl-platform-id",			"Execute tests on given OpenCL platform (IDs start from 1)",			"1")
+		<< Option<CLDeviceIDs>			(DE_NULL,	"deqp-cl-device-ids",			"Execute tests on given CL devices (comma-separated, IDs start from 1)",	parseIntList,	"")
 		<< Option<CLBuildOptions>		(DE_NULL,	"deqp-cl-build-options",		"Extra build options for OpenCL compiler")
 		<< Option<EGLDisplayType>		(DE_NULL,	"deqp-egl-display-type",		"EGL native display type")
 		<< Option<EGLWindowType>		(DE_NULL,	"deqp-egl-window-type",			"EGL native window type")
@@ -238,14 +239,23 @@ public:
 										CaseTreeNode		(const std::string& name) : m_name(name) {}
 										~CaseTreeNode		(void);
 
-	void								addChild			(CaseTreeNode* child) { m_children.push_back(child); }
+	const std::string&					getName				(void) const { return m_name;				}
+	bool								hasChildren			(void) const { return !m_children.empty();	}
 
-	const std::string&					getName				(void) const { return m_name;		}
-	const std::vector<CaseTreeNode*>&	getChildren			(void) const { return m_children;	}
+	bool								hasChild			(const std::string& name) const;
+	const CaseTreeNode*					getChild			(const std::string& name) const;
+	CaseTreeNode*						getChild			(const std::string& name);
+
+	void								addChild			(CaseTreeNode* child) { m_children.push_back(child); }
 
 private:
 										CaseTreeNode		(const CaseTreeNode&);
 	CaseTreeNode&						operator=			(const CaseTreeNode&);
+
+	enum { NOT_FOUND = -1 };
+
+	// \todo [2014-10-30 pyry] Speed up with hash / sorting
+	int									findChildNdx		(const std::string& name) const;
 
 	std::string							m_name;
 	std::vector<CaseTreeNode*>			m_children;
@@ -257,64 +267,242 @@ CaseTreeNode::~CaseTreeNode (void)
 		delete *i;
 }
 
-static CaseTreeNode* parseCaseTree (std::istream& in)
+int CaseTreeNode::findChildNdx (const std::string& name) const
+{
+	for (int ndx = 0; ndx < (int)m_children.size(); ++ndx)
+	{
+		if (m_children[ndx]->getName() == name)
+			return ndx;
+	}
+	return NOT_FOUND;
+}
+
+inline bool CaseTreeNode::hasChild (const std::string& name) const
+{
+	return findChildNdx(name) != NOT_FOUND;
+}
+
+inline const CaseTreeNode* CaseTreeNode::getChild (const std::string& name) const
+{
+	const int ndx = findChildNdx(name);
+	return ndx == NOT_FOUND ? DE_NULL : m_children[ndx];
+}
+
+inline CaseTreeNode* CaseTreeNode::getChild (const std::string& name)
+{
+	const int ndx = findChildNdx(name);
+	return ndx == NOT_FOUND ? DE_NULL : m_children[ndx];
+}
+
+static int getCurrentComponentLen (const char* path)
+{
+	int ndx = 0;
+	for (; path[ndx] != 0 && path[ndx] != '.'; ++ndx);
+	return ndx;
+}
+
+static const CaseTreeNode* findNode (const CaseTreeNode* root, const char* path)
+{
+	const CaseTreeNode*	curNode		= root;
+	const char*			curPath		= path;
+	int					curLen		= getCurrentComponentLen(curPath);
+
+	for (;;)
+	{
+		curNode = curNode->getChild(std::string(curPath, curPath+curLen));
+
+		if (!curNode)
+			break;
+
+		curPath	+= curLen;
+
+		if (curPath[0] == 0)
+			break;
+		else
+		{
+			DE_ASSERT(curPath[0] == '.');
+			curPath		+= 1;
+			curLen		 = getCurrentComponentLen(curPath);
+		}
+	}
+
+	return curNode;
+}
+
+static void parseCaseTrie (CaseTreeNode* root, std::istream& in)
 {
 	vector<CaseTreeNode*>	nodeStack;
 	string					curName;
+	bool					expectNode		= true;
 
 	if (in.get() != '{')
-		throw std::invalid_argument("Malformed case tree");
+		throw std::invalid_argument("Malformed case trie");
 
-	nodeStack.reserve(1);
-	nodeStack.push_back(new CaseTreeNode(""));
+	nodeStack.push_back(root);
 
-	try
+	while (!nodeStack.empty())
 	{
-		for (;;)
+		const int	curChr	= in.get();
+
+		if (curChr == std::char_traits<char>::eof() || curChr == 0)
+			throw std::invalid_argument("Unterminated case tree");
+
+		if (curChr == '{' || curChr == ',' || curChr == '}')
 		{
-			const int	curChr	= in.get();
-
-			if (curChr == std::char_traits<char>::eof() || curChr == 0)
-				break;
-
-			if (nodeStack.empty())
-				throw std::invalid_argument("Trailing characters at end of case tree");
-
-			if (!curName.empty() && (curChr == '{' || curChr == ',' || curChr == '}'))
+			if (!curName.empty() && expectNode)
 			{
-				// Create child and push to stack.
-				nodeStack.reserve(nodeStack.size()+1);
-				nodeStack.push_back(new CaseTreeNode(curName));
+				CaseTreeNode* const newChild = new CaseTreeNode(curName);
+
+				try
+				{
+					nodeStack.back()->addChild(newChild);
+				}
+				catch (...)
+				{
+					delete newChild;
+					throw;
+				}
+
+				if (curChr == '{')
+					nodeStack.push_back(newChild);
 
 				curName.clear();
 			}
+			else if (curName.empty() == expectNode)
+				throw std::invalid_argument(expectNode ? "Empty node name" : "Missing node separator");
 
-			if (curChr == ',' || curChr == '}')
+			if (curChr == '}')
 			{
-				// Attach to parent
-				if (nodeStack.size() < 2)
-					throw std::invalid_argument("Malformed case tree");
-
-				(*(nodeStack.end()-2))->addChild(nodeStack.back());
+				expectNode = false;
 				nodeStack.pop_back();
 			}
-			else if (curChr != '{')
-				curName += (char)curChr;
+			else
+				expectNode = true;
+		}
+		else if (isValidTestCaseNameChar((char)curChr))
+			curName += (char)curChr;
+		else
+			throw std::invalid_argument("Illegal character in node name");
+	}
+}
+
+static void parseCaseList (CaseTreeNode* root, std::istream& in)
+{
+	// \note Algorithm assumes that cases are sorted by groups, but will
+	//		 function fine, albeit more slowly, if that is not the case.
+	vector<CaseTreeNode*>	nodeStack;
+	int						stackPos	= 0;
+	string					curName;
+
+	nodeStack.resize(8, DE_NULL);
+
+	nodeStack[0] = root;
+
+	for (;;)
+	{
+		const int	curChr	= in.get();
+
+		if (curChr == std::char_traits<char>::eof() || curChr == 0 || curChr == '\n' || curChr == '\r')
+		{
+			if (curName.empty())
+				throw std::invalid_argument("Empty test case name");
+
+			if (nodeStack[stackPos]->hasChild(curName))
+				throw std::invalid_argument("Duplicate test case");
+
+			CaseTreeNode* const newChild = new CaseTreeNode(curName);
+
+			try
+			{
+				nodeStack[stackPos]->addChild(newChild);
+			}
+			catch (...)
+			{
+				delete newChild;
+				throw;
+			}
+
+			curName.clear();
+			stackPos = 0;
+
+			if (curChr == '\r' && in.peek() == '\n')
+				in.get();
+
+			{
+				const int nextChr = in.peek();
+
+				if (nextChr == std::char_traits<char>::eof() || nextChr == 0)
+					break;
+			}
+		}
+		else if (curChr == '.')
+		{
+			if (curName.empty())
+				throw std::invalid_argument("Empty test group name");
+
+			if ((int)nodeStack.size() <= stackPos+1)
+				nodeStack.resize(nodeStack.size()*2, DE_NULL);
+
+			if (!nodeStack[stackPos+1] || nodeStack[stackPos+1]->getName() != curName)
+			{
+				CaseTreeNode* curGroup = nodeStack[stackPos]->getChild(curName);
+
+				if (!curGroup)
+				{
+					curGroup = new CaseTreeNode(curName);
+
+					try
+					{
+						nodeStack[stackPos]->addChild(curGroup);
+					}
+					catch (...)
+					{
+						delete curGroup;
+						throw;
+					}
+				}
+
+				nodeStack[stackPos+1] = curGroup;
+
+				if ((int)nodeStack.size() > stackPos+2)
+					nodeStack[stackPos+2] = DE_NULL; // Invalidate rest of entries
+			}
+
+			DE_ASSERT(nodeStack[stackPos+1]->getName() == curName);
+
+			curName.clear();
+			stackPos += 1;
+		}
+		else if (isValidTestCaseNameChar((char)curChr))
+			curName += (char)curChr;
+		else
+			throw std::invalid_argument("Illegal character in test case name");
+	}
+}
+
+static CaseTreeNode* parseCaseList (std::istream& in)
+{
+	CaseTreeNode* const root = new CaseTreeNode("");
+	try
+	{
+		if (in.peek() == '{')
+			parseCaseTrie(root, in);
+		else
+			parseCaseList(root, in);
+
+		{
+			const int curChr = in.get();
+			if (curChr != std::char_traits<char>::eof() && curChr != 0)
+				throw std::invalid_argument("Trailing characters at end of case list");
 		}
 
-		if (nodeStack.size() != 1 || nodeStack[0]->getName() != "")
-			throw std::invalid_argument("Unterminated case tree");
+		return root;
 	}
 	catch (...)
 	{
-		// Nodes in stack are not attached to any parents and must be deleted individually.
-		for (vector<CaseTreeNode*>::const_iterator i = nodeStack.begin(); i != nodeStack.end(); ++i)
-			delete *i;
-
+		delete root;
 		throw;
 	}
-
-	return nodeStack[0];
 }
 
 class CasePaths
@@ -507,9 +695,9 @@ bool CommandLine::parse (int argc, const char* const* argv)
 	if (!m_cmdLine.getOption<opt::LogImages>())
 		m_logFlags |= QP_TEST_LOG_EXCLUDE_IMAGES;
 
-	if ((m_cmdLine.getOption<opt::CasePath>().empty()?0:1) +
-		(m_cmdLine.getOption<opt::CaseList>().empty()?0:1) +
-		(m_cmdLine.getOption<opt::CaseListFile>().empty()?0:1) +
+	if ((m_cmdLine.hasOption<opt::CasePath>()?1:0) +
+		(m_cmdLine.hasOption<opt::CaseList>()?1:0) +
+		(m_cmdLine.hasOption<opt::CaseListFile>()?1:0) +
 		(m_cmdLine.getOption<opt::StdinCaseList>()?1:0) > 1)
 	{
 		debugOut << "ERROR: multiple test case list options given!\n" << std::endl;
@@ -519,26 +707,26 @@ bool CommandLine::parse (int argc, const char* const* argv)
 
 	try
 	{
-		if (!m_cmdLine.getOption<opt::CaseList>().empty())
+		if (m_cmdLine.hasOption<opt::CaseList>())
 		{
 			std::istringstream str(m_cmdLine.getOption<opt::CaseList>());
 
-			m_caseTree = parseCaseTree(str);
+			m_caseTree = parseCaseList(str);
 		}
-		else if (!m_cmdLine.getOption<opt::CaseListFile>().empty())
+		else if (m_cmdLine.hasOption<opt::CaseListFile>())
 		{
 			std::ifstream in(m_cmdLine.getOption<opt::CaseListFile>().c_str(), std::ios_base::binary);
 
 			if (!in.is_open() || !in.good())
 				throw Exception("Failed to open case list file '" + m_cmdLine.getOption<opt::CaseListFile>() + "'");
 
-			m_caseTree = parseCaseTree(in);
+			m_caseTree = parseCaseList(in);
 		}
 		else if (m_cmdLine.getOption<opt::StdinCaseList>())
 		{
-			m_caseTree = parseCaseTree(std::cin);
+			m_caseTree = parseCaseList(std::cin);
 		}
-		else if (!m_cmdLine.getOption<opt::CasePath>().empty())
+		else if (m_cmdLine.hasOption<opt::CasePath>())
 			m_casePaths = de::MovePtr<const CasePaths>(new CasePaths(m_cmdLine.getOption<opt::CasePath>()));
 	}
 	catch (const std::exception& e)
@@ -592,21 +780,18 @@ ScreenRotation			CommandLine::getScreenRotation			(void) const	{ return m_cmdLin
 int						CommandLine::getGLConfigId				(void) const	{ return m_cmdLine.getOption<opt::GLConfigID>();				}
 int						CommandLine::getCLPlatformId			(void) const	{ return m_cmdLine.getOption<opt::CLPlatformID>();				}
 const std::vector<int>&	CommandLine::getCLDeviceIds				(void) const	{ return m_cmdLine.getOption<opt::CLDeviceIDs>();				}
-const char*				CommandLine::getEGLDisplayType			(void) const	{ return m_cmdLine.getOption<opt::EGLDisplayType>().c_str();	}
-const char*				CommandLine::getEGLWindowType			(void) const	{ return m_cmdLine.getOption<opt::EGLWindowType>().c_str();		}
-const char*				CommandLine::getEGLPixmapType			(void) const	{ return m_cmdLine.getOption<opt::EGLPixmapType>().c_str();		}
 bool					CommandLine::isOutOfMemoryTestEnabled	(void) const	{ return m_cmdLine.getOption<opt::TestOOM>();					}
 
 const char* CommandLine::getGLContextType (void) const
 {
-	if (!m_cmdLine.getOption<opt::GLContextType>().empty())
+	if (m_cmdLine.hasOption<opt::GLContextType>())
 		return m_cmdLine.getOption<opt::GLContextType>().c_str();
 	else
 		return DE_NULL;
 }
 const char* CommandLine::getGLConfigName (void) const
 {
-	if (!m_cmdLine.getOption<opt::GLConfigName>().empty())
+	if (m_cmdLine.hasOption<opt::GLConfigName>())
 		return m_cmdLine.getOption<opt::GLConfigName>().c_str();
 	else
 		return DE_NULL;
@@ -614,7 +799,7 @@ const char* CommandLine::getGLConfigName (void) const
 
 const char* CommandLine::getGLContextFlags (void) const
 {
-	if (!m_cmdLine.getOption<opt::GLContextFlags>().empty())
+	if (m_cmdLine.hasOption<opt::GLContextFlags>())
 		return m_cmdLine.getOption<opt::GLContextFlags>().c_str();
 	else
 		return DE_NULL;
@@ -622,50 +807,46 @@ const char* CommandLine::getGLContextFlags (void) const
 
 const char* CommandLine::getCLBuildOptions (void) const
 {
-	if (!m_cmdLine.getOption<opt::CLBuildOptions>().empty())
+	if (m_cmdLine.hasOption<opt::CLBuildOptions>())
 		return m_cmdLine.getOption<opt::CLBuildOptions>().c_str();
 	else
 		return DE_NULL;
 }
 
-static bool checkTestGroupName (const CaseTreeNode* node, const char* groupName)
+const char* CommandLine::getEGLDisplayType (void) const
 {
-	for (vector<CaseTreeNode*>::const_iterator childIter = node->getChildren().begin(); childIter != node->getChildren().end(); ++childIter)
-	{
-		const CaseTreeNode* const child = *childIter;
-
-		if (deStringBeginsWith(groupName, child->getName().c_str()))
-		{
-			const int prefixLen = (int)child->getName().length();
-
-			if (groupName[prefixLen] == 0)
-				return true;
-			else if (groupName[prefixLen] == '.')
-				return checkTestGroupName(child, groupName + prefixLen + 1);
-		}
-	}
-
-	return false;
+	if (m_cmdLine.hasOption<opt::EGLDisplayType>())
+		return m_cmdLine.getOption<opt::EGLDisplayType>().c_str();
+	else
+		return DE_NULL;
 }
 
-static bool checkTestCaseName (const CaseTreeNode* node, const char* caseName)
+const char* CommandLine::getEGLWindowType (void) const
 {
-	for (vector<CaseTreeNode*>::const_iterator childIter = node->getChildren().begin(); childIter != node->getChildren().end(); ++childIter)
-	{
-		const CaseTreeNode* const child = *childIter;
+	if (m_cmdLine.hasOption<opt::EGLWindowType>())
+		return m_cmdLine.getOption<opt::EGLWindowType>().c_str();
+	else
+		return DE_NULL;
+}
 
-		if (deStringBeginsWith(caseName, child->getName().c_str()))
-		{
-			const int prefixLen = (int)child->getName().length();
+const char* CommandLine::getEGLPixmapType (void) const
+{
+	if (m_cmdLine.hasOption<opt::EGLPixmapType>())
+		return m_cmdLine.getOption<opt::EGLPixmapType>().c_str();
+	else
+		return DE_NULL;
+}
 
-			if (caseName[prefixLen] == 0 && child->getChildren().empty())
-				return true;
-			else if (caseName[prefixLen] == '.')
-				return checkTestCaseName(child, caseName + prefixLen + 1);
-		}
-	}
+static bool checkTestGroupName (const CaseTreeNode* root, const char* groupPath)
+{
+	const CaseTreeNode* node = findNode(root, groupPath);
+	return node && node->hasChildren();
+}
 
-	return false;
+static bool checkTestCaseName (const CaseTreeNode* root, const char* casePath)
+{
+	const CaseTreeNode* node = findNode(root, casePath);
+	return node && !node->hasChildren();
 }
 
 bool CommandLine::checkTestGroupName (const char* groupName) const

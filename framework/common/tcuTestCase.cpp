@@ -33,19 +33,11 @@ using namespace std;
 
 // TestNode.
 
-inline bool isValidCaseNameChar (char c)
-{
-	return de::inRange(c, 'a', 'z') ||
-		   de::inRange(c, 'A', 'Z') ||
-		   de::inRange(c, '0', '9') ||
-		   c == '_' || c == '-';
-}
-
 inline bool isValidCaseName (const char* name)
 {
 	for (const char* p = name; *p != '\0'; p++)
 	{
-		if (!isValidCaseNameChar(*p))
+		if (!isValidTestCaseNameChar(*p))
 			return false;
 	}
 	return true;
