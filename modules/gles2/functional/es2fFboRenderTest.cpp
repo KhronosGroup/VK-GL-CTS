@@ -37,7 +37,7 @@
 #include "gluPixelTransfer.hpp"
 #include "gluTextureUtil.hpp"
 #include "gluStrUtil.hpp"
-#include "deRandom.h"
+#include "deRandom.hpp"
 #include "deString.h"
 
 #include "glwFunctions.hpp"
@@ -1987,6 +1987,90 @@ void RecreateBuffersTest<Buffers>::render (sglr::Context& ctx, Surface& dst)
 	}
 }
 
+class RepeatedClearCase : public FboRenderCase
+{
+private:
+	static FboConfig makeConfig (deUint32 format)
+	{
+		FboConfig cfg;
+		cfg.colorbufferType		= GL_TEXTURE_2D;
+		cfg.colorbufferFormat	= format;
+		cfg.depthbufferType		= GL_NONE;
+		cfg.stencilbufferType	= GL_NONE;
+		return cfg;
+	}
+
+public:
+	RepeatedClearCase (Context& context, deUint32 format)
+		: FboRenderCase(context, makeConfig(format).getName().c_str(), "Repeated clears", makeConfig(format))
+	{
+	}
+
+protected:
+	void render (sglr::Context& ctx, Surface& dst)
+	{
+		const int						numRowsCols		= 4;
+		const int						cellSize		= 16;
+		const int						fboSizes[]		= { cellSize, cellSize*numRowsCols };
+
+		SingleTex2DShader				fboBlitShader;
+		const deUint32					fboBlitShaderID	= ctx.createProgram(&fboBlitShader);
+
+		de::Random						rnd				(18169662);
+		deUint32						fbos[]			= { 0, 0 };
+		deUint32						textures[]		= { 0, 0 };
+
+		ctx.genFramebuffers(2, &fbos[0]);
+		ctx.genTextures(2, &textures[0]);
+
+		for (int fboNdx = 0; fboNdx < DE_LENGTH_OF_ARRAY(fbos); fboNdx++)
+		{
+			ctx.bindTexture(GL_TEXTURE_2D, textures[fboNdx]);
+			ctx.texImage2D(GL_TEXTURE_2D, 0, getConfig().colorbufferFormat, fboSizes[fboNdx], fboSizes[fboNdx], 0,
+						   getConfig().colorbufferFormat, GL_UNSIGNED_BYTE, DE_NULL);
+			ctx.texParameteri(GL_TEXTURE_2D,	GL_TEXTURE_WRAP_S,		GL_CLAMP_TO_EDGE);
+			ctx.texParameteri(GL_TEXTURE_2D,	GL_TEXTURE_WRAP_T,		GL_CLAMP_TO_EDGE);
+			ctx.texParameteri(GL_TEXTURE_2D,	GL_TEXTURE_MIN_FILTER,	GL_NEAREST);
+			ctx.texParameteri(GL_TEXTURE_2D,	GL_TEXTURE_MAG_FILTER,	GL_NEAREST);
+
+			ctx.bindFramebuffer(GL_FRAMEBUFFER, fbos[fboNdx]);
+			ctx.framebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textures[fboNdx], 0);
+
+			{
+				const GLenum status = ctx.checkFramebufferStatus(GL_FRAMEBUFFER);
+				if (status != GL_FRAMEBUFFER_COMPLETE)
+					throw FboIncompleteException(getConfig(), status, __FILE__, __LINE__);
+			}
+		}
+
+		// larger fbo bound -- clear to transparent black
+		ctx.clearColor(0.0f, 0.0f, 0.0f, 0.0f);
+		ctx.clear(GL_COLOR_BUFFER_BIT);
+
+		fboBlitShader.setUnit(ctx, fboBlitShaderID, 0);
+		ctx.bindTexture(GL_TEXTURE_2D, textures[0]);
+
+		for (int cellY = 0; cellY < numRowsCols; cellY++)
+		for (int cellX = 0; cellX < numRowsCols; cellX++)
+		{
+			const float	r	= rnd.getFloat();
+			const float	g	= rnd.getFloat();
+			const float	b	= rnd.getFloat();
+			const float	a	= rnd.getFloat();
+
+			ctx.bindFramebuffer(GL_FRAMEBUFFER, fbos[0]);
+			ctx.clearColor(r, g, b, a);
+			ctx.clear(GL_COLOR_BUFFER_BIT);
+
+			ctx.bindFramebuffer(GL_FRAMEBUFFER, fbos[1]);
+			ctx.viewport(cellX*cellSize, cellY*cellSize, cellSize, cellSize);
+			sglr::drawQuad(ctx, fboBlitShaderID, Vec3(-1.0f, -1.0f, 0.0f), Vec3(1.0f, 1.0f, 0.0f));
+		}
+
+		ctx.readPixels(dst, 0, 0, fboSizes[1], fboSizes[1]);
+	}
+};
+
 } // FboCases
 
 FboRenderTestGroup::FboRenderTestGroup (Context& context)
@@ -2105,6 +2189,14 @@ void FboRenderTestGroup::init (void)
 	addChild(texSubImageGroup);
 	addChildVariants<FboCases::TexSubImageAfterRenderTest>		(texSubImageGroup);
 	addChildVariants<FboCases::TexSubImageBetweenRenderTest>	(texSubImageGroup);
+
+	{
+		tcu::TestCaseGroup* const repeatedClearGroup = new tcu::TestCaseGroup(m_testCtx, "repeated_clear", "Repeated FBO clears");
+		addChild(repeatedClearGroup);
+
+		repeatedClearGroup->addChild(new FboCases::RepeatedClearCase(m_context, GL_RGB));
+		repeatedClearGroup->addChild(new FboCases::RepeatedClearCase(m_context, GL_RGBA));
+	}
 }
 
 } // Functional

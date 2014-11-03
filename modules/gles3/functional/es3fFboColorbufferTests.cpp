@@ -812,6 +812,206 @@ private:
 	deUint32	m_dstAlpha;
 };
 
+class FboRepeatedClearSampleTex2DCase : public FboColorbufferCase
+{
+public:
+	FboRepeatedClearSampleTex2DCase (Context& context, const char* name, const char* desc, deUint32 format)
+		: FboColorbufferCase(context, name, desc, format)
+	{
+	}
+
+protected:
+	void preCheck (void)
+	{
+		checkFormatSupport(m_format);
+	}
+
+	void render (tcu::Surface& dst)
+	{
+		const tcu::TextureFormat		fboFormat		= glu::mapGLInternalFormat(m_format);
+		const tcu::TextureFormatInfo	fmtInfo			= tcu::getTextureFormatInfo(fboFormat);
+		const int						numRowsCols		= 4;
+		const int						cellSize		= 16;
+		const int						fboSizes[]		= { cellSize, cellSize*numRowsCols };
+
+		Texture2DShader					fboBlitShader	(DataTypes() << glu::getSampler2DType(fboFormat), getFragmentOutputType(fboFormat), Vec4(1.0f), Vec4(0.0f));
+		const deUint32					fboBlitShaderID	= getCurrentContext()->createProgram(&fboBlitShader);
+
+		de::Random						rnd				(18169662);
+		deUint32						fbos[]			= { 0, 0 };
+		deUint32						textures[]		= { 0, 0 };
+
+		glGenFramebuffers(2, &fbos[0]);
+		glGenTextures(2, &textures[0]);
+
+		for (int fboNdx = 0; fboNdx < DE_LENGTH_OF_ARRAY(fbos); fboNdx++)
+		{
+			glBindTexture(GL_TEXTURE_2D, textures[fboNdx]);
+			glTexStorage2D(GL_TEXTURE_2D, 1, m_format, fboSizes[fboNdx], fboSizes[fboNdx]);
+			glTexParameteri(GL_TEXTURE_2D,	GL_TEXTURE_WRAP_S,		GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_2D,	GL_TEXTURE_WRAP_T,		GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_2D,	GL_TEXTURE_MIN_FILTER,	GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_2D,	GL_TEXTURE_MAG_FILTER,	GL_NEAREST);
+			checkError();
+
+			glBindFramebuffer(GL_FRAMEBUFFER, fbos[fboNdx]);
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textures[fboNdx], 0);
+			checkError();
+			checkFramebufferStatus(GL_FRAMEBUFFER);
+		}
+
+		// larger fbo bound -- clear to transparent black
+		clearColorBuffer(fboFormat, Vec4(0.0f));
+
+		fboBlitShader.setUniforms(*getCurrentContext(), fboBlitShaderID);
+		glBindTexture(GL_TEXTURE_2D, textures[0]);
+
+		for (int cellY = 0; cellY < numRowsCols; cellY++)
+		for (int cellX = 0; cellX < numRowsCols; cellX++)
+		{
+			const Vec4	color	= randomVector<4>(rnd, fmtInfo.valueMin, fmtInfo.valueMax);
+
+			glBindFramebuffer(GL_FRAMEBUFFER, fbos[0]);
+			clearColorBuffer(fboFormat, color);
+
+			glBindFramebuffer(GL_FRAMEBUFFER, fbos[1]);
+			glViewport(cellX*cellSize, cellY*cellSize, cellSize, cellSize);
+			sglr::drawQuad(*getCurrentContext(), fboBlitShaderID, Vec3(-1.0f, -1.0f, 0.0f), Vec3(1.0f, 1.0f, 0.0f));
+		}
+
+		readPixels(dst, 0, 0, fboSizes[1], fboSizes[1], fboFormat, fmtInfo.lookupScale, fmtInfo.lookupBias);
+		checkError();
+	}
+};
+
+class FboRepeatedClearBlitTex2DCase : public FboColorbufferCase
+{
+public:
+	FboRepeatedClearBlitTex2DCase (Context& context, const char* name, const char* desc, deUint32 format)
+		: FboColorbufferCase(context, name, desc, format)
+	{
+	}
+
+protected:
+	void preCheck (void)
+	{
+		checkFormatSupport(m_format);
+	}
+
+	void render (tcu::Surface& dst)
+	{
+		const tcu::TextureFormat		fboFormat		= glu::mapGLInternalFormat(m_format);
+		const tcu::TextureFormatInfo	fmtInfo			= tcu::getTextureFormatInfo(fboFormat);
+		const int						numRowsCols		= 4;
+		const int						cellSize		= 16;
+		const int						fboSizes[]		= { cellSize, cellSize*numRowsCols };
+
+		de::Random						rnd				(18169662);
+		deUint32						fbos[]			= { 0, 0 };
+		deUint32						textures[]		= { 0, 0 };
+
+		glGenFramebuffers(2, &fbos[0]);
+		glGenTextures(2, &textures[0]);
+
+		for (int fboNdx = 0; fboNdx < DE_LENGTH_OF_ARRAY(fbos); fboNdx++)
+		{
+			glBindTexture(GL_TEXTURE_2D, textures[fboNdx]);
+			glTexStorage2D(GL_TEXTURE_2D, 1, m_format, fboSizes[fboNdx], fboSizes[fboNdx]);
+			glTexParameteri(GL_TEXTURE_2D,	GL_TEXTURE_WRAP_S,		GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_2D,	GL_TEXTURE_WRAP_T,		GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_2D,	GL_TEXTURE_MIN_FILTER,	GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_2D,	GL_TEXTURE_MAG_FILTER,	GL_NEAREST);
+			checkError();
+
+			glBindFramebuffer(GL_FRAMEBUFFER, fbos[fboNdx]);
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textures[fboNdx], 0);
+			checkError();
+			checkFramebufferStatus(GL_FRAMEBUFFER);
+		}
+
+		// larger fbo bound -- clear to transparent black
+		clearColorBuffer(fboFormat, Vec4(0.0f));
+
+		for (int cellY = 0; cellY < numRowsCols; cellY++)
+		for (int cellX = 0; cellX < numRowsCols; cellX++)
+		{
+			const Vec4	color	= randomVector<4>(rnd, fmtInfo.valueMin, fmtInfo.valueMax);
+
+			glBindFramebuffer(GL_FRAMEBUFFER, fbos[0]);
+			clearColorBuffer(fboFormat, color);
+
+			glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbos[1]);
+			glBlitFramebuffer(0, 0, cellSize, cellSize, cellX*cellSize, cellY*cellSize, (cellX+1)*cellSize, (cellY+1)*cellSize, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+		}
+
+		glBindFramebuffer(GL_FRAMEBUFFER, fbos[1]);
+		readPixels(dst, 0, 0, fboSizes[1], fboSizes[1], fboFormat, fmtInfo.lookupScale, fmtInfo.lookupBias);
+		checkError();
+	}
+};
+
+class FboRepeatedClearBlitRboCase : public FboColorbufferCase
+{
+public:
+	FboRepeatedClearBlitRboCase (Context& context, const char* name, const char* desc, deUint32 format)
+		: FboColorbufferCase(context, name, desc, format)
+	{
+	}
+
+protected:
+	void preCheck (void)
+	{
+		checkFormatSupport(m_format);
+	}
+
+	void render (tcu::Surface& dst)
+	{
+		const tcu::TextureFormat		fboFormat		= glu::mapGLInternalFormat(m_format);
+		const tcu::TextureFormatInfo	fmtInfo			= tcu::getTextureFormatInfo(fboFormat);
+		const int						numRowsCols		= 4;
+		const int						cellSize		= 16;
+		const int						fboSizes[]		= { cellSize, cellSize*numRowsCols };
+
+		de::Random						rnd				(18169662);
+		deUint32						fbos[]			= { 0, 0 };
+		deUint32						rbos[]			= { 0, 0 };
+
+		glGenFramebuffers(2, &fbos[0]);
+		glGenRenderbuffers(2, &rbos[0]);
+
+		for (int fboNdx = 0; fboNdx < DE_LENGTH_OF_ARRAY(fbos); fboNdx++)
+		{
+			glBindRenderbuffer(GL_RENDERBUFFER, rbos[fboNdx]);
+			glRenderbufferStorage(GL_RENDERBUFFER, m_format, fboSizes[fboNdx], fboSizes[fboNdx]);
+			checkError();
+
+			glBindFramebuffer(GL_FRAMEBUFFER, fbos[fboNdx]);
+			glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, rbos[fboNdx]);
+			checkError();
+			checkFramebufferStatus(GL_FRAMEBUFFER);
+		}
+
+		// larger fbo bound -- clear to transparent black
+		clearColorBuffer(fboFormat, Vec4(0.0f));
+
+		for (int cellY = 0; cellY < numRowsCols; cellY++)
+		for (int cellX = 0; cellX < numRowsCols; cellX++)
+		{
+			const Vec4	color	= randomVector<4>(rnd, fmtInfo.valueMin, fmtInfo.valueMax);
+
+			glBindFramebuffer(GL_FRAMEBUFFER, fbos[0]);
+			clearColorBuffer(fboFormat, color);
+
+			glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbos[1]);
+			glBlitFramebuffer(0, 0, cellSize, cellSize, cellX*cellSize, cellY*cellSize, (cellX+1)*cellSize, (cellY+1)*cellSize, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+		}
+
+		glBindFramebuffer(GL_FRAMEBUFFER, fbos[1]);
+		readPixels(dst, 0, 0, fboSizes[1], fboSizes[1], fboFormat, fmtInfo.lookupScale, fmtInfo.lookupBias);
+		checkError();
+	}
+};
+
 FboColorTests::FboColorTests (Context& context)
 	: TestCaseGroup(context, "color", "Colorbuffer tests")
 {
@@ -942,6 +1142,51 @@ void FboColorTests::init (void)
 				continue; // Blending is not supported.
 
 			blendGroup->addChild(new FboBlendCase(m_context, (fmtName + "_src_over").c_str(), "", format, IVec2(127, 111), GL_FUNC_ADD, GL_FUNC_ADD, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ZERO, GL_ONE));
+		}
+	}
+
+	// .repeated_clear
+	{
+		tcu::TestCaseGroup* const repeatedClearGroup = new tcu::TestCaseGroup(m_testCtx, "repeated_clear", "Repeated clears and blits");
+		addChild(repeatedClearGroup);
+
+		// .sample.tex2d
+		{
+			tcu::TestCaseGroup* const sampleGroup = new tcu::TestCaseGroup(m_testCtx, "sample", "Read by sampling");
+			repeatedClearGroup->addChild(sampleGroup);
+
+			tcu::TestCaseGroup* const tex2DGroup = new tcu::TestCaseGroup(m_testCtx, "tex2d", "2D Texture");
+			sampleGroup->addChild(tex2DGroup);
+
+			for (int fmtNdx = 0; fmtNdx < DE_LENGTH_OF_ARRAY(colorFormats); fmtNdx++)
+				tex2DGroup->addChild(new FboRepeatedClearSampleTex2DCase(m_context, getFormatName(colorFormats[fmtNdx]),
+																		 "", colorFormats[fmtNdx]));
+		}
+
+		// .blit
+		{
+			tcu::TestCaseGroup* const blitGroup = new tcu::TestCaseGroup(m_testCtx, "blit", "Blitted");
+			repeatedClearGroup->addChild(blitGroup);
+
+			// .tex2d
+			{
+				tcu::TestCaseGroup* const tex2DGroup = new tcu::TestCaseGroup(m_testCtx, "tex2d", "2D Texture");
+				blitGroup->addChild(tex2DGroup);
+
+				for (int fmtNdx = 0; fmtNdx < DE_LENGTH_OF_ARRAY(colorFormats); fmtNdx++)
+					tex2DGroup->addChild(new FboRepeatedClearBlitTex2DCase(m_context, getFormatName(colorFormats[fmtNdx]),
+																		   "", colorFormats[fmtNdx]));
+			}
+
+			// .rbo
+			{
+				tcu::TestCaseGroup* const rboGroup = new tcu::TestCaseGroup(m_testCtx, "rbo", "Renderbuffer");
+				blitGroup->addChild(rboGroup);
+
+				for (int fmtNdx = 0; fmtNdx < DE_LENGTH_OF_ARRAY(colorFormats); fmtNdx++)
+					rboGroup->addChild(new FboRepeatedClearBlitRboCase(m_context, getFormatName(colorFormats[fmtNdx]),
+																	   "", colorFormats[fmtNdx]));
+			}
 		}
 	}
 }
