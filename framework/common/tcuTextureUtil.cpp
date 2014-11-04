@@ -113,9 +113,15 @@ TextureChannelClass getTextureChannelClass (TextureFormat::ChannelType channelTy
  *//*--------------------------------------------------------------------*/
 ConstPixelBufferAccess getSubregion (const ConstPixelBufferAccess& access, int x, int y, int z, int width, int height, int depth)
 {
-	DE_ASSERT(de::inBounds(x, 0, access.getWidth())		&& de::inRange(x+width,		x, access.getWidth()));
-	DE_ASSERT(de::inBounds(y, 0, access.getHeight())	&& de::inRange(y+height,	y, access.getHeight()));
-	DE_ASSERT(de::inBounds(z, 0, access.getDepth())		&& de::inRange(z+depth,		z, access.getDepth()));
+	DE_ASSERT(de::inBounds(x, 0, access.getWidth()));
+	DE_ASSERT(de::inRange(x+width, x+1, access.getWidth()));
+
+	DE_ASSERT(de::inBounds(y, 0, access.getHeight()));
+	DE_ASSERT(de::inRange(y+height, y+1, access.getHeight()));
+
+	DE_ASSERT(de::inBounds(z, 0, access.getDepth()));
+	DE_ASSERT(de::inRange(z+depth, z+1, access.getDepth()));
+
 	return ConstPixelBufferAccess(access.getFormat(), width, height, depth, access.getRowPitch(), access.getSlicePitch(),
 								  (const deUint8*)access.getDataPtr() + access.getFormat().getPixelSize()*x + access.getRowPitch()*y + access.getSlicePitch()*z);
 }
@@ -133,9 +139,15 @@ ConstPixelBufferAccess getSubregion (const ConstPixelBufferAccess& access, int x
  *//*--------------------------------------------------------------------*/
 PixelBufferAccess getSubregion (const PixelBufferAccess& access, int x, int y, int z, int width, int height, int depth)
 {
-	DE_ASSERT(de::inBounds(x, 0, access.getWidth())		&& de::inRange(x+width,		x, access.getWidth()));
-	DE_ASSERT(de::inBounds(y, 0, access.getHeight())	&& de::inRange(y+height,	y, access.getHeight()));
-	DE_ASSERT(de::inBounds(z, 0, access.getDepth())		&& de::inRange(z+depth,		z, access.getDepth()));
+	DE_ASSERT(de::inBounds(x, 0, access.getWidth()));
+	DE_ASSERT(de::inRange(x+width, x+1, access.getWidth()));
+
+	DE_ASSERT(de::inBounds(y, 0, access.getHeight()));
+	DE_ASSERT(de::inRange(y+height, y+1, access.getHeight()));
+
+	DE_ASSERT(de::inBounds(z, 0, access.getDepth()));
+	DE_ASSERT(de::inRange(z+depth, z+1, access.getDepth()));
+
 	return PixelBufferAccess(access.getFormat(), width, height, depth, access.getRowPitch(), access.getSlicePitch(),
 							 (deUint8*)access.getDataPtr() + access.getFormat().getPixelSize()*x + access.getRowPitch()*y + access.getSlicePitch()*z);
 }
@@ -931,5 +943,30 @@ int getCubeArrayFaceIndex (CubeFace face)
 			return -1;
 	}
 }
+
+void copyRawPixels (const PixelBufferAccess& dst, const ConstPixelBufferAccess& src)
+{
+	DE_ASSERT(dst.getFormat().getPixelSize() == src.getFormat().getPixelSize());
+	DE_ASSERT(dst.getWidth() == src.getWidth());
+	DE_ASSERT(dst.getHeight() == src.getHeight());
+	DE_ASSERT(dst.getDepth() == src.getDepth());
+
+	const int pixelSize = dst.getFormat().getPixelSize();
+
+	for (int z = 0; z < dst.getDepth(); z++)
+	for (int y = 0; y < dst.getHeight(); y++)
+	{
+		const deUint8* const	srcPtr	= (const deUint8*)src.getDataPtr()
+										+ src.getRowPitch() * y
+										+ src.getSlicePitch() * z;
+
+		deUint8* const			dstPtr	= (deUint8*)dst.getDataPtr()
+										+ dst.getRowPitch() * y
+										+ dst.getSlicePitch() * z;
+
+		deMemcpy(dstPtr, srcPtr, dst.getWidth() * pixelSize);
+	}
+}
+
 
 } // tcu

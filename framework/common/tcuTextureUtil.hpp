@@ -96,6 +96,9 @@ void	fillWithRGBAQuads				(const PixelBufferAccess& access);
 void	copy							(const PixelBufferAccess& dst, const ConstPixelBufferAccess& src);
 void	scale							(const PixelBufferAccess& dst, const ConstPixelBufferAccess& src, Sampler::FilterMode filter);
 
+// Copy raw pixel data between buffers. Both buffers must have same pixel size.
+void	copyRawPixels					(const PixelBufferAccess& dst, const ConstPixelBufferAccess& src);
+
 void	estimatePixelValueRange			(const ConstPixelBufferAccess& access, Vec4& minVal, Vec4& maxVal);
 void	computePixelScaleBias			(const ConstPixelBufferAccess& access, Vec4& scale, Vec4& bias);
 

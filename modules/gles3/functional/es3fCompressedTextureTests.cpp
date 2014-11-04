@@ -34,6 +34,7 @@
 using std::string;
 using tcu::IVec3;
 using tcu::CompressedTexture;
+using tcu::CompressedTexFormat;
 
 namespace deqp
 {
@@ -42,13 +43,13 @@ namespace gles3
 namespace Functional
 {
 
-static const string getASTCFormatShortName (CompressedTexture::Format format)
+static const string getASTCFormatShortName (CompressedTexFormat format)
 {
-	DE_ASSERT(tcu::isASTCFormat(format));
-	const IVec3 blockSize = tcu::getASTCBlockSize(format);
+	DE_ASSERT(tcu::isAstcFormat(format));
+	const IVec3 blockSize = tcu::getBlockPixelSize(format);
 	DE_ASSERT(blockSize.z() == 1);
 
-	return de::toString(blockSize.x()) + "x" + de::toString(blockSize.y()) + (tcu::isASTCSRGBFormat(format) ? "_srgb" : "");
+	return de::toString(blockSize.x()) + "x" + de::toString(blockSize.y()) + (tcu::isAstcSRGBFormat(format) ? "_srgb" : "");
 }
 
 CompressedTextureTests::CompressedTextureTests (Context& context)
@@ -75,13 +76,13 @@ void CompressedTextureTests::init (void)
 			TestCaseGroup* const		testTypeGroup	= new TestCaseGroup(m_context, getBlockTestTypeName(astcTestType), getBlockTestTypeDescription(astcTestType));
 			astcGroup->addChild(testTypeGroup);
 
-			for (int formatI = 0; formatI < CompressedTexture::FORMAT_LAST; formatI++)
+			for (int formatI = 0; formatI < tcu::COMPRESSEDTEXFORMAT_LAST; formatI++)
 			{
-				const CompressedTexture::Format format = (CompressedTexture::Format)formatI;
+				const CompressedTexFormat format = (CompressedTexFormat)formatI;
 
-				if (!tcu::isASTCFormat(format))
+				if (!tcu::isAstcFormat(format))
 					continue;
-				if (tcu::isASTCSRGBFormat(format) && isBlockTestTypeHDROnly(astcTestType))
+				if (tcu::isAstcSRGBFormat(format) && isBlockTestTypeHDROnly(astcTestType))
 					continue;
 
 				testTypeGroup->addChild(new ASTCBlockCase2D(m_context, getASTCFormatShortName(format).c_str(), glu::getCompressedTexFormatName(glu::getGLFormat(format)), astcTestType, format));
@@ -94,11 +95,11 @@ void CompressedTextureTests::init (void)
 			TestCaseGroup* const blockSizeRemainderGroup = new TestCaseGroup(m_context, "block_size_remainder", "Test image size/block size remainders");
 			astcGroup->addChild(blockSizeRemainderGroup);
 
-			for (int formatI = 0; formatI < CompressedTexture::FORMAT_LAST; formatI++)
+			for (int formatI = 0; formatI < tcu::COMPRESSEDTEXFORMAT_LAST; formatI++)
 			{
-				const CompressedTexture::Format format = (CompressedTexture::Format)formatI;
+				const CompressedTexFormat format = (CompressedTexFormat)formatI;
 
-				if (!tcu::isASTCFormat(format))
+				if (!tcu::isAstcFormat(format))
 					continue;
 
 				blockSizeRemainderGroup->addChild(new ASTCBlockSizeRemainderCase2D(m_context, getASTCFormatShortName(format).c_str(), glu::getCompressedTexFormatName(glu::getGLFormat(format)), format));

@@ -126,11 +126,11 @@ Texture2D::Texture2D (const RenderContext& context, deUint32 sizedFormat, int wi
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glGenTextures() failed");
 }
 
-Texture2D::Texture2D (const RenderContext& context, const ContextInfo& contextInfo, int numLevels, const tcu::CompressedTexture* levels, const tcu::CompressedTexture::DecompressionParams& decompressionParams)
+Texture2D::Texture2D (const RenderContext& context, const ContextInfo& contextInfo, int numLevels, const tcu::CompressedTexture* levels, const tcu::TexDecompressionParams& decompressionParams)
 	: m_context			(context)
 	, m_isCompressed	(true)
 	, m_format			(getGLFormat(levels[0].getFormat()))
-	, m_refTexture		(levels[0].getUncompressedFormat(), levels[0].getWidth(), levels[0].getHeight())
+	, m_refTexture		(getUncompressedFormat(levels[0].getFormat()), levels[0].getWidth(), levels[0].getHeight())
 	, m_glTexture		(0)
 {
 	const glw::Functions& gl = context.getFunctions();
@@ -184,7 +184,7 @@ void Texture2D::upload (void)
 	GLU_EXPECT_NO_ERROR(gl.getError(), "Texture upload failed");
 }
 
-void Texture2D::loadCompressed (int numLevels, const tcu::CompressedTexture* levels, const tcu::CompressedTexture::DecompressionParams& decompressionParams)
+void Texture2D::loadCompressed (int numLevels, const tcu::CompressedTexture* levels, const tcu::TexDecompressionParams& decompressionParams)
 {
 	const glw::Functions&	gl					= m_context.getFunctions();
 	deUint32				compressedFormat	= getGLFormat(levels[0].getFormat());
@@ -285,11 +285,11 @@ Texture2D* Texture2D::create (const RenderContext& context, const ContextInfo& c
 
 // TextureCube
 
-TextureCube::TextureCube (const RenderContext& context, const ContextInfo& contextInfo, int numLevels, const tcu::CompressedTexture* levels, const tcu::CompressedTexture::DecompressionParams& decompressionParams)
+TextureCube::TextureCube (const RenderContext& context, const ContextInfo& contextInfo, int numLevels, const tcu::CompressedTexture* levels, const tcu::TexDecompressionParams& decompressionParams)
 	: m_context			(context)
 	, m_isCompressed	(true)
 	, m_format			(getGLFormat(levels[0].getFormat()))
-	, m_refTexture		(levels[0].getUncompressedFormat(), levels[0].getWidth())
+	, m_refTexture		(getUncompressedFormat(levels[0].getFormat()), levels[0].getWidth())
 	, m_glTexture		(0)
 {
 	const glw::Functions& gl = m_context.getFunctions();
@@ -388,7 +388,7 @@ void TextureCube::upload (void)
 	GLU_EXPECT_NO_ERROR(gl.getError(), "Texture upload failed");
 }
 
-void TextureCube::loadCompressed (int numLevels, const tcu::CompressedTexture* levels, const tcu::CompressedTexture::DecompressionParams& decompressionParams)
+void TextureCube::loadCompressed (int numLevels, const tcu::CompressedTexture* levels, const tcu::TexDecompressionParams& decompressionParams)
 {
 	const glw::Functions&	gl					= m_context.getFunctions();
 	deUint32				compressedFormat	= getGLFormat(levels[0].getFormat());
@@ -510,6 +510,7 @@ void Texture1DArray::upload (void)
 
 Texture2DArray::Texture2DArray (const RenderContext& context, deUint32 format, deUint32 dataType, int width, int height, int numLevels)
 	: m_context			(context)
+	, m_isCompressed	(false)
 	, m_format			(format)
 	, m_refTexture		(mapGLTransferFormat(format, dataType), width, height, numLevels)
 	, m_glTexture		(0)
@@ -522,6 +523,7 @@ Texture2DArray::Texture2DArray (const RenderContext& context, deUint32 format, d
 
 Texture2DArray::Texture2DArray (const RenderContext& context, deUint32 sizedFormat, int width, int height, int numLevels)
 	: m_context			(context)
+	, m_isCompressed	(false)
 	, m_format			(sizedFormat)
 	, m_refTexture		(mapGLInternalFormat(sizedFormat), width, height, numLevels)
 	, m_glTexture		(0)
@@ -530,6 +532,32 @@ Texture2DArray::Texture2DArray (const RenderContext& context, deUint32 sizedForm
 	const glw::Functions& gl = m_context.getFunctions();
 	gl.genTextures(1, &m_glTexture);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glGenTextures() failed");
+}
+
+Texture2DArray::Texture2DArray (const RenderContext& context, const ContextInfo& contextInfo, int numLevels, const tcu::CompressedTexture* levels, const tcu::TexDecompressionParams& decompressionParams)
+	: m_context			(context)
+	, m_isCompressed	(true)
+	, m_format			(getGLFormat(levels[0].getFormat()))
+	, m_refTexture		(getUncompressedFormat(levels[0].getFormat()), levels[0].getWidth(), levels[0].getHeight(), levels[0].getDepth())
+	, m_glTexture		(0)
+{
+	const glw::Functions& gl = context.getFunctions();
+
+	if (!contextInfo.isCompressedTextureFormatSupported(m_format))
+		throw tcu::NotSupportedError("Compressed texture format not supported", "", __FILE__, __LINE__);
+
+	gl.genTextures(1, &m_glTexture);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "glGenTextures() failed");
+
+	try
+	{
+		loadCompressed(numLevels, levels, decompressionParams);
+	}
+	catch (const std::exception&)
+	{
+		gl.deleteTextures(1, &m_glTexture);
+		throw;
+	}
 }
 
 Texture2DArray::~Texture2DArray (void)
@@ -561,6 +589,34 @@ void Texture2DArray::upload (void)
 		DE_ASSERT(access.getRowPitch() == access.getFormat().getPixelSize()*access.getWidth());
 		DE_ASSERT(access.getSlicePitch() == access.getFormat().getPixelSize()*access.getWidth()*access.getHeight());
 		gl.texImage3D(GL_TEXTURE_2D_ARRAY, levelNdx, m_format, access.getWidth(), access.getHeight(), access.getDepth(), 0 /* border */, transferFormat.format, transferFormat.dataType, access.getDataPtr());
+	}
+
+	GLU_EXPECT_NO_ERROR(gl.getError(), "Texture upload failed");
+}
+
+void Texture2DArray::loadCompressed (int numLevels, const tcu::CompressedTexture* levels, const tcu::TexDecompressionParams& decompressionParams)
+{
+	const glw::Functions&	gl					= m_context.getFunctions();
+	deUint32				compressedFormat	= getGLFormat(levels[0].getFormat());
+
+	TCU_CHECK(m_glTexture);
+	gl.bindTexture(GL_TEXTURE_2D_ARRAY, m_glTexture);
+
+	for (int levelNdx = 0; levelNdx < numLevels; levelNdx++)
+	{
+		const tcu::CompressedTexture& level = levels[levelNdx];
+
+		// Decompress to reference texture.
+		m_refTexture.allocLevel(levelNdx);
+		tcu::PixelBufferAccess refLevelAccess = m_refTexture.getLevel(levelNdx);
+		TCU_CHECK(level.getWidth()	== refLevelAccess.getWidth() &&
+				  level.getHeight()	== refLevelAccess.getHeight() &&
+				  level.getDepth()	== refLevelAccess.getDepth());
+		level.decompress(refLevelAccess, decompressionParams);
+
+		// Upload to GL texture in compressed form.
+		gl.compressedTexImage3D(GL_TEXTURE_2D_ARRAY, levelNdx, compressedFormat,
+								level.getWidth(), level.getHeight(), m_refTexture.getLevel(levelNdx).getDepth(), 0 /* border */, level.getDataSize(), level.getData());
 	}
 
 	GLU_EXPECT_NO_ERROR(gl.getError(), "Texture upload failed");
