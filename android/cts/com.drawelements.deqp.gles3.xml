@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<TestPackage name="dEQP-GLES3" appPackageName="com.drawelements.deqp.gles3" testType="deqpTest">
+<TestPackage name="dEQP-GLES3" appPackageName="com.drawelements.deqp.gles3" testType="deqpTest" xmlns:deqp="http://drawelements.com/deqp" deqp:glesVersion="196608">
 <TestSuite name="dEQP-GLES3">
 <TestCase name="info">
 <Test name="renderer" />

@@ -1,6 +1,32 @@
 import argparse
 import string
 
+class ModuleTemplate:
+	def __init__(self, friendlyName, packageName, appPackageName, version):
+		self.friendlyName = friendlyName
+		self.packageName = packageName
+		self.appPackageName = appPackageName
+		self.version = version
+
+class GLESVersion:
+	def __init__(self, majorVersion, minorVersion):
+		self.majorVersion = majorVersion
+		self.minorVersion = minorVersion
+
+	def getCTSEncodedGLESVersion(self):
+		return (self.majorVersion << 16) | (self.minorVersion)
+
+class EGLVersion:
+	def getCTSEncodedGLESVersion(self):
+		return None
+
+MODULE_TEMPLATES = [
+	ModuleTemplate("egl",		"dEQP-EGL",		"com.drawelements.deqp.egl",	EGLVersion()),
+	ModuleTemplate("gles2",		"dEQP-GLES2",	"com.drawelements.deqp.gles2",	GLESVersion(2, 0)),
+	ModuleTemplate("gles3",		"dEQP-GLES3",	"com.drawelements.deqp.gles3",	GLESVersion(3, 0)),
+	ModuleTemplate("gles31",	"dEQP-GLES31",	"com.drawelements.deqp.gles31",	GLESVersion(3, 1)),
+]
+
 class TestGroup:
 	def __init__(self, name, parent = None):
 		self.parent = parent
@@ -137,22 +163,41 @@ def writeAndroidCTSTestSuite(group, output):
 
 	output.write('</TestSuite>\n')
 
-def writeAndroidCTSFile(rootGroup, output, name, appPackageName):
+def writeAndroidCTSFile(rootGroup, output, name, appPackageName, optionalAttrs):
+	optAttrsStr = ""
+
+	for k in optionalAttrs.keys():
+		optAttrsStr += " " + k + "=\"" + str(optionalAttrs[k]) + "\""
+
 	output.write('<?xml version="1.0" encoding="UTF-8"?>\n')
-	output.write('<TestPackage name="%s" appPackageName="%s" testType="deqpTest">\n' % (name, appPackageName))
+	output.write('<TestPackage name="%s" appPackageName="%s" testType="deqpTest" xmlns:deqp="http://drawelements.com/deqp"%s>\n' % (name, appPackageName, optAttrsStr))
 
 	writeAndroidCTSTestSuite(rootGroup, output)
 
 	output.write('</TestPackage>\n')
 
+def getTemplateNames():
+	return [template.friendlyName for template in MODULE_TEMPLATES]
+
+def getTemplateByName(name):
+	matching = [template for template in MODULE_TEMPLATES if template.friendlyName == name]
+
+	assert len(matching) == 1
+	return matching[0]
+
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
-	parser.add_argument('input',                      type=argparse.FileType('r'),    help="Input file containing dEQP test names.")
-	parser.add_argument('output',                     type=argparse.FileType('w'),    help="Output file for Android CTS test file.")
-	parser.add_argument('--name',     dest="name",    type=str,                       required=True, help="Name of the test package")
-	parser.add_argument('--package',  dest="package", type=str,                       required=True, help="Name of the app package")
+	parser.add_argument('input',                              type=argparse.FileType('r'),    help="Input file containing dEQP test names.")
+	parser.add_argument('output',                             type=argparse.FileType('w'),    help="Output file for Android CTS test file.")
+	parser.add_argument('--module',       dest="module",      type=str,                       required=True, help="Name of the test module", choices=getTemplateNames())
 
 	args = parser.parse_args()
 
-	rootGroup = loadTestHierarchy(args.input, args.name)
-	writeAndroidCTSFile(rootGroup, args.output, name=args.name, appPackageName=args.package)
+	moduleTemplate = getTemplateByName(args.module)
+
+	optAttrs = {};
+	if moduleTemplate.version.getCTSEncodedGLESVersion():
+		optAttrs["deqp:glesVersion"] = moduleTemplate.version.getCTSEncodedGLESVersion()
+
+	rootGroup = loadTestHierarchy(args.input, moduleTemplate.packageName)
+	writeAndroidCTSFile(rootGroup, args.output, name=moduleTemplate.packageName, appPackageName=moduleTemplate.appPackageName, optionalAttrs=optAttrs)
