@@ -251,9 +251,37 @@ public:
 			};
 			addChild(new CaseListParserCase(m_testCtx, "group_case", caseList, subCases, DE_LENGTH_OF_ARRAY(subCases)));
 		}
+		{
+			static const char* const	caseList	= "{test}\r";
+			static const MatchCase		subCases[]	=
+			{
+				{ "test",		MatchCase::MATCH_CASE	},
+				{ "test.cd",	MatchCase::NO_MATCH		},
+			};
+			addChild(new CaseListParserCase(m_testCtx, "trailing_cr", caseList, subCases, DE_LENGTH_OF_ARRAY(subCases)));
+		}
+		{
+			static const char* const	caseList	= "{test}\n";
+			static const MatchCase		subCases[]	=
+			{
+				{ "test",		MatchCase::MATCH_CASE	},
+				{ "test.cd",	MatchCase::NO_MATCH		},
+			};
+			addChild(new CaseListParserCase(m_testCtx, "trailing_lf", caseList, subCases, DE_LENGTH_OF_ARRAY(subCases)));
+		}
+		{
+			static const char* const	caseList	= "{test}\r\n";
+			static const MatchCase		subCases[]	=
+			{
+				{ "test",		MatchCase::MATCH_CASE	},
+				{ "test.cd",	MatchCase::NO_MATCH		},
+			};
+			addChild(new CaseListParserCase(m_testCtx, "trailing_crlf", caseList, subCases, DE_LENGTH_OF_ARRAY(subCases)));
+		}
 
 		// Negative tests
 		addChild(new NegativeCaseListCase(m_testCtx, "empty_string",			""));
+		addChild(new NegativeCaseListCase(m_testCtx, "empty_line",				"\n"));
 		addChild(new NegativeCaseListCase(m_testCtx, "empty_root",				"{}"));
 		addChild(new NegativeCaseListCase(m_testCtx, "empty_group",				"{test{}}"));
 		addChild(new NegativeCaseListCase(m_testCtx, "empty_group_name_1",		"{{}}"));
@@ -275,6 +303,11 @@ public:
 		addChild(new NegativeCaseListCase(m_testCtx, "invalid_char_2",			"{a[]}"));
 		addChild(new NegativeCaseListCase(m_testCtx, "trailing_char_1",			"{a}}"));
 		addChild(new NegativeCaseListCase(m_testCtx, "trailing_char_2",			"{a}x"));
+		addChild(new NegativeCaseListCase(m_testCtx, "embedded_newline_1",		"{\na}"));
+		addChild(new NegativeCaseListCase(m_testCtx, "embedded_newline_2",		"{a\n,b}"));
+		addChild(new NegativeCaseListCase(m_testCtx, "embedded_newline_3",		"{a,\nb}"));
+		addChild(new NegativeCaseListCase(m_testCtx, "embedded_newline_4",		"{a{b\n}}"));
+		addChild(new NegativeCaseListCase(m_testCtx, "embedded_newline_5",		"{a{b}\n}"));
 	}
 };
 
