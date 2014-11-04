@@ -375,6 +375,15 @@ static void parseCaseTrie (CaseTreeNode* root, std::istream& in)
 			{
 				expectNode = false;
 				nodeStack.pop_back();
+
+				// consume trailing new line
+				if (nodeStack.empty())
+				{
+					if (in.peek() == '\r')
+					  in.get();
+					if (in.peek() == '\n')
+					  in.get();
+				}
 			}
 			else
 				expectNode = true;
