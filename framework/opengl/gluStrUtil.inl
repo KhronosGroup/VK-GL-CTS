@@ -1,5 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
+ *
+ * Generated from Khronos GL API description (gl.xml) revision 28861.
  */
 
 const char* getErrorName (int value)
@@ -1470,7 +1472,7 @@ tcu::Format::Bitfield<16> getBufferMaskStr (int value)
 	{
 		tcu::Format::BitDesc(GL_DEPTH_BUFFER_BIT,	"GL_DEPTH_BUFFER_BIT"),
 		tcu::Format::BitDesc(GL_STENCIL_BUFFER_BIT,	"GL_STENCIL_BUFFER_BIT"),
-		tcu::Format::BitDesc(GL_COLOR_BUFFER_BIT,	"GL_COLOR_BUFFER_BIT")
+		tcu::Format::BitDesc(GL_COLOR_BUFFER_BIT,	"GL_COLOR_BUFFER_BIT"),
 	};
 	return tcu::Format::Bitfield<16>(value, &s_desc[0], &s_desc[DE_LENGTH_OF_ARRAY(s_desc)]);
 }
@@ -1484,7 +1486,7 @@ tcu::Format::Bitfield<16> getBufferMapFlagsStr (int value)
 		tcu::Format::BitDesc(GL_MAP_INVALIDATE_RANGE_BIT,	"GL_MAP_INVALIDATE_RANGE_BIT"),
 		tcu::Format::BitDesc(GL_MAP_INVALIDATE_BUFFER_BIT,	"GL_MAP_INVALIDATE_BUFFER_BIT"),
 		tcu::Format::BitDesc(GL_MAP_FLUSH_EXPLICIT_BIT,		"GL_MAP_FLUSH_EXPLICIT_BIT"),
-		tcu::Format::BitDesc(GL_MAP_UNSYNCHRONIZED_BIT,		"GL_MAP_UNSYNCHRONIZED_BIT")
+		tcu::Format::BitDesc(GL_MAP_UNSYNCHRONIZED_BIT,		"GL_MAP_UNSYNCHRONIZED_BIT"),
 	};
 	return tcu::Format::Bitfield<16>(value, &s_desc[0], &s_desc[DE_LENGTH_OF_ARRAY(s_desc)]);
 }
@@ -1504,7 +1506,7 @@ tcu::Format::Bitfield<16> getMemoryBarrierFlagsStr (int value)
 		tcu::Format::BitDesc(GL_BUFFER_UPDATE_BARRIER_BIT,			"GL_BUFFER_UPDATE_BARRIER_BIT"),
 		tcu::Format::BitDesc(GL_FRAMEBUFFER_BARRIER_BIT,			"GL_FRAMEBUFFER_BARRIER_BIT"),
 		tcu::Format::BitDesc(GL_TRANSFORM_FEEDBACK_BARRIER_BIT,		"GL_TRANSFORM_FEEDBACK_BARRIER_BIT"),
-		tcu::Format::BitDesc(GL_ATOMIC_COUNTER_BARRIER_BIT,			"GL_ATOMIC_COUNTER_BARRIER_BIT")
+		tcu::Format::BitDesc(GL_ATOMIC_COUNTER_BARRIER_BIT,			"GL_ATOMIC_COUNTER_BARRIER_BIT"),
 	};
 	return tcu::Format::Bitfield<16>(value, &s_desc[0], &s_desc[DE_LENGTH_OF_ARRAY(s_desc)]);
 }

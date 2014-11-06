@@ -80,6 +80,7 @@ typedef void				GLvoid;
 
 /* Opaque handles. */
 typedef struct __GLsync*	GLsync;
+typedef void*				GLeglImageOES;
 
 /* Callback for GL_ARB_debug_output. */
 typedef void (GLW_APIENTRY* GLDEBUGPROC) (GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, GLvoid *userParam);

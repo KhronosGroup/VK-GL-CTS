@@ -92,14 +92,6 @@ void initGL44Core (Functions* gl, const FunctionLoader* loader)
 #include "glwInitGL44.inl"
 }
 
-void initExtensionsShared (Functions* gl, const FunctionLoader* loader, const std::set<std::string>& extensions)
-{
-	if (de::contains(extensions, "GL_KHR_blend_equation_advanced"))
-	{
-		gl->blendBarrierKHR		= (glBlendBarrierKHRFunc)		loader->get("glBlendBarrierKHR");
-	}
-}
-
 void initExtensionsGL (Functions* gl, const FunctionLoader* loader, int numExtensions, const char* const* extensions)
 {
 	using std::string;
@@ -107,28 +99,8 @@ void initExtensionsGL (Functions* gl, const FunctionLoader* loader, int numExten
 
 	const set<string> extSet(extensions, extensions+numExtensions);
 
-	initExtensionsShared(gl, loader, extSet);
+#include "glwInitExtGL.inl"
 
-	if (de::contains(extSet, "GL_KHR_debug"))
-	{
-		/*
-			From the spec:
-				NOTE: when implemented in an OpenGL ES context, all entry points defined
-				by this extension must have a "KHR" suffix. When implemented in an
-				OpenGL context, all entry points must have NO suffix, as shown below.
-		*/
-		gl->debugMessageControl = (glDebugMessageControlFunc)	loader->get("glDebugMessageControl");
-		gl->debugMessageInsert	= (glDebugMessageInsertFunc)	loader->get("glDebugMessageInsert");
-		gl->debugMessageCallback= (glDebugMessageCallbackFunc)	loader->get("glDebugMessageCallback");
-		gl->getDebugMessageLog	= (glGetDebugMessageLogFunc)	loader->get("glGetDebugMessageLog");
-		gl->getPointerv			= (glGetPointervFunc)			loader->get("glGetPointerv");
-		gl->pushDebugGroup		= (glPushDebugGroupFunc)		loader->get("glPushDebugGroup");
-		gl->popDebugGroup		= (glPopDebugGroupFunc)			loader->get("glPopDebugGroup");
-		gl->objectLabel			= (glObjectLabelFunc)			loader->get("glObjectLabel");
-		gl->getObjectLabel		= (glGetObjectLabelFunc)		loader->get("glGetObjectLabel");
-		gl->objectPtrLabel		= (glObjectPtrLabelFunc)		loader->get("glObjectPtrLabel");
-		gl->getObjectPtrLabel	= (glGetObjectPtrLabelFunc)		loader->get("glGetObjectPtrLabel");
-	}
 }
 
 void initExtensionsES (Functions* gl, const FunctionLoader* loader, int numExtensions, const char* const* extensions)
@@ -138,54 +110,8 @@ void initExtensionsES (Functions* gl, const FunctionLoader* loader, int numExten
 
 	const set<string> extSet(extensions, extensions+numExtensions);
 
-	initExtensionsShared(gl, loader, extSet);
+#include "glwInitExtES.inl"
 
-	if (de::contains(extSet, "GL_OES_sample_shading"))
-	{
-		gl->minSampleShading		= (glMinSampleShadingFunc)			loader->get("glMinSampleShadingOES");
-	}
-
-	if (de::contains(extSet, "GL_OES_texture_storage_multisample_2d_array"))
-	{
-		gl->texStorage3DMultisample	= (glTexStorage3DMultisampleFunc)	loader->get("glTexStorage3DMultisampleOES");
-	}
-
-	if (de::contains(extSet, "GL_KHR_debug"))
-	{
-		/*
-			From the spec:
-				NOTE: when implemented in an OpenGL ES context, all entry points defined
-				by this extension must have a "KHR" suffix. When implemented in an
-				OpenGL context, all entry points must have NO suffix, as shown below.
-		*/
-		gl->debugMessageControl		= (glDebugMessageControlFunc)		loader->get("glDebugMessageControlKHR");
-		gl->debugMessageInsert		= (glDebugMessageInsertFunc)		loader->get("glDebugMessageInsertKHR");
-		gl->debugMessageCallback	= (glDebugMessageCallbackFunc)		loader->get("glDebugMessageCallbackKHR");
-		gl->getDebugMessageLog		= (glGetDebugMessageLogFunc)		loader->get("glGetDebugMessageLogKHR");
-		gl->getPointerv				= (glGetPointervFunc)				loader->get("glGetPointervKHR");
-		gl->pushDebugGroup			= (glPushDebugGroupFunc)			loader->get("glPushDebugGroupKHR");
-		gl->popDebugGroup			= (glPopDebugGroupFunc)				loader->get("glPopDebugGroupKHR");
-		gl->objectLabel				= (glObjectLabelFunc)				loader->get("glObjectLabelKHR");
-		gl->getObjectLabel			= (glGetObjectLabelFunc)			loader->get("glGetObjectLabelKHR");
-		gl->objectPtrLabel			= (glObjectPtrLabelFunc)			loader->get("glObjectPtrLabelKHR");
-		gl->getObjectPtrLabel		= (glGetObjectPtrLabelFunc)			loader->get("glGetObjectPtrLabelKHR");
-	}
-
-	if (de::contains(extSet, "GL_EXT_tessellation_shader"))
-	{
-		gl->patchParameteri			= (glPatchParameteriFunc)			loader->get("glPatchParameteriEXT");
-	}
-
-	if (de::contains(extSet, "GL_EXT_geometry_shader"))
-	{
-		gl->framebufferTexture		= (glFramebufferTextureFunc)		loader->get("glFramebufferTextureEXT");
-	}
-
-	if (de::contains(extSet, "GL_EXT_texture_buffer"))
-	{
-		gl->texBuffer				= (glTexBufferFunc)					loader->get("glTexBufferEXT");
-		gl->texBufferRange			= (glTexBufferRangeFunc)			loader->get("glTexBufferRangeEXT");
-	}
 }
 
 } // glw

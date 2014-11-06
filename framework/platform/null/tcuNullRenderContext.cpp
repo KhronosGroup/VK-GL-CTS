@@ -37,10 +37,13 @@ namespace tcu
 namespace null
 {
 
+using namespace glw;
+
+#include "tcuNullRenderContextFuncs.inl"
+
+using namespace glu;
 using std::string;
 using std::vector;
-using namespace glw;
-using namespace glu;
 
 class ObjectManager
 {
@@ -575,8 +578,6 @@ GLW_APICALL void GLW_APIENTRY glDeleteBuffers (GLsizei n, const GLuint* buffers)
 		if (buffers[ndx] && buffers[ndx] == ctx->pixelPackBufferBufferBinding)
 			ctx->pixelPackBufferBufferBinding = 0;
 }
-
-#include "tcuNullRenderContextFuncs.inl"
 
 void initFunctions (glw::Functions* gl)
 {

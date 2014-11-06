@@ -1,5 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
+ *
+ * Generated from Khronos GL API description (gl.xml) revision 28861.
  */
 gl->activeTexture						= (glActiveTextureFunc)							loader->get("glActiveTexture");
 gl->attachShader						= (glAttachShaderFunc)							loader->get("glAttachShader");
@@ -51,10 +53,10 @@ gl->framebufferRenderbuffer				= (glFramebufferRenderbufferFunc)				loader->get(
 gl->framebufferTexture2D				= (glFramebufferTexture2DFunc)					loader->get("glFramebufferTexture2D");
 gl->frontFace							= (glFrontFaceFunc)								loader->get("glFrontFace");
 gl->genBuffers							= (glGenBuffersFunc)							loader->get("glGenBuffers");
-gl->generateMipmap						= (glGenerateMipmapFunc)						loader->get("glGenerateMipmap");
 gl->genFramebuffers						= (glGenFramebuffersFunc)						loader->get("glGenFramebuffers");
 gl->genRenderbuffers					= (glGenRenderbuffersFunc)						loader->get("glGenRenderbuffers");
 gl->genTextures							= (glGenTexturesFunc)							loader->get("glGenTextures");
+gl->generateMipmap						= (glGenerateMipmapFunc)						loader->get("glGenerateMipmap");
 gl->getActiveAttrib						= (glGetActiveAttribFunc)						loader->get("glGetActiveAttrib");
 gl->getActiveUniform					= (glGetActiveUniformFunc)						loader->get("glGetActiveUniform");
 gl->getAttachedShaders					= (glGetAttachedShadersFunc)					loader->get("glGetAttachedShaders");
@@ -65,22 +67,22 @@ gl->getError							= (glGetErrorFunc)								loader->get("glGetError");
 gl->getFloatv							= (glGetFloatvFunc)								loader->get("glGetFloatv");
 gl->getFramebufferAttachmentParameteriv	= (glGetFramebufferAttachmentParameterivFunc)	loader->get("glGetFramebufferAttachmentParameteriv");
 gl->getIntegerv							= (glGetIntegervFunc)							loader->get("glGetIntegerv");
-gl->getProgramiv						= (glGetProgramivFunc)							loader->get("glGetProgramiv");
 gl->getProgramInfoLog					= (glGetProgramInfoLogFunc)						loader->get("glGetProgramInfoLog");
+gl->getProgramiv						= (glGetProgramivFunc)							loader->get("glGetProgramiv");
 gl->getRenderbufferParameteriv			= (glGetRenderbufferParameterivFunc)			loader->get("glGetRenderbufferParameteriv");
-gl->getShaderiv							= (glGetShaderivFunc)							loader->get("glGetShaderiv");
 gl->getShaderInfoLog					= (glGetShaderInfoLogFunc)						loader->get("glGetShaderInfoLog");
 gl->getShaderPrecisionFormat			= (glGetShaderPrecisionFormatFunc)				loader->get("glGetShaderPrecisionFormat");
 gl->getShaderSource						= (glGetShaderSourceFunc)						loader->get("glGetShaderSource");
+gl->getShaderiv							= (glGetShaderivFunc)							loader->get("glGetShaderiv");
 gl->getString							= (glGetStringFunc)								loader->get("glGetString");
 gl->getTexParameterfv					= (glGetTexParameterfvFunc)						loader->get("glGetTexParameterfv");
 gl->getTexParameteriv					= (glGetTexParameterivFunc)						loader->get("glGetTexParameteriv");
+gl->getUniformLocation					= (glGetUniformLocationFunc)					loader->get("glGetUniformLocation");
 gl->getUniformfv						= (glGetUniformfvFunc)							loader->get("glGetUniformfv");
 gl->getUniformiv						= (glGetUniformivFunc)							loader->get("glGetUniformiv");
-gl->getUniformLocation					= (glGetUniformLocationFunc)					loader->get("glGetUniformLocation");
+gl->getVertexAttribPointerv				= (glGetVertexAttribPointervFunc)				loader->get("glGetVertexAttribPointerv");
 gl->getVertexAttribfv					= (glGetVertexAttribfvFunc)						loader->get("glGetVertexAttribfv");
 gl->getVertexAttribiv					= (glGetVertexAttribivFunc)						loader->get("glGetVertexAttribiv");
-gl->getVertexAttribPointerv				= (glGetVertexAttribPointervFunc)				loader->get("glGetVertexAttribPointerv");
 gl->hint								= (glHintFunc)									loader->get("glHint");
 gl->isBuffer							= (glIsBufferFunc)								loader->get("glIsBuffer");
 gl->isEnabled							= (glIsEnabledFunc)								loader->get("glIsEnabled");

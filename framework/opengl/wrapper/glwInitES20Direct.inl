@@ -1,5 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
+ *
+ * Generated from Khronos GL API description (gl.xml) revision 28861.
  */
 gl->activeTexture						= &glActiveTexture;
 gl->attachShader						= &glAttachShader;
@@ -51,10 +53,10 @@ gl->framebufferRenderbuffer				= &glFramebufferRenderbuffer;
 gl->framebufferTexture2D				= &glFramebufferTexture2D;
 gl->frontFace							= &glFrontFace;
 gl->genBuffers							= &glGenBuffers;
-gl->generateMipmap						= &glGenerateMipmap;
 gl->genFramebuffers						= &glGenFramebuffers;
 gl->genRenderbuffers					= &glGenRenderbuffers;
 gl->genTextures							= &glGenTextures;
+gl->generateMipmap						= &glGenerateMipmap;
 gl->getActiveAttrib						= &glGetActiveAttrib;
 gl->getActiveUniform					= &glGetActiveUniform;
 gl->getAttachedShaders					= &glGetAttachedShaders;
@@ -65,22 +67,22 @@ gl->getError							= &glGetError;
 gl->getFloatv							= &glGetFloatv;
 gl->getFramebufferAttachmentParameteriv	= &glGetFramebufferAttachmentParameteriv;
 gl->getIntegerv							= &glGetIntegerv;
-gl->getProgramiv						= &glGetProgramiv;
 gl->getProgramInfoLog					= &glGetProgramInfoLog;
+gl->getProgramiv						= &glGetProgramiv;
 gl->getRenderbufferParameteriv			= &glGetRenderbufferParameteriv;
-gl->getShaderiv							= &glGetShaderiv;
 gl->getShaderInfoLog					= &glGetShaderInfoLog;
 gl->getShaderPrecisionFormat			= &glGetShaderPrecisionFormat;
 gl->getShaderSource						= &glGetShaderSource;
+gl->getShaderiv							= &glGetShaderiv;
 gl->getString							= &glGetString;
 gl->getTexParameterfv					= &glGetTexParameterfv;
 gl->getTexParameteriv					= &glGetTexParameteriv;
+gl->getUniformLocation					= &glGetUniformLocation;
 gl->getUniformfv						= &glGetUniformfv;
 gl->getUniformiv						= &glGetUniformiv;
-gl->getUniformLocation					= &glGetUniformLocation;
+gl->getVertexAttribPointerv				= &glGetVertexAttribPointerv;
 gl->getVertexAttribfv					= &glGetVertexAttribfv;
 gl->getVertexAttribiv					= &glGetVertexAttribiv;
-gl->getVertexAttribPointerv				= &glGetVertexAttribPointerv;
 gl->hint								= &glHint;
 gl->isBuffer							= &glIsBuffer;
 gl->isEnabled							= &glIsEnabled;
