@@ -24,19 +24,17 @@
 #include "egluStaticESLibrary.hpp"
 #include "tcuFunctionLibrary.hpp"
 
-#if defined(DEQP_SUPPORT_GLES2) && !defined(DEQP_GLES2_RUNTIME_LOAD)
-#	if (DE_OS == DE_OS_IOS)
-#		include <OpenGLES/ES2/gl.h>
-#	else
-#		include <GLES2/gl2.h>
-#	endif
-#endif
-
 #if defined(DEQP_SUPPORT_GLES3) && !defined(DEQP_GLES3_RUNTIME_LOAD)
 #	if (DE_OS == DE_OS_IOS)
 #		include <OpenGLES/ES3/gl.h>
 #	else
 #		include <GLES3/gl3.h>
+#	endif
+#elif defined(DEQP_SUPPORT_GLES2) && !defined(DEQP_GLES2_RUNTIME_LOAD)
+#	if (DE_OS == DE_OS_IOS)
+#		include <OpenGLES/ES2/gl.h>
+#	else
+#		include <GLES2/gl2.h>
 #	endif
 #endif
 
@@ -50,7 +48,6 @@ tcu::FunctionLibrary* createStaticESLibrary (void)
 	static const tcu::StaticFunctionLibrary::Entry s_functions[] =
 	{
 #if defined(DEQP_SUPPORT_GLES3) && !defined(DEQP_GLES3_RUNTIME_LOAD)
-#	include "egluStaticES20Library.inl"
 #	include "egluStaticES30Library.inl"
 #elif defined(DEQP_SUPPORT_GLES2) && !defined(DEQP_GLES2_RUNTIME_LOAD)
 #	include "egluStaticES20Library.inl"
