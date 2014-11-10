@@ -99,7 +99,8 @@ def getDevices (adb):
 
 		m = ptrn.match(line)
 		if m == None:
-			raise Exception("Failed to parse device info '%s'" % line)
+			print "WARNING: Failed to parse device info '%s'" % line
+			continue
 
 		devices.append(Device(m.group(1), m.group(2), m.group(3), m.group(4)))
 
