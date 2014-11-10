@@ -691,14 +691,35 @@ void pngFlushData (png_structp png)
 	/* nada */
 }
 
+static deBool writeCompressedPNG (png_structp png, png_infop info, png_byte** rowPointers, int width, int height, int colorFormat)
+{
+	if (setjmp(png_jmpbuf(png)) == 0)
+	{
+		/* Write data. */
+		png_set_IHDR(png, info, width, height,
+			8,
+			colorFormat,
+			PNG_INTERLACE_NONE,
+			PNG_COMPRESSION_TYPE_BASE,
+			PNG_FILTER_TYPE_BASE);
+		png_write_info(png, info);
+		png_write_image(png, rowPointers);
+		png_write_end(png, NULL);
+
+		return DE_TRUE;
+	}
+	else
+		return DE_FALSE;
+}
+
 static deBool compressImagePNG (Buffer* buffer, qpImageFormat imageFormat, int width, int height, int rowStride, const void* data)
 {
-	deBool		compressOk		= DE_FALSE;
-	png_structp	png				= DE_NULL;
-	png_infop	info			= DE_NULL;
-	png_byte**	rowPointers		= DE_NULL;
-	deBool		hasAlpha		= imageFormat == QP_IMAGE_FORMAT_RGBA8888;
-	int			ndx;
+	deBool			compressOk		= DE_FALSE;
+	png_structp		png				= DE_NULL;
+	png_infop		info			= DE_NULL;
+	png_byte**		rowPointers		= DE_NULL;
+	deBool			hasAlpha		= imageFormat == QP_IMAGE_FORMAT_RGBA8888;
+	int				ndx;
 
 	/* Handle format. */
 	DE_ASSERT(imageFormat == QP_IMAGE_FORMAT_RGB888 || imageFormat == QP_IMAGE_FORMAT_RGBA8888);
@@ -709,31 +730,18 @@ static deBool compressImagePNG (Buffer* buffer, qpImageFormat imageFormat, int w
 		return DE_FALSE;
 
 	for (ndx = 0; ndx < height; ndx++)
-		rowPointers[ndx] = (png_bytep)((const deUint8*)data + ndx*rowStride);
+		rowPointers[ndx] = (png_byte*)((const deUint8*)data + ndx*rowStride);
 
 	/* Initialize PNG compressor. */
 	png = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
 	info = png ? png_create_info_struct(png) : DE_NULL;
 	if (png && info)
 	{
-		if (setjmp(png_jmpbuf(png)) == 0)
-		{
-			/* Set our own write function. */
-			png_set_write_fn(png, buffer, pngWriteData, pngFlushData);
+		/* Set our own write function. */
+		png_set_write_fn(png, buffer, pngWriteData, pngFlushData);
 
-			/* Write data. */
-			png_set_IHDR(png, info, width, height,
-				8,
-				hasAlpha ? PNG_COLOR_TYPE_RGBA : PNG_COLOR_TYPE_RGB,
-				PNG_INTERLACE_NONE,
-				PNG_COMPRESSION_TYPE_BASE,
-				PNG_FILTER_TYPE_BASE);
-			png_write_info(png, info);
-			png_write_image(png, rowPointers);
-			png_write_end(png, NULL);
-
-			compressOk = DE_TRUE;
-		}
+		compressOk = writeCompressedPNG(png, info, rowPointers, width, height,
+										hasAlpha ? PNG_COLOR_TYPE_RGBA : PNG_COLOR_TYPE_RGB);
 	}
 
 	/* Cleanup & return. */
