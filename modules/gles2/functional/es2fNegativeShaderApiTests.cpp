@@ -898,6 +898,8 @@ void NegativeShaderApiTests::init (void)
 			GLint vMatUnif		= glGetUniformLocation(program.getProgram(), "vMatrix");	// mat4
 			GLint fSamplerUnif	= glGetUniformLocation(program.getProgram(), "fSampler");	// sampler2D
 
+			m_log << program;
+
 			if (vMatUnif == -1 || fSamplerUnif == -1)
 			{
 				m_log << TestLog::Message << "// ERROR: Failed to retrieve uniform location" << TestLog::EndMessage;
@@ -929,6 +931,8 @@ void NegativeShaderApiTests::init (void)
 			glu::ShaderProgram program(m_context.getRenderContext(), glu::makeVtxFragSources(uniformTestVertSource, uniformTestFragSource));
 			glUseProgram(program.getProgram());
 
+			m_log << program;
+
 			std::vector<GLfloat> data(16);
 
 			m_log << tcu::TestLog::Section("", "GL_INVALID_OPERATION is generated if location is an invalid uniform location for the current program object and location is not equal to -1.");
@@ -957,6 +961,8 @@ void NegativeShaderApiTests::init (void)
 			glUseProgram(program.getProgram());
 			GLint vMatUnif		= glGetUniformLocation(program.getProgram(), "vMatrix");		// mat4
 
+			m_log << program;
+
 			if (vMatUnif == -1)
 			{
 				m_log << TestLog::Message << "// ERROR: Failed to retrieve uniform location" << TestLog::EndMessage;
@@ -982,6 +988,8 @@ void NegativeShaderApiTests::init (void)
 		{
 			glu::ShaderProgram program(m_context.getRenderContext(), glu::makeVtxFragSources(uniformTestVertSource, uniformTestFragSource));
 			glUseProgram(program.getProgram());
+
+			m_log << program;
 
 			std::vector<GLfloat> data(16);
 
