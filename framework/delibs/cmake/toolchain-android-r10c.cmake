@@ -31,7 +31,8 @@ if (NOT DEFINED DE_ANDROID_API)
 	set(DE_ANDROID_API 9)
 endif ()
 
-set(COMMON_C_FLAGS		"-fpic -DANDROID -D__ANDROID__ -D__STDC_INT64__")
+set(COMMON_C_FLAGS		"-mandroid -D__STDC_INT64__")
+set(COMMON_CXX_FLAGS	"${COMMON_C_FLAGS} -frtti -fexceptions")
 set(COMMON_LINKER_FLAGS	"")
 set(ARM_C_FLAGS			"-D__ARM_ARCH_5__ -D__ARM_ARCH_5T__ -D__ARM_ARCH_5E__ -D__ARM_ARCH_5TE__ ")
 
@@ -140,6 +141,6 @@ set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
 
 # \note Without CACHE STRING FORCE cmake ignores these.
 set(CMAKE_C_FLAGS				"--sysroot=${ANDROID_SYSROOT} ${COMMON_C_FLAGS} ${TARGET_C_FLAGS}" CACHE STRING "" FORCE)
-set(CMAKE_CXX_FLAGS				"--sysroot=${ANDROID_SYSROOT} ${COMMON_C_FLAGS} ${TARGET_C_FLAGS} -I${ANDROID_NDK_PATH}/sources/cxx-stl/gnu-libstdc++/4.9/include -I${ANDROID_NDK_PATH}/sources/cxx-stl/gnu-libstdc++/4.9/libs/${ANDROID_ABI}/include" CACHE STRING "" FORCE)
+set(CMAKE_CXX_FLAGS				"--sysroot=${ANDROID_SYSROOT} ${COMMON_CXX_FLAGS} ${TARGET_C_FLAGS} -I${ANDROID_NDK_PATH}/sources/cxx-stl/gnu-libstdc++/4.9/include -I${ANDROID_NDK_PATH}/sources/cxx-stl/gnu-libstdc++/4.9/libs/${ANDROID_ABI}/include" CACHE STRING "" FORCE)
 set(CMAKE_SHARED_LINKER_FLAGS	"-nostdlib -Wl,-shared,-Bsymbolic -Wl,--no-undefined ${COMMON_LINKER_FLAGS} ${TARGET_LINKER_FLAGS}" CACHE STRING "" FORCE)
 set(CMAKE_EXE_LINKER_FLAGS		"${COMMON_LINKER_FLAGS} ${TARGET_LINKER_FLAGS}" CACHE STRING "" FORCE)
