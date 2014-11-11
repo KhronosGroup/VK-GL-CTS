@@ -8,8 +8,6 @@ import argparse
 
 import common
 
-BASE_LIBS_DIR = os.path.join(common.ANDROID_DIR, "package", "libs")
-
 def getStoreKeyPasswords (filename):
 	f			= open(filename)
 	storepass	= None
@@ -26,12 +24,12 @@ def getStoreKeyPasswords (filename):
 		common.die("Could not read signing key passwords")
 	return (storepass, keypass)
 
-def getNativeBuildDir (nativeLib, buildType):
-	deqpDir = os.path.normpath(os.path.join(common.ANDROID_DIR, ".."))
-	return os.path.normpath(os.path.join(deqpDir, "android", "build", "%s-%d-%s" % (buildType.lower(), nativeLib.apiVersion, nativeLib.abiVersion)))
+def getNativeBuildDir (buildRoot, nativeLib, buildType):
+	buildName = "%s-%d-%s" % (buildType.lower(), nativeLib.apiVersion, nativeLib.abiVersion)
+	return os.path.normpath(os.path.join(buildRoot, "native", buildName))
 
-def getAssetsDir (nativeLib, buildType):
-	return os.path.join(getNativeBuildDir(nativeLib, buildType), "assets")
+def getAssetsDir (buildRoot, nativeLib, buildType):
+	return os.path.join(getNativeBuildDir(buildRoot, nativeLib, buildType), "assets")
 
 def getPrebuiltsDirName (abiName):
 	PREBUILT_DIRS = {
@@ -45,10 +43,10 @@ def getPrebuiltsDirName (abiName):
 
 	return PREBUILT_DIRS[abiName]
 
-def buildNative (nativeLib, buildType):
+def buildNative (buildRoot, libTargetDir, nativeLib, buildType):
 	deqpDir		= os.path.normpath(os.path.join(common.ANDROID_DIR, ".."))
-	buildDir	= getNativeBuildDir(nativeLib, buildType)
-	libsDir		= os.path.join(BASE_LIBS_DIR, nativeLib.abiVersion)
+	buildDir	= getNativeBuildDir(buildRoot, nativeLib, buildType)
+	libsDir		= os.path.join(libTargetDir, nativeLib.abiVersion)
 	srcLibFile	= os.path.join(buildDir, common.NATIVE_LIB_NAME)
 	dstLibFile	= os.path.join(libsDir, common.NATIVE_LIB_NAME)
 
@@ -56,10 +54,11 @@ def buildNative (nativeLib, buildType):
 	if not os.path.exists(buildDir):
 		os.makedirs(buildDir)
 		os.chdir(buildDir)
+		toolchainFile = '%s/framework/delibs/cmake/toolchain-android-%s.cmake' % (deqpDir, common.ANDROID_NDK_TOOLCHAIN_VERSION)
 		common.execArgs([
 				'cmake',
 				'-G%s' % common.CMAKE_GENERATOR,
-				'-DCMAKE_TOOLCHAIN_FILE=%s/framework/delibs/cmake/toolchain-android-%s.cmake' % (deqpDir, common.ANDROID_NDK_TOOLCHAIN_VERSION),
+				'-DCMAKE_TOOLCHAIN_FILE=%s' % toolchainFile,
 				'-DANDROID_NDK_HOST_OS=%s' % common.ANDROID_NDK_HOST_OS,
 				'-DANDROID_NDK_PATH=%s' % common.ANDROID_NDK_PATH,
 				'-DANDROID_ABI=%s' % nativeLib.abiVersion,
@@ -79,17 +78,29 @@ def buildNative (nativeLib, buildType):
 
 	# Copy gdbserver for debugging
 	if buildType.lower() == "debug":
-		srcGdbserverPath	= os.path.join(common.ANDROID_NDK_PATH, 'prebuilt', getPrebuiltsDirName(nativeLib.abiVersion), 'gdbserver', 'gdbserver')
-		dstGdbserverPath	= os.path.join(libsDir, 'gdbserver')
+		srcGdbserverPath = os.path.join(common.ANDROID_NDK_PATH,
+										'prebuilt',
+										getPrebuiltsDirName(nativeLib.abiVersion),
+										'gdbserver',
+										'gdbserver')
+		dstGdbserverPath = os.path.join(libsDir, 'gdbserver')
 		shutil.copyfile(srcGdbserverPath, dstGdbserverPath)
 	else:
 		assert not os.path.exists(os.path.join(libsDir, "gdbserver"))
 
-def buildApp (isRelease):
-	appDir	= os.path.join(common.ANDROID_DIR, "package")
+def buildApp (buildRoot, isRelease):
+	appDir	= os.path.join(buildRoot, "package")
 
 	# Set up app
 	os.chdir(appDir)
+
+	manifestSrcPath = os.path.normpath(os.path.join(common.ANDROID_DIR, "package", "AndroidManifest.xml"))
+	manifestDstPath = os.path.normpath(os.path.join(appDir, "AndroidManifest.xml"))
+
+	# Build dir can be the Android dir, in which case the copy is not needed.
+	if manifestSrcPath != manifestDstPath:
+		shutil.copy(manifestSrcPath, manifestDstPath)
+
 	common.execArgs([
 			common.ANDROID_BIN,
 			'update', 'project',
@@ -99,7 +110,12 @@ def buildApp (isRelease):
 		])
 
 	# Build
-	common.execArgs([common.ANT_BIN, "release" if isRelease else "debug"])
+	common.execArgs([
+			common.ANT_BIN,
+			"release" if isRelease else "debug",
+			"-Dsource.dir=" + os.path.join(common.ANDROID_DIR, "package", "src"),
+			"-Dresource.absolute.dir=" + os.path.join(common.ANDROID_DIR, "package", "res")
+		])
 
 def signApp (keystore, keyname, storepass, keypass):
 	os.chdir(os.path.join(common.ANDROID_DIR, "package"))
@@ -122,12 +138,12 @@ def signApp (keystore, keyname, storepass, keypass):
 			'bin/dEQP-release.apk'
 		])
 
-def build (isRelease=False, nativeBuildType="Release"):
+def build (buildRoot=common.ANDROID_DIR, isRelease=False, nativeBuildType="Release"):
 	curDir = os.getcwd()
 
 	try:
-		assetsSrcDir	= getAssetsDir(common.NATIVE_LIBS[0], nativeBuildType)
-		assetsDstDir	= os.path.join(common.ANDROID_DIR, "package", "assets")
+		assetsSrcDir = getAssetsDir(buildRoot, common.NATIVE_LIBS[0], nativeBuildType)
+		assetsDstDir = os.path.join(buildRoot, "package", "assets")
 
 		# Remove assets from the first build dir where we copy assets from
 		# to avoid collecting cruft there.
@@ -138,19 +154,20 @@ def build (isRelease=False, nativeBuildType="Release"):
 
 		# Remove old libs dir to avoid collecting out-of-date versions
 		# of libs for ABIs not built this time.
-		if os.path.exists(BASE_LIBS_DIR):
-			shutil.rmtree(BASE_LIBS_DIR)
+		libTargetDir = os.path.join(buildRoot, "package", "libs")
+		if os.path.exists(libTargetDir):
+			shutil.rmtree(libTargetDir)
 
 		# Build native code
 		for lib in common.NATIVE_LIBS:
-			buildNative(lib, nativeBuildType)
+			buildNative(buildRoot, libTargetDir, lib, nativeBuildType)
 
 		# Copy assets
 		if os.path.exists(assetsSrcDir):
 			shutil.copytree(assetsSrcDir, assetsDstDir)
 
 		# Build java code and .apk
-		buildApp(isRelease)
+		buildApp(buildRoot, isRelease)
 
 	finally:
 		# Restore working dir
@@ -160,7 +177,8 @@ if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--is-release', dest='isRelease', type=bool, default=False, help="Build android project in release mode.")
 	parser.add_argument('--native-build-type', dest='nativeBuildType', default="Release", help="Build type passed cmake when building native code.")
+	parser.add_argument('--build-root', dest='buildRoot', default=common.ANDROID_DIR, help="Root directory for storing build results.")
 
 	args = parser.parse_args()
 
-	build(isRelease=args.isRelease, nativeBuildType=args.nativeBuildType)
+	build(buildRoot=os.path.abspath(args.buildRoot), isRelease=args.isRelease, nativeBuildType=args.nativeBuildType)
