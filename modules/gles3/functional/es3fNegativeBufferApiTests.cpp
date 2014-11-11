@@ -1396,11 +1396,6 @@ void NegativeBufferApiTests::init (void)
 			expectError							(GL_INVALID_ENUM);
 			m_log << TestLog::EndSection;
 
-			m_log << TestLog::Section("", "GL_INVALID_OPERATION is generated if internalformat is a signed or unsigned integer format and samples is greater than 0.");
-			glRenderbufferStorageMultisample	(GL_RENDERBUFFER, 1, GL_RGBA8UI, 1, 1);
-			expectError							(GL_INVALID_OPERATION);
-			m_log << TestLog::EndSection;
-
 			m_log << TestLog::Section("", "GL_INVALID_VALUE is generated if width or height is less than zero.");
 			glRenderbufferStorageMultisample	(GL_RENDERBUFFER, 2, GL_RGBA4, -1, 1);
 			expectError							(GL_INVALID_VALUE);
