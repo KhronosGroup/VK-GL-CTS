@@ -769,42 +769,66 @@
 <Test name="vec4_highp_compute" />
 </TestCase>
 <TestCase name="frexp">
+<Test name="float_lowp_vertex" />
 <Test name="float_lowp_geometry" />
 <Test name="float_lowp_tess_control" />
 <Test name="float_lowp_tess_eval" />
+<Test name="float_lowp_compute" />
+<Test name="float_mediump_vertex" />
 <Test name="float_mediump_geometry" />
 <Test name="float_mediump_tess_control" />
 <Test name="float_mediump_tess_eval" />
+<Test name="float_mediump_compute" />
+<Test name="float_highp_vertex" />
 <Test name="float_highp_geometry" />
 <Test name="float_highp_tess_control" />
 <Test name="float_highp_tess_eval" />
+<Test name="float_highp_compute" />
+<Test name="vec2_lowp_vertex" />
 <Test name="vec2_lowp_geometry" />
 <Test name="vec2_lowp_tess_control" />
 <Test name="vec2_lowp_tess_eval" />
+<Test name="vec2_lowp_compute" />
+<Test name="vec2_mediump_vertex" />
 <Test name="vec2_mediump_geometry" />
 <Test name="vec2_mediump_tess_control" />
 <Test name="vec2_mediump_tess_eval" />
+<Test name="vec2_mediump_compute" />
+<Test name="vec2_highp_vertex" />
 <Test name="vec2_highp_geometry" />
 <Test name="vec2_highp_tess_control" />
 <Test name="vec2_highp_tess_eval" />
+<Test name="vec2_highp_compute" />
+<Test name="vec3_lowp_vertex" />
 <Test name="vec3_lowp_geometry" />
 <Test name="vec3_lowp_tess_control" />
 <Test name="vec3_lowp_tess_eval" />
+<Test name="vec3_lowp_compute" />
+<Test name="vec3_mediump_vertex" />
 <Test name="vec3_mediump_geometry" />
 <Test name="vec3_mediump_tess_control" />
 <Test name="vec3_mediump_tess_eval" />
+<Test name="vec3_mediump_compute" />
+<Test name="vec3_highp_vertex" />
 <Test name="vec3_highp_geometry" />
 <Test name="vec3_highp_tess_control" />
 <Test name="vec3_highp_tess_eval" />
+<Test name="vec3_highp_compute" />
+<Test name="vec4_lowp_vertex" />
 <Test name="vec4_lowp_geometry" />
 <Test name="vec4_lowp_tess_control" />
 <Test name="vec4_lowp_tess_eval" />
+<Test name="vec4_lowp_compute" />
+<Test name="vec4_mediump_vertex" />
 <Test name="vec4_mediump_geometry" />
 <Test name="vec4_mediump_tess_control" />
 <Test name="vec4_mediump_tess_eval" />
+<Test name="vec4_mediump_compute" />
+<Test name="vec4_highp_vertex" />
 <Test name="vec4_highp_geometry" />
 <Test name="vec4_highp_tess_control" />
 <Test name="vec4_highp_tess_eval" />
+<Test name="vec4_highp_compute" />
 </TestCase>
 <TestCase name="ldexp">
 <Test name="float_lowp_vertex" />
@@ -3037,15 +3061,27 @@
 <TestSuite name="frexp">
 <TestCase name="lowp_vertex">
 <Test name="scalar" />
+<Test name="vec2" />
+<Test name="vec3" />
+<Test name="vec4" />
 </TestCase>
 <TestCase name="lowp_compute">
 <Test name="scalar" />
+<Test name="vec2" />
+<Test name="vec3" />
+<Test name="vec4" />
 </TestCase>
 <TestCase name="mediump_vertex">
 <Test name="scalar" />
+<Test name="vec2" />
+<Test name="vec3" />
+<Test name="vec4" />
 </TestCase>
 <TestCase name="mediump_compute">
 <Test name="scalar" />
+<Test name="vec2" />
+<Test name="vec3" />
+<Test name="vec4" />
 </TestCase>
 </TestSuite>
 <TestSuite name="ldexp">
@@ -3062,6 +3098,42 @@
 <Test name="vec4" />
 </TestCase>
 <TestCase name="lowp_compute">
+<Test name="scalar" />
+<Test name="vec2" />
+<Test name="vec3" />
+<Test name="vec4" />
+</TestCase>
+<TestCase name="mediump_vertex">
+<Test name="scalar" />
+<Test name="vec2" />
+<Test name="vec3" />
+<Test name="vec4" />
+</TestCase>
+<TestCase name="mediump_fragment">
+<Test name="scalar" />
+<Test name="vec2" />
+<Test name="vec3" />
+<Test name="vec4" />
+</TestCase>
+<TestCase name="mediump_compute">
+<Test name="scalar" />
+<Test name="vec2" />
+<Test name="vec3" />
+<Test name="vec4" />
+</TestCase>
+<TestCase name="highp_vertex">
+<Test name="scalar" />
+<Test name="vec2" />
+<Test name="vec3" />
+<Test name="vec4" />
+</TestCase>
+<TestCase name="highp_fragment">
+<Test name="scalar" />
+<Test name="vec2" />
+<Test name="vec3" />
+<Test name="vec4" />
+</TestCase>
+<TestCase name="highp_compute">
 <Test name="scalar" />
 <Test name="vec2" />
 <Test name="vec3" />
@@ -3531,15 +3603,18 @@
 </TestCase>
 <TestCase name="fragment">
 <Test name="sampler2d" />
+<Test name="samplercube" />
 <Test name="sampler2darray" />
 <Test name="sampler3d" />
 <Test name="sampler2dshadow" />
 <Test name="samplercubeshadow" />
 <Test name="sampler2darrayshadow" />
 <Test name="isampler2d" />
+<Test name="isamplercube" />
 <Test name="isampler2darray" />
 <Test name="isampler3d" />
 <Test name="usampler2d" />
+<Test name="usamplercube" />
 <Test name="usampler2darray" />
 <Test name="usampler3d" />
 </TestCase>
@@ -5485,12 +5560,15 @@
 <Test name="ssbo_cmd_barrier_single" />
 <Test name="ssbo_cmd_barrier_multiple" />
 <Test name="shared_var_single_invocation" />
+<Test name="shared_var_single_group" />
 <Test name="shared_var_multiple_invocations" />
 <Test name="shared_var_multiple_groups" />
 <Test name="shared_atomic_op_single_invocation" />
+<Test name="shared_atomic_op_single_group" />
 <Test name="shared_atomic_op_multiple_invocations" />
 <Test name="shared_atomic_op_multiple_groups" />
 <Test name="copy_image_to_ssbo_small" />
+<Test name="copy_ssbo_to_image_small" />
 <Test name="image_atomic_op_local_size_1" />
 <Test name="image_atomic_op_local_size_8" />
 <Test name="image_barrier_single" />
@@ -5595,34 +5673,66 @@
 </TestCase>
 <TestSuite name="atomic">
 <TestCase name="add">
+<Test name="lowp_uint" />
+<Test name="lowp_int" />
+<Test name="mediump_uint" />
+<Test name="mediump_int" />
 <Test name="highp_uint" />
 <Test name="highp_int" />
 </TestCase>
 <TestCase name="min">
+<Test name="lowp_uint" />
+<Test name="lowp_int" />
+<Test name="mediump_uint" />
+<Test name="mediump_int" />
 <Test name="highp_uint" />
 <Test name="highp_int" />
 </TestCase>
 <TestCase name="max">
+<Test name="lowp_uint" />
+<Test name="lowp_int" />
+<Test name="mediump_uint" />
+<Test name="mediump_int" />
 <Test name="highp_uint" />
 <Test name="highp_int" />
 </TestCase>
 <TestCase name="and">
+<Test name="lowp_uint" />
+<Test name="lowp_int" />
+<Test name="mediump_uint" />
+<Test name="mediump_int" />
 <Test name="highp_uint" />
 <Test name="highp_int" />
 </TestCase>
 <TestCase name="or">
+<Test name="lowp_uint" />
+<Test name="lowp_int" />
+<Test name="mediump_uint" />
+<Test name="mediump_int" />
 <Test name="highp_uint" />
 <Test name="highp_int" />
 </TestCase>
 <TestCase name="xor">
+<Test name="lowp_uint" />
+<Test name="lowp_int" />
+<Test name="mediump_uint" />
+<Test name="mediump_int" />
 <Test name="highp_uint" />
 <Test name="highp_int" />
 </TestCase>
 <TestCase name="exchange">
+<Test name="lowp_uint" />
+<Test name="lowp_int" />
+<Test name="mediump_uint" />
+<Test name="mediump_int" />
 <Test name="highp_uint" />
 <Test name="highp_int" />
 </TestCase>
 <TestCase name="compswap">
+<Test name="lowp_uint" />
+<Test name="lowp_int" />
+<Test name="mediump_uint" />
+<Test name="mediump_int" />
 <Test name="highp_uint" />
 <Test name="highp_int" />
 </TestCase>
@@ -5642,6 +5752,7 @@
 </TestCase>
 <TestCase name="gen_in_compute">
 <Test name="single_invocation" />
+<Test name="multiple_groups" />
 <Test name="multiple_groups_multiple_invocations" />
 <Test name="small_offset" />
 <Test name="empty_command" />
@@ -5793,18 +5904,26 @@
 <Test name="drawarrays_separate_grid_100x100_drawcount_1" />
 <Test name="drawarrays_separate_grid_200x200_drawcount_1" />
 <Test name="drawarrays_separate_grid_500x500_drawcount_1" />
+<Test name="drawarrays_separate_grid_1200x1200_drawcount_1" />
+<Test name="drawarrays_separate_grid_1500x1500_drawcount_1" />
 <Test name="drawarrays_separate_grid_100x100_drawcount_8" />
 <Test name="drawarrays_separate_grid_200x200_drawcount_8" />
 <Test name="drawarrays_separate_grid_500x500_drawcount_8" />
+<Test name="drawarrays_separate_grid_1200x1200_drawcount_8" />
+<Test name="drawarrays_separate_grid_1500x1500_drawcount_8" />
 <Test name="drawarrays_separate_grid_100x100_drawcount_200" />
 <Test name="drawarrays_separate_grid_200x200_drawcount_800" />
 <Test name="drawarrays_separate_grid_500x500_drawcount_2500" />
 <Test name="drawarrays_combined_grid_100x100_drawcount_1" />
 <Test name="drawarrays_combined_grid_200x200_drawcount_1" />
 <Test name="drawarrays_combined_grid_500x500_drawcount_1" />
+<Test name="drawarrays_combined_grid_1200x1200_drawcount_1" />
+<Test name="drawarrays_combined_grid_1500x1500_drawcount_1" />
 <Test name="drawarrays_combined_grid_100x100_drawcount_8" />
 <Test name="drawarrays_combined_grid_200x200_drawcount_8" />
 <Test name="drawarrays_combined_grid_500x500_drawcount_8" />
+<Test name="drawarrays_combined_grid_1200x1200_drawcount_8" />
+<Test name="drawarrays_combined_grid_1500x1500_drawcount_8" />
 <Test name="drawarrays_combined_grid_100x100_drawcount_200" />
 <Test name="drawarrays_combined_grid_200x200_drawcount_800" />
 <Test name="drawarrays_combined_grid_500x500_drawcount_2500" />
@@ -9262,12 +9381,14 @@
 <Test name="10" />
 <Test name="11" />
 <Test name="12" />
+<Test name="13" />
 <Test name="14" />
 <Test name="15" />
 <Test name="16" />
 <Test name="17" />
 <Test name="18" />
 <Test name="19" />
+<Test name="20" />
 <Test name="21" />
 <Test name="22" />
 <Test name="23" />
@@ -9276,6 +9397,7 @@
 <Test name="26" />
 <Test name="27" />
 <Test name="28" />
+<Test name="29" />
 <Test name="30" />
 <Test name="31" />
 <Test name="32" />
@@ -9419,6 +9541,12 @@
 <Test name="comp_swap_r32i_return_value" />
 </TestCase>
 <TestCase name="qualifiers">
+<Test name="coherent_r32f" />
+<Test name="volatile_r32f" />
+<Test name="coherent_r32ui" />
+<Test name="volatile_r32ui" />
+<Test name="coherent_r32i" />
+<Test name="volatile_r32i" />
 <Test name="restrict" />
 </TestCase>
 <TestCase name="format_reinterpret">
@@ -9466,11 +9594,13 @@
 <Test name="r32i_rgba8_snorm" />
 <Test name="rgba8_r32f" />
 <Test name="rgba8_rgba8ui" />
+<Test name="rgba8_r32ui" />
 <Test name="rgba8_rgba8i" />
 <Test name="rgba8_r32i" />
 <Test name="rgba8_rgba8_snorm" />
 <Test name="rgba8_snorm_r32f" />
 <Test name="rgba8_snorm_rgba8ui" />
+<Test name="rgba8_snorm_r32ui" />
 <Test name="rgba8_snorm_rgba8i" />
 <Test name="rgba8_snorm_r32i" />
 <Test name="rgba8_snorm_rgba8" />
@@ -9637,11 +9767,13 @@
 <Test name="r32i_rgba8_snorm" />
 <Test name="rgba8_r32f" />
 <Test name="rgba8_rgba8ui" />
+<Test name="rgba8_r32ui" />
 <Test name="rgba8_rgba8i" />
 <Test name="rgba8_r32i" />
 <Test name="rgba8_rgba8_snorm" />
 <Test name="rgba8_snorm_r32f" />
 <Test name="rgba8_snorm_rgba8ui" />
+<Test name="rgba8_snorm_r32ui" />
 <Test name="rgba8_snorm_rgba8i" />
 <Test name="rgba8_snorm_r32i" />
 <Test name="rgba8_snorm_rgba8" />
@@ -9755,6 +9887,12 @@
 <Test name="comp_swap_r32i_return_value" />
 </TestCase>
 <TestCase name="qualifiers">
+<Test name="coherent_r32f" />
+<Test name="volatile_r32f" />
+<Test name="coherent_r32ui" />
+<Test name="volatile_r32ui" />
+<Test name="coherent_r32i" />
+<Test name="volatile_r32i" />
 <Test name="restrict" />
 </TestCase>
 <TestCase name="format_reinterpret">
@@ -9802,11 +9940,13 @@
 <Test name="r32i_rgba8_snorm" />
 <Test name="rgba8_r32f" />
 <Test name="rgba8_rgba8ui" />
+<Test name="rgba8_r32ui" />
 <Test name="rgba8_rgba8i" />
 <Test name="rgba8_r32i" />
 <Test name="rgba8_rgba8_snorm" />
 <Test name="rgba8_snorm_r32f" />
 <Test name="rgba8_snorm_rgba8ui" />
+<Test name="rgba8_snorm_r32ui" />
 <Test name="rgba8_snorm_rgba8i" />
 <Test name="rgba8_snorm_r32i" />
 <Test name="rgba8_snorm_rgba8" />
@@ -9920,6 +10060,12 @@
 <Test name="comp_swap_r32i_return_value" />
 </TestCase>
 <TestCase name="qualifiers">
+<Test name="coherent_r32f" />
+<Test name="volatile_r32f" />
+<Test name="coherent_r32ui" />
+<Test name="volatile_r32ui" />
+<Test name="coherent_r32i" />
+<Test name="volatile_r32i" />
 <Test name="restrict" />
 </TestCase>
 <TestCase name="format_reinterpret">
@@ -9967,11 +10113,13 @@
 <Test name="r32i_rgba8_snorm" />
 <Test name="rgba8_r32f" />
 <Test name="rgba8_rgba8ui" />
+<Test name="rgba8_r32ui" />
 <Test name="rgba8_rgba8i" />
 <Test name="rgba8_r32i" />
 <Test name="rgba8_rgba8_snorm" />
 <Test name="rgba8_snorm_r32f" />
 <Test name="rgba8_snorm_rgba8ui" />
+<Test name="rgba8_snorm_r32ui" />
 <Test name="rgba8_snorm_rgba8i" />
 <Test name="rgba8_snorm_r32i" />
 <Test name="rgba8_snorm_rgba8" />
@@ -10463,6 +10611,9 @@
 </TestSuite>
 <TestSuite name="stencil_texturing">
 <TestCase name="format">
+<Test name="depth32f_stencil8_2d" />
+<Test name="depth32f_stencil8_2d_array" />
+<Test name="depth32f_stencil8_cube" />
 <Test name="depth24_stencil8_2d" />
 <Test name="depth24_stencil8_2d_array" />
 <Test name="depth24_stencil8_cube" />
@@ -11141,6 +11292,11 @@
 <TestSuite name="multisample">
 <TestCase name="samples_1">
 <Test name="sample_position" />
+<Test name="sample_mask_only" />
+<Test name="sample_mask_and_alpha_to_coverage" />
+<Test name="sample_mask_and_sample_coverage" />
+<Test name="sample_mask_and_sample_coverage_and_alpha_to_coverage" />
+<Test name="sample_mask_non_effective_bits" />
 <Test name="use_texture_color_2d" />
 <Test name="use_texture_color_2d_array" />
 <Test name="use_texture_int_2d" />
@@ -11320,9 +11476,13 @@
 <TestSuite name="rgba8">
 <TestCase name="size_pot">
 <Test name="clamp_to_edge_repeat" />
+<Test name="repeat_mirrored_repeat" />
+<Test name="mirrored_repeat_clamp_to_edge" />
 </TestCase>
 <TestCase name="size_npot">
 <Test name="clamp_to_edge_repeat" />
+<Test name="repeat_mirrored_repeat" />
+<Test name="mirrored_repeat_clamp_to_edge" />
 </TestCase>
 <TestCase name="texture_swizzle">
 <Test name="green_blue_alpha_zero" />
@@ -11333,6 +11493,10 @@
 </TestCase>
 <TestCase name="filter_mode">
 <Test name="min_linear_mag_linear" />
+<Test name="min_nearest_mipmap_nearest_mag_linear" />
+<Test name="min_nearest_mipmap_linear_mag_linear" />
+<Test name="min_linear_mipmap_nearest_mag_linear" />
+<Test name="min_linear_mipmap_linear_mag_linear" />
 </TestCase>
 <TestCase name="base_level">
 <Test name="level_1" />
@@ -11345,9 +11509,13 @@
 <TestSuite name="rgba8ui">
 <TestCase name="size_pot">
 <Test name="clamp_to_edge_repeat" />
+<Test name="repeat_mirrored_repeat" />
+<Test name="mirrored_repeat_clamp_to_edge" />
 </TestCase>
 <TestCase name="size_npot">
 <Test name="clamp_to_edge_repeat" />
+<Test name="repeat_mirrored_repeat" />
+<Test name="mirrored_repeat_clamp_to_edge" />
 </TestCase>
 <TestCase name="texture_swizzle">
 <Test name="green_blue_alpha_zero" />
@@ -11355,6 +11523,9 @@
 <Test name="alpha_zero_one_red" />
 <Test name="zero_one_red_green" />
 <Test name="one_red_green_blue" />
+</TestCase>
+<TestCase name="filter_mode">
+<Test name="min_nearest_mipmap_nearest_mag_nearest" />
 </TestCase>
 <TestCase name="base_level">
 <Test name="level_1" />
@@ -11364,9 +11535,13 @@
 <TestSuite name="rgba8i">
 <TestCase name="size_pot">
 <Test name="clamp_to_edge_repeat" />
+<Test name="repeat_mirrored_repeat" />
+<Test name="mirrored_repeat_clamp_to_edge" />
 </TestCase>
 <TestCase name="size_npot">
 <Test name="clamp_to_edge_repeat" />
+<Test name="repeat_mirrored_repeat" />
+<Test name="mirrored_repeat_clamp_to_edge" />
 </TestCase>
 <TestCase name="texture_swizzle">
 <Test name="green_blue_alpha_zero" />
@@ -11374,6 +11549,9 @@
 <Test name="alpha_zero_one_red" />
 <Test name="zero_one_red_green" />
 <Test name="one_red_green_blue" />
+</TestCase>
+<TestCase name="filter_mode">
+<Test name="min_nearest_mipmap_nearest_mag_nearest" />
 </TestCase>
 <TestCase name="base_level">
 <Test name="level_1" />
@@ -11384,21 +11562,31 @@
 <TestSuite name="size_pot">
 <TestCase name="compare_less">
 <Test name="clamp_to_edge_repeat" />
+<Test name="repeat_mirrored_repeat" />
 </TestCase>
 <TestCase name="compare_greater">
 <Test name="clamp_to_edge_repeat" />
+<Test name="repeat_mirrored_repeat" />
 </TestCase>
 </TestSuite>
 <TestSuite name="size_npot">
 <TestCase name="compare_less">
 <Test name="clamp_to_edge_repeat" />
+<Test name="repeat_mirrored_repeat" />
+<Test name="mirrored_repeat_clamp_to_edge" />
 </TestCase>
 <TestCase name="compare_greater">
 <Test name="clamp_to_edge_repeat" />
+<Test name="repeat_mirrored_repeat" />
+<Test name="mirrored_repeat_clamp_to_edge" />
 </TestCase>
 </TestSuite>
 <TestCase name="filter_mode">
 <Test name="min_linear_mag_linear" />
+<Test name="min_nearest_mipmap_nearest_mag_linear" />
+<Test name="min_nearest_mipmap_linear_mag_linear" />
+<Test name="min_linear_mipmap_nearest_mag_linear" />
+<Test name="min_linear_mipmap_linear_mag_linear" />
 </TestCase>
 <TestCase name="base_level">
 <Test name="level_1" />
@@ -11410,9 +11598,13 @@
 <TestSuite name="rgba8">
 <TestCase name="size_pot">
 <Test name="clamp_to_edge_repeat" />
+<Test name="repeat_mirrored_repeat" />
+<Test name="mirrored_repeat_clamp_to_edge" />
 </TestCase>
 <TestCase name="size_npot">
 <Test name="clamp_to_edge_repeat" />
+<Test name="repeat_mirrored_repeat" />
+<Test name="mirrored_repeat_clamp_to_edge" />
 </TestCase>
 <TestCase name="texture_swizzle">
 <Test name="green_blue_alpha_zero" />
@@ -11423,6 +11615,10 @@
 </TestCase>
 <TestCase name="filter_mode">
 <Test name="min_linear_mag_linear" />
+<Test name="min_nearest_mipmap_nearest_mag_linear" />
+<Test name="min_nearest_mipmap_linear_mag_linear" />
+<Test name="min_linear_mipmap_nearest_mag_linear" />
+<Test name="min_linear_mipmap_linear_mag_linear" />
 </TestCase>
 <TestCase name="base_level">
 <Test name="level_1" />
@@ -11435,9 +11631,13 @@
 <TestSuite name="rgba8ui">
 <TestCase name="size_pot">
 <Test name="clamp_to_edge_repeat" />
+<Test name="repeat_mirrored_repeat" />
+<Test name="mirrored_repeat_clamp_to_edge" />
 </TestCase>
 <TestCase name="size_npot">
 <Test name="clamp_to_edge_repeat" />
+<Test name="repeat_mirrored_repeat" />
+<Test name="mirrored_repeat_clamp_to_edge" />
 </TestCase>
 <TestCase name="texture_swizzle">
 <Test name="green_blue_alpha_zero" />
@@ -11445,6 +11645,9 @@
 <Test name="alpha_zero_one_red" />
 <Test name="zero_one_red_green" />
 <Test name="one_red_green_blue" />
+</TestCase>
+<TestCase name="filter_mode">
+<Test name="min_nearest_mipmap_nearest_mag_nearest" />
 </TestCase>
 <TestCase name="base_level">
 <Test name="level_1" />
@@ -11454,9 +11657,13 @@
 <TestSuite name="rgba8i">
 <TestCase name="size_pot">
 <Test name="clamp_to_edge_repeat" />
+<Test name="repeat_mirrored_repeat" />
+<Test name="mirrored_repeat_clamp_to_edge" />
 </TestCase>
 <TestCase name="size_npot">
 <Test name="clamp_to_edge_repeat" />
+<Test name="repeat_mirrored_repeat" />
+<Test name="mirrored_repeat_clamp_to_edge" />
 </TestCase>
 <TestCase name="texture_swizzle">
 <Test name="green_blue_alpha_zero" />
@@ -11464,6 +11671,9 @@
 <Test name="alpha_zero_one_red" />
 <Test name="zero_one_red_green" />
 <Test name="one_red_green_blue" />
+</TestCase>
+<TestCase name="filter_mode">
+<Test name="min_nearest_mipmap_nearest_mag_nearest" />
 </TestCase>
 <TestCase name="base_level">
 <Test name="level_1" />
@@ -11474,21 +11684,33 @@
 <TestSuite name="size_pot">
 <TestCase name="compare_less">
 <Test name="clamp_to_edge_repeat" />
+<Test name="repeat_mirrored_repeat" />
+<Test name="mirrored_repeat_clamp_to_edge" />
 </TestCase>
 <TestCase name="compare_greater">
 <Test name="clamp_to_edge_repeat" />
+<Test name="repeat_mirrored_repeat" />
+<Test name="mirrored_repeat_clamp_to_edge" />
 </TestCase>
 </TestSuite>
 <TestSuite name="size_npot">
 <TestCase name="compare_less">
 <Test name="clamp_to_edge_repeat" />
+<Test name="repeat_mirrored_repeat" />
+<Test name="mirrored_repeat_clamp_to_edge" />
 </TestCase>
 <TestCase name="compare_greater">
 <Test name="clamp_to_edge_repeat" />
+<Test name="repeat_mirrored_repeat" />
+<Test name="mirrored_repeat_clamp_to_edge" />
 </TestCase>
 </TestSuite>
 <TestCase name="filter_mode">
 <Test name="min_linear_mag_linear" />
+<Test name="min_nearest_mipmap_nearest_mag_linear" />
+<Test name="min_nearest_mipmap_linear_mag_linear" />
+<Test name="min_linear_mipmap_nearest_mag_linear" />
+<Test name="min_linear_mipmap_linear_mag_linear" />
 </TestCase>
 <TestCase name="base_level">
 <Test name="level_1" />
@@ -11517,6 +11739,10 @@
 </TestCase>
 <TestCase name="filter_mode">
 <Test name="min_linear_mag_linear" />
+<Test name="min_nearest_mipmap_nearest_mag_linear" />
+<Test name="min_nearest_mipmap_linear_mag_linear" />
+<Test name="min_linear_mipmap_nearest_mag_linear" />
+<Test name="min_linear_mipmap_linear_mag_linear" />
 </TestCase>
 <TestCase name="base_level">
 <Test name="level_1" />
@@ -11541,6 +11767,9 @@
 <Test name="zero_one_red_green" />
 <Test name="one_red_green_blue" />
 </TestCase>
+<TestCase name="filter_mode">
+<Test name="min_nearest_mipmap_nearest_mag_nearest" />
+</TestCase>
 <TestCase name="base_level">
 <Test name="level_1" />
 <Test name="level_2" />
@@ -11563,6 +11792,9 @@
 <Test name="alpha_zero_one_red" />
 <Test name="zero_one_red_green" />
 <Test name="one_red_green_blue" />
+</TestCase>
+<TestCase name="filter_mode">
+<Test name="min_nearest_mipmap_nearest_mag_nearest" />
 </TestCase>
 <TestCase name="base_level">
 <Test name="level_1" />
@@ -11596,6 +11828,10 @@
 </TestSuite>
 <TestCase name="filter_mode">
 <Test name="min_linear_mag_linear" />
+<Test name="min_nearest_mipmap_nearest_mag_linear" />
+<Test name="min_nearest_mipmap_linear_mag_linear" />
+<Test name="min_linear_mipmap_nearest_mag_linear" />
+<Test name="min_linear_mipmap_linear_mag_linear" />
 </TestCase>
 <TestCase name="base_level">
 <Test name="level_1" />
@@ -11610,42 +11846,62 @@
 <TestSuite name="rgba8">
 <TestCase name="size_pot">
 <Test name="clamp_to_edge_repeat" />
+<Test name="repeat_mirrored_repeat" />
+<Test name="mirrored_repeat_clamp_to_edge" />
 </TestCase>
 <TestCase name="size_npot">
 <Test name="clamp_to_edge_repeat" />
+<Test name="repeat_mirrored_repeat" />
+<Test name="mirrored_repeat_clamp_to_edge" />
 </TestCase>
 </TestSuite>
 <TestSuite name="rgba8ui">
 <TestCase name="size_pot">
 <Test name="clamp_to_edge_repeat" />
+<Test name="repeat_mirrored_repeat" />
+<Test name="mirrored_repeat_clamp_to_edge" />
 </TestCase>
 <TestCase name="size_npot">
 <Test name="clamp_to_edge_repeat" />
+<Test name="repeat_mirrored_repeat" />
+<Test name="mirrored_repeat_clamp_to_edge" />
 </TestCase>
 </TestSuite>
 <TestSuite name="rgba8i">
 <TestCase name="size_pot">
 <Test name="clamp_to_edge_repeat" />
+<Test name="repeat_mirrored_repeat" />
+<Test name="mirrored_repeat_clamp_to_edge" />
 </TestCase>
 <TestCase name="size_npot">
 <Test name="clamp_to_edge_repeat" />
+<Test name="repeat_mirrored_repeat" />
+<Test name="mirrored_repeat_clamp_to_edge" />
 </TestCase>
 </TestSuite>
 <TestSuite name="depth32f">
 <TestSuite name="size_pot">
 <TestCase name="compare_less">
 <Test name="clamp_to_edge_repeat" />
+<Test name="repeat_mirrored_repeat" />
+<Test name="mirrored_repeat_clamp_to_edge" />
 </TestCase>
 <TestCase name="compare_greater">
 <Test name="clamp_to_edge_repeat" />
+<Test name="repeat_mirrored_repeat" />
+<Test name="mirrored_repeat_clamp_to_edge" />
 </TestCase>
 </TestSuite>
 <TestSuite name="size_npot">
 <TestCase name="compare_less">
 <Test name="clamp_to_edge_repeat" />
+<Test name="repeat_mirrored_repeat" />
+<Test name="mirrored_repeat_clamp_to_edge" />
 </TestCase>
 <TestCase name="compare_greater">
 <Test name="clamp_to_edge_repeat" />
+<Test name="repeat_mirrored_repeat" />
+<Test name="mirrored_repeat_clamp_to_edge" />
 </TestCase>
 </TestSuite>
 </TestSuite>
@@ -11654,42 +11910,62 @@
 <TestSuite name="rgba8">
 <TestCase name="size_pot">
 <Test name="clamp_to_edge_repeat" />
+<Test name="repeat_mirrored_repeat" />
+<Test name="mirrored_repeat_clamp_to_edge" />
 </TestCase>
 <TestCase name="size_npot">
 <Test name="clamp_to_edge_repeat" />
+<Test name="repeat_mirrored_repeat" />
+<Test name="mirrored_repeat_clamp_to_edge" />
 </TestCase>
 </TestSuite>
 <TestSuite name="rgba8ui">
 <TestCase name="size_pot">
 <Test name="clamp_to_edge_repeat" />
+<Test name="repeat_mirrored_repeat" />
+<Test name="mirrored_repeat_clamp_to_edge" />
 </TestCase>
 <TestCase name="size_npot">
 <Test name="clamp_to_edge_repeat" />
+<Test name="repeat_mirrored_repeat" />
+<Test name="mirrored_repeat_clamp_to_edge" />
 </TestCase>
 </TestSuite>
 <TestSuite name="rgba8i">
 <TestCase name="size_pot">
 <Test name="clamp_to_edge_repeat" />
+<Test name="repeat_mirrored_repeat" />
+<Test name="mirrored_repeat_clamp_to_edge" />
 </TestCase>
 <TestCase name="size_npot">
 <Test name="clamp_to_edge_repeat" />
+<Test name="repeat_mirrored_repeat" />
+<Test name="mirrored_repeat_clamp_to_edge" />
 </TestCase>
 </TestSuite>
 <TestSuite name="depth32f">
 <TestSuite name="size_pot">
 <TestCase name="compare_less">
 <Test name="clamp_to_edge_repeat" />
+<Test name="repeat_mirrored_repeat" />
+<Test name="mirrored_repeat_clamp_to_edge" />
 </TestCase>
 <TestCase name="compare_greater">
 <Test name="clamp_to_edge_repeat" />
+<Test name="repeat_mirrored_repeat" />
+<Test name="mirrored_repeat_clamp_to_edge" />
 </TestCase>
 </TestSuite>
 <TestSuite name="size_npot">
 <TestCase name="compare_less">
 <Test name="clamp_to_edge_repeat" />
+<Test name="repeat_mirrored_repeat" />
+<Test name="mirrored_repeat_clamp_to_edge" />
 </TestCase>
 <TestCase name="compare_greater">
 <Test name="clamp_to_edge_repeat" />
+<Test name="repeat_mirrored_repeat" />
+<Test name="mirrored_repeat_clamp_to_edge" />
 </TestCase>
 </TestSuite>
 </TestSuite>
@@ -11700,9 +11976,13 @@
 <TestSuite name="rgba8">
 <TestCase name="size_pot">
 <Test name="clamp_to_edge_repeat" />
+<Test name="repeat_mirrored_repeat" />
+<Test name="mirrored_repeat_clamp_to_edge" />
 </TestCase>
 <TestCase name="size_npot">
 <Test name="clamp_to_edge_repeat" />
+<Test name="repeat_mirrored_repeat" />
+<Test name="mirrored_repeat_clamp_to_edge" />
 </TestCase>
 <TestCase name="texture_swizzle">
 <Test name="green_blue_alpha_zero" />
@@ -11713,6 +11993,10 @@
 </TestCase>
 <TestCase name="filter_mode">
 <Test name="min_linear_mag_linear" />
+<Test name="min_nearest_mipmap_nearest_mag_linear" />
+<Test name="min_nearest_mipmap_linear_mag_linear" />
+<Test name="min_linear_mipmap_nearest_mag_linear" />
+<Test name="min_linear_mipmap_linear_mag_linear" />
 </TestCase>
 <TestCase name="base_level">
 <Test name="level_1" />
@@ -11725,9 +12009,13 @@
 <TestSuite name="rgba8ui">
 <TestCase name="size_pot">
 <Test name="clamp_to_edge_repeat" />
+<Test name="repeat_mirrored_repeat" />
+<Test name="mirrored_repeat_clamp_to_edge" />
 </TestCase>
 <TestCase name="size_npot">
 <Test name="clamp_to_edge_repeat" />
+<Test name="repeat_mirrored_repeat" />
+<Test name="mirrored_repeat_clamp_to_edge" />
 </TestCase>
 <TestCase name="texture_swizzle">
 <Test name="green_blue_alpha_zero" />
@@ -11735,6 +12023,9 @@
 <Test name="alpha_zero_one_red" />
 <Test name="zero_one_red_green" />
 <Test name="one_red_green_blue" />
+</TestCase>
+<TestCase name="filter_mode">
+<Test name="min_nearest_mipmap_nearest_mag_nearest" />
 </TestCase>
 <TestCase name="base_level">
 <Test name="level_1" />
@@ -11744,9 +12035,13 @@
 <TestSuite name="rgba8i">
 <TestCase name="size_pot">
 <Test name="clamp_to_edge_repeat" />
+<Test name="repeat_mirrored_repeat" />
+<Test name="mirrored_repeat_clamp_to_edge" />
 </TestCase>
 <TestCase name="size_npot">
 <Test name="clamp_to_edge_repeat" />
+<Test name="repeat_mirrored_repeat" />
+<Test name="mirrored_repeat_clamp_to_edge" />
 </TestCase>
 <TestCase name="texture_swizzle">
 <Test name="green_blue_alpha_zero" />
@@ -11754,6 +12049,9 @@
 <Test name="alpha_zero_one_red" />
 <Test name="zero_one_red_green" />
 <Test name="one_red_green_blue" />
+</TestCase>
+<TestCase name="filter_mode">
+<Test name="min_nearest_mipmap_nearest_mag_nearest" />
 </TestCase>
 <TestCase name="base_level">
 <Test name="level_1" />
@@ -11764,21 +12062,33 @@
 <TestSuite name="size_pot">
 <TestCase name="compare_less">
 <Test name="clamp_to_edge_repeat" />
+<Test name="repeat_mirrored_repeat" />
+<Test name="mirrored_repeat_clamp_to_edge" />
 </TestCase>
 <TestCase name="compare_greater">
 <Test name="clamp_to_edge_repeat" />
+<Test name="repeat_mirrored_repeat" />
+<Test name="mirrored_repeat_clamp_to_edge" />
 </TestCase>
 </TestSuite>
 <TestSuite name="size_npot">
 <TestCase name="compare_less">
 <Test name="clamp_to_edge_repeat" />
+<Test name="repeat_mirrored_repeat" />
+<Test name="mirrored_repeat_clamp_to_edge" />
 </TestCase>
 <TestCase name="compare_greater">
 <Test name="clamp_to_edge_repeat" />
+<Test name="repeat_mirrored_repeat" />
+<Test name="mirrored_repeat_clamp_to_edge" />
 </TestCase>
 </TestSuite>
 <TestCase name="filter_mode">
 <Test name="min_linear_mag_linear" />
+<Test name="min_nearest_mipmap_nearest_mag_linear" />
+<Test name="min_nearest_mipmap_linear_mag_linear" />
+<Test name="min_linear_mipmap_nearest_mag_linear" />
+<Test name="min_linear_mipmap_linear_mag_linear" />
 </TestCase>
 <TestCase name="base_level">
 <Test name="level_1" />
@@ -11790,9 +12100,13 @@
 <TestSuite name="rgba8">
 <TestCase name="size_pot">
 <Test name="clamp_to_edge_repeat" />
+<Test name="repeat_mirrored_repeat" />
+<Test name="mirrored_repeat_clamp_to_edge" />
 </TestCase>
 <TestCase name="size_npot">
 <Test name="clamp_to_edge_repeat" />
+<Test name="repeat_mirrored_repeat" />
+<Test name="mirrored_repeat_clamp_to_edge" />
 </TestCase>
 <TestCase name="texture_swizzle">
 <Test name="green_blue_alpha_zero" />
@@ -11803,6 +12117,10 @@
 </TestCase>
 <TestCase name="filter_mode">
 <Test name="min_linear_mag_linear" />
+<Test name="min_nearest_mipmap_nearest_mag_linear" />
+<Test name="min_nearest_mipmap_linear_mag_linear" />
+<Test name="min_linear_mipmap_nearest_mag_linear" />
+<Test name="min_linear_mipmap_linear_mag_linear" />
 </TestCase>
 <TestCase name="base_level">
 <Test name="level_1" />
@@ -11815,9 +12133,13 @@
 <TestSuite name="rgba8ui">
 <TestCase name="size_pot">
 <Test name="clamp_to_edge_repeat" />
+<Test name="repeat_mirrored_repeat" />
+<Test name="mirrored_repeat_clamp_to_edge" />
 </TestCase>
 <TestCase name="size_npot">
 <Test name="clamp_to_edge_repeat" />
+<Test name="repeat_mirrored_repeat" />
+<Test name="mirrored_repeat_clamp_to_edge" />
 </TestCase>
 <TestCase name="texture_swizzle">
 <Test name="green_blue_alpha_zero" />
@@ -11825,6 +12147,9 @@
 <Test name="alpha_zero_one_red" />
 <Test name="zero_one_red_green" />
 <Test name="one_red_green_blue" />
+</TestCase>
+<TestCase name="filter_mode">
+<Test name="min_nearest_mipmap_nearest_mag_nearest" />
 </TestCase>
 <TestCase name="base_level">
 <Test name="level_1" />
@@ -11834,9 +12159,13 @@
 <TestSuite name="rgba8i">
 <TestCase name="size_pot">
 <Test name="clamp_to_edge_repeat" />
+<Test name="repeat_mirrored_repeat" />
+<Test name="mirrored_repeat_clamp_to_edge" />
 </TestCase>
 <TestCase name="size_npot">
 <Test name="clamp_to_edge_repeat" />
+<Test name="repeat_mirrored_repeat" />
+<Test name="mirrored_repeat_clamp_to_edge" />
 </TestCase>
 <TestCase name="texture_swizzle">
 <Test name="green_blue_alpha_zero" />
@@ -11844,6 +12173,9 @@
 <Test name="alpha_zero_one_red" />
 <Test name="zero_one_red_green" />
 <Test name="one_red_green_blue" />
+</TestCase>
+<TestCase name="filter_mode">
+<Test name="min_nearest_mipmap_nearest_mag_nearest" />
 </TestCase>
 <TestCase name="base_level">
 <Test name="level_1" />
@@ -11854,21 +12186,33 @@
 <TestSuite name="size_pot">
 <TestCase name="compare_less">
 <Test name="clamp_to_edge_repeat" />
+<Test name="repeat_mirrored_repeat" />
+<Test name="mirrored_repeat_clamp_to_edge" />
 </TestCase>
 <TestCase name="compare_greater">
 <Test name="clamp_to_edge_repeat" />
+<Test name="repeat_mirrored_repeat" />
+<Test name="mirrored_repeat_clamp_to_edge" />
 </TestCase>
 </TestSuite>
 <TestSuite name="size_npot">
 <TestCase name="compare_less">
 <Test name="clamp_to_edge_repeat" />
+<Test name="repeat_mirrored_repeat" />
+<Test name="mirrored_repeat_clamp_to_edge" />
 </TestCase>
 <TestCase name="compare_greater">
 <Test name="clamp_to_edge_repeat" />
+<Test name="repeat_mirrored_repeat" />
+<Test name="mirrored_repeat_clamp_to_edge" />
 </TestCase>
 </TestSuite>
 <TestCase name="filter_mode">
 <Test name="min_linear_mag_linear" />
+<Test name="min_nearest_mipmap_nearest_mag_linear" />
+<Test name="min_nearest_mipmap_linear_mag_linear" />
+<Test name="min_linear_mipmap_nearest_mag_linear" />
+<Test name="min_linear_mipmap_linear_mag_linear" />
 </TestCase>
 <TestCase name="base_level">
 <Test name="level_1" />
@@ -14811,6 +15155,7 @@
 <Test name="darken" />
 <Test name="lighten" />
 <Test name="colordodge" />
+<Test name="colorburn" />
 <Test name="hardlight" />
 <Test name="difference" />
 <Test name="exclusion" />
@@ -14846,7 +15191,10 @@
 <Test name="hardlight" />
 <Test name="difference" />
 <Test name="exclusion" />
+<Test name="hsl_hue" />
+<Test name="hsl_saturation" />
 <Test name="hsl_color" />
+<Test name="hsl_luminosity" />
 </TestCase>
 <TestCase name="coherent">
 <Test name="multiply" />
@@ -14921,63 +15269,155 @@
 </TestCase>
 <TestCase name="interface">
 <Test name="same_name_vertex_smooth_fragment_smooth" />
+<Test name="same_name_vertex_smooth_fragment_centroid" />
+<Test name="same_name_vertex_smooth" />
 <Test name="same_name_vertex_flat_fragment_flat" />
+<Test name="same_name_vertex_centroid_fragment_smooth" />
 <Test name="same_name_vertex_centroid_fragment_centroid" />
+<Test name="same_name_vertex_centroid" />
 <Test name="same_name_fragment_smooth" />
+<Test name="same_name_fragment_centroid" />
 <Test name="same_name" />
 <Test name="same_location_vertex_smooth_fragment_smooth" />
+<Test name="same_location_vertex_smooth_fragment_centroid" />
+<Test name="same_location_vertex_smooth" />
 <Test name="same_location_vertex_flat_fragment_flat" />
+<Test name="same_location_vertex_centroid_fragment_smooth" />
 <Test name="same_location_vertex_centroid_fragment_centroid" />
+<Test name="same_location_vertex_centroid" />
+<Test name="same_location_fragment_smooth" />
+<Test name="same_location_fragment_centroid" />
+<Test name="same_location" />
 </TestCase>
 <TestCase name="random">
+<Test name="0" />
+<Test name="1" />
+<Test name="2" />
+<Test name="3" />
 <Test name="4" />
 <Test name="5" />
+<Test name="6" />
 <Test name="7" />
+<Test name="8" />
 <Test name="9" />
 <Test name="10" />
+<Test name="11" />
+<Test name="12" />
+<Test name="13" />
+<Test name="14" />
 <Test name="15" />
+<Test name="16" />
+<Test name="17" />
+<Test name="18" />
 <Test name="19" />
 <Test name="20" />
+<Test name="21" />
+<Test name="22" />
+<Test name="23" />
+<Test name="24" />
+<Test name="25" />
 <Test name="26" />
 <Test name="27" />
+<Test name="28" />
 <Test name="29" />
+<Test name="30" />
 <Test name="31" />
+<Test name="32" />
 <Test name="33" />
 <Test name="34" />
+<Test name="35" />
 <Test name="36" />
+<Test name="37" />
+<Test name="38" />
+<Test name="39" />
 <Test name="40" />
 <Test name="41" />
 <Test name="42" />
 <Test name="43" />
 <Test name="44" />
+<Test name="45" />
 <Test name="46" />
 <Test name="47" />
 <Test name="48" />
+<Test name="49" />
+<Test name="50" />
+<Test name="51" />
+<Test name="52" />
 <Test name="53" />
+<Test name="54" />
 <Test name="55" />
+<Test name="56" />
 <Test name="57" />
+<Test name="58" />
+<Test name="59" />
+<Test name="60" />
+<Test name="61" />
+<Test name="62" />
+<Test name="63" />
+<Test name="64" />
+<Test name="65" />
 <Test name="66" />
+<Test name="67" />
+<Test name="68" />
+<Test name="69" />
+<Test name="70" />
+<Test name="71" />
 <Test name="72" />
+<Test name="73" />
 <Test name="74" />
 <Test name="75" />
 <Test name="76" />
+<Test name="77" />
+<Test name="78" />
+<Test name="79" />
+<Test name="80" />
+<Test name="81" />
+<Test name="82" />
+<Test name="83" />
 <Test name="84" />
 <Test name="85" />
+<Test name="86" />
 <Test name="87" />
+<Test name="88" />
+<Test name="89" />
+<Test name="90" />
+<Test name="91" />
 <Test name="92" />
 <Test name="93" />
 <Test name="94" />
+<Test name="95" />
+<Test name="96" />
+<Test name="97" />
 <Test name="98" />
+<Test name="99" />
+<Test name="100" />
 <Test name="101" />
+<Test name="102" />
+<Test name="103" />
+<Test name="104" />
 <Test name="105" />
+<Test name="106" />
+<Test name="107" />
+<Test name="108" />
 <Test name="109" />
 <Test name="110" />
+<Test name="111" />
+<Test name="112" />
+<Test name="113" />
+<Test name="114" />
+<Test name="115" />
 <Test name="116" />
 <Test name="117" />
+<Test name="118" />
 <Test name="119" />
 <Test name="120" />
+<Test name="121" />
+<Test name="122" />
 <Test name="123" />
+<Test name="124" />
 <Test name="125" />
+<Test name="126" />
+<Test name="127" />
 </TestCase>
 <TestCase name="api">
 <Test name="current_program_priority" />
@@ -14994,11 +15434,14 @@
 <Test name="mismatch_explicit_location_type" />
 <Test name="mismatch_explicit_location_precision" />
 <Test name="mismatch_explicit_location" />
+<Test name="mismatch_implicit_explicit_location_1" />
 <Test name="mismatch_implicit_explicit_location_2" />
 <Test name="mismatch_implicit_explicit_location_3" />
 <Test name="match_different_struct_names" />
+<Test name="mismatch_struct_member_name" />
 <Test name="mismatch_struct_member_type" />
 <Test name="mismatch_struct_member_precision" />
+<Test name="mismatch_struct_member_order" />
 <Test name="mismatch_array_element_type" />
 <Test name="mismatch_array_length" />
 <Test name="mismatch_array_precision" />
@@ -15450,6 +15893,7 @@
 <Test name="draw_buffers" />
 <Test name="flush_mapped_buffer_range" />
 <Test name="map_buffer_range" />
+<Test name="read_buffer" />
 <Test name="unmap_buffer" />
 <Test name="bind_framebuffer" />
 <Test name="bind_renderbuffer" />
@@ -15722,6 +16166,7 @@
 <Test name="get_buffer_parameteriv" />
 <Test name="get_buffer_parameteri64v" />
 <Test name="get_buffer_pointerv" />
+<Test name="get_framebuffer_attachment_parameteriv" />
 <Test name="get_renderbuffer_parameteriv" />
 <Test name="get_internalformativ" />
 <Test name="get_queryiv" />
@@ -15753,6 +16198,7 @@
 <Test name="draw_buffers" />
 <Test name="flush_mapped_buffer_range" />
 <Test name="map_buffer_range" />
+<Test name="read_buffer" />
 <Test name="unmap_buffer" />
 <Test name="bind_framebuffer" />
 <Test name="bind_renderbuffer" />
@@ -16025,6 +16471,7 @@
 <Test name="get_buffer_parameteriv" />
 <Test name="get_buffer_parameteri64v" />
 <Test name="get_buffer_pointerv" />
+<Test name="get_framebuffer_attachment_parameteriv" />
 <Test name="get_renderbuffer_parameteriv" />
 <Test name="get_internalformativ" />
 <Test name="get_queryiv" />
@@ -16309,6 +16756,7 @@
 <Test name="get_buffer_parameteriv" />
 <Test name="get_buffer_parameteri64v" />
 <Test name="get_buffer_pointerv" />
+<Test name="get_framebuffer_attachment_parameteriv" />
 <Test name="get_renderbuffer_parameteriv" />
 <Test name="get_queryiv" />
 <Test name="get_query_objectuiv" />
@@ -16325,11 +16773,15 @@
 <Test name="push_pop_consistency" />
 </TestCase>
 <TestCase name="error_filters">
+<Test name="case_1" />
+<Test name="case_2" />
 <Test name="case_4" />
 <Test name="case_5" />
 <Test name="case_6" />
 <Test name="case_7" />
+<Test name="case_9" />
 <Test name="case_10" />
+<Test name="case_11" />
 <Test name="case_12" />
 <Test name="case_13" />
 <Test name="case_14" />
@@ -16337,13 +16789,23 @@
 <Test name="case_21" />
 <Test name="case_22" />
 <Test name="case_23" />
+<Test name="case_24" />
 <Test name="case_25" />
+<Test name="case_27" />
 <Test name="case_28" />
 <Test name="case_29" />
 <Test name="case_30" />
+<Test name="case_31" />
 </TestCase>
 <TestCase name="error_groups">
+<Test name="case_1" />
+<Test name="case_2" />
 <Test name="case_4" />
+<Test name="case_5" />
+<Test name="case_6" />
+<Test name="case_7" />
+<Test name="case_12" />
+<Test name="case_14" />
 </TestCase>
 <TestCase name="async">
 <Test name="case_0_log" />
@@ -16417,8 +16879,72 @@
 </TestCase>
 </TestSuite>
 <TestSuite name="no_attachments">
+<TestCase name="size">
+<Test name="16x16" />
+<Test name="16x64" />
+<Test name="16x256" />
+<Test name="16x1024" />
+<Test name="64x16" />
+<Test name="64x64" />
+<Test name="64x256" />
+<Test name="64x1024" />
+<Test name="256x16" />
+<Test name="256x64" />
+<Test name="256x256" />
+<Test name="256x1024" />
+<Test name="1024x16" />
+<Test name="1024x64" />
+<Test name="1024x256" />
+<Test name="1024x1024" />
+</TestCase>
 <TestCase name="npot_size">
 <Test name="1x1" />
+<Test name="3x3" />
+<Test name="15x15" />
+<Test name="17x17" />
+<Test name="31x31" />
+<Test name="33x33" />
+<Test name="63x63" />
+<Test name="65x65" />
+<Test name="127x127" />
+<Test name="129x129" />
+<Test name="255x255" />
+<Test name="257x257" />
+<Test name="511x511" />
+<Test name="513x513" />
+<Test name="1023x1023" />
+<Test name="1025x1025" />
+<Test name="2047x2047" />
+<Test name="15x511" />
+<Test name="127x15" />
+<Test name="129x127" />
+<Test name="511x127" />
+<Test name="2047x1025" />
+</TestCase>
+<TestCase name="multisample">
+<Test name="samples0" />
+<Test name="samples1" />
+<Test name="samples2" />
+<Test name="samples3" />
+<Test name="samples4" />
+</TestCase>
+<TestCase name="random">
+<Test name="0" />
+<Test name="1" />
+<Test name="2" />
+<Test name="3" />
+<Test name="4" />
+<Test name="5" />
+<Test name="6" />
+<Test name="7" />
+<Test name="8" />
+<Test name="9" />
+<Test name="10" />
+<Test name="11" />
+<Test name="12" />
+<Test name="13" />
+<Test name="14" />
+<Test name="15" />
 </TestCase>
 <TestCase name="interaction">
 <Test name="256x256ms0_default_128x128ms1" />
@@ -16430,6 +16956,12 @@
 <Test name="2048x2048ms4_default_1x1ms0" />
 <Test name="1x1ms0_default_2048x2048ms4" />
 </TestCase>
+<TestCase name="maximums">
+<Test name="width" />
+<Test name="height" />
+<Test name="size" />
+<Test name="samples" />
+</TestCase>
 </TestSuite>
 <TestCase name="completeness">
 <Test name="no_attachments" />
@@ -16437,6 +16969,7 @@
 </TestSuite>
 <TestSuite name="program_interface_query">
 <TestCase name="buffer_limited_query">
+<Test name="resource_name_query" />
 <Test name="resource_query" />
 </TestCase>
 <TestSuite name="uniform">
@@ -16591,6 +17124,15 @@
 <Test name="mat3" />
 <Test name="mat4x2" />
 <Test name="mat4" />
+<Test name="sampler_2d" />
+<Test name="sampler_cube" />
+<Test name="sampler_2d_array" />
+<Test name="sampler_3d" />
+<Test name="sampler_2d_shadow" />
+<Test name="isampler_2d" />
+<Test name="usampler_2d" />
+<Test name="sampler_2d_ms" />
+<Test name="isampler_2d_ms" />
 <Test name="image_2d" />
 <Test name="iimage_2d_array" />
 <Test name="uimage_2d" />
@@ -16685,9 +17227,23 @@
 <Test name="mat3" />
 <Test name="mat4x2" />
 <Test name="mat4" />
+<Test name="sampler_2d" />
+<Test name="sampler_cube" />
+<Test name="sampler_2d_array" />
+<Test name="sampler_3d" />
+<Test name="sampler_2d_shadow" />
+<Test name="isampler_2d" />
+<Test name="usampler_2d" />
+<Test name="sampler_2d_ms" />
+<Test name="isampler_2d_ms" />
+<Test name="image_2d" />
+<Test name="iimage_2d_array" />
+<Test name="uimage_2d" />
 <Test name="atomic_uint" />
 </TestCase>
 <TestCase name="aggregates">
+<Test name="sampler2D_struct" />
+<Test name="sampler2D_array" />
 <Test name="atomic_uint_array" />
 <Test name="float_struct" />
 <Test name="float_struct_struct" />
@@ -16846,6 +17402,24 @@
 <Test name="mat4" />
 </TestCase>
 <TestCase name="opaque_type">
+<Test name="sampler_2d" />
+<Test name="sampler_cube" />
+<Test name="sampler_2d_array" />
+<Test name="sampler_3d" />
+<Test name="sampler_2d_shadow" />
+<Test name="sampler_cube_shadow" />
+<Test name="sampler_2d_array_shadow" />
+<Test name="isampler_2d" />
+<Test name="isampler_cube" />
+<Test name="isampler_2d_array" />
+<Test name="isampler_3d" />
+<Test name="usampler_2d" />
+<Test name="usampler_cube" />
+<Test name="usampler_2d_array" />
+<Test name="usampler_3d" />
+<Test name="sampler_2d_ms" />
+<Test name="isampler_2d_ms" />
+<Test name="usampler_2d_ms" />
 <Test name="image_2d" />
 <Test name="image_cube" />
 <Test name="image_2d_array" />
@@ -16862,6 +17436,7 @@
 </TestCase>
 <TestCase name="array">
 <Test name="var_array" />
+<Test name="var_array_array" />
 </TestCase>
 </TestSuite>
 <TestCase name="named_block">
@@ -16909,6 +17484,36 @@
 <Test name="mat4" />
 </TestCase>
 <TestCase name="opaque_type">
+<Test name="sampler_2d" />
+<Test name="sampler_cube" />
+<Test name="sampler_2d_array" />
+<Test name="sampler_3d" />
+<Test name="sampler_2d_shadow" />
+<Test name="sampler_cube_shadow" />
+<Test name="sampler_2d_array_shadow" />
+<Test name="isampler_2d" />
+<Test name="isampler_cube" />
+<Test name="isampler_2d_array" />
+<Test name="isampler_3d" />
+<Test name="usampler_2d" />
+<Test name="usampler_cube" />
+<Test name="usampler_2d_array" />
+<Test name="usampler_3d" />
+<Test name="sampler_2d_ms" />
+<Test name="isampler_2d_ms" />
+<Test name="usampler_2d_ms" />
+<Test name="image_2d" />
+<Test name="image_cube" />
+<Test name="image_2d_array" />
+<Test name="image_3d" />
+<Test name="iimage_2d" />
+<Test name="iimage_cube" />
+<Test name="iimage_2d_array" />
+<Test name="iimage_3d" />
+<Test name="uimage_2d" />
+<Test name="uimage_cube" />
+<Test name="uimage_2d_array" />
+<Test name="uimage_3d" />
 <Test name="atomic_uint" />
 </TestCase>
 <TestSuite name="array">
@@ -16929,6 +17534,18 @@
 <Test name="mat4" />
 </TestCase>
 <TestCase name="opaque_type">
+<Test name="sampler_2d" />
+<Test name="sampler_cube" />
+<Test name="sampler_2d_array" />
+<Test name="sampler_3d" />
+<Test name="sampler_2d_shadow" />
+<Test name="isampler_2d" />
+<Test name="usampler_2d" />
+<Test name="sampler_2d_ms" />
+<Test name="isampler_2d_ms" />
+<Test name="image_2d" />
+<Test name="iimage_2d_array" />
+<Test name="uimage_2d" />
 <Test name="atomic_uint" />
 </TestCase>
 <TestCase name="array">
@@ -16938,6 +17555,12 @@
 <Test name="bool" />
 <Test name="vec3" />
 <Test name="vec4" />
+<Test name="sampler_2d" />
+<Test name="sampler_2d_array" />
+<Test name="sampler_3d" />
+<Test name="isampler_2d" />
+<Test name="image_2d" />
+<Test name="iimage_2d_array" />
 <Test name="atomic_uint" />
 </TestCase>
 <TestCase name="struct">
@@ -16947,6 +17570,10 @@
 <Test name="bool" />
 <Test name="vec3" />
 <Test name="vec4" />
+<Test name="sampler_2d" />
+<Test name="sampler_2d_array" />
+<Test name="sampler_3d" />
+<Test name="isampler_2d" />
 </TestCase>
 </TestSuite>
 <TestSuite name="struct">
@@ -16966,6 +17593,17 @@
 <Test name="mat4x2" />
 <Test name="mat4" />
 </TestCase>
+<TestCase name="opaque_type">
+<Test name="sampler_2d" />
+<Test name="sampler_cube" />
+<Test name="sampler_2d_array" />
+<Test name="sampler_3d" />
+<Test name="sampler_2d_shadow" />
+<Test name="isampler_2d" />
+<Test name="usampler_2d" />
+<Test name="sampler_2d_ms" />
+<Test name="isampler_2d_ms" />
+</TestCase>
 <TestCase name="array">
 <Test name="float" />
 <Test name="int" />
@@ -16973,6 +17611,10 @@
 <Test name="bool" />
 <Test name="vec3" />
 <Test name="vec4" />
+<Test name="sampler_2d" />
+<Test name="sampler_2d_array" />
+<Test name="sampler_3d" />
+<Test name="isampler_2d" />
 </TestCase>
 <TestCase name="struct">
 <Test name="float" />
@@ -16981,6 +17623,10 @@
 <Test name="bool" />
 <Test name="vec3" />
 <Test name="vec4" />
+<Test name="sampler_2d" />
+<Test name="sampler_2d_array" />
+<Test name="sampler_3d" />
+<Test name="isampler_2d" />
 </TestCase>
 </TestSuite>
 </TestSuite>
@@ -17017,6 +17663,15 @@
 <Test name="mat3x4" />
 <Test name="mat4x3" />
 <Test name="mat4" />
+<Test name="sampler_2d" />
+<Test name="sampler_cube" />
+<Test name="sampler_2d_array" />
+<Test name="sampler_3d" />
+<Test name="sampler_2d_shadow" />
+<Test name="isampler_2d" />
+<Test name="usampler_2d" />
+<Test name="sampler_2d_ms" />
+<Test name="isampler_2d_ms" />
 <Test name="image_2d" />
 <Test name="iimage_2d_array" />
 <Test name="uimage_2d" />
@@ -17054,6 +17709,7 @@
 <TestCase name="row_major">
 <Test name="var" />
 <Test name="var_struct" />
+<Test name="var_array" />
 </TestCase>
 <TestCase name="column_major">
 <Test name="var" />
@@ -17065,10 +17721,12 @@
 <TestCase name="no_qualifier">
 <Test name="var" />
 <Test name="var_struct" />
+<Test name="var_array" />
 </TestCase>
 <TestCase name="row_major">
 <Test name="var" />
 <Test name="var_struct" />
+<Test name="var_array" />
 </TestCase>
 <TestCase name="column_major">
 <Test name="var" />
@@ -17085,6 +17743,7 @@
 <TestCase name="row_major">
 <Test name="var" />
 <Test name="var_struct" />
+<Test name="var_array" />
 </TestCase>
 <TestCase name="column_major">
 <Test name="var" />
@@ -17101,6 +17760,7 @@
 <TestCase name="row_major">
 <Test name="var" />
 <Test name="var_struct" />
+<Test name="var_array" />
 </TestCase>
 <TestCase name="column_major">
 <Test name="var" />
@@ -17112,10 +17772,12 @@
 <TestCase name="no_qualifier">
 <Test name="var" />
 <Test name="var_struct" />
+<Test name="var_array" />
 </TestCase>
 <TestCase name="row_major">
 <Test name="var" />
 <Test name="var_struct" />
+<Test name="var_array" />
 </TestCase>
 <TestCase name="column_major">
 <Test name="var" />
@@ -17132,6 +17794,7 @@
 <TestCase name="row_major">
 <Test name="var" />
 <Test name="var_struct" />
+<Test name="var_array" />
 </TestCase>
 <TestCase name="column_major">
 <Test name="var" />
@@ -17156,9 +17819,19 @@
 <Test name="mat3x4" />
 <Test name="mat4x3" />
 <Test name="mat4" />
+<Test name="sampler_2d" />
+<Test name="sampler_cube" />
+<Test name="sampler_2d_array" />
+<Test name="sampler_3d" />
+<Test name="sampler_2d_shadow" />
+<Test name="isampler_2d" />
+<Test name="usampler_2d" />
+<Test name="sampler_2d_ms" />
+<Test name="isampler_2d_ms" />
 <Test name="image_2d" />
 <Test name="iimage_2d_array" />
 <Test name="uimage_2d" />
+<Test name="atomic_uint" />
 </TestCase>
 <TestCase name="aggregates">
 <Test name="var" />
@@ -17201,6 +17874,7 @@
 <TestCase name="aggregates">
 <Test name="var" />
 <Test name="var_struct" />
+<Test name="var_array" />
 </TestCase>
 </TestSuite>
 <TestSuite name="column_major">
@@ -17223,10 +17897,12 @@
 <TestCase name="no_qualifier">
 <Test name="var" />
 <Test name="var_struct" />
+<Test name="var_array" />
 </TestCase>
 <TestCase name="row_major">
 <Test name="var" />
 <Test name="var_struct" />
+<Test name="var_array" />
 </TestCase>
 <TestCase name="column_major">
 <Test name="var" />
@@ -17243,6 +17919,7 @@
 <TestCase name="row_major">
 <Test name="var" />
 <Test name="var_struct" />
+<Test name="var_array" />
 </TestCase>
 <TestCase name="column_major">
 <Test name="var" />
@@ -17259,6 +17936,7 @@
 <TestCase name="row_major">
 <Test name="var" />
 <Test name="var_struct" />
+<Test name="var_array" />
 </TestCase>
 <TestCase name="column_major">
 <Test name="var" />
@@ -17270,10 +17948,12 @@
 <TestCase name="no_qualifier">
 <Test name="var" />
 <Test name="var_struct" />
+<Test name="var_array" />
 </TestCase>
 <TestCase name="row_major">
 <Test name="var" />
 <Test name="var_struct" />
+<Test name="var_array" />
 </TestCase>
 <TestCase name="column_major">
 <Test name="var" />
@@ -17290,6 +17970,7 @@
 <TestCase name="row_major">
 <Test name="var" />
 <Test name="var_struct" />
+<Test name="var_array" />
 </TestCase>
 <TestCase name="column_major">
 <Test name="var" />
@@ -17356,6 +18037,36 @@
 <Test name="mat4x2" />
 <Test name="mat4x3" />
 <Test name="mat4" />
+<Test name="sampler_2d" />
+<Test name="sampler_cube" />
+<Test name="sampler_2d_array" />
+<Test name="sampler_3d" />
+<Test name="sampler_2d_shadow" />
+<Test name="sampler_cube_shadow" />
+<Test name="sampler_2d_array_shadow" />
+<Test name="isampler_2d" />
+<Test name="isampler_cube" />
+<Test name="isampler_2d_array" />
+<Test name="isampler_3d" />
+<Test name="usampler_2d" />
+<Test name="usampler_cube" />
+<Test name="usampler_2d_array" />
+<Test name="usampler_3d" />
+<Test name="sampler_2d_ms" />
+<Test name="isampler_2d_ms" />
+<Test name="usampler_2d_ms" />
+<Test name="image_2d" />
+<Test name="image_cube" />
+<Test name="image_2d_array" />
+<Test name="image_3d" />
+<Test name="iimage_2d" />
+<Test name="iimage_cube" />
+<Test name="iimage_2d_array" />
+<Test name="iimage_3d" />
+<Test name="uimage_2d" />
+<Test name="uimage_cube" />
+<Test name="uimage_2d_array" />
+<Test name="uimage_3d" />
 <Test name="atomic_uint" />
 </TestCase>
 <TestCase name="aggregates">
@@ -17456,6 +18167,9 @@
 <Test name="float" />
 <Test name="float_array" />
 <Test name="float_struct" />
+<Test name="sampler" />
+<Test name="sampler_array" />
+<Test name="sampler_struct" />
 <Test name="atomic_uint" />
 <Test name="atomic_uint_array" />
 <Test name="float_array_struct" />
@@ -17588,6 +18302,8 @@
 <Test name="sampler" />
 <Test name="sampler_array" />
 <Test name="sampler_struct" />
+<Test name="atomic_uint" />
+<Test name="atomic_uint_array" />
 </TestCase>
 <TestCase name="uniform_block">
 <Test name="float" />
@@ -17613,6 +18329,8 @@
 <Test name="sampler" />
 <Test name="sampler_array" />
 <Test name="sampler_struct" />
+<Test name="atomic_uint" />
+<Test name="atomic_uint_array" />
 </TestCase>
 <TestCase name="uniform_block">
 <Test name="float" />
@@ -17659,6 +18377,36 @@
 <Test name="mat4x2" />
 <Test name="mat4x3" />
 <Test name="mat4" />
+<Test name="sampler_2d" />
+<Test name="sampler_cube" />
+<Test name="sampler_2d_array" />
+<Test name="sampler_3d" />
+<Test name="sampler_2d_shadow" />
+<Test name="sampler_cube_shadow" />
+<Test name="sampler_2d_array_shadow" />
+<Test name="isampler_2d" />
+<Test name="isampler_cube" />
+<Test name="isampler_2d_array" />
+<Test name="isampler_3d" />
+<Test name="usampler_2d" />
+<Test name="usampler_cube" />
+<Test name="usampler_2d_array" />
+<Test name="usampler_3d" />
+<Test name="sampler_2d_ms" />
+<Test name="isampler_2d_ms" />
+<Test name="usampler_2d_ms" />
+<Test name="image_2d" />
+<Test name="image_cube" />
+<Test name="image_2d_array" />
+<Test name="image_3d" />
+<Test name="iimage_2d" />
+<Test name="iimage_cube" />
+<Test name="iimage_2d_array" />
+<Test name="iimage_3d" />
+<Test name="uimage_2d" />
+<Test name="uimage_cube" />
+<Test name="uimage_2d_array" />
+<Test name="uimage_3d" />
 <Test name="atomic_uint" />
 </TestCase>
 <TestCase name="array">
@@ -17668,6 +18416,12 @@
 <Test name="bool" />
 <Test name="vec3" />
 <Test name="vec4" />
+<Test name="sampler_2d" />
+<Test name="sampler_2d_array" />
+<Test name="sampler_3d" />
+<Test name="isampler_2d" />
+<Test name="image_2d" />
+<Test name="iimage_2d_array" />
 <Test name="atomic_uint" />
 </TestCase>
 <TestCase name="struct">
@@ -17677,6 +18431,10 @@
 <Test name="bool" />
 <Test name="vec3" />
 <Test name="vec4" />
+<Test name="sampler_2d" />
+<Test name="sampler_2d_array" />
+<Test name="sampler_3d" />
+<Test name="isampler_2d" />
 </TestCase>
 </TestSuite>
 <TestSuite name="named_block">
@@ -17779,16 +18537,20 @@
 </TestSuite>
 <TestCase name="random">
 <Test name="0" />
+<Test name="1" />
 <Test name="2" />
 <Test name="3" />
 <Test name="4" />
 <Test name="5" />
 <Test name="6" />
+<Test name="7" />
+<Test name="8" />
 <Test name="9" />
 <Test name="10" />
 <Test name="11" />
 <Test name="12" />
 <Test name="13" />
+<Test name="14" />
 <Test name="15" />
 <Test name="16" />
 <Test name="17" />
@@ -17807,7 +18569,9 @@
 <Test name="30" />
 <Test name="31" />
 <Test name="32" />
+<Test name="33" />
 <Test name="34" />
+<Test name="35" />
 <Test name="36" />
 <Test name="37" />
 <Test name="38" />
@@ -17887,6 +18651,8 @@
 <Test name="referenced_by_separable_vertex" />
 <Test name="referenced_by_separable_fragment" />
 <Test name="referenced_by_vertex_fragment" />
+<Test name="referenced_by_vertex_fragment_only_fragment" />
+<Test name="referenced_by_vertex_fragment_only_vertex" />
 </TestCase>
 <TestSuite name="program_input">
 <TestSuite name="resource_list">
@@ -17926,6 +18692,11 @@
 <TestCase name="separable_vertex">
 <Test name="var" />
 <Test name="var_explicit_location" />
+</TestCase>
+<TestCase name="separable_fragment">
+<Test name="var_explicit_location" />
+<Test name="var_struct_explicit_location" />
+<Test name="var_array_explicit_location" />
 </TestCase>
 </TestSuite>
 <TestSuite name="name_length">
@@ -18071,6 +18842,7 @@
 <TestCase name="vertex_fragment">
 <Test name="empty" />
 <Test name="var" />
+<Test name="var_array" />
 </TestCase>
 <TestCase name="separable_vertex">
 <Test name="empty" />
@@ -18081,6 +18853,7 @@
 <TestCase name="separable_fragment">
 <Test name="empty" />
 <Test name="var" />
+<Test name="var_array" />
 </TestCase>
 <TestCase name="compute">
 <Test name="empty" />
@@ -18104,11 +18877,20 @@
 <TestSuite name="location">
 <TestCase name="vertex_fragment">
 <Test name="var" />
+<Test name="var_explicit_location" />
 <Test name="var_array" />
+<Test name="var_array_explicit_location" />
+</TestCase>
+<TestCase name="separable_vertex">
+<Test name="var_explicit_location" />
+<Test name="var_struct_explicit_location" />
+<Test name="var_array_explicit_location" />
 </TestCase>
 <TestCase name="separable_fragment">
 <Test name="var" />
+<Test name="var_explicit_location" />
 <Test name="var_array" />
+<Test name="var_array_explicit_location" />
 </TestCase>
 </TestSuite>
 <TestSuite name="name_length">
@@ -18270,10 +19052,12 @@
 <TestCase name="vertex_fragment">
 <Test name="builtin_gl_position" />
 <Test name="default_block_basic_type" />
+<Test name="default_block_array_element" />
 </TestCase>
 <TestCase name="separable_vertex">
 <Test name="builtin_gl_position" />
 <Test name="default_block_basic_type" />
+<Test name="default_block_array_element" />
 </TestCase>
 </TestSuite>
 <TestSuite name="array_size">
