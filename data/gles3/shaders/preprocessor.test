@@ -134,6 +134,23 @@ group basic "Basic Tests"
 		""
 	end
 
+	case identifier_with_double_underscore
+		values { output float out0 = 1.0; }
+		version 300 es
+		both ""
+			#version 300 es
+			precision mediump float;
+			${DECLARATIONS}
+			# define __VALUE__	1
+
+			void main()
+			{
+				// __VALUE__ not used since it might be set by an "underlying software layer"
+				out0 = float(1.0);
+				${OUTPUT}
+			}
+		""
+	end
 end # basic
 
 group definitions "Symbol Definition Tests"
@@ -645,22 +662,6 @@ group object_redefinitions "Object Redefinition Tests"
 end # object_redefinitions
 
 group invalid_redefinitions "Invalid Redefinitions Tests"
-
-	case invalid_identifier_1
-		version 300 es
-		expect compile_fail
-		both ""
-			#version 300 es
-			precision mediump float;
-			${DECLARATIONS}
-			# define __VALUE__	1
-
-			void main()
-			{
-				${POSITION_FRAG_COLOR} = vec4(__VALUE__);
-			}
-		""
-	end
 
 	case invalid_identifier_2
 		version 300 es
