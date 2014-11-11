@@ -55,11 +55,17 @@ TypedFieldMap::TypedFieldMap (void)
 
 TypedFieldMap::~TypedFieldMap (void)
 {
+	clear();
+}
+
+void TypedFieldMap::clear (void)
+{
 	for (Map::const_iterator iter = m_fields.begin(); iter != m_fields.end(); ++iter)
 	{
 		if (iter->second.value)
 			iter->second.destructor(iter->second.value);
 	}
+	m_fields.clear();
 }
 
 bool TypedFieldMap::contains (const std::type_info* key) const
@@ -138,8 +144,8 @@ bool Parser::parse (int numArgs, const char* const* args, CommandLine* dst, std:
 		// Set default values.
 		if (opt.defaultValue)
 			opt.dispatchParse(&opt, opt.defaultValue, &dst->m_options);
-		else
-			opt.getDefault(&dst->m_options);
+		else if (opt.setDefault)
+			opt.setDefault(&dst->m_options);
 	}
 
 	DE_ASSERT(!dst->m_options.get<Help>());
@@ -332,10 +338,11 @@ void parseType<int> (const char* src, int* dst)
 
 // Tests
 
-DE_DECLARE_COMMAND_LINE_OPT(TestStringOpt,	std::string);
-DE_DECLARE_COMMAND_LINE_OPT(TestIntOpt,		int);
-DE_DECLARE_COMMAND_LINE_OPT(TestBoolOpt,	bool);
-DE_DECLARE_COMMAND_LINE_OPT(TestNamedOpt,	deUint64);
+DE_DECLARE_COMMAND_LINE_OPT(TestStringOpt,		std::string);
+DE_DECLARE_COMMAND_LINE_OPT(TestStringDefOpt,	std::string);
+DE_DECLARE_COMMAND_LINE_OPT(TestIntOpt,			int);
+DE_DECLARE_COMMAND_LINE_OPT(TestBoolOpt,		bool);
+DE_DECLARE_COMMAND_LINE_OPT(TestNamedOpt,		deUint64);
 
 void selfTest (void)
 {
@@ -396,10 +403,11 @@ void selfTest (void)
 			{ "huge",	~0ull	}
 		};
 
-		parser << Option<TestStringOpt>	("s",	"string",	"String option")
-			   << Option<TestIntOpt>	("i",	"int",		"Int option")
-			   << Option<TestBoolOpt>	("b",	"bool",		"Test boolean flag")
-			   << Option<TestNamedOpt>	("n",	"named",	"Test named opt",	DE_ARRAY_BEGIN(s_namedValues),	DE_ARRAY_END(s_namedValues),	"one");
+		parser << Option<TestStringOpt>		("s",	"string",	"String option")
+			   << Option<TestStringDefOpt>	("x",	"xyz",		"String option w/ default value",	"foo")
+			   << Option<TestIntOpt>		("i",	"int",		"Int option")
+			   << Option<TestBoolOpt>		("b",	"bool",		"Test boolean flag")
+			   << Option<TestNamedOpt>		("n",	"named",	"Test named opt",	DE_ARRAY_BEGIN(s_namedValues),	DE_ARRAY_END(s_namedValues),	"one");
 
 		{
 			std::ostringstream err;
@@ -417,10 +425,11 @@ void selfTest (void)
 			DE_TEST_ASSERT(parseOk);
 			DE_TEST_ASSERT(err.str().empty());
 
-			DE_TEST_ASSERT(cmdLine.getOption<TestStringOpt>() == "");
-			DE_TEST_ASSERT(cmdLine.getOption<TestIntOpt>() == 0);
-			DE_TEST_ASSERT(cmdLine.getOption<TestBoolOpt>() == false);
+			DE_TEST_ASSERT(!cmdLine.hasOption<TestStringOpt>());
+			DE_TEST_ASSERT(!cmdLine.hasOption<TestIntOpt>());
 			DE_TEST_ASSERT(cmdLine.getOption<TestNamedOpt>() == 1);
+			DE_TEST_ASSERT(cmdLine.getOption<TestBoolOpt>() == false);
+			DE_TEST_ASSERT(cmdLine.getOption<TestStringDefOpt>() == "foo");
 		}
 
 		// Basic parsing
@@ -437,6 +446,7 @@ void selfTest (void)
 			DE_TEST_ASSERT(cmdLine.getOption<TestIntOpt>() == 9);
 			DE_TEST_ASSERT(cmdLine.getOption<TestBoolOpt>());
 			DE_TEST_ASSERT(cmdLine.getOption<TestNamedOpt>() == ~0ull);
+			DE_TEST_ASSERT(cmdLine.getOption<TestStringDefOpt>() == "foo");
 		}
 
 		// End of argument list (--)
@@ -451,7 +461,7 @@ void selfTest (void)
 
 			DE_TEST_ASSERT(cmdLine.getOption<TestStringOpt>() == "foo");
 			DE_TEST_ASSERT(cmdLine.getOption<TestBoolOpt>());
-			DE_TEST_ASSERT(cmdLine.getOption<TestIntOpt>() == 0); // Not specified
+			DE_TEST_ASSERT(!cmdLine.hasOption<TestIntOpt>());
 
 			DE_TEST_ASSERT(cmdLine.getArgs().size() == 2);
 			DE_TEST_ASSERT(cmdLine.getArgs()[0] == "--int=2");
@@ -470,7 +480,7 @@ void selfTest (void)
 
 			DE_TEST_ASSERT(cmdLine.getOption<TestStringOpt>() == "--");
 			DE_TEST_ASSERT(cmdLine.getOption<TestBoolOpt>());
-			DE_TEST_ASSERT(cmdLine.getOption<TestIntOpt>() == 0); // Not specified
+			DE_TEST_ASSERT(!cmdLine.hasOption<TestIntOpt>());
 
 			DE_TEST_ASSERT(cmdLine.getArgs().size() == 1);
 			DE_TEST_ASSERT(cmdLine.getArgs()[0] == "foo");
@@ -555,7 +565,7 @@ void selfTest (void)
 
 		// Empty value --arg=
 		{
-			const char*			args[]	= { "--string=", "-b" };
+			const char*			args[]	= { "--string=", "-b", "-x", "" };
 			CommandLine			cmdLine;
 			std::ostringstream	err;
 			bool				parseOk	= parser.parse(DE_LENGTH_OF_ARRAY(args), &args[0], &cmdLine, err);
@@ -563,6 +573,7 @@ void selfTest (void)
 			DE_TEST_ASSERT(parseOk);
 			DE_TEST_ASSERT(err.str().empty());
 			DE_TEST_ASSERT(cmdLine.getOption<TestStringOpt>() == "");
+			DE_TEST_ASSERT(cmdLine.getOption<TestStringDefOpt>() == "");
 			DE_TEST_ASSERT(cmdLine.getOption<TestBoolOpt>());
 		}
 	}

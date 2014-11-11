@@ -194,9 +194,9 @@ PackageContext::PackageContext (tcu::TestContext& testCtx)
 	, m_caseWrapper	(DE_NULL)
 {
 	const eglu::NativeDisplayFactoryRegistry&	dpyFactoryRegistry	= testCtx.getPlatform().getEGLPlatform().getNativeDisplayFactoryRegistry();
-	const std::string							displayFactoryName	= testCtx.getCommandLine().getEGLDisplayType();
-	const std::string							windowFactoryName	= testCtx.getCommandLine().getEGLWindowType();
-	const std::string							pixmapFactoryName	= testCtx.getCommandLine().getEGLPixmapType();
+	const char* const							displayFactoryName	= testCtx.getCommandLine().getEGLDisplayType();
+	const char* const							windowFactoryName	= testCtx.getCommandLine().getEGLWindowType();
+	const char* const							pixmapFactoryName	= testCtx.getCommandLine().getEGLPixmapType();
 
 	const eglu::NativeDisplayFactory*			displayFactory		= DE_NULL;
 	const eglu::NativeWindowFactory*			windowFactory		= DE_NULL;
@@ -208,15 +208,15 @@ PackageContext::PackageContext (tcu::TestContext& testCtx)
 		throw tcu::NotSupportedError("Platform doesn't have EGL any native display factories", DE_NULL, __FILE__, __LINE__);
 	}
 
-	if (displayFactoryName.empty())
+	if (!displayFactoryName)
 		displayFactory = dpyFactoryRegistry.getDefaultFactory();
 	else
 	{
-		displayFactory = dpyFactoryRegistry.getFactoryByName(displayFactoryName.c_str());
+		displayFactory = dpyFactoryRegistry.getFactoryByName(displayFactoryName);
 
 		if (!displayFactory)
 		{
-			tcu::print("ERROR: Unknown/unsupported EGL native display type '%s'\n", displayFactoryName.c_str());
+			tcu::print("ERROR: Unknown/unsupported EGL native display type '%s'\n", displayFactoryName);
 			tcu::print("Supported EGL native display types:\n");
 
 			for (int factoryNdx = 0; factoryNdx < (int)dpyFactoryRegistry.getFactoryCount(); factoryNdx++)
@@ -227,7 +227,7 @@ PackageContext::PackageContext (tcu::TestContext& testCtx)
 				tcu::print("  %s: %s\n", name, desc);
 			}
 
-			throw tcu::NotSupportedError(("Unknown EGL native display type '" + displayFactoryName + "'.").c_str(), DE_NULL, __FILE__, __LINE__);
+			throw tcu::NotSupportedError(("Unknown EGL native display type '" + std::string(displayFactoryName) + "'.").c_str(), DE_NULL, __FILE__, __LINE__);
 		}
 	}
 
@@ -235,13 +235,13 @@ PackageContext::PackageContext (tcu::TestContext& testCtx)
 
 	if (!displayFactory->getNativeWindowRegistry().empty())
 	{
-		windowFactory = windowFactoryName.empty() ? displayFactory->getNativeWindowRegistry().getDefaultFactory()
-												  : displayFactory->getNativeWindowRegistry().getFactoryByName(windowFactoryName.c_str());
+		windowFactory = windowFactoryName ? displayFactory->getNativeWindowRegistry().getFactoryByName(windowFactoryName)
+										  : displayFactory->getNativeWindowRegistry().getDefaultFactory();
 
 		if (!windowFactory)
 		{
-			DE_ASSERT(!windowFactoryName.empty());
-			tcu::print("ERROR: Unknown/unsupported EGL native window type '%s'\n", windowFactoryName.c_str());
+			DE_ASSERT(windowFactoryName);
+			tcu::print("ERROR: Unknown/unsupported EGL native window type '%s'\n", windowFactoryName);
 			tcu::print("Supported EGL native window types for native display '%s':\n", displayFactory->getName());
 
 			for (int factoryNdx = 0; factoryNdx < (int)displayFactory->getNativeWindowRegistry().getFactoryCount(); factoryNdx++)
@@ -252,7 +252,7 @@ PackageContext::PackageContext (tcu::TestContext& testCtx)
 				tcu::print("  %s: %s\n", name, desc);
 			}
 
-			throw tcu::NotSupportedError(("Unknown EGL native window type '" + windowFactoryName + "'").c_str(), DE_NULL, __FILE__, __LINE__);
+			throw tcu::NotSupportedError(("Unknown EGL native window type '" + std::string(windowFactoryName) + "'").c_str(), DE_NULL, __FILE__, __LINE__);
 		}
 	}
 	else
@@ -260,13 +260,13 @@ PackageContext::PackageContext (tcu::TestContext& testCtx)
 
 	if (!displayFactory->getNativePixmapRegistry().empty())
 	{
-		pixmapFactory = pixmapFactoryName.empty() ? displayFactory->getNativePixmapRegistry().getDefaultFactory()
-												  : displayFactory->getNativePixmapRegistry().getFactoryByName(pixmapFactoryName.c_str());
+		pixmapFactory = pixmapFactoryName ? displayFactory->getNativePixmapRegistry().getFactoryByName(pixmapFactoryName)
+										  : displayFactory->getNativePixmapRegistry().getDefaultFactory();
 
 		if (!pixmapFactory)
 		{
-			DE_ASSERT(!pixmapFactoryName.empty());
-			tcu::print("ERROR: Unknown/unsupported EGL native pixmap type '%s'\n", pixmapFactoryName.c_str());
+			DE_ASSERT(pixmapFactoryName);
+			tcu::print("ERROR: Unknown/unsupported EGL native pixmap type '%s'\n", pixmapFactoryName);
 			tcu::print("Supported EGL native pixmap types for native display '%s':\n", displayFactory->getName());
 
 			for (int factoryNdx = 0; factoryNdx < (int)displayFactory->getNativePixmapRegistry().getFactoryCount(); factoryNdx++)
@@ -277,7 +277,7 @@ PackageContext::PackageContext (tcu::TestContext& testCtx)
 				tcu::print("  %s: %s\n", name, desc);
 			}
 
-			throw tcu::NotSupportedError(("Unknown EGL native pixmap type '" + pixmapFactoryName + "'").c_str(), DE_NULL, __FILE__, __LINE__);
+			throw tcu::NotSupportedError(("Unknown EGL native pixmap type '" + std::string(pixmapFactoryName) + "'").c_str(), DE_NULL, __FILE__, __LINE__);
 		}
 	}
 	else
