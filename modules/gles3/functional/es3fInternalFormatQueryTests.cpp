@@ -64,15 +64,6 @@ public:
 
 		m_testCtx.getLog() << TestLog::Message << "// sample counts is " << sampleCounts << TestLog::EndMessage;
 
-		if (m_isIntegerInternalFormat && sampleCounts != 0)
-		{
-			// Since multisampling is not supported for signed and unsigned integer internal
-			// formats, the value of NUM_SAMPLE_COUNTS will be zero for such formats.
-			m_testCtx.getLog() << TestLog::Message << "// ERROR: integer internal formats should have NUM_SAMPLE_COUNTS = 0; got " << sampleCounts << TestLog::EndMessage;
-			if (m_testCtx.getTestResult() == QP_TEST_RESULT_PASS)
-				m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "got invalid value");
-		}
-
 		if (sampleCounts == 0)
 			return;
 
@@ -106,26 +97,29 @@ public:
 			}
 		}
 
-		// the maximum value in SAMPLES is guaranteed to be at least the value of MAX_SAMPLES
-		StateQueryMemoryWriteGuard<GLint> maxSamples;
-		glGetIntegerv(GL_MAX_SAMPLES, &maxSamples);
-		expectError(GL_NO_ERROR);
-
-		if (maxSamples.verifyValidity(m_testCtx))
+		if (!m_isIntegerInternalFormat)
 		{
-			const GLint maximumFormatSampleCount = samples[0];
-			if (!(maximumFormatSampleCount >= maxSamples))
+			// the maximum value in SAMPLES is guaranteed to be at least the value of MAX_SAMPLES
+			StateQueryMemoryWriteGuard<GLint> maxSamples;
+			glGetIntegerv(GL_MAX_SAMPLES, &maxSamples);
+			expectError(GL_NO_ERROR);
+
+			if (maxSamples.verifyValidity(m_testCtx))
 			{
-				m_testCtx.getLog() << TestLog::Message << "// ERROR: Expected maximum value in SAMPLES (" << maximumFormatSampleCount << ") to be at least the value of MAX_SAMPLES (" << maxSamples << ")" << TestLog::EndMessage;
-				if (m_testCtx.getTestResult() == QP_TEST_RESULT_PASS)
-					m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "got invalid maximum sample count");
-			}
+				const GLint maximumFormatSampleCount = samples[0];
+				if (!(maximumFormatSampleCount >= maxSamples))
+				{
+					m_testCtx.getLog() << TestLog::Message << "// ERROR: Expected maximum value in SAMPLES (" << maximumFormatSampleCount << ") to be at least the value of MAX_SAMPLES (" << maxSamples << ")" << TestLog::EndMessage;
+					if (m_testCtx.getTestResult() == QP_TEST_RESULT_PASS)
+						m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "got invalid maximum sample count");
+				}
+		  }
 		}
 	}
 
 private:
-	GLenum	m_internalFormat;
-	bool	m_isIntegerInternalFormat;
+	const GLenum	m_internalFormat;
+	const bool		m_isIntegerInternalFormat;
 };
 
 class SamplesBufferSizeCase : public ApiCase

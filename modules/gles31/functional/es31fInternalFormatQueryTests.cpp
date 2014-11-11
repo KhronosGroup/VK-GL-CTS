@@ -53,27 +53,32 @@ private:
 	void				init				(void);
 	IterateResult		iterate				(void);
 
-	const glw::GLenum	m_texTarget;
+	const glw::GLenum	m_target;
 	const glw::GLenum	m_internalFormat;
 	const FormatType	m_type;
 };
 
-FormatSamplesCase::FormatSamplesCase (Context& ctx, const char* name, const char* desc, glw::GLenum texTarget, glw::GLenum internalFormat, FormatType type)
+FormatSamplesCase::FormatSamplesCase (Context& ctx, const char* name, const char* desc, glw::GLenum target, glw::GLenum internalFormat, FormatType type)
 	: TestCase			(ctx, name, desc)
-	, m_texTarget		(texTarget)
+	, m_target			(target)
 	, m_internalFormat	(internalFormat)
 	, m_type			(type)
 {
-	DE_ASSERT(m_texTarget == GL_TEXTURE_2D_MULTISAMPLE || m_texTarget == GL_TEXTURE_2D_MULTISAMPLE_ARRAY);
+	DE_ASSERT(m_target == GL_TEXTURE_2D_MULTISAMPLE 		||
+			  m_target == GL_TEXTURE_2D_MULTISAMPLE_ARRAY 	||
+			  m_target == GL_RENDERBUFFER);
 }
 
 void FormatSamplesCase::init (void)
 {
-	if (m_texTarget == GL_TEXTURE_2D_MULTISAMPLE_ARRAY && !m_context.getContextInfo().isExtensionSupported("GL_OES_texture_storage_multisample_2d_array"))
+	const bool isTextureTarget = (m_target == GL_TEXTURE_2D_MULTISAMPLE) ||
+								 (m_target == GL_TEXTURE_2D_MULTISAMPLE_ARRAY);
+
+	if (m_target == GL_TEXTURE_2D_MULTISAMPLE_ARRAY && !m_context.getContextInfo().isExtensionSupported("GL_OES_texture_storage_multisample_2d_array"))
 		throw tcu::NotSupportedError("Test requires OES_texture_storage_multisample_2d_array extension");
 
 	// stencil8 textures are not supported without GL_OES_texture_stencil8 extension
-	if (m_internalFormat == GL_STENCIL_INDEX8 && !m_context.getContextInfo().isExtensionSupported("GL_OES_texture_stencil8"))
+	if (isTextureTarget && m_internalFormat == GL_STENCIL_INDEX8 && !m_context.getContextInfo().isExtensionSupported("GL_OES_texture_stencil8"))
 		throw tcu::NotSupportedError("Test requires GL_OES_texture_stencil8 extension");
 }
 
@@ -103,7 +108,7 @@ FormatSamplesCase::IterateResult FormatSamplesCase::iterate (void)
 
 	// Number of sample counts
 	{
-		gl.getInternalformativ(m_texTarget, m_internalFormat, GL_NUM_SAMPLE_COUNTS, 1, &numSampleCounts);
+		gl.getInternalformativ(m_target, m_internalFormat, GL_NUM_SAMPLE_COUNTS, 1, &numSampleCounts);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "get GL_NUM_SAMPLE_COUNTS");
 
 		m_testCtx.getLog() << tcu::TestLog::Message << "GL_NUM_SAMPLE_COUNTS = " << numSampleCounts << tcu::TestLog::EndMessage;
@@ -124,7 +129,7 @@ FormatSamplesCase::IterateResult FormatSamplesCase::iterate (void)
 		{
 			samples.resize(numSampleCounts, -1);
 
-			gl.getInternalformativ(m_texTarget, m_internalFormat, GL_SAMPLES, numSampleCounts, &samples[0]);
+			gl.getInternalformativ(m_target, m_internalFormat, GL_SAMPLES, numSampleCounts, &samples[0]);
 			GLU_EXPECT_NO_ERROR(gl.getError(), "get GL_SAMPLES");
 		}
 		else
@@ -401,6 +406,7 @@ void InternalFormatQueryTests::init (void)
 		deUint32	target;
 	} textureTargets[] =
 	{
+		{ "renderbuffer",					GL_RENDERBUFFER					},
 		{ "texture_2d_multisample",			GL_TEXTURE_2D_MULTISAMPLE		},
 		{ "texture_2d_multisample_array",	GL_TEXTURE_2D_MULTISAMPLE_ARRAY	},
 	};
