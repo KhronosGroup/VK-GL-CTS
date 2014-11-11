@@ -148,9 +148,9 @@ elseif (DE_COMPILER_IS_CLANG)
 	set(CLANG_COMMON_FLAGS "-Wall -Wextra -Wno-long-long -Wshadow -Wundef")
 
 	if (DE_CPU_IS_X86)
-		set(GCC_MACHINE_FLAGS "-m32")
+		set(CLANG_MACHINE_FLAGS "-m32")
 	elseif (DE_CPU_IS_X86_64)
-		set(GCC_MACHINE_FLAGS "-m64")
+		set(CLANG_MACHINE_FLAGS "-m64")
 	endif ()
 
 	# For 3rd party sw disable all warnings
