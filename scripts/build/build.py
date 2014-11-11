@@ -7,7 +7,6 @@ from common import *
 from config import *
 
 def initBuildDir (config, generator):
-	srcPath = DEQP_DIR
 	cfgArgs = []
 
 	# Build base configuration args
@@ -20,7 +19,7 @@ def initBuildDir (config, generator):
 		os.makedirs(config.buildDir)
 
 	pushWorkingDir(config.getBuildDir())
-	execute(["cmake", srcPath] + cfgArgs)
+	execute(["cmake", config.getSrcPath()] + cfgArgs)
 	popWorkingDir()
 
 def build (config, generator, targets = None):

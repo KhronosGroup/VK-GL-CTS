@@ -31,8 +31,6 @@ const char*			qpGetTargetName			(void);
 const char*			qpGetReleaseName		(void);
 deUint32			qpGetReleaseId			(void);
 
-deBool				qpIsLicenseValid		(void);
-
 DE_END_EXTERN_C
 
 #endif /* _QPINFO_H */

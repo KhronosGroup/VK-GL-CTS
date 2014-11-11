@@ -42,3 +42,12 @@ def writeFile (filename, data):
 	f = open(filename, 'wb')
 	f.write(data)
 	f.close()
+
+def which (binName):
+	for path in os.environ['PATH'].split(os.pathsep):
+		path = path.strip('"')
+		fullPath = os.path.join(path, binName)
+		if os.path.isfile(fullPath) and os.access(fullPath, os.X_OK):
+			return fullPath
+
+	return None
