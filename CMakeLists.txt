@@ -320,8 +320,8 @@ if (DE_OS_IS_ANDROID)
 	include_directories(framework/platform/android)
 	include_directories(executor)
 
-	add_library(testercore SHARED framework/platform/android/tcuAndroidMain.cpp framework/platform/android/tcuAndroidJNI.cpp framework/platform/android/tcuTestLogParserJNI.cpp ${DEQP_MODULE_ENTRY_POINTS})
-	target_link_libraries(testercore tcutil-platform xecore ${DEQP_MODULE_LIBRARIES})
+	add_library(deqp SHARED framework/platform/android/tcuAndroidMain.cpp framework/platform/android/tcuAndroidJNI.cpp framework/platform/android/tcuTestLogParserJNI.cpp ${DEQP_MODULE_ENTRY_POINTS})
+	target_link_libraries(deqp tcutil-platform xecore ${DEQP_MODULE_LIBRARIES})
 
 elseif (DE_OS_IS_IOS)
 	# Code sign identity

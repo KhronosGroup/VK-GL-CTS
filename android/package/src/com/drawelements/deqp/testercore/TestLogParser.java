@@ -32,7 +32,7 @@ import java.io.IOException;
 public class TestLogParser
 {
 	static {
-		System.loadLibrary("testercore");
+		System.loadLibrary("deqp");
 	}
 
 	private long				m_nativePointer;

@@ -8,10 +8,9 @@ import subprocess
 import multiprocessing
 
 class NativeLib:
-	def __init__ (self, libName, apiVersion, abiVersion):
-		self.libName		= libName
-		self.apiVersion		= apiVersion
-		self.abiVersion		= abiVersion
+	def __init__ (self, apiVersion, abiVersion):
+		self.apiVersion	= apiVersion
+		self.abiVersion	= abiVersion
 
 def getPlatform ():
 	if sys.platform.startswith('linux'):
@@ -148,12 +147,13 @@ ANDROID_DIR				= os.path.realpath(os.path.join(os.path.dirname(os.path.abspath(_
 
 # Build configuration
 NATIVE_LIBS				= [
-		#		  library name		API		ABI
-		NativeLib("testercore",		13,		"armeabi-v7a"),		# ARM v7a ABI
-		NativeLib("testercore",		13,		"x86"),				# x86
-		NativeLib("testercore",		21,		"arm64-v8a"),		# ARM64 v8a ABI
+		#		  API		ABI
+		NativeLib(13,		"armeabi-v7a"),		# ARM v7a ABI
+		NativeLib(13,		"x86"),				# x86
+		NativeLib(21,		"arm64-v8a"),		# ARM64 v8a ABI
 	]
 ANDROID_JAVA_API		= "android-13"
+NATIVE_LIB_NAME			= "libdeqp.so"
 
 # NDK paths
 ANDROID_NDK_PATH		= selectFirstExistingDir([
