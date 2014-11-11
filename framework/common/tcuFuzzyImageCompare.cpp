@@ -34,8 +34,6 @@ namespace tcu
 
 using std::vector;
 
-// \todo [2012-12-13 pyry] Big-endian architectures?
-
 template<int Channel>
 static inline deUint8 getChannel (deUint32 color)
 {
@@ -82,11 +80,13 @@ static inline deUint32 readUnorm8 (const tcu::ConstPixelBufferAccess& src, int x
 	return v;
 }
 
+#if (DE_ENDIANNESS == DE_LITTLE_ENDIAN)
 template<>
 inline deUint32 readUnorm8<4> (const tcu::ConstPixelBufferAccess& src, int x, int y)
 {
 	return *(const deUint32*)((const deUint8*)src.getDataPtr() + src.getRowPitch()*y + x*4);
 }
+#endif
 
 template<int NumChannels>
 static inline void writeUnorm8 (const tcu::PixelBufferAccess& dst, int x, int y, deUint32 val)
@@ -97,11 +97,13 @@ static inline void writeUnorm8 (const tcu::PixelBufferAccess& dst, int x, int y,
 		ptr[c] = getChannel(val, c);
 }
 
+#if (DE_ENDIANNESS == DE_LITTLE_ENDIAN)
 template<>
 inline void writeUnorm8<4> (const tcu::PixelBufferAccess& dst, int x, int y, deUint32 val)
 {
 	*(deUint32*)((deUint8*)dst.getDataPtr() + dst.getRowPitch()*y + x*4) = val;
 }
+#endif
 
 static inline float compareColors (deUint32 pa, deUint32 pb, int minErrThreshold)
 {
