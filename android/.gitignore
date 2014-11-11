@@ -9,4 +9,4 @@ proguard.cfg
 project.properties
 proguard-project.txt
 debug
-build
+native
