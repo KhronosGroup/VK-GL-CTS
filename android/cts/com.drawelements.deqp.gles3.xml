@@ -641,6 +641,7 @@
 <Test name="pixel_unpack_full" />
 <Test name="pixel_unpack_partial" />
 <Test name="transform_feedback_full" />
+<Test name="transform_feedback_partial" />
 <Test name="uniform_full" />
 <Test name="uniform_partial" />
 </TestCase>
@@ -925,6 +926,8 @@
 <Test name="redefine_object_multiline_comment_fragment" />
 </TestCase>
 <TestCase name="invalid_redefinitions">
+<Test name="invalid_identifier_1_vertex" />
+<Test name="invalid_identifier_1_fragment" />
 <Test name="invalid_identifier_2_vertex" />
 <Test name="invalid_identifier_2_fragment" />
 </TestCase>
@@ -1606,6 +1609,14 @@
 <Test name="mat4x2" />
 <Test name="mat4x3" />
 <Test name="mat4" />
+<Test name="int" />
+<Test name="ivec2" />
+<Test name="ivec3" />
+<Test name="ivec4" />
+<Test name="uint" />
+<Test name="uvec2" />
+<Test name="uvec3" />
+<Test name="uvec4" />
 <Test name="float_vec3" />
 </TestCase>
 <TestCase name="interpolation">
@@ -2835,6 +2846,14 @@
 <TestCase name="if">
 <Test name="single_statement_vertex" />
 <Test name="single_statement_fragment" />
+<Test name="compound_statement_vertex" />
+<Test name="compound_statement_fragment" />
+<Test name="sequence_statements_vertex" />
+<Test name="sequence_statements_fragment" />
+<Test name="sequence_condition_vertex" />
+<Test name="sequence_condition_fragment" />
+<Test name="complex_condition_vertex" />
+<Test name="complex_condition_fragment" />
 <Test name="if_else_vertex" />
 <Test name="if_else_fragment" />
 <Test name="if_elseif_vertex" />
@@ -3593,6 +3612,7 @@
 <Test name="uint_uvec3_fragment" />
 <Test name="uint_uvec4_vertex" />
 <Test name="uint_uvec4_fragment" />
+<Test name="bool_bool_vertex" />
 <Test name="bool_bool_fragment" />
 <Test name="mat2_vertex" />
 <Test name="mat2_fragment" />
@@ -3696,13 +3716,16 @@
 <Test name="user_func_arg_float_types_fragment" />
 <Test name="user_func_arg_int_types_vertex" />
 <Test name="user_func_arg_int_types_fragment" />
+<Test name="user_func_arg_bool_types_vertex" />
 <Test name="user_func_arg_bool_types_fragment" />
+<Test name="user_func_arg_basic_types_vertex" />
 <Test name="user_func_arg_basic_types_fragment" />
 <Test name="user_func_arg_complex_types_vertex" />
 <Test name="user_func_arg_complex_types_fragment" />
 <Test name="user_func_arguments_vertex" />
 <Test name="user_func_arguments_fragment" />
 <Test name="array_size_vertex" />
+<Test name="array_size_fragment" />
 </TestCase>
 <TestCase name="array_arguments">
 <Test name="local_in_float_vertex" />
@@ -3833,6 +3856,8 @@
 <Test name="in_return_type_fragment" />
 <Test name="out_return_type_vertex" />
 <Test name="out_return_type_fragment" />
+<Test name="inout_return_type_vertex" />
+<Test name="inout_return_type_fragment" />
 <Test name="main_invalid_return_type_vertex" />
 <Test name="main_invalid_return_type_fragment" />
 <Test name="main_has_arguments_vertex" />
@@ -4238,6 +4263,12 @@
 <Test name="using_fragment" />
 </TestCase>
 <TestCase name="invalid_identifiers">
+<Test name="two_underscores_begin_vertex" />
+<Test name="two_underscores_begin_fragment" />
+<Test name="two_underscores_middle_vertex" />
+<Test name="two_underscores_middle_fragment" />
+<Test name="two_underscores_end_vertex" />
+<Test name="two_underscores_end_fragment" />
 <Test name="gl_begin_vertex" />
 <Test name="gl_begin_fragment" />
 <Test name="digit_vertex" />
@@ -12049,6 +12080,8 @@
 <Test name="bvec2_fragment" />
 <Test name="bvec3_vertex" />
 <Test name="bvec3_fragment" />
+<Test name="bvec4_vertex" />
+<Test name="bvec4_fragment" />
 </TestCase>
 <TestCase name="all">
 <Test name="bvec2_vertex" />
@@ -14857,9 +14890,13 @@
 </TestSuite>
 <TestSuite name="precision">
 <TestCase name="float">
+<Test name="highp_add_vertex" />
 <Test name="highp_add_fragment" />
+<Test name="highp_sub_vertex" />
 <Test name="highp_sub_fragment" />
+<Test name="highp_mul_vertex" />
 <Test name="highp_mul_fragment" />
+<Test name="highp_div_vertex" />
 <Test name="highp_div_fragment" />
 <Test name="mediump_add_vertex" />
 <Test name="mediump_add_fragment" />
@@ -15074,11 +15111,17 @@
 <Test name="sampler2d_float_vertex" />
 <Test name="sampler2d_float_fragment" />
 <Test name="samplercube_fixed_vertex" />
+<Test name="samplercube_fixed_fragment" />
 <Test name="samplercube_float_vertex" />
+<Test name="samplercube_float_fragment" />
 <Test name="sampler2darray_fixed_vertex" />
 <Test name="sampler2darray_fixed_fragment" />
 <Test name="sampler2darray_float_vertex" />
 <Test name="sampler2darray_float_fragment" />
+<Test name="sampler3d_fixed_vertex" />
+<Test name="sampler3d_fixed_fragment" />
+<Test name="sampler3d_float_vertex" />
+<Test name="sampler3d_float_fragment" />
 <Test name="sampler2dshadow_vertex" />
 <Test name="sampler2dshadow_fragment" />
 <Test name="sampler2darrayshadow_vertex" />
@@ -15093,6 +15136,10 @@
 <Test name="sampler2d_vec4_fixed_fragment" />
 <Test name="sampler2d_vec4_float_vertex" />
 <Test name="sampler2d_vec4_float_fragment" />
+<Test name="sampler3d_fixed_vertex" />
+<Test name="sampler3d_fixed_fragment" />
+<Test name="sampler3d_float_vertex" />
+<Test name="sampler3d_float_fragment" />
 <Test name="sampler2dshadow_vertex" />
 <Test name="sampler2dshadow_fragment" />
 </TestCase>
@@ -15268,6 +15315,11 @@
 <Test name="float_highp" />
 <Test name="vec2_highp" />
 </TestCase>
+<TestCase name="uniform_loop">
+<Test name="float_mediump" />
+<Test name="float_highp" />
+<Test name="vec2_highp" />
+</TestCase>
 <TestCase name="uniform_switch">
 <Test name="float_mediump" />
 <Test name="float_highp" />
@@ -15350,6 +15402,7 @@
 </TestCase>
 <TestCase name="uniform_loop">
 <Test name="float_highp" />
+<Test name="vec2_highp" />
 </TestCase>
 <TestCase name="uniform_switch">
 <Test name="float_highp" />
@@ -15408,6 +15461,7 @@
 <Test name="float_highp" />
 <Test name="vec2_mediump" />
 <Test name="vec2_highp" />
+<Test name="vec4_mediump" />
 </TestCase>
 <TestCase name="static_switch">
 <Test name="float_mediump" />
@@ -15417,6 +15471,13 @@
 <Test name="vec4_mediump" />
 </TestCase>
 <TestCase name="uniform_if">
+<Test name="float_mediump" />
+<Test name="float_highp" />
+<Test name="vec2_mediump" />
+<Test name="vec2_highp" />
+<Test name="vec4_mediump" />
+</TestCase>
+<TestCase name="uniform_loop">
 <Test name="float_mediump" />
 <Test name="float_highp" />
 <Test name="vec2_mediump" />
@@ -15524,6 +15585,14 @@
 <Test name="vec4_mediump_fragment" />
 <Test name="vec4_highp_vertex" />
 <Test name="vec4_highp_fragment" />
+<Test name="int_lowp_fragment" />
+<Test name="int_mediump_fragment" />
+<Test name="ivec2_lowp_fragment" />
+<Test name="ivec2_mediump_fragment" />
+<Test name="ivec3_lowp_fragment" />
+<Test name="ivec3_mediump_fragment" />
+<Test name="ivec4_lowp_fragment" />
+<Test name="ivec4_mediump_fragment" />
 </TestCase>
 <TestCase name="sign">
 <Test name="float_lowp_vertex" />
@@ -15729,21 +15798,25 @@
 <Test name="float_mediump_vertex" />
 <Test name="float_mediump_fragment" />
 <Test name="float_highp_vertex" />
+<Test name="float_highp_fragment" />
 <Test name="vec2_lowp_vertex" />
 <Test name="vec2_lowp_fragment" />
 <Test name="vec2_mediump_vertex" />
 <Test name="vec2_mediump_fragment" />
 <Test name="vec2_highp_vertex" />
+<Test name="vec2_highp_fragment" />
 <Test name="vec3_lowp_vertex" />
 <Test name="vec3_lowp_fragment" />
 <Test name="vec3_mediump_vertex" />
 <Test name="vec3_mediump_fragment" />
 <Test name="vec3_highp_vertex" />
+<Test name="vec3_highp_fragment" />
 <Test name="vec4_lowp_vertex" />
 <Test name="vec4_lowp_fragment" />
 <Test name="vec4_mediump_vertex" />
 <Test name="vec4_mediump_fragment" />
 <Test name="vec4_highp_vertex" />
+<Test name="vec4_highp_fragment" />
 </TestCase>
 <TestCase name="floatbitstouint">
 <Test name="float_lowp_vertex" />
@@ -15751,31 +15824,41 @@
 <Test name="float_mediump_vertex" />
 <Test name="float_mediump_fragment" />
 <Test name="float_highp_vertex" />
+<Test name="float_highp_fragment" />
 <Test name="vec2_lowp_vertex" />
 <Test name="vec2_lowp_fragment" />
 <Test name="vec2_mediump_vertex" />
 <Test name="vec2_mediump_fragment" />
 <Test name="vec2_highp_vertex" />
+<Test name="vec2_highp_fragment" />
 <Test name="vec3_lowp_vertex" />
 <Test name="vec3_lowp_fragment" />
 <Test name="vec3_mediump_vertex" />
 <Test name="vec3_mediump_fragment" />
 <Test name="vec3_highp_vertex" />
+<Test name="vec3_highp_fragment" />
 <Test name="vec4_lowp_vertex" />
 <Test name="vec4_lowp_fragment" />
 <Test name="vec4_mediump_vertex" />
 <Test name="vec4_mediump_fragment" />
 <Test name="vec4_highp_vertex" />
+<Test name="vec4_highp_fragment" />
 </TestCase>
 <TestCase name="intbitstofloat">
 <Test name="int_highp_vertex" />
+<Test name="int_highp_fragment" />
 <Test name="ivec2_highp_vertex" />
+<Test name="ivec2_highp_fragment" />
 <Test name="ivec3_highp_vertex" />
+<Test name="ivec3_highp_fragment" />
 </TestCase>
 <TestCase name="uintbitstofloat">
 <Test name="uint_highp_vertex" />
+<Test name="uint_highp_fragment" />
 <Test name="uvec2_highp_vertex" />
+<Test name="uvec2_highp_fragment" />
 <Test name="uvec3_highp_vertex" />
+<Test name="uvec3_highp_fragment" />
 </TestCase>
 </TestSuite>
 <TestCase name="pack_unpack">
@@ -18439,6 +18522,7 @@
 <Test name="63" />
 <Test name="64" />
 <Test name="65" />
+<Test name="66" />
 <Test name="67" />
 <Test name="68" />
 <Test name="69" />
@@ -18622,6 +18706,7 @@
 <Test name="43" />
 <Test name="44" />
 <Test name="45" />
+<Test name="46" />
 <Test name="47" />
 <Test name="48" />
 <Test name="49" />
@@ -27837,6 +27922,7 @@
 <Test name="rgba16f" />
 <Test name="depth24_stencil8" />
 <Test name="r11f_g11f_b10f" />
+<Test name="srgb_unsigned_byte" />
 <Test name="srgb_alpha_unsigned_byte" />
 <Test name="srgb8_alpha8" />
 <Test name="depth_component32f" />
@@ -27945,6 +28031,8 @@
 <Test name="rgba16f" />
 <Test name="depth24_stencil8" />
 <Test name="r11f_g11f_b10f" />
+<Test name="srgb_unsigned_byte" />
+<Test name="srgb_alpha_unsigned_byte" />
 <Test name="srgb8_alpha8" />
 <Test name="depth_component32f" />
 <Test name="depth32f_stencil8" />
@@ -28008,6 +28096,8 @@
 <Test name="rgb16f" />
 <Test name="depth24_stencil8" />
 <Test name="r11f_g11f_b10f" />
+<Test name="srgb_unsigned_byte" />
+<Test name="srgb_alpha_unsigned_byte" />
 <Test name="srgb8_alpha8" />
 <Test name="depth_component32f" />
 <Test name="depth32f_stencil8" />
@@ -28070,6 +28160,8 @@
 <Test name="rgb16f" />
 <Test name="depth24_stencil8" />
 <Test name="r11f_g11f_b10f" />
+<Test name="srgb_unsigned_byte" />
+<Test name="srgb_alpha_unsigned_byte" />
 <Test name="srgb8_alpha8" />
 <Test name="depth_component32f" />
 <Test name="depth32f_stencil8" />
@@ -38361,6 +38453,7 @@
 <Test name="is_query" />
 <Test name="is_sampler" />
 <Test name="is_sync" />
+<Test name="is_transform_feedback" />
 <Test name="is_vertex_array" />
 </TestCase>
 </TestSuite>
@@ -38520,6 +38613,7 @@
 </TestSuite>
 <TestSuite name="state_query">
 <TestCase name="boolean">
+<Test name="primitive_restart_fixed_index_isenabled" />
 <Test name="primitive_restart_fixed_index_getboolean" />
 <Test name="primitive_restart_fixed_index_getinteger" />
 <Test name="primitive_restart_fixed_index_getinteger64" />
@@ -38554,6 +38648,7 @@
 <Test name="stencil_test_getinteger" />
 <Test name="stencil_test_getinteger64" />
 <Test name="stencil_test_getfloat" />
+<Test name="depth_test_isenabled" />
 <Test name="depth_test_getboolean" />
 <Test name="depth_test_getinteger" />
 <Test name="depth_test_getinteger64" />
@@ -38563,6 +38658,7 @@
 <Test name="blend_getinteger" />
 <Test name="blend_getinteger64" />
 <Test name="blend_getfloat" />
+<Test name="dither_isenabled" />
 <Test name="dither_getboolean" />
 <Test name="dither_getinteger" />
 <Test name="dither_getinteger64" />
@@ -39132,6 +39228,7 @@
 <Test name="line_width_getfloat" />
 <Test name="polygon_offset_factor_getfloat" />
 <Test name="polygon_offset_units_getfloat" />
+<Test name="sample_coverage_value_getboolean" />
 <Test name="blend_color_getboolean" />
 <Test name="blend_color_getfloat" />
 <Test name="color_clear_value_getboolean" />
@@ -40517,6 +40614,7 @@
 <Test name="shader" />
 <Test name="program" />
 <Test name="query" />
+<Test name="transform_feedback" />
 <Test name="vertex_array" />
 <Test name="sampler" />
 </TestCase>
