@@ -130,8 +130,10 @@ LOCAL_SRC_FILES := \
 	framework/egl/egluConfigFilter.cpp \
 	framework/egl/egluConfigInfo.cpp \
 	framework/egl/egluDefs.cpp \
+	framework/egl/egluExtensions.cpp \
 	framework/egl/egluGLContextFactory.cpp \
 	framework/egl/egluGLFunctionLoader.cpp \
+	framework/egl/egluGLUtil.cpp \
 	framework/egl/egluHeaderWrapper.cpp \
 	framework/egl/egluNativeDisplay.cpp \
 	framework/egl/egluNativePixmap.cpp \
