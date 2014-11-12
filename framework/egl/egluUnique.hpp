@@ -25,6 +25,7 @@
 
 #include "egluDefs.hpp"
 #include "egluHeaderWrapper.hpp"
+#include "egluExtensions.hpp"
 
 namespace eglu
 {
@@ -73,6 +74,25 @@ public:
 
 private:
 	EGLDisplay		m_display;
+};
+
+class UniqueImage
+{
+public:
+							UniqueImage		(EGLDisplay display, EGLImageKHR image, const ImageFunctions& funcs);
+							~UniqueImage	(void);
+
+	EGLImageKHR				operator*		(void) { return m_image; }
+	operator				bool			(void) const { return m_image != EGL_NO_IMAGE_KHR; }
+
+private:
+	EGLDisplay				m_display;
+	EGLImageKHR				m_image;
+	const ImageFunctions&	m_funcs;
+
+	// Disabled
+	UniqueImage		operator=		(const UniqueImage&);
+					UniqueImage		(const UniqueImage&);
 };
 
 } // eglu

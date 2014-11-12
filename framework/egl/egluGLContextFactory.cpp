@@ -32,6 +32,7 @@
 #include "egluDefs.hpp"
 #include "egluHeaderWrapper.hpp"
 #include "egluUtil.hpp"
+#include "egluGLUtil.hpp"
 #include "egluNativeWindow.hpp"
 #include "egluNativePixmap.hpp"
 #include "egluStrUtil.hpp"
@@ -49,23 +50,6 @@
 
 using std::string;
 using std::vector;
-
-#if !defined(EGL_KHR_create_context)
-	#define EGL_KHR_create_context 1
-	#define EGL_CONTEXT_MAJOR_VERSION_KHR						0x3098
-	#define EGL_CONTEXT_MINOR_VERSION_KHR						0x30FB
-	#define EGL_CONTEXT_FLAGS_KHR								0x30FC
-	#define EGL_CONTEXT_OPENGL_PROFILE_MASK_KHR					0x30FD
-	#define EGL_CONTEXT_OPENGL_RESET_NOTIFICATION_STRATEGY_KHR	0x31BD
-	#define EGL_NO_RESET_NOTIFICATION_KHR						0x31BE
-	#define EGL_LOSE_CONTEXT_ON_RESET_KHR						0x31BF
-	#define EGL_CONTEXT_OPENGL_DEBUG_BIT_KHR					0x00000001
-	#define EGL_CONTEXT_OPENGL_FORWARD_COMPATIBLE_BIT_KHR		0x00000002
-	#define EGL_CONTEXT_OPENGL_ROBUST_ACCESS_BIT_KHR			0x00000004
-	#define EGL_CONTEXT_OPENGL_CORE_PROFILE_BIT_KHR				0x00000001
-	#define EGL_CONTEXT_OPENGL_COMPATIBILITY_PROFILE_BIT_KHR	0x00000002
-	#define EGL_OPENGL_ES3_BIT_KHR								0x00000040
-#endif // EGL_KHR_create_context
 
 // \todo [2014-03-12 pyry] Use command line arguments for libraries?
 
@@ -212,22 +196,7 @@ bool configMatches (EGLDisplay display, EGLConfig eglConfig, const glu::RenderCo
 
 	{
 		EGLint		renderableType		= 0;
-		EGLint		requiredRenderable	= 0;
-
-		if (glu::isContextTypeES(renderConfig.type))
-		{
-			if (renderConfig.type.getMajorVersion() == 2)
-				requiredRenderable = EGL_OPENGL_ES2_BIT;
-			else if (renderConfig.type.getMajorVersion() == 3)
-				requiredRenderable = EGL_OPENGL_ES3_BIT_KHR;
-			else
-				throw tcu::NotSupportedError("Unsupported OpenGL ES version");
-		}
-		else
-		{
-			DE_ASSERT(glu::isContextTypeGLCore(renderConfig.type) || glu::isContextTypeGLCompatibility(renderConfig.type));
-			requiredRenderable = EGL_OPENGL_BIT;
-		}
+		EGLint		requiredRenderable	= apiRenderableType(renderConfig.type.getAPI());
 
 		EGLU_CHECK_CALL(eglGetConfigAttrib(display, eglConfig, EGL_RENDERABLE_TYPE, &renderableType));
 
@@ -383,91 +352,6 @@ EGLSurface createPBuffer (EGLDisplay display, EGLConfig eglConfig, const glu::Re
 	return surface;
 }
 
-bool isClientExtensionSupported (EGLDisplay display, const std::string& extName)
-{
-	const vector<string> exts = getClientExtensions(display);
-	return de::contains(exts.begin(), exts.end(), extName);
-}
-
-EGLContext createContext (EGLDisplay display, EGLContext eglConfig, const glu::RenderConfig& config)
-{
-	const bool			khrCreateContextSupported	= isClientExtensionSupported(display, "EGL_KHR_create_context");
-	EGLContext			context						= EGL_NO_CONTEXT;
-	EGLenum				api							= EGL_NONE;
-	vector<EGLint>		attribList;
-
-	if (glu::isContextTypeES(config.type))
-	{
-		api = EGL_OPENGL_ES_API;
-
-		if (config.type.getMajorVersion() <= 2)
-		{
-			attribList.push_back(EGL_CONTEXT_CLIENT_VERSION);
-			attribList.push_back(config.type.getMajorVersion());
-		}
-		else
-		{
-			if (!khrCreateContextSupported)
-				throw tcu::NotSupportedError("EGL_KHR_create_context is required for OpenGL ES 3.0 and newer", DE_NULL, __FILE__, __LINE__);
-
-			attribList.push_back(EGL_CONTEXT_MAJOR_VERSION_KHR);
-			attribList.push_back(config.type.getMajorVersion());
-			attribList.push_back(EGL_CONTEXT_MINOR_VERSION_KHR);
-			attribList.push_back(config.type.getMinorVersion());
-		}
-	}
-	else
-	{
-		DE_ASSERT(glu::isContextTypeGLCore(config.type) || glu::isContextTypeGLCompatibility(config.type));
-
-		if (!khrCreateContextSupported)
-			throw tcu::NotSupportedError("EGL_KHR_create_context is required for OpenGL context creation", DE_NULL, __FILE__, __LINE__);
-
-		api = EGL_OPENGL_API;
-
-		attribList.push_back(EGL_CONTEXT_MAJOR_VERSION_KHR);
-		attribList.push_back(config.type.getMajorVersion());
-		attribList.push_back(EGL_CONTEXT_MINOR_VERSION_KHR);
-		attribList.push_back(config.type.getMinorVersion());
-		attribList.push_back(EGL_CONTEXT_OPENGL_PROFILE_MASK_KHR);
-		attribList.push_back(glu::isContextTypeGLCore(config.type) ? EGL_CONTEXT_OPENGL_CORE_PROFILE_BIT_KHR
-																   : EGL_CONTEXT_OPENGL_COMPATIBILITY_PROFILE_BIT_KHR);
-	}
-
-	if (config.type.getFlags() != glu::ContextFlags(0))
-	{
-		EGLint flags = 0;
-
-		if (!khrCreateContextSupported)
-			throw tcu::NotSupportedError("EGL_KHR_create_context is required for creating robust/debug/forward-compatible contexts");
-
-		if ((config.type.getFlags() & glu::CONTEXT_DEBUG) != 0)
-			flags |= EGL_CONTEXT_OPENGL_DEBUG_BIT_KHR;
-
-		if ((config.type.getFlags() & glu::CONTEXT_ROBUST) != 0)
-			flags |= EGL_CONTEXT_OPENGL_ROBUST_ACCESS_BIT_KHR;
-
-		if ((config.type.getFlags() & glu::CONTEXT_FORWARD_COMPATIBLE) != 0)
-		{
-			if (!glu::isContextTypeGLCore(config.type))
-				throw tcu::NotSupportedError("Only OpenGL core contexts can be forward-compatible");
-
-			flags |= EGL_CONTEXT_OPENGL_FORWARD_COMPATIBLE_BIT_KHR;
-		}
-
-		attribList.push_back(EGL_CONTEXT_FLAGS_KHR);
-		attribList.push_back(flags);
-	}
-
-	attribList.push_back(EGL_NONE);
-
-	EGLU_CHECK_CALL(eglBindAPI(api));
-	context = eglCreateContext(display, eglConfig, EGL_NO_CONTEXT, &(attribList[0]));
-	EGLU_CHECK_MSG("eglCreateContext()");
-
-	return context;
-}
-
 void RenderContext::create (const NativeDisplayFactory* displayFactory, const NativeWindowFactory* windowFactory, const NativePixmapFactory* pixmapFactory, const glu::RenderConfig& config)
 {
 	glu::RenderConfig::SurfaceType	surfaceType	= config.surfaceType;
@@ -536,13 +420,13 @@ void RenderContext::create (const NativeDisplayFactory* displayFactory, const Na
 			throw tcu::InternalError("Invalid surface type");
 	}
 
-	m_eglContext = createContext(m_eglDisplay, m_eglConfig, config);
+	m_eglContext = createGLContext(m_eglDisplay, m_eglConfig, config.type);
 
 	EGLU_CHECK_CALL(eglMakeCurrent(m_eglDisplay, m_eglSurface, m_eglSurface, m_eglContext));
 
 	// Init core functions
 
-	if (isClientExtensionSupported(m_eglDisplay, "EGL_KHR_get_all_proc_addresses"))
+	if (hasExtension(m_eglDisplay, "EGL_KHR_get_all_proc_addresses"))
 	{
 		// Use eglGetProcAddress() for core functions
 		GetProcFuncLoader funcLoader;

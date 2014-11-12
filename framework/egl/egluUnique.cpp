@@ -63,4 +63,17 @@ ScopedCurrentContext::~ScopedCurrentContext (void)
 	EGLU_CHECK_CALL(eglMakeCurrent(m_display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT));
 }
 
+UniqueImage::UniqueImage (EGLDisplay display, EGLImageKHR image, const ImageFunctions& funcs)
+	: m_display	(display)
+	, m_image	(image)
+	, m_funcs	(funcs)
+{
+}
+
+UniqueImage::~UniqueImage (void)
+{
+	if (m_image != EGL_NO_IMAGE_KHR)
+		EGLU_CHECK_CALL(m_funcs.destroyImage(m_display, m_image));
+}
+
 } // eglu

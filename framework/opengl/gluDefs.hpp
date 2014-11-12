@@ -33,6 +33,9 @@
 #define GLU_CHECK_CALL_ERROR(CALL, ERR)	do { CALL; GLU_EXPECT_NO_ERROR(ERR, #CALL); } while (deGetFalse())
 #define GLU_CHECK_CALL(CALL)			do { CALL; GLU_EXPECT_NO_ERROR(glGetError(), #CALL); } while (deGetFalse())
 
+#define GLU_CHECK_GLW_MSG(GL, MSG)		GLU_EXPECT_NO_ERROR((GL).getError(), MSG)
+#define GLU_CHECK_GLW(GL)				GLU_CHECK_GLW_MSG(GL, DE_NULL)
+#define GLU_CHECK_GLW_CALL(GL, CALL)	do { (GL).CALL; GLU_EXPECT_NO_ERROR((GL).getError(), #CALL); } while (deGetFalse())
 
 /*--------------------------------------------------------------------*//*!
  * \brief OpenGL (ES) utilities

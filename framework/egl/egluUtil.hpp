@@ -24,6 +24,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "tcuDefs.hpp"
+#include "egluDefs.hpp"
 #include "egluHeaderWrapper.hpp"
 #include "egluNativeWindow.hpp"
 
@@ -44,12 +45,17 @@ class NativePixmap;
 
 typedef std::map<EGLint, EGLint> AttribMap;
 
+std::vector<EGLint>			attribMapToVector			(const AttribMap& map);
+
+Version						getVersion					(EGLDisplay display);
+bool						hasExtension				(EGLDisplay display, const std::string& extName);
 std::vector<std::string>	getPlatformExtensions		(void);
 std::vector<std::string>	getClientExtensions			(EGLDisplay display);
 std::vector<EGLConfig>		getConfigs					(EGLDisplay display);
 std::vector<EGLConfig>		chooseConfig				(EGLDisplay display, const AttribMap& attribs);
 EGLConfig					chooseSingleConfig			(EGLDisplay display, const AttribMap& attribs);
 EGLint						getConfigAttribInt			(EGLDisplay display, EGLConfig config, EGLint attrib);
+EGLint						getConfigID					(EGLDisplay display, EGLConfig config);
 EGLint						querySurfaceInt				(EGLDisplay display, EGLSurface surface, EGLint attrib);
 tcu::IVec2					getSurfaceSize				(EGLDisplay display, EGLSurface surface);
 tcu::IVec2					getSurfaceResolution		(EGLDisplay display, EGLSurface surface);

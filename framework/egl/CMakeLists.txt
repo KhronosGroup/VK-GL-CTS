@@ -12,10 +12,14 @@ set(EGLUTIL_SRCS
 	egluConfigInfo.hpp
 	egluDefs.cpp
 	egluDefs.hpp
+	egluExtensions.cpp
+	egluExtensions.hpp
 	egluGLContextFactory.cpp
 	egluGLContextFactory.hpp
 	egluGLFunctionLoader.cpp
 	egluGLFunctionLoader.hpp
+	egluGLUtil.cpp
+	egluGLUtil.hpp
 	egluHeaderWrapper.cpp
 	egluHeaderWrapper.hpp
 	egluNativeDisplay.cpp

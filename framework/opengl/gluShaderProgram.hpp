@@ -72,6 +72,7 @@ struct ProgramInfo
 class Shader
 {
 public:
+							Shader				(const glw::Functions& gl, ShaderType shaderType);
 							Shader				(const RenderContext& renderCtx, ShaderType shaderType);
 							~Shader				(void);
 
@@ -92,7 +93,7 @@ private:
 							Shader				(const Shader& other);
 	Shader&					operator=			(const Shader& other);
 
-	const RenderContext&	m_renderCtx;
+	const glw::Functions&	m_gl;
 	deUint32				m_shader;	//!< Shader handle.
 	ShaderInfo				m_info;		//!< Client-side clone of state for debug / perf reasons.
 };
@@ -103,6 +104,7 @@ private:
 class Program
 {
 public:
+							Program						(const glw::Functions& gl);
 							Program						(const RenderContext& renderCtx);
 							Program						(const RenderContext& renderCtx, deUint32 program);
 							~Program					(void);
@@ -132,7 +134,7 @@ private:
 							Program						(const Program& other);
 	Program&				operator=					(const Program& other);
 
-	const RenderContext&	m_renderCtx;
+	const glw::Functions&	m_gl;
 	deUint32				m_program;
 	ProgramInfo				m_info;
 };
@@ -145,6 +147,7 @@ class ProgramPipeline
 {
 public:
 							ProgramPipeline				(const RenderContext& renderCtx);
+							ProgramPipeline				(const glw::Functions& gl);
 							~ProgramPipeline			(void);
 
 	deUint32				getPipeline					(void) const { return m_pipeline; }
@@ -156,7 +159,7 @@ private:
 							ProgramPipeline				(const ProgramPipeline& other);
 	ProgramPipeline&		operator=					(const ProgramPipeline& other);
 
-	const RenderContext&	m_renderCtx;
+	const glw::Functions&	m_gl;
 	deUint32				m_pipeline;
 };
 
@@ -171,6 +174,7 @@ struct ProgramSources;
 class ShaderProgram
 {
 public:
+							ShaderProgram				(const glw::Functions& gl, const ProgramSources& sources);
 							ShaderProgram				(const RenderContext& renderCtx, const ProgramSources& sources);
 							~ShaderProgram				(void);
 
@@ -185,6 +189,7 @@ public:
 private:
 							ShaderProgram				(const ShaderProgram& other);
 	ShaderProgram&			operator=					(const ShaderProgram& other);
+	void					init						(const glw::Functions& gl, const ProgramSources& sources);
 
 	std::vector<Shader*>	m_shaders[SHADERTYPE_LAST];
 	Program					m_program;
