@@ -926,8 +926,6 @@
 <Test name="redefine_object_multiline_comment_fragment" />
 </TestCase>
 <TestCase name="invalid_redefinitions">
-<Test name="invalid_identifier_1_vertex" />
-<Test name="invalid_identifier_1_fragment" />
 <Test name="invalid_identifier_2_vertex" />
 <Test name="invalid_identifier_2_fragment" />
 </TestCase>
@@ -4263,12 +4261,6 @@
 <Test name="using_fragment" />
 </TestCase>
 <TestCase name="invalid_identifiers">
-<Test name="two_underscores_begin_vertex" />
-<Test name="two_underscores_begin_fragment" />
-<Test name="two_underscores_middle_vertex" />
-<Test name="two_underscores_middle_fragment" />
-<Test name="two_underscores_end_vertex" />
-<Test name="two_underscores_end_fragment" />
 <Test name="gl_begin_vertex" />
 <Test name="gl_begin_fragment" />
 <Test name="digit_vertex" />

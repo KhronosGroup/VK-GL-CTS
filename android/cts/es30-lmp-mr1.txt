@@ -842,8 +842,6 @@ dEQP-GLES3.functional.shaders.preprocessor.object_redefinitions.redefine_object_
 dEQP-GLES3.functional.shaders.preprocessor.object_redefinitions.redefine_object_comment_fragment
 dEQP-GLES3.functional.shaders.preprocessor.object_redefinitions.redefine_object_multiline_comment_vertex
 dEQP-GLES3.functional.shaders.preprocessor.object_redefinitions.redefine_object_multiline_comment_fragment
-dEQP-GLES3.functional.shaders.preprocessor.invalid_redefinitions.invalid_identifier_1_vertex
-dEQP-GLES3.functional.shaders.preprocessor.invalid_redefinitions.invalid_identifier_1_fragment
 dEQP-GLES3.functional.shaders.preprocessor.invalid_redefinitions.invalid_identifier_2_vertex
 dEQP-GLES3.functional.shaders.preprocessor.invalid_redefinitions.invalid_identifier_2_fragment
 dEQP-GLES3.functional.shaders.preprocessor.comments.multiline_comment_define_vertex
@@ -4043,12 +4041,6 @@ dEQP-GLES3.functional.shaders.keywords.reserved_keywords.namespace_vertex
 dEQP-GLES3.functional.shaders.keywords.reserved_keywords.namespace_fragment
 dEQP-GLES3.functional.shaders.keywords.reserved_keywords.using_vertex
 dEQP-GLES3.functional.shaders.keywords.reserved_keywords.using_fragment
-dEQP-GLES3.functional.shaders.keywords.invalid_identifiers.two_underscores_begin_vertex
-dEQP-GLES3.functional.shaders.keywords.invalid_identifiers.two_underscores_begin_fragment
-dEQP-GLES3.functional.shaders.keywords.invalid_identifiers.two_underscores_middle_vertex
-dEQP-GLES3.functional.shaders.keywords.invalid_identifiers.two_underscores_middle_fragment
-dEQP-GLES3.functional.shaders.keywords.invalid_identifiers.two_underscores_end_vertex
-dEQP-GLES3.functional.shaders.keywords.invalid_identifiers.two_underscores_end_fragment
 dEQP-GLES3.functional.shaders.keywords.invalid_identifiers.gl_begin_vertex
 dEQP-GLES3.functional.shaders.keywords.invalid_identifiers.gl_begin_fragment
 dEQP-GLES3.functional.shaders.keywords.invalid_identifiers.digit_vertex
