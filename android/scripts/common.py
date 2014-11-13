@@ -6,11 +6,19 @@ import sys
 import shlex
 import subprocess
 import multiprocessing
+import string
 
 class NativeLib:
 	def __init__ (self, apiVersion, abiVersion):
 		self.apiVersion	= apiVersion
 		self.abiVersion	= abiVersion
+
+	def __str__ (self):
+		return "(API: %s, ABI: %s)" % (self.apiVersion, self.abiVersion)
+
+	def __repr__ (self):
+		return "(API: %s, ABI: %s)" % (self.apiVersion, self.abiVersion)
+
 
 def getPlatform ():
 	if sys.platform.startswith('linux'):
@@ -70,9 +78,11 @@ def execute (commandLine):
 		raise Exception("Failed to execute '%s', got %d" % (commandLine, retcode))
 
 def execArgs (args):
+	# Make sure previous stdout prints have been written out.
+	sys.stdout.flush()
 	retcode	= subprocess.call(args)
 	if retcode != 0:
-		raise Exception("Failed to execute '%s', got %d" % (str(args), retcode))
+ 		raise Exception("Failed to execute '%s', got %d" % (str(args), retcode))
 
 class Device:
 	def __init__(self, serial, product, model, device):
@@ -156,11 +166,22 @@ NATIVE_LIBS				= [
 ANDROID_JAVA_API		= "android-13"
 NATIVE_LIB_NAME			= "libdeqp.so"
 
-# NDK paths
-ANDROID_NDK_PATH		= selectFirstExistingDir([
+def selectNDKPath ():
+	candidates =  [
 		os.path.expanduser("~/android-ndk-r10c"),
 		"C:/android/android-ndk-r10c",
-	])
+		os.path.normpath(os.environ["ANDROID_NDK_PATH"]),
+	]
+
+	ndkPath = selectFirstExistingDir(candidates)
+
+	if ndkPath == None:
+		raise Exception("None of NDK directory candidates exist: %s. Check ANDROID_NDK_PATH in common.py" % candidates)
+
+	return ndkPath
+
+# NDK paths
+ANDROID_NDK_PATH				= selectNDKPath()
 ANDROID_NDK_HOST_OS				= getNDKHostOsName(ANDROID_NDK_PATH)
 ANDROID_NDK_TOOLCHAIN_VERSION	= "r10c" # Toolchain file is selected based on this
 
@@ -202,3 +223,24 @@ ANT_BIN					= selectFirstExistingBinary([
 		"C:/android/apache-ant-1.9.3/bin/ant.bat",
 		"C:/android/apache-ant-1.9.4/bin/ant.bat",
 	])
+
+def makeNameValueTuple (name):
+	return (name, str(eval(name)))
+
+CONFIG_STRINGS = [
+		makeNameValueTuple("ANDROID_DIR"),
+		makeNameValueTuple("NATIVE_LIBS"),
+		makeNameValueTuple("ANDROID_JAVA_API"),
+		makeNameValueTuple("NATIVE_LIB_NAME"),
+		makeNameValueTuple("ANDROID_NDK_PATH"),
+		makeNameValueTuple("ANDROID_NDK_HOST_OS"),
+		makeNameValueTuple("ANDROID_NDK_TOOLCHAIN_VERSION"),
+		makeNameValueTuple("CMAKE_GENERATOR"),
+		makeNameValueTuple("EXTRA_BUILD_ARGS"),
+		makeNameValueTuple("ANDROID_SDK_PATH"),
+		makeNameValueTuple("ANDROID_BIN"),
+		makeNameValueTuple("ADB_BIN"),
+		makeNameValueTuple("ZIPALIGN_BIN"),
+		makeNameValueTuple("JARSIGNER_BIN"),
+		makeNameValueTuple("ANT_BIN"),
+	]
