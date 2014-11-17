@@ -84,12 +84,6 @@ def execArgs (args):
 	if retcode != 0:
  		raise Exception("Failed to execute '%s', got %d" % (str(args), retcode))
 
-def tryGetEnv (varName):
-	if varName in os.environ:
-		return os.environ[varName]
-	else:
-		return None
-
 class Device:
 	def __init__(self, serial, product, model, device):
 		self.serial		= serial
@@ -176,7 +170,7 @@ def selectNDKPath ():
 	candidates =  [
 		os.path.expanduser("~/android-ndk-r10c"),
 		"C:/android/android-ndk-r10c",
-		tryGetEnv("ANDROID_NDK_PATH"),
+		os.environ.get("ANDROID_NDK_PATH", None), # If not defined, return None
 	]
 
 	ndkPath = selectFirstExistingDir(candidates)
@@ -185,6 +179,12 @@ def selectNDKPath ():
 		raise Exception("None of NDK directory candidates exist: %s. Check ANDROID_NDK_PATH in common.py" % candidates)
 
 	return ndkPath
+
+def noneSafePathJoin (*components):
+	if None in components:
+		return None
+	return os.path.join(*components)
+
 
 # NDK paths
 ANDROID_NDK_PATH				= selectNDKPath()
@@ -205,18 +205,18 @@ ANDROID_SDK_PATH		= selectFirstExistingDir([
 		"C:/android/android-sdk-windows",
 	])
 ANDROID_BIN				= selectFirstExistingBinary([
-		os.path.join(ANDROID_SDK_PATH, "tools", "android"),
-		os.path.join(ANDROID_SDK_PATH, "tools", "android.bat"),
+		noneSafePathJoin(ANDROID_SDK_PATH, "tools", "android"),
+		noneSafePathJoin(ANDROID_SDK_PATH, "tools", "android.bat"),
 		which('android'),
 	])
 ADB_BIN					= selectFirstExistingBinary([
 		which('adb'), # \note Prefer adb in path to avoid version issues on dev machines
-		os.path.join(ANDROID_SDK_PATH, "platform-tools", "adb"),
-		os.path.join(ANDROID_SDK_PATH, "platform-tools", "adb.exe"),
+		noneSafePathJoin(ANDROID_SDK_PATH, "platform-tools", "adb"),
+		noneSafePathJoin(ANDROID_SDK_PATH, "platform-tools", "adb.exe"),
 	])
 ZIPALIGN_BIN			= selectFirstExistingBinary([
-		os.path.join(ANDROID_SDK_PATH, "tools", "zipalign"),
-		os.path.join(ANDROID_SDK_PATH, "tools", "zipalign.exe"),
+		noneSafePathJoin(ANDROID_SDK_PATH, "tools", "zipalign"),
+		noneSafePathJoin(ANDROID_SDK_PATH, "tools", "zipalign.exe"),
 		which('zipalign'),
 	])
 JARSIGNER_BIN			= which('jarsigner')
