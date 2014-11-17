@@ -84,6 +84,12 @@ def execArgs (args):
 	if retcode != 0:
  		raise Exception("Failed to execute '%s', got %d" % (str(args), retcode))
 
+def tryGetEnv (varName):
+	if varName in os.environ:
+		return os.environ[varName]
+	else:
+		return None
+
 class Device:
 	def __init__(self, serial, product, model, device):
 		self.serial		= serial
@@ -170,7 +176,7 @@ def selectNDKPath ():
 	candidates =  [
 		os.path.expanduser("~/android-ndk-r10c"),
 		"C:/android/android-ndk-r10c",
-		os.path.normpath(os.environ["ANDROID_NDK_PATH"]),
+		tryGetEnv("ANDROID_NDK_PATH"),
 	]
 
 	ndkPath = selectFirstExistingDir(candidates)
@@ -227,20 +233,21 @@ ANT_BIN					= selectFirstExistingBinary([
 def makeNameValueTuple (name):
 	return (name, str(eval(name)))
 
-CONFIG_STRINGS = [
-		makeNameValueTuple("ANDROID_DIR"),
-		makeNameValueTuple("NATIVE_LIBS"),
-		makeNameValueTuple("ANDROID_JAVA_API"),
-		makeNameValueTuple("NATIVE_LIB_NAME"),
-		makeNameValueTuple("ANDROID_NDK_PATH"),
-		makeNameValueTuple("ANDROID_NDK_HOST_OS"),
-		makeNameValueTuple("ANDROID_NDK_TOOLCHAIN_VERSION"),
-		makeNameValueTuple("CMAKE_GENERATOR"),
-		makeNameValueTuple("EXTRA_BUILD_ARGS"),
-		makeNameValueTuple("ANDROID_SDK_PATH"),
-		makeNameValueTuple("ANDROID_BIN"),
-		makeNameValueTuple("ADB_BIN"),
-		makeNameValueTuple("ZIPALIGN_BIN"),
-		makeNameValueTuple("JARSIGNER_BIN"),
-		makeNameValueTuple("ANT_BIN"),
+CONFIG_VAR_NAMES = [
+		"ANDROID_DIR",
+		"NATIVE_LIBS",
+		"ANDROID_JAVA_API",
+		"NATIVE_LIB_NAME",
+		"ANDROID_NDK_PATH",
+		"ANDROID_NDK_HOST_OS",
+		"ANDROID_NDK_TOOLCHAIN_VERSION",
+		"CMAKE_GENERATOR",
+		"EXTRA_BUILD_ARGS",
+		"ANDROID_SDK_PATH",
+		"ANDROID_BIN",
+		"ADB_BIN",
+		"ZIPALIGN_BIN",
+		"JARSIGNER_BIN",
+		"ANT_BIN",
 	]
+CONFIG_STRINGS = [makeNameValueTuple(x) for x in CONFIG_VAR_NAMES]
