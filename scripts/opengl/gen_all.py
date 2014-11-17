@@ -12,6 +12,7 @@ from gen_func_ptrs import genFunctionPointers
 from gen_null_render_context import genNullRenderContext
 from gen_str_util import genStrUtil
 from gen_wrapper import genWrapper
+from gen_query_util import genQueryUtil
 
 def genAll ():
 	registry = getGLRegistry()
@@ -27,6 +28,7 @@ def genAll ():
 	genNullRenderContext(iface)
 	genStrUtil(iface)
 	genWrapper(iface)
+	genQueryUtil(iface)
 
 if __name__ == "__main__":
 	genAll()

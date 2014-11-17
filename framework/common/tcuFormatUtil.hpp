@@ -131,15 +131,15 @@ inline std::ostream& operator<< (std::ostream& stream, Bitfield<BitfieldSize> de
 
 // Enum formatter.
 // \todo [2012-10-30 pyry] Use template for GetName.
-
+template <typename T, int NumBytes = sizeof(T)>
 class Enum
 {
 public:
-	typedef const char* (*GetNameFunc) (int value);
+	typedef const char* (*GetNameFunc) (T value);
 
-	Enum (GetNameFunc getName, int value)
+	Enum (GetNameFunc getName, T value)
 		: m_getName	(getName)
-		, m_value	(value)
+		, m_value (value)
 	{
 	}
 
@@ -149,7 +149,7 @@ public:
 		if (name)
 			return stream << name;
 		else
-			return stream << Hex<sizeof(int)*2>(m_value);
+			return stream << Hex<NumBytes*2>(m_value);
 	}
 
 	std::string toString (void) const
@@ -158,15 +158,16 @@ public:
 		if (name)
 			return std::string(name);
 		else
-			return Hex<sizeof(int)*2>(m_value).toString();
+			return Hex<NumBytes*2>(m_value).toString();
 	}
 
 private:
-	GetNameFunc		m_getName;
-	int				m_value;
+	const GetNameFunc	m_getName;
+	const T				m_value;
 };
 
-inline std::ostream& operator<< (std::ostream& stream, Enum fmt) { return fmt.toStream(stream); }
+template <typename T, int NumBytes>
+inline std::ostream& operator<< (std::ostream& stream, const Enum<T, NumBytes>& fmt) { return fmt.toStream(stream); }
 
 // Array formatters.
 

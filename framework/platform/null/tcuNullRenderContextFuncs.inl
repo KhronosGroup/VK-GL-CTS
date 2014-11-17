@@ -3045,6 +3045,19 @@ GLW_APICALL void GLW_APIENTRY glPopDebugGroup (void)
 
 }
 
+GLW_APICALL void GLW_APIENTRY glPrimitiveBoundingBoxEXT (GLfloat minX, GLfloat minY, GLfloat minZ, GLfloat minW, GLfloat maxX, GLfloat maxY, GLfloat maxZ, GLfloat maxW)
+{
+	DE_UNREF(minX);
+	DE_UNREF(minY);
+	DE_UNREF(minZ);
+	DE_UNREF(minW);
+	DE_UNREF(maxX);
+	DE_UNREF(maxY);
+	DE_UNREF(maxZ);
+	DE_UNREF(maxW);
+
+}
+
 GLW_APICALL void GLW_APIENTRY glPrimitiveRestartIndex (GLuint index)
 {
 	DE_UNREF(index);

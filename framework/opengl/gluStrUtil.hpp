@@ -39,40 +39,50 @@ class EnumPointerFmt
 public:
 	typedef const char* (*GetEnumNameFunc) (int value);
 
-	const deUint32*		value;
-	deUint32			size;
-	GetEnumNameFunc		getName;
+	const deUint32* const	value;
+	const deUint32			size;
+	const GetEnumNameFunc	getName;
 
 	EnumPointerFmt (const deUint32* value_, deUint32 size_, GetEnumNameFunc getName_) : value(value_), size(size_), getName(getName_) {}
+};
+
+class BooleanPointerFmt
+{
+public:
+	const deUint8* const 	value;
+	const deUint32			size;
+
+	BooleanPointerFmt (const deUint8* value_, deUint32 size_) : value(value_), size(size_) {}
 };
 
 class TextureUnitStr
 {
 public:
-	deUint32 texUnit;
+	const deUint32 texUnit;
 	TextureUnitStr (deUint32 texUnit_) : texUnit(texUnit_) {}
 };
 
 class TextureParameterValueStr
 {
 public:
-	deUint32	param;
-	int			value;
+	const deUint32	param;
+	const int		value;
 	TextureParameterValueStr (deUint32 param_, int value_) : param(param_), value(value_) {}
 };
 
-std::ostream&		operator<<		(std::ostream& str, TextureUnitStr unitStr);
+std::ostream&		operator<<		(std::ostream& str, const TextureUnitStr& unitStr);
 std::ostream&		operator<<		(std::ostream& str, const TextureParameterValueStr& valueStr);
-std::ostream&		operator<<		(std::ostream& str, EnumPointerFmt fmt);
+std::ostream&		operator<<		(std::ostream& str, const BooleanPointerFmt& fmt);
+std::ostream&		operator<<		(std::ostream& str, const EnumPointerFmt& fmt);
 
 } // detail
 
-inline detail::TextureUnitStr			getTextureUnitStr			(deUint32 unit) { return detail::TextureUnitStr(unit); }
-inline detail::TextureParameterValueStr	getTextureParameterValueStr	(deUint32 param, int value) { return detail::TextureParameterValueStr(param, value); }
-detail::EnumPointerFmt					getInvalidateAttachmentStr	(const deUint32* attachments, int numAttachments);
+inline detail::TextureUnitStr						getTextureUnitStr			(deUint32 unit) { return detail::TextureUnitStr(unit); }
+inline detail::TextureParameterValueStr				getTextureParameterValueStr	(deUint32 param, int value) { return detail::TextureParameterValueStr(param, value); }
+detail::EnumPointerFmt								getInvalidateAttachmentStr	(const deUint32* attachments, int numAttachments);
 
-std::ostream&							operator<<					(std::ostream& str, ApiType apiType);
-std::ostream&							operator<<					(std::ostream& str, ContextType contextType);
+std::ostream&										operator<<					(std::ostream& str, ApiType apiType);
+std::ostream&										operator<<					(std::ostream& str, ContextType contextType);
 
 #include "gluStrUtilPrototypes.inl"
 

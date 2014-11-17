@@ -16,10 +16,16 @@ def pointer (size):
 	return lambda name: "getPointerStr(%s, %s)" % (name, size)
 
 def enumPointer (group, size):
-	return lambda name: "getEnumPointerStr(%s, %s, get%sName)" % (name, size, group)
+	return lambda name: "getEnumPointerStr(%(name)s, %(size)s, %(nameFunc)s)" % {"name": name, "size": size, "nameFunc": ("get%sName" % group)}
+
+def booleanPointer (size):
+	return lambda name: "getBooleanPointerStr(%s, %s)" % (name, size)
 
 def textureUnit (name):
 	return "getTextureUnitStr(%s)" % name
+
+def voidPointer (name):
+	return "static_cast<const void*>(%s)" % name
 
 stringVal = lambda name: "getStringStr(%s)" % name
 
@@ -97,11 +103,18 @@ CALL_LOG_SPECS = {
 	"glGetActiveUniform":					LogSpec({}, argOutPrints = {3: pointer(size = "1"), 4: pointer(size = "1"), 5: enumPointer("ShaderVarType", size = "1"), 6: stringVal}),
 	"glGetActiveUniformsiv":				LogSpec({2: pointer(size = "uniformCount"), 3: enum("UniformParam")}, argOutPrints = {4: pointer(size = "uniformCount")}),
 #	"glGetAttachedShaders":
-	"glGetBooleanv":						LogSpec({0: enum("GettableState")}),
+	"glGetBooleanv":
+		LogSpec(
+			{
+				0: enum("GettableState"),
+				1: voidPointer					# second argument has type of GLboolean* (aka. char*). Prevent
+												# wrapper from attempting to print the argument as a C string.
+			},
+			argOutPrints = {1: booleanPointer(size = "getBasicQueryNumArgsOut(pname)")}),
 	"glGetBufferParameteriv":				LogSpec({0: enum("BufferTarget"), 1: enum("BufferQuery")}),
 	"glGetBufferParameteri64v":				LogSpec({0: enum("BufferTarget"), 1: enum("BufferQuery")}),
 	"glGetError":							LogSpec({}, returnPrint = enum("Error")),
-	"glGetFloatv":							LogSpec({0: enum("GettableState")}),
+	"glGetFloatv":							LogSpec({0: enum("GettableState")}, argOutPrints = {1: pointer(size = "getBasicQueryNumArgsOut(pname)")}),
 	"glGetFramebufferAttachmentParameteriv":
 		LogSpec(
 			{
@@ -111,8 +124,8 @@ CALL_LOG_SPECS = {
 			},
 			argOutPrints = {3: lambda name: "getFramebufferAttachmentParameterValueStr(pname, %s)" % name}),
 	"glGetFramebufferParameteriv":			LogSpec({0: enum("FramebufferTarget"), 1: enum("FramebufferParameter")}),
-	"glGetIntegerv":						LogSpec({0: enum("GettableState")}),
-	"glGetInteger64v":						LogSpec({0: enum("GettableState")}),
+	"glGetIntegerv":						LogSpec({0: enum("GettableState")}, argOutPrints = {1: pointer(size = "getBasicQueryNumArgsOut(pname)")}),
+	"glGetInteger64v":						LogSpec({0: enum("GettableState")}, argOutPrints = {1: pointer(size = "getBasicQueryNumArgsOut(pname)")}),
 	"glGetIntegeri_v":						LogSpec({0: enum("GettableIndexedState")}),
 	"glGetInteger64i_v":					LogSpec({0: enum("GettableIndexedState")}),
 	"glGetInternalformativ":				LogSpec({0: enum("InternalFormatTarget"), 1: enum("PixelFormat"), 2: enum("InternalFormatParameter")}, argOutPrints = {4: pointer(size = "bufSize")}),
@@ -141,10 +154,10 @@ CALL_LOG_SPECS = {
 #	"glGetUniformfv":
 #	"glGetUniformiv":
 	"glGetUniformIndices":					LogSpec({2: pointer(size = "uniformCount")}, argOutPrints = {3: pointer(size = "uniformCount")}),
-	"glGetVertexAttribfv":					LogSpec({1: enum("VertexAttribParameterName")}, argOutPrints = {2: pointer(size = "(pname == GL_CURRENT_VERTEX_ATTRIB ? 4 : 1)")}),
-	"glGetVertexAttribiv":					LogSpec({1: enum("VertexAttribParameterName")}, argOutPrints = {2: pointer(size = "(pname == GL_CURRENT_VERTEX_ATTRIB ? 4 : 1)")}),
-	"glGetVertexAttribIiv":					LogSpec({1: enum("VertexAttribParameterName")}, argOutPrints = {2: pointer(size = "(pname == GL_CURRENT_VERTEX_ATTRIB ? 4 : 1)")}),
-	"glGetVertexAttribIuv":					LogSpec({1: enum("VertexAttribParameterName")}, argOutPrints = {2: pointer(size = "(pname == GL_CURRENT_VERTEX_ATTRIB ? 4 : 1)")}),
+	"glGetVertexAttribfv":					LogSpec({1: enum("VertexAttribParameterName")}, argOutPrints = {2: pointer(size = "getAttributeQueryNumArgsOut(pname)")}),
+	"glGetVertexAttribiv":					LogSpec({1: enum("VertexAttribParameterName")}, argOutPrints = {2: pointer(size = "getAttributeQueryNumArgsOut(pname)")}),
+	"glGetVertexAttribIiv":					LogSpec({1: enum("VertexAttribParameterName")}, argOutPrints = {2: pointer(size = "getAttributeQueryNumArgsOut(pname)")}),
+	"glGetVertexAttribIuiv":				LogSpec({1: enum("VertexAttribParameterName")}, argOutPrints = {2: pointer(size = "getAttributeQueryNumArgsOut(pname)")}),
 #	"glGetVertexAttribPointerv":
 	"glHint":								LogSpec({0: enum("Hint"), 1: enum("HintMode")}),
 	"glIsEnabled":							LogSpec({0: enum("EnableCap")}),
@@ -302,7 +315,7 @@ def commandLogWrapperMemberDef (command):
 		logSpec = None
 
 	src += "\n"
-	src += "%s CallLogWrapper::%s (%s)\n{\n" % (glwPrefix(command.type), command.name, ", ".join(glwPrefix(p.declaration) for p in command.params))
+	src += "%s CallLogWrapper::%s (%s)\n{\n" % (glwPrefix(command.type), command.name, prefixedParams(command))
 
 	# Append paramemetrs
 	callPrintItems = ["\"%s(\"" % command.name]

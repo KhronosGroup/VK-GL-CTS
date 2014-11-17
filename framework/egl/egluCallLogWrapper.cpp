@@ -95,7 +95,7 @@ public:
 inline std::ostream& operator<< (std::ostream& str, EnumPointerFmt fmt)
 {
 	if (fmt.value)
-		return str << tcu::Format::Enum(fmt.getName, *fmt.value);
+		return str << tcu::Format::Enum<int, 2>(fmt.getName, *fmt.value);
 	else
 		return str << "(null)";
 }

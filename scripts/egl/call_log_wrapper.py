@@ -6,7 +6,7 @@ import string
 from common import *
 from khr_util.format import indentLines
 
-def genCommandList(iface, renderCommand, directory, filename, align=False):
+def genCommandList (iface, renderCommand, directory, filename, align=False):
 	lines = map(renderCommand, iface.commands)
 	if align:
 		lines = indentLines(lines)
@@ -25,7 +25,7 @@ def pointer (size):
 	return lambda name: "getPointerStr(%s, %s)" % (name, size)
 
 def enumPointer (group, size):
-	return lambda name: "getEnumPointerStr(%s, %s, get%sName)" % (name, size, group)
+	return lambda name: "getEnumPointerStr<%(nameFunc)s>(%(name)s, %(size)s)" % {"name": name, "size": size, "nameFunc": ("get%sName" % group)}
 
 def configAttrib (attribNdx):
 	return lambda name: "getConfigAttribValueStr(param%d, %s)" % (attribNdx, name)
@@ -48,11 +48,11 @@ CALL_LOG_SPECS = {
 	"eglSurfaceAttrib":			LogSpec({2: enum("SurfaceAttrib"), 3: lambda n: "getSurfaceAttribValueStr(attribute, %s)" % n}),
 }
 
-def eglwPrefix(string):
+def eglwPrefix (string):
 	# \note Not used for now
 	return string
 
-def prefixedParams(command):
+def prefixedParams (command):
 	if len(command.params) > 0:
 		return ", ".join(eglwPrefix(param.declaration) for param in command.params)
 	else:
