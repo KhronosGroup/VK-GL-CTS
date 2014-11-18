@@ -16756,7 +16756,6 @@
 <Test name="get_buffer_parameteriv" />
 <Test name="get_buffer_parameteri64v" />
 <Test name="get_buffer_pointerv" />
-<Test name="get_framebuffer_attachment_parameteriv" />
 <Test name="get_renderbuffer_parameteriv" />
 <Test name="get_queryiv" />
 <Test name="get_query_objectuiv" />
