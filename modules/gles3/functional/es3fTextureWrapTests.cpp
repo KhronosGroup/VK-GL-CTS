@@ -48,6 +48,7 @@ namespace Functional
 
 using tcu::TestLog;
 using tcu::CompressedTexture;
+using tcu::CompressedTexFormat;
 using std::vector;
 using std::string;
 using tcu::Sampler;
@@ -83,7 +84,7 @@ class TextureWrapCase : public tcu::TestCase
 public:
 									TextureWrapCase			(tcu::TestContext& testCtx, glu::RenderContext& renderCtx, const glu::ContextInfo& ctxInfo, const char* name, const char* description, deUint32 format, deUint32 dataType, deUint32 wrapS, deUint32 wrapT, deUint32 minFilter, deUint32 magFilter, int width, int height);
 									TextureWrapCase			(tcu::TestContext& testCtx, glu::RenderContext& renderCtx, const glu::ContextInfo& ctxInfo, const char* name, const char* description, deUint32 wrapS, deUint32 wrapT, deUint32 minFilter, deUint32 magFilter, const std::vector<std::string>& filenames);
-									TextureWrapCase			(tcu::TestContext& testCtx, glu::RenderContext& renderCtx, const glu::ContextInfo& ctxInfo, const char* name, const char* description, CompressedTexture::Format compressedFormat, deUint32 wrapS, deUint32 wrapT, deUint32 minFilter, deUint32 magFilter, int width, int height);
+									TextureWrapCase			(tcu::TestContext& testCtx, glu::RenderContext& renderCtx, const glu::ContextInfo& ctxInfo, const char* name, const char* description, CompressedTexFormat compressedFormat, deUint32 wrapS, deUint32 wrapT, deUint32 minFilter, deUint32 magFilter, int width, int height);
 									~TextureWrapCase		(void);
 
 	void							init					(void);
@@ -108,7 +109,7 @@ private:
 
 	const deUint32					m_format;
 	const deUint32					m_dataType;
-	const CompressedTexture::Format	m_compressedFormat;
+	const CompressedTexFormat		m_compressedFormat;
 	const deUint32					m_wrapS;
 	const deUint32					m_wrapT;
 	const deUint32					m_minFilter;
@@ -131,7 +132,7 @@ TextureWrapCase::TextureWrapCase (tcu::TestContext& testCtx, glu::RenderContext&
 	, m_renderCtxInfo		(ctxInfo)
 	, m_format				(format)
 	, m_dataType			(dataType)
-	, m_compressedFormat	(CompressedTexture::FORMAT_LAST)
+	, m_compressedFormat	(tcu::COMPRESSEDTEXFORMAT_LAST)
 	, m_wrapS				(wrapS)
 	, m_wrapT				(wrapT)
 	, m_minFilter			(minFilter)
@@ -150,7 +151,7 @@ TextureWrapCase::TextureWrapCase (tcu::TestContext& testCtx, glu::RenderContext&
 	, m_renderCtxInfo		(ctxInfo)
 	, m_format				(GL_NONE)
 	, m_dataType			(GL_NONE)
-	, m_compressedFormat	(CompressedTexture::FORMAT_LAST)
+	, m_compressedFormat	(tcu::COMPRESSEDTEXFORMAT_LAST)
 	, m_wrapS				(wrapS)
 	, m_wrapT				(wrapT)
 	, m_minFilter			(minFilter)
@@ -164,7 +165,7 @@ TextureWrapCase::TextureWrapCase (tcu::TestContext& testCtx, glu::RenderContext&
 {
 }
 
-TextureWrapCase::TextureWrapCase (tcu::TestContext& testCtx, glu::RenderContext& renderCtx, const glu::ContextInfo& ctxInfo, const char* name, const char* description, CompressedTexture::Format compressedFormat, deUint32 wrapS, deUint32 wrapT, deUint32 minFilter, deUint32 magFilter, int width, int height)
+TextureWrapCase::TextureWrapCase (tcu::TestContext& testCtx, glu::RenderContext& renderCtx, const glu::ContextInfo& ctxInfo, const char* name, const char* description, CompressedTexFormat compressedFormat, deUint32 wrapS, deUint32 wrapT, deUint32 minFilter, deUint32 magFilter, int width, int height)
 	: TestCase				(testCtx, name, description)
 	, m_renderCtx			(renderCtx)
 	, m_renderCtxInfo		(ctxInfo)
@@ -203,7 +204,7 @@ void TextureWrapCase::init (void)
 		m_width		= m_texture->getRefTexture().getWidth();
 		m_height	= m_texture->getRefTexture().getHeight();
 	}
-	else if (m_compressedFormat != CompressedTexture::FORMAT_LAST)
+	else if (m_compressedFormat != tcu::COMPRESSEDTEXFORMAT_LAST)
 	{
 		// Generate compressed texture.
 
@@ -223,7 +224,7 @@ void TextureWrapCase::init (void)
 
 			m_texture = new glu::Texture2D(m_renderCtx, m_renderCtxInfo, 1, &compressedTexture);
 		}
-		else if (tcu::isASTCFormat(m_compressedFormat))
+		else if (tcu::isAstcFormat(m_compressedFormat))
 		{
 			// Create ASTC texture by picking from a set of pre-generated blocks.
 
@@ -253,7 +254,8 @@ void TextureWrapCase::init (void)
 			for (int i = 0; i < dataSize/BLOCK_SIZE; i++)
 				deMemcpy(&data[i*BLOCK_SIZE], &blocks[rnd.getInt(0, DE_LENGTH_OF_ARRAY(blocks)-1)][0], BLOCK_SIZE);
 
-			m_texture = new glu::Texture2D(m_renderCtx, m_renderCtxInfo, 1, &compressedTexture);
+			// \note All blocks are valid LDR blocks so ASTCMODE_* doesn't change anything
+			m_texture = new glu::Texture2D(m_renderCtx, m_renderCtxInfo, 1, &compressedTexture, tcu::TexDecompressionParams(tcu::TexDecompressionParams::ASTCMODE_LDR));
 		}
 		else
 			DE_ASSERT(false);
@@ -300,7 +302,7 @@ TextureWrapCase::IterateResult TextureWrapCase::iterate (void)
 	vector<float>					texCoord;
 	const tcu::TextureFormatInfo	texFormatInfo					= tcu::getTextureFormatInfo(texFormat);
 	// \note For non-sRGB ASTC formats, the values are fp16 in range [0..1], not the range assumed given by tcu::getTextureFormatInfo().
-	const bool						useDefaultColorScaleAndBias		= !tcu::isASTCFormat(m_compressedFormat) || tcu::isASTCSRGBFormat(m_compressedFormat);
+	const bool						useDefaultColorScaleAndBias		= !tcu::isAstcFormat(m_compressedFormat) || tcu::isAstcSRGBFormat(m_compressedFormat);
 
 	// Bind to unit 0.
 	gl.activeTexture(GL_TEXTURE0);
@@ -468,20 +470,20 @@ void TextureWrapTests::init (void)
 	{
 		static const struct
 		{
-			const char*					name;
-			CompressedTexture::Format	format;
+			const char*			name;
+			CompressedTexFormat	format;
 		} etc2Formats[] =
 		{
-			{ "eac_r11",							CompressedTexture::EAC_R11,							},
-			{ "eac_signed_r11",						CompressedTexture::EAC_SIGNED_R11,					},
-			{ "eac_rg11",							CompressedTexture::EAC_RG11,						},
-			{ "eac_signed_rg11",					CompressedTexture::EAC_SIGNED_RG11,					},
-			{ "etc2_rgb8",							CompressedTexture::ETC2_RGB8,						},
-			{ "etc2_srgb8",							CompressedTexture::ETC2_SRGB8,						},
-			{ "etc2_rgb8_punchthrough_alpha1",		CompressedTexture::ETC2_RGB8_PUNCHTHROUGH_ALPHA1,	},
-			{ "etc2_srgb8_punchthrough_alpha1",		CompressedTexture::ETC2_SRGB8_PUNCHTHROUGH_ALPHA1,	},
-			{ "etc2_eac_rgba8",						CompressedTexture::ETC2_EAC_RGBA8,					},
-			{ "etc2_eac_srgb8_alpha8",				CompressedTexture::ETC2_EAC_SRGB8_ALPHA8,			}
+			{ "eac_r11",							tcu::COMPRESSEDTEXFORMAT_EAC_R11,							},
+			{ "eac_signed_r11",						tcu::COMPRESSEDTEXFORMAT_EAC_SIGNED_R11,					},
+			{ "eac_rg11",							tcu::COMPRESSEDTEXFORMAT_EAC_RG11,							},
+			{ "eac_signed_rg11",					tcu::COMPRESSEDTEXFORMAT_EAC_SIGNED_RG11,					},
+			{ "etc2_rgb8",							tcu::COMPRESSEDTEXFORMAT_ETC2_RGB8,							},
+			{ "etc2_srgb8",							tcu::COMPRESSEDTEXFORMAT_ETC2_SRGB8,						},
+			{ "etc2_rgb8_punchthrough_alpha1",		tcu::COMPRESSEDTEXFORMAT_ETC2_RGB8_PUNCHTHROUGH_ALPHA1,		},
+			{ "etc2_srgb8_punchthrough_alpha1",		tcu::COMPRESSEDTEXFORMAT_ETC2_SRGB8_PUNCHTHROUGH_ALPHA1,	},
+			{ "etc2_eac_rgba8",						tcu::COMPRESSEDTEXFORMAT_ETC2_EAC_RGBA8,					},
+			{ "etc2_eac_srgb8_alpha8",				tcu::COMPRESSEDTEXFORMAT_ETC2_EAC_SRGB8_ALPHA8,				}
 		};
 
 		static const struct
@@ -518,15 +520,16 @@ void TextureWrapTests::init (void)
 
 	// ASTC cases.
 	{
-		for (int formatI = 0; formatI < CompressedTexture::FORMAT_LAST; formatI++)
+		for (int formatI = 0; formatI < tcu::COMPRESSEDTEXFORMAT_LAST; formatI++)
 		{
-			const CompressedTexture::Format format = (CompressedTexture::Format)formatI;
-			if (!tcu::isASTCFormat(format))
+			const CompressedTexFormat format = (CompressedTexFormat)formatI;
+
+			if (!tcu::isAstcFormat(format))
 				continue;
 
 			{
-				const tcu::IVec3		blockSize		= tcu::getASTCBlockSize(format);
-				const string			formatName		= "astc_" + de::toString(blockSize.x()) + "x" + de::toString(blockSize.y()) + (tcu::isASTCSRGBFormat(format) ? "_srgb" : "");
+				const tcu::IVec3		blockSize		= tcu::getBlockPixelSize(format);
+				const string			formatName		= "astc_" + de::toString(blockSize.x()) + "x" + de::toString(blockSize.y()) + (tcu::isAstcSRGBFormat(format) ? "_srgb" : "");
 				TestCaseGroup* const	formatGroup		= new TestCaseGroup(m_context, formatName.c_str(), "");
 				addChild(formatGroup);
 

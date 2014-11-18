@@ -23,12 +23,16 @@
 
 #include "tcuCompressedTexture.hpp"
 #include "tcuTextureUtil.hpp"
+
 #include "deStringUtil.hpp"
 #include "deFloat16.h"
 
 #include <algorithm>
 
 namespace tcu
+{
+
+namespace
 {
 
 enum { ASTC_BLOCK_SIZE_BYTES = 128/8 };
@@ -38,253 +42,205 @@ struct isSameType			{ enum { V = 0 }; };
 template <typename T>
 struct isSameType<T, T>		{ enum { V = 1 }; };
 
-CompressedTexture::CompressedTexture (void)
-	: m_format	(FORMAT_LAST)
-	, m_width	(0)
-	, m_height	(0)
-	, m_depth	(0)
-{
-}
+} // anonymous
 
-CompressedTexture::CompressedTexture (Format format, int width, int height, int depth)
-	: m_format	(FORMAT_LAST)
-	, m_width	(0)
-	, m_height	(0)
-	, m_depth	(0)
+int getBlockSize (CompressedTexFormat format)
 {
-	setStorage(format, width, height, depth);
-}
-
-CompressedTexture::~CompressedTexture (void)
-{
-}
-
-static inline int divRoundUp (int a, int b)
-{
-	return a/b + ((a%b) ? 1 : 0);
-}
-
-bool isEtcFormat (CompressedTexture::Format fmt)
-{
-	switch (fmt)
+	if (isAstcFormat(format))
 	{
-		case CompressedTexture::ETC1_RGB8:
-		case CompressedTexture::EAC_R11:
-		case CompressedTexture::EAC_SIGNED_R11:
-		case CompressedTexture::EAC_RG11:
-		case CompressedTexture::EAC_SIGNED_RG11:
-		case CompressedTexture::ETC2_RGB8:
-		case CompressedTexture::ETC2_SRGB8:
-		case CompressedTexture::ETC2_RGB8_PUNCHTHROUGH_ALPHA1:
-		case CompressedTexture::ETC2_SRGB8_PUNCHTHROUGH_ALPHA1:
-		case CompressedTexture::ETC2_EAC_RGBA8:
-		case CompressedTexture::ETC2_EAC_SRGB8_ALPHA8:
-			return true;
-
-		default:
-			return false;
+		return ASTC_BLOCK_SIZE_BYTES;
 	}
-}
-
-bool isASTCFormat (CompressedTexture::Format fmt)
-{
-	switch (fmt)
+	else if (isEtcFormat(format))
 	{
-		case CompressedTexture::ASTC_4x4_RGBA:
-		case CompressedTexture::ASTC_5x4_RGBA:
-		case CompressedTexture::ASTC_5x5_RGBA:
-		case CompressedTexture::ASTC_6x5_RGBA:
-		case CompressedTexture::ASTC_6x6_RGBA:
-		case CompressedTexture::ASTC_8x5_RGBA:
-		case CompressedTexture::ASTC_8x6_RGBA:
-		case CompressedTexture::ASTC_8x8_RGBA:
-		case CompressedTexture::ASTC_10x5_RGBA:
-		case CompressedTexture::ASTC_10x6_RGBA:
-		case CompressedTexture::ASTC_10x8_RGBA:
-		case CompressedTexture::ASTC_10x10_RGBA:
-		case CompressedTexture::ASTC_12x10_RGBA:
-		case CompressedTexture::ASTC_12x12_RGBA:
-		case CompressedTexture::ASTC_4x4_SRGB8_ALPHA8:
-		case CompressedTexture::ASTC_5x4_SRGB8_ALPHA8:
-		case CompressedTexture::ASTC_5x5_SRGB8_ALPHA8:
-		case CompressedTexture::ASTC_6x5_SRGB8_ALPHA8:
-		case CompressedTexture::ASTC_6x6_SRGB8_ALPHA8:
-		case CompressedTexture::ASTC_8x5_SRGB8_ALPHA8:
-		case CompressedTexture::ASTC_8x6_SRGB8_ALPHA8:
-		case CompressedTexture::ASTC_8x8_SRGB8_ALPHA8:
-		case CompressedTexture::ASTC_10x5_SRGB8_ALPHA8:
-		case CompressedTexture::ASTC_10x6_SRGB8_ALPHA8:
-		case CompressedTexture::ASTC_10x8_SRGB8_ALPHA8:
-		case CompressedTexture::ASTC_10x10_SRGB8_ALPHA8:
-		case CompressedTexture::ASTC_12x10_SRGB8_ALPHA8:
-		case CompressedTexture::ASTC_12x12_SRGB8_ALPHA8:
-			return true;
-
-		default:
-			return false;
-	}
-}
-
-bool isASTCSRGBFormat (CompressedTexture::Format fmt)
-{
-	switch (fmt)
-	{
-		case CompressedTexture::ASTC_4x4_SRGB8_ALPHA8:
-		case CompressedTexture::ASTC_5x4_SRGB8_ALPHA8:
-		case CompressedTexture::ASTC_5x5_SRGB8_ALPHA8:
-		case CompressedTexture::ASTC_6x5_SRGB8_ALPHA8:
-		case CompressedTexture::ASTC_6x6_SRGB8_ALPHA8:
-		case CompressedTexture::ASTC_8x5_SRGB8_ALPHA8:
-		case CompressedTexture::ASTC_8x6_SRGB8_ALPHA8:
-		case CompressedTexture::ASTC_8x8_SRGB8_ALPHA8:
-		case CompressedTexture::ASTC_10x5_SRGB8_ALPHA8:
-		case CompressedTexture::ASTC_10x6_SRGB8_ALPHA8:
-		case CompressedTexture::ASTC_10x8_SRGB8_ALPHA8:
-		case CompressedTexture::ASTC_10x10_SRGB8_ALPHA8:
-		case CompressedTexture::ASTC_12x10_SRGB8_ALPHA8:
-		case CompressedTexture::ASTC_12x12_SRGB8_ALPHA8:
-			return true;
-
-		default:
-			return false;
-	}
-}
-
-IVec3 getASTCBlockSize (CompressedTexture::Format fmt)
-{
-	switch (fmt)
-	{
-		case CompressedTexture::ASTC_4x4_RGBA:				return IVec3(4,  4,  1);
-		case CompressedTexture::ASTC_5x4_RGBA:				return IVec3(5,  4,  1);
-		case CompressedTexture::ASTC_5x5_RGBA:				return IVec3(5,  5,  1);
-		case CompressedTexture::ASTC_6x5_RGBA:				return IVec3(6,  5,  1);
-		case CompressedTexture::ASTC_6x6_RGBA:				return IVec3(6,  6,  1);
-		case CompressedTexture::ASTC_8x5_RGBA:				return IVec3(8,  5,  1);
-		case CompressedTexture::ASTC_8x6_RGBA:				return IVec3(8,  6,  1);
-		case CompressedTexture::ASTC_8x8_RGBA:				return IVec3(8,  8,  1);
-		case CompressedTexture::ASTC_10x5_RGBA:				return IVec3(10, 5,  1);
-		case CompressedTexture::ASTC_10x6_RGBA:				return IVec3(10, 6,  1);
-		case CompressedTexture::ASTC_10x8_RGBA:				return IVec3(10, 8,  1);
-		case CompressedTexture::ASTC_10x10_RGBA:			return IVec3(10, 10, 1);
-		case CompressedTexture::ASTC_12x10_RGBA:			return IVec3(12, 10, 1);
-		case CompressedTexture::ASTC_12x12_RGBA:			return IVec3(12, 12, 1);
-		case CompressedTexture::ASTC_4x4_SRGB8_ALPHA8:		return IVec3(4,  4,  1);
-		case CompressedTexture::ASTC_5x4_SRGB8_ALPHA8:		return IVec3(5,  4,  1);
-		case CompressedTexture::ASTC_5x5_SRGB8_ALPHA8:		return IVec3(5,  5,  1);
-		case CompressedTexture::ASTC_6x5_SRGB8_ALPHA8:		return IVec3(6,  5,  1);
-		case CompressedTexture::ASTC_6x6_SRGB8_ALPHA8:		return IVec3(6,  6,  1);
-		case CompressedTexture::ASTC_8x5_SRGB8_ALPHA8:		return IVec3(8,  5,  1);
-		case CompressedTexture::ASTC_8x6_SRGB8_ALPHA8:		return IVec3(8,  6,  1);
-		case CompressedTexture::ASTC_8x8_SRGB8_ALPHA8:		return IVec3(8,  8,  1);
-		case CompressedTexture::ASTC_10x5_SRGB8_ALPHA8:		return IVec3(10, 5,  1);
-		case CompressedTexture::ASTC_10x6_SRGB8_ALPHA8:		return IVec3(10, 6,  1);
-		case CompressedTexture::ASTC_10x8_SRGB8_ALPHA8:		return IVec3(10, 8,  1);
-		case CompressedTexture::ASTC_10x10_SRGB8_ALPHA8:	return IVec3(10, 10, 1);
-		case CompressedTexture::ASTC_12x10_SRGB8_ALPHA8:	return IVec3(12, 10, 1);
-		case CompressedTexture::ASTC_12x12_SRGB8_ALPHA8:	return IVec3(12, 12, 1);
-
-		default:
-			DE_ASSERT(false);
-			return IVec3();
-	}
-}
-
-CompressedTexture::Format getASTCFormatByBlockSize (int width, int height, int depth, bool isSRGB)
-{
-	if (depth > 1)
-		throw tcu::InternalError("3D ASTC textures not currently supported");
-
-	const tcu::IVec3 size(width, height, depth);
-
-	for (int fmtI = 0; fmtI < CompressedTexture::FORMAT_LAST; fmtI++)
-	{
-		const CompressedTexture::Format fmt = (CompressedTexture::Format)fmtI;
-
-		if (isASTCFormat(fmt) && getASTCBlockSize(fmt) == size && isASTCSRGBFormat(fmt) == isSRGB)
-			return fmt;
-	}
-
-	throw tcu::InternalError("Invalid ASTC block size " + de::toString(width) + "x" + de::toString(height) + "x" + de::toString(depth));
-}
-
-void CompressedTexture::setStorage (Format format, int width, int height, int depth)
-{
-	m_format	= format;
-	m_width		= width;
-	m_height	= height;
-	m_depth		= depth;
-
-	if (isEtcFormat(m_format))
-	{
-		DE_ASSERT(m_depth == 1);
-
-		int blockSizeMultiplier = 0; // How many 64-bit parts each compressed block contains.
-
-		switch (m_format)
+		switch (format)
 		{
-			case ETC1_RGB8:							blockSizeMultiplier = 1;	break;
-			case EAC_R11:							blockSizeMultiplier = 1;	break;
-			case EAC_SIGNED_R11:					blockSizeMultiplier = 1;	break;
-			case EAC_RG11:							blockSizeMultiplier = 2;	break;
-			case EAC_SIGNED_RG11:					blockSizeMultiplier = 2;	break;
-			case ETC2_RGB8:							blockSizeMultiplier = 1;	break;
-			case ETC2_SRGB8:						blockSizeMultiplier = 1;	break;
-			case ETC2_RGB8_PUNCHTHROUGH_ALPHA1:		blockSizeMultiplier = 1;	break;
-			case ETC2_SRGB8_PUNCHTHROUGH_ALPHA1:	blockSizeMultiplier = 1;	break;
-			case ETC2_EAC_RGBA8:					blockSizeMultiplier = 2;	break;
-			case ETC2_EAC_SRGB8_ALPHA8:				blockSizeMultiplier = 2;	break;
+			case COMPRESSEDTEXFORMAT_ETC1_RGB8:							return 8;
+			case COMPRESSEDTEXFORMAT_EAC_R11:							return 8;
+			case COMPRESSEDTEXFORMAT_EAC_SIGNED_R11:					return 8;
+			case COMPRESSEDTEXFORMAT_EAC_RG11:							return 16;
+			case COMPRESSEDTEXFORMAT_EAC_SIGNED_RG11:					return 16;
+			case COMPRESSEDTEXFORMAT_ETC2_RGB8:							return 8;
+			case COMPRESSEDTEXFORMAT_ETC2_SRGB8:						return 8;
+			case COMPRESSEDTEXFORMAT_ETC2_RGB8_PUNCHTHROUGH_ALPHA1:		return 8;
+			case COMPRESSEDTEXFORMAT_ETC2_SRGB8_PUNCHTHROUGH_ALPHA1:	return 8;
+			case COMPRESSEDTEXFORMAT_ETC2_EAC_RGBA8:					return 16;
+			case COMPRESSEDTEXFORMAT_ETC2_EAC_SRGB8_ALPHA8:				return 16;
 
 			default:
 				DE_ASSERT(false);
-				break;
+				return -1;
 		}
-
-		m_data.resize(blockSizeMultiplier * sizeof(deUint64) * divRoundUp(m_width, 4) * divRoundUp(m_height, 4));
-	}
-	else if (isASTCFormat(m_format))
-	{
-		if (m_depth > 1)
-			throw tcu::InternalError("3D ASTC textures not currently supported");
-
-		const IVec3 blockSize = getASTCBlockSize(m_format);
-		m_data.resize(ASTC_BLOCK_SIZE_BYTES * divRoundUp(m_width, blockSize.x()) * divRoundUp(m_height, blockSize.y()) * divRoundUp(m_depth, blockSize.z()));
 	}
 	else
 	{
-		DE_ASSERT(m_format == FORMAT_LAST);
-		DE_ASSERT(m_width == 0 && m_height == 0 && m_depth == 0);
-		m_data.resize(0);
+		DE_ASSERT(false);
+		return -1;
 	}
 }
 
-/*--------------------------------------------------------------------*//*!
- * \brief Get uncompressed texture format
- *//*--------------------------------------------------------------------*/
-TextureFormat CompressedTexture::getUncompressedFormat (void) const
+IVec3 getBlockPixelSize (CompressedTexFormat format)
 {
-	if (isEtcFormat(m_format))
+	if (isEtcFormat(format))
 	{
-		switch (m_format)
+		return IVec3(4, 4, 1);
+	}
+	else if (isAstcFormat(format))
+	{
+		switch (format)
 		{
-			case ETC1_RGB8:							return TextureFormat(TextureFormat::RGB,	TextureFormat::UNORM_INT8);
-			case EAC_R11:							return TextureFormat(TextureFormat::R,		TextureFormat::UNORM_INT16);
-			case EAC_SIGNED_R11:					return TextureFormat(TextureFormat::R,		TextureFormat::SNORM_INT16);
-			case EAC_RG11:							return TextureFormat(TextureFormat::RG,		TextureFormat::UNORM_INT16);
-			case EAC_SIGNED_RG11:					return TextureFormat(TextureFormat::RG,		TextureFormat::SNORM_INT16);
-			case ETC2_RGB8:							return TextureFormat(TextureFormat::RGB,	TextureFormat::UNORM_INT8);
-			case ETC2_SRGB8:						return TextureFormat(TextureFormat::sRGB,	TextureFormat::UNORM_INT8);
-			case ETC2_RGB8_PUNCHTHROUGH_ALPHA1:		return TextureFormat(TextureFormat::RGBA,	TextureFormat::UNORM_INT8);
-			case ETC2_SRGB8_PUNCHTHROUGH_ALPHA1:	return TextureFormat(TextureFormat::sRGBA,	TextureFormat::UNORM_INT8);
-			case ETC2_EAC_RGBA8:					return TextureFormat(TextureFormat::RGBA,	TextureFormat::UNORM_INT8);
-			case ETC2_EAC_SRGB8_ALPHA8:				return TextureFormat(TextureFormat::sRGBA,	TextureFormat::UNORM_INT8);
+			case COMPRESSEDTEXFORMAT_ASTC_4x4_RGBA:				return IVec3(4,  4,  1);
+			case COMPRESSEDTEXFORMAT_ASTC_5x4_RGBA:				return IVec3(5,  4,  1);
+			case COMPRESSEDTEXFORMAT_ASTC_5x5_RGBA:				return IVec3(5,  5,  1);
+			case COMPRESSEDTEXFORMAT_ASTC_6x5_RGBA:				return IVec3(6,  5,  1);
+			case COMPRESSEDTEXFORMAT_ASTC_6x6_RGBA:				return IVec3(6,  6,  1);
+			case COMPRESSEDTEXFORMAT_ASTC_8x5_RGBA:				return IVec3(8,  5,  1);
+			case COMPRESSEDTEXFORMAT_ASTC_8x6_RGBA:				return IVec3(8,  6,  1);
+			case COMPRESSEDTEXFORMAT_ASTC_8x8_RGBA:				return IVec3(8,  8,  1);
+			case COMPRESSEDTEXFORMAT_ASTC_10x5_RGBA:			return IVec3(10, 5,  1);
+			case COMPRESSEDTEXFORMAT_ASTC_10x6_RGBA:			return IVec3(10, 6,  1);
+			case COMPRESSEDTEXFORMAT_ASTC_10x8_RGBA:			return IVec3(10, 8,  1);
+			case COMPRESSEDTEXFORMAT_ASTC_10x10_RGBA:			return IVec3(10, 10, 1);
+			case COMPRESSEDTEXFORMAT_ASTC_12x10_RGBA:			return IVec3(12, 10, 1);
+			case COMPRESSEDTEXFORMAT_ASTC_12x12_RGBA:			return IVec3(12, 12, 1);
+			case COMPRESSEDTEXFORMAT_ASTC_4x4_SRGB8_ALPHA8:		return IVec3(4,  4,  1);
+			case COMPRESSEDTEXFORMAT_ASTC_5x4_SRGB8_ALPHA8:		return IVec3(5,  4,  1);
+			case COMPRESSEDTEXFORMAT_ASTC_5x5_SRGB8_ALPHA8:		return IVec3(5,  5,  1);
+			case COMPRESSEDTEXFORMAT_ASTC_6x5_SRGB8_ALPHA8:		return IVec3(6,  5,  1);
+			case COMPRESSEDTEXFORMAT_ASTC_6x6_SRGB8_ALPHA8:		return IVec3(6,  6,  1);
+			case COMPRESSEDTEXFORMAT_ASTC_8x5_SRGB8_ALPHA8:		return IVec3(8,  5,  1);
+			case COMPRESSEDTEXFORMAT_ASTC_8x6_SRGB8_ALPHA8:		return IVec3(8,  6,  1);
+			case COMPRESSEDTEXFORMAT_ASTC_8x8_SRGB8_ALPHA8:		return IVec3(8,  8,  1);
+			case COMPRESSEDTEXFORMAT_ASTC_10x5_SRGB8_ALPHA8:	return IVec3(10, 5,  1);
+			case COMPRESSEDTEXFORMAT_ASTC_10x6_SRGB8_ALPHA8:	return IVec3(10, 6,  1);
+			case COMPRESSEDTEXFORMAT_ASTC_10x8_SRGB8_ALPHA8:	return IVec3(10, 8,  1);
+			case COMPRESSEDTEXFORMAT_ASTC_10x10_SRGB8_ALPHA8:	return IVec3(10, 10, 1);
+			case COMPRESSEDTEXFORMAT_ASTC_12x10_SRGB8_ALPHA8:	return IVec3(12, 10, 1);
+			case COMPRESSEDTEXFORMAT_ASTC_12x12_SRGB8_ALPHA8:	return IVec3(12, 12, 1);
+
+			default:
+				DE_ASSERT(false);
+				return IVec3();
+		}
+	}
+	else
+	{
+		DE_ASSERT(false);
+		return IVec3(-1);
+	}
+}
+
+bool isEtcFormat (CompressedTexFormat format)
+{
+	switch (format)
+	{
+		case COMPRESSEDTEXFORMAT_ETC1_RGB8:
+		case COMPRESSEDTEXFORMAT_EAC_R11:
+		case COMPRESSEDTEXFORMAT_EAC_SIGNED_R11:
+		case COMPRESSEDTEXFORMAT_EAC_RG11:
+		case COMPRESSEDTEXFORMAT_EAC_SIGNED_RG11:
+		case COMPRESSEDTEXFORMAT_ETC2_RGB8:
+		case COMPRESSEDTEXFORMAT_ETC2_SRGB8:
+		case COMPRESSEDTEXFORMAT_ETC2_RGB8_PUNCHTHROUGH_ALPHA1:
+		case COMPRESSEDTEXFORMAT_ETC2_SRGB8_PUNCHTHROUGH_ALPHA1:
+		case COMPRESSEDTEXFORMAT_ETC2_EAC_RGBA8:
+		case COMPRESSEDTEXFORMAT_ETC2_EAC_SRGB8_ALPHA8:
+			return true;
+
+		default:
+			return false;
+	}
+}
+
+bool isAstcFormat (CompressedTexFormat format)
+{
+	switch (format)
+	{
+		case COMPRESSEDTEXFORMAT_ASTC_4x4_RGBA:
+		case COMPRESSEDTEXFORMAT_ASTC_5x4_RGBA:
+		case COMPRESSEDTEXFORMAT_ASTC_5x5_RGBA:
+		case COMPRESSEDTEXFORMAT_ASTC_6x5_RGBA:
+		case COMPRESSEDTEXFORMAT_ASTC_6x6_RGBA:
+		case COMPRESSEDTEXFORMAT_ASTC_8x5_RGBA:
+		case COMPRESSEDTEXFORMAT_ASTC_8x6_RGBA:
+		case COMPRESSEDTEXFORMAT_ASTC_8x8_RGBA:
+		case COMPRESSEDTEXFORMAT_ASTC_10x5_RGBA:
+		case COMPRESSEDTEXFORMAT_ASTC_10x6_RGBA:
+		case COMPRESSEDTEXFORMAT_ASTC_10x8_RGBA:
+		case COMPRESSEDTEXFORMAT_ASTC_10x10_RGBA:
+		case COMPRESSEDTEXFORMAT_ASTC_12x10_RGBA:
+		case COMPRESSEDTEXFORMAT_ASTC_12x12_RGBA:
+		case COMPRESSEDTEXFORMAT_ASTC_4x4_SRGB8_ALPHA8:
+		case COMPRESSEDTEXFORMAT_ASTC_5x4_SRGB8_ALPHA8:
+		case COMPRESSEDTEXFORMAT_ASTC_5x5_SRGB8_ALPHA8:
+		case COMPRESSEDTEXFORMAT_ASTC_6x5_SRGB8_ALPHA8:
+		case COMPRESSEDTEXFORMAT_ASTC_6x6_SRGB8_ALPHA8:
+		case COMPRESSEDTEXFORMAT_ASTC_8x5_SRGB8_ALPHA8:
+		case COMPRESSEDTEXFORMAT_ASTC_8x6_SRGB8_ALPHA8:
+		case COMPRESSEDTEXFORMAT_ASTC_8x8_SRGB8_ALPHA8:
+		case COMPRESSEDTEXFORMAT_ASTC_10x5_SRGB8_ALPHA8:
+		case COMPRESSEDTEXFORMAT_ASTC_10x6_SRGB8_ALPHA8:
+		case COMPRESSEDTEXFORMAT_ASTC_10x8_SRGB8_ALPHA8:
+		case COMPRESSEDTEXFORMAT_ASTC_10x10_SRGB8_ALPHA8:
+		case COMPRESSEDTEXFORMAT_ASTC_12x10_SRGB8_ALPHA8:
+		case COMPRESSEDTEXFORMAT_ASTC_12x12_SRGB8_ALPHA8:
+			return true;
+
+		default:
+			return false;
+	}
+}
+
+bool isAstcSRGBFormat (CompressedTexFormat format)
+{
+	switch (format)
+	{
+		case COMPRESSEDTEXFORMAT_ASTC_4x4_SRGB8_ALPHA8:
+		case COMPRESSEDTEXFORMAT_ASTC_5x4_SRGB8_ALPHA8:
+		case COMPRESSEDTEXFORMAT_ASTC_5x5_SRGB8_ALPHA8:
+		case COMPRESSEDTEXFORMAT_ASTC_6x5_SRGB8_ALPHA8:
+		case COMPRESSEDTEXFORMAT_ASTC_6x6_SRGB8_ALPHA8:
+		case COMPRESSEDTEXFORMAT_ASTC_8x5_SRGB8_ALPHA8:
+		case COMPRESSEDTEXFORMAT_ASTC_8x6_SRGB8_ALPHA8:
+		case COMPRESSEDTEXFORMAT_ASTC_8x8_SRGB8_ALPHA8:
+		case COMPRESSEDTEXFORMAT_ASTC_10x5_SRGB8_ALPHA8:
+		case COMPRESSEDTEXFORMAT_ASTC_10x6_SRGB8_ALPHA8:
+		case COMPRESSEDTEXFORMAT_ASTC_10x8_SRGB8_ALPHA8:
+		case COMPRESSEDTEXFORMAT_ASTC_10x10_SRGB8_ALPHA8:
+		case COMPRESSEDTEXFORMAT_ASTC_12x10_SRGB8_ALPHA8:
+		case COMPRESSEDTEXFORMAT_ASTC_12x12_SRGB8_ALPHA8:
+			return true;
+
+		default:
+			return false;
+	}
+}
+
+TextureFormat getUncompressedFormat (CompressedTexFormat format)
+{
+	if (isEtcFormat(format))
+	{
+		switch (format)
+		{
+			case COMPRESSEDTEXFORMAT_ETC1_RGB8:							return TextureFormat(TextureFormat::RGB,	TextureFormat::UNORM_INT8);
+			case COMPRESSEDTEXFORMAT_EAC_R11:							return TextureFormat(TextureFormat::R,		TextureFormat::UNORM_INT16);
+			case COMPRESSEDTEXFORMAT_EAC_SIGNED_R11:					return TextureFormat(TextureFormat::R,		TextureFormat::SNORM_INT16);
+			case COMPRESSEDTEXFORMAT_EAC_RG11:							return TextureFormat(TextureFormat::RG,		TextureFormat::UNORM_INT16);
+			case COMPRESSEDTEXFORMAT_EAC_SIGNED_RG11:					return TextureFormat(TextureFormat::RG,		TextureFormat::SNORM_INT16);
+			case COMPRESSEDTEXFORMAT_ETC2_RGB8:							return TextureFormat(TextureFormat::RGB,	TextureFormat::UNORM_INT8);
+			case COMPRESSEDTEXFORMAT_ETC2_SRGB8:						return TextureFormat(TextureFormat::sRGB,	TextureFormat::UNORM_INT8);
+			case COMPRESSEDTEXFORMAT_ETC2_RGB8_PUNCHTHROUGH_ALPHA1:		return TextureFormat(TextureFormat::RGBA,	TextureFormat::UNORM_INT8);
+			case COMPRESSEDTEXFORMAT_ETC2_SRGB8_PUNCHTHROUGH_ALPHA1:	return TextureFormat(TextureFormat::sRGBA,	TextureFormat::UNORM_INT8);
+			case COMPRESSEDTEXFORMAT_ETC2_EAC_RGBA8:					return TextureFormat(TextureFormat::RGBA,	TextureFormat::UNORM_INT8);
+			case COMPRESSEDTEXFORMAT_ETC2_EAC_SRGB8_ALPHA8:				return TextureFormat(TextureFormat::sRGBA,	TextureFormat::UNORM_INT8);
+
 			default:
 				DE_ASSERT(false);
 				return TextureFormat();
 		}
 	}
-	else if (isASTCFormat(m_format))
+	else if (isAstcFormat(format))
 	{
-		if (isASTCSRGBFormat(m_format))
+		if (isAstcSRGBFormat(format))
 			return TextureFormat(TextureFormat::sRGBA, TextureFormat::UNORM_INT8);
 		else
 			return TextureFormat(TextureFormat::RGBA, TextureFormat::HALF_FLOAT);
@@ -294,6 +250,30 @@ TextureFormat CompressedTexture::getUncompressedFormat (void) const
 		DE_ASSERT(false);
 		return TextureFormat();
 	}
+}
+
+CompressedTexFormat getAstcFormatByBlockSize (const IVec3& size, bool isSRGB)
+{
+	if (size.z() > 1)
+		throw InternalError("3D ASTC textures not currently supported");
+
+	for (int fmtI = 0; fmtI < COMPRESSEDTEXFORMAT_LAST; fmtI++)
+	{
+		const CompressedTexFormat fmt = (CompressedTexFormat)fmtI;
+
+		if (isAstcFormat(fmt) && getBlockPixelSize(fmt) == size && isAstcSRGBFormat(fmt) == isSRGB)
+			return fmt;
+	}
+
+	throw InternalError("Invalid ASTC block size " + de::toString(size.x()) + "x" + de::toString(size.y()) + "x" + de::toString(size.z()));
+}
+
+namespace
+{
+
+inline int divRoundUp (int a, int b)
+{
+	return a/b + ((a%b) ? 1 : 0);
 }
 
 // \todo [2013-08-06 nuutti] ETC and ASTC decompression codes are rather unrelated, and are already in their own "private" namespaces - should this be split to multiple files?
@@ -317,82 +297,84 @@ enum
 	ETC2_UNCOMPRESSED_BLOCK_SIZE_RGBA8	= ETC2_BLOCK_WIDTH*ETC2_BLOCK_HEIGHT*ETC2_UNCOMPRESSED_PIXEL_SIZE_RGBA8
 };
 
-static inline deUint64 get64BitBlock (const deUint8* src, int blockNdx)
+inline deUint64 get64BitBlock (const deUint8* src, int blockNdx)
 {
 	// Stored in big-endian form.
 	deUint64 block = 0;
+
 	for (int i = 0; i < 8; i++)
 		block = (block << 8ull) | (deUint64)(src[blockNdx*8+i]);
+
 	return block;
 }
 
 // Return the first 64 bits of a 128 bit block.
-static inline deUint64 get128BitBlockStart (const deUint8* src, int blockNdx)
+inline deUint64 get128BitBlockStart (const deUint8* src, int blockNdx)
 {
 	return get64BitBlock(src, 2*blockNdx);
 }
 
 // Return the last 64 bits of a 128 bit block.
-static inline deUint64 get128BitBlockEnd (const deUint8* src, int blockNdx)
+inline deUint64 get128BitBlockEnd (const deUint8* src, int blockNdx)
 {
 	return get64BitBlock(src, 2*blockNdx + 1);
 }
 
-static inline deUint32 getBit (deUint64 src, int bit)
+inline deUint32 getBit (deUint64 src, int bit)
 {
 	return (src >> bit) & 1;
 }
 
-static inline deUint32 getBits (deUint64 src, int low, int high)
+inline deUint32 getBits (deUint64 src, int low, int high)
 {
 	const int numBits = (high-low) + 1;
 	DE_ASSERT(de::inRange(numBits, 1, 32));
 	return (src >> low) & ((1<<numBits)-1);
 }
 
-static inline deUint8 extend4To8 (deUint8 src)
+inline deUint8 extend4To8 (deUint8 src)
 {
 	DE_ASSERT((src & ~((1<<4)-1)) == 0);
 	return (src << 4) | src;
 }
 
-static inline deUint8 extend5To8 (deUint8 src)
+inline deUint8 extend5To8 (deUint8 src)
 {
 	DE_ASSERT((src & ~((1<<5)-1)) == 0);
 	return (src << 3) | (src >> 2);
 }
 
-static inline deUint8 extend6To8 (deUint8 src)
+inline deUint8 extend6To8 (deUint8 src)
 {
 	DE_ASSERT((src & ~((1<<6)-1)) == 0);
 	return (src << 2) | (src >> 4);
 }
 
-static inline deUint8 extend7To8 (deUint8 src)
+inline deUint8 extend7To8 (deUint8 src)
 {
 	DE_ASSERT((src & ~((1<<7)-1)) == 0);
 	return (src << 1) | (src >> 6);
 }
 
-static inline deInt8 extendSigned3To8 (deUint8 src)
+inline deInt8 extendSigned3To8 (deUint8 src)
 {
 	const bool isNeg = (src & (1<<2)) != 0;
 	return (deInt8)((isNeg ? ~((1<<3)-1) : 0) | src);
 }
 
-static inline deUint8 extend5Delta3To8 (deUint8 base5, deUint8 delta3)
+inline deUint8 extend5Delta3To8 (deUint8 base5, deUint8 delta3)
 {
 	const deUint8 t = (deUint8)((deInt8)base5 + extendSigned3To8(delta3));
 	return extend5To8(t);
 }
 
-static inline deUint16 extend11To16 (deUint16 src)
+inline deUint16 extend11To16 (deUint16 src)
 {
 	DE_ASSERT((src & ~((1<<11)-1)) == 0);
 	return (src << 5) | (src >> 6);
 }
 
-static inline deInt16 extend11To16WithSign (deInt16 src)
+inline deInt16 extend11To16WithSign (deInt16 src)
 {
 	if (src < 0)
 		return -(deInt16)extend11To16(-src);
@@ -400,7 +382,7 @@ static inline deInt16 extend11To16WithSign (deInt16 src)
 		return (deInt16)extend11To16(src);
 }
 
-static void decompressETC1Block (deUint8 dst[ETC2_UNCOMPRESSED_BLOCK_SIZE_RGB8], deUint64 src)
+void decompressETC1Block (deUint8 dst[ETC2_UNCOMPRESSED_BLOCK_SIZE_RGB8], deUint64 src)
 {
 	const int		diffBit		= (int)getBit(src, 33);
 	const int		flipBit		= (int)getBit(src, 32);
@@ -469,7 +451,7 @@ static void decompressETC1Block (deUint8 dst[ETC2_UNCOMPRESSED_BLOCK_SIZE_RGB8],
 }
 
 // if alphaMode is true, do PUNCHTHROUGH and store alpha to alphaDst; otherwise do ordinary ETC2 RGB8.
-static void decompressETC2Block (deUint8 dst[ETC2_UNCOMPRESSED_BLOCK_SIZE_RGB8], deUint64 src, deUint8 alphaDst[ETC2_UNCOMPRESSED_BLOCK_SIZE_A8], bool alphaMode)
+void decompressETC2Block (deUint8 dst[ETC2_UNCOMPRESSED_BLOCK_SIZE_RGB8], deUint64 src, deUint8 alphaDst[ETC2_UNCOMPRESSED_BLOCK_SIZE_A8], bool alphaMode)
 {
 	enum Etc2Mode
 	{
@@ -731,7 +713,7 @@ static void decompressETC2Block (deUint8 dst[ETC2_UNCOMPRESSED_BLOCK_SIZE_RGB8],
 	}
 }
 
-static void decompressEAC8Block (deUint8 dst[ETC2_UNCOMPRESSED_BLOCK_SIZE_A8], deUint64 src)
+void decompressEAC8Block (deUint8 dst[ETC2_UNCOMPRESSED_BLOCK_SIZE_A8], deUint64 src)
 {
 	static const int modifierTable[16][8] =
 	{
@@ -770,7 +752,7 @@ static void decompressEAC8Block (deUint8 dst[ETC2_UNCOMPRESSED_BLOCK_SIZE_A8], d
 	}
 }
 
-static void decompressEAC11Block (deUint8 dst[ETC2_UNCOMPRESSED_BLOCK_SIZE_R11], deUint64 src, bool signedMode)
+void decompressEAC11Block (deUint8 dst[ETC2_UNCOMPRESSED_BLOCK_SIZE_R11], deUint64 src, bool signedMode)
 {
 	static const int modifierTable[16][8] =
 	{
@@ -815,294 +797,199 @@ static void decompressEAC11Block (deUint8 dst[ETC2_UNCOMPRESSED_BLOCK_SIZE_R11],
 
 		if (signedMode)
 		{
+			deInt16 value;
+
 			if (multiplier != 0)
-				*(deInt16*)&dst[dstOffset] = (deInt16)deClamp32(baseCodeword*8 + multiplier*modifier*8, -1023, 1023);
+				value = (deInt16)deClamp32(baseCodeword*8 + multiplier*modifier*8, -1023, 1023);
 			else
-				*(deInt16*)&dst[dstOffset] = (deInt16)deClamp32(baseCodeword*8 + modifier, -1023, 1023);
+				value = (deInt16)deClamp32(baseCodeword*8 + modifier, -1023, 1023);
+
+			*((deInt16*)(dst + dstOffset)) = value;
 		}
 		else
 		{
+			deUint16 value;
+
 			if (multiplier != 0)
-				*(deUint16*)&dst[dstOffset] = (deUint16)deClamp32(baseCodeword*8 + 4 + multiplier*modifier*8, 0, 2047);
+				value = (deUint16)deClamp32(baseCodeword*8 + 4 + multiplier*modifier*8, 0, 2047);
 			else
-				*(deUint16*)&dst[dstOffset] = (deUint16)deClamp32(baseCodeword*8 + 4 + modifier, 0, 2047);
+				value= (deUint16)deClamp32(baseCodeword*8 + 4 + modifier, 0, 2047);
+
+			*((deUint16*)(dst + dstOffset)) = value;
 		}
 	}
 }
 
 } // EtcDecompressInternal
 
-static void decompressETC1 (const tcu::PixelBufferAccess& dst, int width, int height, const deUint8* src)
+void decompressETC1 (const PixelBufferAccess& dst, const deUint8* src)
 {
 	using namespace EtcDecompressInternal;
 
-	DE_ASSERT(dst.getWidth() == width && dst.getHeight() == height && dst.getDepth() == 1);
-	DE_ASSERT(dst.getFormat() == TextureFormat(TextureFormat::RGB, TextureFormat::UNORM_INT8));
-
-	const int		numBlocksX		= divRoundUp(width, 4);
-	const int		numBlocksY		= divRoundUp(height, 4);
 	deUint8* const	dstPtr			= (deUint8*)dst.getDataPtr();
-	const int		dstRowPitch		= dst.getRowPitch();
-	const int		dstPixelSize	= ETC2_UNCOMPRESSED_PIXEL_SIZE_RGB8;
+	const deUint64	compressedBlock = get64BitBlock(src, 0);
 
-	for (int blockY = 0; blockY < numBlocksY; blockY++)
-	{
-		for (int blockX = 0; blockX < numBlocksX; blockX++)
-		{
-			const deUint64	compressedBlock = get64BitBlock(src, blockY*numBlocksX + blockX);
-			deUint8			uncompressedBlock[ETC2_UNCOMPRESSED_BLOCK_SIZE_RGB8];
-
-			// Decompress.
-			decompressETC1Block(uncompressedBlock, compressedBlock);
-
-			// Write to dst.
-			const int baseX = blockX*ETC2_BLOCK_WIDTH;
-			const int baseY = blockY*ETC2_BLOCK_HEIGHT;
-			for (int y = 0; y < de::min((int)ETC2_BLOCK_HEIGHT, height-baseY); y++)
-			{
-				for (int x = 0; x < de::min((int)ETC2_BLOCK_WIDTH, width-baseX); x++)
-				{
-					const deUint8* const	srcPixel = &uncompressedBlock[(y*ETC2_BLOCK_WIDTH + x)*ETC2_UNCOMPRESSED_PIXEL_SIZE_RGB8];
-					deUint8* const			dstPixel = dstPtr + (baseY+y)*dstRowPitch + (baseX+x)*dstPixelSize;
-
-					DE_STATIC_ASSERT(ETC2_UNCOMPRESSED_PIXEL_SIZE_RGB8 == 3);
-					dstPixel[0] = srcPixel[0];
-					dstPixel[1] = srcPixel[1];
-					dstPixel[2] = srcPixel[2];
-				}
-			}
-		}
-	}
+	decompressETC1Block(dstPtr, compressedBlock);
 }
 
-static void decompressETC2 (const tcu::PixelBufferAccess& dst, int width, int height, const deUint8* src)
+void decompressETC2 (const PixelBufferAccess& dst, const deUint8* src)
 {
 	using namespace EtcDecompressInternal;
 
-	const int		numBlocksX		= divRoundUp(width, 4);
-	const int		numBlocksY		= divRoundUp(height, 4);
 	deUint8* const	dstPtr			= (deUint8*)dst.getDataPtr();
-	const int		dstRowPitch		= dst.getRowPitch();
-	const int		dstPixelSize	= ETC2_UNCOMPRESSED_PIXEL_SIZE_RGB8;
+	const deUint64	compressedBlock = get64BitBlock(src, 0);
 
-	for (int blockY = 0; blockY < numBlocksY; blockY++)
-	{
-		for (int blockX = 0; blockX < numBlocksX; blockX++)
-		{
-			const deUint64	compressedBlock = get64BitBlock(src, blockY*numBlocksX + blockX);
-			deUint8			uncompressedBlock[ETC2_UNCOMPRESSED_BLOCK_SIZE_RGB8];
-
-			// Decompress.
-			decompressETC2Block(uncompressedBlock, compressedBlock, NULL, false);
-
-			// Write to dst.
-			const int baseX = blockX*ETC2_BLOCK_WIDTH;
-			const int baseY = blockY*ETC2_BLOCK_HEIGHT;
-			for (int y = 0; y < de::min((int)ETC2_BLOCK_HEIGHT, height-baseY); y++)
-			{
-				for (int x = 0; x < de::min((int)ETC2_BLOCK_WIDTH, width-baseX); x++)
-				{
-					const deUint8* const	srcPixel = &uncompressedBlock[(y*ETC2_BLOCK_WIDTH + x)*ETC2_UNCOMPRESSED_PIXEL_SIZE_RGB8];
-					deUint8* const			dstPixel = dstPtr + (baseY+y)*dstRowPitch + (baseX+x)*dstPixelSize;
-
-					DE_STATIC_ASSERT(ETC2_UNCOMPRESSED_PIXEL_SIZE_RGB8 == 3);
-					dstPixel[0] = srcPixel[0];
-					dstPixel[1] = srcPixel[1];
-					dstPixel[2] = srcPixel[2];
-				}
-			}
-		}
-	}
+	decompressETC2Block(dstPtr, compressedBlock, NULL, false);
 }
 
-static void decompressETC2_EAC_RGBA8 (const tcu::PixelBufferAccess& dst, int width, int height, const deUint8* src)
+void decompressETC2_EAC_RGBA8 (const PixelBufferAccess& dst, const deUint8* src)
 {
 	using namespace EtcDecompressInternal;
 
-	const int		numBlocksX		= divRoundUp(width, 4);
-	const int		numBlocksY		= divRoundUp(height, 4);
 	deUint8* const	dstPtr			= (deUint8*)dst.getDataPtr();
 	const int		dstRowPitch		= dst.getRowPitch();
 	const int		dstPixelSize	= ETC2_UNCOMPRESSED_PIXEL_SIZE_RGBA8;
 
-	for (int blockY = 0; blockY < numBlocksY; blockY++)
+	const deUint64	compressedBlockAlpha	= get128BitBlockStart(src, 0);
+	const deUint64	compressedBlockRGB		= get128BitBlockEnd(src, 0);
+	deUint8			uncompressedBlockAlpha[ETC2_UNCOMPRESSED_BLOCK_SIZE_A8];
+	deUint8			uncompressedBlockRGB[ETC2_UNCOMPRESSED_BLOCK_SIZE_RGB8];
+
+	// Decompress.
+	decompressETC2Block(uncompressedBlockRGB, compressedBlockRGB, NULL, false);
+	decompressEAC8Block(uncompressedBlockAlpha, compressedBlockAlpha);
+
+	// Write to dst.
+	for (int y = 0; y < (int)ETC2_BLOCK_HEIGHT; y++)
 	{
-		for (int blockX = 0; blockX < numBlocksX; blockX++)
+		for (int x = 0; x < (int)ETC2_BLOCK_WIDTH; x++)
 		{
-			const deUint64	compressedBlockAlpha	= get128BitBlockStart(src, blockY*numBlocksX + blockX);
-			const deUint64	compressedBlockRGB		= get128BitBlockEnd(src, blockY*numBlocksX + blockX);
-			deUint8			uncompressedBlockAlpha[ETC2_UNCOMPRESSED_BLOCK_SIZE_A8];
-			deUint8			uncompressedBlockRGB[ETC2_UNCOMPRESSED_BLOCK_SIZE_RGB8];
+			const deUint8* const	srcPixelRGB		= &uncompressedBlockRGB[(y*ETC2_BLOCK_WIDTH + x)*ETC2_UNCOMPRESSED_PIXEL_SIZE_RGB8];
+			const deUint8* const	srcPixelAlpha	= &uncompressedBlockAlpha[(y*ETC2_BLOCK_WIDTH + x)*ETC2_UNCOMPRESSED_PIXEL_SIZE_A8];
+			deUint8* const			dstPixel		= dstPtr + y*dstRowPitch + x*dstPixelSize;
 
-			// Decompress.
-			decompressETC2Block(uncompressedBlockRGB, compressedBlockRGB, NULL, false);
-			decompressEAC8Block(uncompressedBlockAlpha, compressedBlockAlpha);
-
-			// Write to dst.
-			const int baseX = blockX*ETC2_BLOCK_WIDTH;
-			const int baseY = blockY*ETC2_BLOCK_HEIGHT;
-			for (int y = 0; y < de::min((int)ETC2_BLOCK_HEIGHT, height-baseY); y++)
-			{
-				for (int x = 0; x < de::min((int)ETC2_BLOCK_WIDTH, width-baseX); x++)
-				{
-					const deUint8* const	srcPixelRGB		= &uncompressedBlockRGB[(y*ETC2_BLOCK_WIDTH + x)*ETC2_UNCOMPRESSED_PIXEL_SIZE_RGB8];
-					const deUint8* const	srcPixelAlpha	= &uncompressedBlockAlpha[(y*ETC2_BLOCK_WIDTH + x)*ETC2_UNCOMPRESSED_PIXEL_SIZE_A8];
-					deUint8* const			dstPixel		= dstPtr + (baseY+y)*dstRowPitch + (baseX+x)*dstPixelSize;
-
-					DE_STATIC_ASSERT(ETC2_UNCOMPRESSED_PIXEL_SIZE_RGBA8 == 4);
-					dstPixel[0] = srcPixelRGB[0];
-					dstPixel[1] = srcPixelRGB[1];
-					dstPixel[2] = srcPixelRGB[2];
-					dstPixel[3] = srcPixelAlpha[0];
-				}
-			}
+			DE_STATIC_ASSERT(ETC2_UNCOMPRESSED_PIXEL_SIZE_RGBA8 == 4);
+			dstPixel[0] = srcPixelRGB[0];
+			dstPixel[1] = srcPixelRGB[1];
+			dstPixel[2] = srcPixelRGB[2];
+			dstPixel[3] = srcPixelAlpha[0];
 		}
 	}
 }
 
-static void decompressETC2_RGB8_PUNCHTHROUGH_ALPHA1 (const tcu::PixelBufferAccess& dst, int width, int height, const deUint8* src)
+void decompressETC2_RGB8_PUNCHTHROUGH_ALPHA1 (const PixelBufferAccess& dst, const deUint8* src)
 {
 	using namespace EtcDecompressInternal;
 
-	const int		numBlocksX		= divRoundUp(width, 4);
-	const int		numBlocksY		= divRoundUp(height, 4);
 	deUint8* const	dstPtr			= (deUint8*)dst.getDataPtr();
 	const int		dstRowPitch		= dst.getRowPitch();
 	const int		dstPixelSize	= ETC2_UNCOMPRESSED_PIXEL_SIZE_RGBA8;
 
-	for (int blockY = 0; blockY < numBlocksY; blockY++)
+	const deUint64	compressedBlockRGBA	= get64BitBlock(src, 0);
+	deUint8			uncompressedBlockRGB[ETC2_UNCOMPRESSED_BLOCK_SIZE_RGB8];
+	deUint8			uncompressedBlockAlpha[ETC2_UNCOMPRESSED_BLOCK_SIZE_A8];
+
+	// Decompress.
+	decompressETC2Block(uncompressedBlockRGB, compressedBlockRGBA, uncompressedBlockAlpha, DE_TRUE);
+
+	// Write to dst.
+	for (int y = 0; y < (int)ETC2_BLOCK_HEIGHT; y++)
 	{
-		for (int blockX = 0; blockX < numBlocksX; blockX++)
+		for (int x = 0; x < (int)ETC2_BLOCK_WIDTH; x++)
 		{
-			const deUint64	compressedBlockRGBA	= get64BitBlock(src, blockY*numBlocksX + blockX);
-			deUint8			uncompressedBlockRGB[ETC2_UNCOMPRESSED_BLOCK_SIZE_RGB8];
-			deUint8			uncompressedBlockAlpha[ETC2_UNCOMPRESSED_BLOCK_SIZE_A8];
+			const deUint8* const	srcPixel		= &uncompressedBlockRGB[(y*ETC2_BLOCK_WIDTH + x)*ETC2_UNCOMPRESSED_PIXEL_SIZE_RGB8];
+			const deUint8* const	srcPixelAlpha	= &uncompressedBlockAlpha[(y*ETC2_BLOCK_WIDTH + x)*ETC2_UNCOMPRESSED_PIXEL_SIZE_A8];
+			deUint8* const			dstPixel		= dstPtr + y*dstRowPitch + x*dstPixelSize;
 
-			// Decompress.
-			decompressETC2Block(uncompressedBlockRGB, compressedBlockRGBA, uncompressedBlockAlpha, DE_TRUE);
-
-			// Write to dst.
-			const int baseX = blockX*ETC2_BLOCK_WIDTH;
-			const int baseY = blockY*ETC2_BLOCK_HEIGHT;
-			for (int y = 0; y < de::min((int)ETC2_BLOCK_HEIGHT, height-baseY); y++)
-			{
-				for (int x = 0; x < de::min((int)ETC2_BLOCK_WIDTH, width-baseX); x++)
-				{
-					const deUint8* const	srcPixel		= &uncompressedBlockRGB[(y*ETC2_BLOCK_WIDTH + x)*ETC2_UNCOMPRESSED_PIXEL_SIZE_RGB8];
-					const deUint8* const	srcPixelAlpha	= &uncompressedBlockAlpha[(y*ETC2_BLOCK_WIDTH + x)*ETC2_UNCOMPRESSED_PIXEL_SIZE_A8];
-					deUint8* const			dstPixel		= dstPtr + (baseY+y)*dstRowPitch + (baseX+x)*dstPixelSize;
-
-					DE_STATIC_ASSERT(ETC2_UNCOMPRESSED_PIXEL_SIZE_RGBA8 == 4);
-					dstPixel[0] = srcPixel[0];
-					dstPixel[1] = srcPixel[1];
-					dstPixel[2] = srcPixel[2];
-					dstPixel[3] = srcPixelAlpha[0];
-				}
-			}
+			DE_STATIC_ASSERT(ETC2_UNCOMPRESSED_PIXEL_SIZE_RGBA8 == 4);
+			dstPixel[0] = srcPixel[0];
+			dstPixel[1] = srcPixel[1];
+			dstPixel[2] = srcPixel[2];
+			dstPixel[3] = srcPixelAlpha[0];
 		}
 	}
 }
 
-static void decompressEAC_R11 (const tcu::PixelBufferAccess& dst, int width, int height, const deUint8* src, bool signedMode)
+void decompressEAC_R11 (const PixelBufferAccess& dst, const deUint8* src, bool signedMode)
 {
 	using namespace EtcDecompressInternal;
 
-	const int		numBlocksX		= divRoundUp(width, 4);
-	const int		numBlocksY		= divRoundUp(height, 4);
 	deUint8* const	dstPtr			= (deUint8*)dst.getDataPtr();
 	const int		dstRowPitch		= dst.getRowPitch();
 	const int		dstPixelSize	= ETC2_UNCOMPRESSED_PIXEL_SIZE_R11;
 
-	for (int blockY = 0; blockY < numBlocksY; blockY++)
+	const deUint64	compressedBlock = get64BitBlock(src, 0);
+	deUint8			uncompressedBlock[ETC2_UNCOMPRESSED_BLOCK_SIZE_R11];
+
+	// Decompress.
+	decompressEAC11Block(uncompressedBlock, compressedBlock, signedMode);
+
+	// Write to dst.
+	for (int y = 0; y < (int)ETC2_BLOCK_HEIGHT; y++)
 	{
-		for (int blockX = 0; blockX < numBlocksX; blockX++)
+		for (int x = 0; x < (int)ETC2_BLOCK_WIDTH; x++)
 		{
-			const deUint64	compressedBlock = get64BitBlock(src, blockY*numBlocksX + blockX);
-			deUint8			uncompressedBlock[ETC2_UNCOMPRESSED_BLOCK_SIZE_R11];
+			DE_STATIC_ASSERT(ETC2_UNCOMPRESSED_PIXEL_SIZE_R11 == 2);
 
-			// Decompress.
-			decompressEAC11Block(uncompressedBlock, compressedBlock, signedMode);
-
-			// Write to dst.
-			const int baseX = blockX*ETC2_BLOCK_WIDTH;
-			const int baseY = blockY*ETC2_BLOCK_HEIGHT;
-			for (int y = 0; y < de::min((int)ETC2_BLOCK_HEIGHT, height-baseY); y++)
+			if (signedMode)
 			{
-				for (int x = 0; x < de::min((int)ETC2_BLOCK_WIDTH, width-baseX); x++)
-				{
-					DE_STATIC_ASSERT(ETC2_UNCOMPRESSED_PIXEL_SIZE_R11 == 2);
+				const deInt16* const	srcPixel = (deInt16*)&uncompressedBlock[(y*ETC2_BLOCK_WIDTH + x)*ETC2_UNCOMPRESSED_PIXEL_SIZE_R11];
+				deInt16* const			dstPixel = (deInt16*)(dstPtr + y*dstRowPitch + x*dstPixelSize);
 
-					if (signedMode)
-					{
-						const deInt16* const	srcPixel = (deInt16*)&uncompressedBlock[(y*ETC2_BLOCK_WIDTH + x)*ETC2_UNCOMPRESSED_PIXEL_SIZE_R11];
-						deInt16* const			dstPixel = (deInt16*)(dstPtr + (baseY+y)*dstRowPitch + (baseX+x)*dstPixelSize);
+				dstPixel[0] = extend11To16WithSign(srcPixel[0]);
+			}
+			else
+			{
+				const deUint16* const	srcPixel = (deUint16*)&uncompressedBlock[(y*ETC2_BLOCK_WIDTH + x)*ETC2_UNCOMPRESSED_PIXEL_SIZE_R11];
+				deUint16* const			dstPixel = (deUint16*)(dstPtr + y*dstRowPitch + x*dstPixelSize);
 
-						dstPixel[0] = extend11To16WithSign(srcPixel[0]);
-					}
-					else
-					{
-						const deUint16* const	srcPixel = (deUint16*)&uncompressedBlock[(y*ETC2_BLOCK_WIDTH + x)*ETC2_UNCOMPRESSED_PIXEL_SIZE_R11];
-						deUint16* const			dstPixel = (deUint16*)(dstPtr + (baseY+y)*dstRowPitch + (baseX+x)*dstPixelSize);
-
-						dstPixel[0] = extend11To16(srcPixel[0]);
-					}
-				}
+				dstPixel[0] = extend11To16(srcPixel[0]);
 			}
 		}
 	}
 }
 
-static void decompressEAC_RG11 (const tcu::PixelBufferAccess& dst, int width, int height, const deUint8* src, bool signedMode)
+void decompressEAC_RG11 (const PixelBufferAccess& dst, const deUint8* src, bool signedMode)
 {
 	using namespace EtcDecompressInternal;
 
-	const int		numBlocksX		= divRoundUp(width, 4);
-	const int		numBlocksY		= divRoundUp(height, 4);
 	deUint8* const	dstPtr			= (deUint8*)dst.getDataPtr();
 	const int		dstRowPitch		= dst.getRowPitch();
 	const int		dstPixelSize	= ETC2_UNCOMPRESSED_PIXEL_SIZE_RG11;
 
-	for (int blockY = 0; blockY < numBlocksY; blockY++)
+	const deUint64	compressedBlockR = get128BitBlockStart(src, 0);
+	const deUint64	compressedBlockG = get128BitBlockEnd(src, 0);
+	deUint8			uncompressedBlockR[ETC2_UNCOMPRESSED_BLOCK_SIZE_R11];
+	deUint8			uncompressedBlockG[ETC2_UNCOMPRESSED_BLOCK_SIZE_R11];
+
+	// Decompress.
+	decompressEAC11Block(uncompressedBlockR, compressedBlockR, signedMode);
+	decompressEAC11Block(uncompressedBlockG, compressedBlockG, signedMode);
+
+	// Write to dst.
+	for (int y = 0; y < (int)ETC2_BLOCK_HEIGHT; y++)
 	{
-		for (int blockX = 0; blockX < numBlocksX; blockX++)
+		for (int x = 0; x < (int)ETC2_BLOCK_WIDTH; x++)
 		{
-			const deUint64	compressedBlockR = get128BitBlockStart(src, blockY*numBlocksX + blockX);
-			const deUint64	compressedBlockG = get128BitBlockEnd(src, blockY*numBlocksX + blockX);
-			deUint8			uncompressedBlockR[ETC2_UNCOMPRESSED_BLOCK_SIZE_R11];
-			deUint8			uncompressedBlockG[ETC2_UNCOMPRESSED_BLOCK_SIZE_R11];
+			DE_STATIC_ASSERT(ETC2_UNCOMPRESSED_PIXEL_SIZE_RG11 == 4);
 
-			// Decompress.
-			decompressEAC11Block(uncompressedBlockR, compressedBlockR, signedMode);
-			decompressEAC11Block(uncompressedBlockG, compressedBlockG, signedMode);
-
-			// Write to dst.
-			const int baseX = blockX*ETC2_BLOCK_WIDTH;
-			const int baseY = blockY*ETC2_BLOCK_HEIGHT;
-			for (int y = 0; y < de::min((int)ETC2_BLOCK_HEIGHT, height-baseY); y++)
+			if (signedMode)
 			{
-				for (int x = 0; x < de::min((int)ETC2_BLOCK_WIDTH, width-baseX); x++)
-				{
-					DE_STATIC_ASSERT(ETC2_UNCOMPRESSED_PIXEL_SIZE_RG11 == 4);
+				const deInt16* const	srcPixelR	= (deInt16*)&uncompressedBlockR[(y*ETC2_BLOCK_WIDTH + x)*ETC2_UNCOMPRESSED_PIXEL_SIZE_R11];
+				const deInt16* const	srcPixelG	= (deInt16*)&uncompressedBlockG[(y*ETC2_BLOCK_WIDTH + x)*ETC2_UNCOMPRESSED_PIXEL_SIZE_R11];
+				deInt16* const			dstPixel	= (deInt16*)(dstPtr + y*dstRowPitch + x*dstPixelSize);
 
-					if (signedMode)
-					{
-						const deInt16* const	srcPixelR	= (deInt16*)&uncompressedBlockR[(y*ETC2_BLOCK_WIDTH + x)*ETC2_UNCOMPRESSED_PIXEL_SIZE_R11];
-						const deInt16* const	srcPixelG	= (deInt16*)&uncompressedBlockG[(y*ETC2_BLOCK_WIDTH + x)*ETC2_UNCOMPRESSED_PIXEL_SIZE_R11];
-						deInt16* const			dstPixel	= (deInt16*)(dstPtr + (baseY+y)*dstRowPitch + (baseX+x)*dstPixelSize);
+				dstPixel[0] = extend11To16WithSign(srcPixelR[0]);
+				dstPixel[1] = extend11To16WithSign(srcPixelG[0]);
+			}
+			else
+			{
+				const deUint16* const	srcPixelR	= (deUint16*)&uncompressedBlockR[(y*ETC2_BLOCK_WIDTH + x)*ETC2_UNCOMPRESSED_PIXEL_SIZE_R11];
+				const deUint16* const	srcPixelG	= (deUint16*)&uncompressedBlockG[(y*ETC2_BLOCK_WIDTH + x)*ETC2_UNCOMPRESSED_PIXEL_SIZE_R11];
+				deUint16* const			dstPixel	= (deUint16*)(dstPtr + y*dstRowPitch + x*dstPixelSize);
 
-						dstPixel[0] = extend11To16WithSign(srcPixelR[0]);
-						dstPixel[1] = extend11To16WithSign(srcPixelG[0]);
-					}
-					else
-					{
-						const deUint16* const	srcPixelR	= (deUint16*)&uncompressedBlockR[(y*ETC2_BLOCK_WIDTH + x)*ETC2_UNCOMPRESSED_PIXEL_SIZE_R11];
-						const deUint16* const	srcPixelG	= (deUint16*)&uncompressedBlockG[(y*ETC2_BLOCK_WIDTH + x)*ETC2_UNCOMPRESSED_PIXEL_SIZE_R11];
-						deUint16* const			dstPixel	= (deUint16*)(dstPtr + (baseY+y)*dstRowPitch + (baseX+x)*dstPixelSize);
-
-						dstPixel[0] = extend11To16(srcPixelR[0]);
-						dstPixel[1] = extend11To16(srcPixelG[0]);
-					}
-				}
+				dstPixel[0] = extend11To16(srcPixelR[0]);
+				dstPixel[1] = extend11To16(srcPixelG[0]);
 			}
 		}
 	}
@@ -1117,25 +1004,25 @@ enum
 	ASTC_MAX_BLOCK_HEIGHT	= 12
 };
 
-static inline deUint32 getBit (deUint32 src, int ndx)
+inline deUint32 getBit (deUint32 src, int ndx)
 {
 	DE_ASSERT(de::inBounds(ndx, 0, 32));
 	return (src >> ndx) & 1;
 }
 
-static inline deUint32 getBits (deUint32 src, int low, int high)
+inline deUint32 getBits (deUint32 src, int low, int high)
 {
 	const int numBits = (high-low) + 1;
 	DE_ASSERT(de::inRange(numBits, 1, 32));
 	return (src >> low) & ((1u<<numBits)-1);
 }
 
-static inline bool isBitSet (deUint32 src, int ndx)
+inline bool isBitSet (deUint32 src, int ndx)
 {
 	return getBit(src, ndx) != 0;
 }
 
-static inline deUint32 reverseBits (deUint32 src, int numBits)
+inline deUint32 reverseBits (deUint32 src, int numBits)
 {
 	DE_ASSERT(de::inRange(numBits, 0, 32));
 	deUint32 result = 0;
@@ -1144,7 +1031,7 @@ static inline deUint32 reverseBits (deUint32 src, int numBits)
 	return result;
 }
 
-static inline deUint32 bitReplicationScale (deUint32 src, int numSrcBits, int numDstBits)
+inline deUint32 bitReplicationScale (deUint32 src, int numSrcBits, int numDstBits)
 {
 	DE_ASSERT(numSrcBits <= numDstBits);
 	DE_ASSERT((src & ((1<<numSrcBits)-1)) == src);
@@ -1154,14 +1041,14 @@ static inline deUint32 bitReplicationScale (deUint32 src, int numSrcBits, int nu
 	return dst;
 }
 
-static inline deInt32 signExtend (deInt32 src, int numSrcBits)
+inline deInt32 signExtend (deInt32 src, int numSrcBits)
 {
 	DE_ASSERT(de::inRange(numSrcBits, 2, 31));
 	const bool negative = (src & (1 << (numSrcBits-1))) != 0;
 	return src | (negative ? ~((1 << numSrcBits) - 1) : 0);
 }
 
-static inline bool isFloat16InfOrNan (deFloat16 v)
+inline bool isFloat16InfOrNan (deFloat16 v)
 {
 	return getBits(v, 10, 14) == 31;
 }
@@ -1289,7 +1176,7 @@ struct ISEParams
 	ISEParams (ISEMode mode_, int numBits_) : mode(mode_), numBits(numBits_) {}
 };
 
-static inline int computeNumRequiredBits (const ISEParams& iseParams, int numValues)
+inline int computeNumRequiredBits (const ISEParams& iseParams, int numValues)
 {
 	switch (iseParams.mode)
 	{
@@ -1332,7 +1219,7 @@ struct ASTCBlockMode
 	}
 };
 
-static inline int computeNumWeights (const ASTCBlockMode& mode)
+inline int computeNumWeights (const ASTCBlockMode& mode)
 {
 	return mode.weightGridWidth * mode.weightGridHeight * (mode.isDualPlane ? 2 : 1);
 }
@@ -1348,7 +1235,7 @@ struct TexelWeightPair
 	deUint32 w[2];
 };
 
-static ASTCBlockMode getASTCBlockMode (deUint32 blockModeData)
+ASTCBlockMode getASTCBlockMode (deUint32 blockModeData)
 {
 	ASTCBlockMode blockMode;
 	blockMode.isError = true; // \note Set to false later, if not error.
@@ -1463,7 +1350,7 @@ static ASTCBlockMode getASTCBlockMode (deUint32 blockModeData)
 	return blockMode;
 }
 
-static inline void setASTCErrorColorBlock (void* dst, int blockWidth, int blockHeight, bool isSRGB)
+inline void setASTCErrorColorBlock (void* dst, int blockWidth, int blockHeight, bool isSRGB)
 {
 	if (isSRGB)
 	{
@@ -1491,7 +1378,7 @@ static inline void setASTCErrorColorBlock (void* dst, int blockWidth, int blockH
 	}
 }
 
-static void decodeVoidExtentBlock (void* dst, const Block128& blockData, int blockWidth, int blockHeight, bool isSRGB, bool isLDRMode)
+void decodeVoidExtentBlock (void* dst, const Block128& blockData, int blockWidth, int blockHeight, bool isSRGB, bool isLDRMode)
 {
 	const deUint32	minSExtent			= blockData.getBits(12, 24);
 	const deUint32	maxSExtent			= blockData.getBits(25, 37);
@@ -1530,7 +1417,7 @@ static void decodeVoidExtentBlock (void* dst, const Block128& blockData, int blo
 			for (int c = 0; c < 4; c++)
 			{
 				if (isFloat16InfOrNan(rgba[c]))
-					throw tcu::InternalError("Infinity or NaN color component in HDR void extent block in ASTC texture (behavior undefined by ASTC specification)");
+					throw InternalError("Infinity or NaN color component in HDR void extent block in ASTC texture (behavior undefined by ASTC specification)");
 			}
 
 			for (int i = 0; i < blockWidth*blockHeight; i++)
@@ -1548,7 +1435,7 @@ static void decodeVoidExtentBlock (void* dst, const Block128& blockData, int blo
 	return;
 }
 
-static void decodeColorEndpointModes (deUint32* endpointModesDst, const Block128& blockData, int numPartitions, int extraCemBitsStart)
+void decodeColorEndpointModes (deUint32* endpointModesDst, const Block128& blockData, int numPartitions, int extraCemBitsStart)
 {
 	if (numPartitions == 1)
 		endpointModesDst[0] = blockData.getBits(13, 16);
@@ -1578,13 +1465,13 @@ static void decodeColorEndpointModes (deUint32* endpointModesDst, const Block128
 	}
 }
 
-static inline int computeNumColorEndpointValues (deUint32 endpointMode)
+inline int computeNumColorEndpointValues (deUint32 endpointMode)
 {
 	DE_ASSERT(endpointMode < 16);
 	return (endpointMode/4 + 1) * 2;
 }
 
-static int computeNumColorEndpointValues (const deUint32* endpointModes, int numPartitions)
+int computeNumColorEndpointValues (const deUint32* endpointModes, int numPartitions)
 {
 	int result = 0;
 	for (int i = 0; i < numPartitions; i++)
@@ -1592,7 +1479,7 @@ static int computeNumColorEndpointValues (const deUint32* endpointModes, int num
 	return result;
 }
 
-static void decodeISETritBlock (ISEDecodedResult* dst, int numValues, BitAccessStream& data, int numBits)
+void decodeISETritBlock (ISEDecodedResult* dst, int numValues, BitAccessStream& data, int numBits)
 {
 	DE_ASSERT(de::inRange(numValues, 1, 5));
 
@@ -1653,7 +1540,7 @@ static void decodeISETritBlock (ISEDecodedResult* dst, int numValues, BitAccessS
 	}
 }
 
-static void decodeISEQuintBlock (ISEDecodedResult* dst, int numValues, BitAccessStream& data, int numBits)
+void decodeISEQuintBlock (ISEDecodedResult* dst, int numValues, BitAccessStream& data, int numBits)
 {
 	DE_ASSERT(de::inRange(numValues, 1, 3));
 
@@ -1700,13 +1587,13 @@ static void decodeISEQuintBlock (ISEDecodedResult* dst, int numValues, BitAccess
 	}
 }
 
-static inline void decodeISEBitBlock (ISEDecodedResult* dst, BitAccessStream& data, int numBits)
+inline void decodeISEBitBlock (ISEDecodedResult* dst, BitAccessStream& data, int numBits)
 {
 	dst[0].m = data.getNext(numBits);
 	dst[0].v = dst[0].m;
 }
 
-static void decodeISE (ISEDecodedResult* dst, int numValues, BitAccessStream& data, const ISEParams& params)
+void decodeISE (ISEDecodedResult* dst, int numValues, BitAccessStream& data, const ISEParams& params)
 {
 	if (params.mode == ISEMODE_TRIT)
 	{
@@ -1734,7 +1621,7 @@ static void decodeISE (ISEDecodedResult* dst, int numValues, BitAccessStream& da
 	}
 }
 
-static ISEParams computeMaximumRangeISEParams (int numAvailableBits, int numValuesInSequence)
+ISEParams computeMaximumRangeISEParams (int numAvailableBits, int numValuesInSequence)
 {
 	int curBitsForTritMode		= 6;
 	int curBitsForQuintMode		= 5;
@@ -1774,7 +1661,7 @@ static ISEParams computeMaximumRangeISEParams (int numAvailableBits, int numValu
 	}
 }
 
-static void unquantizeColorEndpoints (deUint32* dst, const ISEDecodedResult* iseResults, int numEndpoints, const ISEParams& iseParams)
+void unquantizeColorEndpoints (deUint32* dst, const ISEDecodedResult* iseResults, int numEndpoints, const ISEParams& iseParams)
 {
 	if (iseParams.mode == ISEMODE_TRIT || iseParams.mode == ISEMODE_QUINT)
 	{
@@ -1819,7 +1706,7 @@ static void unquantizeColorEndpoints (deUint32* dst, const ISEDecodedResult* ise
 	}
 }
 
-static inline void bitTransferSigned (deInt32& a, deInt32& b)
+inline void bitTransferSigned (deInt32& a, deInt32& b)
 {
 	b >>= 1;
 	b |= a & 0x80;
@@ -1829,7 +1716,7 @@ static inline void bitTransferSigned (deInt32& a, deInt32& b)
 		a -= 0x40;
 }
 
-static inline UVec4 clampedRGBA (const tcu::IVec4& rgba)
+inline UVec4 clampedRGBA (const IVec4& rgba)
 {
 	return UVec4(de::clamp(rgba.x(), 0, 0xff),
 				 de::clamp(rgba.y(), 0, 0xff),
@@ -1837,12 +1724,12 @@ static inline UVec4 clampedRGBA (const tcu::IVec4& rgba)
 				 de::clamp(rgba.w(), 0, 0xff));
 }
 
-static inline tcu::IVec4 blueContract (int r, int g, int b, int a)
+inline IVec4 blueContract (int r, int g, int b, int a)
 {
-	return tcu::IVec4((r+b)>>1, (g+b)>>1, b, a);
+	return IVec4((r+b)>>1, (g+b)>>1, b, a);
 }
 
-static inline bool isColorEndpointModeHDR (deUint32 mode)
+inline bool isColorEndpointModeHDR (deUint32 mode)
 {
 	return mode == 2	||
 		   mode == 3	||
@@ -1852,7 +1739,7 @@ static inline bool isColorEndpointModeHDR (deUint32 mode)
 		   mode == 15;
 }
 
-static void decodeHDREndpointMode7 (UVec4& e0, UVec4& e1, deUint32 v0, deUint32 v1, deUint32 v2, deUint32 v3)
+void decodeHDREndpointMode7 (UVec4& e0, UVec4& e1, deUint32 v0, deUint32 v1, deUint32 v2, deUint32 v3)
 {
 	const deUint32 m10		= getBit(v1, 7) | (getBit(v2, 7) << 1);
 	const deUint32 m23		= getBits(v0, 6, 7);
@@ -1931,7 +1818,7 @@ static void decodeHDREndpointMode7 (UVec4& e0, UVec4& e1, deUint32 v0, deUint32 
 			   0x780);
 }
 
-static void decodeHDREndpointMode11 (UVec4& e0, UVec4& e1, deUint32 v0, deUint32 v1, deUint32 v2, deUint32 v3, deUint32 v4, deUint32 v5)
+void decodeHDREndpointMode11 (UVec4& e0, UVec4& e1, deUint32 v0, deUint32 v1, deUint32 v2, deUint32 v3, deUint32 v4, deUint32 v5)
 {
 	const deUint32 major = (getBit(v5, 7) << 1) | getBit(v4, 7);
 
@@ -2017,7 +1904,7 @@ static void decodeHDREndpointMode11 (UVec4& e0, UVec4& e1, deUint32 v0, deUint32
 	}
 }
 
-static void decodeHDREndpointMode15(UVec4& e0, UVec4& e1, deUint32 v0, deUint32 v1, deUint32 v2, deUint32 v3, deUint32 v4, deUint32 v5, deUint32 v6In, deUint32 v7In)
+void decodeHDREndpointMode15(UVec4& e0, UVec4& e1, deUint32 v0, deUint32 v1, deUint32 v2, deUint32 v3, deUint32 v4, deUint32 v5, deUint32 v6In, deUint32 v7In)
 {
 	decodeHDREndpointMode11(e0, e1, v0, v1, v2, v3, v4, v5);
 
@@ -2046,7 +1933,7 @@ static void decodeHDREndpointMode15(UVec4& e0, UVec4& e1, deUint32 v0, deUint32 
 	}
 }
 
-static void decodeColorEndpoints (ColorEndpointPair* dst, const deUint32* unquantizedEndpoints, const deUint32* endpointModes, int numPartitions)
+void decodeColorEndpoints (ColorEndpointPair* dst, const deUint32* unquantizedEndpoints, const deUint32* endpointModes, int numPartitions)
 {
 	int unquantizedNdx = 0;
 
@@ -2114,8 +2001,8 @@ static void decodeColorEndpoints (ColorEndpointPair* dst, const deUint32* unquan
 				bitTransferSigned(v1, v0);
 				bitTransferSigned(v3, v2);
 
-				e0 = clampedRGBA(tcu::IVec4(v0,		v0,		v0,		v2));
-				e1 = clampedRGBA(tcu::IVec4(v0+v1,	v0+v1,	v0+v1,	v2+v3));
+				e0 = clampedRGBA(IVec4(v0,		v0,		v0,		v2));
+				e1 = clampedRGBA(IVec4(v0+v1,	v0+v1,	v0+v1,	v2+v3));
 				break;
 			}
 
@@ -2155,8 +2042,8 @@ static void decodeColorEndpoints (ColorEndpointPair* dst, const deUint32* unquan
 
 				if (v1+v3+v5 >= 0)
 				{
-					e0 = clampedRGBA(tcu::IVec4(v0,		v2,		v4,		0xff));
-					e1 = clampedRGBA(tcu::IVec4(v0+v1,	v2+v3,	v4+v5,	0xff));
+					e0 = clampedRGBA(IVec4(v0,		v2,		v4,		0xff));
+					e1 = clampedRGBA(IVec4(v0+v1,	v2+v3,	v4+v5,	0xff));
 				}
 				else
 				{
@@ -2205,8 +2092,8 @@ static void decodeColorEndpoints (ColorEndpointPair* dst, const deUint32* unquan
 
 				if (v1+v3+v5 >= 0)
 				{
-					e0 = clampedRGBA(tcu::IVec4(v0,		v2,		v4,		v6));
-					e1 = clampedRGBA(tcu::IVec4(v0+v1,	v2+v3,	v4+v5,	v6+v7));
+					e0 = clampedRGBA(IVec4(v0,		v2,		v4,		v6));
+					e1 = clampedRGBA(IVec4(v0+v1,	v2+v3,	v4+v5,	v6+v7));
 				}
 				else
 				{
@@ -2233,7 +2120,7 @@ static void decodeColorEndpoints (ColorEndpointPair* dst, const deUint32* unquan
 	}
 }
 
-static void computeColorEndpoints (ColorEndpointPair* dst, const Block128& blockData, const deUint32* endpointModes, int numPartitions, int numColorEndpointValues, const ISEParams& iseParams, int numBitsAvailable)
+void computeColorEndpoints (ColorEndpointPair* dst, const Block128& blockData, const deUint32* endpointModes, int numPartitions, int numColorEndpointValues, const ISEParams& iseParams, int numBitsAvailable)
 {
 	const int			colorEndpointDataStart = numPartitions == 1 ? 17 : 29;
 	ISEDecodedResult	colorEndpointData[18];
@@ -2250,7 +2137,7 @@ static void computeColorEndpoints (ColorEndpointPair* dst, const Block128& block
 	}
 }
 
-static void unquantizeWeights (deUint32* dst, const ISEDecodedResult* weightGrid, const ASTCBlockMode& blockMode)
+void unquantizeWeights (deUint32* dst, const ISEDecodedResult* weightGrid, const ASTCBlockMode& blockMode)
 {
 	const int			numWeights	= computeNumWeights(blockMode);
 	const ISEParams&	iseParams	= blockMode.weightISEParams;
@@ -2306,7 +2193,7 @@ static void unquantizeWeights (deUint32* dst, const ISEDecodedResult* weightGrid
 		dst[weightNdx] += dst[weightNdx] > 32 ? 1 : 0;
 }
 
-static void interpolateWeights (TexelWeightPair* dst, const deUint32* unquantizedWeights, int blockWidth, int blockHeight, const ASTCBlockMode& blockMode)
+void interpolateWeights (TexelWeightPair* dst, const deUint32* unquantizedWeights, int blockWidth, int blockHeight, const ASTCBlockMode& blockMode)
 {
 	const int		numWeightsPerTexel	= blockMode.isDualPlane ? 2 : 1;
 	const deUint32	scaleX				= (1024 + blockWidth/2) / (blockWidth-1);
@@ -2341,7 +2228,7 @@ static void interpolateWeights (TexelWeightPair* dst, const deUint32* unquantize
 	}
 }
 
-static void computeTexelWeights (TexelWeightPair* dst, const Block128& blockData, int blockWidth, int blockHeight, const ASTCBlockMode& blockMode)
+void computeTexelWeights (TexelWeightPair* dst, const Block128& blockData, int blockWidth, int blockHeight, const ASTCBlockMode& blockMode)
 {
 	ISEDecodedResult weightGrid[64];
 
@@ -2357,7 +2244,7 @@ static void computeTexelWeights (TexelWeightPair* dst, const Block128& blockData
 	}
 }
 
-static inline deUint32 hash52 (deUint32 v)
+inline deUint32 hash52 (deUint32 v)
 {
 	deUint32 p = v;
 	p ^= p >> 15;	p -= p << 17;	p += p << 7;	p += p << 4;
@@ -2366,7 +2253,7 @@ static inline deUint32 hash52 (deUint32 v)
 	return p;
 }
 
-static int computeTexelPartition (deUint32 seedIn, deUint32 xIn, deUint32 yIn, deUint32 zIn, int numPartitions, bool smallBlock)
+int computeTexelPartition (deUint32 seedIn, deUint32 xIn, deUint32 yIn, deUint32 zIn, int numPartitions, bool smallBlock)
 {
 	DE_ASSERT(zIn == 0);
 	const deUint32	x		= smallBlock ? xIn << 1 : xIn;
@@ -2413,7 +2300,7 @@ static int computeTexelPartition (deUint32 seedIn, deUint32 xIn, deUint32 yIn, d
 		 :								  3;
 }
 
-static void setTexelColors (void* dst, ColorEndpointPair* colorEndpoints, TexelWeightPair* texelWeights, int ccs, deUint32 partitionIndexSeed,
+void setTexelColors (void* dst, ColorEndpointPair* colorEndpoints, TexelWeightPair* texelWeights, int ccs, deUint32 partitionIndexSeed,
 							int numPartitions, int blockWidth, int blockHeight, bool isSRGB, bool isLDRMode, const deUint32* colorEndpointModes)
 {
 	const bool	smallBlock = blockWidth*blockHeight < 31;
@@ -2486,7 +2373,7 @@ static void setTexelColors (void* dst, ColorEndpointPair* colorEndpoints, TexelW
 	}
 }
 
-static void decompressASTCBlock (void* dst, const Block128& blockData, int blockWidth, int blockHeight, bool isSRGB, bool isLDR)
+void decompressASTCBlock (void* dst, const Block128& blockData, int blockWidth, int blockHeight, bool isSRGB, bool isLDR)
 {
 	DE_ASSERT(isLDR || !isSRGB);
 
@@ -2576,60 +2463,192 @@ static void decompressASTCBlock (void* dst, const Block128& blockData, int block
 
 } // ASTCDecompressInternal
 
-static void decompressASTC (const tcu::PixelBufferAccess& dst, int width, int height, const deUint8* data, int blockWidth, int blockHeight, bool isSRGB, bool isLDR)
+void decompressASTC (const PixelBufferAccess& dst, const deUint8* data, bool isSRGB, bool isLDR)
 {
 	using namespace ASTCDecompressInternal;
 
 	DE_ASSERT(isLDR || !isSRGB);
 
-	const int numBlocksX		= divRoundUp(width,  blockWidth);
-	const int numBlocksY		= divRoundUp(height, blockHeight);
+	const int blockWidth = dst.getWidth();
+	const int blockHeight = dst.getHeight();
+
 	union
 	{
 		deUint8		sRGB[ASTC_MAX_BLOCK_WIDTH*ASTC_MAX_BLOCK_HEIGHT*4];
 		float		linear[ASTC_MAX_BLOCK_WIDTH*ASTC_MAX_BLOCK_HEIGHT*4];
 	} decompressedBuffer;
 
-	for (int blockY = 0; blockY < numBlocksY; blockY++)
-	for (int blockX = 0; blockX < numBlocksX; blockX++)
+	const Block128 blockData(data);
+	decompressASTCBlock(isSRGB ? (void*)&decompressedBuffer.sRGB[0] : (void*)&decompressedBuffer.linear[0],
+						blockData, dst.getWidth(), dst.getHeight(), isSRGB, isLDR);
+
+	if (isSRGB)
 	{
-		const int baseX = blockX * blockWidth;
-		const int baseY = blockY * blockHeight;
-
-		const Block128 blockData(&data[(blockY*numBlocksX + blockX) * ASTC_BLOCK_SIZE_BYTES]);
-		decompressASTCBlock(isSRGB ? (void*)&decompressedBuffer.sRGB[0] : (void*)&decompressedBuffer.linear[0],
-							blockData, blockWidth, blockHeight, isSRGB, isLDR);
-
-		if (isSRGB)
+		for (int i = 0; i < blockHeight; i++)
+		for (int j = 0; j < blockWidth; j++)
 		{
-			for (int i = 0; i < blockHeight; i++)
-			for (int j = 0; j < blockWidth; j++)
-			{
-				if (baseX + j < dst.getWidth() && baseY + i < dst.getHeight())
-					dst.setPixel(tcu::IVec4(decompressedBuffer.sRGB[(i*blockWidth + j) * 4 + 0],
-											decompressedBuffer.sRGB[(i*blockWidth + j) * 4 + 1],
-											decompressedBuffer.sRGB[(i*blockWidth + j) * 4 + 2],
-											decompressedBuffer.sRGB[(i*blockWidth + j) * 4 + 3]),
-								 baseX + j,
-								 baseY + i);
-			}
+			dst.setPixel(IVec4(decompressedBuffer.sRGB[(i*blockWidth + j) * 4 + 0],
+									decompressedBuffer.sRGB[(i*blockWidth + j) * 4 + 1],
+									decompressedBuffer.sRGB[(i*blockWidth + j) * 4 + 2],
+									decompressedBuffer.sRGB[(i*blockWidth + j) * 4 + 3]), j, i);
 		}
-		else
+	}
+	else
+	{
+		for (int i = 0; i < blockHeight; i++)
+		for (int j = 0; j < blockWidth; j++)
 		{
-			for (int i = 0; i < blockHeight; i++)
-			for (int j = 0; j < blockWidth; j++)
-			{
-				if (baseX + j < dst.getWidth() && baseY + i < dst.getHeight())
-				{
-					dst.setPixel(tcu::Vec4(decompressedBuffer.linear[(i*blockWidth + j) * 4 + 0],
-										   decompressedBuffer.linear[(i*blockWidth + j) * 4 + 1],
-										   decompressedBuffer.linear[(i*blockWidth + j) * 4 + 2],
-										   decompressedBuffer.linear[(i*blockWidth + j) * 4 + 3]),
-								 baseX + j,
-								 baseY + i);
-				}
-			}
+			dst.setPixel(Vec4(decompressedBuffer.linear[(i*blockWidth + j) * 4 + 0],
+								   decompressedBuffer.linear[(i*blockWidth + j) * 4 + 1],
+								   decompressedBuffer.linear[(i*blockWidth + j) * 4 + 2],
+								   decompressedBuffer.linear[(i*blockWidth + j) * 4 + 3]), j, i);
 		}
+	}
+}
+
+void decompressBlock (CompressedTexFormat format, const PixelBufferAccess& dst, const deUint8* src, const TexDecompressionParams& params)
+{
+	// No 3D blocks supported right now
+	DE_ASSERT(dst.getDepth() == 1);
+
+	switch (format)
+	{
+		case COMPRESSEDTEXFORMAT_ETC1_RGB8:							decompressETC1							(dst, src);			break;
+		case COMPRESSEDTEXFORMAT_EAC_R11:							decompressEAC_R11						(dst, src, false);	break;
+		case COMPRESSEDTEXFORMAT_EAC_SIGNED_R11:					decompressEAC_R11						(dst, src, true);	break;
+		case COMPRESSEDTEXFORMAT_EAC_RG11:							decompressEAC_RG11						(dst, src, false);	break;
+		case COMPRESSEDTEXFORMAT_EAC_SIGNED_RG11:					decompressEAC_RG11						(dst, src, true);	break;
+		case COMPRESSEDTEXFORMAT_ETC2_RGB8:							decompressETC2							(dst, src);			break;
+		case COMPRESSEDTEXFORMAT_ETC2_SRGB8:						decompressETC2							(dst, src);			break;
+		case COMPRESSEDTEXFORMAT_ETC2_RGB8_PUNCHTHROUGH_ALPHA1:		decompressETC2_RGB8_PUNCHTHROUGH_ALPHA1	(dst, src);			break;
+		case COMPRESSEDTEXFORMAT_ETC2_SRGB8_PUNCHTHROUGH_ALPHA1:	decompressETC2_RGB8_PUNCHTHROUGH_ALPHA1	(dst, src);			break;
+		case COMPRESSEDTEXFORMAT_ETC2_EAC_RGBA8:					decompressETC2_EAC_RGBA8				(dst, src);			break;
+		case COMPRESSEDTEXFORMAT_ETC2_EAC_SRGB8_ALPHA8:				decompressETC2_EAC_RGBA8				(dst, src);			break;
+
+		case COMPRESSEDTEXFORMAT_ASTC_4x4_RGBA:
+		case COMPRESSEDTEXFORMAT_ASTC_5x4_RGBA:
+		case COMPRESSEDTEXFORMAT_ASTC_5x5_RGBA:
+		case COMPRESSEDTEXFORMAT_ASTC_6x5_RGBA:
+		case COMPRESSEDTEXFORMAT_ASTC_6x6_RGBA:
+		case COMPRESSEDTEXFORMAT_ASTC_8x5_RGBA:
+		case COMPRESSEDTEXFORMAT_ASTC_8x6_RGBA:
+		case COMPRESSEDTEXFORMAT_ASTC_8x8_RGBA:
+		case COMPRESSEDTEXFORMAT_ASTC_10x5_RGBA:
+		case COMPRESSEDTEXFORMAT_ASTC_10x6_RGBA:
+		case COMPRESSEDTEXFORMAT_ASTC_10x8_RGBA:
+		case COMPRESSEDTEXFORMAT_ASTC_10x10_RGBA:
+		case COMPRESSEDTEXFORMAT_ASTC_12x10_RGBA:
+		case COMPRESSEDTEXFORMAT_ASTC_12x12_RGBA:
+		case COMPRESSEDTEXFORMAT_ASTC_4x4_SRGB8_ALPHA8:
+		case COMPRESSEDTEXFORMAT_ASTC_5x4_SRGB8_ALPHA8:
+		case COMPRESSEDTEXFORMAT_ASTC_5x5_SRGB8_ALPHA8:
+		case COMPRESSEDTEXFORMAT_ASTC_6x5_SRGB8_ALPHA8:
+		case COMPRESSEDTEXFORMAT_ASTC_6x6_SRGB8_ALPHA8:
+		case COMPRESSEDTEXFORMAT_ASTC_8x5_SRGB8_ALPHA8:
+		case COMPRESSEDTEXFORMAT_ASTC_8x6_SRGB8_ALPHA8:
+		case COMPRESSEDTEXFORMAT_ASTC_8x8_SRGB8_ALPHA8:
+		case COMPRESSEDTEXFORMAT_ASTC_10x5_SRGB8_ALPHA8:
+		case COMPRESSEDTEXFORMAT_ASTC_10x6_SRGB8_ALPHA8:
+		case COMPRESSEDTEXFORMAT_ASTC_10x8_SRGB8_ALPHA8:
+		case COMPRESSEDTEXFORMAT_ASTC_10x10_SRGB8_ALPHA8:
+		case COMPRESSEDTEXFORMAT_ASTC_12x10_SRGB8_ALPHA8:
+		case COMPRESSEDTEXFORMAT_ASTC_12x12_SRGB8_ALPHA8:
+		{
+			DE_ASSERT(params.astcMode == TexDecompressionParams::ASTCMODE_LDR || params.astcMode == TexDecompressionParams::ASTCMODE_HDR);
+
+			const bool isSRGBFormat = isAstcSRGBFormat(format);
+			decompressASTC(dst, src, isSRGBFormat, isSRGBFormat || params.astcMode == TexDecompressionParams::ASTCMODE_LDR);
+
+			break;
+		}
+
+		default:
+			DE_ASSERT(false);
+			break;
+	}
+}
+
+int componentSum (const IVec3& vec)
+{
+	return vec.x() + vec.y() + vec.z();
+}
+
+} // anonymous
+
+void decompress (const PixelBufferAccess& dst, CompressedTexFormat fmt, const deUint8* src, const TexDecompressionParams& params)
+{
+	const size_t			blockSize			= getBlockSize(fmt);
+	const IVec3				blockPixelSize		(getBlockPixelSize(fmt));
+	const IVec3				blockCount			(divRoundUp(dst.getWidth(),		blockPixelSize.x()),
+												 divRoundUp(dst.getHeight(),	blockPixelSize.y()),
+												 divRoundUp(dst.getDepth(),		blockPixelSize.z()));
+	const IVec3				blockPitches		(blockSize, blockSize * blockCount.x(), blockSize * blockCount.x() * blockCount.y());
+
+	std::vector<deUint8>	uncompressedBlock	(dst.getFormat().getPixelSize() * blockPixelSize.x() * blockPixelSize.y() * blockPixelSize.z());
+	const PixelBufferAccess	blockAccess			(getUncompressedFormat(fmt), blockPixelSize.x(), blockPixelSize.y(), blockPixelSize.z(), &uncompressedBlock[0]);
+
+	DE_ASSERT(dst.getFormat() == getUncompressedFormat(fmt));
+
+	for (int blockZ = 0; blockZ < blockCount.z(); blockZ++)
+	for (int blockY = 0; blockY < blockCount.y(); blockY++)
+	for (int blockX = 0; blockX < blockCount.x(); blockX++)
+	{
+		const IVec3				blockPos	(blockX, blockY, blockZ);
+		const deUint8* const	blockPtr	= src + componentSum(blockPos * blockPitches);
+		const IVec3				copySize	(de::min(blockPixelSize.x(), dst.getWidth()		- blockPos.x() * blockPixelSize.x()),
+											 de::min(blockPixelSize.y(), dst.getHeight()	- blockPos.y() * blockPixelSize.y()),
+											 de::min(blockPixelSize.z(), dst.getDepth()		- blockPos.z() * blockPixelSize.z()));
+		const IVec3				dstPixelPos	= blockPos * blockPixelSize;
+
+		decompressBlock(fmt, blockAccess, blockPtr, params);
+
+		copyRawPixels(getSubregion(dst, dstPixelPos.x(), dstPixelPos.y(), dstPixelPos.z(), copySize.x(), copySize.y(), copySize.z()), getSubregion(blockAccess, 0, 0, 0, copySize.x(), copySize.y(), copySize.z()));
+	}
+}
+
+CompressedTexture::CompressedTexture (void)
+	: m_format	(COMPRESSEDTEXFORMAT_LAST)
+	, m_width	(0)
+	, m_height	(0)
+	, m_depth	(0)
+{
+}
+
+CompressedTexture::CompressedTexture (CompressedTexFormat format, int width, int height, int depth)
+	: m_format	(COMPRESSEDTEXFORMAT_LAST)
+	, m_width	(0)
+	, m_height	(0)
+	, m_depth	(0)
+{
+	setStorage(format, width, height, depth);
+}
+
+CompressedTexture::~CompressedTexture (void)
+{
+}
+
+void CompressedTexture::setStorage (CompressedTexFormat format, int width, int height, int depth)
+{
+	m_format	= format;
+	m_width		= width;
+	m_height	= height;
+	m_depth		= depth;
+
+	if (isAstcFormat(m_format) && m_depth > 1)
+		throw InternalError("3D ASTC textures not currently supported");
+
+	if (m_format != COMPRESSEDTEXFORMAT_LAST)
+	{
+		const IVec3	blockPixelSize	= getBlockPixelSize(m_format);
+		const int	blockSize		= getBlockSize(m_format);
+
+		m_data.resize(divRoundUp(m_width, blockPixelSize.x()) * divRoundUp(m_height, blockPixelSize.y()) * divRoundUp(m_depth, blockPixelSize.z()) * blockSize);
+	}
+	else
+	{
+		DE_ASSERT(m_format == COMPRESSEDTEXFORMAT_LAST);
+		DE_ASSERT(m_width == 0 && m_height == 0 && m_depth == 0);
+		m_data.resize(0);
 	}
 }
 
@@ -2637,44 +2656,12 @@ static void decompressASTC (const tcu::PixelBufferAccess& dst, int width, int he
  * \brief Decode to uncompressed pixel data
  * \param dst Destination buffer
  *//*--------------------------------------------------------------------*/
-void CompressedTexture::decompress (const tcu::PixelBufferAccess& dst, const DecompressionParams& params) const
+void CompressedTexture::decompress (const PixelBufferAccess& dst, const TexDecompressionParams& params) const
 {
-	DE_ASSERT(dst.getWidth() == m_width && dst.getHeight() == m_height && dst.getDepth() == 1);
-	DE_ASSERT(dst.getFormat() == getUncompressedFormat());
+	DE_ASSERT(dst.getWidth() == m_width && dst.getHeight() == m_height && dst.getDepth() == m_depth);
+	DE_ASSERT(dst.getFormat() == getUncompressedFormat(m_format));
 
-	if (isEtcFormat(m_format))
-	{
-		switch (m_format)
-		{
-			case ETC1_RGB8:							decompressETC1								(dst, m_width, m_height, &m_data[0]);			break;
-			case EAC_R11:							decompressEAC_R11							(dst, m_width, m_height, &m_data[0], false);	break;
-			case EAC_SIGNED_R11:					decompressEAC_R11							(dst, m_width, m_height, &m_data[0], true);		break;
-			case EAC_RG11:							decompressEAC_RG11							(dst, m_width, m_height, &m_data[0], false);	break;
-			case EAC_SIGNED_RG11:					decompressEAC_RG11							(dst, m_width, m_height, &m_data[0], true);		break;
-			case ETC2_RGB8:							decompressETC2								(dst, m_width, m_height, &m_data[0]);			break;
-			case ETC2_SRGB8:						decompressETC2								(dst, m_width, m_height, &m_data[0]);			break;
-			case ETC2_RGB8_PUNCHTHROUGH_ALPHA1:		decompressETC2_RGB8_PUNCHTHROUGH_ALPHA1		(dst, m_width, m_height, &m_data[0]);			break;
-			case ETC2_SRGB8_PUNCHTHROUGH_ALPHA1:	decompressETC2_RGB8_PUNCHTHROUGH_ALPHA1		(dst, m_width, m_height, &m_data[0]);			break;
-			case ETC2_EAC_RGBA8:					decompressETC2_EAC_RGBA8					(dst, m_width, m_height, &m_data[0]);			break;
-			case ETC2_EAC_SRGB8_ALPHA8:				decompressETC2_EAC_RGBA8					(dst, m_width, m_height, &m_data[0]);			break;
-
-			default:
-				DE_ASSERT(false);
-				break;
-		}
-	}
-	else if (isASTCFormat(m_format))
-	{
-		const tcu::IVec3	blockSize		= getASTCBlockSize(m_format);
-		const bool			isSRGBFormat	= isASTCSRGBFormat(m_format);
-
-		if (blockSize.z() > 1)
-			throw tcu::InternalError("3D ASTC textures not currently supported");
-
-		decompressASTC(dst, m_width, m_height, &m_data[0], blockSize.x(), blockSize.y(), isSRGBFormat, isSRGBFormat || params.isASTCModeLDR);
-	}
-	else
-		DE_ASSERT(false);
+	tcu::decompress(dst, m_format, &m_data[0], params);
 }
 
 } // tcu

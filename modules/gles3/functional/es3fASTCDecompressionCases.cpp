@@ -60,6 +60,7 @@
 
 using tcu::TestLog;
 using tcu::CompressedTexture;
+using tcu::CompressedTexFormat;
 using tcu::IVec2;
 using tcu::IVec3;
 using tcu::IVec4;
@@ -933,7 +934,7 @@ static Vec4 getBlockTestTypeColorBias (ASTCBlockTestType testType)
 }
 
 // Generate block data for a given ASTCBlockTestType and format.
-static void generateBlockCaseTestData (vector<deUint8>& dst, CompressedTexture::Format format, ASTCBlockTestType testType)
+static void generateBlockCaseTestData (vector<deUint8>& dst, CompressedTexFormat format, ASTCBlockTestType testType)
 {
 	using namespace ASTCBlockGeneratorInternal;
 
@@ -953,10 +954,10 @@ static void generateBlockCaseTestData (vector<deUint8>& dst, CompressedTexture::
 		ISEParams(ISEMODE_PLAIN_BIT,	5)
 	};
 
-	DE_ASSERT(tcu::isASTCFormat(format));
-	DE_ASSERT(!(tcu::isASTCSRGBFormat(format) && isBlockTestTypeHDROnly(testType)));
+	DE_ASSERT(tcu::isAstcFormat(format));
+	DE_ASSERT(!(tcu::isAstcSRGBFormat(format) && isBlockTestTypeHDROnly(testType)));
 
-	const IVec3 blockSize = getASTCBlockSize(format);
+	const IVec3 blockSize = getBlockPixelSize(format);
 	DE_ASSERT(blockSize.z() == 1);
 
 	switch (testType)
@@ -1607,57 +1608,57 @@ static inline ASTCSupportLevel getASTCSupportLevel (const glu::ContextInfo& cont
 class ASTCRenderer2D
 {
 public:
-										ASTCRenderer2D		(Context&					context,
-															 CompressedTexture::Format	format,
-															 deUint32					randomSeed);
+								ASTCRenderer2D		(Context&				context,
+													 CompressedTexFormat	format,
+													 deUint32				randomSeed);
 
-										~ASTCRenderer2D		(void);
+								~ASTCRenderer2D		(void);
 
-	void								initialize			(int minRenderWidth, int minRenderHeight, const Vec4& colorScale, const Vec4& colorBias);
-	void								clear				(void);
+	void						initialize			(int minRenderWidth, int minRenderHeight, const Vec4& colorScale, const Vec4& colorBias);
+	void						clear				(void);
 
-	void								render				(Surface&					referenceDst,
-															 Surface&					resultDst,
-															 const glu::Texture2D&		texture,
-															 const tcu::TextureFormat&	uncompressedFormat);
+	void						render				(Surface&					referenceDst,
+													 Surface&					resultDst,
+													 const glu::Texture2D&		texture,
+													 const tcu::TextureFormat&	uncompressedFormat);
 
-	CompressedTexture::Format			getFormat			(void) const { return m_format; }
-	IVec2								getBlockSize		(void) const { return m_blockSize; }
-	ASTCSupportLevel					getASTCSupport		(void) const { DE_ASSERT(m_initialized); return m_astcSupport;	}
+	CompressedTexFormat			getFormat			(void) const { return m_format; }
+	IVec2						getBlockSize		(void) const { return m_blockSize; }
+	ASTCSupportLevel			getASTCSupport		(void) const { DE_ASSERT(m_initialized); return m_astcSupport;	}
 
 private:
-	Context&							m_context;
-	TextureRenderer						m_renderer;
+	Context&					m_context;
+	TextureRenderer				m_renderer;
 
-	const CompressedTexture::Format		m_format;
-	const IVec2							m_blockSize;
-	ASTCSupportLevel					m_astcSupport;
-	Vec4								m_colorScale;
-	Vec4								m_colorBias;
+	const CompressedTexFormat	m_format;
+	const IVec2					m_blockSize;
+	ASTCSupportLevel			m_astcSupport;
+	Vec4						m_colorScale;
+	Vec4						m_colorBias;
 
-	de::Random							m_rnd;
+	de::Random					m_rnd;
 
-	bool								m_initialized;
+	bool						m_initialized;
 };
 
 } // ASTCDecompressionCaseInternal
 
 using namespace ASTCDecompressionCaseInternal;
 
-ASTCRenderer2D::ASTCRenderer2D (Context&					context,
-								CompressedTexture::Format	format,
-								deUint32					randomSeed)
+ASTCRenderer2D::ASTCRenderer2D (Context&			context,
+								CompressedTexFormat	format,
+								deUint32			randomSeed)
 	: m_context			(context)
 	, m_renderer		(context.getRenderContext(), context.getTestContext(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
 	, m_format			(format)
-	, m_blockSize		(tcu::getASTCBlockSize(format).xy())
+	, m_blockSize		(tcu::getBlockPixelSize(format).xy())
 	, m_astcSupport		(ASTCSUPPORTLEVEL_NONE)
 	, m_colorScale		(-1.0f)
 	, m_colorBias		(-1.0f)
 	, m_rnd				(randomSeed)
 	, m_initialized		(false)
 {
-	DE_ASSERT(tcu::getASTCBlockSize(format).z() == 1);
+	DE_ASSERT(tcu::getBlockPixelSize(format).z() == 1);
 }
 
 ASTCRenderer2D::~ASTCRenderer2D (void)
@@ -1743,11 +1744,11 @@ void ASTCRenderer2D::render (Surface& referenceDst, Surface& resultDst, const gl
 	glu::readPixels(renderCtx, viewport.x, viewport.y, resultDst.getAccess());
 }
 
-ASTCBlockCase2D::ASTCBlockCase2D (Context&						context,
-								  const char*					name,
-								  const char*					description,
-								  ASTCBlockTestType				testType,
-								  CompressedTexture::Format		format)
+ASTCBlockCase2D::ASTCBlockCase2D (Context&					context,
+								  const char*				name,
+								  const char*				description,
+								  ASTCBlockTestType			testType,
+								  CompressedTexFormat		format)
 	: TestCase				(context, name, description)
 	, m_testType			(testType)
 	, m_format				(format)
@@ -1755,7 +1756,7 @@ ASTCBlockCase2D::ASTCBlockCase2D (Context&						context,
 	, m_currentIteration	(0)
 	, m_renderer			(new ASTCRenderer2D(context, format, deStringHash(getName())))
 {
-	DE_ASSERT(!(tcu::isASTCSRGBFormat(m_format) && isBlockTestTypeHDROnly(m_testType))); // \note There is no HDR sRGB mode, so these would be redundant.
+	DE_ASSERT(!(tcu::isAstcSRGBFormat(m_format) && isBlockTestTypeHDROnly(m_testType))); // \note There is no HDR sRGB mode, so these would be redundant.
 }
 
 ASTCBlockCase2D::~ASTCBlockCase2D (void)
@@ -1803,7 +1804,7 @@ ASTCBlockCase2D::IterateResult ASTCBlockCase2D::iterate (void)
 	const int						curNumNonDummyBlocks	= de::min(numBlocksPerImage, numBlocksRemaining);
 	const int						curNumDummyBlocks		= numBlocksPerImage - curNumNonDummyBlocks;
 	const glu::RenderContext&		renderCtx				= m_context.getRenderContext();
-	const tcu::RGBA					threshold				= renderCtx.getRenderTarget().getPixelFormat().getColorThreshold() + (tcu::isASTCSRGBFormat(m_format) ? tcu::RGBA(2,2,2,2) : tcu::RGBA(1,1,1,1));
+	const tcu::RGBA					threshold				= renderCtx.getRenderTarget().getPixelFormat().getColorThreshold() + (tcu::isAstcSRGBFormat(m_format) ? tcu::RGBA(2,2,2,2) : tcu::RGBA(1,1,1,1));
 	tcu::CompressedTexture			compressed				(m_format, imageWidth, imageHeight);
 
 	if (m_currentIteration == 0)
@@ -1822,11 +1823,11 @@ ASTCBlockCase2D::IterateResult ASTCBlockCase2D::iterate (void)
 
 	// Create texture and render.
 
-	glu::Texture2D	texture			(renderCtx, m_context.getContextInfo(), 1, &compressed, tcu::CompressedTexture::DecompressionParams(m_renderer->getASTCSupport() == ASTCSUPPORTLEVEL_LDR));
+	glu::Texture2D	texture			(renderCtx, m_context.getContextInfo(), 1, &compressed, tcu::TexDecompressionParams((m_renderer->getASTCSupport() == ASTCSUPPORTLEVEL_LDR ? tcu::TexDecompressionParams::ASTCMODE_LDR : tcu::TexDecompressionParams::ASTCMODE_HDR)));
 	Surface			renderedFrame	(imageWidth, imageHeight);
 	Surface			referenceFrame	(imageWidth, imageHeight);
 
-	m_renderer->render(referenceFrame, renderedFrame, texture, compressed.getUncompressedFormat());
+	m_renderer->render(referenceFrame, renderedFrame, texture, getUncompressedFormat(compressed.getFormat()));
 
 	// Compare and log.
 	// \note Since a case can draw quite many images, only log the first iteration and failures.
@@ -1903,10 +1904,10 @@ void ASTCBlockCase2D::generateDummyBlocks (deUint8* dst, int num)
 		block.assignToMemory(&dst[i * ASTC_BLOCK_SIZE_BYTES]);
 }
 
-ASTCBlockSizeRemainderCase2D::ASTCBlockSizeRemainderCase2D (Context&					context,
-															const char*					name,
-															const char*					description,
-															CompressedTexture::Format	format)
+ASTCBlockSizeRemainderCase2D::ASTCBlockSizeRemainderCase2D (Context&			context,
+															const char*			name,
+															const char*			description,
+															CompressedTexFormat	format)
 	: TestCase				(context, name, description)
 	, m_format				(format)
 	, m_currentIteration	(0)
@@ -1942,7 +1943,7 @@ ASTCBlockSizeRemainderCase2D::IterateResult ASTCBlockSizeRemainderCase2D::iterat
 	const int						numBlocksY				= divRoundUp(imageHeight, blockSize.y());
 	const int						totalNumBlocks			= numBlocksX * numBlocksY;
 	const glu::RenderContext&		renderCtx				= m_context.getRenderContext();
-	const tcu::RGBA					threshold				= renderCtx.getRenderTarget().getPixelFormat().getColorThreshold() + (tcu::isASTCSRGBFormat(m_format) ? tcu::RGBA(2,2,2,2) : tcu::RGBA(1,1,1,1));
+	const tcu::RGBA					threshold				= renderCtx.getRenderTarget().getPixelFormat().getColorThreshold() + (tcu::isAstcSRGBFormat(m_format) ? tcu::RGBA(2,2,2,2) : tcu::RGBA(1,1,1,1));
 	tcu::CompressedTexture			compressed				(m_format, imageWidth, imageHeight);
 
 	DE_ASSERT(compressed.getDataSize() == totalNumBlocks*ASTC_BLOCK_SIZE_BYTES);
@@ -1952,9 +1953,9 @@ ASTCBlockSizeRemainderCase2D::IterateResult ASTCBlockSizeRemainderCase2D::iterat
 
 	Surface			renderedFrame	(imageWidth, imageHeight);
 	Surface			referenceFrame	(imageWidth, imageHeight);
-	glu::Texture2D	texture			(renderCtx, m_context.getContextInfo(), 1, &compressed, tcu::CompressedTexture::DecompressionParams(m_renderer->getASTCSupport() == ASTCSUPPORTLEVEL_LDR));
+	glu::Texture2D	texture			(renderCtx, m_context.getContextInfo(), 1, &compressed, tcu::TexDecompressionParams(m_renderer->getASTCSupport() == ASTCSUPPORTLEVEL_LDR ? tcu::TexDecompressionParams::ASTCMODE_LDR : tcu::TexDecompressionParams::ASTCMODE_HDR));
 
-	m_renderer->render(referenceFrame, renderedFrame, texture, compressed.getUncompressedFormat());
+	m_renderer->render(referenceFrame, renderedFrame, texture, getUncompressedFormat(compressed.getFormat()));
 
 	{
 		// Compare and log.

@@ -66,11 +66,11 @@ enum ASTCBlockTestType
 class ASTCBlockCase2D : public TestCase
 {
 public:
-																	ASTCBlockCase2D			(Context&							context,
-																							 const char*						name,
-																							 const char*						description,
-																							 ASTCBlockTestType					testType,
-																							 tcu::CompressedTexture::Format		format);
+																	ASTCBlockCase2D			(Context&						context,
+																							 const char*					name,
+																							 const char*					description,
+																							 ASTCBlockTestType				testType,
+																							 tcu::CompressedTexFormat		format);
 																	~ASTCBlockCase2D		(void);
 
 	void															init					(void);
@@ -84,7 +84,7 @@ private:
 	ASTCBlockCase2D&												operator=				(const ASTCBlockCase2D& other);
 
 	const ASTCBlockTestType											m_testType;
-	const tcu::CompressedTexture::Format							m_format;
+	const tcu::CompressedTexFormat									m_format;
 	std::vector<deUint8>											m_blockData;
 
 	int																m_numBlocksTested;
@@ -97,10 +97,10 @@ private:
 class ASTCBlockSizeRemainderCase2D : public TestCase
 {
 public:
-																	ASTCBlockSizeRemainderCase2D	(Context&							context,
-																									 const char*						name,
-																									 const char*						description,
-																									 tcu::CompressedTexture::Format		format);
+																	ASTCBlockSizeRemainderCase2D	(Context&						context,
+																									 const char*					name,
+																									 const char*					description,
+																									 tcu::CompressedTexFormat		format);
 																	~ASTCBlockSizeRemainderCase2D	(void);
 
 	void															init							(void);
@@ -119,7 +119,7 @@ private:
 																	ASTCBlockSizeRemainderCase2D	(const ASTCBlockSizeRemainderCase2D& other);
 	ASTCBlockSizeRemainderCase2D&									operator=						(const ASTCBlockSizeRemainderCase2D& other);
 
-	const tcu::CompressedTexture::Format							m_format;
+	const tcu::CompressedTexFormat									m_format;
 
 	int																m_currentIteration;
 

@@ -248,7 +248,7 @@ void loadPKM (CompressedTexture& dst, const tcu::Archive& archive, const char* f
 
     DE_UNREF(width && height);
 
-	dst.setStorage(CompressedTexture::ETC1_RGB8, (int)activeWidth, (int)activeHeight);
+	dst.setStorage(COMPRESSEDTEXFORMAT_ETC1_RGB8, (int)activeWidth, (int)activeHeight);
 	resource->read((deUint8*)dst.getData(), dst.getDataSize());
 }
 

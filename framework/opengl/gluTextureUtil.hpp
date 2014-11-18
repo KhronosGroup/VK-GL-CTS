@@ -66,7 +66,7 @@ tcu::Sampler::CompareMode		mapGLCompareFunc					(deUint32 mode);
 
 TransferFormat					getTransferFormat					(tcu::TextureFormat format);
 deUint32						getInternalFormat					(tcu::TextureFormat format);
-deUint32						getGLFormat							(tcu::CompressedTexture::Format format);
+deUint32						getGLFormat							(tcu::CompressedTexFormat format);
 
 deUint32						getGLWrapMode						(tcu::Sampler::WrapMode wrapMode);
 deUint32						getGLFilterMode						(tcu::Sampler::FilterMode filterMode);

@@ -301,20 +301,20 @@ protected:
 class PixelBufferAccess : public ConstPixelBufferAccess
 {
 public:
-							PixelBufferAccess			(void) {}
-							PixelBufferAccess			(TextureLevel& level);
-							PixelBufferAccess			(const TextureFormat& format, int width, int height, int depth, void* data);
-							PixelBufferAccess			(const TextureFormat& format, int width, int height, int depth, int rowPitch, int slicePitch, void* data);
+						PixelBufferAccess	(void) {}
+						PixelBufferAccess	(TextureLevel& level);
+						PixelBufferAccess	(const TextureFormat& format, int width, int height, int depth, void* data);
+						PixelBufferAccess	(const TextureFormat& format, int width, int height, int depth, int rowPitch, int slicePitch, void* data);
 
-	void*					getDataPtr					(void) const { return m_data; }
+	void*				getDataPtr			(void) const { return m_data; }
 
-	void					setPixels					(const void* buf, int bufSize) const;
-	void					setPixel					(const tcu::Vec4& color, int x, int y, int z = 0) const;
-	void					setPixel					(const tcu::IVec4& color, int x, int y, int z = 0) const;
-	void					setPixel					(const tcu::UVec4& color, int x, int y, int z = 0) const { setPixel(color.cast<int>(), x, y, z); }
+	void				setPixels			(const void* buf, int bufSize) const;
+	void				setPixel			(const tcu::Vec4& color, int x, int y, int z = 0) const;
+	void				setPixel			(const tcu::IVec4& color, int x, int y, int z = 0) const;
+	void				setPixel			(const tcu::UVec4& color, int x, int y, int z = 0) const { setPixel(color.cast<int>(), x, y, z); }
 
-	void					setPixDepth					(float depth, int x, int y, int z = 0) const;
-	void					setPixStencil				(int stencil, int x, int y, int z = 0) const;
+	void				setPixDepth			(float depth, int x, int y, int z = 0) const;
+	void				setPixStencil		(int stencil, int x, int y, int z = 0) const;
 };
 
 /*--------------------------------------------------------------------*//*!
@@ -327,32 +327,32 @@ public:
 class TextureLevel
 {
 public:
-							TextureLevel		(void);
-							TextureLevel		(const TextureFormat& format);
-							TextureLevel		(const TextureFormat& format, int width, int height, int depth = 1);
-							~TextureLevel		(void);
+								TextureLevel		(void);
+								TextureLevel		(const TextureFormat& format);
+								TextureLevel		(const TextureFormat& format, int width, int height, int depth = 1);
+								~TextureLevel		(void);
 
-	int						getWidth			(void) const	{ return m_width;	}
-	int						getHeight			(void) const	{ return m_height;	}
-	int						getDepth			(void) const	{ return m_depth;	}
-	bool					isEmpty				(void) const	{ return m_width == 0 || m_height == 0 || m_depth == 0; }
-	const TextureFormat		getFormat			(void) const	{ return m_format;	}
+	int							getWidth			(void) const	{ return m_width;	}
+	int							getHeight			(void) const	{ return m_height;	}
+	int							getDepth			(void) const	{ return m_depth;	}
+	bool						isEmpty				(void) const	{ return m_width == 0 || m_height == 0 || m_depth == 0; }
+	const TextureFormat			getFormat			(void) const	{ return m_format;	}
 
-	void					setStorage			(const TextureFormat& format, int width, int heigth, int depth = 1);
-	void					setSize				(int width, int height, int depth = 1);
+	void						setStorage			(const TextureFormat& format, int width, int heigth, int depth = 1);
+	void						setSize				(int width, int height, int depth = 1);
 
-	PixelBufferAccess		getAccess			(void)			{ return PixelBufferAccess(m_format, m_width, m_height, m_depth, getPtr());			}
-	ConstPixelBufferAccess	getAccess			(void) const	{ return ConstPixelBufferAccess(m_format, m_width, m_height, m_depth, getPtr());	}
+	PixelBufferAccess			getAccess			(void)			{ return PixelBufferAccess(m_format, m_width, m_height, m_depth, getPtr());			}
+	ConstPixelBufferAccess		getAccess			(void) const	{ return ConstPixelBufferAccess(m_format, m_width, m_height, m_depth, getPtr());	}
 
 private:
-	void*					getPtr				(void)			{ return m_data.getPtr(); }
-	const void*				getPtr				(void) const	{ return m_data.getPtr(); }
+	void*						getPtr				(void)			{ return m_data.getPtr(); }
+	const void*					getPtr				(void) const	{ return m_data.getPtr(); }
 
-	TextureFormat			m_format;
-	int						m_width;
-	int						m_height;
-	int						m_depth;
-	de::ArrayBuffer<deUint8> m_data;
+	TextureFormat				m_format;
+	int							m_width;
+	int							m_height;
+	int							m_depth;
+	de::ArrayBuffer<deUint8>	m_data;
 
 	friend class ConstPixelBufferAccess;
 };
