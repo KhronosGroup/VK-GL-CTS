@@ -60,7 +60,6 @@
 #include "glwDefs.hpp"
 #include "glwEnums.hpp"
 
-
 namespace deqp
 {
 namespace gls
@@ -1652,6 +1651,16 @@ char* RandomArrayGenerator::generateBasicArray (int seed, int elementCount, int 
 	return DE_NULL;
 }
 
+#if (DE_COMPILER == DE_COMPILER_GCC) && (__GNUC__ == 4) && (__GNUC_MINOR__ >= 8)
+	// GCC 4.8/4.9 incorrectly emits array-bounds warning from createBasicArray()
+#	define GCC_ARRAY_BOUNDS_FALSE_NEGATIVE 1
+#endif
+
+#if defined(GCC_ARRAY_BOUNDS_FALSE_NEGATIVE)
+#	pragma GCC diagnostic push
+#	pragma GCC diagnostic ignored "-Warray-bounds"
+#endif
+
 template<typename T, typename GLType>
 char* RandomArrayGenerator::createBasicArray (int seed, int elementCount, int componentCount, int offset, int stride)
 {
@@ -1699,6 +1708,10 @@ char* RandomArrayGenerator::createBasicArray (int seed, int elementCount, int co
 
 	return data;
 }
+
+#if defined(GCC_ARRAY_BOUNDS_FALSE_NEGATIVE)
+#	pragma GCC diagnostic pop
+#endif
 
 char* RandomArrayGenerator::generatePackedArray (int seed, int elementCount, int componentCount, int offset, int stride)
 {
