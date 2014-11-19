@@ -85,8 +85,8 @@ static inline int divRoundToZero (int a, int b)
 
 static void fillWithRandomColorTiles (const PixelBufferAccess& dst, const Vec4& minVal, const Vec4& maxVal, deUint32 seed)
 {
-	const int	numCols		= 7;
-	const int	numRows		= 5;
+	const int	numCols		= dst.getWidth()  >= 7 ? 7 : dst.getWidth();
+	const int	numRows		= dst.getHeight() >= 5 ? 5 : dst.getHeight();
 	de::Random	rnd			(seed);
 
 	for (int slice = 0; slice < dst.getDepth(); slice++)
@@ -751,6 +751,12 @@ enum GatherType
 	GATHERTYPE_LAST
 };
 
+enum GatherCaseFlags
+{
+	GATHERCASE_MIPMAP_INCOMPLETE		= (1<<0),	//!< Excercise special case of sampling mipmap-incomplete texture
+	GATHERCASE_DONT_SAMPLE_CUBE_CORNERS	= (1<<1)	//!< For cube map cases: do not sample cube corners
+};
+
 static inline const char* gatherTypeName (GatherType type)
 {
 	switch (type)
@@ -950,7 +956,7 @@ public:
 																 tcu::Sampler::FilterMode	minFilter,
 																 tcu::Sampler::FilterMode	magFilter,
 																 int						baseLevel,
-																 bool						mipmapIncomplete);
+																 deUint32					flags);
 
 	void								init					(void);
 	void								deinit					(void);
@@ -982,7 +988,7 @@ protected:
 	const tcu::Sampler::FilterMode		m_minFilter;
 	const tcu::Sampler::FilterMode		m_magFilter;
 	const int							m_baseLevel;
-	const bool							m_mipmapIncomplete;
+	const deUint32						m_flags;
 
 private:
 	enum
@@ -1024,7 +1030,7 @@ TextureGatherCase::TextureGatherCase (Context&						context,
 									  tcu::Sampler::FilterMode		minFilter,
 									  tcu::Sampler::FilterMode		magFilter,
 									  int							baseLevel,
-									  bool							mipmapIncomplete)
+									  deUint32						flags)
 	: TestCase				(context, name, description)
 	, m_gatherType			(gatherType)
 	, m_offsetSize			(offsetSize)
@@ -1036,7 +1042,7 @@ TextureGatherCase::TextureGatherCase (Context&						context,
 	, m_minFilter			(minFilter)
 	, m_magFilter			(magFilter)
 	, m_baseLevel			(baseLevel)
-	, m_mipmapIncomplete	(mipmapIncomplete)
+	, m_flags				(flags)
 	, m_textureType			(textureType)
 	, m_colorBufferFormat	(tcu::TextureFormat(tcu::TextureFormat::RGBA,
 												isDepthFormat(textureFormat) ? tcu::TextureFormat::UNORM_INT8 : textureFormat.type))
@@ -1051,8 +1057,9 @@ TextureGatherCase::TextureGatherCase (Context&						context,
 			  m_colorBufferFormat.type == tcu::TextureFormat::SIGNED_INT16);
 	DE_ASSERT(glu::isGLInternalColorFormatFilterable(glu::getInternalFormat(m_colorBufferFormat)) ||
 			  (m_magFilter == tcu::Sampler::NEAREST && (m_minFilter == tcu::Sampler::NEAREST || m_minFilter == tcu::Sampler::NEAREST_MIPMAP_NEAREST)));
-	DE_ASSERT(isMipmapFilter(m_minFilter) || !m_mipmapIncomplete);
-	DE_ASSERT(!(m_mipmapIncomplete && isDepthFormat(m_textureFormat))); // It's not clear what shadow textures should return when incomplete.
+	DE_ASSERT(isMipmapFilter(m_minFilter) || !(m_flags & GATHERCASE_MIPMAP_INCOMPLETE));
+	DE_ASSERT(m_textureType == TEXTURETYPE_CUBE || !(m_flags & GATHERCASE_DONT_SAMPLE_CUBE_CORNERS));
+	DE_ASSERT(!((m_flags & GATHERCASE_MIPMAP_INCOMPLETE) && isDepthFormat(m_textureFormat))); // It's not clear what shadow textures should return when incomplete.
 }
 
 IVec2 TextureGatherCase::getOffsetRange (void) const
@@ -1306,7 +1313,7 @@ void TextureGatherCase::init (void)
 		<< TestLog::Message << "Minification and magnification filter modes are "
 							<< glu::getTextureFilterName(glu::getGLFilterMode(m_minFilter)) << " and "
 							<< glu::getTextureFilterName(glu::getGLFilterMode(m_magFilter)) << ", respectively "
-							<< (m_mipmapIncomplete ?
+							<< ((m_flags & GATHERCASE_MIPMAP_INCOMPLETE) ?
 								"(note that they cause the texture to be incomplete)" :
 								"(note that they should have no effect on gather result)")
 							<< TestLog::EndMessage
@@ -1448,7 +1455,7 @@ bool TextureGatherCase::verify (const ConstPixelBufferAccess&	rendered,
 {
 	TestLog& log = m_testCtx.getLog();
 
-	if (m_mipmapIncomplete)
+	if (m_flags & GATHERCASE_MIPMAP_INCOMPLETE)
 	{
 		const int	componentNdx		= de::max(0, gatherArgs.componentNdx);
 		const Vec4	incompleteColor		(0.0f, 0.0f, 0.0f, 1.0f);
@@ -1623,9 +1630,9 @@ public:
 						 tcu::Sampler::FilterMode	minFilter,
 						 tcu::Sampler::FilterMode	magFilter,
 						 int						baseLevel,
-						 bool						mipmapIncomplete,
+						 deUint32					flags,
 						 const IVec2&				textureSize)
-		: TextureGatherCase		(context, name, description, TEXTURETYPE_2D, gatherType, offsetSize, textureFormat, shadowCompareMode, wrapS, wrapT, texSwizzle, minFilter, magFilter, baseLevel, mipmapIncomplete)
+		: TextureGatherCase		(context, name, description, TEXTURETYPE_2D, gatherType, offsetSize, textureFormat, shadowCompareMode, wrapS, wrapT, texSwizzle, minFilter, magFilter, baseLevel, flags)
 		, m_textureSize			(textureSize)
 		, m_swizzledTexture		(tcu::TextureFormat(), 1, 1)
 	{
@@ -1671,7 +1678,7 @@ void TextureGather2DCase::createAndUploadTexture (void)
 	{
 		tcu::Texture2D&		refTexture	= m_texture->getRefTexture();
 		const int			levelBegin	= m_baseLevel;
-		const int			levelEnd	= isMipmapFilter(m_minFilter) && !m_mipmapIncomplete ? refTexture.getNumLevels() : m_baseLevel+1;
+		const int			levelEnd	= isMipmapFilter(m_minFilter) && !(m_flags & GATHERCASE_MIPMAP_INCOMPLETE) ? refTexture.getNumLevels() : m_baseLevel+1;
 		DE_ASSERT(m_baseLevel < refTexture.getNumLevels());
 
 		for (int levelNdx = levelBegin; levelNdx < levelEnd; levelNdx++)
@@ -1713,9 +1720,9 @@ public:
 							  tcu::Sampler::FilterMode		minFilter,
 							  tcu::Sampler::FilterMode		magFilter,
 							  int							baseLevel,
-							  bool							mipmapIncomplete,
+							  deUint32						flags,
 							  const IVec3&					textureSize)
-		: TextureGatherCase		(context, name, description, TEXTURETYPE_2D_ARRAY, gatherType, offsetSize, textureFormat, shadowCompareMode, wrapS, wrapT, texSwizzle, minFilter, magFilter, baseLevel, mipmapIncomplete)
+		: TextureGatherCase		(context, name, description, TEXTURETYPE_2D_ARRAY, gatherType, offsetSize, textureFormat, shadowCompareMode, wrapS, wrapT, texSwizzle, minFilter, magFilter, baseLevel, flags)
 		, m_textureSize			(textureSize)
 		, m_swizzledTexture		(tcu::TextureFormat(), 1, 1, 1)
 	{
@@ -1798,7 +1805,7 @@ void TextureGather2DArrayCase::createAndUploadTexture (void)
 	{
 		tcu::Texture2DArray&	refTexture	= m_texture->getRefTexture();
 		const int				levelBegin	= m_baseLevel;
-		const int				levelEnd	= isMipmapFilter(m_minFilter) && !m_mipmapIncomplete ? refTexture.getNumLevels() : m_baseLevel+1;
+		const int				levelEnd	= isMipmapFilter(m_minFilter) && !(m_flags & GATHERCASE_MIPMAP_INCOMPLETE) ? refTexture.getNumLevels() : m_baseLevel+1;
 		DE_ASSERT(m_baseLevel < refTexture.getNumLevels());
 
 		for (int levelNdx = levelBegin; levelNdx < levelEnd; levelNdx++)
@@ -1845,9 +1852,9 @@ public:
 						   tcu::Sampler::FilterMode		minFilter,
 						   tcu::Sampler::FilterMode		magFilter,
 						   int							baseLevel,
-						   bool							mipmapIncomplete,
+						   deUint32						flags,
 						   int							textureSize)
-		: TextureGatherCase		(context, name, description, TEXTURETYPE_CUBE, GATHERTYPE_BASIC, OFFSETSIZE_NONE, textureFormat, shadowCompareMode, wrapS, wrapT, texSwizzle, minFilter, magFilter, baseLevel, mipmapIncomplete)
+		: TextureGatherCase		(context, name, description, TEXTURETYPE_CUBE, GATHERTYPE_BASIC, OFFSETSIZE_NONE, textureFormat, shadowCompareMode, wrapS, wrapT, texSwizzle, minFilter, magFilter, baseLevel, flags)
 		, m_textureSize			(textureSize)
 		, m_swizzledTexture		(tcu::TextureFormat(), 1)
 	{
@@ -1877,8 +1884,11 @@ private:
 
 vector<float> TextureGatherCubeCase::computeQuadTexCoord (int iterationNdx) const
 {
-	vector<float> res;
-	gls::TextureTestUtil::computeQuadTexCoordCube(res, m_iterations[iterationNdx].face, Vec2(-1.2f), Vec2(1.2f));
+	const bool		corners	= (m_flags & GATHERCASE_DONT_SAMPLE_CUBE_CORNERS) == 0;
+	const Vec2		minC	= corners ? Vec2(-1.2f) : Vec2(-0.6f, -1.2f);
+	const Vec2		maxC	= corners ? Vec2( 1.2f) : Vec2( 0.6f,  1.2f);
+	vector<float>	res;
+	gls::TextureTestUtil::computeQuadTexCoordCube(res, m_iterations[iterationNdx].face, minC, maxC);
 	return res;
 }
 
@@ -1931,7 +1941,7 @@ void TextureGatherCubeCase::createAndUploadTexture (void)
 	{
 		tcu::TextureCube&	refTexture	= m_texture->getRefTexture();
 		const int			levelBegin	= m_baseLevel;
-		const int			levelEnd	= isMipmapFilter(m_minFilter) && !m_mipmapIncomplete ? refTexture.getNumLevels() : m_baseLevel+1;
+		const int			levelEnd	= isMipmapFilter(m_minFilter) && !(m_flags & GATHERCASE_MIPMAP_INCOMPLETE) ? refTexture.getNumLevels() : m_baseLevel+1;
 		DE_ASSERT(m_baseLevel < refTexture.getNumLevels());
 
 		for (int levelNdx = levelBegin; levelNdx < levelEnd; levelNdx++)
@@ -1983,23 +1993,23 @@ static inline TextureGatherCase* makeTextureGatherCase (TextureType					textureT
 														tcu::Sampler::FilterMode	magFilter,
 														int							baseLevel,
 														const IVec3&				textureSize,
-														bool						mipmapIncomplete = false)
+														deUint32					flags = 0)
 {
 	switch (textureType)
 	{
 		case TEXTURETYPE_2D:
 			return new TextureGather2DCase(context, name, description, gatherType, offsetSize, textureFormat, shadowCompareMode,
-										   wrapS, wrapT, texSwizzle, minFilter, magFilter, baseLevel, mipmapIncomplete, textureSize.swizzle(0, 1));
+										   wrapS, wrapT, texSwizzle, minFilter, magFilter, baseLevel, flags, textureSize.swizzle(0, 1));
 
 		case TEXTURETYPE_2D_ARRAY:
 			return new TextureGather2DArrayCase(context, name, description, gatherType, offsetSize, textureFormat, shadowCompareMode,
-												wrapS, wrapT, texSwizzle, minFilter, magFilter, baseLevel, mipmapIncomplete, textureSize);
+												wrapS, wrapT, texSwizzle, minFilter, magFilter, baseLevel, flags, textureSize);
 
 		case TEXTURETYPE_CUBE:
 			DE_ASSERT(gatherType == GATHERTYPE_BASIC);
 			DE_ASSERT(offsetSize == OFFSETSIZE_NONE);
 			return new TextureGatherCubeCase(context, name, description, textureFormat, shadowCompareMode,
-											 wrapS, wrapT, texSwizzle, minFilter, magFilter, baseLevel, mipmapIncomplete, textureSize.x());
+											 wrapS, wrapT, texSwizzle, minFilter, magFilter, baseLevel, flags, textureSize.x());
 
 		default:
 			DE_ASSERT(false);
@@ -2116,43 +2126,55 @@ void TextureGatherTests::init (void)
 					TestCaseGroup* const		formatGroup		= new TestCaseGroup(m_context, formats[formatNdx].name, "");
 					textureTypeGroup->addChild(formatGroup);
 
-					for (int textureSizeNdx = 0; textureSizeNdx < DE_LENGTH_OF_ARRAY(textureSizes); textureSizeNdx++)
+					for (int noCornersI = 0; noCornersI <= (textureType == TEXTURETYPE_CUBE)?1:0; noCornersI++)
 					{
-						const IVec3&			textureSize			= textureSizes[textureSizeNdx].size;
-						TestCaseGroup* const	textureSizeGroup	= new TestCaseGroup(m_context, textureSizes[textureSizeNdx].name, "");
-						formatGroup->addChild(textureSizeGroup);
+						const bool				noCorners		= noCornersI!= 0;
+						TestCaseGroup* const	cornersGroup	= noCorners
+																? new TestCaseGroup(m_context, "no_corners", "Test case variants that don't sample around cube map corners")
+																: formatGroup;
 
-						for (int compareModeI = 0; compareModeI < tcu::Sampler::COMPAREMODE_LAST; compareModeI++)
+						if (formatGroup != cornersGroup)
+							formatGroup->addChild(cornersGroup);
+
+						for (int textureSizeNdx = 0; textureSizeNdx < DE_LENGTH_OF_ARRAY(textureSizes); textureSizeNdx++)
 						{
-							const tcu::Sampler::CompareMode compareMode = (tcu::Sampler::CompareMode)compareModeI;
+							const IVec3&			textureSize			= textureSizes[textureSizeNdx].size;
+							TestCaseGroup* const	textureSizeGroup	= new TestCaseGroup(m_context, textureSizes[textureSizeNdx].name, "");
+							cornersGroup->addChild(textureSizeGroup);
 
-							if ((compareMode != tcu::Sampler::COMPAREMODE_NONE) != isDepthFormat(format))
-								continue;
-
-							if (compareMode != tcu::Sampler::COMPAREMODE_NONE &&
-								compareMode != tcu::Sampler::COMPAREMODE_LESS &&
-								compareMode != tcu::Sampler::COMPAREMODE_GREATER)
-								continue;
-
-							TestCaseGroup* const compareModeGroup = compareMode == tcu::Sampler::COMPAREMODE_NONE ?
-																		textureSizeGroup :
-																		new TestCaseGroup(m_context,
-																						  (string() + "compare_" + compareModeName(compareMode)).c_str(),
-																						  "");
-							if (compareModeGroup != textureSizeGroup)
-								textureSizeGroup->addChild(compareModeGroup);
-
-							for (int wrapCaseNdx = 0; wrapCaseNdx < DE_LENGTH_OF_ARRAY(wrapModes); wrapCaseNdx++)
+							for (int compareModeI = 0; compareModeI < tcu::Sampler::COMPAREMODE_LAST; compareModeI++)
 							{
-								const int						wrapSNdx	= wrapCaseNdx;
-								const int						wrapTNdx	= (wrapCaseNdx + 1) % DE_LENGTH_OF_ARRAY(wrapModes);
-								const tcu::Sampler::WrapMode	wrapS		= wrapModes[wrapSNdx].mode;
-								const tcu::Sampler::WrapMode	wrapT		= wrapModes[wrapTNdx].mode;
+								const tcu::Sampler::CompareMode compareMode = (tcu::Sampler::CompareMode)compareModeI;
 
-								const string caseName = string() + wrapModes[wrapSNdx].name + "_" + wrapModes[wrapTNdx].name;
+								if ((compareMode != tcu::Sampler::COMPAREMODE_NONE) != isDepthFormat(format))
+									continue;
 
-								compareModeGroup->addChild(makeTextureGatherCase(textureType, m_context, caseName.c_str(), "", gatherType, offsetSize, format, compareMode, wrapS, wrapT,
-																				 MaybeTextureSwizzle::createNoneTextureSwizzle(), tcu::Sampler::NEAREST, tcu::Sampler::NEAREST, 0, textureSize));
+								if (compareMode != tcu::Sampler::COMPAREMODE_NONE &&
+									compareMode != tcu::Sampler::COMPAREMODE_LESS &&
+									compareMode != tcu::Sampler::COMPAREMODE_GREATER)
+									continue;
+
+								TestCaseGroup* const compareModeGroup = compareMode == tcu::Sampler::COMPAREMODE_NONE ?
+																			textureSizeGroup :
+																			new TestCaseGroup(m_context,
+																							  (string() + "compare_" + compareModeName(compareMode)).c_str(),
+																							  "");
+								if (compareModeGroup != textureSizeGroup)
+									textureSizeGroup->addChild(compareModeGroup);
+
+								for (int wrapCaseNdx = 0; wrapCaseNdx < DE_LENGTH_OF_ARRAY(wrapModes); wrapCaseNdx++)
+								{
+									const int						wrapSNdx	= wrapCaseNdx;
+									const int						wrapTNdx	= (wrapCaseNdx + 1) % DE_LENGTH_OF_ARRAY(wrapModes);
+									const tcu::Sampler::WrapMode	wrapS		= wrapModes[wrapSNdx].mode;
+									const tcu::Sampler::WrapMode	wrapT		= wrapModes[wrapTNdx].mode;
+
+									const string caseName = string() + wrapModes[wrapSNdx].name + "_" + wrapModes[wrapTNdx].name;
+
+									compareModeGroup->addChild(makeTextureGatherCase(textureType, m_context, caseName.c_str(), "", gatherType, offsetSize, format, compareMode, wrapS, wrapT,
+																					 MaybeTextureSwizzle::createNoneTextureSwizzle(), tcu::Sampler::NEAREST, tcu::Sampler::NEAREST, 0, textureSize,
+																					 noCorners ? GATHERCASE_DONT_SAMPLE_CUBE_CORNERS : 0));
+								}
 							}
 						}
 					}
@@ -2255,7 +2277,7 @@ void TextureGatherTests::init (void)
 							incompleteGroup->addChild(makeTextureGatherCase(textureType, m_context, "mipmap_incomplete", "", gatherType, offsetSize, format,
 																			compareMode, tcu::Sampler::REPEAT_GL, tcu::Sampler::REPEAT_GL,
 																			MaybeTextureSwizzle::createNoneTextureSwizzle(), tcu::Sampler::NEAREST_MIPMAP_NEAREST, tcu::Sampler::NEAREST,
-																			0, IVec3(64, 64, 3), true /* Mipmap-incomplete */));
+																			0, IVec3(64, 64, 3), GATHERCASE_MIPMAP_INCOMPLETE));
 						}
 					}
 				}
