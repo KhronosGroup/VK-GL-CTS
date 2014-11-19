@@ -316,8 +316,6 @@ add_subdirectory(modules)
 
 # Single-binary targets
 if (DE_OS_IS_ANDROID)
-	# CTS activities require headers from Android port directory
-	include_directories(framework/platform/android)
 	include_directories(executor)
 
 	add_library(deqp SHARED framework/platform/android/tcuAndroidMain.cpp framework/platform/android/tcuAndroidJNI.cpp framework/platform/android/tcuTestLogParserJNI.cpp ${DEQP_MODULE_ENTRY_POINTS})

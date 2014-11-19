@@ -24,6 +24,7 @@
 #include "teglImageTests.hpp"
 
 #include "teglImageUtil.hpp"
+#include "teglAndroidUtil.hpp"
 #include "teglImageFormatTests.hpp"
 
 #include "egluExtensions.hpp"
@@ -272,6 +273,7 @@ public:
 			case EGL_GL_TEXTURE_CUBE_MAP_POSITIVE_Z_KHR:	return "cubemap_pos_z";
 			case EGL_GL_TEXTURE_CUBE_MAP_NEGATIVE_Z_KHR:	return "cubemap_neg_z";
 			case EGL_GL_RENDERBUFFER_KHR:					return "renderbuffer";
+			case EGL_NATIVE_BUFFER_ANDROID:					return "android_native";
 			default:		DE_ASSERT(DE_FALSE);			return "";
 		}
 	}
@@ -286,6 +288,8 @@ public:
 			case GL_RGBA4:				return "rgba4";
 			case GL_RGB5_A1:			return "rgb5_a1";
 			case GL_RGB565:				return "rgb565";
+			case GL_RGB8:				return "rgb8";
+			case GL_RGBA8:				return "rgba8";
 			case GL_STENCIL_INDEX8:		return "stencil_index8";
 			default:
 				DE_ASSERT(DE_FALSE);
@@ -307,6 +311,8 @@ public:
 				return createTextureImageSource(target, format, GL_UNSIGNED_BYTE);
 			case EGL_GL_RENDERBUFFER_KHR:
 				return createRenderbufferImageSource(format);
+			case EGL_NATIVE_BUFFER_ANDROID:
+				return createAndroidNativeImageSource(format);
 			default:
 				DE_ASSERT(!"Impossible");
 				return MovePtr<ImageSource>();
@@ -356,7 +362,6 @@ public:
 
 private:
 	UniquePtr<ImageSource>	m_source;
-	bool					m_useTexLevel0;
 };
 
 class ImageTargetGLES2 : public ImageTestCase
@@ -493,6 +498,18 @@ public:
 		};
 		for (int storageNdx = 0; storageNdx < DE_LENGTH_OF_ARRAY(rboStorages); storageNdx++)
 			addChild(new Image::CreateImageGLES2(m_eglTestCtx, EGL_GL_RENDERBUFFER_KHR, rboStorages[storageNdx]));
+
+		static const GLenum androidFormats[] =
+		{
+			GL_RGB565,
+			GL_RGB8,
+			GL_RGBA4,
+			GL_RGB5_A1,
+			GL_RGBA8,
+		};
+
+		for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(androidFormats); ++formatNdx)
+			addChild(new Image::CreateImageGLES2(m_eglTestCtx, EGL_NATIVE_BUFFER_ANDROID, androidFormats[formatNdx]));
 
 		addChild(new Image::ImageTargetGLES2(m_eglTestCtx, GL_TEXTURE_2D));
 		addChild(new Image::ImageTargetGLES2(m_eglTestCtx, GL_RENDERBUFFER));

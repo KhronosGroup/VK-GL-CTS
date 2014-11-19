@@ -60,25 +60,21 @@ class ClientBuffer
 {
 public:
 	virtual					~ClientBuffer	(void) {}
-	EGLClientBuffer			get				(void) const { return reinterpret_cast<EGLClientBuffer>(static_cast<deUintptr>(getName())); }
-
-protected:
-	virtual glw::GLuint		getName			(void) const = 0;
+	virtual EGLClientBuffer	get				(void) const = 0;
 };
 
 class ImageSource
 {
 public:
 	virtual								~ImageSource		(void) {}
-	virtual EGLenum						getSource			(void) const = 0;
-	virtual eglu::AttribMap				getCreateAttribs	(void) const = 0;
 	virtual std::string					getRequiredExtension(void) const = 0;
 	virtual de::MovePtr<ClientBuffer>	createBuffer		(const glw::Functions& gl, tcu::Texture2D* reference = DE_NULL) const = 0;
-	EGLImageKHR							createImage			(const eglu::ImageFunctions& imgExt, EGLDisplay dpy, EGLContext ctx, EGLClientBuffer clientBuffer) const;
+	virtual EGLImageKHR					createImage			(const eglu::ImageFunctions& imgExt, EGLDisplay dpy, EGLContext ctx, EGLClientBuffer clientBuffer) const = 0;
 };
 
 de::MovePtr<ImageSource> createTextureImageSource			(EGLenum source, glw::GLenum format, glw::GLenum type, bool useTexLevel0 = false);
-de::MovePtr<ImageSource> createRenderbufferImageSource		(glw::GLenum storage);
+de::MovePtr<ImageSource> createRenderbufferImageSource		(glw::GLenum format);
+de::MovePtr<ImageSource> createUnsupportedImageSource		(const std::string& message);
 
 } // Image
 } // egl
