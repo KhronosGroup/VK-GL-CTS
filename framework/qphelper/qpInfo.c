@@ -25,8 +25,12 @@
 
 DE_BEGIN_EXTERN_C
 
-#define DEQP_RELEASE_NAME	"2014.x"
-#define DEQP_RELEASE_ID		0xcafebabe
+#if defined(DEQP_USE_RELEASE_INFO_FILE)
+#	include "qpReleaseInfo.inl"
+#else
+#	define DEQP_RELEASE_NAME	"unknown"
+#	define DEQP_RELEASE_ID		0xcafebabe
+#endif
 
 const char* qpGetTargetName (void)
 {

@@ -36,3 +36,29 @@ endif ()
 
 add_library(qphelper STATIC ${QPHELPER_SRCS})
 target_link_libraries(qphelper ${QPHELPER_LIBS})
+
+# Should qpInfo.c attempt to include qpReleaseInfo.inl
+set(USE_RELEASE_INFO_FILE OFF)
+
+if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/qpReleaseInfo.inl")
+	set(USE_RELEASE_INFO_FILE ON)
+
+elseif (EXISTS "${CMAKE_SOURCE_DIR}/.git")
+	find_program(PYTHON_BIN python)
+
+	if (PYTHON_BIN)
+		message(STATUS "Using git revision as release identifier")
+
+		add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/qpReleaseInfo.inl
+						   COMMAND ${PYTHON_BIN} -B ${CMAKE_CURRENT_SOURCE_DIR}/gen_release_info.py --git --out=${CMAKE_CURRENT_BINARY_DIR}/qpReleaseInfo.inl
+						   DEPENDS gen_release_info.py ${CMAKE_SOURCE_DIR}/.git/HEAD ${CMAKE_SOURCE_DIR}/.git/index) # \note HEAD updated only when changing branches
+		add_custom_target(git-rel-info DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/qpReleaseInfo.inl)
+		add_dependencies(qphelper git-rel-info)
+		include_directories(${CMAKE_CURRENT_BINARY_DIR})
+		set(USE_RELEASE_INFO_FILE ON)
+	endif ()
+endif ()
+
+if (USE_RELEASE_INFO_FILE)
+	add_definitions(-DDEQP_USE_RELEASE_INFO_FILE)
+endif ()

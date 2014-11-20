@@ -96,21 +96,22 @@ class CopyFile (DstFile):
 			die("%s already exists" % self.dstFile)
 		shutil.copyfile(self.srcFile, self.dstFile)
 
-class GenInfoFile (DstFile):
-	def __init__ (self, srcFile, dstFile):
-		super(GenInfoFile, self).__init__(dstFile)
-		self.srcFile = srcFile
+class GenReleaseInfoFileTarget (DstFile):
+	def __init__ (self, dstFile):
+		super(GenReleaseInfoFileTarget, self).__init__(dstFile)
 
 	def make (self, packageBuildInfo):
 		self.makeDir()
-		print "    GenInfoFile: %s" % removeLeadingPath(self.dstFile, packageBuildInfo.dstBasePath)
-		src			= readFile(self.srcFile)
 
-		for define, value in [("DEQP_RELEASE_NAME", 	"\"%s\""	% packageBuildInfo.getReleaseVersion()),
-							  ("DEQP_RELEASE_ID",		"0x%08x"	% packageBuildInfo.getReleaseId())]:
-			src = re.sub('(#\s*define\s+%s\s+)[^\n\r]+' % re.escape(define), r'\1 %s' % value, src)
-
-		writeFile(self.dstFile, src)
+		scriptPath = os.path.normpath(os.path.join(packageBuildInfo.srcBasePath, "framework", "qphelper", "gen_release_info.py"))
+		execute([
+				"python",
+				"-B", # no .py[co]
+				scriptPath,
+				"--name=%s" % packageBuildInfo.getReleaseVersion(),
+				"--id=0x%08x" % packageBuildInfo.getReleaseId(),
+				"--out=%s" % self.dstFile
+			])
 
 class GenCMake (DstFile):
 	def __init__ (self, srcFile, dstFile, replaceVars):
@@ -362,15 +363,13 @@ BASE = Module("Base", [
 	makeFileCopyGroup	("doc/testlog-stylesheet",					"doc/testlog-stylesheet",				["*"]),
 
 	# Non-optional parts of framework
-	# \note qpInfo.c must be processed!
-	FileTargetGroup		("framework", "src/framework", [
-			# If file is qpInfo.c use GenInfoFile
-			(lambda f: f[-8:] == "qpInfo.c", lambda s, d: GenInfoFile(s, d)),
-			# Otherwise just CopyFile targets
-			copyFileFilter(SRC_FILE_PATTERNS, ["imagedifftester", "randomshaders", "simplereference", "referencerenderer"])
-		]),
-
-	# Main modules CMakeLists.txt
+	makeFileCopy		("framework/CMakeLists.txt", 				"src/framework/CMakeLists.txt"),
+	makeFileCopyGroup	("framework/delibs",						"src/framework/delibs",					SRC_FILE_PATTERNS),
+	makeFileCopyGroup	("framework/common",						"src/framework/common",					SRC_FILE_PATTERNS),
+	makeFileCopyGroup	("framework/qphelper",						"src/framework/qphelper",				SRC_FILE_PATTERNS),
+	makeFileCopyGroup	("framework/platform",						"src/framework/platform",				SRC_FILE_PATTERNS),
+	makeFileCopyGroup	("framework/opengl",						"src/framework/opengl",					SRC_FILE_PATTERNS, ["simplereference"]),
+	makeFileCopyGroup	("framework/egl",							"src/framework/egl",					SRC_FILE_PATTERNS),
 
 	# android sources
 	makeFileCopyGroup	("android/package/src",						"src/android/package/src",				SRC_FILE_PATTERNS),
@@ -384,6 +383,9 @@ BASE = Module("Base", [
 		"launch.py",
 		"debug.py"
 		]),
+
+	# Release info
+	GenReleaseInfoFileTarget("src/framework/qphelper/qpReleaseInfo.inl")
 ])
 
 DOCUMENTATION = Module("Documentation", [
