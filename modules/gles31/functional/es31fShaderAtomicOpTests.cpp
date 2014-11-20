@@ -116,6 +116,10 @@ void ShaderAtomicOpCase::init (void)
 	const bool			isSSBO		= m_operandType == ATOMIC_OPERAND_BUFFER_VARIABLE;
 	const char*			precName	= getPrecisionName(m_precision);
 	const char*			typeName	= getDataTypeName(m_type);
+
+	const DataType		outType		= isSSBO ? m_type : glu::TYPE_UINT;
+	const char*			outTypeName	= getDataTypeName(outType);
+
 	const deUint32		numValues	= product(m_workGroupSize)*product(m_numWorkGroups);
 	std::ostringstream	src;
 
@@ -126,8 +130,8 @@ void ShaderAtomicOpCase::init (void)
 		<< "layout(binding = 0) buffer InOut\n"
 		<< "{\n"
 		<< "	" << precName << " " << typeName << " inputValues[" << numValues << "];\n"
-		<< "	" << precName << " " << typeName << " outputValues[" << numValues << "];\n"
-		<< "	" << (isSSBO ? "coherent " : "") << precName << " " << typeName << " groupValues[" << product(m_numWorkGroups) << "];\n"
+		<< "	" << precName << " " << outTypeName << " outputValues[" << numValues << "];\n"
+		<< "	" << (isSSBO ? "coherent " : "") << precName << " " << outTypeName << " groupValues[" << product(m_numWorkGroups) << "];\n"
 		<< "} sb_inout;\n";
 
 	if (!isSSBO)
@@ -144,17 +148,22 @@ void ShaderAtomicOpCase::init (void)
 
 	if (isSSBO)
 	{
+		DE_ASSERT(outType == m_type);
 		src << "	sb_inout.outputValues[offset] = " << m_funcName << "(sb_inout.groupValues[globalNdx], sb_inout.inputValues[offset]);\n";
 	}
 	else
 	{
+		const string		castBeg	= outType != m_type ? (string(outTypeName) + "(") : string("");
+		const char* const	castEnd	= outType != m_type ? ")" : "";
+
 		src << "	if (gl_LocalInvocationIndex == 0u)\n"
 			<< "		s_var = " << typeName << "(" << tcu::toHex(m_initialValue) << "u);\n"
 			<< "	barrier();\n"
-			<< "	sb_inout.outputValues[offset] = " << m_funcName << "(s_var, sb_inout.inputValues[offset]);\n"
+			<< "	" << precName << " " << typeName << " res = " << m_funcName << "(s_var, sb_inout.inputValues[offset]);\n"
+			<< "	sb_inout.outputValues[offset] = " << castBeg << "res" << castEnd << ";\n"
 			<< "	barrier();\n"
 			<< "	if (gl_LocalInvocationIndex == 0u)\n"
-			<< "		sb_inout.groupValues[globalNdx] = s_var;\n";
+			<< "		sb_inout.groupValues[globalNdx] = " << castBeg << "s_var" << castEnd << ";\n";
 	}
 
 	src << "}\n";
