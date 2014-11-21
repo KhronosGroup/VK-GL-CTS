@@ -3,7 +3,12 @@
 import os
 import string
 
+# TODO remove
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+
 from src_util import *
+from khr_util.gen_str_util import addValuePrefix, genStrUtilProtos, genStrUtilImpls
 
 # Bitfield mapping
 BITFIELD_GROUPS = [
@@ -780,103 +785,14 @@ ENUM_GROUPS = [
 # EnableCap EnumGroups are also GettableState EnumGroups
 [x for x in ENUM_GROUPS if x[0]=="GettableState"][0][1].extend([x for x in ENUM_GROUPS if x[0]=="EnableCap"][0][1])
 
-def isValueDefined (definitions, value):
-	return ("GL_" + value) in definitions
-
-def allValuesUndefined (definitions, values):
-	for value in values:
-		if isValueDefined(definitions, value):
-			return False
-	return True
-
-def anyValueDefined (definitions, values):
-	return not allValuesUndefined(definitions, values)
-
-def writeStrUtilPrototypes (enumGroups, bitfieldGroups, definitions, dstFile):
-	def genNameProtos ():
-		for groupName, values in enumGroups:
-			if anyValueDefined(definitions, values):
-				yield "const char*\tget%sName\t(int value);" % groupName
-			else:
-				print "Warning: Empty value set for %s, skipping" % groupName
-
-	def genBitfieldProtos ():
-		for groupName, values in bitfieldGroups:
-			if anyValueDefined(definitions, values):
-				yield "tcu::Format::Bitfield<16>\tget%sStr\t(int value);" % groupName
-			else:
-				print "Warning: Empty value set for %s, skipping" % groupName
-
-	def genStrImpl ():
-		for groupName, values in enumGroups:
-			if anyValueDefined(definitions, values):
-				yield "inline tcu::Format::Enum\tget%sStr\t(int value)\t{ return tcu::Format::Enum(get%sName,\tvalue); }" % (groupName, groupName)
-
-	writeInlFile(dstFile, indentLines(chain(genNameProtos(), genBitfieldProtos(), genStrImpl())))
-
-def genEnumStrImplementation (groupName, values, definitions):
-	if allValuesUndefined(definitions, values):
-		return
-
-	yield ""
-	yield "const char* get%sName (int value)" % groupName
-	yield "{"
-	yield "\tswitch (value)"
-	yield "\t{"
-
-	def genCases ():
-		for value in values:
-			if isValueDefined(definitions, value):
-				yield "case GL_%s:\treturn \"GL_%s\";" % (value, value)
-			else:
-				print "Warning: %s not defined, skipping" % value
-		yield "default:\treturn DE_NULL;"
-
-	for caseLine in indentLines(genCases()):
-		yield "\t\t" + caseLine
-
-	yield "\t}"
-	yield "}"
-
-def genBitfieldStrImplementation (groupName, values, definitions):
-	if allValuesUndefined(definitions, values):
-		return
-
-	yield ""
-	yield "tcu::Format::Bitfield<16> get%sStr (int value)" % groupName
-	yield "{"
-	yield "\tstatic const tcu::Format::BitDesc s_desc[] ="
-	yield "\t{"
-
-	def genFields ():
-		for value in values:
-			if isValueDefined(definitions, value):
-				yield "tcu::Format::BitDesc(GL_%s,\t\"GL_%s\")," % (value, value)
-			else:
-				print "Warning: %s not defined, skipping" % value
-
-	for fieldLine in indentLines(genFields()):
-		yield "\t\t" + fieldLine
-
-	yield "\t};"
-	yield "\treturn tcu::Format::Bitfield<16>(value, &s_desc[0], &s_desc[DE_LENGTH_OF_ARRAY(s_desc)]);"
-	yield "}"
-
-def genStrUtilImplementations (enumGroups, bitfieldGroups, definitions):
-	for groupName, values in enumGroups:
-		for line in genEnumStrImplementation(groupName, values, definitions):
-			yield line
-	for groupName, values in bitfieldGroups:
-		for line in genBitfieldStrImplementation(groupName, values, definitions):
-			yield line
-
-def writeStrUtilImplementations (enumGroups, bitfieldGroups, definitions, dstFile):
-	writeInlFile(dstFile, genStrUtilImplementations(enumGroups, bitfieldGroups, definitions))
-
 def genStrUtil (iface):
-	definitions = set(enum.name for enum in iface.enums)
-	writeStrUtilPrototypes(ENUM_GROUPS, BITFIELD_GROUPS, definitions, os.path.join(OPENGL_DIR, "gluStrUtilPrototypes.inl"))
-	writeStrUtilImplementations(ENUM_GROUPS, BITFIELD_GROUPS, definitions, os.path.join(OPENGL_DIR, "gluStrUtil.inl"))
+	enumGroups		= addValuePrefix(ENUM_GROUPS, "GL_")
+	bitfieldGroups	= addValuePrefix(BITFIELD_GROUPS, "GL_")
+	prototypeFile	= os.path.join(OPENGL_DIR, "gluStrUtilPrototypes.inl")
+	implFile		= os.path.join(OPENGL_DIR, "gluStrUtil.inl")
+
+	writeInlFile(prototypeFile, indentLines(genStrUtilProtos(iface, enumGroups, bitfieldGroups)))
+	writeInlFile(implFile, genStrUtilImpls(iface, enumGroups, bitfieldGroups))
 
 if __name__ == "__main__":
 	genStrUtil(getHybridInterface())

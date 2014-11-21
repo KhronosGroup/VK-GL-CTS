@@ -27,16 +27,9 @@
 #include "egluStrUtil.hpp"
 #include "tcuTestLog.hpp"
 
-#include <vector>
-#include <string>
-#include <algorithm>
-#include <cctype>
-
 #if !defined(EGL_OPENGL_ES3_BIT_KHR)
 #	define EGL_OPENGL_ES3_BIT_KHR	0x0040
 #endif
-
-using tcu::TestLog;
 
 namespace deqp
 {
@@ -46,47 +39,49 @@ namespace egl
 namespace
 {
 
+using tcu::TestLog;
+
 // Function name strings generated from API headers
 
 #include "teglGetProcAddressTests.inl"
 
-std::vector<std::string> makeStringVector (const char** cStrArray)
+struct FunctionNames
 {
-	std::vector<std::string>	out;
+	int					numFunctions;
+	const char* const*	functions;
 
-	for (int ndx = 0; cStrArray[ndx] != DE_NULL; ndx++)
+	FunctionNames (int numFunctions_, const char* const* functions_)
+		: numFunctions	(numFunctions_)
+		, functions		(functions_)
 	{
-		out.push_back(std::string(cStrArray[ndx]));
+	}
+};
+
+FunctionNames getExtFunctionNames (const std::string& extName)
+{
+	for (int ndx = 0; ndx <= DE_LENGTH_OF_ARRAY(s_extensions); ndx++)
+	{
+		if (extName == s_extensions[ndx].name)
+			return FunctionNames(s_extensions[ndx].numFunctions, s_extensions[ndx].functions);
 	}
 
-	return out;
+	DE_ASSERT(false);
+	return FunctionNames(0, DE_NULL);
 }
 
-std::vector<std::string> getExtensionNames (void)
-{
-	return makeStringVector(getExtensionStrs());
-}
-
-std::vector<std::string> getExtFunctionNames (const std::string& extName)
-{
-	const char** names_raw = getExtensionFuncStrs(extName);
-
-	return (names_raw != 0) ? makeStringVector(names_raw) : std::vector<std::string>();
-}
-
-std::vector<std::string> getCoreFunctionNames (EGLint apiBit)
+FunctionNames getCoreFunctionNames (EGLint apiBit)
 {
 	switch (apiBit)
 	{
-		case 0:							return makeStringVector(getCoreFunctionStrs());
-		case EGL_OPENGL_ES_BIT:			return makeStringVector(getGlesFunctionStrs());
-		case EGL_OPENGL_ES2_BIT:		return makeStringVector(getGles2FunctionStrs());
-		case EGL_OPENGL_ES3_BIT_KHR:	return makeStringVector(getGles3FunctionStrs());
+		case 0:							return FunctionNames(DE_LENGTH_OF_ARRAY(s_EGL14),	s_EGL14);
+		case EGL_OPENGL_ES_BIT:			return FunctionNames(DE_LENGTH_OF_ARRAY(s_GLES10),	s_GLES10);
+		case EGL_OPENGL_ES2_BIT:		return FunctionNames(DE_LENGTH_OF_ARRAY(s_GLES20),	s_GLES20);
+		case EGL_OPENGL_ES3_BIT_KHR:	return FunctionNames(DE_LENGTH_OF_ARRAY(s_GLES30),	s_GLES30);
 		default:
-			DE_ASSERT(DE_FALSE);
+			DE_ASSERT(false);
 	}
 
-	return std::vector<std::string>();
+	return FunctionNames(0, DE_NULL);
 }
 
 } // anonymous
@@ -161,21 +156,21 @@ public:
 
 	void executeTest (void)
 	{
-		TestLog&						log			= m_testCtx.getLog();
-		bool							supported	= isSupported(m_extName);
-		const std::vector<std::string>	funcNames	= getExtFunctionNames(m_extName);
+		TestLog&				log			= m_testCtx.getLog();
+		bool					supported	= isSupported(m_extName);
+		const FunctionNames		funcNames	= getExtFunctionNames(m_extName);
 
-		DE_ASSERT(!funcNames.empty());
+		DE_ASSERT(funcNames.numFunctions > 0);
 
 		log << TestLog::Message << m_extName << ": " << (supported ? "supported" : "not supported") << TestLog::EndMessage;
 		log << TestLog::Message << TestLog::EndMessage;
 
-		for (std::vector<std::string>::const_iterator funcIter = funcNames.begin(); funcIter != funcNames.end(); funcIter++)
+		for (int funcNdx = 0; funcNdx < funcNames.numFunctions; funcNdx++)
 		{
-			const std::string&	funcName			= *funcIter;
-			void				(*funcPtr)(void);
+			const char*	funcName		= funcNames.functions[funcNdx];
+			void		(*funcPtr)(void);
 
-			funcPtr = eglGetProcAddress(funcName.c_str());
+			funcPtr = eglGetProcAddress(funcName);
 			TCU_CHECK_EGL();
 
 			if (supported && funcPtr == 0)
@@ -195,9 +190,8 @@ private:
 class GetProcAddressCoreFunctionsCase : public GetProcAddressCase
 {
 public:
-	GetProcAddressCoreFunctionsCase (EglTestContext& eglTestCtx, const char* name, const char* description, const EGLint apiBit = 0)
+	GetProcAddressCoreFunctionsCase (EglTestContext& eglTestCtx, const char* name, const char* description, const EGLint apiBit)
 		: GetProcAddressCase	(eglTestCtx, name, description)
-		, m_funcNames			(getCoreFunctionNames(apiBit))
 		, m_apiBit				(apiBit)
 	{
 	}
@@ -226,9 +220,10 @@ public:
 
 	void executeTest (void)
 	{
-		TestLog&	log					= m_testCtx.getLog();
-		const bool	funcPtrSupported	= isSupported("EGL_KHR_get_all_proc_addresses");
-		const bool	apiSupported		= isApiSupported();
+		TestLog&				log					= m_testCtx.getLog();
+		const bool				funcPtrSupported	= isSupported("EGL_KHR_get_all_proc_addresses");
+		const bool				apiSupported		= isApiSupported();
+		const FunctionNames		funcNames			= getCoreFunctionNames(m_apiBit);
 
 		log << TestLog::Message << "EGL_KHR_get_all_proc_addresses: " << (funcPtrSupported ? "supported" : "not supported") << TestLog::EndMessage;
 		log << TestLog::Message << TestLog::EndMessage;
@@ -239,12 +234,12 @@ public:
 			log << TestLog::Message << TestLog::EndMessage;
 		}
 
-		for (std::vector<std::string>::const_iterator funcIter = m_funcNames.begin(); funcIter != m_funcNames.end(); funcIter++)
+		for (int funcNdx = 0; funcNdx < funcNames.numFunctions; funcNdx++)
 		{
-			const std::string&	funcName			= *funcIter;
-			void				(*funcPtr)(void);
+			const char*	funcName			= funcNames.functions[funcNdx];
+			void		(*funcPtr)(void);
 
-			funcPtr = eglGetProcAddress(funcName.c_str());
+			funcPtr = eglGetProcAddress(funcName);
 			TCU_CHECK_EGL();
 
 			if (apiSupported && funcPtrSupported && (funcPtr == 0))
@@ -261,8 +256,7 @@ public:
 	}
 
 private:
-	const std::vector<std::string>	m_funcNames;
-	const EGLint					m_apiBit;
+	const EGLint	m_apiBit;
 };
 
 GetProcAddressTests::GetProcAddressTests (EglTestContext& eglTestCtx)
@@ -281,17 +275,10 @@ void GetProcAddressTests::init (void)
 		tcu::TestCaseGroup* extensionsGroup = new tcu::TestCaseGroup(m_testCtx, "extension", "Test EGL extensions");
 		addChild(extensionsGroup);
 
-		const std::vector<std::string>	extNames	= getExtensionNames();
-
-		for (std::vector<std::string>::const_iterator extIter = extNames.begin(); extIter != extNames.end(); extIter++)
+		for (int extNdx = 0; extNdx < DE_LENGTH_OF_ARRAY(s_extensions); extNdx++)
 		{
-			const std::string&				extName		= *extIter;
-			const std::vector<std::string>	funcNames	= getExtFunctionNames(extName);
-
-			std::string						testName	(extName);
-
-			if (funcNames.empty())
-				continue;
+			const std::string&		extName		= s_extensions[extNdx].name;
+			std::string				testName	(extName);
 
 			for (size_t ndx = 0; ndx < extName.length(); ndx++)
 				testName[ndx] = std::tolower(extName[ndx]);
@@ -305,7 +292,7 @@ void GetProcAddressTests::init (void)
 		tcu::TestCaseGroup* coreFuncGroup = new tcu::TestCaseGroup(m_testCtx, "core", "Test core functions");
 		addChild(coreFuncGroup);
 
-		coreFuncGroup->addChild(new GetProcAddressCoreFunctionsCase	(m_eglTestCtx,	"egl",		"Test EGL core functions"));
+		coreFuncGroup->addChild(new GetProcAddressCoreFunctionsCase	(m_eglTestCtx,	"egl",		"Test EGL core functions",			0));
 		coreFuncGroup->addChild(new GetProcAddressCoreFunctionsCase	(m_eglTestCtx,	"gles",		"Test OpenGL ES core functions",	EGL_OPENGL_ES_BIT));
 		coreFuncGroup->addChild(new GetProcAddressCoreFunctionsCase	(m_eglTestCtx,	"gles2",	"Test OpenGL ES 2 core functions",	EGL_OPENGL_ES2_BIT));
 		coreFuncGroup->addChild(new GetProcAddressCoreFunctionsCase	(m_eglTestCtx,	"gles3",	"Test OpenGL ES 3 core functions",	EGL_OPENGL_ES3_BIT_KHR));

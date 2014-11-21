@@ -37,7 +37,7 @@ public:
 						~CallLogWrapper			(void);
 
 // EGL API is exposed as member functions
-#include "egluApiPrototypes.inl"
+#include "egluCallLogWrapperApi.inl"
 
 	void				enableLogging			(bool enable)	{ m_enableLog = enable; }
 

@@ -1,7 +1,7 @@
 
 message("*** Using X11 EGL/GLX target")
 set(DEQP_TARGET_NAME 	"X11 EGL/GLX")
-set(DEQP_RUNTIME_LINK	ON)
+set(DEQP_RUNTIME_LINK	OFF)
 set(DEQP_SUPPORT_GLES2	ON)
 set(DEQP_SUPPORT_GLES3	ON)
 set(DEQP_SUPPORT_OPENGL	ON)
@@ -16,5 +16,12 @@ if (NOT X11_FOUND)
 	message(FATAL_ERROR "X11 development package not found")
 endif ()
 
-set(DEQP_PLATFORM_LIBRARIES ${X11_LIBRARIES})
+find_library(EGL_LIBRARY EGL)
+if (NOT EGL_LIBRARY)
+	message(FATAL_ERROR "EGL library not found")
+endif()
+
+set(DEQP_EGL_LIBRARIES		${EGL_LIBRARY})
+set(DEQP_PLATFORM_LIBRARIES	${X11_LIBRARIES})
+
 include_directories(${X11_INCLUDE_DIR})

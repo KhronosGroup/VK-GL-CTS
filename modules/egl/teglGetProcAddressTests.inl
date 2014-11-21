@@ -1,1722 +1,1350 @@
-/* WARNING! THIS IS A PROGRAMMATICALLY GENERATED CODE. DO NOT MODIFY THE CODE,
- * SINCE THE CHANGES WILL BE LOST! MODIFY THE GENERATING PYTHON INSTEAD.
+/* WARNING: This is auto-generated file. Do not modify, since changes will
+ * be lost! Modify the generating script instead.
+ *
+ * Generated from Khronos EGL API description (egl.xml) revision 28861.
  */
 
-const char** getCoreFunctionStrs (void)
-{
-	static const char* funcs[] =
-	{
-		"eglGetError",
-		"eglGetDisplay",
-		"eglInitialize",
-		"eglTerminate",
-		"eglQueryString",
-		"eglGetConfigs",
-		"eglChooseConfig",
-		"eglGetConfigAttrib",
-		"eglCreateWindowSurface",
-		"eglCreatePbufferSurface",
-		"eglCreatePixmapSurface",
-		"eglDestroySurface",
-		"eglQuerySurface",
-		"eglBindAPI",
-		"eglQueryAPI",
-		"eglWaitClient",
-		"eglReleaseThread",
-		"eglCreatePbufferFromClientBuffer",
-		"eglSurfaceAttrib",
-		"eglBindTexImage",
-		"eglReleaseTexImage",
-		"eglSwapInterval",
-		"eglCreateContext",
-		"eglDestroyContext",
-		"eglMakeCurrent",
-		"eglGetCurrentContext",
-		"eglGetCurrentSurface",
-		"eglGetCurrentDisplay",
-		"eglQueryContext",
-		"eglWaitGL",
-		"eglWaitNative",
-		"eglSwapBuffers",
-		"eglCopyBuffers",
-		DE_NULL
-	};
-
-	return funcs;
-}
-
-const char** getGlesFunctionStrs (void)
-{
-	static const char* funcs[] =
-	{
-		"glActiveTexture",
-		"glAlphaFunc",
-		"glAlphaFuncx",
-		"glBindTexture",
-		"glBlendFunc",
-		"glClear",
-		"glClearColor",
-		"glClearColorx",
-		"glClearDepthf",
-		"glClearDepthx",
-		"glClearStencil",
-		"glClientActiveTexture",
-		"glColor4f",
-		"glColor4x",
-		"glColorMask",
-		"glColorPointer",
-		"glCompressedTexImage2D",
-		"glCompressedTexSubImage2D",
-		"glCopyTexImage2D",
-		"glCopyTexSubImage2D",
-		"glCullFace",
-		"glDeleteTextures",
-		"glDepthFunc",
-		"glDepthMask",
-		"glDepthRangef",
-		"glDepthRangex",
-		"glDisable",
-		"glDisableClientState",
-		"glDrawArrays",
-		"glDrawElements",
-		"glEnable",
-		"glEnableClientState",
-		"glFinish",
-		"glFlush",
-		"glFogf",
-		"glFogfv",
-		"glFogx",
-		"glFogxv",
-		"glFrontFace",
-		"glFrustumf",
-		"glFrustumx",
-		"glGenTextures",
-		"glGetError",
-		"glGetIntegerv",
-		"glGetString",
-		"glHint",
-		"glLightModelf",
-		"glLightModelfv",
-		"glLightModelx",
-		"glLightModelxv",
-		"glLightf",
-		"glLightfv",
-		"glLightx",
-		"glLightxv",
-		"glLineWidth",
-		"glLineWidthx",
-		"glLoadIdentity",
-		"glLoadMatrixf",
-		"glLoadMatrixx",
-		"glLogicOp",
-		"glMaterialf",
-		"glMaterialfv",
-		"glMaterialx",
-		"glMaterialxv",
-		"glMatrixMode",
-		"glMultMatrixf",
-		"glMultMatrixx",
-		"glMultiTexCoord4f",
-		"glMultiTexCoord4x",
-		"glNormal3f",
-		"glNormal3x",
-		"glNormalPointer",
-		"glOrthof",
-		"glOrthox",
-		"glPixelStorei",
-		"glPointSize",
-		"glPointSizex",
-		"glPolygonOffset",
-		"glPolygonOffsetx",
-		"glPopMatrix",
-		"glPushMatrix",
-		"glReadPixels",
-		"glRotatef",
-		"glRotatex",
-		"glSampleCoverage",
-		"glSampleCoveragex",
-		"glScalef",
-		"glScalex",
-		"glScissor",
-		"glShadeModel",
-		"glStencilFunc",
-		"glStencilMask",
-		"glStencilOp",
-		"glTexCoordPointer",
-		"glTexEnvf",
-		"glTexEnvfv",
-		"glTexEnvx",
-		"glTexEnvxv",
-		"glTexImage2D",
-		"glTexParameterf",
-		"glTexParameterx",
-		"glTexSubImage2D",
-		"glTranslatef",
-		"glTranslatex",
-		"glVertexPointer",
-		"glViewport",
-		DE_NULL
-	};
-
-	return funcs;
-}
-
-const char** getGles2FunctionStrs (void)
-{
-	static const char* funcs[] =
-	{
-		"glAttachShader",
-		"glBindAttribLocation",
-		"glBindBuffer",
-		"glBindFramebuffer",
-		"glBindRenderbuffer",
-		"glBlendColor",
-		"glBlendEquation",
-		"glBlendEquationSeparate",
-		"glBlendFuncSeparate",
-		"glBufferData",
-		"glBufferSubData",
-		"glCheckFramebufferStatus",
-		"glCompileShader",
-		"glCreateProgram",
-		"glCreateShader",
-		"glDeleteBuffers",
-		"glDeleteFramebuffers",
-		"glDeleteProgram",
-		"glDeleteRenderbuffers",
-		"glDeleteShader",
-		"glDetachShader",
-		"glDisableVertexAttribArray",
-		"glEnableVertexAttribArray",
-		"glFramebufferRenderbuffer",
-		"glFramebufferTexture2D",
-		"glGenBuffers",
-		"glGenerateMipmap",
-		"glGenFramebuffers",
-		"glGenRenderbuffers",
-		"glGetActiveAttrib",
-		"glGetActiveUniform",
-		"glGetAttachedShaders",
-		"glGetAttribLocation",
-		"glGetBooleanv",
-		"glGetBufferParameteriv",
-		"glGetFloatv",
-		"glGetFramebufferAttachmentParameteriv",
-		"glGetProgramiv",
-		"glGetProgramInfoLog",
-		"glGetRenderbufferParameteriv",
-		"glGetShaderiv",
-		"glGetShaderInfoLog",
-		"glGetShaderPrecisionFormat",
-		"glGetShaderSource",
-		"glGetTexParameterfv",
-		"glGetTexParameteriv",
-		"glGetUniformfv",
-		"glGetUniformiv",
-		"glGetUniformLocation",
-		"glGetVertexAttribfv",
-		"glGetVertexAttribiv",
-		"glGetVertexAttribPointerv",
-		"glIsBuffer",
-		"glIsEnabled",
-		"glIsFramebuffer",
-		"glIsProgram",
-		"glIsRenderbuffer",
-		"glIsShader",
-		"glIsTexture",
-		"glLinkProgram",
-		"glReleaseShaderCompiler",
-		"glRenderbufferStorage",
-		"glShaderBinary",
-		"glShaderSource",
-		"glStencilFuncSeparate",
-		"glStencilMaskSeparate",
-		"glStencilOpSeparate",
-		"glTexParameterfv",
-		"glTexParameteri",
-		"glTexParameteriv",
-		"glUniform1f",
-		"glUniform1fv",
-		"glUniform1i",
-		"glUniform1iv",
-		"glUniform2f",
-		"glUniform2fv",
-		"glUniform2i",
-		"glUniform2iv",
-		"glUniform3f",
-		"glUniform3fv",
-		"glUniform3i",
-		"glUniform3iv",
-		"glUniform4f",
-		"glUniform4fv",
-		"glUniform4i",
-		"glUniform4iv",
-		"glUniformMatrix2fv",
-		"glUniformMatrix3fv",
-		"glUniformMatrix4fv",
-		"glUseProgram",
-		"glValidateProgram",
-		"glVertexAttrib1f",
-		"glVertexAttrib1fv",
-		"glVertexAttrib2f",
-		"glVertexAttrib2fv",
-		"glVertexAttrib3f",
-		"glVertexAttrib3fv",
-		"glVertexAttrib4f",
-		"glVertexAttrib4fv",
-		"glVertexAttribPointer",
-		DE_NULL
-	};
-
-	return funcs;
-}
-
-const char** getGles3FunctionStrs (void)
-{
-	static const char* funcs[] =
-	{
-		"glReadBuffer",
-		"glDrawRangeElements",
-		"glTexImage3D",
-		"glTexSubImage3D",
-		"glCopyTexSubImage3D",
-		"glCompressedTexImage3D",
-		"glCompressedTexSubImage3D",
-		"glGenQueries",
-		"glDeleteQueries",
-		"glIsQuery",
-		"glBeginQuery",
-		"glEndQuery",
-		"glGetQueryiv",
-		"glGetQueryObjectuiv",
-		"glUnmapBuffer",
-		"glGetBufferPointerv",
-		"glDrawBuffers",
-		"glUniformMatrix2x3fv",
-		"glUniformMatrix3x2fv",
-		"glUniformMatrix2x4fv",
-		"glUniformMatrix4x2fv",
-		"glUniformMatrix3x4fv",
-		"glUniformMatrix4x3fv",
-		"glBlitFramebuffer",
-		"glRenderbufferStorageMultisample",
-		"glFramebufferTextureLayer",
-		"glMapBufferRange",
-		"glFlushMappedBufferRange",
-		"glBindVertexArray",
-		"glDeleteVertexArrays",
-		"glGenVertexArrays",
-		"glIsVertexArray",
-		"glGetIntegeri_v",
-		"glBeginTransformFeedback",
-		"glEndTransformFeedback",
-		"glBindBufferRange",
-		"glBindBufferBase",
-		"glTransformFeedbackVaryings",
-		"glGetTransformFeedbackVarying",
-		"glVertexAttribIPointer",
-		"glGetVertexAttribIiv",
-		"glGetVertexAttribIuiv",
-		"glVertexAttribI4i",
-		"glVertexAttribI4ui",
-		"glVertexAttribI4iv",
-		"glVertexAttribI4uiv",
-		"glGetUniformuiv",
-		"glGetFragDataLocation",
-		"glUniform1ui",
-		"glUniform2ui",
-		"glUniform3ui",
-		"glUniform4ui",
-		"glUniform1uiv",
-		"glUniform2uiv",
-		"glUniform3uiv",
-		"glUniform4uiv",
-		"glClearBufferiv",
-		"glClearBufferuiv",
-		"glClearBufferfv",
-		"glClearBufferfi",
-		"glGetStringi",
-		"glCopyBufferSubData",
-		"glGetUniformIndices",
-		"glGetActiveUniformsiv",
-		"glGetUniformBlockIndex",
-		"glGetActiveUniformBlockiv",
-		"glGetActiveUniformBlockName",
-		"glUniformBlockBinding",
-		"glDrawArraysInstanced",
-		"glDrawElementsInstanced",
-		"glFenceSync",
-		"glIsSync",
-		"glDeleteSync",
-		"glClientWaitSync",
-		"glWaitSync",
-		"glGetInteger64v",
-		"glGetSynciv",
-		"glGetInteger64i_v",
-		"glGetBufferParameteri64v",
-		"glGenSamplers",
-		"glDeleteSamplers",
-		"glIsSampler",
-		"glBindSampler",
-		"glSamplerParameteri",
-		"glSamplerParameteriv",
-		"glSamplerParameterf",
-		"glSamplerParameterfv",
-		"glGetSamplerParameteriv",
-		"glGetSamplerParameterfv",
-		"glVertexAttribDivisor",
-		"glBindTransformFeedback",
-		"glDeleteTransformFeedbacks",
-		"glGenTransformFeedbacks",
-		"glIsTransformFeedback",
-		"glPauseTransformFeedback",
-		"glResumeTransformFeedback",
-		"glGetProgramBinary",
-		"glProgramBinary",
-		"glProgramParameteri",
-		"glInvalidateFramebuffer",
-		"glInvalidateSubFramebuffer",
-		"glTexStorage2D",
-		"glTexStorage3D",
-		"glGetInternalformativ",
-		DE_NULL
-	};
-
-	return funcs;
-}
-
-const char** getKhrLockSurfaceFuncStrs (void)
-{
-	static const char* funcs[] =
-	{
-		"eglLockSurfaceKHR",
-		"eglUnlockSurfaceKHR",
-		DE_NULL
-	};
-
-	return funcs;
-}
-
-const char** getOesSinglePrecisionFuncStrs (void)
-{
-	static const char* funcs[] =
-	{
-		"glDepthRangefOES",
-		"glFrustumfOES",
-		"glOrthofOES",
-		"glClipPlanefOES",
-		"glGetClipPlanefOES",
-		"glClearDepthfOES",
-		DE_NULL
-	};
-
-	return funcs;
-}
-
-const char** getQcomTiledRenderingFuncStrs (void)
-{
-	static const char* funcs[] =
-	{
-		"glStartTilingQCOM",
-		"glEndTilingQCOM",
-		DE_NULL
-	};
-
-	return funcs;
-}
-
-const char** getNvNativeQueryFuncStrs (void)
-{
-	static const char* funcs[] =
-	{
-		"eglQueryNativeDisplayNV",
-		"eglQueryNativeWindowNV",
-		"eglQueryNativePixmapNV",
-		DE_NULL
-	};
-
-	return funcs;
-}
-
-const char** getMesaDrmImageFuncStrs (void)
-{
-	static const char* funcs[] =
-	{
-		"eglCreateDRMImageMESA",
-		"eglExportDRMImageMESA",
-		DE_NULL
-	};
-
-	return funcs;
-}
-
-const char** getNvFenceFuncStrs (void)
-{
-	static const char* funcs[] =
-	{
-		"glDeleteFencesNV",
-		"glGenFencesNV",
-		"glIsFenceNV",
-		"glTestFenceNV",
-		"glGetFenceivNV",
-		"glFinishFenceNV",
-		"glSetFenceNV",
-		DE_NULL
-	};
-
-	return funcs;
-}
-
-const char** getOesBlendSubtractFuncStrs (void)
-{
-	static const char* funcs[] =
-	{
-		"glBlendEquationOES",
-		DE_NULL
-	};
-
-	return funcs;
-}
-
-const char** getKhrStreamConsumerGltextureFuncStrs (void)
-{
-	static const char* funcs[] =
-	{
-		"eglStreamConsumerGLTextureExternalKHR",
-		"eglStreamConsumerAcquireKHR",
-		"eglStreamConsumerReleaseKHR",
-		DE_NULL
-	};
-
-	return funcs;
-}
-
-const char** getQcomExtendedGet2FuncStrs (void)
-{
-	static const char* funcs[] =
-	{
-		"glExtGetShadersQCOM",
-		"glExtGetProgramsQCOM",
-		"glExtIsProgramBinaryQCOM",
-		"glExtGetProgramBinarySourceQCOM",
-		DE_NULL
-	};
-
-	return funcs;
-}
-
-const char** getExtMultiDrawArraysFuncStrs (void)
-{
-	static const char* funcs[] =
-	{
-		"glMultiDrawArraysEXT",
-		"glMultiDrawElementsEXT",
-		DE_NULL
-	};
-
-	return funcs;
-}
-
-const char** getOesMatrixPaletteFuncStrs (void)
-{
-	static const char* funcs[] =
-	{
-		"glCurrentPaletteMatrixOES",
-		"glLoadPaletteFromModelViewMatrixOES",
-		"glMatrixIndexPointerOES",
-		"glWeightPointerOES",
-		DE_NULL
-	};
-
-	return funcs;
-}
-
-const char** getExtSeparateShaderObjectsFuncStrs (void)
-{
-	static const char* funcs[] =
-	{
-		"glUseProgramStagesEXT",
-		"glActiveShaderProgramEXT",
-		"glCreateShaderProgramvEXT",
-		"glBindProgramPipelineEXT",
-		"glDeleteProgramPipelinesEXT",
-		"glGenProgramPipelinesEXT",
-		"glIsProgramPipelineEXT",
-		"glProgramParameteriEXT",
-		"glGetProgramPipelineivEXT",
-		"glProgramUniform1iEXT",
-		"glProgramUniform2iEXT",
-		"glProgramUniform3iEXT",
-		"glProgramUniform4iEXT",
-		"glProgramUniform1fEXT",
-		"glProgramUniform2fEXT",
-		"glProgramUniform3fEXT",
-		"glProgramUniform4fEXT",
-		"glProgramUniform1ivEXT",
-		"glProgramUniform2ivEXT",
-		"glProgramUniform3ivEXT",
-		"glProgramUniform4ivEXT",
-		"glProgramUniform1fvEXT",
-		"glProgramUniform2fvEXT",
-		"glProgramUniform3fvEXT",
-		"glProgramUniform4fvEXT",
-		"glProgramUniformMatrix2fvEXT",
-		"glProgramUniformMatrix3fvEXT",
-		"glProgramUniformMatrix4fvEXT",
-		"glValidateProgramPipelineEXT",
-		"glGetProgramPipelineInfoLogEXT",
-		DE_NULL
-	};
-
-	return funcs;
-}
-
-const char** getAngleTranslatedShaderSourceFuncStrs (void)
-{
-	static const char* funcs[] =
-	{
-		"glGetTranslatedShaderSourceANGLE",
-		DE_NULL
-	};
-
-	return funcs;
-}
-
-const char** getNvFramebufferMultisampleFuncStrs (void)
-{
-	static const char* funcs[] =
-	{
-		"glRenderbufferStorageMultisampleNV",
-		DE_NULL
-	};
-
-	return funcs;
-}
-
-const char** getNvDrawBuffersFuncStrs (void)
-{
-	static const char* funcs[] =
-	{
-		"glDrawBuffersNV",
-		DE_NULL
-	};
-
-	return funcs;
-}
-
-const char** getOesEglImageFuncStrs (void)
-{
-	static const char* funcs[] =
-	{
-		"glEGLImageTargetTexture2DOES",
-		"glEGLImageTargetRenderbufferStorageOES",
-		DE_NULL
-	};
-
-	return funcs;
-}
-
-const char** getKhrWaitSyncFuncStrs (void)
-{
-	static const char* funcs[] =
-	{
-		"eglWaitSyncKHR",
-		DE_NULL
-	};
-
-	return funcs;
-}
-
-const char** getNvSystemTimeFuncStrs (void)
-{
-	static const char* funcs[] =
-	{
-		"eglGetSystemTimeFrequencyNV",
-		"eglGetSystemTimeNV",
-		DE_NULL
-	};
-
-	return funcs;
-}
-
-const char** getExtRobustnessFuncStrs (void)
-{
-	static const char* funcs[] =
-	{
-		"glGetGraphicsResetStatusEXT",
-		"glReadnPixelsEXT",
-		"glGetnUniformfvEXT",
-		"glGetnUniformivEXT",
-		DE_NULL
-	};
-
-	return funcs;
-}
-
-const char** getKhrImageFuncStrs (void)
-{
-	static const char* funcs[] =
-	{
-		"eglCreateImageKHR",
-		"eglDestroyImageKHR",
-		DE_NULL
-	};
-
-	return funcs;
-}
-
-const char** getNvDrawInstancedFuncStrs (void)
-{
-	static const char* funcs[] =
-	{
-		"glDrawArraysInstancedNV",
-		"glDrawElementsInstancedNV",
-		DE_NULL
-	};
-
-	return funcs;
-}
-
-const char** getImgUserClipPlaneFuncStrs (void)
-{
-	static const char* funcs[] =
-	{
-		"glClipPlanefIMG",
-		"glClipPlanexIMG",
-		DE_NULL
-	};
-
-	return funcs;
-}
-
-const char** getOesQueryMatrixFuncStrs (void)
-{
-	static const char* funcs[] =
-	{
-		"glQueryMatrixxOES",
-		DE_NULL
-	};
-
-	return funcs;
-}
-
-const char** getNvCoverageSampleFuncStrs (void)
-{
-	static const char* funcs[] =
-	{
-		"glCoverageMaskNV",
-		"glCoverageOperationNV",
-		DE_NULL
-	};
-
-	return funcs;
-}
-
-const char** getExtDisjointTimerQueryFuncStrs (void)
-{
-	static const char* funcs[] =
-	{
-		"glGenQueriesEXT",
-		"glDeleteQueriesEXT",
-		"glIsQueryEXT",
-		"glBeginQueryEXT",
-		"glEndQueryEXT",
-		"glQueryCounterEXT",
-		"glGetQueryivEXT",
-		"glGetQueryObjectivEXT",
-		"glGetQueryObjectuivEXT",
-		"glGetQueryObjecti64vEXT",
-		"glGetQueryObjectui64vEXT",
-		DE_NULL
-	};
-
-	return funcs;
-}
-
-const char** getOesVertexArrayObjectFuncStrs (void)
-{
-	static const char* funcs[] =
-	{
-		"glBindVertexArrayOES",
-		"glDeleteVertexArraysOES",
-		"glGenVertexArraysOES",
-		"glIsVertexArrayOES",
-		DE_NULL
-	};
-
-	return funcs;
-}
-
-const char** getKhrReusableSyncFuncStrs (void)
-{
-	static const char* funcs[] =
-	{
-		"eglCreateSyncKHR",
-		"eglDestroySyncKHR",
-		"eglClientWaitSyncKHR",
-		"eglSignalSyncKHR",
-		"eglGetSyncAttribKHR",
-		DE_NULL
-	};
-
-	return funcs;
-}
-
-const char** getExtDebugLabelFuncStrs (void)
-{
-	static const char* funcs[] =
-	{
-		"glLabelObjectEXT",
-		"glGetObjectLabelEXT",
-		DE_NULL
-	};
-
-	return funcs;
-}
-
-const char** getExtMapBufferRangeFuncStrs (void)
-{
-	static const char* funcs[] =
-	{
-		"glMapBufferRangeEXT",
-		"glFlushMappedBufferRangeEXT",
-		DE_NULL
-	};
-
-	return funcs;
-}
-
-const char** getAngleFramebufferMultisampleFuncStrs (void)
-{
-	static const char* funcs[] =
-	{
-		"glRenderbufferStorageMultisampleANGLE",
-		DE_NULL
-	};
-
-	return funcs;
-}
-
-const char** getKhrStreamCrossProcessFdFuncStrs (void)
-{
-	static const char* funcs[] =
-	{
-		"eglGetStreamFileDescriptorKHR",
-		"eglCreateStreamFromFileDescriptorKHR",
-		DE_NULL
-	};
-
-	return funcs;
-}
-
-const char** getExtTextureStorageFuncStrs (void)
-{
-	static const char* funcs[] =
-	{
-		"glTexStorage1DEXT",
-		"glTexStorage2DEXT",
-		"glTexStorage3DEXT",
-		"glTextureStorage1DEXT",
-		"glTextureStorage2DEXT",
-		"glTextureStorage3DEXT",
-		DE_NULL
-	};
-
-	return funcs;
-}
-
-const char** getKhrStreamFifoFuncStrs (void)
-{
-	static const char* funcs[] =
-	{
-		"eglQueryStreamTimeKHR",
-		DE_NULL
-	};
-
-	return funcs;
-}
-
-const char** getOesMapbufferFuncStrs (void)
-{
-	static const char* funcs[] =
-	{
-		"glMapBufferOES",
-		"glUnmapBufferOES",
-		"glGetBufferPointervOES",
-		DE_NULL
-	};
-
-	return funcs;
-}
-
-const char** getNvPostSubBufferFuncStrs (void)
-{
-	static const char* funcs[] =
-	{
-		"eglPostSubBufferNV",
-		DE_NULL
-	};
-
-	return funcs;
-}
-
-const char** getOesTextureCubeMapFuncStrs (void)
-{
-	static const char* funcs[] =
-	{
-		"glTexGenfOES",
-		"glTexGenfvOES",
-		"glTexGeniOES",
-		"glTexGenivOES",
-		"glTexGenxOES",
-		"glTexGenxvOES",
-		"glGetTexGenfvOES",
-		"glGetTexGenivOES",
-		"glGetTexGenxvOES",
-		DE_NULL
-	};
-
-	return funcs;
-}
-
-const char** getKhrStreamProducerEglsurfaceFuncStrs (void)
-{
-	static const char* funcs[] =
-	{
-		"eglCreateStreamProducerSurfaceKHR",
-		DE_NULL
-	};
-
-	return funcs;
-}
-
-const char** getOesBlendEquationSeparateFuncStrs (void)
-{
-	static const char* funcs[] =
-	{
-		"glBlendEquationSeparateOES",
-		DE_NULL
-	};
-
-	return funcs;
-}
-
-const char** getExtDrawBuffersFuncStrs (void)
-{
-	static const char* funcs[] =
-	{
-		"glDrawBuffersEXT",
-		DE_NULL
-	};
-
-	return funcs;
-}
-
-const char** getOesFramebufferObjectFuncStrs (void)
-{
-	static const char* funcs[] =
-	{
-		"glIsRenderbufferOES",
-		"glBindRenderbufferOES",
-		"glDeleteRenderbuffersOES",
-		"glGenRenderbuffersOES",
-		"glRenderbufferStorageOES",
-		"glGetRenderbufferParameterivOES",
-		"glIsFramebufferOES",
-		"glBindFramebufferOES",
-		"glDeleteFramebuffersOES",
-		"glGenFramebuffersOES",
-		"glCheckFramebufferStatusOES",
-		"glFramebufferRenderbufferOES",
-		"glFramebufferTexture2DOES",
-		"glGetFramebufferAttachmentParameterivOES",
-		"glGenerateMipmapOES",
-		DE_NULL
-	};
-
-	return funcs;
-}
-
-const char** getExtDebugMarkerFuncStrs (void)
-{
-	static const char* funcs[] =
-	{
-		"glInsertEventMarkerEXT",
-		"glPushGroupMarkerEXT",
-		"glPopGroupMarkerEXT",
-		DE_NULL
-	};
-
-	return funcs;
-}
-
-const char** getExtMultisampledRenderToTextureFuncStrs (void)
-{
-	static const char* funcs[] =
-	{
-		"glRenderbufferStorageMultisampleEXT",
-		"glFramebufferTexture2DMultisampleEXT",
-		DE_NULL
-	};
-
-	return funcs;
-}
-
-const char** getExtDiscardFramebufferFuncStrs (void)
-{
-	static const char* funcs[] =
-	{
-		"glDiscardFramebufferEXT",
-		DE_NULL
-	};
-
-	return funcs;
-}
-
-const char** getOesFixedPointFuncStrs (void)
-{
-	static const char* funcs[] =
-	{
-		"glAlphaFuncxOES",
-		"glClearColorxOES",
-		"glClearDepthxOES",
-		"glClipPlanexOES",
-		"glColor4xOES",
-		"glDepthRangexOES",
-		"glFogxOES",
-		"glFogxvOES",
-		"glFrustumxOES",
-		"glGetClipPlanexOES",
-		"glGetFixedvOES",
-		"glGetLightxvOES",
-		"glGetMaterialxvOES",
-		"glGetTexEnvxvOES",
-		"glGetTexParameterxvOES",
-		"glLightModelxOES",
-		"glLightModelxvOES",
-		"glLightxOES",
-		"glLightxvOES",
-		"glLineWidthxOES",
-		"glLoadMatrixxOES",
-		"glMaterialxOES",
-		"glMaterialxvOES",
-		"glMultMatrixxOES",
-		"glMultiTexCoord4xOES",
-		"glNormal3xOES",
-		"glOrthoxOES",
-		"glPointParameterxOES",
-		"glPointParameterxvOES",
-		"glPointSizexOES",
-		"glPolygonOffsetxOES",
-		"glRotatexOES",
-		"glSampleCoveragexOES",
-		"glScalexOES",
-		"glTexEnvxOES",
-		"glTexEnvxvOES",
-		"glTexParameterxOES",
-		"glTexParameterxvOES",
-		"glTranslatexOES",
-		DE_NULL
-	};
-
-	return funcs;
-}
-
-const char** getImgMultisampledRenderToTextureFuncStrs (void)
-{
-	static const char* funcs[] =
-	{
-		"glRenderbufferStorageMultisampleIMG",
-		"glFramebufferTexture2DMultisampleIMG",
-		DE_NULL
-	};
-
-	return funcs;
-}
-
-const char** getOesGetProgramBinaryFuncStrs (void)
-{
-	static const char* funcs[] =
-	{
-		"glGetProgramBinaryOES",
-		"glProgramBinaryOES",
-		DE_NULL
-	};
-
-	return funcs;
-}
-
-const char** getAppleFramebufferMultisampleFuncStrs (void)
-{
-	static const char* funcs[] =
-	{
-		"glRenderbufferStorageMultisampleAPPLE",
-		"glResolveMultisampleFramebufferAPPLE",
-		DE_NULL
-	};
-
-	return funcs;
-}
-
-const char** getAppleCopyTextureLevelsFuncStrs (void)
-{
-	static const char* funcs[] =
-	{
-		"glCopyTextureLevelsAPPLE",
-		DE_NULL
-	};
-
-	return funcs;
-}
-
-const char** getExtMultiviewDrawBuffersFuncStrs (void)
-{
-	static const char* funcs[] =
-	{
-		"glReadBufferIndexedEXT",
-		"glDrawBuffersIndexedEXT",
-		"glGetIntegeri_vEXT",
-		DE_NULL
-	};
-
-	return funcs;
-}
-
-const char** getOesBlendFuncSeparateFuncStrs (void)
-{
-	static const char* funcs[] =
-	{
-		"glBlendFuncSeparateOES",
-		DE_NULL
-	};
-
-	return funcs;
-}
-
-const char** getQcomExtendedGetFuncStrs (void)
-{
-	static const char* funcs[] =
-	{
-		"glExtGetTexturesQCOM",
-		"glExtGetBuffersQCOM",
-		"glExtGetRenderbuffersQCOM",
-		"glExtGetFramebuffersQCOM",
-		"glExtGetTexLevelParameterivQCOM",
-		"glExtTexObjectStateOverrideiQCOM",
-		"glExtGetTexSubImageQCOM",
-		"glExtGetBufferPointervQCOM",
-		DE_NULL
-	};
-
-	return funcs;
-}
-
-const char** getNvFramebufferBlitFuncStrs (void)
-{
-	static const char* funcs[] =
-	{
-		"glBlitFramebufferNV",
-		DE_NULL
-	};
-
-	return funcs;
-}
-
-const char** getAndroidBlobCacheFuncStrs (void)
-{
-	static const char* funcs[] =
-	{
-		"eglSetBlobCacheFuncsANDROID",
-		DE_NULL
-	};
-
-	return funcs;
-}
-
-const char** getAngleFramebufferBlitFuncStrs (void)
-{
-	static const char* funcs[] =
-	{
-		"glBlitFramebufferANGLE",
-		DE_NULL
-	};
-
-	return funcs;
-}
-
-const char** getOesTexture3DFuncStrs (void)
-{
-	static const char* funcs[] =
-	{
-		"glTexImage3DOES",
-		"glTexSubImage3DOES",
-		"glCopyTexSubImage3DOES",
-		"glCompressedTexImage3DOES",
-		"glCompressedTexSubImage3DOES",
-		"glFramebufferTexture3DOES",
-		DE_NULL
-	};
-
-	return funcs;
-}
-
-const char** getKhrDebugFuncStrs (void)
-{
-	static const char* funcs[] =
-	{
-		"glDebugMessageControlKHR",
-		"glDebugMessageInsertKHR",
-		"glDebugMessageCallbackKHR",
-		"glGetDebugMessageLogKHR",
-		"glPushDebugGroupKHR",
-		"glPopDebugGroupKHR",
-		"glObjectLabelKHR",
-		"glGetObjectLabelKHR",
-		"glObjectPtrLabelKHR",
-		"glGetObjectPtrLabelKHR",
-		"glGetPointervKHR",
-		DE_NULL
-	};
-
-	return funcs;
-}
-
-const char** getQcomAlphaTestFuncStrs (void)
-{
-	static const char* funcs[] =
-	{
-		"glAlphaFuncQCOM",
-		DE_NULL
-	};
-
-	return funcs;
-}
-
-const char** getHiClientpixmapFuncStrs (void)
-{
-	static const char* funcs[] =
-	{
-		"eglCreatePixmapSurfaceHI",
-		DE_NULL
-	};
-
-	return funcs;
-}
-
-const char** getKhrStreamFuncStrs (void)
-{
-	static const char* funcs[] =
-	{
-		"eglCreateStreamKHR",
-		"eglDestroyStreamKHR",
-		"eglStreamAttribKHR",
-		"eglQueryStreamKHR",
-		"eglQueryStreamu64KHR",
-		DE_NULL
-	};
-
-	return funcs;
-}
-
-const char** getOesDrawTextureFuncStrs (void)
-{
-	static const char* funcs[] =
-	{
-		"glDrawTexsOES",
-		"glDrawTexiOES",
-		"glDrawTexxOES",
-		"glDrawTexsvOES",
-		"glDrawTexivOES",
-		"glDrawTexxvOES",
-		"glDrawTexfOES",
-		"glDrawTexfvOES",
-		DE_NULL
-	};
-
-	return funcs;
-}
-
-const char** getExtOcclusionQueryBooleanFuncStrs (void)
-{
-	static const char* funcs[] =
-	{
-		"glGenQueriesEXT",
-		"glDeleteQueriesEXT",
-		"glIsQueryEXT",
-		"glBeginQueryEXT",
-		"glEndQueryEXT",
-		"glGetQueryivEXT",
-		"glGetQueryObjectuivEXT",
-		DE_NULL
-	};
-
-	return funcs;
-}
-
-const char** getAngleQuerySurfacePointerFuncStrs (void)
-{
-	static const char* funcs[] =
-	{
-		"eglQuerySurfacePointerANGLE",
-		DE_NULL
-	};
-
-	return funcs;
-}
-
-const char** getNvReadBufferFuncStrs (void)
-{
-	static const char* funcs[] =
-	{
-		"glReadBufferNV",
-		DE_NULL
-	};
-
-	return funcs;
-}
-
-const char** getNvInstancedArraysFuncStrs (void)
-{
-	static const char* funcs[] =
-	{
-		"glVertexAttribDivisorNV",
-		DE_NULL
-	};
-
-	return funcs;
-}
-
-const char** getAngleInstancedArraysFuncStrs (void)
-{
-	static const char* funcs[] =
-	{
-		"glDrawArraysInstancedANGLE",
-		"glDrawElementsInstancedANGLE",
-		"glVertexAttribDivisorANGLE",
-		DE_NULL
-	};
-
-	return funcs;
-}
-
-const char** getAmdPerformanceMonitorFuncStrs (void)
-{
-	static const char* funcs[] =
-	{
-		"glGetPerfMonitorGroupsAMD",
-		"glGetPerfMonitorCountersAMD",
-		"glGetPerfMonitorGroupStringAMD",
-		"glGetPerfMonitorCounterStringAMD",
-		"glGetPerfMonitorCounterInfoAMD",
-		"glGenPerfMonitorsAMD",
-		"glDeletePerfMonitorsAMD",
-		"glSelectPerfMonitorCountersAMD",
-		"glBeginPerfMonitorAMD",
-		"glEndPerfMonitorAMD",
-		"glGetPerfMonitorCounterDataAMD",
-		DE_NULL
-	};
-
-	return funcs;
-}
-
-const char** getAndroidNativeFenceSyncFuncStrs (void)
-{
-	static const char* funcs[] =
-	{
-		"eglDupNativeFenceFDANDROID",
-		DE_NULL
-	};
-
-	return funcs;
-}
-
-const char** getAppleSyncFuncStrs (void)
-{
-	static const char* funcs[] =
-	{
-		"glFenceSyncAPPLE",
-		"glIsSyncAPPLE",
-		"glDeleteSyncAPPLE",
-		"glClientWaitSyncAPPLE",
-		"glWaitSyncAPPLE",
-		"glGetInteger64vAPPLE",
-		"glGetSyncivAPPLE",
-		DE_NULL
-	};
-
-	return funcs;
-}
-
-const char** getNvSyncFuncStrs (void)
-{
-	static const char* funcs[] =
-	{
-		"eglCreateFenceSyncNV",
-		"eglDestroySyncNV",
-		"eglFenceNV",
-		"eglClientWaitSyncNV",
-		"eglSignalSyncNV",
-		"eglGetSyncAttribNV",
-		DE_NULL
-	};
-
-	return funcs;
-}
-
-const char** getQcomDriverControlFuncStrs (void)
-{
-	static const char* funcs[] =
-	{
-		"glGetDriverControlsQCOM",
-		"glGetDriverControlStringQCOM",
-		"glEnableDriverControlQCOM",
-		"glDisableDriverControlQCOM",
-		DE_NULL
-	};
-
-	return funcs;
-}
-
-const char** getExtensionFuncStrs (const std::string& extensionName)
-{
-	if (extensionName == "EGL_KHR_lock_surface")
-		return getKhrLockSurfaceFuncStrs();
-	else if (extensionName == "GL_OES_single_precision")
-		return getOesSinglePrecisionFuncStrs();
-	else if (extensionName == "GL_QCOM_tiled_rendering")
-		return getQcomTiledRenderingFuncStrs();
-	else if (extensionName == "EGL_NV_native_query")
-		return getNvNativeQueryFuncStrs();
-	else if (extensionName == "EGL_MESA_drm_image")
-		return getMesaDrmImageFuncStrs();
-	else if (extensionName == "GL_NV_fence")
-		return getNvFenceFuncStrs();
-	else if (extensionName == "GL_OES_blend_subtract")
-		return getOesBlendSubtractFuncStrs();
-	else if (extensionName == "EGL_KHR_stream_consumer_gltexture")
-		return getKhrStreamConsumerGltextureFuncStrs();
-	else if (extensionName == "GL_QCOM_extended_get2")
-		return getQcomExtendedGet2FuncStrs();
-	else if (extensionName == "GL_EXT_multi_draw_arrays")
-		return getExtMultiDrawArraysFuncStrs();
-	else if (extensionName == "GL_OES_matrix_palette")
-		return getOesMatrixPaletteFuncStrs();
-	else if (extensionName == "GL_EXT_separate_shader_objects")
-		return getExtSeparateShaderObjectsFuncStrs();
-	else if (extensionName == "GL_ANGLE_translated_shader_source")
-		return getAngleTranslatedShaderSourceFuncStrs();
-	else if (extensionName == "GL_NV_framebuffer_multisample")
-		return getNvFramebufferMultisampleFuncStrs();
-	else if (extensionName == "GL_NV_draw_buffers")
-		return getNvDrawBuffersFuncStrs();
-	else if (extensionName == "GL_OES_EGL_image")
-		return getOesEglImageFuncStrs();
-	else if (extensionName == "EGL_KHR_wait_sync")
-		return getKhrWaitSyncFuncStrs();
-	else if (extensionName == "EGL_NV_system_time")
-		return getNvSystemTimeFuncStrs();
-	else if (extensionName == "GL_EXT_robustness")
-		return getExtRobustnessFuncStrs();
-	else if (extensionName == "EGL_KHR_image")
-		return getKhrImageFuncStrs();
-	else if (extensionName == "GL_NV_draw_instanced")
-		return getNvDrawInstancedFuncStrs();
-	else if (extensionName == "GL_IMG_user_clip_plane")
-		return getImgUserClipPlaneFuncStrs();
-	else if (extensionName == "GL_OES_query_matrix")
-		return getOesQueryMatrixFuncStrs();
-	else if (extensionName == "GL_NV_coverage_sample")
-		return getNvCoverageSampleFuncStrs();
-	else if (extensionName == "GL_EXT_disjoint_timer_query")
-		return getExtDisjointTimerQueryFuncStrs();
-	else if (extensionName == "GL_OES_vertex_array_object")
-		return getOesVertexArrayObjectFuncStrs();
-	else if (extensionName == "EGL_KHR_reusable_sync")
-		return getKhrReusableSyncFuncStrs();
-	else if (extensionName == "GL_EXT_debug_label")
-		return getExtDebugLabelFuncStrs();
-	else if (extensionName == "GL_EXT_map_buffer_range")
-		return getExtMapBufferRangeFuncStrs();
-	else if (extensionName == "GL_ANGLE_framebuffer_multisample")
-		return getAngleFramebufferMultisampleFuncStrs();
-	else if (extensionName == "EGL_KHR_stream_cross_process_fd")
-		return getKhrStreamCrossProcessFdFuncStrs();
-	else if (extensionName == "GL_EXT_texture_storage")
-		return getExtTextureStorageFuncStrs();
-	else if (extensionName == "EGL_KHR_stream_fifo")
-		return getKhrStreamFifoFuncStrs();
-	else if (extensionName == "GL_OES_mapbuffer")
-		return getOesMapbufferFuncStrs();
-	else if (extensionName == "EGL_NV_post_sub_buffer")
-		return getNvPostSubBufferFuncStrs();
-	else if (extensionName == "GL_OES_texture_cube_map")
-		return getOesTextureCubeMapFuncStrs();
-	else if (extensionName == "EGL_KHR_stream_producer_eglsurface")
-		return getKhrStreamProducerEglsurfaceFuncStrs();
-	else if (extensionName == "GL_OES_blend_equation_separate")
-		return getOesBlendEquationSeparateFuncStrs();
-	else if (extensionName == "GL_EXT_draw_buffers")
-		return getExtDrawBuffersFuncStrs();
-	else if (extensionName == "GL_OES_framebuffer_object")
-		return getOesFramebufferObjectFuncStrs();
-	else if (extensionName == "GL_EXT_debug_marker")
-		return getExtDebugMarkerFuncStrs();
-	else if (extensionName == "GL_EXT_multisampled_render_to_texture")
-		return getExtMultisampledRenderToTextureFuncStrs();
-	else if (extensionName == "GL_EXT_discard_framebuffer")
-		return getExtDiscardFramebufferFuncStrs();
-	else if (extensionName == "GL_OES_fixed_point")
-		return getOesFixedPointFuncStrs();
-	else if (extensionName == "GL_IMG_multisampled_render_to_texture")
-		return getImgMultisampledRenderToTextureFuncStrs();
-	else if (extensionName == "GL_OES_get_program_binary")
-		return getOesGetProgramBinaryFuncStrs();
-	else if (extensionName == "GL_APPLE_framebuffer_multisample")
-		return getAppleFramebufferMultisampleFuncStrs();
-	else if (extensionName == "GL_APPLE_copy_texture_levels")
-		return getAppleCopyTextureLevelsFuncStrs();
-	else if (extensionName == "GL_EXT_multiview_draw_buffers")
-		return getExtMultiviewDrawBuffersFuncStrs();
-	else if (extensionName == "GL_OES_blend_func_separate")
-		return getOesBlendFuncSeparateFuncStrs();
-	else if (extensionName == "GL_QCOM_extended_get")
-		return getQcomExtendedGetFuncStrs();
-	else if (extensionName == "GL_NV_framebuffer_blit")
-		return getNvFramebufferBlitFuncStrs();
-	else if (extensionName == "EGL_ANDROID_blob_cache")
-		return getAndroidBlobCacheFuncStrs();
-	else if (extensionName == "GL_ANGLE_framebuffer_blit")
-		return getAngleFramebufferBlitFuncStrs();
-	else if (extensionName == "GL_OES_texture_3D")
-		return getOesTexture3DFuncStrs();
-	else if (extensionName == "GL_KHR_debug")
-		return getKhrDebugFuncStrs();
-	else if (extensionName == "GL_QCOM_alpha_test")
-		return getQcomAlphaTestFuncStrs();
-	else if (extensionName == "EGL_HI_clientpixmap")
-		return getHiClientpixmapFuncStrs();
-	else if (extensionName == "EGL_KHR_stream")
-		return getKhrStreamFuncStrs();
-	else if (extensionName == "GL_OES_draw_texture")
-		return getOesDrawTextureFuncStrs();
-	else if (extensionName == "GL_EXT_occlusion_query_boolean")
-		return getExtOcclusionQueryBooleanFuncStrs();
-	else if (extensionName == "EGL_ANGLE_query_surface_pointer")
-		return getAngleQuerySurfacePointerFuncStrs();
-	else if (extensionName == "GL_NV_read_buffer")
-		return getNvReadBufferFuncStrs();
-	else if (extensionName == "GL_NV_instanced_arrays")
-		return getNvInstancedArraysFuncStrs();
-	else if (extensionName == "GL_ANGLE_instanced_arrays")
-		return getAngleInstancedArraysFuncStrs();
-	else if (extensionName == "GL_AMD_performance_monitor")
-		return getAmdPerformanceMonitorFuncStrs();
-	else if (extensionName == "EGL_ANDROID_native_fence_sync")
-		return getAndroidNativeFenceSyncFuncStrs();
-	else if (extensionName == "GL_APPLE_sync")
-		return getAppleSyncFuncStrs();
-	else if (extensionName == "EGL_NV_sync")
-		return getNvSyncFuncStrs();
-	else if (extensionName == "GL_QCOM_driver_control")
-		return getQcomDriverControlFuncStrs();
-	else
-		return 0;
-}
-
-const char** getExtensionStrs (void)
-{
-	static const char* extensions[] =
-	{
-		"EGL_KHR_config_attribs",
-		"EGL_KHR_lock_surface",
-		"EGL_KHR_image",
-		"EGL_KHR_vg_parent_image",
-		"EGL_KHR_gl_texture_2D_image",
-		"EGL_KHR_gl_texture_cubemap_image",
-		"EGL_KHR_gl_texture_3D_image",
-		"EGL_KHR_gl_renderbuffer_image",
-		"EGL_KHR_reusable_sync",
-		"EGL_KHR_image_base",
-		"EGL_KHR_image_pixmap",
-		"EGL_IMG_context_priority",
-		"EGL_KHR_lock_surface2",
-		"EGL_NV_coverage_sample",
-		"EGL_NV_depth_nonlinear",
-		"EGL_NV_sync",
-		"EGL_KHR_fence_sync",
-		"EGL_HI_clientpixmap",
-		"EGL_HI_colorformats",
-		"EGL_MESA_drm_image",
-		"EGL_NV_post_sub_buffer",
-		"EGL_ANGLE_query_surface_pointer",
-		"EGL_ANGLE_surface_d3d_texture_2d_share_handle",
-		"EGL_NV_coverage_sample_resolve",
-		"EGL_NV_system_time",
-		"EGL_KHR_stream",
-		"EGL_KHR_stream_consumer_gltexture",
-		"EGL_KHR_stream_producer_eglsurface",
-		"EGL_KHR_stream_producer_aldatalocator",
-		"EGL_KHR_stream_fifo",
-		"EGL_EXT_create_context_robustness",
-		"EGL_ANGLE_d3d_share_handle_client_buffer",
-		"EGL_KHR_create_context",
-		"EGL_KHR_surfaceless_context",
-		"EGL_KHR_stream_cross_process_fd",
-		"EGL_EXT_multiview_window",
-		"EGL_KHR_wait_sync",
-		"EGL_NV_post_convert_rounding",
-		"EGL_NV_native_query",
-		"EGL_NV_3dvision_surface",
-		"EGL_ANDROID_framebuffer_target",
-		"EGL_ANDROID_blob_cache",
-		"EGL_ANDROID_image_native_buffer",
-		"EGL_ANDROID_native_fence_sync",
-		"EGL_ANDROID_recordable",
-		"EGL_EXT_buffer_age",
-		"EGL_EXT_image_dma_buf_import",
-		"EGL_ARM_pixmap_multisample_discard",
-		"GL_APIENTRYP",
-		"GL_OES_blend_equation_separate",
-		"GL_OES_blend_func_separate",
-		"GL_OES_blend_subtract",
-		"GL_OES_compressed_ETC1_RGB8_texture",
-		"GL_OES_depth24",
-		"GL_OES_depth32",
-		"GL_OES_draw_texture",
-		"GL_OES_EGL_image",
-		"GL_OES_EGL_image_external",
-		"GL_OES_element_index_uint",
-		"GL_OES_fixed_point",
-		"GL_OES_framebuffer_object",
-		"GL_OES_mapbuffer",
-		"GL_OES_matrix_get",
-		"GL_OES_matrix_palette",
-		"GL_OES_packed_depth_stencil",
-		"GL_OES_rgb8_rgba8",
-		"GL_OES_stencil1",
-		"GL_OES_stencil4",
-		"GL_OES_stencil8",
-		"GL_OES_stencil_wrap",
-		"GL_OES_texture_cube_map",
-		"GL_OES_texture_mirrored_repeat",
-		"GL_OES_vertex_array_object",
-		"GL_AMD_compressed_3DC_texture",
-		"GL_AMD_compressed_ATC_texture",
-		"GL_APPLE_framebuffer_multisample",
-		"GL_APPLE_sync",
-		"GL_APPLE_texture_format_BGRA8888",
-		"GL_APPLE_texture_max_level",
-		"GL_EXT_blend_minmax",
-		"GL_EXT_discard_framebuffer",
-		"GL_EXT_map_buffer_range",
-		"GL_EXT_multisampled_render_to_texture",
-		"GL_EXT_read_format_bgra",
-		"GL_EXT_robustness",
-		"GL_EXT_sRGB",
-		"GL_EXT_texture_compression_dxt1",
-		"GL_EXT_texture_filter_anisotropic",
-		"GL_EXT_texture_format_BGRA8888",
-		"GL_EXT_texture_lod_bias",
-		"GL_EXT_texture_storage",
-		"GL_IMG_read_format",
-		"GL_IMG_texture_compression_pvrtc",
-		"GL_IMG_texture_env_enhanced_fixed_function",
-		"GL_IMG_user_clip_plane",
-		"GL_IMG_multisampled_render_to_texture",
-		"GL_NV_fence",
-		"GL_QCOM_extended_get",
-		"GL_QCOM_perfmon_global_mode",
-		"GL_QCOM_writeonly_rendering",
-		"GL_QCOM_tiled_rendering",
-		"GL_OES_byte_coordinates",
-		"GL_OES_extended_matrix_palette",
-		"GL_OES_fbo_render_mipmap",
-		"GL_OES_required_internalformat",
-		"GL_OES_query_matrix",
-		"GL_OES_single_precision",
-		"GL_OES_texture_env_crossbar",
-		"GL_APPLE_copy_texture_levels",
-		"GL_APPLE_texture_2D_limited_npot",
-		"GL_ARM_rgba8",
-		"GL_EXT_multi_draw_arrays",
-		"GL_QCOM_driver_control",
-		"GL_QCOM_extended_get2",
-		"GL_OES_compressed_paletted_texture",
-		"GL_OES_get_program_binary",
-		"GL_OES_standard_derivatives",
-		"GL_OES_surfaceless_context",
-		"GL_OES_texture_3D",
-		"GL_OES_texture_half_float",
-		"GL_OES_vertex_type_10_10_10_2",
-		"GL_KHR_debug",
-		"GL_KHR_texture_compression_astc_ldr",
-		"GL_AMD_performance_monitor",
-		"GL_AMD_program_binary_Z400",
-		"GL_ANGLE_depth_texture",
-		"GL_ANGLE_framebuffer_blit",
-		"GL_ANGLE_framebuffer_multisample",
-		"GL_ANGLE_instanced_arrays",
-		"GL_ANGLE_pack_reverse_row_order",
-		"GL_ANGLE_program_binary",
-		"GL_ANGLE_texture_compression_dxt3",
-		"GL_ANGLE_texture_compression_dxt5",
-		"GL_ANGLE_texture_usage",
-		"GL_ANGLE_translated_shader_source",
-		"GL_APPLE_rgb_422",
-		"GL_ARM_mali_program_binary",
-		"GL_ARM_mali_shader_binary",
-		"GL_EXT_color_buffer_half_float",
-		"GL_EXT_debug_label",
-		"GL_EXT_disjoint_timer_query",
-		"GL_EXT_draw_buffers",
-		"GL_EXT_multiview_draw_buffers",
-		"GL_EXT_occlusion_query_boolean",
-		"GL_EXT_separate_shader_objects",
-		"GL_EXT_shader_framebuffer_fetch",
-		"GL_EXT_shadow_samplers",
-		"GL_EXT_texture_rg",
-		"GL_EXT_texture_type_2_10_10_10_REV",
-		"GL_EXT_unpack_subimage",
-		"GL_DMP_shader_binary",
-		"GL_FJ_shader_binary_GCCSO",
-		"GL_IMG_program_binary",
-		"GL_IMG_shader_binary",
-		"GL_IMG_texture_compression_pvrtc2",
-		"GL_NV_coverage_sample",
-		"GL_NV_depth_nonlinear",
-		"GL_NV_draw_buffers",
-		"GL_NV_fbo_color_attachments",
-		"GL_NV_framebuffer_blit",
-		"GL_NV_framebuffer_multisample",
-		"GL_NV_instanced_arrays",
-		"GL_NV_read_buffer",
-		"GL_NV_shadow_samplers_array",
-		"GL_NV_shadow_samplers_cube",
-		"GL_NV_sRGB_formats",
-		"GL_NV_texture_border_clamp",
-		"GL_QCOM_alpha_test",
-		"GL_QCOM_binning_control",
-		"GL_VIV_shader_binary",
-		"GL_OES_depth_texture",
-		"GL_OES_fragment_precision_high",
-		"GL_OES_texture_float",
-		"GL_OES_texture_float_linear",
-		"GL_OES_texture_half_float_linear",
-		"GL_OES_texture_npot",
-		"GL_OES_vertex_half_float",
-		"GL_EXT_debug_marker",
-		"GL_EXT_shader_texture_lod",
-		"GL_NV_draw_instanced",
-		"GL_NV_generate_mipmap_sRGB",
-		"GL_NV_read_buffer_front",
-		"GL_NV_read_depth",
-		"GL_NV_read_depth_stencil",
-		"GL_NV_read_stencil",
-		"GL_NV_texture_compression_s3tc_update",
-		"GL_NV_texture_npot_2D_mipmap",
-		DE_NULL
-	};
-
-	return extensions;
-}
+static const char* s_EGL14[] =
+{
+	"eglBindAPI",
+	"eglBindTexImage",
+	"eglChooseConfig",
+	"eglCopyBuffers",
+	"eglCreateContext",
+	"eglCreatePbufferFromClientBuffer",
+	"eglCreatePbufferSurface",
+	"eglCreatePixmapSurface",
+	"eglCreateWindowSurface",
+	"eglDestroyContext",
+	"eglDestroySurface",
+	"eglGetConfigAttrib",
+	"eglGetConfigs",
+	"eglGetCurrentContext",
+	"eglGetCurrentDisplay",
+	"eglGetCurrentSurface",
+	"eglGetDisplay",
+	"eglGetError",
+	"eglGetProcAddress",
+	"eglInitialize",
+	"eglMakeCurrent",
+	"eglQueryAPI",
+	"eglQueryContext",
+	"eglQueryString",
+	"eglQuerySurface",
+	"eglReleaseTexImage",
+	"eglReleaseThread",
+	"eglSurfaceAttrib",
+	"eglSwapBuffers",
+	"eglSwapInterval",
+	"eglTerminate",
+	"eglWaitClient",
+	"eglWaitGL",
+	"eglWaitNative",
+};
+
+static const char* s_GLES10[] =
+{
+	"glActiveTexture",
+	"glAlphaFunc",
+	"glAlphaFuncx",
+	"glBindBuffer",
+	"glBindTexture",
+	"glBlendFunc",
+	"glBufferData",
+	"glBufferSubData",
+	"glClear",
+	"glClearColor",
+	"glClearColorx",
+	"glClearDepthf",
+	"glClearDepthx",
+	"glClearStencil",
+	"glClientActiveTexture",
+	"glClipPlanef",
+	"glClipPlanex",
+	"glColor4f",
+	"glColor4ub",
+	"glColor4x",
+	"glColorMask",
+	"glColorPointer",
+	"glCompressedTexImage2D",
+	"glCompressedTexSubImage2D",
+	"glCopyTexImage2D",
+	"glCopyTexSubImage2D",
+	"glCullFace",
+	"glDeleteBuffers",
+	"glDeleteTextures",
+	"glDepthFunc",
+	"glDepthMask",
+	"glDepthRangef",
+	"glDepthRangex",
+	"glDisable",
+	"glDisableClientState",
+	"glDrawArrays",
+	"glDrawElements",
+	"glEnable",
+	"glEnableClientState",
+	"glFinish",
+	"glFlush",
+	"glFogf",
+	"glFogfv",
+	"glFogx",
+	"glFogxv",
+	"glFrontFace",
+	"glFrustumf",
+	"glFrustumx",
+	"glGenBuffers",
+	"glGenTextures",
+	"glGetBooleanv",
+	"glGetBufferParameteriv",
+	"glGetClipPlanef",
+	"glGetClipPlanex",
+	"glGetError",
+	"glGetFixedv",
+	"glGetFloatv",
+	"glGetIntegerv",
+	"glGetLightfv",
+	"glGetLightxv",
+	"glGetMaterialfv",
+	"glGetMaterialxv",
+	"glGetPointerv",
+	"glGetString",
+	"glGetTexEnvfv",
+	"glGetTexEnviv",
+	"glGetTexEnvxv",
+	"glGetTexParameterfv",
+	"glGetTexParameteriv",
+	"glGetTexParameterxv",
+	"glHint",
+	"glIsBuffer",
+	"glIsEnabled",
+	"glIsTexture",
+	"glLightModelf",
+	"glLightModelfv",
+	"glLightModelx",
+	"glLightModelxv",
+	"glLightf",
+	"glLightfv",
+	"glLightx",
+	"glLightxv",
+	"glLineWidth",
+	"glLineWidthx",
+	"glLoadIdentity",
+	"glLoadMatrixf",
+	"glLoadMatrixx",
+	"glLogicOp",
+	"glMaterialf",
+	"glMaterialfv",
+	"glMaterialx",
+	"glMaterialxv",
+	"glMatrixMode",
+	"glMultMatrixf",
+	"glMultMatrixx",
+	"glMultiTexCoord4f",
+	"glMultiTexCoord4x",
+	"glNormal3f",
+	"glNormal3x",
+	"glNormalPointer",
+	"glOrthof",
+	"glOrthox",
+	"glPixelStorei",
+	"glPointParameterf",
+	"glPointParameterfv",
+	"glPointParameterx",
+	"glPointParameterxv",
+	"glPointSize",
+	"glPointSizex",
+	"glPolygonOffset",
+	"glPolygonOffsetx",
+	"glPopMatrix",
+	"glPushMatrix",
+	"glReadPixels",
+	"glRotatef",
+	"glRotatex",
+	"glSampleCoverage",
+	"glSampleCoveragex",
+	"glScalef",
+	"glScalex",
+	"glScissor",
+	"glShadeModel",
+	"glStencilFunc",
+	"glStencilMask",
+	"glStencilOp",
+	"glTexCoordPointer",
+	"glTexEnvf",
+	"glTexEnvfv",
+	"glTexEnvi",
+	"glTexEnviv",
+	"glTexEnvx",
+	"glTexEnvxv",
+	"glTexImage2D",
+	"glTexParameterf",
+	"glTexParameterfv",
+	"glTexParameteri",
+	"glTexParameteriv",
+	"glTexParameterx",
+	"glTexParameterxv",
+	"glTexSubImage2D",
+	"glTranslatef",
+	"glTranslatex",
+	"glVertexPointer",
+	"glViewport",
+};
+
+static const char* s_GLES20[] =
+{
+	"glActiveTexture",
+	"glAttachShader",
+	"glBindAttribLocation",
+	"glBindBuffer",
+	"glBindFramebuffer",
+	"glBindRenderbuffer",
+	"glBindTexture",
+	"glBlendColor",
+	"glBlendEquation",
+	"glBlendEquationSeparate",
+	"glBlendFunc",
+	"glBlendFuncSeparate",
+	"glBufferData",
+	"glBufferSubData",
+	"glCheckFramebufferStatus",
+	"glClear",
+	"glClearColor",
+	"glClearDepthf",
+	"glClearStencil",
+	"glColorMask",
+	"glCompileShader",
+	"glCompressedTexImage2D",
+	"glCompressedTexSubImage2D",
+	"glCopyTexImage2D",
+	"glCopyTexSubImage2D",
+	"glCreateProgram",
+	"glCreateShader",
+	"glCullFace",
+	"glDeleteBuffers",
+	"glDeleteFramebuffers",
+	"glDeleteProgram",
+	"glDeleteRenderbuffers",
+	"glDeleteShader",
+	"glDeleteTextures",
+	"glDepthFunc",
+	"glDepthMask",
+	"glDepthRangef",
+	"glDetachShader",
+	"glDisable",
+	"glDisableVertexAttribArray",
+	"glDrawArrays",
+	"glDrawElements",
+	"glEnable",
+	"glEnableVertexAttribArray",
+	"glFinish",
+	"glFlush",
+	"glFramebufferRenderbuffer",
+	"glFramebufferTexture2D",
+	"glFrontFace",
+	"glGenBuffers",
+	"glGenFramebuffers",
+	"glGenRenderbuffers",
+	"glGenTextures",
+	"glGenerateMipmap",
+	"glGetActiveAttrib",
+	"glGetActiveUniform",
+	"glGetAttachedShaders",
+	"glGetAttribLocation",
+	"glGetBooleanv",
+	"glGetBufferParameteriv",
+	"glGetError",
+	"glGetFloatv",
+	"glGetFramebufferAttachmentParameteriv",
+	"glGetIntegerv",
+	"glGetProgramInfoLog",
+	"glGetProgramiv",
+	"glGetRenderbufferParameteriv",
+	"glGetShaderInfoLog",
+	"glGetShaderPrecisionFormat",
+	"glGetShaderSource",
+	"glGetShaderiv",
+	"glGetString",
+	"glGetTexParameterfv",
+	"glGetTexParameteriv",
+	"glGetUniformLocation",
+	"glGetUniformfv",
+	"glGetUniformiv",
+	"glGetVertexAttribPointerv",
+	"glGetVertexAttribfv",
+	"glGetVertexAttribiv",
+	"glHint",
+	"glIsBuffer",
+	"glIsEnabled",
+	"glIsFramebuffer",
+	"glIsProgram",
+	"glIsRenderbuffer",
+	"glIsShader",
+	"glIsTexture",
+	"glLineWidth",
+	"glLinkProgram",
+	"glPixelStorei",
+	"glPolygonOffset",
+	"glReadPixels",
+	"glReleaseShaderCompiler",
+	"glRenderbufferStorage",
+	"glSampleCoverage",
+	"glScissor",
+	"glShaderBinary",
+	"glShaderSource",
+	"glStencilFunc",
+	"glStencilFuncSeparate",
+	"glStencilMask",
+	"glStencilMaskSeparate",
+	"glStencilOp",
+	"glStencilOpSeparate",
+	"glTexImage2D",
+	"glTexParameterf",
+	"glTexParameterfv",
+	"glTexParameteri",
+	"glTexParameteriv",
+	"glTexSubImage2D",
+	"glUniform1f",
+	"glUniform1fv",
+	"glUniform1i",
+	"glUniform1iv",
+	"glUniform2f",
+	"glUniform2fv",
+	"glUniform2i",
+	"glUniform2iv",
+	"glUniform3f",
+	"glUniform3fv",
+	"glUniform3i",
+	"glUniform3iv",
+	"glUniform4f",
+	"glUniform4fv",
+	"glUniform4i",
+	"glUniform4iv",
+	"glUniformMatrix2fv",
+	"glUniformMatrix3fv",
+	"glUniformMatrix4fv",
+	"glUseProgram",
+	"glValidateProgram",
+	"glVertexAttrib1f",
+	"glVertexAttrib1fv",
+	"glVertexAttrib2f",
+	"glVertexAttrib2fv",
+	"glVertexAttrib3f",
+	"glVertexAttrib3fv",
+	"glVertexAttrib4f",
+	"glVertexAttrib4fv",
+	"glVertexAttribPointer",
+	"glViewport",
+};
+
+static const char* s_GLES30[] =
+{
+	"glBeginQuery",
+	"glBeginTransformFeedback",
+	"glBindBufferBase",
+	"glBindBufferRange",
+	"glBindSampler",
+	"glBindTransformFeedback",
+	"glBindVertexArray",
+	"glBlitFramebuffer",
+	"glClearBufferfi",
+	"glClearBufferfv",
+	"glClearBufferiv",
+	"glClearBufferuiv",
+	"glClientWaitSync",
+	"glCompressedTexImage3D",
+	"glCompressedTexSubImage3D",
+	"glCopyBufferSubData",
+	"glCopyTexSubImage3D",
+	"glDeleteQueries",
+	"glDeleteSamplers",
+	"glDeleteSync",
+	"glDeleteTransformFeedbacks",
+	"glDeleteVertexArrays",
+	"glDrawArraysInstanced",
+	"glDrawBuffers",
+	"glDrawElementsInstanced",
+	"glDrawRangeElements",
+	"glEndQuery",
+	"glEndTransformFeedback",
+	"glFenceSync",
+	"glFlushMappedBufferRange",
+	"glFramebufferTextureLayer",
+	"glGenQueries",
+	"glGenSamplers",
+	"glGenTransformFeedbacks",
+	"glGenVertexArrays",
+	"glGetActiveUniformBlockName",
+	"glGetActiveUniformBlockiv",
+	"glGetActiveUniformsiv",
+	"glGetBufferParameteri64v",
+	"glGetBufferPointerv",
+	"glGetFragDataLocation",
+	"glGetInteger64i_v",
+	"glGetInteger64v",
+	"glGetIntegeri_v",
+	"glGetInternalformativ",
+	"glGetProgramBinary",
+	"glGetQueryObjectuiv",
+	"glGetQueryiv",
+	"glGetSamplerParameterfv",
+	"glGetSamplerParameteriv",
+	"glGetStringi",
+	"glGetSynciv",
+	"glGetTransformFeedbackVarying",
+	"glGetUniformBlockIndex",
+	"glGetUniformIndices",
+	"glGetUniformuiv",
+	"glGetVertexAttribIiv",
+	"glGetVertexAttribIuiv",
+	"glInvalidateFramebuffer",
+	"glInvalidateSubFramebuffer",
+	"glIsQuery",
+	"glIsSampler",
+	"glIsSync",
+	"glIsTransformFeedback",
+	"glIsVertexArray",
+	"glMapBufferRange",
+	"glPauseTransformFeedback",
+	"glProgramBinary",
+	"glProgramParameteri",
+	"glReadBuffer",
+	"glRenderbufferStorageMultisample",
+	"glResumeTransformFeedback",
+	"glSamplerParameterf",
+	"glSamplerParameterfv",
+	"glSamplerParameteri",
+	"glSamplerParameteriv",
+	"glTexImage3D",
+	"glTexStorage2D",
+	"glTexStorage3D",
+	"glTexSubImage3D",
+	"glTransformFeedbackVaryings",
+	"glUniform1ui",
+	"glUniform1uiv",
+	"glUniform2ui",
+	"glUniform2uiv",
+	"glUniform3ui",
+	"glUniform3uiv",
+	"glUniform4ui",
+	"glUniform4uiv",
+	"glUniformBlockBinding",
+	"glUniformMatrix2x3fv",
+	"glUniformMatrix2x4fv",
+	"glUniformMatrix3x2fv",
+	"glUniformMatrix3x4fv",
+	"glUniformMatrix4x2fv",
+	"glUniformMatrix4x3fv",
+	"glUnmapBuffer",
+	"glVertexAttribDivisor",
+	"glVertexAttribI4i",
+	"glVertexAttribI4iv",
+	"glVertexAttribI4ui",
+	"glVertexAttribI4uiv",
+	"glVertexAttribIPointer",
+	"glWaitSync",
+};
+
+static const char* s_EGL_ANDROID_blob_cache[] =
+{
+	"eglSetBlobCacheFuncsANDROID",
+};
+
+static const char* s_EGL_ANDROID_native_fence_sync[] =
+{
+	"eglDupNativeFenceFDANDROID",
+};
+
+static const char* s_EGL_ANGLE_query_surface_pointer[] =
+{
+	"eglQuerySurfacePointerANGLE",
+};
+
+static const char* s_EGL_EXT_device_base[] =
+{
+	"eglQueryDeviceAttribEXT",
+	"eglQueryDeviceStringEXT",
+	"eglQueryDevicesEXT",
+	"eglQueryDisplayAttribEXT",
+};
+
+static const char* s_EGL_EXT_output_base[] =
+{
+	"eglGetOutputLayersEXT",
+	"eglGetOutputPortsEXT",
+	"eglOutputLayerAttribEXT",
+	"eglOutputPortAttribEXT",
+	"eglQueryOutputLayerAttribEXT",
+	"eglQueryOutputLayerStringEXT",
+	"eglQueryOutputPortAttribEXT",
+	"eglQueryOutputPortStringEXT",
+};
+
+static const char* s_EGL_EXT_platform_base[] =
+{
+	"eglCreatePlatformPixmapSurfaceEXT",
+	"eglCreatePlatformWindowSurfaceEXT",
+	"eglGetPlatformDisplayEXT",
+};
+
+static const char* s_EGL_EXT_stream_consumer_egloutput[] =
+{
+	"eglStreamConsumerOutputEXT",
+};
+
+static const char* s_EGL_EXT_swap_buffers_with_damage[] =
+{
+	"eglSwapBuffersWithDamageEXT",
+};
+
+static const char* s_EGL_HI_clientpixmap[] =
+{
+	"eglCreatePixmapSurfaceHI",
+};
+
+static const char* s_EGL_KHR_cl_event2[] =
+{
+	"eglCreateSync64KHR",
+};
+
+static const char* s_EGL_KHR_image[] =
+{
+	"eglCreateImageKHR",
+	"eglDestroyImageKHR",
+};
+
+static const char* s_EGL_KHR_image_base[] =
+{
+	"eglCreateImageKHR",
+	"eglDestroyImageKHR",
+};
+
+static const char* s_EGL_KHR_lock_surface[] =
+{
+	"eglLockSurfaceKHR",
+	"eglUnlockSurfaceKHR",
+};
+
+static const char* s_EGL_KHR_lock_surface3[] =
+{
+	"eglLockSurfaceKHR",
+	"eglQuerySurface64KHR",
+	"eglUnlockSurfaceKHR",
+};
+
+static const char* s_EGL_KHR_reusable_sync[] =
+{
+	"eglClientWaitSyncKHR",
+	"eglCreateSyncKHR",
+	"eglDestroySyncKHR",
+	"eglGetSyncAttribKHR",
+	"eglSignalSyncKHR",
+};
+
+static const char* s_EGL_KHR_stream[] =
+{
+	"eglCreateStreamKHR",
+	"eglDestroyStreamKHR",
+	"eglQueryStreamKHR",
+	"eglQueryStreamu64KHR",
+	"eglStreamAttribKHR",
+};
+
+static const char* s_EGL_KHR_stream_consumer_gltexture[] =
+{
+	"eglStreamConsumerAcquireKHR",
+	"eglStreamConsumerGLTextureExternalKHR",
+	"eglStreamConsumerReleaseKHR",
+};
+
+static const char* s_EGL_KHR_stream_cross_process_fd[] =
+{
+	"eglCreateStreamFromFileDescriptorKHR",
+	"eglGetStreamFileDescriptorKHR",
+};
+
+static const char* s_EGL_KHR_stream_fifo[] =
+{
+	"eglQueryStreamTimeKHR",
+};
+
+static const char* s_EGL_KHR_stream_producer_eglsurface[] =
+{
+	"eglCreateStreamProducerSurfaceKHR",
+};
+
+static const char* s_EGL_KHR_wait_sync[] =
+{
+	"eglWaitSyncKHR",
+};
+
+static const char* s_EGL_MESA_drm_image[] =
+{
+	"eglCreateDRMImageMESA",
+	"eglExportDRMImageMESA",
+};
+
+static const char* s_EGL_NOK_swap_region[] =
+{
+	"eglSwapBuffersRegionNOK",
+};
+
+static const char* s_EGL_NOK_swap_region2[] =
+{
+	"eglSwapBuffersRegion2NOK",
+};
+
+static const char* s_EGL_NV_native_query[] =
+{
+	"eglQueryNativeDisplayNV",
+	"eglQueryNativePixmapNV",
+	"eglQueryNativeWindowNV",
+};
+
+static const char* s_EGL_NV_post_sub_buffer[] =
+{
+	"eglPostSubBufferNV",
+};
+
+static const char* s_EGL_NV_stream_sync[] =
+{
+	"eglCreateStreamSyncNV",
+};
+
+static const char* s_EGL_NV_sync[] =
+{
+	"eglClientWaitSyncNV",
+	"eglCreateFenceSyncNV",
+	"eglDestroySyncNV",
+	"eglFenceNV",
+	"eglGetSyncAttribNV",
+	"eglSignalSyncNV",
+};
+
+static const char* s_EGL_NV_system_time[] =
+{
+	"eglGetSystemTimeFrequencyNV",
+	"eglGetSystemTimeNV",
+};
+
+static const char* s_GL_APPLE_copy_texture_levels[] =
+{
+	"glCopyTextureLevelsAPPLE",
+};
+
+static const char* s_GL_APPLE_framebuffer_multisample[] =
+{
+	"glRenderbufferStorageMultisampleAPPLE",
+	"glResolveMultisampleFramebufferAPPLE",
+};
+
+static const char* s_GL_APPLE_sync[] =
+{
+	"glClientWaitSyncAPPLE",
+	"glDeleteSyncAPPLE",
+	"glFenceSyncAPPLE",
+	"glGetInteger64vAPPLE",
+	"glGetSyncivAPPLE",
+	"glIsSyncAPPLE",
+	"glWaitSyncAPPLE",
+};
+
+static const char* s_GL_EXT_discard_framebuffer[] =
+{
+	"glDiscardFramebufferEXT",
+};
+
+static const char* s_GL_EXT_map_buffer_range[] =
+{
+	"glFlushMappedBufferRangeEXT",
+	"glMapBufferRangeEXT",
+};
+
+static const char* s_GL_EXT_multi_draw_arrays[] =
+{
+	"glMultiDrawArraysEXT",
+	"glMultiDrawElementsEXT",
+};
+
+static const char* s_GL_EXT_multisampled_render_to_texture[] =
+{
+	"glFramebufferTexture2DMultisampleEXT",
+	"glRenderbufferStorageMultisampleEXT",
+};
+
+static const char* s_GL_EXT_robustness[] =
+{
+	"glGetGraphicsResetStatusEXT",
+	"glGetnUniformfvEXT",
+	"glGetnUniformivEXT",
+	"glReadnPixelsEXT",
+};
+
+static const char* s_GL_EXT_texture_storage[] =
+{
+	"glTexStorage1DEXT",
+	"glTexStorage2DEXT",
+	"glTexStorage3DEXT",
+	"glTextureStorage1DEXT",
+	"glTextureStorage2DEXT",
+	"glTextureStorage3DEXT",
+};
+
+static const char* s_GL_IMG_multisampled_render_to_texture[] =
+{
+	"glFramebufferTexture2DMultisampleIMG",
+	"glRenderbufferStorageMultisampleIMG",
+};
+
+static const char* s_GL_IMG_user_clip_plane[] =
+{
+	"glClipPlanefIMG",
+	"glClipPlanexIMG",
+};
+
+static const char* s_GL_NV_fence[] =
+{
+	"glDeleteFencesNV",
+	"glFinishFenceNV",
+	"glGenFencesNV",
+	"glGetFenceivNV",
+	"glIsFenceNV",
+	"glSetFenceNV",
+	"glTestFenceNV",
+};
+
+static const char* s_GL_OES_EGL_image[] =
+{
+	"glEGLImageTargetRenderbufferStorageOES",
+	"glEGLImageTargetTexture2DOES",
+};
+
+static const char* s_GL_OES_blend_equation_separate[] =
+{
+	"glBlendEquationSeparateOES",
+};
+
+static const char* s_GL_OES_blend_func_separate[] =
+{
+	"glBlendFuncSeparateOES",
+};
+
+static const char* s_GL_OES_blend_subtract[] =
+{
+	"glBlendEquationOES",
+};
+
+static const char* s_GL_OES_draw_texture[] =
+{
+	"glDrawTexfOES",
+	"glDrawTexfvOES",
+	"glDrawTexiOES",
+	"glDrawTexivOES",
+	"glDrawTexsOES",
+	"glDrawTexsvOES",
+	"glDrawTexxOES",
+	"glDrawTexxvOES",
+};
+
+static const char* s_GL_OES_fixed_point[] =
+{
+	"glAlphaFuncxOES",
+	"glClearColorxOES",
+	"glClearDepthxOES",
+	"glClipPlanexOES",
+	"glColor4xOES",
+	"glDepthRangexOES",
+	"glFogxOES",
+	"glFogxvOES",
+	"glFrustumxOES",
+	"glGetClipPlanexOES",
+	"glGetFixedvOES",
+	"glGetLightxvOES",
+	"glGetMaterialxvOES",
+	"glGetTexEnvxvOES",
+	"glGetTexParameterxvOES",
+	"glLightModelxOES",
+	"glLightModelxvOES",
+	"glLightxOES",
+	"glLightxvOES",
+	"glLineWidthxOES",
+	"glLoadMatrixxOES",
+	"glMaterialxOES",
+	"glMaterialxvOES",
+	"glMultMatrixxOES",
+	"glMultiTexCoord4xOES",
+	"glNormal3xOES",
+	"glOrthoxOES",
+	"glPointParameterxOES",
+	"glPointParameterxvOES",
+	"glPointSizexOES",
+	"glPolygonOffsetxOES",
+	"glRotatexOES",
+	"glSampleCoverageOES",
+	"glSampleCoveragexOES",
+	"glScalexOES",
+	"glTexEnvxOES",
+	"glTexEnvxvOES",
+	"glTexParameterxOES",
+	"glTexParameterxvOES",
+	"glTranslatexOES",
+};
+
+static const char* s_GL_OES_framebuffer_object[] =
+{
+	"glBindFramebufferOES",
+	"glBindRenderbufferOES",
+	"glCheckFramebufferStatusOES",
+	"glDeleteFramebuffersOES",
+	"glDeleteRenderbuffersOES",
+	"glFramebufferRenderbufferOES",
+	"glFramebufferTexture2DOES",
+	"glGenFramebuffersOES",
+	"glGenRenderbuffersOES",
+	"glGenerateMipmapOES",
+	"glGetFramebufferAttachmentParameterivOES",
+	"glGetRenderbufferParameterivOES",
+	"glIsFramebufferOES",
+	"glIsRenderbufferOES",
+	"glRenderbufferStorageOES",
+};
+
+static const char* s_GL_OES_mapbuffer[] =
+{
+	"glGetBufferPointervOES",
+	"glMapBufferOES",
+	"glUnmapBufferOES",
+};
+
+static const char* s_GL_OES_matrix_palette[] =
+{
+	"glCurrentPaletteMatrixOES",
+	"glLoadPaletteFromModelViewMatrixOES",
+	"glMatrixIndexPointerOES",
+	"glWeightPointerOES",
+};
+
+static const char* s_GL_OES_point_size_array[] =
+{
+	"glPointSizePointerOES",
+};
+
+static const char* s_GL_OES_query_matrix[] =
+{
+	"glQueryMatrixxOES",
+};
+
+static const char* s_GL_OES_single_precision[] =
+{
+	"glClearDepthfOES",
+	"glClipPlanefOES",
+	"glDepthRangefOES",
+	"glFrustumfOES",
+	"glGetClipPlanefOES",
+	"glOrthofOES",
+};
+
+static const char* s_GL_OES_texture_cube_map[] =
+{
+	"glGetTexGenfvOES",
+	"glGetTexGenivOES",
+	"glGetTexGenxvOES",
+	"glTexGenfOES",
+	"glTexGenfvOES",
+	"glTexGeniOES",
+	"glTexGenivOES",
+	"glTexGenxOES",
+	"glTexGenxvOES",
+};
+
+static const char* s_GL_OES_vertex_array_object[] =
+{
+	"glBindVertexArrayOES",
+	"glDeleteVertexArraysOES",
+	"glGenVertexArraysOES",
+	"glIsVertexArrayOES",
+};
+
+static const char* s_GL_QCOM_driver_control[] =
+{
+	"glDisableDriverControlQCOM",
+	"glEnableDriverControlQCOM",
+	"glGetDriverControlStringQCOM",
+	"glGetDriverControlsQCOM",
+};
+
+static const char* s_GL_QCOM_extended_get[] =
+{
+	"glExtGetBufferPointervQCOM",
+	"glExtGetBuffersQCOM",
+	"glExtGetFramebuffersQCOM",
+	"glExtGetRenderbuffersQCOM",
+	"glExtGetTexLevelParameterivQCOM",
+	"glExtGetTexSubImageQCOM",
+	"glExtGetTexturesQCOM",
+	"glExtTexObjectStateOverrideiQCOM",
+};
+
+static const char* s_GL_QCOM_extended_get2[] =
+{
+	"glExtGetProgramBinarySourceQCOM",
+	"glExtGetProgramsQCOM",
+	"glExtGetShadersQCOM",
+	"glExtIsProgramBinaryQCOM",
+};
+
+static const char* s_GL_QCOM_tiled_rendering[] =
+{
+	"glEndTilingQCOM",
+	"glStartTilingQCOM",
+};
+
+static const char* s_GL_AMD_performance_monitor[] =
+{
+	"glBeginPerfMonitorAMD",
+	"glDeletePerfMonitorsAMD",
+	"glEndPerfMonitorAMD",
+	"glGenPerfMonitorsAMD",
+	"glGetPerfMonitorCounterDataAMD",
+	"glGetPerfMonitorCounterInfoAMD",
+	"glGetPerfMonitorCounterStringAMD",
+	"glGetPerfMonitorCountersAMD",
+	"glGetPerfMonitorGroupStringAMD",
+	"glGetPerfMonitorGroupsAMD",
+	"glSelectPerfMonitorCountersAMD",
+};
+
+static const char* s_GL_ANGLE_framebuffer_blit[] =
+{
+	"glBlitFramebufferANGLE",
+};
+
+static const char* s_GL_ANGLE_framebuffer_multisample[] =
+{
+	"glRenderbufferStorageMultisampleANGLE",
+};
+
+static const char* s_GL_ANGLE_instanced_arrays[] =
+{
+	"glDrawArraysInstancedANGLE",
+	"glDrawElementsInstancedANGLE",
+	"glVertexAttribDivisorANGLE",
+};
+
+static const char* s_GL_ANGLE_translated_shader_source[] =
+{
+	"glGetTranslatedShaderSourceANGLE",
+};
+
+static const char* s_GL_EXT_copy_image[] =
+{
+	"glCopyImageSubDataEXT",
+};
+
+static const char* s_GL_EXT_debug_label[] =
+{
+	"glGetObjectLabelEXT",
+	"glLabelObjectEXT",
+};
+
+static const char* s_GL_EXT_debug_marker[] =
+{
+	"glInsertEventMarkerEXT",
+	"glPopGroupMarkerEXT",
+	"glPushGroupMarkerEXT",
+};
+
+static const char* s_GL_EXT_disjoint_timer_query[] =
+{
+	"glBeginQueryEXT",
+	"glDeleteQueriesEXT",
+	"glEndQueryEXT",
+	"glGenQueriesEXT",
+	"glGetQueryObjecti64vEXT",
+	"glGetQueryObjectivEXT",
+	"glGetQueryObjectui64vEXT",
+	"glGetQueryObjectuivEXT",
+	"glGetQueryivEXT",
+	"glIsQueryEXT",
+	"glQueryCounterEXT",
+};
+
+static const char* s_GL_EXT_draw_buffers[] =
+{
+	"glDrawBuffersEXT",
+};
+
+static const char* s_GL_EXT_draw_buffers_indexed[] =
+{
+	"glBlendEquationSeparateiEXT",
+	"glBlendEquationiEXT",
+	"glBlendFuncSeparateiEXT",
+	"glBlendFunciEXT",
+	"glColorMaskiEXT",
+	"glDisableiEXT",
+	"glEnableiEXT",
+	"glIsEnablediEXT",
+};
+
+static const char* s_GL_EXT_draw_instanced[] =
+{
+	"glDrawArraysInstancedEXT",
+	"glDrawElementsInstancedEXT",
+};
+
+static const char* s_GL_EXT_geometry_shader[] =
+{
+	"glFramebufferTextureEXT",
+};
+
+static const char* s_GL_EXT_instanced_arrays[] =
+{
+	"glDrawArraysInstancedEXT",
+	"glDrawElementsInstancedEXT",
+	"glVertexAttribDivisorEXT",
+};
+
+static const char* s_GL_EXT_multiview_draw_buffers[] =
+{
+	"glDrawBuffersIndexedEXT",
+	"glGetIntegeri_vEXT",
+	"glReadBufferIndexedEXT",
+};
+
+static const char* s_GL_EXT_occlusion_query_boolean[] =
+{
+	"glBeginQueryEXT",
+	"glDeleteQueriesEXT",
+	"glEndQueryEXT",
+	"glGenQueriesEXT",
+	"glGetQueryObjectuivEXT",
+	"glGetQueryivEXT",
+	"glIsQueryEXT",
+};
+
+static const char* s_GL_EXT_primitive_bounding_box[] =
+{
+	"glPrimitiveBoundingBoxEXT",
+};
+
+static const char* s_GL_EXT_separate_shader_objects[] =
+{
+	"glActiveShaderProgramEXT",
+	"glBindProgramPipelineEXT",
+	"glCreateShaderProgramvEXT",
+	"glDeleteProgramPipelinesEXT",
+	"glGenProgramPipelinesEXT",
+	"glGetProgramPipelineInfoLogEXT",
+	"glGetProgramPipelineivEXT",
+	"glIsProgramPipelineEXT",
+	"glProgramParameteriEXT",
+	"glProgramUniform1fEXT",
+	"glProgramUniform1fvEXT",
+	"glProgramUniform1iEXT",
+	"glProgramUniform1ivEXT",
+	"glProgramUniform1uiEXT",
+	"glProgramUniform1uivEXT",
+	"glProgramUniform2fEXT",
+	"glProgramUniform2fvEXT",
+	"glProgramUniform2iEXT",
+	"glProgramUniform2ivEXT",
+	"glProgramUniform2uiEXT",
+	"glProgramUniform2uivEXT",
+	"glProgramUniform3fEXT",
+	"glProgramUniform3fvEXT",
+	"glProgramUniform3iEXT",
+	"glProgramUniform3ivEXT",
+	"glProgramUniform3uiEXT",
+	"glProgramUniform3uivEXT",
+	"glProgramUniform4fEXT",
+	"glProgramUniform4fvEXT",
+	"glProgramUniform4iEXT",
+	"glProgramUniform4ivEXT",
+	"glProgramUniform4uiEXT",
+	"glProgramUniform4uivEXT",
+	"glProgramUniformMatrix2fvEXT",
+	"glProgramUniformMatrix2x3fvEXT",
+	"glProgramUniformMatrix2x4fvEXT",
+	"glProgramUniformMatrix3fvEXT",
+	"glProgramUniformMatrix3x2fvEXT",
+	"glProgramUniformMatrix3x4fvEXT",
+	"glProgramUniformMatrix4fvEXT",
+	"glProgramUniformMatrix4x2fvEXT",
+	"glProgramUniformMatrix4x3fvEXT",
+	"glUseProgramStagesEXT",
+	"glValidateProgramPipelineEXT",
+};
+
+static const char* s_GL_EXT_tessellation_shader[] =
+{
+	"glPatchParameteriEXT",
+};
+
+static const char* s_GL_EXT_texture_border_clamp[] =
+{
+	"glGetSamplerParameterIivEXT",
+	"glGetSamplerParameterIuivEXT",
+	"glGetTexParameterIivEXT",
+	"glGetTexParameterIuivEXT",
+	"glSamplerParameterIivEXT",
+	"glSamplerParameterIuivEXT",
+	"glTexParameterIivEXT",
+	"glTexParameterIuivEXT",
+};
+
+static const char* s_GL_EXT_texture_buffer[] =
+{
+	"glTexBufferEXT",
+	"glTexBufferRangeEXT",
+};
+
+static const char* s_GL_EXT_texture_view[] =
+{
+	"glTextureViewEXT",
+};
+
+static const char* s_GL_INTEL_performance_query[] =
+{
+	"glBeginPerfQueryINTEL",
+	"glCreatePerfQueryINTEL",
+	"glDeletePerfQueryINTEL",
+	"glEndPerfQueryINTEL",
+	"glGetFirstPerfQueryIdINTEL",
+	"glGetNextPerfQueryIdINTEL",
+	"glGetPerfCounterInfoINTEL",
+	"glGetPerfQueryDataINTEL",
+	"glGetPerfQueryIdByNameINTEL",
+	"glGetPerfQueryInfoINTEL",
+};
+
+static const char* s_GL_KHR_blend_equation_advanced[] =
+{
+	"glBlendBarrierKHR",
+};
+
+static const char* s_GL_KHR_debug[] =
+{
+	"glDebugMessageCallbackKHR",
+	"glDebugMessageControlKHR",
+	"glDebugMessageInsertKHR",
+	"glGetDebugMessageLogKHR",
+	"glGetObjectLabelKHR",
+	"glGetObjectPtrLabelKHR",
+	"glGetPointervKHR",
+	"glObjectLabelKHR",
+	"glObjectPtrLabelKHR",
+	"glPopDebugGroupKHR",
+	"glPushDebugGroupKHR",
+};
+
+static const char* s_GL_KHR_robustness[] =
+{
+	"glGetGraphicsResetStatusKHR",
+	"glGetnUniformfvKHR",
+	"glGetnUniformivKHR",
+	"glGetnUniformuivKHR",
+	"glReadnPixelsKHR",
+};
+
+static const char* s_GL_NV_blend_equation_advanced[] =
+{
+	"glBlendBarrierNV",
+	"glBlendParameteriNV",
+};
+
+static const char* s_GL_NV_copy_buffer[] =
+{
+	"glCopyBufferSubDataNV",
+};
+
+static const char* s_GL_NV_coverage_sample[] =
+{
+	"glCoverageMaskNV",
+	"glCoverageOperationNV",
+};
+
+static const char* s_GL_NV_draw_buffers[] =
+{
+	"glDrawBuffersNV",
+};
+
+static const char* s_GL_NV_draw_instanced[] =
+{
+	"glDrawArraysInstancedNV",
+	"glDrawElementsInstancedNV",
+};
+
+static const char* s_GL_NV_framebuffer_blit[] =
+{
+	"glBlitFramebufferNV",
+};
+
+static const char* s_GL_NV_framebuffer_multisample[] =
+{
+	"glRenderbufferStorageMultisampleNV",
+};
+
+static const char* s_GL_NV_instanced_arrays[] =
+{
+	"glVertexAttribDivisorNV",
+};
+
+static const char* s_GL_NV_internalformat_sample_query[] =
+{
+	"glGetInternalformatSampleivNV",
+};
+
+static const char* s_GL_NV_non_square_matrices[] =
+{
+	"glUniformMatrix2x3fvNV",
+	"glUniformMatrix2x4fvNV",
+	"glUniformMatrix3x2fvNV",
+	"glUniformMatrix3x4fvNV",
+	"glUniformMatrix4x2fvNV",
+	"glUniformMatrix4x3fvNV",
+};
+
+static const char* s_GL_NV_read_buffer[] =
+{
+	"glReadBufferNV",
+};
+
+static const char* s_GL_OES_get_program_binary[] =
+{
+	"glGetProgramBinaryOES",
+	"glProgramBinaryOES",
+};
+
+static const char* s_GL_OES_sample_shading[] =
+{
+	"glMinSampleShadingOES",
+};
+
+static const char* s_GL_OES_texture_3D[] =
+{
+	"glCompressedTexImage3DOES",
+	"glCompressedTexSubImage3DOES",
+	"glCopyTexSubImage3DOES",
+	"glFramebufferTexture3DOES",
+	"glTexImage3DOES",
+	"glTexSubImage3DOES",
+};
+
+static const char* s_GL_OES_texture_storage_multisample_2d_array[] =
+{
+	"glTexStorage3DMultisampleOES",
+};
+
+static const char* s_GL_QCOM_alpha_test[] =
+{
+	"glAlphaFuncQCOM",
+};
+
+static const struct
+{
+	const char*			name;
+	const int			numFunctions;
+	const char* const*	functions;
+} s_extensions[] =
+{
+	{ "EGL_ANDROID_blob_cache",							DE_LENGTH_OF_ARRAY(s_EGL_ANDROID_blob_cache),						s_EGL_ANDROID_blob_cache						},
+	{ "EGL_ANDROID_native_fence_sync",					DE_LENGTH_OF_ARRAY(s_EGL_ANDROID_native_fence_sync),				s_EGL_ANDROID_native_fence_sync					},
+	{ "EGL_ANGLE_query_surface_pointer",				DE_LENGTH_OF_ARRAY(s_EGL_ANGLE_query_surface_pointer),				s_EGL_ANGLE_query_surface_pointer				},
+	{ "EGL_EXT_device_base",							DE_LENGTH_OF_ARRAY(s_EGL_EXT_device_base),							s_EGL_EXT_device_base							},
+	{ "EGL_EXT_output_base",							DE_LENGTH_OF_ARRAY(s_EGL_EXT_output_base),							s_EGL_EXT_output_base							},
+	{ "EGL_EXT_platform_base",							DE_LENGTH_OF_ARRAY(s_EGL_EXT_platform_base),						s_EGL_EXT_platform_base							},
+	{ "EGL_EXT_stream_consumer_egloutput",				DE_LENGTH_OF_ARRAY(s_EGL_EXT_stream_consumer_egloutput),			s_EGL_EXT_stream_consumer_egloutput				},
+	{ "EGL_EXT_swap_buffers_with_damage",				DE_LENGTH_OF_ARRAY(s_EGL_EXT_swap_buffers_with_damage),				s_EGL_EXT_swap_buffers_with_damage				},
+	{ "EGL_HI_clientpixmap",							DE_LENGTH_OF_ARRAY(s_EGL_HI_clientpixmap),							s_EGL_HI_clientpixmap							},
+	{ "EGL_KHR_cl_event2",								DE_LENGTH_OF_ARRAY(s_EGL_KHR_cl_event2),							s_EGL_KHR_cl_event2								},
+	{ "EGL_KHR_image",									DE_LENGTH_OF_ARRAY(s_EGL_KHR_image),								s_EGL_KHR_image									},
+	{ "EGL_KHR_image_base",								DE_LENGTH_OF_ARRAY(s_EGL_KHR_image_base),							s_EGL_KHR_image_base							},
+	{ "EGL_KHR_lock_surface",							DE_LENGTH_OF_ARRAY(s_EGL_KHR_lock_surface),							s_EGL_KHR_lock_surface							},
+	{ "EGL_KHR_lock_surface3",							DE_LENGTH_OF_ARRAY(s_EGL_KHR_lock_surface3),						s_EGL_KHR_lock_surface3							},
+	{ "EGL_KHR_reusable_sync",							DE_LENGTH_OF_ARRAY(s_EGL_KHR_reusable_sync),						s_EGL_KHR_reusable_sync							},
+	{ "EGL_KHR_stream",									DE_LENGTH_OF_ARRAY(s_EGL_KHR_stream),								s_EGL_KHR_stream								},
+	{ "EGL_KHR_stream_consumer_gltexture",				DE_LENGTH_OF_ARRAY(s_EGL_KHR_stream_consumer_gltexture),			s_EGL_KHR_stream_consumer_gltexture				},
+	{ "EGL_KHR_stream_cross_process_fd",				DE_LENGTH_OF_ARRAY(s_EGL_KHR_stream_cross_process_fd),				s_EGL_KHR_stream_cross_process_fd				},
+	{ "EGL_KHR_stream_fifo",							DE_LENGTH_OF_ARRAY(s_EGL_KHR_stream_fifo),							s_EGL_KHR_stream_fifo							},
+	{ "EGL_KHR_stream_producer_eglsurface",				DE_LENGTH_OF_ARRAY(s_EGL_KHR_stream_producer_eglsurface),			s_EGL_KHR_stream_producer_eglsurface			},
+	{ "EGL_KHR_wait_sync",								DE_LENGTH_OF_ARRAY(s_EGL_KHR_wait_sync),							s_EGL_KHR_wait_sync								},
+	{ "EGL_MESA_drm_image",								DE_LENGTH_OF_ARRAY(s_EGL_MESA_drm_image),							s_EGL_MESA_drm_image							},
+	{ "EGL_NOK_swap_region",							DE_LENGTH_OF_ARRAY(s_EGL_NOK_swap_region),							s_EGL_NOK_swap_region							},
+	{ "EGL_NOK_swap_region2",							DE_LENGTH_OF_ARRAY(s_EGL_NOK_swap_region2),							s_EGL_NOK_swap_region2							},
+	{ "EGL_NV_native_query",							DE_LENGTH_OF_ARRAY(s_EGL_NV_native_query),							s_EGL_NV_native_query							},
+	{ "EGL_NV_post_sub_buffer",							DE_LENGTH_OF_ARRAY(s_EGL_NV_post_sub_buffer),						s_EGL_NV_post_sub_buffer						},
+	{ "EGL_NV_stream_sync",								DE_LENGTH_OF_ARRAY(s_EGL_NV_stream_sync),							s_EGL_NV_stream_sync							},
+	{ "EGL_NV_sync",									DE_LENGTH_OF_ARRAY(s_EGL_NV_sync),									s_EGL_NV_sync									},
+	{ "EGL_NV_system_time",								DE_LENGTH_OF_ARRAY(s_EGL_NV_system_time),							s_EGL_NV_system_time							},
+	{ "GL_APPLE_copy_texture_levels",					DE_LENGTH_OF_ARRAY(s_GL_APPLE_copy_texture_levels),					s_GL_APPLE_copy_texture_levels					},
+	{ "GL_APPLE_framebuffer_multisample",				DE_LENGTH_OF_ARRAY(s_GL_APPLE_framebuffer_multisample),				s_GL_APPLE_framebuffer_multisample				},
+	{ "GL_APPLE_sync",									DE_LENGTH_OF_ARRAY(s_GL_APPLE_sync),								s_GL_APPLE_sync									},
+	{ "GL_EXT_discard_framebuffer",						DE_LENGTH_OF_ARRAY(s_GL_EXT_discard_framebuffer),					s_GL_EXT_discard_framebuffer					},
+	{ "GL_EXT_map_buffer_range",						DE_LENGTH_OF_ARRAY(s_GL_EXT_map_buffer_range),						s_GL_EXT_map_buffer_range						},
+	{ "GL_EXT_multi_draw_arrays",						DE_LENGTH_OF_ARRAY(s_GL_EXT_multi_draw_arrays),						s_GL_EXT_multi_draw_arrays						},
+	{ "GL_EXT_multisampled_render_to_texture",			DE_LENGTH_OF_ARRAY(s_GL_EXT_multisampled_render_to_texture),		s_GL_EXT_multisampled_render_to_texture			},
+	{ "GL_EXT_robustness",								DE_LENGTH_OF_ARRAY(s_GL_EXT_robustness),							s_GL_EXT_robustness								},
+	{ "GL_EXT_texture_storage",							DE_LENGTH_OF_ARRAY(s_GL_EXT_texture_storage),						s_GL_EXT_texture_storage						},
+	{ "GL_IMG_multisampled_render_to_texture",			DE_LENGTH_OF_ARRAY(s_GL_IMG_multisampled_render_to_texture),		s_GL_IMG_multisampled_render_to_texture			},
+	{ "GL_IMG_user_clip_plane",							DE_LENGTH_OF_ARRAY(s_GL_IMG_user_clip_plane),						s_GL_IMG_user_clip_plane						},
+	{ "GL_NV_fence",									DE_LENGTH_OF_ARRAY(s_GL_NV_fence),									s_GL_NV_fence									},
+	{ "GL_OES_EGL_image",								DE_LENGTH_OF_ARRAY(s_GL_OES_EGL_image),								s_GL_OES_EGL_image								},
+	{ "GL_OES_blend_equation_separate",					DE_LENGTH_OF_ARRAY(s_GL_OES_blend_equation_separate),				s_GL_OES_blend_equation_separate				},
+	{ "GL_OES_blend_func_separate",						DE_LENGTH_OF_ARRAY(s_GL_OES_blend_func_separate),					s_GL_OES_blend_func_separate					},
+	{ "GL_OES_blend_subtract",							DE_LENGTH_OF_ARRAY(s_GL_OES_blend_subtract),						s_GL_OES_blend_subtract							},
+	{ "GL_OES_draw_texture",							DE_LENGTH_OF_ARRAY(s_GL_OES_draw_texture),							s_GL_OES_draw_texture							},
+	{ "GL_OES_fixed_point",								DE_LENGTH_OF_ARRAY(s_GL_OES_fixed_point),							s_GL_OES_fixed_point							},
+	{ "GL_OES_framebuffer_object",						DE_LENGTH_OF_ARRAY(s_GL_OES_framebuffer_object),					s_GL_OES_framebuffer_object						},
+	{ "GL_OES_mapbuffer",								DE_LENGTH_OF_ARRAY(s_GL_OES_mapbuffer),								s_GL_OES_mapbuffer								},
+	{ "GL_OES_matrix_palette",							DE_LENGTH_OF_ARRAY(s_GL_OES_matrix_palette),						s_GL_OES_matrix_palette							},
+	{ "GL_OES_point_size_array",						DE_LENGTH_OF_ARRAY(s_GL_OES_point_size_array),						s_GL_OES_point_size_array						},
+	{ "GL_OES_query_matrix",							DE_LENGTH_OF_ARRAY(s_GL_OES_query_matrix),							s_GL_OES_query_matrix							},
+	{ "GL_OES_single_precision",						DE_LENGTH_OF_ARRAY(s_GL_OES_single_precision),						s_GL_OES_single_precision						},
+	{ "GL_OES_texture_cube_map",						DE_LENGTH_OF_ARRAY(s_GL_OES_texture_cube_map),						s_GL_OES_texture_cube_map						},
+	{ "GL_OES_vertex_array_object",						DE_LENGTH_OF_ARRAY(s_GL_OES_vertex_array_object),					s_GL_OES_vertex_array_object					},
+	{ "GL_QCOM_driver_control",							DE_LENGTH_OF_ARRAY(s_GL_QCOM_driver_control),						s_GL_QCOM_driver_control						},
+	{ "GL_QCOM_extended_get",							DE_LENGTH_OF_ARRAY(s_GL_QCOM_extended_get),							s_GL_QCOM_extended_get							},
+	{ "GL_QCOM_extended_get2",							DE_LENGTH_OF_ARRAY(s_GL_QCOM_extended_get2),						s_GL_QCOM_extended_get2							},
+	{ "GL_QCOM_tiled_rendering",						DE_LENGTH_OF_ARRAY(s_GL_QCOM_tiled_rendering),						s_GL_QCOM_tiled_rendering						},
+	{ "GL_AMD_performance_monitor",						DE_LENGTH_OF_ARRAY(s_GL_AMD_performance_monitor),					s_GL_AMD_performance_monitor					},
+	{ "GL_ANGLE_framebuffer_blit",						DE_LENGTH_OF_ARRAY(s_GL_ANGLE_framebuffer_blit),					s_GL_ANGLE_framebuffer_blit						},
+	{ "GL_ANGLE_framebuffer_multisample",				DE_LENGTH_OF_ARRAY(s_GL_ANGLE_framebuffer_multisample),				s_GL_ANGLE_framebuffer_multisample				},
+	{ "GL_ANGLE_instanced_arrays",						DE_LENGTH_OF_ARRAY(s_GL_ANGLE_instanced_arrays),					s_GL_ANGLE_instanced_arrays						},
+	{ "GL_ANGLE_translated_shader_source",				DE_LENGTH_OF_ARRAY(s_GL_ANGLE_translated_shader_source),			s_GL_ANGLE_translated_shader_source				},
+	{ "GL_EXT_copy_image",								DE_LENGTH_OF_ARRAY(s_GL_EXT_copy_image),							s_GL_EXT_copy_image								},
+	{ "GL_EXT_debug_label",								DE_LENGTH_OF_ARRAY(s_GL_EXT_debug_label),							s_GL_EXT_debug_label							},
+	{ "GL_EXT_debug_marker",							DE_LENGTH_OF_ARRAY(s_GL_EXT_debug_marker),							s_GL_EXT_debug_marker							},
+	{ "GL_EXT_disjoint_timer_query",					DE_LENGTH_OF_ARRAY(s_GL_EXT_disjoint_timer_query),					s_GL_EXT_disjoint_timer_query					},
+	{ "GL_EXT_draw_buffers",							DE_LENGTH_OF_ARRAY(s_GL_EXT_draw_buffers),							s_GL_EXT_draw_buffers							},
+	{ "GL_EXT_draw_buffers_indexed",					DE_LENGTH_OF_ARRAY(s_GL_EXT_draw_buffers_indexed),					s_GL_EXT_draw_buffers_indexed					},
+	{ "GL_EXT_draw_instanced",							DE_LENGTH_OF_ARRAY(s_GL_EXT_draw_instanced),						s_GL_EXT_draw_instanced							},
+	{ "GL_EXT_geometry_shader",							DE_LENGTH_OF_ARRAY(s_GL_EXT_geometry_shader),						s_GL_EXT_geometry_shader						},
+	{ "GL_EXT_instanced_arrays",						DE_LENGTH_OF_ARRAY(s_GL_EXT_instanced_arrays),						s_GL_EXT_instanced_arrays						},
+	{ "GL_EXT_multiview_draw_buffers",					DE_LENGTH_OF_ARRAY(s_GL_EXT_multiview_draw_buffers),				s_GL_EXT_multiview_draw_buffers					},
+	{ "GL_EXT_occlusion_query_boolean",					DE_LENGTH_OF_ARRAY(s_GL_EXT_occlusion_query_boolean),				s_GL_EXT_occlusion_query_boolean				},
+	{ "GL_EXT_primitive_bounding_box",					DE_LENGTH_OF_ARRAY(s_GL_EXT_primitive_bounding_box),				s_GL_EXT_primitive_bounding_box					},
+	{ "GL_EXT_separate_shader_objects",					DE_LENGTH_OF_ARRAY(s_GL_EXT_separate_shader_objects),				s_GL_EXT_separate_shader_objects				},
+	{ "GL_EXT_tessellation_shader",						DE_LENGTH_OF_ARRAY(s_GL_EXT_tessellation_shader),					s_GL_EXT_tessellation_shader					},
+	{ "GL_EXT_texture_border_clamp",					DE_LENGTH_OF_ARRAY(s_GL_EXT_texture_border_clamp),					s_GL_EXT_texture_border_clamp					},
+	{ "GL_EXT_texture_buffer",							DE_LENGTH_OF_ARRAY(s_GL_EXT_texture_buffer),						s_GL_EXT_texture_buffer							},
+	{ "GL_EXT_texture_view",							DE_LENGTH_OF_ARRAY(s_GL_EXT_texture_view),							s_GL_EXT_texture_view							},
+	{ "GL_INTEL_performance_query",						DE_LENGTH_OF_ARRAY(s_GL_INTEL_performance_query),					s_GL_INTEL_performance_query					},
+	{ "GL_KHR_blend_equation_advanced",					DE_LENGTH_OF_ARRAY(s_GL_KHR_blend_equation_advanced),				s_GL_KHR_blend_equation_advanced				},
+	{ "GL_KHR_debug",									DE_LENGTH_OF_ARRAY(s_GL_KHR_debug),									s_GL_KHR_debug									},
+	{ "GL_KHR_robustness",								DE_LENGTH_OF_ARRAY(s_GL_KHR_robustness),							s_GL_KHR_robustness								},
+	{ "GL_NV_blend_equation_advanced",					DE_LENGTH_OF_ARRAY(s_GL_NV_blend_equation_advanced),				s_GL_NV_blend_equation_advanced					},
+	{ "GL_NV_copy_buffer",								DE_LENGTH_OF_ARRAY(s_GL_NV_copy_buffer),							s_GL_NV_copy_buffer								},
+	{ "GL_NV_coverage_sample",							DE_LENGTH_OF_ARRAY(s_GL_NV_coverage_sample),						s_GL_NV_coverage_sample							},
+	{ "GL_NV_draw_buffers",								DE_LENGTH_OF_ARRAY(s_GL_NV_draw_buffers),							s_GL_NV_draw_buffers							},
+	{ "GL_NV_draw_instanced",							DE_LENGTH_OF_ARRAY(s_GL_NV_draw_instanced),							s_GL_NV_draw_instanced							},
+	{ "GL_NV_framebuffer_blit",							DE_LENGTH_OF_ARRAY(s_GL_NV_framebuffer_blit),						s_GL_NV_framebuffer_blit						},
+	{ "GL_NV_framebuffer_multisample",					DE_LENGTH_OF_ARRAY(s_GL_NV_framebuffer_multisample),				s_GL_NV_framebuffer_multisample					},
+	{ "GL_NV_instanced_arrays",							DE_LENGTH_OF_ARRAY(s_GL_NV_instanced_arrays),						s_GL_NV_instanced_arrays						},
+	{ "GL_NV_internalformat_sample_query",				DE_LENGTH_OF_ARRAY(s_GL_NV_internalformat_sample_query),			s_GL_NV_internalformat_sample_query				},
+	{ "GL_NV_non_square_matrices",						DE_LENGTH_OF_ARRAY(s_GL_NV_non_square_matrices),					s_GL_NV_non_square_matrices						},
+	{ "GL_NV_read_buffer",								DE_LENGTH_OF_ARRAY(s_GL_NV_read_buffer),							s_GL_NV_read_buffer								},
+	{ "GL_OES_get_program_binary",						DE_LENGTH_OF_ARRAY(s_GL_OES_get_program_binary),					s_GL_OES_get_program_binary						},
+	{ "GL_OES_sample_shading",							DE_LENGTH_OF_ARRAY(s_GL_OES_sample_shading),						s_GL_OES_sample_shading							},
+	{ "GL_OES_texture_3D",								DE_LENGTH_OF_ARRAY(s_GL_OES_texture_3D),							s_GL_OES_texture_3D								},
+	{ "GL_OES_texture_storage_multisample_2d_array",	DE_LENGTH_OF_ARRAY(s_GL_OES_texture_storage_multisample_2d_array),	s_GL_OES_texture_storage_multisample_2d_array	},
+	{ "GL_QCOM_alpha_test",								DE_LENGTH_OF_ARRAY(s_GL_QCOM_alpha_test),							s_GL_QCOM_alpha_test							},
+};
