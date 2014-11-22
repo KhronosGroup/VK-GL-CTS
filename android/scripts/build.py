@@ -88,7 +88,7 @@ def buildNative (buildRoot, libTargetDir, nativeLib, buildType):
 	else:
 		assert not os.path.exists(os.path.join(libsDir, "gdbserver"))
 
-def buildApp (buildRoot, isRelease):
+def buildApp (buildRoot, isRelease, javaApi):
 	appDir	= os.path.join(buildRoot, "package")
 
 	# Set up app
@@ -106,7 +106,7 @@ def buildApp (buildRoot, isRelease):
 			'update', 'project',
 			'--name', 'dEQP',
 			'--path', '.',
-			'--target', str(common.ANDROID_JAVA_API),
+			'--target', javaApi,
 		])
 
 	# Build
@@ -138,7 +138,7 @@ def signApp (keystore, keyname, storepass, keypass):
 			'bin/dEQP-release.apk'
 		])
 
-def build (buildRoot=common.ANDROID_DIR, isRelease=False, nativeBuildType="Release"):
+def build (buildRoot=common.ANDROID_DIR, isRelease=False, nativeBuildType="Release", javaApi=common.ANDROID_JAVA_API):
 	curDir = os.getcwd()
 
 	try:
@@ -167,7 +167,7 @@ def build (buildRoot=common.ANDROID_DIR, isRelease=False, nativeBuildType="Relea
 			shutil.copytree(assetsSrcDir, assetsDstDir)
 
 		# Build java code and .apk
-		buildApp(buildRoot, isRelease)
+		buildApp(buildRoot, isRelease, javaApi)
 
 	finally:
 		# Restore working dir
@@ -185,10 +185,11 @@ if __name__ == "__main__":
 	parser.add_argument('--native-build-type', dest='nativeBuildType', default="Release", help="Build type passed cmake when building native code.")
 	parser.add_argument('--build-root', dest='buildRoot', default=common.ANDROID_DIR, help="Root directory for storing build results.")
 	parser.add_argument('--dump-config', dest='dumpConfig', action='store_true', help="Print out all configurations variables")
+	parser.add_argument('--java-api', dest='javaApi', default=common.ANDROID_JAVA_API, help="Set the API signature for the java build.")
 
 	args = parser.parse_args()
 
 	if args.dumpConfig:
 		dumpConfig()
 
-	build(buildRoot=os.path.abspath(args.buildRoot), isRelease=args.isRelease, nativeBuildType=args.nativeBuildType)
+	build(buildRoot=os.path.abspath(args.buildRoot), isRelease=args.isRelease, nativeBuildType=args.nativeBuildType, javaApi=args.javaApi)
