@@ -673,7 +673,7 @@ void LayoutBindingNegativeCase::init (void)
 			break;
 
 		case SHADERTYPE_BOTH:
-			maxUnits = maxCombinedUnits/2;
+			maxUnits = de::min(de::min(maxVertexUnits, maxFragmentUnits), maxCombinedUnits/2);
 			break;
 
 		default:
@@ -691,9 +691,19 @@ void LayoutBindingNegativeCase::init (void)
 		case TESTTYPE_BINDING_MULTIPLE:
 		case TESTTYPE_BINDING_ARRAY:
 		case TESTTYPE_BINDING_MAX_ARRAY:
-			if (maxUnits < 2)
-				throw tcu::NotSupportedError("Not enough uniforms available for test");
-			m_numBindings = rnd.getInt(2, deMin32(MAX_UNIFORM_ARRAY_SIZE, maxUnits));
+			if (m_errorType == ERRORTYPE_CONTRADICTORY)
+			{
+				// leave room for contradictory case
+				if (maxUnits < 3)
+					throw tcu::NotSupportedError("Not enough uniforms available for test");
+				m_numBindings = rnd.getInt(2, deMin32(MAX_UNIFORM_ARRAY_SIZE, maxUnits-1));
+			}
+			else
+			{
+				if (maxUnits < 2)
+					throw tcu::NotSupportedError("Not enough uniforms available for test");
+				m_numBindings = rnd.getInt(2, deMin32(MAX_UNIFORM_ARRAY_SIZE, maxUnits));
+			}
 			break;
 
 		default:
@@ -710,6 +720,8 @@ void LayoutBindingNegativeCase::init (void)
 
 	// Check that we have enough binding points to perform the tests
 	if (numBindingPoints < m_numBindings)
+		throw tcu::NotSupportedError("Not enough binding points available for test");
+	if (m_errorType == ERRORTYPE_CONTRADICTORY && numBindingPoints == m_numBindings)
 		throw tcu::NotSupportedError("Not enough binding points available for test");
 
 	// Initialize the binding points i.e. populate the two binding point vectors
@@ -778,7 +790,7 @@ void LayoutBindingNegativeCase::initBindingPoints (int minBindingPoint, int numB
 
 		case ERRORTYPE_LESS_THAN_ZERO:	// Select a random negative binding point
 		{
-			const glw::GLint binding = -rnd.getInt(1, numBindingPoints-m_numBindings);
+			const glw::GLint binding = -rnd.getInt(1, m_numBindings);
 			m_vertexShaderBinding.push_back(binding);
 			m_fragmentShaderBinding.push_back(binding);
 			break;
@@ -787,7 +799,8 @@ void LayoutBindingNegativeCase::initBindingPoints (int minBindingPoint, int numB
 		case ERRORTYPE_CONTRADICTORY:	// Select two valid, but contradictory binding points
 		{
 			m_vertexShaderBinding.push_back(minBindingPoint);
-			m_fragmentShaderBinding.push_back(numBindingPoints-m_numBindings);
+			m_fragmentShaderBinding.push_back((minBindingPoint+1)%numBindingPoints);
+			DE_ASSERT(m_vertexShaderBinding.back() != m_fragmentShaderBinding.back());
 			break;
 		}
 
@@ -1612,7 +1625,7 @@ glu::ShaderProgram* UBOBindingNegativeCase::generateShaders (void) const
 	// Generate the shader body for the vertex and fragment shaders
 	for (int bindNdx = 0; bindNdx < m_numBindings*2; ++bindNdx)	// Multiply by two to cover cases for both colors for each UBO
 	{
-		const std::string uname = (arrayInstance ? getUniformName("colors", 0, m_numBindings) : getUniformName("colors", bindNdx/2));
+		const std::string uname = (arrayInstance ? getUniformName("colors", 0, bindNdx/2) : getUniformName("colors", bindNdx/2));
 		shaderBody	<< "	" << (bindNdx == 0 ? "if" : "else if") << " (u_arrayNdx == " << de::toString(bindNdx) << ")\n"
 					<< "	{\n"
 					<< "		color = " << uname << (bindNdx%2 == 0 ? ".color1" : ".color2") << ";\n"
