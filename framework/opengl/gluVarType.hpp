@@ -169,7 +169,7 @@ private:
 
 enum Storage
 {
-	STORAGE_IN,
+	STORAGE_IN = 0,
 	STORAGE_OUT,
 	STORAGE_CONST,
 	STORAGE_UNIFORM,
@@ -181,7 +181,7 @@ const char* getStorageName (Storage storage);
 
 enum Interpolation
 {
-	INTERPOLATION_SMOOTH,
+	INTERPOLATION_SMOOTH = 0,
 	INTERPOLATION_FLAT,
 	INTERPOLATION_CENTROID,
 	INTERPOLATION_LAST

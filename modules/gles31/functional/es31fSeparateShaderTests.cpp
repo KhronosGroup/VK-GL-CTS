@@ -79,7 +79,6 @@ using tcu::ResultCollector;
 using glu::CallLogWrapper;
 using glu::DataType;
 using glu::VariableDeclaration;
-using glu::Interpolation;
 using glu::Precision;
 using glu::Program;
 using glu::ProgramPipeline;
@@ -107,6 +106,17 @@ enum
 	VIEWPORT_SIZE = 128
 };
 
+enum VaryingInterpolation
+{
+	VARYINGINTERPOLATION_SMOOTH		= 0,
+	VARYINGINTERPOLATION_FLAT,
+	VARYINGINTERPOLATION_CENTROID,
+	VARYINGINTERPOLATION_DEFAULT,
+	VARYINGINTERPOLATION_RANDOM,
+
+	VARYINGINTERPOLATION_LAST
+};
+
 DataType randomType (Random& rnd)
 {
 	using namespace glu;
@@ -131,10 +141,48 @@ DataType randomType (Random& rnd)
 	return TYPE_INVALID;
 }
 
-Interpolation randomInterpolation (Random& rnd)
+VaryingInterpolation randomInterpolation (Random& rnd)
 {
-	return Interpolation(rnd.getInt(0, glu::INTERPOLATION_LAST - 1));
+	static const VaryingInterpolation s_validInterpolations[] =
+	{
+		VARYINGINTERPOLATION_SMOOTH,
+		VARYINGINTERPOLATION_FLAT,
+		VARYINGINTERPOLATION_CENTROID,
+		VARYINGINTERPOLATION_DEFAULT,
+	};
+	return s_validInterpolations[rnd.getInt(0, DE_LENGTH_OF_ARRAY(s_validInterpolations)-1)];
 }
+
+glu::Interpolation getGluInterpolation (VaryingInterpolation interpolation)
+{
+	switch (interpolation)
+	{
+		case VARYINGINTERPOLATION_SMOOTH:	return glu::INTERPOLATION_SMOOTH;
+		case VARYINGINTERPOLATION_FLAT:		return glu::INTERPOLATION_FLAT;
+		case VARYINGINTERPOLATION_CENTROID:	return glu::INTERPOLATION_CENTROID;
+		case VARYINGINTERPOLATION_DEFAULT:	return glu::INTERPOLATION_LAST;		//!< Last means no qualifier, i.e. default
+		default:
+			DE_ASSERT(!"Invalid interpolation");
+			return glu::INTERPOLATION_LAST;
+	}
+}
+
+// used only for debug sanity checks
+#if defined(DE_DEBUG)
+VaryingInterpolation getVaryingInterpolation (glu::Interpolation interpolation)
+{
+	switch (interpolation)
+	{
+		case glu::INTERPOLATION_SMOOTH:		return VARYINGINTERPOLATION_SMOOTH;
+		case glu::INTERPOLATION_FLAT:		return VARYINGINTERPOLATION_FLAT;
+		case glu::INTERPOLATION_CENTROID:	return VARYINGINTERPOLATION_CENTROID;
+		case glu::INTERPOLATION_LAST:		return VARYINGINTERPOLATION_DEFAULT;		//!< Last means no qualifier, i.e. default
+		default:
+			DE_ASSERT(!"Invalid interpolation");
+			return VARYINGINTERPOLATION_LAST;
+	}
+}
+#endif
 
 enum BindingKind
 {
@@ -220,18 +268,18 @@ void printInputColor (ostringstream& oss, const VariableDeclaration& input)
 
 struct VaryingParams
 {
-	VaryingParams 			(void)
+	VaryingParams			(void)
 		: count				(0)
 		, type				(glu::TYPE_LAST)
 		, binding			(BINDING_LAST)
-		, vtxInterp			(glu::INTERPOLATION_LAST)
-		, frgInterp			(glu::INTERPOLATION_LAST) {}
+		, vtxInterp			(VARYINGINTERPOLATION_LAST)
+		, frgInterp			(VARYINGINTERPOLATION_LAST) {}
 
 	int						count;
 	DataType				type;
 	BindingKind				binding;
-	Interpolation			vtxInterp;
-	Interpolation			frgInterp;
+	VaryingInterpolation	vtxInterp;
+	VaryingInterpolation	frgInterp;
 };
 
 struct VaryingInterface
@@ -243,15 +291,34 @@ struct VaryingInterface
 // Generate corresponding input and output variable declarations that may vary
 // in compatible ways.
 
-Interpolation chooseInterpolation (Interpolation param, DataType type, Random& rnd)
+VaryingInterpolation chooseInterpolation (VaryingInterpolation param, DataType type, Random& rnd)
 {
 	if (glu::getDataTypeScalarType(type) != glu::TYPE_FLOAT)
-		return glu::INTERPOLATION_FLAT;
+		return VARYINGINTERPOLATION_FLAT;
 
-	if (param == glu::INTERPOLATION_LAST)
+	if (param == VARYINGINTERPOLATION_RANDOM)
 		return randomInterpolation(rnd);
 
 	return param;
+}
+
+bool isSSOCompatibleInterpolation (VaryingInterpolation vertexInterpolation, VaryingInterpolation fragmentInterpolation)
+{
+	// interpolations must be fully specified
+	DE_ASSERT(vertexInterpolation != VARYINGINTERPOLATION_RANDOM);
+	DE_ASSERT(vertexInterpolation < VARYINGINTERPOLATION_LAST);
+	DE_ASSERT(fragmentInterpolation != VARYINGINTERPOLATION_RANDOM);
+	DE_ASSERT(fragmentInterpolation < VARYINGINTERPOLATION_LAST);
+
+	// interpolation can only be either smooth or flat. Auxiliary storage does not matter.
+	const bool isSmoothVtx =    (vertexInterpolation == VARYINGINTERPOLATION_SMOOTH)      || //!< trivial
+	                            (vertexInterpolation == VARYINGINTERPOLATION_DEFAULT)     || //!< default to smooth
+	                            (vertexInterpolation == VARYINGINTERPOLATION_CENTROID);      //!< default to smooth, ignore storage
+	const bool isSmoothFrag =   (fragmentInterpolation == VARYINGINTERPOLATION_SMOOTH)    || //!< trivial
+	                            (fragmentInterpolation == VARYINGINTERPOLATION_DEFAULT)   || //!< default to smooth
+	                            (fragmentInterpolation == VARYINGINTERPOLATION_CENTROID);    //!< default to smooth, ignore storage
+	// Khronos bug #12630: flat / smooth qualifiers must match in SSO
+	return isSmoothVtx == isSmoothFrag;
 }
 
 VaryingInterface genVaryingInterface (const VaryingParams&		params,
@@ -264,19 +331,21 @@ VaryingInterface genVaryingInterface (const VaryingParams&		params,
 
 	for (int varNdx = 0; varNdx < params.count; ++varNdx)
 	{
-		const BindingKind	binding			= ((params.binding == BINDING_LAST)
-											   ? randomBinding(rnd) : params.binding);
-		const DataType		type			= ((params.type == TYPE_LAST)
-											   ? randomType(rnd) : params.type);
-		const Interpolation	vtxInterp		= chooseInterpolation(params.vtxInterp, type, rnd);
-		const Interpolation	frgInterp		= chooseInterpolation(params.frgInterp, type, rnd);
-		const int			loc				= ((binding == BINDING_LOCATION) ? offset : -1);
-		const string		ndxStr			= de::toString(varNdx);
-		const string		vtxName			= ((binding == BINDING_NAME)
-											   ? "var" + ndxStr : "vtxVar" + ndxStr);
-		const string		frgName			= ((binding == BINDING_NAME)
-											   ? "var" + ndxStr : "frgVar" + ndxStr);
-		const VarType		varType			(type, PRECISION_HIGHP);
+		const BindingKind			binding			= ((params.binding == BINDING_LAST)
+													   ? randomBinding(rnd) : params.binding);
+		const DataType				type			= ((params.type == TYPE_LAST)
+													   ? randomType(rnd) : params.type);
+		const VaryingInterpolation	vtxInterp		= chooseInterpolation(params.vtxInterp, type, rnd);
+		const VaryingInterpolation	frgInterp		= chooseInterpolation(params.frgInterp, type, rnd);
+		const VaryingInterpolation	vtxCompatInterp	= (isSSOCompatibleInterpolation(vtxInterp, frgInterp))
+													   ? (vtxInterp) : (frgInterp);
+		const int					loc				= ((binding == BINDING_LOCATION) ? offset : -1);
+		const string				ndxStr			= de::toString(varNdx);
+		const string				vtxName			= ((binding == BINDING_NAME)
+													   ? "var" + ndxStr : "vtxVar" + ndxStr);
+		const string				frgName			= ((binding == BINDING_NAME)
+													   ? "var" + ndxStr : "frgVar" + ndxStr);
+		const VarType				varType			(type, PRECISION_HIGHP);
 
 		offset += getDataTypeNumLocations(type);
 
@@ -285,9 +354,9 @@ VaryingInterface genVaryingInterface (const VaryingParams&		params,
 			break;
 
 		ret.vtxOutputs.push_back(
-			VariableDeclaration(varType, vtxName, STORAGE_OUT, vtxInterp, loc));
+			VariableDeclaration(varType, vtxName, STORAGE_OUT, getGluInterpolation(vtxCompatInterp), loc));
 		ret.frgInputs.push_back(
-			VariableDeclaration(varType, frgName, STORAGE_IN, frgInterp, loc));
+			VariableDeclaration(varType, frgName, STORAGE_IN, getGluInterpolation(frgInterp), loc));
 	}
 
 	return ret;
@@ -378,10 +447,16 @@ string genVtxShaderSrc (deUint32							seed,
 {
 	ostringstream		oss;
 	Random				rnd								(seed);
-	enum { 				NUM_COMPONENTS 					= 2 };
+	enum {				NUM_COMPONENTS					= 2 };
 	static const int	s_quadrants[][NUM_COMPONENTS]	= { {1, 1}, {-1, 1}, {1, -1} };
 
 	oss << "#version 310 es\n";
+
+	printFloatDeclaration(oss, varName, uniform, value);
+
+	for (vector<VariableDeclaration>::const_iterator it = outputs.begin();
+		 it != outputs.end(); ++it)
+		oss << *it << ";\n";
 
 	oss << "const vec2 triangle[3] = vec2[3](\n";
 
@@ -413,11 +488,8 @@ string genVtxShaderSrc (deUint32							seed,
 			oss << (i == 0 ? "\t" : ",\n\t");
 			printRandomInitializer(oss, type, rnd);
 		}
-		oss << ");\n"
-			<< *it << ";\n";
+		oss << ");\n";
 	}
-
-	printFloatDeclaration(oss, varName, uniform, value);
 
 	oss << "void main (void)\n"
 		<< "{\n"
@@ -445,9 +517,9 @@ string genFrgShaderSrc (deUint32							seed,
 	oss.width(7);
 	oss << "#version 310 es\n";
 
-	oss << "precision highp float;\n";;
+	oss << "precision highp float;\n";
 
-	oss << "out vec4 fragColor;\n";;
+	oss << "out vec4 fragColor;\n";
 
 	printFloatDeclaration(oss, varName, uniform, value);
 
@@ -518,7 +590,7 @@ string genFrgShaderSrc (deUint32							seed,
 class ProgramWrapper
 {
 public:
-	virtual 		~ProgramWrapper			(void) {}
+	virtual			~ProgramWrapper			(void) {}
 
 	virtual GLuint	getProgramName			(void) = 0;
 	virtual void	writeToLog				(TestLog& log) = 0;
@@ -614,8 +686,8 @@ struct TestParams
 
 deUint32 paramsSeed (const TestParams& params)
 {
-	deUint32 paramCode 	= (params.initSingle	 		<< 0 |
-						   params.switchVtx 			<< 1 |
+	deUint32 paramCode	= (params.initSingle			<< 0 |
+						   params.switchVtx				<< 1 |
 						   params.switchFrg				<< 2 |
 						   params.useUniform			<< 3 |
 						   params.useSameName			<< 4 |
@@ -649,15 +721,15 @@ string paramsCode (const TestParams& params)
 			 params.varyings.binding == BINDING_LOCATION ? "l" :
 			 params.varyings.binding == BINDING_LAST ? "r" :
 			"")
-		 << (params.varyings.vtxInterp == INTERPOLATION_SMOOTH ? "m" :
-			 params.varyings.vtxInterp == INTERPOLATION_CENTROID ? "e" :
-			 params.varyings.vtxInterp == INTERPOLATION_FLAT ? "a" :
-			 params.varyings.vtxInterp == INTERPOLATION_LAST ? "r" :
+		 << (params.varyings.vtxInterp == VARYINGINTERPOLATION_SMOOTH ? "m" :
+			 params.varyings.vtxInterp == VARYINGINTERPOLATION_CENTROID ? "e" :
+			 params.varyings.vtxInterp == VARYINGINTERPOLATION_FLAT ? "a" :
+			 params.varyings.vtxInterp == VARYINGINTERPOLATION_RANDOM ? "r" :
 			"o")
-		 << (params.varyings.frgInterp == INTERPOLATION_SMOOTH ? "m" :
-			 params.varyings.frgInterp == INTERPOLATION_CENTROID ? "e" :
-			 params.varyings.frgInterp == INTERPOLATION_FLAT ? "a" :
-			 params.varyings.frgInterp == INTERPOLATION_LAST ? "r" :
+		 << (params.varyings.frgInterp == VARYINGINTERPOLATION_SMOOTH ? "m" :
+			 params.varyings.frgInterp == VARYINGINTERPOLATION_CENTROID ? "e" :
+			 params.varyings.frgInterp == VARYINGINTERPOLATION_FLAT ? "a" :
+			 params.varyings.frgInterp == VARYINGINTERPOLATION_RANDOM ? "r" :
 			"o");
 	return oss.str();
 }
@@ -688,16 +760,39 @@ bool paramsValid (const TestParams& params)
 
 	// Interpolation is meaningless if we don't use an in/out variable.
 	if (params.varyings.count == 0 &&
-		!(params.varyings.vtxInterp == INTERPOLATION_LAST &&
-		  params.varyings.frgInterp == INTERPOLATION_LAST))
+		!(params.varyings.vtxInterp == VARYINGINTERPOLATION_LAST &&
+		  params.varyings.frgInterp == VARYINGINTERPOLATION_LAST))
 		return false;
 
 	// Mismatch by flat / smooth is not allowed. See Khronos bug #12630
-	if ((params.varyings.vtxInterp == INTERPOLATION_FLAT) != (params.varyings.frgInterp == INTERPOLATION_FLAT))
+	// \note: iterpolations might be RANDOM, causing generated varyings potentially match / mismatch anyway.
+	//        This is checked later on. Here, we just make sure that we don't force the generator to generate
+	//        only invalid varying configurations, i.e. there exists a valid varying configuration for this
+	//        test param config.
+	if ((params.varyings.vtxInterp != VARYINGINTERPOLATION_RANDOM) &&
+		(params.varyings.frgInterp != VARYINGINTERPOLATION_RANDOM) &&
+		(params.varyings.vtxInterp == VARYINGINTERPOLATION_FLAT) != (params.varyings.frgInterp == VARYINGINTERPOLATION_FLAT))
 		return false;
 
 	return true;
 }
+
+// used only for debug sanity checks
+#if defined(DE_DEBUG)
+bool varyingsValid (const VaryingInterface& varyings)
+{
+	for (int ndx = 0; ndx < (int)varyings.vtxOutputs.size(); ++ndx)
+	{
+		const VaryingInterpolation vertexInterpolation		= getVaryingInterpolation(varyings.vtxOutputs[ndx].interpolation);
+		const VaryingInterpolation fragmentInterpolation	= getVaryingInterpolation(varyings.frgInputs[ndx].interpolation);
+
+		if (!isSSOCompatibleInterpolation(vertexInterpolation, fragmentInterpolation))
+			return false;
+	}
+
+	return true;
+}
+#endif
 
 void logParams (TestLog& log, const TestParams& params)
 {
@@ -743,16 +838,20 @@ void logParams (TestLog& log, const TestParams& params)
 		}
 
 		msg << "In the vertex shader the varyings are qualified ";
-		if (params.varyings.vtxInterp == glu::INTERPOLATION_LAST)
+		if (params.varyings.vtxInterp == VARYINGINTERPOLATION_DEFAULT)
+			msg << "with no interpolation qualifiers.\n";
+		else if (params.varyings.vtxInterp == VARYINGINTERPOLATION_RANDOM)
 			msg << "with a random interpolation qualifier.\n";
 		else
-			msg << "'" << glu::getInterpolationName(params.varyings.vtxInterp) << "'.\n";
+			msg << "'" << glu::getInterpolationName(getGluInterpolation(params.varyings.vtxInterp)) << "'.\n";
 
 		msg << "In the fragment shader the varyings are qualified ";
-		if (params.varyings.frgInterp == glu::INTERPOLATION_LAST)
+		if (params.varyings.frgInterp == VARYINGINTERPOLATION_DEFAULT)
+			msg << "with no interpolation qualifiers.\n";
+		else if (params.varyings.frgInterp == VARYINGINTERPOLATION_RANDOM)
 			msg << "with a random interpolation qualifier.\n";
 		else
-			msg << "'" << glu::getInterpolationName(params.varyings.frgInterp) << "'.\n";
+			msg << "'" << glu::getInterpolationName(getGluInterpolation(params.varyings.frgInterp)) << "'.\n";
 	}
 
 	msg << TestLog::EndMessage;
@@ -783,15 +882,15 @@ TestParams genParams (deUint32 seed)
 		{
 			params.varyings.type		= glu::TYPE_LAST;
 			params.varyings.binding		= BINDING_LAST;
-			params.varyings.vtxInterp	= glu::INTERPOLATION_LAST;
-			params.varyings.frgInterp	= glu::INTERPOLATION_LAST;
+			params.varyings.vtxInterp	= VARYINGINTERPOLATION_RANDOM;
+			params.varyings.frgInterp	= VARYINGINTERPOLATION_RANDOM;
 		}
 		else
 		{
 			params.varyings.type		= glu::TYPE_INVALID;
 			params.varyings.binding		= BINDING_LAST;
-			params.varyings.vtxInterp	= glu::INTERPOLATION_LAST;
-			params.varyings.frgInterp	= glu::INTERPOLATION_LAST;
+			params.varyings.vtxInterp	= VARYINGINTERPOLATION_LAST;
+			params.varyings.frgInterp	= VARYINGINTERPOLATION_LAST;
 		}
 
 		tryNdx += 1;
@@ -977,6 +1076,7 @@ SeparateShaderTest::SeparateShaderTest (Context&			ctx,
 	, m_varyings		(genVaryingInterface(params.varyings, m_rnd))
 {
 	DE_ASSERT(paramsValid(params));
+	DE_ASSERT(varyingsValid(m_varyings));
 }
 
 MovePtr<ProgramWrapper> SeparateShaderTest::createShaderProgram (const string*	vtxSource,
@@ -1030,7 +1130,7 @@ MovePtr<ProgramWrapper> SeparateShaderTest::createSingleShaderProgram (ShaderTyp
 		RawProgramWrapper* const	wrapper	= new RawProgramWrapper(renderCtx, programName,
 																	shaderType, src);
 		MovePtr<ProgramWrapper>		wrapperPtr(wrapper);
-		Program& 					program = wrapper->getProgram();
+		Program&					program = wrapper->getProgram();
 
 		if (!program.getLinkStatus())
 		{
@@ -1080,7 +1180,7 @@ void SeparateShaderTest::setUniform (ProgramWrapper&	program,
 	msg << TestLog::EndMessage;
 }
 
-MovePtr<Pipeline> SeparateShaderTest::createPipeline(const ProgramParams& pp)
+MovePtr<Pipeline> SeparateShaderTest::createPipeline (const ProgramParams& pp)
 {
 	const bool		useUniform	= m_params.useUniform;
 	const string	vtxName		= m_params.useSameName ? "scale" : "vtxScale";
@@ -1178,7 +1278,7 @@ MovePtr<Pipeline> SeparateShaderTest::createPipeline(const ProgramParams& pp)
 	return MovePtr<Pipeline>(new Pipeline(pipeline, fullProg, vtxProg, frgProg));
 }
 
-MovePtr<ProgramWrapper> SeparateShaderTest::createReferenceProgram(const ProgramParams& pp)
+MovePtr<ProgramWrapper> SeparateShaderTest::createReferenceProgram (const ProgramParams& pp)
 {
 	bool					useUniform	= m_params.useUniform;
 	const string			vtxSrc		= genVtxShaderSrc(pp.vtxSeed,
@@ -1206,7 +1306,7 @@ void SeparateShaderTest::drawSurface (Surface& dst, deUint32 seed)
 {
 	const RenderContext&	renderCtx	= getRenderContext();
 	Random					rnd			(seed > 0 ? seed : m_rnd.getUint32());
-	Rectangle				viewport 	= randomViewport(renderCtx, rnd,
+	Rectangle				viewport	= randomViewport(renderCtx, rnd,
 														 VIEWPORT_SIZE, VIEWPORT_SIZE);
 	glClearColor(0.125f, 0.25f, 0.5f, 1.f);
 	setViewport(renderCtx, viewport);
@@ -1305,8 +1405,8 @@ void SeparateShaderTest::testActiveProgramUniform (MovePtr<Pipeline>& pipeOut)
 
 	{
 		ProgramParams				changePp	= genProgramParams(m_rnd);
-		changePp.vtxSeed 						= refPp.vtxSeed;
-		changePp.frgSeed 						= refPp.frgSeed;
+		changePp.vtxSeed						= refPp.vtxSeed;
+		changePp.frgSeed						= refPp.frgSeed;
 		UniquePtr<ProgramWrapper>	changeProg	(createReferenceProgram(changePp));
 		GLuint						changeName	= changeProg->getProgramName();
 		ProgramPipeline				pipeline	(getRenderContext());
@@ -1492,17 +1592,19 @@ bool addRenderTest (TestCaseGroup& group, const string& namePrefix, const string
 	return true;
 }
 
-void describeInterpolation(const string& stage, Interpolation qual,
-						   ostringstream& name, ostringstream& desc)
+void describeInterpolation (const string& stage, VaryingInterpolation qual,
+							ostringstream& name, ostringstream& desc)
 {
-	if (qual == glu::INTERPOLATION_LAST)
+	DE_ASSERT(qual < VARYINGINTERPOLATION_RANDOM);
+
+	if (qual == VARYINGINTERPOLATION_DEFAULT)
 	{
 		desc << ", unqualified in " << stage << " shader";
 		return;
 	}
 	else
 	{
-		const string qualName = glu::getInterpolationName(qual);
+		const string qualName = glu::getInterpolationName(getGluInterpolation(qual));
 
 		name << "_" << stage << "_" << qualName;
 		desc << ", qualified '" << qualName << "' in " << stage << " shader";
@@ -1510,7 +1612,7 @@ void describeInterpolation(const string& stage, Interpolation qual,
 }
 
 
-} // anonymous namespace
+} // anonymous
 
 TestCaseGroup* createSeparateShaderTests (Context& ctx)
 {
@@ -1529,8 +1631,8 @@ TestCaseGroup* createSeparateShaderTests (Context& ctx)
 	defaultParams.varyings.count		= 0;
 	defaultParams.varyings.type			= glu::TYPE_INVALID;
 	defaultParams.varyings.binding		= BINDING_NAME;
-	defaultParams.varyings.vtxInterp	= glu::INTERPOLATION_LAST;
-	defaultParams.varyings.frgInterp	= glu::INTERPOLATION_LAST;
+	defaultParams.varyings.vtxInterp	= VARYINGINTERPOLATION_LAST;
+	defaultParams.varyings.frgInterp	= VARYINGINTERPOLATION_LAST;
 
 	TestCaseGroup* stagesGroup =
 		new TestCaseGroup(ctx, "pipeline", "Pipeline configuration tests");
@@ -1613,21 +1715,21 @@ TestCaseGroup* createSeparateShaderTests (Context& ctx)
 
 	enum
 	{
-		NUM_INTERPOLATIONS	= glu::INTERPOLATION_LAST + 1, // INTERPOLATION_LAST is valid
+		NUM_INTERPOLATIONS	= VARYINGINTERPOLATION_RANDOM, // VARYINGINTERPOLATION_RANDOM is one after last fully specified interpolation
 		INTERFACEFLAGS_LAST = BINDING_LAST * NUM_INTERPOLATIONS * NUM_INTERPOLATIONS
 	};
 
 	for (deUint32 flags = 0; flags < INTERFACEFLAGS_LAST; ++flags)
 	{
-		deUint32		tmpFlags	= flags;
-		Interpolation	frgInterp	= Interpolation(tmpFlags % NUM_INTERPOLATIONS);
-		Interpolation	vtxInterp	= Interpolation((tmpFlags /= NUM_INTERPOLATIONS)
-													% NUM_INTERPOLATIONS);
-		BindingKind		binding		= BindingKind((tmpFlags /= NUM_INTERPOLATIONS)
-												  % BINDING_LAST);
-		TestParams		params		= defaultParams;
-		ostringstream	name;
-		ostringstream	desc;
+		deUint32				tmpFlags	= flags;
+		VaryingInterpolation	frgInterp	= VaryingInterpolation(tmpFlags % NUM_INTERPOLATIONS);
+		VaryingInterpolation	vtxInterp	= VaryingInterpolation((tmpFlags /= NUM_INTERPOLATIONS)
+																   % NUM_INTERPOLATIONS);
+		BindingKind				binding		= BindingKind((tmpFlags /= NUM_INTERPOLATIONS)
+														  % BINDING_LAST);
+		TestParams				params		= defaultParams;
+		ostringstream			name;
+		ostringstream			desc;
 
 		params.varyings.count		= 1;
 		params.varyings.type		= glu::TYPE_FLOAT;
