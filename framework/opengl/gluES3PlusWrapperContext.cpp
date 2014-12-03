@@ -114,6 +114,7 @@ Context::Context (const glw::Functions& gl_)
 	addExtension("GL_EXT_gpu_shader5");
 	addExtension("GL_KHR_debug");
 	addExtension("GL_EXT_texture_cube_map_array");
+	addExtension("GL_EXT_shader_implicit_conversions");
 }
 
 Context::~Context (void)
