@@ -44,6 +44,7 @@
 #include "tcuTextureUtil.hpp"
 #include "tcuRGBA.hpp"
 #include "tcuFloat.hpp"
+#include "tcuInterval.hpp"
 #include "deRandom.hpp"
 #include "deUniquePtr.hpp"
 #include "deString.h"
@@ -218,15 +219,117 @@ float computeFloatingPointError (const float value, const int numAccurateBits)
 	return tcu::Float32::construct(+1, exp, (1u<<23) | mask).asFloat() - tcu::Float32::construct(+1, exp, 1u<<23).asFloat();
 }
 
+static int getNumMantissaBits (const glu::Precision precision)
+{
+	switch (precision)
+	{
+		case glu::PRECISION_HIGHP:		return 23;
+		case glu::PRECISION_MEDIUMP:	return 10;
+		case glu::PRECISION_LOWP:		return 6;
+		default:
+			DE_ASSERT(false);
+			return 0;
+	}
+}
+
+static int getMinExponent (const glu::Precision precision)
+{
+	switch (precision)
+	{
+		case glu::PRECISION_HIGHP:		return -126;
+		case glu::PRECISION_MEDIUMP:	return -14;
+		case glu::PRECISION_LOWP:		return -8;
+		default:
+			DE_ASSERT(false);
+			return 0;
+	}
+}
+
+static float getSingleULPForExponent (int exp, int numMantissaBits)
+{
+	if (numMantissaBits > 0)
+	{
+		DE_ASSERT(numMantissaBits <= 23);
+
+		const int ulpBitNdx = 23-numMantissaBits;
+		return tcu::Float32::construct(+1, exp, (1<<23) | (1 << ulpBitNdx)).asFloat() - tcu::Float32::construct(+1, exp, (1<<23)).asFloat();
+	}
+	else
+	{
+		DE_ASSERT(numMantissaBits == 0);
+		return tcu::Float32::construct(+1, exp, (1<<23)).asFloat();
+	}
+}
+
+static float getSingleULPForValue (float value, int numMantissaBits)
+{
+	const int exp = tcu::Float32(value).exponent();
+	return getSingleULPForExponent(exp, numMantissaBits);
+}
+
+static float convertFloorFlushToZero (float value, int minExponent, int numAccurateBits)
+{
+	if (value == 0.0f)
+	{
+		return 0.0f;
+	}
+	else
+	{
+		const tcu::Float32	inputFloat			= tcu::Float32(value);
+		const int			numTruncatedBits	= 23-numAccurateBits;
+		const deUint32		truncMask			= (1u<<numTruncatedBits)-1u;
+
+		if (value > 0.0f)
+		{
+			if (value > 0.0f && tcu::Float32(value).exponent() < minExponent)
+			{
+				// flush to zero if possible
+				return 0.0f;
+			}
+			else
+			{
+				// just mask away non-representable bits
+				return tcu::Float32::construct(+1, inputFloat.exponent(), inputFloat.mantissa() & ~truncMask).asFloat();
+			}
+		}
+		else
+		{
+			if (inputFloat.mantissa() & truncMask)
+			{
+				// decrement one ulp if truncated bits are non-zero (i.e. if value is not representable)
+				return tcu::Float32::construct(-1, inputFloat.exponent(), inputFloat.mantissa() & ~truncMask).asFloat() - getSingleULPForExponent(inputFloat.exponent(), numAccurateBits);
+			}
+			else
+			{
+				// value is representable, no need to do anything
+				return value;
+			}
+		}
+	}
+}
+
+static float convertCeilFlushToZero (float value, int minExponent, int numAccurateBits)
+{
+	return -convertFloorFlushToZero(-value, minExponent, numAccurateBits);
+}
+
+static float addErrorUlp (float value, float numUlps, int numMantissaBits)
+{
+	return value + numUlps * getSingleULPForValue(value, numMantissaBits);
+}
+
+enum
+{
+	INTERPOLATION_LOST_BITS = 3, // number mantissa of bits allowed to be lost in varying interpolation
+};
+
 static inline tcu::Vec4 getDerivateThreshold (const glu::Precision precision, const tcu::Vec4& valueMin, const tcu::Vec4& valueMax, const tcu::Vec4& expectedDerivate)
 {
-	const int			baseBits		= precision == glu::PRECISION_HIGHP		? 23	:
-										  precision == glu::PRECISION_MEDIUMP	? 10	:
-										  precision == glu::PRECISION_LOWP		? 6		: 0;
+	const int			baseBits		= getNumMantissaBits(precision);
 	const tcu::UVec4	derivExp		= getCompExpBits(expectedDerivate);
 	const tcu::UVec4	maxValueExp		= max(getCompExpBits(valueMin), getCompExpBits(valueMax));
 	const tcu::UVec4	numBitsLost		= maxValueExp - min(maxValueExp, derivExp);
-	const tcu::IVec4	numAccurateBits	= max(baseBits - numBitsLost.asInt() - 3, tcu::IVec4(0));
+	const tcu::IVec4	numAccurateBits	= max(baseBits - numBitsLost.asInt() - (int)INTERPOLATION_LOST_BITS, tcu::IVec4(0));
 
 	return tcu::Vec4(computeFloatingPointError(expectedDerivate[0], numAccurateBits[0]),
 					 computeFloatingPointError(expectedDerivate[1], numAccurateBits[1]),
@@ -260,6 +363,12 @@ std::ostream& operator<< (std::ostream& str, const LogVecComps& v)
 
 } // anonymous
 
+enum VerificationLogging
+{
+	LOG_ALL = 0,
+	LOG_NOTHING
+};
+
 static bool verifyConstantDerivate (tcu::TestLog&						log,
 									const tcu::ConstPixelBufferAccess&	result,
 									const tcu::PixelBufferAccess&		errorMask,
@@ -267,13 +376,15 @@ static bool verifyConstantDerivate (tcu::TestLog&						log,
 									const tcu::Vec4&					reference,
 									const tcu::Vec4&					threshold,
 									const tcu::Vec4&					scale,
-									const tcu::Vec4&					bias)
+									const tcu::Vec4&					bias,
+									VerificationLogging					logPolicy = LOG_ALL)
 {
 	const int			numComps		= glu::getDataTypeFloatScalars(dataType);
 	const tcu::BVec4	mask			= tcu::logicalNot(getDerivateMask(dataType));
 	int					numFailedPixels	= 0;
 
-	log << TestLog::Message << "Expecting " << LogVecComps(reference, numComps) << " with threshold " << LogVecComps(threshold, numComps) << TestLog::EndMessage;
+	if (logPolicy == LOG_ALL)
+		log << TestLog::Message << "Expecting " << LogVecComps(reference, numComps) << " with threshold " << LogVecComps(threshold, numComps) << TestLog::EndMessage;
 
 	for (int y = 0; y < result.getHeight(); y++)
 	{
@@ -284,7 +395,7 @@ static bool verifyConstantDerivate (tcu::TestLog&						log,
 
 			if (!isOk)
 			{
-				if (numFailedPixels < MAX_FAILED_MESSAGES)
+				if (numFailedPixels < MAX_FAILED_MESSAGES && logPolicy == LOG_ALL)
 					log << TestLog::Message << "FAIL: got " << LogVecComps(resDerivate, numComps)
 											<< ", diff = " << LogVecComps(tcu::abs(reference - resDerivate), numComps)
 											<< ", at x = " << x << ", y = " << y
@@ -293,6 +404,145 @@ static bool verifyConstantDerivate (tcu::TestLog&						log,
 				errorMask.setPixel(tcu::RGBA::red.toVec(), x, y);
 			}
 		}
+	}
+
+	if (numFailedPixels >= MAX_FAILED_MESSAGES && logPolicy == LOG_ALL)
+		log << TestLog::Message << "..." << TestLog::EndMessage;
+
+	if (numFailedPixels > 0 && logPolicy == LOG_ALL)
+		log << TestLog::Message << "FAIL: found " << numFailedPixels << " failed pixels" << TestLog::EndMessage;
+
+	return numFailedPixels == 0;
+}
+
+struct Linear2DFunctionEvaluator
+{
+	tcu::Matrix<float, 4, 3> matrix;
+
+	//      .-----.
+	//      | s_x |
+	//  M x | s_y |
+	//      | 1.0 |
+	//      '-----'
+	tcu::Vec4 evaluateAt (float screenX, float screenY) const;
+};
+
+tcu::Vec4 Linear2DFunctionEvaluator::evaluateAt (float screenX, float screenY) const
+{
+	const tcu::Vec3 position(screenX, screenY, 1.0f);
+	return matrix * position;
+}
+
+static bool reverifyConstantDerivateWithFlushRelaxations (tcu::TestLog&							log,
+														  const tcu::ConstPixelBufferAccess&	result,
+														  const tcu::PixelBufferAccess&			errorMask,
+														  glu::DataType							dataType,
+														  glu::Precision						precision,
+														  const tcu::Vec4&						derivScale,
+														  const tcu::Vec4&						derivBias,
+														  const tcu::Vec4&						surfaceThreshold,
+														  DerivateFunc							derivateFunc,
+														  const Linear2DFunctionEvaluator&		function)
+{
+	DE_ASSERT(result.getWidth() == errorMask.getWidth());
+	DE_ASSERT(result.getHeight() == errorMask.getHeight());
+	DE_ASSERT(derivateFunc == DERIVATE_DFDX || derivateFunc == DERIVATE_DFDY);
+
+	const tcu::IVec4	red						(255, 0, 0, 255);
+	const tcu::IVec4	green					(0, 255, 0, 255);
+	const float			divisionErrorUlps		= 2.5f;
+
+	const int			numComponents			= glu::getDataTypeFloatScalars(dataType);
+	const int			numBits					= getNumMantissaBits(precision);
+	const int			minExponent				= getMinExponent(precision);
+
+	const int			numVaryingSampleBits	= numBits - INTERPOLATION_LOST_BITS;
+	int					numFailedPixels			= 0;
+
+	tcu::clear(errorMask, green);
+
+	// search for failed pixels
+	for (int y = 0; y < result.getHeight(); ++y)
+	for (int x = 0; x < result.getWidth(); ++x)
+	{
+		//                 flushToZero?(f2z?(functionValueCurrent) - f2z?(functionValueBefore))
+		// flushToZero? ( ------------------------------------------------------------------------ +- 2.5 ULP )
+		//                                                  dx
+
+		const tcu::Vec4	resultDerivative		= readDerivate(result, derivScale, derivBias, x, y);
+
+		// sample at the front of the back pixel and the back of the front pixel to cover the whole area of
+		// legal sample positions. In general case this is NOT OK, but we know that the target funtion is
+		// (mostly*) linear which allows us to take the sample points at arbitrary points. This gets us the
+		// maximum difference possible in exponents which are used in error bound calculations.
+		// * non-linearity may happen around zero or with very high function values due to subnorms not
+		//   behaving well.
+		const tcu::Vec4	functionValueForward	= (derivateFunc == DERIVATE_DFDX)
+													? (function.evaluateAt(x + 2.0f, y + 0.5f))
+													: (function.evaluateAt(x + 0.5f, y + 2.0f));
+		const tcu::Vec4	functionValueBackward	= (derivateFunc == DERIVATE_DFDX)
+													? (function.evaluateAt(x - 1.0f, y + 0.5f))
+													: (function.evaluateAt(x + 0.5f, y - 1.0f));
+
+		bool	anyComponentFailed				= false;
+
+		// check components separately
+		for (int c = 0; c < numComponents; ++c)
+		{
+			// interpolation value range
+			const tcu::Interval	forwardComponent		(convertFloorFlushToZero(functionValueForward[c], minExponent, numVaryingSampleBits),
+														 convertCeilFlushToZero(functionValueForward[c], minExponent, numVaryingSampleBits));
+			const tcu::Interval	backwardComponent		(convertFloorFlushToZero(functionValueBackward[c], minExponent, numVaryingSampleBits),
+														 convertCeilFlushToZero(functionValueBackward[c], minExponent, numVaryingSampleBits));
+			const int			maxValueExp				= de::max(de::max(tcu::Float32(forwardComponent.lo()).exponent(),   tcu::Float32(forwardComponent.hi()).exponent()),
+																  de::max(tcu::Float32(backwardComponent.lo()).exponent(),  tcu::Float32(backwardComponent.hi()).exponent()));
+
+			// subtraction in nominator will likely cause a cancellation of the most
+			// significant bits. Apply error bounds.
+
+			const tcu::Interval	nominator				(forwardComponent - backwardComponent);
+			const int			nominatorLoExp			= tcu::Float32(nominator.lo()).exponent();
+			const int			nominatorHiExp			= tcu::Float32(nominator.hi()).exponent();
+			const int			nominatorLoBitsLost		= maxValueExp - nominatorLoExp;
+			const int			nominatorHiBitsLost		= maxValueExp - nominatorHiExp;
+			const int			nominatorLoBits			= de::max(0, numBits - nominatorLoBitsLost);
+			const int			nominatorHiBits			= de::max(0, numBits - nominatorHiBitsLost);
+
+			const tcu::Interval	nominatorRange			(convertFloorFlushToZero(nominator.lo(), minExponent, nominatorLoBits),
+														 convertCeilFlushToZero(nominator.hi(), minExponent, nominatorHiBits));
+
+			const tcu::Interval	divisionRange			= nominatorRange / 3.0f; // legal sample area is anywhere within this and neighboring pixels (i.e. size = 3)
+			const tcu::Interval	divisionResultRange		(convertFloorFlushToZero(addErrorUlp(divisionRange.lo(), -divisionErrorUlps, numBits), minExponent, numBits),
+														 convertCeilFlushToZero(addErrorUlp(divisionRange.hi(), +divisionErrorUlps, numBits), minExponent, numBits));
+			const tcu::Interval	finalResultRange		(divisionResultRange.lo() - surfaceThreshold[c], divisionResultRange.hi() + surfaceThreshold[c]);
+
+			if (resultDerivative[c] >= finalResultRange.lo() && resultDerivative[c] <= finalResultRange.hi())
+			{
+				// value ok
+			}
+			else
+			{
+				if (numFailedPixels < MAX_FAILED_MESSAGES)
+					log << tcu::TestLog::Message
+						<< "Error in pixel at " << x << ", " << y << " with component " << c << " (channel " << ("rgba"[c]) << ")\n"
+						<< "\tGot pixel value " << result.getPixelInt(x, y) << "\n"
+						<< "\t\tdFd" << ((derivateFunc == DERIVATE_DFDX) ? ('x') : ('y')) << " ~= " << resultDerivative[c] << "\n"
+						<< "\t\tdifference to a valid range: "
+							<< ((resultDerivative[c] < finalResultRange.lo()) ? ("-") : ("+"))
+							<< ((resultDerivative[c] < finalResultRange.lo()) ? (finalResultRange.lo() - resultDerivative[c]) : (resultDerivative[c] - finalResultRange.hi()))
+							<< "\n"
+						<< "\tDerivative value range:\n"
+						<< "\t\tMin: " << finalResultRange.lo() << "\n"
+						<< "\t\tMax: " << finalResultRange.hi() << "\n"
+						<< tcu::TestLog::EndMessage;
+
+				++numFailedPixels;
+				anyComponentFailed = true;
+			}
+		}
+
+		if (anyComponentFailed)
+			errorMask.setPixel(red, x, y);
 	}
 
 	if (numFailedPixels >= MAX_FAILED_MESSAGES)
@@ -428,7 +678,15 @@ TriangleDerivateCase::IterateResult TriangleDerivateCase::iterate (void)
 		TCU_CHECK(gl.checkFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
 	}
 	else
-		m_testCtx.getLog() << TestLog::Message << "Rendering to default framebuffer" << TestLog::EndMessage;
+	{
+		const tcu::PixelFormat pixelFormat = m_context.getRenderTarget().getPixelFormat();
+
+		m_testCtx.getLog()
+			<< TestLog::Message
+			<< "Rendering to default framebuffer\n"
+			<< "\tColor depth: R=" << pixelFormat.redBits << ", G=" << pixelFormat.greenBits << ", B=" << pixelFormat.blueBits << ", A=" << pixelFormat.alphaBits
+			<< TestLog::EndMessage;
+	}
 
 	m_testCtx.getLog() << TestLog::Message << "in: " << m_coordMin << " -> " << m_coordMax << "\n"
 										   << "v_coord.x = in.x * x\n"
@@ -465,6 +723,7 @@ TriangleDerivateCase::IterateResult TriangleDerivateCase::iterate (void)
 
 		gl.clearColor(0.125f, 0.25f, 0.5f, 1.0f);
 		gl.clear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
+		gl.disable(GL_DITHER);
 
 		gl.useProgram(program.getProgram());
 
@@ -804,9 +1063,54 @@ bool LinearDerivateCase::verify (const tcu::ConstPixelBufferAccess& result, cons
 		const tcu::Vec4		reference	= ((m_coordMax - m_coordMin) / div) * scale;
 		const tcu::Vec4		opThreshold	= getDerivateThreshold(m_precision, m_coordMin*scale, m_coordMax*scale, reference);
 		const tcu::Vec4		threshold	= max(surfaceThreshold, opThreshold);
+		const int			numComps	= glu::getDataTypeFloatScalars(m_dataType);
 
-		return verifyConstantDerivate(m_testCtx.getLog(), result, errorMask, m_dataType,
-									  reference, threshold, m_derivScale, m_derivBias);
+		m_testCtx.getLog()
+			<< tcu::TestLog::Message
+			<< "Verifying result image.\n"
+			<< "\tValid derivative is " << LogVecComps(reference, numComps) << " with threshold " << LogVecComps(threshold, numComps)
+			<< tcu::TestLog::EndMessage;
+
+		// short circuit if result is strictly within the normal value error bounds.
+		// This improves performance significantly.
+		if (verifyConstantDerivate(m_testCtx.getLog(), result, errorMask, m_dataType,
+								   reference, threshold, m_derivScale, m_derivBias,
+								   LOG_NOTHING))
+		{
+			m_testCtx.getLog()
+				<< tcu::TestLog::Message
+				<< "No incorrect derivatives found, result valid."
+				<< tcu::TestLog::EndMessage;
+
+			return true;
+		}
+
+		// some pixels exceed error bounds calculated for normal values. Verify that these
+		// potentially invalid pixels are in fact valid due to (for example) subnorm flushing.
+
+		m_testCtx.getLog()
+			<< tcu::TestLog::Message
+			<< "Initial verification failed, verifying image by calculating accurate error bounds for each result pixel.\n"
+			<< "\tVerifying each result derivative is within its range of legal result values."
+			<< tcu::TestLog::EndMessage;
+
+		{
+			const tcu::IVec2			viewportSize	= getViewportSize();
+			const float					w				= float(viewportSize.x());
+			const float					h				= float(viewportSize.y());
+			const tcu::Vec4				valueRamp		= (m_coordMax - m_coordMin);
+			Linear2DFunctionEvaluator	function;
+
+			function.matrix.setRow(0, tcu::Vec3(valueRamp.x() / w, 0.0f, m_coordMin.x()));
+			function.matrix.setRow(1, tcu::Vec3(0.0f, valueRamp.y() / h, m_coordMin.y()));
+			function.matrix.setRow(2, tcu::Vec3(valueRamp.z() / w, valueRamp.z() / h, m_coordMin.z() + m_coordMin.z()) / 2.0f);
+			function.matrix.setRow(3, tcu::Vec3(-valueRamp.w() / w, -valueRamp.w() / h, m_coordMax.w() + m_coordMax.w()) / 2.0f);
+
+			return reverifyConstantDerivateWithFlushRelaxations(m_testCtx.getLog(), result, errorMask,
+																m_dataType, m_precision, m_derivScale,
+																m_derivBias, surfaceThreshold, m_func,
+																function);
+		}
 	}
 	else
 	{
@@ -1054,9 +1358,51 @@ bool TextureDerivateCase::verify (const tcu::ConstPixelBufferAccess& result, con
 		const tcu::Vec4		reference	= ((m_texValueMax - m_texValueMin) / div) * scale;
 		const tcu::Vec4		opThreshold	= getDerivateThreshold(m_precision, m_texValueMin*scale, m_texValueMax*scale, reference);
 		const tcu::Vec4		threshold	= max(surfaceThreshold, opThreshold);
+		const int			numComps	= glu::getDataTypeFloatScalars(m_dataType);
 
-		return verifyConstantDerivate(m_testCtx.getLog(), compareArea, maskArea, m_dataType,
-									  reference, threshold, m_derivScale, m_derivBias);
+		m_testCtx.getLog()
+			<< tcu::TestLog::Message
+			<< "Verifying result image.\n"
+			<< "\tValid derivative is " << LogVecComps(reference, numComps) << " with threshold " << LogVecComps(threshold, numComps)
+			<< tcu::TestLog::EndMessage;
+
+		// short circuit if result is strictly within the normal value error bounds.
+		// This improves performance significantly.
+		if (verifyConstantDerivate(m_testCtx.getLog(), compareArea, maskArea, m_dataType,
+								   reference, threshold, m_derivScale, m_derivBias,
+								   LOG_NOTHING))
+		{
+			m_testCtx.getLog()
+				<< tcu::TestLog::Message
+				<< "No incorrect derivatives found, result valid."
+				<< tcu::TestLog::EndMessage;
+
+			return true;
+		}
+
+		// some pixels exceed error bounds calculated for normal values. Verify that these
+		// potentially invalid pixels are in fact valid due to (for example) subnorm flushing.
+
+		m_testCtx.getLog()
+			<< tcu::TestLog::Message
+			<< "Initial verification failed, verifying image by calculating accurate error bounds for each result pixel.\n"
+			<< "\tVerifying each result derivative is within its range of legal result values."
+			<< tcu::TestLog::EndMessage;
+
+		{
+			const tcu::Vec4				valueRamp		= (m_texValueMax - m_texValueMin);
+			Linear2DFunctionEvaluator	function;
+
+			function.matrix.setRow(0, tcu::Vec3(valueRamp.x() / w, 0.0f, m_texValueMin.x()));
+			function.matrix.setRow(1, tcu::Vec3(0.0f, valueRamp.y() / h, m_texValueMin.y()));
+			function.matrix.setRow(2, tcu::Vec3(valueRamp.z() / w, valueRamp.z() / h, m_texValueMin.z() + m_texValueMin.z()) / 2.0f);
+			function.matrix.setRow(3, tcu::Vec3(-valueRamp.w() / w, -valueRamp.w() / h, m_texValueMax.w() + m_texValueMax.w()) / 2.0f);
+
+			return reverifyConstantDerivateWithFlushRelaxations(m_testCtx.getLog(), compareArea, maskArea,
+																m_dataType, m_precision, m_derivScale,
+																m_derivBias, surfaceThreshold, m_func,
+																function);
+		}
 	}
 	else
 	{
