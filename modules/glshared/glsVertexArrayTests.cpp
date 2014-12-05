@@ -460,19 +460,7 @@ inline GLValue::Double abs (GLValue::Double val)
 }
 
 template<class T>
-static
-#if (DE_COMPILER == DE_COMPILER_GCC) && (DE_CPU == DE_CPU_X86) && \
-	(__GNUC__ == 4) && (__GNUC_MINOR__ == 8) && (__GNUC_PATCHLEVEL__ == 0)
-	// GCC 4.8.0 generates internal compiler error (assign_by_spills) in
-	// RandomArrayGenerator::createQuads() when compiled with -march=prescott.
-	// As a workaround for the error, disable inlining of
-	// alignmentSafeAssignment() when compiling for x86 using the affected GCC
-	// version.
-	__attribute__ ((noinline))
-#else
-	inline
-#endif
-void alignmentSafeAssignment (char* dst, T val)
+static inline void alignmentSafeAssignment (char* dst, T val)
 {
 	std::memcpy(dst, &val, sizeof(T));
 }
