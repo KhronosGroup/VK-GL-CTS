@@ -319,6 +319,7 @@ string ShaderParser::parseShaderSource (const char* str)
 
 	// Eat first empty line from beginning.
 	while (*p == ' ') p++;
+	if (*p == '\r') p++;
 	if (*p == '\n') p++;
 
 	while ((p[0] != '"') || (p[1] != '"'))
