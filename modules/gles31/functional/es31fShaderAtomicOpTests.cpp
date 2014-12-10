@@ -343,6 +343,69 @@ protected:
 	}
 };
 
+
+static int getPrecisionNumIntegerBits (glu::Precision precision)
+{
+	switch (precision)
+	{
+		case glu::PRECISION_HIGHP:		return 32;
+		case glu::PRECISION_MEDIUMP:	return 16;
+		case glu::PRECISION_LOWP:		return 9;
+		default:
+			DE_ASSERT(false);
+			return 0;
+	}
+}
+
+static deUint32 getPrecisionMask (int numPreciseBits)
+{
+	// \note: bit shift with larger or equal than var length is undefined, use 64 bit ints
+	return (deUint32)((((deUint64)1u) << numPreciseBits) - 1) ;
+}
+
+static bool intEqualsAfterUintCast (deInt32 value, deUint32 casted, glu::Precision precision)
+{
+	// Bit format of 'casted' = [ uint -> highp uint promotion bits (0) ] [ sign extend bits (s) ] [ value bits ]
+	//                                                                                             |--min len---|
+	//                                                                    |---------------signed length---------|
+	//                          |-------------------------------- highp uint length ----------------------------|
+
+	const deUint32	reference		= (deUint32)value;
+	const int		signBitOn		= value < 0;
+	const int		numPreciseBits	= getPrecisionNumIntegerBits(precision);
+	const deUint32	preciseMask		= getPrecisionMask(numPreciseBits);
+
+	// Lowest N bits must match, N = minimum precision
+	if ((reference & preciseMask) != (casted & preciseMask))
+		return false;
+
+	// Other lowest bits must match the sign and the remaining (topmost) if any must be 0
+	for (int signedIntegerLength = numPreciseBits; signedIntegerLength <= 32; ++signedIntegerLength)
+	{
+		const deUint32 signBits = (signBitOn) ? (getPrecisionMask(signedIntegerLength)) : (0u);
+
+		if ((signBits & ~preciseMask) == (casted & ~preciseMask))
+			return true;
+	}
+	return false;
+}
+
+static bool containsAfterUintCast (const std::set<deInt32>& haystack, deUint32 needle, glu::Precision precision)
+{
+	for (std::set<deInt32>::const_iterator it = haystack.begin(); it != haystack.end(); ++it)
+		if (intEqualsAfterUintCast(*it, needle, precision))
+			return true;
+	return false;
+}
+
+static bool containsAfterUintCast (const std::set<deUint32>& haystack, deInt32 needle, glu::Precision precision)
+{
+	for (std::set<deUint32>::const_iterator it = haystack.begin(); it != haystack.end(); ++it)
+		if (intEqualsAfterUintCast(needle, *it, precision))
+			return true;
+	return false;
+}
+
 class ShaderAtomicMinCase : public ShaderAtomicOpCase
 {
 public:
@@ -368,51 +431,59 @@ protected:
 	{
 		const int	workGroupSize	= (int)product(m_workGroupSize);
 		const int	numWorkGroups	= numValues/workGroupSize;
+		bool		anyError		= false;
 
 		for (int groupNdx = 0; groupNdx < numWorkGroups; groupNdx++)
 		{
-			const int	groupOffset		= groupNdx*workGroupSize;
-			const int	groupOutput		= *(const int*)((const deUint8*)groupOutputs + groupNdx*groupStride);
-			set<int>	inValues;
-			set<int>	outValues;
-			int			minValue		= (int)m_initialValue;
+			const int		groupOffset		= groupNdx*workGroupSize;
+			const deUint32	groupOutput		= *(const deUint32*)((const deUint8*)groupOutputs + groupNdx*groupStride);
+			set<deInt32>	inValues;
+			set<deUint32>	outValues;
+			int				minValue		= (int)m_initialValue;
 
 			for (int localNdx = 0; localNdx < workGroupSize; localNdx++)
 			{
-				const int inputValue = *(const int*)((const deUint8*)inputs + inputStride*(groupOffset+localNdx));
+				const deInt32 inputValue = *(const deInt32*)((const deUint8*)inputs + inputStride*(groupOffset+localNdx));
 				inValues.insert(inputValue);
 				minValue = de::min(inputValue, minValue);
 			}
 
-			if (minValue != groupOutput)
+			if (!intEqualsAfterUintCast(minValue, groupOutput, m_precision))
 			{
-				m_testCtx.getLog() << TestLog::Message << "ERROR: at group " << groupNdx << ": expected minimum " << minValue << ", got " << groupOutput << TestLog::EndMessage;
-				return false;
+				m_testCtx.getLog()
+					<< TestLog::Message
+					<< "ERROR: at group " << groupNdx
+					<< ": expected minimum " << minValue << " (" << tcu::Format::Hex<8>((deUint32)minValue) << ")"
+					<< ", got " << groupOutput << " (" << tcu::Format::Hex<8>(groupOutput) << ")"
+					<< TestLog::EndMessage;
+				anyError = true;
 			}
 
 			for (int localNdx = 0; localNdx < workGroupSize; localNdx++)
 			{
-				const int outputValue = *(const int*)((const deUint8*)outputs + outputStride*(groupOffset+localNdx));
+				const deUint32 outputValue = *(const deUint32*)((const deUint8*)outputs + outputStride*(groupOffset+localNdx));
 
-				if (inValues.find(outputValue) == inValues.end() && outputValue != (int)m_initialValue)
+				if (!containsAfterUintCast(inValues, outputValue, m_precision) &&
+					!intEqualsAfterUintCast((deInt32)m_initialValue, outputValue, m_precision))
 				{
 					m_testCtx.getLog() << TestLog::Message << "ERROR: at group " << groupNdx << ", invocation " << localNdx
 														   << ": found unexpected value " << outputValue
+														   << " (" << tcu::Format::Hex<8>(outputValue) << ")"
 									   << TestLog::EndMessage;
-					return false;
+					anyError = true;
 				}
 
 				outValues.insert(outputValue);
 			}
 
-			if (outValues.find((int)m_initialValue) == outValues.end())
+			if (!containsAfterUintCast(outValues, (int)m_initialValue, m_precision))
 			{
 				m_testCtx.getLog() << TestLog::Message << "ERROR: could not find initial value from group " << groupNdx << TestLog::EndMessage;
-				return false;
+				anyError = true;
 			}
 		}
 
-		return true;
+		return !anyError;
 	}
 };
 
@@ -442,51 +513,59 @@ protected:
 	{
 		const int	workGroupSize	= (int)product(m_workGroupSize);
 		const int	numWorkGroups	= numValues/workGroupSize;
+		bool		anyError		= false;
 
 		for (int groupNdx = 0; groupNdx < numWorkGroups; groupNdx++)
 		{
-			const int	groupOffset		= groupNdx*workGroupSize;
-			const int	groupOutput		= *(const int*)((const deUint8*)groupOutputs + groupNdx*groupStride);
-			set<int>	inValues;
-			set<int>	outValues;
-			int			maxValue		= (int)m_initialValue;
+			const int		groupOffset		= groupNdx*workGroupSize;
+			const deUint32	groupOutput		= *(const deUint32*)((const deUint8*)groupOutputs + groupNdx*groupStride);
+			set<int>		inValues;
+			set<deUint32>	outValues;
+			int				maxValue		= (int)m_initialValue;
 
 			for (int localNdx = 0; localNdx < workGroupSize; localNdx++)
 			{
-				const int inputValue = *(const int*)((const deUint8*)inputs + inputStride*(groupOffset+localNdx));
+				const deInt32 inputValue = *(const deInt32*)((const deUint8*)inputs + inputStride*(groupOffset+localNdx));
 				inValues.insert(inputValue);
 				maxValue = de::max(maxValue, inputValue);
 			}
 
-			if (maxValue != groupOutput)
+			if (!intEqualsAfterUintCast(maxValue, groupOutput, m_precision))
 			{
-				m_testCtx.getLog() << TestLog::Message << "ERROR: at group " << groupNdx << ": expected maximum " << maxValue << ", got " << groupOutput << TestLog::EndMessage;
-				return false;
+				m_testCtx.getLog()
+					<< TestLog::Message
+					<< "ERROR: at group " << groupNdx
+					<< ": expected maximum " << maxValue << " (" << tcu::Format::Hex<8>((deUint32)maxValue) << ")"
+					<< ", got " << groupOutput << " (" << tcu::Format::Hex<8>(groupOutput) << ")"
+					<< TestLog::EndMessage;
+				anyError = true;
 			}
 
 			for (int localNdx = 0; localNdx < workGroupSize; localNdx++)
 			{
-				const int outputValue = *(const int*)((const deUint8*)outputs + outputStride*(groupOffset+localNdx));
+				const deUint32 outputValue = *(const deUint32*)((const deUint8*)outputs + outputStride*(groupOffset+localNdx));
 
-				if (inValues.find(outputValue) == inValues.end() && outputValue != (int)m_initialValue)
+				if (!containsAfterUintCast(inValues, outputValue, m_precision) &&
+					!intEqualsAfterUintCast((deInt32)m_initialValue, outputValue, m_precision))
 				{
 					m_testCtx.getLog() << TestLog::Message << "ERROR: at group " << groupNdx << ", invocation " << localNdx
 														   << ": found unexpected value " << outputValue
+														   << " (" << tcu::Format::Hex<8>(outputValue) << ")"
 									   << TestLog::EndMessage;
-					return false;
+					anyError = true;
 				}
 
 				outValues.insert(outputValue);
 			}
 
-			if (outValues.find((int)m_initialValue) == outValues.end())
+			if (!containsAfterUintCast(outValues, (int)m_initialValue, m_precision))
 			{
 				m_testCtx.getLog() << TestLog::Message << "ERROR: could not find initial value from group " << groupNdx << TestLog::EndMessage;
-				return false;
+				anyError = true;
 			}
 		}
 
-		return true;
+		return !anyError;
 	}
 };
 
