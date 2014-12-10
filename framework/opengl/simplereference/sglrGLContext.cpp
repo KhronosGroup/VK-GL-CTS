@@ -864,6 +864,7 @@ deUint32 GLContext::createProgram (ShaderProgram* shader)
 	if (!program->isOk())
 	{
 		m_log << *program;
+		delete program;
 		TCU_FAIL("Compile failed");
 	}
 
