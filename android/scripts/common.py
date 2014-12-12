@@ -8,6 +8,11 @@ import subprocess
 import multiprocessing
 import string
 
+try:
+	import threading
+except ImportError:
+	import dummy_threading as threading
+
 class NativeLib:
 	def __init__ (self, apiVersion, abiVersion):
 		self.apiVersion	= apiVersion
@@ -82,7 +87,43 @@ def execArgs (args):
 	sys.stdout.flush()
 	retcode	= subprocess.call(args)
 	if retcode != 0:
- 		raise Exception("Failed to execute '%s', got %d" % (str(args), retcode))
+		raise Exception("Failed to execute '%s', got %d" % (str(args), retcode))
+
+def execArgsInDirectory (args, cwd):
+	# Make sure previous stdout prints have been written out.
+	sys.stdout.flush()
+	process = subprocess.Popen(args, cwd=cwd)
+	retcode = process.wait()
+	if retcode != 0:
+		raise Exception("Failed to execute '%s', got %d" % (str(args), retcode))
+
+def serialApply(f, argsList):
+	for args in argsList:
+		f(*args)
+
+def parallelApply(f, argsList):
+	class ErrorCode:
+		def __init__ (self):
+			self.error = None;
+
+	def applyAndCaptureError (func, args, errorCode):
+		try:
+			func(*args)
+		except:
+			errorCode.error = sys.exc_info()
+
+	errorCode = ErrorCode()
+	jobs = []
+	for args in argsList:
+		job = threading.Thread(target=applyAndCaptureError, args=(f, args, errorCode))
+		job.start()
+		jobs.append(job)
+
+	for job in jobs:
+		job.join()
+
+	if errorCode.error:
+		raise errorCode.error[0], errorCode.error[1], errorCode.error[2]
 
 class Device:
 	def __init__(self, serial, product, model, device):
@@ -99,7 +140,7 @@ def getDevices (adb):
 	(stdout, stderr) = proc.communicate()
 
 	if proc.returncode != 0:
-		raise Exception("adb devices -l failed, got %d" % retcode)
+		raise Exception("adb devices -l failed, got %d" % proc.returncode)
 
 	ptrn = re.compile(r'^([a-zA-Z0-9]+)\s+.*product:([^\s]+)\s+model:([^\s]+)\s+device:([^\s]+)')
 	devices = []

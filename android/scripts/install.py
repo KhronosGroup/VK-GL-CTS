@@ -7,43 +7,39 @@ import string
 
 import common
 
-def install (extraArgs = []):
-	curDir = os.getcwd()
-	try:
-		os.chdir(common.ANDROID_DIR)
+def install (extraArgs = [], printPrefix=""):
+	print printPrefix + "Removing old dEQP Package...\n",
+	common.execArgsInDirectory([common.ADB_BIN] + extraArgs + [
+			'uninstall',
+			'com.drawelements.deqp'
+		], common.ANDROID_DIR)
+	print printPrefix + "Remove complete\n",
 
-		print "Removing old dEQP Package..."
-		common.execArgs([common.ADB_BIN] + extraArgs + [
-				'uninstall',
-				'com.drawelements.deqp'
-			])
-		print ""
+	print printPrefix + "Installing dEQP Package...\n",
+	common.execArgsInDirectory([common.ADB_BIN] + extraArgs + [
+			'install',
+			'-r',
+			'package/bin/dEQP-debug.apk'
+		], common.ANDROID_DIR)
+	print printPrefix + "Install complete\n",
 
-		print "Installing dEQP Package..."
-		common.execArgs([common.ADB_BIN] + extraArgs + [
-				'install',
-				'-r',
-				'package/bin/dEQP-debug.apk'
-			])
-		print ""
+def installToDevice (device, printPrefix=""):
+	print printPrefix + "Installing to %s (%s)...\n" % (device.serial, device.model),
+	install(['-s', device.serial], printPrefix)
 
-	finally:
-		# Restore working dir
-		os.chdir(curDir)
-
-def installToDevice (device):
-	print "Installing to %s (%s)..." % (device.serial, device.model)
-	install(['-s', device.serial])
-
-def installToAllDevices ():
+def installToAllDevices (doParallel):
 	devices = common.getDevices(common.ADB_BIN)
-	for device in devices:
-		installToDevice(device)
+	padLen = max([len(device.model) for device in devices])+1
+	if doParallel:
+		common.parallelApply(installToDevice, [(device, ("(%s):%s" % (device.model, ' ' * (padLen - len(device.model))))) for device in devices]);
+	else:
+		common.serialApply(installToDevice, [(device, ) for device in devices]);
 
 if __name__ == "__main__":
 	if len(sys.argv) > 1:
 		if sys.argv[1] == '-a':
-			installToAllDevices()
+			doParallel = '-p' in sys.argv[1:]
+			installToAllDevices(doParallel)
 		else:
 			install(sys.argv[1:])
 	else:

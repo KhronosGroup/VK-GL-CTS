@@ -53,9 +53,8 @@ def buildNative (buildRoot, libTargetDir, nativeLib, buildType):
 	# Make build directory if necessary
 	if not os.path.exists(buildDir):
 		os.makedirs(buildDir)
-		os.chdir(buildDir)
 		toolchainFile = '%s/framework/delibs/cmake/toolchain-android-%s.cmake' % (deqpDir, common.ANDROID_NDK_TOOLCHAIN_VERSION)
-		common.execArgs([
+		common.execArgsInDirectory([
 				'cmake',
 				'-G%s' % common.CMAKE_GENERATOR,
 				'-DCMAKE_TOOLCHAIN_FILE=%s' % toolchainFile,
@@ -66,10 +65,9 @@ def buildNative (buildRoot, libTargetDir, nativeLib, buildType):
 				'-DCMAKE_BUILD_TYPE=%s' % buildType,
 				'-DDEQP_TARGET=android',
 				deqpDir
-			])
+			], buildDir)
 
-	os.chdir(buildDir)
-	common.execArgs(['cmake', '--build', '.'] + common.EXTRA_BUILD_ARGS)
+	common.execArgsInDirectory(['cmake', '--build', '.'] + common.EXTRA_BUILD_ARGS, buildDir)
 
 	if not os.path.exists(libsDir):
 		os.makedirs(libsDir)
@@ -138,7 +136,7 @@ def signApp (keystore, keyname, storepass, keypass):
 			'bin/dEQP-release.apk'
 		])
 
-def build (buildRoot=common.ANDROID_DIR, isRelease=False, nativeBuildType="Release", javaApi=common.ANDROID_JAVA_API):
+def build (buildRoot=common.ANDROID_DIR, isRelease=False, nativeBuildType="Release", javaApi=common.ANDROID_JAVA_API, doParallelBuild=False):
 	curDir = os.getcwd()
 
 	try:
@@ -159,8 +157,11 @@ def build (buildRoot=common.ANDROID_DIR, isRelease=False, nativeBuildType="Relea
 			shutil.rmtree(libTargetDir)
 
 		# Build native code
-		for lib in common.NATIVE_LIBS:
-			buildNative(buildRoot, libTargetDir, lib, nativeBuildType)
+		nativeBuildArgs = [(buildRoot, libTargetDir, nativeLib, nativeBuildType) for nativeLib in common.NATIVE_LIBS]
+		if doParallelBuild:
+			common.parallelApply(buildNative, nativeBuildArgs)
+		else:
+			common.serialApply(buildNative, nativeBuildArgs)
 
 		# Copy assets
 		if os.path.exists(assetsSrcDir):
@@ -186,10 +187,11 @@ if __name__ == "__main__":
 	parser.add_argument('--build-root', dest='buildRoot', default=common.ANDROID_DIR, help="Root directory for storing build results.")
 	parser.add_argument('--dump-config', dest='dumpConfig', action='store_true', help="Print out all configurations variables")
 	parser.add_argument('--java-api', dest='javaApi', default=common.ANDROID_JAVA_API, help="Set the API signature for the java build.")
+	parser.add_argument('-p', '--parallel-build', dest='parallelBuild', action="store_true", help="Build native libraries in parallel.")
 
 	args = parser.parse_args()
 
 	if args.dumpConfig:
 		dumpConfig()
 
-	build(buildRoot=os.path.abspath(args.buildRoot), isRelease=args.isRelease, nativeBuildType=args.nativeBuildType, javaApi=args.javaApi)
+	build(buildRoot=os.path.abspath(args.buildRoot), isRelease=args.isRelease, nativeBuildType=args.nativeBuildType, javaApi=args.javaApi, doParallelBuild=args.parallelBuild)
