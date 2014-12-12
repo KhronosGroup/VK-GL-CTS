@@ -28023,7 +28023,6 @@
 <Test name="rgba16f" />
 <Test name="depth24_stencil8" />
 <Test name="r11f_g11f_b10f" />
-<Test name="srgb_unsigned_byte" />
 <Test name="srgb_alpha_unsigned_byte" />
 <Test name="srgb8_alpha8" />
 <Test name="depth_component32f" />
@@ -32449,7 +32448,6 @@
 <Test name="15" />
 <Test name="18" />
 <Test name="23" />
-<Test name="24" />
 </TestCase>
 <TestCase name="all_per_block_buffers">
 <Test name="4" />

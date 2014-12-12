@@ -8445,7 +8445,6 @@
 <Test name="17" />
 <Test name="18" />
 <Test name="19" />
-<Test name="20" />
 <Test name="21" />
 <Test name="22" />
 <Test name="23" />
@@ -11292,11 +11291,6 @@
 <TestSuite name="multisample">
 <TestCase name="samples_1">
 <Test name="sample_position" />
-<Test name="sample_mask_only" />
-<Test name="sample_mask_and_alpha_to_coverage" />
-<Test name="sample_mask_and_sample_coverage" />
-<Test name="sample_mask_and_sample_coverage_and_alpha_to_coverage" />
-<Test name="sample_mask_non_effective_bits" />
 <Test name="use_texture_color_2d" />
 <Test name="use_texture_color_2d_array" />
 <Test name="use_texture_int_2d" />
@@ -16799,15 +16793,11 @@
 <Test name="push_pop_consistency" />
 </TestCase>
 <TestCase name="error_filters">
-<Test name="case_1" />
-<Test name="case_2" />
 <Test name="case_4" />
 <Test name="case_5" />
 <Test name="case_6" />
 <Test name="case_7" />
-<Test name="case_9" />
 <Test name="case_10" />
-<Test name="case_11" />
 <Test name="case_12" />
 <Test name="case_13" />
 <Test name="case_14" />
@@ -16815,23 +16805,10 @@
 <Test name="case_21" />
 <Test name="case_22" />
 <Test name="case_23" />
-<Test name="case_24" />
 <Test name="case_25" />
-<Test name="case_27" />
 <Test name="case_28" />
 <Test name="case_29" />
 <Test name="case_30" />
-<Test name="case_31" />
-</TestCase>
-<TestCase name="error_groups">
-<Test name="case_1" />
-<Test name="case_2" />
-<Test name="case_4" />
-<Test name="case_5" />
-<Test name="case_6" />
-<Test name="case_7" />
-<Test name="case_12" />
-<Test name="case_14" />
 </TestCase>
 <TestCase name="async">
 <Test name="case_0_log" />
