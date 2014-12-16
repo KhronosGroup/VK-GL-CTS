@@ -7694,7 +7694,6 @@
 <Test name="copyteximage2d_invalid_width_height_cube_neg_x" />
 <Test name="copyteximage2d_invalid_width_height_cube_neg_y" />
 <Test name="copyteximage2d_invalid_width_height_cube_neg_z" />
-<Test name="generatemipmap_invalid_target_bind" />
 <Test name="teximage2d_format_mismatch" />
 <Test name="compressedteximage2d_width_height_max_cube_pos_y" />
 <Test name="compressedtexsubimage2d_offset_allowed" />
@@ -7728,7 +7727,6 @@
 <Test name="teximage2d_neg_width_height_cube_neg_x" />
 <Test name="teximage2d_neg_width_height_cube_neg_y" />
 <Test name="teximage2d_neg_width_height_cube_neg_z" />
-<Test name="compressedtexsubimage2d_invalid_format" />
 <Test name="copyteximage2d_invalid_border_cube_pos_z" />
 <Test name="copyteximage2d_invalid_border_cube_pos_x" />
 <Test name="copyteximage2d_invalid_border_cube_pos_y" />

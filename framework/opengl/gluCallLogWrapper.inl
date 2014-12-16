@@ -520,7 +520,7 @@ void CallLogWrapper::glCompressedTexImage1D (glw::GLenum target, glw::GLint leve
 void CallLogWrapper::glCompressedTexImage2D (glw::GLenum target, glw::GLint level, glw::GLenum internalformat, glw::GLsizei width, glw::GLsizei height, glw::GLint border, glw::GLsizei imageSize, const void *data)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glCompressedTexImage2D(" << getTextureTargetStr(target) << ", " << level << ", " << getPixelFormatStr(internalformat) << ", " << width << ", " << height << ", " << border << ", " << imageSize << ", " << data << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glCompressedTexImage2D(" << getTextureTargetStr(target) << ", " << level << ", " << getCompressedTexFormatStr(internalformat) << ", " << width << ", " << height << ", " << border << ", " << imageSize << ", " << data << ");" << TestLog::EndMessage;
 	m_gl.compressedTexImage2D(target, level, internalformat, width, height, border, imageSize, data);
 }
 
@@ -541,7 +541,7 @@ void CallLogWrapper::glCompressedTexSubImage1D (glw::GLenum target, glw::GLint l
 void CallLogWrapper::glCompressedTexSubImage2D (glw::GLenum target, glw::GLint level, glw::GLint xoffset, glw::GLint yoffset, glw::GLsizei width, glw::GLsizei height, glw::GLenum format, glw::GLsizei imageSize, const void *data)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glCompressedTexSubImage2D(" << getTextureTargetStr(target) << ", " << level << ", " << xoffset << ", " << yoffset << ", " << width << ", " << height << ", " << getPixelFormatStr(format) << ", " << imageSize << ", " << data << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glCompressedTexSubImage2D(" << getTextureTargetStr(target) << ", " << level << ", " << xoffset << ", " << yoffset << ", " << width << ", " << height << ", " << getCompressedTexFormatStr(format) << ", " << imageSize << ", " << data << ");" << TestLog::EndMessage;
 	m_gl.compressedTexSubImage2D(target, level, xoffset, yoffset, width, height, format, imageSize, data);
 }
 

@@ -1149,24 +1149,18 @@ void NegativeTextureApiTests::init (void)
 			expectError(GL_INVALID_ENUM);
 			m_log << TestLog::EndSection;
 		});
-	ES2F_ADD_API_CASE(generatemipmap_invalid_target_bind, "Invalid glGenerateMipmap() usage",
-		{
-			GLuint texture;
-			glGenTextures(1, &texture);
-
-			m_log << TestLog::Section("", "INVALID_OPERATION is generated if the texture bound to target is not cube complete.");
-			glBindTexture(GL_TEXTURE_2D, texture);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 0, 0, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
-			glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
-			expectError(GL_INVALID_OPERATION);
-			m_log << TestLog::EndSection;
-
-			glDeleteTextures(1, &texture);
-		});
 	ES2F_ADD_API_CASE(generatemipmap_npot_wdt_hgt, "Invalid glGenerateMipmap() usage",
 		{
 			GLuint texture;
+
+			if (m_context.getContextInfo().isExtensionSupported("GL_OES_texture_npot"))
+			{
+				m_log	<< tcu::TestLog::Message
+						<< "GL_OES_texture_npot extension removes error condition, skipping test"
+						<< tcu::TestLog::EndMessage;
+				return;
+			}
+
 			glActiveTexture(GL_TEXTURE0);
 			glGenTextures(1, &texture);
 			glBindTexture(GL_TEXTURE_2D, texture);
@@ -1980,33 +1974,6 @@ void NegativeTextureApiTests::init (void)
 					m_log << TestLog::Message << "// Using texture format " << tcu::toHex(accepted[i]) << TestLog::EndMessage;
 					//glCompressedTexImage2D(GL_TEXTURE_2D, 0, accepted[i], 0, 0, 0, 0, 0);
 					glCompressedTexSubImage2D(0, 0, 0, 0, 0, 0, accepted[i], 0, 0);
-					expectError(GL_INVALID_ENUM);
-					m_log << TestLog::EndSection;
-				}
-			}
-		});
-	ES2F_ADD_API_CASE(compressedtexsubimage2d_invalid_format, "Invalid glCompressedTexSubImage2D() usage",
-		{
-			vector<deInt32> supported;
-			vector<deInt32> accepted;
-			getSupportedExtensions(GL_NUM_COMPRESSED_TEXTURE_FORMATS, GL_COMPRESSED_TEXTURE_FORMATS, supported);
-			getCompressedTexSubImage2DFormat(supported, accepted);
-
-			if (accepted.empty())
-			{
-				m_log << TestLog::Message << "// No suitable compressed formats found, expect GL_INVALID_ENUM." << TestLog::EndMessage;
-				glCompressedTexImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, 0, 0);
-				expectError(GL_INVALID_ENUM);
-			}
-			else
-			{
-				for (int i = 0; i < (int)accepted.size(); i++)
-				{
-					m_log << TestLog::Section("", "GL_INVALID_ENUM is generated if format is not a supported format returned in GL_COMPRESSED_TEXTURE_FORMATS.");
-					m_log << TestLog::Message << "// Using texture format " << tcu::toHex(accepted[i]) << TestLog::EndMessage;
-					//glCompressedTexImage2D(GL_TEXTURE_2D, 0, accepted[i], 0, 0, 0, 0, 0);
-					//expectError(GL_NO_ERROR);
-					glCompressedTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, accepted[i], 0, 0);
 					expectError(GL_INVALID_ENUM);
 					m_log << TestLog::EndSection;
 				}
