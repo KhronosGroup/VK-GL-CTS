@@ -350,6 +350,12 @@ ShaderCase::ShaderCase (tcu::TestContext& testCtx, RenderContext& renderCtx, con
 		DE_ASSERT(specification.geometrySources.empty());
 	}
 
+	if (m_expectResult == EXPECT_BUILD_SUCCESSFUL)
+	{
+		// Shader is never executed. Presense of input/output values is likely an error
+		DE_ASSERT(m_valueBlocks.empty());
+	}
+
 	// single program object
 	{
 		ProgramObject program;
@@ -479,6 +485,10 @@ void ShaderCase::init (void)
 
 		case EXPECT_VALIDATION_FAIL:
 			m_testCtx.getLog() << tcu::TestLog::Message << "Expecting program validation to fail." << tcu::TestLog::EndMessage;
+			break;
+
+		case EXPECT_BUILD_SUCCESSFUL:
+			m_testCtx.getLog() << tcu::TestLog::Message << "Expecting shader compilation and program linking to succeed. Resulting program will not be executed." << tcu::TestLog::EndMessage;
 			break;
 
 		default:
@@ -715,6 +725,7 @@ bool ShaderCase::execute (void)
 	{
 		case EXPECT_PASS:
 		case EXPECT_VALIDATION_FAIL:
+		case EXPECT_BUILD_SUCCESSFUL:
 			if (!allCompilesOk)
 				failReason = "expected shaders to compile and link properly, but failed to compile.";
 			else if (!allLinksOk)
@@ -758,10 +769,11 @@ bool ShaderCase::execute (void)
 		return false;
 	}
 
-	// Return if compile/link expected to fail.
+	// Return if shader is not intended to be run
 	if (m_expectResult == EXPECT_COMPILE_FAIL		||
 		m_expectResult == EXPECT_COMPILE_LINK_FAIL	||
-		m_expectResult == EXPECT_LINK_FAIL)
+		m_expectResult == EXPECT_LINK_FAIL			||
+		m_expectResult == EXPECT_BUILD_SUCCESSFUL)
 		return (failReason == DE_NULL);
 
 	// Setup viewport.

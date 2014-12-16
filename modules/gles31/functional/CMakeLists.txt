@@ -1,6 +1,8 @@
 # dEQP-GLES31.functional
 
 set(DEQP_GLES31_FUNCTIONAL_SRCS
+	es31fAndroidExtensionPackES31ATests.cpp
+	es31fAndroidExtensionPackES31ATests.hpp
 	es31fBasicComputeShaderTests.cpp
 	es31fBasicComputeShaderTests.hpp
 	es31fBuiltinPrecisionTests.cpp

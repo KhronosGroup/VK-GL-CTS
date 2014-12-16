@@ -231,6 +231,7 @@ LOCAL_SRC_FILES := \
 	framework/referencerenderer/rrVertexAttrib.cpp \
 	framework/referencerenderer/rrVertexPacket.cpp \
 	modules/gles31/functional/es31fAdvancedBlendTests.cpp \
+	modules/gles31/functional/es31fAndroidExtensionPackES31ATests.cpp \
 	modules/gles31/functional/es31fAtomicCounterTests.cpp \
 	modules/gles31/functional/es31fBasicComputeShaderTests.cpp \
 	modules/gles31/functional/es31fBuiltinPrecisionTests.cpp \

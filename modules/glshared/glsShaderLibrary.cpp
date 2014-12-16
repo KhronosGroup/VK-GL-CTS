@@ -1015,6 +1015,8 @@ void ShaderParser::parseExpectResult (ShaderCase::ExpectResult& expectResult)
 		expectResult = ShaderCase::EXPECT_COMPILE_LINK_FAIL;
 	else if (m_curTokenStr == "validation_fail")
 		expectResult = ShaderCase::EXPECT_VALIDATION_FAIL;
+	else if (m_curTokenStr == "build_successful")
+		expectResult = ShaderCase::EXPECT_BUILD_SUCCESSFUL;
 	else
 		parseError(string("invalid expected result value: " + m_curTokenStr));
 

@@ -76,6 +76,7 @@
 #include "es31fShaderBuiltinConstantTests.hpp"
 #include "es31fShaderHelperInvocationTests.hpp"
 #include "es31fPrimitiveBoundingBoxTests.hpp"
+#include "es31fAndroidExtensionPackES31ATests.hpp"
 
 namespace deqp
 {
@@ -310,6 +311,7 @@ void FunctionalTests::init (void)
 	addChild(new ProgramInterfaceQueryTests				(m_context));
 	addChild(new LayoutBindingTests						(m_context));
 	addChild(new PrimitiveBoundingBoxTests				(m_context));
+	addChild(new AndroidExtensionPackES31ATests			(m_context));
 
 }
 
