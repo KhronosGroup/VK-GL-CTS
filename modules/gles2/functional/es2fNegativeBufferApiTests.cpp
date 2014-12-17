@@ -23,6 +23,7 @@
 
 #include "es2fNegativeBufferApiTests.hpp"
 #include "es2fApiCase.hpp"
+#include "gluContextInfo.hpp"
 
 #include "glwEnums.hpp"
 #include "glwDefs.hpp"
@@ -339,10 +340,13 @@ void NegativeBufferApiTests::init (void)
 			expectError(GL_INVALID_ENUM);
 			m_log << TestLog::EndSection;
 
-			m_log << TestLog::Section("", "GL_INVALID_VALUE is generated if level is not 0.");
-			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex2D, 3);
-			expectError(GL_INVALID_VALUE);
-			m_log << TestLog::EndSection;
+			if (!m_context.getContextInfo().isExtensionSupported("GL_OES_fbo_render_mipmap"))
+			{
+				m_log << TestLog::Section("", "GL_INVALID_VALUE is generated if level is not 0.");
+				glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex2D, 3);
+				expectError(GL_INVALID_VALUE);
+				m_log << TestLog::EndSection;
+			}
 
 			m_log << TestLog::Section("", "GL_INVALID_OPERATION is generated if texture is neither 0 nor the name of an existing texture object.");
 			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, -1, 0);

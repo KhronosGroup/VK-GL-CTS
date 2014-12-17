@@ -63,11 +63,12 @@ public:
 						ShaderBuiltinConstantCase				(Context& context, const char* name, const char* desc, const char* varName, deUint32 paramName, bool isVertexCase);
 						~ShaderBuiltinConstantCase				(void);
 
+	int					getRefValue								(void);
 	void				init									(void);
 
 private:
-	std::string			m_varName;
-	deUint32			m_paramName;
+	const std::string	m_varName;
+	const deUint32		m_paramName;
 };
 
 ShaderBuiltinConstantCase::ShaderBuiltinConstantCase (Context& context, const char* name, const char* desc, const char* varName, deUint32 paramName, bool isVertexCase)
@@ -81,20 +82,25 @@ ShaderBuiltinConstantCase::~ShaderBuiltinConstantCase (void)
 {
 }
 
-static int getConstRefValue (const char* varName)
+int ShaderBuiltinConstantCase::getRefValue (void)
 {
-	if (deStringEqual(varName, "gl_MaxDrawBuffers"))
-		return 1;
+	if (m_varName == "gl_MaxDrawBuffers")
+	{
+		if (m_ctxInfo.isExtensionSupported("GL_EXT_draw_buffers"))
+			return m_ctxInfo.getInt(GL_MAX_DRAW_BUFFERS);
+		else
+			return 1;
+	}
 	else
 	{
-		DE_ASSERT(DE_FALSE);
-		return 0;
+		DE_ASSERT(m_paramName != GL_NONE);
+		return m_ctxInfo.getInt(m_paramName);
 	}
 }
 
 void ShaderBuiltinConstantCase::init (void)
 {
-	int refValue = m_paramName != GL_NONE ? m_ctxInfo.getInt(m_paramName) : getConstRefValue(m_varName.c_str());
+	const int refValue = getRefValue();
 	m_testCtx.getLog() << tcu::TestLog::Message << m_varName << " = " << refValue << tcu::TestLog::EndMessage;
 
 	static const char* defaultVertSrc =

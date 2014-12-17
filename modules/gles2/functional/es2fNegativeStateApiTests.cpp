@@ -348,7 +348,7 @@ void NegativeStateApiTests::init (void)
 
 			GLint vUnif = glGetUniformLocation(program.getProgram(), "vTest");	// vec4
 			GLint fUnif = glGetUniformLocation(program.getProgram(), "fTest");	// ivec4
-			if (vUnif == -1 || fUnif)
+			if (vUnif == -1 || fUnif == -1)
 				m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Failed to retrieve uniform location");
 
 			GLuint shader		= glCreateShader(GL_VERTEX_SHADER);
