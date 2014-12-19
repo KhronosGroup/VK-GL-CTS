@@ -24,15 +24,6 @@
 #include "teglColorClearTests.hpp"
 #include "teglColorClearCase.hpp"
 
-#include <EGL/eglext.h>
-
-#if !defined(EGL_OPENGL_ES3_BIT_KHR)
-#	define EGL_OPENGL_ES3_BIT_KHR	0x0040
-#endif
-#if !defined(EGL_CONTEXT_MAJOR_VERSION_KHR)
-#	define EGL_CONTEXT_MAJOR_VERSION_KHR EGL_CONTEXT_CLIENT_VERSION
-#endif
-
 using std::string;
 using std::vector;
 
@@ -40,6 +31,8 @@ namespace deqp
 {
 namespace egl
 {
+
+using namespace eglw;
 
 ColorClearTests::ColorClearTests (EglTestContext& eglTestCtx)
 	: TestCaseGroup(eglTestCtx, "color_clears", "Color clears with different client APIs")
@@ -52,10 +45,11 @@ ColorClearTests::~ColorClearTests (void)
 
 struct ColorClearGroupSpec
 {
-	const char*		name;
-	const char*		desc;
-	EGLint			apiBits;
-	int				numContextsPerApi;
+	const char*			name;
+	const char*			desc;
+	EGLint				apiBits;
+	eglu::ConfigFilter	baseFilter;
+	int					numContextsPerApi;
 };
 
 template <class ClearClass>
@@ -66,39 +60,49 @@ static void createColorClearGroups (EglTestContext& eglTestCtx, tcu::TestCaseGro
 		tcu::TestCaseGroup* configGroup = new tcu::TestCaseGroup(eglTestCtx.getTestContext(), groupIter->name, groupIter->desc);
 		group->addChild(configGroup);
 
-		vector<RenderConfigIdSet>	configSets;
-		eglu::FilterList			filters;
-		filters << (eglu::ConfigRenderableType() & groupIter->apiBits);
-		getDefaultRenderConfigIdSets(configSets, eglTestCtx.getConfigs(), filters);
+		vector<RenderFilterList>	filterLists;
+		eglu::FilterList			baseFilters;
+		baseFilters << groupIter->baseFilter;
+		getDefaultRenderFilterLists(filterLists, baseFilters);
 
-		for (vector<RenderConfigIdSet>::const_iterator setIter = configSets.begin(); setIter != configSets.end(); setIter++)
-			configGroup->addChild(new ClearClass(eglTestCtx, setIter->getName(), "", groupIter->apiBits, setIter->getSurfaceTypeMask(), setIter->getConfigIds(), groupIter->numContextsPerApi));
+		for (vector<RenderFilterList>::const_iterator listIter = filterLists.begin(); listIter != filterLists.end(); listIter++)
+			configGroup->addChild(new ClearClass(eglTestCtx, listIter->getName(), "", groupIter->apiBits, listIter->getSurfaceTypeMask(), *listIter, groupIter->numContextsPerApi));
 	}
+}
+
+template <deUint32 Bits>
+static bool renderable (const eglu::CandidateConfig& c)
+{
+	return (c.renderableType() & Bits) == Bits;
 }
 
 void ColorClearTests::init (void)
 {
+#define CASE(NAME, DESC, BITS, NUMCFG) { NAME, DESC, BITS, renderable<BITS>, NUMCFG }
+
 	static const ColorClearGroupSpec singleContextCases[] =
 	{
-		{ "gles1",			"Color clears using GLES1",											EGL_OPENGL_ES_BIT,										1 },
-		{ "gles2",			"Color clears using GLES2",											EGL_OPENGL_ES2_BIT,										1 },
-		{ "gles3",			"Color clears using GLES3",											EGL_OPENGL_ES3_BIT_KHR,									1 },
-		{ "vg",				"Color clears using OpenVG",										EGL_OPENVG_BIT,											1 }
+		CASE("gles1",			"Color clears using GLES1",											EGL_OPENGL_ES_BIT,										1),
+		CASE("gles2",			"Color clears using GLES2",											EGL_OPENGL_ES2_BIT,										1),
+		CASE("gles3",			"Color clears using GLES3",											EGL_OPENGL_ES3_BIT,										1),
+		CASE("vg",				"Color clears using OpenVG",										EGL_OPENVG_BIT,											1)
 	};
 
 	static const ColorClearGroupSpec multiContextCases[] =
 	{
-		{ "gles1",				"Color clears using multiple GLES1 contexts to shared surface",		EGL_OPENGL_ES_BIT,												3 },
-		{ "gles2",				"Color clears using multiple GLES2 contexts to shared surface",		EGL_OPENGL_ES2_BIT,												3 },
-		{ "gles3",				"Color clears using multiple GLES3 contexts to shared surface",		EGL_OPENGL_ES3_BIT_KHR,											3 },
-		{ "vg",					"Color clears using multiple OpenVG contexts to shared surface",	EGL_OPENVG_BIT,													3 },
-		{ "gles1_gles2",		"Color clears using multiple APIs to shared surface",				EGL_OPENGL_ES_BIT|EGL_OPENGL_ES2_BIT,							1 },
-		{ "gles1_gles2_gles3",	"Color clears using multiple APIs to shared surface",				EGL_OPENGL_ES_BIT|EGL_OPENGL_ES2_BIT|EGL_OPENGL_ES3_BIT_KHR,	1 },
-		{ "gles1_vg",			"Color clears using multiple APIs to shared surface",				EGL_OPENGL_ES_BIT|EGL_OPENVG_BIT,								1 },
-		{ "gles2_vg",			"Color clears using multiple APIs to shared surface",				EGL_OPENGL_ES2_BIT|EGL_OPENVG_BIT,								1 },
-		{ "gles3_vg",			"Color clears using multiple APIs to shared surface",				EGL_OPENGL_ES3_BIT_KHR|EGL_OPENVG_BIT,							1 },
-		{ "gles1_gles2_vg",		"Color clears using multiple APIs to shared surface",				EGL_OPENGL_ES_BIT|EGL_OPENGL_ES2_BIT|EGL_OPENVG_BIT,			1 }
+		CASE("gles1",				"Color clears using multiple GLES1 contexts to shared surface",		EGL_OPENGL_ES_BIT,											3),
+		CASE("gles2",				"Color clears using multiple GLES2 contexts to shared surface",		EGL_OPENGL_ES2_BIT,											3),
+		CASE("gles3",				"Color clears using multiple GLES3 contexts to shared surface",		EGL_OPENGL_ES3_BIT,											3),
+		CASE("vg",					"Color clears using multiple OpenVG contexts to shared surface",	EGL_OPENVG_BIT,												3),
+		CASE("gles1_gles2",			"Color clears using multiple APIs to shared surface",				EGL_OPENGL_ES_BIT|EGL_OPENGL_ES2_BIT,						1),
+		CASE("gles1_gles2_gles3",	"Color clears using multiple APIs to shared surface",				EGL_OPENGL_ES_BIT|EGL_OPENGL_ES2_BIT|EGL_OPENGL_ES3_BIT,	1),
+		CASE("gles1_vg",			"Color clears using multiple APIs to shared surface",				EGL_OPENGL_ES_BIT|EGL_OPENVG_BIT,							1),
+		CASE("gles2_vg",			"Color clears using multiple APIs to shared surface",				EGL_OPENGL_ES2_BIT|EGL_OPENVG_BIT,							1),
+		CASE("gles3_vg",			"Color clears using multiple APIs to shared surface",				EGL_OPENGL_ES3_BIT|EGL_OPENVG_BIT,							1),
+		CASE("gles1_gles2_vg",		"Color clears using multiple APIs to shared surface",				EGL_OPENGL_ES_BIT|EGL_OPENGL_ES2_BIT|EGL_OPENVG_BIT,		1)
 	};
+
+#undef CASE
 
 	tcu::TestCaseGroup* singleContextGroup = new tcu::TestCaseGroup(m_testCtx, "single_context", "Single-context color clears");
 	addChild(singleContextGroup);

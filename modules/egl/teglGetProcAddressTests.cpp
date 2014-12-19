@@ -25,11 +25,12 @@
 #include "teglTestCase.hpp"
 #include "egluCallLogWrapper.hpp"
 #include "egluStrUtil.hpp"
+#include "egluUtil.hpp"
+#include "eglwLibrary.hpp"
+#include "eglwEnums.hpp"
 #include "tcuTestLog.hpp"
-
-#if !defined(EGL_OPENGL_ES3_BIT_KHR)
-#	define EGL_OPENGL_ES3_BIT_KHR	0x0040
-#endif
+#include "deSTLUtil.hpp"
+#include "deStringUtil.hpp"
 
 namespace deqp
 {
@@ -40,6 +41,7 @@ namespace
 {
 
 using tcu::TestLog;
+using namespace eglw;
 
 // Function name strings generated from API headers
 
@@ -95,11 +97,15 @@ public:
 	virtual						~GetProcAddressCase		(void);
 
 	void						init					(void);
+	void						deinit					(void);
 	IterateResult				iterate					(void);
 
 	bool						isSupported				(const std::string& extName);
 
 	virtual void				executeTest				(void) = 0;
+
+protected:
+	EGLDisplay					m_display;
 
 private:
 	std::vector<std::string>	m_supported;
@@ -107,7 +113,8 @@ private:
 
 GetProcAddressCase::GetProcAddressCase (EglTestContext& eglTestCtx, const char* name, const char* description)
 	: TestCase			(eglTestCtx, name, description)
-	, CallLogWrapper	(eglTestCtx.getTestContext().getLog())
+	, CallLogWrapper	(eglTestCtx.getLibrary(), eglTestCtx.getTestContext().getLog())
+	, m_display			(EGL_NO_DISPLAY)
 {
 }
 
@@ -117,10 +124,18 @@ GetProcAddressCase::~GetProcAddressCase (void)
 
 void GetProcAddressCase::init (void)
 {
-	const tcu::egl::Display&	display		= m_eglTestCtx.getDisplay();
-	display.getExtensions(m_supported);
+	DE_ASSERT(m_display == EGL_NO_DISPLAY);
+
+	m_display	= eglu::getAndInitDisplay(m_eglTestCtx.getNativeDisplay());
+	m_supported	= eglu::getClientExtensions(m_eglTestCtx.getLibrary(), m_display);
 
 	m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+}
+
+void GetProcAddressCase::deinit (void)
+{
+	m_eglTestCtx.getLibrary().terminate(m_display);
+	m_display = EGL_NO_DISPLAY;
 }
 
 tcu::TestNode::IterateResult GetProcAddressCase::iterate (void)
@@ -136,7 +151,7 @@ tcu::TestNode::IterateResult GetProcAddressCase::iterate (void)
 
 bool GetProcAddressCase::isSupported (const std::string& extName)
 {
-	return std::find(m_supported.begin(), m_supported.end(), extName) != m_supported.end();
+	return de::contains(m_supported.begin(), m_supported.end(), extName);
 }
 
 // Test by extension
@@ -171,7 +186,7 @@ public:
 			void		(*funcPtr)(void);
 
 			funcPtr = eglGetProcAddress(funcName);
-			TCU_CHECK_EGL();
+			eglu::checkError(eglGetError(), "eglGetProcAddress()", __FILE__, __LINE__);
 
 			if (supported && funcPtr == 0)
 			{
@@ -200,29 +215,11 @@ public:
 	{
 	}
 
-	bool isApiSupported (void)
-	{
-		const std::vector<eglu::ConfigInfo>	configs	= m_eglTestCtx.getConfigs();
-
-		if (m_apiBit == 0)
-			return true;
-
-		for (std::vector<eglu::ConfigInfo>::const_iterator configIter = configs.begin(); configIter != configs.end(); configIter++)
-		{
-			const eglu::ConfigInfo&	config	= *configIter;
-
-			if ((config.renderableType & m_apiBit) != 0)
-				return true;
-		}
-
-		return false;
-	}
-
 	void executeTest (void)
 	{
 		TestLog&				log					= m_testCtx.getLog();
 		const bool				funcPtrSupported	= isSupported("EGL_KHR_get_all_proc_addresses");
-		const bool				apiSupported		= isApiSupported();
+		const bool				apiSupported		= (eglu::getRenderableAPIsMask(m_eglTestCtx.getLibrary(), m_display) & m_apiBit) == m_apiBit;
 		const FunctionNames		funcNames			= getCoreFunctionNames(m_apiBit);
 
 		log << TestLog::Message << "EGL_KHR_get_all_proc_addresses: " << (funcPtrSupported ? "supported" : "not supported") << TestLog::EndMessage;
@@ -240,7 +237,7 @@ public:
 			void		(*funcPtr)(void);
 
 			funcPtr = eglGetProcAddress(funcName);
-			TCU_CHECK_EGL();
+			eglu::checkError(eglGetError(), "eglGetProcAddress()", __FILE__, __LINE__);
 
 			if (apiSupported && funcPtrSupported && (funcPtr == 0))
 			{
@@ -281,7 +278,7 @@ void GetProcAddressTests::init (void)
 			std::string				testName	(extName);
 
 			for (size_t ndx = 0; ndx < extName.length(); ndx++)
-				testName[ndx] = std::tolower(extName[ndx]);
+				testName[ndx] = de::toLower(extName[ndx]);
 
 			extensionsGroup->addChild(new GetProcAddressExtensionCase(m_eglTestCtx, testName.c_str(), ("Test " + extName).c_str(), extName));
 		}

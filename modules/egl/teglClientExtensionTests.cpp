@@ -25,7 +25,13 @@
 
 #include "tcuTestLog.hpp"
 
-#include <EGL/egl.h>
+#include "egluUtil.hpp"
+
+#include "eglwLibrary.hpp"
+#include "eglwEnums.hpp"
+
+#include "deStringUtil.hpp"
+#include "deSTLUtil.hpp"
 
 #include <vector>
 #include <set>
@@ -37,6 +43,8 @@ using std::vector;
 using std::set;
 
 using tcu::TestLog;
+
+using namespace eglw;
 
 namespace deqp
 {
@@ -111,17 +119,6 @@ static const char* const s_clientExtensionList[] =
 	"EGL_EXT_platform_wayland"
 };
 
-void splitExtensions (vector<string>& extensions, const char* str)
-{
-	std::istringstream	stream(str);
-	string				extension;
-
-	extensions.clear();
-
-	while (std::getline(stream, extension, ' '))
-		extensions.push_back(extension);
-}
-
 class BaseTest : public TestCase
 {
 public:
@@ -136,19 +133,20 @@ BaseTest::BaseTest (EglTestContext& eglTestCtx)
 
 TestCase::IterateResult BaseTest::iterate (void)
 {
-	const char* const	clientExtesionsStr	= eglQueryString(EGL_NO_DISPLAY, EGL_EXTENSIONS);
-	const EGLint		eglError			= eglGetError();
+	const Library&		egl					= m_eglTestCtx.getLibrary();
+	const char* const	clientExtesionsStr	= egl.queryString(EGL_NO_DISPLAY, EGL_EXTENSIONS);
+	const EGLint		eglError			= egl.getError();
 
 	if (eglError == EGL_BAD_DISPLAY)
-		throw tcu::NotSupportedError("EGL_EXT_client_extensions not supported", "", __FILE__, __LINE__);
+		TCU_THROW(NotSupportedError, "EGL_EXT_client_extensions not supported");
 	else if (eglError != EGL_SUCCESS)
-		throw eglu::Error(eglError, "eglQueryString()", "", __FILE__, __LINE__);
+		throw eglu::Error(eglError, "eglQueryString()", DE_NULL, __FILE__, __LINE__);
 
 	TCU_CHECK(clientExtesionsStr);
 
 	{
-		bool				found = false;
-		std::istringstream	stream(clientExtesionsStr);
+		bool				found		= false;
+		std::istringstream	stream		(clientExtesionsStr);
 		string				extension;
 
 		while (std::getline(stream, extension, ' '))
@@ -186,25 +184,33 @@ CheckExtensionsTest::CheckExtensionsTest (EglTestContext& eglTestCtx)
 
 TestCase::IterateResult CheckExtensionsTest::iterate (void)
 {
-	bool				isOk				= true;
-	const char* const	clientExtesionsStr	= eglQueryString(EGL_NO_DISPLAY, EGL_EXTENSIONS);
-	const EGLint		eglQueryError		= eglGetError();
+	const Library&		egl						= m_eglTestCtx.getLibrary();
+	bool				isOk					= true;
+	const char* const	clientExtensionsStr		= egl.queryString(EGL_NO_DISPLAY, EGL_EXTENSIONS);
+	const EGLint		eglQueryError			= egl.getError();
 
-	set<string>		knownClientExtensions(s_clientExtensionList, s_clientExtensionList + DE_LENGTH_OF_ARRAY(s_clientExtensionList));
-	set<string>		knownDisplayExtensions(s_displayExtensionList, s_displayExtensionList + DE_LENGTH_OF_ARRAY(s_displayExtensionList));
+	set<string>			knownClientExtensions	(s_clientExtensionList, s_clientExtensionList + DE_LENGTH_OF_ARRAY(s_clientExtensionList));
+	set<string>			knownDisplayExtensions	(s_displayExtensionList, s_displayExtensionList + DE_LENGTH_OF_ARRAY(s_displayExtensionList));
 
-	vector<string>	displayExtensions;
-	vector<string>	clientExtensions;
+	vector<string>		displayExtensions;
+	vector<string>		clientExtensions;
 
 	if (eglQueryError == EGL_BAD_DISPLAY)
-		throw tcu::NotSupportedError("EGL_EXT_client_extensions not supported", "", __FILE__, __LINE__);
+		TCU_THROW(NotSupportedError, "EGL_EXT_client_extensions not supported");
 	else if (eglQueryError != EGL_SUCCESS)
-		throw eglu::Error(eglQueryError, "eglQueryString()", "", __FILE__, __LINE__);
+		throw eglu::Error(eglQueryError, "eglQueryString()", DE_NULL, __FILE__, __LINE__);
 
-	TCU_CHECK(clientExtesionsStr);
+	TCU_CHECK(clientExtensionsStr);
 
-	splitExtensions(clientExtensions, clientExtesionsStr);
-	m_eglTestCtx.getDisplay().getExtensions(displayExtensions);
+	clientExtensions = de::splitString(clientExtensionsStr, ' ');
+
+	{
+		EGLDisplay	display	= eglu::getAndInitDisplay(m_eglTestCtx.getNativeDisplay());
+
+		displayExtensions = de::splitString(egl.queryString(display, EGL_EXTENSIONS), ' ');
+
+		egl.terminate(display);
+	}
 
 	for (int extNdx = 0; extNdx < (int)clientExtensions.size(); extNdx++)
 	{
@@ -246,19 +252,27 @@ DisjointTest::DisjointTest (EglTestContext& eglTestCtx)
 
 TestCase::IterateResult DisjointTest::iterate (void)
 {
-	const char*	const	clientExtesionsStr	= eglQueryString(EGL_NO_DISPLAY, EGL_EXTENSIONS);
-	const EGLint		eglQueryError		= eglGetError();
+	const Library&		egl					= m_eglTestCtx.getLibrary();
+	const char*	const	clientExtensionsStr	= egl.queryString(EGL_NO_DISPLAY, EGL_EXTENSIONS);
+	const EGLint		eglQueryError		= egl.getError();
 
 	if (eglQueryError == EGL_BAD_DISPLAY)
-		throw tcu::NotSupportedError("EGL_EXT_client_extensions not supported", "", __FILE__, __LINE__);
+		TCU_THROW(NotSupportedError, "EGL_EXT_client_extensions not supported");
 	else if (eglQueryError != EGL_SUCCESS)
-		throw eglu::Error(eglQueryError, "eglQueryString()", "", __FILE__, __LINE__);
+		throw eglu::Error(eglQueryError, "eglQueryString()", DE_NULL, __FILE__, __LINE__);
 
-	vector<string> displayExtensions;
-	vector<string> clientExtensions;
+	vector<string>		displayExtensions;
+	vector<string>		clientExtensions;
 
-	splitExtensions(clientExtensions, clientExtesionsStr);
-	m_eglTestCtx.getDisplay().getExtensions(displayExtensions);
+	clientExtensions = de::splitString(clientExtensionsStr, ' ');
+
+	{
+		EGLDisplay	display	= eglu::getAndInitDisplay(m_eglTestCtx.getNativeDisplay());
+
+		displayExtensions = de::splitString(egl.queryString(display, EGL_EXTENSIONS), ' ');
+
+		egl.terminate(display);
+	}
 
 	// Log client extensions
 	{

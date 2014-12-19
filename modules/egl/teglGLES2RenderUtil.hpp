@@ -27,6 +27,11 @@
 #include "tcuSurface.hpp"
 #include "tcuVector.hpp"
 
+namespace glw
+{
+class Functions;
+}
+
 namespace deqp
 {
 namespace egl
@@ -34,8 +39,8 @@ namespace egl
 namespace gles2
 {
 
-void	clear		(int x, int y, int width, int height, const tcu::Vec4& color);
-void	readPixels	(tcu::Surface& dst, int x, int y, int width, int height);
+void	clear		(const glw::Functions& gl, int x, int y, int width, int height, const tcu::Vec4& color);
+void	readPixels	(const glw::Functions& gl, tcu::Surface& dst, int x, int y, int width, int height);
 
 } // gles2
 } // egl

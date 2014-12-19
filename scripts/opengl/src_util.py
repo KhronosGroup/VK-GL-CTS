@@ -120,31 +120,13 @@ def getFunctionMemberName (funcName):
 	else:
 		return "%c%s" % (funcName[2].lower(), funcName[3:])
 
-def normalizeConstant(constant):
-	value = int(constant, base=0)
-	if value >= 1 << 63:
-		suffix = 'ull'
-	elif value >= 1 << 32:
-		suffix = 'll'
-	elif value >= 1 << 31:
-		suffix = 'u'
-	else:
-		suffix = ''
-	return constant + suffix
-
-def commandParams(command):
-	if len(command.params) > 0:
-		return ", ".join(param.declaration for param in command.params)
-	else:
-		return "void"
-
-def commandArgs(command):
-	return ", ".join(param.name for param in command.params)
-
 INL_HEADER = khr_util.format.genInlHeader("Khronos GL API description (gl.xml)", GL_SOURCE.getRevision())
 
 def writeInlFile (filename, source):
 	khr_util.format.writeInlFile(filename, INL_HEADER, source)
 
 # Aliases from khr_util.common
-indentLines		= khr_util.format.indentLines
+indentLines			= khr_util.format.indentLines
+normalizeConstant	= khr_util.format.normalizeConstant
+commandParams		= khr_util.format.commandParams
+commandArgs			= khr_util.format.commandArgs

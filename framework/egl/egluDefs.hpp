@@ -25,12 +25,9 @@
 
 #include "tcuDefs.hpp"
 
-#include <vector>
-#include <string>
-
-#define EGLU_CHECK()			eglu::checkError(DE_NULL, __FILE__, __LINE__)
-#define EGLU_CHECK_MSG(MSG)		eglu::checkError(MSG, __FILE__, __LINE__)
-#define EGLU_CHECK_CALL(CALL)	do { CALL; eglu::checkError(#CALL, __FILE__, __LINE__); } while (deGetFalse())
+#define EGLU_CHECK(EGLW)			eglu::checkError((EGLW).getError(), DE_NULL, __FILE__, __LINE__)
+#define EGLU_CHECK_MSG(EGLW, MSG)	eglu::checkError((EGLW).getError(), MSG, __FILE__, __LINE__)
+#define EGLU_CHECK_CALL(EGLW, CALL)	do { (EGLW).CALL; eglu::checkError((EGLW).getError(), #CALL, __FILE__, __LINE__); } while (deGetFalse())
 
 /*--------------------------------------------------------------------*//*!
  * \brief EGL utilities
@@ -41,14 +38,14 @@ namespace eglu
 class Error : public tcu::TestError
 {
 public:
-						Error			(deInt32 errCode, const char* errStr);
-						Error			(deInt32 errCode, const char* message, const char* expr, const char* file, int line);
+						Error			(deUint32 errCode, const char* errStr);
+						Error			(deUint32 errCode, const char* message, const char* expr, const char* file, int line);
 						~Error			(void) throw() {}
 
-	deInt32				getError		(void) const { return m_error; }
+	deUint32			getError		(void) const { return m_error; }
 
 private:
-	deInt32				m_error;
+	deUint32			m_error;
 };
 
 class BadAllocError : public tcu::ResourceError
@@ -59,7 +56,7 @@ public:
 						~BadAllocError	(void) throw() {}
 };
 
-void checkError (const char* msg, const char* file, int line);
+void	checkError		(deUint32 err, const char* msg, const char* file, int line);
 
 class Version
 {

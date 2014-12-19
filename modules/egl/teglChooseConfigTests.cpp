@@ -25,6 +25,9 @@
 #include "teglChooseConfigReference.hpp"
 #include "tcuTestLog.hpp"
 #include "egluStrUtil.hpp"
+#include "egluUtil.hpp"
+#include "eglwLibrary.hpp"
+#include "eglwEnums.hpp"
 #include "deRandom.hpp"
 #include "deStringUtil.hpp"
 
@@ -34,29 +37,29 @@
 #include <set>
 #include <map>
 
-using std::set;
-using std::vector;
-using std::pair;
-using std::string;
-using tcu::TestLog;
-
 namespace deqp
 {
 namespace egl
 {
 
+using std::set;
+using std::vector;
+using std::pair;
+using std::string;
+using tcu::TestLog;
 using eglu::ConfigInfo;
+using namespace eglw;
 
 namespace
 {
 
-string configListToString (const tcu::egl::Display& display, const vector<EGLConfig>& configs)
+string configListToString (const Library& egl, const EGLDisplay& display, const vector<EGLConfig>& configs)
 {
 	string str = "";
 	for (vector<EGLConfig>::const_iterator cfgIter = configs.begin(); cfgIter != configs.end(); cfgIter++)
 	{
 		EGLConfig	config		= *cfgIter;
-		EGLint		configId	= display.getConfigAttrib(config, EGL_CONFIG_ID);
+		EGLint		configId	= eglu::getConfigID(egl, display, config);
 
 		if (str.length() != 0)
 			str += " ";
@@ -87,6 +90,7 @@ public:
 	ChooseConfigCase (EglTestContext& eglTestCtx, const char* name, const char* description, bool checkOrder, const EGLint* attributes)
 		: TestCase		(eglTestCtx, name, description)
 		, m_checkOrder	(checkOrder)
+		, m_display		(EGL_NO_DISPLAY)
 	{
 		// Parse attributes
 		while (attributes[0] != EGL_NONE)
@@ -100,27 +104,41 @@ public:
 		: TestCase		(eglTestCtx, name, description)
 		, m_checkOrder	(checkOrder)
 		, m_attributes	(attributes)
+		, m_display		(EGL_NO_DISPLAY)
 	{
+	}
+
+	void init (void)
+	{
+		DE_ASSERT(m_display == EGL_NO_DISPLAY);
+		m_display	= eglu::getAndInitDisplay(m_eglTestCtx.getNativeDisplay());
+	}
+
+	void deinit (void)
+	{
+		m_eglTestCtx.getLibrary().terminate(m_display);
+		m_display = EGL_NO_DISPLAY;
 	}
 
 	IterateResult iterate (void)
 	{
 		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
-
 		executeTest(m_attributes, m_checkOrder);
 		return STOP;
 	}
+
 protected:
 	ChooseConfigCase (EglTestContext& eglTestCtx, const char* name, const char* description, bool checkOrder)
 		: TestCase		(eglTestCtx, name, description)
 		, m_checkOrder	(checkOrder)
+		, m_display		(EGL_NO_DISPLAY)
 	{
 	}
 
 	void executeTest (const std::vector<std::pair<EGLenum, EGLint> >& attributes, bool checkOrder)
 	{
-		TestLog&					log		= m_testCtx.getLog();
-		const tcu::egl::Display&	display	= m_eglTestCtx.getDisplay();
+		const Library&	egl	= m_eglTestCtx.getLibrary();
+		TestLog&		log	= m_testCtx.getLog();
 
 		// Build attributes for EGL
 		vector<EGLint> attribList;
@@ -142,18 +160,18 @@ protected:
 		// Query from EGL implementation
 		{
 			EGLint numConfigs = 0;
-			TCU_CHECK_EGL_CALL(eglChooseConfig(display.getEGLDisplay(), &attribList[0], DE_NULL, 0, &numConfigs));
+			EGLU_CHECK_CALL(egl, chooseConfig(m_display, &attribList[0], DE_NULL, 0, &numConfigs));
 			resultConfigs.resize(numConfigs);
 
 			if (numConfigs > 0)
-				TCU_CHECK_EGL_CALL(eglChooseConfig(display.getEGLDisplay(), &attribList[0], &resultConfigs[0], (EGLint)resultConfigs.size(), &numConfigs));
+				EGLU_CHECK_CALL(egl, chooseConfig(m_display, &attribList[0], &resultConfigs[0], (EGLint)resultConfigs.size(), &numConfigs));
 		}
 
 		// Build reference
-		chooseConfigReference(display, referenceConfigs, attributes);
+		chooseConfigReference(egl, m_display, referenceConfigs, attributes);
 
-		log << TestLog::Message << "Expected:\n  " << configListToString(display, referenceConfigs) << TestLog::EndMessage;
-		log << TestLog::Message << "Got:\n  " << configListToString(display, resultConfigs) << TestLog::EndMessage;
+		log << TestLog::Message << "Expected:\n  " << configListToString(egl, m_display, referenceConfigs) << TestLog::EndMessage;
+		log << TestLog::Message << "Got:\n  " << configListToString(egl, m_display, resultConfigs) << TestLog::EndMessage;
 
 		bool isSetMatch		= (set<EGLConfig>(resultConfigs.begin(), resultConfigs.end()) == set<EGLConfig>(referenceConfigs.begin(), referenceConfigs.end()));
 		bool isExactMatch	= (resultConfigs == referenceConfigs);
@@ -191,8 +209,10 @@ protected:
 		}
 	}
 
-	bool							m_checkOrder;
+	const bool						m_checkOrder;
 	vector<pair<EGLenum, EGLint> >	m_attributes;
+
+	EGLDisplay						m_display;
 };
 
 class ChooseConfigSimpleCase : public ChooseConfigCase
@@ -204,7 +224,8 @@ protected:
 		{
 			EGLenum		name;
 			EGLint		value;
-		} attributes[] = {
+		} attributes[] =
+		{
 			{ EGL_BUFFER_SIZE,				0					},
 			{ EGL_RED_SIZE,					0					},
 			{ EGL_GREEN_SIZE,				0					},
@@ -248,13 +269,15 @@ protected:
 		if (name == EGL_CONFIG_ID)
 		{
 			de::Random rnd(0);
-			return m_eglTestCtx.getConfigs()[rnd.getInt(0, (int)(m_eglTestCtx.getConfigs().size()-1))].configId;
+			vector<EGLConfig> configs = eglu::getConfigs(m_eglTestCtx.getLibrary(), m_display);
+			return eglu::getConfigID(m_eglTestCtx.getLibrary(), m_display, configs[rnd.getInt(0, (int)configs.size()-1)]);
 		}
 		else
 		{
 			for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(attributes); ndx++)
 			{
-				if (attributes[ndx].name == name) return attributes[ndx].value;
+				if (attributes[ndx].name == name)
+					return attributes[ndx].value;
 			}
 		}
 
@@ -265,10 +288,6 @@ public:
 	ChooseConfigSimpleCase (EglTestContext& eglTestCtx, const char* name, const char* description, EGLenum attribute, bool checkOrder)
 		: ChooseConfigCase(eglTestCtx, name, description, checkOrder)
 		, m_attribute(attribute)
-	{
-	}
-
-	void init (void)
 	{
 	}
 
@@ -301,6 +320,7 @@ public:
 
 	void init (void)
 	{
+		ChooseConfigCase::init();
 		m_iterNdx = 0;
 		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
 	}

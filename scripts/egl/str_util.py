@@ -103,8 +103,8 @@ ENUM_GROUPS = [
 		"SWAP_BEHAVIOR",
 		"TEXTURE_FORMAT",
 		"TEXTURE_TARGET",
-		"VG_ALPHA_FORMAT",
-		"VG_COLORSPACE"
+		"ALPHA_FORMAT",
+		"COLORSPACE"
 		]),
 	("SurfaceTarget",		["READ", "DRAW"]),
 
@@ -119,8 +119,8 @@ ENUM_GROUPS = [
 	("SwapBehavior",		["BUFFER_DESTROYED", "BUFFER_PRESERVED"]),
 	("TextureFormat",		["NO_TEXTURE", "TEXTURE_RGB", "TEXTURE_RGBA"]),
 	("TextureTarget",		["NO_TEXTURE", "TEXTURE_2D"]),
-	("VGAlphaFormat",		["VG_ALPHA_FORMAT_NONPRE", "VG_ALPHA_FORMAT_PRE"]),
-	("VGColorspace",		["VG_COLORSPACE_sRGB", "VG_COLORSPACE_LINEAR"])
+	("AlphaFormat",			["ALPHA_FORMAT_NONPRE", "ALPHA_FORMAT_PRE"]),
+	("Colorspace",			["COLORSPACE_sRGB", "COLORSPACE_LINEAR"])
 ]
 
 def gen (iface):

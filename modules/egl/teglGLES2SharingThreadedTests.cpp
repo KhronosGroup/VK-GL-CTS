@@ -24,6 +24,7 @@
 #include "teglGLES2SharingThreadedTests.hpp"
 
 #include "tcuTestLog.hpp"
+#include "tcuThreadUtil.hpp"
 
 #include "deRandom.hpp"
 #include "deThread.hpp"
@@ -39,20 +40,13 @@
 
 #include "gluDefs.hpp"
 
-#include "tcuThreadUtil.hpp"
+#include "glwEnums.hpp"
+#include "glwFunctions.hpp"
 
-#include <GLES2/gl2.h>
-#include <GLES2/gl2ext.h>
-#include <EGL/egl.h>
-#include <EGL/eglext.h>
+#include "egluUtil.hpp"
 
-#ifndef EGL_KHR_wait_sync
-#define EGL_KHR_wait_sync 1
-typedef EGLint (EGLAPIENTRYP PFNEGLWAITSYNCKHRPROC) (EGLDisplay dpy, EGLSyncKHR sync, EGLint flags);
-#ifdef EGL_EGLEXT_PROTOTYPES
-EGLAPI EGLint EGLAPIENTRY eglWaitSyncKHR (EGLDisplay dpy, EGLSyncKHR sync, EGLint flags);
-#endif
-#endif /* EGL_KHR_wait_sync */
+#include "eglwLibrary.hpp"
+#include "eglwEnums.hpp"
 
 #include <vector>
 #include <string>
@@ -62,6 +56,9 @@ EGLAPI EGLint EGLAPIENTRY eglWaitSyncKHR (EGLDisplay dpy, EGLSyncKHR sync, EGLin
 using std::vector;
 using std::string;
 using de::SharedPtr;
+
+using namespace glw;
+using namespace eglw;
 
 namespace deqp
 {
@@ -157,7 +154,7 @@ public:
 
 	struct
 	{
-		PFNGLEGLIMAGETARGETTEXTURE2DOESPROC	imageTargetTexture2D;
+		glEGLImageTargetTexture2DOESFunc	imageTargetTexture2D;
 	} glExtensions;
 private:
 					GLES2Context		(const GLES2Context&);
@@ -170,7 +167,7 @@ GLES2Context::GLES2Context (SharedPtr<tcu::ThreadUtil::Event> event, SharedPtr<G
 	, display					(EGL_NO_DISPLAY)
 	, context					(EGL_NO_CONTEXT)
 {
-	glExtensions.imageTargetTexture2D = NULL;
+	glExtensions.imageTargetTexture2D = DE_NULL;
 }
 
 GLES2Context::~GLES2Context (void)
@@ -205,9 +202,12 @@ Surface::~Surface (void)
 class EGLThread : public tcu::ThreadUtil::Thread
 {
 public:
-								EGLThread	(int seed);
+								EGLThread	(const Library& egl_, const glw::Functions& gl_, int seed);
 								~EGLThread	(void);
 	virtual void				deinit		(void);
+
+	const Library&				egl;
+	const glw::Functions&		gl;
 
 	// Generation time attributes
 	SharedPtr<GLES2Context>		context;
@@ -217,41 +217,15 @@ public:
 
 	SharedPtr<GLES2Context>		runtimeContext;
 	EGLSurface					eglSurface;
-
-	struct
-	{
-		PFNEGLCREATESYNCKHRPROC		createSync;
-		PFNEGLDESTROYSYNCKHRPROC	destroySync;
-		PFNEGLCLIENTWAITSYNCKHRPROC	clientWaitSync;
-
-		PFNEGLWAITSYNCKHRPROC		waitSync;
-
-		PFNEGLCREATEIMAGEKHRPROC	createImage;
-		PFNEGLDESTROYIMAGEKHRPROC	destroyImage;
-	} eglExtensions;
-
 private:
 };
 
-EGLThread::EGLThread (int seed)
+EGLThread::EGLThread (const Library& egl_, const glw::Functions& gl_, int seed)
 	: tcu::ThreadUtil::Thread	(seed)
+	, egl						(egl_)
+	, gl						(gl_)
 	, eglSurface				(EGL_NO_SURFACE)
 {
-	eglExtensions.createSync		= NULL;
-	eglExtensions.destroySync		= NULL;
-	eglExtensions.clientWaitSync	= NULL;
-
-	eglExtensions.createImage		= NULL;
-	eglExtensions.destroyImage		= NULL;
-
-	eglExtensions.createSync		= (PFNEGLCREATESYNCKHRPROC)eglGetProcAddress("eglCreateSyncKHR");
-	eglExtensions.destroySync		= (PFNEGLDESTROYSYNCKHRPROC)eglGetProcAddress("eglDestroySyncKHR");
-	eglExtensions.clientWaitSync	= (PFNEGLCLIENTWAITSYNCKHRPROC)eglGetProcAddress("eglClientWaitSyncKHR");
-
-	eglExtensions.waitSync			= (PFNEGLWAITSYNCKHRPROC)eglGetProcAddress("eglWaitSyncKHR");
-
-	eglExtensions.createImage		= (PFNEGLCREATEIMAGEKHRPROC)eglGetProcAddress("eglCreateImageKHR");
-	eglExtensions.destroyImage		= (PFNEGLDESTROYIMAGEKHRPROC)eglGetProcAddress("eglDestroyImageKHR");
 }
 
 void EGLThread::deinit (void)
@@ -259,16 +233,16 @@ void EGLThread::deinit (void)
 	if (runtimeContext)
 	{
 		if (runtimeContext->context != EGL_NO_CONTEXT)
-			eglMakeCurrent(runtimeContext->display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+			egl.makeCurrent(runtimeContext->display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
 
-		eglDestroyContext(runtimeContext->display, runtimeContext->context);
-		eglDestroySurface(runtimeContext->display, eglSurface);
+		egl.destroyContext(runtimeContext->display, runtimeContext->context);
+		egl.destroySurface(runtimeContext->display, eglSurface);
 
 		runtimeContext->context	= EGL_NO_CONTEXT;
 		eglSurface	= EGL_NO_SURFACE;
 	}
 
-	eglReleaseThread();
+	egl.releaseThread();
 }
 
 EGLThread::~EGLThread (void)
@@ -322,8 +296,8 @@ void FenceSync::init (EGLThread& thread, bool serverSync)
 	m_lock.lock();
 	if (m_waiterCount > 0)
 	{
-		thread.newMessage() << "Begin -- eglCreateSyncKHR(" << ((size_t)m_display) << ", EGL_SYNC_FENCE_KHR, NULL)" << tcu::ThreadUtil::Message::End;
-		m_sync = thread.eglExtensions.createSync(m_display, EGL_SYNC_FENCE_KHR, NULL);
+		thread.newMessage() << "Begin -- eglCreateSyncKHR(" << ((size_t)m_display) << ", EGL_SYNC_FENCE_KHR, DE_NULL)" << tcu::ThreadUtil::Message::End;
+		m_sync = thread.egl.createSyncKHR(m_display, EGL_SYNC_FENCE_KHR, DE_NULL);
 		thread.newMessage() << "End -- " << ((size_t)m_sync) << " = eglCreateSyncKHR()" << tcu::ThreadUtil::Message::End;
 		TCU_CHECK(m_sync);
 	}
@@ -336,14 +310,14 @@ bool FenceSync::waitReady (EGLThread& thread)
 	if (m_serverSync)
 	{
 		thread.newMessage() << "Begin -- eglWaitSyncKHR(" << ((size_t)m_display) << ", " << ((size_t)m_sync) << ", 0)" << tcu::ThreadUtil::Message::End;
-		EGLint result = thread.eglExtensions.waitSync(m_display, m_sync, 0);
+		EGLint result = thread.egl.waitSyncKHR(m_display, m_sync, 0);
 		thread.newMessage() << "End -- " << result << " = eglWaitSyncKHR()" << tcu::ThreadUtil::Message::End;
 		ok = result == EGL_TRUE;
 	}
 	else
 	{
 		thread.newMessage() << "Begin -- eglClientWaitSyncKHR(" << ((size_t)m_display) << ", " << ((size_t)m_sync) << ", EGL_SYNC_FLUSH_COMMANDS_BIT_KHR, 1000 000 000)" << tcu::ThreadUtil::Message::End;
-		EGLint result = thread.eglExtensions.clientWaitSync(m_display, m_sync, EGL_SYNC_FLUSH_COMMANDS_BIT_KHR, 1000000000);
+		EGLint result = thread.egl.clientWaitSyncKHR(m_display, m_sync, EGL_SYNC_FLUSH_COMMANDS_BIT_KHR, 1000000000);
 		thread.newMessage() << "End -- " << result << " = eglClientWaitSyncKHR()" << tcu::ThreadUtil::Message::End;
 		ok = result == EGL_CONDITION_SATISFIED_KHR;
 	}
@@ -356,9 +330,9 @@ bool FenceSync::waitReady (EGLThread& thread)
 	{
 		// \note [mika] This is no longer deterministic and eglDestroySyncKHR might happen in different places and in different threads
 		thread.newMessage() << "Begin -- eglDestroySyncKHR(" << ((size_t)m_display) << ", " << ((size_t)m_sync) << ")" << tcu::ThreadUtil::Message::End;
-		EGLint destroyResult = thread.eglExtensions.destroySync(m_display, m_sync);
+		EGLint destroyResult = thread.egl.destroySyncKHR(m_display, m_sync);
 		thread.newMessage() << "End -- " << destroyResult << " = eglDestroySyncKHR()" << tcu::ThreadUtil::Message::End;
-		m_sync = NULL;
+		m_sync = DE_NULL;
 	}
 
 	m_lock.unlock();
@@ -468,8 +442,10 @@ void Operation::modifyGLObject (SharedPtr<Object> object)
 	object->modifyGL(m_sync, m_syncDeps);
 }
 
-void Operation::execute (tcu::ThreadUtil::Thread& thread)
+void Operation::execute (tcu::ThreadUtil::Thread& t)
 {
+	EGLThread& thread = dynamic_cast<EGLThread&>(t);
+
 	bool success = true;
 
 	// Wait for dependencies and check that they succeeded
@@ -507,13 +483,13 @@ void Operation::execute (tcu::ThreadUtil::Thread& thread)
 					DE_ASSERT(eglThread);
 					m_sync->init(*eglThread, m_serverSync);
 					thread.newMessage() << "Begin -- glFlush()" << tcu::ThreadUtil::Message::End;
-					GLU_CHECK_CALL(glFlush());
+					GLU_CHECK_GLW_CALL(thread.gl, flush());
 					thread.newMessage() << "End -- glFlush()" << tcu::ThreadUtil::Message::End;
 				}
 				else
 				{
 					thread.newMessage() << "Begin -- glFinish()" << tcu::ThreadUtil::Message::End;
-					GLU_CHECK_CALL(glFinish());
+					GLU_CHECK_GLW_CALL(thread.gl, finish());
 					thread.newMessage() << "End -- glFinish()" << tcu::ThreadUtil::Message::End;
 				}
 			}
@@ -617,19 +593,19 @@ CreateContext::CreateContext (EGLDisplay display, EGLConfig config, SharedPtr<GL
 	m_context = context;
 }
 
-void CreateContext::exec (tcu::ThreadUtil::Thread& thread)
+void CreateContext::exec (tcu::ThreadUtil::Thread& t)
 {
-	DE_UNREF(thread);
+	EGLThread& thread = dynamic_cast<EGLThread&>(t);
 	m_context->display = m_display;
 
-	EGLint attriblist[] =
+	const EGLint attriblist[] =
 	{
 		EGL_CONTEXT_CLIENT_VERSION, 2,
 		EGL_NONE
 	};
 
 	thread.newMessage() << "Begin -- eglBindAPI(EGL_OPENGL_ES_API)" << tcu::ThreadUtil::Message::End;
-	TCU_CHECK_EGL_CALL(eglBindAPI(EGL_OPENGL_ES_API));
+	EGLU_CHECK_CALL(thread.egl, bindAPI(EGL_OPENGL_ES_API));
 	thread.newMessage() << "End -- eglBindAPI()" << tcu::ThreadUtil::Message::End;
 
 	if (m_shared)
@@ -639,17 +615,17 @@ void CreateContext::exec (tcu::ThreadUtil::Thread& thread)
 		DE_ASSERT(m_shared->display == m_display);
 
 		thread.newMessage() << "Begin -- eglCreateContext(" << m_display << ", " << m_config << ", " << m_shared->context << ", { EGL_CONTEXT_CLIENT_VERSION, 2, EGL_NONE })" << tcu::ThreadUtil::Message::End;
-		m_context->context = eglCreateContext(m_display, m_config, m_shared->context, attriblist);
+		m_context->context = thread.egl.createContext(m_display, m_config, m_shared->context, attriblist);
 		thread.newMessage() << "End -- " << m_context->context << " = eglCreateContext()" << tcu::ThreadUtil::Message::End;
 	}
 	else
 	{
 		thread.newMessage() << "Begin -- eglCreateContext(" << m_display << ", " << m_config << ", EGL_NO_CONTEXT, { EGL_CONTEXT_CLIENT_VERSION, 2, EGL_NONE })" << tcu::ThreadUtil::Message::End;
-		m_context->context = eglCreateContext(m_display, m_config, EGL_NO_CONTEXT, attriblist);
+		m_context->context = thread.egl.createContext(m_display, m_config, EGL_NO_CONTEXT, attriblist);
 		thread.newMessage() << "End -- " << m_context->context << " = eglCreateContext()" << tcu::ThreadUtil::Message::End;
 	}
 
-	TCU_CHECK_EGL_MSG("Failed to create GLES2 context");
+	EGLU_CHECK_MSG(thread.egl, "Failed to create GLES2 context");
 	TCU_CHECK(m_context->context != EGL_NO_CONTEXT);
 }
 
@@ -670,11 +646,12 @@ DestroyContext::DestroyContext (SharedPtr<GLES2Context> contex)
 	modifyObject(SharedPtr<tcu::ThreadUtil::Object>(m_context));
 }
 
-void DestroyContext::exec (tcu::ThreadUtil::Thread& thread)
+void DestroyContext::exec (tcu::ThreadUtil::Thread& t)
 {
-	DE_UNREF(thread);
+	EGLThread& thread = dynamic_cast<EGLThread&>(t);
+
 	thread.newMessage() << "Begin -- eglDestroyContext(" << m_context->display << ", " << m_context->context << ")" << tcu::ThreadUtil::Message::End;
-	TCU_CHECK_EGL_CALL(eglDestroyContext(m_context->display, m_context->context));
+	EGLU_CHECK_CALL(thread.egl, destroyContext(m_context->display, m_context->context));
 	thread.newMessage() << "End -- eglDestroyContext()" << tcu::ThreadUtil::Message::End;
 	m_context->display	= EGL_NO_DISPLAY;
 	m_context->context	= EGL_NO_CONTEXT;
@@ -723,8 +700,7 @@ MakeCurrent::MakeCurrent (EGLThread& thread, EGLDisplay display, SharedPtr<Surfa
 
 void MakeCurrent::exec (tcu::ThreadUtil::Thread& t)
 {
-	EGLThread& thread = *(dynamic_cast<EGLThread*>(&t));
-	DE_ASSERT(&thread);
+	EGLThread& thread = dynamic_cast<EGLThread&>(t);
 
 	if (m_context)
 	{
@@ -733,7 +709,7 @@ void MakeCurrent::exec (tcu::ThreadUtil::Thread& t)
 
 		DE_ASSERT(m_surface);
 		thread.newMessage() << "Begin -- eglMakeCurrent(" << m_display << ", " << m_surface->surface << ", " << m_surface->surface << ", " << m_context->context << ")" << tcu::ThreadUtil::Message::End;
-		TCU_CHECK_EGL_CALL(eglMakeCurrent(m_display, m_surface->surface, m_surface->surface, m_context->context));
+		EGLU_CHECK_CALL(thread.egl, makeCurrent(m_display, m_surface->surface, m_surface->surface, m_context->context));
 		thread.newMessage() << "End -- eglMakeCurrent()" << tcu::ThreadUtil::Message::End;
 	}
 	else
@@ -741,7 +717,7 @@ void MakeCurrent::exec (tcu::ThreadUtil::Thread& t)
 		thread.runtimeContext = m_context;
 
 		thread.newMessage() << "Begin -- eglMakeCurrent(" << m_display << ", EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT)" << tcu::ThreadUtil::Message::End;
-		TCU_CHECK_EGL_CALL(eglMakeCurrent(m_display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT));
+		EGLU_CHECK_CALL(thread.egl, makeCurrent(m_display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT));
 		thread.newMessage() << "End -- eglMakeCurrent()" << tcu::ThreadUtil::Message::End;
 	}
 }
@@ -765,13 +741,13 @@ InitGLExtension::InitGLExtension (const char* extension)
 
 void InitGLExtension::exec (tcu::ThreadUtil::Thread& t)
 {
-	EGLThread& thread = *(dynamic_cast<EGLThread*>(&t));
+	EGLThread& thread = dynamic_cast<EGLThread&>(t);
 
 	// Check extensions
 	bool found = false;
 
 	thread.newMessage() << "Begin -- glGetString(GL_EXTENSIONS)" << tcu::ThreadUtil::Message::End;
-	std::string extensions = (const char*)glGetString(GL_EXTENSIONS);
+	std::string extensions = (const char*)thread.gl.getString(GL_EXTENSIONS);
 	thread.newMessage() << "End -- glGetString()" << tcu::ThreadUtil::Message::End;
 
 	std::string::size_type pos = extensions.find(" ");
@@ -806,7 +782,7 @@ void InitGLExtension::exec (tcu::ThreadUtil::Thread& t)
 	if (m_extension == "GL_OES_EGL_image")
 	{
 		thread.newMessage() << "Begin -- eglGetProcAddress(\"glEGLImageTargetTexture2DOES\")" << tcu::ThreadUtil::Message::End;
-		thread.runtimeContext->glExtensions.imageTargetTexture2D = (PFNGLEGLIMAGETARGETTEXTURE2DOESPROC)eglGetProcAddress("glEGLImageTargetTexture2DOES");
+		thread.runtimeContext->glExtensions.imageTargetTexture2D = (glEGLImageTargetTexture2DOESFunc)thread.egl.getProcAddress("glEGLImageTargetTexture2DOES");
 		thread.newMessage() << "End --  " << ((void*)thread.runtimeContext->glExtensions.imageTargetTexture2D) << " = eglGetProcAddress()"<< tcu::ThreadUtil::Message::End;
 	}
 }
@@ -836,18 +812,20 @@ CreatePBufferSurface::CreatePBufferSurface (EGLDisplay display, EGLConfig config
 	m_surface = surface;
 }
 
-void CreatePBufferSurface::exec (tcu::ThreadUtil::Thread& thread)
+void CreatePBufferSurface::exec (tcu::ThreadUtil::Thread& t)
 {
-	EGLint attriblist[] = {
+	EGLThread& thread = dynamic_cast<EGLThread&>(t);
+
+	const EGLint attriblist[] = {
 		EGL_WIDTH, m_width,
 		EGL_HEIGHT, m_height,
 		EGL_NONE
 	};
 
 	thread.newMessage() << "Begin -- eglCreatePbufferSurface(" << m_display << ", " << m_config << ", { EGL_WIDTH, " << m_width << ", EGL_HEIGHT, " << m_height << ", EGL_NONE })" << tcu::ThreadUtil::Message::End;
-	m_surface->surface = eglCreatePbufferSurface(m_display, m_config, attriblist);
+	m_surface->surface = thread.egl.createPbufferSurface(m_display, m_config, attriblist);
 	thread.newMessage() << "End -- " << m_surface->surface << "= eglCreatePbufferSurface()" << tcu::ThreadUtil::Message::End;
-	TCU_CHECK_EGL_MSG("eglCreatePbufferSurface()");
+	EGLU_CHECK_MSG(thread.egl, "eglCreatePbufferSurface()");
 }
 
 class DestroySurface : public tcu::ThreadUtil::Operation
@@ -869,10 +847,12 @@ DestroySurface::DestroySurface (EGLDisplay display, SharedPtr<Surface> surface)
 	modifyObject(SharedPtr<tcu::ThreadUtil::Object>(m_surface));
 }
 
-void DestroySurface::exec (tcu::ThreadUtil::Thread& thread)
+void DestroySurface::exec (tcu::ThreadUtil::Thread& t)
 {
+	EGLThread& thread = dynamic_cast<EGLThread&>(t);
+
 	thread.newMessage() << "Begin -- eglDestroySurface(" << m_display << ",  " << m_surface->surface << ")" << tcu::ThreadUtil::Message::End;
-	TCU_CHECK_EGL_CALL(eglDestroySurface(m_display, m_surface->surface));
+	EGLU_CHECK_CALL(thread.egl, destroySurface(m_display, m_surface->surface));
 	thread.newMessage() << "End -- eglDestroySurface()" << tcu::ThreadUtil::Message::End;
 }
 
@@ -920,12 +900,13 @@ CreateTexture::CreateTexture (SharedPtr<Texture>& texture, bool useSync, bool se
 	m_texture = texture;
 }
 
-void CreateTexture::exec (tcu::ThreadUtil::Thread& thread)
+void CreateTexture::exec (tcu::ThreadUtil::Thread& t)
 {
+	EGLThread& thread = dynamic_cast<EGLThread&>(t);
 	GLuint tex = 0;
 
 	thread.newMessage() << "Begin -- glGenTextures(1, { 0 })" << tcu::ThreadUtil::Message::End;
-	GLU_CHECK_CALL(glGenTextures(1, &tex));
+	GLU_CHECK_GLW_CALL(thread.gl, genTextures(1, &tex));
 	thread.newMessage() << "End -- glGenTextures(1, { " << tex << " })" << tcu::ThreadUtil::Message::End;
 
 	m_texture->texture = tex;
@@ -948,12 +929,13 @@ DeleteTexture::DeleteTexture (SharedPtr<Texture> texture, bool useSync, bool ser
 	modifyGLObject(SharedPtr<Object>(m_texture));
 }
 
-void DeleteTexture::exec (tcu::ThreadUtil::Thread& thread)
+void DeleteTexture::exec (tcu::ThreadUtil::Thread& t)
 {
+	EGLThread& thread = dynamic_cast<EGLThread&>(t);
 	GLuint tex = m_texture->texture;
 
 	thread.newMessage() << "Begin -- glDeleteTextures(1, { " << tex << " })" << tcu::ThreadUtil::Message::End;
-	GLU_CHECK_CALL(glDeleteTextures(1, &tex));
+	GLU_CHECK_GLW_CALL(thread.gl, deleteTextures(1, &tex));
 	thread.newMessage() << "End -- glDeleteTextures()" << tcu::ThreadUtil::Message::End;
 
 	m_texture->texture = 0;
@@ -992,20 +974,21 @@ TexImage2D::TexImage2D (SharedPtr<Texture> texture, GLint level, GLint internalF
 	texture->sourceImage = SharedPtr<EGLImage>();
 }
 
-void TexImage2D::exec (tcu::ThreadUtil::Thread& thread)
+void TexImage2D::exec (tcu::ThreadUtil::Thread& t)
 {
+	EGLThread& thread = dynamic_cast<EGLThread&>(t);
 	void* dummyData = thread.getDummyData(m_width*m_height*4);
 
 	thread.newMessage() << "Begin -- glBindTexture(GL_TEXTURE_2D, " << m_texture->texture << ")" << tcu::ThreadUtil::Message::End;
-	GLU_CHECK_CALL(glBindTexture(GL_TEXTURE_2D, m_texture->texture));
+	GLU_CHECK_GLW_CALL(thread.gl, bindTexture(GL_TEXTURE_2D, m_texture->texture));
 	thread.newMessage() << "End -- glBindTexture()" << tcu::ThreadUtil::Message::End;
 
 	thread.newMessage() << "Begin -- glTexImage2D(GL_TEXTURE_2D, " << m_level << ", " << m_internalFormat << ", " << m_width << ", " << m_height << ", 0, " << m_format << ", " << m_type << ", data)" << tcu::ThreadUtil::Message::End;
-	GLU_CHECK_CALL(glTexImage2D(GL_TEXTURE_2D, m_level, m_internalFormat, m_width, m_height, 0, m_format, m_type, dummyData));
+	GLU_CHECK_GLW_CALL(thread.gl, texImage2D(GL_TEXTURE_2D, m_level, m_internalFormat, m_width, m_height, 0, m_format, m_type, dummyData));
 	thread.newMessage() << "End -- glTexImage2D()" << tcu::ThreadUtil::Message::End;
 
 	thread.newMessage() << "Begin -- glBindTexture(GL_TEXTURE_2D, 0)" << tcu::ThreadUtil::Message::End;
-	GLU_CHECK_CALL(glBindTexture(GL_TEXTURE_2D, 0));
+	GLU_CHECK_GLW_CALL(thread.gl, bindTexture(GL_TEXTURE_2D, 0));
 	thread.newMessage() << "End -- glBindTexture()" << tcu::ThreadUtil::Message::End;
 }
 
@@ -1043,20 +1026,21 @@ TexSubImage2D::TexSubImage2D (SharedPtr<Texture> texture, GLint level, GLint xof
 		modifyGLObject(SharedPtr<Object>(m_texture->sourceImage));
 }
 
-void TexSubImage2D::exec (tcu::ThreadUtil::Thread& thread)
+void TexSubImage2D::exec (tcu::ThreadUtil::Thread& t)
 {
+	EGLThread& thread = dynamic_cast<EGLThread&>(t);
 	void* dummyData = thread.getDummyData(m_width*m_height*4);
 
 	thread.newMessage() << "Begin -- glBindTexture(GL_TEXTURE_2D, " << m_texture->texture << ")" << tcu::ThreadUtil::Message::End;
-	GLU_CHECK_CALL(glBindTexture(GL_TEXTURE_2D, m_texture->texture));
+	GLU_CHECK_GLW_CALL(thread.gl, bindTexture(GL_TEXTURE_2D, m_texture->texture));
 	thread.newMessage() << "End -- glBindTexture()" << tcu::ThreadUtil::Message::End;
 
 	thread.newMessage() << "Begin -- glTexSubImage2D(GL_TEXTURE_2D, " << m_level << ", " << m_xoffset << ", " << m_yoffset << ", " << m_width << ", " << m_height << ", 0, " << m_format << ", " << m_type << ", <data>)" << tcu::ThreadUtil::Message::End;
-	GLU_CHECK_CALL(glTexSubImage2D(GL_TEXTURE_2D, m_level, m_xoffset, m_yoffset, m_width, m_height, m_format, m_type, dummyData));
+	GLU_CHECK_GLW_CALL(thread.gl, texSubImage2D(GL_TEXTURE_2D, m_level, m_xoffset, m_yoffset, m_width, m_height, m_format, m_type, dummyData));
 	thread.newMessage() << "End -- glSubTexImage2D()" << tcu::ThreadUtil::Message::End;
 
 	thread.newMessage() << "Begin -- glBindTexture(GL_TEXTURE_2D, 0)" << tcu::ThreadUtil::Message::End;
-	GLU_CHECK_CALL(glBindTexture(GL_TEXTURE_2D, 0));
+	GLU_CHECK_GLW_CALL(thread.gl, bindTexture(GL_TEXTURE_2D, 0));
 	thread.newMessage() << "End -- glBindTexture()" << tcu::ThreadUtil::Message::End;
 }
 
@@ -1095,18 +1079,20 @@ CopyTexImage2D::CopyTexImage2D (SharedPtr<Texture> texture, GLint level, GLint i
 	texture->sourceImage = SharedPtr<EGLImage>();
 }
 
-void CopyTexImage2D::exec (tcu::ThreadUtil::Thread& thread)
+void CopyTexImage2D::exec (tcu::ThreadUtil::Thread& t)
 {
+	EGLThread& thread = dynamic_cast<EGLThread&>(t);
+
 	thread.newMessage() << "Begin -- glBindTexture(GL_TEXTURE_2D, " << m_texture->texture << ")" << tcu::ThreadUtil::Message::End;
-	GLU_CHECK_CALL(glBindTexture(GL_TEXTURE_2D, m_texture->texture));
+	GLU_CHECK_GLW_CALL(thread.gl, bindTexture(GL_TEXTURE_2D, m_texture->texture));
 	thread.newMessage() << "End -- glBindTexture()" << tcu::ThreadUtil::Message::End;
 
 	thread.newMessage() << "Begin -- glCopyTexImage2D(GL_TEXTURE_2D, " << m_level << ", " << m_internalFormat << ", " << m_x << ", " << m_y << ", " << m_width << ", " << m_height << ", " << m_border << ")" << tcu::ThreadUtil::Message::End;
-	GLU_CHECK_CALL(glCopyTexImage2D(GL_TEXTURE_2D, m_level, m_internalFormat, m_x, m_y, m_width, m_height, m_border));
+	GLU_CHECK_GLW_CALL(thread.gl, copyTexImage2D(GL_TEXTURE_2D, m_level, m_internalFormat, m_x, m_y, m_width, m_height, m_border));
 	thread.newMessage() << "End -- glCopyTexImage2D()" << tcu::ThreadUtil::Message::End;
 
 	thread.newMessage() << "Begin -- glBindTexture(GL_TEXTURE_2D, 0)" << tcu::ThreadUtil::Message::End;
-	GLU_CHECK_CALL(glBindTexture(GL_TEXTURE_2D, 0));
+	GLU_CHECK_GLW_CALL(thread.gl, bindTexture(GL_TEXTURE_2D, 0));
 	thread.newMessage() << "End -- glBindTexture()" << tcu::ThreadUtil::Message::End;
 }
 
@@ -1144,18 +1130,20 @@ CopyTexSubImage2D::CopyTexSubImage2D (SharedPtr<Texture> texture, GLint level, G
 		modifyGLObject(SharedPtr<Object>(m_texture->sourceImage));
 }
 
-void CopyTexSubImage2D::exec (tcu::ThreadUtil::Thread& thread)
+void CopyTexSubImage2D::exec (tcu::ThreadUtil::Thread& t)
 {
+	EGLThread& thread = dynamic_cast<EGLThread&>(t);
+
 	thread.newMessage() << "Begin -- glBindTexture(GL_TEXTURE_2D, " << m_texture->texture << ")" << tcu::ThreadUtil::Message::End;
-	GLU_CHECK_CALL(glBindTexture(GL_TEXTURE_2D, m_texture->texture));
+	GLU_CHECK_GLW_CALL(thread.gl, bindTexture(GL_TEXTURE_2D, m_texture->texture));
 	thread.newMessage() << "End -- glBindTexture()" << tcu::ThreadUtil::Message::End;
 
 	thread.newMessage() << "Begin -- glCopyTexSubImage2D(GL_TEXTURE_2D, " << m_level << ", " << m_xoffset << ", " << m_yoffset << ", " << m_x << ", " << m_y << ", " << m_width << ", " << m_height << ")" << tcu::ThreadUtil::Message::End;
-	GLU_CHECK_CALL(glCopyTexSubImage2D(GL_TEXTURE_2D, m_level, m_xoffset, m_yoffset, m_x, m_y, m_width, m_height));
+	GLU_CHECK_GLW_CALL(thread.gl, copyTexSubImage2D(GL_TEXTURE_2D, m_level, m_xoffset, m_yoffset, m_x, m_y, m_width, m_height));
 	thread.newMessage() << "End -- glCopyTexSubImage2D()" << tcu::ThreadUtil::Message::End;
 
 	thread.newMessage() << "Begin -- glBindTexture(GL_TEXTURE_2D, 0)" << tcu::ThreadUtil::Message::End;
-	GLU_CHECK_CALL(glBindTexture(GL_TEXTURE_2D, 0));
+	GLU_CHECK_GLW_CALL(thread.gl, bindTexture(GL_TEXTURE_2D, 0));
 	thread.newMessage() << "End -- glBindTexture()" << tcu::ThreadUtil::Message::End;
 }
 
@@ -1197,12 +1185,13 @@ CreateBuffer::CreateBuffer (SharedPtr<Buffer>& buffer, bool useSync, bool server
 	m_buffer = buffer;
 }
 
-void CreateBuffer::exec (tcu::ThreadUtil::Thread& thread)
+void CreateBuffer::exec (tcu::ThreadUtil::Thread& t)
 {
+	EGLThread& thread = dynamic_cast<EGLThread&>(t);
 	GLuint buffer = 0;
 
 	thread.newMessage() << "Begin -- glGenBuffers(1, { 0 })" << tcu::ThreadUtil::Message::End;
-	GLU_CHECK_CALL(glGenBuffers(1, &buffer));
+	GLU_CHECK_GLW_CALL(thread.gl, genBuffers(1, &buffer));
 	thread.newMessage() << "End -- glGenBuffers(1, { " << buffer << " })" << tcu::ThreadUtil::Message::End;
 
 	m_buffer->buffer = buffer;
@@ -1225,12 +1214,13 @@ DeleteBuffer::DeleteBuffer (SharedPtr<Buffer> buffer, bool useSync, bool serverS
 	modifyGLObject(SharedPtr<Object>(m_buffer));
 }
 
-void DeleteBuffer::exec (tcu::ThreadUtil::Thread& thread)
+void DeleteBuffer::exec (tcu::ThreadUtil::Thread& t)
 {
+	EGLThread& thread = dynamic_cast<EGLThread&>(t);
 	GLuint buffer = m_buffer->buffer;
 
 	thread.newMessage() << "Begin -- glDeleteBuffers(1, { " << buffer << " })" << tcu::ThreadUtil::Message::End;
-	GLU_CHECK_CALL(glDeleteBuffers(1, &buffer));
+	GLU_CHECK_GLW_CALL(thread.gl, deleteBuffers(1, &buffer));
 	thread.newMessage() << "End -- glDeleteBuffers()" << tcu::ThreadUtil::Message::End;
 
 	m_buffer->buffer = 0;
@@ -1261,20 +1251,21 @@ BufferData::BufferData (SharedPtr<Buffer> buffer, GLenum target, GLsizeiptr size
 	buffer->size		= size;
 }
 
-void BufferData::exec (tcu::ThreadUtil::Thread& thread)
+void BufferData::exec (tcu::ThreadUtil::Thread& t)
 {
+	EGLThread& thread = dynamic_cast<EGLThread&>(t);
 	void* dummyData = thread.getDummyData(m_size);
 
 	thread.newMessage() << "Begin -- glBindBuffer(" << m_target << ", " << m_buffer->buffer << ")" << tcu::ThreadUtil::Message::End;
-	GLU_CHECK_CALL(glBindBuffer(m_target, m_buffer->buffer));
+	GLU_CHECK_GLW_CALL(thread.gl, bindBuffer(m_target, m_buffer->buffer));
 	thread.newMessage() << "End -- glBindBuffer()" << tcu::ThreadUtil::Message::End;
 
 	thread.newMessage() << "Begin -- glBufferData(" << m_target << ", " << m_size << ", <DATA>, " << m_usage << ")" << tcu::ThreadUtil::Message::End;
-	GLU_CHECK_CALL(glBufferData(m_target, m_size, dummyData, m_usage));
+	GLU_CHECK_GLW_CALL(thread.gl, bufferData(m_target, m_size, dummyData, m_usage));
 	thread.newMessage() << "End -- glBufferData()" << tcu::ThreadUtil::Message::End;
 
 	thread.newMessage() << "Begin -- glBindBuffer(" << m_target << ", 0)" << tcu::ThreadUtil::Message::End;
-	GLU_CHECK_CALL(glBindBuffer(m_target, 0));
+	GLU_CHECK_GLW_CALL(thread.gl, bindBuffer(m_target, 0));
 	thread.newMessage() << "End -- glBindBuffer()" << tcu::ThreadUtil::Message::End;
 }
 
@@ -1301,20 +1292,21 @@ BufferSubData::BufferSubData (SharedPtr<Buffer> buffer, GLenum target, GLintptr 
 	modifyGLObject(SharedPtr<Object>(m_buffer));
 }
 
-void BufferSubData::exec (tcu::ThreadUtil::Thread& thread)
+void BufferSubData::exec (tcu::ThreadUtil::Thread& t)
 {
+	EGLThread& thread = dynamic_cast<EGLThread&>(t);
 	void* dummyData = thread.getDummyData(m_size);
 
 	thread.newMessage() << "Begin -- glBindBuffer(" << m_target << ", " << m_buffer->buffer << ")" << tcu::ThreadUtil::Message::End;
-	GLU_CHECK_CALL(glBindBuffer(m_target, m_buffer->buffer));
+	GLU_CHECK_GLW_CALL(thread.gl, bindBuffer(m_target, m_buffer->buffer));
 	thread.newMessage() << "End -- glBindBuffer()" << tcu::ThreadUtil::Message::End;
 
 	thread.newMessage() << "Begin -- glBufferSubData(" << m_target << ", " << m_offset << ", " << m_size << ", <DATA>)" << tcu::ThreadUtil::Message::End;
-	GLU_CHECK_CALL(glBufferSubData(m_target, m_offset, m_size, dummyData));
+	GLU_CHECK_GLW_CALL(thread.gl, bufferSubData(m_target, m_offset, m_size, dummyData));
 	thread.newMessage() << "End -- glBufferSubData()" << tcu::ThreadUtil::Message::End;
 
 	thread.newMessage() << "Begin -- glBindBuffer(" << m_target << ", 0)" << tcu::ThreadUtil::Message::End;
-	GLU_CHECK_CALL(glBindBuffer(m_target, 0));
+	GLU_CHECK_GLW_CALL(thread.gl, bindBuffer(m_target, 0));
 	thread.newMessage() << "End -- glBindBuffer()" << tcu::ThreadUtil::Message::End;
 }
 
@@ -1359,13 +1351,14 @@ CreateShader::CreateShader (GLenum type, SharedPtr<Shader>& shader, bool useSync
 	m_shader = shader;
 }
 
-void CreateShader::exec (tcu::ThreadUtil::Thread& thread)
+void CreateShader::exec (tcu::ThreadUtil::Thread& t)
 {
+	EGLThread& thread = dynamic_cast<EGLThread&>(t);
 	GLuint shader = 0;
 
 	thread.newMessage() << "Begin -- glCreateShader(" << m_type << ")" << tcu::ThreadUtil::Message::End;
-	shader = glCreateShader(m_type);
-	GLU_CHECK_MSG("glCreateShader()");
+	shader = thread.gl.createShader(m_type);
+	GLU_CHECK_GLW_MSG(thread.gl, "glCreateShader()");
 	thread.newMessage() << "End -- " << shader  << " = glCreateShader(" << m_type << ")" << tcu::ThreadUtil::Message::End;
 
 	m_shader->shader	= shader;
@@ -1388,12 +1381,13 @@ DeleteShader::DeleteShader (SharedPtr<Shader> shader, bool useSync, bool serverS
 	modifyGLObject(SharedPtr<Object>(m_shader));
 }
 
-void DeleteShader::exec (tcu::ThreadUtil::Thread& thread)
+void DeleteShader::exec (tcu::ThreadUtil::Thread& t)
 {
+	EGLThread& thread = dynamic_cast<EGLThread&>(t);
 	GLuint shader = m_shader->shader;
 
 	thread.newMessage() << "Begin -- glDeleteShader(" << shader << ")" << tcu::ThreadUtil::Message::End;
-	GLU_CHECK_CALL(glDeleteShader(shader));
+	GLU_CHECK_GLW_CALL(thread.gl, deleteShader(shader));
 	thread.newMessage() << "End -- glDeleteShader()" << tcu::ThreadUtil::Message::End;
 
 	m_shader->shader = 0;
@@ -1419,12 +1413,13 @@ ShaderSource::ShaderSource (SharedPtr<Shader> shader, const char* source, bool u
 	m_shader->isDefined = true;
 }
 
-void ShaderSource::exec (tcu::ThreadUtil::Thread& thread)
+void ShaderSource::exec (tcu::ThreadUtil::Thread& t)
 {
+	EGLThread& thread = dynamic_cast<EGLThread&>(t);
 	const char* shaderSource = m_source.c_str();
 
-	thread.newMessage() << "Begin -- glShaderSource(" << m_shader->shader << ", 1, \"" << shaderSource << "\", NULL)" << tcu::ThreadUtil::Message::End;
-	GLU_CHECK_CALL(glShaderSource(m_shader->shader, 1, &shaderSource, NULL));
+	thread.newMessage() << "Begin -- glShaderSource(" << m_shader->shader << ", 1, \"" << shaderSource << "\", DE_NULL)" << tcu::ThreadUtil::Message::End;
+	GLU_CHECK_GLW_CALL(thread.gl, shaderSource(m_shader->shader, 1, &shaderSource, DE_NULL));
 	thread.newMessage() << "End -- glShaderSource()" << tcu::ThreadUtil::Message::End;
 }
 
@@ -1446,10 +1441,12 @@ ShaderCompile::ShaderCompile (SharedPtr<Shader> shader, bool useSync, bool serve
 	modifyGLObject(SharedPtr<Object>(m_shader));
 }
 
-void ShaderCompile::exec (tcu::ThreadUtil::Thread& thread)
+void ShaderCompile::exec (tcu::ThreadUtil::Thread& t)
 {
+	EGLThread& thread = dynamic_cast<EGLThread&>(t);
+
 	thread.newMessage() << "Begin -- glCompileShader(" << m_shader->shader << ")" << tcu::ThreadUtil::Message::End;
-	GLU_CHECK_CALL(glCompileShader(m_shader->shader));
+	GLU_CHECK_GLW_CALL(thread.gl, compileShader(m_shader->shader));
 	thread.newMessage() << "End -- glCompileShader()" << tcu::ThreadUtil::Message::End;
 }
 
@@ -1495,13 +1492,14 @@ CreateProgram::CreateProgram (SharedPtr<Program>& program, bool useSync, bool se
 	m_program = program;
 }
 
-void CreateProgram::exec (tcu::ThreadUtil::Thread& thread)
+void CreateProgram::exec (tcu::ThreadUtil::Thread& t)
 {
+	EGLThread& thread = dynamic_cast<EGLThread&>(t);
 	GLuint program = 0;
 
 	thread.newMessage() << "Begin -- glCreateProgram()" << tcu::ThreadUtil::Message::End;
-	program = glCreateProgram();
-	GLU_CHECK_MSG("glCreateProgram()");
+	program = thread.gl.createProgram();
+	GLU_CHECK_GLW_MSG(thread.gl, "glCreateProgram()");
 	thread.newMessage() << "End -- " << program  << " = glCreateProgram()" << tcu::ThreadUtil::Message::End;
 
 	m_program->program	= program;
@@ -1524,12 +1522,13 @@ DeleteProgram::DeleteProgram (SharedPtr<Program> program, bool useSync, bool ser
 	modifyGLObject(SharedPtr<Object>(m_program));
 }
 
-void DeleteProgram::exec (tcu::ThreadUtil::Thread& thread)
+void DeleteProgram::exec (tcu::ThreadUtil::Thread& t)
 {
+	EGLThread& thread = dynamic_cast<EGLThread&>(t);
 	GLuint program = m_program->program;
 
 	thread.newMessage() << "Begin -- glDeleteProgram(" << program << ")" << tcu::ThreadUtil::Message::End;
-	GLU_CHECK_CALL(glDeleteProgram(program));
+	GLU_CHECK_GLW_CALL(thread.gl, deleteProgram(program));
 	thread.newMessage() << "End -- glDeleteProgram()" << tcu::ThreadUtil::Message::End;
 
 	m_program->program = 0;
@@ -1562,10 +1561,12 @@ AttachShader::AttachShader (SharedPtr<Program> program, SharedPtr<Shader> shader
 		DE_ASSERT(false);
 }
 
-void AttachShader::exec (tcu::ThreadUtil::Thread& thread)
+void AttachShader::exec (tcu::ThreadUtil::Thread& t)
 {
+	EGLThread& thread = dynamic_cast<EGLThread&>(t);
+
 	thread.newMessage() << "Begin -- glAttachShader(" << m_program->program << ", " << m_shader->shader << ")" << tcu::ThreadUtil::Message::End;
-	GLU_CHECK_CALL(glAttachShader(m_program->program, m_shader->shader));
+	GLU_CHECK_GLW_CALL(thread.gl, attachShader(m_program->program, m_shader->shader));
 	thread.newMessage() << "End -- glAttachShader()" << tcu::ThreadUtil::Message::End;
 
 	if (m_shader->type == GL_VERTEX_SHADER)
@@ -1608,19 +1609,21 @@ DetachShader::DetachShader (SharedPtr<Program> program, GLenum type, bool useSyn
 		DE_ASSERT(false);
 }
 
-void DetachShader::exec (tcu::ThreadUtil::Thread& thread)
+void DetachShader::exec (tcu::ThreadUtil::Thread& t)
 {
+	EGLThread& thread = dynamic_cast<EGLThread&>(t);
+
 	if (m_type == GL_VERTEX_SHADER)
 	{
 		thread.newMessage() << "Begin -- glDetachShader(" << m_program->program << ", " << m_program->runtimeVertexShader << ")" << tcu::ThreadUtil::Message::End;
-		GLU_CHECK_CALL(glDetachShader(m_program->program, m_program->runtimeVertexShader));
+		GLU_CHECK_GLW_CALL(thread.gl, detachShader(m_program->program, m_program->runtimeVertexShader));
 		thread.newMessage() << "End -- glDetachShader()" << tcu::ThreadUtil::Message::End;
 		m_program->runtimeVertexShader = 0;
 	}
 	else if (m_type == GL_FRAGMENT_SHADER)
 	{
 		thread.newMessage() << "Begin -- glDetachShader(" << m_program->program << ", " << m_program->runtimeFragmentShader << ")" << tcu::ThreadUtil::Message::End;
-		GLU_CHECK_CALL(glDetachShader(m_program->program, m_program->runtimeFragmentShader));
+		GLU_CHECK_GLW_CALL(thread.gl, detachShader(m_program->program, m_program->runtimeFragmentShader));
 		thread.newMessage() << "End -- glDetachShader()" << tcu::ThreadUtil::Message::End;
 		m_program->runtimeFragmentShader = 0;
 	}
@@ -1646,12 +1649,13 @@ LinkProgram::LinkProgram (SharedPtr<Program> program, bool useSync, bool serverS
 	program->linked = true;
 }
 
-void LinkProgram::exec (tcu::ThreadUtil::Thread& thread)
+void LinkProgram::exec (tcu::ThreadUtil::Thread& t)
 {
+	EGLThread& thread = dynamic_cast<EGLThread&>(t);
 	GLuint program = m_program->program;
 
 	thread.newMessage() << "Begin -- glLinkProgram(" << program << ")" << tcu::ThreadUtil::Message::End;
-	GLU_CHECK_CALL(glLinkProgram(program));
+	GLU_CHECK_GLW_CALL(thread.gl, linkProgram(program));
 	thread.newMessage() << "End -- glLinkProgram()" << tcu::ThreadUtil::Message::End;
 }
 
@@ -1675,51 +1679,53 @@ RenderBuffer::RenderBuffer (SharedPtr<Program> program, SharedPtr<Buffer> buffer
 	readGLObject(SharedPtr<Object>(buffer));
 }
 
-void RenderBuffer::exec (tcu::ThreadUtil::Thread& thread)
+void RenderBuffer::exec (tcu::ThreadUtil::Thread& t)
 {
+	EGLThread& thread = dynamic_cast<EGLThread&>(t);
+
 	thread.newMessage() << "Begin -- glClearColor(0.5f, 0.5f, 0.5f, 1.0f)" << tcu::ThreadUtil::Message::End;
-	GLU_CHECK_CALL(glClearColor(0.5f, 0.5f, 0.5f, 1.0f));
+	GLU_CHECK_GLW_CALL(thread.gl, clearColor(0.5f, 0.5f, 0.5f, 1.0f));
 	thread.newMessage() << "End -- glClearColor()" << tcu::ThreadUtil::Message::End;
 
 	thread.newMessage() << "Begin -- glClear(GL_COLOR_BUFFER_BIT)" << tcu::ThreadUtil::Message::End;
-	GLU_CHECK_CALL(glClear(GL_COLOR_BUFFER_BIT));
+	GLU_CHECK_GLW_CALL(thread.gl, clear(GL_COLOR_BUFFER_BIT));
 	thread.newMessage() << "End -- glClear()" << tcu::ThreadUtil::Message::End;
 
 	thread.newMessage() << "Begin -- glUseProgram(" << m_program->program << ")" << tcu::ThreadUtil::Message::End;
-	GLU_CHECK_CALL(glUseProgram(m_program->program));
+	GLU_CHECK_GLW_CALL(thread.gl, useProgram(m_program->program));
 	thread.newMessage() << "End -- glUseProgram()" << tcu::ThreadUtil::Message::End;
 
 	thread.newMessage() << "Begin -- glGetAttribLocation(" << m_program->program << ", \"a_pos\")" << tcu::ThreadUtil::Message::End;
-	GLint posLoc = glGetAttribLocation(m_program->program, "a_pos");
-	GLU_CHECK_MSG("glGetAttribLocation()");
+	GLint posLoc = thread.gl.getAttribLocation(m_program->program, "a_pos");
+	GLU_CHECK_GLW_MSG(thread.gl, "glGetAttribLocation()");
 	thread.newMessage() << "End -- " << posLoc << " = glGetAttribLocation()" << tcu::ThreadUtil::Message::End;
 
 	thread.newMessage() << "Begin -- glEnableVertexAttribArray(" << posLoc << ")" << tcu::ThreadUtil::Message::End;
-	GLU_CHECK_CALL(glEnableVertexAttribArray(posLoc));
+	GLU_CHECK_GLW_CALL(thread.gl, enableVertexAttribArray(posLoc));
 	thread.newMessage() << "End -- glEnableVertexAttribArray()" << tcu::ThreadUtil::Message::End;
 
 	thread.newMessage() << "Begin -- glBindBuffer(GL_ARRAY_BUFFER, " << m_buffer->buffer << ")" << tcu::ThreadUtil::Message::End;
-	GLU_CHECK_CALL(glBindBuffer(GL_ARRAY_BUFFER, m_buffer->buffer));
+	GLU_CHECK_GLW_CALL(thread.gl, bindBuffer(GL_ARRAY_BUFFER, m_buffer->buffer));
 	thread.newMessage() << "End -- glBindBuffer()" << tcu::ThreadUtil::Message::End;
 
 	thread.newMessage() << "Begin -- glVertexAttribPointer(" << posLoc << ", GL_BYTE, GL_TRUE, 0, 0)" << tcu::ThreadUtil::Message::End;
-	GLU_CHECK_CALL(glVertexAttribPointer(posLoc, 2, GL_BYTE, GL_TRUE, 0, 0));
+	GLU_CHECK_GLW_CALL(thread.gl, vertexAttribPointer(posLoc, 2, GL_BYTE, GL_TRUE, 0, 0));
 	thread.newMessage() << "End -- glVertexAttribPointer()" << tcu::ThreadUtil::Message::End;
 
 	thread.newMessage() << "Begin -- glDrawArrays(GL_TRIANGLES, 0, " << (m_buffer->size / 2) << ")" << tcu::ThreadUtil::Message::End;
-	GLU_CHECK_CALL(glDrawArrays(GL_TRIANGLES, 0, (GLsizei)m_buffer->size / 2));
+	GLU_CHECK_GLW_CALL(thread.gl, drawArrays(GL_TRIANGLES, 0, (GLsizei)m_buffer->size / 2));
 	thread.newMessage() << "End -- glDrawArrays()" << tcu::ThreadUtil::Message::End;
 
 	thread.newMessage() << "Begin -- glBindBuffer(GL_ARRAY_BUFFER, 0)" << tcu::ThreadUtil::Message::End;
-	GLU_CHECK_CALL(glBindBuffer(GL_ARRAY_BUFFER, 0));
+	GLU_CHECK_GLW_CALL(thread.gl, bindBuffer(GL_ARRAY_BUFFER, 0));
 	thread.newMessage() << "End -- glBindBuffer()" << tcu::ThreadUtil::Message::End;
 
 	thread.newMessage() << "Begin -- glDisableVertexAttribArray(" << posLoc << ")" << tcu::ThreadUtil::Message::End;
-	GLU_CHECK_CALL(glDisableVertexAttribArray(posLoc));
+	GLU_CHECK_GLW_CALL(thread.gl, disableVertexAttribArray(posLoc));
 	thread.newMessage() << "End -- glDisableVertexAttribArray()" << tcu::ThreadUtil::Message::End;
 
 	thread.newMessage() << "Begin -- glUseProgram(0)" << tcu::ThreadUtil::Message::End;
-	GLU_CHECK_CALL(glUseProgram(0));
+	GLU_CHECK_GLW_CALL(thread.gl, useProgram(0));
 	thread.newMessage() << "End -- glUseProgram()" << tcu::ThreadUtil::Message::End;
 }
 
@@ -1743,45 +1749,47 @@ RenderTexture::RenderTexture (SharedPtr<Program> program, SharedPtr<Texture> tex
 	readGLObject(SharedPtr<Object>(texture));
 }
 
-void RenderTexture::exec (tcu::ThreadUtil::Thread& thread)
+void RenderTexture::exec (tcu::ThreadUtil::Thread& t)
 {
+	EGLThread& thread = dynamic_cast<EGLThread&>(t);
+
 	thread.newMessage() << "Begin -- glClearColor(0.5f, 0.5f, 0.5f, 1.0f)" << tcu::ThreadUtil::Message::End;
-	GLU_CHECK_CALL(glClearColor(0.5f, 0.5f, 0.5f, 1.0f));
+	GLU_CHECK_GLW_CALL(thread.gl, clearColor(0.5f, 0.5f, 0.5f, 1.0f));
 	thread.newMessage() << "End -- glClearColor()" << tcu::ThreadUtil::Message::End;
 
 	thread.newMessage() << "Begin -- glClear(GL_COLOR_BUFFER_BIT)" << tcu::ThreadUtil::Message::End;
-	GLU_CHECK_CALL(glClear(GL_COLOR_BUFFER_BIT));
+	GLU_CHECK_GLW_CALL(thread.gl, clear(GL_COLOR_BUFFER_BIT));
 	thread.newMessage() << "End -- glClear()" << tcu::ThreadUtil::Message::End;
 
 	thread.newMessage() << "Begin -- glUseProgram(" << m_program->program << ")" << tcu::ThreadUtil::Message::End;
-	GLU_CHECK_CALL(glUseProgram(m_program->program));
+	GLU_CHECK_GLW_CALL(thread.gl, useProgram(m_program->program));
 	thread.newMessage() << "End -- glUseProgram()" << tcu::ThreadUtil::Message::End;
 
 	thread.newMessage() << "Begin -- glBindTexture(GL_TEXTURE_2D, " << m_texture->texture << ")" << tcu::ThreadUtil::Message::End;
-	GLU_CHECK_CALL(glBindTexture(GL_TEXTURE_2D, m_texture->texture));
+	GLU_CHECK_GLW_CALL(thread.gl, bindTexture(GL_TEXTURE_2D, m_texture->texture));
 	thread.newMessage() << "End -- glBindTexture()" << tcu::ThreadUtil::Message::End;
 
 	thread.newMessage() << "Begin -- glGetUniformLocation(" << m_program->program << ", \"u_sampler\")" << tcu::ThreadUtil::Message::End;
-	GLint samplerPos = glGetUniformLocation(m_program->program, "u_sampler");
-	GLU_CHECK_MSG("glGetUniformLocation()");
+	GLint samplerPos = thread.gl.getUniformLocation(m_program->program, "u_sampler");
+	GLU_CHECK_GLW_MSG(thread.gl, "glGetUniformLocation()");
 	thread.newMessage() << "End -- glGetUniformLocation()" << tcu::ThreadUtil::Message::End;
 
 	thread.newMessage() << "Begin -- glUniform1i(" << samplerPos << ", 0)" << tcu::ThreadUtil::Message::End;
-	GLU_CHECK_CALL(glUniform1i(samplerPos, 0));
+	GLU_CHECK_GLW_CALL(thread.gl, uniform1i(samplerPos, 0));
 	thread.newMessage() << "End -- glUniform1i()" << tcu::ThreadUtil::Message::End;
 
 
 	thread.newMessage() << "Begin -- glGetAttribLocation(" << m_program->program << ", \"a_pos\")" << tcu::ThreadUtil::Message::End;
-	GLint posLoc = glGetAttribLocation(m_program->program, "a_pos");
-	GLU_CHECK_MSG("glGetAttribLocation()");
+	GLint posLoc = thread.gl.getAttribLocation(m_program->program, "a_pos");
+	GLU_CHECK_GLW_MSG(thread.gl, "glGetAttribLocation()");
 	thread.newMessage() << "End -- " << posLoc << " = glGetAttribLocation()" << tcu::ThreadUtil::Message::End;
 
 	thread.newMessage() << "Begin -- glEnableVertexAttribArray(" << posLoc << ")" << tcu::ThreadUtil::Message::End;
-	GLU_CHECK_CALL(glEnableVertexAttribArray(posLoc));
+	GLU_CHECK_GLW_CALL(thread.gl, enableVertexAttribArray(posLoc));
 	thread.newMessage() << "End -- glEnableVertexAttribArray()" << tcu::ThreadUtil::Message::End;
 
 	thread.newMessage() << "Begin -- glBindBuffer(GL_ARRAY_BUFFER, 0)" << tcu::ThreadUtil::Message::End;
-	GLU_CHECK_CALL(glBindBuffer(GL_ARRAY_BUFFER, 0));
+	GLU_CHECK_GLW_CALL(thread.gl, bindBuffer(GL_ARRAY_BUFFER, 0));
 	thread.newMessage() << "End -- glBindBuffer()" << tcu::ThreadUtil::Message::End;
 
 
@@ -1796,27 +1804,27 @@ void RenderTexture::exec (tcu::ThreadUtil::Thread& thread)
 	};
 
 	thread.newMessage() << "Begin -- glVertexAttribPointer(" << posLoc << ", GL_FLOAT, GL_FALSE, 0, <data>)" << tcu::ThreadUtil::Message::End;
-	GLU_CHECK_CALL(glVertexAttribPointer(posLoc, 2, GL_FLOAT, GL_FALSE, 0, coords));
+	GLU_CHECK_GLW_CALL(thread.gl, vertexAttribPointer(posLoc, 2, GL_FLOAT, GL_FALSE, 0, coords));
 	thread.newMessage() << "End -- glVertexAttribPointer()" << tcu::ThreadUtil::Message::End;
 
 	thread.newMessage() << "Begin -- glDrawArrays(GL_TRIANGLES, 0, 6)" << tcu::ThreadUtil::Message::End;
-	GLU_CHECK_CALL(glDrawArrays(GL_TRIANGLES, 0, 6));
+	GLU_CHECK_GLW_CALL(thread.gl, drawArrays(GL_TRIANGLES, 0, 6));
 	thread.newMessage() << "End -- glDrawArrays()" << tcu::ThreadUtil::Message::End;
 
 	thread.newMessage() << "Begin -- glBindBuffer(GL_ARRAY_BUFFER, 0)" << tcu::ThreadUtil::Message::End;
-	GLU_CHECK_CALL(glBindBuffer(GL_ARRAY_BUFFER, 0));
+	GLU_CHECK_GLW_CALL(thread.gl, bindBuffer(GL_ARRAY_BUFFER, 0));
 	thread.newMessage() << "End -- glBindBuffer()" << tcu::ThreadUtil::Message::End;
 
 	thread.newMessage() << "Begin -- glBindTexture(GL_TEXTURE_2D, 0)" << tcu::ThreadUtil::Message::End;
-	GLU_CHECK_CALL(glBindTexture(GL_TEXTURE_2D, 0));
+	GLU_CHECK_GLW_CALL(thread.gl, bindTexture(GL_TEXTURE_2D, 0));
 	thread.newMessage() << "End -- glBindTexture()" << tcu::ThreadUtil::Message::End;
 
 	thread.newMessage() << "Begin -- glDisableVertexAttribArray(" << posLoc << ")" << tcu::ThreadUtil::Message::End;
-	GLU_CHECK_CALL(glDisableVertexAttribArray(posLoc));
+	GLU_CHECK_GLW_CALL(thread.gl, disableVertexAttribArray(posLoc));
 	thread.newMessage() << "End -- glDisableVertexAttribArray()" << tcu::ThreadUtil::Message::End;
 
 	thread.newMessage() << "Begin -- glUseProgram(0)" << tcu::ThreadUtil::Message::End;
-	GLU_CHECK_CALL(glUseProgram(0));
+	GLU_CHECK_GLW_CALL(thread.gl, useProgram(0));
 	thread.newMessage() << "End -- glUseProgram()" << tcu::ThreadUtil::Message::End;
 }
 
@@ -1849,15 +1857,17 @@ ReadPixels::ReadPixels (int x, int y, int width, int height, GLenum format, GLen
 	m_data = data;
 }
 
-void ReadPixels::exec (tcu::ThreadUtil::Thread& thread)
+void ReadPixels::exec (tcu::ThreadUtil::Thread& t)
 {
+	EGLThread& thread = dynamic_cast<EGLThread&>(t);
+
 	DE_ASSERT(m_type == GL_UNSIGNED_BYTE);
 	DE_ASSERT(m_format == GL_RGBA);
 
 	std::vector<deUint8> data((m_width-m_x)*(m_height-m_y)*4);
 
 	thread.newMessage() << "Begin -- glReadPixels(" << m_x << ", " << m_y << ", " << m_width << ", " << m_height << ", " << m_format << ", " << m_type << ", <data>)" << tcu::ThreadUtil::Message::End;
-	GLU_CHECK_CALL(glReadPixels(m_x, m_y, m_width, m_height, m_format, m_type, &(data[0])));
+	GLU_CHECK_GLW_CALL(thread.gl, readPixels(m_x, m_y, m_width, m_height, m_format, m_type, &(data[0])));
 	thread.newMessage() << "End -- glReadPixels()" << tcu::ThreadUtil::Message::End;
 
 	m_data->setData(data.size(), &(data[0]));
@@ -1889,43 +1899,41 @@ CreateImageFromTexture::CreateImageFromTexture (SharedPtr<EGLImage>& image, Shar
 
 void CreateImageFromTexture::exec (tcu::ThreadUtil::Thread& t)
 {
-	EGLThread& thread = *(dynamic_cast<EGLThread*>(&t));
+	EGLThread& thread = dynamic_cast<EGLThread&>(t);
 
 	EGLint attribList[] = {
 		EGL_GL_TEXTURE_LEVEL_KHR, 0,
 		EGL_NONE
 	};
 
-	TCU_CHECK(thread.eglExtensions.createImage);
-
 	thread.newMessage() << "Begin -- glBindTexture(GL_TEXTURE_2D, " << m_texture->texture << ")" << tcu::ThreadUtil::Message::End;
-	GLU_CHECK_CALL(glBindTexture(GL_TEXTURE_2D, m_texture->texture));
+	GLU_CHECK_GLW_CALL(thread.gl, bindTexture(GL_TEXTURE_2D, m_texture->texture));
 	thread.newMessage() << "End -- glBindTexture()" << tcu::ThreadUtil::Message::End;
 
 	// Make texture image complete...
 	thread.newMessage() << "Begin -- glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)" << tcu::ThreadUtil::Message::End;
-	GLU_CHECK_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
+	GLU_CHECK_GLW_CALL(thread.gl, texParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
 	thread.newMessage() << "End -- glTexParameteri()" << tcu::ThreadUtil::Message::End;
 
 	thread.newMessage() << "Begin -- glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)" << tcu::ThreadUtil::Message::End;
-	GLU_CHECK_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
+	GLU_CHECK_GLW_CALL(thread.gl, texParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
 	thread.newMessage() << "End -- glTexParameteri()" << tcu::ThreadUtil::Message::End;
 
 	thread.newMessage() << "Begin -- glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE)" << tcu::ThreadUtil::Message::End;
-	GLU_CHECK_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
+	GLU_CHECK_GLW_CALL(thread.gl, texParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
 	thread.newMessage() << "End -- glTexParameteri()" << tcu::ThreadUtil::Message::End;
 
 	thread.newMessage() << "Begin -- glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE)" << tcu::ThreadUtil::Message::End;
-	GLU_CHECK_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
+	GLU_CHECK_GLW_CALL(thread.gl, texParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
 	thread.newMessage() << "End -- glTexParameteri()" << tcu::ThreadUtil::Message::End;
 
 	thread.newMessage() << "Begin -- eglCreateImageKHR(" << thread.runtimeContext->display << ", " << thread.runtimeContext->context << ", EGL_GL_TEXTURE_2D_KHR, " << m_texture->texture << ", { EGL_GL_TEXTURE_LEVEL_KHR, 0, EGL_NONE })" << tcu::ThreadUtil::Message::End;
-	m_image->image = thread.eglExtensions.createImage(thread.runtimeContext->display, thread.runtimeContext->context, EGL_GL_TEXTURE_2D_KHR, (EGLClientBuffer)(deUintptr)m_texture->texture, attribList);
-	TCU_CHECK_EGL_MSG("eglCreateImageKHR()");
+	m_image->image = thread.egl.createImageKHR(thread.runtimeContext->display, thread.runtimeContext->context, EGL_GL_TEXTURE_2D_KHR, (EGLClientBuffer)(deUintptr)m_texture->texture, attribList);
+	EGLU_CHECK_MSG(thread.egl, "eglCreateImageKHR()");
 	thread.newMessage() << "End -- " << m_image->image << " = eglCreateImageKHR()" << tcu::ThreadUtil::Message::End;
 
 	thread.newMessage() << "Begin -- glBindTexture(GL_TEXTURE_2D, 0)" << tcu::ThreadUtil::Message::End;
-	GLU_CHECK_CALL(glBindTexture(GL_TEXTURE_2D, 0));
+	GLU_CHECK_GLW_CALL(thread.gl, bindTexture(GL_TEXTURE_2D, 0));
 	thread.newMessage() << "End -- glBindTexture()" << tcu::ThreadUtil::Message::End;
 }
 
@@ -1950,14 +1958,12 @@ DestroyImage::DestroyImage (SharedPtr<EGLImage> image, bool useSync, bool server
 
 void DestroyImage::exec (tcu::ThreadUtil::Thread& t)
 {
-	EGLThread& thread = *(dynamic_cast<EGLThread*>(&t));
-
-	TCU_CHECK(thread.eglExtensions.destroyImage);
+	EGLThread& thread = dynamic_cast<EGLThread&>(t);
 
 	thread.newMessage() << "Begin -- eglDestroyImageKHR(" << thread.runtimeContext->display << ", " << m_image->image << ")" << tcu::ThreadUtil::Message::End;
-	thread.eglExtensions.destroyImage(thread.runtimeContext->display, m_image->image);
+	thread.egl.destroyImageKHR(thread.runtimeContext->display, m_image->image);
 	m_image->image = EGL_NO_IMAGE_KHR;
-	TCU_CHECK_EGL_MSG("eglDestroyImageKHR()");
+	EGLU_CHECK_MSG(thread.egl, "eglDestroyImageKHR()");
 	thread.newMessage() << "End -- eglDestroyImageKHR()" << tcu::ThreadUtil::Message::End;
 }
 
@@ -1987,56 +1993,28 @@ DefineTextureFromImage::DefineTextureFromImage (SharedPtr<Texture> texture, Shar
 
 void DefineTextureFromImage::exec (tcu::ThreadUtil::Thread& t)
 {
-	EGLThread& thread = *(dynamic_cast<EGLThread*>(&t));
+	EGLThread& thread = dynamic_cast<EGLThread&>(t);
 
 	thread.newMessage() << "Begin -- glBindTexture(GL_TEXTURE_2D, " << m_texture->texture << ")" << tcu::ThreadUtil::Message::End;
-	GLU_CHECK_CALL(glBindTexture(GL_TEXTURE_2D, m_texture->texture));
+	GLU_CHECK_GLW_CALL(thread.gl, bindTexture(GL_TEXTURE_2D, m_texture->texture));
 	thread.newMessage() << "End -- glBindTexture()" << tcu::ThreadUtil::Message::End;
 
 	thread.newMessage() << "Begin -- glEGLImageTargetTexture2DOES(GL_TEXTURE_2D, " << m_image->image << ")" << tcu::ThreadUtil::Message::End;
 	thread.runtimeContext->glExtensions.imageTargetTexture2D(GL_TEXTURE_2D, m_image->image);
-	GLU_CHECK_MSG("glEGLImageTargetTexture2DOES()");
+	GLU_CHECK_GLW_MSG(thread.gl, "glEGLImageTargetTexture2DOES()");
 	thread.newMessage() << "End -- glEGLImageTargetTexture2DOES()" << tcu::ThreadUtil::Message::End;
 
 	thread.newMessage() << "Begin -- glBindTexture(GL_TEXTURE_2D, 0)" << tcu::ThreadUtil::Message::End;
-	GLU_CHECK_CALL(glBindTexture(GL_TEXTURE_2D, 0));
+	GLU_CHECK_GLW_CALL(thread.gl, bindTexture(GL_TEXTURE_2D, 0));
 	thread.newMessage() << "End -- glBindTexture()" << tcu::ThreadUtil::Message::End;
 }
 
 } // GLES2ThreadTest
 
-static void requireEGLExtension (EGLDisplay eglDisplay, const char* requiredExtension)
+static void requireEGLExtension (const Library& egl, EGLDisplay eglDisplay, const char* requiredExtension)
 {
-	// Check extensions
-	bool found = false;
-
-	std::string extensions = eglQueryString(eglDisplay, EGL_EXTENSIONS);
-
-	std::string::size_type pos = extensions.find(" ");
-	do
-	{
-		std::string extension;
-		if (pos != std::string::npos)
-		{
-			extension = extensions.substr(0, pos);
-			extensions = extensions.substr(pos+1);
-		}
-		else
-		{
-			extension = extensions;
-			extensions = "";
-		}
-
-		if (extension == requiredExtension)
-		{
-			found = true;
-			break;
-		}
-		pos = extensions.find(" ");
-	} while (pos != std::string::npos);
-
-	if (!found)
-		throw tcu::NotSupportedError((string(requiredExtension) + " not supported").c_str(), "", __FILE__, __LINE__);
+	if (!eglu::hasExtension(egl, eglDisplay, requiredExtension))
+		TCU_THROW(NotSupportedError, (string(requiredExtension) + " not supported").c_str());
 }
 
 enum OperationId
@@ -2117,6 +2095,8 @@ private:
 	EGLDisplay				m_eglDisplay;
 	EGLConfig				m_eglConfig;
 	OperationId				m_lastOperation;
+
+	glw::Functions			m_gl;
 };
 
 GLES2SharingRandomTest::TestConfig::TestConfig (void)
@@ -2147,6 +2127,7 @@ GLES2SharingRandomTest::GLES2SharingRandomTest (EglTestContext& context, const T
 	, m_eglConfig		(0)
 	, m_lastOperation	(THREADOPERATIONID_NONE)
 {
+	m_eglTestCtx.initGLFunctions(&m_gl, glu::ApiType::es(2,0));
 }
 
 GLES2SharingRandomTest::~GLES2SharingRandomTest (void)
@@ -2156,11 +2137,9 @@ GLES2SharingRandomTest::~GLES2SharingRandomTest (void)
 
 void GLES2SharingRandomTest::init (void)
 {
-	tcu::egl::Display& display = m_eglTestCtx.getDisplay();
+	const Library& egl = m_eglTestCtx.getLibrary();
 
-	vector<EGLConfig>	configs;
-
-	EGLint attribList[] =
+	const EGLint attribList[] =
 	{
 		EGL_RENDERABLE_TYPE,	EGL_OPENGL_ES2_BIT,
 		EGL_SURFACE_TYPE,		EGL_WINDOW_BIT,
@@ -2168,28 +2147,27 @@ void GLES2SharingRandomTest::init (void)
 		EGL_NONE
 	};
 
-	display.chooseConfig(attribList, configs);
-	m_eglDisplay	= display.getEGLDisplay();
-	m_eglConfig 	= configs[0];
+	m_eglDisplay	= eglu::getAndInitDisplay(m_eglTestCtx.getNativeDisplay());
+	m_eglConfig 	= eglu::chooseSingleConfig(egl, m_eglDisplay, attribList);
 
 	// Check extensions
 	if (m_config.useFenceSync)
-		requireEGLExtension(m_eglDisplay, "EGL_KHR_fence_sync");
+		requireEGLExtension(egl, m_eglDisplay, "EGL_KHR_fence_sync");
 
 	if (m_config.serverSync)
-		requireEGLExtension(m_eglDisplay, "EGL_KHR_wait_sync");
+		requireEGLExtension(egl, m_eglDisplay, "EGL_KHR_wait_sync");
 
 	if (m_config.useImages)
 	{
-		requireEGLExtension(m_eglDisplay, "EGL_KHR_image_base");
-		requireEGLExtension(m_eglDisplay, "EGL_KHR_gl_texture_2D_image");
+		requireEGLExtension(egl, m_eglDisplay, "EGL_KHR_image_base");
+		requireEGLExtension(egl, m_eglDisplay, "EGL_KHR_gl_texture_2D_image");
 	}
 
 	GLES2ThreadTest::EGLResourceManager resourceManager;
 	// Create contexts
 	for (int threadNdx = 0; threadNdx < m_config.threadCount; threadNdx++)
 	{
-		m_threads.push_back(new GLES2ThreadTest::EGLThread(deInt32Hash(m_seed+threadNdx)));
+		m_threads.push_back(new GLES2ThreadTest::EGLThread(egl, m_gl, deInt32Hash(m_seed+threadNdx)));
 		SharedPtr<GLES2ThreadTest::GLES2Context> context;
 		SharedPtr<GLES2ThreadTest::GLES2Context> shared = (threadNdx > 0 ? resourceManager.popContext(0) : SharedPtr<GLES2ThreadTest::GLES2Context>());
 		m_threads[threadNdx]->addOperation(new GLES2ThreadTest::CreateContext(m_eglDisplay, m_eglConfig, shared, context));
@@ -2263,6 +2241,8 @@ void GLES2SharingRandomTest::deinit (void)
 		delete m_threads[threadNdx];
 
 	m_threads.clear();
+
+	m_eglTestCtx.getLibrary().terminate(m_eglDisplay);
 
 	TCU_CHECK(!m_requiresRestart);
 }
@@ -2981,6 +2961,7 @@ private:
 
 	EGLDisplay				m_eglDisplay;
 	EGLConfig				m_eglConfig;
+	glw::Functions			m_gl;
 };
 
 GLES2ThreadedSharingTest::GLES2ThreadedSharingTest (EglTestContext& context, const TestConfig& config, const char* name, const char* description)
@@ -2999,6 +2980,7 @@ GLES2ThreadedSharingTest::GLES2ThreadedSharingTest (EglTestContext& context, con
 	, m_eglDisplay		(EGL_NO_DISPLAY)
 	, m_eglConfig		(0)
 {
+	m_eglTestCtx.initGLFunctions(&m_gl, glu::ApiType::es(2,0));
 }
 
 GLES2ThreadedSharingTest::~GLES2ThreadedSharingTest (void)
@@ -3008,11 +2990,9 @@ GLES2ThreadedSharingTest::~GLES2ThreadedSharingTest (void)
 
 void GLES2ThreadedSharingTest::init (void)
 {
-	tcu::egl::Display& display = m_eglTestCtx.getDisplay();
+	const Library& egl = m_eglTestCtx.getLibrary();
 
-	vector<EGLConfig>	configs;
-
-	EGLint attribList[] =
+	const EGLint attribList[] =
 	{
 		EGL_RENDERABLE_TYPE,	EGL_OPENGL_ES2_BIT,
 		EGL_SURFACE_TYPE,		EGL_WINDOW_BIT,
@@ -3020,26 +3000,25 @@ void GLES2ThreadedSharingTest::init (void)
 		EGL_NONE
 	};
 
-	display.chooseConfig(attribList, configs);
-	m_eglDisplay	= display.getEGLDisplay();
-	m_eglConfig 	= configs[0];
+	m_eglDisplay	= eglu::getAndInitDisplay(m_eglTestCtx.getNativeDisplay());
+	m_eglConfig 	= eglu::chooseSingleConfig(egl, m_eglDisplay, attribList);
 
 	// Check extensions
 	if (m_config.useFenceSync)
-		requireEGLExtension(m_eglDisplay, "EGL_KHR_fence_sync");
+		requireEGLExtension(egl, m_eglDisplay, "EGL_KHR_fence_sync");
 
 	if (m_config.serverSync)
-		requireEGLExtension(m_eglDisplay, "EGL_KHR_wait_sync");
+		requireEGLExtension(egl, m_eglDisplay, "EGL_KHR_wait_sync");
 
 	if (m_config.resourceType == TestConfig::RESOURCETYPE_IMAGE)
 	{
-		requireEGLExtension(m_eglDisplay, "EGL_KHR_image_base");
-		requireEGLExtension(m_eglDisplay, "EGL_KHR_gl_texture_2D_image");
+		requireEGLExtension(egl, m_eglDisplay, "EGL_KHR_image_base");
+		requireEGLExtension(egl, m_eglDisplay, "EGL_KHR_gl_texture_2D_image");
 	}
 
 	// Create threads
-	m_threads.push_back(new GLES2ThreadTest::EGLThread(deInt32Hash(m_seed)));
-	m_threads.push_back(new GLES2ThreadTest::EGLThread(deInt32Hash(m_seed*200)));
+	m_threads.push_back(new GLES2ThreadTest::EGLThread(egl, m_gl, deInt32Hash(m_seed)));
+	m_threads.push_back(new GLES2ThreadTest::EGLThread(egl, m_gl, deInt32Hash(m_seed*200)));
 
 	SharedPtr<GLES2ThreadTest::GLES2Context> contex1;
 	SharedPtr<GLES2ThreadTest::GLES2Context> contex2;
@@ -3591,6 +3570,7 @@ void GLES2ThreadedSharingTest::deinit (void)
 		delete m_threads[threadNdx];
 
 	m_threads.clear();
+	m_eglTestCtx.getLibrary().terminate(m_eglDisplay);
 
 	TCU_CHECK(!m_requiresRestart);
 }

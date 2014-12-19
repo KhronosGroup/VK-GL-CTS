@@ -26,6 +26,8 @@
 namespace eglu
 {
 
+using namespace eglw;
+
 // NativePixmap
 
 NativePixmap::NativePixmap (Capability capabilities)

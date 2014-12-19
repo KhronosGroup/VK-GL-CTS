@@ -27,13 +27,16 @@
 #include "tcuTestLog.hpp"
 #include "tcuSurface.hpp"
 #include "tcuTextureUtil.hpp"
-#include "tcuEgl.hpp"
 
 #include "egluNativeWindow.hpp"
 #include "egluUtil.hpp"
 
+#include "eglwLibrary.hpp"
+#include "eglwEnums.hpp"
+
 #include "gluDefs.hpp"
 #include "gluRenderContext.hpp"
+#include "gluShaderProgram.hpp"
 
 #include "glwDefs.hpp"
 #include "glwEnums.hpp"
@@ -48,6 +51,8 @@
 
 using std::vector;
 using std::string;
+
+using namespace eglw;
 
 namespace deqp
 {
@@ -83,10 +88,11 @@ private:
 	const DrawType				m_preSwapDrawType;
 	const DrawType				m_postSwapDrawType;
 
+	EGLDisplay					m_eglDisplay;
 	eglu::NativeWindow*			m_window;
-	tcu::egl::WindowSurface*	m_eglSurface;
+	EGLSurface					m_eglSurface;
 	EGLConfig					m_eglConfig;
-	tcu::egl::Context*			m_eglContext;
+	EGLContext					m_eglContext;
 	glw::Functions				m_gl;
 
 	GLES2Program*				m_gles2Program;
@@ -106,7 +112,7 @@ public:
 
 private:
 	const glw::Functions&	m_gl;
-	glw::GLuint				m_glProgram;
+	glu::ShaderProgram		m_glProgram;
 	glw::GLuint				m_coordLoc;
 	glw::GLuint				m_colorLoc;
 
@@ -114,91 +120,41 @@ private:
 							GLES2Program	(const GLES2Program&);
 };
 
+static glu::ProgramSources getSources (void)
+{
+	const char* const vertexShaderSource =
+		"attribute mediump vec4 a_pos;\n"
+		"attribute mediump vec4 a_color;\n"
+		"varying mediump vec4 v_color;\n"
+		"void main(void)\n"
+		"{\n"
+		"\tv_color = a_color;\n"
+		"\tgl_Position = a_pos;\n"
+		"}";
+
+	const char* const fragmentShaderSource =
+		"varying mediump vec4 v_color;\n"
+		"void main(void)\n"
+		"{\n"
+		"\tgl_FragColor = v_color;\n"
+		"}";
+
+	return glu::makeVtxFragSources(vertexShaderSource, fragmentShaderSource);
+}
+
 GLES2Program::GLES2Program (const glw::Functions& gl)
 	: m_gl			(gl)
-	, m_glProgram	(0)
+	, m_glProgram	(gl, getSources())
 	, m_coordLoc	((glw::GLuint)-1)
 	, m_colorLoc	((glw::GLuint)-1)
 {
-	const char* const vertexShaderSource =
-	"attribute mediump vec4 a_pos;\n"
-	"attribute mediump vec4 a_color;\n"
-	"varying mediump vec4 v_color;\n"
-	"void main(void)\n"
-	"{\n"
-	"\tv_color = a_color;\n"
-	"\tgl_Position = a_pos;\n"
-	"}";
-
-	const char* const fragmentShaderSource =
-	"varying mediump vec4 v_color;\n"
-	"void main(void)\n"
-	"{\n"
-	"\tgl_FragColor = v_color;\n"
-	"}";
-
-	glw::GLuint	vtxShader	= (glw::GLuint)-1;
-	glw::GLuint	fragShader	= (glw::GLuint)-1;
-
-	try
-	{
-		vtxShader = m_gl.createShader(GL_VERTEX_SHADER);
-		fragShader = m_gl.createShader(GL_FRAGMENT_SHADER);
-
-		m_glProgram	= m_gl.createProgram();
-
-		GLU_EXPECT_NO_ERROR(m_gl.getError(), "Failed to create resources for shader program");
-
-		m_gl.shaderSource(vtxShader, 1, &vertexShaderSource, DE_NULL);
-		m_gl.shaderSource(fragShader, 1, &fragmentShaderSource, DE_NULL);
-		GLU_EXPECT_NO_ERROR(m_gl.getError(), "Failed to set shader sources");
-
-		m_gl.compileShader(vtxShader);
-		m_gl.compileShader(fragShader);
-		GLU_EXPECT_NO_ERROR(m_gl.getError(), "Shader compilation failed");
-
-		m_gl.attachShader(m_glProgram, vtxShader);
-		m_gl.attachShader(m_glProgram, fragShader);
-		GLU_EXPECT_NO_ERROR(m_gl.getError(), "Failed to attach shaders to program");
-
-		m_gl.linkProgram(m_glProgram);
-		GLU_EXPECT_NO_ERROR(m_gl.getError(), "Failed to link program");
-
-		m_gl.deleteShader(fragShader);
-		fragShader = (glw::GLuint)-1;
-		m_gl.deleteShader(vtxShader);
-		vtxShader = (glw::GLuint)-1;
-		GLU_EXPECT_NO_ERROR(m_gl.getError(), "Failed to delete shaders");
-
-		m_colorLoc = m_gl.getAttribLocation(m_glProgram, "a_color");
-		m_coordLoc = m_gl.getAttribLocation(m_glProgram, "a_pos");
-		GLU_EXPECT_NO_ERROR(m_gl.getError(), "Failed to get attribute locations");
-
-		TCU_CHECK(m_colorLoc != (glw::GLuint)-1);
-		TCU_CHECK(m_coordLoc != (glw::GLuint)-1);
-
-	}
-	catch (...)
-	{
-		if (vtxShader != (glw::GLuint)-1)
-			m_gl.deleteShader(vtxShader);
-
-		if (fragShader != (glw::GLuint)-1)
-			m_gl.deleteShader(fragShader);
-
-		if (m_glProgram != (glw::GLuint)-1)
-			m_gl.deleteProgram(m_glProgram);
-
-		m_glProgram = (glw::GLuint)-1;
-
-		throw;
-	}
+	m_colorLoc = m_gl.getAttribLocation(m_glProgram.getProgram(), "a_color");
+	m_coordLoc = m_gl.getAttribLocation(m_glProgram.getProgram(), "a_pos");
+	GLU_EXPECT_NO_ERROR(m_gl.getError(), "Failed to get attribute locations");
 }
 
 GLES2Program::~GLES2Program (void)
 {
-	if (m_glProgram != (glw::GLuint)-1)
-		m_gl.deleteProgram(m_glProgram);
 }
 
 void GLES2Program::render (int width, int height, float x1, float y1, float x2, float y2, PreservingSwapTest::DrawType drawType)
@@ -227,7 +183,7 @@ void GLES2Program::render (int width, int height, float x1, float y1, float x2, 
 			127,	127,	127,	255
 		};
 
-		m_gl.useProgram(m_glProgram);
+		m_gl.useProgram(m_glProgram.getProgram());
 		GLU_EXPECT_NO_ERROR(m_gl.getError(), "glUseProgram() failed");
 
 		m_gl.enableVertexAttribArray(m_coordLoc);
@@ -328,9 +284,10 @@ PreservingSwapTest::PreservingSwapTest (EglTestContext& eglTestCtx, bool preserv
 	, m_readPixelsBeforeSwap	(readPixelsBeforeSwap)
 	, m_preSwapDrawType			(preSwapDrawType)
 	, m_postSwapDrawType		(postSwapDrawType)
+	, m_eglDisplay				(EGL_NO_DISPLAY)
 	, m_window					(DE_NULL)
-	, m_eglSurface				(DE_NULL)
-	, m_eglContext				(DE_NULL)
+	, m_eglSurface				(EGL_NO_SURFACE)
+	, m_eglContext				(EGL_NO_CONTEXT)
 	, m_gles2Program			(DE_NULL)
 	, m_refProgram				(DE_NULL)
 {
@@ -341,31 +298,25 @@ PreservingSwapTest::~PreservingSwapTest (void)
 	deinit();
 }
 
-EGLConfig getEGLConfig (tcu::egl::Display& eglDisplay, bool preserveColorbuffer)
+EGLConfig getEGLConfig (const Library& egl, EGLDisplay eglDisplay, bool preserveColorbuffer)
 {
-	vector<EGLConfig>	configs;
-	const EGLint		attribList[] =
+	const EGLint attribList[] =
 	{
 		EGL_SURFACE_TYPE,		EGL_WINDOW_BIT | (preserveColorbuffer ? EGL_SWAP_BEHAVIOR_PRESERVED_BIT : 0),
 		EGL_RENDERABLE_TYPE,	EGL_OPENGL_ES2_BIT,
 		EGL_NONE
 	};
 
-	eglDisplay.chooseConfig(attribList, configs);
-
-	if (configs.size() == 0)
-		return DE_NULL;
-	else
-		return configs[0];
+	return eglu::chooseSingleConfig(egl, eglDisplay, &attribList[0]);
 }
 
-void clearColorScreen(const glw::Functions& gl, float red, float green, float blue, float alpha)
+void clearColorScreen (const glw::Functions& gl, float red, float green, float blue, float alpha)
 {
 	gl.clearColor(red, green, blue, alpha);
 	gl.clear(GL_COLOR_BUFFER_BIT);
 }
 
-void clearColorReference(tcu::Surface* ref, float red, float green, float blue, float alpha)
+void clearColorReference (tcu::Surface* ref, float red, float green, float blue, float alpha)
 {
 	tcu::clear(ref->getAccess(), tcu::Vec4(red, green, blue, alpha));
 }
@@ -377,34 +328,45 @@ void readPixels (const glw::Functions& gl, tcu::Surface* screen)
 
 void PreservingSwapTest::initEGLSurface (EGLConfig config)
 {
-	m_window		= m_eglTestCtx.createNativeWindow(m_eglTestCtx.getDisplay().getEGLDisplay(), config, DE_NULL, 480, 480, eglu::parseWindowVisibility(m_testCtx.getCommandLine()));
-	m_eglSurface	= new tcu::egl::WindowSurface(m_eglTestCtx.getDisplay(), eglu::createWindowSurface(m_eglTestCtx.getNativeDisplay(), *m_window, m_eglTestCtx.getDisplay().getEGLDisplay(), config, DE_NULL));
+	const eglu::NativeWindowFactory*	factory	= eglu::selectNativeWindowFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
+
+	if (!factory)
+		TCU_THROW(NotSupportedError, "Windows not supported");
+
+	m_window		= factory->createWindow(&m_eglTestCtx.getNativeDisplay(), m_eglDisplay, config, DE_NULL, eglu::WindowParams(480, 480, eglu::parseWindowVisibility(m_testCtx.getCommandLine())));
+	m_eglSurface	= eglu::createWindowSurface(m_eglTestCtx.getNativeDisplay(), *m_window, m_eglDisplay, config, DE_NULL);
 }
 
 void PreservingSwapTest::initEGLContext (EGLConfig config)
 {
-	const EGLint attribList[] =
+	const Library&	egl				= m_eglTestCtx.getLibrary();
+	const EGLint	attribList[]	=
 	{
 		EGL_CONTEXT_CLIENT_VERSION, 2,
 		EGL_NONE
 	};
 
-	m_eglContext = new tcu::egl::Context(m_eglTestCtx.getDisplay(), config, attribList, EGL_OPENGL_ES_API);
+	egl.bindAPI(EGL_OPENGL_ES_API);
+	m_eglContext = egl.createContext(m_eglDisplay, config, EGL_NO_CONTEXT, attribList);
+	EGLU_CHECK_MSG(egl, "eglCreateContext");
+
+	DE_ASSERT(m_eglSurface != EGL_NO_SURFACE);
+	egl.makeCurrent(m_eglDisplay, m_eglSurface, m_eglSurface, m_eglContext);
+	EGLU_CHECK_MSG(egl, "eglMakeCurrent");
 }
 
 void PreservingSwapTest::init (void)
 {
-	m_eglConfig = getEGLConfig(m_eglTestCtx.getDisplay(), m_preserveColorbuffer);
+	m_eglDisplay	= eglu::getAndInitDisplay(m_eglTestCtx.getNativeDisplay());
+	m_eglConfig		= getEGLConfig(m_eglTestCtx.getLibrary(), m_eglDisplay, m_preserveColorbuffer);
 
 	if (m_eglConfig == DE_NULL)
-		throw tcu::NotSupportedError("No supported config found", "", __FILE__, __LINE__);
+		TCU_THROW(NotSupportedError, "No supported config found");
 
 	initEGLSurface(m_eglConfig);
 	initEGLContext(m_eglConfig);
 
-	m_eglContext->makeCurrent(*m_eglSurface, *m_eglSurface);
-
-	m_eglTestCtx.getGLFunctions(m_gl, glu::ApiType::es(2,0));
+	m_eglTestCtx.initGLFunctions(&m_gl, glu::ApiType::es(2,0));
 
 	m_gles2Program	= new GLES2Program(m_gl);
 	m_refProgram	= new ReferenceProgram();
@@ -412,17 +374,32 @@ void PreservingSwapTest::init (void)
 
 void PreservingSwapTest::deinit (void)
 {
+	const Library& egl = m_eglTestCtx.getLibrary();
+
 	delete m_refProgram;
 	m_refProgram = DE_NULL;
 
 	delete m_gles2Program;
 	m_gles2Program = DE_NULL;
 
-	delete m_eglContext;
-	m_eglContext = DE_NULL;
+	if (m_eglContext != EGL_NO_CONTEXT)
+	{
+		egl.makeCurrent(m_eglDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+		egl.destroyContext(m_eglDisplay, m_eglContext);
+		m_eglContext = EGL_NO_CONTEXT;
+	}
 
-	delete m_eglSurface;
-	m_eglSurface = DE_NULL;
+	if (m_eglSurface != EGL_NO_SURFACE)
+	{
+		egl.destroySurface(m_eglDisplay, m_eglSurface);
+		m_eglSurface = EGL_NO_SURFACE;
+	}
+
+	if (m_eglDisplay != EGL_NO_DISPLAY)
+	{
+		egl.terminate(m_eglDisplay);
+		m_eglDisplay = EGL_NO_DISPLAY;
+	}
 
 	delete m_window;
 	m_window = DE_NULL;
@@ -443,11 +420,12 @@ bool comparePreAndPostSwapFramebuffers (tcu::TestLog& log, const tcu::Surface& p
 
 TestCase::IterateResult PreservingSwapTest::iterate (void)
 {
+	const Library&	egl				= m_eglTestCtx.getLibrary();
 	tcu::TestLog&	log				= m_testCtx.getLog();
 	de::Random		rnd(m_seed);
 
-	const int		width			= m_eglSurface->getWidth();
-	const int		height			= m_eglSurface->getHeight();
+	const int		width			= eglu::querySurfaceInt(egl, m_eglDisplay, m_eglSurface, EGL_WIDTH);
+	const int		height			= eglu::querySurfaceInt(egl, m_eglDisplay, m_eglSurface, EGL_HEIGHT);
 
 	const float		clearRed		= rnd.getFloat();
 	const float		clearGreen		= rnd.getFloat();
@@ -471,9 +449,9 @@ TestCase::IterateResult PreservingSwapTest::iterate (void)
 	tcu::Surface	preSwapFramebuffer(width, height);
 
 	if (m_preserveColorbuffer)
-		m_eglSurface->setAttribute(EGL_SWAP_BEHAVIOR, EGL_BUFFER_PRESERVED);
+		EGLU_CHECK_CALL(egl, surfaceAttrib(m_eglDisplay, m_eglSurface, EGL_SWAP_BEHAVIOR, EGL_BUFFER_PRESERVED));
 
-	m_eglContext->makeCurrent(*m_eglSurface, *m_eglSurface);
+	EGLU_CHECK_CALL(egl, makeCurrent(m_eglDisplay, m_eglSurface, m_eglSurface, m_eglContext));
 
 	clearColorScreen(m_gl, clearRed, clearGreen, clearBlue, clearAlpha);
 
@@ -496,7 +474,7 @@ TestCase::IterateResult PreservingSwapTest::iterate (void)
 		readPixels(m_gl, &preSwapFramebuffer);
 	}
 
-	m_eglSurface->swapBuffers();
+	EGLU_CHECK_CALL(egl, swapBuffers(m_eglDisplay, m_eglSurface));
 
 	if (m_postSwapDrawType != DRAWTYPE_NONE)
 	{

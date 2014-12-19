@@ -1,8 +1,8 @@
-#ifndef _EGLUEXTENSIONS_HPP
-#define _EGLUEXTENSIONS_HPP
+#ifndef _EGLWDEFS_HPP
+#define _EGLWDEFS_HPP
 /*-------------------------------------------------------------------------
- * drawElements Quality Program Tester Core
- * ----------------------------------------
+ * drawElements Quality Program EGL Utilities
+ * ------------------------------------------
  *
  * Copyright 2014 The Android Open Source Project
  *
@@ -20,31 +20,28 @@
  *
  *//*!
  * \file
- * \brief EGL extension resolving.
+ * \brief EGL wrapper base types and definitions.
+ *
+ * This header defines all standard EGL types using drawElements Base
+ * Portability Library (delibs) types.
  *//*--------------------------------------------------------------------*/
 
 #include "deDefs.hpp"
-#include "egluHeaderWrapper.hpp"
 
-namespace eglu
+/*--------------------------------------------------------------------*//*!
+ * \brief EGL API
+ *//*--------------------------------------------------------------------*/
+namespace eglw
 {
 
-deFunctionPtr getProcAddressChecked (const char* procName);
-
-template <typename FUNC>
-inline FUNC getFunction (const char* procName)
+// extern "C" since eglwTypes.inl may contain function pointer types.
+extern "C"
 {
-	return reinterpret_cast<FUNC>(getProcAddressChecked(procName));
+
+#include "eglwTypes.inl"
+
 }
 
-struct ImageFunctions
-{
-	PFNEGLCREATEIMAGEKHRPROC	createImage;
-	PFNEGLDESTROYIMAGEKHRPROC	destroyImage;
-};
+} // eglw
 
-ImageFunctions getImageFunctions (EGLDisplay dpy);
-
-} // eglu
-
-#endif // _EGLUEXTENSIONS_HPP
+#endif // _EGLWDEFS_HPP

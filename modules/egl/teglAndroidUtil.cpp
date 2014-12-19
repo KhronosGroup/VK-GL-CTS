@@ -27,6 +27,8 @@
 #include "tcuTextureUtil.hpp"
 #include "gluTextureUtil.hpp"
 #include "glwEnums.hpp"
+#include "eglwLibrary.hpp"
+#include "eglwEnums.hpp"
 
 #if (DE_OS == DE_OS_ANDROID)
 #	include "tcuAndroidInternals.hpp"
@@ -45,12 +47,13 @@ using tcu::TextureFormat;
 using tcu::Texture2D;
 using eglu::AttribMap;
 using namespace glw;
+using namespace eglw;
 
 #if (DE_OS != DE_OS_ANDROID)
 
 MovePtr<ImageSource> createAndroidNativeImageSource	(GLenum)
 {
-	return createUnsupportedImageSource("Not an android platform");
+	return createUnsupportedImageSource("Not Android platform");
 }
 
 #else // DE_OS == DE_OS_ANDROID
@@ -101,7 +104,7 @@ public:
 							AndroidNativeImageSource	(GLenum format) : m_format(format) {}
 	MovePtr<ClientBuffer>	createBuffer 				(const glw::Functions&, Texture2D*) const;
 	string					getRequiredExtension		(void) const { return "EGL_ANDROID_image_native_buffer"; }
-	EGLImageKHR				createImage					(const eglu::ImageFunctions& imgExt, EGLDisplay dpy, EGLContext ctx, EGLClientBuffer clientBuffer) const;
+	EGLImageKHR				createImage					(const Library& egl, EGLDisplay dpy, EGLContext ctx, EGLClientBuffer clientBuffer) const;
 
 protected:
 	GLenum					m_format;
@@ -138,12 +141,12 @@ MovePtr<ClientBuffer> AndroidNativeImageSource::createBuffer (const glw::Functio
 	return MovePtr<ClientBuffer>(buffer);
 }
 
-EGLImageKHR AndroidNativeImageSource::createImage (const eglu::ImageFunctions& imgExt, EGLDisplay dpy, EGLContext, EGLClientBuffer clientBuffer) const
+EGLImageKHR AndroidNativeImageSource::createImage (const Library& egl, EGLDisplay dpy, EGLContext, EGLClientBuffer clientBuffer) const
 {
 	static const EGLint attribs[] = { EGL_IMAGE_PRESERVED_KHR, EGL_TRUE, EGL_NONE };
-	const EGLImageKHR	image 		= imgExt.createImage(dpy, EGL_NO_CONTEXT, EGL_NATIVE_BUFFER_ANDROID, clientBuffer, attribs);
+	const EGLImageKHR	image 		= egl.createImageKHR(dpy, EGL_NO_CONTEXT, EGL_NATIVE_BUFFER_ANDROID, clientBuffer, attribs);
 
-	EGLU_CHECK_MSG("eglCreateImageKHR()");
+	EGLU_CHECK_MSG(egl, "eglCreateImageKHR()");
 	return image;
 }
 

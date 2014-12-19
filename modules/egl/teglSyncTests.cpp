@@ -27,21 +27,16 @@
 #include "egluStrUtil.hpp"
 #include "egluUtil.hpp"
 
+#include "eglwLibrary.hpp"
+#include "eglwEnums.hpp"
+
 #include "tcuTestLog.hpp"
 #include "tcuCommandLine.hpp"
 
 #include "gluDefs.hpp"
 
-#include <EGL/eglext.h>
-#include <GLES2/gl2.h>
-
-#ifndef EGL_KHR_wait_sync
-#define EGL_KHR_wait_sync 1
-typedef EGLint (EGLAPIENTRYP PFNEGLWAITSYNCKHRPROC) (EGLDisplay dpy, EGLSyncKHR sync, EGLint flags);
-#ifdef EGL_EGLEXT_PROTOTYPES
-EGLAPI EGLint EGLAPIENTRY eglWaitSyncKHR (EGLDisplay dpy, EGLSyncKHR sync, EGLint flags);
-#endif
-#endif /* EGL_KHR_wait_sync */
+#include "glwFunctions.hpp"
+#include "glwEnums.hpp"
 
 #include <vector>
 #include <string>
@@ -53,6 +48,9 @@ using std::string;
 using std::set;
 
 using tcu::TestLog;
+
+using namespace eglw;
+using namespace glw;
 
 namespace deqp
 {
@@ -93,23 +91,14 @@ protected:
 	const EGLenum					m_syncType;
 	const Extension					m_extensions;
 
+	glw::Functions					m_gl;
+
 	EGLDisplay						m_eglDisplay;
 	EGLConfig						m_eglConfig;
 	EGLSurface						m_eglSurface;
 	eglu::NativeWindow*				m_nativeWindow;
 	EGLContext						m_eglContext;
 	EGLSyncKHR						m_sync;
-
-	struct
-	{
-		PFNEGLCREATESYNCKHRPROC		createSync;
-		PFNEGLDESTROYSYNCKHRPROC	destroySync;
-		PFNEGLCLIENTWAITSYNCKHRPROC	clientWaitSync;
-		PFNEGLGETSYNCATTRIBKHRPROC	getSyncAttrib;
-
-		PFNEGLWAITSYNCKHRPROC		waitSync;
-		PFNEGLSIGNALSYNCKHRPROC		signalSync;
-	} m_ext;
 };
 
 SyncTest::SyncTest (EglTestContext& eglTestCtx, EGLenum syncType, Extension extensions, const char* name, const char* description)
@@ -122,11 +111,7 @@ SyncTest::SyncTest (EglTestContext& eglTestCtx, EGLenum syncType, Extension exte
 	, m_eglContext		(EGL_NO_CONTEXT)
 	, m_sync			(EGL_NO_SYNC_KHR)
 {
-	m_ext.createSync		= DE_NULL;
-	m_ext.destroySync		= DE_NULL;
-	m_ext.clientWaitSync	= DE_NULL;
-	m_ext.getSyncAttrib		= DE_NULL;
-	m_ext.waitSync			= DE_NULL;
+	m_eglTestCtx.initGLFunctions(&m_gl, glu::ApiType::es(2,0));
 }
 
 SyncTest::~SyncTest (void)
@@ -134,13 +119,13 @@ SyncTest::~SyncTest (void)
 	SyncTest::deinit();
 }
 
-void requiredEGLExtensions (EGLDisplay display, SyncTest::Extension requiredExtensions)
+void requiredEGLExtensions (const Library& egl, EGLDisplay display, SyncTest::Extension requiredExtensions)
 {
 	SyncTest::Extension foundExtensions = SyncTest::EXTENSION_NONE;
-	std::istringstream	extensionStream(eglQueryString(display, EGL_EXTENSIONS));
+	std::istringstream	extensionStream(egl.queryString(display, EGL_EXTENSIONS));
 	string				extension;
 
-	TCU_CHECK_EGL_MSG("eglQueryString(display, EGL_EXTENSIONS)");
+	EGLU_CHECK_MSG(egl, "eglQueryString(display, EGL_EXTENSIONS)");
 
 	while (std::getline(extensionStream, extension, ' '))
 	{
@@ -156,23 +141,23 @@ void requiredEGLExtensions (EGLDisplay display, SyncTest::Extension requiredExte
 		const SyncTest::Extension missingExtensions = (SyncTest::Extension)((foundExtensions & requiredExtensions) ^ requiredExtensions);
 
 		if ((missingExtensions & SyncTest::EXTENSION_FENCE_SYNC) != 0)
-			throw tcu::NotSupportedError("EGL_KHR_fence_sync not supported", "", __FILE__, __LINE__);
+			TCU_THROW(NotSupportedError, "EGL_KHR_fence_sync not supported");
 
 		if ((missingExtensions & SyncTest::EXTENSION_REUSABLE_SYNC) != 0)
-			throw tcu::NotSupportedError("EGL_KHR_reusable_sync not supported", "", __FILE__, __LINE__);
+			TCU_THROW(NotSupportedError, "EGL_KHR_reusable_sync not supported");
 
 		if ((missingExtensions & SyncTest::EXTENSION_WAIT_SYNC) != 0)
-			throw tcu::NotSupportedError("EGL_KHR_wait_sync not supported", "", __FILE__, __LINE__);
+			TCU_THROW(NotSupportedError, "EGL_KHR_wait_sync not supported");
 	}
 }
 
-void requiredGLESExtensions (void)
+void requiredGLESExtensions (const glw::Functions& gl)
 {
 	bool				found = false;
-	std::istringstream	extensionStream((const char*)glGetString(GL_EXTENSIONS));
+	std::istringstream	extensionStream((const char*)gl.getString(GL_EXTENSIONS));
 	string				extension;
 
-	GLU_CHECK_MSG("glGetString(GL_EXTENSIONS)");
+	GLU_CHECK_GLW_MSG(gl, "glGetString(GL_EXTENSIONS)");
 
 	while (std::getline(extensionStream, extension, ' '))
 	{
@@ -181,7 +166,7 @@ void requiredGLESExtensions (void)
 	}
 
 	if (!found)
-		throw tcu::NotSupportedError("GL_OES_EGL_sync not supported", "", __FILE__, __LINE__);
+		TCU_THROW(NotSupportedError, "GL_OES_EGL_sync not supported");
 }
 
 SyncTest::Extension getSyncTypeExtension (EGLenum syncType)
@@ -198,6 +183,9 @@ SyncTest::Extension getSyncTypeExtension (EGLenum syncType)
 
 void SyncTest::init (void)
 {
+	const Library&						egl				= m_eglTestCtx.getLibrary();
+	const eglu::NativeWindowFactory*	windowFactory	= eglu::selectNativeWindowFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
+
 	const EGLint displayAttribList[] =
 	{
 		EGL_RENDERABLE_TYPE,	EGL_OPENGL_ES2_BIT,
@@ -212,66 +200,61 @@ void SyncTest::init (void)
 		EGL_NONE
 	};
 
-	tcu::egl::Display&	display = m_eglTestCtx.getDisplay();
-	vector<EGLConfig>	configs;
+	if (!windowFactory)
+		TCU_THROW(NotSupportedError, "Windows not supported");
 
-	display.chooseConfig(displayAttribList, configs);
-	m_eglDisplay	= display.getEGLDisplay();
-	m_eglConfig 	= configs[0];
+	m_eglDisplay	= eglu::getAndInitDisplay(m_eglTestCtx.getNativeDisplay());
+	m_eglConfig 	= eglu::chooseSingleConfig(egl, m_eglDisplay, displayAttribList);
 
 	{
 		const Extension syncTypeExtension = getSyncTypeExtension(m_syncType);
-		requiredEGLExtensions(m_eglDisplay, (Extension)(m_extensions | syncTypeExtension));
+		requiredEGLExtensions(egl, m_eglDisplay, (Extension)(m_extensions | syncTypeExtension));
 	}
 
-	m_ext.createSync		= (PFNEGLCREATESYNCKHRPROC)eglGetProcAddress("eglCreateSyncKHR");
-	m_ext.destroySync		= (PFNEGLDESTROYSYNCKHRPROC)eglGetProcAddress("eglDestroySyncKHR");
-	m_ext.clientWaitSync	= (PFNEGLCLIENTWAITSYNCKHRPROC)eglGetProcAddress("eglClientWaitSyncKHR");
-	m_ext.getSyncAttrib		= (PFNEGLGETSYNCATTRIBKHRPROC)eglGetProcAddress("eglGetSyncAttribKHR");
-	m_ext.waitSync			= (PFNEGLWAITSYNCKHRPROC)eglGetProcAddress("eglWaitSyncKHR");
-	m_ext.signalSync		= (PFNEGLSIGNALSYNCKHRPROC)eglGetProcAddress("eglSignalSyncKHR");
-
 	// Create context
-	TCU_CHECK_EGL_CALL(eglBindAPI(EGL_OPENGL_ES_API));
-	m_eglContext = eglCreateContext(m_eglDisplay, m_eglConfig, EGL_NO_CONTEXT, contextAttribList);
-	TCU_CHECK_EGL_MSG("Failed to create GLES2 context");
+	EGLU_CHECK_CALL(egl, bindAPI(EGL_OPENGL_ES_API));
+	m_eglContext = egl.createContext(m_eglDisplay, m_eglConfig, EGL_NO_CONTEXT, contextAttribList);
+	EGLU_CHECK_MSG(egl, "Failed to create GLES2 context");
 
 	// Create surface
-	m_nativeWindow = m_eglTestCtx.createNativeWindow(m_eglDisplay, m_eglConfig, DE_NULL, 480, 480, eglu::parseWindowVisibility(m_testCtx.getCommandLine()));
+	m_nativeWindow = windowFactory->createWindow(&m_eglTestCtx.getNativeDisplay(), m_eglDisplay, m_eglConfig, DE_NULL, eglu::WindowParams(480, 480, eglu::parseWindowVisibility(m_testCtx.getCommandLine())));
 	m_eglSurface = eglu::createWindowSurface(m_eglTestCtx.getNativeDisplay(), *m_nativeWindow, m_eglDisplay, m_eglConfig, DE_NULL);
 
-	TCU_CHECK_EGL_CALL(eglMakeCurrent(m_eglDisplay, m_eglSurface, m_eglSurface, m_eglContext));
+	EGLU_CHECK_CALL(egl, makeCurrent(m_eglDisplay, m_eglSurface, m_eglSurface, m_eglContext));
 
-	requiredGLESExtensions();
+	requiredGLESExtensions(m_gl);
 }
 
 void SyncTest::deinit (void)
 {
+	const Library&	egl		= m_eglTestCtx.getLibrary();
+
 	if (m_eglDisplay != EGL_NO_DISPLAY)
 	{
 		if (m_sync != EGL_NO_SYNC_KHR)
 		{
-			TCU_CHECK_EGL_CALL(m_ext.destroySync(m_eglDisplay, m_sync));
+			EGLU_CHECK_CALL(egl, destroySyncKHR(m_eglDisplay, m_sync));
 			m_sync = EGL_NO_SYNC_KHR;
 		}
 
-		TCU_CHECK_EGL_CALL(eglMakeCurrent(m_eglDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT));
+		EGLU_CHECK_CALL(egl, makeCurrent(m_eglDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT));
 
 		if (m_eglContext != EGL_NO_CONTEXT)
 		{
-			TCU_CHECK_EGL_CALL(eglDestroyContext(m_eglDisplay, m_eglContext));
+			EGLU_CHECK_CALL(egl, destroyContext(m_eglDisplay, m_eglContext));
 			m_eglContext = EGL_NO_CONTEXT;
 		}
 
 		if (m_eglSurface != EGL_NO_SURFACE)
 		{
-			TCU_CHECK_EGL_CALL(eglDestroySurface(m_eglDisplay, m_eglSurface));
+			EGLU_CHECK_CALL(egl, destroySurface(m_eglDisplay, m_eglSurface));
 			m_eglSurface = EGL_NO_SURFACE;
 		}
 
 		delete m_nativeWindow;
 		m_nativeWindow = DE_NULL;
 
+		egl.terminate(m_eglDisplay);
 		m_eglDisplay = EGL_NO_DISPLAY;
 	}
 }
@@ -283,12 +266,12 @@ public:
 
 	IterateResult	iterate					(void)
 	{
-		TestLog& log = m_testCtx.getLog();
-		TCU_CHECK(m_ext.createSync);
+		const Library&	egl		= m_eglTestCtx.getLibrary();
+		TestLog&		log		= m_testCtx.getLog();
 
-		m_sync = m_ext.createSync(m_eglDisplay, m_syncType, NULL);
+		m_sync = egl.createSyncKHR(m_eglDisplay, m_syncType, NULL);
 		log << TestLog::Message << m_sync << " = eglCreateSyncKHR(" << m_eglDisplay << ", " << getSyncTypeName(m_syncType) << ", NULL)" << TestLog::EndMessage;
-		TCU_CHECK_EGL_MSG("eglCreateSyncKHR()");
+		EGLU_CHECK_MSG(egl, "eglCreateSyncKHR()");
 
 		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
 		return STOP;
@@ -303,15 +286,16 @@ public:
 	IterateResult	iterate					(void)
 	{
 
-		const EGLint attribList[] = {
+		const Library&	egl				= m_eglTestCtx.getLibrary();
+		TestLog&		log				= m_testCtx.getLog();
+		const EGLint	attribList[]	=
+		{
 			EGL_NONE
 		};
-		TestLog& log = m_testCtx.getLog();
-		TCU_CHECK(m_ext.createSync);
 
-		m_sync = m_ext.createSync(m_eglDisplay, m_syncType, attribList);
+		m_sync = egl.createSyncKHR(m_eglDisplay, m_syncType, attribList);
 		log << TestLog::Message << m_sync << " = eglCreateSyncKHR(" << m_eglDisplay << ", " << getSyncTypeName(m_syncType) << ", { EGL_NONE })" << TestLog::EndMessage;
-		TCU_CHECK_EGL_MSG("eglCreateSyncKHR()");
+		EGLU_CHECK_MSG(egl, "eglCreateSyncKHR()");
 
 		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
 		return STOP;
@@ -325,13 +309,13 @@ public:
 
 	IterateResult	iterate						(void)
 	{
-		TestLog& log = m_testCtx.getLog();
-		TCU_CHECK(m_ext.createSync);
+		const Library&	egl		= m_eglTestCtx.getLibrary();
+		TestLog&		log		= m_testCtx.getLog();
 
-		m_sync = m_ext.createSync(EGL_NO_DISPLAY, m_syncType, NULL);
+		m_sync = egl.createSyncKHR(EGL_NO_DISPLAY, m_syncType, NULL);
 		log << TestLog::Message << m_sync << " = eglCreateSyncKHR(EGL_NO_DISPLAY, " << getSyncTypeName(m_syncType) << ", NULL)" << TestLog::EndMessage;
 
-		EGLint error = eglGetError();
+		EGLint error = egl.getError();
 		log << TestLog::Message << error << " = eglGetError()" << TestLog::EndMessage;
 
 		if (error != EGL_BAD_DISPLAY)
@@ -355,13 +339,13 @@ public:
 
 	IterateResult	iterate					(void)
 	{
-		TestLog& log = m_testCtx.getLog();
-		TCU_CHECK(m_ext.createSync);
+		const Library&	egl		= m_eglTestCtx.getLibrary();
+		TestLog&		log		= m_testCtx.getLog();
 
-		m_sync = m_ext.createSync(m_eglDisplay, EGL_NONE, NULL);
+		m_sync = egl.createSyncKHR(m_eglDisplay, EGL_NONE, NULL);
 		log << TestLog::Message << m_sync << " = eglCreateSyncKHR(" << m_eglDisplay << ", EGL_NONE, NULL)" << TestLog::EndMessage;
 
-		EGLint error = eglGetError();
+		EGLint error = egl.getError();
 		log << TestLog::Message << error << " = eglGetError()" << TestLog::EndMessage;
 
 		if (error != EGL_BAD_ATTRIBUTE)
@@ -385,18 +369,18 @@ public:
 
 	IterateResult	iterate						(void)
 	{
-		TestLog& log = m_testCtx.getLog();
-		TCU_CHECK(m_ext.createSync);
+		const Library&	egl		= m_eglTestCtx.getLibrary();
+		TestLog&		log		= m_testCtx.getLog();
 
 		EGLint attribs[] = {
 			2, 3, 4, 5,
 			EGL_NONE
 		};
 
-		m_sync = m_ext.createSync(m_eglDisplay, m_syncType, attribs);
+		m_sync = egl.createSyncKHR(m_eglDisplay, m_syncType, attribs);
 		log << TestLog::Message << m_sync << " = eglCreateSyncKHR(" << m_eglDisplay << ", " << getSyncTypeName(m_syncType) << ", { 2, 3, 4, 5, EGL_NONE })" << TestLog::EndMessage;
 
-		EGLint error = eglGetError();
+		EGLint error = egl.getError();
 		log << TestLog::Message << error << " = eglGetError()" << TestLog::EndMessage;
 
 		if (error != EGL_BAD_ATTRIBUTE)
@@ -420,16 +404,16 @@ public:
 
 	IterateResult	iterate						(void)
 	{
-		TestLog& log = m_testCtx.getLog();
-		TCU_CHECK(m_ext.createSync);
+		const Library&	egl		= m_eglTestCtx.getLibrary();
+		TestLog&		log		= m_testCtx.getLog();
 
 		log << TestLog::Message << "eglMakeCurrent(" << m_eglDisplay << ", EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT)" << TestLog::EndMessage;
-		TCU_CHECK_EGL_CALL(eglMakeCurrent(m_eglDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT));
+		EGLU_CHECK_CALL(egl, makeCurrent(m_eglDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT));
 
-		m_sync = m_ext.createSync(m_eglDisplay, m_syncType, NULL);
+		m_sync = egl.createSyncKHR(m_eglDisplay, m_syncType, NULL);
 		log << TestLog::Message << m_sync << " = eglCreateSyncKHR(" << m_eglDisplay << ", " << getSyncTypeName(m_syncType) << ", NULL)" << TestLog::EndMessage;
 
-		EGLint error = eglGetError();
+		EGLint error = egl.getError();
 		log << TestLog::Message << error << " = eglGetError()" << TestLog::EndMessage;
 
 		if (error != EGL_BAD_MATCH)
@@ -453,15 +437,14 @@ public:
 
 	IterateResult	iterate					(void)
 	{
-		TestLog& log = m_testCtx.getLog();
-		TCU_CHECK(m_ext.createSync);
-		TCU_CHECK(m_ext.clientWaitSync);
+		const Library&	egl		= m_eglTestCtx.getLibrary();
+		TestLog&		log		= m_testCtx.getLog();
 
-		m_sync = m_ext.createSync(m_eglDisplay, m_syncType, NULL);
+		m_sync = egl.createSyncKHR(m_eglDisplay, m_syncType, NULL);
 		log << TestLog::Message << m_sync << " = eglCreateSyncKHR(" << m_eglDisplay << ", " << getSyncTypeName(m_syncType) << ", NULL)" << TestLog::EndMessage;
-		TCU_CHECK_EGL_MSG("eglCreateSyncKHR()");
+		EGLU_CHECK_MSG(egl, "eglCreateSyncKHR()");
 
-		EGLint status = m_ext.clientWaitSync(m_eglDisplay, m_sync, 0, 0);
+		EGLint status = egl.clientWaitSyncKHR(m_eglDisplay, m_sync, 0, 0);
 		log << TestLog::Message << status << " = eglClientWaitSyncKHR(" << m_eglDisplay << ", " << m_sync << ", 0, 0)" << TestLog::EndMessage;
 
 		if (m_syncType == EGL_SYNC_FENCE_KHR)
@@ -484,33 +467,32 @@ public:
 
 	IterateResult	iterate					(void)
 	{
-		TestLog& log = m_testCtx.getLog();
-		TCU_CHECK(m_ext.createSync);
-		TCU_CHECK(m_ext.clientWaitSync);
+		const Library&	egl		= m_eglTestCtx.getLibrary();
+		TestLog&		log		= m_testCtx.getLog();
 
-		m_sync = m_ext.createSync(m_eglDisplay, m_syncType, NULL);
+		m_sync = egl.createSyncKHR(m_eglDisplay, m_syncType, NULL);
 		log << TestLog::Message << m_sync << " = eglCreateSyncKHR(" << m_eglDisplay << ", " << getSyncTypeName(m_syncType) << ", NULL)" << TestLog::EndMessage;
-		TCU_CHECK_EGL_MSG("eglCreateSyncKHR()");
+		EGLU_CHECK_MSG(egl, "eglCreateSyncKHR()");
 
 		if (m_syncType == EGL_SYNC_REUSABLE_KHR)
 		{
-			EGLBoolean ret = m_ext.signalSync(m_eglDisplay, m_sync, EGL_SIGNALED_KHR);
+			EGLBoolean ret = egl.signalSyncKHR(m_eglDisplay, m_sync, EGL_SIGNALED_KHR);
 			log << TestLog::Message << ret << " = eglSignalSyncKHR(" << m_eglDisplay << ", " << m_sync << ", EGL_SIGNALED_KHR)" << TestLog::EndMessage;
-			TCU_CHECK_EGL_MSG("eglSignalSyncKHR()");
+			EGLU_CHECK_MSG(egl, "eglSignalSyncKHR()");
 		}
 		else if (m_syncType == EGL_SYNC_FENCE_KHR)
 		{
-			GLU_CHECK_CALL(glFlush());
+			GLU_CHECK_GLW_CALL(m_gl, flush());
 			log << TestLog::Message << "glFlush()" << TestLog::EndMessage;
 		}
 		else
 			DE_ASSERT(DE_FALSE);
 
-		EGLint status = m_ext.clientWaitSync(m_eglDisplay, m_sync, 0, EGL_FOREVER_KHR);
+		EGLint status = egl.clientWaitSyncKHR(m_eglDisplay, m_sync, 0, EGL_FOREVER_KHR);
 		log << TestLog::Message << status << " = eglClientWaitSyncKHR(" << m_eglDisplay << ", " << m_sync << ", 0, EGL_FOREVER_KHR)" << TestLog::EndMessage;
 
 		TCU_CHECK(status == EGL_CONDITION_SATISFIED_KHR);
-		TCU_CHECK_EGL_MSG("eglClientWaitSyncKHR()");
+		EGLU_CHECK_MSG(egl, "eglClientWaitSyncKHR()");
 
 		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
 		return STOP;
@@ -524,33 +506,32 @@ public:
 
 	IterateResult	iterate					(void)
 	{
-		TestLog& log = m_testCtx.getLog();
-		TCU_CHECK(m_ext.createSync);
-		TCU_CHECK(m_ext.clientWaitSync);
+		const Library&	egl		= m_eglTestCtx.getLibrary();
+		TestLog&		log		= m_testCtx.getLog();
 
-		m_sync = m_ext.createSync(m_eglDisplay, m_syncType, NULL);
+		m_sync = egl.createSyncKHR(m_eglDisplay, m_syncType, NULL);
 		log << TestLog::Message << m_sync << " = eglCreateSyncKHR(" << m_eglDisplay << ", " << getSyncTypeName(m_syncType) << ", NULL)" << TestLog::EndMessage;
-		TCU_CHECK_EGL_MSG("eglCreateSyncKHR()");
+		EGLU_CHECK_MSG(egl, "eglCreateSyncKHR()");
 
 
 		if (m_syncType == EGL_SYNC_REUSABLE_KHR)
 		{
-			EGLBoolean ret = m_ext.signalSync(m_eglDisplay, m_sync, EGL_SIGNALED_KHR);
+			EGLBoolean ret = egl.signalSyncKHR(m_eglDisplay, m_sync, EGL_SIGNALED_KHR);
 			log << TestLog::Message << ret << " = eglSignalSyncKHR(" << m_eglDisplay << ", " << m_sync << ", EGL_SIGNALED_KHR)" << TestLog::EndMessage;
-			TCU_CHECK_EGL_MSG("eglSignalSyncKHR()");
+			EGLU_CHECK_MSG(egl, "eglSignalSyncKHR()");
 		}
 		else if (m_syncType == EGL_SYNC_FENCE_KHR)
 		{
-			GLU_CHECK_CALL(glFlush());
+			GLU_CHECK_GLW_CALL(m_gl, flush());
 			log << TestLog::Message << "glFlush()" << TestLog::EndMessage;
 		}
 		else
 			DE_ASSERT(DE_FALSE);
 
 		log << TestLog::Message << "eglMakeCurrent(" << m_eglDisplay << ", EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT)" << TestLog::EndMessage;
-		TCU_CHECK_EGL_CALL(eglMakeCurrent(m_eglDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT));
+		EGLU_CHECK_CALL(egl, makeCurrent(m_eglDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT));
 
-		EGLint result = m_ext.clientWaitSync(m_eglDisplay, m_sync, 0, EGL_FOREVER_KHR);
+		EGLint result = egl.clientWaitSyncKHR(m_eglDisplay, m_sync, 0, EGL_FOREVER_KHR);
 		log << TestLog::Message << result << " = eglClientWaitSyncKHR(" << m_eglDisplay << ", " << m_sync << ", 0, EGL_FOREVER_KHR)" << TestLog::EndMessage;
 
 		TCU_CHECK(result == EGL_CONDITION_SATISFIED_KHR);
@@ -567,22 +548,21 @@ public:
 
 	IterateResult	iterate						(void)
 	{
-		TestLog& log = m_testCtx.getLog();
-		TCU_CHECK(m_ext.createSync);
-		TCU_CHECK(m_ext.clientWaitSync);
+		const Library&	egl		= m_eglTestCtx.getLibrary();
+		TestLog&		log		= m_testCtx.getLog();
 
-		m_sync = m_ext.createSync(m_eglDisplay, m_syncType, NULL);
+		m_sync = egl.createSyncKHR(m_eglDisplay, m_syncType, NULL);
 		log << TestLog::Message << m_sync << " = eglCreateSyncKHR(" << m_eglDisplay << ", " << getSyncTypeName(m_syncType) << ", NULL)" << TestLog::EndMessage;
-		TCU_CHECK_EGL_MSG("eglCreateSyncKHR()");
+		EGLU_CHECK_MSG(egl, "eglCreateSyncKHR()");
 
 		if (m_syncType == EGL_SYNC_REUSABLE_KHR)
 		{
-			EGLBoolean ret = m_ext.signalSync(m_eglDisplay, m_sync, EGL_SIGNALED_KHR);
+			EGLBoolean ret = egl.signalSyncKHR(m_eglDisplay, m_sync, EGL_SIGNALED_KHR);
 			log << TestLog::Message << ret << " = eglSignalSyncKHR(" << m_eglDisplay << ", " << m_sync << ", EGL_SIGNALED_KHR)" << TestLog::EndMessage;
-			TCU_CHECK_EGL_MSG("eglSignalSyncKHR()");
+			EGLU_CHECK_MSG(egl, "eglSignalSyncKHR()");
 		}
 
-		EGLint status = m_ext.clientWaitSync(m_eglDisplay, m_sync, EGL_SYNC_FLUSH_COMMANDS_BIT_KHR, EGL_FOREVER_KHR);
+		EGLint status = egl.clientWaitSyncKHR(m_eglDisplay, m_sync, EGL_SYNC_FLUSH_COMMANDS_BIT_KHR, EGL_FOREVER_KHR);
 		log << TestLog::Message << status << " = eglClientWaitSyncKHR(" << m_eglDisplay << ", " << m_sync << ", EGL_SYNC_FLUSH_COMMANDS_BIT_KHR, EGL_FOREVER_KHR)" << TestLog::EndMessage;
 
 		TCU_CHECK(status == EGL_CONDITION_SATISFIED_KHR);
@@ -599,18 +579,17 @@ public:
 
 	IterateResult	iterate							(void)
 	{
-		TestLog& log = m_testCtx.getLog();
-		TCU_CHECK(m_ext.createSync);
-		TCU_CHECK(m_ext.clientWaitSync);
+		const Library&	egl		= m_eglTestCtx.getLibrary();
+		TestLog&		log		= m_testCtx.getLog();
 
-		m_sync = m_ext.createSync(m_eglDisplay, m_syncType, NULL);
+		m_sync = egl.createSyncKHR(m_eglDisplay, m_syncType, NULL);
 		log << TestLog::Message << m_sync << " = eglCreateSyncKHR(" << m_eglDisplay << ", " << getSyncTypeName(m_syncType) << ", NULL)" << TestLog::EndMessage;
-		TCU_CHECK_EGL_MSG("eglCreateSyncKHR()");
+		EGLU_CHECK_MSG(egl, "eglCreateSyncKHR()");
 
-		EGLint status = m_ext.clientWaitSync(EGL_NO_DISPLAY, m_sync, EGL_SYNC_FLUSH_COMMANDS_BIT_KHR, EGL_FOREVER_KHR);
+		EGLint status = egl.clientWaitSyncKHR(EGL_NO_DISPLAY, m_sync, EGL_SYNC_FLUSH_COMMANDS_BIT_KHR, EGL_FOREVER_KHR);
 		log << TestLog::Message << status << " = eglClientWaitSyncKHR(EGL_NO_DISPLAY, " << m_sync << ", EGL_SYNC_FLUSH_COMMANDS_BIT_KHR, EGL_FOREVER_KHR)" << TestLog::EndMessage;
 
-		EGLint error = eglGetError();
+		EGLint error = egl.getError();
 		log << TestLog::Message << error << " = eglGetError()" << TestLog::EndMessage;
 
 		if (error != EGL_BAD_DISPLAY)
@@ -634,13 +613,13 @@ public:
 
 	IterateResult	iterate						(void)
 	{
-		TestLog& log = m_testCtx.getLog();
-		TCU_CHECK(m_ext.clientWaitSync);
+		const Library&	egl		= m_eglTestCtx.getLibrary();
+		TestLog&		log		= m_testCtx.getLog();
 
-		EGLint status = m_ext.clientWaitSync(m_eglDisplay, EGL_NO_SYNC_KHR, 0, EGL_FOREVER_KHR);
+		EGLint status = egl.clientWaitSyncKHR(m_eglDisplay, EGL_NO_SYNC_KHR, 0, EGL_FOREVER_KHR);
 		log << TestLog::Message << status << " = eglClientWaitSyncKHR(" << m_eglDisplay << ", EGL_NO_SYNC_KHR, 0, EGL_FOREVER_KHR)" << TestLog::EndMessage;
 
-		EGLint error = eglGetError();
+		EGLint error = egl.getError();
 		log << TestLog::Message << error << " = eglGetError()" << TestLog::EndMessage;
 
 		if (error != EGL_BAD_PARAMETER)
@@ -664,18 +643,17 @@ public:
 
 	IterateResult	iterate						(void)
 	{
-		TestLog& log = m_testCtx.getLog();
-		TCU_CHECK(m_ext.createSync);
-		TCU_CHECK(m_ext.clientWaitSync);
+		const Library&	egl		= m_eglTestCtx.getLibrary();
+		TestLog&		log		= m_testCtx.getLog();
 
-		m_sync = m_ext.createSync(m_eglDisplay, m_syncType, NULL);
+		m_sync = egl.createSyncKHR(m_eglDisplay, m_syncType, NULL);
 		log << TestLog::Message << m_sync << " = eglCreateSyncKHR(" << m_eglDisplay << ", " << getSyncTypeName(m_syncType) << ", NULL)" << TestLog::EndMessage;
-		TCU_CHECK_EGL_MSG("eglCreateSyncKHR()");
+		EGLU_CHECK_MSG(egl, "eglCreateSyncKHR()");
 
-		EGLint status = m_ext.clientWaitSync(m_eglDisplay, m_sync, 0xFFFFFFFF, EGL_FOREVER_KHR);
+		EGLint status = egl.clientWaitSyncKHR(m_eglDisplay, m_sync, 0xFFFFFFFF, EGL_FOREVER_KHR);
 		log << TestLog::Message << status << " = eglClientWaitSyncKHR(" << m_eglDisplay << ", " << m_sync << ", 0xFFFFFFFF, EGL_FOREVER_KHR)" << TestLog::EndMessage;
 
-		EGLint error = eglGetError();
+		EGLint error = egl.getError();
 		log << TestLog::Message << error << " = eglGetError()" << TestLog::EndMessage;
 
 		if (error != EGL_BAD_PARAMETER)
@@ -699,16 +677,15 @@ public:
 
 	IterateResult	iterate			(void)
 	{
-		TestLog& log = m_testCtx.getLog();
-		TCU_CHECK(m_ext.createSync);
-		TCU_CHECK(m_ext.getSyncAttrib);
+		const Library&	egl		= m_eglTestCtx.getLibrary();
+		TestLog&		log		= m_testCtx.getLog();
 
-		m_sync = m_ext.createSync(m_eglDisplay, m_syncType, NULL);
+		m_sync = egl.createSyncKHR(m_eglDisplay, m_syncType, NULL);
 		log << TestLog::Message << m_sync << " = eglCreateSyncKHR(" << m_eglDisplay << ", " << getSyncTypeName(m_syncType) << ", NULL)" << TestLog::EndMessage;
-		TCU_CHECK_EGL_MSG("eglCreateSyncKHR()");
+		EGLU_CHECK_MSG(egl, "eglCreateSyncKHR()");
 
 		EGLint type = 0;
-		TCU_CHECK_EGL_CALL(m_ext.getSyncAttrib(m_eglDisplay, m_sync, EGL_SYNC_TYPE_KHR, &type));
+		EGLU_CHECK_CALL(egl, getSyncAttribKHR(m_eglDisplay, m_sync, EGL_SYNC_TYPE_KHR, &type));
 		log << TestLog::Message << "eglGetSyncAttribKHR(" << m_eglDisplay << ", " << m_sync << ", EGL_SYNC_TYPE_KHR, {" << type << "})" << TestLog::EndMessage;
 
 		TCU_CHECK(type == ((EGLint)m_syncType));
@@ -725,16 +702,15 @@ public:
 
 	IterateResult	iterate				(void)
 	{
-		TestLog& log = m_testCtx.getLog();
-		TCU_CHECK(m_ext.createSync);
-		TCU_CHECK(m_ext.getSyncAttrib);
+		const Library&	egl		= m_eglTestCtx.getLibrary();
+		TestLog&		log		= m_testCtx.getLog();
 
-		m_sync = m_ext.createSync(m_eglDisplay, m_syncType, NULL);
+		m_sync = egl.createSyncKHR(m_eglDisplay, m_syncType, NULL);
 		log << TestLog::Message << m_sync << " = eglCreateSyncKHR(" << m_eglDisplay << ", " << getSyncTypeName(m_syncType) << ", NULL)" << TestLog::EndMessage;
-		TCU_CHECK_EGL_MSG("eglCreateSyncKHR()");
+		EGLU_CHECK_MSG(egl, "eglCreateSyncKHR()");
 
 		EGLint status = 0;
-		TCU_CHECK_EGL_CALL(m_ext.getSyncAttrib(m_eglDisplay, m_sync, EGL_SYNC_STATUS_KHR, &status));
+		EGLU_CHECK_CALL(egl, getSyncAttribKHR(m_eglDisplay, m_sync, EGL_SYNC_STATUS_KHR, &status));
 		log << TestLog::Message << "eglGetSyncAttribKHR(" << m_eglDisplay << ", " << m_sync << ", EGL_SYNC_STATUS_KHR, {" << status << "})" << TestLog::EndMessage;
 
 		if (m_syncType == EGL_SYNC_FENCE_KHR)
@@ -754,37 +730,35 @@ public:
 
 	IterateResult	iterate						(void)
 	{
-		TestLog& log = m_testCtx.getLog();
-		TCU_CHECK(m_ext.createSync);
-		TCU_CHECK(m_ext.clientWaitSync);
-		TCU_CHECK(m_ext.getSyncAttrib);
+		const Library&	egl		= m_eglTestCtx.getLibrary();
+		TestLog&		log		= m_testCtx.getLog();
 
-		m_sync = m_ext.createSync(m_eglDisplay, m_syncType, NULL);
+		m_sync = egl.createSyncKHR(m_eglDisplay, m_syncType, NULL);
 		log << TestLog::Message << m_sync << " = eglCreateSyncKHR(" << m_eglDisplay << ", " << getSyncTypeName(m_syncType) << ", NULL)" << TestLog::EndMessage;
-		TCU_CHECK_EGL_MSG("eglCreateSyncKHR()");
+		EGLU_CHECK_MSG(egl, "eglCreateSyncKHR()");
 
 		if (m_syncType == EGL_SYNC_REUSABLE_KHR)
 		{
-			EGLBoolean ret = m_ext.signalSync(m_eglDisplay, m_sync, EGL_SIGNALED_KHR);
+			EGLBoolean ret = egl.signalSyncKHR(m_eglDisplay, m_sync, EGL_SIGNALED_KHR);
 			log << TestLog::Message << ret << " = eglSignalSyncKHR(" << m_eglDisplay << ", " << m_sync << ", EGL_SIGNALED_KHR)" << TestLog::EndMessage;
-			TCU_CHECK_EGL_MSG("eglSignalSyncKHR()");
+			EGLU_CHECK_MSG(egl, "eglSignalSyncKHR()");
 		}
 		else if (m_syncType == EGL_SYNC_FENCE_KHR)
 		{
-			GLU_CHECK_CALL(glFinish());
+			GLU_CHECK_GLW_CALL(m_gl, finish());
 			log << TestLog::Message << "glFinish()" << TestLog::EndMessage;
 		}
 		else
 			DE_ASSERT(DE_FALSE);
 
 		{
-			EGLint status = m_ext.clientWaitSync(m_eglDisplay, m_sync, EGL_SYNC_FLUSH_COMMANDS_BIT_KHR, EGL_FOREVER_KHR);
+			EGLint status = egl.clientWaitSyncKHR(m_eglDisplay, m_sync, EGL_SYNC_FLUSH_COMMANDS_BIT_KHR, EGL_FOREVER_KHR);
 			log << TestLog::Message << status << " = eglClientWaitSyncKHR(" << m_eglDisplay << ", " << m_sync << ", EGL_SYNC_FLUSH_COMMANDS_BIT_KHR, EGL_FOREVER_KHR)" << TestLog::EndMessage;
 			TCU_CHECK(status == EGL_CONDITION_SATISFIED_KHR);
 		}
 
 		EGLint status = 0;
-		TCU_CHECK_EGL_CALL(m_ext.getSyncAttrib(m_eglDisplay, m_sync, EGL_SYNC_STATUS_KHR, &status));
+		EGLU_CHECK_CALL(egl, getSyncAttribKHR(m_eglDisplay, m_sync, EGL_SYNC_STATUS_KHR, &status));
 		log << TestLog::Message << "eglGetSyncAttribKHR(" << m_eglDisplay << ", " << m_sync << ", EGL_SYNC_STATUS_KHR, {" << status << "})" << TestLog::EndMessage;
 
 		TCU_CHECK(status == EGL_SIGNALED_KHR);
@@ -801,16 +775,15 @@ public:
 
 	IterateResult	iterate					(void)
 	{
-		TestLog& log = m_testCtx.getLog();
-		TCU_CHECK(m_ext.createSync);
-		TCU_CHECK(m_ext.getSyncAttrib);
+		const Library&	egl		= m_eglTestCtx.getLibrary();
+		TestLog&		log		= m_testCtx.getLog();
 
-		m_sync = m_ext.createSync(m_eglDisplay, m_syncType, NULL);
+		m_sync = egl.createSyncKHR(m_eglDisplay, m_syncType, NULL);
 		log << TestLog::Message << m_sync << " = eglCreateSyncKHR(" << m_eglDisplay << ", " << getSyncTypeName(m_syncType) << ", NULL)" << TestLog::EndMessage;
-		TCU_CHECK_EGL_MSG("eglCreateSyncKHR()");
+		EGLU_CHECK_MSG(egl, "eglCreateSyncKHR()");
 
 		EGLint condition = 0;
-		TCU_CHECK_EGL_CALL(m_ext.getSyncAttrib(m_eglDisplay, m_sync, EGL_SYNC_CONDITION_KHR, &condition));
+		EGLU_CHECK_CALL(egl, getSyncAttribKHR(m_eglDisplay, m_sync, EGL_SYNC_CONDITION_KHR, &condition));
 		log << TestLog::Message << "eglGetSyncAttribKHR(" << m_eglDisplay << ", " << m_sync << ", EGL_SYNC_CONDITION_KHR, {" << condition << "})" << TestLog::EndMessage;
 
 		TCU_CHECK(condition == EGL_SYNC_PRIOR_COMMANDS_COMPLETE_KHR);
@@ -827,19 +800,18 @@ public:
 
 	IterateResult	iterate						(void)
 	{
-		TestLog& log = m_testCtx.getLog();
-		TCU_CHECK(m_ext.createSync);
-		TCU_CHECK(m_ext.getSyncAttrib);
+		const Library&	egl		= m_eglTestCtx.getLibrary();
+		TestLog&		log		= m_testCtx.getLog();
 
-		m_sync = m_ext.createSync(m_eglDisplay, m_syncType, NULL);
+		m_sync = egl.createSyncKHR(m_eglDisplay, m_syncType, NULL);
 		log << TestLog::Message << m_sync << " = eglCreateSyncKHR(" << m_eglDisplay << ", " << getSyncTypeName(m_syncType) << ", NULL)" << TestLog::EndMessage;
-		TCU_CHECK_EGL_MSG("eglCreateSyncKHR()");
+		EGLU_CHECK_MSG(egl, "eglCreateSyncKHR()");
 
 		EGLint condition = 0xF0F0F;
-		EGLBoolean result = m_ext.getSyncAttrib(EGL_NO_DISPLAY, m_sync, EGL_SYNC_CONDITION_KHR, &condition);
+		EGLBoolean result = egl.getSyncAttribKHR(EGL_NO_DISPLAY, m_sync, EGL_SYNC_CONDITION_KHR, &condition);
 		log << TestLog::Message << result << " = eglGetSyncAttribKHR(EGL_NO_DISPLAY, " << m_sync << ", EGL_SYNC_CONDITION_KHR, {" << condition << "})" << TestLog::EndMessage;
 
-		EGLint error = eglGetError();
+		EGLint error = egl.getError();
 		log << TestLog::Message << error << " = eglGetError()" << TestLog::EndMessage;
 
 		if (error != EGL_BAD_DISPLAY)
@@ -864,14 +836,14 @@ public:
 
 	IterateResult	iterate					(void)
 	{
-		TestLog& log = m_testCtx.getLog();
-		TCU_CHECK(m_ext.getSyncAttrib);
+		const Library&	egl		= m_eglTestCtx.getLibrary();
+		TestLog&		log		= m_testCtx.getLog();
 
 		EGLint condition = 0xF0F0F;
-		EGLBoolean result = m_ext.getSyncAttrib(m_eglDisplay, EGL_NO_SYNC_KHR, EGL_SYNC_CONDITION_KHR, &condition);
+		EGLBoolean result = egl.getSyncAttribKHR(m_eglDisplay, EGL_NO_SYNC_KHR, EGL_SYNC_CONDITION_KHR, &condition);
 		log << TestLog::Message << result << " = eglGetSyncAttribKHR(" << m_eglDisplay << ", EGL_NO_SYNC_KHR, EGL_SYNC_CONDITION_KHR, {" << condition << "})" << TestLog::EndMessage;
 
-		EGLint error = eglGetError();
+		EGLint error = egl.getError();
 		log << TestLog::Message << error << " = eglGetError()" << TestLog::EndMessage;
 
 		if (error != EGL_BAD_PARAMETER)
@@ -896,19 +868,18 @@ public:
 
 	IterateResult	iterate						(void)
 	{
-		TestLog& log = m_testCtx.getLog();
-		TCU_CHECK(m_ext.createSync);
-		TCU_CHECK(m_ext.getSyncAttrib);
+		const Library&	egl		= m_eglTestCtx.getLibrary();
+		TestLog&		log		= m_testCtx.getLog();
 
-		m_sync = m_ext.createSync(m_eglDisplay, m_syncType, NULL);
+		m_sync = egl.createSyncKHR(m_eglDisplay, m_syncType, NULL);
 		log << TestLog::Message << m_sync << " = eglCreateSyncKHR(" << m_eglDisplay << ", " << getSyncTypeName(m_syncType) << ", NULL)" << TestLog::EndMessage;
-		TCU_CHECK_EGL_MSG("eglCreateSyncKHR()");
+		EGLU_CHECK_MSG(egl, "eglCreateSyncKHR()");
 
 		EGLint condition = 0xF0F0F;
-		EGLBoolean result = m_ext.getSyncAttrib(m_eglDisplay, m_sync, EGL_NONE, &condition);
+		EGLBoolean result = egl.getSyncAttribKHR(m_eglDisplay, m_sync, EGL_NONE, &condition);
 		log << TestLog::Message << result << " = eglGetSyncAttribKHR(" << m_eglDisplay << ", " << m_sync << ", EGL_NONE, {" << condition << "})" << TestLog::EndMessage;
 
-		EGLint error = eglGetError();
+		EGLint error = egl.getError();
 		log << TestLog::Message << error << " = eglGetError()" << TestLog::EndMessage;
 
 		if (error != EGL_BAD_ATTRIBUTE)
@@ -933,18 +904,17 @@ public:
 
 	IterateResult	iterate					(void)
 	{
-		TestLog& log = m_testCtx.getLog();
-		TCU_CHECK(m_ext.createSync);
-		TCU_CHECK(m_ext.getSyncAttrib);
+		const Library&	egl		= m_eglTestCtx.getLibrary();
+		TestLog&		log		= m_testCtx.getLog();
 
-		m_sync = m_ext.createSync(m_eglDisplay, m_syncType, NULL);
+		m_sync = egl.createSyncKHR(m_eglDisplay, m_syncType, NULL);
 		log << TestLog::Message << m_sync << " = eglCreateSyncKHR(" << m_eglDisplay << ", " << getSyncTypeName(m_syncType) << ", NULL)" << TestLog::EndMessage;
-		TCU_CHECK_EGL_MSG("eglCreateSyncKHR()");
+		EGLU_CHECK_MSG(egl, "eglCreateSyncKHR()");
 
-		EGLBoolean result = m_ext.getSyncAttrib(m_eglDisplay, m_sync, EGL_SYNC_TYPE_KHR, NULL);
+		EGLBoolean result = egl.getSyncAttribKHR(m_eglDisplay, m_sync, EGL_SYNC_TYPE_KHR, NULL);
 		log << TestLog::Message << result << " = eglGetSyncAttribKHR(" << m_eglDisplay << ", " << m_sync << ", EGL_SYNC_CONDITION_KHR, NULL)" << TestLog::EndMessage;
 
-		EGLint error = eglGetError();
+		EGLint error = egl.getError();
 		log << TestLog::Message << error << " = eglGetError()" << TestLog::EndMessage;
 
 		if (error != EGL_BAD_PARAMETER)
@@ -968,16 +938,15 @@ public:
 
 	IterateResult	iterate			(void)
 	{
-		TestLog& log = m_testCtx.getLog();
-		TCU_CHECK(m_ext.createSync);
-		TCU_CHECK(m_ext.destroySync);
+		const Library&	egl		= m_eglTestCtx.getLibrary();
+		TestLog&		log		= m_testCtx.getLog();
 
-		m_sync = m_ext.createSync(m_eglDisplay, m_syncType, NULL);
+		m_sync = egl.createSyncKHR(m_eglDisplay, m_syncType, NULL);
 		log << TestLog::Message << "eglCreateSyncKHR(" << m_eglDisplay << ", " << getSyncTypeName(m_syncType) << ", NULL)" << TestLog::EndMessage;
-		TCU_CHECK_EGL_MSG("eglCreateSyncKHR()");
+		EGLU_CHECK_MSG(egl, "eglCreateSyncKHR()");
 
 		log << TestLog::Message << "eglDestroySyncKHR(" << m_eglDisplay << ", " << m_sync << ")" << TestLog::EndMessage;
-		TCU_CHECK_EGL_CALL(m_ext.destroySync(m_eglDisplay, m_sync));
+		EGLU_CHECK_CALL(egl, destroySyncKHR(m_eglDisplay, m_sync));
 		m_sync = EGL_NO_SYNC_KHR;
 
 		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
@@ -992,18 +961,17 @@ public:
 
 	IterateResult	iterate							(void)
 	{
-		TestLog& log = m_testCtx.getLog();
-		TCU_CHECK(m_ext.createSync);
-		TCU_CHECK(m_ext.destroySync);
+		const Library&	egl		= m_eglTestCtx.getLibrary();
+		TestLog&		log		= m_testCtx.getLog();
 
-		m_sync = m_ext.createSync(m_eglDisplay, m_syncType, NULL);
+		m_sync = egl.createSyncKHR(m_eglDisplay, m_syncType, NULL);
 		log << TestLog::Message << "eglCreateSyncKHR(" << m_eglDisplay << ", " << getSyncTypeName(m_syncType) << ", NULL)" << TestLog::EndMessage;
-		TCU_CHECK_EGL_MSG("eglCreateSyncKHR()");
+		EGLU_CHECK_MSG(egl, "eglCreateSyncKHR()");
 
-		EGLBoolean result = m_ext.destroySync(EGL_NO_DISPLAY, m_sync);
+		EGLBoolean result = egl.destroySyncKHR(EGL_NO_DISPLAY, m_sync);
 		log << TestLog::Message << result << " = eglDestroySyncKHR(EGL_NO_DISPLAY, " << m_sync << ")" << TestLog::EndMessage;
 
-		EGLint error = eglGetError();
+		EGLint error = egl.getError();
 		log << TestLog::Message << error << " = eglGetError()" << TestLog::EndMessage;
 
 		if (error != EGL_BAD_DISPLAY)
@@ -1027,13 +995,13 @@ public:
 
 	IterateResult	iterate						(void)
 	{
-		TestLog& log = m_testCtx.getLog();
-		TCU_CHECK(m_ext.destroySync);
+		const Library&	egl		= m_eglTestCtx.getLibrary();
+		TestLog&		log		= m_testCtx.getLog();
 
-		EGLBoolean result = m_ext.destroySync(m_eglDisplay, EGL_NO_SYNC_KHR);
+		EGLBoolean result = egl.destroySyncKHR(m_eglDisplay, EGL_NO_SYNC_KHR);
 		log << TestLog::Message << result << " = eglDestroySyncKHR(" << m_eglDisplay << ", EGL_NO_SYNC_KHR)" << TestLog::EndMessage;
 
-		EGLint error = eglGetError();
+		EGLint error = egl.getError();
 		log << TestLog::Message << error << " = eglGetError()" << TestLog::EndMessage;
 
 		if (error != EGL_BAD_PARAMETER)
@@ -1057,20 +1025,19 @@ public:
 
 	IterateResult	iterate			(void)
 	{
-		TestLog& log = m_testCtx.getLog();
-		TCU_CHECK(m_ext.createSync);
-		TCU_CHECK(m_ext.waitSync);
+		const Library&	egl		= m_eglTestCtx.getLibrary();
+		TestLog&		log		= m_testCtx.getLog();
 
-		m_sync = m_ext.createSync(m_eglDisplay, m_syncType, NULL);
+		m_sync = egl.createSyncKHR(m_eglDisplay, m_syncType, NULL);
 		log << TestLog::Message << m_sync << " = eglCreateSyncKHR(" << m_eglDisplay << ", " << getSyncTypeName(m_syncType) << ", NULL)" << TestLog::EndMessage;
-		TCU_CHECK_EGL_MSG("eglCreateSyncKHR()");
+		EGLU_CHECK_MSG(egl, "eglCreateSyncKHR()");
 
-		EGLint status = m_ext.waitSync(m_eglDisplay, m_sync, 0);
+		EGLint status = egl.waitSyncKHR(m_eglDisplay, m_sync, 0);
 		log << TestLog::Message << status << " = eglWaitSyncKHR(" << m_eglDisplay << ", " << m_sync << ", 0, 0)" << TestLog::EndMessage;
 
 		TCU_CHECK(status == EGL_TRUE);
 
-		GLU_CHECK_CALL(glFinish());
+		GLU_CHECK_GLW_CALL(m_gl, finish());
 
 		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
 		return STOP;
@@ -1085,18 +1052,17 @@ public:
 
 	IterateResult	iterate						(void)
 	{
-		TestLog& log = m_testCtx.getLog();
-		TCU_CHECK(m_ext.createSync);
-		TCU_CHECK(m_ext.waitSync);
+		const Library&	egl		= m_eglTestCtx.getLibrary();
+		TestLog&		log		= m_testCtx.getLog();
 
-		m_sync = m_ext.createSync(m_eglDisplay, m_syncType, NULL);
+		m_sync = egl.createSyncKHR(m_eglDisplay, m_syncType, NULL);
 		log << TestLog::Message << m_sync << " = eglCreateSyncKHR(" << m_eglDisplay << ", " << getSyncTypeName(m_syncType) << ", NULL)" << TestLog::EndMessage;
-		TCU_CHECK_EGL_MSG("eglCreateSyncKHR()");
+		EGLU_CHECK_MSG(egl, "eglCreateSyncKHR()");
 
-		EGLint status = m_ext.waitSync(EGL_NO_DISPLAY, m_sync, 0);
+		EGLint status = egl.waitSyncKHR(EGL_NO_DISPLAY, m_sync, 0);
 		log << TestLog::Message << status << " = eglWaitSyncKHR(EGL_NO_DISPLAY, " << m_sync << ", 0)" << TestLog::EndMessage;
 
-		EGLint error = eglGetError();
+		EGLint error = egl.getError();
 		log << TestLog::Message << error << " = eglGetError()" << TestLog::EndMessage;
 
 		if (error != EGL_BAD_DISPLAY)
@@ -1120,13 +1086,13 @@ public:
 
 	IterateResult	iterate					(void)
 	{
-		TestLog& log = m_testCtx.getLog();
-		TCU_CHECK(m_ext.waitSync);
+		const Library&	egl		= m_eglTestCtx.getLibrary();
+		TestLog&		log		= m_testCtx.getLog();
 
-		EGLint status = m_ext.waitSync(m_eglDisplay, EGL_NO_SYNC_KHR, 0);
+		EGLint status = egl.waitSyncKHR(m_eglDisplay, EGL_NO_SYNC_KHR, 0);
 		log << TestLog::Message << status << " = eglWaitSyncKHR(" << m_eglDisplay << ", EGL_NO_SYNC_KHR, 0)" << TestLog::EndMessage;
 
-		EGLint error = eglGetError();
+		EGLint error = egl.getError();
 		log << TestLog::Message << error << " = eglGetError()" << TestLog::EndMessage;
 
 		if (error != EGL_BAD_PARAMETER)
@@ -1150,18 +1116,17 @@ public:
 
 	IterateResult	iterate					(void)
 	{
-		TestLog& log = m_testCtx.getLog();
-		TCU_CHECK(m_ext.createSync);
-		TCU_CHECK(m_ext.waitSync);
+		const Library&	egl		= m_eglTestCtx.getLibrary();
+		TestLog&		log		= m_testCtx.getLog();
 
-		m_sync = m_ext.createSync(m_eglDisplay, m_syncType, NULL);
+		m_sync = egl.createSyncKHR(m_eglDisplay, m_syncType, NULL);
 		log << TestLog::Message << m_sync << " = eglCreateSyncKHR(" << m_eglDisplay << ", " << getSyncTypeName(m_syncType) << ", NULL)" << TestLog::EndMessage;
-		TCU_CHECK_EGL_MSG("eglCreateSyncKHR()");
+		EGLU_CHECK_MSG(egl, "eglCreateSyncKHR()");
 
-		EGLint status = m_ext.waitSync(m_eglDisplay, m_sync, 0xFFFFFFFF);
+		EGLint status = egl.waitSyncKHR(m_eglDisplay, m_sync, 0xFFFFFFFF);
 		log << TestLog::Message << status << " = eglWaitSyncKHR(" << m_eglDisplay << ", " << m_sync << ", 0xFFFFFFFF)" << TestLog::EndMessage;
 
-		EGLint error = eglGetError();
+		EGLint error = egl.getError();
 		log << TestLog::Message << error << " = eglGetError()" << TestLog::EndMessage;
 
 		if (error != EGL_BAD_PARAMETER)

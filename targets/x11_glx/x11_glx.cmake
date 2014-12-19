@@ -8,7 +8,7 @@ set(DEQP_SUPPORT_EGL	OFF)
 set(DEQP_SUPPORT_GLX	ON)
 
 # Use X11 target
-set(DEQP_USE_X11	ON)
+set(DEQP_USE_X11		ON)
 
 find_package(X11)
 if (NOT X11_FOUND)

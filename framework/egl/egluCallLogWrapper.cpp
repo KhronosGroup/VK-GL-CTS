@@ -23,6 +23,8 @@
 
 #include "egluCallLogWrapper.hpp"
 #include "egluStrUtil.hpp"
+#include "eglwLibrary.hpp"
+#include "eglwEnums.hpp"
 #include "deStringUtil.hpp"
 #include "deInt32.h"
 
@@ -32,8 +34,9 @@ namespace eglu
 using tcu::toHex;
 using tcu::TestLog;
 
-CallLogWrapper::CallLogWrapper (TestLog& log)
-	: m_log			(log)
+CallLogWrapper::CallLogWrapper (const eglw::Library& egl, TestLog& log)
+	: m_egl			(egl)
+	, m_log			(log)
 	, m_enableLog	(false)
 {
 }
@@ -186,11 +189,11 @@ inline std::ostream& operator<< (std::ostream& str, const SurfaceAttribValuePoin
 class EGLDisplayFmt
 {
 public:
-	EGLDisplay display;
-	EGLDisplayFmt (EGLDisplay display_) : display(display_) {}
+	eglw::EGLDisplay display;
+	EGLDisplayFmt (eglw::EGLDisplay display_) : display(display_) {}
 };
 
-inline EGLDisplayFmt getEGLDisplayStr (EGLDisplay display) { return EGLDisplayFmt(display); }
+inline EGLDisplayFmt getEGLDisplayStr (eglw::EGLDisplay display) { return EGLDisplayFmt(display); }
 
 inline std::ostream& operator<< (std::ostream& str, const EGLDisplayFmt& fmt)
 {
@@ -205,18 +208,18 @@ inline std::ostream& operator<< (std::ostream& str, const EGLDisplayFmt& fmt)
 class EGLSurfaceFmt
 {
 public:
-	EGLSurface display;
-	EGLSurfaceFmt (EGLSurface display_) : display(display_) {}
+	eglw::EGLSurface surface;
+	EGLSurfaceFmt (eglw::EGLSurface surface_) : surface(surface_) {}
 };
 
-inline EGLSurfaceFmt getEGLSurfaceStr (EGLSurface display) { return EGLSurfaceFmt(display); }
+inline EGLSurfaceFmt getEGLSurfaceStr (eglw::EGLSurface surface) { return EGLSurfaceFmt(surface); }
 
 inline std::ostream& operator<< (std::ostream& str, const EGLSurfaceFmt& fmt)
 {
-	if (fmt.display == EGL_NO_SURFACE)
+	if (fmt.surface == EGL_NO_SURFACE)
 		return str << "EGL_NO_SURFACE";
 	else
-		return str << toHex(fmt.display);
+		return str << toHex(fmt.surface);
 }
 
 // EGLContext formatter
@@ -224,18 +227,18 @@ inline std::ostream& operator<< (std::ostream& str, const EGLSurfaceFmt& fmt)
 class EGLContextFmt
 {
 public:
-	EGLContext display;
-	EGLContextFmt (EGLContext display_) : display(display_) {}
+	eglw::EGLContext context;
+	EGLContextFmt (eglw::EGLContext context_) : context(context_) {}
 };
 
-inline EGLContextFmt getEGLContextStr (EGLContext display) { return EGLContextFmt(display); }
+inline EGLContextFmt getEGLContextStr (eglw::EGLContext context) { return EGLContextFmt(context); }
 
 inline std::ostream& operator<< (std::ostream& str, const EGLContextFmt& fmt)
 {
-	if (fmt.display == EGL_NO_CONTEXT)
+	if (fmt.context == EGL_NO_CONTEXT)
 		return str << "EGL_NO_CONTEXT";
 	else
-		return str << toHex(fmt.display);
+		return str << toHex(fmt.context);
 }
 
 // API entry-point implementations are auto-generated

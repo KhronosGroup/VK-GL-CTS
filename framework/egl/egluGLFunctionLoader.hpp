@@ -26,21 +26,55 @@
 #include "tcuDefs.hpp"
 #include "tcuFunctionLibrary.hpp"
 #include "glwFunctionLoader.hpp"
+#include "gluRenderContext.hpp"
+
+namespace tcu
+{
+class CommandLine;
+}
+
+namespace eglw
+{
+class Library;
+}
 
 namespace eglu
 {
 
+class Platform;
+
 class GLFunctionLoader : public glw::FunctionLoader
 {
 public:
-										GLFunctionLoader	(const tcu::FunctionLibrary* platformLibrary);
+										GLFunctionLoader	(const eglw::Library& egl, const tcu::FunctionLibrary* platformLibrary);
 	glw::GenericFuncType				get					(const char* name) const;
 
 private:
 										GLFunctionLoader	(const GLFunctionLoader&);
 	GLFunctionLoader&					operator=			(const GLFunctionLoader&);
 
+	const eglw::Library&				m_egl;
 	const tcu::FunctionLibrary* const	m_library;			//!< Base platform library for functions. Used if eglGetProcAddress() fails.
+};
+
+class GLLibraryCache
+{
+public:
+								GLLibraryCache		(const Platform& platform, const tcu::CommandLine& cmdLine);
+								~GLLibraryCache		(void);
+
+	const tcu::FunctionLibrary*	getLibrary			(glu::ApiType apiType);
+
+private:
+	GLLibraryCache&				operator=			(const GLLibraryCache& other);
+								GLLibraryCache		(const GLLibraryCache& other);
+
+	typedef std::map<deUint32, tcu::FunctionLibrary*> LibraryMap;
+
+	const Platform&				m_platform;
+	const tcu::CommandLine&		m_cmdLine;
+
+	LibraryMap					m_libraries;
 };
 
 } // eglu

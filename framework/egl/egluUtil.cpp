@@ -24,12 +24,13 @@
 #include "egluUtil.hpp"
 #include "egluDefs.hpp"
 #include "egluNativeDisplay.hpp"
+#include "egluConfigFilter.hpp"
+#include "eglwLibrary.hpp"
+#include "eglwEnums.hpp"
 #include "tcuCommandLine.hpp"
 #include "deSTLUtil.hpp"
 #include "deStringUtil.hpp"
 #include "glwEnums.hpp"
-
-#include <EGL/eglext.h>
 
 #include <algorithm>
 #include <sstream>
@@ -37,17 +38,12 @@
 using std::string;
 using std::vector;
 
-#if !defined(EGL_EXT_platform_base)
-#	define EGL_EXT_platform_base 1
-	typedef EGLDisplay (EGLAPIENTRYP PFNEGLGETPLATFORMDISPLAYEXTPROC) (EGLenum platform, void *native_display, const EGLint *attrib_list);
-	typedef EGLSurface (EGLAPIENTRYP PFNEGLCREATEPLATFORMWINDOWSURFACEEXTPROC) (EGLDisplay dpy, EGLConfig config, void *native_window, const EGLint *attrib_list);
-	typedef EGLSurface (EGLAPIENTRYP PFNEGLCREATEPLATFORMPIXMAPSURFACEEXTPROC) (EGLDisplay dpy, EGLConfig config, void *native_pixmap, const EGLint *attrib_list);
-#endif // EGL_EXT_platform_base
-
 namespace eglu
 {
 
-vector<EGLint> attribMapToVector (const AttribMap& attribs)
+using namespace eglw;
+
+vector<EGLint> attribMapToList (const AttribMap& attribs)
 {
 	vector<EGLint> attribList;
 
@@ -62,124 +58,165 @@ vector<EGLint> attribMapToVector (const AttribMap& attribs)
 	return attribList;
 }
 
-Version getVersion (EGLDisplay display)
+Version getVersion (const Library& egl, EGLDisplay display)
 {
 	EGLint major, minor;
 
 	// eglInitialize on already initialized displays just returns the version.
-	EGLU_CHECK_CALL(eglInitialize(display, &major, &minor));
+	EGLU_CHECK_CALL(egl, initialize(display, &major, &minor));
 
 	return Version(major, minor);
 }
 
-vector<string> getExtensions (EGLDisplay display)
+vector<string> getExtensions (const Library& egl, EGLDisplay display)
 {
-	const char*	const extensionStr = eglQueryString(display, EGL_EXTENSIONS);
+	const char*	const extensionStr = egl.queryString(display, EGL_EXTENSIONS);
 
-	EGLU_CHECK_MSG("Querying extensions failed");
+	EGLU_CHECK_MSG(egl, "Querying extensions failed");
 
 	return de::splitString(extensionStr, ' ');
 }
 
-bool hasExtension (EGLDisplay display, const string& str)
+bool hasExtension (const Library& egl, EGLDisplay display, const string& str)
 {
-	const vector<string> extensions = getExtensions(display);
+	const vector<string> extensions = getExtensions(egl, display);
 	return de::contains(extensions.begin(), extensions.end(), str);
 }
 
-vector<string> getPlatformExtensions (void)
+vector<string> getPlatformExtensions (const Library& egl)
 {
-	return getExtensions(EGL_NO_DISPLAY);
+	return getExtensions(egl, EGL_NO_DISPLAY);
 }
 
-vector<string> getClientExtensions (EGLDisplay display)
+vector<string> getClientExtensions (const Library& egl, EGLDisplay display)
 {
 	DE_ASSERT(display != EGL_NO_DISPLAY);
 
-	return getExtensions(display);
+	return getExtensions(egl, display);
 }
 
-vector<EGLConfig> getConfigs (EGLDisplay display)
+vector<EGLConfig> getConfigs (const Library& egl, EGLDisplay display)
 {
 	vector<EGLConfig>	configs;
 	EGLint				configCount	= 0;
-	EGLU_CHECK_CALL(eglGetConfigs(display, DE_NULL, 0, &configCount));
+	EGLU_CHECK_CALL(egl, getConfigs(display, DE_NULL, 0, &configCount));
 
 	if (configCount > 0)
 	{
 		configs.resize(configCount);
-		EGLU_CHECK_CALL(eglGetConfigs(display, &(configs[0]), (EGLint)configs.size(), &configCount));
+		EGLU_CHECK_CALL(egl, getConfigs(display, &(configs[0]), (EGLint)configs.size(), &configCount));
 	}
 
 	return configs;
 }
 
-vector<EGLConfig> chooseConfig (EGLDisplay display, const AttribMap& attribs)
+vector<EGLConfig> chooseConfigs (const Library& egl, EGLDisplay display, const EGLint* attribList)
 {
-	vector<EGLint> attribList;
+	EGLint	numConfigs	= 0;
 
-	for (AttribMap::const_iterator it = attribs.begin(); it != attribs.end(); ++it)
-	{
-		attribList.push_back(it->first);
-		attribList.push_back(it->second);
-	}
-
-	attribList.push_back(EGL_NONE);
+	EGLU_CHECK_CALL(egl, chooseConfig(display, attribList, DE_NULL, 0, &numConfigs));
 
 	{
-		EGLint numConfigs = 0;
-		EGLU_CHECK_CALL(eglChooseConfig(display, &attribList.front(), DE_NULL, 0, &numConfigs));
+		vector<EGLConfig> configs(numConfigs);
 
-		{
-			vector<EGLConfig> configs(numConfigs);
+		if (numConfigs > 0)
+			EGLU_CHECK_CALL(egl, chooseConfig(display, attribList, &configs.front(), numConfigs, &numConfigs));
 
-			if (numConfigs > 0)
-				EGLU_CHECK_CALL(eglChooseConfig(display, &attribList.front(), &configs.front(), numConfigs, &numConfigs));
-
-			return configs;
-		}
+		return configs;
 	}
 }
 
-EGLConfig chooseSingleConfig (EGLDisplay display, const AttribMap& attribs)
+vector<EGLConfig> chooseConfigs (const Library& egl, EGLDisplay display, const FilterList& filters)
 {
-	vector<EGLConfig> configs (chooseConfig(display, attribs));
+	const vector<EGLConfig>	allConfigs		(getConfigs(egl, display));
+	vector<EGLConfig>		matchingConfigs;
+
+	for (vector<EGLConfig>::const_iterator cfg = allConfigs.begin(); cfg != allConfigs.end(); ++cfg)
+	{
+		if (filters.match(egl, display, *cfg))
+			matchingConfigs.push_back(*cfg);
+	}
+
+	return matchingConfigs;
+}
+
+EGLConfig chooseSingleConfig (const Library& egl, EGLDisplay display, const FilterList& filters)
+{
+	const vector<EGLConfig>	allConfigs	(getConfigs(egl, display));
+
+	for (vector<EGLConfig>::const_iterator cfg = allConfigs.begin(); cfg != allConfigs.end(); ++cfg)
+	{
+		if (filters.match(egl, display, *cfg))
+			return *cfg;
+	}
+
+	TCU_THROW(NotSupportedError, "No matching EGL config found");
+}
+
+EGLConfig chooseSingleConfig (const Library& egl, EGLDisplay display, const EGLint* attribList)
+{
+	const vector<EGLConfig> configs (chooseConfigs(egl, display, attribList));
 	if (configs.empty())
-		TCU_THROW(NotSupportedError, "No suitable EGL configuration found");
+		TCU_THROW(NotSupportedError, "No matching EGL config found");
 
 	return configs.front();
 }
 
-EGLint getConfigAttribInt (EGLDisplay display, EGLConfig config, EGLint attrib)
+vector<EGLConfig> chooseConfigs (const Library& egl, EGLDisplay display, const AttribMap& attribs)
+{
+	const vector<EGLint>	attribList	= attribMapToList(attribs);
+	return chooseConfigs(egl, display, &attribList.front());
+}
+
+EGLConfig chooseSingleConfig (const Library& egl, EGLDisplay display, const AttribMap& attribs)
+{
+	const vector<EGLint>	attribList	= attribMapToList(attribs);
+	return chooseSingleConfig(egl, display, &attribList.front());
+}
+
+EGLConfig chooseConfigByID (const Library& egl, EGLDisplay display, EGLint id)
+{
+	AttribMap attribs;
+
+	attribs[EGL_CONFIG_ID]			= id;
+	attribs[EGL_TRANSPARENT_TYPE]	= EGL_DONT_CARE;
+	attribs[EGL_COLOR_BUFFER_TYPE]	= EGL_DONT_CARE;
+	attribs[EGL_RENDERABLE_TYPE]	= EGL_DONT_CARE;
+	attribs[EGL_SURFACE_TYPE]		= EGL_DONT_CARE;
+
+	return chooseSingleConfig(egl, display, attribs);
+}
+
+EGLint getConfigAttribInt (const Library& egl, EGLDisplay display, EGLConfig config, EGLint attrib)
 {
 	EGLint value = 0;
-	EGLU_CHECK_CALL(eglGetConfigAttrib(display, config, attrib, &value));
+	EGLU_CHECK_CALL(egl, getConfigAttrib(display, config, attrib, &value));
 	return value;
 }
 
-EGLint getConfigID (EGLDisplay display, EGLConfig config)
+EGLint getConfigID (const Library& egl, EGLDisplay display, EGLConfig config)
 {
-	return getConfigAttribInt (display, config, EGL_CONFIG_ID);
+	return getConfigAttribInt(egl, display, config, EGL_CONFIG_ID);
 }
 
-EGLint querySurfaceInt (EGLDisplay display, EGLSurface surface, EGLint attrib)
+EGLint querySurfaceInt (const Library& egl, EGLDisplay display, EGLSurface surface, EGLint attrib)
 {
 	EGLint value = 0;
-	EGLU_CHECK_CALL(eglQuerySurface(display, surface, attrib, &value));
+	EGLU_CHECK_CALL(egl, querySurface(display, surface, attrib, &value));
 	return value;
 }
 
-tcu::IVec2 getSurfaceSize (EGLDisplay display, EGLSurface surface)
+tcu::IVec2 getSurfaceSize (const Library& egl, EGLDisplay display, EGLSurface surface)
 {
-	const EGLint width	= querySurfaceInt(display, surface, EGL_WIDTH);
-	const EGLint height	= querySurfaceInt(display, surface, EGL_HEIGHT);
+	const EGLint width	= querySurfaceInt(egl, display, surface, EGL_WIDTH);
+	const EGLint height	= querySurfaceInt(egl, display, surface, EGL_HEIGHT);
 	return tcu::IVec2(width, height);
 }
 
-tcu::IVec2 getSurfaceResolution (EGLDisplay display, EGLSurface surface)
+tcu::IVec2 getSurfaceResolution (const Library& egl, EGLDisplay display, EGLSurface surface)
 {
-	const EGLint hRes	= querySurfaceInt(display, surface, EGL_HORIZONTAL_RESOLUTION);
-	const EGLint vRes	= querySurfaceInt(display, surface, EGL_VERTICAL_RESOLUTION);
+	const EGLint hRes	= querySurfaceInt(egl, display, surface, EGL_HORIZONTAL_RESOLUTION);
+	const EGLint vRes	= querySurfaceInt(egl, display, surface, EGL_VERTICAL_RESOLUTION);
 
 	if (hRes == EGL_UNKNOWN || vRes == EGL_UNKNOWN)
 		TCU_THROW(NotSupportedError, "Surface doesn't support pixel density queries");
@@ -189,35 +226,31 @@ tcu::IVec2 getSurfaceResolution (EGLDisplay display, EGLSurface surface)
 //! Get EGLdisplay using eglGetDisplay() or eglGetPlatformDisplayEXT()
 EGLDisplay getDisplay (NativeDisplay& nativeDisplay)
 {
-	const bool	supportsLegacyGetDisplay		= (nativeDisplay.getCapabilities() & NativeDisplay::CAPABILITY_GET_DISPLAY_LEGACY) != 0;
-	const bool	supportsPlatformGetDisplay		= (nativeDisplay.getCapabilities() & NativeDisplay::CAPABILITY_GET_DISPLAY_PLATFORM) != 0;
-	bool		usePlatformExt					= false;
-	EGLDisplay	display							= EGL_NO_DISPLAY;
+	const Library&	egl								= nativeDisplay.getLibrary();
+	const bool		supportsLegacyGetDisplay		= (nativeDisplay.getCapabilities() & NativeDisplay::CAPABILITY_GET_DISPLAY_LEGACY) != 0;
+	const bool		supportsPlatformGetDisplay		= (nativeDisplay.getCapabilities() & NativeDisplay::CAPABILITY_GET_DISPLAY_PLATFORM) != 0;
+	bool			usePlatformExt					= false;
+	EGLDisplay		display							= EGL_NO_DISPLAY;
 
 	TCU_CHECK_INTERNAL(supportsLegacyGetDisplay || supportsPlatformGetDisplay);
 
 	if (supportsPlatformGetDisplay)
 	{
-		const vector<string> platformExts = getPlatformExtensions();
+		const vector<string> platformExts = getPlatformExtensions(egl);
 		usePlatformExt = de::contains(platformExts.begin(), platformExts.end(), string("EGL_EXT_platform_base")) &&
 						 de::contains(platformExts.begin(), platformExts.end(), string(nativeDisplay.getPlatformExtensionName()));
 	}
 
 	if (usePlatformExt)
 	{
-		const PFNEGLGETPLATFORMDISPLAYEXTPROC	getPlatformDisplay	= (PFNEGLGETPLATFORMDISPLAYEXTPROC)eglGetProcAddress("eglGetPlatformDisplayEXT");
-
-		EGLU_CHECK_MSG("eglGetProcAddress()");
-		TCU_CHECK(getPlatformDisplay);
-
-		display = getPlatformDisplay(nativeDisplay.getPlatformType(), nativeDisplay.getPlatformNative(), DE_NULL);
-		EGLU_CHECK_MSG("eglGetPlatformDisplayEXT()");
+		display = egl.getPlatformDisplayEXT(nativeDisplay.getPlatformType(), nativeDisplay.getPlatformNative(), DE_NULL);
+		EGLU_CHECK_MSG(egl, "eglGetPlatformDisplayEXT()");
 		TCU_CHECK(display != EGL_NO_DISPLAY);
 	}
 	else if (supportsLegacyGetDisplay)
 	{
-		display = eglGetDisplay(nativeDisplay.getLegacyNative());
-		EGLU_CHECK_MSG("eglGetDisplay()");
+		display = egl.getDisplay(nativeDisplay.getLegacyNative());
+		EGLU_CHECK_MSG(egl, "eglGetDisplay()");
 		TCU_CHECK(display != EGL_NO_DISPLAY);
 	}
 	else
@@ -227,19 +260,34 @@ EGLDisplay getDisplay (NativeDisplay& nativeDisplay)
 	return display;
 }
 
+EGLDisplay getAndInitDisplay (NativeDisplay& nativeDisplay, Version* version)
+{
+	const Library&	egl		= nativeDisplay.getLibrary();
+	EGLDisplay		display	= getDisplay(nativeDisplay);
+	int				major, minor;
+
+	EGLU_CHECK_CALL(egl, initialize(display, &major, &minor));
+
+	if (version)
+		*version = Version(major, minor);
+
+	return display;
+}
+
 //! Create EGL window surface using eglCreateWindowSurface() or eglCreatePlatformWindowSurfaceEXT()
 EGLSurface createWindowSurface (NativeDisplay& nativeDisplay, NativeWindow& window, EGLDisplay display, EGLConfig config, const EGLAttrib* attribList)
 {
-	const bool	supportsLegacyCreate			= (window.getCapabilities() & NativeWindow::CAPABILITY_CREATE_SURFACE_LEGACY) != 0;
-	const bool	supportsPlatformCreate			= (window.getCapabilities() & NativeWindow::CAPABILITY_CREATE_SURFACE_PLATFORM) != 0;
-	bool		usePlatformExt					= false;
-	EGLSurface	surface							= EGL_NO_SURFACE;
+	const Library&	egl							= nativeDisplay.getLibrary();
+	const bool		supportsLegacyCreate		= (window.getCapabilities() & NativeWindow::CAPABILITY_CREATE_SURFACE_LEGACY) != 0;
+	const bool		supportsPlatformCreate		= (window.getCapabilities() & NativeWindow::CAPABILITY_CREATE_SURFACE_PLATFORM) != 0;
+	bool			usePlatformExt				= false;
+	EGLSurface		surface						= EGL_NO_SURFACE;
 
 	TCU_CHECK_INTERNAL(supportsLegacyCreate || supportsPlatformCreate);
 
 	if (supportsPlatformCreate)
 	{
-		const vector<string> platformExts = getPlatformExtensions();
+		const vector<string> platformExts = getPlatformExtensions(egl);
 		usePlatformExt = de::contains(platformExts.begin(), platformExts.end(), string("EGL_EXT_platform_base")) &&
 						 de::contains(platformExts.begin(), platformExts.end(), string(nativeDisplay.getPlatformExtensionName()));
 	}
@@ -247,21 +295,17 @@ EGLSurface createWindowSurface (NativeDisplay& nativeDisplay, NativeWindow& wind
 	// \todo [2014-03-13 pyry] EGL 1.5 core support
 	if (usePlatformExt)
 	{
-		const PFNEGLCREATEPLATFORMWINDOWSURFACEEXTPROC	createPlatformWindowSurface	= (PFNEGLCREATEPLATFORMWINDOWSURFACEEXTPROC)eglGetProcAddress("eglCreatePlatformWindowSurfaceEXT");
-		const vector<EGLint>							legacyAttribs				= toLegacyAttribList(attribList);
+		const vector<EGLint>	legacyAttribs	= toLegacyAttribList(attribList);
 
-		EGLU_CHECK_MSG("eglGetProcAddress()");
-		TCU_CHECK(createPlatformWindowSurface);
-
-		surface = createPlatformWindowSurface(display, config, window.getPlatformNative(), &legacyAttribs[0]);
-		EGLU_CHECK_MSG("eglCreatePlatformWindowSurfaceEXT()");
+		surface = egl.createPlatformWindowSurfaceEXT(display, config, window.getPlatformNative(), &legacyAttribs[0]);
+		EGLU_CHECK_MSG(egl, "eglCreatePlatformWindowSurfaceEXT()");
 		TCU_CHECK(surface != EGL_NO_SURFACE);
 	}
 	else if (supportsLegacyCreate)
 	{
 		const vector<EGLint> legacyAttribs = toLegacyAttribList(attribList);
-		surface = eglCreateWindowSurface(display, config, window.getLegacyNative(), &legacyAttribs[0]);
-		EGLU_CHECK_MSG("eglCreateWindowSurface()");
+		surface = egl.createWindowSurface(display, config, window.getLegacyNative(), &legacyAttribs[0]);
+		EGLU_CHECK_MSG(egl, "eglCreateWindowSurface()");
 		TCU_CHECK(surface != EGL_NO_SURFACE);
 	}
 	else
@@ -274,37 +318,34 @@ EGLSurface createWindowSurface (NativeDisplay& nativeDisplay, NativeWindow& wind
 //! Create EGL pixmap surface using eglCreatePixmapSurface() or eglCreatePlatformPixmapSurfaceEXT()
 EGLSurface createPixmapSurface (NativeDisplay& nativeDisplay, NativePixmap& pixmap, EGLDisplay display, EGLConfig config, const EGLAttrib* attribList)
 {
-	const bool	supportsLegacyCreate			= (pixmap.getCapabilities() & NativePixmap::CAPABILITY_CREATE_SURFACE_LEGACY) != 0;
-	const bool	supportsPlatformCreate			= (pixmap.getCapabilities() & NativePixmap::CAPABILITY_CREATE_SURFACE_PLATFORM) != 0;
-	bool		usePlatformExt					= false;
-	EGLSurface	surface							= EGL_NO_SURFACE;
+	const Library&	egl							= nativeDisplay.getLibrary();
+	const bool		supportsLegacyCreate		= (pixmap.getCapabilities() & NativePixmap::CAPABILITY_CREATE_SURFACE_LEGACY) != 0;
+	const bool		supportsPlatformCreate		= (pixmap.getCapabilities() & NativePixmap::CAPABILITY_CREATE_SURFACE_PLATFORM) != 0;
+	bool			usePlatformExt				= false;
+	EGLSurface		surface						= EGL_NO_SURFACE;
 
 	TCU_CHECK_INTERNAL(supportsLegacyCreate || supportsPlatformCreate);
 
 	if (supportsPlatformCreate)
 	{
-		const vector<string> platformExts = getPlatformExtensions();
+		const vector<string> platformExts = getPlatformExtensions(egl);
 		usePlatformExt = de::contains(platformExts.begin(), platformExts.end(), string("EGL_EXT_platform_base")) &&
 						 de::contains(platformExts.begin(), platformExts.end(), string(nativeDisplay.getPlatformExtensionName()));
 	}
 
 	if (usePlatformExt)
 	{
-		const PFNEGLCREATEPLATFORMPIXMAPSURFACEEXTPROC	createPlatformPixmapSurface	= (PFNEGLCREATEPLATFORMPIXMAPSURFACEEXTPROC)eglGetProcAddress("eglCreatePlatformPixmapSurfaceEXT");
-		const vector<EGLint>							legacyAttribs				= toLegacyAttribList(attribList);
+		const vector<EGLint>	legacyAttribs	= toLegacyAttribList(attribList);
 
-		EGLU_CHECK_MSG("eglGetProcAddress()");
-		TCU_CHECK(createPlatformPixmapSurface);
-
-		surface = createPlatformPixmapSurface(display, config, pixmap.getPlatformNative(), &legacyAttribs[0]);
-		EGLU_CHECK_MSG("eglCreatePlatformPixmapSurfaceEXT()");
+		surface = egl.createPlatformPixmapSurfaceEXT(display, config, pixmap.getPlatformNative(), &legacyAttribs[0]);
+		EGLU_CHECK_MSG(egl, "eglCreatePlatformPixmapSurfaceEXT()");
 		TCU_CHECK(surface != EGL_NO_SURFACE);
 	}
 	else if (supportsLegacyCreate)
 	{
 		const vector<EGLint> legacyAttribs = toLegacyAttribList(attribList);
-		surface = eglCreatePixmapSurface(display, config, pixmap.getLegacyNative(), &legacyAttribs[0]);
-		EGLU_CHECK_MSG("eglCreatePixmapSurface()");
+		surface = egl.createPixmapSurface(display, config, pixmap.getLegacyNative(), &legacyAttribs[0]);
+		EGLU_CHECK_MSG(egl, "eglCreatePixmapSurface()");
 		TCU_CHECK(surface != EGL_NO_SURFACE);
 	}
 	else
@@ -333,6 +374,45 @@ WindowParams::Visibility parseWindowVisibility (const tcu::CommandLine& commandL
 	return getWindowVisibility(commandLine.getVisibility());
 }
 
+EGLenum parseClientAPI (const std::string& api)
+{
+	if (api == "OpenGL")
+		return EGL_OPENGL_API;
+	else if (api == "OpenGL_ES")
+		return EGL_OPENGL_ES_API;
+	else if (api == "OpenVG")
+		return EGL_OPENVG_API;
+	else
+		throw tcu::InternalError("Unknown EGL client API '" + api + "'");
+}
+
+vector<EGLenum> parseClientAPIs (const std::string& apiList)
+{
+	const vector<string>	apiStrs	= de::splitString(apiList, ' ');
+	vector<EGLenum>			apis;
+
+	for (vector<string>::const_iterator api = apiStrs.begin(); api != apiStrs.end(); ++api)
+		apis.push_back(parseClientAPI(*api));
+
+	return apis;
+}
+
+vector<EGLenum> getClientAPIs (const eglw::Library& egl, eglw::EGLDisplay display)
+{
+	return parseClientAPIs(egl.queryString(display, EGL_CLIENT_APIS));
+}
+
+EGLint getRenderableAPIsMask (const eglw::Library& egl, eglw::EGLDisplay display)
+{
+	const vector<EGLConfig>	configs	= getConfigs(egl, display);
+	EGLint					allAPIs	= 0;
+
+	for (vector<EGLConfig>::const_iterator i = configs.begin(); i != configs.end(); ++i)
+		allAPIs |= getConfigAttribInt(egl, display, *i, EGL_RENDERABLE_TYPE);
+
+	return allAPIs;
+}
+
 vector<EGLint> toLegacyAttribList (const EGLAttrib* attribs)
 {
 	const deUint64	attribMask		= 0xffffffffull;	//!< Max bits that can be used
@@ -353,6 +433,46 @@ vector<EGLint> toLegacyAttribList (const EGLAttrib* attribs)
 	legacyAttribs.push_back(EGL_NONE);
 
 	return legacyAttribs;
+}
+
+template<typename Factory>
+static const Factory* selectFactory (const tcu::FactoryRegistry<Factory>& registry, const char* objectTypeName, const char* cmdLineArg)
+{
+	if (cmdLineArg)
+	{
+		const Factory* factory = registry.getFactoryByName(cmdLineArg);
+
+		if (factory)
+			return factory;
+		else
+		{
+			tcu::print("ERROR: Unknown or unsupported EGL %s type '%s'", objectTypeName, cmdLineArg);
+			tcu::print("Available EGL %s types:\n", objectTypeName);
+			for (size_t ndx = 0; ndx < registry.getFactoryCount(); ndx++)
+				tcu::print("  %s: %s\n", registry.getFactoryByIndex(ndx)->getName(), registry.getFactoryByIndex(ndx)->getDescription());
+
+			TCU_THROW(NotSupportedError, (string("Unsupported or unknown EGL ") + objectTypeName + " type '" + cmdLineArg + "'").c_str());
+		}
+	}
+	else if (!registry.empty())
+		return registry.getDefaultFactory();
+	else
+		return DE_NULL;
+}
+
+const NativeDisplayFactory* selectNativeDisplayFactory (const NativeDisplayFactoryRegistry& registry, const tcu::CommandLine& cmdLine)
+{
+	return selectFactory(registry, "display", cmdLine.getEGLDisplayType());
+}
+
+const NativeWindowFactory* selectNativeWindowFactory (const NativeDisplayFactory& factory, const tcu::CommandLine& cmdLine)
+{
+	return selectFactory(factory.getNativeWindowRegistry(), "window", cmdLine.getEGLWindowType());
+}
+
+const NativePixmapFactory* selectNativePixmapFactory (const NativeDisplayFactory& factory, const tcu::CommandLine& cmdLine)
+{
+	return selectFactory(factory.getNativePixmapRegistry(), "pixmap", cmdLine.getEGLPixmapType());
 }
 
 } // eglu

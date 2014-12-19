@@ -20,9 +20,11 @@
  * \file
  * \brief EGL image tests.
  *//*--------------------------------------------------------------------*/
+
 #include "teglImageFormatTests.hpp"
 
 #include "deStringUtil.hpp"
+#include "deSTLUtil.hpp"
 
 #include "tcuTestLog.hpp"
 #include "tcuSurface.hpp"
@@ -37,6 +39,9 @@
 #include "egluConfigFilter.hpp"
 #include "egluUnique.hpp"
 #include "egluUtil.hpp"
+
+#include "eglwLibrary.hpp"
+#include "eglwEnums.hpp"
 
 #include "gluCallLogWrapper.hpp"
 #include "gluShaderProgram.hpp"
@@ -72,6 +77,7 @@ using eglu::UniqueImage;
 using tcu::ConstPixelBufferAccess;
 
 using namespace glw;
+using namespace eglw;
 
 namespace deqp
 {
@@ -141,17 +147,19 @@ struct TestSpec
 class ImageApi
 {
 public:
-							ImageApi				(int contextId, tcu::egl::Display& display, tcu::egl::Surface* surface);
-	virtual 				~ImageApi				(void) {}
+					ImageApi		(const Library& egl, int contextId, EGLDisplay display, EGLSurface surface);
+	virtual 		~ImageApi		(void) {}
 
 protected:
-	int						m_contextId;
-	tcu::egl::Display&		m_display;
-	tcu::egl::Surface*		m_surface;
+	const Library&	m_egl;
+	int				m_contextId;
+	EGLDisplay		m_display;
+	EGLSurface		m_surface;
 };
 
-ImageApi::ImageApi (int contextId, tcu::egl::Display& display, tcu::egl::Surface* surface)
-	: m_contextId		(contextId)
+ImageApi::ImageApi (const Library& egl, int contextId, EGLDisplay display, EGLSurface surface)
+	: m_egl				(egl)
+	, m_contextId		(contextId)
 	, m_display			(display)
 	, m_surface			(surface)
 {
@@ -249,50 +257,50 @@ public:
 		GLint		m_stencil;
 	};
 
-					GLES2ImageApi					(const glw::Functions& gl, int contextId, tcu::TestLog& log, tcu::egl::Display& display, tcu::egl::Surface* surface, EGLConfig config);
+					GLES2ImageApi					(const Library& egl, const glw::Functions& gl, int contextId, tcu::TestLog& log, EGLDisplay display, EGLSurface surface, EGLConfig config);
 					~GLES2ImageApi					(void);
 
 private:
-	tcu::egl::Context*			m_context;
+	EGLContext					m_context;
 	const glw::Functions&		m_gl;
-	const eglu::ImageFunctions	m_imgExt;
 
 	MovePtr<UniqueImage>		createImage			(const ImageSource& source, const ClientBuffer& buffer) const;
 };
 
-GLES2ImageApi::GLES2ImageApi (const glw::Functions& gl, int contextId, tcu::TestLog& log, tcu::egl::Display& display, tcu::egl::Surface* surface, EGLConfig config)
-	: ImageApi				(contextId, display, surface)
+GLES2ImageApi::GLES2ImageApi (const Library& egl, const glw::Functions& gl, int contextId, tcu::TestLog& log, EGLDisplay display, EGLSurface surface, EGLConfig config)
+	: ImageApi				(egl, contextId, display, surface)
 	, glu::CallLogWrapper	(gl, log)
 	, m_context				(DE_NULL)
 	, m_gl					(gl)
-	, m_imgExt				(eglu::getImageFunctions(display.getEGLDisplay()))
 {
-	EGLint attriblist[] =
+	const EGLint attriblist[] =
 	{
 		EGL_CONTEXT_CLIENT_VERSION, 2,
 		EGL_NONE
 	};
 
 	EGLint configId = -1;
-	TCU_CHECK_EGL_CALL(eglGetConfigAttrib(m_display.getEGLDisplay(), config, EGL_CONFIG_ID, &configId));
+	EGLU_CHECK_CALL(m_egl, getConfigAttrib(m_display, config, EGL_CONFIG_ID, &configId));
 	getLog() << tcu::TestLog::Message << "Creating gles2 context with config id: " << configId << " context: " << m_contextId << tcu::TestLog::EndMessage;
-	m_context = new tcu::egl::Context(m_display, config, attriblist, EGL_OPENGL_ES_API);
-	TCU_CHECK_EGL_MSG("Failed to create GLES2 context");
+	egl.bindAPI(EGL_OPENGL_ES_API);
+	m_context = m_egl.createContext(m_display, config, EGL_NO_CONTEXT, attriblist);
+	EGLU_CHECK_MSG(m_egl, "Failed to create GLES2 context");
 
-	m_context->makeCurrent(*m_surface, *m_surface);
-	TCU_CHECK_EGL_MSG("Failed to make context current");
+	egl.makeCurrent(display, m_surface, m_surface, m_context);
+	EGLU_CHECK_MSG(m_egl, "Failed to make context current");
 }
 
 GLES2ImageApi::~GLES2ImageApi (void)
 {
-	delete m_context;
+	m_egl.makeCurrent(m_display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+	m_egl.destroyContext(m_display, m_context);
 }
 
 bool GLES2ImageApi::GLES2Action::invoke (ImageApi& api, MovePtr<UniqueImage>& image, tcu::Texture2D& ref) const
 {
 	GLES2ImageApi& gles2Api = dynamic_cast<GLES2ImageApi&>(api);
 
-	gles2Api.m_context->makeCurrent(*gles2Api.m_surface, *gles2Api.m_surface);
+	gles2Api.m_egl.makeCurrent(gles2Api.m_display, gles2Api.m_surface, gles2Api.m_surface, gles2Api.m_context);
 	return invokeGLES2(gles2Api, image, ref);
 }
 
@@ -306,11 +314,11 @@ bool GLES2ImageApi::Create::invokeGLES2 (GLES2ImageApi& api, MovePtr<UniqueImage
 
 MovePtr<UniqueImage> GLES2ImageApi::createImage (const ImageSource& source, const ClientBuffer& buffer) const
 {
-	const EGLImageKHR image = source.createImage(m_imgExt, m_display.getEGLDisplay(), m_context->getEGLContext(), buffer.get());
-	return MovePtr<UniqueImage>(new UniqueImage(m_display.getEGLDisplay(), image, m_imgExt));
+	const EGLImageKHR image = source.createImage(m_egl, m_display, m_context, buffer.get());
+	return MovePtr<UniqueImage>(new UniqueImage(m_egl, m_display, image));
 }
 
-static void imageTargetTexture2D (const glw::Functions& gl, GLeglImageOES img)
+static void imageTargetTexture2D (const Library& egl, const glw::Functions& gl, GLeglImageOES img)
 {
 	gl.eglImageTargetTexture2DOES(GL_TEXTURE_2D, img);
 	{
@@ -320,11 +328,11 @@ static void imageTargetTexture2D (const glw::Functions& gl, GLeglImageOES img)
 			TCU_THROW(NotSupportedError, "Creating texture2D from EGLImage type not supported");
 
 		GLU_EXPECT_NO_ERROR(error, "glEGLImageTargetTexture2DOES()");
-		EGLU_CHECK_MSG("glEGLImageTargetTexture2DOES()");
+		EGLU_CHECK_MSG(egl, "glEGLImageTargetTexture2DOES()");
 	}
 }
 
-static void imageTargetRenderbuffer (const glw::Functions& gl, GLeglImageOES img)
+static void imageTargetRenderbuffer (const Library& egl, const glw::Functions& gl, GLeglImageOES img)
 {
 	gl.eglImageTargetRenderbufferStorageOES(GL_RENDERBUFFER, img);
 	{
@@ -334,7 +342,7 @@ static void imageTargetRenderbuffer (const glw::Functions& gl, GLeglImageOES img
 			TCU_THROW(NotSupportedError, "Creating renderbuffer from EGLImage type not supported");
 
 		GLU_EXPECT_NO_ERROR(error, "glEGLImageTargetRenderbufferStorageOES()");
-		EGLU_CHECK_MSG("glEGLImageTargetRenderbufferStorageOES()");
+		EGLU_CHECK_MSG(egl, "glEGLImageTargetRenderbufferStorageOES()");
 	}
 }
 
@@ -372,7 +380,7 @@ bool GLES2ImageApi::RenderTexture2D::invokeGLES2 (GLES2ImageApi& api, MovePtr<Un
 	TCU_CHECK(**img != EGL_NO_IMAGE_KHR);
 
 	GLU_CHECK_GLW_CALL(gl, bindTexture(GL_TEXTURE_2D, *srcTex));
-	imageTargetTexture2D(gl, **img);
+	imageTargetTexture2D(api.m_egl, gl, **img);
 
 	GLU_CHECK_GLW_CALL(gl, texParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
 	GLU_CHECK_GLW_CALL(gl, texParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
@@ -444,7 +452,7 @@ bool GLES2ImageApi::RenderDepthbuffer::invokeGLES2 (GLES2ImageApi& api, MovePtr<
 	framebufferRenderbuffer(gl, GL_COLOR_ATTACHMENT0, *renderbufferColor);
 
 	GLU_CHECK_GLW_CALL(gl, bindRenderbuffer(GL_RENDERBUFFER, *renderbufferDepth));
-	imageTargetRenderbuffer(gl, **img);
+	imageTargetRenderbuffer(api.m_egl, gl, **img);
 	framebufferRenderbuffer(gl, GL_DEPTH_ATTACHMENT, *renderbufferDepth);
 	GLU_CHECK_GLW_CALL(gl, bindRenderbuffer(GL_RENDERBUFFER, 0));
 
@@ -551,7 +559,7 @@ bool GLES2ImageApi::RenderReadPixelsRenderbuffer::invokeGLES2 (GLES2ImageApi& ap
 
 	GLU_CHECK_GLW_CALL(gl, bindFramebuffer(GL_FRAMEBUFFER, *framebuffer));
 	GLU_CHECK_GLW_CALL(gl, bindRenderbuffer(GL_RENDERBUFFER, *renderbuffer));
-	imageTargetRenderbuffer(gl, **img);
+	imageTargetRenderbuffer(api.m_egl, gl, **img);
 	framebufferRenderbuffer(gl, GL_COLOR_ATTACHMENT0, *renderbuffer);
 
 	GLU_CHECK_GLW_CALL(gl, viewport(0, 0, reference.getWidth(), reference.getHeight()));
@@ -615,7 +623,7 @@ bool GLES2ImageApi::ModifyTexSubImage::invokeGLES2 (GLES2ImageApi& api, MovePtr<
 	tcu::fillWithComponentGradients(src.getLevel(0), tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f), tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f));
 
 	GLU_CHECK_GLW_CALL(gl, bindTexture(GL_TEXTURE_2D, *srcTex));
-	imageTargetTexture2D(gl, **img);
+	imageTargetTexture2D(api.m_egl, gl, **img);
 	GLU_CHECK_GLW_CALL(gl, texSubImage2D(GL_TEXTURE_2D, 0, xOffset, yOffset, src.getWidth(), src.getHeight(), m_format, m_type, src.getLevel(0).getDataPtr()));
 	GLU_CHECK_GLW_CALL(gl, bindTexture(GL_TEXTURE_2D, 0));
 	GLU_CHECK_GLW_CALL(gl, finish());
@@ -637,7 +645,7 @@ bool GLES2ImageApi::ModifyRenderbuffer::invokeGLES2 (GLES2ImageApi& api, MovePtr
 	GLU_CHECK_GLW_CALL(gl, bindFramebuffer(GL_FRAMEBUFFER, *framebuffer));
 	GLU_CHECK_GLW_CALL(gl, bindRenderbuffer(GL_RENDERBUFFER, *renderbuffer));
 
-	imageTargetRenderbuffer(gl, **img);
+	imageTargetRenderbuffer(api.m_egl, gl, **img);
 
 	initializeRbo(api, *renderbuffer, reference);
 
@@ -709,9 +717,9 @@ private:
 
 	vector<ImageApi*>	m_apiContexts;
 
-	tcu::egl::Display*	m_display;
+	EGLDisplay			m_display;
 	eglu::NativeWindow*	m_window;
-	tcu::egl::Surface*	m_surface;
+	EGLSurface			m_surface;
 	EGLConfig			m_config;
 	int					m_curIter;
 	MovePtr<UniqueImage>m_img;
@@ -721,10 +729,7 @@ private:
 
 EGLConfig ImageFormatCase::getConfig (void)
 {
-	vector<EGLConfig>	configs;
-	eglu::FilterList	filter;
-
-	EGLint attribList[] =
+	const EGLint attribList[] =
 	{
 		EGL_RENDERABLE_TYPE, 	EGL_OPENGL_ES2_BIT,
 		EGL_SURFACE_TYPE,	 	EGL_WINDOW_BIT,
@@ -732,18 +737,17 @@ EGLConfig ImageFormatCase::getConfig (void)
 		EGL_DEPTH_SIZE,			8,
 		EGL_NONE
 	};
-	m_display->chooseConfig(attribList, configs);
 
-	return configs[0];
+	return eglu::chooseSingleConfig(m_eglTestCtx.getLibrary(), m_display, attribList);
 }
 
 ImageFormatCase::ImageFormatCase (EglTestContext& eglTestCtx, const TestSpec& spec)
 	: TestCase				(eglTestCtx, spec.name.c_str(), spec.desc.c_str())
 	, glu::CallLogWrapper	(m_gl, eglTestCtx.getTestContext().getLog())
 	, m_spec				(spec)
-	, m_display				(DE_NULL)
+	, m_display				(EGL_NO_DISPLAY)
 	, m_window				(DE_NULL)
-	, m_surface				(DE_NULL)
+	, m_surface				(EGL_NO_SURFACE)
 	, m_config				(0)
 	, m_curIter				(0)
 	, m_refImg				(tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8), 1, 1)
@@ -757,15 +761,16 @@ ImageFormatCase::~ImageFormatCase (void)
 
 void ImageFormatCase::checkExtensions (void)
 {
-	const EGLDisplay		dpy		= m_display->getEGLDisplay();
+	const Library&			egl		= m_eglTestCtx.getLibrary();
+	const EGLDisplay		dpy		= m_display;
 	set<string>				exts;
 	const vector<string>	glExts	= de::splitString((const char*) m_gl.getString(GL_EXTENSIONS));
-	const vector<string>	eglExts	= eglu::getClientExtensions(dpy);
+	const vector<string>	eglExts	= eglu::getClientExtensions(egl, dpy);
 
 	exts.insert(glExts.begin(), glExts.end());
 	exts.insert(eglExts.begin(), eglExts.end());
 
-	if (eglu::getVersion(dpy) >= eglu::Version(1, 5))
+	if (eglu::getVersion(egl, dpy) >= eglu::Version(1, 5))
 	{
 		// EGL 1.5 has built-in support for EGLImage and GL sources
 		exts.insert("EGL_KHR_image_base");
@@ -795,43 +800,73 @@ void ImageFormatCase::checkExtensions (void)
 
 void ImageFormatCase::init (void)
 {
-	m_display	= &m_eglTestCtx.getDisplay();
-	m_config	= getConfig();
-	m_window	= m_eglTestCtx.createNativeWindow(m_display->getEGLDisplay(), m_config, DE_NULL, 480, 480, eglu::parseWindowVisibility(m_testCtx.getCommandLine()));
-	m_surface	= new tcu::egl::WindowSurface(*m_display, eglu::createWindowSurface(m_eglTestCtx.getNativeDisplay(), *m_window, m_display->getEGLDisplay(), m_config, DE_NULL));
+	const Library&						egl				= m_eglTestCtx.getLibrary();
+	const eglu::NativeWindowFactory*	windowFactory	= eglu::selectNativeWindowFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
 
-	m_eglTestCtx.getGLFunctions(m_gl, glu::ApiType::es(2, 0), vector<const char*>(1, "GL_OES_EGL_image"));
+	if (!windowFactory)
+		TCU_THROW(NotSupportedError, "Windows not supported");
 
-	for (int contextNdx = 0; contextNdx < (int)m_spec.contexts.size(); contextNdx++)
+	try
 	{
-		ImageApi* api = DE_NULL;
-		switch (m_spec.contexts[contextNdx])
-		{
-			case TestSpec::API_GLES2:
-			{
-				api = new GLES2ImageApi(m_gl, contextNdx, getLog(), *m_display, m_surface, m_config);
-				break;
-			}
+		m_display	= eglu::getAndInitDisplay(m_eglTestCtx.getNativeDisplay());
+		m_config	= getConfig();
+		m_window	= windowFactory->createWindow(&m_eglTestCtx.getNativeDisplay(), m_display, m_config, DE_NULL, eglu::WindowParams(480, 480, eglu::parseWindowVisibility(m_testCtx.getCommandLine())));
+		m_surface	= eglu::createWindowSurface(m_eglTestCtx.getNativeDisplay(), *m_window, m_display, m_config, DE_NULL);
 
-			default:
-				DE_ASSERT(false);
-				break;
+		{
+			const char* extensions[] = { "GL_OES_EGL_image" };
+			m_eglTestCtx.initGLFunctions(&m_gl, glu::ApiType::es(2, 0), DE_LENGTH_OF_ARRAY(extensions), &extensions[0]);
 		}
-		m_apiContexts.push_back(api);
+
+		for (int contextNdx = 0; contextNdx < (int)m_spec.contexts.size(); contextNdx++)
+		{
+			ImageApi* api = DE_NULL;
+			switch (m_spec.contexts[contextNdx])
+			{
+				case TestSpec::API_GLES2:
+				{
+					api = new GLES2ImageApi(egl, m_gl, contextNdx, getLog(), m_display, m_surface, m_config);
+					break;
+				}
+
+				default:
+					DE_ASSERT(false);
+					break;
+			}
+			m_apiContexts.push_back(api);
+		}
+		checkExtensions();
 	}
-	checkExtensions();
+	catch (...)
+	{
+		deinit();
+		throw;
+	}
 }
 
 void ImageFormatCase::deinit (void)
 {
+	const Library& egl = m_eglTestCtx.getLibrary();
+
 	for (int contexNdx = 0 ; contexNdx < (int)m_apiContexts.size(); contexNdx++)
 		delete m_apiContexts[contexNdx];
 
 	m_apiContexts.clear();
-	delete m_surface;
-	m_surface = DE_NULL;
+
+	if (m_surface != EGL_NO_SURFACE)
+	{
+		egl.destroySurface(m_display, m_surface);
+		m_surface = EGL_NO_SURFACE;
+	}
+
 	delete m_window;
 	m_window = DE_NULL;
+
+	if (m_display != EGL_NO_DISPLAY)
+	{
+		egl.terminate(m_display);
+		m_display = EGL_NO_DISPLAY;
+	}
 }
 
 TestCase::IterateResult ImageFormatCase::iterate (void)

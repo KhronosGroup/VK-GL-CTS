@@ -23,11 +23,16 @@
 
 #include "teglColorClearCase.hpp"
 #include "tcuTestLog.hpp"
+#include "eglwLibrary.hpp"
+#include "eglwEnums.hpp"
+#include "egluUtil.hpp"
 #include "deRandom.hpp"
 #include "deString.h"
 #include "tcuImageCompare.hpp"
 #include "tcuVector.hpp"
 #include "tcuTextureUtil.hpp"
+#include "tcuPixelFormat.hpp"
+#include "glwFunctions.hpp"
 #include "deThread.hpp"
 #include "deSemaphore.hpp"
 #include "deSharedPtr.hpp"
@@ -38,24 +43,15 @@
 #include <memory>
 #include <iterator>
 
-#include <EGL/eglext.h>
-
-#if !defined(EGL_OPENGL_ES3_BIT_KHR)
-#	define EGL_OPENGL_ES3_BIT_KHR	0x0040
-#endif
-#if !defined(EGL_CONTEXT_MAJOR_VERSION_KHR)
-#	define EGL_CONTEXT_MAJOR_VERSION_KHR EGL_CONTEXT_CLIENT_VERSION
-#endif
-
-using tcu::TestLog;
-using tcu::RGBA;
-
-using std::vector;
-
 namespace deqp
 {
 namespace egl
 {
+
+using tcu::TestLog;
+using tcu::RGBA;
+using std::vector;
+using namespace eglw;
 
 // Utilities.
 
@@ -86,6 +82,11 @@ struct ClearOp
 	tcu::RGBA	color;
 };
 
+struct ApiFunctions
+{
+	glw::Functions	gl;
+};
+
 static ClearOp computeRandomClear (de::Random& rnd, int width, int height)
 {
 	int			w		= rnd.getInt(1, width);
@@ -106,87 +107,103 @@ static void renderReference (tcu::Surface& dst, const vector<ClearOp>& clears, c
 	}
 }
 
-static void renderClear (EGLint api, const ClearOp& clear)
+static void renderClear (EGLint api, const ApiFunctions& func, const ClearOp& clear)
 {
 	switch (api)
 	{
-		case EGL_OPENGL_ES_BIT:			gles1::clear(clear.x, clear.y, clear.width, clear.height, clear.color.toVec());	break;
-		case EGL_OPENGL_ES2_BIT:		gles2::clear(clear.x, clear.y, clear.width, clear.height, clear.color.toVec());	break;
-		case EGL_OPENGL_ES3_BIT_KHR:	gles2::clear(clear.x, clear.y, clear.width, clear.height, clear.color.toVec());	break;
-		case EGL_OPENVG_BIT:			vg::clear	(clear.x, clear.y, clear.width, clear.height, clear.color.toVec());	break;
+		case EGL_OPENGL_ES_BIT:			gles1::clear(clear.x, clear.y, clear.width, clear.height, clear.color.toVec());				break;
+		case EGL_OPENGL_ES2_BIT:		gles2::clear(func.gl, clear.x, clear.y, clear.width, clear.height, clear.color.toVec());	break;
+		case EGL_OPENGL_ES3_BIT_KHR:	gles2::clear(func.gl, clear.x, clear.y, clear.width, clear.height, clear.color.toVec());	break;
+		case EGL_OPENVG_BIT:			vg::clear	(clear.x, clear.y, clear.width, clear.height, clear.color.toVec());				break;
 		default:
 			DE_ASSERT(DE_FALSE);
 	}
 }
 
-static void readPixels (EGLint api, tcu::Surface& dst)
+static void readPixels (EGLint api, const ApiFunctions& func, tcu::Surface& dst)
 {
 	switch (api)
 	{
-		case EGL_OPENGL_ES_BIT:			gles1::readPixels	(dst, 0, 0, dst.getWidth(), dst.getHeight());	break;
-		case EGL_OPENGL_ES2_BIT:		gles2::readPixels	(dst, 0, 0, dst.getWidth(), dst.getHeight());	break;
-		case EGL_OPENGL_ES3_BIT_KHR:	gles2::readPixels	(dst, 0, 0, dst.getWidth(), dst.getHeight());	break;
-		case EGL_OPENVG_BIT:			vg::readPixels		(dst, 0, 0, dst.getWidth(), dst.getHeight());	break;
+		case EGL_OPENGL_ES_BIT:			gles1::readPixels	(dst, 0, 0, dst.getWidth(), dst.getHeight());			break;
+		case EGL_OPENGL_ES2_BIT:		gles2::readPixels	(func.gl, dst, 0, 0, dst.getWidth(), dst.getHeight());	break;
+		case EGL_OPENGL_ES3_BIT_KHR:	gles2::readPixels	(func.gl, dst, 0, 0, dst.getWidth(), dst.getHeight());	break;
+		case EGL_OPENVG_BIT:			vg::readPixels		(dst, 0, 0, dst.getWidth(), dst.getHeight());			break;
 		default:
 			DE_ASSERT(DE_FALSE);
 	}
+}
+
+static tcu::PixelFormat getPixelFormat (const Library& egl, EGLDisplay display, EGLConfig config)
+{
+	tcu::PixelFormat pixelFmt;
+
+	egl.getConfigAttrib(display, config, EGL_RED_SIZE,		&pixelFmt.redBits);
+	egl.getConfigAttrib(display, config, EGL_GREEN_SIZE,	&pixelFmt.greenBits);
+	egl.getConfigAttrib(display, config, EGL_BLUE_SIZE,		&pixelFmt.blueBits);
+	egl.getConfigAttrib(display, config, EGL_ALPHA_SIZE,	&pixelFmt.alphaBits);
+
+	return pixelFmt;
 }
 
 // SingleThreadColorClearCase
 
-SingleThreadColorClearCase::SingleThreadColorClearCase (EglTestContext& eglTestCtx, const char* name, const char* description, EGLint api, EGLint surfaceType, const std::vector<EGLint>& configIds, int numContextsPerApi)
-	: MultiContextRenderCase(eglTestCtx, name, description, api, surfaceType, configIds, numContextsPerApi)
+SingleThreadColorClearCase::SingleThreadColorClearCase (EglTestContext& eglTestCtx, const char* name, const char* description, EGLint api, EGLint surfaceType, const eglu::FilterList& filters, int numContextsPerApi)
+	: MultiContextRenderCase(eglTestCtx, name, description, api, surfaceType, filters, numContextsPerApi)
 {
 }
 
-void SingleThreadColorClearCase::executeForContexts (tcu::egl::Display& display, tcu::egl::Surface& surface, EGLConfig config, const std::vector<std::pair<EGLint, tcu::egl::Context*> >& contexts)
+void SingleThreadColorClearCase::executeForContexts (EGLDisplay display, EGLSurface surface, const Config& config, const std::vector<std::pair<EGLint, EGLContext> >& contexts)
 {
-	int					width		= surface.getWidth();
-	int					height		= surface.getHeight();
+	const Library&		egl			= m_eglTestCtx.getLibrary();
+
+	const tcu::IVec2	surfaceSize	= eglu::getSurfaceSize(egl, display, surface);
+	const int			width		= surfaceSize.x();
+	const int			height		= surfaceSize.y();
 
 	TestLog&			log			= m_testCtx.getLog();
 
 	tcu::Surface		refFrame	(width, height);
 	tcu::Surface		frame		(width, height);
-	tcu::PixelFormat	pixelFmt;
+	tcu::PixelFormat	pixelFmt	= getPixelFormat(egl, display, config.config);
 
 	de::Random			rnd			(deStringHash(getName()));
 	vector<ClearOp>		clears;
 	const int			ctxClears	= 2;
 	const int			numIters	= 3;
 
-	// Query pixel format.
-	display.describeConfig(config, pixelFmt);
+	ApiFunctions		funcs;
+
+	m_eglTestCtx.initGLFunctions(&funcs.gl, glu::ApiType::es(2,0));
 
 	// Clear to black using first context.
 	{
-		EGLint				api			= contexts[0].first;
-		tcu::egl::Context*	context		= contexts[0].second;
-		ClearOp				clear		(0, 0, width, height, RGBA::black);
+		EGLint		api			= contexts[0].first;
+		EGLContext	context		= contexts[0].second;
+		ClearOp		clear		(0, 0, width, height, RGBA::black);
 
-		eglMakeCurrent(display.getEGLDisplay(), surface.getEGLSurface(), surface.getEGLSurface(), context->getEGLContext());
-		TCU_CHECK_EGL();
+		egl.makeCurrent(display, surface, surface, context);
+		EGLU_CHECK_MSG(egl, "eglMakeCurrent");
 
-		renderClear(api, clear);
+		renderClear(api, funcs, clear);
 		clears.push_back(clear);
 	}
 
 	// Render.
 	for (int iterNdx = 0; iterNdx < numIters; iterNdx++)
 	{
-		for (vector<std::pair<EGLint, tcu::egl::Context*> >::const_iterator ctxIter = contexts.begin(); ctxIter != contexts.end(); ctxIter++)
+		for (vector<std::pair<EGLint, EGLContext> >::const_iterator ctxIter = contexts.begin(); ctxIter != contexts.end(); ctxIter++)
 		{
-			EGLint				api			= ctxIter->first;
-			tcu::egl::Context*	context		= ctxIter->second;
+			EGLint		api			= ctxIter->first;
+			EGLContext	context		= ctxIter->second;
 
-			eglMakeCurrent(display.getEGLDisplay(), surface.getEGLSurface(), surface.getEGLSurface(), context->getEGLContext());
-			TCU_CHECK_EGL();
+			egl.makeCurrent(display, surface, surface, context);
+			EGLU_CHECK_MSG(egl, "eglMakeCurrent");
 
 			for (int clearNdx = 0; clearNdx < ctxClears; clearNdx++)
 			{
 				ClearOp clear = computeRandomClear(rnd, width, height);
 
-				renderClear(api, clear);
+				renderClear(api, funcs, clear);
 				clears.push_back(clear);
 			}
 		}
@@ -194,13 +211,13 @@ void SingleThreadColorClearCase::executeForContexts (tcu::egl::Display& display,
 
 	// Read pixels using first context. \todo [pyry] Randomize?
 	{
-		EGLint				api		= contexts[0].first;
-		tcu::egl::Context*	context	= contexts[0].second;
+		EGLint		api		= contexts[0].first;
+		EGLContext	context	= contexts[0].second;
 
-		eglMakeCurrent(display.getEGLDisplay(), surface.getEGLSurface(), surface.getEGLSurface(), context->getEGLContext());
-		TCU_CHECK_EGL();
+		egl.makeCurrent(display, surface, surface, context);
+		EGLU_CHECK_MSG(egl, "eglMakeCurrent");
 
-		readPixels(api, frame);
+		readPixels(api, funcs, frame);
 	}
 
 	// Render reference.
@@ -241,11 +258,13 @@ struct ClearPacket
 class ColorClearThread : public de::Thread
 {
 public:
-	ColorClearThread (tcu::egl::Display& display, tcu::egl::Surface& surface, tcu::egl::Context& context, EGLint api, const std::vector<ClearPacket>& packets)
-		: m_display	(display)
+	ColorClearThread (const Library& egl, EGLDisplay display, EGLSurface surface, EGLContext context, EGLint api, const ApiFunctions& funcs, const std::vector<ClearPacket>& packets)
+		: m_egl		(egl)
+		, m_display	(display)
 		, m_surface	(surface)
 		, m_context	(context)
 		, m_api		(api)
+		, m_funcs	(funcs)
 		, m_packets	(packets)
 	{
 	}
@@ -258,14 +277,14 @@ public:
 			packetIter->wait->decrement();
 
 			// Acquire context.
-			eglMakeCurrent(m_display.getEGLDisplay(), m_surface.getEGLSurface(), m_surface.getEGLSurface(), m_context.getEGLContext());
+			m_egl.makeCurrent(m_display, m_surface, m_surface, m_context);
 
 			// Execute clears.
 			for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(packetIter->clears); ndx++)
-				renderClear(m_api, packetIter->clears[ndx]);
+				renderClear(m_api, m_funcs, packetIter->clears[ndx]);
 
 			// Release context.
-			eglMakeCurrent(m_display.getEGLDisplay(), EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+			m_egl.makeCurrent(m_display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
 
 			// Signal completion.
 			packetIter->signal->increment();
@@ -273,33 +292,39 @@ public:
 	}
 
 private:
-	tcu::egl::Display&				m_display;
-	tcu::egl::Surface&				m_surface;
-	tcu::egl::Context&				m_context;
+	const Library&					m_egl;
+	EGLDisplay						m_display;
+	EGLSurface						m_surface;
+	EGLContext						m_context;
 	EGLint							m_api;
+	const ApiFunctions&				m_funcs;
 	const std::vector<ClearPacket>&	m_packets;
 };
 
-MultiThreadColorClearCase::MultiThreadColorClearCase (EglTestContext& eglTestCtx, const char* name, const char* description, EGLint api, EGLint surfaceType, const std::vector<EGLint>& configIds, int numContextsPerApi)
-	: MultiContextRenderCase(eglTestCtx, name, description, api, surfaceType, configIds, numContextsPerApi)
+MultiThreadColorClearCase::MultiThreadColorClearCase (EglTestContext& eglTestCtx, const char* name, const char* description, EGLint api, EGLint surfaceType, const eglu::FilterList& filters, int numContextsPerApi)
+	: MultiContextRenderCase(eglTestCtx, name, description, api, surfaceType, filters, numContextsPerApi)
 {
 }
 
-void MultiThreadColorClearCase::executeForContexts (tcu::egl::Display& display, tcu::egl::Surface& surface, EGLConfig config, const std::vector<std::pair<EGLint, tcu::egl::Context*> >& contexts)
+void MultiThreadColorClearCase::executeForContexts (EGLDisplay display, EGLSurface surface, const Config& config, const std::vector<std::pair<EGLint, EGLContext> >& contexts)
 {
-	int					width		= surface.getWidth();
-	int					height		= surface.getHeight();
+	const Library&		egl			= m_eglTestCtx.getLibrary();
+
+	const tcu::IVec2	surfaceSize	= eglu::getSurfaceSize(egl, display, surface);
+	const int			width		= surfaceSize.x();
+	const int			height		= surfaceSize.y();
 
 	TestLog&			log			= m_testCtx.getLog();
 
 	tcu::Surface		refFrame	(width, height);
 	tcu::Surface		frame		(width, height);
-	tcu::PixelFormat	pixelFmt;
+	tcu::PixelFormat	pixelFmt	= getPixelFormat(egl, display, config.config);
 
 	de::Random			rnd			(deStringHash(getName()));
 
-	// Query pixel format.
-	display.describeConfig(config, pixelFmt);
+	ApiFunctions		funcs;
+
+	m_eglTestCtx.initGLFunctions(&funcs.gl, glu::ApiType::es(2,0));
 
 	// Create clear packets.
 	const int						numPacketsPerThread		= 2;
@@ -341,7 +366,7 @@ void MultiThreadColorClearCase::executeForContexts (tcu::egl::Display& display, 
 	// Create and launch threads (actual rendering starts once first semaphore is signaled).
 	for (int threadNdx = 0; threadNdx < numThreads; threadNdx++)
 	{
-		threads[threadNdx] = ColorClearThreadSp(new ColorClearThread(display, surface, *contexts[threadNdx].second, contexts[threadNdx].first, packets[threadNdx]));
+		threads[threadNdx] = ColorClearThreadSp(new ColorClearThread(egl, display, surface, contexts[threadNdx].second, contexts[threadNdx].first, funcs, packets[threadNdx]));
 		threads[threadNdx]->start();
 	}
 
@@ -351,13 +376,13 @@ void MultiThreadColorClearCase::executeForContexts (tcu::egl::Display& display, 
 
 	// Read pixels using first context. \todo [pyry] Randomize?
 	{
-		EGLint				api		= contexts[0].first;
-		tcu::egl::Context*	context	= contexts[0].second;
+		EGLint		api		= contexts[0].first;
+		EGLContext	context	= contexts[0].second;
 
-		eglMakeCurrent(display.getEGLDisplay(), surface.getEGLSurface(), surface.getEGLSurface(), context->getEGLContext());
-		TCU_CHECK_EGL();
+		egl.makeCurrent(display, surface, surface, context);
+		EGLU_CHECK_MSG(egl, "eglMakeCurrent");
 
-		readPixels(api, frame);
+		readPixels(api, funcs, frame);
 	}
 
 	// Join threads.

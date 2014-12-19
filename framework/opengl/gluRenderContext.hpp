@@ -80,6 +80,8 @@ public:
 	bool				operator==		(ApiType other) const	{ return m_bits == other.m_bits;						}
 	bool				operator!=		(ApiType other) const	{ return m_bits != other.m_bits;						}
 
+	deUint32			getPacked		(void) const	{ return m_bits;												}
+
 	// Shorthands
 	static ApiType		es				(int major, int minor)	{ return ApiType(major, minor, PROFILE_ES);				}
 	static ApiType		core			(int major, int minor)	{ return ApiType(major, minor, PROFILE_CORE);			}

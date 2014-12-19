@@ -24,7 +24,12 @@
  *//*--------------------------------------------------------------------*/
 
 #include "tcuDefs.hpp"
-#include "egluHeaderWrapper.hpp"
+#include "eglwDefs.hpp"
+
+namespace eglw
+{
+class Library;
+}
 
 namespace eglu
 {
@@ -102,7 +107,7 @@ public:
 	deInt32 getAttribute (deUint32 attribute) const;
 };
 
-void	queryConfigInfo		(EGLDisplay display, EGLConfig config, ConfigInfo* dst);
+void	queryConfigInfo		(const eglw::Library& egl, eglw::EGLDisplay display, eglw::EGLConfig config, ConfigInfo* dst);
 
 } // eglu
 

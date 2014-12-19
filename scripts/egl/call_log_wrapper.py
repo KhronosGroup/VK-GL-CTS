@@ -6,12 +6,6 @@ import string
 from common import *
 from khr_util.format import indentLines
 
-def genCommandList (iface, renderCommand, directory, filename, align=False):
-	lines = map(renderCommand, iface.commands)
-	if align:
-		lines = indentLines(lines)
-	writeInlFile(os.path.join(directory, filename), lines)
-
 class LogSpec:
 	def __init__ (self, argInPrints, argOutPrints = {}, returnPrint = None):
 		self.argInPrints	= argInPrints
@@ -49,8 +43,10 @@ CALL_LOG_SPECS = {
 }
 
 def eglwPrefix (string):
-	# \note Not used for now
-	return string
+	if string[:5] == "__egl":
+		return "eglw::" + string
+	else:
+		return re.sub(r'\bEGL', 'eglw::EGL', string)
 
 def prefixedParams (command):
 	if len(command.params) > 0:
@@ -97,7 +93,7 @@ def commandLogWrapperMemberDef (command):
 	src += "\tif (m_enableLog)\n"
 	src += "\t\tm_log << TestLog::Message << %s;\n" % " << ".join(callPrintItems)
 
-	callStr = "::%s(%s)" % (command.name, ", ".join([p.name for p in command.params]))
+	callStr = "m_egl.%s(%s)" % (getFunctionMemberName(command.name), ", ".join([p.name for p in command.params]))
 
 	isVoid	= command.type == 'void'
 	if isVoid:

@@ -33,6 +33,32 @@ namespace deqp
 namespace egl
 {
 
+using namespace eglw;
+
+template <deUint32 Type>
+static bool renderable (const eglu::CandidateConfig& c)
+{
+	return (c.renderableType() & Type) == Type;
+}
+
+template <deUint32 Type>
+static bool notRenderable (const eglu::CandidateConfig& c)
+{
+	return (c.renderableType() & Type) == 0;
+}
+
+template <deUint32 Bits>
+static bool surfaceBits (const eglu::CandidateConfig& c)
+{
+	return (c.surfaceType() & Bits) == Bits;
+}
+
+template <deUint32 Bits>
+static bool notSurfaceBits (const eglu::CandidateConfig& c)
+{
+	return (c.surfaceType() & Bits) == 0;
+}
+
 NegativeApiTests::NegativeApiTests (EglTestContext& eglTestCtx)
 	: TestCaseGroup(eglTestCtx, "negative_api", "Negative API Tests")
 {
@@ -85,7 +111,7 @@ void NegativeApiTests::init (void)
 	//  * eglWaitNative()
 	//    - EGL_BAD_CURRENT_SURFACE is generated if the surface associated with the current context has a native window or pixmap, and that window or pixmap is no longer valid
 
-	using namespace tcu::egl;
+	using namespace eglw;
 	using namespace eglu;
 
 	static const EGLint s_emptyAttribList[]			= { EGL_NONE };
@@ -157,20 +183,20 @@ void NegativeApiTests::init (void)
 
 			log << TestLog::Section("Test1", "EGL_BAD_DISPLAY is generated if display is not an EGL display connection");
 
-			expectFalse(eglCopyBuffers(EGL_NO_DISPLAY, EGL_NO_SURFACE, (NativePixmapType)0));
+			expectFalse(eglCopyBuffers(EGL_NO_DISPLAY, EGL_NO_SURFACE, (EGLNativePixmapType)0));
 			expectError(EGL_BAD_DISPLAY);
 
-			expectFalse(eglCopyBuffers((EGLDisplay)-1, EGL_NO_SURFACE, (NativePixmapType)0));
+			expectFalse(eglCopyBuffers((EGLDisplay)-1, EGL_NO_SURFACE, (EGLNativePixmapType)0));
 			expectError(EGL_BAD_DISPLAY);
 
 			log << TestLog::EndSection;
 
 			log << TestLog::Section("Test2", "EGL_BAD_SURFACE is generated if surface is not an EGL surface");
 
-			expectFalse(eglCopyBuffers(display, EGL_NO_SURFACE, (NativePixmapType)0));
+			expectFalse(eglCopyBuffers(display, EGL_NO_SURFACE, (EGLNativePixmapType)0));
 			expectError(EGL_BAD_SURFACE);
 
-			expectFalse(eglCopyBuffers(display, (EGLSurface)-1, (NativePixmapType)0));
+			expectFalse(eglCopyBuffers(display, (EGLSurface)-1, (EGLNativePixmapType)0));
 			expectError(EGL_BAD_SURFACE);
 
 			log << TestLog::EndSection;
@@ -261,7 +287,7 @@ void NegativeApiTests::init (void)
 			if (isAPISupported(EGL_OPENGL_API))
 			{
 				EGLConfig es1OnlyConfig;
-				if (getConfig(&es1OnlyConfig, FilterList() << (ConfigRenderableType() & EGL_OPENGL_ES_BIT) << (ConfigRenderableType() ^ EGL_OPENGL_BIT)))
+				if (getConfig(&es1OnlyConfig, FilterList() << renderable<EGL_OPENGL_ES_BIT> << notRenderable<EGL_OPENGL_BIT>))
 				{
 					expectTrue(eglBindAPI(EGL_OPENGL_API));
 					expectNoContext(eglCreateContext(display, es1OnlyConfig, EGL_NO_CONTEXT, s_es1ContextAttribList));
@@ -269,7 +295,7 @@ void NegativeApiTests::init (void)
 				}
 
 				EGLConfig es2OnlyConfig;
-				if (getConfig(&es2OnlyConfig, FilterList() << (ConfigRenderableType() & EGL_OPENGL_ES2_BIT) << (ConfigRenderableType() ^ EGL_OPENGL_BIT)))
+				if (getConfig(&es2OnlyConfig, FilterList() << renderable<EGL_OPENGL_ES2_BIT> << notRenderable<EGL_OPENGL_BIT>))
 				{
 					expectTrue(eglBindAPI(EGL_OPENGL_API));
 					expectNoContext(eglCreateContext(display, es2OnlyConfig, EGL_NO_CONTEXT, s_es2ContextAttribList));
@@ -277,7 +303,7 @@ void NegativeApiTests::init (void)
 				}
 
 				EGLConfig vgOnlyConfig;
-				if (getConfig(&vgOnlyConfig, FilterList() << (ConfigRenderableType() & EGL_OPENVG_BIT) << (ConfigRenderableType() ^ EGL_OPENGL_BIT)))
+				if (getConfig(&vgOnlyConfig, FilterList() << renderable<EGL_OPENVG_BIT> << notRenderable<EGL_OPENGL_BIT>))
 				{
 					expectTrue(eglBindAPI(EGL_OPENGL_API));
 					expectNoContext(eglCreateContext(display, vgOnlyConfig, EGL_NO_CONTEXT, s_emptyAttribList));
@@ -288,7 +314,7 @@ void NegativeApiTests::init (void)
 			if (isAPISupported(EGL_OPENGL_ES_API))
 			{
 				EGLConfig glOnlyConfig;
-				if (getConfig(&glOnlyConfig, FilterList() << (ConfigRenderableType() & EGL_OPENGL_BIT) << (ConfigRenderableType() ^ (EGL_OPENGL_ES_BIT|EGL_OPENGL_ES2_BIT))))
+				if (getConfig(&glOnlyConfig, FilterList() << renderable<EGL_OPENGL_BIT> << notRenderable<EGL_OPENGL_ES_BIT|EGL_OPENGL_ES2_BIT>))
 				{
 					expectTrue(eglBindAPI(EGL_OPENGL_ES_API));
 					expectNoContext(eglCreateContext(display, glOnlyConfig, EGL_NO_CONTEXT, s_emptyAttribList));
@@ -296,7 +322,7 @@ void NegativeApiTests::init (void)
 				}
 
 				EGLConfig vgOnlyConfig;
-				if (getConfig(&vgOnlyConfig, FilterList() << (ConfigRenderableType() & EGL_OPENVG_BIT) << (ConfigRenderableType() ^ (EGL_OPENGL_ES_BIT|EGL_OPENGL_ES2_BIT))))
+				if (getConfig(&vgOnlyConfig, FilterList() << renderable<EGL_OPENVG_BIT> << notRenderable<EGL_OPENGL_ES_BIT|EGL_OPENGL_ES2_BIT>))
 				{
 					expectTrue(eglBindAPI(EGL_OPENGL_ES_API));
 					expectNoContext(eglCreateContext(display, vgOnlyConfig, EGL_NO_CONTEXT, s_emptyAttribList));
@@ -307,7 +333,7 @@ void NegativeApiTests::init (void)
 			if (isAPISupported(EGL_OPENVG_API))
 			{
 				EGLConfig glOnlyConfig;
-				if (getConfig(&glOnlyConfig, FilterList() << (ConfigRenderableType() & EGL_OPENGL_BIT) << (ConfigRenderableType() ^ EGL_OPENVG_BIT)))
+				if (getConfig(&glOnlyConfig, FilterList() << renderable<EGL_OPENGL_BIT> << notRenderable<EGL_OPENVG_BIT>))
 				{
 					expectTrue(eglBindAPI(EGL_OPENVG_API));
 					expectNoContext(eglCreateContext(display, glOnlyConfig, EGL_NO_CONTEXT, s_emptyAttribList));
@@ -315,7 +341,7 @@ void NegativeApiTests::init (void)
 				}
 
 				EGLConfig es1OnlyConfig;
-				if (getConfig(&es1OnlyConfig, FilterList() << (ConfigRenderableType() & EGL_OPENGL_ES_BIT) << (ConfigRenderableType() ^ EGL_OPENVG_BIT)))
+				if (getConfig(&es1OnlyConfig, FilterList() << renderable<EGL_OPENGL_ES_BIT> << notRenderable<EGL_OPENVG_BIT>))
 				{
 					expectTrue(eglBindAPI(EGL_OPENVG_API));
 					expectNoContext(eglCreateContext(display, es1OnlyConfig, EGL_NO_CONTEXT, s_es1ContextAttribList));
@@ -323,7 +349,7 @@ void NegativeApiTests::init (void)
 				}
 
 				EGLConfig es2OnlyConfig;
-				if (getConfig(&es2OnlyConfig, FilterList() << (ConfigRenderableType() & EGL_OPENGL_ES2_BIT) << (ConfigRenderableType() ^ EGL_OPENVG_BIT)))
+				if (getConfig(&es2OnlyConfig, FilterList() << renderable<EGL_OPENGL_ES2_BIT> << notRenderable<EGL_OPENVG_BIT>))
 				{
 					expectTrue(eglBindAPI(EGL_OPENVG_API));
 					expectNoContext(eglCreateContext(display, es2OnlyConfig, EGL_NO_CONTEXT, s_es2ContextAttribList));
@@ -338,7 +364,7 @@ void NegativeApiTests::init (void)
 			if (isAPISupported(EGL_OPENGL_ES_API))
 			{
 				EGLConfig notES1Config;
-				if (getConfig(&notES1Config, FilterList() << (ConfigRenderableType() ^ EGL_OPENGL_ES_BIT)))
+				if (getConfig(&notES1Config, FilterList() << notRenderable<EGL_OPENGL_ES_BIT>))
 				{
 					expectTrue(eglBindAPI(EGL_OPENGL_ES_API));
 					expectNoContext(eglCreateContext(display, notES1Config, EGL_NO_CONTEXT, s_es1ContextAttribList));
@@ -353,7 +379,7 @@ void NegativeApiTests::init (void)
 			if (isAPISupported(EGL_OPENGL_ES_API))
 			{
 				EGLConfig notES2Config;
-				if (getConfig(&notES2Config, FilterList() << (ConfigRenderableType() ^ EGL_OPENGL_ES2_BIT)))
+				if (getConfig(&notES2Config, FilterList() << notRenderable<EGL_OPENGL_ES2_BIT>))
 				{
 					expectTrue(eglBindAPI(EGL_OPENGL_ES_API));
 					expectNoContext(eglCreateContext(display, notES2Config, EGL_NO_CONTEXT, s_es2ContextAttribList));
@@ -368,7 +394,7 @@ void NegativeApiTests::init (void)
 			if (isAPISupported(EGL_OPENGL_API))
 			{
 				EGLConfig glConfig;
-				if (getConfig(&glConfig, FilterList() << (ConfigRenderableType() & EGL_OPENGL_BIT)))
+				if (getConfig(&glConfig, FilterList() << renderable<EGL_OPENGL_BIT>))
 				{
 					expectTrue(eglBindAPI(EGL_OPENGL_API));
 					expectNoContext(eglCreateContext(display, glConfig, EGL_NO_CONTEXT, s_es1ContextAttribList));
@@ -379,7 +405,7 @@ void NegativeApiTests::init (void)
 			if (isAPISupported(EGL_OPENVG_API))
 			{
 				EGLConfig vgConfig;
-				if (getConfig(&vgConfig, FilterList() << (ConfigRenderableType() & EGL_OPENVG_BIT)))
+				if (getConfig(&vgConfig, FilterList() << renderable<EGL_OPENVG_BIT>))
 				{
 					expectTrue(eglBindAPI(EGL_OPENVG_API));
 					expectNoContext(eglCreateContext(display, vgConfig, EGL_NO_CONTEXT, s_es1ContextAttribList));
@@ -392,8 +418,8 @@ void NegativeApiTests::init (void)
 				bool		gotConfig	= false;
 				EGLConfig	esConfig;
 
-				gotConfig = getConfig(&esConfig, FilterList() << (ConfigRenderableType() & EGL_OPENGL_ES_BIT)) ||
-							getConfig(&esConfig, FilterList() << (ConfigRenderableType() & EGL_OPENGL_ES2_BIT));
+				gotConfig = getConfig(&esConfig, FilterList() << renderable<EGL_OPENGL_ES_BIT>) ||
+							getConfig(&esConfig, FilterList() << renderable<EGL_OPENGL_ES2_BIT>);
 
 				if (gotConfig)
 				{
@@ -477,8 +503,8 @@ void NegativeApiTests::init (void)
 		s_invalidEsPbufferAttrib1
 	};
 
-	static const EGLint s_vgPreMultAlphaPbufferAttrib[] = { EGL_VG_ALPHA_FORMAT, EGL_VG_ALPHA_FORMAT_PRE, EGL_WIDTH, 64, EGL_HEIGHT, 64, EGL_NONE };
-	static const EGLint s_vgLinearColorspacePbufferAttrib[] = { EGL_VG_COLORSPACE, EGL_VG_COLORSPACE_LINEAR, EGL_WIDTH, 64, EGL_HEIGHT, 64, EGL_NONE };
+	static const EGLint s_vgPreMultAlphaPbufferAttrib[] = { EGL_ALPHA_FORMAT, EGL_ALPHA_FORMAT_PRE, EGL_WIDTH, 64, EGL_HEIGHT, 64, EGL_NONE };
+	static const EGLint s_vgLinearColorspacePbufferAttrib[] = { EGL_COLORSPACE, EGL_VG_COLORSPACE_LINEAR, EGL_WIDTH, 64, EGL_HEIGHT, 64, EGL_NONE };
 
 	TEGL_ADD_API_CASE(create_pbuffer_surface, "eglCreatePbufferSurface() negative tests",
 		{
@@ -506,7 +532,7 @@ void NegativeApiTests::init (void)
 
 			// Generic pbuffer-capable config
 			EGLConfig genericConfig;
-			if (getConfig(&genericConfig, FilterList() << (ConfigSurfaceType() & EGL_PBUFFER_BIT)))
+			if (getConfig(&genericConfig, FilterList() << surfaceBits<EGL_PBUFFER_BIT>))
 			{
 				for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(s_invalidGenericPbufferAttribs); ndx++)
 				{
@@ -520,7 +546,7 @@ void NegativeApiTests::init (void)
 			log << TestLog::Section("Test4", "EGL_BAD_MATCH is generated if config does not support rendering to pixel buffers");
 
 			EGLConfig noPbufferConfig;
-			if (getConfig(&noPbufferConfig, FilterList() << (ConfigSurfaceType() ^ EGL_PBUFFER_BIT)))
+			if (getConfig(&noPbufferConfig, FilterList() << notSurfaceBits<EGL_PBUFFER_BIT>))
 			{
 				expectNoSurface(eglCreatePbufferSurface(display, noPbufferConfig, s_validGenericPbufferAttrib));
 				expectError(EGL_BAD_MATCH);
@@ -531,7 +557,7 @@ void NegativeApiTests::init (void)
 			log << TestLog::Section("Test5", "EGL_BAD_ATTRIBUTE is generated if attrib_list contains any of the attributes EGL_MIPMAP_TEXTURE, EGL_TEXTURE_FORMAT, or EGL_TEXTURE_TARGET, and config does not support OpenGL ES rendering");
 
 			EGLConfig noEsConfig;
-			if (getConfig(&noEsConfig, FilterList() << (ConfigRenderableType() ^ (EGL_OPENGL_ES_BIT|EGL_OPENGL_ES2_BIT))))
+			if (getConfig(&noEsConfig, FilterList() << notRenderable<EGL_OPENGL_ES_BIT|EGL_OPENGL_ES2_BIT>))
 			{
 				for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(s_invalidNoEsPbufferAttribs); ndx++)
 				{
@@ -546,8 +572,8 @@ void NegativeApiTests::init (void)
 
 			// ES1 or ES2 config.
 			EGLConfig	esConfig;
-			bool		gotEsConfig	= getConfig(&esConfig, FilterList() << (ConfigRenderableType() & EGL_OPENGL_ES_BIT)) ||
-									  getConfig(&esConfig, FilterList() << (ConfigRenderableType() & EGL_OPENGL_ES2_BIT));
+			bool		gotEsConfig	= getConfig(&esConfig, FilterList() << renderable<EGL_OPENGL_ES_BIT>) ||
+									  getConfig(&esConfig, FilterList() << renderable<EGL_OPENGL_ES2_BIT>);
 			if (gotEsConfig)
 			{
 				for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(s_invalidEsPbufferAttribs); ndx++)
@@ -562,14 +588,14 @@ void NegativeApiTests::init (void)
 			log << TestLog::Section("Test7", "EGL_BAD_MATCH is generated if config does not support the specified OpenVG alpha format attribute or colorspace attribute");
 
 			EGLConfig vgNoPreConfig;
-			if (getConfig(&vgNoPreConfig, FilterList() << (ConfigRenderableType() & EGL_OPENVG_BIT) << (ConfigSurfaceType() ^ EGL_VG_ALPHA_FORMAT_PRE)))
+			if (getConfig(&vgNoPreConfig, FilterList() << renderable<EGL_OPENVG_BIT> << notSurfaceBits<EGL_VG_ALPHA_FORMAT_PRE_BIT>))
 			{
 				expectNoSurface(eglCreatePbufferSurface(display, vgNoPreConfig, s_vgPreMultAlphaPbufferAttrib));
 				expectError(EGL_BAD_MATCH);
 			}
 
 			EGLConfig vgNoLinearConfig;
-			if (getConfig(&vgNoLinearConfig, FilterList() << (ConfigRenderableType() & EGL_OPENVG_BIT) << (ConfigSurfaceType() ^ EGL_VG_COLORSPACE_LINEAR_BIT)))
+			if (getConfig(&vgNoLinearConfig, FilterList() << renderable<EGL_OPENVG_BIT> << notSurfaceBits<EGL_VG_COLORSPACE_LINEAR_BIT>))
 			{
 				expectNoSurface(eglCreatePbufferSurface(display, vgNoLinearConfig, s_vgLinearColorspacePbufferAttrib));
 				expectError(EGL_BAD_MATCH);
@@ -604,7 +630,7 @@ void NegativeApiTests::init (void)
 
 			// Any pixmap-capable config.
 			EGLConfig pixmapConfig;
-			if (getConfig(&pixmapConfig, FilterList() << (ConfigSurfaceType() & EGL_PIXMAP_BIT)))
+			if (getConfig(&pixmapConfig, FilterList() << surfaceBits<EGL_PIXMAP_BIT>))
 			{
 				expectNoSurface(eglCreatePixmapSurface(display, pixmapConfig, DE_NULL, s_emptyAttribList));
 				expectError(EGL_BAD_NATIVE_PIXMAP);
@@ -642,7 +668,7 @@ void NegativeApiTests::init (void)
 
 			// Any window-capable config.
 			EGLConfig windowConfig;
-			if (getConfig(&windowConfig, FilterList() << (ConfigSurfaceType() & EGL_WINDOW_BIT)))
+			if (getConfig(&windowConfig, FilterList() << surfaceBits<EGL_WINDOW_BIT>))
 			{
 				expectNoSurface(eglCreateWindowSurface(display, windowConfig, DE_NULL, s_emptyAttribList));
 				expectError(EGL_BAD_NATIVE_WINDOW);
@@ -814,7 +840,7 @@ void NegativeApiTests::init (void)
 			EGLSurface surface = EGL_NO_SURFACE;
 			{
 				EGLConfig config;
-				if (getConfig(&config, FilterList() << (ConfigSurfaceType() & EGL_PBUFFER_BIT)))
+				if (getConfig(&config, FilterList() << surfaceBits<EGL_PBUFFER_BIT>))
 				{
 					surface = eglCreatePbufferSurface(display, config, s_validGenericPbufferAttrib);
 					expectError(EGL_SUCCESS);
@@ -915,7 +941,7 @@ void NegativeApiTests::init (void)
 			// Create ES2 context.
 			EGLConfig	config		= DE_NULL;
 			EGLContext	context		= DE_NULL;
-			bool		gotConfig	= getConfig(&config, FilterList() << (ConfigRenderableType() & EGL_OPENGL_ES2_BIT));
+			bool		gotConfig	= getConfig(&config, FilterList() << renderable<EGL_OPENGL_ES2_BIT>);
 
 			if (gotConfig)
 			{
@@ -1002,7 +1028,7 @@ void NegativeApiTests::init (void)
 			EGLSurface surface = EGL_NO_SURFACE;
 			{
 				EGLConfig config;
-				if (getConfig(&config, FilterList() << (ConfigSurfaceType() & EGL_PBUFFER_BIT)))
+				if (getConfig(&config, FilterList() << surfaceBits<EGL_PBUFFER_BIT>))
 				{
 					surface = eglCreatePbufferSurface(display, config, s_validGenericPbufferAttrib);
 					expectError(EGL_SUCCESS);
@@ -1087,7 +1113,7 @@ void NegativeApiTests::init (void)
 				EGLSurface surface = EGL_NO_SURFACE;
 				{
 					EGLConfig config;
-					if (getConfig(&config, FilterList() << (ConfigSurfaceType() & EGL_PBUFFER_BIT)))
+					if (getConfig(&config, FilterList() << surfaceBits<EGL_PBUFFER_BIT>))
 					{
 						surface = eglCreatePbufferSurface(display, config, s_validGenericPbufferAttrib);
 						expectError(EGL_SUCCESS);
@@ -1121,7 +1147,7 @@ void NegativeApiTests::init (void)
 				EGLSurface surface = EGL_NO_SURFACE;
 				{
 					EGLConfig config;
-					if (getConfig(&config, FilterList() << (ConfigSurfaceType() & EGL_PBUFFER_BIT) << (ConfigSurfaceType() ^ EGL_MULTISAMPLE_RESOLVE_BOX_BIT)))
+					if (getConfig(&config, FilterList() << surfaceBits<EGL_PBUFFER_BIT> << notSurfaceBits<EGL_MULTISAMPLE_RESOLVE_BOX_BIT>))
 					{
 						surface = eglCreatePbufferSurface(display, config, s_validGenericPbufferAttrib);
 						expectError(EGL_SUCCESS);
@@ -1152,7 +1178,7 @@ void NegativeApiTests::init (void)
 				EGLSurface surface = EGL_NO_SURFACE;
 				{
 					EGLConfig config;
-					if (getConfig(&config, FilterList() << (ConfigSurfaceType() & EGL_PBUFFER_BIT) << (ConfigSurfaceType() ^ EGL_SWAP_BEHAVIOR_PRESERVED_BIT)))
+					if (getConfig(&config, FilterList() << surfaceBits<EGL_PBUFFER_BIT> << notSurfaceBits<EGL_SWAP_BEHAVIOR_PRESERVED_BIT>))
 					{
 						surface = eglCreatePbufferSurface(display, config, s_validGenericPbufferAttrib);
 						expectError(EGL_SUCCESS);

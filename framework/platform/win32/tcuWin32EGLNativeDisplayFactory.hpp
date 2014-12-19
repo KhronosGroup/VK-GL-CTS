@@ -25,6 +25,7 @@
 
 #include "tcuDefs.hpp"
 #include "egluNativeDisplay.hpp"
+#include "eglwDefs.hpp"
 #include "tcuWin32API.h"
 
 namespace tcu
@@ -36,7 +37,7 @@ public:
 									Win32EGLNativeDisplayFactory	(HINSTANCE instance);
 	virtual							~Win32EGLNativeDisplayFactory	(void);
 
-	virtual eglu::NativeDisplay*	createDisplay					(const EGLAttrib* attribList) const;
+	virtual eglu::NativeDisplay*	createDisplay					(const eglw::EGLAttrib* attribList) const;
 
 private:
 	const HINSTANCE					m_instance;

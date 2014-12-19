@@ -27,11 +27,22 @@
 #include "egluNativeWindow.hpp"
 #include "egluGLContextFactory.hpp"
 #include "egluUtil.hpp"
+#include "eglwLibrary.hpp"
+#include "eglwEnums.hpp"
+
+// Assume no call translation is needed
+#include <android/native_window.h>
+struct egl_native_pixmap_t;
+DE_STATIC_ASSERT(sizeof(eglw::EGLNativeDisplayType) == sizeof(void*));
+DE_STATIC_ASSERT(sizeof(eglw::EGLNativePixmapType) == sizeof(struct egl_native_pixmap_t*));
+DE_STATIC_ASSERT(sizeof(eglw::EGLNativeWindowType) == sizeof(ANativeWindow*));
 
 namespace tcu
 {
 namespace Android
 {
+
+using namespace eglw;
 
 static const eglu::NativeDisplay::Capability	DISPLAY_CAPABILITIES	= eglu::NativeDisplay::CAPABILITY_GET_DISPLAY_LEGACY;
 static const eglu::NativeWindow::Capability		WINDOW_CAPABILITIES		= (eglu::NativeWindow::Capability)(eglu::NativeWindow::CAPABILITY_CREATE_SURFACE_LEGACY |
@@ -41,10 +52,14 @@ static const eglu::NativeWindow::Capability		WINDOW_CAPABILITIES		= (eglu::Nativ
 class NativeDisplay : public eglu::NativeDisplay
 {
 public:
-									NativeDisplay			(void) : eglu::NativeDisplay(DISPLAY_CAPABILITIES) {}
+									NativeDisplay			(void) : eglu::NativeDisplay(DISPLAY_CAPABILITIES), m_library("libEGL.so") {}
 	virtual							~NativeDisplay			(void) {}
 
-	virtual EGLNativeDisplayType	getLegacyNative			(void) { return EGL_DEFAULT_DISPLAY; }
+	virtual EGLNativeDisplayType	getLegacyNative			(void)			{ return EGL_DEFAULT_DISPLAY;	}
+	virtual const eglw::Library&	getLibrary				(void) const	{ return m_library;				}
+
+private:
+	eglw::DefaultLibrary			m_library;
 };
 
 class NativeDisplayFactory : public eglu::NativeDisplayFactory
@@ -138,7 +153,7 @@ eglu::NativeWindow* NativeWindowFactory::createWindow (eglu::NativeDisplay* nati
 
 eglu::NativeWindow* NativeWindowFactory::createWindow (eglu::NativeDisplay* nativeDisplay, EGLDisplay display, EGLConfig config, const EGLAttrib* attribList, const eglu::WindowParams& params) const
 {
-	const int32_t format = (int32_t)eglu::getConfigAttribInt(display, config, EGL_NATIVE_VISUAL_ID);
+	const int32_t format = (int32_t)eglu::getConfigAttribInt(nativeDisplay->getLibrary(), display, config, EGL_NATIVE_VISUAL_ID);
 	DE_UNREF(nativeDisplay && attribList);
 	return createWindow(params, format);
 }

@@ -1,6 +1,8 @@
+#ifndef _EGLWFUNCTIONS_HPP
+#define _EGLWFUNCTIONS_HPP
 /*-------------------------------------------------------------------------
- * drawElements Quality Program Tester Core
- * ----------------------------------------
+ * drawElements Quality Program EGL Utilities
+ * ------------------------------------------
  *
  * Copyright 2014 The Android Open Source Project
  *
@@ -18,9 +20,41 @@
  *
  *//*!
  * \file
- * \brief EGL header file wrapper
+ * \brief EGL API Functions.
  *//*--------------------------------------------------------------------*/
 
-#include "egluHeaderWrapper.hpp"
+#include "eglwDefs.hpp"
 
-DE_EMPTY_CPP_FILE
+namespace eglw
+{
+
+// Function typedefs.
+extern "C"
+{
+#include "eglwFunctionTypes.inl"
+}
+
+class Functions
+{
+public:
+	// Function definitions:
+	// eglInitializeFunc	initialize;
+#include "eglwFunctions.inl"
+
+	Functions (void);
+};
+
+typedef EGLW_APICALL void (EGLW_APIENTRY* GenericFuncType) (void);
+
+class FunctionLoader
+{
+public:
+	virtual GenericFuncType		get		(const char* name) const = 0;
+};
+
+void	initCore		(Functions* dst, const FunctionLoader* loader);
+void	initExtensions	(Functions* dst, const FunctionLoader* loader);
+
+} // eglw
+
+#endif // _EGLWFUNCTIONS_HPP

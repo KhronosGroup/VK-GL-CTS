@@ -25,15 +25,17 @@
 
 #include "tcuDefs.hpp"
 #include "tcuTestCase.hpp"
-#include "tcuEgl.hpp"
-#include "egluNativeWindow.hpp"
-#include "egluConfigInfo.hpp"
 #include "tcuFunctionLibrary.hpp"
-#include "gluRenderContext.hpp"
-#include "deSTLUtil.hpp"
 
-#include <set>
-#include <map>
+#include "egluNativeDisplay.hpp"
+#include "egluGLFunctionLoader.hpp"
+#include "egluConfigInfo.hpp"
+
+#include "eglwDefs.hpp"
+
+#include "gluRenderContext.hpp"
+
+#include "deUniquePtr.hpp"
 
 namespace eglu
 {
@@ -43,7 +45,12 @@ class NativePixmap;
 class NativeDisplayFactory;
 class NativeWindowFactory;
 class NativePixmapFactory;
-} // eglu
+}
+
+namespace eglw
+{
+class Library;
+}
 
 namespace deqp
 {
@@ -53,50 +60,25 @@ namespace egl
 class EglTestContext
 {
 public:
-												EglTestContext			(tcu::TestContext& testCtx, const eglu::NativeDisplayFactory& displayFactory, const eglu::NativeWindowFactory* windowFactory, const eglu::NativePixmapFactory* pixmapFactory);
-												~EglTestContext			(void);
+										EglTestContext			(tcu::TestContext& testCtx, const eglu::NativeDisplayFactory& displayFactory);
+										~EglTestContext			(void);
 
-	tcu::TestContext&							getTestContext			(void) const	{ return m_testCtx;													}
-	eglu::NativeDisplay&						getNativeDisplay		(void) const	{ return *m_defaultNativeDisplay;									}
-	tcu::egl::Display&							getDisplay				(void) const	{ return *m_defaultEGLDisplay;										}
-	EGLDisplay									getEGLDisplay			(void) const	{ return getDisplay().getEGLDisplay();								}
-	const std::vector<eglu::ConfigInfo>&		getConfigs				(void) const	{ return m_configs;													}
+	tcu::TestContext&					getTestContext			(void) const { return m_testCtx;				}
+	const eglu::NativeDisplayFactory&	getNativeDisplayFactory	(void) const { return m_nativeDisplayFactory;	}
+	eglu::NativeDisplay&				getNativeDisplay		(void) const { return *m_nativeDisplay;			}
+	const eglw::Library&				getLibrary				(void) const;
 
-	const eglu::NativeWindowFactory&			getNativeWindowFactory	(void) const;
-	const eglu::NativePixmapFactory&			getNativePixmapFactory	(void) const;
-
-	eglu::NativeWindow*							createNativeWindow		(EGLDisplay display, EGLConfig config, const EGLAttrib* attribList, int width, int height, eglu::WindowParams::Visibility visibility);
-	eglu::NativeWindow*							createNativeWindow		(EGLDisplay display, EGLConfig config, const EGLAttrib* attribList, int width, int height);
-	eglu::NativePixmap*							createNativePixmap		(EGLDisplay display, EGLConfig config, const EGLAttrib* attribList, int width, int height);
-
-	deFunctionPtr								getGLFunction			(glu::ApiType apiType, const char* name) const;
-	void										getGLFunctions			(glw::Functions& gl, glu::ApiType apiType, const std::vector<const char*>& extensions) const;
-	void										getGLFunctions			(glw::Functions& gl, glu::ApiType apiType) const	{ getGLFunctions(gl, apiType, std::vector<const char*>()); }
-
-	bool										isAPISupported			(EGLint api) const { return de::contains(m_supportedAPIs, api);						}
-
-	// Test case wrapper will instruct test context to create display upon case init and destroy it in deinit
-	void										createDefaultDisplay	(void);
-	void										destroyDefaultDisplay	(void);
+	void								initGLFunctions			(glw::Functions* dst, glu::ApiType apiType) const;
+	void								initGLFunctions			(glw::Functions* dst, glu::ApiType apiType, int numExtensions, const char* const* extensions) const;
 
 private:
-												EglTestContext			(const EglTestContext&);
-	EglTestContext&								operator=				(const EglTestContext&);
+										EglTestContext			(const EglTestContext&);
+	EglTestContext&						operator=				(const EglTestContext&);
 
-	const tcu::FunctionLibrary*					getGLLibrary			(glu::ApiType apiType) const;
-
-	tcu::TestContext&							m_testCtx;
-	const eglu::NativeDisplayFactory&			m_displayFactory;
-	const eglu::NativeWindowFactory*			m_windowFactory;
-	const eglu::NativePixmapFactory*			m_pixmapFactory;
-
-	typedef std::map<deUint32, tcu::FunctionLibrary*> GLLibraryMap;
-	mutable GLLibraryMap						m_glLibraries;			//!< GL library cache.
-
-	eglu::NativeDisplay*						m_defaultNativeDisplay;
-	tcu::egl::Display*							m_defaultEGLDisplay;
-	std::vector<eglu::ConfigInfo>				m_configs;
-	std::set<EGLint>							m_supportedAPIs;
+	tcu::TestContext&					m_testCtx;
+	const eglu::NativeDisplayFactory&	m_nativeDisplayFactory;
+	de::UniquePtr<eglu::NativeDisplay>	m_nativeDisplay;
+	mutable eglu::GLLibraryCache		m_glLibraryCache;
 };
 
 class TestCaseGroup : public tcu::TestCaseGroup

@@ -37,19 +37,37 @@ namespace egl
 class SingleThreadColorClearCase : public MultiContextRenderCase
 {
 public:
-						SingleThreadColorClearCase		(EglTestContext& eglTestCtx, const char* name, const char* description, EGLint api, EGLint surfaceType, const std::vector<EGLint>& configIds, int numContextsPerApi);
+					SingleThreadColorClearCase	(EglTestContext&					eglTestCtx,
+												 const char*						name,
+												 const char*						description,
+												 eglw::EGLint						api,
+												 eglw::EGLint						surfaceType,
+												 const eglu::FilterList&			filters,
+												 int								numContextsPerApi);
 
 private:
-	virtual void		executeForContexts				(tcu::egl::Display& display, tcu::egl::Surface& surface, EGLConfig config, const std::vector<std::pair<EGLint, tcu::egl::Context*> >& contexts);
+	virtual void	executeForContexts			(eglw::EGLDisplay												display,
+												 eglw::EGLSurface												surface,
+												 const Config&													config,
+												 const std::vector<std::pair<eglw::EGLint, eglw::EGLContext> >&	contexts);
 };
 
 class MultiThreadColorClearCase : public MultiContextRenderCase
 {
 public:
-						MultiThreadColorClearCase		(EglTestContext& eglTestCtx, const char* name, const char* description, EGLint api, EGLint surfaceType, const std::vector<EGLint>& configIds, int numContextsPerApi);
+					MultiThreadColorClearCase	(EglTestContext&					eglTestCtx,
+												 const char*						name,
+												 const char*						description,
+												 eglw::EGLint						api,
+												 eglw::EGLint						surfaceType,
+												 const eglu::FilterList&			filters,
+												 int								numContextsPerApi);
 
 private:
-	virtual void		executeForContexts				(tcu::egl::Display& display, tcu::egl::Surface& surface, EGLConfig config, const std::vector<std::pair<EGLint, tcu::egl::Context*> >& contexts);
+	virtual void	executeForContexts			(eglw::EGLDisplay												display,
+												 eglw::EGLSurface												surface,
+												 const Config&													config,
+												 const std::vector<std::pair<eglw::EGLint, eglw::EGLContext> >&	contexts);
 };
 
 } // egl

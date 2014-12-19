@@ -23,9 +23,13 @@
 
 #include "egluConfigInfo.hpp"
 #include "egluDefs.hpp"
+#include "eglwLibrary.hpp"
+#include "eglwEnums.hpp"
 
 namespace eglu
 {
+
+using namespace eglw;
 
 deInt32 ConfigInfo::getAttribute (deUint32 attribute) const
 {
@@ -66,40 +70,40 @@ deInt32 ConfigInfo::getAttribute (deUint32 attribute) const
 	}
 }
 
-void queryConfigInfo (EGLDisplay display, EGLConfig config, ConfigInfo* dst)
+void queryConfigInfo (const Library& egl, EGLDisplay display, EGLConfig config, ConfigInfo* dst)
 {
-	eglGetConfigAttrib(display, config, EGL_BUFFER_SIZE,				&dst->bufferSize);
-	eglGetConfigAttrib(display, config, EGL_RED_SIZE,					&dst->redSize);
-	eglGetConfigAttrib(display, config, EGL_GREEN_SIZE,					&dst->greenSize);
-	eglGetConfigAttrib(display, config, EGL_BLUE_SIZE,					&dst->blueSize);
-	eglGetConfigAttrib(display, config, EGL_LUMINANCE_SIZE,				&dst->luminanceSize);
-	eglGetConfigAttrib(display, config, EGL_ALPHA_SIZE,					&dst->alphaSize);
-	eglGetConfigAttrib(display, config, EGL_ALPHA_MASK_SIZE,			&dst->alphaMaskSize);
-	eglGetConfigAttrib(display, config, EGL_BIND_TO_TEXTURE_RGB,		(EGLint*)&dst->bindToTextureRGB);
-	eglGetConfigAttrib(display, config, EGL_BIND_TO_TEXTURE_RGBA,		(EGLint*)&dst->bindToTextureRGBA);
-	eglGetConfigAttrib(display, config, EGL_COLOR_BUFFER_TYPE,			(EGLint*)&dst->colorBufferType);
-	eglGetConfigAttrib(display, config, EGL_CONFIG_CAVEAT,				(EGLint*)&dst->configCaveat);
-	eglGetConfigAttrib(display, config, EGL_CONFIG_ID,					&dst->configId);
-	eglGetConfigAttrib(display, config, EGL_CONFORMANT,					&dst->conformant);
-	eglGetConfigAttrib(display, config, EGL_DEPTH_SIZE,					&dst->depthSize);
-	eglGetConfigAttrib(display, config, EGL_LEVEL,						&dst->level);
-	eglGetConfigAttrib(display, config, EGL_MAX_PBUFFER_WIDTH,			&dst->maxPbufferWidth);
-	eglGetConfigAttrib(display, config, EGL_MAX_PBUFFER_HEIGHT,			&dst->maxPbufferHeight);
-	eglGetConfigAttrib(display, config, EGL_MAX_SWAP_INTERVAL,			&dst->maxSwapInterval);
-	eglGetConfigAttrib(display, config, EGL_MIN_SWAP_INTERVAL,			&dst->minSwapInterval);
-	eglGetConfigAttrib(display, config, EGL_NATIVE_RENDERABLE,			(EGLint*)&dst->nativeRenderable);
-	eglGetConfigAttrib(display, config, EGL_NATIVE_VISUAL_ID,			&dst->nativeVisualId);
-	eglGetConfigAttrib(display, config, EGL_NATIVE_VISUAL_TYPE,			&dst->nativeVisualType);
-	eglGetConfigAttrib(display, config, EGL_RENDERABLE_TYPE,			&dst->renderableType);
-	eglGetConfigAttrib(display, config, EGL_SAMPLE_BUFFERS,				&dst->sampleBuffers);
-	eglGetConfigAttrib(display, config, EGL_SAMPLES,					&dst->samples);
-	eglGetConfigAttrib(display, config, EGL_STENCIL_SIZE,				&dst->stencilSize);
-	eglGetConfigAttrib(display, config, EGL_SURFACE_TYPE,				&dst->surfaceType);
-	eglGetConfigAttrib(display, config, EGL_TRANSPARENT_TYPE,			(EGLint*)&dst->transparentType);
-	eglGetConfigAttrib(display, config, EGL_TRANSPARENT_RED_VALUE,		&dst->transparentRedValue);
-	eglGetConfigAttrib(display, config, EGL_TRANSPARENT_GREEN_VALUE,	&dst->transparentGreenValue);
-	eglGetConfigAttrib(display, config, EGL_TRANSPARENT_BLUE_VALUE,		&dst->transparentBlueValue);
-	EGLU_CHECK_MSG("Failed to query config info");
+	egl.getConfigAttrib(display, config, EGL_BUFFER_SIZE,				&dst->bufferSize);
+	egl.getConfigAttrib(display, config, EGL_RED_SIZE,					&dst->redSize);
+	egl.getConfigAttrib(display, config, EGL_GREEN_SIZE,				&dst->greenSize);
+	egl.getConfigAttrib(display, config, EGL_BLUE_SIZE,					&dst->blueSize);
+	egl.getConfigAttrib(display, config, EGL_LUMINANCE_SIZE,			&dst->luminanceSize);
+	egl.getConfigAttrib(display, config, EGL_ALPHA_SIZE,				&dst->alphaSize);
+	egl.getConfigAttrib(display, config, EGL_ALPHA_MASK_SIZE,			&dst->alphaMaskSize);
+	egl.getConfigAttrib(display, config, EGL_BIND_TO_TEXTURE_RGB,		(EGLint*)&dst->bindToTextureRGB);
+	egl.getConfigAttrib(display, config, EGL_BIND_TO_TEXTURE_RGBA,		(EGLint*)&dst->bindToTextureRGBA);
+	egl.getConfigAttrib(display, config, EGL_COLOR_BUFFER_TYPE,			(EGLint*)&dst->colorBufferType);
+	egl.getConfigAttrib(display, config, EGL_CONFIG_CAVEAT,				(EGLint*)&dst->configCaveat);
+	egl.getConfigAttrib(display, config, EGL_CONFIG_ID,					&dst->configId);
+	egl.getConfigAttrib(display, config, EGL_CONFORMANT,				&dst->conformant);
+	egl.getConfigAttrib(display, config, EGL_DEPTH_SIZE,				&dst->depthSize);
+	egl.getConfigAttrib(display, config, EGL_LEVEL,						&dst->level);
+	egl.getConfigAttrib(display, config, EGL_MAX_PBUFFER_WIDTH,			&dst->maxPbufferWidth);
+	egl.getConfigAttrib(display, config, EGL_MAX_PBUFFER_HEIGHT,		&dst->maxPbufferHeight);
+	egl.getConfigAttrib(display, config, EGL_MAX_SWAP_INTERVAL,			&dst->maxSwapInterval);
+	egl.getConfigAttrib(display, config, EGL_MIN_SWAP_INTERVAL,			&dst->minSwapInterval);
+	egl.getConfigAttrib(display, config, EGL_NATIVE_RENDERABLE,			(EGLint*)&dst->nativeRenderable);
+	egl.getConfigAttrib(display, config, EGL_NATIVE_VISUAL_ID,			&dst->nativeVisualId);
+	egl.getConfigAttrib(display, config, EGL_NATIVE_VISUAL_TYPE,		&dst->nativeVisualType);
+	egl.getConfigAttrib(display, config, EGL_RENDERABLE_TYPE,			&dst->renderableType);
+	egl.getConfigAttrib(display, config, EGL_SAMPLE_BUFFERS,			&dst->sampleBuffers);
+	egl.getConfigAttrib(display, config, EGL_SAMPLES,					&dst->samples);
+	egl.getConfigAttrib(display, config, EGL_STENCIL_SIZE,				&dst->stencilSize);
+	egl.getConfigAttrib(display, config, EGL_SURFACE_TYPE,				&dst->surfaceType);
+	egl.getConfigAttrib(display, config, EGL_TRANSPARENT_TYPE,			(EGLint*)&dst->transparentType);
+	egl.getConfigAttrib(display, config, EGL_TRANSPARENT_RED_VALUE,		&dst->transparentRedValue);
+	egl.getConfigAttrib(display, config, EGL_TRANSPARENT_GREEN_VALUE,	&dst->transparentGreenValue);
+	egl.getConfigAttrib(display, config, EGL_TRANSPARENT_BLUE_VALUE,	&dst->transparentBlueValue);
+	EGLU_CHECK_MSG(egl, "Failed to query config info");
 }
 
 } // eglu

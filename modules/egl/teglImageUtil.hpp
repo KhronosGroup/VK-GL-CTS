@@ -32,9 +32,13 @@
 
 #include "egluUtil.hpp"
 #include "egluUnique.hpp"
-#include "egluHeaderWrapper.hpp"
 
 #include "glwDefs.hpp"
+
+namespace eglw
+{
+class Library;
+}
 
 namespace deqp
 {
@@ -48,19 +52,19 @@ class ManagedSurface
 public:
 										ManagedSurface	(de::MovePtr<eglu::UniqueSurface> surface) : m_surface(surface) {}
 	virtual								~ManagedSurface	(void) {}
-	EGLSurface							get				(void) const { return **m_surface; }
+	eglw::EGLSurface					get				(void) const { return **m_surface; }
 
 private:
 	de::UniquePtr<eglu::UniqueSurface>	m_surface;
 };
 
-de::MovePtr<ManagedSurface> createSurface (EglTestContext& eglTestCtx, EGLConfig config, int width, int height);
+de::MovePtr<ManagedSurface> createSurface (EglTestContext& eglTestCtx, eglw::EGLDisplay display, eglw::EGLConfig config, int width, int height);
 
 class ClientBuffer
 {
 public:
-	virtual					~ClientBuffer	(void) {}
-	virtual EGLClientBuffer	get				(void) const = 0;
+	virtual							~ClientBuffer	(void) {}
+	virtual eglw::EGLClientBuffer	get				(void) const = 0;
 };
 
 class ImageSource
@@ -69,10 +73,10 @@ public:
 	virtual								~ImageSource		(void) {}
 	virtual std::string					getRequiredExtension(void) const = 0;
 	virtual de::MovePtr<ClientBuffer>	createBuffer		(const glw::Functions& gl, tcu::Texture2D* reference = DE_NULL) const = 0;
-	virtual EGLImageKHR					createImage			(const eglu::ImageFunctions& imgExt, EGLDisplay dpy, EGLContext ctx, EGLClientBuffer clientBuffer) const = 0;
+	virtual eglw::EGLImageKHR			createImage			(const eglw::Library& egl, eglw::EGLDisplay dpy, eglw::EGLContext ctx, eglw::EGLClientBuffer clientBuffer) const = 0;
 };
 
-de::MovePtr<ImageSource> createTextureImageSource			(EGLenum source, glw::GLenum format, glw::GLenum type, bool useTexLevel0 = false);
+de::MovePtr<ImageSource> createTextureImageSource			(eglw::EGLenum source, glw::GLenum format, glw::GLenum type, bool useTexLevel0 = false);
 de::MovePtr<ImageSource> createRenderbufferImageSource		(glw::GLenum format);
 de::MovePtr<ImageSource> createUnsupportedImageSource		(const std::string& message);
 

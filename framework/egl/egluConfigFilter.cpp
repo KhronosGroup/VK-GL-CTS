@@ -32,63 +32,34 @@ using std::vector;
 namespace eglu
 {
 
-bool ConfigFilter::match (EGLDisplay display, EGLConfig config) const
+using namespace eglw;
+
+
+CandidateConfig::CandidateConfig (const eglw::Library& egl, eglw::EGLDisplay display, eglw::EGLConfig config)
+	: m_type(TYPE_EGL_OBJECT)
 {
-	EGLint	cmpValue	= getConfigAttribInt(display, config, m_attribute);
-	bool	isMatch		= false;
-
-	switch (m_rule)
-	{
-		case FILTER_EQUAL:				isMatch = (cmpValue == m_value);			break;
-		case FILTER_GREATER_OR_EQUAL:	isMatch = (cmpValue >= m_value);			break;
-		case FILTER_AND:				isMatch = (cmpValue & m_value) == m_value;	break;
-		case FILTER_NOT_SET:			isMatch = (cmpValue & m_value) == 0;		break;
-		default:						DE_ASSERT(false);							break;
-	}
-
-	return isMatch;
+	m_cfg.object.egl		= &egl;
+	m_cfg.object.display	= display;
+	m_cfg.object.config		= config;
 }
 
-bool ConfigFilter::match (const ConfigInfo& configInfo) const
+CandidateConfig::CandidateConfig (const ConfigInfo& configInfo)
+	: m_type(TYPE_CONFIG_INFO)
 {
-	EGLint	cmpValue	= configInfo.getAttribute(m_attribute);
-	bool	isMatch		= false;
-
-	switch (m_rule)
-	{
-		case FILTER_EQUAL:				isMatch = (cmpValue == m_value);			break;
-		case FILTER_GREATER_OR_EQUAL:	isMatch = (cmpValue >= m_value);			break;
-		case FILTER_AND:				isMatch = (cmpValue & m_value) == m_value;	break;
-		case FILTER_NOT_SET:			isMatch = (cmpValue & m_value) == 0;		break;
-		default:						DE_ASSERT(false);							break;
-	}
-
-	return isMatch;
+	m_cfg.configInfo = &configInfo;
 }
 
-FilterList ConfigColorBits::operator== (tcu::RGBA bits) const
+int CandidateConfig::get (deUint32 attrib) const
 {
-	FilterList list;
-	list << (ConfigRedSize()	== bits.getRed())
-		 << (ConfigGreenSize()	== bits.getGreen())
-		 << (ConfigBlueSize()	== bits.getBlue())
-		 << (ConfigAlphaSize()	== bits.getAlpha());
-	return list;
+	if (m_type == TYPE_CONFIG_INFO)
+		return m_cfg.configInfo->getAttribute(attrib);
+	else
+		return getConfigAttribInt(*m_cfg.object.egl, m_cfg.object.display, m_cfg.object.config, attrib);
 }
 
-FilterList ConfigColorBits::operator>= (tcu::RGBA bits) const
+FilterList& FilterList::operator<< (ConfigFilter filter)
 {
-	FilterList list;
-	list << (ConfigRedSize()	>= bits.getRed())
-		 << (ConfigGreenSize()	>= bits.getGreen())
-		 << (ConfigBlueSize()	>= bits.getBlue())
-		 << (ConfigAlphaSize()	>= bits.getAlpha());
-	return list;
-}
-
-FilterList& FilterList::operator<< (const ConfigFilter& rule)
-{
-	m_rules.push_back(rule);
+	m_rules.push_back(filter);
 	return *this;
 }
 
@@ -100,24 +71,28 @@ FilterList& FilterList::operator<< (const FilterList& other)
 	return *this;
 }
 
-bool FilterList::match (const EGLDisplay display, EGLConfig config) const
+bool FilterList::match (const Library& egl, EGLDisplay display, EGLConfig config) const
 {
-	for (vector<ConfigFilter>::const_iterator ruleIter = m_rules.begin(); ruleIter != m_rules.end(); ruleIter++)
-	{
-		if (!ruleIter->match(display, config))
-			return false;
-	}
-	return true;
+	return match(CandidateConfig(egl, display, config));
 }
 
 bool FilterList::match (const ConfigInfo& configInfo) const
 {
-	for (vector<ConfigFilter>::const_iterator ruleIter = m_rules.begin(); ruleIter != m_rules.end(); ruleIter++)
+	return match(CandidateConfig(configInfo));
+}
+
+bool FilterList::match (const CandidateConfig& candidate) const
+{
+	for (vector<ConfigFilter>::const_iterator filterIter = m_rules.begin(); filterIter != m_rules.end(); filterIter++)
 	{
-		if (!ruleIter->match(configInfo))
+		ConfigFilter filter = *filterIter;
+
+		if (!filter(candidate))
 			return false;
 	}
+
 	return true;
 }
+
 
 } // eglu

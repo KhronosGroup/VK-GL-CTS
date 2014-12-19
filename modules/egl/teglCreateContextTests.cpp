@@ -24,36 +24,31 @@
 #include "teglCreateContextTests.hpp"
 #include "teglSimpleConfigCase.hpp"
 #include "egluStrUtil.hpp"
+#include "egluUtil.hpp"
+#include "eglwLibrary.hpp"
+#include "eglwEnums.hpp"
 #include "tcuTestLog.hpp"
-
-#include <EGL/eglext.h>
-
-#if !defined(EGL_OPENGL_ES3_BIT_KHR)
-#	define EGL_OPENGL_ES3_BIT_KHR	0x0040
-#endif
-#if !defined(EGL_CONTEXT_MAJOR_VERSION_KHR)
-#	define EGL_CONTEXT_MAJOR_VERSION_KHR EGL_CONTEXT_CLIENT_VERSION
-#endif
-
-using std::vector;
-using tcu::TestLog;
 
 namespace deqp
 {
 namespace egl
 {
 
+using std::vector;
+using tcu::TestLog;
+using namespace eglw;
+
 class CreateContextCase : public SimpleConfigCase
 {
 public:
-						CreateContextCase			(EglTestContext& eglTestCtx, const char* name, const char* description, const vector<EGLint>& configIds);
+						CreateContextCase			(EglTestContext& eglTestCtx, const char* name, const char* description, const eglu::FilterList& filters);
 						~CreateContextCase			(void);
 
-	void				executeForConfig			(tcu::egl::Display& display, EGLConfig config);
+	void				executeForConfig			(EGLDisplay display, EGLConfig config);
 };
 
-CreateContextCase::CreateContextCase (EglTestContext& eglTestCtx, const char* name, const char* description, const vector<EGLint>& configIds)
-	: SimpleConfigCase(eglTestCtx, name, description, configIds)
+CreateContextCase::CreateContextCase (EglTestContext& eglTestCtx, const char* name, const char* description, const eglu::FilterList& filters)
+	: SimpleConfigCase(eglTestCtx, name, description, filters)
 {
 }
 
@@ -61,11 +56,12 @@ CreateContextCase::~CreateContextCase (void)
 {
 }
 
-void CreateContextCase::executeForConfig (tcu::egl::Display& display, EGLConfig config)
+void CreateContextCase::executeForConfig (EGLDisplay display, EGLConfig config)
 {
-	TestLog&	log		= m_testCtx.getLog();
-	EGLint		id		= display.getConfigAttrib(config, EGL_CONFIG_ID);
-	EGLint		apiBits	= display.getConfigAttrib(config, EGL_RENDERABLE_TYPE);
+	const Library&	egl		= m_eglTestCtx.getLibrary();
+	TestLog&		log		= m_testCtx.getLog();
+	EGLint			id		= eglu::getConfigAttribInt(egl, display, config, EGL_CONFIG_ID);
+	EGLint			apiBits	= eglu::getConfigAttribInt(egl, display, config, EGL_RENDERABLE_TYPE);
 
 	static const EGLint es1Attrs[] = { EGL_CONTEXT_CLIENT_VERSION,		1, EGL_NONE };
 	static const EGLint es2Attrs[] = { EGL_CONTEXT_CLIENT_VERSION,		2, EGL_NONE };
@@ -92,12 +88,12 @@ void CreateContextCase::executeForConfig (tcu::egl::Display& display, EGLConfig 
 			continue; // Not supported API
 
 		log << TestLog::Message << "Creating " << apis[apiNdx].name << " context with config ID " << id << TestLog::EndMessage;
-		TCU_CHECK_EGL();
+		EGLU_CHECK_MSG(egl, "init");
 
-		TCU_CHECK_EGL_CALL(eglBindAPI(apis[apiNdx].api));
+		EGLU_CHECK_CALL(egl, bindAPI(apis[apiNdx].api));
 
-		EGLContext	context = eglCreateContext(display.getEGLDisplay(), config, EGL_NO_CONTEXT, apis[apiNdx].ctxAttrs);
-		EGLenum		err		= eglGetError();
+		EGLContext	context = egl.createContext(display, config, EGL_NO_CONTEXT, apis[apiNdx].ctxAttrs);
+		EGLenum		err		= egl.getError();
 
 		if (context == EGL_NO_CONTEXT || err != EGL_SUCCESS)
 		{
@@ -107,7 +103,7 @@ void CreateContextCase::executeForConfig (tcu::egl::Display& display, EGLConfig 
 		else
 		{
 			// Destroy
-			TCU_CHECK_EGL_CALL(eglDestroyContext(display.getEGLDisplay(), context));
+			EGLU_CHECK_CALL(egl, destroyContext(display, context));
 			log << TestLog::Message << "  Pass" << TestLog::EndMessage;
 		}
 	}
@@ -125,12 +121,11 @@ CreateContextTests::~CreateContextTests (void)
 
 void CreateContextTests::init (void)
 {
-	vector<NamedConfigIdSet>	configIdSets;
-	eglu::FilterList			filters;
-	NamedConfigIdSet::getDefaultSets(configIdSets, m_eglTestCtx.getConfigs(), filters);
+	vector<NamedFilterList>	filterLists;
+	getDefaultFilterLists(filterLists, eglu::FilterList());
 
-	for (vector<NamedConfigIdSet>::iterator i = configIdSets.begin(); i != configIdSets.end(); i++)
-		addChild(new CreateContextCase(m_eglTestCtx, i->getName(), i->getDescription(), i->getConfigIds()));
+	for (vector<NamedFilterList>::iterator i = filterLists.begin(); i != filterLists.end(); i++)
+		addChild(new CreateContextCase(m_eglTestCtx, i->getName(), i->getDescription(), *i));
 }
 
 } // egl

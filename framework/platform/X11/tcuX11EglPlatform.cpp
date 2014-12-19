@@ -22,8 +22,10 @@
  *//*--------------------------------------------------------------------*/
 
 #include "tcuX11EglPlatform.hpp"
-
 #include "egluGLContextFactory.hpp"
+#include "eglwLibrary.hpp"
+#include "eglwFunctions.hpp"
+#include "eglwEnums.hpp"
 
 namespace tcu
 {
@@ -31,6 +33,24 @@ namespace x11
 {
 namespace egl
 {
+
+typedef ::Display*	EGLNativeDisplayType;
+typedef ::Pixmap	EGLNativePixmapType;
+typedef ::Window	EGLNativeWindowType;
+
+DE_STATIC_ASSERT(sizeof(EGLNativeDisplayType)	<= sizeof(eglw::EGLNativeDisplayType));
+DE_STATIC_ASSERT(sizeof(EGLNativePixmapType)	<= sizeof(eglw::EGLNativePixmapType));
+DE_STATIC_ASSERT(sizeof(EGLNativeWindowType)	<= sizeof(eglw::EGLNativeWindowType));
+
+extern "C"
+{
+
+typedef EGLW_APICALL	eglw::EGLDisplay	(EGLW_APIENTRY* eglX11GetDisplayFunc)			(EGLNativeDisplayType display_id);
+typedef EGLW_APICALL	eglw::EGLBoolean	(EGLW_APIENTRY* eglX11CopyBuffersFunc)			(eglw::EGLDisplay dpy, eglw::EGLSurface surface, EGLNativePixmapType target);
+typedef EGLW_APICALL	eglw::EGLSurface	(EGLW_APIENTRY* eglX11CreatePixmapSurfaceFunc)	(eglw::EGLDisplay dpy, eglw::EGLConfig config, EGLNativePixmapType pixmap, const eglw::EGLint* attrib_list);
+typedef EGLW_APICALL	eglw::EGLSurface	(EGLW_APIENTRY* eglX11CreateWindowSurfaceFunc)	(eglw::EGLDisplay dpy, eglw::EGLConfig config, EGLNativeWindowType win, const eglw::EGLint* attrib_list);
+
+}
 
 using std::string;
 
@@ -47,12 +67,34 @@ using eglu::NativePixmapFactory;
 using eglu::WindowParams;
 using tcu::TextureLevel;
 
-#ifndef EGL_PLATFORM_X11_EXT
-#	define EGL_PLATFORM_X11_EXT			0x31D5
-#endif
-#ifndef EGL_PLATFORM_X11_SCREEN_EXT
-#	define EGL_PLATFORM_X11_SCREEN_EXT	0x31D6
-#endif
+class Library : public eglw::DefaultLibrary
+{
+public:
+	Library (void)
+		: eglw::DefaultLibrary("libEGL.so")
+	{
+	}
+
+	eglw::EGLBoolean copyBuffers (eglw::EGLDisplay dpy, eglw::EGLSurface surface, eglw::EGLNativePixmapType target) const
+	{
+		return ((eglX11CopyBuffersFunc)m_egl.copyBuffers)(dpy, surface, reinterpret_cast<EGLNativePixmapType>(target));
+	}
+
+	eglw::EGLSurface createPixmapSurface (eglw::EGLDisplay dpy, eglw::EGLConfig config, eglw::EGLNativePixmapType pixmap, const eglw::EGLint *attrib_list) const
+	{
+		return ((eglX11CreatePixmapSurfaceFunc)m_egl.createPixmapSurface)(dpy, config, reinterpret_cast<EGLNativePixmapType>(pixmap), attrib_list);
+	}
+
+	eglw::EGLSurface createWindowSurface (eglw::EGLDisplay dpy, eglw::EGLConfig config, eglw::EGLNativeWindowType win, const eglw::EGLint *attrib_list) const
+	{
+		return ((eglX11CreateWindowSurfaceFunc)m_egl.createWindowSurface)(dpy, config, reinterpret_cast<EGLNativeWindowType>(win), attrib_list);
+	}
+
+	eglw::EGLDisplay getDisplay (eglw::EGLNativeDisplayType display_id) const
+	{
+		return ((eglX11GetDisplayFunc)m_egl.getDisplay)(reinterpret_cast<EGLNativeDisplayType>(display_id));
+	}
+};
 
 class Display : public NativeDisplay
 {
@@ -60,21 +102,22 @@ public:
 	static const Capability CAPABILITIES 		= Capability(CAPABILITY_GET_DISPLAY_LEGACY |
 															 CAPABILITY_GET_DISPLAY_PLATFORM);
 
-							Display				(MovePtr<x11::Display> x11Display)
-								: NativeDisplay	(CAPABILITIES,
-												 EGL_PLATFORM_X11_EXT,
-												 "EGL_EXT_platform_x11")
-								, m_display		(x11Display) {}
+								Display				(MovePtr<x11::Display> x11Display)
+									: NativeDisplay	(CAPABILITIES,
+													 EGL_PLATFORM_X11_EXT,
+													 "EGL_EXT_platform_x11")
+									, m_display		(x11Display) {}
 
-	void*					getPlatformNative	(void) 	{ return m_display->getXDisplay(); }
-	EGLNativeDisplayType	getLegacyNative		(void)	{ return m_display->getXDisplay(); }
+	void*						getPlatformNative	(void) 	{ return m_display->getXDisplay(); }
+	eglw::EGLNativeDisplayType	getLegacyNative		(void)	{ return reinterpret_cast<eglw::EGLNativeDisplayType>(m_display->getXDisplay()); }
 
-	x11::Display&			getX11Display		(void)	{ return *m_display; }
+	x11::Display&				getX11Display		(void)			{ return *m_display;	}
+	const eglw::Library&		getLibrary			(void) const	{ return m_library;		}
 
 private:
-	UniquePtr<x11::Display>	m_display;
+	UniquePtr<x11::Display>		m_display;
+	Library						m_library;
 };
-
 
 class Window : public NativeWindow
 {
@@ -85,21 +128,22 @@ public:
 															 CAPABILITY_SET_SURFACE_SIZE |
 															 CAPABILITY_GET_SCREEN_SIZE);
 
-							Window				(Display&				display,
-												 const WindowParams&	params,
-												 Visual*				visual);
+								Window				(Display&				display,
+													 const WindowParams&	params,
+													 Visual*				visual);
 
-	EGLNativeWindowType		getLegacyNative		(void) { return m_window.getXID(); }
-	void*					getPlatformNative	(void) { return &m_window.getXID(); }
-	IVec2					getSurfaceSize		(void) const;
-	void					setSurfaceSize		(IVec2 size);
-	IVec2					getScreenSize		(void) const { return getSurfaceSize(); }
+	eglw::EGLNativeWindowType	getLegacyNative		(void) { return reinterpret_cast<eglw::EGLNativeWindowType>(m_window.getXID()); }
+	void*						getPlatformNative	(void) { return &m_window.getXID();	}
+
+	IVec2						getSurfaceSize		(void) const;
+	void						setSurfaceSize		(IVec2 size);
+	IVec2						getScreenSize		(void) const { return getSurfaceSize(); }
 
 private:
-	x11::Window				m_window;
+	x11::Window					m_window;
 };
 
-Window::Window(Display& display, const WindowParams& params, Visual* visual)
+Window::Window (Display& display, const WindowParams& params, Visual* visual)
 	: NativeWindow	(CAPABILITIES)
 	, m_window		(display.getX11Display(), params.width, params.height, visual)
 {
@@ -127,9 +171,9 @@ public:
 											 const WindowParams&	params) const;
 
 	NativeWindow*		createWindow		(NativeDisplay*			nativeDisplay,
-											 EGLDisplay				display,
-											 EGLConfig				config,
-											 const EGLAttrib*		attribList,
+											 eglw::EGLDisplay		display,
+											 eglw::EGLConfig		config,
+											 const eglw::EGLAttrib*	attribList,
 											 const WindowParams&	params) const;
 };
 
@@ -147,17 +191,17 @@ NativeWindow* WindowFactory::createWindow (NativeDisplay*		nativeDisplay,
 }
 
 NativeWindow* WindowFactory::createWindow (NativeDisplay*			nativeDisplay,
-										   EGLDisplay				eglDisplay,
-										   EGLConfig				config,
-										   const EGLAttrib*			attribList,
+										   eglw::EGLDisplay			eglDisplay,
+										   eglw::EGLConfig			config,
+										   const eglw::EGLAttrib*	attribList,
 										   const WindowParams&		params) const
 {
 	DE_UNREF(attribList);
 
-	Display&	display		= *dynamic_cast<Display*>(nativeDisplay);
-	EGLint		visualID	= 0;
-	::Visual*	visual		= DE_NULL;
-	eglGetConfigAttrib(eglDisplay, config, EGL_NATIVE_VISUAL_ID, &visualID);
+	Display&		display		= *dynamic_cast<Display*>(nativeDisplay);
+	eglw::EGLint	visualID	= 0;
+	::Visual*		visual		= DE_NULL;
+	nativeDisplay->getLibrary().getConfigAttrib(eglDisplay, config, EGL_NATIVE_VISUAL_ID, &visualID);
 
 	if (visualID != 0)
 		visual = display.getX11Display().getVisual(visualID);
@@ -214,7 +258,7 @@ class DisplayFactory : public NativeDisplayFactory
 public:
 						DisplayFactory		(EventState& eventState);
 
-	NativeDisplay*		createDisplay		(const EGLAttrib* attribList) const;
+	NativeDisplay*		createDisplay		(const eglw::EGLAttrib* attribList) const;
 
 private:
 	EventState&			m_eventState;
@@ -231,7 +275,7 @@ DisplayFactory::DisplayFactory (EventState& eventState)
 	// m_nativePixmapRegistry.registerFactory(new PixmapFactory());
 }
 
-NativeDisplay* DisplayFactory::createDisplay (const EGLAttrib* attribList) const
+NativeDisplay* DisplayFactory::createDisplay (const eglw::EGLAttrib* attribList) const
 {
 	DE_UNREF(attribList);
 

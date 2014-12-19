@@ -30,6 +30,10 @@
 #include "egluNativePixmap.hpp"
 #include "egluStrUtil.hpp"
 #include "egluUtil.hpp"
+#include "egluUnique.hpp"
+
+#include "eglwLibrary.hpp"
+#include "eglwEnums.hpp"
 
 #include "tcuTestLog.hpp"
 #include "tcuTestContext.hpp"
@@ -48,6 +52,7 @@ namespace egl
 
 using eglu::ConfigInfo;
 using tcu::TestLog;
+using namespace eglw;
 
 static void logSurfaceAttribute (tcu::TestLog& log, EGLint attribute, EGLint value)
 {
@@ -57,17 +62,13 @@ static void logSurfaceAttribute (tcu::TestLog& log, EGLint attribute, EGLint val
 	log << TestLog::Message << "  " << name << ": " << valueFmt << TestLog::EndMessage;
 }
 
-static void logSurfaceAttributes (tcu::TestLog& log, const tcu::egl::Surface& surface, const EGLint* attributes, int num)
+static void logSurfaceAttributes (tcu::TestLog& log, const Library& egl, EGLDisplay display, EGLSurface surface, const EGLint* attributes, int numAttribs)
 {
-	for (int ndx = 0; ndx < num; ndx++)
-	{
-		const EGLint	attrib	= attributes[ndx];
-
-		logSurfaceAttribute(log, attrib, surface.getAttribute(attrib));
-	}
+	for (int ndx = 0; ndx < numAttribs; ndx++)
+		logSurfaceAttribute(log, attributes[ndx], eglu::querySurfaceInt(egl, display, surface, attributes[ndx]));
 }
 
-static void logCommonSurfaceAttributes (tcu::TestLog& log, const tcu::egl::Surface& surface)
+static void logCommonSurfaceAttributes (tcu::TestLog& log, const Library& egl, EGLDisplay display, EGLSurface surface)
 {
 	static const EGLint	attributes[] =
 	{
@@ -80,16 +81,17 @@ static void logCommonSurfaceAttributes (tcu::TestLog& log, const tcu::egl::Surfa
 		EGL_PIXEL_ASPECT_RATIO,
 		EGL_RENDER_BUFFER,
 		EGL_SWAP_BEHAVIOR,
-		EGL_VG_ALPHA_FORMAT,
-		EGL_VG_COLORSPACE
+		EGL_ALPHA_FORMAT,
+		EGL_COLORSPACE
 	};
 
-	logSurfaceAttributes(log, surface, attributes, DE_LENGTH_OF_ARRAY(attributes));
+	logSurfaceAttributes(log, egl, display, surface, attributes, DE_LENGTH_OF_ARRAY(attributes));
 }
 
-static void logPbufferSurfaceAttributes (tcu::TestLog& log, const tcu::egl::Surface& surface)
+static void logPbufferSurfaceAttributes (tcu::TestLog& log, const Library& egl, EGLDisplay display, EGLSurface surface)
 {
-	static const EGLint	attributes[] = {
+	static const EGLint	attributes[] =
+	{
 		EGL_LARGEST_PBUFFER,
 		EGL_TEXTURE_FORMAT,
 		EGL_TEXTURE_TARGET,
@@ -97,32 +99,33 @@ static void logPbufferSurfaceAttributes (tcu::TestLog& log, const tcu::egl::Surf
 		EGL_MIPMAP_LEVEL,
 	};
 
-	logSurfaceAttributes(log, surface, attributes, DE_LENGTH_OF_ARRAY(attributes));
+	logSurfaceAttributes(log, egl, display, surface, attributes, DE_LENGTH_OF_ARRAY(attributes));
 }
 
 class QuerySurfaceCase : public SimpleConfigCase
 {
 public:
-	QuerySurfaceCase (EglTestContext& eglTestCtx, const char* name, const char* description, const std::vector<EGLint>& configIds);
+			QuerySurfaceCase			(EglTestContext& eglTestCtx, const char* name, const char* description, const eglu::FilterList& filters);
 
-	void checkCommonAttributes (const tcu::egl::Surface& surface, const ConfigInfo& info);
-	void checkNonPbufferAttributes (EGLDisplay display, const tcu::egl::Surface& surface);
+	void	checkCommonAttributes		(EGLDisplay display, EGLSurface surface, const ConfigInfo& info);
+	void	checkNonPbufferAttributes	(EGLDisplay display, EGLSurface surface);
 };
 
-QuerySurfaceCase::QuerySurfaceCase (EglTestContext& eglTestCtx, const char* name, const char* description, const std::vector<EGLint>& configIds)
-	: SimpleConfigCase(eglTestCtx, name, description, configIds)
+QuerySurfaceCase::QuerySurfaceCase (EglTestContext& eglTestCtx, const char* name, const char* description, const eglu::FilterList& filters)
+	: SimpleConfigCase(eglTestCtx, name, description, filters)
 {
 }
 
-void QuerySurfaceCase::checkCommonAttributes (const tcu::egl::Surface& surface, const ConfigInfo& info)
+void QuerySurfaceCase::checkCommonAttributes (EGLDisplay display, EGLSurface surface, const ConfigInfo& info)
 {
+	const Library&	egl		= m_eglTestCtx.getLibrary();
 	tcu::TestLog&	log		= m_testCtx.getLog();
 
 	// Attributes which are common to all surface types
 
 	// Config ID
 	{
-		const EGLint	id	= surface.getAttribute(EGL_CONFIG_ID);
+		const EGLint	id	= eglu::querySurfaceInt(egl, display, surface, EGL_CONFIG_ID);
 
 		if (id != info.configId)
 		{
@@ -133,8 +136,8 @@ void QuerySurfaceCase::checkCommonAttributes (const tcu::egl::Surface& surface, 
 
 	// Width and height
 	{
-		const EGLint	width	= surface.getWidth();
-		const EGLint	height	= surface.getHeight();
+		const EGLint	width	= eglu::querySurfaceInt(egl, display, surface, EGL_WIDTH);
+		const EGLint	height	= eglu::querySurfaceInt(egl, display, surface, EGL_HEIGHT);
 
 		if (width <= 0 || height <= 0)
 		{
@@ -145,8 +148,8 @@ void QuerySurfaceCase::checkCommonAttributes (const tcu::egl::Surface& surface, 
 
 	// Horizontal and vertical resolution
 	{
-		const EGLint	hRes	= surface.getAttribute(EGL_HORIZONTAL_RESOLUTION);
-		const EGLint	vRes	= surface.getAttribute(EGL_VERTICAL_RESOLUTION);
+		const EGLint	hRes	= eglu::querySurfaceInt(egl, display, surface, EGL_HORIZONTAL_RESOLUTION);
+		const EGLint	vRes	= eglu::querySurfaceInt(egl, display, surface, EGL_VERTICAL_RESOLUTION);
 
 		if ((hRes <= 0 || vRes <= 0) && (hRes != EGL_UNKNOWN && vRes != EGL_UNKNOWN))
 		{
@@ -157,18 +160,18 @@ void QuerySurfaceCase::checkCommonAttributes (const tcu::egl::Surface& surface, 
 
 	// Pixel aspect ratio
 	{
-		const EGLint	pixelRatio	= surface.getAttribute(EGL_PIXEL_ASPECT_RATIO);
+		const EGLint	pixelRatio	= eglu::querySurfaceInt(egl, display, surface, EGL_PIXEL_ASPECT_RATIO);
 
 		if (pixelRatio <= 0 && pixelRatio != EGL_UNKNOWN)
 		{
-			log << TestLog::Message << "    Fail, invalid pixel aspect ratio " << surface.getAttribute(EGL_PIXEL_ASPECT_RATIO) << TestLog::EndMessage;
+			log << TestLog::Message << "    Fail, invalid pixel aspect ratio " << eglu::querySurfaceInt(egl, display, surface, EGL_PIXEL_ASPECT_RATIO) << TestLog::EndMessage;
 			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Invalid pixel aspect ratio");
 		}
 	}
 
 	// Render buffer
 	{
-		const EGLint	renderBuffer	= surface.getAttribute(EGL_RENDER_BUFFER);
+		const EGLint	renderBuffer	= eglu::querySurfaceInt(egl, display, surface, EGL_RENDER_BUFFER);
 
 		if (renderBuffer != EGL_BACK_BUFFER && renderBuffer != EGL_SINGLE_BUFFER)
 		{
@@ -179,7 +182,7 @@ void QuerySurfaceCase::checkCommonAttributes (const tcu::egl::Surface& surface, 
 
 	// Multisample resolve
 	{
-		const EGLint	multisampleResolve	= surface.getAttribute(EGL_MULTISAMPLE_RESOLVE);
+		const EGLint	multisampleResolve	= eglu::querySurfaceInt(egl, display, surface, EGL_MULTISAMPLE_RESOLVE);
 
 		if (multisampleResolve != EGL_MULTISAMPLE_RESOLVE_DEFAULT && multisampleResolve != EGL_MULTISAMPLE_RESOLVE_BOX)
 		{
@@ -196,7 +199,7 @@ void QuerySurfaceCase::checkCommonAttributes (const tcu::egl::Surface& surface, 
 
 	// Swap behavior
 	{
-		const EGLint	swapBehavior	= surface.getAttribute(EGL_SWAP_BEHAVIOR);
+		const EGLint	swapBehavior	= eglu::querySurfaceInt(egl, display, surface, EGL_SWAP_BEHAVIOR);
 
 		if (swapBehavior != EGL_BUFFER_DESTROYED && swapBehavior != EGL_BUFFER_PRESERVED)
 		{
@@ -211,48 +214,50 @@ void QuerySurfaceCase::checkCommonAttributes (const tcu::egl::Surface& surface, 
 		}
 	}
 
-	// OpenVG alpha format
+	// alpha format
 	{
-		const EGLint	vgAlphaFormat	= surface.getAttribute(EGL_VG_ALPHA_FORMAT);
+		const EGLint	alphaFormat	= eglu::querySurfaceInt(egl, display, surface, EGL_ALPHA_FORMAT);
 
-		if (vgAlphaFormat != EGL_VG_ALPHA_FORMAT_NONPRE && vgAlphaFormat != EGL_VG_ALPHA_FORMAT_PRE)
+		if (alphaFormat != EGL_ALPHA_FORMAT_NONPRE && alphaFormat != EGL_ALPHA_FORMAT_PRE)
 		{
-			log << TestLog::Message << "    Fail, invalid OpenVG alpha format value " << vgAlphaFormat << TestLog::EndMessage;
-			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Invalid OpenVG alpha format");
+			log << TestLog::Message << "    Fail, invalid alpha format value " << alphaFormat << TestLog::EndMessage;
+			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Invalid alpha format");
 		}
 
-		if (vgAlphaFormat == EGL_VG_ALPHA_FORMAT_PRE && !(info.surfaceType & EGL_VG_ALPHA_FORMAT_PRE_BIT))
+		if (alphaFormat == EGL_ALPHA_FORMAT_PRE && !(info.surfaceType & EGL_VG_ALPHA_FORMAT_PRE_BIT))
 		{
-			log << TestLog::Message << "    Fail, OpenVG is set to use premultiplied alpha but configuration does not support it." << TestLog::EndMessage;
-			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Invalid OpenVG alpha format");
+			log << TestLog::Message << "    Fail, is set to use premultiplied alpha but configuration does not support it." << TestLog::EndMessage;
+			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Invalid alpha format");
 		}
 	}
 
-	// OpenVG color space
+	// color space
 	{
-		const EGLint	vgColorspace	= surface.getAttribute(EGL_VG_COLORSPACE);
+		const EGLint	colorspace	= eglu::querySurfaceInt(egl, display, surface, EGL_COLORSPACE);
 
-		if (vgColorspace != EGL_VG_COLORSPACE_sRGB && vgColorspace != EGL_VG_COLORSPACE_LINEAR)
+		if (colorspace != EGL_VG_COLORSPACE_sRGB && colorspace != EGL_VG_COLORSPACE_LINEAR)
 		{
-			log << TestLog::Message << "    Fail, invalid OpenVG color space value " << vgColorspace << TestLog::EndMessage;
-			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Invalid OpenVG color space");
+			log << TestLog::Message << "    Fail, invalid color space value " << colorspace << TestLog::EndMessage;
+			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Invalid color space");
 		}
 
-		if (vgColorspace == EGL_VG_COLORSPACE_LINEAR && !(info.surfaceType & EGL_VG_COLORSPACE_LINEAR_BIT))
+		if (colorspace == EGL_VG_COLORSPACE_LINEAR && !(info.surfaceType & EGL_VG_COLORSPACE_LINEAR_BIT))
 		{
-			log << TestLog::Message << "    Fail, OpenVG is set to use a linear color space but configuration does not support it." << TestLog::EndMessage;
-			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Invalid OpenVG color space");
+			log << TestLog::Message << "    Fail, is set to use a linear color space but configuration does not support it." << TestLog::EndMessage;
+			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Invalid color space");
 		}
 	}
 }
 
-void QuerySurfaceCase::checkNonPbufferAttributes (EGLDisplay display, const tcu::egl::Surface& surface)
+void QuerySurfaceCase::checkNonPbufferAttributes (EGLDisplay display, EGLSurface surface)
 {
+	const Library&	egl						= m_eglTestCtx.getLibrary();
 	const EGLint	uninitializedMagicValue	= -42;
 	tcu::TestLog&	log						= m_testCtx.getLog();
 	EGLint			value					= uninitializedMagicValue;
 
-	static const EGLint pbufferAttribs[] = {
+	static const EGLint pbufferAttribs[] =
+	{
 		EGL_LARGEST_PBUFFER,
 		EGL_TEXTURE_FORMAT,
 		EGL_TEXTURE_TARGET,
@@ -265,19 +270,18 @@ void QuerySurfaceCase::checkNonPbufferAttributes (EGLDisplay display, const tcu:
 		const EGLint		attribute	= pbufferAttribs[ndx];
 		const std::string	name		= eglu::getSurfaceAttribName(pbufferAttribs[ndx]);
 
-		eglQuerySurface(display, surface.getEGLSurface(), attribute, &value);
+		egl.querySurface(display, surface, attribute, &value);
 
 		{
-			const EGLint	error	= eglGetError();
+			const EGLint	error	= egl.getError();
 
 			if (error != EGL_SUCCESS)
 			{
 				log << TestLog::Message << "    Fail, querying " << name << " from a non-pbuffer surface should not result in an error, received "
 					<< eglu::getErrorStr(error) << TestLog::EndMessage;
 				m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Illegal error condition");
+				break;
 			}
-
-			break;
 		}
 
 		// "For a window or pixmap surface, the contents of value are not modified."
@@ -292,86 +296,95 @@ void QuerySurfaceCase::checkNonPbufferAttributes (EGLDisplay display, const tcu:
 class QuerySurfaceSimpleWindowCase : public QuerySurfaceCase
 {
 public:
-	QuerySurfaceSimpleWindowCase (EglTestContext& eglTestCtx, const char* name, const char* description, const std::vector<EGLint>& configIds)
-		: QuerySurfaceCase(eglTestCtx, name, description, configIds)
+	QuerySurfaceSimpleWindowCase (EglTestContext& eglTestCtx, const char* name, const char* description, const eglu::FilterList& filters)
+		: QuerySurfaceCase(eglTestCtx, name, description, filters)
 	{
 	}
 
-	void executeForConfig (tcu::egl::Display& display, EGLConfig config)
+	void executeForConfig (EGLDisplay display, EGLConfig config)
 	{
-		tcu::TestLog&	log		= m_testCtx.getLog();
-		const int		width	= 64;
-		const int		height	= 64;
+		const Library&						egl				= m_eglTestCtx.getLibrary();
+		tcu::TestLog&						log				= m_testCtx.getLog();
+		const int							width			= 64;
+		const int							height			= 64;
+		const eglu::NativeWindowFactory*	windowFactory	= eglu::selectNativeWindowFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
+		ConfigInfo							info;
 
-		ConfigInfo		info;
-		display.describeConfig(config, info);
+		if (!windowFactory)
+			TCU_THROW(NotSupportedError, "Windows not supported");
+
+		eglu::queryConfigInfo(egl, display, config, &info);
 
 		log << TestLog::Message << "Creating window surface with config ID " << info.configId << TestLog::EndMessage;
-		TCU_CHECK_EGL();
+		EGLU_CHECK_MSG(egl, "before queries");
 
-		de::UniquePtr<eglu::NativeWindow>	window(m_eglTestCtx.createNativeWindow(display.getEGLDisplay(), config, DE_NULL, width, height, eglu::parseWindowVisibility(m_testCtx.getCommandLine())));
-		tcu::egl::WindowSurface				surface(display, eglu::createWindowSurface(m_eglTestCtx.getNativeDisplay(), *window, display.getEGLDisplay(), config, DE_NULL));
+		de::UniquePtr<eglu::NativeWindow>	window	(windowFactory->createWindow(&m_eglTestCtx.getNativeDisplay(), display, config, DE_NULL, eglu::WindowParams(width, height, eglu::parseWindowVisibility(m_testCtx.getCommandLine()))));
+		eglu::UniqueSurface					surface	(egl, display, eglu::createWindowSurface(m_eglTestCtx.getNativeDisplay(), *window, display, config, DE_NULL));
 
-		logCommonSurfaceAttributes(log, surface);
-
-		checkCommonAttributes(surface, info);
-		checkNonPbufferAttributes(display.getEGLDisplay(), surface);
+		logCommonSurfaceAttributes	(log, egl, display, *surface);
+		checkCommonAttributes		(display, *surface, info);
+		checkNonPbufferAttributes	(display, *surface);
 	}
 };
 
 class QuerySurfaceSimplePixmapCase : public QuerySurfaceCase
 {
 public:
-	QuerySurfaceSimplePixmapCase (EglTestContext& eglTestCtx, const char* name, const char* description, const std::vector<EGLint>& configIds)
-		: QuerySurfaceCase(eglTestCtx, name, description, configIds)
+	QuerySurfaceSimplePixmapCase (EglTestContext& eglTestCtx, const char* name, const char* description, const eglu::FilterList& filters)
+		: QuerySurfaceCase(eglTestCtx, name, description, filters)
 	{
 	}
 
-	void executeForConfig (tcu::egl::Display& display, EGLConfig config)
+	void executeForConfig (EGLDisplay display, EGLConfig config)
 	{
-		tcu::TestLog&	log		= m_testCtx.getLog();
-		const int		width	= 64;
-		const int		height	= 64;
+		const Library&						egl				= m_eglTestCtx.getLibrary();
+		tcu::TestLog&						log				= m_testCtx.getLog();
+		const int							width			= 64;
+		const int							height			= 64;
+		const eglu::NativePixmapFactory*	pixmapFactory	= eglu::selectNativePixmapFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
+		ConfigInfo							info;
 
-		ConfigInfo		info;
-		display.describeConfig(config, info);
+		if (!pixmapFactory)
+			TCU_THROW(NotSupportedError, "Pixmaps not supported");
+
+		eglu::queryConfigInfo(egl, display, config, &info);
 
 		log << TestLog::Message << "Creating pixmap surface with config ID " << info.configId << TestLog::EndMessage;
-		TCU_CHECK_EGL();
+		EGLU_CHECK_MSG(egl, "before queries");
 
-		de::UniquePtr<eglu::NativePixmap>	pixmap	(m_eglTestCtx.createNativePixmap(display.getEGLDisplay(), config, DE_NULL, width, height));
-		tcu::egl::PixmapSurface				surface	(display, eglu::createPixmapSurface(m_eglTestCtx.getNativeDisplay(), *pixmap, display.getEGLDisplay(), config, DE_NULL));
+		de::UniquePtr<eglu::NativePixmap>	pixmap	(pixmapFactory->createPixmap(&m_eglTestCtx.getNativeDisplay(), display, config, DE_NULL, width, height));
+		eglu::UniqueSurface					surface	(egl, display, eglu::createPixmapSurface(m_eglTestCtx.getNativeDisplay(), *pixmap, display, config, DE_NULL));
 
-		logCommonSurfaceAttributes(log, surface);
-
-		checkCommonAttributes(surface, info);
-		checkNonPbufferAttributes(display.getEGLDisplay(), surface);
+		logCommonSurfaceAttributes	(log, egl, display, *surface);
+		checkCommonAttributes		(display, *surface, info);
+		checkNonPbufferAttributes	(display, *surface);
 	}
 };
 
 class QuerySurfaceSimplePbufferCase : public QuerySurfaceCase
 {
 public:
-	QuerySurfaceSimplePbufferCase (EglTestContext& eglTestCtx, const char* name, const char* description, const std::vector<EGLint>& configIds)
-		: QuerySurfaceCase(eglTestCtx, name, description, configIds)
+	QuerySurfaceSimplePbufferCase (EglTestContext& eglTestCtx, const char* name, const char* description, const eglu::FilterList& filters)
+		: QuerySurfaceCase(eglTestCtx, name, description, filters)
 	{
 	}
 
-	void executeForConfig (tcu::egl::Display& display, EGLConfig config)
+	void executeForConfig (EGLDisplay display, EGLConfig config)
 	{
+		const Library&	egl		= m_eglTestCtx.getLibrary();
 		tcu::TestLog&	log		= m_testCtx.getLog();
 		int				width	= 64;
 		int				height	= 64;
-
 		ConfigInfo		info;
-		display.describeConfig(config, info);
+
+		eglu::queryConfigInfo(egl, display, config, &info);
 
 		log << TestLog::Message << "Creating pbuffer surface with config ID " << info.configId << TestLog::EndMessage;
-		TCU_CHECK_EGL();
+		EGLU_CHECK_MSG(egl, "before queries");
 
 		// Clamp to maximums reported by implementation
-		width	= deMin32(width, display.getConfigAttrib(config, EGL_MAX_PBUFFER_WIDTH));
-		height	= deMin32(height, display.getConfigAttrib(config, EGL_MAX_PBUFFER_HEIGHT));
+		width	= deMin32(width, eglu::getConfigAttribInt(egl, display, config, EGL_MAX_PBUFFER_WIDTH));
+		height	= deMin32(height, eglu::getConfigAttribInt(egl, display, config, EGL_MAX_PBUFFER_HEIGHT));
 
 		if (width == 0 || height == 0)
 		{
@@ -389,18 +402,17 @@ public:
 		};
 
 		{
-			tcu::egl::PbufferSurface surface(display, config, attribs);
+			eglu::UniqueSurface surface(egl, display, egl.createPbufferSurface(display, config, attribs));
 
-			logCommonSurfaceAttributes(log, surface);
-			logPbufferSurfaceAttributes(log, surface);
-
-			checkCommonAttributes(surface, info);
+			logCommonSurfaceAttributes	(log, egl, display, *surface);
+			logPbufferSurfaceAttributes	(log, egl, display, *surface);
+			checkCommonAttributes		(display, *surface, info);
 
 			// Pbuffer-specific attributes
 
 			// Largest pbuffer
 			{
-				const EGLint	largestPbuffer	= surface.getAttribute(EGL_LARGEST_PBUFFER);
+				const EGLint	largestPbuffer	= eglu::querySurfaceInt(egl, display, *surface, EGL_LARGEST_PBUFFER);
 
 				if (largestPbuffer != EGL_FALSE && largestPbuffer != EGL_TRUE)
 				{
@@ -411,7 +423,7 @@ public:
 
 			// Texture format
 			{
-				const EGLint	textureFormat	= surface.getAttribute(EGL_TEXTURE_FORMAT);
+				const EGLint	textureFormat	= eglu::querySurfaceInt(egl, display, *surface, EGL_TEXTURE_FORMAT);
 
 				if (textureFormat != EGL_NO_TEXTURE && textureFormat != EGL_TEXTURE_RGB && textureFormat != EGL_TEXTURE_RGBA)
 				{
@@ -422,7 +434,7 @@ public:
 
 			// Texture target
 			{
-				const EGLint	textureTarget	= surface.getAttribute(EGL_TEXTURE_TARGET);
+				const EGLint	textureTarget	= eglu::querySurfaceInt(egl, display, *surface, EGL_TEXTURE_TARGET);
 
 				if (textureTarget != EGL_NO_TEXTURE && textureTarget != EGL_TEXTURE_2D)
 				{
@@ -433,7 +445,7 @@ public:
 
 			// Mipmap texture
 			{
-				const EGLint	mipmapTexture	= surface.getAttribute(EGL_MIPMAP_TEXTURE);
+				const EGLint	mipmapTexture	= eglu::querySurfaceInt(egl, display, *surface, EGL_MIPMAP_TEXTURE);
 
 				if (mipmapTexture != EGL_FALSE && mipmapTexture != EGL_TRUE)
 				{
@@ -448,26 +460,25 @@ public:
 class SurfaceAttribCase : public SimpleConfigCase
 {
 public:
-			SurfaceAttribCase	(EglTestContext& eglTestCtx, const char* name, const char* description, const std::vector<EGLint>& configIds);
+			SurfaceAttribCase	(EglTestContext& eglTestCtx, const char* name, const char* description, const eglu::FilterList& filters);
 	virtual	~SurfaceAttribCase	(void) {}
 
-	void	testAttributes		(tcu::egl::Surface& surface, const ConfigInfo& info);
+	void	testAttributes		(EGLDisplay display, EGLSurface surface, EGLint surfaceType, const ConfigInfo& info);
 };
 
-SurfaceAttribCase::SurfaceAttribCase (EglTestContext& eglTestCtx, const char* name, const char* description, const std::vector<EGLint>& configIds)
-		: SimpleConfigCase(eglTestCtx, name, description, configIds)
+SurfaceAttribCase::SurfaceAttribCase (EglTestContext& eglTestCtx, const char* name, const char* description, const eglu::FilterList& filters)
+		: SimpleConfigCase(eglTestCtx, name, description, filters)
 {
 }
 
-void SurfaceAttribCase::testAttributes (tcu::egl::Surface& surface, const ConfigInfo& info)
+void SurfaceAttribCase::testAttributes (EGLDisplay display, EGLSurface surface, EGLint surfaceType, const ConfigInfo& info)
 {
-	const tcu::egl::Display&	display			= surface.getDisplay();
-	tcu::TestLog&				log				= m_testCtx.getLog();
-	const int					majorVersion	= display.getEGLMajorVersion();
-	const int					minorVersion	= display.getEGLMinorVersion();
-	de::Random					rnd				(deStringHash(m_name.c_str()) ^ 0xf215918f);
+	const Library&		egl		= m_eglTestCtx.getLibrary();
+	tcu::TestLog&		log		= m_testCtx.getLog();
+	const eglu::Version	version	= eglu::getVersion(egl, display);
+	de::Random			rnd		(deStringHash(m_name.c_str()) ^ 0xf215918f);
 
-	if (majorVersion == 1 && minorVersion == 0)
+	if (version.getMajor() == 1 && version.getMinor() == 0)
 	{
 		log << TestLog::Message << "No attributes can be set in EGL 1.0" << TestLog::EndMessage;
 		return;
@@ -479,11 +490,11 @@ void SurfaceAttribCase::testAttributes (tcu::egl::Surface& surface, const Config
 		const EGLint initialValue = 0xDEADBAAD;
 		EGLint value = initialValue;
 
-		TCU_CHECK_EGL_CALL(eglQuerySurface(surface.getDisplay().getEGLDisplay(), surface.getEGLSurface(), EGL_MIPMAP_LEVEL, &value));
+		EGLU_CHECK_CALL(egl, querySurface(display, surface, EGL_MIPMAP_LEVEL, &value));
 
 		logSurfaceAttribute(log, EGL_MIPMAP_LEVEL, value);
 
-		if (dynamic_cast<tcu::egl::PbufferSurface*>(&surface))
+		if (surfaceType == EGL_PBUFFER_BIT)
 		{
 			if (value != 0)
 			{
@@ -497,10 +508,10 @@ void SurfaceAttribCase::testAttributes (tcu::egl::Surface& surface, const Config
 			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "EGL_MIPMAP_LEVEL query modified result for non-pbuffer surface.");
 		}
 
-		eglSurfaceAttrib(display.getEGLDisplay(), surface.getEGLSurface(), EGL_MIPMAP_LEVEL, 1);
+		egl.surfaceAttrib(display, surface, EGL_MIPMAP_LEVEL, 1);
 
 		{
-			const EGLint	error	= eglGetError();
+			const EGLint	error	= egl.getError();
 
 			if (error != EGL_SUCCESS)
 			{
@@ -512,11 +523,11 @@ void SurfaceAttribCase::testAttributes (tcu::egl::Surface& surface, const Config
 	}
 
 	// Only mipmap level can be set in EGL 1.3 and lower
-	if (majorVersion == 1 && minorVersion <= 3) return;
+	if (version.getMajor() == 1 && version.getMinor() <= 3) return;
 
 	// Multisample resolve
 	{
-		const EGLint	value	= surface.getAttribute(EGL_MULTISAMPLE_RESOLVE);
+		const EGLint	value	= eglu::querySurfaceInt(egl, display, surface, EGL_MULTISAMPLE_RESOLVE);
 
 		logSurfaceAttribute(log, EGL_MULTISAMPLE_RESOLVE, value);
 
@@ -531,9 +542,9 @@ void SurfaceAttribCase::testAttributes (tcu::egl::Surface& surface, const Config
 		{
 			log << TestLog::Message << "    Box filter is supported by surface, trying to set." << TestLog::EndMessage;
 
-			surface.setAttribute(EGL_MULTISAMPLE_RESOLVE, EGL_MULTISAMPLE_RESOLVE_BOX);
+			egl.surfaceAttrib(display, surface, EGL_MULTISAMPLE_RESOLVE, EGL_MULTISAMPLE_RESOLVE_BOX);
 
-			if (surface.getAttribute(EGL_MULTISAMPLE_RESOLVE) != EGL_MULTISAMPLE_RESOLVE_BOX)
+			if (eglu::querySurfaceInt(egl, display, surface, EGL_MULTISAMPLE_RESOLVE) != EGL_MULTISAMPLE_RESOLVE_BOX)
 			{
 				log << TestLog::Message << "    Fail, tried to enable box filter but value did not change.";
 				m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Failed to set multisample resolve");
@@ -543,7 +554,7 @@ void SurfaceAttribCase::testAttributes (tcu::egl::Surface& surface, const Config
 
 	// Swap behavior
 	{
-		const EGLint	value	= surface.getAttribute(EGL_SWAP_BEHAVIOR);
+		const EGLint	value	= eglu::querySurfaceInt(egl, display, surface, EGL_SWAP_BEHAVIOR);
 
 		logSurfaceAttribute(log, EGL_SWAP_BEHAVIOR, value);
 
@@ -551,9 +562,9 @@ void SurfaceAttribCase::testAttributes (tcu::egl::Surface& surface, const Config
 		{
 			const EGLint	nextValue	= (value == EGL_BUFFER_DESTROYED) ? EGL_BUFFER_PRESERVED : EGL_BUFFER_DESTROYED;
 
-			surface.setAttribute(EGL_SWAP_BEHAVIOR, nextValue);
+			egl.surfaceAttrib(display, surface, EGL_SWAP_BEHAVIOR, nextValue);
 
-			if (surface.getAttribute(EGL_SWAP_BEHAVIOR) != nextValue)
+			if (eglu::querySurfaceInt(egl, display, surface, EGL_SWAP_BEHAVIOR) != nextValue)
 			{
 				log << TestLog::Message << "  Fail, tried to set swap behavior to " << eglu::getSurfaceAttribStr(nextValue) << TestLog::EndMessage;
 				m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Failed to set swap behavior");
@@ -565,80 +576,91 @@ void SurfaceAttribCase::testAttributes (tcu::egl::Surface& surface, const Config
 class SurfaceAttribWindowCase : public SurfaceAttribCase
 {
 public:
-	SurfaceAttribWindowCase (EglTestContext& eglTestCtx, const char* name, const char* description, const std::vector<EGLint>& configIds)
-		: SurfaceAttribCase(eglTestCtx, name, description, configIds)
+	SurfaceAttribWindowCase (EglTestContext& eglTestCtx, const char* name, const char* description, const eglu::FilterList& filters)
+		: SurfaceAttribCase(eglTestCtx, name, description, filters)
 	{
 	}
 
-	void executeForConfig (tcu::egl::Display& display, EGLConfig config)
+	void executeForConfig (EGLDisplay display, EGLConfig config)
 	{
-		tcu::TestLog&	log		= m_testCtx.getLog();
-		const int		width	= 64;
-		const int		height	= 64;
+		const Library&						egl				= m_eglTestCtx.getLibrary();
+		tcu::TestLog&						log				= m_testCtx.getLog();
+		const int							width			= 64;
+		const int							height			= 64;
+		const eglu::NativeWindowFactory*	windowFactory	= eglu::selectNativeWindowFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
+		ConfigInfo							info;
 
-		ConfigInfo		info;
-		display.describeConfig(config, info);
+		if (!windowFactory)
+			TCU_THROW(NotSupportedError, "Windows not supported");
+
+		eglu::queryConfigInfo(egl, display, config, &info);
 
 		log << TestLog::Message << "Creating window surface with config ID " << info.configId << TestLog::EndMessage;
-		TCU_CHECK_EGL();
+		EGLU_CHECK_MSG(egl, "before queries");
 
-		de::UniquePtr<eglu::NativeWindow>	window(m_eglTestCtx.createNativeWindow(display.getEGLDisplay(), config, DE_NULL, width, height, eglu::parseWindowVisibility(m_testCtx.getCommandLine())));
-		tcu::egl::WindowSurface				surface(display, eglu::createWindowSurface(m_eglTestCtx.getNativeDisplay(), *window, display.getEGLDisplay(), config, DE_NULL));
+		de::UniquePtr<eglu::NativeWindow>	window	(windowFactory->createWindow(&m_eglTestCtx.getNativeDisplay(), display, config, DE_NULL, eglu::WindowParams(width, height, eglu::parseWindowVisibility(m_testCtx.getCommandLine()))));
+		eglu::UniqueSurface					surface	(egl, display, eglu::createWindowSurface(m_eglTestCtx.getNativeDisplay(), *window, display, config, DE_NULL));
 
-		testAttributes(surface, info);
+		testAttributes(display, *surface, EGL_WINDOW_BIT, info);
 	}
 };
 
 class SurfaceAttribPixmapCase : public SurfaceAttribCase
 {
 public:
-	SurfaceAttribPixmapCase (EglTestContext& eglTestCtx, const char* name, const char* description, const std::vector<EGLint>& configIds)
-		: SurfaceAttribCase(eglTestCtx, name, description, configIds)
+	SurfaceAttribPixmapCase (EglTestContext& eglTestCtx, const char* name, const char* description, const eglu::FilterList& filters)
+		: SurfaceAttribCase(eglTestCtx, name, description, filters)
 	{
 	}
 
-	void executeForConfig (tcu::egl::Display& display, EGLConfig config)
+	void executeForConfig (EGLDisplay display, EGLConfig config)
 	{
-		tcu::TestLog&	log		= m_testCtx.getLog();
-		const int		width	= 64;
-		const int		height	= 64;
+		const Library&						egl				= m_eglTestCtx.getLibrary();
+		tcu::TestLog&						log				= m_testCtx.getLog();
+		const int							width			= 64;
+		const int							height			= 64;
+		const eglu::NativePixmapFactory*	pixmapFactory	= eglu::selectNativePixmapFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
+		ConfigInfo							info;
 
-		ConfigInfo		info;
-		display.describeConfig(config, info);
+		if (!pixmapFactory)
+			TCU_THROW(NotSupportedError, "Pixmaps not supported");
+
+		eglu::queryConfigInfo(egl, display, config, &info);
 
 		log << TestLog::Message << "Creating pixmap surface with config ID " << info.configId << TestLog::EndMessage;
-		TCU_CHECK_EGL();
+		EGLU_CHECK_MSG(egl, "before queries");
 
-		de::UniquePtr<eglu::NativePixmap>	pixmap	(m_eglTestCtx.createNativePixmap(display.getEGLDisplay(), config, DE_NULL, width, height));
-		tcu::egl::PixmapSurface				surface	(display, eglu::createPixmapSurface(m_eglTestCtx.getNativeDisplay(), *pixmap, display.getEGLDisplay(), config, DE_NULL));
+		de::UniquePtr<eglu::NativePixmap>	pixmap	(pixmapFactory->createPixmap(&m_eglTestCtx.getNativeDisplay(), display, config, DE_NULL, width, height));
+		eglu::UniqueSurface					surface	(egl, display, eglu::createPixmapSurface(m_eglTestCtx.getNativeDisplay(), *pixmap, display, config, DE_NULL));
 
-		testAttributes(surface, info);
+		testAttributes(display, *surface, EGL_PIXMAP_BIT, info);
 	}
 };
 
 class SurfaceAttribPbufferCase : public SurfaceAttribCase
 {
 public:
-	SurfaceAttribPbufferCase (EglTestContext& eglTestCtx, const char* name, const char* description, const std::vector<EGLint>& configIds)
-		: SurfaceAttribCase(eglTestCtx, name, description, configIds)
+	SurfaceAttribPbufferCase (EglTestContext& eglTestCtx, const char* name, const char* description, const eglu::FilterList& filters)
+		: SurfaceAttribCase(eglTestCtx, name, description, filters)
 	{
 	}
 
-	void executeForConfig (tcu::egl::Display& display, EGLConfig config)
+	void executeForConfig (EGLDisplay display, EGLConfig config)
 	{
+		const Library&	egl		= m_eglTestCtx.getLibrary();
 		tcu::TestLog&	log		= m_testCtx.getLog();
 		int				width	= 64;
 		int				height	= 64;
-
 		ConfigInfo		info;
-		display.describeConfig(config, info);
+
+		eglu::queryConfigInfo(egl, display, config, &info);
 
 		log << TestLog::Message << "Creating pbuffer surface with config ID " << info.configId << TestLog::EndMessage;
-		TCU_CHECK_EGL();
+		EGLU_CHECK_MSG(egl, "before queries");
 
 		// Clamp to maximums reported by implementation
-		width	= deMin32(width, display.getConfigAttrib(config, EGL_MAX_PBUFFER_WIDTH));
-		height	= deMin32(height, display.getConfigAttrib(config, EGL_MAX_PBUFFER_HEIGHT));
+		width	= deMin32(width, eglu::getConfigAttribInt(egl, display, config, EGL_MAX_PBUFFER_WIDTH));
+		height	= deMin32(height, eglu::getConfigAttribInt(egl, display, config, EGL_MAX_PBUFFER_HEIGHT));
 
 		if (width == 0 || height == 0)
 		{
@@ -655,9 +677,9 @@ public:
 			EGL_NONE
 		};
 
-		tcu::egl::PbufferSurface surface(display, config, attribs);
+		eglu::UniqueSurface surface(egl, display, egl.createPbufferSurface(display, config, attribs));
 
-		testAttributes(surface, info);
+		testAttributes(display, *surface, EGL_PBUFFER_BIT, info);
 	}
 };
 
@@ -670,23 +692,10 @@ QuerySurfaceTests::~QuerySurfaceTests (void)
 {
 }
 
-std::vector<EGLint> getConfigs (const tcu::egl::Display& display, EGLint surfaceType)
+template <deUint32 Type>
+static bool surfaceType (const eglu::CandidateConfig& c)
 {
-	std::vector<EGLint>			out;
-
-	std::vector<EGLConfig> eglConfigs;
-	display.getConfigs(eglConfigs);
-
-	for (size_t ndx = 0; ndx < eglConfigs.size(); ndx++)
-	{
-		ConfigInfo info;
-		display.describeConfig(eglConfigs[ndx], info);
-
-		if (info.surfaceType & surfaceType)
-			out.push_back(info.configId);
-	}
-
-	return out;
+	return (c.surfaceType() & Type) == Type;
 }
 
 void QuerySurfaceTests::init (void)
@@ -701,14 +710,14 @@ void QuerySurfaceTests::init (void)
 			tcu::TestCaseGroup* windowGroup = new tcu::TestCaseGroup(m_testCtx, "window", "Window surfaces");
 			simpleGroup->addChild(windowGroup);
 
-			eglu::FilterList filters;
-			filters << (eglu::ConfigSurfaceType() & EGL_WINDOW_BIT);
+			eglu::FilterList baseFilters;
+			baseFilters << surfaceType<EGL_WINDOW_BIT>;
 
-			std::vector<NamedConfigIdSet> configIdSets;
-			NamedConfigIdSet::getDefaultSets(configIdSets, m_eglTestCtx.getConfigs(), filters);
+			std::vector<NamedFilterList> filterLists;
+			getDefaultFilterLists(filterLists, baseFilters);
 
-			for (std::vector<NamedConfigIdSet>::iterator i = configIdSets.begin(); i != configIdSets.end(); i++)
-				windowGroup->addChild(new QuerySurfaceSimpleWindowCase(m_eglTestCtx, i->getName(), i->getDescription(), i->getConfigIds()));
+			for (std::vector<NamedFilterList>::iterator i = filterLists.begin(); i != filterLists.end(); i++)
+				windowGroup->addChild(new QuerySurfaceSimpleWindowCase(m_eglTestCtx, i->getName(), i->getDescription(), *i));
 		}
 
 		// Pixmap
@@ -716,14 +725,14 @@ void QuerySurfaceTests::init (void)
 			tcu::TestCaseGroup* pixmapGroup = new tcu::TestCaseGroup(m_testCtx, "pixmap", "Pixmap surfaces");
 			simpleGroup->addChild(pixmapGroup);
 
-			eglu::FilterList filters;
-			filters << (eglu::ConfigSurfaceType() & EGL_PIXMAP_BIT);
+			eglu::FilterList baseFilters;
+			baseFilters << surfaceType<EGL_PIXMAP_BIT>;
 
-			std::vector<NamedConfigIdSet> configIdSets;
-			NamedConfigIdSet::getDefaultSets(configIdSets, m_eglTestCtx.getConfigs(), filters);
+			std::vector<NamedFilterList> filterLists;
+			getDefaultFilterLists(filterLists, baseFilters);
 
-			for (std::vector<NamedConfigIdSet>::iterator i = configIdSets.begin(); i != configIdSets.end(); i++)
-				pixmapGroup->addChild(new QuerySurfaceSimplePixmapCase(m_eglTestCtx, i->getName(), i->getDescription(), i->getConfigIds()));
+			for (std::vector<NamedFilterList>::iterator i = filterLists.begin(); i != filterLists.end(); i++)
+				pixmapGroup->addChild(new QuerySurfaceSimplePixmapCase(m_eglTestCtx, i->getName(), i->getDescription(), *i));
 		}
 
 		// Pbuffer
@@ -731,14 +740,14 @@ void QuerySurfaceTests::init (void)
 			tcu::TestCaseGroup* pbufferGroup = new tcu::TestCaseGroup(m_testCtx, "pbuffer", "Pbuffer surfaces");
 			simpleGroup->addChild(pbufferGroup);
 
-			eglu::FilterList filters;
-			filters << (eglu::ConfigSurfaceType() & EGL_PBUFFER_BIT);
+			eglu::FilterList baseFilters;
+			baseFilters << surfaceType<EGL_PBUFFER_BIT>;
 
-			std::vector<NamedConfigIdSet> configIdSets;
-			NamedConfigIdSet::getDefaultSets(configIdSets, m_eglTestCtx.getConfigs(), filters);
+			std::vector<NamedFilterList> filterLists;
+			getDefaultFilterLists(filterLists, baseFilters);
 
-			for (std::vector<NamedConfigIdSet>::iterator i = configIdSets.begin(); i != configIdSets.end(); i++)
-				pbufferGroup->addChild(new QuerySurfaceSimplePbufferCase(m_eglTestCtx, i->getName(), i->getDescription(), i->getConfigIds()));
+			for (std::vector<NamedFilterList>::iterator i = filterLists.begin(); i != filterLists.end(); i++)
+				pbufferGroup->addChild(new QuerySurfaceSimplePbufferCase(m_eglTestCtx, i->getName(), i->getDescription(), *i));
 		}
 	}
 
@@ -752,14 +761,14 @@ void QuerySurfaceTests::init (void)
 			tcu::TestCaseGroup* windowGroup = new tcu::TestCaseGroup(m_testCtx, "window", "Window surfaces");
 			setAttributeGroup->addChild(windowGroup);
 
-			eglu::FilterList filters;
-			filters << (eglu::ConfigSurfaceType() & EGL_WINDOW_BIT);
+			eglu::FilterList baseFilters;
+			baseFilters << surfaceType<EGL_WINDOW_BIT>;
 
-			std::vector<NamedConfigIdSet> configIdSets;
-			NamedConfigIdSet::getDefaultSets(configIdSets, m_eglTestCtx.getConfigs(), filters);
+			std::vector<NamedFilterList> filterLists;
+			getDefaultFilterLists(filterLists, baseFilters);
 
-			for (std::vector<NamedConfigIdSet>::iterator i = configIdSets.begin(); i != configIdSets.end(); i++)
-				windowGroup->addChild(new SurfaceAttribWindowCase(m_eglTestCtx, i->getName(), i->getDescription(), i->getConfigIds()));
+			for (std::vector<NamedFilterList>::iterator i = filterLists.begin(); i != filterLists.end(); i++)
+				windowGroup->addChild(new SurfaceAttribWindowCase(m_eglTestCtx, i->getName(), i->getDescription(), *i));
 		}
 
 		// Pixmap
@@ -767,14 +776,14 @@ void QuerySurfaceTests::init (void)
 			tcu::TestCaseGroup* pixmapGroup = new tcu::TestCaseGroup(m_testCtx, "pixmap", "Pixmap surfaces");
 			setAttributeGroup->addChild(pixmapGroup);
 
-			eglu::FilterList filters;
-			filters << (eglu::ConfigSurfaceType() & EGL_PIXMAP_BIT);
+			eglu::FilterList baseFilters;
+			baseFilters << surfaceType<EGL_PIXMAP_BIT>;
 
-			std::vector<NamedConfigIdSet> configIdSets;
-			NamedConfigIdSet::getDefaultSets(configIdSets, m_eglTestCtx.getConfigs(), filters);
+			std::vector<NamedFilterList> filterLists;
+			getDefaultFilterLists(filterLists, baseFilters);
 
-			for (std::vector<NamedConfigIdSet>::iterator i = configIdSets.begin(); i != configIdSets.end(); i++)
-				pixmapGroup->addChild(new SurfaceAttribPixmapCase(m_eglTestCtx, i->getName(), i->getDescription(), i->getConfigIds()));
+			for (std::vector<NamedFilterList>::iterator i = filterLists.begin(); i != filterLists.end(); i++)
+				pixmapGroup->addChild(new SurfaceAttribPixmapCase(m_eglTestCtx, i->getName(), i->getDescription(), *i));
 		}
 
 		// Pbuffer
@@ -782,14 +791,14 @@ void QuerySurfaceTests::init (void)
 			tcu::TestCaseGroup* pbufferGroup = new tcu::TestCaseGroup(m_testCtx, "pbuffer", "Pbuffer surfaces");
 			setAttributeGroup->addChild(pbufferGroup);
 
-			eglu::FilterList filters;
-			filters << (eglu::ConfigSurfaceType() & EGL_PBUFFER_BIT);
+			eglu::FilterList baseFilters;
+			baseFilters << surfaceType<EGL_PBUFFER_BIT>;
 
-			std::vector<NamedConfigIdSet> configIdSets;
-			NamedConfigIdSet::getDefaultSets(configIdSets, m_eglTestCtx.getConfigs(), filters);
+			std::vector<NamedFilterList> filterLists;
+			getDefaultFilterLists(filterLists, baseFilters);
 
-			for (std::vector<NamedConfigIdSet>::iterator i = configIdSets.begin(); i != configIdSets.end(); i++)
-				pbufferGroup->addChild(new SurfaceAttribPbufferCase(m_eglTestCtx, i->getName(), i->getDescription(), i->getConfigIds()));
+			for (std::vector<NamedFilterList>::iterator i = filterLists.begin(); i != filterLists.end(); i++)
+				pbufferGroup->addChild(new SurfaceAttribPbufferCase(m_eglTestCtx, i->getName(), i->getDescription(), *i));
 		}
 	}
 }

@@ -26,6 +26,8 @@
 namespace eglu
 {
 
+using namespace eglw;
+
 // NativeWindow
 
 NativeWindow::NativeWindow (Capability capabilities)

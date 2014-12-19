@@ -22,16 +22,8 @@
  *//*--------------------------------------------------------------------*/
 
 #include "teglGLES2RenderUtil.hpp"
-
-#if defined(DEQP_SUPPORT_GLES2) || defined(DEQP_SUPPORT_GLES3)
-#	include "gluDefs.hpp"
-#	include "gluPixelTransfer.hpp"
-#	if !defined(DEQP_SUPPORT_GLES2)
-#		include <GLES3/gl3.h>
-#	else
-#		include <GLES2/gl2.h>
-#	endif
-#endif
+#include "glwFunctions.hpp"
+#include "glwEnums.hpp"
 
 namespace deqp
 {
@@ -40,40 +32,20 @@ namespace egl
 namespace gles2
 {
 
-#if defined(DEQP_SUPPORT_GLES2) || defined(DEQP_SUPPORT_GLES3)
-
-void clear (int x, int y, int width, int height, const tcu::Vec4& color)
+void clear (const glw::Functions& gl, int x, int y, int width, int height, const tcu::Vec4& color)
 {
-	glEnable(GL_SCISSOR_TEST);
-	glScissor(x, y, width, height);
-	glClearColor(color.x(), color.y(), color.z(), color.w());
-	glClear(GL_COLOR_BUFFER_BIT);
-	glDisable(GL_SCISSOR_TEST);
+	gl.enable(GL_SCISSOR_TEST);
+	gl.scissor(x, y, width, height);
+	gl.clearColor(color.x(), color.y(), color.z(), color.w());
+	gl.clear(GL_COLOR_BUFFER_BIT);
+	gl.disable(GL_SCISSOR_TEST);
 }
 
-void readPixels (tcu::Surface& dst, int x, int y, int width, int height)
+void readPixels (const glw::Functions& gl, tcu::Surface& dst, int x, int y, int width, int height)
 {
 	dst.setSize(width, height);
-	glReadPixels(x, y, width, height, GL_RGBA, GL_UNSIGNED_BYTE, dst.getAccess().getDataPtr());
+	gl.readPixels(x, y, width, height, GL_RGBA, GL_UNSIGNED_BYTE, dst.getAccess().getDataPtr());
 }
-
-#else // DEQP_SUPPORT_GLES2 || DEQP_SUPPORT_GLES3
-
-void clear (int x, int y, int width, int height, const tcu::Vec4& color)
-{
-	DE_UNREF(x && y && width && height);
-	DE_UNREF(color);
-	throw tcu::NotSupportedError("OpenGL ES 2 is not supported", "", __FILE__, __LINE__);
-}
-
-void readPixels (tcu::Surface& dst, int x, int y, int width, int height)
-{
-	DE_UNREF(x && y && width && height);
-	DE_UNREF(dst);
-	throw tcu::NotSupportedError("OpenGL ES 2 is not supported", "", __FILE__, __LINE__);
-}
-
-#endif // DEQP_SUPPORT_GLES2 || DEQP_SUPPORT_GLES3
 
 } // gles2
 } // egl

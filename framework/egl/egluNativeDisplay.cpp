@@ -22,9 +22,12 @@
  *//*--------------------------------------------------------------------*/
 
 #include "egluNativeDisplay.hpp"
+#include "eglwEnums.hpp"
 
 namespace eglu
 {
+
+using namespace eglw;
 
 // NativeDisplay
 

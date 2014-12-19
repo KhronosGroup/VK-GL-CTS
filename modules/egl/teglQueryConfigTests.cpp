@@ -28,14 +28,13 @@
 #include "tcuCommandLine.hpp"
 #include "egluCallLogWrapper.hpp"
 #include "egluStrUtil.hpp"
+#include "egluUtil.hpp"
+#include "eglwLibrary.hpp"
+#include "eglwEnums.hpp"
 #include "deRandom.hpp"
 
 #include <string>
 #include <vector>
-
-#if !defined(EGL_OPENGL_ES3_BIT_KHR)
-#	define EGL_OPENGL_ES3_BIT_KHR	0x0040
-#endif
 
 namespace deqp
 {
@@ -44,6 +43,7 @@ namespace egl
 
 using eglu::ConfigInfo;
 using tcu::TestLog;
+using namespace eglw;
 
 static void logConfigAttribute (TestLog& log, EGLenum attrib, EGLint value)
 {
@@ -81,17 +81,26 @@ class GetConfigsBoundsCase : public TestCase, protected eglu::CallLogWrapper
 {
 public:
 	GetConfigsBoundsCase (EglTestContext& eglTestCtx, const char* name, const char* description)
-		: TestCase	(eglTestCtx, name, description)
-		, CallLogWrapper(eglTestCtx.getTestContext().getLog())
+		: TestCase		(eglTestCtx, name, description)
+		, CallLogWrapper(eglTestCtx.getLibrary(), eglTestCtx.getTestContext().getLog())
+		, m_display		(EGL_NO_DISPLAY)
 	{
 	}
 
 	void init (void)
 	{
+		DE_ASSERT(m_display == EGL_NO_DISPLAY);
+		m_display = eglu::getAndInitDisplay(m_eglTestCtx.getNativeDisplay());
 		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
 	}
 
-	void checkGetConfigsBounds(const tcu::egl::Display& display, de::Random& rnd, const int numConfigAll, const int numConfigRequested)
+	void deinit (void)
+	{
+		m_eglTestCtx.getLibrary().terminate(m_display);
+		m_display = EGL_NO_DISPLAY;
+	}
+
+	void checkGetConfigsBounds (de::Random& rnd, const int numConfigAll, const int numConfigRequested)
 	{
 		tcu::TestLog&			log				= m_testCtx.getLog();
 		std::vector<EGLConfig>	buffer			(numConfigAll + 10);
@@ -105,8 +114,8 @@ public:
 		for (size_t ndx = 0; ndx < magicBuffer.size(); ndx++)	magicBuffer[ndx]	= rnd.getUint32();
 		for (size_t ndx = 0; ndx < buffer.size(); ndx++)		buffer[ndx]			= magicConfigs[ndx];
 
-		eglGetConfigs(display.getEGLDisplay(), &buffer[0], numConfigRequested, &numConfigReturned);
-		TCU_CHECK_EGL();
+		eglGetConfigs(m_display, &buffer[0], numConfigRequested, &numConfigReturned);
+		eglu::checkError(eglGetError(), DE_NULL, __FILE__, __LINE__);
 
 		log << TestLog::Message << numConfigReturned << " configs returned" << TestLog::EndMessage;
 
@@ -146,13 +155,12 @@ public:
 
 	IterateResult iterate (void)
 	{
-		tcu::TestLog&		log			= m_testCtx.getLog();
-		tcu::egl::Display&	display		= m_eglTestCtx.getDisplay();
-		EGLint				numConfigAll;
+		tcu::TestLog&	log		= m_testCtx.getLog();
+		EGLint			numConfigAll;
 
 		enableLogging(true);
 
-		eglGetConfigs(display.getEGLDisplay(), 0, 0, &numConfigAll);
+		eglGetConfigs(m_display, 0, 0, &numConfigAll);
 
 		log << TestLog::Message << numConfigAll << " configs available" << TestLog::EndMessage;
 		log << TestLog::Message << TestLog::EndMessage;
@@ -163,11 +171,11 @@ public:
 
 			for (int i = 0; i < 5; i++)
 			{
-				checkGetConfigsBounds(display, rnd, numConfigAll, rnd.getInt(0, numConfigAll));
+				checkGetConfigsBounds(rnd, numConfigAll, rnd.getInt(0, numConfigAll));
 				log << TestLog::Message << TestLog::EndMessage;
 			}
 
-			checkGetConfigsBounds(display, rnd, numConfigAll, -1);
+			checkGetConfigsBounds(rnd, numConfigAll, -1);
 		}
 		else
 		{
@@ -178,6 +186,9 @@ public:
 
 		return STOP;
 	}
+
+protected:
+	EGLDisplay	m_display;
 };
 
 class GetConfigAttribCase : public TestCase, protected eglu::CallLogWrapper
@@ -185,37 +196,48 @@ class GetConfigAttribCase : public TestCase, protected eglu::CallLogWrapper
 public:
 	GetConfigAttribCase (EglTestContext& eglTestCtx, const char* name, const char* description);
 
-	void			init		();
+	void			init		(void);
+	void			deinit		(void);
 	IterateResult	iterate		(void);
 
 	EGLint			getValue	(EGLConfig config, EGLenum attrib, bool logValue=true);
 
 	virtual void	executeTest	(EGLConfig config) = 0;
+
+protected:
+	EGLDisplay								m_display;
+
 private:
 	std::vector<EGLConfig>					m_configs;
 	std::vector<EGLConfig>::const_iterator	m_configsIter;
 };
 
 GetConfigAttribCase::GetConfigAttribCase (EglTestContext& eglTestCtx, const char* name, const char* description)
-	: TestCase(eglTestCtx, name, description)
-	, CallLogWrapper(eglTestCtx.getTestContext().getLog())
+	: TestCase			(eglTestCtx, name, description)
+	, CallLogWrapper	(eglTestCtx.getLibrary(), eglTestCtx.getTestContext().getLog())
+	, m_display			(EGL_NO_DISPLAY)
 {
 }
 
 void GetConfigAttribCase::init (void)
 {
-	const tcu::egl::Display&	display	= m_eglTestCtx.getDisplay();
-
-	display.getConfigs(m_configs);
-	m_configsIter = m_configs.begin();
+	DE_ASSERT(m_display == EGL_NO_DISPLAY);
+	m_display		= eglu::getAndInitDisplay(m_eglTestCtx.getNativeDisplay());
+	m_configs		= eglu::getConfigs(m_eglTestCtx.getLibrary(), m_display);
+	m_configsIter	= m_configs.begin();
 
 	m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
 }
 
+void GetConfigAttribCase::deinit (void)
+{
+	m_eglTestCtx.getLibrary().terminate(m_display);
+	m_display = EGL_NO_DISPLAY;
+}
+
 tcu::TestNode::IterateResult GetConfigAttribCase::iterate (void)
 {
-	tcu::TestLog&		log			= m_testCtx.getLog();
-	tcu::egl::Display&	display		= m_eglTestCtx.getDisplay();
+	tcu::TestLog&	log		= m_testCtx.getLog();
 
 	if (m_configsIter == m_configs.end())
 	{
@@ -227,7 +249,8 @@ tcu::TestNode::IterateResult GetConfigAttribCase::iterate (void)
 		const EGLConfig	config	= *m_configsIter;
 		EGLint			id;
 
-		TCU_CHECK_EGL_CALL(eglGetConfigAttrib(display.getEGLDisplay(), config, EGL_CONFIG_ID, &id));
+		eglGetConfigAttrib(m_display, config, EGL_CONFIG_ID, &id);
+		eglu::checkError(eglGetError(), DE_NULL, __FILE__, __LINE__);
 		log << TestLog::Message << "Config ID " << id << TestLog::EndMessage;
 
 		executeTest(config);
@@ -245,14 +268,14 @@ tcu::TestNode::IterateResult GetConfigAttribCase::iterate (void)
 
 EGLint GetConfigAttribCase::getValue (EGLConfig config, EGLenum attrib, bool logValue)
 {
-	TestLog&					log		= m_testCtx.getLog();
-	const tcu::egl::Display&	display	= m_eglTestCtx.getDisplay();
-	EGLint			value;
+	TestLog&	log		= m_testCtx.getLog();
+	EGLint		value;
 
-	eglGetConfigAttrib(display.getEGLDisplay(), config, attrib, &value);
-	TCU_CHECK_EGL();
+	eglGetConfigAttrib(m_display, config, attrib, &value);
+	eglu::checkError(eglGetError(), DE_NULL, __FILE__, __LINE__);
 
-	if (logValue) logConfigAttribute(log, attrib, value);
+	if (logValue)
+		logConfigAttribute(log, attrib, value);
 
 	return value;
 }
@@ -369,10 +392,10 @@ public:
 
 	void executeTest (EGLConfig config)
 	{
-		TestLog&					log		= m_testCtx.getLog();
-		const tcu::egl::Display&	display	= m_eglTestCtx.getDisplay();
+		TestLog&			log		= m_testCtx.getLog();
+		eglu::Version		version	= eglu::getVersion(m_eglTestCtx.getLibrary(), m_display);
 
-		if (!isAttributePresent(display.getVersion(), m_attrib))
+		if (!isAttributePresent(version, m_attrib))
 		{
 			log << TestLog::Message << eglu::getConfigAttribStr(m_attrib) << " not supported by this EGL version";
 		}
@@ -382,8 +405,8 @@ public:
 
 			enableLogging(true);
 
-			eglGetConfigAttrib(display.getEGLDisplay(), config, m_attrib, &value);
-			TCU_CHECK_EGL();
+			eglGetConfigAttrib(m_display, config, m_attrib, &value);
+			eglu::checkError(eglGetError(), DE_NULL, __FILE__, __LINE__);
 
 			logConfigAttribute(log, m_attrib, value);
 			checkAttribute(m_attrib, value);

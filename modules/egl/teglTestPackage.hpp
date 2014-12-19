@@ -54,12 +54,12 @@ public:
 									PackageContext			(tcu::TestContext& testCtx);
 									~PackageContext			(void);
 
-	EglTestContext&					getEglTestContext		(void) { return *m_eglTestCtx;	}
-	tcu::TestCaseWrapper&			getTestCaseWrapper		(void) { return *m_caseWrapper;	}
+	EglTestContext&					getEglTestContext		(void) { return m_eglTestCtx;	}
+	tcu::TestCaseWrapper&			getTestCaseWrapper		(void) { return m_caseWrapper;	}
 
 private:
-	EglTestContext*					m_eglTestCtx;
-	TestCaseWrapper*				m_caseWrapper;
+	EglTestContext					m_eglTestCtx;
+	TestCaseWrapper					m_caseWrapper;
 };
 
 class TestPackage : public tcu::TestPackage

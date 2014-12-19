@@ -31,6 +31,9 @@
 #include "egluNativeWindow.hpp"
 #include "egluNativePixmap.hpp"
 
+#include "eglwLibrary.hpp"
+#include "eglwEnums.hpp"
+
 #include "glwEnums.hpp"
 
 #include "gluObjectWrapper.hpp"
@@ -58,10 +61,16 @@ using glu::Texture;
 
 using eglu::AttribMap;
 using eglu::UniqueSurface;
+using eglu::NativeDisplay;
 using eglu::NativeWindow;
 using eglu::NativePixmap;
+using eglu::NativeDisplayFactory;
+using eglu::NativeWindowFactory;
+using eglu::NativePixmapFactory;
+using eglu::WindowParams;
 
 using namespace glw;
+using namespace eglw;
 
 enum {
 	IMAGE_WIDTH		= 64,
@@ -85,33 +94,49 @@ private:
 typedef NativeSurface<NativeWindow> NativeWindowSurface;
 typedef NativeSurface<NativePixmap> NativePixmapSurface;
 
-MovePtr<ManagedSurface> createSurface (EglTestContext& eglTestCtx, EGLConfig config, int width, int height)
+MovePtr<ManagedSurface> createSurface (EglTestContext& eglTestCtx, EGLDisplay dpy, EGLConfig config, int width, int height)
 {
-	EGLDisplay	dpy				= eglTestCtx.getEGLDisplay();
-	EGLint		surfaceTypeBits	= eglu::getConfigAttribInt(dpy, config, EGL_SURFACE_TYPE);
+	const Library&				egl				= eglTestCtx.getLibrary();
+	EGLint						surfaceTypeBits	= eglu::getConfigAttribInt(egl, dpy, config, EGL_SURFACE_TYPE);
+	const NativeDisplayFactory&	displayFactory	= eglTestCtx.getNativeDisplayFactory();
+	NativeDisplay&				nativeDisplay	= eglTestCtx.getNativeDisplay();
 
 	if (surfaceTypeBits & EGL_PBUFFER_BIT)
 	{
 		static const EGLint attribs[]	= { EGL_WIDTH, width, EGL_HEIGHT, height, EGL_NONE };
-		const EGLSurface	surface		= eglCreatePbufferSurface(dpy, config, attribs);
+		const EGLSurface	surface		= egl.createPbufferSurface(dpy, config, attribs);
 
-		EGLU_CHECK();
+		EGLU_CHECK_MSG(egl, "eglCreatePbufferSurface()");
 
-		return de::newMovePtr<ManagedSurface>(de::newMovePtr<UniqueSurface>(dpy, surface));
+		return de::newMovePtr<ManagedSurface>(MovePtr<UniqueSurface>(new UniqueSurface(egl, dpy, surface)));
 	}
 	else if (surfaceTypeBits & EGL_WINDOW_BIT)
 	{
-		MovePtr<NativeWindow>	window	(eglTestCtx.createNativeWindow(dpy, config, DE_NULL, width, height));
-		const EGLSurface		surface	= eglu::createWindowSurface(eglTestCtx.getNativeDisplay(), *window, dpy, config, DE_NULL);
+		const NativeWindowFactory*	windowFactory	= selectNativeWindowFactory(displayFactory, eglTestCtx.getTestContext().getCommandLine());
 
-		return MovePtr<ManagedSurface>(new NativeWindowSurface(de::newMovePtr<UniqueSurface>(dpy, surface), window));
+		if (windowFactory)
+		{
+			MovePtr<NativeWindow>	window	(windowFactory->createWindow(&nativeDisplay, dpy, config, DE_NULL, WindowParams(width, height, WindowParams::VISIBILITY_DONT_CARE)));
+			const EGLSurface		surface	= eglu::createWindowSurface(nativeDisplay, *window, dpy, config, DE_NULL);
+
+			return MovePtr<ManagedSurface>(new NativeWindowSurface(MovePtr<UniqueSurface>(new UniqueSurface(egl, dpy, surface)), window));
+		}
+		else
+			TCU_THROW(NotSupportedError, "Windows not supported");
 	}
 	else if (surfaceTypeBits & EGL_PIXMAP_BIT)
 	{
-		MovePtr<NativePixmap>	pixmap	(eglTestCtx.createNativePixmap(dpy, config, DE_NULL, width, height));
-		const EGLSurface		surface	= eglu::createPixmapSurface(eglTestCtx.getNativeDisplay(), *pixmap, dpy, config, DE_NULL);
+		const NativePixmapFactory*	pixmapFactory	= selectNativePixmapFactory(displayFactory, eglTestCtx.getTestContext().getCommandLine());
 
-		return MovePtr<ManagedSurface>(new NativePixmapSurface(de::newMovePtr<UniqueSurface>(dpy, surface), pixmap));
+		if (pixmapFactory)
+		{
+			MovePtr<NativePixmap>	pixmap	(pixmapFactory->createPixmap(&nativeDisplay, dpy, config, DE_NULL, width, height));
+			const EGLSurface		surface	= eglu::createPixmapSurface(eglTestCtx.getNativeDisplay(), *pixmap, dpy, config, DE_NULL);
+
+			return MovePtr<ManagedSurface>(new NativePixmapSurface(MovePtr<UniqueSurface>(new UniqueSurface(egl, dpy, surface)), pixmap));
+		}
+		else
+			TCU_THROW(NotSupportedError, "Pixmaps not supported");
 	}
 	else
 		TCU_FAIL("No valid surface types supported in config");
@@ -138,24 +163,24 @@ private:
 class GLImageSource : public ImageSource
 {
 public:
-	EGLImageKHR			createImage			(const eglu::ImageFunctions& imgExt, EGLDisplay dpy, EGLContext ctx, EGLClientBuffer clientBuffer) const;
+	EGLImageKHR			createImage			(const Library& egl, EGLDisplay dpy, EGLContext ctx, EGLClientBuffer clientBuffer) const;
 
 protected:
 	virtual AttribMap	getCreateAttribs	(void) const = 0;
 	virtual EGLenum		getSource			(void) const = 0;
 };
 
-EGLImageKHR GLImageSource::createImage	 (const eglu::ImageFunctions& imgExt, EGLDisplay dpy, EGLContext ctx, EGLClientBuffer clientBuffer) const
+EGLImageKHR GLImageSource::createImage (const Library& egl, EGLDisplay dpy, EGLContext ctx, EGLClientBuffer clientBuffer) const
 {
 	AttribMap				attribMap	= getCreateAttribs();
 
 	attribMap[EGL_IMAGE_PRESERVED_KHR] = EGL_TRUE;
 
 	{
-		const vector<EGLint> 	attribs	= eglu::attribMapToVector(attribMap);
-		const EGLImageKHR		image 	= imgExt.createImage(dpy, ctx, getSource(),
+		const vector<EGLint> 	attribs	= eglu::attribMapToList(attribMap);
+		const EGLImageKHR		image 	= egl.createImageKHR(dpy, ctx, getSource(),
 															 clientBuffer, &attribs.front());
-		EGLU_CHECK_MSG("eglCreateImageKHR()");
+		EGLU_CHECK_MSG(egl, "eglCreateImageKHR()");
 		return image;
 	}
 }
@@ -386,7 +411,7 @@ public:
 							UnsupportedImageSource	(const string& message) : m_message(message) {}
 	string					getRequiredExtension	(void) const { fail(); return ""; }
 	MovePtr<ClientBuffer>	createBuffer			(const glw::Functions&, tcu::Texture2D*) const { fail(); return de::MovePtr<ClientBuffer>(); }
-	EGLImageKHR				createImage				(const eglu::ImageFunctions& imgExt, EGLDisplay dpy, EGLContext ctx, EGLClientBuffer clientBuffer) const;
+	EGLImageKHR				createImage				(const Library& egl, EGLDisplay dpy, EGLContext ctx, EGLClientBuffer clientBuffer) const;
 
 private:
 	const string			m_message;
@@ -394,7 +419,7 @@ private:
 	void					fail					(void) const { TCU_THROW(NotSupportedError, m_message.c_str()); }
 };
 
-EGLImageKHR	UnsupportedImageSource::createImage (const eglu::ImageFunctions&, EGLDisplay, EGLContext, EGLClientBuffer) const
+EGLImageKHR	UnsupportedImageSource::createImage (const Library&, EGLDisplay, EGLContext, EGLClientBuffer) const
 {
 	fail();
 	return EGL_NO_IMAGE_KHR;

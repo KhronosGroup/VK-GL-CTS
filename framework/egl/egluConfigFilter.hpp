@@ -24,77 +24,68 @@
  *//*--------------------------------------------------------------------*/
 
 #include "tcuDefs.hpp"
-#include "egluHeaderWrapper.hpp"
 #include "tcuRGBA.hpp"
 
+#include "eglwDefs.hpp"
+#include "eglwEnums.hpp"
+
 #include <vector>
+
+namespace eglw
+{
+class Library;
+}
 
 namespace eglu
 {
 
 class ConfigInfo;
 
-class ConfigFilter
+class CandidateConfig
 {
 public:
-	enum Filter
-	{
-		FILTER_EQUAL = 0,
-		FILTER_GREATER_OR_EQUAL,
-		FILTER_AND,
-		FILTER_NOT_SET,
+					CandidateConfig		(const eglw::Library& egl, eglw::EGLDisplay display, eglw::EGLConfig config);
+					CandidateConfig		(const ConfigInfo& configInfo);
 
-		FILTER_LAST
-	};
+	int				get					(deUint32 attrib) const;
 
-	ConfigFilter (EGLint attribute, EGLint value, Filter rule)
-		: m_attribute	(attribute)
-		, m_value		(value)
-		, m_rule		(rule)
-	{
-	}
+	int				id					(void) const { return get(EGL_CONFIG_ID);		}
+	int				redSize				(void) const { return get(EGL_RED_SIZE);		}
+	int				greenSize			(void) const { return get(EGL_GREEN_SIZE);		}
+	int				blueSize			(void) const { return get(EGL_BLUE_SIZE);		}
+	int				alphaSize			(void) const { return get(EGL_ALPHA_SIZE);		}
+	int				depthSize			(void) const { return get(EGL_DEPTH_SIZE);		}
+	int				stencilSize			(void) const { return get(EGL_STENCIL_SIZE);	}
+	int				samples				(void) const { return get(EGL_SAMPLES);			}
 
-	ConfigFilter (void)
-		: m_attribute	(0)
-		, m_value		(0)
-		, m_rule		(FILTER_LAST)
-	{
-	}
+	deUint32		renderableType		(void) const { return (deUint32)get(EGL_RENDERABLE_TYPE);	}
+	deUint32		surfaceType			(void) const { return (deUint32)get(EGL_SURFACE_TYPE);		}
 
-	bool match (EGLDisplay display, EGLConfig config) const;
-
-	bool match (const ConfigInfo& configInfo) const;
+	tcu::RGBA		colorBits			(void) const { return tcu::RGBA(redSize(), greenSize(), blueSize(), alphaSize());	}
 
 private:
-	EGLint		m_attribute;
-	EGLint		m_value;
-	Filter		m_rule;
+	enum Type
+	{
+		TYPE_EGL_OBJECT = 0,
+		TYPE_CONFIG_INFO,
+
+		TYPE_LAST
+	};
+
+	const Type		m_type;
+	union
+	{
+		struct
+		{
+			const eglw::Library*	egl;
+			eglw::EGLDisplay		display;
+			eglw::EGLConfig			config;
+		} object;
+		const ConfigInfo*			configInfo;
+	} m_cfg;
 };
 
-template <EGLint Attribute>
-class FilterTemplate
-{
-public:
-					FilterTemplate			(void) {}
-					~FilterTemplate			(void) {}
-
-	ConfigFilter	operator==				(EGLint value) const	{ return ConfigFilter(Attribute, value, ConfigFilter::FILTER_EQUAL);			}
-	ConfigFilter	operator>=				(EGLint value) const	{ return ConfigFilter(Attribute, value, ConfigFilter::FILTER_GREATER_OR_EQUAL);	}
-	ConfigFilter	operator&				(EGLint value) const	{ return ConfigFilter(Attribute, value, ConfigFilter::FILTER_AND);				}
-	ConfigFilter	operator^				(EGLint value) const	{ return ConfigFilter(Attribute, value, ConfigFilter::FILTER_NOT_SET);			}
-};
-
-// Helpers for filters
-typedef FilterTemplate<EGL_CONFIG_ID>		ConfigId;
-typedef FilterTemplate<EGL_RED_SIZE>		ConfigRedSize;
-typedef FilterTemplate<EGL_GREEN_SIZE>		ConfigGreenSize;
-typedef FilterTemplate<EGL_BLUE_SIZE>		ConfigBlueSize;
-typedef FilterTemplate<EGL_ALPHA_SIZE>		ConfigAlphaSize;
-typedef FilterTemplate<EGL_DEPTH_SIZE>		ConfigDepthSize;
-typedef FilterTemplate<EGL_STENCIL_SIZE>	ConfigStencilSize;
-typedef FilterTemplate<EGL_RENDERABLE_TYPE>	ConfigRenderableType;
-typedef FilterTemplate<EGL_SURFACE_TYPE>	ConfigSurfaceType;
-typedef FilterTemplate<EGL_SAMPLES>			ConfigSamples;
+typedef bool (*ConfigFilter) (const CandidateConfig& candidate);
 
 class FilterList
 {
@@ -102,23 +93,15 @@ public:
 								FilterList		(void) {}
 								~FilterList		(void) {}
 
-	FilterList&					operator<<		(const ConfigFilter& rule);
+	FilterList&					operator<<		(ConfigFilter filter);
 	FilterList&					operator<<		(const FilterList& other);
 
-	bool						match			(const EGLDisplay display, EGLConfig config) const;
+	bool						match			(const eglw::Library& egl, eglw::EGLDisplay display, eglw::EGLConfig config) const;
 	bool						match			(const ConfigInfo& configInfo) const;
+	bool						match			(const CandidateConfig& candidate) const;
 
 private:
 	std::vector<ConfigFilter>	m_rules;
-};
-
-class ConfigColorBits
-{
-public:
-					ConfigColorBits			(void) {};
-
-	FilterList		operator==				(tcu::RGBA bits) const;
-	FilterList		operator>=				(tcu::RGBA bits) const;
 };
 
 } // eglu

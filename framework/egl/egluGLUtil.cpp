@@ -24,6 +24,8 @@
 #include "egluGLUtil.hpp"
 
 #include "egluUtil.hpp"
+#include "eglwLibrary.hpp"
+#include "eglwEnums.hpp"
 #include "glwEnums.hpp"
 
 #include <vector>
@@ -32,6 +34,8 @@ using std::vector;
 
 namespace eglu
 {
+
+using namespace eglw;
 
 glw::GLenum getImageGLTarget (EGLenum source)
 {
@@ -72,9 +76,9 @@ EGLint apiRenderableType (glu::ApiType apiType)
 	return 0;
 }
 
-EGLContext createGLContext (EGLDisplay display, EGLContext eglConfig, const glu::ContextType& contextType)
+EGLContext createGLContext (const Library& egl, EGLDisplay display, EGLContext eglConfig, const glu::ContextType& contextType)
 {
-	const bool			khrCreateContextSupported	= hasExtension(display, "EGL_KHR_create_context");
+	const bool			khrCreateContextSupported	= hasExtension(egl, display, "EGL_KHR_create_context");
 	EGLContext			context						= EGL_NO_CONTEXT;
 	EGLenum				api							= EGL_NONE;
 	vector<EGLint>		attribList;
@@ -144,9 +148,9 @@ EGLContext createGLContext (EGLDisplay display, EGLContext eglConfig, const glu:
 
 	attribList.push_back(EGL_NONE);
 
-	EGLU_CHECK_CALL(eglBindAPI(api));
-	context = eglCreateContext(display, eglConfig, EGL_NO_CONTEXT, &(attribList[0]));
-	EGLU_CHECK_MSG("eglCreateContext()");
+	EGLU_CHECK_CALL(egl, bindAPI(api));
+	context = egl.createContext(display, eglConfig, EGL_NO_CONTEXT, &(attribList[0]));
+	EGLU_CHECK_MSG(egl, "eglCreateContext()");
 
 	return context;
 }

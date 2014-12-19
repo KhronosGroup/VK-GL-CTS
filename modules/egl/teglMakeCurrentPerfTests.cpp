@@ -27,6 +27,9 @@
 #include "egluNativePixmap.hpp"
 #include "egluUtil.hpp"
 
+#include "eglwLibrary.hpp"
+#include "eglwEnums.hpp"
+
 #include "tcuTestLog.hpp"
 
 #include "deRandom.hpp"
@@ -47,6 +50,8 @@ using std::string;
 using std::vector;
 
 using tcu::TestLog;
+
+using namespace eglw;
 
 namespace deqp
 {
@@ -88,6 +93,7 @@ private:
 	Spec						m_spec;
 	de::Random					m_rnd;
 
+	EGLDisplay					m_display;
 	EGLConfig					m_config;
 	vector<EGLContext>			m_contexts;
 	vector<EGLSurface>			m_surfaces;
@@ -152,6 +158,7 @@ MakeCurrentPerfCase::MakeCurrentPerfCase (EglTestContext& eglTestCtx, const Spec
 	: TestCase		(eglTestCtx, tcu::NODETYPE_PERFORMANCE, name, description)
 	, m_spec		(spec)
 	, m_rnd			(deStringHash(name))
+	, m_display		(EGL_NO_DISPLAY)
 	, m_config		(DE_NULL)
 {
 }
@@ -163,6 +170,8 @@ MakeCurrentPerfCase::~MakeCurrentPerfCase (void)
 
 void MakeCurrentPerfCase::init (void)
 {
+	m_display = eglu::getAndInitDisplay(m_eglTestCtx.getNativeDisplay());
+
 	chooseConfig();
 	createContexts();
 	createSurfaces();
@@ -172,6 +181,9 @@ void MakeCurrentPerfCase::deinit (void)
 {
 	destroyContexts();
 	destroySurfaces();
+
+	m_eglTestCtx.getLibrary().terminate(m_display);
+	m_display = EGL_NO_DISPLAY;
 }
 
 void MakeCurrentPerfCase::chooseConfig (void)
@@ -186,10 +198,10 @@ void MakeCurrentPerfCase::chooseConfig (void)
 		EGL_NONE
 	};
 
-	EGLint		configCount = 0;
-	EGLDisplay	display	= m_eglTestCtx.getDisplay().getEGLDisplay();
+	const Library&	egl			= m_eglTestCtx.getLibrary();
+	EGLint			configCount = 0;
 
-	TCU_CHECK_EGL_CALL(eglChooseConfig(display, attribList, &m_config, 1, &configCount));
+	EGLU_CHECK_CALL(egl, chooseConfig(m_display, attribList, &m_config, 1, &configCount));
 
 	if (configCount <= 0)
 		throw tcu::NotSupportedError("No compatible configs found");
@@ -237,6 +249,7 @@ void MakeCurrentPerfCase::createSurfaces (void)
 
 void MakeCurrentPerfCase::createPBuffer (void)
 {
+	const Library&	egl		= m_eglTestCtx.getLibrary();
 	const EGLint	width	= 256;
 	const EGLint	height	= 256;
 
@@ -246,31 +259,36 @@ void MakeCurrentPerfCase::createPBuffer (void)
 		EGL_NONE
 	};
 
-	EGLDisplay	display	= m_eglTestCtx.getDisplay().getEGLDisplay();
-	EGLSurface	surface = eglCreatePbufferSurface(display, m_config, attribList);
+	EGLSurface	surface = egl.createPbufferSurface(m_display, m_config, attribList);
 
-	TCU_CHECK_EGL_MSG("eglCreatePbufferSurface()");
+	EGLU_CHECK_MSG(egl, "eglCreatePbufferSurface()");
 
 	m_surfaces.push_back(surface);
 }
 
 void MakeCurrentPerfCase::createWindow (void)
 {
-	const EGLint	width	= 256;
-	const EGLint	height	= 256;
+	const Library&						egl				= m_eglTestCtx.getLibrary();
+	const EGLint						width			= 256;
+	const EGLint						height			= 256;
 
-	eglu::NativeWindow* window	= DE_NULL;
-	EGLSurface			surface	= EGL_NO_SURFACE;
+	const eglu::NativeWindowFactory*	windowFactory	= eglu::selectNativeWindowFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
+
+	eglu::NativeWindow* 				window			= DE_NULL;
+	EGLSurface							surface			= EGL_NO_SURFACE;
+
+	if (!windowFactory)
+		TCU_THROW(NotSupportedError, "Windows not supported");
 
 	try
 	{
-		window	= m_eglTestCtx.createNativeWindow(m_eglTestCtx.getDisplay().getEGLDisplay(), m_config, DE_NULL, width, height, eglu::parseWindowVisibility(m_eglTestCtx.getTestContext().getCommandLine()));
-		surface	= eglu::createWindowSurface(m_eglTestCtx.getNativeDisplay(), *window, m_eglTestCtx.getDisplay().getEGLDisplay(), m_config, DE_NULL);
+		window	= windowFactory->createWindow(&m_eglTestCtx.getNativeDisplay(), m_display, m_config, DE_NULL, eglu::WindowParams(width, height, eglu::parseWindowVisibility(m_eglTestCtx.getTestContext().getCommandLine())));
+		surface	= eglu::createWindowSurface(m_eglTestCtx.getNativeDisplay(), *window, m_display, m_config, DE_NULL);
 	}
-	catch (const std::exception&)
+	catch (...)
 	{
 		if (surface != EGL_NO_SURFACE)
-			TCU_CHECK_EGL_CALL(eglDestroySurface(m_eglTestCtx.getDisplay().getEGLDisplay(), surface));
+			egl.destroySurface(m_display, surface);
 
 		delete window;
 		throw;
@@ -282,21 +300,27 @@ void MakeCurrentPerfCase::createWindow (void)
 
 void MakeCurrentPerfCase::createPixmap (void)
 {
-	const EGLint	width	= 256;
-	const EGLint	height	= 256;
+	const Library&						egl				= m_eglTestCtx.getLibrary();
+	const EGLint						width			= 256;
+	const EGLint						height			= 256;
 
-	eglu::NativePixmap*	pixmap	= DE_NULL;
-	EGLSurface			surface	= EGL_NO_SURFACE;
+	const eglu::NativePixmapFactory*	pixmapFactory	= eglu::selectNativePixmapFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
+
+	eglu::NativePixmap* 				pixmap			= DE_NULL;
+	EGLSurface							surface			= EGL_NO_SURFACE;
+
+	if (!pixmapFactory)
+		TCU_THROW(NotSupportedError, "Pixmaps not supported");
 
 	try
 	{
-		pixmap	= m_eglTestCtx.createNativePixmap(m_eglTestCtx.getDisplay().getEGLDisplay(), m_config, DE_NULL, width, height);
-		surface	= eglu::createPixmapSurface(m_eglTestCtx.getNativeDisplay(), *pixmap, m_eglTestCtx.getDisplay().getEGLDisplay(), m_config, DE_NULL);
+		pixmap	= pixmapFactory->createPixmap(&m_eglTestCtx.getNativeDisplay(), m_display, m_config, DE_NULL, width, height);
+		surface	= eglu::createPixmapSurface(m_eglTestCtx.getNativeDisplay(), *pixmap, m_display, m_config, DE_NULL);
 	}
-	catch (const std::exception&)
+	catch (...)
 	{
 		if (surface != EGL_NO_SURFACE)
-			TCU_CHECK_EGL_CALL(eglDestroySurface(m_eglTestCtx.getDisplay().getEGLDisplay(), surface));
+			egl.destroySurface(m_display, surface);
 
 		delete pixmap;
 		throw;
@@ -308,15 +332,17 @@ void MakeCurrentPerfCase::createPixmap (void)
 
 void MakeCurrentPerfCase::destroySurfaces (void)
 {
+	const Library&	egl	= m_eglTestCtx.getLibrary();
+
 	if (m_surfaces.size() > 0)
 	{
-		EGLDisplay display = m_eglTestCtx.getDisplay().getEGLDisplay();
+		EGLDisplay display = m_display;
 
 		// Destroy surfaces
 		for (vector<EGLSurface>::iterator iter = m_surfaces.begin(); iter != m_surfaces.end(); ++iter)
 		{
 			if (*iter != EGL_NO_SURFACE)
-				TCU_CHECK_EGL_CALL(eglDestroySurface(display, *iter));
+				EGLU_CHECK_CALL(egl, destroySurface(display, *iter));
 			*iter = EGL_NO_SURFACE;
 		}
 
@@ -347,7 +373,7 @@ void MakeCurrentPerfCase::destroySurfaces (void)
 
 void MakeCurrentPerfCase::createContexts (void)
 {
-	EGLDisplay display = m_eglTestCtx.getDisplay().getEGLDisplay();
+	const Library&	egl	= m_eglTestCtx.getLibrary();
 
 	for (int contextNdx = 0; contextNdx < m_spec.contextCount; contextNdx++)
 	{
@@ -356,9 +382,9 @@ void MakeCurrentPerfCase::createContexts (void)
 			EGL_NONE
 		};
 
-		TCU_CHECK_EGL_CALL(eglBindAPI(EGL_OPENGL_ES_API));
-		EGLContext context = eglCreateContext(display, m_config, EGL_NO_CONTEXT, attribList);
-		TCU_CHECK_EGL_MSG("eglCreateContext()");
+		EGLU_CHECK_CALL(egl, bindAPI(EGL_OPENGL_ES_API));
+		EGLContext context = egl.createContext(m_display, m_config, EGL_NO_CONTEXT, attribList);
+		EGLU_CHECK_MSG(egl, "eglCreateContext()");
 
 		m_contexts.push_back(context);
 	}
@@ -366,14 +392,15 @@ void MakeCurrentPerfCase::createContexts (void)
 
 void MakeCurrentPerfCase::destroyContexts (void)
 {
+	const Library&	egl	= m_eglTestCtx.getLibrary();
 	if (m_contexts.size() > 0)
 	{
-		EGLDisplay display = m_eglTestCtx.getDisplay().getEGLDisplay();
+		EGLDisplay display = m_display;
 
 		for (vector<EGLContext>::iterator iter = m_contexts.begin(); iter != m_contexts.end(); ++iter)
 		{
 			if (*iter != EGL_NO_CONTEXT)
-				TCU_CHECK_EGL_CALL(eglDestroyContext(display, *iter));
+				EGLU_CHECK_CALL(egl, destroyContext(display, *iter));
 			*iter = EGL_NO_CONTEXT;
 		}
 
@@ -483,11 +510,12 @@ void MakeCurrentPerfCase::logResults (void)
 
 TestCase::IterateResult MakeCurrentPerfCase::iterate (void)
 {
+	const Library&	egl	= m_eglTestCtx.getLibrary();
 	if (m_samples.size() == 0)
 		logTestInfo();
 
 	{
-		EGLDisplay	display		= m_eglTestCtx.getDisplay().getEGLDisplay();
+		EGLDisplay	display		= m_display;
 		deUint64	beginTimeUs	= deGetMicroseconds();
 
 		for (int iteration = 0; iteration < m_spec.iterationCount; iteration++)
@@ -495,13 +523,15 @@ TestCase::IterateResult MakeCurrentPerfCase::iterate (void)
 			EGLContext	context = m_contexts[m_rnd.getUint32() % m_contexts.size()];
 			EGLSurface	surface	= m_surfaces[m_rnd.getUint32() % m_surfaces.size()];
 
-			TCU_CHECK_EGL_CALL(eglMakeCurrent(display, surface, surface, context));
+			egl.makeCurrent(display, surface, surface, context);
 
 			if (m_spec.release)
-				TCU_CHECK_EGL_CALL(eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT));
+				egl.makeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
 		}
 
 		m_samples.push_back(deGetMicroseconds() - beginTimeUs);
+
+		EGLU_CHECK_MSG(egl, "eglMakeCurrent()");
 	}
 
 	if ((int)m_samples.size() == m_spec.sampleCount)

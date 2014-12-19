@@ -25,7 +25,7 @@
 
 #include "tcuDefs.hpp"
 #include "tcuFactoryRegistry.hpp"
-#include "egluHeaderWrapper.hpp"
+#include "eglwDefs.hpp"
 #include "tcuVector.hpp"
 
 namespace tcu
@@ -48,51 +48,51 @@ public:
 		CAPABILITY_READ_PIXELS				= (1<<2)
 	};
 
-	virtual						~NativePixmap					(void) {}
+	virtual								~NativePixmap			(void) {}
 
 	//! Return EGLNativePixmapType that can be used with eglCreatePixmapSurface(). Default implementation throws tcu::NotSupportedError().
-	virtual EGLNativePixmapType	getLegacyNative					(void);
+	virtual eglw::EGLNativePixmapType	getLegacyNative			(void);
 
 	//! Return native pointer that can be used with eglCreatePlatformPixmapSurfaceEXT(). Default implementation throws tcu::NotSupportedError().
-	virtual void*				getPlatformNative				(void);
+	virtual void*						getPlatformNative		(void);
 
 	// Read pixels from pixmap. Default implementation throws tcu::NotSupportedError()
-	virtual void				readPixels						(tcu::TextureLevel* dst);
+	virtual void						readPixels				(tcu::TextureLevel* dst);
 
 	// These values are initialized in constructor.
-	Capability					getCapabilities					(void) const { return m_capabilities; }
+	Capability							getCapabilities			(void) const { return m_capabilities; }
 
 protected:
-								NativePixmap					(Capability capabilities);
+										NativePixmap			(Capability capabilities);
 
 private:
-								NativePixmap					(const NativePixmap&);
-	NativePixmap&				operator=						(const NativePixmap&);
+										NativePixmap			(const NativePixmap&);
+	NativePixmap&						operator=				(const NativePixmap&);
 
-	const Capability			m_capabilities;
+	const Capability					m_capabilities;
 };
 
 class NativePixmapFactory : public tcu::FactoryBase
 {
 public:
-	virtual							~NativePixmapFactory	(void);
+	virtual								~NativePixmapFactory	(void);
 
 	//! Create generic pixmap.
-	virtual NativePixmap*			createPixmap			(NativeDisplay* nativeDisplay, int width, int height) const = 0;
+	virtual NativePixmap*				createPixmap			(NativeDisplay* nativeDisplay, int width, int height) const = 0;
 
 	//! Create pixmap that matches given EGL config. Defaults to generic createPixmap().
-	virtual NativePixmap*			createPixmap			(NativeDisplay* nativeDisplay, EGLDisplay display, EGLConfig config, const EGLAttrib* attribList, int width, int height) const;
+	virtual NativePixmap*				createPixmap			(NativeDisplay* nativeDisplay, eglw::EGLDisplay display, eglw::EGLConfig config, const eglw::EGLAttrib* attribList, int width, int height) const;
 
-	NativePixmap::Capability		getCapabilities			(void) const { return m_capabilities; }
+	NativePixmap::Capability			getCapabilities			(void) const { return m_capabilities; }
 
 protected:
-									NativePixmapFactory		(const std::string& name, const std::string& description, NativePixmap::Capability capabilities);
+										NativePixmapFactory		(const std::string& name, const std::string& description, NativePixmap::Capability capabilities);
 
 private:
-									NativePixmapFactory		(const NativePixmapFactory&);
-	NativePixmapFactory&			operator=				(const NativePixmapFactory&);
+										NativePixmapFactory		(const NativePixmapFactory&);
+	NativePixmapFactory&				operator=				(const NativePixmapFactory&);
 
-	const NativePixmap::Capability	m_capabilities;
+	const NativePixmap::Capability		m_capabilities;
 };
 
 typedef tcu::FactoryRegistry<NativePixmapFactory> NativePixmapFactoryRegistry;

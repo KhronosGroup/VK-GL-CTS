@@ -23,6 +23,12 @@
 
 #include "teglChooseConfigReference.hpp"
 
+#include "egluUtil.hpp"
+#include "egluConfigInfo.hpp"
+#include "egluStrUtil.hpp"
+#include "eglwLibrary.hpp"
+#include "eglwEnums.hpp"
+
 #include <algorithm>
 #include <vector>
 #include <map>
@@ -32,6 +38,7 @@ namespace deqp
 namespace egl
 {
 
+using namespace eglw;
 using eglu::ConfigInfo;
 
 enum Criteria
@@ -87,7 +94,8 @@ private:
 			case EGL_NONE:					return 0;
 			case EGL_SLOW_CONFIG:			return 1;
 			case EGL_NON_CONFORMANT_CONFIG:	return 2;
-			default: DE_ASSERT(DE_FALSE);	return 3;
+			default:
+				TCU_THROW(TestError, (std::string("Unknown config caveat: ") + eglu::getConfigCaveatStr(caveat).toString()).c_str());
 		}
 	}
 
@@ -97,7 +105,8 @@ private:
 		{
 			case EGL_RGB_BUFFER:			return 0;
 			case EGL_LUMINANCE_BUFFER:		return 1;
-			default: DE_ASSERT(DE_FALSE);	return 2;
+			default:
+				TCU_THROW(TestError, (std::string("Unknown color buffer type: ") + eglu::getColorBufferTypeStr(type).toString()).c_str());
 		}
 	}
 
@@ -354,19 +363,16 @@ public:
 	}
 };
 
-void chooseConfigReference (const tcu::egl::Display& display, std::vector<EGLConfig>& dst, const std::vector<std::pair<EGLenum, EGLint> >& attributes)
+void chooseConfigReference (const Library& egl, EGLDisplay display, std::vector<EGLConfig>& dst, const std::vector<std::pair<EGLenum, EGLint> >& attributes)
 {
 	// Get all configs
-	std::vector<EGLConfig> eglConfigs;
-	display.getConfigs(eglConfigs);
+	std::vector<EGLConfig> eglConfigs = eglu::getConfigs(egl, display);
 
 	// Config infos
 	std::vector<ConfigInfo> configInfos;
 	configInfos.resize(eglConfigs.size());
 	for (size_t ndx = 0; ndx < eglConfigs.size(); ndx++)
-		display.describeConfig(eglConfigs[ndx], configInfos[ndx]);
-
-	TCU_CHECK_EGL_MSG("Config query failed");
+		eglu::queryConfigInfo(egl, display, eglConfigs[ndx], &configInfos[ndx]);
 
 	// Pair configs with info
 	std::vector<SurfaceConfig> configs;

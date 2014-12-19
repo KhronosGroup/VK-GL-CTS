@@ -27,7 +27,6 @@
 #include "teglAndroidUtil.hpp"
 #include "teglImageFormatTests.hpp"
 
-#include "egluExtensions.hpp"
 #include "egluNativeDisplay.hpp"
 #include "egluNativeWindow.hpp"
 #include "egluNativePixmap.hpp"
@@ -35,6 +34,9 @@
 #include "egluUnique.hpp"
 #include "egluUtil.hpp"
 #include "egluGLUtil.hpp"
+
+#include "eglwLibrary.hpp"
+#include "eglwEnums.hpp"
 
 #include "gluDefs.hpp"
 #include "gluCallLogWrapper.hpp"
@@ -75,6 +77,7 @@ using eglu::UniqueSurface;
 using eglu::ScopedCurrentContext;
 
 using namespace glw;
+using namespace eglw;
 
 namespace deqp
 {
@@ -85,15 +88,18 @@ namespace Image
 {
 
 #define CHECK_EXTENSION(DPY, EXTNAME) \
-	TCU_CHECK_AND_THROW(NotSupportedError, eglu::hasExtension(DPY, EXTNAME), (string("Unsupported extension: ") + EXTNAME).c_str())
+	TCU_CHECK_AND_THROW(NotSupportedError, eglu::hasExtension(m_eglTestCtx.getLibrary(), DPY, EXTNAME), (string("Unsupported extension: ") + EXTNAME).c_str())
 
 template <typename RetVal>
-RetVal checkCallError (tcu::TestContext& testCtx, const char* call, RetVal returnValue, EGLint expectError)
+RetVal checkCallError (EglTestContext& eglTestCtx, const char* call, RetVal returnValue, EGLint expectError)
 {
-	TestLog& log = testCtx.getLog();
+	tcu::TestContext&	testCtx		= eglTestCtx.getTestContext();
+	TestLog&			log			= testCtx.getLog();
+	EGLint				error;
+
 	log << TestLog::Message << call << TestLog::EndMessage;
 
-	EGLint error = eglGetError();
+	error = eglTestCtx.getLibrary().getError();
 
 	if (error != expectError)
 	{
@@ -108,12 +114,15 @@ RetVal checkCallError (tcu::TestContext& testCtx, const char* call, RetVal retur
 }
 
 template <typename RetVal>
-void checkCallReturn (tcu::TestContext& testCtx, const char* call, RetVal returnValue, RetVal expectReturnValue, EGLint expectError)
+void checkCallReturn (EglTestContext& eglTestCtx, const char* call, RetVal returnValue, RetVal expectReturnValue, EGLint expectError)
 {
-	TestLog& log = testCtx.getLog();
+	tcu::TestContext&	testCtx		= eglTestCtx.getTestContext();
+	TestLog&			log			= testCtx.getLog();
+	EGLint				error;
+
 	log << TestLog::Message << call << TestLog::EndMessage;
 
-	EGLint error = eglGetError();
+	error = eglTestCtx.getLibrary().getError();
 
 	if (returnValue != expectReturnValue)
 	{
@@ -132,9 +141,9 @@ void checkCallReturn (tcu::TestContext& testCtx, const char* call, RetVal return
 	}
 }
 
-// \note These macros expect "TestContext m_testCtx" to be defined.
-#define CHECK_EXT_CALL_RET(CALL, EXPECT_RETURN_VALUE, EXPECT_ERROR)	checkCallReturn(m_testCtx, #CALL, CALL, (EXPECT_RETURN_VALUE), (EXPECT_ERROR))
-#define CHECK_EXT_CALL_ERR(CALL, EXPECT_ERROR)						checkCallError(m_testCtx, #CALL, CALL, (EXPECT_ERROR))
+// \note These macros expect "EglTestContext m_eglTestCtx" to be defined.
+#define CHECK_EXT_CALL_RET(CALL, EXPECT_RETURN_VALUE, EXPECT_ERROR)	checkCallReturn(m_eglTestCtx, #CALL, CALL, (EXPECT_RETURN_VALUE), (EXPECT_ERROR))
+#define CHECK_EXT_CALL_ERR(CALL, EXPECT_ERROR)						checkCallError(m_eglTestCtx, #CALL, CALL, (EXPECT_ERROR))
 
 class ImageTestCase : public TestCase, public glu::CallLogWrapper
 {
@@ -142,28 +151,30 @@ public:
 				ImageTestCase		(EglTestContext& eglTestCtx, ApiType api, const string& name, const string& desc)
 					: TestCase				(eglTestCtx, name.c_str(), desc.c_str())
 					, glu::CallLogWrapper	(m_gl, m_testCtx.getLog())
-					, m_api					(api) {}
+					, m_api					(api)
+					, m_display				(EGL_NO_DISPLAY)
+	{
+	}
 
 	void		init				(void)
 	{
-		m_eglTestCtx.getGLFunctions(m_gl, m_api, vector<const char*>(1, "GL_OES_EGL_image"));
-		m_imageExt = de::newMovePtr<eglu::ImageFunctions>(eglu::getImageFunctions(m_eglTestCtx.getEGLDisplay()));
+		DE_ASSERT(m_display == EGL_NO_DISPLAY);
+		m_display = eglu::getAndInitDisplay(m_eglTestCtx.getNativeDisplay());
+
+		const char* extensions[] = { "GL_OES_EGL_image" };
+		m_eglTestCtx.initGLFunctions(&m_gl, m_api, DE_LENGTH_OF_ARRAY(extensions), &extensions[0]);
+	}
+
+	void		deinit				(void)
+	{
+		m_eglTestCtx.getLibrary().terminate(m_display);
+		m_display = EGL_NO_DISPLAY;
 	}
 
 protected:
-	EGLImageKHR	eglCreateImageKHR	(EGLDisplay dpy, EGLContext ctx, EGLenum target, EGLClientBuffer buffer, const EGLint *attribList)
-	{
-		return m_imageExt->createImage(dpy, ctx, target, buffer, attribList);
-	}
-
-	EGLBoolean	eglDestroyImageKHR	(EGLDisplay dpy, EGLImageKHR image)
-	{
-		return m_imageExt->destroyImage(dpy, image);
-	}
-
-	glw::Functions					m_gl;
-	MovePtr<eglu::ImageFunctions>	m_imageExt;
-	ApiType							m_api;
+	glw::Functions	m_gl;
+	ApiType			m_api;
+	EGLDisplay		m_display;
 };
 
 class InvalidCreateImage : public ImageTestCase
@@ -178,12 +189,10 @@ public:
 
 	IterateResult iterate (void)
 	{
-		const EGLDisplay			dpy 		= m_eglTestCtx.getEGLDisplay();
-
 #define CHECK_CREATE(MSG, DPY, CONTEXT, SOURCE, ERR) checkCreate(MSG, DPY, #DPY, CONTEXT, #CONTEXT, SOURCE, #SOURCE, ERR)
 		CHECK_CREATE("Testing bad display (-1)...", (EGLDisplay)-1, EGL_NO_CONTEXT, EGL_NONE, EGL_BAD_DISPLAY);
-		CHECK_CREATE("Testing bad context (-1)...", dpy, (EGLContext)-1, EGL_NONE, EGL_BAD_CONTEXT);
-		CHECK_CREATE("Testing bad source (-1)...", dpy, EGL_NO_CONTEXT, (EGLenum)-1, EGL_BAD_PARAMETER);
+		CHECK_CREATE("Testing bad context (-1)...", m_display, (EGLContext)-1, EGL_NONE, EGL_BAD_CONTEXT);
+		CHECK_CREATE("Testing bad source (-1)...", m_display, EGL_NO_CONTEXT, (EGLenum)-1, EGL_BAD_PARAMETER);
 #undef CHECK_CREATE
 
 		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
@@ -196,17 +205,16 @@ void InvalidCreateImage::checkCreate (const char* msg, EGLDisplay dpy, const cha
 {
 	m_testCtx.getLog() << TestLog::Message << msg << TestLog::EndMessage;
 	{
-		const EGLImageKHR	image = m_imageExt->createImage(dpy, context, source, 0, DE_NULL);
+		const Library&		egl		= m_eglTestCtx.getLibrary();
+		const EGLImageKHR	image	= egl.createImageKHR(dpy, context, source, 0, DE_NULL);
 		ostringstream		call;
 
 		call << "eglCreateImage(" << dpyStr << ", " << ctxStr << ", " << srcStr << ", 0, DE_NULL)";
-		checkCallReturn(m_testCtx, call.str().c_str(), image, EGL_NO_IMAGE_KHR, expectError);
+		checkCallReturn(m_eglTestCtx, call.str().c_str(), image, EGL_NO_IMAGE_KHR, expectError);
 	}
 }
 
-
-
-EGLConfig chooseConfig (EGLDisplay display, ApiType apiType)
+EGLConfig chooseConfig (const Library& egl, EGLDisplay display, ApiType apiType)
 {
 	AttribMap				attribs;
 	vector<EGLConfig>		configs;
@@ -218,7 +226,7 @@ EGLConfig chooseConfig (EGLDisplay display, ApiType apiType)
 	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(s_surfaceTypes); ++ndx)
 	{
 		attribs[EGL_SURFACE_TYPE] = s_surfaceTypes[ndx];
-		configs = eglu::chooseConfig(display, attribs);
+		configs = eglu::chooseConfigs(egl, display, attribs);
 
 		if (!configs.empty())
 			return configs.front();
@@ -231,25 +239,27 @@ EGLConfig chooseConfig (EGLDisplay display, ApiType apiType)
 class Context
 {
 public:
-								Context (EglTestContext& eglTestCtx, ContextType ctxType, int width, int height)
+								Context			(EglTestContext& eglTestCtx, EGLDisplay display, ContextType ctxType, int width, int height)
 									: m_eglTestCtx	(eglTestCtx)
-									, m_config		(chooseConfig(eglTestCtx.getEGLDisplay(), ctxType.getAPI()))
-									, m_context		(eglu::createGLContext(eglTestCtx.getEGLDisplay(), m_config, ctxType))
-									, m_surface		(createSurface(eglTestCtx, m_config, width, height))
-									, m_current		(eglTestCtx.getEGLDisplay(), m_surface->get(), m_surface->get(), m_context)
+									, m_display		(display)
+									, m_config		(chooseConfig(eglTestCtx.getLibrary(), display, ctxType.getAPI()))
+									, m_context		(m_eglTestCtx.getLibrary(), m_display, eglu::createGLContext(eglTestCtx.getLibrary(), m_display, m_config, ctxType))
+									, m_surface		(createSurface(eglTestCtx, m_display, m_config, width, height))
+									, m_current		(eglTestCtx.getLibrary(), m_display, m_surface->get(), m_surface->get(), *m_context)
 	{
-		m_eglTestCtx.getGLFunctions(m_gl, ctxType.getAPI());
+		m_eglTestCtx.initGLFunctions(&m_gl, ctxType.getAPI());
 	}
 
 	EGLConfig					getConfig		(void) const { return m_config; }
-	EGLDisplay 					getEglDisplay	(void) const { return m_eglTestCtx.getEGLDisplay(); }
-	EGLContext 					getEglContext	(void) const { return m_context; }
+	EGLDisplay 					getEglDisplay	(void) const { return m_display; }
+	EGLContext 					getEglContext	(void) const { return *m_context; }
 	const glw::Functions&		gl				(void) const { return m_gl; }
 
 private:
 	EglTestContext&				m_eglTestCtx;
+	EGLDisplay					m_display;
 	EGLConfig					m_config;
-	EGLContext					m_context;
+	eglu::UniqueContext			m_context;
 	UniquePtr<ManagedSurface>	m_surface;
 	ScopedCurrentContext		m_current;
 	glw::Functions				m_gl;
@@ -297,7 +307,7 @@ public:
 		}
 	}
 
-	MovePtr<ImageSource> getImageSource (EGLint target, GLenum format)
+	MovePtr<ImageSource> getImageSource (EGLint target, GLenum format, bool useTexLevel0)
 	{
 		switch (target)
 		{
@@ -308,7 +318,7 @@ public:
 			case EGL_GL_TEXTURE_CUBE_MAP_NEGATIVE_Y_KHR:
 			case EGL_GL_TEXTURE_CUBE_MAP_POSITIVE_Z_KHR:
 			case EGL_GL_TEXTURE_CUBE_MAP_NEGATIVE_Z_KHR:
-				return createTextureImageSource(target, format, GL_UNSIGNED_BYTE);
+				return createTextureImageSource(target, format, GL_UNSIGNED_BYTE, useTexLevel0);
 			case EGL_GL_RENDERBUFFER_KHR:
 				return createRenderbufferImageSource(format);
 			case EGL_NATIVE_BUFFER_ANDROID:
@@ -321,15 +331,16 @@ public:
 
 	CreateImageGLES2 (EglTestContext& eglTestCtx, EGLint target, GLenum storage, bool useTexLevel0 = false)
 		: ImageTestCase		(eglTestCtx, ApiType::es(2, 0), string("create_image_gles2_") + getTargetName(target) + "_" + getStorageName(storage) + (useTexLevel0 ? "_level0_only" : ""), "Create EGLImage from GLES2 object")
-		, m_source			(getImageSource(target, storage))
+		, m_source			(getImageSource(target, storage, useTexLevel0))
 	{
 	}
 
 	IterateResult iterate (void)
 	{
-		const EGLDisplay	dpy			= m_eglTestCtx.getEGLDisplay();
+		const Library&			egl				= m_eglTestCtx.getLibrary();
+		const EGLDisplay		dpy				= m_display;
 
-		if (eglu::getVersion(dpy) < eglu::Version(1, 5))
+		if (eglu::getVersion(egl, dpy) < eglu::Version(1, 5))
 			CHECK_EXTENSION(dpy, m_source->getRequiredExtension());
 
 		// Initialize result.
@@ -338,13 +349,13 @@ public:
 		// Create GLES2 context
 		TestLog&				log				= m_testCtx.getLog();
 		const ContextType		contextType		(ApiType::es(2, 0));
-		Context					context			(m_eglTestCtx, contextType, 64, 64);
+		Context					context			(m_eglTestCtx, dpy, contextType, 64, 64);
 		const EGLContext		eglContext		= context.getEglContext();
 
-		log << TestLog::Message << "Using EGL config " << eglu::getConfigID(dpy, context.getConfig()) << TestLog::EndMessage;
+		log << TestLog::Message << "Using EGL config " << eglu::getConfigID(egl, dpy, context.getConfig()) << TestLog::EndMessage;
 
 		UniquePtr<ClientBuffer>	clientBuffer	(m_source->createBuffer(context.gl()));
-		const EGLImageKHR		image			= m_source->createImage(*m_imageExt, dpy, eglContext, clientBuffer->get());
+		const EGLImageKHR		image			= m_source->createImage(egl, dpy, eglContext, clientBuffer->get());
 
 		if (image == EGL_NO_IMAGE_KHR)
 		{
@@ -355,13 +366,14 @@ public:
 		}
 
 		// Destroy image
-		CHECK_EXT_CALL_RET(eglDestroyImageKHR(context.getEglDisplay(), image), (EGLBoolean)EGL_TRUE, EGL_SUCCESS);
+		CHECK_EXT_CALL_RET(egl.destroyImageKHR(context.getEglDisplay(), image), (EGLBoolean)EGL_TRUE, EGL_SUCCESS);
 
 		return STOP;
 	}
 
 private:
 	UniquePtr<ImageSource>	m_source;
+	EGLint					m_target;
 };
 
 class ImageTargetGLES2 : public ImageTestCase
@@ -387,18 +399,19 @@ public:
 
 	IterateResult iterate (void)
 	{
+		const Library&	egl	= m_eglTestCtx.getLibrary();
 		TestLog&		log	= m_testCtx.getLog();
 
 		// \todo [2011-07-21 pyry] Try all possible EGLImage sources
-		CHECK_EXTENSION(m_eglTestCtx.getEGLDisplay(), "EGL_KHR_gl_texture_2D_image");
+		CHECK_EXTENSION(m_display, "EGL_KHR_gl_texture_2D_image");
 
 		// Initialize result.
 		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
 
 		// Create GLES2 context
 
-		Context context(m_eglTestCtx, ContextType(ApiType::es(2, 0)), 64, 64);
-		log << TestLog::Message << "Using EGL config " << eglu::getConfigID(context.getEglDisplay(), context.getConfig()) << TestLog::EndMessage;
+		Context context(m_eglTestCtx, m_display, ContextType(ApiType::es(2, 0)), 64, 64);
+		log << TestLog::Message << "Using EGL config " << eglu::getConfigID(m_eglTestCtx.getLibrary(), context.getEglDisplay(), context.getConfig()) << TestLog::EndMessage;
 
 		// Check for OES_EGL_image
 		{
@@ -421,7 +434,7 @@ public:
 
 		// Create EGL image
 		EGLint		attribs[]	= { EGL_GL_TEXTURE_LEVEL_KHR, 0, EGL_NONE };
-		EGLImageKHR	image		= CHECK_EXT_CALL_ERR(eglCreateImageKHR(context.getEglDisplay(), context.getEglContext(), EGL_GL_TEXTURE_2D_KHR, (EGLClientBuffer)(deUintptr)srcTex, attribs), EGL_SUCCESS);
+		EGLImageKHR	image		= CHECK_EXT_CALL_ERR(egl.createImageKHR(context.getEglDisplay(), context.getEglContext(), EGL_GL_TEXTURE_2D_KHR, (EGLClientBuffer)(deUintptr)srcTex, attribs), EGL_SUCCESS);
 		if (image == EGL_NO_IMAGE_KHR)
 		{
 			log << TestLog::Message << "  Fail: Got EGL_NO_IMAGE_KHR!" << TestLog::EndMessage;
@@ -453,7 +466,7 @@ public:
 		}
 
 		// Destroy image
-		CHECK_EXT_CALL_RET(eglDestroyImageKHR(context.getEglDisplay(), image), (EGLBoolean)EGL_TRUE, EGL_SUCCESS);
+		CHECK_EXT_CALL_RET(egl.destroyImageKHR(context.getEglDisplay(), image), (EGLBoolean)EGL_TRUE, EGL_SUCCESS);
 
 		// Destroy source texture object
 		GLU_CHECK_CALL(glDeleteTextures(1, &srcTex));

@@ -29,6 +29,10 @@
 #include "egluNativeWindow.hpp"
 #include "egluNativePixmap.hpp"
 #include "egluUtil.hpp"
+#include "egluUnique.hpp"
+
+#include "eglwLibrary.hpp"
+#include "eglwEnums.hpp"
 
 #include "tcuRenderTarget.hpp"
 #include "tcuTestLog.hpp"
@@ -42,62 +46,33 @@
 #include <memory>
 #include <set>
 
-#include <EGL/eglext.h>
-
-#if !defined(EGL_OPENGL_ES3_BIT_KHR)
-#	define EGL_OPENGL_ES3_BIT_KHR	0x0040
-#endif
-#if !defined(EGL_CONTEXT_MAJOR_VERSION_KHR)
-#	define EGL_CONTEXT_MAJOR_VERSION_KHR EGL_CONTEXT_CLIENT_VERSION
-#endif
-
-using std::string;
-using std::vector;
-using std::set;
-
-using tcu::TestLog;
-
 namespace deqp
 {
 namespace egl
 {
 
-// \todo [2013-04-24 pyry] Should we instead store surface bit somewhere?
-template<class Derived, class Base>
-inline bool instanceOf (Base& obj)
+using std::string;
+using std::vector;
+using std::set;
+using tcu::TestLog;
+using namespace eglw;
+
+static void postSurface (const Library& egl, EGLDisplay display, EGLSurface surface, EGLint typeBit)
 {
-	return dynamic_cast<Derived*>(&obj) != DE_NULL;
-}
-
-static void postSurface (tcu::egl::Surface& surface)
-{
-	const bool	isWindow	= instanceOf<tcu::egl::WindowSurface>(surface);
-	const bool	isPixmap	= instanceOf<tcu::egl::PixmapSurface>(surface);
-	const bool	isPbuffer	= instanceOf<tcu::egl::PbufferSurface>(surface);
-
-	DE_ASSERT((isWindow?1:0) + (isPixmap?1:0) + (isPbuffer?1:0) == 1);
-
-	if (isWindow)
-	{
-		tcu::egl::WindowSurface& window = static_cast<tcu::egl::WindowSurface&>(surface);
-		window.swapBuffers();
-	}
-	else if (isPixmap)
-	{
-		TCU_CHECK_EGL_CALL(eglWaitClient());
-	}
+	if (typeBit == EGL_WINDOW_BIT)
+		EGLU_CHECK_CALL(egl, swapBuffers(display, surface));
+	else if (typeBit == EGL_PIXMAP_BIT)
+		EGLU_CHECK_CALL(egl, waitClient());
+	else if (typeBit == EGL_PBUFFER_BIT)
+		EGLU_CHECK_CALL(egl, waitClient());
 	else
-	{
-		DE_ASSERT(isPbuffer);
-		DE_UNREF(isPbuffer);
-		TCU_CHECK_EGL_CALL(eglWaitClient());
-	}
+		DE_ASSERT(false);
 }
 
 // RenderCase
 
-RenderCase::RenderCase (EglTestContext& eglTestCtx, const char* name, const char* description, EGLint apiMask, EGLint surfaceTypeMask, const vector<EGLint>& configIds)
-	: SimpleConfigCase	(eglTestCtx, name, description, configIds)
+RenderCase::RenderCase (EglTestContext& eglTestCtx, const char* name, const char* description, EGLint apiMask, EGLint surfaceTypeMask, const eglu::FilterList& filters)
+	: SimpleConfigCase	(eglTestCtx, name, description, filters)
 	, m_apiMask			(apiMask)
 	, m_surfaceTypeMask	(surfaceTypeMask)
 {
@@ -107,17 +82,14 @@ RenderCase::~RenderCase (void)
 {
 }
 
-EGLint RenderCase::getSupportedApis (void)
+EGLint getBuildClientAPIMask (void)
 {
 	EGLint apiMask = 0;
 
-#if defined(DEQP_SUPPORT_GLES2)
+	// Always supported regardless of flags - dynamically loaded
 	apiMask |= EGL_OPENGL_ES2_BIT;
-#endif
-
-#if defined(DEQP_SUPPORT_GLES3)
-	apiMask |= EGL_OPENGL_ES3_BIT_KHR;
-#endif
+	apiMask |= EGL_OPENGL_ES3_BIT;
+	apiMask |= EGL_OPENGL_BIT;
 
 #if defined(DEQP_SUPPORT_GLES1)
 	apiMask |= EGL_OPENGL_ES_BIT;
@@ -130,28 +102,47 @@ EGLint RenderCase::getSupportedApis (void)
 	return apiMask;
 }
 
-void RenderCase::executeForConfig (tcu::egl::Display& defaultDisplay, EGLConfig config)
+static void checkBuildClientAPISupport (EGLint requiredAPIs)
 {
-	tcu::TestLog&			log				= m_testCtx.getLog();
-	int						width			= 128;
-	int						height			= 128;
-	EGLint					configId		= defaultDisplay.getConfigAttrib(config, EGL_CONFIG_ID);
-	bool					isOk			= true;
-	string					failReason		= "";
+	const EGLint	builtClientAPIs		= getBuildClientAPIMask();
+
+	if ((requiredAPIs & builtClientAPIs) != requiredAPIs)
+		TCU_THROW(InternalError, "Test case requires client API not supported in current build");
+}
+
+void RenderCase::executeForConfig (EGLDisplay display, EGLConfig config)
+{
+	const Library&						egl				= m_eglTestCtx.getLibrary();
+	tcu::TestLog&						log				= m_testCtx.getLog();
+	const int							width			= 128;
+	const int							height			= 128;
+	const EGLint						configId		= eglu::getConfigID(egl, display, config);
+
+	const eglu::NativeDisplayFactory&	displayFactory	= m_eglTestCtx.getNativeDisplayFactory();
+	eglu::NativeDisplay&				nativeDisplay	= m_eglTestCtx.getNativeDisplay();
+
+	bool								isOk			= true;
+	string								failReason		= "";
 
 	if (m_surfaceTypeMask & EGL_WINDOW_BIT)
 	{
-		tcu::ScopedLogSection(log, (string("Config") + de::toString(configId) + "-Window").c_str(),
-										(string("Config ID ") + de::toString(configId) + ", window surface").c_str());
+		tcu::ScopedLogSection(log,
+							  string("Config") + de::toString(configId) + "-Window",
+							  string("Config ID ") + de::toString(configId) + ", window surface");
+
+		const eglu::NativeWindowFactory*	windowFactory	= eglu::selectNativeWindowFactory(displayFactory, m_testCtx.getCommandLine());
+
+		if (!windowFactory)
+			TCU_THROW(NotSupportedError, "Windows not supported");
 
 		try
 		{
-			tcu::egl::Display&					display		= m_eglTestCtx.getDisplay();
-			de::UniquePtr<eglu::NativeWindow>	window		(m_eglTestCtx.createNativeWindow(display.getEGLDisplay(), config, DE_NULL, width, height, eglu::parseWindowVisibility(m_testCtx.getCommandLine())));
-			EGLSurface							eglSurface	= createWindowSurface(m_eglTestCtx.getNativeDisplay(), *window, display.getEGLDisplay(), config, DE_NULL);
-			tcu::egl::WindowSurface				surface		(display, eglSurface);
+			const eglu::WindowParams			params		(width, height, eglu::parseWindowVisibility(m_testCtx.getCommandLine()));
+			de::UniquePtr<eglu::NativeWindow>	window		(windowFactory->createWindow(&nativeDisplay, display, config, DE_NULL, params));
+			EGLSurface							eglSurface	= createWindowSurface(nativeDisplay, *window, display, config, DE_NULL);
+			eglu::UniqueSurface					surface		(egl, display, eglSurface);
 
-			executeForSurface(display, surface, config);
+			executeForSurface(display, *surface, Config(config, EGL_WINDOW_BIT, 0));
 		}
 		catch (const tcu::TestError& e)
 		{
@@ -163,17 +154,22 @@ void RenderCase::executeForConfig (tcu::egl::Display& defaultDisplay, EGLConfig 
 
 	if (m_surfaceTypeMask & EGL_PIXMAP_BIT)
 	{
-		tcu::ScopedLogSection(log, (string("Config") + de::toString(configId) + "-Pixmap").c_str(),
-										(string("Config ID ") + de::toString(configId) + ", pixmap surface").c_str());
+		tcu::ScopedLogSection(log,
+							  string("Config") + de::toString(configId) + "-Pixmap",
+							  string("Config ID ") + de::toString(configId) + ", pixmap surface");
+
+		const eglu::NativePixmapFactory*	pixmapFactory	= eglu::selectNativePixmapFactory(displayFactory, m_testCtx.getCommandLine());
+
+		if (!pixmapFactory)
+			TCU_THROW(NotSupportedError, "Windows not supported");
 
 		try
 		{
-			tcu::egl::Display&					display		= m_eglTestCtx.getDisplay();
-			std::auto_ptr<eglu::NativePixmap>	pixmap		(m_eglTestCtx.createNativePixmap(display.getEGLDisplay(), config, DE_NULL, width, height));
-			EGLSurface							eglSurface	= createPixmapSurface(m_eglTestCtx.getNativeDisplay(), *pixmap, display.getEGLDisplay(), config, DE_NULL);
-			tcu::egl::PixmapSurface				surface		(display, eglSurface);
+			std::auto_ptr<eglu::NativePixmap>	pixmap		(pixmapFactory->createPixmap(&nativeDisplay, display, config, DE_NULL, width, height));
+			EGLSurface							eglSurface	= createPixmapSurface(nativeDisplay, *pixmap, display, config, DE_NULL);
+			eglu::UniqueSurface					surface		(egl, display, eglSurface);
 
-			executeForSurface(display, surface, config);
+			executeForSurface(display, *surface, Config(config, EGL_PIXMAP_BIT, 0));
 		}
 		catch (const tcu::TestError& e)
 		{
@@ -185,20 +181,22 @@ void RenderCase::executeForConfig (tcu::egl::Display& defaultDisplay, EGLConfig 
 
 	if (m_surfaceTypeMask & EGL_PBUFFER_BIT)
 	{
-		tcu::ScopedLogSection(log, (string("Config") + de::toString(configId) + "-Pbuffer").c_str(),
-										(string("Config ID ") + de::toString(configId) + ", pbuffer surface").c_str());
+		tcu::ScopedLogSection(log,
+							  string("Config") + de::toString(configId) + "-Pbuffer",
+							  string("Config ID ") + de::toString(configId) + ", pbuffer surface");
 		try
 		{
-			EGLint surfaceAttribs[] =
+			const EGLint surfaceAttribs[] =
 			{
 				EGL_WIDTH,	width,
 				EGL_HEIGHT,	height,
 				EGL_NONE
 			};
 
-			tcu::egl::PbufferSurface surface(defaultDisplay, config, surfaceAttribs);
+			eglu::UniqueSurface surface(egl, display, egl.createPbufferSurface(display, config, surfaceAttribs));
+			EGLU_CHECK_MSG(egl, "eglCreatePbufferSurface()");
 
-			executeForSurface(defaultDisplay, surface, config);
+			executeForSurface(display, *surface, Config(config, EGL_PBUFFER_BIT, 0));
 		}
 		catch (const tcu::TestError& e)
 		{
@@ -214,8 +212,8 @@ void RenderCase::executeForConfig (tcu::egl::Display& defaultDisplay, EGLConfig 
 
 // SingleContextRenderCase
 
-SingleContextRenderCase::SingleContextRenderCase (EglTestContext& eglTestCtx, const char* name, const char* description, EGLint apiMask, EGLint surfaceTypeMask, const std::vector<EGLint>& configIds)
-	: RenderCase(eglTestCtx, name, description, apiMask, surfaceTypeMask, configIds)
+SingleContextRenderCase::SingleContextRenderCase (EglTestContext& eglTestCtx, const char* name, const char* description, EGLint apiMask, EGLint surfaceTypeMask, const eglu::FilterList& filters)
+	: RenderCase(eglTestCtx, name, description, apiMask, surfaceTypeMask, filters)
 {
 }
 
@@ -223,15 +221,13 @@ SingleContextRenderCase::~SingleContextRenderCase (void)
 {
 }
 
-void SingleContextRenderCase::executeForSurface (tcu::egl::Display& display, tcu::egl::Surface& surface, EGLConfig config)
+void SingleContextRenderCase::executeForSurface (EGLDisplay display, EGLSurface surface, const Config& config)
 {
-	EGLint				supportedApis	= getSupportedApis();
-	const EGLint		apis[]			= { EGL_OPENGL_ES2_BIT, EGL_OPENGL_ES3_BIT_KHR, EGL_OPENGL_ES_BIT, EGL_OPENVG_BIT };
-	tcu::TestLog&		log				= m_testCtx.getLog();
+	const Library&		egl		= m_eglTestCtx.getLibrary();
+	const EGLint		apis[]	= { EGL_OPENGL_ES2_BIT, EGL_OPENGL_ES3_BIT_KHR, EGL_OPENGL_ES_BIT, EGL_OPENVG_BIT };
+	tcu::TestLog&		log		= m_testCtx.getLog();
 
-	// Check if case is supported
-	if ((m_apiMask & supportedApis) != m_apiMask)
-		throw tcu::NotSupportedError("Client APIs not supported", "", __FILE__, __LINE__);
+	checkBuildClientAPISupport(m_apiMask);
 
 	for (int apiNdx = 0; apiNdx < DE_LENGTH_OF_ARRAY(apis); apiNdx++)
 	{
@@ -281,20 +277,24 @@ void SingleContextRenderCase::executeForSurface (tcu::egl::Display& display, tcu
 
 		log << TestLog::Message << apiName << TestLog::EndMessage;
 
-		tcu::egl::Context context(display, config, &contextAttribs[0], api);
+		EGLU_CHECK_CALL(egl, bindAPI(api));
 
-		context.makeCurrent(surface, surface);
-		executeForContext(display, context, surface, apiBit);
+		eglu::UniqueContext	context	(egl, display, egl.createContext(display, config.config, EGL_NO_CONTEXT, &contextAttribs[0]));
+
+		EGLU_CHECK_CALL(egl, makeCurrent(display, surface, surface, *context));
+		executeForContext(display, *context, surface, Config(config.config, config.surfaceTypeBit, apiBit));
 
 		// Call SwapBuffers() / WaitClient() to finish rendering
-		postSurface(surface);
+		postSurface(egl, display, surface, config.surfaceTypeBit);
 	}
+
+	EGLU_CHECK_CALL(egl, makeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT));
 }
 
 // MultiContextRenderCase
 
-MultiContextRenderCase::MultiContextRenderCase (EglTestContext& eglTestCtx, const char* name, const char* description, EGLint api, EGLint surfaceType, const vector<EGLint>& configIds, int numContextsPerApi)
-	: RenderCase			(eglTestCtx, name, description, api, surfaceType, configIds)
+MultiContextRenderCase::MultiContextRenderCase (EglTestContext& eglTestCtx, const char* name, const char* description, EGLint api, EGLint surfaceType, const eglu::FilterList& filters, int numContextsPerApi)
+	: RenderCase			(eglTestCtx, name, description, api, surfaceType, filters)
 	, m_numContextsPerApi	(numContextsPerApi)
 {
 }
@@ -303,10 +303,13 @@ MultiContextRenderCase::~MultiContextRenderCase (void)
 {
 }
 
-void MultiContextRenderCase::executeForSurface (tcu::egl::Display& display, tcu::egl::Surface& surface, EGLConfig config)
+void MultiContextRenderCase::executeForSurface (EGLDisplay display, EGLSurface surface, const Config& config)
 {
-	vector<std::pair<EGLint, tcu::egl::Context*> > contexts;
+	const Library&							egl		= m_eglTestCtx.getLibrary();
+	vector<std::pair<EGLint, EGLContext> >	contexts;
 	contexts.reserve(3*m_numContextsPerApi); // 3 types of contexts at maximum.
+
+	checkBuildClientAPISupport(m_apiMask);
 
 	try
 	{
@@ -316,116 +319,132 @@ void MultiContextRenderCase::executeForSurface (tcu::egl::Display& display, tcu:
 			if (m_apiMask & EGL_OPENGL_ES2_BIT)
 			{
 				static const EGLint attribs[] = { EGL_CONTEXT_CLIENT_VERSION, 2, EGL_NONE };
-				contexts.push_back(std::make_pair(EGL_OPENGL_ES2_BIT, new tcu::egl::Context(display, config, &attribs[0], EGL_OPENGL_ES_API)));
+				EGLU_CHECK_CALL(egl, bindAPI(EGL_OPENGL_ES_API));
+				contexts.push_back(std::make_pair(EGL_OPENGL_ES2_BIT, egl.createContext(display, config.config, EGL_NO_CONTEXT, &attribs[0])));
 			}
 
 			if (m_apiMask & EGL_OPENGL_ES3_BIT_KHR)
 			{
 				static const EGLint attribs[] = { EGL_CONTEXT_MAJOR_VERSION_KHR, 3, EGL_NONE };
-				contexts.push_back(std::make_pair(EGL_OPENGL_ES3_BIT_KHR, new tcu::egl::Context(display, config, &attribs[0], EGL_OPENGL_ES_API)));
+				EGLU_CHECK_CALL(egl, bindAPI(EGL_OPENGL_ES_API));
+				contexts.push_back(std::make_pair(EGL_OPENGL_ES3_BIT_KHR, egl.createContext(display, config.config, EGL_NO_CONTEXT, &attribs[0])));
 			}
 
 			if (m_apiMask & EGL_OPENGL_ES_BIT)
 			{
 				static const EGLint attribs[] = { EGL_CONTEXT_CLIENT_VERSION, 1, EGL_NONE };
-				contexts.push_back(std::make_pair(EGL_OPENGL_ES_BIT, new tcu::egl::Context(display, config, &attribs[0], EGL_OPENGL_ES_API)));
+				EGLU_CHECK_CALL(egl, bindAPI(EGL_OPENGL_ES_API));
+				contexts.push_back(std::make_pair(EGL_OPENGL_ES_BIT, egl.createContext(display, config.config, EGL_NO_CONTEXT, &attribs[0])));
 			}
 
 			if (m_apiMask & EGL_OPENVG_BIT)
 			{
 				static const EGLint attribs[] = { EGL_NONE };
-				contexts.push_back(std::make_pair(EGL_OPENVG_BIT, new tcu::egl::Context(display, config, &attribs[0], EGL_OPENVG_API)));
+				EGLU_CHECK_CALL(egl, bindAPI(EGL_OPENVG_API));
+				contexts.push_back(std::make_pair(EGL_OPENVG_BIT, egl.createContext(display, config.config, EGL_NO_CONTEXT, &attribs[0])));
 			}
 		}
 
+		EGLU_CHECK_MSG(egl, "eglCreateContext()");
+
 		// Execute for contexts.
-		executeForContexts(display, surface, config, contexts);
+		executeForContexts(display, surface, Config(config.config, config.surfaceTypeBit, m_apiMask), contexts);
+
+		EGLU_CHECK_CALL(egl, makeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT));
 	}
-	catch (const std::exception&)
+	catch (...)
 	{
 		// Make sure all contexts have been destroyed.
-		for (vector<std::pair<EGLint, tcu::egl::Context*> >::iterator i = contexts.begin(); i != contexts.end(); i++)
-			delete i->second;
+		for (vector<std::pair<EGLint, EGLContext> >::iterator i = contexts.begin(); i != contexts.end(); i++)
+			egl.destroyContext(display, i->second);
 		throw;
 	}
 
 	// Destroy contexts.
-	for (vector<std::pair<EGLint, tcu::egl::Context*> >::iterator i = contexts.begin(); i != contexts.end(); i++)
-		delete i->second;
+	for (vector<std::pair<EGLint, EGLContext> >::iterator i = contexts.begin(); i != contexts.end(); i++)
+		egl.destroyContext(display, i->second);
 }
 
 // Utilities
 
-void addRenderConfigIdSet (
-	vector<RenderConfigIdSet>&			configSets,
-	const vector<eglu::ConfigInfo>&		configInfos,
-	const eglu::FilterList&				baseFilters,
-	const char*							name,
-	tcu::RGBA							colorBits,
-	EGLint								surfaceType)
+template <int Red, int Green, int Blue, int Alpha>
+static bool colorBits (const eglu::CandidateConfig& c)
 {
-	eglu::FilterList filters = baseFilters;
-	filters << (eglu::ConfigColorBits() == colorBits) << (eglu::ConfigSurfaceType() & surfaceType);
+	return c.redSize()		== Red		&&
+		   c.greenSize()	== Green	&&
+		   c.blueSize()		== Blue		&&
+		   c.alphaSize()	== Alpha;
+}
 
-	vector<EGLint> matchingConfigs;
+template <int Red, int Green, int Blue, int Alpha>
+static bool notColorBits (const eglu::CandidateConfig& c)
+{
+	return c.redSize()		!= Red		||
+		   c.greenSize()	!= Green	||
+		   c.blueSize()		!= Blue		||
+		   c.alphaSize()	!= Alpha;
+}
 
-	for (vector<eglu::ConfigInfo>::const_iterator configIter = configInfos.begin(); configIter != configInfos.end(); configIter++)
+template <deUint32 Type>
+static bool surfaceType (const eglu::CandidateConfig& c)
+{
+	return (c.surfaceType() & Type) == Type;
+}
+
+void getDefaultRenderFilterLists (vector<RenderFilterList>& filterLists, const eglu::FilterList& baseFilters)
+{
+	static const struct
 	{
-		if (!filters.match(*configIter))
-			continue;
+		const char*			name;
+		eglu::ConfigFilter	filter;
+	} s_colorRules[] =
+	{
+		{ "rgb565",		colorBits<5, 6, 5, 0>	},
+		{ "rgb888",		colorBits<8, 8, 8, 0>	},
+		{ "rgba4444",	colorBits<4, 4, 4, 4>	},
+		{ "rgba5551",	colorBits<5, 5, 5, 1>	},
+		{ "rgba8888",	colorBits<8, 8, 8, 8>	},
+	};
 
-		matchingConfigs.push_back(configIter->configId);
+	static const struct
+	{
+		const char*			name;
+		EGLint				bits;
+		eglu::ConfigFilter	filter;
+	} s_surfaceRules[] =
+	{
+		{ "window",		EGL_WINDOW_BIT,		surfaceType<EGL_WINDOW_BIT>		},
+		{ "pixmap",		EGL_PIXMAP_BIT,		surfaceType<EGL_PIXMAP_BIT>,	},
+		{ "pbuffer",	EGL_PBUFFER_BIT,	surfaceType<EGL_PBUFFER_BIT>	}
+	};
+
+	for (int colorNdx = 0; colorNdx < DE_LENGTH_OF_ARRAY(s_colorRules); colorNdx++)
+	{
+		for (int surfaceNdx = 0; surfaceNdx < DE_LENGTH_OF_ARRAY(s_surfaceRules); surfaceNdx++)
+		{
+			const string		name	= string(s_colorRules[colorNdx].name) + "_" + s_surfaceRules[surfaceNdx].name;
+			RenderFilterList	filters	(name.c_str(), "", s_surfaceRules[surfaceNdx].bits);
+
+			filters << baseFilters
+					<< s_colorRules[colorNdx].filter
+					<< s_surfaceRules[surfaceNdx].filter;
+
+			filterLists.push_back(filters);
+		}
 	}
-
-	configSets.push_back(RenderConfigIdSet(name, "", matchingConfigs, surfaceType));
-}
-
-void addRenderConfigIdSet (
-	vector<RenderConfigIdSet>&			configSets,
-	const vector<eglu::ConfigInfo>&		configInfos,
-	const eglu::FilterList&				baseFilters,
-	const char*							name,
-	tcu::RGBA							colorBits)
-{
-	addRenderConfigIdSet(configSets, configInfos, baseFilters, (string(name) + "_window").c_str(),	colorBits, EGL_WINDOW_BIT);
-	addRenderConfigIdSet(configSets, configInfos, baseFilters, (string(name) + "_pixmap").c_str(),	colorBits, EGL_PIXMAP_BIT);
-	addRenderConfigIdSet(configSets, configInfos, baseFilters, (string(name) + "_pbuffer").c_str(),	colorBits, EGL_PBUFFER_BIT);
-}
-
-void getDefaultRenderConfigIdSets (vector<RenderConfigIdSet>& configSets, const vector<eglu::ConfigInfo>& configInfos, const eglu::FilterList& baseFilters)
-{
-	using tcu::RGBA;
-
-	addRenderConfigIdSet(configSets, configInfos, baseFilters, "rgb565",	RGBA(5, 6, 5, 0));
-	addRenderConfigIdSet(configSets, configInfos, baseFilters, "rgb888",	RGBA(8, 8, 8, 0));
-	addRenderConfigIdSet(configSets, configInfos, baseFilters, "rgba4444",	RGBA(4, 4, 4, 4));
-	addRenderConfigIdSet(configSets, configInfos, baseFilters, "rgba5551",	RGBA(5, 5, 5, 1));
-	addRenderConfigIdSet(configSets, configInfos, baseFilters, "rgba8888",	RGBA(8, 8, 8, 8));
 
 	// Add other config ids to "other" set
 	{
-		set<EGLint>		usedConfigs;
-		vector<EGLint>	otherCfgSet;
+		RenderFilterList	filters	("other", "", EGL_WINDOW_BIT|EGL_PIXMAP_BIT|EGL_PBUFFER_BIT);
 
-		for (vector<RenderConfigIdSet>::const_iterator setIter = configSets.begin(); setIter != configSets.end(); setIter++)
-		{
-			const vector<EGLint>& setCfgs = setIter->getConfigIds();
-			for (vector<EGLint>::const_iterator i = setCfgs.begin(); i != setCfgs.end(); i++)
-				usedConfigs.insert(*i);
-		}
+		filters << baseFilters
+				<< notColorBits<5, 6, 5, 0>
+				<< notColorBits<8, 8, 8, 0>
+				<< notColorBits<4, 4, 4, 4>
+				<< notColorBits<5, 5, 5, 1>
+				<< notColorBits<8, 8, 8, 8>;
 
-		for (vector<eglu::ConfigInfo>::const_iterator cfgIter = configInfos.begin(); cfgIter != configInfos.end(); cfgIter++)
-		{
-			if (!baseFilters.match(*cfgIter))
-				continue;
-
-			EGLint id = cfgIter->configId;
-
-			if (usedConfigs.find(id) == usedConfigs.end())
-				otherCfgSet.push_back(id);
-		}
-
-		configSets.push_back(RenderConfigIdSet("other", "", otherCfgSet, EGL_WINDOW_BIT|EGL_PIXMAP_BIT|EGL_PBUFFER_BIT));
+		filterLists.push_back(filters);
 	}
 }
 

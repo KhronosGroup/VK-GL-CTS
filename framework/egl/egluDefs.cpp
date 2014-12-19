@@ -24,20 +24,20 @@
 #include "egluDefs.hpp"
 #include "egluStrUtil.hpp"
 #include "egluConfigInfo.hpp"
+#include "eglwLibrary.hpp"
+#include "eglwEnums.hpp"
 #include "deString.h"
 
+#include <string>
 #include <sstream>
 
 namespace eglu
 {
 
-using std::vector;
-using std::string;
+using namespace eglw;
 
-void checkError (const char* message, const char* file, int line)
+void checkError (deUint32 err, const char* message, const char* file, int line)
 {
-	const EGLenum err = eglGetError();
-
 	if (err != EGL_SUCCESS)
 	{
 		std::ostringstream desc;
@@ -52,13 +52,13 @@ void checkError (const char* message, const char* file, int line)
 	}
 }
 
-Error::Error (deInt32 errCode, const char* errStr)
+Error::Error (deUint32 errCode, const char* errStr)
 	: tcu::TestError	((std::string("EGL returned ") + getErrorName(errCode)).c_str(), errStr ? errStr : "", __FILE__, __LINE__)
 	, m_error			(errCode)
 {
 }
 
-Error::Error (deInt32 errCode, const char* message, const char* expr, const char* file, int line)
+Error::Error (deUint32 errCode, const char* message, const char* expr, const char* file, int line)
 	: tcu::TestError	(message, expr, file, line)
 	, m_error			(errCode)
 {

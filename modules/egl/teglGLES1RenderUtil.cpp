@@ -59,14 +59,14 @@ void clear (int x, int y, int width, int height, const tcu::Vec4& color)
 {
 	DE_UNREF(x && y && width && height);
 	DE_UNREF(color);
-	throw tcu::NotSupportedError("OpenGL ES 1.x is not supported", "", __FILE__, __LINE__);
+	TCU_THROW(NotSupportedError, "OpenGL ES 1.x is not supported");
 }
 
 void readPixels (tcu::Surface& dst, int x, int y, int width, int height)
 {
 	DE_UNREF(x && y && width && height);
 	DE_UNREF(dst);
-	throw tcu::NotSupportedError("OpenGL ES 1.x is not supported", "", __FILE__, __LINE__);
+	TCU_THROW(NotSupportedError, "OpenGL ES 1.x is not supported");
 }
 
 #endif // DEQP_SUPPORT_GLES1

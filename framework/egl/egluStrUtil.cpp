@@ -22,13 +22,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "egluStrUtil.hpp"
-#include "egluHeaderWrapper.hpp"
-
-#include <EGL/eglext.h>
-
-#if !defined(EGL_OPENGL_ES3_BIT_KHR)
-#	define EGL_OPENGL_ES3_BIT_KHR	0x0040
-#endif
+#include "eglwEnums.hpp"
 
 namespace eglu
 {
@@ -139,11 +133,11 @@ std::ostream& operator<< (std::ostream& str, const SurfaceAttribValueFmt& attrib
 		case EGL_TEXTURE_TARGET:
 			return str << getTextureTargetStr(attribFmt.value);
 
-		case EGL_VG_ALPHA_FORMAT:
-			return str << getVGAlphaFormatStr(attribFmt.value);
+		case EGL_ALPHA_FORMAT:
+			return str << getAlphaFormatStr(attribFmt.value);
 
-		case EGL_VG_COLORSPACE:
-			return str << getVGColorspaceStr(attribFmt.value);
+		case EGL_COLORSPACE:
+			return str << getColorspaceStr(attribFmt.value);
 
 		default:
 			return str << tcu::toHex(attribFmt.value);

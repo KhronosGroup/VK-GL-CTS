@@ -24,11 +24,23 @@
 
 #include "teglRenderTests.hpp"
 #include "teglRenderCase.hpp"
+
 #include "tcuRenderTarget.hpp"
 #include "tcuTestLog.hpp"
 #include "tcuImageCompare.hpp"
 #include "tcuTextureUtil.hpp"
 #include "tcuSurface.hpp"
+
+#include "egluDefs.hpp"
+#include "egluUtil.hpp"
+
+#include "eglwLibrary.hpp"
+#include "eglwEnums.hpp"
+
+#include "gluShaderProgram.hpp"
+
+#include "glwFunctions.hpp"
+#include "glwEnums.hpp"
 
 #include "deRandom.hpp"
 #include "deSharedPtr.hpp"
@@ -36,36 +48,13 @@
 #include "deThread.hpp"
 #include "deString.h"
 
+#include "rrRenderer.hpp"
+#include "rrFragmentOperations.hpp"
+
 #include <algorithm>
 #include <iterator>
 #include <memory>
 #include <set>
-
-#include <EGL/eglext.h>
-
-#if !defined(EGL_OPENGL_ES3_BIT_KHR)
-#	define EGL_OPENGL_ES3_BIT_KHR	0x0040
-#endif
-#if !defined(EGL_CONTEXT_MAJOR_VERSION_KHR)
-#	define EGL_CONTEXT_MAJOR_VERSION_KHR EGL_CONTEXT_CLIENT_VERSION
-#endif
-
-#if defined(DEQP_SUPPORT_GLES2)
-#	include <GLES2/gl2.h>
-#elif defined(DEQP_SUPPORT_GLES3)
-#	include <GLES3/gl3.h>
-#endif
-
-#include "rrRenderer.hpp"
-#include "rrFragmentOperations.hpp"
-
-#if defined(DEQP_SUPPORT_GLES2) || defined(DEQP_SUPPORT_GLES3)
-#      include "gluDefs.hpp"
-#else
-       // \todo [pyry] Move renderer to common utils
-       // \note [jarkko] gluDefs is required for GLU_CHECK_MSG
-#      error "Reference renderer requires GLES2 or GLES3 support"
-#endif
 
 namespace deqp
 {
@@ -79,6 +68,9 @@ using std::set;
 using tcu::Vec4;
 
 using tcu::TestLog;
+
+using namespace glw;
+using namespace eglw;
 
 static const tcu::Vec4	CLEAR_COLOR		= tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f);
 static const float		CLEAR_DEPTH		= 1.0f;
@@ -423,92 +415,40 @@ public:
 
 typedef de::SharedPtr<Program> ProgramSp;
 
-#if defined(DEQP_SUPPORT_GLES2) || defined(DEQP_SUPPORT_GLES3)
-
-static const char* s_vertexSrc =
-	"attribute highp vec4 a_position;\n"
-	"attribute mediump vec4 a_color;\n"
-	"varying mediump vec4 v_color;\n"
-	"void main (void)\n"
-	"{\n"
-	"	gl_Position = a_position;\n"
-	"	v_color = a_color;\n"
-	"}\n";
-
-static const char* s_fragmentSrc =
-	"varying mediump vec4 v_color;\n"
-	"void main (void)\n"
-	"{\n"
-	"	gl_FragColor = v_color;\n"
-	"}\n";
-
-static deUint32 createShader (deUint32 shaderType, const char* source)
+static glu::ProgramSources getProgramSourcesES2 (void)
 {
-	deUint32 shader = glCreateShader(shaderType);
-	glShaderSource(shader, 1, &source, DE_NULL);
-	glCompileShader(shader);
+	static const char* s_vertexSrc =
+		"attribute highp vec4 a_position;\n"
+		"attribute mediump vec4 a_color;\n"
+		"varying mediump vec4 v_color;\n"
+		"void main (void)\n"
+		"{\n"
+		"	gl_Position = a_position;\n"
+		"	v_color = a_color;\n"
+		"}\n";
 
-	int compileStatus = 0;
-	glGetShaderiv(shader, GL_COMPILE_STATUS, &compileStatus);
+	static const char* s_fragmentSrc =
+		"varying mediump vec4 v_color;\n"
+		"void main (void)\n"
+		"{\n"
+		"	gl_FragColor = v_color;\n"
+		"}\n";
 
-	if (!compileStatus)
-	{
-		glDeleteShader(shader);
-		return 0;
-	}
-
-	return shader;
-}
-
-static deUint32 createProgram (deUint32 vertexShader, deUint32 fragmentShader)
-{
-	deUint32 program = glCreateProgram();
-	glAttachShader(program, vertexShader);
-	glAttachShader(program, fragmentShader);
-	glLinkProgram(program);
-
-	int linkStatus = 0;
-	glGetProgramiv(program, GL_LINK_STATUS, &linkStatus);
-
-	if (!linkStatus)
-	{
-		glDeleteProgram(program);
-		return 0;
-	}
-
-	return program;
+	return glu::ProgramSources() << glu::VertexSource(s_vertexSrc) << glu::FragmentSource(s_fragmentSrc);
 }
 
 class GLES2Program : public Program
 {
 public:
-	GLES2Program (void)
-		: m_program			(0)
-		, m_vertexShader	(0)
-		, m_fragmentShader	(0)
+	GLES2Program (const glw::Functions& gl)
+		: m_gl				(gl)
+		, m_program			(gl, getProgramSourcesES2())
 		, m_positionLoc		(0)
 		, m_colorLoc		(0)
 	{
-		m_vertexShader		= createShader(GL_VERTEX_SHADER, s_vertexSrc);
-		m_fragmentShader	= createShader(GL_FRAGMENT_SHADER, s_fragmentSrc);
 
-		if (!m_vertexShader || !m_fragmentShader)
-		{
-			glDeleteShader(m_vertexShader);
-			glDeleteShader(m_fragmentShader);
-			throw tcu::TestError("Failed to compile shaders");
-		}
-
-		m_program = createProgram(m_vertexShader, m_fragmentShader);
-		if (!m_program)
-		{
-			glDeleteShader(m_vertexShader);
-			glDeleteShader(m_fragmentShader);
-			throw tcu::TestError("Failed to link program");
-		}
-
-		m_positionLoc	= glGetAttribLocation(m_program, "a_position");
-		m_colorLoc		= glGetAttribLocation(m_program, "a_color");
+		m_positionLoc	= m_gl.getAttribLocation(m_program.getProgram(), "a_position");
+		m_colorLoc		= m_gl.getAttribLocation(m_program.getProgram(), "a_color");
 	}
 
 	~GLES2Program (void)
@@ -517,49 +457,48 @@ public:
 
 	void setup (void) const
 	{
-		glUseProgram(m_program);
-		glEnableVertexAttribArray(m_positionLoc);
-		glEnableVertexAttribArray(m_colorLoc);
-		GLU_CHECK_MSG("Program setup failed");
+		m_gl.useProgram(m_program.getProgram());
+		m_gl.enableVertexAttribArray(m_positionLoc);
+		m_gl.enableVertexAttribArray(m_colorLoc);
+		GLU_CHECK_GLW_MSG(m_gl, "Program setup failed");
 	}
 
-	int			getPositionLoc		(void) const { return m_positionLoc;	}
-	int			getColorLoc			(void) const { return m_colorLoc;		}
+	int						getPositionLoc		(void) const { return m_positionLoc;	}
+	int						getColorLoc			(void) const { return m_colorLoc;		}
 
 private:
-	deUint32	m_program;
-	deUint32	m_vertexShader;
-	deUint32	m_fragmentShader;
-	int			m_positionLoc;
-	int			m_colorLoc;
+	const glw::Functions&	m_gl;
+	glu::ShaderProgram		m_program;
+	int						m_positionLoc;
+	int						m_colorLoc;
 };
 
-void clearGLES2 (const tcu::Vec4& color, const float depth, const int stencil)
+void clearGLES2 (const glw::Functions& gl, const tcu::Vec4& color, const float depth, const int stencil)
 {
-	glClearColor(color.x(), color.y(), color.z(), color.w());
-	glClearDepthf(depth);
-	glClearStencil(stencil);
-	glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
+	gl.clearColor(color.x(), color.y(), color.z(), color.w());
+	gl.clearDepthf(depth);
+	gl.clearStencil(stencil);
+	gl.clear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
 }
 
-void drawGLES2 (const Program& program, const DrawPrimitiveOp& drawOp)
+void drawGLES2 (const glw::Functions& gl, const Program& program, const DrawPrimitiveOp& drawOp)
 {
 	const GLES2Program& gles2Program = dynamic_cast<const GLES2Program&>(program);
 
 	switch (drawOp.blend)
 	{
 		case BLENDMODE_NONE:
-			glDisable(GL_BLEND);
+			gl.disable(GL_BLEND);
 			break;
 
 		case BLENDMODE_ADDITIVE:
-			glEnable(GL_BLEND);
-			glBlendFunc(GL_ONE, GL_ONE);
+			gl.enable(GL_BLEND);
+			gl.blendFunc(GL_ONE, GL_ONE);
 			break;
 
 		case BLENDMODE_SRC_OVER:
-			glEnable(GL_BLEND);
-			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+			gl.enable(GL_BLEND);
+			gl.blendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 			break;
 
 		default:
@@ -569,11 +508,11 @@ void drawGLES2 (const Program& program, const DrawPrimitiveOp& drawOp)
 	switch (drawOp.depth)
 	{
 		case DEPTHMODE_NONE:
-			glDisable(GL_DEPTH_TEST);
+			gl.disable(GL_DEPTH_TEST);
 			break;
 
 		case DEPTHMODE_LESS:
-			glEnable(GL_DEPTH_TEST);
+			gl.enable(GL_DEPTH_TEST);
 			break;
 
 		default:
@@ -583,89 +522,82 @@ void drawGLES2 (const Program& program, const DrawPrimitiveOp& drawOp)
 	switch (drawOp.stencil)
 	{
 		case STENCILMODE_NONE:
-			glDisable(GL_STENCIL_TEST);
+			gl.disable(GL_STENCIL_TEST);
 			break;
 
 		case STENCILMODE_LEQUAL_INC:
-			glEnable(GL_STENCIL_TEST);
-			glStencilFunc(GL_LEQUAL, drawOp.stencilRef, ~0u);
-			glStencilOp(GL_KEEP, GL_INCR, GL_INCR);
+			gl.enable(GL_STENCIL_TEST);
+			gl.stencilFunc(GL_LEQUAL, drawOp.stencilRef, ~0u);
+			gl.stencilOp(GL_KEEP, GL_INCR, GL_INCR);
 			break;
 
 		default:
 			DE_ASSERT(false);
 	}
 
-	glVertexAttribPointer(gles2Program.getPositionLoc(), 4, GL_FLOAT, GL_FALSE, 0, &drawOp.positions[0]);
-	glVertexAttribPointer(gles2Program.getColorLoc(), 4, GL_FLOAT, GL_FALSE, 0, &drawOp.colors[0]);
+	gl.vertexAttribPointer(gles2Program.getPositionLoc(), 4, GL_FLOAT, GL_FALSE, 0, &drawOp.positions[0]);
+	gl.vertexAttribPointer(gles2Program.getColorLoc(), 4, GL_FLOAT, GL_FALSE, 0, &drawOp.colors[0]);
 
 	DE_ASSERT(drawOp.type == PRIMITIVETYPE_TRIANGLE);
-	glDrawArrays(GL_TRIANGLES, 0, drawOp.count*3);
+	gl.drawArrays(GL_TRIANGLES, 0, drawOp.count*3);
 }
 
-static void readPixelsGLES2 (tcu::Surface& dst)
+static void readPixelsGLES2 (const glw::Functions& gl, tcu::Surface& dst)
 {
-	glReadPixels(0, 0, dst.getWidth(), dst.getHeight(), GL_RGBA, GL_UNSIGNED_BYTE, dst.getAccess().getDataPtr());
+	gl.readPixels(0, 0, dst.getWidth(), dst.getHeight(), GL_RGBA, GL_UNSIGNED_BYTE, dst.getAccess().getDataPtr());
 }
 
-#endif
-
-Program* createProgram (EGLint api)
+Program* createProgram (const glw::Functions& gl, EGLint api)
 {
 	switch (api)
 	{
-#if defined(DEQP_SUPPORT_GLES2) || defined(DEQP_SUPPORT_GLES3)
-		case EGL_OPENGL_ES2_BIT:		return new GLES2Program();
-		case EGL_OPENGL_ES3_BIT_KHR:	return new GLES2Program();
-#endif
+		case EGL_OPENGL_ES2_BIT:		return new GLES2Program(gl);
+		case EGL_OPENGL_ES3_BIT_KHR:	return new GLES2Program(gl);
 		default:
 			throw tcu::NotSupportedError("Unsupported API");
 	}
 }
 
-void draw (EGLint api, const Program& program, const DrawPrimitiveOp& drawOp)
+void draw (const glw::Functions& gl, EGLint api, const Program& program, const DrawPrimitiveOp& drawOp)
 {
 	switch (api)
 	{
-#if defined(DEQP_SUPPORT_GLES2) || defined(DEQP_SUPPORT_GLES3)
-		case EGL_OPENGL_ES2_BIT:		drawGLES2(program, drawOp);		break;
-		case EGL_OPENGL_ES3_BIT_KHR:	drawGLES2(program, drawOp);		break;
-#endif
+		case EGL_OPENGL_ES2_BIT:		drawGLES2(gl, program, drawOp);		break;
+		case EGL_OPENGL_ES3_BIT_KHR:	drawGLES2(gl, program, drawOp);		break;
 		default:
 			throw tcu::NotSupportedError("Unsupported API");
 	}
 }
 
-void clear (EGLint api, const tcu::Vec4& color, const float depth, const int stencil)
+void clear (const glw::Functions& gl, EGLint api, const tcu::Vec4& color, const float depth, const int stencil)
 {
 	switch (api)
 	{
-#if defined(DEQP_SUPPORT_GLES2) || defined(DEQP_SUPPORT_GLES3)
-		case EGL_OPENGL_ES2_BIT:		clearGLES2(color, depth, stencil);		break;
-		case EGL_OPENGL_ES3_BIT_KHR:	clearGLES2(color, depth, stencil);		break;
-#endif
+		case EGL_OPENGL_ES2_BIT:		clearGLES2(gl, color, depth, stencil);		break;
+		case EGL_OPENGL_ES3_BIT_KHR:	clearGLES2(gl, color, depth, stencil);		break;
 		default:
 			throw tcu::NotSupportedError("Unsupported API");
 	}
 }
 
-static void readPixels (EGLint api, tcu::Surface& dst)
+static void readPixels (const glw::Functions& gl, EGLint api, tcu::Surface& dst)
 {
 	switch (api)
 	{
-#if defined(DEQP_SUPPORT_GLES2) || defined(DEQP_SUPPORT_GLES3)
-		case EGL_OPENGL_ES2_BIT:		readPixelsGLES2(dst);		break;
-		case EGL_OPENGL_ES3_BIT_KHR:	readPixelsGLES2(dst);		break;
-#endif
+		case EGL_OPENGL_ES2_BIT:		readPixelsGLES2(gl, dst);		break;
+		case EGL_OPENGL_ES3_BIT_KHR:	readPixelsGLES2(gl, dst);		break;
 		default:
 			throw tcu::NotSupportedError("Unsupported API");
 	}
 }
 
-tcu::PixelFormat getPixelFormat (const tcu::egl::Display& display, EGLConfig config)
+tcu::PixelFormat getPixelFormat (const Library& egl, EGLDisplay display, EGLConfig config)
 {
 	tcu::PixelFormat fmt;
-	display.describeConfig(config, fmt);
+	fmt.redBits		= eglu::getConfigAttribInt(egl, display, config, EGL_RED_SIZE);
+	fmt.greenBits	= eglu::getConfigAttribInt(egl, display, config, EGL_GREEN_SIZE);
+	fmt.blueBits	= eglu::getConfigAttribInt(egl, display, config, EGL_BLUE_SIZE);
+	fmt.alphaBits	= eglu::getConfigAttribInt(egl, display, config, EGL_ALPHA_SIZE);
 	return fmt;
 }
 
@@ -676,32 +608,36 @@ tcu::PixelFormat getPixelFormat (const tcu::egl::Display& display, EGLConfig con
 class SingleThreadRenderCase : public MultiContextRenderCase
 {
 public:
-						SingleThreadRenderCase		(EglTestContext& eglTestCtx, const char* name, const char* description, EGLint api, EGLint surfaceType, const std::vector<EGLint>& configIds, int numContextsPerApi);
+						SingleThreadRenderCase		(EglTestContext& eglTestCtx, const char* name, const char* description, EGLint api, EGLint surfaceType, const eglu::FilterList& filters, int numContextsPerApi);
 
 private:
-	virtual void		executeForContexts			(tcu::egl::Display& display, tcu::egl::Surface& surface, EGLConfig config, const std::vector<std::pair<EGLint, tcu::egl::Context*> >& contexts);
+	virtual void		executeForContexts			(EGLDisplay display, EGLSurface surface, const Config& config, const std::vector<std::pair<EGLint, EGLContext> >& contexts);
+
+	glw::Functions		m_gl;
 };
 
 // SingleThreadColorClearCase
 
-SingleThreadRenderCase::SingleThreadRenderCase (EglTestContext& eglTestCtx, const char* name, const char* description, EGLint api, EGLint surfaceType, const std::vector<EGLint>& configIds, int numContextsPerApi)
-	: MultiContextRenderCase(eglTestCtx, name, description, api, surfaceType, configIds, numContextsPerApi)
+SingleThreadRenderCase::SingleThreadRenderCase (EglTestContext& eglTestCtx, const char* name, const char* description, EGLint api, EGLint surfaceType, const eglu::FilterList& filters, int numContextsPerApi)
+	: MultiContextRenderCase(eglTestCtx, name, description, api, surfaceType, filters, numContextsPerApi)
 {
+	m_eglTestCtx.initGLFunctions(&m_gl, glu::ApiType::es(2,0));
 }
 
-void SingleThreadRenderCase::executeForContexts (tcu::egl::Display& display, tcu::egl::Surface& surface, EGLConfig config, const std::vector<std::pair<EGLint, tcu::egl::Context*> >& contexts)
+void SingleThreadRenderCase::executeForContexts (EGLDisplay display, EGLSurface surface, const Config& config, const std::vector<std::pair<EGLint, EGLContext> >& contexts)
 {
-	const int				width		= surface.getWidth();
-	const int				height		= surface.getHeight();
+	const Library&			egl			= m_eglTestCtx.getLibrary();
+	const int				width		= eglu::querySurfaceInt(egl, display, surface, EGL_WIDTH);
+	const int				height		= eglu::querySurfaceInt(egl, display, surface, EGL_HEIGHT);
 	const int				numContexts	= (int)contexts.size();
 	const int				drawsPerCtx	= 2;
 	const int				numIters	= 2;
 	const float				threshold	= 0.02f;
 
-	const tcu::PixelFormat	pixelFmt	= getPixelFormat(display, config);
-	const int				depthBits	= display.getConfigAttrib(config, EGL_DEPTH_SIZE);
-	const int				stencilBits	= display.getConfigAttrib(config, EGL_STENCIL_SIZE);
-	const int				numSamples	= display.getConfigAttrib(config, EGL_SAMPLES);
+	const tcu::PixelFormat	pixelFmt	= getPixelFormat(egl, display, config.config);
+	const int				depthBits	= eglu::getConfigAttribInt(egl, display, config.config, EGL_DEPTH_SIZE);
+	const int				stencilBits	= eglu::getConfigAttribInt(egl, display, config.config, EGL_STENCIL_SIZE);
+	const int				numSamples	= eglu::getConfigAttribInt(egl, display, config.config, EGL_SAMPLES);
 
 	TestLog&				log			= m_testCtx.getLog();
 
@@ -729,25 +665,23 @@ void SingleThreadRenderCase::executeForContexts (tcu::egl::Display& display, tcu
 	// Create and setup programs per context
 	for (int ctxNdx = 0; ctxNdx < numContexts; ctxNdx++)
 	{
-		EGLint				api			= contexts[ctxNdx].first;
-		tcu::egl::Context*	context		= contexts[ctxNdx].second;
+		EGLint		api			= contexts[ctxNdx].first;
+		EGLContext	context		= contexts[ctxNdx].second;
 
-		eglMakeCurrent(display.getEGLDisplay(), surface.getEGLSurface(), surface.getEGLSurface(), context->getEGLContext());
-		TCU_CHECK_EGL();
+		EGLU_CHECK_CALL(egl, makeCurrent(display, surface, surface, context));
 
-		programs[ctxNdx] = ProgramSp(createProgram(api));
+		programs[ctxNdx] = ProgramSp(createProgram(m_gl, api));
 		programs[ctxNdx]->setup();
 	}
 
 	// Clear to black using first context.
 	{
-		EGLint				api			= contexts[0].first;
-		tcu::egl::Context*	context		= contexts[0].second;
+		EGLint		api			= contexts[0].first;
+		EGLContext	context		= contexts[0].second;
 
-		eglMakeCurrent(display.getEGLDisplay(), surface.getEGLSurface(), surface.getEGLSurface(), context->getEGLContext());
-		TCU_CHECK_EGL();
+		EGLU_CHECK_CALL(egl, makeCurrent(display, surface, surface, context));
 
-		clear(api, CLEAR_COLOR, CLEAR_DEPTH, CLEAR_STENCIL);
+		clear(m_gl, api, CLEAR_COLOR, CLEAR_DEPTH, CLEAR_STENCIL);
 	}
 
 	// Render.
@@ -755,29 +689,27 @@ void SingleThreadRenderCase::executeForContexts (tcu::egl::Display& display, tcu
 	{
 		for (int ctxNdx = 0; ctxNdx < numContexts; ctxNdx++)
 		{
-			EGLint				api			= contexts[ctxNdx].first;
-			tcu::egl::Context*	context		= contexts[ctxNdx].second;
+			EGLint		api			= contexts[ctxNdx].first;
+			EGLContext	context		= contexts[ctxNdx].second;
 
-			eglMakeCurrent(display.getEGLDisplay(), surface.getEGLSurface(), surface.getEGLSurface(), context->getEGLContext());
-			TCU_CHECK_EGL();
+			EGLU_CHECK_CALL(egl, makeCurrent(display, surface, surface, context));
 
 			for (int drawNdx = 0; drawNdx < drawsPerCtx; drawNdx++)
 			{
 				const DrawPrimitiveOp& drawOp = drawOps[iterNdx*numContexts*drawsPerCtx + ctxNdx*drawsPerCtx + drawNdx];
-				draw(api, *programs[ctxNdx], drawOp);
+				draw(m_gl, api, *programs[ctxNdx], drawOp);
 			}
 		}
 	}
 
 	// Read pixels using first context. \todo [pyry] Randomize?
 	{
-		EGLint				api		= contexts[0].first;
-		tcu::egl::Context*	context	= contexts[0].second;
+		EGLint		api		= contexts[0].first;
+		EGLContext	context	= contexts[0].second;
 
-		eglMakeCurrent(display.getEGLDisplay(), surface.getEGLSurface(), surface.getEGLSurface(), context->getEGLContext());
-		TCU_CHECK_EGL();
+		EGLU_CHECK_CALL(egl, makeCurrent(display, surface, surface, context));
 
-		readPixels(api, frame);
+		readPixels(m_gl, api, frame);
 	}
 
 	// Render reference.
@@ -798,10 +730,12 @@ void SingleThreadRenderCase::executeForContexts (tcu::egl::Display& display, tcu
 class MultiThreadRenderCase : public MultiContextRenderCase
 {
 public:
-						MultiThreadRenderCase		(EglTestContext& eglTestCtx, const char* name, const char* description, EGLint api, EGLint surfaceType, const std::vector<EGLint>& configIds, int numContextsPerApi);
+						MultiThreadRenderCase		(EglTestContext& eglTestCtx, const char* name, const char* description, EGLint api, EGLint surfaceType, const eglu::FilterList& filters, int numContextsPerApi);
 
 private:
-	virtual void		executeForContexts			(tcu::egl::Display& display, tcu::egl::Surface& surface, EGLConfig config, const std::vector<std::pair<EGLint, tcu::egl::Context*> >& contexts);
+	virtual void		executeForContexts			(EGLDisplay display, EGLSurface surface, const Config& config, const std::vector<std::pair<EGLint, EGLContext> >& contexts);
+
+	glw::Functions		m_gl;
 };
 
 class RenderTestThread;
@@ -826,11 +760,13 @@ struct DrawOpPacket
 class RenderTestThread : public de::Thread
 {
 public:
-	RenderTestThread (tcu::egl::Display& display, tcu::egl::Surface& surface, tcu::egl::Context& context, EGLint api, const Program& program, const std::vector<DrawOpPacket>& packets)
-		: m_display	(display)
+	RenderTestThread (const Library& egl, EGLDisplay display, EGLSurface surface, EGLContext context, EGLint api, const glw::Functions& gl, const Program& program, const std::vector<DrawOpPacket>& packets)
+		: m_egl		(egl)
+		, m_display	(display)
 		, m_surface	(surface)
 		, m_context	(context)
 		, m_api		(api)
+		, m_gl		(gl)
 		, m_program	(program)
 		, m_packets	(packets)
 	{
@@ -844,14 +780,14 @@ public:
 			packetIter->wait->decrement();
 
 			// Acquire context.
-			eglMakeCurrent(m_display.getEGLDisplay(), m_surface.getEGLSurface(), m_surface.getEGLSurface(), m_context.getEGLContext());
+			EGLU_CHECK_CALL(m_egl, makeCurrent(m_display, m_surface, m_surface, m_context));
 
 			// Execute rendering.
 			for (int ndx = 0; ndx < packetIter->numOps; ndx++)
-				draw(m_api, m_program, packetIter->drawOps[ndx]);
+				draw(m_gl, m_api, m_program, packetIter->drawOps[ndx]);
 
 			// Release context.
-			eglMakeCurrent(m_display.getEGLDisplay(), EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+			EGLU_CHECK_CALL(m_egl, makeCurrent(m_display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT));
 
 			// Signal completion.
 			packetIter->signal->increment();
@@ -859,23 +795,27 @@ public:
 	}
 
 private:
-	tcu::egl::Display&					m_display;
-	tcu::egl::Surface&					m_surface;
-	tcu::egl::Context&					m_context;
+	const Library&						m_egl;
+	EGLDisplay							m_display;
+	EGLSurface							m_surface;
+	EGLContext							m_context;
 	EGLint								m_api;
+	const glw::Functions&				m_gl;
 	const Program&						m_program;
 	const std::vector<DrawOpPacket>&	m_packets;
 };
 
-MultiThreadRenderCase::MultiThreadRenderCase (EglTestContext& eglTestCtx, const char* name, const char* description, EGLint api, EGLint surfaceType, const std::vector<EGLint>& configIds, int numContextsPerApi)
-	: MultiContextRenderCase(eglTestCtx, name, description, api, surfaceType, configIds, numContextsPerApi)
+MultiThreadRenderCase::MultiThreadRenderCase (EglTestContext& eglTestCtx, const char* name, const char* description, EGLint api, EGLint surfaceType, const eglu::FilterList& filters, int numContextsPerApi)
+	: MultiContextRenderCase(eglTestCtx, name, description, api, surfaceType, filters, numContextsPerApi)
 {
+	m_eglTestCtx.initGLFunctions(&m_gl, glu::ApiType::es(2,0));
 }
 
-void MultiThreadRenderCase::executeForContexts (tcu::egl::Display& display, tcu::egl::Surface& surface, EGLConfig config, const std::vector<std::pair<EGLint, tcu::egl::Context*> >& contexts)
+void MultiThreadRenderCase::executeForContexts (EGLDisplay display, EGLSurface surface, const Config& config, const std::vector<std::pair<EGLint, EGLContext> >& contexts)
 {
-	const int				width				= surface.getWidth();
-	const int				height				= surface.getHeight();
+	const Library&			egl					= m_eglTestCtx.getLibrary();
+	const int				width				= eglu::querySurfaceInt(egl, display, surface, EGL_WIDTH);
+	const int				height				= eglu::querySurfaceInt(egl, display, surface, EGL_HEIGHT);
 	const int				numContexts			= (int)contexts.size();
 	const int				opsPerPacket		= 2;
 	const int				packetsPerThread	= 2;
@@ -883,10 +823,10 @@ void MultiThreadRenderCase::executeForContexts (tcu::egl::Display& display, tcu:
 	const int				numPackets			= numThreads * packetsPerThread;
 	const float				threshold			= 0.02f;
 
-	const tcu::PixelFormat	pixelFmt			= getPixelFormat(display, config);
-	const int				depthBits			= display.getConfigAttrib(config, EGL_DEPTH_SIZE);
-	const int				stencilBits			= display.getConfigAttrib(config, EGL_STENCIL_SIZE);
-	const int				numSamples			= display.getConfigAttrib(config, EGL_SAMPLES);
+	const tcu::PixelFormat	pixelFmt			= getPixelFormat(egl, display, config.config);
+	const int				depthBits			= eglu::getConfigAttribInt(egl, display, config.config, EGL_DEPTH_SIZE);
+	const int				stencilBits			= eglu::getConfigAttribInt(egl, display, config.config, EGL_STENCIL_SIZE);
+	const int				numSamples			= eglu::getConfigAttribInt(egl, display, config.config, EGL_SAMPLES);
 
 	TestLog&				log					= m_testCtx.getLog();
 
@@ -939,37 +879,35 @@ void MultiThreadRenderCase::executeForContexts (tcu::egl::Display& display, tcu:
 	// Create and setup programs per context
 	for (int ctxNdx = 0; ctxNdx < numContexts; ctxNdx++)
 	{
-		EGLint				api			= contexts[ctxNdx].first;
-		tcu::egl::Context*	context		= contexts[ctxNdx].second;
+		EGLint		api			= contexts[ctxNdx].first;
+		EGLContext	context		= contexts[ctxNdx].second;
 
-		eglMakeCurrent(display.getEGLDisplay(), surface.getEGLSurface(), surface.getEGLSurface(), context->getEGLContext());
-		TCU_CHECK_EGL();
+		EGLU_CHECK_CALL(egl, makeCurrent(display, surface, surface, context));
 
-		programs[ctxNdx] = ProgramSp(createProgram(api));
+		programs[ctxNdx] = ProgramSp(createProgram(m_gl, api));
 		programs[ctxNdx]->setup();
 
 		// Release context
-		eglMakeCurrent(display.getEGLDisplay(), EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+		EGLU_CHECK_CALL(egl, makeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT));
 	}
 
 	// Clear to black using first context.
 	{
-		EGLint				api			= contexts[0].first;
-		tcu::egl::Context*	context		= contexts[0].second;
+		EGLint		api			= contexts[0].first;
+		EGLContext	context		= contexts[0].second;
 
-		eglMakeCurrent(display.getEGLDisplay(), surface.getEGLSurface(), surface.getEGLSurface(), context->getEGLContext());
-		TCU_CHECK_EGL();
+		EGLU_CHECK_CALL(egl, makeCurrent(display, surface, surface, context));
 
-		clear(api, CLEAR_COLOR, CLEAR_DEPTH, CLEAR_STENCIL);
+		clear(m_gl, api, CLEAR_COLOR, CLEAR_DEPTH, CLEAR_STENCIL);
 
 		// Release context
-		eglMakeCurrent(display.getEGLDisplay(), EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+		EGLU_CHECK_CALL(egl, makeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT));
 	}
 
 	// Create and launch threads (actual rendering starts once first semaphore is signaled).
 	for (int threadNdx = 0; threadNdx < numThreads; threadNdx++)
 	{
-		threads[threadNdx] = RenderTestThreadSp(new RenderTestThread(display, surface, *contexts[threadNdx].second, contexts[threadNdx].first, *programs[threadNdx], packets[threadNdx]));
+		threads[threadNdx] = RenderTestThreadSp(new RenderTestThread(egl, display, surface, contexts[threadNdx].second, contexts[threadNdx].first, m_gl, *programs[threadNdx], packets[threadNdx]));
 		threads[threadNdx]->start();
 	}
 
@@ -979,13 +917,12 @@ void MultiThreadRenderCase::executeForContexts (tcu::egl::Display& display, tcu:
 
 	// Read pixels using first context. \todo [pyry] Randomize?
 	{
-		EGLint				api		= contexts[0].first;
-		tcu::egl::Context*	context	= contexts[0].second;
+		EGLint		api		= contexts[0].first;
+		EGLContext	context	= contexts[0].second;
 
-		eglMakeCurrent(display.getEGLDisplay(), surface.getEGLSurface(), surface.getEGLSurface(), context->getEGLContext());
-		TCU_CHECK_EGL();
+		EGLU_CHECK_CALL(egl, makeCurrent(display, surface, surface, context));
 
-		readPixels(api, frame);
+		readPixels(m_gl, api, frame);
 	}
 
 	// Join threads.
@@ -1015,11 +952,18 @@ RenderTests::~RenderTests (void)
 
 struct RenderGroupSpec
 {
-	const char*		name;
-	const char*		desc;
-	EGLint			apiBits;
-	int				numContextsPerApi;
+	const char*			name;
+	const char*			desc;
+	EGLint				apiBits;
+	eglu::ConfigFilter	baseFilter;
+	int					numContextsPerApi;
 };
+
+template <deUint32 Bits>
+static bool renderable (const eglu::CandidateConfig& c)
+{
+	return (c.renderableType() & Bits) == Bits;
+}
 
 template <class RenderClass>
 static void createRenderGroups (EglTestContext& eglTestCtx, tcu::TestCaseGroup* group, const RenderGroupSpec* first, const RenderGroupSpec* last)
@@ -1029,13 +973,13 @@ static void createRenderGroups (EglTestContext& eglTestCtx, tcu::TestCaseGroup* 
 		tcu::TestCaseGroup* configGroup = new tcu::TestCaseGroup(eglTestCtx.getTestContext(), groupIter->name, groupIter->desc);
 		group->addChild(configGroup);
 
-		vector<RenderConfigIdSet>	configSets;
-		eglu::FilterList			filters;
-		filters << (eglu::ConfigRenderableType() & groupIter->apiBits);
-		getDefaultRenderConfigIdSets(configSets, eglTestCtx.getConfigs(), filters);
+		vector<RenderFilterList>	filterLists;
+		eglu::FilterList			baseFilters;
+		baseFilters << groupIter->baseFilter;
+		getDefaultRenderFilterLists(filterLists, baseFilters);
 
-		for (vector<RenderConfigIdSet>::const_iterator setIter = configSets.begin(); setIter != configSets.end(); setIter++)
-			configGroup->addChild(new RenderClass(eglTestCtx, setIter->getName(), "", groupIter->apiBits, setIter->getSurfaceTypeMask(), setIter->getConfigIds(), groupIter->numContextsPerApi));
+		for (vector<RenderFilterList>::const_iterator listIter = filterLists.begin(); listIter != filterLists.end(); listIter++)
+			configGroup->addChild(new RenderClass(eglTestCtx, listIter->getName(), "", groupIter->apiBits, listIter->getSurfaceTypeMask(), *listIter, groupIter->numContextsPerApi));
 	}
 }
 
@@ -1043,25 +987,45 @@ void RenderTests::init (void)
 {
 	static const RenderGroupSpec singleContextCases[] =
 	{
-//		{ "gles1",			"Primitive rendering using GLES1",												EGL_OPENGL_ES_BIT,										1 },
-		{ "gles2",			"Primitive rendering using GLES2",												EGL_OPENGL_ES2_BIT,										1 },
-		{ "gles3",			"Primitive rendering using GLES3",												EGL_OPENGL_ES3_BIT_KHR,									1 },
-//		{ "vg",				"Primitive rendering using OpenVG",												EGL_OPENVG_BIT,											1 }
+		{
+			"gles2",
+			"Primitive rendering using GLES2",
+			EGL_OPENGL_ES2_BIT,
+			renderable<EGL_OPENGL_ES2_BIT>,
+			1
+		},
+		{
+			"gles3",
+			"Primitive rendering using GLES3",
+			EGL_OPENGL_ES3_BIT,
+			renderable<EGL_OPENGL_ES3_BIT>,
+			1
+		},
 	};
 
 	static const RenderGroupSpec multiContextCases[] =
 	{
-//		{ "gles1",				"Primitive rendering using multiple GLES1 contexts to shared surface",		EGL_OPENGL_ES_BIT,												3 },
-		{ "gles2",				"Primitive rendering using multiple GLES2 contexts to shared surface",		EGL_OPENGL_ES2_BIT,												3 },
-		{ "gles3",				"Primitive rendering using multiple GLES3 contexts to shared surface",		EGL_OPENGL_ES3_BIT_KHR,											3 },
-//		{ "vg",					"Primitive rendering using multiple OpenVG contexts to shared surface",		EGL_OPENVG_BIT,													3 },
-//		{ "gles1_gles2",		"Primitive rendering using multiple APIs to shared surface",				EGL_OPENGL_ES_BIT|EGL_OPENGL_ES2_BIT,							1 },
-//		{ "gles1_gles2_gles3",	"Primitive rendering using multiple APIs to shared surface",				EGL_OPENGL_ES_BIT|EGL_OPENGL_ES2_BIT|EGL_OPENGL_ES3_BIT_KHR,	1 },
-		{ "gles2_gles3",		"Primitive rendering using multiple APIs to shared surface",				EGL_OPENGL_ES2_BIT|EGL_OPENGL_ES3_BIT_KHR,						1 },
-//		{ "gles1_vg",			"Primitive rendering using multiple APIs to shared surface",				EGL_OPENGL_ES_BIT|EGL_OPENVG_BIT,								1 },
-//		{ "gles2_vg",			"Primitive rendering using multiple APIs to shared surface",				EGL_OPENGL_ES2_BIT|EGL_OPENVG_BIT,								1 },
-//		{ "gles3_vg",			"Primitive rendering using multiple APIs to shared surface",				EGL_OPENGL_ES3_BIT_KHR|EGL_OPENVG_BIT,							1 },
-//		{ "gles1_gles2_vg",		"Primitive rendering using multiple APIs to shared surface",				EGL_OPENGL_ES_BIT|EGL_OPENGL_ES2_BIT|EGL_OPENVG_BIT,			1 }
+		{
+			"gles2",
+			"Primitive rendering using multiple GLES2 contexts to shared surface",
+			EGL_OPENGL_ES2_BIT,
+			renderable<EGL_OPENGL_ES2_BIT>,
+			3
+		},
+		{
+			"gles3",
+			"Primitive rendering using multiple GLES3 contexts to shared surface",
+			EGL_OPENGL_ES3_BIT,
+			renderable<EGL_OPENGL_ES3_BIT>,
+			3
+		},
+		{
+			"gles2_gles3",
+			"Primitive rendering using multiple APIs to shared surface",
+			EGL_OPENGL_ES2_BIT|EGL_OPENGL_ES3_BIT,
+			renderable<EGL_OPENGL_ES2_BIT|EGL_OPENGL_ES3_BIT>,
+			1
+		},
 	};
 
 	tcu::TestCaseGroup* singleContextGroup = new tcu::TestCaseGroup(m_testCtx, "single_context", "Single-context rendering");

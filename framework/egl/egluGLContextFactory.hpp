@@ -39,8 +39,8 @@ namespace eglu
 class GLRenderContext : public glu::RenderContext
 {
 public:
-	virtual EGLDisplay						getEGLDisplay		(void) const = 0;
-	virtual EGLContext						getEGLContext		(void) const = 0;
+	virtual eglw::EGLDisplay				getEGLDisplay		(void) const = 0;
+	virtual eglw::EGLContext				getEGLContext		(void) const = 0;
 };
 
 class GLContextFactory : public glu::ContextFactory

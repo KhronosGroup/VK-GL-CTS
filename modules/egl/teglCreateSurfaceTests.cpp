@@ -27,6 +27,10 @@
 #include "egluNativeWindow.hpp"
 #include "egluNativePixmap.hpp"
 #include "egluUtil.hpp"
+#include "egluUnique.hpp"
+
+#include "eglwLibrary.hpp"
+#include "eglwEnums.hpp"
 
 #include "teglSimpleConfigCase.hpp"
 #include "tcuTestContext.hpp"
@@ -38,26 +42,21 @@
 
 #include <memory>
 
-#if !defined(EGL_EXT_platform_base)
-#	define EGL_EXT_platform_base 1
-	typedef EGLDisplay (EGLAPIENTRYP PFNEGLGETPLATFORMDISPLAYEXTPROC) (EGLenum platform, void *native_display, const EGLint *attrib_list);
-	typedef EGLSurface (EGLAPIENTRYP PFNEGLCREATEPLATFORMWINDOWSURFACEEXTPROC) (EGLDisplay dpy, EGLConfig config, void *native_window, const EGLint *attrib_list);
-	typedef EGLSurface (EGLAPIENTRYP PFNEGLCREATEPLATFORMPIXMAPSURFACEEXTPROC) (EGLDisplay dpy, EGLConfig config, void *native_pixmap, const EGLint *attrib_list);
-#endif // EGL_EXT_platform_base
-
-using std::vector;
-using tcu::TestLog;
-
 namespace deqp
 {
 namespace egl
 {
+
+using std::vector;
+using tcu::TestLog;
+using namespace eglw;
+
 namespace
 {
 
-void checkEGLPlatformSupport (const char* platformExt)
+void checkEGLPlatformSupport (const Library& egl, const char* platformExt)
 {
-	std::vector<std::string> extensions = eglu::getPlatformExtensions();
+	std::vector<std::string> extensions = eglu::getPlatformExtensions(egl);
 
 	if (!de::contains(extensions.begin(), extensions.end(), platformExt))
 		throw tcu::NotSupportedError((std::string("Platform extension '") + platformExt + "' not supported").c_str(), "", __FILE__, __LINE__);
@@ -65,22 +64,20 @@ void checkEGLPlatformSupport (const char* platformExt)
 
 EGLSurface createWindowSurface (EGLDisplay display, EGLConfig config, eglu::NativeDisplay& nativeDisplay, eglu::NativeWindow& window, bool useLegacyCreate)
 {
-	EGLSurface surface = EGL_NO_SURFACE;
+	const Library&	egl		= nativeDisplay.getLibrary();
+	EGLSurface		surface	= EGL_NO_SURFACE;
 
 	if (useLegacyCreate)
 	{
-		surface = eglCreateWindowSurface(display, config, window.getLegacyNative(), DE_NULL);
-		TCU_CHECK_EGL_MSG("eglCreateWindowSurface() failed");
+		surface = egl.createWindowSurface(display, config, window.getLegacyNative(), DE_NULL);
+		EGLU_CHECK_MSG(egl, "eglCreateWindowSurface() failed");
 	}
 	else
 	{
-		checkEGLPlatformSupport(nativeDisplay.getPlatformExtensionName());
+		checkEGLPlatformSupport(egl, nativeDisplay.getPlatformExtensionName());
 
-		PFNEGLCREATEPLATFORMWINDOWSURFACEEXTPROC createPlatformWindowSurfaceEXT = (PFNEGLCREATEPLATFORMWINDOWSURFACEEXTPROC)eglGetProcAddress("eglCreatePlatformWindowSurfaceEXT");
-		TCU_CHECK_EGL_MSG("eglGetProcAddress() failed");
-
-		surface = createPlatformWindowSurfaceEXT(display, config, window.getPlatformNative(), DE_NULL);
-		TCU_CHECK_EGL_MSG("eglCreatePlatformWindowSurfaceEXT() failed");
+		surface = egl.createPlatformWindowSurfaceEXT(display, config, window.getPlatformNative(), DE_NULL);
+		EGLU_CHECK_MSG(egl, "eglCreatePlatformWindowSurfaceEXT() failed");
 	}
 
 	return surface;
@@ -88,22 +85,20 @@ EGLSurface createWindowSurface (EGLDisplay display, EGLConfig config, eglu::Nati
 
 EGLSurface createPixmapSurface (EGLDisplay display, EGLConfig config, eglu::NativeDisplay& nativeDisplay, eglu::NativePixmap& pixmap, bool useLegacyCreate)
 {
-	EGLSurface surface = EGL_NO_SURFACE;
+	const Library&	egl		= nativeDisplay.getLibrary();
+	EGLSurface		surface	= EGL_NO_SURFACE;
 
 	if (useLegacyCreate)
 	{
-		surface = eglCreatePixmapSurface(display, config, pixmap.getLegacyNative(), DE_NULL);
-		TCU_CHECK_EGL_MSG("eglCreatePixmapSurface() failed");
+		surface = egl.createPixmapSurface(display, config, pixmap.getLegacyNative(), DE_NULL);
+		EGLU_CHECK_MSG(egl, "eglCreatePixmapSurface() failed");
 	}
 	else
 	{
-		checkEGLPlatformSupport(nativeDisplay.getPlatformExtensionName());
+		checkEGLPlatformSupport(egl, nativeDisplay.getPlatformExtensionName());
 
-		PFNEGLCREATEPLATFORMPIXMAPSURFACEEXTPROC createPlatformPixmapSurfaceEXT = (PFNEGLCREATEPLATFORMPIXMAPSURFACEEXTPROC)eglGetProcAddress("eglCreatePlatformPixmapSurfaceEXT");
-		TCU_CHECK_EGL_MSG("eglGetProcAddress() failed");
-
-		surface = createPlatformPixmapSurfaceEXT(display, config, pixmap.getPlatformNative(), DE_NULL);
-		TCU_CHECK_EGL_MSG("eglCreatePlatformPixmapSurfaceEXT() failed");
+		surface = egl.createPlatformPixmapSurfaceEXT(display, config, pixmap.getPlatformNative(), DE_NULL);
+		EGLU_CHECK_MSG(egl, "eglCreatePlatformPixmapSurfaceEXT() failed");
 	}
 
 	return surface;
@@ -112,44 +107,49 @@ EGLSurface createPixmapSurface (EGLDisplay display, EGLConfig config, eglu::Nati
 class CreateWindowSurfaceCase : public SimpleConfigCase
 {
 public:
-	CreateWindowSurfaceCase (EglTestContext& eglTestCtx, const char* name, const char* description, bool useLegacyCreate, const vector<EGLint>& configIds)
-		: SimpleConfigCase	(eglTestCtx, name, description, configIds)
+	CreateWindowSurfaceCase (EglTestContext& eglTestCtx, const char* name, const char* description, bool useLegacyCreate, const eglu::FilterList& filters)
+		: SimpleConfigCase	(eglTestCtx, name, description, filters)
 		, m_useLegacyCreate	(useLegacyCreate)
 	{
 	}
 
-	void executeForConfig (tcu::egl::Display& display, EGLConfig config)
+	void executeForConfig (EGLDisplay display, EGLConfig config)
 	{
-		TestLog&	log		= m_testCtx.getLog();
-		EGLint		id		= display.getConfigAttrib(config, EGL_CONFIG_ID);
+		const Library&						egl				= m_eglTestCtx.getLibrary();
+		TestLog&							log				= m_testCtx.getLog();
+		EGLint								id				= eglu::getConfigID(egl, display, config);
+		const eglu::NativeWindowFactory*	windowFactory	= eglu::selectNativeWindowFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
+
+		if (!windowFactory)
+			TCU_THROW(NotSupportedError, "Windows not supported");
 
 		// \todo [2011-03-23 pyry] Iterate thru all possible combinations of EGL_RENDER_BUFFER, EGL_VG_COLORSPACE and EGL_VG_ALPHA_FORMAT
 
 		if (m_useLegacyCreate)
 		{
-			if ((m_eglTestCtx.getNativeWindowFactory().getCapabilities() & eglu::NativeWindow::CAPABILITY_CREATE_SURFACE_LEGACY) == 0)
-				throw tcu::NotSupportedError("Native window doesn't support legacy eglCreateWindowSurface()", "", __FILE__, __LINE__);
+			if ((windowFactory->getCapabilities() & eglu::NativeWindow::CAPABILITY_CREATE_SURFACE_LEGACY) == 0)
+				TCU_THROW(NotSupportedError, "Native window doesn't support legacy eglCreateWindowSurface()");
 		}
 		else
 		{
-			if ((m_eglTestCtx.getNativeWindowFactory().getCapabilities() & eglu::NativeWindow::CAPABILITY_CREATE_SURFACE_PLATFORM) == 0)
-				throw tcu::NotSupportedError("Native window doesn't support eglCreatePlatformWindowSurfaceEXT()", "", __FILE__, __LINE__);
+			if ((windowFactory->getCapabilities() & eglu::NativeWindow::CAPABILITY_CREATE_SURFACE_PLATFORM) == 0)
+				TCU_THROW(NotSupportedError, "Native window doesn't support eglCreatePlatformWindowSurfaceEXT()");
 		}
 
 		log << TestLog::Message << "Creating window surface with config ID " << id << TestLog::EndMessage;
-		TCU_CHECK_EGL();
+		EGLU_CHECK_MSG(egl, "init");
 
 		{
 			const int							width			= 64;
 			const int							height			= 64;
-			de::UniquePtr<eglu::NativeWindow>	window			(m_eglTestCtx.createNativeWindow(display.getEGLDisplay(), config, DE_NULL, width, height, eglu::parseWindowVisibility(m_testCtx.getCommandLine())));
-			tcu::egl::WindowSurface				surface			(display, createWindowSurface(display.getEGLDisplay(), config, m_eglTestCtx.getNativeDisplay(), *window, m_useLegacyCreate));
+			de::UniquePtr<eglu::NativeWindow>	window			(windowFactory->createWindow(&m_eglTestCtx.getNativeDisplay(), display, config, DE_NULL, eglu::WindowParams(width, height, eglu::parseWindowVisibility(m_testCtx.getCommandLine()))));
+			eglu::UniqueSurface					surface			(egl, display, createWindowSurface(display, config, m_eglTestCtx.getNativeDisplay(), *window, m_useLegacyCreate));
 
 			EGLint								windowWidth		= 0;
 			EGLint								windowHeight	= 0;
 
-			TCU_CHECK_EGL_CALL(eglQuerySurface(display.getEGLDisplay(), surface.getEGLSurface(), EGL_WIDTH,		&windowWidth));
-			TCU_CHECK_EGL_CALL(eglQuerySurface(display.getEGLDisplay(), surface.getEGLSurface(), EGL_HEIGHT,	&windowHeight));
+			EGLU_CHECK_CALL(egl, querySurface(display, *surface, EGL_WIDTH,		&windowWidth));
+			EGLU_CHECK_CALL(egl, querySurface(display, *surface, EGL_HEIGHT,	&windowHeight));
 
 			if (windowWidth <= 0 || windowHeight <= 0)
 			{
@@ -168,43 +168,48 @@ private:
 class CreatePixmapSurfaceCase : public SimpleConfigCase
 {
 public:
-	CreatePixmapSurfaceCase (EglTestContext& eglTestCtx, const char* name, const char* description, bool useLegacyCreate, const vector<EGLint>& configIds)
-		: SimpleConfigCase(eglTestCtx, name, description, configIds)
+	CreatePixmapSurfaceCase (EglTestContext& eglTestCtx, const char* name, const char* description, bool useLegacyCreate, const eglu::FilterList& filters)
+		: SimpleConfigCase(eglTestCtx, name, description, filters)
 		, m_useLegacyCreate	(useLegacyCreate)
 	{
 	}
 
-	void executeForConfig (tcu::egl::Display& display, EGLConfig config)
+	void executeForConfig (EGLDisplay display, EGLConfig config)
 	{
-		TestLog&	log		= m_testCtx.getLog();
-		EGLint		id		= display.getConfigAttrib(config, EGL_CONFIG_ID);
+		const Library&						egl				= m_eglTestCtx.getLibrary();
+		TestLog&							log				= m_testCtx.getLog();
+		EGLint								id				= eglu::getConfigID(egl, display, config);
+		const eglu::NativePixmapFactory*	pixmapFactory	= eglu::selectNativePixmapFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
+
+		if (!pixmapFactory)
+			TCU_THROW(NotSupportedError, "Pixmaps not supported");
 
 		// \todo [2011-03-23 pyry] Iterate thru all possible combinations of EGL_RENDER_BUFFER, EGL_VG_COLORSPACE and EGL_VG_ALPHA_FORMAT
 
 		if (m_useLegacyCreate)
 		{
-			if ((m_eglTestCtx.getNativePixmapFactory().getCapabilities() & eglu::NativePixmap::CAPABILITY_CREATE_SURFACE_LEGACY) == 0)
-				throw tcu::NotSupportedError("Native pixmap doesn't support legacy eglCreatePixmapSurface()", "", __FILE__, __LINE__);
+			if ((pixmapFactory->getCapabilities() & eglu::NativePixmap::CAPABILITY_CREATE_SURFACE_LEGACY) == 0)
+				TCU_THROW(NotSupportedError, "Native pixmap doesn't support legacy eglCreatePixmapSurface()");
 		}
 		else
 		{
-			if ((m_eglTestCtx.getNativePixmapFactory().getCapabilities() & eglu::NativePixmap::CAPABILITY_CREATE_SURFACE_PLATFORM) == 0)
-				throw tcu::NotSupportedError("Native pixmap doesn't support eglCreatePlatformPixmapSurfaceEXT()", "", __FILE__, __LINE__);
+			if ((pixmapFactory->getCapabilities() & eglu::NativePixmap::CAPABILITY_CREATE_SURFACE_PLATFORM) == 0)
+				TCU_THROW(NotSupportedError, "Native pixmap doesn't support eglCreatePlatformPixmapSurfaceEXT()");
 		}
 
 		log << TestLog::Message << "Creating pixmap surface with config ID " << id << TestLog::EndMessage;
-		TCU_CHECK_EGL();
+		EGLU_CHECK_MSG(egl, "init");
 
 		{
 			const int							width			= 64;
 			const int							height			= 64;
-			de::UniquePtr<eglu::NativePixmap>	pixmap			(m_eglTestCtx.createNativePixmap(display.getEGLDisplay(), config, DE_NULL, width, height));
-			tcu::egl::PixmapSurface				surface			(display, createPixmapSurface(display.getEGLDisplay(), config, m_eglTestCtx.getNativeDisplay(), *pixmap, m_useLegacyCreate));
+			de::UniquePtr<eglu::NativePixmap>	pixmap			(pixmapFactory->createPixmap(&m_eglTestCtx.getNativeDisplay(), display, config, DE_NULL, width, height));
+			eglu::UniqueSurface					surface			(egl, display, createPixmapSurface(display, config, m_eglTestCtx.getNativeDisplay(), *pixmap, m_useLegacyCreate));
 			EGLint								pixmapWidth		= 0;
 			EGLint								pixmapHeight	= 0;
 
-			TCU_CHECK_EGL_CALL(eglQuerySurface(display.getEGLDisplay(), surface.getEGLSurface(), EGL_WIDTH,		&pixmapWidth));
-			TCU_CHECK_EGL_CALL(eglQuerySurface(display.getEGLDisplay(), surface.getEGLSurface(), EGL_HEIGHT,	&pixmapHeight));
+			EGLU_CHECK_CALL(egl, querySurface(display, *surface, EGL_WIDTH,		&pixmapWidth));
+			EGLU_CHECK_CALL(egl, querySurface(display, *surface, EGL_HEIGHT,	&pixmapHeight));
 
 			if (pixmapWidth <= 0 || pixmapHeight <= 0)
 			{
@@ -223,26 +228,27 @@ private:
 class CreatePbufferSurfaceCase : public SimpleConfigCase
 {
 public:
-	CreatePbufferSurfaceCase (EglTestContext& eglTestCtx, const char* name, const char* description, const vector<EGLint>& configIds)
-		: SimpleConfigCase(eglTestCtx, name, description, configIds)
+	CreatePbufferSurfaceCase (EglTestContext& eglTestCtx, const char* name, const char* description, const eglu::FilterList& filters)
+		: SimpleConfigCase(eglTestCtx, name, description, filters)
 	{
 	}
 
-	void executeForConfig (tcu::egl::Display& display, EGLConfig config)
+	void executeForConfig (EGLDisplay display, EGLConfig config)
 	{
-		TestLog&	log		= m_testCtx.getLog();
-		EGLint		id		= display.getConfigAttrib(config, EGL_CONFIG_ID);
-		int			width	= 64;
-		int			height	= 64;
+		const Library&	egl		= m_eglTestCtx.getLibrary();
+		TestLog&		log		= m_testCtx.getLog();
+		EGLint			id		= eglu::getConfigID(egl, display, config);
+		int				width	= 64;
+		int				height	= 64;
 
 		// \todo [2011-03-23 pyry] Iterate thru all possible combinations of EGL_RENDER_BUFFER, EGL_VG_COLORSPACE and EGL_VG_ALPHA_FORMAT
 
 		log << TestLog::Message << "Creating pbuffer surface with config ID " << id << TestLog::EndMessage;
-		TCU_CHECK_EGL();
+		EGLU_CHECK_MSG(egl, "init");
 
 		// Clamp to maximums reported by implementation
-		width	= deMin32(width, display.getConfigAttrib(config, EGL_MAX_PBUFFER_WIDTH));
-		height	= deMin32(height, display.getConfigAttrib(config, EGL_MAX_PBUFFER_HEIGHT));
+		width	= deMin32(width, eglu::getConfigAttribInt(egl, display, config, EGL_MAX_PBUFFER_WIDTH));
+		height	= deMin32(height, eglu::getConfigAttribInt(egl, display, config, EGL_MAX_PBUFFER_HEIGHT));
 
 		if (width == 0 || height == 0)
 		{
@@ -253,7 +259,7 @@ public:
 
 		// \todo [2011-03-23 pyry] Texture-backed variants!
 
-		EGLint attribs[] =
+		const EGLint attribs[] =
 		{
 			EGL_WIDTH,			width,
 			EGL_HEIGHT,			height,
@@ -261,10 +267,10 @@ public:
 			EGL_NONE
 		};
 
-		EGLSurface surface = eglCreatePbufferSurface(display.getEGLDisplay(), config, attribs);
-		TCU_CHECK_EGL_MSG("Failed to create pbuffer");
+		EGLSurface surface = egl.createPbufferSurface(display, config, attribs);
+		EGLU_CHECK_MSG(egl, "Failed to create pbuffer");
 		TCU_CHECK(surface != EGL_NO_SURFACE);
-		eglDestroySurface(display.getEGLDisplay(), surface);
+		egl.destroySurface(display, surface);
 
 		log << TestLog::Message << "  Pass" << TestLog::EndMessage;
 	}
@@ -281,6 +287,12 @@ CreateSurfaceTests::~CreateSurfaceTests (void)
 {
 }
 
+template <deUint32 Type>
+static bool surfaceType (const eglu::CandidateConfig& c)
+{
+	return (c.surfaceType() & Type) == Type;
+}
+
 void CreateSurfaceTests::init (void)
 {
 	// Window surfaces
@@ -288,14 +300,14 @@ void CreateSurfaceTests::init (void)
 		tcu::TestCaseGroup* windowGroup = new tcu::TestCaseGroup(m_testCtx, "window", "Window surfaces");
 		addChild(windowGroup);
 
-		eglu::FilterList filters;
-		filters << (eglu::ConfigSurfaceType() & EGL_WINDOW_BIT);
+		eglu::FilterList baseFilters;
+		baseFilters << surfaceType<EGL_WINDOW_BIT>;
 
-		vector<NamedConfigIdSet> configIdSets;
-		NamedConfigIdSet::getDefaultSets(configIdSets, m_eglTestCtx.getConfigs(), filters);
+		vector<NamedFilterList> filterLists;
+		getDefaultFilterLists(filterLists, baseFilters);
 
-		for (vector<NamedConfigIdSet>::iterator i = configIdSets.begin(); i != configIdSets.end(); i++)
-			windowGroup->addChild(new CreateWindowSurfaceCase(m_eglTestCtx, i->getName(), i->getDescription(), true, i->getConfigIds()));
+		for (vector<NamedFilterList>::iterator i = filterLists.begin(); i != filterLists.end(); i++)
+			windowGroup->addChild(new CreateWindowSurfaceCase(m_eglTestCtx, i->getName(), i->getDescription(), true, *i));
 	}
 
 	// Pixmap surfaces
@@ -303,14 +315,14 @@ void CreateSurfaceTests::init (void)
 		tcu::TestCaseGroup* pixmapGroup = new tcu::TestCaseGroup(m_testCtx, "pixmap", "Pixmap surfaces");
 		addChild(pixmapGroup);
 
-		eglu::FilterList filters;
-		filters << (eglu::ConfigSurfaceType() & EGL_PIXMAP_BIT);
+		eglu::FilterList baseFilters;
+		baseFilters << surfaceType<EGL_PIXMAP_BIT>;
 
-		vector<NamedConfigIdSet> configIdSets;
-		NamedConfigIdSet::getDefaultSets(configIdSets, m_eglTestCtx.getConfigs(), filters);
+		vector<NamedFilterList> filterLists;
+		getDefaultFilterLists(filterLists, baseFilters);
 
-		for (vector<NamedConfigIdSet>::iterator i = configIdSets.begin(); i != configIdSets.end(); i++)
-			pixmapGroup->addChild(new CreatePixmapSurfaceCase(m_eglTestCtx, i->getName(), i->getDescription(), true, i->getConfigIds()));
+		for (vector<NamedFilterList>::iterator i = filterLists.begin(); i != filterLists.end(); i++)
+			pixmapGroup->addChild(new CreatePixmapSurfaceCase(m_eglTestCtx, i->getName(), i->getDescription(), true, *i));
 	}
 
 	// Pbuffer surfaces
@@ -318,14 +330,14 @@ void CreateSurfaceTests::init (void)
 		tcu::TestCaseGroup* pbufferGroup = new tcu::TestCaseGroup(m_testCtx, "pbuffer", "Pbuffer surfaces");
 		addChild(pbufferGroup);
 
-		eglu::FilterList filters;
-		filters << (eglu::ConfigSurfaceType() & EGL_PBUFFER_BIT);
+		eglu::FilterList baseFilters;
+		baseFilters << surfaceType<EGL_PBUFFER_BIT>;
 
-		vector<NamedConfigIdSet> configIdSets;
-		NamedConfigIdSet::getDefaultSets(configIdSets, m_eglTestCtx.getConfigs(), filters);
+		vector<NamedFilterList> filterLists;
+		getDefaultFilterLists(filterLists, baseFilters);
 
-		for (vector<NamedConfigIdSet>::iterator i = configIdSets.begin(); i != configIdSets.end(); i++)
-			pbufferGroup->addChild(new CreatePbufferSurfaceCase(m_eglTestCtx, i->getName(), i->getDescription(), i->getConfigIds()));
+		for (vector<NamedFilterList>::iterator i = filterLists.begin(); i != filterLists.end(); i++)
+			pbufferGroup->addChild(new CreatePbufferSurfaceCase(m_eglTestCtx, i->getName(), i->getDescription(), *i));
 	}
 
 	// Window surfaces with new platform extension
@@ -333,14 +345,14 @@ void CreateSurfaceTests::init (void)
 		tcu::TestCaseGroup* windowGroup = new tcu::TestCaseGroup(m_testCtx, "platform_window", "Window surfaces with platform extension");
 		addChild(windowGroup);
 
-		eglu::FilterList filters;
-		filters << (eglu::ConfigSurfaceType() & EGL_WINDOW_BIT);
+		eglu::FilterList baseFilters;
+		baseFilters << surfaceType<EGL_WINDOW_BIT>;
 
-		vector<NamedConfigIdSet> configIdSets;
-		NamedConfigIdSet::getDefaultSets(configIdSets, m_eglTestCtx.getConfigs(), filters);
+		vector<NamedFilterList> filterLists;
+		getDefaultFilterLists(filterLists, baseFilters);
 
-		for (vector<NamedConfigIdSet>::iterator i = configIdSets.begin(); i != configIdSets.end(); i++)
-			windowGroup->addChild(new CreateWindowSurfaceCase(m_eglTestCtx, i->getName(), i->getDescription(), false, i->getConfigIds()));
+		for (vector<NamedFilterList>::iterator i = filterLists.begin(); i != filterLists.end(); i++)
+			windowGroup->addChild(new CreateWindowSurfaceCase(m_eglTestCtx, i->getName(), i->getDescription(), false, *i));
 	}
 
 	// Pixmap surfaces with new platform extension
@@ -348,14 +360,14 @@ void CreateSurfaceTests::init (void)
 		tcu::TestCaseGroup* pixmapGroup = new tcu::TestCaseGroup(m_testCtx, "platform_pixmap", "Pixmap surfaces with platform extension");
 		addChild(pixmapGroup);
 
-		eglu::FilterList filters;
-		filters << (eglu::ConfigSurfaceType() & EGL_PIXMAP_BIT);
+		eglu::FilterList baseFilters;
+		baseFilters << surfaceType<EGL_PIXMAP_BIT>;
 
-		vector<NamedConfigIdSet> configIdSets;
-		NamedConfigIdSet::getDefaultSets(configIdSets, m_eglTestCtx.getConfigs(), filters);
+		vector<NamedFilterList> filterLists;
+		getDefaultFilterLists(filterLists, baseFilters);
 
-		for (vector<NamedConfigIdSet>::iterator i = configIdSets.begin(); i != configIdSets.end(); i++)
-			pixmapGroup->addChild(new CreatePixmapSurfaceCase(m_eglTestCtx, i->getName(), i->getDescription(), false, i->getConfigIds()));
+		for (vector<NamedFilterList>::iterator i = filterLists.begin(); i != filterLists.end(); i++)
+			pixmapGroup->addChild(new CreatePixmapSurfaceCase(m_eglTestCtx, i->getName(), i->getDescription(), false, *i));
 	}
 }
 

@@ -19,8 +19,8 @@ const char*							getRenderBufferName			(int value);
 const char*							getSwapBehaviorName			(int value);
 const char*							getTextureFormatName		(int value);
 const char*							getTextureTargetName		(int value);
-const char*							getVGAlphaFormatName		(int value);
-const char*							getVGColorspaceName			(int value);
+const char*							getAlphaFormatName			(int value);
+const char*							getColorspaceName			(int value);
 tcu::Format::Bitfield<16>			getAPIBitsStr				(int value);
 tcu::Format::Bitfield<16>			getSurfaceBitsStr			(int value);
 inline tcu::Format::Enum<int, 2>	getBooleanStr				(int value)		{ return tcu::Format::Enum<int, 2>(getBooleanName, value); }
@@ -39,5 +39,5 @@ inline tcu::Format::Enum<int, 2>	getRenderBufferStr			(int value)		{ return tcu:
 inline tcu::Format::Enum<int, 2>	getSwapBehaviorStr			(int value)		{ return tcu::Format::Enum<int, 2>(getSwapBehaviorName, value); }
 inline tcu::Format::Enum<int, 2>	getTextureFormatStr			(int value)		{ return tcu::Format::Enum<int, 2>(getTextureFormatName, value); }
 inline tcu::Format::Enum<int, 2>	getTextureTargetStr			(int value)		{ return tcu::Format::Enum<int, 2>(getTextureTargetName, value); }
-inline tcu::Format::Enum<int, 2>	getVGAlphaFormatStr			(int value)		{ return tcu::Format::Enum<int, 2>(getVGAlphaFormatName, value); }
-inline tcu::Format::Enum<int, 2>	getVGColorspaceStr			(int value)		{ return tcu::Format::Enum<int, 2>(getVGColorspaceName, value); }
+inline tcu::Format::Enum<int, 2>	getAlphaFormatStr			(int value)		{ return tcu::Format::Enum<int, 2>(getAlphaFormatName, value); }
+inline tcu::Format::Enum<int, 2>	getColorspaceStr			(int value)		{ return tcu::Format::Enum<int, 2>(getColorspaceName, value); }

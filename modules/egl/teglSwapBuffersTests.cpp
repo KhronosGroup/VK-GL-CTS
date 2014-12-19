@@ -28,6 +28,8 @@
 #include "egluNativeWindow.hpp"
 #include "egluUtil.hpp"
 #include "egluUnique.hpp"
+#include "eglwLibrary.hpp"
+#include "eglwEnums.hpp"
 
 #include "gluDefs.hpp"
 #include "glwEnums.hpp"
@@ -48,20 +50,20 @@
 #include <vector>
 #include <sstream>
 
-using tcu::TestLog;
-
-using std::string;
-using std::vector;
-
 namespace deqp
 {
 namespace egl
 {
 
+using tcu::TestLog;
+using std::string;
+using std::vector;
+using namespace eglw;
+
 namespace
 {
 
-EGLContext createGLES2Context (EGLDisplay display, EGLConfig config)
+EGLContext createGLES2Context (const Library& egl, EGLDisplay display, EGLConfig config)
 {
 	EGLContext		context = EGL_NO_CONTEXT;
 	const EGLint	attribList[] =
@@ -71,10 +73,10 @@ EGLContext createGLES2Context (EGLDisplay display, EGLConfig config)
 	};
 
 
-	TCU_CHECK_EGL_CALL(eglBindAPI(EGL_OPENGL_ES_API));
+	EGLU_CHECK_CALL(egl, bindAPI(EGL_OPENGL_ES_API));
 
-	context = eglCreateContext(display, config, EGL_NO_CONTEXT, attribList);
-	TCU_CHECK_EGL_MSG("eglCreateContext() failed");
+	context = egl.createContext(display, config, EGL_NO_CONTEXT, attribList);
+	EGLU_CHECK_MSG(egl, "eglCreateContext() failed");
 	TCU_CHECK(context);
 
 	return context;
@@ -83,11 +85,11 @@ EGLContext createGLES2Context (EGLDisplay display, EGLConfig config)
 class SwapBuffersTest : public SimpleConfigCase
 {
 public:
-						SwapBuffersTest		(EglTestContext& eglTestCtx, const char* name, const char* description, const vector<EGLint>& configIds);
+						SwapBuffersTest		(EglTestContext& eglTestCtx, const NamedFilterList& filters);
 						~SwapBuffersTest	(void);
 
 private:
-	void				executeForConfig	(tcu::egl::Display& display, EGLConfig config);
+	void				executeForConfig	(EGLDisplay display, EGLConfig config);
 
 	// Not allowed
 						SwapBuffersTest		(const SwapBuffersTest&);
@@ -95,8 +97,8 @@ private:
 };
 
 
-SwapBuffersTest::SwapBuffersTest (EglTestContext& eglTestCtx, const char* name, const char* description, const vector<EGLint>& configIds)
-	: SimpleConfigCase			(eglTestCtx, name, description, configIds)
+SwapBuffersTest::SwapBuffersTest (EglTestContext& eglTestCtx, const NamedFilterList& filters)
+	: SimpleConfigCase(eglTestCtx, filters.getName(), filters.getDescription(), filters)
 {
 }
 
@@ -104,12 +106,12 @@ SwapBuffersTest::~SwapBuffersTest (void)
 {
 }
 
-string getConfigIdString (EGLDisplay display, EGLConfig config)
+string getConfigIdString (const Library& egl, EGLDisplay display, EGLConfig config)
 {
 	std::ostringstream	stream;
 	EGLint				id;
 
-	TCU_CHECK_EGL_CALL(eglGetConfigAttrib(display, config , EGL_CONFIG_ID, &id));
+	EGLU_CHECK_CALL(egl, getConfigAttrib(display, config , EGL_CONFIG_ID, &id));
 
 	stream << id;
 
@@ -262,33 +264,38 @@ bool checkColor (tcu::TestLog& log, const tcu::TextureLevel& screen, const tcu::
 	return true;
 }
 
-void SwapBuffersTest::executeForConfig (tcu::egl::Display& display, EGLConfig config)
+void SwapBuffersTest::executeForConfig (EGLDisplay display, EGLConfig config)
 {
-	const string			configIdStr	(getConfigIdString(display.getEGLDisplay(), config));
-	tcu::ScopedLogSection	logSection	(m_testCtx.getLog(), ("Config ID " + configIdStr).c_str(), ("Config ID " + configIdStr).c_str());
-	const int				waitFrames	= 5;
+	const Library&						egl			= m_eglTestCtx.getLibrary();
+	const string						configIdStr	(getConfigIdString(egl, display, config));
+	tcu::ScopedLogSection				logSection	(m_testCtx.getLog(), ("Config ID " + configIdStr).c_str(), ("Config ID " + configIdStr).c_str());
+	const int							waitFrames	= 5;
+	const eglu::NativeWindowFactory*	factory		= eglu::selectNativeWindowFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
+
+	if (!factory)
+		TCU_THROW(NotSupportedError, "Windows not supported");
+
+	if ((factory->getCapabilities() & eglu::NativeWindow::CAPABILITY_READ_SCREEN_PIXELS) == 0)
+		TCU_THROW(NotSupportedError, "eglu::NativeWindow doesn't support readScreenPixels()");
 
 	{
 		TestLog& log = m_testCtx.getLog();
 
-		log << TestLog::Message << "EGL_RED_SIZE: " << eglu::getConfigAttribInt(display.getEGLDisplay(), config, EGL_RED_SIZE) << TestLog::EndMessage;
-		log << TestLog::Message << "EGL_GREEN_SIZE: " << eglu::getConfigAttribInt(display.getEGLDisplay(), config, EGL_GREEN_SIZE) << TestLog::EndMessage;
-		log << TestLog::Message << "EGL_BLUE_SIZE: " << eglu::getConfigAttribInt(display.getEGLDisplay(), config, EGL_BLUE_SIZE) << TestLog::EndMessage;
-		log << TestLog::Message << "EGL_ALPHA_SIZE: " << eglu::getConfigAttribInt(display.getEGLDisplay(), config, EGL_ALPHA_SIZE) << TestLog::EndMessage;
-		log << TestLog::Message << "EGL_DEPTH_SIZE: " << eglu::getConfigAttribInt(display.getEGLDisplay(), config, EGL_DEPTH_SIZE) << TestLog::EndMessage;
-		log << TestLog::Message << "EGL_STENCIL_SIZE: " << eglu::getConfigAttribInt(display.getEGLDisplay(), config, EGL_STENCIL_SIZE) << TestLog::EndMessage;
-		log << TestLog::Message << "EGL_SAMPLES: " << eglu::getConfigAttribInt(display.getEGLDisplay(), config, EGL_SAMPLES) << TestLog::EndMessage;
+		log << TestLog::Message << "EGL_RED_SIZE: "		<< eglu::getConfigAttribInt(egl, display, config, EGL_RED_SIZE)		<< TestLog::EndMessage;
+		log << TestLog::Message << "EGL_GREEN_SIZE: "	<< eglu::getConfigAttribInt(egl, display, config, EGL_GREEN_SIZE)	<< TestLog::EndMessage;
+		log << TestLog::Message << "EGL_BLUE_SIZE: "	<< eglu::getConfigAttribInt(egl, display, config, EGL_BLUE_SIZE)	<< TestLog::EndMessage;
+		log << TestLog::Message << "EGL_ALPHA_SIZE: "	<< eglu::getConfigAttribInt(egl, display, config, EGL_ALPHA_SIZE)	<< TestLog::EndMessage;
+		log << TestLog::Message << "EGL_DEPTH_SIZE: "	<< eglu::getConfigAttribInt(egl, display, config, EGL_DEPTH_SIZE)	<< TestLog::EndMessage;
+		log << TestLog::Message << "EGL_STENCIL_SIZE: "	<< eglu::getConfigAttribInt(egl, display, config, EGL_STENCIL_SIZE)	<< TestLog::EndMessage;
+		log << TestLog::Message << "EGL_SAMPLES: "		<< eglu::getConfigAttribInt(egl, display, config, EGL_SAMPLES)		<< TestLog::EndMessage;
 
 		log << TestLog::Message << "Waiting " << waitFrames * 16 << "ms after eglSwapBuffers() and glFinish() for frame to become visible" << TestLog::EndMessage;
 	}
 
-	if ((m_eglTestCtx.getNativeWindowFactory().getCapabilities() & eglu::NativeWindow::CAPABILITY_READ_SCREEN_PIXELS) == 0)
-		throw tcu::NotSupportedError("eglu::NativeWindow doesn't support readScreenPixels()", "", __FILE__, __LINE__);
+	de::UniquePtr<eglu::NativeWindow>	window	(factory->createWindow(&m_eglTestCtx.getNativeDisplay(), display, config, DE_NULL, eglu::WindowParams(128, 128, eglu::WindowParams::VISIBILITY_VISIBLE)));
 
-	de::UniquePtr<eglu::NativeWindow>	window	(m_eglTestCtx.createNativeWindow(m_eglTestCtx.getDisplay().getEGLDisplay(), config, DE_NULL, 128, 128, eglu::WindowParams::VISIBILITY_VISIBLE));
-
-	eglu::UniqueSurface					surface	(display.getEGLDisplay(), eglu::createWindowSurface(m_eglTestCtx.getNativeDisplay(), *window, display.getEGLDisplay(), config, DE_NULL));
-	eglu::UniqueContext					context	(display.getEGLDisplay(), createGLES2Context(display.getEGLDisplay(), config));
+	eglu::UniqueSurface					surface	(egl, display, eglu::createWindowSurface(m_eglTestCtx.getNativeDisplay(), *window, display, config, DE_NULL));
+	eglu::UniqueContext					context	(egl, display, createGLES2Context(egl, display, config));
 	glw::Functions						gl;
 	deUint32							program = 0;
 
@@ -297,8 +304,8 @@ void SwapBuffersTest::executeForConfig (tcu::egl::Display& display, EGLConfig co
 	tcu::TextureLevel					frameBegin;
 	tcu::TextureLevel					frameEnd;
 
-	m_eglTestCtx.getGLFunctions(gl, glu::ApiType::es(2,0));
-	TCU_CHECK_EGL_CALL(eglMakeCurrent(display.getEGLDisplay(), *surface, *surface, *context));
+	m_eglTestCtx.initGLFunctions(&gl, glu::ApiType::es(2,0));
+	EGLU_CHECK_CALL(egl, makeCurrent(display, *surface, *surface, *context));
 
 	try
 	{
@@ -336,7 +343,7 @@ void SwapBuffersTest::executeForConfig (tcu::egl::Display& display, EGLConfig co
 		gl.clear(GL_COLOR_BUFFER_BIT);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to clear surface");
 
-		TCU_CHECK_EGL_CALL(eglSwapBuffers(display.getEGLDisplay(), *surface));
+		EGLU_CHECK_CALL(egl, swapBuffers(display, *surface));
 		gl.finish();
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glFinish() failed");
 		deSleep(waitFrames * 16);
@@ -354,7 +361,7 @@ void SwapBuffersTest::executeForConfig (tcu::egl::Display& display, EGLConfig co
 		gl.clear(GL_COLOR_BUFFER_BIT);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to clear surface");
 
-		TCU_CHECK_EGL_CALL(eglSwapBuffers(display.getEGLDisplay(), *surface));
+		EGLU_CHECK_CALL(egl, swapBuffers(display, *surface));
 		gl.finish();
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glFinish() failed");
 		deSleep(waitFrames * 16);
@@ -375,7 +382,7 @@ void SwapBuffersTest::executeForConfig (tcu::egl::Display& display, EGLConfig co
 		gl.drawArrays(GL_TRIANGLES, 0, 6);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to render");
 
-		TCU_CHECK_EGL_CALL(eglSwapBuffers(display.getEGLDisplay(), *surface));
+		EGLU_CHECK_CALL(egl, swapBuffers(display, *surface));
 		gl.finish();
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glFinish() failed");
 		deSleep(waitFrames * 16);
@@ -395,7 +402,7 @@ void SwapBuffersTest::executeForConfig (tcu::egl::Display& display, EGLConfig co
 		deSleep(waitFrames * 16);
 		window->readScreenPixels(&frameEnd);
 
-		TCU_CHECK_EGL_CALL(eglSwapBuffers(display.getEGLDisplay(), *surface));
+		EGLU_CHECK_CALL(egl, swapBuffers(display, *surface));
 		gl.finish();
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glFinish() failed");
 		deSleep(waitFrames * 16);
@@ -417,11 +424,11 @@ void SwapBuffersTest::executeForConfig (tcu::egl::Display& display, EGLConfig co
 		if (program != 0)
 			gl.deleteProgram(program);
 
-		TCU_CHECK_EGL_CALL(eglMakeCurrent(display.getEGLDisplay(), EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT));
+		EGLU_CHECK_CALL(egl, makeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT));
 		throw;
 	}
 
-	TCU_CHECK_EGL_CALL(eglMakeCurrent(display.getEGLDisplay(), EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT));
+	EGLU_CHECK_CALL(egl, makeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT));
 }
 
 } // anonymous
@@ -431,16 +438,18 @@ SwapBuffersTests::SwapBuffersTests (EglTestContext& eglTestCtx)
 {
 }
 
+static bool isWindow (const eglu::CandidateConfig& c) { return (c.surfaceType() & EGL_WINDOW_BIT); }
+
 void SwapBuffersTests::init (void)
 {
-	eglu::FilterList filters;
-	filters << (eglu::ConfigSurfaceType() & EGL_WINDOW_BIT);
+	eglu::FilterList baseFilters;
+	baseFilters << isWindow;
 
-	vector<NamedConfigIdSet> configIdSets;
-	NamedConfigIdSet::getDefaultSets(configIdSets, m_eglTestCtx.getConfigs(), filters);
+	vector<NamedFilterList> filterLists;
+	getDefaultFilterLists(filterLists, baseFilters);
 
-	for (vector<NamedConfigIdSet>::iterator i = configIdSets.begin(); i != configIdSets.end(); i++)
-		addChild(new SwapBuffersTest(m_eglTestCtx, i->getName(), i->getDescription(), i->getConfigIds()));
+	for (vector<NamedFilterList>::iterator i = filterLists.begin(); i != filterLists.end(); i++)
+		addChild(new SwapBuffersTest(m_eglTestCtx, *i));
 }
 
 } // egl

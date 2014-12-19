@@ -21,7 +21,6 @@
  *//*!
  * \file
  * \brief Base class for rendering tests.
- * \todo [2011-07-18 pyry] Uses currently gles2-specific RenderContext.
  *//*--------------------------------------------------------------------*/
 
 #include "tcuDefs.hpp"
@@ -38,65 +37,80 @@ namespace egl
 class RenderCase : public SimpleConfigCase
 {
 public:
-					RenderCase				(EglTestContext& eglTestCtx, const char* name, const char* description, EGLint apiMask, EGLint surfaceTypeMask, const std::vector<EGLint>& configIds);
-	virtual			~RenderCase				(void);
-
-	static EGLint	getSupportedApis		(void);
+						RenderCase				(EglTestContext& eglTestCtx, const char* name, const char* description, eglw::EGLint apiMask, eglw::EGLint surfaceTypeMask, const eglu::FilterList& filters);
+	virtual				~RenderCase				(void);
 
 protected:
-	virtual void	executeForConfig		(tcu::egl::Display& display, EGLConfig config);
+	struct Config
+	{
+		eglw::EGLConfig		config;
+		eglw::EGLint		surfaceTypeBit;
+		eglw::EGLint		apiBits;
 
-	virtual void	executeForSurface		(tcu::egl::Display& display, tcu::egl::Surface& surface, EGLConfig config) = DE_NULL;
+		Config (eglw::EGLConfig config_, eglw::EGLint surfaceTypeBit_, eglw::EGLint apiBits_)
+			: config			(config_)
+			, surfaceTypeBit	(surfaceTypeBit_)
+			, apiBits			(apiBits_)
+		{
+		}
+	};
 
-	EGLint			m_apiMask;
-	EGLint			m_surfaceTypeMask;
+	virtual void		executeForConfig		(eglw::EGLDisplay display, eglw::EGLConfig config);
+
+	virtual void		executeForSurface		(eglw::EGLDisplay display, eglw::EGLSurface surface, const Config& config) = DE_NULL;
+
+	eglw::EGLint		m_apiMask;
+	eglw::EGLint		m_surfaceTypeMask;
 };
 
 class SingleContextRenderCase : public RenderCase
 {
 public:
-					SingleContextRenderCase		(EglTestContext& eglTestCtx, const char* name, const char* description, EGLint apiMask, EGLint surfaceTypeMask, const std::vector<EGLint>& configIds);
+					SingleContextRenderCase		(EglTestContext& eglTestCtx, const char* name, const char* description, eglw::EGLint apiMask, eglw::EGLint surfaceTypeMask, const eglu::FilterList& filters);
 	virtual			~SingleContextRenderCase	(void);
 
 protected:
-	virtual void	executeForSurface			(tcu::egl::Display& display, tcu::egl::Surface& surface, EGLConfig config);
+	virtual void	executeForSurface			(eglw::EGLDisplay display, eglw::EGLSurface surface, const Config& config);
 
-	virtual void	executeForContext			(const tcu::egl::Display& display, tcu::egl::Context& context, tcu::egl::Surface& surface, EGLint api) = DE_NULL;
+	virtual void	executeForContext			(eglw::EGLDisplay display, eglw::EGLContext context, eglw::EGLSurface surface, const Config& config) = DE_NULL;
 };
 
 class MultiContextRenderCase : public RenderCase
 {
 public:
-						MultiContextRenderCase		(EglTestContext& eglTestCtx, const char* name, const char* description, EGLint api, EGLint surfaceType, const std::vector<EGLint>& configIds, int numContextsPerApi);
-	virtual				~MultiContextRenderCase		(void);
+					MultiContextRenderCase		(EglTestContext& eglTestCtx, const char* name, const char* description, eglw::EGLint api, eglw::EGLint surfaceType, const eglu::FilterList& filters, int numContextsPerApi);
+	virtual			~MultiContextRenderCase		(void);
 
 protected:
-	void				executeForSurface			(tcu::egl::Display& display, tcu::egl::Surface& surface, EGLConfig config);
+	void			executeForSurface			(eglw::EGLDisplay display, eglw::EGLSurface surface, const Config& config);
 
-	virtual void		executeForContexts			(tcu::egl::Display& display, tcu::egl::Surface& surface, EGLConfig config, const std::vector<std::pair<EGLint, tcu::egl::Context*> >& contexts) = DE_NULL;
+	virtual void	executeForContexts			(eglw::EGLDisplay display, eglw::EGLSurface surface, const Config& config, const std::vector<std::pair<eglw::EGLint, eglw::EGLContext> >& contexts) = DE_NULL;
 
-	int					m_numContextsPerApi;
+	int				m_numContextsPerApi;
 };
 
-class RenderConfigIdSet : public NamedConfigIdSet
+class RenderFilterList : public NamedFilterList
 {
 public:
-	RenderConfigIdSet (const char* name, const char* description, std::vector<EGLint> configIds, EGLint surfaceTypeMask)
-		: NamedConfigIdSet	(name, description, configIds)
+	RenderFilterList (const char* name, const char* description, eglw::EGLint surfaceTypeMask)
+		: NamedFilterList	(name, description)
 		, m_surfaceTypeMask	(surfaceTypeMask)
 	{
 	}
 
-	EGLint getSurfaceTypeMask (void) const
+	eglw::EGLint getSurfaceTypeMask (void) const
 	{
 		return m_surfaceTypeMask;
 	}
 
 private:
-	EGLint m_surfaceTypeMask;
+	eglw::EGLint	m_surfaceTypeMask;
 };
 
-void getDefaultRenderConfigIdSets (std::vector<RenderConfigIdSet>& configSets, const std::vector<eglu::ConfigInfo>& configInfos, const eglu::FilterList& baseFilters);
+void			getDefaultRenderFilterLists	(std::vector<RenderFilterList>& configSets, const eglu::FilterList& baseFilters);
+
+//! Client APIs supported in current build
+eglw::EGLint	getBuildClientAPIMask		(void);
 
 } // egl
 } // deqp

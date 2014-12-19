@@ -126,8 +126,8 @@ const char* getSurfaceAttribName (int value)
 		case EGL_SWAP_BEHAVIOR:			return "EGL_SWAP_BEHAVIOR";
 		case EGL_TEXTURE_FORMAT:		return "EGL_TEXTURE_FORMAT";
 		case EGL_TEXTURE_TARGET:		return "EGL_TEXTURE_TARGET";
-		case EGL_VG_ALPHA_FORMAT:		return "EGL_VG_ALPHA_FORMAT";
-		case EGL_VG_COLORSPACE:			return "EGL_VG_COLORSPACE";
+		case EGL_ALPHA_FORMAT:			return "EGL_ALPHA_FORMAT";
+		case EGL_COLORSPACE:			return "EGL_COLORSPACE";
 		default:						return DE_NULL;
 	}
 }
@@ -224,23 +224,23 @@ const char* getTextureTargetName (int value)
 	}
 }
 
-const char* getVGAlphaFormatName (int value)
+const char* getAlphaFormatName (int value)
 {
 	switch (value)
 	{
-		case EGL_VG_ALPHA_FORMAT_NONPRE:	return "EGL_VG_ALPHA_FORMAT_NONPRE";
-		case EGL_VG_ALPHA_FORMAT_PRE:		return "EGL_VG_ALPHA_FORMAT_PRE";
-		default:							return DE_NULL;
+		case EGL_ALPHA_FORMAT_NONPRE:	return "EGL_ALPHA_FORMAT_NONPRE";
+		case EGL_ALPHA_FORMAT_PRE:		return "EGL_ALPHA_FORMAT_PRE";
+		default:						return DE_NULL;
 	}
 }
 
-const char* getVGColorspaceName (int value)
+const char* getColorspaceName (int value)
 {
 	switch (value)
 	{
-		case EGL_VG_COLORSPACE_sRGB:	return "EGL_VG_COLORSPACE_sRGB";
-		case EGL_VG_COLORSPACE_LINEAR:	return "EGL_VG_COLORSPACE_LINEAR";
-		default:						return DE_NULL;
+		case EGL_COLORSPACE_sRGB:	return "EGL_COLORSPACE_sRGB";
+		case EGL_COLORSPACE_LINEAR:	return "EGL_COLORSPACE_LINEAR";
+		default:					return DE_NULL;
 	}
 }
 

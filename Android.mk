@@ -131,11 +131,9 @@ LOCAL_SRC_FILES := \
 	framework/egl/egluConfigFilter.cpp \
 	framework/egl/egluConfigInfo.cpp \
 	framework/egl/egluDefs.cpp \
-	framework/egl/egluExtensions.cpp \
 	framework/egl/egluGLContextFactory.cpp \
 	framework/egl/egluGLFunctionLoader.cpp \
 	framework/egl/egluGLUtil.cpp \
-	framework/egl/egluHeaderWrapper.cpp \
 	framework/egl/egluNativeDisplay.cpp \
 	framework/egl/egluNativePixmap.cpp \
 	framework/egl/egluNativeWindow.cpp \
@@ -144,7 +142,9 @@ LOCAL_SRC_FILES := \
 	framework/egl/egluStrUtil.cpp \
 	framework/egl/egluUnique.cpp \
 	framework/egl/egluUtil.cpp \
-	framework/egl/tcuEgl.cpp \
+	framework/egl/wrapper/eglwDefs.cpp \
+	framework/egl/wrapper/eglwFunctions.cpp \
+	framework/egl/wrapper/eglwLibrary.cpp \
 	framework/opengl/gluCallLogWrapper.cpp \
 	framework/opengl/gluContextFactory.cpp \
 	framework/opengl/gluContextInfo.cpp \
@@ -504,6 +504,7 @@ LOCAL_C_INCLUDES := \
 	$(deqp_dir)/framework/qphelper \
 	$(deqp_dir)/framework/platform/android \
 	$(deqp_dir)/framework/egl \
+	$(deqp_dir)/framework/egl/wrapper \
 	$(deqp_dir)/framework/opengl \
 	$(deqp_dir)/framework/opengl/wrapper \
 	$(deqp_dir)/framework/referencerenderer \

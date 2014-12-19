@@ -23,25 +23,27 @@
 
 #include "teglSurfacelessContextTests.hpp"
 #include "teglSimpleConfigCase.hpp"
+
 #include "egluStrUtil.hpp"
+#include "egluUtil.hpp"
+#include "egluUnique.hpp"
+
 #include "tcuTestLog.hpp"
 
-#include <EGL/eglext.h>
+#include "eglwLibrary.hpp"
+#include "eglwEnums.hpp"
+
+#include "deSTLUtil.hpp"
 
 #include <string>
 #include <vector>
 #include <algorithm>
 
-#if !defined(EGL_OPENGL_ES3_BIT_KHR)
-#	define EGL_OPENGL_ES3_BIT_KHR	0x0040
-#endif
-#if !defined(EGL_CONTEXT_MAJOR_VERSION_KHR)
-#	define EGL_CONTEXT_MAJOR_VERSION_KHR EGL_CONTEXT_CLIENT_VERSION
-#endif
-
 using std::vector;
 using std::string;
 using tcu::TestLog;
+
+using namespace eglw;
 
 namespace deqp
 {
@@ -53,14 +55,14 @@ namespace
 class SurfacelessContextCase : public SimpleConfigCase
 {
 public:
-						SurfacelessContextCase			(EglTestContext& eglTestCtx, const char* name, const char* description, const vector<EGLint>& configIds);
+						SurfacelessContextCase			(EglTestContext& eglTestCtx, const char* name, const char* description, const eglu::FilterList& filters);
 						~SurfacelessContextCase			(void);
 
-	void				executeForConfig				(tcu::egl::Display& display, EGLConfig config);
+	void				executeForConfig				(EGLDisplay display, EGLConfig config);
 };
 
-SurfacelessContextCase::SurfacelessContextCase (EglTestContext& eglTestCtx, const char* name, const char* description, const vector<EGLint>& configIds)
-	: SimpleConfigCase(eglTestCtx, name, description, configIds)
+SurfacelessContextCase::SurfacelessContextCase (EglTestContext& eglTestCtx, const char* name, const char* description, const eglu::FilterList& filters)
+	: SimpleConfigCase(eglTestCtx, name, description, filters)
 {
 }
 
@@ -68,11 +70,12 @@ SurfacelessContextCase::~SurfacelessContextCase (void)
 {
 }
 
-void SurfacelessContextCase::executeForConfig (tcu::egl::Display& display, EGLConfig config)
+void SurfacelessContextCase::executeForConfig (EGLDisplay display, EGLConfig config)
 {
+	const Library&	egl		= m_eglTestCtx.getLibrary();
 	TestLog&		log		= m_testCtx.getLog();
-	const EGLint	id		= display.getConfigAttrib(config, EGL_CONFIG_ID);
-	const EGLint	apiBits	= display.getConfigAttrib(config, EGL_RENDERABLE_TYPE);
+	const EGLint	id		= eglu::getConfigAttribInt(egl, display, config, EGL_CONFIG_ID);
+	const EGLint	apiBits	= eglu::getConfigAttribInt(egl, display, config, EGL_RENDERABLE_TYPE);
 
 	static const EGLint es1Attrs[] = { EGL_CONTEXT_CLIENT_VERSION,		1, EGL_NONE };
 	static const EGLint es2Attrs[] = { EGL_CONTEXT_CLIENT_VERSION,		2, EGL_NONE };
@@ -93,13 +96,8 @@ void SurfacelessContextCase::executeForConfig (tcu::egl::Display& display, EGLCo
 		{ "OpenVG",			EGL_OPENVG_API,		EGL_OPENVG_BIT,			DE_NULL		}
 	};
 
-	{
-		vector<string> extensions;
-		display.getExtensions(extensions);
-
-		if (std::find(extensions.begin(), extensions.end(), string("EGL_KHR_surfaceless_context")) == extensions.end())
-			throw tcu::NotSupportedError("EGL_KHR_surfaceless_context not supported", "", __FILE__, __LINE__);
-	}
+	if (!eglu::hasExtension(egl, display, "EGL_KHR_surfaceless_context"))
+		TCU_THROW(NotSupportedError, "EGL_KHR_surfaceless_context not supported");
 
 	for (int apiNdx = 0; apiNdx < (int)DE_LENGTH_OF_ARRAY(apis); apiNdx++)
 	{
@@ -107,35 +105,31 @@ void SurfacelessContextCase::executeForConfig (tcu::egl::Display& display, EGLCo
 			continue; // Not supported API
 
 		log << TestLog::Message << "Creating " << apis[apiNdx].name << " context with config ID " << id << TestLog::EndMessage;
-		TCU_CHECK_EGL();
 
-		TCU_CHECK_EGL_CALL(eglBindAPI(apis[apiNdx].api));
+		EGLU_CHECK_CALL(egl, bindAPI(apis[apiNdx].api));
 
-		EGLContext context = eglCreateContext(display.getEGLDisplay(), config, EGL_NO_CONTEXT, apis[apiNdx].ctxAttrs);
-		TCU_CHECK_EGL();
+		eglu::UniqueContext context(egl, display, egl.createContext(display, config, EGL_NO_CONTEXT, apis[apiNdx].ctxAttrs));
+		EGLU_CHECK_MSG(egl, "eglCreateContext()");
 
-		if (!eglMakeCurrent(display.getEGLDisplay(), EGL_NO_SURFACE, EGL_NO_SURFACE, context))
+		if (!egl.makeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, *context))
 		{
-			const EGLenum err = eglGetError();
+			const EGLenum err = egl.getError();
 
 			if (err == EGL_BAD_MATCH)
 			{
 				log << TestLog::Message << "  eglMakeCurrent() failed with EGL_BAD_MATCH. Context doesn't support surfaceless mode." << TestLog::EndMessage;
-				TCU_CHECK_EGL_CALL(eglDestroyContext(display.getEGLDisplay(), context));
 				continue;
 			}
 			else
 			{
-				log << TestLog::Message << "  Fail, context: " << tcu::toHex(context) << ", error: " << eglu::getErrorName(err) << TestLog::EndMessage;
+				log << TestLog::Message << "  Fail, context: " << tcu::toHex(*context) << ", error: " << eglu::getErrorName(err) << TestLog::EndMessage;
 				m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Failed to make context current");
 				continue;
 			}
 		}
 
-		TCU_CHECK_EGL_CALL(eglMakeCurrent(display.getEGLDisplay(), EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT));
+		EGLU_CHECK_CALL(egl, makeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT));
 
-		// Destroy
-		TCU_CHECK_EGL_CALL(eglDestroyContext(display.getEGLDisplay(), context));
 		log << TestLog::Message << "  Pass" << TestLog::EndMessage;
 	}
 }
@@ -151,12 +145,11 @@ SurfacelessContextTests::SurfacelessContextTests (EglTestContext& eglTestCtx)
 
 void SurfacelessContextTests::init (void)
 {
-	vector<NamedConfigIdSet>	configIdSets;
-	eglu::FilterList			filters;
-	NamedConfigIdSet::getDefaultSets(configIdSets, m_eglTestCtx.getConfigs(), filters);
+	vector<NamedFilterList>	filterLists;
+	getDefaultFilterLists(filterLists, eglu::FilterList());
 
-	for (vector<NamedConfigIdSet>::const_iterator i = configIdSets.begin(); i != configIdSets.end(); i++)
-		addChild(new SurfacelessContextCase(m_eglTestCtx, i->getName(), i->getDescription(), i->getConfigIds()));
+	for (vector<NamedFilterList>::const_iterator i = filterLists.begin(); i != filterLists.end(); i++)
+		addChild(new SurfacelessContextCase(m_eglTestCtx, i->getName(), i->getDescription(), *i));
 }
 
 } // egl

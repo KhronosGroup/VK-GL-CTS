@@ -105,7 +105,7 @@ target_link_libraries(tcutil-platform glutil)
 
 # Link to eglutil if platform supports EGL
 if (DEQP_SUPPORT_EGL)
-	target_link_libraries(tcutil-platform eglutil)
+	target_link_libraries(tcutil-platform eglutil eglwrapper)
 endif ()
 
 # X11 libraries

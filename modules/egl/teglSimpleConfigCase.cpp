@@ -22,29 +22,29 @@
  *//*--------------------------------------------------------------------*/
 
 #include "teglSimpleConfigCase.hpp"
-#include "deStringUtil.hpp"
 #include "tcuTestLog.hpp"
 #include "tcuFormatUtil.hpp"
-
-#include <map>
-#include <set>
-#include <algorithm>
+#include "egluUtil.hpp"
+#include "eglwLibrary.hpp"
+#include "eglwEnums.hpp"
+#include "deStringUtil.hpp"
 
 namespace deqp
 {
 namespace egl
 {
 
-using std::map;
-using std::set;
 using std::vector;
 using std::string;
 using tcu::TestLog;
 using eglu::ConfigInfo;
+using namespace eglw;
+using namespace eglu;
 
-SimpleConfigCase::SimpleConfigCase (EglTestContext& eglTestCtx, const char* name, const char* description, const vector<EGLint>& configIds)
-	: TestCase		(eglTestCtx, name, description)
-	, m_configIds	(configIds)
+SimpleConfigCase::SimpleConfigCase (EglTestContext& eglTestCtx, const char* name, const char* description, const FilterList& filters)
+	: TestCase	(eglTestCtx, name, description)
+	, m_filters	(filters)
+	, m_display	(EGL_NO_DISPLAY)
 {
 }
 
@@ -54,39 +54,28 @@ SimpleConfigCase::~SimpleConfigCase (void)
 
 void SimpleConfigCase::init (void)
 {
-	const tcu::egl::Display& display = m_eglTestCtx.getDisplay();
+	const Library&		egl		= m_eglTestCtx.getLibrary();
+
+	DE_ASSERT(m_display == EGL_NO_DISPLAY && m_configs.empty());
+
+	m_display	= getAndInitDisplay(m_eglTestCtx.getNativeDisplay());
+	m_configs	= chooseConfigs(egl, m_display, m_filters);
 
 	// Log matching configs.
-	m_testCtx.getLog() << TestLog::Message << "Matching configs: " << tcu::formatArray(m_configIds.begin(), m_configIds.end()) << TestLog::EndMessage;
-
-	// Config id set.
-	set<EGLint> idSet(m_configIds.begin(), m_configIds.end());
-
-	if (idSet.size() != m_configIds.size())
 	{
-		DE_ASSERT(idSet.size() < m_configIds.size());
-		m_testCtx.getLog() << tcu::TestLog::Message << "Warning: Duplicate config IDs in list" << TestLog::EndMessage;
-	}
+		vector<EGLint> configIds(m_configs.size());
 
-	// Get all configs
-	vector<EGLConfig> allConfigs;
-	display.getConfigs(allConfigs);
+		for (size_t ndx = 0; ndx < m_configs.size(); ndx++)
+			configIds[ndx] = getConfigID(egl, m_display, m_configs[ndx]);
 
-	// Collect list of configs with matching IDs
-	m_configs.clear();
-	for (vector<EGLConfig>::const_iterator cfgIter = allConfigs.begin(); cfgIter != allConfigs.end(); ++cfgIter)
-	{
-		const EGLint	configId	= display.getConfigAttrib(*cfgIter, EGL_CONFIG_ID);
-		const bool		isInSet		= idSet.find(configId) != idSet.end();
-
-		if (isInSet)
-			m_configs.push_back(*cfgIter);
+		m_testCtx.getLog() << TestLog::Message << "Compatible configs: " << tcu::formatArray(configIds.begin(), configIds.end()) << TestLog::EndMessage;
 	}
 
 	if (m_configs.empty())
 	{
-		// If no compatible configs are found, it is reported as NotSupported
-		throw tcu::NotSupportedError("No compatible configs found");
+		egl.terminate(m_display);
+		m_display = EGL_NO_DISPLAY;
+		TCU_THROW(NotSupportedError, "No compatible configs found");
 	}
 
 	// Init config iter
@@ -96,16 +85,22 @@ void SimpleConfigCase::init (void)
 	m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
 }
 
+void SimpleConfigCase::deinit (void)
+{
+	m_eglTestCtx.getLibrary().terminate(m_display);
+	m_display = EGL_NO_DISPLAY;
+	m_configs.clear();
+}
+
 SimpleConfigCase::IterateResult SimpleConfigCase::iterate (void)
 {
 	DE_ASSERT(m_configIter != m_configs.end());
 
-	tcu::egl::Display&	display	= m_eglTestCtx.getDisplay();
-	EGLConfig			config	= *m_configIter++;
+	EGLConfig	config	= *m_configIter++;
 
 	try
 	{
-		executeForConfig(display, config);
+		executeForConfig(m_display, config);
 	}
 	catch (const tcu::TestError& e)
 	{
@@ -117,111 +112,96 @@ SimpleConfigCase::IterateResult SimpleConfigCase::iterate (void)
 	return (m_configIter != m_configs.end()) ? CONTINUE : STOP;
 }
 
-namespace
+template <int Red, int Green, int Blue, int Alpha>
+static bool colorBits (const eglu::CandidateConfig& c)
 {
-
-void addConfigId (map<string, NamedConfigIdSet*>& setMap, const char* name, const ConfigInfo& info)
-{
-	DE_ASSERT(setMap.find(name) != setMap.end());
-	setMap[name]->getConfigIds().push_back(info.configId);
+	return c.redSize()		== Red		&&
+		   c.greenSize()	== Green	&&
+		   c.blueSize()		== Blue		&&
+		   c.alphaSize()	== Alpha;
 }
 
-bool filterConfigStencil (map<string, NamedConfigIdSet*>& setMap, const char* namePrefix, const ConfigInfo& info)
+template <int Red, int Green, int Blue, int Alpha>
+static bool notColorBits (const eglu::CandidateConfig& c)
 {
-	if (info.stencilSize > 0)
-		addConfigId(setMap, (string(namePrefix) + "stencil").c_str(), info);
-	else
-		addConfigId(setMap, (string(namePrefix) + "no_stencil").c_str(), info);
-	return true;
+	return c.redSize()		!= Red		||
+		   c.greenSize()	!= Green	||
+		   c.blueSize()		!= Blue		||
+		   c.alphaSize()	!= Alpha;
 }
 
-bool filterConfigDepth (map<string, NamedConfigIdSet*>& setMap, const char* namePrefix, const ConfigInfo& info)
-{
-	if (info.depthSize > 0)
-		return filterConfigStencil(setMap, (string(namePrefix) + "depth_").c_str(), info);
-	else
-		return filterConfigStencil(setMap, (string(namePrefix) + "no_depth_").c_str(), info);
-}
+static bool	hasDepth	(const eglu::CandidateConfig& c)	{ return c.depthSize() > 0;		}
+static bool	noDepth		(const eglu::CandidateConfig& c)	{ return c.depthSize() == 0;	}
+static bool	hasStencil	(const eglu::CandidateConfig& c)	{ return c.stencilSize() > 0;	}
+static bool	noStencil	(const eglu::CandidateConfig& c)	{ return c.stencilSize() == 0;	}
 
-bool filterConfigColor (map<string, NamedConfigIdSet*>& setMap, const char* namePrefix, const ConfigInfo& info)
+void getDefaultFilterLists (vector<NamedFilterList>& lists, const FilterList& baseFilters)
 {
 	static const struct
 	{
-		const char*	name;
-		int			red, green, blue, alpha;
-	}
-	colorRules[] =
+		const char*			name;
+		eglu::ConfigFilter	filter;
+	} s_colorRules[] =
 	{
-		{ "rgb565",		5, 6, 5, 0 },
-		{ "rgb888",		8, 8, 8, 0 },
-		{ "rgba4444",	4, 4, 4, 4 },
-		{ "rgba5551",	5, 5, 5, 1 },
-		{ "rgba8888",	8, 8, 8, 8 }
+		{ "rgb565",		colorBits<5, 6, 5, 0> },
+		{ "rgb888",		colorBits<8, 8, 8, 0> },
+		{ "rgba4444",	colorBits<4, 4, 4, 4> },
+		{ "rgba5551",	colorBits<5, 5, 5, 1> },
+		{ "rgba8888",	colorBits<8, 8, 8, 8> }
 	};
-	for (int ndx = 0; ndx < (int)DE_LENGTH_OF_ARRAY(colorRules); ndx++)
+
+	static const struct
 	{
-		if (info.redSize	== colorRules[ndx].red		&&
-			info.greenSize	== colorRules[ndx].green	&&
-			info.blueSize	== colorRules[ndx].blue		&&
-			info.alphaSize	== colorRules[ndx].alpha)
-			return filterConfigDepth(setMap, (string(namePrefix) + colorRules[ndx].name + "_").c_str(), info);
-	}
-
-	return false; // Didn't match any
-}
-
-} // anonymous
-
-void NamedConfigIdSet::getDefaultSets (vector<NamedConfigIdSet>& configSets, const vector<ConfigInfo>& configInfos, const eglu::FilterList& baseFilters)
-{
-	// Set list
-	configSets.push_back(NamedConfigIdSet("rgb565_no_depth_no_stencil",		"RGB565 configs without depth or stencil"));
-	configSets.push_back(NamedConfigIdSet("rgb565_no_depth_stencil",		"RGB565 configs with stencil and no depth"));
-	configSets.push_back(NamedConfigIdSet("rgb565_depth_no_stencil",		"RGB565 configs with depth and no stencil"));
-	configSets.push_back(NamedConfigIdSet("rgb565_depth_stencil",			"RGB565 configs with depth and stencil"));
-	configSets.push_back(NamedConfigIdSet("rgb888_no_depth_no_stencil",		"RGB888 configs without depth or stencil"));
-	configSets.push_back(NamedConfigIdSet("rgb888_no_depth_stencil",		"RGB888 configs with stencil and no depth"));
-	configSets.push_back(NamedConfigIdSet("rgb888_depth_no_stencil",		"RGB888 configs with depth and no stencil"));
-	configSets.push_back(NamedConfigIdSet("rgb888_depth_stencil",			"RGB888 configs with depth and stencil"));
-	configSets.push_back(NamedConfigIdSet("rgba4444_no_depth_no_stencil",	"RGBA4444 configs without depth or stencil"));
-	configSets.push_back(NamedConfigIdSet("rgba4444_no_depth_stencil",		"RGBA4444 configs with stencil and no depth"));
-	configSets.push_back(NamedConfigIdSet("rgba4444_depth_no_stencil",		"RGBA4444 configs with depth and no stencil"));
-	configSets.push_back(NamedConfigIdSet("rgba4444_depth_stencil",			"RGBA4444 configs with depth and stencil"));
-	configSets.push_back(NamedConfigIdSet("rgba5551_no_depth_no_stencil",	"RGBA5551 configs without depth or stencil"));
-	configSets.push_back(NamedConfigIdSet("rgba5551_no_depth_stencil",		"RGBA5551 configs with stencil and no depth"));
-	configSets.push_back(NamedConfigIdSet("rgba5551_depth_no_stencil",		"RGBA5551 configs with depth and no stencil"));
-	configSets.push_back(NamedConfigIdSet("rgba5551_depth_stencil",			"RGBA5551 configs with depth and stencil"));
-	configSets.push_back(NamedConfigIdSet("rgba8888_no_depth_no_stencil",	"RGBA8888 configs without depth or stencil"));
-	configSets.push_back(NamedConfigIdSet("rgba8888_no_depth_stencil",		"RGBA8888 configs with stencil and no depth"));
-	configSets.push_back(NamedConfigIdSet("rgba8888_depth_no_stencil",		"RGBA8888 configs with depth and no stencil"));
-	configSets.push_back(NamedConfigIdSet("rgba8888_depth_stencil",			"RGBA8888 configs with depth and stencil"));
-	configSets.push_back(NamedConfigIdSet("other",							"All other configs"));
-
-	// Build set map
-	map<string, NamedConfigIdSet*> setMap;
-	for (int ndx = 0; ndx < (int)configSets.size(); ndx++)
-		setMap[configSets[ndx].getName()] = &configSets[ndx];
-
-	// Filter configs
-	for (vector<ConfigInfo>::const_iterator cfgIter = configInfos.begin(); cfgIter != configInfos.end(); cfgIter++)
+		const char*			name;
+		eglu::ConfigFilter	filter;
+	} s_depthRules[] =
 	{
-		const ConfigInfo& info = *cfgIter;
+		{ "no_depth",	noDepth		},
+		{ "depth",		hasDepth	},
+	};
 
-		if (!baseFilters.match(info))
-			continue;
+	static const struct
+	{
+		const char*			name;
+		eglu::ConfigFilter	filter;
+	} s_stencilRules[] =
+	{
+		{ "no_stencil",	noStencil	},
+		{ "stencil",	hasStencil	},
+	};
 
-		if (!filterConfigColor(setMap, "", info))
+	for (int colorRuleNdx = 0; colorRuleNdx < DE_LENGTH_OF_ARRAY(s_colorRules); colorRuleNdx++)
+	{
+		for (int depthRuleNdx = 0; depthRuleNdx < DE_LENGTH_OF_ARRAY(s_depthRules); depthRuleNdx++)
 		{
-			// Add to "other" set
-			addConfigId(setMap, "other", info);
+			for (int stencilRuleNdx = 0; stencilRuleNdx < DE_LENGTH_OF_ARRAY(s_stencilRules); stencilRuleNdx++)
+			{
+				const string		name		= string(s_colorRules[colorRuleNdx].name) + "_" + s_depthRules[depthRuleNdx].name + "_" + s_stencilRules[stencilRuleNdx].name;
+				NamedFilterList		filters		(name.c_str(), "");
+
+				filters << baseFilters
+						<< s_colorRules[colorRuleNdx].filter
+						<< s_depthRules[depthRuleNdx].filter
+						<< s_stencilRules[stencilRuleNdx].filter;
+
+				lists.push_back(filters);
+			}
 		}
 	}
 
-	// Sort config ids
-	for (vector<NamedConfigIdSet>::iterator i = configSets.begin(); i != configSets.end(); i++)
+	// Build "other" set - not configs that don't match any of known color rules
 	{
-		vector<EGLint>& ids = i->getConfigIds();
-		std::sort(ids.begin(), ids.end());
+		NamedFilterList		filters		("other", "All other configs");
+
+		// \todo [2014-12-18 pyry] Optimize rules
+		filters << baseFilters
+				<< notColorBits<5, 6, 5, 0>
+				<< notColorBits<8, 8, 8, 0>
+				<< notColorBits<4, 4, 4, 4>
+				<< notColorBits<5, 5, 5, 1>
+				<< notColorBits<8, 8, 8, 8>;
+
+		lists.push_back(filters);
 	}
 }
 

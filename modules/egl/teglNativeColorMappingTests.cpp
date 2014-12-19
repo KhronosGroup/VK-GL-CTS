@@ -33,6 +33,9 @@
 #include "egluUnique.hpp"
 #include "egluUtil.hpp"
 
+#include "eglwLibrary.hpp"
+#include "eglwEnums.hpp"
+
 #include "gluDefs.hpp"
 #include "glwFunctions.hpp"
 #include "glwEnums.hpp"
@@ -55,6 +58,8 @@ using tcu::TestLog;
 using std::vector;
 using std::string;
 
+using namespace eglw;
+
 namespace deqp
 {
 namespace egl
@@ -62,19 +67,19 @@ namespace egl
 namespace
 {
 
-EGLContext createGLES2Context (EGLDisplay display, EGLConfig config)
+EGLContext createGLES2Context (const Library& egl, EGLDisplay display, EGLConfig config)
 {
-	EGLContext		context = EGL_NO_CONTEXT;
-	const EGLint	attribList[] =
+	EGLContext		context			= EGL_NO_CONTEXT;
+	const EGLint	attribList[]	=
 	{
 		EGL_CONTEXT_CLIENT_VERSION, 2,
 		EGL_NONE
 	};
 
-	TCU_CHECK_EGL_CALL(eglBindAPI(EGL_OPENGL_ES_API));
+	EGLU_CHECK_CALL(egl, bindAPI(EGL_OPENGL_ES_API));
 
-	context = eglCreateContext(display, config, EGL_NO_CONTEXT, attribList);
-	TCU_CHECK_EGL_MSG("eglCreateContext() failed");
+	context = egl.createContext(display, config, EGL_NO_CONTEXT, attribList);
+	EGLU_CHECK_MSG(egl, "eglCreateContext() failed");
 	TCU_CHECK(context);
 
 	return context;
@@ -240,12 +245,12 @@ void render (const glw::Functions& gl, deUint32 program, const tcu::Vec4& color)
 	GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to render");
 }
 
-bool validate (TestLog& log, EGLDisplay display, EGLConfig config, const tcu::TextureLevel& result, const tcu::Vec4& color)
+bool validate (TestLog& log, const Library& egl, EGLDisplay display, EGLConfig config, const tcu::TextureLevel& result, const tcu::Vec4& color)
 {
-	const tcu::UVec4 eglBitDepth((deUint32)eglu::getConfigAttribInt(display, config, EGL_RED_SIZE),
-								 (deUint32)eglu::getConfigAttribInt(display, config, EGL_GREEN_SIZE),
-								 (deUint32)eglu::getConfigAttribInt(display, config, EGL_BLUE_SIZE),
-								 (deUint32)eglu::getConfigAttribInt(display, config, EGL_ALPHA_SIZE));
+	const tcu::UVec4 eglBitDepth((deUint32)eglu::getConfigAttribInt(egl, display, config, EGL_RED_SIZE),
+								 (deUint32)eglu::getConfigAttribInt(egl, display, config, EGL_GREEN_SIZE),
+								 (deUint32)eglu::getConfigAttribInt(egl, display, config, EGL_BLUE_SIZE),
+								 (deUint32)eglu::getConfigAttribInt(egl, display, config, EGL_ALPHA_SIZE));
 
 	const tcu::UVec4 nativeBitDepth(tcu::getTextureFormatBitDepth(result.getFormat()).asUint());
 	const tcu::UVec4 bitDepth(deMinu32(nativeBitDepth.x(), eglBitDepth.x()),
@@ -279,18 +284,18 @@ public:
 		NATIVETYPE_PBUFFER_COPY_TO_PIXMAP
 	};
 
-				NativeColorMappingCase	(EglTestContext& eglTestCtx, const char* name, const char* description, bool render, NativeType nativeType, const vector<EGLint>& configIds);
+				NativeColorMappingCase	(EglTestContext& eglTestCtx, const char* name, const char* description, bool render, NativeType nativeType, const eglu::FilterList& filters);
 				~NativeColorMappingCase	(void);
 
 private:
-	void		executeForConfig		(tcu::egl::Display& display, EGLConfig config);
+	void		executeForConfig		(EGLDisplay display, EGLConfig config);
 
 	NativeType	m_nativeType;
 	bool		m_render;
 };
 
-NativeColorMappingCase::NativeColorMappingCase (EglTestContext& eglTestCtx, const char* name, const char* description, bool render, NativeType nativeType, const vector<EGLint>& configIds)
-	: SimpleConfigCase	(eglTestCtx, name, description, configIds)
+NativeColorMappingCase::NativeColorMappingCase (EglTestContext& eglTestCtx, const char* name, const char* description, bool render, NativeType nativeType, const eglu::FilterList& filters)
+	: SimpleConfigCase	(eglTestCtx, name, description, filters)
 	, m_nativeType		(nativeType)
 	, m_render			(render)
 {
@@ -301,15 +306,15 @@ NativeColorMappingCase::~NativeColorMappingCase	(void)
 	deinit();
 }
 
-void logConfigInfo (TestLog& log, EGLDisplay display, EGLConfig config, NativeColorMappingCase::NativeType nativeType, int waitFrames)
+void logConfigInfo (TestLog& log, const Library& egl, EGLDisplay display, EGLConfig config, NativeColorMappingCase::NativeType nativeType, int waitFrames)
 {
-	log << TestLog::Message << "EGL_RED_SIZE: "		<< eglu::getConfigAttribInt(display, config, EGL_RED_SIZE)		<< TestLog::EndMessage;
-	log << TestLog::Message << "EGL_GREEN_SIZE: "	<< eglu::getConfigAttribInt(display, config, EGL_GREEN_SIZE)	<< TestLog::EndMessage;
-	log << TestLog::Message << "EGL_BLUE_SIZE: "	<< eglu::getConfigAttribInt(display, config, EGL_BLUE_SIZE)		<< TestLog::EndMessage;
-	log << TestLog::Message << "EGL_ALPHA_SIZE: "	<< eglu::getConfigAttribInt(display, config, EGL_ALPHA_SIZE)	<< TestLog::EndMessage;
-	log << TestLog::Message << "EGL_DEPTH_SIZE: "	<< eglu::getConfigAttribInt(display, config, EGL_DEPTH_SIZE)	<< TestLog::EndMessage;
-	log << TestLog::Message << "EGL_STENCIL_SIZE: "	<< eglu::getConfigAttribInt(display, config, EGL_STENCIL_SIZE)	<< TestLog::EndMessage;
-	log << TestLog::Message << "EGL_SAMPLES: "		<< eglu::getConfigAttribInt(display, config, EGL_SAMPLES)		<< TestLog::EndMessage;
+	log << TestLog::Message << "EGL_RED_SIZE: "		<< eglu::getConfigAttribInt(egl, display, config, EGL_RED_SIZE)		<< TestLog::EndMessage;
+	log << TestLog::Message << "EGL_GREEN_SIZE: "	<< eglu::getConfigAttribInt(egl, display, config, EGL_GREEN_SIZE)	<< TestLog::EndMessage;
+	log << TestLog::Message << "EGL_BLUE_SIZE: "	<< eglu::getConfigAttribInt(egl, display, config, EGL_BLUE_SIZE)	<< TestLog::EndMessage;
+	log << TestLog::Message << "EGL_ALPHA_SIZE: "	<< eglu::getConfigAttribInt(egl, display, config, EGL_ALPHA_SIZE)	<< TestLog::EndMessage;
+	log << TestLog::Message << "EGL_DEPTH_SIZE: "	<< eglu::getConfigAttribInt(egl, display, config, EGL_DEPTH_SIZE)	<< TestLog::EndMessage;
+	log << TestLog::Message << "EGL_STENCIL_SIZE: "	<< eglu::getConfigAttribInt(egl, display, config, EGL_STENCIL_SIZE)	<< TestLog::EndMessage;
+	log << TestLog::Message << "EGL_SAMPLES: "		<< eglu::getConfigAttribInt(egl, display, config, EGL_SAMPLES)		<< TestLog::EndMessage;
 
 	if (nativeType == NativeColorMappingCase::NATIVETYPE_WINDOW)
 		log << TestLog::Message << "Waiting " << waitFrames * 16 << "ms after eglSwapBuffers() and glFinish() for frame to become visible" << TestLog::EndMessage;
@@ -317,14 +322,15 @@ void logConfigInfo (TestLog& log, EGLDisplay display, EGLConfig config, NativeCo
 
 bool testNativeWindow (TestLog& log, eglu::NativeDisplay& nativeDisplay, eglu::NativeWindow& nativeWindow, EGLDisplay display, EGLContext context, EGLConfig config, const glw::Functions& gl, bool renderColor, int waitFrames, size_t colorCount, const tcu::Vec4* colors)
 {
-	eglu::UniqueSurface	surface(display, eglu::createWindowSurface(nativeDisplay, nativeWindow, display, config, DE_NULL));
+	const Library&		egl			= nativeDisplay.getLibrary();
+	eglu::UniqueSurface	surface		(egl, display, eglu::createWindowSurface(nativeDisplay, nativeWindow, display, config, DE_NULL));
 	tcu::TextureLevel	result;
-	deUint32			program	= 0;
-	bool				isOk	= true;
+	deUint32			program		= 0;
+	bool				isOk		= true;
 
 	try
 	{
-		TCU_CHECK_EGL_CALL(eglMakeCurrent(display, *surface, *surface, context));
+		EGLU_CHECK_CALL(egl, makeCurrent(display, *surface, *surface, context));
 
 		if (renderColor)
 			program = createGLES2Program(gl, log);
@@ -336,16 +342,16 @@ bool testNativeWindow (TestLog& log, eglu::NativeDisplay& nativeDisplay, eglu::N
 			else
 				clear(gl, colors[colorNdx]);
 
-			TCU_CHECK_EGL_CALL(eglSwapBuffers(display, *surface));
-			TCU_CHECK_EGL_CALL(eglWaitClient());
+			EGLU_CHECK_CALL(egl, swapBuffers(display, *surface));
+			EGLU_CHECK_CALL(egl, waitClient());
 			deSleep(waitFrames*16);
 			nativeWindow.readScreenPixels(&result);
 
-			if (!validate(log, display, config, result, colors[colorNdx]))
+			if (!validate(log, egl, display, config, result, colors[colorNdx]))
 				isOk = false;
 		}
 
-		TCU_CHECK_EGL_CALL(eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT));
+		EGLU_CHECK_CALL(egl, makeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT));
 	}
 	catch (...)
 	{
@@ -359,14 +365,15 @@ bool testNativeWindow (TestLog& log, eglu::NativeDisplay& nativeDisplay, eglu::N
 
 bool testNativePixmap (TestLog& log, eglu::NativeDisplay& nativeDisplay, eglu::NativePixmap& nativePixmap, EGLDisplay display, EGLContext context, EGLConfig config, const glw::Functions& gl, bool renderColor, size_t colorCount, const tcu::Vec4* colors)
 {
-	eglu::UniqueSurface	surface(display, eglu::createPixmapSurface(nativeDisplay, nativePixmap, display, config, DE_NULL));
+	const Library&		egl			= nativeDisplay.getLibrary();
+	eglu::UniqueSurface	surface		(egl, display, eglu::createPixmapSurface(nativeDisplay, nativePixmap, display, config, DE_NULL));
 	tcu::TextureLevel	result;
-	deUint32			program	= 0;
-	bool				isOk	= true;
+	deUint32			program		= 0;
+	bool				isOk		= true;
 
 	try
 	{
-		TCU_CHECK_EGL_CALL(eglMakeCurrent(display, *surface, *surface, context));
+		EGLU_CHECK_CALL(egl, makeCurrent(display, *surface, *surface, context));
 
 		if (renderColor)
 			program = createGLES2Program(gl, log);
@@ -378,14 +385,14 @@ bool testNativePixmap (TestLog& log, eglu::NativeDisplay& nativeDisplay, eglu::N
 			else
 				clear(gl, colors[colorNdx]);
 
-			TCU_CHECK_EGL_CALL(eglWaitClient());
+			EGLU_CHECK_CALL(egl, waitClient());
 			nativePixmap.readPixels(&result);
 
-			if (!validate(log, display, config, result, colors[colorNdx]))
+			if (!validate(log, egl, display, config, result, colors[colorNdx]))
 				isOk = false;
 		}
 
-		TCU_CHECK_EGL_CALL(eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT));
+		EGLU_CHECK_CALL(egl, makeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT));
 	}
 	catch (...)
 	{
@@ -397,16 +404,16 @@ bool testNativePixmap (TestLog& log, eglu::NativeDisplay& nativeDisplay, eglu::N
 	return isOk;
 }
 
-bool testNativePixmapCopy (TestLog& log, eglu::NativePixmap& nativePixmap, EGLDisplay display, EGLContext context, EGLConfig config, const glw::Functions& gl, bool renderColor, size_t colorCount, const tcu::Vec4* colors)
+bool testNativePixmapCopy (TestLog& log, const Library& egl, eglu::NativePixmap& nativePixmap, EGLDisplay display, EGLContext context, EGLConfig config, const glw::Functions& gl, bool renderColor, size_t colorCount, const tcu::Vec4* colors)
 {
-	eglu::UniqueSurface	surface(display, eglCreatePbufferSurface(display, config, DE_NULL));
+	eglu::UniqueSurface	surface		(egl, display, egl.createPbufferSurface(display, config, DE_NULL));
 	tcu::TextureLevel	result;
-	deUint32			program	= 0;
-	bool				isOk	= true;
+	deUint32			program		= 0;
+	bool				isOk		= true;
 
 	try
 	{
-		TCU_CHECK_EGL_CALL(eglMakeCurrent(display, *surface, *surface, context));
+		EGLU_CHECK_CALL(egl, makeCurrent(display, *surface, *surface, context));
 
 		if (renderColor)
 			program = createGLES2Program(gl, log);
@@ -418,15 +425,15 @@ bool testNativePixmapCopy (TestLog& log, eglu::NativePixmap& nativePixmap, EGLDi
 			else
 				clear(gl, colors[colorNdx]);
 
-			TCU_CHECK_EGL_CALL(eglCopyBuffers(display, *surface, nativePixmap.getLegacyNative()));
-			TCU_CHECK_EGL_CALL(eglWaitClient());
+			EGLU_CHECK_CALL(egl, copyBuffers(display, *surface, nativePixmap.getLegacyNative()));
+			EGLU_CHECK_CALL(egl, waitClient());
 			nativePixmap.readPixels(&result);
 
-			if (!validate(log, display, config, result, colors[colorNdx]))
+			if (!validate(log, egl, display, config, result, colors[colorNdx]))
 				isOk = false;
 		}
 
-		TCU_CHECK_EGL_CALL(eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT));
+		EGLU_CHECK_CALL(egl, makeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT));
 	}
 	catch (...)
 	{
@@ -438,32 +445,50 @@ bool testNativePixmapCopy (TestLog& log, eglu::NativePixmap& nativePixmap, EGLDi
 	return isOk;
 }
 
-void checkSupport (EglTestContext& eglTestCtx, NativeColorMappingCase::NativeType nativeType)
+void checkSupport (NativeColorMappingCase::NativeType nativeType, const eglu::NativeWindowFactory* windowFactory, const eglu::NativePixmapFactory* pixmapFactory)
 {
 	switch (nativeType)
 	{
 		case NativeColorMappingCase::NATIVETYPE_WINDOW:
-			if ((eglTestCtx.getNativeWindowFactory().getCapabilities() & eglu::NativeWindow::CAPABILITY_READ_SCREEN_PIXELS) == 0)
-				throw tcu::NotSupportedError("Native window doesn't support readPixels()", "", __FILE__, __LINE__);
+		{
+			if (!windowFactory)
+				TCU_THROW(NotSupportedError, "Windows not supported");
+
+			if ((windowFactory->getCapabilities() & eglu::NativeWindow::CAPABILITY_READ_SCREEN_PIXELS) == 0)
+				TCU_THROW(NotSupportedError, "Native window doesn't support readPixels()");
+
 			break;
+		}
 
 		case NativeColorMappingCase::NATIVETYPE_PIXMAP:
-			if ((eglTestCtx.getNativePixmapFactory().getCapabilities() & eglu::NativePixmap::CAPABILITY_READ_PIXELS) == 0)
-				throw tcu::NotSupportedError("Native pixmap doesn't support readPixels()", "", __FILE__, __LINE__);
+		{
+			if (!pixmapFactory)
+				TCU_THROW(NotSupportedError, "Pixmaps not supported");
+
+			if ((pixmapFactory->getCapabilities() & eglu::NativePixmap::CAPABILITY_READ_PIXELS) == 0)
+				TCU_THROW(NotSupportedError, "Native pixmap doesn't support readPixels()");
+
 			break;
+		}
 
 		case NativeColorMappingCase::NATIVETYPE_PBUFFER_COPY_TO_PIXMAP:
-			if ((eglTestCtx.getNativePixmapFactory().getCapabilities() & eglu::NativePixmap::CAPABILITY_READ_PIXELS) == 0 ||
-				(eglTestCtx.getNativePixmapFactory().getCapabilities() & eglu::NativePixmap::CAPABILITY_CREATE_SURFACE_LEGACY) == 0)
-				throw tcu::NotSupportedError("Native pixmap doesn't support readPixels() or legacy create surface", "", __FILE__, __LINE__);
+		{
+			if (!pixmapFactory)
+				TCU_THROW(NotSupportedError, "Pixmaps not supported");
+
+			if ((pixmapFactory->getCapabilities() & eglu::NativePixmap::CAPABILITY_READ_PIXELS) == 0 ||
+				(pixmapFactory->getCapabilities() & eglu::NativePixmap::CAPABILITY_CREATE_SURFACE_LEGACY) == 0)
+				TCU_THROW(NotSupportedError, "Native pixmap doesn't support readPixels() or legacy create surface");
+
 			break;
+		}
 
 		default:
 			DE_ASSERT(DE_FALSE);
 	}
 }
 
-void NativeColorMappingCase::executeForConfig (tcu::egl::Display& display, EGLConfig config)
+void NativeColorMappingCase::executeForConfig (EGLDisplay display, EGLConfig config)
 {
 	const int width		= 128;
 	const int height	= 128;
@@ -489,44 +514,47 @@ void NativeColorMappingCase::executeForConfig (tcu::egl::Display& display, EGLCo
 		tcu::Vec4(0.5f, 0.5f, 0.5f, 1.0f)
 	};
 
-	const string			configIdStr	(de::toString(eglu::getConfigAttribInt(display.getEGLDisplay(), config, EGL_CONFIG_ID)));
-	tcu::ScopedLogSection	logSection	(m_testCtx.getLog(), ("Config ID " + configIdStr).c_str(), ("Config ID " + configIdStr).c_str());
-	const int				waitFrames	= 5;
+	const Library&						egl				= m_eglTestCtx.getLibrary();
+	const string						configIdStr		(de::toString(eglu::getConfigAttribInt(egl, display, config, EGL_CONFIG_ID)));
+	tcu::ScopedLogSection				logSection		(m_testCtx.getLog(), ("Config ID " + configIdStr).c_str(), ("Config ID " + configIdStr).c_str());
+	const int							waitFrames		= 5;
+	const eglu::NativeWindowFactory*	windowFactory	= eglu::selectNativeWindowFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
+	const eglu::NativePixmapFactory*	pixmapFactory	= eglu::selectNativePixmapFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
 
-	logConfigInfo(m_testCtx.getLog(), display.getEGLDisplay(), config, m_nativeType, waitFrames);
+	logConfigInfo(m_testCtx.getLog(), egl, display, config, m_nativeType, waitFrames);
 
-	checkSupport(m_eglTestCtx, m_nativeType);
+	checkSupport(m_nativeType, windowFactory, pixmapFactory);
 
-	eglu::UniqueContext context(display.getEGLDisplay(), createGLES2Context(display.getEGLDisplay(), config));
-	glw::Functions		gl;
+	eglu::UniqueContext 	context		(egl, display, createGLES2Context(egl, display, config));
+	glw::Functions			gl;
 
-	m_eglTestCtx.getGLFunctions(gl, glu::ApiType::es(2,0));
+	m_eglTestCtx.initGLFunctions(&gl, glu::ApiType::es(2,0));
 
 	switch (m_nativeType)
 	{
 		case NATIVETYPE_WINDOW:
 		{
-			de::UniquePtr<eglu::NativeWindow> nativeWindow(m_eglTestCtx.createNativeWindow(display.getEGLDisplay(), config, DE_NULL, width, height, eglu::WindowParams::VISIBILITY_VISIBLE));
+			de::UniquePtr<eglu::NativeWindow>	nativeWindow	(windowFactory->createWindow(&m_eglTestCtx.getNativeDisplay(), display, config, DE_NULL, eglu::WindowParams(width, height, eglu::WindowParams::VISIBILITY_VISIBLE)));
 
-			if (!testNativeWindow(m_testCtx.getLog(), m_eglTestCtx.getNativeDisplay(), *nativeWindow, display.getEGLDisplay(), *context, config, gl, m_render, waitFrames, DE_LENGTH_OF_ARRAY(colors), colors))
+			if (!testNativeWindow(m_testCtx.getLog(), m_eglTestCtx.getNativeDisplay(), *nativeWindow, display, *context, config, gl, m_render, waitFrames, DE_LENGTH_OF_ARRAY(colors), colors))
 				m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Invalid color rendered");
 			break;
 		}
 
 		case NATIVETYPE_PIXMAP:
 		{
-			de::UniquePtr<eglu::NativePixmap> nativePixmap(m_eglTestCtx.createNativePixmap(display.getEGLDisplay(), config, DE_NULL, width, height));
+			de::UniquePtr<eglu::NativePixmap> nativePixmap		(pixmapFactory->createPixmap(&m_eglTestCtx.getNativeDisplay(), display, config, DE_NULL, width, height));
 
-			if (!testNativePixmap(m_testCtx.getLog(), m_eglTestCtx.getNativeDisplay(), *nativePixmap, display.getEGLDisplay(), *context, config, gl, m_render, DE_LENGTH_OF_ARRAY(colors), colors))
+			if (!testNativePixmap(m_testCtx.getLog(), m_eglTestCtx.getNativeDisplay(), *nativePixmap, display, *context, config, gl, m_render, DE_LENGTH_OF_ARRAY(colors), colors))
 				m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Invalid color rendered");
 			break;
 		}
 
 		case NATIVETYPE_PBUFFER_COPY_TO_PIXMAP:
 		{
-			de::UniquePtr<eglu::NativePixmap> nativePixmap(m_eglTestCtx.createNativePixmap(display.getEGLDisplay(), config, DE_NULL, width, height));
+			de::UniquePtr<eglu::NativePixmap> nativePixmap		(pixmapFactory->createPixmap(&m_eglTestCtx.getNativeDisplay(), display, config, DE_NULL, width, height));
 
-			if (!testNativePixmapCopy(m_testCtx.getLog(), *nativePixmap, display.getEGLDisplay(), *context, config, gl, m_render, DE_LENGTH_OF_ARRAY(colors), colors))
+			if (!testNativePixmapCopy(m_testCtx.getLog(), egl, *nativePixmap, display, *context, config, gl, m_render, DE_LENGTH_OF_ARRAY(colors), colors))
 				m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Invalid color rendered");
 			break;
 		}
@@ -536,35 +564,41 @@ void NativeColorMappingCase::executeForConfig (tcu::egl::Display& display, EGLCo
 	}
 }
 
+template<deUint32 Type>
+static bool surfaceType (const eglu::CandidateConfig& c)
+{
+	return (c.surfaceType() & Type) == Type;
+}
+
 void addTestGroups (EglTestContext& eglTestCtx, TestCaseGroup* group, NativeColorMappingCase::NativeType type)
 {
-	eglu::FilterList filters;
+	eglu::FilterList baseFilters;
 
 	switch (type)
 	{
 		case NativeColorMappingCase::NATIVETYPE_WINDOW:
-			filters << (eglu::ConfigSurfaceType() & EGL_WINDOW_BIT);
+			baseFilters << surfaceType<EGL_WINDOW_BIT>;
 			break;
 
 		case NativeColorMappingCase::NATIVETYPE_PIXMAP:
-			filters << (eglu::ConfigSurfaceType() & EGL_PIXMAP_BIT);
+			baseFilters << surfaceType<EGL_PIXMAP_BIT>;
 			break;
 
 		case NativeColorMappingCase::NATIVETYPE_PBUFFER_COPY_TO_PIXMAP:
-			filters << (eglu::ConfigSurfaceType() & EGL_PBUFFER_BIT);
+			baseFilters << surfaceType<EGL_PBUFFER_BIT>;
 			break;
 
 		default:
 			DE_ASSERT(DE_FALSE);
 	}
 
-	vector<NamedConfigIdSet> configIdSets;
-	NamedConfigIdSet::getDefaultSets(configIdSets, eglTestCtx.getConfigs(), filters);
+	vector<NamedFilterList> filterLists;
+	getDefaultFilterLists(filterLists, baseFilters);
 
-	for (vector<NamedConfigIdSet>::iterator i = configIdSets.begin(); i != configIdSets.end(); i++)
+	for (vector<NamedFilterList>::iterator i = filterLists.begin(); i != filterLists.end(); i++)
 	{
-		group->addChild(new NativeColorMappingCase(eglTestCtx, (string(i->getName()) + "_clear").c_str(), i->getDescription(), false, type, i->getConfigIds()));
-		group->addChild(new NativeColorMappingCase(eglTestCtx, (string(i->getName()) + "_render").c_str(), i->getDescription(), true, type, i->getConfigIds()));
+		group->addChild(new NativeColorMappingCase(eglTestCtx, (string(i->getName()) + "_clear").c_str(), i->getDescription(), false, type, *i));
+		group->addChild(new NativeColorMappingCase(eglTestCtx, (string(i->getName()) + "_render").c_str(), i->getDescription(), true, type, *i));
 	}
 }
 

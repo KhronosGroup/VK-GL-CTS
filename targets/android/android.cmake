@@ -3,15 +3,8 @@ message("*** Using Android")
 set(DEQP_TARGET_NAME	"Android")
 set(DEQP_SUPPORT_GLES1	ON)
 set(DEQP_SUPPORT_GLES2	ON)
-
-if (DE_ANDROID_API GREATER 8)
-	set(DEQP_SUPPORT_EGL	ON)
-	set(DEQP_SUPPORT_GLES3	ON) # \note GLES3 support requires eglGetProcAddress()
-else ()
-	set(DEQP_SUPPORT_EGL	OFF)
-endif ()
-
-set(DEQP_SUPPORT_OPENCL	OFF)
+set(DEQP_SUPPORT_GLES3	ON)
+set(DEQP_SUPPORT_EGL	ON)
 
 # GLESv2 lib
 find_library(GLES2_LIBRARY GLESv2 PATHS /usr/lib)
@@ -25,14 +18,6 @@ set(DEQP_GLES1_LIBRARIES ${GLES1_LIBRARY})
 if (DEQP_SUPPORT_EGL)
 	find_library(EGL_LIBRARY EGL PATHS /usr/lib)
 	set(DEQP_EGL_LIBRARIES ${EGL_LIBRARY})
-endif ()
-
-# OpenCL - dynamic loading
-if (DEQP_SUPPORT_OPENCL)
-	include_directories(framework/opencl/inc)
-
-	add_subdirectory(wrappers/opencl_dynamic)
-	set(DEQP_OPENCL_LIBRARIES OpenCL)
 endif ()
 
 # Platform libs

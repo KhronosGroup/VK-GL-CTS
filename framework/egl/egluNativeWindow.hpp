@@ -25,7 +25,7 @@
 
 #include "tcuDefs.hpp"
 #include "tcuFactoryRegistry.hpp"
-#include "egluHeaderWrapper.hpp"
+#include "eglwDefs.hpp"
 #include "tcuVector.hpp"
 
 namespace tcu
@@ -84,65 +84,65 @@ public:
 		CAPABILITY_CHANGE_VISIBILITY		= (1<<6)
 	};
 
-	virtual						~NativeWindow					(void) {}
+	virtual								~NativeWindow					(void) {}
 
 	//! Return EGLNativeWindowType that can be used with eglCreateWindowSurface(). Default implementation throws tcu::NotSupportedError().
-	virtual EGLNativeWindowType	getLegacyNative					(void);
+	virtual eglw::EGLNativeWindowType	getLegacyNative					(void);
 
 	//! Return native pointer that can be used with eglCreatePlatformWindowSurface(). Default implementation throws tcu::NotSupportedError().
-	virtual void*				getPlatformNative				(void);
+	virtual void*						getPlatformNative				(void);
 
 	// Process window events. Defaults to dummy implementation, that does nothing.
-	virtual void				processEvents					(void) {}
+	virtual void						processEvents					(void) {}
 
 	// Get current size of window's logical surface. Default implementation throws tcu::NotSupportedError()
-	virtual tcu::IVec2			getSurfaceSize					(void) const;
+	virtual tcu::IVec2					getSurfaceSize					(void) const;
 
 	// Set the size of the window's logical surface. Default implementation throws tcu::NotSupportedError()
-	virtual void				setSurfaceSize					(tcu::IVec2 size);
+	virtual void						setSurfaceSize					(tcu::IVec2 size);
 
 	// Get the size of the window in screen pixels. Default implementation throws tcu::NotSupportedError()
-	virtual tcu::IVec2			getScreenSize					(void) const;
+	virtual tcu::IVec2					getScreenSize					(void) const;
 
 	// Read screen (visible) pixels from window. Default implementation throws tcu::NotSupportedError()
-	virtual void				readScreenPixels				(tcu::TextureLevel* dst) const;
+	virtual void						readScreenPixels				(tcu::TextureLevel* dst) const;
 
 	// Change window visibility. Default throws tcu::NotSupportedError().
-	virtual void				setVisibility					(WindowParams::Visibility visibility);
+	virtual void						setVisibility					(WindowParams::Visibility visibility);
 
-	Capability					getCapabilities					(void) const { return m_capabilities; }
+	Capability							getCapabilities					(void) const { return m_capabilities; }
 
 protected:
-								NativeWindow					(Capability capabilities);
+										NativeWindow					(Capability capabilities);
 
 private:
-								NativeWindow					(const NativeWindow&);
-	NativeWindow&				operator=						(const NativeWindow&);
+										NativeWindow					(const NativeWindow&);
+	NativeWindow&						operator=						(const NativeWindow&);
 
-	const Capability			m_capabilities;
+	const Capability					m_capabilities;
 };
 
 class NativeWindowFactory : public tcu::FactoryBase
 {
 public:
-	virtual							~NativeWindowFactory			(void);
+	virtual								~NativeWindowFactory			(void);
 
 	//! Create generic NativeWindow
-	virtual NativeWindow*			createWindow					(NativeDisplay* nativeDisplay, const WindowParams& params) const = 0;
+	virtual NativeWindow*				createWindow					(NativeDisplay* nativeDisplay, const WindowParams& params) const = 0;
 
 	//! Create NativeWindow that matches given config. Defaults to generic createWindow().
-	virtual NativeWindow*			createWindow					(NativeDisplay* nativeDisplay, EGLDisplay display, EGLConfig config, const EGLAttrib* attribList, const WindowParams& params) const;
+	virtual NativeWindow*				createWindow					(NativeDisplay* nativeDisplay, eglw::EGLDisplay display, eglw::EGLConfig config, const eglw::EGLAttrib* attribList, const WindowParams& params) const;
 
-	NativeWindow::Capability		getCapabilities					(void) const { return m_capabilities; }
+	NativeWindow::Capability			getCapabilities					(void) const { return m_capabilities; }
 
 protected:
-									NativeWindowFactory				(const std::string& name, const std::string& description, NativeWindow::Capability capabilities);
+										NativeWindowFactory				(const std::string& name, const std::string& description, NativeWindow::Capability capabilities);
 
 private:
-									NativeWindowFactory				(const NativeWindowFactory&);
-	NativeWindowFactory&			operator=						(const NativeWindowFactory&);
+										NativeWindowFactory				(const NativeWindowFactory&);
+	NativeWindowFactory&				operator=						(const NativeWindowFactory&);
 
-	const NativeWindow::Capability	m_capabilities;
+	const NativeWindow::Capability		m_capabilities;
 };
 
 typedef tcu::FactoryRegistry<NativeWindowFactory> NativeWindowFactoryRegistry;

@@ -9,16 +9,15 @@ add_subdirectory(common)
 # Common OpenGL utilities
 add_subdirectory(opengl)
 
+# EGL utilities
+add_subdirectory(egl)
+
 if (IS_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/randomshaders)
 	add_subdirectory(randomshaders)
 endif ()
 
 if (IS_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/referencerenderer)
 	add_subdirectory(referencerenderer)
-endif ()
-
-if (DEQP_SUPPORT_EGL)
-	add_subdirectory(egl)
 endif ()
 
 # Platform library

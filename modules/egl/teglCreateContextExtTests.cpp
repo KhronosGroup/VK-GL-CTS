@@ -31,6 +31,10 @@
 #include "egluConfigFilter.hpp"
 #include "egluStrUtil.hpp"
 #include "egluUtil.hpp"
+#include "egluUnique.hpp"
+
+#include "eglwLibrary.hpp"
+#include "eglwEnums.hpp"
 
 #include "gluDefs.hpp"
 #include "gluRenderConfig.hpp"
@@ -40,8 +44,7 @@
 
 #include "deStringUtil.hpp"
 #include "deUniquePtr.hpp"
-
-#include <EGL/eglext.h>
+#include "deSTLUtil.hpp"
 
 #include <string>
 #include <vector>
@@ -50,59 +53,21 @@
 
 #include <cstring>
 
-// \note Taken from official EGL/eglext.h. EGL_EGLEXT_VERSION 20131028
-#ifndef EGL_KHR_create_context
-#define EGL_KHR_create_context 1
-#define EGL_CONTEXT_MAJOR_VERSION_KHR     0x3098
-#define EGL_CONTEXT_MINOR_VERSION_KHR     0x30FB
-#define EGL_CONTEXT_FLAGS_KHR             0x30FC
-#define EGL_CONTEXT_OPENGL_PROFILE_MASK_KHR 0x30FD
-#define EGL_CONTEXT_OPENGL_RESET_NOTIFICATION_STRATEGY_KHR 0x31BD
-#define EGL_NO_RESET_NOTIFICATION_KHR     0x31BE
-#define EGL_LOSE_CONTEXT_ON_RESET_KHR     0x31BF
-#define EGL_CONTEXT_OPENGL_DEBUG_BIT_KHR  0x00000001
-#define EGL_CONTEXT_OPENGL_FORWARD_COMPATIBLE_BIT_KHR 0x00000002
-#define EGL_CONTEXT_OPENGL_ROBUST_ACCESS_BIT_KHR 0x00000004
-#define EGL_CONTEXT_OPENGL_CORE_PROFILE_BIT_KHR 0x00000001
-#define EGL_CONTEXT_OPENGL_COMPATIBILITY_PROFILE_BIT_KHR 0x00000002
-#define EGL_OPENGL_ES3_BIT_KHR            0x00000040
-#endif /* EGL_KHR_create_context */
-
-#ifndef EGL_EXT_create_context_robustness
-#define EGL_EXT_create_context_robustness 1
-#define EGL_CONTEXT_OPENGL_ROBUST_ACCESS_EXT 0x30BF
-#define EGL_CONTEXT_OPENGL_RESET_NOTIFICATION_STRATEGY_EXT 0x3138
-#define EGL_NO_RESET_NOTIFICATION_EXT     0x31BE
-#define EGL_LOSE_CONTEXT_ON_RESET_EXT     0x31BF
-#endif /* EGL_EXT_create_context_robustness */
-
-// \note Taken from official GLES2/gl2ext.h. Generated on date 20131202.
-#ifndef GL_EXT_robustness
-#define GL_EXT_robustness 1
-#define GL_GUILTY_CONTEXT_RESET_EXT       0x8253
-#define GL_INNOCENT_CONTEXT_RESET_EXT     0x8254
-#define GL_UNKNOWN_CONTEXT_RESET_EXT      0x8255
-#define GL_CONTEXT_ROBUST_ACCESS_EXT      0x90F3
-#define GL_RESET_NOTIFICATION_STRATEGY_EXT 0x8256
-#define GL_LOSE_CONTEXT_ON_RESET_EXT      0x8252
-#define GL_NO_RESET_NOTIFICATION_EXT      0x8261
-#endif /* GL_EXT_robustness */
-
-#ifndef GL_ARB_robustness
-/* reuse GL_NO_ERROR */
-#define GL_CONTEXT_FLAG_ROBUST_ACCESS_BIT_ARB 0x00000004
-#define GL_LOSE_CONTEXT_ON_RESET_ARB      0x8252
-#define GL_GUILTY_CONTEXT_RESET_ARB       0x8253
-#define GL_INNOCENT_CONTEXT_RESET_ARB     0x8254
-#define GL_UNKNOWN_CONTEXT_RESET_ARB      0x8255
-#define GL_RESET_NOTIFICATION_STRATEGY_ARB 0x8256
-#define GL_NO_RESET_NOTIFICATION_ARB      0x8261
-#endif
-
 using std::set;
 using std::string;
 using std::vector;
 using tcu::TestLog;
+
+using namespace eglw;
+
+// Make sure KHR / core values match to those in GL_ARB_robustness and GL_EXT_robustness
+DE_STATIC_ASSERT(GL_RESET_NOTIFICATION_STRATEGY	== 0x8256);
+DE_STATIC_ASSERT(GL_LOSE_CONTEXT_ON_RESET		== 0x8252);
+DE_STATIC_ASSERT(GL_NO_RESET_NOTIFICATION		== 0x8261);
+
+#if !defined(GL_CONTEXT_ROBUST_ACCESS)
+#	define GL_CONTEXT_ROBUST_ACCESS		0x90F3
+#endif
 
 namespace deqp
 {
@@ -213,7 +178,7 @@ public:
 								CreateContextExtCase	(EglTestContext& eglTestCtx, EGLenum api, const EGLint* attribList, const eglu::FilterList& filter, const char* name, const char* description);
 								~CreateContextExtCase	(void);
 
-	void						executeForConfig		(tcu::egl::Display& display, EGLConfig config, tcu::egl::Surface& surface);
+	void						executeForSurface		(EGLConfig config, EGLSurface surface);
 
 	void						init					(void);
 	void						deinit					(void);
@@ -231,6 +196,7 @@ private:
 	vector<EGLint>				m_attribList;
 	const EGLenum				m_api;
 
+	EGLDisplay					m_display;
 	vector<EGLConfig>			m_configs;
 	glu::ContextType			m_glContextType;
 };
@@ -243,7 +209,7 @@ glu::ContextType attribListToContextType (EGLenum api, const EGLint* attribList)
 	glu::Profile		profile			= api == EGL_OPENGL_ES_API ? glu::PROFILE_ES : glu::PROFILE_CORE;
 	const EGLint*		iter			= attribList;
 
-	while((*iter) != EGL_NONE)
+	while ((*iter) != EGL_NONE)
 	{
 		switch (*iter)
 		{
@@ -312,6 +278,7 @@ CreateContextExtCase::CreateContextExtCase (EglTestContext& eglTestCtx, EGLenum 
 	, m_filter			(filter)
 	, m_attribList		(attribList, attribList + getAttribListLength(attribList))
 	, m_api				(api)
+	, m_display			(EGL_NO_DISPLAY)
 	, m_glContextType	(attribListToContextType(api, attribList))
 {
 }
@@ -323,20 +290,20 @@ CreateContextExtCase::~CreateContextExtCase (void)
 
 void CreateContextExtCase::init (void)
 {
-	vector<EGLConfig> configs;
-	m_eglTestCtx.getDisplay().getConfigs(configs);
-
-	for (int configNdx = 0; configNdx < (int)configs.size(); configNdx++)
-	{
-		if (m_filter.match(m_eglTestCtx.getDisplay().getEGLDisplay(), configs[configNdx]))
-			m_configs.push_back(configs[configNdx]);
-	}
+	m_display	= eglu::getAndInitDisplay(m_eglTestCtx.getNativeDisplay());
+	m_configs	= eglu::chooseConfigs(m_eglTestCtx.getLibrary(), m_display, m_filter);
 }
 
 void CreateContextExtCase::deinit (void)
 {
-	m_attribList	= vector<EGLint>();
-	m_configs		= vector<EGLConfig>();
+	m_attribList.clear();
+	m_configs.clear();
+
+	if (m_display != EGL_NO_DISPLAY)
+	{
+		m_eglTestCtx.getLibrary().terminate(m_display);
+		m_display = EGL_NO_DISPLAY;
+	}
 }
 
 void CreateContextExtCase::logAttribList (void)
@@ -402,9 +369,7 @@ void CreateContextExtCase::checkRequiredExtensions (void)
 {
 	bool			isOk = true;
 	set<string>		requiredExtensions;
-	vector<string>	extensions;
-
-	m_eglTestCtx.getDisplay().getExtensions(extensions);
+	vector<string>	extensions			= eglu::getClientExtensions(m_eglTestCtx.getLibrary(), m_display);
 
 	{
 		const EGLint* iter = &(m_attribList[0]);
@@ -462,15 +427,7 @@ void CreateContextExtCase::checkRequiredExtensions (void)
 
 	for (std::set<string>::const_iterator reqExt = requiredExtensions.begin(); reqExt != requiredExtensions.end(); ++reqExt)
 	{
-		bool found = false;
-
-		for (int extNdx = 0; extNdx < (int)extensions.size(); extNdx++)
-		{
-			if (*reqExt == extensions[extNdx])
-				found = true;
-		}
-
-		if (!found)
+		if (!de::contains(extensions.begin(), extensions.end(), *reqExt))
 		{
 			m_testCtx.getLog() << TestLog::Message << "Required extension '" << (*reqExt) << "' not supported" << TestLog::EndMessage;
 			isOk = false;
@@ -478,7 +435,7 @@ void CreateContextExtCase::checkRequiredExtensions (void)
 	}
 
 	if (!isOk)
-		throw tcu::NotSupportedError("Required extensions not supported", "", __FILE__, __LINE__);
+		TCU_THROW(NotSupportedError, "Required extensions not supported");
 }
 
 bool hasExtension (const glw::Functions& gl, const char* extension)
@@ -858,87 +815,28 @@ bool CreateContextExtCase::validateCurrentContext (const glw::Functions& gl)
 		}
 	}
 
-	if (notificationStrategy != -1)
+	DE_ASSERT(notificationStrategy == -1 || notificationStrategyExt == -1);
+
+	if (notificationStrategy != -1 || notificationStrategyExt != -1)
 	{
-		if (m_api == EGL_OPENGL_API)
+		const deInt32	expected	= notificationStrategy != -1 ? notificationStrategy : notificationStrategyExt;
+		deInt32			strategy	= 0;
+
+		gl.getIntegerv(GL_RESET_NOTIFICATION_STRATEGY, &strategy);
+		GLU_EXPECT_NO_ERROR(gl.getError(), "glGetIntegerv()");
+
+		if (expected == EGL_NO_RESET_NOTIFICATION && strategy != GL_NO_RESET_NOTIFICATION)
 		{
-			deInt32 strategy;
-
-			gl.getIntegerv(GL_RESET_NOTIFICATION_STRATEGY_ARB, &strategy);
-			GLU_EXPECT_NO_ERROR(gl.getError(), "glGetIntegerv()");
-
-			if (notificationStrategy == EGL_NO_RESET_NOTIFICATION_KHR && strategy != GL_NO_RESET_NOTIFICATION_ARB)
-			{
-				log << TestLog::Message << "glGetIntegerv(GL_RESET_NOTIFICATION_STRATEGY_ARB) returned '" << strategy << "', expected 'GL_NO_RESET_NOTIFICATION_ARB'" << TestLog::EndMessage;
-				isOk = false;
-			}
-			else if (notificationStrategy == EGL_LOSE_CONTEXT_ON_RESET_KHR && strategy != GL_LOSE_CONTEXT_ON_RESET_ARB)
-			{
-				log << TestLog::Message << "glGetIntegerv(GL_RESET_NOTIFICATION_STRATEGY_ARB) returned '" << strategy << "', expected 'GL_LOSE_CONTEXT_ON_RESET_ARB'" << TestLog::EndMessage;
-				isOk = false;
-			}
+			log << TestLog::Message << "glGetIntegerv(GL_RESET_NOTIFICATION_STRATEGY) returned '" << strategy << "', expected 'GL_NO_RESET_NOTIFICATION'" << TestLog::EndMessage;
+			isOk = false;
 		}
-		else if (m_api == EGL_OPENGL_ES_API)
+		else if (expected == EGL_LOSE_CONTEXT_ON_RESET && strategy != GL_LOSE_CONTEXT_ON_RESET)
 		{
-			deInt32 strategy;
-
-			gl.getIntegerv(GL_RESET_NOTIFICATION_STRATEGY_EXT, &strategy);
-			GLU_EXPECT_NO_ERROR(gl.getError(), "glGetIntegerv()");
-
-			if (notificationStrategy == EGL_NO_RESET_NOTIFICATION_KHR && strategy != GL_NO_RESET_NOTIFICATION_EXT)
-			{
-				log << TestLog::Message << "glGetIntegerv(GL_RESET_NOTIFICATION_STRATEGY_EXT) returned '" << strategy << "', expected 'GL_NO_RESET_NOTIFICATION_EXT'" << TestLog::EndMessage;
-				isOk = false;
-			}
-			else if (notificationStrategy == EGL_LOSE_CONTEXT_ON_RESET_KHR && strategy != GL_LOSE_CONTEXT_ON_RESET_EXT)
-			{
-				log << TestLog::Message << "glGetIntegerv(GL_RESET_NOTIFICATION_STRATEGY_EXT) returned '" << strategy << "', expected 'GL_LOSE_CONTEXT_ON_RESET_EXT'" << TestLog::EndMessage;
-				isOk = false;
-			}
-		}
-	}
-
-	if (notificationStrategyExt != -1)
-	{
-		if (m_api == EGL_OPENGL_API)
-		{
-			deInt32 strategy;
-
-			gl.getIntegerv(GL_RESET_NOTIFICATION_STRATEGY_ARB, &strategy);
-			GLU_EXPECT_NO_ERROR(gl.getError(), "glGetIntegerv()");
-
-			if (notificationStrategyExt == EGL_NO_RESET_NOTIFICATION_KHR && strategy != GL_NO_RESET_NOTIFICATION_ARB)
-			{
-				log << TestLog::Message << "glGetIntegerv(GL_RESET_NOTIFICATION_STRATEGY_ARB) returned '" << strategy << "', expected 'GL_NO_RESET_NOTIFICATION_ARB'" << TestLog::EndMessage;
-				isOk = false;
-			}
-			else if (notificationStrategyExt == EGL_LOSE_CONTEXT_ON_RESET_KHR && strategy != GL_LOSE_CONTEXT_ON_RESET_ARB)
-			{
-				log << TestLog::Message << "glGetIntegerv(GL_RESET_NOTIFICATION_STRATEGY_ARB) returned '" << strategy << "', expected 'GL_LOSE_CONTEXT_ON_RESET_ARB'" << TestLog::EndMessage;
-				isOk = false;
-			}
-		}
-		else if (m_api == EGL_OPENGL_ES_API)
-		{
-			deInt32 strategy;
-
-			gl.getIntegerv(GL_RESET_NOTIFICATION_STRATEGY_EXT, &strategy);
-			GLU_EXPECT_NO_ERROR(gl.getError(), "glGetIntegerv()");
-
-			if (notificationStrategyExt == EGL_NO_RESET_NOTIFICATION_KHR && strategy != GL_NO_RESET_NOTIFICATION_EXT)
-			{
-				log << TestLog::Message << "glGetIntegerv(GL_RESET_NOTIFICATION_STRATEGY_EXT) returned '" << strategy << "', expected 'GL_NO_RESET_NOTIFICATION_EXT'" << TestLog::EndMessage;
-				isOk = false;
-			}
-			else if (notificationStrategyExt == EGL_LOSE_CONTEXT_ON_RESET_KHR && strategy != GL_LOSE_CONTEXT_ON_RESET_EXT)
-			{
-				log << TestLog::Message << "glGetIntegerv(GL_RESET_NOTIFICATION_STRATEGY_EXT) returned '" << strategy << "', expected 'GL_LOSE_CONTEXT_ON_RESET_EXT'" << TestLog::EndMessage;
-				isOk = false;
-			}
+			log << TestLog::Message << "glGetIntegerv(GL_RESET_NOTIFICATION_STRATEGY) returned '" << strategy << "', expected 'GL_LOSE_CONTEXT_ON_RESET'" << TestLog::EndMessage;
+			isOk = false;
 		}
 	}
 	
-
 	if (robustAccessExt == EGL_TRUE)
 	{
 		if (m_api == EGL_OPENGL_API)
@@ -966,9 +864,9 @@ bool CreateContextExtCase::validateCurrentContext (const glw::Functions& gl)
 
 			gl.getIntegerv(GL_CONTEXT_FLAGS, &contextFlagsGL);
 
-			if ((contextFlagsGL & GL_CONTEXT_FLAG_ROBUST_ACCESS_BIT_ARB) != 0)
+			if ((contextFlagsGL & GL_CONTEXT_FLAG_ROBUST_ACCESS_BIT) != 0)
 			{
-				log << TestLog::Message << "Invalid GL_CONTEXT_FLAGS. GL_CONTEXT_FLAG_ROBUST_ACCESS_BIT_ARB to be set, got '" << eglContextFlagsToString(contextFlagsGL) << "'" << TestLog::EndMessage;
+				log << TestLog::Message << "Invalid GL_CONTEXT_FLAGS. GL_CONTEXT_FLAG_ROBUST_ACCESS_BIT to be set, got '" << eglContextFlagsToString(contextFlagsGL) << "'" << TestLog::EndMessage;
 				isOk = false;
 			}
 		}
@@ -976,12 +874,12 @@ bool CreateContextExtCase::validateCurrentContext (const glw::Functions& gl)
 		{
 			deUint8 robustAccessGL;
 
-			gl.getBooleanv(GL_CONTEXT_ROBUST_ACCESS_EXT, &robustAccessGL);
+			gl.getBooleanv(GL_CONTEXT_ROBUST_ACCESS, &robustAccessGL);
 			GLU_EXPECT_NO_ERROR(gl.getError(), "glGetBooleanv()");
 
 			if (robustAccessGL != GL_TRUE)
 			{
-				log << TestLog::Message << "Invalid GL_CONTEXT_ROBUST_ACCESS_EXT returned by glGetBooleanv(). Got '" << robustAccessGL << "' expected GL_TRUE." << TestLog::EndMessage;
+				log << TestLog::Message << "Invalid GL_CONTEXT_ROBUST_ACCESS returned by glGetBooleanv(). Got '" << robustAccessGL << "' expected GL_TRUE." << TestLog::EndMessage;
 				isOk = false;
 			}
 		}
@@ -1001,40 +899,51 @@ TestCase::IterateResult CreateContextExtCase::iterate (void)
 
 	if (m_iteration < (int)m_configs.size())
 	{
+		const Library&		egl				= m_eglTestCtx.getLibrary();
 		const EGLConfig		config			= m_configs[m_iteration];
-		tcu::egl::Display&	display			= m_eglTestCtx.getDisplay();
-		const EGLint		surfaceTypes	= display.getConfigAttrib(config, EGL_SURFACE_TYPE);
-		const EGLint		configId		= display.getConfigAttrib(config, EGL_CONFIG_ID);
+		const EGLint		surfaceTypes	= eglu::getConfigAttribInt(egl, m_display, config, EGL_SURFACE_TYPE);
+		const EGLint		configId		= eglu::getConfigAttribInt(egl, m_display, config, EGL_CONFIG_ID);
 
 		if ((surfaceTypes & EGL_PBUFFER_BIT) != 0)
 		{
-			tcu::ScopedLogSection section(m_testCtx.getLog(), ("EGLConfig ID: " + de::toString(configId) + " with PBuffer").c_str(), ("EGLConfig ID: " + de::toString(configId)).c_str());
-			const EGLint attribList[] =
+			tcu::ScopedLogSection	section			(m_testCtx.getLog(), ("EGLConfig ID: " + de::toString(configId) + " with PBuffer").c_str(), ("EGLConfig ID: " + de::toString(configId)).c_str());
+			const EGLint			attribList[]	=
 			{
 				EGL_WIDTH,	64,
 				EGL_HEIGHT,	64,
 				EGL_NONE
 			};
+			eglu::UniqueSurface		surface			(egl, m_display, egl.createPbufferSurface(m_display, config, attribList));
+			EGLU_CHECK_MSG(egl, "eglCreatePbufferSurface");
 
-			tcu::egl::PbufferSurface pbuffer(display, config, attribList);
-			executeForConfig(display, config, pbuffer);
+			executeForSurface(config, *surface);
 		}
 		else if ((surfaceTypes & EGL_WINDOW_BIT) != 0)
 		{
-			de::UniquePtr<eglu::NativeWindow>	window	(m_eglTestCtx.createNativeWindow(display.getEGLDisplay(), config, DE_NULL, 256, 256, eglu::parseWindowVisibility(m_testCtx.getCommandLine())));
-			tcu::egl::WindowSurface				surface	(display, eglu::createWindowSurface(m_eglTestCtx.getNativeDisplay(), *window, display.getEGLDisplay(), config, DE_NULL));
+			const eglu::NativeWindowFactory*	factory	= eglu::selectNativeWindowFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
 
-			executeForConfig(display, config, surface);
+			if (!factory)
+				TCU_THROW(NotSupportedError, "Windows not supported");
+
+			de::UniquePtr<eglu::NativeWindow>	window	(factory->createWindow(&m_eglTestCtx.getNativeDisplay(), m_display, config, DE_NULL, eglu::WindowParams(256, 256, eglu::parseWindowVisibility(m_testCtx.getCommandLine()))));
+			eglu::UniqueSurface					surface	(egl, m_display, eglu::createWindowSurface(m_eglTestCtx.getNativeDisplay(), *window, m_display, config, DE_NULL));
+
+			executeForSurface(config, *surface);
 		}
 		else if ((surfaceTypes & EGL_PIXMAP_BIT) != 0)
 		{
-			de::UniquePtr<eglu::NativePixmap>	pixmap	(m_eglTestCtx.createNativePixmap(display.getEGLDisplay(), config, DE_NULL, 256, 256));
-			tcu::egl::PixmapSurface				surface	(display, eglu::createPixmapSurface(m_eglTestCtx.getNativeDisplay(), *pixmap, display.getEGLDisplay(), config, DE_NULL));
+			const eglu::NativePixmapFactory*	factory	= eglu::selectNativePixmapFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
 
-			executeForConfig(display, config, surface);
+			if (!factory)
+				TCU_THROW(NotSupportedError, "Pixmaps not supported");
+
+			de::UniquePtr<eglu::NativePixmap>	pixmap	(factory->createPixmap(&m_eglTestCtx.getNativeDisplay(), m_display, config, DE_NULL, 256, 256));
+			eglu::UniqueSurface					surface	(egl, m_display, eglu::createPixmapSurface(m_eglTestCtx.getNativeDisplay(), *pixmap, m_display, config, DE_NULL));
+
+			executeForSurface(config, *surface);
 		}
 		else // No supported surface type
-			TCU_CHECK(false);
+			TCU_FAIL("Invalid or empty surface type bits");
 
 		m_iteration++;
 		return CONTINUE;
@@ -1055,30 +964,27 @@ TestCase::IterateResult CreateContextExtCase::iterate (void)
 	}
 }
 
-void CreateContextExtCase::executeForConfig (tcu::egl::Display& display, EGLConfig config, tcu::egl::Surface& surface)
+void CreateContextExtCase::executeForSurface (EGLConfig config, EGLSurface surface)
 {
-	tcu::egl::Context*		context		= DE_NULL;
+	const Library&	egl		= m_eglTestCtx.getLibrary();
 
-	TCU_CHECK_EGL_CALL(eglBindAPI(m_api));
+	EGLU_CHECK_CALL(egl, bindAPI(m_api));
 
 	try
 	{
-		glw::Functions	gl;
+		glw::Functions		gl;
+		eglu::UniqueContext	context	(egl, m_display, egl.createContext(m_display, config, EGL_NO_CONTEXT, &m_attribList[0]));
+		EGLU_CHECK_MSG(egl, "eglCreateContext");
 
-		context = new tcu::egl::Context(display, config, &(m_attribList[0]), m_api);
-		context->makeCurrent(surface, surface);
+		EGLU_CHECK_CALL(egl, makeCurrent(m_display, surface, surface, *context));
 
-		m_eglTestCtx.getGLFunctions(gl, m_glContextType.getAPI());
+		m_eglTestCtx.initGLFunctions(&gl, m_glContextType.getAPI());
 
 		if (!validateCurrentContext(gl))
 			m_isOk = false;
-
-		delete context;
 	}
 	catch (const eglu::Error& error)
 	{
-		delete context;
-
 		if (error.getError() == EGL_BAD_MATCH)
 			m_testCtx.getLog() << TestLog::Message << "Context creation failed with error EGL_BAD_CONTEXT. Config doesn't support api version." << TestLog::EndMessage;
 		else if (error.getError() == EGL_BAD_CONFIG)
@@ -1088,11 +994,6 @@ void CreateContextExtCase::executeForConfig (tcu::egl::Display& display, EGLConf
 			m_testCtx.getLog() << TestLog::Message << "Context creation failed with error " << eglu::getErrorStr(error.getError()) << ". Error is not result of unsupported api etc." << TestLog::EndMessage;
 			m_isOk = false;
 		}
-	}
-	catch (...)
-	{
-		delete context;
-		throw;
 	}
 }
 
@@ -1122,6 +1023,40 @@ CreateContextExtGroup::~CreateContextExtGroup (void)
 {
 }
 
+
+template <int Red, int Green, int Blue, int Alpha>
+static bool colorBits (const eglu::CandidateConfig& c)
+{
+	return c.redSize()		== Red		&&
+		   c.greenSize()	== Green	&&
+		   c.blueSize()		== Blue		&&
+		   c.alphaSize()	== Alpha;
+}
+
+static bool	hasDepth	(const eglu::CandidateConfig& c)	{ return c.depthSize() > 0;		}
+static bool	noDepth		(const eglu::CandidateConfig& c)	{ return c.depthSize() == 0;	}
+static bool	hasStencil	(const eglu::CandidateConfig& c)	{ return c.stencilSize() > 0;	}
+static bool	noStencil	(const eglu::CandidateConfig& c)	{ return c.stencilSize() == 0;	}
+
+template <deUint32 Type>
+static bool renderable (const eglu::CandidateConfig& c)
+{
+	return (c.renderableType() & Type) == Type;
+}
+
+static eglu::ConfigFilter getRenderableFilter (deUint32 bits)
+{
+	switch (bits)
+	{
+		case EGL_OPENGL_ES2_BIT:	return renderable<EGL_OPENGL_ES2_BIT>;
+		case EGL_OPENGL_ES3_BIT:	return renderable<EGL_OPENGL_ES3_BIT>;
+		case EGL_OPENGL_BIT:		return renderable<EGL_OPENGL_BIT>;
+		default:
+			DE_ASSERT(false);
+			return renderable<0>;
+	}
+}
+
 void CreateContextExtGroup::init (void)
 {
 	const struct
@@ -1129,58 +1064,45 @@ void CreateContextExtGroup::init (void)
 		const char*				name;
 		const char*				description;
 
-		EGLint					redSize;
-		EGLint					greenSize;
-		EGLint					blueSize;
-		EGLint					alphaSize;
-
-		bool					hasDepth;
-		bool					hasStencil;
+		eglu::ConfigFilter		colorFilter;
+		eglu::ConfigFilter		depthFilter;
+		eglu::ConfigFilter		stencilFilter;
 	} groups[] =
 	{
-		{ "rgb565_no_depth_no_stencil",		"RGB565 configs without depth or stencil",		5, 6, 5, 0, false,	false	},
-		{ "rgb565_no_depth_stencil",		"RGB565 configs with stencil and no depth",		5, 6, 5, 0, false,	true	},
-		{ "rgb565_depth_no_stencil",		"RGB565 configs with depth and no stencil",		5, 6, 5, 0, true,	false	},
-		{ "rgb565_depth_stencil",			"RGB565 configs with depth and stencil",		5, 6, 5, 0, true,	true	},
+		{ "rgb565_no_depth_no_stencil",		"RGB565 configs without depth or stencil",		colorBits<5, 6, 5, 0>, noDepth, 	noStencil	},
+		{ "rgb565_no_depth_stencil",		"RGB565 configs with stencil and no depth",		colorBits<5, 6, 5, 0>, noDepth,		hasStencil	},
+		{ "rgb565_depth_no_stencil",		"RGB565 configs with depth and no stencil",		colorBits<5, 6, 5, 0>, hasDepth,	noStencil	},
+		{ "rgb565_depth_stencil",			"RGB565 configs with depth and stencil",		colorBits<5, 6, 5, 0>, hasDepth,	hasStencil	},
 
-		{ "rgb888_no_depth_no_stencil",		"RGB888 configs without depth or stencil",		8, 8, 8, 0, false,	false	},
-		{ "rgb888_no_depth_stencil",		"RGB888 configs with stencil and no depth",		8, 8, 8, 0, false,	true	},
-		{ "rgb888_depth_no_stencil",		"RGB888 configs with depth and no stencil",		8, 8, 8, 0, true,	false	},
-		{ "rgb888_depth_stencil",			"RGB888 configs with depth and stencil",		8, 8, 8, 0, true,	true	},
+		{ "rgb888_no_depth_no_stencil",		"RGB888 configs without depth or stencil",		colorBits<8, 8, 8, 0>, noDepth, 	noStencil	},
+		{ "rgb888_no_depth_stencil",		"RGB888 configs with stencil and no depth",		colorBits<8, 8, 8, 0>, noDepth,		hasStencil	},
+		{ "rgb888_depth_no_stencil",		"RGB888 configs with depth and no stencil",		colorBits<8, 8, 8, 0>, hasDepth,	noStencil	},
+		{ "rgb888_depth_stencil",			"RGB888 configs with depth and stencil",		colorBits<8, 8, 8, 0>, hasDepth,	hasStencil	},
 
-		{ "rgba4444_no_depth_no_stencil",	"RGBA4444 configs without depth or stencil",	4, 4, 4, 4, false,	false	},
-		{ "rgba4444_no_depth_stencil",		"RGBA4444 configs with stencil and no depth",	4, 4, 4, 4, false,	true	},
-		{ "rgba4444_depth_no_stencil",		"RGBA4444 configs with depth and no stencil",	4, 4, 4, 4, false,	false	},
-		{ "rgba4444_depth_stencil",			"RGBA4444 configs with depth and stencil",		4, 4, 4, 4, true,	true	},
+		{ "rgba4444_no_depth_no_stencil",	"RGBA4444 configs without depth or stencil",	colorBits<4, 4, 4, 4>, noDepth, 	noStencil	},
+		{ "rgba4444_no_depth_stencil",		"RGBA4444 configs with stencil and no depth",	colorBits<4, 4, 4, 4>, noDepth,		hasStencil	},
+		{ "rgba4444_depth_no_stencil",		"RGBA4444 configs with depth and no stencil",	colorBits<4, 4, 4, 4>, hasDepth, 	noStencil	},
+		{ "rgba4444_depth_stencil",			"RGBA4444 configs with depth and stencil",		colorBits<4, 4, 4, 4>, hasDepth,	hasStencil	},
 
-		{ "rgba5551_no_depth_no_stencil",	"RGBA5551 configs without depth or stencil",	5, 5, 5, 1, false,	false	},
-		{ "rgba5551_no_depth_stencil",		"RGBA5551 configs with stencil and no depth",	5, 5, 5, 1, false,	true	},
-		{ "rgba5551_depth_no_stencil",		"RGBA5551 configs with depth and no stencil",	5, 5, 5, 1, true,	false	},
-		{ "rgba5551_depth_stencil",			"RGBA5551 configs with depth and stencil",		5, 5, 5, 1, true,	true	},
+		{ "rgba5551_no_depth_no_stencil",	"RGBA5551 configs without depth or stencil",	colorBits<5, 5, 5, 1>, noDepth, 	noStencil	},
+		{ "rgba5551_no_depth_stencil",		"RGBA5551 configs with stencil and no depth",	colorBits<5, 5, 5, 1>, noDepth,		hasStencil	},
+		{ "rgba5551_depth_no_stencil",		"RGBA5551 configs with depth and no stencil",	colorBits<5, 5, 5, 1>, hasDepth,	noStencil	},
+		{ "rgba5551_depth_stencil",			"RGBA5551 configs with depth and stencil",		colorBits<5, 5, 5, 1>, hasDepth,	hasStencil	},
 
-		{ "rgba8888_no_depth_no_stencil",	"RGBA8888 configs without depth or stencil",	8, 8, 8, 8, false,	false	},
-		{ "rgba8888_no_depth_stencil",		"RGBA8888 configs with stencil and no depth",	8, 8, 8, 8, false,	true	},
-		{ "rgba8888_depth_no_stencil",		"RGBA8888 configs with depth and no stencil",	8, 8, 8, 8, true,	false	},
-		{ "rgba8888_depth_stencil",			"RGBA8888 configs with depth and stencil",		8, 8, 8, 8, true,	true	}
+		{ "rgba8888_no_depth_no_stencil",	"RGBA8888 configs without depth or stencil",	colorBits<8, 8, 8, 8>, noDepth, 	noStencil	},
+		{ "rgba8888_no_depth_stencil",		"RGBA8888 configs with stencil and no depth",	colorBits<8, 8, 8, 8>, noDepth,		hasStencil	},
+		{ "rgba8888_depth_no_stencil",		"RGBA8888 configs with depth and no stencil",	colorBits<8, 8, 8, 8>, hasDepth,	noStencil	},
+		{ "rgba8888_depth_stencil",			"RGBA8888 configs with depth and stencil",		colorBits<8, 8, 8, 8>, hasDepth,	hasStencil	}
 	};
 
 	for (int groupNdx = 0; groupNdx < DE_LENGTH_OF_ARRAY(groups); groupNdx++)
 	{
 		eglu::FilterList filter;
 
-		filter
-		<< (eglu::ConfigRedSize()	== groups[groupNdx].redSize)
-		<< (eglu::ConfigGreenSize()	== groups[groupNdx].greenSize)
-		<< (eglu::ConfigBlueSize()	== groups[groupNdx].blueSize)
-		<< (eglu::ConfigAlphaSize()	== groups[groupNdx].alphaSize);
-
-		if (groups[groupNdx].hasDepth)
-			filter << (eglu::ConfigDepthSize() >= 1);
-
-		if (groups[groupNdx].hasStencil)
-			filter << (eglu::ConfigStencilSize() >= 1);
-
-		filter << (eglu::ConfigRenderableType() & m_apiBit);
+		filter << groups[groupNdx].colorFilter
+			   << groups[groupNdx].depthFilter
+			   << groups[groupNdx].stencilFilter
+			   << getRenderableFilter(m_apiBit);
 
 		addChild(new CreateContextExtCase(m_eglTestCtx, m_api, &(m_attribList[0]), filter, groups[groupNdx].name, groups[groupNdx].description));
 	}

@@ -1,5 +1,7 @@
 # EGL utilities
 
+add_subdirectory(wrapper)
+
 # GLContextFactory uses glu
 include_directories(../opengl)
 
@@ -12,16 +14,12 @@ set(EGLUTIL_SRCS
 	egluConfigInfo.hpp
 	egluDefs.cpp
 	egluDefs.hpp
-	egluExtensions.cpp
-	egluExtensions.hpp
 	egluGLContextFactory.cpp
 	egluGLContextFactory.hpp
 	egluGLFunctionLoader.cpp
 	egluGLFunctionLoader.hpp
 	egluGLUtil.cpp
 	egluGLUtil.hpp
-	egluHeaderWrapper.cpp
-	egluHeaderWrapper.hpp
 	egluNativeDisplay.cpp
 	egluNativeDisplay.hpp
 	egluNativePixmap.cpp
@@ -38,9 +36,7 @@ set(EGLUTIL_SRCS
 	egluUtil.hpp
 	egluUnique.hpp
 	egluUnique.cpp
-	tcuEgl.cpp
-	tcuEgl.hpp
 	)
 
 add_library(eglutil STATIC ${EGLUTIL_SRCS})
-target_link_libraries(eglutil tcutil glutil glwrapper ${DEQP_EGL_LIBRARIES})
+target_link_libraries(eglutil tcutil eglwrapper glutil glwrapper ${DEQP_EGL_LIBRARIES})

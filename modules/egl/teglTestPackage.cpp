@@ -28,9 +28,7 @@
 #include "tcuCommandLine.hpp"
 
 #include "egluPlatform.hpp"
-#include "egluNativeDisplay.hpp"
-#include "egluNativeWindow.hpp"
-#include "egluNativePixmap.hpp"
+#include "egluUtil.hpp"
 
 #include "teglInfoTests.hpp"
 #include "teglCreateContextTests.hpp"
@@ -58,10 +56,6 @@
 #include "teglNativeColorMappingTests.hpp"
 #include "teglNativeCoordMappingTests.hpp"
 #include "teglResizeTests.hpp"
-
-#include <typeinfo>
-
-using std::vector;
 
 namespace deqp
 {
@@ -145,43 +139,12 @@ TestCaseWrapper::~TestCaseWrapper (void)
 
 bool TestCaseWrapper::initTestCase (tcu::TestCase* testCase)
 {
-	tcu::TestLog& log = m_eglTestCtx.getTestContext().getLog();
-
-	// Create display
-	try
-	{
-		m_eglTestCtx.createDefaultDisplay();
-	}
-	catch (const std::exception& e)
-	{
-		log << e;
-		m_eglTestCtx.getTestContext().setTestResult(QP_TEST_RESULT_FAIL, "Failed to initialize EGL for default display");
-		return false;
-	}
-
 	return tcu::TestCaseWrapper::initTestCase(testCase);
 }
 
 bool TestCaseWrapper::deinitTestCase (tcu::TestCase* testCase)
 {
-	tcu::TestLog& log = m_eglTestCtx.getTestContext().getLog();
-
-	bool deinitOk = tcu::TestCaseWrapper::deinitTestCase(testCase);
-
-	// Destroy display
-	try
-	{
-		TCU_CHECK_EGL_CALL(eglMakeCurrent(m_eglTestCtx.getDisplay().getEGLDisplay(), EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT));
-		m_eglTestCtx.destroyDefaultDisplay();
-	}
-	catch (const std::exception& e)
-	{
-		log << e;
-		log << tcu::TestLog::Message << "Error in EGL deinit, test program will teminate." << tcu::TestLog::EndMessage;
-		return false;
-	}
-
-	return deinitOk;
+	return tcu::TestCaseWrapper::deinitTestCase(testCase);
 }
 
 tcu::TestNode::IterateResult TestCaseWrapper::iterateTestCase (tcu::TestCase* testCase)
@@ -189,123 +152,24 @@ tcu::TestNode::IterateResult TestCaseWrapper::iterateTestCase (tcu::TestCase* te
 	return tcu::TestCaseWrapper::iterateTestCase(testCase);
 }
 
-PackageContext::PackageContext (tcu::TestContext& testCtx)
-	: m_eglTestCtx	(DE_NULL)
-	, m_caseWrapper	(DE_NULL)
+static const eglu::NativeDisplayFactory& getDefaultDisplayFactory (tcu::TestContext& testCtx)
 {
-	const eglu::NativeDisplayFactoryRegistry&	dpyFactoryRegistry	= testCtx.getPlatform().getEGLPlatform().getNativeDisplayFactoryRegistry();
-	const char* const							displayFactoryName	= testCtx.getCommandLine().getEGLDisplayType();
-	const char* const							windowFactoryName	= testCtx.getCommandLine().getEGLWindowType();
-	const char* const							pixmapFactoryName	= testCtx.getCommandLine().getEGLPixmapType();
+	const eglu::NativeDisplayFactory* factory = eglu::selectNativeDisplayFactory(testCtx.getPlatform().getEGLPlatform().getNativeDisplayFactoryRegistry(), testCtx.getCommandLine());
 
-	const eglu::NativeDisplayFactory*			displayFactory		= DE_NULL;
-	const eglu::NativeWindowFactory*			windowFactory		= DE_NULL;
-	const eglu::NativePixmapFactory*			pixmapFactory		= DE_NULL;
+	if (!factory)
+		TCU_THROW(InternalError, "No native display factories available");
 
-	if (dpyFactoryRegistry.empty())
-	{
-		tcu::print("ERROR: Platform doesn't support any EGL native display types!\n");
-		throw tcu::NotSupportedError("Platform doesn't have EGL any native display factories", DE_NULL, __FILE__, __LINE__);
-	}
+	return *factory;
+}
 
-	if (!displayFactoryName)
-		displayFactory = dpyFactoryRegistry.getDefaultFactory();
-	else
-	{
-		displayFactory = dpyFactoryRegistry.getFactoryByName(displayFactoryName);
-
-		if (!displayFactory)
-		{
-			tcu::print("ERROR: Unknown/unsupported EGL native display type '%s'\n", displayFactoryName);
-			tcu::print("Supported EGL native display types:\n");
-
-			for (int factoryNdx = 0; factoryNdx < (int)dpyFactoryRegistry.getFactoryCount(); factoryNdx++)
-			{
-				const char* name = dpyFactoryRegistry.getFactoryByIndex(factoryNdx)->getName();
-				const char* desc = dpyFactoryRegistry.getFactoryByIndex(factoryNdx)->getDescription();
-
-				tcu::print("  %s: %s\n", name, desc);
-			}
-
-			throw tcu::NotSupportedError(("Unknown EGL native display type '" + std::string(displayFactoryName) + "'.").c_str(), DE_NULL, __FILE__, __LINE__);
-		}
-	}
-
-	tcu::print("Using EGL native display type '%s'\n", displayFactory->getName());
-
-	if (!displayFactory->getNativeWindowRegistry().empty())
-	{
-		windowFactory = windowFactoryName ? displayFactory->getNativeWindowRegistry().getFactoryByName(windowFactoryName)
-										  : displayFactory->getNativeWindowRegistry().getDefaultFactory();
-
-		if (!windowFactory)
-		{
-			DE_ASSERT(windowFactoryName);
-			tcu::print("ERROR: Unknown/unsupported EGL native window type '%s'\n", windowFactoryName);
-			tcu::print("Supported EGL native window types for native display '%s':\n", displayFactory->getName());
-
-			for (int factoryNdx = 0; factoryNdx < (int)displayFactory->getNativeWindowRegistry().getFactoryCount(); factoryNdx++)
-			{
-				const char* name = displayFactory->getNativeWindowRegistry().getFactoryByIndex(factoryNdx)->getName();
-				const char* desc = displayFactory->getNativeWindowRegistry().getFactoryByIndex(factoryNdx)->getDescription();
-
-				tcu::print("  %s: %s\n", name, desc);
-			}
-
-			throw tcu::NotSupportedError(("Unknown EGL native window type '" + std::string(windowFactoryName) + "'").c_str(), DE_NULL, __FILE__, __LINE__);
-		}
-	}
-	else
-		tcu::print("Warning: EGL native display doesn't have any native window types.\n");
-
-	if (!displayFactory->getNativePixmapRegistry().empty())
-	{
-		pixmapFactory = pixmapFactoryName ? displayFactory->getNativePixmapRegistry().getFactoryByName(pixmapFactoryName)
-										  : displayFactory->getNativePixmapRegistry().getDefaultFactory();
-
-		if (!pixmapFactory)
-		{
-			DE_ASSERT(pixmapFactoryName);
-			tcu::print("ERROR: Unknown/unsupported EGL native pixmap type '%s'\n", pixmapFactoryName);
-			tcu::print("Supported EGL native pixmap types for native display '%s':\n", displayFactory->getName());
-
-			for (int factoryNdx = 0; factoryNdx < (int)displayFactory->getNativePixmapRegistry().getFactoryCount(); factoryNdx++)
-			{
-				const char* name = displayFactory->getNativePixmapRegistry().getFactoryByIndex(factoryNdx)->getName();
-				const char* desc = displayFactory->getNativePixmapRegistry().getFactoryByIndex(factoryNdx)->getDescription();
-
-				tcu::print("  %s: %s\n", name, desc);
-			}
-
-			throw tcu::NotSupportedError(("Unknown EGL native pixmap type '" + std::string(pixmapFactoryName) + "'").c_str(), DE_NULL, __FILE__, __LINE__);
-		}
-	}
-	else
-		tcu::print("Warning: EGL native display doesn't have any native pixmap types.\n");
-
-	if (windowFactory)
-		tcu::print("Using EGL native window type '%s'\n", windowFactory->getName());
-	if (pixmapFactory)
-		tcu::print("Using EGL native pixmap type '%s'\n", pixmapFactory->getName());
-
-	try
-	{
-		m_eglTestCtx	= new EglTestContext(testCtx, *displayFactory, windowFactory, pixmapFactory);
-		m_caseWrapper	= new TestCaseWrapper(*m_eglTestCtx);
-	}
-	catch (...)
-	{
-		delete m_caseWrapper;
-		delete m_eglTestCtx;
-
-		throw;
-	}
+PackageContext::PackageContext (tcu::TestContext& testCtx)
+	: m_eglTestCtx	(testCtx, getDefaultDisplayFactory(testCtx))
+	, m_caseWrapper	(m_eglTestCtx)
+{
 }
 
 PackageContext::~PackageContext (void)
 {
-	delete m_caseWrapper;
-	delete m_eglTestCtx;
 }
 
 TestPackage::TestPackage (tcu::TestContext& testCtx)
@@ -329,10 +193,10 @@ void TestPackage::init (void)
 
 	try
 	{
-		addChild(new InfoTests				(m_packageCtx->getEglTestContext()));
-		addChild(new FunctionalTests		(m_packageCtx->getEglTestContext()));
-		addChild(new PerformanceTests		(m_packageCtx->getEglTestContext()));
-		addChild(new StressTests			(m_packageCtx->getEglTestContext()));
+		addChild(new InfoTests			(m_packageCtx->getEglTestContext()));
+		addChild(new FunctionalTests	(m_packageCtx->getEglTestContext()));
+		addChild(new PerformanceTests	(m_packageCtx->getEglTestContext()));
+		addChild(new StressTests		(m_packageCtx->getEglTestContext()));
 	}
 	catch (...)
 	{

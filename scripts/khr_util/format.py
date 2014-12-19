@@ -60,3 +60,24 @@ def writeLines (filename, lines):
 
 def writeInlFile (filename, header, source):
 	writeLines(filename, chain([header], source))
+
+def normalizeConstant (constant):
+	value = int(constant, base=0)
+	if value >= 1 << 63:
+		suffix = 'ull'
+	elif value >= 1 << 32:
+		suffix = 'll'
+	elif value >= 1 << 31:
+		suffix = 'u'
+	else:
+		suffix = ''
+	return constant + suffix
+
+def commandParams (command):
+	if len(command.params) > 0:
+		return ", ".join(param.declaration for param in command.params)
+	else:
+		return "void"
+
+def commandArgs (command):
+	return ", ".join(param.name for param in command.params)

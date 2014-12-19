@@ -22,13 +22,16 @@
  *//*--------------------------------------------------------------------*/
 
 #include "egluGLFunctionLoader.hpp"
-#include "egluHeaderWrapper.hpp"
+#include "egluPlatform.hpp"
+#include "eglwLibrary.hpp"
+#include "tcuFunctionLibrary.hpp"
 
 namespace eglu
 {
 
-GLFunctionLoader::GLFunctionLoader (const tcu::FunctionLibrary* library)
-	: m_library(library)
+GLFunctionLoader::GLFunctionLoader (const eglw::Library& egl, const tcu::FunctionLibrary* library)
+	: m_egl		(egl)
+	, m_library	(library)
 {
 }
 
@@ -37,9 +40,46 @@ glw::GenericFuncType GLFunctionLoader::get (const char* name) const
 	glw::GenericFuncType func = (glw::GenericFuncType)m_library->getFunction(name);
 
 	if (!func)
-		return (glw::GenericFuncType)eglGetProcAddress(name);
+		return (glw::GenericFuncType)m_egl.getProcAddress(name);
 	else
 		return func;
+}
+
+GLLibraryCache::GLLibraryCache (const Platform& platform, const tcu::CommandLine& cmdLine)
+	: m_platform	(platform)
+	, m_cmdLine		(cmdLine)
+{
+}
+
+GLLibraryCache::~GLLibraryCache (void)
+{
+	for (LibraryMap::iterator i = m_libraries.begin(); i != m_libraries.end(); ++i)
+		delete i->second;
+}
+
+const tcu::FunctionLibrary* GLLibraryCache::getLibrary (glu::ApiType apiType)
+{
+	tcu::FunctionLibrary*	library	= DE_NULL;
+	const deUint32			key		= apiType.getPacked();
+	LibraryMap::iterator	iter	= m_libraries.find(key);
+
+	if (iter == m_libraries.end())
+	{
+		library = m_platform.createDefaultGLFunctionLibrary(apiType, m_cmdLine);
+		try
+		{
+			m_libraries.insert(std::make_pair(key, library));
+		}
+		catch (...)
+		{
+			delete library;
+			throw;
+		}
+	}
+	else
+		library = iter->second;
+
+	return library;
 }
 
 } // eglu

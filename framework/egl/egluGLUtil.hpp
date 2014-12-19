@@ -24,17 +24,22 @@
  *//*--------------------------------------------------------------------*/
 
 #include "egluDefs.hpp"
-#include "egluHeaderWrapper.hpp"
+#include "eglwDefs.hpp"
 
 #include "gluRenderConfig.hpp"
 #include "glwDefs.hpp"
 
+namespace eglw
+{
+class Library;
+}
+
 namespace eglu
 {
 
-glw::GLenum		getImageGLTarget		(EGLenum source);
-EGLint			apiRenderableType 		(glu::ApiType apiType);
-EGLContext		createGLContext			(EGLDisplay display, EGLConfig config, const glu::ContextType& contextType);
+glw::GLenum			getImageGLTarget		(eglw::EGLenum source);
+eglw::EGLint		apiRenderableType 		(glu::ApiType apiType);
+eglw::EGLContext	createGLContext			(const eglw::Library& egl, eglw::EGLDisplay display, eglw::EGLConfig config, const glu::ContextType& contextType);
 
 }
 

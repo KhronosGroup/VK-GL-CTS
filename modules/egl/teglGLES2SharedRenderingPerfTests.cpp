@@ -25,6 +25,10 @@
 
 #include "tcuTestLog.hpp"
 
+#include "egluUtil.hpp"
+#include "eglwLibrary.hpp"
+#include "eglwEnums.hpp"
+
 #include "gluDefs.hpp"
 #include "glwDefs.hpp"
 #include "glwEnums.hpp"
@@ -33,26 +37,24 @@
 #include "deThread.hpp"
 #include "deClock.h"
 #include "deStringUtil.hpp"
+#include "deSTLUtil.hpp"
 
 #include <vector>
 #include <string>
 #include <algorithm>
 #include <cmath>
 
-#include <EGL/egl.h>
-#include <EGL/eglext.h>
-
-#include <GLES2/gl2.h>
-#include <GLES2/gl2ext.h>
+namespace deqp
+{
+namespace egl
+{
 
 using tcu::TestLog;
 using std::vector;
 using std::string;
 
-namespace deqp
-{
-namespace egl
-{
+using namespace glw;
+using namespace eglw;
 
 namespace
 {
@@ -99,7 +101,7 @@ struct TestConfig
 class TestContext
 {
 public:
-						TestContext		(EglTestContext& eglTestCtx, EGLConfig eglConfig, const TestConfig& config, bool share, TestContext* parent);
+						TestContext		(EglTestContext& eglTestCtx, EGLDisplay display, EGLConfig eglConfig, const TestConfig& config, bool share, TestContext* parent);
 						~TestContext	(void);
 
 	void				render			(void);
@@ -113,58 +115,39 @@ public:
 	EGLImageKHR			getEGLImage		(void) const { return m_eglImage;		}
 
 private:
-	TestContext*				m_parent;
-	EglTestContext&				m_testCtx;
-	TestConfig					m_config;
-	EGLContext					m_eglContext;
-	EGLSurface					m_eglSurface;
+	TestContext*		m_parent;
+	EglTestContext&		m_testCtx;
+	TestConfig			m_config;
 
-	glw::Functions				m_gl;
+	EGLDisplay			m_eglDisplay;
+	EGLContext			m_eglContext;
+	EGLSurface			m_eglSurface;
 
-	PFNEGLCREATEIMAGEKHRPROC	m_eglCreateImageKHR;
-	PFNEGLDESTROYIMAGEKHRPROC	m_eglDestroyImageKHR;
+	glw::Functions		m_gl;
 
-	PFNGLEGLIMAGETARGETTEXTURE2DOESPROC	m_glEGLImageTargetTexture2DOES;
+	GLuint				m_coordBuffer;
+	GLuint				m_indexBuffer;
+	GLuint				m_texture;
+	GLuint				m_program;
 
-	GLuint						m_coordBuffer;
-	GLuint						m_indexBuffer;
-	GLuint						m_texture;
-	GLuint						m_program;
+	EGLImageKHR			m_eglImage;
 
-	EGLImageKHR					m_eglImage;
+	GLuint				m_coordLoc;
+	GLuint				m_textureLoc;
 
-	GLuint						m_coordLoc;
-	GLuint						m_textureLoc;
+	vector<float>		m_coordData;
+	vector<deUint16>	m_indexData;
 
-	vector<float>				m_coordData;
-	vector<deUint16>			m_indexData;
-
-	EGLImageKHR					createEGLImage			(void);
-	GLuint						createTextureFromImage	(EGLImageKHR image);
+	EGLImageKHR			createEGLImage			(void);
+	GLuint				createTextureFromImage	(EGLImageKHR image);
 
 	// Not supported
-	TestContext&	operator=		(const TestContext&);
-					TestContext		(const TestContext&);
+	TestContext&		operator=				(const TestContext&);
+						TestContext				(const TestContext&);
 };
 
 namespace
 {
-
-bool checkExtension (const char* extensions, const char* extension)
-{
-	TCU_CHECK(extensions);
-
-	std::istringstream	stream(extensions);
-	string				ext;
-
-	while (std::getline(stream, ext, ' '))
-	{
-		if (ext == extension)
-			return true;
-	}
-
-	return false;
-}
 
 void createCoordData (vector<float>& data, const TestConfig& config)
 {
@@ -338,9 +321,9 @@ GLuint createProgram (const glw::Functions& gl, const TestConfig& config)
 		"\tgl_FragColor = texture2D(u_sampler, v_texCoord);\n"
 		"}\n";
 
-		gl.shaderSource(vertexShader, 1, &vertexShaderSource, NULL);
+		gl.shaderSource(vertexShader, 1, &vertexShaderSource, DE_NULL);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glShaderSource()");
-		gl.shaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
+		gl.shaderSource(fragmentShader, 1, &fragmentShaderSource, DE_NULL);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glShaderSource()");
 	}
 	else
@@ -361,9 +344,9 @@ GLuint createProgram (const glw::Functions& gl, const TestConfig& config)
 		"\tgl_FragColor = v_color;\n"
 		"}\n";
 
-		gl.shaderSource(vertexShader, 1, &vertexShaderSource, NULL);
+		gl.shaderSource(vertexShader, 1, &vertexShaderSource, DE_NULL);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glShaderSource()");
-		gl.shaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
+		gl.shaderSource(fragmentShader, 1, &fragmentShaderSource, DE_NULL);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glShaderSource()");
 	}
 
@@ -438,7 +421,7 @@ GLuint createProgram (const glw::Functions& gl, const TestConfig& config)
 				string	log;
 				GLsizei	length;
 
-				gl.getProgramInfoLog(program, 0, &length, NULL);
+				gl.getProgramInfoLog(program, 0, &length, DE_NULL);
 				GLU_EXPECT_NO_ERROR(gl.getError(), "glGetProgramInfoLog()");
 				log.resize(length, 0);
 
@@ -458,87 +441,87 @@ GLuint createProgram (const glw::Functions& gl, const TestConfig& config)
 	}
 }
 
-EGLContext createEGLContext (EglTestContext& testCtx, EGLConfig eglConfig, EGLContext share)
+EGLContext createEGLContext (EglTestContext& testCtx, EGLDisplay eglDisplay, EGLConfig eglConfig, EGLContext share)
 {
-	const EGLint attribList[] = {
+	const Library&	egl				= testCtx.getLibrary();
+	const EGLint	attribList[]	=
+	{
 		EGL_CONTEXT_CLIENT_VERSION, 2,
 		EGL_NONE
 	};
 
-	TCU_CHECK_EGL_CALL(eglBindAPI(EGL_OPENGL_ES_API));
+	EGLU_CHECK_CALL(egl, bindAPI(EGL_OPENGL_ES_API));
 
-	EGLContext context = eglCreateContext(testCtx.getDisplay().getEGLDisplay(), eglConfig, share, attribList);
-	TCU_CHECK_EGL_MSG("eglCreateContext()");
+	EGLContext context = egl.createContext(eglDisplay, eglConfig, share, attribList);
+	EGLU_CHECK_MSG(egl, "eglCreateContext()");
 
 	return context;
 }
 
-EGLSurface createEGLSurface (EglTestContext& testCtx, EGLConfig eglConfig, const TestConfig& config)
+EGLSurface createEGLSurface (EglTestContext& testCtx, EGLDisplay display, EGLConfig eglConfig, const TestConfig& config)
 {
-	const EGLint attribList[] = {
+	const Library&	egl				= testCtx.getLibrary();
+	const EGLint	attribList[]	=
+	{
 		EGL_WIDTH,	config.surfaceWidth,
 		EGL_HEIGHT, config.surfaceHeight,
 		EGL_NONE
 	};
 
-	EGLSurface surface = eglCreatePbufferSurface(testCtx.getDisplay().getEGLDisplay(), eglConfig, attribList);
-	TCU_CHECK_EGL_MSG("eglCreatePbufferSurface()");
+	EGLSurface surface = egl.createPbufferSurface(display, eglConfig, attribList);
+	EGLU_CHECK_MSG(egl, "eglCreatePbufferSurface()");
 
 	return surface;
 }
 
 } // anonymous
 
-TestContext::TestContext (EglTestContext& testCtx, EGLConfig eglConfig, const TestConfig& config, bool share, TestContext* parent)
+TestContext::TestContext (EglTestContext& testCtx, EGLDisplay eglDisplay, EGLConfig eglConfig, const TestConfig& config, bool share, TestContext* parent)
 	: m_parent				(parent)
 	, m_testCtx				(testCtx)
 	, m_config				(config)
+	, m_eglDisplay			(eglDisplay)
 	, m_eglContext			(EGL_NO_CONTEXT)
 	, m_eglSurface			(EGL_NO_SURFACE)
-
-	, m_eglCreateImageKHR	(NULL)
-	, m_eglDestroyImageKHR	(NULL)
-
-	, m_glEGLImageTargetTexture2DOES			(NULL)
-
 	, m_coordBuffer			(0)
 	, m_indexBuffer			(0)
 	, m_texture				(0)
 	, m_program				(0)
 	, m_eglImage			(EGL_NO_IMAGE_KHR)
 {
+	const Library&	egl	= m_testCtx.getLibrary();
+
 	if (m_config.textureType == TestConfig::TEXTURETYPE_IMAGE
 		|| m_config.textureType == TestConfig::TEXTURETYPE_SHARED_IMAGE
 		|| m_config.textureType == TestConfig::TEXTURETYPE_SHARED_IMAGE_TEXTURE)
 	{
-		if (	!checkExtension(eglQueryString(m_testCtx.getDisplay().getEGLDisplay(), EGL_EXTENSIONS), "EGL_KHR_image_base")
-			||	!checkExtension(eglQueryString(m_testCtx.getDisplay().getEGLDisplay(), EGL_EXTENSIONS), "EGL_KHR_gl_texture_2D_image"))
-			throw tcu::NotSupportedError("EGL_KHR_image_base extensions not supported", "", __FILE__, __LINE__);
+		const vector<string> extensions = eglu::getClientExtensions(egl, m_eglDisplay);
 
-		m_eglCreateImageKHR		= (PFNEGLCREATEIMAGEKHRPROC)eglGetProcAddress("eglCreateImageKHR");
-		m_eglDestroyImageKHR	= (PFNEGLDESTROYIMAGEKHRPROC)eglGetProcAddress("eglDestroyImageKHR");
-
-		TCU_CHECK(m_eglCreateImageKHR);
-		TCU_CHECK(m_eglDestroyImageKHR);
+		if (!de::contains(extensions.begin(), extensions.end(), "EGL_KHR_image_base") ||
+			!de::contains(extensions.begin(), extensions.end(), "EGL_KHR_gl_texture_2D_image"))
+			TCU_THROW(NotSupportedError, "EGL_KHR_image_base extensions not supported");
 	}
 
-	m_eglContext = createEGLContext(m_testCtx, eglConfig, (share && parent ? parent->getEGLContext() : EGL_NO_CONTEXT));
-	m_eglSurface = createEGLSurface(m_testCtx, eglConfig, config);
+	m_eglContext = createEGLContext(m_testCtx, m_eglDisplay, eglConfig, (share && parent ? parent->getEGLContext() : EGL_NO_CONTEXT));
+	m_eglSurface = createEGLSurface(m_testCtx, m_eglDisplay, eglConfig, config);
 
-	TCU_CHECK_EGL_CALL(eglMakeCurrent(m_testCtx.getDisplay().getEGLDisplay(), m_eglSurface, m_eglSurface, m_eglContext));
+	EGLU_CHECK_CALL(egl, makeCurrent(m_eglDisplay, m_eglSurface, m_eglSurface, m_eglContext));
 
-	m_testCtx.getGLFunctions(m_gl, glu::ApiType::es(2,0));
+	{
+		const char* reqExts[] = { "GL_OES_EGL_image" };
+		m_testCtx.initGLFunctions(&m_gl, glu::ApiType::es(2,0), DE_LENGTH_OF_ARRAY(reqExts), reqExts);
+	}
 
 	if (m_config.textureType == TestConfig::TEXTURETYPE_IMAGE
 		|| m_config.textureType == TestConfig::TEXTURETYPE_SHARED_IMAGE
 		|| m_config.textureType == TestConfig::TEXTURETYPE_SHARED_IMAGE_TEXTURE)
 	{
-		if (!checkExtension((const char*)m_gl.getString(GL_EXTENSIONS), "GL_OES_EGL_image"))
-			throw tcu::NotSupportedError("GL_OES_EGL_image extensions not supported", "", __FILE__, __LINE__);
+		vector<string> glExts = de::splitString((const char*)m_gl.getString(GL_EXTENSIONS), ' ');
 
-		m_glEGLImageTargetTexture2DOES = (PFNGLEGLIMAGETARGETTEXTURE2DOESPROC)eglGetProcAddress("glEGLImageTargetTexture2DOES");
+		if (!de::contains(glExts.begin(), glExts.end(), "GL_OES_EGL_image"))
+			TCU_THROW(NotSupportedError, "GL_OES_EGL_image extensions not supported");
 
-		TCU_CHECK(m_glEGLImageTargetTexture2DOES);
+		TCU_CHECK(m_gl.eglImageTargetTexture2DOES);
 	}
 
 	if (m_config.useCoordBuffer && (!m_config.sharedCoordBuffer || !parent))
@@ -602,7 +585,7 @@ TestContext::TestContext (EglTestContext& testCtx, EGLConfig eglConfig, const Te
 	if (m_config.useTexture)
 		m_textureLoc = m_gl.getUniformLocation(m_program, "u_sampler");
 
-	TCU_CHECK_EGL_CALL(eglMakeCurrent(m_testCtx.getDisplay().getEGLDisplay(), EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT));
+	EGLU_CHECK_CALL(egl, makeCurrent(m_eglDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT));
 }
 
 EGLImageKHR TestContext::createEGLImage (void)
@@ -611,13 +594,15 @@ EGLImageKHR TestContext::createEGLImage (void)
 
 	try
 	{
-		const EGLint attribList[] = {
+		const Library&	egl				= m_testCtx.getLibrary();
+		const EGLint	attribList[]	=
+		{
 			EGL_GL_TEXTURE_LEVEL_KHR, 0,
 			EGL_NONE
 		};
 
-		EGLImageKHR image = m_eglCreateImageKHR(m_testCtx.getDisplay().getEGLDisplay(), m_eglContext, EGL_GL_TEXTURE_2D_KHR, (EGLClientBuffer)(deUintptr)sourceTexture, attribList);
-		TCU_CHECK_EGL_MSG("eglCreateImageKHR()");
+		EGLImageKHR image = egl.createImageKHR(m_eglDisplay, m_eglContext, EGL_GL_TEXTURE_2D_KHR, (EGLClientBuffer)(deUintptr)sourceTexture, attribList);
+		EGLU_CHECK_MSG(egl, "eglCreateImageKHR()");
 
 		m_gl.deleteTextures(1, &sourceTexture);
 		GLU_EXPECT_NO_ERROR(m_gl.getError(), "eglCreateImageKHR()");
@@ -639,8 +624,9 @@ GLuint TestContext::createTextureFromImage (EGLImageKHR image)
 	{
 		m_gl.genTextures(1, &texture);
 		m_gl.bindTexture(GL_TEXTURE_2D, texture);
-		m_glEGLImageTargetTexture2DOES(GL_TEXTURE_2D, image);
+		m_gl.eglImageTargetTexture2DOES(GL_TEXTURE_2D, image);
 		m_gl.bindTexture(GL_TEXTURE_2D, 0);
+		GLU_EXPECT_NO_ERROR(m_gl.getError(), "Creating texture from image");
 
 		return texture;
 	}
@@ -654,23 +640,23 @@ GLuint TestContext::createTextureFromImage (EGLImageKHR image)
 
 TestContext::~TestContext (void)
 {
-	EGLDisplay display = m_testCtx.getDisplay().getEGLDisplay();
+	const Library&	egl	= m_testCtx.getLibrary();
 
-	TCU_CHECK_EGL_CALL(eglMakeCurrent(display, m_eglSurface, m_eglSurface, m_eglContext));
+	EGLU_CHECK_CALL(egl, makeCurrent(m_eglDisplay, m_eglSurface, m_eglSurface, m_eglContext));
 
-	if (m_parent == NULL && m_eglImage)
-		TCU_CHECK_EGL_CALL(m_eglDestroyImageKHR(display, m_eglImage));
+	if (m_parent == DE_NULL && m_eglImage)
+		EGLU_CHECK_CALL(egl, destroyImageKHR(m_eglDisplay, m_eglImage));
 
-	TCU_CHECK_EGL_CALL(eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT));
-	TCU_CHECK_EGL_CALL(eglDestroyContext(display, m_eglContext));
-	TCU_CHECK_EGL_CALL(eglDestroySurface(display, m_eglSurface));
+	EGLU_CHECK_CALL(egl, makeCurrent(m_eglDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT));
+	EGLU_CHECK_CALL(egl, destroyContext(m_eglDisplay, m_eglContext));
+	EGLU_CHECK_CALL(egl, destroySurface(m_eglDisplay, m_eglSurface));
 }
 
 void TestContext::render (void)
 {
-	EGLDisplay display = m_testCtx.getDisplay().getEGLDisplay();
+	const Library&	egl	= m_testCtx.getLibrary();
 
-	eglMakeCurrent(display, m_eglSurface, m_eglSurface, m_eglContext);
+	egl.makeCurrent(m_eglDisplay, m_eglSurface, m_eglSurface, m_eglContext);
 
 	for (int frameNdx = 0; frameNdx < m_config.frameCount; frameNdx++)
 	{
@@ -720,12 +706,12 @@ void TestContext::render (void)
 		}
 
 
-		eglSwapBuffers(display, m_eglSurface);
+		egl.swapBuffers(m_eglDisplay, m_eglSurface);
 	}
 
 	m_gl.finish();
 	GLU_EXPECT_NO_ERROR(m_gl.getError(), "glFinish()");
-	TCU_CHECK_EGL_CALL(eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT));
+	EGLU_CHECK_CALL(egl, makeCurrent(m_eglDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT));
 }
 
 class TestThread : de::Thread
@@ -836,6 +822,8 @@ public:
 private:
 	TestConfig					m_config;
 	const int					m_iterationCount;
+
+	EGLDisplay					m_display;
 	vector<TestContext*>		m_contexts;
 	vector<deUint64>			m_results;
 
@@ -847,6 +835,7 @@ SharedRenderingPerfCase::SharedRenderingPerfCase (EglTestContext& eglTestCtx, co
 	: TestCase			(eglTestCtx, tcu::NODETYPE_PERFORMANCE, name, description)
 	, m_config			(config)
 	, m_iterationCount	(30)
+	, m_display			(EGL_NO_DISPLAY)
 {
 }
 
@@ -857,26 +846,22 @@ SharedRenderingPerfCase::~SharedRenderingPerfCase (void)
 
 void SharedRenderingPerfCase::init (void)
 {
-	EGLConfig eglConfig;
+	m_display = eglu::getAndInitDisplay(m_eglTestCtx.getNativeDisplay());
 
 	{
-		const EGLint	attribList[] = {
+		const Library&	egl				= m_eglTestCtx.getLibrary();
+		const EGLint	attribList[]	=
+		{
 			EGL_SURFACE_TYPE,		EGL_PBUFFER_BIT,
 			EGL_RENDERABLE_TYPE,	EGL_OPENGL_ES2_BIT,
 			EGL_NONE
 		};
+		EGLConfig		eglConfig		= eglu::chooseSingleConfig(egl, m_display, attribList);
 
-		EGLint		configCount = 0;
-		EGLDisplay	display	= m_eglTestCtx.getDisplay().getEGLDisplay();
-
-		TCU_CHECK_EGL_CALL(eglChooseConfig(display, attribList, &eglConfig, 1, &configCount));
-
-		TCU_CHECK(configCount != 0);
+		// Create contexts and resources
+		for (int threadNdx = 0; threadNdx < m_config.threadCount * m_config.perThreadContextCount; threadNdx++)
+			m_contexts.push_back(new TestContext(m_eglTestCtx, m_display, eglConfig, m_config, m_config.sharedContexts, (threadNdx == 0 ? DE_NULL : m_contexts[threadNdx-1])));
 	}
-
-	// Create contexts and resources
-	for (int threadNdx = 0; threadNdx < m_config.threadCount * m_config.perThreadContextCount; threadNdx++)
-		m_contexts.push_back(new TestContext(m_eglTestCtx, eglConfig, m_config, m_config.sharedContexts, (threadNdx == 0 ? NULL : m_contexts[threadNdx-1])));
 }
 
 void SharedRenderingPerfCase::deinit (void)
@@ -885,11 +870,17 @@ void SharedRenderingPerfCase::deinit (void)
 	for (int threadNdx = 0; threadNdx < (int)m_contexts.size(); threadNdx++)
 	{
 		delete m_contexts[threadNdx];
-		m_contexts[threadNdx] = NULL;
+		m_contexts[threadNdx] = DE_NULL;
 	}
 
 	m_contexts.clear();
 	m_results.clear();
+
+	if (m_display != EGL_NO_DISPLAY)
+	{
+		m_eglTestCtx.getLibrary().terminate(m_display);
+		m_display = EGL_NO_DISPLAY;
+	}
 }
 
 namespace
@@ -918,7 +909,7 @@ void destroyThreads (vector<TestThread*>& threads)
 	for (int threadNdx = 0; threadNdx < (int)threads.size(); threadNdx++)
 	{
 		delete threads[threadNdx];
-		threads[threadNdx] = NULL;
+		threads[threadNdx] = DE_NULL;
 	}
 
 	threads.clear();

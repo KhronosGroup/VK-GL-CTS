@@ -38,6 +38,9 @@
 #include "egluUnique.hpp"
 #include "egluUtil.hpp"
 
+#include "eglwLibrary.hpp"
+#include "eglwEnums.hpp"
+
 #include "gluDefs.hpp"
 #include "glwFunctions.hpp"
 #include "glwEnums.hpp"
@@ -55,27 +58,29 @@ namespace deqp
 namespace egl
 {
 
-using	std::vector;
-using	std::string;
-using	std::ostringstream;
-using	de::MovePtr;
-using	tcu::CommandLine;
-using	tcu::ConstPixelBufferAccess;
-using	tcu::Interval;
-using	tcu::IVec2;
-using	tcu::Vec3;
-using	tcu::Vec4;
-using	tcu::UVec4;
-using	tcu::ResultCollector;
-using	tcu::Surface;
-using	tcu::TestLog;
-using	tcu::egl::Display;
-using	eglu::AttribMap;
-using	eglu::NativeDisplay;
-using	eglu::NativeWindow;
-using	eglu::ScopedCurrentContext;
-using	eglu::UniqueSurface;
-using	eglu::UniqueContext;
+using std::vector;
+using std::string;
+using std::ostringstream;
+using de::MovePtr;
+using tcu::CommandLine;
+using tcu::ConstPixelBufferAccess;
+using tcu::Interval;
+using tcu::IVec2;
+using tcu::Vec3;
+using tcu::Vec4;
+using tcu::UVec4;
+using tcu::ResultCollector;
+using tcu::Surface;
+using tcu::TestLog;
+using eglu::AttribMap;
+using eglu::NativeDisplay;
+using eglu::NativeWindow;
+using eglu::ScopedCurrentContext;
+using eglu::UniqueSurface;
+using eglu::UniqueContext;
+using eglu::NativeWindowFactory;
+using eglu::WindowParams;
+using namespace eglw;
 
 typedef	eglu::WindowParams::Visibility	Visibility;
 typedef	TestCase::IterateResult			IterateResult;
@@ -122,68 +127,79 @@ protected:
 	glw::Functions				m_gl;
 };
 
-EGLConfig getEGLConfig (const EGLDisplay eglDisplay, EGLenum surfaceType)
+EGLConfig getEGLConfig (const Library& egl, const EGLDisplay eglDisplay, EGLenum surfaceType)
 {
 	AttribMap attribMap;
 
 	attribMap[EGL_SURFACE_TYPE]		= surfaceType;
 	attribMap[EGL_RENDERABLE_TYPE]	= EGL_OPENGL_ES2_BIT;
 
-	return eglu::chooseSingleConfig(eglDisplay, attribMap);
+	return eglu::chooseSingleConfig(egl, eglDisplay, attribMap);
 }
 
 void ResizeTest::init (void)
 {
 	TestCase::init();
 
-	const CommandLine&		cmdLine			= m_testCtx.getCommandLine();
-	const EGLDisplay		eglDisplay		= m_eglTestCtx.getDisplay().getEGLDisplay();
-	const EGLConfig			eglConfig		= getEGLConfig(eglDisplay, surfaceType());
-	const EGLint			ctxAttribs[]	=
+	const Library&				egl				= m_eglTestCtx.getLibrary();
+	const CommandLine&			cmdLine			= m_testCtx.getCommandLine();
+	const EGLDisplay			eglDisplay		= eglu::getAndInitDisplay(m_eglTestCtx.getNativeDisplay());
+	const EGLConfig				eglConfig		= getEGLConfig(egl, eglDisplay, surfaceType());
+	const EGLint				ctxAttribs[]	=
 	{
 		EGL_CONTEXT_CLIENT_VERSION, 2,
 		EGL_NONE
 	};
-	EGLContext				eglContext		= eglCreateContext(eglDisplay,
-															   eglConfig,
-															   EGL_NO_CONTEXT,
-															   ctxAttribs);
-	EGLU_CHECK_MSG("eglCreateContext()");
-	MovePtr<UniqueContext>	context			(new UniqueContext(eglDisplay, eglContext));
-	const EGLint			configId		= eglu::getConfigAttribInt(eglDisplay,
-																	   eglConfig,
-																	   EGL_CONFIG_ID);
-	const Visibility		visibility		= eglu::parseWindowVisibility(cmdLine);
-	NativeDisplay&			nativeDisplay	= m_eglTestCtx.getNativeDisplay();
-	MovePtr<NativeWindow>	nativeWindow	(m_eglTestCtx.createNativeWindow(eglDisplay,
+	EGLContext					eglContext		= egl.createContext(eglDisplay,
+																   eglConfig,
+																   EGL_NO_CONTEXT,
+																   ctxAttribs);
+	EGLU_CHECK_MSG(egl, "eglCreateContext()");
+	MovePtr<UniqueContext>		context			(new UniqueContext(egl, eglDisplay, eglContext));
+	const EGLint				configId		= eglu::getConfigAttribInt(egl,
+																		   eglDisplay,
+																		   eglConfig,
+																		   EGL_CONFIG_ID);
+	const Visibility			visibility		= eglu::parseWindowVisibility(cmdLine);
+	NativeDisplay&				nativeDisplay	= m_eglTestCtx.getNativeDisplay();
+	const NativeWindowFactory*	windowFactory	= eglu::selectNativeWindowFactory(m_eglTestCtx.getNativeDisplayFactory(),
+																				  cmdLine);
+
+	if (!windowFactory)
+		TCU_THROW(NotSupportedError, "Windows not supported");
+
+	const WindowParams			windowParams	(m_oldSize.x(), m_oldSize.y(), visibility);
+	MovePtr<NativeWindow>		nativeWindow	(windowFactory->createWindow(&nativeDisplay,
+																			 eglDisplay,
 																			 eglConfig,
 																			 DE_NULL,
-																			 m_oldSize.x(),
-																			 m_oldSize.y(),
-																			 visibility));
-	const EGLSurface		eglSurface		= eglu::createWindowSurface(nativeDisplay,
-																		*nativeWindow,
-																		eglDisplay,
-																		eglConfig,
-																		DE_NULL);
-	MovePtr<UniqueSurface>	surface			(new UniqueSurface(eglDisplay, eglSurface));
+																			 windowParams));
+	const EGLSurface			eglSurface		= eglu::createWindowSurface(nativeDisplay,
+																			*nativeWindow,
+																			eglDisplay,
+																			eglConfig,
+																			DE_NULL);
+	MovePtr<UniqueSurface>		surface			(new UniqueSurface(egl, eglDisplay, eglSurface));
 
 	m_log << TestLog::Message
 		  << "Chose EGLConfig with id " << configId << ".\n"
 		  << "Created initial surface with size " << m_oldSize
 		  << TestLog::EndMessage;
 
-	m_eglTestCtx.getGLFunctions(m_gl, glu::ApiType::es(2, 0));
+	m_eglTestCtx.initGLFunctions(&m_gl, glu::ApiType::es(2, 0));
 	m_config		= eglConfig;
 	m_surface		= surface;
 	m_context		= context;
 	m_display		= eglDisplay;
 	m_nativeWindow	= nativeWindow;
-	EGLU_CHECK();
+	EGLU_CHECK_MSG(egl, "init");
 }
 
 void ResizeTest::deinit (void)
 {
+	if (m_display != EGL_NO_DISPLAY)
+		m_eglTestCtx.getLibrary().terminate(m_display);
+
 	m_config		= DE_NULL;
 	m_display		= EGL_NO_DISPLAY;
 	m_context.clear();
@@ -311,14 +327,15 @@ IVec2 getNativeSurfaceSize (const NativeWindow& nativeWindow,
 	return reqSize; // assume we got the requested size
 }
 
-IVec2 checkSurfaceSize (EGLDisplay			eglDisplay,
+IVec2 checkSurfaceSize (const Library&		egl,
+						EGLDisplay			eglDisplay,
 						EGLSurface			eglSurface,
 						const NativeWindow&	nativeWindow,
 						IVec2				reqSize,
 						ResultCollector&	status)
 {
 	const IVec2		nativeSize	= getNativeSurfaceSize(nativeWindow, reqSize);
-	IVec2			eglSize		= eglu::getSurfaceSize(eglDisplay, eglSurface);
+	IVec2			eglSize		= eglu::getSurfaceSize(egl, eglDisplay, eglSurface);
 	ostringstream	oss;
 
 	oss << "Size of EGL surface " << eglSize
@@ -330,11 +347,12 @@ IVec2 checkSurfaceSize (EGLDisplay			eglDisplay,
 
 IterateResult ChangeSurfaceSizeCase::iterate (void)
 {
-	EGLU_CHECK();
+	const Library&			egl			= m_eglTestCtx.getLibrary();
 	Surface					oldSurface;
 	Surface					newSurface;
-	ScopedCurrentContext	currentCtx	(m_display, **m_surface, **m_surface, **m_context);
-	IVec2					oldEglSize	= checkSurfaceSize(m_display,
+	ScopedCurrentContext	currentCtx	(egl, m_display, **m_surface, **m_surface, **m_context);
+	IVec2					oldEglSize	= checkSurfaceSize(egl,
+														   m_display,
 														   **m_surface,
 														   *m_nativeWindow,
 														   m_oldSize,
@@ -344,8 +362,9 @@ IterateResult ChangeSurfaceSizeCase::iterate (void)
 
 	this->resize(m_newSize);
 
-	eglSwapBuffers(m_display, **m_surface);
-	checkSurfaceSize(m_display, **m_surface, *m_nativeWindow, m_newSize, m_status);
+	egl.swapBuffers(m_display, **m_surface);
+	EGLU_CHECK_MSG(egl, "eglSwapBuffers()");
+	checkSurfaceSize(egl, m_display, **m_surface, *m_nativeWindow, m_newSize, m_status);
 
 	m_status.setTestContextResult(m_testCtx);
 	return STOP;
@@ -369,15 +388,15 @@ EGLenum PreserveBackBufferCase::surfaceType (void) const
 
 IterateResult PreserveBackBufferCase::iterate (void)
 {
-	ScopedCurrentContext	currentCtx	(m_display, **m_surface, **m_surface, **m_context);
+	const Library&			egl			= m_eglTestCtx.getLibrary();
+	ScopedCurrentContext	currentCtx	(egl, m_display, **m_surface, **m_surface, **m_context);
 
-	EGLU_CHECK_CALL(
-		eglSurfaceAttrib(m_display, **m_surface, EGL_SWAP_BEHAVIOR, EGL_BUFFER_PRESERVED));
+	EGLU_CHECK_CALL(egl, surfaceAttrib(m_display, **m_surface, EGL_SWAP_BEHAVIOR, EGL_BUFFER_PRESERVED));
 
 	GLU_EXPECT_NO_ERROR(m_gl.getError(), "GL state erroneous upon initialization!");
 
 	{
-		const IVec2 oldEglSize = eglu::getSurfaceSize(m_display, **m_surface);
+		const IVec2 oldEglSize = eglu::getSurfaceSize(egl, m_display, **m_surface);
 		initSurface(m_gl, oldEglSize);
 
 		m_gl.finish();
@@ -386,12 +405,13 @@ IterateResult PreserveBackBufferCase::iterate (void)
 		{
 			const Surface oldSurface = readSurface(m_gl, oldEglSize);
 
-			eglSwapBuffers(m_display, **m_surface);
+			egl.swapBuffers(m_display, **m_surface);
 			this->resize(m_newSize);
-			eglSwapBuffers(m_display, **m_surface);
+			egl.swapBuffers(m_display, **m_surface);
+			EGLU_CHECK_MSG(egl, "eglSwapBuffers()");
 
 			{
-				const IVec2		newEglSize	= eglu::getSurfaceSize(m_display, **m_surface);
+				const IVec2		newEglSize	= eglu::getSurfaceSize(egl, m_display, **m_surface);
 				const Surface	newSurface	= readSurface(m_gl, newEglSize);
 
 				m_log << TestLog::ImageSet("Corner comparison",
@@ -438,10 +458,11 @@ Interval approximateInt (int i)
 
 IvVec2 UpdateResolutionCase::getNativePixelsPerInch	(void)
 {
+	const Library&	egl			= m_eglTestCtx.getLibrary();
 	const int		inchPer10km	= 254 * EGL_DISPLAY_SCALING;
-	const IVec2		bufSize		= eglu::getSurfaceSize(m_display, **m_surface);
+	const IVec2		bufSize		= eglu::getSurfaceSize(egl, m_display, **m_surface);
 	const IVec2		winSize		= m_nativeWindow->getScreenSize();
-	const IVec2		bufPp10km	= eglu::getSurfaceResolution(m_display, **m_surface);
+	const IVec2		bufPp10km	= eglu::getSurfaceResolution(egl, m_display, **m_surface);
 	const Interval	margin		(-1.0, 1.0); // The resolution may be rounded
 	const IvVec2	bufPpiI		= (IvVec2(approximateInt(bufPp10km.x()),
 										  approximateInt(bufPp10km.y()))
@@ -466,20 +487,21 @@ IvVec2 UpdateResolutionCase::getNativePixelsPerInch	(void)
 
 IterateResult UpdateResolutionCase::iterate (void)
 {
-	ScopedCurrentContext	currentCtx	(m_display, **m_surface, **m_surface, **m_context);
+	const Library&			egl			= m_eglTestCtx.getLibrary();
+	ScopedCurrentContext	currentCtx	(egl, m_display, **m_surface, **m_surface, **m_context);
 
 	if (!hasBits(m_nativeWindow->getCapabilities(),
 				 NativeWindow::CAPABILITY_GET_SCREEN_SIZE))
 		TCU_THROW(NotSupportedError, "Unable to determine surface size in screen pixels");
 
 	{
-		const IVec2 oldEglSize = eglu::getSurfaceSize(m_display, **m_surface);
+		const IVec2 oldEglSize = eglu::getSurfaceSize(egl, m_display, **m_surface);
 		initSurface(m_gl, oldEglSize);
 	}
 	{
 		const IvVec2 oldPpi = this->getNativePixelsPerInch();
 		this->resize(m_newSize);
-		eglSwapBuffers(m_display, **m_surface);
+		EGLU_CHECK_CALL(egl, swapBuffers(m_display, **m_surface));
 		{
 			const IvVec2 newPpi = this->getNativePixelsPerInch();
 			m_status.check(oldPpi.x().intersects(newPpi.x()) &&

@@ -23,18 +23,22 @@
 
 #include "teglMemoryStressTests.hpp"
 
-#include "gluDefs.hpp"
 #include "tcuTestLog.hpp"
 #include "tcuCommandLine.hpp"
 
 #include "deRandom.hpp"
-
 #include "deClock.h"
 #include "deString.h"
 
+#include "gluDefs.hpp"
 #include "glwFunctions.hpp"
 #include "glwDefs.hpp"
 #include "glwEnums.hpp"
+
+#include "egluUtil.hpp"
+
+#include "eglwLibrary.hpp"
+#include "eglwEnums.hpp"
 
 #include <vector>
 #include <string>
@@ -42,6 +46,8 @@
 using std::vector;
 using std::string;
 using tcu::TestLog;
+
+using namespace eglw;
 
 namespace deqp
 {
@@ -111,20 +117,20 @@ MemoryAllocator::MemoryAllocator (EglTestContext& eglTestCtx, EGLDisplay display
 	, m_maxHeight	(maxHeight)
 	, m_use			(use)
 {
-	m_eglTestCtx.getGLFunctions(m_gl, glu::ApiType::es(2,0));
+	m_eglTestCtx.initGLFunctions(&m_gl, glu::ApiType::es(2,0));
 }
 
 MemoryAllocator::~MemoryAllocator (void)
 {
+	const Library& egl = m_eglTestCtx.getLibrary();
+
 	for (vector<EGLSurface>::const_iterator iter = m_pbuffers.begin(); iter != m_pbuffers.end(); ++iter)
-		TCU_CHECK_EGL_CALL(eglDestroySurface(m_display, *iter));
+		egl.destroySurface(m_display, *iter);
 
 	m_pbuffers.clear();
 
 	for (vector<EGLContext>::const_iterator iter = m_contexts.begin(); iter != m_contexts.end(); ++iter)
-	{
-		TCU_CHECK_EGL_CALL(eglDestroyContext(m_display, *iter));
-	}
+		egl.destroyContext(m_display, *iter);
 
 	m_contexts.clear();
 }
@@ -190,17 +196,18 @@ void MemoryAllocator::allocatePBuffer (void)
 	// Allocate pbuffer
 	try
 	{
-		const EGLint	width	= m_rnd.getInt(m_minWidth, m_maxWidth);
-		const EGLint	height	= m_rnd.getInt(m_minHeight, m_maxHeight);
-
-		const EGLint attribList[] = {
+		const Library&	egl				= m_eglTestCtx.getLibrary();
+		const EGLint	width			= m_rnd.getInt(m_minWidth, m_maxWidth);
+		const EGLint	height			= m_rnd.getInt(m_minHeight, m_maxHeight);
+		const EGLint	attribList[]	=
+		{
 			EGL_WIDTH,	width,
 			EGL_HEIGHT, height,
 			EGL_NONE
 		};
 
-		EGLSurface surface = eglCreatePbufferSurface(m_display, m_config, attribList);
-		TCU_CHECK_EGL_MSG("eglCreatePbufferSurface");
+		EGLSurface		surface			= egl.createPbufferSurface(m_display, m_config, attribList);
+		EGLU_CHECK_MSG(egl, "eglCreatePbufferSurface");
 
 		DE_ASSERT(surface != EGL_NO_SURFACE);
 
@@ -214,7 +221,7 @@ void MemoryAllocator::allocatePBuffer (void)
 			const float				blue		= m_rnd.getFloat();
 			const float				alpha		= m_rnd.getFloat();
 
-			TCU_CHECK_EGL_CALL(eglMakeCurrent(m_display, surface, surface, context));
+			EGLU_CHECK_CALL(egl, makeCurrent(m_display, surface, surface, context));
 
 			m_gl.clearColor(red, green, blue, alpha);
 			GLU_EXPECT_NO_ERROR(m_gl.getError(), "glClearColor()");
@@ -222,7 +229,7 @@ void MemoryAllocator::allocatePBuffer (void)
 			m_gl.clear(GL_COLOR_BUFFER_BIT);
 			GLU_EXPECT_NO_ERROR(m_gl.getError(), "glClear()");
 
-			TCU_CHECK_EGL_CALL(eglMakeCurrent(m_display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT));
+			EGLU_CHECK_CALL(egl, makeCurrent(m_display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT));
 		}
 	}
 	catch (const eglu::Error& error)
@@ -255,14 +262,16 @@ void MemoryAllocator::allocateContext (void)
 	// Allocate context
 	try
 	{
-		const EGLint attribList[] = {
+		const Library&	egl				= m_eglTestCtx.getLibrary();
+		const EGLint	attribList[]	=
+		{
 			EGL_CONTEXT_CLIENT_VERSION, 2,
 			EGL_NONE
 		};
 
-		TCU_CHECK_EGL_CALL(eglBindAPI(EGL_OPENGL_ES_API));
-		EGLContext context = eglCreateContext(m_display, m_config, EGL_NO_CONTEXT, attribList);
-		TCU_CHECK_EGL_MSG("eglCreateContext");
+		EGLU_CHECK_CALL(egl, bindAPI(EGL_OPENGL_ES_API));
+		EGLContext context = egl.createContext(m_display, m_config, EGL_NO_CONTEXT, attribList);
+		EGLU_CHECK_MSG(egl, "eglCreateContext");
 
 		DE_ASSERT(context != EGL_NO_CONTEXT);
 
@@ -276,7 +285,7 @@ void MemoryAllocator::allocateContext (void)
 			const float				blue		= m_rnd.getFloat();
 			const float				alpha		= m_rnd.getFloat();
 
-			TCU_CHECK_EGL_CALL(eglMakeCurrent(m_display, surface, surface, context));
+			EGLU_CHECK_CALL(egl, makeCurrent(m_display, surface, surface, context));
 
 			m_gl.clearColor(red, green, blue, alpha);
 			GLU_EXPECT_NO_ERROR(m_gl.getError(), "glClearColor()");
@@ -284,7 +293,7 @@ void MemoryAllocator::allocateContext (void)
 			m_gl.clear(GL_COLOR_BUFFER_BIT);
 			GLU_EXPECT_NO_ERROR(m_gl.getError(), "glClear()");
 
-			TCU_CHECK_EGL_CALL(eglMakeCurrent(m_display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT));
+			EGLU_CHECK_CALL(egl, makeCurrent(m_display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT));
 		}
 	}
 	catch (const eglu::Error& error)
@@ -346,8 +355,10 @@ MemoryStressCase::MemoryStressCase (EglTestContext& eglTestCtx, Spec spec, const
 
 void MemoryStressCase::init (void)
 {
-	EGLint			configCount = 0;
-	const EGLint	attribList[] = {
+	const Library&	egl				= m_eglTestCtx.getLibrary();
+	EGLint			configCount		= 0;
+	const EGLint	attribList[]	=
+	{
 		EGL_SURFACE_TYPE,		EGL_PBUFFER_BIT,
 		EGL_RENDERABLE_TYPE,	EGL_OPENGL_ES2_BIT,
 		EGL_NONE
@@ -359,9 +370,9 @@ void MemoryStressCase::init (void)
 		throw tcu::NotSupportedError("OOM tests disabled");
 	}
 
-	m_display = m_eglTestCtx.getDisplay().getEGLDisplay();
+	m_display = eglu::getAndInitDisplay(m_eglTestCtx.getNativeDisplay());
 
-	TCU_CHECK_EGL_CALL(eglChooseConfig(m_display, attribList, &m_config, 1, &configCount));
+	EGLU_CHECK_CALL(egl, chooseConfig(m_display, attribList, &m_config, 1, &configCount));
 
 	TCU_CHECK(configCount != 0);
 }
@@ -370,6 +381,12 @@ void MemoryStressCase::deinit (void)
 {
 	delete m_allocator;
 	m_allocator = DE_NULL;
+
+	if (m_display != EGL_NO_DISPLAY)
+	{
+		m_eglTestCtx.getLibrary().terminate(m_display);
+		m_display = EGL_NO_DISPLAY;
+	}
 }
 
 TestCase::IterateResult MemoryStressCase::iterate (void)

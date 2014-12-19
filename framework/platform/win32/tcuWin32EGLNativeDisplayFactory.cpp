@@ -30,11 +30,20 @@
 #include "deMemory.h"
 #include "deThread.h"
 #include "deClock.h"
+#include "eglwLibrary.hpp"
+#include "eglwEnums.hpp"
+
+// Assume no call translation is needed
+DE_STATIC_ASSERT(sizeof(eglw::EGLNativeDisplayType) == sizeof(HDC));
+DE_STATIC_ASSERT(sizeof(eglw::EGLNativePixmapType) == sizeof(HBITMAP));
+DE_STATIC_ASSERT(sizeof(eglw::EGLNativeWindowType) == sizeof(HWND));
 
 namespace tcu
 {
 namespace
 {
+
+using namespace eglw;
 
 enum
 {
@@ -59,12 +68,14 @@ public:
 									NativeDisplay			(void);
 	virtual							~NativeDisplay			(void) {}
 
-	virtual EGLNativeDisplayType	getLegacyNative			(void) { return m_deviceContext; }
+	virtual EGLNativeDisplayType	getLegacyNative			(void)			{ return m_deviceContext;	}
+	const eglw::Library&			getLibrary				(void) const	{ return m_library;			}
 
-	HDC								getDeviceContext		(void) { return m_deviceContext; }
+	HDC								getDeviceContext		(void)			{ return m_deviceContext;	}
 
 private:
 	HDC								m_deviceContext;
+	eglw::DefaultLibrary			m_library;
 };
 
 class NativePixmapFactory : public eglu::NativePixmapFactory
@@ -125,7 +136,8 @@ private:
 
 NativeDisplay::NativeDisplay (void)
 	: eglu::NativeDisplay	(DISPLAY_CAPABILITIES)
-	, m_deviceContext		(EGL_DEFAULT_DISPLAY)
+	, m_deviceContext		((HDC)EGL_DEFAULT_DISPLAY)
+	, m_library				("libEGL.dll")
 {
 }
 
@@ -176,18 +188,21 @@ NativePixmapFactory::NativePixmapFactory (void)
 
 eglu::NativePixmap* NativePixmapFactory::createPixmap (eglu::NativeDisplay* nativeDisplay, EGLDisplay display, EGLConfig config, const EGLAttrib* attribList, int width, int height) const
 {
-	int	redBits		= 0;
-	int	greenBits	= 0;
-	int	blueBits	= 0;
-	int	alphaBits	= 0;
-	int	bitSum		= 0;
+	const Library&	egl			= nativeDisplay->getLibrary();
+	int				redBits		= 0;
+	int				greenBits	= 0;
+	int				blueBits	= 0;
+	int				alphaBits	= 0;
+	int				bitSum		= 0;
 
 	DE_ASSERT(display != EGL_NO_DISPLAY);
 
-	EGLU_CHECK_CALL(eglGetConfigAttrib(display, config, EGL_RED_SIZE,	&redBits));
-	EGLU_CHECK_CALL(eglGetConfigAttrib(display, config, EGL_GREEN_SIZE,	&greenBits));
-	EGLU_CHECK_CALL(eglGetConfigAttrib(display, config, EGL_BLUE_SIZE,	&blueBits));
-	EGLU_CHECK_CALL(eglGetConfigAttrib(display, config, EGL_ALPHA_SIZE,	&alphaBits));
+	egl.getConfigAttrib(display, config, EGL_RED_SIZE,		&redBits);
+	egl.getConfigAttrib(display, config, EGL_GREEN_SIZE,	&greenBits);
+	egl.getConfigAttrib(display, config, EGL_BLUE_SIZE,		&blueBits);
+	egl.getConfigAttrib(display, config, EGL_ALPHA_SIZE,	&alphaBits);
+	EGLU_CHECK_MSG(egl, "eglGetConfigAttrib()");
+
 	bitSum = redBits+greenBits+blueBits+alphaBits;
 
 	return new NativePixmap(dynamic_cast<NativeDisplay*>(nativeDisplay), width, height, bitSum);

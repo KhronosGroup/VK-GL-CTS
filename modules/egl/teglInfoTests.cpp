@@ -24,44 +24,26 @@
 #include "teglInfoTests.hpp"
 #include "teglConfigList.hpp"
 #include "tcuTestLog.hpp"
+#include "deStringUtil.hpp"
+#include "egluUtil.hpp"
+#include "eglwLibrary.hpp"
+#include "eglwEnums.hpp"
 
 #include <vector>
 #include <string>
 #include <sstream>
-
-#include <EGL/egl.h>
-
-using std::vector;
-using std::string;
-
-using tcu::TestLog;
 
 namespace deqp
 {
 namespace egl
 {
 
-static std::vector<std::string> split(const std::string& str, const std::string& delim = " ")
-{
-	std::vector<std::string>	out;
-	if (str.length() == 0) return out;
+using std::vector;
+using std::string;
+using tcu::TestLog;
+using namespace eglw;
 
-	size_t	start	= 0;
-	size_t	end		= string::npos;
-
-	while ((end = str.find(delim, start)) != string::npos)
-	{
-		out.push_back(str.substr(start, end-start));
-		start = end + delim.length();
-	}
-
-	if (start < end)
-		out.push_back(str.substr(start, end-start));
-
-	return out;
-}
-
-static int toInt(std::string str)
+static int toInt (std::string str)
 {
 	std::istringstream strStream(str);
 
@@ -70,11 +52,38 @@ static int toInt(std::string str)
 	return out;
 }
 
-class QueryStringCase : public TestCase
+class InfoCase : public TestCase
+{
+public:
+	InfoCase (EglTestContext& eglTestCtx, const char* name, const char* description)
+		: TestCase	(eglTestCtx, name, description)
+		, m_display	(EGL_NO_DISPLAY)
+		, m_version	(0, 0)
+	{
+	}
+
+	void init (void)
+	{
+		DE_ASSERT(m_display == EGL_NO_DISPLAY);
+		m_display = eglu::getAndInitDisplay(m_eglTestCtx.getNativeDisplay(), &m_version);
+	}
+
+	void deinit (void)
+	{
+		m_eglTestCtx.getLibrary().terminate(m_display);
+		m_display = EGL_NO_DISPLAY;
+	}
+
+protected:
+	EGLDisplay		m_display;
+	eglu::Version	m_version;
+};
+
+class QueryStringCase : public InfoCase
 {
 public:
 	QueryStringCase (EglTestContext& eglTestCtx, const char* name, const char* description, EGLint query)
-		: TestCase	(eglTestCtx, name, description)
+		: InfoCase	(eglTestCtx, name, description)
 		, m_query	(query)
 	{
 	}
@@ -82,15 +91,14 @@ public:
 	void validateString (const std::string& result)
 	{
 		tcu::TestLog&				log		= m_testCtx.getLog();
-		std::vector<std::string>	tokens	= split(result);
+		std::vector<std::string>	tokens	= de::splitString(result, ' ');
 
 		if (m_query == EGL_VERSION)
 		{
-			const tcu::egl::Display&		display			= m_eglTestCtx.getDisplay();
-			const int						dispMajor		= display.getEGLMajorVersion();
-			const int						dispMinor		= display.getEGLMinorVersion();
+			const int	dispMajor	= m_version.getMajor();
+			const int	dispMinor	= m_version.getMinor();
 
-			const std::vector<std::string>	versionTokens	= split(tokens[0], ".");
+			const std::vector<std::string>	versionTokens	= de::splitString(tokens[0], '.');
 
 			if (versionTokens.size() < 2)
 			{
@@ -114,8 +122,9 @@ public:
 
 	IterateResult iterate (void)
 	{
-		const char* result = eglQueryString(m_eglTestCtx.getDisplay().getEGLDisplay(), m_query);
-		TCU_CHECK_EGL_MSG("eglQueryString() failed");
+		const Library&	egl		= m_eglTestCtx.getLibrary();
+		const char*		result	= egl.queryString(m_display, m_query);
+		EGLU_CHECK_MSG(egl, "eglQueryString() failed");
 
 		m_testCtx.getLog() << tcu::TestLog::Message << result << tcu::TestLog::EndMessage;
 		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
@@ -129,18 +138,18 @@ private:
 	EGLint m_query;
 };
 
-class QueryExtensionsCase : public TestCase
+class QueryExtensionsCase : public InfoCase
 {
 public:
 	QueryExtensionsCase (EglTestContext& eglTestCtx)
-		: TestCase	(eglTestCtx, "extensions", "Supported Extensions")
+		: InfoCase	(eglTestCtx, "extensions", "Supported Extensions")
 	{
 	}
 
 	IterateResult iterate (void)
 	{
-		vector<string> extensions;
-		m_eglTestCtx.getDisplay().getExtensions(extensions);
+		const Library&	egl			= m_eglTestCtx.getLibrary();
+		vector<string>	extensions	= eglu::getClientExtensions(egl, m_display);
 
 		for (vector<string>::const_iterator i = extensions.begin(); i != extensions.end(); i++)
 			m_testCtx.getLog() << tcu::TestLog::Message << *i << tcu::TestLog::EndMessage;
