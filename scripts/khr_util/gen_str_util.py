@@ -39,7 +39,11 @@ def genStrUtilProtos (iface, enumGroups, bitfieldGroups):
 	def genStrImpl ():
 		for groupName, values in enumGroups:
 			if anyValueDefined(definitions, values):
-				yield "inline tcu::Format::Enum\tget%sStr\t(int value)\t{ return tcu::Format::Enum(get%sName,\tvalue); }" % (groupName, groupName)
+				yield "inline tcu::Format::Enum<int, 2>\tget%(name)sStr\t(int value)\t{ return tcu::Format::Enum<int, 2>(get%(name)sName, value); }" % {"name": groupName}
+
+		# booleans can be stored in enums or in byte-sized arrays. For clarity add special case
+		if anyValueDefined(definitions, ["GL_TRUE", "GL_FALSE"]):
+			yield "inline tcu::Format::Enum<int, 1>\tgetBooleanStr\t(deUint8 value)\t{ return tcu::Format::Enum<int, 1>(getBooleanName, (int)value); }"
 
 	return chain(genNameProtos(), genBitfieldProtos(), genStrImpl())
 
@@ -99,6 +103,34 @@ def genStrUtilImpls (iface, enumGroups, bitfieldGroups):
 			yield line
 	for groupName, values in bitfieldGroups:
 		for line in genBitfieldStrImpl(groupName, values, definitions):
+			yield line
+
+def genEnumUtilImpl (groupName, groupQueries, allEnums):
+	yield ""
+	yield "int get%sQueryNumArgsOut (int pname)" % groupName
+	yield "{"
+	yield "\tswitch(pname)"
+	yield "\t{"
+
+	def genCases ():
+		for enumName, enumQueryNumOutputs in groupQueries:
+			if enumName in allEnums:
+				yield "case %s:\treturn %s;" % (enumName, enumQueryNumOutputs)
+			else:
+				print "Warning: %s not defined, skipping" % enumName
+		yield "default:\treturn 1;"
+
+	for caseLine in indentLines(genCases()):
+		yield "\t\t" + caseLine
+
+	yield "\t}"
+	yield "}"
+
+def genEnumUtilImpls (iface, queryGroups):
+	allEnums = makeDefSet(iface)
+
+	for groupName, groupQueries in queryGroups:
+		for line in genEnumUtilImpl(groupName, groupQueries, allEnums):
 			yield line
 
 def addValuePrefix (groups, prefix):

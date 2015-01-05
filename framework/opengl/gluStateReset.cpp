@@ -480,6 +480,20 @@ void resetStateES (const RenderContext& renderCtx)
 				gl.disable(GL_DEBUG_OUTPUT);
 		}
 	}
+
+	// Primitive bounding box state.
+	if (ctxInfo->isExtensionSupported("GL_EXT_primitive_bounding_box"))
+	{
+		gl.primitiveBoundingBoxEXT(-1.0f, -1.0f, -1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f);
+		GLU_EXPECT_NO_ERROR(gl.getError(), "Primitive bounding box state reset failed");
+	}
+
+	// Tessellation state
+	if (ctxInfo->isExtensionSupported("GL_EXT_tessellation_shader"))
+	{
+		gl.patchParameteri(GL_PATCH_VERTICES, 3);
+		GLU_EXPECT_NO_ERROR(gl.getError(), "Tessellation patch vertices state reset failed");
+	}
 }
 
 void resetStateGLCore (const RenderContext& renderCtx)

@@ -381,6 +381,7 @@
 #define			glPolygonMode									glwPolygonMode
 #define			glPolygonOffset									glwPolygonOffset
 #define			glPopDebugGroup									glwPopDebugGroup
+#define			glPrimitiveBoundingBoxEXT						glwPrimitiveBoundingBoxEXT
 #define			glPrimitiveRestartIndex							glwPrimitiveRestartIndex
 #define			glProgramBinary									glwProgramBinary
 #define			glProgramParameteri								glwProgramParameteri
@@ -1037,6 +1038,7 @@ void			glwPointSize									(GLfloat size);
 void			glwPolygonMode									(GLenum face, GLenum mode);
 void			glwPolygonOffset								(GLfloat factor, GLfloat units);
 void			glwPopDebugGroup								();
+void			glwPrimitiveBoundingBoxEXT						(GLfloat minX, GLfloat minY, GLfloat minZ, GLfloat minW, GLfloat maxX, GLfloat maxY, GLfloat maxZ, GLfloat maxW);
 void			glwPrimitiveRestartIndex						(GLuint index);
 void			glwProgramBinary								(GLuint program, GLenum binaryFormat, const void *binary, GLsizei length);
 void			glwProgramParameteri							(GLuint program, GLenum pname, GLint value);

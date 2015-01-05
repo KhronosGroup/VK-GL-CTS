@@ -40,6 +40,11 @@ if (de::contains(extSet, "GL_EXT_texture_buffer"))
 	gl->texBufferRange	= (glTexBufferRangeFunc)	loader->get("glTexBufferRangeEXT");
 }
 
+if (de::contains(extSet, "GL_EXT_primitive_bounding_box"))
+{
+	gl->primitiveBoundingBoxEXT	= (glPrimitiveBoundingBoxEXTFunc)	loader->get("glPrimitiveBoundingBoxEXT");
+}
+
 if (de::contains(extSet, "GL_OES_EGL_image"))
 {
 	gl->eglImageTargetRenderbufferStorageOES	= (glEGLImageTargetRenderbufferStorageOESFunc)	loader->get("glEGLImageTargetRenderbufferStorageOES");

@@ -381,6 +381,7 @@ void					glPointSize										(glw::GLfloat size);
 void					glPolygonMode									(glw::GLenum face, glw::GLenum mode);
 void					glPolygonOffset									(glw::GLfloat factor, glw::GLfloat units);
 void					glPopDebugGroup									(void);
+void					glPrimitiveBoundingBoxEXT						(glw::GLfloat minX, glw::GLfloat minY, glw::GLfloat minZ, glw::GLfloat minW, glw::GLfloat maxX, glw::GLfloat maxY, glw::GLfloat maxZ, glw::GLfloat maxW);
 void					glPrimitiveRestartIndex							(glw::GLuint index);
 void					glProgramBinary									(glw::GLuint program, glw::GLenum binaryFormat, const void *binary, glw::GLsizei length);
 void					glProgramParameteri								(glw::GLuint program, glw::GLenum pname, glw::GLint value);

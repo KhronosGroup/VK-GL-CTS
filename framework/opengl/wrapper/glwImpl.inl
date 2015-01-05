@@ -3028,6 +3028,14 @@ void glwPopDebugGroup (void)
 	gl->popDebugGroup();
 }
 
+void glwPrimitiveBoundingBoxEXT (GLfloat minX, GLfloat minY, GLfloat minZ, GLfloat minW, GLfloat maxX, GLfloat maxY, GLfloat maxZ, GLfloat maxW)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->primitiveBoundingBoxEXT(minX, minY, minZ, minW, maxX, maxY, maxZ, maxW);
+}
+
 void glwPrimitiveRestartIndex (GLuint index)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();

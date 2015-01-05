@@ -207,7 +207,7 @@ void CallLogWrapper::glBindVertexBuffers (glw::GLuint first, glw::GLsizei count,
 	m_gl.bindVertexBuffers(first, count, buffers, offsets, strides);
 }
 
-void CallLogWrapper::glBlendBarrierKHR ()
+void CallLogWrapper::glBlendBarrierKHR (void)
 {
 	if (m_enableLog)
 		m_log << TestLog::Message << "glBlendBarrierKHR(" << ");" << TestLog::EndMessage;
@@ -664,7 +664,7 @@ void CallLogWrapper::glCreateFramebuffers (glw::GLsizei n, glw::GLuint *framebuf
 	m_gl.createFramebuffers(n, framebuffers);
 }
 
-glw::GLuint CallLogWrapper::glCreateProgram ()
+glw::GLuint CallLogWrapper::glCreateProgram (void)
 {
 	if (m_enableLog)
 		m_log << TestLog::Message << "glCreateProgram(" << ");" << TestLog::EndMessage;
@@ -1121,7 +1121,7 @@ void CallLogWrapper::glEnablei (glw::GLenum target, glw::GLuint index)
 	m_gl.enablei(target, index);
 }
 
-void CallLogWrapper::glEndConditionalRender ()
+void CallLogWrapper::glEndConditionalRender (void)
 {
 	if (m_enableLog)
 		m_log << TestLog::Message << "glEndConditionalRender(" << ");" << TestLog::EndMessage;
@@ -1142,7 +1142,7 @@ void CallLogWrapper::glEndQueryIndexed (glw::GLenum target, glw::GLuint index)
 	m_gl.endQueryIndexed(target, index);
 }
 
-void CallLogWrapper::glEndTransformFeedback ()
+void CallLogWrapper::glEndTransformFeedback (void)
 {
 	if (m_enableLog)
 		m_log << TestLog::Message << "glEndTransformFeedback(" << ");" << TestLog::EndMessage;
@@ -1159,14 +1159,14 @@ glw::GLsync CallLogWrapper::glFenceSync (glw::GLenum condition, glw::GLbitfield 
 	return returnValue;
 }
 
-void CallLogWrapper::glFinish ()
+void CallLogWrapper::glFinish (void)
 {
 	if (m_enableLog)
 		m_log << TestLog::Message << "glFinish(" << ");" << TestLog::EndMessage;
 	m_gl.finish();
 }
 
-void CallLogWrapper::glFlush ()
+void CallLogWrapper::glFlush (void)
 {
 	if (m_enableLog)
 		m_log << TestLog::Message << "glFlush(" << ");" << TestLog::EndMessage;
@@ -1456,8 +1456,12 @@ void CallLogWrapper::glGetBooleani_v (glw::GLenum target, glw::GLuint index, glw
 void CallLogWrapper::glGetBooleanv (glw::GLenum pname, glw::GLboolean *data)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetBooleanv(" << getGettableStateStr(pname) << ", " << data << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetBooleanv(" << getGettableStateStr(pname) << ", " << static_cast<const void*>(data) << ");" << TestLog::EndMessage;
 	m_gl.getBooleanv(pname, data);
+	if (m_enableLog)
+	{
+		m_log << TestLog::Message << "// data = " << getBooleanPointerStr(data, getBasicQueryNumArgsOut(pname)) << TestLog::EndMessage;
+	}
 }
 
 void CallLogWrapper::glGetBufferParameteri64v (glw::GLenum target, glw::GLenum pname, glw::GLint64 *params)
@@ -1533,7 +1537,7 @@ void CallLogWrapper::glGetDoublev (glw::GLenum pname, glw::GLdouble *data)
 	m_gl.getDoublev(pname, data);
 }
 
-glw::GLenum CallLogWrapper::glGetError ()
+glw::GLenum CallLogWrapper::glGetError (void)
 {
 	if (m_enableLog)
 		m_log << TestLog::Message << "glGetError(" << ");" << TestLog::EndMessage;
@@ -1555,6 +1559,10 @@ void CallLogWrapper::glGetFloatv (glw::GLenum pname, glw::GLfloat *data)
 	if (m_enableLog)
 		m_log << TestLog::Message << "glGetFloatv(" << getGettableStateStr(pname) << ", " << data << ");" << TestLog::EndMessage;
 	m_gl.getFloatv(pname, data);
+	if (m_enableLog)
+	{
+		m_log << TestLog::Message << "// data = " << getPointerStr(data, getBasicQueryNumArgsOut(pname)) << TestLog::EndMessage;
+	}
 }
 
 glw::GLint CallLogWrapper::glGetFragDataIndex (glw::GLuint program, const glw::GLchar *name)
@@ -1595,7 +1603,7 @@ void CallLogWrapper::glGetFramebufferParameteriv (glw::GLenum target, glw::GLenu
 	m_gl.getFramebufferParameteriv(target, pname, params);
 }
 
-glw::GLenum CallLogWrapper::glGetGraphicsResetStatus ()
+glw::GLenum CallLogWrapper::glGetGraphicsResetStatus (void)
 {
 	if (m_enableLog)
 		m_log << TestLog::Message << "glGetGraphicsResetStatus(" << ");" << TestLog::EndMessage;
@@ -1617,6 +1625,10 @@ void CallLogWrapper::glGetInteger64v (glw::GLenum pname, glw::GLint64 *data)
 	if (m_enableLog)
 		m_log << TestLog::Message << "glGetInteger64v(" << getGettableStateStr(pname) << ", " << data << ");" << TestLog::EndMessage;
 	m_gl.getInteger64v(pname, data);
+	if (m_enableLog)
+	{
+		m_log << TestLog::Message << "// data = " << getPointerStr(data, getBasicQueryNumArgsOut(pname)) << TestLog::EndMessage;
+	}
 }
 
 void CallLogWrapper::glGetIntegeri_v (glw::GLenum target, glw::GLuint index, glw::GLint *data)
@@ -1631,6 +1643,10 @@ void CallLogWrapper::glGetIntegerv (glw::GLenum pname, glw::GLint *data)
 	if (m_enableLog)
 		m_log << TestLog::Message << "glGetIntegerv(" << getGettableStateStr(pname) << ", " << data << ");" << TestLog::EndMessage;
 	m_gl.getIntegerv(pname, data);
+	if (m_enableLog)
+	{
+		m_log << TestLog::Message << "// data = " << getPointerStr(data, getBasicQueryNumArgsOut(pname)) << TestLog::EndMessage;
+	}
 }
 
 void CallLogWrapper::glGetInternalformati64v (glw::GLenum target, glw::GLenum internalformat, glw::GLenum pname, glw::GLsizei bufSize, glw::GLint64 *params)
@@ -2264,15 +2280,19 @@ void CallLogWrapper::glGetVertexAttribIiv (glw::GLuint index, glw::GLenum pname,
 	m_gl.getVertexAttribIiv(index, pname, params);
 	if (m_enableLog)
 	{
-		m_log << TestLog::Message << "// params = " << getPointerStr(params, (pname == GL_CURRENT_VERTEX_ATTRIB ? 4 : 1)) << TestLog::EndMessage;
+		m_log << TestLog::Message << "// params = " << getPointerStr(params, getAttributeQueryNumArgsOut(pname)) << TestLog::EndMessage;
 	}
 }
 
 void CallLogWrapper::glGetVertexAttribIuiv (glw::GLuint index, glw::GLenum pname, glw::GLuint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetVertexAttribIuiv(" << index << ", " << toHex(pname) << ", " << params << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetVertexAttribIuiv(" << index << ", " << getVertexAttribParameterNameStr(pname) << ", " << params << ");" << TestLog::EndMessage;
 	m_gl.getVertexAttribIuiv(index, pname, params);
+	if (m_enableLog)
+	{
+		m_log << TestLog::Message << "// params = " << getPointerStr(params, getAttributeQueryNumArgsOut(pname)) << TestLog::EndMessage;
+	}
 }
 
 void CallLogWrapper::glGetVertexAttribLdv (glw::GLuint index, glw::GLenum pname, glw::GLdouble *params)
@@ -2303,7 +2323,7 @@ void CallLogWrapper::glGetVertexAttribfv (glw::GLuint index, glw::GLenum pname, 
 	m_gl.getVertexAttribfv(index, pname, params);
 	if (m_enableLog)
 	{
-		m_log << TestLog::Message << "// params = " << getPointerStr(params, (pname == GL_CURRENT_VERTEX_ATTRIB ? 4 : 1)) << TestLog::EndMessage;
+		m_log << TestLog::Message << "// params = " << getPointerStr(params, getAttributeQueryNumArgsOut(pname)) << TestLog::EndMessage;
 	}
 }
 
@@ -2314,7 +2334,7 @@ void CallLogWrapper::glGetVertexAttribiv (glw::GLuint index, glw::GLenum pname, 
 	m_gl.getVertexAttribiv(index, pname, params);
 	if (m_enableLog)
 	{
-		m_log << TestLog::Message << "// params = " << getPointerStr(params, (pname == GL_CURRENT_VERTEX_ATTRIB ? 4 : 1)) << TestLog::EndMessage;
+		m_log << TestLog::Message << "// params = " << getPointerStr(params, getAttributeQueryNumArgsOut(pname)) << TestLog::EndMessage;
 	}
 }
 
@@ -2792,7 +2812,7 @@ void CallLogWrapper::glPatchParameteri (glw::GLenum pname, glw::GLint value)
 	m_gl.patchParameteri(pname, value);
 }
 
-void CallLogWrapper::glPauseTransformFeedback ()
+void CallLogWrapper::glPauseTransformFeedback (void)
 {
 	if (m_enableLog)
 		m_log << TestLog::Message << "glPauseTransformFeedback(" << ");" << TestLog::EndMessage;
@@ -2862,11 +2882,18 @@ void CallLogWrapper::glPolygonOffset (glw::GLfloat factor, glw::GLfloat units)
 	m_gl.polygonOffset(factor, units);
 }
 
-void CallLogWrapper::glPopDebugGroup ()
+void CallLogWrapper::glPopDebugGroup (void)
 {
 	if (m_enableLog)
 		m_log << TestLog::Message << "glPopDebugGroup(" << ");" << TestLog::EndMessage;
 	m_gl.popDebugGroup();
+}
+
+void CallLogWrapper::glPrimitiveBoundingBoxEXT (glw::GLfloat minX, glw::GLfloat minY, glw::GLfloat minZ, glw::GLfloat minW, glw::GLfloat maxX, glw::GLfloat maxY, glw::GLfloat maxZ, glw::GLfloat maxW)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glPrimitiveBoundingBoxEXT(" << minX << ", " << minY << ", " << minZ << ", " << minW << ", " << maxX << ", " << maxY << ", " << maxZ << ", " << maxW << ");" << TestLog::EndMessage;
+	m_gl.primitiveBoundingBoxEXT(minX, minY, minZ, minW, maxX, maxY, maxZ, maxW);
 }
 
 void CallLogWrapper::glPrimitiveRestartIndex (glw::GLuint index)
@@ -3282,7 +3309,7 @@ void CallLogWrapper::glReadnPixels (glw::GLint x, glw::GLint y, glw::GLsizei wid
 	m_gl.readnPixels(x, y, width, height, format, type, bufSize, data);
 }
 
-void CallLogWrapper::glReleaseShaderCompiler ()
+void CallLogWrapper::glReleaseShaderCompiler (void)
 {
 	if (m_enableLog)
 		m_log << TestLog::Message << "glReleaseShaderCompiler(" << ");" << TestLog::EndMessage;
@@ -3303,7 +3330,7 @@ void CallLogWrapper::glRenderbufferStorageMultisample (glw::GLenum target, glw::
 	m_gl.renderbufferStorageMultisample(target, samples, internalformat, width, height);
 }
 
-void CallLogWrapper::glResumeTransformFeedback ()
+void CallLogWrapper::glResumeTransformFeedback (void)
 {
 	if (m_enableLog)
 		m_log << TestLog::Message << "glResumeTransformFeedback(" << ");" << TestLog::EndMessage;
@@ -3604,7 +3631,7 @@ void CallLogWrapper::glTexSubImage3D (glw::GLenum target, glw::GLint level, glw:
 	m_gl.texSubImage3D(target, level, xoffset, yoffset, zoffset, width, height, depth, format, type, pixels);
 }
 
-void CallLogWrapper::glTextureBarrier ()
+void CallLogWrapper::glTextureBarrier (void)
 {
 	if (m_enableLog)
 		m_log << TestLog::Message << "glTextureBarrier(" << ");" << TestLog::EndMessage;

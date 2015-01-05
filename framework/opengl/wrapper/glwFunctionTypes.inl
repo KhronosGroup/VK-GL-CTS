@@ -381,6 +381,7 @@ typedef GLW_APICALL void			(GLW_APIENTRY* glPointSizeFunc)										(GLfloat siz
 typedef GLW_APICALL void			(GLW_APIENTRY* glPolygonModeFunc)									(GLenum face, GLenum mode);
 typedef GLW_APICALL void			(GLW_APIENTRY* glPolygonOffsetFunc)									(GLfloat factor, GLfloat units);
 typedef GLW_APICALL void			(GLW_APIENTRY* glPopDebugGroupFunc)									(void);
+typedef GLW_APICALL void			(GLW_APIENTRY* glPrimitiveBoundingBoxEXTFunc)						(GLfloat minX, GLfloat minY, GLfloat minZ, GLfloat minW, GLfloat maxX, GLfloat maxY, GLfloat maxZ, GLfloat maxW);
 typedef GLW_APICALL void			(GLW_APIENTRY* glPrimitiveRestartIndexFunc)							(GLuint index);
 typedef GLW_APICALL void			(GLW_APIENTRY* glProgramBinaryFunc)									(GLuint program, GLenum binaryFormat, const void *binary, GLsizei length);
 typedef GLW_APICALL void			(GLW_APIENTRY* glProgramParameteriFunc)								(GLuint program, GLenum pname, GLint value);

@@ -257,6 +257,7 @@ LOCAL_SRC_FILES := \
 	modules/gles31/functional/es31fNegativeTextureApiTests.cpp \
 	modules/gles31/functional/es31fNegativeVertexArrayApiTests.cpp \
 	modules/gles31/functional/es31fOpaqueTypeIndexingTests.cpp \
+	modules/gles31/functional/es31fPrimitiveBoundingBoxTests.cpp \
 	modules/gles31/functional/es31fProgramInterfaceDefinition.cpp \
 	modules/gles31/functional/es31fProgramInterfaceDefinitionUtil.cpp \
 	modules/gles31/functional/es31fProgramInterfaceQueryTestCase.cpp \

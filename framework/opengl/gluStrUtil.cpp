@@ -30,7 +30,7 @@ namespace glu
 namespace detail
 {
 
-std::ostream& operator<< (std::ostream& str, EnumPointerFmt fmt)
+std::ostream& operator<< (std::ostream& str, const BooleanPointerFmt& fmt)
 {
 	if (fmt.value)
 	{
@@ -39,7 +39,7 @@ std::ostream& operator<< (std::ostream& str, EnumPointerFmt fmt)
 		{
 			if (ndx != 0)
 				str << ", ";
-			str << tcu::Format::Enum(fmt.getName, fmt.value[ndx]);
+			str << getBooleanStr(fmt.value[ndx]);
 		}
 		str << " }";
 		return str;
@@ -48,7 +48,27 @@ std::ostream& operator<< (std::ostream& str, EnumPointerFmt fmt)
 		return str << "(null)";
 }
 
-std::ostream& operator<< (std::ostream& str, TextureUnitStr unitStr)
+
+std::ostream& operator<< (std::ostream& str, const EnumPointerFmt& fmt)
+{
+	if (fmt.value)
+	{
+		str << "{ ";
+		for (deUint32 ndx = 0; ndx < fmt.size; ndx++)
+		{
+			if (ndx != 0)
+				str << ", ";
+			// use storage size (4) as print width for clarity
+			str << tcu::Format::Enum<int, 4>(fmt.getName, fmt.value[ndx]);
+		}
+		str << " }";
+		return str;
+	}
+	else
+		return str << "(null)";
+}
+
+std::ostream& operator<< (std::ostream& str, const TextureUnitStr& unitStr)
 {
 	int unitNdx = unitStr.texUnit - GL_TEXTURE0;
 	if (unitNdx >= 0)

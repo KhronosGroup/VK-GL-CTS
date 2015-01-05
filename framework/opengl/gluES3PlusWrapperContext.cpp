@@ -28,6 +28,7 @@
 #include "glwFunctionLoader.hpp"
 #include "gluContextFactory.hpp"
 #include "deThreadLocal.hpp"
+#include "deSTLUtil.hpp"
 #include "glwEnums.hpp"
 
 #include <sstream>
@@ -115,6 +116,7 @@ Context::Context (const glw::Functions& gl_)
 	addExtension("GL_KHR_debug");
 	addExtension("GL_EXT_texture_cube_map_array");
 	addExtension("GL_EXT_shader_implicit_conversions");
+	addExtension("GL_EXT_primitive_bounding_box");
 }
 
 Context::~Context (void)
@@ -251,10 +253,11 @@ static GLW_APICALL void GLW_APIENTRY hint (deUint32 target, deUint32 mode)
 
 static void translateShaderSource (deUint32 shaderType, std::ostream& dst, const std::string& src, const std::vector<std::string>& filteredExtensions)
 {
-	bool				foundVersion	= false;
-	std::istringstream	istr			(src);
+	bool				foundVersion		= false;
+	std::istringstream	istr				(src);
 	std::string			line;
-	int					srcLineNdx		= 1;
+	int					srcLineNdx			= 1;
+	bool				preprocessorSection	= true;
 
 	while (std::getline(istr, line, '\n'))
 	{
@@ -312,7 +315,7 @@ static void translateShaderSource (deUint32 shaderType, std::ostream& dst, const
 			{
 				const std::string	extName				= line.substr(extNamePos, extNameEndPos-extNamePos);
 				const std::string	behavior			= line.substr(behaviorPos);
-				const bool			filteredExtension	= std::find(filteredExtensions.begin(), filteredExtensions.end(), extName) != filteredExtensions.end();
+				const bool			filteredExtension	= de::contains(filteredExtensions.begin(), filteredExtensions.end(), extName);
 				const bool			validBehavior		= behavior == "require" || behavior == "enable" || behavior == "warn" || behavior == "disable";
 
 				if (filteredExtension && validBehavior)
@@ -324,6 +327,19 @@ static void translateShaderSource (deUint32 shaderType, std::ostream& dst, const
 			dst << "// " << line << "\n";
 		else
 			dst << line << "\n";
+
+		if (preprocessorSection && !line.empty() && line[0] != '#')
+		{
+			preprocessorSection = false;
+
+			// GL_EXT_primitive_bounding_box tessellation no-op fallback
+			if (shaderType == GL_TESS_CONTROL_SHADER)
+			{
+				dst << "#define gl_BoundingBoxEXT _dummy_unused_output_for_primitive_bbox\n"
+					<< "patch out vec4 _dummy_unused_output_for_primitive_bbox[2];\n"
+					<< "#line " << (srcLineNdx + 1) << "\n";
+			}
+		}
 
 		srcLineNdx += 1;
 	}
@@ -412,6 +428,19 @@ static GLW_APICALL deUint32 GLW_APIENTRY createShaderProgramv (deUint32 type, de
 	return 0;
 }
 
+static GLW_APICALL void GLW_APIENTRY dummyPrimitiveBoundingBox (float minX, float minY, float minZ, float minW, float maxX, float maxY, float maxZ, float maxW)
+{
+	// dummy no-op. No-op is a valid implementation. States queries are not emulated.
+	DE_UNREF(minX);
+	DE_UNREF(minY);
+	DE_UNREF(minZ);
+	DE_UNREF(minW);
+	DE_UNREF(maxX);
+	DE_UNREF(maxY);
+	DE_UNREF(maxZ);
+	DE_UNREF(maxW);
+}
+
 static void initFunctions (glw::Functions* dst, const glw::Functions& src)
 {
 	// Functions directly passed to GL context.
@@ -481,6 +510,9 @@ static void initFunctions (glw::Functions* dst, const glw::Functions& src)
 		extFuncMap["glGetObjectLabelKHR"]			= (glw::GenericFuncType)src.getObjectLabel;
 		extFuncMap["glObjectPtrLabelKHR"]			= (glw::GenericFuncType)src.objectPtrLabel;
 		extFuncMap["glGetObjectPtrLabelKHR"]		= (glw::GenericFuncType)src.getObjectPtrLabel;
+
+		// GL_EXT_primitive_bounding_box (dummy no-op)
+		extFuncMap["glPrimitiveBoundingBoxEXT"]		= (glw::GenericFuncType)dummyPrimitiveBoundingBox;
 
 		{
 			int	numExts	= 0;
