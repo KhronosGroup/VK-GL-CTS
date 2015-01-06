@@ -8237,7 +8237,6 @@ dEQP-GLES31.functional.ubo.random.all_per_block_buffers.16
 dEQP-GLES31.functional.ubo.random.all_per_block_buffers.17
 dEQP-GLES31.functional.ubo.random.all_per_block_buffers.18
 dEQP-GLES31.functional.ubo.random.all_per_block_buffers.19
-dEQP-GLES31.functional.ubo.random.all_per_block_buffers.20
 dEQP-GLES31.functional.ubo.random.all_per_block_buffers.21
 dEQP-GLES31.functional.ubo.random.all_per_block_buffers.22
 dEQP-GLES31.functional.ubo.random.all_per_block_buffers.23
