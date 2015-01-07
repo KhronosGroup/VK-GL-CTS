@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+import sys
 import copy
 import platform
 import multiprocessing
@@ -108,7 +109,7 @@ class VSProjectGenerator(CMakeGenerator):
 			return False
 
 	def isAvailable (self):
-		if _winreg != None:
+		if sys.platform == 'win32' and _winreg != None:
 			nativeArch = VSProjectGenerator.getNativeArch()
 			if nativeArch == self.ARCH_32BIT and self.arch == self.ARCH_64BIT:
 				return False
@@ -159,6 +160,16 @@ ANY_VS_X64_GENERATOR	= selectFirstAvailableGenerator([
 								VS2010_X64_GENERATOR,
 							])
 ANY_UNIX_GENERATOR		= selectFirstAvailableGenerator([
+								NINJA_GENERATOR,
+								MAKEFILE_GENERATOR,
+							])
+ANY_GENERATOR			= selectFirstAvailableGenerator([
+								VS2013_X64_GENERATOR,
+								VS2012_X64_GENERATOR,
+								VS2010_X64_GENERATOR,
+								VS2013_X32_GENERATOR,
+								VS2012_X32_GENERATOR,
+								VS2010_X32_GENERATOR,
 								NINJA_GENERATOR,
 								MAKEFILE_GENERATOR,
 							])
