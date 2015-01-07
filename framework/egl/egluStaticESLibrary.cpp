@@ -24,18 +24,26 @@
 #include "egluStaticESLibrary.hpp"
 #include "tcuFunctionLibrary.hpp"
 
+#define STATIC_LIB_NONE	0
+#define STATIC_LIB_ES20	1
+#define STATIC_LIB_ES30	2
+
 #if defined(DEQP_SUPPORT_GLES3) && !defined(DEQP_GLES3_RUNTIME_LOAD)
 #	if (DE_OS == DE_OS_IOS)
 #		include <OpenGLES/ES3/gl.h>
 #	else
 #		include <GLES3/gl3.h>
 #	endif
+#	define STATIC_LIB STATIC_LIB_ES30
 #elif defined(DEQP_SUPPORT_GLES2) && !defined(DEQP_GLES2_RUNTIME_LOAD)
 #	if (DE_OS == DE_OS_IOS)
 #		include <OpenGLES/ES2/gl.h>
 #	else
 #		include <GLES2/gl2.h>
 #	endif
+#	define STATIC_LIB STATIC_LIB_ES20
+#else
+#	define STATIC_LIB STATIC_LIB_NONE
 #endif
 
 // \todo [2014-03-14 pyry] ES3.1 support
@@ -45,16 +53,22 @@ namespace eglu
 
 tcu::FunctionLibrary* createStaticESLibrary (void)
 {
+#if (STATIC_LIB == STATIC_LIB_NONE)
+	return new tcu::StaticFunctionLibrary(DE_NULL, 0);
+#else
 	static const tcu::StaticFunctionLibrary::Entry s_functions[] =
 	{
-#if defined(DEQP_SUPPORT_GLES3) && !defined(DEQP_GLES3_RUNTIME_LOAD)
+#if (STATIC_LIB == STATIC_LIB_ES30)
 #	include "egluStaticES30Library.inl"
-#elif defined(DEQP_SUPPORT_GLES2) && !defined(DEQP_GLES2_RUNTIME_LOAD)
+#elif (STATIC_LIB == STATIC_LIB_ES20)
 #	include "egluStaticES20Library.inl"
+#else
+#	error "Unknown STATIC_LIB value"
 #endif
 	};
 
 	return new tcu::StaticFunctionLibrary(&s_functions[0], DE_LENGTH_OF_ARRAY(s_functions));
+#endif
 }
 
 } // eglu
