@@ -73,6 +73,7 @@ deUint32						getGLFilterMode						(tcu::Sampler::FilterMode filterMode);
 deUint32						getGLCompareFunc					(tcu::Sampler::CompareMode compareMode);
 
 deUint32						getGLCubeFace						(tcu::CubeFace face);
+tcu::CubeFace					getCubeFaceFromGL					(deUint32 face);
 
 DataType						getSampler1DType					(tcu::TextureFormat format);
 DataType						getSampler2DType					(tcu::TextureFormat format);

@@ -343,22 +343,6 @@ TextureCube::~TextureCube (void)
 		m_context.getFunctions().deleteTextures(1, &m_glTexture);
 }
 
-static deUint32 cubeFaceToGLFace (tcu::CubeFace face)
-{
-	switch (face)
-	{
-		case tcu::CUBEFACE_NEGATIVE_X: return GL_TEXTURE_CUBE_MAP_NEGATIVE_X;
-		case tcu::CUBEFACE_POSITIVE_X: return GL_TEXTURE_CUBE_MAP_POSITIVE_X;
-		case tcu::CUBEFACE_NEGATIVE_Y: return GL_TEXTURE_CUBE_MAP_NEGATIVE_Y;
-		case tcu::CUBEFACE_POSITIVE_Y: return GL_TEXTURE_CUBE_MAP_POSITIVE_Y;
-		case tcu::CUBEFACE_NEGATIVE_Z: return GL_TEXTURE_CUBE_MAP_NEGATIVE_Z;
-		case tcu::CUBEFACE_POSITIVE_Z: return GL_TEXTURE_CUBE_MAP_POSITIVE_Z;
-		default:
-			DE_ASSERT(DE_FALSE);
-			return GL_NONE;
-	}
-}
-
 void TextureCube::upload (void)
 {
 	const glw::Functions& gl = m_context.getFunctions();
@@ -381,7 +365,7 @@ void TextureCube::upload (void)
 
 			tcu::ConstPixelBufferAccess access = m_refTexture.getLevelFace(levelNdx, (tcu::CubeFace)face);
 			DE_ASSERT(access.getRowPitch() == access.getFormat().getPixelSize()*access.getWidth());
-			gl.texImage2D(cubeFaceToGLFace((tcu::CubeFace)face), levelNdx, m_format, access.getWidth(), access.getHeight(), 0 /* border */, transferFormat.format, transferFormat.dataType, access.getDataPtr());
+			gl.texImage2D(getGLCubeFace((tcu::CubeFace)face), levelNdx, m_format, access.getWidth(), access.getHeight(), 0 /* border */, transferFormat.format, transferFormat.dataType, access.getDataPtr());
 		}
 	}
 
@@ -410,7 +394,7 @@ void TextureCube::loadCompressed (int numLevels, const tcu::CompressedTexture* l
 			level.decompress(refLevelAccess, decompressionParams);
 
 			// Upload to GL texture in compressed form.
-			gl.compressedTexImage2D(cubeFaceToGLFace((tcu::CubeFace)face), levelNdx, compressedFormat,
+			gl.compressedTexImage2D(getGLCubeFace((tcu::CubeFace)face), levelNdx, compressedFormat,
 									level.getWidth(), level.getHeight(), 0 /* border */, level.getDataSize(), level.getData());
 		}
 	}

@@ -696,6 +696,21 @@ deUint32 getGLCubeFace (tcu::CubeFace face)
 	}
 }
 
+tcu::CubeFace getCubeFaceFromGL (deUint32 face)
+{
+	switch (face)
+	{
+		case GL_TEXTURE_CUBE_MAP_NEGATIVE_X:	return tcu::CUBEFACE_NEGATIVE_X;
+		case GL_TEXTURE_CUBE_MAP_POSITIVE_X:	return tcu::CUBEFACE_POSITIVE_X;
+		case GL_TEXTURE_CUBE_MAP_NEGATIVE_Y:	return tcu::CUBEFACE_NEGATIVE_Y;
+		case GL_TEXTURE_CUBE_MAP_POSITIVE_Y:	return tcu::CUBEFACE_POSITIVE_Y;
+		case GL_TEXTURE_CUBE_MAP_NEGATIVE_Z:	return tcu::CUBEFACE_NEGATIVE_Z;
+		case GL_TEXTURE_CUBE_MAP_POSITIVE_Z:	return tcu::CUBEFACE_POSITIVE_Z;
+		default:
+			throw tcu::InternalError("Can't map cube face");
+	}
+}
+
 /*--------------------------------------------------------------------*//*!
  * \brief Get GLSL sampler type for texture format.
  *
