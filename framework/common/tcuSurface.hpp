@@ -59,9 +59,6 @@ public:
 	ConstPixelBufferAccess	getAccess			(void) const;
 	PixelBufferAccess		getAccess			(void);
 
-	ConstPixelBufferAccess	getSubAccess		(int x, int y, int width, int height) const;
-	PixelBufferAccess		getSubAccess		(int x, int y, int width, int height);
-
 private:
 	// \note Copy constructor and assignment operators are public and auto-generated
 
@@ -102,43 +99,6 @@ inline RGBA Surface::getPixel (int x, int y) const
 	const deUint8*	byteAddr	= (const deUint8*)pixAddr;
 	return RGBA(byteAddr[0], byteAddr[1], byteAddr[2], byteAddr[3]);
 #endif
-}
-
-
-/** Get pixel sub buffer access from surface. */
-inline ConstPixelBufferAccess Surface::getSubAccess (int x, int y, int width, int height) const
-{
-	DE_ASSERT(x >= 0);
-	DE_ASSERT(width >= 1);
-	DE_ASSERT(x < m_width);
-
-	DE_ASSERT(y >= 0);
-	DE_ASSERT(height >= 1);
-	DE_ASSERT(y < m_height);
-
-	DE_ASSERT(x + width <= m_width);
-	DE_ASSERT(y + height <= m_height);
-
-	const deUint8* ptr = (m_pixels.empty() ? NULL : ((deUint8*)&m_pixels[0]) + 4 * (x + y * m_width));
-	return ConstPixelBufferAccess(TextureFormat(TextureFormat::RGBA, TextureFormat::UNORM_INT8), width, height, 1, m_width*4, 0, ptr);
-}
-
-/** Get pixel sub buffer access from surface. */
-inline PixelBufferAccess Surface::getSubAccess (int x, int y, int width, int height)
-{
-	DE_ASSERT(x >= 0);
-	DE_ASSERT(width >= 1);
-	DE_ASSERT(x < m_width);
-
-	DE_ASSERT(y >= 0);
-	DE_ASSERT(height >= 1);
-	DE_ASSERT(y < m_height);
-
-	DE_ASSERT(x + width <= m_width);
-	DE_ASSERT(y + height <= m_height);
-
-	deUint8* ptr = (m_pixels.empty() ? NULL : ((deUint8*)&m_pixels[0]) + 4 * (x + y * m_width));
-	return PixelBufferAccess(TextureFormat(TextureFormat::RGBA, TextureFormat::UNORM_INT8), width, height, 1, m_width*4, 0, ptr);
 }
 
 /** Get pixel buffer access from surface. */

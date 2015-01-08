@@ -30,6 +30,7 @@
 #include "tcuPlatform.hpp"
 #include "tcuTestLog.hpp"
 #include "tcuInterval.hpp"
+#include "tcuTextureUtil.hpp"
 
 #include "egluNativeDisplay.hpp"
 #include "egluNativeWindow.hpp"
@@ -274,9 +275,9 @@ bool compareCorners (const Surface& oldSurface, const Surface& newSurface)
 			const int				oldY		= yCorner == 0 ? 0 : oldHeight - minHeight;
 			const int				newY		= yCorner == 0 ? 0 : newHeight - minHeight;
 			ConstPixelBufferAccess	oldAccess	=
-				oldSurface.getSubAccess(oldX, oldY, minWidth, minHeight);
+				getSubregion(oldSurface.getAccess(), oldX, oldY, minWidth, minHeight);
 			ConstPixelBufferAccess	newAccess	=
-				newSurface.getSubAccess(newX, newY, minWidth, minHeight);
+				getSubregion(newSurface.getAccess(), newX, newY, minWidth, minHeight);
 
 			if (compareRectangles(oldAccess, newAccess))
 				return true;
