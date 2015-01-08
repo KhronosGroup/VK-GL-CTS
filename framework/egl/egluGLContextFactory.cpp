@@ -605,11 +605,7 @@ void RenderContext::postIterate (void)
 		}
 	}
 	else
-	{
-		// \todo [2014-05-02 mika] Should we call flush or finish? Old platform uses finish() but flush() is closer to the behaviour of eglSwapBuffers()
 		m_glFunctions.flush();
-		GLU_EXPECT_NO_ERROR(m_glFunctions.getError(), "glFlush()");
-	}
 }
 
 } // anonymous
