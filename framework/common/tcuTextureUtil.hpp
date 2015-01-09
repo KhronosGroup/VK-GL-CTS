@@ -124,6 +124,8 @@ inline deUint8 floatToU8 (float fv)
 	return (deUint8)(m>>24);
 }
 
+deUint32 packRGB999E5 (const tcu::Vec4& color);
+
 } // tcu
 
 #endif // _TCUTEXTUREUTIL_HPP

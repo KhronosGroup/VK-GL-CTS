@@ -383,35 +383,6 @@ inline deUint32 uintToChannel (deUint32 src, int bits)
 	return de::min(maxVal, src);
 }
 
-deUint32 packRGB999E5 (const tcu::Vec4& color)
-{
-	const int	mBits	= 9;
-	const int	eBits	= 5;
-	const int	eBias	= 15;
-	const int	eMax	= (1<<eBits)-1;
-	const float	maxVal	= (float)(((1<<mBits) - 1) * (1<<(eMax-eBias))) / (float)(1<<mBits);
-
-	float	rc		= deFloatClamp(color[0], 0.0f, maxVal);
-	float	gc		= deFloatClamp(color[1], 0.0f, maxVal);
-	float	bc		= deFloatClamp(color[2], 0.0f, maxVal);
-	float	maxc	= de::max(rc, de::max(gc, bc));
-	int		expp	= de::max(-eBias - 1, deFloorFloatToInt32(deFloatLog2(maxc))) + 1 + eBias;
-	float	e		= deFloatPow(2.0f, (float)(expp-eBias-mBits));
-	int		maxs	= deFloorFloatToInt32(maxc / e + 0.5f);
-
-	deUint32	exps	= maxs == (1<<mBits) ? expp+1 : expp;
-	deUint32	rs		= (deUint32)deClamp32(deFloorFloatToInt32(rc / e + 0.5f), 0, (1<<9)-1);
-	deUint32	gs		= (deUint32)deClamp32(deFloorFloatToInt32(gc / e + 0.5f), 0, (1<<9)-1);
-	deUint32	bs		= (deUint32)deClamp32(deFloorFloatToInt32(bc / e + 0.5f), 0, (1<<9)-1);
-
-	DE_ASSERT((exps & ~((1<<5)-1)) == 0);
-	DE_ASSERT((rs & ~((1<<9)-1)) == 0);
-	DE_ASSERT((gs & ~((1<<9)-1)) == 0);
-	DE_ASSERT((bs & ~((1<<9)-1)) == 0);
-
-	return rs | (gs << 9) | (bs << 18) | (exps << 27);
-}
-
 tcu::Vec4 unpackRGB999E5 (deUint32 color)
 {
 	const int	mBits	= 9;
