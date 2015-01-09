@@ -60,3 +60,8 @@ if (de::contains(extSet, "GL_OES_sample_shading"))
 {
 	gl->minSampleShading	= (glMinSampleShadingFunc)	loader->get("glMinSampleShadingOES");
 }
+
+if (de::contains(extSet, "GL_EXT_copy_image"))
+{
+	gl->copyImageSubData	= (glCopyImageSubDataFunc)	loader->get("glCopyImageSubDataEXT");
+}

@@ -38,6 +38,7 @@ EXTENSIONS			= [
 	'GL_OES_sample_shading',
 	'GL_EXT_texture_compression_s3tc',
 	'GL_IMG_texture_compression_pvrtc',
+	'GL_EXT_copy_image',
 ]
 
 def getGLRegistry ():
