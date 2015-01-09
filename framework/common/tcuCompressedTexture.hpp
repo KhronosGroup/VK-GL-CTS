@@ -135,7 +135,7 @@ private:
 	std::vector<deUint8>	m_data;
 };
 
-void decompress (const PixelBufferAccess& dst, CompressedTexFormat fmt, const deUint8* src, const TexDecompressionParams& params);
+void decompress (const PixelBufferAccess& dst, CompressedTexFormat fmt, const deUint8* src, const TexDecompressionParams& params = TexDecompressionParams());
 
 } // tcu
 
