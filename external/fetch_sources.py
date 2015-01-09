@@ -93,9 +93,9 @@ PACKAGES = [
 				  "zlib-1.2.8.tar.gz",
 				  "36658cb768a54c1d4dec43c3116c27ed893e88b02ecfcb44f2166f9c0b7f2a0d",
 				  "zlib"),
-	SourcePackage("http://www.imagemagick.org/download/delegates/libpng-1.6.14.tar.gz",
+	SourcePackage("ftp://ftp.simplesystems.org/pub/libpng/png/src/libpng16/libpng-1.6.16.tar.gz",
 				  "libpng-1.6.14.tar.gz",
-				  "e6cab38f051bfc66929e766c1e67eba6fafac9e0f463ee3bbeb4ac16f173fe8e",
+				  "02f96b6bad5a381d36d7ba7a5d9be3b06f7fe6c274da00707509c23592a073ad",
 				  "libpng",
 				  postExtract = postExtractLibpng),
 ]
