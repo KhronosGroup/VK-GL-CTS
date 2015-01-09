@@ -430,7 +430,10 @@ void PreservingSwapTest::deinit (void)
 
 bool compareToReference (tcu::TestLog& log, const char* name, const char* description, const tcu::Surface& reference, const tcu::Surface& screen, int x, int y, int width, int height)
 {
-	return tcu::fuzzyCompare(log, name, description, reference.getSubAccess(x, y, width, height), screen.getSubAccess(x, y, width, height), 0.05f, tcu::COMPARE_LOG_RESULT);
+	return tcu::fuzzyCompare(log, name, description,
+							 getSubregion(reference.getAccess(), x, y, width, height),
+							 getSubregion(screen.getAccess(), x, y, width, height),
+							 0.05f, tcu::COMPARE_LOG_RESULT);
 }
 
 bool comparePreAndPostSwapFramebuffers (tcu::TestLog& log, const tcu::Surface& preSwap, const tcu::Surface& postSwap)
