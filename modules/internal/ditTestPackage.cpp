@@ -28,6 +28,7 @@
 #include "ditImageIOTests.hpp"
 #include "ditImageCompareTests.hpp"
 #include "ditTestLogTests.hpp"
+#include "ditSeedBuilderTests.hpp"
 
 namespace dit
 {
@@ -45,6 +46,7 @@ public:
 		addChild(new TestLogTests		(m_testCtx));
 		addChild(new ImageIOTests		(m_testCtx));
 		addChild(new ImageCompareTests	(m_testCtx));
+		addChild(createSeedBuilderTests	(m_testCtx));
 	}
 };
 

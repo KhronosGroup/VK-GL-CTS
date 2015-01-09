@@ -17,6 +17,8 @@ set(DE_INTERNAL_TESTS_SRCS
 	ditTestLogTests.hpp
 	ditTestPackage.cpp
 	ditTestPackage.hpp
+	ditSeedBuilderTests.hpp
+	ditSeedBuilderTests.cpp
 	)
 
 set(DE_INTERNAL_TESTS_LIBS

@@ -73,6 +73,8 @@ set(TCUTIL_SRCS
 	tcuCPUWarmup.hpp
 	tcuFactoryRegistry.hpp
 	tcuFactoryRegistry.cpp
+	tcuSeedBuilder.hpp
+	tcuSeedBuilder.cpp
 	)
 
 set(TCUTIL_LIBS

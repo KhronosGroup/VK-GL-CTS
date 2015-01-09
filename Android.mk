@@ -63,6 +63,7 @@ LOCAL_SRC_FILES := \
 	framework/common/tcuTextureUtil.cpp \
 	framework/common/tcuTexVerifierUtil.cpp \
 	framework/common/tcuThreadUtil.cpp \
+	framework/common/tcuSeedBuilder.cpp \
 	framework/delibs/debase/deDefs.c \
 	framework/delibs/debase/deFloat16.c \
 	framework/delibs/debase/deInt32.c \
@@ -486,6 +487,7 @@ LOCAL_SRC_FILES := \
 	modules/internal/ditTestCase.cpp \
 	modules/internal/ditTestLogTests.cpp \
 	modules/internal/ditTestPackage.cpp \
+	modules/internal/ditSeedBuilderTests.cpp \
 	modules/internal/ditTestPackageEntry.cpp
 
 LOCAL_C_INCLUDES := \
