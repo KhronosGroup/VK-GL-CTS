@@ -143,9 +143,8 @@ public class DeqpInstrumentation extends Instrumentation
 			Log.e(LOG_TAG, "Exception", e);
 
 			Bundle info = new Bundle();
-
 			info.putString("Exception", e.getMessage());
-			finish(1, new Bundle());
+			finish(1, info);
 		}
 		finally
 		{
