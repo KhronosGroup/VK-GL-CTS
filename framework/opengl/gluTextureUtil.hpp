@@ -58,6 +58,7 @@ struct TransferFormat
 
 tcu::TextureFormat				mapGLTransferFormat					(deUint32 format, deUint32 dataType);
 tcu::TextureFormat				mapGLInternalFormat					(deUint32 internalFormat);
+tcu::CompressedTexFormat		mapGLCompressedTexFormat			(deUint32 format);
 bool							isGLInternalColorFormatFilterable	(deUint32 internalFormat);
 tcu::Sampler					mapGLSampler						(deUint32 wrapS, deUint32 minFilter, deUint32 magFilter);
 tcu::Sampler					mapGLSampler						(deUint32 wrapS, deUint32 wrapT, deUint32 minFilter, deUint32 magFilter);
