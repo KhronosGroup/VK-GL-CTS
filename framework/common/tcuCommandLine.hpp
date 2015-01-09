@@ -181,11 +181,16 @@ public:
 	//! Check if test case is in supplied test case list.
 	bool							checkTestCaseName			(const char* caseName) const;
 
+protected:
+	const de::cmdline::CommandLine&	getCommandLine				(void) const;
+
 private:
 									CommandLine					(const CommandLine&);	// not allowed!
 	CommandLine&					operator=					(const CommandLine&);	// not allowed!
 
 	void							clear						(void);
+
+	virtual void					registerExtendedOptions		(de::cmdline::Parser& parser);
 
 	de::cmdline::CommandLine		m_cmdLine;
 	deUint32						m_logFlags;

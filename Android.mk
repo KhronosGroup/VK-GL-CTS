@@ -186,6 +186,7 @@ LOCAL_SRC_FILES := \
 	framework/platform/android/tcuAndroidMain.cpp \
 	framework/platform/android/tcuAndroidNativeActivity.cpp \
 	framework/platform/android/tcuAndroidPlatform.cpp \
+	framework/platform/android/tcuAndroidPlatformCapabilityQueryJNI.cpp \
 	framework/platform/android/tcuAndroidRenderActivity.cpp \
 	framework/platform/android/tcuAndroidTestActivity.cpp \
 	framework/platform/android/tcuAndroidUtil.cpp \

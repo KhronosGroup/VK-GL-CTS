@@ -155,4 +155,83 @@ EGLContext createGLContext (const Library& egl, EGLDisplay display, EGLContext e
 	return context;
 }
 
+static bool configMatches (const eglw::Library& egl, eglw::EGLDisplay display, eglw::EGLConfig eglConfig, const glu::RenderConfig& renderConfig)
+{
+	// \todo [2014-03-12 pyry] Check other attributes like double-buffer bit.
+
+	{
+		EGLint		renderableType		= 0;
+		EGLint		requiredRenderable	= apiRenderableType(renderConfig.type.getAPI());
+
+		EGLU_CHECK_CALL(egl, getConfigAttrib(display, eglConfig, EGL_RENDERABLE_TYPE, &renderableType));
+
+		if ((renderableType & requiredRenderable) == 0)
+			return false;
+	}
+
+	if (renderConfig.surfaceType != (glu::RenderConfig::SurfaceType)glu::RenderConfig::DONT_CARE)
+	{
+		EGLint		surfaceType		= 0;
+		EGLint		requiredSurface	= 0;
+
+		switch (renderConfig.surfaceType)
+		{
+			case glu::RenderConfig::SURFACETYPE_WINDOW:				requiredSurface = EGL_WINDOW_BIT;	break;
+			case glu::RenderConfig::SURFACETYPE_OFFSCREEN_NATIVE:	requiredSurface = EGL_PIXMAP_BIT;	break;
+			case glu::RenderConfig::SURFACETYPE_OFFSCREEN_GENERIC:	requiredSurface = EGL_PBUFFER_BIT;	break;
+			default:
+				DE_ASSERT(false);
+		}
+
+		EGLU_CHECK_CALL(egl, getConfigAttrib(display, eglConfig, EGL_SURFACE_TYPE, &surfaceType));
+
+		if ((surfaceType & requiredSurface) == 0)
+			return false;
+	}
+
+	{
+		static const struct
+		{
+			int	glu::RenderConfig::*field;
+			EGLint attrib;
+		} s_attribs[] =
+		{
+			{ &glu::RenderConfig::id,			EGL_CONFIG_ID		},
+			{ &glu::RenderConfig::redBits,		EGL_RED_SIZE		},
+			{ &glu::RenderConfig::greenBits,	EGL_GREEN_SIZE		},
+			{ &glu::RenderConfig::blueBits,		EGL_BLUE_SIZE		},
+			{ &glu::RenderConfig::alphaBits,	EGL_ALPHA_SIZE		},
+			{ &glu::RenderConfig::depthBits,	EGL_DEPTH_SIZE		},
+			{ &glu::RenderConfig::stencilBits,	EGL_STENCIL_SIZE	},
+			{ &glu::RenderConfig::numSamples,	EGL_SAMPLES			},
+		};
+
+		for (int attribNdx = 0; attribNdx < DE_LENGTH_OF_ARRAY(s_attribs); attribNdx++)
+		{
+			if (renderConfig.*s_attribs[attribNdx].field != glu::RenderConfig::DONT_CARE)
+			{
+				EGLint value = 0;
+				EGLU_CHECK_CALL(egl, getConfigAttrib(display, eglConfig, s_attribs[attribNdx].attrib, &value));
+				if (value != renderConfig.*s_attribs[attribNdx].field)
+					return false;
+			}
+		}
+	}
+
+	return true;
+}
+
+EGLConfig chooseConfig (const Library& egl, EGLDisplay display, const glu::RenderConfig& config)
+{
+	const std::vector<EGLConfig> configs = eglu::getConfigs(egl, display);
+
+	for (vector<EGLConfig>::const_iterator iter = configs.begin(); iter != configs.end(); ++iter)
+	{
+		if (configMatches(egl, display, *iter, config))
+			return *iter;
+	}
+
+	throw tcu::NotSupportedError("Matching EGL config not found", DE_NULL, __FILE__, __LINE__);
+}
+
 }
