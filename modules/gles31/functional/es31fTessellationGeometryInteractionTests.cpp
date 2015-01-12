@@ -2866,7 +2866,7 @@ FeedbackRecordVariableSelectionCase::IterateResult FeedbackRecordVariableSelecti
 
 	m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
 
-	m_testCtx.getLog() << tcu::TestLog::Message << "Rendering a patch of size 1." << tcu::TestLog::EndMessage;
+	m_testCtx.getLog() << tcu::TestLog::Message << "Rendering a patch of size 3." << tcu::TestLog::EndMessage;
 
 	// Render and feed back
 
@@ -2884,7 +2884,7 @@ FeedbackRecordVariableSelectionCase::IterateResult FeedbackRecordVariableSelecti
 	gl.useProgram(m_program->getProgram());
 	GLU_EXPECT_NO_ERROR(gl.getError(), "use program");
 
-	gl.patchParameteri(GL_PATCH_VERTICES, 1);
+	gl.patchParameteri(GL_PATCH_VERTICES, 3);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "set patch param");
 
 	gl.bindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, m_xfbBuf);
@@ -2893,7 +2893,7 @@ FeedbackRecordVariableSelectionCase::IterateResult FeedbackRecordVariableSelecti
 	gl.beginTransformFeedback(GL_TRIANGLES);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "beginTransformFeedback");
 
-	gl.drawArrays(GL_PATCHES, 0, 1);
+	gl.drawArrays(GL_PATCHES, 0, 3);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "drawArrays");
 
 	gl.endTransformFeedback();
