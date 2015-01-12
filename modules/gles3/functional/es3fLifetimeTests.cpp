@@ -464,24 +464,89 @@ TfDeleteActiveTest::TfDeleteActiveTest (gles3::Context& context,
 	enableLogging(true);
 }
 
+class ScopedTransformFeedbackFeedback
+{
+public:
+							ScopedTransformFeedbackFeedback		(glu::CallLogWrapper& gl, GLenum type);
+							~ScopedTransformFeedbackFeedback	(void);
+
+private:
+	glu::CallLogWrapper&	m_gl;
+};
+
+ScopedTransformFeedbackFeedback::ScopedTransformFeedbackFeedback (glu::CallLogWrapper& gl, GLenum type)
+	: m_gl(gl)
+{
+	m_gl.glBeginTransformFeedback(type);
+	GLU_EXPECT_NO_ERROR(m_gl.glGetError(), "glBeginTransformFeedback");
+}
+
+ScopedTransformFeedbackFeedback::~ScopedTransformFeedbackFeedback (void)
+{
+	m_gl.glEndTransformFeedback();
+}
+
 IterateResult TfDeleteActiveTest::iterate (void)
 {
-	GLuint tf = 0;
-	glGenTransformFeedbacks(1, &tf);
-	glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, tf);
-	glBeginTransformFeedback(GL_TRIANGLES);
-	glDeleteTransformFeedbacks(1, &tf);
+	static const char* const s_xfbVertexSource =	"#version 300 es\n"
+													"void main ()\n"
+													"{\n"
+													"	gl_Position = vec4(float(gl_VertexID) / 2.0, float(gl_VertexID % 2) / 2.0, 0.0, 1.0);\n"
+													"}\n";
+	static const char* const s_xfbFragmentSource =	"#version 300 es\n"
+													"layout(location=0) out mediump vec4 dEQP_FragColor;\n"
+													"void main ()\n"
+													"{\n"
+													"	dEQP_FragColor = vec4(1.0, 1.0, 0.0, 1.0);\n"
+													"}\n";
+
+	glu::Buffer			buf			(m_context.getRenderContext());
+	GLuint				tf			= 0;
+	glu::ShaderProgram	program		(m_context.getRenderContext(),
+									 glu::ProgramSources()
+										<< glu::VertexSource(s_xfbVertexSource)
+										<< glu::FragmentSource(s_xfbFragmentSource)
+										<< glu::TransformFeedbackMode(GL_INTERLEAVED_ATTRIBS)
+										<< glu::TransformFeedbackVarying("gl_Position"));
+
+	if (!program.isOk())
 	{
-		GLenum err = glGetError();
-		if (err != GL_INVALID_OPERATION)
-			getTestContext().setTestResult(
-				QP_TEST_RESULT_FAIL,
-				"Deleting active transform feedback did not produce GL_INVALID_OPERATION");
-		else
-			getTestContext().setTestResult(QP_TEST_RESULT_PASS, "Pass");
+		m_testCtx.getLog() << program;
+		throw tcu::TestError("failed to build program");
 	}
-	glEndTransformFeedback();
-	glDeleteTransformFeedbacks(1, &tf);
+
+	try
+	{
+		GLU_CHECK_CALL(glUseProgram(program.getProgram()));
+		GLU_CHECK_CALL(glGenTransformFeedbacks(1, &tf));
+		GLU_CHECK_CALL(glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, tf));
+		GLU_CHECK_CALL(glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, *buf));
+		GLU_CHECK_CALL(glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, 3 * sizeof(glw::GLfloat[4]), DE_NULL, GL_DYNAMIC_COPY));
+
+		{
+			ScopedTransformFeedbackFeedback xfb(static_cast<glu::CallLogWrapper&>(*this), GL_TRIANGLES);
+
+			glDeleteTransformFeedbacks(1, &tf);
+			{
+				GLenum err = glGetError();
+				if (err != GL_INVALID_OPERATION)
+					getTestContext().setTestResult(
+						QP_TEST_RESULT_FAIL,
+						"Deleting active transform feedback did not produce GL_INVALID_OPERATION");
+				else
+					getTestContext().setTestResult(QP_TEST_RESULT_PASS, "Pass");
+			}
+		}
+		GLU_CHECK(); // ScopedTransformFeedbackFeedback::dtor might modify error state
+
+		GLU_CHECK_CALL(glDeleteTransformFeedbacks(1, &tf));
+	}
+	catch (const glu::Error&)
+	{
+		glDeleteTransformFeedbacks(1, &tf);
+		throw;
+	}
+
 	return STOP;
 }
 
