@@ -61,12 +61,19 @@ namespace
 {
 using namespace glw;
 
-using NegativeTestShared::NegativeTestContext;
-using NegativeTestShared::FunctionContainer;
 using std::string;
 using std::vector;
+using std::set;
+using std::map;
+using de::MovePtr;
 
-GLenum debugTypes[] =
+using tcu::ResultCollector;
+using tcu::TestLog;
+using glu::CallLogWrapper;
+
+using NegativeTestShared::NegativeTestContext;
+
+static const GLenum s_debugTypes[] =
 {
 	GL_DEBUG_TYPE_ERROR,
 	GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR,
@@ -79,7 +86,7 @@ GLenum debugTypes[] =
 	GL_DEBUG_TYPE_POP_GROUP,
 };
 
-GLenum debugSeverities[] =
+static const GLenum s_debugSeverities[] =
 {
 	GL_DEBUG_SEVERITY_HIGH,
     GL_DEBUG_SEVERITY_MEDIUM,
@@ -87,14 +94,88 @@ GLenum debugSeverities[] =
     GL_DEBUG_SEVERITY_NOTIFICATION,
 };
 
-void emitMessages(NegativeTestContext& ctx, GLenum source)
+class BaseCase;
+
+class DebugMessageTestContext : public NegativeTestContext
 {
-	for (int typeNdx = 0; typeNdx < DE_LENGTH_OF_ARRAY(debugTypes); typeNdx++)
+public:
+				DebugMessageTestContext		(BaseCase&					host,
+											 glu::RenderContext&		renderCtx,
+											 const glu::ContextInfo&	ctxInfo,
+											 tcu::TestLog&				log,
+											 tcu::ResultCollector&		results,
+											 bool						enableLog);
+				~DebugMessageTestContext	(void);
+
+	void		expectMessage				(GLenum source, GLenum type);
+
+private:
+	BaseCase&	m_debugHost;
+};
+
+class TestFunctionWrapper
+{
+public:
+	typedef void (*CoreTestFunc)(NegativeTestContext& ctx);
+	typedef void (*DebugTestFunc)(DebugMessageTestContext& ctx);
+
+				TestFunctionWrapper	(void);
+	explicit	TestFunctionWrapper	(CoreTestFunc func);
+	explicit	TestFunctionWrapper	(DebugTestFunc func);
+
+	void		call				(DebugMessageTestContext& ctx) const;
+
+private:
+	enum FuncType
 	{
-		for (int severityNdx = 0; severityNdx < DE_LENGTH_OF_ARRAY(debugSeverities); severityNdx++)
+		TYPE_NULL = 0,
+		TYPE_CORE,
+		TYPE_DEBUG,
+	};
+	FuncType m_type;
+
+	union
+	{
+		CoreTestFunc	coreFn;
+		DebugTestFunc	debugFn;
+	} m_func;
+};
+
+TestFunctionWrapper::TestFunctionWrapper (void)
+	: m_type(TYPE_NULL)
+{
+}
+
+TestFunctionWrapper::TestFunctionWrapper (CoreTestFunc func)
+	: m_type(TYPE_CORE)
+{
+	m_func.coreFn = func;
+}
+
+TestFunctionWrapper::TestFunctionWrapper (DebugTestFunc func)
+	: m_type(TYPE_DEBUG)
+{
+	m_func.debugFn = func;
+}
+
+void TestFunctionWrapper::call (DebugMessageTestContext& ctx) const
+{
+	if (m_type == TYPE_CORE)
+		m_func.coreFn(static_cast<NegativeTestContext&>(ctx));
+	else if (m_type == TYPE_DEBUG)
+		m_func.debugFn(ctx);
+	else
+		DE_ASSERT(false);
+}
+
+void emitMessages(DebugMessageTestContext& ctx, GLenum source)
+{
+	for (int typeNdx = 0; typeNdx < DE_LENGTH_OF_ARRAY(s_debugTypes); typeNdx++)
+	{
+		for (int severityNdx = 0; severityNdx < DE_LENGTH_OF_ARRAY(s_debugSeverities); severityNdx++)
 		{
-			const GLenum type		= debugTypes[typeNdx];
-			const GLenum severity	= debugSeverities[severityNdx];
+			const GLenum type		= s_debugTypes[typeNdx];
+			const GLenum severity	= s_debugSeverities[severityNdx];
 			const string msg		= string("Application generated message with type ") + glu::getDebugMessageTypeName(type)
 									  + " and severity " + glu::getDebugMessageSeverityName(severity);
 
@@ -105,21 +186,21 @@ void emitMessages(NegativeTestContext& ctx, GLenum source)
 	}
 }
 
-void application_messages (NegativeTestContext& ctx)
+void application_messages (DebugMessageTestContext& ctx)
 {
 	ctx.beginSection("Messages with source of GL_DEBUG_SOURCE_APPLICATION");
 	emitMessages(ctx, GL_DEBUG_SOURCE_APPLICATION);
 	ctx.endSection();
 }
 
-void thirdparty_messages (NegativeTestContext& ctx)
+void thirdparty_messages (DebugMessageTestContext& ctx)
 {
 	ctx.beginSection("Messages with source of GL_DEBUG_SOURCE_THIRD_PARTY");
 	emitMessages(ctx, GL_DEBUG_SOURCE_THIRD_PARTY);
 	ctx.endSection();
 }
 
-void push_pop_messages (NegativeTestContext& ctx)
+void push_pop_messages (DebugMessageTestContext& ctx)
 {
 	ctx.beginSection("Push/Pop Debug Group");
 
@@ -154,40 +235,24 @@ void push_pop_messages (NegativeTestContext& ctx)
 	ctx.endSection();
 }
 
+struct FunctionContainer
+{
+	TestFunctionWrapper	function;
+	const char*			name;
+	const char*			desc;
+};
+
 vector<FunctionContainer> getUserMessageFuncs (void)
 {
 	FunctionContainer funcs[] =
 	{
-		{ application_messages,	"application_messages", "Externally generated messages from the application"	},
-		{ thirdparty_messages,	"third_party_messages",	"Externally generated messages from a third party"		},
-		{ push_pop_messages,	"push_pop_stack",		"Messages from pushing/popping debug groups"			},
+		{ TestFunctionWrapper(application_messages),	"application_messages", "Externally generated messages from the application"	},
+		{ TestFunctionWrapper(thirdparty_messages),		"third_party_messages",	"Externally generated messages from a third party"		},
+		{ TestFunctionWrapper(push_pop_messages),		"push_pop_stack",		"Messages from pushing/popping debug groups"			},
 	};
 
 	return std::vector<FunctionContainer>(DE_ARRAY_BEGIN(funcs), DE_ARRAY_END(funcs));
 }
-
-} // Anonymous
-
-namespace
-{
-
-using std::string;
-using std::vector;
-using std::set;
-using std::map;
-using de::MovePtr;
-
-using glw::GLenum;
-using glw::GLuint;
-using glw::GLsizei;
-
-using tcu::ResultCollector;
-using tcu::TestLog;
-using glu::CallLogWrapper;
-
-using NegativeTestShared::TestFunc;
-using NegativeTestShared::FunctionContainer;
-using NegativeTestShared::NegativeTestContext;
 
 // Data required to uniquely identify a debug message
 struct MessageID
@@ -543,27 +608,27 @@ bool BaseCase::isDebugContext (void) const
 class CallbackErrorCase : public BaseCase
 {
 public:
-							CallbackErrorCase	(Context&				ctx,
-												 const char*			name,
-												 const char*			desc,
-												 TestFunc				errorFunc);
-	virtual 				~CallbackErrorCase	(void) {}
+								CallbackErrorCase	(Context&				ctx,
+													 const char*			name,
+													 const char*			desc,
+													 TestFunctionWrapper	errorFunc);
+	virtual 					~CallbackErrorCase	(void) {}
 
-	virtual IterateResult	iterate				(void);
+	virtual IterateResult		iterate				(void);
 
-	virtual void			expectMessage		(GLenum source, GLenum type);
+	virtual void				expectMessage		(GLenum source, GLenum type);
 
 private:
-	virtual void			callback			(GLenum source, GLenum type, GLuint id, GLenum severity, const string& message);
+	virtual void				callback			(GLenum source, GLenum type, GLuint id, GLenum severity, const string& message);
 
-	const TestFunc			m_errorFunc;
-	MessageData				m_lastMessage;
+	const TestFunctionWrapper	m_errorFunc;
+	MessageData					m_lastMessage;
 };
 
 CallbackErrorCase::CallbackErrorCase (Context&				ctx,
 									  const char*			name,
 									  const char*			desc,
-									  TestFunc				errorFunc)
+									  TestFunctionWrapper	errorFunc)
 	: BaseCase		(ctx, name, desc)
 	, m_errorFunc	(errorFunc)
 {
@@ -575,7 +640,7 @@ CallbackErrorCase::IterateResult CallbackErrorCase::iterate (void)
 
 	const glw::Functions&	gl		= m_context.getRenderContext().getFunctions();
 	tcu::TestLog&			log		= m_testCtx.getLog();
-	NegativeTestContext		context	= NegativeTestContext(*this, m_context.getRenderContext(), m_context.getContextInfo(), log, m_results, true);
+	DebugMessageTestContext	context	= DebugMessageTestContext(*this, m_context.getRenderContext(), m_context.getContextInfo(), log, m_results, true);
 
 	gl.enable(GL_DEBUG_OUTPUT);
 	gl.enable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
@@ -585,7 +650,7 @@ CallbackErrorCase::IterateResult CallbackErrorCase::iterate (void)
 	gl.debugMessageControl(GL_DEBUG_SOURCE_THIRD_PARTY, GL_DONT_CARE, GL_DONT_CARE, 0, DE_NULL, true); // enable third party messages
 	gl.debugMessageCallback(callbackHandle, this);
 
-	m_errorFunc(context);
+	m_errorFunc.call(context);
 
 	gl.debugMessageCallback(DE_NULL, DE_NULL);
 	gl.disable(GL_DEBUG_OUTPUT);
@@ -599,9 +664,6 @@ void CallbackErrorCase::expectMessage (GLenum source, GLenum type)
 {
 	verifyMessage(m_lastMessage, source, type);
 	m_lastMessage = MessageData();
-
-	// Reset error so that code afterwards doesn't break because of lingering error state
-	m_context.getRenderContext().getFunctions().getError();
 }
 
 void CallbackErrorCase::callback (GLenum source, GLenum type, GLuint id, GLenum severity, const string& message)
@@ -613,25 +675,25 @@ void CallbackErrorCase::callback (GLenum source, GLenum type, GLuint id, GLenum 
 class LogErrorCase : public BaseCase
 {
 public:
-							LogErrorCase	(Context&				context,
-											 const char*			name,
-											 const char*			desc,
-											 TestFunc				errorFunc);
-	virtual 				~LogErrorCase	(void) {}
+								LogErrorCase	(Context&				context,
+												 const char*			name,
+												 const char*			desc,
+												 TestFunctionWrapper	errorFunc);
+	virtual		 				~LogErrorCase	(void) {}
 
-	virtual IterateResult	iterate			(void);
+	virtual IterateResult		iterate			(void);
 
-	virtual void			expectMessage	(GLenum source, GLenum type);
+	virtual void				expectMessage	(GLenum source, GLenum type);
 
 private:
-	const TestFunc			m_errorFunc;
-	MessageData				m_lastMessage;
+	const TestFunctionWrapper	m_errorFunc;
+	MessageData					m_lastMessage;
 };
 
-LogErrorCase::LogErrorCase (Context&	ctx,
-							const char*	name,
-							const char*	desc,
-							TestFunc	errorFunc)
+LogErrorCase::LogErrorCase (Context&			ctx,
+							const char*			name,
+							const char*			desc,
+							TestFunctionWrapper	errorFunc)
 	: BaseCase		(ctx, name, desc)
 	, m_errorFunc	(errorFunc)
 {
@@ -643,7 +705,7 @@ LogErrorCase::IterateResult LogErrorCase::iterate (void)
 
 	const glw::Functions&	gl		= m_context.getRenderContext().getFunctions();
 	tcu::TestLog&			log		= m_testCtx.getLog();
-	NegativeTestContext		context	= NegativeTestContext(*this, m_context.getRenderContext(), m_context.getContextInfo(), log, m_results, true);
+	DebugMessageTestContext	context	= DebugMessageTestContext(*this, m_context.getRenderContext(), m_context.getContextInfo(), log, m_results, true);
 	GLint					numMsg	= 0;
 
 	gl.enable(GL_DEBUG_OUTPUT);
@@ -654,7 +716,7 @@ LogErrorCase::IterateResult LogErrorCase::iterate (void)
 	gl.getIntegerv(GL_DEBUG_LOGGED_MESSAGES, &numMsg);
 	gl.getDebugMessageLog(numMsg, 0, DE_NULL, DE_NULL, DE_NULL, DE_NULL, DE_NULL, DE_NULL); // clear log
 
-	m_errorFunc(context);
+	m_errorFunc.call(context);
 
 	gl.disable(GL_DEBUG_OUTPUT);
 	m_results.setTestContextResult(m_testCtx);
@@ -711,34 +773,31 @@ void LogErrorCase::expectMessage (GLenum source, GLenum type)
 	log << TestLog::Message << "Driver says: \"" << lastMsg.message << "\"" << TestLog::EndMessage;
 
 	verifyMessage(lastMsg, source, type);
-
-	// Reset error so that code afterwards doesn't break because of lingering error state
-	m_context.getRenderContext().getFunctions().getError();
 }
 
 // Generate errors, verify that calling glGetError afterwards produces desired result
 class GetErrorCase : public BaseCase
 {
 public:
-							GetErrorCase	(Context&				ctx,
-											 const char*			name,
-											 const char*			desc,
-											 TestFunc				errorFunc);
-	virtual 				~GetErrorCase	(void) {}
+								GetErrorCase	(Context&				ctx,
+												 const char*			name,
+												 const char*			desc,
+												 TestFunctionWrapper	errorFunc);
+	virtual 					~GetErrorCase	(void) {}
 
-	virtual IterateResult	iterate			(void);
+	virtual IterateResult		iterate			(void);
 
-	virtual void			expectMessage	(GLenum source, GLenum type);
-	virtual void			expectError		(glw::GLenum error0, glw::GLenum error1);
+	virtual void				expectMessage	(GLenum source, GLenum type);
+	virtual void				expectError		(glw::GLenum error0, glw::GLenum error1);
 
 private:
-	const TestFunc			m_errorFunc;
+	const TestFunctionWrapper	m_errorFunc;
 };
 
-GetErrorCase::GetErrorCase (Context&	ctx,
-							const char*	name,
-							const char*	desc,
-							TestFunc	errorFunc)
+GetErrorCase::GetErrorCase (Context&			ctx,
+							const char*			name,
+							const char*			desc,
+							TestFunctionWrapper	errorFunc)
 	: BaseCase		(ctx, name, desc)
 	, m_errorFunc	(errorFunc)
 {
@@ -747,9 +806,9 @@ GetErrorCase::GetErrorCase (Context&	ctx,
 GetErrorCase::IterateResult GetErrorCase::iterate (void)
 {
 	tcu::TestLog&			log		= m_testCtx.getLog();
-	NegativeTestContext		context	= NegativeTestContext(*this, m_context.getRenderContext(), m_context.getContextInfo(), log, m_results, true);
+	DebugMessageTestContext	context	= DebugMessageTestContext(*this, m_context.getRenderContext(), m_context.getContextInfo(), log, m_results, true);
 
-	m_errorFunc(context);
+	m_errorFunc.call(context);
 
 	m_results.setTestContextResult(m_testCtx);
 
@@ -792,15 +851,15 @@ void GetErrorCase::expectError (glw::GLenum error0, glw::GLenum error1)
 class FilterCase : public BaseCase
 {
 public:
-								FilterCase		(Context&				ctx,
-												 const char*			name,
-												 const char*			desc,
-												 const vector<TestFunc>	errorFuncs);
-	virtual 					~FilterCase		(void) {}
+										FilterCase		(Context&							ctx,
+														 const char*						name,
+														 const char*						desc,
+														 const vector<TestFunctionWrapper>&	errorFuncs);
+	virtual 							~FilterCase		(void) {}
 
-	virtual IterateResult		iterate			(void);
+	virtual IterateResult				iterate			(void);
 
-	virtual void				expectMessage	(GLenum source, GLenum type);
+	virtual void						expectMessage	(GLenum source, GLenum type);
 
 protected:
 	struct MessageFilter
@@ -815,27 +874,27 @@ protected:
 		bool			enabled;
 	};
 
-	virtual void				callback			(GLenum source, GLenum type, GLuint id, GLenum severity, const string& message);
+	virtual void						callback			(GLenum source, GLenum type, GLuint id, GLenum severity, const string& message);
 
-	vector<MessageData>			genMessages			(bool uselog, const string& desc);
+	vector<MessageData>					genMessages			(bool uselog, const string& desc);
 
-	vector<MessageFilter>		genFilters			(const vector<MessageData>& messages, const vector<MessageFilter>& initial, deUint32 seed, int iterations) const;
-	void						applyFilters		(const vector<MessageFilter>& filters) const;
-	bool						isEnabled			(const vector<MessageFilter>& filters, const MessageData& message) const;
+	vector<MessageFilter>				genFilters			(const vector<MessageData>& messages, const vector<MessageFilter>& initial, deUint32 seed, int iterations) const;
+	void								applyFilters		(const vector<MessageFilter>& filters) const;
+	bool								isEnabled			(const vector<MessageFilter>& filters, const MessageData& message) const;
 
-	void						verify				(const vector<MessageData>&		refMessages,
-													 const vector<MessageData>&		filteredMessages,
-													 const vector<MessageFilter>&	filters);
+	void								verify				(const vector<MessageData>&		refMessages,
+															 const vector<MessageData>&		filteredMessages,
+															 const vector<MessageFilter>&	filters);
 
-	const vector<TestFunc>		m_errorFuncs;
+	const vector<TestFunctionWrapper>	m_errorFuncs;
 
-	vector<MessageData>*		m_currentErrors;
+	vector<MessageData>*				m_currentErrors;
 };
 
-FilterCase::FilterCase (Context&				ctx,
-						const char*				name,
-						const char*				desc,
-						const vector<TestFunc>	errorFuncs)
+FilterCase::FilterCase (Context&							ctx,
+						const char*							name,
+						const char*							desc,
+						const vector<TestFunctionWrapper>&	errorFuncs)
 	: BaseCase			(ctx, name, desc)
 	, m_errorFuncs		(errorFuncs)
 	, m_currentErrors	(DE_NULL)
@@ -893,14 +952,14 @@ void FilterCase::callback (GLenum source, GLenum type, GLuint id, GLenum severit
 vector<MessageData> FilterCase::genMessages (bool uselog, const string& desc)
 {
 	tcu::TestLog&			log			= m_testCtx.getLog();
-	NegativeTestContext		context		= NegativeTestContext(*this, m_context.getRenderContext(), m_context.getContextInfo(), log, m_results, uselog);
+	DebugMessageTestContext	context		= DebugMessageTestContext(*this, m_context.getRenderContext(), m_context.getContextInfo(), log, m_results, uselog);
 	tcu::ScopedLogSection	section		(log, "message gen", desc);
 	vector<MessageData>		messages;
 
 	m_currentErrors = &messages;
 
 	for (int ndx = 0; ndx < int(m_errorFuncs.size()); ndx++)
-		m_errorFuncs[ndx](context);
+		m_errorFuncs[ndx].call(context);
 
 	m_currentErrors = DE_NULL;
 
@@ -1126,19 +1185,19 @@ void FilterCase::verify (const vector<MessageData>& refMessages, const vector<Me
 class GroupFilterCase : public FilterCase
 {
 public:
-							GroupFilterCase		(Context&				ctx,
-												 const char*			name,
-												 const char*			desc,
-												 const vector<TestFunc>	errorFuncs);
+							GroupFilterCase		(Context&							ctx,
+												 const char*						name,
+												 const char*						desc,
+												 const vector<TestFunctionWrapper>&	errorFuncs);
 	virtual 				~GroupFilterCase	(void) {}
 
 	virtual IterateResult	iterate				(void);
 };
 
-GroupFilterCase::GroupFilterCase (Context&					ctx,
-								  const char*				name,
-								  const char*				desc,
-								  const vector<TestFunc>	errorFuncs)
+GroupFilterCase::GroupFilterCase (Context&								ctx,
+								  const char*							name,
+								  const char*							desc,
+								  const vector<TestFunctionWrapper>&	errorFuncs)
 	: FilterCase(ctx, name, desc, errorFuncs)
 {
 }
@@ -1301,16 +1360,16 @@ void GroupCase::callback (GLenum source, GLenum type, GLuint id, GLenum severity
 class AsyncCase : public BaseCase
 {
 public:
-							AsyncCase			(Context&				ctx,
-												 const char*			name,
-												 const char*			desc,
-												 const vector<TestFunc>	errorFuncs,
-												 bool					useCallbacks);
-	virtual					~AsyncCase			() {}
+										AsyncCase			(Context&							ctx,
+															 const char*						name,
+															 const char*						desc,
+															 const vector<TestFunctionWrapper>&	errorFuncs,
+															 bool								useCallbacks);
+	virtual								~AsyncCase			(void) {}
 
-	virtual IterateResult	iterate				(void);
+	virtual IterateResult				iterate				(void);
 
-	virtual void			expectMessage		(glw::GLenum source, glw::GLenum type);
+	virtual void						expectMessage		(glw::GLenum source, glw::GLenum type);
 
 private:
 	struct MessageCount
@@ -1331,23 +1390,23 @@ private:
 		VERIFY_LAST
 	};
 
-	virtual void			callback			(glw::GLenum source, glw::GLenum type, glw::GLuint id, glw::GLenum severity, const std::string& message);
-	VerifyState				verify				(bool uselog);
-	void					fetchLogMessages	(void);
+	virtual void						callback			(glw::GLenum source, glw::GLenum type, glw::GLuint id, glw::GLenum severity, const std::string& message);
+	VerifyState							verify				(bool uselog);
+	void								fetchLogMessages	(void);
 
-	const vector<TestFunc>	m_errorFuncs;
-	const bool				m_useCallbacks;
+	const vector<TestFunctionWrapper>	m_errorFuncs;
+	const bool							m_useCallbacks;
 
-	MessageCounter			m_counts;
+	MessageCounter						m_counts;
 
-	de::Mutex				m_mutex;
+	de::Mutex							m_mutex;
 };
 
-AsyncCase::AsyncCase (Context&					ctx,
-					  const char*				name,
-					  const char*				desc,
-					  const vector<TestFunc>	errorFuncs,
-					  bool						useCallbacks)
+AsyncCase::AsyncCase (Context&								ctx,
+					  const char*							name,
+					  const char*							desc,
+					  const vector<TestFunctionWrapper>&	errorFuncs,
+					  bool									useCallbacks)
 	: BaseCase			(ctx, name, desc)
 	, m_errorFuncs		(errorFuncs)
 	, m_useCallbacks	(useCallbacks)
@@ -1358,11 +1417,11 @@ AsyncCase::IterateResult AsyncCase::iterate (void)
 {
 	TCU_CHECK_AND_THROW(NotSupportedError, m_context.getContextInfo().isExtensionSupported("GL_KHR_debug"), "GL_KHR_debug is not supported");
 
-	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
-	tcu::TestLog&		log			= m_testCtx.getLog();
-	NegativeTestContext	context		= NegativeTestContext(*this, m_context.getRenderContext(), m_context.getContextInfo(), log, m_results, true);
-	const int			maxWait		= 10000; // ms
-	const int			warnWait	= 100;
+	const glw::Functions&	gl			= m_context.getRenderContext().getFunctions();
+	tcu::TestLog&			log			= m_testCtx.getLog();
+	DebugMessageTestContext	context		= DebugMessageTestContext(*this, m_context.getRenderContext(), m_context.getContextInfo(), log, m_results, true);
+	const int				maxWait		= 10000; // ms
+	const int				warnWait	= 100;
 
 	gl.enable(GL_DEBUG_OUTPUT);
 	gl.enable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
@@ -1381,7 +1440,7 @@ AsyncCase::IterateResult AsyncCase::iterate (void)
 		tcu::ScopedLogSection section(log, "reference run", "Reference run (synchronous)");
 
 		for (int ndx = 0; ndx < int(m_errorFuncs.size()); ndx++)
-			m_errorFuncs[ndx](context);
+			m_errorFuncs[ndx].call(context);
 	}
 
 	if (m_counts.empty())
@@ -1408,7 +1467,7 @@ AsyncCase::IterateResult AsyncCase::iterate (void)
 
 	// Result run (async)
 	for (int ndx = 0; ndx < int(m_errorFuncs.size()); ndx++)
-		m_errorFuncs[ndx](context);
+		m_errorFuncs[ndx].call(context);
 
 	// Repatedly try verification, new results may be added to m_receivedMessages at any time
 	{
@@ -1676,7 +1735,28 @@ LabelCase::IterateResult LabelCase::iterate (void)
 	return STOP;
 }
 
-} // Anonymous
+
+DebugMessageTestContext::DebugMessageTestContext (BaseCase&					host,
+												  glu::RenderContext&		renderCtx,
+												  const glu::ContextInfo&	ctxInfo,
+												  tcu::TestLog&				log,
+												  tcu::ResultCollector&		results,
+												  bool						enableLog)
+	: NegativeTestContext	(host, renderCtx, ctxInfo, log, results, enableLog)
+	, m_debugHost			(host)
+{
+}
+
+DebugMessageTestContext::~DebugMessageTestContext (void)
+{
+}
+
+void DebugMessageTestContext::expectMessage (GLenum source, GLenum type)
+{
+	m_debugHost.expectMessage(source, type);
+}
+
+} // anonymous
 
 DebugTests::DebugTests (Context& context)
 	: TestCaseGroup(context, "debug", "Debug tests")
@@ -1692,7 +1772,7 @@ enum CaseType
 	CASETYPE_LAST
 };
 
-tcu::TestNode* createCase (CaseType type, Context& ctx, const char* name, const char* desc, TestFunc function)
+tcu::TestNode* createCase (CaseType type, Context& ctx, const char* name, const char* desc, TestFunctionWrapper function)
 {
 	switch(type)
 	{
@@ -1717,14 +1797,29 @@ tcu::TestCaseGroup* createChildCases (CaseType type, Context& ctx, const char* n
 	return host;
 }
 
+vector<FunctionContainer> wrapCoreFunctions (const vector<NegativeTestShared::FunctionContainer>& fns)
+{
+	vector<FunctionContainer> retVal;
+
+	retVal.resize(fns.size());
+	for (int ndx = 0; ndx < (int)fns.size(); ++ndx)
+	{
+		retVal[ndx].function = TestFunctionWrapper(fns[ndx].function);
+		retVal[ndx].name = fns[ndx].name;
+		retVal[ndx].desc = fns[ndx].desc;
+	}
+
+	return retVal;
+}
+
 void DebugTests::init (void)
 {
-	const vector<FunctionContainer> bufferFuncs		= NegativeTestShared::getNegativeBufferApiTestFunctions();
-	const vector<FunctionContainer> textureFuncs	= NegativeTestShared::getNegativeTextureApiTestFunctions();
-	const vector<FunctionContainer> shaderFuncs		= NegativeTestShared::getNegativeShaderApiTestFunctions();
-	const vector<FunctionContainer> fragmentFuncs	= NegativeTestShared::getNegativeFragmentApiTestFunctions();
-	const vector<FunctionContainer> vaFuncs			= NegativeTestShared::getNegativeVertexArrayApiTestFunctions();
-	const vector<FunctionContainer> stateFuncs		= NegativeTestShared::getNegativeStateApiTestFunctions();
+	const vector<FunctionContainer> bufferFuncs		= wrapCoreFunctions(NegativeTestShared::getNegativeBufferApiTestFunctions());
+	const vector<FunctionContainer> textureFuncs	= wrapCoreFunctions(NegativeTestShared::getNegativeTextureApiTestFunctions());
+	const vector<FunctionContainer> shaderFuncs		= wrapCoreFunctions(NegativeTestShared::getNegativeShaderApiTestFunctions());
+	const vector<FunctionContainer> fragmentFuncs	= wrapCoreFunctions(NegativeTestShared::getNegativeFragmentApiTestFunctions());
+	const vector<FunctionContainer> vaFuncs			= wrapCoreFunctions(NegativeTestShared::getNegativeVertexArrayApiTestFunctions());
+	const vector<FunctionContainer> stateFuncs		= wrapCoreFunctions(NegativeTestShared::getNegativeStateApiTestFunctions());
 	const vector<FunctionContainer> externalFuncs	= getUserMessageFuncs();
 
 	{
@@ -1772,7 +1867,7 @@ void DebugTests::init (void)
 	}
 
 	{
-		tcu::TestCaseGroup*			host	= createChildCases(CASETYPE_CALLBACK, m_context, "externally_generated", "Externally Generated Messages", externalFuncs);
+		tcu::TestCaseGroup* const host = createChildCases(CASETYPE_CALLBACK, m_context, "externally_generated", "Externally Generated Messages", externalFuncs);
 
 		host->addChild(new GroupCase(m_context, "push_pop_consistency", "Push/pop message generation with full message output checking"));
 
@@ -1781,7 +1876,7 @@ void DebugTests::init (void)
 
 	{
 		vector<FunctionContainer>	containers;
-		vector<TestFunc>			allFuncs;
+		vector<TestFunctionWrapper>	allFuncs;
 
 		de::Random					rng			(0x53941903 ^ m_context.getTestContext().getCommandLine().getBaseSeed());
 
@@ -1804,10 +1899,10 @@ void DebugTests::init (void)
 
 			for (int caseNdx = 0; caseNdx < de::min(caseCount, maxFilteringCaseCount); caseNdx++)
 			{
-				const int			start		= caseNdx*errorFuncsPerCase;
-				const int			end			= de::min((caseNdx+1)*errorFuncsPerCase, int(allFuncs.size()));
-				const string		name		= "case_" + de::toString(caseNdx);
-				vector<TestFunc>	funcs		(allFuncs.begin()+start, allFuncs.begin()+end);
+				const int					start		= caseNdx*errorFuncsPerCase;
+				const int					end			= de::min((caseNdx+1)*errorFuncsPerCase, int(allFuncs.size()));
+				const string				name		= "case_" + de::toString(caseNdx);
+				vector<TestFunctionWrapper>	funcs		(allFuncs.begin()+start, allFuncs.begin()+end);
 
 				// These produce lots of different message types, thus always include at least one when testing filtering
 				funcs.insert(funcs.end(), externalFuncs[caseNdx%externalFuncs.size()].function);
@@ -1826,10 +1921,10 @@ void DebugTests::init (void)
 
 			for (int caseNdx = 0; caseNdx < caseCount && caseNdx < maxFilteringCaseCount; caseNdx++)
 			{
-				const int			start		= caseNdx*errorFuncsPerCase;
-				const int			end			= de::min((caseNdx+1)*errorFuncsPerCase, int(allFuncs.size()));
-				const string		name		= ("case_" + de::toString(caseNdx)).c_str();
-				vector<TestFunc>	funcs		(&allFuncs[0]+start, &allFuncs[0]+end);
+				const int					start		= caseNdx*errorFuncsPerCase;
+				const int					end			= de::min((caseNdx+1)*errorFuncsPerCase, int(allFuncs.size()));
+				const string				name		= ("case_" + de::toString(caseNdx)).c_str();
+				vector<TestFunctionWrapper>	funcs		(&allFuncs[0]+start, &allFuncs[0]+end);
 
 				// These produce lots of different message types, thus always include at least one when testing filtering
 				funcs.insert(funcs.end(), externalFuncs[caseNdx%externalFuncs.size()].function);
@@ -1848,10 +1943,10 @@ void DebugTests::init (void)
 
 			for (int caseNdx = 0; caseNdx < caseCount && caseNdx < maxAsyncCaseCount; caseNdx++)
 			{
-				const int			start		= caseNdx*errorFuncsPerCase;
-				const int			end			= de::min((caseNdx+1)*errorFuncsPerCase, int(allFuncs.size()));
-				const string		name		= ("case_" + de::toString(caseNdx)).c_str();
-				vector<TestFunc>	funcs		(&allFuncs[0]+start, &allFuncs[0]+end);
+				const int					start		= caseNdx*errorFuncsPerCase;
+				const int					end			= de::min((caseNdx+1)*errorFuncsPerCase, int(allFuncs.size()));
+				const string				name		= ("case_" + de::toString(caseNdx)).c_str();
+				vector<TestFunctionWrapper>	funcs		(&allFuncs[0]+start, &allFuncs[0]+end);
 
 				if (caseNdx&0x1)
 					async->addChild(new AsyncCase(m_context, (name+"_callback").c_str(), "Async message generation", funcs, true));

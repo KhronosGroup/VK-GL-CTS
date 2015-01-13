@@ -51,9 +51,9 @@ NegativeTestContext::NegativeTestContext (ErrorCase&				host,
 										  tcu::ResultCollector&		results,
 										  bool						enableLogging_)
 	: glu::CallLogWrapper	(renderCtx.getFunctions(), log)
+	, m_host				(host)
 	, m_renderCtx			(renderCtx)
 	, m_ctxInfo				(ctxInfo)
-	, m_host				(host)
 	, m_results				(results)
 	, m_openSections		(0)
 {
@@ -95,11 +95,6 @@ void NegativeTestContext::endSection (void)
 		getLog() << TestLog::EndSection;
 		m_openSections--;
 	}
-}
-
-void NegativeTestContext::expectMessage (GLenum source, GLenum type)
-{
-	m_host.expectMessage(source, type);
 }
 
 void NegativeTestContext::expectError (GLenum error)
