@@ -43,7 +43,6 @@ public:
 								ErrorCase		(Context& ctx, const char* name, const char* desc);
 	virtual 					~ErrorCase		(void) {}
 
-	virtual void				expectMessage	(glw::GLenum source, glw::GLenum type) = 0;
 	virtual void				expectError		(glw::GLenum error0, glw::GLenum error1) = 0;
 };
 
@@ -62,14 +61,15 @@ public:
 	void						beginSection			(const std::string& desc);
 	void						endSection				(void);
 
-	void						expectMessage			(glw::GLenum source, glw::GLenum type);
 	void						expectError				(glw::GLenum error);
 	void						expectError				(glw::GLenum error0, glw::GLenum error1);
+
+protected:
+	ErrorCase&					m_host;
 
 private:
 	glu::RenderContext&			m_renderCtx;
 	const glu::ContextInfo& 	m_ctxInfo;
-	ErrorCase&					m_host;
 	tcu::ResultCollector&		m_results;
 	int							m_openSections;
 };
