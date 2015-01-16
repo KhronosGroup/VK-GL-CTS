@@ -298,6 +298,7 @@ LOCAL_SRC_FILES := \
 	modules/gles31/functional/es31fUniformLocationTests.cpp \
 	modules/gles31/functional/es31fVertexAttributeBindingStateQueryTests.cpp \
 	modules/gles31/functional/es31fVertexAttributeBindingTests.cpp \
+	modules/gles31/functional/es31fCopyImageTests.cpp \
 	modules/gles31/stress/es31sDrawTests.cpp \
 	modules/gles31/stress/es31sStressTests.cpp \
 	modules/gles31/stress/es31sTessellationGeometryInteractionTests.cpp \
