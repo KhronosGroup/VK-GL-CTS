@@ -62,6 +62,9 @@ public:
 	//! Return display pointer that can be used with eglGetPlatformDisplay(). Default implementations throw tcu::NotSupportedError()
 	virtual void*						getPlatformNative			(void);
 
+	//! Attributes to pass to eglGetPlatformDisplay(EXT)
+	virtual const eglw::EGLAttrib*		getPlatformAttributes		(void) const;
+
 protected:
 										NativeDisplay				(Capability capabilities, eglw::EGLenum platformType, const char* platformExtension);
 										NativeDisplay				(Capability capabilities);

@@ -243,7 +243,9 @@ EGLDisplay getDisplay (NativeDisplay& nativeDisplay)
 
 	if (usePlatformExt)
 	{
-		display = egl.getPlatformDisplayEXT(nativeDisplay.getPlatformType(), nativeDisplay.getPlatformNative(), DE_NULL);
+		const vector<EGLint>	legacyAttribs	= toLegacyAttribList(nativeDisplay.getPlatformAttributes());
+
+		display = egl.getPlatformDisplayEXT(nativeDisplay.getPlatformType(), nativeDisplay.getPlatformNative(), &legacyAttribs[0]);
 		EGLU_CHECK_MSG(egl, "eglGetPlatformDisplayEXT()");
 		TCU_CHECK(display != EGL_NO_DISPLAY);
 	}

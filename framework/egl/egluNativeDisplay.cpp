@@ -65,6 +65,12 @@ void* NativeDisplay::getPlatformNative (void)
 	throw tcu::NotSupportedError("eglu::NativeDisplay can't be used with eglGetPlatformDisplay()", DE_NULL, __FILE__, __LINE__);
 }
 
+const EGLAttrib* NativeDisplay::getPlatformAttributes (void) const
+{
+	TCU_CHECK_INTERNAL((m_capabilities & CAPABILITY_GET_DISPLAY_PLATFORM) == 0);
+	return DE_NULL;
+}
+
 // NativeDisplayFactory
 
 NativeDisplayFactory::NativeDisplayFactory (const std::string& name, const std::string& description, NativeDisplay::Capability capabilities, EGLenum platformType, const char* platformExtension)
