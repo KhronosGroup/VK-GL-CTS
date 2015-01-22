@@ -50,6 +50,11 @@ namespace gls
 namespace TextureTestUtil
 {
 
+enum
+{
+	MIN_SUBPIXEL_BITS	= 4
+};
+
 SamplerType getSamplerType (tcu::TextureFormat format)
 {
 	using tcu::TextureFormat;
@@ -1985,7 +1990,7 @@ int computeTextureLookupDiff (const tcu::ConstPixelBufferAccess&	result,
 
 	const tcu::Vec2		lodBias			((sampleParams.flags & ReferenceParams::USE_BIAS) ? sampleParams.bias : 0.0f);
 
-	const float			posEps			= 1.0f / float((1<<4) + 1); // ES3 requires at least 4 subpixel bits.
+	const float			posEps			= 1.0f / float((1<<MIN_SUBPIXEL_BITS) + 1);
 
 	int					numFailed		= 0;
 
@@ -2164,6 +2169,8 @@ int computeTextureLookupDiff (const tcu::ConstPixelBufferAccess&	result,
 
 	const tcu::Vec2		lodBias			((sampleParams.flags & ReferenceParams::USE_BIAS) ? sampleParams.bias : 0.0f);
 
+	const float			posEps			= 1.0f / float((1<<MIN_SUBPIXEL_BITS) + 1);
+
 	int					numFailed		= 0;
 
 	const tcu::Vec2 lodOffsets[] =
@@ -2195,49 +2202,64 @@ int computeTextureLookupDiff (const tcu::ConstPixelBufferAccess&	result,
 				const float		nx		= wx / dstW;
 				const float		ny		= wy / dstH;
 
-				const int		triNdx	= nx + ny >= 1.0f ? 1 : 0;
-				const float		triWx	= triNdx ? dstW - wx : wx;
-				const float		triWy	= triNdx ? dstH - wy : wy;
-				const float		triNx	= triNdx ? 1.0f - nx : nx;
-				const float		triNy	= triNdx ? 1.0f - ny : ny;
+				const bool		tri0	= nx + ny - posEps <= 1.0f;
+				const bool		tri1	= nx + ny + posEps >= 1.0f;
 
-				const tcu::Vec3	coord		(projectedTriInterpolate(triS[triNdx], triW[triNdx], triNx, triNy),
-											 projectedTriInterpolate(triT[triNdx], triW[triNdx], triNx, triNy),
-											 projectedTriInterpolate(triR[triNdx], triW[triNdx], triNx, triNy));
-				const tcu::Vec3	coordDx		= tcu::Vec3(triDerivateX(triS[triNdx], triW[triNdx], wx, dstW, triNy),
-														triDerivateX(triT[triNdx], triW[triNdx], wx, dstW, triNy),
-														triDerivateX(triR[triNdx], triW[triNdx], wx, dstW, triNy)) * srcSize.asFloat();
-				const tcu::Vec3	coordDy		= tcu::Vec3(triDerivateY(triS[triNdx], triW[triNdx], wy, dstH, triNx),
-														triDerivateY(triT[triNdx], triW[triNdx], wy, dstH, triNx),
-														triDerivateY(triR[triNdx], triW[triNdx], wy, dstH, triNx)) * srcSize.asFloat();
+				bool			isOk	= false;
 
-				tcu::Vec2		lodBounds	= tcu::computeLodBoundsFromDerivates(coordDx.x(), coordDx.y(), coordDx.z(), coordDy.x(), coordDy.y(), coordDy.z(), lodPrec);
+				DE_ASSERT(tri0 || tri1);
 
-				// Compute lod bounds across lodOffsets range.
-				for (int lodOffsNdx = 0; lodOffsNdx < DE_LENGTH_OF_ARRAY(lodOffsets); lodOffsNdx++)
+				// Pixel can belong to either of the triangles if it lies close enough to the edge.
+				for (int triNdx = (tri0?0:1); triNdx <= (tri1?1:0); triNdx++)
 				{
-					const float		wxo		= triWx + lodOffsets[lodOffsNdx].x();
-					const float		wyo		= triWy + lodOffsets[lodOffsNdx].y();
-					const float		nxo		= wxo/dstW;
-					const float		nyo		= wyo/dstH;
+					const float		triWx	= triNdx ? dstW - wx : wx;
+					const float		triWy	= triNdx ? dstH - wy : wy;
+					const float		triNx	= triNdx ? 1.0f - nx : nx;
+					const float		triNy	= triNdx ? 1.0f - ny : ny;
 
-					const tcu::Vec3	coordO		(projectedTriInterpolate(triS[triNdx], triW[triNdx], nxo, nyo),
-												 projectedTriInterpolate(triT[triNdx], triW[triNdx], nxo, nyo),
-												 projectedTriInterpolate(triR[triNdx], triW[triNdx], nxo, nyo));
-					const tcu::Vec3	coordDxo	= tcu::Vec3(triDerivateX(triS[triNdx], triW[triNdx], wxo, dstW, nyo),
-															triDerivateX(triT[triNdx], triW[triNdx], wxo, dstW, nyo),
-															triDerivateX(triR[triNdx], triW[triNdx], wxo, dstW, nyo)) * srcSize.asFloat();
-					const tcu::Vec3	coordDyo	= tcu::Vec3(triDerivateY(triS[triNdx], triW[triNdx], wyo, dstH, nxo),
-															triDerivateY(triT[triNdx], triW[triNdx], wyo, dstH, nxo),
-															triDerivateY(triR[triNdx], triW[triNdx], wyo, dstH, nxo)) * srcSize.asFloat();
-					const tcu::Vec2	lodO		= tcu::computeLodBoundsFromDerivates(coordDxo.x(), coordDxo.y(), coordDxo.z(), coordDyo.x(), coordDyo.y(), coordDyo.z(), lodPrec);
+					const tcu::Vec3	coord		(projectedTriInterpolate(triS[triNdx], triW[triNdx], triNx, triNy),
+												 projectedTriInterpolate(triT[triNdx], triW[triNdx], triNx, triNy),
+												 projectedTriInterpolate(triR[triNdx], triW[triNdx], triNx, triNy));
+					const tcu::Vec3	coordDx		= tcu::Vec3(triDerivateX(triS[triNdx], triW[triNdx], wx, dstW, triNy),
+															triDerivateX(triT[triNdx], triW[triNdx], wx, dstW, triNy),
+															triDerivateX(triR[triNdx], triW[triNdx], wx, dstW, triNy)) * srcSize.asFloat();
+					const tcu::Vec3	coordDy		= tcu::Vec3(triDerivateY(triS[triNdx], triW[triNdx], wy, dstH, triNx),
+															triDerivateY(triT[triNdx], triW[triNdx], wy, dstH, triNx),
+															triDerivateY(triR[triNdx], triW[triNdx], wy, dstH, triNx)) * srcSize.asFloat();
 
-					lodBounds.x() = de::min(lodBounds.x(), lodO.x());
-					lodBounds.y() = de::max(lodBounds.y(), lodO.y());
+					tcu::Vec2		lodBounds	= tcu::computeLodBoundsFromDerivates(coordDx.x(), coordDx.y(), coordDx.z(), coordDy.x(), coordDy.y(), coordDy.z(), lodPrec);
+
+					// Compute lod bounds across lodOffsets range.
+					for (int lodOffsNdx = 0; lodOffsNdx < DE_LENGTH_OF_ARRAY(lodOffsets); lodOffsNdx++)
+					{
+						const float		wxo		= triWx + lodOffsets[lodOffsNdx].x();
+						const float		wyo		= triWy + lodOffsets[lodOffsNdx].y();
+						const float		nxo		= wxo/dstW;
+						const float		nyo		= wyo/dstH;
+
+						const tcu::Vec3	coordO		(projectedTriInterpolate(triS[triNdx], triW[triNdx], nxo, nyo),
+													 projectedTriInterpolate(triT[triNdx], triW[triNdx], nxo, nyo),
+													 projectedTriInterpolate(triR[triNdx], triW[triNdx], nxo, nyo));
+						const tcu::Vec3	coordDxo	= tcu::Vec3(triDerivateX(triS[triNdx], triW[triNdx], wxo, dstW, nyo),
+																triDerivateX(triT[triNdx], triW[triNdx], wxo, dstW, nyo),
+																triDerivateX(triR[triNdx], triW[triNdx], wxo, dstW, nyo)) * srcSize.asFloat();
+						const tcu::Vec3	coordDyo	= tcu::Vec3(triDerivateY(triS[triNdx], triW[triNdx], wyo, dstH, nxo),
+																triDerivateY(triT[triNdx], triW[triNdx], wyo, dstH, nxo),
+																triDerivateY(triR[triNdx], triW[triNdx], wyo, dstH, nxo)) * srcSize.asFloat();
+						const tcu::Vec2	lodO		= tcu::computeLodBoundsFromDerivates(coordDxo.x(), coordDxo.y(), coordDxo.z(), coordDyo.x(), coordDyo.y(), coordDyo.z(), lodPrec);
+
+						lodBounds.x() = de::min(lodBounds.x(), lodO.x());
+						lodBounds.y() = de::max(lodBounds.y(), lodO.y());
+					}
+
+					const tcu::Vec2	clampedLod	= tcu::clampLodBounds(lodBounds + lodBias, tcu::Vec2(sampleParams.minLod, sampleParams.maxLod), lodPrec);
+
+					if (tcu::isLookupResultValid(src, sampleParams.sampler, lookupPrec, coord, clampedLod, resPix))
+					{
+						isOk = true;
+						break;
+					}
 				}
-
-				const tcu::Vec2	clampedLod	= tcu::clampLodBounds(lodBounds + lodBias, tcu::Vec2(sampleParams.minLod, sampleParams.maxLod), lodPrec);
-				const bool		isOk		= tcu::isLookupResultValid(src, sampleParams.sampler, lookupPrec, coord, clampedLod, resPix);
 
 				if (!isOk)
 				{
