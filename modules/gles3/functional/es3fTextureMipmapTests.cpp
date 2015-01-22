@@ -38,8 +38,6 @@
 #include "glwFunctions.hpp"
 #include "glwEnums.hpp"
 
-#include "tcuImageIO.hpp"
-
 using std::vector;
 using std::string;
 using namespace deqp::gls;
