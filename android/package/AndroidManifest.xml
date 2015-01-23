@@ -50,4 +50,7 @@
 	<instrumentation android:label="dEQP-Instrumentation"
 					 android:name="com.drawelements.deqp.testercore.DeqpInstrumentation"
 					 android:targetPackage="com.drawelements.deqp" />
+	<instrumentation android:label="dEQP-PlatformCapabilityQueryInstrumentation"
+					 android:name="com.drawelements.deqp.platformutil.DeqpPlatformCapabilityQueryInstrumentation"
+					 android:targetPackage="com.drawelements.deqp" />
 </manifest>
