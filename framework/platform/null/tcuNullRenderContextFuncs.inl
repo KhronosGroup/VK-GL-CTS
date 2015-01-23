@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision 28861.
+ * Generated from Khronos GL API description (gl.xml) revision 29570.
  */
 
 GLW_APICALL void GLW_APIENTRY glActiveShaderProgram (GLuint pipeline, GLuint program)
@@ -466,7 +466,7 @@ GLW_APICALL void GLW_APIENTRY glClearNamedBufferData (GLuint buffer, GLenum inte
 
 }
 
-GLW_APICALL void GLW_APIENTRY glClearNamedBufferSubData (GLuint buffer, GLenum internalformat, GLintptr offset, GLsizei size, GLenum format, GLenum type, const void *data)
+GLW_APICALL void GLW_APIENTRY glClearNamedBufferSubData (GLuint buffer, GLenum internalformat, GLintptr offset, GLsizeiptr size, GLenum format, GLenum type, const void *data)
 {
 	DE_UNREF(buffer);
 	DE_UNREF(internalformat);
@@ -740,7 +740,7 @@ GLW_APICALL void GLW_APIENTRY glCopyImageSubData (GLuint srcName, GLenum srcTarg
 
 }
 
-GLW_APICALL void GLW_APIENTRY glCopyNamedBufferSubData (GLuint readBuffer, GLuint writeBuffer, GLintptr readOffset, GLintptr writeOffset, GLsizei size)
+GLW_APICALL void GLW_APIENTRY glCopyNamedBufferSubData (GLuint readBuffer, GLuint writeBuffer, GLintptr readOffset, GLintptr writeOffset, GLsizeiptr size)
 {
 	DE_UNREF(readBuffer);
 	DE_UNREF(writeBuffer);
@@ -1385,7 +1385,7 @@ GLW_APICALL void GLW_APIENTRY glFlushMappedBufferRange (GLenum target, GLintptr 
 
 }
 
-GLW_APICALL void GLW_APIENTRY glFlushMappedNamedBufferRange (GLuint buffer, GLintptr offset, GLsizei length)
+GLW_APICALL void GLW_APIENTRY glFlushMappedNamedBufferRange (GLuint buffer, GLintptr offset, GLsizeiptr length)
 {
 	DE_UNREF(buffer);
 	DE_UNREF(offset);
@@ -1823,7 +1823,7 @@ GLW_APICALL void GLW_APIENTRY glGetNamedBufferPointerv (GLuint buffer, GLenum pn
 
 }
 
-GLW_APICALL void GLW_APIENTRY glGetNamedBufferSubData (GLuint buffer, GLintptr offset, GLsizei size, void *data)
+GLW_APICALL void GLW_APIENTRY glGetNamedBufferSubData (GLuint buffer, GLintptr offset, GLsizeiptr size, void *data)
 {
 	DE_UNREF(buffer);
 	DE_UNREF(offset);
@@ -2761,7 +2761,7 @@ GLW_APICALL void * GLW_APIENTRY glMapNamedBuffer (GLuint buffer, GLenum access)
 	return (void *)0;
 }
 
-GLW_APICALL void * GLW_APIENTRY glMapNamedBufferRange (GLuint buffer, GLintptr offset, GLsizei length, GLbitfield access)
+GLW_APICALL void * GLW_APIENTRY glMapNamedBufferRange (GLuint buffer, GLintptr offset, GLsizeiptr length, GLbitfield access)
 {
 	DE_UNREF(buffer);
 	DE_UNREF(offset);
@@ -2838,7 +2838,7 @@ GLW_APICALL void GLW_APIENTRY glMultiDrawElementsIndirect (GLenum mode, GLenum t
 
 }
 
-GLW_APICALL void GLW_APIENTRY glNamedBufferData (GLuint buffer, GLsizei size, const void *data, GLenum usage)
+GLW_APICALL void GLW_APIENTRY glNamedBufferData (GLuint buffer, GLsizeiptr size, const void *data, GLenum usage)
 {
 	DE_UNREF(buffer);
 	DE_UNREF(size);
@@ -2847,7 +2847,7 @@ GLW_APICALL void GLW_APIENTRY glNamedBufferData (GLuint buffer, GLsizei size, co
 
 }
 
-GLW_APICALL void GLW_APIENTRY glNamedBufferStorage (GLuint buffer, GLsizei size, const void *data, GLbitfield flags)
+GLW_APICALL void GLW_APIENTRY glNamedBufferStorage (GLuint buffer, GLsizeiptr size, const void *data, GLbitfield flags)
 {
 	DE_UNREF(buffer);
 	DE_UNREF(size);
@@ -2856,7 +2856,7 @@ GLW_APICALL void GLW_APIENTRY glNamedBufferStorage (GLuint buffer, GLsizei size,
 
 }
 
-GLW_APICALL void GLW_APIENTRY glNamedBufferSubData (GLuint buffer, GLintptr offset, GLsizei size, const void *data)
+GLW_APICALL void GLW_APIENTRY glNamedBufferSubData (GLuint buffer, GLintptr offset, GLsizeiptr size, const void *data)
 {
 	DE_UNREF(buffer);
 	DE_UNREF(offset);
@@ -4036,7 +4036,7 @@ GLW_APICALL void GLW_APIENTRY glTextureBuffer (GLuint texture, GLenum internalfo
 
 }
 
-GLW_APICALL void GLW_APIENTRY glTextureBufferRange (GLuint texture, GLenum internalformat, GLuint buffer, GLintptr offset, GLsizei size)
+GLW_APICALL void GLW_APIENTRY glTextureBufferRange (GLuint texture, GLenum internalformat, GLuint buffer, GLintptr offset, GLsizeiptr size)
 {
 	DE_UNREF(texture);
 	DE_UNREF(internalformat);
@@ -4210,7 +4210,7 @@ GLW_APICALL void GLW_APIENTRY glTransformFeedbackBufferBase (GLuint xfb, GLuint 
 
 }
 
-GLW_APICALL void GLW_APIENTRY glTransformFeedbackBufferRange (GLuint xfb, GLuint index, GLuint buffer, GLintptr offset, GLsizei size)
+GLW_APICALL void GLW_APIENTRY glTransformFeedbackBufferRange (GLuint xfb, GLuint index, GLuint buffer, GLintptr offset, GLsizeiptr size)
 {
 	DE_UNREF(xfb);
 	DE_UNREF(index);
