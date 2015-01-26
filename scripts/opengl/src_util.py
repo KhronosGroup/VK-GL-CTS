@@ -39,7 +39,7 @@ EXTENSIONS			= [
 	'GL_EXT_texture_compression_s3tc',
 	'GL_IMG_texture_compression_pvrtc',
 	'GL_EXT_copy_image',
-	'GL_OES_draw_buffers_indexed'
+	'GL_EXT_draw_buffers_indexed'
 ]
 
 def getGLRegistry ():
