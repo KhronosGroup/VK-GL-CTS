@@ -1,0 +1,4 @@
+libpng/*
+!libpng/CMakeLists.txt
+zlib/*
+!zlib/CMakeLists.txt
