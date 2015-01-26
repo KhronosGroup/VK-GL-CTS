@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision 28861.
+ * Generated from Khronos GL API description (gl.xml) revision 29570.
  */
 
 void CallLogWrapper::glActiveShaderProgram (glw::GLuint pipeline, glw::GLuint program)
@@ -416,7 +416,7 @@ void CallLogWrapper::glClearNamedBufferData (glw::GLuint buffer, glw::GLenum int
 	m_gl.clearNamedBufferData(buffer, internalformat, format, type, data);
 }
 
-void CallLogWrapper::glClearNamedBufferSubData (glw::GLuint buffer, glw::GLenum internalformat, glw::GLintptr offset, glw::GLsizei size, glw::GLenum format, glw::GLenum type, const void *data)
+void CallLogWrapper::glClearNamedBufferSubData (glw::GLuint buffer, glw::GLenum internalformat, glw::GLintptr offset, glw::GLsizeiptr size, glw::GLenum format, glw::GLenum type, const void *data)
 {
 	if (m_enableLog)
 		m_log << TestLog::Message << "glClearNamedBufferSubData(" << buffer << ", " << toHex(internalformat) << ", " << offset << ", " << size << ", " << toHex(format) << ", " << toHex(type) << ", " << data << ");" << TestLog::EndMessage;
@@ -587,7 +587,7 @@ void CallLogWrapper::glCopyImageSubData (glw::GLuint srcName, glw::GLenum srcTar
 	m_gl.copyImageSubData(srcName, srcTarget, srcLevel, srcX, srcY, srcZ, dstName, dstTarget, dstLevel, dstX, dstY, dstZ, srcWidth, srcHeight, srcDepth);
 }
 
-void CallLogWrapper::glCopyNamedBufferSubData (glw::GLuint readBuffer, glw::GLuint writeBuffer, glw::GLintptr readOffset, glw::GLintptr writeOffset, glw::GLsizei size)
+void CallLogWrapper::glCopyNamedBufferSubData (glw::GLuint readBuffer, glw::GLuint writeBuffer, glw::GLintptr readOffset, glw::GLintptr writeOffset, glw::GLsizeiptr size)
 {
 	if (m_enableLog)
 		m_log << TestLog::Message << "glCopyNamedBufferSubData(" << readBuffer << ", " << writeBuffer << ", " << readOffset << ", " << writeOffset << ", " << size << ");" << TestLog::EndMessage;
@@ -1180,7 +1180,7 @@ void CallLogWrapper::glFlushMappedBufferRange (glw::GLenum target, glw::GLintptr
 	m_gl.flushMappedBufferRange(target, offset, length);
 }
 
-void CallLogWrapper::glFlushMappedNamedBufferRange (glw::GLuint buffer, glw::GLintptr offset, glw::GLsizei length)
+void CallLogWrapper::glFlushMappedNamedBufferRange (glw::GLuint buffer, glw::GLintptr offset, glw::GLsizeiptr length)
 {
 	if (m_enableLog)
 		m_log << TestLog::Message << "glFlushMappedNamedBufferRange(" << buffer << ", " << offset << ", " << length << ");" << TestLog::EndMessage;
@@ -1699,7 +1699,7 @@ void CallLogWrapper::glGetNamedBufferPointerv (glw::GLuint buffer, glw::GLenum p
 	m_gl.getNamedBufferPointerv(buffer, pname, params);
 }
 
-void CallLogWrapper::glGetNamedBufferSubData (glw::GLuint buffer, glw::GLintptr offset, glw::GLsizei size, void *data)
+void CallLogWrapper::glGetNamedBufferSubData (glw::GLuint buffer, glw::GLintptr offset, glw::GLsizeiptr size, void *data)
 {
 	if (m_enableLog)
 		m_log << TestLog::Message << "glGetNamedBufferSubData(" << buffer << ", " << offset << ", " << size << ", " << data << ");" << TestLog::EndMessage;
@@ -2634,7 +2634,7 @@ void * CallLogWrapper::glMapNamedBuffer (glw::GLuint buffer, glw::GLenum access)
 	return returnValue;
 }
 
-void * CallLogWrapper::glMapNamedBufferRange (glw::GLuint buffer, glw::GLintptr offset, glw::GLsizei length, glw::GLbitfield access)
+void * CallLogWrapper::glMapNamedBufferRange (glw::GLuint buffer, glw::GLintptr offset, glw::GLsizeiptr length, glw::GLbitfield access)
 {
 	if (m_enableLog)
 		m_log << TestLog::Message << "glMapNamedBufferRange(" << buffer << ", " << offset << ", " << length << ", " << toHex(access) << ");" << TestLog::EndMessage;
@@ -2700,21 +2700,21 @@ void CallLogWrapper::glMultiDrawElementsIndirect (glw::GLenum mode, glw::GLenum 
 	m_gl.multiDrawElementsIndirect(mode, type, indirect, drawcount, stride);
 }
 
-void CallLogWrapper::glNamedBufferData (glw::GLuint buffer, glw::GLsizei size, const void *data, glw::GLenum usage)
+void CallLogWrapper::glNamedBufferData (glw::GLuint buffer, glw::GLsizeiptr size, const void *data, glw::GLenum usage)
 {
 	if (m_enableLog)
 		m_log << TestLog::Message << "glNamedBufferData(" << buffer << ", " << size << ", " << data << ", " << toHex(usage) << ");" << TestLog::EndMessage;
 	m_gl.namedBufferData(buffer, size, data, usage);
 }
 
-void CallLogWrapper::glNamedBufferStorage (glw::GLuint buffer, glw::GLsizei size, const void *data, glw::GLbitfield flags)
+void CallLogWrapper::glNamedBufferStorage (glw::GLuint buffer, glw::GLsizeiptr size, const void *data, glw::GLbitfield flags)
 {
 	if (m_enableLog)
 		m_log << TestLog::Message << "glNamedBufferStorage(" << buffer << ", " << size << ", " << data << ", " << toHex(flags) << ");" << TestLog::EndMessage;
 	m_gl.namedBufferStorage(buffer, size, data, flags);
 }
 
-void CallLogWrapper::glNamedBufferSubData (glw::GLuint buffer, glw::GLintptr offset, glw::GLsizei size, const void *data)
+void CallLogWrapper::glNamedBufferSubData (glw::GLuint buffer, glw::GLintptr offset, glw::GLsizeiptr size, const void *data)
 {
 	if (m_enableLog)
 		m_log << TestLog::Message << "glNamedBufferSubData(" << buffer << ", " << offset << ", " << size << ", " << data << ");" << TestLog::EndMessage;
@@ -3645,7 +3645,7 @@ void CallLogWrapper::glTextureBuffer (glw::GLuint texture, glw::GLenum internalf
 	m_gl.textureBuffer(texture, internalformat, buffer);
 }
 
-void CallLogWrapper::glTextureBufferRange (glw::GLuint texture, glw::GLenum internalformat, glw::GLuint buffer, glw::GLintptr offset, glw::GLsizei size)
+void CallLogWrapper::glTextureBufferRange (glw::GLuint texture, glw::GLenum internalformat, glw::GLuint buffer, glw::GLintptr offset, glw::GLsizeiptr size)
 {
 	if (m_enableLog)
 		m_log << TestLog::Message << "glTextureBufferRange(" << texture << ", " << toHex(internalformat) << ", " << buffer << ", " << offset << ", " << size << ");" << TestLog::EndMessage;
@@ -3764,7 +3764,7 @@ void CallLogWrapper::glTransformFeedbackBufferBase (glw::GLuint xfb, glw::GLuint
 	m_gl.transformFeedbackBufferBase(xfb, index, buffer);
 }
 
-void CallLogWrapper::glTransformFeedbackBufferRange (glw::GLuint xfb, glw::GLuint index, glw::GLuint buffer, glw::GLintptr offset, glw::GLsizei size)
+void CallLogWrapper::glTransformFeedbackBufferRange (glw::GLuint xfb, glw::GLuint index, glw::GLuint buffer, glw::GLintptr offset, glw::GLsizeiptr size)
 {
 	if (m_enableLog)
 		m_log << TestLog::Message << "glTransformFeedbackBufferRange(" << xfb << ", " << index << ", " << buffer << ", " << offset << ", " << size << ");" << TestLog::EndMessage;

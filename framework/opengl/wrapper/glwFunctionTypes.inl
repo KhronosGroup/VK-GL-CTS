@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision 28861.
+ * Generated from Khronos GL API description (gl.xml) revision 29570.
  */
 typedef GLW_APICALL void			(GLW_APIENTRY* glActiveShaderProgramFunc)							(GLuint pipeline, GLuint program);
 typedef GLW_APICALL void			(GLW_APIENTRY* glActiveTextureFunc)									(GLenum texture);
@@ -61,7 +61,7 @@ typedef GLW_APICALL void			(GLW_APIENTRY* glClearColorFunc)									(GLfloat red
 typedef GLW_APICALL void			(GLW_APIENTRY* glClearDepthFunc)									(GLdouble depth);
 typedef GLW_APICALL void			(GLW_APIENTRY* glClearDepthfFunc)									(GLfloat d);
 typedef GLW_APICALL void			(GLW_APIENTRY* glClearNamedBufferDataFunc)							(GLuint buffer, GLenum internalformat, GLenum format, GLenum type, const void *data);
-typedef GLW_APICALL void			(GLW_APIENTRY* glClearNamedBufferSubDataFunc)						(GLuint buffer, GLenum internalformat, GLintptr offset, GLsizei size, GLenum format, GLenum type, const void *data);
+typedef GLW_APICALL void			(GLW_APIENTRY* glClearNamedBufferSubDataFunc)						(GLuint buffer, GLenum internalformat, GLintptr offset, GLsizeiptr size, GLenum format, GLenum type, const void *data);
 typedef GLW_APICALL void			(GLW_APIENTRY* glClearNamedFramebufferfiFunc)						(GLuint framebuffer, GLenum buffer, const GLfloat depth, GLint stencil);
 typedef GLW_APICALL void			(GLW_APIENTRY* glClearNamedFramebufferfvFunc)						(GLuint framebuffer, GLenum buffer, GLint drawbuffer, const GLfloat *value);
 typedef GLW_APICALL void			(GLW_APIENTRY* glClearNamedFramebufferivFunc)						(GLuint framebuffer, GLenum buffer, GLint drawbuffer, const GLint *value);
@@ -85,7 +85,7 @@ typedef GLW_APICALL void			(GLW_APIENTRY* glCompressedTextureSubImage2DFunc)				
 typedef GLW_APICALL void			(GLW_APIENTRY* glCompressedTextureSubImage3DFunc)					(GLuint texture, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLsizei imageSize, const void *data);
 typedef GLW_APICALL void			(GLW_APIENTRY* glCopyBufferSubDataFunc)								(GLenum readTarget, GLenum writeTarget, GLintptr readOffset, GLintptr writeOffset, GLsizeiptr size);
 typedef GLW_APICALL void			(GLW_APIENTRY* glCopyImageSubDataFunc)								(GLuint srcName, GLenum srcTarget, GLint srcLevel, GLint srcX, GLint srcY, GLint srcZ, GLuint dstName, GLenum dstTarget, GLint dstLevel, GLint dstX, GLint dstY, GLint dstZ, GLsizei srcWidth, GLsizei srcHeight, GLsizei srcDepth);
-typedef GLW_APICALL void			(GLW_APIENTRY* glCopyNamedBufferSubDataFunc)						(GLuint readBuffer, GLuint writeBuffer, GLintptr readOffset, GLintptr writeOffset, GLsizei size);
+typedef GLW_APICALL void			(GLW_APIENTRY* glCopyNamedBufferSubDataFunc)						(GLuint readBuffer, GLuint writeBuffer, GLintptr readOffset, GLintptr writeOffset, GLsizeiptr size);
 typedef GLW_APICALL void			(GLW_APIENTRY* glCopyTexImage1DFunc)								(GLenum target, GLint level, GLenum internalformat, GLint x, GLint y, GLsizei width, GLint border);
 typedef GLW_APICALL void			(GLW_APIENTRY* glCopyTexImage2DFunc)								(GLenum target, GLint level, GLenum internalformat, GLint x, GLint y, GLsizei width, GLsizei height, GLint border);
 typedef GLW_APICALL void			(GLW_APIENTRY* glCopyTexSubImage1DFunc)								(GLenum target, GLint level, GLint xoffset, GLint x, GLint y, GLsizei width);
@@ -168,7 +168,7 @@ typedef GLW_APICALL GLsync			(GLW_APIENTRY* glFenceSyncFunc)										(GLenum co
 typedef GLW_APICALL void			(GLW_APIENTRY* glFinishFunc)										(void);
 typedef GLW_APICALL void			(GLW_APIENTRY* glFlushFunc)											(void);
 typedef GLW_APICALL void			(GLW_APIENTRY* glFlushMappedBufferRangeFunc)						(GLenum target, GLintptr offset, GLsizeiptr length);
-typedef GLW_APICALL void			(GLW_APIENTRY* glFlushMappedNamedBufferRangeFunc)					(GLuint buffer, GLintptr offset, GLsizei length);
+typedef GLW_APICALL void			(GLW_APIENTRY* glFlushMappedNamedBufferRangeFunc)					(GLuint buffer, GLintptr offset, GLsizeiptr length);
 typedef GLW_APICALL void			(GLW_APIENTRY* glFramebufferParameteriFunc)							(GLenum target, GLenum pname, GLint param);
 typedef GLW_APICALL void			(GLW_APIENTRY* glFramebufferRenderbufferFunc)						(GLenum target, GLenum attachment, GLenum renderbuffertarget, GLuint renderbuffer);
 typedef GLW_APICALL void			(GLW_APIENTRY* glFramebufferTextureFunc)							(GLenum target, GLenum attachment, GLuint texture, GLint level);
@@ -230,7 +230,7 @@ typedef GLW_APICALL void			(GLW_APIENTRY* glGetMultisamplefvFunc)								(GLenum
 typedef GLW_APICALL void			(GLW_APIENTRY* glGetNamedBufferParameteri64vFunc)					(GLuint buffer, GLenum pname, GLint64 *params);
 typedef GLW_APICALL void			(GLW_APIENTRY* glGetNamedBufferParameterivFunc)						(GLuint buffer, GLenum pname, GLint *params);
 typedef GLW_APICALL void			(GLW_APIENTRY* glGetNamedBufferPointervFunc)						(GLuint buffer, GLenum pname, void **params);
-typedef GLW_APICALL void			(GLW_APIENTRY* glGetNamedBufferSubDataFunc)							(GLuint buffer, GLintptr offset, GLsizei size, void *data);
+typedef GLW_APICALL void			(GLW_APIENTRY* glGetNamedBufferSubDataFunc)							(GLuint buffer, GLintptr offset, GLsizeiptr size, void *data);
 typedef GLW_APICALL void			(GLW_APIENTRY* glGetNamedFramebufferAttachmentParameterivFunc)		(GLuint framebuffer, GLenum attachment, GLenum pname, GLint *params);
 typedef GLW_APICALL void			(GLW_APIENTRY* glGetNamedFramebufferParameterivFunc)				(GLuint framebuffer, GLenum pname, GLint *param);
 typedef GLW_APICALL void			(GLW_APIENTRY* glGetNamedRenderbufferParameterivFunc)				(GLuint renderbuffer, GLenum pname, GLint *params);
@@ -345,7 +345,7 @@ typedef GLW_APICALL void			(GLW_APIENTRY* glLogicOpFunc)										(GLenum opcode
 typedef GLW_APICALL void *			(GLW_APIENTRY* glMapBufferFunc)										(GLenum target, GLenum access);
 typedef GLW_APICALL void *			(GLW_APIENTRY* glMapBufferRangeFunc)								(GLenum target, GLintptr offset, GLsizeiptr length, GLbitfield access);
 typedef GLW_APICALL void *			(GLW_APIENTRY* glMapNamedBufferFunc)								(GLuint buffer, GLenum access);
-typedef GLW_APICALL void *			(GLW_APIENTRY* glMapNamedBufferRangeFunc)							(GLuint buffer, GLintptr offset, GLsizei length, GLbitfield access);
+typedef GLW_APICALL void *			(GLW_APIENTRY* glMapNamedBufferRangeFunc)							(GLuint buffer, GLintptr offset, GLsizeiptr length, GLbitfield access);
 typedef GLW_APICALL void			(GLW_APIENTRY* glMemoryBarrierFunc)									(GLbitfield barriers);
 typedef GLW_APICALL void			(GLW_APIENTRY* glMemoryBarrierByRegionFunc)							(GLbitfield barriers);
 typedef GLW_APICALL void			(GLW_APIENTRY* glMinSampleShadingFunc)								(GLfloat value);
@@ -354,9 +354,9 @@ typedef GLW_APICALL void			(GLW_APIENTRY* glMultiDrawArraysIndirectFunc)						(G
 typedef GLW_APICALL void			(GLW_APIENTRY* glMultiDrawElementsFunc)								(GLenum mode, const GLsizei *count, GLenum type, const void *const*indices, GLsizei drawcount);
 typedef GLW_APICALL void			(GLW_APIENTRY* glMultiDrawElementsBaseVertexFunc)					(GLenum mode, const GLsizei *count, GLenum type, const void *const*indices, GLsizei drawcount, const GLint *basevertex);
 typedef GLW_APICALL void			(GLW_APIENTRY* glMultiDrawElementsIndirectFunc)						(GLenum mode, GLenum type, const void *indirect, GLsizei drawcount, GLsizei stride);
-typedef GLW_APICALL void			(GLW_APIENTRY* glNamedBufferDataFunc)								(GLuint buffer, GLsizei size, const void *data, GLenum usage);
-typedef GLW_APICALL void			(GLW_APIENTRY* glNamedBufferStorageFunc)							(GLuint buffer, GLsizei size, const void *data, GLbitfield flags);
-typedef GLW_APICALL void			(GLW_APIENTRY* glNamedBufferSubDataFunc)							(GLuint buffer, GLintptr offset, GLsizei size, const void *data);
+typedef GLW_APICALL void			(GLW_APIENTRY* glNamedBufferDataFunc)								(GLuint buffer, GLsizeiptr size, const void *data, GLenum usage);
+typedef GLW_APICALL void			(GLW_APIENTRY* glNamedBufferStorageFunc)							(GLuint buffer, GLsizeiptr size, const void *data, GLbitfield flags);
+typedef GLW_APICALL void			(GLW_APIENTRY* glNamedBufferSubDataFunc)							(GLuint buffer, GLintptr offset, GLsizeiptr size, const void *data);
 typedef GLW_APICALL void			(GLW_APIENTRY* glNamedFramebufferDrawBufferFunc)					(GLuint framebuffer, GLenum buf);
 typedef GLW_APICALL void			(GLW_APIENTRY* glNamedFramebufferDrawBuffersFunc)					(GLuint framebuffer, GLsizei n, const GLenum *bufs);
 typedef GLW_APICALL void			(GLW_APIENTRY* glNamedFramebufferParameteriFunc)					(GLuint framebuffer, GLenum pname, GLint param);
@@ -489,7 +489,7 @@ typedef GLW_APICALL void			(GLW_APIENTRY* glTexSubImage2DFunc)									(GLenum t
 typedef GLW_APICALL void			(GLW_APIENTRY* glTexSubImage3DFunc)									(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, const void *pixels);
 typedef GLW_APICALL void			(GLW_APIENTRY* glTextureBarrierFunc)								(void);
 typedef GLW_APICALL void			(GLW_APIENTRY* glTextureBufferFunc)									(GLuint texture, GLenum internalformat, GLuint buffer);
-typedef GLW_APICALL void			(GLW_APIENTRY* glTextureBufferRangeFunc)							(GLuint texture, GLenum internalformat, GLuint buffer, GLintptr offset, GLsizei size);
+typedef GLW_APICALL void			(GLW_APIENTRY* glTextureBufferRangeFunc)							(GLuint texture, GLenum internalformat, GLuint buffer, GLintptr offset, GLsizeiptr size);
 typedef GLW_APICALL void			(GLW_APIENTRY* glTextureParameterIivFunc)							(GLuint texture, GLenum pname, const GLint *params);
 typedef GLW_APICALL void			(GLW_APIENTRY* glTextureParameterIuivFunc)							(GLuint texture, GLenum pname, const GLuint *params);
 typedef GLW_APICALL void			(GLW_APIENTRY* glTextureParameterfFunc)								(GLuint texture, GLenum pname, GLfloat param);
@@ -506,7 +506,7 @@ typedef GLW_APICALL void			(GLW_APIENTRY* glTextureSubImage2DFunc)								(GLuin
 typedef GLW_APICALL void			(GLW_APIENTRY* glTextureSubImage3DFunc)								(GLuint texture, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, const void *pixels);
 typedef GLW_APICALL void			(GLW_APIENTRY* glTextureViewFunc)									(GLuint texture, GLenum target, GLuint origtexture, GLenum internalformat, GLuint minlevel, GLuint numlevels, GLuint minlayer, GLuint numlayers);
 typedef GLW_APICALL void			(GLW_APIENTRY* glTransformFeedbackBufferBaseFunc)					(GLuint xfb, GLuint index, GLuint buffer);
-typedef GLW_APICALL void			(GLW_APIENTRY* glTransformFeedbackBufferRangeFunc)					(GLuint xfb, GLuint index, GLuint buffer, GLintptr offset, GLsizei size);
+typedef GLW_APICALL void			(GLW_APIENTRY* glTransformFeedbackBufferRangeFunc)					(GLuint xfb, GLuint index, GLuint buffer, GLintptr offset, GLsizeiptr size);
 typedef GLW_APICALL void			(GLW_APIENTRY* glTransformFeedbackVaryingsFunc)						(GLuint program, GLsizei count, const GLchar *const*varyings, GLenum bufferMode);
 typedef GLW_APICALL void			(GLW_APIENTRY* glUniform1dFunc)										(GLint location, GLdouble x);
 typedef GLW_APICALL void			(GLW_APIENTRY* glUniform1dvFunc)									(GLint location, GLsizei count, const GLdouble *value);

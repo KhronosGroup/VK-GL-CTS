@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision 28861.
+ * Generated from Khronos GL API description (gl.xml) revision 29570.
  */
 
 void glwActiveShaderProgram (GLuint pipeline, GLuint program)
@@ -468,7 +468,7 @@ void glwClearNamedBufferData (GLuint buffer, GLenum internalformat, GLenum forma
 	gl->clearNamedBufferData(buffer, internalformat, format, type, data);
 }
 
-void glwClearNamedBufferSubData (GLuint buffer, GLenum internalformat, GLintptr offset, GLsizei size, GLenum format, GLenum type, const void *data)
+void glwClearNamedBufferSubData (GLuint buffer, GLenum internalformat, GLintptr offset, GLsizeiptr size, GLenum format, GLenum type, const void *data)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
 	if (!gl)
@@ -660,7 +660,7 @@ void glwCopyImageSubData (GLuint srcName, GLenum srcTarget, GLint srcLevel, GLin
 	gl->copyImageSubData(srcName, srcTarget, srcLevel, srcX, srcY, srcZ, dstName, dstTarget, dstLevel, dstX, dstY, dstZ, srcWidth, srcHeight, srcDepth);
 }
 
-void glwCopyNamedBufferSubData (GLuint readBuffer, GLuint writeBuffer, GLintptr readOffset, GLintptr writeOffset, GLsizei size)
+void glwCopyNamedBufferSubData (GLuint readBuffer, GLuint writeBuffer, GLintptr readOffset, GLintptr writeOffset, GLsizeiptr size)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
 	if (!gl)
@@ -1324,7 +1324,7 @@ void glwFlushMappedBufferRange (GLenum target, GLintptr offset, GLsizeiptr lengt
 	gl->flushMappedBufferRange(target, offset, length);
 }
 
-void glwFlushMappedNamedBufferRange (GLuint buffer, GLintptr offset, GLsizei length)
+void glwFlushMappedNamedBufferRange (GLuint buffer, GLintptr offset, GLsizeiptr length)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
 	if (!gl)
@@ -1820,7 +1820,7 @@ void glwGetNamedBufferPointerv (GLuint buffer, GLenum pname, void **params)
 	gl->getNamedBufferPointerv(buffer, pname, params);
 }
 
-void glwGetNamedBufferSubData (GLuint buffer, GLintptr offset, GLsizei size, void *data)
+void glwGetNamedBufferSubData (GLuint buffer, GLintptr offset, GLsizeiptr size, void *data)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
 	if (!gl)
@@ -2740,7 +2740,7 @@ void * glwMapNamedBuffer (GLuint buffer, GLenum access)
 	return gl->mapNamedBuffer(buffer, access);
 }
 
-void * glwMapNamedBufferRange (GLuint buffer, GLintptr offset, GLsizei length, GLbitfield access)
+void * glwMapNamedBufferRange (GLuint buffer, GLintptr offset, GLsizeiptr length, GLbitfield access)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
 	if (!gl)
@@ -2812,7 +2812,7 @@ void glwMultiDrawElementsIndirect (GLenum mode, GLenum type, const void *indirec
 	gl->multiDrawElementsIndirect(mode, type, indirect, drawcount, stride);
 }
 
-void glwNamedBufferData (GLuint buffer, GLsizei size, const void *data, GLenum usage)
+void glwNamedBufferData (GLuint buffer, GLsizeiptr size, const void *data, GLenum usage)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
 	if (!gl)
@@ -2820,7 +2820,7 @@ void glwNamedBufferData (GLuint buffer, GLsizei size, const void *data, GLenum u
 	gl->namedBufferData(buffer, size, data, usage);
 }
 
-void glwNamedBufferStorage (GLuint buffer, GLsizei size, const void *data, GLbitfield flags)
+void glwNamedBufferStorage (GLuint buffer, GLsizeiptr size, const void *data, GLbitfield flags)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
 	if (!gl)
@@ -2828,7 +2828,7 @@ void glwNamedBufferStorage (GLuint buffer, GLsizei size, const void *data, GLbit
 	gl->namedBufferStorage(buffer, size, data, flags);
 }
 
-void glwNamedBufferSubData (GLuint buffer, GLintptr offset, GLsizei size, const void *data)
+void glwNamedBufferSubData (GLuint buffer, GLintptr offset, GLsizeiptr size, const void *data)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
 	if (!gl)
@@ -3892,7 +3892,7 @@ void glwTextureBuffer (GLuint texture, GLenum internalformat, GLuint buffer)
 	gl->textureBuffer(texture, internalformat, buffer);
 }
 
-void glwTextureBufferRange (GLuint texture, GLenum internalformat, GLuint buffer, GLintptr offset, GLsizei size)
+void glwTextureBufferRange (GLuint texture, GLenum internalformat, GLuint buffer, GLintptr offset, GLsizeiptr size)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
 	if (!gl)
@@ -4028,7 +4028,7 @@ void glwTransformFeedbackBufferBase (GLuint xfb, GLuint index, GLuint buffer)
 	gl->transformFeedbackBufferBase(xfb, index, buffer);
 }
 
-void glwTransformFeedbackBufferRange (GLuint xfb, GLuint index, GLuint buffer, GLintptr offset, GLsizei size)
+void glwTransformFeedbackBufferRange (GLuint xfb, GLuint index, GLuint buffer, GLintptr offset, GLsizeiptr size)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
 	if (!gl)
