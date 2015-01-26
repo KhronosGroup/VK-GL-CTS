@@ -357,7 +357,7 @@ void deBsdAddressToSocketAddress (deSocketAddress* address, const struct sockadd
 		deSocketAddress_setPort(address, ntohs(addr4->sin_port));
 
 		{
-			char buf[16]; // Max valid address takes 3*4 + 3 = 15 chars
+			char buf[16]; /* Max valid address takes 3*4 + 3 = 15 chars */
 			inet_ntop(AF_INET, (void*)&addr4->sin_addr, buf, sizeof(buf));
 			deSocketAddress_setHost(address, buf);
 		}
@@ -372,7 +372,7 @@ void deBsdAddressToSocketAddress (deSocketAddress* address, const struct sockadd
 		deSocketAddress_setPort(address, ntohs(addr6->sin6_port));
 
 		{
-			char buf[40]; // Max valid address takes 8*4 + 7 = 39 chars
+			char buf[40]; /* Max valid address takes 8*4 + 7 = 39 chars */
 			inet_ntop(AF_INET6, (void*)&addr6->sin6_addr, buf, sizeof(buf));
 			deSocketAddress_setHost(address, buf);
 		}
