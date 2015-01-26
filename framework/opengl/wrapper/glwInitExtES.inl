@@ -65,3 +65,15 @@ if (de::contains(extSet, "GL_EXT_copy_image"))
 {
 	gl->copyImageSubData	= (glCopyImageSubDataFunc)	loader->get("glCopyImageSubDataEXT");
 }
+
+if (de::contains(extSet, "GL_OES_draw_buffers_indexed"))
+{
+	gl->blendEquationSeparatei	= (glBlendEquationSeparateiFunc)	loader->get("glBlendEquationSeparateiOES");
+	gl->blendEquationi			= (glBlendEquationiFunc)			loader->get("glBlendEquationiOES");
+	gl->blendFuncSeparatei		= (glBlendFuncSeparateiFunc)		loader->get("glBlendFuncSeparateiOES");
+	gl->blendFunci				= (glBlendFunciFunc)				loader->get("glBlendFunciOES");
+	gl->colorMaski				= (glColorMaskiFunc)				loader->get("glColorMaskiOES");
+	gl->disablei				= (glDisableiFunc)					loader->get("glDisableiOES");
+	gl->enablei					= (glEnableiFunc)					loader->get("glEnableiOES");
+	gl->isEnabledi				= (glIsEnablediFunc)				loader->get("glIsEnablediOES");
+}
