@@ -31,6 +31,7 @@ set(DEQP_GL_SHARED_SRCS
 	glsShaderPerformanceCase.hpp
 	glsShaderRenderCase.cpp
 	glsShaderRenderCase.hpp
+	glsStateQueryUtil.cpp
 	glsStateQueryUtil.hpp
 	glsScissorTests.cpp
 	glsScissorTests.hpp

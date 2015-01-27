@@ -32,18 +32,21 @@ LOCAL_SRC_FILES := \
 	executor/xeXMLParser.cpp \
 	executor/xeXMLWriter.cpp \
 	framework/common/tcuApp.cpp \
+	framework/common/tcuArray.cpp \
 	framework/common/tcuBilinearImageCompare.cpp \
 	framework/common/tcuCommandLine.cpp \
 	framework/common/tcuCompressedTexture.cpp \
 	framework/common/tcuCPUWarmup.cpp \
 	framework/common/tcuDefs.cpp \
 	framework/common/tcuFactoryRegistry.cpp \
+	framework/common/tcuFloat.cpp \
 	framework/common/tcuFloatFormat.cpp \
 	framework/common/tcuFunctionLibrary.cpp \
 	framework/common/tcuFuzzyImageCompare.cpp \
 	framework/common/tcuImageCompare.cpp \
 	framework/common/tcuImageIO.cpp \
 	framework/common/tcuInterval.cpp \
+	framework/common/tcuMatrix.cpp \
 	framework/common/tcuPlatform.cpp \
 	framework/common/tcuRandomValueIterator.cpp \
 	framework/common/tcuRenderTarget.cpp \
@@ -250,7 +253,13 @@ LOCAL_SRC_FILES := \
 	modules/gles31/functional/es31fGeometryShaderTests.cpp \
 	modules/gles31/functional/es31fIndirectComputeDispatchTests.cpp \
 	modules/gles31/functional/es31fIntegerStateQueryTests.cpp \
+	modules/gles31/functional/es31fBooleanStateQueryTests.cpp \
+	modules/gles31/functional/es31fIndexedStateQueryTests.cpp \
 	modules/gles31/functional/es31fInternalFormatQueryTests.cpp \
+	modules/gles31/functional/es31fTextureStateQueryTests.cpp \
+	modules/gles31/functional/es31fFramebufferDefaultStateQueryTests.cpp \
+	modules/gles31/functional/es31fProgramPipelineStateQueryTests.cpp \
+	modules/gles31/functional/es31fProgramStateQueryTests.cpp \
 	modules/gles31/functional/es31fLayoutBindingTests.cpp \
 	modules/gles31/functional/es31fMultisampleShaderRenderCase.cpp \
 	modules/gles31/functional/es31fMultisampleTests.cpp \
@@ -477,6 +486,7 @@ LOCAL_SRC_FILES := \
 	modules/glshared/glsShaderPerformanceCase.cpp \
 	modules/glshared/glsShaderPerformanceMeasurer.cpp \
 	modules/glshared/glsShaderRenderCase.cpp \
+	modules/glshared/glsStateQueryUtil.cpp \
 	modules/glshared/glsStateChangePerfTestCases.cpp \
 	modules/glshared/glsTextureBufferCase.cpp \
 	modules/glshared/glsTextureTestUtil.cpp \

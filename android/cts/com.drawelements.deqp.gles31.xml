@@ -13425,7 +13425,6 @@
 </TestSuite>
 <TestSuite name="state_query">
 <TestCase name="integer">
-<Test name="sample_mask_value" />
 <Test name="max_color_texture_samples_getboolean" />
 <Test name="max_color_texture_samples_getinteger" />
 <Test name="max_color_texture_samples_getinteger64" />
@@ -13462,6 +13461,9 @@
 <Test name="shader_storage_buffer_offset_alignment_getinteger" />
 <Test name="shader_storage_buffer_offset_alignment_getinteger64" />
 <Test name="shader_storage_buffer_offset_alignment_getfloat" />
+</TestCase>
+<TestCase name="indexed">
+<Test name="sample_mask_value_getintegeri_v" />
 </TestCase>
 <TestSuite name="texture_level">
 <TestCase name="integer">

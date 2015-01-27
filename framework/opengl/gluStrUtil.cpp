@@ -108,6 +108,9 @@ std::ostream& operator<< (std::ostream& str, const TextureParameterValueStr& val
 		case GL_TEXTURE_MAG_FILTER:
 			return str << getTextureFilterStr(valueStr.value);
 
+		case GL_DEPTH_STENCIL_TEXTURE_MODE:
+			return str << getTextureDepthStencilModeStr(valueStr.value);
+
 		default:
 			return str << tcu::toHex(valueStr.value);
 	}

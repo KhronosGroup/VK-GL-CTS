@@ -33,6 +33,7 @@
 #include "glwEnums.hpp"
 #include "deStringUtil.hpp"
 #include "tcuTextureUtil.hpp"
+#include "tcuFormatUtil.hpp"
 
 namespace deqp
 {
@@ -43,11 +44,7 @@ namespace Functional
 namespace
 {
 
-enum VerifierType
-{
-	VERIFIER_INT = 0,
-	VERIFIER_FLOAT
-};
+using namespace gls::StateQueryUtil;
 
 struct TextureGenerationSpec
 {
@@ -99,132 +96,53 @@ struct PixelFormatPrinter
 };
 
 template <typename Printer>
-static bool verifyTextureLevelParameterEqualWithPrinter (glu::CallLogWrapper& gl, glw::GLenum target, int level, glw::GLenum pname, int refValue, VerifierType type)
+static bool verifyTextureLevelParameterEqualWithPrinter (glu::CallLogWrapper& gl, glw::GLenum target, int level, glw::GLenum pname, int refValue, QueryType type)
 {
+	QueriedState			state;
+	tcu::ResultCollector	result	(gl.getLog(), " // ERROR: ");
+
 	gl.getLog() << tcu::TestLog::Message << "Verifying " << glu::getTextureLevelParameterStr(pname) << ", expecting " << Printer::getIntegerName(refValue) << tcu::TestLog::EndMessage;
+	queryTextureLevelState(result, gl, type, target, level, pname, state);
 
-	if (type == VERIFIER_INT)
-	{
-		gls::StateQueryUtil::StateQueryMemoryWriteGuard<int> result;
-
-		gl.glGetTexLevelParameteriv(target, level, pname, &result);
-		GLU_EXPECT_NO_ERROR(gl.glGetError(), "glGetTexLevelParameteriv");
-
-		if (result.isUndefined())
-		{
-			gl.getLog() << tcu::TestLog::Message << "Error: Get* did not write a value." << tcu::TestLog::EndMessage;
-			return false;
-		}
-		else if (result.isMemoryContaminated())
-		{
-			gl.getLog() << tcu::TestLog::Message << "Error: detected illegal memory write." << tcu::TestLog::EndMessage;
-			return false;
-		}
-
-		if (result == refValue)
-			return true;
-
-		gl.getLog() << tcu::TestLog::Message << "Error: Expected " << Printer::getIntegerName(refValue) << ", got " << Printer::getIntegerName(result) << tcu::TestLog::EndMessage;
+	if (state.isUndefined())
 		return false;
-	}
-	else if (type == VERIFIER_FLOAT)
-	{
-		gls::StateQueryUtil::StateQueryMemoryWriteGuard<float> result;
 
-		gl.glGetTexLevelParameterfv(target, level, pname, &result);
-		GLU_EXPECT_NO_ERROR(gl.glGetError(), "glGetTexLevelParameterfv");
+	verifyInteger(result, state, refValue);
 
-		if (result.isUndefined())
-		{
-			gl.getLog() << tcu::TestLog::Message << "Error: Get* did not write a value." << tcu::TestLog::EndMessage;
-			return false;
-		}
-		else if (result.isMemoryContaminated())
-		{
-			gl.getLog() << tcu::TestLog::Message << "Error: detected illegal memory write." << tcu::TestLog::EndMessage;
-			return false;
-		}
-
-		if (result == (float)refValue)
-			return true;
-
-		gl.getLog() << tcu::TestLog::Message << "Error: Expected " << Printer::getIntegerName(refValue) << ", got " << Printer::getFloatName(result) << tcu::TestLog::EndMessage;
-		return false;
-	}
-
-	DE_ASSERT(DE_FALSE);
-	return false;
+	return result.getResult() == QP_TEST_RESULT_LAST;
 }
 
-static bool verifyTextureLevelParameterEqual (glu::CallLogWrapper& gl, glw::GLenum target, int level, glw::GLenum pname, int refValue, VerifierType type)
+static bool verifyTextureLevelParameterEqual (glu::CallLogWrapper& gl, glw::GLenum target, int level, glw::GLenum pname, int refValue, QueryType type)
 {
 	return verifyTextureLevelParameterEqualWithPrinter<IntegerPrinter>(gl, target, level, pname, refValue, type);
 }
 
-static bool verifyTextureLevelParameterInternalFormatEqual (glu::CallLogWrapper& gl, glw::GLenum target, int level, glw::GLenum pname, int refValue, VerifierType type)
+static bool verifyTextureLevelParameterInternalFormatEqual (glu::CallLogWrapper& gl, glw::GLenum target, int level, glw::GLenum pname, int refValue, QueryType type)
 {
 	return verifyTextureLevelParameterEqualWithPrinter<PixelFormatPrinter>(gl, target, level, pname, refValue, type);
 }
 
-static bool verifyTextureLevelParameterGreaterOrEqual (glu::CallLogWrapper& gl, glw::GLenum target, int level, glw::GLenum pname, int refValue, VerifierType type)
+static bool verifyTextureLevelParameterGreaterOrEqual (glu::CallLogWrapper& gl, glw::GLenum target, int level, glw::GLenum pname, int refValue, QueryType type)
 {
+	QueriedState			state;
+	tcu::ResultCollector	result	(gl.getLog(), " // ERROR: ");
+
 	gl.getLog() << tcu::TestLog::Message << "Verifying " << glu::getTextureLevelParameterStr(pname) << ", expecting " << refValue << " or greater" << tcu::TestLog::EndMessage;
+	queryTextureLevelState(result, gl, type, target, level, pname, state);
 
-	if (type == VERIFIER_INT)
-	{
-		gls::StateQueryUtil::StateQueryMemoryWriteGuard<int> result;
-
-		gl.glGetTexLevelParameteriv(target, level, pname, &result);
-		GLU_EXPECT_NO_ERROR(gl.glGetError(), "glGetTexLevelParameteriv");
-
-		if (result.isUndefined())
-		{
-			gl.getLog() << tcu::TestLog::Message << "Error: Get* did not write a value." << tcu::TestLog::EndMessage;
-			return false;
-		}
-		else if (result.isMemoryContaminated())
-		{
-			gl.getLog() << tcu::TestLog::Message << "Error: detected illegal memory write." << tcu::TestLog::EndMessage;
-			return false;
-		}
-
-		if (result >= refValue)
-			return true;
-
-		gl.getLog() << tcu::TestLog::Message << "Error: Expected " << refValue << " or larger, got " << result << tcu::TestLog::EndMessage;
+	if (state.isUndefined())
 		return false;
-	}
-	else if (type == VERIFIER_FLOAT)
-	{
-		gls::StateQueryUtil::StateQueryMemoryWriteGuard<float> result;
 
-		gl.glGetTexLevelParameterfv(target, level, pname, &result);
-		GLU_EXPECT_NO_ERROR(gl.glGetError(), "glGetTexLevelParameterfv");
+	verifyIntegerMin(result, state, refValue);
 
-		if (result.isUndefined())
-		{
-			gl.getLog() << tcu::TestLog::Message << "Error: Get* did not write a value." << tcu::TestLog::EndMessage;
-			return false;
-		}
-		else if (result.isMemoryContaminated())
-		{
-			gl.getLog() << tcu::TestLog::Message << "Error: detected illegal memory write." << tcu::TestLog::EndMessage;
-			return false;
-		}
-
-		if (result >= (float)refValue)
-			return true;
-
-		gl.getLog() << tcu::TestLog::Message << "Error: Expected " << refValue << " or larger, got " << result << tcu::TestLog::EndMessage;
-		return false;
-	}
-
-	DE_ASSERT(DE_FALSE);
-	return false;
+	return result.getResult() == QP_TEST_RESULT_LAST;
 }
 
-static bool verifyTextureLevelParameterInternalFormatAnyOf (glu::CallLogWrapper& gl, glw::GLenum target, int level, glw::GLenum pname, const int* refValues, int numRefValues, VerifierType type)
+static bool verifyTextureLevelParameterInternalFormatAnyOf (glu::CallLogWrapper& gl, glw::GLenum target, int level, glw::GLenum pname, const int* refValues, int numRefValues, QueryType type)
 {
+	QueriedState			state;
+	tcu::ResultCollector	result	(gl.getLog(), " // ERROR: ");
+
 	// Log what we try to do
 	{
 		tcu::MessageBuilder msg(&gl.getLog());
@@ -240,61 +158,35 @@ static bool verifyTextureLevelParameterInternalFormatAnyOf (glu::CallLogWrapper&
 		msg << tcu::TestLog::EndMessage;
 	}
 
+	queryTextureLevelState(result, gl, type, target, level, pname, state);
+	if (state.isUndefined())
+		return false;
+
 	// verify
-	if (type == VERIFIER_INT)
+	switch (state.getType())
 	{
-		gls::StateQueryUtil::StateQueryMemoryWriteGuard<int> result;
-
-		gl.glGetTexLevelParameteriv(target, level, pname, &result);
-		GLU_EXPECT_NO_ERROR(gl.glGetError(), "glGetTexLevelParameteriv");
-
-		if (result.isUndefined())
+		case DATATYPE_INTEGER:
 		{
-			gl.getLog() << tcu::TestLog::Message << "Error: Get* did not write a value." << tcu::TestLog::EndMessage;
+			for (int ndx = 0; ndx < numRefValues; ++ndx)
+				if (state.getIntAccess() == refValues[ndx])
+					return true;
+
+			gl.getLog() << tcu::TestLog::Message << "Error: got " << state.getIntAccess() << ", (" << glu::getPixelFormatStr(state.getIntAccess()) << ")" << tcu::TestLog::EndMessage;
 			return false;
 		}
-		else if (result.isMemoryContaminated())
+		case DATATYPE_FLOAT:
 		{
-			gl.getLog() << tcu::TestLog::Message << "Error: detected illegal memory write." << tcu::TestLog::EndMessage;
+			for (int ndx = 0; ndx < numRefValues; ++ndx)
+				if (state.getFloatAccess() == (float)refValues[ndx])
+					return true;
+
+			gl.getLog() << tcu::TestLog::Message << "Error: got " << state.getFloatAccess() << ", (" << glu::getPixelFormatStr((int)state.getFloatAccess()) << ")" << tcu::TestLog::EndMessage;
 			return false;
 		}
-
-		for (int ndx = 0; ndx < numRefValues; ++ndx)
-			if (result == refValues[ndx])
-				return true;
-
-		gl.getLog() << tcu::TestLog::Message << "Error: got " << result << ", (" << glu::getPixelFormatStr(result) << ")" << tcu::TestLog::EndMessage;
-		return false;
+		default:
+			DE_ASSERT(DE_FALSE);
+			return false;
 	}
-	else if (type == VERIFIER_FLOAT)
-	{
-		gls::StateQueryUtil::StateQueryMemoryWriteGuard<float> result;
-
-		gl.glGetTexLevelParameterfv(target, level, pname, &result);
-		GLU_EXPECT_NO_ERROR(gl.glGetError(), "glGetTexLevelParameterfv");
-
-		if (result.isUndefined())
-		{
-			gl.getLog() << tcu::TestLog::Message << "Error: Get* did not write a value." << tcu::TestLog::EndMessage;
-			return false;
-		}
-		else if (result.isMemoryContaminated())
-		{
-			gl.getLog() << tcu::TestLog::Message << "Error: detected illegal memory write." << tcu::TestLog::EndMessage;
-			return false;
-		}
-
-		for (int ndx = 0; ndx < numRefValues; ++ndx)
-			if (result == (float)refValues[ndx])
-				return true;
-
-		gl.getLog() << tcu::TestLog::Message << "Error: got " << result << ", (" << glu::getPixelFormatStr((int)result) << ")" << tcu::TestLog::EndMessage;
-		return false;
-	}
-
-	DE_ASSERT(DE_FALSE);
-	return false;
-
 }
 
 static void generateColorTextureGenerationGroup (std::vector<TextureGenerationSpec>& group, int max2DSamples, int max2DArraySamples, glw::GLenum internalFormat)
@@ -681,7 +573,7 @@ void applyTextureGenergationSpec (glu::CallLogWrapper& gl, const TextureGenerati
 class TextureLevelCase : public TestCase
 {
 public:
-										TextureLevelCase		(Context& ctx, const char* name, const char* desc, VerifierType type);
+										TextureLevelCase		(Context& ctx, const char* name, const char* desc, QueryType type);
 										~TextureLevelCase		(void);
 
 	void								init					(void);
@@ -694,7 +586,7 @@ protected:
 	virtual bool						checkTextureState		(glu::CallLogWrapper& gl, const TextureGenerationSpec& spec) = 0;
 	virtual void						generateTestIterations	(std::vector<TextureGenerationSpec>& iterations) = 0;
 
-	const VerifierType					m_type;
+	const QueryType						m_type;
 	const glw::GLenum					m_internalFormat;
 	glw::GLuint							m_texture;
 
@@ -705,7 +597,7 @@ private:
 	std::vector<int>					m_failedIterations;
 };
 
-TextureLevelCase::TextureLevelCase (Context& ctx, const char* name, const char* desc, VerifierType type)
+TextureLevelCase::TextureLevelCase (Context& ctx, const char* name, const char* desc, QueryType type)
 	: TestCase			(ctx, name, desc)
 	, m_type			(type)
 	, m_internalFormat	(GL_RGBA8)
@@ -834,13 +726,13 @@ bool TextureLevelCase::testConfig (const TextureGenerationSpec& spec)
 class TextureLevelCommonCase : public TextureLevelCase
 {
 public:
-					TextureLevelCommonCase	(Context& ctx, const char* name, const char* desc, VerifierType type);
+					TextureLevelCommonCase	(Context& ctx, const char* name, const char* desc, QueryType type);
 
 protected:
 	virtual void	generateTestIterations	(std::vector<TextureGenerationSpec>& iterations);
 };
 
-TextureLevelCommonCase::TextureLevelCommonCase (Context& ctx, const char* name, const char* desc, VerifierType type)
+TextureLevelCommonCase::TextureLevelCommonCase (Context& ctx, const char* name, const char* desc, QueryType type)
 	: TextureLevelCase(ctx, name, desc, type)
 {
 }
@@ -867,13 +759,13 @@ void TextureLevelCommonCase::generateTestIterations (std::vector<TextureGenerati
 class TextureLevelMultisampleCase : public TextureLevelCase
 {
 public:
-					TextureLevelMultisampleCase	(Context& ctx, const char* name, const char* desc, VerifierType type);
+					TextureLevelMultisampleCase	(Context& ctx, const char* name, const char* desc, QueryType type);
 
 protected:
 	virtual void	generateTestIterations		(std::vector<TextureGenerationSpec>& iterations);
 };
 
-TextureLevelMultisampleCase::TextureLevelMultisampleCase (Context& ctx, const char* name, const char* desc, VerifierType type)
+TextureLevelMultisampleCase::TextureLevelMultisampleCase (Context& ctx, const char* name, const char* desc, QueryType type)
 	: TextureLevelCase(ctx, name, desc, type)
 {
 }
@@ -897,7 +789,7 @@ void TextureLevelMultisampleCase::generateTestIterations (std::vector<TextureGen
 class TextureLevelSampleCase : public TextureLevelMultisampleCase
 {
 public:
-	TextureLevelSampleCase (Context& ctx, const char* name, const char* desc, VerifierType type)
+	TextureLevelSampleCase (Context& ctx, const char* name, const char* desc, QueryType type)
 		: TextureLevelMultisampleCase(ctx, name, desc, type)
 	{
 	}
@@ -915,7 +807,7 @@ private:
 class TextureLevelFixedSamplesCase : public TextureLevelMultisampleCase
 {
 public:
-	TextureLevelFixedSamplesCase (Context& ctx, const char* name, const char* desc, VerifierType type)
+	TextureLevelFixedSamplesCase (Context& ctx, const char* name, const char* desc, QueryType type)
 		: TextureLevelMultisampleCase(ctx, name, desc, type)
 	{
 	}
@@ -933,7 +825,7 @@ private:
 class TextureLevelWidthCase : public TextureLevelCommonCase
 {
 public:
-	TextureLevelWidthCase (Context& ctx, const char* name, const char* desc, VerifierType type)
+	TextureLevelWidthCase (Context& ctx, const char* name, const char* desc, QueryType type)
 		: TextureLevelCommonCase(ctx, name, desc, type)
 	{
 	}
@@ -969,7 +861,7 @@ private:
 class TextureLevelHeightCase : public TextureLevelCommonCase
 {
 public:
-	TextureLevelHeightCase (Context& ctx, const char* name, const char* desc, VerifierType type)
+	TextureLevelHeightCase (Context& ctx, const char* name, const char* desc, QueryType type)
 		: TextureLevelCommonCase(ctx, name, desc, type)
 	{
 	}
@@ -1005,7 +897,7 @@ private:
 class TextureLevelDepthCase : public TextureLevelCommonCase
 {
 public:
-	TextureLevelDepthCase (Context& ctx, const char* name, const char* desc, VerifierType type)
+	TextureLevelDepthCase (Context& ctx, const char* name, const char* desc, QueryType type)
 		: TextureLevelCommonCase(ctx, name, desc, type)
 	{
 	}
@@ -1053,7 +945,7 @@ private:
 class TextureLevelInternalFormatCase : public TextureLevelCase
 {
 public:
-	TextureLevelInternalFormatCase (Context& ctx, const char* name, const char* desc, VerifierType type)
+	TextureLevelInternalFormatCase (Context& ctx, const char* name, const char* desc, QueryType type)
 		: TextureLevelCase(ctx, name, desc, type)
 	{
 	}
@@ -1093,7 +985,7 @@ private:
 class TextureLevelSizeCase : public TextureLevelCase
 {
 public:
-						TextureLevelSizeCase			(Context& ctx, const char* name, const char* desc, VerifierType type, glw::GLenum pname);
+						TextureLevelSizeCase			(Context& ctx, const char* name, const char* desc, QueryType type, glw::GLenum pname);
 
 private:
 	void				generateTestIterations			(std::vector<TextureGenerationSpec>& iterations);
@@ -1103,7 +995,7 @@ private:
 	const glw::GLenum	m_pname;
 };
 
-TextureLevelSizeCase::TextureLevelSizeCase (Context& ctx, const char* name, const char* desc, VerifierType type, glw::GLenum pname)
+TextureLevelSizeCase::TextureLevelSizeCase (Context& ctx, const char* name, const char* desc, QueryType type, glw::GLenum pname)
 	: TextureLevelCase	(ctx, name, desc, type)
 	, m_pname			(pname)
 {
@@ -1215,7 +1107,7 @@ int TextureLevelSizeCase::getMinimumComponentResolution (glw::GLenum internalFor
 class TextureLevelTypeCase : public TextureLevelCase
 {
 public:
-						TextureLevelTypeCase			(Context& ctx, const char* name, const char* desc, VerifierType type, glw::GLenum pname);
+						TextureLevelTypeCase			(Context& ctx, const char* name, const char* desc, QueryType type, glw::GLenum pname);
 
 private:
 	void				generateTestIterations			(std::vector<TextureGenerationSpec>& iterations);
@@ -1225,7 +1117,7 @@ private:
 	const glw::GLenum	m_pname;
 };
 
-TextureLevelTypeCase::TextureLevelTypeCase (Context& ctx, const char* name, const char* desc, VerifierType type, glw::GLenum pname)
+TextureLevelTypeCase::TextureLevelTypeCase (Context& ctx, const char* name, const char* desc, QueryType type, glw::GLenum pname)
 	: TextureLevelCase	(ctx, name, desc, type)
 	, m_pname			(pname)
 {
@@ -1356,7 +1248,7 @@ int TextureLevelTypeCase::getComponentType (glw::GLenum internalFormat)
 class TextureLevelCompressedCase : public TextureLevelCase
 {
 public:
-	TextureLevelCompressedCase (Context& ctx, const char* name, const char* desc, VerifierType type)
+	TextureLevelCompressedCase (Context& ctx, const char* name, const char* desc, QueryType type)
 		: TextureLevelCase(ctx, name, desc, type)
 	{
 	}
@@ -1412,7 +1304,7 @@ void TextureLevelStateQueryTests::init (void)
 	for (int groupNdx = 0; groupNdx < 2; ++groupNdx)
 	{
 		tcu::TestCaseGroup* const	group		= (groupNdx == 0) ? (integerGroup) : (floatGroup);
-		const VerifierType			verifier	= (groupNdx == 0) ? (VERIFIER_INT) : (VERIFIER_FLOAT);
+		const QueryType				verifier	= (groupNdx == 0) ? (QUERY_TEXTURE_LEVEL_INTEGER) : (QUERY_TEXTURE_LEVEL_FLOAT);
 
 
 		group->addChild(new TextureLevelSampleCase			(m_context, "texture_samples",					"Verify TEXTURE_SAMPLES",					verifier));

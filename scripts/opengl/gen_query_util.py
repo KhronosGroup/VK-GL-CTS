@@ -41,6 +41,10 @@ QUERY_NUM_OUT_ARGUMENTS = [
 	("Attribute", [
 		("CURRENT_VERTEX_ATTRIB",		4),
 		]),
+
+	("Program", [
+		("COMPUTE_WORK_GROUP_SIZE",		3),
+		]),
 ]
 
 def addNamePrefix (prefix, groups):

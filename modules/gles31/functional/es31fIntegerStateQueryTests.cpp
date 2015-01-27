@@ -26,10 +26,14 @@
 #include "gluRenderContext.hpp"
 #include "gluCallLogWrapper.hpp"
 #include "gluContextInfo.hpp"
+#include "gluObjectWrapper.hpp"
+#include "gluShaderProgram.hpp"
+#include "gluStrUtil.hpp"
 #include "glwFunctions.hpp"
 #include "glwEnums.hpp"
-#include "deRandom.hpp"
 #include "glsStateQueryUtil.hpp"
+#include "deRandom.hpp"
+#include "deStringUtil.hpp"
 
 namespace deqp
 {
@@ -40,414 +44,35 @@ namespace Functional
 namespace
 {
 
-using gls::StateQueryUtil::StateQueryMemoryWriteGuard;
+using namespace gls::StateQueryUtil;
 
-enum VerifierType
-{
-	VERIFIER_GETBOOLEAN = 0,
-	VERIFIER_GETINTEGER,
-	VERIFIER_GETINTEGER64,
-	VERIFIER_GETFLOAT
-};
-
-static const char* getVerifierSuffix (VerifierType type)
+static const char* getVerifierSuffix (QueryType type)
 {
 	switch (type)
 	{
-		case VERIFIER_GETBOOLEAN:	return "getboolean";
-		case VERIFIER_GETINTEGER:	return "getinteger";
-		case VERIFIER_GETINTEGER64:	return "getinteger64";
-		case VERIFIER_GETFLOAT:		return "getfloat";
+		case QUERY_BOOLEAN:		return "getboolean";
+		case QUERY_INTEGER:		return "getinteger";
+		case QUERY_INTEGER64:	return "getinteger64";
+		case QUERY_FLOAT:		return "getfloat";
 		default:
 			DE_ASSERT(DE_FALSE);
 			return DE_NULL;
 	}
-}
-
-static bool verifyValue (glu::CallLogWrapper& gl, glw::GLenum target, int refValue, VerifierType type)
-{
-	switch (type)
-	{
-		case VERIFIER_GETBOOLEAN:
-		{
-			StateQueryMemoryWriteGuard<glw::GLboolean> value;
-			gl.glGetBooleanv(target, &value);
-
-			GLU_EXPECT_NO_ERROR(gl.glGetError(), "glGetBooleanv");
-
-			if (value.isUndefined())
-			{
-				gl.getLog() << tcu::TestLog::Message << "Get* did not return a value." << tcu::TestLog::EndMessage;
-				return false;
-			}
-			else if (value != ((refValue == 0) ? (GL_FALSE) : (GL_TRUE)))
-			{
-				gl.getLog() << tcu::TestLog::Message << "Expected " << ((refValue == 0) ? (GL_FALSE) : (GL_TRUE)) << ", got " << ((value == 0) ? (GL_FALSE) : (GL_TRUE)) << tcu::TestLog::EndMessage;
-				return false;
-			}
-			else
-				return true;
-		}
-
-		case VERIFIER_GETINTEGER:
-		{
-			StateQueryMemoryWriteGuard<glw::GLint> value;
-			gl.glGetIntegerv(target, &value);
-
-			GLU_EXPECT_NO_ERROR(gl.glGetError(), "glGetIntegerv");
-
-			if (value.isUndefined())
-			{
-				gl.getLog() << tcu::TestLog::Message << "Get* did not return a value." << tcu::TestLog::EndMessage;
-				return false;
-			}
-			else if (value != refValue)
-			{
-				gl.getLog() << tcu::TestLog::Message << "Expected " << refValue << ", got " << value << tcu::TestLog::EndMessage;
-				return false;
-			}
-			else
-				return true;
-		}
-
-		case VERIFIER_GETINTEGER64:
-		{
-			StateQueryMemoryWriteGuard<glw::GLint64> value;
-			gl.glGetInteger64v(target, &value);
-
-			GLU_EXPECT_NO_ERROR(gl.glGetError(), "glGetInteger64v");
-
-			if (value.isUndefined())
-			{
-				gl.getLog() << tcu::TestLog::Message << "Get* did not return a value." << tcu::TestLog::EndMessage;
-				return false;
-			}
-			else if (value != (glw::GLint64)refValue)
-			{
-				gl.getLog() << tcu::TestLog::Message << "Expected " << refValue << ", got " << value << tcu::TestLog::EndMessage;
-				return false;
-			}
-			else
-				return true;
-		}
-
-		case VERIFIER_GETFLOAT:
-		{
-			StateQueryMemoryWriteGuard<glw::GLfloat> value;
-			gl.glGetFloatv(target, &value);
-
-			GLU_EXPECT_NO_ERROR(gl.glGetError(), "glGetFloatv");
-
-			if (value.isUndefined())
-			{
-				gl.getLog() << tcu::TestLog::Message << "Get* did not return a value." << tcu::TestLog::EndMessage;
-				return false;
-			}
-			else if (value != (glw::GLfloat)refValue)
-			{
-				gl.getLog() << tcu::TestLog::Message << "Expected " << refValue << ", got " << value << tcu::TestLog::EndMessage;
-				return false;
-			}
-			else
-				return true;
-		}
-
-		default:
-			DE_ASSERT(DE_FALSE);
-			return DE_NULL;
-	}
-}
-
-static bool verifyMinValue (glu::CallLogWrapper& gl, glw::GLenum target, int minValue, VerifierType type)
-{
-	switch (type)
-	{
-		case VERIFIER_GETBOOLEAN:
-		{
-			StateQueryMemoryWriteGuard<glw::GLboolean> value;
-			gl.glGetBooleanv(target, &value);
-
-			GLU_EXPECT_NO_ERROR(gl.glGetError(), "glGetBooleanv");
-
-			if (value.isUndefined())
-			{
-				gl.getLog() << tcu::TestLog::Message << "Get* did not return a value." << tcu::TestLog::EndMessage;
-				return false;
-			}
-			else if (minValue > 0 && value == GL_FALSE)
-			{
-				gl.getLog() << tcu::TestLog::Message << "Expected GL_TRUE, got GL_FALSE" << tcu::TestLog::EndMessage;
-				return false;
-			}
-			else
-				return true;
-		}
-
-		case VERIFIER_GETINTEGER:
-		{
-			StateQueryMemoryWriteGuard<glw::GLint> value;
-			gl.glGetIntegerv(target, &value);
-
-			GLU_EXPECT_NO_ERROR(gl.glGetError(), "glGetIntegerv");
-
-			if (value.isUndefined())
-			{
-				gl.getLog() << tcu::TestLog::Message << "Get* did not return a value." << tcu::TestLog::EndMessage;
-				return false;
-			}
-			else if (value < minValue)
-			{
-				gl.getLog() << tcu::TestLog::Message << "Expected greater or equal to " << minValue << ", got " << value << tcu::TestLog::EndMessage;
-				return false;
-			}
-			else
-				return true;
-		}
-
-		case VERIFIER_GETINTEGER64:
-		{
-			StateQueryMemoryWriteGuard<glw::GLint64> value;
-			gl.glGetInteger64v(target, &value);
-
-			GLU_EXPECT_NO_ERROR(gl.glGetError(), "glGetInteger64v");
-
-			if (value.isUndefined())
-			{
-				gl.getLog() << tcu::TestLog::Message << "Get* did not return a value." << tcu::TestLog::EndMessage;
-				return false;
-			}
-			else if (value < minValue)
-			{
-				gl.getLog() << tcu::TestLog::Message << "Expected greater or equal to " << minValue << ", got " << value << tcu::TestLog::EndMessage;
-				return false;
-			}
-			else
-				return true;
-		}
-
-		case VERIFIER_GETFLOAT:
-		{
-			StateQueryMemoryWriteGuard<glw::GLfloat> value;
-			gl.glGetFloatv(target, &value);
-
-			GLU_EXPECT_NO_ERROR(gl.glGetError(), "glGetFloatv");
-
-			if (value.isUndefined())
-			{
-				gl.getLog() << tcu::TestLog::Message << "Get* did not return a value." << tcu::TestLog::EndMessage;
-				return false;
-			}
-			else if (value < minValue)
-			{
-				gl.getLog() << tcu::TestLog::Message << "Expected greater or equal to " << minValue << ", got " << value << tcu::TestLog::EndMessage;
-				return false;
-			}
-			else
-				return true;
-		}
-
-		default:
-			DE_ASSERT(DE_FALSE);
-			return DE_NULL;
-	}
-}
-
-static bool verifyMaxValue (glu::CallLogWrapper& gl, glw::GLenum target, int maxValue, VerifierType type)
-{
-	switch (type)
-	{
-		case VERIFIER_GETBOOLEAN:
-		{
-			StateQueryMemoryWriteGuard<glw::GLboolean> value;
-			gl.glGetBooleanv(target, &value);
-
-			GLU_EXPECT_NO_ERROR(gl.glGetError(), "glGetBooleanv");
-
-			if (value.isUndefined())
-			{
-				gl.getLog() << tcu::TestLog::Message << "Get* did not return a value." << tcu::TestLog::EndMessage;
-				return false;
-			}
-			else if (maxValue < 0 && value == GL_FALSE)
-			{
-				gl.getLog() << tcu::TestLog::Message << "Expected GL_TRUE, got GL_FALSE" << tcu::TestLog::EndMessage;
-				return false;
-			}
-			else
-				return true;
-		}
-
-		case VERIFIER_GETINTEGER:
-		{
-			StateQueryMemoryWriteGuard<glw::GLint> value;
-			gl.glGetIntegerv(target, &value);
-
-			GLU_EXPECT_NO_ERROR(gl.glGetError(), "glGetIntegerv");
-
-			if (value.isUndefined())
-			{
-				gl.getLog() << tcu::TestLog::Message << "Get* did not return a value." << tcu::TestLog::EndMessage;
-				return false;
-			}
-			else if (value > maxValue)
-			{
-				gl.getLog() << tcu::TestLog::Message << "Expected less or equal to " << maxValue << ", got " << value << tcu::TestLog::EndMessage;
-				return false;
-			}
-			else
-				return true;
-		}
-
-		case VERIFIER_GETINTEGER64:
-		{
-			StateQueryMemoryWriteGuard<glw::GLint64> value;
-			gl.glGetInteger64v(target, &value);
-
-			GLU_EXPECT_NO_ERROR(gl.glGetError(), "glGetInteger64v");
-
-			if (value.isUndefined())
-			{
-				gl.getLog() << tcu::TestLog::Message << "Get* did not return a value." << tcu::TestLog::EndMessage;
-				return false;
-			}
-			else if (value > maxValue)
-			{
-				gl.getLog() << tcu::TestLog::Message << "Expected less or equal to " << maxValue << ", got " << value << tcu::TestLog::EndMessage;
-				return false;
-			}
-			else
-				return true;
-		}
-
-		case VERIFIER_GETFLOAT:
-		{
-			StateQueryMemoryWriteGuard<glw::GLfloat> value;
-			gl.glGetFloatv(target, &value);
-
-			GLU_EXPECT_NO_ERROR(gl.glGetError(), "glGetFloatv");
-
-			if (value.isUndefined())
-			{
-				gl.getLog() << tcu::TestLog::Message << "Get* did not return a value." << tcu::TestLog::EndMessage;
-				return false;
-			}
-			else if (value > maxValue)
-			{
-				gl.getLog() << tcu::TestLog::Message << "Expected less or equal to " << maxValue << ", got " << value << tcu::TestLog::EndMessage;
-				return false;
-			}
-			else
-				return true;
-		}
-
-		default:
-			DE_ASSERT(DE_FALSE);
-			return DE_NULL;
-	}
-}
-
-class SampleMaskCase : public TestCase
-{
-public:
-					SampleMaskCase	(Context& context, const char* name, const char* desc);
-
-private:
-	void			init			(void);
-	IterateResult	iterate			(void);
-
-	int				m_maxSampleMaskWords;
-};
-
-SampleMaskCase::SampleMaskCase (Context& context, const char* name, const char* desc)
-	: TestCase				(context, name, desc)
-	, m_maxSampleMaskWords	(-1)
-{
-}
-
-void SampleMaskCase::init (void)
-{
-	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
-
-	gl.getIntegerv(GL_MAX_SAMPLE_MASK_WORDS, &m_maxSampleMaskWords);
-	m_testCtx.getLog() << tcu::TestLog::Message << "GL_MAX_SAMPLE_MASK_WORDS = " << m_maxSampleMaskWords << tcu::TestLog::EndMessage;
-}
-
-SampleMaskCase::IterateResult SampleMaskCase::iterate (void)
-{
-	glu::CallLogWrapper gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
-	bool				error	= false;
-
-	gl.enableLogging(true);
-
-	// mask word count ok?
-	if (m_maxSampleMaskWords <= 0)
-	{
-		m_testCtx.getLog() << tcu::TestLog::Message << "Minimum value of GL_MAX_SAMPLE_MASK_WORDS is 1. Got " << m_maxSampleMaskWords << tcu::TestLog::EndMessage;
-		m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Invalid limit value");
-		return STOP;
-	}
-
-	// initial values
-	{
-		const tcu::ScopedLogSection section(m_testCtx.getLog(), "initial", "Initial values");
-
-		for (int ndx = 0; ndx < m_maxSampleMaskWords; ++ndx)
-		{
-			glw::GLint word = 0;
-			gl.glGetIntegeri_v(GL_SAMPLE_MASK_VALUE, ndx, &word);
-
-			if (word != -1)
-			{
-				m_testCtx.getLog() << tcu::TestLog::Message << "ERROR: Expected all bits set (-1), got " << word << tcu::TestLog::EndMessage;
-				error = true;
-			}
-		}
-	}
-
-	// random masks
-	{
-		const int					numRandomTest	= 20;
-		const tcu::ScopedLogSection section			(m_testCtx.getLog(), "random", "Random values");
-		de::Random					rnd				(0x4312);
-
-		for (int testNdx = 0; testNdx < numRandomTest; ++testNdx)
-		{
-			const glw::GLint	maskIndex		= (glw::GLint)(rnd.getUint32() % m_maxSampleMaskWords);
-			glw::GLint			mask			= (glw::GLint)(rnd.getUint32());
-			glw::GLint			queriedMask		= 0;
-
-			gl.glSampleMaski(maskIndex, mask);
-			gl.glGetIntegeri_v(GL_SAMPLE_MASK_VALUE, maskIndex, &queriedMask);
-
-			if (mask != queriedMask)
-			{
-				m_testCtx.getLog() << tcu::TestLog::Message << "ERROR: Expected " << mask << ", got " << queriedMask << tcu::TestLog::EndMessage;
-				error = true;
-			}
-		}
-	}
-
-	if (!error)
-		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
-	else
-		m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Invalid mask value");
-
-	return STOP;
 }
 
 class MaxSamplesCase : public TestCase
 {
 public:
-						MaxSamplesCase	(Context& context, const char* name, const char* desc, glw::GLenum target, int minValue, VerifierType verifierType);
+						MaxSamplesCase	(Context& context, const char* name, const char* desc, glw::GLenum target, int minValue, QueryType verifierType);
 private:
 	IterateResult		iterate			(void);
 
 	const glw::GLenum	m_target;
 	const int			m_minValue;
-	const VerifierType	m_verifierType;
+	const QueryType		m_verifierType;
 };
 
-MaxSamplesCase::MaxSamplesCase (Context& context, const char* name, const char* desc, glw::GLenum target, int minValue, VerifierType verifierType)
+MaxSamplesCase::MaxSamplesCase (Context& context, const char* name, const char* desc, glw::GLenum target, int minValue, QueryType verifierType)
 	: TestCase			(context, name, desc)
 	, m_target			(target)
 	, m_minValue		(minValue)
@@ -457,31 +82,30 @@ MaxSamplesCase::MaxSamplesCase (Context& context, const char* name, const char* 
 
 MaxSamplesCase::IterateResult MaxSamplesCase::iterate (void)
 {
-	glu::CallLogWrapper gl(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
+	glu::CallLogWrapper 	gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
+	tcu::ResultCollector	result	(m_testCtx.getLog(), " // ERROR: ");
 
 	gl.enableLogging(true);
+	verifyStateIntegerMin(result, gl, m_target, m_minValue, m_verifierType);
 
-	if (verifyMinValue(gl, m_target, m_minValue, m_verifierType))
-		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
-	else
-		m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Value not in legal range");
+	result.setTestContextResult(m_testCtx);
 	return STOP;
 }
 
 class TexBindingCase : public TestCase
 {
 public:
-						TexBindingCase	(Context& context, const char* name, const char* desc, glw::GLenum texTarget, glw::GLenum bindTarget, VerifierType verifierType);
+						TexBindingCase	(Context& context, const char* name, const char* desc, glw::GLenum texTarget, glw::GLenum bindTarget, QueryType verifierType);
 private:
 	void				init			(void);
 	IterateResult		iterate			(void);
 
 	const glw::GLenum	m_texTarget;
 	const glw::GLenum	m_bindTarget;
-	const VerifierType	m_verifierType;
+	const QueryType		m_verifierType;
 };
 
-TexBindingCase::TexBindingCase (Context& context, const char* name, const char* desc, glw::GLenum texTarget, glw::GLenum bindTarget, VerifierType verifierType)
+TexBindingCase::TexBindingCase (Context& context, const char* name, const char* desc, glw::GLenum texTarget, glw::GLenum bindTarget, QueryType verifierType)
 	: TestCase			(context, name, desc)
 	, m_texTarget		(texTarget)
 	, m_bindTarget		(bindTarget)
@@ -497,8 +121,8 @@ void TexBindingCase::init (void)
 
 TexBindingCase::IterateResult TexBindingCase::iterate (void)
 {
-	glu::CallLogWrapper gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
-	bool				allOk	= true;
+	glu::CallLogWrapper 	gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
+	tcu::ResultCollector	result	(m_testCtx.getLog(), " // ERROR: ");
 
 	gl.enableLogging(true);
 
@@ -506,7 +130,7 @@ TexBindingCase::IterateResult TexBindingCase::iterate (void)
 	{
 		const tcu::ScopedLogSection section(m_testCtx.getLog(), "initial", "Initial value");
 
-		allOk &= verifyValue(gl, m_bindTarget, 0, m_verifierType);
+		verifyStateInteger(result, gl, m_bindTarget, 0, m_verifierType);
 	}
 
 	// bind
@@ -519,7 +143,7 @@ TexBindingCase::IterateResult TexBindingCase::iterate (void)
 		gl.glBindTexture(m_texTarget, texture);
 		GLU_EXPECT_NO_ERROR(gl.glGetError(), "bind texture");
 
-		allOk &= verifyValue(gl, m_bindTarget, texture, m_verifierType);
+		verifyStateInteger(result, gl, m_bindTarget, texture, m_verifierType);
 
 		gl.glDeleteTextures(1, &texture);
 	}
@@ -528,29 +152,26 @@ TexBindingCase::IterateResult TexBindingCase::iterate (void)
 	{
 		const tcu::ScopedLogSection section(m_testCtx.getLog(), "bind", "After delete");
 
-		allOk &= verifyValue(gl, m_bindTarget, 0, m_verifierType);
+		verifyStateInteger(result, gl, m_bindTarget, 0, m_verifierType);
 	}
 
-	if (allOk)
-		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
-	else
-		m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Got invalid value");
+	result.setTestContextResult(m_testCtx);
 	return STOP;
 }
 
 class MinimumValueCase : public TestCase
 {
 public:
-						MinimumValueCase	(Context& context, const char* name, const char* desc, glw::GLenum target, int minValue, VerifierType verifierType);
+						MinimumValueCase	(Context& context, const char* name, const char* desc, glw::GLenum target, int minValue, QueryType verifierType);
 private:
 	IterateResult		iterate				(void);
 
 	const glw::GLenum	m_target;
 	const int			m_minValue;
-	const VerifierType	m_verifierType;
+	const QueryType		m_verifierType;
 };
 
-MinimumValueCase::MinimumValueCase (Context& context, const char* name, const char* desc, glw::GLenum target, int minValue, VerifierType verifierType)
+MinimumValueCase::MinimumValueCase (Context& context, const char* name, const char* desc, glw::GLenum target, int minValue, QueryType verifierType)
 	: TestCase			(context, name, desc)
 	, m_target			(target)
 	, m_minValue		(minValue)
@@ -560,30 +181,29 @@ MinimumValueCase::MinimumValueCase (Context& context, const char* name, const ch
 
 MinimumValueCase::IterateResult MinimumValueCase::iterate (void)
 {
-	glu::CallLogWrapper gl(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
+	glu::CallLogWrapper		gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
+	tcu::ResultCollector	result	(m_testCtx.getLog(), " // ERROR: ");
 
 	gl.enableLogging(true);
+	verifyStateIntegerMin(result, gl, m_target, m_minValue, m_verifierType);
 
-	if (verifyMinValue(gl, m_target, m_minValue, m_verifierType))
-		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
-	else
-		m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Got invalid value");
+	result.setTestContextResult(m_testCtx);
 	return STOP;
 }
 
 class AlignmentCase : public TestCase
 {
 public:
-						AlignmentCase	(Context& context, const char* name, const char* desc, glw::GLenum target, int minValue, VerifierType verifierType);
+						AlignmentCase	(Context& context, const char* name, const char* desc, glw::GLenum target, int minValue, QueryType verifierType);
 private:
 	IterateResult		iterate			(void);
 
 	const glw::GLenum	m_target;
 	const int			m_minValue;
-	const VerifierType	m_verifierType;
+	const QueryType		m_verifierType;
 };
 
-AlignmentCase::AlignmentCase (Context& context, const char* name, const char* desc, glw::GLenum target, int minValue, VerifierType verifierType)
+AlignmentCase::AlignmentCase (Context& context, const char* name, const char* desc, glw::GLenum target, int minValue, QueryType verifierType)
 	: TestCase			(context, name, desc)
 	, m_target			(target)
 	, m_minValue		(minValue)
@@ -593,14 +213,302 @@ AlignmentCase::AlignmentCase (Context& context, const char* name, const char* de
 
 AlignmentCase::IterateResult AlignmentCase::iterate (void)
 {
-	glu::CallLogWrapper gl(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
+	glu::CallLogWrapper		gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
+	tcu::ResultCollector	result	(m_testCtx.getLog(), " // ERROR: ");
+
+	gl.enableLogging(true);
+	verifyStateIntegerMax(result, gl, m_target, m_minValue, m_verifierType);
+
+	result.setTestContextResult(m_testCtx);
+	return STOP;
+}
+
+class BufferBindingCase : public TestCase
+{
+public:
+						BufferBindingCase	(Context& context, const char* name, const char* desc, glw::GLenum queryTarget, glw::GLenum bindingPoint, QueryType verifierType);
+private:
+	IterateResult		iterate				(void);
+
+	const glw::GLenum	m_queryTarget;
+	const glw::GLenum	m_bindingPoint;
+	const QueryType		m_verifierType;
+};
+
+BufferBindingCase::BufferBindingCase (Context& context, const char* name, const char* desc, glw::GLenum queryTarget, glw::GLenum bindingPoint, QueryType verifierType)
+	: TestCase			(context, name, desc)
+	, m_queryTarget		(queryTarget)
+	, m_bindingPoint	(bindingPoint)
+	, m_verifierType	(verifierType)
+{
+}
+
+BufferBindingCase::IterateResult BufferBindingCase::iterate (void)
+{
+	glu::CallLogWrapper		gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
+	tcu::ResultCollector	result	(m_testCtx.getLog(), " // ERROR: ");
 
 	gl.enableLogging(true);
 
-	if (verifyMaxValue(gl, m_target, m_minValue, m_verifierType))
-		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+	{
+		const tcu::ScopedLogSection	section(m_testCtx.getLog(), "Initial", "Initial value");
+
+		verifyStateInteger(result, gl, m_queryTarget, 0, m_verifierType);
+	}
+
+	{
+		const tcu::ScopedLogSection	section	(m_testCtx.getLog(), "AfterBinding", "After binding");
+		glu::Buffer					buf		(m_context.getRenderContext());
+
+		gl.glBindBuffer(m_bindingPoint, *buf);
+		GLU_EXPECT_NO_ERROR(gl.glGetError(), "setup");
+
+		verifyStateInteger(result, gl, m_queryTarget, *buf, m_verifierType);
+	}
+
+	{
+		const tcu::ScopedLogSection	section	(m_testCtx.getLog(), "AfterDelete", "After deleting");
+		glw::GLuint					buf		= 0;
+
+		gl.glGenBuffers(1, &buf);
+		gl.glBindBuffer(m_bindingPoint, buf);
+		gl.glDeleteBuffers(1, &buf);
+		GLU_EXPECT_NO_ERROR(gl.glGetError(), "setup");
+
+		verifyStateInteger(result, gl, m_queryTarget, 0, m_verifierType);
+	}
+
+	result.setTestContextResult(m_testCtx);
+	return STOP;
+}
+
+class ProgramPipelineBindingCase : public TestCase
+{
+public:
+						ProgramPipelineBindingCase	(Context& context, const char* name, const char* desc, QueryType verifierType);
+private:
+	IterateResult		iterate						(void);
+
+	const QueryType		m_verifierType;
+};
+
+ProgramPipelineBindingCase::ProgramPipelineBindingCase (Context& context, const char* name, const char* desc, QueryType verifierType)
+	: TestCase			(context, name, desc)
+	, m_verifierType	(verifierType)
+{
+}
+
+ProgramPipelineBindingCase::IterateResult ProgramPipelineBindingCase::iterate (void)
+{
+	glu::CallLogWrapper		gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
+	tcu::ResultCollector	result	(m_testCtx.getLog(), " // ERROR: ");
+
+	gl.enableLogging(true);
+
+	{
+		const tcu::ScopedLogSection	section(m_testCtx.getLog(), "Initial", "Initial value");
+
+		verifyStateInteger(result, gl, GL_PROGRAM_PIPELINE_BINDING, 0, m_verifierType);
+	}
+
+	{
+		const tcu::ScopedLogSection	section		(m_testCtx.getLog(), "AfterBinding", "After binding");
+		glu::ProgramPipeline		pipeline	(m_context.getRenderContext());
+
+		gl.glBindProgramPipeline(pipeline.getPipeline());
+		GLU_EXPECT_NO_ERROR(gl.glGetError(), "setup");
+
+		verifyStateInteger(result, gl, GL_PROGRAM_PIPELINE_BINDING, pipeline.getPipeline(), m_verifierType);
+	}
+
+	{
+		const tcu::ScopedLogSection	section		(m_testCtx.getLog(), "AfterDelete", "After deleting");
+		glw::GLuint					pipeline	= 0;
+
+		gl.glGenProgramPipelines(1, &pipeline);
+		gl.glBindProgramPipeline(pipeline);
+		gl.glDeleteProgramPipelines(1, &pipeline);
+		GLU_EXPECT_NO_ERROR(gl.glGetError(), "setup");
+
+		verifyStateInteger(result, gl, GL_PROGRAM_PIPELINE_BINDING, 0, m_verifierType);
+	}
+
+	result.setTestContextResult(m_testCtx);
+	return STOP;
+}
+
+class FramebufferMinimumValueCase : public TestCase
+{
+public:
+						FramebufferMinimumValueCase	(Context& context, const char* name, const char* desc, glw::GLenum target, int minValue, glw::GLenum tiedTo, QueryType verifierType);
+private:
+	IterateResult		iterate						(void);
+
+	const glw::GLenum	m_target;
+	const glw::GLenum	m_tiedTo;
+	const int			m_minValue;
+	const QueryType		m_verifierType;
+};
+
+FramebufferMinimumValueCase::FramebufferMinimumValueCase (Context& context, const char* name, const char* desc, glw::GLenum target, int minValue, glw::GLenum tiedTo, QueryType verifierType)
+	: TestCase			(context, name, desc)
+	, m_target			(target)
+	, m_tiedTo			(tiedTo)
+	, m_minValue		(minValue)
+	, m_verifierType	(verifierType)
+{
+}
+
+FramebufferMinimumValueCase::IterateResult FramebufferMinimumValueCase::iterate (void)
+{
+	glu::CallLogWrapper		gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
+	tcu::ResultCollector	result	(m_testCtx.getLog(), " // ERROR: ");
+
+	gl.enableLogging(true);
+
+	{
+		const tcu::ScopedLogSection	section(m_testCtx.getLog(), "Minimum", "Minimum is " + de::toString(m_minValue));
+
+		verifyStateIntegerMin(result, gl, m_target, m_minValue, m_verifierType);
+	}
+	{
+		const tcu::ScopedLogSection	section(m_testCtx.getLog(), "Ties", "Tied to " + de::toString(glu::getGettableStateStr(m_tiedTo)));
+
+		verifyStateIntegerEqualToOther(result, gl, m_target, m_tiedTo, m_verifierType);
+	}
+
+	result.setTestContextResult(m_testCtx);
+	return STOP;
+}
+
+class LegacyVectorLimitCase : public TestCase
+{
+public:
+						LegacyVectorLimitCase	(Context& context, const char* name, const char* desc, glw::GLenum legacyTarget, glw::GLenum componentTarget, QueryType verifierType);
+private:
+	IterateResult		iterate					(void);
+
+	const glw::GLenum	m_legacyTarget;
+	const glw::GLenum	m_componentTarget;
+	const QueryType		m_verifierType;
+};
+
+LegacyVectorLimitCase::LegacyVectorLimitCase (Context& context, const char* name, const char* desc, glw::GLenum legacyTarget, glw::GLenum componentTarget, QueryType verifierType)
+	: TestCase			(context, name, desc)
+	, m_legacyTarget	(legacyTarget)
+	, m_componentTarget	(componentTarget)
+	, m_verifierType	(verifierType)
+{
+}
+
+LegacyVectorLimitCase::IterateResult LegacyVectorLimitCase::iterate (void)
+{
+	glu::CallLogWrapper		gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
+	tcu::ResultCollector	result	(m_testCtx.getLog(), " // ERROR: ");
+
+	gl.enableLogging(true);
+
+	{
+		const tcu::ScopedLogSection	section(m_testCtx.getLog(), "TiedTo", de::toString(glu::getGettableStateStr(m_legacyTarget)) +
+																			" is " +
+																			de::toString(glu::getGettableStateStr(m_componentTarget)) +
+																			" divided by four");
+
+		StateQueryMemoryWriteGuard<glw::GLint> value;
+		gl.glGetIntegerv(m_componentTarget, &value);
+		GLU_EXPECT_NO_ERROR(gl.glGetError(), "glGetIntegerv");
+
+		if (value.verifyValidity(result))
+			verifyStateInteger(result, gl, m_legacyTarget, ((int)value) / 4, m_verifierType);
+	}
+
+	result.setTestContextResult(m_testCtx);
+	return STOP;
+}
+
+class CombinedComputeUniformComponentsCase : public TestCase
+{
+public:
+						CombinedComputeUniformComponentsCase	(Context& context, const char* name, const char* desc, QueryType verifierType);
+private:
+	IterateResult		iterate									(void);
+
+	const QueryType		m_verifierType;
+};
+
+CombinedComputeUniformComponentsCase::CombinedComputeUniformComponentsCase (Context& context, const char* name, const char* desc, QueryType verifierType)
+	: TestCase			(context, name, desc)
+	, m_verifierType	(verifierType)
+{
+}
+
+CombinedComputeUniformComponentsCase::IterateResult CombinedComputeUniformComponentsCase::iterate (void)
+{
+	glu::CallLogWrapper		gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
+	tcu::ResultCollector	result	(m_testCtx.getLog(), " // ERROR: ");
+
+	gl.enableLogging(true);
+
+	m_testCtx.getLog()	<< tcu::TestLog::Message
+						<< "The minimum value of MAX_COMBINED_COMPUTE_UNIFORM_COMPONENTS is MAX_COMPUTE_UNIFORM_BLOCKS x MAX_UNIFORM_BLOCK_SIZE / 4 + MAX_COMPUTE_UNIFORM_COMPONENTS"
+						<< tcu::TestLog::EndMessage;
+
+	StateQueryMemoryWriteGuard<glw::GLint> maxUniformBlocks;
+	gl.glGetIntegerv(GL_MAX_COMPUTE_UNIFORM_BLOCKS, &maxUniformBlocks);
+	GLU_EXPECT_NO_ERROR(gl.glGetError(), "glGetIntegerv");
+
+	StateQueryMemoryWriteGuard<glw::GLint> maxUniformBlockSize;
+	gl.glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, &maxUniformBlockSize);
+	GLU_EXPECT_NO_ERROR(gl.glGetError(), "glGetIntegerv");
+
+	StateQueryMemoryWriteGuard<glw::GLint> maxUniformComponents;
+	gl.glGetIntegerv(GL_MAX_COMPUTE_UNIFORM_COMPONENTS, &maxUniformComponents);
+	GLU_EXPECT_NO_ERROR(gl.glGetError(), "glGetIntegerv");
+
+	if (maxUniformBlocks.verifyValidity(result) && maxUniformBlockSize.verifyValidity(result) && maxUniformComponents.verifyValidity(result))
+		verifyStateIntegerMin(result, gl, GL_MAX_COMBINED_COMPUTE_UNIFORM_COMPONENTS, ((int)maxUniformBlocks) * ((int)maxUniformBlockSize) / 4 + (int)maxUniformComponents, m_verifierType);
+
+	result.setTestContextResult(m_testCtx);
+	return STOP;
+}
+
+class TextureGatherLimitCase : public TestCase
+{
+public:
+						TextureGatherLimitCase	(Context& context, const char* name, const char* desc, bool isMaxCase, QueryType verifierType);
+private:
+	IterateResult		iterate					(void);
+
+	const bool			m_isMaxCase;
+	const QueryType		m_verifierType;
+};
+
+TextureGatherLimitCase::TextureGatherLimitCase (Context& context, const char* name, const char* desc, bool isMaxCase, QueryType verifierType)
+	: TestCase			(context, name, desc)
+	, m_isMaxCase		(isMaxCase)
+	, m_verifierType	(verifierType)
+{
+}
+
+TextureGatherLimitCase::IterateResult TextureGatherLimitCase::iterate (void)
+{
+	glu::CallLogWrapper		gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
+	tcu::ResultCollector	result	(m_testCtx.getLog(), " // ERROR: ");
+
+	gl.enableLogging(true);
+
+	if (m_isMaxCase)
+	{
+		// range [0, inf)
+		verifyStateIntegerMin(result, gl, GL_MAX_PROGRAM_TEXTURE_GATHER_OFFSET, 0, m_verifierType);
+	}
 	else
-		m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Got invalid value");
+	{
+		// range (-inf, 0]
+		verifyStateIntegerMax(result, gl, GL_MIN_PROGRAM_TEXTURE_GATHER_OFFSET, 0, m_verifierType);
+	}
+
+	result.setTestContextResult(m_testCtx);
 	return STOP;
 }
 
@@ -618,18 +526,15 @@ IntegerStateQueryTests::~IntegerStateQueryTests (void)
 void IntegerStateQueryTests::init (void)
 {
 	// Verifiers
-	const VerifierType verifiers[] = { VERIFIER_GETBOOLEAN, VERIFIER_GETINTEGER, VERIFIER_GETINTEGER64, VERIFIER_GETFLOAT };
+	const QueryType verifiers[] = { QUERY_BOOLEAN, QUERY_INTEGER, QUERY_INTEGER64, QUERY_FLOAT };
 
 #define FOR_EACH_VERIFIER(X) \
 	for (int verifierNdx = 0; verifierNdx < DE_LENGTH_OF_ARRAY(verifiers); ++verifierNdx)	\
 	{																						\
 		const char* verifierSuffix = getVerifierSuffix(verifiers[verifierNdx]);				\
-		const VerifierType verifier = verifiers[verifierNdx];								\
+		const QueryType verifier = verifiers[verifierNdx];									\
 		this->addChild(X);																	\
 	}
-
-	// No additional verifiers for sample_mask_value
-	this->addChild(new SampleMaskCase(m_context, "sample_mask_value", "Test sample mask value"));
 
 	FOR_EACH_VERIFIER(new MaxSamplesCase(m_context,		(std::string() + "max_color_texture_samples_" + verifierSuffix).c_str(),				"Test GL_MAX_COLOR_TEXTURE_SAMPLES",			GL_MAX_COLOR_TEXTURE_SAMPLES,		1,	verifier))
 	FOR_EACH_VERIFIER(new MaxSamplesCase(m_context,		(std::string() + "max_depth_texture_samples_" + verifierSuffix).c_str(),				"Test GL_MAX_DEPTH_TEXTURE_SAMPLES",			GL_MAX_DEPTH_TEXTURE_SAMPLES,		1,	verifier))
@@ -641,8 +546,67 @@ void IntegerStateQueryTests::init (void)
 	FOR_EACH_VERIFIER(new MinimumValueCase(m_context,	(std::string() + "max_vertex_attrib_relative_offset_" + verifierSuffix).c_str(),		"Test MAX_VERTEX_ATTRIB_RELATIVE_OFFSET",		GL_MAX_VERTEX_ATTRIB_RELATIVE_OFFSET,	2047,	verifier))
 	FOR_EACH_VERIFIER(new MinimumValueCase(m_context,	(std::string() + "max_vertex_attrib_bindings_" + verifierSuffix).c_str(),				"Test MAX_VERTEX_ATTRIB_BINDINGS",				GL_MAX_VERTEX_ATTRIB_BINDINGS,			16,		verifier))
 	FOR_EACH_VERIFIER(new MinimumValueCase(m_context,	(std::string() + "max_vertex_attrib_stride_" + verifierSuffix).c_str(),					"Test MAX_VERTEX_ATTRIB_STRIDE",				GL_MAX_VERTEX_ATTRIB_STRIDE,			2048,	verifier))
+	FOR_EACH_VERIFIER(new MinimumValueCase(m_context,	(std::string() + "max_sample_mask_words_" + verifierSuffix).c_str(),					"Test MAX_SAMPLE_MASK_WORDS",					GL_MAX_SAMPLE_MASK_WORDS,				1,		verifier))
 
 	FOR_EACH_VERIFIER(new AlignmentCase(m_context,		(std::string() + "shader_storage_buffer_offset_alignment_" + verifierSuffix).c_str(),	"Test SHADER_STORAGE_BUFFER_OFFSET_ALIGNMENT",	GL_SHADER_STORAGE_BUFFER_OFFSET_ALIGNMENT,	256,	verifier))
+
+	FOR_EACH_VERIFIER(new BufferBindingCase(m_context,	(std::string() + "draw_indirect_buffer_binding_" + verifierSuffix).c_str(),				"Test DRAW_INDIRECT_BUFFER_BINDING",			GL_DRAW_INDIRECT_BUFFER_BINDING,		GL_DRAW_INDIRECT_BUFFER,		verifier))
+	FOR_EACH_VERIFIER(new BufferBindingCase(m_context,	(std::string() + "atomic_counter_buffer_binding_" + verifierSuffix).c_str(),			"Test ATOMIC_COUNTER_BUFFER_BINDING",			GL_ATOMIC_COUNTER_BUFFER_BINDING,		GL_ATOMIC_COUNTER_BUFFER,		verifier))
+	FOR_EACH_VERIFIER(new BufferBindingCase(m_context,	(std::string() + "shader_storage_buffer_binding_" + verifierSuffix).c_str(),			"Test SHADER_STORAGE_BUFFER_BINDING",			GL_SHADER_STORAGE_BUFFER_BINDING,		GL_SHADER_STORAGE_BUFFER,		verifier))
+	FOR_EACH_VERIFIER(new BufferBindingCase(m_context,	(std::string() + "dispatch_indirect_buffer_binding_" + verifierSuffix).c_str(),			"Test DISPATCH_INDIRECT_BUFFER_BINDING",		GL_DISPATCH_INDIRECT_BUFFER_BINDING,	GL_DISPATCH_INDIRECT_BUFFER,	verifier))
+
+	FOR_EACH_VERIFIER(new FramebufferMinimumValueCase(m_context,	(std::string() + "max_framebuffer_width_" + verifierSuffix).c_str(),		"Test MAX_FRAMEBUFFER_WIDTH",					GL_MAX_FRAMEBUFFER_WIDTH,				2048,	GL_MAX_TEXTURE_SIZE,	verifier))
+	FOR_EACH_VERIFIER(new FramebufferMinimumValueCase(m_context,	(std::string() + "max_framebuffer_height_" + verifierSuffix).c_str(),		"Test MAX_FRAMEBUFFER_HEIGHT",					GL_MAX_FRAMEBUFFER_HEIGHT,				2048,	GL_MAX_TEXTURE_SIZE,	verifier))
+	FOR_EACH_VERIFIER(new FramebufferMinimumValueCase(m_context,	(std::string() + "max_framebuffer_samples_" + verifierSuffix).c_str(),		"Test MAX_FRAMEBUFFER_SAMPLES",					GL_MAX_FRAMEBUFFER_SAMPLES,				4,		GL_MAX_SAMPLES,			verifier))
+
+	FOR_EACH_VERIFIER(new ProgramPipelineBindingCase(m_context,	(std::string() + "program_pipeline_binding_" + verifierSuffix).c_str(),			"Test PROGRAM_PIPELINE_BINDING",	verifier))
+
+	// vertex
+	FOR_EACH_VERIFIER(new MinimumValueCase(m_context,	(std::string() + "max_vertex_atomic_counter_buffers_" + verifierSuffix).c_str(),		"Test MAX_VERTEX_ATOMIC_COUNTER_BUFFERS",		GL_MAX_VERTEX_ATOMIC_COUNTER_BUFFERS,	0,		verifier))
+	FOR_EACH_VERIFIER(new MinimumValueCase(m_context,	(std::string() + "max_vertex_atomic_counters_" + verifierSuffix).c_str(),				"Test MAX_VERTEX_ATOMIC_COUNTERS",				GL_MAX_VERTEX_ATOMIC_COUNTERS,			0,		verifier))
+	FOR_EACH_VERIFIER(new MinimumValueCase(m_context,	(std::string() + "max_vertex_image_uniforms_" + verifierSuffix).c_str(),				"Test MAX_VERTEX_IMAGE_UNIFORMS",				GL_MAX_VERTEX_IMAGE_UNIFORMS,			0,		verifier))
+	FOR_EACH_VERIFIER(new MinimumValueCase(m_context,	(std::string() + "max_vertex_shader_storage_blocks_" + verifierSuffix).c_str(),			"Test MAX_VERTEX_SHADER_STORAGE_BLOCKS",		GL_MAX_VERTEX_SHADER_STORAGE_BLOCKS,	0,		verifier))
+	FOR_EACH_VERIFIER(new MinimumValueCase(m_context,	(std::string() + "max_vertex_uniform_components_" + verifierSuffix).c_str(),			"Test MAX_VERTEX_UNIFORM_COMPONENTS",			GL_MAX_VERTEX_UNIFORM_COMPONENTS,		1024,	verifier))
+
+	// fragment
+	FOR_EACH_VERIFIER(new MinimumValueCase(m_context,	(std::string() + "max_fragment_atomic_counter_buffers_" + verifierSuffix).c_str(),		"Test MAX_FRAGMENT_ATOMIC_COUNTER_BUFFERS",		GL_MAX_FRAGMENT_ATOMIC_COUNTER_BUFFERS,	0,		verifier))
+	FOR_EACH_VERIFIER(new MinimumValueCase(m_context,	(std::string() + "max_fragment_atomic_counters_" + verifierSuffix).c_str(),				"Test MAX_FRAGMENT_ATOMIC_COUNTERS",			GL_MAX_FRAGMENT_ATOMIC_COUNTERS,		0,		verifier))
+	FOR_EACH_VERIFIER(new MinimumValueCase(m_context,	(std::string() + "max_fragment_image_uniforms_" + verifierSuffix).c_str(),				"Test MAX_FRAGMENT_IMAGE_UNIFORMS",				GL_MAX_FRAGMENT_IMAGE_UNIFORMS,			0,		verifier))
+	FOR_EACH_VERIFIER(new MinimumValueCase(m_context,	(std::string() + "max_fragment_shader_storage_blocks_" + verifierSuffix).c_str(),		"Test MAX_FRAGMENT_SHADER_STORAGE_BLOCKS",		GL_MAX_FRAGMENT_SHADER_STORAGE_BLOCKS,	0,		verifier))
+	FOR_EACH_VERIFIER(new MinimumValueCase(m_context,	(std::string() + "max_fragment_uniform_components_" + verifierSuffix).c_str(),			"Test MAX_FRAGMENT_UNIFORM_COMPONENTS",			GL_MAX_FRAGMENT_UNIFORM_COMPONENTS,		1024,	verifier))
+
+	// compute
+	FOR_EACH_VERIFIER(new MinimumValueCase(m_context,	(std::string() + "max_compute_work_group_invocations_" + verifierSuffix).c_str(),		"Test MAX_COMPUTE_WORK_GROUP_INVOCATIONS",		GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS,		128,	verifier))
+	FOR_EACH_VERIFIER(new MinimumValueCase(m_context,	(std::string() + "max_compute_uniform_blocks_" + verifierSuffix).c_str(),				"Test MAX_COMPUTE_UNIFORM_BLOCKS",				GL_MAX_COMPUTE_UNIFORM_BLOCKS,				12,		verifier))
+	FOR_EACH_VERIFIER(new MinimumValueCase(m_context,	(std::string() + "max_compute_texture_image_units_" + verifierSuffix).c_str(),			"Test MAX_COMPUTE_TEXTURE_IMAGE_UNITS",			GL_MAX_COMPUTE_TEXTURE_IMAGE_UNITS,			16,		verifier))
+	FOR_EACH_VERIFIER(new MinimumValueCase(m_context,	(std::string() + "max_compute_shared_memory_size_" + verifierSuffix).c_str(),			"Test MAX_COMPUTE_SHARED_MEMORY_SIZE",			GL_MAX_COMPUTE_SHARED_MEMORY_SIZE,			16384,	verifier))
+	FOR_EACH_VERIFIER(new MinimumValueCase(m_context,	(std::string() + "max_compute_uniform_components_" + verifierSuffix).c_str(),			"Test MAX_COMPUTE_UNIFORM_COMPONENTS",			GL_MAX_COMPUTE_UNIFORM_COMPONENTS,			1024,	verifier))
+	FOR_EACH_VERIFIER(new MinimumValueCase(m_context,	(std::string() + "max_compute_atomic_counter_buffers_" + verifierSuffix).c_str(),		"Test MAX_COMPUTE_ATOMIC_COUNTER_BUFFERS",		GL_MAX_COMPUTE_ATOMIC_COUNTER_BUFFERS,		1,		verifier))
+	FOR_EACH_VERIFIER(new MinimumValueCase(m_context,	(std::string() + "max_compute_atomic_counters_" + verifierSuffix).c_str(),				"Test MAX_COMPUTE_ATOMIC_COUNTERS",				GL_MAX_COMPUTE_ATOMIC_COUNTERS,				8,		verifier))
+	FOR_EACH_VERIFIER(new MinimumValueCase(m_context,	(std::string() + "max_compute_image_uniforms_" + verifierSuffix).c_str(),				"Test MAX_COMPUTE_IMAGE_UNIFORMS",				GL_MAX_COMPUTE_IMAGE_UNIFORMS,				4,		verifier))
+	FOR_EACH_VERIFIER(new MinimumValueCase(m_context,	(std::string() + "max_compute_shader_storage_blocks_" + verifierSuffix).c_str(),		"Test MAX_COMPUTE_SHADER_STORAGE_BLOCKS",		GL_MAX_COMPUTE_SHADER_STORAGE_BLOCKS,		4,		verifier))
+
+	FOR_EACH_VERIFIER(new MinimumValueCase(m_context,	(std::string() + "max_uniform_locations_" + verifierSuffix).c_str(),					"Test MAX_UNIFORM_LOCATIONS",					GL_MAX_UNIFORM_LOCATIONS,					1024,	verifier))
+	FOR_EACH_VERIFIER(new MinimumValueCase(m_context,	(std::string() + "max_atomic_counter_buffer_bindings_" + verifierSuffix).c_str(),		"Test MAX_ATOMIC_COUNTER_BUFFER_BINDINGS",		GL_MAX_ATOMIC_COUNTER_BUFFER_BINDINGS,		1,		verifier))
+	FOR_EACH_VERIFIER(new MinimumValueCase(m_context,	(std::string() + "max_atomic_counter_buffer_size_" + verifierSuffix).c_str(),			"Test MAX_ATOMIC_COUNTER_BUFFER_SIZE",			GL_MAX_ATOMIC_COUNTER_BUFFER_SIZE,			32,		verifier))
+	FOR_EACH_VERIFIER(new MinimumValueCase(m_context,	(std::string() + "max_combined_atomic_counter_buffers_" + verifierSuffix).c_str(),		"Test MAX_COMBINED_ATOMIC_COUNTER_BUFFERS",		GL_MAX_COMBINED_ATOMIC_COUNTER_BUFFERS,		1,		verifier))
+	FOR_EACH_VERIFIER(new MinimumValueCase(m_context,	(std::string() + "max_combined_atomic_counters_" + verifierSuffix).c_str(),				"Test MAX_COMBINED_ATOMIC_COUNTERS",			GL_MAX_COMBINED_ATOMIC_COUNTERS,			8,		verifier))
+	FOR_EACH_VERIFIER(new MinimumValueCase(m_context,	(std::string() + "max_image_units_" + verifierSuffix).c_str(),							"Test MAX_IMAGE_UNITS",							GL_MAX_IMAGE_UNITS,							4,		verifier))
+	FOR_EACH_VERIFIER(new MinimumValueCase(m_context,	(std::string() + "max_combined_image_uniforms_" + verifierSuffix).c_str(),				"Test MAX_COMBINED_IMAGE_UNIFORMS",				GL_MAX_COMBINED_IMAGE_UNIFORMS,				4,		verifier))
+	FOR_EACH_VERIFIER(new MinimumValueCase(m_context,	(std::string() + "max_shader_storage_buffer_bindings_" + verifierSuffix).c_str(),		"Test MAX_SHADER_STORAGE_BUFFER_BINDINGS",		GL_MAX_SHADER_STORAGE_BUFFER_BINDINGS,		4,		verifier))
+	FOR_EACH_VERIFIER(new MinimumValueCase(m_context,	(std::string() + "max_shader_storage_block_size_" + verifierSuffix).c_str(),			"Test MAX_SHADER_STORAGE_BLOCK_SIZE",			GL_MAX_SHADER_STORAGE_BLOCK_SIZE,			1<<27,	verifier))
+	FOR_EACH_VERIFIER(new MinimumValueCase(m_context,	(std::string() + "max_combined_shader_storage_blocks_" + verifierSuffix).c_str(),		"Test MAX_COMBINED_SHADER_STORAGE_BLOCKS",		GL_MAX_COMBINED_SHADER_STORAGE_BLOCKS,		4,		verifier))
+	FOR_EACH_VERIFIER(new MinimumValueCase(m_context,	(std::string() + "max_uniform_buffer_bindings_" + verifierSuffix).c_str(),				"Test MAX_UNIFORM_BUFFER_BINDINGS",				GL_MAX_UNIFORM_BUFFER_BINDINGS,				36,		verifier))
+	FOR_EACH_VERIFIER(new MinimumValueCase(m_context,	(std::string() + "max_combined_texture_image_units_" + verifierSuffix).c_str(),			"Test MAX_COMBINED_TEXTURE_IMAGE_UNITS",		GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS,		48,		verifier))
+	FOR_EACH_VERIFIER(new MinimumValueCase(m_context,	(std::string() + "max_combined_shader_output_resources_" + verifierSuffix).c_str(),		"Test MAX_COMBINED_SHADER_OUTPUT_RESOURCES",	GL_MAX_COMBINED_SHADER_OUTPUT_RESOURCES,	4,		verifier))
+
+	FOR_EACH_VERIFIER(new CombinedComputeUniformComponentsCase(m_context,	(std::string() + "max_combined_compute_uniform_components_" + verifierSuffix).c_str(), "Test MAX_COMBINED_COMPUTE_UNIFORM_COMPONENTS", verifier))
+
+	FOR_EACH_VERIFIER(new LegacyVectorLimitCase(m_context,	(std::string() + "max_vertex_uniform_vectors_" + verifierSuffix).c_str(),			"Test MAX_VERTEX_UNIFORM_VECTORS",				GL_MAX_VERTEX_UNIFORM_VECTORS,			GL_MAX_VERTEX_UNIFORM_COMPONENTS,	verifier))
+	FOR_EACH_VERIFIER(new LegacyVectorLimitCase(m_context,	(std::string() + "max_fragment_uniform_vectors_" + verifierSuffix).c_str(),			"Test MAX_FRAGMENT_UNIFORM_VECTORS",			GL_MAX_FRAGMENT_UNIFORM_VECTORS,		GL_MAX_FRAGMENT_UNIFORM_COMPONENTS,	verifier))
+
+	FOR_EACH_VERIFIER(new TextureGatherLimitCase(m_context,	(std::string() + "min_program_texture_gather_offset_" + verifierSuffix).c_str(),	"Test MIN_PROGRAM_TEXTURE_GATHER_OFFSET",		false,		verifier))
+	FOR_EACH_VERIFIER(new TextureGatherLimitCase(m_context,	(std::string() + "max_program_texture_gather_offset_" + verifierSuffix).c_str(),	"Test MAX_PROGRAM_TEXTURE_GATHER_OFFSET",		true,		verifier))
 
 #undef FOR_EACH_VERIFIER
 }

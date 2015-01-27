@@ -30,6 +30,7 @@
 #include "glsStateQueryUtil.hpp"
 #include "glwEnums.hpp"
 #include "glwFunctions.hpp"
+#include "glsStateQueryUtil.hpp"
 #include "deRandom.hpp"
 
 namespace deqp
@@ -41,25 +42,53 @@ namespace Functional
 namespace
 {
 
-class AttributeBindingCase : public TestCase
+using namespace gls::StateQueryUtil;
+
+class AttributeCase : public TestCase
 {
 public:
-					AttributeBindingCase	(Context& context, const char* name, const char* desc);
-	IterateResult	iterate					(void);
+						AttributeCase		(Context& context, const char* name, const char* desc, QueryType verifier);
+
+	IterateResult		iterate				(void);
+	virtual void		test				(tcu::ResultCollector& result) = 0;
+
+protected:
+	const QueryType		m_verifier;
 };
 
-AttributeBindingCase::AttributeBindingCase (Context& context, const char* name, const char* desc)
-	: TestCase(context, name, desc)
+AttributeCase::AttributeCase (Context& context, const char* name, const char* desc, QueryType verifier)
+	: TestCase		(context, name, desc)
+	, m_verifier	(verifier)
 {
 }
 
-AttributeBindingCase::IterateResult AttributeBindingCase::iterate (void)
+AttributeCase::IterateResult AttributeCase::iterate (void)
+{
+	tcu::ResultCollector result(m_testCtx.getLog(), " // ERROR: ");
+
+	test(result);
+
+	result.setTestContextResult(m_testCtx);
+	return STOP;
+}
+
+class AttributeBindingCase : public AttributeCase
+{
+public:
+			AttributeBindingCase	(Context& context, const char* name, const char* desc, QueryType verifier);
+	void	test					(tcu::ResultCollector& result);
+};
+
+AttributeBindingCase::AttributeBindingCase (Context& context, const char* name, const char* desc, QueryType verifier)
+	: AttributeCase(context, name, desc, verifier)
+{
+}
+
+void AttributeBindingCase::test (tcu::ResultCollector& result)
 {
 	glu::CallLogWrapper gl			(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
 	glu::VertexArray	vao			(m_context.getRenderContext());
-	glw::GLenum			error		= 0;
 	glw::GLint			maxAttrs	= -1;
-	bool				allOk		= true;
 
 	gl.enableLogging(true);
 
@@ -71,30 +100,13 @@ AttributeBindingCase::IterateResult AttributeBindingCase::iterate (void)
 		const tcu::ScopedLogSection section(m_testCtx.getLog(), "initial", "Initial values");
 
 		for (int attr = 0; attr < de::max(16, maxAttrs); ++attr)
-		{
-			glw::GLint bindingState = -1;
-
-			gl.glGetVertexAttribiv(attr, GL_VERTEX_ATTRIB_BINDING, &bindingState);
-			error = gl.glGetError();
-
-			if (error != GL_NO_ERROR)
-			{
-				m_testCtx.getLog() << tcu::TestLog::Message << "// ERROR: Got error " << glu::getErrorStr(error) << tcu::TestLog::EndMessage;
-				allOk = false;
-			}
-			else if (bindingState != attr)
-			{
-				m_testCtx.getLog() << tcu::TestLog::Message << "// ERROR: Expected " << attr << ", got " << bindingState << tcu::TestLog::EndMessage;
-				allOk = false;
-			}
-		}
+			verifyStateAttributeInteger(result, gl, GL_VERTEX_ATTRIB_BINDING, attr, attr, m_verifier);
 	}
 
 	// is part of vao
 	{
 		const tcu::ScopedLogSection section			(m_testCtx.getLog(), "vao", "VAO state");
 		glu::VertexArray			otherVao		(m_context.getRenderContext());
-		glw::GLint					bindingState	= -1;
 
 		// set to value A in vao1
 		gl.glVertexAttribBinding(1, 4);
@@ -105,19 +117,7 @@ AttributeBindingCase::IterateResult AttributeBindingCase::iterate (void)
 
 		// check value is still ok in original vao
 		gl.glBindVertexArray(*vao);
-		gl.glGetVertexAttribiv(1, GL_VERTEX_ATTRIB_BINDING, &bindingState);
-		error = gl.glGetError();
-
-		if (error != GL_NO_ERROR)
-		{
-			m_testCtx.getLog() << tcu::TestLog::Message << "// ERROR: Got error " << glu::getErrorStr(error) << tcu::TestLog::EndMessage;
-			allOk = false;
-		}
-		else if (bindingState != 4)
-		{
-			m_testCtx.getLog() << tcu::TestLog::Message << "// ERROR: Expected 4, got " << bindingState << tcu::TestLog::EndMessage;
-			allOk = false;
-		}
+		verifyStateAttributeInteger(result, gl, GL_VERTEX_ATTRIB_BINDING, 1, 4, m_verifier);
 	}
 
 	// random values
@@ -131,51 +131,30 @@ AttributeBindingCase::IterateResult AttributeBindingCase::iterate (void)
 			// switch random va to random binding
 			const int	va				= rnd.getInt(0, de::max(16, maxAttrs)-1);
 			const int	binding			= rnd.getInt(0, 16);
-			glw::GLint	bindingState	= -1;
 
 			gl.glVertexAttribBinding(va, binding);
-			gl.glGetVertexAttribiv(va, GL_VERTEX_ATTRIB_BINDING, &bindingState);
-			error = gl.glGetError();
-
-			if (error != GL_NO_ERROR)
-			{
-				m_testCtx.getLog() << tcu::TestLog::Message << "// ERROR: Got error " << glu::getErrorStr(error) << tcu::TestLog::EndMessage;
-				allOk = false;
-			}
-			else if (bindingState != binding)
-			{
-				m_testCtx.getLog() << tcu::TestLog::Message << "// ERROR: Expected " << binding << ", got " << bindingState << tcu::TestLog::EndMessage;
-				allOk = false;
-			}
+			verifyStateAttributeInteger(result, gl, GL_VERTEX_ATTRIB_BINDING, va, binding, m_verifier);
 		}
 	}
-
-	if (allOk)
-		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
-	else
-		m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Got invalid value");
-	return STOP;
 }
 
-class AttributeRelativeOffsetCase : public TestCase
+class AttributeRelativeOffsetCase : public AttributeCase
 {
 public:
-					AttributeRelativeOffsetCase	(Context& context, const char* name, const char* desc);
-	IterateResult	iterate						(void);
+			AttributeRelativeOffsetCase	(Context& context, const char* name, const char* desc, QueryType verifier);
+	void	test						(tcu::ResultCollector& result);
 };
 
-AttributeRelativeOffsetCase::AttributeRelativeOffsetCase (Context& context, const char* name, const char* desc)
-	: TestCase(context, name, desc)
+AttributeRelativeOffsetCase::AttributeRelativeOffsetCase (Context& context, const char* name, const char* desc, QueryType verifier)
+	: AttributeCase(context, name, desc, verifier)
 {
 }
 
-AttributeRelativeOffsetCase::IterateResult AttributeRelativeOffsetCase::iterate (void)
+void AttributeRelativeOffsetCase::test (tcu::ResultCollector& result)
 {
 	glu::CallLogWrapper gl			(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
 	glu::VertexArray	vao			(m_context.getRenderContext());
-	glw::GLenum			error		= 0;
 	glw::GLint			maxAttrs	= -1;
-	bool				allOk		= true;
 
 	gl.enableLogging(true);
 
@@ -187,30 +166,13 @@ AttributeRelativeOffsetCase::IterateResult AttributeRelativeOffsetCase::iterate 
 		const tcu::ScopedLogSection section(m_testCtx.getLog(), "initial", "Initial values");
 
 		for (int attr = 0; attr < de::max(16, maxAttrs); ++attr)
-		{
-			glw::GLint relOffsetState = -1;
-
-			gl.glGetVertexAttribiv(attr, GL_VERTEX_ATTRIB_RELATIVE_OFFSET, &relOffsetState);
-			error = gl.glGetError();
-
-			if (error != GL_NO_ERROR)
-			{
-				m_testCtx.getLog() << tcu::TestLog::Message << "// ERROR: Got error " << glu::getErrorStr(error) << tcu::TestLog::EndMessage;
-				allOk = false;
-			}
-			else if (relOffsetState != 0)
-			{
-				m_testCtx.getLog() << tcu::TestLog::Message << "// ERROR: Expected 0, got " << relOffsetState << tcu::TestLog::EndMessage;
-				allOk = false;
-			}
-		}
+			verifyStateAttributeInteger(result, gl, GL_VERTEX_ATTRIB_RELATIVE_OFFSET, attr, 0, m_verifier);
 	}
 
 	// is part of vao
 	{
 		const tcu::ScopedLogSection section			(m_testCtx.getLog(), "vao", "VAO state");
 		glu::VertexArray			otherVao		(m_context.getRenderContext());
-		glw::GLint					relOffsetState	= -1;
 
 		// set to value A in vao1
 		gl.glVertexAttribFormat(1, 4, GL_FLOAT, GL_FALSE, 9);
@@ -221,19 +183,7 @@ AttributeRelativeOffsetCase::IterateResult AttributeRelativeOffsetCase::iterate 
 
 		// check value is still ok in original vao
 		gl.glBindVertexArray(*vao);
-		gl.glGetVertexAttribiv(1, GL_VERTEX_ATTRIB_RELATIVE_OFFSET, &relOffsetState);
-		error = gl.glGetError();
-
-		if (error != GL_NO_ERROR)
-		{
-			m_testCtx.getLog() << tcu::TestLog::Message << "// ERROR: Got error " << glu::getErrorStr(error) << tcu::TestLog::EndMessage;
-			allOk = false;
-		}
-		else if (relOffsetState != 9)
-		{
-			m_testCtx.getLog() << tcu::TestLog::Message << "// ERROR: Expected 9, got " << relOffsetState << tcu::TestLog::EndMessage;
-			allOk = false;
-		}
+		verifyStateAttributeInteger(result, gl, GL_VERTEX_ATTRIB_RELATIVE_OFFSET, 1, 9, m_verifier);
 	}
 
 	// random values
@@ -246,145 +196,54 @@ AttributeRelativeOffsetCase::IterateResult AttributeRelativeOffsetCase::iterate 
 		{
 			const int	va				= rnd.getInt(0, de::max(16, maxAttrs)-1);
 			const int	offset			= rnd.getInt(0, 2047);
-			glw::GLint	relOffsetState	= -1;
 
 			gl.glVertexAttribFormat(va, 4, GL_FLOAT, GL_FALSE, offset);
-			gl.glGetVertexAttribiv(va, GL_VERTEX_ATTRIB_RELATIVE_OFFSET, &relOffsetState);
-			error = gl.glGetError();
-
-			if (error != GL_NO_ERROR)
-			{
-				m_testCtx.getLog() << tcu::TestLog::Message << "// ERROR: Got error " << glu::getErrorStr(error) << tcu::TestLog::EndMessage;
-				allOk = false;
-			}
-			else if (relOffsetState != offset)
-			{
-				m_testCtx.getLog() << tcu::TestLog::Message << "// ERROR: Expected " << offset << ", got " << relOffsetState << tcu::TestLog::EndMessage;
-				allOk = false;
-			}
+			verifyStateAttributeInteger(result, gl, GL_VERTEX_ATTRIB_RELATIVE_OFFSET, va, offset, m_verifier);
 		}
 	}
-
-	if (allOk)
-		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
-	else
-		m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Got invalid value");
-	return STOP;
 }
 
 class IndexedCase : public TestCase
 {
 public:
-	enum VerifierType
-	{
-		VERIFIER_INT,
-		VERIFIER_INT64,
-
-		VERIFIER_LAST
-	};
-
-						IndexedCase			(Context& context, const char* name, const char* desc, VerifierType verifier);
+						IndexedCase			(Context& context, const char* name, const char* desc, QueryType verifier);
 
 	IterateResult		iterate				(void);
-	void				verifyValue			(glu::CallLogWrapper& gl, glw::GLenum name, int index, int expected);
+	virtual void		test				(tcu::ResultCollector& result) = 0;
 
-	virtual void		test				(void) = 0;
-private:
-	const VerifierType	m_verifier;
+protected:
+	const QueryType		m_verifier;
 };
 
-IndexedCase::IndexedCase (Context& context, const char* name, const char* desc, VerifierType verifier)
+IndexedCase::IndexedCase (Context& context, const char* name, const char* desc, QueryType verifier)
 	: TestCase		(context, name, desc)
 	, m_verifier	(verifier)
 {
-	DE_ASSERT(verifier < VERIFIER_LAST);
 }
 
 IndexedCase::IterateResult IndexedCase::iterate (void)
 {
-	// default value
-	m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+	tcu::ResultCollector result(m_testCtx.getLog(), " // ERROR: ");
 
-	test();
+	test(result);
 
+	result.setTestContextResult(m_testCtx);
 	return STOP;
-}
-
-void IndexedCase::verifyValue (glu::CallLogWrapper& gl, glw::GLenum name, int index, int expected)
-{
-	if (m_verifier == VERIFIER_INT)
-	{
-		gls::StateQueryUtil::StateQueryMemoryWriteGuard<glw::GLint>	value;
-		glw::GLenum													error = 0;
-
-		gl.glGetIntegeri_v(name, index, &value);
-		error = gl.glGetError();
-
-		if (error != GL_NO_ERROR)
-		{
-			m_testCtx.getLog() << tcu::TestLog::Message << "// ERROR: Got unexpected error: " << glu::getErrorStr(error) << tcu::TestLog::EndMessage;
-			if (m_testCtx.getTestResult() == QP_TEST_RESULT_PASS)
-				m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Got unexpected error");
-		}
-		else if (!value.verifyValidity(m_testCtx))
-		{
-			// verifyValidity sets error
-		}
-		else
-		{
-			if (value != expected)
-			{
-				m_testCtx.getLog() << tcu::TestLog::Message << "// ERROR: Expected " << expected << ", got " << value << tcu::TestLog::EndMessage;
-				if (m_testCtx.getTestResult() == QP_TEST_RESULT_PASS)
-					m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Got unexpected value");
-			}
-		}
-	}
-	else if (m_verifier == VERIFIER_INT64)
-	{
-		gls::StateQueryUtil::StateQueryMemoryWriteGuard<glw::GLint64>	value;
-		glw::GLenum														error = 0;
-
-		gl.glGetInteger64i_v(name, index, &value);
-		error = gl.glGetError();
-
-		if (error != GL_NO_ERROR)
-		{
-			m_testCtx.getLog() << tcu::TestLog::Message << "// ERROR: Got unexpected error: " << glu::getErrorStr(error) << tcu::TestLog::EndMessage;
-			if (m_testCtx.getTestResult() == QP_TEST_RESULT_PASS)
-				m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Got unexpected error");
-		}
-		else if (!value.verifyValidity(m_testCtx))
-		{
-			// verifyValidity sets error
-		}
-		else
-		{
-			if (value != expected)
-			{
-				m_testCtx.getLog() << tcu::TestLog::Message << "// ERROR: Expected " << expected << ", got " << value << tcu::TestLog::EndMessage;
-				if (m_testCtx.getTestResult() == QP_TEST_RESULT_PASS)
-					m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Got unexpected value");
-			}
-		}
-	}
-	else
-		DE_ASSERT(false);
 }
 
 class VertexBindingDivisorCase : public IndexedCase
 {
 public:
-			VertexBindingDivisorCase	(Context& context, const char* name, const char* desc, VerifierType verifier);
-	void	test						(void);
+			VertexBindingDivisorCase	(Context& context, const char* name, const char* desc, QueryType verifier);
+	void	test						(tcu::ResultCollector& result);
 };
 
-VertexBindingDivisorCase::VertexBindingDivisorCase (Context& context, const char* name, const char* desc, VerifierType verifier)
+VertexBindingDivisorCase::VertexBindingDivisorCase (Context& context, const char* name, const char* desc, QueryType verifier)
 	: IndexedCase(context, name, desc, verifier)
 {
 }
 
-void VertexBindingDivisorCase::test (void)
+void VertexBindingDivisorCase::test (tcu::ResultCollector& result)
 {
 	glu::CallLogWrapper gl					(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
 	glu::VertexArray	vao					(m_context.getRenderContext());
@@ -402,7 +261,7 @@ void VertexBindingDivisorCase::test (void)
 		const tcu::ScopedLogSection section(m_testCtx.getLog(), "initial", "Initial values");
 
 		for (int binding = 0; binding < maxBindings; ++binding)
-			verifyValue(gl, GL_VERTEX_BINDING_DIVISOR, binding, 0);
+			verifyStateIndexedInteger(result, gl, GL_VERTEX_BINDING_DIVISOR, binding, 0, m_verifier);
 	}
 
 	// is part of vao
@@ -419,7 +278,7 @@ void VertexBindingDivisorCase::test (void)
 
 		// check value is still ok in original vao
 		gl.glBindVertexArray(*vao);
-		verifyValue(gl, GL_VERTEX_BINDING_DIVISOR, 1, 4);
+		verifyStateIndexedInteger(result, gl, GL_VERTEX_BINDING_DIVISOR, 1, 4, m_verifier);
 	}
 
 	// random values
@@ -434,7 +293,7 @@ void VertexBindingDivisorCase::test (void)
 			const int	divisor			= rnd.getInt(0, 2047);
 
 			gl.glVertexBindingDivisor(binding, divisor);
-			verifyValue(gl, GL_VERTEX_BINDING_DIVISOR, binding, divisor);
+			verifyStateIndexedInteger(result, gl, GL_VERTEX_BINDING_DIVISOR, binding, divisor, m_verifier);
 		}
 	}
 }
@@ -442,16 +301,16 @@ void VertexBindingDivisorCase::test (void)
 class VertexBindingOffsetCase : public IndexedCase
 {
 public:
-			VertexBindingOffsetCase		(Context& context, const char* name, const char* desc, VerifierType verifier);
-	void	test						(void);
+			VertexBindingOffsetCase		(Context& context, const char* name, const char* desc, QueryType verifier);
+	void	test						(tcu::ResultCollector& result);
 };
 
-VertexBindingOffsetCase::VertexBindingOffsetCase (Context& context, const char* name, const char* desc, VerifierType verifier)
+VertexBindingOffsetCase::VertexBindingOffsetCase (Context& context, const char* name, const char* desc, QueryType verifier)
 	: IndexedCase(context, name, desc, verifier)
 {
 }
 
-void VertexBindingOffsetCase::test (void)
+void VertexBindingOffsetCase::test (tcu::ResultCollector& result)
 {
 	glu::CallLogWrapper gl					(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
 	glu::VertexArray	vao					(m_context.getRenderContext());
@@ -470,7 +329,7 @@ void VertexBindingOffsetCase::test (void)
 		const tcu::ScopedLogSection section(m_testCtx.getLog(), "initial", "Initial values");
 
 		for (int binding = 0; binding < maxBindings; ++binding)
-			verifyValue(gl, GL_VERTEX_BINDING_OFFSET, binding, 0);
+			verifyStateIndexedInteger(result, gl, GL_VERTEX_BINDING_OFFSET, binding, 0, m_verifier);
 	}
 
 	// is part of vao
@@ -487,7 +346,7 @@ void VertexBindingOffsetCase::test (void)
 
 		// check value is still ok in original vao
 		gl.glBindVertexArray(*vao);
-		verifyValue(gl, GL_VERTEX_BINDING_OFFSET, 1, 4);
+		verifyStateIndexedInteger(result, gl, GL_VERTEX_BINDING_OFFSET, 1, 4, m_verifier);
 	}
 
 	// random values
@@ -502,7 +361,7 @@ void VertexBindingOffsetCase::test (void)
 			const int	offset			= rnd.getInt(0, 4000);
 
 			gl.glBindVertexBuffer(binding, *buffer, offset, 32);
-			verifyValue(gl, GL_VERTEX_BINDING_OFFSET, binding, offset);
+			verifyStateIndexedInteger(result, gl, GL_VERTEX_BINDING_OFFSET, binding, offset, m_verifier);
 		}
 	}
 }
@@ -510,16 +369,16 @@ void VertexBindingOffsetCase::test (void)
 class VertexBindingStrideCase : public IndexedCase
 {
 public:
-			VertexBindingStrideCase		(Context& context, const char* name, const char* desc, VerifierType verifier);
-	void	test						(void);
+			VertexBindingStrideCase		(Context& context, const char* name, const char* desc, QueryType verifier);
+	void	test						(tcu::ResultCollector& result);
 };
 
-VertexBindingStrideCase::VertexBindingStrideCase (Context& context, const char* name, const char* desc, VerifierType verifier)
+VertexBindingStrideCase::VertexBindingStrideCase (Context& context, const char* name, const char* desc, QueryType verifier)
 	: IndexedCase(context, name, desc, verifier)
 {
 }
 
-void VertexBindingStrideCase::test (void)
+void VertexBindingStrideCase::test (tcu::ResultCollector& result)
 {
 	glu::CallLogWrapper gl					(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
 	glu::VertexArray	vao					(m_context.getRenderContext());
@@ -538,7 +397,7 @@ void VertexBindingStrideCase::test (void)
 		const tcu::ScopedLogSection section(m_testCtx.getLog(), "initial", "Initial values");
 
 		for (int binding = 0; binding < maxBindings; ++binding)
-			verifyValue(gl, GL_VERTEX_BINDING_STRIDE, binding, 16);
+			verifyStateIndexedInteger(result, gl, GL_VERTEX_BINDING_STRIDE, binding, 16, m_verifier);
 	}
 
 	// is part of vao
@@ -555,7 +414,7 @@ void VertexBindingStrideCase::test (void)
 
 		// check value is still ok in original vao
 		gl.glBindVertexArray(*vao);
-		verifyValue(gl, GL_VERTEX_BINDING_STRIDE, 1, 32);
+		verifyStateIndexedInteger(result, gl, GL_VERTEX_BINDING_STRIDE, 1, 32, m_verifier);
 	}
 
 	// random values
@@ -570,7 +429,7 @@ void VertexBindingStrideCase::test (void)
 			const int	stride			= rnd.getInt(0, 2048);
 
 			gl.glBindVertexBuffer(binding, *buffer, 0, stride);
-			verifyValue(gl, GL_VERTEX_BINDING_STRIDE, binding, stride);
+			verifyStateIndexedInteger(result, gl, GL_VERTEX_BINDING_STRIDE, binding, stride, m_verifier);
 		}
 	}
 }
@@ -578,16 +437,16 @@ void VertexBindingStrideCase::test (void)
 class VertexBindingBufferCase : public IndexedCase
 {
 public:
-			VertexBindingBufferCase		(Context& context, const char* name, const char* desc, VerifierType verifier);
-	void	test						(void);
+			VertexBindingBufferCase		(Context& context, const char* name, const char* desc, QueryType verifier);
+	void	test						(tcu::ResultCollector& result);
 };
 
-VertexBindingBufferCase::VertexBindingBufferCase (Context& context, const char* name, const char* desc, VerifierType verifier)
+VertexBindingBufferCase::VertexBindingBufferCase (Context& context, const char* name, const char* desc, QueryType verifier)
 	: IndexedCase(context, name, desc, verifier)
 {
 }
 
-void VertexBindingBufferCase::test (void)
+void VertexBindingBufferCase::test (tcu::ResultCollector& result)
 {
 	glu::CallLogWrapper gl					(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
 	glu::VertexArray	vao					(m_context.getRenderContext());
@@ -606,7 +465,7 @@ void VertexBindingBufferCase::test (void)
 		const tcu::ScopedLogSection section(m_testCtx.getLog(), "initial", "Initial values");
 
 		for (int binding = 0; binding < maxBindings; ++binding)
-			verifyValue(gl, GL_VERTEX_BINDING_BUFFER, binding, 0);
+			verifyStateIndexedInteger(result, gl, GL_VERTEX_BINDING_BUFFER, binding, 0, m_verifier);
 	}
 
 	// is part of vao
@@ -624,7 +483,7 @@ void VertexBindingBufferCase::test (void)
 
 		// check value is still ok in original vao
 		gl.glBindVertexArray(*vao);
-		verifyValue(gl, GL_VERTEX_BINDING_BUFFER, 1, *buffer);
+		verifyStateIndexedInteger(result, gl, GL_VERTEX_BINDING_BUFFER, 1, *buffer, m_verifier);
 	}
 
 	// Is detached in delete from active vao and not from deactive
@@ -642,9 +501,9 @@ void VertexBindingBufferCase::test (void)
 
 		// delete buffer. This unbinds it from active (vao2) but not from unactive
 		gl.glDeleteBuffers(1, &otherBuffer);
-		verifyValue(gl, GL_VERTEX_BINDING_BUFFER, 1, 0);
+		verifyStateIndexedInteger(result, gl, GL_VERTEX_BINDING_BUFFER, 1, 0, m_verifier);
 		gl.glBindVertexArray(*vao);
-		verifyValue(gl, GL_VERTEX_BINDING_BUFFER, 1, otherBuffer);
+		verifyStateIndexedInteger(result, gl, GL_VERTEX_BINDING_BUFFER, 1, otherBuffer, m_verifier);
 	}
 }
 
@@ -652,15 +511,15 @@ class MixedVertexBindingDivisorCase : public IndexedCase
 {
 public:
 			MixedVertexBindingDivisorCase	(Context& context, const char* name, const char* desc);
-	void	test							(void);
+	void	test							(tcu::ResultCollector& result);
 };
 
 MixedVertexBindingDivisorCase::MixedVertexBindingDivisorCase (Context& context, const char* name, const char* desc)
-	: IndexedCase(context, name, desc, VERIFIER_INT)
+	: IndexedCase(context, name, desc, QUERY_INDEXED_INTEGER)
 {
 }
 
-void MixedVertexBindingDivisorCase::test (void)
+void MixedVertexBindingDivisorCase::test (tcu::ResultCollector& result)
 {
 	glu::CallLogWrapper gl					(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
 	glu::VertexArray	vao					(m_context.getRenderContext());
@@ -668,22 +527,22 @@ void MixedVertexBindingDivisorCase::test (void)
 	gl.enableLogging(true);
 
 	gl.glVertexAttribDivisor(1, 4);
-	verifyValue(gl, GL_VERTEX_BINDING_DIVISOR, 1, 4);
+	verifyStateIndexedInteger(result, gl, GL_VERTEX_BINDING_DIVISOR, 1, 4, m_verifier);
 }
 
 class MixedVertexBindingOffsetCase : public IndexedCase
 {
 public:
 			MixedVertexBindingOffsetCase	(Context& context, const char* name, const char* desc);
-	void	test							(void);
+	void	test							(tcu::ResultCollector& result);
 };
 
 MixedVertexBindingOffsetCase::MixedVertexBindingOffsetCase (Context& context, const char* name, const char* desc)
-	: IndexedCase(context, name, desc, VERIFIER_INT)
+	: IndexedCase(context, name, desc, QUERY_INDEXED_INTEGER)
 {
 }
 
-void MixedVertexBindingOffsetCase::test (void)
+void MixedVertexBindingOffsetCase::test (tcu::ResultCollector& result)
 {
 	glu::CallLogWrapper gl					(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
 	glu::VertexArray	vao					(m_context.getRenderContext());
@@ -694,22 +553,22 @@ void MixedVertexBindingOffsetCase::test (void)
 	gl.glBindBuffer(GL_ARRAY_BUFFER, *buffer);
 	gl.glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 0, (const deUint8*)DE_NULL + 12);
 
-	verifyValue(gl, GL_VERTEX_BINDING_OFFSET, 1, 12);
+	verifyStateIndexedInteger(result, gl, GL_VERTEX_BINDING_OFFSET, 1, 12, m_verifier);
 }
 
 class MixedVertexBindingStrideCase : public IndexedCase
 {
 public:
 			MixedVertexBindingStrideCase	(Context& context, const char* name, const char* desc);
-	void	test							(void);
+	void	test							(tcu::ResultCollector& result);
 };
 
 MixedVertexBindingStrideCase::MixedVertexBindingStrideCase (Context& context, const char* name, const char* desc)
-	: IndexedCase(context, name, desc, VERIFIER_INT)
+	: IndexedCase(context, name, desc, QUERY_INDEXED_INTEGER)
 {
 }
 
-void MixedVertexBindingStrideCase::test (void)
+void MixedVertexBindingStrideCase::test (tcu::ResultCollector& result)
 {
 	glu::CallLogWrapper gl					(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
 	glu::VertexArray	vao					(m_context.getRenderContext());
@@ -719,26 +578,26 @@ void MixedVertexBindingStrideCase::test (void)
 
 	gl.glBindBuffer(GL_ARRAY_BUFFER, *buffer);
 	gl.glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 12, 0);
-	verifyValue(gl, GL_VERTEX_BINDING_STRIDE, 1, 12);
+	verifyStateIndexedInteger(result, gl, GL_VERTEX_BINDING_STRIDE, 1, 12, m_verifier);
 
 	// test effectiveStride
 	gl.glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 0, 0);
-	verifyValue(gl, GL_VERTEX_BINDING_STRIDE, 1, 16);
+	verifyStateIndexedInteger(result, gl, GL_VERTEX_BINDING_STRIDE, 1, 16, m_verifier);
 }
 
 class MixedVertexBindingBufferCase : public IndexedCase
 {
 public:
 			MixedVertexBindingBufferCase	(Context& context, const char* name, const char* desc);
-	void	test							(void);
+	void	test							(tcu::ResultCollector& result);
 };
 
 MixedVertexBindingBufferCase::MixedVertexBindingBufferCase (Context& context, const char* name, const char* desc)
-	: IndexedCase(context, name, desc, VERIFIER_INT)
+	: IndexedCase(context, name, desc, QUERY_INDEXED_INTEGER)
 {
 }
 
-void MixedVertexBindingBufferCase::test (void)
+void MixedVertexBindingBufferCase::test (tcu::ResultCollector& result)
 {
 	glu::CallLogWrapper gl					(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
 	glu::VertexArray	vao					(m_context.getRenderContext());
@@ -748,7 +607,7 @@ void MixedVertexBindingBufferCase::test (void)
 
 	gl.glBindBuffer(GL_ARRAY_BUFFER, *buffer);
 	gl.glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 0, 0);
-	verifyValue(gl, GL_VERTEX_BINDING_BUFFER, 1, *buffer);
+	verifyStateIndexedInteger(result, gl, GL_VERTEX_BINDING_BUFFER, 1, *buffer, m_verifier);
 }
 
 } // anonymous
@@ -772,20 +631,36 @@ void VertexAttributeBindingStateQueryTests::init (void)
 
 	// .vertex_attrib
 	{
-		attributeGroup->addChild(new AttributeBindingCase		(m_context,	"vertex_attrib_binding",			"Test VERTEX_ATTRIB_BINDING"));
-		attributeGroup->addChild(new AttributeRelativeOffsetCase(m_context,	"vertex_attrib_relative_offset",	"Test VERTEX_ATTRIB_RELATIVE_OFFSET"));
+		static const struct Verifier
+		{
+			const char*		suffix;
+			QueryType		type;
+		} verifiers[] =
+		{
+			{ "",						QUERY_ATTRIBUTE_INTEGER					},	// avoid renaming tests
+			{ "_getvertexattribfv",		QUERY_ATTRIBUTE_FLOAT					},
+			{ "_getvertexattribiiv",	QUERY_ATTRIBUTE_PURE_INTEGER			},
+			{ "_getvertexattribiuiv",	QUERY_ATTRIBUTE_PURE_UNSIGNED_INTEGER	},
+		};
+
+		for (int verifierNdx = 0; verifierNdx < DE_LENGTH_OF_ARRAY(verifiers); ++verifierNdx)
+		{
+			attributeGroup->addChild(new AttributeBindingCase		(m_context,	(std::string("vertex_attrib_binding") + verifiers[verifierNdx].suffix).c_str(),			"Test VERTEX_ATTRIB_BINDING",			verifiers[verifierNdx].type));
+			attributeGroup->addChild(new AttributeRelativeOffsetCase(m_context,	(std::string("vertex_attrib_relative_offset") + verifiers[verifierNdx].suffix).c_str(),	"Test VERTEX_ATTRIB_RELATIVE_OFFSET",	verifiers[verifierNdx].type));
+		}
 	}
 
-	// .indexed (and 64)
+	// .indexed
 	{
 		static const struct Verifier
 		{
-			const char*					name;
-			IndexedCase::VerifierType	type;
+			const char*		name;
+			QueryType		type;
 		} verifiers[] =
 		{
-			{ "getintegeri",	IndexedCase::VERIFIER_INT	},
-			{ "getintegeri64",	IndexedCase::VERIFIER_INT64	},
+			{ "getintegeri",	QUERY_INDEXED_INTEGER	},
+			{ "getintegeri64",	QUERY_INDEXED_INTEGER64	},
+			{ "getboolean",		QUERY_INDEXED_BOOLEAN	},
 		};
 
 		// states

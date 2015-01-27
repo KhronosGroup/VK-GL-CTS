@@ -30,3 +30,12 @@ int getAttributeQueryNumArgsOut (int pname)
 		default:						return 1;
 	}
 }
+
+int getProgramQueryNumArgsOut (int pname)
+{
+	switch(pname)
+	{
+		case GL_COMPUTE_WORK_GROUP_SIZE:	return 3;
+		default:							return 1;
+	}
+}

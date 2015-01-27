@@ -47,35 +47,24 @@ namespace Functional
 namespace
 {
 
+using namespace gls::StateQueryUtil;
+
 class SampleShadingStateCase : public TestCase
 {
 public:
-	enum VerifierType
-	{
-		TYPE_IS_ENABLED = 0,
-		TYPE_GET_BOOLEAN,
-		TYPE_GET_INTEGER,
-		TYPE_GET_FLOAT,
-		TYPE_GET_INTEGER64,
-		TYPE_LAST
-	};
-
-						SampleShadingStateCase	(Context& ctx, const char* name, const char* desc, VerifierType);
+						SampleShadingStateCase	(Context& ctx, const char* name, const char* desc, QueryType);
 
 	void				init					(void);
 	IterateResult		iterate					(void);
 
 private:
-	bool				verify					(bool v);
-
-	const VerifierType	m_verifier;
+	const QueryType		m_verifier;
 };
 
-SampleShadingStateCase::SampleShadingStateCase (Context& ctx, const char* name, const char* desc, VerifierType type)
+SampleShadingStateCase::SampleShadingStateCase (Context& ctx, const char* name, const char* desc, QueryType type)
 	: TestCase		(ctx, name, desc)
 	, m_verifier	(type)
 {
-	DE_ASSERT(m_verifier < TYPE_LAST);
 }
 
 void SampleShadingStateCase::init (void)
@@ -86,16 +75,14 @@ void SampleShadingStateCase::init (void)
 
 SampleShadingStateCase::IterateResult SampleShadingStateCase::iterate (void)
 {
-	bool				allOk	= true;
-	glu::CallLogWrapper gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
+	glu::CallLogWrapper		gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
+	tcu::ResultCollector	result	(m_testCtx.getLog(), " // ERROR: ");
 	gl.enableLogging(true);
-
-	m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
 
 	// initial
 	{
 		m_testCtx.getLog() << tcu::TestLog::Message << "Verifying initial value" << tcu::TestLog::EndMessage;
-		allOk &= verify(false);
+		verifyStateBoolean(result, gl, GL_SAMPLE_SHADING, false, m_verifier);
 	}
 
 	// true and false too
@@ -103,132 +90,32 @@ SampleShadingStateCase::IterateResult SampleShadingStateCase::iterate (void)
 		m_testCtx.getLog() << tcu::TestLog::Message << "Verifying random values" << tcu::TestLog::EndMessage;
 
 		gl.glEnable(GL_SAMPLE_SHADING);
-		allOk &= verify(true);
+		verifyStateBoolean(result, gl, GL_SAMPLE_SHADING, true, m_verifier);
 
 		gl.glDisable(GL_SAMPLE_SHADING);
-		allOk &= verify(false);
+		verifyStateBoolean(result, gl, GL_SAMPLE_SHADING, false, m_verifier);
 	}
 
-	if (!allOk && m_testCtx.getTestResult() == QP_TEST_RESULT_PASS)
-		m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Got unexpected value");
-
+	result.setTestContextResult(m_testCtx);
 	return STOP;
-}
-
-bool SampleShadingStateCase::verify (bool v)
-{
-	glu::CallLogWrapper gl(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
-	gl.enableLogging(true);
-
-	switch (m_verifier)
-	{
-		case TYPE_IS_ENABLED:
-		{
-			const glw::GLboolean retVal = gl.glIsEnabled(GL_SAMPLE_SHADING);
-
-			if ((v && retVal==GL_TRUE) || (!v && retVal==GL_FALSE))
-				return true;
-
-			m_testCtx.getLog() << tcu::TestLog::Message << "// ERROR: Expected " << ((v) ? ("GL_TRUE") : ("GL_FALSE")) << ", got " << ((retVal == GL_TRUE) ? ("GL_TRUE") : (retVal == GL_FALSE) ? ("GL_FALSE") : ("not-a-boolean")) << tcu::TestLog::EndMessage;
-			return false;
-		}
-
-		case TYPE_GET_BOOLEAN:
-		{
-			gls::StateQueryUtil::StateQueryMemoryWriteGuard<glw::GLboolean> state;
-			gl.glGetBooleanv(GL_SAMPLE_SHADING, &state);
-
-			if (!state.verifyValidity(m_testCtx))
-				return false;
-
-			if ((v && state==GL_TRUE) || (!v && state==GL_FALSE))
-				return true;
-
-			m_testCtx.getLog() << tcu::TestLog::Message << "// ERROR: Expected " << ((v) ? ("GL_TRUE") : ("GL_FALSE")) << ", got " << ((state == GL_TRUE) ? ("GL_TRUE") : (state == GL_FALSE) ? ("GL_FALSE") : ("not-a-boolean")) << tcu::TestLog::EndMessage;
-			return false;
-		}
-
-		case TYPE_GET_INTEGER:
-		{
-			gls::StateQueryUtil::StateQueryMemoryWriteGuard<glw::GLint> state;
-			gl.glGetIntegerv(GL_SAMPLE_SHADING, &state);
-
-			if (!state.verifyValidity(m_testCtx))
-				return false;
-
-			if ((v && state==1) || (!v && state==0))
-				return true;
-
-			m_testCtx.getLog() << tcu::TestLog::Message << "// ERROR: Expected " << ((v) ? ("1") : ("0")) << ", got " << state << tcu::TestLog::EndMessage;
-			return false;
-		}
-
-		case TYPE_GET_FLOAT:
-		{
-			gls::StateQueryUtil::StateQueryMemoryWriteGuard<glw::GLfloat> state;
-			gl.glGetFloatv(GL_SAMPLE_SHADING, &state);
-
-			if (!state.verifyValidity(m_testCtx))
-				return false;
-
-			if ((v && state==1.0f) || (!v && state==0.0f))
-				return true;
-
-			m_testCtx.getLog() << tcu::TestLog::Message << "// ERROR: Expected " << ((v) ? ("1.0") : ("0.0")) << ", got " << state << tcu::TestLog::EndMessage;
-			return false;
-		}
-
-		case TYPE_GET_INTEGER64:
-		{
-			gls::StateQueryUtil::StateQueryMemoryWriteGuard<glw::GLint64> state;
-			gl.glGetInteger64v(GL_SAMPLE_SHADING, &state);
-
-			if (!state.verifyValidity(m_testCtx))
-				return false;
-
-			if ((v && state==1) || (!v && state==0))
-				return true;
-
-			m_testCtx.getLog() << tcu::TestLog::Message << "// ERROR: Expected " << ((v) ? ("1") : ("0")) << ", got " << state << tcu::TestLog::EndMessage;
-			return false;
-		}
-
-		default:
-		{
-			DE_ASSERT(false);
-			return false;
-		}
-	}
 }
 
 class MinSampleShadingValueCase : public TestCase
 {
 public:
-	enum VerifierType
-	{
-		TYPE_GET_BOOLEAN = 0,
-		TYPE_GET_INTEGER,
-		TYPE_GET_FLOAT,
-		TYPE_GET_INTEGER64,
-		TYPE_LAST
-	};
-
-						MinSampleShadingValueCase	(Context& ctx, const char* name, const char* desc, VerifierType);
+						MinSampleShadingValueCase	(Context& ctx, const char* name, const char* desc, QueryType);
 
 	void				init						(void);
 	IterateResult		iterate						(void);
 
 private:
-	bool				verify						(float v);
-
-	const VerifierType	m_verifier;
+	const QueryType		m_verifier;
 };
 
-MinSampleShadingValueCase::MinSampleShadingValueCase (Context& ctx, const char* name, const char* desc, VerifierType type)
+MinSampleShadingValueCase::MinSampleShadingValueCase (Context& ctx, const char* name, const char* desc, QueryType type)
 	: TestCase		(ctx, name, desc)
 	, m_verifier	(type)
 {
-	DE_ASSERT(m_verifier < TYPE_LAST);
 }
 
 void MinSampleShadingValueCase::init (void)
@@ -239,16 +126,15 @@ void MinSampleShadingValueCase::init (void)
 
 MinSampleShadingValueCase::IterateResult MinSampleShadingValueCase::iterate (void)
 {
-	bool				allOk	= true;
-	glu::CallLogWrapper gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
-	gl.enableLogging(true);
+	glu::CallLogWrapper		gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
+	tcu::ResultCollector	result	(m_testCtx.getLog(), " // ERROR: ");
 
-	m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+	gl.enableLogging(true);
 
 	// initial
 	{
 		m_testCtx.getLog() << tcu::TestLog::Message << "Verifying initial value" << tcu::TestLog::EndMessage;
-		allOk &= verify(0.0);
+		verifyStateFloat(result, gl, GL_MIN_SAMPLE_SHADING_VALUE, 0.0, m_verifier);
 	}
 
 	// special values
@@ -256,13 +142,13 @@ MinSampleShadingValueCase::IterateResult MinSampleShadingValueCase::iterate (voi
 		m_testCtx.getLog() << tcu::TestLog::Message << "Verifying special values" << tcu::TestLog::EndMessage;
 
 		gl.glMinSampleShading(0.0f);
-		allOk &= verify(0.0);
+		verifyStateFloat(result, gl, GL_MIN_SAMPLE_SHADING_VALUE, 0.0, m_verifier);
 
 		gl.glMinSampleShading(1.0f);
-		allOk &= verify(1.0);
+		verifyStateFloat(result, gl, GL_MIN_SAMPLE_SHADING_VALUE, 1.0, m_verifier);
 
 		gl.glMinSampleShading(0.5f);
-		allOk &= verify(0.5);
+		verifyStateFloat(result, gl, GL_MIN_SAMPLE_SHADING_VALUE, 0.5, m_verifier);
 	}
 
 	// random values
@@ -277,89 +163,12 @@ MinSampleShadingValueCase::IterateResult MinSampleShadingValueCase::iterate (voi
 			const float value = rnd.getFloat();
 
 			gl.glMinSampleShading(value);
-			allOk &= verify(value);
+			verifyStateFloat(result, gl, GL_MIN_SAMPLE_SHADING_VALUE, value, m_verifier);
 		}
 	}
 
-	if (!allOk && m_testCtx.getTestResult() == QP_TEST_RESULT_PASS)
-		m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Got unexpected value");
-
+	result.setTestContextResult(m_testCtx);
 	return STOP;
-}
-
-bool MinSampleShadingValueCase::verify (float v)
-{
-	glu::CallLogWrapper gl(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
-	gl.enableLogging(true);
-
-	switch (m_verifier)
-	{
-		case TYPE_GET_BOOLEAN:
-		{
-			gls::StateQueryUtil::StateQueryMemoryWriteGuard<glw::GLboolean> state;
-			gl.glGetBooleanv(GL_MIN_SAMPLE_SHADING_VALUE, &state);
-
-			if (!state.verifyValidity(m_testCtx))
-				return false;
-
-			if ((v!=0.0f && state==GL_TRUE) || (v==0.0f && state==GL_FALSE))
-				return true;
-
-			m_testCtx.getLog() << tcu::TestLog::Message << "// ERROR: Expected " << ((v!=0.0f) ? ("GL_TRUE") : ("GL_FALSE")) << ", got " << ((state == GL_TRUE) ? ("GL_TRUE") : (state == GL_FALSE) ? ("GL_FALSE") : ("not-a-boolean")) << tcu::TestLog::EndMessage;
-			return false;
-		}
-
-		case TYPE_GET_INTEGER:
-		{
-			gls::StateQueryUtil::StateQueryMemoryWriteGuard<glw::GLint> state;
-			gl.glGetIntegerv(GL_MIN_SAMPLE_SHADING_VALUE, &state);
-
-			if (!state.verifyValidity(m_testCtx))
-				return false;
-
-			if ((v>=0.5f && state==1) || (v<=0.5f && state==0))
-				return true;
-
-			m_testCtx.getLog() << tcu::TestLog::Message << "// ERROR: Expected " << ((v==0.5) ? ("0 or 1") : (v<0.5) ? ("0") : ("1")) << ", got " << state << tcu::TestLog::EndMessage;
-			return false;
-		}
-
-		case TYPE_GET_FLOAT:
-		{
-			gls::StateQueryUtil::StateQueryMemoryWriteGuard<glw::GLfloat> state;
-			gl.glGetFloatv(GL_MIN_SAMPLE_SHADING_VALUE, &state);
-
-			if (!state.verifyValidity(m_testCtx))
-				return false;
-
-			if (v == state)
-				return true;
-
-			m_testCtx.getLog() << tcu::TestLog::Message << "// ERROR: Expected " << v << ", got " << state << tcu::TestLog::EndMessage;
-			return false;
-		}
-
-		case TYPE_GET_INTEGER64:
-		{
-			gls::StateQueryUtil::StateQueryMemoryWriteGuard<glw::GLint64> state;
-			gl.glGetInteger64v(GL_MIN_SAMPLE_SHADING_VALUE, &state);
-
-			if (!state.verifyValidity(m_testCtx))
-				return false;
-
-			if ((v>=0.5f && state==1) || (v<=0.5f && state==0))
-				return true;
-
-			m_testCtx.getLog() << tcu::TestLog::Message << "// ERROR: Expected " << ((v==0.5) ? ("0 or 1") : (v<0.5) ? ("0") : ("1")) << ", got " << state << tcu::TestLog::EndMessage;
-			return false;
-		}
-
-		default:
-		{
-			DE_ASSERT(false);
-			return false;
-		}
-	}
 }
 
 class MinSampleShadingValueClampingCase : public TestCase
@@ -369,9 +178,6 @@ public:
 
 	void				init								(void);
 	IterateResult		iterate								(void);
-
-private:
-	bool				verify								(float v);
 };
 
 MinSampleShadingValueClampingCase::MinSampleShadingValueClampingCase (Context& ctx, const char* name, const char* desc)
@@ -387,8 +193,8 @@ void MinSampleShadingValueClampingCase::init (void)
 
 MinSampleShadingValueClampingCase::IterateResult MinSampleShadingValueClampingCase::iterate (void)
 {
-	bool				allOk	= true;
-	glu::CallLogWrapper gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
+	glu::CallLogWrapper		gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
+	tcu::ResultCollector	result	(m_testCtx.getLog(), " // ERROR: ");
 	gl.enableLogging(true);
 
 	m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
@@ -398,47 +204,26 @@ MinSampleShadingValueClampingCase::IterateResult MinSampleShadingValueClampingCa
 		m_testCtx.getLog() << tcu::TestLog::Message << "Verifying clamped values. Value is clamped when specified." << tcu::TestLog::EndMessage;
 
 		gl.glMinSampleShading(-0.5f);
-		allOk &= verify(0.0);
+		verifyStateFloat(result, gl, GL_MIN_SAMPLE_SHADING_VALUE, 0.0, QUERY_FLOAT);
 
 		gl.glMinSampleShading(-1.0f);
-		allOk &= verify(0.0);
+		verifyStateFloat(result, gl, GL_MIN_SAMPLE_SHADING_VALUE, 0.0, QUERY_FLOAT);
 
 		gl.glMinSampleShading(-1.5f);
-		allOk &= verify(0.0);
+		verifyStateFloat(result, gl, GL_MIN_SAMPLE_SHADING_VALUE, 0.0, QUERY_FLOAT);
 
 		gl.glMinSampleShading(1.5f);
-		allOk &= verify(1.0);
+		verifyStateFloat(result, gl, GL_MIN_SAMPLE_SHADING_VALUE, 1.0, QUERY_FLOAT);
 
 		gl.glMinSampleShading(2.0f);
-		allOk &= verify(1.0);
+		verifyStateFloat(result, gl, GL_MIN_SAMPLE_SHADING_VALUE, 1.0, QUERY_FLOAT);
 
 		gl.glMinSampleShading(2.5f);
-		allOk &= verify(1.0);
+		verifyStateFloat(result, gl, GL_MIN_SAMPLE_SHADING_VALUE, 1.0, QUERY_FLOAT);
 	}
 
-	if (!allOk && m_testCtx.getTestResult() == QP_TEST_RESULT_PASS)
-		m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Got unexpected value");
-
+	result.setTestContextResult(m_testCtx);
 	return STOP;
-}
-
-bool MinSampleShadingValueClampingCase::verify (float v)
-{
-	glu::CallLogWrapper												gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
-	gls::StateQueryUtil::StateQueryMemoryWriteGuard<glw::GLfloat>	state;
-
-	gl.enableLogging(true);
-
-	gl.glGetFloatv(GL_MIN_SAMPLE_SHADING_VALUE, &state);
-
-	if (!state.verifyValidity(m_testCtx))
-		return false;
-
-	if (v == state)
-		return true;
-
-	m_testCtx.getLog() << tcu::TestLog::Message << "// ERROR: Expected " << v << ", got " << state << tcu::TestLog::EndMessage;
-	return false;
 }
 
 class SampleShadingRenderingCase : public MultisampleShaderRenderUtil::MultisampleRenderCase
@@ -666,15 +451,15 @@ void SampleShadingTests::init (void)
 
 	// .state query
 	{
-		stateQueryGroup->addChild(new SampleShadingStateCase			(m_context, "sample_shading_is_enabled",				"test SAMPLE_SHADING",						SampleShadingStateCase::TYPE_IS_ENABLED));
-		stateQueryGroup->addChild(new SampleShadingStateCase			(m_context, "sample_shading_get_boolean",				"test SAMPLE_SHADING",						SampleShadingStateCase::TYPE_GET_BOOLEAN));
-		stateQueryGroup->addChild(new SampleShadingStateCase			(m_context, "sample_shading_get_integer",				"test SAMPLE_SHADING",						SampleShadingStateCase::TYPE_GET_INTEGER));
-		stateQueryGroup->addChild(new SampleShadingStateCase			(m_context, "sample_shading_get_float",					"test SAMPLE_SHADING",						SampleShadingStateCase::TYPE_GET_FLOAT));
-		stateQueryGroup->addChild(new SampleShadingStateCase			(m_context, "sample_shading_get_integer64",				"test SAMPLE_SHADING",						SampleShadingStateCase::TYPE_GET_INTEGER64));
-		stateQueryGroup->addChild(new MinSampleShadingValueCase			(m_context, "min_sample_shading_value_get_boolean",		"test MIN_SAMPLE_SHADING_VALUE",			MinSampleShadingValueCase::TYPE_GET_BOOLEAN));
-		stateQueryGroup->addChild(new MinSampleShadingValueCase			(m_context, "min_sample_shading_value_get_integer",		"test MIN_SAMPLE_SHADING_VALUE",			MinSampleShadingValueCase::TYPE_GET_INTEGER));
-		stateQueryGroup->addChild(new MinSampleShadingValueCase			(m_context, "min_sample_shading_value_get_float",		"test MIN_SAMPLE_SHADING_VALUE",			MinSampleShadingValueCase::TYPE_GET_FLOAT));
-		stateQueryGroup->addChild(new MinSampleShadingValueCase			(m_context, "min_sample_shading_value_get_integer64",	"test MIN_SAMPLE_SHADING_VALUE",			MinSampleShadingValueCase::TYPE_GET_INTEGER64));
+		stateQueryGroup->addChild(new SampleShadingStateCase			(m_context, "sample_shading_is_enabled",				"test SAMPLE_SHADING",						QUERY_ISENABLED));
+		stateQueryGroup->addChild(new SampleShadingStateCase			(m_context, "sample_shading_get_boolean",				"test SAMPLE_SHADING",						QUERY_BOOLEAN));
+		stateQueryGroup->addChild(new SampleShadingStateCase			(m_context, "sample_shading_get_integer",				"test SAMPLE_SHADING",						QUERY_INTEGER));
+		stateQueryGroup->addChild(new SampleShadingStateCase			(m_context, "sample_shading_get_float",					"test SAMPLE_SHADING",						QUERY_FLOAT));
+		stateQueryGroup->addChild(new SampleShadingStateCase			(m_context, "sample_shading_get_integer64",				"test SAMPLE_SHADING",						QUERY_INTEGER64));
+		stateQueryGroup->addChild(new MinSampleShadingValueCase			(m_context, "min_sample_shading_value_get_boolean",		"test MIN_SAMPLE_SHADING_VALUE",			QUERY_BOOLEAN));
+		stateQueryGroup->addChild(new MinSampleShadingValueCase			(m_context, "min_sample_shading_value_get_integer",		"test MIN_SAMPLE_SHADING_VALUE",			QUERY_INTEGER));
+		stateQueryGroup->addChild(new MinSampleShadingValueCase			(m_context, "min_sample_shading_value_get_float",		"test MIN_SAMPLE_SHADING_VALUE",			QUERY_FLOAT));
+		stateQueryGroup->addChild(new MinSampleShadingValueCase			(m_context, "min_sample_shading_value_get_integer64",	"test MIN_SAMPLE_SHADING_VALUE",			QUERY_INTEGER64));
 		stateQueryGroup->addChild(new MinSampleShadingValueClampingCase	(m_context, "min_sample_shading_value_clamping",		"test MIN_SAMPLE_SHADING_VALUE clamping"));
 	}
 
