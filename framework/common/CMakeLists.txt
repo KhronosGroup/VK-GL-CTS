@@ -77,6 +77,8 @@ set(TCUTIL_SRCS
 	tcuSeedBuilder.cpp
 	tcuMaybe.hpp
 	tcuMaybe.cpp
+	tcuEither.hpp
+	tcuEither.cpp
 	)
 
 set(TCUTIL_LIBS

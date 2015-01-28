@@ -23,6 +23,7 @@
 
 #include "ditFrameworkTests.hpp"
 #include "tcuFloatFormat.hpp"
+#include "tcuEither.hpp"
 #include "tcuTestLog.hpp"
 #include "tcuCommandLine.hpp"
 
@@ -556,6 +557,8 @@ public:
 	{
 		addChild(new SelfCheckCase(m_testCtx, "float_format","tcu::FloatFormat_selfTest()",
 								   tcu::FloatFormat_selfTest));
+		addChild(new SelfCheckCase(m_testCtx, "either","tcu::Either_selfTest()",
+								   tcu::Either_selfTest));
 	}
 };
 
