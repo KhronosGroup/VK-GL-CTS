@@ -24,6 +24,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "deDefs.hpp"
+#include "qpTestLog.h"
 
 #include <string>
 #include <stdexcept>
@@ -47,18 +48,33 @@ void	print	(const char* format, ...) DE_PRINTF_FUNC_ATTR(1, 2);
 class Exception : public std::runtime_error
 {
 public:
-					Exception			(const char* message, const char* expr, const char* file, int line);
-					Exception			(const std::string& message);
-	virtual			~Exception			(void) throw() {}
+						Exception			(const char* message, const char* expr, const char* file, int line);
+						Exception			(const std::string& message);
+	virtual				~Exception			(void) throw() {}
 
-	const char*		getMessage			(void) const { return m_message.c_str(); }
+	const char*			getMessage			(void) const { return m_message.c_str(); }
 
 private:
-	std::string		m_message;
+	const std::string	m_message;
+};
+
+//! Base exception class for test exceptions that affect test result
+class TestException : public Exception
+{
+public:
+						TestException		(const char* message, const char* expr, const char* file, int line, qpTestResult result);
+						TestException		(const std::string& message, qpTestResult result);
+	virtual				~TestException		(void) throw() {}
+
+	qpTestResult		getTestResult		(void) const { return m_result; }
+	virtual bool		isFatal				(void) const { return false; }
+
+private:
+	const qpTestResult	m_result;
 };
 
 //! Exception for test errors.
-class TestError : public Exception
+class TestError : public TestException
 {
 public:
 					TestError			(const char* message, const char* expr, const char* file, int line);
@@ -67,7 +83,7 @@ public:
 };
 
 //! Exception for internal errors.
-class InternalError : public Exception
+class InternalError : public TestException
 {
 public:
 					InternalError		(const char* message, const char* expr, const char* file, int line);
@@ -76,16 +92,18 @@ public:
 };
 
 //! Resource error. Tester will terminate if thrown out of test case.
-class ResourceError : public Exception
+class ResourceError : public TestException
 {
 public:
 					ResourceError		(const char* message, const char* expr, const char* file, int line);
 					ResourceError		(const std::string& message);
 	virtual			~ResourceError		(void) throw() {}
+
+	virtual bool	isFatal				(void) const { return true; }
 };
 
 //! Not supported error.
-class NotSupportedError : public Exception
+class NotSupportedError : public TestException
 {
 public:
 					NotSupportedError	(const char* message, const char* expr, const char* file, int line);

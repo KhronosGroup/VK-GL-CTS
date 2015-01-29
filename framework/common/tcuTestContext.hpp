@@ -67,6 +67,8 @@ public:
 	Archive&				getRootArchive		(void) const		{ return m_rootArchive;		}
 	void					setCurrentArchive	(Archive& archive)	{ m_curArchive = &archive;	}
 
+	void					setTerminateAfter	(bool terminate)	{ m_terminateAfter = terminate;	}
+	bool					getTerminateAfter	(void) const		{ return m_terminateAfter; 		}
 protected:
 	Platform&				m_platform;			//!< Platform port implementation.
 	Archive&				m_rootArchive;		//!< Root archive.
@@ -77,6 +79,7 @@ protected:
 	Archive*				m_curArchive;		//!< Current archive for test cases.
 	qpTestResult			m_testResult;		//!< Latest test result.
 	std::string				m_testResultDesc;	//!< Latest test result description.
+	bool					m_terminateAfter;	//!< Should tester terminate after execution of the current test
 };
 
 /*--------------------------------------------------------------------*//*!
