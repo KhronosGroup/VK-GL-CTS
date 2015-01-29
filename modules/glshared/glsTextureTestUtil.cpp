@@ -2653,7 +2653,7 @@ int computeTextureLookupDiff (const tcu::ConstPixelBufferAccess&	result,
 		tcu::Vec2(-1, -1),
 		tcu::Vec2(-1, +1),
 		tcu::Vec2(+1, -1),
-		tcu::Vec2(+1, -1),
+		tcu::Vec2(+1, +1),
 	};
 
 	tcu::clear(errorMask, tcu::RGBA::green.toVec());
