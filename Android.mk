@@ -64,6 +64,7 @@ LOCAL_SRC_FILES := \
 	framework/common/tcuTexVerifierUtil.cpp \
 	framework/common/tcuThreadUtil.cpp \
 	framework/common/tcuSeedBuilder.cpp \
+	framework/common/tcuMaybe.cpp \
 	framework/delibs/debase/deDefs.c \
 	framework/delibs/debase/deFloat16.c \
 	framework/delibs/debase/deInt32.c \

@@ -75,6 +75,8 @@ set(TCUTIL_SRCS
 	tcuFactoryRegistry.cpp
 	tcuSeedBuilder.hpp
 	tcuSeedBuilder.cpp
+	tcuMaybe.hpp
+	tcuMaybe.cpp
 	)
 
 set(TCUTIL_LIBS
