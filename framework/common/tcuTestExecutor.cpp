@@ -194,11 +194,18 @@ void TestExecutor::leaveTestCase (TestCase* testCase)
 	const RunMode runMode = m_cmdLine.getRunMode();
 	if (runMode == RUNMODE_EXECUTE)
 	{
-		// Update statistics.
-		qpTestResult testResult = m_testCtx.getTestResult();
+		// De-init case.
+		const bool			deinitOk		= m_testCaseWrapper->deinitTestCase(testCase);
+		const qpTestResult	testResult		= m_testCtx.getTestResult();
+		const char* const	testResultDesc	= m_testCtx.getTestResultDesc();
+		const bool			terminateAfter	= m_testCtx.getTerminateAfter();
 		DE_ASSERT(testResult != QP_TEST_RESULT_LAST);
 
-		print("  %s (%s)\n", qpGetTestResultName(testResult), m_testCtx.getTestResultDesc());
+		m_isInTestCase = false;
+		m_testCtx.getLog().endCase(testResult, testResultDesc);
+
+		// Update statistics.
+		print("  %s (%s)\n", qpGetTestResultName(testResult), testResultDesc);
 
 		m_result.numExecuted += 1;
 		switch (testResult)
@@ -210,14 +217,8 @@ void TestExecutor::leaveTestCase (TestCase* testCase)
 			default:									m_result.numFailed			+= 1;	break;
 		}
 
-		// De-init case.
-		bool deinitOk = m_testCaseWrapper->deinitTestCase(testCase);
-
-		m_isInTestCase = false;
-		m_testCtx.getLog().endCase(m_testCtx.getTestResult(), m_testCtx.getTestResultDesc());
-
-		// Resource error or any error in deinit means that execution should end
-		if (!deinitOk || testResult == QP_TEST_RESULT_RESOURCE_ERROR)
+		// terminateAfter, Resource error or any error in deinit means that execution should end
+		if (terminateAfter || !deinitOk || testResult == QP_TEST_RESULT_RESOURCE_ERROR)
 			m_abortSession = true;
 
 		// \todo [2011-02-09 pyry] Disable watchdog temporarily?
