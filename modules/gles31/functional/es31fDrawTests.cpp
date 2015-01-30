@@ -1536,15 +1536,15 @@ void ComputeShaderGeneratedCase::renderTo (tcu::Surface& dst)
 	}
 	gl.useProgram(0);
 
-	glu::checkError(gl.getError(), "", __FILE__, __LINE__);
-
 	// free
 
 	gl.deleteVertexArrays(1, &vaoID);
+	glu::checkError(gl.getError(), "", __FILE__, __LINE__);
 
 	gl.finish();
-	glu::readPixels(m_context.getRenderContext(), 0, 0, dst.getAccess());
+	glu::checkError(gl.getError(), "", __FILE__, __LINE__);
 
+	glu::readPixels(m_context.getRenderContext(), 0, 0, dst.getAccess());
 	glu::checkError(gl.getError(), "", __FILE__, __LINE__);
 }
 
