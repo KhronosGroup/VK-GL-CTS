@@ -1179,6 +1179,7 @@ ComputeShaderGeneratedCase::IterateResult ComputeShaderGeneratedCase::iterate (v
 	{
 		m_testCtx.getLog() << tcu::TestLog::Message << "Got GL_OUT_OF_MEMORY." << tcu::TestLog::EndMessage;
 		m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "Got GL_OUT_OF_MEMORY");
+		m_testCtx.setTerminateAfter(true); // Do not rely on implementation to be able to recover from OOM
 		return STOP;
 	}
 
