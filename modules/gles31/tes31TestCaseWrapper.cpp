@@ -86,6 +86,7 @@ tcu::TestNode::IterateResult TestCaseWrapper::iterateTestCase (tcu::TestCase* te
 	{
 		m_testCtx.getLog() << e;
 		m_testCtx.setTestResult(QP_TEST_RESULT_RESOURCE_ERROR, "Resource error in context post-iteration routine");
+		m_testCtx.setTerminateAfter(true);
 		return tcu::TestNode::STOP;
 	}
 	catch (const std::exception& e)
