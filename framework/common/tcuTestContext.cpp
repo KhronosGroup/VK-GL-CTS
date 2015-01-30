@@ -41,6 +41,7 @@ TestContext::TestContext (
 	, m_watchDog		(watchDog)
 	, m_curArchive		(DE_NULL)
 	, m_testResult		(QP_TEST_RESULT_LAST)
+	, m_terminateAfter	(false)
 {
 	setCurrentArchive(m_rootArchive);
 }
