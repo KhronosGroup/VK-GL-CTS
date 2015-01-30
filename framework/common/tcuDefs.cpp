@@ -73,43 +73,55 @@ Exception::Exception (const std::string& message)
 {
 }
 
+TestException::TestException (const char* message, const char* expr, const char* file, int line, qpTestResult result)
+	: Exception	(formatError(message, expr, file, line))
+	, m_result	(result)
+{
+}
+
+TestException::TestException (const std::string& message, qpTestResult result)
+	: Exception	(message)
+	, m_result	(result)
+{
+}
+
 TestError::TestError (const char* message, const char* expr, const char* file, int line)
-	: Exception(message, expr, file, line)
+	: TestException(message, expr, file, line, QP_TEST_RESULT_FAIL)
 {
 }
 
 TestError::TestError (const std::string& message)
-	: Exception(message)
+	: TestException(message, QP_TEST_RESULT_FAIL)
 {
 }
 
 InternalError::InternalError (const char* message, const char* expr, const char* file, int line)
-	: Exception(message, expr, file, line)
+	: TestException(message, expr, file, line, QP_TEST_RESULT_INTERNAL_ERROR)
 {
 }
 
 InternalError::InternalError (const std::string& message)
-	: Exception(message)
+	: TestException(message, QP_TEST_RESULT_INTERNAL_ERROR)
 {
 }
 
 ResourceError::ResourceError (const char* message, const char* expr, const char* file, int line)
-	: Exception(message, expr, file, line)
+	: TestException(message, expr, file, line, QP_TEST_RESULT_RESOURCE_ERROR)
 {
 }
 
 ResourceError::ResourceError (const std::string& message)
-	: Exception(message)
+	: TestException(message, QP_TEST_RESULT_RESOURCE_ERROR)
 {
 }
 
 NotSupportedError::NotSupportedError (const char* message, const char* expr, const char* file, int line)
-	: Exception(message, expr, file, line)
+	: TestException(message, expr, file, line, QP_TEST_RESULT_NOT_SUPPORTED)
 {
 }
 
 NotSupportedError::NotSupportedError (const std::string& message)
-	: Exception(message)
+	: TestException(message, QP_TEST_RESULT_NOT_SUPPORTED)
 {
 }
 

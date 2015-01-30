@@ -56,23 +56,13 @@ bool TestCaseWrapper::initTestCase (TestCase* testCase)
 	{
 		DE_ASSERT(!success);
 		m_testCtx.setTestResult(QP_TEST_RESULT_RESOURCE_ERROR, "Failed to allocate memory in test case init");
+		m_testCtx.setTerminateAfter(true);
 	}
-	catch (const tcu::ResourceError& e)
+	catch (const tcu::TestException& e)
 	{
 		DE_ASSERT(!success);
-		m_testCtx.setTestResult(QP_TEST_RESULT_RESOURCE_ERROR, e.getMessage());
-		log << e;
-	}
-	catch (const tcu::NotSupportedError& e)
-	{
-		DE_ASSERT(!success);
-		m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, e.getMessage());
-		log << e;
-	}
-	catch (const tcu::InternalError& e)
-	{
-		DE_ASSERT(!success);
-		m_testCtx.setTestResult(QP_TEST_RESULT_INTERNAL_ERROR, e.getMessage());
+		m_testCtx.setTestResult(e.getTestResult(), e.getMessage());
+		m_testCtx.setTerminateAfter(e.isFatal());
 		log << e;
 	}
 	catch (const tcu::Exception& e)
@@ -125,21 +115,13 @@ TestNode::IterateResult TestCaseWrapper::iterateTestCase (TestCase* testCase)
 	catch (const std::bad_alloc&)
 	{
 		m_testCtx.setTestResult(QP_TEST_RESULT_RESOURCE_ERROR, "Failed to allocate memory during test execution");
+		m_testCtx.setTerminateAfter(true);
 	}
-	catch (const tcu::ResourceError& e)
+	catch (const tcu::TestException& e)
 	{
 		log << e;
-		m_testCtx.setTestResult(QP_TEST_RESULT_RESOURCE_ERROR, e.getMessage());
-	}
-	catch (const tcu::NotSupportedError& e)
-	{
-		log << e;
-		m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, e.getMessage());
-	}
-	catch (const tcu::InternalError& e)
-	{
-		log << e;
-		m_testCtx.setTestResult(QP_TEST_RESULT_INTERNAL_ERROR, e.getMessage());
+		m_testCtx.setTestResult(e.getTestResult(), e.getMessage());
+		m_testCtx.setTerminateAfter(e.isFatal());
 	}
 	catch (const tcu::Exception& e)
 	{
