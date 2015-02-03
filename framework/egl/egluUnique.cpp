@@ -23,6 +23,7 @@
 
 #include "egluUnique.hpp"
 #include "eglwLibrary.hpp"
+#include "eglwEnums.hpp"
 
 namespace eglu
 {
@@ -41,6 +42,11 @@ UniqueDisplay::~UniqueDisplay (void)
 		m_egl.terminate(m_display);
 }
 
+UniqueDisplay::operator bool (void) const
+{
+	return m_display != EGL_NO_DISPLAY;
+}
+
 UniqueSurface::UniqueSurface (const Library& egl, EGLDisplay display, EGLSurface surface)
 	: m_egl		(egl)
 	, m_display	(display)
@@ -54,6 +60,11 @@ UniqueSurface::~UniqueSurface (void)
 		m_egl.destroySurface(m_display, m_surface);
 }
 
+UniqueSurface::operator bool (void) const
+{
+	return m_surface != EGL_NO_SURFACE;
+}
+
 UniqueContext::UniqueContext (const Library& egl, EGLDisplay display, EGLContext context)
 	: m_egl		(egl)
 	, m_display	(display)
@@ -65,6 +76,11 @@ UniqueContext::~UniqueContext (void)
 {
 	if (m_context != EGL_NO_CONTEXT)
 		m_egl.destroyContext(m_display, m_context);
+}
+
+UniqueContext::operator bool (void) const
+{
+	return m_context != EGL_NO_CONTEXT;
 }
 
 ScopedCurrentContext::ScopedCurrentContext (const Library& egl, EGLDisplay display, EGLSurface draw, EGLSurface read, EGLContext context)
@@ -90,6 +106,11 @@ UniqueImage::~UniqueImage (void)
 {
 	if (m_image != EGL_NO_IMAGE)
 		m_egl.destroyImageKHR(m_display, m_image);
+}
+
+UniqueImage::operator bool (void) const
+{
+	return m_image != EGL_NO_IMAGE;
 }
 
 } // eglu

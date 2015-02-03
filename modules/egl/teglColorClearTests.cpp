@@ -23,6 +23,7 @@
 
 #include "teglColorClearTests.hpp"
 #include "teglColorClearCase.hpp"
+#include "eglwEnums.hpp"
 
 using std::string;
 using std::vector;

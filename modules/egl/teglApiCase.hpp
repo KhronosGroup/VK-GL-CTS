@@ -27,6 +27,7 @@
 #include "teglTestCase.hpp"
 #include "egluCallLogWrapper.hpp"
 #include "egluConfigFilter.hpp"
+#include "eglwEnums.hpp"
 
 #include <vector>
 

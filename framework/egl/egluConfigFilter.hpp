@@ -27,7 +27,6 @@
 #include "tcuRGBA.hpp"
 
 #include "eglwDefs.hpp"
-#include "eglwEnums.hpp"
 
 #include <vector>
 
@@ -49,17 +48,17 @@ public:
 
 	int				get					(deUint32 attrib) const;
 
-	int				id					(void) const { return get(EGL_CONFIG_ID);		}
-	int				redSize				(void) const { return get(EGL_RED_SIZE);		}
-	int				greenSize			(void) const { return get(EGL_GREEN_SIZE);		}
-	int				blueSize			(void) const { return get(EGL_BLUE_SIZE);		}
-	int				alphaSize			(void) const { return get(EGL_ALPHA_SIZE);		}
-	int				depthSize			(void) const { return get(EGL_DEPTH_SIZE);		}
-	int				stencilSize			(void) const { return get(EGL_STENCIL_SIZE);	}
-	int				samples				(void) const { return get(EGL_SAMPLES);			}
+	int				id					(void) const;
+	int				redSize				(void) const;
+	int				greenSize			(void) const;
+	int				blueSize			(void) const;
+	int				alphaSize			(void) const;
+	int				depthSize			(void) const;
+	int				stencilSize			(void) const;
+	int				samples				(void) const;
 
-	deUint32		renderableType		(void) const { return (deUint32)get(EGL_RENDERABLE_TYPE);	}
-	deUint32		surfaceType			(void) const { return (deUint32)get(EGL_SURFACE_TYPE);		}
+	deUint32		renderableType		(void) const;
+	deUint32		surfaceType			(void) const;
 
 	tcu::RGBA		colorBits			(void) const { return tcu::RGBA(redSize(), greenSize(), blueSize(), alphaSize());	}
 

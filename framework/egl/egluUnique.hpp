@@ -25,7 +25,6 @@
 
 #include "egluDefs.hpp"
 #include "eglwDefs.hpp"
-#include "eglwEnums.hpp"
 
 namespace eglw
 {
@@ -42,7 +41,7 @@ public:
 							~UniqueDisplay	(void);
 
 	eglw::EGLDisplay		operator*		(void) const { return m_display; }
-	operator				bool			(void) const { return m_display != EGL_NO_DISPLAY; }
+	operator				bool			(void) const;
 
 private:
 	const eglw::Library&	m_egl;
@@ -60,7 +59,7 @@ public:
 							~UniqueSurface	(void);
 
 	eglw::EGLSurface		operator*		(void) const { return m_surface; }
-	operator				bool			(void) const { return m_surface != EGL_NO_SURFACE; }
+	operator				bool			(void) const;
 
 private:
 	const eglw::Library&	m_egl;
@@ -79,7 +78,7 @@ public:
 							~UniqueContext	(void);
 
 	eglw::EGLContext		operator*		(void) const { return m_context; }
-	operator				bool			(void) const { return m_context != EGL_NO_CONTEXT; }
+	operator				bool			(void) const;
 
 private:
 	const eglw::Library&	m_egl;
@@ -109,7 +108,7 @@ public:
 							~UniqueImage	(void);
 
 	eglw::EGLImage			operator*		(void) const { return m_image; }
-	operator				bool			(void) const { return m_image != EGL_NO_IMAGE_KHR; }
+	operator				bool			(void) const;
 
 private:
 	const eglw::Library&	m_egl;
