@@ -3,10 +3,11 @@ message("*** Default target")
 
 set(DEQP_TARGET_NAME 	"Default")
 
-# OpenGL (ES) tests do not require any libraries or headers
+# OpenGL (ES) & EGL tests do not require any libraries or headers
 set(DEQP_SUPPORT_GLES2	ON)
 set(DEQP_SUPPORT_GLES3	ON)
 set(DEQP_SUPPORT_OPENGL	ON)
+set(DEQP_SUPPORT_EGL	ON)
 
 # For static linking
 find_library(GLES2_LIBRARY		NAMES libGLESv2 GLESv2)
@@ -18,6 +19,7 @@ find_path(EGL_INCLUDE_PATH		EGL/egl.h)
 
 if (GLES2_LIBRARY AND GLES2_INCLUDE_PATH)
 	set(DEQP_GLES2_LIBRARIES ${GLES2_LIBRARY})
+	include_directories(${GLES2_INCLUDE_PATH})
 endif ()
 
 if (GLES2_LIBRARY AND GLES3_INCLUDE_PATH)
@@ -26,22 +28,8 @@ if (GLES2_LIBRARY AND GLES3_INCLUDE_PATH)
 endif ()
 
 if (EGL_LIBRARY AND EGL_INCLUDE_PATH)
-	set(DEQP_SUPPORT_EGL		ON)
-	set(DEQP_EGL_LIBRARIES		${EGL_LIBRARY})
+	set(DEQP_EGL_LIBRARIES ${EGL_LIBRARY})
 	include_directories(${EGL_INCLUDE_PATH})
-endif ()
-
-# OpenCL support?
-find_library(OPENCL_LIBRARY		NAMES libOpenCL OpenCL)
-find_path(OPENCL_INCLUDE_PATH	CL/cl.h OpenCL/cl.h)
-
-message("OPENCL_LIBRARY = ${OPENCL_LIBRARY}")
-message("OPENCL_INCLUDE_PATH = ${OPENCL_INCLUDE_PATH}")
-
-if (OPENCL_LIBRARY AND OPENCL_INCLUDE_PATH)
-	set(DEQP_SUPPORT_OPENCL		ON)
-	set(DEQP_OPENCL_LIBRARIES	${OPENCL_LIBRARY})
-	include_directories(${OPENCL_INCLUDE_PATH})
 endif ()
 
 # X11 / GLX?

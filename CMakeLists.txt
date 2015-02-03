@@ -2,16 +2,13 @@
 
 cmake_minimum_required(VERSION 2.6)
 
-# Paths to dependencies
-set(DELIBS_DIR "framework/delibs" CACHE STRING "Path to delibs (../delibs).")
-
 # dEQP Target.
 set(DEQP_TARGET "default" CACHE STRING "dEQP Target (default, android...)")
 
 project(dEQP-Core-${DEQP_TARGET})
 
-include(${DELIBS_DIR}/cmake/Defs.cmake NO_POLICY_SCOPE)
-include(${DELIBS_DIR}/cmake/CFlags.cmake)
+include(framework/delibs/cmake/Defs.cmake NO_POLICY_SCOPE)
+include(framework/delibs/cmake/CFlags.cmake)
 
 add_definitions(-DDE_ASSERT_FAILURE_CALLBACK)
 
@@ -33,9 +30,6 @@ set(DEQP_VG_LIBRARIES		)				# VG libraries
 set(DEQP_SUPPORT_EGL		OFF)			# Is EGL supported
 set(DEQP_EGL_LIBRARIES		)				# EGL libraries
 
-set(DEQP_SUPPORT_OPENCL		OFF)			# Is OpenCL supported
-set(DEQP_OPENCL_LIBRARIES	)				# OpenCL libraries
-
 set(DEQP_PLATFORM_LIBRARIES	)				# Other platform libraries
 
 set(DEQP_SUPPORT_OPENGL		OFF)			# Is OpenGL supported on platform
@@ -45,12 +39,12 @@ set(DEQP_PLATFORM_COPY_LIBRARIES	)		# Libraries / binaries that need to be copie
 
 # Delibs include directories
 include_directories(
-	${DELIBS_DIR}/debase
-	${DELIBS_DIR}/decpp
-	${DELIBS_DIR}/depool
-	${DELIBS_DIR}/dethread
-	${DELIBS_DIR}/deutil
-	${DELIBS_DIR}/destream
+	framework/delibs/debase
+	framework/delibs/decpp
+	framework/delibs/depool
+	framework/delibs/dethread
+	framework/delibs/deutil
+	framework/delibs/destream
 	)
 
 # Include target-specific definitions
@@ -91,8 +85,6 @@ message(STATUS "DEQP_SUPPORT_VG         = ${DEQP_SUPPORT_VG}")
 message(STATUS "DEQP_VG_LIBRARIES       = ${DEQP_VG_LIBRARIES}")
 message(STATUS "DEQP_SUPPORT_EGL        = ${DEQP_SUPPORT_EGL}")
 message(STATUS "DEQP_EGL_LIBRARIES      = ${DEQP_EGL_LIBRARIES}")
-message(STATUS "DEQP_SUPPORT_OPENCL     = ${DEQP_SUPPORT_OPENCL}")
-message(STATUS "DEQP_OPENCL_LIBRARIES   = ${DEQP_OPENCL_LIBRARIES}")
 message(STATUS "DEQP_SUPPORT_OPENGL     = ${DEQP_SUPPORT_OPENGL}")
 message(STATUS "DEQP_PLATFORM_LIBRARIES = ${DEQP_PLATFORM_LIBRARIES}")
 
@@ -117,10 +109,6 @@ endif ()
 
 if (DEQP_SUPPORT_EGL)
 	add_definitions(-DDEQP_SUPPORT_EGL=1)
-endif ()
-
-if (DEQP_SUPPORT_OPENCL)
-	add_definitions(-DDEQP_SUPPORT_OPENCL=1)
 endif ()
 
 if (DEQP_SUPPORT_OPENGL)
@@ -156,10 +144,6 @@ if (DEQP_SUPPORT_EGL AND NOT DEFINED DEQP_EGL_LIBRARIES)
 	add_definitions(-DDEQP_EGL_RUNTIME_LOAD=1)
 endif ()
 
-if (DEQP_SUPPORT_OPENCL AND NOT DEFINED DEQP_OPENCL_LIBRARIES)
-	message(FATAL_ERROR "Run-time loading of OpenCL is not supported (DEQP_OPENCL_LIBRARIES is not set)")
-endif ()
-
 # OpenGL is always loaded on run-time
 if (DEQP_SUPPORT_OPENGL)
 	add_definitions(-DDEQP_OPENGL_RUNTIME_LOAD=1)
@@ -171,12 +155,12 @@ if (DE_COMPILER_IS_MSC)
 endif ()
 
 # delibs projects
-add_subdirectory(${DELIBS_DIR}/debase		debase)
-add_subdirectory(${DELIBS_DIR}/depool		depool)
-add_subdirectory(${DELIBS_DIR}/dethread		dethread)
-add_subdirectory(${DELIBS_DIR}/destream		destream)
-add_subdirectory(${DELIBS_DIR}/deutil		deutil)
-add_subdirectory(${DELIBS_DIR}/decpp		decpp)
+add_subdirectory(framework/delibs/debase)
+add_subdirectory(framework/delibs/depool)
+add_subdirectory(framework/delibs/dethread)
+add_subdirectory(framework/delibs/destream)
+add_subdirectory(framework/delibs/deutil)
+add_subdirectory(framework/delibs/decpp)
 
 # ExecServer
 add_subdirectory(execserver)
@@ -184,12 +168,6 @@ add_subdirectory(execserver)
 # Executor framework and tools
 if (IS_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/executor)
 	add_subdirectory(executor)
-endif ()
-
-if (DEQP_SUPPORT_OPENCL)
-	# We need to support all older CL1.x versions
-	add_definitions(-DCL_USE_DEPRECATED_OPENCL_1_0_APIS)
-	add_definitions(-DCL_USE_DEPRECATED_OPENCL_1_1_APIS)
 endif ()
 
 # Test framework include directories
