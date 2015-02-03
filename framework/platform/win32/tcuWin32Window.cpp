@@ -40,8 +40,8 @@ Win32Window::Win32Window (HINSTANCE instance, int width, int height)
 {
 	try
 	{
-		static const char	s_className[]	= "dEQP Tester Core Class";
-		static const char	s_windowName[]	= "dEQP Tester Core";
+		static const char	s_className[]	= "dEQP Test Process Class";
+		static const char	s_windowName[]	= "dEQP Test Process";
 
 		{
 			WNDCLASS wndClass;
@@ -67,7 +67,7 @@ Win32Window::Win32Window (HINSTANCE instance, int width, int height)
 								NULL, NULL, instance, NULL);
 
 		if (!m_window)
-			throw ResourceError("Failed to create Win32 window", "", __FILE__, __LINE__);
+			TCU_THROW(ResourceError, "Failed to create Win32 window");
 
 		// Store this as userdata
 		SetWindowLongPtr(m_window, GWLP_USERDATA, (LONG_PTR)this);
@@ -109,19 +109,19 @@ void Win32Window::setSize (int width, int height)
 	rc.bottom	= height;
 
 	if (!AdjustWindowRect(&rc, GetWindowLong(m_window, GWL_STYLE), GetMenu(m_window) != NULL))
-		throw tcu::TestError("AdjustWindowRect() failed", DE_NULL, __FILE__, __LINE__);
+		TCU_THROW(TestError, "AdjustWindowRect() failed");
 
 	if (!SetWindowPos(m_window, NULL, 0, 0,
 					  rc.right - rc.left, rc.bottom - rc.top,
 					  SWP_NOACTIVATE | SWP_NOCOPYBITS | SWP_NOMOVE | SWP_NOZORDER))
-		throw tcu::TestError("SetWindowPos() failed", DE_NULL, __FILE__, __LINE__);
+		TCU_THROW(TestError, "SetWindowPos() failed");
 }
 
 IVec2 Win32Window::getSize (void) const
 {
 	RECT rc;
 	if (!GetClientRect(m_window, &rc))
-		throw tcu::TestError("GetClientRect() failed", DE_NULL, __FILE__, __LINE__);
+		TCU_THROW(TestError, "GetClientRect() failed");
 
 	return IVec2(rc.right - rc.left,
 				 rc.bottom - rc.top);
