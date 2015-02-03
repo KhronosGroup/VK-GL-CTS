@@ -438,7 +438,7 @@ SwapBuffersTests::SwapBuffersTests (EglTestContext& eglTestCtx)
 {
 }
 
-static bool isWindow (const eglu::CandidateConfig& c) { return (c.surfaceType() & EGL_WINDOW_BIT); }
+static bool isWindow (const eglu::CandidateConfig& c) { return (c.surfaceType() & EGL_WINDOW_BIT) != 0; }
 
 void SwapBuffersTests::init (void)
 {

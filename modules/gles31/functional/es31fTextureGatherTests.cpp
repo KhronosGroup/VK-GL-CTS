@@ -2126,7 +2126,7 @@ void TextureGatherTests::init (void)
 					TestCaseGroup* const		formatGroup		= new TestCaseGroup(m_context, formats[formatNdx].name, "");
 					textureTypeGroup->addChild(formatGroup);
 
-					for (int noCornersI = 0; noCornersI <= (textureType == TEXTURETYPE_CUBE)?1:0; noCornersI++)
+					for (int noCornersI = 0; noCornersI <= ((textureType == TEXTURETYPE_CUBE)?1:0); noCornersI++)
 					{
 						const bool				noCorners		= noCornersI!= 0;
 						TestCaseGroup* const	cornersGroup	= noCorners

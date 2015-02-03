@@ -2577,7 +2577,7 @@ int componentSum (const IVec3& vec)
 
 void decompress (const PixelBufferAccess& dst, CompressedTexFormat fmt, const deUint8* src, const TexDecompressionParams& params)
 {
-	const size_t			blockSize			= getBlockSize(fmt);
+	const int				blockSize			= getBlockSize(fmt);
 	const IVec3				blockPixelSize		(getBlockPixelSize(fmt));
 	const IVec3				blockCount			(divRoundUp(dst.getWidth(),		blockPixelSize.x()),
 												 divRoundUp(dst.getHeight(),	blockPixelSize.y()),

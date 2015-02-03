@@ -282,9 +282,9 @@ static deBool deSocketAddressToBsdAddress (const deSocketAddress* address, int b
 			return DE_FALSE;
 		}
 
-		*bsdAddrLen	= result->ai_addrlen;
+		*bsdAddrLen	= (int)result->ai_addrlen;
 
-		deMemcpy(bsdAddr, result->ai_addr, result->ai_addrlen);
+		deMemcpy(bsdAddr, result->ai_addr, (int)result->ai_addrlen);
 		freeaddrinfo(result);
 
 		/* Add port. */

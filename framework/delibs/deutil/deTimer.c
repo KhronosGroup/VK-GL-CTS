@@ -131,7 +131,9 @@ void deTimer_disable (deTimer* timer)
 			if (success)
 			{
 				/* Wait for all callbacks to complete. */
-				DE_VERIFY(WaitForSingleObject(waitEvent, INFINITE) == WAIT_OBJECT_0);
+				DWORD res = WaitForSingleObject(waitEvent, INFINITE);
+				DE_ASSERT(res == WAIT_OBJECT_0);
+				DE_UNREF(res);
 				break;
 			}
 			else
