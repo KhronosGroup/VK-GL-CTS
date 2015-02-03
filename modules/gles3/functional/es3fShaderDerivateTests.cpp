@@ -508,12 +508,12 @@ static bool reverifyConstantDerivateWithFlushRelaxations (tcu::TestLog&							lo
 			const int			nominatorLoBits			= de::max(0, numBits - nominatorLoBitsLost);
 			const int			nominatorHiBits			= de::max(0, numBits - nominatorHiBitsLost);
 
-			const tcu::Interval	nominatorRange			(convertFloorFlushToZero(nominator.lo(), minExponent, nominatorLoBits),
-														 convertCeilFlushToZero(nominator.hi(), minExponent, nominatorHiBits));
+			const tcu::Interval	nominatorRange			(convertFloorFlushToZero((float)nominator.lo(), minExponent, nominatorLoBits),
+														 convertCeilFlushToZero((float)nominator.hi(), minExponent, nominatorHiBits));
 
 			const tcu::Interval	divisionRange			= nominatorRange / 3.0f; // legal sample area is anywhere within this and neighboring pixels (i.e. size = 3)
-			const tcu::Interval	divisionResultRange		(convertFloorFlushToZero(addErrorUlp(divisionRange.lo(), -divisionErrorUlps, numBits), minExponent, numBits),
-														 convertCeilFlushToZero(addErrorUlp(divisionRange.hi(), +divisionErrorUlps, numBits), minExponent, numBits));
+			const tcu::Interval	divisionResultRange		(convertFloorFlushToZero(addErrorUlp((float)divisionRange.lo(), -divisionErrorUlps, numBits), minExponent, numBits),
+														 convertCeilFlushToZero(addErrorUlp((float)divisionRange.hi(), +divisionErrorUlps, numBits), minExponent, numBits));
 			const tcu::Interval	finalResultRange		(divisionResultRange.lo() - surfaceThreshold[c], divisionResultRange.hi() + surfaceThreshold[c]);
 
 			if (resultDerivative[c] >= finalResultRange.lo() && resultDerivative[c] <= finalResultRange.hi())
