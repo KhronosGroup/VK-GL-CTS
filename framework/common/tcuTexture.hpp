@@ -228,6 +228,9 @@ public:
 	}
 };
 
+// Calculate pitches for pixel data with no padding.
+IVec3 calculatePackedPitch (const TextureFormat& format, const IVec3& size);
+
 class TextureLevel;
 
 /*--------------------------------------------------------------------*//*!
@@ -246,17 +249,20 @@ public:
 							ConstPixelBufferAccess		(void);
 							ConstPixelBufferAccess		(const TextureLevel& level);
 							ConstPixelBufferAccess		(const TextureFormat& format, int width, int height, int depth, const void* data);
+							ConstPixelBufferAccess		(const TextureFormat& format, const IVec3& size, const void* data);
 							ConstPixelBufferAccess		(const TextureFormat& format, int width, int height, int depth, int rowPitch, int slicePitch, const void* data);
+							ConstPixelBufferAccess		(const TextureFormat& format, const IVec3& size, const IVec3& pitch, const void* data);
 
-	const TextureFormat&	getFormat					(void) const	{ return m_format;		}
-	int						getWidth					(void) const	{ return m_width;		}
-	int						getHeight					(void) const	{ return m_height;		}
-	int						getDepth					(void) const	{ return m_depth;		}
-	int						getRowPitch					(void) const	{ return m_rowPitch;	}
-	int						getSlicePitch				(void) const	{ return m_slicePitch;	}
+	const TextureFormat&	getFormat					(void) const	{ return m_format;					}
+	const IVec3&			getSize						(void) const	{ return m_size;					}
+	int						getWidth					(void) const	{ return m_size.x();				}
+	int						getHeight					(void) const	{ return m_size.y();				}
+	int						getDepth					(void) const	{ return m_size.z();				}
+	int						getRowPitch					(void) const	{ return m_pitch.y();				}
+	int						getSlicePitch				(void) const	{ return m_pitch.z();				}
 
-	const void*				getDataPtr					(void) const	{ return m_data;		}
-	int						getDataSize					(void) const	{ return m_depth*m_slicePitch;	}
+	const void*				getDataPtr					(void) const	{ return m_data;					}
+	int						getDataSize					(void) const	{ return m_size.z()*m_pitch.z();	}
 
 	Vec4					getPixel					(int x, int y, int z = 0) const;
 	IVec4					getPixelInt					(int x, int y, int z = 0) const;
@@ -281,11 +287,8 @@ public:
 
 protected:
 	TextureFormat			m_format;
-	int						m_width;
-	int						m_height;
-	int						m_depth;
-	int						m_rowPitch;
-	int						m_slicePitch;
+	IVec3					m_size;
+	IVec3					m_pitch;	//!< (pixelPitch, rowPitch, slicePitch)
 	mutable void*			m_data;
 };
 
@@ -304,7 +307,9 @@ public:
 						PixelBufferAccess	(void) {}
 						PixelBufferAccess	(TextureLevel& level);
 						PixelBufferAccess	(const TextureFormat& format, int width, int height, int depth, void* data);
+						PixelBufferAccess	(const TextureFormat& format, const IVec3& size, void* data);
 						PixelBufferAccess	(const TextureFormat& format, int width, int height, int depth, int rowPitch, int slicePitch, void* data);
+						PixelBufferAccess	(const TextureFormat& format, const IVec3& size, const IVec3& pitch, void* data);
 
 	void*				getDataPtr			(void) const { return m_data; }
 
@@ -332,26 +337,25 @@ public:
 								TextureLevel		(const TextureFormat& format, int width, int height, int depth = 1);
 								~TextureLevel		(void);
 
-	int							getWidth			(void) const	{ return m_width;	}
-	int							getHeight			(void) const	{ return m_height;	}
-	int							getDepth			(void) const	{ return m_depth;	}
-	bool						isEmpty				(void) const	{ return m_width == 0 || m_height == 0 || m_depth == 0; }
+	const IVec3&				getSize				(void) const	{ return m_size;		}
+	int							getWidth			(void) const	{ return m_size.x();	}
+	int							getHeight			(void) const	{ return m_size.y();	}
+	int							getDepth			(void) const	{ return m_size.z();	}
+	bool						isEmpty				(void) const	{ return m_size.x() * m_size.y() * m_size.z() == 0; }
 	const TextureFormat			getFormat			(void) const	{ return m_format;	}
 
 	void						setStorage			(const TextureFormat& format, int width, int heigth, int depth = 1);
 	void						setSize				(int width, int height, int depth = 1);
 
-	PixelBufferAccess			getAccess			(void)			{ return PixelBufferAccess(m_format, m_width, m_height, m_depth, getPtr());			}
-	ConstPixelBufferAccess		getAccess			(void) const	{ return ConstPixelBufferAccess(m_format, m_width, m_height, m_depth, getPtr());	}
+	PixelBufferAccess			getAccess			(void)			{ return PixelBufferAccess(m_format, m_size, calculatePackedPitch(m_format, m_size), getPtr());			}
+	ConstPixelBufferAccess		getAccess			(void) const	{ return ConstPixelBufferAccess(m_format, m_size, calculatePackedPitch(m_format, m_size), getPtr());	}
 
 private:
 	void*						getPtr				(void)			{ return m_data.getPtr(); }
 	const void*					getPtr				(void) const	{ return m_data.getPtr(); }
 
 	TextureFormat				m_format;
-	int							m_width;
-	int							m_height;
-	int							m_depth;
+	IVec3						m_size;
 	de::ArrayBuffer<deUint8>	m_data;
 
 	friend class ConstPixelBufferAccess;

@@ -403,6 +403,15 @@ tcu::Vec4 unpackRGB999E5 (deUint32 color)
 
 } // anonymous
 
+IVec3 calculatePackedPitch (const TextureFormat& format, const IVec3& size)
+{
+	const int pixelSize		= format.getPixelSize();
+	const int rowPitch		= pixelSize * size.x();
+	const int slicePitch	= rowPitch * size.y();
+
+	return IVec3(pixelSize, rowPitch, slicePitch);
+}
+
 /** Get pixel size in bytes. */
 int TextureFormat::getPixelSize (void) const
 {
@@ -492,44 +501,49 @@ int TextureFormat::getPixelSize (void) const
 }
 
 ConstPixelBufferAccess::ConstPixelBufferAccess (void)
-	: m_width		(0)
-	, m_height		(0)
-	, m_depth		(0)
-	, m_rowPitch	(0)
-	, m_slicePitch	(0)
+	: m_size		(0)
+	, m_pitch		(0)
 	, m_data		(DE_NULL)
 {
 }
 
 ConstPixelBufferAccess::ConstPixelBufferAccess (const TextureFormat& format, int width, int height, int depth, const void* data)
 	: m_format		(format)
-	, m_width		(width)
-	, m_height		(height)
-	, m_depth		(depth)
-	, m_rowPitch	(width*format.getPixelSize())
-	, m_slicePitch	(m_rowPitch*height)
+	, m_size		(width, height, depth)
+	, m_pitch		(calculatePackedPitch(m_format, m_size))
+	, m_data		((void*)data)
+{
+}
+
+ConstPixelBufferAccess::ConstPixelBufferAccess (const TextureFormat& format, const IVec3& size, const void* data)
+	: m_format		(format)
+	, m_size		(size)
+	, m_pitch		(calculatePackedPitch(m_format, m_size))
 	, m_data		((void*)data)
 {
 }
 
 ConstPixelBufferAccess::ConstPixelBufferAccess (const TextureFormat& format, int width, int height, int depth, int rowPitch, int slicePitch, const void* data)
 	: m_format		(format)
-	, m_width		(width)
-	, m_height		(height)
-	, m_depth		(depth)
-	, m_rowPitch	(rowPitch)
-	, m_slicePitch	(slicePitch)
+	, m_size		(width, height, depth)
+	, m_pitch		(format.getPixelSize(), rowPitch, slicePitch)
 	, m_data		((void*)data)
 {
 }
 
+ConstPixelBufferAccess::ConstPixelBufferAccess (const TextureFormat& format, const IVec3& size, const IVec3& pitch, const void* data)
+	: m_format		(format)
+	, m_size		(size)
+	, m_pitch		(pitch)
+	, m_data		((void*)data)
+{
+	DE_ASSERT(m_format.getPixelSize() <= m_pitch.x());
+}
+
 ConstPixelBufferAccess::ConstPixelBufferAccess (const TextureLevel& level)
 	: m_format		(level.getFormat())
-	, m_width		(level.getWidth())
-	, m_height		(level.getHeight())
-	, m_depth		(level.getDepth())
-	, m_rowPitch	(m_width*m_format.getPixelSize())
-	, m_slicePitch	(m_rowPitch*m_height)
+	, m_size		(level.getSize())
+	, m_pitch		(calculatePackedPitch(m_format, m_size))
 	, m_data		((void*)level.getPtr())
 {
 }
@@ -539,8 +553,18 @@ PixelBufferAccess::PixelBufferAccess (const TextureFormat& format, int width, in
 {
 }
 
+PixelBufferAccess::PixelBufferAccess (const TextureFormat& format, const IVec3& size, void* data)
+	: ConstPixelBufferAccess(format, size, data)
+{
+}
+
 PixelBufferAccess::PixelBufferAccess (const TextureFormat& format, int width, int height, int depth, int rowPitch, int slicePitch, void* data)
 	: ConstPixelBufferAccess(format, width, height, depth, rowPitch, slicePitch, data)
+{
+}
+
+PixelBufferAccess::PixelBufferAccess (const TextureFormat& format, const IVec3& size, const IVec3& pitch, void* data)
+	: ConstPixelBufferAccess(format, size, pitch, data)
 {
 }
 
@@ -557,21 +581,20 @@ void PixelBufferAccess::setPixels (const void* buf, int bufSize) const
 
 Vec4 ConstPixelBufferAccess::getPixel (int x, int y, int z) const
 {
-	DE_ASSERT(de::inBounds(x, 0, m_width));
-	DE_ASSERT(de::inBounds(y, 0, m_height));
-	DE_ASSERT(de::inBounds(z, 0, m_depth));
+	DE_ASSERT(de::inBounds(x, 0, m_size.x()));
+	DE_ASSERT(de::inBounds(y, 0, m_size.y()));
+	DE_ASSERT(de::inBounds(z, 0, m_size.z()));
+
+	const deUint8* pixelPtr = (const deUint8*)getDataPtr() + z*m_pitch.z() + y*m_pitch.y() + x*m_pitch.x();
 
 	// Optimized fomats.
 	if (m_format.type == TextureFormat::UNORM_INT8)
 	{
 		if (m_format.order == TextureFormat::RGBA)
-			return readRGBA8888Float((const deUint8*)getDataPtr() + z*m_slicePitch + y*m_rowPitch + x*4);
+			return readRGBA8888Float(pixelPtr);
 		else if (m_format.order == TextureFormat::RGB)
-			return readRGB888Float((const deUint8*)getDataPtr() + z*m_slicePitch + y*m_rowPitch + x*3);
+			return readRGB888Float(pixelPtr);
 	}
-
-	int				pixelSize		= m_format.getPixelSize();
-	const deUint8*	pixelPtr		= (const deUint8*)getDataPtr() + z*m_slicePitch + y*m_rowPitch + x*pixelSize;
 
 #define UB16(OFFS, COUNT)		((*((const deUint16*)pixelPtr) >> (OFFS)) & ((1<<(COUNT))-1))
 #define UB32(OFFS, COUNT)		((*((const deUint32*)pixelPtr) >> (OFFS)) & ((1<<(COUNT))-1))
@@ -642,12 +665,11 @@ Vec4 ConstPixelBufferAccess::getPixel (int x, int y, int z) const
 
 IVec4 ConstPixelBufferAccess::getPixelInt (int x, int y, int z) const
 {
-	DE_ASSERT(de::inBounds(x, 0, m_width));
-	DE_ASSERT(de::inBounds(y, 0, m_height));
-	DE_ASSERT(de::inBounds(z, 0, m_depth));
+	DE_ASSERT(de::inBounds(x, 0, m_size.x()));
+	DE_ASSERT(de::inBounds(y, 0, m_size.y()));
+	DE_ASSERT(de::inBounds(z, 0, m_size.z()));
 
-	int				pixelSize		= m_format.getPixelSize();
-	const deUint8*	pixelPtr		= (const deUint8*)getDataPtr() + z*m_slicePitch + y*m_rowPitch + x*pixelSize;
+	const deUint8*	pixelPtr = (const deUint8*)getDataPtr() + z*m_pitch.z() + y*m_pitch.y() + x*m_pitch.x();
 	IVec4			result;
 
 	// Optimized fomats.
@@ -738,8 +760,7 @@ float ConstPixelBufferAccess::getPixDepth (int x, int y, int z) const
 	DE_ASSERT(de::inBounds(y, 0, getHeight()));
 	DE_ASSERT(de::inBounds(z, 0, getDepth()));
 
-	int			pixelSize	= m_format.getPixelSize();
-	deUint8*	pixelPtr	= (deUint8*)getDataPtr() + z*m_slicePitch + y*m_rowPitch + x*pixelSize;
+	deUint8* pixelPtr = (deUint8*)getDataPtr() + z*m_pitch.z() + y*m_pitch.y() + x*m_pitch.x();
 
 #define UB32(OFFS, COUNT) ((*((const deUint32*)pixelPtr) >> (OFFS)) & ((1<<(COUNT))-1))
 #define NB32(OFFS, COUNT) channelToNormFloat(UB32(OFFS, COUNT), (COUNT))
@@ -778,8 +799,7 @@ int ConstPixelBufferAccess::getPixStencil (int x, int y, int z) const
 	DE_ASSERT(de::inBounds(y, 0, getHeight()));
 	DE_ASSERT(de::inBounds(z, 0, getDepth()));
 
-	int			pixelSize	= m_format.getPixelSize();
-	deUint8*	pixelPtr	= (deUint8*)getDataPtr() + z*m_slicePitch + y*m_rowPitch + x*pixelSize;
+	deUint8* pixelPtr = (deUint8*)getDataPtr() + z*m_pitch.z() + y*m_pitch.y() + x*m_pitch.x();
 
 	switch (m_format.type)
 	{
@@ -818,25 +838,22 @@ void PixelBufferAccess::setPixel (const Vec4& color, int x, int y, int z) const
 	DE_ASSERT(de::inBounds(y, 0, getHeight()));
 	DE_ASSERT(de::inBounds(z, 0, getDepth()));
 
+	deUint8* const pixelPtr = (deUint8*)getDataPtr() + z*m_pitch.z() + y*m_pitch.y() + x*m_pitch.x();
+
 	// Optimized fomats.
 	if (m_format.type == TextureFormat::UNORM_INT8)
 	{
 		if (m_format.order == TextureFormat::RGBA)
 		{
-			deUint8* const ptr = (deUint8*)getDataPtr() + z*m_slicePitch + y*m_rowPitch + x*4;
-			writeRGBA8888Float(ptr, color);
+			writeRGBA8888Float(pixelPtr, color);
 			return;
 		}
 		else if (m_format.order == TextureFormat::RGB)
 		{
-			deUint8* const ptr = (deUint8*)getDataPtr() + z*m_slicePitch + y*m_rowPitch + x*3;
-			writeRGB888Float(ptr, color);
+			writeRGB888Float(pixelPtr, color);
 			return;
 		}
 	}
-
-	const int		pixelSize	= m_format.getPixelSize();
-	deUint8* const	pixelPtr	= (deUint8*)getDataPtr() + z*m_slicePitch + y*m_rowPitch + x*pixelSize;
 
 #define PN(VAL, OFFS, BITS)		(normFloatToChannel((VAL), (BITS)) << (OFFS))
 #define PU(VAL, OFFS, BITS)		(uintToChannel((VAL), (BITS)) << (OFFS))
@@ -914,8 +931,7 @@ void PixelBufferAccess::setPixel (const IVec4& color, int x, int y, int z) const
 	DE_ASSERT(de::inBounds(y, 0, getHeight()));
 	DE_ASSERT(de::inBounds(z, 0, getDepth()));
 
-	int			pixelSize	= m_format.getPixelSize();
-	deUint8*	pixelPtr	= (deUint8*)getDataPtr() + z*m_slicePitch + y*m_rowPitch + x*pixelSize;
+	deUint8* pixelPtr = (deUint8*)getDataPtr() + z*m_pitch.z() + y*m_pitch.y() + x*m_pitch.x();
 
 	// Optimized fomats.
 	if (m_format.type == TextureFormat::UNORM_INT8)
@@ -976,8 +992,7 @@ void PixelBufferAccess::setPixDepth (float depth, int x, int y, int z) const
 	DE_ASSERT(de::inBounds(y, 0, getHeight()));
 	DE_ASSERT(de::inBounds(z, 0, getDepth()));
 
-	int			pixelSize	= m_format.getPixelSize();
-	deUint8*	pixelPtr	= (deUint8*)getDataPtr() + z*m_slicePitch + y*m_rowPitch + x*pixelSize;
+	deUint8* pixelPtr = (deUint8*)getDataPtr() + z*m_pitch.z() + y*m_pitch.y() + x*m_pitch.x();
 
 #define PN(VAL, OFFS, BITS) (normFloatToChannel((VAL), (BITS)) << (OFFS))
 
@@ -1013,8 +1028,7 @@ void PixelBufferAccess::setPixStencil (int stencil, int x, int y, int z) const
 	DE_ASSERT(de::inBounds(y, 0, getHeight()));
 	DE_ASSERT(de::inBounds(z, 0, getDepth()));
 
-	int			pixelSize	= m_format.getPixelSize();
-	deUint8*	pixelPtr	= (deUint8*)getDataPtr() + z*m_slicePitch + y*m_rowPitch + x*pixelSize;
+	deUint8* pixelPtr = (deUint8*)getDataPtr() + z*m_pitch.z() + y*m_pitch.y() + x*m_pitch.x();
 
 #define PU(VAL, OFFS, BITS) (uintToChannel((deUint32)(VAL), (BITS)) << (OFFS))
 
@@ -1600,13 +1614,13 @@ static Vec4 sampleLinear3D (const ConstPixelBufferAccess& access, const Sampler&
 
 Vec4 ConstPixelBufferAccess::sample1D (const Sampler& sampler, Sampler::FilterMode filter, float s, int level) const
 {
-	DE_ASSERT(de::inBounds(level, 0, m_height));
+	DE_ASSERT(de::inBounds(level, 0, m_size.y()));
 
 	// Non-normalized coordinates.
 	float u = s;
 
 	if (sampler.normalizedCoords)
-		u = unnormalize(sampler.wrapS, s, m_width);
+		u = unnormalize(sampler.wrapS, s, m_size.x());
 
 	switch (filter)
 	{
@@ -1620,7 +1634,7 @@ Vec4 ConstPixelBufferAccess::sample1D (const Sampler& sampler, Sampler::FilterMo
 
 Vec4 ConstPixelBufferAccess::sample2D (const Sampler& sampler, Sampler::FilterMode filter, float s, float t, int depth) const
 {
-	DE_ASSERT(de::inBounds(depth, 0, m_depth));
+	DE_ASSERT(de::inBounds(depth, 0, m_size.z()));
 
 	// Non-normalized coordinates.
 	float u = s;
@@ -1628,8 +1642,8 @@ Vec4 ConstPixelBufferAccess::sample2D (const Sampler& sampler, Sampler::FilterMo
 
 	if (sampler.normalizedCoords)
 	{
-		u = unnormalize(sampler.wrapS, s, m_width);
-		v = unnormalize(sampler.wrapT, t, m_height);
+		u = unnormalize(sampler.wrapS, s, m_size.x());
+		v = unnormalize(sampler.wrapT, t, m_size.y());
 	}
 
 	switch (filter)
@@ -1644,13 +1658,13 @@ Vec4 ConstPixelBufferAccess::sample2D (const Sampler& sampler, Sampler::FilterMo
 
 Vec4 ConstPixelBufferAccess::sample1DOffset (const Sampler& sampler, Sampler::FilterMode filter, float s, const IVec2& offset) const
 {
-	DE_ASSERT(de::inBounds(offset.y(), 0, m_width));
+	DE_ASSERT(de::inBounds(offset.y(), 0, m_size.x()));
 
 	// Non-normalized coordinates.
 	float u = s;
 
 	if (sampler.normalizedCoords)
-		u = unnormalize(sampler.wrapS, s, m_width);
+		u = unnormalize(sampler.wrapS, s, m_size.x());
 
 	switch (filter)
 	{
@@ -1664,7 +1678,7 @@ Vec4 ConstPixelBufferAccess::sample1DOffset (const Sampler& sampler, Sampler::Fi
 
 Vec4 ConstPixelBufferAccess::sample2DOffset (const Sampler& sampler, Sampler::FilterMode filter, float s, float t, const IVec3& offset) const
 {
-	DE_ASSERT(de::inBounds(offset.z(), 0, m_depth));
+	DE_ASSERT(de::inBounds(offset.z(), 0, m_size.z()));
 
 	// Non-normalized coordinates.
 	float u = s;
@@ -1672,8 +1686,8 @@ Vec4 ConstPixelBufferAccess::sample2DOffset (const Sampler& sampler, Sampler::Fi
 
 	if (sampler.normalizedCoords)
 	{
-		u = unnormalize(sampler.wrapS, s, m_width);
-		v = unnormalize(sampler.wrapT, t, m_height);
+		u = unnormalize(sampler.wrapS, s, m_size.x());
+		v = unnormalize(sampler.wrapT, t, m_size.y());
 	}
 
 	switch (filter)
@@ -1688,7 +1702,7 @@ Vec4 ConstPixelBufferAccess::sample2DOffset (const Sampler& sampler, Sampler::Fi
 
 float ConstPixelBufferAccess::sample1DCompare (const Sampler& sampler, Sampler::FilterMode filter, float ref, float s, const IVec2& offset) const
 {
-	DE_ASSERT(de::inBounds(offset.y(), 0, m_height));
+	DE_ASSERT(de::inBounds(offset.y(), 0, m_size.y()));
 
 	// Format information for comparison function
 	const bool isFixedPointDepth = isFixedPointDepthTextureFormat(m_format);
@@ -1697,7 +1711,7 @@ float ConstPixelBufferAccess::sample1DCompare (const Sampler& sampler, Sampler::
 	float u = s;
 
 	if (sampler.normalizedCoords)
-		u = unnormalize(sampler.wrapS, s, m_width);
+		u = unnormalize(sampler.wrapS, s, m_size.x());
 
 	switch (filter)
 	{
@@ -1711,7 +1725,7 @@ float ConstPixelBufferAccess::sample1DCompare (const Sampler& sampler, Sampler::
 
 float ConstPixelBufferAccess::sample2DCompare (const Sampler& sampler, Sampler::FilterMode filter, float ref, float s, float t, const IVec3& offset) const
 {
-	DE_ASSERT(de::inBounds(offset.z(), 0, m_depth));
+	DE_ASSERT(de::inBounds(offset.z(), 0, m_size.z()));
 
 	// Format information for comparison function
 	const bool isFixedPointDepth = isFixedPointDepthTextureFormat(m_format);
@@ -1722,8 +1736,8 @@ float ConstPixelBufferAccess::sample2DCompare (const Sampler& sampler, Sampler::
 
 	if (sampler.normalizedCoords)
 	{
-		u = unnormalize(sampler.wrapS, s, m_width);
-		v = unnormalize(sampler.wrapT, t, m_height);
+		u = unnormalize(sampler.wrapS, s, m_size.x());
+		v = unnormalize(sampler.wrapT, t, m_size.y());
 	}
 
 	switch (filter)
@@ -1745,9 +1759,9 @@ Vec4 ConstPixelBufferAccess::sample3D (const Sampler& sampler, Sampler::FilterMo
 
 	if (sampler.normalizedCoords)
 	{
-		u = unnormalize(sampler.wrapS, s, m_width);
-		v = unnormalize(sampler.wrapT, t, m_height);
-		w = unnormalize(sampler.wrapR, r, m_depth);
+		u = unnormalize(sampler.wrapS, s, m_size.x());
+		v = unnormalize(sampler.wrapT, t, m_size.y());
+		w = unnormalize(sampler.wrapR, r, m_size.z());
 	}
 
 	switch (filter)
@@ -1769,9 +1783,9 @@ Vec4 ConstPixelBufferAccess::sample3DOffset (const Sampler& sampler, Sampler::Fi
 
 	if (sampler.normalizedCoords)
 	{
-		u = unnormalize(sampler.wrapS, s, m_width);
-		v = unnormalize(sampler.wrapT, t, m_height);
-		w = unnormalize(sampler.wrapR, r, m_depth);
+		u = unnormalize(sampler.wrapS, s, m_size.x());
+		v = unnormalize(sampler.wrapT, t, m_size.y());
+		w = unnormalize(sampler.wrapR, r, m_size.z());
 	}
 
 	switch (filter)
@@ -1786,25 +1800,19 @@ Vec4 ConstPixelBufferAccess::sample3DOffset (const Sampler& sampler, Sampler::Fi
 
 TextureLevel::TextureLevel (void)
 	: m_format	()
-	, m_width	(0)
-	, m_height	(0)
-	, m_depth	(0)
+	, m_size	(0)
 {
 }
 
 TextureLevel::TextureLevel (const TextureFormat& format)
 	: m_format	(format)
-	, m_width	(0)
-	, m_height	(0)
-	, m_depth	(0)
+	, m_size	(0)
 {
 }
 
 TextureLevel::TextureLevel (const TextureFormat& format, int width, int height, int depth)
 	: m_format	(format)
-	, m_width	(0)
-	, m_height	(0)
-	, m_depth	(0)
+	, m_size	(0)
 {
 	setSize(width, height, depth);
 }
@@ -1823,11 +1831,9 @@ void TextureLevel::setSize (int width, int height, int depth)
 {
 	int pixelSize = m_format.getPixelSize();
 
-	m_width		= width;
-	m_height	= height;
-	m_depth		= depth;
+	m_size = IVec3(width, height, depth);
 
-	m_data.setStorage(m_width*m_height*m_depth*pixelSize);
+	m_data.setStorage(m_size.x() * m_size.y() * m_size.z() * pixelSize);
 }
 
 Vec4 sampleLevelArray1D (const ConstPixelBufferAccess* levels, int numLevels, const Sampler& sampler, float s, int depth, float lod)
