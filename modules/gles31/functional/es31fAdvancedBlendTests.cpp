@@ -104,6 +104,8 @@ private:
 	const RenderTargetType	m_rtType;
 	const int				m_numIters;
 
+	bool					m_coherentExtensionSupported;
+
 	deUint32				m_colorRbo;
 	deUint32				m_fbo;
 
@@ -223,6 +225,8 @@ void AdvancedBlendCase::init (void)
 	DE_ASSERT(!m_program);
 	DE_ASSERT(!m_referenceRenderer);
 	DE_ASSERT(!m_refColorBuffer);
+
+	m_coherentExtensionSupported = m_context.getContextInfo().isExtensionSupported("GL_KHR_blend_equation_advanced_coherent");
 
 	m_program = new glu::ShaderProgram(m_context.getRenderContext(), getBlendProgramSrc(sglr::rr_util::mapGLBlendEquationAdvanced(m_blendMode)));
 	m_testCtx.getLog() << *m_program;
@@ -414,8 +418,12 @@ AdvancedBlendCase::IterateResult AdvancedBlendCase::iterate (void)
 		gl.useProgram(program);
 		gl.viewport(viewportX, viewportY, m_viewportWidth, m_viewportHeight);
 		gl.blendEquation(m_blendMode);
+
+		// \note coherent extension enables GL_BLEND_ADVANCED_COHERENT_KHR by default
 		if (m_coherentBlending)
 			gl.enable(GL_BLEND_ADVANCED_COHERENT_KHR);
+		else if (m_coherentExtensionSupported)
+			gl.disable(GL_BLEND_ADVANCED_COHERENT_KHR);
 
 		GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to set render state");
 
