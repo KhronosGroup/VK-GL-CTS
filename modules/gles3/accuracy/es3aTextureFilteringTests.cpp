@@ -541,7 +541,7 @@ TextureCubeFilteringCase::IterateResult TextureCubeFilteringCase::iterate (void)
 	tcu::TextureFormatInfo		fmtInfo				= tcu::getTextureFormatInfo(texFmt);
 
 	// Accuracy measurements are off unless viewport size is exactly as expected.
-	if (m_nodeType == tcu::NODETYPE_ACCURACY && (viewport.width < defViewportWidth || viewport.height < defViewportHeight))
+	if (getNodeType() == tcu::NODETYPE_ACCURACY && (viewport.width < defViewportWidth || viewport.height < defViewportHeight))
 		throw tcu::NotSupportedError("Too small viewport", "", __FILE__, __LINE__);
 
 	// Viewport is divided into 4 sections.

@@ -43,12 +43,34 @@ enum TestNodeType
 	NODETYPE_ACCURACY		//!< Accuracy test case -- can be executed
 };
 
+enum TestNodeClass
+{
+	NODECLASS_GROUP = 0,	//!< Root or non-leaf in the test hierarchy tree
+	NODECLASS_EXECUTABLE,	//!< Non-root leaf in the test hierarchy tree
+
+	NODECLASS_LAST
+};
+
+inline TestNodeClass getTestNodeTypeClass (TestNodeType type)
+{
+	switch (type)
+	{
+		case NODETYPE_ROOT:				return NODECLASS_GROUP;
+		case NODETYPE_PACKAGE:			return NODECLASS_GROUP;
+		case NODETYPE_GROUP:			return NODECLASS_GROUP;
+		case NODETYPE_SELF_VALIDATE:	return NODECLASS_EXECUTABLE;
+		case NODETYPE_PERFORMANCE:		return NODECLASS_EXECUTABLE;
+		case NODETYPE_CAPABILITY:		return NODECLASS_EXECUTABLE;
+		case NODETYPE_ACCURACY:			return NODECLASS_EXECUTABLE;
+		default:
+			DE_ASSERT(false);
+			return NODECLASS_LAST;
+	}
+}
+
 inline bool isTestNodeTypeExecutable (TestNodeType type)
 {
-	return type == NODETYPE_SELF_VALIDATE	||
-		   type == NODETYPE_PERFORMANCE		||
-		   type == NODETYPE_CAPABILITY		||
-		   type == NODETYPE_ACCURACY;
+	return getTestNodeTypeClass(type) == NODECLASS_EXECUTABLE;
 }
 
 inline bool isValidTestCaseNameChar (char c)
@@ -90,7 +112,7 @@ public:
 	TestContext&			getTestContext	(void) const	{ return m_testCtx;				}
 	const char*				getName			(void) const	{ return m_name.c_str();		}
 	const char*				getDescription	(void) const	{ return m_description.c_str(); }
-	void					getChildren		(std::vector<TestNode*>& children) const;
+	void					getChildren		(std::vector<TestNode*>& children);
 	void					addChild		(TestNode* node);
 
 	virtual void			init			(void);
@@ -99,11 +121,11 @@ public:
 
 protected:
 	TestContext&			m_testCtx;
-	TestNodeType			m_nodeType;
 	std::string				m_name;
 	std::string				m_description;
 
 private:
+	const TestNodeType		m_nodeType;
 	std::vector<TestNode*>	m_children;
 };
 

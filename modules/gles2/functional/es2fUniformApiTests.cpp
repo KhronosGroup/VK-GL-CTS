@@ -2297,8 +2297,7 @@ void UniformApiTests::init (void)
 						{
 							const UniformCollectionGroup&	collectionGroup			= defaultUniformCollections[collectionGroupNdx];
 							const string					collectionGroupName		= collectionGroup.name + (referToFirstArrayElemWithoutIndexI == 0 ? "" : "_first_elem_without_brackets");
-							TestCaseGroup* const			collectionTestGroup		= new TestCaseGroup(m_context, collectionGroupName.c_str(), "");
-							checkMethodGroup->addChild(collectionTestGroup);
+							TestCaseGroup*					collectionTestGroup		= DE_NULL;
 
 							for (int collectionNdx = 0; collectionNdx < (int)collectionGroup.cases.size(); collectionNdx++)
 							{
@@ -2327,6 +2326,13 @@ void UniformApiTests::init (void)
 									{
 										const string	name							= nameWithMatrixType + getCaseShaderTypeName((CaseShaderType)shaderType);
 										const deUint32	arrayFirstElemNameNoIndexFeat	= referToFirstArrayElemWithoutIndexI == 0 ? 0 : UniformCase::FEATURE_ARRAY_FIRST_ELEM_NAME_NO_INDEX;
+
+										// skip empty groups by creating groups on demand
+										if (!collectionTestGroup)
+										{
+											collectionTestGroup = new TestCaseGroup(m_context, collectionGroupName.c_str(), "");
+											checkMethodGroup->addChild(collectionTestGroup);
+										}
 
 										collectionTestGroup->addChild(new UniformValueCase(m_context, name.c_str(), "", (CaseShaderType)shaderType, uniformCollection,
 																							UniformValueCase::VALUETOCHECK_ASSIGNED, checkMethod, assignMethod,
