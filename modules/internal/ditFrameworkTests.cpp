@@ -556,7 +556,6 @@ public:
 	{
 		addChild(new SelfCheckCase(m_testCtx, "float_format","tcu::FloatFormat_selfTest()",
 								   tcu::FloatFormat_selfTest));
-		addChild(new CaseListParserTests(m_testCtx));
 	}
 };
 
@@ -573,7 +572,8 @@ FrameworkTests::~FrameworkTests (void)
 
 void FrameworkTests::init (void)
 {
-	addChild(new CommonFrameworkTests(m_testCtx));
+	addChild(new CommonFrameworkTests	(m_testCtx));
+	addChild(new CaseListParserTests	(m_testCtx));
 }
 
 }

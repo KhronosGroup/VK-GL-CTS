@@ -5080,7 +5080,7 @@ void ProgramInputTestGroup::init (void)
 	{
 		tcu::TestCaseGroup* const blockGroup = new tcu::TestCaseGroup(m_testCtx, "type", "Type");
 		addChild(blockGroup);
-		generateProgramInputOutputShaderCaseBlocks(m_context, blockGroup, true, true, generateProgramInputTypeBlockContents);
+		generateProgramInputOutputShaderCaseBlocks(m_context, blockGroup, false, true, generateProgramInputTypeBlockContents);
 	}
 }
 
@@ -5137,7 +5137,7 @@ void ProgramOutputTestGroup::init (void)
 	{
 		tcu::TestCaseGroup* const blockGroup = new tcu::TestCaseGroup(m_testCtx, "type", "Type");
 		addChild(blockGroup);
-		generateProgramInputOutputShaderCaseBlocks(m_context, blockGroup, true, false, generateProgramOutputTypeBlockContents);
+		generateProgramInputOutputShaderCaseBlocks(m_context, blockGroup, false, false, generateProgramOutputTypeBlockContents);
 	}
 }
 

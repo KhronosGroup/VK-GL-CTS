@@ -424,9 +424,6 @@ void IndexGroup::init (void)
 		{ gls::DrawTestSpec::STORAGE_BUFFER,	gls::DrawTestSpec::INDEXTYPE_BYTE,	true,	{ 0, 1, -1 } },
 		{ gls::DrawTestSpec::STORAGE_BUFFER,	gls::DrawTestSpec::INDEXTYPE_SHORT,	true,	{ 0, 2, -1 } },
 		{ gls::DrawTestSpec::STORAGE_BUFFER,	gls::DrawTestSpec::INDEXTYPE_INT,	true,	{ 0, 4, -1 } },
-
-		{ gls::DrawTestSpec::STORAGE_BUFFER,	gls::DrawTestSpec::INDEXTYPE_SHORT,	false,	{ 1, 3, -1 } },
-		{ gls::DrawTestSpec::STORAGE_BUFFER,	gls::DrawTestSpec::INDEXTYPE_INT,	false,	{ 2, 3, -1 } },
 	};
 
 	gls::DrawTestSpec spec;
@@ -434,19 +431,19 @@ void IndexGroup::init (void)
 	tcu::TestCaseGroup* userPtrGroup			= new tcu::TestCaseGroup(m_testCtx, "user_ptr", "user pointer");
 	tcu::TestCaseGroup* unalignedUserPtrGroup	= new tcu::TestCaseGroup(m_testCtx, "unaligned_user_ptr", "unaligned user pointer");
 	tcu::TestCaseGroup* bufferGroup				= new tcu::TestCaseGroup(m_testCtx, "buffer", "buffer");
-	tcu::TestCaseGroup* unalignedBufferGroup	= new tcu::TestCaseGroup(m_testCtx, "unaligned_buffer", "unaligned buffer");
 
 	genBasicSpec(spec, m_method);
 
 	this->addChild(userPtrGroup);
 	this->addChild(unalignedUserPtrGroup);
 	this->addChild(bufferGroup);
-	this->addChild(unalignedBufferGroup);
 
 	for (int testNdx = 0; testNdx < DE_LENGTH_OF_ARRAY(tests); ++testNdx)
 	{
 		const IndexTest&				indexTest	= tests[testNdx];
-		tcu::TestCaseGroup*				group		= (indexTest.storage == gls::DrawTestSpec::STORAGE_USER) ? ((indexTest.aligned) ? (userPtrGroup) : (unalignedUserPtrGroup)) : ((indexTest.aligned) ? (bufferGroup) : (unalignedBufferGroup));
+		tcu::TestCaseGroup*				group		= (indexTest.storage == gls::DrawTestSpec::STORAGE_USER)
+													? ((indexTest.aligned) ? (userPtrGroup) : (unalignedUserPtrGroup))
+													: ((indexTest.aligned) ? (bufferGroup) : (DE_NULL));
 
 		const std::string				name		= std::string("index_") + gls::DrawTestSpec::indexTypeToString(indexTest.type);
 		const std::string				desc		= std::string("index ") + gls::DrawTestSpec::indexTypeToString(indexTest.type) + " in " + gls::DrawTestSpec::storageToString(indexTest.storage);
@@ -462,9 +459,9 @@ void IndexGroup::init (void)
 			test->addIteration(spec, iterationDesc.c_str());
 		}
 
-		if (spec.isCompatibilityTest() != gls::DrawTestSpec::COMPATIBILITY_UNALIGNED_OFFSET &&
-			spec.isCompatibilityTest() != gls::DrawTestSpec::COMPATIBILITY_UNALIGNED_STRIDE)
-			group->addChild(test.release());
+		DE_ASSERT(spec.isCompatibilityTest() != gls::DrawTestSpec::COMPATIBILITY_UNALIGNED_OFFSET);
+		DE_ASSERT(spec.isCompatibilityTest() != gls::DrawTestSpec::COMPATIBILITY_UNALIGNED_STRIDE);
+		group->addChild(test.release());
 	}
 }
 
