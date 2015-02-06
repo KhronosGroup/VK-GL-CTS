@@ -1877,7 +1877,6 @@ public:
 		const glu::DataType		type			= m_spec.inputs[0].varType.getBasicType();
 		const glu::Precision	precision		= m_spec.inputs[0].varType.getPrecision();
 		const int				scalarSize		= glu::getDataTypeScalarSize(type);
-		const bool				signedZero		= supportsSignedZero(precision);
 
 		const int				mantissaBits	= getMinMantissaBits(precision);
 		const deUint32			maxUlpDiff		= getMaxUlpDiffFromBits(mantissaBits);
@@ -1888,7 +1887,7 @@ public:
 			const int		in1			= ((const int*)inputs[1])[compNdx];
 			const float		out0		= ((const float*)outputs[0])[compNdx];
 			const float		refOut0		= ldexp(in0, in1);
-			const deUint32	ulpDiff		= signedZero ? getUlpDiff(out0, refOut0) : getUlpDiffIgnoreZeroSign(out0, refOut0);
+			const deUint32	ulpDiff		= getUlpDiffIgnoreZeroSign(out0, refOut0);
 
 			const int		inExp		= tcu::Float32(in0).exponent();
 
