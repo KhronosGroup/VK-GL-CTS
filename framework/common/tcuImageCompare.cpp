@@ -89,18 +89,30 @@ void computeScaleAndBias (const ConstPixelBufferAccess& reference, const ConstPi
 
 static int findNumPositionDeviationFailingPixels (const PixelBufferAccess& errorMask, const ConstPixelBufferAccess& reference, const ConstPixelBufferAccess& result, const UVec4& threshold, const tcu::IVec3& maxPositionDeviation, bool acceptOutOfBoundsAsAnyValue)
 {
-	const int	width				= reference.getWidth();
-	const int	height				= reference.getHeight();
-	const int	depth				= reference.getDepth();
-	int			numFailingPixels	= 0;
+	const tcu::IVec4	okColor				(0, 255, 0, 255);
+	const tcu::IVec4	errorColor			(255, 0, 0, 255);
+	const int			width				= reference.getWidth();
+	const int			height				= reference.getHeight();
+	const int			depth				= reference.getDepth();
+	int					numFailingPixels	= 0;
+
+	// Accept pixels "sampling" over the image bounds pixels since "taps" could be anything
+	const int			beginX				= (acceptOutOfBoundsAsAnyValue) ? (maxPositionDeviation.x()) : (0);
+	const int			beginY				= (acceptOutOfBoundsAsAnyValue) ? (maxPositionDeviation.y()) : (0);
+	const int			beginZ				= (acceptOutOfBoundsAsAnyValue) ? (maxPositionDeviation.z()) : (0);
+	const int			endX				= (acceptOutOfBoundsAsAnyValue) ? (width  - maxPositionDeviation.x()) : (0);
+	const int			endY				= (acceptOutOfBoundsAsAnyValue) ? (height - maxPositionDeviation.y()) : (0);
+	const int			endZ				= (acceptOutOfBoundsAsAnyValue) ? (depth  - maxPositionDeviation.z()) : (0);
 
 	TCU_CHECK_INTERNAL(result.getWidth() == width && result.getHeight() == height && result.getDepth() == depth);
 
-	for (int z = 0; z < depth; z++)
+	tcu::clear(errorMask, okColor);
+
+	for (int z = beginZ; z < endZ; z++)
 	{
-		for (int y = 0; y < height; y++)
+		for (int y = beginY; y < endY; y++)
 		{
-			for (int x = 0; x < width; x++)
+			for (int x = beginX; x < endX; x++)
 			{
 				const IVec4	refPix = reference.getPixelInt(x, y, z);
 				const IVec4	cmpPix = result.getPixelInt(x, y, z);
@@ -111,28 +123,13 @@ static int findNumPositionDeviationFailingPixels (const PixelBufferAccess& error
 					const bool	isOk = boolAll(lessThanEqual(diff, threshold));
 
 					if (isOk)
-					{
-						errorMask.setPixel(IVec4(0, 0xff, 0, 0xff), x, y, z);
 						continue;
-					}
-				}
-
-				// Accept over the image bounds pixels since they could be anything
-
-				if (acceptOutOfBoundsAsAnyValue &&
-					(x < maxPositionDeviation.x() || x + maxPositionDeviation.x() >= width  ||
-					 y < maxPositionDeviation.y() || y + maxPositionDeviation.y() >= height ||
-					 z < maxPositionDeviation.z() || z + maxPositionDeviation.z() >= depth))
-				{
-					errorMask.setPixel(IVec4(0, 0xff, 0, 0xff), x, y, z);
-					continue;
 				}
 
 				// Find matching pixels for both result and reference pixel
 
 				{
 					bool pixelFoundForReference = false;
-					bool pixelFoundForResult	= false;
 
 					// Find deviated result pixel for reference
 
@@ -144,8 +141,18 @@ static int findNumPositionDeviationFailingPixels (const PixelBufferAccess& error
 						const UVec4	diff			= abs(refPix - deviatedCmpPix).cast<deUint32>();
 						const bool	isOk			= boolAll(lessThanEqual(diff, threshold));
 
-						pixelFoundForReference		|= isOk;
+						pixelFoundForReference		= isOk;
 					}
+
+					if (!pixelFoundForReference)
+					{
+						errorMask.setPixel(errorColor, x, y, z);
+						++numFailingPixels;
+						continue;
+					}
+				}
+				{
+					bool pixelFoundForResult = false;
 
 					// Find deviated reference pixel for result
 
@@ -157,15 +164,14 @@ static int findNumPositionDeviationFailingPixels (const PixelBufferAccess& error
 						const UVec4	diff			= abs(cmpPix - deviatedRefPix).cast<deUint32>();
 						const bool	isOk			= boolAll(lessThanEqual(diff, threshold));
 
-						pixelFoundForResult			|= isOk;
+						pixelFoundForResult			= isOk;
 					}
 
-					if (pixelFoundForReference && pixelFoundForResult)
-						errorMask.setPixel(IVec4(0, 0xff, 0, 0xff), x, y, z);
-					else
+					if (!pixelFoundForResult)
 					{
-						errorMask.setPixel(IVec4(0xff, 0, 0, 0xff), x, y, z);
+						errorMask.setPixel(errorColor, x, y, z);
 						++numFailingPixels;
+						continue;
 					}
 				}
 			}

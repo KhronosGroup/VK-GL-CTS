@@ -239,6 +239,43 @@ bool doesLineSegmentExitDiamond (const SubpixelLineSegment& line, const tcu::Vec
 
 	const deInt64 halfPixel = 1ll << (RASTERIZER_SUBPIXEL_BITS-1);
 
+	// Reject distant diamonds early
+	{
+		const tcu::Vector<deInt64,2>	u				= line.direction();
+		const tcu::Vector<deInt64,2>	v				= (diamondCenter - line.m_v0);
+		const deInt64					crossProduct	= (u.x() * v.y() - u.y() * v.x());
+
+		// crossProduct = |p| |l| sin(theta)
+		// distanceFromLine = |p| sin(theta)
+		// => distanceFromLine = crossProduct / |l|
+		//
+		// |distanceFromLine| > C
+		// => distanceFromLine^2 > C^2
+		// => crossProduct^2 / |l|^2 > C^2
+		// => crossProduct^2 > |l|^2 * C^2
+
+		const deInt64	floorSqrtMaxInt64			= 3037000499LL; //!< floor(sqrt(MAX_INT64))
+
+		const deInt64	broadRejectDistance			= 2 * halfPixel;
+		const deInt64	broadRejectDistanceSquared	= broadRejectDistance * broadRejectDistance;
+		const bool		crossProductOverflows		= (crossProduct > floorSqrtMaxInt64 || crossProduct < -floorSqrtMaxInt64);
+		const deInt64	crossProductSquared			= (crossProductOverflows) ? (0) : (crossProduct * crossProduct); // avoid overflow
+		const deInt64	lineLengthSquared			= tcu::lengthSquared(u);
+		const bool		limitValueCouldOverflow		= ((64 - deClz64(lineLengthSquared)) + (64 - deClz64(broadRejectDistanceSquared))) > 63;
+		const deInt64	limitValue					= (limitValueCouldOverflow) ? (0) : (lineLengthSquared * broadRejectDistanceSquared); // avoid overflow
+
+		// only cross overflows
+		if (crossProductOverflows && !limitValueCouldOverflow)
+			return false;
+
+		// both representable
+		if (!crossProductOverflows && !limitValueCouldOverflow)
+		{
+			if (crossProductSquared > limitValue)
+				return false;
+		}
+	}
+
 	const struct DiamondBound
 	{
 		tcu::Vector<deInt64,2>	p0;
@@ -281,7 +318,6 @@ bool doesLineSegmentExitDiamond (const SubpixelLineSegment& line, const tcu::Vec
 		CORNER_EDGE_CASE_BEHAVIOR	lineBehavior;			// would a line segment going through this corner intersect with the region
 		CORNER_START_CASE_BEHAVIOR	startBehavior;			// how the corner behaves if the start point at the corner
 		CORNER_END_CASE_BEHAVIOR	endBehavior;			// how the corner behaves if the end point at the corner
-
 	} corners[] =
 	{
 		{ tcu::Vector<deInt64,2>(0,				-halfPixel),	false,	DiamondCorners::CORNER_EDGE_CASE_HIT_SECOND_QUARTER,	DiamondCorners::CORNER_START_CASE_POSITIVE_Y_45,	DiamondCorners::CORNER_END_CASE_DIRECTION_AND_SECOND_QUARTER},
