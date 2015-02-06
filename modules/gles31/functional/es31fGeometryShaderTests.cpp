@@ -3878,7 +3878,12 @@ GeometryProgramQueryCase::IterateResult GeometryProgramQueryCase::iterate (void)
 	// not linked -case (INVALID OP)
 	{
 		const tcu::ScopedLogSection section			(m_testCtx.getLog(), "NotLinkedProgram", "Shader program not linked");
-		const std::string			geometrySource	= "#version 310 es\nlayout (triangles) in;\n" + std::string(s_geometryBody);
+		const std::string			geometrySource	= "#version 310 es\n"
+													  "#extension GL_EXT_geometry_shader : require\n"
+													  "layout (triangles) in;\n"
+													  "layout (points, max_vertices = 3) out;\n"
+													  + std::string(s_geometryBody);
+
 
 		glu::Shader					vertexShader	(m_context.getRenderContext(), glu::SHADERTYPE_VERTEX);
 		glu::Shader					fragmentShader	(m_context.getRenderContext(), glu::SHADERTYPE_FRAGMENT);
