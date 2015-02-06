@@ -128,9 +128,10 @@ void IndexGroup::init (void)
 	for (int testNdx = 0; testNdx < DE_LENGTH_OF_ARRAY(tests); ++testNdx)
 	{
 		const IndexTest&				indexTest	= tests[testNdx];
-		tcu::TestCaseGroup*				group		= (indexTest.storage == gls::DrawTestSpec::STORAGE_USER)
-													? ((indexTest.aligned) ? (DE_NULL) : (DE_NULL))
-													: ((indexTest.aligned) ? (DE_NULL) : (unalignedBufferGroup));
+
+		DE_ASSERT(indexTest.storage != gls::DrawTestSpec::STORAGE_USER);
+		DE_ASSERT(!indexTest.aligned);
+		tcu::TestCaseGroup*				group		= unalignedBufferGroup;
 
 		const std::string				name		= std::string("index_") + gls::DrawTestSpec::indexTypeToString(indexTest.type);
 		const std::string				desc		= std::string("index ") + gls::DrawTestSpec::indexTypeToString(indexTest.type) + " in " + gls::DrawTestSpec::storageToString(indexTest.storage);

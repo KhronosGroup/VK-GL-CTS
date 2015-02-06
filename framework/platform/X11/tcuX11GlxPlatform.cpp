@@ -177,7 +177,6 @@ private:
 	GlxDisplay							m_glxDisplay;
 	GlxVisual							m_glxVisual;
 	ContextType							m_type;
-	GLXFBConfig							m_fbConfig;
 	GLXContext							m_GLXContext;
 	UniquePtr<GlxDrawable>				m_glxDrawable;
 	RenderTarget						m_renderTarget;
