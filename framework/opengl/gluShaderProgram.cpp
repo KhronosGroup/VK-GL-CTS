@@ -123,17 +123,29 @@ static bool getProgramLinkStatus (const glw::Functions& gl, deUint32 program)
 
 static std::string getProgramInfoLog (const glw::Functions& gl, deUint32 program)
 {
-	int	infoLogLen	= 0;
-	int	unusedLen;
+	int infoLogLen = 0;
+	int unusedLen;
 
-	gl.getProgramiv(program, GL_INFO_LOG_LENGTH,	&infoLogLen);
+	gl.getProgramiv(program, GL_INFO_LOG_LENGTH, &infoLogLen);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glGetProgramiv()");
 
 	if (infoLogLen > 0)
 	{
-		std::vector<char> infoLog(infoLogLen);
-		gl.getProgramInfoLog(program, (int)infoLog.size(), &unusedLen, &infoLog[0]);
-		return std::string(&infoLog[0], infoLogLen);
+		// The INFO_LOG_LENGTH query and the buffer query implementations have
+		// very commonly off-by-one errors. Try to work around these issues.
+
+		// add tolerance for off-by-one in log length, buffer write, and for terminator
+		std::vector<char> infoLog(infoLogLen + 3, '\0');
+
+		// claim buf size is one smaller to protect from off-by-one writing over buffer bounds
+		gl.getProgramInfoLog(program, (int)infoLog.size() - 1, &unusedLen, &infoLog[0]);
+
+		// return whole buffer if null terminator was overwritten
+		if (infoLog[(int)(infoLog.size()) - 1] != '\0')
+			return std::string(&infoLog[0], infoLog.size());
+
+		// read as C string. infoLog is guaranteed to be 0-terminated
+		return std::string(&infoLog[0]);
 	}
 	return std::string();
 }
