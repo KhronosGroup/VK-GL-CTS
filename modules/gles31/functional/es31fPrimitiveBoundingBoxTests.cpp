@@ -903,7 +903,8 @@ const char* BBoxRenderCase::genShaderFunction (ShaderFunction func) const
 					"	if (gl_FragCoord.x < float(u_viewportPos.x) + wc.x || gl_FragCoord.x > float(u_viewportPos.x) + wc.z ||\n"
 					"	    gl_FragCoord.y < float(u_viewportPos.y) + wc.y || gl_FragCoord.y > float(u_viewportPos.y) + wc.w)\n"
 					"	    return false;\n"
-					"	if (depth*2.0-1.0 < v_bbox_clipMin.z || depth*2.0-1.0 > v_bbox_clipMax.z)\n"
+					"	const highp float dEpsilon = 0.001;\n"
+					"	if (depth*2.0-1.0 < v_bbox_clipMin.z - dEpsilon || depth*2.0-1.0 > v_bbox_clipMax.z + dEpsilon)\n"
 					"	    return false;\n"
 					"	return true;\n"
 					"}\n";
@@ -4170,7 +4171,7 @@ void ClearCase::renderTo (tcu::Surface& dst, bool useBBox)
 bool ClearCase::verifyImagesEqual (const tcu::PixelBufferAccess& withoutBBox, const tcu::PixelBufferAccess& withBBox)
 {
 	DE_ASSERT(withoutBBox.getWidth() == withBBox.getWidth());
-	DE_ASSERT(withoutBBox.getHeight() == withBBox.getWidth());
+	DE_ASSERT(withoutBBox.getHeight() == withBBox.getHeight());
 
 	tcu::Surface	errorMask	(withoutBBox.getWidth(), withoutBBox.getHeight());
 	bool			anyError	= false;
