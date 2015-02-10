@@ -129,10 +129,16 @@ void resolveMultisampleColorBuffer (const tcu::PixelBufferAccess& dst, const Mul
 	DE_ASSERT(dst.getWidth() == src.raw().getHeight());
 	DE_ASSERT(dst.getHeight() == src.raw().getDepth());
 
-	float numSamplesInv = 1.0f / (float)src.getNumSamples();
-
-	for (int y = 0; y < dst.getHeight(); y++)
+	if (src.getNumSamples() == 1)
 	{
+		// fast-path for non-multisampled cases
+		tcu::copy(dst, src.toSinglesampleAccess());
+	}
+	else
+	{
+		const float numSamplesInv = 1.0f / (float)src.getNumSamples();
+
+		for (int y = 0; y < dst.getHeight(); y++)
 		for (int x = 0; x < dst.getWidth(); x++)
 		{
 			tcu::Vec4 sum;

@@ -76,21 +76,17 @@ const int MAX_RENDER_TARGET_SIZE = 512;
 
 static GLenum targetToGL (DrawTestSpec::Target target)
 {
-	DE_ASSERT(target < DrawTestSpec::TARGET_LAST);
-
 	static const GLenum targets[] =
 	{
 		GL_ELEMENT_ARRAY_BUFFER,	// TARGET_ELEMENT_ARRAY = 0,
 		GL_ARRAY_BUFFER				// TARGET_ARRAY,
 	};
 
-	return targets[(int)target];
+	return de::getSizedArrayElement<DrawTestSpec::TARGET_LAST>(targets, (int)target);
 }
 
 static GLenum usageToGL (DrawTestSpec::Usage usage)
 {
-	DE_ASSERT(usage < DrawTestSpec::USAGE_LAST);
-
 	static const GLenum usages[] =
 	{
 		GL_DYNAMIC_DRAW,	// USAGE_DYNAMIC_DRAW = 0,
@@ -106,15 +102,12 @@ static GLenum usageToGL (DrawTestSpec::Usage usage)
 		GL_DYNAMIC_READ,	// USAGE_DYNAMIC_READ,
 		GL_DYNAMIC_COPY		// USAGE_DYNAMIC_COPY,
 	};
-	DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(usages) == DrawTestSpec::USAGE_LAST);
 
-	return usages[(int)usage];
+	return de::getSizedArrayElement<DrawTestSpec::USAGE_LAST>(usages, (int)usage);
 }
 
 static GLenum inputTypeToGL (DrawTestSpec::InputType type)
 {
-	DE_ASSERT(type < DrawTestSpec::INPUTTYPE_LAST);
-
 	static const GLenum types[] =
 	{
 		GL_FLOAT,				// INPUTTYPE_FLOAT = 0,
@@ -131,15 +124,12 @@ static GLenum inputTypeToGL (DrawTestSpec::InputType type)
 		GL_UNSIGNED_INT_2_10_10_10_REV, // INPUTTYPE_UNSIGNED_INT_2_10_10_10,
 		GL_INT_2_10_10_10_REV			// INPUTTYPE_INT_2_10_10_10,
 	};
-	DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(types) == DrawTestSpec::INPUTTYPE_LAST);
 
-	return types[(int)type];
+	return de::getSizedArrayElement<DrawTestSpec::INPUTTYPE_LAST>(types, (int)type);
 }
 
 static std::string outputTypeToGLType (DrawTestSpec::OutputType type)
 {
-	DE_ASSERT(type < DrawTestSpec::OUTPUTTYPE_LAST);
-
 	static const char* types[] =
 	{
 		"float",		// OUTPUTTYPE_FLOAT = 0,
@@ -158,14 +148,13 @@ static std::string outputTypeToGLType (DrawTestSpec::OutputType type)
 		"uvec3",		// OUTPUTTYPE_UVEC3,
 		"uvec4",		// OUTPUTTYPE_UVEC4,
 	};
-	DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(types) == DrawTestSpec::OUTPUTTYPE_LAST);
 
-	return types[type];
+	return de::getSizedArrayElement<DrawTestSpec::OUTPUTTYPE_LAST>(types, (int)type);
 }
 
 static GLenum primitiveToGL (DrawTestSpec::Primitive primitive)
 {
-	GLenum primitives[] =
+	static const GLenum primitives[] =
 	{
 		GL_POINTS,						// PRIMITIVE_POINTS = 0,
 		GL_TRIANGLES,					// PRIMITIVE_TRIANGLES,
@@ -179,22 +168,20 @@ static GLenum primitiveToGL (DrawTestSpec::Primitive primitive)
 		GL_TRIANGLES_ADJACENCY,			// PRIMITIVE_TRIANGLES_ADJACENCY
 		GL_TRIANGLE_STRIP_ADJACENCY,	// PRIMITIVE_TRIANGLE_STRIP_ADJACENCY
 	};
-	DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(primitives) == DrawTestSpec::PRIMITIVE_LAST);
 
-	return primitives[(int)primitive];
+	return de::getSizedArrayElement<DrawTestSpec::PRIMITIVE_LAST>(primitives, (int)primitive);
 }
 
 static deUint32 indexTypeToGL (DrawTestSpec::IndexType indexType)
 {
-	GLenum indexTypes[] =
+	static const GLenum indexTypes[] =
 	{
 		GL_UNSIGNED_BYTE,	// INDEXTYPE_BYTE = 0,
 		GL_UNSIGNED_SHORT,	// INDEXTYPE_SHORT,
 		GL_UNSIGNED_INT,	// INDEXTYPE_INT,
 	};
-	DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(indexTypes) == DrawTestSpec::INDEXTYPE_LAST);
 
-	return indexTypes[(int)indexType];
+	return de::getSizedArrayElement<DrawTestSpec::INDEXTYPE_LAST>(indexTypes, (int)indexType);
 }
 
 static bool inputTypeIsFloatType (DrawTestSpec::InputType type)
@@ -291,9 +278,7 @@ static MethodInfo getMethodInfo (gls::DrawTestSpec::DrawMethod method)
 		{	true,		false,		true,		false,		true,		false	}, //!< DRAWMETHOD_DRAWELEMENTS_RANGED_BASEVERTEX,
 	};
 
-	DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(infos) == DrawTestSpec::DRAWMETHOD_LAST);
-	DE_ASSERT((int)method < DE_LENGTH_OF_ARRAY(infos));
-	return infos[(int)method];
+	return de::getSizedArrayElement<DrawTestSpec::DRAWMETHOD_LAST>(infos, (int)method);
 }
 
 template<class T>
@@ -2333,22 +2318,17 @@ bool DrawTestSpec::AttributeSpec::isBufferStrideAligned (void) const
 
 std::string DrawTestSpec::targetToString(Target target)
 {
-	DE_ASSERT(target < TARGET_LAST);
-
 	static const char* targets[] =
 	{
 		"element_array",	// TARGET_ELEMENT_ARRAY = 0,
 		"array"				// TARGET_ARRAY,
 	};
-	DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(targets) == DrawTestSpec::TARGET_LAST);
 
-	return targets[(int)target];
+	return de::getSizedArrayElement<DrawTestSpec::TARGET_LAST>(targets, (int)target);
 }
 
 std::string DrawTestSpec::inputTypeToString(InputType type)
 {
-	DE_ASSERT(type < INPUTTYPE_LAST);
-
 	static const char* types[] =
 	{
 		"float",			// INPUTTYPE_FLOAT = 0,
@@ -2367,15 +2347,12 @@ std::string DrawTestSpec::inputTypeToString(InputType type)
 		"unsigned_int2_10_10_10",	// INPUTTYPE_UNSIGNED_INT_2_10_10_10,
 		"int2_10_10_10"				// INPUTTYPE_INT_2_10_10_10,
 	};
-	DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(types) == DrawTestSpec::INPUTTYPE_LAST);
 
-	return types[(int)type];
+	return de::getSizedArrayElement<DrawTestSpec::INPUTTYPE_LAST>(types, (int)type);
 }
 
 std::string DrawTestSpec::outputTypeToString(OutputType type)
 {
-	DE_ASSERT(type < OUTPUTTYPE_LAST);
-
 	static const char* types[] =
 	{
 		"float",		// OUTPUTTYPE_FLOAT = 0,
@@ -2394,15 +2371,12 @@ std::string DrawTestSpec::outputTypeToString(OutputType type)
 		"uvec3",		// OUTPUTTYPE_UVEC3,
 		"uvec4",		// OUTPUTTYPE_UVEC4,
 	};
-	DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(types) == DrawTestSpec::OUTPUTTYPE_LAST);
 
-	return types[(int)type];
+	return de::getSizedArrayElement<DrawTestSpec::OUTPUTTYPE_LAST>(types, (int)type);
 }
 
 std::string DrawTestSpec::usageTypeToString(Usage usage)
 {
-	DE_ASSERT(usage < USAGE_LAST);
-
 	static const char* usages[] =
 	{
 		"dynamic_draw",	// USAGE_DYNAMIC_DRAW = 0,
@@ -2418,29 +2392,23 @@ std::string DrawTestSpec::usageTypeToString(Usage usage)
 		"dynamic_read",	// USAGE_DYNAMIC_READ,
 		"dynamic_copy",	// USAGE_DYNAMIC_COPY,
 	};
-	DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(usages) == DrawTestSpec::USAGE_LAST);
 
-	return usages[(int)usage];
+	return de::getSizedArrayElement<DrawTestSpec::USAGE_LAST>(usages, (int)usage);
 }
 
 std::string	DrawTestSpec::storageToString (Storage storage)
 {
-	DE_ASSERT(storage < STORAGE_LAST);
-
 	static const char* storages[] =
 	{
 		"user_ptr",	// STORAGE_USER = 0,
 		"buffer"	// STORAGE_BUFFER,
 	};
-	DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(storages) == DrawTestSpec::STORAGE_LAST);
 
-	return storages[(int)storage];
+	return de::getSizedArrayElement<DrawTestSpec::STORAGE_LAST>(storages, (int)storage);
 }
 
 std::string DrawTestSpec::primitiveToString (Primitive primitive)
 {
-	DE_ASSERT(primitive < PRIMITIVE_LAST);
-
 	static const char* primitives[] =
 	{
 		"points",					// PRIMITIVE_POINTS ,
@@ -2455,30 +2423,24 @@ std::string DrawTestSpec::primitiveToString (Primitive primitive)
 		"triangles_adjacency",		// PRIMITIVE_TRIANGLES_ADJACENCY
 		"triangle_strip_adjacency",	// PRIMITIVE_TRIANGLE_STRIP_ADJACENCY
 	};
-	DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(primitives) == DrawTestSpec::PRIMITIVE_LAST);
 
-	return primitives[(int)primitive];
+	return de::getSizedArrayElement<DrawTestSpec::PRIMITIVE_LAST>(primitives, (int)primitive);
 }
 
 std::string DrawTestSpec::indexTypeToString (IndexType type)
 {
-	DE_ASSERT(type < DrawTestSpec::INDEXTYPE_LAST);
-
 	static const char* indexTypes[] =
 	{
 		"byte",		// INDEXTYPE_BYTE = 0,
 		"short",	// INDEXTYPE_SHORT,
 		"int",		// INDEXTYPE_INT,
 	};
-	DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(indexTypes) == DrawTestSpec::INDEXTYPE_LAST);
 
-	return indexTypes[(int)type];
+	return de::getSizedArrayElement<DrawTestSpec::INDEXTYPE_LAST>(indexTypes, (int)type);
 }
 
 std::string DrawTestSpec::drawMethodToString (DrawTestSpec::DrawMethod method)
 {
-	DE_ASSERT(method < DrawTestSpec::DRAWMETHOD_LAST);
-
 	static const char* methods[] =
 	{
 		"draw_arrays",							//!< DRAWMETHOD_DRAWARRAYS
@@ -2492,15 +2454,12 @@ std::string DrawTestSpec::drawMethodToString (DrawTestSpec::DrawMethod method)
 		"draw_elements_instanced_base_vertex",	//!< DRAWMETHOD_DRAWELEMENTS_INSTANCED_BASEVERTEX,
 		"draw_range_elements_base_vertex",		//!< DRAWMETHOD_DRAWELEMENTS_RANGED_BASEVERTEX,
 	};
-	DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(methods) == DrawTestSpec::DRAWMETHOD_LAST);
 
-	return methods[(int)method];
+	return de::getSizedArrayElement<DrawTestSpec::DRAWMETHOD_LAST>(methods, (int)method);
 }
 
 int DrawTestSpec::inputTypeSize (InputType type)
 {
-	DE_ASSERT(type < INPUTTYPE_LAST);
-
 	static const int size[] =
 	{
 		sizeof(float),		// INPUTTYPE_FLOAT = 0,
@@ -2519,24 +2478,20 @@ int DrawTestSpec::inputTypeSize (InputType type)
 		sizeof(deUint32) / 4,		// INPUTTYPE_UNSIGNED_INT_2_10_10_10,
 		sizeof(deUint32) / 4		// INPUTTYPE_INT_2_10_10_10,
 	};
-	DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(size) == DrawTestSpec::INPUTTYPE_LAST);
 
-	return size[(int)type];
+	return de::getSizedArrayElement<DrawTestSpec::INPUTTYPE_LAST>(size, (int)type);
 }
 
 int DrawTestSpec::indexTypeSize (IndexType type)
 {
-	DE_ASSERT(type < INDEXTYPE_LAST);
-
 	static const int size[] =
 	{
 		sizeof(deUint8),	// INDEXTYPE_BYTE,
 		sizeof(deUint16),	// INDEXTYPE_SHORT,
 		sizeof(deUint32),	// INDEXTYPE_INT,
 	};
-	DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(size) == DrawTestSpec::INDEXTYPE_LAST);
 
-	return size[(int)type];
+	return de::getSizedArrayElement<DrawTestSpec::INDEXTYPE_LAST>(size, (int)type);
 }
 
 std::string DrawTestSpec::getName (void) const
@@ -3546,6 +3501,16 @@ static bool pixelNearLineIntersection (int x, int y, const tcu::Surface& target)
 	return false;
 }
 
+static inline bool colorsEqual (const tcu::RGBA& colorA, const tcu::RGBA& colorB, const tcu::IVec3& compareThreshold)
+{
+	enum
+	{
+		TCU_RGBA_RGB_MASK = tcu::RGBA::RED_MASK | tcu::RGBA::GREEN_MASK | tcu::RGBA::BLUE_MASK
+	};
+
+	return tcu::compareThresholdMasked(colorA, colorB, tcu::RGBA(compareThreshold.x(), compareThreshold.y(), compareThreshold.z(), 0), TCU_RGBA_RGB_MASK);
+}
+
 // search 3x3 are for matching color
 static bool pixelNeighborhoodContainsColor (const tcu::Surface& target, int x, int y, const tcu::RGBA& color, const tcu::IVec3& compareThreshold)
 {
@@ -3556,12 +3521,8 @@ static bool pixelNeighborhoodContainsColor (const tcu::Surface& target, int x, i
 	for (int dy = -1; dy < 2; dy++)
 	for (int dx = -1; dx < 2; dx++)
 	{
-		const tcu::RGBA	targetCmpPixel	= target.getPixel(x+dx, y+dy);
-		const int		r				= deAbs32(color.getRed()	- targetCmpPixel.getRed());
-		const int		g				= deAbs32(color.getGreen()	- targetCmpPixel.getGreen());
-		const int		b				= deAbs32(color.getBlue()	- targetCmpPixel.getBlue());
-
-		if (r <= compareThreshold.x() && g <= compareThreshold.y() && b <= compareThreshold.z())
+		const tcu::RGBA	targetCmpPixel = target.getPixel(x+dx, y+dy);
+		if (colorsEqual(color, targetCmpPixel, compareThreshold))
 			return true;
 	}
 
@@ -3590,19 +3551,20 @@ static bool edgeRelaxedImageCompare (tcu::TestLog& log, const char* imageSetName
 {
 	DE_ASSERT(result.getWidth() == reference.getWidth() && result.getHeight() == reference.getHeight());
 
-	const tcu::IVec4	green						(0, 255, 0, 255);
-	const tcu::IVec4	errorColor					(255, 0, 0, 255);
-	const int			width						= reference.getWidth();
-	const int			height						= reference.getHeight();
-	tcu::TextureLevel	errorMask					(tcu::TextureFormat(tcu::TextureFormat::RGB, tcu::TextureFormat::UNORM_INT8), width, height);
-	int					numFailingPixels			= 0;
+	const tcu::IVec4				green						(0, 255, 0, 255);
+	const tcu::IVec4				red							(255, 0, 0, 255);
+	const int						width						= reference.getWidth();
+	const int						height						= reference.getHeight();
+	tcu::TextureLevel				errorMask					(tcu::TextureFormat(tcu::TextureFormat::RGB, tcu::TextureFormat::UNORM_INT8), width, height);
+	const tcu::PixelBufferAccess	errorAccess					= errorMask.getAccess();
+	int								numFailingPixels			= 0;
 
 	// clear errormask edges which would otherwise be transparent
 
-	tcu::clear(tcu::getSubregion(errorMask.getAccess(), 0,			0,			width,	1),			green);
-	tcu::clear(tcu::getSubregion(errorMask.getAccess(), 0,			height-1,	width,	1),			green);
-	tcu::clear(tcu::getSubregion(errorMask.getAccess(), 0,			0,			1,		height),	green);
-	tcu::clear(tcu::getSubregion(errorMask.getAccess(), width-1,	0,			1,		height),	green);
+	tcu::clear(tcu::getSubregion(errorAccess, 0,			0,			width,	1),			green);
+	tcu::clear(tcu::getSubregion(errorAccess, 0,			height-1,	width,	1),			green);
+	tcu::clear(tcu::getSubregion(errorAccess, 0,			0,			1,		height),	green);
+	tcu::clear(tcu::getSubregion(errorAccess, width-1,		0,			1,		height),	green);
 
 	// skip edge pixels since coverage on edge cannot be verified
 
@@ -3611,19 +3573,20 @@ static bool edgeRelaxedImageCompare (tcu::TestLog& log, const char* imageSetName
 	{
 		const tcu::RGBA	refPixel			= reference.getPixel(x, y);
 		const tcu::RGBA	screenPixel			= result.getPixel(x, y);
-		const bool		isOkReferencePixel	= pixelNeighborhoodContainsColor(result, x, y, refPixel, compareThreshold);			// screen image has a matching pixel nearby (~= If something is drawn on reference, it must be drawn to screen too.)
-		const bool		isOkScreenPixel		= pixelNeighborhoodContainsColor(reference, x, y, screenPixel, compareThreshold);	// reference image has a matching pixel nearby (~= If something is drawn on screen, it must be drawn to reference too.)
+		const bool		directMatch			= colorsEqual(refPixel, screenPixel, compareThreshold);
+		const bool		isOkReferencePixel	= directMatch || pixelNeighborhoodContainsColor(result, x, y, refPixel, compareThreshold);			// screen image has a matching pixel nearby (~= If something is drawn on reference, it must be drawn to screen too.)
+		const bool		isOkScreenPixel		= directMatch || pixelNeighborhoodContainsColor(reference, x, y, screenPixel, compareThreshold);	// reference image has a matching pixel nearby (~= If something is drawn on screen, it must be drawn to reference too.)
 
 		if (isOkScreenPixel && isOkReferencePixel)
 		{
 			// pixel valid, write greenish pixels to make the result image easier to read
 			const deUint32 grayscaleValue = getVisualizationGrayscaleColor(screenPixel);
-			errorMask.getAccess().setPixel(tcu::UVec4(grayscaleValue, 255, grayscaleValue, 255), x, y);
+			errorAccess.setPixel(tcu::UVec4(grayscaleValue, 255, grayscaleValue, 255), x, y);
 		}
 		else if (!pixelNearEdge(x, y, reference, renderTargetThreshold))
 		{
 			// non-edge pixel values must be within threshold of the reference values
-			errorMask.getAccess().setPixel(errorColor, x, y);
+			errorAccess.setPixel(red, x, y);
 			++numFailingPixels;
 		}
 		else
@@ -3638,12 +3601,12 @@ static bool edgeRelaxedImageCompare (tcu::TestLog& log, const char* imageSetName
 			{
 				// pixel valid, write greenish pixels to make the result image easier to read
 				const deUint32 grayscaleValue = getVisualizationGrayscaleColor(screenPixel);
-				errorMask.getAccess().setPixel(tcu::UVec4(grayscaleValue, 255, grayscaleValue, 255), x, y);
+				errorAccess.setPixel(tcu::UVec4(grayscaleValue, 255, grayscaleValue, 255), x, y);
 			}
 			else
 			{
 				// coverage does not match
-				errorMask.getAccess().setPixel(errorColor, x, y);
+				errorAccess.setPixel(red, x, y);
 				++numFailingPixels;
 			}
 		}
@@ -3683,19 +3646,20 @@ static bool intersectionRelaxedLineImageCompare (tcu::TestLog& log, const char* 
 {
 	DE_ASSERT(result.getWidth() == reference.getWidth() && result.getHeight() == reference.getHeight());
 
-	const tcu::IVec4	green						(0, 255, 0, 255);
-	const tcu::IVec4	errorColor					(255, 0, 0, 255);
-	const int			width						= reference.getWidth();
-	const int			height						= reference.getHeight();
-	tcu::TextureLevel	errorMask					(tcu::TextureFormat(tcu::TextureFormat::RGB, tcu::TextureFormat::UNORM_INT8), width, height);
-	int					numFailingPixels			= 0;
+	const tcu::IVec4				green						(0, 255, 0, 255);
+	const tcu::IVec4				red							(255, 0, 0, 255);
+	const int						width						= reference.getWidth();
+	const int						height						= reference.getHeight();
+	tcu::TextureLevel				errorMask					(tcu::TextureFormat(tcu::TextureFormat::RGB, tcu::TextureFormat::UNORM_INT8), width, height);
+	const tcu::PixelBufferAccess	errorAccess					= errorMask.getAccess();
+	int								numFailingPixels			= 0;
 
 	// clear errormask edges which would otherwise be transparent
 
-	tcu::clear(tcu::getSubregion(errorMask.getAccess(), 0,			0,			width,	1),			green);
-	tcu::clear(tcu::getSubregion(errorMask.getAccess(), 0,			height-1,	width,	1),			green);
-	tcu::clear(tcu::getSubregion(errorMask.getAccess(), 0,			0,			1,		height),	green);
-	tcu::clear(tcu::getSubregion(errorMask.getAccess(), width-1,	0,			1,		height),	green);
+	tcu::clear(tcu::getSubregion(errorAccess, 0,			0,			width,	1),			green);
+	tcu::clear(tcu::getSubregion(errorAccess, 0,			height-1,	width,	1),			green);
+	tcu::clear(tcu::getSubregion(errorAccess, 0,			0,			1,		height),	green);
+	tcu::clear(tcu::getSubregion(errorAccess, width-1,		0,			1,		height),	green);
 
 	// skip edge pixels since coverage on edge cannot be verified
 
@@ -3704,20 +3668,21 @@ static bool intersectionRelaxedLineImageCompare (tcu::TestLog& log, const char* 
 	{
 		const tcu::RGBA	refPixel			= reference.getPixel(x, y);
 		const tcu::RGBA	screenPixel			= result.getPixel(x, y);
-		const bool		isOkScreenPixel		= pixelNeighborhoodContainsColor(reference, x, y, screenPixel, compareThreshold);	// reference image has a matching pixel nearby (~= If something is drawn on screen, it must be drawn to reference too.)
-		const bool		isOkReferencePixel	= pixelNeighborhoodContainsColor(result, x, y, refPixel, compareThreshold);			// screen image has a matching pixel nearby (~= If something is drawn on reference, it must be drawn to screen too.)
+		const bool		directMatch			= colorsEqual(refPixel, screenPixel, compareThreshold);
+		const bool		isOkScreenPixel		= directMatch || pixelNeighborhoodContainsColor(reference, x, y, screenPixel, compareThreshold);	// reference image has a matching pixel nearby (~= If something is drawn on screen, it must be drawn to reference too.)
+		const bool		isOkReferencePixel	= directMatch || pixelNeighborhoodContainsColor(result, x, y, refPixel, compareThreshold);			// screen image has a matching pixel nearby (~= If something is drawn on reference, it must be drawn to screen too.)
 
 		if (isOkScreenPixel && isOkReferencePixel)
 		{
 			// pixel valid, write greenish pixels to make the result image easier to read
 			const deUint32 grayscaleValue = getVisualizationGrayscaleColor(screenPixel);
-			errorMask.getAccess().setPixel(tcu::UVec4(grayscaleValue, 255, grayscaleValue, 255), x, y);
+			errorAccess.setPixel(tcu::UVec4(grayscaleValue, 255, grayscaleValue, 255), x, y);
 		}
 		else if (!pixelNearLineIntersection(x, y, reference) &&
 				 !pixelNearLineIntersection(x, y, result))
 		{
 			// non-intersection pixel values must be within threshold of the reference values
-			errorMask.getAccess().setPixel(errorColor, x, y);
+			errorAccess.setPixel(red, x, y);
 			++numFailingPixels;
 		}
 		else
@@ -3733,12 +3698,12 @@ static bool intersectionRelaxedLineImageCompare (tcu::TestLog& log, const char* 
 			{
 				// pixel valid, write greenish pixels to make the result image easier to read
 				const deUint32 grayscaleValue = getVisualizationGrayscaleColor(screenPixel);
-				errorMask.getAccess().setPixel(tcu::UVec4(grayscaleValue, 255, grayscaleValue, 255), x, y);
+				errorAccess.setPixel(tcu::UVec4(grayscaleValue, 255, grayscaleValue, 255), x, y);
 			}
 			else
 			{
 				// coverage does not match
-				errorMask.getAccess().setPixel(errorColor, x, y);
+				errorAccess.setPixel(red, x, y);
 				++numFailingPixels;
 			}
 		}

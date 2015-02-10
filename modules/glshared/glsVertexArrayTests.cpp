@@ -65,22 +65,17 @@ using namespace glw; // GL types
 
 std::string Array::targetToString(Target target)
 {
-	DE_ASSERT(target < TARGET_LAST);
-
 	static const char* targets[] =
 	{
 		"element_array",	// TARGET_ELEMENT_ARRAY = 0,
 		"array"				// TARGET_ARRAY,
 	};
-	DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(targets) == Array::TARGET_LAST);
 
-	return targets[(int)target];
+	return de::getSizedArrayElement<Array::TARGET_LAST>(targets, (int)target);
 }
 
 std::string Array::inputTypeToString(InputType type)
 {
-	DE_ASSERT(type < INPUTTYPE_LAST);
-
 	static const char* types[] =
 	{
 		"float",			// INPUTTYPE_FLOAT = 0,
@@ -99,15 +94,12 @@ std::string Array::inputTypeToString(InputType type)
 		"usigned_int2_10_10_10",	// INPUTTYPE_UNSIGNED_INT_2_10_10_10,
 		"int2_10_10_10"				// INPUTTYPE_INT_2_10_10_10,
 	};
-	DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(types) == Array::INPUTTYPE_LAST);
 
-	return types[(int)type];
+	return de::getSizedArrayElement<Array::INPUTTYPE_LAST>(types, (int)type);
 }
 
 std::string Array::outputTypeToString(OutputType type)
 {
-	DE_ASSERT(type < OUTPUTTYPE_LAST);
-
 	static const char* types[] =
 	{
 		"float",		// OUTPUTTYPE_FLOAT = 0,
@@ -126,15 +118,12 @@ std::string Array::outputTypeToString(OutputType type)
 		"uvec3",		// OUTPUTTYPE_UVEC3,
 		"uvec4",		// OUTPUTTYPE_UVEC4,
 	};
-	DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(types) == Array::OUTPUTTYPE_LAST);
 
-	return types[(int)type];
+	return de::getSizedArrayElement<Array::OUTPUTTYPE_LAST>(types, (int)type);
 }
 
 std::string Array::usageTypeToString(Usage usage)
 {
-	DE_ASSERT(usage < USAGE_LAST);
-
 	static const char* usages[] =
 	{
 		"dynamic_draw",	// USAGE_DYNAMIC_DRAW = 0,
@@ -150,29 +139,23 @@ std::string Array::usageTypeToString(Usage usage)
 		"dynamic_read",	// USAGE_DYNAMIC_READ,
 		"dynamic_copy",	// USAGE_DYNAMIC_COPY,
 	};
-	DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(usages) == Array::USAGE_LAST);
 
-	return usages[(int)usage];
+	return de::getSizedArrayElement<Array::USAGE_LAST>(usages, (int)usage);
 }
 
 std::string	Array::storageToString (Storage storage)
 {
-	DE_ASSERT(storage < STORAGE_LAST);
-
 	static const char* storages[] =
 	{
 		"user_ptr",	// STORAGE_USER = 0,
 		"buffer"	// STORAGE_BUFFER,
 	};
-	DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(storages) == Array::STORAGE_LAST);
 
-	return storages[(int)storage];
+	return de::getSizedArrayElement<Array::STORAGE_LAST>(storages, (int)storage);
 }
 
 std::string Array::primitiveToString (Primitive primitive)
 {
-	DE_ASSERT(primitive < PRIMITIVE_LAST);
-
 	static const char* primitives[] =
 	{
 		"points",			// PRIMITIVE_POINTS ,
@@ -180,15 +163,12 @@ std::string Array::primitiveToString (Primitive primitive)
 		"triangle_fan",		// PRIMITIVE_TRIANGLE_FAN,
 		"triangle_strip"	// PRIMITIVE_TRIANGLE_STRIP,
 	};
-	DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(primitives) == Array::PRIMITIVE_LAST);
 
-	return primitives[(int)primitive];
+	return de::getSizedArrayElement<Array::PRIMITIVE_LAST>(primitives, (int)primitive);
 }
 
 int Array::inputTypeSize (InputType type)
 {
-	DE_ASSERT(type < INPUTTYPE_LAST);
-
 	static const int size[] =
 	{
 		sizeof(float),		// INPUTTYPE_FLOAT = 0,
@@ -207,9 +187,8 @@ int Array::inputTypeSize (InputType type)
 		sizeof(deUint32) / 4,		// INPUTTYPE_UNSIGNED_INT_2_10_10_10,
 		sizeof(deUint32) / 4		// INPUTTYPE_INT_2_10_10_10,
 	};
-	DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(size) == Array::INPUTTYPE_LAST);
 
-	return size[(int)type];
+	return de::getSizedArrayElement<Array::INPUTTYPE_LAST>(size, (int)type);
 }
 
 static bool inputTypeIsFloatType (Array::InputType type)
@@ -648,21 +627,17 @@ void ContextArray::glBind (deUint32 loc)
 
 GLenum ContextArray::targetToGL (Array::Target target)
 {
-	DE_ASSERT(target < TARGET_LAST);
-
 	static const GLenum targets[] =
 	{
 		GL_ELEMENT_ARRAY_BUFFER,	// TARGET_ELEMENT_ARRAY = 0,
 		GL_ARRAY_BUFFER				// TARGET_ARRAY,
 	};
 
-	return targets[(int)target];
+	return de::getSizedArrayElement<Array::TARGET_LAST>(targets, (int)target);
 }
 
 GLenum ContextArray::usageToGL (Array::Usage usage)
 {
-	DE_ASSERT(usage < USAGE_LAST);
-
 	static const GLenum usages[] =
 	{
 		GL_DYNAMIC_DRAW,	// USAGE_DYNAMIC_DRAW = 0,
@@ -678,15 +653,12 @@ GLenum ContextArray::usageToGL (Array::Usage usage)
 		GL_DYNAMIC_READ,	// USAGE_DYNAMIC_READ,
 		GL_DYNAMIC_COPY		// USAGE_DYNAMIC_COPY,
 	};
-	DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(usages) == Array::USAGE_LAST);
 
-	return usages[(int)usage];
+	return de::getSizedArrayElement<Array::USAGE_LAST>(usages, (int)usage);
 }
 
 GLenum ContextArray::inputTypeToGL (Array::InputType type)
 {
-	DE_ASSERT(type < INPUTTYPE_LAST);
-
 	static const GLenum types[] =
 	{
 		GL_FLOAT,				// INPUTTYPE_FLOAT = 0,
@@ -703,15 +675,12 @@ GLenum ContextArray::inputTypeToGL (Array::InputType type)
 		GL_UNSIGNED_INT_2_10_10_10_REV, // INPUTTYPE_UNSIGNED_INT_2_10_10_10,
 		GL_INT_2_10_10_10_REV			// INPUTTYPE_INT_2_10_10_10,
 	};
-	DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(types) == Array::INPUTTYPE_LAST);
 
-	return types[(int)type];
+	return de::getSizedArrayElement<Array::INPUTTYPE_LAST>(types, (int)type);
 }
 
 std::string ContextArray::outputTypeToGLType (Array::OutputType type)
 {
-	DE_ASSERT(type < OUTPUTTYPE_LAST);
-
 	static const char* types[] =
 	{
 		"float",		// OUTPUTTYPE_FLOAT = 0,
@@ -730,23 +699,21 @@ std::string ContextArray::outputTypeToGLType (Array::OutputType type)
 		"uvec3",		// OUTPUTTYPE_UVEC3,
 		"uvec4",		// OUTPUTTYPE_UVEC4,
 	};
-	DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(types) == Array::OUTPUTTYPE_LAST);
 
-	return types[type];
+	return de::getSizedArrayElement<Array::OUTPUTTYPE_LAST>(types, (int)type);
 }
 
 GLenum ContextArray::primitiveToGL (Array::Primitive primitive)
 {
-	GLenum primitives[] =
+	static const GLenum primitives[] =
 	{
 		GL_POINTS,			// PRIMITIVE_POINTS = 0,
 		GL_TRIANGLES,		// PRIMITIVE_TRIANGLES,
 		GL_TRIANGLE_FAN,	// PRIMITIVE_TRIANGLE_FAN,
 		GL_TRIANGLE_STRIP	// PRIMITIVE_TRIANGLE_STRIP,
 	};
-	DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(primitives) == Array::PRIMITIVE_LAST);
 
-	return primitives[(int)primitive];
+	return de::getSizedArrayElement<Array::PRIMITIVE_LAST>(primitives, (int)primitive);
 }
 
 ContextArrayPack::ContextArrayPack (glu::RenderContext& renderCtx, sglr::Context& drawContext)
