@@ -279,6 +279,13 @@ inline Format::ArrayPointer<T> formatArray (const T* arr, int size)
 	return Format::ArrayPointer<T>(arr, size);
 }
 
+/** Format array contents. */
+template <typename T, int Size>
+inline Format::ArrayPointer<T> formatArray (const T (&arr)[Size])
+{
+	return Format::ArrayPointer<T>(arr, Size);
+}
+
 } // tcu
 
 #endif // _TCUFORMATUTIL_HPP
