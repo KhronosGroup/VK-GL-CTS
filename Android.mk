@@ -49,6 +49,7 @@ LOCAL_SRC_FILES := \
 	framework/common/tcuRenderTarget.cpp \
 	framework/common/tcuResource.cpp \
 	framework/common/tcuRGBA.cpp \
+	framework/common/tcuEither.cpp \
 	framework/common/tcuStringTemplate.cpp \
 	framework/common/tcuSurface.cpp \
 	framework/common/tcuTestCase.cpp \
