@@ -36,6 +36,7 @@
 #include "tcuStringTemplate.hpp"
 #include "tcuCPUWarmup.hpp"
 #include "tcuCommandLine.hpp"
+#include "tcuResultCollector.hpp"
 
 #include "deClock.h"
 #include "deString.h"

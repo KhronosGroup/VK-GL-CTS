@@ -26,6 +26,7 @@
 #include "tcuDefs.hpp"
 #include "tcuTestLog.hpp"
 #include "tcuTestContext.hpp"
+#include "tcuResultCollector.hpp"
 #include "glwDefs.hpp"
 #include "deMath.h"
 

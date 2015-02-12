@@ -32,6 +32,7 @@
 #include "tcuCommandLine.hpp"
 #include "tcuImageCompare.hpp"
 #include "tcuRenderTarget.hpp"
+#include "tcuResultCollector.hpp"
 #include "tcuRGBA.hpp"
 #include "tcuSurface.hpp"
 #include "tcuStringTemplate.hpp"

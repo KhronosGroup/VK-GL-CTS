@@ -40,6 +40,8 @@ set(TCUTIL_SRCS
 	tcuRenderTarget.hpp
 	tcuResource.cpp
 	tcuResource.hpp
+	tcuResultCollector.cpp
+	tcuResultCollector.hpp
 	tcuSurface.cpp
 	tcuSurface.hpp
 	tcuTestCase.cpp

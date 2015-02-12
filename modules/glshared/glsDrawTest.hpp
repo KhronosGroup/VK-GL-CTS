@@ -24,6 +24,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "tcuTestCase.hpp"
+#include "tcuResultCollector.hpp"
 #include "gluRenderContext.hpp"
 
 namespace sglr

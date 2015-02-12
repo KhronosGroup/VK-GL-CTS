@@ -51,6 +51,7 @@ LOCAL_SRC_FILES := \
 	framework/common/tcuRandomValueIterator.cpp \
 	framework/common/tcuRenderTarget.cpp \
 	framework/common/tcuResource.cpp \
+	framework/common/tcuResultCollector.cpp \
 	framework/common/tcuRGBA.cpp \
 	framework/common/tcuEither.cpp \
 	framework/common/tcuStringTemplate.cpp \

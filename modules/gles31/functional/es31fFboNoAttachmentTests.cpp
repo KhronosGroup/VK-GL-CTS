@@ -36,6 +36,7 @@
 #include "tcuVectorUtil.hpp"
 #include "tcuTestLog.hpp"
 #include "tcuCommandLine.hpp"
+#include "tcuResultCollector.hpp"
 
 #include "deMemory.h"
 #include "deRandom.hpp"
