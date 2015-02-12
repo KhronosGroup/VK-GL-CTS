@@ -47,6 +47,7 @@ enum ObjectType
 	OBJECTTYPE_TRANSFORM_FEEDBACK,
 	OBJECTTYPE_VERTEX_ARRAY,
 	OBJECTTYPE_QUERY,
+	OBJECTTYPE_SAMPLER,
 
 	OBJECTTYPE_LAST
 };
@@ -135,6 +136,7 @@ typedef TypedObjectWrapper<OBJECTTYPE_FRAMEBUFFER>			Framebuffer;
 typedef TypedObjectWrapper<OBJECTTYPE_TRANSFORM_FEEDBACK>	TransformFeedback;
 typedef TypedObjectWrapper<OBJECTTYPE_VERTEX_ARRAY>			VertexArray;
 typedef TypedObjectWrapper<OBJECTTYPE_QUERY>				Query;
+typedef TypedObjectWrapper<OBJECTTYPE_SAMPLER>				Sampler;
 
 typedef TypedObjectVector<OBJECTTYPE_TEXTURE>				TextureVector;
 typedef TypedObjectVector<OBJECTTYPE_BUFFER>				BufferVector;

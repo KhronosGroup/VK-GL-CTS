@@ -124,7 +124,8 @@ void resetStateES (const RenderContext& renderCtx)
 	// Texture state.
 	// \todo [2013-04-08 pyry] Reset all levels?
 	{
-		int numTexUnits = 0;
+		const float	borderColor[]	= { 0.0f, 0.0f, 0.0f, 0.0f };
+		int			numTexUnits		= 0;
 		gl.getIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, &numTexUnits);
 
 		for (int ndx = 0; ndx < numTexUnits; ndx++)
@@ -134,7 +135,7 @@ void resetStateES (const RenderContext& renderCtx)
 			// Reset 2D texture.
 			gl.bindTexture(GL_TEXTURE_2D, 0);
 			gl.texImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL);
-			gl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,		GL_LINEAR_MIPMAP_NEAREST);
+			gl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,		GL_NEAREST_MIPMAP_LINEAR);
 			gl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,		GL_LINEAR);
 			gl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,			GL_REPEAT);
 			gl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T,			GL_REPEAT);
@@ -156,6 +157,9 @@ void resetStateES (const RenderContext& renderCtx)
 			if (contextSupports(type, ApiType::es(3,1)))
 				gl.texParameteri(GL_TEXTURE_2D, GL_DEPTH_STENCIL_TEXTURE_MODE, GL_DEPTH_COMPONENT);
 
+			if (ctxInfo->isExtensionSupported("GL_EXT_texture_border_clamp"))
+				gl.texParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, &borderColor[0]);
+
 			// Reset cube map texture.
 			gl.bindTexture(GL_TEXTURE_CUBE_MAP, 0);
 			gl.texImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0, GL_RGBA, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL);
@@ -164,7 +168,7 @@ void resetStateES (const RenderContext& renderCtx)
 			gl.texImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, 0, GL_RGBA, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL);
 			gl.texImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Z, 0, GL_RGBA, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL);
 			gl.texImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z, 0, GL_RGBA, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL);
-			gl.texParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER,	GL_LINEAR_MIPMAP_NEAREST);
+			gl.texParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER,	GL_NEAREST_MIPMAP_LINEAR);
 			gl.texParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER,	GL_LINEAR);
 			gl.texParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S,		GL_REPEAT);
 			gl.texParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T,		GL_REPEAT);
@@ -186,12 +190,15 @@ void resetStateES (const RenderContext& renderCtx)
 			if (contextSupports(type, ApiType::es(3,1)))
 				gl.texParameteri(GL_TEXTURE_CUBE_MAP, GL_DEPTH_STENCIL_TEXTURE_MODE, GL_DEPTH_COMPONENT);
 
+			if (ctxInfo->isExtensionSupported("GL_EXT_texture_border_clamp"))
+				gl.texParameterfv(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_BORDER_COLOR, &borderColor[0]);
+
 			if (contextSupports(type, ApiType::es(3,0)))
 			{
 				// Reset 2D array texture.
 				gl.bindTexture(GL_TEXTURE_2D_ARRAY, 0);
 				gl.texImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA, 0, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL);
-				gl.texParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER,	GL_LINEAR_MIPMAP_NEAREST);
+				gl.texParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER,	GL_NEAREST_MIPMAP_LINEAR);
 				gl.texParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER,	GL_LINEAR);
 				gl.texParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S,		GL_REPEAT);
 				gl.texParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T,		GL_REPEAT);
@@ -205,16 +212,20 @@ void resetStateES (const RenderContext& renderCtx)
 				gl.texParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAX_LEVEL,		1000);
 				gl.texParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_COMPARE_MODE,	GL_NONE);
 				gl.texParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_COMPARE_FUNC,	GL_LEQUAL);
-				if (contextSupports(type, ApiType::es(3,1)))
-					gl.texParameteri(GL_TEXTURE_2D_ARRAY, GL_DEPTH_STENCIL_TEXTURE_MODE, GL_DEPTH_COMPONENT);
-			};
+
+				if (ctxInfo->isExtensionSupported("GL_EXT_texture_border_clamp"))
+					gl.texParameterfv(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_BORDER_COLOR, &borderColor[0]);
+			}
+
+			if (contextSupports(type, ApiType::es(3,1)))
+				gl.texParameteri(GL_TEXTURE_2D_ARRAY, GL_DEPTH_STENCIL_TEXTURE_MODE, GL_DEPTH_COMPONENT);
 
 			if (contextSupports(type, ApiType::es(3,0)))
 			{
 				// Reset 3D texture.
 				gl.bindTexture(GL_TEXTURE_3D, 0);
 				gl.texImage3D(GL_TEXTURE_3D, 0, GL_RGBA, 0, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL);
-				gl.texParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER,		GL_LINEAR_MIPMAP_NEAREST);
+				gl.texParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER,		GL_NEAREST_MIPMAP_LINEAR);
 				gl.texParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER,		GL_LINEAR);
 				gl.texParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S,			GL_REPEAT);
 				gl.texParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T,			GL_REPEAT);
@@ -229,17 +240,58 @@ void resetStateES (const RenderContext& renderCtx)
 				gl.texParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAX_LEVEL,		1000);
 				gl.texParameteri(GL_TEXTURE_3D, GL_TEXTURE_COMPARE_MODE,	GL_NONE);
 				gl.texParameteri(GL_TEXTURE_3D, GL_TEXTURE_COMPARE_FUNC,	GL_LEQUAL);
-				if (contextSupports(type, ApiType::es(3,1)))
-					gl.texParameteri(GL_TEXTURE_3D, GL_DEPTH_STENCIL_TEXTURE_MODE, GL_DEPTH_COMPONENT);
+
+				if (ctxInfo->isExtensionSupported("GL_EXT_texture_border_clamp"))
+					gl.texParameterfv(GL_TEXTURE_3D, GL_TEXTURE_BORDER_COLOR, &borderColor[0]);
 			}
+
+			if (contextSupports(type, ApiType::es(3,1)))
+				gl.texParameteri(GL_TEXTURE_3D, GL_DEPTH_STENCIL_TEXTURE_MODE, GL_DEPTH_COMPONENT);
 
 			if (contextSupports(type, ApiType::es(3,1)))
 			{
 				// Reset multisample textures.
 				gl.bindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
+				gl.texParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_SWIZZLE_R,	GL_RED);
+				gl.texParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_SWIZZLE_G,	GL_GREEN);
+				gl.texParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_SWIZZLE_B,	GL_BLUE);
+				gl.texParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_SWIZZLE_A,	GL_ALPHA);
+				gl.texParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_BASE_LEVEL,	0);
+				gl.texParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAX_LEVEL,	1000);
+			}
 
-				if (ctxInfo->isExtensionSupported("GL_OES_texture_storage_multisample_2d_array"))
-					gl.bindTexture(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, 0);
+			if (ctxInfo->isExtensionSupported("GL_OES_texture_storage_multisample_2d_array"))
+			{
+				gl.bindTexture(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, 0);
+				gl.texParameteri(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_SWIZZLE_R,		GL_RED);
+				gl.texParameteri(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_SWIZZLE_G,		GL_GREEN);
+				gl.texParameteri(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_SWIZZLE_B,		GL_BLUE);
+				gl.texParameteri(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_SWIZZLE_A,		GL_ALPHA);
+				gl.texParameteri(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_BASE_LEVEL,	0);
+				gl.texParameteri(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_MAX_LEVEL,		1000);
+			}
+
+			if (ctxInfo->isExtensionSupported("GL_EXT_texture_cube_map_array"))
+			{
+				// Reset cube array texture.
+				gl.bindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, 0);
+				gl.texParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_MIN_FILTER,		GL_NEAREST_MIPMAP_LINEAR);
+				gl.texParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_MAG_FILTER,		GL_LINEAR);
+				gl.texParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_WRAP_S,			GL_REPEAT);
+				gl.texParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_WRAP_T,			GL_REPEAT);
+				gl.texParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_SWIZZLE_R,		GL_RED);
+				gl.texParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_SWIZZLE_G,		GL_GREEN);
+				gl.texParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_SWIZZLE_B,		GL_BLUE);
+				gl.texParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_SWIZZLE_A,		GL_ALPHA);
+				gl.texParameterf(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_MIN_LOD,			-1000.0f);
+				gl.texParameterf(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_MAX_LOD,			1000.0f);
+				gl.texParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_BASE_LEVEL,		0);
+				gl.texParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_MAX_LEVEL,		1000);
+				gl.texParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_COMPARE_MODE,	GL_NONE);
+				gl.texParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_COMPARE_FUNC,	GL_LEQUAL);
+
+				if (ctxInfo->isExtensionSupported("GL_EXT_texture_border_clamp"))
+					gl.texParameterfv(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_BORDER_COLOR, &borderColor[0]);
 			}
 		}
 
@@ -477,11 +529,17 @@ void resetStateES (const RenderContext& renderCtx)
 	if (ctxInfo->isExtensionSupported("GL_KHR_debug"))
 	{
 		const bool entrypointsPresent =	gl.debugMessageControl	!= DE_NULL	&&
-										gl.debugMessageCallback	!= DE_NULL;
+										gl.debugMessageCallback	!= DE_NULL	&&
+										gl.popDebugGroup		!= DE_NULL;
 
 		// some drivers advertise GL_KHR_debug but give out null pointers. Silently ignore.
 		if (entrypointsPresent)
 		{
+			int stackDepth = 0;
+			gl.getIntegerv(GL_DEBUG_GROUP_STACK_DEPTH, &stackDepth);
+			for (int ndx = 1; ndx < stackDepth; ++ndx)
+				gl.popDebugGroup();
+
 			gl.debugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, DE_NULL, true);
 			gl.debugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_LOW, 0, DE_NULL, false);
 			gl.debugMessageCallback(DE_NULL, DE_NULL);
@@ -490,6 +548,9 @@ void resetStateES (const RenderContext& renderCtx)
 				gl.enable(GL_DEBUG_OUTPUT);
 			else
 				gl.disable(GL_DEBUG_OUTPUT);
+			gl.disable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+
+			GLU_EXPECT_NO_ERROR(gl.getError(), "Debug state reset failed");
 		}
 	}
 
@@ -505,6 +566,21 @@ void resetStateES (const RenderContext& renderCtx)
 	{
 		gl.patchParameteri(GL_PATCH_VERTICES, 3);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "Tessellation patch vertices state reset failed");
+	}
+
+	// Advanced coherent blending
+	if (ctxInfo->isExtensionSupported("GL_KHR_blend_equation_advanced_coherent"))
+	{
+		gl.enable(GL_BLEND_ADVANCED_COHERENT_KHR);
+		GLU_EXPECT_NO_ERROR(gl.getError(), "Blend equation advanced coherent state reset failed");
+	}
+
+	// Texture buffer
+	if (ctxInfo->isExtensionSupported("GL_EXT_texture_buffer"))
+	{
+		gl.bindTexture(GL_TEXTURE_BUFFER, 0);
+		gl.bindBuffer(GL_TEXTURE_BUFFER, 0);
+		GLU_EXPECT_NO_ERROR(gl.getError(), "Texture buffer state reset failed");
 	}
 }
 

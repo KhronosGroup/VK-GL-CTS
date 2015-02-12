@@ -21,7 +21,7 @@
 #-------------------------------------------------------------------------
 
 from src_util import *
-from khr_util.gen_str_util import genEnumUtilImpls
+from khr_util.gen_str_util import genSetEnumUtilImpls, genQueryEnumUtilImpls
 
 QUERY_NUM_OUT_ARGUMENTS = [
 
@@ -45,16 +45,31 @@ QUERY_NUM_OUT_ARGUMENTS = [
 	("Program", [
 		("COMPUTE_WORK_GROUP_SIZE",		3),
 		]),
+
+	("TextureParam", [
+		("TEXTURE_BORDER_COLOR",		4),
+		]),
 ]
+
+SET_NUM_IN_ARGUMENTS = [
+	("TextureParam", [
+		("TEXTURE_BORDER_COLOR",		4),
+		]),
+]
+
 
 def addNamePrefix (prefix, groups):
 	return [(groupName, [(prefix + queryName, querySize) for queryName, querySize in groupQueries]) for groupName, groupQueries in groups]
 
 def genQueryUtil (iface):
 	queryNumOutArgs = addNamePrefix("GL_", QUERY_NUM_OUT_ARGUMENTS);
-	utilFile = os.path.join(OPENGL_DIR, "gluQueryUtil.inl")
+	setNumInArgs    = addNamePrefix("GL_", SET_NUM_IN_ARGUMENTS);
 
-	writeInlFile(utilFile, genEnumUtilImpls(iface, queryNumOutArgs))
+	utilFile = os.path.join(OPENGL_DIR, "gluQueryUtil.inl")
+	writeInlFile(utilFile, genQueryEnumUtilImpls(iface, queryNumOutArgs))
+
+	utilFile = os.path.join(OPENGL_DIR, "gluCallLogUtil.inl")
+	writeInlFile(utilFile, genSetEnumUtilImpls(iface, setNumInArgs))
 
 if __name__ == "__main__":
 	genQueryUtil(getHybridInterface())

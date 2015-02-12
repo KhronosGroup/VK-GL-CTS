@@ -39,3 +39,12 @@ int getProgramQueryNumArgsOut (int pname)
 		default:							return 1;
 	}
 }
+
+int getTextureParamQueryNumArgsOut (int pname)
+{
+	switch(pname)
+	{
+		case GL_TEXTURE_BORDER_COLOR:	return 4;
+		default:						return 1;
+	}
+}

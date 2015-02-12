@@ -77,3 +77,15 @@ if (de::contains(extSet, "GL_EXT_draw_buffers_indexed"))
 	gl->enablei					= (glEnableiFunc)					loader->get("glEnableiEXT");
 	gl->isEnabledi				= (glIsEnablediFunc)				loader->get("glIsEnablediEXT");
 }
+
+if (de::contains(extSet, "GL_EXT_texture_border_clamp"))
+{
+	gl->getSamplerParameterIiv	= (glGetSamplerParameterIivFunc)	loader->get("glGetSamplerParameterIivEXT");
+	gl->getSamplerParameterIuiv	= (glGetSamplerParameterIuivFunc)	loader->get("glGetSamplerParameterIuivEXT");
+	gl->getTexParameterIiv		= (glGetTexParameterIivFunc)		loader->get("glGetTexParameterIivEXT");
+	gl->getTexParameterIuiv		= (glGetTexParameterIuivFunc)		loader->get("glGetTexParameterIuivEXT");
+	gl->samplerParameterIiv		= (glSamplerParameterIivFunc)		loader->get("glSamplerParameterIivEXT");
+	gl->samplerParameterIuiv	= (glSamplerParameterIuivFunc)		loader->get("glSamplerParameterIuivEXT");
+	gl->texParameterIiv			= (glTexParameterIivFunc)			loader->get("glTexParameterIivEXT");
+	gl->texParameterIuiv		= (glTexParameterIuivFunc)			loader->get("glTexParameterIuivEXT");
+}

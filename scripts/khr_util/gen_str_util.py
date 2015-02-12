@@ -125,7 +125,7 @@ def genStrUtilImpls (iface, enumGroups, bitfieldGroups):
 		for line in genBitfieldStrImpl(groupName, values, definitions):
 			yield line
 
-def genEnumUtilImpl (groupName, groupQueries, allEnums):
+def genQueryEnumUtilImpl (groupName, groupQueries, allEnums):
 	yield ""
 	yield "int get%sQueryNumArgsOut (int pname)" % groupName
 	yield "{"
@@ -146,11 +146,39 @@ def genEnumUtilImpl (groupName, groupQueries, allEnums):
 	yield "\t}"
 	yield "}"
 
-def genEnumUtilImpls (iface, queryGroups):
+def genQueryEnumUtilImpls (iface, queryGroups):
 	allEnums = makeDefSet(iface)
 
 	for groupName, groupQueries in queryGroups:
-		for line in genEnumUtilImpl(groupName, groupQueries, allEnums):
+		for line in genQueryEnumUtilImpl(groupName, groupQueries, allEnums):
+			yield line
+
+def genSetEnumUtilImpl (groupName, groupQueries, allEnums):
+	yield ""
+	yield "int get%sNumArgs (int pname)" % groupName
+	yield "{"
+	yield "\tswitch(pname)"
+	yield "\t{"
+
+	def genCases ():
+		for enumName, enumQueryNumOutputs in groupQueries:
+			if enumName in allEnums:
+				yield "case %s:\treturn %s;" % (enumName, enumQueryNumOutputs)
+			else:
+				print "Warning: %s not defined, skipping" % enumName
+		yield "default:\treturn 1;"
+
+	for caseLine in indentLines(genCases()):
+		yield "\t\t" + caseLine
+
+	yield "\t}"
+	yield "}"
+
+def genSetEnumUtilImpls (iface, queryGroups):
+	allEnums = makeDefSet(iface)
+
+	for groupName, groupQueries in queryGroups:
+		for line in genSetEnumUtilImpl(groupName, groupQueries, allEnums):
 			yield line
 
 def addValuePrefix (groups, prefix):

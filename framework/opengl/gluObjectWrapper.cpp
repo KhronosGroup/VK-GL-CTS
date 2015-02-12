@@ -76,6 +76,7 @@ static const ObjectTraits s_objectTraits[OBJECTTYPE_LAST] =
 	{ "transform feedback",	&glw::Functions::genTransformFeedbacks,	&glw::Functions::deleteTransformFeedbacks	},
 	{ "vertex array",		&glw::Functions::genVertexArrays, 		&glw::Functions::deleteVertexArrays			},
 	{ "query",				&glw::Functions::genQueries, 			&glw::Functions::deleteQueries				},
+	{ "sampler",			&glw::Functions::genSamplers, 			&glw::Functions::deleteSamplers				},
 };
 
 const ObjectTraits& objectTraits (ObjectType type)

@@ -59,7 +59,9 @@ EXTENSIONS			= [
 	'GL_EXT_texture_compression_s3tc',
 	'GL_IMG_texture_compression_pvrtc',
 	'GL_EXT_copy_image',
-	'GL_EXT_draw_buffers_indexed'
+	'GL_EXT_draw_buffers_indexed',
+	'GL_EXT_texture_sRGB_decode',
+	'GL_EXT_texture_border_clamp',
 ]
 
 def getGLRegistry ():

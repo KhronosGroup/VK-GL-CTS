@@ -27,8 +27,11 @@
 #include "glwInitFunctions.hpp"
 #include "glwFunctionLoader.hpp"
 #include "gluContextFactory.hpp"
+#include "gluContextInfo.hpp"
+#include "gluShaderUtil.hpp"
 #include "deThreadLocal.hpp"
 #include "deSTLUtil.hpp"
+#include "deUniquePtr.hpp"
 #include "glwEnums.hpp"
 
 #include <sstream>
@@ -50,7 +53,7 @@ using std::string;
 class Context
 {
 public:
-								Context			(const glw::Functions& gl_);
+								Context			(const glu::RenderContext& ctx);
 								~Context		(void);
 
 	void						addExtension	(const char* name);
@@ -68,10 +71,12 @@ public:
 
 	deUint32					defaultVAO;
 	bool						defaultVAOBound;
+
+	const glu::GLSLVersion		nativeGLSLVersion;
 };
 
-Context::Context (const glw::Functions& gl_)
-	: gl						(gl_)
+Context::Context (const glu::RenderContext& ctx)
+	: gl						(ctx.getFunctions())
 	, vendor					("drawElements")
 	, version					("OpenGL ES 3.1")
 	, renderer					((const char*)gl.getString(GL_RENDERER))
@@ -79,7 +84,10 @@ Context::Context (const glw::Functions& gl_)
 	, primitiveRestartEnabled	(false)
 	, defaultVAO				(0)
 	, defaultVAOBound			(false)
+	, nativeGLSLVersion			(glu::getContextTypeGLSLVersion(ctx.getType()))
 {
+	const de::UniquePtr<glu::ContextInfo> ctxInfo(glu::ContextInfo::create(ctx));
+
 	gl.genVertexArrays(1, &defaultVAO);
 	if (gl.getError() != GL_NO_ERROR || defaultVAO == 0)
 		throw tcu::InternalError("Failed to allocate VAO for emulation");
@@ -103,9 +111,17 @@ Context::Context (const glw::Functions& gl_)
 	addExtension("GL_OES_shader_image_atomic");
 	addExtension("GL_OES_texture_storage_multisample_2d_array");
 
-	// \todo [2014-03-18 pyry] Enable only if base ctx supports these or compatible GL_NV_blend_equation_advanced ext
-	addExtension("GL_KHR_blend_equation_advanced");
-	addExtension("GL_KHR_blend_equation_advanced_coherent");
+	// Enable only if base ctx supports these or compatible GL_NV_blend_equation_advanced ext
+	if (ctxInfo->isExtensionSupported("GL_NV_blend_equation_advanced") ||
+		ctxInfo->isExtensionSupported("GL_KHR_blend_equation_advanced"))
+	{
+		addExtension("GL_KHR_blend_equation_advanced");
+	}
+	if (ctxInfo->isExtensionSupported("GL_NV_blend_equation_advanced_coherent") ||
+		ctxInfo->isExtensionSupported("GL_KHR_blend_equation_advanced_coherent"))
+	{
+		addExtension("GL_KHR_blend_equation_advanced_coherent");
+	}
 
 	addExtension("GL_EXT_shader_io_blocks");
 	addExtension("GL_EXT_geometry_shader");
@@ -117,6 +133,10 @@ Context::Context (const glw::Functions& gl_)
 	addExtension("GL_EXT_texture_cube_map_array");
 	addExtension("GL_EXT_shader_implicit_conversions");
 	addExtension("GL_EXT_primitive_bounding_box");
+	addExtension("GL_EXT_texture_sRGB_decode");
+	addExtension("GL_EXT_texture_border_clamp");
+	addExtension("GL_EXT_texture_buffer");
+	addExtension("GL_EXT_draw_buffers_indexed");
 }
 
 Context::~Context (void)
@@ -251,7 +271,7 @@ static GLW_APICALL void GLW_APIENTRY hint (deUint32 target, deUint32 mode)
 	}
 }
 
-static void translateShaderSource (deUint32 shaderType, std::ostream& dst, const std::string& src, const std::vector<std::string>& filteredExtensions)
+static void translateShaderSource (deUint32 shaderType, std::ostream& dst, const std::string& src, const std::vector<std::string>& filteredExtensions, GLSLVersion version)
 {
 	bool				foundVersion		= false;
 	std::istringstream	istr				(src);
@@ -261,13 +281,13 @@ static void translateShaderSource (deUint32 shaderType, std::ostream& dst, const
 
 	while (std::getline(istr, line, '\n'))
 	{
-		if (line == "#version 310 es")
+		if (preprocessorSection && !line.empty() && line[0] != '#')
 		{
-			foundVersion = true;
-			dst << "#version 430\n";
+			preprocessorSection = false;
+
+			// ARB_separate_shader_objects requires gl_PerVertex to be explicitly declared
 			if (shaderType == GL_VERTEX_SHADER)
 			{
-				// ARB_separate_shader_objects requires gl_PerVertex to be explicitly declared
 				dst << "out gl_PerVertex {\n"
 					<< "    vec4 gl_Position;\n"
 					<< "    float gl_PointSize;\n"
@@ -275,6 +295,58 @@ static void translateShaderSource (deUint32 shaderType, std::ostream& dst, const
 					<< "};\n"
 					<< "#line " << (srcLineNdx + 1) << "\n";
 			}
+			else if (shaderType == GL_TESS_CONTROL_SHADER)
+			{
+				dst << "#extension GL_ARB_tessellation_shader : enable\n"
+					<< "in gl_PerVertex {\n"
+					<< "	highp vec4 gl_Position;\n"
+					<< "	highp float gl_PointSize;\n"
+					<< "} gl_in[gl_MaxPatchVertices];\n"
+					<< "out gl_PerVertex {\n"
+					<< "	highp vec4 gl_Position;\n"
+					<< "	highp float gl_PointSize;\n"
+					<< "} gl_out[];\n"
+					<< "#line " << (srcLineNdx + 1) << "\n";
+			}
+			else if (shaderType == GL_TESS_EVALUATION_SHADER)
+			{
+				dst << "#extension GL_ARB_tessellation_shader : enable\n"
+					<< "in gl_PerVertex {\n"
+					<< "	highp vec4 gl_Position;\n"
+					<< "	highp float gl_PointSize;\n"
+					<< "} gl_in[gl_MaxPatchVertices];\n"
+					<< "out gl_PerVertex {\n"
+					<< "	highp vec4 gl_Position;\n"
+					<< "	highp float gl_PointSize;\n"
+					<< "};\n"
+					<< "#line " << (srcLineNdx + 1) << "\n";
+			}
+			else if (shaderType == GL_GEOMETRY_SHADER)
+			{
+				dst << "in gl_PerVertex {\n"
+					<< "	highp vec4 gl_Position;\n"
+					<< "	highp float gl_PointSize;\n"
+					<< "} gl_in[];\n"
+					<< "out gl_PerVertex {\n"
+					<< "	highp vec4 gl_Position;\n"
+					<< "	highp float gl_PointSize;\n"
+					<< "};\n"
+					<< "#line " << (srcLineNdx + 1) << "\n";
+			}
+
+			// GL_EXT_primitive_bounding_box tessellation no-op fallback
+			if (shaderType == GL_TESS_CONTROL_SHADER)
+			{
+				dst << "#define gl_BoundingBoxEXT _dummy_unused_output_for_primitive_bbox\n"
+					<< "patch out vec4 _dummy_unused_output_for_primitive_bbox[2];\n"
+					<< "#line " << (srcLineNdx + 1) << "\n";
+			}
+		}
+
+		if (line == "#version 310 es")
+		{
+			foundVersion = true;
+			dst << glu::getGLSLVersionDeclaration(version) << "\n";
 		}
 		else if (line == "#version 300 es")
 		{
@@ -328,19 +400,6 @@ static void translateShaderSource (deUint32 shaderType, std::ostream& dst, const
 		else
 			dst << line << "\n";
 
-		if (preprocessorSection && !line.empty() && line[0] != '#')
-		{
-			preprocessorSection = false;
-
-			// GL_EXT_primitive_bounding_box tessellation no-op fallback
-			if (shaderType == GL_TESS_CONTROL_SHADER)
-			{
-				dst << "#define gl_BoundingBoxEXT _dummy_unused_output_for_primitive_bbox\n"
-					<< "patch out vec4 _dummy_unused_output_for_primitive_bbox[2];\n"
-					<< "#line " << (srcLineNdx + 1) << "\n";
-			}
-		}
-
 		srcLineNdx += 1;
 	}
 
@@ -348,7 +407,7 @@ static void translateShaderSource (deUint32 shaderType, std::ostream& dst, const
 	DE_UNREF(foundVersion);
 }
 
-static std::string translateShaderSources (deUint32 shaderType, deInt32 count, const char* const* strings, const int* length, const std::vector<std::string>& filteredExtensions)
+static std::string translateShaderSources (deUint32 shaderType, deInt32 count, const char* const* strings, const int* length, const std::vector<std::string>& filteredExtensions, GLSLVersion version)
 {
 	std::ostringstream	srcIn;
 	std::ostringstream	srcOut;
@@ -359,7 +418,7 @@ static std::string translateShaderSources (deUint32 shaderType, deInt32 count, c
 		srcIn << std::string(strings[ndx], strings[ndx] + len);
 	}
 
-	translateShaderSource(shaderType, srcOut, srcIn.str(), filteredExtensions);
+	translateShaderSource(shaderType, srcOut, srcIn.str(), filteredExtensions, version);
 
 	return srcOut.str();
 }
@@ -375,7 +434,7 @@ static GLW_APICALL void GLW_APIENTRY shaderSource (deUint32 shader, deInt32 coun
 			deInt32				shaderType = GL_NONE;
 			context->gl.getShaderiv(shader, GL_SHADER_TYPE, &shaderType);
 			{
-				const std::string	translatedSrc	= translateShaderSources(shaderType, count, strings, length, context->extensionList);
+				const std::string	translatedSrc	= translateShaderSources(shaderType, count, strings, length, context->extensionList, context->nativeGLSLVersion);
 				const char*			srcPtr			= translatedSrc.c_str();
 				context->gl.shaderSource(shader, 1, &srcPtr, DE_NULL);
 			}
@@ -418,7 +477,7 @@ static GLW_APICALL deUint32 GLW_APIENTRY createShaderProgramv (deUint32 type, de
 	{
 		if (count > 0 && strings)
 		{
-			const std::string	translatedSrc	= translateShaderSources(type, count, strings, DE_NULL, context->extensionList);
+			const std::string	translatedSrc	= translateShaderSources(type, count, strings, DE_NULL, context->extensionList, context->nativeGLSLVersion);
 			const char*			srcPtr			= translatedSrc.c_str();
 			return context->gl.createShaderProgramv(type, 1, &srcPtr);
 		}
@@ -514,6 +573,30 @@ static void initFunctions (glw::Functions* dst, const glw::Functions& src)
 		// GL_EXT_primitive_bounding_box (dummy no-op)
 		extFuncMap["glPrimitiveBoundingBoxEXT"]		= (glw::GenericFuncType)dummyPrimitiveBoundingBox;
 
+		// GL_EXT_texture_border_clamp
+		extFuncMap["glTexParameterIivEXT"]			= (glw::GenericFuncType)src.texParameterIiv;
+		extFuncMap["glTexParameterIuivEXT"]			= (glw::GenericFuncType)src.texParameterIuiv;
+		extFuncMap["glGetTexParameterIivEXT"]		= (glw::GenericFuncType)src.getTexParameterIiv;
+		extFuncMap["glGetTexParameterIuivEXT"]		= (glw::GenericFuncType)src.getTexParameterIuiv;
+		extFuncMap["glSamplerParameterIivEXT"]		= (glw::GenericFuncType)src.samplerParameterIiv;
+		extFuncMap["glSamplerParameterIuivEXT"]		= (glw::GenericFuncType)src.samplerParameterIuiv;
+		extFuncMap["glGetSamplerParameterIivEXT"]	= (glw::GenericFuncType)src.getSamplerParameterIiv;
+		extFuncMap["glGetSamplerParameterIuivEXT"]	= (glw::GenericFuncType)src.getSamplerParameterIuiv;
+
+		// GL_EXT_texture_buffer
+		extFuncMap["glTexBufferEXT"]				= (glw::GenericFuncType)src.texBuffer;
+		extFuncMap["glTexBufferRangeEXT"]			= (glw::GenericFuncType)src.texBufferRange;
+
+		// GL_EXT_draw_buffers_indexed
+		extFuncMap["glEnableiEXT"]					= (glw::GenericFuncType)src.enablei;
+		extFuncMap["glDisableiEXT"]					= (glw::GenericFuncType)src.disablei;
+		extFuncMap["glBlendEquationiEXT"]			= (glw::GenericFuncType)src.blendEquationi;
+		extFuncMap["glBlendEquationSeparateiEXT"]	= (glw::GenericFuncType)src.blendEquationSeparatei;
+		extFuncMap["glBlendFunciEXT"]				= (glw::GenericFuncType)src.blendFunci;
+		extFuncMap["glBlendFuncSeparateiEXT"]		= (glw::GenericFuncType)src.blendFuncSeparatei;
+		extFuncMap["glColorMaskiEXT"]				= (glw::GenericFuncType)src.colorMaski;
+		extFuncMap["glIsEnablediEXT"]				= (glw::GenericFuncType)src.isEnabledi;
+
 		{
 			int	numExts	= 0;
 			dst->getIntegerv(GL_NUM_EXTENSIONS, &numExts);
@@ -561,7 +644,7 @@ ES3PlusWrapperContext::ES3PlusWrapperContext (const ContextFactory& factory, con
 			nativeConfig.type = nativeContext;
 
 			m_context		= factory.createContext(nativeConfig, cmdLine);
-			m_wrapperCtx	= new es3plus::Context(m_context->getFunctions());
+			m_wrapperCtx	= new es3plus::Context(*m_context);
 
 			es3plus::setCurrentContext(m_wrapperCtx);
 			es3plus::initFunctions(&m_functions, m_context->getFunctions());

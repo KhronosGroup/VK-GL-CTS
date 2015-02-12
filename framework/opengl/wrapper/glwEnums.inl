@@ -189,6 +189,7 @@
 #define GL_TEXTURE_HEIGHT												0x1001
 #define GL_TEXTURE_INTERNAL_FORMAT										0x1003
 #define GL_TEXTURE_BORDER_COLOR											0x1004
+#define GL_TEXTURE_BORDER_COLOR_EXT										0x1004
 #define GL_TEXTURE_TARGET												0x1006
 #define GL_DONT_CARE													0x1100
 #define GL_FASTEST														0x1101
@@ -337,6 +338,7 @@
 #define GL_MAX_ELEMENTS_INDICES											0x80E9
 #define GL_POINT_FADE_THRESHOLD_SIZE									0x8128
 #define GL_CLAMP_TO_BORDER												0x812D
+#define GL_CLAMP_TO_BORDER_EXT											0x812D
 #define GL_CLAMP_TO_EDGE												0x812F
 #define GL_TEXTURE_MIN_LOD												0x813A
 #define GL_TEXTURE_MAX_LOD												0x813B
@@ -807,6 +809,9 @@
 #define GL_UNIFORM_BLOCK_REFERENCED_BY_VERTEX_SHADER					0x8A44
 #define GL_UNIFORM_BLOCK_REFERENCED_BY_GEOMETRY_SHADER					0x8A45
 #define GL_UNIFORM_BLOCK_REFERENCED_BY_FRAGMENT_SHADER					0x8A46
+#define GL_TEXTURE_SRGB_DECODE_EXT										0x8A48
+#define GL_DECODE_EXT													0x8A49
+#define GL_SKIP_DECODE_EXT												0x8A4A
 #define GL_FRAGMENT_SHADER												0x8B30
 #define GL_VERTEX_SHADER												0x8B31
 #define GL_MAX_FRAGMENT_UNIFORM_COMPONENTS								0x8B49

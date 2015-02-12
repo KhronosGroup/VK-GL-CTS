@@ -139,6 +139,7 @@ inline FboParamPtrFmt getFramebufferAttachmentParameterValueStr (deUint32 param,
 }
 
 #include "gluQueryUtil.inl"
+#include "gluCallLogUtil.inl"
 
 // API entry-point implementations are auto-generated
 #include "gluCallLogWrapper.inl"

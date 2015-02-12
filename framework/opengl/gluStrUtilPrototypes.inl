@@ -54,6 +54,7 @@ const char*							getBooleanName							(int value);
 const char*							getGettableStateName					(int value);
 const char*							getGettableIndexedStateName				(int value);
 const char*							getGettableStringName					(int value);
+const char*							getPointerStateName						(int value);
 const char*							getInternalFormatParameterName			(int value);
 const char*							getInternalFormatTargetName				(int value);
 const char*							getMultisampleParameterName				(int value);
@@ -70,6 +71,7 @@ const char*							getDebugMessageSourceName				(int value);
 const char*							getDebugMessageTypeName					(int value);
 const char*							getDebugMessageSeverityName				(int value);
 const char*							getPipelineParamName					(int value);
+const char*							getPatchParamName						(int value);
 tcu::Format::Bitfield<16>			getBufferMaskStr						(int value);
 tcu::Format::Bitfield<16>			getBufferMapFlagsStr					(int value);
 tcu::Format::Bitfield<16>			getMemoryBarrierFlagsStr				(int value);
@@ -125,6 +127,7 @@ inline tcu::Format::Enum<int, 2>	getBooleanStr							(int value)		{ return tcu::
 inline tcu::Format::Enum<int, 2>	getGettableStateStr						(int value)		{ return tcu::Format::Enum<int, 2>(getGettableStateName, value); }
 inline tcu::Format::Enum<int, 2>	getGettableIndexedStateStr				(int value)		{ return tcu::Format::Enum<int, 2>(getGettableIndexedStateName, value); }
 inline tcu::Format::Enum<int, 2>	getGettableStringStr					(int value)		{ return tcu::Format::Enum<int, 2>(getGettableStringName, value); }
+inline tcu::Format::Enum<int, 2>	getPointerStateStr						(int value)		{ return tcu::Format::Enum<int, 2>(getPointerStateName, value); }
 inline tcu::Format::Enum<int, 2>	getInternalFormatParameterStr			(int value)		{ return tcu::Format::Enum<int, 2>(getInternalFormatParameterName, value); }
 inline tcu::Format::Enum<int, 2>	getInternalFormatTargetStr				(int value)		{ return tcu::Format::Enum<int, 2>(getInternalFormatTargetName, value); }
 inline tcu::Format::Enum<int, 2>	getMultisampleParameterStr				(int value)		{ return tcu::Format::Enum<int, 2>(getMultisampleParameterName, value); }
@@ -141,4 +144,5 @@ inline tcu::Format::Enum<int, 2>	getDebugMessageSourceStr				(int value)		{ retu
 inline tcu::Format::Enum<int, 2>	getDebugMessageTypeStr					(int value)		{ return tcu::Format::Enum<int, 2>(getDebugMessageTypeName, value); }
 inline tcu::Format::Enum<int, 2>	getDebugMessageSeverityStr				(int value)		{ return tcu::Format::Enum<int, 2>(getDebugMessageSeverityName, value); }
 inline tcu::Format::Enum<int, 2>	getPipelineParamStr						(int value)		{ return tcu::Format::Enum<int, 2>(getPipelineParamName, value); }
+inline tcu::Format::Enum<int, 2>	getPatchParamStr						(int value)		{ return tcu::Format::Enum<int, 2>(getPatchParamName, value); }
 inline tcu::Format::Enum<int, 1>	getBooleanStr							(deUint8 value)	{ return tcu::Format::Enum<int, 1>(getBooleanName, (int)value); }
