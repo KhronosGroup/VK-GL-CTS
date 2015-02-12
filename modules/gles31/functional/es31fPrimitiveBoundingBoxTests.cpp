@@ -251,7 +251,8 @@ QueryCase::IterateResult QueryCase::iterate (void)
 
 	for (int caseNdx = 0; caseNdx < (int)cases.size(); ++caseNdx)
 	{
-		const BoundingBox& boundingBox = cases[caseNdx];
+		const tcu::ScopedLogSection	section		(m_testCtx.getLog(), "Iteration", "Iteration " + de::toString(caseNdx+1));
+		const BoundingBox&			boundingBox	= cases[caseNdx];
 
 		gl.glPrimitiveBoundingBoxEXT(boundingBox.min.x(), boundingBox.min.y(), boundingBox.min.z(), boundingBox.min.w(),
 									 boundingBox.max.x(), boundingBox.max.y(), boundingBox.max.z(), boundingBox.max.w());
@@ -1359,7 +1360,15 @@ void GridRenderCase::verifyRenderResult (const IterationConfig& config)
 		m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Image verification failed");
 	}
 	else
-		m_testCtx.getLog() << tcu::TestLog::Message << "Result image ok." << tcu::TestLog::EndMessage;
+	{
+		m_testCtx.getLog()
+			<< tcu::TestLog::Message
+			<< "Result image ok."
+			<< tcu::TestLog::EndMessage
+			<< tcu::TestLog::ImageSet("Images", "Image verification")
+			<< tcu::TestLog::Image("Viewport", "Viewport contents", viewportSurface.getAccess())
+			<< tcu::TestLog::EndImageSet;
+	}
 }
 
 class LineRenderCase : public BBoxRenderCase
@@ -1851,7 +1860,15 @@ void LineRenderCase::verifyRenderResult (const IterationConfig& config)
 		m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Image verification failed");
 	}
 	else
-		m_testCtx.getLog() << tcu::TestLog::Message << "Result image ok." << tcu::TestLog::EndMessage;
+	{
+		m_testCtx.getLog()
+			<< tcu::TestLog::Message
+			<< "Result image ok."
+			<< tcu::TestLog::EndMessage
+			<< tcu::TestLog::ImageSet("Images", "Image verification")
+			<< tcu::TestLog::Image("Viewport", "Viewport contents", viewportSurface.getAccess())
+			<< tcu::TestLog::EndImageSet;
+	}
 }
 
 tcu::IVec2 LineRenderCase::getNumberOfLinesRange (int queryAreaBegin, int queryAreaEnd, float patternStart, float patternSize, int viewportArea, QueryDirection queryDir) const
@@ -2604,7 +2621,15 @@ void PointRenderCase::verifyRenderResult (const IterationConfig& config)
 		m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Image verification failed");
 	}
 	else
-		m_testCtx.getLog() << tcu::TestLog::Message << "Result image ok." << tcu::TestLog::EndMessage;
+	{
+		m_testCtx.getLog()
+			<< tcu::TestLog::Message
+			<< "Result image ok."
+			<< tcu::TestLog::EndMessage
+			<< tcu::TestLog::ImageSet("Images", "Image verification")
+			<< tcu::TestLog::Image("Viewport", "Viewport contents", viewportSurface.getAccess())
+			<< tcu::TestLog::EndImageSet;
+	}
 }
 
 struct PointSorter
@@ -3348,7 +3373,10 @@ bool BlitFboCase::verifyImage (const BlitArgs& args)
 		m_testCtx.getLog()
 			<< tcu::TestLog::Message
 			<< "Result image ok."
-			<< tcu::TestLog::EndMessage;
+			<< tcu::TestLog::EndMessage
+			<< tcu::TestLog::ImageSet("Images", "Image verification")
+			<< tcu::TestLog::Image("Viewport", "Viewport contents", viewport.getAccess())
+			<< tcu::TestLog::EndImageSet;
 		return true;
 	}
 }
@@ -3839,7 +3867,10 @@ bool DepthDrawCase::verifyImage (const tcu::Surface& viewport) const
 		m_testCtx.getLog()
 			<< tcu::TestLog::Message
 			<< "Result image ok."
-			<< tcu::TestLog::EndMessage;
+			<< tcu::TestLog::EndMessage
+			<< tcu::TestLog::ImageSet("Images", "Image verification")
+			<< tcu::TestLog::Image("Viewport", "Viewport contents", viewport.getAccess())
+			<< tcu::TestLog::EndImageSet;
 
 	return !anyError;
 }
