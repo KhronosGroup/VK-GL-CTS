@@ -5191,9 +5191,9 @@ TestCaseGroup* createFuncGroup (const PrecisionTestContext&	ctx,
 	{
 		const Precision		precision	= Precision(precNdx);
 		const string		precName	(glu::getPrecisionName(precision));
-		const FloatFormat&	fmt			= *de::getSizedArrayElement(ctx.formats, precNdx);
-		const FloatFormat&	highpFmt	= *de::getSizedArrayElement(ctx.formats,
-																	glu::PRECISION_HIGHP);
+		const FloatFormat&	fmt			= *de::getSizedArrayElement<glu::PRECISION_LAST>(ctx.formats, precNdx);
+		const FloatFormat&	highpFmt	= *de::getSizedArrayElement<glu::PRECISION_LAST>(ctx.formats,
+																						 glu::PRECISION_HIGHP);
 
 		for (size_t shaderNdx = 0; shaderNdx < ctx.shaderTypes.size(); ++shaderNdx)
 		{

@@ -502,7 +502,7 @@ deUint32 mapFaceNdxToFace (int ndx)
 		GL_TEXTURE_CUBE_MAP_NEGATIVE_Z
 	};
 
-	return de::getSizedArrayElement(cubeFaces, ndx);
+	return de::getSizedArrayElement<6>(cubeFaces, ndx);
 }
 
 deUint32 getFormatForInternalFormat (deUint32 format)
