@@ -137,6 +137,8 @@ set(DEQP_GLES31_FUNCTIONAL_SRCS
 	es31fShaderHelperInvocationTests.hpp
 	es31fPrimitiveBoundingBoxTests.cpp
 	es31fPrimitiveBoundingBoxTests.hpp
+	es31fCopyImageTests.hpp
+	es31fCopyImageTests.cpp
 	)
 
 add_library(deqp-gles31-functional STATIC ${DEQP_GLES31_FUNCTIONAL_SRCS})
