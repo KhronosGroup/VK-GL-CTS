@@ -578,12 +578,12 @@ void genericTexImage (const glw::Functions&	gl,
 		{
 			case 2:
 				DE_ASSERT(size.z() == 1);
-				gl.compressedTexImage2D(glTarget, level, format, size.x(), size.y(), 0, dataSize, data);
+				gl.compressedTexImage2D(glTarget, level, format, (glw::GLsizei)size.x(), (glw::GLsizei)size.y(), 0, (glw::GLsizei)dataSize, data);
 				GLU_EXPECT_NO_ERROR(gl.getError(), "glCompressedTexImage2D failed.");
 				break;
 
 			case 3:
-				gl.compressedTexImage3D(glTarget, level, format, size.x(), size.y(), size.z(), 0, dataSize, data);
+				gl.compressedTexImage3D(glTarget, level, format, (glw::GLsizei)size.x(), (glw::GLsizei)size.y(), (glw::GLsizei)size.z(), 0, (glw::GLsizei)dataSize, data);
 				GLU_EXPECT_NO_ERROR(gl.getError(), "glCompressedTexImage3D failed.");
 				break;
 
@@ -600,12 +600,12 @@ void genericTexImage (const glw::Functions&	gl,
 		{
 			case 2:
 				DE_ASSERT(size.z() == 1);
-				gl.texImage2D(glTarget, level, format, size.x(), size.y(), 0, glFormat, glType, data);
+				gl.texImage2D(glTarget, level, format, (glw::GLsizei)size.x(), (glw::GLsizei)size.y(), 0, glFormat, glType, data);
 				GLU_EXPECT_NO_ERROR(gl.getError(), "glTexImage2D failed.");
 				break;
 
 			case 3:
-				gl.texImage3D(glTarget, level, format, size.x(), size.y(), size.z(), 0, glFormat, glType, data);
+				gl.texImage3D(glTarget, level, format, (glw::GLsizei)size.x(), (glw::GLsizei)size.y(), (glw::GLsizei)size.z(), 0, glFormat, glType, data);
 				GLU_EXPECT_NO_ERROR(gl.getError(), "glTexImage3D failed.");
 				break;
 
@@ -1029,7 +1029,7 @@ void verifyTexture2D (tcu::TestContext&						testContext,
 		decompressTexture(levelDatas, levelAccesses, renderContext, info, data);
 
 		{
-			const tcu::Texture2DView refTexture(levelAccesses.size(), &(levelAccesses[0]));
+			const tcu::Texture2DView refTexture((int)levelAccesses.size(), &(levelAccesses[0]));
 
 			verifyTexture2DView(testContext, renderContext, textureRenderer, results, rng, name, info, refTexture);
 		}
@@ -1037,7 +1037,7 @@ void verifyTexture2D (tcu::TestContext&						testContext,
 	else
 	{
 		const vector<tcu::ConstPixelBufferAccess>	levelAccesses	= getLevelAccesses(data, info);
-		const tcu::Texture2DView					refTexture		(levelAccesses.size(), &(levelAccesses[0]));
+		const tcu::Texture2DView					refTexture		((int)levelAccesses.size(), &(levelAccesses[0]));
 
 		verifyTexture2DView(testContext, renderContext, textureRenderer, results, rng, name, info, refTexture);
 	}
@@ -1130,7 +1130,7 @@ void verifyTexture3D (tcu::TestContext&						testContext,
 		decompressTexture(levelDatas, levelAccesses, renderContext, info, data);
 
 		{
-			const tcu::Texture3DView refTexture(levelAccesses.size(), &(levelAccesses[0]));
+			const tcu::Texture3DView refTexture((int)levelAccesses.size(), &(levelAccesses[0]));
 
 			verifyTexture3DView(testContext, renderContext, textureRenderer, results, rng, name, info, refTexture);
 		}
@@ -1138,7 +1138,7 @@ void verifyTexture3D (tcu::TestContext&						testContext,
 	else
 	{
 		const vector<tcu::ConstPixelBufferAccess>	levelAccesses	= getLevelAccesses(data, info);
-		const tcu::Texture3DView					refTexture		(levelAccesses.size(), &(levelAccesses[0]));
+		const tcu::Texture3DView					refTexture		((int)levelAccesses.size(), &(levelAccesses[0]));
 
 		verifyTexture3DView(testContext, renderContext, textureRenderer, results, rng, name, info, refTexture);
 	}
@@ -1393,7 +1393,7 @@ void verifyTexture2DArray (tcu::TestContext&					testContext,
 		decompressTexture(levelDatas, levelAccesses, renderContext, info, data);
 
 		{
-			const tcu::Texture2DArrayView refTexture(levelAccesses.size(), &(levelAccesses[0]));
+			const tcu::Texture2DArrayView refTexture((int)levelAccesses.size(), &(levelAccesses[0]));
 
 			verifyTexture2DArrayView(testContext, renderContext, textureRenderer, results, rng, name, info, refTexture);
 		}
@@ -1401,7 +1401,7 @@ void verifyTexture2DArray (tcu::TestContext&					testContext,
 	else
 	{
 		const vector<tcu::ConstPixelBufferAccess>	levelAccesses	= getLevelAccesses(data, info);
-		const tcu::Texture2DArrayView				refTexture		(levelAccesses.size(), &(levelAccesses[0]));
+		const tcu::Texture2DArrayView				refTexture		((int)levelAccesses.size(), &(levelAccesses[0]));
 
 		verifyTexture2DArrayView(testContext, renderContext, textureRenderer, results, rng, name, info, refTexture);
 	}

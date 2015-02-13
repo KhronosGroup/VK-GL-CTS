@@ -599,7 +599,7 @@ void verifyInteger (tcu::ResultCollector& result, QueriedState& state, int expec
 
 		case DATATYPE_FLOAT:
 		{
-			const glw::GLint64 reference = (glw::GLfloat)expected;
+			const glw::GLfloat reference = (glw::GLfloat)expected;
 			if (state.getFloatAccess() != reference)
 			{
 				std::ostringstream buf;
