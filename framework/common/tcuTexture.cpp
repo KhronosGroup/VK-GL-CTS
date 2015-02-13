@@ -3561,48 +3561,63 @@ void TextureCubeArray::allocLevel (int levelNdx)
 
 std::ostream& operator<< (std::ostream& str, TextureFormat::ChannelOrder order)
 {
-	switch (order)
+	const char* const orderStrings[] =
 	{
-		case TextureFormat::R:					return str << "R";
-		case TextureFormat::A:					return str << "A";
-		case TextureFormat::I:					return str << "I";
-		case TextureFormat::L:					return str << "L";
-		case TextureFormat::LA:					return str << "LA";
-		case TextureFormat::RG:					return str << "RG";
-		case TextureFormat::RA:					return str << "RA";
-		case TextureFormat::RGB:				return str << "RGB";
-		case TextureFormat::RGBA:				return str << "RGBA";
-		case TextureFormat::ARGB:				return str << "ARGB";
-		case TextureFormat::BGRA:				return str << "BGRA";
-		case TextureFormat::CHANNELORDER_LAST:	return str << "CHANNELORDER_LAST";
-		default:								return str << "UNKNOWN(" << (int)order << ")";
-	}
+		"R",
+		"A",
+		"I",
+		"L",
+		"LA",
+		"RG",
+		"RA",
+		"RGB",
+		"RGBA",
+		"ARGB",
+		"BGRA",
+
+		"sRGB",
+		"sRGBA",
+
+		"D",
+		"S",
+		"DS"
+	};
+
+	return str << de::getSizedArrayElement<TextureFormat::CHANNELORDER_LAST>(orderStrings, order);
 }
 
 std::ostream& operator<< (std::ostream& str, TextureFormat::ChannelType type)
 {
-	switch (type)
+	const char* const typeStrings[] =
 	{
-		case TextureFormat::SNORM_INT8:			return str << "SNORM_INT8";
-		case TextureFormat::SNORM_INT16:		return str << "SNORM_INT16";
-		case TextureFormat::UNORM_INT8:			return str << "UNORM_INT8";
-		case TextureFormat::UNORM_INT16:		return str << "UNORM_INT16";
-		case TextureFormat::UNORM_SHORT_565:	return str << "UNORM_SHORT_565";
-		case TextureFormat::UNORM_SHORT_555:	return str << "UNORM_SHORT_555";
-		case TextureFormat::UNORM_SHORT_4444:	return str << "UNORM_SHORT_4444";
-		case TextureFormat::UNORM_SHORT_5551:	return str << "UNORM_SHORT_5551";
-		case TextureFormat::UNORM_INT_101010:	return str << "UNORM_INT_101010";
-		case TextureFormat::SIGNED_INT8:		return str << "SIGNED_INT8";
-		case TextureFormat::SIGNED_INT16:		return str << "SIGNED_INT16";
-		case TextureFormat::SIGNED_INT32:		return str << "SIGNED_INT32";
-		case TextureFormat::UNSIGNED_INT8:		return str << "UNSIGNED_INT8";
-		case TextureFormat::UNSIGNED_INT16:		return str << "UNSIGNED_INT16";
-		case TextureFormat::UNSIGNED_INT32:		return str << "UNSIGNED_INT32";
-		case TextureFormat::HALF_FLOAT:			return str << "HALF_FLOAT";
-		case TextureFormat::FLOAT:				return str << "FLOAT";
-		case TextureFormat::CHANNELTYPE_LAST:	return str << "CHANNELTYPE_LAST";
-		default:								return str << "UNKNOWN(" << (int)type << ")";
-	}
+		"SNORM_INT8",
+		"SNORM_INT16",
+		"SNORM_INT32",
+		"UNORM_INT8",
+		"UNORM_INT16",
+		"UNORM_INT32",
+		"UNORM_SHORT_565",
+		"UNORM_SHORT_555",
+		"UNORM_SHORT_4444",
+		"UNORM_SHORT_5551",
+		"UNORM_INT_101010",
+		"UNORM_INT_1010102_REV",
+		"UNSIGNED_INT_1010102_REV",
+		"UNSIGNED_INT_11F_11F_10F_REV",
+		"UNSIGNED_INT_999_E5_REV",
+		"UNSIGNED_INT_24_8",
+		"SIGNED_INT8",
+		"SIGNED_INT16",
+		"SIGNED_INT32",
+		"UNSIGNED_INT8",
+		"UNSIGNED_INT16",
+		"UNSIGNED_INT32",
+		"HALF_FLOAT",
+		"FLOAT",
+		"FLOAT_UNSIGNED_INT_24_8_REV"
+	};
+
+	return str << de::getSizedArrayElement<TextureFormat::CHANNELTYPE_LAST>(typeStrings, type);
 }
 
 std::ostream& operator<< (std::ostream& str, CubeFace face)
