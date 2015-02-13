@@ -66,6 +66,12 @@ Maybe<T> nothing (void)
 }
 
 template<typename T>
+Maybe<T> just (const T& value)
+{
+	return Maybe<T>(value);
+}
+
+template<typename T>
 Maybe<T>::Maybe (void)
 	: m_ptr (DE_NULL)
 {
