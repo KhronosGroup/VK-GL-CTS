@@ -1,10 +1,10 @@
-#ifndef _ES3FTEXTURESTATEQUERYTESTS_HPP
-#define _ES3FTEXTURESTATEQUERYTESTS_HPP
+#ifndef _ES31FINFOLOGQUERYSHARED_HPP
+#define _ES31FINFOLOGQUERYSHARED_HPP
 /*-------------------------------------------------------------------------
- * drawElements Quality Program OpenGL ES 3.0 Module
+ * drawElements Quality Program OpenGL ES 3.1 Module
  * -------------------------------------------------
  *
- * Copyright 2014 The Android Open Source Project
+ * Copyright 2015 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,33 +20,31 @@
  *
  *//*!
  * \file
- * \brief Texture State Query tests.
+ * \brief Info log query shared utilities
  *//*--------------------------------------------------------------------*/
 
 #include "tcuDefs.hpp"
-#include "tes3TestCase.hpp"
+#include "glwDefs.hpp"
+#include "gluCallLogWrapper.hpp"
+#include "tcuResultCollector.hpp"
 
 namespace deqp
 {
-namespace gles3
+namespace gles31
 {
 namespace Functional
 {
 
-class TextureStateQueryTests : public TestCaseGroup
-{
-public:
-								TextureStateQueryTests	(Context& context);
+void verifyInfoLogQuery (tcu::ResultCollector&			result,
+						 glu::CallLogWrapper&			gl,
+						 int							logLen,
+						 glw::GLuint					object,
+						 void (glu::CallLogWrapper::	*getInfoLog)(glw::GLuint, glw::GLsizei, glw::GLsizei*, glw::GLchar*),
+						 const char*					getterName);
 
-	void						init					(void);
-
-private:
-								TextureStateQueryTests	(const TextureStateQueryTests& other);
-	TextureStateQueryTests&		operator=				(const TextureStateQueryTests& other);
-};
 
 } // Functional
-} // gles3
+} // gles31
 } // deqp
 
-#endif // _ES3FTEXTURESTATEQUERYTESTS_HPP
+#endif // _ES31FINFOLOGQUERYSHARED_HPP

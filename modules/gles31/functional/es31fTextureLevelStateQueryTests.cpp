@@ -31,9 +31,10 @@
 #include "gluContextInfo.hpp"
 #include "glwFunctions.hpp"
 #include "glwEnums.hpp"
-#include "deStringUtil.hpp"
 #include "tcuTextureUtil.hpp"
 #include "tcuFormatUtil.hpp"
+#include "deStringUtil.hpp"
+#include "deUniquePtr.hpp"
 
 namespace deqp
 {
@@ -46,26 +47,6 @@ namespace
 
 using namespace gls::StateQueryUtil;
 
-struct TextureGenerationSpec
-{
-	struct TextureLevelSpec
-	{
-		int			width;
-		int			height;
-		int			depth;
-		int			level;
-		glw::GLenum internalFormat;
-		bool		compressed;
-	};
-
-	glw::GLenum						bindTarget;
-	glw::GLenum						queryTarget;
-	bool							immutable;
-	bool							fixedSamplePos;	// !< fixed sample pos argument for multisample textures
-	int								sampleCount;
-	std::vector<TextureLevelSpec>	levels;
-	std::string						description;
-};
 
 static bool textureTypeHasDepth (glw::GLenum textureBindTarget)
 {
@@ -77,12 +58,104 @@ static bool textureTypeHasDepth (glw::GLenum textureBindTarget)
 		case GL_TEXTURE_CUBE_MAP:				return false;
 		case GL_TEXTURE_2D_MULTISAMPLE:			return false;
 		case GL_TEXTURE_2D_MULTISAMPLE_ARRAY:	return true;
+		case GL_TEXTURE_BUFFER:					return false;
+		case GL_TEXTURE_CUBE_MAP_ARRAY:			return true;
 		default:
 			DE_ASSERT(DE_FALSE);
 			return false;
 	}
 }
 
+static bool textureTypeHasHeight (glw::GLenum textureBindTarget)
+{
+	switch (textureBindTarget)
+	{
+		case GL_TEXTURE_2D:						return true;
+		case GL_TEXTURE_3D:						return true;
+		case GL_TEXTURE_2D_ARRAY:				return true;
+		case GL_TEXTURE_CUBE_MAP:				return true;
+		case GL_TEXTURE_2D_MULTISAMPLE:			return true;
+		case GL_TEXTURE_2D_MULTISAMPLE_ARRAY:	return true;
+		case GL_TEXTURE_BUFFER:					return false;
+		case GL_TEXTURE_CUBE_MAP_ARRAY:			return true;
+		default:
+			DE_ASSERT(DE_FALSE);
+			return false;
+	}
+}
+
+static const char* getTextureTargetExtension (glw::GLenum target)
+{
+	switch (target)
+	{
+		case GL_TEXTURE_2D_MULTISAMPLE_ARRAY:	return "GL_OES_texture_storage_multisample_2d_array";
+		case GL_TEXTURE_BUFFER:					return "GL_EXT_texture_buffer";
+		case GL_TEXTURE_CUBE_MAP_ARRAY:			return "GL_EXT_texture_cube_map_array";
+		default:
+			DE_ASSERT(DE_FALSE);
+			return DE_NULL;
+	}
+}
+
+static bool isCoreTextureTarget (glw::GLenum target)
+{
+	switch (target)
+	{
+		case GL_TEXTURE_2D:
+		case GL_TEXTURE_3D:
+		case GL_TEXTURE_2D_ARRAY:
+		case GL_TEXTURE_CUBE_MAP:
+		case GL_TEXTURE_2D_MULTISAMPLE:
+			return true;
+
+		default:
+			return false;
+	}
+}
+
+struct TextureGenerationSpec
+{
+	struct TextureLevelSpec
+	{
+		int			width;
+		int			height;
+		int			depth;
+		int			level;
+		glw::GLenum internalFormat;
+		bool		compressed;
+
+		TextureLevelSpec (void)
+			: width				(0)
+			, height			(0)
+			, depth				(0)
+			, level				(0)
+			, internalFormat	(GL_RGBA)
+			, compressed		(false)
+		{
+		}
+	};
+
+	glw::GLenum						bindTarget;
+	glw::GLenum						queryTarget;
+	bool							immutable;
+	bool							fixedSamplePos;	// !< fixed sample pos argument for multisample textures
+	int								sampleCount;
+	int								texBufferDataOffset;
+	int								texBufferDataSize;
+	bool							bindWholeArray;
+	std::vector<TextureLevelSpec>	levels;
+	std::string						description;
+
+	TextureGenerationSpec (void)
+		: immutable				(true)
+		, fixedSamplePos		(true)
+		, sampleCount			(0)
+		, texBufferDataOffset	(0)
+		, texBufferDataSize		(256)
+		, bindWholeArray		(false)
+	{
+	}
+};
 struct IntegerPrinter
 {
 	static std::string	getIntegerName	(int v)		{ return de::toString(v); }
@@ -189,197 +262,325 @@ static bool verifyTextureLevelParameterInternalFormatAnyOf (glu::CallLogWrapper&
 	}
 }
 
-static void generateColorTextureGenerationGroup (std::vector<TextureGenerationSpec>& group, int max2DSamples, int max2DArraySamples, glw::GLenum internalFormat)
+static bool isDepthFormat (const tcu::TextureFormat& fmt)
 {
-	// initial setups
-	static const struct InitialSetup
-	{
-		glw::GLenum	bindTarget;
-		glw::GLenum	queryTarget;
-		bool		immutable;
-		const char*	description;
-	} initialSetups[] =
-	{
-		{ GL_TEXTURE_2D,					GL_TEXTURE_2D,					true,	"GL_TEXTURE_2D, initial values"						},
-		{ GL_TEXTURE_3D,					GL_TEXTURE_3D,					true,	"GL_TEXTURE_3D, initial values"						},
-		{ GL_TEXTURE_2D_ARRAY,				GL_TEXTURE_2D_ARRAY,			true,	"GL_TEXTURE_2D_ARRAY, initial values"				},
-		{ GL_TEXTURE_CUBE_MAP,				GL_TEXTURE_CUBE_MAP_NEGATIVE_Y,	true,	"GL_TEXTURE_CUBE_MAP, initial values"				},
-		{ GL_TEXTURE_2D_MULTISAMPLE,		GL_TEXTURE_2D_MULTISAMPLE,		true,	"GL_TEXTURE_2D_MULTISAMPLE, initial values"			},
-		{ GL_TEXTURE_2D_MULTISAMPLE_ARRAY,	GL_TEXTURE_2D_MULTISAMPLE_ARRAY,true,	"GL_TEXTURE_2D_MULTISAMPLE_ARRAY, initial values"	},
-	};
-
-	// multisample setups
-	static const struct MultisampleSetup
-	{
-		glw::GLenum	bindTarget;
-		int			sampleCount;
-		const char*	description;
-	} msSetups[] =
-	{
-		{ GL_TEXTURE_2D_MULTISAMPLE,		1,					"immutable GL_TEXTURE_2D_MULTISAMPLE, low sample count"			},
-		{ GL_TEXTURE_2D_MULTISAMPLE,		max2DSamples,		"immutable GL_TEXTURE_2D_MULTISAMPLE, max sample count"			},
-		{ GL_TEXTURE_2D_MULTISAMPLE_ARRAY,	1,					"immutable GL_TEXTURE_2D_MULTISAMPLE_ARRAY, low sample count"	},
-		{ GL_TEXTURE_2D_MULTISAMPLE_ARRAY,	max2DArraySamples,	"immutable GL_TEXTURE_2D_MULTISAMPLE_ARRAY, max sample count"	},
-	};
-
-	// normal setups
-	static const struct NormalSetup
-	{
-		glw::GLenum	bindTarget;
-		glw::GLenum	queryTarget;
-		bool		immutable;
-		int			level;
-		const char*	description;
-	} normalSetups[] =
-	{
-		{ GL_TEXTURE_2D,					GL_TEXTURE_2D,					true,	0,	"immutable GL_TEXTURE_2D"					},
-		{ GL_TEXTURE_3D,					GL_TEXTURE_3D,					true,	0,	"immutable GL_TEXTURE_3D"					},
-		{ GL_TEXTURE_2D_ARRAY,				GL_TEXTURE_2D_ARRAY,			true,	0,	"immutable GL_TEXTURE_2D_ARRAY"				},
-		{ GL_TEXTURE_CUBE_MAP,				GL_TEXTURE_CUBE_MAP_NEGATIVE_Y,	true,	0,	"immutable GL_TEXTURE_CUBE_MAP"				},
-		{ GL_TEXTURE_2D,					GL_TEXTURE_2D,					false,	0,	"mutable GL_TEXTURE_2D"						},
-		{ GL_TEXTURE_3D,					GL_TEXTURE_3D,					false,	0,	"mutable GL_TEXTURE_3D"						},
-		{ GL_TEXTURE_2D_ARRAY,				GL_TEXTURE_2D_ARRAY,			false,	0,	"mutable GL_TEXTURE_2D_ARRAY"				},
-		{ GL_TEXTURE_CUBE_MAP,				GL_TEXTURE_CUBE_MAP_NEGATIVE_Y,	false,	0,	"mutable GL_TEXTURE_CUBE_MAP"				},
-		{ GL_TEXTURE_2D,					GL_TEXTURE_2D,					false,	3,	"mutable GL_TEXTURE_2D, mip level 3"		},
-		{ GL_TEXTURE_3D,					GL_TEXTURE_3D,					false,	3,	"mutable GL_TEXTURE_3D, mip level 3"		},
-		{ GL_TEXTURE_2D_ARRAY,				GL_TEXTURE_2D_ARRAY,			false,	3,	"mutable GL_TEXTURE_2D_ARRAY, mip level 3"	},
-		{ GL_TEXTURE_CUBE_MAP,				GL_TEXTURE_CUBE_MAP_NEGATIVE_Y,	false,	3,	"mutable GL_TEXTURE_CUBE_MAP, mip level 3"	},
-	};
-
-	for (int initialSetupNdx = 0; initialSetupNdx < DE_LENGTH_OF_ARRAY(initialSetups); ++initialSetupNdx)
-	{
-		TextureGenerationSpec texGen;
-		texGen.bindTarget		= initialSetups[initialSetupNdx].bindTarget;
-		texGen.queryTarget		= initialSetups[initialSetupNdx].queryTarget;
-		texGen.immutable		= initialSetups[initialSetupNdx].immutable;
-		texGen.sampleCount		= 0;
-		texGen.description		= initialSetups[initialSetupNdx].description;
-
-		group.push_back(texGen);
-	}
-
-	for (int msSetupNdx = 0; msSetupNdx < DE_LENGTH_OF_ARRAY(msSetups); ++msSetupNdx)
-	{
-		TextureGenerationSpec					texGen;
-		TextureGenerationSpec::TextureLevelSpec	level;
-
-		texGen.bindTarget		= msSetups[msSetupNdx].bindTarget;
-		texGen.queryTarget		= msSetups[msSetupNdx].bindTarget;
-		texGen.immutable		= true;
-		texGen.sampleCount		= msSetups[msSetupNdx].sampleCount;
-		texGen.fixedSamplePos	= false;
-		texGen.description		= msSetups[msSetupNdx].description;
-
-		level.width				= 32;
-		level.height			= 32;
-		level.depth				= (textureTypeHasDepth(texGen.bindTarget)) ? (8) : (0);
-		level.level				= 0;
-		level.internalFormat	= internalFormat;
-		level.compressed		= false;
-
-		texGen.levels.push_back(level);
-		group.push_back(texGen);
-	}
-
-	for (int normalSetupNdx = 0; normalSetupNdx < DE_LENGTH_OF_ARRAY(normalSetups); ++normalSetupNdx)
-	{
-		TextureGenerationSpec					texGen;
-		TextureGenerationSpec::TextureLevelSpec	level;
-
-		texGen.bindTarget		= normalSetups[normalSetupNdx].bindTarget;
-		texGen.queryTarget		= normalSetups[normalSetupNdx].queryTarget;
-		texGen.immutable		= normalSetups[normalSetupNdx].immutable;
-		texGen.sampleCount		= 0;
-		texGen.description		= normalSetups[normalSetupNdx].description;
-
-		level.width				= 32;
-		level.height			= 32;
-		level.depth				= (textureTypeHasDepth(texGen.bindTarget)) ? (8) : (0);
-		level.level				= normalSetups[normalSetupNdx].level;
-		level.internalFormat	= internalFormat;
-		level.compressed		= false;
-
-		texGen.levels.push_back(level);
-		group.push_back(texGen);
-	}
+	return fmt.order == tcu::TextureFormat::D || fmt.order == tcu::TextureFormat::DS;
 }
 
-static void generateColorMultisampleTextureGenerationGroup (std::vector<TextureGenerationSpec>& group, int max2DSamples, int max2DArraySamples, glw::GLenum internalFormat)
+static bool isColorRenderableFormat (glw::GLenum internalFormat)
 {
-	// multisample setups
-	static const struct MultisampleSetup
-	{
-		glw::GLenum	bindTarget;
-		bool		initialized;
-		int			sampleCount;
-		bool		fixedSamples;
-		const char*	description;
-	} msSetups[] =
-	{
-		{ GL_TEXTURE_2D_MULTISAMPLE,		false,	0,					false,	"GL_TEXTURE_2D_MULTISAMPLE, initial values"					},
-		{ GL_TEXTURE_2D_MULTISAMPLE,		true,	1,					false,	"GL_TEXTURE_2D_MULTISAMPLE, low sample count"				},
-		{ GL_TEXTURE_2D_MULTISAMPLE,		true,	max2DSamples,		false,	"GL_TEXTURE_2D_MULTISAMPLE, max sample count"				},
-		{ GL_TEXTURE_2D_MULTISAMPLE,		true,	max2DSamples,		true,	"GL_TEXTURE_2D_MULTISAMPLE, fixed sample positions"			},
-		{ GL_TEXTURE_2D_MULTISAMPLE_ARRAY,	false,	0,					false,	"GL_TEXTURE_2D_MULTISAMPLE_ARRAY, initial values"			},
-		{ GL_TEXTURE_2D_MULTISAMPLE_ARRAY,	true,	1,					false,	"GL_TEXTURE_2D_MULTISAMPLE_ARRAY, low sample count"			},
-		{ GL_TEXTURE_2D_MULTISAMPLE_ARRAY,	true,	max2DArraySamples,	false,	"GL_TEXTURE_2D_MULTISAMPLE_ARRAY, max sample count"			},
-		{ GL_TEXTURE_2D_MULTISAMPLE_ARRAY,	true,	max2DArraySamples,	true,	"GL_TEXTURE_2D_MULTISAMPLE_ARRAY, fixed sample positions"	},
-	};
+	return	internalFormat == GL_RGB565			||
+			internalFormat == GL_RGBA4			||
+			internalFormat == GL_RGB5_A1		||
+			internalFormat == GL_RGB10_A2		||
+			internalFormat == GL_RGB10_A2UI		||
+			internalFormat == GL_SRGB8_ALPHA8	||
+			internalFormat == GL_R8				||
+			internalFormat == GL_RG8			||
+			internalFormat == GL_RGB8			||
+			internalFormat == GL_RGBA8			||
+			internalFormat == GL_R8I			||
+			internalFormat == GL_RG8I			||
+			internalFormat == GL_RGBA8I			||
+			internalFormat == GL_R8UI			||
+			internalFormat == GL_RG8UI			||
+			internalFormat == GL_RGBA8UI		||
+			internalFormat == GL_R16I			||
+			internalFormat == GL_RG16I			||
+			internalFormat == GL_RGBA16I		||
+			internalFormat == GL_R16UI			||
+			internalFormat == GL_RG16UI			||
+			internalFormat == GL_RGBA16UI		||
+			internalFormat == GL_R32I			||
+			internalFormat == GL_RG32I			||
+			internalFormat == GL_RGBA32I		||
+			internalFormat == GL_R32UI			||
+			internalFormat == GL_RG32UI			||
+			internalFormat == GL_RGBA32UI;
+}
 
-	for (int msSetupNdx = 0; msSetupNdx < DE_LENGTH_OF_ARRAY(msSetups); ++msSetupNdx)
+static bool isRenderableFormat (glw::GLenum internalFormat)
+{
+	return	isColorRenderableFormat(internalFormat)	||
+			internalFormat == GL_DEPTH_COMPONENT16	||
+			internalFormat == GL_DEPTH_COMPONENT24	||
+			internalFormat == GL_DEPTH_COMPONENT32F	||
+			internalFormat == GL_DEPTH24_STENCIL8	||
+			internalFormat == GL_DEPTH32F_STENCIL8;
+}
+
+static bool isTextureBufferFormat (glw::GLenum internalFormat)
+{
+	return	internalFormat == GL_R8			||
+			internalFormat == GL_R16F		||
+			internalFormat == GL_R32F		||
+			internalFormat == GL_R8I		||
+			internalFormat == GL_R16I		||
+			internalFormat == GL_R32I		||
+			internalFormat == GL_R8UI		||
+			internalFormat == GL_R16UI		||
+			internalFormat == GL_R32UI		||
+			internalFormat == GL_RG8		||
+			internalFormat == GL_RG16F		||
+			internalFormat == GL_RG32F		||
+			internalFormat == GL_RG8I		||
+			internalFormat == GL_RG16I		||
+			internalFormat == GL_RG32I		||
+			internalFormat == GL_RG8UI		||
+			internalFormat == GL_RG16UI		||
+			internalFormat == GL_RG32UI		||
+			internalFormat == GL_RGB32F		||
+			internalFormat == GL_RGB32I		||
+			internalFormat == GL_RGB32UI	||
+			internalFormat == GL_RGBA8		||
+			internalFormat == GL_RGBA16F	||
+			internalFormat == GL_RGBA32F	||
+			internalFormat == GL_RGBA8I		||
+			internalFormat == GL_RGBA16I	||
+			internalFormat == GL_RGBA32I	||
+			internalFormat == GL_RGBA8UI	||
+			internalFormat == GL_RGBA16UI	||
+			internalFormat == GL_RGBA32UI;
+}
+
+static bool isLegalFormatForTarget (glw::GLenum target, glw::GLenum format)
+{
+	const tcu::TextureFormat fmt = glu::mapGLInternalFormat(format);
+
+	if (target == GL_TEXTURE_3D && isDepthFormat(fmt))
+		return false;
+	if ((target == GL_TEXTURE_2D_MULTISAMPLE || target == GL_TEXTURE_2D_MULTISAMPLE_ARRAY) && !isRenderableFormat(format))
+		return false;
+	if (target == GL_TEXTURE_BUFFER || !isTextureBufferFormat(format))
+		return false;
+	return true;
+}
+
+static bool isCompressionSupportedForTarget (glw::GLenum target)
+{
+	return target == GL_TEXTURE_2D || target == GL_TEXTURE_2D_ARRAY;
+}
+
+static bool isMultisampleTarget (glw::GLenum target)
+{
+	return target == GL_TEXTURE_2D_MULTISAMPLE || target == GL_TEXTURE_2D_MULTISAMPLE_ARRAY;
+}
+
+static bool targetSupportsMipLevels (glw::GLenum target)
+{
+	return	target != GL_TEXTURE_2D_MULTISAMPLE &&
+			target != GL_TEXTURE_2D_MULTISAMPLE_ARRAY &&
+			target != GL_TEXTURE_BUFFER;
+}
+
+static int getPixelSize (glw::GLenum internalFormat)
+{
+	const tcu::TextureFormat fmt = glu::mapGLInternalFormat(internalFormat);
+	return fmt.getPixelSize();
+}
+
+static void generateColorTextureGenerationGroup (std::vector<TextureGenerationSpec>& group, glw::GLenum target, int maxSamples, glw::GLenum internalFormat)
+{
+	const glw::GLenum queryTarget = (target == GL_TEXTURE_CUBE_MAP) ? (GL_TEXTURE_CUBE_MAP_NEGATIVE_Y) : (target);
+
+	// initial
 	{
 		TextureGenerationSpec texGen;
-
-		texGen.bindTarget		= msSetups[msSetupNdx].bindTarget;
-		texGen.queryTarget		= msSetups[msSetupNdx].bindTarget;
+		texGen.bindTarget		= target;
+		texGen.queryTarget		= queryTarget;
 		texGen.immutable		= true;
-		texGen.sampleCount		= msSetups[msSetupNdx].sampleCount;
-		texGen.fixedSamplePos	= msSetups[msSetupNdx].fixedSamples;
-		texGen.description		= msSetups[msSetupNdx].description;
+		texGen.sampleCount		= 0;
+		texGen.description		= glu::getTextureTargetStr(target).toString() + ", initial values";
 
-		if (msSetups[msSetupNdx].initialized)
+		group.push_back(texGen);
+	}
+
+	// ms targets
+	if (isMultisampleTarget(target))
+	{
 		{
+			TextureGenerationSpec					texGen;
 			TextureGenerationSpec::TextureLevelSpec	level;
-			level.width				= 32;
-			level.height			= 32;
-			level.depth				= (textureTypeHasDepth(texGen.bindTarget)) ? (8) : (0);
+
+			texGen.bindTarget		= target;
+			texGen.queryTarget		= queryTarget;
+			texGen.immutable		= true;
+			texGen.sampleCount		= 1;
+			texGen.fixedSamplePos	= false;
+			texGen.description		= glu::getTextureTargetStr(target).toString() + ", low sample count";
+
+			level.width				= 16;
+			level.height			= 16;
+			level.depth				= (textureTypeHasDepth(texGen.bindTarget)) ? (6) : (0);
 			level.level				= 0;
 			level.internalFormat	= internalFormat;
 			level.compressed		= false;
 
 			texGen.levels.push_back(level);
+			group.push_back(texGen);
 		}
+		{
+			TextureGenerationSpec					texGen;
+			TextureGenerationSpec::TextureLevelSpec	level;
 
-		group.push_back(texGen);
+			texGen.bindTarget		= target;
+			texGen.queryTarget		= queryTarget;
+			texGen.immutable		= true;
+			texGen.sampleCount		= maxSamples;
+			texGen.fixedSamplePos	= false;
+			texGen.description		= glu::getTextureTargetStr(target).toString() + ", high sample count";
+
+			level.width				= 32;
+			level.height			= 32;
+			level.depth				= (textureTypeHasDepth(texGen.bindTarget)) ? (6) : (0);
+			level.level				= 0;
+			level.internalFormat	= internalFormat;
+			level.compressed		= false;
+
+			texGen.levels.push_back(level);
+			group.push_back(texGen);
+		}
+		{
+			TextureGenerationSpec					texGen;
+			TextureGenerationSpec::TextureLevelSpec	level;
+
+			texGen.bindTarget		= target;
+			texGen.queryTarget		= queryTarget;
+			texGen.immutable		= true;
+			texGen.sampleCount		= maxSamples;
+			texGen.fixedSamplePos	= true;
+			texGen.description		= glu::getTextureTargetStr(target).toString() + ", fixed sample positions";
+
+			level.width				= 32;
+			level.height			= 32;
+			level.depth				= (textureTypeHasDepth(texGen.bindTarget)) ? (6) : (0);
+			level.level				= 0;
+			level.internalFormat	= internalFormat;
+			level.compressed		= false;
+
+			texGen.levels.push_back(level);
+			group.push_back(texGen);
+		}
+	}
+	else if (target == GL_TEXTURE_BUFFER)
+	{
+		// whole buffer
+		{
+			TextureGenerationSpec					texGen;
+			TextureGenerationSpec::TextureLevelSpec	level;
+			const int								baseSize = getPixelSize(internalFormat);
+
+			texGen.bindTarget			= target;
+			texGen.queryTarget			= queryTarget;
+			texGen.immutable			= true;
+			texGen.description			= glu::getTextureTargetStr(target).toString() + ", whole buffer";
+			texGen.texBufferDataOffset	= 0;
+			texGen.texBufferDataSize	= 32 * baseSize + (baseSize - 1);
+			texGen.bindWholeArray		= true;
+
+			level.width				= 32;
+			level.height			= 0;
+			level.depth				= 0;
+			level.level				= 0;
+			level.internalFormat	= internalFormat;
+			level.compressed		= false;
+
+			texGen.levels.push_back(level);
+			group.push_back(texGen);
+		}
+		// partial buffer
+		{
+			TextureGenerationSpec					texGen;
+			TextureGenerationSpec::TextureLevelSpec	level;
+			const int								baseSize = getPixelSize(internalFormat);
+
+			texGen.bindTarget			= target;
+			texGen.queryTarget			= queryTarget;
+			texGen.immutable			= true;
+			texGen.description			= glu::getTextureTargetStr(target).toString() + ", partial buffer";
+			texGen.texBufferDataOffset	= 256;
+			texGen.texBufferDataSize	= 16 * baseSize + (baseSize - 1);
+			texGen.bindWholeArray		= false;
+
+			level.width				= 16;
+			level.height			= 0;
+			level.depth				= 0;
+			level.level				= 0;
+			level.internalFormat	= internalFormat;
+			level.compressed		= false;
+
+			texGen.levels.push_back(level);
+			group.push_back(texGen);
+		}
+	}
+	else
+	{
+		// immutable
+		{
+			TextureGenerationSpec					texGen;
+			TextureGenerationSpec::TextureLevelSpec	level;
+
+			texGen.bindTarget		= target;
+			texGen.queryTarget		= queryTarget;
+			texGen.immutable		= true;
+			texGen.description		= glu::getTextureTargetStr(target).toString() + ", immutable";
+
+			level.width				= 32;
+			level.height			= 32;
+			level.depth				= (textureTypeHasDepth(texGen.bindTarget)) ? (6) : (0);
+			level.level				= 0;
+			level.internalFormat	= internalFormat;
+			level.compressed		= false;
+
+			texGen.levels.push_back(level);
+			group.push_back(texGen);
+		}
+		// mutable
+		{
+			TextureGenerationSpec					texGen;
+			TextureGenerationSpec::TextureLevelSpec	level;
+
+			texGen.bindTarget		= target;
+			texGen.queryTarget		= queryTarget;
+			texGen.immutable		= false;
+			texGen.description		= glu::getTextureTargetStr(target).toString() + ", mutable";
+
+			level.width				= 16;
+			level.height			= (target == GL_TEXTURE_CUBE_MAP || target == GL_TEXTURE_CUBE_MAP_ARRAY) ? (16) : (64);
+			level.depth				= (textureTypeHasDepth(texGen.bindTarget)) ? (6) : (0);
+			level.level				= 0;
+			level.internalFormat	= internalFormat;
+			level.compressed		= false;
+
+			texGen.levels.push_back(level);
+			group.push_back(texGen);
+		}
+		// mip3
+		{
+			TextureGenerationSpec					texGen;
+			TextureGenerationSpec::TextureLevelSpec	level;
+
+			texGen.bindTarget		= target;
+			texGen.queryTarget		= queryTarget;
+			texGen.immutable		= false;
+			texGen.description		= glu::getTextureTargetStr(target).toString() + ", mip level 3";
+
+			level.width				= 4;
+			level.height			= (target == GL_TEXTURE_CUBE_MAP || target == GL_TEXTURE_CUBE_MAP_ARRAY) ? (4) : (8);
+			level.depth				= (textureTypeHasDepth(texGen.bindTarget)) ? (6) : (0);
+			level.level				= 3;
+			level.internalFormat	= internalFormat;
+			level.compressed		= false;
+
+			texGen.levels.push_back(level);
+			group.push_back(texGen);
+		}
 	}
 }
 
-static void generateInternalFormatTextureGenerationGroup (std::vector<TextureGenerationSpec>& group)
+static void generateInternalFormatTextureGenerationGroup (std::vector<TextureGenerationSpec>& group, glw::GLenum target)
 {
-	// initial setups
-	static const struct InitialSetup
-	{
-		glw::GLenum	bindTarget;
-		glw::GLenum	queryTarget;
-		bool		immutable;
-		const char*	description;
-	} initialSetups[] =
-	{
-		{ GL_TEXTURE_2D,					GL_TEXTURE_2D,					true,	"GL_TEXTURE_2D, initial values"						},
-		{ GL_TEXTURE_3D,					GL_TEXTURE_3D,					true,	"GL_TEXTURE_3D, initial values"						},
-		{ GL_TEXTURE_2D_ARRAY,				GL_TEXTURE_2D_ARRAY,			true,	"GL_TEXTURE_2D_ARRAY, initial values"				},
-		{ GL_TEXTURE_CUBE_MAP,				GL_TEXTURE_CUBE_MAP_NEGATIVE_Y,	true,	"GL_TEXTURE_CUBE_MAP, initial values"				},
-		{ GL_TEXTURE_2D_MULTISAMPLE,		GL_TEXTURE_2D_MULTISAMPLE,		true,	"GL_TEXTURE_2D_MULTISAMPLE, initial values"			},
-		{ GL_TEXTURE_2D_MULTISAMPLE_ARRAY,	GL_TEXTURE_2D_MULTISAMPLE_ARRAY,true,	"GL_TEXTURE_2D_MULTISAMPLE_ARRAY, initial values"	},
-	};
-
-	// Renderable internal formats (subset)
-	static const glw::GLenum renderableInternalFormats[] =
-	{
-		GL_R8, GL_RGB565, GL_RGB5_A1, GL_RGB10_A2UI, GL_SRGB8_ALPHA8, GL_RG32I,
-		GL_RGBA16UI, GL_DEPTH_COMPONENT16, GL_DEPTH_COMPONENT24,
-		GL_DEPTH_COMPONENT32F, GL_DEPTH24_STENCIL8, GL_DEPTH32F_STENCIL8
-	};
+	const glw::GLenum queryTarget = (target == GL_TEXTURE_CUBE_MAP) ? (GL_TEXTURE_CUBE_MAP_NEGATIVE_Y) : (target);
 
 	// Internal formats
 	static const glw::GLenum internalFormats[] =
@@ -395,57 +596,45 @@ static void generateInternalFormatTextureGenerationGroup (std::vector<TextureGen
 		GL_DEPTH32F_STENCIL8, GL_DEPTH24_STENCIL8
 	};
 
-	for (int initialSetupNdx = 0; initialSetupNdx < DE_LENGTH_OF_ARRAY(initialSetups); ++initialSetupNdx)
+	// initial
 	{
 		TextureGenerationSpec texGen;
-		texGen.bindTarget		= initialSetups[initialSetupNdx].bindTarget;
-		texGen.queryTarget		= initialSetups[initialSetupNdx].queryTarget;
-		texGen.immutable		= initialSetups[initialSetupNdx].immutable;
-		texGen.sampleCount		= 0;
-		texGen.description		= initialSetups[initialSetupNdx].description;
-
-		group.push_back(texGen);
-	}
-
-	// test some color/stencil/depth renderable with multisample texture2d
-	for (int internalFormatNdx = 0; internalFormatNdx < DE_LENGTH_OF_ARRAY(renderableInternalFormats); ++internalFormatNdx)
-	{
-		TextureGenerationSpec					texGen;
-		TextureGenerationSpec::TextureLevelSpec	level;
-
-		texGen.bindTarget		= GL_TEXTURE_2D_MULTISAMPLE;
-		texGen.queryTarget		= GL_TEXTURE_2D_MULTISAMPLE;
+		texGen.bindTarget		= target;
+		texGen.queryTarget		= queryTarget;
 		texGen.immutable		= true;
-		texGen.sampleCount		= 1;
-		texGen.fixedSamplePos	= false;
-		texGen.description		= std::string() + "GL_TEXTURE_2D_MULTISAMPLE, internal format " + glu::getPixelFormatName(renderableInternalFormats[internalFormatNdx]);
+		texGen.sampleCount		= 0;
+		texGen.fixedSamplePos	= true;
+		texGen.description		= glu::getTextureTargetStr(target).toString() + ", initial values";
 
-		level.width				= 32;
-		level.height			= 32;
-		level.depth				= 0;
-		level.level				= 0;
-		level.internalFormat	= renderableInternalFormats[internalFormatNdx];
-		level.compressed		= false;
-
-		texGen.levels.push_back(level);
 		group.push_back(texGen);
 	}
 
-	// test all with texture2d
+	// test all formats
 	for (int internalFormatNdx = 0; internalFormatNdx < DE_LENGTH_OF_ARRAY(internalFormats); ++internalFormatNdx)
 	{
+		if (!isLegalFormatForTarget(target, internalFormats[internalFormatNdx]))
+			continue;
+
+		const int								baseSize = getPixelSize(internalFormats[internalFormatNdx]);
 		TextureGenerationSpec					texGen;
 		TextureGenerationSpec::TextureLevelSpec	level;
 
-		texGen.bindTarget		= GL_TEXTURE_2D;
-		texGen.queryTarget		= GL_TEXTURE_2D;
+		texGen.bindTarget		= target;
+		texGen.queryTarget		= queryTarget;
 		texGen.immutable		= true;
-		texGen.sampleCount		= 0;
-		texGen.description		= std::string() + "GL_TEXTURE_2D, internal format " + glu::getPixelFormatName(internalFormats[internalFormatNdx]);
+		texGen.sampleCount		= (isMultisampleTarget(target) ? (1) : (0));
+		texGen.description		= glu::getTextureTargetStr(target).toString() + ", internal format " + glu::getPixelFormatName(internalFormats[internalFormatNdx]);
+
+		if (target == GL_TEXTURE_BUFFER)
+		{
+			texGen.texBufferDataOffset	= 0;
+			texGen.texBufferDataSize	= 32 * baseSize + (baseSize - 1);
+			texGen.bindWholeArray		= true;
+		}
 
 		level.width				= 32;
-		level.height			= 32;
-		level.depth				= 0;
+		level.height			= (textureTypeHasHeight(target)) ? (32) : (0);
+		level.depth				= (textureTypeHasDepth(target)) ? (6) : (0);
 		level.level				= 0;
 		level.internalFormat	= internalFormats[internalFormatNdx];
 		level.compressed		= false;
@@ -454,20 +643,20 @@ static void generateInternalFormatTextureGenerationGroup (std::vector<TextureGen
 		group.push_back(texGen);
 	}
 
-	// test rgba8 with mip level 3
+	// test mutable rgba8 with mip level 3
+	if (targetSupportsMipLevels(target))
 	{
 		TextureGenerationSpec					texGen;
 		TextureGenerationSpec::TextureLevelSpec	level;
 
-		texGen.bindTarget		= GL_TEXTURE_2D;
-		texGen.queryTarget		= GL_TEXTURE_2D;
+		texGen.bindTarget		= target;
+		texGen.queryTarget		= queryTarget;
 		texGen.immutable		= false;
-		texGen.sampleCount		= 0;
-		texGen.description		= std::string() + "GL_TEXTURE_2D, internal format GL_RGBA8";
+		texGen.description		= glu::getTextureTargetStr(target).toString() + ", internal format GL_RGBA8, mip level 3";
 
 		level.width				= 32;
 		level.height			= 32;
-		level.depth				= 0;
+		level.depth				= (textureTypeHasDepth(target)) ? (6) : (0);
 		level.level				= 3;
 		level.internalFormat	= GL_RGBA8;
 		level.compressed		= false;
@@ -477,46 +666,35 @@ static void generateInternalFormatTextureGenerationGroup (std::vector<TextureGen
 	}
 }
 
-static void generateCompressedTextureGenerationGroup (std::vector<TextureGenerationSpec>& group)
+static void generateCompressedTextureGenerationGroup (std::vector<TextureGenerationSpec>& group, glw::GLenum target)
 {
-	// initial ms
+	const glw::GLenum queryTarget = (target == GL_TEXTURE_CUBE_MAP) ? (GL_TEXTURE_CUBE_MAP_NEGATIVE_Y) : (target);
+
+	// initial
 	{
 		TextureGenerationSpec texGen;
-		texGen.bindTarget	= GL_TEXTURE_2D_MULTISAMPLE;
-		texGen.queryTarget	= GL_TEXTURE_2D_MULTISAMPLE;
+		texGen.bindTarget	= target;
+		texGen.queryTarget	= queryTarget;
 		texGen.immutable	= true;
-		texGen.sampleCount	= 0;
-		texGen.description	= "GL_TEXTURE_2D_MULTISAMPLE, initial values";
-
-		group.push_back(texGen);
-	}
-
-	// initial non-ms
-	{
-		TextureGenerationSpec texGen;
-		texGen.bindTarget	= GL_TEXTURE_2D;
-		texGen.queryTarget	= GL_TEXTURE_2D;
-		texGen.immutable	= true;
-		texGen.sampleCount	= 0;
-		texGen.description	= "GL_TEXTURE_2D, initial values";
+		texGen.description	= glu::getTextureTargetStr(target).toString() + ", initial values";
 
 		group.push_back(texGen);
 	}
 
 	// compressed
+	if (isCompressionSupportedForTarget(target))
 	{
 		TextureGenerationSpec					texGen;
 		TextureGenerationSpec::TextureLevelSpec	level;
 
-		texGen.bindTarget		= GL_TEXTURE_2D;
-		texGen.queryTarget		= GL_TEXTURE_2D;
+		texGen.bindTarget		= target;
+		texGen.queryTarget		= queryTarget;
 		texGen.immutable		= false;
-		texGen.sampleCount		= 0;
-		texGen.description		= "GL_TEXTURE_2D, compressed";
+		texGen.description		= glu::getTextureTargetStr(target).toString() + ", compressed";
 
 		level.width				= 32;
 		level.height			= 32;
-		level.depth				= 0;
+		level.depth				= (target == GL_TEXTURE_2D_ARRAY) ? (2) : (0);
 		level.level				= 0;
 		level.internalFormat	= GL_COMPRESSED_RGB8_ETC2;
 		level.compressed		= true;
@@ -526,8 +704,29 @@ static void generateCompressedTextureGenerationGroup (std::vector<TextureGenerat
 	}
 }
 
-void applyTextureGenergationSpec (glu::CallLogWrapper& gl, const TextureGenerationSpec& spec)
+static void generateTextureBufferGenerationGroup (std::vector<TextureGenerationSpec>& group, glw::GLenum target)
 {
+	const glw::GLenum queryTarget = (target == GL_TEXTURE_CUBE_MAP) ? (GL_TEXTURE_CUBE_MAP_NEGATIVE_Y) : (target);
+
+	// initial
+	{
+		TextureGenerationSpec texGen;
+		texGen.bindTarget		= target;
+		texGen.queryTarget		= queryTarget;
+		texGen.immutable		= true;
+		texGen.sampleCount		= 0;
+		texGen.description		= glu::getTextureTargetStr(target).toString() + ", initial values";
+
+		group.push_back(texGen);
+	}
+
+	// actual specification tests are in texture_buffer tests, no need to do them here too
+}
+
+bool applyTextureGenerationSpec (glu::CallLogWrapper& gl, const TextureGenerationSpec& spec, glw::GLuint& texBuffer)
+{
+	bool allOk = true;
+
 	DE_ASSERT(!(spec.immutable && spec.levels.size() > 1));		// !< immutable textures have only one level
 
 	for (int levelNdx = 0; levelNdx < (int)spec.levels.size(); ++levelNdx)
@@ -546,6 +745,8 @@ void applyTextureGenergationSpec (glu::CallLogWrapper& gl, const TextureGenerati
 			gl.glTexStorage2DMultisample(spec.bindTarget, spec.sampleCount, spec.levels[levelNdx].internalFormat, spec.levels[levelNdx].width, spec.levels[levelNdx].height, (spec.fixedSamplePos) ? (GL_TRUE) : (GL_FALSE));
 		else if (spec.immutable && !spec.levels[levelNdx].compressed && spec.bindTarget == GL_TEXTURE_2D_MULTISAMPLE_ARRAY)
 			gl.glTexStorage3DMultisample(spec.bindTarget, spec.sampleCount, spec.levels[levelNdx].internalFormat, spec.levels[levelNdx].width, spec.levels[levelNdx].height, spec.levels[levelNdx].depth, (spec.fixedSamplePos) ? (GL_TRUE) : (GL_FALSE));
+		else if (spec.immutable && !spec.levels[levelNdx].compressed && spec.bindTarget == GL_TEXTURE_CUBE_MAP_ARRAY)
+			gl.glTexStorage3D(spec.bindTarget, 1, spec.levels[levelNdx].internalFormat, spec.levels[levelNdx].width, spec.levels[levelNdx].height, spec.levels[levelNdx].depth);
 		else if (!spec.immutable && !spec.levels[levelNdx].compressed && spec.bindTarget == GL_TEXTURE_2D)
 			gl.glTexImage2D(spec.bindTarget, spec.levels[levelNdx].level, spec.levels[levelNdx].internalFormat, spec.levels[levelNdx].width, spec.levels[levelNdx].height, 0, transferFormat.format, transferFormat.dataType, DE_NULL);
 		else if (!spec.immutable && !spec.levels[levelNdx].compressed && spec.bindTarget == GL_TEXTURE_3D)
@@ -554,6 +755,8 @@ void applyTextureGenergationSpec (glu::CallLogWrapper& gl, const TextureGenerati
 			gl.glTexImage3D(spec.bindTarget, spec.levels[levelNdx].level, spec.levels[levelNdx].internalFormat, spec.levels[levelNdx].width, spec.levels[levelNdx].height, spec.levels[levelNdx].depth, 0, transferFormat.format, transferFormat.dataType, DE_NULL);
 		else if (!spec.immutable && !spec.levels[levelNdx].compressed && spec.bindTarget == GL_TEXTURE_CUBE_MAP)
 			gl.glTexImage2D(spec.queryTarget, spec.levels[levelNdx].level, spec.levels[levelNdx].internalFormat, spec.levels[levelNdx].width, spec.levels[levelNdx].height, 0, transferFormat.format, transferFormat.dataType, DE_NULL);
+		else if (!spec.immutable && !spec.levels[levelNdx].compressed && spec.bindTarget == GL_TEXTURE_CUBE_MAP_ARRAY)
+			gl.glTexImage3D(spec.bindTarget, spec.levels[levelNdx].level, spec.levels[levelNdx].internalFormat, spec.levels[levelNdx].width, spec.levels[levelNdx].height, spec.levels[levelNdx].depth, 0, transferFormat.format, transferFormat.dataType, DE_NULL);
 		else if (!spec.immutable && spec.levels[levelNdx].compressed && spec.bindTarget == GL_TEXTURE_2D)
 		{
 			DE_ASSERT(spec.levels[levelNdx].width == 32);
@@ -563,17 +766,54 @@ void applyTextureGenergationSpec (glu::CallLogWrapper& gl, const TextureGenerati
 			static const deUint8 buffer[64 * 8] = { 0 };
 			gl.glCompressedTexImage2D(spec.bindTarget, spec.levels[levelNdx].level, spec.levels[levelNdx].internalFormat, spec.levels[levelNdx].width, spec.levels[levelNdx].height, 0, sizeof(buffer), buffer);
 		}
+		else if (!spec.immutable && spec.levels[levelNdx].compressed && spec.bindTarget == GL_TEXTURE_2D_ARRAY)
+		{
+			DE_ASSERT(spec.levels[levelNdx].width == 32);
+			DE_ASSERT(spec.levels[levelNdx].height == 32);
+			DE_ASSERT(spec.levels[levelNdx].depth == 2);
+			DE_ASSERT(spec.levels[levelNdx].internalFormat == GL_COMPRESSED_RGB8_ETC2);
+
+			static const deUint8 buffer[64 * 8 * 2] = { 0 };
+			gl.glCompressedTexImage3D(spec.bindTarget, spec.levels[levelNdx].level, spec.levels[levelNdx].internalFormat, spec.levels[levelNdx].width, spec.levels[levelNdx].height, spec.levels[levelNdx].depth, 0, sizeof(buffer), buffer);
+		}
+		else if (spec.immutable && !spec.levels[levelNdx].compressed && spec.bindTarget == GL_TEXTURE_BUFFER)
+		{
+			gl.glGenBuffers(1, &texBuffer);
+			gl.glBindBuffer(GL_TEXTURE_BUFFER, texBuffer);
+
+			if (spec.bindWholeArray)
+			{
+				gl.glBufferData(GL_TEXTURE_BUFFER, spec.texBufferDataSize, DE_NULL, GL_STATIC_DRAW);
+				gl.glTexBuffer(GL_TEXTURE_BUFFER, spec.levels[levelNdx].internalFormat, texBuffer);
+			}
+			else
+			{
+				gl.glBufferData(GL_TEXTURE_BUFFER, spec.texBufferDataOffset + spec.texBufferDataSize, DE_NULL, GL_STATIC_DRAW);
+				gl.glTexBufferRange(GL_TEXTURE_BUFFER, spec.levels[levelNdx].internalFormat, texBuffer, spec.texBufferDataOffset, spec.texBufferDataSize);
+			}
+		}
 		else
 			DE_ASSERT(DE_FALSE);
 
-		GLU_EXPECT_NO_ERROR(gl.glGetError(), "set level");
+		{
+			const glw::GLenum err = gl.glGetError();
+			if (err != GL_NO_ERROR)
+			{
+				gl.getLog()	<< tcu::TestLog::Message
+							<< "Texture specification failed, got " + glu::getErrorStr(err).toString()
+							<< tcu::TestLog::EndMessage;
+				allOk = false;
+			}
+		}
 	}
+
+	return allOk;
 }
 
 class TextureLevelCase : public TestCase
 {
 public:
-										TextureLevelCase		(Context& ctx, const char* name, const char* desc, QueryType type);
+										TextureLevelCase		(Context& ctx, const char* name, const char* desc, glw::GLenum target, QueryType type);
 										~TextureLevelCase		(void);
 
 	void								init					(void);
@@ -581,14 +821,15 @@ public:
 	IterateResult						iterate					(void);
 
 protected:
-	void								getFormatSamples		(glw::GLenum target, std::vector<int>& samples);
+	void								getFormatSamples		(glw::GLenum internalFormat, std::vector<int>& samples);
 	bool								testConfig				(const TextureGenerationSpec& spec);
 	virtual bool						checkTextureState		(glu::CallLogWrapper& gl, const TextureGenerationSpec& spec) = 0;
 	virtual void						generateTestIterations	(std::vector<TextureGenerationSpec>& iterations) = 0;
 
 	const QueryType						m_type;
-	const glw::GLenum					m_internalFormat;
+	const glw::GLenum					m_target;
 	glw::GLuint							m_texture;
+	glw::GLuint							m_texBuffer;
 
 private:
 	int									m_iteration;
@@ -597,11 +838,12 @@ private:
 	std::vector<int>					m_failedIterations;
 };
 
-TextureLevelCase::TextureLevelCase (Context& ctx, const char* name, const char* desc, QueryType type)
+TextureLevelCase::TextureLevelCase (Context& ctx, const char* name, const char* desc, glw::GLenum target, QueryType type)
 	: TestCase			(ctx, name, desc)
 	, m_type			(type)
-	, m_internalFormat	(GL_RGBA8)
+	, m_target			(target)
 	, m_texture			(0)
+	, m_texBuffer		(0)
 	, m_iteration		(0)
 	, m_allIterationsOk	(true)
 {
@@ -614,7 +856,18 @@ TextureLevelCase::~TextureLevelCase (void)
 
 void TextureLevelCase::init (void)
 {
+	if (!isCoreTextureTarget(m_target))
+	{
+		const char* const targetExtension = getTextureTargetExtension(m_target);
+
+		if (!m_context.getContextInfo().isExtensionSupported(targetExtension))
+			throw tcu::NotSupportedError("Test requires " + std::string(targetExtension) + " extension");
+	}
+
 	generateTestIterations(m_iterations);
+
+	for (int iterationNdx = 0; iterationNdx < (int)m_iterations.size(); ++iterationNdx)
+		DE_ASSERT(m_iterations[iterationNdx].bindTarget == m_target);
 }
 
 void TextureLevelCase::deinit (void)
@@ -624,22 +877,22 @@ void TextureLevelCase::deinit (void)
 		m_context.getRenderContext().getFunctions().deleteTextures(1, &m_texture);
 		m_texture = 0;
 	}
+	if (m_texBuffer)
+	{
+		m_context.getRenderContext().getFunctions().deleteTextures(1, &m_texBuffer);
+		m_texBuffer = 0;
+	}
 }
 
-void TextureLevelCase::getFormatSamples (glw::GLenum target, std::vector<int>& samples)
+void TextureLevelCase::getFormatSamples (glw::GLenum internalFormat, std::vector<int>& samples)
 {
 	const glw::Functions	gl			= m_context.getRenderContext().getFunctions();
 	int						sampleCount	= -1;
 
-	// fake values for unsupported queries to simplify code. The extension will be checked later for each config anyway (in testConfig())
-	if (target == GL_TEXTURE_2D_MULTISAMPLE_ARRAY && !m_context.getContextInfo().isExtensionSupported("GL_OES_texture_storage_multisample_2d_array"))
-	{
-		samples.resize(1);
-		samples[0] = 0;
+	if (!isMultisampleTarget(m_target))
 		return;
-	}
 
-	gl.getInternalformativ(target, m_internalFormat, GL_NUM_SAMPLE_COUNTS, 1, &sampleCount);
+	gl.getInternalformativ(m_target, internalFormat, GL_NUM_SAMPLE_COUNTS, 1, &sampleCount);
 
 	if (sampleCount < 0)
 		throw tcu::TestError("internal format query failed");
@@ -648,7 +901,7 @@ void TextureLevelCase::getFormatSamples (glw::GLenum target, std::vector<int>& s
 
 	if (sampleCount > 0)
 	{
-		gl.getInternalformativ(target, m_internalFormat, GL_SAMPLES, sampleCount, &samples[0]);
+		gl.getInternalformativ(m_target, internalFormat, GL_SAMPLES, sampleCount, &samples[0]);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "get max samples");
 	}
 }
@@ -692,16 +945,6 @@ bool TextureLevelCase::testConfig (const TextureGenerationSpec& spec)
 	glu::CallLogWrapper			gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
 	bool						result;
 
-	// skip unsupported targets
-
-	if (spec.bindTarget == GL_TEXTURE_2D_MULTISAMPLE_ARRAY && !m_context.getContextInfo().isExtensionSupported("GL_OES_texture_storage_multisample_2d_array"))
-	{
-		m_testCtx.getLog() << tcu::TestLog::Message << "Target binding requires GL_OES_texture_storage_multisample_2d_array extension, skipping." << tcu::TestLog::EndMessage;
-		return true;
-	}
-
-	// test supported targets
-
 	gl.enableLogging(true);
 
 	gl.glGenTextures(1, &m_texture);
@@ -709,7 +952,7 @@ bool TextureLevelCase::testConfig (const TextureGenerationSpec& spec)
 	GLU_EXPECT_NO_ERROR(gl.glGetError(), "gen tex");
 
 	// Set the state
-	applyTextureGenergationSpec(gl, spec);
+	applyTextureGenerationSpec(gl, spec, m_texBuffer);
 
 	// Verify the state
 	result = checkTextureState(gl, spec);
@@ -717,80 +960,52 @@ bool TextureLevelCase::testConfig (const TextureGenerationSpec& spec)
 	gl.glDeleteTextures(1, &m_texture);
 	m_texture = 0;
 
+	if (m_texBuffer)
+	{
+		gl.glDeleteTextures(1, &m_texBuffer);
+		m_texture = 0;
+	}
+
 	return result;
 }
 
 /*--------------------------------------------------------------------*//*!
- * \brief Test all texture targets
+ * \brief Test texture target
  *//*--------------------------------------------------------------------*/
 class TextureLevelCommonCase : public TextureLevelCase
 {
 public:
-					TextureLevelCommonCase	(Context& ctx, const char* name, const char* desc, QueryType type);
+						TextureLevelCommonCase	(Context& ctx, const char* name, const char* desc, glw::GLenum target, QueryType type);
 
 protected:
-	virtual void	generateTestIterations	(std::vector<TextureGenerationSpec>& iterations);
+	virtual void		generateTestIterations	(std::vector<TextureGenerationSpec>& iterations);
 };
 
-TextureLevelCommonCase::TextureLevelCommonCase (Context& ctx, const char* name, const char* desc, QueryType type)
-	: TextureLevelCase(ctx, name, desc, type)
+TextureLevelCommonCase::TextureLevelCommonCase (Context& ctx, const char* name, const char* desc, glw::GLenum target, QueryType type)
+	: TextureLevelCase(ctx, name, desc, target, type)
 {
 }
 
 void TextureLevelCommonCase::generateTestIterations (std::vector<TextureGenerationSpec>& iterations)
 {
-	std::vector<int> texture2DSamples;
-	std::vector<int> texture2DArraySamples;
+	const glw::GLenum	internalFormat = GL_RGBA8;
+	int					maxSamples;
+	std::vector<int>	samples;
 
-	getFormatSamples(GL_TEXTURE_2D_MULTISAMPLE, texture2DSamples);
-	getFormatSamples(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, texture2DArraySamples);
+	getFormatSamples(internalFormat, samples);
+	if (samples.empty())
+		maxSamples = -1;
+	else
+		maxSamples = samples[0];
 
-	TCU_CHECK(!texture2DSamples.empty());
-	TCU_CHECK(!texture2DArraySamples.empty());
-
-	// gen iterations
-
-	generateColorTextureGenerationGroup(iterations, texture2DSamples[0], texture2DArraySamples[0], m_internalFormat);
+	generateColorTextureGenerationGroup(iterations, m_target, maxSamples, internalFormat);
 }
 
-/*--------------------------------------------------------------------*//*!
- * \brief Test all multisample texture targets
- *//*--------------------------------------------------------------------*/
-class TextureLevelMultisampleCase : public TextureLevelCase
+class TextureLevelSampleCase : public TextureLevelCommonCase
 {
 public:
-					TextureLevelMultisampleCase	(Context& ctx, const char* name, const char* desc, QueryType type);
-
-protected:
-	virtual void	generateTestIterations		(std::vector<TextureGenerationSpec>& iterations);
-};
-
-TextureLevelMultisampleCase::TextureLevelMultisampleCase (Context& ctx, const char* name, const char* desc, QueryType type)
-	: TextureLevelCase(ctx, name, desc, type)
-{
-}
-
-void TextureLevelMultisampleCase::generateTestIterations (std::vector<TextureGenerationSpec>& iterations)
-{
-	std::vector<int> texture2DSamples;
-	std::vector<int> texture2DArraySamples;
-
-	getFormatSamples(GL_TEXTURE_2D_MULTISAMPLE, texture2DSamples);
-	getFormatSamples(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, texture2DArraySamples);
-
-	TCU_CHECK(!texture2DSamples.empty());
-	TCU_CHECK(!texture2DArraySamples.empty());
-
-	// gen iterations
-
-	generateColorMultisampleTextureGenerationGroup(iterations, texture2DSamples[0], texture2DArraySamples[0], m_internalFormat);
-}
-
-class TextureLevelSampleCase : public TextureLevelMultisampleCase
-{
-public:
-	TextureLevelSampleCase (Context& ctx, const char* name, const char* desc, QueryType type)
-		: TextureLevelMultisampleCase(ctx, name, desc, type)
+	TextureLevelSampleCase (Context& ctx, const char* name, const char* desc, glw::GLenum target, QueryType type)
+		: TextureLevelCommonCase(ctx, name, desc, target, type)
 	{
 	}
 
@@ -804,11 +1019,11 @@ private:
 	}
 };
 
-class TextureLevelFixedSamplesCase : public TextureLevelMultisampleCase
+class TextureLevelFixedSamplesCase : public TextureLevelCommonCase
 {
 public:
-	TextureLevelFixedSamplesCase (Context& ctx, const char* name, const char* desc, QueryType type)
-		: TextureLevelMultisampleCase(ctx, name, desc, type)
+	TextureLevelFixedSamplesCase (Context& ctx, const char* name, const char* desc, glw::GLenum target, QueryType type)
+		: TextureLevelCommonCase(ctx, name, desc, target, type)
 	{
 	}
 
@@ -825,8 +1040,8 @@ private:
 class TextureLevelWidthCase : public TextureLevelCommonCase
 {
 public:
-	TextureLevelWidthCase (Context& ctx, const char* name, const char* desc, QueryType type)
-		: TextureLevelCommonCase(ctx, name, desc, type)
+	TextureLevelWidthCase (Context& ctx, const char* name, const char* desc, glw::GLenum target, QueryType type)
+		: TextureLevelCommonCase(ctx, name, desc, target, type)
 	{
 	}
 
@@ -861,8 +1076,8 @@ private:
 class TextureLevelHeightCase : public TextureLevelCommonCase
 {
 public:
-	TextureLevelHeightCase (Context& ctx, const char* name, const char* desc, QueryType type)
-		: TextureLevelCommonCase(ctx, name, desc, type)
+	TextureLevelHeightCase (Context& ctx, const char* name, const char* desc, glw::GLenum target, QueryType type)
+		: TextureLevelCommonCase(ctx, name, desc, target, type)
 	{
 	}
 
@@ -897,23 +1112,12 @@ private:
 class TextureLevelDepthCase : public TextureLevelCommonCase
 {
 public:
-	TextureLevelDepthCase (Context& ctx, const char* name, const char* desc, QueryType type)
-		: TextureLevelCommonCase(ctx, name, desc, type)
+	TextureLevelDepthCase (Context& ctx, const char* name, const char* desc, glw::GLenum target, QueryType type)
+		: TextureLevelCommonCase(ctx, name, desc, target, type)
 	{
 	}
 
 private:
-
-	void generateTestIterations (std::vector<TextureGenerationSpec>& iterations)
-	{
-		std::vector<TextureGenerationSpec> allIterations;
-		this->TextureLevelCommonCase::generateTestIterations(allIterations);
-
-		// test only cases with depth
-		for (int ndx = 0; ndx < (int)allIterations.size(); ++ndx)
-			if (textureTypeHasDepth(allIterations[ndx].bindTarget))
-				iterations.push_back(allIterations[ndx]);
-	}
 
 	bool checkTextureState (glu::CallLogWrapper& gl, const TextureGenerationSpec& spec)
 	{
@@ -945,15 +1149,15 @@ private:
 class TextureLevelInternalFormatCase : public TextureLevelCase
 {
 public:
-	TextureLevelInternalFormatCase (Context& ctx, const char* name, const char* desc, QueryType type)
-		: TextureLevelCase(ctx, name, desc, type)
+	TextureLevelInternalFormatCase (Context& ctx, const char* name, const char* desc, glw::GLenum target, QueryType type)
+		: TextureLevelCase(ctx, name, desc, target, type)
 	{
 	}
 
 private:
 	void generateTestIterations (std::vector<TextureGenerationSpec>& iterations)
 	{
-		generateInternalFormatTextureGenerationGroup(iterations);
+		generateInternalFormatTextureGenerationGroup(iterations, m_target);
 	}
 
 	bool checkTextureState (glu::CallLogWrapper& gl, const TextureGenerationSpec& spec)
@@ -985,7 +1189,7 @@ private:
 class TextureLevelSizeCase : public TextureLevelCase
 {
 public:
-						TextureLevelSizeCase			(Context& ctx, const char* name, const char* desc, QueryType type, glw::GLenum pname);
+						TextureLevelSizeCase			(Context& ctx, const char* name, const char* desc, glw::GLenum target, QueryType type, glw::GLenum pname);
 
 private:
 	void				generateTestIterations			(std::vector<TextureGenerationSpec>& iterations);
@@ -995,15 +1199,15 @@ private:
 	const glw::GLenum	m_pname;
 };
 
-TextureLevelSizeCase::TextureLevelSizeCase (Context& ctx, const char* name, const char* desc, QueryType type, glw::GLenum pname)
-	: TextureLevelCase	(ctx, name, desc, type)
+TextureLevelSizeCase::TextureLevelSizeCase (Context& ctx, const char* name, const char* desc, glw::GLenum target, QueryType type, glw::GLenum pname)
+	: TextureLevelCase	(ctx, name, desc, target, type)
 	, m_pname			(pname)
 {
 }
 
 void TextureLevelSizeCase::generateTestIterations (std::vector<TextureGenerationSpec>& iterations)
 {
-	generateInternalFormatTextureGenerationGroup(iterations);
+	generateInternalFormatTextureGenerationGroup(iterations, m_target);
 }
 
 bool TextureLevelSizeCase::checkTextureState (glu::CallLogWrapper& gl, const TextureGenerationSpec& spec)
@@ -1107,7 +1311,7 @@ int TextureLevelSizeCase::getMinimumComponentResolution (glw::GLenum internalFor
 class TextureLevelTypeCase : public TextureLevelCase
 {
 public:
-						TextureLevelTypeCase			(Context& ctx, const char* name, const char* desc, QueryType type, glw::GLenum pname);
+						TextureLevelTypeCase			(Context& ctx, const char* name, const char* desc, glw::GLenum target, QueryType type, glw::GLenum pname);
 
 private:
 	void				generateTestIterations			(std::vector<TextureGenerationSpec>& iterations);
@@ -1117,15 +1321,15 @@ private:
 	const glw::GLenum	m_pname;
 };
 
-TextureLevelTypeCase::TextureLevelTypeCase (Context& ctx, const char* name, const char* desc, QueryType type, glw::GLenum pname)
-	: TextureLevelCase	(ctx, name, desc, type)
+TextureLevelTypeCase::TextureLevelTypeCase (Context& ctx, const char* name, const char* desc, glw::GLenum target, QueryType type, glw::GLenum pname)
+	: TextureLevelCase	(ctx, name, desc, target, type)
 	, m_pname			(pname)
 {
 }
 
 void TextureLevelTypeCase::generateTestIterations (std::vector<TextureGenerationSpec>& iterations)
 {
-	generateInternalFormatTextureGenerationGroup(iterations);
+	generateInternalFormatTextureGenerationGroup(iterations, m_target);
 }
 
 bool TextureLevelTypeCase::checkTextureState (glu::CallLogWrapper& gl, const TextureGenerationSpec& spec)
@@ -1248,15 +1452,15 @@ int TextureLevelTypeCase::getComponentType (glw::GLenum internalFormat)
 class TextureLevelCompressedCase : public TextureLevelCase
 {
 public:
-	TextureLevelCompressedCase (Context& ctx, const char* name, const char* desc, QueryType type)
-		: TextureLevelCase(ctx, name, desc, type)
+	TextureLevelCompressedCase (Context& ctx, const char* name, const char* desc, glw::GLenum target, QueryType type)
+		: TextureLevelCase(ctx, name, desc, target, type)
 	{
 	}
 
 private:
 	void generateTestIterations (std::vector<TextureGenerationSpec>& iterations)
 	{
-		generateCompressedTextureGenerationGroup(iterations);
+		generateCompressedTextureGenerationGroup(iterations, m_target);
 	}
 
 	bool checkTextureState (glu::CallLogWrapper& gl, const TextureGenerationSpec& spec)
@@ -1282,7 +1486,137 @@ private:
 	}
 };
 
+class TextureLevelBufferDataStoreCase : public TextureLevelCase
+{
+public:
+	TextureLevelBufferDataStoreCase (Context& ctx, const char* name, const char* desc, glw::GLenum target, QueryType type)
+		: TextureLevelCase(ctx, name, desc, target, type)
+	{
+	}
+
+private:
+	void init (void)
+	{
+		if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_texture_buffer"))
+			throw tcu::NotSupportedError("Test requires GL_EXT_texture_buffer extension");
+		TextureLevelCase::init();
+	}
+
+	void generateTestIterations (std::vector<TextureGenerationSpec>& iterations)
+	{
+		generateTextureBufferGenerationGroup(iterations, m_target);
+	}
+
+	bool checkTextureState (glu::CallLogWrapper& gl, const TextureGenerationSpec& spec)
+	{
+		bool allOk = true;
+
+		if (spec.levels.empty())
+		{
+			allOk &= verifyTextureLevelParameterEqual(gl, spec.queryTarget, 0, GL_TEXTURE_BUFFER_DATA_STORE_BINDING, 0, m_type);
+		}
+		else
+		{
+			allOk &= verifyTextureLevelParameterEqual(gl, spec.queryTarget, 0, GL_TEXTURE_BUFFER_DATA_STORE_BINDING, m_texBuffer, m_type);
+		}
+
+		return allOk;
+	}
+};
+
+class TextureLevelBufferDataOffsetCase : public TextureLevelCase
+{
+public:
+	TextureLevelBufferDataOffsetCase (Context& ctx, const char* name, const char* desc, glw::GLenum target, QueryType type)
+		: TextureLevelCase(ctx, name, desc, target, type)
+	{
+	}
+
+private:
+	void init (void)
+	{
+		if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_texture_buffer"))
+			throw tcu::NotSupportedError("Test requires GL_EXT_texture_buffer extension");
+		TextureLevelCase::init();
+	}
+
+	void generateTestIterations (std::vector<TextureGenerationSpec>& iterations)
+	{
+		generateTextureBufferGenerationGroup(iterations, m_target);
+	}
+
+	bool checkTextureState (glu::CallLogWrapper& gl, const TextureGenerationSpec& spec)
+	{
+		bool allOk = true;
+
+		if (spec.levels.empty())
+		{
+			allOk &= verifyTextureLevelParameterEqual(gl, spec.queryTarget, 0, GL_TEXTURE_BUFFER_OFFSET, 0, m_type);
+		}
+		else
+		{
+			const int refValue = spec.texBufferDataOffset;
+
+			allOk &= verifyTextureLevelParameterEqual(gl, spec.queryTarget, 0, GL_TEXTURE_BUFFER_OFFSET, refValue, m_type);
+		}
+
+		return allOk;
+	}
+};
+
+class TextureLevelBufferDataSizeCase : public TextureLevelCase
+{
+public:
+	TextureLevelBufferDataSizeCase (Context& ctx, const char* name, const char* desc, glw::GLenum target, QueryType type)
+		: TextureLevelCase(ctx, name, desc, target, type)
+	{
+	}
+
+private:
+	void init (void)
+	{
+		if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_texture_buffer"))
+			throw tcu::NotSupportedError("Test requires GL_EXT_texture_buffer extension");
+		TextureLevelCase::init();
+	}
+
+	void generateTestIterations (std::vector<TextureGenerationSpec>& iterations)
+	{
+		generateTextureBufferGenerationGroup(iterations, m_target);
+	}
+
+	bool checkTextureState (glu::CallLogWrapper& gl, const TextureGenerationSpec& spec)
+	{
+		bool allOk = true;
+
+		if (spec.levels.empty())
+		{
+			allOk &= verifyTextureLevelParameterEqual(gl, spec.queryTarget, 0, GL_TEXTURE_BUFFER_SIZE, 0, m_type);
+		}
+		else
+		{
+			const int refValue = spec.texBufferDataSize;
+
+			allOk &= verifyTextureLevelParameterEqual(gl, spec.queryTarget, 0, GL_TEXTURE_BUFFER_SIZE, refValue, m_type);
+		}
+
+		return allOk;
+	}
+};
+
 } // anonymous
+
+static const char* getVerifierSuffix (QueryType type)
+{
+	switch (type)
+	{
+		case QUERY_TEXTURE_LEVEL_FLOAT:		return "_float";
+		case QUERY_TEXTURE_LEVEL_INTEGER:	return "_integer";
+		default:
+			DE_ASSERT(DE_FALSE);
+			return DE_NULL;
+	}
+}
 
 TextureLevelStateQueryTests::TextureLevelStateQueryTests (Context& context)
 	: TestCaseGroup(context, "texture_level", "GetTexLevelParameter tests")
@@ -1295,38 +1629,65 @@ TextureLevelStateQueryTests::~TextureLevelStateQueryTests (void)
 
 void TextureLevelStateQueryTests::init (void)
 {
-	tcu::TestCaseGroup* const integerGroup = new tcu::TestCaseGroup(m_testCtx, "integer", "use GetTexLevelParameteriv");
-	tcu::TestCaseGroup* const floatGroup = new tcu::TestCaseGroup(m_testCtx, "float", "use GetTexLevelParameterfv");
-
-	addChild(integerGroup);
-	addChild(floatGroup);
-
-	for (int groupNdx = 0; groupNdx < 2; ++groupNdx)
+	static const QueryType verifiers[] =
 	{
-		tcu::TestCaseGroup* const	group		= (groupNdx == 0) ? (integerGroup) : (floatGroup);
-		const QueryType				verifier	= (groupNdx == 0) ? (QUERY_TEXTURE_LEVEL_INTEGER) : (QUERY_TEXTURE_LEVEL_FLOAT);
+		QUERY_TEXTURE_LEVEL_INTEGER,
+		QUERY_TEXTURE_LEVEL_FLOAT,
+	};
 
-
-		group->addChild(new TextureLevelSampleCase			(m_context, "texture_samples",					"Verify TEXTURE_SAMPLES",					verifier));
-		group->addChild(new TextureLevelFixedSamplesCase	(m_context, "texture_fixed_sample_locations",	"Verify TEXTURE_FIXED_SAMPLE_LOCATIONS",	verifier));
-		group->addChild(new TextureLevelWidthCase			(m_context, "texture_width",					"Verify TEXTURE_WIDTH",						verifier));
-		group->addChild(new TextureLevelHeightCase			(m_context, "texture_height",					"Verify TEXTURE_HEIGHT",					verifier));
-		group->addChild(new TextureLevelDepthCase			(m_context, "texture_depth",					"Verify TEXTURE_DEPTH",						verifier));
-		group->addChild(new TextureLevelInternalFormatCase	(m_context, "texture_internal_format",			"Verify TEXTURE_INTERNAL_FORMAT",			verifier));
-		group->addChild(new TextureLevelSizeCase			(m_context, "texture_red_size",					"Verify TEXTURE_RED_SIZE",					verifier,	GL_TEXTURE_RED_SIZE));
-		group->addChild(new TextureLevelSizeCase			(m_context, "texture_green_size",				"Verify TEXTURE_GREEN_SIZE",				verifier,	GL_TEXTURE_GREEN_SIZE));
-		group->addChild(new TextureLevelSizeCase			(m_context, "texture_blue_size",				"Verify TEXTURE_BLUE_SIZE",					verifier,	GL_TEXTURE_BLUE_SIZE));
-		group->addChild(new TextureLevelSizeCase			(m_context, "texture_alpha_size",				"Verify TEXTURE_ALPHA_SIZE",				verifier,	GL_TEXTURE_ALPHA_SIZE));
-		group->addChild(new TextureLevelSizeCase			(m_context, "texture_depth_size",				"Verify TEXTURE_DEPTH_SIZE",				verifier,	GL_TEXTURE_DEPTH_SIZE));
-		group->addChild(new TextureLevelSizeCase			(m_context, "texture_stencil_size",				"Verify TEXTURE_STENCIL_SIZE",				verifier,	GL_TEXTURE_STENCIL_SIZE));
-		group->addChild(new TextureLevelSizeCase			(m_context, "texture_shared_size",				"Verify TEXTURE_SHARED_SIZE",				verifier,	GL_TEXTURE_SHARED_SIZE));
-		group->addChild(new TextureLevelTypeCase			(m_context, "texture_red_type",					"Verify TEXTURE_RED_TYPE",					verifier,	GL_TEXTURE_RED_TYPE));
-		group->addChild(new TextureLevelTypeCase			(m_context, "texture_green_type",				"Verify TEXTURE_GREEN_TYPE",				verifier,	GL_TEXTURE_GREEN_TYPE));
-		group->addChild(new TextureLevelTypeCase			(m_context, "texture_blue_type",				"Verify TEXTURE_BLUE_TYPE",					verifier,	GL_TEXTURE_BLUE_TYPE));
-		group->addChild(new TextureLevelTypeCase			(m_context, "texture_alpha_type",				"Verify TEXTURE_ALPHA_TYPE",				verifier,	GL_TEXTURE_ALPHA_TYPE));
-		group->addChild(new TextureLevelTypeCase			(m_context, "texture_depth_type",				"Verify TEXTURE_DEPTH_TYPE",				verifier,	GL_TEXTURE_DEPTH_TYPE));
-		group->addChild(new TextureLevelCompressedCase		(m_context, "texture_compressed",				"Verify TEXTURE_COMPRESSED",				verifier));
+#define FOR_EACH_VERIFIER(X) \
+	for (int verifierNdx = 0; verifierNdx < DE_LENGTH_OF_ARRAY(verifiers); ++verifierNdx)	\
+	{																						\
+		const std::string verifierSuffix = getVerifierSuffix(verifiers[verifierNdx]);		\
+		const QueryType verifier = verifiers[verifierNdx];									\
+		targetGroup->addChild(X);															\
 	}
+	static const struct
+	{
+		const char*	name;
+		glw::GLenum	target;
+	} textureTargets[] =
+	{
+		{ "texture_2d",						GL_TEXTURE_2D,						},
+		{ "texture_3d",						GL_TEXTURE_3D,						},
+		{ "texture_2d_array",				GL_TEXTURE_2D_ARRAY,				},
+		{ "texture_cube_map",				GL_TEXTURE_CUBE_MAP,				},
+		{ "texture_2d_multisample",			GL_TEXTURE_2D_MULTISAMPLE,			},
+		{ "texture_2d_multisample_array",	GL_TEXTURE_2D_MULTISAMPLE_ARRAY,	}, // GL_OES_texture_storage_multisample_2d_array
+		{ "texture_buffer",					GL_TEXTURE_BUFFER,					}, // GL_EXT_texture_buffer
+		{ "texture_cube_array",				GL_TEXTURE_CUBE_MAP_ARRAY,			}, // GL_EXT_texture_cube_map_array
+	};
+
+	for (int targetNdx = 0; targetNdx < DE_LENGTH_OF_ARRAY(textureTargets); ++targetNdx)
+	{
+		tcu::TestCaseGroup* const targetGroup = new tcu::TestCaseGroup(m_testCtx, textureTargets[targetNdx].name, textureTargets[targetNdx].name);
+		addChild(targetGroup);
+
+		FOR_EACH_VERIFIER(new TextureLevelSampleCase			(m_context, ("samples" + verifierSuffix).c_str(),					"Verify TEXTURE_SAMPLES",					textureTargets[targetNdx].target,	verifier));
+		FOR_EACH_VERIFIER(new TextureLevelFixedSamplesCase		(m_context, ("fixed_sample_locations" + verifierSuffix).c_str(),	"Verify TEXTURE_FIXED_SAMPLE_LOCATIONS",	textureTargets[targetNdx].target,	verifier));
+		FOR_EACH_VERIFIER(new TextureLevelWidthCase				(m_context, ("width" + verifierSuffix).c_str(),						"Verify TEXTURE_WIDTH",						textureTargets[targetNdx].target,	verifier));
+		FOR_EACH_VERIFIER(new TextureLevelHeightCase			(m_context, ("height" + verifierSuffix).c_str(),					"Verify TEXTURE_HEIGHT",					textureTargets[targetNdx].target,	verifier));
+		FOR_EACH_VERIFIER(new TextureLevelDepthCase				(m_context, ("depth" + verifierSuffix).c_str(),						"Verify TEXTURE_DEPTH",						textureTargets[targetNdx].target,	verifier));
+		FOR_EACH_VERIFIER(new TextureLevelInternalFormatCase	(m_context, ("internal_format" + verifierSuffix).c_str(),			"Verify TEXTURE_INTERNAL_FORMAT",			textureTargets[targetNdx].target,	verifier));
+		FOR_EACH_VERIFIER(new TextureLevelSizeCase				(m_context, ("red_size" + verifierSuffix).c_str(),					"Verify TEXTURE_RED_SIZE",					textureTargets[targetNdx].target,	verifier,	GL_TEXTURE_RED_SIZE));
+		FOR_EACH_VERIFIER(new TextureLevelSizeCase				(m_context, ("green_size" + verifierSuffix).c_str(),				"Verify TEXTURE_GREEN_SIZE",				textureTargets[targetNdx].target,	verifier,	GL_TEXTURE_GREEN_SIZE));
+		FOR_EACH_VERIFIER(new TextureLevelSizeCase				(m_context, ("blue_size" + verifierSuffix).c_str(),					"Verify TEXTURE_BLUE_SIZE",					textureTargets[targetNdx].target,	verifier,	GL_TEXTURE_BLUE_SIZE));
+		FOR_EACH_VERIFIER(new TextureLevelSizeCase				(m_context, ("alpha_size" + verifierSuffix).c_str(),				"Verify TEXTURE_ALPHA_SIZE",				textureTargets[targetNdx].target,	verifier,	GL_TEXTURE_ALPHA_SIZE));
+		FOR_EACH_VERIFIER(new TextureLevelSizeCase				(m_context, ("depth_size" + verifierSuffix).c_str(),				"Verify TEXTURE_DEPTH_SIZE",				textureTargets[targetNdx].target,	verifier,	GL_TEXTURE_DEPTH_SIZE));
+		FOR_EACH_VERIFIER(new TextureLevelSizeCase				(m_context, ("stencil_size" + verifierSuffix).c_str(),				"Verify TEXTURE_STENCIL_SIZE",				textureTargets[targetNdx].target,	verifier,	GL_TEXTURE_STENCIL_SIZE));
+		FOR_EACH_VERIFIER(new TextureLevelSizeCase				(m_context, ("shared_size" + verifierSuffix).c_str(),				"Verify TEXTURE_SHARED_SIZE",				textureTargets[targetNdx].target,	verifier,	GL_TEXTURE_SHARED_SIZE));
+		FOR_EACH_VERIFIER(new TextureLevelTypeCase				(m_context, ("red_type" + verifierSuffix).c_str(),					"Verify TEXTURE_RED_TYPE",					textureTargets[targetNdx].target,	verifier,	GL_TEXTURE_RED_TYPE));
+		FOR_EACH_VERIFIER(new TextureLevelTypeCase				(m_context, ("green_type" + verifierSuffix).c_str(),				"Verify TEXTURE_GREEN_TYPE",				textureTargets[targetNdx].target,	verifier,	GL_TEXTURE_GREEN_TYPE));
+		FOR_EACH_VERIFIER(new TextureLevelTypeCase				(m_context, ("blue_type" + verifierSuffix).c_str(),					"Verify TEXTURE_BLUE_TYPE",					textureTargets[targetNdx].target,	verifier,	GL_TEXTURE_BLUE_TYPE));
+		FOR_EACH_VERIFIER(new TextureLevelTypeCase				(m_context, ("alpha_type" + verifierSuffix).c_str(),				"Verify TEXTURE_ALPHA_TYPE",				textureTargets[targetNdx].target,	verifier,	GL_TEXTURE_ALPHA_TYPE));
+		FOR_EACH_VERIFIER(new TextureLevelTypeCase				(m_context, ("depth_type" + verifierSuffix).c_str(),				"Verify TEXTURE_DEPTH_TYPE",				textureTargets[targetNdx].target,	verifier,	GL_TEXTURE_DEPTH_TYPE));
+		FOR_EACH_VERIFIER(new TextureLevelCompressedCase		(m_context, ("compressed" + verifierSuffix).c_str(),				"Verify TEXTURE_COMPRESSED",				textureTargets[targetNdx].target,	verifier));
+		FOR_EACH_VERIFIER(new TextureLevelBufferDataStoreCase	(m_context, ("buffer_data_store_binding" + verifierSuffix).c_str(),	"Verify TEXTURE_BUFFER_DATA_STORE_BINDING",	textureTargets[targetNdx].target,	verifier));
+		FOR_EACH_VERIFIER(new TextureLevelBufferDataOffsetCase	(m_context, ("buffer_offset" + verifierSuffix).c_str(),				"Verify TEXTURE_BUFFER_OFFSET",				textureTargets[targetNdx].target,	verifier));
+		FOR_EACH_VERIFIER(new TextureLevelBufferDataSizeCase	(m_context, ("buffer_size" + verifierSuffix).c_str(),				"Verify TEXTURE_BUFFER_SIZE",				textureTargets[targetNdx].target,	verifier));
+	}
+
+#undef FOR_EACH_VERIFIER
 }
 
 } // Functional

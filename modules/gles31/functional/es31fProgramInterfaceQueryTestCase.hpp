@@ -60,6 +60,7 @@ enum ProgramResourcePropFlags
 	PROGRAMRESOURCEPROP_ACTIVE_VARIABLES				= (1 << 14),
 	PROGRAMRESOURCEPROP_TOP_LEVEL_ARRAY_SIZE			= (1 << 15),
 	PROGRAMRESOURCEPROP_TOP_LEVEL_ARRAY_STRIDE			= (1 << 16),
+	PROGRAMRESOURCEPROP_IS_PER_PATCH					= (1 << 17),
 
 	PROGRAMRESOURCEPROP_UNIFORM_INTERFACE_MASK			= PROGRAMRESOURCEPROP_ARRAY_SIZE					|
 														  PROGRAMRESOURCEPROP_ARRAY_STRIDE					|
@@ -89,13 +90,15 @@ enum ProgramResourcePropFlags
 														  PROGRAMRESOURCEPROP_LOCATION						|
 														  PROGRAMRESOURCEPROP_NAME_LENGTH					|
 														  PROGRAMRESOURCEPROP_REFERENCED_BY_SHADER			|
-														  PROGRAMRESOURCEPROP_TYPE,
+														  PROGRAMRESOURCEPROP_TYPE							|
+														  PROGRAMRESOURCEPROP_IS_PER_PATCH,
 
 	PROGRAMRESOURCEPROP_PROGRAM_OUTPUT_MASK				= PROGRAMRESOURCEPROP_ARRAY_SIZE					|
 														  PROGRAMRESOURCEPROP_LOCATION						|
 														  PROGRAMRESOURCEPROP_NAME_LENGTH					|
 														  PROGRAMRESOURCEPROP_REFERENCED_BY_SHADER			|
-														  PROGRAMRESOURCEPROP_TYPE,
+														  PROGRAMRESOURCEPROP_TYPE							|
+														  PROGRAMRESOURCEPROP_IS_PER_PATCH,
 
 	PROGRAMRESOURCEPROP_BUFFER_VARIABLE_MASK			= PROGRAMRESOURCEPROP_ARRAY_SIZE					|
 														  PROGRAMRESOURCEPROP_ARRAY_STRIDE					|
@@ -117,18 +120,21 @@ enum ProgramResourcePropFlags
 class ProgramInterfaceQueryTestCase : public TestCase
 {
 public:
-													ProgramInterfaceQueryTestCase	(Context& context, const char* name, const char* description, ProgramResourceQueryTestTarget queryTarget);
-													~ProgramInterfaceQueryTestCase	(void);
+														ProgramInterfaceQueryTestCase	(Context& context, const char* name, const char* description, ProgramResourceQueryTestTarget queryTarget);
+														~ProgramInterfaceQueryTestCase	(void);
 
 protected:
-	ProgramInterface								getTargetInterface				(void) const;
+	ProgramInterface									getTargetInterface				(void) const;
 
 private:
-	IterateResult									iterate							(void);
-	virtual ProgramInterfaceDefinition::Program*	getProgramDefinition			(void) = 0;
-	virtual std::vector<std::string>				getQueryTargetResources			(void) = 0;
+	const ProgramInterfaceDefinition::Program*			getAndCheckProgramDefinition	(void);
+	int													getMaxPatchVertices				(void);
+	IterateResult										iterate							(void);
 
-	const ProgramResourceQueryTestTarget			m_queryTarget;
+	virtual const ProgramInterfaceDefinition::Program*	getProgramDefinition			(void) const = 0;
+	virtual std::vector<std::string>					getQueryTargetResources			(void) const = 0;
+
+	const ProgramResourceQueryTestTarget				m_queryTarget;
 };
 
 void checkProgramResourceUsage (const ProgramInterfaceDefinition::Program* program, const glw::Functions& gl, tcu::TestLog& log);

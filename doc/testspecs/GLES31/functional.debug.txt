@@ -35,12 +35,12 @@ Includes:
    - Most cases use synchronous
  + Labels (for all valid object types)
  + Handling for debug/non-debug contexts
+ + Limits (MAX_DEBUG_MESSAGE_LENGTH, MAX_DEBUG_LOGGED_MESSAGES)
 
 Excludes:
  + Negative API tests for the extension itself
  + Some API errors
  + Labeled objects are not used for anything
- + Limits (MAX_DEBUG_MESSAGE_LENGTH, MAX_DEBUG_LOGGED_MESSAGES)
  + Initial state of DEBUG_OUTPUT
 
 

@@ -45,14 +45,67 @@ namespace Functional
 namespace ProgramInterfaceDefinition
 {
 
-VariableSearchFilter VariableSearchFilter::intersection (const VariableSearchFilter& a, const VariableSearchFilter& b)
+VariableSearchFilter::VariableSearchFilter (void)
+	: m_shaderTypeBits	(0xFFFFFFFFul)
+	, m_storageBits		(0xFFFFFFFFul)
 {
-	const bool storageNonEmpty		= (a.m_storage == b.m_storage) || (a.m_storage == glu::STORAGE_LAST) || (b.m_storage == glu::STORAGE_LAST);
-	const bool shaderTypeNonEmpty	= (a.m_shaderType == b.m_shaderType) || (a.m_shaderType == glu::SHADERTYPE_LAST) || (b.m_shaderType == glu::SHADERTYPE_LAST);
+}
 
-	return VariableSearchFilter((a.m_shaderType == glu::SHADERTYPE_LAST) ? (b.m_shaderType) : (a.m_shaderType),
-								(a.m_storage == glu::STORAGE_LAST) ? (b.m_storage) : (a.m_storage),
-								!storageNonEmpty || !shaderTypeNonEmpty || a.m_null || b.m_null);
+VariableSearchFilter VariableSearchFilter::createShaderTypeFilter (glu::ShaderType type)
+{
+	DE_ASSERT(type < glu::SHADERTYPE_LAST);
+
+	VariableSearchFilter filter;
+	filter.m_shaderTypeBits = (1u << type);
+	return filter;
+}
+
+VariableSearchFilter VariableSearchFilter::createStorageFilter (glu::Storage storage)
+{
+	DE_ASSERT(storage < glu::STORAGE_LAST);
+
+	VariableSearchFilter filter;
+	filter.m_storageBits = (1u << storage);
+	return filter;
+}
+
+VariableSearchFilter VariableSearchFilter::createShaderTypeStorageFilter (glu::ShaderType type, glu::Storage storage)
+{
+	return logicalAnd(createShaderTypeFilter(type), createStorageFilter(storage));
+}
+
+VariableSearchFilter VariableSearchFilter::logicalOr (const VariableSearchFilter& a, const VariableSearchFilter& b)
+{
+	VariableSearchFilter filter;
+	filter.m_shaderTypeBits	= a.m_shaderTypeBits | b.m_shaderTypeBits;
+	filter.m_storageBits	= a.m_storageBits | b.m_storageBits;
+	return filter;
+}
+
+VariableSearchFilter VariableSearchFilter::logicalAnd (const VariableSearchFilter& a, const VariableSearchFilter& b)
+{
+	VariableSearchFilter filter;
+	filter.m_shaderTypeBits	= a.m_shaderTypeBits & b.m_shaderTypeBits;
+	filter.m_storageBits	= a.m_storageBits & b.m_storageBits;
+	return filter;
+}
+
+bool VariableSearchFilter::matchesFilter (const ProgramInterfaceDefinition::Shader* shader) const
+{
+	DE_ASSERT(shader->getType() < glu::SHADERTYPE_LAST);
+	return (m_shaderTypeBits & (1u << shader->getType())) != 0;
+}
+
+bool VariableSearchFilter::matchesFilter (const glu::VariableDeclaration& variable) const
+{
+	DE_ASSERT(variable.storage < glu::STORAGE_LAST);
+	return (m_storageBits & (1u << variable.storage)) != 0;
+}
+
+bool VariableSearchFilter::matchesFilter (const glu::InterfaceBlock& block) const
+{
+	DE_ASSERT(block.storage < glu::STORAGE_LAST);
+	return (m_storageBits & (1u << block.storage)) != 0;
 }
 
 } // ProgramInterfaceDefinition
@@ -70,6 +123,48 @@ static bool incrementMultiDimensionIndex (std::vector<int>& index, const std::ve
 	}
 
 	return (incrementDimensionNdx != -1);
+}
+
+bool programContainsIOBlocks (const ProgramInterfaceDefinition::Program* program)
+{
+	for (int shaderNdx = 0; shaderNdx < (int)program->getShaders().size(); ++shaderNdx)
+	{
+		if (shaderContainsIOBlocks(program->getShaders()[shaderNdx]))
+			return true;
+	}
+
+	return false;
+}
+
+bool shaderContainsIOBlocks (const ProgramInterfaceDefinition::Shader* shader)
+{
+	for (int ndx = 0; ndx < (int)shader->getDefaultBlock().interfaceBlocks.size(); ++ndx)
+	{
+		const glu::Storage storage = shader->getDefaultBlock().interfaceBlocks[ndx].storage;
+		if (storage == glu::STORAGE_IN			||
+			storage == glu::STORAGE_OUT			||
+			storage == glu::STORAGE_PATCH_IN	||
+			storage == glu::STORAGE_PATCH_OUT)
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+glu::ShaderType getProgramTransformFeedbackStage (const ProgramInterfaceDefinition::Program* program)
+{
+	if (program->hasStage(glu::SHADERTYPE_GEOMETRY))
+		return glu::SHADERTYPE_GEOMETRY;
+
+	if (program->hasStage(glu::SHADERTYPE_TESSELLATION_EVALUATION))
+		return glu::SHADERTYPE_TESSELLATION_EVALUATION;
+
+	if (program->hasStage(glu::SHADERTYPE_VERTEX))
+		return glu::SHADERTYPE_VERTEX;
+
+	DE_ASSERT(false);
+	return glu::SHADERTYPE_LAST;
 }
 
 void generateVariableTypeResourceNames (std::vector<std::string>& resources, const std::string& name, const glu::VarType& type, deUint32 resourceNameGenerationFlags)
@@ -121,32 +216,63 @@ namespace
 using ProgramInterfaceDefinition::VariablePathComponent;
 using ProgramInterfaceDefinition::VariableSearchFilter;
 
-static const char* getShaderTypeDeclarations (glu::ShaderType type)
+static std::string getShaderExtensionDeclarations (const ProgramInterfaceDefinition::Shader* shader)
+{
+	std::vector<std::string>	extensions;
+	std::ostringstream			buf;
+
+	if (shader->getType() == glu::SHADERTYPE_GEOMETRY)
+	{
+		extensions.push_back("GL_EXT_geometry_shader");
+	}
+	else if (shader->getType() == glu::SHADERTYPE_TESSELLATION_CONTROL ||
+			 shader->getType() == glu::SHADERTYPE_TESSELLATION_EVALUATION)
+	{
+		extensions.push_back("GL_EXT_tessellation_shader");
+	}
+
+	if (shaderContainsIOBlocks(shader))
+		extensions.push_back("GL_EXT_shader_io_blocks");
+
+	for (int ndx = 0; ndx < (int)extensions.size(); ++ndx)
+		buf << "#extension " << extensions[ndx] << " : require\n";
+	return buf.str();
+}
+
+static std::string getShaderTypeDeclarations (const ProgramInterfaceDefinition::Program* program, glu::ShaderType type)
 {
 	switch (type)
 	{
 		case glu::SHADERTYPE_VERTEX:
-			return	"";
+			return "";
 
 		case glu::SHADERTYPE_FRAGMENT:
-			return	"";
+			return "";
 
 		case glu::SHADERTYPE_GEOMETRY:
-			return	"layout(points) in;\n"
-					"layout(points, max_vertices=3) out;\n";
+		{
+			std::ostringstream buf;
+			buf <<	"layout(points) in;\n"
+					"layout(points, max_vertices=" << program->getGeometryNumOutputVertices() << ") out;\n";
+			return buf.str();
+		}
 
 		case glu::SHADERTYPE_TESSELLATION_CONTROL:
-			return	"layout(vertices=1) out;\n";
+		{
+			std::ostringstream buf;
+			buf << "layout(vertices=" << program->getTessellationNumOutputPatchVertices() << ") out;\n";
+			return buf.str();
+		}
 
 		case glu::SHADERTYPE_TESSELLATION_EVALUATION:
-			return	"layout(triangle, point_mode) in;\n";
+			return "layout(triangles, point_mode) in;\n";
 
 		case glu::SHADERTYPE_COMPUTE:
-			return	"layout(local_size_x=1) in;\n";
+			return "layout(local_size_x=1) in;\n";
 
 		default:
 			DE_ASSERT(false);
-			return DE_NULL;
+			return "";
 	}
 }
 
@@ -244,7 +370,29 @@ static void writeInterfaceBlock (std::ostringstream& buf, const glu::InterfaceBl
 	buf << ";\n\n";
 }
 
-static void writeVariableReadAccumulateExpression (std::ostringstream& buf, const std::string& accumulatorName, const std::string& name, const glu::VarType& varType)
+static bool isReadableInterface (const glu::InterfaceBlock& interface)
+{
+	return	interface.storage == glu::STORAGE_UNIFORM	||
+			interface.storage == glu::STORAGE_IN		||
+			interface.storage == glu::STORAGE_PATCH_IN	||
+			(interface.storage == glu::STORAGE_BUFFER && (interface.memoryAccessQualifierFlags & glu::MEMORYACCESSQUALIFIER_WRITEONLY_BIT) == 0);
+}
+
+static bool isWritableInterface (const glu::InterfaceBlock& interface)
+{
+	return	interface.storage == glu::STORAGE_OUT		||
+			interface.storage == glu::STORAGE_PATCH_OUT	||
+			(interface.storage == glu::STORAGE_BUFFER && (interface.memoryAccessQualifierFlags & glu::MEMORYACCESSQUALIFIER_READONLY_BIT) == 0);
+}
+
+
+static void writeVariableReadAccumulateExpression (std::ostringstream&							buf,
+												   const std::string&							accumulatorName,
+												   const std::string&							name,
+												   glu::ShaderType								shaderType,
+												   glu::Storage									storage,
+												   const ProgramInterfaceDefinition::Program*	program,
+												   const glu::VarType&							varType)
 {
 	if (varType.isBasicType())
 	{
@@ -272,28 +420,107 @@ static void writeVariableReadAccumulateExpression (std::ostringstream& buf, cons
 	else if (varType.isStructType())
 	{
 		for (int ndx = 0; ndx < varType.getStructPtr()->getNumMembers(); ++ndx)
-			writeVariableReadAccumulateExpression(buf, accumulatorName, name + "." + varType.getStructPtr()->getMember(ndx).getName(), varType.getStructPtr()->getMember(ndx).getType());
+			writeVariableReadAccumulateExpression(buf,
+												  accumulatorName,
+												  name + "." + varType.getStructPtr()->getMember(ndx).getName(),
+												  shaderType,
+												  storage,
+												  program,
+												  varType.getStructPtr()->getMember(ndx).getType());
 	}
 	else if (varType.isArrayType())
 	{
 		if (varType.getArraySize() != glu::VarType::UNSIZED_ARRAY)
+		{
 			for (int ndx = 0; ndx < varType.getArraySize(); ++ndx)
-				writeVariableReadAccumulateExpression(buf, accumulatorName, name + "[" + de::toString(ndx) + "]", varType.getElementType());
+				writeVariableReadAccumulateExpression(buf,
+													  accumulatorName,
+													  name + "[" + de::toString(ndx) + "]",
+													  shaderType,
+													  storage,
+													  program,
+													  varType.getElementType());
+		}
+		else if (storage == glu::STORAGE_BUFFER)
+		{
+			// run-time sized array, read arbitrary
+			writeVariableReadAccumulateExpression(buf,
+												  accumulatorName,
+												  name + "[8]",
+												  shaderType,
+												  storage,
+												  program,
+												  varType.getElementType());
+		}
 		else
-			writeVariableReadAccumulateExpression(buf, accumulatorName, name + "[8]", varType.getElementType());
+		{
+			DE_ASSERT(storage == glu::STORAGE_IN);
+
+			if (shaderType == glu::SHADERTYPE_GEOMETRY)
+			{
+				// implicit sized geometry input array, size = primitive size. Just reading first is enough
+				writeVariableReadAccumulateExpression(buf,
+													  accumulatorName,
+													  name + "[0]",
+													  shaderType,
+													  storage,
+													  program,
+													  varType.getElementType());
+			}
+			else if (shaderType == glu::SHADERTYPE_TESSELLATION_CONTROL)
+			{
+				// implicit sized tessellation input array, size = input patch max size. Just reading current is enough
+				writeVariableReadAccumulateExpression(buf,
+													  accumulatorName,
+													  name + "[gl_InvocationID]",
+													  shaderType,
+													  storage,
+													  program,
+													  varType.getElementType());
+			}
+			else if (shaderType == glu::SHADERTYPE_TESSELLATION_EVALUATION)
+			{
+				// implicit sized tessellation input array, size = output patch max size. Read all to prevent optimizations
+				DE_ASSERT(program->getTessellationNumOutputPatchVertices() > 0);
+				for (int ndx = 0; ndx < (int)program->getTessellationNumOutputPatchVertices(); ++ndx)
+				{
+					writeVariableReadAccumulateExpression(buf,
+														  accumulatorName,
+														  name + "[" + de::toString(ndx) + "]",
+														  shaderType,
+														  storage,
+														  program,
+														  varType.getElementType());
+				}
+			}
+			else
+				DE_ASSERT(false);
+		}
 	}
 	else
 		DE_ASSERT(false);
 }
 
-static void writeInterfaceReadAccumulateExpression (std::ostringstream& buf, const std::string& accumulatorName, const glu::InterfaceBlock& block)
+static void writeInterfaceReadAccumulateExpression (std::ostringstream&							buf,
+													const std::string&							accumulatorName,
+													const glu::InterfaceBlock&					block,
+													glu::ShaderType								shaderType,
+													const ProgramInterfaceDefinition::Program*	program)
 {
 	if (block.dimensions.empty())
 	{
 		const std::string prefix = (block.instanceName.empty()) ? ("") : (block.instanceName + ".");
 
 		for (int ndx = 0; ndx < (int)block.variables.size(); ++ndx)
-			writeVariableReadAccumulateExpression(buf, accumulatorName, prefix + block.variables[ndx].name, block.variables[ndx].varType);
+		{
+			writeVariableReadAccumulateExpression(buf,
+												  accumulatorName,
+												  prefix + block.variables[ndx].name,
+												  shaderType,
+												  block.storage,
+												  program,
+												  block.variables[ndx].varType);
+		}
 	}
 	else
 	{
@@ -310,7 +537,15 @@ static void writeInterfaceReadAccumulateExpression (std::ostringstream& buf, con
 					name << "[" << index[dimensionNdx] << "]";
 
 				for (int ndx = 0; ndx < (int)block.variables.size(); ++ndx)
-					writeVariableReadAccumulateExpression(buf, accumulatorName, name.str() + "." + block.variables[ndx].name, block.variables[ndx].varType);
+				{
+					writeVariableReadAccumulateExpression(buf,
+														  accumulatorName,
+														  name.str() + "." + block.variables[ndx].name,
+														  shaderType,
+														  block.storage,
+														  program,
+														  block.variables[ndx].varType);
+				}
 			}
 
 			// increment index
@@ -320,7 +555,13 @@ static void writeInterfaceReadAccumulateExpression (std::ostringstream& buf, con
 	}
 }
 
-static void writeVariableWriteExpression (std::ostringstream& buf, const std::string& sourceVec4Name, const std::string& name, const glu::VarType& varType)
+static void writeVariableWriteExpression (std::ostringstream&							buf,
+										  const std::string&							sourceVec4Name,
+										  const std::string&							name,
+										  glu::ShaderType								shaderType,
+										  glu::Storage									storage,
+										  const ProgramInterfaceDefinition::Program*	program,
+										  const glu::VarType&							varType)
 {
 	if (varType.isBasicType())
 	{
@@ -338,28 +579,81 @@ static void writeVariableWriteExpression (std::ostringstream& buf, const std::st
 	else if (varType.isStructType())
 	{
 		for (int ndx = 0; ndx < varType.getStructPtr()->getNumMembers(); ++ndx)
-			writeVariableWriteExpression(buf, sourceVec4Name, name + "." + varType.getStructPtr()->getMember(ndx).getName(), varType.getStructPtr()->getMember(ndx).getType());
+			writeVariableWriteExpression(buf,
+										 sourceVec4Name,
+										 name + "." + varType.getStructPtr()->getMember(ndx).getName(),
+										 shaderType,
+										 storage,
+										 program,
+										 varType.getStructPtr()->getMember(ndx).getType());
 	}
 	else if (varType.isArrayType())
 	{
 		if (varType.getArraySize() != glu::VarType::UNSIZED_ARRAY)
+		{
 			for (int ndx = 0; ndx < varType.getArraySize(); ++ndx)
-				writeVariableWriteExpression(buf, sourceVec4Name, name + "[" + de::toString(ndx) + "]", varType.getElementType());
+				writeVariableWriteExpression(buf,
+											 sourceVec4Name,
+											 name + "[" + de::toString(ndx) + "]",
+											 shaderType,
+											 storage,
+											 program,
+											 varType.getElementType());
+		}
+		else if (storage == glu::STORAGE_BUFFER)
+		{
+			// run-time sized array, write arbitrary
+			writeVariableWriteExpression(buf,
+										 sourceVec4Name,
+										 name + "[9]",
+										 shaderType,
+										 storage,
+										 program,
+										 varType.getElementType());
+		}
 		else
-			writeVariableWriteExpression(buf, sourceVec4Name, name + "[9]", varType.getElementType());
+		{
+			DE_ASSERT(storage == glu::STORAGE_OUT);
+
+			if (shaderType == glu::SHADERTYPE_TESSELLATION_CONTROL)
+			{
+				// implicit sized tessellation onput array, size = output patch max size. Can only write to gl_InvocationID
+				writeVariableWriteExpression(buf,
+											 sourceVec4Name,
+											 name + "[gl_InvocationID]",
+											 shaderType,
+											 storage,
+											 program,
+											 varType.getElementType());
+			}
+			else
+				DE_ASSERT(false);
+		}
 	}
 	else
 		DE_ASSERT(false);
 }
 
-static void writeInterfaceWriteExpression (std::ostringstream& buf, const std::string& sourceVec4Name, const glu::InterfaceBlock& block)
+static void writeInterfaceWriteExpression (std::ostringstream&							buf,
+										   const std::string&							sourceVec4Name,
+										   const glu::InterfaceBlock&					block,
+										   glu::ShaderType								shaderType,
+										   const ProgramInterfaceDefinition::Program*	program)
 {
 	if (block.dimensions.empty())
 	{
 		const std::string prefix = (block.instanceName.empty()) ? ("") : (block.instanceName + ".");
 
 		for (int ndx = 0; ndx < (int)block.variables.size(); ++ndx)
-			writeVariableWriteExpression(buf, sourceVec4Name, prefix + block.variables[ndx].name, block.variables[ndx].varType);
+		{
+			writeVariableWriteExpression(buf,
+										 sourceVec4Name,
+										 prefix + block.variables[ndx].name,
+										 shaderType,
+										 block.storage,
+										 program,
+										 block.variables[ndx].varType);
+		}
 	}
 	else
 	{
@@ -376,7 +670,15 @@ static void writeInterfaceWriteExpression (std::ostringstream& buf, const std::s
 					name << "[" << index[dimensionNdx] << "]";
 
 				for (int ndx = 0; ndx < (int)block.variables.size(); ++ndx)
-					writeVariableWriteExpression(buf, sourceVec4Name, name.str() + "." + block.variables[ndx].name, block.variables[ndx].varType);
+				{
+					writeVariableWriteExpression(buf,
+												 sourceVec4Name,
+												 name.str() + "." + block.variables[ndx].name,
+												 shaderType,
+												 block.storage,
+												 program,
+												 block.variables[ndx].varType);
+				}
 			}
 
 			// increment index
@@ -573,112 +875,134 @@ static int getNumAtomicCounterBuffers (const ProgramInterfaceDefinition::Shader*
 	return (int)buffers.size();
 }
 
-template <bool B>
-static bool dummyConstantTypeFilter (glu::DataType d)
+template <typename DataTypeMap>
+static int accumulateComplexType (const glu::VarType& complexType, const DataTypeMap& dTypeMap)
+{
+	if (complexType.isBasicType())
+		return dTypeMap(complexType.getBasicType());
+	else if (complexType.isArrayType())
+	{
+		const int arraySize = (complexType.getArraySize() == glu::VarType::UNSIZED_ARRAY) ? (1) : (complexType.getArraySize());
+		return arraySize * accumulateComplexType(complexType.getElementType(), dTypeMap);
+	}
+	else if (complexType.isStructType())
+	{
+		int sum = 0;
+		for (int ndx = 0; ndx < complexType.getStructPtr()->getNumMembers(); ++ndx)
+			sum += accumulateComplexType(complexType.getStructPtr()->getMember(ndx).getType(), dTypeMap);
+		return sum;
+	}
+	else
+	{
+		DE_ASSERT(false);
+		return false;
+	}
+}
+
+template <typename InterfaceBlockFilter, typename VarDeclFilter, typename DataTypeMap>
+static int accumulateShader (const ProgramInterfaceDefinition::Shader* shader,
+							 const InterfaceBlockFilter& ibFilter,
+							 const VarDeclFilter& vdFilter,
+							 const DataTypeMap& dMap)
+{
+	int retVal = 0;
+
+	for (int ndx = 0; ndx < (int)shader->getDefaultBlock().interfaceBlocks.size(); ++ndx)
+	{
+		if (ibFilter(shader->getDefaultBlock().interfaceBlocks[ndx]))
+		{
+			int numInstances = 1;
+
+			for (int dimensionNdx = 0; dimensionNdx < (int)shader->getDefaultBlock().interfaceBlocks[ndx].dimensions.size(); ++dimensionNdx)
+				numInstances *= shader->getDefaultBlock().interfaceBlocks[ndx].dimensions[dimensionNdx];
+
+			for (int varNdx = 0; varNdx < (int)shader->getDefaultBlock().interfaceBlocks[ndx].variables.size(); ++varNdx)
+				retVal += numInstances * accumulateComplexType(shader->getDefaultBlock().interfaceBlocks[ndx].variables[varNdx].varType, dMap);
+		}
+	}
+
+	for (int varNdx = 0; varNdx < (int)shader->getDefaultBlock().variables.size(); ++varNdx)
+		if (vdFilter(shader->getDefaultBlock().variables[varNdx]))
+			retVal += accumulateComplexType(shader->getDefaultBlock().variables[varNdx].varType, dMap);
+
+	return retVal;
+}
+
+static bool dummyTrueConstantTypeFilter (glu::DataType d)
 {
 	DE_UNREF(d);
-	return B;
+	return true;
 }
+
+class InstanceCounter
+{
+public:
+	InstanceCounter (bool (*predicate)(glu::DataType))
+		: m_predicate(predicate)
+	{
+	}
+
+	int operator() (glu::DataType t) const
+	{
+		return (m_predicate(t)) ? (1) : (0);
+	}
+
+private:
+	bool (*const m_predicate)(glu::DataType);
+};
+
+class InterfaceBlockStorageFilter
+{
+public:
+	InterfaceBlockStorageFilter (glu::Storage storage)
+		: m_storage(storage)
+	{
+	}
+
+	bool operator() (const glu::InterfaceBlock& b) const
+	{
+		return m_storage == b.storage;
+	}
+
+private:
+	const glu::Storage m_storage;
+};
+
+class VariableDeclarationStorageFilter
+{
+public:
+	VariableDeclarationStorageFilter (glu::Storage storage)
+		: m_storage(storage)
+	{
+	}
+
+	bool operator() (const glu::VariableDeclaration& d) const
+	{
+		return m_storage == d.storage;
+	}
+
+private:
+	const glu::Storage m_storage;
+};
 
 static int getNumTypeInstances (const glu::VarType& complexType, bool (*predicate)(glu::DataType))
 {
-	if (complexType.isBasicType())
-	{
-		if (predicate(complexType.getBasicType()))
-			return 1;
-		else
-			return 0;
-	}
-	else if (complexType.isArrayType())
-	{
-		const int arraySize = (complexType.getArraySize() == glu::VarType::UNSIZED_ARRAY) ? (1) : (complexType.getArraySize());
-		return arraySize * getNumTypeInstances(complexType.getElementType(), predicate);
-	}
-	else if (complexType.isStructType())
-	{
-		int sum = 0;
-		for (int ndx = 0; ndx < complexType.getStructPtr()->getNumMembers(); ++ndx)
-			sum += getNumTypeInstances(complexType.getStructPtr()->getMember(ndx).getType(), predicate);
-		return sum;
-	}
-	else
-	{
-		DE_ASSERT(false);
-		return false;
-	}
-}
-
-static int getMappedBasicTypeSum (const glu::VarType& complexType, int (*typeMap)(glu::DataType))
-{
-	if (complexType.isBasicType())
-		return typeMap(complexType.getBasicType());
-	else if (complexType.isArrayType())
-	{
-		const int arraySize = (complexType.getArraySize() == glu::VarType::UNSIZED_ARRAY) ? (1) : (complexType.getArraySize());
-		return arraySize * getMappedBasicTypeSum(complexType.getElementType(), typeMap);
-	}
-	else if (complexType.isStructType())
-	{
-		int sum = 0;
-		for (int ndx = 0; ndx < complexType.getStructPtr()->getNumMembers(); ++ndx)
-			sum += getMappedBasicTypeSum(complexType.getStructPtr()->getMember(ndx).getType(), typeMap);
-		return sum;
-	}
-	else
-	{
-		DE_ASSERT(false);
-		return false;
-	}
+	return accumulateComplexType(complexType, InstanceCounter(predicate));
 }
 
 static int getNumTypeInstances (const ProgramInterfaceDefinition::Shader* shader, glu::Storage storage, bool (*predicate)(glu::DataType))
 {
-	int retVal = 0;
-
-	for (int ndx = 0; ndx < (int)shader->getDefaultBlock().interfaceBlocks.size(); ++ndx)
-	{
-		if (shader->getDefaultBlock().interfaceBlocks[ndx].storage == storage)
-		{
-			int numInstances = 1;
-
-			for (int dimensionNdx = 0; dimensionNdx < (int)shader->getDefaultBlock().interfaceBlocks[ndx].dimensions.size(); ++dimensionNdx)
-				numInstances *= shader->getDefaultBlock().interfaceBlocks[ndx].dimensions[dimensionNdx];
-
-			for (int varNdx = 0; varNdx < (int)shader->getDefaultBlock().interfaceBlocks[ndx].variables.size(); ++varNdx)
-				retVal += numInstances * getNumTypeInstances(shader->getDefaultBlock().interfaceBlocks[ndx].variables[varNdx].varType, predicate);
-		}
-	}
-
-	for (int varNdx = 0; varNdx < (int)shader->getDefaultBlock().variables.size(); ++varNdx)
-		if (shader->getDefaultBlock().variables[varNdx].storage == storage)
-			retVal += getNumTypeInstances(shader->getDefaultBlock().variables[varNdx].varType, predicate);
-
-	return retVal;
+	return accumulateShader(shader, InterfaceBlockStorageFilter(storage), VariableDeclarationStorageFilter(storage), InstanceCounter(predicate));
 }
 
-static int getMappedBasicTypeSum (const ProgramInterfaceDefinition::Shader* shader, glu::Storage storage, int (*typeMap)(glu::DataType))
+static int getNumTypeInstances (const ProgramInterfaceDefinition::Shader* shader, glu::Storage storage)
 {
-	int retVal = 0;
+	return getNumTypeInstances(shader, storage, dummyTrueConstantTypeFilter);
+}
 
-	for (int ndx = 0; ndx < (int)shader->getDefaultBlock().interfaceBlocks.size(); ++ndx)
-	{
-		if (shader->getDefaultBlock().interfaceBlocks[ndx].storage == storage)
-		{
-			int numInstances = 1;
-
-			for (int dimensionNdx = 0; dimensionNdx < (int)shader->getDefaultBlock().interfaceBlocks[ndx].dimensions.size(); ++dimensionNdx)
-				numInstances *= shader->getDefaultBlock().interfaceBlocks[ndx].dimensions[dimensionNdx];
-
-			for (int varNdx = 0; varNdx < (int)shader->getDefaultBlock().interfaceBlocks[ndx].variables.size(); ++varNdx)
-				retVal += numInstances * getMappedBasicTypeSum(shader->getDefaultBlock().interfaceBlocks[ndx].variables[varNdx].varType, typeMap);
-		}
-	}
-
-	for (int varNdx = 0; varNdx < (int)shader->getDefaultBlock().variables.size(); ++varNdx)
-		if (shader->getDefaultBlock().variables[varNdx].storage == storage)
-			retVal += getMappedBasicTypeSum(shader->getDefaultBlock().variables[varNdx].varType, typeMap);
-
-	return retVal;
+static int accumulateShaderStorage (const ProgramInterfaceDefinition::Shader* shader, glu::Storage storage, int (*typeMap)(glu::DataType))
+{
+	return accumulateShader(shader, InterfaceBlockStorageFilter(storage), VariableDeclarationStorageFilter(storage), typeMap);
 }
 
 static int getNumDataTypeComponents (glu::DataType type)
@@ -703,12 +1027,12 @@ static int getNumDataTypeVectors (glu::DataType type)
 
 static int getNumComponents (const ProgramInterfaceDefinition::Shader* shader, glu::Storage storage)
 {
-	return getMappedBasicTypeSum(shader, storage, getNumDataTypeComponents);
+	return accumulateShaderStorage(shader, storage, getNumDataTypeComponents);
 }
 
 static int getNumVectors (const ProgramInterfaceDefinition::Shader* shader, glu::Storage storage)
 {
-	return getMappedBasicTypeSum(shader, storage, getNumDataTypeVectors);
+	return accumulateShaderStorage(shader, storage, getNumDataTypeVectors);
 }
 
 static int getNumDefaultBlockComponents (const ProgramInterfaceDefinition::Shader* shader, glu::Storage storage)
@@ -717,7 +1041,7 @@ static int getNumDefaultBlockComponents (const ProgramInterfaceDefinition::Shade
 
 	for (int varNdx = 0; varNdx < (int)shader->getDefaultBlock().variables.size(); ++varNdx)
 		if (shader->getDefaultBlock().variables[varNdx].storage == storage)
-			retVal += getMappedBasicTypeSum(shader->getDefaultBlock().variables[varNdx].varType, getNumDataTypeComponents);
+			retVal += accumulateComplexType(shader->getDefaultBlock().variables[varNdx].varType, getNumDataTypeComponents);
 
 	return retVal;
 }
@@ -825,9 +1149,14 @@ static int getUniformMaxBinding (const ProgramInterfaceDefinition::Shader* shade
 	int maxBinding = -1;
 
 	for (int ndx = 0; ndx < (int)shader->getDefaultBlock().variables.size(); ++ndx)
-		maxBinding = de::max(maxBinding, shader->getDefaultBlock().variables[ndx].layout.binding + getNumTypeInstances(shader->getDefaultBlock().variables[ndx].varType, predicate));
+	{
+		const int binding		= (shader->getDefaultBlock().variables[ndx].layout.binding == -1) ? (0) : (shader->getDefaultBlock().variables[ndx].layout.binding);
+		const int numInstances	= getNumTypeInstances(shader->getDefaultBlock().variables[ndx].varType, predicate);
 
-	return (int)maxBinding;
+		maxBinding = de::max(maxBinding, binding + numInstances - 1);
+	}
+
+	return maxBinding;
 }
 
 static int getAtomicCounterMaxBufferSize (const ProgramInterfaceDefinition::Shader* shader)
@@ -867,10 +1196,10 @@ static int getNumFeedbackVaryingComponents (const ProgramInterfaceDefinition::Pr
 
 	DE_ASSERT(deStringBeginsWith(name.c_str(), "gl_") == DE_FALSE);
 
-	if (!traverseProgramVariablePath(path, program, name, VariableSearchFilter(glu::SHADERTYPE_VERTEX, glu::STORAGE_OUT)))
+	if (!traverseProgramVariablePath(path, program, name, VariableSearchFilter::createShaderTypeStorageFilter(getProgramTransformFeedbackStage(program), glu::STORAGE_OUT)))
 		DE_ASSERT(false); // Program failed validate, invalid operation
 
-	return getMappedBasicTypeSum(*path.back().getVariableType(), getNumDataTypeComponents);
+	return accumulateComplexType(*path.back().getVariableType(), getNumDataTypeComponents);
 }
 
 static int getNumXFBComponents (const ProgramInterfaceDefinition::Program* program)
@@ -930,6 +1259,7 @@ std::vector<std::string> getProgramInterfaceBlockMemberResourceList (const glu::
 	const bool					isTopLevelBufferVariable	= (interfaceBlock.storage == glu::STORAGE_BUFFER);
 	std::vector<std::string>	resources;
 
+	// \note this is defined in the GLSL spec, not in the GL spec
 	for (int variableNdx = 0; variableNdx < (int)interfaceBlock.variables.size(); ++variableNdx)
 		generateVariableTypeResourceNames(resources,
 										  namePrefix + interfaceBlock.variables[variableNdx].name,
@@ -1022,8 +1352,9 @@ std::vector<std::string> getProgramInterfaceResourceList (const ProgramInterface
 		case PROGRAMINTERFACE_PROGRAM_INPUT:
 		case PROGRAMINTERFACE_PROGRAM_OUTPUT:
 		{
-			const glu::Storage		storage		= (interface == PROGRAMINTERFACE_PROGRAM_INPUT) ? (glu::STORAGE_IN) : (glu::STORAGE_OUT);
-			const glu::ShaderType	shaderType	= (interface == PROGRAMINTERFACE_PROGRAM_INPUT) ? (program->getFirstStage()) : (program->getLastStage());
+			const glu::Storage		queryStorage		= (interface == PROGRAMINTERFACE_PROGRAM_INPUT) ? (glu::STORAGE_IN) : (glu::STORAGE_OUT);
+			const glu::Storage		queryPatchStorage	= (interface == PROGRAMINTERFACE_PROGRAM_INPUT) ? (glu::STORAGE_PATCH_IN) : (glu::STORAGE_PATCH_OUT);
+			const glu::ShaderType	shaderType			= (interface == PROGRAMINTERFACE_PROGRAM_INPUT) ? (program->getFirstStage()) : (program->getLastStage());
 
 			for (int shaderNdx = 0; shaderNdx < (int)program->getShaders().size(); ++shaderNdx)
 			{
@@ -1033,16 +1364,19 @@ std::vector<std::string> getProgramInterfaceResourceList (const ProgramInterface
 					continue;
 
 				for (int variableNdx = 0; variableNdx < (int)shader->getDefaultBlock().variables.size(); ++variableNdx)
-					if (shader->getDefaultBlock().variables[variableNdx].storage == storage)
+				{
+					const glu::Storage variableStorage = shader->getDefaultBlock().variables[variableNdx].storage;
+					if (variableStorage == queryStorage || variableStorage == queryPatchStorage)
 						generateVariableTypeResourceNames(resources,
 														  shader->getDefaultBlock().variables[variableNdx].name,
 														  shader->getDefaultBlock().variables[variableNdx].varType,
 														  RESOURCE_NAME_GENERATION_FLAG_DEFAULT);
+				}
 
 				for (int interfaceNdx = 0; interfaceNdx < (int)shader->getDefaultBlock().interfaceBlocks.size(); ++interfaceNdx)
 				{
 					const glu::InterfaceBlock& interfaceBlock = shader->getDefaultBlock().interfaceBlocks[interfaceNdx];
-					if (interfaceBlock.storage == storage)
+					if (interfaceBlock.storage == queryStorage || interfaceBlock.storage == queryPatchStorage)
 					{
 						const std::vector<std::string> blockResources = getProgramInterfaceBlockMemberResourceList(interfaceBlock);
 						resources.insert(resources.end(), blockResources.begin(), blockResources.end());
@@ -1057,18 +1391,15 @@ std::vector<std::string> getProgramInterfaceResourceList (const ProgramInterface
 					resources.push_back("gl_VertexID"); // only read from when there are no other inputs
 				else if (shaderType == glu::SHADERTYPE_FRAGMENT && resources.empty())
 					resources.push_back("gl_FragCoord"); // only read from when there are no other inputs
-				else if (shaderType == glu::SHADERTYPE_GEOMETRY && resources.empty())
-					resources.push_back("gl_in[0].gl_Position");
+				else if (shaderType == glu::SHADERTYPE_GEOMETRY)
+					resources.push_back("gl_PerVertex.gl_Position");
 				else if (shaderType == glu::SHADERTYPE_TESSELLATION_CONTROL)
 				{
-					const bool noInputs = resources.empty();
 					resources.push_back("gl_InvocationID");
-
-					if (noInputs)
-						resources.push_back("gl_in[0].gl_Position"); // only read from when there are no other inputs
+					resources.push_back("gl_PerVertex.gl_Position");
 				}
-				else if (shaderType == glu::SHADERTYPE_TESSELLATION_EVALUATION && resources.empty())
-					resources.push_back("gl_in[0].gl_Position"); // only read from when there are no other inputs
+				else if (shaderType == glu::SHADERTYPE_TESSELLATION_EVALUATION)
+					resources.push_back("gl_PerVertex.gl_Position");
 				else if (shaderType == glu::SHADERTYPE_COMPUTE && resources.empty())
 					resources.push_back("gl_NumWorkGroups"); // only read from when there are no other inputs
 			}
@@ -1081,7 +1412,11 @@ std::vector<std::string> getProgramInterfaceResourceList (const ProgramInterface
 				else if (shaderType == glu::SHADERTYPE_GEOMETRY)
 					resources.push_back("gl_Position");
 				else if (shaderType == glu::SHADERTYPE_TESSELLATION_CONTROL)
-					resources.push_back("gl_out[0].gl_Position");
+				{
+					resources.push_back("gl_PerVertex.gl_Position");
+					resources.push_back("gl_TessLevelOuter");
+					resources.push_back("gl_TessLevelInner");
+				}
 				else if (shaderType == glu::SHADERTYPE_TESSELLATION_EVALUATION)
 					resources.push_back("gl_Position");
 			}
@@ -1091,6 +1426,8 @@ std::vector<std::string> getProgramInterfaceResourceList (const ProgramInterface
 
 		case PROGRAMINTERFACE_TRANSFORM_FEEDBACK_VARYING:
 		{
+			const glu::ShaderType xfbStage = getProgramTransformFeedbackStage(program);
+
 			for (int varyingNdx = 0; varyingNdx < (int)program->getTransformFeedbackVaryings().size(); ++varyingNdx)
 			{
 				const std::string& varyingName = program->getTransformFeedbackVaryings()[varyingNdx];
@@ -1101,7 +1438,7 @@ std::vector<std::string> getProgramInterfaceResourceList (const ProgramInterface
 				{
 					std::vector<VariablePathComponent> path;
 
-					if (!traverseProgramVariablePath(path, program, varyingName, VariableSearchFilter(glu::SHADERTYPE_VERTEX, glu::STORAGE_OUT)))
+					if (!traverseProgramVariablePath(path, program, varyingName, VariableSearchFilter::createShaderTypeStorageFilter(xfbStage, glu::STORAGE_OUT)))
 						DE_ASSERT(false); // Program failed validate, invalid operation
 
 					generateVariableTypeResourceNames(resources,
@@ -1153,7 +1490,8 @@ glu::ProgramSources generateProgramInterfaceProgramSources (const ProgramInterfa
 		std::ostringstream							usageBuf;
 
 		sourceBuf	<< glu::getGLSLVersionDeclaration(shader->getVersion()) << "\n"
-					<< getShaderTypeDeclarations(shader->getType())
+					<< getShaderExtensionDeclarations(shader)
+					<< getShaderTypeDeclarations(program, shader->getType())
 					<< "\n";
 
 		// Struct definitions
@@ -1183,10 +1521,17 @@ glu::ProgramSources generateProgramInterfaceProgramSources (const ProgramInterfa
 
 		for (int ndx = 0; ndx < (int)shader->getDefaultBlock().variables.size(); ++ndx)
 		{
-			if (shader->getDefaultBlock().variables[ndx].storage == glu::STORAGE_IN ||
+			if (shader->getDefaultBlock().variables[ndx].storage == glu::STORAGE_IN			||
+				shader->getDefaultBlock().variables[ndx].storage == glu::STORAGE_PATCH_IN	||
 				shader->getDefaultBlock().variables[ndx].storage == glu::STORAGE_UNIFORM)
 			{
-				writeVariableReadAccumulateExpression(usageBuf, "retValue", shader->getDefaultBlock().variables[ndx].name, shader->getDefaultBlock().variables[ndx].varType);
+				writeVariableReadAccumulateExpression(usageBuf,
+													  "retValue",
+													  shader->getDefaultBlock().variables[ndx].name,
+													  shader->getType(),
+													  shader->getDefaultBlock().variables[ndx].storage,
+													  program,
+													  shader->getDefaultBlock().variables[ndx].varType);
 				containsUserDefinedInputs = true;
 			}
 		}
@@ -1194,30 +1539,52 @@ glu::ProgramSources generateProgramInterfaceProgramSources (const ProgramInterfa
 		for (int interfaceNdx = 0; interfaceNdx < (int)shader->getDefaultBlock().interfaceBlocks.size(); ++interfaceNdx)
 		{
 			const glu::InterfaceBlock& interface = shader->getDefaultBlock().interfaceBlocks[interfaceNdx];
-			if (interface.storage == glu::STORAGE_UNIFORM ||
-				(interface.storage == glu::STORAGE_BUFFER && (interface.memoryAccessQualifierFlags & glu::MEMORYACCESSQUALIFIER_WRITEONLY_BIT) == 0))
+			if (isReadableInterface(interface))
 			{
-				writeInterfaceReadAccumulateExpression(usageBuf, "retValue", interface);
+				writeInterfaceReadAccumulateExpression(usageBuf,
+													   "retValue",
+													   interface,
+													   shader->getType(),
+													   program);
 				containsUserDefinedInputs = true;
 			}
 		}
 
 		// Built-in-inputs
 
-		if (!containsUserDefinedInputs)
+		switch (shader->getType())
 		{
-			if (shader->getType() == glu::SHADERTYPE_VERTEX)
-				usageBuf << "	retValue += vec4(float(gl_VertexID));\n";
-			else if (shader->getType() == glu::SHADERTYPE_FRAGMENT)
-				usageBuf << "	retValue += gl_FragCoord;\n";
-			else if (shader->getType() == glu::SHADERTYPE_GEOMETRY)
+			case glu::SHADERTYPE_VERTEX:
+				// make readInputs to never be compile time constant
+				if (!containsUserDefinedInputs)
+					usageBuf << "	retValue += vec4(float(gl_VertexID));\n";
+				break;
+
+			case glu::SHADERTYPE_FRAGMENT:
+				// make readInputs to never be compile time constant
+				if (!containsUserDefinedInputs)
+					usageBuf << "	retValue += gl_FragCoord;\n";
+				break;
+			case glu::SHADERTYPE_GEOMETRY:
+				// always use previous stage's output values so that previous stage won't be optimized out
 				usageBuf << "	retValue += gl_in[0].gl_Position;\n";
-			else if (shader->getType() == glu::SHADERTYPE_TESSELLATION_CONTROL)
+				break;
+			case glu::SHADERTYPE_TESSELLATION_CONTROL:
+				// always use previous stage's output values so that previous stage won't be optimized out
 				usageBuf << "	retValue += gl_in[0].gl_Position;\n";
-			else if (shader->getType() == glu::SHADERTYPE_TESSELLATION_EVALUATION)
+				break;
+			case glu::SHADERTYPE_TESSELLATION_EVALUATION:
+				// always use previous stage's output values so that previous stage won't be optimized out
 				usageBuf << "	retValue += gl_in[0].gl_Position;\n";
-			else if (shader->getType() == glu::SHADERTYPE_COMPUTE)
-				usageBuf << "	retValue += vec4(float(gl_NumWorkGroups.x));\n";
+				break;
+
+			case glu::SHADERTYPE_COMPUTE:
+				// make readInputs to never be compile time constant
+				if (!containsUserDefinedInputs)
+					usageBuf << "	retValue += vec4(float(gl_NumWorkGroups.x));\n";
+				break;
+			default:
+				DE_ASSERT(false);
 		}
 
 		usageBuf <<	"	return retValue;\n"
@@ -1230,9 +1597,16 @@ glu::ProgramSources generateProgramInterfaceProgramSources (const ProgramInterfa
 
 		for (int ndx = 0; ndx < (int)shader->getDefaultBlock().variables.size(); ++ndx)
 		{
-			if (shader->getDefaultBlock().variables[ndx].storage == glu::STORAGE_OUT)
+			if (shader->getDefaultBlock().variables[ndx].storage == glu::STORAGE_OUT ||
+				shader->getDefaultBlock().variables[ndx].storage == glu::STORAGE_PATCH_OUT)
 			{
-				writeVariableWriteExpression(usageBuf, "dummyValue", shader->getDefaultBlock().variables[ndx].name, shader->getDefaultBlock().variables[ndx].varType);
+				writeVariableWriteExpression(usageBuf,
+											 "dummyValue",
+											 shader->getDefaultBlock().variables[ndx].name,
+											 shader->getType(),
+											 shader->getDefaultBlock().variables[ndx].storage,
+											 program,
+											 shader->getDefaultBlock().variables[ndx].varType);
 				containsUserDefinedOutputs = true;
 			}
 		}
@@ -1240,9 +1614,9 @@ glu::ProgramSources generateProgramInterfaceProgramSources (const ProgramInterfa
 		for (int interfaceNdx = 0; interfaceNdx < (int)shader->getDefaultBlock().interfaceBlocks.size(); ++interfaceNdx)
 		{
 			const glu::InterfaceBlock& interface = shader->getDefaultBlock().interfaceBlocks[interfaceNdx];
-			if (interface.storage == glu::STORAGE_BUFFER && (interface.memoryAccessQualifierFlags & glu::MEMORYACCESSQUALIFIER_READONLY_BIT) == 0)
+			if (isWritableInterface(interface))
 			{
-				writeInterfaceWriteExpression(usageBuf, "dummyValue", interface);
+				writeInterfaceWriteExpression(usageBuf, "dummyValue", interface, shader->getType(), program);
 				containsUserDefinedOutputs = true;
 			}
 		}
@@ -1255,7 +1629,13 @@ glu::ProgramSources generateProgramInterfaceProgramSources (const ProgramInterfa
 			usageBuf << "	gl_Position = dummyValue;\n"
 						 "	EmitVertex();\n";
 		else if (shader->getType() == glu::SHADERTYPE_TESSELLATION_CONTROL)
-			usageBuf << "	gl_out[gl_InvocationID].gl_Position = dummyValue;\n";
+			usageBuf << "	gl_out[gl_InvocationID].gl_Position = dummyValue;\n"
+						"	gl_TessLevelOuter[0] = 2.8;\n"
+						"	gl_TessLevelOuter[1] = 2.8;\n"
+						"	gl_TessLevelOuter[2] = 2.8;\n"
+						"	gl_TessLevelOuter[3] = 2.8;\n"
+						"	gl_TessLevelInner[0] = 2.8;\n"
+						"	gl_TessLevelInner[1] = 2.8;\n";
 		else if (shader->getType() == glu::SHADERTYPE_TESSELLATION_EVALUATION)
 			usageBuf << "	gl_Position = dummyValue;\n";
 
@@ -1312,17 +1692,20 @@ bool findProgramVariablePathByPathName (std::vector<VariablePathComponent>& type
 	return true;
 }
 
-ProgramInterfaceDefinition::ShaderResourceUsage getShaderResourceUsage (const ProgramInterfaceDefinition::Shader* shader)
+ProgramInterfaceDefinition::ShaderResourceUsage getShaderResourceUsage (const ProgramInterfaceDefinition::Program* program, const ProgramInterfaceDefinition::Shader* shader)
 {
 	ProgramInterfaceDefinition::ShaderResourceUsage retVal;
 
-	retVal.numInputs						= getNumTypeInstances(shader, glu::STORAGE_IN, dummyConstantTypeFilter<true>);
+	retVal.numInputs						= getNumTypeInstances(shader, glu::STORAGE_IN);
 	retVal.numInputVectors					= getNumVectors(shader, glu::STORAGE_IN);
 	retVal.numInputComponents				= getNumComponents(shader, glu::STORAGE_IN);
 
-	retVal.numOutputs						= getNumTypeInstances(shader, glu::STORAGE_OUT, dummyConstantTypeFilter<true>);
+	retVal.numOutputs						= getNumTypeInstances(shader, glu::STORAGE_OUT);
 	retVal.numOutputVectors					= getNumVectors(shader, glu::STORAGE_OUT);
 	retVal.numOutputComponents				= getNumComponents(shader, glu::STORAGE_OUT);
+
+	retVal.numPatchInputComponents			= getNumComponents(shader, glu::STORAGE_PATCH_IN);
+	retVal.numPatchOutputComponents			= getNumComponents(shader, glu::STORAGE_PATCH_OUT);
 
 	retVal.numDefaultBlockUniformComponents	= getNumDefaultBlockComponents(shader, glu::STORAGE_UNIFORM);
 	retVal.numCombinedUniformComponents		= getNumComponents(shader, glu::STORAGE_UNIFORM);
@@ -1337,35 +1720,97 @@ ProgramInterfaceDefinition::ShaderResourceUsage getShaderResourceUsage (const Pr
 	retVal.numUniformBlocks					= getNumShaderBlocks(shader, glu::STORAGE_UNIFORM);
 	retVal.numShaderStorageBlocks			= getNumShaderBlocks(shader, glu::STORAGE_BUFFER);
 
+	// add builtins
+	switch (shader->getType())
+	{
+		case glu::SHADERTYPE_VERTEX:
+			// gl_Position is not counted
+			break;
+
+		case glu::SHADERTYPE_FRAGMENT:
+			// nada
+			break;
+
+		case glu::SHADERTYPE_GEOMETRY:
+			// gl_Position in (point mode => size 1)
+			retVal.numInputs			+= 1;
+			retVal.numInputVectors		+= 1;
+			retVal.numInputComponents	+= 4;
+
+			// gl_Position out
+			retVal.numOutputs			+= 1;
+			retVal.numOutputVectors		+= 1;
+			retVal.numOutputComponents	+= 4;
+			break;
+
+		case glu::SHADERTYPE_TESSELLATION_CONTROL:
+			// gl_Position in is read up to gl_InstanceID
+			retVal.numInputs			+= 1 * program->getTessellationNumOutputPatchVertices();
+			retVal.numInputVectors		+= 1 * program->getTessellationNumOutputPatchVertices();
+			retVal.numInputComponents	+= 4 * program->getTessellationNumOutputPatchVertices();
+
+			// gl_Position out, size = num patch out vertices
+			retVal.numOutputs			+= 1 * program->getTessellationNumOutputPatchVertices();
+			retVal.numOutputVectors		+= 1 * program->getTessellationNumOutputPatchVertices();
+			retVal.numOutputComponents	+= 4 * program->getTessellationNumOutputPatchVertices();
+			break;
+
+		case glu::SHADERTYPE_TESSELLATION_EVALUATION:
+			// gl_Position in is read up to gl_InstanceID
+			retVal.numInputs			+= 1 * program->getTessellationNumOutputPatchVertices();
+			retVal.numInputVectors		+= 1 * program->getTessellationNumOutputPatchVertices();
+			retVal.numInputComponents	+= 4 * program->getTessellationNumOutputPatchVertices();
+
+			// gl_Position out
+			retVal.numOutputs			+= 1;
+			retVal.numOutputVectors		+= 1;
+			retVal.numOutputComponents	+= 4;
+			break;
+
+		case glu::SHADERTYPE_COMPUTE:
+			// nada
+			break;
+
+		default:
+			DE_ASSERT(false);
+			break;
+	}
 	return retVal;
 }
 
 ProgramInterfaceDefinition::ProgramResourceUsage getCombinedProgramResourceUsage (const ProgramInterfaceDefinition::Program* program)
 {
-	ProgramInterfaceDefinition::ProgramResourceUsage retVal;
+	ProgramInterfaceDefinition::ProgramResourceUsage	retVal;
+	int													numVertexOutputComponents	= 0;
+	int													numFragmentInputComponents	= 0;
+	int													numVertexOutputVectors		= 0;
+	int													numFragmentInputVectors		= 0;
 
-	retVal.uniformBufferMaxBinding				= -1; // max binding is inclusive upper bound. Allow 0 bindings by using negative value
-	retVal.uniformBufferMaxSize					= 0;
-	retVal.numUniformBlocks						= 0;
-	retVal.numCombinedVertexUniformComponents	= 0;
-	retVal.numCombinedFragmentUniformComponents	= 0;
-	retVal.shaderStorageBufferMaxBinding		= -1; // see above
-	retVal.shaderStorageBufferMaxSize			= 0;
-	retVal.numShaderStorageBlocks				= 0;
-	retVal.numVaryingComponents					= 0;
-	retVal.numVaryingVectors					= 0;
-	retVal.numCombinedSamplers					= 0;
-	retVal.atomicCounterBufferMaxBinding		= -1; // see above
-	retVal.atomicCounterBufferMaxSize			= 0;
-	retVal.numAtomicCounterBuffers				= 0;
-	retVal.numAtomicCounters					= 0;
-	retVal.maxImageBinding						= -1; // see above
-	retVal.numCombinedImages					= 0;
-	retVal.numCombinedOutputResources			= 0;
-	retVal.numXFBInterleavedComponents			= 0;
-	retVal.numXFBSeparateAttribs				= 0;
-	retVal.numXFBSeparateComponents				= 0;
-	retVal.fragmentOutputMaxBinding				= -1; // see above
+	retVal.uniformBufferMaxBinding					= -1; // max binding is inclusive upper bound. Allow 0 bindings by using negative value
+	retVal.uniformBufferMaxSize						= 0;
+	retVal.numUniformBlocks							= 0;
+	retVal.numCombinedVertexUniformComponents		= 0;
+	retVal.numCombinedFragmentUniformComponents		= 0;
+	retVal.numCombinedGeometryUniformComponents		= 0;
+	retVal.numCombinedTessControlUniformComponents	= 0;
+	retVal.numCombinedTessEvalUniformComponents		= 0;
+	retVal.shaderStorageBufferMaxBinding			= -1; // see above
+	retVal.shaderStorageBufferMaxSize				= 0;
+	retVal.numShaderStorageBlocks					= 0;
+	retVal.numVaryingComponents						= 0;
+	retVal.numVaryingVectors						= 0;
+	retVal.numCombinedSamplers						= 0;
+	retVal.atomicCounterBufferMaxBinding			= -1; // see above
+	retVal.atomicCounterBufferMaxSize				= 0;
+	retVal.numAtomicCounterBuffers					= 0;
+	retVal.numAtomicCounters						= 0;
+	retVal.maxImageBinding							= -1; // see above
+	retVal.numCombinedImages						= 0;
+	retVal.numCombinedOutputResources				= 0;
+	retVal.numXFBInterleavedComponents				= 0;
+	retVal.numXFBSeparateAttribs					= 0;
+	retVal.numXFBSeparateComponents					= 0;
+	retVal.fragmentOutputMaxBinding					= -1; // see above
 
 	for (int shaderNdx = 0; shaderNdx < (int)program->getShaders().size(); ++shaderNdx)
 	{
@@ -1375,11 +1820,15 @@ ProgramInterfaceDefinition::ProgramResourceUsage getCombinedProgramResourceUsage
 		retVal.uniformBufferMaxSize			= de::max(retVal.uniformBufferMaxSize, getBufferMaxSize(shader, glu::STORAGE_UNIFORM));
 		retVal.numUniformBlocks				+= getNumShaderBlocks(shader, glu::STORAGE_UNIFORM);
 
-		if (shader->getType() == glu::SHADERTYPE_VERTEX)
-			retVal.numCombinedVertexUniformComponents += getNumComponents(shader, glu::STORAGE_UNIFORM);
-
-		if (shader->getType() == glu::SHADERTYPE_FRAGMENT)
-			retVal.numCombinedFragmentUniformComponents += getNumComponents(shader, glu::STORAGE_UNIFORM);
+		switch (shader->getType())
+		{
+			case glu::SHADERTYPE_VERTEX:					retVal.numCombinedVertexUniformComponents		+= getNumComponents(shader, glu::STORAGE_UNIFORM); break;
+			case glu::SHADERTYPE_FRAGMENT:					retVal.numCombinedFragmentUniformComponents		+= getNumComponents(shader, glu::STORAGE_UNIFORM); break;
+			case glu::SHADERTYPE_GEOMETRY:					retVal.numCombinedGeometryUniformComponents		+= getNumComponents(shader, glu::STORAGE_UNIFORM); break;
+			case glu::SHADERTYPE_TESSELLATION_CONTROL:		retVal.numCombinedTessControlUniformComponents	+= getNumComponents(shader, glu::STORAGE_UNIFORM); break;
+			case glu::SHADERTYPE_TESSELLATION_EVALUATION:	retVal.numCombinedTessEvalUniformComponents		+= getNumComponents(shader, glu::STORAGE_UNIFORM); break;
+			default: break;
+		}
 
 		retVal.shaderStorageBufferMaxBinding	= de::max(retVal.shaderStorageBufferMaxBinding, getMaxBufferBinding(shader, glu::STORAGE_BUFFER));
 		retVal.shaderStorageBufferMaxSize		= de::max(retVal.shaderStorageBufferMaxSize, getBufferMaxSize(shader, glu::STORAGE_BUFFER));
@@ -1387,8 +1836,13 @@ ProgramInterfaceDefinition::ProgramResourceUsage getCombinedProgramResourceUsage
 
 		if (shader->getType() == glu::SHADERTYPE_VERTEX)
 		{
-			retVal.numVaryingComponents += getNumComponents(shader, glu::STORAGE_OUT);
-			retVal.numVaryingVectors	+= getNumVectors(shader, glu::STORAGE_OUT);
+			numVertexOutputComponents	+= getNumComponents(shader, glu::STORAGE_OUT);
+			numVertexOutputVectors		+= getNumVectors(shader, glu::STORAGE_OUT);
+		}
+		else if (shader->getType() == glu::SHADERTYPE_FRAGMENT)
+		{
+			numFragmentInputComponents	+= getNumComponents(shader, glu::STORAGE_IN);
+			numFragmentInputVectors		+= getNumVectors(shader, glu::STORAGE_IN);
 		}
 
 		retVal.numCombinedSamplers	+= getNumTypeInstances(shader, glu::STORAGE_UNIFORM, glu::isDataTypeSampler);
@@ -1417,6 +1871,10 @@ ProgramInterfaceDefinition::ProgramResourceUsage getCombinedProgramResourceUsage
 		retVal.numXFBSeparateAttribs	= (int)program->getTransformFeedbackVaryings().size();
 		retVal.numXFBSeparateComponents	= getNumMaxXFBOutputComponents(program);
 	}
+
+	// legacy limits
+	retVal.numVaryingComponents	= de::max(numVertexOutputComponents, numFragmentInputComponents);
+	retVal.numVaryingVectors	= de::max(numVertexOutputVectors, numFragmentInputVectors);
 
 	return retVal;
 }

@@ -94,6 +94,7 @@ void AttributeBindingCase::test (tcu::ResultCollector& result)
 
 	gl.glBindVertexArray(*vao);
 	gl.glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &maxAttrs);
+	GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glGetIntegerv");
 
 	// initial
 	{
@@ -110,13 +111,19 @@ void AttributeBindingCase::test (tcu::ResultCollector& result)
 
 		// set to value A in vao1
 		gl.glVertexAttribBinding(1, 4);
+		GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glVertexAttribBinding");
 
 		// set to value B in vao2
 		gl.glBindVertexArray(*otherVao);
+		GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glBindVertexArray");
+
 		gl.glVertexAttribBinding(1, 7);
+		GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glVertexAttribBinding");
 
 		// check value is still ok in original vao
 		gl.glBindVertexArray(*vao);
+		GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glBindVertexArray");
+
 		verifyStateAttributeInteger(result, gl, GL_VERTEX_ATTRIB_BINDING, 1, 4, m_verifier);
 	}
 
@@ -133,6 +140,8 @@ void AttributeBindingCase::test (tcu::ResultCollector& result)
 			const int	binding			= rnd.getInt(0, 16);
 
 			gl.glVertexAttribBinding(va, binding);
+			GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glVertexAttribBinding");
+
 			verifyStateAttributeInteger(result, gl, GL_VERTEX_ATTRIB_BINDING, va, binding, m_verifier);
 		}
 	}
@@ -160,6 +169,7 @@ void AttributeRelativeOffsetCase::test (tcu::ResultCollector& result)
 
 	gl.glBindVertexArray(*vao);
 	gl.glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &maxAttrs);
+	GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glGetIntegerv");
 
 	// initial
 	{
@@ -176,13 +186,19 @@ void AttributeRelativeOffsetCase::test (tcu::ResultCollector& result)
 
 		// set to value A in vao1
 		gl.glVertexAttribFormat(1, 4, GL_FLOAT, GL_FALSE, 9);
+		GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glVertexAttribFormat");
 
 		// set to value B in vao2
 		gl.glBindVertexArray(*otherVao);
+		GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glBindVertexArray");
+
 		gl.glVertexAttribFormat(1, 4, GL_FLOAT, GL_FALSE, 21);
+		GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glVertexAttribFormat");
 
 		// check value is still ok in original vao
 		gl.glBindVertexArray(*vao);
+		GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glBindVertexArray");
+
 		verifyStateAttributeInteger(result, gl, GL_VERTEX_ATTRIB_RELATIVE_OFFSET, 1, 9, m_verifier);
 	}
 
@@ -198,6 +214,8 @@ void AttributeRelativeOffsetCase::test (tcu::ResultCollector& result)
 			const int	offset			= rnd.getInt(0, 2047);
 
 			gl.glVertexAttribFormat(va, 4, GL_FLOAT, GL_FALSE, offset);
+			GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glVertexAttribFormat");
+
 			verifyStateAttributeInteger(result, gl, GL_VERTEX_ATTRIB_RELATIVE_OFFSET, va, offset, m_verifier);
 		}
 	}
@@ -254,6 +272,8 @@ void VertexBindingDivisorCase::test (tcu::ResultCollector& result)
 
 	gl.glBindVertexArray(*vao);
 	gl.glGetIntegerv(GL_MAX_VERTEX_ATTRIB_BINDINGS, &reportedMaxBindings);
+	GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glGetIntegerv");
+
 	maxBindings = de::max(16, reportedMaxBindings);
 
 	// initial
@@ -271,13 +291,19 @@ void VertexBindingDivisorCase::test (tcu::ResultCollector& result)
 
 		// set to value A in vao1
 		gl.glVertexBindingDivisor(1, 4);
+		GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glVertexBindingDivisor");
 
 		// set to value B in vao2
 		gl.glBindVertexArray(*otherVao);
+		GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glBindVertexArray");
+
 		gl.glVertexBindingDivisor(1, 9);
+		GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glVertexBindingDivisor");
 
 		// check value is still ok in original vao
 		gl.glBindVertexArray(*vao);
+		GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glBindVertexArray");
+
 		verifyStateIndexedInteger(result, gl, GL_VERTEX_BINDING_DIVISOR, 1, 4, m_verifier);
 	}
 
@@ -293,6 +319,8 @@ void VertexBindingDivisorCase::test (tcu::ResultCollector& result)
 			const int	divisor			= rnd.getInt(0, 2047);
 
 			gl.glVertexBindingDivisor(binding, divisor);
+			GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glVertexBindingDivisor");
+
 			verifyStateIndexedInteger(result, gl, GL_VERTEX_BINDING_DIVISOR, binding, divisor, m_verifier);
 		}
 	}
@@ -322,6 +350,8 @@ void VertexBindingOffsetCase::test (tcu::ResultCollector& result)
 
 	gl.glBindVertexArray(*vao);
 	gl.glGetIntegerv(GL_MAX_VERTEX_ATTRIB_BINDINGS, &reportedMaxBindings);
+	GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glGetIntegerv");
+
 	maxBindings = de::max(16, reportedMaxBindings);
 
 	// initial
@@ -339,13 +369,19 @@ void VertexBindingOffsetCase::test (tcu::ResultCollector& result)
 
 		// set to value A in vao1
 		gl.glBindVertexBuffer(1, *buffer, 4, 32);
+		GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glBindVertexBuffer");
 
 		// set to value B in vao2
 		gl.glBindVertexArray(*otherVao);
+		GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glBindVertexArray");
+
 		gl.glBindVertexBuffer(1, *buffer, 13, 32);
+		GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glBindVertexBuffer");
 
 		// check value is still ok in original vao
 		gl.glBindVertexArray(*vao);
+		GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glBindVertexArray");
+
 		verifyStateIndexedInteger(result, gl, GL_VERTEX_BINDING_OFFSET, 1, 4, m_verifier);
 	}
 
@@ -361,6 +397,8 @@ void VertexBindingOffsetCase::test (tcu::ResultCollector& result)
 			const int	offset			= rnd.getInt(0, 4000);
 
 			gl.glBindVertexBuffer(binding, *buffer, offset, 32);
+			GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glBindVertexBuffer");
+
 			verifyStateIndexedInteger(result, gl, GL_VERTEX_BINDING_OFFSET, binding, offset, m_verifier);
 		}
 	}
@@ -390,6 +428,8 @@ void VertexBindingStrideCase::test (tcu::ResultCollector& result)
 
 	gl.glBindVertexArray(*vao);
 	gl.glGetIntegerv(GL_MAX_VERTEX_ATTRIB_BINDINGS, &reportedMaxBindings);
+	GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glGetIntegerv");
+
 	maxBindings = de::max(16, reportedMaxBindings);
 
 	// initial
@@ -407,13 +447,19 @@ void VertexBindingStrideCase::test (tcu::ResultCollector& result)
 
 		// set to value A in vao1
 		gl.glBindVertexBuffer(1, *buffer, 0, 32);
+		GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glBindVertexBuffer");
 
 		// set to value B in vao2
 		gl.glBindVertexArray(*otherVao);
+		GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glBindVertexArray");
+
 		gl.glBindVertexBuffer(1, *buffer, 0, 64);
+		GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glBindVertexBuffer");
 
 		// check value is still ok in original vao
 		gl.glBindVertexArray(*vao);
+		GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glBindVertexArray");
+
 		verifyStateIndexedInteger(result, gl, GL_VERTEX_BINDING_STRIDE, 1, 32, m_verifier);
 	}
 
@@ -429,6 +475,8 @@ void VertexBindingStrideCase::test (tcu::ResultCollector& result)
 			const int	stride			= rnd.getInt(0, 2048);
 
 			gl.glBindVertexBuffer(binding, *buffer, 0, stride);
+			GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glBindVertexBuffer");
+
 			verifyStateIndexedInteger(result, gl, GL_VERTEX_BINDING_STRIDE, binding, stride, m_verifier);
 		}
 	}
@@ -458,6 +506,8 @@ void VertexBindingBufferCase::test (tcu::ResultCollector& result)
 
 	gl.glBindVertexArray(*vao);
 	gl.glGetIntegerv(GL_MAX_VERTEX_ATTRIB_BINDINGS, &reportedMaxBindings);
+	GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glGetIntegerv");
+
 	maxBindings = de::max(16, reportedMaxBindings);
 
 	// initial
@@ -476,13 +526,18 @@ void VertexBindingBufferCase::test (tcu::ResultCollector& result)
 
 		// set to value A in vao1
 		gl.glBindVertexBuffer(1, *buffer, 0, 32);
+		GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glBindVertexBuffer");
 
 		// set to value B in vao2
 		gl.glBindVertexArray(*otherVao);
+		GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glBindVertexArray");
 		gl.glBindVertexBuffer(1, *otherBuffer, 0, 32);
+		GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glBindVertexBuffer");
 
 		// check value is still ok in original vao
 		gl.glBindVertexArray(*vao);
+		GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glBindVertexArray");
+
 		verifyStateIndexedInteger(result, gl, GL_VERTEX_BINDING_BUFFER, 1, *buffer, m_verifier);
 	}
 
@@ -502,6 +557,7 @@ void VertexBindingBufferCase::test (tcu::ResultCollector& result)
 		// delete buffer. This unbinds it from active (vao2) but not from unactive
 		gl.glDeleteBuffers(1, &otherBuffer);
 		verifyStateIndexedInteger(result, gl, GL_VERTEX_BINDING_BUFFER, 1, 0, m_verifier);
+
 		gl.glBindVertexArray(*vao);
 		verifyStateIndexedInteger(result, gl, GL_VERTEX_BINDING_BUFFER, 1, otherBuffer, m_verifier);
 	}

@@ -261,6 +261,7 @@ LOCAL_SRC_FILES := \
 	modules/gles31/functional/es31fFramebufferDefaultStateQueryTests.cpp \
 	modules/gles31/functional/es31fProgramPipelineStateQueryTests.cpp \
 	modules/gles31/functional/es31fProgramStateQueryTests.cpp \
+	modules/gles31/functional/es31fInfoLogQueryShared.cpp \
 	modules/gles31/functional/es31fLayoutBindingTests.cpp \
 	modules/gles31/functional/es31fMultisampleShaderRenderCase.cpp \
 	modules/gles31/functional/es31fMultisampleTests.cpp \
@@ -278,6 +279,7 @@ LOCAL_SRC_FILES := \
 	modules/gles31/functional/es31fProgramInterfaceQueryTestCase.cpp \
 	modules/gles31/functional/es31fProgramInterfaceQueryTests.cpp \
 	modules/gles31/functional/es31fProgramUniformTests.cpp \
+	modules/gles31/functional/es31fSamplerStateQueryTests.cpp \
 	modules/gles31/functional/es31fSampleShadingTests.cpp \
 	modules/gles31/functional/es31fSampleVariableTests.cpp \
 	modules/gles31/functional/es31fSeparateShaderTests.cpp \
@@ -491,6 +493,7 @@ LOCAL_SRC_FILES := \
 	modules/glshared/glsStateQueryUtil.cpp \
 	modules/glshared/glsStateChangePerfTestCases.cpp \
 	modules/glshared/glsTextureBufferCase.cpp \
+	modules/glshared/glsTextureStateQueryTests.cpp \
 	modules/glshared/glsTextureTestUtil.cpp \
 	modules/glshared/glsUniformBlockCase.cpp \
 	modules/glshared/glsVertexArrayTests.cpp \

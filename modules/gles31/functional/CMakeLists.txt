@@ -21,6 +21,8 @@ set(DEQP_GLES31_FUNCTIONAL_SRCS
 	es31fTessellationTests.hpp
 	es31fAtomicCounterTests.hpp
 	es31fAtomicCounterTests.cpp
+	es31fSamplerStateQueryTests.cpp
+	es31fSamplerStateQueryTests.hpp
 	es31fSampleShadingTests.cpp
 	es31fSampleShadingTests.hpp
 	es31fSampleVariableTests.cpp
@@ -87,6 +89,8 @@ set(DEQP_GLES31_FUNCTIONAL_SRCS
 	es31fProgramPipelineStateQueryTests.hpp
 	es31fProgramStateQueryTests.cpp
 	es31fProgramStateQueryTests.hpp
+	es31fInfoLogQueryShared.cpp
+	es31fInfoLogQueryShared.hpp
 	es31fTextureMultisampleTests.cpp
 	es31fTextureMultisampleTests.hpp
 	es31fUniformLocationTests.cpp

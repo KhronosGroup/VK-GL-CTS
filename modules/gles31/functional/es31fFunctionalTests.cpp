@@ -50,6 +50,7 @@
 #include "es31fFramebufferDefaultStateQueryTests.hpp"
 #include "es31fProgramPipelineStateQueryTests.hpp"
 #include "es31fProgramStateQueryTests.hpp"
+#include "es31fSamplerStateQueryTests.hpp"
 #include "es31fTextureFilteringTests.hpp"
 #include "es31fTextureFormatTests.hpp"
 #include "es31fTextureSpecificationTests.hpp"
@@ -261,6 +262,7 @@ public:
 		addChild(new IndexedStateQueryTests							(m_context));
 		addChild(new TextureStateQueryTests							(m_context));
 		addChild(new TextureLevelStateQueryTests					(m_context));
+		addChild(new SamplerStateQueryTests							(m_context));
 		addChild(new ShaderStateQueryTests							(m_context));
 		addChild(new InternalFormatQueryTests						(m_context));
 		addChild(new VertexAttributeBindingStateQueryTests			(m_context));

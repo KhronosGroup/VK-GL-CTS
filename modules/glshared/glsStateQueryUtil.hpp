@@ -42,6 +42,15 @@ namespace gls
 namespace StateQueryUtil
 {
 
+#define GLS_COLLECT_GL_ERROR(RES, ERR, MSG) \
+	do \
+	{ \
+		const deUint32 err = (ERR); \
+		if (err != GL_NO_ERROR) \
+			(RES).fail(std::string("Got Error ") + glu::getErrorStr(err).toString() + ": " + (MSG)); \
+	} \
+	while (deGetFalse())
+
 /*--------------------------------------------------------------------*//*!
  * \brief Rounds given float to the nearest integer (half up).
  *
@@ -256,10 +265,35 @@ enum QueryType
 	// texture param
 	QUERY_TEXTURE_PARAM_INTEGER,
 	QUERY_TEXTURE_PARAM_FLOAT,
+	QUERY_TEXTURE_PARAM_PURE_INTEGER,
+	QUERY_TEXTURE_PARAM_PURE_UNSIGNED_INTEGER,
+	QUERY_TEXTURE_PARAM_INTEGER_VEC4,
+	QUERY_TEXTURE_PARAM_FLOAT_VEC4,
+	QUERY_TEXTURE_PARAM_PURE_INTEGER_VEC4,
+	QUERY_TEXTURE_PARAM_PURE_UNSIGNED_INTEGER_VEC4,
 
 	// texture level
 	QUERY_TEXTURE_LEVEL_INTEGER,
 	QUERY_TEXTURE_LEVEL_FLOAT,
+
+	// pointer
+	QUERY_POINTER,
+
+	// object states
+	QUERY_ISTEXTURE,
+
+	// query queries
+	QUERY_QUERY,
+
+	// sampler state
+	QUERY_SAMPLER_PARAM_INTEGER,
+	QUERY_SAMPLER_PARAM_FLOAT,
+	QUERY_SAMPLER_PARAM_PURE_INTEGER,
+	QUERY_SAMPLER_PARAM_PURE_UNSIGNED_INTEGER,
+	QUERY_SAMPLER_PARAM_INTEGER_VEC4,
+	QUERY_SAMPLER_PARAM_FLOAT_VEC4,
+	QUERY_SAMPLER_PARAM_PURE_INTEGER_VEC4,
+	QUERY_SAMPLER_PARAM_PURE_UNSIGNED_INTEGER_VEC4,
 
 	QUERY_LAST
 };
@@ -272,6 +306,10 @@ enum DataType
 	DATATYPE_FLOAT,
 	DATATYPE_UNSIGNED_INTEGER,
 	DATATYPE_INTEGER_VEC3,
+	DATATYPE_FLOAT_VEC4,
+	DATATYPE_INTEGER_VEC4,
+	DATATYPE_UNSIGNED_INTEGER_VEC4,
+	DATATYPE_POINTER,
 
 	DATATYPE_LAST
 };
@@ -279,25 +317,36 @@ enum DataType
 class QueriedState
 {
 public:
-	typedef glw::GLint GLIntVec3[3];
+	typedef glw::GLint		GLIntVec3[3];
+	typedef glw::GLint		GLIntVec4[4];
+	typedef glw::GLuint		GLUintVec4[4];
+	typedef glw::GLfloat	GLFloatVec4[4];
 
 							QueriedState		(void);
 	explicit				QueriedState		(glw::GLint);
 	explicit				QueriedState		(glw::GLint64);
-	explicit				QueriedState		(glw::GLboolean);
+	explicit				QueriedState		(bool);
 	explicit				QueriedState		(glw::GLfloat);
 	explicit				QueriedState		(glw::GLuint);
 	explicit				QueriedState		(const GLIntVec3&);
+	explicit				QueriedState		(void*);
+	explicit				QueriedState		(const GLIntVec4&);
+	explicit				QueriedState		(const GLUintVec4&);
+	explicit				QueriedState		(const GLFloatVec4&);
 
 	bool					isUndefined			(void) const;
 	DataType				getType				(void) const;
 
 	glw::GLint&				getIntAccess		(void);
 	glw::GLint64&			getInt64Access		(void);
-	glw::GLboolean&			getBoolAccess		(void);
+	bool&					getBoolAccess		(void);
 	glw::GLfloat&			getFloatAccess		(void);
 	glw::GLuint&			getUintAccess		(void);
 	GLIntVec3&				getIntVec3Access	(void);
+	void*&					getPtrAccess		(void);
+	GLIntVec4&				getIntVec4Access	(void);
+	GLUintVec4&				getUintVec4Access	(void);
+	GLFloatVec4&			getFloatVec4Access	(void);
 
 private:
 	DataType				m_type;
@@ -305,56 +354,84 @@ private:
 	{
 		glw::GLint			vInt;
 		glw::GLint64		vInt64;
-		glw::GLboolean		vBool;
+		bool				vBool;
 		glw::GLfloat		vFloat;
 		glw::GLuint			vUint;
 		GLIntVec3			vIntVec3;
+		void*				vPtr;
+		GLIntVec4			vIntVec4;
+		GLUintVec4			vUintVec4;
+		GLFloatVec4			vFloatVec4;
 	} m_v;
 };
 
 // query functions
 
-void queryState							(tcu::ResultCollector& result, glu::CallLogWrapper& gl, QueryType type, glw::GLenum target, QueriedState& state);
-void queryIndexedState					(tcu::ResultCollector& result, glu::CallLogWrapper& gl, QueryType type, glw::GLenum target, int index, QueriedState& state);
-void queryAttributeState				(tcu::ResultCollector& result, glu::CallLogWrapper& gl, QueryType type, glw::GLenum target, int index, QueriedState& state);
-void queryFramebufferState				(tcu::ResultCollector& result, glu::CallLogWrapper& gl, QueryType type, glw::GLenum target, glw::GLenum pname, QueriedState& state);
-void queryProgramState					(tcu::ResultCollector& result, glu::CallLogWrapper& gl, QueryType type, glw::GLuint program, glw::GLenum pname, QueriedState& state);
-void queryPipelineState					(tcu::ResultCollector& result, glu::CallLogWrapper& gl, QueryType type, glw::GLuint pipeline, glw::GLenum pname, QueriedState& state);
-void queryTextureParamState				(tcu::ResultCollector& result, glu::CallLogWrapper& gl, QueryType type, glw::GLenum target, glw::GLenum pname, QueriedState& state);
-void queryTextureLevelState				(tcu::ResultCollector& result, glu::CallLogWrapper& gl, QueryType type, glw::GLenum target, int level, glw::GLenum pname, QueriedState& state);
+void queryState									(tcu::ResultCollector& result, glu::CallLogWrapper& gl, QueryType type, glw::GLenum pname, QueriedState& state);
+void queryIndexedState							(tcu::ResultCollector& result, glu::CallLogWrapper& gl, QueryType type, glw::GLenum target, int index, QueriedState& state);
+void queryAttributeState						(tcu::ResultCollector& result, glu::CallLogWrapper& gl, QueryType type, glw::GLenum target, int index, QueriedState& state);
+void queryFramebufferState						(tcu::ResultCollector& result, glu::CallLogWrapper& gl, QueryType type, glw::GLenum target, glw::GLenum pname, QueriedState& state);
+void queryProgramState							(tcu::ResultCollector& result, glu::CallLogWrapper& gl, QueryType type, glw::GLuint program, glw::GLenum pname, QueriedState& state);
+void queryPipelineState							(tcu::ResultCollector& result, glu::CallLogWrapper& gl, QueryType type, glw::GLuint pipeline, glw::GLenum pname, QueriedState& state);
+void queryTextureParamState						(tcu::ResultCollector& result, glu::CallLogWrapper& gl, QueryType type, glw::GLenum target, glw::GLenum pname, QueriedState& state);
+void queryTextureLevelState						(tcu::ResultCollector& result, glu::CallLogWrapper& gl, QueryType type, glw::GLenum target, int level, glw::GLenum pname, QueriedState& state);
+void queryPointerState							(tcu::ResultCollector& result, glu::CallLogWrapper& gl, QueryType type, glw::GLenum pname, QueriedState& state);
+void queryObjectState							(tcu::ResultCollector& result, glu::CallLogWrapper& gl, QueryType type, glw::GLuint handle, QueriedState& state);
+void queryQueryState							(tcu::ResultCollector& result, glu::CallLogWrapper& gl, QueryType type, glw::GLenum target, glw::GLenum pname, QueriedState& state);
+void querySamplerState							(tcu::ResultCollector& result, glu::CallLogWrapper& gl, QueryType type, glw::GLuint sampler, glw::GLenum pname, QueriedState& state);
 
 // verification functions
 
-void verifyBoolean						(tcu::ResultCollector& result, QueriedState& state, bool expected);
-void verifyInteger						(tcu::ResultCollector& result, QueriedState& state, int expected);
-void verifyIntegerMin					(tcu::ResultCollector& result, QueriedState& state, int minValue);
-void verifyIntegerMax					(tcu::ResultCollector& result, QueriedState& state, int maxValue);
-void verifyIntegersEqual				(tcu::ResultCollector& result, QueriedState& stateA, QueriedState& stateB);
-void verifyFloat						(tcu::ResultCollector& result, QueriedState& state, float expected);
-void verifyFloatMin						(tcu::ResultCollector& result, QueriedState& state, float minValue);
-void verifyFloatMax						(tcu::ResultCollector& result, QueriedState& state, float maxValue);
-void verifyIntegerVec3					(tcu::ResultCollector& result, QueriedState& state, const tcu::IVec3& expected);
+void verifyBoolean								(tcu::ResultCollector& result, QueriedState& state, bool expected);
+void verifyInteger								(tcu::ResultCollector& result, QueriedState& state, int expected);
+void verifyIntegerMin							(tcu::ResultCollector& result, QueriedState& state, int minValue);
+void verifyIntegerMax							(tcu::ResultCollector& result, QueriedState& state, int maxValue);
+void verifyIntegersEqual						(tcu::ResultCollector& result, QueriedState& stateA, QueriedState& stateB);
+void verifyFloat								(tcu::ResultCollector& result, QueriedState& state, float expected);
+void verifyFloatMin								(tcu::ResultCollector& result, QueriedState& state, float minValue);
+void verifyFloatMax								(tcu::ResultCollector& result, QueriedState& state, float maxValue);
+void verifyIntegerVec3							(tcu::ResultCollector& result, QueriedState& state, const tcu::IVec3& expected);
+void verifyIntegerVec4							(tcu::ResultCollector& result, QueriedState& state, const tcu::IVec4& expected);
+void verifyUnsignedIntegerVec4					(tcu::ResultCollector& result, QueriedState& state, const tcu::UVec4& expected);
+void verifyFloatVec4							(tcu::ResultCollector& result, QueriedState& state, const tcu::Vec4& expected);
+void verifyPointer								(tcu::ResultCollector& result, QueriedState& state, const void* expected);
+void verifyNormalizedI32Vec4					(tcu::ResultCollector& result, QueriedState& state, const tcu::IVec4& expected);
 
 // Helper functions that both query and verify
 
-void verifyStateBoolean					(tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLenum target,		bool expected,		QueryType type);
-void verifyStateInteger					(tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLenum target,		int expected,		QueryType type);
-void verifyStateIntegerMin				(tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLenum target,		int minValue,		QueryType type);
-void verifyStateIntegerMax				(tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLenum target,		int maxValue,		QueryType type);
-void verifyStateIntegerEqualToOther		(tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLenum target,		glw::GLenum other,	QueryType type);
-void verifyStateFloat					(tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLenum target,		float reference,	QueryType type);
-void verifyStateFloatMin				(tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLenum target,		float minValue,		QueryType type);
-void verifyStateFloatMax				(tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLenum target,		float maxValue,		QueryType type);
-void verifyStateIndexedBoolean			(tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLenum target,		int index,			bool expected,				QueryType type);
-void verifyStateIndexedInteger			(tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLenum target,		int index,			int expected,				QueryType type);
-void verifyStateIndexedIntegerMin		(tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLenum target,		int index,			int minValue,				QueryType type);
-void verifyStateAttributeInteger		(tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLenum target,		int index,			int expected,				QueryType type);
-void verifyStateFramebufferInteger		(tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLenum target,		glw::GLenum pname,	int expected,				QueryType type);
-void verifyStateFramebufferIntegerMin	(tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLenum target,		glw::GLenum pname,	int minValue,				QueryType type);
-void verifyStateProgramInteger			(tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLuint program,	glw::GLenum pname,	int expected,				QueryType type);
-void verifyStateProgramIntegerVec3		(tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLuint program, 	glw::GLenum pname,	const tcu::IVec3& expected,	QueryType type);
-void verifyStatePipelineInteger			(tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLuint pipeline,	glw::GLenum pname,	int expected,				QueryType type);
-void verifyStateTextureParamInteger		(tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLenum target,		glw::GLenum pname,	int expected,				QueryType type);
+void verifyStateBoolean							(tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLenum target,		bool expected,			QueryType type);
+void verifyStateInteger							(tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLenum target,		int expected,			QueryType type);
+void verifyStateIntegerMin						(tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLenum target,		int minValue,			QueryType type);
+void verifyStateIntegerMax						(tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLenum target,		int maxValue,			QueryType type);
+void verifyStateIntegerEqualToOther				(tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLenum target,		glw::GLenum other,		QueryType type);
+void verifyStateFloat							(tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLenum target,		float reference,		QueryType type);
+void verifyStateFloatMin						(tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLenum target,		float minValue,			QueryType type);
+void verifyStateFloatMax						(tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLenum target,		float maxValue,			QueryType type);
+void verifyStatePointer							(tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLenum target,		const void* expected,	QueryType type);
+void verifyStateIndexedBoolean					(tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLenum target,		int index,				bool expected,				QueryType type);
+void verifyStateIndexedInteger					(tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLenum target,		int index,				int expected,				QueryType type);
+void verifyStateIndexedIntegerMin				(tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLenum target,		int index,				int minValue,				QueryType type);
+void verifyStateAttributeInteger				(tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLenum target,		int index,				int expected,				QueryType type);
+void verifyStateFramebufferInteger				(tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLenum target,		glw::GLenum pname,		int expected,				QueryType type);
+void verifyStateFramebufferIntegerMin			(tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLenum target,		glw::GLenum pname,		int minValue,				QueryType type);
+void verifyStateProgramInteger					(tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLuint program,	glw::GLenum pname,		int expected,				QueryType type);
+void verifyStateProgramIntegerVec3				(tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLuint program, 	glw::GLenum pname,		const tcu::IVec3& expected,	QueryType type);
+void verifyStatePipelineInteger					(tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLuint pipeline,	glw::GLenum pname,		int expected,				QueryType type);
+void verifyStateTextureParamInteger				(tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLenum target,		glw::GLenum pname,		int expected,				QueryType type);
+void verifyStateTextureParamFloat				(tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLenum target,		glw::GLenum pname,		float expected,				QueryType type);
+void verifyStateTextureParamFloatVec4			(tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLenum target,		glw::GLenum pname,		const tcu::Vec4& expected,	QueryType type);
+void verifyStateTextureParamNormalizedI32Vec4	(tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLenum target,		glw::GLenum pname,		const tcu::IVec4& expected,	QueryType type);
+void verifyStateTextureParamIntegerVec4			(tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLenum target,		glw::GLenum pname,		const tcu::IVec4& expected,	QueryType type);
+void verifyStateTextureParamUnsignedIntegerVec4	(tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLenum target,		glw::GLenum pname,		const tcu::UVec4& expected,	QueryType type);
+void verifyStateTextureLevelInteger				(tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLenum target,		int level,				glw::GLenum pname,			int expected,		QueryType type);
+void verifyStateObjectBoolean					(tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLuint handle,		bool expected,			QueryType type);
+void verifyStateQueryInteger					(tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLenum target,		glw::GLenum pname,		int expected,				QueryType type);
+void verifyStateSamplerParamInteger				(tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLuint sampler,	glw::GLenum pname,		int expected,				QueryType type);
+void verifyStateSamplerParamFloat				(tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLuint sampler,	glw::GLenum pname,		float expected,				QueryType type);
+void verifyStateSamplerParamFloatVec4			(tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLuint sampler,	glw::GLenum pname,		const tcu::Vec4& expected,	QueryType type);
+void verifyStateSamplerParamNormalizedI32Vec4	(tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLuint sampler,	glw::GLenum pname,		const tcu::IVec4& expected,	QueryType type);
+void verifyStateSamplerParamIntegerVec4			(tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLuint sampler,	glw::GLenum pname,		const tcu::IVec4& expected,	QueryType type);
+void verifyStateSamplerParamUnsignedIntegerVec4	(tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLuint sampler,	glw::GLenum pname,		const tcu::UVec4& expected,	QueryType type);
 
 } // StateQueryUtil
 } // gls

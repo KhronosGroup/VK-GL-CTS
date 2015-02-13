@@ -63,7 +63,7 @@ QueriedState::QueriedState (glw::GLint64 v)
 	m_v.vInt64 = v;
 }
 
-QueriedState::QueriedState (glw::GLboolean v)
+QueriedState::QueriedState (bool v)
 	: m_type(DATATYPE_BOOLEAN)
 {
 	m_v.vBool = v;
@@ -89,6 +89,39 @@ QueriedState::QueriedState (const GLIntVec3& v)
 	m_v.vIntVec3[2] = v[2];
 }
 
+QueriedState::QueriedState (void* v)
+	: m_type(DATATYPE_POINTER)
+{
+	m_v.vPtr = v;
+}
+
+QueriedState::QueriedState (const GLIntVec4& v)
+	: m_type(DATATYPE_INTEGER_VEC4)
+{
+	m_v.vIntVec4[0] = v[0];
+	m_v.vIntVec4[1] = v[1];
+	m_v.vIntVec4[2] = v[2];
+	m_v.vIntVec4[3] = v[3];
+}
+
+QueriedState::QueriedState (const GLUintVec4& v)
+	: m_type(DATATYPE_UNSIGNED_INTEGER_VEC4)
+{
+	m_v.vUintVec4[0] = v[0];
+	m_v.vUintVec4[1] = v[1];
+	m_v.vUintVec4[2] = v[2];
+	m_v.vUintVec4[3] = v[3];
+}
+
+QueriedState::QueriedState (const GLFloatVec4& v)
+	: m_type(DATATYPE_FLOAT_VEC4)
+{
+	m_v.vFloatVec4[0] = v[0];
+	m_v.vFloatVec4[1] = v[1];
+	m_v.vFloatVec4[2] = v[2];
+	m_v.vFloatVec4[3] = v[3];
+}
+
 bool QueriedState::isUndefined (void) const
 {
 	return m_type == DATATYPE_LAST;
@@ -111,7 +144,7 @@ glw::GLint64& QueriedState::getInt64Access (void)
 	return m_v.vInt64;
 }
 
-glw::GLboolean& QueriedState::getBoolAccess (void)
+bool& QueriedState::getBoolAccess (void)
 {
 	DE_ASSERT(m_type == DATATYPE_BOOLEAN);
 	return m_v.vBool;
@@ -135,7 +168,44 @@ QueriedState::GLIntVec3& QueriedState::getIntVec3Access (void)
 	return m_v.vIntVec3;
 }
 
+void*& QueriedState::getPtrAccess (void)
+{
+	DE_ASSERT(m_type == DATATYPE_POINTER);
+	return m_v.vPtr;
+}
+
+QueriedState::GLIntVec4& QueriedState::getIntVec4Access (void)
+{
+	DE_ASSERT(m_type == DATATYPE_INTEGER_VEC4);
+	return m_v.vIntVec4;
+}
+
+QueriedState::GLUintVec4& QueriedState::getUintVec4Access (void)
+{
+	DE_ASSERT(m_type == DATATYPE_UNSIGNED_INTEGER_VEC4);
+	return m_v.vUintVec4;
+}
+
+QueriedState::GLFloatVec4& QueriedState::getFloatVec4Access (void)
+{
+	DE_ASSERT(m_type == DATATYPE_FLOAT_VEC4);
+	return m_v.vFloatVec4;
+}
+
 // query
+
+static bool verifyBooleanValidity (tcu::ResultCollector& result, glw::GLboolean v)
+{
+	if (v == GL_TRUE || v == GL_FALSE)
+		return true;
+	else
+	{
+		std::ostringstream buf;
+		buf << "Boolean value was not neither GL_TRUE nor GL_FALSE, got " << de::toString(tcu::Format::Hex<2>(v));
+		result.fail(buf.str());
+		return false;
+	}
+}
 
 void queryState (tcu::ResultCollector& result, glu::CallLogWrapper& gl, QueryType type, glw::GLenum target, QueriedState& state)
 {
@@ -148,7 +218,10 @@ void queryState (tcu::ResultCollector& result, glu::CallLogWrapper& gl, QueryTyp
 			if (!checkError(result, gl, "glIsEnabled"))
 				return;
 
-			state = QueriedState(value);
+			if (!verifyBooleanValidity(result, value))
+				return;
+
+			state = QueriedState(value == GL_TRUE);
 			break;
 		}
 
@@ -162,8 +235,10 @@ void queryState (tcu::ResultCollector& result, glu::CallLogWrapper& gl, QueryTyp
 
 			if (!value.verifyValidity(result))
 				return;
+			if (!verifyBooleanValidity(result, value))
+				return;
 
-			state = QueriedState(value);
+			state = QueriedState(value == GL_TRUE);
 			break;
 		}
 
@@ -232,8 +307,10 @@ void queryIndexedState (tcu::ResultCollector& result, glu::CallLogWrapper& gl, Q
 
 			if (!value.verifyValidity(result))
 				return;
+			if (!verifyBooleanValidity(result, value))
+				return;
 
-			state = QueriedState(value);
+			state = QueriedState(value == GL_TRUE);
 			break;
 		}
 
@@ -453,6 +530,90 @@ void queryTextureParamState (tcu::ResultCollector& result, glu::CallLogWrapper& 
 			state = QueriedState(value);
 			break;
 		}
+		case QUERY_TEXTURE_PARAM_PURE_INTEGER:
+		{
+			StateQueryMemoryWriteGuard<glw::GLint> value;
+			gl.glGetTexParameterIiv(target, pname, &value);
+
+			if (!checkError(result, gl, "GetTexParameterIiv"))
+				return;
+
+			if (!value.verifyValidity(result))
+				return;
+
+			state = QueriedState(value);
+			break;
+		}
+		case QUERY_TEXTURE_PARAM_PURE_UNSIGNED_INTEGER:
+		{
+			StateQueryMemoryWriteGuard<glw::GLuint> value;
+			gl.glGetTexParameterIuiv(target, pname, &value);
+
+			if (!checkError(result, gl, "GetTexParameterIuiv"))
+				return;
+
+			if (!value.verifyValidity(result))
+				return;
+
+			state = QueriedState(value);
+			break;
+		}
+		case QUERY_TEXTURE_PARAM_INTEGER_VEC4:
+		{
+			StateQueryMemoryWriteGuard<glw::GLint[4]> value;
+			gl.glGetTexParameteriv(target, pname, value);
+
+			if (!checkError(result, gl, "glGetTexParameteriv"))
+				return;
+
+			if (!value.verifyValidity(result))
+				return;
+
+			state = QueriedState(value);
+			break;
+		}
+		case QUERY_TEXTURE_PARAM_FLOAT_VEC4:
+		{
+			StateQueryMemoryWriteGuard<glw::GLfloat[4]> value;
+			gl.glGetTexParameterfv(target, pname, value);
+
+			if (!checkError(result, gl, "glGetTexParameterfv"))
+				return;
+
+			if (!value.verifyValidity(result))
+				return;
+
+			state = QueriedState(value);
+			break;
+		}
+		case QUERY_TEXTURE_PARAM_PURE_INTEGER_VEC4:
+		{
+			StateQueryMemoryWriteGuard<glw::GLint[4]> value;
+			gl.glGetTexParameterIiv(target, pname, value);
+
+			if (!checkError(result, gl, "GetTexParameterIiv"))
+				return;
+
+			if (!value.verifyValidity(result))
+				return;
+
+			state = QueriedState(value);
+			break;
+		}
+		case QUERY_TEXTURE_PARAM_PURE_UNSIGNED_INTEGER_VEC4:
+		{
+			StateQueryMemoryWriteGuard<glw::GLuint[4]> value;
+			gl.glGetTexParameterIuiv(target, pname, value);
+
+			if (!checkError(result, gl, "GetTexParameterIuiv"))
+				return;
+
+			if (!value.verifyValidity(result))
+				return;
+
+			state = QueriedState(value);
+			break;
+		}
 		default:
 			DE_ASSERT(false);
 	}
@@ -495,7 +656,201 @@ void queryTextureLevelState (tcu::ResultCollector& result, glu::CallLogWrapper& 
 	}
 }
 
+void queryPointerState (tcu::ResultCollector& result, glu::CallLogWrapper& gl, QueryType type, glw::GLenum pname, QueriedState& state)
+{
+	switch (type)
+	{
+		case QUERY_POINTER:
+		{
+			StateQueryMemoryWriteGuard<void*> value;
+			gl.glGetPointerv(pname, &value);
+
+			if (!checkError(result, gl, "glGetPointerv"))
+				return;
+
+			if (!value.verifyValidity(result))
+				return;
+
+			state = QueriedState(value);
+			break;
+		}
+		default:
+			DE_ASSERT(false);
+	}
+}
+
+void queryObjectState (tcu::ResultCollector& result, glu::CallLogWrapper& gl, QueryType type, glw::GLuint handle, QueriedState& state)
+{
+	switch (type)
+	{
+		case QUERY_ISTEXTURE:
+		{
+			const glw::GLboolean value = gl.glIsTexture(handle);
+
+			if (!checkError(result, gl, "glIsTexture"))
+				return;
+
+			if (!verifyBooleanValidity(result, value))
+				return;
+
+			state = QueriedState(value == GL_TRUE);
+			break;
+		}
+		default:
+			DE_ASSERT(false);
+	}
+}
+
+void queryQueryState (tcu::ResultCollector& result, glu::CallLogWrapper& gl, QueryType type, glw::GLenum target, glw::GLenum pname, QueriedState& state)
+{
+	switch (type)
+	{
+		case QUERY_QUERY:
+		{
+			StateQueryMemoryWriteGuard<glw::GLint> value;
+			gl.glGetQueryiv(target, pname, &value);
+
+			if (!checkError(result, gl, "glGetQueryiv"))
+				return;
+
+			if (!value.verifyValidity(result))
+				return;
+
+			state = QueriedState(value);
+			break;
+		}
+		default:
+			DE_ASSERT(false);
+	}
+}
+
+void querySamplerState (tcu::ResultCollector& result, glu::CallLogWrapper& gl, QueryType type, glw::GLuint sampler, glw::GLenum pname, QueriedState& state)
+{
+	switch (type)
+	{
+		case QUERY_SAMPLER_PARAM_INTEGER:
+		{
+			StateQueryMemoryWriteGuard<glw::GLint> value;
+			gl.glGetSamplerParameteriv(sampler, pname, &value);
+
+			if (!checkError(result, gl, "glGetSamplerParameteriv"))
+				return;
+
+			if (!value.verifyValidity(result))
+				return;
+
+			state = QueriedState(value);
+			break;
+		}
+		case QUERY_SAMPLER_PARAM_FLOAT:
+		{
+			StateQueryMemoryWriteGuard<glw::GLfloat> value;
+			gl.glGetSamplerParameterfv(sampler, pname, &value);
+
+			if (!checkError(result, gl, "glGetSamplerParameteriv"))
+				return;
+
+			if (!value.verifyValidity(result))
+				return;
+
+			state = QueriedState(value);
+			break;
+		}
+		case QUERY_SAMPLER_PARAM_PURE_INTEGER:
+		{
+			StateQueryMemoryWriteGuard<glw::GLint> value;
+			gl.glGetSamplerParameterIiv(sampler, pname, &value);
+
+			if (!checkError(result, gl, "glGetSamplerParameterIiv"))
+				return;
+
+			if (!value.verifyValidity(result))
+				return;
+
+			state = QueriedState(value);
+			break;
+		}
+		case QUERY_SAMPLER_PARAM_PURE_UNSIGNED_INTEGER:
+		{
+			StateQueryMemoryWriteGuard<glw::GLuint> value;
+			gl.glGetSamplerParameterIuiv(sampler, pname, &value);
+
+			if (!checkError(result, gl, "glGetSamplerParameterIuiv"))
+				return;
+
+			if (!value.verifyValidity(result))
+				return;
+
+			state = QueriedState(value);
+			break;
+		}
+		case QUERY_SAMPLER_PARAM_INTEGER_VEC4:
+		{
+			StateQueryMemoryWriteGuard<glw::GLint[4]> value;
+			gl.glGetSamplerParameteriv(sampler, pname, value);
+
+			if (!checkError(result, gl, "glGetSamplerParameteriv"))
+				return;
+
+			if (!value.verifyValidity(result))
+				return;
+
+			state = QueriedState(value);
+			break;
+		}
+		case QUERY_SAMPLER_PARAM_FLOAT_VEC4:
+		{
+			StateQueryMemoryWriteGuard<glw::GLfloat[4]> value;
+			gl.glGetSamplerParameterfv(sampler, pname, value);
+
+			if (!checkError(result, gl, "glGetSamplerParameteriv"))
+				return;
+
+			if (!value.verifyValidity(result))
+				return;
+
+			state = QueriedState(value);
+			break;
+		}
+		case QUERY_SAMPLER_PARAM_PURE_INTEGER_VEC4:
+		{
+			StateQueryMemoryWriteGuard<glw::GLint[4]> value;
+			gl.glGetSamplerParameterIiv(sampler, pname, value);
+
+			if (!checkError(result, gl, "glGetSamplerParameterIiv"))
+				return;
+
+			if (!value.verifyValidity(result))
+				return;
+
+			state = QueriedState(value);
+			break;
+		}
+		case QUERY_SAMPLER_PARAM_PURE_UNSIGNED_INTEGER_VEC4:
+		{
+			StateQueryMemoryWriteGuard<glw::GLuint[4]> value;
+			gl.glGetSamplerParameterIuiv(sampler, pname, value);
+
+			if (!checkError(result, gl, "glGetSamplerParameterIuiv"))
+				return;
+
+			if (!value.verifyValidity(result))
+				return;
+
+			state = QueriedState(value);
+			break;
+		}
+		default:
+			DE_ASSERT(false);
+	}
+}
+
 // verify
+
+static const char* getGLBooleanStr (bool v)
+{
+	return (v) ? ("GL_TRUE") : ("GL_FALSE");
+}
 
 void verifyBoolean (tcu::ResultCollector& result, QueriedState& state, bool expected)
 {
@@ -503,11 +858,10 @@ void verifyBoolean (tcu::ResultCollector& result, QueriedState& state, bool expe
 	{
 		case DATATYPE_BOOLEAN:
 		{
-			const glw::GLboolean reference = expected ? GL_TRUE : GL_FALSE;
-			if (state.getBoolAccess() != reference)
+			if (state.getBoolAccess() != expected)
 			{
 				std::ostringstream buf;
-				buf << "Expected " << glu::getBooleanStr(reference) << ", got " << glu::getBooleanStr(state.getBoolAccess());
+				buf << "Expected " << getGLBooleanStr(expected) << ", got " << getGLBooleanStr(state.getBoolAccess());
 				result.fail(buf.str());
 			}
 			break;
@@ -561,11 +915,11 @@ void verifyInteger (tcu::ResultCollector& result, QueriedState& state, int expec
 	{
 		case DATATYPE_BOOLEAN:
 		{
-			const glw::GLboolean reference = (expected == 0) ? (GL_FALSE) : (GL_TRUE);
+			const bool reference = (expected != 0);
 			if (state.getBoolAccess() != reference)
 			{
 				std::ostringstream buf;
-				buf << "Expected " << glu::getBooleanStr(reference) << ", got " << glu::getBooleanStr(state.getBoolAccess());
+				buf << "Expected " << getGLBooleanStr(reference) << ", got " << getGLBooleanStr(state.getBoolAccess());
 				result.fail(buf.str());
 			}
 			break;
@@ -634,7 +988,7 @@ void verifyIntegerMin (tcu::ResultCollector& result, QueriedState& state, int mi
 	{
 		case DATATYPE_BOOLEAN:
 		{
-			if (minValue > 0 && state.getBoolAccess() != GL_TRUE)
+			if (minValue > 0 && state.getBoolAccess() != true)
 			{
 				std::ostringstream buf;
 				buf << "Expected GL_TRUE, got GL_FALSE";
@@ -688,7 +1042,7 @@ void verifyIntegerMax (tcu::ResultCollector& result, QueriedState& state, int ma
 	{
 		case DATATYPE_BOOLEAN:
 		{
-			if (maxValue < 0 && state.getBoolAccess() != GL_TRUE)
+			if (maxValue < 0 && state.getBoolAccess() != true)
 			{
 				std::ostringstream buf;
 				buf << "Expected GL_TRUE, got GL_FALSE";
@@ -742,11 +1096,11 @@ void verifyFloat (tcu::ResultCollector& result, QueriedState& state, float expec
 	{
 		case DATATYPE_BOOLEAN:
 		{
-			const glw::GLboolean reference = (expected == 0.0f) ? (GL_FALSE) : (GL_TRUE);
+			const bool reference = (expected != 0.0f);
 			if (state.getBoolAccess() != reference)
 			{
 				std::ostringstream buf;
-				buf << "Expected " << glu::getBooleanStr(reference) << ", got " << glu::getBooleanStr(state.getBoolAccess());
+				buf << "Expected " << getGLBooleanStr(reference) << ", got " << getGLBooleanStr(state.getBoolAccess());
 				result.fail(buf.str());
 			}
 			break;
@@ -803,6 +1157,26 @@ void verifyFloat (tcu::ResultCollector& result, QueriedState& state, float expec
 			break;
 		}
 
+		case DATATYPE_UNSIGNED_INTEGER:
+		{
+			const glw::GLuint refValueMin = roundGLfloatToNearestIntegerHalfDown<glw::GLuint>(expected);
+			const glw::GLuint refValueMax = roundGLfloatToNearestIntegerHalfUp<glw::GLuint>(expected);
+
+			if (state.getUintAccess() < refValueMin ||
+				state.getUintAccess() > refValueMax)
+			{
+				std::ostringstream buf;
+
+				if (refValueMin == refValueMax)
+					buf << "Expected " << refValueMin << ", got " << state.getUintAccess();
+				else
+					buf << "Expected in range [" << refValueMin << ", " << refValueMax << "], got " << state.getUintAccess();
+
+				result.fail(buf.str());
+			}
+			break;
+		}
+
 		default:
 			DE_ASSERT(DE_FALSE);
 			break;
@@ -815,7 +1189,7 @@ void verifyFloatMin (tcu::ResultCollector& result, QueriedState& state, float mi
 	{
 		case DATATYPE_BOOLEAN:
 		{
-			if (minValue > 0.0f && state.getBoolAccess() != GL_TRUE)
+			if (minValue > 0.0f && state.getBoolAccess() != true)
 				result.fail("expected GL_TRUE, got GL_FALSE");
 			break;
 		}
@@ -869,7 +1243,7 @@ void verifyFloatMax (tcu::ResultCollector& result, QueriedState& state, float ma
 	{
 		case DATATYPE_BOOLEAN:
 		{
-			if (maxValue < 0.0f && state.getBoolAccess() != GL_TRUE)
+			if (maxValue < 0.0f && state.getBoolAccess() != true)
 				result.fail("expected GL_TRUE, got GL_FALSE");
 			break;
 		}
@@ -928,7 +1302,256 @@ void verifyIntegerVec3 (tcu::ResultCollector& result, QueriedState& state, const
 				state.getIntVec3Access()[2] != expected[2])
 			{
 				std::ostringstream buf;
-				buf << "Expected " << expected << ", got " << state.getIntVec3Access();
+				buf << "Expected " << expected << ", got " << tcu::formatArray(state.getIntVec3Access());
+				result.fail(buf.str());
+			}
+			break;
+		}
+
+		default:
+			DE_ASSERT(DE_FALSE);
+			break;
+	}
+}
+
+void verifyIntegerVec4 (tcu::ResultCollector& result, QueriedState& state, const tcu::IVec4& expected)
+{
+	switch (state.getType())
+	{
+		case DATATYPE_INTEGER_VEC4:
+		{
+			if (state.getIntVec4Access()[0] != expected[0] ||
+				state.getIntVec4Access()[1] != expected[1] ||
+				state.getIntVec4Access()[2] != expected[2] ||
+				state.getIntVec4Access()[3] != expected[3])
+			{
+				std::ostringstream buf;
+				buf << "Expected " << expected << ", got " << tcu::formatArray(state.getIntVec4Access());
+				result.fail(buf.str());
+			}
+			break;
+		}
+
+		default:
+			DE_ASSERT(DE_FALSE);
+			break;
+	}
+}
+
+void verifyUnsignedIntegerVec4 (tcu::ResultCollector& result, QueriedState& state, const tcu::UVec4& expected)
+{
+	switch (state.getType())
+	{
+		case DATATYPE_UNSIGNED_INTEGER_VEC4:
+		{
+			if (state.getUintVec4Access()[0] != expected[0] ||
+				state.getUintVec4Access()[1] != expected[1] ||
+				state.getUintVec4Access()[2] != expected[2] ||
+				state.getUintVec4Access()[3] != expected[3])
+			{
+				std::ostringstream buf;
+				buf << "Expected " << expected << ", got " << tcu::formatArray(state.getUintVec4Access());
+				result.fail(buf.str());
+			}
+			break;
+		}
+
+		default:
+			DE_ASSERT(DE_FALSE);
+			break;
+	}
+}
+
+void verifyFloatVec4 (tcu::ResultCollector& result, QueriedState& state, const tcu::Vec4& expected)
+{
+	switch (state.getType())
+	{
+		case DATATYPE_FLOAT_VEC4:
+		{
+			if (state.getFloatVec4Access()[0] != expected[0] ||
+				state.getFloatVec4Access()[1] != expected[1] ||
+				state.getFloatVec4Access()[2] != expected[2] ||
+				state.getFloatVec4Access()[3] != expected[3])
+			{
+				std::ostringstream buf;
+				buf << "Expected " << expected << ", got " << tcu::formatArray(state.getFloatVec4Access());
+				result.fail(buf.str());
+			}
+			break;
+		}
+		case DATATYPE_INTEGER_VEC4:
+		{
+			bool				anyError = false;
+			std::ostringstream	expectation;
+
+			for (int ndx = 0; ndx < 4; ++ndx)
+			{
+				const glw::GLint refValueMin = roundGLfloatToNearestIntegerHalfDown<glw::GLint>(expected[ndx]);
+				const glw::GLint refValueMax = roundGLfloatToNearestIntegerHalfUp<glw::GLint>(expected[ndx]);
+
+				if (state.getIntVec4Access()[ndx] < refValueMin ||
+					state.getIntVec4Access()[ndx] > refValueMax)
+				{
+					std::ostringstream buf;
+
+					if (ndx > 0)
+						expectation << " ,";
+
+					if (refValueMin == refValueMax)
+						buf << refValueMin;
+					else
+						buf << "[" << refValueMin << ", " << refValueMax << "]";
+				}
+			}
+
+			if (anyError)
+			{
+				std::ostringstream buf;
+				buf << "Expected {" << expectation.str() << "}, got " << tcu::formatArray(state.getIntVec4Access());
+				result.fail(buf.str());
+			}
+			break;
+		}
+		case DATATYPE_UNSIGNED_INTEGER_VEC4:
+		{
+			bool				anyError = false;
+			std::ostringstream	expectation;
+
+			for (int ndx = 0; ndx < 4; ++ndx)
+			{
+				const glw::GLuint refValueMin = roundGLfloatToNearestIntegerHalfDown<glw::GLuint>(expected[ndx]);
+				const glw::GLuint refValueMax = roundGLfloatToNearestIntegerHalfUp<glw::GLuint>(expected[ndx]);
+
+				if (state.getUintVec4Access()[ndx] < refValueMin ||
+					state.getUintVec4Access()[ndx] > refValueMax)
+				{
+					std::ostringstream buf;
+
+					if (ndx > 0)
+						expectation << " ,";
+
+					if (refValueMin == refValueMax)
+						buf << refValueMin;
+					else
+						buf << "[" << refValueMin << ", " << refValueMax << "]";
+				}
+			}
+
+			if (anyError)
+			{
+				std::ostringstream buf;
+				buf << "Expected {" << expectation.str() << "}, got " << tcu::formatArray(state.getUintVec4Access());
+				result.fail(buf.str());
+			}
+			break;
+		}
+
+		default:
+			DE_ASSERT(DE_FALSE);
+			break;
+	}
+}
+
+void verifyPointer (tcu::ResultCollector& result, QueriedState& state, const void* expected)
+{
+	switch (state.getType())
+	{
+		case DATATYPE_POINTER:
+		{
+			if (state.getPtrAccess() != expected)
+			{
+				std::ostringstream buf;
+				buf << "Expected " << expected << ", got " << state.getPtrAccess();
+				result.fail(buf.str());
+			}
+			break;
+		}
+
+		default:
+			DE_ASSERT(DE_FALSE);
+			break;
+	}
+}
+
+static float normalizeI32Float (deInt32 c)
+{
+	return de::max(c / float((1ul << 31) - 1u), -1.0f);
+}
+
+void verifyNormalizedI32Vec4 (tcu::ResultCollector& result, QueriedState& state, const tcu::IVec4& expected)
+{
+	// \note: normalization precision is irrelevant for these tests, we can use very large thresholds
+	const float			normalizationError	= 0.1f;
+	const tcu::Vec4		reference			(normalizeI32Float(expected[0]),
+											 normalizeI32Float(expected[1]),
+											 normalizeI32Float(expected[2]),
+											 normalizeI32Float(expected[3]));
+	const tcu::Vec4		validHigh			(de::min( 1.0f, reference[0] + normalizationError),
+											 de::min( 1.0f, reference[1] + normalizationError),
+											 de::min( 1.0f, reference[2] + normalizationError),
+											 de::min( 1.0f, reference[3] + normalizationError));
+	const tcu::Vec4		validLow			(de::max(-1.0f, reference[0] - normalizationError),
+											 de::max(-1.0f, reference[1] - normalizationError),
+											 de::max(-1.0f, reference[2] - normalizationError),
+											 de::max(-1.0f, reference[3] - normalizationError));
+
+	switch (state.getType())
+	{
+		case DATATYPE_FLOAT_VEC4:
+		{
+			bool				anyError = false;
+			std::ostringstream	expectation;
+
+			for (int ndx = 0; ndx < 4; ++ndx)
+			{
+				if (state.getFloatVec4Access()[ndx] < validLow[ndx] ||
+					state.getFloatVec4Access()[ndx] > validHigh[ndx])
+				{
+					std::ostringstream buf;
+
+					if (ndx > 0)
+						expectation << " ,";
+					buf << "[" << validLow[ndx] << ", " << validHigh[ndx] << "]";
+				}
+			}
+
+			if (anyError)
+			{
+				std::ostringstream buf;
+				buf << "Expected {" << expectation.str() << "}, got " << tcu::formatArray(state.getFloatVec4Access());
+				result.fail(buf.str());
+			}
+			break;
+		}
+		case DATATYPE_INTEGER_VEC4:
+		{
+			bool				anyError = false;
+			std::ostringstream	expectation;
+
+			for (int ndx = 0; ndx < 4; ++ndx)
+			{
+				const glw::GLint refValueMin = roundGLfloatToNearestIntegerHalfDown<glw::GLint>(validHigh[ndx]);
+				const glw::GLint refValueMax = roundGLfloatToNearestIntegerHalfUp<glw::GLint>(validLow[ndx]);
+
+				if (state.getIntVec4Access()[ndx] < refValueMin ||
+					state.getIntVec4Access()[ndx] > refValueMax)
+				{
+					std::ostringstream buf;
+
+					if (ndx > 0)
+						expectation << " ,";
+
+					if (refValueMin == refValueMax)
+						buf << refValueMin;
+					else
+						buf << "[" << refValueMin << ", " << refValueMax << "]";
+				}
+			}
+
+			if (anyError)
+			{
+				std::ostringstream buf;
+				buf << "Expected {" << expectation.str() << "}, got " << tcu::formatArray(state.getIntVec4Access());
 				result.fail(buf.str());
 			}
 			break;
@@ -1059,6 +1682,16 @@ void verifyStateFloatMax (tcu::ResultCollector& result, glu::CallLogWrapper& gl,
 		verifyFloatMax(result, state, maxValue);
 }
 
+void verifyStatePointer (tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLenum target, const void* expected, QueryType type)
+{
+	QueriedState state;
+
+	queryPointerState(result, gl, type, target, state);
+
+	if (!state.isUndefined())
+		verifyPointer(result, state, expected);
+}
+
 void verifyStateIndexedBoolean (tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLenum target, int index, bool expected, QueryType type)
 {
 	QueriedState state;
@@ -1157,6 +1790,146 @@ void verifyStateTextureParamInteger (tcu::ResultCollector& result, glu::CallLogW
 
 	if (!state.isUndefined())
 		verifyInteger(result, state, expected);
+}
+
+void verifyStateTextureParamFloat (tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLenum target, glw::GLenum pname, float expected, QueryType type)
+{
+	QueriedState state;
+
+	queryTextureParamState(result, gl, type, target, pname, state);
+
+	if (!state.isUndefined())
+		verifyFloat(result, state, expected);
+}
+
+void verifyStateTextureParamFloatVec4 (tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLenum target, glw::GLenum pname, const tcu::Vec4& expected, QueryType type)
+{
+	QueriedState state;
+
+	queryTextureParamState(result, gl, type, target, pname, state);
+
+	if (!state.isUndefined())
+		verifyFloatVec4(result, state, expected);
+}
+
+void verifyStateTextureParamNormalizedI32Vec4 (tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLenum target, glw::GLenum pname, const tcu::IVec4& expected, QueryType type)
+{
+	QueriedState state;
+
+	queryTextureParamState(result, gl, type, target, pname, state);
+
+	if (!state.isUndefined())
+		verifyNormalizedI32Vec4(result, state, expected);
+}
+
+void verifyStateTextureParamIntegerVec4 (tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLenum target, glw::GLenum pname, const tcu::IVec4& expected, QueryType type)
+{
+	QueriedState state;
+
+	queryTextureParamState(result, gl, type, target, pname, state);
+
+	if (!state.isUndefined())
+		verifyIntegerVec4(result, state, expected);
+}
+
+void verifyStateTextureParamUnsignedIntegerVec4 (tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLenum target, glw::GLenum pname, const tcu::UVec4& expected, QueryType type)
+{
+	QueriedState state;
+
+	queryTextureParamState(result, gl, type, target, pname, state);
+
+	if (!state.isUndefined())
+		verifyUnsignedIntegerVec4(result, state, expected);
+}
+
+void verifyStateTextureLevelInteger (tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLenum target, int level, glw::GLenum pname, int expected, QueryType type)
+{
+	QueriedState state;
+
+	queryTextureLevelState(result, gl, type, target, level, pname, state);
+
+	if (!state.isUndefined())
+		verifyInteger(result, state, expected);
+}
+
+void verifyStateObjectBoolean (tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLuint handle, bool expected, QueryType type)
+{
+	QueriedState state;
+
+	queryObjectState(result, gl, type, handle, state);
+
+	if (!state.isUndefined())
+		verifyBoolean(result, state, expected);
+}
+
+void verifyStateQueryInteger (tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLenum target, glw::GLenum pname, int expected, QueryType type)
+{
+	QueriedState state;
+
+	queryQueryState(result, gl, type, target, pname, state);
+
+	if (!state.isUndefined())
+		verifyInteger(result, state, expected);
+}
+
+void verifyStateSamplerParamInteger (tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLuint sampler, glw::GLenum pname, int expected, QueryType type)
+{
+	QueriedState state;
+
+	querySamplerState(result, gl, type, sampler, pname, state);
+
+	if (!state.isUndefined())
+		verifyInteger(result, state, expected);
+}
+
+void verifyStateSamplerParamFloat (tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLuint sampler, glw::GLenum pname, float expected, QueryType type)
+{
+	QueriedState state;
+
+	querySamplerState(result, gl, type, sampler, pname, state);
+
+	if (!state.isUndefined())
+		verifyFloat(result, state, expected);
+}
+
+void verifyStateSamplerParamFloatVec4 (tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLuint sampler, glw::GLenum pname, const tcu::Vec4& expected, QueryType type)
+{
+	QueriedState state;
+
+	querySamplerState(result, gl, type, sampler, pname, state);
+
+	if (!state.isUndefined())
+		verifyFloatVec4(result, state, expected);
+}
+
+void verifyStateSamplerParamNormalizedI32Vec4 (tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLuint sampler, glw::GLenum pname, const tcu::IVec4& expected, QueryType type)
+{
+	QueriedState state;
+
+	querySamplerState(result, gl, type, sampler, pname, state);
+
+	if (!state.isUndefined())
+		verifyNormalizedI32Vec4(result, state, expected);
+}
+
+void verifyStateSamplerParamIntegerVec4 (tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLuint sampler, glw::GLenum pname, const tcu::IVec4& expected, QueryType type)
+{
+	QueriedState state;
+
+	querySamplerState(result, gl, type, sampler, pname, state);
+
+	if (!state.isUndefined())
+		verifyIntegerVec4(result, state, expected);
+}
+
+void verifyStateSamplerParamUnsignedIntegerVec4 (tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLuint sampler, glw::GLenum pname, const tcu::UVec4& expected, QueryType type)
+{
+	QueriedState state;
+
+	querySamplerState(result, gl, type, sampler, pname, state);
+
+	if (!state.isUndefined())
+		verifyUnsignedIntegerVec4(result, state, expected);
 }
 
 } // StateQueryUtil
