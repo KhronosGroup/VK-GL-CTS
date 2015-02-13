@@ -46,6 +46,7 @@
 #include "tcuVector.hpp"
 #include "tcuVectorUtil.hpp"
 #include "tcuSeedBuilder.hpp"
+#include "tcuResultCollector.hpp"
 
 #include "deArrayBuffer.hpp"
 #include "deFloat16.h"
