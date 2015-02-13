@@ -25,26 +25,10 @@
 
 #include "tcuDefs.hpp"
 #include "tcuVector.hpp"
+#include "tcuArray.hpp"
 
 namespace tcu
 {
-
-template <typename T, int Size>
-class Array
-{
-public:
-					Array			(void) {}
-					~Array			(void) {}
-
-	inline T		operator[]		(int ndx) const		{ return m_data[ndx]; }
-	inline T&		operator[]		(int ndx)			{ return m_data[ndx]; }
-
-	inline const T*	getPtr			(void) const		{ return m_data; }
-	inline T*		getPtr			(void)				{ return m_data; }
-
-private:
-	T				m_data[Size];
-};
 
 // Templated matrix class.
 template <typename T, int Rows, int Cols>
@@ -589,6 +573,6 @@ Matrix<T, Rows, Cols> operator/ (const Matrix<T, Rows, Cols>& a, const Matrix<T,
 	return res;
 }
 
-} // namespace tcu
+} // tcu
 
 #endif // _TCUMATRIX_HPP

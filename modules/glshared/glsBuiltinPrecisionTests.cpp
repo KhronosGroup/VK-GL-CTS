@@ -40,6 +40,7 @@
 #include "tcuTestLog.hpp"
 #include "tcuVector.hpp"
 #include "tcuMatrix.hpp"
+#include "tcuResultCollector.hpp"
 
 #include "gluContextInfo.hpp"
 #include "gluVarType.hpp"

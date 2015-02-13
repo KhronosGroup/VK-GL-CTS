@@ -73,8 +73,20 @@ set(DEQP_GLES31_FUNCTIONAL_SRCS
 	es31fTextureSpecificationTests.cpp
 	es31fIntegerStateQueryTests.cpp
 	es31fIntegerStateQueryTests.hpp
+	es31fBooleanStateQueryTests.cpp
+	es31fBooleanStateQueryTests.hpp
+	es31fIndexedStateQueryTests.cpp
+	es31fIndexedStateQueryTests.hpp
 	es31fInternalFormatQueryTests.cpp
 	es31fInternalFormatQueryTests.hpp
+	es31fTextureStateQueryTests.cpp
+	es31fTextureStateQueryTests.hpp
+	es31fFramebufferDefaultStateQueryTests.cpp
+	es31fFramebufferDefaultStateQueryTests.hpp
+	es31fProgramPipelineStateQueryTests.cpp
+	es31fProgramPipelineStateQueryTests.hpp
+	es31fProgramStateQueryTests.cpp
+	es31fProgramStateQueryTests.hpp
 	es31fTextureMultisampleTests.cpp
 	es31fTextureMultisampleTests.hpp
 	es31fUniformLocationTests.cpp

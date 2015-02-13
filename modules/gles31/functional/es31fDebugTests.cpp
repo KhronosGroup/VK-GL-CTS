@@ -50,6 +50,7 @@
 #include "tes31Context.hpp"
 #include "tcuTestContext.hpp"
 #include "tcuCommandLine.hpp"
+#include "tcuResultCollector.hpp"
 
 namespace deqp
 {

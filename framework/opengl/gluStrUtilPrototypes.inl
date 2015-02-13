@@ -43,6 +43,7 @@ const char*							getTextureWrapModeName					(int value);
 const char*							getTextureSwizzleName					(int value);
 const char*							getTextureCompareModeName				(int value);
 const char*							getCubeMapFaceName						(int value);
+const char*							getTextureDepthStencilModeName			(int value);
 const char*							getPixelStoreParameterName				(int value);
 const char*							getPixelFormatName						(int value);
 const char*							getCompressedTexFormatName				(int value);
@@ -72,6 +73,7 @@ const char*							getPipelineParamName					(int value);
 tcu::Format::Bitfield<16>			getBufferMaskStr						(int value);
 tcu::Format::Bitfield<16>			getBufferMapFlagsStr					(int value);
 tcu::Format::Bitfield<16>			getMemoryBarrierFlagsStr				(int value);
+tcu::Format::Bitfield<16>			getShaderTypeMaskStr					(int value);
 inline tcu::Format::Enum<int, 2>	getErrorStr								(int value)		{ return tcu::Format::Enum<int, 2>(getErrorName, value); }
 inline tcu::Format::Enum<int, 2>	getTypeStr								(int value)		{ return tcu::Format::Enum<int, 2>(getTypeName, value); }
 inline tcu::Format::Enum<int, 2>	getParamQueryStr						(int value)		{ return tcu::Format::Enum<int, 2>(getParamQueryName, value); }
@@ -112,6 +114,7 @@ inline tcu::Format::Enum<int, 2>	getTextureWrapModeStr					(int value)		{ return
 inline tcu::Format::Enum<int, 2>	getTextureSwizzleStr					(int value)		{ return tcu::Format::Enum<int, 2>(getTextureSwizzleName, value); }
 inline tcu::Format::Enum<int, 2>	getTextureCompareModeStr				(int value)		{ return tcu::Format::Enum<int, 2>(getTextureCompareModeName, value); }
 inline tcu::Format::Enum<int, 2>	getCubeMapFaceStr						(int value)		{ return tcu::Format::Enum<int, 2>(getCubeMapFaceName, value); }
+inline tcu::Format::Enum<int, 2>	getTextureDepthStencilModeStr			(int value)		{ return tcu::Format::Enum<int, 2>(getTextureDepthStencilModeName, value); }
 inline tcu::Format::Enum<int, 2>	getPixelStoreParameterStr				(int value)		{ return tcu::Format::Enum<int, 2>(getPixelStoreParameterName, value); }
 inline tcu::Format::Enum<int, 2>	getPixelFormatStr						(int value)		{ return tcu::Format::Enum<int, 2>(getPixelFormatName, value); }
 inline tcu::Format::Enum<int, 2>	getCompressedTexFormatStr				(int value)		{ return tcu::Format::Enum<int, 2>(getCompressedTexFormatName, value); }

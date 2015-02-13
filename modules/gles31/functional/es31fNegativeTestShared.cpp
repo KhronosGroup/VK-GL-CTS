@@ -23,6 +23,8 @@
 
 #include "es31fNegativeTestShared.hpp"
 
+#include "tcuResultCollector.hpp"
+
 #include "gluRenderContext.hpp"
 #include "glwFunctions.hpp"
 

@@ -30,6 +30,7 @@
 #include "tcuSurface.hpp"
 #include "tcuTestLog.hpp"
 #include "tcuTextureUtil.hpp"
+#include "tcuResultCollector.hpp"
 
 #include "rrRenderer.hpp"
 #include "rrShaders.hpp"

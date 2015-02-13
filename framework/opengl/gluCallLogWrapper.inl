@@ -795,7 +795,7 @@ void CallLogWrapper::glDeleteProgram (glw::GLuint program)
 void CallLogWrapper::glDeleteProgramPipelines (glw::GLsizei n, const glw::GLuint *pipelines)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glDeleteProgramPipelines(" << n << ", " << pipelines << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glDeleteProgramPipelines(" << n << ", " << getPointerStr(pipelines, n) << ");" << TestLog::EndMessage;
 	m_gl.deleteProgramPipelines(n, pipelines);
 }
 
@@ -1249,9 +1249,7 @@ void CallLogWrapper::glGenBuffers (glw::GLsizei n, glw::GLuint *buffers)
 		m_log << TestLog::Message << "glGenBuffers(" << n << ", " << buffers << ");" << TestLog::EndMessage;
 	m_gl.genBuffers(n, buffers);
 	if (m_enableLog)
-	{
 		m_log << TestLog::Message << "// buffers = " << getPointerStr(buffers, n) << TestLog::EndMessage;
-	}
 }
 
 void CallLogWrapper::glGenFramebuffers (glw::GLsizei n, glw::GLuint *framebuffers)
@@ -1260,9 +1258,7 @@ void CallLogWrapper::glGenFramebuffers (glw::GLsizei n, glw::GLuint *framebuffer
 		m_log << TestLog::Message << "glGenFramebuffers(" << n << ", " << framebuffers << ");" << TestLog::EndMessage;
 	m_gl.genFramebuffers(n, framebuffers);
 	if (m_enableLog)
-	{
 		m_log << TestLog::Message << "// framebuffers = " << getPointerStr(framebuffers, n) << TestLog::EndMessage;
-	}
 }
 
 void CallLogWrapper::glGenProgramPipelines (glw::GLsizei n, glw::GLuint *pipelines)
@@ -1270,6 +1266,8 @@ void CallLogWrapper::glGenProgramPipelines (glw::GLsizei n, glw::GLuint *pipelin
 	if (m_enableLog)
 		m_log << TestLog::Message << "glGenProgramPipelines(" << n << ", " << pipelines << ");" << TestLog::EndMessage;
 	m_gl.genProgramPipelines(n, pipelines);
+	if (m_enableLog)
+		m_log << TestLog::Message << "// pipelines = " << getPointerStr(pipelines, n) << TestLog::EndMessage;
 }
 
 void CallLogWrapper::glGenQueries (glw::GLsizei n, glw::GLuint *ids)
@@ -1278,9 +1276,7 @@ void CallLogWrapper::glGenQueries (glw::GLsizei n, glw::GLuint *ids)
 		m_log << TestLog::Message << "glGenQueries(" << n << ", " << ids << ");" << TestLog::EndMessage;
 	m_gl.genQueries(n, ids);
 	if (m_enableLog)
-	{
 		m_log << TestLog::Message << "// ids = " << getPointerStr(ids, n) << TestLog::EndMessage;
-	}
 }
 
 void CallLogWrapper::glGenRenderbuffers (glw::GLsizei n, glw::GLuint *renderbuffers)
@@ -1289,9 +1285,7 @@ void CallLogWrapper::glGenRenderbuffers (glw::GLsizei n, glw::GLuint *renderbuff
 		m_log << TestLog::Message << "glGenRenderbuffers(" << n << ", " << renderbuffers << ");" << TestLog::EndMessage;
 	m_gl.genRenderbuffers(n, renderbuffers);
 	if (m_enableLog)
-	{
 		m_log << TestLog::Message << "// renderbuffers = " << getPointerStr(renderbuffers, n) << TestLog::EndMessage;
-	}
 }
 
 void CallLogWrapper::glGenSamplers (glw::GLsizei count, glw::GLuint *samplers)
@@ -1307,9 +1301,7 @@ void CallLogWrapper::glGenTextures (glw::GLsizei n, glw::GLuint *textures)
 		m_log << TestLog::Message << "glGenTextures(" << n << ", " << textures << ");" << TestLog::EndMessage;
 	m_gl.genTextures(n, textures);
 	if (m_enableLog)
-	{
 		m_log << TestLog::Message << "// textures = " << getPointerStr(textures, n) << TestLog::EndMessage;
-	}
 }
 
 void CallLogWrapper::glGenTransformFeedbacks (glw::GLsizei n, glw::GLuint *ids)
@@ -1318,9 +1310,7 @@ void CallLogWrapper::glGenTransformFeedbacks (glw::GLsizei n, glw::GLuint *ids)
 		m_log << TestLog::Message << "glGenTransformFeedbacks(" << n << ", " << ids << ");" << TestLog::EndMessage;
 	m_gl.genTransformFeedbacks(n, ids);
 	if (m_enableLog)
-	{
 		m_log << TestLog::Message << "// ids = " << getPointerStr(ids, n) << TestLog::EndMessage;
-	}
 }
 
 void CallLogWrapper::glGenVertexArrays (glw::GLsizei n, glw::GLuint *arrays)
@@ -1329,9 +1319,7 @@ void CallLogWrapper::glGenVertexArrays (glw::GLsizei n, glw::GLuint *arrays)
 		m_log << TestLog::Message << "glGenVertexArrays(" << n << ", " << arrays << ");" << TestLog::EndMessage;
 	m_gl.genVertexArrays(n, arrays);
 	if (m_enableLog)
-	{
 		m_log << TestLog::Message << "// arrays = " << getPointerStr(arrays, n) << TestLog::EndMessage;
-	}
 }
 
 void CallLogWrapper::glGenerateMipmap (glw::GLenum target)
@@ -1424,9 +1412,7 @@ void CallLogWrapper::glGetActiveUniformsiv (glw::GLuint program, glw::GLsizei un
 		m_log << TestLog::Message << "glGetActiveUniformsiv(" << program << ", " << uniformCount << ", " << getPointerStr(uniformIndices, uniformCount) << ", " << getUniformParamStr(pname) << ", " << params << ");" << TestLog::EndMessage;
 	m_gl.getActiveUniformsiv(program, uniformCount, uniformIndices, pname, params);
 	if (m_enableLog)
-	{
 		m_log << TestLog::Message << "// params = " << getPointerStr(params, uniformCount) << TestLog::EndMessage;
-	}
 }
 
 void CallLogWrapper::glGetAttachedShaders (glw::GLuint program, glw::GLsizei maxCount, glw::GLsizei *count, glw::GLuint *shaders)
@@ -1449,8 +1435,10 @@ glw::GLint CallLogWrapper::glGetAttribLocation (glw::GLuint program, const glw::
 void CallLogWrapper::glGetBooleani_v (glw::GLenum target, glw::GLuint index, glw::GLboolean *data)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetBooleani_v(" << toHex(target) << ", " << index << ", " << data << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetBooleani_v(" << getGettableIndexedStateStr(target) << ", " << index << ", " << static_cast<const void*>(data) << ");" << TestLog::EndMessage;
 	m_gl.getBooleani_v(target, index, data);
+	if (m_enableLog)
+		m_log << TestLog::Message << "// data = " << getBooleanPointerStr(data, 1) << TestLog::EndMessage;
 }
 
 void CallLogWrapper::glGetBooleanv (glw::GLenum pname, glw::GLboolean *data)
@@ -1459,9 +1447,7 @@ void CallLogWrapper::glGetBooleanv (glw::GLenum pname, glw::GLboolean *data)
 		m_log << TestLog::Message << "glGetBooleanv(" << getGettableStateStr(pname) << ", " << static_cast<const void*>(data) << ");" << TestLog::EndMessage;
 	m_gl.getBooleanv(pname, data);
 	if (m_enableLog)
-	{
 		m_log << TestLog::Message << "// data = " << getBooleanPointerStr(data, getBasicQueryNumArgsOut(pname)) << TestLog::EndMessage;
-	}
 }
 
 void CallLogWrapper::glGetBufferParameteri64v (glw::GLenum target, glw::GLenum pname, glw::GLint64 *params)
@@ -1560,9 +1546,7 @@ void CallLogWrapper::glGetFloatv (glw::GLenum pname, glw::GLfloat *data)
 		m_log << TestLog::Message << "glGetFloatv(" << getGettableStateStr(pname) << ", " << data << ");" << TestLog::EndMessage;
 	m_gl.getFloatv(pname, data);
 	if (m_enableLog)
-	{
 		m_log << TestLog::Message << "// data = " << getPointerStr(data, getBasicQueryNumArgsOut(pname)) << TestLog::EndMessage;
-	}
 }
 
 glw::GLint CallLogWrapper::glGetFragDataIndex (glw::GLuint program, const glw::GLchar *name)
@@ -1591,9 +1575,7 @@ void CallLogWrapper::glGetFramebufferAttachmentParameteriv (glw::GLenum target, 
 		m_log << TestLog::Message << "glGetFramebufferAttachmentParameteriv(" << getFramebufferTargetStr(target) << ", " << getFramebufferAttachmentStr(attachment) << ", " << getFramebufferAttachmentParameterStr(pname) << ", " << params << ");" << TestLog::EndMessage;
 	m_gl.getFramebufferAttachmentParameteriv(target, attachment, pname, params);
 	if (m_enableLog)
-	{
 		m_log << TestLog::Message << "// params = " << getFramebufferAttachmentParameterValueStr(pname, params) << TestLog::EndMessage;
-	}
 }
 
 void CallLogWrapper::glGetFramebufferParameteriv (glw::GLenum target, glw::GLenum pname, glw::GLint *params)
@@ -1601,6 +1583,8 @@ void CallLogWrapper::glGetFramebufferParameteriv (glw::GLenum target, glw::GLenu
 	if (m_enableLog)
 		m_log << TestLog::Message << "glGetFramebufferParameteriv(" << getFramebufferTargetStr(target) << ", " << getFramebufferParameterStr(pname) << ", " << params << ");" << TestLog::EndMessage;
 	m_gl.getFramebufferParameteriv(target, pname, params);
+	if (m_enableLog)
+		m_log << TestLog::Message << "// params = " << getPointerStr(params, 1) << TestLog::EndMessage;
 }
 
 glw::GLenum CallLogWrapper::glGetGraphicsResetStatus (void)
@@ -1618,6 +1602,8 @@ void CallLogWrapper::glGetInteger64i_v (glw::GLenum target, glw::GLuint index, g
 	if (m_enableLog)
 		m_log << TestLog::Message << "glGetInteger64i_v(" << getGettableIndexedStateStr(target) << ", " << index << ", " << data << ");" << TestLog::EndMessage;
 	m_gl.getInteger64i_v(target, index, data);
+	if (m_enableLog)
+		m_log << TestLog::Message << "// data = " << getPointerStr(data, 1) << TestLog::EndMessage;
 }
 
 void CallLogWrapper::glGetInteger64v (glw::GLenum pname, glw::GLint64 *data)
@@ -1626,9 +1612,7 @@ void CallLogWrapper::glGetInteger64v (glw::GLenum pname, glw::GLint64 *data)
 		m_log << TestLog::Message << "glGetInteger64v(" << getGettableStateStr(pname) << ", " << data << ");" << TestLog::EndMessage;
 	m_gl.getInteger64v(pname, data);
 	if (m_enableLog)
-	{
 		m_log << TestLog::Message << "// data = " << getPointerStr(data, getBasicQueryNumArgsOut(pname)) << TestLog::EndMessage;
-	}
 }
 
 void CallLogWrapper::glGetIntegeri_v (glw::GLenum target, glw::GLuint index, glw::GLint *data)
@@ -1636,6 +1620,8 @@ void CallLogWrapper::glGetIntegeri_v (glw::GLenum target, glw::GLuint index, glw
 	if (m_enableLog)
 		m_log << TestLog::Message << "glGetIntegeri_v(" << getGettableIndexedStateStr(target) << ", " << index << ", " << data << ");" << TestLog::EndMessage;
 	m_gl.getIntegeri_v(target, index, data);
+	if (m_enableLog)
+		m_log << TestLog::Message << "// data = " << getPointerStr(data, 1) << TestLog::EndMessage;
 }
 
 void CallLogWrapper::glGetIntegerv (glw::GLenum pname, glw::GLint *data)
@@ -1644,9 +1630,7 @@ void CallLogWrapper::glGetIntegerv (glw::GLenum pname, glw::GLint *data)
 		m_log << TestLog::Message << "glGetIntegerv(" << getGettableStateStr(pname) << ", " << data << ");" << TestLog::EndMessage;
 	m_gl.getIntegerv(pname, data);
 	if (m_enableLog)
-	{
 		m_log << TestLog::Message << "// data = " << getPointerStr(data, getBasicQueryNumArgsOut(pname)) << TestLog::EndMessage;
-	}
 }
 
 void CallLogWrapper::glGetInternalformati64v (glw::GLenum target, glw::GLenum internalformat, glw::GLenum pname, glw::GLsizei bufSize, glw::GLint64 *params)
@@ -1662,9 +1646,7 @@ void CallLogWrapper::glGetInternalformativ (glw::GLenum target, glw::GLenum inte
 		m_log << TestLog::Message << "glGetInternalformativ(" << getInternalFormatTargetStr(target) << ", " << getPixelFormatStr(internalformat) << ", " << getInternalFormatParameterStr(pname) << ", " << bufSize << ", " << params << ");" << TestLog::EndMessage;
 	m_gl.getInternalformativ(target, internalformat, pname, bufSize, params);
 	if (m_enableLog)
-	{
 		m_log << TestLog::Message << "// params = " << getPointerStr(params, bufSize) << TestLog::EndMessage;
-	}
 }
 
 void CallLogWrapper::glGetMultisamplefv (glw::GLenum pname, glw::GLuint index, glw::GLfloat *val)
@@ -1673,9 +1655,7 @@ void CallLogWrapper::glGetMultisamplefv (glw::GLenum pname, glw::GLuint index, g
 		m_log << TestLog::Message << "glGetMultisamplefv(" << getMultisampleParameterStr(pname) << ", " << index << ", " << val << ");" << TestLog::EndMessage;
 	m_gl.getMultisamplefv(pname, index, val);
 	if (m_enableLog)
-	{
 		m_log << TestLog::Message << "// val = " << getPointerStr(val, 2) << TestLog::EndMessage;
-	}
 }
 
 void CallLogWrapper::glGetNamedBufferParameteri64v (glw::GLuint buffer, glw::GLenum pname, glw::GLint64 *params)
@@ -1772,8 +1752,10 @@ void CallLogWrapper::glGetProgramInterfaceiv (glw::GLuint program, glw::GLenum p
 void CallLogWrapper::glGetProgramPipelineInfoLog (glw::GLuint pipeline, glw::GLsizei bufSize, glw::GLsizei *length, glw::GLchar *infoLog)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetProgramPipelineInfoLog(" << pipeline << ", " << bufSize << ", " << length << ", " << infoLog << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetProgramPipelineInfoLog(" << pipeline << ", " << bufSize << ", " << length << ", " << static_cast<const void*>(infoLog) << ");" << TestLog::EndMessage;
 	m_gl.getProgramPipelineInfoLog(pipeline, bufSize, length, infoLog);
+	if (m_enableLog)
+		m_log << TestLog::Message << "// length = " << getPointerStr(length, 1) << TestLog::EndMessage;
 }
 
 void CallLogWrapper::glGetProgramPipelineiv (glw::GLuint pipeline, glw::GLenum pname, glw::GLint *params)
@@ -1782,9 +1764,7 @@ void CallLogWrapper::glGetProgramPipelineiv (glw::GLuint pipeline, glw::GLenum p
 		m_log << TestLog::Message << "glGetProgramPipelineiv(" << pipeline << ", " << getPipelineParamStr(pname) << ", " << params << ");" << TestLog::EndMessage;
 	m_gl.getProgramPipelineiv(pipeline, pname, params);
 	if (m_enableLog)
-	{
 		m_log << TestLog::Message << "// params = " << getPointerStr(params, 1) << TestLog::EndMessage;
-	}
 }
 
 glw::GLuint CallLogWrapper::glGetProgramResourceIndex (glw::GLuint program, glw::GLenum programInterface, const glw::GLchar *name)
@@ -1844,9 +1824,7 @@ void CallLogWrapper::glGetProgramiv (glw::GLuint program, glw::GLenum pname, glw
 		m_log << TestLog::Message << "glGetProgramiv(" << program << ", " << getProgramParamStr(pname) << ", " << params << ");" << TestLog::EndMessage;
 	m_gl.getProgramiv(program, pname, params);
 	if (m_enableLog)
-	{
-		m_log << TestLog::Message << "// params = " << getPointerStr(params, 1) << TestLog::EndMessage;
-	}
+		m_log << TestLog::Message << "// params = " << getPointerStr(params, getProgramQueryNumArgsOut(pname)) << TestLog::EndMessage;
 }
 
 void CallLogWrapper::glGetQueryBufferObjecti64v (glw::GLuint id, glw::GLuint buffer, glw::GLenum pname, glw::GLintptr offset)
@@ -1890,9 +1868,7 @@ void CallLogWrapper::glGetQueryObjecti64v (glw::GLuint id, glw::GLenum pname, gl
 		m_log << TestLog::Message << "glGetQueryObjecti64v(" << id << ", " << getQueryObjectParamStr(pname) << ", " << params << ");" << TestLog::EndMessage;
 	m_gl.getQueryObjecti64v(id, pname, params);
 	if (m_enableLog)
-	{
 		m_log << TestLog::Message << "// params = " << getPointerStr(params, 1) << TestLog::EndMessage;
-	}
 }
 
 void CallLogWrapper::glGetQueryObjectiv (glw::GLuint id, glw::GLenum pname, glw::GLint *params)
@@ -1901,9 +1877,7 @@ void CallLogWrapper::glGetQueryObjectiv (glw::GLuint id, glw::GLenum pname, glw:
 		m_log << TestLog::Message << "glGetQueryObjectiv(" << id << ", " << getQueryObjectParamStr(pname) << ", " << params << ");" << TestLog::EndMessage;
 	m_gl.getQueryObjectiv(id, pname, params);
 	if (m_enableLog)
-	{
 		m_log << TestLog::Message << "// params = " << getPointerStr(params, 1) << TestLog::EndMessage;
-	}
 }
 
 void CallLogWrapper::glGetQueryObjectui64v (glw::GLuint id, glw::GLenum pname, glw::GLuint64 *params)
@@ -1912,9 +1886,7 @@ void CallLogWrapper::glGetQueryObjectui64v (glw::GLuint id, glw::GLenum pname, g
 		m_log << TestLog::Message << "glGetQueryObjectui64v(" << id << ", " << getQueryObjectParamStr(pname) << ", " << params << ");" << TestLog::EndMessage;
 	m_gl.getQueryObjectui64v(id, pname, params);
 	if (m_enableLog)
-	{
 		m_log << TestLog::Message << "// params = " << getPointerStr(params, 1) << TestLog::EndMessage;
-	}
 }
 
 void CallLogWrapper::glGetQueryObjectuiv (glw::GLuint id, glw::GLenum pname, glw::GLuint *params)
@@ -1923,9 +1895,7 @@ void CallLogWrapper::glGetQueryObjectuiv (glw::GLuint id, glw::GLenum pname, glw
 		m_log << TestLog::Message << "glGetQueryObjectuiv(" << id << ", " << getQueryObjectParamStr(pname) << ", " << params << ");" << TestLog::EndMessage;
 	m_gl.getQueryObjectuiv(id, pname, params);
 	if (m_enableLog)
-	{
 		m_log << TestLog::Message << "// params = " << getPointerStr(params, 1) << TestLog::EndMessage;
-	}
 }
 
 void CallLogWrapper::glGetQueryiv (glw::GLenum target, glw::GLenum pname, glw::GLint *params)
@@ -1934,9 +1904,7 @@ void CallLogWrapper::glGetQueryiv (glw::GLenum target, glw::GLenum pname, glw::G
 		m_log << TestLog::Message << "glGetQueryiv(" << getQueryTargetStr(target) << ", " << getQueryParamStr(pname) << ", " << params << ");" << TestLog::EndMessage;
 	m_gl.getQueryiv(target, pname, params);
 	if (m_enableLog)
-	{
 		m_log << TestLog::Message << "// params = " << getPointerStr(params, 1) << TestLog::EndMessage;
-	}
 }
 
 void CallLogWrapper::glGetRenderbufferParameteriv (glw::GLenum target, glw::GLenum pname, glw::GLint *params)
@@ -2001,9 +1969,7 @@ void CallLogWrapper::glGetShaderiv (glw::GLuint shader, glw::GLenum pname, glw::
 		m_log << TestLog::Message << "glGetShaderiv(" << shader << ", " << getShaderParamStr(pname) << ", " << params << ");" << TestLog::EndMessage;
 	m_gl.getShaderiv(shader, pname, params);
 	if (m_enableLog)
-	{
 		m_log << TestLog::Message << "// params = " << getPointerStr(params, 1) << TestLog::EndMessage;
-	}
 }
 
 const glw::GLubyte * CallLogWrapper::glGetString (glw::GLenum name)
@@ -2065,6 +2031,8 @@ void CallLogWrapper::glGetTexLevelParameterfv (glw::GLenum target, glw::GLint le
 	if (m_enableLog)
 		m_log << TestLog::Message << "glGetTexLevelParameterfv(" << getTextureTargetStr(target) << ", " << level << ", " << getTextureLevelParameterStr(pname) << ", " << params << ");" << TestLog::EndMessage;
 	m_gl.getTexLevelParameterfv(target, level, pname, params);
+	if (m_enableLog)
+		m_log << TestLog::Message << "// params = " << getPointerStr(params, 1) << TestLog::EndMessage;
 }
 
 void CallLogWrapper::glGetTexLevelParameteriv (glw::GLenum target, glw::GLint level, glw::GLenum pname, glw::GLint *params)
@@ -2072,6 +2040,8 @@ void CallLogWrapper::glGetTexLevelParameteriv (glw::GLenum target, glw::GLint le
 	if (m_enableLog)
 		m_log << TestLog::Message << "glGetTexLevelParameteriv(" << getTextureTargetStr(target) << ", " << level << ", " << getTextureLevelParameterStr(pname) << ", " << params << ");" << TestLog::EndMessage;
 	m_gl.getTexLevelParameteriv(target, level, pname, params);
+	if (m_enableLog)
+		m_log << TestLog::Message << "// params = " << getPointerStr(params, 1) << TestLog::EndMessage;
 }
 
 void CallLogWrapper::glGetTexParameterIiv (glw::GLenum target, glw::GLenum pname, glw::GLint *params)
@@ -2093,6 +2063,8 @@ void CallLogWrapper::glGetTexParameterfv (glw::GLenum target, glw::GLenum pname,
 	if (m_enableLog)
 		m_log << TestLog::Message << "glGetTexParameterfv(" << getTextureTargetStr(target) << ", " << getTextureParameterStr(pname) << ", " << params << ");" << TestLog::EndMessage;
 	m_gl.getTexParameterfv(target, pname, params);
+	if (m_enableLog)
+		m_log << TestLog::Message << "// params = " << getPointerStr(params, 1) << TestLog::EndMessage;
 }
 
 void CallLogWrapper::glGetTexParameteriv (glw::GLenum target, glw::GLenum pname, glw::GLint *params)
@@ -2100,6 +2072,8 @@ void CallLogWrapper::glGetTexParameteriv (glw::GLenum target, glw::GLenum pname,
 	if (m_enableLog)
 		m_log << TestLog::Message << "glGetTexParameteriv(" << getTextureTargetStr(target) << ", " << getTextureParameterStr(pname) << ", " << params << ");" << TestLog::EndMessage;
 	m_gl.getTexParameteriv(target, pname, params);
+	if (m_enableLog)
+		m_log << TestLog::Message << "// params = " << getPointerStr(params, 1) << TestLog::EndMessage;
 }
 
 void CallLogWrapper::glGetTextureImage (glw::GLuint texture, glw::GLint level, glw::GLenum format, glw::GLenum type, glw::GLsizei bufSize, void *pixels)
@@ -2202,9 +2176,7 @@ void CallLogWrapper::glGetUniformIndices (glw::GLuint program, glw::GLsizei unif
 		m_log << TestLog::Message << "glGetUniformIndices(" << program << ", " << uniformCount << ", " << getPointerStr(uniformNames, uniformCount) << ", " << uniformIndices << ");" << TestLog::EndMessage;
 	m_gl.getUniformIndices(program, uniformCount, uniformNames, uniformIndices);
 	if (m_enableLog)
-	{
 		m_log << TestLog::Message << "// uniformIndices = " << getPointerStr(uniformIndices, uniformCount) << TestLog::EndMessage;
-	}
 }
 
 glw::GLint CallLogWrapper::glGetUniformLocation (glw::GLuint program, const glw::GLchar *name)
@@ -2279,9 +2251,7 @@ void CallLogWrapper::glGetVertexAttribIiv (glw::GLuint index, glw::GLenum pname,
 		m_log << TestLog::Message << "glGetVertexAttribIiv(" << index << ", " << getVertexAttribParameterNameStr(pname) << ", " << params << ");" << TestLog::EndMessage;
 	m_gl.getVertexAttribIiv(index, pname, params);
 	if (m_enableLog)
-	{
 		m_log << TestLog::Message << "// params = " << getPointerStr(params, getAttributeQueryNumArgsOut(pname)) << TestLog::EndMessage;
-	}
 }
 
 void CallLogWrapper::glGetVertexAttribIuiv (glw::GLuint index, glw::GLenum pname, glw::GLuint *params)
@@ -2290,9 +2260,7 @@ void CallLogWrapper::glGetVertexAttribIuiv (glw::GLuint index, glw::GLenum pname
 		m_log << TestLog::Message << "glGetVertexAttribIuiv(" << index << ", " << getVertexAttribParameterNameStr(pname) << ", " << params << ");" << TestLog::EndMessage;
 	m_gl.getVertexAttribIuiv(index, pname, params);
 	if (m_enableLog)
-	{
 		m_log << TestLog::Message << "// params = " << getPointerStr(params, getAttributeQueryNumArgsOut(pname)) << TestLog::EndMessage;
-	}
 }
 
 void CallLogWrapper::glGetVertexAttribLdv (glw::GLuint index, glw::GLenum pname, glw::GLdouble *params)
@@ -2322,9 +2290,7 @@ void CallLogWrapper::glGetVertexAttribfv (glw::GLuint index, glw::GLenum pname, 
 		m_log << TestLog::Message << "glGetVertexAttribfv(" << index << ", " << getVertexAttribParameterNameStr(pname) << ", " << params << ");" << TestLog::EndMessage;
 	m_gl.getVertexAttribfv(index, pname, params);
 	if (m_enableLog)
-	{
 		m_log << TestLog::Message << "// params = " << getPointerStr(params, getAttributeQueryNumArgsOut(pname)) << TestLog::EndMessage;
-	}
 }
 
 void CallLogWrapper::glGetVertexAttribiv (glw::GLuint index, glw::GLenum pname, glw::GLint *params)
@@ -2333,9 +2299,7 @@ void CallLogWrapper::glGetVertexAttribiv (glw::GLuint index, glw::GLenum pname, 
 		m_log << TestLog::Message << "glGetVertexAttribiv(" << index << ", " << getVertexAttribParameterNameStr(pname) << ", " << params << ");" << TestLog::EndMessage;
 	m_gl.getVertexAttribiv(index, pname, params);
 	if (m_enableLog)
-	{
 		m_log << TestLog::Message << "// params = " << getPointerStr(params, getAttributeQueryNumArgsOut(pname)) << TestLog::EndMessage;
-	}
 }
 
 void CallLogWrapper::glGetnCompressedTexImage (glw::GLenum target, glw::GLint lod, glw::GLsizei bufSize, void *pixels)
@@ -2913,7 +2877,7 @@ void CallLogWrapper::glProgramBinary (glw::GLuint program, glw::GLenum binaryFor
 void CallLogWrapper::glProgramParameteri (glw::GLuint program, glw::GLenum pname, glw::GLint value)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glProgramParameteri(" << program << ", " << toHex(pname) << ", " << value << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glProgramParameteri(" << program << ", " << getProgramParamStr(pname) << ", " << value << ");" << TestLog::EndMessage;
 	m_gl.programParameteri(program, pname, value);
 }
 
@@ -3557,7 +3521,7 @@ void CallLogWrapper::glTexParameterf (glw::GLenum target, glw::GLenum pname, glw
 void CallLogWrapper::glTexParameterfv (glw::GLenum target, glw::GLenum pname, const glw::GLfloat *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glTexParameterfv(" << getTextureTargetStr(target) << ", " << getTextureParameterStr(pname) << ", " << params << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glTexParameterfv(" << getTextureTargetStr(target) << ", " << getTextureParameterStr(pname) << ", " << getPointerStr(params, 1) << ");" << TestLog::EndMessage;
 	m_gl.texParameterfv(target, pname, params);
 }
 
@@ -3571,7 +3535,7 @@ void CallLogWrapper::glTexParameteri (glw::GLenum target, glw::GLenum pname, glw
 void CallLogWrapper::glTexParameteriv (glw::GLenum target, glw::GLenum pname, const glw::GLint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glTexParameteriv(" << getTextureTargetStr(target) << ", " << getTextureParameterStr(pname) << ", " << params << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glTexParameteriv(" << getTextureTargetStr(target) << ", " << getTextureParameterStr(pname) << ", " << getPointerStr(params, 1) << ");" << TestLog::EndMessage;
 	m_gl.texParameteriv(target, pname, params);
 }
 
@@ -4172,7 +4136,7 @@ void CallLogWrapper::glUseProgram (glw::GLuint program)
 void CallLogWrapper::glUseProgramStages (glw::GLuint pipeline, glw::GLbitfield stages, glw::GLuint program)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glUseProgramStages(" << pipeline << ", " << toHex(stages) << ", " << program << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glUseProgramStages(" << pipeline << ", " << getShaderTypeMaskStr(stages) << ", " << program << ");" << TestLog::EndMessage;
 	m_gl.useProgramStages(pipeline, stages, program);
 }
 

@@ -44,6 +44,12 @@
 #include "es31fTextureLevelStateQueryTests.hpp"
 #include "es31fIntegerStateQueryTests.hpp"
 #include "es31fInternalFormatQueryTests.hpp"
+#include "es31fBooleanStateQueryTests.hpp"
+#include "es31fIndexedStateQueryTests.hpp"
+#include "es31fTextureStateQueryTests.hpp"
+#include "es31fFramebufferDefaultStateQueryTests.hpp"
+#include "es31fProgramPipelineStateQueryTests.hpp"
+#include "es31fProgramStateQueryTests.hpp"
 #include "es31fTextureFilteringTests.hpp"
 #include "es31fTextureFormatTests.hpp"
 #include "es31fTextureSpecificationTests.hpp"
@@ -250,12 +256,18 @@ public:
 
 	void init (void)
 	{
+		addChild(new BooleanStateQueryTests							(m_context));
 		addChild(new IntegerStateQueryTests							(m_context));
+		addChild(new IndexedStateQueryTests							(m_context));
+		addChild(new TextureStateQueryTests							(m_context));
 		addChild(new TextureLevelStateQueryTests					(m_context));
 		addChild(new ShaderStateQueryTests							(m_context));
 		addChild(new InternalFormatQueryTests						(m_context));
 		addChild(new VertexAttributeBindingStateQueryTests			(m_context));
 		addChild(new ShaderMultisampleInterpolationStateQueryTests	(m_context));
+		addChild(new FramebufferDefaultStateQueryTests				(m_context));
+		addChild(new ProgramStateQueryTests							(m_context));
+		addChild(new ProgramPipelineStateQueryTests					(m_context));
 	}
 };
 

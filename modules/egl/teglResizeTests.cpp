@@ -31,6 +31,7 @@
 #include "tcuTestLog.hpp"
 #include "tcuInterval.hpp"
 #include "tcuTextureUtil.hpp"
+#include "tcuResultCollector.hpp"
 
 #include "egluNativeDisplay.hpp"
 #include "egluNativeWindow.hpp"

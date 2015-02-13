@@ -28,6 +28,13 @@
 #include "gluCallLogWrapper.hpp"
 #include "tes31TestCase.hpp"
 
+namespace tcu
+{
+
+class ResultCollector;
+
+} // tcu
+
 namespace deqp
 {
 namespace gles31

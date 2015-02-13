@@ -1,8 +1,10 @@
+#ifndef _TCUARRAY_HPP
+#define _TCUARRAY_HPP
 /*-------------------------------------------------------------------------
  * drawElements Quality Program Tester Core
  * ----------------------------------------
  *
- * Copyright 2014 The Android Open Source Project
+ * Copyright 2015 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,44 +20,41 @@
  *
  *//*!
  * \file
- * \brief Context shared between test cases.
+ * \brief Templatized array class.
  *//*--------------------------------------------------------------------*/
 
-#include "tcuTestContext.hpp"
+#include "tcuDefs.hpp"
+#include "tcuFormatUtil.hpp"
 
-#include "tcuTestLog.hpp"
+#include <ostream>
 
 namespace tcu
 {
 
-TestContext::TestContext (
-	Platform&			platform,
-	Archive&			rootArchive,
-	TestLog&			log,
-	const CommandLine&	cmdLine,
-	qpWatchDog*			watchDog)
-	: m_platform		(platform)
-	, m_rootArchive		(rootArchive)
-	, m_log				(log)
-	, m_cmdLine			(cmdLine)
-	, m_watchDog		(watchDog)
-	, m_curArchive		(DE_NULL)
-	, m_testResult		(QP_TEST_RESULT_LAST)
-	, m_terminateAfter	(false)
+template <typename T, int Size>
+class Array
 {
-	setCurrentArchive(m_rootArchive);
-}
+public:
+					Array			(void) {}
+					~Array			(void) {}
 
-void TestContext::touchWatchdog (void)
-{
-	if (m_watchDog)
-		qpWatchDog_touch(m_watchDog);
-}
+	inline T		operator[]		(int ndx) const		{ return m_data[ndx]; }
+	inline T&		operator[]		(int ndx)			{ return m_data[ndx]; }
 
-void TestContext::setTestResult (qpTestResult testResult, const char* description)
+	inline const T*	getPtr			(void) const		{ return m_data; }
+	inline T*		getPtr			(void)				{ return m_data; }
+
+private:
+	T				m_data[Size];
+};
+
+
+template <typename T, int Size>
+std::ostream& operator<< (std::ostream& stream, const Array<T, Size>& arr)
 {
-	m_testResult		= testResult;
-	m_testResultDesc	= description;
+	return stream << Format::Array<T*>(arr.getPtr(), arr.getPtr() + Size);
 }
 
 } // tcu
+
+#endif // _TCUARRAY_HPP

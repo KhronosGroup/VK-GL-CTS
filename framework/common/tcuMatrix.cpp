@@ -18,44 +18,9 @@
  *
  *//*!
  * \file
- * \brief Context shared between test cases.
+ * \brief 	Templatized matrix class.
  *//*--------------------------------------------------------------------*/
 
-#include "tcuTestContext.hpp"
+#include "tcuMatrix.hpp"
 
-#include "tcuTestLog.hpp"
-
-namespace tcu
-{
-
-TestContext::TestContext (
-	Platform&			platform,
-	Archive&			rootArchive,
-	TestLog&			log,
-	const CommandLine&	cmdLine,
-	qpWatchDog*			watchDog)
-	: m_platform		(platform)
-	, m_rootArchive		(rootArchive)
-	, m_log				(log)
-	, m_cmdLine			(cmdLine)
-	, m_watchDog		(watchDog)
-	, m_curArchive		(DE_NULL)
-	, m_testResult		(QP_TEST_RESULT_LAST)
-	, m_terminateAfter	(false)
-{
-	setCurrentArchive(m_rootArchive);
-}
-
-void TestContext::touchWatchdog (void)
-{
-	if (m_watchDog)
-		qpWatchDog_touch(m_watchDog);
-}
-
-void TestContext::setTestResult (qpTestResult testResult, const char* description)
-{
-	m_testResult		= testResult;
-	m_testResultDesc	= description;
-}
-
-} // tcu
+DE_EMPTY_CPP_FILE
