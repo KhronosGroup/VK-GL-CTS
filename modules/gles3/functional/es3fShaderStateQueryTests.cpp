@@ -1189,8 +1189,15 @@ public:
 class ProgramInfoLogCase : public ApiCase
 {
 public:
-	ProgramInfoLogCase (Context& context, const char* name, const char* description)
-		: ApiCase(context, name, description)
+	enum BuildErrorType
+	{
+		BUILDERROR_COMPILE = 0,
+		BUILDERROR_LINK
+	};
+
+	ProgramInfoLogCase (Context& context, const char* name, const char* description, BuildErrorType buildErrorType)
+		: ApiCase			(context, name, description)
+		, m_buildErrorType	(buildErrorType)
 	{
 	}
 
@@ -1198,11 +1205,35 @@ public:
 	{
 		using tcu::TestLog;
 
+		enum
+		{
+			BUF_SIZE = 2048
+		};
+
+		static const char* const linkErrorVtxSource = "#version 300 es\n"
+													  "in highp vec4 a_pos;\n"
+													  "uniform highp vec4 u_uniform;\n"
+													  "void main ()\n"
+													  "{\n"
+													  "	gl_Position = a_pos + u_uniform;\n"
+													  "}\n";
+		static const char* const linkErrorFrgSource = "#version 300 es\n"
+													  "in highp vec4 v_missingVar;\n"
+													  "uniform highp int u_uniform;\n"
+													  "layout(location = 0) out mediump vec4 fragColor;\n"
+													  "void main ()\n"
+													  "{\n"
+													  "	fragColor = v_missingVar + vec4(float(u_uniform));\n"
+													  "}\n";
+
+		const char* vtxSource = (m_buildErrorType == BUILDERROR_COMPILE) ? (brokenShader) : (linkErrorVtxSource);
+		const char* frgSource = (m_buildErrorType == BUILDERROR_COMPILE) ? (brokenShader) : (linkErrorFrgSource);
+
 		GLuint shaderVert = glCreateShader(GL_VERTEX_SHADER);
 		GLuint shaderFrag = glCreateShader(GL_FRAGMENT_SHADER);
 
-		glShaderSource(shaderVert, 1, &brokenShader, DE_NULL);
-		glShaderSource(shaderFrag, 1, &brokenShader, DE_NULL);
+		glShaderSource(shaderVert, 1, &vtxSource, DE_NULL);
+		glShaderSource(shaderFrag, 1, &frgSource, DE_NULL);
 
 		glCompileShader(shaderVert);
 		glCompileShader(shaderFrag);
@@ -1213,16 +1244,17 @@ public:
 		glAttachShader(program, shaderFrag);
 		glLinkProgram(program);
 
+		StateQueryMemoryWriteGuard<GLint> logLength;
+		glGetProgramiv(program, GL_INFO_LOG_LENGTH, &logLength);
+		logLength.verifyValidity(m_testCtx);
+
 		// check INFO_LOG_LENGTH == GetProgramInfoLog len
 		{
-			char buffer[2048] = {'x'};
+			const tcu::ScopedLogSection	section				(m_testCtx.getLog(), "QueryLarge", "Query to large buffer");
+			char						buffer[BUF_SIZE]	= {'x'};
+			GLint						written				= 0;
 
-			GLint written = 0;
-			glGetProgramInfoLog(program, DE_LENGTH_OF_ARRAY(buffer), &written, buffer);
-
-			StateQueryMemoryWriteGuard<GLint> logLength;
-			glGetProgramiv(program, GL_INFO_LOG_LENGTH, &logLength);
-			logLength.verifyValidity(m_testCtx);
+			glGetProgramInfoLog(program, BUF_SIZE, &written, buffer);
 
 			if (logLength != 0 && written+1 != logLength) // INFO_LOG_LENGTH contains 0-terminator
 			{
@@ -1230,13 +1262,43 @@ public:
 				if (m_testCtx.getTestResult() == QP_TEST_RESULT_PASS)
 					m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "got invalid log length");
 			}
+			else if (logLength != 0 && buffer[written] != '\0')
+			{
+				m_testCtx.getLog() << TestLog::Message << "// ERROR: Expected null terminator at index " << written << TestLog::EndMessage;
+				if (m_testCtx.getTestResult() == QP_TEST_RESULT_PASS)
+					m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "missing null terminator");
+			}
+		}
+
+		// check query to just correct sized buffer
+		if (BUF_SIZE > logLength)
+		{
+			const tcu::ScopedLogSection	section				(m_testCtx.getLog(), "QueryAll", "Query all to exactly right sized buffer");
+			char						buffer[BUF_SIZE]	= {'x'};
+			GLint						written				= 0;
+
+			glGetProgramInfoLog(program, logLength, &written, buffer);
+
+			if (logLength != 0 && written+1 != logLength) // INFO_LOG_LENGTH contains 0-terminator
+			{
+				m_testCtx.getLog() << TestLog::Message << "// ERROR: Expected INFO_LOG_LENGTH " << written+1 << "; got " << logLength << TestLog::EndMessage;
+				if (m_testCtx.getTestResult() == QP_TEST_RESULT_PASS)
+					m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "got invalid log length");
+			}
+			else if (logLength != 0 && buffer[written] != '\0')
+			{
+				m_testCtx.getLog() << TestLog::Message << "// ERROR: Expected null terminator at index " << written << TestLog::EndMessage;
+				if (m_testCtx.getTestResult() == QP_TEST_RESULT_PASS)
+					m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "missing null terminator");
+			}
 		}
 
 		// check GetProgramInfoLog works with too small buffer
 		{
-			char buffer[2048] = {'x'};
+			const tcu::ScopedLogSection	section				(m_testCtx.getLog(), "QueryNone", "Query none");
+			char						buffer[BUF_SIZE]	= {'x'};
+			GLint						written				= 0;
 
-			GLint written = 0;
 			glGetProgramInfoLog(program, 1, &written, buffer);
 
 			if (written != 0)
@@ -1252,6 +1314,8 @@ public:
 		glDeleteProgram(program);
 		expectError(GL_NO_ERROR);
 	}
+
+	const BuildErrorType m_buildErrorType;
 };
 
 class ProgramValidateStatusCase : public ApiCase
@@ -3592,7 +3656,8 @@ void ShaderStateQueryTests::init (void)
 	addChild(new CurrentVertexAttribConversionCase	(m_context, "current_vertex_attrib_float_to_int",	"CURRENT_VERTEX_ATTRIB"));
 
 	// program
-	addChild(new ProgramInfoLogCase					(m_context, "program_info_log_length",				"INFO_LOG_LENGTH"));
+	addChild(new ProgramInfoLogCase					(m_context, "program_info_log_length",				"INFO_LOG_LENGTH",	ProgramInfoLogCase::BUILDERROR_COMPILE));
+	addChild(new ProgramInfoLogCase					(m_context, "program_info_log_length_link_error",	"INFO_LOG_LENGTH",	ProgramInfoLogCase::BUILDERROR_LINK));
 	addChild(new ProgramValidateStatusCase			(m_context, "program_validate_status",				"VALIDATE_STATUS"));
 	addChild(new ProgramAttachedShadersCase			(m_context, "program_attached_shaders",				"ATTACHED_SHADERS"));
 

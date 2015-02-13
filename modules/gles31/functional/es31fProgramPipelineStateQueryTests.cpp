@@ -22,6 +22,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "es31fProgramPipelineStateQueryTests.hpp"
+#include "es31fInfoLogQueryShared.hpp"
 #include "glsStateQueryUtil.hpp"
 #include "gluRenderContext.hpp"
 #include "gluCallLogWrapper.hpp"
@@ -364,95 +365,8 @@ InfoLogCase::IterateResult InfoLogCase::iterate (void)
 		gl.glGetProgramPipelineiv(pipeline.getPipeline(), GL_INFO_LOG_LENGTH, &logLen);
 		GLU_EXPECT_NO_ERROR(gl.glGetError(), "get INFO_LOG_LENGTH");
 
-		if (logLen.verifyValidity(m_testCtx))
-		{
-			{
-				const tcu::ScopedLogSection	section	(m_testCtx.getLog(), "QueryAll", "Query all");
-				std::string					buf		(logLen + 2, 'X');
-
-				buf[logLen + 1] = '\0';
-				gl.glGetProgramPipelineInfoLog(pipeline.getPipeline(), logLen, DE_NULL, &buf[0]);
-				GLU_EXPECT_NO_ERROR(gl.glGetError(), "glGetProgramPipelineInfoLog");
-
-				if (logLen > 0 && buf[logLen-1] != '\0')
-					result.fail("Return buffer was not INFO_LOG_LENGTH sized and null-terminated");
-				else if (buf[logLen] != 'X' && buf[logLen+1] != '\0')
-					result.fail("Buffer end guard modified, query wrote over the end of the buffer.");
-			}
-
-			{
-				const tcu::ScopedLogSection section	(m_testCtx.getLog(), "QueryMore", "Query more");
-				std::string					buf		(logLen + 4, 'X');
-				int							written	= -1;
-
-				buf[logLen + 3] = '\0';
-				gl.glGetProgramPipelineInfoLog(pipeline.getPipeline(), logLen+2, &written, &buf[0]);
-				GLU_EXPECT_NO_ERROR(gl.glGetError(), "glGetProgramPipelineInfoLog");
-
-				if (written == -1)
-					result.fail("'length' was not written to");
-				else if (buf[written] != '\0')
-					result.fail("Either length was incorrect or result was not null-terminated");
-				else if (logLen != 0 && (written + 1) > logLen)
-					result.fail("'length' characters + null terminator is larger than INFO_LOG_LENGTH");
-				else if ((written + 1) < logLen)
-					result.fail("'length' is not consistent with INFO_LOG_LENGTH");
-				else if (buf[logLen+2] != 'X' && buf[logLen+3] != '\0')
-					result.fail("Buffer end guard modified, query wrote over the end of the buffer.");
-				else if (written != (int)strlen(&buf[0]))
-					result.fail("'length' and written string length do not match");
-			}
-
-			if (logLen > 2)
-			{
-				const tcu::ScopedLogSection section	(m_testCtx.getLog(), "QueryLess", "Query less");
-				std::string					buf		(logLen + 2, 'X');
-				int							written	= -1;
-
-				gl.glGetProgramPipelineInfoLog(pipeline.getPipeline(), 2, &written, &buf[0]);
-				GLU_EXPECT_NO_ERROR(gl.glGetError(), "glGetProgramPipelineInfoLog");
-
-				if (written == -1)
-					result.fail("'length' was not written to");
-				else if (written != 1)
-					result.fail("Expected 'length' = 1");
-				else if (buf[1] != '\0')
-					result.fail("Expected null terminator at index 1");
-			}
-
-			if (logLen > 0)
-			{
-				const tcu::ScopedLogSection section	(m_testCtx.getLog(), "QueryOne", "Query one character");
-				std::string					buf		(logLen + 2, 'X');
-				int							written	= -1;
-
-				gl.glGetProgramPipelineInfoLog(pipeline.getPipeline(), 1, &written, &buf[0]);
-				GLU_EXPECT_NO_ERROR(gl.glGetError(), "glGetProgramPipelineInfoLog");
-
-				if (written == -1)
-					result.fail("'length' was not written to");
-				else if (written != 0)
-					result.fail("Expected 'length' = 0");
-				else if (buf[0] != '\0')
-					result.fail("Expected null terminator at index 0");
-			}
-
-			{
-				const tcu::ScopedLogSection section	(m_testCtx.getLog(), "QueryNone", "Query to zero-sized buffer");
-				std::string					buf		(logLen + 2, 'X');
-				int							written	= -1;
-
-				gl.glGetProgramPipelineInfoLog(pipeline.getPipeline(), 0, &written, &buf[0]);
-				GLU_EXPECT_NO_ERROR(gl.glGetError(), "glGetProgramPipelineInfoLog");
-
-				if (written == -1)
-					result.fail("'length' was not written to");
-				else if (written != 0)
-					result.fail("Expected 'length' = 0");
-				else if (buf[0] != 'X')
-					result.fail("Unexpected buffer mutation at index 0");
-			}
-		}
+		if (logLen.verifyValidity(result))
+			verifyInfoLogQuery(result, gl, logLen, pipeline.getPipeline(), &glu::CallLogWrapper::glGetProgramPipelineInfoLog, "glGetProgramPipelineInfoLog");
 	}
 
 	result.setTestContextResult(m_testCtx);

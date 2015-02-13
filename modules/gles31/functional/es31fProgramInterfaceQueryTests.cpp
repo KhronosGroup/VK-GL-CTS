@@ -29,6 +29,7 @@
 #include "gluShaderProgram.hpp"
 #include "gluVarTypeUtil.hpp"
 #include "gluStrUtil.hpp"
+#include "gluContextInfo.hpp"
 #include "glwFunctions.hpp"
 #include "glwEnums.hpp"
 #include "deRandom.hpp"
@@ -164,7 +165,54 @@ static glw::GLenum getProgramInterfaceGLEnum (ProgramInterface interface)
 	};
 
 	return de::getSizedArrayElement<PROGRAMINTERFACE_LAST>(s_enums, interface);
+}
 
+static glu::ShaderType getShaderMaskFirstStage (deUint32 mask)
+{
+	if (mask & (1u << glu::SHADERTYPE_COMPUTE))
+		return glu::SHADERTYPE_COMPUTE;
+
+	if (mask & (1u << glu::SHADERTYPE_VERTEX))
+		return glu::SHADERTYPE_VERTEX;
+
+	if (mask & (1u << glu::SHADERTYPE_TESSELLATION_CONTROL))
+		return glu::SHADERTYPE_TESSELLATION_CONTROL;
+
+	if (mask & (1u << glu::SHADERTYPE_TESSELLATION_EVALUATION))
+		return glu::SHADERTYPE_TESSELLATION_EVALUATION;
+
+	if (mask & (1u << glu::SHADERTYPE_GEOMETRY))
+		return glu::SHADERTYPE_GEOMETRY;
+
+	if (mask & (1u << glu::SHADERTYPE_FRAGMENT))
+		return glu::SHADERTYPE_FRAGMENT;
+
+	DE_ASSERT(false);
+	return glu::SHADERTYPE_LAST;
+}
+
+static glu::ShaderType getShaderMaskLastStage (deUint32 mask)
+{
+	if (mask & (1u << glu::SHADERTYPE_FRAGMENT))
+		return glu::SHADERTYPE_FRAGMENT;
+
+	if (mask & (1u << glu::SHADERTYPE_GEOMETRY))
+		return glu::SHADERTYPE_GEOMETRY;
+
+	if (mask & (1u << glu::SHADERTYPE_TESSELLATION_EVALUATION))
+		return glu::SHADERTYPE_TESSELLATION_EVALUATION;
+
+	if (mask & (1u << glu::SHADERTYPE_TESSELLATION_CONTROL))
+		return glu::SHADERTYPE_TESSELLATION_CONTROL;
+
+	if (mask & (1u << glu::SHADERTYPE_VERTEX))
+		return glu::SHADERTYPE_VERTEX;
+
+	if (mask & (1u << glu::SHADERTYPE_COMPUTE))
+		return glu::SHADERTYPE_COMPUTE;
+
+	DE_ASSERT(false);
+	return glu::SHADERTYPE_LAST;
 }
 
 namespace ResourceDefinition
@@ -225,6 +273,7 @@ public:
 		, m_version	(version)
 	{
 		DE_ASSERT(enclosingNode->getType() == TYPE_PROGRAM);
+		DE_ASSERT(type < glu::SHADERTYPE_LAST);
 	}
 
 	const glu::ShaderType	m_type;
@@ -283,10 +332,13 @@ public:
 		: Node		(TYPE_INTERFACE_BLOCK, enclosing)
 		, m_named	(named)
 	{
-		// Must be qualified
+		// Must be storage qualified
 		const Node* storageNode = enclosing.get();
-		while (storageNode->getType() == TYPE_ARRAY_ELEMENT || storageNode->getType() == TYPE_LAYOUT_QUALIFIER)
+		while (storageNode->getType() == TYPE_ARRAY_ELEMENT ||
+			   storageNode->getType() == TYPE_LAYOUT_QUALIFIER)
+		{
 			storageNode = storageNode->getEnclosingNode();
+		}
 
 		DE_ASSERT(storageNode->getType() == TYPE_STORAGE_QUALIFIER);
 		DE_UNREF(storageNode);
@@ -373,16 +425,20 @@ public:
 class ShaderSet : public Node
 {
 public:
-			ShaderSet			(const SharedPtr& enclosing, glu::GLSLVersion version);
+				ShaderSet			(const SharedPtr& enclosing, glu::GLSLVersion version);
+				ShaderSet			(const SharedPtr& enclosing, glu::GLSLVersion version, deUint32 stagesPresentBits, deUint32 stagesReferencingBits);
 
-	void	setStage			(glu::ShaderType type, bool referencing);
-	bool	isStagePresent		(glu::ShaderType stage) const;
-	bool	isStageReferencing	(glu::ShaderType stage) const;
+	void		setStage			(glu::ShaderType type, bool referencing);
+	bool		isStagePresent		(glu::ShaderType stage) const;
+	bool		isStageReferencing	(glu::ShaderType stage) const;
+
+	deUint32	getPresentMask		(void) const;
+	deUint32	getReferencingMask	(void) const;
 
 	const glu::GLSLVersion	m_version;
 private:
-	bool					m_stagePresent[glu::SHADERTYPE_LAST];
-	bool					m_stageReferencing[glu::SHADERTYPE_LAST];
+	bool		m_stagePresent[glu::SHADERTYPE_LAST];
+	bool		m_stageReferencing[glu::SHADERTYPE_LAST];
 };
 
 ShaderSet::ShaderSet (const SharedPtr& enclosing, glu::GLSLVersion version)
@@ -395,8 +451,29 @@ ShaderSet::ShaderSet (const SharedPtr& enclosing, glu::GLSLVersion version)
 	deMemset(m_stageReferencing, 0, sizeof(m_stageReferencing));
 }
 
+ShaderSet::ShaderSet (const SharedPtr&	enclosing,
+					  glu::GLSLVersion	version,
+					  deUint32			stagesPresentBits,
+					  deUint32			stagesReferencingBits)
+	: Node		(TYPE_SHADER_SET, enclosing)
+	, m_version	(version)
+{
+	for (deUint32 stageNdx = 0; stageNdx < glu::SHADERTYPE_LAST; ++stageNdx)
+	{
+		const deUint32	stageMask			= (1u << stageNdx);
+		const bool		stagePresent		= (stagesPresentBits & stageMask) != 0;
+		const bool		stageReferencing	= (stagesReferencingBits & stageMask) != 0;
+
+		DE_ASSERT(stagePresent || !stageReferencing);
+
+		m_stagePresent[stageNdx]		= stagePresent;
+		m_stageReferencing[stageNdx]	= stageReferencing;
+	}
+}
+
 void ShaderSet::setStage (glu::ShaderType type, bool referencing)
 {
+	DE_ASSERT(type < glu::SHADERTYPE_LAST);
 	m_stagePresent[type] = true;
 	m_stageReferencing[type] = referencing;
 }
@@ -411,6 +488,28 @@ bool ShaderSet::isStageReferencing (glu::ShaderType stage) const
 {
 	DE_ASSERT(stage < glu::SHADERTYPE_LAST);
 	return m_stageReferencing[stage];
+}
+
+deUint32 ShaderSet::getPresentMask (void) const
+{
+	deUint32 mask = 0;
+	for (deUint32 stage = 0; stage < glu::SHADERTYPE_LAST; ++stage)
+	{
+		if (m_stagePresent[stage])
+			mask |= (1u << stage);
+	}
+	return mask;
+}
+
+deUint32 ShaderSet::getReferencingMask (void) const
+{
+	deUint32 mask = 0;
+	for (deUint32 stage = 0; stage < glu::SHADERTYPE_LAST; ++stage)
+	{
+		if (m_stageReferencing[stage])
+			mask |= (1u << stage);
+	}
+	return mask;
 }
 
 class TransformFeedbackTarget : public Node
@@ -764,6 +863,11 @@ static de::MovePtr<ProgramInterfaceDefinition::Program>	generateProgramDefinitio
 		}
 	}
 
+	if (program->hasStage(glu::SHADERTYPE_GEOMETRY))
+		program->setGeometryNumOutputVertices(1);
+	if (program->hasStage(glu::SHADERTYPE_TESSELLATION_CONTROL) || program->hasStage(glu::SHADERTYPE_TESSELLATION_EVALUATION))
+		program->setTessellationNumOutputPatchVertices(1);
+
 	return program;
 }
 
@@ -787,10 +891,11 @@ static void checkAndLogProgram (const glu::ShaderProgram& program, const Program
 class ResourceListTestCase : public TestCase
 {
 public:
-												ResourceListTestCase		(Context& context, const ResourceDefinition::Node::SharedPtr& targetResource, const ProgramInterface& interface, const char* name = DE_NULL);
+												ResourceListTestCase		(Context& context, const ResourceDefinition::Node::SharedPtr& targetResource, ProgramInterface interface, const char* name = DE_NULL);
 												~ResourceListTestCase		(void);
 
 protected:
+	void										init						(void);
 	void										deinit						(void);
 	IterateResult								iterate						(void);
 
@@ -799,16 +904,19 @@ protected:
 	bool										verifyResourceIndexQuery	(const std::vector<std::string>& resourceList, const std::vector<std::string>& referenceResources, glw::GLuint program);
 	bool										verifyMaxNameLength			(const std::vector<std::string>& referenceResourceList, glw::GLuint program);
 
-	static std::string							genTestCaseName				(const ResourceDefinition::Node*);
+	static std::string							genTestCaseName				(ProgramInterface interface, const ResourceDefinition::Node*);
+	static bool									isArrayedInterface			(ProgramInterface interface, deUint32 stageBits);
 
 	const ProgramInterface						m_programInterface;
 	ResourceDefinition::Node::SharedPtr			m_targetResource;
+	ProgramInterfaceDefinition::Program*		m_programDefinition;
 };
 
-ResourceListTestCase::ResourceListTestCase (Context& context, const ResourceDefinition::Node::SharedPtr& targetResource, const ProgramInterface& interface, const char* name)
-	: TestCase				(context, (name == DE_NULL) ? (genTestCaseName(targetResource.get()).c_str()) : (name), "")
+ResourceListTestCase::ResourceListTestCase (Context& context, const ResourceDefinition::Node::SharedPtr& targetResource, ProgramInterface interface, const char* name)
+	: TestCase				(context, (name == DE_NULL) ? (genTestCaseName(interface, targetResource.get()).c_str()) : (name), "")
 	, m_programInterface	(interface)
 	, m_targetResource		(targetResource)
+	, m_programDefinition	(DE_NULL)
 {
 	// GL_ATOMIC_COUNTER_BUFFER: no resource names
 	DE_ASSERT(m_programInterface != PROGRAMINTERFACE_ATOMIC_COUNTER_BUFFER);
@@ -819,18 +927,41 @@ ResourceListTestCase::~ResourceListTestCase (void)
 	deinit();
 }
 
+void ResourceListTestCase::init (void)
+{
+	m_programDefinition = generateProgramDefinitionFromResource(m_targetResource.get()).release();
+
+	if ((m_programDefinition->hasStage(glu::SHADERTYPE_TESSELLATION_CONTROL) || m_programDefinition->hasStage(glu::SHADERTYPE_TESSELLATION_EVALUATION)) &&
+		!m_context.getContextInfo().isExtensionSupported("GL_EXT_tessellation_shader"))
+	{
+		throw tcu::NotSupportedError("Test requires GL_EXT_tessellation_shader extension");
+	}
+	if (m_programDefinition->hasStage(glu::SHADERTYPE_GEOMETRY) &&
+		!m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader"))
+	{
+		throw tcu::NotSupportedError("Test requires GL_EXT_geometry_shader extension");
+	}
+	if (programContainsIOBlocks(m_programDefinition) &&
+		!m_context.getContextInfo().isExtensionSupported("GL_EXT_shader_io_blocks"))
+	{
+		throw tcu::NotSupportedError("Test requires GL_EXT_shader_io_blocks extension");
+	}
+}
+
 void ResourceListTestCase::deinit (void)
 {
 	m_targetResource.clear();
+
+	delete m_programDefinition;
+	m_programDefinition = DE_NULL;
 }
 
 ResourceListTestCase::IterateResult ResourceListTestCase::iterate (void)
 {
-	const de::UniquePtr<ProgramInterfaceDefinition::Program>	programDefinition	(generateProgramDefinitionFromResource(m_targetResource.get()));
-	const glu::ShaderProgram									program				(m_context.getRenderContext(), generateProgramInterfaceProgramSources(programDefinition.get()));
+	const glu::ShaderProgram program(m_context.getRenderContext(), generateProgramInterfaceProgramSources(m_programDefinition));
 
 	m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
-	checkAndLogProgram(program, programDefinition.get(), m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
+	checkAndLogProgram(program, m_programDefinition, m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
 
 	// Check resource list
 	{
@@ -839,7 +970,7 @@ ResourceListTestCase::IterateResult ResourceListTestCase::iterate (void)
 		std::vector<std::string>	expectedResources;
 
 		queryResourceList(resourceList, program.getProgram());
-		expectedResources = getProgramInterfaceResourceList(programDefinition.get(), m_programInterface);
+		expectedResources = getProgramInterfaceResourceList(m_programDefinition, m_programInterface);
 
 		// verify the list and the expected list match
 
@@ -1026,20 +1157,120 @@ bool ResourceListTestCase::verifyMaxNameLength (const std::vector<std::string>& 
 	return true;
 }
 
-std::string ResourceListTestCase::genTestCaseName (const ResourceDefinition::Node* root)
+std::string ResourceListTestCase::genTestCaseName (ProgramInterface interface, const ResourceDefinition::Node* root)
 {
-	std::ostringstream buf;
-	buf << "var";
+	bool				isImplicitlySizedArray	= false;
+	bool				hasVariable				= false;
+	bool				accumulateName			= true;
+	std::string			buf						= "var";
+	std::string			prefix;
 
 	for (const ResourceDefinition::Node* node = root; node; node = node->getEnclosingNode())
 	{
-		if (node->getType() == ResourceDefinition::Node::TYPE_STRUCT_MEMBER)
-			buf << "_struct";
-		if (node->getType() == ResourceDefinition::Node::TYPE_ARRAY_ELEMENT)
-			buf << "_array";
+		switch (node->getType())
+		{
+			case ResourceDefinition::Node::TYPE_VARIABLE:
+			{
+				hasVariable = true;
+				break;
+			}
+
+			case ResourceDefinition::Node::TYPE_STRUCT_MEMBER:
+			{
+				if (accumulateName)
+					buf += "_struct";
+				break;
+			}
+
+			case ResourceDefinition::Node::TYPE_ARRAY_ELEMENT:
+			{
+				DE_ASSERT(dynamic_cast<const ResourceDefinition::ArrayElement*>(node));
+				const ResourceDefinition::ArrayElement* arrayElement = static_cast<const ResourceDefinition::ArrayElement*>(node);
+
+				isImplicitlySizedArray = (arrayElement->m_arraySize == ResourceDefinition::ArrayElement::UNSIZED_ARRAY);
+
+				if (accumulateName)
+					buf += "_array";
+				break;
+			}
+
+			case ResourceDefinition::Node::TYPE_STORAGE_QUALIFIER:
+			{
+				DE_ASSERT(dynamic_cast<const ResourceDefinition::StorageQualifier*>(node));
+				const ResourceDefinition::StorageQualifier* storageDef = static_cast<const ResourceDefinition::StorageQualifier*>(node);
+
+				if (storageDef->m_storage == glu::STORAGE_PATCH_IN ||
+					storageDef->m_storage == glu::STORAGE_PATCH_OUT)
+				{
+					if (accumulateName)
+						prefix += "patch_";
+				}
+				break;
+			}
+
+			case ResourceDefinition::Node::TYPE_SHADER:
+			case ResourceDefinition::Node::TYPE_SHADER_SET:
+			{
+				bool arrayedInterface;
+
+				if (node->getType() == ResourceDefinition::Node::TYPE_SHADER)
+				{
+					DE_ASSERT(dynamic_cast<const ResourceDefinition::Shader*>(node));
+					const ResourceDefinition::Shader* shaderDef = static_cast<const ResourceDefinition::Shader*>(node);
+
+					arrayedInterface = isArrayedInterface(interface, (1u << shaderDef->m_type));
+				}
+				else
+				{
+					DE_ASSERT(node->getType() == ResourceDefinition::Node::TYPE_SHADER_SET);
+					DE_ASSERT(dynamic_cast<const ResourceDefinition::ShaderSet*>(node));
+					const ResourceDefinition::ShaderSet* shaderDef = static_cast<const ResourceDefinition::ShaderSet*>(node);
+
+					arrayedInterface = isArrayedInterface(interface, shaderDef->getReferencingMask());
+				}
+
+				if (arrayedInterface && isImplicitlySizedArray)
+				{
+					// omit implicit arrayness from name, i.e. remove trailing "_array"
+					DE_ASSERT(stringEndsWith(buf, "_array"));
+					buf = buf.substr(0, buf.length() - 6);
+				}
+
+				break;
+			}
+
+			case ResourceDefinition::Node::TYPE_INTERFACE_BLOCK:
+			{
+				accumulateName = false;
+				break;
+			}
+
+			default:
+				break;
+		}
 	}
 
-	return buf.str();
+	if (!hasVariable)
+		return prefix + "empty";
+	else
+		return prefix + buf;
+}
+
+bool ResourceListTestCase::isArrayedInterface (ProgramInterface interface, deUint32 stageBits)
+{
+	if (interface == PROGRAMINTERFACE_PROGRAM_INPUT)
+	{
+		const glu::ShaderType firstStage = getShaderMaskFirstStage(stageBits);
+		return	firstStage == glu::SHADERTYPE_TESSELLATION_CONTROL		||
+				firstStage == glu::SHADERTYPE_TESSELLATION_EVALUATION	||
+				firstStage == glu::SHADERTYPE_GEOMETRY;
+	}
+	else if (interface == PROGRAMINTERFACE_PROGRAM_OUTPUT)
+	{
+		const glu::ShaderType lastStage = getShaderMaskLastStage(stageBits);
+		return	lastStage == glu::SHADERTYPE_TESSELLATION_CONTROL;
+	}
+	return false;
 }
 
 // Resouce property query case
@@ -1053,8 +1284,8 @@ public:
 private:
 	void													init						(void);
 	void													deinit						(void);
-	ProgramInterfaceDefinition::Program*					getProgramDefinition		(void);
-	std::vector<std::string>								getQueryTargetResources		(void);
+	const ProgramInterfaceDefinition::Program*				getProgramDefinition		(void) const;
+	std::vector<std::string>								getQueryTargetResources		(void) const;
 
 	static std::string										genTestCaseName				(const ResourceDefinition::Node*);
 	static std::string										genMultilineDescription		(const ResourceDefinition::Node*);
@@ -1101,12 +1332,12 @@ void ResourceTestCase::deinit (void)
 	m_targetResources = std::vector<std::string>();
 }
 
-ProgramInterfaceDefinition::Program* ResourceTestCase::getProgramDefinition (void)
+const ProgramInterfaceDefinition::Program* ResourceTestCase::getProgramDefinition (void) const
 {
 	return m_program;
 }
 
-std::vector<std::string> ResourceTestCase::getQueryTargetResources (void)
+std::vector<std::string> ResourceTestCase::getQueryTargetResources (void) const
 {
 	return m_targetResources;
 }
@@ -1146,7 +1377,7 @@ std::string ResourceTestCase::genMultilineDescription (const ResourceDefinition:
 				const ResourceDefinition::StorageQualifier*	storageDef = static_cast<const ResourceDefinition::StorageQualifier*>(node);
 
 				uniformType = std::string(" ") + glu::getStorageName(storageDef->m_storage);
-				structureDescriptor << "\n\tdeclared as " << glu::getStorageName(storageDef->m_storage);
+				structureDescriptor << "\n\tdeclared as \"" << glu::getStorageName(storageDef->m_storage) << "\"";
 			}
 
 			if (node->getType() == ResourceDefinition::Node::TYPE_ARRAY_ELEMENT)
@@ -2435,7 +2666,12 @@ AtomicCounterBufferDataSizeCase::IterateResult AtomicCounterBufferDataSizeCase::
 class AtomicCounterReferencedByCase : public TestCase
 {
 public:
-											AtomicCounterReferencedByCase	(Context& context, const char* name, const char* description, deUint32 presentStagesMask, deUint32 activeStagesMask);
+											AtomicCounterReferencedByCase	(Context&		context,
+																			 const char*	name,
+																			 const char*	description,
+																			 bool			separable,
+																			 deUint32		presentStagesMask,
+																			 deUint32		activeStagesMask);
 											~AtomicCounterReferencedByCase	(void);
 
 private:
@@ -2443,13 +2679,20 @@ private:
 	void									deinit							(void);
 	IterateResult							iterate							(void);
 
+	const bool								m_separable;
 	const deUint32							m_presentStagesMask;
 	const deUint32							m_activeStagesMask;
 	ProgramInterfaceDefinition::Program*	m_program;
 };
 
-AtomicCounterReferencedByCase::AtomicCounterReferencedByCase (Context& context, const char* name, const char* description, deUint32 presentStagesMask, deUint32 activeStagesMask)
+AtomicCounterReferencedByCase::AtomicCounterReferencedByCase (Context&		context,
+															  const char*	name,
+															  const char*	description,
+															  bool			separable,
+															  deUint32		presentStagesMask,
+															  deUint32		activeStagesMask)
 	: TestCase				(context, name, description)
+	, m_separable			(separable)
 	, m_presentStagesMask	(presentStagesMask)
 	, m_activeStagesMask	(activeStagesMask)
 	, m_program				(DE_NULL)
@@ -2464,12 +2707,19 @@ AtomicCounterReferencedByCase::~AtomicCounterReferencedByCase (void)
 
 void AtomicCounterReferencedByCase::init (void)
 {
-	glu::VariableDeclaration atomicVar(glu::VarType(glu::TYPE_UINT_ATOMIC_COUNTER, glu::PRECISION_LAST), "targetCounter", glu::STORAGE_UNIFORM);
+	const deUint32				geometryMask		= (1 << glu::SHADERTYPE_GEOMETRY);
+	const deUint32				tessellationMask	= (1 << glu::SHADERTYPE_TESSELLATION_CONTROL) | (1 << glu::SHADERTYPE_TESSELLATION_EVALUATION);
+	glu::VariableDeclaration	atomicVar			(glu::VarType(glu::TYPE_UINT_ATOMIC_COUNTER, glu::PRECISION_LAST), "targetCounter", glu::STORAGE_UNIFORM);
+
+	if ((m_presentStagesMask & tessellationMask) != 0 && !m_context.getContextInfo().isExtensionSupported("GL_EXT_tessellation_shader"))
+		throw tcu::NotSupportedError("Test requires GL_EXT_tessellation_shader extension");
+	if ((m_presentStagesMask & geometryMask) != 0 && !m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader"))
+		throw tcu::NotSupportedError("Test requires GL_EXT_geometry_shader extension");
 
 	atomicVar.layout.binding = 1;
 
 	m_program = new ProgramInterfaceDefinition::Program();
-	m_program->setSeparable(((m_presentStagesMask & (1 << glu::SHADERTYPE_VERTEX)) != 0) != ((m_presentStagesMask & (1 << glu::SHADERTYPE_FRAGMENT)) != 0));
+	m_program->setSeparable(m_separable);
 
 	for (int shaderType = 0; shaderType < glu::SHADERTYPE_LAST; ++shaderType)
 	{
@@ -2478,6 +2728,11 @@ void AtomicCounterReferencedByCase::init (void)
 		else if (m_presentStagesMask & (1 << shaderType))
 			m_program->addShader((glu::ShaderType)shaderType, glu::GLSL_VERSION_310_ES);
 	}
+
+	if (m_program->hasStage(glu::SHADERTYPE_GEOMETRY))
+		m_program->setGeometryNumOutputVertices(1);
+	if (m_program->hasStage(glu::SHADERTYPE_TESSELLATION_CONTROL) || m_program->hasStage(glu::SHADERTYPE_TESSELLATION_EVALUATION))
+		m_program->setTessellationNumOutputPatchVertices(1);
 
 	DE_ASSERT(m_program->isValid());
 }
@@ -2494,15 +2749,19 @@ AtomicCounterReferencedByCase::IterateResult AtomicCounterReferencedByCase::iter
 	{
 		glw::GLenum		propName;
 		glu::ShaderType	shaderType;
+		const char*		extension;
 	} targetProps[] =
 	{
-		{ GL_REFERENCED_BY_VERTEX_SHADER,	glu::SHADERTYPE_VERTEX		},
-		{ GL_REFERENCED_BY_FRAGMENT_SHADER,	glu::SHADERTYPE_FRAGMENT	},
-		{ GL_REFERENCED_BY_COMPUTE_SHADER,	glu::SHADERTYPE_COMPUTE		},
+		{ GL_REFERENCED_BY_VERTEX_SHADER,			glu::SHADERTYPE_VERTEX,						DE_NULL							},
+		{ GL_REFERENCED_BY_FRAGMENT_SHADER,			glu::SHADERTYPE_FRAGMENT,					DE_NULL							},
+		{ GL_REFERENCED_BY_COMPUTE_SHADER,			glu::SHADERTYPE_COMPUTE,					DE_NULL							},
+		{ GL_REFERENCED_BY_TESS_CONTROL_SHADER,		glu::SHADERTYPE_TESSELLATION_CONTROL,		"GL_EXT_tessellation_shader"	},
+		{ GL_REFERENCED_BY_TESS_EVALUATION_SHADER,	glu::SHADERTYPE_TESSELLATION_EVALUATION,	"GL_EXT_tessellation_shader"	},
+		{ GL_REFERENCED_BY_GEOMETRY_SHADER,			glu::SHADERTYPE_GEOMETRY,					"GL_EXT_geometry_shader"		},
 	};
 
-	const glw::Functions&		gl								= m_context.getRenderContext().getFunctions();
-	const glu::ShaderProgram	program							(m_context.getRenderContext(), generateProgramInterfaceProgramSources(m_program));
+	const glw::Functions&		gl			= m_context.getRenderContext().getFunctions();
+	const glu::ShaderProgram	program		(m_context.getRenderContext(), generateProgramInterfaceProgramSources(m_program));
 
 	m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
 	checkAndLogProgram(program, m_program, m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
@@ -2510,30 +2769,33 @@ AtomicCounterReferencedByCase::IterateResult AtomicCounterReferencedByCase::iter
 	// check props
 	for (int propNdx = 0; propNdx < DE_LENGTH_OF_ARRAY(targetProps); ++propNdx)
 	{
-		const glw::GLenum	prop		= targetProps[propNdx].propName;
-		const glw::GLint	expected	= ((m_activeStagesMask & (1 << targetProps[propNdx].shaderType)) != 0) ? (GL_TRUE) : (GL_FALSE);
-		glw::GLint			value		= -1;
-		glw::GLint			written		= -1;
-
-		m_testCtx.getLog() << tcu::TestLog::Message << "Verifying " << glu::getProgramResourcePropertyName(prop) << ", expecting " << glu::getBooleanName(expected) << tcu::TestLog::EndMessage;
-
-		gl.getProgramResourceiv(program.getProgram(), GL_ATOMIC_COUNTER_BUFFER, 0, 1, &prop, 1, &written, &value);
-		GLU_EXPECT_NO_ERROR(gl.getError(), "query buffer binding");
-
-		if (written != 1)
+		if (targetProps[propNdx].extension == DE_NULL || m_context.getContextInfo().isExtensionSupported(targetProps[propNdx].extension))
 		{
-			m_testCtx.getLog() << tcu::TestLog::Message << "Error, query for referenced_by_* returned invalid number of values." << tcu::TestLog::EndMessage;
-			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "property query failed");
-			continue;
-		}
+			const glw::GLenum	prop		= targetProps[propNdx].propName;
+			const glw::GLint	expected	= ((m_activeStagesMask & (1 << targetProps[propNdx].shaderType)) != 0) ? (GL_TRUE) : (GL_FALSE);
+			glw::GLint			value		= -1;
+			glw::GLint			written		= -1;
 
-		m_testCtx.getLog() << tcu::TestLog::Message << glu::getProgramResourcePropertyName(prop) << " = " << glu::getBooleanStr(value) << tcu::TestLog::EndMessage;
+			m_testCtx.getLog() << tcu::TestLog::Message << "Verifying " << glu::getProgramResourcePropertyName(prop) << ", expecting " << glu::getBooleanName(expected) << tcu::TestLog::EndMessage;
 
-		if (value != expected)
-		{
-			m_testCtx.getLog() << tcu::TestLog::Message << "Error, got unexpected value" << tcu::TestLog::EndMessage;
-			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "unexpected property value");
-			continue;
+			gl.getProgramResourceiv(program.getProgram(), GL_ATOMIC_COUNTER_BUFFER, 0, 1, &prop, 1, &written, &value);
+			GLU_EXPECT_NO_ERROR(gl.getError(), "query buffer binding");
+
+			if (written != 1)
+			{
+				m_testCtx.getLog() << tcu::TestLog::Message << "Error, query for referenced_by_* returned invalid number of values." << tcu::TestLog::EndMessage;
+				m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "property query failed");
+				continue;
+			}
+
+			m_testCtx.getLog() << tcu::TestLog::Message << glu::getProgramResourcePropertyName(prop) << " = " << glu::getBooleanStr(value) << tcu::TestLog::EndMessage;
+
+			if (value != expected)
+			{
+				m_testCtx.getLog() << tcu::TestLog::Message << "Error, got unexpected value" << tcu::TestLog::EndMessage;
+				m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "unexpected property value");
+				continue;
+			}
 		}
 	}
 
@@ -2546,8 +2808,15 @@ public:
 	enum CaseType
 	{
 		CASE_VERTEX_FRAGMENT = 0,
+		CASE_VERTEX_GEO_FRAGMENT,
+		CASE_VERTEX_TESS_FRAGMENT,
+		CASE_VERTEX_TESS_GEO_FRAGMENT,
+
 		CASE_SEPARABLE_VERTEX,
 		CASE_SEPARABLE_FRAGMENT,
+		CASE_SEPARABLE_GEOMETRY,
+		CASE_SEPARABLE_TESS_CTRL,
+		CASE_SEPARABLE_TESS_EVAL,
 
 		CASE_LAST
 	};
@@ -2580,31 +2849,135 @@ ProgramInputOutputReferencedByCase::~ProgramInputOutputReferencedByCase (void)
 
 void ProgramInputOutputReferencedByCase::init (void)
 {
+	const bool hasTessellationShader =	(m_caseType == CASE_VERTEX_TESS_FRAGMENT)		||
+										(m_caseType == CASE_VERTEX_TESS_GEO_FRAGMENT)	||
+										(m_caseType == CASE_SEPARABLE_TESS_CTRL)		||
+										(m_caseType == CASE_SEPARABLE_TESS_EVAL);
+	const bool hasGeometryShader =		(m_caseType == CASE_VERTEX_GEO_FRAGMENT)		||
+										(m_caseType == CASE_VERTEX_TESS_GEO_FRAGMENT)	||
+										(m_caseType == CASE_SEPARABLE_GEOMETRY);
+
+	if (hasTessellationShader && !m_context.getContextInfo().isExtensionSupported("GL_EXT_tessellation_shader"))
+		throw tcu::NotSupportedError("Test requires GL_EXT_tessellation_shader extension");
+	if (hasGeometryShader && !m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader"))
+		throw tcu::NotSupportedError("Test requires GL_EXT_geometry_shader extension");
+
 	m_program = new ProgramInterfaceDefinition::Program();
 
-	if (m_caseType == CASE_SEPARABLE_VERTEX || m_caseType == CASE_SEPARABLE_FRAGMENT)
+	if (m_caseType == CASE_SEPARABLE_VERTEX		||
+		m_caseType == CASE_SEPARABLE_FRAGMENT	||
+		m_caseType == CASE_SEPARABLE_GEOMETRY	||
+		m_caseType == CASE_SEPARABLE_TESS_CTRL	||
+		m_caseType == CASE_SEPARABLE_TESS_EVAL)
 	{
-		const std::string				varName		= (m_targetStorage == glu::STORAGE_IN) ? ("shaderInput") : ("shaderOutput");
-		const glu::VariableDeclaration	targetDecl	(glu::VarType(glu::TYPE_FLOAT_VEC4, glu::PRECISION_HIGHP), varName, m_targetStorage);
+		const bool						isInputCase			= (m_targetStorage == glu::STORAGE_IN || m_targetStorage == glu::STORAGE_PATCH_IN);
+		const bool						perPatchStorage		= (m_targetStorage == glu::STORAGE_PATCH_IN || m_targetStorage == glu::STORAGE_PATCH_OUT);
+		const char*						varName				= (isInputCase) ? ("shaderInput") : ("shaderOutput");
+		const glu::VariableDeclaration	targetDecl			(glu::VarType(glu::TYPE_FLOAT_VEC4, glu::PRECISION_HIGHP), varName, m_targetStorage);
+		const glu::ShaderType			shaderType			= (m_caseType == CASE_SEPARABLE_VERTEX)		? (glu::SHADERTYPE_VERTEX)
+															: (m_caseType == CASE_SEPARABLE_FRAGMENT)	? (glu::SHADERTYPE_FRAGMENT)
+															: (m_caseType == CASE_SEPARABLE_GEOMETRY)	? (glu::SHADERTYPE_GEOMETRY)
+															: (m_caseType == CASE_SEPARABLE_TESS_CTRL)	? (glu::SHADERTYPE_TESSELLATION_CONTROL)
+															: (m_caseType == CASE_SEPARABLE_TESS_EVAL)	? (glu::SHADERTYPE_TESSELLATION_EVALUATION)
+															:											  (glu::SHADERTYPE_LAST);
+		const bool						arrayedInterface	= (isInputCase) ? ((shaderType == glu::SHADERTYPE_GEOMETRY)					||
+																			   (shaderType == glu::SHADERTYPE_TESSELLATION_CONTROL)		||
+																			   (shaderType == glu::SHADERTYPE_TESSELLATION_EVALUATION))
+																			: (shaderType == glu::SHADERTYPE_TESSELLATION_CONTROL);
 
 		m_program->setSeparable(true);
-		m_program->addShader((m_caseType == CASE_SEPARABLE_VERTEX) ? (glu::SHADERTYPE_VERTEX) : (glu::SHADERTYPE_FRAGMENT), glu::GLSL_VERSION_310_ES)->getDefaultBlock().variables.push_back(targetDecl);
+
+		if (arrayedInterface && !perPatchStorage)
+		{
+			const glu::VariableDeclaration targetDeclArr(glu::VarType(targetDecl.varType, glu::VarType::UNSIZED_ARRAY), varName, m_targetStorage);
+			m_program->addShader(shaderType, glu::GLSL_VERSION_310_ES)->getDefaultBlock().variables.push_back(targetDeclArr);
+		}
+		else
+		{
+			m_program->addShader(shaderType, glu::GLSL_VERSION_310_ES)->getDefaultBlock().variables.push_back(targetDecl);
+		}
 	}
-	else if (m_caseType == CASE_VERTEX_FRAGMENT)
+	else if (m_caseType == CASE_VERTEX_FRAGMENT			||
+			 m_caseType == CASE_VERTEX_GEO_FRAGMENT		||
+			 m_caseType == CASE_VERTEX_TESS_FRAGMENT	||
+			 m_caseType == CASE_VERTEX_TESS_GEO_FRAGMENT)
 	{
 		ProgramInterfaceDefinition::Shader*	vertex		= m_program->addShader(glu::SHADERTYPE_VERTEX, glu::GLSL_VERSION_310_ES);
 		ProgramInterfaceDefinition::Shader*	fragment	= m_program->addShader(glu::SHADERTYPE_FRAGMENT, glu::GLSL_VERSION_310_ES);
 
 		m_program->setSeparable(false);
 
-		vertex->getDefaultBlock().variables.push_back(glu::VariableDeclaration(glu::VarType(glu::TYPE_FLOAT_VEC4, glu::PRECISION_HIGHP), "shaderInput", glu::STORAGE_IN));
-		vertex->getDefaultBlock().variables.push_back(glu::VariableDeclaration(glu::VarType(glu::TYPE_FLOAT_VEC4, glu::PRECISION_HIGHP), "shaderOutput", glu::STORAGE_OUT, glu::INTERPOLATION_LAST, glu::Layout(1)));
+		vertex->getDefaultBlock().variables.push_back(glu::VariableDeclaration(glu::VarType(glu::TYPE_FLOAT_VEC4, glu::PRECISION_HIGHP),
+																			   "shaderInput",
+																			   glu::STORAGE_IN));
+		vertex->getDefaultBlock().variables.push_back(glu::VariableDeclaration(glu::VarType(glu::TYPE_FLOAT_VEC4, glu::PRECISION_HIGHP),
+																			   "shaderOutput",
+																			   glu::STORAGE_OUT,
+																			   glu::INTERPOLATION_LAST,
+																			   glu::Layout(1)));
 
-		fragment->getDefaultBlock().variables.push_back(glu::VariableDeclaration(glu::VarType(glu::TYPE_FLOAT_VEC4, glu::PRECISION_HIGHP), "shaderInput", glu::STORAGE_IN, glu::INTERPOLATION_LAST, glu::Layout(1)));
-		fragment->getDefaultBlock().variables.push_back(glu::VariableDeclaration(glu::VarType(glu::TYPE_FLOAT_VEC4, glu::PRECISION_HIGHP), "shaderOutput", glu::STORAGE_OUT, glu::INTERPOLATION_LAST, glu::Layout(0)));
+		fragment->getDefaultBlock().variables.push_back(glu::VariableDeclaration(glu::VarType(glu::TYPE_FLOAT_VEC4, glu::PRECISION_HIGHP),
+																				 "shaderOutput",
+																				 glu::STORAGE_OUT,
+																				 glu::INTERPOLATION_LAST,
+																				 glu::Layout(0)));
+		fragment->getDefaultBlock().variables.push_back(glu::VariableDeclaration(glu::VarType(glu::TYPE_FLOAT_VEC4, glu::PRECISION_HIGHP),
+																				 "shaderInput",
+																				 glu::STORAGE_IN,
+																				 glu::INTERPOLATION_LAST,
+																				 glu::Layout(1)));
+
+		if (m_caseType == CASE_VERTEX_TESS_FRAGMENT || m_caseType == CASE_VERTEX_TESS_GEO_FRAGMENT)
+		{
+			ProgramInterfaceDefinition::Shader* tessCtrl = m_program->addShader(glu::SHADERTYPE_TESSELLATION_CONTROL, glu::GLSL_VERSION_310_ES);
+			ProgramInterfaceDefinition::Shader* tessEval = m_program->addShader(glu::SHADERTYPE_TESSELLATION_EVALUATION, glu::GLSL_VERSION_310_ES);
+
+			tessCtrl->getDefaultBlock().variables.push_back(glu::VariableDeclaration(glu::VarType(glu::VarType(glu::TYPE_FLOAT_VEC4, glu::PRECISION_HIGHP), glu::VarType::UNSIZED_ARRAY),
+																					 "shaderInput",
+																					 glu::STORAGE_IN,
+																					 glu::INTERPOLATION_LAST,
+																					 glu::Layout(1)));
+			tessCtrl->getDefaultBlock().variables.push_back(glu::VariableDeclaration(glu::VarType(glu::VarType(glu::TYPE_FLOAT_VEC4, glu::PRECISION_HIGHP), glu::VarType::UNSIZED_ARRAY),
+																					 "shaderOutput",
+																					 glu::STORAGE_OUT,
+																					 glu::INTERPOLATION_LAST,
+																					 glu::Layout(1)));
+
+			tessEval->getDefaultBlock().variables.push_back(glu::VariableDeclaration(glu::VarType(glu::VarType(glu::TYPE_FLOAT_VEC4, glu::PRECISION_HIGHP), glu::VarType::UNSIZED_ARRAY),
+																					 "shaderInput",
+																					 glu::STORAGE_IN,
+																					 glu::INTERPOLATION_LAST,
+																					 glu::Layout(1)));
+			tessEval->getDefaultBlock().variables.push_back(glu::VariableDeclaration(glu::VarType(glu::TYPE_FLOAT_VEC4, glu::PRECISION_HIGHP),
+																					 "shaderOutput",
+																					 glu::STORAGE_OUT,
+																					 glu::INTERPOLATION_LAST,
+																					 glu::Layout(1)));
+		}
+
+		if (m_caseType == CASE_VERTEX_GEO_FRAGMENT || m_caseType == CASE_VERTEX_TESS_GEO_FRAGMENT)
+		{
+			ProgramInterfaceDefinition::Shader* geometry = m_program->addShader(glu::SHADERTYPE_GEOMETRY, glu::GLSL_VERSION_310_ES);
+
+			geometry->getDefaultBlock().variables.push_back(glu::VariableDeclaration(glu::VarType(glu::VarType(glu::TYPE_FLOAT_VEC4, glu::PRECISION_HIGHP), glu::VarType::UNSIZED_ARRAY),
+																					 "shaderInput",
+																					 glu::STORAGE_IN,
+																					 glu::INTERPOLATION_LAST,
+																					 glu::Layout(1)));
+			geometry->getDefaultBlock().variables.push_back(glu::VariableDeclaration(glu::VarType(glu::TYPE_FLOAT_VEC4, glu::PRECISION_HIGHP),
+																					 "shaderOutput",
+																					 glu::STORAGE_OUT,
+																					 glu::INTERPOLATION_LAST,
+																					 glu::Layout(1)));
+		}
 	}
 	else
 		DE_ASSERT(false);
+
+	if (m_program->hasStage(glu::SHADERTYPE_GEOMETRY))
+		m_program->setGeometryNumOutputVertices(1);
+	if (m_program->hasStage(glu::SHADERTYPE_TESSELLATION_CONTROL) || m_program->hasStage(glu::SHADERTYPE_TESSELLATION_EVALUATION))
+		m_program->setTessellationNumOutputPatchVertices(1);
 
 	DE_ASSERT(m_program->isValid());
 }
@@ -2621,17 +2994,22 @@ ProgramInputOutputReferencedByCase::IterateResult ProgramInputOutputReferencedBy
 	{
 		glw::GLenum		propName;
 		glu::ShaderType	shaderType;
+		const char*		extension;
 	} targetProps[] =
 	{
-		{ GL_REFERENCED_BY_VERTEX_SHADER,	glu::SHADERTYPE_VERTEX		},
-		{ GL_REFERENCED_BY_FRAGMENT_SHADER,	glu::SHADERTYPE_FRAGMENT	},
-		{ GL_REFERENCED_BY_COMPUTE_SHADER,	glu::SHADERTYPE_COMPUTE		},
+		{ GL_REFERENCED_BY_VERTEX_SHADER,			glu::SHADERTYPE_VERTEX,						DE_NULL							},
+		{ GL_REFERENCED_BY_FRAGMENT_SHADER,			glu::SHADERTYPE_FRAGMENT,					DE_NULL							},
+		{ GL_REFERENCED_BY_COMPUTE_SHADER,			glu::SHADERTYPE_COMPUTE,					DE_NULL							},
+		{ GL_REFERENCED_BY_TESS_CONTROL_SHADER,		glu::SHADERTYPE_TESSELLATION_CONTROL,		"GL_EXT_tessellation_shader"	},
+		{ GL_REFERENCED_BY_TESS_EVALUATION_SHADER,	glu::SHADERTYPE_TESSELLATION_EVALUATION,	"GL_EXT_tessellation_shader"	},
+		{ GL_REFERENCED_BY_GEOMETRY_SHADER,			glu::SHADERTYPE_GEOMETRY,					"GL_EXT_geometry_shader"		},
 	};
 
+	const bool					isInputCase						= (m_targetStorage == glu::STORAGE_IN || m_targetStorage == glu::STORAGE_PATCH_IN);
 	const glw::Functions&		gl								= m_context.getRenderContext().getFunctions();
 	const glu::ShaderProgram	program							(m_context.getRenderContext(), generateProgramInterfaceProgramSources(m_program));
-	const std::string			targetResourceName				= (m_targetStorage == glu::STORAGE_IN) ? ("shaderInput") : ("shaderOutput");
-	const glw::GLenum			programGLInterface				= (m_targetStorage == glu::STORAGE_IN) ? (GL_PROGRAM_INPUT) : (GL_PROGRAM_OUTPUT);
+	const std::string			targetResourceName				= (isInputCase) ? ("shaderInput") : ("shaderOutput");
+	const glw::GLenum			programGLInterface				= (isInputCase) ? (GL_PROGRAM_INPUT) : (GL_PROGRAM_OUTPUT);
 	glw::GLuint					resourceIndex;
 
 	m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
@@ -2652,34 +3030,33 @@ ProgramInputOutputReferencedByCase::IterateResult ProgramInputOutputReferencedBy
 	// check props
 	for (int propNdx = 0; propNdx < DE_LENGTH_OF_ARRAY(targetProps); ++propNdx)
 	{
-		const glw::GLenum	prop			= targetProps[propNdx].propName;
-		const bool			vertexPresent	= (m_caseType == CASE_VERTEX_FRAGMENT) || (m_caseType == CASE_SEPARABLE_VERTEX);
-		const bool			fragmentPresent	= (m_caseType == CASE_VERTEX_FRAGMENT) || (m_caseType == CASE_SEPARABLE_FRAGMENT);
-		const bool			expected		= (m_targetStorage == glu::STORAGE_IN) ?
-												((vertexPresent) ? (targetProps[propNdx].shaderType == glu::SHADERTYPE_VERTEX) : (targetProps[propNdx].shaderType == glu::SHADERTYPE_FRAGMENT)) :
-												((fragmentPresent) ? (targetProps[propNdx].shaderType == glu::SHADERTYPE_FRAGMENT) : (targetProps[propNdx].shaderType == glu::SHADERTYPE_VERTEX));
-		glw::GLint			value			= -1;
-		glw::GLint			written			= -1;
-
-		m_testCtx.getLog() << tcu::TestLog::Message << "Verifying " << glu::getProgramResourcePropertyName(prop) << ", expecting " << ((expected) ? ("TRUE") : ("FALSE")) << tcu::TestLog::EndMessage;
-
-		gl.getProgramResourceiv(program.getProgram(), programGLInterface, resourceIndex, 1, &prop, 1, &written, &value);
-		GLU_EXPECT_NO_ERROR(gl.getError(), "query buffer binding");
-
-		if (written != 1)
+		if (targetProps[propNdx].extension == DE_NULL || m_context.getContextInfo().isExtensionSupported(targetProps[propNdx].extension))
 		{
-			m_testCtx.getLog() << tcu::TestLog::Message << "Error, query for referenced_by_* returned invalid number of values." << tcu::TestLog::EndMessage;
-			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "property query failed");
-			continue;
-		}
+			const glw::GLenum	prop			= targetProps[propNdx].propName;
+			const bool			expected		= (isInputCase) ? (targetProps[propNdx].shaderType == m_program->getFirstStage()) : (targetProps[propNdx].shaderType == m_program->getLastStage());
+			glw::GLint			value			= -1;
+			glw::GLint			written			= -1;
 
-		m_testCtx.getLog() << tcu::TestLog::Message << glu::getProgramResourcePropertyName(prop) << " = " << glu::getBooleanStr(value) << tcu::TestLog::EndMessage;
+			m_testCtx.getLog() << tcu::TestLog::Message << "Verifying " << glu::getProgramResourcePropertyName(prop) << ", expecting " << ((expected) ? ("TRUE") : ("FALSE")) << tcu::TestLog::EndMessage;
 
-		if (value != ((expected) ? (GL_TRUE) : (GL_FALSE)))
-		{
-			m_testCtx.getLog() << tcu::TestLog::Message << "Error, got unexpected value" << tcu::TestLog::EndMessage;
-			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "unexpected property value");
-			continue;
+			gl.getProgramResourceiv(program.getProgram(), programGLInterface, resourceIndex, 1, &prop, 1, &written, &value);
+			GLU_EXPECT_NO_ERROR(gl.getError(), "query buffer binding");
+
+			if (written != 1)
+			{
+				m_testCtx.getLog() << tcu::TestLog::Message << "Error, query for referenced_by_* returned invalid number of values." << tcu::TestLog::EndMessage;
+				m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "property query failed");
+				continue;
+			}
+
+			m_testCtx.getLog() << tcu::TestLog::Message << glu::getProgramResourcePropertyName(prop) << " = " << glu::getBooleanStr(value) << tcu::TestLog::EndMessage;
+
+			if (value != ((expected) ? (GL_TRUE) : (GL_FALSE)))
+			{
+				m_testCtx.getLog() << tcu::TestLog::Message << "Error, got unexpected value" << tcu::TestLog::EndMessage;
+				m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "unexpected property value");
+				continue;
+			}
 		}
 	}
 
@@ -2708,8 +3085,7 @@ FeedbackResourceListTestCase::~FeedbackResourceListTestCase (void)
 
 FeedbackResourceListTestCase::IterateResult FeedbackResourceListTestCase::iterate (void)
 {
-	const de::UniquePtr<ProgramInterfaceDefinition::Program>	programDefinition	(generateProgramDefinitionFromResource(m_targetResource.get()));
-	const glu::ShaderProgram									program				(m_context.getRenderContext(), generateProgramInterfaceProgramSources(programDefinition.get()));
+	const glu::ShaderProgram program(m_context.getRenderContext(), generateProgramInterfaceProgramSources(m_programDefinition));
 
 	m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
 
@@ -2717,16 +3093,16 @@ FeedbackResourceListTestCase::IterateResult FeedbackResourceListTestCase::iterat
 	{
 		tcu::MessageBuilder builder(&m_testCtx.getLog());
 		builder << "Transform feedback varyings: {";
-		for (int ndx = 0; ndx < (int)programDefinition->getTransformFeedbackVaryings().size(); ++ndx)
+		for (int ndx = 0; ndx < (int)m_programDefinition->getTransformFeedbackVaryings().size(); ++ndx)
 		{
 			if (ndx)
 				builder << ", ";
-			builder << "\"" << programDefinition->getTransformFeedbackVaryings()[ndx] << "\"";
+			builder << "\"" << m_programDefinition->getTransformFeedbackVaryings()[ndx] << "\"";
 		}
 		builder << "}" << tcu::TestLog::EndMessage;
 	}
 
-	checkAndLogProgram(program, programDefinition.get(), m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
+	checkAndLogProgram(program, m_programDefinition, m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
 
 	// Check resource list
 	{
@@ -2735,7 +3111,7 @@ FeedbackResourceListTestCase::IterateResult FeedbackResourceListTestCase::iterat
 		std::vector<std::string>	expectedResources;
 
 		queryResourceList(resourceList, program.getProgram());
-		expectedResources = getProgramInterfaceResourceList(programDefinition.get(), m_programInterface);
+		expectedResources = getProgramInterfaceResourceList(m_programDefinition, m_programInterface);
 
 		// verify the list and the expected list match
 
@@ -3840,22 +4216,45 @@ static void generateReferencedByShaderCaseBlocks (Context& context, tcu::TestCas
 		int				expandLevel;
 	} singleStageCases[] =
 	{
-		{ "compute",			glu::SHADERTYPE_COMPUTE,	3	},
-		{ "separable_vertex",	glu::SHADERTYPE_VERTEX,		2	},
-		{ "separable_fragment",	glu::SHADERTYPE_FRAGMENT,	2	},
+		{ "compute",				glu::SHADERTYPE_COMPUTE,					3	},
+		{ "separable_vertex",		glu::SHADERTYPE_VERTEX,						2	},
+		{ "separable_fragment",		glu::SHADERTYPE_FRAGMENT,					2	},
+		{ "separable_tess_ctrl",	glu::SHADERTYPE_TESSELLATION_CONTROL,		2	},
+		{ "separable_tess_eval",	glu::SHADERTYPE_TESSELLATION_EVALUATION,	2	},
+		{ "separable_geometry",		glu::SHADERTYPE_GEOMETRY,					2	},
 	};
-
 	static const struct
 	{
-		const char*		name;
-		deUint32		stagesPresent;
-		deUint32		stagesReferencing;
-		int				expandLevel;
-	} multiStageCases[] =
+		const char*	name;
+		deUint32	flags;
+		int			expandLevel;
+		int			subExpandLevel;
+	} pipelines[] =
 	{
-		{ "vertex_fragment",				(1 << glu::SHADERTYPE_VERTEX) | (1 << glu::SHADERTYPE_FRAGMENT),	(1 << glu::SHADERTYPE_VERTEX) | (1 << glu::SHADERTYPE_FRAGMENT),	3	},
-		{ "vertex_fragment_only_fragment",	(1 << glu::SHADERTYPE_VERTEX) | (1 << glu::SHADERTYPE_FRAGMENT),									(1 << glu::SHADERTYPE_FRAGMENT),	2	},
-		{ "vertex_fragment_only_vertex",	(1 << glu::SHADERTYPE_VERTEX) | (1 << glu::SHADERTYPE_FRAGMENT),	(1 << glu::SHADERTYPE_VERTEX),										2	},
+		{
+			"vertex_fragment",
+			(1 << glu::SHADERTYPE_VERTEX) | (1 << glu::SHADERTYPE_FRAGMENT),
+			3,
+			2,
+		},
+		{
+			"vertex_tess_fragment",
+			(1 << glu::SHADERTYPE_VERTEX) | (1 << glu::SHADERTYPE_FRAGMENT) | (1 << glu::SHADERTYPE_TESSELLATION_CONTROL) | (1 << glu::SHADERTYPE_TESSELLATION_EVALUATION),
+			2,
+			2,
+		},
+		{
+			"vertex_geo_fragment",
+			(1 << glu::SHADERTYPE_VERTEX) | (1 << glu::SHADERTYPE_FRAGMENT) | (1 << glu::SHADERTYPE_GEOMETRY),
+			2,
+			2,
+		},
+		{
+			"vertex_tess_geo_fragment",
+			(1 << glu::SHADERTYPE_VERTEX) | (1 << glu::SHADERTYPE_FRAGMENT) | (1 << glu::SHADERTYPE_TESSELLATION_CONTROL) | (1 << glu::SHADERTYPE_TESSELLATION_EVALUATION) | (1 << glu::SHADERTYPE_GEOMETRY),
+			2,
+			1,
+		},
 	};
 
 	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(singleStageCases); ++ndx)
@@ -3870,30 +4269,47 @@ static void generateReferencedByShaderCaseBlocks (Context& context, tcu::TestCas
 		generateBlockContent(context, stage, blockGroup, singleStageCases[ndx].expandLevel);
 	}
 
-	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(multiStageCases); ++ndx)
+	for (int pipelineNdx = 0; pipelineNdx < DE_LENGTH_OF_ARRAY(pipelines); ++pipelineNdx)
 	{
-		TestCaseGroup* const						blockGroup			= new TestCaseGroup(context, multiStageCases[ndx].name, "");
-		const ResourceDefinition::Node::SharedPtr	program				(new ResourceDefinition::Program());
-		ResourceDefinition::ShaderSet*				shaderSet			= new ResourceDefinition::ShaderSet(program, glu::GLSL_VERSION_310_ES);
-
-		targetGroup->addChild(blockGroup);
-
-		for (int shaderBit = 0; shaderBit < glu::SHADERTYPE_LAST; ++shaderBit)
+		// whole pipeline
 		{
-			const int	stageMask			= (1 << shaderBit);
-			const bool	stagePresent		= (multiStageCases[ndx].stagesPresent & stageMask) != 0;
-			const bool	stageReferencing	= (multiStageCases[ndx].stagesReferencing & stageMask) != 0;
+			TestCaseGroup* const						blockGroup			= new TestCaseGroup(context, pipelines[pipelineNdx].name, "");
+			const ResourceDefinition::Node::SharedPtr	program				(new ResourceDefinition::Program());
+			ResourceDefinition::ShaderSet*				shaderSet			= new ResourceDefinition::ShaderSet(program,
+																												glu::GLSL_VERSION_310_ES,
+																												pipelines[pipelineNdx].flags,
+																												pipelines[pipelineNdx].flags);
+			targetGroup->addChild(blockGroup);
 
-			DE_ASSERT(stagePresent || !stageReferencing);
-
-			if (stagePresent)
-				shaderSet->setStage((glu::ShaderType)shaderBit, stageReferencing);
+			{
+				const ResourceDefinition::Node::SharedPtr shaders(shaderSet);
+				generateBlockContent(context, shaders, blockGroup, pipelines[pipelineNdx].expandLevel);
+			}
 		}
 
+		// only one stage
+		for (int selectedStageBit = 0; selectedStageBit < glu::SHADERTYPE_LAST; ++selectedStageBit)
 		{
-			const ResourceDefinition::Node::SharedPtr shaders(shaderSet);
+			if (pipelines[pipelineNdx].flags & (1 << selectedStageBit))
+			{
+				const ResourceDefinition::Node::SharedPtr	program		(new ResourceDefinition::Program());
+				ResourceDefinition::ShaderSet*				shaderSet	= new ResourceDefinition::ShaderSet(program,
+																											glu::GLSL_VERSION_310_ES,
+																											pipelines[pipelineNdx].flags,
+																											(1u << selectedStageBit));
+				const char*									stageName	= (selectedStageBit == glu::SHADERTYPE_VERTEX)					? ("vertex")
+																		: (selectedStageBit == glu::SHADERTYPE_FRAGMENT)				? ("fragment")
+																		: (selectedStageBit == glu::SHADERTYPE_GEOMETRY)				? ("geo")
+																		: (selectedStageBit == glu::SHADERTYPE_TESSELLATION_CONTROL)	? ("tess_ctrl")
+																		: (selectedStageBit == glu::SHADERTYPE_TESSELLATION_EVALUATION)	? ("tess_eval")
+																		: (DE_NULL);
+				const std::string							setName		= std::string() + pipelines[pipelineNdx].name + "_only_" + stageName;
+				TestCaseGroup* const						blockGroup	= new TestCaseGroup(context, setName.c_str(), "");
+				const ResourceDefinition::Node::SharedPtr	shaders		(shaderSet);
 
-			generateBlockContent(context, shaders, blockGroup, multiStageCases[ndx].expandLevel);
+				generateBlockContent(context, shaders, blockGroup, pipelines[pipelineNdx].subExpandLevel);
+				targetGroup->addChild(blockGroup);
+			}
 		}
 	}
 }
@@ -3972,7 +4388,11 @@ static glu::DataType generateRandomDataType (de::Random& rnd, bool excludeOpaque
 	}
 }
 
-static ResourceDefinition::Node::SharedPtr generateRandomVariableDefinition (de::Random& rnd, const ResourceDefinition::Node::SharedPtr& parentStructure, glu::DataType baseType, const glu::Layout& layout, bool allowUnsized)
+static ResourceDefinition::Node::SharedPtr generateRandomVariableDefinition (de::Random&								rnd,
+																			 const ResourceDefinition::Node::SharedPtr&	parentStructure,
+																			 glu::DataType								baseType,
+																			 const glu::Layout&							layout,
+																			 bool										allowUnsized)
 {
 	const int							maxNesting			= 4;
 	ResourceDefinition::Node::SharedPtr	currentStructure	= parentStructure;
@@ -3993,7 +4413,7 @@ static ResourceDefinition::Node::SharedPtr generateRandomVariableDefinition (de:
 	return ResourceDefinition::Node::SharedPtr(new ResourceDefinition::Variable(currentStructure, baseType));
 }
 
-static ResourceDefinition::Node::SharedPtr generateRandomShaderSet (de::Random& rnd)
+static ResourceDefinition::Node::SharedPtr generateRandomCoreShaderSet (de::Random& rnd)
 {
 	if (rnd.getFloat() < 0.5f)
 	{
@@ -4030,6 +4450,69 @@ static ResourceDefinition::Node::SharedPtr generateRandomShaderSet (de::Random& 
 	}
 }
 
+static ResourceDefinition::Node::SharedPtr generateRandomExtShaderSet (de::Random& rnd)
+{
+	if (rnd.getFloat() < 0.5f)
+	{
+		// whole pipeline
+		const ResourceDefinition::Node::SharedPtr	program		(new ResourceDefinition::Program());
+		ResourceDefinition::ShaderSet*				shaderSet	= new ResourceDefinition::ShaderSet(program, glu::GLSL_VERSION_310_ES);
+
+		shaderSet->setStage(glu::SHADERTYPE_VERTEX, rnd.getBool());
+		shaderSet->setStage(glu::SHADERTYPE_FRAGMENT, rnd.getBool());
+
+		// tess shader are either both or neither present. Make cases interesting
+		// by forcing one extended shader to always have reference
+		if (rnd.getBool())
+		{
+			shaderSet->setStage(glu::SHADERTYPE_GEOMETRY, true);
+
+			if (rnd.getBool())
+			{
+				shaderSet->setStage(glu::SHADERTYPE_TESSELLATION_CONTROL, rnd.getBool());
+				shaderSet->setStage(glu::SHADERTYPE_TESSELLATION_EVALUATION, rnd.getBool());
+			}
+		}
+		else
+		{
+			shaderSet->setStage(glu::SHADERTYPE_GEOMETRY, rnd.getBool());
+
+			if (rnd.getBool())
+			{
+				shaderSet->setStage(glu::SHADERTYPE_TESSELLATION_CONTROL, true);
+				shaderSet->setStage(glu::SHADERTYPE_TESSELLATION_EVALUATION, rnd.getBool());
+			}
+			else
+			{
+				shaderSet->setStage(glu::SHADERTYPE_TESSELLATION_CONTROL, rnd.getBool());
+				shaderSet->setStage(glu::SHADERTYPE_TESSELLATION_EVALUATION, true);
+			}
+		}
+
+		return ResourceDefinition::Node::SharedPtr(shaderSet);
+	}
+	else
+	{
+		// separate
+		const ResourceDefinition::Node::SharedPtr	program		(new ResourceDefinition::Program(true));
+		const int									selector	= rnd.getInt(0, 2);
+		const glu::ShaderType						shaderType	= (selector == 0) ? (glu::SHADERTYPE_GEOMETRY)
+																: (selector == 1) ? (glu::SHADERTYPE_TESSELLATION_CONTROL)
+																: (selector == 2) ? (glu::SHADERTYPE_TESSELLATION_EVALUATION)
+																: 					(glu::SHADERTYPE_LAST);
+
+		return ResourceDefinition::Node::SharedPtr(new ResourceDefinition::Shader(program, shaderType, glu::GLSL_VERSION_310_ES));
+	}
+}
+
+static ResourceDefinition::Node::SharedPtr generateRandomShaderSet (de::Random& rnd, bool onlyExtensionStages)
+{
+	if (!onlyExtensionStages)
+		return generateRandomCoreShaderSet(rnd);
+	else
+		return generateRandomExtShaderSet(rnd);
+}
+
 static glu::Layout generateRandomUniformBlockLayout (de::Random& rnd)
 {
 	glu::Layout layout;
@@ -4064,10 +4547,10 @@ static glu::Layout generateRandomVariableLayout (de::Random& rnd, glu::DataType 
 	return layout;
 }
 
-static void generateUniformRandomCase (Context& context, tcu::TestCaseGroup* const targetGroup, int index)
+static void generateUniformRandomCase (Context& context, tcu::TestCaseGroup* const targetGroup, int index, bool onlyExtensionStages)
 {
 	de::Random									rnd					(index * 0x12345);
-	const ResourceDefinition::Node::SharedPtr	shader				= generateRandomShaderSet(rnd);
+	const ResourceDefinition::Node::SharedPtr	shader				= generateRandomShaderSet(rnd, onlyExtensionStages);
 	const bool									interfaceBlock		= rnd.getBool();
 	const glu::DataType							type				= generateRandomDataType(rnd, interfaceBlock);
 	const glu::Layout							layout				= generateRandomVariableLayout(rnd, type, interfaceBlock);
@@ -4095,10 +4578,13 @@ static void generateUniformRandomCase (Context& context, tcu::TestCaseGroup* con
 
 static void generateUniformCaseRandomCases (Context& context, tcu::TestCaseGroup* const targetGroup)
 {
-	const int numCases = 40;
+	const int numBasicCases		= 40;
+	const int numTessGeoCases	= 40;
 
-	for (int ndx = 0; ndx < numCases; ++ndx)
-		generateUniformRandomCase(context, targetGroup, ndx);
+	for (int ndx = 0; ndx < numBasicCases; ++ndx)
+		generateUniformRandomCase(context, targetGroup, ndx, false);
+	for (int ndx = 0; ndx < numTessGeoCases; ++ndx)
+		generateUniformRandomCase(context, targetGroup, numBasicCases + ndx, true);
 }
 
 class UniformInterfaceTestGroup : public TestCaseGroup
@@ -4468,6 +4954,30 @@ AtomicCounterTestGroup::AtomicCounterTestGroup (Context& context)
 
 void AtomicCounterTestGroup::init (void)
 {
+	static const struct
+	{
+		const char*	name;
+		deUint32	flags;
+	} pipelines[] =
+	{
+		{
+			"vertex_fragment",
+			(1 << glu::SHADERTYPE_VERTEX) | (1 << glu::SHADERTYPE_FRAGMENT)
+		},
+		{
+			"vertex_tess_fragment",
+			(1 << glu::SHADERTYPE_VERTEX) | (1 << glu::SHADERTYPE_FRAGMENT) | (1 << glu::SHADERTYPE_TESSELLATION_CONTROL) | (1 << glu::SHADERTYPE_TESSELLATION_EVALUATION)
+		},
+		{
+			"vertex_geo_fragment",
+			(1 << glu::SHADERTYPE_VERTEX) | (1 << glu::SHADERTYPE_FRAGMENT) | (1 << glu::SHADERTYPE_GEOMETRY)
+		},
+		{
+			"vertex_tess_geo_fragment",
+			(1 << glu::SHADERTYPE_VERTEX) | (1 << glu::SHADERTYPE_FRAGMENT) | (1 << glu::SHADERTYPE_TESSELLATION_CONTROL) | (1 << glu::SHADERTYPE_TESSELLATION_EVALUATION) | (1 << glu::SHADERTYPE_GEOMETRY),
+		},
+	};
+
 	// .resource_list
 	addChild(new AtomicCounterResourceListCase(m_context, "resource_list", "Resource list"));
 
@@ -4481,241 +4991,434 @@ void AtomicCounterTestGroup::init (void)
 	addChild(new AtomicCounterBufferDataSizeCase(m_context, "buffer_data_size", "Buffer binding"));
 
 	// .referenced_by
-	addChild(new AtomicCounterReferencedByCase(m_context, "referenced_by_compute",							"",	(1 << glu::SHADERTYPE_COMPUTE),										(1 << glu::SHADERTYPE_COMPUTE)));
-	addChild(new AtomicCounterReferencedByCase(m_context, "referenced_by_separable_vertex",					"",	(1 << glu::SHADERTYPE_VERTEX),										(1 << glu::SHADERTYPE_VERTEX)));
-	addChild(new AtomicCounterReferencedByCase(m_context, "referenced_by_separable_fragment",				"",	(1 << glu::SHADERTYPE_FRAGMENT),									(1 << glu::SHADERTYPE_FRAGMENT)));
-	addChild(new AtomicCounterReferencedByCase(m_context, "referenced_by_vertex_fragment",					"",	(1 << glu::SHADERTYPE_VERTEX) | (1 << glu::SHADERTYPE_FRAGMENT),	(1 << glu::SHADERTYPE_VERTEX) | (1 << glu::SHADERTYPE_FRAGMENT)));
-	addChild(new AtomicCounterReferencedByCase(m_context, "referenced_by_vertex_fragment_only_fragment",	"",	(1 << glu::SHADERTYPE_VERTEX) | (1 << glu::SHADERTYPE_FRAGMENT),									(1 << glu::SHADERTYPE_FRAGMENT)));
-	addChild(new AtomicCounterReferencedByCase(m_context, "referenced_by_vertex_fragment_only_vertex",		"",	(1 << glu::SHADERTYPE_VERTEX) | (1 << glu::SHADERTYPE_FRAGMENT),	(1 << glu::SHADERTYPE_VERTEX)));
+	addChild(new AtomicCounterReferencedByCase(m_context, "referenced_by_compute",				"",	false,	(1 << glu::SHADERTYPE_COMPUTE),										(1 << glu::SHADERTYPE_COMPUTE)));
+	addChild(new AtomicCounterReferencedByCase(m_context, "referenced_by_separable_vertex",		"",	true,	(1 << glu::SHADERTYPE_VERTEX),										(1 << glu::SHADERTYPE_VERTEX)));
+	addChild(new AtomicCounterReferencedByCase(m_context, "referenced_by_separable_fragment",	"",	true,	(1 << glu::SHADERTYPE_FRAGMENT),									(1 << glu::SHADERTYPE_FRAGMENT)));
+	addChild(new AtomicCounterReferencedByCase(m_context, "referenced_by_separable_geometry",	"",	true,	(1 << glu::SHADERTYPE_GEOMETRY),									(1 << glu::SHADERTYPE_GEOMETRY)));
+	addChild(new AtomicCounterReferencedByCase(m_context, "referenced_by_separable_tess_ctrl",	"",	true,	(1 << glu::SHADERTYPE_TESSELLATION_CONTROL),						(1 << glu::SHADERTYPE_TESSELLATION_CONTROL)));
+	addChild(new AtomicCounterReferencedByCase(m_context, "referenced_by_separable_tess_eval",	"",	true,	(1 << glu::SHADERTYPE_TESSELLATION_EVALUATION),						(1 << glu::SHADERTYPE_TESSELLATION_EVALUATION)));
+
+	for (int pipelineNdx = 0; pipelineNdx < DE_LENGTH_OF_ARRAY(pipelines); ++pipelineNdx)
+	{
+		addChild(new AtomicCounterReferencedByCase(m_context, (std::string() + "referenced_by_" + pipelines[pipelineNdx].name).c_str(), "", false, pipelines[pipelineNdx].flags, pipelines[pipelineNdx].flags));
+
+		for (deUint32 stageNdx = 0; stageNdx < glu::SHADERTYPE_LAST; ++stageNdx)
+		{
+			const deUint32 currentBit = (1u << stageNdx);
+			if (currentBit > pipelines[pipelineNdx].flags)
+				break;
+			if (currentBit & pipelines[pipelineNdx].flags)
+			{
+				const char*			stageName	= (stageNdx == glu::SHADERTYPE_VERTEX)					? ("vertex")
+												: (stageNdx == glu::SHADERTYPE_FRAGMENT)				? ("fragment")
+												: (stageNdx == glu::SHADERTYPE_GEOMETRY)				? ("geo")
+												: (stageNdx == glu::SHADERTYPE_TESSELLATION_CONTROL)	? ("tess_ctrl")
+												: (stageNdx == glu::SHADERTYPE_TESSELLATION_EVALUATION)	? ("tess_eval")
+												: (DE_NULL);
+				const std::string	name		= std::string() + "referenced_by_" + pipelines[pipelineNdx].name + "_only_" + stageName;
+
+				addChild(new AtomicCounterReferencedByCase(m_context, name.c_str(), "", false, pipelines[pipelineNdx].flags, currentBit));
+			}
+		}
+	}
 }
 
 static void generateProgramInputOutputShaderCaseBlocks (Context& context, tcu::TestCaseGroup* targetGroup, bool withCompute, bool inputCase, void (*blockContentGenerator)(Context&, const ResourceDefinition::Node::SharedPtr&, tcu::TestCaseGroup*, deUint32))
 {
+	static const struct
+	{
+		const char*		name;
+		glu::ShaderType	stage;
+	} singleStageCases[] =
+	{
+		{ "separable_vertex",		glu::SHADERTYPE_VERTEX					},
+		{ "separable_fragment",		glu::SHADERTYPE_FRAGMENT				},
+		{ "separable_tess_ctrl",	glu::SHADERTYPE_TESSELLATION_CONTROL	},
+		{ "separable_tess_eval",	glu::SHADERTYPE_TESSELLATION_EVALUATION	},
+		{ "separable_geometry",		glu::SHADERTYPE_GEOMETRY				},
+	};
+
 	// .vertex_fragment
 	{
 		tcu::TestCaseGroup* const					blockGroup		= new TestCaseGroup(context, "vertex_fragment", "Vertex and fragment");
 		const ResourceDefinition::Node::SharedPtr	program			(new ResourceDefinition::Program(false));
 		ResourceDefinition::ShaderSet*				shaderSetPtr	= new ResourceDefinition::ShaderSet(program, glu::GLSL_VERSION_310_ES);
 		const ResourceDefinition::Node::SharedPtr	shaderSet		(shaderSetPtr);
+		const ResourceDefinition::Node::SharedPtr	defaultBlock	(new ResourceDefinition::DefaultBlock(shaderSet));
 
 		shaderSetPtr->setStage(glu::SHADERTYPE_VERTEX, inputCase);
 		shaderSetPtr->setStage(glu::SHADERTYPE_FRAGMENT, !inputCase);
 
 		targetGroup->addChild(blockGroup);
 
-		blockContentGenerator(context, shaderSet, blockGroup, (1 << glu::SHADERTYPE_VERTEX) | (1 << glu::SHADERTYPE_FRAGMENT));
+		blockContentGenerator(context, defaultBlock, blockGroup, (1 << glu::SHADERTYPE_VERTEX) | (1 << glu::SHADERTYPE_FRAGMENT));
 	}
 
-	// .separable_vertex
+	// .separable_*
+	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(singleStageCases); ++ndx)
 	{
-		tcu::TestCaseGroup* const					blockGroup	= new TestCaseGroup(context, "separable_vertex", "Separable vertex");
-		const ResourceDefinition::Node::SharedPtr	program		(new ResourceDefinition::Program(true));
-		const ResourceDefinition::Node::SharedPtr	shader		(new ResourceDefinition::Shader(program, glu::SHADERTYPE_VERTEX, glu::GLSL_VERSION_310_ES));
+		TestCaseGroup* const						blockGroup			= new TestCaseGroup(context, singleStageCases[ndx].name, "");
+		const ResourceDefinition::Node::SharedPtr	program				(new ResourceDefinition::Program(true));
+		const ResourceDefinition::Node::SharedPtr	shader				(new ResourceDefinition::Shader(program, singleStageCases[ndx].stage, glu::GLSL_VERSION_310_ES));
+		const ResourceDefinition::Node::SharedPtr	defaultBlock		(new ResourceDefinition::DefaultBlock(shader));
 
 		targetGroup->addChild(blockGroup);
-
-		blockContentGenerator(context, shader, blockGroup, (1 << glu::SHADERTYPE_VERTEX));
-	}
-
-	// .separable_fragment
-	{
-		tcu::TestCaseGroup* const					blockGroup	= new TestCaseGroup(context, "separable_fragment", "Separable fragment");
-		const ResourceDefinition::Node::SharedPtr	program		(new ResourceDefinition::Program(true));
-		const ResourceDefinition::Node::SharedPtr	shader		(new ResourceDefinition::Shader(program, glu::SHADERTYPE_FRAGMENT, glu::GLSL_VERSION_310_ES));
-
-		targetGroup->addChild(blockGroup);
-
-		blockContentGenerator(context, shader, blockGroup, (1 << glu::SHADERTYPE_FRAGMENT));
+		blockContentGenerator(context, defaultBlock, blockGroup, (1 << singleStageCases[ndx].stage));
 	}
 
 	// .compute
 	if (withCompute)
 	{
-		tcu::TestCaseGroup* const					blockGroup	= new TestCaseGroup(context, "compute", "Compute");
-		const ResourceDefinition::Node::SharedPtr	program		(new ResourceDefinition::Program(true));
-		const ResourceDefinition::Node::SharedPtr	shader		(new ResourceDefinition::Shader(program, glu::SHADERTYPE_COMPUTE, glu::GLSL_VERSION_310_ES));
+		tcu::TestCaseGroup* const					blockGroup		= new TestCaseGroup(context, "compute", "Compute");
+		const ResourceDefinition::Node::SharedPtr	program			(new ResourceDefinition::Program(true));
+		const ResourceDefinition::Node::SharedPtr	shader			(new ResourceDefinition::Shader(program, glu::SHADERTYPE_COMPUTE, glu::GLSL_VERSION_310_ES));
+		const ResourceDefinition::Node::SharedPtr	defaultBlock	(new ResourceDefinition::DefaultBlock(shader));
 
 		targetGroup->addChild(blockGroup);
 
-		blockContentGenerator(context, shader, blockGroup, (1 << glu::SHADERTYPE_COMPUTE));
+		blockContentGenerator(context, defaultBlock, blockGroup, (1 << glu::SHADERTYPE_COMPUTE));
+	}
+
+	// .interface_blocks
+	{
+		static const struct
+		{
+			const char*			inputName;
+			glu::ShaderType		inputStage;
+			glu::Storage		inputStorage;
+			const char*			outputName;
+			glu::ShaderType		outputStage;
+			glu::Storage		outputStorage;
+		} ioBlockTypes[] =
+		{
+			{
+				"in",
+				glu::SHADERTYPE_FRAGMENT,
+				glu::STORAGE_IN,
+				"out",
+				glu::SHADERTYPE_VERTEX,
+				glu::STORAGE_OUT,
+			},
+			{
+				"patch_in",
+				glu::SHADERTYPE_TESSELLATION_EVALUATION,
+				glu::STORAGE_PATCH_IN,
+				"patch_out",
+				glu::SHADERTYPE_TESSELLATION_CONTROL,
+				glu::STORAGE_PATCH_OUT,
+			},
+		};
+
+		tcu::TestCaseGroup* const ioBlocksGroup = new TestCaseGroup(context, "interface_blocks", "Interface blocks");
+		targetGroup->addChild(ioBlocksGroup);
+
+		// .in/out
+		// .sample in/out
+		// .patch in/out
+		for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(ioBlockTypes); ++ndx)
+		{
+			const char* const							name			= (inputCase) ? (ioBlockTypes[ndx].inputName) : (ioBlockTypes[ndx].outputName);
+			const glu::ShaderType						shaderType		= (inputCase) ? (ioBlockTypes[ndx].inputStage) : (ioBlockTypes[ndx].outputStage);
+			const glu::Storage							storageType		= (inputCase) ? (ioBlockTypes[ndx].inputStorage) : (ioBlockTypes[ndx].outputStorage);
+			tcu::TestCaseGroup* const					ioBlockGroup	= new TestCaseGroup(context, name, "");
+			const ResourceDefinition::Node::SharedPtr	program			(new ResourceDefinition::Program(true));
+			const ResourceDefinition::Node::SharedPtr	shader			(new ResourceDefinition::Shader(program, shaderType, glu::GLSL_VERSION_310_ES));
+			const ResourceDefinition::Node::SharedPtr	defaultBlock	(new ResourceDefinition::DefaultBlock(shader));
+			const ResourceDefinition::Node::SharedPtr	storage			(new ResourceDefinition::StorageQualifier(defaultBlock, storageType));
+
+			ioBlocksGroup->addChild(ioBlockGroup);
+
+			// .named_block
+			{
+				const ResourceDefinition::Node::SharedPtr	block		(new ResourceDefinition::InterfaceBlock(storage, true));
+				tcu::TestCaseGroup* const					blockGroup	= new TestCaseGroup(context, "named_block", "Named block");
+
+				ioBlockGroup->addChild(blockGroup);
+
+				blockContentGenerator(context, block, blockGroup, (1 << shaderType));
+			}
+
+			// .named_block_explicit_location
+			{
+				const ResourceDefinition::Node::SharedPtr	layout		(new ResourceDefinition::LayoutQualifier(storage, glu::Layout(3)));
+				const ResourceDefinition::Node::SharedPtr	block		(new ResourceDefinition::InterfaceBlock(layout, true));
+				tcu::TestCaseGroup* const					blockGroup	= new TestCaseGroup(context, "named_block_explicit_location", "Named block with explicit location");
+
+				ioBlockGroup->addChild(blockGroup);
+
+				blockContentGenerator(context, block, blockGroup, (1 << shaderType));
+			}
+
+			// .unnamed_block
+			{
+				const ResourceDefinition::Node::SharedPtr	block		(new ResourceDefinition::InterfaceBlock(storage, false));
+				tcu::TestCaseGroup* const					blockGroup	= new TestCaseGroup(context, "unnamed_block", "Unnamed block");
+
+				ioBlockGroup->addChild(blockGroup);
+
+				blockContentGenerator(context, block, blockGroup, (1 << shaderType));
+			}
+
+			// .block_array
+			{
+				const ResourceDefinition::Node::SharedPtr	arrayElement	(new ResourceDefinition::ArrayElement(storage));
+				const ResourceDefinition::Node::SharedPtr	block			(new ResourceDefinition::InterfaceBlock(arrayElement, true));
+				tcu::TestCaseGroup* const					blockGroup		= new TestCaseGroup(context, "block_array", "Block array");
+
+				ioBlockGroup->addChild(blockGroup);
+
+				blockContentGenerator(context, block, blockGroup, (1 << shaderType));
+			}
+		}
 	}
 }
 
-static void generateProgramInputResourceListBlockContents (Context& context, const ResourceDefinition::Node::SharedPtr& parentStructure, tcu::TestCaseGroup* targetGroup, deUint32 presentShadersMask)
+static void generateProgramInputBlockContents (Context&										context,
+											   const ResourceDefinition::Node::SharedPtr&	parentStructure,
+											   tcu::TestCaseGroup*							targetGroup,
+											   deUint32										presentShadersMask,
+											   bool											includeEmpty,
+											   void											(*genCase)(Context&										context,
+																									   const ResourceDefinition::Node::SharedPtr&	parentStructure,
+																									   tcu::TestCaseGroup*							targetGroup,
+																									   ProgramInterface								interface,
+																									   const char*									name))
 {
-	const ResourceDefinition::Node::SharedPtr	defaultBlock	(new ResourceDefinition::DefaultBlock(parentStructure));
-	const ResourceDefinition::Node::SharedPtr	input			(new ResourceDefinition::StorageQualifier(defaultBlock, glu::STORAGE_IN));
+	const bool									inDefaultBlock	= parentStructure->getType() == ResourceDefinition::Node::TYPE_DEFAULT_BLOCK;
+	const ResourceDefinition::Node::SharedPtr	input			= (inDefaultBlock)
+																	? (ResourceDefinition::Node::SharedPtr(new ResourceDefinition::StorageQualifier(parentStructure, glu::STORAGE_IN)))
+																	: (parentStructure);
+	const glu::ShaderType						firstStage		= getShaderMaskFirstStage(presentShadersMask);
 
 	// .empty
-	targetGroup->addChild(new ResourceListTestCase(context, defaultBlock, PROGRAMINTERFACE_PROGRAM_INPUT, "empty"));
+	if (includeEmpty && inDefaultBlock)
+		genCase(context, parentStructure, targetGroup, PROGRAMINTERFACE_PROGRAM_INPUT, "empty");
 
-	// vertex first stage
-	if (presentShadersMask & (1 << glu::SHADERTYPE_VERTEX))
+	if (firstStage == glu::SHADERTYPE_VERTEX)
 	{
 		// .var
 		const ResourceDefinition::Node::SharedPtr variable(new ResourceDefinition::Variable(input, glu::TYPE_FLOAT_VEC4));
-		targetGroup->addChild(new ResourceListTestCase(context, variable, PROGRAMINTERFACE_PROGRAM_INPUT));
+		genCase(context, variable, targetGroup, PROGRAMINTERFACE_PROGRAM_INPUT, "var");
 	}
-
-	// fragment first stage
-	if (presentShadersMask == (1 << glu::SHADERTYPE_FRAGMENT))
+	else if (firstStage == glu::SHADERTYPE_FRAGMENT || !inDefaultBlock)
 	{
 		// .var
 		{
 			const ResourceDefinition::Node::SharedPtr variable(new ResourceDefinition::Variable(input, glu::TYPE_FLOAT_VEC4));
-			targetGroup->addChild(new ResourceListTestCase(context, variable, PROGRAMINTERFACE_PROGRAM_INPUT));
+			genCase(context, variable, targetGroup, PROGRAMINTERFACE_PROGRAM_INPUT, "var");
 		}
 		// .var_struct
 		{
 			const ResourceDefinition::Node::SharedPtr structMbr	(new ResourceDefinition::StructMember(input));
 			const ResourceDefinition::Node::SharedPtr variable	(new ResourceDefinition::Variable(structMbr, glu::TYPE_FLOAT_VEC4));
-			targetGroup->addChild(new ResourceListTestCase(context, variable, PROGRAMINTERFACE_PROGRAM_INPUT));
+			genCase(context, variable, targetGroup, PROGRAMINTERFACE_PROGRAM_INPUT, "var_struct");
 		}
 		// .var_array
 		{
 			const ResourceDefinition::Node::SharedPtr arrayElem	(new ResourceDefinition::ArrayElement(input));
 			const ResourceDefinition::Node::SharedPtr variable	(new ResourceDefinition::Variable(arrayElem, glu::TYPE_FLOAT_VEC4));
-			targetGroup->addChild(new ResourceListTestCase(context, variable, PROGRAMINTERFACE_PROGRAM_INPUT));
+			genCase(context, variable, targetGroup, PROGRAMINTERFACE_PROGRAM_INPUT, "var_array");
 		}
 	}
+	else if (firstStage == glu::SHADERTYPE_TESSELLATION_CONTROL ||
+			 firstStage == glu::SHADERTYPE_GEOMETRY)
+	{
+		// arrayed interface
+
+		// .var
+		{
+			const ResourceDefinition::Node::SharedPtr arrayElem	(new ResourceDefinition::ArrayElement(input, ResourceDefinition::ArrayElement::UNSIZED_ARRAY));
+			const ResourceDefinition::Node::SharedPtr variable	(new ResourceDefinition::Variable(arrayElem, glu::TYPE_FLOAT_VEC4));
+			genCase(context, variable, targetGroup, PROGRAMINTERFACE_PROGRAM_INPUT, "var");
+		}
+		// extension forbids use arrays of structs
+		// extension forbids use arrays of arrays
+	}
+	else if (firstStage == glu::SHADERTYPE_TESSELLATION_EVALUATION)
+	{
+		// arrayed interface
+		const ResourceDefinition::Node::SharedPtr patchInput(new ResourceDefinition::StorageQualifier(parentStructure, glu::STORAGE_PATCH_IN));
+
+		// .var
+		{
+			const ResourceDefinition::Node::SharedPtr arrayElem	(new ResourceDefinition::ArrayElement(input, ResourceDefinition::ArrayElement::UNSIZED_ARRAY));
+			const ResourceDefinition::Node::SharedPtr variable	(new ResourceDefinition::Variable(arrayElem, glu::TYPE_FLOAT_VEC4));
+			genCase(context, variable, targetGroup, PROGRAMINTERFACE_PROGRAM_INPUT, "var");
+		}
+		// extension forbids use arrays of structs
+		// extension forbids use arrays of arrays
+
+		// .patch_var
+		{
+			const ResourceDefinition::Node::SharedPtr variable	(new ResourceDefinition::Variable(patchInput, glu::TYPE_FLOAT_VEC4));
+			genCase(context, variable, targetGroup, PROGRAMINTERFACE_PROGRAM_INPUT, "patch_var");
+		}
+		// .patch_var_struct
+		{
+			const ResourceDefinition::Node::SharedPtr structMbr	(new ResourceDefinition::StructMember(patchInput));
+			const ResourceDefinition::Node::SharedPtr variable	(new ResourceDefinition::Variable(structMbr, glu::TYPE_FLOAT_VEC4));
+			genCase(context, variable, targetGroup, PROGRAMINTERFACE_PROGRAM_INPUT, "patch_var_struct");
+		}
+		// .patch_var_array
+		{
+			const ResourceDefinition::Node::SharedPtr arrayElem	(new ResourceDefinition::ArrayElement(patchInput));
+			const ResourceDefinition::Node::SharedPtr variable	(new ResourceDefinition::Variable(arrayElem, glu::TYPE_FLOAT_VEC4));
+			genCase(context, variable, targetGroup, PROGRAMINTERFACE_PROGRAM_INPUT, "patch_var_array");
+		}
+	}
+	else if (firstStage == glu::SHADERTYPE_COMPUTE)
+	{
+		// nada
+	}
+	else
+		DE_ASSERT(false);
 }
 
-static void generateProgramOutputResourceListBlockContents (Context& context, const ResourceDefinition::Node::SharedPtr& parentStructure, tcu::TestCaseGroup* targetGroup, deUint32 presentShadersMask)
+static void generateProgramOutputBlockContents (Context&										context,
+												const ResourceDefinition::Node::SharedPtr&		parentStructure,
+												tcu::TestCaseGroup*								targetGroup,
+												deUint32										presentShadersMask,
+												bool											includeEmpty,
+												void											(*genCase)(Context&										context,
+																										   const ResourceDefinition::Node::SharedPtr&	parentStructure,
+																										   tcu::TestCaseGroup*							targetGroup,
+																										   ProgramInterface								interface,
+																										   const char*									name))
 {
-	const ResourceDefinition::Node::SharedPtr	defaultBlock	(new ResourceDefinition::DefaultBlock(parentStructure));
-	const ResourceDefinition::Node::SharedPtr	output			(new ResourceDefinition::StorageQualifier(defaultBlock, glu::STORAGE_OUT));
+	const bool									inDefaultBlock	= parentStructure->getType() == ResourceDefinition::Node::TYPE_DEFAULT_BLOCK;
+	const ResourceDefinition::Node::SharedPtr	output			= (inDefaultBlock)
+																	? (ResourceDefinition::Node::SharedPtr(new ResourceDefinition::StorageQualifier(parentStructure, glu::STORAGE_OUT)))
+																	: (parentStructure);
+	const glu::ShaderType						lastStage		= getShaderMaskLastStage(presentShadersMask);
 
 	// .empty
-	targetGroup->addChild(new ResourceListTestCase(context, defaultBlock, PROGRAMINTERFACE_PROGRAM_OUTPUT, "empty"));
+	if (includeEmpty && inDefaultBlock)
+		genCase(context, parentStructure, targetGroup, PROGRAMINTERFACE_PROGRAM_OUTPUT, "empty");
 
-	// vertex last stage
-	if (presentShadersMask == (1 << glu::SHADERTYPE_VERTEX))
+	if (lastStage == glu::SHADERTYPE_VERTEX						||
+		lastStage == glu::SHADERTYPE_GEOMETRY					||
+		lastStage == glu::SHADERTYPE_TESSELLATION_EVALUATION	||
+		!inDefaultBlock)
 	{
 		// .var
 		{
 			const ResourceDefinition::Node::SharedPtr variable(new ResourceDefinition::Variable(output, glu::TYPE_FLOAT_VEC4));
-			targetGroup->addChild(new ResourceListTestCase(context, variable, PROGRAMINTERFACE_PROGRAM_OUTPUT));
+			genCase(context, variable, targetGroup, PROGRAMINTERFACE_PROGRAM_OUTPUT, "var");
 		}
 		// .var_struct
 		{
 			const ResourceDefinition::Node::SharedPtr structMbr	(new ResourceDefinition::StructMember(output));
 			const ResourceDefinition::Node::SharedPtr variable	(new ResourceDefinition::Variable(structMbr, glu::TYPE_FLOAT_VEC4));
-			targetGroup->addChild(new ResourceListTestCase(context, variable, PROGRAMINTERFACE_PROGRAM_OUTPUT));
+			genCase(context, variable, targetGroup, PROGRAMINTERFACE_PROGRAM_OUTPUT, "var_struct");
 		}
 		// .var_array
 		{
 			const ResourceDefinition::Node::SharedPtr arrayElem	(new ResourceDefinition::ArrayElement(output));
 			const ResourceDefinition::Node::SharedPtr variable	(new ResourceDefinition::Variable(arrayElem, glu::TYPE_FLOAT_VEC4));
-			targetGroup->addChild(new ResourceListTestCase(context, variable, PROGRAMINTERFACE_PROGRAM_OUTPUT));
+			genCase(context, variable, targetGroup, PROGRAMINTERFACE_PROGRAM_OUTPUT, "var_array");
 		}
 	}
-
-	// fragment last stage
-	if (presentShadersMask & (1 << glu::SHADERTYPE_FRAGMENT))
+	else if (lastStage == glu::SHADERTYPE_FRAGMENT)
 	{
 		// .var
 		{
 			const ResourceDefinition::Node::SharedPtr variable(new ResourceDefinition::Variable(output, glu::TYPE_FLOAT_VEC4));
-			targetGroup->addChild(new ResourceListTestCase(context, variable, PROGRAMINTERFACE_PROGRAM_OUTPUT));
+			genCase(context, variable, targetGroup, PROGRAMINTERFACE_PROGRAM_OUTPUT, "var");
 		}
 		// .var_array
 		{
 			const ResourceDefinition::Node::SharedPtr arrayElem	(new ResourceDefinition::ArrayElement(output));
 			const ResourceDefinition::Node::SharedPtr variable	(new ResourceDefinition::Variable(arrayElem, glu::TYPE_FLOAT_VEC4));
-			targetGroup->addChild(new ResourceListTestCase(context, variable, PROGRAMINTERFACE_PROGRAM_OUTPUT));
+			genCase(context, variable, targetGroup, PROGRAMINTERFACE_PROGRAM_OUTPUT, "var_array");
 		}
 	}
+	else if (lastStage == glu::SHADERTYPE_TESSELLATION_CONTROL)
+	{
+		// arrayed interface
+		const ResourceDefinition::Node::SharedPtr patchOutput(new ResourceDefinition::StorageQualifier(parentStructure, glu::STORAGE_PATCH_OUT));
+
+		// .var
+		{
+			const ResourceDefinition::Node::SharedPtr arrayElem	(new ResourceDefinition::ArrayElement(output, ResourceDefinition::ArrayElement::UNSIZED_ARRAY));
+			const ResourceDefinition::Node::SharedPtr variable	(new ResourceDefinition::Variable(arrayElem, glu::TYPE_FLOAT_VEC4));
+			genCase(context, variable, targetGroup, PROGRAMINTERFACE_PROGRAM_OUTPUT, "var");
+		}
+		// extension forbids use arrays of structs
+		// extension forbids use array of arrays
+
+		// .patch_var
+		{
+			const ResourceDefinition::Node::SharedPtr variable	(new ResourceDefinition::Variable(patchOutput, glu::TYPE_FLOAT_VEC4));
+			genCase(context, variable, targetGroup, PROGRAMINTERFACE_PROGRAM_OUTPUT, "patch_var");
+		}
+		// .patch_var_struct
+		{
+			const ResourceDefinition::Node::SharedPtr structMbr	(new ResourceDefinition::StructMember(patchOutput));
+			const ResourceDefinition::Node::SharedPtr variable	(new ResourceDefinition::Variable(structMbr, glu::TYPE_FLOAT_VEC4));
+			genCase(context, variable, targetGroup, PROGRAMINTERFACE_PROGRAM_OUTPUT, "patch_var_struct");
+		}
+		// .patch_var_array
+		{
+			const ResourceDefinition::Node::SharedPtr arrayElem	(new ResourceDefinition::ArrayElement(patchOutput));
+			const ResourceDefinition::Node::SharedPtr variable	(new ResourceDefinition::Variable(arrayElem, glu::TYPE_FLOAT_VEC4));
+			genCase(context, variable, targetGroup, PROGRAMINTERFACE_PROGRAM_OUTPUT, "patch_var_array");
+		}
+	}
+	else if (lastStage == glu::SHADERTYPE_COMPUTE)
+	{
+		// nada
+	}
+	else
+		DE_ASSERT(false);
+}
+
+static void addProgramInputOutputResourceListCase (Context& context, const ResourceDefinition::Node::SharedPtr& parentStructure, tcu::TestCaseGroup* targetGroup, ProgramInterface programInterface, const char* name)
+{
+	ResourceListTestCase* const resourceListCase = new ResourceListTestCase(context, parentStructure, programInterface);
+
+	DE_ASSERT(deStringEqual(name, resourceListCase->getName()));
+	DE_UNREF(name);
+	targetGroup->addChild(resourceListCase);
+}
+
+static void generateProgramInputResourceListBlockContents (Context& context, const ResourceDefinition::Node::SharedPtr& parentStructure, tcu::TestCaseGroup* targetGroup, deUint32 presentShadersMask)
+{
+	generateProgramInputBlockContents(context, parentStructure, targetGroup, presentShadersMask, true, addProgramInputOutputResourceListCase);
+}
+
+static void generateProgramOutputResourceListBlockContents (Context& context, const ResourceDefinition::Node::SharedPtr& parentStructure, tcu::TestCaseGroup* targetGroup, deUint32 presentShadersMask)
+{
+	generateProgramOutputBlockContents(context, parentStructure, targetGroup, presentShadersMask, true, addProgramInputOutputResourceListCase);
+}
+
+template <ProgramResourcePropFlags TargetProp>
+static void addProgramInputOutputResourceTestCase (Context& context, const ResourceDefinition::Node::SharedPtr& parentStructure, tcu::TestCaseGroup* targetGroup, ProgramInterface programInterface, const char* name)
+{
+	ResourceTestCase* const resourceTestCase = new ResourceTestCase(context, parentStructure, ProgramResourceQueryTestTarget(programInterface, TargetProp), name);
+	targetGroup->addChild(resourceTestCase);
 }
 
 template <ProgramResourcePropFlags TargetProp>
 static void generateProgramInputBasicBlockContents (Context& context, const ResourceDefinition::Node::SharedPtr& parentStructure, tcu::TestCaseGroup* targetGroup, deUint32 presentShadersMask)
 {
-	const ResourceDefinition::Node::SharedPtr	defaultBlock	(new ResourceDefinition::DefaultBlock(parentStructure));
-	const ResourceDefinition::Node::SharedPtr	input			(new ResourceDefinition::StorageQualifier(defaultBlock, glu::STORAGE_IN));
-
-	// vertex first stage
-	if (presentShadersMask & (1 << glu::SHADERTYPE_VERTEX))
-	{
-		// .var
-		const ResourceDefinition::Node::SharedPtr variable(new ResourceDefinition::Variable(input, glu::TYPE_FLOAT_VEC4));
-		targetGroup->addChild(new ResourceTestCase(context, variable, ProgramResourceQueryTestTarget(PROGRAMINTERFACE_PROGRAM_INPUT, TargetProp), "var"));
-	}
-
-	// fragment first stage
-	if (presentShadersMask == (1 << glu::SHADERTYPE_FRAGMENT))
-	{
-		// .var
-		{
-			const ResourceDefinition::Node::SharedPtr variable(new ResourceDefinition::Variable(input, glu::TYPE_FLOAT_VEC4));
-			targetGroup->addChild(new ResourceTestCase(context, variable, ProgramResourceQueryTestTarget(PROGRAMINTERFACE_PROGRAM_INPUT, TargetProp), "var"));
-		}
-		// .var_struct
-		{
-			const ResourceDefinition::Node::SharedPtr structMbr	(new ResourceDefinition::StructMember(input));
-			const ResourceDefinition::Node::SharedPtr variable	(new ResourceDefinition::Variable(structMbr, glu::TYPE_FLOAT_VEC4));
-			targetGroup->addChild(new ResourceTestCase(context, variable, ProgramResourceQueryTestTarget(PROGRAMINTERFACE_PROGRAM_INPUT, TargetProp), "var_struct"));
-		}
-		// .var_array
-		{
-			const ResourceDefinition::Node::SharedPtr arrayElem	(new ResourceDefinition::ArrayElement(input));
-			const ResourceDefinition::Node::SharedPtr variable	(new ResourceDefinition::Variable(arrayElem, glu::TYPE_FLOAT_VEC4));
-			targetGroup->addChild(new ResourceTestCase(context, variable, ProgramResourceQueryTestTarget(PROGRAMINTERFACE_PROGRAM_INPUT, TargetProp), "var_array"));
-		}
-	}
+	generateProgramInputBlockContents(context, parentStructure, targetGroup, presentShadersMask, false, addProgramInputOutputResourceTestCase<TargetProp>);
 }
 
 template <ProgramResourcePropFlags TargetProp>
 static void generateProgramOutputBasicBlockContents (Context& context, const ResourceDefinition::Node::SharedPtr& parentStructure, tcu::TestCaseGroup* targetGroup, deUint32 presentShadersMask)
 {
-	const ResourceDefinition::Node::SharedPtr	defaultBlock	(new ResourceDefinition::DefaultBlock(parentStructure));
-	const ResourceDefinition::Node::SharedPtr	output			(new ResourceDefinition::StorageQualifier(defaultBlock, glu::STORAGE_OUT));
-
-	// vertex last stage
-	if (presentShadersMask == (1 << glu::SHADERTYPE_VERTEX))
-	{
-		// .var
-		{
-			const ResourceDefinition::Node::SharedPtr variable(new ResourceDefinition::Variable(output, glu::TYPE_FLOAT_VEC4));
-			targetGroup->addChild(new ResourceTestCase(context, variable, ProgramResourceQueryTestTarget(PROGRAMINTERFACE_PROGRAM_OUTPUT, TargetProp), "var"));
-		}
-		// .var_struct
-		{
-			const ResourceDefinition::Node::SharedPtr structMbr	(new ResourceDefinition::StructMember(output));
-			const ResourceDefinition::Node::SharedPtr variable	(new ResourceDefinition::Variable(structMbr, glu::TYPE_FLOAT_VEC4));
-			targetGroup->addChild(new ResourceTestCase(context, variable, ProgramResourceQueryTestTarget(PROGRAMINTERFACE_PROGRAM_OUTPUT, TargetProp), "var_struct"));
-		}
-		// .var_array
-		{
-			const ResourceDefinition::Node::SharedPtr arrayElem	(new ResourceDefinition::ArrayElement(output));
-			const ResourceDefinition::Node::SharedPtr variable	(new ResourceDefinition::Variable(arrayElem, glu::TYPE_FLOAT_VEC4));
-			targetGroup->addChild(new ResourceTestCase(context, variable, ProgramResourceQueryTestTarget(PROGRAMINTERFACE_PROGRAM_OUTPUT, TargetProp), "var_array"));
-		}
-	}
-
-	// fragment last stage
-	if (presentShadersMask & (1 << glu::SHADERTYPE_FRAGMENT))
-	{
-		// .var
-		{
-			const ResourceDefinition::Node::SharedPtr variable(new ResourceDefinition::Variable(output, glu::TYPE_FLOAT_VEC4));
-			targetGroup->addChild(new ResourceTestCase(context, variable, ProgramResourceQueryTestTarget(PROGRAMINTERFACE_PROGRAM_OUTPUT, TargetProp), "var"));
-		}
-		// .var_array
-		{
-			const ResourceDefinition::Node::SharedPtr arrayElem	(new ResourceDefinition::ArrayElement(output));
-			const ResourceDefinition::Node::SharedPtr variable	(new ResourceDefinition::Variable(arrayElem, glu::TYPE_FLOAT_VEC4));
-			targetGroup->addChild(new ResourceTestCase(context, variable, ProgramResourceQueryTestTarget(PROGRAMINTERFACE_PROGRAM_OUTPUT, TargetProp), "var_array"));
-		}
-	}
+	generateProgramOutputBlockContents(context, parentStructure, targetGroup, presentShadersMask, false, addProgramInputOutputResourceTestCase<TargetProp>);
 }
 
 static void generateProgramInputLocationBlockContents (Context& context, const ResourceDefinition::Node::SharedPtr& parentStructure, tcu::TestCaseGroup* targetGroup, deUint32 presentShadersMask)
 {
-	const ResourceDefinition::Node::SharedPtr	defaultBlock	(new ResourceDefinition::DefaultBlock(parentStructure));
-	const ResourceDefinition::Node::SharedPtr	input			(new ResourceDefinition::StorageQualifier(defaultBlock, glu::STORAGE_IN));
+	const bool									inDefaultBlock	= parentStructure->getType() == ResourceDefinition::Node::TYPE_DEFAULT_BLOCK;
+	const ResourceDefinition::Node::SharedPtr	input			= (inDefaultBlock)
+																	? (ResourceDefinition::Node::SharedPtr(new ResourceDefinition::StorageQualifier(parentStructure, glu::STORAGE_IN)))
+																	: (parentStructure);
+	const glu::ShaderType						firstStage		= getShaderMaskFirstStage(presentShadersMask);
 
-	// vertex first stage
-	if (presentShadersMask & (1 << glu::SHADERTYPE_VERTEX))
+	if (firstStage == glu::SHADERTYPE_VERTEX)
 	{
 		// .var
 		{
@@ -4729,9 +5432,7 @@ static void generateProgramInputLocationBlockContents (Context& context, const R
 			targetGroup->addChild(new ResourceTestCase(context, variable, ProgramResourceQueryTestTarget(PROGRAMINTERFACE_PROGRAM_INPUT, PROGRAMRESOURCEPROP_LOCATION), "var_explicit_location"));
 		}
 	}
-
-	// fragment first stage
-	if (presentShadersMask == (1 << glu::SHADERTYPE_FRAGMENT))
+	else if (firstStage == glu::SHADERTYPE_FRAGMENT || !inDefaultBlock)
 	{
 		// .var
 		{
@@ -4771,15 +5472,106 @@ static void generateProgramInputLocationBlockContents (Context& context, const R
 			targetGroup->addChild(new ResourceTestCase(context, variable, ProgramResourceQueryTestTarget(PROGRAMINTERFACE_PROGRAM_INPUT, PROGRAMRESOURCEPROP_LOCATION), "var_array_explicit_location"));
 		}
 	}
+	else if (firstStage == glu::SHADERTYPE_TESSELLATION_CONTROL ||
+			 firstStage == glu::SHADERTYPE_GEOMETRY)
+	{
+		// arrayed interface
+
+		// .var
+		{
+			const ResourceDefinition::Node::SharedPtr arrayElem	(new ResourceDefinition::ArrayElement(input, ResourceDefinition::ArrayElement::UNSIZED_ARRAY));
+			const ResourceDefinition::Node::SharedPtr variable	(new ResourceDefinition::Variable(arrayElem, glu::TYPE_FLOAT_VEC4));
+			targetGroup->addChild(new ResourceTestCase(context, variable, ProgramResourceQueryTestTarget(PROGRAMINTERFACE_PROGRAM_INPUT, PROGRAMRESOURCEPROP_LOCATION), "var"));
+		}
+		// .var_explicit_location
+		{
+			const ResourceDefinition::Node::SharedPtr layout	(new ResourceDefinition::LayoutQualifier(input, glu::Layout(2)));
+			const ResourceDefinition::Node::SharedPtr arrayElem	(new ResourceDefinition::ArrayElement(layout, ResourceDefinition::ArrayElement::UNSIZED_ARRAY));
+			const ResourceDefinition::Node::SharedPtr variable	(new ResourceDefinition::Variable(arrayElem, glu::TYPE_FLOAT_VEC4));
+			targetGroup->addChild(new ResourceTestCase(context, variable, ProgramResourceQueryTestTarget(PROGRAMINTERFACE_PROGRAM_INPUT, PROGRAMRESOURCEPROP_LOCATION), "var_explicit_location"));
+		}
+		// extension forbids use arrays of structs
+		// extension forbids use arrays of arrays
+	}
+	else if (firstStage == glu::SHADERTYPE_TESSELLATION_EVALUATION)
+	{
+		// arrayed interface
+		const ResourceDefinition::Node::SharedPtr patchInput(new ResourceDefinition::StorageQualifier(parentStructure, glu::STORAGE_PATCH_IN));
+
+		// .var
+		{
+			const ResourceDefinition::Node::SharedPtr arrayElem	(new ResourceDefinition::ArrayElement(input, ResourceDefinition::ArrayElement::UNSIZED_ARRAY));
+			const ResourceDefinition::Node::SharedPtr variable	(new ResourceDefinition::Variable(arrayElem, glu::TYPE_FLOAT_VEC4));
+			targetGroup->addChild(new ResourceTestCase(context, variable, ProgramResourceQueryTestTarget(PROGRAMINTERFACE_PROGRAM_INPUT, PROGRAMRESOURCEPROP_LOCATION), "var"));
+		}
+		// .var_explicit_location
+		{
+			const ResourceDefinition::Node::SharedPtr layout	(new ResourceDefinition::LayoutQualifier(input, glu::Layout(2)));
+			const ResourceDefinition::Node::SharedPtr arrayElem	(new ResourceDefinition::ArrayElement(layout, ResourceDefinition::ArrayElement::UNSIZED_ARRAY));
+			const ResourceDefinition::Node::SharedPtr variable	(new ResourceDefinition::Variable(arrayElem, glu::TYPE_FLOAT_VEC4));
+			targetGroup->addChild(new ResourceTestCase(context, variable, ProgramResourceQueryTestTarget(PROGRAMINTERFACE_PROGRAM_INPUT, PROGRAMRESOURCEPROP_LOCATION), "var_explicit_location"));
+		}
+		// extension forbids use arrays of structs
+		// extension forbids use arrays of arrays
+
+		// .patch_var
+		{
+			const ResourceDefinition::Node::SharedPtr variable	(new ResourceDefinition::Variable(patchInput, glu::TYPE_FLOAT_VEC4));
+			targetGroup->addChild(new ResourceTestCase(context, variable, ProgramResourceQueryTestTarget(PROGRAMINTERFACE_PROGRAM_INPUT, PROGRAMRESOURCEPROP_LOCATION), "patch_var"));
+		}
+		// .patch_var_explicit_location
+		{
+			const ResourceDefinition::Node::SharedPtr layout	(new ResourceDefinition::LayoutQualifier(patchInput, glu::Layout(2)));
+			const ResourceDefinition::Node::SharedPtr variable	(new ResourceDefinition::Variable(layout, glu::TYPE_FLOAT_VEC4));
+			targetGroup->addChild(new ResourceTestCase(context, variable, ProgramResourceQueryTestTarget(PROGRAMINTERFACE_PROGRAM_INPUT, PROGRAMRESOURCEPROP_LOCATION), "patch_var_explicit_location"));
+		}
+		// .patch_var_struct
+		{
+			const ResourceDefinition::Node::SharedPtr structMbr	(new ResourceDefinition::StructMember(patchInput));
+			const ResourceDefinition::Node::SharedPtr variable	(new ResourceDefinition::Variable(structMbr, glu::TYPE_FLOAT_VEC4));
+			targetGroup->addChild(new ResourceTestCase(context, variable, ProgramResourceQueryTestTarget(PROGRAMINTERFACE_PROGRAM_INPUT, PROGRAMRESOURCEPROP_LOCATION), "patch_var_struct"));
+		}
+		// .patch_var_struct_explicit_location
+		{
+			const ResourceDefinition::Node::SharedPtr layout	(new ResourceDefinition::LayoutQualifier(patchInput, glu::Layout(2)));
+			const ResourceDefinition::Node::SharedPtr structMbr	(new ResourceDefinition::StructMember(layout));
+			const ResourceDefinition::Node::SharedPtr variable	(new ResourceDefinition::Variable(structMbr, glu::TYPE_FLOAT_VEC4));
+			targetGroup->addChild(new ResourceTestCase(context, variable, ProgramResourceQueryTestTarget(PROGRAMINTERFACE_PROGRAM_INPUT, PROGRAMRESOURCEPROP_LOCATION), "patch_var_struct_explicit_location"));
+		}
+		// .patch_var_array
+		{
+			const ResourceDefinition::Node::SharedPtr arrayElem	(new ResourceDefinition::ArrayElement(patchInput));
+			const ResourceDefinition::Node::SharedPtr variable	(new ResourceDefinition::Variable(arrayElem, glu::TYPE_FLOAT_VEC4));
+			targetGroup->addChild(new ResourceTestCase(context, variable, ProgramResourceQueryTestTarget(PROGRAMINTERFACE_PROGRAM_INPUT, PROGRAMRESOURCEPROP_LOCATION), "patch_var_array"));
+		}
+		// .patch_var_array_explicit_location
+		{
+			const ResourceDefinition::Node::SharedPtr layout	(new ResourceDefinition::LayoutQualifier(patchInput, glu::Layout(2)));
+			const ResourceDefinition::Node::SharedPtr arrayElem	(new ResourceDefinition::ArrayElement(layout));
+			const ResourceDefinition::Node::SharedPtr variable	(new ResourceDefinition::Variable(arrayElem, glu::TYPE_FLOAT_VEC4));
+			targetGroup->addChild(new ResourceTestCase(context, variable, ProgramResourceQueryTestTarget(PROGRAMINTERFACE_PROGRAM_INPUT, PROGRAMRESOURCEPROP_LOCATION), "patch_var_array_explicit_location"));
+		}
+	}
+	else if (firstStage == glu::SHADERTYPE_COMPUTE)
+	{
+		// nada
+	}
+	else
+		DE_ASSERT(false);
 }
 
 static void generateProgramOutputLocationBlockContents (Context& context, const ResourceDefinition::Node::SharedPtr& parentStructure, tcu::TestCaseGroup* targetGroup, deUint32 presentShadersMask)
 {
-	const ResourceDefinition::Node::SharedPtr	defaultBlock	(new ResourceDefinition::DefaultBlock(parentStructure));
-	const ResourceDefinition::Node::SharedPtr	output			(new ResourceDefinition::StorageQualifier(defaultBlock, glu::STORAGE_OUT));
+	const bool									inDefaultBlock	= parentStructure->getType() == ResourceDefinition::Node::TYPE_DEFAULT_BLOCK;
+	const ResourceDefinition::Node::SharedPtr	output			= (inDefaultBlock)
+																	? (ResourceDefinition::Node::SharedPtr(new ResourceDefinition::StorageQualifier(parentStructure, glu::STORAGE_OUT)))
+																	: (parentStructure);
+	const glu::ShaderType						lastStage		= getShaderMaskLastStage(presentShadersMask);
 
-	// vertex last stage
-	if (presentShadersMask == (1 << glu::SHADERTYPE_VERTEX))
+	if (lastStage == glu::SHADERTYPE_VERTEX						||
+		lastStage == glu::SHADERTYPE_GEOMETRY					||
+		lastStage == glu::SHADERTYPE_TESSELLATION_EVALUATION	||
+		!inDefaultBlock)
 	{
 		// .var
 		{
@@ -4819,9 +5611,7 @@ static void generateProgramOutputLocationBlockContents (Context& context, const 
 			targetGroup->addChild(new ResourceTestCase(context, variable, ProgramResourceQueryTestTarget(PROGRAMINTERFACE_PROGRAM_OUTPUT, PROGRAMRESOURCEPROP_LOCATION), "var_array_explicit_location"));
 		}
 	}
-
-	// fragment last stage
-	if (presentShadersMask & (1 << glu::SHADERTYPE_FRAGMENT))
+	else if (lastStage == glu::SHADERTYPE_FRAGMENT)
 	{
 		// .var
 		{
@@ -4848,67 +5638,158 @@ static void generateProgramOutputLocationBlockContents (Context& context, const 
 			targetGroup->addChild(new ResourceTestCase(context, variable, ProgramResourceQueryTestTarget(PROGRAMINTERFACE_PROGRAM_OUTPUT, PROGRAMRESOURCEPROP_LOCATION), "var_array_explicit_location"));
 		}
 	}
+	else if (lastStage == glu::SHADERTYPE_TESSELLATION_CONTROL)
+	{
+		// arrayed interface
+		const ResourceDefinition::Node::SharedPtr patchOutput(new ResourceDefinition::StorageQualifier(parentStructure, glu::STORAGE_PATCH_OUT));
+
+		// .var
+		{
+			const ResourceDefinition::Node::SharedPtr arrayElem	(new ResourceDefinition::ArrayElement(output, ResourceDefinition::ArrayElement::UNSIZED_ARRAY));
+			const ResourceDefinition::Node::SharedPtr variable	(new ResourceDefinition::Variable(arrayElem, glu::TYPE_FLOAT_VEC4));
+			targetGroup->addChild(new ResourceTestCase(context, variable, ProgramResourceQueryTestTarget(PROGRAMINTERFACE_PROGRAM_OUTPUT, PROGRAMRESOURCEPROP_LOCATION), "var"));
+		}
+		// .var_explicit_location
+		{
+			const ResourceDefinition::Node::SharedPtr layout	(new ResourceDefinition::LayoutQualifier(output, glu::Layout(2)));
+			const ResourceDefinition::Node::SharedPtr arrayElem	(new ResourceDefinition::ArrayElement(layout, ResourceDefinition::ArrayElement::UNSIZED_ARRAY));
+			const ResourceDefinition::Node::SharedPtr variable	(new ResourceDefinition::Variable(arrayElem, glu::TYPE_FLOAT_VEC4));
+			targetGroup->addChild(new ResourceTestCase(context, variable, ProgramResourceQueryTestTarget(PROGRAMINTERFACE_PROGRAM_OUTPUT, PROGRAMRESOURCEPROP_LOCATION), "var_explicit_location"));
+		}
+		// extension forbids use arrays of structs
+		// extension forbids use array of arrays
+
+		// .patch_var
+		{
+			const ResourceDefinition::Node::SharedPtr variable	(new ResourceDefinition::Variable(patchOutput, glu::TYPE_FLOAT_VEC4));
+			targetGroup->addChild(new ResourceTestCase(context, variable, ProgramResourceQueryTestTarget(PROGRAMINTERFACE_PROGRAM_OUTPUT, PROGRAMRESOURCEPROP_LOCATION), "patch_var"));
+		}
+		// .patch_var_explicit_location
+		{
+			const ResourceDefinition::Node::SharedPtr layout	(new ResourceDefinition::LayoutQualifier(patchOutput, glu::Layout(2)));
+			const ResourceDefinition::Node::SharedPtr variable	(new ResourceDefinition::Variable(layout, glu::TYPE_FLOAT_VEC4));
+			targetGroup->addChild(new ResourceTestCase(context, variable, ProgramResourceQueryTestTarget(PROGRAMINTERFACE_PROGRAM_OUTPUT, PROGRAMRESOURCEPROP_LOCATION), "patch_var_explicit_location"));
+		}
+		// .patch_var_struct
+		{
+			const ResourceDefinition::Node::SharedPtr structMbr	(new ResourceDefinition::StructMember(patchOutput));
+			const ResourceDefinition::Node::SharedPtr variable	(new ResourceDefinition::Variable(structMbr, glu::TYPE_FLOAT_VEC4));
+			targetGroup->addChild(new ResourceTestCase(context, variable, ProgramResourceQueryTestTarget(PROGRAMINTERFACE_PROGRAM_OUTPUT, PROGRAMRESOURCEPROP_LOCATION), "patch_var_struct"));
+		}
+		// .patch_var_struct_explicit_location
+		{
+			const ResourceDefinition::Node::SharedPtr layout	(new ResourceDefinition::LayoutQualifier(patchOutput, glu::Layout(2)));
+			const ResourceDefinition::Node::SharedPtr structMbr	(new ResourceDefinition::StructMember(layout));
+			const ResourceDefinition::Node::SharedPtr variable	(new ResourceDefinition::Variable(structMbr, glu::TYPE_FLOAT_VEC4));
+			targetGroup->addChild(new ResourceTestCase(context, variable, ProgramResourceQueryTestTarget(PROGRAMINTERFACE_PROGRAM_OUTPUT, PROGRAMRESOURCEPROP_LOCATION), "patch_var_struct_explicit_location"));
+		}
+		// .patch_var_array
+		{
+			const ResourceDefinition::Node::SharedPtr arrayElem	(new ResourceDefinition::ArrayElement(patchOutput));
+			const ResourceDefinition::Node::SharedPtr variable	(new ResourceDefinition::Variable(arrayElem, glu::TYPE_FLOAT_VEC4));
+			targetGroup->addChild(new ResourceTestCase(context, variable, ProgramResourceQueryTestTarget(PROGRAMINTERFACE_PROGRAM_OUTPUT, PROGRAMRESOURCEPROP_LOCATION), "patch_var_array"));
+		}
+		// .patch_var_array_explicit_location
+		{
+			const ResourceDefinition::Node::SharedPtr layout	(new ResourceDefinition::LayoutQualifier(patchOutput, glu::Layout(2)));
+			const ResourceDefinition::Node::SharedPtr arrayElem	(new ResourceDefinition::ArrayElement(layout));
+			const ResourceDefinition::Node::SharedPtr variable	(new ResourceDefinition::Variable(arrayElem, glu::TYPE_FLOAT_VEC4));
+			targetGroup->addChild(new ResourceTestCase(context, variable, ProgramResourceQueryTestTarget(PROGRAMINTERFACE_PROGRAM_OUTPUT, PROGRAMRESOURCEPROP_LOCATION), "patch_var_array_explicit_location"));
+		}
+	}
+	else if (lastStage == glu::SHADERTYPE_COMPUTE)
+	{
+		// nada
+	}
+	else
+		DE_ASSERT(false);
 }
 
 static void generateProgramInputOutputReferencedByCases (Context& context, tcu::TestCaseGroup* targetGroup, glu::Storage storage)
 {
-	targetGroup->addChild(new ProgramInputOutputReferencedByCase(context, "referenced_by_vertex_fragment",		"",	storage,	ProgramInputOutputReferencedByCase::CASE_VERTEX_FRAGMENT));
+	// all whole pipelines
+	targetGroup->addChild(new ProgramInputOutputReferencedByCase(context, "referenced_by_vertex_fragment",			"",	storage,	ProgramInputOutputReferencedByCase::CASE_VERTEX_FRAGMENT));
+	targetGroup->addChild(new ProgramInputOutputReferencedByCase(context, "referenced_by_vertex_tess_fragment",		"",	storage,	ProgramInputOutputReferencedByCase::CASE_VERTEX_TESS_FRAGMENT));
+	targetGroup->addChild(new ProgramInputOutputReferencedByCase(context, "referenced_by_vertex_geo_fragment",		"",	storage,	ProgramInputOutputReferencedByCase::CASE_VERTEX_GEO_FRAGMENT));
+	targetGroup->addChild(new ProgramInputOutputReferencedByCase(context, "referenced_by_vertex_tess_geo_fragment",	"",	storage,	ProgramInputOutputReferencedByCase::CASE_VERTEX_TESS_GEO_FRAGMENT));
+
+	// all partial pipelines
 	targetGroup->addChild(new ProgramInputOutputReferencedByCase(context, "referenced_by_separable_vertex",		"",	storage,	ProgramInputOutputReferencedByCase::CASE_SEPARABLE_VERTEX));
 	targetGroup->addChild(new ProgramInputOutputReferencedByCase(context, "referenced_by_separable_fragment",	"",	storage,	ProgramInputOutputReferencedByCase::CASE_SEPARABLE_FRAGMENT));
+	targetGroup->addChild(new ProgramInputOutputReferencedByCase(context, "referenced_by_separable_geometry",	"",	storage,	ProgramInputOutputReferencedByCase::CASE_SEPARABLE_GEOMETRY));
+	targetGroup->addChild(new ProgramInputOutputReferencedByCase(context, "referenced_by_separable_tess_eval",	"",	storage,	ProgramInputOutputReferencedByCase::CASE_SEPARABLE_TESS_EVAL));
+	targetGroup->addChild(new ProgramInputOutputReferencedByCase(context, "referenced_by_separable_tess_ctrl",	"",	storage,	ProgramInputOutputReferencedByCase::CASE_SEPARABLE_TESS_CTRL));
+
+	// patch
+	if (storage == glu::STORAGE_IN)
+		targetGroup->addChild(new ProgramInputOutputReferencedByCase(context, "referenced_by_separable_tess_eval_patch_in", "", glu::STORAGE_PATCH_IN, ProgramInputOutputReferencedByCase::CASE_SEPARABLE_TESS_EVAL));
+	else if (storage == glu::STORAGE_OUT)
+		targetGroup->addChild(new ProgramInputOutputReferencedByCase(context, "referenced_by_separable_tess_ctrl_patch_out", "", glu::STORAGE_PATCH_OUT, ProgramInputOutputReferencedByCase::CASE_SEPARABLE_TESS_CTRL));
+	else
+		DE_ASSERT(false);
 }
 
-static void generateProgramInputTypeBasicTypeCases (Context& context, const ResourceDefinition::Node::SharedPtr& parentStructure, tcu::TestCaseGroup* targetGroup)
+template <ProgramInterface interface>
+static void generateProgramInputOutputTypeBasicTypeCases (Context& context, const ResourceDefinition::Node::SharedPtr& parentStructure, tcu::TestCaseGroup* targetGroup, bool allowMatrixCases, int expandLevel)
 {
-	static const glu::DataType variableTypes[] =
+	static const struct
 	{
-		glu::TYPE_FLOAT,
-		glu::TYPE_INT,
-		glu::TYPE_UINT,
-
-		glu::TYPE_FLOAT_VEC2,
-		glu::TYPE_FLOAT_VEC3,
-		glu::TYPE_FLOAT_VEC4,
-
-		glu::TYPE_INT_VEC2,
-		glu::TYPE_INT_VEC3,
-		glu::TYPE_INT_VEC4,
-
-		glu::TYPE_UINT_VEC2,
-		glu::TYPE_UINT_VEC3,
-		glu::TYPE_UINT_VEC4,
-
-		glu::TYPE_FLOAT_MAT2,
-		glu::TYPE_FLOAT_MAT2X3,
-		glu::TYPE_FLOAT_MAT2X4,
-		glu::TYPE_FLOAT_MAT3X2,
-		glu::TYPE_FLOAT_MAT3,
-		glu::TYPE_FLOAT_MAT3X4,
-		glu::TYPE_FLOAT_MAT4X2,
-		glu::TYPE_FLOAT_MAT4X3,
-		glu::TYPE_FLOAT_MAT4,
+		glu::DataType	type;
+		bool			isMatrix;
+		int				level;
+	} variableTypes[] =
+	{
+		{ glu::TYPE_FLOAT,			false,		0	},
+		{ glu::TYPE_INT,			false,		1	},
+		{ glu::TYPE_UINT,			false,		1	},
+		{ glu::TYPE_FLOAT_VEC2,		false,		2	},
+		{ glu::TYPE_FLOAT_VEC3,		false,		1	},
+		{ glu::TYPE_FLOAT_VEC4,		false,		2	},
+		{ glu::TYPE_INT_VEC2,		false,		0	},
+		{ glu::TYPE_INT_VEC3,		false,		2	},
+		{ glu::TYPE_INT_VEC4,		false,		2	},
+		{ glu::TYPE_UINT_VEC2,		false,		2	},
+		{ glu::TYPE_UINT_VEC3,		false,		2	},
+		{ glu::TYPE_UINT_VEC4,		false,		0	},
+		{ glu::TYPE_FLOAT_MAT2,		true,		2	},
+		{ glu::TYPE_FLOAT_MAT2X3,	true,		2	},
+		{ glu::TYPE_FLOAT_MAT2X4,	true,		2	},
+		{ glu::TYPE_FLOAT_MAT3X2,	true,		0	},
+		{ glu::TYPE_FLOAT_MAT3,		true,		2	},
+		{ glu::TYPE_FLOAT_MAT3X4,	true,		2	},
+		{ glu::TYPE_FLOAT_MAT4X2,	true,		2	},
+		{ glu::TYPE_FLOAT_MAT4X3,	true,		2	},
+		{ glu::TYPE_FLOAT_MAT4,		true,		2	},
 	};
 
 	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(variableTypes); ++ndx)
 	{
-		const ResourceDefinition::Node::SharedPtr variable(new ResourceDefinition::Variable(parentStructure, variableTypes[ndx]));
-		targetGroup->addChild(new ResourceTestCase(context, variable, ProgramResourceQueryTestTarget(PROGRAMINTERFACE_PROGRAM_INPUT, PROGRAMRESOURCEPROP_TYPE)));
+		if (!allowMatrixCases && variableTypes[ndx].isMatrix)
+			continue;
+
+		if (variableTypes[ndx].level <= expandLevel)
+		{
+			const ResourceDefinition::Node::SharedPtr variable(new ResourceDefinition::Variable(parentStructure, variableTypes[ndx].type));
+			targetGroup->addChild(new ResourceTestCase(context, variable, ProgramResourceQueryTestTarget(interface, PROGRAMRESOURCEPROP_TYPE)));
+		}
 	}
 }
 
 static void generateProgramInputTypeBlockContents (Context& context, const ResourceDefinition::Node::SharedPtr& parentStructure, tcu::TestCaseGroup* targetGroup, deUint32 presentShadersMask)
 {
-	const ResourceDefinition::Node::SharedPtr	defaultBlock	(new ResourceDefinition::DefaultBlock(parentStructure));
-	const ResourceDefinition::Node::SharedPtr	input			(new ResourceDefinition::StorageQualifier(defaultBlock, glu::STORAGE_IN));
+	const bool									inDefaultBlock						= parentStructure->getType() == ResourceDefinition::Node::TYPE_DEFAULT_BLOCK;
+	const ResourceDefinition::Node::SharedPtr	input								= (inDefaultBlock)
+																						? (ResourceDefinition::Node::SharedPtr(new ResourceDefinition::StorageQualifier(parentStructure, glu::STORAGE_IN)))
+																						: (parentStructure);
+	const glu::ShaderType						firstStage							= getShaderMaskFirstStage(presentShadersMask);
+	const int									interfaceBlockExpansionReducement	= (!inDefaultBlock) ? (1) : (0); // lesser expansions on block members to keep test counts reasonable
 
-	// vertex first stage
-	if (presentShadersMask & (1 << glu::SHADERTYPE_VERTEX))
+	if (firstStage == glu::SHADERTYPE_VERTEX)
 	{
 		// Only basic types (and no booleans)
-		generateProgramInputTypeBasicTypeCases(context, input, targetGroup);
+		generateProgramInputOutputTypeBasicTypeCases<PROGRAMINTERFACE_PROGRAM_INPUT>(context, input, targetGroup, true, 2 - interfaceBlockExpansionReducement);
 	}
-
-	// fragment first stage
-	if (presentShadersMask == (1 << glu::SHADERTYPE_FRAGMENT))
+	else if (firstStage == glu::SHADERTYPE_FRAGMENT || !inDefaultBlock)
 	{
 		const ResourceDefinition::Node::SharedPtr flatShading(new ResourceDefinition::InterpolationQualifier(input, glu::INTERPOLATION_FLAT));
 
@@ -4916,73 +5797,93 @@ static void generateProgramInputTypeBlockContents (Context& context, const Resou
 		{
 			tcu::TestCaseGroup* const blockGroup = new TestCaseGroup(context, "basic_type", "Basic types");
 			targetGroup->addChild(blockGroup);
-			generateProgramInputTypeBasicTypeCases(context, flatShading, blockGroup);
+			generateProgramInputOutputTypeBasicTypeCases<PROGRAMINTERFACE_PROGRAM_INPUT>(context, flatShading, blockGroup, true, 2 - interfaceBlockExpansionReducement);
 		}
 		{
 			const ResourceDefinition::Node::SharedPtr	arrayElement	(new ResourceDefinition::ArrayElement(flatShading));
 			tcu::TestCaseGroup* const					blockGroup		= new TestCaseGroup(context, "array", "Array types");
 
 			targetGroup->addChild(blockGroup);
-			generateProgramInputTypeBasicTypeCases(context, arrayElement, blockGroup);
+			generateProgramInputOutputTypeBasicTypeCases<PROGRAMINTERFACE_PROGRAM_INPUT>(context, arrayElement, blockGroup, true, 2 - interfaceBlockExpansionReducement);
 		}
 		{
 			const ResourceDefinition::Node::SharedPtr	structMember	(new ResourceDefinition::StructMember(flatShading));
 			tcu::TestCaseGroup* const					blockGroup		= new TestCaseGroup(context, "struct", "Struct types");
 
 			targetGroup->addChild(blockGroup);
-			generateProgramInputTypeBasicTypeCases(context, structMember, blockGroup);
+			generateProgramInputOutputTypeBasicTypeCases<PROGRAMINTERFACE_PROGRAM_INPUT>(context, structMember, blockGroup, true, 2 - interfaceBlockExpansionReducement);
 		}
 	}
-}
-
-static void generateProgramOutputTypeBasicTypeCases (Context& context, const ResourceDefinition::Node::SharedPtr& parentStructure, tcu::TestCaseGroup* targetGroup, bool addMatrixCases)
-{
-	static const glu::DataType variableTypes[] =
+	else if (firstStage == glu::SHADERTYPE_TESSELLATION_CONTROL ||
+			 firstStage == glu::SHADERTYPE_GEOMETRY)
 	{
-		glu::TYPE_FLOAT,
-		glu::TYPE_INT,
-		glu::TYPE_UINT,
+		// arrayed interface
 
-		glu::TYPE_FLOAT_VEC2,
-		glu::TYPE_FLOAT_VEC3,
-		glu::TYPE_FLOAT_VEC4,
-
-		glu::TYPE_INT_VEC2,
-		glu::TYPE_INT_VEC3,
-		glu::TYPE_INT_VEC4,
-
-		glu::TYPE_UINT_VEC2,
-		glu::TYPE_UINT_VEC3,
-		glu::TYPE_UINT_VEC4,
-
-		glu::TYPE_FLOAT_MAT2,
-		glu::TYPE_FLOAT_MAT2X3,
-		glu::TYPE_FLOAT_MAT2X4,
-		glu::TYPE_FLOAT_MAT3X2,
-		glu::TYPE_FLOAT_MAT3,
-		glu::TYPE_FLOAT_MAT3X4,
-		glu::TYPE_FLOAT_MAT4X2,
-		glu::TYPE_FLOAT_MAT4X3,
-		glu::TYPE_FLOAT_MAT4,
-	};
-
-	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(variableTypes); ++ndx)
+		// Only basic types (and no booleans)
+		const ResourceDefinition::Node::SharedPtr arrayElement(new ResourceDefinition::ArrayElement(input, ResourceDefinition::ArrayElement::UNSIZED_ARRAY));
+		generateProgramInputOutputTypeBasicTypeCases<PROGRAMINTERFACE_PROGRAM_INPUT>(context, arrayElement, targetGroup, true, 2);
+	}
+	else if (firstStage == glu::SHADERTYPE_TESSELLATION_EVALUATION)
 	{
-		if (addMatrixCases || !glu::isDataTypeMatrix(variableTypes[ndx]))
+		// arrayed interface
+		const ResourceDefinition::Node::SharedPtr patchInput(new ResourceDefinition::StorageQualifier(parentStructure, glu::STORAGE_PATCH_IN));
+
+		// .var
 		{
-			const ResourceDefinition::Node::SharedPtr variable(new ResourceDefinition::Variable(parentStructure, variableTypes[ndx]));
-			targetGroup->addChild(new ResourceTestCase(context, variable, ProgramResourceQueryTestTarget(PROGRAMINTERFACE_PROGRAM_OUTPUT, PROGRAMRESOURCEPROP_TYPE)));
+			const ResourceDefinition::Node::SharedPtr	arrayElem		(new ResourceDefinition::ArrayElement(input, ResourceDefinition::ArrayElement::UNSIZED_ARRAY));
+			tcu::TestCaseGroup* const					blockGroup		= new TestCaseGroup(context, "basic_type", "Basic types");
+
+			targetGroup->addChild(blockGroup);
+			generateProgramInputOutputTypeBasicTypeCases<PROGRAMINTERFACE_PROGRAM_INPUT>(context, arrayElem, blockGroup, true, 2);
+		}
+		// extension forbids use arrays of structs
+		// extension forbids use arrays of arrays
+
+		// .patch_var
+		{
+			tcu::TestCaseGroup* const					blockGroup		= new TestCaseGroup(context, "patch_var", "Basic types, per-patch");
+
+			targetGroup->addChild(blockGroup);
+			generateProgramInputOutputTypeBasicTypeCases<PROGRAMINTERFACE_PROGRAM_INPUT>(context, patchInput, blockGroup, true, 1);
+		}
+		// .patch_var_struct
+		{
+			const ResourceDefinition::Node::SharedPtr	structMbr		(new ResourceDefinition::StructMember(patchInput));
+			tcu::TestCaseGroup* const					blockGroup		= new TestCaseGroup(context, "patch_var_struct", "Struct types, per-patch");
+
+			targetGroup->addChild(blockGroup);
+			generateProgramInputOutputTypeBasicTypeCases<PROGRAMINTERFACE_PROGRAM_INPUT>(context, structMbr, blockGroup, true, 1);
+		}
+		// .patch_var_array
+		{
+			const ResourceDefinition::Node::SharedPtr	arrayElem		(new ResourceDefinition::ArrayElement(patchInput));
+			tcu::TestCaseGroup* const					blockGroup		= new TestCaseGroup(context, "patch_var_array", "Array types, per-patch");
+
+			targetGroup->addChild(blockGroup);
+			generateProgramInputOutputTypeBasicTypeCases<PROGRAMINTERFACE_PROGRAM_INPUT>(context, arrayElem, blockGroup, true, 1);
 		}
 	}
+	else if (firstStage == glu::SHADERTYPE_COMPUTE)
+	{
+		// nada
+	}
+	else
+		DE_ASSERT(false);
 }
 
 static void generateProgramOutputTypeBlockContents (Context& context, const ResourceDefinition::Node::SharedPtr& parentStructure, tcu::TestCaseGroup* targetGroup, deUint32 presentShadersMask)
 {
-	const ResourceDefinition::Node::SharedPtr	defaultBlock	(new ResourceDefinition::DefaultBlock(parentStructure));
-	const ResourceDefinition::Node::SharedPtr	output			(new ResourceDefinition::StorageQualifier(defaultBlock, glu::STORAGE_OUT));
+	const bool									inDefaultBlock						= parentStructure->getType() == ResourceDefinition::Node::TYPE_DEFAULT_BLOCK;
+	const ResourceDefinition::Node::SharedPtr	output								= (inDefaultBlock)
+																						? (ResourceDefinition::Node::SharedPtr(new ResourceDefinition::StorageQualifier(parentStructure, glu::STORAGE_OUT)))
+																						: (parentStructure);
+	const glu::ShaderType						lastStage							= getShaderMaskLastStage(presentShadersMask);
+	const int									interfaceBlockExpansionReducement	= (!inDefaultBlock) ? (1) : (0); // lesser expansions on block members to keep test counts reasonable
 
-	// vertex last stage
-	if (presentShadersMask == (1 << glu::SHADERTYPE_VERTEX))
+	if (lastStage == glu::SHADERTYPE_VERTEX						||
+		lastStage == glu::SHADERTYPE_GEOMETRY					||
+		lastStage == glu::SHADERTYPE_TESSELLATION_EVALUATION	||
+		!inDefaultBlock)
 	{
 		const ResourceDefinition::Node::SharedPtr flatShading(new ResourceDefinition::InterpolationQualifier(output, glu::INTERPOLATION_FLAT));
 
@@ -4990,41 +5891,89 @@ static void generateProgramOutputTypeBlockContents (Context& context, const Reso
 		{
 			tcu::TestCaseGroup* const blockGroup = new TestCaseGroup(context, "basic_type", "Basic types");
 			targetGroup->addChild(blockGroup);
-			generateProgramOutputTypeBasicTypeCases(context, flatShading, blockGroup, true);
+			generateProgramInputOutputTypeBasicTypeCases<PROGRAMINTERFACE_PROGRAM_OUTPUT>(context, flatShading, blockGroup, true, 2 - interfaceBlockExpansionReducement);
 		}
 		{
-			const ResourceDefinition::Node::SharedPtr	arrayElement	(new ResourceDefinition::ArrayElement(flatShading));
-			tcu::TestCaseGroup* const					blockGroup		= new TestCaseGroup(context, "array", "Array types");
+			const ResourceDefinition::Node::SharedPtr	arrayElement			(new ResourceDefinition::ArrayElement(flatShading));
+			tcu::TestCaseGroup* const					blockGroup				= new TestCaseGroup(context, "array", "Array types");
+			const int									typeExpansionReducement	= (lastStage != glu::SHADERTYPE_VERTEX) ? (1) : (0); // lesser expansions on other stages
+			const int									expansionLevel			= 2 - interfaceBlockExpansionReducement - typeExpansionReducement;
 
 			targetGroup->addChild(blockGroup);
-			generateProgramOutputTypeBasicTypeCases(context, arrayElement, blockGroup, true);
+			generateProgramInputOutputTypeBasicTypeCases<PROGRAMINTERFACE_PROGRAM_OUTPUT>(context, arrayElement, blockGroup, true, expansionLevel);
 		}
 		{
-			const ResourceDefinition::Node::SharedPtr	structMember	(new ResourceDefinition::StructMember(flatShading));
-			tcu::TestCaseGroup* const					blockGroup		= new TestCaseGroup(context, "struct", "Struct types");
+			const ResourceDefinition::Node::SharedPtr	structMember			(new ResourceDefinition::StructMember(flatShading));
+			tcu::TestCaseGroup* const					blockGroup				= new TestCaseGroup(context, "struct", "Struct types");
+			const int									typeExpansionReducement	= (lastStage != glu::SHADERTYPE_VERTEX) ? (1) : (0); // lesser expansions on other stages
+			const int									expansionLevel			= 2 - interfaceBlockExpansionReducement - typeExpansionReducement;
 
 			targetGroup->addChild(blockGroup);
-			generateProgramOutputTypeBasicTypeCases(context, structMember, blockGroup, true);
+			generateProgramInputOutputTypeBasicTypeCases<PROGRAMINTERFACE_PROGRAM_OUTPUT>(context, structMember, blockGroup, true, expansionLevel);
 		}
 	}
-
-	// fragment last stage
-	if (presentShadersMask & (1 << glu::SHADERTYPE_FRAGMENT))
+	else if (lastStage == glu::SHADERTYPE_FRAGMENT)
 	{
 		// only basic type and basic type array (and no booleans or matrices)
 		{
 			tcu::TestCaseGroup* const blockGroup = new TestCaseGroup(context, "basic_type", "Basic types");
 			targetGroup->addChild(blockGroup);
-			generateProgramOutputTypeBasicTypeCases(context, output, blockGroup, false);
+			generateProgramInputOutputTypeBasicTypeCases<PROGRAMINTERFACE_PROGRAM_OUTPUT>(context, output, blockGroup, false, 2);
 		}
 		{
 			const ResourceDefinition::Node::SharedPtr	arrayElement	(new ResourceDefinition::ArrayElement(output));
 			tcu::TestCaseGroup* const					blockGroup		= new TestCaseGroup(context, "array", "Array types");
 
 			targetGroup->addChild(blockGroup);
-			generateProgramOutputTypeBasicTypeCases(context, arrayElement, blockGroup, false);
+			generateProgramInputOutputTypeBasicTypeCases<PROGRAMINTERFACE_PROGRAM_OUTPUT>(context, arrayElement, blockGroup, false, 2);
 		}
 	}
+	else if (lastStage == glu::SHADERTYPE_TESSELLATION_CONTROL)
+	{
+		// arrayed interface
+		const ResourceDefinition::Node::SharedPtr patchOutput(new ResourceDefinition::StorageQualifier(parentStructure, glu::STORAGE_PATCH_OUT));
+
+		// .var
+		{
+			const ResourceDefinition::Node::SharedPtr	arrayElem		(new ResourceDefinition::ArrayElement(output, ResourceDefinition::ArrayElement::UNSIZED_ARRAY));
+			tcu::TestCaseGroup* const					blockGroup		= new TestCaseGroup(context, "basic_type", "Basic types");
+
+			targetGroup->addChild(blockGroup);
+			generateProgramInputOutputTypeBasicTypeCases<PROGRAMINTERFACE_PROGRAM_OUTPUT>(context, arrayElem, blockGroup, true, 2);
+		}
+		// extension forbids use arrays of structs
+		// extension forbids use arrays of arrays
+
+		// .patch_var
+		{
+			tcu::TestCaseGroup* const					blockGroup		= new TestCaseGroup(context, "patch_var", "Basic types, per-patch");
+
+			targetGroup->addChild(blockGroup);
+			generateProgramInputOutputTypeBasicTypeCases<PROGRAMINTERFACE_PROGRAM_OUTPUT>(context, patchOutput, blockGroup, true, 1);
+		}
+		// .patch_var_struct
+		{
+			const ResourceDefinition::Node::SharedPtr	structMbr		(new ResourceDefinition::StructMember(patchOutput));
+			tcu::TestCaseGroup* const					blockGroup		= new TestCaseGroup(context, "patch_var_struct", "Struct types, per-patch");
+
+			targetGroup->addChild(blockGroup);
+			generateProgramInputOutputTypeBasicTypeCases<PROGRAMINTERFACE_PROGRAM_OUTPUT>(context, structMbr, blockGroup, true, 1);
+		}
+		// .patch_var_array
+		{
+			const ResourceDefinition::Node::SharedPtr	arrayElem		(new ResourceDefinition::ArrayElement(patchOutput));
+			tcu::TestCaseGroup* const					blockGroup		= new TestCaseGroup(context, "patch_var_array", "Array types, per-patch");
+
+			targetGroup->addChild(blockGroup);
+			generateProgramInputOutputTypeBasicTypeCases<PROGRAMINTERFACE_PROGRAM_OUTPUT>(context, arrayElem, blockGroup, true, 1);
+		}
+	}
+	else if (lastStage == glu::SHADERTYPE_COMPUTE)
+	{
+		// nada
+	}
+	else
+		DE_ASSERT(false);
 }
 
 class ProgramInputTestGroup : public TestCaseGroup
@@ -5081,6 +6030,13 @@ void ProgramInputTestGroup::init (void)
 		tcu::TestCaseGroup* const blockGroup = new tcu::TestCaseGroup(m_testCtx, "type", "Type");
 		addChild(blockGroup);
 		generateProgramInputOutputShaderCaseBlocks(m_context, blockGroup, false, true, generateProgramInputTypeBlockContents);
+	}
+
+	// .is_per_patch
+	{
+		tcu::TestCaseGroup* const blockGroup = new tcu::TestCaseGroup(m_testCtx, "is_per_patch", "Is per patch");
+		addChild(blockGroup);
+		generateProgramInputOutputShaderCaseBlocks(m_context, blockGroup, false, true, generateProgramInputBasicBlockContents<PROGRAMRESOURCEPROP_IS_PER_PATCH>);
 	}
 }
 
@@ -5139,41 +6095,94 @@ void ProgramOutputTestGroup::init (void)
 		addChild(blockGroup);
 		generateProgramInputOutputShaderCaseBlocks(m_context, blockGroup, false, false, generateProgramOutputTypeBlockContents);
 	}
+
+	// .is_per_patch
+	{
+		tcu::TestCaseGroup* const blockGroup = new tcu::TestCaseGroup(m_testCtx, "is_per_patch", "Is per patch");
+		addChild(blockGroup);
+		generateProgramInputOutputShaderCaseBlocks(m_context, blockGroup, false, false, generateProgramOutputBasicBlockContents<PROGRAMRESOURCEPROP_IS_PER_PATCH>);
+	}
 }
 
-static void generateTransformFeedbackShaderCaseBlocks (Context& context, tcu::TestCaseGroup* targetGroup, void (*blockContentGenerator)(Context&, const ResourceDefinition::Node::SharedPtr&, tcu::TestCaseGroup*))
+static void generateTransformFeedbackShaderCaseBlocks (Context& context, tcu::TestCaseGroup* targetGroup, void (*blockContentGenerator)(Context&, const ResourceDefinition::Node::SharedPtr&, tcu::TestCaseGroup*, bool))
 {
-	// .vertex_fragment
+	static const struct
 	{
-		tcu::TestCaseGroup* const					blockGroup		= new TestCaseGroup(context, "vertex_fragment", "Vertex and fragment");
-		const ResourceDefinition::Node::SharedPtr	program			(new ResourceDefinition::Program(false));
-		ResourceDefinition::ShaderSet*				shaderSetPtr	= new ResourceDefinition::ShaderSet(program, glu::GLSL_VERSION_310_ES);
-		const ResourceDefinition::Node::SharedPtr	shaderSet		(shaderSetPtr);
+		const char*	name;
+		deUint32	stageBits;
+		deUint32	lastStageBit;
+		bool		reducedSet;
+	} pipelines[] =
+	{
+		{
+			"vertex_fragment",
+			(1 << glu::SHADERTYPE_VERTEX) | (1 << glu::SHADERTYPE_FRAGMENT),
+			(1 << glu::SHADERTYPE_VERTEX),
+			false
+		},
+		{
+			"vertex_tess_fragment",
+			(1 << glu::SHADERTYPE_VERTEX) | (1 << glu::SHADERTYPE_FRAGMENT) | (1 << glu::SHADERTYPE_TESSELLATION_CONTROL) | (1 << glu::SHADERTYPE_TESSELLATION_EVALUATION),
+			(1 << glu::SHADERTYPE_TESSELLATION_EVALUATION),
+			true
+		},
+		{
+			"vertex_geo_fragment",
+			(1 << glu::SHADERTYPE_VERTEX) | (1 << glu::SHADERTYPE_FRAGMENT) | (1 << glu::SHADERTYPE_GEOMETRY),
+			(1 << glu::SHADERTYPE_GEOMETRY),
+			true
+		},
+		{
+			"vertex_tess_geo_fragment",
+			(1 << glu::SHADERTYPE_VERTEX) | (1 << glu::SHADERTYPE_FRAGMENT) | (1 << glu::SHADERTYPE_TESSELLATION_CONTROL) | (1 << glu::SHADERTYPE_TESSELLATION_EVALUATION) | (1 << glu::SHADERTYPE_GEOMETRY),
+			(1 << glu::SHADERTYPE_GEOMETRY),
+			true
+		},
+	};
+	static const struct
+	{
+		const char*		name;
+		glu::ShaderType	stage;
+		bool			reducedSet;
+	} singleStageCases[] =
+	{
+		{ "separable_vertex",		glu::SHADERTYPE_VERTEX,						false	},
+		{ "separable_tess_eval",	glu::SHADERTYPE_TESSELLATION_EVALUATION,	true	},
+		{ "separable_geometry",		glu::SHADERTYPE_GEOMETRY,					true	},
+	};
 
-		shaderSetPtr->setStage(glu::SHADERTYPE_VERTEX, true);
-		shaderSetPtr->setStage(glu::SHADERTYPE_FRAGMENT, false);
+	// monolithic pipeline
+	for (int pipelineNdx = 0; pipelineNdx < DE_LENGTH_OF_ARRAY(pipelines); ++pipelineNdx)
+	{
+		TestCaseGroup* const						blockGroup		= new TestCaseGroup(context, pipelines[pipelineNdx].name, "");
+		const ResourceDefinition::Node::SharedPtr	program			(new ResourceDefinition::Program());
+		const ResourceDefinition::Node::SharedPtr	shaderSet		(new ResourceDefinition::ShaderSet(program,
+																									   glu::GLSL_VERSION_310_ES,
+																									   pipelines[pipelineNdx].stageBits,
+																									   pipelines[pipelineNdx].lastStageBit));
 
 		targetGroup->addChild(blockGroup);
-
-		blockContentGenerator(context, shaderSet, blockGroup);
+		blockContentGenerator(context, shaderSet, blockGroup, pipelines[pipelineNdx].reducedSet);
 	}
 
-	// .separable_vertex
+	// separable pipeline
+	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(singleStageCases); ++ndx)
 	{
-		tcu::TestCaseGroup* const					blockGroup	= new TestCaseGroup(context, "separable_vertex", "Separable vertex");
-		const ResourceDefinition::Node::SharedPtr	program		(new ResourceDefinition::Program(true));
-		const ResourceDefinition::Node::SharedPtr	shader		(new ResourceDefinition::Shader(program, glu::SHADERTYPE_VERTEX, glu::GLSL_VERSION_310_ES));
+		TestCaseGroup* const						blockGroup			= new TestCaseGroup(context, singleStageCases[ndx].name, "");
+		const ResourceDefinition::Node::SharedPtr	program				(new ResourceDefinition::Program(true));
+		const ResourceDefinition::Node::SharedPtr	shader				(new ResourceDefinition::Shader(program, singleStageCases[ndx].stage, glu::GLSL_VERSION_310_ES));
 
 		targetGroup->addChild(blockGroup);
-
-		blockContentGenerator(context, shader, blockGroup);
+		blockContentGenerator(context, shader, blockGroup, singleStageCases[ndx].reducedSet);
 	}
 }
 
-static void generateTransformFeedbackResourceListBlockContents (Context& context, const ResourceDefinition::Node::SharedPtr& parentStructure, tcu::TestCaseGroup* targetGroup)
+static void generateTransformFeedbackResourceListBlockContents (Context& context, const ResourceDefinition::Node::SharedPtr& parentStructure, tcu::TestCaseGroup* targetGroup, bool reducedSet)
 {
 	const ResourceDefinition::Node::SharedPtr	defaultBlock	(new ResourceDefinition::DefaultBlock(parentStructure));
 	const ResourceDefinition::Node::SharedPtr	output			(new ResourceDefinition::StorageQualifier(defaultBlock, glu::STORAGE_OUT));
+
+	DE_UNREF(reducedSet);
 
 	// .builtin_gl_position
 	{
@@ -5217,10 +6226,12 @@ static void generateTransformFeedbackResourceListBlockContents (Context& context
 }
 
 template <ProgramResourcePropFlags TargetProp>
-static void generateTransformFeedbackVariableBlockContents (Context& context, const ResourceDefinition::Node::SharedPtr& parentStructure, tcu::TestCaseGroup* targetGroup)
+static void generateTransformFeedbackVariableBlockContents (Context& context, const ResourceDefinition::Node::SharedPtr& parentStructure, tcu::TestCaseGroup* targetGroup, bool reducedSet)
 {
 	const ResourceDefinition::Node::SharedPtr	defaultBlock	(new ResourceDefinition::DefaultBlock(parentStructure));
 	const ResourceDefinition::Node::SharedPtr	output			(new ResourceDefinition::StorageQualifier(defaultBlock, glu::STORAGE_OUT));
+
+	DE_UNREF(reducedSet);
 
 	// .builtin_gl_position
 	{
@@ -5263,45 +6274,52 @@ static void generateTransformFeedbackVariableBlockContents (Context& context, co
 	}
 }
 
-static void generateTransformFeedbackVariableBasicTypeCases (Context& context, const ResourceDefinition::Node::SharedPtr& parentStructure, tcu::TestCaseGroup* targetGroup)
+static void generateTransformFeedbackVariableBasicTypeCases (Context& context, const ResourceDefinition::Node::SharedPtr& parentStructure, tcu::TestCaseGroup* targetGroup, bool reducedSet)
 {
-	static const glu::DataType variableTypes[] =
+	static const struct
 	{
-		glu::TYPE_FLOAT,
-		glu::TYPE_INT,
-		glu::TYPE_UINT,
+		glu::DataType	type;
+		bool			important;
+	} variableTypes[] =
+	{
+		{ glu::TYPE_FLOAT,			true	},
+		{ glu::TYPE_INT,			true	},
+		{ glu::TYPE_UINT,			true	},
 
-		glu::TYPE_FLOAT_VEC2,
-		glu::TYPE_FLOAT_VEC3,
-		glu::TYPE_FLOAT_VEC4,
+		{ glu::TYPE_FLOAT_VEC2,		false	},
+		{ glu::TYPE_FLOAT_VEC3,		true	},
+		{ glu::TYPE_FLOAT_VEC4,		false	},
 
-		glu::TYPE_INT_VEC2,
-		glu::TYPE_INT_VEC3,
-		glu::TYPE_INT_VEC4,
+		{ glu::TYPE_INT_VEC2,		false	},
+		{ glu::TYPE_INT_VEC3,		true	},
+		{ glu::TYPE_INT_VEC4,		false	},
 
-		glu::TYPE_UINT_VEC2,
-		glu::TYPE_UINT_VEC3,
-		glu::TYPE_UINT_VEC4,
+		{ glu::TYPE_UINT_VEC2,		true	},
+		{ glu::TYPE_UINT_VEC3,		false	},
+		{ glu::TYPE_UINT_VEC4,		false	},
 
-		glu::TYPE_FLOAT_MAT2,
-		glu::TYPE_FLOAT_MAT2X3,
-		glu::TYPE_FLOAT_MAT2X4,
-		glu::TYPE_FLOAT_MAT3X2,
-		glu::TYPE_FLOAT_MAT3,
-		glu::TYPE_FLOAT_MAT3X4,
-		glu::TYPE_FLOAT_MAT4X2,
-		glu::TYPE_FLOAT_MAT4X3,
-		glu::TYPE_FLOAT_MAT4,
+		{ glu::TYPE_FLOAT_MAT2,		false	},
+		{ glu::TYPE_FLOAT_MAT2X3,	false	},
+		{ glu::TYPE_FLOAT_MAT2X4,	false	},
+		{ glu::TYPE_FLOAT_MAT3X2,	false	},
+		{ glu::TYPE_FLOAT_MAT3,		false	},
+		{ glu::TYPE_FLOAT_MAT3X4,	true	},
+		{ glu::TYPE_FLOAT_MAT4X2,	false	},
+		{ glu::TYPE_FLOAT_MAT4X3,	false	},
+		{ glu::TYPE_FLOAT_MAT4,		false	},
 	};
 
 	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(variableTypes); ++ndx)
 	{
-		const ResourceDefinition::Node::SharedPtr variable(new ResourceDefinition::Variable(parentStructure, variableTypes[ndx]));
-		targetGroup->addChild(new ResourceTestCase(context, variable, ProgramResourceQueryTestTarget(PROGRAMINTERFACE_TRANSFORM_FEEDBACK_VARYING, PROGRAMRESOURCEPROP_TYPE)));
+		if (variableTypes[ndx].important || !reducedSet)
+		{
+			const ResourceDefinition::Node::SharedPtr variable(new ResourceDefinition::Variable(parentStructure, variableTypes[ndx].type));
+			targetGroup->addChild(new ResourceTestCase(context, variable, ProgramResourceQueryTestTarget(PROGRAMINTERFACE_TRANSFORM_FEEDBACK_VARYING, PROGRAMRESOURCEPROP_TYPE)));
+		}
 	}
 }
 
-static void generateTransformFeedbackVariableTypeBlockContents (Context& context, const ResourceDefinition::Node::SharedPtr& parentStructure, tcu::TestCaseGroup* targetGroup)
+static void generateTransformFeedbackVariableTypeBlockContents (Context& context, const ResourceDefinition::Node::SharedPtr& parentStructure, tcu::TestCaseGroup* targetGroup, bool reducedSet)
 {
 	const ResourceDefinition::Node::SharedPtr	defaultBlock	(new ResourceDefinition::DefaultBlock(parentStructure));
 	const ResourceDefinition::Node::SharedPtr	output			(new ResourceDefinition::StorageQualifier(defaultBlock, glu::STORAGE_OUT));
@@ -5320,7 +6338,7 @@ static void generateTransformFeedbackVariableTypeBlockContents (Context& context
 		tcu::TestCaseGroup* const					blockGroup		= new TestCaseGroup(context, "basic_type", "Basic types");
 
 		targetGroup->addChild(blockGroup);
-		generateTransformFeedbackVariableBasicTypeCases(context, xfbTarget, blockGroup);
+		generateTransformFeedbackVariableBasicTypeCases(context, xfbTarget, blockGroup, reducedSet);
 	}
 	{
 		const ResourceDefinition::Node::SharedPtr	arrayElement	(new ResourceDefinition::ArrayElement(flatShading));
@@ -5328,7 +6346,7 @@ static void generateTransformFeedbackVariableTypeBlockContents (Context& context
 		tcu::TestCaseGroup* const					blockGroup		= new TestCaseGroup(context, "array", "Array types");
 
 		targetGroup->addChild(blockGroup);
-		generateTransformFeedbackVariableBasicTypeCases(context, xfbTarget, blockGroup);
+		generateTransformFeedbackVariableBasicTypeCases(context, xfbTarget, blockGroup, reducedSet);
 	}
 	{
 		const ResourceDefinition::Node::SharedPtr	xfbTarget		(new ResourceDefinition::TransformFeedbackTarget(flatShading));
@@ -5336,7 +6354,7 @@ static void generateTransformFeedbackVariableTypeBlockContents (Context& context
 		tcu::TestCaseGroup* const					blockGroup		= new TestCaseGroup(context, "whole_array", "Whole array");
 
 		targetGroup->addChild(blockGroup);
-		generateTransformFeedbackVariableBasicTypeCases(context, arrayElement, blockGroup);
+		generateTransformFeedbackVariableBasicTypeCases(context, arrayElement, blockGroup, reducedSet);
 	}
 	{
 		const ResourceDefinition::Node::SharedPtr	structMember	(new ResourceDefinition::StructMember(flatShading));
@@ -5344,7 +6362,7 @@ static void generateTransformFeedbackVariableTypeBlockContents (Context& context
 		tcu::TestCaseGroup* const					blockGroup		= new TestCaseGroup(context, "struct", "Struct types");
 
 		targetGroup->addChild(blockGroup);
-		generateTransformFeedbackVariableBasicTypeCases(context, xfbTarget, blockGroup);
+		generateTransformFeedbackVariableBasicTypeCases(context, xfbTarget, blockGroup, reducedSet);
 	}
 }
 
@@ -5856,10 +6874,10 @@ static void generateBufferVariableTypeBlock (Context& context, tcu::TestCaseGrou
 	generateBufferVariableTypeCases(context, block, targetGroup);
 }
 
-static void generateBufferVariableRandomCase (Context& context, tcu::TestCaseGroup* const targetGroup, int index)
+static void generateBufferVariableRandomCase (Context& context, tcu::TestCaseGroup* const targetGroup, int index, bool onlyExtensionStages)
 {
 	de::Random									rnd					(index * 0x12345);
-	const ResourceDefinition::Node::SharedPtr	shader				= generateRandomShaderSet(rnd);
+	const ResourceDefinition::Node::SharedPtr	shader				= generateRandomShaderSet(rnd, onlyExtensionStages);
 	const glu::DataType							type				= generateRandomDataType(rnd, true);
 	const glu::Layout							layout				= generateRandomVariableLayout(rnd, type, true);
 	const bool									namedBlock			= rnd.getBool();
@@ -5879,10 +6897,13 @@ static void generateBufferVariableRandomCase (Context& context, tcu::TestCaseGro
 
 static void generateBufferVariableRandomCases (Context& context, tcu::TestCaseGroup* const targetGroup)
 {
-	const int numCases = 40;
+	const int numBasicCases		= 40;
+	const int numTessGeoCases	= 40;
 
-	for (int ndx = 0; ndx < numCases; ++ndx)
-		generateBufferVariableRandomCase(context, targetGroup, ndx);
+	for (int ndx = 0; ndx < numBasicCases; ++ndx)
+		generateBufferVariableRandomCase(context, targetGroup, ndx, false);
+	for (int ndx = 0; ndx < numTessGeoCases; ++ndx)
+		generateBufferVariableRandomCase(context, targetGroup, numBasicCases + ndx, true);
 }
 
 class BufferVariableTestGroup : public TestCaseGroup

@@ -24,10 +24,13 @@
 #include "es31fAdvancedBlendTests.hpp"
 #include "gluStrUtil.hpp"
 #include "glsFragmentOpUtil.hpp"
+#include "glsStateQueryUtil.hpp"
 #include "gluPixelTransfer.hpp"
 #include "gluObjectWrapper.hpp"
 #include "gluContextInfo.hpp"
 #include "gluShaderProgram.hpp"
+#include "gluCallLogWrapper.hpp"
+#include "gluStrUtil.hpp"
 #include "tcuPixelFormat.hpp"
 #include "tcuTexture.hpp"
 #include "tcuTextureUtil.hpp"
@@ -36,6 +39,7 @@
 #include "tcuTestLog.hpp"
 #include "tcuStringTemplate.hpp"
 #include "deRandom.hpp"
+#include "deStringUtil.hpp"
 #include "rrFragmentOperations.hpp"
 #include "sglrReferenceUtils.hpp"
 #include "glwEnums.hpp"
@@ -81,6 +85,31 @@ enum RenderTargetType
 
 	RENDERTARGETTYPE_LAST
 };
+
+static const char* getEquationName (glw::GLenum equation)
+{
+	switch (equation)
+	{
+		case GL_MULTIPLY_KHR:		return "multiply";
+		case GL_SCREEN_KHR:			return "screen";
+		case GL_OVERLAY_KHR:		return "overlay";
+		case GL_DARKEN_KHR:			return "darken";
+		case GL_LIGHTEN_KHR:		return "lighten";
+		case GL_COLORDODGE_KHR:		return "colordodge";
+		case GL_COLORBURN_KHR:		return "colorburn";
+		case GL_HARDLIGHT_KHR:		return "hardlight";
+		case GL_SOFTLIGHT_KHR:		return "softlight";
+		case GL_DIFFERENCE_KHR:		return "difference";
+		case GL_EXCLUSION_KHR:		return "exclusion";
+		case GL_HSL_HUE_KHR:		return "hsl_hue";
+		case GL_HSL_SATURATION_KHR:	return "hsl_saturation";
+		case GL_HSL_COLOR_KHR:		return "hsl_color";
+		case GL_HSL_LUMINOSITY_KHR:	return "hsl_luminosity";
+		default:
+			DE_ASSERT(false);
+			return DE_NULL;
+	}
+}
 
 class AdvancedBlendCase : public TestCase
 {
@@ -513,7 +542,7 @@ AdvancedBlendCase::IterateResult AdvancedBlendCase::iterate (void)
 		}
 		else
 		{
-		const UVec4 compareThreshold = (useFbo ? tcu::PixelFormat(8, 8, 8, 8) : m_context.getRenderTarget().getPixelFormat()).getColorThreshold().toIVec().asUint()
+			const UVec4 compareThreshold = (useFbo ? tcu::PixelFormat(8, 8, 8, 8) : m_context.getRenderTarget().getPixelFormat()).getColorThreshold().toIVec().asUint()
 									 * UVec4(5) / UVec4(2) + UVec4(3 * m_overdrawCount);
 
 			comparePass = tcu::bilinearCompare(m_testCtx.getLog(), "CompareResult", "Image Comparison Result",
@@ -541,6 +570,168 @@ AdvancedBlendCase::IterateResult AdvancedBlendCase::iterate (void)
 	}
 }
 
+class BlendAdvancedCoherentStateCase : public TestCase
+{
+public:
+											BlendAdvancedCoherentStateCase	(Context&						context,
+																			 const char*					name,
+																			 const char*					description,
+																			 gls::StateQueryUtil::QueryType	type);
+private:
+	IterateResult							iterate							(void);
+
+	const gls::StateQueryUtil::QueryType	m_type;
+};
+
+BlendAdvancedCoherentStateCase::BlendAdvancedCoherentStateCase	(Context&						context,
+																 const char*					name,
+																 const char*					description,
+																 gls::StateQueryUtil::QueryType	type)
+	: TestCase	(context, name, description)
+	, m_type	(type)
+{
+}
+
+BlendAdvancedCoherentStateCase::IterateResult BlendAdvancedCoherentStateCase::iterate (void)
+{
+	TCU_CHECK_AND_THROW(NotSupportedError, m_context.getContextInfo().isExtensionSupported("GL_KHR_blend_equation_advanced_coherent"), "GL_KHR_blend_equation_advanced_coherent is not supported");
+
+	glu::CallLogWrapper		gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
+	tcu::ResultCollector	result	(m_testCtx.getLog(), " // ERROR: ");
+
+	gl.enableLogging(true);
+
+	// check inital value
+	{
+		const tcu::ScopedLogSection section(m_testCtx.getLog(), "Initial", "Initial");
+		gls::StateQueryUtil::verifyStateBoolean(result, gl, GL_BLEND_ADVANCED_COHERENT_KHR, true, m_type);
+	}
+
+	// check toggle
+	{
+		const tcu::ScopedLogSection section(m_testCtx.getLog(), "Toggle", "Toggle");
+		gl.glDisable(GL_BLEND_ADVANCED_COHERENT_KHR);
+		GLU_EXPECT_NO_ERROR(gl.glGetError(), "glDisable");
+
+		gls::StateQueryUtil::verifyStateBoolean(result, gl, GL_BLEND_ADVANCED_COHERENT_KHR, false, m_type);
+
+		gl.glEnable(GL_BLEND_ADVANCED_COHERENT_KHR);
+		GLU_EXPECT_NO_ERROR(gl.glGetError(), "glEnable");
+
+		gls::StateQueryUtil::verifyStateBoolean(result, gl, GL_BLEND_ADVANCED_COHERENT_KHR, true, m_type);
+	}
+
+	result.setTestContextResult(m_testCtx);
+	return STOP;
+}
+
+class BlendEquationStateCase : public TestCase
+{
+public:
+											BlendEquationStateCase	(Context&						context,
+																	 const char*					name,
+																	 const char*					description,
+																	 const glw::GLenum*				equations,
+																	 int							numEquations,
+																	 gls::StateQueryUtil::QueryType	type);
+private:
+	IterateResult							iterate					(void);
+
+	const gls::StateQueryUtil::QueryType	m_type;
+	const glw::GLenum*						m_equations;
+	const int								m_numEquations;
+};
+
+BlendEquationStateCase::BlendEquationStateCase	(Context&						context,
+												 const char*					name,
+												 const char*					description,
+												 const glw::GLenum*				equations,
+												 int							numEquations,
+												 gls::StateQueryUtil::QueryType	type)
+	: TestCase			(context, name, description)
+	, m_type			(type)
+	, m_equations		(equations)
+	, m_numEquations	(numEquations)
+{
+}
+
+BlendEquationStateCase::IterateResult BlendEquationStateCase::iterate (void)
+{
+	TCU_CHECK_AND_THROW(NotSupportedError, m_context.getContextInfo().isExtensionSupported("GL_KHR_blend_equation_advanced"), "GL_KHR_blend_equation_advanced is not supported");
+
+	glu::CallLogWrapper		gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
+	tcu::ResultCollector	result	(m_testCtx.getLog(), " // ERROR: ");
+
+	gl.enableLogging(true);
+
+	for (int ndx = 0; ndx < m_numEquations; ++ndx)
+	{
+		const tcu::ScopedLogSection section(m_testCtx.getLog(), "Type", "Test " + de::toString(glu::getBlendEquationStr(m_equations[ndx])));
+
+		gl.glBlendEquation(m_equations[ndx]);
+		GLU_EXPECT_NO_ERROR(gl.glGetError(), "glBlendEquation");
+
+		gls::StateQueryUtil::verifyStateInteger(result, gl, GL_BLEND_EQUATION, m_equations[ndx], m_type);
+	}
+
+	result.setTestContextResult(m_testCtx);
+	return STOP;
+}
+
+class BlendEquationIndexedStateCase : public TestCase
+{
+public:
+											BlendEquationIndexedStateCase	(Context&						context,
+																			 const char*					name,
+																			 const char*					description,
+																			 const glw::GLenum*				equations,
+																			 int							numEquations,
+																			 gls::StateQueryUtil::QueryType	type);
+private:
+	IterateResult							iterate							(void);
+
+	const gls::StateQueryUtil::QueryType	m_type;
+	const glw::GLenum*						m_equations;
+	const int								m_numEquations;
+};
+
+BlendEquationIndexedStateCase::BlendEquationIndexedStateCase	(Context&						context,
+																 const char*					name,
+																 const char*					description,
+																 const glw::GLenum*				equations,
+																 int							numEquations,
+																 gls::StateQueryUtil::QueryType	type)
+	: TestCase			(context, name, description)
+	, m_type			(type)
+	, m_equations		(equations)
+	, m_numEquations	(numEquations)
+{
+}
+
+BlendEquationIndexedStateCase::IterateResult BlendEquationIndexedStateCase::iterate (void)
+{
+	TCU_CHECK_AND_THROW(NotSupportedError, m_context.getContextInfo().isExtensionSupported("GL_KHR_blend_equation_advanced"), "GL_KHR_blend_equation_advanced is not supported");
+	TCU_CHECK_AND_THROW(NotSupportedError, m_context.getContextInfo().isExtensionSupported("GL_EXT_draw_buffers_indexed"), "GL_EXT_draw_buffers_indexed is not supported");
+
+	glu::CallLogWrapper		gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
+	tcu::ResultCollector	result	(m_testCtx.getLog(), " // ERROR: ");
+
+	gl.enableLogging(true);
+
+	for (int ndx = 0; ndx < m_numEquations; ++ndx)
+	{
+		const tcu::ScopedLogSection section(m_testCtx.getLog(), "Type", "Test " + de::toString(glu::getBlendEquationStr(m_equations[ndx])));
+
+		gl.glBlendEquationi(2, m_equations[ndx]);
+		GLU_EXPECT_NO_ERROR(gl.glGetError(), "glBlendEquationi");
+
+		gls::StateQueryUtil::verifyStateIndexedInteger(result, gl, GL_BLEND_EQUATION, 2, m_equations[ndx], m_type);
+	}
+
+	result.setTestContextResult(m_testCtx);
+	return STOP;
+}
+
 } // anonymous
 
 AdvancedBlendTests::AdvancedBlendTests (Context& context)
@@ -554,29 +745,26 @@ AdvancedBlendTests::~AdvancedBlendTests (void)
 
 void AdvancedBlendTests::init (void)
 {
-	static const struct
+	static const glw::GLenum s_blendEquations[] =
 	{
-		deUint32	mode;
-		const char*	name;
-	} s_blendModes[] =
-	{
-		{ GL_MULTIPLY_KHR,			"multiply"			},
-		{ GL_SCREEN_KHR,			"screen"			},
-		{ GL_OVERLAY_KHR,			"overlay"			},
-		{ GL_DARKEN_KHR,			"darken"			},
-		{ GL_LIGHTEN_KHR,			"lighten"			},
-		{ GL_COLORDODGE_KHR,		"colordodge"		},
-		{ GL_COLORBURN_KHR,			"colorburn"			},
-		{ GL_HARDLIGHT_KHR,			"hardlight"			},
-		{ GL_SOFTLIGHT_KHR,			"softlight"			},
-		{ GL_DIFFERENCE_KHR,		"difference"		},
-		{ GL_EXCLUSION_KHR,			"exclusion"			},
-		{ GL_HSL_HUE_KHR,			"hsl_hue"			},
-		{ GL_HSL_SATURATION_KHR,	"hsl_saturation"	},
-		{ GL_HSL_COLOR_KHR,			"hsl_color"			},
-		{ GL_HSL_LUMINOSITY_KHR,	"hsl_luminosity"	}
+		GL_MULTIPLY_KHR,
+		GL_SCREEN_KHR,
+		GL_OVERLAY_KHR,
+		GL_DARKEN_KHR,
+		GL_LIGHTEN_KHR,
+		GL_COLORDODGE_KHR,
+		GL_COLORBURN_KHR,
+		GL_HARDLIGHT_KHR,
+		GL_SOFTLIGHT_KHR,
+		GL_DIFFERENCE_KHR,
+		GL_EXCLUSION_KHR,
+		GL_HSL_HUE_KHR,
+		GL_HSL_SATURATION_KHR,
+		GL_HSL_COLOR_KHR,
+		GL_HSL_LUMINOSITY_KHR,
 	};
 
+	tcu::TestCaseGroup* const	stateQueryGroup		= new tcu::TestCaseGroup(m_testCtx, "state_query",		"State query tests");
 	tcu::TestCaseGroup* const	basicGroup			= new tcu::TestCaseGroup(m_testCtx, "basic",			"Single quad only");
 	tcu::TestCaseGroup* const	srgbGroup			= new tcu::TestCaseGroup(m_testCtx, "srgb",				"Advanced blending with sRGB FBO");
 	tcu::TestCaseGroup* const	msaaGroup			= new tcu::TestCaseGroup(m_testCtx, "msaa",				"Advanced blending with MSAA FBO");
@@ -584,6 +772,7 @@ void AdvancedBlendTests::init (void)
 	tcu::TestCaseGroup* const	coherentGroup		= new tcu::TestCaseGroup(m_testCtx, "coherent",			"Overlapping quads with coherent blending");
 	tcu::TestCaseGroup* const	coherentMsaaGroup	= new tcu::TestCaseGroup(m_testCtx, "coherent_msaa",	"Overlapping quads with coherent blending with MSAA FBO");
 
+	addChild(stateQueryGroup);
 	addChild(basicGroup);
 	addChild(srgbGroup);
 	addChild(msaaGroup);
@@ -591,11 +780,32 @@ void AdvancedBlendTests::init (void)
 	addChild(coherentGroup);
 	addChild(coherentMsaaGroup);
 
-	for (int modeNdx = 0; modeNdx < DE_LENGTH_OF_ARRAY(s_blendModes); modeNdx++)
+	// .state_query
 	{
-		const char* const		name		= s_blendModes[modeNdx].name;
+		using namespace gls::StateQueryUtil;
+
+		stateQueryGroup->addChild(new BlendAdvancedCoherentStateCase(m_context, "blend_advanced_coherent_getboolean",	"Test BLEND_ADVANCED_COHERENT_KHR", QUERY_BOOLEAN));
+		stateQueryGroup->addChild(new BlendAdvancedCoherentStateCase(m_context, "blend_advanced_coherent_isenabled",	"Test BLEND_ADVANCED_COHERENT_KHR", QUERY_ISENABLED));
+		stateQueryGroup->addChild(new BlendAdvancedCoherentStateCase(m_context, "blend_advanced_coherent_getinteger",	"Test BLEND_ADVANCED_COHERENT_KHR", QUERY_INTEGER));
+		stateQueryGroup->addChild(new BlendAdvancedCoherentStateCase(m_context, "blend_advanced_coherent_getinteger64",	"Test BLEND_ADVANCED_COHERENT_KHR", QUERY_INTEGER64));
+		stateQueryGroup->addChild(new BlendAdvancedCoherentStateCase(m_context, "blend_advanced_coherent_getfloat",		"Test BLEND_ADVANCED_COHERENT_KHR", QUERY_FLOAT));
+
+		stateQueryGroup->addChild(new BlendEquationStateCase(m_context, "blend_equation_getboolean",	"Test BLEND_EQUATION", s_blendEquations, DE_LENGTH_OF_ARRAY(s_blendEquations), QUERY_BOOLEAN));
+		stateQueryGroup->addChild(new BlendEquationStateCase(m_context, "blend_equation_getinteger",	"Test BLEND_EQUATION", s_blendEquations, DE_LENGTH_OF_ARRAY(s_blendEquations), QUERY_INTEGER));
+		stateQueryGroup->addChild(new BlendEquationStateCase(m_context, "blend_equation_getinteger64",	"Test BLEND_EQUATION", s_blendEquations, DE_LENGTH_OF_ARRAY(s_blendEquations), QUERY_INTEGER64));
+		stateQueryGroup->addChild(new BlendEquationStateCase(m_context, "blend_equation_getfloat",		"Test BLEND_EQUATION", s_blendEquations, DE_LENGTH_OF_ARRAY(s_blendEquations), QUERY_FLOAT));
+
+		stateQueryGroup->addChild(new BlendEquationIndexedStateCase(m_context, "blend_equation_getbooleani_v",		"Test per-attchment BLEND_EQUATION", s_blendEquations, DE_LENGTH_OF_ARRAY(s_blendEquations), QUERY_INDEXED_BOOLEAN));
+		stateQueryGroup->addChild(new BlendEquationIndexedStateCase(m_context, "blend_equation_getintegeri_v",		"Test per-attchment BLEND_EQUATION", s_blendEquations, DE_LENGTH_OF_ARRAY(s_blendEquations), QUERY_INDEXED_INTEGER));
+		stateQueryGroup->addChild(new BlendEquationIndexedStateCase(m_context, "blend_equation_getinteger64i_v",	"Test per-attchment BLEND_EQUATION", s_blendEquations, DE_LENGTH_OF_ARRAY(s_blendEquations), QUERY_INDEXED_INTEGER64));
+	}
+
+	// others
+	for (int modeNdx = 0; modeNdx < DE_LENGTH_OF_ARRAY(s_blendEquations); modeNdx++)
+	{
+		const char* const		name		= getEquationName(s_blendEquations[modeNdx]);
 		const char* const		desc		= "";
-		const deUint32			mode		= s_blendModes[modeNdx].mode;
+		const deUint32			mode		= s_blendEquations[modeNdx];
 
 		basicGroup->addChild		(new AdvancedBlendCase(m_context, name, desc, mode, 1, false,	RENDERTARGETTYPE_DEFAULT));
 		srgbGroup->addChild			(new AdvancedBlendCase(m_context, name, desc, mode, 1, false,	RENDERTARGETTYPE_SRGB_FBO));

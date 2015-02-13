@@ -275,6 +275,15 @@ bool Shader::isValid (void) const
 			if (m_defaultBlock.variables[varNdx].storage == glu::STORAGE_OUT && m_defaultBlock.variables[varNdx].interpolation != glu::INTERPOLATION_FLAT && isTypeIntegerOrContainsIntegers(m_defaultBlock.variables[varNdx].varType))
 				return false;
 		}
+		for (int interfaceNdx = 0; interfaceNdx < (int)m_defaultBlock.interfaceBlocks.size(); ++interfaceNdx)
+		{
+			if (m_defaultBlock.interfaceBlocks[interfaceNdx].storage == glu::STORAGE_IN			||
+				m_defaultBlock.interfaceBlocks[interfaceNdx].storage == glu::STORAGE_PATCH_IN	||
+				m_defaultBlock.interfaceBlocks[interfaceNdx].storage == glu::STORAGE_PATCH_OUT)
+			{
+				return false;
+			}
+		}
 	}
 	else if (m_shaderType == glu::SHADERTYPE_FRAGMENT)
 	{
@@ -287,14 +296,119 @@ bool Shader::isValid (void) const
 			if (m_defaultBlock.variables[varNdx].storage == glu::STORAGE_OUT && isIllegalFragmentOutput(m_defaultBlock.variables[varNdx].varType))
 				return false;
 		}
+		for (int interfaceNdx = 0; interfaceNdx < (int)m_defaultBlock.interfaceBlocks.size(); ++interfaceNdx)
+		{
+			if (m_defaultBlock.interfaceBlocks[interfaceNdx].storage == glu::STORAGE_PATCH_IN	||
+				m_defaultBlock.interfaceBlocks[interfaceNdx].storage == glu::STORAGE_OUT		||
+				m_defaultBlock.interfaceBlocks[interfaceNdx].storage == glu::STORAGE_PATCH_OUT)
+			{
+				return false;
+			}
+		}
 	}
+	else if (m_shaderType == glu::SHADERTYPE_COMPUTE)
+	{
+		for (int varNdx = 0; varNdx < (int)m_defaultBlock.variables.size(); ++varNdx)
+		{
+			if (m_defaultBlock.variables[varNdx].storage == glu::STORAGE_IN			||
+				m_defaultBlock.variables[varNdx].storage == glu::STORAGE_PATCH_IN	||
+				m_defaultBlock.variables[varNdx].storage == glu::STORAGE_OUT		||
+				m_defaultBlock.variables[varNdx].storage == glu::STORAGE_PATCH_OUT)
+			{
+				return false;
+			}
+		}
+		for (int interfaceNdx = 0; interfaceNdx < (int)m_defaultBlock.interfaceBlocks.size(); ++interfaceNdx)
+		{
+			if (m_defaultBlock.interfaceBlocks[interfaceNdx].storage == glu::STORAGE_IN			||
+				m_defaultBlock.interfaceBlocks[interfaceNdx].storage == glu::STORAGE_PATCH_IN	||
+				m_defaultBlock.interfaceBlocks[interfaceNdx].storage == glu::STORAGE_OUT		||
+				m_defaultBlock.interfaceBlocks[interfaceNdx].storage == glu::STORAGE_PATCH_OUT)
+			{
+				return false;
+			}
+		}
+	}
+	else if (m_shaderType == glu::SHADERTYPE_GEOMETRY)
+	{
+		for (int varNdx = 0; varNdx < (int)m_defaultBlock.variables.size(); ++varNdx)
+		{
+			if (m_defaultBlock.variables[varNdx].storage == glu::STORAGE_PATCH_IN	||
+				m_defaultBlock.variables[varNdx].storage == glu::STORAGE_PATCH_OUT)
+			{
+				return false;
+			}
+			// arrayed input
+			if (m_defaultBlock.variables[varNdx].storage == glu::STORAGE_IN && !m_defaultBlock.variables[varNdx].varType.isArrayType())
+				return false;
+		}
+		for (int interfaceNdx = 0; interfaceNdx < (int)m_defaultBlock.interfaceBlocks.size(); ++interfaceNdx)
+		{
+			if (m_defaultBlock.interfaceBlocks[interfaceNdx].storage == glu::STORAGE_PATCH_IN	||
+				m_defaultBlock.interfaceBlocks[interfaceNdx].storage == glu::STORAGE_PATCH_OUT)
+			{
+				return false;
+			}
+			// arrayed input
+			if (m_defaultBlock.interfaceBlocks[interfaceNdx].storage == glu::STORAGE_IN && m_defaultBlock.interfaceBlocks[interfaceNdx].dimensions.empty())
+				return false;
+		}
+	}
+	else if (m_shaderType == glu::SHADERTYPE_TESSELLATION_CONTROL)
+	{
+		for (int varNdx = 0; varNdx < (int)m_defaultBlock.variables.size(); ++varNdx)
+		{
+			if (m_defaultBlock.variables[varNdx].storage == glu::STORAGE_PATCH_IN)
+				return false;
+			// arrayed input
+			if (m_defaultBlock.variables[varNdx].storage == glu::STORAGE_IN && !m_defaultBlock.variables[varNdx].varType.isArrayType())
+				return false;
+			// arrayed output
+			if (m_defaultBlock.variables[varNdx].storage == glu::STORAGE_OUT && !m_defaultBlock.variables[varNdx].varType.isArrayType())
+				return false;
+		}
+		for (int interfaceNdx = 0; interfaceNdx < (int)m_defaultBlock.interfaceBlocks.size(); ++interfaceNdx)
+		{
+			if (m_defaultBlock.interfaceBlocks[interfaceNdx].storage == glu::STORAGE_PATCH_IN)
+				return false;
+			// arrayed input
+			if (m_defaultBlock.interfaceBlocks[interfaceNdx].storage == glu::STORAGE_IN && m_defaultBlock.interfaceBlocks[interfaceNdx].dimensions.empty())
+				return false;
+			// arrayed output
+			if (m_defaultBlock.interfaceBlocks[interfaceNdx].storage == glu::STORAGE_OUT && m_defaultBlock.interfaceBlocks[interfaceNdx].dimensions.empty())
+				return false;
+		}
+	}
+	else if (m_shaderType == glu::SHADERTYPE_TESSELLATION_EVALUATION)
+	{
+		for (int varNdx = 0; varNdx < (int)m_defaultBlock.variables.size(); ++varNdx)
+		{
+			if (m_defaultBlock.variables[varNdx].storage == glu::STORAGE_PATCH_OUT)
+				return false;
+			// arrayed input
+			if (m_defaultBlock.variables[varNdx].storage == glu::STORAGE_IN && !m_defaultBlock.variables[varNdx].varType.isArrayType())
+				return false;
+		}
+		for (int interfaceNdx = 0; interfaceNdx < (int)m_defaultBlock.interfaceBlocks.size(); ++interfaceNdx)
+		{
+			if (m_defaultBlock.interfaceBlocks[interfaceNdx].storage == glu::STORAGE_PATCH_OUT)
+				return false;
+			// arrayed input
+			if (m_defaultBlock.interfaceBlocks[interfaceNdx].storage == glu::STORAGE_IN && m_defaultBlock.interfaceBlocks[interfaceNdx].dimensions.empty())
+				return false;
+		}
+	}
+	else
+		DE_ASSERT(false);
 
 	return true;
 }
 
 Program::Program (void)
-	: m_separable	(false)
-	, m_xfbMode		(0)
+	: m_separable				(false)
+	, m_xfbMode					(0)
+	, m_geoNumOutputVertices	(0)
+	, m_tessNumOutputVertices	(0)
 {
 }
 
@@ -338,6 +452,8 @@ Program::~Program (void)
 
 Shader* Program::addShader (glu::ShaderType type, glu::GLSLVersion version)
 {
+	DE_ASSERT(type < glu::SHADERTYPE_LAST);
+
 	Shader* shader;
 
 	// make sure push_back() cannot throw
@@ -400,6 +516,16 @@ glu::ShaderType Program::getLastStage (void) const
 		return s_shaderStageOrder[lastStage];
 }
 
+bool Program::hasStage (glu::ShaderType stage) const
+{
+	for (int shaderNdx = 0; shaderNdx < (int)m_shaders.size(); ++shaderNdx)
+	{
+		if (m_shaders[shaderNdx]->getType() == stage)
+			return true;
+	}
+	return false;
+}
+
 void Program::addTransformFeedbackVarying (const std::string& varName)
 {
 	m_xfbVaryings.push_back(varName);
@@ -420,9 +546,34 @@ deUint32 Program::getTransformFeedbackMode (void) const
 	return m_xfbMode;
 }
 
+deUint32 Program::getGeometryNumOutputVertices (void) const
+{
+	return m_geoNumOutputVertices;
+}
+
+void Program::setGeometryNumOutputVertices (deUint32 vertices)
+{
+	m_geoNumOutputVertices = vertices;
+}
+
+deUint32 Program::getTessellationNumOutputPatchVertices (void) const
+{
+	return m_tessNumOutputVertices;
+}
+
+void Program::setTessellationNumOutputPatchVertices (deUint32 vertices)
+{
+	m_tessNumOutputVertices = vertices;
+}
+
 bool Program::isValid (void) const
 {
-	bool computePresent = false;
+	bool computePresent			= false;
+	bool vertexPresent			= false;
+	bool fragmentPresent		= false;
+	bool tessControlPresent		= false;
+	bool tessEvalPresent		= false;
+	bool geometryPresent		= false;
 
 	if (m_shaders.empty())
 		return false;
@@ -436,18 +587,24 @@ bool Program::isValid (void) const
 		if (m_shaders[0]->getVersion() != m_shaders[ndx]->getVersion())
 			return false;
 
+	for (int ndx = 0; ndx < (int)m_shaders.size(); ++ndx)
+	{
+		switch (m_shaders[ndx]->getType())
+		{
+			case glu::SHADERTYPE_COMPUTE:					computePresent = true;		break;
+			case glu::SHADERTYPE_VERTEX:					vertexPresent = true;		break;
+			case glu::SHADERTYPE_FRAGMENT:					fragmentPresent = true;		break;
+			case glu::SHADERTYPE_TESSELLATION_CONTROL:		tessControlPresent = true;	break;
+			case glu::SHADERTYPE_TESSELLATION_EVALUATION:	tessEvalPresent = true;		break;
+			case glu::SHADERTYPE_GEOMETRY:					geometryPresent = true;		break;
+			default:
+				DE_ASSERT(false);
+				break;
+		}
+	}
 	// compute present -> no other stages present
 	{
-		bool nonComputePresent = false;
-
-		for (int ndx = 0; ndx < (int)m_shaders.size(); ++ndx)
-		{
-			if (m_shaders[ndx]->getType() == glu::SHADERTYPE_COMPUTE)
-				computePresent = true;
-			else
-				nonComputePresent = true;
-		}
-
+		const bool nonComputePresent = vertexPresent || fragmentPresent || tessControlPresent || tessEvalPresent || geometryPresent;
 		if (computePresent && nonComputePresent)
 			return false;
 	}
@@ -455,37 +612,22 @@ bool Program::isValid (void) const
 	// must contain both vertex and fragment shaders
 	if (!computePresent && !m_separable)
 	{
-		bool vertexPresent = false;
-		bool fragmentPresent = false;
-
-		for (int ndx = 0; ndx < (int)m_shaders.size(); ++ndx)
-		{
-			if (m_shaders[ndx]->getType() == glu::SHADERTYPE_VERTEX)
-				vertexPresent = true;
-			else if (m_shaders[ndx]->getType() == glu::SHADERTYPE_FRAGMENT)
-				fragmentPresent = true;
-		}
-
 		if (!vertexPresent || !fragmentPresent)
 			return false;
 	}
 
 	// tess.Eval present <=> tess.Control present
+	if (!m_separable)
 	{
-		bool tessEvalPresent = false;
-		bool tessControlPresent = false;
-
-		for (int ndx = 0; ndx < (int)m_shaders.size(); ++ndx)
-		{
-			if (m_shaders[ndx]->getType() == glu::SHADERTYPE_TESSELLATION_EVALUATION)
-				tessEvalPresent = true;
-			else if (m_shaders[ndx]->getType() == glu::SHADERTYPE_TESSELLATION_CONTROL)
-				tessControlPresent = true;
-		}
-
 		if (tessEvalPresent != tessControlPresent)
 			return false;
 	}
+
+	if ((m_tessNumOutputVertices != 0) != (tessControlPresent || tessEvalPresent))
+		return false;
+
+	if ((m_geoNumOutputVertices != 0) != geometryPresent)
+		return false;
 
 	return true;
 }

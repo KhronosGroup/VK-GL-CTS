@@ -117,6 +117,8 @@ void TexBindingCase::init (void)
 {
 	if (m_texTarget == GL_TEXTURE_2D_MULTISAMPLE_ARRAY && !m_context.getContextInfo().isExtensionSupported("GL_OES_texture_storage_multisample_2d_array"))
 		throw tcu::NotSupportedError("Test requires OES_texture_storage_multisample_2d_array extension");
+	if (m_texTarget == GL_TEXTURE_CUBE_MAP_ARRAY && !m_context.getContextInfo().isExtensionSupported("GL_EXT_texture_cube_map_array"))
+		throw tcu::NotSupportedError("Test requires GL_EXT_texture_cube_map_array extension");
 }
 
 TexBindingCase::IterateResult TexBindingCase::iterate (void)
@@ -141,7 +143,7 @@ TexBindingCase::IterateResult TexBindingCase::iterate (void)
 
 		gl.glGenTextures(1, &texture);
 		gl.glBindTexture(m_texTarget, texture);
-		GLU_EXPECT_NO_ERROR(gl.glGetError(), "bind texture");
+		GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "bind texture");
 
 		verifyStateInteger(result, gl, m_bindTarget, texture, m_verifierType);
 
@@ -261,7 +263,7 @@ BufferBindingCase::IterateResult BufferBindingCase::iterate (void)
 		glu::Buffer					buf		(m_context.getRenderContext());
 
 		gl.glBindBuffer(m_bindingPoint, *buf);
-		GLU_EXPECT_NO_ERROR(gl.glGetError(), "setup");
+		GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "setup");
 
 		verifyStateInteger(result, gl, m_queryTarget, *buf, m_verifierType);
 	}
@@ -273,7 +275,7 @@ BufferBindingCase::IterateResult BufferBindingCase::iterate (void)
 		gl.glGenBuffers(1, &buf);
 		gl.glBindBuffer(m_bindingPoint, buf);
 		gl.glDeleteBuffers(1, &buf);
-		GLU_EXPECT_NO_ERROR(gl.glGetError(), "setup");
+		GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "setup");
 
 		verifyStateInteger(result, gl, m_queryTarget, 0, m_verifierType);
 	}
@@ -316,7 +318,7 @@ ProgramPipelineBindingCase::IterateResult ProgramPipelineBindingCase::iterate (v
 		glu::ProgramPipeline		pipeline	(m_context.getRenderContext());
 
 		gl.glBindProgramPipeline(pipeline.getPipeline());
-		GLU_EXPECT_NO_ERROR(gl.glGetError(), "setup");
+		GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "setup");
 
 		verifyStateInteger(result, gl, GL_PROGRAM_PIPELINE_BINDING, pipeline.getPipeline(), m_verifierType);
 	}
@@ -328,7 +330,7 @@ ProgramPipelineBindingCase::IterateResult ProgramPipelineBindingCase::iterate (v
 		gl.glGenProgramPipelines(1, &pipeline);
 		gl.glBindProgramPipeline(pipeline);
 		gl.glDeleteProgramPipelines(1, &pipeline);
-		GLU_EXPECT_NO_ERROR(gl.glGetError(), "setup");
+		GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "setup");
 
 		verifyStateInteger(result, gl, GL_PROGRAM_PIPELINE_BINDING, 0, m_verifierType);
 	}
@@ -416,7 +418,7 @@ LegacyVectorLimitCase::IterateResult LegacyVectorLimitCase::iterate (void)
 
 		StateQueryMemoryWriteGuard<glw::GLint> value;
 		gl.glGetIntegerv(m_componentTarget, &value);
-		GLU_EXPECT_NO_ERROR(gl.glGetError(), "glGetIntegerv");
+		GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glGetIntegerv");
 
 		if (value.verifyValidity(result))
 			verifyStateInteger(result, gl, m_legacyTarget, ((int)value) / 4, m_verifierType);
@@ -455,15 +457,15 @@ CombinedComputeUniformComponentsCase::IterateResult CombinedComputeUniformCompon
 
 	StateQueryMemoryWriteGuard<glw::GLint> maxUniformBlocks;
 	gl.glGetIntegerv(GL_MAX_COMPUTE_UNIFORM_BLOCKS, &maxUniformBlocks);
-	GLU_EXPECT_NO_ERROR(gl.glGetError(), "glGetIntegerv");
+	GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glGetIntegerv");
 
 	StateQueryMemoryWriteGuard<glw::GLint> maxUniformBlockSize;
 	gl.glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, &maxUniformBlockSize);
-	GLU_EXPECT_NO_ERROR(gl.glGetError(), "glGetIntegerv");
+	GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glGetIntegerv");
 
 	StateQueryMemoryWriteGuard<glw::GLint> maxUniformComponents;
 	gl.glGetIntegerv(GL_MAX_COMPUTE_UNIFORM_COMPONENTS, &maxUniformComponents);
-	GLU_EXPECT_NO_ERROR(gl.glGetError(), "glGetIntegerv");
+	GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glGetIntegerv");
 
 	if (maxUniformBlocks.verifyValidity(result) && maxUniformBlockSize.verifyValidity(result) && maxUniformComponents.verifyValidity(result))
 		verifyStateIntegerMin(result, gl, GL_MAX_COMBINED_COMPUTE_UNIFORM_COMPONENTS, ((int)maxUniformBlocks) * ((int)maxUniformBlockSize) / 4 + (int)maxUniformComponents, m_verifierType);
@@ -512,6 +514,156 @@ TextureGatherLimitCase::IterateResult TextureGatherLimitCase::iterate (void)
 	return STOP;
 }
 
+class MaxUniformBufferBindingsCase : public TestCase
+{
+public:
+						MaxUniformBufferBindingsCase	(Context& context, const char* name, const char* desc, QueryType verifierType);
+private:
+	IterateResult		iterate							(void);
+
+	const QueryType		m_verifierType;
+};
+
+MaxUniformBufferBindingsCase::MaxUniformBufferBindingsCase (Context& context, const char* name, const char* desc, QueryType verifierType)
+	: TestCase			(context, name, desc)
+	, m_verifierType	(verifierType)
+{
+}
+
+MaxUniformBufferBindingsCase::IterateResult MaxUniformBufferBindingsCase::iterate (void)
+{
+	glu::CallLogWrapper		gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
+	tcu::ResultCollector	result	(m_testCtx.getLog(), " // ERROR: ");
+	int						minMax;
+
+	gl.enableLogging(true);
+
+	if (m_context.getContextInfo().isExtensionSupported("GL_EXT_tessellation_shader"))
+	{
+		m_testCtx.getLog()	<< tcu::TestLog::Message
+							<< "GL_EXT_tessellation_shader increases the minimum value of GL_MAX_UNIFORM_BUFFER_BINDINGS to 72"
+							<< tcu::TestLog::EndMessage;
+		minMax = 72;
+	}
+	else if (m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader"))
+	{
+		m_testCtx.getLog()	<< tcu::TestLog::Message
+							<< "GL_EXT_geometry_shader increases the minimum value of GL_MAX_UNIFORM_BUFFER_BINDINGS to 48"
+							<< tcu::TestLog::EndMessage;
+		minMax = 48;
+	}
+	else
+	{
+		minMax = 36;
+	}
+
+	// range [0, inf)
+	verifyStateIntegerMin(result, gl, GL_MAX_UNIFORM_BUFFER_BINDINGS, minMax, m_verifierType);
+
+	result.setTestContextResult(m_testCtx);
+	return STOP;
+}
+
+class MaxCombinedUniformBlocksCase : public TestCase
+{
+public:
+						MaxCombinedUniformBlocksCase	(Context& context, const char* name, const char* desc, QueryType verifierType);
+private:
+	IterateResult		iterate							(void);
+
+	const QueryType		m_verifierType;
+};
+
+MaxCombinedUniformBlocksCase::MaxCombinedUniformBlocksCase (Context& context, const char* name, const char* desc, QueryType verifierType)
+	: TestCase			(context, name, desc)
+	, m_verifierType	(verifierType)
+{
+}
+
+MaxCombinedUniformBlocksCase::IterateResult MaxCombinedUniformBlocksCase::iterate (void)
+{
+	glu::CallLogWrapper		gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
+	tcu::ResultCollector	result	(m_testCtx.getLog(), " // ERROR: ");
+	int						minMax;
+
+	gl.enableLogging(true);
+
+	if (m_context.getContextInfo().isExtensionSupported("GL_EXT_tessellation_shader"))
+	{
+		m_testCtx.getLog()	<< tcu::TestLog::Message
+							<< "GL_EXT_tessellation_shader increases the minimum value of GL_MAX_COMBINED_UNIFORM_BLOCKS to 60"
+							<< tcu::TestLog::EndMessage;
+		minMax = 60;
+	}
+	else if (m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader"))
+	{
+		m_testCtx.getLog()	<< tcu::TestLog::Message
+							<< "GL_EXT_geometry_shader increases the minimum value of GL_MAX_COMBINED_UNIFORM_BLOCKS to 36"
+							<< tcu::TestLog::EndMessage;
+		minMax = 36;
+	}
+	else
+	{
+		minMax = 24;
+	}
+
+	// range [0, inf)
+	verifyStateIntegerMin(result, gl, GL_MAX_COMBINED_UNIFORM_BLOCKS, minMax, m_verifierType);
+
+	result.setTestContextResult(m_testCtx);
+	return STOP;
+}
+
+class MaxCombinedTexImageUnitsCase : public TestCase
+{
+public:
+						MaxCombinedTexImageUnitsCase	(Context& context, const char* name, const char* desc, QueryType verifierType);
+private:
+	IterateResult		iterate							(void);
+
+	const QueryType		m_verifierType;
+};
+
+MaxCombinedTexImageUnitsCase::MaxCombinedTexImageUnitsCase (Context& context, const char* name, const char* desc, QueryType verifierType)
+	: TestCase			(context, name, desc)
+	, m_verifierType	(verifierType)
+{
+}
+
+MaxCombinedTexImageUnitsCase::IterateResult MaxCombinedTexImageUnitsCase::iterate (void)
+{
+	glu::CallLogWrapper		gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
+	tcu::ResultCollector	result	(m_testCtx.getLog(), " // ERROR: ");
+	int						minMax;
+
+	gl.enableLogging(true);
+
+	if (m_context.getContextInfo().isExtensionSupported("GL_EXT_tessellation_shader"))
+	{
+		m_testCtx.getLog()	<< tcu::TestLog::Message
+							<< "GL_EXT_tessellation_shader increases the minimum value of GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS to 96"
+							<< tcu::TestLog::EndMessage;
+		minMax = 96;
+	}
+	else if (m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader"))
+	{
+		m_testCtx.getLog()	<< tcu::TestLog::Message
+							<< "GL_EXT_geometry_shader increases the minimum value of GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS to 36"
+							<< tcu::TestLog::EndMessage;
+		minMax = 64;
+	}
+	else
+	{
+		minMax = 48;
+	}
+
+	// range [0, inf)
+	verifyStateIntegerMin(result, gl, GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, minMax, m_verifierType);
+
+	result.setTestContextResult(m_testCtx);
+	return STOP;
+}
+
 } // anonymous
 
 IntegerStateQueryTests::IntegerStateQueryTests (Context& context)
@@ -542,6 +694,7 @@ void IntegerStateQueryTests::init (void)
 
 	FOR_EACH_VERIFIER(new TexBindingCase(m_context,		(std::string() + "texture_binding_2d_multisample_" + verifierSuffix).c_str(),			"Test TEXTURE_BINDING_2D_MULTISAMPLE",			GL_TEXTURE_2D_MULTISAMPLE,			GL_TEXTURE_BINDING_2D_MULTISAMPLE,			verifier))
 	FOR_EACH_VERIFIER(new TexBindingCase(m_context,		(std::string() + "texture_binding_2d_multisample_array_" + verifierSuffix).c_str(),		"Test TEXTURE_BINDING_2D_MULTISAMPLE_ARRAY",	GL_TEXTURE_2D_MULTISAMPLE_ARRAY,	GL_TEXTURE_BINDING_2D_MULTISAMPLE_ARRAY,	verifier))
+	FOR_EACH_VERIFIER(new TexBindingCase(m_context,		(std::string() + "texture_binding_cube_map_array_" + verifierSuffix).c_str(),			"Test TEXTURE_BINDING_CUBE_MAP_ARRAY",			GL_TEXTURE_CUBE_MAP_ARRAY,			GL_TEXTURE_BINDING_CUBE_MAP_ARRAY,			verifier))
 
 	FOR_EACH_VERIFIER(new MinimumValueCase(m_context,	(std::string() + "max_vertex_attrib_relative_offset_" + verifierSuffix).c_str(),		"Test MAX_VERTEX_ATTRIB_RELATIVE_OFFSET",		GL_MAX_VERTEX_ATTRIB_RELATIVE_OFFSET,	2047,	verifier))
 	FOR_EACH_VERIFIER(new MinimumValueCase(m_context,	(std::string() + "max_vertex_attrib_bindings_" + verifierSuffix).c_str(),				"Test MAX_VERTEX_ATTRIB_BINDINGS",				GL_MAX_VERTEX_ATTRIB_BINDINGS,			16,		verifier))
@@ -596,11 +749,12 @@ void IntegerStateQueryTests::init (void)
 	FOR_EACH_VERIFIER(new MinimumValueCase(m_context,	(std::string() + "max_shader_storage_buffer_bindings_" + verifierSuffix).c_str(),		"Test MAX_SHADER_STORAGE_BUFFER_BINDINGS",		GL_MAX_SHADER_STORAGE_BUFFER_BINDINGS,		4,		verifier))
 	FOR_EACH_VERIFIER(new MinimumValueCase(m_context,	(std::string() + "max_shader_storage_block_size_" + verifierSuffix).c_str(),			"Test MAX_SHADER_STORAGE_BLOCK_SIZE",			GL_MAX_SHADER_STORAGE_BLOCK_SIZE,			1<<27,	verifier))
 	FOR_EACH_VERIFIER(new MinimumValueCase(m_context,	(std::string() + "max_combined_shader_storage_blocks_" + verifierSuffix).c_str(),		"Test MAX_COMBINED_SHADER_STORAGE_BLOCKS",		GL_MAX_COMBINED_SHADER_STORAGE_BLOCKS,		4,		verifier))
-	FOR_EACH_VERIFIER(new MinimumValueCase(m_context,	(std::string() + "max_uniform_buffer_bindings_" + verifierSuffix).c_str(),				"Test MAX_UNIFORM_BUFFER_BINDINGS",				GL_MAX_UNIFORM_BUFFER_BINDINGS,				36,		verifier))
-	FOR_EACH_VERIFIER(new MinimumValueCase(m_context,	(std::string() + "max_combined_texture_image_units_" + verifierSuffix).c_str(),			"Test MAX_COMBINED_TEXTURE_IMAGE_UNITS",		GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS,		48,		verifier))
 	FOR_EACH_VERIFIER(new MinimumValueCase(m_context,	(std::string() + "max_combined_shader_output_resources_" + verifierSuffix).c_str(),		"Test MAX_COMBINED_SHADER_OUTPUT_RESOURCES",	GL_MAX_COMBINED_SHADER_OUTPUT_RESOURCES,	4,		verifier))
 
-	FOR_EACH_VERIFIER(new CombinedComputeUniformComponentsCase(m_context,	(std::string() + "max_combined_compute_uniform_components_" + verifierSuffix).c_str(), "Test MAX_COMBINED_COMPUTE_UNIFORM_COMPONENTS", verifier))
+	FOR_EACH_VERIFIER(new MaxUniformBufferBindingsCase			(m_context,	(std::string() + "max_uniform_buffer_bindings_" + verifierSuffix).c_str(),				"Test MAX_UNIFORM_BUFFER_BINDINGS",				verifier))
+	FOR_EACH_VERIFIER(new MaxCombinedUniformBlocksCase			(m_context,	(std::string() + "max_combined_uniform_blocks_" + verifierSuffix).c_str(),				"Test MAX_COMBINED_UNIFORM_BLOCKS",				verifier))
+	FOR_EACH_VERIFIER(new MaxCombinedTexImageUnitsCase			(m_context,	(std::string() + "max_combined_texture_image_units_" + verifierSuffix).c_str(),			"Test MAX_COMBINED_TEXTURE_IMAGE_UNITS",		verifier))
+	FOR_EACH_VERIFIER(new CombinedComputeUniformComponentsCase	(m_context,	(std::string() + "max_combined_compute_uniform_components_" + verifierSuffix).c_str(), "Test MAX_COMBINED_COMPUTE_UNIFORM_COMPONENTS",	verifier))
 
 	FOR_EACH_VERIFIER(new LegacyVectorLimitCase(m_context,	(std::string() + "max_vertex_uniform_vectors_" + verifierSuffix).c_str(),			"Test MAX_VERTEX_UNIFORM_VECTORS",				GL_MAX_VERTEX_UNIFORM_VECTORS,			GL_MAX_VERTEX_UNIFORM_COMPONENTS,	verifier))
 	FOR_EACH_VERIFIER(new LegacyVectorLimitCase(m_context,	(std::string() + "max_fragment_uniform_vectors_" + verifierSuffix).c_str(),			"Test MAX_FRAGMENT_UNIFORM_VECTORS",			GL_MAX_FRAGMENT_UNIFORM_VECTORS,		GL_MAX_FRAGMENT_UNIFORM_COMPONENTS,	verifier))

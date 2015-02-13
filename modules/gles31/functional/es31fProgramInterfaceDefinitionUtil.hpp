@@ -82,23 +82,26 @@ private:
 
 struct VariableSearchFilter
 {
-								VariableSearchFilter	(glu::ShaderType shaderType, glu::Storage storage) : m_shaderType(shaderType), m_storage(storage), m_null(false) { }
-
-	static VariableSearchFilter	intersection			(const VariableSearchFilter& a, const VariableSearchFilter& b);
-
-	bool						matchesFilter			(const ProgramInterfaceDefinition::Shader* shader) const	{ return !m_null && (m_shaderType == glu::SHADERTYPE_LAST || shader->getType() == m_shaderType);	}
-	bool						matchesFilter			(const glu::VariableDeclaration& variable) const			{ return !m_null && (m_storage == glu::STORAGE_LAST || variable.storage == m_storage);				}
-	bool						matchesFilter			(const glu::InterfaceBlock& block) const					{ return !m_null && (m_storage == glu::STORAGE_LAST || block.storage == m_storage);				}
-
-	glu::ShaderType				getShaderTypeFilter		(void) const												{ return m_shaderType;	}
-	glu::Storage				getStorageFilter		(void) const												{ return m_storage;		}
-
 private:
-								VariableSearchFilter	(glu::ShaderType shaderType, glu::Storage storage, bool empty) : m_shaderType(shaderType), m_storage(storage), m_null(empty) { }
+								VariableSearchFilter			(void);
 
-	const glu::ShaderType		m_shaderType;
-	const glu::Storage			m_storage;
-	const bool					m_null;					// !< Null filter does not match any variable
+public:
+	static VariableSearchFilter	createShaderTypeFilter			(glu::ShaderType);
+	static VariableSearchFilter	createStorageFilter				(glu::Storage);
+	static VariableSearchFilter	createShaderTypeStorageFilter	(glu::ShaderType, glu::Storage);
+
+	static VariableSearchFilter	logicalOr						(const VariableSearchFilter& a, const VariableSearchFilter& b);
+	static VariableSearchFilter	logicalAnd						(const VariableSearchFilter& a, const VariableSearchFilter& b);
+
+	bool						matchesFilter					(const ProgramInterfaceDefinition::Shader* shader) const;
+	bool						matchesFilter					(const glu::VariableDeclaration& variable) const;
+	bool						matchesFilter					(const glu::InterfaceBlock& block) const;
+
+	deUint32					getShaderTypeBits				(void) const { return m_shaderTypeBits;	};
+	deUint32					getStorageBits					(void) const { return m_storageBits;	};
+private:
+	deUint32					m_shaderTypeBits;
+	deUint32					m_storageBits;
 };
 
 struct ShaderResourceUsage
@@ -109,6 +112,8 @@ struct ShaderResourceUsage
 	int numOutputs;
 	int numOutputVectors;
 	int numOutputComponents;
+	int numPatchInputComponents;
+	int numPatchOutputComponents;
 
 	int numDefaultBlockUniformComponents;
 	int numCombinedUniformComponents;
@@ -131,6 +136,9 @@ struct ProgramResourceUsage
 	int numUniformBlocks;
 	int numCombinedVertexUniformComponents;
 	int numCombinedFragmentUniformComponents;
+	int numCombinedGeometryUniformComponents;
+	int numCombinedTessControlUniformComponents;
+	int numCombinedTessEvalUniformComponents;
 	int shaderStorageBufferMaxBinding;
 	int shaderStorageBufferMaxSize;
 	int numShaderStorageBlocks;
@@ -161,12 +169,15 @@ enum ResourceNameGenerationFlag
 	RESOURCE_NAME_GENERATION_FLAG_MASK							= 0x3
 };
 
+bool												programContainsIOBlocks						(const ProgramInterfaceDefinition::Program* program);
+bool												shaderContainsIOBlocks						(const ProgramInterfaceDefinition::Shader* shader);
+glu::ShaderType										getProgramTransformFeedbackStage			(const ProgramInterfaceDefinition::Program* program);
 std::vector<std::string>							getProgramInterfaceResourceList				(const ProgramInterfaceDefinition::Program* program, ProgramInterface interface);
 std::vector<std::string>							getProgramInterfaceBlockMemberResourceList	(const glu::InterfaceBlock& interfaceBlock);
 glu::ProgramSources									generateProgramInterfaceProgramSources		(const ProgramInterfaceDefinition::Program* program);
 bool												findProgramVariablePathByPathName			(std::vector<ProgramInterfaceDefinition::VariablePathComponent>& typePath, const ProgramInterfaceDefinition::Program* program, const std::string& pathName, const ProgramInterfaceDefinition::VariableSearchFilter& filter);
 void												generateVariableTypeResourceNames			(std::vector<std::string>& resources, const std::string& name, const glu::VarType& type, deUint32 resourceNameGenerationFlags);
-ProgramInterfaceDefinition::ShaderResourceUsage		getShaderResourceUsage						(const ProgramInterfaceDefinition::Shader* shader);
+ProgramInterfaceDefinition::ShaderResourceUsage		getShaderResourceUsage						(const ProgramInterfaceDefinition::Program* program, const ProgramInterfaceDefinition::Shader* shader);
 ProgramInterfaceDefinition::ProgramResourceUsage	getCombinedProgramResourceUsage				(const ProgramInterfaceDefinition::Program* program);
 
 } // Functional

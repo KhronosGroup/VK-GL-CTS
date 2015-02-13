@@ -22,11 +22,15 @@
  *//*--------------------------------------------------------------------*/
 
 #include "es31fShaderStateQueryTests.hpp"
+#include "es31fInfoLogQueryShared.hpp"
+#include "glsStateQueryUtil.hpp"
 #include "tcuTestLog.hpp"
 #include "tcuStringTemplate.hpp"
 #include "gluShaderProgram.hpp"
 #include "gluRenderContext.hpp"
+#include "gluCallLogWrapper.hpp"
 #include "gluContextInfo.hpp"
+#include "gluStrUtil.hpp"
 #include "glwFunctions.hpp"
 #include "glwEnums.hpp"
 
@@ -39,38 +43,38 @@ namespace Functional
 namespace
 {
 
-class SamplerTypeCase : public TestCase
+static const char* const s_brokenSource =	"#version 310 es\n"
+											"broken, this should not compile,\n"
+											"{";
+
+class BaseTypeCase : public TestCase
 {
 public:
-					SamplerTypeCase	(Context& ctx, const char* name, const char* desc);
+	struct TestTypeInfo
+	{
+		glw::GLenum	glType;
+		const char*	declarationStr;
+		const char*	accessStr;
+	};
+
+										BaseTypeCase		(Context& ctx, const char* name, const char* desc, const char* extension);
 
 private:
-	IterateResult	iterate			(void);
+	IterateResult						iterate				(void);
+	virtual std::vector<TestTypeInfo>	getInfos			(void) const = 0;
+	virtual void						checkRequirements	(void) const;
+
+	const char* const					m_extension;
 };
 
-SamplerTypeCase::SamplerTypeCase (Context& ctx, const char* name, const char* desc)
-	: TestCase(ctx, name, desc)
+BaseTypeCase::BaseTypeCase (Context& ctx, const char* name, const char* desc, const char* extension)
+	: TestCase		(ctx, name, desc)
+	, m_extension	(extension)
 {
 }
 
-SamplerTypeCase::IterateResult SamplerTypeCase::iterate (void)
+BaseTypeCase::IterateResult BaseTypeCase::iterate (void)
 {
-	static const struct SamplerType
-	{
-		glw::GLenum	glType;
-		const char*	typeStr;
-		const char*	samplePosStr;
-		bool		isArray;
-	} samplerTypes[] =
-	{
-		{ GL_SAMPLER_2D_MULTISAMPLE,						"sampler2DMS",			"ivec2(gl_FragCoord.xy)",	false	},
-		{ GL_INT_SAMPLER_2D_MULTISAMPLE,					"isampler2DMS",			"ivec2(gl_FragCoord.xy)",	false	},
-		{ GL_UNSIGNED_INT_SAMPLER_2D_MULTISAMPLE,			"usampler2DMS",			"ivec2(gl_FragCoord.xy)",	false	},
-		{ GL_SAMPLER_2D_MULTISAMPLE_ARRAY,					"sampler2DMSArray",		"ivec3(gl_FragCoord.xyz)",	true	},
-		{ GL_INT_SAMPLER_2D_MULTISAMPLE_ARRAY,				"isampler2DMSArray",	"ivec3(gl_FragCoord.xyz)",	true	},
-		{ GL_UNSIGNED_INT_SAMPLER_2D_MULTISAMPLE_ARRAY,		"usampler2DMSArray",	"ivec3(gl_FragCoord.xyz)",	true	},
-	};
-
 	static const char* const	vertexSource			=	"#version 310 es\n"
 															"in highp vec4 a_position;\n"
 															"void main(void)\n"
@@ -79,78 +83,348 @@ SamplerTypeCase::IterateResult SamplerTypeCase::iterate (void)
 															"}\n";
 	static const char* const	fragmentSourceTemplate	=	"#version 310 es\n"
 															"${EXTENSIONSTATEMENT}"
-															"uniform highp ${SAMPLERTYPE} u_sampler;\n"
+															"${DECLARATIONSTR};\n"
 															"layout(location = 0) out highp vec4 dEQP_FragColor;\n"
 															"void main(void)\n"
 															"{\n"
-															"	dEQP_FragColor = vec4(texelFetch(u_sampler, ${POSITION}, 0));\n"
+															"	dEQP_FragColor = vec4(${ACCESSSTR});\n"
 															"}\n";
-	const bool					textureArraySupported	=	m_context.getContextInfo().isExtensionSupported("GL_OES_texture_storage_multisample_2d_array");
-	bool						error					=	false;
 
-	for (int typeNdx = 0; typeNdx < DE_LENGTH_OF_ARRAY(samplerTypes); ++typeNdx)
+	tcu::ResultCollector		result			(m_testCtx.getLog());
+	std::vector<TestTypeInfo>	samplerTypes	= getInfos();
+
+	if (m_extension && !m_context.getContextInfo().isExtensionSupported(m_extension))
+		throw tcu::NotSupportedError("Test requires " + std::string(m_extension));
+	checkRequirements();
+
+	for (int typeNdx = 0; typeNdx < (int)samplerTypes.size(); ++typeNdx)
 	{
-		const tcu::ScopedLogSection section(m_testCtx.getLog(), std::string(samplerTypes[typeNdx].typeStr), std::string() + "Sampler type " + samplerTypes[typeNdx].typeStr);
+		const tcu::ScopedLogSection			section	(m_testCtx.getLog(),
+													 std::string(glu::getShaderVarTypeStr(samplerTypes[typeNdx].glType).toString()),
+													 "Uniform type " + glu::getShaderVarTypeStr(samplerTypes[typeNdx].glType).toString());
 
-		if (samplerTypes[typeNdx].isArray && !textureArraySupported)
+		std::map<std::string, std::string>	shaderArgs;
+		shaderArgs["DECLARATIONSTR"]		= samplerTypes[typeNdx].declarationStr;
+		shaderArgs["ACCESSSTR"]				= samplerTypes[typeNdx].accessStr;
+		shaderArgs["EXTENSIONSTATEMENT"]	= (m_extension) ? (std::string() + "#extension " + m_extension + " : require\n") : ("");
+
+		const std::string					fragmentSource	= tcu::StringTemplate(fragmentSourceTemplate).specialize(shaderArgs);
+		const glw::Functions&				gl				= m_context.getRenderContext().getFunctions();
+		glu::ShaderProgram					program			(m_context.getRenderContext(), glu::ProgramSources() << glu::VertexSource(vertexSource) << glu::FragmentSource(fragmentSource));
+
+		m_testCtx.getLog() << tcu::TestLog::Message << "Building program with uniform sampler of type " << glu::getShaderVarTypeStr(samplerTypes[typeNdx].glType) << tcu::TestLog::EndMessage;
+
+		if (!program.isOk())
 		{
-			m_testCtx.getLog() << tcu::TestLog::Message << "GL_OES_texture_storage_multisample_2d_array not supported, skipping type " << samplerTypes[typeNdx].typeStr << tcu::TestLog::EndMessage;
+			m_testCtx.getLog() << program;
+			result.fail("could not build shader");
 		}
 		else
 		{
-			std::map<std::string, std::string>	shaderArgs;
-			shaderArgs["SAMPLERTYPE"]			= samplerTypes[typeNdx].typeStr;
-			shaderArgs["POSITION"]				= samplerTypes[typeNdx].samplePosStr;
-			shaderArgs["EXTENSIONSTATEMENT"]	= (samplerTypes[typeNdx].isArray) ? ("#extension GL_OES_texture_storage_multisample_2d_array : require\n") : ("");
+			// only one uniform -- uniform at index 0
+			int uniforms = 0;
+			gl.getProgramiv(program.getProgram(), GL_ACTIVE_UNIFORMS, &uniforms);
 
+			if (uniforms != 1)
+				result.fail("Unexpected GL_ACTIVE_UNIFORMS, expected 1");
+			else
 			{
-				const std::string			fragmentSource	= tcu::StringTemplate(fragmentSourceTemplate).specialize(shaderArgs);
-				const glw::Functions&		gl				= m_context.getRenderContext().getFunctions();
-				glu::ShaderProgram			program			(m_context.getRenderContext(), glu::ProgramSources() << glu::VertexSource(vertexSource) << glu::FragmentSource(fragmentSource));
-
-				m_testCtx.getLog() << tcu::TestLog::Message << "Building program with uniform sampler of type " << samplerTypes[typeNdx].typeStr << tcu::TestLog::EndMessage;
-
-				if (!program.isOk())
-				{
-					m_testCtx.getLog() << program;
-					throw tcu::TestError("could not build shader");
-				}
-
-				// only one uniform -- uniform at index 0
-				{
-					int uniforms = 0;
-					gl.getProgramiv(program.getProgram(), GL_ACTIVE_UNIFORMS, &uniforms);
-
-					if (uniforms != 1)
-						throw tcu::TestError("Unexpected GL_ACTIVE_UNIFORMS, expected 1");
-				}
+				// check type
+				const glw::GLuint	uniformIndex	= 0;
+				glw::GLint			type			= 0;
 
 				m_testCtx.getLog() << tcu::TestLog::Message << "Verifying uniform type." << tcu::TestLog::EndMessage;
+				gl.getActiveUniformsiv(program.getProgram(), 1, &uniformIndex, GL_UNIFORM_TYPE, &type);
 
-				// check type
+				if (type != (glw::GLint)samplerTypes[typeNdx].glType)
 				{
-					const glw::GLuint	uniformIndex	= 0;
-					glw::GLint			type			= 0;
-
-					gl.getActiveUniformsiv(program.getProgram(), 1, &uniformIndex, GL_UNIFORM_TYPE, &type);
-
-					if (type != (glw::GLint)samplerTypes[typeNdx].glType)
-					{
-						m_testCtx.getLog() << tcu::TestLog::Message << "Invalid type, expected " << samplerTypes[typeNdx].glType << ", got " << type << tcu::TestLog::EndMessage;
-						error = true;
-					}
+					std::ostringstream buf;
+					buf << "Invalid type, expected " << samplerTypes[typeNdx].glType << ", got " << type;
+					result.fail(buf.str());
 				}
-
-				GLU_EXPECT_NO_ERROR(gl.getError(), "");
 			}
 		}
+
+		GLU_EXPECT_NO_ERROR(gl.getError(), "");
 	}
 
-	if (!error)
-		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
-	else
-		m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Invalid uniform type");
+	result.setTestContextResult(m_testCtx);
+	return STOP;
+}
 
+void BaseTypeCase::checkRequirements (void) const
+{
+}
+
+class CoreSamplerTypeCase : public BaseTypeCase
+{
+public:
+								CoreSamplerTypeCase	(Context& ctx, const char* name, const char* desc);
+
+private:
+	std::vector<TestTypeInfo>	getInfos			(void) const;
+};
+
+CoreSamplerTypeCase::CoreSamplerTypeCase (Context& ctx, const char* name, const char* desc)
+	: BaseTypeCase(ctx, name, desc, DE_NULL)
+{
+}
+
+std::vector<BaseTypeCase::TestTypeInfo> CoreSamplerTypeCase::getInfos (void) const
+{
+	static const TestTypeInfo samplerTypes[] =
+	{
+		{ GL_SAMPLER_2D_MULTISAMPLE,				"uniform highp sampler2DMS u_sampler",	"texelFetch(u_sampler, ivec2(gl_FragCoord.xy), 0)" },
+		{ GL_INT_SAMPLER_2D_MULTISAMPLE,			"uniform highp isampler2DMS u_sampler",	"texelFetch(u_sampler, ivec2(gl_FragCoord.xy), 0)" },
+		{ GL_UNSIGNED_INT_SAMPLER_2D_MULTISAMPLE,	"uniform highp usampler2DMS u_sampler",	"texelFetch(u_sampler, ivec2(gl_FragCoord.xy), 0)" },
+	};
+
+	std::vector<TestTypeInfo> infos;
+	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(samplerTypes); ++ndx)
+		infos.push_back(samplerTypes[ndx]);
+
+	return infos;
+}
+
+class MSArraySamplerTypeCase : public BaseTypeCase
+{
+public:
+								MSArraySamplerTypeCase	(Context& ctx, const char* name, const char* desc);
+
+private:
+	std::vector<TestTypeInfo>	getInfos				(void) const;
+};
+
+MSArraySamplerTypeCase::MSArraySamplerTypeCase (Context& ctx, const char* name, const char* desc)
+	: BaseTypeCase(ctx, name, desc, "GL_OES_texture_storage_multisample_2d_array")
+{
+}
+
+std::vector<BaseTypeCase::TestTypeInfo> MSArraySamplerTypeCase::getInfos (void) const
+{
+	static const TestTypeInfo samplerTypes[] =
+	{
+		{ GL_SAMPLER_2D_MULTISAMPLE_ARRAY,				"uniform highp sampler2DMSArray u_sampler",		"texelFetch(u_sampler, ivec3(gl_FragCoord.xyz), 0)" },
+		{ GL_INT_SAMPLER_2D_MULTISAMPLE_ARRAY,			"uniform highp isampler2DMSArray u_sampler",	"texelFetch(u_sampler, ivec3(gl_FragCoord.xyz), 0)" },
+		{ GL_UNSIGNED_INT_SAMPLER_2D_MULTISAMPLE_ARRAY,	"uniform highp usampler2DMSArray u_sampler",	"texelFetch(u_sampler, ivec3(gl_FragCoord.xyz), 0)" },
+	};
+
+	std::vector<TestTypeInfo> infos;
+	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(samplerTypes); ++ndx)
+		infos.push_back(samplerTypes[ndx]);
+
+	return infos;
+}
+
+class TextureBufferSamplerTypeCase : public BaseTypeCase
+{
+public:
+								TextureBufferSamplerTypeCase	(Context& ctx, const char* name, const char* desc);
+
+private:
+	std::vector<TestTypeInfo>	getInfos						(void) const;
+};
+
+TextureBufferSamplerTypeCase::TextureBufferSamplerTypeCase (Context& ctx, const char* name, const char* desc)
+	: BaseTypeCase(ctx, name, desc, "GL_EXT_texture_buffer")
+{
+}
+
+std::vector<BaseTypeCase::TestTypeInfo> TextureBufferSamplerTypeCase::getInfos (void) const
+{
+	static const TestTypeInfo samplerTypes[] =
+	{
+		{ GL_SAMPLER_BUFFER,				"uniform highp samplerBuffer u_sampler",	"texelFetch(u_sampler, int(gl_FragCoord.x))" },
+		{ GL_INT_SAMPLER_BUFFER,			"uniform highp isamplerBuffer u_sampler",	"texelFetch(u_sampler, int(gl_FragCoord.x))" },
+		{ GL_UNSIGNED_INT_SAMPLER_BUFFER,	"uniform highp usamplerBuffer u_sampler",	"texelFetch(u_sampler, int(gl_FragCoord.x))" },
+	};
+
+	std::vector<TestTypeInfo> infos;
+	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(samplerTypes); ++ndx)
+		infos.push_back(samplerTypes[ndx]);
+
+	return infos;
+}
+
+class TextureBufferImageTypeCase : public BaseTypeCase
+{
+public:
+								TextureBufferImageTypeCase	(Context& ctx, const char* name, const char* desc);
+
+private:
+	std::vector<TestTypeInfo>	getInfos					(void) const;
+	void						checkRequirements			(void) const;
+};
+
+TextureBufferImageTypeCase::TextureBufferImageTypeCase (Context& ctx, const char* name, const char* desc)
+	: BaseTypeCase(ctx, name, desc, "GL_EXT_texture_buffer")
+{
+}
+
+std::vector<BaseTypeCase::TestTypeInfo> TextureBufferImageTypeCase::getInfos (void) const
+{
+	static const TestTypeInfo samplerTypes[] =
+	{
+		{ GL_IMAGE_BUFFER,				"layout(binding=0, rgba8) readonly uniform highp imageBuffer u_image",	"imageLoad(u_image, int(gl_FragCoord.x))" },
+		{ GL_INT_IMAGE_BUFFER,			"layout(binding=0, r32i) readonly uniform highp iimageBuffer u_image",	"imageLoad(u_image, int(gl_FragCoord.x))" },
+		{ GL_UNSIGNED_INT_IMAGE_BUFFER,	"layout(binding=0, r32ui) readonly uniform highp uimageBuffer u_image",	"imageLoad(u_image, int(gl_FragCoord.x))" },
+	};
+
+	std::vector<TestTypeInfo> infos;
+	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(samplerTypes); ++ndx)
+		infos.push_back(samplerTypes[ndx]);
+
+	return infos;
+}
+
+void TextureBufferImageTypeCase::checkRequirements (void) const
+{
+	if (m_context.getContextInfo().getInt(GL_MAX_FRAGMENT_IMAGE_UNIFORMS) < 1)
+		throw tcu::NotSupportedError("Test requires fragment images");
+}
+
+class CubeArraySamplerTypeCase : public BaseTypeCase
+{
+public:
+								CubeArraySamplerTypeCase	(Context& ctx, const char* name, const char* desc);
+
+private:
+	std::vector<TestTypeInfo>	getInfos						(void) const;
+};
+
+CubeArraySamplerTypeCase::CubeArraySamplerTypeCase (Context& ctx, const char* name, const char* desc)
+	: BaseTypeCase(ctx, name, desc, "GL_EXT_texture_cube_map_array")
+{
+}
+
+std::vector<BaseTypeCase::TestTypeInfo> CubeArraySamplerTypeCase::getInfos (void) const
+{
+	static const TestTypeInfo samplerTypes[] =
+	{
+		{ GL_SAMPLER_CUBE_MAP_ARRAY,				"uniform highp samplerCubeArray u_sampler",			"texture(u_sampler, gl_FragCoord.xxyz)"			},
+		{ GL_SAMPLER_CUBE_MAP_ARRAY_SHADOW,			"uniform highp samplerCubeArrayShadow u_sampler",	"texture(u_sampler, gl_FragCoord.xxyz, 0.5)"	},
+		{ GL_INT_SAMPLER_CUBE_MAP_ARRAY,			"uniform highp isamplerCubeArray u_sampler",		"texture(u_sampler, gl_FragCoord.xxyz)"			},
+		{ GL_UNSIGNED_INT_SAMPLER_CUBE_MAP_ARRAY,	"uniform highp usamplerCubeArray u_sampler",		"texture(u_sampler, gl_FragCoord.xxyz)"			},
+	};
+
+	std::vector<TestTypeInfo> infos;
+	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(samplerTypes); ++ndx)
+		infos.push_back(samplerTypes[ndx]);
+
+	return infos;
+}
+
+class CubeArrayImageTypeCase : public BaseTypeCase
+{
+public:
+								CubeArrayImageTypeCase	(Context& ctx, const char* name, const char* desc);
+
+private:
+	std::vector<TestTypeInfo>	getInfos				(void) const;
+	void						checkRequirements		(void) const;
+};
+
+CubeArrayImageTypeCase::CubeArrayImageTypeCase (Context& ctx, const char* name, const char* desc)
+	: BaseTypeCase(ctx, name, desc, "GL_EXT_texture_cube_map_array")
+{
+}
+
+std::vector<BaseTypeCase::TestTypeInfo> CubeArrayImageTypeCase::getInfos (void) const
+{
+	static const TestTypeInfo samplerTypes[] =
+	{
+		{ GL_IMAGE_CUBE_MAP_ARRAY,				"layout(binding=0, rgba8) readonly uniform highp imageCubeArray u_image",	"imageLoad(u_image, ivec3(gl_FragCoord.xyx))"	},
+		{ GL_INT_IMAGE_CUBE_MAP_ARRAY,			"layout(binding=0, r32i) readonly uniform highp iimageCubeArray u_image",	"imageLoad(u_image, ivec3(gl_FragCoord.xyx))"	},
+		{ GL_UNSIGNED_INT_IMAGE_CUBE_MAP_ARRAY,	"layout(binding=0, r32ui) readonly uniform highp uimageCubeArray u_image",	"imageLoad(u_image, ivec3(gl_FragCoord.xyx))"	},
+	};
+
+	std::vector<TestTypeInfo> infos;
+	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(samplerTypes); ++ndx)
+		infos.push_back(samplerTypes[ndx]);
+
+	return infos;
+}
+
+void CubeArrayImageTypeCase::checkRequirements (void) const
+{
+	if (m_context.getContextInfo().getInt(GL_MAX_FRAGMENT_IMAGE_UNIFORMS) < 1)
+		throw tcu::NotSupportedError("Test requires fragment images");
+}
+
+class ShaderLogCase : public TestCase
+{
+public:
+							ShaderLogCase	(Context& ctx, const char* name, const char* desc, glu::ShaderType shaderType);
+
+private:
+	void					init			(void);
+	IterateResult			iterate			(void);
+
+	const glu::ShaderType	m_shaderType;
+};
+
+ShaderLogCase::ShaderLogCase (Context& ctx, const char* name, const char* desc, glu::ShaderType shaderType)
+	: TestCase		(ctx, name, desc)
+	, m_shaderType	(shaderType)
+{
+}
+
+void ShaderLogCase::init (void)
+{
+	switch (m_shaderType)
+	{
+		case glu::SHADERTYPE_VERTEX:
+		case glu::SHADERTYPE_FRAGMENT:
+		case glu::SHADERTYPE_COMPUTE:
+			break;
+
+		case glu::SHADERTYPE_GEOMETRY:
+			if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader"))
+				throw tcu::NotSupportedError("Test requires GL_EXT_geometry_shader extension");
+			break;
+
+		case glu::SHADERTYPE_TESSELLATION_CONTROL:
+		case glu::SHADERTYPE_TESSELLATION_EVALUATION:
+			if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_tessellation_shader"))
+				throw tcu::NotSupportedError("Test requires GL_EXT_tessellation_shader extension");
+			break;
+
+		default:
+			DE_ASSERT(false);
+			break;
+	}
+}
+
+ShaderLogCase::IterateResult ShaderLogCase::iterate (void)
+{
+	using gls::StateQueryUtil::StateQueryMemoryWriteGuard;
+
+	tcu::ResultCollector					result		(m_testCtx.getLog());
+	glu::CallLogWrapper						gl			(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
+	deUint32								shader		= 0;
+	StateQueryMemoryWriteGuard<glw::GLint>	logLen;
+
+	gl.enableLogging(true);
+
+	m_testCtx.getLog() << tcu::TestLog::Message << "Trying to compile broken shader source." << tcu::TestLog::EndMessage;
+
+	shader = gl.glCreateShader(glu::getGLShaderType(m_shaderType));
+	GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "create shader");
+
+	gl.glShaderSource(shader, 1, &s_brokenSource, DE_NULL);
+	gl.glCompileShader(shader);
+	GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "compile");
+
+	gl.glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &logLen);
+	logLen.verifyValidity(result);
+
+	if (!logLen.isUndefined())
+		verifyInfoLogQuery(result, gl, logLen, shader, &glu::CallLogWrapper::glGetShaderInfoLog, "glGetShaderInfoLog");
+
+	gl.glDeleteShader(shader);
+	GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "delete");
+
+	result.setTestContextResult(m_testCtx);
 	return STOP;
 }
 
@@ -167,8 +441,34 @@ ShaderStateQueryTests::~ShaderStateQueryTests (void)
 
 void ShaderStateQueryTests::init (void)
 {
-	// sampler type query
-	addChild(new SamplerTypeCase(m_context, "sampler_type", "Sampler type cases"));
+	addChild(new CoreSamplerTypeCase			(m_context, "sampler_type",						"Sampler type cases"));
+	addChild(new MSArraySamplerTypeCase			(m_context, "sampler_type_multisample_array",	"MSAA array sampler type cases"));
+	addChild(new TextureBufferSamplerTypeCase	(m_context, "sampler_type_texture_buffer",		"Texture buffer sampler type cases"));
+	addChild(new TextureBufferImageTypeCase		(m_context, "image_type_texture_buffer",		"Texture buffer image type cases"));
+	addChild(new CubeArraySamplerTypeCase		(m_context, "sampler_type_cube_array",			"Cube array sampler type cases"));
+	addChild(new CubeArrayImageTypeCase			(m_context, "image_type_cube_array",			"Cube array image type cases"));
+
+	// shader info log tests
+	// \note, there exists similar tests in gles3 module. However, the gles31 could use a different
+	//        shader compiler with different INFO_LOG bugs.
+	{
+		static const struct
+		{
+			const char*		caseName;
+			glu::ShaderType	caseType;
+		} shaderTypes[] =
+		{
+			{ "info_log_vertex",		glu::SHADERTYPE_VERTEX					},
+			{ "info_log_fragment",		glu::SHADERTYPE_FRAGMENT				},
+			{ "info_log_geometry",		glu::SHADERTYPE_GEOMETRY				},
+			{ "info_log_tess_ctrl",		glu::SHADERTYPE_TESSELLATION_CONTROL	},
+			{ "info_log_tess_eval",		glu::SHADERTYPE_TESSELLATION_EVALUATION	},
+			{ "info_log_compute",		glu::SHADERTYPE_COMPUTE					},
+		};
+
+		for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(shaderTypes); ++ndx)
+			addChild(new ShaderLogCase(m_context, shaderTypes[ndx].caseName, "", shaderTypes[ndx].caseType));
+	}
 }
 
 } // Functional

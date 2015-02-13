@@ -32,29 +32,17 @@ namespace gles3
 {
 namespace Functional
 {
-namespace SamplerParamVerifiers
-{
-
-class GetSamplerParameterIVerifier;
-class GetSamplerParameterFVerifier;
-
-} // TextureParamVerifiers
 
 class SamplerStateQueryTests : public TestCaseGroup
 {
 public:
-																		SamplerStateQueryTests	(Context& context);
-																		~SamplerStateQueryTests	(void);
+								SamplerStateQueryTests	(Context& context);
 
-	void																init					(void);
-	void																deinit					(void);
+	void						init					(void);
 
 private:
-																		SamplerStateQueryTests	(const SamplerStateQueryTests& other);
-	SamplerStateQueryTests&												operator=				(const SamplerStateQueryTests& other);
-
-	SamplerParamVerifiers::GetSamplerParameterIVerifier*				m_verifierInt;
-	SamplerParamVerifiers::GetSamplerParameterFVerifier*				m_verifierFloat;
+								SamplerStateQueryTests	(const SamplerStateQueryTests& other);
+	SamplerStateQueryTests&		operator=				(const SamplerStateQueryTests& other);
 };
 
 } // Functional

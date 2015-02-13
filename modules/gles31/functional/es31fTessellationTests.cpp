@@ -23,6 +23,7 @@
 
 #include "es31fTessellationTests.hpp"
 #include "glsTextureTestUtil.hpp"
+#include "glsStateQueryUtil.hpp"
 #include "gluShaderProgram.hpp"
 #include "gluRenderContext.hpp"
 #include "gluPixelTransfer.hpp"
@@ -32,6 +33,7 @@
 #include "gluContextInfo.hpp"
 #include "gluVarType.hpp"
 #include "gluVarTypeUtil.hpp"
+#include "gluCallLogWrapper.hpp"
 #include "tcuTestLog.hpp"
 #include "tcuRenderTarget.hpp"
 #include "tcuSurface.hpp"
@@ -81,6 +83,8 @@ namespace gles31
 {
 namespace Functional
 {
+
+using namespace gls::StateQueryUtil;
 
 enum
 {
@@ -6267,6 +6271,793 @@ GLPositionCase::IterateResult GLPositionCase::iterate (void)
 	return STOP;
 }
 
+class LimitQueryCase : public TestCase
+{
+public:
+						LimitQueryCase	(Context& context, const char* name, const char* desc, glw::GLenum target, int minValue);
+private:
+	IterateResult		iterate			(void);
+
+	const glw::GLenum	m_target;
+	const int			m_minValue;
+};
+
+LimitQueryCase::LimitQueryCase (Context& context, const char* name, const char* desc, glw::GLenum target, int minValue)
+	: TestCase			(context, name, desc)
+	, m_target			(target)
+	, m_minValue		(minValue)
+{
+}
+
+LimitQueryCase::IterateResult LimitQueryCase::iterate (void)
+{
+	checkTessellationSupport(m_context);
+
+	glu::CallLogWrapper 	gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
+	tcu::ResultCollector	result	(m_testCtx.getLog(), " // ERROR: ");
+
+	gl.enableLogging(true);
+	verifyStateIntegerMin(result, gl, m_target, m_minValue, QUERY_INTEGER);
+
+	{
+		const tcu::ScopedLogSection	section(m_testCtx.getLog(), "Types", "Alternative queries");
+		verifyStateIntegerMin(result, gl, m_target, m_minValue, QUERY_BOOLEAN);
+		verifyStateIntegerMin(result, gl, m_target, m_minValue, QUERY_INTEGER64);
+		verifyStateIntegerMin(result, gl, m_target, m_minValue, QUERY_FLOAT);
+	}
+
+	result.setTestContextResult(m_testCtx);
+	return STOP;
+}
+
+class CombinedUniformLimitCase : public TestCase
+{
+public:
+						CombinedUniformLimitCase	(Context& context, const char* name, const char* desc, glw::GLenum combined, glw::GLenum numBlocks, glw::GLenum defaultComponents);
+private:
+	IterateResult		iterate						(void);
+
+	const glw::GLenum	m_combined;
+	const glw::GLenum	m_numBlocks;
+	const glw::GLenum	m_defaultComponents;
+};
+
+CombinedUniformLimitCase::CombinedUniformLimitCase (Context& context, const char* name, const char* desc, glw::GLenum combined, glw::GLenum numBlocks, glw::GLenum defaultComponents)
+	: TestCase				(context, name, desc)
+	, m_combined			(combined)
+	, m_numBlocks			(numBlocks)
+	, m_defaultComponents	(defaultComponents)
+{
+}
+
+CombinedUniformLimitCase::IterateResult CombinedUniformLimitCase::iterate (void)
+{
+	checkTessellationSupport(m_context);
+
+	glu::CallLogWrapper		gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
+	tcu::ResultCollector	result	(m_testCtx.getLog(), " // ERROR: ");
+
+	gl.enableLogging(true);
+
+	m_testCtx.getLog()	<< tcu::TestLog::Message
+						<< "The minimum value of " << glu::getGettableStateStr(m_combined)
+						<< " is " << glu::getGettableStateStr(m_numBlocks)
+						<< " x MAX_UNIFORM_BLOCK_SIZE / 4 + "
+						<< glu::getGettableStateStr(m_defaultComponents)
+						<< tcu::TestLog::EndMessage;
+
+	StateQueryMemoryWriteGuard<glw::GLint> maxUniformBlocks;
+	gl.glGetIntegerv(m_numBlocks, &maxUniformBlocks);
+	GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glGetIntegerv");
+
+	StateQueryMemoryWriteGuard<glw::GLint> maxUniformBlockSize;
+	gl.glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, &maxUniformBlockSize);
+	GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glGetIntegerv");
+
+	StateQueryMemoryWriteGuard<glw::GLint> maxUniformComponents;
+	gl.glGetIntegerv(m_defaultComponents, &maxUniformComponents);
+	GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glGetIntegerv");
+
+	if (maxUniformBlocks.verifyValidity(result) && maxUniformBlockSize.verifyValidity(result) && maxUniformComponents.verifyValidity(result))
+	{
+		const int limit = ((int)maxUniformBlocks) * ((int)maxUniformBlockSize) / 4 + (int)maxUniformComponents;
+		verifyStateIntegerMin(result, gl, m_combined, limit, QUERY_INTEGER);
+
+		{
+			const tcu::ScopedLogSection	section(m_testCtx.getLog(), "Types", "Alternative queries");
+			verifyStateIntegerMin(result, gl, m_combined, limit, QUERY_BOOLEAN);
+			verifyStateIntegerMin(result, gl, m_combined, limit, QUERY_INTEGER64);
+			verifyStateIntegerMin(result, gl, m_combined, limit, QUERY_FLOAT);
+		}
+	}
+
+	result.setTestContextResult(m_testCtx);
+	return STOP;
+}
+
+class PatchVerticesStateCase : public TestCase
+{
+public:
+						PatchVerticesStateCase	(Context& context, const char* name, const char* desc);
+private:
+	IterateResult		iterate					(void);
+};
+
+PatchVerticesStateCase::PatchVerticesStateCase (Context& context, const char* name, const char* desc)
+	: TestCase(context, name, desc)
+{
+}
+
+PatchVerticesStateCase::IterateResult PatchVerticesStateCase::iterate (void)
+{
+	checkTessellationSupport(m_context);
+
+	glu::CallLogWrapper 	gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
+	tcu::ResultCollector	result	(m_testCtx.getLog(), " // ERROR: ");
+
+	gl.enableLogging(true);
+
+	// initial
+	{
+		const tcu::ScopedLogSection section(m_testCtx.getLog(), "initial", "Initial value");
+
+		verifyStateInteger(result, gl, GL_PATCH_VERTICES, 3, QUERY_INTEGER);
+	}
+
+	// bind
+	{
+		const tcu::ScopedLogSection section(m_testCtx.getLog(), "set", "After set");
+
+		gl.glPatchParameteri(GL_PATCH_VERTICES, 22);
+		GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glPatchParameteri");
+
+		verifyStateInteger(result, gl, GL_PATCH_VERTICES, 22, QUERY_INTEGER);
+		{
+			const tcu::ScopedLogSection	subsection(m_testCtx.getLog(), "Types", "Alternative queries");
+			verifyStateIntegerMin(result, gl, GL_PATCH_VERTICES, 22, QUERY_BOOLEAN);
+			verifyStateIntegerMin(result, gl, GL_PATCH_VERTICES, 22, QUERY_INTEGER64);
+			verifyStateIntegerMin(result, gl, GL_PATCH_VERTICES, 22, QUERY_FLOAT);
+		}
+	}
+
+	result.setTestContextResult(m_testCtx);
+	return STOP;
+}
+
+class PrimitiveRestartForPatchesSupportedCase : public TestCase
+{
+public:
+						PrimitiveRestartForPatchesSupportedCase	(Context& context, const char* name, const char* desc);
+private:
+	IterateResult		iterate									(void);
+};
+
+PrimitiveRestartForPatchesSupportedCase::PrimitiveRestartForPatchesSupportedCase (Context& context, const char* name, const char* desc)
+	: TestCase(context, name, desc)
+{
+}
+
+PrimitiveRestartForPatchesSupportedCase::IterateResult PrimitiveRestartForPatchesSupportedCase::iterate (void)
+{
+	checkTessellationSupport(m_context);
+
+	glu::CallLogWrapper 	gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
+	tcu::ResultCollector	result	(m_testCtx.getLog(), " // ERROR: ");
+	QueriedState			state;
+
+	gl.enableLogging(true);
+
+	queryState(result, gl, QUERY_BOOLEAN, GL_PRIMITIVE_RESTART_FOR_PATCHES_SUPPORTED, state);
+
+	if (!state.isUndefined())
+	{
+		const tcu::ScopedLogSection	subsection(m_testCtx.getLog(), "Types", "Alternative types");
+		verifyStateBoolean(result, gl, GL_PRIMITIVE_RESTART_FOR_PATCHES_SUPPORTED, state.getBoolAccess(), QUERY_INTEGER);
+		verifyStateBoolean(result, gl, GL_PRIMITIVE_RESTART_FOR_PATCHES_SUPPORTED, state.getBoolAccess(), QUERY_INTEGER64);
+		verifyStateBoolean(result, gl, GL_PRIMITIVE_RESTART_FOR_PATCHES_SUPPORTED, state.getBoolAccess(), QUERY_FLOAT);
+	}
+
+	result.setTestContextResult(m_testCtx);
+	return STOP;
+}
+
+class TessProgramQueryCase : public TestCase
+{
+public:
+						TessProgramQueryCase	(Context& context, const char* name, const char* desc);
+
+	std::string			getVertexSource			(void) const;
+	std::string			getFragmentSource		(void) const;
+	std::string			getTessCtrlSource		(const char* globalLayouts) const;
+	std::string			getTessEvalSource		(const char* globalLayouts) const;
+};
+
+TessProgramQueryCase::TessProgramQueryCase (Context& context, const char* name, const char* desc)
+	: TestCase(context, name, desc)
+{
+}
+
+std::string TessProgramQueryCase::getVertexSource (void) const
+{
+	return	"#version 310 es\n"
+			"void main (void)\n"
+			"{\n"
+			"	gl_Position = vec4(float(gl_VertexID), float(gl_VertexID / 2), 0.0, 1.0);\n"
+			"}\n";
+}
+
+std::string TessProgramQueryCase::getFragmentSource (void) const
+{
+	return	"#version 310 es\n"
+			"layout (location = 0) out mediump vec4 o_color;\n"
+			"void main (void)\n"
+			"{\n"
+			"	o_color = vec4(0.0, 1.0, 0.0, 1.0);\n"
+			"}\n";
+}
+
+std::string TessProgramQueryCase::getTessCtrlSource (const char* globalLayouts) const
+{
+	return	"#version 310 es\n"
+			"#extension GL_EXT_tessellation_shader : require\n"
+			+ std::string(globalLayouts) + ";\n"
+			"void main (void)\n"
+			"{\n"
+			"	gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n"
+			"	gl_TessLevelInner[0] = 2.8;\n"
+			"	gl_TessLevelInner[1] = 2.8;\n"
+			"	gl_TessLevelOuter[0] = 2.8;\n"
+			"	gl_TessLevelOuter[1] = 2.8;\n"
+			"	gl_TessLevelOuter[2] = 2.8;\n"
+			"	gl_TessLevelOuter[3] = 2.8;\n"
+			"}\n";
+}
+
+std::string TessProgramQueryCase::getTessEvalSource (const char* globalLayouts) const
+{
+	return	"#version 310 es\n"
+			"#extension GL_EXT_tessellation_shader : require\n"
+			+ std::string(globalLayouts) + ";\n"
+			"void main (void)\n"
+			"{\n"
+			"	gl_Position = gl_TessCoord.x * gl_in[0].gl_Position\n"
+			"	            + gl_TessCoord.y * gl_in[1].gl_Position\n"
+			"	            + gl_TessCoord.y * gl_in[2].gl_Position\n"
+			"	            + gl_TessCoord.z * gl_in[3].gl_Position;\n"
+			"}\n";
+}
+
+class TessControlOutputVerticesCase : public TessProgramQueryCase
+{
+public:
+						TessControlOutputVerticesCase	(Context& context, const char* name, const char* desc);
+private:
+	IterateResult		iterate							(void);
+};
+
+TessControlOutputVerticesCase::TessControlOutputVerticesCase (Context& context, const char* name, const char* desc)
+	: TessProgramQueryCase(context, name, desc)
+{
+}
+
+TessControlOutputVerticesCase::IterateResult TessControlOutputVerticesCase::iterate (void)
+{
+	checkTessellationSupport(m_context);
+
+	glu::ShaderProgram program (m_context.getRenderContext(), glu::ProgramSources()
+																<< glu::VertexSource(getVertexSource())
+																<< glu::FragmentSource(getFragmentSource())
+																<< glu::TessellationControlSource(getTessCtrlSource("layout(vertices=4) out"))
+																<< glu::TessellationEvaluationSource(getTessEvalSource("layout(triangles) in")));
+
+	m_testCtx.getLog() << program;
+	if (!program.isOk())
+		throw tcu::TestError("failed to build program");
+
+	{
+		glu::CallLogWrapper 	gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
+		tcu::ResultCollector	result	(m_testCtx.getLog(), " // ERROR: ");
+
+		gl.enableLogging(true);
+		verifyStateProgramInteger(result, gl, program.getProgram(), GL_TESS_CONTROL_OUTPUT_VERTICES, 4, QUERY_PROGRAM_INTEGER);
+
+		result.setTestContextResult(m_testCtx);
+	}
+	return STOP;
+}
+
+class TessGenModeQueryCase : public TessProgramQueryCase
+{
+public:
+						TessGenModeQueryCase	(Context& context, const char* name, const char* desc);
+private:
+	IterateResult		iterate					(void);
+};
+
+TessGenModeQueryCase::TessGenModeQueryCase (Context& context, const char* name, const char* desc)
+	: TessProgramQueryCase(context, name, desc)
+{
+}
+
+TessGenModeQueryCase::IterateResult TessGenModeQueryCase::iterate (void)
+{
+	tcu::ResultCollector	result	(m_testCtx.getLog(), " // ERROR: ");
+	glu::CallLogWrapper		gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
+
+	static const struct
+	{
+		const char* description;
+		const char* layout;
+		glw::GLenum mode;
+	} s_modes[] =
+	{
+		{ "Triangles",	"layout(triangles) in",	GL_TRIANGLES	},
+		{ "Isolines",	"layout(isolines) in",	GL_ISOLINES		},
+		{ "Quads",		"layout(quads) in",		GL_QUADS		},
+	};
+
+	checkTessellationSupport(m_context);
+	gl.enableLogging(true);
+
+	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(s_modes); ++ndx)
+	{
+		const tcu::ScopedLogSection	section(m_testCtx.getLog(), "Type", s_modes[ndx].description);
+
+		glu::ShaderProgram program (m_context.getRenderContext(), glu::ProgramSources()
+																	<< glu::VertexSource(getVertexSource())
+																	<< glu::FragmentSource(getFragmentSource())
+																	<< glu::TessellationControlSource(getTessCtrlSource("layout(vertices=6) out"))
+																	<< glu::TessellationEvaluationSource(getTessEvalSource(s_modes[ndx].layout)));
+
+		m_testCtx.getLog() << program;
+		if (!program.isOk())
+			result.fail("failed to build program");
+		else
+			verifyStateProgramInteger(result, gl, program.getProgram(), GL_TESS_GEN_MODE, s_modes[ndx].mode, QUERY_PROGRAM_INTEGER);
+	}
+
+	result.setTestContextResult(m_testCtx);
+	return STOP;
+}
+
+class TessGenSpacingQueryCase : public TessProgramQueryCase
+{
+public:
+						TessGenSpacingQueryCase	(Context& context, const char* name, const char* desc);
+private:
+	IterateResult		iterate					(void);
+};
+
+TessGenSpacingQueryCase::TessGenSpacingQueryCase (Context& context, const char* name, const char* desc)
+	: TessProgramQueryCase(context, name, desc)
+{
+}
+
+TessGenSpacingQueryCase::IterateResult TessGenSpacingQueryCase::iterate (void)
+{
+	tcu::ResultCollector	result	(m_testCtx.getLog(), " // ERROR: ");
+	glu::CallLogWrapper		gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
+
+	static const struct
+	{
+		const char* description;
+		const char* layout;
+		glw::GLenum spacing;
+	} s_modes[] =
+	{
+		{ "Default spacing",			"layout(triangles) in",								GL_EQUAL			},
+		{ "Equal spacing",				"layout(triangles, equal_spacing) in",				GL_EQUAL			},
+		{ "Fractional even spacing",	"layout(triangles, fractional_even_spacing) in",	GL_FRACTIONAL_EVEN	},
+		{ "Fractional odd spacing",		"layout(triangles, fractional_odd_spacing) in",		GL_FRACTIONAL_ODD	},
+	};
+
+	checkTessellationSupport(m_context);
+	gl.enableLogging(true);
+
+	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(s_modes); ++ndx)
+	{
+		const tcu::ScopedLogSection	section(m_testCtx.getLog(), "Type", s_modes[ndx].description);
+
+		glu::ShaderProgram program (m_context.getRenderContext(), glu::ProgramSources()
+																	<< glu::VertexSource(getVertexSource())
+																	<< glu::FragmentSource(getFragmentSource())
+																	<< glu::TessellationControlSource(getTessCtrlSource("layout(vertices=6) out"))
+																	<< glu::TessellationEvaluationSource(getTessEvalSource(s_modes[ndx].layout)));
+
+		m_testCtx.getLog() << program;
+		if (!program.isOk())
+			result.fail("failed to build program");
+		else
+			verifyStateProgramInteger(result, gl, program.getProgram(), GL_TESS_GEN_SPACING, s_modes[ndx].spacing, QUERY_PROGRAM_INTEGER);
+	}
+
+	result.setTestContextResult(m_testCtx);
+	return STOP;
+}
+
+class TessGenVertexOrderQueryCase : public TessProgramQueryCase
+{
+public:
+						TessGenVertexOrderQueryCase	(Context& context, const char* name, const char* desc);
+private:
+	IterateResult		iterate						(void);
+};
+
+TessGenVertexOrderQueryCase::TessGenVertexOrderQueryCase (Context& context, const char* name, const char* desc)
+	: TessProgramQueryCase(context, name, desc)
+{
+}
+
+TessGenVertexOrderQueryCase::IterateResult TessGenVertexOrderQueryCase::iterate (void)
+{
+	tcu::ResultCollector	result	(m_testCtx.getLog(), " // ERROR: ");
+	glu::CallLogWrapper		gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
+
+	static const struct
+	{
+		const char* description;
+		const char* layout;
+		glw::GLenum order;
+	} s_modes[] =
+	{
+		{ "Default order",	"layout(triangles) in",			GL_CCW	},
+		{ "CW order",		"layout(triangles, cw) in",		GL_CW	},
+		{ "CCW order",		"layout(triangles, ccw) in",	GL_CCW	},
+	};
+
+	checkTessellationSupport(m_context);
+	gl.enableLogging(true);
+
+	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(s_modes); ++ndx)
+	{
+		const tcu::ScopedLogSection	section(m_testCtx.getLog(), "Type", s_modes[ndx].description);
+
+		glu::ShaderProgram program (m_context.getRenderContext(), glu::ProgramSources()
+																	<< glu::VertexSource(getVertexSource())
+																	<< glu::FragmentSource(getFragmentSource())
+																	<< glu::TessellationControlSource(getTessCtrlSource("layout(vertices=6) out"))
+																	<< glu::TessellationEvaluationSource(getTessEvalSource(s_modes[ndx].layout)));
+
+		m_testCtx.getLog() << program;
+		if (!program.isOk())
+			result.fail("failed to build program");
+		else
+			verifyStateProgramInteger(result, gl, program.getProgram(), GL_TESS_GEN_VERTEX_ORDER, s_modes[ndx].order, QUERY_PROGRAM_INTEGER);
+	}
+
+	result.setTestContextResult(m_testCtx);
+	return STOP;
+}
+
+class TessGenPointModeQueryCase : public TessProgramQueryCase
+{
+public:
+						TessGenPointModeQueryCase	(Context& context, const char* name, const char* desc);
+private:
+	IterateResult		iterate						(void);
+};
+
+TessGenPointModeQueryCase::TessGenPointModeQueryCase (Context& context, const char* name, const char* desc)
+	: TessProgramQueryCase(context, name, desc)
+{
+}
+
+TessGenPointModeQueryCase::IterateResult TessGenPointModeQueryCase::iterate (void)
+{
+	tcu::ResultCollector	result	(m_testCtx.getLog(), " // ERROR: ");
+	glu::CallLogWrapper		gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
+
+	static const struct
+	{
+		const char* description;
+		const char* layout;
+		glw::GLenum mode;
+	} s_modes[] =
+	{
+		{ "Default mode",	"layout(triangles) in",			GL_FALSE	},
+		{ "Point mode",		"layout(triangles, point_mode) in",		GL_TRUE		},
+	};
+
+	checkTessellationSupport(m_context);
+	gl.enableLogging(true);
+
+	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(s_modes); ++ndx)
+	{
+		const tcu::ScopedLogSection	section(m_testCtx.getLog(), "Type", s_modes[ndx].description);
+
+		glu::ShaderProgram program (m_context.getRenderContext(), glu::ProgramSources()
+																	<< glu::VertexSource(getVertexSource())
+																	<< glu::FragmentSource(getFragmentSource())
+																	<< glu::TessellationControlSource(getTessCtrlSource("layout(vertices=6) out"))
+																	<< glu::TessellationEvaluationSource(getTessEvalSource(s_modes[ndx].layout)));
+
+		m_testCtx.getLog() << program;
+		if (!program.isOk())
+			result.fail("failed to build program");
+		else
+			verifyStateProgramInteger(result, gl, program.getProgram(), GL_TESS_GEN_POINT_MODE, s_modes[ndx].mode, QUERY_PROGRAM_INTEGER);
+	}
+
+	result.setTestContextResult(m_testCtx);
+	return STOP;
+}
+
+class ReferencedByTessellationQueryCase : public TestCase
+{
+public:
+					ReferencedByTessellationQueryCase	(Context& context, const char* name, const char* desc, bool isCtrlCase);
+private:
+	void			init								(void);
+	IterateResult	iterate								(void);
+
+	std::string		getVertexSource						(void) const;
+	std::string		getFragmentSource					(void) const;
+	std::string		getTessCtrlSource					(void) const;
+	std::string		getTessEvalSource					(void) const;
+
+	const bool		m_isCtrlCase;
+};
+
+ReferencedByTessellationQueryCase::ReferencedByTessellationQueryCase (Context& context, const char* name, const char* desc, bool isCtrlCase)
+	: TestCase		(context, name, desc)
+	, m_isCtrlCase	(isCtrlCase)
+{
+}
+
+void ReferencedByTessellationQueryCase::init (void)
+{
+	checkTessellationSupport(m_context);
+}
+
+ReferencedByTessellationQueryCase::IterateResult ReferencedByTessellationQueryCase::iterate (void)
+{
+	tcu::ResultCollector	result	(m_testCtx.getLog(), " // ERROR: ");
+	glu::CallLogWrapper		gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
+	glu::ShaderProgram		program	(m_context.getRenderContext(), glu::ProgramSources()
+																	<< glu::VertexSource(getVertexSource())
+																	<< glu::FragmentSource(getFragmentSource())
+																	<< glu::TessellationControlSource(getTessCtrlSource())
+																	<< glu::TessellationEvaluationSource(getTessEvalSource()));
+
+	gl.enableLogging(true);
+
+	m_testCtx.getLog() << program;
+	if (!program.isOk())
+		result.fail("failed to build program");
+	else
+	{
+		const deUint32 props[1] = { (deUint32)((m_isCtrlCase) ? (GL_REFERENCED_BY_TESS_CONTROL_SHADER) : (GL_REFERENCED_BY_TESS_EVALUATION_SHADER)) };
+
+		{
+			const tcu::ScopedLogSection section		(m_testCtx.getLog(), "UnreferencedUniform", "Unreferenced uniform u_unreferenced");
+			deUint32					resourcePos;
+			glw::GLsizei				length		= 0;
+			glw::GLint					referenced	= 0;
+
+			resourcePos = gl.glGetProgramResourceIndex(program.getProgram(), GL_UNIFORM, "u_unreferenced");
+			m_testCtx.getLog() << tcu::TestLog::Message << "u_unreferenced resource index: " << resourcePos << tcu::TestLog::EndMessage;
+
+			if (resourcePos == GL_INVALID_INDEX)
+				result.fail("resourcePos was GL_INVALID_INDEX");
+			else
+			{
+				gl.glGetProgramResourceiv(program.getProgram(), GL_UNIFORM, resourcePos, 1, props, 1, &length, &referenced);
+				m_testCtx.getLog()
+					<< tcu::TestLog::Message
+					<< "Query " << glu::getProgramResourcePropertyStr(props[0])
+					<< ", got " << length << " value(s), value[0] = " << glu::getBooleanStr(referenced)
+					<< tcu::TestLog::EndMessage;
+
+				GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "query resource");
+
+				if (length == 0 || referenced != GL_FALSE)
+					result.fail("expected GL_FALSE");
+			}
+		}
+
+		{
+			const tcu::ScopedLogSection section		(m_testCtx.getLog(), "ReferencedUniform", "Referenced uniform u_referenced");
+			deUint32					resourcePos;
+			glw::GLsizei				length		= 0;
+			glw::GLint					referenced	= 0;
+
+			resourcePos = gl.glGetProgramResourceIndex(program.getProgram(), GL_UNIFORM, "u_referenced");
+			m_testCtx.getLog() << tcu::TestLog::Message << "u_referenced resource index: " << resourcePos << tcu::TestLog::EndMessage;
+
+			if (resourcePos == GL_INVALID_INDEX)
+				result.fail("resourcePos was GL_INVALID_INDEX");
+			else
+			{
+				gl.glGetProgramResourceiv(program.getProgram(), GL_UNIFORM, resourcePos, 1, props, 1, &length, &referenced);
+				m_testCtx.getLog()
+					<< tcu::TestLog::Message
+					<< "Query " << glu::getProgramResourcePropertyStr(props[0])
+					<< ", got " << length << " value(s), value[0] = " << glu::getBooleanStr(referenced)
+					<< tcu::TestLog::EndMessage;
+
+				GLU_EXPECT_NO_ERROR(gl.glGetError(), "query resource");
+
+				if (length == 0 || referenced != GL_TRUE)
+					result.fail("expected GL_TRUE");
+			}
+		}
+	}
+
+	result.setTestContextResult(m_testCtx);
+	return STOP;
+}
+
+std::string ReferencedByTessellationQueryCase::getVertexSource (void) const
+{
+	return	"#version 310 es\n"
+			"void main (void)\n"
+			"{\n"
+			"	gl_Position = vec4(float(gl_VertexID), float(gl_VertexID / 2), 0.0, 1.0);\n"
+			"}\n";
+}
+
+std::string ReferencedByTessellationQueryCase::getFragmentSource (void) const
+{
+	return	"#version 310 es\n"
+			"layout (location = 0) out mediump vec4 o_color;\n"
+			"void main (void)\n"
+			"{\n"
+			"	o_color = vec4(0.0, 1.0, 0.0, 1.0);\n"
+			"}\n";
+}
+
+std::string ReferencedByTessellationQueryCase::getTessCtrlSource (void) const
+{
+	std::ostringstream buf;
+	buf <<	"#version 310 es\n"
+			"#extension GL_EXT_tessellation_shader : require\n"
+			"layout(vertices = 3) out;\n"
+			"uniform highp vec4 " << ((m_isCtrlCase) ? ("u_referenced") : ("u_unreferenced")) << ";\n"
+			"void main (void)\n"
+			"{\n"
+			"	vec4 offset = " << ((m_isCtrlCase) ? ("u_referenced") : ("u_unreferenced")) << ";\n"
+			"	gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position + offset;\n"
+			"	gl_TessLevelInner[0] = 2.8;\n"
+			"	gl_TessLevelInner[1] = 2.8;\n"
+			"	gl_TessLevelOuter[0] = 2.8;\n"
+			"	gl_TessLevelOuter[1] = 2.8;\n"
+			"	gl_TessLevelOuter[2] = 2.8;\n"
+			"	gl_TessLevelOuter[3] = 2.8;\n"
+			"}\n";
+	return buf.str();
+}
+
+std::string ReferencedByTessellationQueryCase::getTessEvalSource (void) const
+{
+	std::ostringstream buf;
+	buf <<	"#version 310 es\n"
+			"#extension GL_EXT_tessellation_shader : require\n"
+			"layout(triangles) in;\n"
+			"uniform highp vec4 " << ((m_isCtrlCase) ? ("u_unreferenced") : ("u_referenced")) << ";\n"
+			"void main (void)\n"
+			"{\n"
+			"	vec4 offset = " << ((m_isCtrlCase) ? ("u_unreferenced") : ("u_referenced")) << ";\n"
+			"	gl_Position = gl_TessCoord.x * gl_in[0].gl_Position\n"
+			"	            + gl_TessCoord.y * gl_in[1].gl_Position\n"
+			"	            + gl_TessCoord.z * gl_in[2].gl_Position\n"
+			"	            + offset;\n"
+			"}\n";
+
+	return buf.str();
+}
+
+class IsPerPatchQueryCase : public TestCase
+{
+public:
+					IsPerPatchQueryCase		(Context& context, const char* name, const char* desc);
+private:
+	void			init					(void);
+	IterateResult	iterate					(void);
+};
+
+IsPerPatchQueryCase::IsPerPatchQueryCase (Context& context, const char* name, const char* desc)
+	: TestCase(context, name, desc)
+{
+}
+
+void IsPerPatchQueryCase::init (void)
+{
+	checkTessellationSupport(m_context);
+}
+
+IsPerPatchQueryCase::IterateResult IsPerPatchQueryCase::iterate (void)
+{
+	static const char* const s_controlSource =	"#version 310 es\n"
+												"#extension GL_EXT_tessellation_shader : require\n"
+												"layout(vertices = 3) out;\n"
+												"patch out highp vec4 v_perPatch;\n"
+												"out highp vec4 v_perVertex[];\n"
+												"void main (void)\n"
+												"{\n"
+												"	gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n"
+												"	v_perPatch = gl_in[0].gl_Position;\n"
+												"	v_perVertex[gl_InvocationID] = -gl_in[gl_InvocationID].gl_Position;\n"
+												"	gl_TessLevelInner[0] = 2.8;\n"
+												"	gl_TessLevelInner[1] = 2.8;\n"
+												"	gl_TessLevelOuter[0] = 2.8;\n"
+												"	gl_TessLevelOuter[1] = 2.8;\n"
+												"	gl_TessLevelOuter[2] = 2.8;\n"
+												"	gl_TessLevelOuter[3] = 2.8;\n"
+												"}\n";
+	tcu::ResultCollector	result	(m_testCtx.getLog(), " // ERROR: ");
+	glu::CallLogWrapper		gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
+	glu::ShaderProgram		program	(m_context.getRenderContext(), glu::ProgramSources()
+																	<< glu::TessellationControlSource(s_controlSource)
+																	<< glu::ProgramSeparable(true));
+
+	gl.enableLogging(true);
+
+	m_testCtx.getLog() << program;
+	if (!program.isOk())
+		result.fail("failed to build program");
+	else
+	{
+		const deUint32 props[1] = { GL_IS_PER_PATCH };
+
+		{
+			const tcu::ScopedLogSection section		(m_testCtx.getLog(), "PerPatchOutput", "Per patch v_perPatch");
+			deUint32					resourcePos;
+			glw::GLsizei				length		= 0;
+			glw::GLint					referenced	= 0;
+
+			resourcePos = gl.glGetProgramResourceIndex(program.getProgram(), GL_PROGRAM_OUTPUT, "v_perPatch");
+			m_testCtx.getLog() << tcu::TestLog::Message << "v_perPatch resource index: " << resourcePos << tcu::TestLog::EndMessage;
+
+			if (resourcePos == GL_INVALID_INDEX)
+				result.fail("resourcePos was GL_INVALID_INDEX");
+			else
+			{
+				gl.glGetProgramResourceiv(program.getProgram(), GL_PROGRAM_OUTPUT, resourcePos, 1, props, 1, &length, &referenced);
+				m_testCtx.getLog()
+					<< tcu::TestLog::Message
+					<< "Query " << glu::getProgramResourcePropertyStr(props[0])
+					<< ", got " << length << " value(s), value[0] = " << glu::getBooleanStr(referenced)
+					<< tcu::TestLog::EndMessage;
+
+				GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "query resource");
+
+				if (length == 0 || referenced != GL_TRUE)
+					result.fail("expected GL_TRUE");
+			}
+		}
+
+		{
+			const tcu::ScopedLogSection section		(m_testCtx.getLog(), "PerVertexhOutput", "Per vertex v_perVertex");
+			deUint32					resourcePos;
+			glw::GLsizei				length		= 0;
+			glw::GLint					referenced	= 0;
+
+			resourcePos = gl.glGetProgramResourceIndex(program.getProgram(), GL_PROGRAM_OUTPUT, "v_perVertex");
+			m_testCtx.getLog() << tcu::TestLog::Message << "v_perVertex resource index: " << resourcePos << tcu::TestLog::EndMessage;
+
+			if (resourcePos == GL_INVALID_INDEX)
+				result.fail("resourcePos was GL_INVALID_INDEX");
+			else
+			{
+				gl.glGetProgramResourceiv(program.getProgram(), GL_PROGRAM_OUTPUT, resourcePos, 1, props, 1, &length, &referenced);
+				m_testCtx.getLog()
+					<< tcu::TestLog::Message
+					<< "Query " << glu::getProgramResourcePropertyStr(props[0])
+					<< ", got " << length << " value(s), value[0] = " << glu::getBooleanStr(referenced)
+					<< tcu::TestLog::EndMessage;
+
+				GLU_EXPECT_NO_ERROR(gl.glGetError(), "query resource");
+
+				if (length == 0 || referenced != GL_FALSE)
+					result.fail("expected GL_FALSE");
+			}
+		}
+	}
+
+	result.setTestContextResult(m_testCtx);
+	return STOP;
+}
+
 } // anonymous
 
 TessellationTests::TessellationTests (Context& context)
@@ -6280,6 +7071,62 @@ TessellationTests::~TessellationTests (void)
 
 void TessellationTests::init (void)
 {
+	{
+		tcu::TestCaseGroup* const queryGroup = new tcu::TestCaseGroup(m_testCtx, "state_query", "Query tests");
+		addChild(queryGroup);
+
+		// new limits
+		queryGroup->addChild(new LimitQueryCase(m_context, "max_patch_vertices",								"Test MAX_PATCH_VERTICES",								GL_MAX_PATCH_VERTICES,							32));
+		queryGroup->addChild(new LimitQueryCase(m_context, "max_tess_gen_level",								"Test MAX_TESS_GEN_LEVEL",								GL_MAX_TESS_GEN_LEVEL,							64));
+		queryGroup->addChild(new LimitQueryCase(m_context, "max_tess_control_uniform_components",				"Test MAX_TESS_CONTROL_UNIFORM_COMPONENTS",				GL_MAX_TESS_CONTROL_UNIFORM_COMPONENTS,			1024));
+		queryGroup->addChild(new LimitQueryCase(m_context, "max_tess_evaluation_uniform_components",			"Test MAX_TESS_EVALUATION_UNIFORM_COMPONENTS",			GL_MAX_TESS_EVALUATION_UNIFORM_COMPONENTS,		1024));
+		queryGroup->addChild(new LimitQueryCase(m_context, "max_tess_control_texture_image_units",				"Test MAX_TESS_CONTROL_TEXTURE_IMAGE_UNITS",			GL_MAX_TESS_CONTROL_TEXTURE_IMAGE_UNITS,		16));
+		queryGroup->addChild(new LimitQueryCase(m_context, "max_tess_evaluation_texture_image_units",			"Test MAX_TESS_EVALUATION_TEXTURE_IMAGE_UNITS",			GL_MAX_TESS_EVALUATION_TEXTURE_IMAGE_UNITS,		16));
+		queryGroup->addChild(new LimitQueryCase(m_context, "max_tess_control_output_components",				"Test MAX_TESS_CONTROL_OUTPUT_COMPONENTS",				GL_MAX_TESS_CONTROL_OUTPUT_COMPONENTS,			128));
+		queryGroup->addChild(new LimitQueryCase(m_context, "max_tess_patch_components",							"Test MAX_TESS_PATCH_COMPONENTS",						GL_MAX_TESS_PATCH_COMPONENTS,					120));
+		queryGroup->addChild(new LimitQueryCase(m_context, "max_tess_control_total_output_components",			"Test MAX_TESS_CONTROL_TOTAL_OUTPUT_COMPONENTS",		GL_MAX_TESS_CONTROL_TOTAL_OUTPUT_COMPONENTS,	4096));
+		queryGroup->addChild(new LimitQueryCase(m_context, "max_tess_evaluation_output_components",				"Test MAX_TESS_EVALUATION_OUTPUT_COMPONENTS",			GL_MAX_TESS_EVALUATION_OUTPUT_COMPONENTS,		128));
+		queryGroup->addChild(new LimitQueryCase(m_context, "max_tess_control_uniform_blocks",					"Test MAX_TESS_CONTROL_UNIFORM_BLOCKS",					GL_MAX_TESS_CONTROL_UNIFORM_BLOCKS,				12));
+		queryGroup->addChild(new LimitQueryCase(m_context, "max_tess_evaluation_uniform_blocks",				"Test MAX_TESS_EVALUATION_UNIFORM_BLOCKS",				GL_MAX_TESS_EVALUATION_UNIFORM_BLOCKS,			12));
+		queryGroup->addChild(new LimitQueryCase(m_context, "max_tess_control_input_components",					"Test MAX_TESS_CONTROL_INPUT_COMPONENTS",				GL_MAX_TESS_CONTROL_INPUT_COMPONENTS,			128));
+		queryGroup->addChild(new LimitQueryCase(m_context, "max_tess_evaluation_input_components",				"Test MAX_TESS_EVALUATION_INPUT_COMPONENTS",			GL_MAX_TESS_EVALUATION_INPUT_COMPONENTS,		128));
+		queryGroup->addChild(new LimitQueryCase(m_context, "max_tess_control_atomic_counter_buffers",			"Test MAX_TESS_CONTROL_ATOMIC_COUNTER_BUFFERS",			GL_MAX_TESS_CONTROL_ATOMIC_COUNTER_BUFFERS,		0));
+		queryGroup->addChild(new LimitQueryCase(m_context, "max_tess_evaluation_atomic_counter_buffers",		"Test MAX_TESS_EVALUATION_ATOMIC_COUNTER_BUFFERS",		GL_MAX_TESS_EVALUATION_ATOMIC_COUNTER_BUFFERS,	0));
+		queryGroup->addChild(new LimitQueryCase(m_context, "max_tess_control_atomic_counters",					"Test MAX_TESS_CONTROL_ATOMIC_COUNTERS",				GL_MAX_TESS_CONTROL_ATOMIC_COUNTERS,			0));
+		queryGroup->addChild(new LimitQueryCase(m_context, "max_tess_evaluation_atomic_counters",				"Test MAX_TESS_EVALUATION_ATOMIC_COUNTERS",				GL_MAX_TESS_EVALUATION_ATOMIC_COUNTERS,			0));
+		queryGroup->addChild(new LimitQueryCase(m_context, "max_tess_control_image_uniforms",					"Test MAX_TESS_CONTROL_IMAGE_UNIFORMS",					GL_MAX_TESS_CONTROL_IMAGE_UNIFORMS,				0));
+		queryGroup->addChild(new LimitQueryCase(m_context, "max_tess_evaluation_image_uniforms",				"Test MAX_TESS_EVALUATION_IMAGE_UNIFORMS",				GL_MAX_TESS_EVALUATION_IMAGE_UNIFORMS,			0));
+		queryGroup->addChild(new LimitQueryCase(m_context, "max_tess_control_shader_storage_blocks",			"Test MAX_TESS_CONTROL_SHADER_STORAGE_BLOCKS",			GL_MAX_TESS_CONTROL_SHADER_STORAGE_BLOCKS,		0));
+		queryGroup->addChild(new LimitQueryCase(m_context, "max_tess_evaluation_shader_storage_blocks",			"Test MAX_TESS_EVALUATION_SHADER_STORAGE_BLOCKS",		GL_MAX_TESS_EVALUATION_SHADER_STORAGE_BLOCKS,	0));
+
+		// modified limits
+		queryGroup->addChild(new LimitQueryCase(m_context, "max_uniform_buffer_bindings",						"Test MAX_UNIFORM_BUFFER_BINDINGS",						GL_MAX_UNIFORM_BUFFER_BINDINGS,					72));
+		queryGroup->addChild(new LimitQueryCase(m_context, "max_combined_uniform_blocks",						"Test MAX_COMBINED_UNIFORM_BLOCKS",						GL_MAX_COMBINED_UNIFORM_BLOCKS,					60));
+		queryGroup->addChild(new LimitQueryCase(m_context, "max_combined_texture_image_units",					"Test MAX_COMBINED_TEXTURE_IMAGE_UNITS",				GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS,			96));
+
+		// combined limits
+		queryGroup->addChild(new CombinedUniformLimitCase(m_context, "max_combined_tess_control_uniform_components",		"Test MAX_COMBINED_TESS_CONTROL_UNIFORM_COMPONENTS",	GL_MAX_COMBINED_TESS_CONTROL_UNIFORM_COMPONENTS,		GL_MAX_TESS_CONTROL_UNIFORM_BLOCKS,		GL_MAX_TESS_CONTROL_UNIFORM_COMPONENTS));
+		queryGroup->addChild(new CombinedUniformLimitCase(m_context, "max_combined_tess_evaluation_uniform_components",		"Test MAX_COMBINED_TESS_EVALUATION_UNIFORM_COMPONENTS",	GL_MAX_COMBINED_TESS_EVALUATION_UNIFORM_COMPONENTS,		GL_MAX_TESS_EVALUATION_UNIFORM_BLOCKS,	GL_MAX_TESS_EVALUATION_UNIFORM_COMPONENTS));
+
+		// features
+		queryGroup->addChild(new PrimitiveRestartForPatchesSupportedCase(m_context, "primitive_restart_for_patches_supported", "Test PRIMITIVE_RESTART_FOR_PATCHES_SUPPORTED"));
+
+		// states
+		queryGroup->addChild(new PatchVerticesStateCase(m_context, "patch_vertices", "Test PATCH_VERTICES"));
+
+		// program states
+		queryGroup->addChild(new TessControlOutputVerticesCase	(m_context, "tess_control_output_vertices",	"Test TESS_CONTROL_OUTPUT_VERTICES"));
+		queryGroup->addChild(new TessGenModeQueryCase			(m_context, "tess_gen_mode",				"Test TESS_GEN_MODE"));
+		queryGroup->addChild(new TessGenSpacingQueryCase		(m_context, "tess_gen_spacing",				"Test TESS_GEN_SPACING"));
+		queryGroup->addChild(new TessGenVertexOrderQueryCase	(m_context, "tess_gen_vertex_order",		"Test TESS_GEN_VERTEX_ORDER"));
+		queryGroup->addChild(new TessGenPointModeQueryCase		(m_context, "tess_gen_point_mode",			"Test TESS_GEN_POINT_MODE"));
+
+		// resource queries
+		queryGroup->addChild(new ReferencedByTessellationQueryCase	(m_context, "referenced_by_tess_control_shader",	"Test REFERENCED_BY_TESS_CONTROL_SHADER",		true));
+		queryGroup->addChild(new ReferencedByTessellationQueryCase	(m_context, "referenced_by_tess_evaluation_shader",	"Test REFERENCED_BY_TESS_EVALUATION_SHADER",	false));
+		queryGroup->addChild(new IsPerPatchQueryCase				(m_context, "is_per_patch",							"Test IS_PER_PATCH"));
+	}
+
 	{
 		TestCaseGroup* const tessCoordGroup = new TestCaseGroup(m_context, "tesscoord", "Get tessellation coordinates with transform feedback and validate them");
 		addChild(tessCoordGroup);

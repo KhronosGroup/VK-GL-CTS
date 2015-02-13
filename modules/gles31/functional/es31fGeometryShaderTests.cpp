@@ -63,6 +63,8 @@ namespace Functional
 namespace
 {
 
+using namespace gls::StateQueryUtil;
+
 const int TEST_CANVAS_SIZE = 256;
 
 static const char* const s_commonShaderSourceVertex =		"#version 310 es\n"
@@ -4070,22 +4072,20 @@ void ImplementationLimitCase::init (void)
 
 ImplementationLimitCase::IterateResult ImplementationLimitCase::iterate (void)
 {
-	gls::StateQueryUtil::StateQueryMemoryWriteGuard<glw::GLint>	state;
-	glu::CallLogWrapper											gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
+	glu::CallLogWrapper		gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
+	tcu::ResultCollector	result	(m_testCtx.getLog(), " // ERROR: ");
 
 	gl.enableLogging(true);
-	gl.glGetIntegerv(m_target, &state);
-	GLU_EXPECT_NO_ERROR(gl.glGetError(), "getIntegerv()");
+	verifyStateIntegerMin(result, gl, m_target, m_minValue, QUERY_INTEGER);
 
-	m_testCtx.getLog() << tcu::TestLog::Message << glu::getGettableStateStr(m_target) << " = " << state << tcu::TestLog::EndMessage;
-	m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
-
-	if (state.verifyValidity(m_testCtx) && state < m_minValue)
 	{
-		m_testCtx.getLog() << tcu::TestLog::Message << "// ERROR: Minimum value = " << m_minValue << ", got " << state << tcu::TestLog::EndMessage;
-		m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Got a value less than minimum value");
+		const tcu::ScopedLogSection	section(m_testCtx.getLog(), "Types", "Alternative queries");
+		verifyStateIntegerMin(result, gl, m_target, m_minValue, QUERY_BOOLEAN);
+		verifyStateIntegerMin(result, gl, m_target, m_minValue, QUERY_INTEGER64);
+		verifyStateIntegerMin(result, gl, m_target, m_minValue, QUERY_FLOAT);
 	}
 
+	result.setTestContextResult(m_testCtx);
 	return STOP;
 }
 
@@ -4111,34 +4111,40 @@ void LayerProvokingVertexQueryCase::init (void)
 
 LayerProvokingVertexQueryCase::IterateResult LayerProvokingVertexQueryCase::iterate (void)
 {
-	gls::StateQueryUtil::StateQueryMemoryWriteGuard<glw::GLint>	state;
-	glu::CallLogWrapper											gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
+	glu::CallLogWrapper		gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
+	tcu::ResultCollector	result	(m_testCtx.getLog(), " // ERROR: ");
+	QueriedState			state;
 
 	gl.enableLogging(true);
-	gl.glGetIntegerv(GL_LAYER_PROVOKING_VERTEX, &state);
-	GLU_EXPECT_NO_ERROR(gl.glGetError(), "getIntegerv(LAYER_PROVOKING_VERTEX)");
+	queryState(result, gl, QUERY_INTEGER, GL_LAYER_PROVOKING_VERTEX, state);
 
-	m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
-
-	if (state.verifyValidity(m_testCtx))
+	if (!state.isUndefined())
 	{
-		m_testCtx.getLog() << tcu::TestLog::Message << "LAYER_PROVOKING_VERTEX = " << glu::getProvokingVertexStr(state) << tcu::TestLog::EndMessage;
+		m_testCtx.getLog() << tcu::TestLog::Message << "LAYER_PROVOKING_VERTEX = " << glu::getProvokingVertexStr(state.getIntAccess()) << tcu::TestLog::EndMessage;
 
-		if (state != GL_FIRST_VERTEX_CONVENTION &&
-			state != GL_LAST_VERTEX_CONVENTION &&
-			state != GL_UNDEFINED_VERTEX)
+		if (state.getIntAccess() != GL_FIRST_VERTEX_CONVENTION &&
+			state.getIntAccess() != GL_LAST_VERTEX_CONVENTION &&
+			state.getIntAccess() != GL_UNDEFINED_VERTEX)
 		{
 			m_testCtx.getLog()
 				<< tcu::TestLog::Message
 				<< "getInteger(GL_LAYER_PROVOKING_VERTEX) returned illegal value. Got "
-				<< state << "\n"
+				<< state.getIntAccess() << "\n"
 				<< "Expected any of {FIRST_VERTEX_CONVENTION, LAST_VERTEX_CONVENTION, UNDEFINED_VERTEX}."
 				<< tcu::TestLog::EndMessage;
 
-			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "got unexpected provoking vertex value");
+			result.fail("got unexpected provoking vertex value");
+		}
+
+		{
+			const tcu::ScopedLogSection	section(m_testCtx.getLog(), "Types", "Alternative queries");
+			verifyStateInteger(result, gl, GL_LAYER_PROVOKING_VERTEX, state.getIntAccess(), QUERY_BOOLEAN);
+			verifyStateInteger(result, gl, GL_LAYER_PROVOKING_VERTEX, state.getIntAccess(), QUERY_INTEGER64);
+			verifyStateInteger(result, gl, GL_LAYER_PROVOKING_VERTEX, state.getIntAccess(), QUERY_FLOAT);
 		}
 	}
 
+	result.setTestContextResult(m_testCtx);
 	return STOP;
 }
 
@@ -4383,9 +4389,8 @@ void GeometryProgramLimitCase::init (void)
 
 GeometryProgramLimitCase::IterateResult GeometryProgramLimitCase::iterate (void)
 {
-	int limit;
-
-	m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+	tcu::ResultCollector	result	(m_testCtx.getLog(), " // ERROR: ");
+	int						limit;
 
 	// query limit
 	{
@@ -4398,17 +4403,28 @@ GeometryProgramLimitCase::IterateResult GeometryProgramLimitCase::iterate (void)
 
 		m_testCtx.getLog() << tcu::TestLog::Message << glu::getGettableStateStr(m_apiName) << " = " << state << tcu::TestLog::EndMessage;
 
-		if (!state.verifyValidity(m_testCtx))
+		if (!state.verifyValidity(result))
+		{
+			result.setTestContextResult(m_testCtx);
 			return STOP;
+		}
 
 		if (state < m_limit)
 		{
-			m_testCtx.getLog() << tcu::TestLog::Message << "// ERROR: Minimum value = " << m_limit << ", got " << state << tcu::TestLog::EndMessage;
-			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Got a value less than minimum value");
+			result.fail("Minimum value = " + de::toString(m_limit) + ", got " + de::toString(state.get()));
+			result.setTestContextResult(m_testCtx);
 			return STOP;
 		}
 
 		limit = state;
+
+		// verify other getters
+		{
+			const tcu::ScopedLogSection	section(m_testCtx.getLog(), "Types", "Alternative queries");
+			verifyStateInteger(result, gl, m_apiName, limit, QUERY_BOOLEAN);
+			verifyStateInteger(result, gl, m_apiName, limit, QUERY_INTEGER64);
+			verifyStateInteger(result, gl, m_apiName, limit, QUERY_FLOAT);
+		}
 	}
 
 	// verify limit is the same in GLSL
@@ -4450,13 +4466,15 @@ GeometryProgramLimitCase::IterateResult GeometryProgramLimitCase::iterate (void)
 		if (!program->isOk())
 		{
 			// compile failed, assume static assert failed
-			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Shader build failed");
+			result.fail("Shader build failed");
+			result.setTestContextResult(m_testCtx);
 			return STOP;
 		}
 
 		m_testCtx.getLog() << tcu::TestLog::Message << "Build ok" << tcu::TestLog::EndMessage;
 	}
 
+	result.setTestContextResult(m_testCtx);
 	return STOP;
 }
 
@@ -4719,6 +4737,54 @@ glu::ShaderProgram* PrimitivesGeneratedQueryCase::genProgram (void)
 		sources << glu::GeometrySource(geometrySource.str());
 
 	return new glu::ShaderProgram(m_context.getRenderContext(), sources);
+}
+
+class PrimitivesGeneratedQueryObjectQueryCase : public TestCase
+{
+public:
+					PrimitivesGeneratedQueryObjectQueryCase	(Context& context, const char* name, const char* description);
+
+	void			init									(void);
+	IterateResult	iterate									(void);
+};
+
+PrimitivesGeneratedQueryObjectQueryCase::PrimitivesGeneratedQueryObjectQueryCase (Context& context, const char* name, const char* description)
+	: TestCase(context, name, description)
+{
+}
+
+void PrimitivesGeneratedQueryObjectQueryCase::init (void)
+{
+	if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader"))
+		throw tcu::NotSupportedError("Geometry shader tests require GL_EXT_geometry_shader extension");
+}
+
+PrimitivesGeneratedQueryObjectQueryCase::IterateResult PrimitivesGeneratedQueryObjectQueryCase::iterate (void)
+{
+	glu::CallLogWrapper 	gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
+	tcu::ResultCollector	result	(m_testCtx.getLog(), " // ERROR: ");
+
+	gl.enableLogging(true);
+
+	{
+		glw::GLuint query = 0;
+
+		verifyStateQueryInteger(result, gl, GL_PRIMITIVES_GENERATED, GL_CURRENT_QUERY, 0, QUERY_QUERY);
+
+		gl.glGenQueries(1, &query);
+		GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glGenQueries");
+
+		gl.glBeginQuery(GL_PRIMITIVES_GENERATED, query);
+		GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "beginQuery");
+
+		verifyStateQueryInteger(result, gl, GL_PRIMITIVES_GENERATED, GL_CURRENT_QUERY, (int)query, QUERY_QUERY);
+
+		gl.glEndQuery(GL_PRIMITIVES_GENERATED);
+		GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "endQuery");
+	}
+
+	result.setTestContextResult(m_testCtx);
+	return STOP;
 }
 
 class GeometryShaderFeartureTestCase : public TestCase
@@ -5110,6 +5176,59 @@ ReferencedByGeometryShaderCase::IterateResult ReferencedByGeometryShaderCase::it
 		}
 	}
 
+	return STOP;
+}
+
+class CombinedGeometryUniformLimitCase : public GeometryShaderFeartureTestCase
+{
+public:
+						CombinedGeometryUniformLimitCase	(Context& context, const char* name, const char* desc);
+private:
+	IterateResult		iterate								(void);
+};
+
+CombinedGeometryUniformLimitCase::CombinedGeometryUniformLimitCase (Context& context, const char* name, const char* desc)
+	: GeometryShaderFeartureTestCase(context, name, desc)
+{
+}
+
+CombinedGeometryUniformLimitCase::IterateResult CombinedGeometryUniformLimitCase::iterate (void)
+{
+	glu::CallLogWrapper		gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
+	tcu::ResultCollector	result	(m_testCtx.getLog(), " // ERROR: ");
+
+	gl.enableLogging(true);
+
+	m_testCtx.getLog()	<< tcu::TestLog::Message
+						<< "The minimum value of MAX_COMBINED_GEOMETRY_UNIFORM_COMPONENTS is MAX_GEOMETRY_UNIFORM_BLOCKS x MAX_UNIFORM_BLOCK_SIZE / 4 + MAX_GEOMETRY_UNIFORM_COMPONENTS"
+						<< tcu::TestLog::EndMessage;
+
+	StateQueryMemoryWriteGuard<glw::GLint> maxUniformBlocks;
+	gl.glGetIntegerv(GL_MAX_GEOMETRY_UNIFORM_BLOCKS, &maxUniformBlocks);
+	GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glGetIntegerv");
+
+	StateQueryMemoryWriteGuard<glw::GLint> maxUniformBlockSize;
+	gl.glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, &maxUniformBlockSize);
+	GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glGetIntegerv");
+
+	StateQueryMemoryWriteGuard<glw::GLint> maxUniformComponents;
+	gl.glGetIntegerv(GL_MAX_GEOMETRY_UNIFORM_COMPONENTS, &maxUniformComponents);
+	GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glGetIntegerv");
+
+	if (maxUniformBlocks.verifyValidity(result) && maxUniformBlockSize.verifyValidity(result) && maxUniformComponents.verifyValidity(result))
+	{
+		const int limit = ((int)maxUniformBlocks) * ((int)maxUniformBlockSize) / 4 + (int)maxUniformComponents;
+		verifyStateIntegerMin(result, gl, GL_MAX_COMBINED_GEOMETRY_UNIFORM_COMPONENTS, limit, QUERY_INTEGER);
+
+		{
+			const tcu::ScopedLogSection	section(m_testCtx.getLog(), "Types", "Alternative queries");
+			verifyStateIntegerMin(result, gl, GL_MAX_COMBINED_GEOMETRY_UNIFORM_COMPONENTS, limit, QUERY_BOOLEAN);
+			verifyStateIntegerMin(result, gl, GL_MAX_COMBINED_GEOMETRY_UNIFORM_COMPONENTS, limit, QUERY_INTEGER64);
+			verifyStateIntegerMin(result, gl, GL_MAX_COMBINED_GEOMETRY_UNIFORM_COMPONENTS, limit, QUERY_FLOAT);
+		}
+	}
+
+	result.setTestContextResult(m_testCtx);
 	return STOP;
 }
 
@@ -5847,8 +5966,8 @@ void GeometryShaderTests::init (void)
 
 		// limits
 		queryGroup->addChild(new ImplementationLimitCase(m_context, "max_geometry_shader_invocations",		"", GL_MAX_GEOMETRY_SHADER_INVOCATIONS,		32));
-        queryGroup->addChild(new ImplementationLimitCase(m_context, "max_geometry_uniform_blocks",			"", GL_MAX_GEOMETRY_UNIFORM_BLOCKS,			12));
-        queryGroup->addChild(new ImplementationLimitCase(m_context, "max_geometry_shader_storage_blocks",	"", GL_MAX_GEOMETRY_SHADER_STORAGE_BLOCKS,	0));
+		queryGroup->addChild(new ImplementationLimitCase(m_context, "max_geometry_uniform_blocks",			"", GL_MAX_GEOMETRY_UNIFORM_BLOCKS,			12));
+		queryGroup->addChild(new ImplementationLimitCase(m_context, "max_geometry_shader_storage_blocks",	"", GL_MAX_GEOMETRY_SHADER_STORAGE_BLOCKS,	0));
 
 		// layer_provoking_vertex_ext
 		queryGroup->addChild(new LayerProvokingVertexQueryCase(m_context, "layer_provoking_vertex", "GL_LAYER_PROVOKING_VERTEX"));
@@ -5860,6 +5979,8 @@ void GeometryShaderTests::init (void)
 		queryGroup->addChild(new PrimitivesGeneratedQueryCase(m_context, "primitives_generated_partial_primitives", "PRIMITIVES_GENERATED query with geometry shader emitting partial primitives",		PrimitivesGeneratedQueryCase::TEST_PARTIAL_PRIMITIVES));
 		queryGroup->addChild(new PrimitivesGeneratedQueryCase(m_context, "primitives_generated_instanced",			"PRIMITIVES_GENERATED query with instanced geometry shader",						PrimitivesGeneratedQueryCase::TEST_INSTANCED));
 
+		queryGroup->addChild(new PrimitivesGeneratedQueryObjectQueryCase(m_context, "primitives_generated", "Query bound PRIMITIVES_GENERATED query"));
+
 		// fbo
 		queryGroup->addChild(new ImplementationLimitCase				(m_context, "max_framebuffer_layers",				"", GL_MAX_FRAMEBUFFER_LAYERS,	256));
 		queryGroup->addChild(new FramebufferDefaultLayersCase			(m_context, "framebuffer_default_layers",			""));
@@ -5868,6 +5989,9 @@ void GeometryShaderTests::init (void)
 
 		// resource query
 		queryGroup->addChild(new ReferencedByGeometryShaderCase			(m_context, "referenced_by_geometry_shader",	""));
+
+		// combined limits
+		queryGroup->addChild(new CombinedGeometryUniformLimitCase		(m_context, "max_combined_geometry_uniform_components", "MAX_COMBINED_GEOMETRY_UNIFORM_COMPONENTS"));
 	}
 
 	// basic tests

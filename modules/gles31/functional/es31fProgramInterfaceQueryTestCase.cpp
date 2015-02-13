@@ -58,9 +58,17 @@ static glw::GLenum getProgramDefaultBlockInterfaceFromStorage (glu::Storage stor
 {
 	switch (storage)
 	{
-		case glu::STORAGE_IN:		return GL_PROGRAM_INPUT;
-		case glu::STORAGE_OUT:		return GL_PROGRAM_OUTPUT;
-		case glu::STORAGE_UNIFORM:	return GL_UNIFORM;
+		case glu::STORAGE_IN:
+		case glu::STORAGE_PATCH_IN:
+			return GL_PROGRAM_INPUT;
+
+		case glu::STORAGE_OUT:
+		case glu::STORAGE_PATCH_OUT:
+			return GL_PROGRAM_OUTPUT;
+
+		case glu::STORAGE_UNIFORM:
+			return GL_UNIFORM;
+
 		default:
 			DE_ASSERT(false);
 			return 0;
@@ -70,6 +78,28 @@ static glw::GLenum getProgramDefaultBlockInterfaceFromStorage (glu::Storage stor
 static bool isBufferBackedInterfaceBlockStorage (glu::Storage storage)
 {
 	return storage == glu::STORAGE_BUFFER || storage == glu::STORAGE_UNIFORM;
+}
+
+const char* getRequiredExtensionForStage (glu::ShaderType stage)
+{
+	switch (stage)
+	{
+		case glu::SHADERTYPE_COMPUTE:
+		case glu::SHADERTYPE_VERTEX:
+		case glu::SHADERTYPE_FRAGMENT:
+			return DE_NULL;
+
+		case glu::SHADERTYPE_GEOMETRY:
+			return "GL_EXT_geometry_shader";
+
+		case glu::SHADERTYPE_TESSELLATION_CONTROL:
+		case glu::SHADERTYPE_TESSELLATION_EVALUATION:
+			return "GL_EXT_tessellation_shader";
+
+		default:
+			DE_ASSERT(false);
+			return DE_NULL;
+	}
 }
 
 static int getTypeSize (glu::DataType type)
@@ -145,10 +175,10 @@ static glu::MatrixOrder getMatrixOrderFromPath (const std::vector<VariablePathCo
 class PropValidator
 {
 public:
-									PropValidator					(Context& context, ProgramResourcePropFlags validationProp, const char* requiredExtension = "");
+									PropValidator					(Context& context, ProgramResourcePropFlags validationProp, const char* requiredExtension);
 
 	virtual std::string				getHumanReadablePropertyString	(glw::GLint propVal) const;
-	virtual void					validate						(const ProgramInterfaceDefinition::Program* program, const std::string& resource, glw::GLint propValue) const = 0;
+	virtual void					validate						(const ProgramInterfaceDefinition::Program* program, const std::string& resource, glw::GLint propValue, const std::string& implementationName) const = 0;
 
 	bool							isSupported						(void) const;
 	bool							isSelected						(deUint32 caseFlags) const;
@@ -161,7 +191,7 @@ protected:
 
 private:
 	const glu::ContextInfo&			m_contextInfo;
-	const std::string				m_extension;
+	const char*						m_extension;
 	const ProgramResourcePropFlags	m_validationProp;
 };
 
@@ -181,7 +211,7 @@ std::string PropValidator::getHumanReadablePropertyString (glw::GLint propVal) c
 
 bool PropValidator::isSupported (void) const
 {
-	return m_extension.empty() || m_contextInfo.isExtensionSupported(m_extension.c_str());
+	return m_extension == DE_NULL || m_contextInfo.isExtensionSupported(m_extension);
 }
 
 bool PropValidator::isSelected (deUint32 caseFlags) const
@@ -199,11 +229,11 @@ void PropValidator::setError (const std::string& err) const
 class SingleVariableValidator : public PropValidator
 {
 public:
-					SingleVariableValidator	(Context& context, ProgramResourcePropFlags validationProp, glw::GLuint programID, const VariableSearchFilter& filter, const char* requiredExtension = "");
+					SingleVariableValidator	(Context& context, ProgramResourcePropFlags validationProp, glw::GLuint programID, const VariableSearchFilter& filter, const char* requiredExtension);
 
-	void			validate				(const ProgramInterfaceDefinition::Program* program, const std::string& resource, glw::GLint propValue) const;
-	virtual void	validateSingleVariable	(const std::vector<VariablePathComponent>& path, const std::string& resource, glw::GLint propValue) const = 0;
-	virtual void	validateBuiltinVariable	(const std::string& resource, glw::GLint propValue) const;
+	void			validate				(const ProgramInterfaceDefinition::Program* program, const std::string& resource, glw::GLint propValue, const std::string& implementationName) const;
+	virtual void	validateSingleVariable	(const std::vector<VariablePathComponent>& path, const std::string& resource, glw::GLint propValue, const std::string& implementationName) const = 0;
+	virtual void	validateBuiltinVariable	(const std::string& resource, glw::GLint propValue, const std::string& implementationName) const;
 
 protected:
 	const VariableSearchFilter	m_filter;
@@ -217,7 +247,7 @@ SingleVariableValidator::SingleVariableValidator (Context& context, ProgramResou
 {
 }
 
-void SingleVariableValidator::validate (const ProgramInterfaceDefinition::Program* program, const std::string& resource, glw::GLint propValue) const
+void SingleVariableValidator::validate (const ProgramInterfaceDefinition::Program* program, const std::string& resource, glw::GLint propValue, const std::string& implementationName) const
 {
 	std::vector<VariablePathComponent> path;
 
@@ -231,7 +261,7 @@ void SingleVariableValidator::validate (const ProgramInterfaceDefinition::Progra
 			setError("resource not basic type");
 		}
 		else
-			validateSingleVariable(path, resource, propValue);
+			validateSingleVariable(path, resource, propValue, implementationName);
 
 		// finding matching variable in any shader is sufficient
 		return;
@@ -239,29 +269,30 @@ void SingleVariableValidator::validate (const ProgramInterfaceDefinition::Progra
 	else if (deStringBeginsWith(resource.c_str(), "gl_"))
 	{
 		// special case for builtins
-		validateBuiltinVariable(resource, propValue);
+		validateBuiltinVariable(resource, propValue, implementationName);
 		return;
 	}
 
-	m_testCtx.getLog() << tcu::TestLog::Message << "Error, could not find resource \"" << resource << "\" in the program" << tcu::TestLog::EndMessage;
-	setError("could not find resource");
+	// we are only supplied good names, generated by ourselves
+	DE_ASSERT(false);
+	throw tcu::InternalError("Resource name consistency error");
 }
 
-void SingleVariableValidator::validateBuiltinVariable (const std::string& resource, glw::GLint propValue) const
+void SingleVariableValidator::validateBuiltinVariable (const std::string& resource, glw::GLint propValue, const std::string& implementationName) const
 {
+	DE_UNREF(resource);
 	DE_UNREF(propValue);
-
-	m_testCtx.getLog() << tcu::TestLog::Message << "Error, could not find builtin resource \"" << resource << "\" in the program" << tcu::TestLog::EndMessage;
-	setError("could not find builtin resource");
+	DE_UNREF(implementationName);
+	DE_ASSERT(false);
 }
 
 class SingleBlockValidator : public PropValidator
 {
 public:
-								SingleBlockValidator	(Context& context, ProgramResourcePropFlags validationProp, glw::GLuint programID, const VariableSearchFilter& filter, const char* requiredExtension = "");
+								SingleBlockValidator	(Context& context, ProgramResourcePropFlags validationProp, glw::GLuint programID, const VariableSearchFilter& filter, const char* requiredExtension);
 
-	void						validate				(const ProgramInterfaceDefinition::Program* program, const std::string& resource, glw::GLint propValue) const;
-	virtual void				validateSingleBlock		(const glu::InterfaceBlock& block, const std::vector<int>& instanceIndex, const std::string& resource, glw::GLint propValue) const = 0;
+	void						validate				(const ProgramInterfaceDefinition::Program* program, const std::string& resource, glw::GLint propValue, const std::string& implementationName) const;
+	virtual void				validateSingleBlock		(const glu::InterfaceBlock& block, const std::vector<int>& instanceIndex, const std::string& resource, glw::GLint propValue, const std::string& implementationName) const = 0;
 
 protected:
 	const VariableSearchFilter	m_filter;
@@ -275,7 +306,7 @@ SingleBlockValidator::SingleBlockValidator (Context& context, ProgramResourcePro
 {
 }
 
-void SingleBlockValidator::validate (const ProgramInterfaceDefinition::Program* program, const std::string& resource, glw::GLint propValue) const
+void SingleBlockValidator::validate (const ProgramInterfaceDefinition::Program* program, const std::string& resource, glw::GLint propValue, const std::string& implementationName) const
 {
 	glu::VarTokenizer	tokenizer		(resource.c_str());
 	const std::string	blockName		= tokenizer.getIdentifier();
@@ -315,13 +346,15 @@ void SingleBlockValidator::validate (const ProgramInterfaceDefinition::Program* 
 				// dimensions match
 				DE_ASSERT(instanceIndex.size() == block.dimensions.size());
 
-				validateSingleBlock(block, instanceIndex, resource, propValue);
+				validateSingleBlock(block, instanceIndex, resource, propValue, implementationName);
 				return;
 			}
 		}
 	}
-	m_testCtx.getLog() << tcu::TestLog::Message << "Error, could not find resource \"" << resource << "\" in the program" << tcu::TestLog::EndMessage;
-	setError("could not find resource");
+
+	// we are only supplied good names, generated by ourselves
+	DE_ASSERT(false);
+	throw tcu::InternalError("Resource name consistency error");
 }
 
 class TypeValidator : public SingleVariableValidator
@@ -330,12 +363,12 @@ public:
 				TypeValidator					(Context& context, glw::GLuint programID, const VariableSearchFilter& filter);
 
 	std::string	getHumanReadablePropertyString	(glw::GLint propVal) const;
-	void		validateSingleVariable			(const std::vector<VariablePathComponent>& path, const std::string& resource, glw::GLint propValue) const;
-	void		validateBuiltinVariable			(const std::string& resource, glw::GLint propValue) const;
+	void		validateSingleVariable			(const std::vector<VariablePathComponent>& path, const std::string& resource, glw::GLint propValue, const std::string& implementationName) const;
+	void		validateBuiltinVariable			(const std::string& resource, glw::GLint propValue, const std::string& implementationName) const;
 };
 
 TypeValidator::TypeValidator (Context& context, glw::GLuint programID, const VariableSearchFilter& filter)
-	: SingleVariableValidator(context, PROGRAMRESOURCEPROP_TYPE, programID, filter)
+	: SingleVariableValidator(context, PROGRAMRESOURCEPROP_TYPE, programID, filter, DE_NULL)
 {
 }
 
@@ -344,11 +377,12 @@ std::string TypeValidator::getHumanReadablePropertyString (glw::GLint propVal) c
 	return de::toString(glu::getShaderVarTypeStr(propVal));
 }
 
-void TypeValidator::validateSingleVariable (const std::vector<VariablePathComponent>& path, const std::string& resource, glw::GLint propValue) const
+void TypeValidator::validateSingleVariable (const std::vector<VariablePathComponent>& path, const std::string& resource, glw::GLint propValue, const std::string& implementationName) const
 {
 	const glu::VarType* variable = path.back().getVariableType();
 
 	DE_UNREF(resource);
+	DE_UNREF(implementationName);
 
 	m_testCtx.getLog() << tcu::TestLog::Message << "Verifying type, expecting " << glu::getDataTypeName(variable->getBasicType()) << tcu::TestLog::EndMessage;
 
@@ -359,21 +393,25 @@ void TypeValidator::validateSingleVariable (const std::vector<VariablePathCompon
 	}
 }
 
-void TypeValidator::validateBuiltinVariable (const std::string& resource, glw::GLint propValue) const
+void TypeValidator::validateBuiltinVariable (const std::string& resource, glw::GLint propValue, const std::string& implementationName) const
 {
+	DE_UNREF(implementationName);
+
 	static const struct
 	{
 		const char*		name;
 		glu::DataType	type;
 	} builtins[] =
 	{
-		{ "gl_Position",			glu::TYPE_FLOAT_VEC4	},
-		{ "gl_FragCoord",			glu::TYPE_FLOAT_VEC4	},
-		{ "gl_in[0].gl_Position",	glu::TYPE_FLOAT_VEC4	},
-		{ "gl_VertexID",			glu::TYPE_INT			},
-		{ "gl_InvocationID",		glu::TYPE_INT			},
-		{ "gl_NumWorkGroups",		glu::TYPE_UINT_VEC3		},
-		{ "gl_FragDepth",			glu::TYPE_FLOAT			},
+		{ "gl_Position",				glu::TYPE_FLOAT_VEC4	},
+		{ "gl_FragCoord",				glu::TYPE_FLOAT_VEC4	},
+		{ "gl_PerVertex.gl_Position",	glu::TYPE_FLOAT_VEC4	},
+		{ "gl_VertexID",				glu::TYPE_INT			},
+		{ "gl_InvocationID",			glu::TYPE_INT			},
+		{ "gl_NumWorkGroups",			glu::TYPE_UINT_VEC3		},
+		{ "gl_FragDepth",				glu::TYPE_FLOAT			},
+		{ "gl_TessLevelOuter",			glu::TYPE_FLOAT			},
+		{ "gl_TessLevelInner",			glu::TYPE_FLOAT			},
 	};
 
 	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(builtins); ++ndx)
@@ -397,26 +435,33 @@ void TypeValidator::validateBuiltinVariable (const std::string& resource, glw::G
 class ArraySizeValidator : public SingleVariableValidator
 {
 public:
-				ArraySizeValidator				(Context& context, glw::GLuint programID, const VariableSearchFilter& filter);
-	void		validateSingleVariable			(const std::vector<VariablePathComponent>& path, const std::string& resource, glw::GLint propValue) const;
-	void		validateBuiltinVariable			(const std::string& resource, glw::GLint propValue) const;
+				ArraySizeValidator				(Context& context, glw::GLuint programID, int unsizedArraySize, const VariableSearchFilter& filter);
+
+	void		validateSingleVariable			(const std::vector<VariablePathComponent>& path, const std::string& resource, glw::GLint propValue, const std::string& implementationName) const;
+	void		validateBuiltinVariable			(const std::string& resource, glw::GLint propValue, const std::string& implementationName) const;
+
+private:
+	const int	m_unsizedArraySize;
 };
 
-ArraySizeValidator::ArraySizeValidator (Context& context, glw::GLuint programID, const VariableSearchFilter& filter)
-	: SingleVariableValidator(context, PROGRAMRESOURCEPROP_ARRAY_SIZE, programID, filter)
+ArraySizeValidator::ArraySizeValidator (Context& context, glw::GLuint programID, int unsizedArraySize, const VariableSearchFilter& filter)
+	: SingleVariableValidator	(context, PROGRAMRESOURCEPROP_ARRAY_SIZE, programID, filter, DE_NULL)
+	, m_unsizedArraySize		(unsizedArraySize)
 {
 }
 
-void ArraySizeValidator::validateSingleVariable (const std::vector<VariablePathComponent>& path, const std::string& resource, glw::GLint propValue) const
+void ArraySizeValidator::validateSingleVariable (const std::vector<VariablePathComponent>& path, const std::string& resource, glw::GLint propValue, const std::string& implementationName) const
 {
 	const VariablePathComponent		nullComponent;
 	const VariablePathComponent&	enclosingcomponent	= (path.size() > 1) ? (path[path.size()-2]) : (nullComponent);
 
 	const bool						isArray				= enclosingcomponent.isVariableType() && enclosingcomponent.getVariableType()->isArrayType();
 	const bool						inUnsizedArray		= isArray && (enclosingcomponent.getVariableType()->getArraySize() == glu::VarType::UNSIZED_ARRAY);
-	const int						arraySize			= (!isArray) ? (1) : (inUnsizedArray) ? (0) : (enclosingcomponent.getVariableType()->getArraySize());
+	const int						arraySize			= (!isArray) ? (1) : (inUnsizedArray) ? (m_unsizedArraySize) : (enclosingcomponent.getVariableType()->getArraySize());
 
+	DE_ASSERT(arraySize >= 0);
 	DE_UNREF(resource);
+	DE_UNREF(implementationName);
 
 	m_testCtx.getLog() << tcu::TestLog::Message << "Verifying array size, expecting " << arraySize << tcu::TestLog::EndMessage;
 
@@ -427,42 +472,59 @@ void ArraySizeValidator::validateSingleVariable (const std::vector<VariablePathC
 	}
 }
 
-void ArraySizeValidator::validateBuiltinVariable (const std::string& resource, glw::GLint propValue) const
+void ArraySizeValidator::validateBuiltinVariable (const std::string& resource, glw::GLint propValue, const std::string& implementationName) const
 {
-	// support all built-ins that getProgramInterfaceResourceList supports
-	if (resource == "gl_Position"			||
-		resource == "gl_VertexID"			||
-		resource == "gl_FragCoord"			||
-		resource == "gl_in[0].gl_Position"	||
-		resource == "gl_InvocationID"		||
-		resource == "gl_NumWorkGroups"		||
-		resource == "gl_FragDepth")
-	{
-		m_testCtx.getLog() << tcu::TestLog::Message << "Verifying array size, expecting 1" << tcu::TestLog::EndMessage;
+	DE_UNREF(implementationName);
 
-		if (propValue != 1)
+	static const struct
+	{
+		const char*		name;
+		int				arraySize;
+	} builtins[] =
+	{
+		{ "gl_Position",				1	},
+		{ "gl_VertexID",				1	},
+		{ "gl_FragCoord",				1	},
+		{ "gl_PerVertex.gl_Position",	1	},
+		{ "gl_InvocationID",			1	},
+		{ "gl_NumWorkGroups",			1	},
+		{ "gl_FragDepth",				1	},
+		{ "gl_TessLevelOuter",			4	},
+		{ "gl_TessLevelInner",			2	},
+	};
+
+	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(builtins); ++ndx)
+	{
+		if (resource == builtins[ndx].name)
 		{
-			m_testCtx.getLog() << tcu::TestLog::Message << "\tError, got " << propValue << tcu::TestLog::EndMessage;
-			setError("resource array size invalid");
+			m_testCtx.getLog() << tcu::TestLog::Message << "Verifying array size, expecting " << builtins[ndx].arraySize << tcu::TestLog::EndMessage;
+
+			if (propValue != builtins[ndx].arraySize)
+			{
+				m_testCtx.getLog() << tcu::TestLog::Message << "\tError, got " << propValue << tcu::TestLog::EndMessage;
+				setError("resource array size invalid");
+			}
+			return;
 		}
 	}
-	else
-		DE_ASSERT(false);
+
+	DE_ASSERT(false);
 }
 
 class ArrayStrideValidator : public SingleVariableValidator
 {
 public:
 				ArrayStrideValidator			(Context& context, glw::GLuint programID, const VariableSearchFilter& filter);
-	void		validateSingleVariable			(const std::vector<VariablePathComponent>& path, const std::string& resource, glw::GLint propValue) const;
+
+	void		validateSingleVariable			(const std::vector<VariablePathComponent>& path, const std::string& resource, glw::GLint propValue, const std::string& implementationName) const;
 };
 
 ArrayStrideValidator::ArrayStrideValidator (Context& context, glw::GLuint programID, const VariableSearchFilter& filter)
-	: SingleVariableValidator(context, PROGRAMRESOURCEPROP_ARRAY_STRIDE, programID, filter)
+	: SingleVariableValidator(context, PROGRAMRESOURCEPROP_ARRAY_STRIDE, programID, filter, DE_NULL)
 {
 }
 
-void ArrayStrideValidator::validateSingleVariable (const std::vector<VariablePathComponent>& path, const std::string& resource, glw::GLint propValue) const
+void ArrayStrideValidator::validateSingleVariable (const std::vector<VariablePathComponent>& path, const std::string& resource, glw::GLint propValue, const std::string& implementationName) const
 {
 	const VariablePathComponent		nullComponent;
 	const VariablePathComponent&	component			= path.back();
@@ -474,6 +536,7 @@ void ArrayStrideValidator::validateSingleVariable (const std::vector<VariablePat
 	const bool						isAtomicCounter		= glu::isDataTypeAtomicCounter(component.getVariableType()->getBasicType()); // atomic counters are buffer backed with a stride of 4 basic machine units
 
 	DE_UNREF(resource);
+	DE_UNREF(implementationName);
 
 	// Layout tests will verify layouts of buffer backed arrays properly. Here we just check values are greater or equal to the element size
 	if (isBufferBlock && isArray)
@@ -506,19 +569,21 @@ class BlockIndexValidator : public SingleVariableValidator
 {
 public:
 				BlockIndexValidator				(Context& context, glw::GLuint programID, const VariableSearchFilter& filter);
-	void		validateSingleVariable			(const std::vector<VariablePathComponent>& path, const std::string& resource, glw::GLint propValue) const;
+
+	void		validateSingleVariable			(const std::vector<VariablePathComponent>& path, const std::string& resource, glw::GLint propValue, const std::string& implementationName) const;
 };
 
 BlockIndexValidator::BlockIndexValidator (Context& context, glw::GLuint programID, const VariableSearchFilter& filter)
-	: SingleVariableValidator(context, PROGRAMRESOURCEPROP_BLOCK_INDEX, programID, filter)
+	: SingleVariableValidator(context, PROGRAMRESOURCEPROP_BLOCK_INDEX, programID, filter, DE_NULL)
 {
 }
 
-void BlockIndexValidator::validateSingleVariable (const std::vector<VariablePathComponent>& path, const std::string& resource, glw::GLint propValue) const
+void BlockIndexValidator::validateSingleVariable (const std::vector<VariablePathComponent>& path, const std::string& resource, glw::GLint propValue, const std::string& implementationName) const
 {
 	const VariablePathComponent& firstComponent = path.front();
 
 	DE_UNREF(resource);
+	DE_UNREF(implementationName);
 
 	if (!firstComponent.isInterfaceBlock())
 	{
@@ -578,20 +643,20 @@ public:
 				IsRowMajorValidator				(Context& context, glw::GLuint programID, const VariableSearchFilter& filter);
 
 	std::string getHumanReadablePropertyString	(glw::GLint propVal) const;
-	void		validateSingleVariable			(const std::vector<VariablePathComponent>& path, const std::string& resource, glw::GLint propValue) const;
+	void		validateSingleVariable			(const std::vector<VariablePathComponent>& path, const std::string& resource, glw::GLint propValue, const std::string& implementationName) const;
 };
 
 IsRowMajorValidator::IsRowMajorValidator (Context& context, glw::GLuint programID, const VariableSearchFilter& filter)
-	: SingleVariableValidator(context, PROGRAMRESOURCEPROP_MATRIX_ROW_MAJOR, programID, filter)
+	: SingleVariableValidator(context, PROGRAMRESOURCEPROP_MATRIX_ROW_MAJOR, programID, filter, DE_NULL)
 {
 }
 
-std::string IsRowMajorValidator::getHumanReadablePropertyString	(glw::GLint propVal) const
+std::string IsRowMajorValidator::getHumanReadablePropertyString (glw::GLint propVal) const
 {
 	return de::toString(glu::getBooleanStr(propVal));
 }
 
-void IsRowMajorValidator::validateSingleVariable (const std::vector<VariablePathComponent>& path, const std::string& resource, glw::GLint propValue) const
+void IsRowMajorValidator::validateSingleVariable (const std::vector<VariablePathComponent>& path, const std::string& resource, glw::GLint propValue, const std::string& implementationName) const
 {
 	const VariablePathComponent&	component			= path.back();
 	const VariablePathComponent&	firstComponent		= path.front();
@@ -601,6 +666,7 @@ void IsRowMajorValidator::validateSingleVariable (const std::vector<VariablePath
 	const int						expected			= (isBufferBlock && isMatrix && getMatrixOrderFromPath(path) == glu::MATRIXORDER_ROW_MAJOR) ? (1) : (0);
 
 	DE_UNREF(resource);
+	DE_UNREF(implementationName);
 
 	m_testCtx.getLog() << tcu::TestLog::Message << "Verifying matrix order, expecting IS_ROW_MAJOR = " << expected << tcu::TestLog::EndMessage;
 
@@ -615,15 +681,16 @@ class MatrixStrideValidator : public SingleVariableValidator
 {
 public:
 				MatrixStrideValidator			(Context& context, glw::GLuint programID, const VariableSearchFilter& filter);
-	void		validateSingleVariable			(const std::vector<VariablePathComponent>& path, const std::string& resource, glw::GLint propValue) const;
+
+	void		validateSingleVariable			(const std::vector<VariablePathComponent>& path, const std::string& resource, glw::GLint propValue, const std::string& implementationName) const;
 };
 
 MatrixStrideValidator::MatrixStrideValidator (Context& context, glw::GLuint programID, const VariableSearchFilter& filter)
-	: SingleVariableValidator(context, PROGRAMRESOURCEPROP_MATRIX_STRIDE, programID, filter)
+	: SingleVariableValidator(context, PROGRAMRESOURCEPROP_MATRIX_STRIDE, programID, filter, DE_NULL)
 {
 }
 
-void MatrixStrideValidator::validateSingleVariable (const std::vector<VariablePathComponent>& path, const std::string& resource, glw::GLint propValue) const
+void MatrixStrideValidator::validateSingleVariable (const std::vector<VariablePathComponent>& path, const std::string& resource, glw::GLint propValue, const std::string& implementationName) const
 {
 	const VariablePathComponent&	component			= path.back();
 	const VariablePathComponent&	firstComponent		= path.front();
@@ -632,6 +699,7 @@ void MatrixStrideValidator::validateSingleVariable (const std::vector<VariablePa
 	const bool						isMatrix			= glu::isDataTypeMatrix(component.getVariableType()->getBasicType());
 
 	DE_UNREF(resource);
+	DE_UNREF(implementationName);
 
 	// Layout tests will verify layouts of buffer backed arrays properly. Here we just check the stride is is greater or equal to the row/column size
 	if (isBufferBlock && isMatrix)
@@ -666,17 +734,19 @@ class AtomicCounterBufferIndexVerifier : public SingleVariableValidator
 {
 public:
 				AtomicCounterBufferIndexVerifier	(Context& context, glw::GLuint programID, const VariableSearchFilter& filter);
-	void		validateSingleVariable				(const std::vector<VariablePathComponent>& path, const std::string& resource, glw::GLint propValue) const;
+
+	void		validateSingleVariable				(const std::vector<VariablePathComponent>& path, const std::string& resource, glw::GLint propValue, const std::string& implementationName) const;
 };
 
 AtomicCounterBufferIndexVerifier::AtomicCounterBufferIndexVerifier (Context& context, glw::GLuint programID, const VariableSearchFilter& filter)
-	: SingleVariableValidator(context, PROGRAMRESOURCEPROP_ATOMIC_COUNTER_BUFFER_INDEX, programID, filter)
+	: SingleVariableValidator(context, PROGRAMRESOURCEPROP_ATOMIC_COUNTER_BUFFER_INDEX, programID, filter, DE_NULL)
 {
 }
 
-void AtomicCounterBufferIndexVerifier::validateSingleVariable (const std::vector<VariablePathComponent>& path, const std::string& resource, glw::GLint propValue) const
+void AtomicCounterBufferIndexVerifier::validateSingleVariable (const std::vector<VariablePathComponent>& path, const std::string& resource, glw::GLint propValue, const std::string& implementationName) const
 {
 	DE_UNREF(resource);
+	DE_UNREF(implementationName);
 
 	if (!glu::isDataTypeAtomicCounter(path.back().getVariableType()->getBasicType()))
 	{
@@ -718,12 +788,13 @@ class LocationValidator : public SingleVariableValidator
 {
 public:
 				LocationValidator		(Context& context, glw::GLuint programID, const VariableSearchFilter& filter);
-	void		validateSingleVariable	(const std::vector<VariablePathComponent>& path, const std::string& resource, glw::GLint propValue) const;
-	void		validateBuiltinVariable	(const std::string& resource, glw::GLint propValue) const;
+
+	void		validateSingleVariable	(const std::vector<VariablePathComponent>& path, const std::string& resource, glw::GLint propValue, const std::string& implementationName) const;
+	void		validateBuiltinVariable	(const std::string& resource, glw::GLint propValue, const std::string& implementationName) const;
 };
 
 LocationValidator::LocationValidator (Context& context, glw::GLuint programID, const VariableSearchFilter& filter)
-	: SingleVariableValidator(context, PROGRAMRESOURCEPROP_LOCATION, programID, filter)
+	: SingleVariableValidator(context, PROGRAMRESOURCEPROP_LOCATION, programID, filter, DE_NULL)
 {
 }
 
@@ -791,13 +862,15 @@ static int getIOBlockVariableLocation (const std::vector<VariablePathComponent>&
 	// Find the block member
 	for (int memberNdx = 0; memberNdx < (int)block->variables.size(); ++memberNdx)
 	{
-		if (&block->variables[memberNdx] == path[1].getDeclaration())
-			break;
-
 		if (block->variables[memberNdx].layout.location != -1)
 			currentLocation = block->variables[memberNdx].layout.location;
 
-		currentLocation += getVariableLocationLength(block->variables[memberNdx].varType);
+		if (&block->variables[memberNdx] == path[1].getDeclaration())
+			break;
+
+		// unspecified + unspecified = unspecified
+		if (currentLocation != -1)
+			currentLocation += getVariableLocationLength(block->variables[memberNdx].varType);
 	}
 
 	// Find subtype location in the complex type
@@ -813,7 +886,10 @@ static int getExplicitLocationFromPath (const std::vector<VariablePathComponent>
 		// inside uniform block
 		return -1;
 	}
-	else if (path.front().isInterfaceBlock() && (path.front().getInterfaceBlock()->storage == glu::STORAGE_IN || path.front().getInterfaceBlock()->storage == glu::STORAGE_OUT))
+	else if (path.front().isInterfaceBlock() && (path.front().getInterfaceBlock()->storage == glu::STORAGE_IN		||
+												 path.front().getInterfaceBlock()->storage == glu::STORAGE_OUT		||
+												 path.front().getInterfaceBlock()->storage == glu::STORAGE_PATCH_IN	||
+												 path.front().getInterfaceBlock()->storage == glu::STORAGE_PATCH_OUT))
 	{
 		// inside ioblock
 		return getIOBlockVariableLocation(path);
@@ -823,7 +899,10 @@ static int getExplicitLocationFromPath (const std::vector<VariablePathComponent>
 		// default block uniform
 		return varDecl->layout.location;
 	}
-	else if (varDecl->storage == glu::STORAGE_IN || varDecl->storage == glu::STORAGE_OUT)
+	else if (varDecl->storage == glu::STORAGE_IN		||
+			 varDecl->storage == glu::STORAGE_OUT		||
+			 varDecl->storage == glu::STORAGE_PATCH_IN	||
+			 varDecl->storage == glu::STORAGE_PATCH_OUT)
 	{
 		// default block input/output
 		return getIOSubVariableLocation(path, 1, varDecl->layout.location);
@@ -835,18 +914,21 @@ static int getExplicitLocationFromPath (const std::vector<VariablePathComponent>
 	}
 }
 
-void LocationValidator::validateSingleVariable (const std::vector<VariablePathComponent>& path, const std::string& resource, glw::GLint propValue) const
+void LocationValidator::validateSingleVariable (const std::vector<VariablePathComponent>& path, const std::string& resource, glw::GLint propValue, const std::string& implementationName) const
 {
-	const bool	isAtomicCounterUniform	= glu::isDataTypeAtomicCounter(path.back().getVariableType()->getBasicType());
-	const bool	isUniformBlockVariable	= path.front().isInterfaceBlock() && path.front().getInterfaceBlock()->storage == glu::STORAGE_UNIFORM;
-	const bool	isVertexShader			= m_filter.getShaderTypeFilter() == glu::SHADERTYPE_VERTEX;
-	const bool	isFragmentShader		= m_filter.getShaderTypeFilter() == glu::SHADERTYPE_FRAGMENT;
-	const bool	isInputVariable			= (path.front().isInterfaceBlock()) ? (path.front().getInterfaceBlock()->storage == glu::STORAGE_IN) : (path.front().getDeclaration()->storage == glu::STORAGE_IN);
-	const bool	isOutputVariable		= (path.front().isInterfaceBlock()) ? (path.front().getInterfaceBlock()->storage == glu::STORAGE_OUT) : (path.front().getDeclaration()->storage == glu::STORAGE_OUT);
-	const int	explicitLayoutLocation	= getExplicitLocationFromPath(path);
+	const bool			isAtomicCounterUniform	= glu::isDataTypeAtomicCounter(path.back().getVariableType()->getBasicType());
+	const bool			isUniformBlockVariable	= path.front().isInterfaceBlock() && path.front().getInterfaceBlock()->storage == glu::STORAGE_UNIFORM;
+	const bool			isVertexShader			= m_filter.getShaderTypeBits() == (1u << glu::SHADERTYPE_VERTEX);
+	const bool			isFragmentShader		= m_filter.getShaderTypeBits() == (1u << glu::SHADERTYPE_FRAGMENT);
+	const glu::Storage	storage					= (path.front().isInterfaceBlock()) ? (path.front().getInterfaceBlock()->storage) : (path.front().getDeclaration()->storage);
+	const bool			isInputVariable			= (storage == glu::STORAGE_IN || storage == glu::STORAGE_PATCH_IN);
+	const bool			isOutputVariable		= (storage == glu::STORAGE_OUT || storage == glu::STORAGE_PATCH_OUT);
+	const int			explicitLayoutLocation	= getExplicitLocationFromPath(path);
 
-	bool		expectLocation;
-	std::string	reasonStr;
+	bool				expectLocation;
+	std::string			reasonStr;
+
+	DE_UNREF(resource);
 
 	if (isAtomicCounterUniform)
 	{
@@ -910,7 +992,6 @@ void LocationValidator::validateSingleVariable (const std::vector<VariablePathCo
 			const bool						isArray				= enclosingcomponent.isVariableType() && enclosingcomponent.getVariableType()->isArrayType();
 
 			const glw::Functions&			gl					= m_renderContext.getFunctions();
-			const glu::Storage				storage				= (path.front().isInterfaceBlock()) ? (path.front().getInterfaceBlock()->storage) : (path.front().getDeclaration()->storage);
 			const glw::GLenum				interface			= getProgramDefaultBlockInterfaceFromStorage(storage);
 
 			m_testCtx.getLog() << tcu::TestLog::Message << "Comparing location to the values returned by GetProgramResourceLocation" << tcu::TestLog::EndMessage;
@@ -918,7 +999,7 @@ void LocationValidator::validateSingleVariable (const std::vector<VariablePathCo
 			// Test all bottom-level array elements
 			if (isArray)
 			{
-				const std::string arrayResourceName = (resource.size() > 3) ? (resource.substr(0, resource.size() - 3)) : (""); // chop "[0]"
+				const std::string arrayResourceName = (implementationName.size() > 3) ? (implementationName.substr(0, implementationName.size() - 3)) : (""); // chop "[0]"
 
 				for (int arrayElementNdx = 0; arrayElementNdx < enclosingcomponent.getVariableType()->getArraySize(); ++arrayElementNdx)
 				{
@@ -940,7 +1021,7 @@ void LocationValidator::validateSingleVariable (const std::vector<VariablePathCo
 			}
 			else
 			{
-				const glw::GLint location = gl.getProgramResourceLocation(m_programID, interface, resource.c_str());
+				const glw::GLint location = gl.getProgramResourceLocation(m_programID, interface, implementationName.c_str());
 
 				if (location != propValue)
 				{
@@ -953,9 +1034,10 @@ void LocationValidator::validateSingleVariable (const std::vector<VariablePathCo
 	}
 }
 
-void LocationValidator::validateBuiltinVariable (const std::string& resource, glw::GLint propValue) const
+void LocationValidator::validateBuiltinVariable (const std::string& resource, glw::GLint propValue, const std::string& implementationName) const
 {
 	DE_UNREF(resource);
+	DE_UNREF(implementationName);
 
 	// built-ins have no location
 
@@ -972,31 +1054,34 @@ class VariableNameLengthValidator : public SingleVariableValidator
 {
 public:
 				VariableNameLengthValidator	(Context& context, glw::GLuint programID, const VariableSearchFilter& filter);
-	void		validateSingleVariable		(const std::vector<VariablePathComponent>& path, const std::string& resource, glw::GLint propValue) const;
-	void		validateBuiltinVariable		(const std::string& resource, glw::GLint propValue) const;
-	void		validateNameLength			(const std::string& resource, glw::GLint propValue) const;
+
+	void		validateSingleVariable		(const std::vector<VariablePathComponent>& path, const std::string& resource, glw::GLint propValue, const std::string& implementationName) const;
+	void		validateBuiltinVariable		(const std::string& resource, glw::GLint propValue, const std::string& implementationName) const;
+	void		validateNameLength			(const std::string& implementationName, glw::GLint propValue) const;
 };
 
 VariableNameLengthValidator::VariableNameLengthValidator (Context& context, glw::GLuint programID, const VariableSearchFilter& filter)
-	: SingleVariableValidator(context, PROGRAMRESOURCEPROP_NAME_LENGTH, programID, filter)
+	: SingleVariableValidator(context, PROGRAMRESOURCEPROP_NAME_LENGTH, programID, filter, DE_NULL)
 {
 }
 
-void VariableNameLengthValidator::validateSingleVariable (const std::vector<VariablePathComponent>& path, const std::string& resource, glw::GLint propValue) const
+void VariableNameLengthValidator::validateSingleVariable (const std::vector<VariablePathComponent>& path, const std::string& resource, glw::GLint propValue, const std::string& implementationName) const
 {
 	DE_UNREF(path);
-	validateNameLength(resource, propValue);
+	DE_UNREF(resource);
+	validateNameLength(implementationName, propValue);
 }
 
-void VariableNameLengthValidator::validateBuiltinVariable (const std::string& resource, glw::GLint propValue) const
+void VariableNameLengthValidator::validateBuiltinVariable (const std::string& resource, glw::GLint propValue, const std::string& implementationName) const
 {
-	validateNameLength(resource, propValue);
+	DE_UNREF(resource);
+	validateNameLength(implementationName, propValue);
 }
 
-void VariableNameLengthValidator::validateNameLength (const std::string& resource, glw::GLint propValue) const
+void VariableNameLengthValidator::validateNameLength (const std::string& implementationName, glw::GLint propValue) const
 {
-	const int expected = (int)resource.length() + 1; // includes null byte
-	m_testCtx.getLog() << tcu::TestLog::Message << "Verifying name length, expecting " << expected << " (" << (int)resource.length() << " for \"" << resource << "\" + 1 byte for terminating null character)" << tcu::TestLog::EndMessage;
+	const int expected = (int)implementationName.length() + 1; // includes null byte
+	m_testCtx.getLog() << tcu::TestLog::Message << "Verifying name length, expecting " << expected << " (" << (int)implementationName.length() << " for \"" << implementationName << "\" + 1 byte for terminating null character)" << tcu::TestLog::EndMessage;
 
 	if (propValue != expected)
 	{
@@ -1009,20 +1094,22 @@ class OffsetValidator : public SingleVariableValidator
 {
 public:
 				OffsetValidator			(Context& context, glw::GLuint programID, const VariableSearchFilter& filter);
-	void		validateSingleVariable	(const std::vector<VariablePathComponent>& path, const std::string& resource, glw::GLint propValue) const;
+
+	void		validateSingleVariable	(const std::vector<VariablePathComponent>& path, const std::string& resource, glw::GLint propValue, const std::string& implementationName) const;
 };
 
 OffsetValidator::OffsetValidator (Context& context, glw::GLuint programID, const VariableSearchFilter& filter)
-	: SingleVariableValidator(context, PROGRAMRESOURCEPROP_OFFSET, programID, filter)
+	: SingleVariableValidator(context, PROGRAMRESOURCEPROP_OFFSET, programID, filter, DE_NULL)
 {
 }
 
-void OffsetValidator::validateSingleVariable (const std::vector<VariablePathComponent>& path, const std::string& resource, glw::GLint propValue) const
+void OffsetValidator::validateSingleVariable (const std::vector<VariablePathComponent>& path, const std::string& resource, glw::GLint propValue, const std::string& implementationName) const
 {
 	const bool isAtomicCounterUniform		= glu::isDataTypeAtomicCounter(path.back().getVariableType()->getBasicType());
 	const bool isBufferBackedBlockStorage	= path.front().isInterfaceBlock() && isBufferBackedInterfaceBlockStorage(path.front().getInterfaceBlock()->storage);
 
 	DE_UNREF(resource);
+	DE_UNREF(implementationName);
 
 	if (!isAtomicCounterUniform && !isBufferBackedBlockStorage)
 	{
@@ -1051,41 +1138,46 @@ void OffsetValidator::validateSingleVariable (const std::vector<VariablePathComp
 class VariableReferencedByShaderValidator : public PropValidator
 {
 public:
-								VariableReferencedByShaderValidator	(Context& context, const VariableSearchFilter& searchFilter);
+								VariableReferencedByShaderValidator	(Context& context, glu::ShaderType shaderType, const VariableSearchFilter& searchFilter);
 
 	std::string					getHumanReadablePropertyString		(glw::GLint propVal) const;
-	void						validate							(const ProgramInterfaceDefinition::Program* program, const std::string& resource, glw::GLint propValue) const;
+	void						validate							(const ProgramInterfaceDefinition::Program* program, const std::string& resource, glw::GLint propValue, const std::string& implementationName) const;
 
 private:
 	const VariableSearchFilter	m_filter;
+	const glu::ShaderType		m_shaderType;
 };
 
-VariableReferencedByShaderValidator::VariableReferencedByShaderValidator (Context& context, const VariableSearchFilter& searchFilter)
-	: PropValidator	(context, PROGRAMRESOURCEPROP_REFERENCED_BY_SHADER)
-	, m_filter		(searchFilter)
+VariableReferencedByShaderValidator::VariableReferencedByShaderValidator (Context& context, glu::ShaderType shaderType, const VariableSearchFilter& searchFilter)
+	: PropValidator	(context, PROGRAMRESOURCEPROP_REFERENCED_BY_SHADER, getRequiredExtensionForStage(shaderType))
+	, m_filter		(VariableSearchFilter::logicalAnd(VariableSearchFilter::createShaderTypeFilter(shaderType), searchFilter))
+	, m_shaderType	(shaderType)
 {
+	DE_ASSERT(m_shaderType < glu::SHADERTYPE_LAST);
 }
 
-std::string VariableReferencedByShaderValidator::getHumanReadablePropertyString	(glw::GLint propVal) const
+std::string VariableReferencedByShaderValidator::getHumanReadablePropertyString (glw::GLint propVal) const
 {
 	return de::toString(glu::getBooleanStr(propVal));
 }
 
-void VariableReferencedByShaderValidator::validate (const ProgramInterfaceDefinition::Program* program, const std::string& resource, glw::GLint propValue) const
+void VariableReferencedByShaderValidator::validate (const ProgramInterfaceDefinition::Program* program, const std::string& resource, glw::GLint propValue, const std::string& implementationName) const
 {
+	DE_UNREF(implementationName);
+
 	std::vector<VariablePathComponent>	dummyPath;
 	const bool							referencedByShader = findProgramVariablePathByPathName(dummyPath, program, resource, m_filter);
 
 	m_testCtx.getLog()
 		<< tcu::TestLog::Message
-		<< "Verifying referenced by " << glu::getShaderTypeName(m_filter.getShaderTypeFilter()) << " shader, expecting "
+		<< "Verifying referenced by " << glu::getShaderTypeName(m_shaderType) << " shader, expecting "
 		<< ((referencedByShader) ? ("GL_TRUE") : ("GL_FALSE"))
 		<< tcu::TestLog::EndMessage;
 
 	if (propValue != ((referencedByShader) ? (1) : (0)))
 	{
-		m_testCtx.getLog() << tcu::TestLog::Message << "\tError, invalid referenced_by_" << glu::getShaderTypeName(m_filter.getShaderTypeFilter()) << ", got " << propValue << tcu::TestLog::EndMessage;
-		setError("referenced_by_" + std::string(glu::getShaderTypeName(m_filter.getShaderTypeFilter())) + " invalid");
+		m_testCtx.getLog() << tcu::TestLog::Message << "\tError, invalid referenced_by_" << glu::getShaderTypeName(m_shaderType) << ", got " << propValue << tcu::TestLog::EndMessage;
+		setError("referenced_by_" + std::string(glu::getShaderTypeName(m_shaderType)) + " invalid");
 	}
 }
 
@@ -1093,21 +1185,23 @@ class BlockNameLengthValidator : public SingleBlockValidator
 {
 public:
 			BlockNameLengthValidator	(Context& context, const glw::GLuint programID, const VariableSearchFilter& filter);
-	void	validateSingleBlock			(const glu::InterfaceBlock& block, const std::vector<int>& instanceIndex, const std::string& resource, glw::GLint propValue) const;
+
+	void	validateSingleBlock			(const glu::InterfaceBlock& block, const std::vector<int>& instanceIndex, const std::string& resource, glw::GLint propValue, const std::string& implementationName) const;
 };
 
 BlockNameLengthValidator::BlockNameLengthValidator (Context& context, const glw::GLuint programID, const VariableSearchFilter& filter)
-	: SingleBlockValidator(context, PROGRAMRESOURCEPROP_NAME_LENGTH, programID, filter)
+	: SingleBlockValidator(context, PROGRAMRESOURCEPROP_NAME_LENGTH, programID, filter, DE_NULL)
 {
 }
 
-void BlockNameLengthValidator::validateSingleBlock (const glu::InterfaceBlock& block, const std::vector<int>& instanceIndex, const std::string& resource, glw::GLint propValue) const
+void BlockNameLengthValidator::validateSingleBlock (const glu::InterfaceBlock& block, const std::vector<int>& instanceIndex, const std::string& resource, glw::GLint propValue, const std::string& implementationName) const
 {
 	DE_UNREF(instanceIndex);
 	DE_UNREF(block);
+	DE_UNREF(resource);
 
-	const int expected = (int)resource.length() + 1; // includes null byte
-	m_testCtx.getLog() << tcu::TestLog::Message << "Verifying name length, expecting " << expected << " (" << (int)resource.length() << " for \"" << resource << "\" + 1 byte for terminating null character)" << tcu::TestLog::EndMessage;
+	const int expected = (int)implementationName.length() + 1; // includes null byte
+	m_testCtx.getLog() << tcu::TestLog::Message << "Verifying name length, expecting " << expected << " (" << (int)implementationName.length() << " for \"" << implementationName << "\" + 1 byte for terminating null character)" << tcu::TestLog::EndMessage;
 
 	if (propValue != expected)
 	{
@@ -1120,17 +1214,19 @@ class BufferBindingValidator : public SingleBlockValidator
 {
 public:
 			BufferBindingValidator	(Context& context, const glw::GLuint programID, const VariableSearchFilter& filter);
-	void	validateSingleBlock		(const glu::InterfaceBlock& block, const std::vector<int>& instanceIndex, const std::string& resource, glw::GLint propValue) const;
+
+	void	validateSingleBlock		(const glu::InterfaceBlock& block, const std::vector<int>& instanceIndex, const std::string& resource, glw::GLint propValue, const std::string& implementationName) const;
 };
 
 BufferBindingValidator::BufferBindingValidator (Context& context, const glw::GLuint programID, const VariableSearchFilter& filter)
-	: SingleBlockValidator(context, PROGRAMRESOURCEPROP_BUFFER_BINDING, programID, filter)
+	: SingleBlockValidator(context, PROGRAMRESOURCEPROP_BUFFER_BINDING, programID, filter, DE_NULL)
 {
 }
 
-void BufferBindingValidator::validateSingleBlock (const glu::InterfaceBlock& block, const std::vector<int>& instanceIndex, const std::string& resource, glw::GLint propValue) const
+void BufferBindingValidator::validateSingleBlock (const glu::InterfaceBlock& block, const std::vector<int>& instanceIndex, const std::string& resource, glw::GLint propValue, const std::string& implementationName) const
 {
 	DE_UNREF(resource);
+	DE_UNREF(implementationName);
 
 	if (block.layout.binding != -1)
 	{
@@ -1167,32 +1263,35 @@ void BufferBindingValidator::validateSingleBlock (const glu::InterfaceBlock& blo
 class BlockReferencedByShaderValidator : public PropValidator
 {
 public:
-								BlockReferencedByShaderValidator	(Context& context, const VariableSearchFilter& searchFilter);
+								BlockReferencedByShaderValidator	(Context& context, glu::ShaderType shaderType, const VariableSearchFilter& searchFilter);
 
 	std::string					getHumanReadablePropertyString		(glw::GLint propVal) const;
-	void						validate							(const ProgramInterfaceDefinition::Program* program, const std::string& resource, glw::GLint propValue) const;
+	void						validate							(const ProgramInterfaceDefinition::Program* program, const std::string& resource, glw::GLint propValue, const std::string& implementationName) const;
 
 private:
 	const VariableSearchFilter	m_filter;
+	const glu::ShaderType		m_shaderType;
 };
 
-BlockReferencedByShaderValidator::BlockReferencedByShaderValidator (Context& context, const VariableSearchFilter& searchFilter)
-	: PropValidator	(context, PROGRAMRESOURCEPROP_REFERENCED_BY_SHADER)
-	, m_filter		(searchFilter)
+BlockReferencedByShaderValidator::BlockReferencedByShaderValidator (Context& context, glu::ShaderType shaderType, const VariableSearchFilter& searchFilter)
+	: PropValidator	(context, PROGRAMRESOURCEPROP_REFERENCED_BY_SHADER, getRequiredExtensionForStage(shaderType))
+	, m_filter		(VariableSearchFilter::logicalAnd(VariableSearchFilter::createShaderTypeFilter(shaderType), searchFilter))
+	, m_shaderType	(shaderType)
 {
+	DE_ASSERT(m_shaderType < glu::SHADERTYPE_LAST);
 }
 
-std::string BlockReferencedByShaderValidator::getHumanReadablePropertyString	(glw::GLint propVal) const
+std::string BlockReferencedByShaderValidator::getHumanReadablePropertyString (glw::GLint propVal) const
 {
 	return de::toString(glu::getBooleanStr(propVal));
 }
 
-void BlockReferencedByShaderValidator::validate (const ProgramInterfaceDefinition::Program* program, const std::string& resource, glw::GLint propValue) const
+void BlockReferencedByShaderValidator::validate (const ProgramInterfaceDefinition::Program* program, const std::string& resource, glw::GLint propValue, const std::string& implementationName) const
 {
 	const std::string	blockName			= glu::parseVariableName(resource.c_str());
 	bool				referencedByShader	= false;
 
-	DE_UNREF(resource);
+	DE_UNREF(implementationName);
 
 	for (int shaderNdx = 0; shaderNdx < (int)program->getShaders().size(); ++shaderNdx)
 	{
@@ -1211,14 +1310,14 @@ void BlockReferencedByShaderValidator::validate (const ProgramInterfaceDefinitio
 
 	m_testCtx.getLog()
 		<< tcu::TestLog::Message
-		<< "Verifying referenced by " << glu::getShaderTypeName(m_filter.getShaderTypeFilter()) << " shader, expecting "
+		<< "Verifying referenced by " << glu::getShaderTypeName(m_shaderType) << " shader, expecting "
 		<< ((referencedByShader) ? ("GL_TRUE") : ("GL_FALSE"))
 		<< tcu::TestLog::EndMessage;
 
 	if (propValue != ((referencedByShader) ? (1) : (0)))
 	{
-		m_testCtx.getLog() << tcu::TestLog::Message << "\tError, invalid referenced_by_" << glu::getShaderTypeName(m_filter.getShaderTypeFilter()) << ", got " << propValue << tcu::TestLog::EndMessage;
-		setError("referenced_by_" + std::string(glu::getShaderTypeName(m_filter.getShaderTypeFilter())) + " invalid");
+		m_testCtx.getLog() << tcu::TestLog::Message << "\tError, invalid referenced_by_" << glu::getShaderTypeName(m_shaderType) << ", got " << propValue << tcu::TestLog::EndMessage;
+		setError("referenced_by_" + std::string(glu::getShaderTypeName(m_shaderType)) + " invalid");
 	}
 }
 
@@ -1226,21 +1325,23 @@ class TopLevelArraySizeValidator : public SingleVariableValidator
 {
 public:
 				TopLevelArraySizeValidator	(Context& context, glw::GLuint programID, const VariableSearchFilter& filter);
-	void		validateSingleVariable		(const std::vector<VariablePathComponent>& path, const std::string& resource, glw::GLint propValue) const;
+
+	void		validateSingleVariable		(const std::vector<VariablePathComponent>& path, const std::string& resource, glw::GLint propValue, const std::string& implementationName) const;
 };
 
 TopLevelArraySizeValidator::TopLevelArraySizeValidator (Context& context, glw::GLuint programID, const VariableSearchFilter& filter)
-	: SingleVariableValidator(context, PROGRAMRESOURCEPROP_TOP_LEVEL_ARRAY_SIZE, programID, filter)
+	: SingleVariableValidator(context, PROGRAMRESOURCEPROP_TOP_LEVEL_ARRAY_SIZE, programID, filter, DE_NULL)
 {
 }
 
-void TopLevelArraySizeValidator::validateSingleVariable (const std::vector<VariablePathComponent>& path, const std::string& resource, glw::GLint propValue) const
+void TopLevelArraySizeValidator::validateSingleVariable (const std::vector<VariablePathComponent>& path, const std::string& resource, glw::GLint propValue, const std::string& implementationName) const
 {
 	int			expected;
 	std::string	reason;
 
 	DE_ASSERT(path.front().isInterfaceBlock() && path.front().getInterfaceBlock()->storage == glu::STORAGE_BUFFER);
 	DE_UNREF(resource);
+	DE_UNREF(implementationName);
 
 	if (!path[1].getDeclaration()->varType.isArrayType())
 	{
@@ -1276,18 +1377,20 @@ class TopLevelArrayStrideValidator : public SingleVariableValidator
 {
 public:
 				TopLevelArrayStrideValidator	(Context& context, glw::GLuint programID, const VariableSearchFilter& filter);
-	void		validateSingleVariable			(const std::vector<VariablePathComponent>& path, const std::string& resource, glw::GLint propValue) const;
+
+	void		validateSingleVariable			(const std::vector<VariablePathComponent>& path, const std::string& resource, glw::GLint propValue, const std::string& implementationName) const;
 };
 
 TopLevelArrayStrideValidator::TopLevelArrayStrideValidator (Context& context, glw::GLuint programID, const VariableSearchFilter& filter)
-	: SingleVariableValidator(context, PROGRAMRESOURCEPROP_TOP_LEVEL_ARRAY_STRIDE, programID, filter)
+	: SingleVariableValidator(context, PROGRAMRESOURCEPROP_TOP_LEVEL_ARRAY_STRIDE, programID, filter, DE_NULL)
 {
 }
 
-void TopLevelArrayStrideValidator::validateSingleVariable (const std::vector<VariablePathComponent>& path, const std::string& resource, glw::GLint propValue) const
+void TopLevelArrayStrideValidator::validateSingleVariable (const std::vector<VariablePathComponent>& path, const std::string& resource, glw::GLint propValue, const std::string& implementationName) const
 {
 	DE_ASSERT(path.front().isInterfaceBlock() && path.front().getInterfaceBlock()->storage == glu::STORAGE_BUFFER);
 	DE_UNREF(resource);
+	DE_UNREF(implementationName);
 
 	if (!path[1].getDeclaration()->varType.isArrayType())
 	{
@@ -1327,24 +1430,25 @@ class TransformFeedbackResourceValidator : public PropValidator
 {
 public:
 					TransformFeedbackResourceValidator	(Context& context, ProgramResourcePropFlags validationProp);
-	void			validate							(const ProgramInterfaceDefinition::Program* program, const std::string& resource, glw::GLint propValue) const;
+
+	void			validate							(const ProgramInterfaceDefinition::Program* program, const std::string& resource, glw::GLint propValue, const std::string& implementationName) const;
 
 private:
-	virtual void	validateBuiltinVariable				(const std::string& resource, glw::GLint propValue) const = 0;
-	virtual void	validateSingleVariable				(const std::vector<VariablePathComponent>& path, const std::string& resource, glw::GLint propValue) const = 0;
+	virtual void	validateBuiltinVariable				(const std::string& resource, glw::GLint propValue, const std::string& implementationName) const = 0;
+	virtual void	validateSingleVariable				(const std::vector<VariablePathComponent>& path, const std::string& resource, glw::GLint propValue, const std::string& implementationName) const = 0;
 };
 
 
 TransformFeedbackResourceValidator::TransformFeedbackResourceValidator (Context& context, ProgramResourcePropFlags validationProp)
-	: PropValidator(context, validationProp)
+	: PropValidator(context, validationProp, DE_NULL)
 {
 }
 
-void TransformFeedbackResourceValidator::validate (const ProgramInterfaceDefinition::Program* program, const std::string& resource, glw::GLint propValue) const
+void TransformFeedbackResourceValidator::validate (const ProgramInterfaceDefinition::Program* program, const std::string& resource, glw::GLint propValue, const std::string& implementationName) const
 {
 	if (deStringBeginsWith(resource.c_str(), "gl_"))
 	{
-		validateBuiltinVariable(resource, propValue);
+		validateBuiltinVariable(resource, propValue, implementationName);
 	}
 	else
 	{
@@ -1359,7 +1463,7 @@ void TransformFeedbackResourceValidator::validate (const ProgramInterfaceDefinit
 			std::vector<VariablePathComponent>	path;
 			std::vector<std::string>			resources;
 
-			if (!findProgramVariablePathByPathName(path, program, varyingName, VariableSearchFilter(glu::SHADERTYPE_VERTEX, glu::STORAGE_OUT)))
+			if (!findProgramVariablePathByPathName(path, program, varyingName, VariableSearchFilter::createShaderTypeStorageFilter(getProgramTransformFeedbackStage(program), glu::STORAGE_OUT)))
 			{
 				// program does not contain feedback varying, not valid program
 				DE_ASSERT(false);
@@ -1384,10 +1488,10 @@ void TransformFeedbackResourceValidator::validate (const ProgramInterfaceDefinit
 		{
 			std::vector<VariablePathComponent> path;
 
-			if (!findProgramVariablePathByPathName(path, program, resource, VariableSearchFilter(glu::SHADERTYPE_VERTEX, glu::STORAGE_OUT)))
+			if (!findProgramVariablePathByPathName(path, program, resource, VariableSearchFilter::createShaderTypeStorageFilter(getProgramTransformFeedbackStage(program), glu::STORAGE_OUT)))
 				DE_ASSERT(false);
 
-			validateSingleVariable(path, resource, propValue);
+			validateSingleVariable(path, resource, propValue, implementationName);
 		}
 	}
 }
@@ -1397,8 +1501,8 @@ class TransformFeedbackArraySizeValidator : public TransformFeedbackResourceVali
 public:
 				TransformFeedbackArraySizeValidator	(Context& context);
 
-	void		validateBuiltinVariable				(const std::string& resource, glw::GLint propValue) const;
-	void		validateSingleVariable				(const std::vector<VariablePathComponent>& path, const std::string& resource, glw::GLint propValue) const;
+	void		validateBuiltinVariable				(const std::string& resource, glw::GLint propValue, const std::string& implementationName) const;
+	void		validateSingleVariable				(const std::vector<VariablePathComponent>& path, const std::string& resource, glw::GLint propValue, const std::string& implementationName) const;
 };
 
 TransformFeedbackArraySizeValidator::TransformFeedbackArraySizeValidator (Context& context)
@@ -1406,8 +1510,10 @@ TransformFeedbackArraySizeValidator::TransformFeedbackArraySizeValidator (Contex
 {
 }
 
-void TransformFeedbackArraySizeValidator::validateBuiltinVariable (const std::string& resource, glw::GLint propValue) const
+void TransformFeedbackArraySizeValidator::validateBuiltinVariable (const std::string& resource, glw::GLint propValue, const std::string& implementationName) const
 {
+	DE_UNREF(implementationName);
+
 	int arraySize = 0;
 
 	if (resource == "gl_Position")
@@ -1423,9 +1529,10 @@ void TransformFeedbackArraySizeValidator::validateBuiltinVariable (const std::st
 	}
 }
 
-void TransformFeedbackArraySizeValidator::validateSingleVariable (const std::vector<VariablePathComponent>& path, const std::string& resource, glw::GLint propValue) const
+void TransformFeedbackArraySizeValidator::validateSingleVariable (const std::vector<VariablePathComponent>& path, const std::string& resource, glw::GLint propValue, const std::string& implementationName) const
 {
 	DE_UNREF(resource);
+	DE_UNREF(implementationName);
 
 	const int arraySize = (path.back().getVariableType()->isArrayType()) ? (path.back().getVariableType()->getArraySize()) : (1);
 
@@ -1443,9 +1550,9 @@ public:
 				TransformFeedbackNameLengthValidator	(Context& context);
 
 private:
-	void		validateBuiltinVariable					(const std::string& resource, glw::GLint propValue) const;
-	void		validateSingleVariable					(const std::vector<VariablePathComponent>& path, const std::string& resource, glw::GLint propValue) const;
-	void		validateVariable						(const std::string& resource, glw::GLint propValue) const;
+	void		validateBuiltinVariable					(const std::string& resource, glw::GLint propValue, const std::string& implementationName) const;
+	void		validateSingleVariable					(const std::vector<VariablePathComponent>& path, const std::string& resource, glw::GLint propValue, const std::string& implementationName) const;
+	void		validateVariable						(const std::string& implementationName, glw::GLint propValue) const;
 };
 
 TransformFeedbackNameLengthValidator::TransformFeedbackNameLengthValidator (Context& context)
@@ -1453,21 +1560,23 @@ TransformFeedbackNameLengthValidator::TransformFeedbackNameLengthValidator (Cont
 {
 }
 
-void TransformFeedbackNameLengthValidator::validateBuiltinVariable (const std::string& resource, glw::GLint propValue) const
+void TransformFeedbackNameLengthValidator::validateBuiltinVariable (const std::string& resource, glw::GLint propValue, const std::string& implementationName) const
 {
-	validateVariable(resource, propValue);
+	DE_UNREF(resource);
+	validateVariable(implementationName, propValue);
 }
 
-void TransformFeedbackNameLengthValidator::validateSingleVariable (const std::vector<VariablePathComponent>& path, const std::string& resource, glw::GLint propValue) const
+void TransformFeedbackNameLengthValidator::validateSingleVariable (const std::vector<VariablePathComponent>& path, const std::string& resource, glw::GLint propValue, const std::string& implementationName) const
 {
 	DE_UNREF(path);
-	validateVariable(resource, propValue);
+	DE_UNREF(resource);
+	validateVariable(implementationName, propValue);
 }
 
-void TransformFeedbackNameLengthValidator::validateVariable (const std::string& resource, glw::GLint propValue) const
+void TransformFeedbackNameLengthValidator::validateVariable (const std::string& implementationName, glw::GLint propValue) const
 {
-	const int expected = (int)resource.length() + 1; // includes null byte
-	m_testCtx.getLog() << tcu::TestLog::Message << "Verifying name length, expecting " << expected << " (" << (int)resource.length() << " for \"" << resource << "\" + 1 byte for terminating null character)" << tcu::TestLog::EndMessage;
+	const int expected = (int)implementationName.length() + 1; // includes null byte
+	m_testCtx.getLog() << tcu::TestLog::Message << "Verifying name length, expecting " << expected << " (" << (int)implementationName.length() << " for \"" << implementationName << "\" + 1 byte for terminating null character)" << tcu::TestLog::EndMessage;
 
 	if (propValue != expected)
 	{
@@ -1481,8 +1590,8 @@ class TransformFeedbackTypeValidator : public TransformFeedbackResourceValidator
 public:
 				TransformFeedbackTypeValidator		(Context& context);
 
-	void		validateBuiltinVariable				(const std::string& resource, glw::GLint propValue) const;
-	void		validateSingleVariable				(const std::vector<VariablePathComponent>& path, const std::string& resource, glw::GLint propValue) const;
+	void		validateBuiltinVariable				(const std::string& resource, glw::GLint propValue, const std::string& implementationName) const;
+	void		validateSingleVariable				(const std::vector<VariablePathComponent>& path, const std::string& resource, glw::GLint propValue, const std::string& implementationName) const;
 };
 
 TransformFeedbackTypeValidator::TransformFeedbackTypeValidator (Context& context)
@@ -1490,8 +1599,10 @@ TransformFeedbackTypeValidator::TransformFeedbackTypeValidator (Context& context
 {
 }
 
-void TransformFeedbackTypeValidator::validateBuiltinVariable (const std::string& resource, glw::GLint propValue) const
+void TransformFeedbackTypeValidator::validateBuiltinVariable (const std::string& resource, glw::GLint propValue, const std::string& implementationName) const
 {
+	DE_UNREF(implementationName);
+
 	glu::DataType varType = glu::TYPE_INVALID;
 
 	if (resource == "gl_Position")
@@ -1508,9 +1619,10 @@ void TransformFeedbackTypeValidator::validateBuiltinVariable (const std::string&
 	return;
 }
 
-void TransformFeedbackTypeValidator::validateSingleVariable (const std::vector<VariablePathComponent>& path, const std::string& resource, glw::GLint propValue) const
+void TransformFeedbackTypeValidator::validateSingleVariable (const std::vector<VariablePathComponent>& path, const std::string& resource, glw::GLint propValue, const std::string& implementationName) const
 {
 	DE_UNREF(resource);
+	DE_UNREF(implementationName);
 
 	// Unlike other interfaces, xfb program interface uses just variable name to refer to arrays of basic types. (Others use "variable[0]")
 	// Thus we might end up querying a type for an array. In this case, return the type of an array element.
@@ -1525,6 +1637,78 @@ void TransformFeedbackTypeValidator::validateSingleVariable (const std::vector<V
 		m_testCtx.getLog() << tcu::TestLog::Message << "\tError, got " << glu::getDataTypeName(glu::getDataTypeFromGLType(propValue)) << tcu::TestLog::EndMessage;
 		setError("resource type invalid");
 	}
+}
+
+class PerPatchValidator : public SingleVariableValidator
+{
+public:
+				PerPatchValidator				(Context& context, glw::GLuint programID, const VariableSearchFilter& filter);
+
+	std::string getHumanReadablePropertyString	(glw::GLint propVal) const;
+	void		validateSingleVariable			(const std::vector<VariablePathComponent>& path, const std::string& resource, glw::GLint propValue, const std::string& implementationName) const;
+	void		validateBuiltinVariable			(const std::string& resource, glw::GLint propValue, const std::string& implementationName) const;
+};
+
+PerPatchValidator::PerPatchValidator (Context& context, glw::GLuint programID, const VariableSearchFilter& filter)
+	: SingleVariableValidator(context, PROGRAMRESOURCEPROP_IS_PER_PATCH, programID, filter, "GL_EXT_tessellation_shader")
+{
+}
+
+std::string PerPatchValidator::getHumanReadablePropertyString (glw::GLint propVal) const
+{
+	return de::toString(glu::getBooleanStr(propVal));
+}
+
+void PerPatchValidator::validateSingleVariable (const std::vector<VariablePathComponent>& path, const std::string& resource, glw::GLint propValue, const std::string& implementationName) const
+{
+	const glu::Storage	storage		= (path.front().isInterfaceBlock()) ? (path.front().getInterfaceBlock()->storage) : (path.front().getDeclaration()->storage);
+	const int			expected	= (storage == glu::STORAGE_PATCH_IN || storage == glu::STORAGE_PATCH_OUT) ? (1) : (0);
+
+	DE_UNREF(resource);
+	DE_UNREF(implementationName);
+
+	m_testCtx.getLog() << tcu::TestLog::Message << "Verifying if is per patch, expecting IS_PER_PATCH = " << expected << tcu::TestLog::EndMessage;
+
+	if (propValue != expected)
+	{
+		m_testCtx.getLog() << tcu::TestLog::Message << "\tError, got " << propValue << tcu::TestLog::EndMessage;
+		setError("resource is per patch invalid");
+	}
+}
+
+void PerPatchValidator::validateBuiltinVariable (const std::string& resource, glw::GLint propValue, const std::string& implementationName) const
+{
+	DE_UNREF(implementationName);
+
+	static const struct
+	{
+		const char*		name;
+		int				isPerPatch;
+	} builtins[] =
+	{
+		{ "gl_Position",				0	},
+		{ "gl_PerVertex.gl_Position",	0	},
+		{ "gl_InvocationID",			0	},
+		{ "gl_TessLevelOuter",			1	},
+		{ "gl_TessLevelInner",			1	},
+	};
+
+	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(builtins); ++ndx)
+	{
+		if (resource == builtins[ndx].name)
+		{
+			m_testCtx.getLog() << tcu::TestLog::Message << "Verifying if is per patch, expecting IS_PER_PATCH = " << builtins[ndx].isPerPatch << tcu::TestLog::EndMessage;
+
+			if (propValue != builtins[ndx].isPerPatch)
+			{
+				m_testCtx.getLog() << tcu::TestLog::Message << "\tError, got " << propValue << tcu::TestLog::EndMessage;
+				setError("resource is per patch invalid");
+			}
+			return;
+		}
+	}
+
+	DE_ASSERT(false);
 }
 
 } // anonymous
@@ -1581,12 +1765,156 @@ static glw::GLenum getGLInterfaceEnumValue (ProgramInterface interface)
 	};
 }
 
-static void queryAndValidateProps (tcu::TestContext& testCtx, const glw::Functions& gl, glw::GLuint programID, ProgramInterface interface, const char* targetResourceName, const ProgramInterfaceDefinition::Program* programDefinition, const std::vector<glw::GLenum>& props, const std::vector<const PropValidator*>& validators)
+static bool isInterfaceBlockInterfaceName (const ProgramInterfaceDefinition::Program* program, ProgramInterface interface, const std::string& blockInterfaceName)
 {
-	const glw::GLenum			glInterface		= getGLInterfaceEnumValue(interface);
+	deUint32 validStorageBits;
+	deUint32 searchStageBits;
+
+	DE_STATIC_ASSERT(glu::STORAGE_LAST < 32);
+	DE_STATIC_ASSERT(glu::SHADERTYPE_LAST < 32);
+
+	switch (interface)
+	{
+		case PROGRAMINTERFACE_UNIFORM_BLOCK:
+		case PROGRAMINTERFACE_SHADER_STORAGE_BLOCK:
+		case PROGRAMINTERFACE_ATOMIC_COUNTER_BUFFER:
+			return false;
+
+		case PROGRAMINTERFACE_PROGRAM_INPUT:
+			validStorageBits = (1u << glu::STORAGE_IN) | (1u << glu::STORAGE_PATCH_IN);
+			searchStageBits = (1u << program->getFirstStage());
+			break;
+
+		case PROGRAMINTERFACE_PROGRAM_OUTPUT:
+			validStorageBits = (1u << glu::STORAGE_OUT) | (1u << glu::STORAGE_PATCH_OUT);
+			searchStageBits = (1u << program->getLastStage());
+			break;
+
+		case PROGRAMINTERFACE_TRANSFORM_FEEDBACK_VARYING:
+			validStorageBits = (1u << glu::STORAGE_OUT);
+			searchStageBits = (1u << getProgramTransformFeedbackStage(program));
+			break;
+
+		case PROGRAMINTERFACE_UNIFORM:
+			validStorageBits = (1u << glu::STORAGE_UNIFORM);
+			searchStageBits = 0xFFFFFFFFu;
+			break;
+
+		case PROGRAMINTERFACE_BUFFER_VARIABLE:
+			validStorageBits = (1u << glu::STORAGE_BUFFER);
+			searchStageBits = 0xFFFFFFFFu;
+			break;
+
+		default:
+			DE_ASSERT(false);
+			return false;
+	}
+
+	for (int shaderNdx = 0; shaderNdx < (int)program->getShaders().size(); ++shaderNdx)
+	{
+		const ProgramInterfaceDefinition::Shader* const shader = program->getShaders()[shaderNdx];
+		if (((1u << shader->getType()) & searchStageBits) == 0)
+			continue;
+
+		for (int blockNdx = 0; blockNdx < (int)shader->getDefaultBlock().interfaceBlocks.size(); ++blockNdx)
+		{
+			const glu::InterfaceBlock& block = shader->getDefaultBlock().interfaceBlocks[blockNdx];
+
+			if (((1u << block.storage) & validStorageBits) == 0)
+				continue;
+
+			if (block.interfaceName == blockInterfaceName)
+				return true;
+		}
+	}
+	return false;
+}
+
+static std::string getInterfaceBlockInteraceNameByMember (const ProgramInterfaceDefinition::Program* program, ProgramInterface interface, const std::string& memberName)
+{
+	deUint32 validStorageBits;
+	deUint32 searchStageBits;
+
+	DE_STATIC_ASSERT(glu::STORAGE_LAST < 32);
+	DE_STATIC_ASSERT(glu::SHADERTYPE_LAST < 32);
+
+	switch (interface)
+	{
+		case PROGRAMINTERFACE_UNIFORM_BLOCK:
+		case PROGRAMINTERFACE_SHADER_STORAGE_BLOCK:
+		case PROGRAMINTERFACE_ATOMIC_COUNTER_BUFFER:
+			return "";
+
+		case PROGRAMINTERFACE_PROGRAM_INPUT:
+			validStorageBits = (1u << glu::STORAGE_IN) | (1u << glu::STORAGE_PATCH_IN);
+			searchStageBits = (1u << program->getFirstStage());
+			break;
+
+		case PROGRAMINTERFACE_PROGRAM_OUTPUT:
+			validStorageBits = (1u << glu::STORAGE_OUT) | (1u << glu::STORAGE_PATCH_OUT);
+			searchStageBits = (1u << program->getLastStage());
+			break;
+
+		case PROGRAMINTERFACE_TRANSFORM_FEEDBACK_VARYING:
+			validStorageBits = (1u << glu::STORAGE_OUT);
+			searchStageBits = (1u << getProgramTransformFeedbackStage(program));
+			break;
+
+		case PROGRAMINTERFACE_UNIFORM:
+			validStorageBits = (1u << glu::STORAGE_UNIFORM);
+			searchStageBits = 0xFFFFFFFFu;
+			break;
+
+		case PROGRAMINTERFACE_BUFFER_VARIABLE:
+			validStorageBits = (1u << glu::STORAGE_BUFFER);
+			searchStageBits = 0xFFFFFFFFu;
+			break;
+
+		default:
+			DE_ASSERT(false);
+			return "";
+	}
+
+	for (int shaderNdx = 0; shaderNdx < (int)program->getShaders().size(); ++shaderNdx)
+	{
+		const ProgramInterfaceDefinition::Shader* const shader = program->getShaders()[shaderNdx];
+		if (((1u << shader->getType()) & searchStageBits) == 0)
+			continue;
+
+		for (int blockNdx = 0; blockNdx < (int)shader->getDefaultBlock().interfaceBlocks.size(); ++blockNdx)
+		{
+			const glu::InterfaceBlock& block = shader->getDefaultBlock().interfaceBlocks[blockNdx];
+
+			if (((1u << block.storage) & validStorageBits) == 0)
+				continue;
+
+			for (int varNdx = 0; varNdx < (int)block.variables.size(); ++varNdx)
+			{
+				if (block.variables[varNdx].name == memberName)
+					return block.interfaceName;
+			}
+		}
+	}
+	return "";
+}
+
+static void queryAndValidateProps (tcu::TestContext&							testCtx,
+								   const glw::Functions&						gl,
+								   glw::GLuint									programID,
+								   ProgramInterface								interface,
+								   const char*									targetResourceName,
+								   const ProgramInterfaceDefinition::Program*	programDefinition,
+								   const std::vector<glw::GLenum>&				props,
+								   const std::vector<const PropValidator*>&		validators)
+{
+	const glw::GLenum			glInterface					= getGLInterfaceEnumValue(interface);
+	std::string					implementationResourceName	= targetResourceName;
 	glw::GLuint					resourceNdx;
-	glw::GLint					written			= -1;
-	std::vector<glw::GLint>		propValues		(props.size() + 1, -2);	// prefill result buffer with an invalid value. -1 might be valid sometimes, avoid it. Make buffer one larger to allow detection of too many return values
+	glw::GLint					written						= -1;
+
+	// prefill result buffer with an invalid value. -1 might be valid sometimes, avoid it. Make buffer one larger
+	// to allow detection of too many return values
+	std::vector<glw::GLint>		propValues		(props.size() + 1, -2);
 
 	DE_ASSERT(props.size() == validators.size());
 
@@ -1597,34 +1925,129 @@ static void queryAndValidateProps (tcu::TestContext& testCtx, const glw::Functio
 
 	if (resourceNdx == GL_INVALID_INDEX)
 	{
+		static const struct
+		{
+			bool removeTrailingArray;	// convert from "target[0]" -> "target"
+			bool removeTrailingMember;	// convert from "target.member" -> "target"
+			bool removeIOBlock;			// convert from "InterfaceName.target" -> "target"
+			bool addIOBlock;			// convert from "target" -> "InterfaceName.target"
+			bool addIOBlockArray;		// convert from "target" -> "InterfaceName[0].target"
+		} recoveryStrategies[] =
+		{
+			// try one patch
+			{ true,		false,	false,	false,	false	},
+			{ false,	true,	false,	false,	false	},
+			{ false,	false,	true,	false,	false	},
+			{ false,	false,	false,	true,	false	},
+			{ false,	false,	false,	false,	true	},
+			// patch both ends
+			{ true,		false,	true,	false,	false	},
+			{ true,		false,	false,	true,	false	},
+			{ true,		false,	false,	false,	true	},
+			{ false,	true,	true,	false,	false	},
+			{ false,	true,	false,	true,	false	},
+			{ false,	true,	false,	false,	true	},
+		};
+
+		// The resource name generation in the GL implementations is very commonly broken. Try to
+		// keep the tests producing useful data even in these cases by attempting to recover from
+		// common naming bugs. Set test result to failure even if recovery succeeded to signal
+		// incorrect name generation.
+
 		testCtx.getLog() << tcu::TestLog::Message << "getProgramResourceIndex returned GL_INVALID_INDEX for \"" << targetResourceName << "\"" << tcu::TestLog::EndMessage;
 		testCtx.setTestResult(QP_TEST_RESULT_FAIL, "could not find target resource");
 
-		// try to recover but keep the test result as failure
+		for (int strategyNdx = 0; strategyNdx < DE_LENGTH_OF_ARRAY(recoveryStrategies); ++strategyNdx)
 		{
 			const std::string	resourceName			= std::string(targetResourceName);
+			const size_t		rootNameEnd				= resourceName.find_first_of(".[");
+			const std::string	rootName				= resourceName.substr(0, rootNameEnd);
 			std::string			simplifiedResourceName;
 
-			if (stringEndsWith(resourceName, "[0]"))
-				simplifiedResourceName = resourceName.substr(0, resourceName.length() - 3);
-			else
+			if (recoveryStrategies[strategyNdx].removeTrailingArray)
+			{
+				if (stringEndsWith(resourceName, "[0]"))
+					simplifiedResourceName = resourceName.substr(0, resourceName.length() - 3);
+				else
+					continue;
+			}
+
+			if (recoveryStrategies[strategyNdx].removeTrailingMember)
 			{
 				const size_t lastMember = resourceName.find_last_of('.');
 				if (lastMember != std::string::npos)
 					simplifiedResourceName = resourceName.substr(0, lastMember);
+				else
+					continue;
+			}
+
+			if (recoveryStrategies[strategyNdx].removeIOBlock)
+			{
+				if (deStringBeginsWith(resourceName.c_str(), "gl_PerVertex."))
+				{
+					// builtin interface bock, remove block name
+					simplifiedResourceName = resourceName.substr(13);
+				}
+				else if (isInterfaceBlockInterfaceName(programDefinition, interface, rootName))
+				{
+					// user-defined inteface block, remove name
+					const size_t accessorEnd = resourceName.find('.'); // includes potential array accessor
+
+					if (accessorEnd != std::string::npos)
+						simplifiedResourceName = resourceName.substr(0, accessorEnd+1);
+					else
+						continue;
+				}
+				else
+				{
+					// recovery not applicable
+					continue;
+				}
+			}
+
+			if (recoveryStrategies[strategyNdx].addIOBlock || recoveryStrategies[strategyNdx].addIOBlockArray)
+			{
+				const std::string arrayAccessor = (recoveryStrategies[strategyNdx].addIOBlockArray) ? ("[0]") : ("");
+
+				if (deStringBeginsWith(resourceName.c_str(), "gl_") && resourceName.find('.') == std::string::npos)
+				{
+					// free builtin variable, add block name
+					simplifiedResourceName = "gl_PerVertex" + arrayAccessor + "." + resourceName;
+				}
+				else
+				{
+					const std::string interafaceName = getInterfaceBlockInteraceNameByMember(programDefinition, interface, rootName);
+
+					if (!interafaceName.empty())
+					{
+						// free user variable, add block name
+						simplifiedResourceName = interafaceName + arrayAccessor + "." + resourceName;
+					}
+					else
+					{
+						// recovery not applicable
+						continue;
+					}
+				}
 			}
 
 			if (simplifiedResourceName.empty())
-				return;
+				continue;
 
 			resourceNdx = gl.getProgramResourceIndex(programID, glInterface, simplifiedResourceName.c_str());
 			GLU_EXPECT_NO_ERROR(gl.getError(), "get resource index");
 
-			if (resourceNdx == GL_INVALID_INDEX)
-				return;
-
-			testCtx.getLog() << tcu::TestLog::Message << "\tResource not found, continuing anyway using index obtained for resource \"" << simplifiedResourceName << "\"" << tcu::TestLog::EndMessage;
+			// recovery succeeded
+			if (resourceNdx != GL_INVALID_INDEX)
+			{
+				implementationResourceName = simplifiedResourceName;
+				testCtx.getLog() << tcu::TestLog::Message << "\tResource not found, continuing anyway using index obtained for resource \"" << simplifiedResourceName << "\"" << tcu::TestLog::EndMessage;
+				break;
+			}
 		}
+
+		if (resourceNdx == GL_INVALID_INDEX)
+			return;
 	}
 
 	gl.getProgramResourceiv(programID, glInterface, resourceNdx, (int)props.size(), &props[0], (int)propValues.size(), &written, &propValues[0]);
@@ -1661,7 +2084,52 @@ static void queryAndValidateProps (tcu::TestContext& testCtx, const glw::Functio
 	// validate
 
 	for (int propNdx = 0; propNdx < (int)propValues.size(); ++propNdx)
-		validators[propNdx]->validate(programDefinition, targetResourceName, propValues[propNdx]);
+		validators[propNdx]->validate(programDefinition, targetResourceName, propValues[propNdx], implementationResourceName);
+}
+
+const ProgramInterfaceDefinition::Program* ProgramInterfaceQueryTestCase::getAndCheckProgramDefinition (void)
+{
+	const ProgramInterfaceDefinition::Program* programDefinition = getProgramDefinition();
+	DE_ASSERT(programDefinition->isValid());
+
+	if (programDefinition->hasStage(glu::SHADERTYPE_TESSELLATION_CONTROL) ||
+		programDefinition->hasStage(glu::SHADERTYPE_TESSELLATION_EVALUATION))
+	{
+		if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_tessellation_shader"))
+			throw tcu::NotSupportedError("Test requires GL_EXT_tessellation_shader extension");
+	}
+
+	// Testing IS_PER_PATCH as a part of a larger set is ok, since the extension is checked
+	// before query. However, we don't want IS_PER_PATCH-specific tests to become noop and pass.
+	if (m_queryTarget.propFlags == PROGRAMRESOURCEPROP_IS_PER_PATCH)
+	{
+		if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_tessellation_shader"))
+			throw tcu::NotSupportedError("Test requires GL_EXT_tessellation_shader extension");
+	}
+
+	if (programDefinition->hasStage(glu::SHADERTYPE_GEOMETRY))
+	{
+		if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader"))
+			throw tcu::NotSupportedError("Test requires GL_EXT_geometry_shader extension");
+	}
+
+	if (programContainsIOBlocks(programDefinition))
+	{
+		if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_shader_io_blocks"))
+			throw tcu::NotSupportedError("Test requires GL_EXT_shader_io_blocks extension");
+	}
+
+	return programDefinition;
+}
+
+int ProgramInterfaceQueryTestCase::getMaxPatchVertices (void)
+{
+	const glw::Functions&	gl					= m_context.getRenderContext().getFunctions();
+	glw::GLint				maxPatchVertices	= 0;
+
+	gl.getIntegerv(GL_MAX_PATCH_VERTICES, &maxPatchVertices);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "getIntegerv(GL_MAX_PATCH_VERTICES)");
+	return maxPatchVertices;
 }
 
 ProgramInterfaceQueryTestCase::IterateResult ProgramInterfaceQueryTestCase::iterate (void)
@@ -1672,13 +2140,11 @@ ProgramInterfaceQueryTestCase::IterateResult ProgramInterfaceQueryTestCase::iter
 		const PropValidator*	validator;
 	};
 
-	const ProgramInterfaceDefinition::Program*	programDefinition	= getProgramDefinition();
+	const ProgramInterfaceDefinition::Program*	programDefinition	= getAndCheckProgramDefinition();
 	const std::vector<std::string>				targetResources		= getQueryTargetResources();
 	glu::ShaderProgram							program				(m_context.getRenderContext(), generateProgramInterfaceProgramSources(programDefinition));
 
 	m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
-
-	DE_ASSERT(programDefinition->isValid());
 
 	// Log program
 	{
@@ -1715,37 +2181,43 @@ ProgramInterfaceQueryTestCase::IterateResult ProgramInterfaceQueryTestCase::iter
 	{
 		case PROGRAMINTERFACE_UNIFORM:
 		{
-			const VariableSearchFilter					uniformFilter						(glu::SHADERTYPE_LAST, glu::STORAGE_UNIFORM);
+			const VariableSearchFilter					uniformFilter						= VariableSearchFilter::createStorageFilter(glu::STORAGE_UNIFORM);
 
-			const TypeValidator							typeValidator						(m_context, program.getProgram(), uniformFilter);
-			const ArraySizeValidator					arraySizeValidator					(m_context, program.getProgram(), uniformFilter);
-			const ArrayStrideValidator					arrayStrideValidator				(m_context, program.getProgram(), uniformFilter);
-			const BlockIndexValidator					blockIndexValidator					(m_context, program.getProgram(), uniformFilter);
-			const IsRowMajorValidator					isRowMajorValidator					(m_context, program.getProgram(), uniformFilter);
-			const MatrixStrideValidator					matrixStrideValidator				(m_context, program.getProgram(), uniformFilter);
-			const AtomicCounterBufferIndexVerifier		atomicCounterBufferIndexVerifier	(m_context, program.getProgram(), uniformFilter);
-			const LocationValidator						locationValidator					(m_context, program.getProgram(), uniformFilter);
-			const VariableNameLengthValidator			nameLengthValidator					(m_context, program.getProgram(), uniformFilter);
-			const OffsetValidator						offsetVerifier						(m_context, program.getProgram(), uniformFilter);
-			const VariableReferencedByShaderValidator	referencedByVertexVerifier			(m_context, VariableSearchFilter(glu::SHADERTYPE_VERTEX,	glu::STORAGE_UNIFORM));
-			const VariableReferencedByShaderValidator	referencedByFragmentVerifier		(m_context, VariableSearchFilter(glu::SHADERTYPE_FRAGMENT,	glu::STORAGE_UNIFORM));
-			const VariableReferencedByShaderValidator	referencedByComputeVerifier			(m_context, VariableSearchFilter(glu::SHADERTYPE_COMPUTE,	glu::STORAGE_UNIFORM));
+			const TypeValidator							typeValidator						(m_context, program.getProgram(),						uniformFilter);
+			const ArraySizeValidator					arraySizeValidator					(m_context, program.getProgram(),						-1,					uniformFilter);
+			const ArrayStrideValidator					arrayStrideValidator				(m_context, program.getProgram(),						uniformFilter);
+			const BlockIndexValidator					blockIndexValidator					(m_context, program.getProgram(),						uniformFilter);
+			const IsRowMajorValidator					isRowMajorValidator					(m_context, program.getProgram(),						uniformFilter);
+			const MatrixStrideValidator					matrixStrideValidator				(m_context, program.getProgram(),						uniformFilter);
+			const AtomicCounterBufferIndexVerifier		atomicCounterBufferIndexVerifier	(m_context, program.getProgram(),						uniformFilter);
+			const LocationValidator						locationValidator					(m_context, program.getProgram(),						uniformFilter);
+			const VariableNameLengthValidator			nameLengthValidator					(m_context, program.getProgram(),						uniformFilter);
+			const OffsetValidator						offsetVerifier						(m_context, program.getProgram(),						uniformFilter);
+			const VariableReferencedByShaderValidator	referencedByVertexVerifier			(m_context, glu::SHADERTYPE_VERTEX,						uniformFilter);
+			const VariableReferencedByShaderValidator	referencedByFragmentVerifier		(m_context, glu::SHADERTYPE_FRAGMENT,					uniformFilter);
+			const VariableReferencedByShaderValidator	referencedByComputeVerifier			(m_context, glu::SHADERTYPE_COMPUTE,					uniformFilter);
+			const VariableReferencedByShaderValidator	referencedByGeometryVerifier		(m_context, glu::SHADERTYPE_GEOMETRY,					uniformFilter);
+			const VariableReferencedByShaderValidator	referencedByTessControlVerifier		(m_context, glu::SHADERTYPE_TESSELLATION_CONTROL,		uniformFilter);
+			const VariableReferencedByShaderValidator	referencedByTessEvaluationVerifier	(m_context, glu::SHADERTYPE_TESSELLATION_EVALUATION,	uniformFilter);
 
 			const TestProperty allProperties[] =
 			{
-				{ GL_ARRAY_SIZE,					&arraySizeValidator					},
-				{ GL_ARRAY_STRIDE,					&arrayStrideValidator				},
-				{ GL_ATOMIC_COUNTER_BUFFER_INDEX,	&atomicCounterBufferIndexVerifier	},
-				{ GL_BLOCK_INDEX,					&blockIndexValidator				},
-				{ GL_IS_ROW_MAJOR,					&isRowMajorValidator				},
-				{ GL_LOCATION,						&locationValidator					},
-				{ GL_MATRIX_STRIDE,					&matrixStrideValidator				},
-				{ GL_NAME_LENGTH,					&nameLengthValidator				},
-				{ GL_OFFSET,						&offsetVerifier						},
-				{ GL_REFERENCED_BY_VERTEX_SHADER,	&referencedByVertexVerifier			},
-				{ GL_REFERENCED_BY_FRAGMENT_SHADER,	&referencedByFragmentVerifier		},
-				{ GL_REFERENCED_BY_COMPUTE_SHADER,	&referencedByComputeVerifier		},
-				{ GL_TYPE,							&typeValidator						},
+				{ GL_ARRAY_SIZE,							&arraySizeValidator					},
+				{ GL_ARRAY_STRIDE,							&arrayStrideValidator				},
+				{ GL_ATOMIC_COUNTER_BUFFER_INDEX,			&atomicCounterBufferIndexVerifier	},
+				{ GL_BLOCK_INDEX,							&blockIndexValidator				},
+				{ GL_IS_ROW_MAJOR,							&isRowMajorValidator				},
+				{ GL_LOCATION,								&locationValidator					},
+				{ GL_MATRIX_STRIDE,							&matrixStrideValidator				},
+				{ GL_NAME_LENGTH,							&nameLengthValidator				},
+				{ GL_OFFSET,								&offsetVerifier						},
+				{ GL_REFERENCED_BY_VERTEX_SHADER,			&referencedByVertexVerifier			},
+				{ GL_REFERENCED_BY_FRAGMENT_SHADER,			&referencedByFragmentVerifier		},
+				{ GL_REFERENCED_BY_COMPUTE_SHADER,			&referencedByComputeVerifier		},
+				{ GL_REFERENCED_BY_GEOMETRY_SHADER,			&referencedByGeometryVerifier		},
+				{ GL_REFERENCED_BY_TESS_CONTROL_SHADER,		&referencedByTessControlVerifier	},
+				{ GL_REFERENCED_BY_TESS_EVALUATION_SHADER,	&referencedByTessEvaluationVerifier	},
+				{ GL_TYPE,									&typeValidator						},
 			};
 
 			for (int targetResourceNdx = 0; targetResourceNdx < (int)targetResources.size(); ++targetResourceNdx)
@@ -1777,21 +2249,27 @@ ProgramInterfaceQueryTestCase::IterateResult ProgramInterfaceQueryTestCase::iter
 		case PROGRAMINTERFACE_SHADER_STORAGE_BLOCK:
 		{
 			const glu::Storage						storage								= (m_queryTarget.interface == PROGRAMINTERFACE_UNIFORM_BLOCK) ? (glu::STORAGE_UNIFORM) : (glu::STORAGE_BUFFER);
-			const VariableSearchFilter				blockFilter							(glu::SHADERTYPE_LAST, storage);
+			const VariableSearchFilter				blockFilter							= VariableSearchFilter::createStorageFilter(storage);
 
-			const BlockNameLengthValidator			nameLengthValidator					(m_context, program.getProgram(), blockFilter);
-			const BlockReferencedByShaderValidator	referencedByVertexVerifier			(m_context, VariableSearchFilter(glu::SHADERTYPE_VERTEX,	storage));
-			const BlockReferencedByShaderValidator	referencedByFragmentVerifier		(m_context, VariableSearchFilter(glu::SHADERTYPE_FRAGMENT,	storage));
-			const BlockReferencedByShaderValidator	referencedByComputeVerifier			(m_context, VariableSearchFilter(glu::SHADERTYPE_COMPUTE,	storage));
-			const BufferBindingValidator			bufferBindingValidator				(m_context, program.getProgram(), blockFilter);
+			const BlockNameLengthValidator			nameLengthValidator					(m_context, program.getProgram(),						blockFilter);
+			const BlockReferencedByShaderValidator	referencedByVertexVerifier			(m_context, glu::SHADERTYPE_VERTEX,						blockFilter);
+			const BlockReferencedByShaderValidator	referencedByFragmentVerifier		(m_context, glu::SHADERTYPE_FRAGMENT,					blockFilter);
+			const BlockReferencedByShaderValidator	referencedByComputeVerifier			(m_context, glu::SHADERTYPE_COMPUTE,					blockFilter);
+			const BlockReferencedByShaderValidator	referencedByGeometryVerifier		(m_context, glu::SHADERTYPE_GEOMETRY,					blockFilter);
+			const BlockReferencedByShaderValidator	referencedByTessControlVerifier		(m_context, glu::SHADERTYPE_TESSELLATION_CONTROL,		blockFilter);
+			const BlockReferencedByShaderValidator	referencedByTessEvaluationVerifier	(m_context, glu::SHADERTYPE_TESSELLATION_EVALUATION,	blockFilter);
+			const BufferBindingValidator			bufferBindingValidator				(m_context, program.getProgram(),						blockFilter);
 
 			const TestProperty allProperties[] =
 			{
-				{ GL_NAME_LENGTH,					&nameLengthValidator				},
-				{ GL_REFERENCED_BY_VERTEX_SHADER,	&referencedByVertexVerifier			},
-				{ GL_REFERENCED_BY_FRAGMENT_SHADER,	&referencedByFragmentVerifier		},
-				{ GL_REFERENCED_BY_COMPUTE_SHADER,	&referencedByComputeVerifier		},
-				{ GL_BUFFER_BINDING,				&bufferBindingValidator				},
+				{ GL_NAME_LENGTH,							&nameLengthValidator				},
+				{ GL_REFERENCED_BY_VERTEX_SHADER,			&referencedByVertexVerifier			},
+				{ GL_REFERENCED_BY_FRAGMENT_SHADER,			&referencedByFragmentVerifier		},
+				{ GL_REFERENCED_BY_COMPUTE_SHADER,			&referencedByComputeVerifier		},
+				{ GL_REFERENCED_BY_GEOMETRY_SHADER,			&referencedByGeometryVerifier		},
+				{ GL_REFERENCED_BY_TESS_CONTROL_SHADER,		&referencedByTessControlVerifier	},
+				{ GL_REFERENCED_BY_TESS_EVALUATION_SHADER,	&referencedByTessEvaluationVerifier	},
+				{ GL_BUFFER_BINDING,						&bufferBindingValidator				},
 			};
 
 			for (int targetResourceNdx = 0; targetResourceNdx < (int)targetResources.size(); ++targetResourceNdx)
@@ -1822,27 +2300,44 @@ ProgramInterfaceQueryTestCase::IterateResult ProgramInterfaceQueryTestCase::iter
 		case PROGRAMINTERFACE_PROGRAM_INPUT:
 		case PROGRAMINTERFACE_PROGRAM_OUTPUT:
 		{
-			const glu::Storage							storage							= (m_queryTarget.interface == PROGRAMINTERFACE_PROGRAM_INPUT) ? (glu::STORAGE_IN) : (glu::STORAGE_OUT);
-			const glu::ShaderType						shaderType						= (m_queryTarget.interface == PROGRAMINTERFACE_PROGRAM_INPUT) ? (programDefinition->getFirstStage()) : (programDefinition->getLastStage());
-			const VariableSearchFilter					variableFilter					(shaderType, storage);
+			const bool									isInputCase							= (m_queryTarget.interface == PROGRAMINTERFACE_PROGRAM_INPUT);
+			const glu::Storage							varyingStorage						= (isInputCase) ? (glu::STORAGE_IN) : (glu::STORAGE_OUT);
+			const glu::Storage							patchStorage						= (isInputCase) ? (glu::STORAGE_PATCH_IN) : (glu::STORAGE_PATCH_OUT);
+			const glu::ShaderType						shaderType							= (isInputCase) ? (programDefinition->getFirstStage()) : (programDefinition->getLastStage());
+			const int									unsizedArraySize					= (isInputCase && shaderType == glu::SHADERTYPE_GEOMETRY)					? (1)															// input points
+																							: (isInputCase && shaderType == glu::SHADERTYPE_TESSELLATION_CONTROL)		? (getMaxPatchVertices())										// input batch size
+																							: (!isInputCase && shaderType == glu::SHADERTYPE_TESSELLATION_CONTROL)		? (programDefinition->getTessellationNumOutputPatchVertices())	// output batch size
+																							: (isInputCase && shaderType == glu::SHADERTYPE_TESSELLATION_EVALUATION)	? (getMaxPatchVertices())										// input batch size
+																							: (-1);
+			const VariableSearchFilter					variableFilter						= VariableSearchFilter::logicalAnd(VariableSearchFilter::createShaderTypeFilter(shaderType),
+																															   VariableSearchFilter::logicalOr(VariableSearchFilter::createStorageFilter(varyingStorage),
+																																							   VariableSearchFilter::createStorageFilter(patchStorage)));
 
-			const TypeValidator							typeValidator					(m_context, program.getProgram(), variableFilter);
-			const ArraySizeValidator					arraySizeValidator				(m_context, program.getProgram(), variableFilter);
-			const LocationValidator						locationValidator				(m_context, program.getProgram(), variableFilter);
-			const VariableNameLengthValidator			nameLengthValidator				(m_context, program.getProgram(), variableFilter);
-			const VariableReferencedByShaderValidator	referencedByVertexVerifier		(m_context, VariableSearchFilter::intersection(VariableSearchFilter(glu::SHADERTYPE_VERTEX,		storage), variableFilter));
-			const VariableReferencedByShaderValidator	referencedByFragmentVerifier	(m_context, VariableSearchFilter::intersection(VariableSearchFilter(glu::SHADERTYPE_FRAGMENT,	storage), variableFilter));
-			const VariableReferencedByShaderValidator	referencedByComputeVerifier		(m_context, VariableSearchFilter::intersection(VariableSearchFilter(glu::SHADERTYPE_COMPUTE,	storage), variableFilter));
+			const TypeValidator							typeValidator						(m_context, program.getProgram(),						variableFilter);
+			const ArraySizeValidator					arraySizeValidator					(m_context, program.getProgram(),						unsizedArraySize,		variableFilter);
+			const LocationValidator						locationValidator					(m_context, program.getProgram(),						variableFilter);
+			const VariableNameLengthValidator			nameLengthValidator					(m_context, program.getProgram(),						variableFilter);
+			const VariableReferencedByShaderValidator	referencedByVertexVerifier			(m_context, glu::SHADERTYPE_VERTEX,						variableFilter);
+			const VariableReferencedByShaderValidator	referencedByFragmentVerifier		(m_context, glu::SHADERTYPE_FRAGMENT,					variableFilter);
+			const VariableReferencedByShaderValidator	referencedByComputeVerifier			(m_context, glu::SHADERTYPE_COMPUTE,					variableFilter);
+			const VariableReferencedByShaderValidator	referencedByGeometryVerifier		(m_context, glu::SHADERTYPE_GEOMETRY,					variableFilter);
+			const VariableReferencedByShaderValidator	referencedByTessControlVerifier		(m_context, glu::SHADERTYPE_TESSELLATION_CONTROL,		variableFilter);
+			const VariableReferencedByShaderValidator	referencedByTessEvaluationVerifier	(m_context, glu::SHADERTYPE_TESSELLATION_EVALUATION,	variableFilter);
+			const PerPatchValidator						perPatchValidator					(m_context, program.getProgram(),						variableFilter);
 
 			const TestProperty allProperties[] =
 			{
-				{ GL_ARRAY_SIZE,					&arraySizeValidator				},
-				{ GL_LOCATION,						&locationValidator				},
-				{ GL_NAME_LENGTH,					&nameLengthValidator			},
-				{ GL_REFERENCED_BY_VERTEX_SHADER,	&referencedByVertexVerifier		},
-				{ GL_REFERENCED_BY_FRAGMENT_SHADER,	&referencedByFragmentVerifier	},
-				{ GL_REFERENCED_BY_COMPUTE_SHADER,	&referencedByComputeVerifier	},
-				{ GL_TYPE,							&typeValidator					},
+				{ GL_ARRAY_SIZE,							&arraySizeValidator					},
+				{ GL_LOCATION,								&locationValidator					},
+				{ GL_NAME_LENGTH,							&nameLengthValidator				},
+				{ GL_REFERENCED_BY_VERTEX_SHADER,			&referencedByVertexVerifier			},
+				{ GL_REFERENCED_BY_FRAGMENT_SHADER,			&referencedByFragmentVerifier		},
+				{ GL_REFERENCED_BY_COMPUTE_SHADER,			&referencedByComputeVerifier		},
+				{ GL_REFERENCED_BY_GEOMETRY_SHADER,			&referencedByGeometryVerifier		},
+				{ GL_REFERENCED_BY_TESS_CONTROL_SHADER,		&referencedByTessControlVerifier	},
+				{ GL_REFERENCED_BY_TESS_EVALUATION_SHADER,	&referencedByTessEvaluationVerifier	},
+				{ GL_TYPE,									&typeValidator						},
+				{ GL_IS_PER_PATCH,							&perPatchValidator					},
 			};
 
 			for (int targetResourceNdx = 0; targetResourceNdx < (int)targetResources.size(); ++targetResourceNdx)
@@ -1873,37 +2368,43 @@ ProgramInterfaceQueryTestCase::IterateResult ProgramInterfaceQueryTestCase::iter
 
 		case PROGRAMINTERFACE_BUFFER_VARIABLE:
 		{
-			const VariableSearchFilter					variableFilter					(glu::SHADERTYPE_LAST, glu::STORAGE_BUFFER);
+			const VariableSearchFilter					variableFilter						= VariableSearchFilter::createStorageFilter(glu::STORAGE_BUFFER);
 
-			const TypeValidator							typeValidator					(m_context, program.getProgram(), variableFilter);
-			const ArraySizeValidator					arraySizeValidator				(m_context, program.getProgram(), variableFilter);
-			const ArrayStrideValidator					arrayStrideValidator			(m_context, program.getProgram(), variableFilter);
-			const BlockIndexValidator					blockIndexValidator				(m_context, program.getProgram(), variableFilter);
-			const IsRowMajorValidator					isRowMajorValidator				(m_context, program.getProgram(), variableFilter);
-			const MatrixStrideValidator					matrixStrideValidator			(m_context, program.getProgram(), variableFilter);
-			const OffsetValidator						offsetValidator					(m_context, program.getProgram(), variableFilter);
-			const VariableNameLengthValidator			nameLengthValidator				(m_context, program.getProgram(), variableFilter);
-			const VariableReferencedByShaderValidator	referencedByVertexVerifier		(m_context, VariableSearchFilter(glu::SHADERTYPE_VERTEX,	glu::STORAGE_BUFFER));
-			const VariableReferencedByShaderValidator	referencedByFragmentVerifier	(m_context, VariableSearchFilter(glu::SHADERTYPE_FRAGMENT,	glu::STORAGE_BUFFER));
-			const VariableReferencedByShaderValidator	referencedByComputeVerifier		(m_context, VariableSearchFilter(glu::SHADERTYPE_COMPUTE,	glu::STORAGE_BUFFER));
-			const TopLevelArraySizeValidator			topLevelArraySizeValidator		(m_context, program.getProgram(), variableFilter);
-			const TopLevelArrayStrideValidator			topLevelArrayStrideValidator	(m_context, program.getProgram(), variableFilter);
+			const TypeValidator							typeValidator						(m_context, program.getProgram(),						variableFilter);
+			const ArraySizeValidator					arraySizeValidator					(m_context, program.getProgram(),						0,					variableFilter);
+			const ArrayStrideValidator					arrayStrideValidator				(m_context, program.getProgram(),						variableFilter);
+			const BlockIndexValidator					blockIndexValidator					(m_context, program.getProgram(),						variableFilter);
+			const IsRowMajorValidator					isRowMajorValidator					(m_context, program.getProgram(),						variableFilter);
+			const MatrixStrideValidator					matrixStrideValidator				(m_context, program.getProgram(),						variableFilter);
+			const OffsetValidator						offsetValidator						(m_context, program.getProgram(),						variableFilter);
+			const VariableNameLengthValidator			nameLengthValidator					(m_context, program.getProgram(),						variableFilter);
+			const VariableReferencedByShaderValidator	referencedByVertexVerifier			(m_context, glu::SHADERTYPE_VERTEX,						variableFilter);
+			const VariableReferencedByShaderValidator	referencedByFragmentVerifier		(m_context, glu::SHADERTYPE_FRAGMENT,					variableFilter);
+			const VariableReferencedByShaderValidator	referencedByComputeVerifier			(m_context, glu::SHADERTYPE_COMPUTE,					variableFilter);
+			const VariableReferencedByShaderValidator	referencedByGeometryVerifier		(m_context, glu::SHADERTYPE_GEOMETRY,					variableFilter);
+			const VariableReferencedByShaderValidator	referencedByTessControlVerifier		(m_context, glu::SHADERTYPE_TESSELLATION_CONTROL,		variableFilter);
+			const VariableReferencedByShaderValidator	referencedByTessEvaluationVerifier	(m_context, glu::SHADERTYPE_TESSELLATION_EVALUATION,	variableFilter);
+			const TopLevelArraySizeValidator			topLevelArraySizeValidator			(m_context, program.getProgram(),						variableFilter);
+			const TopLevelArrayStrideValidator			topLevelArrayStrideValidator		(m_context, program.getProgram(),						variableFilter);
 
 			const TestProperty allProperties[] =
 			{
-				{ GL_ARRAY_SIZE,					&arraySizeValidator				},
-				{ GL_ARRAY_STRIDE,					&arrayStrideValidator			},
-				{ GL_BLOCK_INDEX,					&blockIndexValidator			},
-				{ GL_IS_ROW_MAJOR,					&isRowMajorValidator			},
-				{ GL_MATRIX_STRIDE,					&matrixStrideValidator			},
-				{ GL_NAME_LENGTH,					&nameLengthValidator			},
-				{ GL_OFFSET,						&offsetValidator				},
-				{ GL_REFERENCED_BY_VERTEX_SHADER,	&referencedByVertexVerifier		},
-				{ GL_REFERENCED_BY_FRAGMENT_SHADER,	&referencedByFragmentVerifier	},
-				{ GL_REFERENCED_BY_COMPUTE_SHADER,	&referencedByComputeVerifier	},
-				{ GL_TOP_LEVEL_ARRAY_SIZE,			&topLevelArraySizeValidator		},
-				{ GL_TOP_LEVEL_ARRAY_STRIDE,		&topLevelArrayStrideValidator	},
-				{ GL_TYPE,							&typeValidator					},
+				{ GL_ARRAY_SIZE,							&arraySizeValidator					},
+				{ GL_ARRAY_STRIDE,							&arrayStrideValidator				},
+				{ GL_BLOCK_INDEX,							&blockIndexValidator				},
+				{ GL_IS_ROW_MAJOR,							&isRowMajorValidator				},
+				{ GL_MATRIX_STRIDE,							&matrixStrideValidator				},
+				{ GL_NAME_LENGTH,							&nameLengthValidator				},
+				{ GL_OFFSET,								&offsetValidator					},
+				{ GL_REFERENCED_BY_VERTEX_SHADER,			&referencedByVertexVerifier			},
+				{ GL_REFERENCED_BY_FRAGMENT_SHADER,			&referencedByFragmentVerifier		},
+				{ GL_REFERENCED_BY_COMPUTE_SHADER,			&referencedByComputeVerifier		},
+				{ GL_REFERENCED_BY_GEOMETRY_SHADER,			&referencedByGeometryVerifier		},
+				{ GL_REFERENCED_BY_TESS_CONTROL_SHADER,		&referencedByTessControlVerifier	},
+				{ GL_REFERENCED_BY_TESS_EVALUATION_SHADER,	&referencedByTessEvaluationVerifier	},
+				{ GL_TOP_LEVEL_ARRAY_SIZE,					&topLevelArraySizeValidator			},
+				{ GL_TOP_LEVEL_ARRAY_STRIDE,				&topLevelArrayStrideValidator		},
+				{ GL_TYPE,									&typeValidator						},
 			};
 
 			for (int targetResourceNdx = 0; targetResourceNdx < (int)targetResources.size(); ++targetResourceNdx)
@@ -1996,9 +2497,9 @@ static bool checkLimit (glw::GLenum pname, int usage, const glw::Functions& gl, 
 	return true;
 }
 
-static bool checkShaderResourceUsage (const ProgramInterfaceDefinition::Shader* shader, const glw::Functions& gl, tcu::TestLog& log)
+static bool checkShaderResourceUsage (const ProgramInterfaceDefinition::Program* program, const ProgramInterfaceDefinition::Shader* shader, const glw::Functions& gl, tcu::TestLog& log)
 {
-	const ProgramInterfaceDefinition::ShaderResourceUsage usage = getShaderResourceUsage(shader);
+	const ProgramInterfaceDefinition::ShaderResourceUsage usage = getShaderResourceUsage(program, shader);
 
 	switch (shader->getType())
 	{
@@ -2088,6 +2589,97 @@ static bool checkShaderResourceUsage (const ProgramInterfaceDefinition::Shader* 
 			return allOk;
 		}
 
+		case glu::SHADERTYPE_GEOMETRY:
+		{
+			const int totalOutputComponents = program->getGeometryNumOutputVertices() * usage.numOutputComponents;
+			const struct
+			{
+				glw::GLenum	pname;
+				int			usage;
+			} restrictions[] =
+			{
+				{ GL_MAX_GEOMETRY_UNIFORM_COMPONENTS,				usage.numDefaultBlockUniformComponents			},
+				{ GL_MAX_GEOMETRY_UNIFORM_BLOCKS,					usage.numUniformBlocks							},
+				{ GL_MAX_GEOMETRY_INPUT_COMPONENTS,					usage.numInputComponents						},
+				{ GL_MAX_GEOMETRY_OUTPUT_COMPONENTS,				usage.numOutputComponents						},
+				{ GL_MAX_GEOMETRY_OUTPUT_VERTICES,					(int)program->getGeometryNumOutputVertices()	},
+				{ GL_MAX_GEOMETRY_TOTAL_OUTPUT_COMPONENTS,			totalOutputComponents							},
+				{ GL_MAX_GEOMETRY_TEXTURE_IMAGE_UNITS,				usage.numSamplers								},
+				{ GL_MAX_GEOMETRY_ATOMIC_COUNTER_BUFFERS,			usage.numAtomicCounterBuffers					},
+				{ GL_MAX_GEOMETRY_ATOMIC_COUNTERS,					usage.numAtomicCounters							},
+				{ GL_MAX_GEOMETRY_IMAGE_UNIFORMS,					usage.numImages									},
+				{ GL_MAX_GEOMETRY_SHADER_STORAGE_BLOCKS,			usage.numShaderStorageBlocks					},
+			};
+
+			bool allOk = true;
+
+			log << tcu::TestLog::Message << "Geometry shader:" << tcu::TestLog::EndMessage;
+			for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(restrictions); ++ndx)
+				allOk &= checkLimit(restrictions[ndx].pname, restrictions[ndx].usage, gl, log);
+
+			return allOk;
+		}
+
+		case glu::SHADERTYPE_TESSELLATION_CONTROL:
+		{
+			const int totalOutputComponents = program->getTessellationNumOutputPatchVertices() * usage.numOutputComponents + usage.numPatchOutputComponents;
+			const struct
+			{
+				glw::GLenum	pname;
+				int			usage;
+			} restrictions[] =
+			{
+				{ GL_MAX_PATCH_VERTICES,								(int)program->getTessellationNumOutputPatchVertices()	},
+				{ GL_MAX_TESS_PATCH_COMPONENTS,							usage.numPatchOutputComponents							},
+				{ GL_MAX_TESS_CONTROL_UNIFORM_COMPONENTS,				usage.numDefaultBlockUniformComponents					},
+				{ GL_MAX_TESS_CONTROL_UNIFORM_BLOCKS,					usage.numUniformBlocks									},
+				{ GL_MAX_TESS_CONTROL_INPUT_COMPONENTS,					usage.numInputComponents								},
+				{ GL_MAX_TESS_CONTROL_OUTPUT_COMPONENTS,				usage.numOutputComponents								},
+				{ GL_MAX_TESS_CONTROL_TOTAL_OUTPUT_COMPONENTS,			totalOutputComponents									},
+				{ GL_MAX_TESS_CONTROL_TEXTURE_IMAGE_UNITS,				usage.numSamplers										},
+				{ GL_MAX_TESS_CONTROL_ATOMIC_COUNTER_BUFFERS,			usage.numAtomicCounterBuffers							},
+				{ GL_MAX_TESS_CONTROL_ATOMIC_COUNTERS,					usage.numAtomicCounters									},
+				{ GL_MAX_TESS_CONTROL_SHADER_STORAGE_BLOCKS,			usage.numShaderStorageBlocks							},
+			};
+
+			bool allOk = true;
+
+			log << tcu::TestLog::Message << "Tessellation control shader:" << tcu::TestLog::EndMessage;
+			for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(restrictions); ++ndx)
+				allOk &= checkLimit(restrictions[ndx].pname, restrictions[ndx].usage, gl, log);
+
+			return allOk;
+		}
+
+		case glu::SHADERTYPE_TESSELLATION_EVALUATION:
+		{
+			const struct
+			{
+				glw::GLenum	pname;
+				int			usage;
+			} restrictions[] =
+			{
+				{ GL_MAX_PATCH_VERTICES,								(int)program->getTessellationNumOutputPatchVertices()	},
+				{ GL_MAX_TESS_PATCH_COMPONENTS,							usage.numPatchInputComponents							},
+				{ GL_MAX_TESS_EVALUATION_UNIFORM_COMPONENTS,			usage.numDefaultBlockUniformComponents					},
+				{ GL_MAX_TESS_EVALUATION_UNIFORM_BLOCKS,				usage.numUniformBlocks									},
+				{ GL_MAX_TESS_EVALUATION_INPUT_COMPONENTS,				usage.numInputComponents								},
+				{ GL_MAX_TESS_EVALUATION_OUTPUT_COMPONENTS,				usage.numOutputComponents								},
+				{ GL_MAX_TESS_EVALUATION_TEXTURE_IMAGE_UNITS,			usage.numSamplers										},
+				{ GL_MAX_TESS_EVALUATION_ATOMIC_COUNTER_BUFFERS,		usage.numAtomicCounterBuffers							},
+				{ GL_MAX_TESS_EVALUATION_ATOMIC_COUNTERS,				usage.numAtomicCounters									},
+				{ GL_MAX_TESS_EVALUATION_SHADER_STORAGE_BLOCKS,			usage.numShaderStorageBlocks							},
+			};
+
+			bool allOk = true;
+
+			log << tcu::TestLog::Message << "Tessellation evaluation shader:" << tcu::TestLog::EndMessage;
+			for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(restrictions); ++ndx)
+				allOk &= checkLimit(restrictions[ndx].pname, restrictions[ndx].usage, gl, log);
+
+			return allOk;
+		}
+
 		default:
 			DE_ASSERT(false);
 			return false;
@@ -2104,28 +2696,31 @@ static bool checkProgramCombinedResourceUsage (const ProgramInterfaceDefinition:
 		int			usage;
 	} restrictions[] =
 	{
-		{ GL_MAX_UNIFORM_BUFFER_BINDINGS,						usage.uniformBufferMaxBinding+1				},
-		{ GL_MAX_UNIFORM_BLOCK_SIZE,							usage.uniformBufferMaxSize					},
-		{ GL_MAX_COMBINED_UNIFORM_BLOCKS,						usage.numUniformBlocks						},
-		{ GL_MAX_COMBINED_VERTEX_UNIFORM_COMPONENTS,			usage.numCombinedVertexUniformComponents	},
-		{ GL_MAX_COMBINED_FRAGMENT_UNIFORM_COMPONENTS,			usage.numCombinedFragmentUniformComponents	},
-		{ GL_MAX_VARYING_COMPONENTS,							usage.numVaryingComponents					},
-		{ GL_MAX_VARYING_VECTORS,								usage.numVaryingVectors						},
-		{ GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS,					usage.numCombinedSamplers					},
-		{ GL_MAX_COMBINED_SHADER_OUTPUT_RESOURCES,				usage.numCombinedOutputResources			},
-		{ GL_MAX_ATOMIC_COUNTER_BUFFER_BINDINGS,				usage.atomicCounterBufferMaxBinding+1		},
-		{ GL_MAX_ATOMIC_COUNTER_BUFFER_SIZE,					usage.atomicCounterBufferMaxSize			},
-		{ GL_MAX_COMBINED_ATOMIC_COUNTER_BUFFERS,				usage.numAtomicCounterBuffers				},
-		{ GL_MAX_COMBINED_ATOMIC_COUNTERS,						usage.numAtomicCounters						},
-		{ GL_MAX_IMAGE_UNITS,									usage.maxImageBinding+1						},
-		{ GL_MAX_COMBINED_IMAGE_UNIFORMS,						usage.numCombinedImages						},
-		{ GL_MAX_SHADER_STORAGE_BUFFER_BINDINGS,				usage.shaderStorageBufferMaxBinding+1		},
-		{ GL_MAX_SHADER_STORAGE_BLOCK_SIZE,						usage.shaderStorageBufferMaxSize			},
-		{ GL_MAX_COMBINED_SHADER_STORAGE_BLOCKS,				usage.numShaderStorageBlocks				},
-		{ GL_MAX_TRANSFORM_FEEDBACK_INTERLEAVED_COMPONENTS,		usage.numXFBInterleavedComponents			},
-		{ GL_MAX_TRANSFORM_FEEDBACK_SEPARATE_ATTRIBS,			usage.numXFBSeparateAttribs					},
-		{ GL_MAX_TRANSFORM_FEEDBACK_SEPARATE_COMPONENTS,		usage.numXFBSeparateComponents				},
-		{ GL_MAX_DRAW_BUFFERS,									usage.fragmentOutputMaxBinding+1			},
+		{ GL_MAX_UNIFORM_BUFFER_BINDINGS,						usage.uniformBufferMaxBinding+1					},
+		{ GL_MAX_UNIFORM_BLOCK_SIZE,							usage.uniformBufferMaxSize						},
+		{ GL_MAX_COMBINED_UNIFORM_BLOCKS,						usage.numUniformBlocks							},
+		{ GL_MAX_COMBINED_VERTEX_UNIFORM_COMPONENTS,			usage.numCombinedVertexUniformComponents		},
+		{ GL_MAX_COMBINED_FRAGMENT_UNIFORM_COMPONENTS,			usage.numCombinedFragmentUniformComponents		},
+		{ GL_MAX_COMBINED_GEOMETRY_UNIFORM_COMPONENTS,			usage.numCombinedGeometryUniformComponents		},
+		{ GL_MAX_COMBINED_TESS_CONTROL_UNIFORM_COMPONENTS,		usage.numCombinedTessControlUniformComponents	},
+		{ GL_MAX_COMBINED_TESS_EVALUATION_UNIFORM_COMPONENTS,	usage.numCombinedTessEvalUniformComponents		},
+		{ GL_MAX_VARYING_COMPONENTS,							usage.numVaryingComponents						},
+		{ GL_MAX_VARYING_VECTORS,								usage.numVaryingVectors							},
+		{ GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS,					usage.numCombinedSamplers						},
+		{ GL_MAX_COMBINED_SHADER_OUTPUT_RESOURCES,				usage.numCombinedOutputResources				},
+		{ GL_MAX_ATOMIC_COUNTER_BUFFER_BINDINGS,				usage.atomicCounterBufferMaxBinding+1			},
+		{ GL_MAX_ATOMIC_COUNTER_BUFFER_SIZE,					usage.atomicCounterBufferMaxSize				},
+		{ GL_MAX_COMBINED_ATOMIC_COUNTER_BUFFERS,				usage.numAtomicCounterBuffers					},
+		{ GL_MAX_COMBINED_ATOMIC_COUNTERS,						usage.numAtomicCounters							},
+		{ GL_MAX_IMAGE_UNITS,									usage.maxImageBinding+1							},
+		{ GL_MAX_COMBINED_IMAGE_UNIFORMS,						usage.numCombinedImages							},
+		{ GL_MAX_SHADER_STORAGE_BUFFER_BINDINGS,				usage.shaderStorageBufferMaxBinding+1			},
+		{ GL_MAX_SHADER_STORAGE_BLOCK_SIZE,						usage.shaderStorageBufferMaxSize				},
+		{ GL_MAX_COMBINED_SHADER_STORAGE_BLOCKS,				usage.numShaderStorageBlocks					},
+		{ GL_MAX_TRANSFORM_FEEDBACK_INTERLEAVED_COMPONENTS,		usage.numXFBInterleavedComponents				},
+		{ GL_MAX_TRANSFORM_FEEDBACK_SEPARATE_ATTRIBS,			usage.numXFBSeparateAttribs						},
+		{ GL_MAX_TRANSFORM_FEEDBACK_SEPARATE_COMPONENTS,		usage.numXFBSeparateComponents					},
+		{ GL_MAX_DRAW_BUFFERS,									usage.fragmentOutputMaxBinding+1				},
 	};
 
 	bool allOk = true;
@@ -2142,7 +2737,7 @@ void checkProgramResourceUsage (const ProgramInterfaceDefinition::Program* progr
 	bool limitExceeded = false;
 
 	for (int shaderNdx = 0; shaderNdx < (int)program->getShaders().size(); ++shaderNdx)
-		limitExceeded |= !checkShaderResourceUsage(program->getShaders()[shaderNdx], gl, log);
+		limitExceeded |= !checkShaderResourceUsage(program, program->getShaders()[shaderNdx], gl, log);
 
 	limitExceeded |= !checkProgramCombinedResourceUsage(program, gl, log);
 

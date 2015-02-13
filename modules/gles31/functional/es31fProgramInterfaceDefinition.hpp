@@ -87,33 +87,41 @@ private:
 class Program
 {
 public:
-									Program							(void);
-									~Program						(void);
+									Program									(void);
+									~Program								(void);
 
-	Shader*							addShader						(glu::ShaderType type, glu::GLSLVersion version);
+	Shader*							addShader								(glu::ShaderType type, glu::GLSLVersion version);
 
-	void							setSeparable					(bool separable);
-	bool							isSeparable						(void) const;
+	void							setSeparable							(bool separable);
+	bool							isSeparable								(void) const;
 
-	const std::vector<Shader*>&		getShaders						(void) const;
-	glu::ShaderType					getFirstStage					(void) const;
-	glu::ShaderType					getLastStage					(void) const;
+	const std::vector<Shader*>&		getShaders								(void) const;
+	glu::ShaderType					getFirstStage							(void) const;
+	glu::ShaderType					getLastStage							(void) const;
+	bool							hasStage								(glu::ShaderType stage) const;
 
-	void							addTransformFeedbackVarying		(const std::string& varName);
-	const std::vector<std::string>&	getTransformFeedbackVaryings	(void) const;
-	void							setTransformFeedbackMode		(deUint32 mode);
-	deUint32						getTransformFeedbackMode		(void) const;
+	void							addTransformFeedbackVarying				(const std::string& varName);
+	const std::vector<std::string>&	getTransformFeedbackVaryings			(void) const;
+	void							setTransformFeedbackMode				(deUint32 mode);
+	deUint32						getTransformFeedbackMode				(void) const;
 
-	bool							isValid							(void) const;
+	deUint32						getGeometryNumOutputVertices			(void) const;
+	void							setGeometryNumOutputVertices			(deUint32);
+	deUint32						getTessellationNumOutputPatchVertices 	(void) const;
+	void							setTessellationNumOutputPatchVertices	(deUint32);
+
+	bool							isValid									(void) const;
 
 private:
-	Program&						operator=						(const Program&);
-									Program							(const Program&);
+	Program&						operator=								(const Program&);
+									Program									(const Program&);
 
 	bool							m_separable;
 	std::vector<Shader*>			m_shaders;
 	std::vector<std::string>		m_xfbVaryings;
 	deUint32						m_xfbMode;
+	deUint32						m_geoNumOutputVertices;
+	deUint32						m_tessNumOutputVertices;
 };
 
 } // ProgramInterfaceDefinition
