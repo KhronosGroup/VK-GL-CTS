@@ -193,7 +193,7 @@ inline MovePtr<T> newMovePtr (P0 p0, P1 p1, P2 p2)	{ return MovePtr<T>(new T(p0,
  * ownership of the pointer from the MovePtr. Because a UniquePtr cannot be
  * copied, direct initialization syntax must be used, i.e.:
  *
- *		MovePtr<Foo> createFoo (void); 
+ *		MovePtr<Foo> createFoo (void);
  * 		UniquePtr<Foo> fooPtr(createFoo()); // NOT fooPtr = createFoo();
  *
  *//*--------------------------------------------------------------------*/

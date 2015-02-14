@@ -131,17 +131,17 @@ bool ThreadSafeRingBuffer<T>::tryPopBack (T& dst)
 {
 	if (!m_readMutex.tryLock())
 		return false;
-	
+
 	bool success = m_fill.tryDecrement();
-	
+
 	if (success)
 	{
 		dst = popBackInternal();
 		m_empty.increment();
 	}
-	
+
 	m_readMutex.unlock();
-	
+
 	return success;
 }
 

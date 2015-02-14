@@ -54,7 +54,7 @@ deUint64 deGetMicroseconds (void)
 #elif  (DE_OS == DE_OS_SYMBIAN)
 	struct timespec currTime;
 	/* Symbian supports only realtime clock for clock_gettime. */
-	/* \todo [2011-08-22 kalle] Proper Symbian-based implementation that is guaranteed to be monotonic. */ 
+	/* \todo [2011-08-22 kalle] Proper Symbian-based implementation that is guaranteed to be monotonic. */
 	clock_gettime(CLOCK_REALTIME, &currTime);
 	return (deUint64)currTime.tv_sec*1000000 + ((deUint64)currTime.tv_nsec/1000);
 

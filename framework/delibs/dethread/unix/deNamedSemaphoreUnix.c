@@ -48,22 +48,22 @@ deSemaphore deSemaphore_create (int initialValue, const deSemaphoreAttributes* a
 	NamedSemaphore*	sem		= (NamedSemaphore*)deCalloc(sizeof(NamedSemaphore));
 	char			name[128];
 	deUint32		mode	= 0700;
-	
+
 	DE_UNREF(attributes);
-	
+
 	if (!sem)
 		return 0;
-	
+
 	NamedSemaphore_getName(sem, name, DE_LENGTH_OF_ARRAY(name));
-	
+
 	sem->semaphore = sem_open(name, O_CREAT|O_EXCL, mode, initialValue);
-	
+
 	if (sem->semaphore == SEM_FAILED)
 	{
 		deFree(sem);
 		return 0;
 	}
-	
+
 	return (deSemaphore)sem;
 }
 
@@ -72,9 +72,9 @@ void deSemaphore_destroy (deSemaphore semaphore)
 	NamedSemaphore* sem			= (NamedSemaphore*)semaphore;
 	char			name[128];
 	int				res;
-	
+
 	NamedSemaphore_getName(sem, name, DE_LENGTH_OF_ARRAY(name));
-	
+
 	res = sem_close(sem->semaphore);
 	DE_ASSERT(res == 0);
 	res = sem_unlink(name);

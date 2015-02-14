@@ -68,7 +68,7 @@ public:
 	FilePath&			normalize			(void);
 
 	void				split				(std::vector<std::string>& components) const;
-	
+
 	bool				isAbsolutePath		(void) const;
 
 	static bool			isSeparator			(char c);

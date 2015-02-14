@@ -100,7 +100,7 @@ void MessageBuilder::clear (void)
 
 ExecutionServer::ExecutionServer (xs::TestProcess* testProcess, deSocketFamily family, int port, RunMode runMode)
 	: TcpServer		(family, port)
-	, m_testDriver	(testProcess)	
+	, m_testDriver	(testProcess)
 	, m_runMode		(runMode)
 {
 }

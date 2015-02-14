@@ -56,4 +56,4 @@ deBool			deProcess_closeStdErr		(deProcess* process);
 
 DE_END_EXTERN_C
 
-#endif /* _DEPROCESS_H */ 
+#endif /* _DEPROCESS_H */

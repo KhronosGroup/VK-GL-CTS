@@ -34,18 +34,18 @@ DE_STATIC_ASSERT(sizeof(deSemaphore) >= sizeof(sem_t*));
 deSemaphore deSemaphore_create (int initialValue, const deSemaphoreAttributes* attributes)
 {
 	sem_t*	sem	= (sem_t*)deMalloc(sizeof(sem_t));
-	
+
 	DE_UNREF(attributes);
-	
+
 	if (!sem)
 		return 0;
-	
+
 	if (sem_init(sem, 0, initialValue) != 0)
 	{
 		deFree(sem);
 		return 0;
 	}
-	
+
 	return (deSemaphore)sem;
 }
 

@@ -58,7 +58,7 @@ public:
 
 	operator deSocketAddress*		()			{ return m_address; }
 	operator const deSocketAddress* () const	{ return m_address; }
-	
+
 	deSocketAddress*	getPtr				(void)						{ return m_address; }
 
 
@@ -76,7 +76,7 @@ public:
 						~Socket				(void);
 
 	void				setFlags			(deUint32 flags);
-	
+
 	deSocketState		getState			(void) const					{ return deSocket_getState(m_socket);				}
 	bool				isConnected			(void) const					{ return getState() == DE_SOCKETSTATE_CONNECTED;	}
 
@@ -102,7 +102,7 @@ private:
 						Socket				(deSocket* socket) : m_socket(socket) {}
 						Socket				(const Socket& other);
 	Socket&				operator=			(const Socket& other);
-	
+
 	Socket*				accept				(deSocketAddress* clientAddress);
 
 	deSocket*			m_socket;

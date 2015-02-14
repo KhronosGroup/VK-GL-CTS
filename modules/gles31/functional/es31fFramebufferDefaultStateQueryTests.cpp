@@ -130,7 +130,7 @@ void FramebufferDimensionTest::checkInitial (tcu::ResultCollector& result, glu::
 void FramebufferDimensionTest::checkSet (tcu::ResultCollector& result, glu::CallLogWrapper& gl)
 {
 	const glw::GLenum pname = (m_dimension == DIMENSION_WIDTH) ? (GL_FRAMEBUFFER_DEFAULT_WIDTH) : (GL_FRAMEBUFFER_DEFAULT_HEIGHT);
-	
+
 	gl.glFramebufferParameteri(GL_DRAW_FRAMEBUFFER, pname, 32);
 	GLU_EXPECT_NO_ERROR(gl.glGetError(), "set state");
 
@@ -141,8 +141,8 @@ class FramebufferSamplesTest : public FramebufferTest
 {
 public:
 						FramebufferSamplesTest	(Context& context, QueryType verifier, const char* name, const char* desc);
-	void				checkInitial				(tcu::ResultCollector& result, glu::CallLogWrapper& gl);
-	void				checkSet					(tcu::ResultCollector& result, glu::CallLogWrapper& gl);
+	void				checkInitial			(tcu::ResultCollector& result, glu::CallLogWrapper& gl);
+	void				checkSet				(tcu::ResultCollector& result, glu::CallLogWrapper& gl);
 };
 
 FramebufferSamplesTest::FramebufferSamplesTest (Context& context, QueryType verifier, const char* name, const char* desc)
@@ -170,8 +170,8 @@ class FramebufferFixedSampleLocationsTest : public FramebufferTest
 {
 public:
 						FramebufferFixedSampleLocationsTest	(Context& context, QueryType verifier, const char* name, const char* desc);
-	void				checkInitial				(tcu::ResultCollector& result, glu::CallLogWrapper& gl);
-	void				checkSet					(tcu::ResultCollector& result, glu::CallLogWrapper& gl);
+	void				checkInitial						(tcu::ResultCollector& result, glu::CallLogWrapper& gl);
+	void				checkSet							(tcu::ResultCollector& result, glu::CallLogWrapper& gl);
 };
 
 FramebufferFixedSampleLocationsTest::FramebufferFixedSampleLocationsTest (Context& context, QueryType verifier, const char* name, const char* desc)

@@ -668,7 +668,7 @@ case uniform_struct
 		varying mediump float dummy;
 		${FRAGMENT_DECLARATIONS}
 		void main()
-		{	 
+		{
 			out0 = val.b + val.a;
 			out0 = out0 + dummy;
 			out0 = out0 - dummy;
@@ -702,7 +702,7 @@ case uniform_struct_vertex_only
 		varying mediump float res;
 		${FRAGMENT_DECLARATIONS}
 		void main()
-		{	 
+		{
 			out0 = res;
 			${FRAGMENT_OUTPUT}
 		}
@@ -731,7 +731,7 @@ case uniform_struct_fragment_only
 		uniform Struct val;
 		${FRAGMENT_DECLARATIONS}
 		void main()
-		{	 
+		{
 			out0 = val.a + val.b;
 			${FRAGMENT_OUTPUT}
 		}
@@ -763,7 +763,7 @@ case uniform_struct_partial
 		${FRAGMENT_DECLARATIONS}
 		varying mediump float res;
 		void main()
-		{	 
+		{
 			out0 = res + val.b;
 			${FRAGMENT_OUTPUT}
 		}
@@ -795,7 +795,7 @@ case uniform_struct_vec4
 		varying mediump float dummy;
 		${FRAGMENT_DECLARATIONS}
 		void main()
-		{	 
+		{
 			out0 = val.b.y + val.a.x;
 			out0 = out0 + dummy;
 			out0 = out0 - dummy;
@@ -829,7 +829,7 @@ case uniform_struct_vertex_only_vec4
 		varying mediump float res;
 		${FRAGMENT_DECLARATIONS}
 		void main()
-		{	 
+		{
 			out0 = res;
 			${FRAGMENT_OUTPUT}
 		}
@@ -858,7 +858,7 @@ case uniform_struct_fragment_only_vec4
 		uniform Struct val;
 		${FRAGMENT_DECLARATIONS}
 		void main()
-		{	 
+		{
 			out0 = val.a.x + val.b.y;
 			${FRAGMENT_OUTPUT}
 		}
@@ -890,7 +890,7 @@ case uniform_struct_partial_vec4
 		${FRAGMENT_DECLARATIONS}
 		varying mediump float res;
 		void main()
-		{	 
+		{
 			out0 = res + val.b.y;
 			${FRAGMENT_OUTPUT}
 		}
@@ -922,7 +922,7 @@ case uniform_struct_vec4_vec3
 		varying mediump float dummy;
 		${FRAGMENT_DECLARATIONS}
 		void main()
-		{	 
+		{
 			out0 = val.b.y + val.a.x;
 			out0 = out0 + dummy;
 			out0 = out0 - dummy;
@@ -956,7 +956,7 @@ case uniform_struct_vertex_only_vec4_vec3
 		varying mediump float res;
 		${FRAGMENT_DECLARATIONS}
 		void main()
-		{	 
+		{
 			out0 = res;
 			${FRAGMENT_OUTPUT}
 		}
@@ -985,7 +985,7 @@ case uniform_struct_fragment_only_vec4_vec3
 		uniform Struct val;
 		${FRAGMENT_DECLARATIONS}
 		void main()
-		{	 
+		{
 			out0 = val.a.x + val.b.y;
 			${FRAGMENT_OUTPUT}
 		}
@@ -1017,7 +1017,7 @@ case uniform_struct_partial_vec4_vec3
 		${FRAGMENT_DECLARATIONS}
 		varying mediump float res;
 		void main()
-		{	 
+		{
 			out0 = res + val.b.y;
 			${FRAGMENT_OUTPUT}
 		}
@@ -1049,7 +1049,7 @@ case uniform_struct_vec4_float
 		varying mediump float dummy;
 		${FRAGMENT_DECLARATIONS}
 		void main()
-		{	 
+		{
 			out0 = val.b + val.a.x;
 			out0 = out0 + dummy;
 			out0 = out0 - dummy;
@@ -1083,7 +1083,7 @@ case uniform_struct_vertex_only_vec4_float
 		varying mediump float res;
 		${FRAGMENT_DECLARATIONS}
 		void main()
-		{	 
+		{
 			out0 = res;
 			${FRAGMENT_OUTPUT}
 		}
@@ -1112,7 +1112,7 @@ case uniform_struct_fragment_only_vec4_float
 		uniform Struct val;
 		${FRAGMENT_DECLARATIONS}
 		void main()
-		{	 
+		{
 			out0 = val.a.x + val.b;
 			${FRAGMENT_OUTPUT}
 		}
@@ -1144,7 +1144,7 @@ case uniform_struct_partial_vec4_float
 		${FRAGMENT_DECLARATIONS}
 		varying mediump float res;
 		void main()
-		{	 
+		{
 			out0 = res + val.b;
 			${FRAGMENT_OUTPUT}
 		}
@@ -1178,7 +1178,7 @@ case uniform_struct_partial_vec4_struct
 		${FRAGMENT_DECLARATIONS}
 		varying mediump float res;
 		void main()
-		{	 
+		{
 			out0 = res + val.b.c.y;
 			${FRAGMENT_OUTPUT}
 		}
@@ -1214,7 +1214,7 @@ case uniform_struct_partial_vec4_vec3_struct
 		${FRAGMENT_DECLARATIONS}
 		varying mediump float res;
 		void main()
-		{	 
+		{
 			out0 = res + val.b.c.y;
 			${FRAGMENT_OUTPUT}
 		}
@@ -1246,7 +1246,7 @@ case uniform_struct_partial_vec2_vec3
 		${FRAGMENT_DECLARATIONS}
 		varying mediump float res;
 		void main()
-		{	 
+		{
 			out0 = res + val.b.y;
 			${FRAGMENT_OUTPUT}
 		}
@@ -1278,7 +1278,7 @@ case uniform_struct_partial_vec2_int
 		${FRAGMENT_DECLARATIONS}
 		varying mediump float res;
 		void main()
-		{	 
+		{
 			out0 = res + float(val.b);
 			${FRAGMENT_OUTPUT}
 		}
@@ -1310,7 +1310,7 @@ case uniform_struct_partial_int_float
 		${FRAGMENT_DECLARATIONS}
 		varying mediump float res;
 		void main()
-		{	 
+		{
 			out0 = res + float(val.b);
 			${FRAGMENT_OUTPUT}
 		}
@@ -1342,7 +1342,7 @@ case uniform_struct_partial_bvec2_vec2
 		${FRAGMENT_DECLARATIONS}
 		varying mediump float res;
 		void main()
-		{	 
+		{
 			out0 = res + val.b.y;
 			${FRAGMENT_OUTPUT}
 		}
@@ -1374,7 +1374,7 @@ case uniform_struct_partial_ivec2_vec2
 		${FRAGMENT_DECLARATIONS}
 		varying mediump float res;
 		void main()
-		{	 
+		{
 			out0 = res + val.b.y;
 			${FRAGMENT_OUTPUT}
 		}
@@ -1406,7 +1406,7 @@ case uniform_struct_partial_ivec2_ivec2
 		${FRAGMENT_DECLARATIONS}
 		varying mediump float res;
 		void main()
-		{	 
+		{
 			out0 = res + vec2(val.b).y;
 			${FRAGMENT_OUTPUT}
 		}
@@ -1435,7 +1435,7 @@ case uniform_struct_type_conflict_1
 		${FRAGMENT_DECLARATIONS}
 		varying mediump float res;
 		void main()
-		{	 
+		{
 			out0 = res + val.a;
 			${FRAGMENT_OUTPUT}
 		}
@@ -1464,7 +1464,7 @@ case uniform_struct_type_conflict_2
 		${FRAGMENT_DECLARATIONS}
 		varying mediump float res;
 		void main()
-		{	 
+		{
 			out0 = val.a;
 			${FRAGMENT_OUTPUT}
 		}
@@ -1493,7 +1493,7 @@ case uniform_struct_type_conflict_3
 		${FRAGMENT_DECLARATIONS}
 		varying mediump float res;
 		void main()
-		{	 
+		{
 			out0 = val.a.x;
 			${FRAGMENT_OUTPUT}
 		}
@@ -1522,7 +1522,7 @@ case uniform_struct_precision_conflict_1
 		${FRAGMENT_DECLARATIONS}
 		varying mediump float res;
 		void main()
-		{	 
+		{
 			out0 = val.a;
 			${FRAGMENT_OUTPUT}
 		}
@@ -1551,7 +1551,7 @@ case uniform_struct_precision_conflict_2
 		${FRAGMENT_DECLARATIONS}
 		varying mediump float res;
 		void main()
-		{	 
+		{
 			out0 = val.a;
 			${FRAGMENT_OUTPUT}
 		}
@@ -1580,7 +1580,7 @@ case uniform_struct_precision_conflict_3
 		${FRAGMENT_DECLARATIONS}
 		varying mediump float res;
 		void main()
-		{	 
+		{
 			out0 = val.a;
 			${FRAGMENT_OUTPUT}
 		}
@@ -1609,7 +1609,7 @@ case uniform_struct_precision_conflict_4
 		${FRAGMENT_DECLARATIONS}
 		varying mediump float res;
 		void main()
-		{	 
+		{
 			out0 = val.a;
 			${FRAGMENT_OUTPUT}
 		}
@@ -1620,7 +1620,7 @@ case uniform_struct_use_case_rip
 	desc "Complex Light struct from use case tests."
 	values {
 		uniform float val.constantAttenuation = 1.0;
-		uniform float val.quadraticAttenuation = 1.0;   
+		uniform float val.quadraticAttenuation = 1.0;
 	    output float out0 = 2.0;
     }
 	vertex ""
@@ -1658,7 +1658,7 @@ case uniform_struct_use_case_rip
 		${FRAGMENT_DECLARATIONS}
 		varying mediump float res;
 		void main()
-		{	 
+		{
 			out0 = res + val.quadraticAttenuation;
 			${FRAGMENT_OUTPUT}
 		}
@@ -1669,7 +1669,7 @@ case uniform_struct_use_case_rip_sans_highp
 	desc "Complex Light struct from use case tests, without highp usage"
 	values {
 		uniform float val.constantAttenuation = 1.0;
-		uniform float val.quadraticAttenuation = 1.0;   
+		uniform float val.quadraticAttenuation = 1.0;
 	    output float out0 = 2.0;
     }
 	vertex ""
@@ -1707,7 +1707,7 @@ case uniform_struct_use_case_rip_sans_highp
 		${FRAGMENT_DECLARATIONS}
 		varying mediump float res;
 		void main()
-		{	 
+		{
 			out0 = res + val.quadraticAttenuation;
 			${FRAGMENT_OUTPUT}
 		}

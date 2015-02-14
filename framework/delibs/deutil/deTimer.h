@@ -42,4 +42,4 @@ void			deTimer_disable				(deTimer* timer);
 
 DE_END_EXTERN_C
 
-#endif /* _DETIMER_H */ 
+#endif /* _DETIMER_H */

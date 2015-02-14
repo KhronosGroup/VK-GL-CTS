@@ -76,7 +76,7 @@ typedef enum deSocketState_e
 	DE_SOCKETSTATE_CONNECTED				= 1,
 	DE_SOCKETSTATE_LISTENING				= 2,
 	DE_SOCKETSTATE_DISCONNECTED				= 3,
-	
+
 	DE_SOCKETSTATE_LAST
 } deSocketState;
 
@@ -95,7 +95,7 @@ typedef enum deSocketChannel_e
 {
 	DE_SOCKETCHANNEL_RECEIVE	= (1<<0),
 	DE_SOCKETCHANNEL_SEND		= (1<<1),
-	
+
 	DE_SOCKETCHANNEL_BOTH		= DE_SOCKETCHANNEL_RECEIVE|DE_SOCKETCHANNEL_SEND
 } deSocketChannel;
 
@@ -141,4 +141,4 @@ const char*			deGetSocketResultName		(deSocketResult result);
 
 DE_END_EXTERN_C
 
-#endif /* _DESOCKET_H */ 
+#endif /* _DESOCKET_H */

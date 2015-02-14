@@ -58,7 +58,7 @@ public:
 private:
 						Thread			(const Thread& other); // Not allowed!
 	Thread&				operator=		(const Thread& other); // Not allowed!
-	
+
 	deThreadAttributes	m_attribs;
 	deThread			m_thread;
 };

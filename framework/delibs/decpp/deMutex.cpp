@@ -40,7 +40,7 @@ Mutex::Mutex (deUint32 flags)
 	deMutexAttributes attribs;
 	deMemset(&attribs, 0, sizeof(attribs));
 	attribs.flags = flags;
-	
+
 	m_mutex = deMutex_create(&attribs);
 	if (!m_mutex)
 		throw std::bad_alloc();

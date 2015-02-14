@@ -38,16 +38,16 @@ deMutex deMutex_create (const deMutexAttributes* attributes)
 	pthread_mutexattr_t	attr;
 	int					ret;
 	pthread_mutex_t*	mutex = deMalloc(sizeof(pthread_mutex_t));
-	
+
 	if (!mutex)
 		return 0;
-	
+
 	if (pthread_mutexattr_init(&attr) != 0)
 	{
 		deFree(mutex);
 		return 0;
 	}
-	
+
 #if defined(DE_DEBUG)
 	if (pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_ERRORCHECK) != 0)
 #else
@@ -58,7 +58,7 @@ deMutex deMutex_create (const deMutexAttributes* attributes)
 		deFree(mutex);
 		return 0;
 	}
-	
+
 	if (attributes)
 	{
 		if (attributes->flags & DE_MUTEX_RECURSIVE)
@@ -71,7 +71,7 @@ deMutex deMutex_create (const deMutexAttributes* attributes)
 			}
 		}
 	}
-	
+
 	ret = pthread_mutex_init(mutex, &attr);
 	if (ret != 0)
 	{
@@ -79,9 +79,9 @@ deMutex deMutex_create (const deMutexAttributes* attributes)
 		deFree(mutex);
 		return 0;
 	}
-	
+
 	pthread_mutexattr_destroy(&attr);
-	
+
 	return (deMutex)mutex;
 }
 

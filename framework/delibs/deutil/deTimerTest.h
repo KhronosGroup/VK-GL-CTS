@@ -31,4 +31,4 @@ void deTimer_selfTest (void);
 
 DE_END_EXTERN_C
 
-#endif /* _DETIMERTEST_H */ 
+#endif /* _DETIMERTEST_H */

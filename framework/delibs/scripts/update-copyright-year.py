@@ -33,15 +33,14 @@ def processFile (filename):
 	file = open(filename, "wb")
 	file.write(data)
 	file.close()
-	
+
 def processDir (dir):
 	srcFiles = findSrcFiles(dir)
 	for file in srcFiles:
 		processFile(file)
-	
+
 if __name__ == "__main__":
 	if len(sys.argv) < 2:
 		print sys.argv[0] + ": [directory]"
 	else:
 		processDir(sys.argv[1])
-	

@@ -224,8 +224,8 @@ typedef void (*deFunctionPtr) (void);
 
 /** Length of array. C++ version does compile time check that passed value is an array reference. */
 #if defined(__cplusplus) && (DE_COMPILER == DE_COMPILER_MSC)
-	template <typename T, size_t N> char (&deArraySizeHelper(T (&array)[N]))[N];  
-#	define DE_LENGTH_OF_ARRAY(ARRAY) ((int)(sizeof(deArraySizeHelper(ARRAY))))  
+	template <typename T, size_t N> char (&deArraySizeHelper(T (&array)[N]))[N];
+#	define DE_LENGTH_OF_ARRAY(ARRAY) ((int)(sizeof(deArraySizeHelper(ARRAY))))
 #else
 #	define DE_LENGTH_OF_ARRAY(ARRAY) ((int)(sizeof(ARRAY) / sizeof((ARRAY)[0])))
 #endif

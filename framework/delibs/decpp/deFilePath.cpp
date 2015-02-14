@@ -72,7 +72,7 @@ void FilePath::split (std::vector<std::string>& components) const
 		{
 			if (pos - curCompStart > 0)
 				components.push_back(m_path.substr(curCompStart, pos - curCompStart));
-			
+
 			curCompStart = pos+1;
 		}
 	}
@@ -120,7 +120,7 @@ FilePath& FilePath::normalize (void)
 		else
 			m_path = "..";
 	}
-	
+
 	if (winNetPath)
 		m_path = separator + separator + m_path;
 	else if (rootPath && !hasDrive)

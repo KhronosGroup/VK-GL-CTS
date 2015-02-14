@@ -43,7 +43,7 @@ void STLUtil_selfTest (void)
 		DE_TEST_ASSERT(!contains(m, 3));
 		DE_TEST_ASSERT(tryLookup(m, 3) == DE_NULL);
 		DE_TEST_ASSERT(lookupDefault(m, 3, 7) == 7);
-	}	
+	}
 
 	{
 		set<int> s1;
@@ -69,8 +69,7 @@ void STLUtil_selfTest (void)
 		DE_TEST_ASSERT(contains(su, 2));
 		DE_TEST_ASSERT(contains(su, 3));
 		DE_TEST_ASSERT(contains(su, 5));
-	}	
-	
+	}
 }
 
 }

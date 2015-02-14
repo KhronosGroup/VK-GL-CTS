@@ -61,4 +61,4 @@ void					deDynamicLibrary_close			(deDynamicLibrary* library);
 
 DE_END_EXTERN_C
 
-#endif /* _DEDYNAMICLIBRARY_H */ 
+#endif /* _DEDYNAMICLIBRARY_H */

@@ -37,7 +37,7 @@ elseif (ANDROID_NDK_HOST_OS STREQUAL "windows")
 else ()
 	message(FATAL_ERROR "Unknown ANDROID_NDK_HOST_OS")
 endif ()
-	
+
 set(CMAKE_SHARED_LIBRARY_C_FLAGS "")
 set(CMAKE_SHARED_LIBRARY_CXX_FLAGS "")
 
@@ -64,7 +64,7 @@ set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
 
 set(NDK_FLAGS "--sysroot=${ANDROID_SYSROOT} -fpic -mfloat-abi=softfp -Os -D__ARM_ARCH_5__ -D__ARM_ARCH_5T__ -D__ARM_ARCH_5E__ -D__ARM_ARCH_5TE__ -DANDROID -D__ANDROID__ -D__STDC_INT64__")
 
-if (ANDROID_ABI STREQUAL "armeabi-v7a")	
+if (ANDROID_ABI STREQUAL "armeabi-v7a")
 	# For armeabi-v7a
 	set(NDK_FLAGS "${NDK_FLAGS} -march=armv7-a -mfpu=vfp")
 

@@ -90,10 +90,10 @@ DE_STATIC_ASSERT(sizeof(deMutex) >= sizeof(HANDLE));
 deMutex deMutex_create (const deMutexAttributes* attributes)
 {
 	HANDLE handle = DE_NULL;
-	
+
 	DE_UNREF(attributes);
 	/* \note [2009-11-12 pyry] Created mutex is always recursive. */
-	
+
 	handle = CreateMutex(DE_NULL, FALSE, DE_NULL);
 	return (deMutex)handle;
 }

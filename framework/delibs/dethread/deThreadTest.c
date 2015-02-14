@@ -88,67 +88,67 @@ void deThread_selfTest (void)
 	deSleep(0);
 	deSleep(100);
 	deYield();
-	
+
 	/* Thread test 1. */
 	{
 		deInt32		val		= 123;
 		deBool		ret;
 		deThread	thread	= deThread_create(threadTestThr1, &val, DE_NULL);
 		DE_TEST_ASSERT(thread);
-		
+
 		ret = deThread_join(thread);
 		DE_TEST_ASSERT(ret);
-		
+
 		deThread_destroy(thread);
 	}
-	
+
 	/* Thread test 2. */
 	{
 		deThread	thread	= deThread_create(threadTestThr2, DE_NULL, DE_NULL);
 		deInt32		ret;
 		DE_TEST_ASSERT(thread);
-		
+
 		ret = deThread_join(thread);
 		DE_TEST_ASSERT(ret);
-		
+
 		deThread_destroy(thread);
 	}
-	
+
 	/* Thread test 3. */
 	{
 		ThreadData3	data;
 		deThread	thread;
 		deBool		ret;
 		int			ndx;
-		
+
 		deMemset(&data, 0, sizeof(ThreadData3));
-		
+
 		thread = deThread_create(threadTestThr3, &data, DE_NULL);
 		DE_TEST_ASSERT(thread);
-		
+
 		ret = deThread_join(thread);
 		DE_TEST_ASSERT(ret);
-		
+
 		for (ndx = 0; ndx < (int)DE_LENGTH_OF_ARRAY(data.bytes); ndx++)
 			DE_TEST_ASSERT(data.bytes[ndx] == 0xff);
-		
+
 		deThread_destroy(thread);
 	}
-	
+
 	/* Test tls. */
 	{
 		deThreadLocal	tls;
 		deThread		thread;
-		
+
 		tls = deThreadLocal_create();
 		DE_TEST_ASSERT(tls);
-		
+
 		deThreadLocal_set(tls, (void*)(deUintptr)0xff);
-		
+
 		thread = deThread_create(threadTestThr4, &tls, DE_NULL);
 		deThread_join(thread);
 		deThread_destroy(thread);
-		
+
 		DE_TEST_ASSERT((deUintptr)deThreadLocal_get(tls) == 0xff);
 		deThreadLocal_destroy(tls);
 	}
@@ -174,7 +174,7 @@ void deThread_selfTest (void)
 static void mutexTestThr1 (void* arg)
 {
 	deMutex		mutex	= *((deMutex*)arg);
-	
+
 	deMutex_lock(mutex);
 	deMutex_unlock(mutex);
 }
@@ -191,30 +191,30 @@ static void mutexTestThr2 (void* arg)
 {
 	MutexData2* data = (MutexData2*)arg;
 	deInt32 numIncremented = 0;
-	
+
 	for (;;)
 	{
 		deInt32 localCounter;
 		deMutex_lock(data->mutex);
-		
+
 		if (data->counter >= data->maxVal)
 		{
 			deMutex_unlock(data->mutex);
 			break;
 		}
-		
+
 		localCounter = data->counter;
 		deYield();
-		
+
 		DE_TEST_ASSERT(localCounter == data->counter);
 		localCounter += 1;
 		data->counter = localCounter;
-		
+
 		deMutex_unlock(data->mutex);
-		
+
 		numIncremented++;
 	}
-	
+
 	deMutex_lock(data->mutex);
 	data->counter2 += numIncremented;
 	deMutex_unlock(data->mutex);
@@ -236,7 +236,7 @@ void deMutex_selfTest (void)
 		deMutex mutex = deMutex_create(DE_NULL);
 		deBool	ret;
 		DE_TEST_ASSERT(mutex);
-		
+
 		deMutex_lock(mutex);
 		deMutex_unlock(mutex);
 
@@ -244,91 +244,91 @@ void deMutex_selfTest (void)
 		ret = deMutex_tryLock(mutex);
 		DE_TEST_ASSERT(ret);
 		deMutex_unlock(mutex);
-		
+
 		deMutex_destroy(mutex);
 	}
-	
+
 	/* Recursive mutex. */
 	{
 		deMutexAttributes	attrs;
 		deMutex				mutex;
 		int					ndx;
 		int					numLocks	= 10;
-		
+
 		deMemset(&attrs, 0, sizeof(attrs));
-		
+
 		attrs.flags = DE_MUTEX_RECURSIVE;
-		
+
 		mutex = deMutex_create(&attrs);
 		DE_TEST_ASSERT(mutex);
-		
+
 		for (ndx = 0; ndx < numLocks; ndx++)
 			deMutex_lock(mutex);
-		
+
 		for (ndx = 0; ndx < numLocks; ndx++)
 			deMutex_unlock(mutex);
-		
+
 		deMutex_destroy(mutex);
 	}
-	
+
 	/* Mutex and threads. */
 	{
 		deMutex		mutex;
 		deThread	thread;
-		
+
 		mutex = deMutex_create(DE_NULL);
 		DE_TEST_ASSERT(mutex);
-		
+
 		deMutex_lock(mutex);
-		
+
 		thread = deThread_create(mutexTestThr1, &mutex, DE_NULL);
 		DE_TEST_ASSERT(thread);
-		
+
 		deSleep(100);
 		deMutex_unlock(mutex);
-		
+
 		deMutex_lock(mutex);
 		deMutex_unlock(mutex);
-		
+
 		deThread_join(thread);
-		
+
 		deThread_destroy(thread);
 		deMutex_destroy(mutex);
 	}
-	
+
 	/* A bit more complex mutex test. */
 	{
 		MutexData2	data;
 		deThread	threads[2];
 		int			ndx;
-		
+
 		data.mutex	= deMutex_create(DE_NULL);
 		DE_TEST_ASSERT(data.mutex);
-		
+
 		data.counter	= 0;
 		data.counter2	= 0;
 		data.maxVal		= 1000;
-		
+
 		deMutex_lock(data.mutex);
-		
+
 		for (ndx = 0; ndx < (int)DE_LENGTH_OF_ARRAY(threads); ndx++)
 		{
 			threads[ndx] = deThread_create(mutexTestThr2, &data, DE_NULL);
 			DE_TEST_ASSERT(threads[ndx]);
 		}
-		
+
 		deMutex_unlock(data.mutex);
-		
+
 		for (ndx = 0; ndx < (int)DE_LENGTH_OF_ARRAY(threads); ndx++)
 		{
 			deBool ret = deThread_join(threads[ndx]);
 			DE_TEST_ASSERT(ret);
 			deThread_destroy(threads[ndx]);
 		}
-		
+
 		DE_TEST_ASSERT(data.counter == data.counter2);
 		DE_TEST_ASSERT(data.maxVal == data.counter);
-		
+
 		deMutex_destroy(data.mutex);
 	}
 
@@ -370,13 +370,13 @@ void producerThread (void* arg)
 	int			ndx;
 	int			numToProduce	= 10000;
 	int			writePos		= 0;
-	
+
 	deRandom_init(&random, 123);
 
 	for (ndx = 0; ndx <= numToProduce; ndx++)
 	{
 		deInt32 val;
-		
+
 		if (ndx == numToProduce)
 		{
 			val = 0; /* End. */
@@ -393,7 +393,7 @@ void producerThread (void* arg)
 		writePos = (writePos + 1) % DE_LENGTH_OF_ARRAY(buffer->buffer);
 
 		deSemaphore_increment(buffer->fill);
-		
+
 		buffer->producerSum += val;
 	}
 }
@@ -474,7 +474,7 @@ void deAtomic_selfTest (void)
 		DE_TEST_ASSERT(a == 12);
 		DE_TEST_ASSERT(deAtomicIncrement32(&a) == 13);
 		DE_TEST_ASSERT(a == 13);
-		
+
 		DE_TEST_ASSERT(deAtomicDecrement32(&a) == 12);
 		DE_TEST_ASSERT(a == 12);
 		DE_TEST_ASSERT(deAtomicDecrement32(&a) == 11);

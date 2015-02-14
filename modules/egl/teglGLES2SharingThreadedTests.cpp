@@ -473,7 +473,7 @@ void Operation::execute (tcu::ThreadUtil::Thread& t)
 					}
 				}
 			}
-	
+
 			if (success)
 			{
 				exec(thread);

@@ -836,7 +836,7 @@ bool CreateContextExtCase::validateCurrentContext (const glw::Functions& gl)
 			isOk = false;
 		}
 	}
-	
+
 	if (robustAccessExt == EGL_TRUE)
 	{
 		if (m_api == EGL_OPENGL_API)
@@ -883,7 +883,7 @@ bool CreateContextExtCase::validateCurrentContext (const glw::Functions& gl)
 				isOk = false;
 			}
 		}
-		
+
 	}
 
 	return isOk;
