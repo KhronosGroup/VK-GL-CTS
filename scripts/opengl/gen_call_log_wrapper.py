@@ -415,10 +415,15 @@ def commandLogWrapperMemberDef (command):
 				printouts += "\t\tm_log << TestLog::Message << \"// %s = \" << %s << TestLog::EndMessage;\n" % (param.name, logSpec.argOutPrints[paramNdx](param.name))
 				numPrintouts += 1
 
-		if numPrintouts > 1:
+		# If print handlers do not match the actual command, that is very likely an error. Check
+		# print handlers is a subset of all arguments.
+		if numPrintouts == 0 or len(set(logSpec.argOutPrints.keys()) - set(range(len(command.params)))) > 0:
+			raise Exception("Invalid print handlers when processing command %s" % command.name)
+
+		if numPrintouts != 1:
 			src += "\t{\n"
 		src += printouts
-		if numPrintouts > 1:
+		if numPrintouts != 1:
 			src += "\t}\n"
 
 	if not isVoid:
