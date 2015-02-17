@@ -255,10 +255,7 @@ void ReadPixelsTest::clearColor (tcu::Texture2D& reference, vector<deUint8>& pix
 
 		GLU_CHECK_CALL(glClearBufferfv(GL_COLOR, 0, color));
 
-		// Clear reference
-		for (int x = 0; x < reference.getWidth(); x++)
-			for (int y = 0; y < reference.getHeight(); y++)
-					reference.getLevel(0).setPixel(tcu::UVec4((deUint32)(255.0f * red), (deUint32)(255.0f * green), (deUint32)(255.0f * blue), (deUint32)(255 * alpha)), x, y);
+		tcu::clear(reference.getLevel(0), tcu::Vec4(red, green, blue, alpha));
 	}
 	else if (m_format == GL_RGBA_INTEGER)
 	{
@@ -274,10 +271,7 @@ void ReadPixelsTest::clearColor (tcu::Texture2D& reference, vector<deUint8>& pix
 
 			GLU_CHECK_CALL(glClearBufferiv(GL_COLOR, 0, color));
 
-			// Clear reference
-			for (int x = 0; x < reference.getWidth(); x++)
-				for (int y = 0; y < reference.getHeight(); y++)
-						reference.getLevel(0).setPixel(tcu::IVec4(red, green, blue, alpha), x, y);
+			tcu::clear(reference.getLevel(0), tcu::IVec4(red, green, blue, alpha));
 		}
 		else if (m_type == GL_UNSIGNED_INT)
 		{
@@ -291,10 +285,7 @@ void ReadPixelsTest::clearColor (tcu::Texture2D& reference, vector<deUint8>& pix
 
 			GLU_CHECK_CALL(glClearBufferuiv(GL_COLOR, 0, color));
 
-			// Clear reference
-			for (int x = 0; x < reference.getWidth(); x++)
-				for (int y = 0; y < reference.getHeight(); y++)
-						reference.getLevel(0).setPixel(tcu::UVec4(red, green, blue, alpha), x, y);
+			tcu::clear(reference.getLevel(0), tcu::UVec4(red, green, blue, alpha));
 		}
 		else
 			DE_ASSERT(false);
