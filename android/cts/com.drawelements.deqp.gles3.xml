@@ -35983,13 +35983,11 @@
 <Test name="triangles" />
 <Test name="triangle_strip" />
 <Test name="triangle_fan" />
-<Test name="line_loop" />
 </TestCase>
 <TestCase name="projected">
 <Test name="triangles" />
 <Test name="triangle_strip" />
 <Test name="triangle_fan" />
-<Test name="line_strip" />
 </TestCase>
 </TestSuite>
 <TestCase name="flatshading">
