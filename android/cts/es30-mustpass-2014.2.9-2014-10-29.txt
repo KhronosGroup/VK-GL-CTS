@@ -33421,11 +33421,9 @@ dEQP-GLES3.functional.rasterization.culling.both_triangle_fan_reverse
 dEQP-GLES3.functional.rasterization.interpolation.basic.triangles
 dEQP-GLES3.functional.rasterization.interpolation.basic.triangle_strip
 dEQP-GLES3.functional.rasterization.interpolation.basic.triangle_fan
-dEQP-GLES3.functional.rasterization.interpolation.basic.line_loop
 dEQP-GLES3.functional.rasterization.interpolation.projected.triangles
 dEQP-GLES3.functional.rasterization.interpolation.projected.triangle_strip
 dEQP-GLES3.functional.rasterization.interpolation.projected.triangle_fan
-dEQP-GLES3.functional.rasterization.interpolation.projected.line_strip
 dEQP-GLES3.functional.rasterization.flatshading.triangles
 dEQP-GLES3.functional.rasterization.flatshading.triangle_strip
 dEQP-GLES3.functional.rasterization.flatshading.triangle_fan
