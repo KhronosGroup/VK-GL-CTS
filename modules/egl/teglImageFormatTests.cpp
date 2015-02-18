@@ -420,7 +420,7 @@ bool GLES2ImageApi::RenderTexture2D::invokeGLES2 (GLES2ImageApi& api, MovePtr<Un
 	GLU_CHECK_GLW_CALL(gl, enableVertexAttribArray(coordLoc));
 	GLU_CHECK_GLW_CALL(gl, vertexAttribPointer(coordLoc, 2, GL_FLOAT, GL_FALSE, 0, squareTriangleCoords));
 
-	GLU_CHECK_GLW_CALL(gl, drawArrays(GL_TRIANGLES, 0, DE_LENGTH_OF_ARRAY(squareTriangleCoords)));
+	GLU_CHECK_GLW_CALL(gl, drawArrays(GL_TRIANGLES, 0, 6));
 	GLU_CHECK_GLW_CALL(gl, disableVertexAttribArray(coordLoc));
 	GLU_CHECK_GLW_CALL(gl, bindTexture(GL_TEXTURE_2D, 0));
 
@@ -512,7 +512,7 @@ bool GLES2ImageApi::RenderDepthbuffer::invokeGLES2 (GLES2ImageApi& api, MovePtr<
 		tcu::Vec4 color = depthLevelColors[level];
 		GLU_CHECK_GLW_CALL(gl, uniform4f(colorLoc, color.x(), color.y(), color.z(), color.w()));
 		GLU_CHECK_GLW_CALL(gl, uniform1f(depthLoc, (level + 1) * 0.1f));
-		GLU_CHECK_GLW_CALL(gl, drawArrays(GL_TRIANGLES, 0, DE_LENGTH_OF_ARRAY(squareTriangleCoords)));
+		GLU_CHECK_GLW_CALL(gl, drawArrays(GL_TRIANGLES, 0, 6));
 	}
 
 	GLU_CHECK_GLW_CALL(gl, disable(GL_DEPTH_TEST));
