@@ -43,7 +43,7 @@ DE_STATIC_ASSERT(DE_PTR_SIZE		== sizeof(void*));
 #	error "DE_CPU and DE_PTR_SIZE mismatch"
 #endif
 
-#if (DE_OS == DE_OS_UNIX) && defined(NDEBUG)
+#if (DE_OS == DE_OS_UNIX || DE_OS == DE_OS_WIN32) && defined(NDEBUG)
 	/* We need __assert_fail declaration from assert.h */
 #	undef NDEBUG
 #endif
