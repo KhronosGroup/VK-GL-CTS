@@ -85,6 +85,7 @@ IVec4				getTextureFormatMantissaBitDepth	(const TextureFormat& format);
 // Texture fill.
 void	clear							(const PixelBufferAccess& access, const Vec4& color);
 void	clear							(const PixelBufferAccess& access, const IVec4& color);
+void	clear							(const PixelBufferAccess& access, const UVec4& color);
 void	clearDepth						(const PixelBufferAccess& access, float depth);
 void	clearStencil					(const PixelBufferAccess& access, int stencil);
 void	fillWithComponentGradients		(const PixelBufferAccess& access, const Vec4& minVal, const Vec4& maxVal);
