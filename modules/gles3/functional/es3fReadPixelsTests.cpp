@@ -76,8 +76,8 @@ private:
 	const int		m_width;
 	const int		m_height;
 
-	void			getFormatInfo	(tcu::TextureFormat& format, int& pixelSize, bool& align);
-	void			clearColor		(tcu::Texture2D& reference, vector<deUint8>& pixelData, bool align, int pixelSize);
+	void			getFormatInfo	(tcu::TextureFormat& format, int& pixelSize);
+	void			clearColor		(tcu::Texture2D& reference, vector<deUint8>& pixelData, int pixelSize);
 };
 
 ReadPixelsTest::ReadPixelsTest	(Context& context, const char* name, const char* description, bool chooseFormat, int alignment, GLint rowLength, GLint skipRows, GLint skipPixels, GLenum format, GLenum type)
@@ -191,7 +191,7 @@ void ReadPixelsTest::render (tcu::Texture2D& reference)
 	}
 }
 
-void ReadPixelsTest::getFormatInfo (tcu::TextureFormat& format, int& pixelSize, bool& align)
+void ReadPixelsTest::getFormatInfo (tcu::TextureFormat& format, int& pixelSize)
 {
 	if (m_chooseFormat)
 	{
@@ -200,39 +200,10 @@ void ReadPixelsTest::getFormatInfo (tcu::TextureFormat& format, int& pixelSize, 
 	}
 
 	format = glu::mapGLTransferFormat(m_format, m_type);
-
-	switch (m_type)
-	{
-		case GL_BYTE:
-		case GL_UNSIGNED_BYTE:
-		case GL_SHORT:
-		case GL_UNSIGNED_SHORT:
-		case GL_INT:
-		case GL_UNSIGNED_INT:
-		case GL_FLOAT:
-		case GL_HALF_FLOAT:
-			align = true;
-			break;
-
-		case GL_UNSIGNED_SHORT_5_6_5:
-		case GL_UNSIGNED_SHORT_4_4_4_4:
-		case GL_UNSIGNED_SHORT_5_5_5_1:
-		case GL_UNSIGNED_INT_2_10_10_10_REV:
-		case GL_UNSIGNED_INT_10F_11F_11F_REV:
-		case GL_UNSIGNED_INT_24_8:
-		case GL_FLOAT_32_UNSIGNED_INT_24_8_REV:
-		case GL_UNSIGNED_INT_5_9_9_9_REV:
-			align = false;
-			break;
-
-		default:
-			throw tcu::InternalError("Unsupported format", "", __FILE__, __LINE__);
-	}
-
 	pixelSize = format.getPixelSize();
 }
 
-void ReadPixelsTest::clearColor (tcu::Texture2D& reference, vector<deUint8>& pixelData, bool align, int pixelSize)
+void ReadPixelsTest::clearColor (tcu::Texture2D& reference, vector<deUint8>& pixelData, int pixelSize)
 {
 	de::Random					rnd(m_seed);
 	GLuint						framebuffer = 0;
@@ -334,7 +305,7 @@ void ReadPixelsTest::clearColor (tcu::Texture2D& reference, vector<deUint8>& pix
 	render(reference);
 
 	const int rowWidth	= (m_rowLength == 0 ? m_width : m_rowLength) + m_skipPixels;
-	const int rowPitch	= (align ? m_alignment * deCeilFloatToInt32(pixelSize * rowWidth / (float)m_alignment) : rowWidth * pixelSize);
+	const int rowPitch	= m_alignment * deCeilFloatToInt32(pixelSize * rowWidth / (float)m_alignment);
 
 	pixelData.resize(rowPitch * (m_height + m_skipRows), 0);
 
@@ -351,9 +322,8 @@ TestCase::IterateResult ReadPixelsTest::iterate (void)
 {
 	tcu::TextureFormat			format(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8);
 	int							pixelSize;
-	bool						align;
 
-	getFormatInfo(format, pixelSize, align);
+	getFormatInfo(format, pixelSize);
 	m_testCtx.getLog() << tcu::TestLog::Message << "Format: " << glu::getPixelFormatStr(m_format) << ", Type: " << glu::getTypeStr(m_type) << tcu::TestLog::EndMessage;
 
 	tcu::Texture2D reference(format, m_width, m_height);
@@ -374,10 +344,10 @@ TestCase::IterateResult ReadPixelsTest::iterate (void)
 	GLU_CHECK_CALL(glViewport(0, 0, m_width, m_height));
 
 	vector<deUint8>	pixelData;
-	clearColor(reference, pixelData, align, pixelSize);
+	clearColor(reference, pixelData, pixelSize);
 
 	const int rowWidth	= (m_rowLength == 0 ? m_width : m_rowLength);
-	const int rowPitch	= (align ? m_alignment * deCeilFloatToInt32(pixelSize * rowWidth / (float)m_alignment) : rowWidth * pixelSize);
+	const int rowPitch	= m_alignment * deCeilFloatToInt32(pixelSize * rowWidth / (float)m_alignment);
 
 	// \note GL_RGBA_INTEGER uses always renderbuffers that are never multisampled. Otherwise default framebuffer is used.
 	if (m_format != GL_RGBA_INTEGER && m_context.getRenderTarget().getNumSamples() > 1)
