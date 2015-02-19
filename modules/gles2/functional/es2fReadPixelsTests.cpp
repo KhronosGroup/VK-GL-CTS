@@ -194,10 +194,7 @@ TestCase::IterateResult ReadPixelsTest::iterate (void)
 		GLU_CHECK_CALL(glClearColor(red, green, blue, alpha));
 		GLU_CHECK_CALL(glClear(GL_COLOR_BUFFER_BIT));
 
-		// Clear reference
-		for (int x = 0; x < reference.getWidth(); x++)
-			for (int y = 0; y < reference.getHeight(); y++)
-					reference.getLevel(0).setPixel(tcu::Vec4(red, green, blue, alpha), x, y);
+		tcu::clear(reference.getLevel(0), tcu::Vec4(red, green, blue, alpha));
 	}
 
 	render(reference);
