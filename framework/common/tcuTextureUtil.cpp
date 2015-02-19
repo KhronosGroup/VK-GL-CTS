@@ -537,6 +537,11 @@ void clear (const PixelBufferAccess& access, const IVec4& color)
 	}
 }
 
+void clear (const PixelBufferAccess& access, const UVec4& color)
+{
+	clear(access, color.cast<deInt32>());
+}
+
 void clearDepth (const PixelBufferAccess& access, float depth)
 {
 	int pixelSize = access.getFormat().getPixelSize();
