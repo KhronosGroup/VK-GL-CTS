@@ -27,6 +27,8 @@
 #include "tcuTestLog.hpp"
 #include "tcuFormatUtil.hpp"
 #include "tcuFloat.hpp"
+#include "tcuInterval.hpp"
+#include "tcuFloatFormat.hpp"
 #include "deRandom.hpp"
 #include "deMath.h"
 #include "deString.h"
@@ -2019,32 +2021,57 @@ public:
 		}
 	}
 
+	static tcu::Interval fma (glu::Precision precision, float a, float b, float c)
+	{
+		const tcu::FloatFormat formats[] =
+		{
+			//				 minExp		maxExp		mantissa	exact,		subnormals	infinities	NaN
+			tcu::FloatFormat(0,			0,			7,			false,		tcu::YES,	tcu::MAYBE,	tcu::MAYBE),
+			tcu::FloatFormat(-13,		13,			9,			false,		tcu::MAYBE,	tcu::MAYBE,	tcu::MAYBE),
+			tcu::FloatFormat(-126,		127,		23,			true,		tcu::MAYBE, tcu::YES,	tcu::MAYBE)
+		};
+		const tcu::FloatFormat&	format	= de::getSizedArrayElement<glu::PRECISION_LAST>(formats, precision);
+		const tcu::Interval		ia		= format.convert(a);
+		const tcu::Interval		ib		= format.convert(b);
+		const tcu::Interval		ic		= format.convert(c);
+		tcu::Interval			prod0;
+		tcu::Interval			prod1;
+		tcu::Interval			prod2;
+		tcu::Interval			prod3;
+		tcu::Interval			prod;
+		tcu::Interval			res;
+
+		TCU_SET_INTERVAL(prod0, tmp, tmp = ia.lo() * ib.lo());
+		TCU_SET_INTERVAL(prod1, tmp, tmp = ia.lo() * ib.hi());
+		TCU_SET_INTERVAL(prod2, tmp, tmp = ia.hi() * ib.lo());
+		TCU_SET_INTERVAL(prod3, tmp, tmp = ia.hi() * ib.hi());
+
+		prod = format.convert(format.roundOut(prod0 | prod1 | prod2 | prod3, ia.isFinite() && ib.isFinite()));
+
+		TCU_SET_INTERVAL_BOUNDS(res, tmp,
+								tmp = prod.lo() + ic.lo(),
+								tmp = prod.hi() + ic.hi());
+
+		return format.convert(format.roundOut(res, prod.isFinite() && ic.isFinite()));
+	}
+
 	bool compare (const void* const* inputs, const void* const* outputs)
 	{
 		const glu::DataType		type			= m_spec.inputs[0].varType.getBasicType();
 		const glu::Precision	precision		= m_spec.inputs[0].varType.getPrecision();
 		const int				scalarSize		= glu::getDataTypeScalarSize(type);
-		const bool				signedZero		= supportsSignedZero(precision);
-
-		const int				mantissaBits	= getMinMantissaBits(precision);
 
 		for (int compNdx = 0; compNdx < scalarSize; compNdx++)
 		{
-			const float		a			= ((const float*)inputs[0])[compNdx];
-			const float		b			= ((const float*)inputs[1])[compNdx];
-			const float		c			= ((const float*)inputs[2])[compNdx];
-			const float		res			= ((const float*)outputs[0])[compNdx];
-			const float		ref			= a*b + c;
+			const float			a			= ((const float*)inputs[0])[compNdx];
+			const float			b			= ((const float*)inputs[1])[compNdx];
+			const float			c			= ((const float*)inputs[2])[compNdx];
+			const float			res			= ((const float*)outputs[0])[compNdx];
+			const tcu::Interval	ref			= fma(precision, a, b, c);
 
-			const int		numBitsLost	= 1; // allow last bit to vary
-			const deUint32	maxUlpDiff	= getMaxUlpDiffFromBits(de::max(0, mantissaBits-numBitsLost));
-
-			const deUint32	ulpDiff		= signedZero ? getUlpDiff(res, ref) : getUlpDiffIgnoreZeroSign(res, ref);
-
-			if (ulpDiff > maxUlpDiff)
+			if (!ref.contains(res))
 			{
-				m_failMsg << "Expected [" << compNdx << "] = " << HexFloat(ref) << " with ULP threshold "
-						  << tcu::toHex(maxUlpDiff) << ", got ULP diff " << tcu::toHex(ulpDiff);
+				m_failMsg << "Expected [" << compNdx << "] = " << ref;
 				return false;
 			}
 		}
