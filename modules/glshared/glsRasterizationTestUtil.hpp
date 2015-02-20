@@ -53,6 +53,13 @@ enum VerificationMode
 	VERIFICATIONMODE_LAST
 };
 
+enum LineInterpolationMethod
+{
+	LINEINTERPOLATION_STRICTLY_CORRECT = 0,	// !< line interpolation matches the specification
+	LINEINTERPOLATION_PROJECTED,			// !< line interpolation weights are otherwise correct, but they are projected onto major axis
+	LINEINTERPOLATION_INCORRECT				// !< line interpolation is incorrect
+};
+
 struct TriangleSceneSpec
 {
 	struct SceneTriangle
@@ -158,9 +165,9 @@ bool verifyTriangleGroupInterpolation (const tcu::Surface& surface, const Triang
  *
  * The background is expected to be black.
  *
- * Returns false if invalid rasterization interpolation is found.
+ * Returns the detected interpolation method of the input image.
  *//*--------------------------------------------------------------------*/
-bool verifyLineGroupInterpolation (const tcu::Surface& surface, const LineSceneSpec& scene, const RasterizationArguments& args, tcu::TestLog& log);
+LineInterpolationMethod verifyLineGroupInterpolation (const tcu::Surface& surface, const LineSceneSpec& scene, const RasterizationArguments& args, tcu::TestLog& log);
 
 } // StateQueryUtil
 } // gls

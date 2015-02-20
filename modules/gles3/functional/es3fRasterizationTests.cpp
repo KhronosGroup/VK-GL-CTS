@@ -28,6 +28,7 @@
 #include "tcuVectorUtil.hpp"
 #include "tcuStringTemplate.hpp"
 #include "tcuTextureUtil.hpp"
+#include "tcuResultCollector.hpp"
 #include "gluShaderProgram.hpp"
 #include "gluRenderContext.hpp"
 #include "gluPixelTransfer.hpp"
@@ -1905,7 +1906,7 @@ private:
 	const PrimitiveWideness	m_primitiveWideness;
 
 	int						m_iteration;
-	bool					m_allIterationsPassed;
+	tcu::ResultCollector	m_result;
 	float					m_maxLineWidth;
 	std::vector<float>		m_lineWidths;
 };
@@ -1917,7 +1918,6 @@ LineInterpolationTest::LineInterpolationTest (Context& ctx, const char* name, co
 	, m_iterationCount		(3)
 	, m_primitiveWideness	(wideness)
 	, m_iteration			(0)
-	, m_allIterationsPassed	(true)
 	, m_maxLineWidth		(1.0f)
 {
 	m_flatshade = ((flags & INTERPOLATIONFLAGS_FLATSHADE) != 0);
@@ -1992,6 +1992,7 @@ LineInterpolationTest::IterateResult LineInterpolationTest::iterate (void)
 		{
 			RasterizationArguments	args;
 			LineSceneSpec			scene;
+			LineInterpolationMethod	iterationResult;
 
 			args.numSamples		= m_numSamples;
 			args.subpixelBits	= m_subpixelBits;
@@ -2002,8 +2003,32 @@ LineInterpolationTest::IterateResult LineInterpolationTest::iterate (void)
 			scene.lines.swap(lines);
 			scene.lineWidth = getLineWidth();
 
-			if (!verifyLineGroupInterpolation(resultImage, scene, args, m_testCtx.getLog()))
-				m_allIterationsPassed = false;
+			iterationResult = verifyLineGroupInterpolation(resultImage, scene, args, m_testCtx.getLog());
+			switch (iterationResult)
+			{
+				case LINEINTERPOLATION_STRICTLY_CORRECT:
+					// line interpolation matches the specification
+					m_result.addResult(QP_TEST_RESULT_PASS, "Pass");
+					break;
+
+				case LINEINTERPOLATION_PROJECTED:
+					// line interpolation weights are otherwise correct, but they are projected onto major axis
+					m_testCtx.getLog()	<< tcu::TestLog::Message
+										<< "Interpolation was calculated using coordinates projected onto major axis. "
+										"This method does not produce the same values as the non-projecting method defined in the specification."
+										<< tcu::TestLog::EndMessage;
+					m_result.addResult(QP_TEST_RESULT_QUALITY_WARNING, "Interpolation was calculated using projected coordinateds");
+					break;
+
+				case LINEINTERPOLATION_INCORRECT:
+					// line interpolation is incorrect
+					m_result.addResult(QP_TEST_RESULT_FAIL, "Found invalid pixel values");
+					break;
+
+				default:
+					DE_ASSERT(false);
+					break;
+			}
 		}
 	}
 	else
@@ -2012,11 +2037,7 @@ LineInterpolationTest::IterateResult LineInterpolationTest::iterate (void)
 	// result
 	if (++m_iteration == m_iterationCount)
 	{
-		if (m_allIterationsPassed)
-			m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
-		else
-			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Found invalid pixel values");
-
+		m_result.setTestContextResult(m_testCtx);
 		return STOP;
 	}
 	else

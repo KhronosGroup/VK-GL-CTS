@@ -316,6 +316,19 @@ float minimalRangeDivision (float minDividend, float maxDividend, float minDivis
 	return de::min(de::min(minDividend / minDivisor, minDividend / maxDivisor), de::min(maxDividend / minDivisor, maxDividend / maxDivisor));
 }
 
+static bool isLineXMajor (const tcu::Vec2& lineScreenSpaceP0, const tcu::Vec2& lineScreenSpaceP1)
+{
+	return de::abs(lineScreenSpaceP1.x() - lineScreenSpaceP0.x()) >= de::abs(lineScreenSpaceP1.y() - lineScreenSpaceP0.y());
+}
+
+static bool isPackedSSLineXMajor (const tcu::Vec4& packedLine)
+{
+	const tcu::Vec2 lineScreenSpaceP0 = packedLine.swizzle(0, 1);
+	const tcu::Vec2 lineScreenSpaceP1 = packedLine.swizzle(2, 3);
+
+	return isLineXMajor(lineScreenSpaceP0, lineScreenSpaceP1);
+}
+
 struct InterpolationRange
 {
 	tcu::Vec3 max;
@@ -389,76 +402,26 @@ InterpolationRange calcTriangleInterpolationWeights (const tcu::Vec4& p0, const 
 	return returnValue;
 }
 
-LineInterpolationRange calcSingleSampleLineInterpolationWeights (const tcu::Vec4& p0, const tcu::Vec4& p1, const tcu::Vec2& ndpoint)
+LineInterpolationRange calcLineInterpolationWeights (const tcu::Vec2& pa, float wa, const tcu::Vec2& pb, float wb, const tcu::Vec2& pr)
 {
-	const int divError = 3;
+	const int roundError	= 1;
+	const int divError		= 3;
 
-	const tcu::Vec2 nd0 = p0.swizzle(0, 1) / p0.w();
-	const tcu::Vec2 nd1 = p1.swizzle(0, 1) / p1.w();
-
-	// project p to the line along the minor direction
-
-	const bool		xMajor		= (de::abs(nd0.x() - nd1.x()) >= de::abs(nd0.y() - nd1.y()));
-	const tcu::Vec2	minorDir	= (xMajor) ? (tcu::Vec2(0.0f, 1.0f)) : (tcu::Vec2(1.0f, 0.0f));
-	const tcu::Vec2	lineDir		(nd1 - nd0);
-	const tcu::Vec2	d			(ndpoint - nd0);
-
-	// calculate factors: vec2((1-t) / p0.w, t / p1.w) / ((1-t) / p0.w + t / p1.w)
-
-	const float		tFactorMax				= getMaxValueWithinError(-(1.0f / (minorDir.x()*lineDir.y() - lineDir.x()*minorDir.y())), divError);
-	const float		tFactorMin				= getMinValueWithinError(-(1.0f / (minorDir.x()*lineDir.y() - lineDir.x()*minorDir.y())), divError);
-	DE_ASSERT(tFactorMin <= tFactorMax);
-
-	const float		tResult1				= tFactorMax * (minorDir.y()*d.x() - minorDir.x()*d.y());
-	const float		tResult2				= tFactorMin * (minorDir.y()*d.x() - minorDir.x()*d.y());
-	const float		tMax					= de::max(tResult1, tResult2);
-	const float		tMin					= de::min(tResult1, tResult2);
-	DE_ASSERT(tMin <= tMax);
-
-	const float		perspectiveTMax			= getMaxValueWithinError(maximalRangeDivision(tMin, tMax, p1.w(), p1.w()), divError);
-	const float		perspectiveTMin			= getMinValueWithinError(minimalRangeDivision(tMin, tMax, p1.w(), p1.w()), divError);
-	DE_ASSERT(perspectiveTMin <= perspectiveTMax);
-
-	const float		perspectiveInvTMax		= getMaxValueWithinError(maximalRangeDivision((1.0f - tMax), (1.0f - tMin), p0.w(), p0.w()), divError);
-	const float		perspectiveInvTMin		= getMinValueWithinError(minimalRangeDivision((1.0f - tMax), (1.0f - tMin), p0.w(), p0.w()), divError);
-	DE_ASSERT(perspectiveInvTMin <= perspectiveInvTMax);
-
-	const float		perspectiveDivisorMax	= perspectiveTMax + perspectiveInvTMax;
-	const float		perspectiveDivisorMin	= perspectiveTMin + perspectiveInvTMin;
-	DE_ASSERT(perspectiveDivisorMin <= perspectiveDivisorMax);
-
-	LineInterpolationRange returnValue;
-	returnValue.max.x() = getMaxValueWithinError(maximalRangeDivision(perspectiveInvTMin,	perspectiveInvTMax,	perspectiveDivisorMin, perspectiveDivisorMax), divError);
-	returnValue.max.y() = getMaxValueWithinError(maximalRangeDivision(perspectiveTMin,		perspectiveTMax,	perspectiveDivisorMin, perspectiveDivisorMax), divError);
-	returnValue.min.x() = getMinValueWithinError(minimalRangeDivision(perspectiveInvTMin,	perspectiveInvTMax,	perspectiveDivisorMin, perspectiveDivisorMax), divError);
-	returnValue.min.y() = getMinValueWithinError(minimalRangeDivision(perspectiveTMin,		perspectiveTMax,	perspectiveDivisorMin, perspectiveDivisorMax), divError);
-
-	DE_ASSERT(returnValue.min.x() <= returnValue.max.x());
-	DE_ASSERT(returnValue.min.y() <= returnValue.max.y());
-
-	return returnValue;
-}
-
-LineInterpolationRange calcMultiSampleLineInterpolationWeights (const tcu::Vec4& p0, const tcu::Vec4& p1, const tcu::Vec2& ndpoint)
-{
-	const int divError = 3;
-
-	// calc weights: vec2((1-t) / p0.w, t / p1.w) / ((1-t) / p0.w + t / p1.w)
-
-	// highp vertex shader
-	const tcu::Vec2 nd0 = p0.swizzle(0, 1) / p0.w();
-	const tcu::Vec2 nd1 = p1.swizzle(0, 1) / p1.w();
+	// calc weights:
+	//			(1-t) / wa					t / wb
+	//		-------------------	,	-------------------
+	//		(1-t) / wa + t / wb		(1-t) / wa + t / wb
 
 	// Allow 1 ULP
-	const float		dividend	= tcu::dot(ndpoint - nd0, nd1 - nd0);
+	const float		dividend	= tcu::dot(pr - pa, pb - pa);
 	const float		dividendMax	= getMaxValueWithinError(dividend, 1);
-	const float		dividendMin	= getMaxValueWithinError(dividend, 1);
+	const float		dividendMin	= getMinValueWithinError(dividend, 1);
 	DE_ASSERT(dividendMin <= dividendMax);
 
 	// Assuming lengthSquared will not be implemented as sqrt(x)^2, allow 1 ULP
-	const float		divisor		= tcu::lengthSquared(nd1 - nd0);
+	const float		divisor		= tcu::lengthSquared(pb - pa);
 	const float		divisorMax	= getMaxValueWithinError(divisor, 1);
-	const float		divisorMin	= getMaxValueWithinError(divisor, 1);
+	const float		divisorMin	= getMinValueWithinError(divisor, 1);
 	DE_ASSERT(divisorMin <= divisorMax);
 
 	// Allow 3 ULP precision for division
@@ -466,16 +429,16 @@ LineInterpolationRange calcMultiSampleLineInterpolationWeights (const tcu::Vec4&
 	const float		tMin		= getMinValueWithinError(minimalRangeDivision(dividendMin, dividendMax, divisorMin, divisorMax), divError);
 	DE_ASSERT(tMin <= tMax);
 
-	const float		perspectiveTMax			= getMaxValueWithinError(maximalRangeDivision(tMin, tMax, p1.w(), p1.w()), divError);
-	const float		perspectiveTMin			= getMinValueWithinError(minimalRangeDivision(tMin, tMax, p1.w(), p1.w()), divError);
+	const float		perspectiveTMax			= getMaxValueWithinError(maximalRangeDivision(tMin, tMax, wb, wb), divError);
+	const float		perspectiveTMin			= getMinValueWithinError(minimalRangeDivision(tMin, tMax, wb, wb), divError);
 	DE_ASSERT(perspectiveTMin <= perspectiveTMax);
 
-	const float		perspectiveInvTMax		= getMaxValueWithinError(maximalRangeDivision((1.0f - tMax), (1.0f - tMin), p0.w(), p0.w()), divError);
-	const float		perspectiveInvTMin		= getMinValueWithinError(minimalRangeDivision((1.0f - tMax), (1.0f - tMin), p0.w(), p0.w()), divError);
+	const float		perspectiveInvTMax		= getMaxValueWithinError(maximalRangeDivision((1.0f - tMax), (1.0f - tMin), wa, wa), divError);
+	const float		perspectiveInvTMin		= getMinValueWithinError(minimalRangeDivision((1.0f - tMax), (1.0f - tMin), wa, wa), divError);
 	DE_ASSERT(perspectiveInvTMin <= perspectiveInvTMax);
 
-	const float		perspectiveDivisorMax	= perspectiveTMax + perspectiveInvTMax;
-	const float		perspectiveDivisorMin	= perspectiveTMin + perspectiveInvTMin;
+	const float		perspectiveDivisorMax	= getMaxValueWithinError(perspectiveTMax + perspectiveInvTMax, roundError);
+	const float		perspectiveDivisorMin	= getMinValueWithinError(perspectiveTMin + perspectiveInvTMin, roundError);
 	DE_ASSERT(perspectiveDivisorMin <= perspectiveDivisorMax);
 
 	LineInterpolationRange returnValue;
@@ -490,36 +453,111 @@ LineInterpolationRange calcMultiSampleLineInterpolationWeights (const tcu::Vec4&
 	return returnValue;
 }
 
-LineInterpolationRange calcSingleSampleLineInterpolationRange (const tcu::Vec4& p0, const tcu::Vec4& p1, const tcu::IVec2& pixel, const tcu::IVec2& viewportSize, int subpixelBits)
+LineInterpolationRange calcLineInterpolationWeightsAxisProjected (const tcu::Vec2& pa, float wa, const tcu::Vec2& pb, float wb, const tcu::Vec2& pr)
+{
+	const int	roundError		= 1;
+	const int	divError		= 3;
+	const bool	isXMajor		= isLineXMajor(pa, pb);
+	const int	majorAxisNdx	= (isXMajor) ? (0) : (1);
+
+	// calc weights:
+	//			(1-t) / wa					t / wb
+	//		-------------------	,	-------------------
+	//		(1-t) / wa + t / wb		(1-t) / wa + t / wb
+
+	// Use axis projected (inaccurate) method, i.e. for X-major lines:
+	//     (xd - xa) * (xb - xa)      xd - xa
+	// t = ---------------------  ==  -------
+	//       ( xb - xa ) ^ 2          xb - xa
+
+	// Allow 1 ULP
+	const float		dividend	= (pr[majorAxisNdx] - pa[majorAxisNdx]);
+	const float		dividendMax	= getMaxValueWithinError(dividend, 1);
+	const float		dividendMin	= getMinValueWithinError(dividend, 1);
+	DE_ASSERT(dividendMin <= dividendMax);
+
+	// Allow 1 ULP
+	const float		divisor		= (pb[majorAxisNdx] - pa[majorAxisNdx]);
+	const float		divisorMax	= getMaxValueWithinError(divisor, 1);
+	const float		divisorMin	= getMinValueWithinError(divisor, 1);
+	DE_ASSERT(divisorMin <= divisorMax);
+
+	// Allow 3 ULP precision for division
+	const float		tMax		= getMaxValueWithinError(maximalRangeDivision(dividendMin, dividendMax, divisorMin, divisorMax), divError);
+	const float		tMin		= getMinValueWithinError(minimalRangeDivision(dividendMin, dividendMax, divisorMin, divisorMax), divError);
+	DE_ASSERT(tMin <= tMax);
+
+	const float		perspectiveTMax			= getMaxValueWithinError(maximalRangeDivision(tMin, tMax, wb, wb), divError);
+	const float		perspectiveTMin			= getMinValueWithinError(minimalRangeDivision(tMin, tMax, wb, wb), divError);
+	DE_ASSERT(perspectiveTMin <= perspectiveTMax);
+
+	const float		perspectiveInvTMax		= getMaxValueWithinError(maximalRangeDivision((1.0f - tMax), (1.0f - tMin), wa, wa), divError);
+	const float		perspectiveInvTMin		= getMinValueWithinError(minimalRangeDivision((1.0f - tMax), (1.0f - tMin), wa, wa), divError);
+	DE_ASSERT(perspectiveInvTMin <= perspectiveInvTMax);
+
+	const float		perspectiveDivisorMax	= getMaxValueWithinError(perspectiveTMax + perspectiveInvTMax, roundError);
+	const float		perspectiveDivisorMin	= getMinValueWithinError(perspectiveTMin + perspectiveInvTMin, roundError);
+	DE_ASSERT(perspectiveDivisorMin <= perspectiveDivisorMax);
+
+	LineInterpolationRange returnValue;
+	returnValue.max.x() = getMaxValueWithinError(maximalRangeDivision(perspectiveInvTMin,	perspectiveInvTMax,	perspectiveDivisorMin, perspectiveDivisorMax), divError);
+	returnValue.max.y() = getMaxValueWithinError(maximalRangeDivision(perspectiveTMin,		perspectiveTMax,	perspectiveDivisorMin, perspectiveDivisorMax), divError);
+	returnValue.min.x() = getMinValueWithinError(minimalRangeDivision(perspectiveInvTMin,	perspectiveInvTMax,	perspectiveDivisorMin, perspectiveDivisorMax), divError);
+	returnValue.min.y() = getMinValueWithinError(minimalRangeDivision(perspectiveTMin,		perspectiveTMax,	perspectiveDivisorMin, perspectiveDivisorMax), divError);
+
+	DE_ASSERT(returnValue.min.x() <= returnValue.max.x());
+	DE_ASSERT(returnValue.min.y() <= returnValue.max.y());
+
+	return returnValue;
+}
+
+template <typename WeightEquation>
+LineInterpolationRange calcSingleSampleLineInterpolationRangeWithWeightEquation (const tcu::Vec2&	pa,
+																				 float				wa,
+																				 const tcu::Vec2&	pb,
+																				 float				wb,
+																				 const tcu::IVec2&	pixel,
+																				 int				subpixelBits,
+																				 WeightEquation		weightEquation)
 {
 	// allow interpolation weights anywhere in the central subpixels
 	const float testSquareSize = (2.0f / (1UL << subpixelBits));
 	const float testSquarePos  = (0.5f - testSquareSize / 2);
+
 	const tcu::Vec2 corners[4] =
 	{
-		tcu::Vec2((pixel.x() + testSquarePos + 0.0f)           / viewportSize.x() * 2.0f - 1.0f, (pixel.y() + testSquarePos + 0.0f          ) / viewportSize.y() * 2.0f - 1.0f),
-		tcu::Vec2((pixel.x() + testSquarePos + 0.0f)           / viewportSize.x() * 2.0f - 1.0f, (pixel.y() + testSquarePos + testSquareSize) / viewportSize.y() * 2.0f - 1.0f),
-		tcu::Vec2((pixel.x() + testSquarePos + testSquareSize) / viewportSize.x() * 2.0f - 1.0f, (pixel.y() + testSquarePos + testSquareSize) / viewportSize.y() * 2.0f - 1.0f),
-		tcu::Vec2((pixel.x() + testSquarePos + testSquareSize) / viewportSize.x() * 2.0f - 1.0f, (pixel.y() + testSquarePos + 0.0f          ) / viewportSize.y() * 2.0f - 1.0f),
+		tcu::Vec2(pixel.x() + testSquarePos + 0.0f,				pixel.y() + testSquarePos + 0.0f),
+		tcu::Vec2(pixel.x() + testSquarePos + 0.0f,				pixel.y() + testSquarePos + testSquareSize),
+		tcu::Vec2(pixel.x() + testSquarePos + testSquareSize,	pixel.y() + testSquarePos + testSquareSize),
+		tcu::Vec2(pixel.x() + testSquarePos + testSquareSize,	pixel.y() + testSquarePos + 0.0f),
 	};
 
 	// calculate interpolation as a line
 	const LineInterpolationRange weights[4] =
 	{
-		calcSingleSampleLineInterpolationWeights(p0, p1, corners[0]),
-		calcSingleSampleLineInterpolationWeights(p0, p1, corners[1]),
-		calcSingleSampleLineInterpolationWeights(p0, p1, corners[2]),
-		calcSingleSampleLineInterpolationWeights(p0, p1, corners[3]),
+		weightEquation(pa, wa, pb, wb, corners[0]),
+		weightEquation(pa, wa, pb, wb, corners[1]),
+		weightEquation(pa, wa, pb, wb, corners[2]),
+		weightEquation(pa, wa, pb, wb, corners[3]),
 	};
 
 	const tcu::Vec2 minWeights = tcu::min(tcu::min(weights[0].min, weights[1].min), tcu::min(weights[2].min, weights[3].min));
 	const tcu::Vec2 maxWeights = tcu::max(tcu::max(weights[0].max, weights[1].max), tcu::max(weights[2].max, weights[3].max));
 
-	// convert to three-component form. For all triangles, the vertex 0 is always emitted by the line starting point, and vertex 2 by the ending point
 	LineInterpolationRange result;
 	result.min = minWeights;
 	result.max = maxWeights;
 	return result;
+}
+
+LineInterpolationRange calcSingleSampleLineInterpolationRange (const tcu::Vec2& pa, float wa, const tcu::Vec2& pb, float wb, const tcu::IVec2& pixel, int subpixelBits)
+{
+	return calcSingleSampleLineInterpolationRangeWithWeightEquation(pa, wa, pb, wb, pixel, subpixelBits, calcLineInterpolationWeights);
+}
+
+LineInterpolationRange calcSingleSampleLineInterpolationRangeAxisProjected (const tcu::Vec2& pa, float wa, const tcu::Vec2& pb, float wb, const tcu::IVec2& pixel, int subpixelBits)
+{
+	return calcSingleSampleLineInterpolationRangeWithWeightEquation(pa, wa, pb, wb, pixel, subpixelBits, calcLineInterpolationWeightsAxisProjected);
 }
 
 struct TriangleInterpolator
@@ -584,19 +622,26 @@ struct MultisampleLineInterpolator
 		// allow interpolation weights anywhere in the pixel
 		const tcu::Vec2 corners[4] =
 		{
-			tcu::Vec2((pixel.x() + 0.0f) / viewportSize.x() * 2.0f - 1.0f, (pixel.y() + 0.0f) / viewportSize.y() * 2.0f - 1.0f),
-			tcu::Vec2((pixel.x() + 0.0f) / viewportSize.x() * 2.0f - 1.0f, (pixel.y() + 1.0f) / viewportSize.y() * 2.0f - 1.0f),
-			tcu::Vec2((pixel.x() + 1.0f) / viewportSize.x() * 2.0f - 1.0f, (pixel.y() + 1.0f) / viewportSize.y() * 2.0f - 1.0f),
-			tcu::Vec2((pixel.x() + 1.0f) / viewportSize.x() * 2.0f - 1.0f, (pixel.y() + 0.0f) / viewportSize.y() * 2.0f - 1.0f),
+			tcu::Vec2(pixel.x() + 0.0f, pixel.y() + 0.0f),
+			tcu::Vec2(pixel.x() + 0.0f, pixel.y() + 1.0f),
+			tcu::Vec2(pixel.x() + 1.0f, pixel.y() + 1.0f),
+			tcu::Vec2(pixel.x() + 1.0f, pixel.y() + 0.0f),
 		};
+
+		const float		wa = scene.lines[lineNdx].positions[0].w();
+		const float		wb = scene.lines[lineNdx].positions[1].w();
+		const tcu::Vec2	pa = tcu::Vec2((scene.lines[lineNdx].positions[0].x() / wa + 1.0f) * 0.5f * viewportSize.x(),
+									   (scene.lines[lineNdx].positions[0].y() / wa + 1.0f) * 0.5f * viewportSize.y());
+		const tcu::Vec2	pb = tcu::Vec2((scene.lines[lineNdx].positions[1].x() / wb + 1.0f) * 0.5f * viewportSize.x(),
+									   (scene.lines[lineNdx].positions[1].y() / wb + 1.0f) * 0.5f * viewportSize.y());
 
 		// calculate interpolation as a line
 		const LineInterpolationRange weights[4] =
 		{
-			calcMultiSampleLineInterpolationWeights(scene.lines[lineNdx].positions[0], scene.lines[lineNdx].positions[1], corners[0]),
-			calcMultiSampleLineInterpolationWeights(scene.lines[lineNdx].positions[0], scene.lines[lineNdx].positions[1], corners[1]),
-			calcMultiSampleLineInterpolationWeights(scene.lines[lineNdx].positions[0], scene.lines[lineNdx].positions[1], corners[2]),
-			calcMultiSampleLineInterpolationWeights(scene.lines[lineNdx].positions[0], scene.lines[lineNdx].positions[1], corners[3]),
+			calcLineInterpolationWeights(pa, wa, pb, wb, corners[0]),
+			calcLineInterpolationWeights(pa, wa, pb, wb, corners[1]),
+			calcLineInterpolationWeights(pa, wa, pb, wb, corners[2]),
+			calcLineInterpolationWeights(pa, wa, pb, wb, corners[3]),
 		};
 
 		const tcu::Vec2 minWeights = tcu::min(tcu::min(weights[0].min, weights[1].min), tcu::min(weights[2].min, weights[3].min));
@@ -978,42 +1023,62 @@ bool verifyMultisamplePointGroupRasterization (const tcu::Surface& surface, cons
 	return verifyTriangleGroupRasterization(surface, triangleScene, args, log);
 }
 
+void genScreenSpaceLines (std::vector<tcu::Vec4>& screenspaceLines, const std::vector<LineSceneSpec::SceneLine>& lines, const tcu::IVec2& viewportSize)
+{
+	DE_ASSERT(screenspaceLines.size() == lines.size());
+
+	for (int lineNdx = 0; lineNdx < (int)lines.size(); ++lineNdx)
+	{
+		const tcu::Vec2 lineNormalizedDeviceSpace[2] =
+		{
+			tcu::Vec2(lines[lineNdx].positions[0].x() / lines[lineNdx].positions[0].w(), lines[lineNdx].positions[0].y() / lines[lineNdx].positions[0].w()),
+			tcu::Vec2(lines[lineNdx].positions[1].x() / lines[lineNdx].positions[1].w(), lines[lineNdx].positions[1].y() / lines[lineNdx].positions[1].w()),
+		};
+		const tcu::Vec4 lineScreenSpace[2] =
+		{
+			tcu::Vec4((lineNormalizedDeviceSpace[0].x() + 1.0f) * 0.5f * (float)viewportSize.x(), (lineNormalizedDeviceSpace[0].y() + 1.0f) * 0.5f * (float)viewportSize.y(), 0.0f, 1.0f),
+			tcu::Vec4((lineNormalizedDeviceSpace[1].x() + 1.0f) * 0.5f * (float)viewportSize.x(), (lineNormalizedDeviceSpace[1].y() + 1.0f) * 0.5f * (float)viewportSize.y(), 0.0f, 1.0f),
+		};
+
+		screenspaceLines[lineNdx] = tcu::Vec4(lineScreenSpace[0].x(), lineScreenSpace[0].y(), lineScreenSpace[1].x(), lineScreenSpace[1].y());
+	}
+}
+
 bool verifySinglesampleLineGroupRasterization (const tcu::Surface& surface, const LineSceneSpec& scene, const RasterizationArguments& args, tcu::TestLog& log)
 {
 	DE_ASSERT(deFloatFrac(scene.lineWidth) != 0.5f); // rounding direction is not defined, disallow undefined cases
 	DE_ASSERT(scene.lines.size() < 255); // indices are stored as unsigned 8-bit ints
 
-	bool				allOK				= true;
-	bool				overdrawInReference	= false;
-	int					referenceFragments	= 0;
-	int					resultFragments		= 0;
-	int					lineWidth			= deFloorFloatToInt32(scene.lineWidth + 0.5f);
-	bool				imageShown			= false;
-	std::vector<bool>	lineIsXMajor		(scene.lines.size());
+	bool					allOK				= true;
+	bool					overdrawInReference	= false;
+	int						referenceFragments	= 0;
+	int						resultFragments		= 0;
+	int						lineWidth			= deFloorFloatToInt32(scene.lineWidth + 0.5f);
+	bool					imageShown			= false;
+	std::vector<bool>		lineIsXMajor		(scene.lines.size());
+	std::vector<tcu::Vec4>	screenspaceLines(scene.lines.size());
 
 	// Reference renderer produces correct fragments using the diamond-rule. Make 2D int array, each cell contains the highest index (first index = 1) of the overlapping lines or 0 if no line intersects the pixel
 	tcu::TextureLevel referenceLineMap(tcu::TextureFormat(tcu::TextureFormat::R, tcu::TextureFormat::UNSIGNED_INT8), surface.getWidth(), surface.getHeight());
 	tcu::clear(referenceLineMap.getAccess(), tcu::IVec4(0, 0, 0, 0));
 
+	genScreenSpaceLines(screenspaceLines, scene.lines, tcu::IVec2(surface.getWidth(), surface.getHeight()));
+
 	for (int lineNdx = 0; lineNdx < (int)scene.lines.size(); ++lineNdx)
 	{
 		rr::SingleSampleLineRasterizer rasterizer(tcu::IVec4(0, 0, surface.getWidth(), surface.getHeight()));
-
-		const tcu::Vec2 lineNormalizedDeviceSpace[2] =
-		{
-			tcu::Vec2(scene.lines[lineNdx].positions[0].x() / scene.lines[lineNdx].positions[0].w(), scene.lines[lineNdx].positions[0].y() / scene.lines[lineNdx].positions[0].w()),
-			tcu::Vec2(scene.lines[lineNdx].positions[1].x() / scene.lines[lineNdx].positions[1].w(), scene.lines[lineNdx].positions[1].y() / scene.lines[lineNdx].positions[1].w()),
-		};
-		const tcu::Vec4 lineScreenSpace[2] =
-		{
-			tcu::Vec4((lineNormalizedDeviceSpace[0].x() + 1.0f) * 0.5f * (float)surface.getWidth(), (lineNormalizedDeviceSpace[0].y() + 1.0f) * 0.5f * (float)surface.getHeight(), 0.0f, 1.0f),
-			tcu::Vec4((lineNormalizedDeviceSpace[1].x() + 1.0f) * 0.5f * (float)surface.getWidth(), (lineNormalizedDeviceSpace[1].y() + 1.0f) * 0.5f * (float)surface.getHeight(), 0.0f, 1.0f),
-		};
-
-		rasterizer.init(lineScreenSpace[0], lineScreenSpace[1], scene.lineWidth);
+		rasterizer.init(tcu::Vec4(screenspaceLines[lineNdx][0],
+								  screenspaceLines[lineNdx][1],
+								  0.0f,
+								  1.0f),
+						tcu::Vec4(screenspaceLines[lineNdx][2],
+								  screenspaceLines[lineNdx][3],
+								  0.0f,
+								  1.0f),
+						scene.lineWidth);
 
 		// calculate majority of later use
-		lineIsXMajor[lineNdx] = de::abs(lineScreenSpace[1].x() - lineScreenSpace[0].x()) >= de::abs(lineScreenSpace[1].y() - lineScreenSpace[0].y());
+		lineIsXMajor[lineNdx] = isPackedSSLineXMajor(screenspaceLines[lineNdx]);
 
 		for (;;)
 		{
@@ -1352,7 +1417,7 @@ bool verifySinglesampleLineGroupRasterization (const tcu::Surface& surface, cons
 	return allOK;
 }
 
-struct SingleSampleLineCoverageCandidate
+struct SingleSampleNarrowLineCandidate
 {
 	int			lineNdx;
 	tcu::IVec3	colorMin;
@@ -1363,17 +1428,81 @@ struct SingleSampleLineCoverageCandidate
 	tcu::Vec3	valueRangeMax;
 };
 
-bool verifySinglesampleLineGroupInterpolation (const tcu::Surface& surface, const LineSceneSpec& scene, const RasterizationArguments& args, tcu::TestLog& log)
+void setMaskMapCoverageBitForLine (int bitNdx, const tcu::Vec2& screenSpaceP0, const tcu::Vec2& screenSpaceP1, float lineWidth, tcu::PixelBufferAccess maskMap)
 {
-	DE_ASSERT(deFloatFrac(scene.lineWidth) != 0.5f); // rounding direction is not defined, disallow undefined cases
-	DE_ASSERT(scene.lines.size() < 8); // coverage indices are stored as bitmask in a unsigned 8-bit ints
+	enum
+	{
+		MAX_PACKETS = 32,
+	};
 
-	const tcu::RGBA		invalidPixelColor	= tcu::RGBA(255, 0, 0, 255);
-	const tcu::IVec2	viewportSize		= tcu::IVec2(surface.getWidth(), surface.getHeight());
-	const int			errorFloodThreshold	= 4;
-	int					errorCount			= 0;
-	tcu::Surface		errorMask			(surface.getWidth(), surface.getHeight());
-	int					invalidPixels		= 0;
+	rr::SingleSampleLineRasterizer	rasterizer				(tcu::IVec4(0, 0, maskMap.getWidth(), maskMap.getHeight()));
+	int								numRasterized			= MAX_PACKETS;
+	rr::FragmentPacket				packets[MAX_PACKETS];
+
+	rasterizer.init(tcu::Vec4(screenSpaceP0.x(), screenSpaceP0.y(), 0.0f, 1.0f),
+					tcu::Vec4(screenSpaceP1.x(), screenSpaceP1.y(), 0.0f, 1.0f),
+					lineWidth);
+
+	while (numRasterized == MAX_PACKETS)
+	{
+		rasterizer.rasterize(packets, DE_NULL, MAX_PACKETS, numRasterized);
+
+		for (int packetNdx = 0; packetNdx < numRasterized; ++packetNdx)
+		{
+			for (int fragNdx = 0; fragNdx < 4; ++fragNdx)
+			{
+				if ((deUint32)packets[packetNdx].coverage & (1 << fragNdx))
+				{
+					const tcu::IVec2	fragPos			= packets[packetNdx].position + tcu::IVec2(fragNdx%2, fragNdx/2);
+
+					DE_ASSERT(deInBounds32(fragPos.x(), 0, maskMap.getWidth()));
+					DE_ASSERT(deInBounds32(fragPos.y(), 0, maskMap.getHeight()));
+
+					const int			previousMask	= maskMap.getPixelInt(fragPos.x(), fragPos.y()).x();
+					const int			newMask			= (previousMask) | (1UL << bitNdx);
+
+					maskMap.setPixel(tcu::IVec4(newMask, 0, 0, 0), fragPos.x(), fragPos.y());
+				}
+			}
+		}
+	}
+}
+
+void setMaskMapCoverageBitForLines (const std::vector<tcu::Vec4>& screenspaceLines, float lineWidth, tcu::PixelBufferAccess maskMap)
+{
+	for (int lineNdx = 0; lineNdx < (int)screenspaceLines.size(); ++lineNdx)
+	{
+		const tcu::Vec2 pa = screenspaceLines[lineNdx].swizzle(0, 1);
+		const tcu::Vec2 pb = screenspaceLines[lineNdx].swizzle(2, 3);
+
+		setMaskMapCoverageBitForLine(lineNdx, pa, pb, lineWidth, maskMap);
+	}
+}
+
+// verify line interpolation assuming line pixels are interpolated independently depending only on screen space location
+bool verifyLineGroupPixelIndependentInterpolation (const tcu::Surface&				surface,
+												   const LineSceneSpec&				scene,
+												   const RasterizationArguments&	args,
+												   tcu::TestLog&					log,
+												   LineInterpolationMethod			interpolationMethod)
+{
+	DE_ASSERT(scene.lines.size() < 8); // coverage indices are stored as bitmask in a unsigned 8-bit ints
+	DE_ASSERT(interpolationMethod == LINEINTERPOLATION_STRICTLY_CORRECT || interpolationMethod == LINEINTERPOLATION_PROJECTED);
+
+	const tcu::RGBA			invalidPixelColor	= tcu::RGBA(255, 0, 0, 255);
+	const tcu::IVec2		viewportSize		= tcu::IVec2(surface.getWidth(), surface.getHeight());
+	const int				errorFloodThreshold	= 4;
+	int						errorCount			= 0;
+	tcu::Surface			errorMask			(surface.getWidth(), surface.getHeight());
+	int						invalidPixels		= 0;
+	std::vector<tcu::Vec4>	screenspaceLines	(scene.lines.size()); //!< packed (x0, y0, x1, y1)
+
+	// Reference renderer produces correct fragments using the diamond-exit-rule. Make 2D int array, store line coverage as a 8-bit bitfield
+	// The map is used to find lines with potential coverage to a given pixel
+	tcu::TextureLevel		referenceLineMap	(tcu::TextureFormat(tcu::TextureFormat::R, tcu::TextureFormat::UNSIGNED_INT8), surface.getWidth(), surface.getHeight());
+
+	tcu::clear(referenceLineMap.getAccess(), tcu::IVec4(0, 0, 0, 0));
+	tcu::clear(errorMask.getAccess(), tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f));
 
 	// log format
 
@@ -1381,58 +1510,10 @@ bool verifySinglesampleLineGroupInterpolation (const tcu::Surface& surface, cons
 	if (args.redBits > 8 || args.greenBits > 8 || args.blueBits > 8)
 		log << tcu::TestLog::Message << "Warning! More than 8 bits in a color channel, this may produce false negatives." << tcu::TestLog::EndMessage;
 
-	// Reference renderer produces correct fragments using the diamond-exit-rule. Make 2D int array, store line coverage as a 8-bit bitfield
-	// The map is used to find lines with potential coverage to a given pixel
-	tcu::TextureLevel referenceLineMap(tcu::TextureFormat(tcu::TextureFormat::R, tcu::TextureFormat::UNSIGNED_INT8), surface.getWidth(), surface.getHeight());
-	tcu::clear(referenceLineMap.getAccess(), tcu::IVec4(0, 0, 0, 0));
+	// prepare lookup map
 
-	tcu::clear(errorMask.getAccess(), tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f));
-
-	for (int lineNdx = 0; lineNdx < (int)scene.lines.size(); ++lineNdx)
-	{
-		rr::SingleSampleLineRasterizer rasterizer(tcu::IVec4(0, 0, surface.getWidth(), surface.getHeight()));
-
-		const tcu::Vec2 lineNormalizedDeviceSpace[2] =
-		{
-			tcu::Vec2(scene.lines[lineNdx].positions[0].x() / scene.lines[lineNdx].positions[0].w(), scene.lines[lineNdx].positions[0].y() / scene.lines[lineNdx].positions[0].w()),
-			tcu::Vec2(scene.lines[lineNdx].positions[1].x() / scene.lines[lineNdx].positions[1].w(), scene.lines[lineNdx].positions[1].y() / scene.lines[lineNdx].positions[1].w()),
-		};
-		const tcu::Vec4 lineScreenSpace[2] =
-		{
-			tcu::Vec4((lineNormalizedDeviceSpace[0].x() + 1.0f) * 0.5f * (float)surface.getWidth(), (lineNormalizedDeviceSpace[0].y() + 1.0f) * 0.5f * (float)surface.getHeight(), 0.0f, 1.0f),
-			tcu::Vec4((lineNormalizedDeviceSpace[1].x() + 1.0f) * 0.5f * (float)surface.getWidth(), (lineNormalizedDeviceSpace[1].y() + 1.0f) * 0.5f * (float)surface.getHeight(), 0.0f, 1.0f),
-		};
-
-		rasterizer.init(lineScreenSpace[0], lineScreenSpace[1], scene.lineWidth);
-
-		// Calculate correct line coverage
-		for (;;)
-		{
-			const int			maxPackets			= 32;
-			int					numRasterized		= 0;
-			rr::FragmentPacket	packets[maxPackets];
-
-			rasterizer.rasterize(packets, DE_NULL, maxPackets, numRasterized);
-
-			for (int packetNdx = 0; packetNdx < numRasterized; ++packetNdx)
-			{
-				for (int fragNdx = 0; fragNdx < 4; ++fragNdx)
-				{
-					if ((deUint32)packets[packetNdx].coverage & (1 << fragNdx))
-					{
-						const tcu::IVec2	fragPos			= packets[packetNdx].position + tcu::IVec2(fragNdx%2, fragNdx/2);
-						const int			previousMask	= referenceLineMap.getAccess().getPixelInt(fragPos.x(), fragPos.y()).x();
-						const int			newMask			= (previousMask) | (1UL << lineNdx);
-
-						referenceLineMap.getAccess().setPixel(tcu::IVec4(newMask, 0, 0, 0), fragPos.x(), fragPos.y());
-					}
-				}
-			}
-
-			if (numRasterized != maxPackets)
-				break;
-		}
-	}
+	genScreenSpaceLines(screenspaceLines, scene.lines, viewportSize);
+	setMaskMapCoverageBitForLines(screenspaceLines, scene.lineWidth, referenceLineMap.getAccess());
 
 	// Find all possible lines with coverage, check pixel color matches one of them
 
@@ -1446,7 +1527,7 @@ bool verifySinglesampleLineGroupInterpolation (const tcu::Surface& surface, cons
 		bool				matchFound				= false;
 		const tcu::IVec3	formatLimit				((1 << args.redBits) - 1, (1 << args.greenBits) - 1, (1 << args.blueBits) - 1);
 
-		std::vector<SingleSampleLineCoverageCandidate> candidates;
+		std::vector<SingleSampleNarrowLineCandidate> candidates;
 
 		// Find lines with possible coverage
 
@@ -1469,27 +1550,30 @@ bool verifySinglesampleLineGroupInterpolation (const tcu::Surface& surface, cons
 		{
 			if (((lineCoverageSet >> lineNdx) & 0x01) != 0)
 			{
-				const LineInterpolationRange range = calcSingleSampleLineInterpolationRange(scene.lines[lineNdx].positions[0],
-																							scene.lines[lineNdx].positions[1],
-																							tcu::IVec2(x, y),
-																							viewportSize,
-																							args.subpixelBits);
+				const float						wa				= scene.lines[lineNdx].positions[0].w();
+				const float						wb				= scene.lines[lineNdx].positions[1].w();
+				const tcu::Vec2					pa				= screenspaceLines[lineNdx].swizzle(0, 1);
+				const tcu::Vec2					pb				= screenspaceLines[lineNdx].swizzle(2, 3);
 
-				const tcu::Vec4		valueMin		= de::clamp(range.min.x(), 0.0f, 1.0f) * scene.lines[lineNdx].colors[0] + de::clamp(range.min.y(), 0.0f, 1.0f) * scene.lines[lineNdx].colors[1];
-				const tcu::Vec4		valueMax		= de::clamp(range.max.x(), 0.0f, 1.0f) * scene.lines[lineNdx].colors[0] + de::clamp(range.max.y(), 0.0f, 1.0f) * scene.lines[lineNdx].colors[1];
+				const LineInterpolationRange	range			= (interpolationMethod == LINEINTERPOLATION_STRICTLY_CORRECT)
+																	? (calcSingleSampleLineInterpolationRange(pa, wa, pb, wb, tcu::IVec2(x, y), args.subpixelBits))
+																	: (calcSingleSampleLineInterpolationRangeAxisProjected(pa, wa, pb, wb, tcu::IVec2(x, y), args.subpixelBits));
 
-				const tcu::Vec3		colorMinF		(de::clamp(valueMin.x() * formatLimit.x(), 0.0f, (float)formatLimit.x()),
-													 de::clamp(valueMin.y() * formatLimit.y(), 0.0f, (float)formatLimit.y()),
-													 de::clamp(valueMin.z() * formatLimit.z(), 0.0f, (float)formatLimit.z()));
-				const tcu::Vec3		colorMaxF		(de::clamp(valueMax.x() * formatLimit.x(), 0.0f, (float)formatLimit.x()),
-													 de::clamp(valueMax.y() * formatLimit.y(), 0.0f, (float)formatLimit.y()),
-													 de::clamp(valueMax.z() * formatLimit.z(), 0.0f, (float)formatLimit.z()));
-				const tcu::IVec3	colorMin		((int)deFloatFloor(colorMinF.x()),
-													 (int)deFloatFloor(colorMinF.y()),
-													 (int)deFloatFloor(colorMinF.z()));
-				const tcu::IVec3	colorMax		((int)deFloatCeil (colorMaxF.x()),
-													 (int)deFloatCeil (colorMaxF.y()),
-													 (int)deFloatCeil (colorMaxF.z()));
+				const tcu::Vec4					valueMin		= de::clamp(range.min.x(), 0.0f, 1.0f) * scene.lines[lineNdx].colors[0] + de::clamp(range.min.y(), 0.0f, 1.0f) * scene.lines[lineNdx].colors[1];
+				const tcu::Vec4					valueMax		= de::clamp(range.max.x(), 0.0f, 1.0f) * scene.lines[lineNdx].colors[0] + de::clamp(range.max.y(), 0.0f, 1.0f) * scene.lines[lineNdx].colors[1];
+
+				const tcu::Vec3					colorMinF		(de::clamp(valueMin.x() * formatLimit.x(), 0.0f, (float)formatLimit.x()),
+																 de::clamp(valueMin.y() * formatLimit.y(), 0.0f, (float)formatLimit.y()),
+																 de::clamp(valueMin.z() * formatLimit.z(), 0.0f, (float)formatLimit.z()));
+				const tcu::Vec3					colorMaxF		(de::clamp(valueMax.x() * formatLimit.x(), 0.0f, (float)formatLimit.x()),
+																 de::clamp(valueMax.y() * formatLimit.y(), 0.0f, (float)formatLimit.y()),
+																 de::clamp(valueMax.z() * formatLimit.z(), 0.0f, (float)formatLimit.z()));
+				const tcu::IVec3				colorMin		((int)deFloatFloor(colorMinF.x()),
+																 (int)deFloatFloor(colorMinF.y()),
+																 (int)deFloatFloor(colorMinF.z()));
+				const tcu::IVec3				colorMax		((int)deFloatCeil (colorMaxF.x()),
+																 (int)deFloatCeil (colorMaxF.y()),
+																 (int)deFloatCeil (colorMaxF.z()));
 
 				// Verify validity
 				if (pixelNativeColor.x() < colorMin.x() ||
@@ -1502,7 +1586,7 @@ bool verifySinglesampleLineGroupInterpolation (const tcu::Surface& surface, cons
 					if (errorCount < errorFloodThreshold)
 					{
 						// Store candidate information for logging
-						SingleSampleLineCoverageCandidate candidate;
+						SingleSampleNarrowLineCandidate candidate;
 
 						candidate.lineNdx		= lineNdx;
 						candidate.colorMin		= colorMin;
@@ -1543,7 +1627,7 @@ bool verifySinglesampleLineGroupInterpolation (const tcu::Surface& surface, cons
 
 			for (int candidateNdx = 0; candidateNdx < (int)candidates.size(); ++candidateNdx)
 			{
-				const SingleSampleLineCoverageCandidate& candidate = candidates[candidateNdx];
+				const SingleSampleNarrowLineCandidate& candidate = candidates[candidateNdx];
 
 				log << tcu::TestLog::Message << "\tCandidate (line " << candidate.lineNdx << "):\n"
 					<< "\t\tReference native color min: " << tcu::clamp(candidate.colorMin, tcu::IVec3(0,0,0), formatLimit) << "\n"
@@ -1554,6 +1638,381 @@ bool verifySinglesampleLineGroupInterpolation (const tcu::Surface& surface, cons
 					<< "\t\tFmax:\t" << tcu::clamp(candidate.valueRangeMax, tcu::Vec3(0.0f, 0.0f, 0.0f), tcu::Vec3(1.0f, 1.0f, 1.0f)) << "\n"
 					<< tcu::TestLog::EndMessage;
 			}
+		}
+	}
+
+	// don't just hide failures
+	if (errorCount > errorFloodThreshold)
+		log << tcu::TestLog::Message << "Omitted " << (errorCount-errorFloodThreshold) << " pixel error description(s)." << tcu::TestLog::EndMessage;
+
+	// report result
+	if (invalidPixels)
+	{
+		log << tcu::TestLog::Message << invalidPixels << " invalid pixel(s) found." << tcu::TestLog::EndMessage;
+		log << tcu::TestLog::ImageSet("Verification result", "Result of rendering")
+			<< tcu::TestLog::Image("Result", "Result",			surface)
+			<< tcu::TestLog::Image("ErrorMask", "ErrorMask",	errorMask)
+			<< tcu::TestLog::EndImageSet;
+
+		return false;
+	}
+	else
+	{
+		log << tcu::TestLog::Message << "No invalid pixels found." << tcu::TestLog::EndMessage;
+		log << tcu::TestLog::ImageSet("Verification result", "Result of rendering")
+			<< tcu::TestLog::Image("Result", "Result", surface)
+			<< tcu::TestLog::EndImageSet;
+
+		return true;
+	}
+}
+
+bool verifySinglesampleNarrowLineGroupInterpolation (const tcu::Surface& surface, const LineSceneSpec& scene, const RasterizationArguments& args, tcu::TestLog& log)
+{
+	DE_ASSERT(scene.lineWidth == 1.0f);
+	return verifyLineGroupPixelIndependentInterpolation(surface, scene, args, log, LINEINTERPOLATION_STRICTLY_CORRECT);
+}
+
+bool verifyLineGroupInterpolationWithProjectedWeights (const tcu::Surface& surface, const LineSceneSpec& scene, const RasterizationArguments& args, tcu::TestLog& log)
+{
+	return verifyLineGroupPixelIndependentInterpolation(surface, scene, args, log, LINEINTERPOLATION_PROJECTED);
+}
+
+struct SingleSampleWideLineCandidate
+{
+	struct InterpolationPointCandidate
+	{
+		tcu::IVec2	interpolationPoint;
+		tcu::IVec3	colorMin;
+		tcu::IVec3	colorMax;
+		tcu::Vec3	colorMinF;
+		tcu::Vec3	colorMaxF;
+		tcu::Vec3	valueRangeMin;
+		tcu::Vec3	valueRangeMax;
+	};
+
+	int							lineNdx;
+	int							numCandidates;
+	InterpolationPointCandidate	interpolationCandidates[3];
+};
+
+// return point on line at a given position on a given axis
+tcu::Vec2 getLineCoordAtAxisCoord (const tcu::Vec2& pa, const tcu::Vec2& pb, bool isXAxis, float axisCoord)
+{
+	const int	fixedCoordNdx		= (isXAxis) ? (0) : (1);
+	const int	varyingCoordNdx		= (isXAxis) ? (1) : (0);
+
+	const float	fixedDifference		= pb[fixedCoordNdx] - pa[fixedCoordNdx];
+	const float	varyingDifference	= pb[varyingCoordNdx] - pa[varyingCoordNdx];
+
+	DE_ASSERT(fixedDifference != 0.0f);
+
+	const float	resultFixedCoord	= axisCoord;
+	const float	resultVaryingCoord	= pa[varyingCoordNdx] + (axisCoord - pa[fixedCoordNdx]) * (varyingDifference / fixedDifference);
+
+	return (isXAxis) ? (tcu::Vec2(resultFixedCoord, resultVaryingCoord))
+					 : (tcu::Vec2(resultVaryingCoord, resultFixedCoord));
+}
+
+bool isBlack (const tcu::RGBA& c)
+{
+	return c.getRed() == 0 && c.getGreen() == 0 && c.getBlue() == 0;
+}
+
+bool verifySinglesampleWideLineGroupInterpolation (const tcu::Surface& surface, const LineSceneSpec& scene, const RasterizationArguments& args, tcu::TestLog& log)
+{
+	DE_ASSERT(deFloatFrac(scene.lineWidth) != 0.5f); // rounding direction is not defined, disallow undefined cases
+	DE_ASSERT(scene.lines.size() < 8); // coverage indices are stored as bitmask in a unsigned 8-bit ints
+
+	enum
+	{
+		FLAG_ROOT_NOT_SET = (1u << 16)
+	};
+
+	const tcu::RGBA						invalidPixelColor	= tcu::RGBA(255, 0, 0, 255);
+	const tcu::IVec2					viewportSize		= tcu::IVec2(surface.getWidth(), surface.getHeight());
+	const int							errorFloodThreshold	= 4;
+	int									errorCount			= 0;
+	tcu::Surface						errorMask			(surface.getWidth(), surface.getHeight());
+	int									invalidPixels		= 0;
+	std::vector<tcu::Vec4>				effectiveLines		(scene.lines.size()); //!< packed (x0, y0, x1, y1)
+	std::vector<bool>					lineIsXMajor		(scene.lines.size());
+
+	// for each line, for every distinct major direction fragment, store root pixel location (along
+	// minor direction);
+	std::vector<std::vector<deUint32> >	rootPixelLocation	(scene.lines.size()); //!< packed [16b - flags] [16b - coordinate]
+
+	// log format
+
+	log << tcu::TestLog::Message << "Verifying rasterization result. Native format is RGB" << args.redBits << args.greenBits << args.blueBits << tcu::TestLog::EndMessage;
+	if (args.redBits > 8 || args.greenBits > 8 || args.blueBits > 8)
+		log << tcu::TestLog::Message << "Warning! More than 8 bits in a color channel, this may produce false negatives." << tcu::TestLog::EndMessage;
+
+	// Reference renderer produces correct fragments using the diamond-exit-rule. Make 2D int array, store line coverage as a 8-bit bitfield
+	// The map is used to find lines with potential coverage to a given pixel
+	tcu::TextureLevel referenceLineMap(tcu::TextureFormat(tcu::TextureFormat::R, tcu::TextureFormat::UNSIGNED_INT8), surface.getWidth(), surface.getHeight());
+	tcu::clear(referenceLineMap.getAccess(), tcu::IVec4(0, 0, 0, 0));
+
+	tcu::clear(errorMask.getAccess(), tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f));
+
+	// calculate mask and effective line coordinates
+	{
+		std::vector<tcu::Vec4> screenspaceLines(scene.lines.size());
+
+		genScreenSpaceLines(screenspaceLines, scene.lines, viewportSize);
+		setMaskMapCoverageBitForLines(screenspaceLines, scene.lineWidth, referenceLineMap.getAccess());
+
+		for (int lineNdx = 0; lineNdx < (int)scene.lines.size(); ++lineNdx)
+		{
+			const tcu::Vec2	lineScreenSpaceP0	= screenspaceLines[lineNdx].swizzle(0, 1);
+			const tcu::Vec2	lineScreenSpaceP1	= screenspaceLines[lineNdx].swizzle(2, 3);
+			const bool		isXMajor			= isPackedSSLineXMajor(screenspaceLines[lineNdx]);
+
+			lineIsXMajor[lineNdx] = isXMajor;
+
+			// wide line interpolations are calculated for a line moved in minor direction
+			{
+				const float		offsetLength	= (scene.lineWidth - 1.0f) / 2.0f;
+				const tcu::Vec2	offsetDirection	= (isXMajor) ? (tcu::Vec2(0.0f, -1.0f)) : (tcu::Vec2(-1.0f, 0.0f));
+				const tcu::Vec2	offset			= offsetDirection * offsetLength;
+
+				effectiveLines[lineNdx] = tcu::Vec4(lineScreenSpaceP0.x() + offset.x(),
+													lineScreenSpaceP0.y() + offset.y(),
+													lineScreenSpaceP1.x() + offset.x(),
+													lineScreenSpaceP1.y() + offset.y());
+			}
+		}
+	}
+
+	for (int lineNdx = 0; lineNdx < (int)scene.lines.size(); ++lineNdx)
+	{
+		// Calculate root pixel lookup table for this line. Since the implementation's fragment
+		// major coordinate range might not be a subset of the correct line range (they are allowed
+		// to vary by one pixel), we must extend the domain to cover whole viewport along major
+		// dimension.
+		//
+		// Expanding line strip to (effectively) infinite line might result in exit-diamnod set
+		// that is not a superset of the exit-diamond set of the line strip. In practice, this
+		// won't be an issue, since the allow-one-pixel-variation rule should tolerate this even
+		// if the original and extended line would resolve differently a diamond the line just
+		// touches (precision lost in expansion changes enter/exit status).
+
+		{
+			const bool						isXMajor			= lineIsXMajor[lineNdx];
+			const int						majorSize			= (isXMajor) ? (surface.getWidth()) : (surface.getHeight());
+			rr::LineExitDiamondGenerator	diamondGenerator;
+			rr::LineExitDiamond				diamonds[32];
+			int								numRasterized		= DE_LENGTH_OF_ARRAY(diamonds);
+
+			// Expand to effectively infinite line (endpoints are just one pixel over viewport boundaries)
+			const tcu::Vec2					expandedP0		= getLineCoordAtAxisCoord(effectiveLines[lineNdx].swizzle(0, 1), effectiveLines[lineNdx].swizzle(2, 3), isXMajor, -1.0f);
+			const tcu::Vec2					expandedP1		= getLineCoordAtAxisCoord(effectiveLines[lineNdx].swizzle(0, 1), effectiveLines[lineNdx].swizzle(2, 3), isXMajor, (float)majorSize + 1.0f);
+
+			diamondGenerator.init(tcu::Vec4(expandedP0.x(), expandedP0.y(), 0.0f, 1.0f),
+								  tcu::Vec4(expandedP1.x(), expandedP1.y(), 0.0f, 1.0f));
+
+			rootPixelLocation[lineNdx].resize(majorSize, FLAG_ROOT_NOT_SET);
+
+			while (numRasterized == DE_LENGTH_OF_ARRAY(diamonds))
+			{
+				diamondGenerator.rasterize(diamonds, DE_LENGTH_OF_ARRAY(diamonds), numRasterized);
+
+				for (int packetNdx = 0; packetNdx < numRasterized; ++packetNdx)
+				{
+					const tcu::IVec2	fragPos			= diamonds[packetNdx].position;
+					const int			majorPos		= (isXMajor) ? (fragPos.x()) : (fragPos.y());
+					const int			rootPos			= (isXMajor) ? (fragPos.y()) : (fragPos.x());
+					const deUint32		packed			= (deUint32)((deUint16)((deInt16)rootPos));
+
+					// infinite line will generate some diamonds outside the viewport
+					if (deInBounds32(majorPos, 0, majorSize))
+					{
+						DE_ASSERT((rootPixelLocation[lineNdx][majorPos] & FLAG_ROOT_NOT_SET) != 0u);
+						rootPixelLocation[lineNdx][majorPos] = packed;
+					}
+				}
+			}
+
+			// Filled whole lookup table
+			for (int majorPos = 0; majorPos < majorSize; ++majorPos)
+				DE_ASSERT((rootPixelLocation[lineNdx][majorPos] & FLAG_ROOT_NOT_SET) == 0u);
+		}
+	}
+
+	// Find all possible lines with coverage, check pixel color matches one of them
+
+	for (int y = 1; y < surface.getHeight() - 1; ++y)
+	for (int x = 1; x < surface.getWidth()  - 1; ++x)
+	{
+		const tcu::RGBA		color					= surface.getPixel(x, y);
+		const tcu::IVec3	pixelNativeColor		= convertRGB8ToNativeFormat(color, args);	// Convert pixel color from rgba8 to the real pixel format. Usually rgba8 or 565
+		int					lineCoverageSet			= 0;										// !< lines that may cover this fragment
+		int					lineSurroundingCoverage = 0xFFFF;									// !< lines that will cover this fragment
+		bool				matchFound				= false;
+		const tcu::IVec3	formatLimit				((1 << args.redBits) - 1, (1 << args.greenBits) - 1, (1 << args.blueBits) - 1);
+
+		std::vector<SingleSampleWideLineCandidate> candidates;
+
+		// Find lines with possible coverage
+
+		for (int dy = -1; dy < 2; ++dy)
+		for (int dx = -1; dx < 2; ++dx)
+		{
+			const int coverage = referenceLineMap.getAccess().getPixelInt(x+dx, y+dy).x();
+
+			lineCoverageSet			|= coverage;
+			lineSurroundingCoverage	&= coverage;
+		}
+
+		// background color is possible?
+		if (lineSurroundingCoverage == 0 && compareColors(color, tcu::RGBA::black, args.redBits, args.greenBits, args.blueBits))
+			continue;
+
+		// Check those lines
+
+		for (int lineNdx = 0; lineNdx < (int)scene.lines.size(); ++lineNdx)
+		{
+			if (((lineCoverageSet >> lineNdx) & 0x01) != 0)
+			{
+				const float						wa				= scene.lines[lineNdx].positions[0].w();
+				const float						wb				= scene.lines[lineNdx].positions[1].w();
+				const tcu::Vec2					pa				= effectiveLines[lineNdx].swizzle(0, 1);
+				const tcu::Vec2					pb				= effectiveLines[lineNdx].swizzle(2, 3);
+
+				// \note Wide line fragments are generated by replicating the root fragment for each
+				//       fragment column (row for y-major). Calculate interpolation at the root
+				//       fragment.
+				const bool						isXMajor		= lineIsXMajor[lineNdx];
+				const int						majorPosition	= (isXMajor) ? (x) : (y);
+				const deUint32					minorInfoPacked	= rootPixelLocation[lineNdx][majorPosition];
+				const int						minorPosition	= (int)((deInt16)((deUint16)(minorInfoPacked & 0xFFFFu)));
+				const tcu::IVec2				idealRootPos	= (isXMajor) ? (tcu::IVec2(majorPosition, minorPosition)) : (tcu::IVec2(minorPosition, majorPosition));
+				const tcu::IVec2				minorDirection	= (isXMajor) ? (tcu::IVec2(0, 1)) : (tcu::IVec2(1, 0));
+
+				SingleSampleWideLineCandidate	candidate;
+
+				candidate.lineNdx		= lineNdx;
+				candidate.numCandidates	= 0;
+				DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(candidate.interpolationCandidates) == 3);
+
+				// Interpolation happens at the root fragment, which is then replicated in minor
+				// direction. Search for implementation's root position near accurate root.
+				for (int minorOffset = -1; minorOffset < 2; ++minorOffset)
+				{
+					const tcu::IVec2				rootPosition	= idealRootPos + minorOffset * minorDirection;
+
+					// A fragment can be root fragment only if it exists
+					// \note root fragment can "exist" outside viewport
+					// \note no pixel format theshold since in this case allowing only black is more conservative
+					if (deInBounds32(rootPosition.x(), 0, surface.getWidth()) &&
+						deInBounds32(rootPosition.y(), 0, surface.getHeight()) &&
+						isBlack(surface.getPixel(rootPosition.x(), rootPosition.y())))
+					{
+						continue;
+					}
+
+					const LineInterpolationRange	range			= calcSingleSampleLineInterpolationRange(pa, wa, pb, wb, rootPosition, args.subpixelBits);
+
+					const tcu::Vec4					valueMin		= de::clamp(range.min.x(), 0.0f, 1.0f) * scene.lines[lineNdx].colors[0] + de::clamp(range.min.y(), 0.0f, 1.0f) * scene.lines[lineNdx].colors[1];
+					const tcu::Vec4					valueMax		= de::clamp(range.max.x(), 0.0f, 1.0f) * scene.lines[lineNdx].colors[0] + de::clamp(range.max.y(), 0.0f, 1.0f) * scene.lines[lineNdx].colors[1];
+
+					const tcu::Vec3					colorMinF		(de::clamp(valueMin.x() * formatLimit.x(), 0.0f, (float)formatLimit.x()),
+																	de::clamp(valueMin.y() * formatLimit.y(), 0.0f, (float)formatLimit.y()),
+																	de::clamp(valueMin.z() * formatLimit.z(), 0.0f, (float)formatLimit.z()));
+					const tcu::Vec3					colorMaxF		(de::clamp(valueMax.x() * formatLimit.x(), 0.0f, (float)formatLimit.x()),
+																	de::clamp(valueMax.y() * formatLimit.y(), 0.0f, (float)formatLimit.y()),
+																	de::clamp(valueMax.z() * formatLimit.z(), 0.0f, (float)formatLimit.z()));
+					const tcu::IVec3				colorMin		((int)deFloatFloor(colorMinF.x()),
+																	(int)deFloatFloor(colorMinF.y()),
+																	(int)deFloatFloor(colorMinF.z()));
+					const tcu::IVec3				colorMax		((int)deFloatCeil (colorMaxF.x()),
+																	(int)deFloatCeil (colorMaxF.y()),
+																	(int)deFloatCeil (colorMaxF.z()));
+
+					// Verify validity
+					if (pixelNativeColor.x() < colorMin.x() ||
+						pixelNativeColor.y() < colorMin.y() ||
+						pixelNativeColor.z() < colorMin.z() ||
+						pixelNativeColor.x() > colorMax.x() ||
+						pixelNativeColor.y() > colorMax.y() ||
+						pixelNativeColor.z() > colorMax.z())
+					{
+						if (errorCount < errorFloodThreshold)
+						{
+							// Store candidate information for logging
+							SingleSampleWideLineCandidate::InterpolationPointCandidate& interpolationCandidate = candidate.interpolationCandidates[candidate.numCandidates++];
+							DE_ASSERT(candidate.numCandidates <= DE_LENGTH_OF_ARRAY(candidate.interpolationCandidates));
+
+							interpolationCandidate.interpolationPoint	= rootPosition;
+							interpolationCandidate.colorMin				= colorMin;
+							interpolationCandidate.colorMax				= colorMax;
+							interpolationCandidate.colorMinF			= colorMinF;
+							interpolationCandidate.colorMaxF			= colorMaxF;
+							interpolationCandidate.valueRangeMin		= valueMin.swizzle(0, 1, 2);
+							interpolationCandidate.valueRangeMax		= valueMax.swizzle(0, 1, 2);
+						}
+					}
+					else
+					{
+						matchFound = true;
+						break;
+					}
+				}
+
+				if (!matchFound)
+				{
+					// store info for logging
+					if (errorCount < errorFloodThreshold && candidate.numCandidates > 0)
+						candidates.push_back(candidate);
+				}
+				else
+				{
+					// no need to check other lines
+					break;
+				}
+			}
+		}
+
+		if (matchFound)
+			continue;
+
+		// invalid fragment
+		++invalidPixels;
+		errorMask.setPixel(x, y, invalidPixelColor);
+
+		++errorCount;
+
+		// don't fill the logs with too much data
+		if (errorCount < errorFloodThreshold)
+		{
+			tcu::MessageBuilder msg(&log);
+
+			msg	<< "Found an invalid pixel at (" << x << "," << y << "), " << (int)candidates.size() << " candidate reference value(s) found:\n"
+				<< "\tPixel color:\t\t" << color << "\n"
+				<< "\tNative color:\t\t" << pixelNativeColor << "\n";
+
+			for (int lineCandidateNdx = 0; lineCandidateNdx < (int)candidates.size(); ++lineCandidateNdx)
+			{
+				const SingleSampleWideLineCandidate& candidate = candidates[lineCandidateNdx];
+
+				msg << "\tCandidate line (line " << candidate.lineNdx << "):\n";
+
+				for (int interpolationCandidateNdx = 0; interpolationCandidateNdx < candidate.numCandidates; ++interpolationCandidateNdx)
+				{
+					const SingleSampleWideLineCandidate::InterpolationPointCandidate& interpolationCandidate = candidate.interpolationCandidates[interpolationCandidateNdx];
+
+					msg	<< "\t\tCandidate interpolation point (index " << interpolationCandidateNdx << "):\n"
+						<< "\t\t\tRoot fragment position (non-replicated fragment): " << interpolationCandidate.interpolationPoint << ":\n"
+						<< "\t\t\tReference native color min: " << tcu::clamp(interpolationCandidate.colorMin, tcu::IVec3(0,0,0), formatLimit) << "\n"
+						<< "\t\t\tReference native color max: " << tcu::clamp(interpolationCandidate.colorMax, tcu::IVec3(0,0,0), formatLimit) << "\n"
+						<< "\t\t\tReference native float min: " << tcu::clamp(interpolationCandidate.colorMinF, tcu::Vec3(0.0f, 0.0f, 0.0f), formatLimit.cast<float>()) << "\n"
+						<< "\t\t\tReference native float max: " << tcu::clamp(interpolationCandidate.colorMaxF, tcu::Vec3(0.0f, 0.0f, 0.0f), formatLimit.cast<float>()) << "\n"
+						<< "\t\t\tFmin:\t" << tcu::clamp(interpolationCandidate.valueRangeMin, tcu::Vec3(0.0f, 0.0f, 0.0f), tcu::Vec3(1.0f, 1.0f, 1.0f)) << "\n"
+						<< "\t\t\tFmax:\t" << tcu::clamp(interpolationCandidate.valueRangeMax, tcu::Vec3(0.0f, 0.0f, 0.0f), tcu::Vec3(1.0f, 1.0f, 1.0f)) << "\n";
+				}
+			}
+
+			msg << tcu::TestLog::EndMessage;
 		}
 	}
 
@@ -1913,14 +2372,39 @@ bool verifyTriangleGroupInterpolation (const tcu::Surface& surface, const Triang
 	return verifyTriangleGroupInterpolationWithInterpolator(surface, scene, args, log, TriangleInterpolator(scene));
 }
 
-bool verifyLineGroupInterpolation (const tcu::Surface& surface, const LineSceneSpec& scene, const RasterizationArguments& args, tcu::TestLog& log)
+LineInterpolationMethod verifyLineGroupInterpolation (const tcu::Surface& surface, const LineSceneSpec& scene, const RasterizationArguments& args, tcu::TestLog& log)
 {
 	const bool multisampled = args.numSamples != 0;
 
 	if (multisampled)
-		return verifyMultisampleLineGroupInterpolation(surface, scene, args, log);
+	{
+		if (verifyMultisampleLineGroupInterpolation(surface, scene, args, log))
+			return LINEINTERPOLATION_STRICTLY_CORRECT;
+		return LINEINTERPOLATION_INCORRECT;
+	}
 	else
-		return verifySinglesampleLineGroupInterpolation(surface, scene, args, log);
+	{
+		const bool isNarrow = (scene.lineWidth == 1.0f);
+
+		// accurate interpolation
+		if (isNarrow)
+		{
+			if (verifySinglesampleNarrowLineGroupInterpolation(surface, scene, args, log))
+				return LINEINTERPOLATION_STRICTLY_CORRECT;
+		}
+		else
+		{
+			if (verifySinglesampleWideLineGroupInterpolation(surface, scene, args, log))
+				return LINEINTERPOLATION_STRICTLY_CORRECT;
+		}
+
+		// check with projected (inaccurate) interpolation
+		log << tcu::TestLog::Message << "Accurate verification failed, checking with projected weights (inaccurate equation)." << tcu::TestLog::EndMessage;
+		if (verifyLineGroupInterpolationWithProjectedWeights(surface, scene, args, log))
+			return LINEINTERPOLATION_PROJECTED;
+
+		return LINEINTERPOLATION_INCORRECT;
+	}
 }
 
 } // StateQueryUtil

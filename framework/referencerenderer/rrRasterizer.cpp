@@ -865,7 +865,7 @@ SingleSampleLineRasterizer::SingleSampleLineRasterizer (const tcu::IVec4& viewpo
 {
 }
 
-SingleSampleLineRasterizer::~SingleSampleLineRasterizer	()
+SingleSampleLineRasterizer::~SingleSampleLineRasterizer (void)
 {
 }
 
@@ -925,16 +925,18 @@ void SingleSampleLineRasterizer::rasterize (FragmentPacket* const fragmentPacket
 {
 	DE_ASSERT(maxFragmentPackets > 0);
 
-	const deInt64								halfPixel		= 1ll << (RASTERIZER_SUBPIXEL_BITS-1);
-	const deInt32								lineWidth		= (m_lineWidth > 1.0f) ? (deInt32)floor(m_lineWidth + 0.5f) : 1;
-	const bool									isXMajor		= de::abs((m_v1 - m_v0).x()) >= de::abs((m_v1 - m_v0).y());
-	const tcu::IVec2							minorDirection	= (isXMajor ? tcu::IVec2(0, 1) : tcu::IVec2(1, 0));
-	const tcu::Vector<deInt64,2>				widthOffset		= (isXMajor ? tcu::Vector<deInt64,2>(0, -1) : tcu::Vector<deInt64,2>(-1, 0)) * (toSubpixelCoord(lineWidth - 1) / 2);
-	const tcu::Vector<deInt64,2>				pa				= LineRasterUtil::toSubpixelVector(m_v0.xy()) + widthOffset;
-	const tcu::Vector<deInt64,2>				pb				= LineRasterUtil::toSubpixelVector(m_v1.xy()) + widthOffset;
-	const LineRasterUtil::SubpixelLineSegment	line			= LineRasterUtil::SubpixelLineSegment(pa, pb);
+	const deInt64								halfPixel			= 1ll << (RASTERIZER_SUBPIXEL_BITS-1);
+	const deInt32								lineWidth			= (m_lineWidth > 1.0f) ? deFloorFloatToInt32(m_lineWidth + 0.5f) : 1;
+	const bool									isXMajor			= de::abs((m_v1 - m_v0).x()) >= de::abs((m_v1 - m_v0).y());
+	const tcu::IVec2							minorDirection		= (isXMajor) ? (tcu::IVec2(0, 1)) : (tcu::IVec2(1, 0));
+	const int									minViewportLimit	= (isXMajor) ? (m_viewport.y()) : (m_viewport.x());
+	const int									maxViewportLimit	= (isXMajor) ? (m_viewport.y() + m_viewport.w()) : (m_viewport.x() + m_viewport.z());
+	const tcu::Vector<deInt64,2>				widthOffset			= -minorDirection.cast<deInt64>() * (toSubpixelCoord(lineWidth - 1) / 2);
+	const tcu::Vector<deInt64,2>				pa					= LineRasterUtil::toSubpixelVector(m_v0.xy()) + widthOffset;
+	const tcu::Vector<deInt64,2>				pb					= LineRasterUtil::toSubpixelVector(m_v1.xy()) + widthOffset;
+	const LineRasterUtil::SubpixelLineSegment	line				= LineRasterUtil::SubpixelLineSegment(pa, pb);
 
-	int											packetNdx 		= 0;
+	int											packetNdx			= 0;
 
 	while (m_curPos.y() <= m_bboxMax.y() && packetNdx < maxFragmentPackets)
 	{
@@ -943,21 +945,19 @@ void SingleSampleLineRasterizer::rasterize (FragmentPacket* const fragmentPacket
 		// Should current fragment be drawn? == does the segment exit this diamond?
 		if (LineRasterUtil::doesLineSegmentExitDiamond(line, diamondPosition))
 		{
-			const tcu::Vector<deInt64,2> 	pr					= diamondPosition;
-			const float 					t					= tcu::dot((pr - pa).asFloat(), (pb - pa).asFloat()) / tcu::lengthSquared(pb.asFloat() - pa.asFloat());
+			const tcu::Vector<deInt64,2>	pr					= diamondPosition;
+			const float						t					= tcu::dot((pr - pa).asFloat(), (pb - pa).asFloat()) / tcu::lengthSquared(pb.asFloat() - pa.asFloat());
 
 			// Rasterize on only fragments that are would end up in the viewport (i.e. visible)
-			const int						minViewportLimit	= (isXMajor) ? (m_viewport.y())                  : (m_viewport.x());
-			const int						maxViewportLimit	= (isXMajor) ? (m_viewport.y() + m_viewport.w()) : (m_viewport.x() + m_viewport.z());
-			const int						fragmentLocation	= (isXMajor) ? (m_curPos.y())                    : (m_curPos.x());
-
+			const int						fragmentLocation	= (isXMajor) ? (m_curPos.y()) : (m_curPos.x());
 			const int						rowFragBegin		= de::max(0, minViewportLimit - fragmentLocation);
 			const int						rowFragEnd			= de::min(maxViewportLimit - fragmentLocation, lineWidth);
 
 			// Wide lines require multiple fragments.
 			for (; rowFragBegin + m_curRowFragment < rowFragEnd; m_curRowFragment++)
 			{
-				const tcu::IVec2 fragmentPos = m_curPos + minorDirection * (rowFragBegin + m_curRowFragment);
+				const int			replicationId	= rowFragBegin + m_curRowFragment;
+				const tcu::IVec2	fragmentPos		= m_curPos + minorDirection * replicationId;
 
 				// We only rasterize visible area
 				DE_ASSERT(LineRasterUtil::inViewport(fragmentPos, m_viewport));
@@ -1086,6 +1086,72 @@ void MultiSampleLineRasterizer::rasterize (FragmentPacket* const fragmentPackets
 			std::swap(nextFragmentPackets[packNdx].barycentric[0][fragNdx], nextFragmentPackets[packNdx].barycentric[1][fragNdx]);
 		}
 	}
+}
+
+LineExitDiamondGenerator::LineExitDiamondGenerator (void)
+{
+}
+
+LineExitDiamondGenerator::~LineExitDiamondGenerator (void)
+{
+}
+
+void LineExitDiamondGenerator::init (const tcu::Vec4& v0, const tcu::Vec4& v1)
+{
+	const deInt64					x0				= toSubpixelCoord(v0.x());
+	const deInt64					y0				= toSubpixelCoord(v0.y());
+	const deInt64					x1				= toSubpixelCoord(v1.x());
+	const deInt64					y1				= toSubpixelCoord(v1.y());
+
+	// line endpoints might be perturbed, add some margin
+	const deInt64					xMin			= de::min(x0, x1) - toSubpixelCoord(1);
+	const deInt64					xMax			= de::max(x0, x1) + toSubpixelCoord(1);
+	const deInt64					yMin			= de::min(y0, y1) - toSubpixelCoord(1);
+	const deInt64					yMax			= de::max(y0, y1) + toSubpixelCoord(1);
+
+	m_bboxMin.x() = floorSubpixelToPixelCoord(xMin, true);
+	m_bboxMin.y() = floorSubpixelToPixelCoord(yMin, true);
+	m_bboxMax.x() = ceilSubpixelToPixelCoord (xMax, true);
+	m_bboxMax.y() = ceilSubpixelToPixelCoord (yMax, true);
+
+	m_v0 = v0;
+	m_v1 = v1;
+
+	m_curPos = m_bboxMin;
+}
+
+void LineExitDiamondGenerator::rasterize (LineExitDiamond* const lineDiamonds, const int maxDiamonds, int& numWritten)
+{
+	DE_ASSERT(maxDiamonds > 0);
+
+	const deInt64								halfPixel			= 1ll << (RASTERIZER_SUBPIXEL_BITS-1);
+	const tcu::Vector<deInt64,2>				pa					= LineRasterUtil::toSubpixelVector(m_v0.xy());
+	const tcu::Vector<deInt64,2>				pb					= LineRasterUtil::toSubpixelVector(m_v1.xy());
+	const LineRasterUtil::SubpixelLineSegment	line				= LineRasterUtil::SubpixelLineSegment(pa, pb);
+
+	int											diamondNdx			= 0;
+
+	while (m_curPos.y() <= m_bboxMax.y() && diamondNdx < maxDiamonds)
+	{
+		const tcu::Vector<deInt64,2> diamondPosition = LineRasterUtil::toSubpixelVector(m_curPos) + tcu::Vector<deInt64,2>(halfPixel,halfPixel);
+
+		if (LineRasterUtil::doesLineSegmentExitDiamond(line, diamondPosition))
+		{
+			LineExitDiamond& packet = lineDiamonds[diamondNdx];
+			packet.position = m_curPos;
+			++diamondNdx;
+		}
+
+		++m_curPos.x();
+		if (m_curPos.x() > m_bboxMax.x())
+		{
+			++m_curPos.y();
+			m_curPos.x() = m_bboxMin.x();
+		}
+	}
+
+	DE_ASSERT(diamondNdx <= maxDiamonds);
+	numWritten = diamondNdx;
 }
 
 } // rr

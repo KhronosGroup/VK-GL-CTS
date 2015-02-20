@@ -27,6 +27,7 @@
 #include "tcuRenderTarget.hpp"
 #include "tcuVectorUtil.hpp"
 #include "tcuStringTemplate.hpp"
+#include "tcuResultCollector.hpp"
 #include "gluShaderProgram.hpp"
 #include "gluRenderContext.hpp"
 #include "gluPixelTransfer.hpp"
@@ -1583,20 +1584,20 @@ void TriangleInterpolationTest::extractTriangles (std::vector<TriangleSceneSpec:
 class LineInterpolationTest : public BaseRenderingCase
 {
 public:
-						LineInterpolationTest	(Context& ctx, const char* name, const char* desc, glw::GLenum primitive, int flags, float lineWidth);
-						~LineInterpolationTest	(void);
-	IterateResult		iterate					(void);
+							LineInterpolationTest	(Context& ctx, const char* name, const char* desc, glw::GLenum primitive, int flags, float lineWidth);
+							~LineInterpolationTest	(void);
+	IterateResult			iterate					(void);
 
 private:
-	void				generateVertices		(int iteration, std::vector<tcu::Vec4>& outVertices, std::vector<tcu::Vec4>& outColors) const;
-	void				extractLines			(std::vector<LineSceneSpec::SceneLine>& outLines, const std::vector<tcu::Vec4>& vertices, const std::vector<tcu::Vec4>& colors) const;
+	void					generateVertices		(int iteration, std::vector<tcu::Vec4>& outVertices, std::vector<tcu::Vec4>& outColors) const;
+	void					extractLines			(std::vector<LineSceneSpec::SceneLine>& outLines, const std::vector<tcu::Vec4>& vertices, const std::vector<tcu::Vec4>& colors) const;
 
-	const glw::GLenum	m_primitive;
-	const bool			m_projective;
-	const int			m_iterationCount;
+	const glw::GLenum		m_primitive;
+	const bool				m_projective;
+	const int				m_iterationCount;
 
-	int					m_iteration;
-	bool				m_allIterationsPassed;
+	int						m_iteration;
+	tcu::ResultCollector	m_result;
 };
 
 LineInterpolationTest::LineInterpolationTest (Context& ctx, const char* name, const char* desc, glw::GLenum primitive, int flags, float lineWidth)
@@ -1605,7 +1606,6 @@ LineInterpolationTest::LineInterpolationTest (Context& ctx, const char* name, co
 	, m_projective			((flags & INTERPOLATIONFLAGS_PROJECTED) != 0)
 	, m_iterationCount		(3)
 	, m_iteration			(0)
-	, m_allIterationsPassed	(true)
 {
 	m_lineWidth = lineWidth;
 }
@@ -1642,6 +1642,7 @@ LineInterpolationTest::IterateResult LineInterpolationTest::iterate (void)
 	{
 		RasterizationArguments	args;
 		LineSceneSpec			scene;
+		LineInterpolationMethod	iterationResult;
 
 		args.numSamples		= m_numSamples;
 		args.subpixelBits	= m_subpixelBits;
@@ -1652,18 +1653,38 @@ LineInterpolationTest::IterateResult LineInterpolationTest::iterate (void)
 		scene.lines.swap(lines);
 		scene.lineWidth = m_lineWidth;
 
-		if (!verifyLineGroupInterpolation(resultImage, scene, args, m_testCtx.getLog()))
-			m_allIterationsPassed = false;
+		iterationResult = verifyLineGroupInterpolation(resultImage, scene, args, m_testCtx.getLog());
+		switch (iterationResult)
+		{
+			case LINEINTERPOLATION_STRICTLY_CORRECT:
+				// line interpolation matches the specification
+				m_result.addResult(QP_TEST_RESULT_PASS, "Pass");
+				break;
+
+			case LINEINTERPOLATION_PROJECTED:
+				// line interpolation weights are otherwise correct, but they are projected onto major axis
+				m_testCtx.getLog()	<< tcu::TestLog::Message
+									<< "Interpolation was calculated using coordinates projected onto major axis. "
+									   "This method does not produce the same values as the non-projecting method defined in the specification."
+									<< tcu::TestLog::EndMessage;
+				m_result.addResult(QP_TEST_RESULT_QUALITY_WARNING, "Interpolation was calculated using projected coordinateds");
+				break;
+
+			case LINEINTERPOLATION_INCORRECT:
+				// line interpolation is incorrect
+				m_result.addResult(QP_TEST_RESULT_FAIL, "Found invalid pixel values");
+				break;
+
+			default:
+				DE_ASSERT(false);
+				break;
+		}
 	}
 
 	// result
 	if (++m_iteration == m_iterationCount)
 	{
-		if (m_allIterationsPassed)
-			m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
-		else
-			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Found invalid pixel values");
-
+		m_result.setTestContextResult(m_testCtx);
 		return STOP;
 	}
 	else
