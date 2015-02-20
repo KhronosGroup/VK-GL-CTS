@@ -475,6 +475,70 @@ struct AttachmentData
 	vector<deUint8>			referenceData;
 };
 
+template<typename Type>
+string valueRangeToString (int numValidChannels, const tcu::Vector<Type, 4>& minValue, const tcu::Vector<Type, 4>& maxValue)
+{
+	std::ostringstream stream;
+
+	stream << "(";
+
+	for (int i = 0; i < 4; i++)
+	{
+		if (i != 0)
+			stream << ", ";
+
+		if (i < numValidChannels)
+			stream << minValue[i] << " -> " << maxValue[i];
+		else
+			stream << "Undef";
+	}
+
+	stream << ")";
+
+	return stream.str();
+}
+
+void clearUndefined (const tcu::PixelBufferAccess& access, int numValidChannels)
+{
+	for (int y = 0; y < access.getHeight(); y++)
+	for (int x = 0; x < access.getWidth(); x++)
+	{
+		switch (tcu::getTextureChannelClass(access.getFormat().type))
+		{
+			case tcu::TEXTURECHANNELCLASS_FLOATING_POINT:
+			{
+				const Vec4	srcPixel	= access.getPixel(x, y);
+				Vec4		dstPixel	(0.0f, 0.0f, 0.0f, 1.0f);
+
+				for (int channelNdx = 0; channelNdx < numValidChannels; channelNdx++)
+					dstPixel[channelNdx] = srcPixel[channelNdx];
+
+				access.setPixel(dstPixel, x, y);
+				break;
+			}
+
+			case tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER:
+			case tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER:
+			case tcu::TEXTURECHANNELCLASS_SIGNED_FIXED_POINT:
+			case tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT:
+			{
+				const IVec4	bitDepth	= tcu::getTextureFormatBitDepth(access.getFormat());
+				const IVec4	srcPixel	= access.getPixelInt(x, y);
+				IVec4		dstPixel	(0, 0, 0, (0x1u << (deUint64)bitDepth.w()) - 1);
+
+				for (int channelNdx = 0; channelNdx < numValidChannels; channelNdx++)
+					dstPixel[channelNdx] = srcPixel[channelNdx];
+
+				access.setPixel(dstPixel, x, y);
+				break;
+			}
+
+			default:
+				DE_ASSERT(false);
+		}
+	}
+}
+
 } // anonymous
 
 FragmentOutputCase::IterateResult FragmentOutputCase::iterate (void)
@@ -591,7 +655,7 @@ FragmentOutputCase::IterateResult FragmentOutputCase::iterate (void)
 						maxVal = tcu::min(maxVal, fmtInfo.valueMax);
 					}
 
-					m_testCtx.getLog() << TestLog::Message << "out" << curInVec << " value range: " << minVal << " -> " << maxVal << TestLog::EndMessage;
+					m_testCtx.getLog() << TestLog::Message << "out" << curInVec << " value range: " << valueRangeToString(numScalars, minVal, maxVal) << TestLog::EndMessage;
 
 					for (int y = 0; y < gridHeight; y++)
 					{
@@ -629,7 +693,7 @@ FragmentOutputCase::IterateResult FragmentOutputCase::iterate (void)
 						maxVal = select(maxVal, tcu::min(maxVal, fmtMaxVal), isZero);
 					}
 
-					m_testCtx.getLog() << TestLog::Message << "out" << curInVec << " value range: " << minVal << " -> " << maxVal << TestLog::EndMessage;
+					m_testCtx.getLog() << TestLog::Message << "out" << curInVec << " value range: " << valueRangeToString(numScalars, minVal, maxVal) << TestLog::EndMessage;
 
 					const IVec4	rangeDiv	= swizzleVec((IVec4(gridWidth, gridHeight, gridWidth, gridHeight)-1), curInVec);
 					const IVec4	step		= ((maxVal.cast<deInt64>() - minVal.cast<deInt64>()) / (rangeDiv.cast<deInt64>())).asInt();
@@ -665,7 +729,7 @@ FragmentOutputCase::IterateResult FragmentOutputCase::iterate (void)
 						maxVal = tcu::min(maxVal, fmtMaxVal);
 					}
 
-					m_testCtx.getLog() << TestLog::Message << "out" << curInVec << " value range: " << UVec4(0) << " -> " << maxVal << TestLog::EndMessage;
+					m_testCtx.getLog() << TestLog::Message << "out" << curInVec << " value range: "  << valueRangeToString(numScalars, UVec4(0), maxVal) << TestLog::EndMessage;
 
 					const IVec4	rangeDiv	= swizzleVec((IVec4(gridWidth, gridHeight, gridWidth, gridHeight)-1), curInVec);
 					const UVec4	step		= maxVal / rangeDiv.asUint();
@@ -754,11 +818,17 @@ FragmentOutputCase::IterateResult FragmentOutputCase::iterate (void)
 	// Read all attachment points.
 	for (int ndx = 0; ndx < numAttachments; ndx++)
 	{
-		const glu::TransferFormat		transferFmt		= glu::getTransferFormat(attachments[ndx].readFormat);
-		void*							dst				= &attachments[ndx].renderedData[0];
+		const glu::TransferFormat		transferFmt			= glu::getTransferFormat(attachments[ndx].readFormat);
+		void*							dst					= &attachments[ndx].renderedData[0];
+		const int						attachmentW			= m_fboSpec[ndx].width;
+		const int						attachmentH			= m_fboSpec[ndx].height;
+		const int						numValidChannels	= attachments[ndx].numWrittenChannels;
+		const tcu::PixelBufferAccess	rendered			(attachments[ndx].readFormat, attachmentW, attachmentH, 1, deAlign32(attachments[ndx].readFormat.getPixelSize()*attachmentW, readAlignment), 0, &attachments[ndx].renderedData[0]);
 
 		gl.readBuffer(GL_COLOR_ATTACHMENT0+ndx);
 		gl.readPixels(0, 0, minBufSize.x(), minBufSize.y(), transferFmt.format, transferFmt.dataType, dst);
+
+		clearUndefined(rendered, numValidChannels);
 	}
 
 	// Render reference images.
