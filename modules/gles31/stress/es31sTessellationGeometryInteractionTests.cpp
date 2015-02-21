@@ -473,6 +473,7 @@ std::string GridRenderCase::getTessellationEvaluationSource (int tessLevel)
 			"\n"
 			"out mediump ivec2 v_tessellationGridPosition;\n"
 			"\n"
+			"// \\note No need to use precise gl_Position since position does not depend on order\n"
 			"void main (void)\n"
 			"{\n"
 			"	// Fill the whole viewport\n"
