@@ -2658,104 +2658,6 @@ IsEnabledCase::IterateResult IsEnabledCase::iterate (void)
 	return STOP;
 }
 
-class ContextFlagsCase : public TestCase
-{
-public:
-											ContextFlagsCase	(Context&						context,
-																 const char*					name,
-																 const char*					description,
-																 gls::StateQueryUtil::QueryType	type);
-
-	IterateResult							iterate			(void);
-private:
-	const gls::StateQueryUtil::QueryType	m_type;
-};
-
-ContextFlagsCase::ContextFlagsCase (Context&						context,
-									const char*						name,
-									const char*						description,
-									gls::StateQueryUtil::QueryType	type)
-	: TestCase	(context, name, description)
-	, m_type	(type)
-{
-}
-
-ContextFlagsCase::IterateResult ContextFlagsCase::iterate (void)
-{
-	using namespace gls::StateQueryUtil;
-
-	TCU_CHECK_AND_THROW(NotSupportedError, m_context.getContextInfo().isExtensionSupported("GL_KHR_debug"), "GL_KHR_debug is not supported");
-
-	glu::CallLogWrapper		gl				(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
-	tcu::ResultCollector	result			(m_testCtx.getLog(), " // ERROR: ");
-	const bool				isDebugContext	= (m_context.getRenderContext().getType().getFlags() & glu::CONTEXT_DEBUG) != 0;
-
-	gl.enableLogging(true);
-
-	QueriedState state;
-	queryState(result, gl, m_type, GL_CONTEXT_FLAGS, state);
-
-	if (!state.isUndefined())
-	{
-		switch (state.getType())
-		{
-			case DATATYPE_BOOLEAN:
-			{
-				// Flags is a bit set, we can only detect absence of all bits or presence of some bit
-				if (isDebugContext && !state.getBoolAccess())
-				{
-					std::ostringstream buf;
-					buf << "Expected TRUE, got " << glu::getBooleanStr(state.getBoolAccess());
-					result.fail(buf.str());
-				}
-				break;
-			}
-			case DATATYPE_INTEGER:
-			{
-				const bool claimsDebug = (state.getIntAccess() & GL_CONTEXT_FLAG_DEBUG_BIT) != 0;
-				if (claimsDebug != isDebugContext)
-				{
-					std::ostringstream buf;
-					buf << "Expected GL_CONTEXT_FLAG_DEBUG_BIT bit to be set to " << ((isDebugContext) ? 1 : 0) << ", got GL_CONTEXT_FLAGS = " << de::toString(tcu::Format::Hex<8>(state.getIntAccess()));
-					result.fail(buf.str());
-				}
-				break;
-			}
-			case DATATYPE_INTEGER64:
-			{
-				const bool claimsDebug = (state.getInt64Access() & GL_CONTEXT_FLAG_DEBUG_BIT) != 0;
-				if (claimsDebug != isDebugContext)
-				{
-					std::ostringstream buf;
-					buf << "Expected GL_CONTEXT_FLAG_DEBUG_BIT bit to be set to " << ((isDebugContext) ? 1 : 0) << ", got GL_CONTEXT_FLAGS = " << de::toString(tcu::Format::Hex<8>(state.getInt64Access()));
-					result.fail(buf.str());
-				}
-				break;
-			}
-			case DATATYPE_FLOAT:
-			{
-				const bool claimsDebug = (((int)state.getFloatAccess()) & GL_CONTEXT_FLAG_DEBUG_BIT) != 0;
-				if (claimsDebug != isDebugContext)
-				{
-					std::ostringstream buf;
-					buf	<< "Expected GL_CONTEXT_FLAG_DEBUG_BIT bit to be set to " << ((isDebugContext) ? 1 : 0)
-						<< ", got GL_CONTEXT_FLAGS = " << state.getFloatAccess()
-						<< " (as int " << de::toString(tcu::Format::Hex<8>((int)state.getFloatAccess())) << ")";
-					result.fail(buf.str());
-				}
-				break;
-			}
-
-			default:
-				DE_ASSERT(DE_FALSE);
-				break;
-		}
-	}
-
-	result.setTestContextResult(m_testCtx);
-	return STOP;
-}
-
 class PositiveIntegerCase : public TestCase
 {
 public:
@@ -3064,7 +2966,6 @@ void DebugTests::init (void)
 		FOR_ALL_ENABLE_TYPES(queries->addChild(new IsEnabledCase	(m_context, (std::string("debug_output") + postfix).c_str(),						"Test DEBUG_OUTPUT",						GL_DEBUG_OUTPUT,				IsEnabledCase::INITIAL_CTX_IS_DEBUG,	queryType)));
 		FOR_ALL_ENABLE_TYPES(queries->addChild(new IsEnabledCase	(m_context, (std::string("debug_output_synchronous") + postfix).c_str(),			"Test DEBUG_OUTPUT_SYNCHRONOUS",			GL_DEBUG_OUTPUT_SYNCHRONOUS,	IsEnabledCase::INITIAL_FALSE,			queryType)));
 
-		FOR_ALL_TYPES(queries->addChild(new ContextFlagsCase		(m_context, (std::string("context_flags") + postfix).c_str(), 						"Test CONTEXT_FLAGS", 						queryType)));
 		FOR_ALL_TYPES(queries->addChild(new PositiveIntegerCase		(m_context, (std::string("debug_logged_messages") + postfix).c_str(),				"Test DEBUG_LOGGED_MESSAGES",				GL_DEBUG_LOGGED_MESSAGES,				queryType)));
 		FOR_ALL_TYPES(queries->addChild(new PositiveIntegerCase		(m_context, (std::string("debug_next_logged_message_length") + postfix).c_str(),	"Test DEBUG_NEXT_LOGGED_MESSAGE_LENGTH",	GL_DEBUG_NEXT_LOGGED_MESSAGE_LENGTH,	queryType)));
 		FOR_ALL_TYPES(queries->addChild(new GroupStackDepthQueryCase(m_context, (std::string("debug_group_stack_depth") + postfix).c_str(),				"Test DEBUG_GROUP_STACK_DEPTH", 			queryType)));
