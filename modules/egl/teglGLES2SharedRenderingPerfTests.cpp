@@ -606,7 +606,7 @@ EGLImageKHR TestContext::createEGLImage (void)
 
 		m_gl.deleteTextures(1, &sourceTexture);
 		GLU_EXPECT_NO_ERROR(m_gl.getError(), "eglCreateImageKHR()");
-	
+
 		return image;
 	}
 	catch (...)

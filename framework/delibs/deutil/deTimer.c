@@ -320,7 +320,7 @@ static void timerThread (void* arg)
 		int sleepTime = 0;
 
 		deMutex_lock(thread->lock);
-		
+
 		if (thread->state == TIMERSTATE_SINGLE && numCallbacks > 0)
 		{
 			destroy = DE_FALSE; /* Will be destroyed by deTimer_disable(). */
@@ -329,7 +329,7 @@ static void timerThread (void* arg)
 		}
 		else if (thread->state == TIMERSTATE_DISABLED)
 			break;
-		
+
 		deMutex_unlock(thread->lock);
 
 		sleepTime = thread->interval - (int)(((deInt64)deGetMicroseconds()-lastCallback)/1000);

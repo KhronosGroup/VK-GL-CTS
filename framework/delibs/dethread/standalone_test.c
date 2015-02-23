@@ -27,11 +27,11 @@
 int main (int argc, char* argv[])
 {
 	DE_UNREF(argc && argv);
-	
+
 	printf("Testing deThread... ");
 	deThread_selfTest();
 	printf("ok\n");
-	
+
 	printf("Testing deMutex... ");
 	deMutex_selfTest();
 	printf("ok\n");
@@ -43,7 +43,7 @@ int main (int argc, char* argv[])
 	printf("Testing deAtomic... ");
 	deAtomic_selfTest();
 	printf("ok\n");
-	
+
 	printf("All tests ok!\n");
 	return 0;
 }

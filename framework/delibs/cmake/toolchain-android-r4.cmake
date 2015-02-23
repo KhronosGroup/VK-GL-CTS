@@ -32,7 +32,7 @@ elseif (ANDROID_NDK_HOST_OS STREQUAL "windows")
 else ()
 	message(FATAL_ERROR "Unknown ANDROID_NDK_HOST_OS")
 endif ()
-	
+
 set(CMAKE_SHARED_LIBRARY_C_FLAGS "")
 set(CMAKE_SHARED_LIBRARY_CXX_FLAGS "")
 
@@ -61,7 +61,7 @@ link_directories(
 
 set(NDK_FLAGS "-fpic -mthumb-interwork -ffunction-sections -funwind-tables -fstack-protector -fno-short-enums -mfloat-abi=softfp -Os -fomit-frame-pointer -fno-strict-aliasing -finline-limit=64 -D__ARM_ARCH_5__ -D__ARM_ARCH_5T__ -D__ARM_ARCH_5E__ -D__ARM_ARCH_5TE__ -DANDROID -D__ANDROID__ -D__STDC_INT64__")
 
-if (ANDROID_ABI STREQUAL "armeabi-v7a")	
+if (ANDROID_ABI STREQUAL "armeabi-v7a")
 	# For armeabi-v7a
 	set(NDK_FLAGS "${NDK_FLAGS} -march=armv7-a -mfpu=vfp")
 

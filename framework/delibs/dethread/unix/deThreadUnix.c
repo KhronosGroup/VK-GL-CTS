@@ -49,10 +49,10 @@ static void* startThread (void* entryPtr)
 	Thread*			thread	= (Thread*)entryPtr;
 	deThreadFunc	func	= thread->func;
 	void*			arg		= thread->arg;
-	
+
 	/* Start actual thread. */
 	func(arg);
-	
+
 	return DE_NULL;
 }
 
@@ -60,10 +60,10 @@ deThread deThread_create (deThreadFunc func, void* arg, const deThreadAttributes
 {
 	pthread_attr_t	attr;
 	Thread*			thread	= (Thread*)deCalloc(sizeof(Thread));
-	
+
 	if (!thread)
 		return 0;
-	
+
 	thread->func	= func;
 	thread->arg		= arg;
 
@@ -90,7 +90,7 @@ deThread deThread_create (deThreadFunc func, void* arg, const deThreadAttributes
 		return 0;
 	}
 	DE_ASSERT(thread->thread);
-	
+
 	pthread_attr_destroy(&attr);
 
 	return (deThread)thread;
@@ -133,12 +133,12 @@ void deSleep (deUint32 milliseconds)
 {
 	/* Maximum value for usleep is 10^6. */
 	deUint32 seconds = milliseconds / 1000;
-	
+
 	milliseconds = milliseconds - seconds * 1000;
-	
+
 	if (seconds > 0)
 		sleep(seconds);
-	
+
 	usleep((useconds_t)milliseconds * (useconds_t)1000);
 }
 

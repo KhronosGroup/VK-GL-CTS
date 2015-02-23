@@ -19,7 +19,7 @@ repos	= ALL_REPOS
 # Parse command line.
 numArgs = len(sys.argv)
 if (numArgs == 1):
-	pass 
+	pass
 else:
 	if (sys.argv[1] in COMMANDS):
 		command = sys.argv[1]

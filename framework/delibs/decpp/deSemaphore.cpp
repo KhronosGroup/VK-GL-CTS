@@ -39,7 +39,7 @@ Semaphore::Semaphore (int initialValue, deUint32 flags)
 	deSemaphoreAttributes attribs;
 	deMemset(&attribs, 0, sizeof(attribs));
 	attribs.flags = flags;
-	
+
 	m_semaphore = deSemaphore_create(initialValue, &attribs);
 	if (!m_semaphore)
 		throw std::bad_alloc();

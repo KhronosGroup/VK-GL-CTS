@@ -32,7 +32,7 @@ if (ANDROID_ABI STREQUAL "x86")
 	set(ANDROID_CC_PATH	"${ANDROID_NDK_PATH}/toolchains/x86-4.4.3/prebuilt/${ANDROID_NDK_HOST_OS}/")
 	set(CROSS_COMPILE	"${ANDROID_CC_PATH}bin/i686-android-linux-")
 	set(ANDROID_SYSROOT	"${ANDROID_NDK_PATH}/platforms/${ANDROID_NDK_TARGET}/arch-x86")
-	
+
 	set(CMAKE_FIND_ROOT_PATH
 		"${ANDROID_NDK_PATH}/sources/cxx-stl/gnu-libstdc++/libs/${ANDROID_ABI}"
 		"${ANDROID_CC_PATH}i686-android-linux"
@@ -44,7 +44,7 @@ else ()
 	set(ANDROID_CC_PATH	"${ANDROID_NDK_PATH}/toolchains/arm-linux-androideabi-4.4.3/prebuilt/${ANDROID_NDK_HOST_OS}/")
 	set(CROSS_COMPILE	"${ANDROID_CC_PATH}bin/arm-linux-androideabi-")
 	set(ANDROID_SYSROOT	"${ANDROID_NDK_PATH}/platforms/${ANDROID_NDK_TARGET}/arch-arm")
-	
+
 	set(CMAKE_FIND_ROOT_PATH
 		"${ANDROID_NDK_PATH}/sources/cxx-stl/gnu-libstdc++/libs/${ANDROID_ABI}"
 		"${ANDROID_CC_PATH}arm-linux-androideabi"
@@ -71,7 +71,7 @@ elseif (ANDROID_NDK_HOST_OS STREQUAL "windows")
 else ()
 	message(FATAL_ERROR "Unknown ANDROID_NDK_HOST_OS")
 endif ()
-	
+
 set(CMAKE_SHARED_LIBRARY_C_FLAGS "")
 set(CMAKE_SHARED_LIBRARY_CXX_FLAGS "")
 
@@ -89,7 +89,7 @@ set(COMMON_LINKER_FLAGS	"-nostdlib -Wl,-shared,-Bsymbolic -Wl,--no-undefined")
 set(ARM_C_FLAGS			"-mfloat-abi=softfp -D__ARM_ARCH_5__ -D__ARM_ARCH_5T__ -D__ARM_ARCH_5E__ -D__ARM_ARCH_5TE__ ")
 set(ARM_LINKER_FLAGS	"-Wl,--fix-cortex-a")
 
-if (ANDROID_ABI STREQUAL "armeabi-v7a")	
+if (ANDROID_ABI STREQUAL "armeabi-v7a")
 	# For armeabi-v7a
 	set(TARGET_C_FLAGS		"${COMMON_C_FLAGS} ${ARM_C_FLAGS} -march=armv7-a -mfpu=vfp")
 	set(TARGET_LINKER_FLAGS	"${COMMON_LINKER_FLAGS} ${ARM_LINKER_FLAGS}")
@@ -102,7 +102,7 @@ elseif (ANDROID_ABI STREQUAL "armeabi")
 elseif (ANDROID_ABI STREQUAL "x86")
 	set(TARGET_C_FLAGS		"${COMMON_C_FLAGS} -march=i686 -msse3 -mstackrealign -mfpmath=sse")
 	set(TARGET_LINKER_FLAGS	"${COMMON_LINKER_FLAGS}")
-	
+
 else ()
 	message(FATAL_ERROR "Unknown Android ABI \"${ANDROID_ABI}\"")
 endif ()

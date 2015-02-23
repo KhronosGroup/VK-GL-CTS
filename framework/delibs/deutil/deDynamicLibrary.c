@@ -39,14 +39,14 @@ deDynamicLibrary* deDynamicLibrary_open (const char* fileName)
 	deDynamicLibrary* library = (deDynamicLibrary*)deCalloc(sizeof(deDynamicLibrary));
 	if (!library)
 		return DE_NULL;
-	
+
 	library->libHandle = dlopen(fileName, RTLD_LAZY);
 	if (!library->libHandle)
 	{
 		deFree(library);
 		return DE_NULL;
 	}
-	
+
 	return library;
 }
 
@@ -88,14 +88,14 @@ deDynamicLibrary* deDynamicLibrary_open (const char* fileName)
 	deDynamicLibrary* library = (deDynamicLibrary*)deCalloc(sizeof(deDynamicLibrary));
 	if (!library)
 		return DE_NULL;
-	
+
 	library->handle = LoadLibrary(fileName);
 	if (!library->handle)
 	{
 		deFree(library);
 		return DE_NULL;
 	}
-	
+
 	return library;
 }
 

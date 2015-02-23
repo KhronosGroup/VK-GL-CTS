@@ -250,7 +250,7 @@ end
 
 case const_float_global
 	 values { output float out0 = 1000.0; }
-	 
+
 	 both ""
 	 	  precision mediump float;
 	 	  ${DECLARATIONS}
@@ -265,7 +265,7 @@ end
 
 case const_float_main
 	 values { output float out0 = -1000.0; }
-	 
+
 	 both ""
 	 	  precision mediump float;
 	 	  ${DECLARATIONS}
@@ -280,14 +280,14 @@ end
 
 case const_float_function
 	 values { output float out0 = -0.012; }
-	 
+
 	 both ""
 	 	  precision mediump float;
 	 	  ${DECLARATIONS}
 		  float func()
 		  {
 		  	    const float theConstant = -0.012;
-				return theConstant;				
+				return theConstant;
 		  }
 		  void main()
 		  {
@@ -299,7 +299,7 @@ end
 
 case const_float_scope
 	 values { output float out0 = 1.0; }
-	 
+
 	 both ""
 	 	  precision mediump float;
 	 	  ${DECLARATIONS}
@@ -316,7 +316,7 @@ end
 
 case const_float_scope_shawdowing_1
 	 values { output float out0 = 1.0; }
-	 
+
 	 both ""
 	 	  precision mediump float;
 	 	  ${DECLARATIONS}
@@ -334,7 +334,7 @@ end
 
 case const_float_scope_shawdowing_2
 	 values { output float out0 = 1.0; }
-	 
+
 	 both ""
 	 	  precision mediump float;
    	      ${DECLARATIONS}
@@ -352,7 +352,7 @@ end
 
 case const_float_scope_shawdowing_3
 	 values { output float out0 = 1.0; }
-	 
+
 	 both ""
 	 	  precision mediump float;
    	      ${DECLARATIONS}
@@ -371,7 +371,7 @@ end
 
 case const_float_scope_shawdowing_4
 	 values { output float out0 = 2.0; }
-	 
+
 	 both ""
 	 	  precision mediump float;
    	      ${DECLARATIONS}
@@ -395,7 +395,7 @@ end
 
 case const_float_operations_with_const
 	 values { output float out0 = 21.0; }
-	 
+
 	 both ""
 	 	  precision mediump float;
    	      ${DECLARATIONS}
@@ -419,7 +419,7 @@ end
 
 case const_float_assignment_1
 	 values { output float out0 = 10.0; }
-	 
+
 	 both ""
 	 	  precision mediump float;
    	      ${DECLARATIONS}
@@ -435,7 +435,7 @@ end
 
 case const_float_assignment_2
 	 values { output float out0 = 10.0; }
-	 
+
 	 both ""
 	 	  precision mediump float;
    	      ${DECLARATIONS}
@@ -453,7 +453,7 @@ end
 
 case const_float_assignment_3
 	 values { output float out0 = 10.0; }
-	 
+
 	 both ""
 	 	  precision mediump float;
    	      ${DECLARATIONS}
@@ -469,7 +469,7 @@ end
 
 case const_float_assignment_4
 	 values { output float out0 = 10.0; }
-	 
+
 	 both ""
 	 	  precision mediump float;
    	      ${DECLARATIONS}
@@ -477,7 +477,7 @@ case const_float_assignment_4
 		  float func()
 		  {
 				const float theConstant2 = theConstant1;
-				return theConstant2;				
+				return theConstant2;
 		  }
 		  void main()
 		  {
@@ -488,7 +488,7 @@ case const_float_assignment_4
 end
 
 case const_float_assign_uniform
-	 expect compile_fail	 
+	 expect compile_fail
 	 values { output float out0 = 10.0; }
 	 both ""
 	 	  precision mediump float;
@@ -504,7 +504,7 @@ case const_float_assign_uniform
 end
 
 case const_float_assign_varying
-	 expect compile_fail	 
+	 expect compile_fail
 	 values { output float out0 = 10.0; }
 	 vertex ""
    	      ${VERTEX_DECLARATIONS}
@@ -513,7 +513,7 @@ case const_float_assign_varying
 		  {
 				theVarying = 1.0;
 				gl_Position = vec(1.0);
-		  }	 	
+		  }
 	 ""
 	 fragment ""
 	 	  precision mediump float;
@@ -530,7 +530,7 @@ end
 
 case const_float_function_gotcha
 	 desc "Function constant parameters are not really constants, so using them as constant expressions should fail."
- 	 expect compile_fail	 
+ 	 expect compile_fail
 	 values { output float out0 = 20.0; }
 	 both ""
 	 	  precision mediump float;
@@ -538,7 +538,7 @@ case const_float_function_gotcha
 		  float func(const float gotcha)
 		  {
 				const float theConstant2 = gotcha;
-				return theConstant2*2.0;				
+				return theConstant2*2.0;
 		  }
 		  void main()
 		  {
@@ -551,7 +551,7 @@ end
 
 case const_float_from_int
 	 values { output float out0 = 10.0; }
-	 
+
 	 both ""
 	 	  precision mediump float;
    	      ${DECLARATIONS}
@@ -566,7 +566,7 @@ end
 
 case const_float_from_vec2
 	 values { output float out0 = 10.0; }
-	 
+
 	 both ""
 	 	  precision mediump float;
    	      ${DECLARATIONS}
@@ -581,7 +581,7 @@ end
 
 case const_float_from_vec3
 	 values { output float out0 = 10.0; }
-	 
+
 	 both ""
 	 	  precision mediump float;
    	      ${DECLARATIONS}
@@ -596,7 +596,7 @@ end
 
 case const_float_from_vec4
 	 values { output float out0 = 10.0; }
-	 
+
 	 both ""
 	 	  precision mediump float;
    	      ${DECLARATIONS}
@@ -610,7 +610,7 @@ case const_float_from_vec4
 end
 
 case const_float_assign_variable_1
-	 expect compile_fail	 
+	 expect compile_fail
 	 values { output float out0 = 20.0; }
 	 both ""
 	 	  precision mediump float;
@@ -626,7 +626,7 @@ case const_float_assign_variable_1
 end
 
 case const_float_assign_variable_2
-	 expect compile_fail	 
+	 expect compile_fail
 	 values { output float out0 = 50.0; }
 	 both ""
 	 	  precision mediump float;
@@ -643,7 +643,7 @@ case const_float_assign_variable_2
 end
 
 case const_float_assign_user_func
-	 expect compile_fail	 
+	 expect compile_fail
 	 values { output float out0 = 50.0; }
 	 both ""
 	 	  precision mediump float;

@@ -89,7 +89,7 @@ string capitalize (const string& str)
 vector<string> splitString (const string& s, char delim)
 {
 	istringstream tokenStream(s);
-	
+
 	if (delim == '\0')
 		return vector<string>(istream_iterator<string>(tokenStream),
 							  istream_iterator<string>());

@@ -45,4 +45,4 @@ deUint64		deGetTime			(void);
 
 DE_END_EXTERN_C
 
-#endif /* _DECLOCK_H */ 
+#endif /* _DECLOCK_H */

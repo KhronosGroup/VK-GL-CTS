@@ -1119,7 +1119,7 @@ void StateChangeTests::init (void)
 			requirePrograms(1);
 
 			gl.bindAttribLocation(m_programs[0]->getProgram(), 0, "a_coord");
-			GLU_EXPECT_NO_ERROR(gl.getError(), "glBindAttribLocation()"); 
+			GLU_EXPECT_NO_ERROR(gl.getError(), "glBindAttribLocation()");
 			gl.linkProgram(m_programs[0]->getProgram());
 			GLU_EXPECT_NO_ERROR(gl.getError(), "glLinkProgram()");
 

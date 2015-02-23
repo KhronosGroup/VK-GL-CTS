@@ -465,7 +465,7 @@ int choosePixelFormat (const Core& wgl, HDC deviceCtx, const glu::RenderConfig& 
 			!info.doubleBuffer											||
 			!(info.surfaceTypes & wgl::PixelFormatInfo::SURFACE_WINDOW))
 			continue;
-			
+
 		if (config.redBits != glu::RenderConfig::DONT_CARE &&
 			config.redBits != info.redBits)
 			continue;

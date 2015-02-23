@@ -44,7 +44,7 @@ public:
 	int		getSize			(void) const	{ return m_size;					}
 	int		getNumElements	(void) const	{ return m_numElements;				}
 	int		getNumFree		(void) const	{ return m_size - m_numElements;	}
-	
+
 	void	pushFront		(const T& elem);
 	void	pushFront		(const T* elemBuf, int count);
 
@@ -59,7 +59,7 @@ protected:
 	int		m_numElements;
 	int		m_front;
 	int		m_back;
-	
+
 	T*		m_buffer;
 	int		m_size;
 };

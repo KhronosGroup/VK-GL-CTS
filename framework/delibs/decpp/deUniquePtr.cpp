@@ -158,7 +158,7 @@ void UniquePtr_selfTest (void)
 		}
 		DE_TEST_ASSERT(!exists);
 	}
-	
+
 	// MovePtr assignment
 	{
 		bool exists1 = false;
@@ -200,7 +200,7 @@ void UniquePtr_selfTest (void)
 		}
 		DE_TEST_ASSERT(!exists);
 	}
-	
+
 #if 0
 	// UniquePtr assignment or copy construction should not compile. This
 	// piece of code is intentionally commented out. To manually test that

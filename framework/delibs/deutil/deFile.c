@@ -58,7 +58,7 @@ deFile* deFile_createFromHandle (deUintptr handle)
 		close(fd);
 		return file;
 	}
-	
+
 	file->fd = fd;
 	return file;
 }
@@ -121,7 +121,7 @@ deBool deFile_setFlags (deFile* file, deUint32 flags)
 		if (fcntl(file->fd, F_SETFL, newFlags) != 0)
 			return DE_FALSE;
 	}
-	
+
 	/* Close on exec. */
 	{
 		int oldFlags = fcntl(file->fd, F_GETFD, 0);
@@ -129,7 +129,7 @@ deBool deFile_setFlags (deFile* file, deUint32 flags)
 		if (fcntl(file->fd, F_SETFD, newFlags) != 0)
 			return DE_FALSE;
 	}
-	
+
 	return DE_TRUE;
 }
 
@@ -169,7 +169,7 @@ deInt64 deFile_getSize (const deFile* file)
 
 	size = lseek(file->fd, 0, SEEK_CUR);
 	lseek(file->fd, curPos, SEEK_SET);
-	
+
 	return size;
 }
 
@@ -186,7 +186,7 @@ static deFileResult mapReadWriteResult (deInt64 numBytes)
 deFileResult deFile_read (deFile* file, void* buf, deInt64 bufSize, deInt64* numReadPtr)
 {
 	deInt64 numRead = read(file->fd, buf, bufSize);
-	
+
 	if (numReadPtr)
 		*numReadPtr = numRead;
 
@@ -196,7 +196,7 @@ deFileResult deFile_read (deFile* file, void* buf, deInt64 bufSize, deInt64* num
 deFileResult deFile_write (deFile* file, const void* buf, deInt64 bufSize, deInt64* numWrittenPtr)
 {
 	deInt64 numWritten = write(file->fd, buf, bufSize);
-	
+
 	if (numWrittenPtr)
 		*numWrittenPtr = numWritten;
 
@@ -232,7 +232,7 @@ deFile* deFile_createFromHandle (deUintptr handle)
 		CloseHandle((HANDLE)handle);
 		return file;
 	}
-	
+
 	file->handle = (HANDLE)handle;
 	return file;
 }
@@ -301,7 +301,7 @@ deBool deFile_setFlags (deFile* file, deUint32 flags)
 	/* Non-blocking. */
 	if (flags & DE_FILE_NONBLOCKING)
 		return DE_FALSE; /* Not supported. */
-	
+
 	/* Close on exec. */
 	if (!SetHandleInformation(file->handle, HANDLE_FLAG_INHERIT, (flags & DE_FILE_CLOSE_ON_EXEC) ? HANDLE_FLAG_INHERIT : 0))
 		return DE_FALSE;

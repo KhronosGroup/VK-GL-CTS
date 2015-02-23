@@ -60,7 +60,7 @@ typedef enum deFilePosition_e
 	DE_FILEPOSITION_BEGIN		= 0,
 	DE_FILEPOSITION_END			= 1,
 	DE_FILEPOSITION_CURRENT		= 2,
-	
+
 	DE_FILEPOSITION_LAST
 } deFilePosition;
 

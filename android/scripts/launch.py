@@ -45,7 +45,7 @@ def launch (extraArgs = ""):
 	finally:
 		# Restore working dir
 		os.chdir(curDir)
-	
+
 if __name__ == "__main__":
 	if len(sys.argv) > 1:
 		launch(string.join(sys.argv[1:], " "))

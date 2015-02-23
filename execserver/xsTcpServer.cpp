@@ -51,7 +51,7 @@ void TcpServer::runServer (void)
 	while ((clientSocket = m_socket.accept(clientAddr)) != DE_NULL)
 	{
 		ConnectionHandler* handler = DE_NULL;
-		
+
 		try
 		{
 			handler = createHandler(clientSocket, clientAddr);

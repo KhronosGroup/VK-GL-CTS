@@ -39,7 +39,7 @@ set(CMAKE_C_COMPILER "${CROSS_COMPILER_PREFIX}gcc.exe")
 set(CMAKE_CXX_COMPILER "${CROSS_COMPILER_PREFIX}g++.exe")
 set(CMAKE_LINKER 		"${CROSS_COMPILER_PREFIX}ld.exe")
 
-# Some shortcut variables for later use. See CFlags.cmake 
+# Some shortcut variables for later use. See CFlags.cmake
 # TODO: Should these be in CFlags.cmake instead?
 set(COMPILER_INCLUDE_DIR "${ARM_CC_BASE}/lib/gcc/arm-none-symbianelf/4.4.1/include")
 set(COMPILER_LIB_DIR ${ARM_CC_BASE}/lib/gcc/arm-none-symbianelf/4.4.1 ${ARM_CC_BASE}/arm-none-symbianelf/lib)

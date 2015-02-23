@@ -59,11 +59,11 @@ static DWORD __stdcall startThread (LPVOID entryPtr)
 	ThreadEntry*	entry	= (ThreadEntry*)entryPtr;
 	deThreadFunc	func	= entry->func;
 	void*			arg		= entry->arg;
-	
+
 	deFree(entry);
-	
+
 	func(arg);
-	
+
 	return 0;
 }
 
@@ -71,20 +71,20 @@ deThread deThread_create (deThreadFunc func, void* arg, const deThreadAttributes
 {
 	ThreadEntry*	entry	= (ThreadEntry*)deMalloc(sizeof(ThreadEntry));
 	HANDLE			thread	= 0;
-	
+
 	if (!entry)
 		return 0;
-	
+
 	entry->func	= func;
 	entry->arg	= arg;
-	
+
 	thread = CreateThread(DE_NULL, 0, startThread, entry, 0, DE_NULL);
 	if (!thread)
 	{
 		deFree(entry);
 		return 0;
 	}
-	
+
 	if (attributes)
 		SetThreadPriority(thread, mapPriority(attributes->priority));
 
@@ -112,7 +112,7 @@ void deSleep (deUint32 milliseconds)
 
 void deYield (void)
 {
-	SwitchToThread();	
+	SwitchToThread();
 }
 
 #endif /* DE_OS */

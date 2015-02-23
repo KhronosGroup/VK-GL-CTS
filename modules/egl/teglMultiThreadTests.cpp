@@ -836,7 +836,7 @@ void MultiThreadedObjectTest::deinit (void)
 	m_contexts1.clear();
 
 	// Clear pixmaps
-	for (int pixmapNdx = 0; pixmapNdx < (int)m_nativePixmaps0.size(); pixmapNdx++)	
+	for (int pixmapNdx = 0; pixmapNdx < (int)m_nativePixmaps0.size(); pixmapNdx++)
 	{
 		if (m_nativePixmaps0[pixmapNdx].second != EGL_NO_SURFACE)
 			EGLU_CHECK_CALL(egl, destroySurface(m_display, m_nativePixmaps0[pixmapNdx].second));

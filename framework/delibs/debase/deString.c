@@ -121,19 +121,19 @@ int deVsprintf (char* string, size_t size, const char* format, va_list list)
 #if (DE_COMPILER == DE_COMPILER_MSC)
 #	if (DE_OS == DE_OS_WINCE)
 	res = _vsnprintf(string, size, format, list);
-#	else 
+#	else
 	res = vsnprintf_s(string, size, _TRUNCATE, format, list);
-#	endif 
-#else 
+#	endif
+#else
 	res = vsnprintf(string, size, format, list);
 #endif
-	
+
 	return res;
 }
 
 /*--------------------------------------------------------------------*//*!
- * \brief 	Safe string print 
- * \note	This has the new safe signature, i.e., string length is a 
+ * \brief 	Safe string print
+ * \note	This has the new safe signature, i.e., string length is a
  *			required parameter.
  *//*--------------------------------------------------------------------*/
 int deSprintf (char* string, size_t size, const char* format, ...)
@@ -146,14 +146,14 @@ int deSprintf (char* string, size_t size, const char* format, ...)
 	va_start(list, format);
 
 	res = deVsprintf(string, size, format, list);
-	
+
 	va_end(list);
-	
+
 	return res;
 }
 
 /*--------------------------------------------------------------------*//*!
- * \note	This has the new safe signature, i.e., string length is a 
+ * \note	This has the new safe signature, i.e., string length is a
  *			required parameter.
  *//*--------------------------------------------------------------------*/
 char* deStrcpy (char* dst, size_t size, const char* src)
@@ -167,10 +167,10 @@ char* deStrcpy (char* dst, size_t size, const char* src)
 }
 
 /*--------------------------------------------------------------------*//*!
- * \note	This has the new safe signature, i.e., string length is a 
+ * \note	This has the new safe signature, i.e., string length is a
  *			required parameter.
  *//*--------------------------------------------------------------------*/
-char* deStrcat (char* s1, size_t size, const char* s2)	
+char* deStrcat (char* s1, size_t size, const char* s2)
 {
 #if (DE_COMPILER == DE_COMPILER_MSC) && (DE_OS != DE_OS_WINCE)
 	(void)strcat_s(s1, size, s2);
