@@ -1915,7 +1915,7 @@ group uniform "Uniform"
 			vertex ""
 				#version 310 es
 				${VERTEX_DECLARATIONS}
-				layout(binding=0) layout(rgba8i) uniform iimage2D u_var;
+				layout(binding=0) layout(rgba8i) uniform readonly highp iimage2D u_var;
 				out mediump float vtx_out;
 				void main()
 				{
