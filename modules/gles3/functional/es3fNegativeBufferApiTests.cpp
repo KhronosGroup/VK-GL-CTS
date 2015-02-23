@@ -1199,26 +1199,29 @@ void NegativeBufferApiTests::init (void)
 
 			expectError						(GL_NO_ERROR);
 
-			m_log << TestLog::Section("", "GL_INVALID_OPERATION is generated if the value of GL_SAMPLE_BUFFERS for the draw buffer is greater than zero.");
-			glRenderbufferStorageMultisample(GL_RENDERBUFFER, 4, GL_RGBA8, 32, 32);
-			glFramebufferRenderbuffer		(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, rbo[1]);
-			glBlitFramebuffer				(0, 0, 16, 16, 0, 0, 16, 16, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-			expectError						(GL_INVALID_OPERATION);
-			m_log << TestLog::EndSection;
+			if (!m_context.getContextInfo().isExtensionSupported("GL_NV_framebuffer_multisample"))
+			{
+				m_log << TestLog::Section("", "GL_INVALID_OPERATION is generated if the value of GL_SAMPLE_BUFFERS for the draw buffer is greater than zero.");
+				glRenderbufferStorageMultisample(GL_RENDERBUFFER, 4, GL_RGBA8, 32, 32);
+				glFramebufferRenderbuffer		(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, rbo[1]);
+				glBlitFramebuffer				(0, 0, 16, 16, 0, 0, 16, 16, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+				expectError						(GL_INVALID_OPERATION);
+				m_log << TestLog::EndSection;
 
-			m_log << TestLog::Section("", "GL_INVALID_OPERATION is generated if GL_SAMPLE_BUFFERS for the read buffer is greater than zero and the formats of draw and read buffers are not identical.");
-			glRenderbufferStorage			(GL_RENDERBUFFER, GL_RGBA4, 32, 32);
-			glFramebufferRenderbuffer		(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, rbo[1]);
-			glBlitFramebuffer				(0, 0, 16, 16, 0, 0, 16, 16, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-			expectError						(GL_INVALID_OPERATION);
-			m_log << TestLog::EndSection;
+				m_log << TestLog::Section("", "GL_INVALID_OPERATION is generated if GL_SAMPLE_BUFFERS for the read buffer is greater than zero and the formats of draw and read buffers are not identical.");
+				glRenderbufferStorage			(GL_RENDERBUFFER, GL_RGBA4, 32, 32);
+				glFramebufferRenderbuffer		(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, rbo[1]);
+				glBlitFramebuffer				(0, 0, 16, 16, 0, 0, 16, 16, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+				expectError						(GL_INVALID_OPERATION);
+				m_log << TestLog::EndSection;
 
-			m_log << TestLog::Section("", "GL_INVALID_OPERATION is generated if GL_SAMPLE_BUFFERS for the read buffer is greater than zero and the source and destination rectangles are not defined with the same (X0, Y0) and (X1, Y1) bounds.");
-			glRenderbufferStorage			(GL_RENDERBUFFER, GL_RGBA8, 32, 32);
-			glFramebufferRenderbuffer		(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, rbo[1]);
-			glBlitFramebuffer				(0, 0, 16, 16, 2, 2, 18, 18, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-			expectError						(GL_INVALID_OPERATION);
-			m_log << TestLog::EndSection;
+				m_log << TestLog::Section("", "GL_INVALID_OPERATION is generated if GL_SAMPLE_BUFFERS for the read buffer is greater than zero and the source and destination rectangles are not defined with the same (X0, Y0) and (X1, Y1) bounds.");
+				glRenderbufferStorage			(GL_RENDERBUFFER, GL_RGBA8, 32, 32);
+				glFramebufferRenderbuffer		(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, rbo[1]);
+				glBlitFramebuffer				(0, 0, 16, 16, 2, 2, 18, 18, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+				expectError						(GL_INVALID_OPERATION);
+				m_log << TestLog::EndSection;
+			}
 
 			glBindFramebuffer		(GL_FRAMEBUFFER, 0);
 			glDeleteRenderbuffers	(2, rbo);
