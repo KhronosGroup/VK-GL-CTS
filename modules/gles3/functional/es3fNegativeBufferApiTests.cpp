@@ -1059,8 +1059,12 @@ void NegativeBufferApiTests::init (void)
 				expectError				(GL_INVALID_ENUM);
 			}
 
-			glRenderbufferStorage	(GL_RENDERBUFFER, GL_RGBA8_SNORM, 1, 1);
-			expectError				(GL_INVALID_ENUM);
+			if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_render_snorm")) // GL_EXT_render_snorm disables error
+			{
+				glRenderbufferStorage	(GL_RENDERBUFFER, GL_RGBA8_SNORM, 1, 1);
+				expectError				(GL_INVALID_ENUM);
+			}
+
 			m_log << TestLog::EndSection;
 
 			m_log << TestLog::Section("", "GL_INVALID_VALUE is generated if width or height is less than zero.");
@@ -1392,8 +1396,12 @@ void NegativeBufferApiTests::init (void)
 				expectError							(GL_INVALID_ENUM);
 			}
 
-			glRenderbufferStorageMultisample	(GL_RENDERBUFFER, 2, GL_RGBA8_SNORM, 1, 1);
-			expectError							(GL_INVALID_ENUM);
+			if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_render_snorm")) // GL_EXT_render_snorm disables error
+			{
+				glRenderbufferStorageMultisample	(GL_RENDERBUFFER, 2, GL_RGBA8_SNORM, 1, 1);
+				expectError							(GL_INVALID_ENUM);
+			}
+
 			m_log << TestLog::EndSection;
 
 			m_log << TestLog::Section("", "GL_INVALID_VALUE is generated if width or height is less than zero.");

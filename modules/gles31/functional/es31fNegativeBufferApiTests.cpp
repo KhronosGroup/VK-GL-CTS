@@ -1084,8 +1084,12 @@ void renderbuffer_storage (NegativeTestContext& ctx)
 		ctx.expectError				(GL_INVALID_ENUM);
 	}
 
-	ctx.glRenderbufferStorage	(GL_RENDERBUFFER, GL_RGBA8_SNORM, 1, 1);
-	ctx.expectError				(GL_INVALID_ENUM);
+	if (!ctx.getContextInfo().isExtensionSupported("GL_EXT_render_snorm")) // GL_EXT_render_snorm disables error
+	{
+		ctx.glRenderbufferStorage	(GL_RENDERBUFFER, GL_RGBA8_SNORM, 1, 1);
+		ctx.expectError				(GL_INVALID_ENUM);
+	}
+
 	ctx.endSection();
 
 	ctx.beginSection("GL_INVALID_VALUE is generated if width or height is less than zero.");
@@ -1426,8 +1430,12 @@ void renderbuffer_storage_multisample (NegativeTestContext& ctx)
 		ctx.expectError							(GL_INVALID_ENUM);
 	}
 
-	ctx.glRenderbufferStorageMultisample	(GL_RENDERBUFFER, 2, GL_RGBA8_SNORM, 1, 1);
-	ctx.expectError							(GL_INVALID_ENUM);
+	if (!ctx.getContextInfo().isExtensionSupported("GL_EXT_render_snorm")) // GL_EXT_render_snorm disables error
+	{
+		ctx.glRenderbufferStorageMultisample	(GL_RENDERBUFFER, 2, GL_RGBA8_SNORM, 1, 1);
+		ctx.expectError							(GL_INVALID_ENUM);
+	}
+
 	ctx.endSection();
 
 	ctx.beginSection("GL_INVALID_OPERATION is generated if samples is greater than the maximum number of samples supported for internalformat. (Unsigned integer format)");
