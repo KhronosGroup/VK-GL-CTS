@@ -84,6 +84,7 @@ DataType						getSampler3DType					(tcu::TextureFormat format);
 DataType						getSamplerCubeArrayType				(tcu::TextureFormat format);
 
 bool							isSizedFormatColorRenderable		(const RenderContext& renderCtx, const ContextInfo& contextInfo, deUint32 sizedFormat);
+bool							isCompressedFormat					(deUint32 internalFormat);
 
 } // glu
 
