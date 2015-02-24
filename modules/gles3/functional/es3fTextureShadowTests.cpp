@@ -212,7 +212,7 @@ Texture2DShadowCase::Texture2DShadowCase (Context& context, const char* name, co
 	, m_width			(width)
 	, m_height			(height)
 	, m_compareFunc		(compareFunc)
-	, m_renderer		(context.getRenderContext(), context.getTestContext(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
+	, m_renderer		(context.getRenderContext(), context.getTestContext().getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
 	, m_caseNdx			(0)
 {
 }
@@ -465,7 +465,7 @@ TextureCubeShadowCase::TextureCubeShadowCase (Context& context, const char* name
 	, m_compareFunc		(compareFunc)
 	, m_gradientTex		(DE_NULL)
 	, m_gridTex			(DE_NULL)
-	, m_renderer		(context.getRenderContext(), m_context.getTestContext(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
+	, m_renderer		(context.getRenderContext(), context.getTestContext().getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
 	, m_caseNdx			(0)
 {
 }
@@ -760,7 +760,7 @@ Texture2DArrayShadowCase::Texture2DArrayShadowCase (Context& context, const char
 	, m_compareFunc		(compareFunc)
 	, m_gradientTex		(DE_NULL)
 	, m_gridTex			(DE_NULL)
-	, m_renderer		(context.getRenderContext(), context.getTestContext(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
+	, m_renderer		(context.getRenderContext(), context.getTestContext().getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
 	, m_caseNdx			(0)
 {
 }

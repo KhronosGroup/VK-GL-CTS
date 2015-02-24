@@ -1603,13 +1603,13 @@ private:
 	struct State
 	{
 		State (int					seed,
-			   tcu::TestContext&	testContext,
+			   tcu::TestLog&		log,
 			   glu::RenderContext&	renderContext)
 			: rng				(seed)
-			, results			(testContext.getLog())
+			, results			(log)
 			, srcImage			(NULL)
 			, dstImage			(NULL)
-			, textureRenderer	(renderContext, testContext, glu::GLSL_VERSION_310_ES, glu::PRECISION_HIGHP)
+			, textureRenderer	(renderContext, log, glu::GLSL_VERSION_310_ES, glu::PRECISION_HIGHP)
 		{
 		}
 
@@ -1691,7 +1691,7 @@ void CopyImageTest::init (void)
 				<< m_srcImageInfo
 				<< m_dstImageInfo;
 
-		m_state = new State(builder.get(), m_testCtx, m_context.getRenderContext());
+		m_state = new State(builder.get(), m_testCtx.getLog(), m_context.getRenderContext());
 	}
 }
 

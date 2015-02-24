@@ -90,7 +90,7 @@ Texture2DFilteringCase::Texture2DFilteringCase (tcu::TestContext& testCtx, glu::
 	, m_internalFormat	(internalFormat)
 	, m_width			(width)
 	, m_height			(height)
-	, m_renderer		(renderCtx, testCtx, glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
+	, m_renderer		(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
 {
 }
 
@@ -106,7 +106,7 @@ Texture2DFilteringCase::Texture2DFilteringCase (tcu::TestContext& testCtx, glu::
 	, m_width			(0)
 	, m_height			(0)
 	, m_filenames		(filenames)
-	, m_renderer		(renderCtx, testCtx, glu::GLSL_VERSION_100_ES, glu::PRECISION_HIGHP)
+	, m_renderer		(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_100_ES, glu::PRECISION_HIGHP)
 {
 }
 
@@ -346,7 +346,7 @@ TextureCubeFilteringCase::TextureCubeFilteringCase (tcu::TestContext& testCtx, g
 	, m_internalFormat			(internalFormat)
 	, m_width					(width)
 	, m_height					(height)
-	, m_renderer				(renderCtx, testCtx, glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
+	, m_renderer				(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
 {
 }
 
@@ -363,7 +363,7 @@ TextureCubeFilteringCase::TextureCubeFilteringCase (tcu::TestContext& testCtx, g
 	, m_width					(0)
 	, m_height					(0)
 	, m_filenames				(filenames)
-	, m_renderer				(renderCtx, testCtx, glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
+	, m_renderer				(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
 {
 }
 

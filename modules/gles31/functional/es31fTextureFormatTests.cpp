@@ -108,7 +108,7 @@ TextureCubeArrayFormatCase::TextureCubeArrayFormatCase (tcu::TestContext& testCt
 	, m_size			(size)
 	, m_depth			(depth)
 	, m_texture			(DE_NULL)
-	, m_renderer		(renderCtx, testCtx, glu::GLSL_VERSION_310_ES, glu::PRECISION_HIGHP)
+	, m_renderer		(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_310_ES, glu::PRECISION_HIGHP)
 	, m_curLayerFace	(0)
 {
 }
@@ -122,7 +122,7 @@ TextureCubeArrayFormatCase::TextureCubeArrayFormatCase (tcu::TestContext& testCt
 	, m_size			(size)
 	, m_depth			(depth)
 	, m_texture			(DE_NULL)
-	, m_renderer		(renderCtx, testCtx, glu::GLSL_VERSION_310_ES, glu::PRECISION_HIGHP)
+	, m_renderer		(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_310_ES, glu::PRECISION_HIGHP)
 	, m_curLayerFace	(0)
 {
 }
@@ -269,7 +269,7 @@ TextureBufferFormatCase::TextureBufferFormatCase (tcu::TestContext& testCtx, glu
 	, m_format		(internalFormat)
 	, m_width		(width)
 	, m_texture		(DE_NULL)
-	, m_renderer	(renderCtx, testCtx, glu::GLSL_VERSION_310_ES, glu::PRECISION_HIGHP)
+	, m_renderer	(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_310_ES, glu::PRECISION_HIGHP)
 {
 }
 

@@ -187,7 +187,7 @@ Texture2DMipmapCase::Texture2DMipmapCase (tcu::TestContext&			testCtx,
 	, m_width			(width)
 	, m_height			(height)
 	, m_texture			(DE_NULL)
-	, m_renderer		(renderCtx, testCtx, glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
+	, m_renderer		(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
 {
 }
 
@@ -532,7 +532,7 @@ TextureCubeMipmapCase::TextureCubeMipmapCase (tcu::TestContext&			testCtx,
 	, m_dataType		(dataType)
 	, m_size			(size)
 	, m_texture			(DE_NULL)
-	, m_renderer		(renderCtx, testCtx, glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
+	, m_renderer		(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
 {
 }
 
@@ -822,7 +822,7 @@ Texture2DGenMipmapCase::Texture2DGenMipmapCase (tcu::TestContext& testCtx, glu::
 	, m_width			(width)
 	, m_height			(height)
 	, m_texture			(DE_NULL)
-	, m_renderer		(renderCtx, testCtx, glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
+	, m_renderer		(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
 {
 }
 
@@ -955,7 +955,7 @@ TextureCubeGenMipmapCase::TextureCubeGenMipmapCase (tcu::TestContext& testCtx, g
 	, m_hint			(hint)
 	, m_size			(size)
 	, m_texture			(DE_NULL)
-	, m_renderer		(renderCtx, testCtx, glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
+	, m_renderer		(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
 {
 }
 
@@ -1129,7 +1129,7 @@ Texture3DMipmapCase::Texture3DMipmapCase (Context& context, const char* name, co
 	, m_height			(height)
 	, m_depth			(depth)
 	, m_texture			(DE_NULL)
-	, m_renderer		(context.getRenderContext(), m_context.getTestContext(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
+	, m_renderer		(context.getRenderContext(), context.getTestContext().getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
 {
 }
 
@@ -1452,7 +1452,7 @@ Texture2DLodControlCase::Texture2DLodControlCase (Context& context, const char* 
 	, m_texHeight	(64)
 	, m_minFilter	(minFilter)
 	, m_texture		(DE_NULL)
-	, m_renderer	(context.getRenderContext(), m_context.getTestContext(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
+	, m_renderer	(context.getRenderContext(), context.getTestContext().getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
 {
 }
 
@@ -1752,7 +1752,7 @@ TextureCubeLodControlCase::TextureCubeLodControlCase (Context& context, const ch
 	, m_texSize			(64)
 	, m_minFilter		(minFilter)
 	, m_texture			(DE_NULL)
-	, m_renderer		(context.getRenderContext(), context.getTestContext(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
+	, m_renderer		(context.getRenderContext(), context.getTestContext().getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
 {
 }
 
@@ -2071,7 +2071,7 @@ Texture3DLodControlCase::Texture3DLodControlCase (Context& context, const char* 
 	, m_texDepth		(32)
 	, m_minFilter		(minFilter)
 	, m_texture			(DE_NULL)
-	, m_renderer		(context.getRenderContext(), m_context.getTestContext(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
+	, m_renderer		(context.getRenderContext(), context.getTestContext().getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
 {
 }
 

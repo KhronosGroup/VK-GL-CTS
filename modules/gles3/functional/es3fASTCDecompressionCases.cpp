@@ -1649,7 +1649,7 @@ ASTCRenderer2D::ASTCRenderer2D (Context&			context,
 								CompressedTexFormat	format,
 								deUint32			randomSeed)
 	: m_context			(context)
-	, m_renderer		(context.getRenderContext(), context.getTestContext(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
+	, m_renderer		(context.getRenderContext(), context.getTestContext().getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
 	, m_format			(format)
 	, m_blockSize		(tcu::getBlockPixelSize(format).xy())
 	, m_astcSupport		(ASTCSUPPORTLEVEL_NONE)

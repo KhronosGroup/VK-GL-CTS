@@ -1027,9 +1027,9 @@ RandomViewport::RandomViewport (const tcu::RenderTarget& renderTarget, int prefe
 	y = rnd.getInt(0, renderTarget.getHeight()	- height);
 }
 
-ProgramLibrary::ProgramLibrary (const glu::RenderContext& context, tcu::TestContext& testCtx, glu::GLSLVersion glslVersion, glu::Precision texCoordPrecision)
+ProgramLibrary::ProgramLibrary (const glu::RenderContext& context, tcu::TestLog& log, glu::GLSLVersion glslVersion, glu::Precision texCoordPrecision)
 	: m_context				(context)
-	, m_testCtx				(testCtx)
+	, m_log					(log)
 	, m_glslVersion			(glslVersion)
 	, m_texCoordPrecision	(texCoordPrecision)
 {
@@ -1052,8 +1052,6 @@ void ProgramLibrary::clear (void)
 
 glu::ShaderProgram* ProgramLibrary::getProgram (Program program)
 {
-	TestLog& log = m_testCtx.getLog();
-
 	if (m_programs.find(program) != m_programs.end())
 		return m_programs[program]; // Return from cache.
 
@@ -1223,7 +1221,7 @@ glu::ShaderProgram* ProgramLibrary::getProgram (Program program)
 	glu::ShaderProgram* progObj = new glu::ShaderProgram(m_context, glu::makeVtxFragSources(vertSrc, fragSrc));
 	if (!progObj->isOk())
 	{
-		log << *progObj;
+		m_log << *progObj;
 		delete progObj;
 		TCU_FAIL("Failed to compile shader program");
 	}
@@ -1241,10 +1239,10 @@ glu::ShaderProgram* ProgramLibrary::getProgram (Program program)
 	return progObj;
 }
 
-TextureRenderer::TextureRenderer (const glu::RenderContext& context, tcu::TestContext& testCtx, glu::GLSLVersion glslVersion, glu::Precision texCoordPrecision)
+TextureRenderer::TextureRenderer (const glu::RenderContext& context, tcu::TestLog& log, glu::GLSLVersion glslVersion, glu::Precision texCoordPrecision)
 	: m_renderCtx		(context)
-	, m_testCtx			(testCtx)
-	, m_programLibrary	(context, testCtx, glslVersion, texCoordPrecision)
+	, m_log				(log)
+	, m_programLibrary	(context, log, glslVersion, texCoordPrecision)
 {
 }
 
@@ -1268,7 +1266,6 @@ void TextureRenderer::renderQuad (int texUnit, const float* texCoord, const Rend
 	const glw::Functions&	gl			= m_renderCtx.getFunctions();
 	tcu::Vec4				wCoord		= params.flags & RenderParams::PROJECTED ? params.w : tcu::Vec4(1.0f);
 	bool					useBias		= !!(params.flags & RenderParams::USE_BIAS);
-	TestLog&				log			= m_testCtx.getLog();
 	bool					logUniforms	= !!(params.flags & RenderParams::LOG_UNIFORMS);
 
 	// Render quad with texture.
@@ -1398,7 +1395,7 @@ void TextureRenderer::renderQuad (int texUnit, const float* texCoord, const Rend
 
 	// \todo [2012-09-26 pyry] Move to ProgramLibrary and log unique programs only(?)
 	if (params.flags & RenderParams::LOG_PROGRAMS)
-		log << *program;
+		m_log << *program;
 
 	GLU_EXPECT_NO_ERROR(gl.getError(), "Set vertex attributes");
 
@@ -1408,20 +1405,20 @@ void TextureRenderer::renderQuad (int texUnit, const float* texCoord, const Rend
 
 	gl.uniform1i(gl.getUniformLocation(prog, "u_sampler"), texUnit);
 	if (logUniforms)
-		log << TestLog::Message << "u_sampler = " << texUnit << TestLog::EndMessage;
+		m_log << TestLog::Message << "u_sampler = " << texUnit << TestLog::EndMessage;
 
 	if (useBias)
 	{
 		gl.uniform1f(gl.getUniformLocation(prog, "u_bias"), params.bias);
 		if (logUniforms)
-			log << TestLog::Message << "u_bias = " << params.bias << TestLog::EndMessage;
+			m_log << TestLog::Message << "u_bias = " << params.bias << TestLog::EndMessage;
 	}
 
 	if (params.samplerType == SAMPLERTYPE_SHADOW)
 	{
 		gl.uniform1f(gl.getUniformLocation(prog, "u_ref"), params.ref);
 		if (logUniforms)
-			log << TestLog::Message << "u_ref = " << params.ref << TestLog::EndMessage;
+			m_log << TestLog::Message << "u_ref = " << params.ref << TestLog::EndMessage;
 	}
 
 	gl.uniform4fv(gl.getUniformLocation(prog, "u_colorScale"),	1, params.colorScale.getPtr());
@@ -1429,8 +1426,8 @@ void TextureRenderer::renderQuad (int texUnit, const float* texCoord, const Rend
 
 	if (logUniforms)
 	{
-		log << TestLog::Message << "u_colorScale = " << params.colorScale << TestLog::EndMessage;
-		log << TestLog::Message << "u_colorBias = " << params.colorBias << TestLog::EndMessage;
+		m_log << TestLog::Message << "u_colorScale = " << params.colorScale << TestLog::EndMessage;
+		m_log << TestLog::Message << "u_colorBias = " << params.colorBias << TestLog::EndMessage;
 	}
 
 	GLU_EXPECT_NO_ERROR(gl.getError(), "Set program state");
