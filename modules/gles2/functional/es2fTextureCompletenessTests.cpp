@@ -537,9 +537,6 @@ Incomplete2DEmptyObjectCase::Incomplete2DEmptyObjectCase (tcu::TestContext& test
 
 void Incomplete2DEmptyObjectCase::createTexture (void)
 {
-	tcu::TextureFormat	fmt			= glu::mapGLTransferFormat(GL_RGBA, GL_UNSIGNED_BYTE);
-	tcu::TextureLevel	levelData	(fmt);
-
 	GLuint texture;
 	glGenTextures	(1, &texture);
 	glPixelStorei	(GL_UNPACK_ALIGNMENT, 1);
@@ -901,9 +898,6 @@ IncompleteCubeEmptyObjectCase::IncompleteCubeEmptyObjectCase (tcu::TestContext& 
 
 void IncompleteCubeEmptyObjectCase::createTexture (void)
 {
-	tcu::TextureFormat		fmt				= glu::mapGLTransferFormat(GL_RGBA, GL_UNSIGNED_BYTE);
-	tcu::TextureLevel		levelData		(fmt);
-
 	GLuint texture;
 	glGenTextures	(1, &texture);
 	glPixelStorei	(GL_UNPACK_ALIGNMENT, 1);

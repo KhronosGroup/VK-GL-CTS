@@ -1068,7 +1068,6 @@ static void drawTessCoordVisualization (tcu::Surface& dst, TessPrimitiveType pri
 {
 	const int		imageWidth		= 256;
 	const int		imageHeight		= 256;
-	const Vec2		imageSizeFloat	((float)imageWidth, (float)imageHeight);
 	dst.setSize(imageWidth, imageHeight);
 
 	tcu::clear(dst.getAccess(), tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f));
@@ -1716,8 +1715,6 @@ CommonEdgeCase::IterateResult CommonEdgeCase::iterate (void)
 	gridIndices.reserve(numIndices);
 
 	{
-		Random constantSeedRnd(42);
-
 		for (int i = 0; i < gridHeight+1; i++)
 		for (int j = 0; j < gridWidth+1; j++)
 		{

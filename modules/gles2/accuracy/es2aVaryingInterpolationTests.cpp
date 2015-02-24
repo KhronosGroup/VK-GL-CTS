@@ -254,7 +254,6 @@ InterpolationCase::IterateResult InterpolationCase::iterate (void)
 	// Frames.
 	tcu::Surface	rendered		(viewportWidth, viewportHeight);
 	tcu::Surface	reference		(viewportWidth, viewportHeight);
-	tcu::Surface	diffMask		(viewportWidth, viewportHeight);
 
 	// Render with GL.
 	glViewport(viewportX, viewportY, viewportWidth, viewportHeight);

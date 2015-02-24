@@ -816,7 +816,6 @@ Texture2DGenMipmapCase::IterateResult Texture2DGenMipmapCase::iterate (void)
 	const deUint32			wrapT				= GL_CLAMP_TO_EDGE;
 
 	const int				numLevels			= deLog2Floor32(de::max(m_width, m_height))+1;
-	const tcu::Sampler		sampler				= glu::mapGLSampler(wrapS, wrapT, minFilter, magFilter);
 
 	tcu::Texture2D			resultTexture		(tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8), m_texture->getRefTexture().getWidth(), m_texture->getRefTexture().getHeight());
 
@@ -955,7 +954,6 @@ TextureCubeGenMipmapCase::IterateResult TextureCubeGenMipmapCase::iterate (void)
 	tcu::TextureCube		resultTexture		(tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8), m_size);
 
 	const int				numLevels			= deLog2Floor32(m_size)+1;
-	tcu::Sampler			sampler				= glu::mapGLSampler(wrapS, wrapT, minFilter, magFilter);
 	vector<float>			texCoord;
 
 	// Initialize texture level 0 with colored grid.

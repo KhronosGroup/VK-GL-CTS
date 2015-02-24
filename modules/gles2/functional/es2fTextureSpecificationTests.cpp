@@ -155,7 +155,6 @@ public:
 			const float			y		= coord.y();
 			const float			f0		= (x + y) * 0.5f;
 			const float			f1		= 0.5f + (x - y) * 0.5f;
-			const tcu::Vec4		fv		= Vec4(f0, f1, 1.0f-f0, 1.0f-f1);
 
 			rr::writeFragmentOutput(context, packetNdx, fragNdx, 0, tcu::Vec4(f0, f1, 1.0f-f0, 1.0f-f1));
 		}

@@ -43,9 +43,6 @@ public:
 	bool							deinitTestCase			(tcu::TestCase* testCase);
 
 	tcu::TestNode::IterateResult	iterateTestCase			(tcu::TestCase* testCase);
-
-private:
-	EglTestContext&					m_eglTestCtx;
 };
 
 class PackageContext

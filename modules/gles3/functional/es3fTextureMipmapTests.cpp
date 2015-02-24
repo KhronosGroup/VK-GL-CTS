@@ -855,7 +855,6 @@ Texture2DGenMipmapCase::IterateResult Texture2DGenMipmapCase::iterate (void)
 	const deUint32			wrapT				= GL_CLAMP_TO_EDGE;
 
 	const int				numLevels			= deLog2Floor32(de::max(m_width, m_height))+1;
-	const tcu::Sampler		sampler				= glu::mapGLSampler(wrapS, wrapT, minFilter, magFilter);
 
 	tcu::Texture2D			resultTexture		(tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8), m_texture->getRefTexture().getWidth(), m_texture->getRefTexture().getHeight());
 

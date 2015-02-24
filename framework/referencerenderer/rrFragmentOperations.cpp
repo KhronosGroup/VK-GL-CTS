@@ -672,7 +672,6 @@ void FragmentProcessor::executeRGBA8ColorWrite (int fragNdxOffset, int numSample
 		{
 			const int			fragSampleNdx	= regSampleNdx % numSamplesPerFragment;
 			const Fragment&		frag			= inputFragments[fragNdxOffset + regSampleNdx/numSamplesPerFragment];
-			Vec4				combinedColor;
 			deUint8*			dstPtr			= basePtr + fragSampleNdx*fragStride + frag.pixelCoord.x()*xStride + frag.pixelCoord.y()*yStride;
 
 			dstPtr[0] = tcu::floatToU8(m_sampleRegister[regSampleNdx].blendedRGB.x());

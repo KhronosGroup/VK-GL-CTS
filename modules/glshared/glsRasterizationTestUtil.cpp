@@ -1700,7 +1700,6 @@ CoverageType calculateTriangleCoverage (const tcu::Vec4& p0, const tcu::Vec4& p1
 			const int		nextEdgeNdx	= (edgeNdx+1) % 3;
 			const I64Vec2	startPos	((startRounding&0x01)	? (triangleSubPixelSpaceFloor[edgeNdx].x())		: (triangleSubPixelSpaceCeil[edgeNdx].x()),		(startRounding&0x02)	? (triangleSubPixelSpaceFloor[edgeNdx].y())		: (triangleSubPixelSpaceCeil[edgeNdx].y()));
 			const I64Vec2	endPos		((endRounding&0x01)		? (triangleSubPixelSpaceFloor[nextEdgeNdx].x())	: (triangleSubPixelSpaceCeil[nextEdgeNdx].x()),	(endRounding&0x02)		? (triangleSubPixelSpaceFloor[nextEdgeNdx].y())	: (triangleSubPixelSpaceCeil[nextEdgeNdx].y()));
-			const I64Vec2	edge		= endPos - startPos;
 
 			for (int pixelEdgeNdx = 0; pixelEdgeNdx < 4; ++pixelEdgeNdx)
 			{

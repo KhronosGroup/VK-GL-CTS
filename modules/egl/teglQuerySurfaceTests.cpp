@@ -40,7 +40,6 @@
 #include "tcuCommandLine.hpp"
 
 #include "deUniquePtr.hpp"
-#include "deRandom.hpp"
 
 #include <string>
 #include <vector>
@@ -476,7 +475,6 @@ void SurfaceAttribCase::testAttributes (EGLDisplay display, EGLSurface surface, 
 	const Library&		egl		= m_eglTestCtx.getLibrary();
 	tcu::TestLog&		log		= m_testCtx.getLog();
 	const eglu::Version	version	= eglu::getVersion(egl, display);
-	de::Random			rnd		(deStringHash(m_name.c_str()) ^ 0xf215918f);
 
 	if (version.getMajor() == 1 && version.getMinor() == 0)
 	{

@@ -3482,7 +3482,6 @@ bool LayeredRenderCase::verifyEmptyImage (const tcu::Surface& layer, bool loggin
 
 bool LayeredRenderCase::verifyProvokingVertexLayers (const tcu::Surface& layer0, const tcu::Surface& layer1)
 {
-	const tcu::Vec4	white			= tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f);
 	const bool		layer0Empty		= verifyEmptyImage(layer0, false);
 	const bool		layer1Empty		= verifyEmptyImage(layer1, false);
 	bool			error			= false;
