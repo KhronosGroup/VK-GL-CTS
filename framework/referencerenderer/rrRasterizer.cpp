@@ -535,6 +535,13 @@ void TriangleRasterizer::rasterizeSingleSample (FragmentPacket* const fragmentPa
 	const deUint64	halfPixel	= 1ll << (RASTERIZER_SUBPIXEL_BITS-1);
 	int				packetNdx	= 0;
 
+	// For depth interpolation; given barycentrics A, B, C = (1 - A - B)
+	// we can reformulate the usual z = z0*A + z1*B + z2*C into more
+	// stable equation z = A*(z0 - z2) + B*(z1 - z2) + z2.
+	const float		za			= m_v0.z()-m_v2.z();
+	const float		zb			= m_v1.z()-m_v2.z();
+	const float		zc			= m_v2.z();
+
 	while (m_curPos.y() <= m_bboxMax.y() && packetNdx < maxFragmentPackets)
 	{
 		const int		x0		= m_curPos.x();
@@ -597,15 +604,14 @@ void TriangleRasterizer::rasterizeSingleSample (FragmentPacket* const fragmentPa
 		// Compute depth values.
 		if (depthValues)
 		{
-			const tcu::Vec4		ooSum	= 1.0f / (e01f + e12f + e20f);
-			const tcu::Vec4		z0		= e12f * ooSum;
-			const tcu::Vec4		z1		= e20f * ooSum;
-			const tcu::Vec4		z2		= e01f * ooSum;
+			const tcu::Vec4		edgeSum	= e01f + e12f + e20f;
+			const tcu::Vec4		z0		= e12f / edgeSum;
+			const tcu::Vec4		z1		= e20f / edgeSum;
 
-			depthValues[packetNdx*4+0] = z0[0]*m_v0.z() + z1[0]*m_v1.z() + z2[0]*m_v2.z();
-			depthValues[packetNdx*4+1] = z0[1]*m_v0.z() + z1[1]*m_v1.z() + z2[1]*m_v2.z();
-			depthValues[packetNdx*4+2] = z0[2]*m_v0.z() + z1[2]*m_v1.z() + z2[2]*m_v2.z();
-			depthValues[packetNdx*4+3] = z0[3]*m_v0.z() + z1[3]*m_v1.z() + z2[3]*m_v2.z();
+			depthValues[packetNdx*4+0] = z0[0]*za + z1[0]*zb + zc;
+			depthValues[packetNdx*4+1] = z0[1]*za + z1[1]*zb + zc;
+			depthValues[packetNdx*4+2] = z0[2]*za + z1[2]*zb + zc;
+			depthValues[packetNdx*4+3] = z0[3]*za + z1[3]*zb + zc;
 		}
 
 		// Compute barycentrics and write out fragment packet
@@ -615,12 +621,12 @@ void TriangleRasterizer::rasterizeSingleSample (FragmentPacket* const fragmentPa
 			const tcu::Vec4		b0		= e12f * m_v0.w();
 			const tcu::Vec4		b1		= e20f * m_v1.w();
 			const tcu::Vec4		b2		= e01f * m_v2.w();
-			const tcu::Vec4		ooSum	= 1.0f / (b0 + b1 + b2);
+			const tcu::Vec4		bSum	= b0 + b1 + b2;
 
 			packet.position			= tcu::IVec2(x0, y0);
 			packet.coverage			= coverage;
-			packet.barycentric[0]	= b0 * ooSum;
-			packet.barycentric[1]	= b1 * ooSum;
+			packet.barycentric[0]	= b0 / bSum;
+			packet.barycentric[1]	= b1 / bSum;
 			packet.barycentric[2]	= 1.0f - packet.barycentric[0] - packet.barycentric[1];
 
 			packetNdx += 1;
@@ -700,6 +706,11 @@ void TriangleRasterizer::rasterizeMultiSample (FragmentPacket* const fragmentPac
 	const deInt64*	samplePos	= DE_NULL;
 	const deUint64	halfPixel	= 1ll << (RASTERIZER_SUBPIXEL_BITS-1);
 	int				packetNdx	= 0;
+
+	// For depth interpolation, see rasterizeSingleSample
+	const float		za			= m_v0.z()-m_v2.z();
+	const float		zb			= m_v1.z()-m_v2.z();
+	const float		zc			= m_v2.z();
 
 	switch (NumSamples)
 	{
@@ -784,15 +795,14 @@ void TriangleRasterizer::rasterizeMultiSample (FragmentPacket* const fragmentPac
 				const tcu::Vec4&	e12f	= e12[sampleNdx].asFloat();
 				const tcu::Vec4&	e20f	= e20[sampleNdx].asFloat();
 
-				const tcu::Vec4		ooSum	= 1.0f / (e01f + e12f + e20f);
-				const tcu::Vec4		z0		= e12f * ooSum;
-				const tcu::Vec4		z1		= e20f * ooSum;
-				const tcu::Vec4		z2		= e01f * ooSum;
+				const tcu::Vec4		edgeSum	= e01f + e12f + e20f;
+				const tcu::Vec4		z0		= e12f / edgeSum;
+				const tcu::Vec4		z1		= e20f / edgeSum;
 
-				depthValues[(packetNdx*4+0)*NumSamples + sampleNdx] = z0[0]*m_v0.z() + z1[0]*m_v1.z() + z2[0]*m_v2.z();
-				depthValues[(packetNdx*4+1)*NumSamples + sampleNdx] = z0[1]*m_v0.z() + z1[1]*m_v1.z() + z2[1]*m_v2.z();
-				depthValues[(packetNdx*4+2)*NumSamples + sampleNdx] = z0[2]*m_v0.z() + z1[2]*m_v1.z() + z2[2]*m_v2.z();
-				depthValues[(packetNdx*4+3)*NumSamples + sampleNdx] = z0[3]*m_v0.z() + z1[3]*m_v1.z() + z2[3]*m_v2.z();
+				depthValues[(packetNdx*4+0)*NumSamples + sampleNdx] = z0[0]*za + z1[0]*zb + zc;
+				depthValues[(packetNdx*4+1)*NumSamples + sampleNdx] = z0[1]*za + z1[1]*zb + zc;
+				depthValues[(packetNdx*4+2)*NumSamples + sampleNdx] = z0[2]*za + z1[2]*zb + zc;
+				depthValues[(packetNdx*4+3)*NumSamples + sampleNdx] = z0[3]*za + z1[3]*zb + zc;
 			}
 		}
 
@@ -816,12 +826,12 @@ void TriangleRasterizer::rasterizeMultiSample (FragmentPacket* const fragmentPac
 			const tcu::Vec4		b0		= e12f * m_v0.w();
 			const tcu::Vec4		b1		= e20f * m_v1.w();
 			const tcu::Vec4		b2		= e01f * m_v2.w();
-			const tcu::Vec4		ooSum	= 1.0f / (b0 + b1 + b2);
+			const tcu::Vec4		bSum	= b0 + b1 + b2;
 
 			packet.position			= tcu::IVec2(x0, y0);
 			packet.coverage			= coverage;
-			packet.barycentric[0]	= b0 * ooSum;
-			packet.barycentric[1]	= b1 * ooSum;
+			packet.barycentric[0]	= b0 / bSum;
+			packet.barycentric[1]	= b1 / bSum;
 			packet.barycentric[2]	= 1.0f - packet.barycentric[0] - packet.barycentric[1];
 
 			packetNdx += 1;
