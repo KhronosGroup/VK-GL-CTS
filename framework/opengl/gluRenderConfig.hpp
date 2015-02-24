@@ -96,7 +96,7 @@ struct RenderConfig
 		, numSamples		(DONT_CARE)
 	{
 	}
-};
+} DE_WARN_UNUSED_TYPE;
 
 // Utilities
 

@@ -106,7 +106,7 @@ public:
 
 	template<typename ScalarType>
 	inline const ScalarType* getAccess () const;
-};
+} DE_WARN_UNUSED_TYPE;
 
 template<>
 inline float* GenericVec4::getAccess<float> ()

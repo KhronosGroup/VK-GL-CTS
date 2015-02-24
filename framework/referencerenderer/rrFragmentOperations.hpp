@@ -76,7 +76,7 @@ struct Fragment
 		, sampleDepths	(DE_NULL)
 	{
 	}
-};
+} DE_WARN_UNUSED_TYPE;
 
 // These functions are for clearing only a specific pixel rectangle in a multisample buffer.
 // When clearing the entire buffer, tcu::clear, tcu::clearDepth and tcu::clearStencil can be used.
@@ -149,7 +149,7 @@ private:
 	void		executeUnsignedValueWrite		(int fragNdxOffset, int numSamplesPerFragment, const Fragment* inputFragments, const tcu::BVec4& colorMask, const tcu::PixelBufferAccess& colorBuffer);
 
 	SampleData	m_sampleRegister[SAMPLE_REGISTER_SIZE];
-};
+} DE_WARN_UNUSED_TYPE;
 
 } // rr
 

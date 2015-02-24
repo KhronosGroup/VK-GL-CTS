@@ -54,7 +54,7 @@ struct TransferFormat
 		, dataType	(dataType_)
 	{
 	}
-};
+} DE_WARN_UNUSED_TYPE;
 
 tcu::TextureFormat				mapGLTransferFormat					(deUint32 format, deUint32 dataType);
 tcu::TextureFormat				mapGLInternalFormat					(deUint32 internalFormat);

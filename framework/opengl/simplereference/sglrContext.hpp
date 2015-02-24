@@ -211,7 +211,7 @@ public:
 
 private:
 	const glu::ContextType	m_type;
-};
+} DE_WARN_UNUSED_TYPE;
 
 } // sglr
 

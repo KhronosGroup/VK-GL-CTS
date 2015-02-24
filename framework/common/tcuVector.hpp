@@ -169,7 +169,7 @@ public:
 
 	template <int NewSize>
 	Vector<T, NewSize>		toWidth		(void) const;
-};
+} DE_WARN_UNUSED_TYPE;
 
 template <typename T, int Size>
 inline Vector<T, Size>::Vector (void)

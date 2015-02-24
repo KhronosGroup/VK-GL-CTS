@@ -65,7 +65,7 @@ private:
 	int						m_width;
 	int 					m_height;
 	std::vector<deUint32>	m_pixels;
-};
+} DE_WARN_UNUSED_TYPE;
 
 inline void Surface::setPixel (int x, int y, RGBA col)
 {

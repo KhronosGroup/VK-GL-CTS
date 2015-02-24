@@ -79,7 +79,7 @@ protected:
 private:
 							ObjectWrapper		(const ObjectWrapper& other);
 	ObjectWrapper&			operator=			(const ObjectWrapper& other);
-};
+} DE_WARN_UNUSED_TYPE;
 
 /*--------------------------------------------------------------------*//*!
  * \brief API object wrapper template.
@@ -90,7 +90,7 @@ public:
 				TypedObjectWrapper (const glw::Functions& gl, deUint32 object) : ObjectWrapper(gl, objectTraits(Type), object) {}
 	explicit	TypedObjectWrapper (const RenderContext& context) : ObjectWrapper(context.getFunctions(), objectTraits(Type)) {}
 	explicit	TypedObjectWrapper (const glw::Functions& gl) : ObjectWrapper(gl, objectTraits(Type)) {}
-};
+} DE_WARN_UNUSED_TYPE;
 
 /*--------------------------------------------------------------------*//*!
  * \brief API object vector.
@@ -118,7 +118,7 @@ private:
 	const glw::Functions&				m_gl;
 	const ObjectTraits&					m_traits;
 	std::vector<deUint32>				m_objects;
-};
+} DE_WARN_UNUSED_TYPE;
 
 template<ObjectType Type> class TypedObjectVector : public ObjectVector
 {

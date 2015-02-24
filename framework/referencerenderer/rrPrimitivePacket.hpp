@@ -43,7 +43,7 @@ struct PrimitivePacket
 {
 	int						primitiveIDIn;
 	const VertexPacket*		vertices[6];
-};
+} DE_WARN_UNUSED_TYPE;
 
 /*--------------------------------------------------------------------*//*!
  * \brief Geometry emitter
@@ -69,7 +69,7 @@ private:
 	size_t						m_numEmitted;
 	size_t						m_maxVertices;
 
-};
+} DE_WARN_UNUSED_TYPE;
 
 } // rr
 

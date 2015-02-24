@@ -73,7 +73,7 @@ public:
 
 private:
 	Vector<Vector<T, Rows>, Cols>	m_data;
-};
+} DE_WARN_UNUSED_TYPE;
 
 // Operators.
 

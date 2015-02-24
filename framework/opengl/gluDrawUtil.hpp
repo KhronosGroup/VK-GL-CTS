@@ -138,7 +138,7 @@ struct VertexArrayPointer
 		, data			(0)
 	{
 	}
-};
+} DE_WARN_UNUSED_TYPE;
 
 struct VertexArrayBinding
 {
@@ -154,7 +154,7 @@ struct VertexArrayBinding
 	VertexArrayBinding (void)
 	{
 	}
-};
+} DE_WARN_UNUSED_TYPE;
 
 struct PrimitiveList
 {
@@ -186,7 +186,7 @@ struct PrimitiveList
 		, indices		(0)
 	{
 	}
-};
+} DE_WARN_UNUSED_TYPE;
 
 class DrawUtilCallback
 {

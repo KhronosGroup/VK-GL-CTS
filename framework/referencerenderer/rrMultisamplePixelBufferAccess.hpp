@@ -54,7 +54,7 @@ public:
 
 private:
 	tcu::PixelBufferAccess						m_access;
-};
+} DE_WARN_UNUSED_TYPE;
 
 /*--------------------------------------------------------------------*//*!
  * \brief Read-only pixel data access to multisampled buffers.
@@ -82,7 +82,7 @@ public:
 
 private:
 	tcu::ConstPixelBufferAccess					m_access;
-};
+} DE_WARN_UNUSED_TYPE;
 
 // Multisampled versions of tcu-utils
 

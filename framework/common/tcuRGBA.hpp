@@ -102,7 +102,7 @@ public:
 
 private:
 	deUint32	m_value;
-};
+} DE_WARN_UNUSED_TYPE;
 
 inline bool compareEqualMasked (RGBA a, RGBA b, deUint32 cmpMask)
 {

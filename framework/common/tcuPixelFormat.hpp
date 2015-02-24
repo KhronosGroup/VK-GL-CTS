@@ -108,7 +108,7 @@ struct PixelFormat
 	{
 		return !(*this == other);
 	}
-};
+} DE_WARN_UNUSED_TYPE;
 
 } // namespace tcu
 

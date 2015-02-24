@@ -50,7 +50,7 @@ struct TexComparePrecision
 		, resultBits	(16)
 	{
 	}
-};
+} DE_WARN_UNUSED_TYPE;
 
 bool		isTexCompareResultValid				(const Texture2DView&		texture, const Sampler& sampler, const TexComparePrecision& prec, const Vec2& coord, const Vec2& lodBounds, const float cmpReference, const float result);
 bool		isTexCompareResultValid				(const TextureCubeView&		texture, const Sampler& sampler, const TexComparePrecision& prec, const Vec3& coord, const Vec2& lodBounds, const float cmpReference, const float result);

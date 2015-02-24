@@ -133,7 +133,7 @@ private:
 	int						m_height;
 	int						m_depth;
 	std::vector<deUint8>	m_data;
-};
+} DE_WARN_UNUSED_TYPE;
 
 void decompress (const PixelBufferAccess& dst, CompressedTexFormat fmt, const deUint8* src, const TexDecompressionParams& params = TexDecompressionParams());
 

@@ -252,7 +252,7 @@ private:
 
 	friend class ReferenceContext;	// for uniform access
 	friend class GLContext;			// for source string access
-};
+} DE_WARN_UNUSED_TYPE;
 
 } // sglr
 

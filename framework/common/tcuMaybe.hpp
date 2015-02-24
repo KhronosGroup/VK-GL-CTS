@@ -57,7 +57,7 @@ private:
 		deUint8		m_data[sizeof(T)];
 		deUint64	m_align;
 	};
-};
+} DE_WARN_UNUSED_TYPE;
 
 template<typename T>
 Maybe<T> nothing (void)

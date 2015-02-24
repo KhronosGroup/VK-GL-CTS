@@ -77,7 +77,7 @@ struct TextureFormatInfo
 		, lookupBias	(lookupBias_)
 	{
 	}
-};
+} DE_WARN_UNUSED_TYPE;
 
 TextureFormatInfo	getTextureFormatInfo				(const TextureFormat& format);
 IVec4				getTextureFormatBitDepth			(const TextureFormat& format);

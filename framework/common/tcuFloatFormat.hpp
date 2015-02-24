@@ -81,7 +81,7 @@ private:
 	YesNoMaybe			m_hasNaN;			// Does the format support NaNs?
 	bool				m_exactPrecision;	// Are larger precisions disallowed?
 	double				m_maxValue;			// Largest representable finite value.
-};
+} DE_WARN_UNUSED_TYPE;
 
 void		FloatFormat_selfTest	(void);
 

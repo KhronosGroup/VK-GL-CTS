@@ -150,7 +150,7 @@ private:
 	bool		m_hasNaN;
 	double		m_lo;
 	double		m_hi;
-};
+} DE_WARN_UNUSED_TYPE;
 
 inline Interval	operator+	(const Interval& x) { return x; }
 Interval		exp2		(const Interval& x);

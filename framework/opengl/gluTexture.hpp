@@ -60,7 +60,7 @@ private:
 	deUint32				m_format;				//!< Internal format.
 	tcu::Texture1D			m_refTexture;
 	deUint32				m_glTexture;
-};
+} DE_WARN_UNUSED_TYPE;
 
 /*--------------------------------------------------------------------*//*!
  * \brief 2D Texture
@@ -96,7 +96,7 @@ private:
 
 	tcu::Texture2D			m_refTexture;
 	deUint32				m_glTexture;
-};
+} DE_WARN_UNUSED_TYPE;
 
 /*--------------------------------------------------------------------*//*!
  * \brief Cube Map Texture
@@ -135,7 +135,7 @@ private:
 
 	tcu::TextureCube		m_refTexture;
 	deUint32				m_glTexture;
-};
+} DE_WARN_UNUSED_TYPE;
 
 /*--------------------------------------------------------------------*//*!
  * \brief 2D Array Texture
@@ -169,7 +169,7 @@ private:
 
 	tcu::Texture2DArray			m_refTexture;
 	deUint32					m_glTexture;
-};
+} DE_WARN_UNUSED_TYPE;
 
 /*--------------------------------------------------------------------*//*!
  * \brief 1D Array Texture
@@ -198,7 +198,7 @@ private:
 
 	tcu::Texture1DArray			m_refTexture;
 	deUint32					m_glTexture;
-};
+} DE_WARN_UNUSED_TYPE;
 
 /*--------------------------------------------------------------------*//*!
  * \brief 3D Texture
@@ -227,7 +227,7 @@ private:
 
 	tcu::Texture3D				m_refTexture;
 	deUint32					m_glTexture;
-};
+} DE_WARN_UNUSED_TYPE;
 
 /*--------------------------------------------------------------------*//*!
  * \brief Cube Map Array Texture
@@ -258,7 +258,7 @@ private:
 
 	tcu::TextureCubeArray			m_refTexture;
 	deUint32						m_glTexture;
-};
+} DE_WARN_UNUSED_TYPE;
 
 /*--------------------------------------------------------------------*//*!
  * \brief 1D Texture Buffer only supported on OpenGL
@@ -303,7 +303,7 @@ private:
 	tcu::PixelBufferAccess	m_refTexture;
 	deUint32				m_glTexture;
 	deUint32				m_glBuffer;
-};
+} DE_WARN_UNUSED_TYPE;
 
 } // glu
 
