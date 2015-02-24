@@ -994,9 +994,14 @@ void NegativeTextureApiTests::init (void)
 			glTexImage2D(GL_TEXTURE_2D, 0, GL_R8I, 0, 0, 0, GL_RED_INTEGER, GL_BYTE, 0);
 			glGenerateMipmap(GL_TEXTURE_2D);
 			expectError(GL_INVALID_OPERATION);
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, 0, 0, 0, GL_RGBA, GL_FLOAT, 0);
-			glGenerateMipmap(GL_TEXTURE_2D);
-			expectError(GL_INVALID_OPERATION);
+
+			if (!(m_context.getContextInfo().isExtensionSupported("GL_EXT_color_buffer_float") && m_context.getContextInfo().isExtensionSupported("GL_OES_texture_float_linear")))
+			{
+				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, 0, 0, 0, GL_RGBA, GL_FLOAT, 0);
+				glGenerateMipmap(GL_TEXTURE_2D);
+				expectError(GL_INVALID_OPERATION);
+			}
+
 			m_log << TestLog::EndSection;
 
 			glDeleteTextures(2, texture);

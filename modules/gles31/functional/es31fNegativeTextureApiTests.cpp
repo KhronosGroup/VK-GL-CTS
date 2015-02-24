@@ -25,6 +25,7 @@
 #include "es31fNegativeTestShared.hpp"
 
 #include "gluCallLogWrapper.hpp"
+#include "gluContextInfo.hpp"
 
 #include "glwDefs.hpp"
 #include "glwEnums.hpp"
@@ -1002,9 +1003,14 @@ void generatemipmap (NegativeTestContext& ctx)
 	ctx.glTexImage2D(GL_TEXTURE_2D, 0, GL_R8I, 0, 0, 0, GL_RED_INTEGER, GL_BYTE, 0);
 	ctx.glGenerateMipmap(GL_TEXTURE_2D);
 	ctx.expectError(GL_INVALID_OPERATION);
-	ctx.glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, 0, 0, 0, GL_RGBA, GL_FLOAT, 0);
-	ctx.glGenerateMipmap(GL_TEXTURE_2D);
-	ctx.expectError(GL_INVALID_OPERATION);
+
+	if (!(ctx.getContextInfo().isExtensionSupported("GL_EXT_color_buffer_float") && ctx.getContextInfo().isExtensionSupported("GL_OES_texture_float_linear")))
+	{
+		ctx.glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, 0, 0, 0, GL_RGBA, GL_FLOAT, 0);
+		ctx.glGenerateMipmap(GL_TEXTURE_2D);
+		ctx.expectError(GL_INVALID_OPERATION);
+	}
+
 	ctx.endSection();
 
 	ctx.glDeleteTextures(2, texture);
