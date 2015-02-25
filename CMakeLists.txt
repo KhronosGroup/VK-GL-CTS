@@ -30,6 +30,9 @@ set(DEQP_VG_LIBRARIES		)				# VG libraries
 set(DEQP_SUPPORT_EGL		OFF)			# Is EGL supported
 set(DEQP_EGL_LIBRARIES		)				# EGL libraries
 
+set(DEQP_SUPPORT_GLX		OFF)			# Is GLX supported
+set(DEQP_SUPPORT_WGL		OFF)			# Is WGL supported
+
 set(DEQP_PLATFORM_LIBRARIES	)				# Other platform libraries
 
 set(DEQP_SUPPORT_OPENGL		OFF)			# Is OpenGL supported on platform
@@ -87,6 +90,8 @@ message(STATUS "DEQP_SUPPORT_EGL        = ${DEQP_SUPPORT_EGL}")
 message(STATUS "DEQP_EGL_LIBRARIES      = ${DEQP_EGL_LIBRARIES}")
 message(STATUS "DEQP_SUPPORT_OPENGL     = ${DEQP_SUPPORT_OPENGL}")
 message(STATUS "DEQP_PLATFORM_LIBRARIES = ${DEQP_PLATFORM_LIBRARIES}")
+message(STATUS "DEQP_SUPPORT_WGL        = ${DEQP_SUPPORT_WGL}")
+message(STATUS "DEQP_SUPPORT_GLX        = ${DEQP_SUPPORT_GLX}")
 
 # Defines
 add_definitions(-DDEQP_TARGET_NAME="${DEQP_TARGET_NAME}")
