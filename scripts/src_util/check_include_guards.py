@@ -97,6 +97,15 @@ def getHeaderFileList (path):
 					headers.append(os.path.join(root, file))
 	return headers
 
+def checkIncludeGuards (files):
+    error = False
+    for file in files:
+        if isHeader(file):
+            if not hasValidIncludeGuard(file):
+                error = True
+                print "File %s contains invalid include guards" % file
+    return not error
+
 if __name__ == "__main__":
 	parser = OptionParser()
 	parser.add_option("-x", "--fix", action="store_true", dest="fix", default=False, help="attempt to fix include guards (use with caution)")
