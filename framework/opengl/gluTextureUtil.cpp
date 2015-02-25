@@ -563,7 +563,7 @@ static inline tcu::Sampler::WrapMode mapGLWrapMode (deUint32 wrapMode)
 	}
 }
 
-static inline tcu::Sampler::FilterMode mapGLFilterMode (deUint32 filterMode)
+static inline tcu::Sampler::FilterMode mapGLMinFilterMode (deUint32 filterMode)
 {
 	switch (filterMode)
 	{
@@ -574,7 +574,18 @@ static inline tcu::Sampler::FilterMode mapGLFilterMode (deUint32 filterMode)
 		case GL_LINEAR_MIPMAP_NEAREST:	return tcu::Sampler::LINEAR_MIPMAP_NEAREST;
 		case GL_LINEAR_MIPMAP_LINEAR:	return tcu::Sampler::LINEAR_MIPMAP_LINEAR;
 		default:
-			throw tcu::InternalError("Can't map GL filter mode" + tcu::toHex(filterMode).toString());
+			throw tcu::InternalError("Can't map GL min filter mode" + tcu::toHex(filterMode).toString());
+	}
+}
+
+static inline tcu::Sampler::FilterMode mapGLMagFilterMode (deUint32 filterMode)
+{
+	switch (filterMode)
+	{
+		case GL_NEAREST:				return tcu::Sampler::NEAREST;
+		case GL_LINEAR:					return tcu::Sampler::LINEAR;
+		default:
+			throw tcu::InternalError("Can't map GL mag filter mode" + tcu::toHex(filterMode).toString());
 	}
 }
 
@@ -625,7 +636,7 @@ tcu::Sampler mapGLSampler (deUint32 wrapS, deUint32 wrapT, deUint32 minFilter, d
 tcu::Sampler mapGLSampler (deUint32 wrapS, deUint32 wrapT, deUint32 wrapR, deUint32 minFilter, deUint32 magFilter)
 {
 	return tcu::Sampler(mapGLWrapMode(wrapS), mapGLWrapMode(wrapT), mapGLWrapMode(wrapR),
-						mapGLFilterMode(minFilter), mapGLFilterMode(magFilter),
+						mapGLMinFilterMode(minFilter), mapGLMagFilterMode(magFilter),
 						0.0f /* lod threshold */,
 						true /* normalized coords */,
 						tcu::Sampler::COMPAREMODE_NONE /* no compare */,
