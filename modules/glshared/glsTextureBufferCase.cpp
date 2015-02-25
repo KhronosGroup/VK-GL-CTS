@@ -266,8 +266,6 @@ public:
 		{
 			rr::FragmentPacket&	packet		= packets[packetNdx];
 
-			const tcu::IVec2	position	= packet.position;
-
 			const tcu::IVec2	position0	= packet.position + tcu::IVec2(0, 0);
 			const tcu::IVec2	position1	= packet.position + tcu::IVec2(1, 0);
 			const tcu::IVec2	position2	= packet.position + tcu::IVec2(0, 1);

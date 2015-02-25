@@ -73,8 +73,6 @@ static bool verifyImageYellowGreen (const tcu::Surface& image, tcu::TestLog& log
 {
 	using tcu::TestLog;
 
-	const tcu::RGBA green		(0, 255, 0, 255);
-	const tcu::RGBA yellow		(255, 255, 0, 255);
 	const int colorThreshold	= 20;
 
 	tcu::Surface error			(image.getWidth(), image.getHeight());

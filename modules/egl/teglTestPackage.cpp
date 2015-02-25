@@ -128,8 +128,7 @@ public:
 };
 
 TestCaseWrapper::TestCaseWrapper (EglTestContext& eglTestCtx)
-	: tcu::TestCaseWrapper	(eglTestCtx.getTestContext())
-	, m_eglTestCtx			(eglTestCtx)
+	: tcu::TestCaseWrapper(eglTestCtx.getTestContext())
 {
 }
 

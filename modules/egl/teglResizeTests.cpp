@@ -349,8 +349,6 @@ IVec2 checkSurfaceSize (const Library&		egl,
 IterateResult ChangeSurfaceSizeCase::iterate (void)
 {
 	const Library&			egl			= m_eglTestCtx.getLibrary();
-	Surface					oldSurface;
-	Surface					newSurface;
 	ScopedCurrentContext	currentCtx	(egl, m_display, **m_surface, **m_surface, **m_context);
 	IVec2					oldEglSize	= checkSurfaceSize(egl,
 														   m_display,
@@ -454,7 +452,9 @@ IvVec2 ivVec2 (const IVec2& vec)
 
 Interval approximateInt (int i)
 {
-	return (Interval(i) + Interval(-1.0, 1.0)) & Interval(0.0, TCU_INFINITY);
+	const Interval margin(-1.0, 1.0); // The resolution may be rounded
+
+	return (Interval(i) + margin) & Interval(0.0, TCU_INFINITY);
 }
 
 IvVec2 UpdateResolutionCase::getNativePixelsPerInch	(void)
@@ -464,7 +464,6 @@ IvVec2 UpdateResolutionCase::getNativePixelsPerInch	(void)
 	const IVec2		bufSize		= eglu::getSurfaceSize(egl, m_display, **m_surface);
 	const IVec2		winSize		= m_nativeWindow->getScreenSize();
 	const IVec2		bufPp10km	= eglu::getSurfaceResolution(egl, m_display, **m_surface);
-	const Interval	margin		(-1.0, 1.0); // The resolution may be rounded
 	const IvVec2	bufPpiI		= (IvVec2(approximateInt(bufPp10km.x()),
 										  approximateInt(bufPp10km.y()))
 								   / Interval(inchPer10km));

@@ -2942,7 +2942,6 @@ EarlyFragmentTestsCase::IterateResult EarlyFragmentTestsCase::iterate (void)
 	const int						viewportHeight		= RENDER_SIZE;
 	const int						viewportX			= (m_renderTarget == RENDERTARGET_DEFAULT) ? (rnd.getInt(0, renderCtx.getRenderTarget().getWidth() - viewportWidth))	: (0);
 	const int						viewportY			= (m_renderTarget == RENDERTARGET_DEFAULT) ? (rnd.getInt(0, renderCtx.getRenderTarget().getHeight() - viewportHeight))	: (0);
-	const IVec3						imageSize			= defaultImageSize(TEXTURETYPE_2D);
 	const glu::Texture				texture				(renderCtx);
 	de::MovePtr<glu::Framebuffer>	fbo;
 	de::MovePtr<glu::Renderbuffer> 	colorAttachment;

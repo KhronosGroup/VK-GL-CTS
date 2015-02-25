@@ -280,8 +280,7 @@ void Either_selfTest (void)
 		Either<int, TestClassWithConstructor>		either		(intValue);
 		const Either<int, TestClassWithConstructor>	otherEither	(testObject);
 
-
-		either = testObject;
+		either = otherEither;
 
 		TCU_CHECK(!either.isFirst());
 		TCU_CHECK(either.isSecond());

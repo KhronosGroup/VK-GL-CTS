@@ -373,7 +373,6 @@ public:
 
 private:
 	UniquePtr<ImageSource>	m_source;
-	EGLint					m_target;
 };
 
 class ImageTargetGLES2 : public ImageTestCase

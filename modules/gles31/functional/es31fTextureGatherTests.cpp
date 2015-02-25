@@ -1335,7 +1335,6 @@ TextureGatherCase::IterateResult TextureGatherCase::iterate (void)
 	TestLog&						log								= m_testCtx.getLog();
 	const tcu::ScopedLogSection		iterationSection				(log, "Iteration" + de::toString(m_currentIteration), "Iteration " + de::toString(m_currentIteration));
 	const glu::RenderContext&		renderCtx						= m_context.getRenderContext();
-	const tcu::IVec2				renderSize						= RENDER_SIZE;
 	const glw::Functions&			gl								= renderCtx.getFunctions();
 	const GatherArgs&				gatherArgs						= getGatherArgs(m_currentIteration);
 	const string					refZExpr						= "v_normalizedCoord.x";

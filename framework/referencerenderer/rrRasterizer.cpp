@@ -876,7 +876,6 @@ void SingleSampleLineRasterizer::init (const tcu::Vec4& v0, const tcu::Vec4& v1,
 	// Bounding box \note: with wide lines, the line is actually moved as in the spec
 	const deInt32					lineWidthPixels	= (lineWidth > 1.0f) ? (deInt32)floor(lineWidth + 0.5f) : 1;
 
-	const tcu::IVec2				minorDirection	= (isXMajor ? tcu::IVec2(0, 1) : tcu::IVec2(1, 0));
 	const tcu::Vector<deInt64,2>	widthOffset		= (isXMajor ? tcu::Vector<deInt64,2>(0, -1) : tcu::Vector<deInt64,2>(-1, 0)) * (toSubpixelCoord(lineWidthPixels - 1) / 2);
 
 	const deInt64					x0				= toSubpixelCoord(v0.x()) + widthOffset.x();

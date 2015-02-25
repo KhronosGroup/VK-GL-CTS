@@ -296,7 +296,6 @@ TextureWrapCase::IterateResult TextureWrapCase::iterate (void)
 	TestLog&						log								= m_testCtx.getLog();
 	const RandomViewport			viewport						(m_renderCtx.getRenderTarget(), VIEWPORT_WIDTH, VIEWPORT_HEIGHT, deStringHash(getName()) + m_caseNdx);
 	tcu::Surface					renderedFrame					(viewport.width, viewport.height);
-	tcu::Surface					referenceFrame					(viewport.width, viewport.height);
 	ReferenceParams					refParams						(TEXTURETYPE_2D);
 	const tcu::TextureFormat		texFormat						= m_texture->getRefTexture().getFormat();
 	vector<float>					texCoord;

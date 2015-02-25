@@ -194,7 +194,6 @@ inline Vector<T, Size> reflect (const Vector<T, Size>& i, const Vector<T, Size>&
 template <typename T, int Size>
 inline Vector<T, Size> refract (const Vector<T, Size>& i, const Vector<T, Size>& n, T eta)
 {
-	Vector<T, Size> res;
 	T cosAngle = dot(n, i);
 	T k = T(1) - eta * eta * (T(1) - cosAngle * cosAngle);
 	if (k < T(0))

@@ -937,7 +937,6 @@ void sampleTexture (const SurfaceAccess& dst, const tcu::TextureCubeArrayView& s
 void fetchTexture (const SurfaceAccess& dst, const tcu::ConstPixelBufferAccess& src, const float* texCoord, const tcu::Vec4& colorScale, const tcu::Vec4& colorBias)
 {
 	const tcu::Vec4		sq			= tcu::Vec4(texCoord[0], texCoord[1], texCoord[2], texCoord[3]);
-	const tcu::IVec2	dstSize		= tcu::IVec2(dst.getWidth(), dst.getHeight());
 	const tcu::Vec3		triS[2]		= { sq.swizzle(0, 1, 2), sq.swizzle(3, 2, 1) };
 
 	for (int y = 0; y < dst.getHeight(); y++)
@@ -1855,8 +1854,6 @@ int computeTextureLookupDiff (const tcu::ConstPixelBufferAccess&	result,
 					const float		nxo		= wxo/dstW;
 					const float		nyo		= wyo/dstH;
 
-					const tcu::Vec2	coordO		(projectedTriInterpolate(triS[triNdx], triW[triNdx], nxo, nyo),
-												 projectedTriInterpolate(triT[triNdx], triW[triNdx], nxo, nyo));
 					const tcu::Vec2	coordDxo	= tcu::Vec2(triDerivateX(triS[triNdx], triW[triNdx], wxo, dstW, nyo),
 															triDerivateX(triT[triNdx], triW[triNdx], wxo, dstW, nyo)) * srcSize.asFloat();
 					const tcu::Vec2	coordDyo	= tcu::Vec2(triDerivateY(triS[triNdx], triW[triNdx], wyo, dstH, nxo),
@@ -2234,9 +2231,6 @@ int computeTextureLookupDiff (const tcu::ConstPixelBufferAccess&	result,
 						const float		nxo		= wxo/dstW;
 						const float		nyo		= wyo/dstH;
 
-						const tcu::Vec3	coordO		(projectedTriInterpolate(triS[triNdx], triW[triNdx], nxo, nyo),
-													 projectedTriInterpolate(triT[triNdx], triW[triNdx], nxo, nyo),
-													 projectedTriInterpolate(triR[triNdx], triW[triNdx], nxo, nyo));
 						const tcu::Vec3	coordDxo	= tcu::Vec3(triDerivateX(triS[triNdx], triW[triNdx], wxo, dstW, nyo),
 																triDerivateX(triT[triNdx], triW[triNdx], wxo, dstW, nyo),
 																triDerivateX(triR[triNdx], triW[triNdx], wxo, dstW, nyo)) * srcSize.asFloat();
@@ -2387,8 +2381,6 @@ int computeTextureLookupDiff (const tcu::ConstPixelBufferAccess&	result,
 					const float		nxo		= wxo/dstW;
 					const float		nyo		= wyo/dstH;
 
-					const tcu::Vec2	coordO		(projectedTriInterpolate(triS[triNdx], triW[triNdx], nxo, nyo),
-												 projectedTriInterpolate(triT[triNdx], triW[triNdx], nxo, nyo));
 					const float	coordDxo		= triDerivateX(triS[triNdx], triW[triNdx], wxo, dstW, nyo) * srcSize;
 					const float	coordDyo		= triDerivateY(triS[triNdx], triW[triNdx], wyo, dstH, nxo) * srcSize;
 					const tcu::Vec2	lodO		= tcu::computeLodBoundsFromDerivates(coordDxo, coordDyo, lodPrec);
@@ -2498,9 +2490,6 @@ int computeTextureLookupDiff (const tcu::ConstPixelBufferAccess&	result,
 					const float		nxo		= wxo/dstW;
 					const float		nyo		= wyo/dstH;
 
-					const tcu::Vec3	coordO		(projectedTriInterpolate(triS[triNdx], triW[triNdx], nxo, nyo),
-												 projectedTriInterpolate(triT[triNdx], triW[triNdx], nxo, nyo),
-												 projectedTriInterpolate(triR[triNdx], triW[triNdx], nxo, nyo));
 					const tcu::Vec2	coordDxo	= tcu::Vec2(triDerivateX(triS[triNdx], triW[triNdx], wxo, dstW, nyo),
 															triDerivateX(triT[triNdx], triW[triNdx], wxo, dstW, nyo)) * srcSize;
 					const tcu::Vec2	coordDyo	= tcu::Vec2(triDerivateY(triS[triNdx], triW[triNdx], wyo, dstH, nxo),
@@ -2869,8 +2858,6 @@ int computeTextureCompareDiff (const tcu::ConstPixelBufferAccess&	result,
 					const float		nxo		= wxo/dstW;
 					const float		nyo		= wyo/dstH;
 
-					const tcu::Vec2	coordO		(projectedTriInterpolate(triS[triNdx], triW[triNdx], nxo, nyo),
-												 projectedTriInterpolate(triT[triNdx], triW[triNdx], nxo, nyo));
 					const tcu::Vec2	coordDxo	= tcu::Vec2(triDerivateX(triS[triNdx], triW[triNdx], wxo, dstW, nyo),
 															triDerivateX(triT[triNdx], triW[triNdx], wxo, dstW, nyo)) * srcSize.asFloat();
 					const tcu::Vec2	coordDyo	= tcu::Vec2(triDerivateY(triS[triNdx], triW[triNdx], wyo, dstH, nxo),
@@ -3100,8 +3087,6 @@ int computeTextureCompareDiff (const tcu::ConstPixelBufferAccess&	result,
 					const float		nxo		= wxo/dstW;
 					const float		nyo		= wyo/dstH;
 
-					const tcu::Vec2	coordO		(projectedTriInterpolate(triS[triNdx], triW[triNdx], nxo, nyo),
-												 projectedTriInterpolate(triT[triNdx], triW[triNdx], nxo, nyo));
 					const tcu::Vec2	coordDxo	= tcu::Vec2(triDerivateX(triS[triNdx], triW[triNdx], wxo, dstW, nyo),
 															triDerivateX(triT[triNdx], triW[triNdx], wxo, dstW, nyo)) * srcSize.asFloat();
 					const tcu::Vec2	coordDyo	= tcu::Vec2(triDerivateY(triS[triNdx], triW[triNdx], wyo, dstH, nxo),

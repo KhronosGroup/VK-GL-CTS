@@ -124,7 +124,6 @@ void blitImageOnBlackSurface(const ConstPixelBufferAccess& src, const PixelBuffe
 {
 	const int			height	= src.getHeight();
 	const int			width	= src.getWidth();
-	const tcu::IVec4	black	= tcu::IVec4(0, 0, 0, 255);
 
 	for (int y = 0; y < height; y++)
 	for (int x = 0; x < width; x++)
