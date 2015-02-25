@@ -1990,7 +1990,7 @@ int computeTextureLookupDiff (const tcu::ConstPixelBufferAccess&	result,
 
 	const tcu::Vec2		lodBias			((sampleParams.flags & ReferenceParams::USE_BIAS) ? sampleParams.bias : 0.0f);
 
-	const float			posEps			= 1.0f / float((1<<MIN_SUBPIXEL_BITS) + 1);
+	const float			posEps			= 1.0f / float(1<<MIN_SUBPIXEL_BITS);
 
 	int					numFailed		= 0;
 
@@ -2029,8 +2029,8 @@ int computeTextureLookupDiff (const tcu::ConstPixelBufferAccess&	result,
 				const float		nx		= wx / dstW;
 				const float		ny		= wy / dstH;
 
-				const bool		tri0	= nx + ny - posEps <= 1.0f;
-				const bool		tri1	= nx + ny + posEps >= 1.0f;
+				const bool		tri0	= (wx-posEps)/dstW + (wy-posEps)/dstH <= 1.0f;
+				const bool		tri1	= (wx+posEps)/dstW + (wy+posEps)/dstH >= 1.0f;
 
 				bool			isOk	= false;
 
@@ -2169,7 +2169,7 @@ int computeTextureLookupDiff (const tcu::ConstPixelBufferAccess&	result,
 
 	const tcu::Vec2		lodBias			((sampleParams.flags & ReferenceParams::USE_BIAS) ? sampleParams.bias : 0.0f);
 
-	const float			posEps			= 1.0f / float((1<<MIN_SUBPIXEL_BITS) + 1);
+	const float			posEps			= 1.0f / float(1<<MIN_SUBPIXEL_BITS);
 
 	int					numFailed		= 0;
 
@@ -2202,8 +2202,8 @@ int computeTextureLookupDiff (const tcu::ConstPixelBufferAccess&	result,
 				const float		nx		= wx / dstW;
 				const float		ny		= wy / dstH;
 
-				const bool		tri0	= nx + ny - posEps <= 1.0f;
-				const bool		tri1	= nx + ny + posEps >= 1.0f;
+				const bool		tri0	= (wx-posEps)/dstW + (wy-posEps)/dstH <= 1.0f;
+				const bool		tri1	= (wx+posEps)/dstW + (wy+posEps)/dstH >= 1.0f;
 
 				bool			isOk	= false;
 
