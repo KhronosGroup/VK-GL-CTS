@@ -22,6 +22,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "xsExecutionServer.hpp"
+#include "deCommandLine.hpp"
 #include "deString.h"
 
 #if (DE_OS == DE_OS_WIN32)
@@ -30,47 +31,64 @@
 #	include "xsPosixTestProcess.hpp"
 #endif
 
-#include <cstdlib>
-#include <cstdio>
+#include <iostream>
+
+namespace opt
+{
+
+DE_DECLARE_COMMAND_LINE_OPT(Port,		int);
+DE_DECLARE_COMMAND_LINE_OPT(SingleExec,	bool);
+
+void registerOptions (de::cmdline::Parser& parser)
+{
+	using de::cmdline::Option;
+	using de::cmdline::NamedValue;
+
+	parser << Option<Port>		("p", "port",	"Port", "50016")
+		   << Option<SingleExec>("s", "single",	"Kill execserver after first session");
+}
+
+}
 
 int main (int argc, const char* const* argv)
 {
-	xs::ExecutionServer::RunMode	runMode		= xs::ExecutionServer::RUNMODE_FOREVER;
-	int								port		= 50016;
+	de::cmdline::CommandLine	cmdLine;
 
 #if (DE_OS == DE_OS_WIN32)
-	xs::Win32TestProcess			testProcess;
+	xs::Win32TestProcess		testProcess;
 #else
-	xs::PosixTestProcess			testProcess;
-#endif
+	xs::PosixTestProcess		testProcess;
 
-	DE_STATIC_ASSERT(sizeof("a") == 2);
-
-#if (DE_OS != DE_OS_WIN32)
-	// Set line buffered mode to stdout so executor gets any log messages soon enough.
+	// Set line buffered mode to stdout so executor gets any log messages in a timely manner.
 	setvbuf(stdout, DE_NULL, _IOLBF, 4*1024);
 #endif
 
 	// Parse command line.
-	for (int argNdx = 1; argNdx < argc; argNdx++)
 	{
-		const char* arg = argv[argNdx];
+		de::cmdline::Parser	parser;
+		opt::registerOptions(parser);
 
-		if (deStringBeginsWith(arg, "--port="))
-			port = atoi(arg+sizeof("--port=")-1);
-		else if (deStringEqual(arg, "--single"))
-			runMode = xs::ExecutionServer::RUNMODE_SINGLE_EXEC;
+		if (!parser.parse(argc, argv, &cmdLine, std::cerr))
+		{
+			parser.help(std::cout);
+			return -1;
+		}
 	}
 
 	try
 	{
-		xs::ExecutionServer server(&testProcess, DE_SOCKETFAMILY_INET4, port, runMode);
-		printf("Listening on port %d.\n", port);
+		const xs::ExecutionServer::RunMode	runMode		= cmdLine.getOption<opt::SingleExec>()
+														? xs::ExecutionServer::RUNMODE_SINGLE_EXEC
+														: xs::ExecutionServer::RUNMODE_FOREVER;
+		const int							port		= cmdLine.getOption<opt::Port>();
+		xs::ExecutionServer					server		(&testProcess, DE_SOCKETFAMILY_INET4, port, runMode);
+
+		std::cout << "Listening on port " << port << ".\n";
 		server.runServer();
 	}
 	catch (const std::exception& e)
 	{
-		printf("%s\n", e.what());
+		std::cerr << e.what() << "\n";
 		return -1;
 	}
 
