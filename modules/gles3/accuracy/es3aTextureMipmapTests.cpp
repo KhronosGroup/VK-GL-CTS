@@ -134,7 +134,7 @@ Texture2DMipmapCase::Texture2DMipmapCase (tcu::TestContext&			testCtx,
 	, m_width			(width)
 	, m_height			(height)
 	, m_texture			(DE_NULL)
-	, m_renderer		(renderCtx, testCtx, glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
+	, m_renderer		(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
 {
 }
 
@@ -427,7 +427,7 @@ TextureCubeMipmapCase::TextureCubeMipmapCase (tcu::TestContext&			testCtx,
 	, m_dataType		(dataType)
 	, m_size			(size)
 	, m_texture			(DE_NULL)
-	, m_renderer		(renderCtx, testCtx, glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
+	, m_renderer		(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
 {
 }
 

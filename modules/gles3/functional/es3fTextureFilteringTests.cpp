@@ -127,7 +127,7 @@ Texture2DFilteringCase::Texture2DFilteringCase (tcu::TestContext& testCtx, glu::
 	, m_internalFormat	(internalFormat)
 	, m_width			(width)
 	, m_height			(height)
-	, m_renderer		(renderCtx, testCtx, glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
+	, m_renderer		(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
 	, m_caseNdx			(0)
 {
 }
@@ -144,7 +144,7 @@ Texture2DFilteringCase::Texture2DFilteringCase (tcu::TestContext& testCtx, glu::
 	, m_width			(0)
 	, m_height			(0)
 	, m_filenames		(filenames)
-	, m_renderer		(renderCtx, testCtx, glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
+	, m_renderer		(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
 	, m_caseNdx			(0)
 {
 }
@@ -405,7 +405,7 @@ TextureCubeFilteringCase::TextureCubeFilteringCase (tcu::TestContext& testCtx, g
 	, m_internalFormat			(internalFormat)
 	, m_width					(width)
 	, m_height					(height)
-	, m_renderer				(renderCtx, testCtx, glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
+	, m_renderer				(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
 	, m_caseNdx					(0)
 {
 }
@@ -423,7 +423,7 @@ TextureCubeFilteringCase::TextureCubeFilteringCase (tcu::TestContext& testCtx, g
 	, m_width					(0)
 	, m_height					(0)
 	, m_filenames				(filenames)
-	, m_renderer				(renderCtx, testCtx, glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
+	, m_renderer				(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
 	, m_caseNdx					(0)
 {
 }
@@ -718,7 +718,7 @@ Texture2DArrayFilteringCase::Texture2DArrayFilteringCase (Context& context, cons
 	, m_numLayers		(numLayers)
 	, m_gradientTex		(DE_NULL)
 	, m_gridTex			(DE_NULL)
-	, m_renderer		(m_context.getRenderContext(), context.getTestContext(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
+	, m_renderer		(context.getRenderContext(), context.getTestContext().getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
 	, m_caseNdx			(0)
 {
 }
@@ -983,7 +983,7 @@ Texture3DFilteringCase::Texture3DFilteringCase (Context& context, const char* na
 	, m_depth			(depth)
 	, m_gradientTex		(DE_NULL)
 	, m_gridTex			(DE_NULL)
-	, m_renderer		(m_context.getRenderContext(), context.getTestContext(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
+	, m_renderer		(context.getRenderContext(), context.getTestContext().getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
 	, m_caseNdx			(0)
 {
 }

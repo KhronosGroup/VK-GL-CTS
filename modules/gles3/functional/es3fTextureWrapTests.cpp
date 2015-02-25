@@ -141,7 +141,7 @@ TextureWrapCase::TextureWrapCase (tcu::TestContext& testCtx, glu::RenderContext&
 	, m_height				(height)
 	, m_caseNdx				(0)
 	, m_texture				(DE_NULL)
-	, m_renderer			(renderCtx, testCtx, glu::GLSL_VERSION_300_ES, glu::PRECISION_MEDIUMP)
+	, m_renderer			(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_MEDIUMP)
 {
 }
 
@@ -161,7 +161,7 @@ TextureWrapCase::TextureWrapCase (tcu::TestContext& testCtx, glu::RenderContext&
 	, m_filenames			(filenames)
 	, m_caseNdx				(0)
 	, m_texture				(DE_NULL)
-	, m_renderer			(renderCtx, testCtx, glu::GLSL_VERSION_300_ES, glu::PRECISION_MEDIUMP)
+	, m_renderer			(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_MEDIUMP)
 {
 }
 
@@ -180,7 +180,7 @@ TextureWrapCase::TextureWrapCase (tcu::TestContext& testCtx, glu::RenderContext&
 	, m_height				(height)
 	, m_caseNdx				(0)
 	, m_texture				(DE_NULL)
-	, m_renderer			(renderCtx, testCtx, glu::GLSL_VERSION_300_ES, glu::PRECISION_MEDIUMP)
+	, m_renderer			(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_MEDIUMP)
 {
 }
 

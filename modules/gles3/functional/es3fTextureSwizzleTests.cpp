@@ -109,7 +109,7 @@ Texture2DSwizzleCase::Texture2DSwizzleCase (Context& context, const char* name, 
 	, m_swizzleB		(swizzleB)
 	, m_swizzleA		(swizzleA)
 	, m_texture			(DE_NULL)
-	, m_renderer		(context.getRenderContext(), context.getTestContext(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
+	, m_renderer		(context.getRenderContext(), context.getTestContext().getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
 {
 }
 

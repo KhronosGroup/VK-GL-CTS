@@ -82,7 +82,7 @@ Texture2DSizeCase::Texture2DSizeCase (tcu::TestContext& testCtx, glu::RenderCont
 	, m_height		(height)
 	, m_useMipmaps	(mipmaps)
 	, m_texture		(DE_NULL)
-	, m_renderer	(renderCtx, testCtx, glu::GLSL_VERSION_300_ES, glu::PRECISION_MEDIUMP)
+	, m_renderer	(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_MEDIUMP)
 {
 }
 
@@ -202,7 +202,7 @@ TextureCubeSizeCase::TextureCubeSizeCase (tcu::TestContext& testCtx, glu::Render
 	, m_height		(height)
 	, m_useMipmaps	(mipmaps)
 	, m_texture		(DE_NULL)
-	, m_renderer	(renderCtx, testCtx, glu::GLSL_VERSION_300_ES, glu::PRECISION_MEDIUMP)
+	, m_renderer	(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_MEDIUMP)
 	, m_curFace		(0)
 	, m_isOk		(false)
 {

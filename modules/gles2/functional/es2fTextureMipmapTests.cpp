@@ -138,7 +138,7 @@ Texture2DMipmapCase::Texture2DMipmapCase (tcu::TestContext&			testCtx,
 	, m_width			(width)
 	, m_height			(height)
 	, m_texture			(DE_NULL)
-	, m_renderer		(renderCtx, testCtx, glu::GLSL_VERSION_100_ES,
+	, m_renderer		(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_100_ES,
 						 renderCtxInfo.isFragmentHighPrecisionSupported() ? glu::PRECISION_HIGHP // Use highp if available.
 																		  : glu::PRECISION_MEDIUMP)
 {
@@ -488,7 +488,7 @@ TextureCubeMipmapCase::TextureCubeMipmapCase (tcu::TestContext&			testCtx,
 	, m_dataType		(dataType)
 	, m_size			(size)
 	, m_texture			(DE_NULL)
-	, m_renderer		(renderCtx, testCtx, glu::GLSL_VERSION_100_ES,
+	, m_renderer		(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_100_ES,
 						 renderCtxInfo.isFragmentHighPrecisionSupported() ? glu::PRECISION_HIGHP // Use highp if available.
 																		  : glu::PRECISION_MEDIUMP)
 {
@@ -783,7 +783,7 @@ Texture2DGenMipmapCase::Texture2DGenMipmapCase (tcu::TestContext& testCtx, glu::
 	, m_width			(width)
 	, m_height			(height)
 	, m_texture			(DE_NULL)
-	, m_renderer		(renderCtx, testCtx, glu::GLSL_VERSION_100_ES, glu::PRECISION_MEDIUMP)
+	, m_renderer		(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_100_ES, glu::PRECISION_MEDIUMP)
 {
 }
 
@@ -917,7 +917,7 @@ TextureCubeGenMipmapCase::TextureCubeGenMipmapCase (tcu::TestContext& testCtx, g
 	, m_hint			(hint)
 	, m_size			(size)
 	, m_texture			(DE_NULL)
-	, m_renderer		(renderCtx, testCtx, glu::GLSL_VERSION_100_ES, glu::PRECISION_MEDIUMP)
+	, m_renderer		(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_100_ES, glu::PRECISION_MEDIUMP)
 {
 }
 

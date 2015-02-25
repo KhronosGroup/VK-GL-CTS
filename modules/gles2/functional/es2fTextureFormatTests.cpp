@@ -96,7 +96,7 @@ Texture2DFormatCase::Texture2DFormatCase (tcu::TestContext& testCtx, glu::Render
 	, m_width		(width)
 	, m_height		(height)
 	, m_texture		(DE_NULL)
-	, m_renderer	(renderCtx, testCtx, glu::GLSL_VERSION_100_ES, glu::PRECISION_MEDIUMP)
+	, m_renderer	(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_100_ES, glu::PRECISION_MEDIUMP)
 {
 }
 
@@ -240,7 +240,7 @@ TextureCubeFormatCase::TextureCubeFormatCase (tcu::TestContext& testCtx, glu::Re
 	, m_width		(width)
 	, m_height		(height)
 	, m_texture		(DE_NULL)
-	, m_renderer	(renderCtx, testCtx, glu::GLSL_VERSION_100_ES, glu::PRECISION_MEDIUMP)
+	, m_renderer	(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_100_ES, glu::PRECISION_MEDIUMP)
 	, m_curFace		(0)
 	, m_isOk		(false)
 {
@@ -420,7 +420,7 @@ Compressed2DFormatCase::Compressed2DFormatCase (tcu::TestContext& testCtx, glu::
 	, m_renderCtxInfo	(renderCtxInfo)
 	, m_filenames		(filenames)
 	, m_texture			(DE_NULL)
-	, m_renderer		(renderCtx, testCtx, glu::GLSL_VERSION_100_ES, glu::PRECISION_MEDIUMP)
+	, m_renderer		(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_100_ES, glu::PRECISION_MEDIUMP)
 {
 }
 
@@ -525,7 +525,7 @@ CompressedCubeFormatCase::CompressedCubeFormatCase (tcu::TestContext& testCtx, g
 	, m_renderCtxInfo	(renderCtxInfo)
 	, m_filenames		(filenames)
 	, m_texture			(DE_NULL)
-	, m_renderer		(renderCtx, testCtx, glu::GLSL_VERSION_100_ES, glu::PRECISION_MEDIUMP)
+	, m_renderer		(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_100_ES, glu::PRECISION_MEDIUMP)
 	, m_curFace			(0)
 	, m_isOk			(false)
 {

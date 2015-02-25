@@ -189,7 +189,7 @@ enum Program
 class ProgramLibrary
 {
 public:
-											ProgramLibrary			(const glu::RenderContext& context, tcu::TestContext& testCtx, glu::GLSLVersion glslVersion, glu::Precision texCoordPrecision);
+											ProgramLibrary			(const glu::RenderContext& context, tcu::TestLog& log, glu::GLSLVersion glslVersion, glu::Precision texCoordPrecision);
 											~ProgramLibrary			(void);
 
 	glu::ShaderProgram*						getProgram				(Program program);
@@ -200,7 +200,7 @@ private:
 	ProgramLibrary&							operator=				(const ProgramLibrary& other);
 
 	const glu::RenderContext&				m_context;
-	tcu::TestContext&						m_testCtx;
+	tcu::TestLog&							m_log;
 	glu::GLSLVersion						m_glslVersion;
 	glu::Precision							m_texCoordPrecision;
 	std::map<Program, glu::ShaderProgram*>	m_programs;
@@ -209,7 +209,7 @@ private:
 class TextureRenderer
 {
 public:
-								TextureRenderer			(const glu::RenderContext& context, tcu::TestContext& testCtx, glu::GLSLVersion glslVersion, glu::Precision texCoordPrecision);
+								TextureRenderer			(const glu::RenderContext& context, tcu::TestLog& log, glu::GLSLVersion glslVersion, glu::Precision texCoordPrecision);
 								~TextureRenderer		(void);
 
 	void						clear					(void); //!< Frees allocated resources. Destructor will call clear() as well.
@@ -222,7 +222,7 @@ private:
 	TextureRenderer&			operator=				(const TextureRenderer& other);
 
 	const glu::RenderContext&	m_renderCtx;
-	tcu::TestContext&			m_testCtx;
+	tcu::TestLog&				m_log;
 	ProgramLibrary				m_programLibrary;
 };
 

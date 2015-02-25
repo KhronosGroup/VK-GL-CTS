@@ -96,7 +96,7 @@ Texture2DFormatCase::Texture2DFormatCase (tcu::TestContext& testCtx, glu::Render
 	, m_width		(width)
 	, m_height		(height)
 	, m_texture		(DE_NULL)
-	, m_renderer	(renderCtx, testCtx, glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
+	, m_renderer	(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
 {
 }
 
@@ -108,7 +108,7 @@ Texture2DFormatCase::Texture2DFormatCase (tcu::TestContext& testCtx, glu::Render
 	, m_width		(width)
 	, m_height		(height)
 	, m_texture		(DE_NULL)
-	, m_renderer	(renderCtx, testCtx, glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
+	, m_renderer	(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
 {
 }
 
@@ -257,7 +257,7 @@ TextureCubeFormatCase::TextureCubeFormatCase (tcu::TestContext& testCtx, glu::Re
 	, m_width		(width)
 	, m_height		(height)
 	, m_texture		(DE_NULL)
-	, m_renderer	(renderCtx, testCtx, glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
+	, m_renderer	(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
 	, m_curFace		(0)
 	, m_isOk		(false)
 {
@@ -271,7 +271,7 @@ TextureCubeFormatCase::TextureCubeFormatCase (tcu::TestContext& testCtx, glu::Re
 	, m_width		(width)
 	, m_height		(height)
 	, m_texture		(DE_NULL)
-	, m_renderer	(renderCtx, testCtx, glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
+	, m_renderer	(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
 	, m_curFace		(0)
 	, m_isOk		(false)
 {
@@ -453,7 +453,7 @@ Texture2DArrayFormatCase::Texture2DArrayFormatCase (tcu::TestContext& testCtx, g
 	, m_height		(height)
 	, m_numLayers	(numLayers)
 	, m_texture		(DE_NULL)
-	, m_renderer	(renderCtx, testCtx, glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
+	, m_renderer	(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
 	, m_curLayer	(0)
 {
 }
@@ -467,7 +467,7 @@ Texture2DArrayFormatCase::Texture2DArrayFormatCase (tcu::TestContext& testCtx, g
 	, m_height		(height)
 	, m_numLayers	(numLayers)
 	, m_texture		(DE_NULL)
-	, m_renderer	(renderCtx, testCtx, glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
+	, m_renderer	(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
 	, m_curLayer	(0)
 {
 }
@@ -605,7 +605,7 @@ Texture3DFormatCase::Texture3DFormatCase (tcu::TestContext& testCtx, glu::Render
 	, m_height		(height)
 	, m_depth		(depth)
 	, m_texture		(DE_NULL)
-	, m_renderer	(renderCtx, testCtx, glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
+	, m_renderer	(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
 	, m_curSlice	(0)
 {
 }
@@ -619,7 +619,7 @@ Texture3DFormatCase::Texture3DFormatCase (tcu::TestContext& testCtx, glu::Render
 	, m_height		(height)
 	, m_depth		(depth)
 	, m_texture		(DE_NULL)
-	, m_renderer	(renderCtx, testCtx, glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
+	, m_renderer	(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
 	, m_curSlice	(0)
 {
 }
@@ -770,7 +770,7 @@ Compressed2DFormatCase::Compressed2DFormatCase (tcu::TestContext&			testCtx,
 	, m_width			(width)
 	, m_height			(height)
 	, m_texture			(DE_NULL)
-	, m_renderer		(renderCtx, testCtx, glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
+	, m_renderer		(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
 {
 }
 
@@ -911,7 +911,7 @@ CompressedCubeFormatCase::CompressedCubeFormatCase (tcu::TestContext&			testCtx,
 	, m_width			(width)
 	, m_height			(height)
 	, m_texture			(DE_NULL)
-	, m_renderer		(renderCtx, testCtx, glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
+	, m_renderer		(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
 	, m_curFace			(0)
 	, m_isOk			(false)
 {
@@ -1048,7 +1048,7 @@ Texture2DFileCase::Texture2DFileCase (tcu::TestContext& testCtx, glu::RenderCont
 	, m_renderCtxInfo	(renderCtxInfo)
 	, m_filenames		(filenames)
 	, m_texture			(DE_NULL)
-	, m_renderer		(renderCtx, testCtx, glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
+	, m_renderer		(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
 {
 }
 
@@ -1153,7 +1153,7 @@ TextureCubeFileCase::TextureCubeFileCase (tcu::TestContext& testCtx, glu::Render
 	, m_renderCtxInfo	(renderCtxInfo)
 	, m_filenames		(filenames)
 	, m_texture			(DE_NULL)
-	, m_renderer		(renderCtx, testCtx, glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
+	, m_renderer		(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
 	, m_curFace			(0)
 	, m_isOk			(false)
 {

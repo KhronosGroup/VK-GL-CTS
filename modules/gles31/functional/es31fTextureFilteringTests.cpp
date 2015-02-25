@@ -184,7 +184,7 @@ TextureCubeArrayFilteringCase::TextureCubeArrayFilteringCase (Context& context,
 	, m_onlySampleFaceInterior	(onlySampleFaceInterior)
 	, m_gradientTex				(DE_NULL)
 	, m_gridTex					(DE_NULL)
-	, m_renderer				(m_context.getRenderContext(), context.getTestContext(), glu::GLSL_VERSION_310_ES, glu::PRECISION_HIGHP)
+	, m_renderer				(context.getRenderContext(), context.getTestContext().getLog(), glu::GLSL_VERSION_310_ES, glu::PRECISION_HIGHP)
 	, m_caseNdx					(0)
 {
 }
