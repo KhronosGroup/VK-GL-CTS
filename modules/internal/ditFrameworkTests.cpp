@@ -27,6 +27,12 @@
 #include "tcuTestLog.hpp"
 #include "tcuCommandLine.hpp"
 
+#include "rrRenderer.hpp"
+#include "tcuTextureUtil.hpp"
+#include "tcuVectorUtil.hpp"
+#include "deRandom.hpp"
+#include "tcuFloat.hpp"
+
 namespace dit
 {
 
@@ -545,6 +551,315 @@ public:
 	}
 };
 
+inline deUint32 ulpDiff (float a, float b)
+{
+	const deUint32 ab = tcu::Float32(a).bits();
+	const deUint32 bb = tcu::Float32(b).bits();
+	return de::max(ab, bb) - de::min(ab, bb);
+}
+
+template<int Size>
+inline tcu::Vector<deUint32, Size> ulpDiff (const tcu::Vector<float, Size>& a, const tcu::Vector<float,  Size>& b)
+{
+	tcu::Vector<deUint32, Size> res;
+	for (int ndx = 0; ndx < Size; ndx++)
+		res[ndx] = ulpDiff(a[ndx], b[ndx]);
+	return res;
+}
+
+class ConstantInterpolationTest : public tcu::TestCase
+{
+public:
+	ConstantInterpolationTest (tcu::TestContext& testCtx)
+		: tcu::TestCase(testCtx, "const_interpolation", "Constant value interpolation")
+	{
+		const int supportedMsaaLevels[] = {1, 2, 4, 8, 16};
+
+		for (int msaaNdx = 0; msaaNdx < DE_LENGTH_OF_ARRAY(supportedMsaaLevels); msaaNdx++)
+		{
+			const int numSamples = supportedMsaaLevels[msaaNdx];
+			{
+				SubCase c;
+				c.rtSize	= tcu::IVec3(128, 128, numSamples);
+				c.vtx[0]	= tcu::Vec4(-1.0f, -1.0f, 0.5f, 1.0f);
+				c.vtx[1]	= tcu::Vec4(-1.0f, +1.0f, 0.5f, 1.0f);
+				c.vtx[2]	= tcu::Vec4(+1.0f, -1.0f, 0.5f, 1.0f);
+				c.varying	= tcu::Vec4(0.0f, 1.0f, 8.0f, -8.0f);
+				m_cases.push_back(c);
+			}
+
+			{
+				SubCase c;
+				c.rtSize	= tcu::IVec3(128, 128, numSamples);
+				c.vtx[0]	= tcu::Vec4(-1.0f, +1.0f, 0.5f, 1.0f);
+				c.vtx[1]	= tcu::Vec4(+1.0f, -1.0f, 0.5f, 1.0f);
+				c.vtx[2]	= tcu::Vec4(+1.0f, +1.0f, 0.5f, 1.0f);
+				c.varying	= tcu::Vec4(0.0f, 1.0f, 8.0f, -8.0f);
+				m_cases.push_back(c);
+			}
+			{
+				SubCase c;
+				c.rtSize	= tcu::IVec3(129, 113, numSamples);
+				c.vtx[0]	= tcu::Vec4(-1.0f, -1.0f, 0.5f, 1.0f);
+				c.vtx[1]	= tcu::Vec4(-1.0f, +1.0f, 0.5f, 1.0f);
+				c.vtx[2]	= tcu::Vec4(+1.0f, -1.0f, 0.5f, 1.0f);
+				c.varying	= tcu::Vec4(0.0f, 1.0f, 8.0f, -8.0f);
+				m_cases.push_back(c);
+			}
+			{
+				SubCase c;
+				c.rtSize	= tcu::IVec3(107, 131, numSamples);
+				c.vtx[0]	= tcu::Vec4(-1.0f, +1.0f, 0.5f, 1.0f);
+				c.vtx[1]	= tcu::Vec4(+1.0f, -1.0f, 0.5f, 1.0f);
+				c.vtx[2]	= tcu::Vec4(+1.0f, +1.0f, 0.5f, 1.0f);
+				c.varying	= tcu::Vec4(0.0f, 1.0f, 8.0f, -8.0f);
+				m_cases.push_back(c);
+			}
+		}
+
+		{
+			de::Random rnd(0x89423f);
+			for (int ndx = 0; ndx < 25; ndx++)
+			{
+				const float	depth	= rnd.getFloat()*2.0f - 1.0f;
+				SubCase		c;
+
+				c.rtSize.x() = rnd.getInt(16, 256);
+				c.rtSize.y() = rnd.getInt(16, 256);
+				c.rtSize.z() = rnd.choose<int>(DE_ARRAY_BEGIN(supportedMsaaLevels), DE_ARRAY_END(supportedMsaaLevels));
+
+				for (int vtxNdx = 0; vtxNdx < DE_LENGTH_OF_ARRAY(c.vtx); vtxNdx++)
+				{
+					c.vtx[vtxNdx].x() = rnd.getFloat()*2.0f - 1.0f;
+					c.vtx[vtxNdx].y() = rnd.getFloat()*2.0f - 1.0f;
+					c.vtx[vtxNdx].z() = depth;
+					c.vtx[vtxNdx].w() = 1.0f;
+				}
+
+				for (int compNdx = 0; compNdx < 4; compNdx++)
+				{
+					float v;
+					do
+					{
+						v = tcu::Float32(rnd.getUint32()).asFloat();
+					} while (deFloatIsInf(v) || deFloatIsNaN(v));
+					c.varying[compNdx] = v;
+				}
+				m_cases.push_back(c);
+			}
+		}
+	}
+
+	void init (void)
+	{
+		m_caseIter = m_cases.begin();
+		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "All iterations passed");
+	}
+
+	IterateResult iterate (void)
+	{
+		{
+			tcu::ScopedLogSection section(m_testCtx.getLog(), "SubCase", "");
+			runCase(*m_caseIter);
+		}
+		return (++m_caseIter != m_cases.end()) ? CONTINUE : STOP;
+	}
+
+protected:
+	struct SubCase
+	{
+		tcu::IVec3	rtSize;	// (width, height, samples)
+		tcu::Vec4	vtx[3];
+		tcu::Vec4	varying;
+	};
+
+	void runCase (const SubCase& subCase)
+	{
+		using namespace tcu;
+
+		const deUint32	maxColorUlpDiff	= 2;
+		const deUint32	maxDepthUlpDiff	= 0;
+
+		const int		width			= subCase.rtSize.x();
+		const int		height			= subCase.rtSize.y();
+		const int		numSamples		= subCase.rtSize.z();
+		const float		zn				= 0.0f;
+		const float		zf				= 1.0f;
+
+		TextureLevel	interpolated	(TextureFormat(TextureFormat::RGBA, TextureFormat::FLOAT), numSamples, width, height);
+		TextureLevel	depthStencil	(TextureFormat(TextureFormat::DS, TextureFormat::FLOAT_UNSIGNED_INT_24_8_REV), numSamples, width, height);
+
+		m_testCtx.getLog() << TestLog::Message
+						   << "RT size (w, h, #samples) = " << subCase.rtSize << "\n"
+						   << "vtx[0] = " << subCase.vtx[0] << "\n"
+						   << "vtx[1] = " << subCase.vtx[1] << "\n"
+						   << "vtx[2] = " << subCase.vtx[2] << "\n"
+						   << "color = " << subCase.varying
+						   << TestLog::EndMessage;
+
+		clear			(interpolated.getAccess(), subCase.varying - Vec4(0.0f, 0.0f, 0.0f, 1.0f));
+		clearDepth		(depthStencil.getAccess(), 0.0f);
+		clearStencil	(depthStencil.getAccess(), 0);
+
+		{
+			class VtxShader : public rr::VertexShader
+			{
+			public:
+				VtxShader (void)
+					: rr::VertexShader(2, 1)
+				{
+					m_inputs[0].type	= rr::GENERICVECTYPE_FLOAT;
+					m_inputs[1].type	= rr::GENERICVECTYPE_FLOAT;
+					m_outputs[0].type	= rr::GENERICVECTYPE_FLOAT;
+				}
+
+				void shadeVertices (const rr::VertexAttrib* inputs, rr::VertexPacket* const* packets, const int numPackets) const
+				{
+					for (int packetNdx = 0; packetNdx < numPackets; packetNdx++)
+					{
+						rr::readVertexAttrib(packets[packetNdx]->position, inputs[0], packets[packetNdx]->instanceNdx, packets[packetNdx]->vertexNdx);
+						packets[packetNdx]->outputs[0] = rr::readVertexAttribFloat(inputs[1], packets[packetNdx]->instanceNdx, packets[packetNdx]->vertexNdx);
+					}
+				}
+			} vtxShader;
+
+			class FragShader : public rr::FragmentShader
+			{
+			public:
+				FragShader (void)
+					: rr::FragmentShader(1, 1)
+				{
+					m_inputs[0].type	= rr::GENERICVECTYPE_FLOAT;
+					m_outputs[0].type	= rr::GENERICVECTYPE_FLOAT;
+				}
+
+				void shadeFragments (rr::FragmentPacket* packets, const int numPackets, const rr::FragmentShadingContext& context) const
+				{
+					for (int packetNdx = 0; packetNdx < numPackets; packetNdx++)
+					{
+						for (int fragNdx = 0; fragNdx < rr::NUM_FRAGMENTS_PER_PACKET; fragNdx++)
+						{
+							const tcu::Vec4 interp = rr::readTriangleVarying<float>(packets[packetNdx], context, 0, fragNdx);
+							rr::writeFragmentOutput(context, packetNdx, fragNdx, 0, interp);
+						}
+					}
+				}
+			} fragShader;
+
+			const rr::Program						program			(&vtxShader, &fragShader);
+
+			const rr::MultisamplePixelBufferAccess	colorAccess		= rr::MultisamplePixelBufferAccess::fromMultisampleAccess(interpolated.getAccess());
+			const rr::MultisamplePixelBufferAccess	dsAccess		= rr::MultisamplePixelBufferAccess::fromMultisampleAccess(depthStencil.getAccess());
+			const rr::RenderTarget					renderTarget	(colorAccess, dsAccess, dsAccess);
+			const rr::VertexAttrib					vertexAttribs[]	=
+			{
+				rr::VertexAttrib(rr::VERTEXATTRIBTYPE_FLOAT, 4, 0, 0, subCase.vtx),
+				rr::VertexAttrib(subCase.varying)
+			};
+			rr::ViewportState						viewport		(colorAccess);
+			rr::RenderState							state			(viewport);
+			const rr::DrawCommand					drawCmd			(state, renderTarget, program, DE_LENGTH_OF_ARRAY(vertexAttribs), vertexAttribs, rr::PrimitiveList(rr::PRIMITIVETYPE_TRIANGLES, 3, 0));
+			const rr::Renderer						renderer;
+
+			viewport.zn	= zn;
+			viewport.zf	= zf;
+
+			state.fragOps.depthTestEnabled							= true;
+			state.fragOps.depthFunc									= rr::TESTFUNC_ALWAYS;
+			state.fragOps.stencilTestEnabled						= true;
+			state.fragOps.stencilStates[rr::FACETYPE_BACK].func		= rr::TESTFUNC_ALWAYS;
+			state.fragOps.stencilStates[rr::FACETYPE_BACK].dpPass	= rr::STENCILOP_INCR;
+			state.fragOps.stencilStates[rr::FACETYPE_FRONT]			= state.fragOps.stencilStates[rr::FACETYPE_BACK];
+
+			renderer.draw(drawCmd);
+		}
+
+		// Verify interpolated values
+		{
+			TextureLevel					resolvedColor			(interpolated.getFormat(), width, height); // For debugging
+			TextureLevel					resolvedDepthStencil	(depthStencil.getFormat(), width, height); // For debugging
+			TextureLevel					errorMask				(TextureFormat(TextureFormat::RGB, TextureFormat::UNORM_INT8), width, height);
+			const ConstPixelBufferAccess	interpAccess			= interpolated.getAccess();
+			const ConstPixelBufferAccess	dsAccess				= depthStencil.getAccess();
+			const PixelBufferAccess			errorAccess				= errorMask.getAccess();
+			int								numCoveredSamples		= 0;
+			int								numFailedColorSamples	= 0;
+			int								numFailedDepthSamples	= 0;
+			const bool						verifyDepth				= (subCase.vtx[0].z() == subCase.vtx[1].z()) &&
+																	  (subCase.vtx[1].z() == subCase.vtx[2].z());
+			const float						refDepth				= subCase.vtx[0].z()*(zf - zn)/2.0f + (zn + zf)/2.0f;
+
+			rr::resolveMultisampleColorBuffer(resolvedColor.getAccess(), rr::MultisampleConstPixelBufferAccess::fromMultisampleAccess(interpolated.getAccess()));
+			rr::resolveMultisampleColorBuffer(resolvedDepthStencil.getAccess(), rr::MultisampleConstPixelBufferAccess::fromMultisampleAccess(depthStencil.getAccess()));
+			clear(errorAccess, Vec4(0.0f, 1.0f, 0.0f, 1.0f));
+
+			for (int y = 0; y < height; y++)
+			{
+				for (int x = 0; x < width; x++)
+				{
+					for (int sampleNdx = 0; sampleNdx < numSamples; sampleNdx++)
+					{
+						if (dsAccess.getPixStencil(sampleNdx, x, y) != 0)
+						{
+							const Vec4		color		= interpAccess.getPixel(sampleNdx, x, y);
+							const UVec4		colorDiff	= ulpDiff(color, subCase.varying);
+							const bool		colorOk		= boolAll(lessThanEqual(colorDiff, tcu::UVec4(maxColorUlpDiff)));
+
+							const float		depth		= dsAccess.getPixDepth(sampleNdx, x, y);
+							const deUint32	depthDiff	= ulpDiff(depth, refDepth);
+							const bool		depthOk		= verifyDepth && (depthDiff <= maxDepthUlpDiff);
+
+							const int		maxMsgs		= 10;
+
+							numCoveredSamples += 1;
+
+							if (!colorOk)
+							{
+								numFailedColorSamples += 1;
+
+								if (numFailedColorSamples <= maxMsgs)
+									m_testCtx.getLog() << TestLog::Message
+													   << "FAIL: " << tcu::IVec3(x, y, sampleNdx)
+													   << " color ulp diff = " << colorDiff
+													   << TestLog::EndMessage;
+							}
+
+							if (!depthOk)
+								numFailedDepthSamples += 1;
+
+							if (!colorOk || !depthOk)
+								errorAccess.setPixel(errorAccess.getPixel(x, y) + Vec4(1.0f, -1.0f, 0.0f, 0.0f) / float(numSamples-1), x, y);
+						}
+					}
+				}
+			}
+
+			m_testCtx.getLog() << TestLog::Image("ResolvedColor", "Resolved colorbuffer", resolvedColor)
+							   << TestLog::Image("ResolvedDepthStencil", "Resolved depth- & stencilbuffer", resolvedDepthStencil);
+
+			if (numFailedColorSamples != 0 || numFailedDepthSamples != 0)
+			{
+				m_testCtx.getLog() << TestLog::Image("ErrorMask", "Error mask", errorMask);
+
+				if (numFailedColorSamples != 0)
+					m_testCtx.getLog() << TestLog::Message << "FAIL: Found " << numFailedColorSamples << " invalid color samples!" << TestLog::EndMessage;
+
+				if (numFailedDepthSamples != 0)
+					m_testCtx.getLog() << TestLog::Message << "FAIL: Found " << numFailedDepthSamples << " invalid depth samples!" << TestLog::EndMessage;
+
+				if (m_testCtx.getTestResult() == QP_TEST_RESULT_PASS)
+					m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Invalid samples found");
+			}
+
+			m_testCtx.getLog() << TestLog::Message << (numCoveredSamples-numFailedColorSamples) << " / " << numCoveredSamples << " color samples passed" << TestLog::EndMessage;
+			m_testCtx.getLog() << TestLog::Message << (numCoveredSamples-numFailedDepthSamples) << " / " << numCoveredSamples << " depth samples passed" << TestLog::EndMessage;
+		}
+	}
+
+	vector<SubCase>					m_cases;
+	vector<SubCase>::const_iterator	m_caseIter;
+};
+
 class CommonFrameworkTests : public tcu::TestCaseGroup
 {
 public:
@@ -559,6 +874,20 @@ public:
 								   tcu::FloatFormat_selfTest));
 		addChild(new SelfCheckCase(m_testCtx, "either","tcu::Either_selfTest()",
 								   tcu::Either_selfTest));
+	}
+};
+
+class ReferenceRendererTests : public tcu::TestCaseGroup
+{
+public:
+	ReferenceRendererTests (tcu::TestContext& testCtx)
+		: tcu::TestCaseGroup(testCtx, "reference_renderer", "Reference renderer tests")
+	{
+	}
+
+	void init (void)
+	{
+		addChild(new ConstantInterpolationTest(m_testCtx));
 	}
 };
 
@@ -577,6 +906,7 @@ void FrameworkTests::init (void)
 {
 	addChild(new CommonFrameworkTests	(m_testCtx));
 	addChild(new CaseListParserTests	(m_testCtx));
+	addChild(new ReferenceRendererTests	(m_testCtx));
 }
 
 }

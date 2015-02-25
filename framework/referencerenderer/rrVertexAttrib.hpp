@@ -123,6 +123,26 @@ struct VertexAttrib
 		, pointer			(DE_NULL)
 	{
 	}
+
+	VertexAttrib (VertexAttribType type_, int size_, int stride_, int instanceDivisor_, const void* pointer_)
+		: type				(type_)
+		, size				(size_)
+		, stride			(stride_)
+		, instanceDivisor	(instanceDivisor_)
+		, pointer			(pointer_)
+	{
+	}
+
+	template<typename ScalarType>
+	explicit VertexAttrib (const tcu::Vector<ScalarType, 4>& generic_)
+		: type				(VERTEXATTRIBTYPE_DONT_CARE)
+		, size				(0)
+		, stride			(0)
+		, instanceDivisor	(0)
+		, pointer			(DE_NULL)
+		, generic			(generic_)
+	{
+	}
 };
 
 bool		isValidVertexAttrib		(const VertexAttrib& vertexAttrib);
