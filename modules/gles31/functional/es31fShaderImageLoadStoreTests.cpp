@@ -2458,11 +2458,6 @@ AtomicCompSwapCase::IterateResult AtomicCompSwapCase::iterate (void)
 																		: m_caseType == ATOMIC_OPERATION_CASE_TYPE_RETURN_VALUES	? *returnValueTextureBuf
 																		: (deUint32)-1;
 
-		// Actual size of the texture being checked.
-		const IVec3									textureToCheckSize	= imageSize * (m_caseType == ATOMIC_OPERATION_CASE_TYPE_END_RESULT	? IVec3(1,							1,							1)
-																					 : m_imageType == TEXTURETYPE_CUBE						? IVec3(NUM_INVOCATIONS_PER_PIXEL,	NUM_INVOCATIONS_PER_PIXEL,	1)
-																					 :														  IVec3(NUM_INVOCATIONS_PER_PIXEL,	1,							1));
-
 		// The relevant region of the texture being checked (potentially
 		// different from actual texture size for cube maps, because cube maps
 		// may have unused pixels due to square size restriction).

@@ -4359,7 +4359,6 @@ void ReferenceRenderTimeCase::runSample (SampleResult& sample)
 	const int				numVertices		= getLayeredGridNumVertices(sample.scene);
 	const glu::Buffer		arrayBuffer		(m_context.getRenderContext());
 	const glu::Buffer		indexBuffer		(m_context.getRenderContext());
-	const glu::Buffer		unrelatedBuffer	(m_context.getRenderContext());
 	std::vector<tcu::Vec4>	vertexData;
 	std::vector<deUint32>	indexData;
 	deUint64				startTime;

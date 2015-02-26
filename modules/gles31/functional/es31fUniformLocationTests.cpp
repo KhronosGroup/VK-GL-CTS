@@ -389,7 +389,6 @@ bool UniformLocationCase::verifyLocations (const glu::ShaderProgram& program, co
 
 		for (glu::BasicTypeIterator subTypeIter = glu::BasicTypeIterator::begin(&uniformInfo.type); subTypeIter != glu::BasicTypeIterator::end(&uniformInfo.type); subTypeIter++, subTypeIndex++)
 		{
-			const glu::VarType	type		= glu::getVarType(uniformInfo.type, subTypeIter.getPath());
 			const string		name		= getUniformName(uniformNdx, uniformInfo.type, subTypeIter.getPath());
 			const int			gotLoc		= gl.getUniformLocation(programID, name.c_str());
 			const int			expectLoc	= uniformInfo.location >= 0 ? uniformInfo.location+subTypeIndex : -1;
@@ -985,7 +984,6 @@ void UniformLocationTests::init (void)
 	// Min/Max location
 	{
 		tcu::TestCaseGroup* const	group		= new tcu::TestCaseGroup(m_testCtx, "min_max", "Maximum & minimum location");
-		de::Random					rng			(baseSeed + 0x1f01);
 
 		addChild(group);
 

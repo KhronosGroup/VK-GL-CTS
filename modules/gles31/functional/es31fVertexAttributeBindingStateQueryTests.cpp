@@ -578,7 +578,6 @@ MixedVertexBindingDivisorCase::MixedVertexBindingDivisorCase (Context& context, 
 void MixedVertexBindingDivisorCase::test (tcu::ResultCollector& result)
 {
 	glu::CallLogWrapper gl					(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
-	glu::VertexArray	vao					(m_context.getRenderContext());
 
 	gl.enableLogging(true);
 
@@ -601,7 +600,6 @@ MixedVertexBindingOffsetCase::MixedVertexBindingOffsetCase (Context& context, co
 void MixedVertexBindingOffsetCase::test (tcu::ResultCollector& result)
 {
 	glu::CallLogWrapper gl					(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
-	glu::VertexArray	vao					(m_context.getRenderContext());
 	glu::Buffer			buffer				(m_context.getRenderContext());
 
 	gl.enableLogging(true);
@@ -627,7 +625,6 @@ MixedVertexBindingStrideCase::MixedVertexBindingStrideCase (Context& context, co
 void MixedVertexBindingStrideCase::test (tcu::ResultCollector& result)
 {
 	glu::CallLogWrapper gl					(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
-	glu::VertexArray	vao					(m_context.getRenderContext());
 	glu::Buffer			buffer				(m_context.getRenderContext());
 
 	gl.enableLogging(true);
@@ -656,7 +653,6 @@ MixedVertexBindingBufferCase::MixedVertexBindingBufferCase (Context& context, co
 void MixedVertexBindingBufferCase::test (tcu::ResultCollector& result)
 {
 	glu::CallLogWrapper gl					(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
-	glu::VertexArray	vao					(m_context.getRenderContext());
 	glu::Buffer			buffer				(m_context.getRenderContext());
 
 	gl.enableLogging(true);

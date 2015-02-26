@@ -333,8 +333,6 @@ public:
 
 	void test (void)
 	{
-		de::Random rnd(0xabcdef);
-
 		GLuint renderbufferID = 0;
 		glGenRenderbuffers(1, &renderbufferID);
 		glBindRenderbuffer(GL_RENDERBUFFER, renderbufferID);
