@@ -12621,7 +12621,6 @@ dEQP-GLES31.functional.separate_shader.validation.io_blocks.mismatch_member_orde
 dEQP-GLES31.functional.separate_shader.validation.io_blocks.mismatch_member_type
 dEQP-GLES31.functional.separate_shader.validation.io_blocks.mismatch_member_name
 dEQP-GLES31.functional.separate_shader.validation.io_blocks.mismatch_member_precision
-dEQP-GLES31.functional.separate_shader.validation.io_blocks.match_different_member_interpolation
 dEQP-GLES31.functional.separate_shader.validation.io_blocks.mismatch_member_array_size
 dEQP-GLES31.functional.separate_shader.validation.io_blocks.match_different_member_struct_names
 dEQP-GLES31.functional.separate_shader.validation.io_blocks.mismatch_member_struct_member_name
