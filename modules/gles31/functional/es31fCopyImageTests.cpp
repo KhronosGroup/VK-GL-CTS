@@ -606,6 +606,16 @@ void genTextureImage (const glw::Functions&				gl,
 		}
 	}
 
+	gl.texParameteri(info.getTarget(), GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	gl.texParameteri(info.getTarget(), GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+	if (info.getTarget() == GL_TEXTURE_3D)
+		gl.texParameteri(info.getTarget(), GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+	gl.texParameteri(info.getTarget(), GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	gl.texParameteri(info.getTarget(), GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "Setting texture parameters failed");
+
 	gl.bindTexture(info.getTarget(), 0);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "Unbinding texture failed.");
 }
@@ -728,12 +738,12 @@ int sumComponents (const IVec3& v)
 }
 
 void copyImageData (vector<ArrayBuffer<deUint8> >&			dstImageData,
-				    const ImageInfo&						dstImageInfo,
+					const ImageInfo&						dstImageInfo,
 					int										dstLevel,
 					const IVec3&							dstPos,
 
 					const vector<ArrayBuffer<deUint8> >&	srcImageData,
-				    const ImageInfo&						srcImageInfo,
+					const ImageInfo&						srcImageInfo,
 					int										srcLevel,
 					const IVec3&							srcPos,
 
