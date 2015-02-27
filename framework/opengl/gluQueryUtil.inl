@@ -22,6 +22,15 @@ int getBasicQueryNumArgsOut (int pname)
 	}
 }
 
+int getIndexedQueryNumArgsOut (int pname)
+{
+	switch(pname)
+	{
+		case GL_COLOR_WRITEMASK:	return 4;
+		default:					return 1;
+	}
+}
+
 int getAttributeQueryNumArgsOut (int pname)
 {
 	switch(pname)

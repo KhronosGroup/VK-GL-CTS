@@ -1438,7 +1438,7 @@ void CallLogWrapper::glGetBooleani_v (glw::GLenum target, glw::GLuint index, glw
 		m_log << TestLog::Message << "glGetBooleani_v(" << getGettableIndexedStateStr(target) << ", " << index << ", " << static_cast<const void*>(data) << ");" << TestLog::EndMessage;
 	m_gl.getBooleani_v(target, index, data);
 	if (m_enableLog)
-		m_log << TestLog::Message << "// data = " << getBooleanPointerStr(data, 1) << TestLog::EndMessage;
+		m_log << TestLog::Message << "// data = " << getBooleanPointerStr(data, getIndexedQueryNumArgsOut(target)) << TestLog::EndMessage;
 }
 
 void CallLogWrapper::glGetBooleanv (glw::GLenum pname, glw::GLboolean *data)
@@ -1603,7 +1603,7 @@ void CallLogWrapper::glGetInteger64i_v (glw::GLenum target, glw::GLuint index, g
 		m_log << TestLog::Message << "glGetInteger64i_v(" << getGettableIndexedStateStr(target) << ", " << index << ", " << data << ");" << TestLog::EndMessage;
 	m_gl.getInteger64i_v(target, index, data);
 	if (m_enableLog)
-		m_log << TestLog::Message << "// data = " << getPointerStr(data, 1) << TestLog::EndMessage;
+		m_log << TestLog::Message << "// data = " << getPointerStr(data, getIndexedQueryNumArgsOut(target)) << TestLog::EndMessage;
 }
 
 void CallLogWrapper::glGetInteger64v (glw::GLenum pname, glw::GLint64 *data)
@@ -1621,7 +1621,7 @@ void CallLogWrapper::glGetIntegeri_v (glw::GLenum target, glw::GLuint index, glw
 		m_log << TestLog::Message << "glGetIntegeri_v(" << getGettableIndexedStateStr(target) << ", " << index << ", " << data << ");" << TestLog::EndMessage;
 	m_gl.getIntegeri_v(target, index, data);
 	if (m_enableLog)
-		m_log << TestLog::Message << "// data = " << getPointerStr(data, 1) << TestLog::EndMessage;
+		m_log << TestLog::Message << "// data = " << getPointerStr(data, getIndexedQueryNumArgsOut(target)) << TestLog::EndMessage;
 }
 
 void CallLogWrapper::glGetIntegerv (glw::GLenum pname, glw::GLint *data)

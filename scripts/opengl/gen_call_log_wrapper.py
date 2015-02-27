@@ -153,8 +153,8 @@ CALL_LOG_SPECS = {
 	"glGetFramebufferParameteriv":			LogSpec({0: enum("FramebufferTarget"), 1: enum("FramebufferParameter")}, argOutPrints = {2: pointer(size = "1")}),
 	"glGetIntegerv":						LogSpec({0: enum("GettableState")}, argOutPrints = {1: pointer(size = "getBasicQueryNumArgsOut(pname)")}),
 	"glGetInteger64v":						LogSpec({0: enum("GettableState")}, argOutPrints = {1: pointer(size = "getBasicQueryNumArgsOut(pname)")}),
-	"glGetIntegeri_v":						LogSpec({0: enum("GettableIndexedState")}, argOutPrints = {2: pointer(size = "1")}),
-	"glGetInteger64i_v":					LogSpec({0: enum("GettableIndexedState")}, argOutPrints = {2: pointer(size = "1")}),
+	"glGetIntegeri_v":						LogSpec({0: enum("GettableIndexedState")}, argOutPrints = {2:pointer(size = "getIndexedQueryNumArgsOut(target)")}),
+	"glGetInteger64i_v":						LogSpec({0: enum("GettableIndexedState")}, argOutPrints = {2: pointer(size = "getIndexedQueryNumArgsOut(target)")}),
 	"glGetBooleani_v":
 		LogSpec(
 			{
@@ -162,7 +162,7 @@ CALL_LOG_SPECS = {
 				2: voidPointer					# last argument has type of GLboolean* (aka. char*). Prevent
 												# wrapper from attempting to print the argument as a C string.
 			},
-			argOutPrints = {2: booleanPointer(size = "1")}),
+			argOutPrints = {2: booleanPointer(size = "getIndexedQueryNumArgsOut(target)")}),
 	"glGetInternalformativ":				LogSpec({0: enum("InternalFormatTarget"), 1: enum("PixelFormat"), 2: enum("InternalFormatParameter")}, argOutPrints = {4: pointer(size = "bufSize")}),
 	"glGetMultisamplefv":					LogSpec({0: enum("MultisampleParameter")}, argOutPrints = {2: pointer(size = "2")}),
 	"glGetPointerv":						LogSpec({0: enum("PointerState")}, argOutPrints = {1: pointer(size = "1")}),
