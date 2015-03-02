@@ -77,6 +77,16 @@ std::ostream&		operator<<		(std::ostream& str, const EnumPointerFmt& fmt);
 
 } // detail
 
+inline detail::EnumPointerFmt getEnumPointerStr (const deUint32* value, deInt32 size, detail::EnumPointerFmt::GetEnumNameFunc getName)
+{
+	return detail::EnumPointerFmt(value, (deUint32)de::max(0, size), getName);
+}
+
+inline detail::BooleanPointerFmt getBooleanPointerStr (const deUint8* value, deInt32 size)
+{
+	return detail::BooleanPointerFmt(value, (deUint32)de::max(0, size));
+}
+
 inline detail::TextureUnitStr						getTextureUnitStr			(deUint32 unit) { return detail::TextureUnitStr(unit); }
 inline detail::TextureParameterValueStr				getTextureParameterValueStr	(deUint32 param, int value) { return detail::TextureParameterValueStr(param, value); }
 detail::EnumPointerFmt								getInvalidateAttachmentStr	(const deUint32* attachments, int numAttachments);

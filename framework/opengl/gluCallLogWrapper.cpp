@@ -55,16 +55,6 @@ inline tcu::Format::ArrayPointer<T> getPointerStr (const T* arr, int size)
 	return tcu::formatArray(arr, de::max(size, 0));
 }
 
-inline detail::EnumPointerFmt getEnumPointerStr (const deUint32* value, glw::GLsizei size, detail::EnumPointerFmt::GetEnumNameFunc getName)
-{
-	return detail::EnumPointerFmt(value, (deUint32)de::max(0, size), getName);
-}
-
-inline detail::BooleanPointerFmt getBooleanPointerStr (const deUint8* value, glw::GLsizei size)
-{
-	return detail::BooleanPointerFmt(value, (deUint32)de::max(0, size));
-}
-
 // String formatter.
 
 class StringFmt
