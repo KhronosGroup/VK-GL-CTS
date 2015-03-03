@@ -27,6 +27,8 @@
 
 #include "tcuSeedBuilder.hpp"
 
+#include "deMemory.h"
+
 namespace tcu
 {
 
@@ -93,61 +95,142 @@ SeedBuilder& operator<< (SeedBuilder& builder, deUint8 value)
 
 SeedBuilder& operator<< (SeedBuilder& builder, deInt16 value)
 {
-	const deInt16 val = value ^ 555;
+	const deInt16	val		= value ^ 555;
+	const deUint8	data[]	=
+	{
+		(deUint8)(((deUint16)val) & 0xFFu),
+		(deUint8)(((deUint16)val) >> 8),
+	};
 
-	builder.feed(sizeof(val), &val);
+	builder.feed(sizeof(data), data);
 	return builder;
 }
 
 SeedBuilder& operator<< (SeedBuilder& builder, deUint16 value)
 {
-	const deUint16 val = value ^ 37323u;
+	const deUint16	val		= value ^ 37323u;
+	const deUint8	data[]	=
+	{
+		(deUint8)(val & 0xFFu),
+		(deUint8)(val >> 8),
+	};
 
-	builder.feed(sizeof(val), &val);
+	builder.feed(sizeof(data), data);
 	return builder;
 }
 
 SeedBuilder& operator<< (SeedBuilder& builder, deInt32 value)
 {
-	const deInt32 val = value ^ 53054741;
+	const deInt32	val		= value ^ 53054741;
+	const deUint8	data[]	=
+	{
+		(deUint8)(((deUint32)val) & 0xFFu),
+		(deUint8)((((deUint32)val) >> 8) & 0xFFu),
+		(deUint8)((((deUint32)val) >> 16) & 0xFFu),
+		(deUint8)((((deUint32)val) >> 24) & 0xFFu),
+	};
 
-	builder.feed(sizeof(val), &val);
+	builder.feed(sizeof(data), data);
 	return builder;
 }
 
 SeedBuilder& operator<< (SeedBuilder& builder, deUint32 value)
 {
-	const deUint32 val = value ^ 1977303630u;
+	const deUint32	val		= value ^ 1977303630u;
+	const deUint8	data[]	=
+	{
+		(deUint8)(val & 0xFFu),
+		(deUint8)((val >> 8) & 0xFFu),
+		(deUint8)((val >> 16) & 0xFFu),
+		(deUint8)((val >> 24) & 0xFFu),
+	};
 
-	builder.feed(sizeof(val), &val);
+	builder.feed(sizeof(data), data);
 	return builder;
 }
 
 SeedBuilder& operator<< (SeedBuilder& builder, deInt64 value)
 {
-	const deInt64 val = value ^ 772935234179004386ll;
+	const deInt64	val		= value ^ 772935234179004386ll;
+	const deUint8	data[]	=
+	{
+		(deUint8)(((deUint64)val) & 0xFFu),
+		(deUint8)((((deUint64)val) >> 8) & 0xFFu),
+		(deUint8)((((deUint64)val) >> 16) & 0xFFu),
+		(deUint8)((((deUint64)val) >> 24) & 0xFFu),
 
-	builder.feed(sizeof(val), &val);
+		(deUint8)((((deUint64)val) >> 32) & 0xFFu),
+		(deUint8)((((deUint64)val) >> 40) & 0xFFu),
+		(deUint8)((((deUint64)val) >> 48) & 0xFFu),
+		(deUint8)((((deUint64)val) >> 56) & 0xFFu),
+	};
+
+	builder.feed(sizeof(data), data);
 	return builder;
 }
 
 SeedBuilder& operator<< (SeedBuilder& builder, deUint64 value)
 {
-	const deUint64 val = value ^ 4664937258000467599ull;
+	const deUint64	val		= value ^ 4664937258000467599ull;
+	const deUint8	data[]	=
+	{
+		(deUint8)(val & 0xFFu),
+		(deUint8)((val >> 8) & 0xFFu),
+		(deUint8)((val >> 16) & 0xFFu),
+		(deUint8)((val >> 24) & 0xFFu),
 
-	builder.feed(sizeof(val), &val);
+		(deUint8)((val >> 32) & 0xFFu),
+		(deUint8)((val >> 40) & 0xFFu),
+		(deUint8)((val >> 48) & 0xFFu),
+		(deUint8)((val >> 56) & 0xFFu),
+	};
+
+	builder.feed(sizeof(data), data);
 	return builder;
 }
 
 SeedBuilder& operator<< (SeedBuilder& builder, float value)
 {
-	builder.feed(sizeof(value), &value);
-	return builder;
+	// \note Assume that float has same endianess as uint32.
+	deUint32 val;
+
+	deMemcpy(&val, &value, sizeof(deUint32));
+
+	{
+		const deUint8	data[]	=
+		{
+			(deUint8)(val & 0xFFu),
+			(deUint8)((val >> 8) & 0xFFu),
+			(deUint8)((val >> 16) & 0xFFu),
+			(deUint8)((val >> 24) & 0xFFu),
+		};
+
+		builder.feed(sizeof(data), data);
+		return builder;
+	}
 }
 
 SeedBuilder& operator<< (SeedBuilder& builder, double value)
 {
-	builder.feed(sizeof(value), &value);
+	// \note Assume that double has same endianess as uint64.
+	deUint64 val;
+
+	deMemcpy(&val, &value, sizeof(deUint64));
+
+	const deUint8	data[]	=
+	{
+		(deUint8)(val & 0xFFu),
+		(deUint8)((val >> 8) & 0xFFu),
+		(deUint8)((val >> 16) & 0xFFu),
+		(deUint8)((val >> 24) & 0xFFu),
+
+		(deUint8)((val >> 32) & 0xFFu),
+		(deUint8)((val >> 40) & 0xFFu),
+		(deUint8)((val >> 48) & 0xFFu),
+		(deUint8)((val >> 56) & 0xFFu),
+	};
+
+	builder.feed(sizeof(data), data);
 	return builder;
 }
 
