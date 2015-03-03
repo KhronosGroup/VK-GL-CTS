@@ -411,7 +411,7 @@ static void generateColorTextureGenerationGroup (std::vector<TextureGenerationSp
 
 			level.width				= 16;
 			level.height			= 16;
-			level.depth				= (textureTypeHasDepth(texGen.bindTarget)) ? (6) : (0);
+			level.depth				= (textureTypeHasDepth(texGen.bindTarget)) ? (6) : (1);
 			level.level				= 0;
 			level.internalFormat	= internalFormat;
 			level.compressed		= false;
@@ -432,7 +432,7 @@ static void generateColorTextureGenerationGroup (std::vector<TextureGenerationSp
 
 			level.width				= 32;
 			level.height			= 32;
-			level.depth				= (textureTypeHasDepth(texGen.bindTarget)) ? (6) : (0);
+			level.depth				= (textureTypeHasDepth(texGen.bindTarget)) ? (6) : (1);
 			level.level				= 0;
 			level.internalFormat	= internalFormat;
 			level.compressed		= false;
@@ -453,7 +453,7 @@ static void generateColorTextureGenerationGroup (std::vector<TextureGenerationSp
 
 			level.width				= 32;
 			level.height			= 32;
-			level.depth				= (textureTypeHasDepth(texGen.bindTarget)) ? (6) : (0);
+			level.depth				= (textureTypeHasDepth(texGen.bindTarget)) ? (6) : (1);
 			level.level				= 0;
 			level.internalFormat	= internalFormat;
 			level.compressed		= false;
@@ -479,8 +479,8 @@ static void generateColorTextureGenerationGroup (std::vector<TextureGenerationSp
 			texGen.bindWholeArray		= true;
 
 			level.width				= 32;
-			level.height			= 0;
-			level.depth				= 0;
+			level.height			= 1;
+			level.depth				= 1;
 			level.level				= 0;
 			level.internalFormat	= internalFormat;
 			level.compressed		= false;
@@ -503,8 +503,8 @@ static void generateColorTextureGenerationGroup (std::vector<TextureGenerationSp
 			texGen.bindWholeArray		= false;
 
 			level.width				= 16;
-			level.height			= 0;
-			level.depth				= 0;
+			level.height			= 1;
+			level.depth				= 1;
 			level.level				= 0;
 			level.internalFormat	= internalFormat;
 			level.compressed		= false;
@@ -527,7 +527,7 @@ static void generateColorTextureGenerationGroup (std::vector<TextureGenerationSp
 
 			level.width				= 32;
 			level.height			= 32;
-			level.depth				= (textureTypeHasDepth(texGen.bindTarget)) ? (6) : (0);
+			level.depth				= (textureTypeHasDepth(texGen.bindTarget)) ? (6) : (1);
 			level.level				= 0;
 			level.internalFormat	= internalFormat;
 			level.compressed		= false;
@@ -547,7 +547,7 @@ static void generateColorTextureGenerationGroup (std::vector<TextureGenerationSp
 
 			level.width				= 16;
 			level.height			= (target == GL_TEXTURE_CUBE_MAP || target == GL_TEXTURE_CUBE_MAP_ARRAY) ? (16) : (64);
-			level.depth				= (textureTypeHasDepth(texGen.bindTarget)) ? (6) : (0);
+			level.depth				= (textureTypeHasDepth(texGen.bindTarget)) ? (6) : (1);
 			level.level				= 0;
 			level.internalFormat	= internalFormat;
 			level.compressed		= false;
@@ -567,7 +567,7 @@ static void generateColorTextureGenerationGroup (std::vector<TextureGenerationSp
 
 			level.width				= 4;
 			level.height			= (target == GL_TEXTURE_CUBE_MAP || target == GL_TEXTURE_CUBE_MAP_ARRAY) ? (4) : (8);
-			level.depth				= (textureTypeHasDepth(texGen.bindTarget)) ? (6) : (0);
+			level.depth				= (textureTypeHasDepth(texGen.bindTarget)) ? (6) : (1);
 			level.level				= 3;
 			level.internalFormat	= internalFormat;
 			level.compressed		= false;
@@ -633,8 +633,8 @@ static void generateInternalFormatTextureGenerationGroup (std::vector<TextureGen
 		}
 
 		level.width				= 32;
-		level.height			= (textureTypeHasHeight(target)) ? (32) : (0);
-		level.depth				= (textureTypeHasDepth(target)) ? (6) : (0);
+		level.height			= (textureTypeHasHeight(target)) ? (32) : (1);
+		level.depth				= (textureTypeHasDepth(target)) ? (6) : (1);
 		level.level				= 0;
 		level.internalFormat	= internalFormats[internalFormatNdx];
 		level.compressed		= false;
@@ -656,7 +656,7 @@ static void generateInternalFormatTextureGenerationGroup (std::vector<TextureGen
 
 		level.width				= 32;
 		level.height			= 32;
-		level.depth				= (textureTypeHasDepth(target)) ? (6) : (0);
+		level.depth				= (textureTypeHasDepth(target)) ? (6) : (1);
 		level.level				= 3;
 		level.internalFormat	= GL_RGBA8;
 		level.compressed		= false;
@@ -694,7 +694,7 @@ static void generateCompressedTextureGenerationGroup (std::vector<TextureGenerat
 
 		level.width				= 32;
 		level.height			= 32;
-		level.depth				= (target == GL_TEXTURE_2D_ARRAY) ? (2) : (0);
+		level.depth				= (target == GL_TEXTURE_2D_ARRAY) ? (2) : (1);
 		level.level				= 0;
 		level.internalFormat	= GL_COMPRESSED_RGB8_ETC2;
 		level.compressed		= true;
@@ -962,7 +962,7 @@ bool TextureLevelCase::testConfig (const TextureGenerationSpec& spec)
 
 	if (m_texBuffer)
 	{
-		gl.glDeleteTextures(1, &m_texBuffer);
+		gl.glDeleteBuffers(1, &m_texBuffer);
 		m_texture = 0;
 	}
 
