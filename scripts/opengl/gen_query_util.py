@@ -38,6 +38,10 @@ QUERY_NUM_OUT_ARGUMENTS = [
 		("PRIMITIVE_BOUNDING_BOX_EXT",		8),
 		]),
 
+	("Indexed", [
+		("COLOR_WRITEMASK",				4),
+		]),
+
 	("Attribute", [
 		("CURRENT_VERTEX_ATTRIB",		4),
 		]),
