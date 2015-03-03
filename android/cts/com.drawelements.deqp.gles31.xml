@@ -13475,8 +13475,6 @@
 <Test name="width_float" />
 <Test name="height_integer" />
 <Test name="height_float" />
-<Test name="depth_integer" />
-<Test name="depth_float" />
 <Test name="red_size_integer" />
 <Test name="red_size_float" />
 <Test name="green_size_integer" />
