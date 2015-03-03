@@ -11257,8 +11257,6 @@ dEQP-GLES31.functional.state_query.texture_level.texture_2d.width_integer
 dEQP-GLES31.functional.state_query.texture_level.texture_2d.width_float
 dEQP-GLES31.functional.state_query.texture_level.texture_2d.height_integer
 dEQP-GLES31.functional.state_query.texture_level.texture_2d.height_float
-dEQP-GLES31.functional.state_query.texture_level.texture_2d.depth_integer
-dEQP-GLES31.functional.state_query.texture_level.texture_2d.depth_float
 dEQP-GLES31.functional.state_query.texture_level.texture_2d.red_size_integer
 dEQP-GLES31.functional.state_query.texture_level.texture_2d.red_size_float
 dEQP-GLES31.functional.state_query.texture_level.texture_2d.green_size_integer
