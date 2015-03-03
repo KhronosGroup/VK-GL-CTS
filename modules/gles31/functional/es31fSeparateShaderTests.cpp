@@ -551,7 +551,14 @@ string genFrgShaderSrc (deUint32							seed,
 
 	if (inputs.size() > 0)
 	{
-		oss << "\t" << "switch (imod(int(0.5 * (gl_FragCoord.x - gl_FragCoord.y)), "
+		oss << "\t"
+			<< "switch (imod(int(0.5 * (";
+
+		printFloat(oss, rnd.getFloat(0.5f, 2.0f));
+		oss << " * gl_FragCoord.x - ";
+
+		printFloat(oss, rnd.getFloat(0.5f, 2.0f));
+		oss << " * gl_FragCoord.y)), "
 			<< inputs.size() << "))" << "\n"
 			<< "\t" << "{" << "\n";
 
