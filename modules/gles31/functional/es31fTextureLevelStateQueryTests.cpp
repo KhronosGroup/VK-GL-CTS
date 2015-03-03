@@ -1030,7 +1030,7 @@ public:
 private:
 	bool checkTextureState (glu::CallLogWrapper& gl, const TextureGenerationSpec& spec)
 	{
-		const int queryLevel	= 0;
+		const int queryLevel	= (spec.levels.empty()) ? (0) : (spec.levels[0].level);
 		const int refValue		= (spec.levels.empty()) ? (1) : ((spec.fixedSamplePos) ? (1) : (0));
 
 		return verifyTextureLevelParameterEqual(gl, spec.queryTarget, queryLevel, GL_TEXTURE_FIXED_SAMPLE_LOCATIONS, refValue, m_type);
