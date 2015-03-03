@@ -227,6 +227,8 @@ deBool			qpTestLog_writeValueInteger		(qpTestLog* log, deInt64 value);
 deBool			qpTestLog_endSample				(qpTestLog* log);
 deBool			qpTestLog_endSampleList			(qpTestLog* log);
 
+deUint32		qpTestLog_getLogFlags			(const qpTestLog* log);
+
 const char*		qpGetTestResultName				(qpTestResult result);
 
 DE_END_EXTERN_C

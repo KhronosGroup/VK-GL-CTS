@@ -1444,6 +1444,12 @@ deBool qpTestLog_endSampleList (qpTestLog* log)
 	return DE_TRUE;
 }
 
+deUint32 qpTestLog_getLogFlags (const qpTestLog* log)
+{
+	DE_ASSERT(log);
+	return log->flags;
+}
+
 const char* qpGetTestResultName (qpTestResult result)
 {
 	return QP_LOOKUP_STRING(s_qpTestResultMap, result);
