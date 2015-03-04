@@ -484,8 +484,7 @@ static void renderFaces (
 	int							height,
 	const tcu::Vec2&			bottomLeft,
 	const tcu::Vec2&			topRight,
-	const tcu::Vec2&			texCoordTopRightFactor,
-	bool						multiFace)
+	const tcu::Vec2&			texCoordTopRightFactor)
 {
 	DE_ASSERT(width == dstRef.getWidth() && height == dstRef.getHeight());
 
@@ -517,10 +516,7 @@ static void renderFaces (
 
 		renderer.renderQuad(0, &texCoord[0], params);
 
-		if (multiFace)
-			sampleTextureMultiFace(SurfaceAccess(dstRef, curX, curY, curW, curH), refTexture, &texCoord[0], params);
-		else
-			sampleTexture(SurfaceAccess(dstRef, curX, curY, curW, curH), refTexture, &texCoord[0], params);
+		sampleTexture(SurfaceAccess(dstRef, curX, curY, curW, curH), refTexture, &texCoord[0], params);
 	}
 
 	GLU_EXPECT_NO_ERROR(gl.getError(), "Post render");
@@ -578,8 +574,7 @@ TextureCubeFilteringCase::IterateResult TextureCubeFilteringCase::iterate (void)
 				viewport.x, viewport.y, leftWidth, bottomHeight,
 				m_onlySampleFaceInterior ? tcu::Vec2(-0.81f, -0.81f) : tcu::Vec2(-0.975f, -0.975f),
 				m_onlySampleFaceInterior ? tcu::Vec2( 0.8f,  0.8f) : tcu::Vec2( 0.975f,  0.975f),
-				!m_onlySampleFaceInterior ? tcu::Vec2(1.3f, 1.25f) : tcu::Vec2(1.0f, 1.0f),
-				!m_onlySampleFaceInterior);
+				!m_onlySampleFaceInterior ? tcu::Vec2(1.3f, 1.25f) : tcu::Vec2(1.0f, 1.0f));
 
 	// Bottom right: Magnification
 	renderFaces(gl,
@@ -588,8 +583,7 @@ TextureCubeFilteringCase::IterateResult TextureCubeFilteringCase::iterate (void)
 				m_renderer,
 				viewport.x+leftWidth, viewport.y, rightWidth, bottomHeight,
 				tcu::Vec2(0.5f, 0.65f), m_onlySampleFaceInterior ? tcu::Vec2(0.8f, 0.8f) : tcu::Vec2(0.975f, 0.975f),
-				!m_onlySampleFaceInterior ? tcu::Vec2(1.1f, 1.06f) : tcu::Vec2(1.0f, 1.0f),
-				!m_onlySampleFaceInterior);
+				!m_onlySampleFaceInterior ? tcu::Vec2(1.1f, 1.06f) : tcu::Vec2(1.0f, 1.0f));
 
 	if (m_textures.size() >= 2)
 	{
@@ -611,8 +605,7 @@ TextureCubeFilteringCase::IterateResult TextureCubeFilteringCase::iterate (void)
 				viewport.x, viewport.y+bottomHeight, leftWidth, topHeight,
 				m_onlySampleFaceInterior ? tcu::Vec2(-0.81f, -0.81f) : tcu::Vec2(-0.975f, -0.975f),
 				m_onlySampleFaceInterior ? tcu::Vec2( 0.8f,  0.8f) : tcu::Vec2( 0.975f,  0.975f),
-				!m_onlySampleFaceInterior ? tcu::Vec2(1.3f, 1.25f) : tcu::Vec2(1.0f, 1.0f),
-				!m_onlySampleFaceInterior);
+				!m_onlySampleFaceInterior ? tcu::Vec2(1.3f, 1.25f) : tcu::Vec2(1.0f, 1.0f));
 
 	// Top right: Magnification
 	renderFaces(gl,
@@ -621,8 +614,7 @@ TextureCubeFilteringCase::IterateResult TextureCubeFilteringCase::iterate (void)
 				m_renderer,
 				viewport.x+leftWidth, viewport.y+bottomHeight, rightWidth, topHeight,
 				tcu::Vec2(0.5f, -0.65f), m_onlySampleFaceInterior ? tcu::Vec2(0.8f, -0.8f) : tcu::Vec2(0.975f, -0.975f),
-				!m_onlySampleFaceInterior ? tcu::Vec2(1.1f, 1.06f) : tcu::Vec2(1.0f, 1.0f),
-				!m_onlySampleFaceInterior);
+				!m_onlySampleFaceInterior ? tcu::Vec2(1.1f, 1.06f) : tcu::Vec2(1.0f, 1.0f));
 
 	// Read result.
 	glu::readPixels(m_renderCtx, viewport.x, viewport.y, renderedFrame.getAccess());
