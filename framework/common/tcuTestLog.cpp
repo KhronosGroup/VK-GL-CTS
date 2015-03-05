@@ -170,6 +170,10 @@ void TestLog::writeImage (const char* name, const char* description, const Const
 	int						height		= access.getHeight();
 	int						depth		= access.getDepth();
 
+	// Do not bother with preprocessing if images are not stored
+	if ((qpTestLog_getLogFlags(m_log) & QP_TEST_LOG_EXCLUDE_IMAGES) != 0)
+		return;
+
 	if (depth == 1 && format.type == TextureFormat::UNORM_INT8 &&
 		width <= MAX_IMAGE_SIZE_2D && height <= MAX_IMAGE_SIZE_2D &&
 		(format.order == TextureFormat::RGB || format.order == TextureFormat::RGBA)
