@@ -84,18 +84,6 @@ inline void writeRGB888Float (deUint8* ptr, const Vec4& val)
 	ptr[2] = floatToU8(val[2]);
 }
 
-enum Channel
-{
-	// \note CHANNEL_N must equal int N
-	CHANNEL_0 = 0,
-	CHANNEL_1,
-	CHANNEL_2,
-	CHANNEL_3,
-
-	CHANNEL_ZERO,
-	CHANNEL_ONE
-};
-
 // \todo [2011-09-21 pyry] Move to tcutil?
 template <typename T>
 inline T convertSatRte (float f)
@@ -123,89 +111,6 @@ inline T convertSatRte (float f)
 	intVal = de::max(minVal, de::min(maxVal, intVal));
 
 	return (T)intVal;
-}
-
-const Channel* getChannelReadMap (TextureFormat::ChannelOrder order)
-{
-	static const Channel INV[]	= { CHANNEL_ZERO,	CHANNEL_ZERO,	CHANNEL_ZERO,	CHANNEL_ONE };
-	static const Channel R[]	= { CHANNEL_0,		CHANNEL_ZERO,	CHANNEL_ZERO,	CHANNEL_ONE };
-	static const Channel A[]	= { CHANNEL_ZERO,	CHANNEL_ZERO,	CHANNEL_ZERO,	CHANNEL_0	};
-	static const Channel I[]	= { CHANNEL_0,		CHANNEL_0,		CHANNEL_0,		CHANNEL_0	};
-	static const Channel L[]	= { CHANNEL_0,		CHANNEL_0,		CHANNEL_0,		CHANNEL_ONE	};
-	static const Channel LA[]	= { CHANNEL_0,		CHANNEL_0,		CHANNEL_0,		CHANNEL_1	};
-	static const Channel RG[]	= { CHANNEL_0,		CHANNEL_1,		CHANNEL_ZERO,	CHANNEL_ONE	};
-	static const Channel RA[]	= { CHANNEL_0,		CHANNEL_ZERO,	CHANNEL_ZERO,	CHANNEL_1	};
-	static const Channel RGB[]	= { CHANNEL_0,		CHANNEL_1,		CHANNEL_2,		CHANNEL_ONE	};
-	static const Channel RGBA[]	= { CHANNEL_0,		CHANNEL_1,		CHANNEL_2,		CHANNEL_3	};
-	static const Channel BGRA[]	= { CHANNEL_2,		CHANNEL_1,		CHANNEL_0,		CHANNEL_3	};
-	static const Channel ARGB[]	= { CHANNEL_1,		CHANNEL_2,		CHANNEL_3,		CHANNEL_0	};
-	static const Channel D[]	= { CHANNEL_0,		CHANNEL_ZERO,	CHANNEL_ZERO,	CHANNEL_ONE	};
-	static const Channel S[]	= { CHANNEL_ZERO,	CHANNEL_ZERO,	CHANNEL_ZERO,	CHANNEL_0	};
-	static const Channel DS[]	= { CHANNEL_0,		CHANNEL_ZERO,	CHANNEL_ZERO,	CHANNEL_1	};
-
-	switch (order)
-	{
-		case TextureFormat::R:			return R;
-		case TextureFormat::A:			return A;
-		case TextureFormat::I:			return I;
-		case TextureFormat::L:			return L;
-		case TextureFormat::LA:			return LA;
-		case TextureFormat::RG:			return RG;
-		case TextureFormat::RA:			return RA;
-		case TextureFormat::RGB:		return RGB;
-		case TextureFormat::RGBA:		return RGBA;
-		case TextureFormat::ARGB:		return ARGB;
-		case TextureFormat::BGRA:		return BGRA;
-		case TextureFormat::sRGB:		return RGB;
-		case TextureFormat::sRGBA:		return RGBA;
-		case TextureFormat::D:			return D;
-		case TextureFormat::S:			return S;
-		case TextureFormat::DS:			return DS;
-		default:
-			DE_ASSERT(DE_FALSE);
-			return INV;
-	}
-}
-
-const int* getChannelWriteMap (TextureFormat::ChannelOrder order)
-{
-	static const int R[]	= { 0 };
-	static const int A[]	= { 3 };
-	static const int I[]	= { 0 };
-	static const int L[]	= { 0 };
-	static const int LA[]	= { 0, 3 };
-	static const int RG[]	= { 0, 1 };
-	static const int RA[]	= { 0, 3 };
-	static const int RGB[]	= { 0, 1, 2 };
-	static const int RGBA[]	= { 0, 1, 2, 3 };
-	static const int BGRA[]	= { 2, 1, 0, 3 };
-	static const int ARGB[]	= { 3, 0, 1, 2 };
-	static const int D[]	= { 0 };
-	static const int S[]	= { 3 };
-	static const int DS[]	= { 0, 3 };
-
-	switch (order)
-	{
-		case TextureFormat::R:			return R;
-		case TextureFormat::A:			return A;
-		case TextureFormat::I:			return I;
-		case TextureFormat::L:			return L;
-		case TextureFormat::LA:			return LA;
-		case TextureFormat::RG:			return RG;
-		case TextureFormat::RA:			return RA;
-		case TextureFormat::RGB:		return RGB;
-		case TextureFormat::RGBA:		return RGBA;
-		case TextureFormat::ARGB:		return ARGB;
-		case TextureFormat::BGRA:		return BGRA;
-		case TextureFormat::sRGB:		return RGB;
-		case TextureFormat::sRGBA:		return RGBA;
-		case TextureFormat::D:			return D;
-		case TextureFormat::S:			return S;
-		case TextureFormat::DS:			return DS;
-		default:
-			DE_ASSERT(DE_FALSE);
-			return DE_NULL;
-	}
 }
 
 int getChannelSize (TextureFormat::ChannelType type)
@@ -402,6 +307,96 @@ tcu::Vec4 unpackRGB999E5 (deUint32 color)
 }
 
 } // anonymous
+
+const TextureSwizzle& getChannelReadSwizzle (TextureFormat::ChannelOrder order)
+{
+	// make sure to update these tables when channel orders are updated
+	DE_STATIC_ASSERT(TextureFormat::CHANNELORDER_LAST == 16);
+
+	static const TextureSwizzle INV		= {{ TextureSwizzle::CHANNEL_ZERO,	TextureSwizzle::CHANNEL_ZERO,	TextureSwizzle::CHANNEL_ZERO,	TextureSwizzle::CHANNEL_ONE	}};
+	static const TextureSwizzle R		= {{ TextureSwizzle::CHANNEL_0,		TextureSwizzle::CHANNEL_ZERO,	TextureSwizzle::CHANNEL_ZERO,	TextureSwizzle::CHANNEL_ONE	}};
+	static const TextureSwizzle A		= {{ TextureSwizzle::CHANNEL_ZERO,	TextureSwizzle::CHANNEL_ZERO,	TextureSwizzle::CHANNEL_ZERO,	TextureSwizzle::CHANNEL_0	}};
+	static const TextureSwizzle I		= {{ TextureSwizzle::CHANNEL_0,		TextureSwizzle::CHANNEL_0,		TextureSwizzle::CHANNEL_0,		TextureSwizzle::CHANNEL_0	}};
+	static const TextureSwizzle L		= {{ TextureSwizzle::CHANNEL_0,		TextureSwizzle::CHANNEL_0,		TextureSwizzle::CHANNEL_0,		TextureSwizzle::CHANNEL_ONE	}};
+	static const TextureSwizzle LA		= {{ TextureSwizzle::CHANNEL_0,		TextureSwizzle::CHANNEL_0,		TextureSwizzle::CHANNEL_0,		TextureSwizzle::CHANNEL_1	}};
+	static const TextureSwizzle RG		= {{ TextureSwizzle::CHANNEL_0,		TextureSwizzle::CHANNEL_1,		TextureSwizzle::CHANNEL_ZERO,	TextureSwizzle::CHANNEL_ONE	}};
+	static const TextureSwizzle RA		= {{ TextureSwizzle::CHANNEL_0,		TextureSwizzle::CHANNEL_ZERO,	TextureSwizzle::CHANNEL_ZERO,	TextureSwizzle::CHANNEL_1	}};
+	static const TextureSwizzle RGB		= {{ TextureSwizzle::CHANNEL_0,		TextureSwizzle::CHANNEL_1,		TextureSwizzle::CHANNEL_2,		TextureSwizzle::CHANNEL_ONE	}};
+	static const TextureSwizzle RGBA	= {{ TextureSwizzle::CHANNEL_0,		TextureSwizzle::CHANNEL_1,		TextureSwizzle::CHANNEL_2,		TextureSwizzle::CHANNEL_3	}};
+	static const TextureSwizzle BGRA	= {{ TextureSwizzle::CHANNEL_2,		TextureSwizzle::CHANNEL_1,		TextureSwizzle::CHANNEL_0,		TextureSwizzle::CHANNEL_3	}};
+	static const TextureSwizzle ARGB	= {{ TextureSwizzle::CHANNEL_1,		TextureSwizzle::CHANNEL_2,		TextureSwizzle::CHANNEL_3,		TextureSwizzle::CHANNEL_0	}};
+	static const TextureSwizzle D		= {{ TextureSwizzle::CHANNEL_0,		TextureSwizzle::CHANNEL_ZERO,	TextureSwizzle::CHANNEL_ZERO,	TextureSwizzle::CHANNEL_ONE	}};
+	static const TextureSwizzle S		= {{ TextureSwizzle::CHANNEL_ZERO,	TextureSwizzle::CHANNEL_ZERO,	TextureSwizzle::CHANNEL_ZERO,	TextureSwizzle::CHANNEL_0	}};
+	static const TextureSwizzle DS		= {{ TextureSwizzle::CHANNEL_0,		TextureSwizzle::CHANNEL_ZERO,	TextureSwizzle::CHANNEL_ZERO,	TextureSwizzle::CHANNEL_1	}};
+
+	switch (order)
+	{
+		case TextureFormat::R:			return R;
+		case TextureFormat::A:			return A;
+		case TextureFormat::I:			return I;
+		case TextureFormat::L:			return L;
+		case TextureFormat::LA:			return LA;
+		case TextureFormat::RG:			return RG;
+		case TextureFormat::RA:			return RA;
+		case TextureFormat::RGB:		return RGB;
+		case TextureFormat::RGBA:		return RGBA;
+		case TextureFormat::ARGB:		return ARGB;
+		case TextureFormat::BGRA:		return BGRA;
+		case TextureFormat::sRGB:		return RGB;
+		case TextureFormat::sRGBA:		return RGBA;
+		case TextureFormat::D:			return D;
+		case TextureFormat::S:			return S;
+		case TextureFormat::DS:			return DS;
+		default:
+			DE_ASSERT(DE_FALSE);
+			return INV;
+	}
+}
+
+const TextureSwizzle& getChannelWriteSwizzle (TextureFormat::ChannelOrder order)
+{
+	// make sure to update these tables when channel orders are updated
+	DE_STATIC_ASSERT(TextureFormat::CHANNELORDER_LAST == 16);
+
+	static const TextureSwizzle INV		= {{ TextureSwizzle::CHANNEL_LAST,	TextureSwizzle::CHANNEL_LAST,	TextureSwizzle::CHANNEL_LAST,	TextureSwizzle::CHANNEL_LAST	}};
+	static const TextureSwizzle R		= {{ TextureSwizzle::CHANNEL_0,		TextureSwizzle::CHANNEL_LAST,	TextureSwizzle::CHANNEL_LAST,	TextureSwizzle::CHANNEL_LAST	}};
+	static const TextureSwizzle A		= {{ TextureSwizzle::CHANNEL_3,		TextureSwizzle::CHANNEL_LAST,	TextureSwizzle::CHANNEL_LAST,	TextureSwizzle::CHANNEL_LAST	}};
+	static const TextureSwizzle I		= {{ TextureSwizzle::CHANNEL_0,		TextureSwizzle::CHANNEL_LAST,	TextureSwizzle::CHANNEL_LAST,	TextureSwizzle::CHANNEL_LAST	}};
+	static const TextureSwizzle L		= {{ TextureSwizzle::CHANNEL_0,		TextureSwizzle::CHANNEL_LAST,	TextureSwizzle::CHANNEL_LAST,	TextureSwizzle::CHANNEL_LAST	}};
+	static const TextureSwizzle LA		= {{ TextureSwizzle::CHANNEL_0,		TextureSwizzle::CHANNEL_3,		TextureSwizzle::CHANNEL_LAST,	TextureSwizzle::CHANNEL_LAST	}};
+	static const TextureSwizzle RG		= {{ TextureSwizzle::CHANNEL_0,		TextureSwizzle::CHANNEL_1,		TextureSwizzle::CHANNEL_LAST,	TextureSwizzle::CHANNEL_LAST	}};
+	static const TextureSwizzle RA		= {{ TextureSwizzle::CHANNEL_0,		TextureSwizzle::CHANNEL_3,		TextureSwizzle::CHANNEL_LAST,	TextureSwizzle::CHANNEL_LAST	}};
+	static const TextureSwizzle RGB		= {{ TextureSwizzle::CHANNEL_0,		TextureSwizzle::CHANNEL_1,		TextureSwizzle::CHANNEL_2,		TextureSwizzle::CHANNEL_LAST	}};
+	static const TextureSwizzle RGBA	= {{ TextureSwizzle::CHANNEL_0,		TextureSwizzle::CHANNEL_1,		TextureSwizzle::CHANNEL_2,		TextureSwizzle::CHANNEL_3		}};
+	static const TextureSwizzle BGRA	= {{ TextureSwizzle::CHANNEL_2,		TextureSwizzle::CHANNEL_1,		TextureSwizzle::CHANNEL_0,		TextureSwizzle::CHANNEL_3		}};
+	static const TextureSwizzle ARGB	= {{ TextureSwizzle::CHANNEL_3,		TextureSwizzle::CHANNEL_0,		TextureSwizzle::CHANNEL_1,		TextureSwizzle::CHANNEL_2		}};
+	static const TextureSwizzle D		= {{ TextureSwizzle::CHANNEL_0,		TextureSwizzle::CHANNEL_LAST,	TextureSwizzle::CHANNEL_LAST,	TextureSwizzle::CHANNEL_LAST	}};
+	static const TextureSwizzle S		= {{ TextureSwizzle::CHANNEL_3,		TextureSwizzle::CHANNEL_LAST,	TextureSwizzle::CHANNEL_LAST,	TextureSwizzle::CHANNEL_LAST	}};
+	static const TextureSwizzle DS		= {{ TextureSwizzle::CHANNEL_0,		TextureSwizzle::CHANNEL_3,		TextureSwizzle::CHANNEL_LAST,	TextureSwizzle::CHANNEL_LAST	}};
+
+	switch (order)
+	{
+		case TextureFormat::R:			return R;
+		case TextureFormat::A:			return A;
+		case TextureFormat::I:			return I;
+		case TextureFormat::L:			return L;
+		case TextureFormat::LA:			return LA;
+		case TextureFormat::RG:			return RG;
+		case TextureFormat::RA:			return RA;
+		case TextureFormat::RGB:		return RGB;
+		case TextureFormat::RGBA:		return RGBA;
+		case TextureFormat::ARGB:		return ARGB;
+		case TextureFormat::BGRA:		return BGRA;
+		case TextureFormat::sRGB:		return RGB;
+		case TextureFormat::sRGBA:		return RGBA;
+		case TextureFormat::D:			return D;
+		case TextureFormat::S:			return S;
+		case TextureFormat::DS:			return DS;
+		default:
+			DE_ASSERT(DE_FALSE);
+			return INV;
+	}
+}
 
 IVec3 calculatePackedPitch (const TextureFormat& format, const IVec3& size)
 {
@@ -645,19 +640,32 @@ Vec4 ConstPixelBufferAccess::getPixel (int x, int y, int z) const
 #undef UB32
 
 	// Generic path.
-	Vec4			result;
-	const Channel*	channelMap	= getChannelReadMap(m_format.order);
-	int				channelSize	= getChannelSize(m_format.type);
+	Vec4							result;
+	const TextureSwizzle::Channel*	channelMap	= getChannelReadSwizzle(m_format.order).components;
+	int								channelSize	= getChannelSize(m_format.type);
 
 	for (int c = 0; c < 4; c++)
 	{
-		Channel map = channelMap[c];
-		if (map == CHANNEL_ZERO)
-			result[c] = 0.0f;
-		else if (map == CHANNEL_ONE)
-			result[c] = 1.0f;
-		else
-			result[c] = channelToFloat(pixelPtr + channelSize*((int)map), m_format.type);
+		switch (channelMap[c])
+		{
+			case TextureSwizzle::CHANNEL_0:
+			case TextureSwizzle::CHANNEL_1:
+			case TextureSwizzle::CHANNEL_2:
+			case TextureSwizzle::CHANNEL_3:
+				result[c] = channelToFloat(pixelPtr + channelSize*((int)channelMap[c]), m_format.type);
+				break;
+
+			case TextureSwizzle::CHANNEL_ZERO:
+				result[c] = 0.0f;
+				break;
+
+			case TextureSwizzle::CHANNEL_ONE:
+				result[c] = 1.0f;
+				break;
+
+			default:
+				DE_ASSERT(false);
+		}
 	}
 
 	return result;
@@ -719,18 +727,31 @@ IVec4 ConstPixelBufferAccess::getPixelInt (int x, int y, int z) const
 #undef U32
 
 	// Generic path.
-	const Channel*	channelMap	= getChannelReadMap(m_format.order);
-	int				channelSize	= getChannelSize(m_format.type);
+	const TextureSwizzle::Channel*	channelMap	= getChannelReadSwizzle(m_format.order).components;
+	int								channelSize	= getChannelSize(m_format.type);
 
 	for (int c = 0; c < 4; c++)
 	{
-		Channel map = channelMap[c];
-		if (map == CHANNEL_ZERO)
-			result[c] = 0;
-		else if (map == CHANNEL_ONE)
-			result[c] = 1;
-		else
-			result[c] = channelToInt(pixelPtr + channelSize*((int)map), m_format.type);
+		switch (channelMap[c])
+		{
+			case TextureSwizzle::CHANNEL_0:
+			case TextureSwizzle::CHANNEL_1:
+			case TextureSwizzle::CHANNEL_2:
+			case TextureSwizzle::CHANNEL_3:
+				result[c] = channelToInt(pixelPtr + channelSize*((int)channelMap[c]), m_format.type);
+				break;
+
+			case TextureSwizzle::CHANNEL_ZERO:
+				result[c] = 0;
+				break;
+
+			case TextureSwizzle::CHANNEL_ONE:
+				result[c] = 1;
+				break;
+
+			default:
+				DE_ASSERT(false);
+		}
 	}
 
 	return result;
@@ -910,13 +931,15 @@ void PixelBufferAccess::setPixel (const Vec4& color, int x, int y, int z) const
 		default:
 		{
 			// Generic path.
-			int			numChannels	= getNumUsedChannels(m_format.order);
-			const int*	map			= getChannelWriteMap(m_format.order);
-			int			channelSize	= getChannelSize(m_format.type);
+			int								numChannels	= getNumUsedChannels(m_format.order);
+			const TextureSwizzle::Channel*	map			= getChannelWriteSwizzle(m_format.order).components;
+			int								channelSize	= getChannelSize(m_format.type);
 
 			for (int c = 0; c < numChannels; c++)
+			{
+				DE_ASSERT(deInRange32(map[c], TextureSwizzle::CHANNEL_0, TextureSwizzle::CHANNEL_3));
 				floatToChannel(pixelPtr + channelSize*c, color[map[c]], m_format.type);
-
+			}
 			break;
 		}
 	}
@@ -972,13 +995,15 @@ void PixelBufferAccess::setPixel (const IVec4& color, int x, int y, int z) const
 		default:
 		{
 			// Generic path.
-			int			numChannels	= getNumUsedChannels(m_format.order);
-			const int*	map			= getChannelWriteMap(m_format.order);
-			int			channelSize	= getChannelSize(m_format.type);
+			int								numChannels	= getNumUsedChannels(m_format.order);
+			const TextureSwizzle::Channel*	map			= getChannelWriteSwizzle(m_format.order).components;
+			int								channelSize	= getChannelSize(m_format.type);
 
 			for (int c = 0; c < numChannels; c++)
+			{
+				DE_ASSERT(deInRange32(map[c], TextureSwizzle::CHANNEL_0, TextureSwizzle::CHANNEL_3));
 				intToChannel(pixelPtr + channelSize*c, color[map[c]], m_format.type);
-
+			}
 			break;
 		}
 	}

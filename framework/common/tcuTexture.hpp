@@ -119,6 +119,34 @@ public:
 } DE_WARN_UNUSED_TYPE;
 
 /*--------------------------------------------------------------------*//*!
+ * \brief Texture swizzle
+ *//*--------------------------------------------------------------------*/
+struct TextureSwizzle
+{
+	enum Channel
+	{
+		// \note CHANNEL_N must equal int N
+		CHANNEL_0 = 0,
+		CHANNEL_1,
+		CHANNEL_2,
+		CHANNEL_3,
+
+		CHANNEL_ZERO,
+		CHANNEL_ONE,
+
+		CHANNEL_LAST
+	};
+
+	Channel components[4];
+};
+
+//! get the swizzle used to expand texture data with a given channel order to RGBA form
+const TextureSwizzle& getChannelReadSwizzle		(TextureFormat::ChannelOrder order);
+
+//! get the swizzle used to narrow RGBA form data to native texture data with a given channel order
+const TextureSwizzle& getChannelWriteSwizzle	(TextureFormat::ChannelOrder order);
+
+/*--------------------------------------------------------------------*//*!
  * \brief Sampling parameters
  *//*--------------------------------------------------------------------*/
 class Sampler
