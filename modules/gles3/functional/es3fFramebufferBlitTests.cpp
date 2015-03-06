@@ -426,8 +426,8 @@ protected:
 	{
 		const tcu::TextureFormat	srcFormat	= glu::mapGLInternalFormat(m_srcFormat);
 		const tcu::TextureFormat	dstFormat	= glu::mapGLInternalFormat(m_dstFormat);
-		const bool					srcIsSRGB	= (srcFormat.order == tcu::TextureFormat::sRGBA);
-		const bool					dstIsSRGB	= (dstFormat.order == tcu::TextureFormat::sRGBA);
+		const bool					srcIsSRGB	= tcu::isSRGB(srcFormat);
+		const bool					dstIsSRGB	= tcu::isSRGB(dstFormat);
 
 		tcu::RGBA					threshold;
 

@@ -42,6 +42,7 @@ ConstPixelBufferAccess	flipYAccess		(const ConstPixelBufferAccess& access);
 // sRGB - linear conversion.
 Vec4					sRGBToLinear	(const Vec4& cs);
 Vec4					linearToSRGB	(const Vec4& cl);
+bool					isSRGB			(TextureFormat format);
 
 /*--------------------------------------------------------------------*//*!
  * \brief Color channel storage type

@@ -395,7 +395,7 @@ static inline IVec4 readIVec4 (const int* ptr, int numComponents)
 
 static void renderFloatReference (const tcu::PixelBufferAccess& dst, int gridWidth, int gridHeight, int numComponents, const float* vertices)
 {
-	const bool	isSRGB		= dst.getFormat().order == tcu::TextureFormat::sRGB ||dst.getFormat().order == tcu::TextureFormat::sRGBA;
+	const bool	isSRGB		= tcu::isSRGB(dst.getFormat());
 	const float	cellW		= (float)dst.getWidth() / (float)(gridWidth-1);
 	const float	cellH		= (float)dst.getHeight() / (float)(gridHeight-1);
 

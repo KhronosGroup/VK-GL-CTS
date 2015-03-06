@@ -3004,8 +3004,8 @@ deUint32 ReferenceContext::blitResolveMultisampleFramebuffer (deUint32 mask, con
 		bool									dstIsFloat	= dstClass == tcu::TEXTURECHANNELCLASS_FLOATING_POINT		||
 															  dstClass == tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT	||
 															  dstClass == tcu::TEXTURECHANNELCLASS_SIGNED_FIXED_POINT;
-		bool									srcIsSRGB	= src.raw().getFormat().order == tcu::TextureFormat::sRGB || src.raw().getFormat().order == tcu::TextureFormat::sRGBA;
-		bool									dstIsSRGB	= dst.getFormat().order == tcu::TextureFormat::sRGB || dst.getFormat().order == tcu::TextureFormat::sRGBA;
+		bool									srcIsSRGB	= tcu::isSRGB(src.raw().getFormat());
+		bool									dstIsSRGB	= tcu::isSRGB(dst.getFormat());
 		const bool								convertSRGB	= m_sRGBUpdateEnabled && glu::isContextTypeES(getType());
 
 		if (!convertSRGB)
@@ -3156,8 +3156,8 @@ void ReferenceContext::blitFramebuffer (int srcX0, int srcY0, int srcX1, int src
 		tcu::Sampler::FilterMode		sFilter		= (scale && filter == GL_LINEAR) ? tcu::Sampler::LINEAR : tcu::Sampler::NEAREST;
 		tcu::Sampler					sampler		(tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::CLAMP_TO_EDGE,
 													 sFilter, sFilter, 0.0f /* lod threshold */, false /* non-normalized coords */);
-		bool							srcIsSRGB	= src.getFormat().order == tcu::TextureFormat::sRGB || src.getFormat().order == tcu::TextureFormat::sRGBA;
-		bool							dstIsSRGB	= dst.getFormat().order == tcu::TextureFormat::sRGB || dst.getFormat().order == tcu::TextureFormat::sRGBA;
+		bool							srcIsSRGB	= tcu::isSRGB(src.getFormat());
+		bool							dstIsSRGB	= tcu::isSRGB(dst.getFormat());
 		const bool						convertSRGB	= m_sRGBUpdateEnabled && glu::isContextTypeES(getType());
 
 		if (!convertSRGB)
@@ -3350,7 +3350,7 @@ void ReferenceContext::clear (deUint32 buffers)
 	{
 		IVec4								colorArea	= intersect(baseArea, getBufferRect(colorBuf0));
 		rr::MultisamplePixelBufferAccess	access		= rr::getSubregion(colorBuf0, colorArea.x(), colorArea.y(), colorArea.z(), colorArea.w());
-		bool								isSRGB		= colorBuf0.raw().getFormat().order == tcu::TextureFormat::sRGB || colorBuf0.raw().getFormat().order == tcu::TextureFormat::sRGBA;
+		bool								isSRGB		= tcu::isSRGB(colorBuf0.raw().getFormat());
 		Vec4								c			= (isSRGB && m_sRGBUpdateEnabled) ? tcu::linearToSRGB(m_clearColor) : m_clearColor;
 		bool								maskUsed	= !m_colorMask[0] || !m_colorMask[1] || !m_colorMask[2] || !m_colorMask[3];
 		bool								maskZero	= !m_colorMask[0] && !m_colorMask[1] && !m_colorMask[2] && !m_colorMask[3];
@@ -3499,8 +3499,7 @@ void ReferenceContext::clearBufferfv (deUint32 buffer, int drawbuffer, const flo
 			rr::MultisamplePixelBufferAccess	access		= rr::getSubregion(colorBuf, area.x(), area.y(), area.z(), area.w());
 			Vec4								color		(value[0], value[1], value[2], value[3]);
 
-			if (m_sRGBUpdateEnabled && (access.raw().getFormat().order == tcu::TextureFormat::sRGB ||
-										access.raw().getFormat().order == tcu::TextureFormat::sRGBA))
+			if (m_sRGBUpdateEnabled && tcu::isSRGB(access.raw().getFormat()))
 				color = tcu::linearToSRGB(color);
 
 			if (!maskUsed)
