@@ -227,7 +227,6 @@ MovePtr<ClientBuffer> TextureImageSource::createBuffer (const glw::Functions& gl
 
 	if (ref != DE_NULL)
 	{
-		Texture		srcTex		(gl);
 		GLenum		imgTarget	= eglu::getImageGLTarget(getSource());
 
 		*ref = Texture2D(glu::mapGLTransferFormat(m_format, m_type), IMAGE_WIDTH, IMAGE_HEIGHT);
