@@ -171,7 +171,7 @@ void TestFunctionWrapper::call (DebugMessageTestContext& ctx) const
 		DE_ASSERT(false);
 }
 
-void emitMessages(DebugMessageTestContext& ctx, GLenum source)
+void emitMessages (DebugMessageTestContext& ctx, GLenum source)
 {
 	for (int typeNdx = 0; typeNdx < DE_LENGTH_OF_ARRAY(s_debugTypes); typeNdx++)
 	{
@@ -667,6 +667,10 @@ void CallbackErrorCase::expectMessage (GLenum source, GLenum type)
 {
 	verifyMessage(m_lastMessage, source, type);
 	m_lastMessage = MessageData();
+
+	// Reset error so that code afterwards (such as glu::ShaderProgram) doesn't break because of
+	// lingering error state.
+	m_context.getRenderContext().getFunctions().getError();
 }
 
 void CallbackErrorCase::callback (GLenum source, GLenum type, GLuint id, GLenum severity, const string& message)
@@ -776,6 +780,10 @@ void LogErrorCase::expectMessage (GLenum source, GLenum type)
 	log << TestLog::Message << "Driver says: \"" << lastMsg.message << "\"" << TestLog::EndMessage;
 
 	verifyMessage(lastMsg, source, type);
+
+	// Reset error so that code afterwards (such as glu::ShaderProgram) doesn't break because of
+	// lingering error state.
+	m_context.getRenderContext().getFunctions().getError();
 }
 
 // Generate errors, verify that calling glGetError afterwards produces desired result
