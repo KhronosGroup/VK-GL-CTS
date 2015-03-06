@@ -1069,10 +1069,10 @@ group io_blocks "shader io blocks"
 		end
 	end
 
-	case match_different_member_interpolation
+	case mismatch_different_member_interpolation
 		version 310 es
-		desc "IO-block members match with different interpolation qualifiers"
-		expect pass
+		desc "IO-block members do not match due to different interpolation qualifiers"
+		expect validation_fail
 
 		pipeline_program
 			active_stages {vertex}
