@@ -1633,9 +1633,6 @@ void CommonEdgeCase::init (void)
 													 "void main (void)\n"
 													 "{\n"
 													 + (m_primitiveType == TESSPRIMITIVETYPE_TRIANGLES ?
-														string(m_caseType == CASETYPE_PRECISE
-															? "\t// Note: when this is an edge vertex, at most two of the following terms are non-zero (so order doesn't matter)\n"
-															: "") +
 														"	highp vec2 pos = gl_TessCoord.x*in_te_position[0] + gl_TessCoord.y*in_te_position[1] + gl_TessCoord.z*in_te_position[2];\n"
 														"\n"
 														"	highp float f = sqrt(3.0 * min(gl_TessCoord.x, min(gl_TessCoord.y, gl_TessCoord.z))) * 0.5 + 0.5;\n"
@@ -1652,7 +1649,6 @@ void CommonEdgeCase::init (void)
 															"	highp vec2 b = (    gl_TessCoord.x)*(1.0-gl_TessCoord.y)*in_te_position[1];\n"
 															"	highp vec2 c = (1.0-gl_TessCoord.x)*(    gl_TessCoord.y)*in_te_position[2];\n"
 															"	highp vec2 d = (    gl_TessCoord.x)*(    gl_TessCoord.y)*in_te_position[3];\n"
-															"	// Note: when this is an edge vertex, at most two of the following terms are non-zero (so order doesn't matter)\n"
 															"	highp vec2 pos = a+b+c+d;\n"
 														 : DE_NULL) +
 														"\n"
@@ -2440,6 +2436,12 @@ public:
 	}
 
 protected:
+	void init (void)
+	{
+		checkExtensionSupport(m_context, "GL_EXT_gpu_shader5");
+		BasicVariousTessLevelsPosAttrCase::init();
+	}
+
 	const glu::ProgramSources makeSources (TessPrimitiveType primitiveType, SpacingMode spacing, const char* vtxOutPosAttrName) const
 	{
 		return glu::ProgramSources()
@@ -2456,11 +2458,13 @@ protected:
 
 			<< glu::TessellationEvaluationSource	("#version 310 es\n"
 													 "#extension GL_EXT_tessellation_shader : require\n"
+													 "#extension GL_EXT_gpu_shader5 : require\n"
 													 "\n"
 													 + getTessellationEvaluationInLayoutString(primitiveType, spacing) +
 													 "\n"
 													 "in highp vec2 in_te_position[];\n"
 													 "\n"
+													 "precise gl_Position;\n"
 													 "void main (void)\n"
 													 "{\n"
 													 + (primitiveType == TESSPRIMITIVETYPE_TRIANGLES ?
