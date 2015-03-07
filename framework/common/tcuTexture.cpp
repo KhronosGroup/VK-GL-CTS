@@ -84,6 +84,32 @@ inline void writeRGB888Float (deUint8* ptr, const Vec4& val)
 	ptr[2] = floatToU8(val[2]);
 }
 
+inline void writeUint24 (deUint8* dst, deUint32 val)
+{
+#if (DE_ENDIANNESS == DE_LITTLE_ENDIAN)
+	dst[0] = (deUint8)((val & 0x0000FFu) >>  0u);
+	dst[1] = (deUint8)((val & 0x00FF00u) >>  8u);
+	dst[2] = (deUint8)((val & 0xFF0000u) >> 16u);
+#else
+	dst[0] = (deUint8)((val & 0xFF0000u) >> 16u);
+	dst[1] = (deUint8)((val & 0x00FF00u) >>  8u);
+	dst[2] = (deUint8)((val & 0x0000FFu) >>  0u);
+#endif
+}
+
+inline deUint32 readUint24 (const deUint8* src)
+{
+#if (DE_ENDIANNESS == DE_LITTLE_ENDIAN)
+	return	(((deUint32)src[0]) <<  0u) |
+			(((deUint32)src[1]) <<  8u) |
+			(((deUint32)src[2]) << 16u);
+#else
+	return	(((deUint32)src[0]) << 16u) |
+			(((deUint32)src[1]) <<  8u) |
+			(((deUint32)src[2]) <<  0u);
+#endif
+}
+
 // \todo [2011-09-21 pyry] Move to tcutil?
 template <typename T>
 inline T convertSatRte (float f)
@@ -113,8 +139,18 @@ inline T convertSatRte (float f)
 	return (T)intVal;
 }
 
+inline deUint32 convertSatRteUint24 (float f)
+{
+	const deUint32 rounded		= convertSatRte<deUint32>(f);
+	const deUint32 maxUint24	= 0xFFFFFFu;
+	return de::min(rounded, maxUint24);
+}
+
 int getChannelSize (TextureFormat::ChannelType type)
 {
+	// make sure this table is updated if format table is updated
+	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 26);
+
 	switch (type)
 	{
 		case TextureFormat::SNORM_INT8:			return 1;
@@ -122,6 +158,7 @@ int getChannelSize (TextureFormat::ChannelType type)
 		case TextureFormat::SNORM_INT32:		return 4;
 		case TextureFormat::UNORM_INT8:			return 1;
 		case TextureFormat::UNORM_INT16:		return 2;
+		case TextureFormat::UNORM_INT24:		return 3;
 		case TextureFormat::UNORM_INT32:		return 4;
 		case TextureFormat::SIGNED_INT8:		return 1;
 		case TextureFormat::SIGNED_INT16:		return 2;
@@ -139,6 +176,9 @@ int getChannelSize (TextureFormat::ChannelType type)
 
 int getNumUsedChannels (TextureFormat::ChannelOrder order)
 {
+	// make sure this table is updated if type table is updated
+	DE_STATIC_ASSERT(TextureFormat::CHANNELORDER_LAST == 16);
+
 	switch (order)
 	{
 		case TextureFormat::R:			return 1;
@@ -165,6 +205,9 @@ int getNumUsedChannels (TextureFormat::ChannelOrder order)
 
 inline float channelToFloat (const deUint8* value, TextureFormat::ChannelType type)
 {
+	// make sure this table is updated if format table is updated
+	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 26);
+
 	switch (type)
 	{
 		case TextureFormat::SNORM_INT8:			return de::max(-1.0f, (float)*((const deInt8*)value) / 127.0f);
@@ -172,6 +215,7 @@ inline float channelToFloat (const deUint8* value, TextureFormat::ChannelType ty
 		case TextureFormat::SNORM_INT32:		return de::max(-1.0f, (float)*((const deInt32*)value) / 2147483647.0f);
 		case TextureFormat::UNORM_INT8:			return (float)*((const deUint8*)value) / 255.0f;
 		case TextureFormat::UNORM_INT16:		return (float)*((const deUint16*)value) / 65535.0f;
+		case TextureFormat::UNORM_INT24:		return (float)readUint24(value) / 16777215.0f;
 		case TextureFormat::UNORM_INT32:		return (float)*((const deUint32*)value) / 4294967295.0f;
 		case TextureFormat::SIGNED_INT8:		return (float)*((const deInt8*)value);
 		case TextureFormat::SIGNED_INT16:		return (float)*((const deInt16*)value);
@@ -189,6 +233,9 @@ inline float channelToFloat (const deUint8* value, TextureFormat::ChannelType ty
 
 inline int channelToInt (const deUint8* value, TextureFormat::ChannelType type)
 {
+	// make sure this table is updated if format table is updated
+	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 26);
+
 	switch (type)
 	{
 		case TextureFormat::SNORM_INT8:			return (int)*((const deInt8*)value);
@@ -196,6 +243,7 @@ inline int channelToInt (const deUint8* value, TextureFormat::ChannelType type)
 		case TextureFormat::SNORM_INT32:		return (int)*((const deInt32*)value);
 		case TextureFormat::UNORM_INT8:			return (int)*((const deUint8*)value);
 		case TextureFormat::UNORM_INT16:		return (int)*((const deUint16*)value);
+		case TextureFormat::UNORM_INT24:		return (int)readUint24(value);
 		case TextureFormat::UNORM_INT32:		return (int)*((const deUint32*)value);
 		case TextureFormat::SIGNED_INT8:		return (int)*((const deInt8*)value);
 		case TextureFormat::SIGNED_INT16:		return (int)*((const deInt16*)value);
@@ -213,6 +261,9 @@ inline int channelToInt (const deUint8* value, TextureFormat::ChannelType type)
 
 void floatToChannel (deUint8* dst, float src, TextureFormat::ChannelType type)
 {
+	// make sure this table is updated if format table is updated
+	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 26);
+
 	switch (type)
 	{
 		case TextureFormat::SNORM_INT8:			*((deInt8*)dst)			= convertSatRte<deInt8>		(src * 127.0f);			break;
@@ -220,6 +271,7 @@ void floatToChannel (deUint8* dst, float src, TextureFormat::ChannelType type)
 		case TextureFormat::SNORM_INT32:		*((deInt32*)dst)		= convertSatRte<deInt32>	(src * 2147483647.0f);	break;
 		case TextureFormat::UNORM_INT8:			*((deUint8*)dst)		= convertSatRte<deUint8>	(src * 255.0f);			break;
 		case TextureFormat::UNORM_INT16:		*((deUint16*)dst)		= convertSatRte<deUint16>	(src * 65535.0f);		break;
+		case TextureFormat::UNORM_INT24:		writeUint24(dst, convertSatRteUint24(src * 16777215.0f));						break;
 		case TextureFormat::UNORM_INT32:		*((deUint32*)dst)		= convertSatRte<deUint32>	(src * 4294967295.0f);	break;
 		case TextureFormat::SIGNED_INT8:		*((deInt8*)dst)			= convertSatRte<deInt8>		(src);					break;
 		case TextureFormat::SIGNED_INT16:		*((deInt16*)dst)		= convertSatRte<deInt16>	(src);					break;
@@ -248,14 +300,32 @@ static inline T convertSat (S src)
 		return (T)src;
 }
 
+template <typename S>
+static inline deUint32 convertSatUint24 (S src)
+{
+	S min = (S)0u;
+	S max = (S)0xFFFFFFu;
+
+	if (src < min)
+		return (deUint32)min;
+	else if (src > max)
+		return (deUint32)max;
+	else
+		return (deUint32)src;
+}
+
 void intToChannel (deUint8* dst, int src, TextureFormat::ChannelType type)
 {
+	// make sure this table is updated if format table is updated
+	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 26);
+
 	switch (type)
 	{
 		case TextureFormat::SNORM_INT8:			*((deInt8*)dst)			= convertSat<deInt8>	(src);				break;
 		case TextureFormat::SNORM_INT16:		*((deInt16*)dst)		= convertSat<deInt16>	(src);				break;
 		case TextureFormat::UNORM_INT8:			*((deUint8*)dst)		= convertSat<deUint8>	(src);				break;
 		case TextureFormat::UNORM_INT16:		*((deUint16*)dst)		= convertSat<deUint16>	(src);				break;
+		case TextureFormat::UNORM_INT24:		writeUint24(dst, convertSatUint24(src));							break;
 		case TextureFormat::SIGNED_INT8:		*((deInt8*)dst)			= convertSat<deInt8>	(src);				break;
 		case TextureFormat::SIGNED_INT16:		*((deInt16*)dst)		= convertSat<deInt16>	(src);				break;
 		case TextureFormat::SIGNED_INT32:		*((deInt32*)dst)		= convertSat<deInt32>	(src);				break;
@@ -447,52 +517,7 @@ int TextureFormat::getPixelSize (void) const
 		return 8;
 	}
 	else
-	{
-		int numChannels	= 0;
-		int channelSize	= 0;
-
-		switch (order)
-		{
-			case R:			numChannels = 1;	break;
-			case A:			numChannels = 1;	break;
-			case I:			numChannels = 1;	break;
-			case L:			numChannels = 1;	break;
-			case LA:		numChannels = 2;	break;
-			case RG:		numChannels = 2;	break;
-			case RA:		numChannels = 2;	break;
-			case RGB:		numChannels = 3;	break;
-			case RGBA:		numChannels = 4;	break;
-			case ARGB:		numChannels = 4;	break;
-			case BGRA:		numChannels = 4;	break;
-			case sRGB:		numChannels = 3;	break;
-			case sRGBA:		numChannels = 4;	break;
-			case D:			numChannels = 1;	break;
-			case S:			numChannels = 1;	break;
-			case DS:		numChannels = 2;	break;
-			default:		DE_ASSERT(DE_FALSE);
-		}
-
-		switch (type)
-		{
-			case SNORM_INT8:		channelSize = 1;	break;
-			case SNORM_INT16:		channelSize = 2;	break;
-			case SNORM_INT32:		channelSize = 4;	break;
-			case UNORM_INT8:		channelSize = 1;	break;
-			case UNORM_INT16:		channelSize = 2;	break;
-			case UNORM_INT32:		channelSize = 4;	break;
-			case SIGNED_INT8:		channelSize = 1;	break;
-			case SIGNED_INT16:		channelSize = 2;	break;
-			case SIGNED_INT32:		channelSize = 4;	break;
-			case UNSIGNED_INT8:		channelSize = 1;	break;
-			case UNSIGNED_INT16:	channelSize = 2;	break;
-			case UNSIGNED_INT32:	channelSize = 4;	break;
-			case HALF_FLOAT:		channelSize = 2;	break;
-			case FLOAT:				channelSize = 4;	break;
-			default:				DE_ASSERT(DE_FALSE);
-		}
-
-		return numChannels*channelSize;
-	}
+		return getNumUsedChannels(order) * getChannelSize(type);
 }
 
 ConstPixelBufferAccess::ConstPixelBufferAccess (void)
@@ -677,8 +702,8 @@ IVec4 ConstPixelBufferAccess::getPixelInt (int x, int y, int z) const
 	DE_ASSERT(de::inBounds(y, 0, m_size.y()));
 	DE_ASSERT(de::inBounds(z, 0, m_size.z()));
 
-	const deUint8*	pixelPtr = (const deUint8*)getDataPtr() + z*m_pitch.z() + y*m_pitch.y() + x*m_pitch.x();
-	IVec4			result;
+	const deUint8* const	pixelPtr = (const deUint8*)getDataPtr() + z*m_pitch.z() + y*m_pitch.y() + x*m_pitch.x();
+	IVec4					result;
 
 	// Optimized fomats.
 	if (m_format.type == TextureFormat::UNORM_INT8)
@@ -781,7 +806,7 @@ float ConstPixelBufferAccess::getPixDepth (int x, int y, int z) const
 	DE_ASSERT(de::inBounds(y, 0, getHeight()));
 	DE_ASSERT(de::inBounds(z, 0, getDepth()));
 
-	deUint8* pixelPtr = (deUint8*)getDataPtr() + z*m_pitch.z() + y*m_pitch.y() + x*m_pitch.x();
+	const deUint8* const pixelPtr = (const deUint8*)getDataPtr() + z*m_pitch.z() + y*m_pitch.y() + x*m_pitch.x();
 
 #define UB32(OFFS, COUNT) ((*((const deUint32*)pixelPtr) >> (OFFS)) & ((1<<(COUNT))-1))
 #define NB32(OFFS, COUNT) channelToNormFloat(UB32(OFFS, COUNT), (COUNT))
@@ -820,7 +845,7 @@ int ConstPixelBufferAccess::getPixStencil (int x, int y, int z) const
 	DE_ASSERT(de::inBounds(y, 0, getHeight()));
 	DE_ASSERT(de::inBounds(z, 0, getDepth()));
 
-	deUint8* pixelPtr = (deUint8*)getDataPtr() + z*m_pitch.z() + y*m_pitch.y() + x*m_pitch.x();
+	const deUint8* const pixelPtr = (const deUint8*)getDataPtr() + z*m_pitch.z() + y*m_pitch.y() + x*m_pitch.x();
 
 	switch (m_format.type)
 	{
@@ -954,7 +979,7 @@ void PixelBufferAccess::setPixel (const IVec4& color, int x, int y, int z) const
 	DE_ASSERT(de::inBounds(y, 0, getHeight()));
 	DE_ASSERT(de::inBounds(z, 0, getDepth()));
 
-	deUint8* pixelPtr = (deUint8*)getDataPtr() + z*m_pitch.z() + y*m_pitch.y() + x*m_pitch.x();
+	deUint8* const pixelPtr = (deUint8*)getDataPtr() + z*m_pitch.z() + y*m_pitch.y() + x*m_pitch.x();
 
 	// Optimized fomats.
 	if (m_format.type == TextureFormat::UNORM_INT8)
@@ -1017,7 +1042,7 @@ void PixelBufferAccess::setPixDepth (float depth, int x, int y, int z) const
 	DE_ASSERT(de::inBounds(y, 0, getHeight()));
 	DE_ASSERT(de::inBounds(z, 0, getDepth()));
 
-	deUint8* pixelPtr = (deUint8*)getDataPtr() + z*m_pitch.z() + y*m_pitch.y() + x*m_pitch.x();
+	deUint8* const pixelPtr = (deUint8*)getDataPtr() + z*m_pitch.z() + y*m_pitch.y() + x*m_pitch.x();
 
 #define PN(VAL, OFFS, BITS) (normFloatToChannel((VAL), (BITS)) << (OFFS))
 
@@ -1053,7 +1078,7 @@ void PixelBufferAccess::setPixStencil (int stencil, int x, int y, int z) const
 	DE_ASSERT(de::inBounds(y, 0, getHeight()));
 	DE_ASSERT(de::inBounds(z, 0, getDepth()));
 
-	deUint8* pixelPtr = (deUint8*)getDataPtr() + z*m_pitch.z() + y*m_pitch.y() + x*m_pitch.x();
+	deUint8* const pixelPtr = (deUint8*)getDataPtr() + z*m_pitch.z() + y*m_pitch.y() + x*m_pitch.x();
 
 #define PU(VAL, OFFS, BITS) (uintToChannel((deUint32)(VAL), (BITS)) << (OFFS))
 
@@ -3409,6 +3434,7 @@ std::ostream& operator<< (std::ostream& str, TextureFormat::ChannelType type)
 		"SNORM_INT32",
 		"UNORM_INT8",
 		"UNORM_INT16",
+		"UNORM_INT24",
 		"UNORM_INT32",
 		"UNORM_SHORT_565",
 		"UNORM_SHORT_555",

@@ -78,12 +78,18 @@ bool isSRGB (TextureFormat format)
 //! Get texture channel class for format
 TextureChannelClass getTextureChannelClass (TextureFormat::ChannelType channelType)
 {
+	// make sure this table is updated if format table is updated
+	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 26);
+
 	switch (channelType)
 	{
 		case TextureFormat::SNORM_INT8:						return TEXTURECHANNELCLASS_SIGNED_FIXED_POINT;
 		case TextureFormat::SNORM_INT16:					return TEXTURECHANNELCLASS_SIGNED_FIXED_POINT;
+		case TextureFormat::SNORM_INT32:					return TEXTURECHANNELCLASS_SIGNED_FIXED_POINT;
 		case TextureFormat::UNORM_INT8:						return TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT;
 		case TextureFormat::UNORM_INT16:					return TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT;
+		case TextureFormat::UNORM_INT24:					return TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT;
+		case TextureFormat::UNORM_INT32:					return TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT;
 		case TextureFormat::UNORM_SHORT_565:				return TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT;
 		case TextureFormat::UNORM_SHORT_555:				return TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT;
 		case TextureFormat::UNORM_SHORT_4444:				return TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT;
@@ -93,6 +99,7 @@ TextureChannelClass getTextureChannelClass (TextureFormat::ChannelType channelTy
 		case TextureFormat::UNSIGNED_INT_1010102_REV:		return TEXTURECHANNELCLASS_UNSIGNED_INTEGER;
 		case TextureFormat::UNSIGNED_INT_11F_11F_10F_REV:	return TEXTURECHANNELCLASS_FLOATING_POINT;
 		case TextureFormat::UNSIGNED_INT_999_E5_REV:		return TEXTURECHANNELCLASS_FLOATING_POINT;
+		case TextureFormat::UNSIGNED_INT_24_8:				return TEXTURECHANNELCLASS_LAST;					//!< packed unorm24-uint8
 		case TextureFormat::SIGNED_INT8:					return TEXTURECHANNELCLASS_SIGNED_INTEGER;
 		case TextureFormat::SIGNED_INT16:					return TEXTURECHANNELCLASS_SIGNED_INTEGER;
 		case TextureFormat::SIGNED_INT32:					return TEXTURECHANNELCLASS_SIGNED_INTEGER;
@@ -101,6 +108,7 @@ TextureChannelClass getTextureChannelClass (TextureFormat::ChannelType channelTy
 		case TextureFormat::UNSIGNED_INT32:					return TEXTURECHANNELCLASS_UNSIGNED_INTEGER;
 		case TextureFormat::HALF_FLOAT:						return TEXTURECHANNELCLASS_FLOATING_POINT;
 		case TextureFormat::FLOAT:							return TEXTURECHANNELCLASS_FLOATING_POINT;
+		case TextureFormat::FLOAT_UNSIGNED_INT_24_8_REV:	return TEXTURECHANNELCLASS_LAST;					//!< packed float32-pad24-uint8
 		default:											return TEXTURECHANNELCLASS_LAST;
 	}
 }
@@ -215,6 +223,9 @@ ConstPixelBufferAccess flipYAccess (const ConstPixelBufferAccess& access)
 
 static Vec2 getChannelValueRange (TextureFormat::ChannelType channelType)
 {
+	// make sure this table is updated if format table is updated
+	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 26);
+
 	float cMin = 0.0f;
 	float cMax = 0.0f;
 
@@ -222,11 +233,14 @@ static Vec2 getChannelValueRange (TextureFormat::ChannelType channelType)
 	{
 		// Signed normalized formats.
 		case TextureFormat::SNORM_INT8:
-		case TextureFormat::SNORM_INT16:					cMin = -1.0f;			cMax = 1.0f;			break;
+		case TextureFormat::SNORM_INT16:
+		case TextureFormat::SNORM_INT32:					cMin = -1.0f;			cMax = 1.0f;			break;
 
 		// Unsigned normalized formats.
 		case TextureFormat::UNORM_INT8:
 		case TextureFormat::UNORM_INT16:
+		case TextureFormat::UNORM_INT24:
+		case TextureFormat::UNORM_INT32:
 		case TextureFormat::UNORM_SHORT_565:
 		case TextureFormat::UNORM_SHORT_4444:
 		case TextureFormat::UNORM_INT_101010:
@@ -295,6 +309,9 @@ TextureFormatInfo getTextureFormatInfo (const TextureFormat& format)
 
 static IVec4 getChannelBitDepth (TextureFormat::ChannelType channelType)
 {
+	// make sure this table is updated if format table is updated
+	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 26);
+
 	switch (channelType)
 	{
 		case TextureFormat::SNORM_INT8:						return IVec4(8);
@@ -302,6 +319,7 @@ static IVec4 getChannelBitDepth (TextureFormat::ChannelType channelType)
 		case TextureFormat::SNORM_INT32:					return IVec4(32);
 		case TextureFormat::UNORM_INT8:						return IVec4(8);
 		case TextureFormat::UNORM_INT16:					return IVec4(16);
+		case TextureFormat::UNORM_INT24:					return IVec4(24);
 		case TextureFormat::UNORM_INT32:					return IVec4(32);
 		case TextureFormat::UNORM_SHORT_565:				return IVec4(5,6,5,0);
 		case TextureFormat::UNORM_SHORT_4444:				return IVec4(4);
@@ -346,6 +364,9 @@ IVec4 getTextureFormatBitDepth (const TextureFormat& format)
 
 static IVec4 getChannelMantissaBitDepth (TextureFormat::ChannelType channelType)
 {
+	// make sure this table is updated if format table is updated
+	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 26);
+
 	switch (channelType)
 	{
 		case TextureFormat::SNORM_INT8:
@@ -353,6 +374,7 @@ static IVec4 getChannelMantissaBitDepth (TextureFormat::ChannelType channelType)
 		case TextureFormat::SNORM_INT32:
 		case TextureFormat::UNORM_INT8:
 		case TextureFormat::UNORM_INT16:
+		case TextureFormat::UNORM_INT24:
 		case TextureFormat::UNORM_INT32:
 		case TextureFormat::UNORM_SHORT_565:
 		case TextureFormat::UNORM_SHORT_4444:
