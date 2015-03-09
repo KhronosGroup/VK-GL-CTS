@@ -26,6 +26,7 @@ const char*							getBufferQueryName						(int value);
 const char*							getFaceName								(int value);
 const char*							getCompareFuncName						(int value);
 const char*							getEnableCapName						(int value);
+const char*							getIndexedEnableCapName					(int value);
 const char*							getWindingName							(int value);
 const char*							getHintModeName							(int value);
 const char*							getHintName								(int value);
@@ -99,6 +100,7 @@ inline tcu::Format::Enum<int, 2>	getBufferQueryStr						(int value)		{ return tc
 inline tcu::Format::Enum<int, 2>	getFaceStr								(int value)		{ return tcu::Format::Enum<int, 2>(getFaceName, value); }
 inline tcu::Format::Enum<int, 2>	getCompareFuncStr						(int value)		{ return tcu::Format::Enum<int, 2>(getCompareFuncName, value); }
 inline tcu::Format::Enum<int, 2>	getEnableCapStr							(int value)		{ return tcu::Format::Enum<int, 2>(getEnableCapName, value); }
+inline tcu::Format::Enum<int, 2>	getIndexedEnableCapStr					(int value)		{ return tcu::Format::Enum<int, 2>(getIndexedEnableCapName, value); }
 inline tcu::Format::Enum<int, 2>	getWindingStr							(int value)		{ return tcu::Format::Enum<int, 2>(getWindingName, value); }
 inline tcu::Format::Enum<int, 2>	getHintModeStr							(int value)		{ return tcu::Format::Enum<int, 2>(getHintModeName, value); }
 inline tcu::Format::Enum<int, 2>	getHintStr								(int value)		{ return tcu::Format::Enum<int, 2>(getHintName, value); }

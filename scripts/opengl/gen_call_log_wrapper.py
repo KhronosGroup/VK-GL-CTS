@@ -95,6 +95,7 @@ CALL_LOG_SPECS = {
 	"glDeleteProgramPipelines":				LogSpec({1: pointer(size = "n")}),
 	"glDepthFunc":							LogSpec({0: enum("CompareFunc")}),
 	"glDisable":							LogSpec({0: enum("EnableCap")}),
+	"glDisablei":							LogSpec({0: enum("IndexedEnableCap")}),
 	"glDrawArrays":							LogSpec({0: enum("PrimitiveType")}),
 	"glDrawArraysInstanced":				LogSpec({0: enum("PrimitiveType")}),
 	"glDrawBuffers":						LogSpec({1: enumPointer("DrawReadBuffer", size = "n")}),
@@ -110,6 +111,7 @@ CALL_LOG_SPECS = {
 	"glMultiDrawElements":					LogSpec({0: enum("PrimitiveType"), 2: enum("Type")}),
 	"glMultiDrawElementsBaseVertex":		LogSpec({0: enum("PrimitiveType"), 2: enum("Type")}),
 	"glEnable":								LogSpec({0: enum("EnableCap")}),
+	"glEnablei":							LogSpec({0: enum("IndexedEnableCap")}),
 	"glEndQuery":							LogSpec({0: enum("QueryTarget")}),
 	"glFramebufferRenderbuffer":			LogSpec({0: enum("FramebufferTarget"), 1: enum("FramebufferAttachment"), 2: enum("FramebufferTarget")}),
 	"glFramebufferTexture2D":				LogSpec({0: enum("FramebufferTarget"), 1: enum("FramebufferAttachment"), 2: enum("TextureTarget")}),
@@ -202,6 +204,7 @@ CALL_LOG_SPECS = {
 #	"glGetVertexAttribPointerv":
 	"glHint":								LogSpec({0: enum("Hint"), 1: enum("HintMode")}),
 	"glIsEnabled":							LogSpec({0: enum("EnableCap")}),
+	"glIsEnabledi":							LogSpec({0: enum("IndexedEnableCap")}),
 	"glPixelStorei":						LogSpec({0: enum("PixelStoreParameter")}),
 	"glReadBuffer":							LogSpec({0: enum("DrawReadBuffer")}),
 	"glReadPixels":							LogSpec({4: enum("PixelFormat"), 5: enum("Type")}),

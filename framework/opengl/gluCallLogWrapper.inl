@@ -928,7 +928,7 @@ void CallLogWrapper::glDisableVertexAttribArray (glw::GLuint index)
 void CallLogWrapper::glDisablei (glw::GLenum target, glw::GLuint index)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glDisablei(" << toHex(target) << ", " << index << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glDisablei(" << getIndexedEnableCapStr(target) << ", " << index << ");" << TestLog::EndMessage;
 	m_gl.disablei(target, index);
 }
 
@@ -1117,7 +1117,7 @@ void CallLogWrapper::glEnableVertexAttribArray (glw::GLuint index)
 void CallLogWrapper::glEnablei (glw::GLenum target, glw::GLuint index)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glEnablei(" << toHex(target) << ", " << index << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glEnablei(" << getIndexedEnableCapStr(target) << ", " << index << ");" << TestLog::EndMessage;
 	m_gl.enablei(target, index);
 }
 
@@ -2453,7 +2453,7 @@ glw::GLboolean CallLogWrapper::glIsEnabled (glw::GLenum cap)
 glw::GLboolean CallLogWrapper::glIsEnabledi (glw::GLenum target, glw::GLuint index)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glIsEnabledi(" << toHex(target) << ", " << index << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glIsEnabledi(" << getIndexedEnableCapStr(target) << ", " << index << ");" << TestLog::EndMessage;
 	glw::GLboolean returnValue = m_gl.isEnabledi(target, index);
 	if (m_enableLog)
 		m_log << TestLog::Message << "// " << getBooleanStr(returnValue) << " returned" << TestLog::EndMessage;
