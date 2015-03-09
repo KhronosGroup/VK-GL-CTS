@@ -34,9 +34,10 @@ except ImportError:
 	import dummy_threading as threading
 
 class NativeLib:
-	def __init__ (self, apiVersion, abiVersion):
-		self.apiVersion	= apiVersion
-		self.abiVersion	= abiVersion
+	def __init__ (self, apiVersion, abiVersion, prebuiltDir):
+		self.apiVersion		= apiVersion
+		self.abiVersion		= abiVersion
+		self.prebuiltDir	= prebuiltDir
 
 	def __str__ (self):
 		return "(API: %s, ABI: %s)" % (self.apiVersion, self.abiVersion)
@@ -219,11 +220,12 @@ ANDROID_DIR				= os.path.realpath(os.path.join(os.path.dirname(os.path.abspath(_
 
 # Build configuration
 NATIVE_LIBS				= [
-		#		  API		ABI
-		NativeLib(13,		"armeabi-v7a"),		# ARM v7a ABI
-		NativeLib(13,		"x86"),				# x86
-		NativeLib(21,		"arm64-v8a"),		# ARM64 v8a ABI
+		#		  API		ABI				prebuiltsDir
+		NativeLib(13,		"armeabi-v7a",	'android-arm'),		# ARM v7a ABI
+		NativeLib(13,		"x86",			'android-x86'),		# x86
+		NativeLib(21,		"arm64-v8a",	'android-arm64'),	# ARM64 v8a ABI
 	]
+
 ANDROID_JAVA_API		= "android-13"
 NATIVE_LIB_NAME			= "libdeqp.so"
 
