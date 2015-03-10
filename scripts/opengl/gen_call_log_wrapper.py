@@ -45,10 +45,10 @@ def textureUnit (name):
 	return "getTextureUnitStr(%s)" % name
 
 def voidPointer (name):
-	return "static_cast<const void*>(%s)" % name
+	return "toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(%s)))" % name
 
 def fnPointer (name):
-	return "((const void*)(%s))" % name
+	return "toHex(reinterpret_cast<deUintptr>(%s))" % name
 
 stringVal = lambda name: "getStringStr(%s)" % name
 
@@ -186,8 +186,8 @@ CALL_LOG_SPECS = {
 	"glGetShaderInfoLog":					LogSpec({3: voidPointer}, argOutPrints = {2: pointer(size = "1")}),
 	"glGetShaderPrecisionFormat":			LogSpec({0: enum("ShaderType"), 1: enum("PrecisionFormatType")}),
 #	"glGetShaderSource":
-	"glGetString":							LogSpec({0: enum("GettableString")}),
-	"glGetStringi":							LogSpec({0: enum("GettableString")}),
+	"glGetString":							LogSpec({0: enum("GettableString")}, returnPrint=stringVal),
+	"glGetStringi":							LogSpec({0: enum("GettableString")}, returnPrint=stringVal),
 	"glGetTexParameterfv":					LogSpec({0: enum("TextureTarget"), 1: enum("TextureParameter")}, argOutPrints = {2: pointer(size = "1")}),
 	"glGetTexParameteriv":					LogSpec({0: enum("TextureTarget"), 1: enum("TextureParameter")}, argOutPrints = {2: pointer(size = "1")}),
 	"glGetTexParameterIiv":					LogSpec({0: enum("TextureTarget"), 1: enum("TextureParameter")}, argOutPrints = {2: pointer(size = "getTextureParamQueryNumArgsOut(pname)")}),
@@ -351,10 +351,10 @@ CALL_LOG_SPECS = {
 	"glTexBufferRange":						LogSpec({0: enum("BufferTarget"), 1: enum("PixelFormat")}),
 }
 
-def glwPrefix(string):
+def glwPrefix (string):
 	return re.sub(r'\bGL', 'glw::GL', string)
 
-def prefixedParams(command):
+def prefixedParams (command):
 	if len(command.params) > 0:
 		return ", ".join(glwPrefix(param.declaration) for param in command.params)
 	else:
@@ -364,12 +364,17 @@ def commandLogWrapperMemberDecl (command):
 	return "%s\t%s\t(%s);" % (glwPrefix(command.type), command.name, prefixedParams(command))
 
 def getVarDefaultPrint (type, varName):
-	if re.match(r'^const +(GLchar|GLubyte) *\*$', type):
+	if re.match(r'^const +GLchar *\*$', type):
 		return "getStringStr(%s)" % varName
 	elif re.match(r'(GLubyte|GLbyte|GLenum|GLushort|GLbitfield|\*)$', type):
 		return "toHex(%s)" % varName
 	elif type == 'GLboolean':
 		return "getBooleanStr(%s)" % varName
+	elif re.match(r'^(const +)?.+ *\*$', type) and not re.match(r'^(const +)?void *\*$', type):
+		# non-void pointer type, always cast to void* to avoid unforeseen consequences of
+		# implicit assumptions (such as char* should be printed as a zero-terminated string)
+		# \note use static_cast to break the build if function pointer is supplied
+		return "toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(%s)))" % varName
 	else:
 		return varName
 
