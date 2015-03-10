@@ -161,10 +161,11 @@ private:
 	tcu::IVec2				m_curPos;		//!< Current rasterization position.
 };
 
+
 /*--------------------------------------------------------------------*//*!
  * \brief Single sample line rasterizer
  *
- * Triangle rasterizer implements following features:
+ * Line rasterizer implements following features:
  *  - Rasterization using fixed-point coordinates
  *  - Depth interpolation
  *  - Perspective-correct interpolation
@@ -177,7 +178,7 @@ class SingleSampleLineRasterizer
 {
 public:
 									SingleSampleLineRasterizer	(const tcu::IVec4& viewport);
-									~SingleSampleLineRasterizer	();
+									~SingleSampleLineRasterizer	(void);
 
 	void							init						(const tcu::Vec4& v0, const tcu::Vec4& v1, float lineWidth);
 
@@ -205,7 +206,7 @@ private:
 /*--------------------------------------------------------------------*//*!
  * \brief Multisampled line rasterizer
  *
- * Triangle rasterizer implements following features:
+ * Line rasterizer implements following features:
  *  - Rasterization using fixed-point coordinates
  *  - Depth interpolation
  *  - Perspective-correct interpolation
@@ -235,6 +236,49 @@ private:
 	// Per-line rasterization state.
 	TriangleRasterizer			m_triangleRasterizer0; //!< not in array because we want to initialize these in the initialization list
 	TriangleRasterizer			m_triangleRasterizer1;
+};
+
+
+/*--------------------------------------------------------------------*//*!
+ * \brief Pixel diamond
+ *
+ * Structure representing a diamond a line exits.
+ *//*--------------------------------------------------------------------*/
+struct LineExitDiamond
+{
+	tcu::IVec2	position;
+};
+
+/*--------------------------------------------------------------------*//*!
+ * \brief Line exit diamond generator
+ *
+ * For a given line, generates list of diamonds the line exits using the
+ * line-exit rules of the line rasterization. Does not do scissoring.
+ *
+ * \note Not used by rr, but provided to prevent test cases requiring
+ *       accurate diamonds from abusing SingleSampleLineRasterizer.
+ *//*--------------------------------------------------------------------*/
+class LineExitDiamondGenerator
+{
+public:
+									LineExitDiamondGenerator	(void);
+									~LineExitDiamondGenerator	(void);
+
+	void							init						(const tcu::Vec4& v0, const tcu::Vec4& v1);
+
+	// only available after init()
+	void							rasterize					(LineExitDiamond* const lineDiamonds, const int maxDiamonds, int& numWritten);
+
+private:
+									LineExitDiamondGenerator	(const LineExitDiamondGenerator&); // not allowed
+	LineExitDiamondGenerator&		operator=					(const LineExitDiamondGenerator&); // not allowed
+
+	// Per-line rasterization state.
+	tcu::Vec4						m_v0;
+	tcu::Vec4						m_v1;
+	tcu::IVec2						m_bboxMin;			//!< Bounding box min (inclusive).
+	tcu::IVec2						m_bboxMax;			//!< Bounding box max (inclusive).
+	tcu::IVec2						m_curPos;			//!< Current rasterization position.
 };
 
 } // rr
