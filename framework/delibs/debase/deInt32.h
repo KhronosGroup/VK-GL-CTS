@@ -269,7 +269,7 @@ DE_INLINE int deClz32 (deUint32 a)
 		return 32;
 	else
 		return 31-i;
-#elif (DE_COMPILER == DE_COMPILER_GCC == DE_COMPILER == DE_COMPILER_CLANG)
+#elif (DE_COMPILER == DE_COMPILER_GCC) || (DE_COMPILER == DE_COMPILER_CLANG)
 	if (a == 0)
 		return 32;
 	else
