@@ -349,7 +349,7 @@ void CreateContextExtCase::logAttribList (void)
 				iter++;
 				attribListString << "EGL_CONTEXT_OPENGL_ROBUST_ACCESS_EXT, ";
 
-				if (*iter == EGL_FALSE && *iter == EGL_TRUE)
+				if (*iter == EGL_FALSE || *iter == EGL_TRUE)
 					attribListString << (*iter ? "EGL_TRUE" : "EGL_FALSE");
 				else
 					attribListString << (*iter);
