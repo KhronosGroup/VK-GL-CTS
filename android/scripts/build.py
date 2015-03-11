@@ -51,18 +51,6 @@ def getNativeBuildDir (buildRoot, nativeLib, buildType):
 def getAssetsDir (buildRoot, nativeLib, buildType):
 	return os.path.join(getNativeBuildDir(buildRoot, nativeLib, buildType), "assets")
 
-def getPrebuiltsDirName (abiName):
-	PREBUILT_DIRS = {
-			'x86':			'android-x86',
-			'armeabi-v7a':	'android-arm',
-			'arm64-v8a':	'android-arm64'
-		}
-
-	if not abiName in PREBUILT_DIRS:
-		raise Exception("Unknown ABI %s, don't know where prebuilts are" % abiName)
-
-	return PREBUILT_DIRS[abiName]
-
 def buildNative (buildRoot, libTargetDir, nativeLib, buildType):
 	deqpDir		= os.path.normpath(os.path.join(common.ANDROID_DIR, ".."))
 	buildDir	= getNativeBuildDir(buildRoot, nativeLib, buildType)
@@ -98,7 +86,7 @@ def buildNative (buildRoot, libTargetDir, nativeLib, buildType):
 	if buildType.lower() == "debug":
 		srcGdbserverPath = os.path.join(common.ANDROID_NDK_PATH,
 										'prebuilt',
-										getPrebuiltsDirName(nativeLib.abiVersion),
+										nativeLib.prebuiltDir,
 										'gdbserver',
 										'gdbserver')
 		dstGdbserverPath = os.path.join(libsDir, 'gdbserver')
