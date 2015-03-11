@@ -1096,7 +1096,7 @@ void MultiThreadedObjectTest::createDestroyObjects (TestThread& thread, int coun
 					const eglu::NativeWindowFactory*	windowFactory	= eglu::selectNativeWindowFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
 
 					if (!windowFactory)
-						TCU_THROW(NotSupportedError, "Windows nos supported");
+						TCU_THROW(NotSupportedError, "Windows not supported");
 
 					if ((m_types & TYPE_SINGLE_WINDOW) != 0)
 					{
@@ -1118,6 +1118,7 @@ void MultiThreadedObjectTest::createDestroyObjects (TestThread& thread, int coun
 								if (surface != EGL_NO_SURFACE)
 									EGLU_CHECK_CALL(egl, destroySurface(m_display, surface));
 								delete window;
+								m_hasWindow = 0;
 								throw;
 							}
 						}
