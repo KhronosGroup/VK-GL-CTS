@@ -1208,20 +1208,6 @@ static inline float execCompare (const tcu::Vec4& color, Sampler::CompareMode co
 	return res ? 1.0f : 0.0f;
 }
 
-static Vec4 sampleNearest1D (const ConstPixelBufferAccess& access, const Sampler& sampler, float u, int level)
-{
-	int width	= access.getWidth();
-	int x		= deFloorFloatToInt32(u);
-
-	// Check for CLAMP_TO_BORDER.
-	if ((sampler.wrapS == Sampler::CLAMP_TO_BORDER && !deInBounds32(x, 0, width)))
-		return sampler.borderColor;
-
-	int i = wrap(sampler.wrapS, x, width);
-
-	return lookup(access, i, level, 0);
-}
-
 static Vec4 sampleNearest1D (const ConstPixelBufferAccess& access, const Sampler& sampler, float u, const IVec2& offset)
 {
 	int width	= access.getWidth();
@@ -1235,25 +1221,6 @@ static Vec4 sampleNearest1D (const ConstPixelBufferAccess& access, const Sampler
 	int i = wrap(sampler.wrapS, x, width);
 
 	return lookup(access, i, offset.y(), 0);
-}
-
-static Vec4 sampleNearest2D (const ConstPixelBufferAccess& access, const Sampler& sampler, float u, float v, int depth)
-{
-	int width	= access.getWidth();
-	int height	= access.getHeight();
-
-	int x = deFloorFloatToInt32(u);
-	int y = deFloorFloatToInt32(v);
-
-	// Check for CLAMP_TO_BORDER.
-	if ((sampler.wrapS == Sampler::CLAMP_TO_BORDER && !deInBounds32(x, 0, width)) ||
-		(sampler.wrapT == Sampler::CLAMP_TO_BORDER && !deInBounds32(y, 0, height)))
-		return sampler.borderColor;
-
-	int i = wrap(sampler.wrapS, x, width);
-	int j = wrap(sampler.wrapT, y, height);
-
-	return lookup(access, i, j, depth);
 }
 
 static Vec4 sampleNearest2D (const ConstPixelBufferAccess& access, const Sampler& sampler, float u, float v, const IVec3& offset)
@@ -1273,29 +1240,6 @@ static Vec4 sampleNearest2D (const ConstPixelBufferAccess& access, const Sampler
 	int j = wrap(sampler.wrapT, y, height);
 
 	return lookup(access, i, j, offset.z());
-}
-
-static Vec4 sampleNearest3D (const ConstPixelBufferAccess& access, const Sampler& sampler, float u, float v, float w)
-{
-	int width	= access.getWidth();
-	int height	= access.getHeight();
-	int depth	= access.getDepth();
-
-	int x = deFloorFloatToInt32(u);
-	int y = deFloorFloatToInt32(v);
-	int z = deFloorFloatToInt32(w);
-
-	// Check for CLAMP_TO_BORDER.
-	if ((sampler.wrapS == Sampler::CLAMP_TO_BORDER && !deInBounds32(x, 0, width))	||
-		(sampler.wrapT == Sampler::CLAMP_TO_BORDER && !deInBounds32(y, 0, height))	||
-		(sampler.wrapR == Sampler::CLAMP_TO_BORDER && !deInBounds32(z, 0, depth)))
-		return sampler.borderColor;
-
-	int i = wrap(sampler.wrapS, x, width);
-	int j = wrap(sampler.wrapT, y, height);
-	int k = wrap(sampler.wrapR, z, depth);
-
-	return lookup(access, i, j, k);
 }
 
 static Vec4 sampleNearest3D (const ConstPixelBufferAccess& access, const Sampler& sampler, float u, float v, float w, const IVec3& offset)
@@ -1321,29 +1265,6 @@ static Vec4 sampleNearest3D (const ConstPixelBufferAccess& access, const Sampler
 	return lookup(access, i, j, k);
 }
 
-static Vec4 sampleLinear1D (const ConstPixelBufferAccess& access, const Sampler& sampler, float u, int level)
-{
-	int w = access.getWidth();
-
-	int x0 = deFloorFloatToInt32(u-0.5f);
-	int x1 = x0+1;
-
-	int i0 = wrap(sampler.wrapS, x0, w);
-	int i1 = wrap(sampler.wrapS, x1, w);
-
-	float a = deFloatFrac(u-0.5f);
-
-	bool i0UseBorder = sampler.wrapS == Sampler::CLAMP_TO_BORDER && !de::inBounds(i0, 0, w);
-	bool i1UseBorder = sampler.wrapS == Sampler::CLAMP_TO_BORDER && !de::inBounds(i1, 0, w);
-
-	// Border color for out-of-range coordinates if using CLAMP_TO_BORDER, otherwise execute lookups.
-	Vec4 p0 = i0UseBorder ? sampler.borderColor : lookup(access, i0, level, 0);
-	Vec4 p1 = i1UseBorder ? sampler.borderColor : lookup(access, i1, level, 0);
-
-	// Interpolate.
-	return p0 * (1.0f-a) + a * p1;
-}
-
 static Vec4 sampleLinear1D (const ConstPixelBufferAccess& access, const Sampler& sampler, float u, const IVec2& offset)
 {
 	int w = access.getWidth();
@@ -1365,42 +1286,6 @@ static Vec4 sampleLinear1D (const ConstPixelBufferAccess& access, const Sampler&
 
 	// Interpolate.
 	return p0 * (1.0f - a) + p1 * a;
-}
-
-static Vec4 sampleLinear2D (const ConstPixelBufferAccess& access, const Sampler& sampler, float u, float v, int depth)
-{
-	int w = access.getWidth();
-	int h = access.getHeight();
-
-	int x0 = deFloorFloatToInt32(u-0.5f);
-	int x1 = x0+1;
-	int y0 = deFloorFloatToInt32(v-0.5f);
-	int y1 = y0+1;
-
-	int i0 = wrap(sampler.wrapS, x0, w);
-	int i1 = wrap(sampler.wrapS, x1, w);
-	int j0 = wrap(sampler.wrapT, y0, h);
-	int j1 = wrap(sampler.wrapT, y1, h);
-
-	float a = deFloatFrac(u-0.5f);
-	float b = deFloatFrac(v-0.5f);
-
-	bool i0UseBorder = sampler.wrapS == Sampler::CLAMP_TO_BORDER && !de::inBounds(i0, 0, w);
-	bool i1UseBorder = sampler.wrapS == Sampler::CLAMP_TO_BORDER && !de::inBounds(i1, 0, w);
-	bool j0UseBorder = sampler.wrapT == Sampler::CLAMP_TO_BORDER && !de::inBounds(j0, 0, h);
-	bool j1UseBorder = sampler.wrapT == Sampler::CLAMP_TO_BORDER && !de::inBounds(j1, 0, h);
-
-	// Border color for out-of-range coordinates if using CLAMP_TO_BORDER, otherwise execute lookups.
-	Vec4 p00 = (i0UseBorder || j0UseBorder) ? sampler.borderColor : lookup(access, i0, j0, depth);
-	Vec4 p10 = (i1UseBorder || j0UseBorder) ? sampler.borderColor : lookup(access, i1, j0, depth);
-	Vec4 p01 = (i0UseBorder || j1UseBorder) ? sampler.borderColor : lookup(access, i0, j1, depth);
-	Vec4 p11 = (i1UseBorder || j1UseBorder) ? sampler.borderColor : lookup(access, i1, j1, depth);
-
-	// Interpolate.
-	return (p00*(1.0f-a)*(1.0f-b)) +
-		   (p10*(     a)*(1.0f-b)) +
-		   (p01*(1.0f-a)*(     b)) +
-		   (p11*(     a)*(     b));
 }
 
 static Vec4 sampleLinear2D (const ConstPixelBufferAccess& access, const Sampler& sampler, float u, float v, const IVec3& offset)
@@ -1508,58 +1393,6 @@ static float sampleLinear2DCompare (const ConstPixelBufferAccess& access, const 
 		   (p11*(     a)*(     b));
 }
 
-static Vec4 sampleLinear3D (const ConstPixelBufferAccess& access, const Sampler& sampler, float u, float v, float w)
-{
-	int width	= access.getWidth();
-	int height	= access.getHeight();
-	int depth	= access.getDepth();
-
-	int x0 = deFloorFloatToInt32(u-0.5f);
-	int x1 = x0+1;
-	int y0 = deFloorFloatToInt32(v-0.5f);
-	int y1 = y0+1;
-	int z0 = deFloorFloatToInt32(w-0.5f);
-	int z1 = z0+1;
-
-	int i0 = wrap(sampler.wrapS, x0, width);
-	int i1 = wrap(sampler.wrapS, x1, width);
-	int j0 = wrap(sampler.wrapT, y0, height);
-	int j1 = wrap(sampler.wrapT, y1, height);
-	int k0 = wrap(sampler.wrapR, z0, depth);
-	int k1 = wrap(sampler.wrapR, z1, depth);
-
-	float a = deFloatFrac(u-0.5f);
-	float b = deFloatFrac(v-0.5f);
-	float c = deFloatFrac(w-0.5f);
-
-	bool i0UseBorder = sampler.wrapS == Sampler::CLAMP_TO_BORDER && !de::inBounds(i0, 0, width);
-	bool i1UseBorder = sampler.wrapS == Sampler::CLAMP_TO_BORDER && !de::inBounds(i1, 0, width);
-	bool j0UseBorder = sampler.wrapT == Sampler::CLAMP_TO_BORDER && !de::inBounds(j0, 0, height);
-	bool j1UseBorder = sampler.wrapT == Sampler::CLAMP_TO_BORDER && !de::inBounds(j1, 0, height);
-	bool k0UseBorder = sampler.wrapR == Sampler::CLAMP_TO_BORDER && !de::inBounds(k0, 0, depth);
-	bool k1UseBorder = sampler.wrapR == Sampler::CLAMP_TO_BORDER && !de::inBounds(k1, 0, depth);
-
-	// Border color for out-of-range coordinates if using CLAMP_TO_BORDER, otherwise execute lookups.
-	Vec4 p000 = (i0UseBorder || j0UseBorder || k0UseBorder) ? sampler.borderColor : lookup(access, i0, j0, k0);
-	Vec4 p100 = (i1UseBorder || j0UseBorder || k0UseBorder) ? sampler.borderColor : lookup(access, i1, j0, k0);
-	Vec4 p010 = (i0UseBorder || j1UseBorder || k0UseBorder) ? sampler.borderColor : lookup(access, i0, j1, k0);
-	Vec4 p110 = (i1UseBorder || j1UseBorder || k0UseBorder) ? sampler.borderColor : lookup(access, i1, j1, k0);
-	Vec4 p001 = (i0UseBorder || j0UseBorder || k1UseBorder) ? sampler.borderColor : lookup(access, i0, j0, k1);
-	Vec4 p101 = (i1UseBorder || j0UseBorder || k1UseBorder) ? sampler.borderColor : lookup(access, i1, j0, k1);
-	Vec4 p011 = (i0UseBorder || j1UseBorder || k1UseBorder) ? sampler.borderColor : lookup(access, i0, j1, k1);
-	Vec4 p111 = (i1UseBorder || j1UseBorder || k1UseBorder) ? sampler.borderColor : lookup(access, i1, j1, k1);
-
-	// Interpolate.
-	return (p000*(1.0f-a)*(1.0f-b)*(1.0f-c)) +
-		   (p100*(     a)*(1.0f-b)*(1.0f-c)) +
-		   (p010*(1.0f-a)*(     b)*(1.0f-c)) +
-		   (p110*(     a)*(     b)*(1.0f-c)) +
-		   (p001*(1.0f-a)*(1.0f-b)*(     c)) +
-		   (p101*(     a)*(1.0f-b)*(     c)) +
-		   (p011*(1.0f-a)*(     b)*(     c)) +
-		   (p111*(     a)*(     b)*(     c));
-}
-
 static Vec4 sampleLinear3D (const ConstPixelBufferAccess& access, const Sampler& sampler, float u, float v, float w, const IVec3& offset)
 {
 	int width	= access.getWidth();
@@ -1614,51 +1447,30 @@ static Vec4 sampleLinear3D (const ConstPixelBufferAccess& access, const Sampler&
 
 Vec4 ConstPixelBufferAccess::sample1D (const Sampler& sampler, Sampler::FilterMode filter, float s, int level) const
 {
+	// check selected layer exists
 	DE_ASSERT(de::inBounds(level, 0, m_size.y()));
 
-	// Non-normalized coordinates.
-	float u = s;
-
-	if (sampler.normalizedCoords)
-		u = unnormalize(sampler.wrapS, s, m_size.x());
-
-	switch (filter)
-	{
-		case Sampler::NEAREST:	return sampleNearest1D	(*this, sampler, u, level);
-		case Sampler::LINEAR:	return sampleLinear1D	(*this, sampler, u, level);
-		default:
-			DE_ASSERT(DE_FALSE);
-			return Vec4(0.0f);
-	}
+	return sample1DOffset(sampler, filter, s, tcu::IVec2(0, level));
 }
 
 Vec4 ConstPixelBufferAccess::sample2D (const Sampler& sampler, Sampler::FilterMode filter, float s, float t, int depth) const
 {
+	// check selected layer exists
 	DE_ASSERT(de::inBounds(depth, 0, m_size.z()));
 
-	// Non-normalized coordinates.
-	float u = s;
-	float v = t;
+	return sample2DOffset(sampler, filter, s, t, tcu::IVec3(0, 0, depth));
+}
 
-	if (sampler.normalizedCoords)
-	{
-		u = unnormalize(sampler.wrapS, s, m_size.x());
-		v = unnormalize(sampler.wrapT, t, m_size.y());
-	}
-
-	switch (filter)
-	{
-		case Sampler::NEAREST:	return sampleNearest2D	(*this, sampler, u, v, depth);
-		case Sampler::LINEAR:	return sampleLinear2D	(*this, sampler, u, v, depth);
-		default:
-			DE_ASSERT(DE_FALSE);
-			return Vec4(0.0f);
-	}
+Vec4 ConstPixelBufferAccess::sample3D (const Sampler& sampler, Sampler::FilterMode filter, float s, float t, float r) const
+{
+	return sample3DOffset(sampler, filter, s, t, r, tcu::IVec3(0, 0, 0));
 }
 
 Vec4 ConstPixelBufferAccess::sample1DOffset (const Sampler& sampler, Sampler::FilterMode filter, float s, const IVec2& offset) const
 {
-	DE_ASSERT(de::inBounds(offset.y(), 0, m_size.x()));
+	// check selected layer exists
+	// \note offset.x is X offset, offset.y is the selected layer
+	DE_ASSERT(de::inBounds(offset.y(), 0, m_size.y()));
 
 	// Non-normalized coordinates.
 	float u = s;
@@ -1678,6 +1490,8 @@ Vec4 ConstPixelBufferAccess::sample1DOffset (const Sampler& sampler, Sampler::Fi
 
 Vec4 ConstPixelBufferAccess::sample2DOffset (const Sampler& sampler, Sampler::FilterMode filter, float s, float t, const IVec3& offset) const
 {
+	// check selected layer exists
+	// \note offset.xy is the XY offset, offset.z is the selected layer
 	DE_ASSERT(de::inBounds(offset.z(), 0, m_size.z()));
 
 	// Non-normalized coordinates.
@@ -1694,80 +1508,6 @@ Vec4 ConstPixelBufferAccess::sample2DOffset (const Sampler& sampler, Sampler::Fi
 	{
 		case Sampler::NEAREST:	return sampleNearest2D	(*this, sampler, u, v, offset);
 		case Sampler::LINEAR:	return sampleLinear2D	(*this, sampler, u, v, offset);
-		default:
-			DE_ASSERT(DE_FALSE);
-			return Vec4(0.0f);
-	}
-}
-
-float ConstPixelBufferAccess::sample1DCompare (const Sampler& sampler, Sampler::FilterMode filter, float ref, float s, const IVec2& offset) const
-{
-	DE_ASSERT(de::inBounds(offset.y(), 0, m_size.y()));
-
-	// Format information for comparison function
-	const bool isFixedPointDepth = isFixedPointDepthTextureFormat(m_format);
-
-	// Non-normalized coordinates.
-	float u = s;
-
-	if (sampler.normalizedCoords)
-		u = unnormalize(sampler.wrapS, s, m_size.x());
-
-	switch (filter)
-	{
-		case Sampler::NEAREST:	return execCompare(sampleNearest1D(*this, sampler, u, offset), sampler.compare, sampler.compareChannel, ref, isFixedPointDepth);
-		case Sampler::LINEAR:	return sampleLinear1DCompare(*this, sampler, ref, u, offset, isFixedPointDepth);
-		default:
-			DE_ASSERT(DE_FALSE);
-			return 0.0f;
-	}
-}
-
-float ConstPixelBufferAccess::sample2DCompare (const Sampler& sampler, Sampler::FilterMode filter, float ref, float s, float t, const IVec3& offset) const
-{
-	DE_ASSERT(de::inBounds(offset.z(), 0, m_size.z()));
-
-	// Format information for comparison function
-	const bool isFixedPointDepth = isFixedPointDepthTextureFormat(m_format);
-
-	// Non-normalized coordinates.
-	float u = s;
-	float v = t;
-
-	if (sampler.normalizedCoords)
-	{
-		u = unnormalize(sampler.wrapS, s, m_size.x());
-		v = unnormalize(sampler.wrapT, t, m_size.y());
-	}
-
-	switch (filter)
-	{
-		case Sampler::NEAREST:	return execCompare(sampleNearest2D(*this, sampler, u, v, offset), sampler.compare, sampler.compareChannel, ref, isFixedPointDepth);
-		case Sampler::LINEAR:	return sampleLinear2DCompare(*this, sampler, ref, u, v, offset, isFixedPointDepth);
-		default:
-			DE_ASSERT(DE_FALSE);
-			return 0.0f;
-	}
-}
-
-Vec4 ConstPixelBufferAccess::sample3D (const Sampler& sampler, Sampler::FilterMode filter, float s, float t, float r) const
-{
-	// Non-normalized coordinates.
-	float u = s;
-	float v = t;
-	float w = r;
-
-	if (sampler.normalizedCoords)
-	{
-		u = unnormalize(sampler.wrapS, s, m_size.x());
-		v = unnormalize(sampler.wrapT, t, m_size.y());
-		w = unnormalize(sampler.wrapR, r, m_size.z());
-	}
-
-	switch (filter)
-	{
-		case Sampler::NEAREST:	return sampleNearest3D	(*this, sampler, u, v, w);
-		case Sampler::LINEAR:	return sampleLinear3D	(*this, sampler, u, v, w);
 		default:
 			DE_ASSERT(DE_FALSE);
 			return Vec4(0.0f);
@@ -1795,6 +1535,60 @@ Vec4 ConstPixelBufferAccess::sample3DOffset (const Sampler& sampler, Sampler::Fi
 		default:
 			DE_ASSERT(DE_FALSE);
 			return Vec4(0.0f);
+	}
+}
+
+float ConstPixelBufferAccess::sample1DCompare (const Sampler& sampler, Sampler::FilterMode filter, float ref, float s, const IVec2& offset) const
+{
+	// check selected layer exists
+	// \note offset.x is X offset, offset.y is the selected layer
+	DE_ASSERT(de::inBounds(offset.y(), 0, m_size.y()));
+
+	// Format information for comparison function
+	const bool isFixedPointDepth = isFixedPointDepthTextureFormat(m_format);
+
+	// Non-normalized coordinates.
+	float u = s;
+
+	if (sampler.normalizedCoords)
+		u = unnormalize(sampler.wrapS, s, m_size.x());
+
+	switch (filter)
+	{
+		case Sampler::NEAREST:	return execCompare(sampleNearest1D(*this, sampler, u, offset), sampler.compare, sampler.compareChannel, ref, isFixedPointDepth);
+		case Sampler::LINEAR:	return sampleLinear1DCompare(*this, sampler, ref, u, offset, isFixedPointDepth);
+		default:
+			DE_ASSERT(DE_FALSE);
+			return 0.0f;
+	}
+}
+
+float ConstPixelBufferAccess::sample2DCompare (const Sampler& sampler, Sampler::FilterMode filter, float ref, float s, float t, const IVec3& offset) const
+{
+	// check selected layer exists
+	// \note offset.xy is XY offset, offset.z is the selected layer
+	DE_ASSERT(de::inBounds(offset.z(), 0, m_size.z()));
+
+	// Format information for comparison function
+	const bool isFixedPointDepth = isFixedPointDepthTextureFormat(m_format);
+
+	// Non-normalized coordinates.
+	float u = s;
+	float v = t;
+
+	if (sampler.normalizedCoords)
+	{
+		u = unnormalize(sampler.wrapS, s, m_size.x());
+		v = unnormalize(sampler.wrapT, t, m_size.y());
+	}
+
+	switch (filter)
+	{
+		case Sampler::NEAREST:	return execCompare(sampleNearest2D(*this, sampler, u, v, offset), sampler.compare, sampler.compareChannel, ref, isFixedPointDepth);
+		case Sampler::LINEAR:	return sampleLinear2DCompare(*this, sampler, ref, u, v, offset, isFixedPointDepth);
+		default:
+			DE_ASSERT(DE_FALSE);
+			return 0.0f;
 	}
 }
 
