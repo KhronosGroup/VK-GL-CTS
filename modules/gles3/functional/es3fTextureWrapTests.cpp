@@ -330,7 +330,7 @@ TextureWrapCase::IterateResult TextureWrapCase::iterate (void)
 	{
 		const tcu::ScopedLogSection		section			(log, string("Test") + de::toString(m_caseNdx), string("Test ") + de::toString(m_caseNdx));
 		const bool						isNearestOnly	= m_minFilter == GL_NEAREST && m_magFilter == GL_NEAREST;
-		const bool						isSRGB			= texFormat.order == tcu::TextureFormat::sRGB || texFormat.order == tcu::TextureFormat::sRGBA;
+		const bool						isSRGB			= tcu::isSRGB(texFormat);
 		const tcu::PixelFormat			pixelFormat		= m_renderCtx.getRenderTarget().getPixelFormat();
 		const tcu::IVec4				colorBits		= tcu::max(getBitsVec(pixelFormat) - (isNearestOnly && !isSRGB ? 1 : 2), tcu::IVec4(0));
 		tcu::LodPrecision				lodPrecision;

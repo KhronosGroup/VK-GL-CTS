@@ -768,8 +768,7 @@ void FragmentProcessor::render (const rr::MultisamplePixelBufferAccess&		msColor
 	const StencilState&		stencilState				= state.stencilStates[fragmentFacing];
 	Vec4					colorMaskFactor				(state.colorMask[0] ? 1.0f : 0.0f, state.colorMask[1] ? 1.0f : 0.0f, state.colorMask[2] ? 1.0f : 0.0f, state.colorMask[3] ? 1.0f : 0.0f);
 	Vec4					colorMaskNegationFactor		(state.colorMask[0] ? 0.0f : 1.0f, state.colorMask[1] ? 0.0f : 1.0f, state.colorMask[2] ? 0.0f : 1.0f, state.colorMask[3] ? 0.0f : 1.0f);
-	bool					sRGBTarget					= state.sRGBEnabled && (colorBuffer.getFormat().order == tcu::TextureFormat::sRGBA ||
-																				colorBuffer.getFormat().order == tcu::TextureFormat::sRGB);
+	bool					sRGBTarget					= state.sRGBEnabled && tcu::isSRGB(colorBuffer.getFormat());
 
 	DE_ASSERT(SAMPLE_REGISTER_SIZE % numSamplesPerFragment == 0);
 

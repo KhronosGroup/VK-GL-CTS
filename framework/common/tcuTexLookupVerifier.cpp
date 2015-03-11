@@ -52,11 +52,6 @@ static inline bool coordsInBounds (const ConstPixelBufferAccess& access, int x, 
 	return de::inBounds(x, 0, access.getWidth()) && de::inBounds(y, 0, access.getHeight()) && de::inBounds(z, 0, access.getDepth());
 }
 
-static inline bool isSRGB (TextureFormat format)
-{
-	return format.order == TextureFormat::sRGB || format.order == TextureFormat::sRGBA;
-}
-
 template<typename ScalarType>
 inline Vector<ScalarType, 4> lookup (const ConstPixelBufferAccess& access, const Sampler& sampler, int i, int j, int k)
 {

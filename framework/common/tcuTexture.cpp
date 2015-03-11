@@ -1143,11 +1143,6 @@ static inline float unnormalize (Sampler::WrapMode mode, float c, int size)
 	}
 }
 
-static inline bool isSRGB (TextureFormat format)
-{
-	return format.order == TextureFormat::sRGB || format.order == TextureFormat::sRGBA;
-}
-
 static bool isFixedPointDepthTextureFormat (const tcu::TextureFormat& format)
 {
 	const tcu::TextureChannelClass channelClass = tcu::getTextureChannelClass(format.type);
