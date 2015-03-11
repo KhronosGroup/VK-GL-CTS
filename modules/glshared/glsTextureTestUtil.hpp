@@ -361,7 +361,6 @@ void			fetchTexture				(const SurfaceAccess& dst, const tcu::ConstPixelBufferAcc
 
 void			sampleTexture				(const SurfaceAccess& dst, const tcu::Texture2DView&		src, const float* texCoord, const ReferenceParams& params);
 void			sampleTexture				(const SurfaceAccess& dst, const tcu::TextureCubeView&		src, const float* texCoord, const ReferenceParams& params);
-void			sampleTextureMultiFace		(const SurfaceAccess& dst, const tcu::TextureCubeView&		src, const float* texCoord, const ReferenceParams& params);
 void			sampleTexture				(const SurfaceAccess& dst, const tcu::Texture2DArrayView&	src, const float* texCoord, const ReferenceParams& params);
 void			sampleTexture				(const SurfaceAccess& dst, const tcu::Texture3DView&		src, const float* texCoord, const ReferenceParams& params);
 void			sampleTexture				(const SurfaceAccess& dst, const tcu::TextureCubeArrayView&	src, const float* texCoord, const ReferenceParams& params);

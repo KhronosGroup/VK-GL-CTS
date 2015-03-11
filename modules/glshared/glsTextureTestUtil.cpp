@@ -692,12 +692,6 @@ void sampleTexture (const SurfaceAccess& dst, const tcu::TextureCubeView& src, c
 	return sampleTexture(dst, view, sq, tq, rq, params);
 }
 
-// \todo [2013-07-17 pyry] Remove this!
-void sampleTextureMultiFace (const SurfaceAccess& dst, const tcu::TextureCubeView& src, const float* texCoord, const ReferenceParams& params)
-{
-	return sampleTexture(dst, src, texCoord, params);
-}
-
 static void sampleTextureNonProjected (const SurfaceAccess& dst, const tcu::Texture2DArrayView& src, const tcu::Vec4& sq, const tcu::Vec4& tq, const tcu::Vec4& rq, const ReferenceParams& params)
 {
 	float		lodBias		= (params.flags & ReferenceParams::USE_BIAS) ? params.bias : 0.0f;
@@ -2110,7 +2104,7 @@ bool verifyTextureResult (tcu::TestContext&						testCtx,
 
 	DE_ASSERT(getCompareMask(pixelFormat) == lookupPrec.colorMask);
 
-	sampleTextureMultiFace(SurfaceAccess(reference, pixelFormat), src, texCoord, sampleParams);
+	sampleTexture(SurfaceAccess(reference, pixelFormat), src, texCoord, sampleParams);
 	numFailedPixels = computeTextureLookupDiff(result, reference.getAccess(), errorMask.getAccess(), src, texCoord, sampleParams, lookupPrec, lodPrec, testCtx.getWatchDog());
 
 	if (numFailedPixels > 0)
