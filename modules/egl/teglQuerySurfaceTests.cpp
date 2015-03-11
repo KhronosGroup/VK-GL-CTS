@@ -306,18 +306,15 @@ public:
 		tcu::TestLog&						log				= m_testCtx.getLog();
 		const int							width			= 64;
 		const int							height			= 64;
-		const eglu::NativeWindowFactory*	windowFactory	= eglu::selectNativeWindowFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
+		const eglu::NativeWindowFactory&	windowFactory	= eglu::selectNativeWindowFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
 		ConfigInfo							info;
-
-		if (!windowFactory)
-			TCU_THROW(NotSupportedError, "Windows not supported");
 
 		eglu::queryConfigInfo(egl, display, config, &info);
 
 		log << TestLog::Message << "Creating window surface with config ID " << info.configId << TestLog::EndMessage;
 		EGLU_CHECK_MSG(egl, "before queries");
 
-		de::UniquePtr<eglu::NativeWindow>	window	(windowFactory->createWindow(&m_eglTestCtx.getNativeDisplay(), display, config, DE_NULL, eglu::WindowParams(width, height, eglu::parseWindowVisibility(m_testCtx.getCommandLine()))));
+		de::UniquePtr<eglu::NativeWindow>	window	(windowFactory.createWindow(&m_eglTestCtx.getNativeDisplay(), display, config, DE_NULL, eglu::WindowParams(width, height, eglu::parseWindowVisibility(m_testCtx.getCommandLine()))));
 		eglu::UniqueSurface					surface	(egl, display, eglu::createWindowSurface(m_eglTestCtx.getNativeDisplay(), *window, display, config, DE_NULL));
 
 		logCommonSurfaceAttributes	(log, egl, display, *surface);
@@ -340,18 +337,15 @@ public:
 		tcu::TestLog&						log				= m_testCtx.getLog();
 		const int							width			= 64;
 		const int							height			= 64;
-		const eglu::NativePixmapFactory*	pixmapFactory	= eglu::selectNativePixmapFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
+		const eglu::NativePixmapFactory&	pixmapFactory	= eglu::selectNativePixmapFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
 		ConfigInfo							info;
-
-		if (!pixmapFactory)
-			TCU_THROW(NotSupportedError, "Pixmaps not supported");
 
 		eglu::queryConfigInfo(egl, display, config, &info);
 
 		log << TestLog::Message << "Creating pixmap surface with config ID " << info.configId << TestLog::EndMessage;
 		EGLU_CHECK_MSG(egl, "before queries");
 
-		de::UniquePtr<eglu::NativePixmap>	pixmap	(pixmapFactory->createPixmap(&m_eglTestCtx.getNativeDisplay(), display, config, DE_NULL, width, height));
+		de::UniquePtr<eglu::NativePixmap>	pixmap	(pixmapFactory.createPixmap(&m_eglTestCtx.getNativeDisplay(), display, config, DE_NULL, width, height));
 		eglu::UniqueSurface					surface	(egl, display, eglu::createPixmapSurface(m_eglTestCtx.getNativeDisplay(), *pixmap, display, config, DE_NULL));
 
 		logCommonSurfaceAttributes	(log, egl, display, *surface);
@@ -585,18 +579,15 @@ public:
 		tcu::TestLog&						log				= m_testCtx.getLog();
 		const int							width			= 64;
 		const int							height			= 64;
-		const eglu::NativeWindowFactory*	windowFactory	= eglu::selectNativeWindowFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
+		const eglu::NativeWindowFactory&	windowFactory	= eglu::selectNativeWindowFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
 		ConfigInfo							info;
-
-		if (!windowFactory)
-			TCU_THROW(NotSupportedError, "Windows not supported");
 
 		eglu::queryConfigInfo(egl, display, config, &info);
 
 		log << TestLog::Message << "Creating window surface with config ID " << info.configId << TestLog::EndMessage;
 		EGLU_CHECK_MSG(egl, "before queries");
 
-		de::UniquePtr<eglu::NativeWindow>	window	(windowFactory->createWindow(&m_eglTestCtx.getNativeDisplay(), display, config, DE_NULL, eglu::WindowParams(width, height, eglu::parseWindowVisibility(m_testCtx.getCommandLine()))));
+		de::UniquePtr<eglu::NativeWindow>	window	(windowFactory.createWindow(&m_eglTestCtx.getNativeDisplay(), display, config, DE_NULL, eglu::WindowParams(width, height, eglu::parseWindowVisibility(m_testCtx.getCommandLine()))));
 		eglu::UniqueSurface					surface	(egl, display, eglu::createWindowSurface(m_eglTestCtx.getNativeDisplay(), *window, display, config, DE_NULL));
 
 		testAttributes(display, *surface, EGL_WINDOW_BIT, info);
@@ -617,18 +608,15 @@ public:
 		tcu::TestLog&						log				= m_testCtx.getLog();
 		const int							width			= 64;
 		const int							height			= 64;
-		const eglu::NativePixmapFactory*	pixmapFactory	= eglu::selectNativePixmapFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
+		const eglu::NativePixmapFactory&	pixmapFactory	= eglu::selectNativePixmapFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
 		ConfigInfo							info;
-
-		if (!pixmapFactory)
-			TCU_THROW(NotSupportedError, "Pixmaps not supported");
 
 		eglu::queryConfigInfo(egl, display, config, &info);
 
 		log << TestLog::Message << "Creating pixmap surface with config ID " << info.configId << TestLog::EndMessage;
 		EGLU_CHECK_MSG(egl, "before queries");
 
-		de::UniquePtr<eglu::NativePixmap>	pixmap	(pixmapFactory->createPixmap(&m_eglTestCtx.getNativeDisplay(), display, config, DE_NULL, width, height));
+		de::UniquePtr<eglu::NativePixmap>	pixmap	(pixmapFactory.createPixmap(&m_eglTestCtx.getNativeDisplay(), display, config, DE_NULL, width, height));
 		eglu::UniqueSurface					surface	(egl, display, eglu::createPixmapSurface(m_eglTestCtx.getNativeDisplay(), *pixmap, display, config, DE_NULL));
 
 		testAttributes(display, *surface, EGL_PIXMAP_BIT, info);

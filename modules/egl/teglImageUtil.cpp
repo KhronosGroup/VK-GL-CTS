@@ -112,31 +112,21 @@ MovePtr<ManagedSurface> createSurface (EglTestContext& eglTestCtx, EGLDisplay dp
 	}
 	else if (surfaceTypeBits & EGL_WINDOW_BIT)
 	{
-		const NativeWindowFactory*	windowFactory	= selectNativeWindowFactory(displayFactory, eglTestCtx.getTestContext().getCommandLine());
+		const NativeWindowFactory&	windowFactory	= selectNativeWindowFactory(displayFactory, eglTestCtx.getTestContext().getCommandLine());
 
-		if (windowFactory)
-		{
-			MovePtr<NativeWindow>	window	(windowFactory->createWindow(&nativeDisplay, dpy, config, DE_NULL, WindowParams(width, height, WindowParams::VISIBILITY_DONT_CARE)));
-			const EGLSurface		surface	= eglu::createWindowSurface(nativeDisplay, *window, dpy, config, DE_NULL);
+		MovePtr<NativeWindow>		window	(windowFactory.createWindow(&nativeDisplay, dpy, config, DE_NULL, WindowParams(width, height, WindowParams::VISIBILITY_DONT_CARE)));
+		const EGLSurface			surface	= eglu::createWindowSurface(nativeDisplay, *window, dpy, config, DE_NULL);
 
-			return MovePtr<ManagedSurface>(new NativeWindowSurface(MovePtr<UniqueSurface>(new UniqueSurface(egl, dpy, surface)), window));
-		}
-		else
-			TCU_THROW(NotSupportedError, "Windows not supported");
+		return MovePtr<ManagedSurface>(new NativeWindowSurface(MovePtr<UniqueSurface>(new UniqueSurface(egl, dpy, surface)), window));
 	}
 	else if (surfaceTypeBits & EGL_PIXMAP_BIT)
 	{
-		const NativePixmapFactory*	pixmapFactory	= selectNativePixmapFactory(displayFactory, eglTestCtx.getTestContext().getCommandLine());
+		const NativePixmapFactory&	pixmapFactory	= selectNativePixmapFactory(displayFactory, eglTestCtx.getTestContext().getCommandLine());
 
-		if (pixmapFactory)
-		{
-			MovePtr<NativePixmap>	pixmap	(pixmapFactory->createPixmap(&nativeDisplay, dpy, config, DE_NULL, width, height));
-			const EGLSurface		surface	= eglu::createPixmapSurface(eglTestCtx.getNativeDisplay(), *pixmap, dpy, config, DE_NULL);
+		MovePtr<NativePixmap>	pixmap	(pixmapFactory.createPixmap(&nativeDisplay, dpy, config, DE_NULL, width, height));
+		const EGLSurface		surface	= eglu::createPixmapSurface(eglTestCtx.getNativeDisplay(), *pixmap, dpy, config, DE_NULL);
 
-			return MovePtr<ManagedSurface>(new NativePixmapSurface(MovePtr<UniqueSurface>(new UniqueSurface(egl, dpy, surface)), pixmap));
-		}
-		else
-			TCU_THROW(NotSupportedError, "Pixmaps not supported");
+		return MovePtr<ManagedSurface>(new NativePixmapSurface(MovePtr<UniqueSurface>(new UniqueSurface(egl, dpy, surface)), pixmap));
 	}
 	else
 		TCU_FAIL("No valid surface types supported in config");

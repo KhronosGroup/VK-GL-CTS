@@ -445,49 +445,6 @@ bool testNativePixmapCopy (TestLog& log, const Library& egl, eglu::NativePixmap&
 	return isOk;
 }
 
-void checkSupport (NativeColorMappingCase::NativeType nativeType, const eglu::NativeWindowFactory* windowFactory, const eglu::NativePixmapFactory* pixmapFactory)
-{
-	switch (nativeType)
-	{
-		case NativeColorMappingCase::NATIVETYPE_WINDOW:
-		{
-			if (!windowFactory)
-				TCU_THROW(NotSupportedError, "Windows not supported");
-
-			if ((windowFactory->getCapabilities() & eglu::NativeWindow::CAPABILITY_READ_SCREEN_PIXELS) == 0)
-				TCU_THROW(NotSupportedError, "Native window doesn't support readPixels()");
-
-			break;
-		}
-
-		case NativeColorMappingCase::NATIVETYPE_PIXMAP:
-		{
-			if (!pixmapFactory)
-				TCU_THROW(NotSupportedError, "Pixmaps not supported");
-
-			if ((pixmapFactory->getCapabilities() & eglu::NativePixmap::CAPABILITY_READ_PIXELS) == 0)
-				TCU_THROW(NotSupportedError, "Native pixmap doesn't support readPixels()");
-
-			break;
-		}
-
-		case NativeColorMappingCase::NATIVETYPE_PBUFFER_COPY_TO_PIXMAP:
-		{
-			if (!pixmapFactory)
-				TCU_THROW(NotSupportedError, "Pixmaps not supported");
-
-			if ((pixmapFactory->getCapabilities() & eglu::NativePixmap::CAPABILITY_READ_PIXELS) == 0 ||
-				(pixmapFactory->getCapabilities() & eglu::NativePixmap::CAPABILITY_CREATE_SURFACE_LEGACY) == 0)
-				TCU_THROW(NotSupportedError, "Native pixmap doesn't support readPixels() or legacy create surface");
-
-			break;
-		}
-
-		default:
-			DE_ASSERT(DE_FALSE);
-	}
-}
-
 void NativeColorMappingCase::executeForConfig (EGLDisplay display, EGLConfig config)
 {
 	const int width		= 128;
@@ -518,12 +475,52 @@ void NativeColorMappingCase::executeForConfig (EGLDisplay display, EGLConfig con
 	const string						configIdStr		(de::toString(eglu::getConfigAttribInt(egl, display, config, EGL_CONFIG_ID)));
 	tcu::ScopedLogSection				logSection		(m_testCtx.getLog(), ("Config ID " + configIdStr).c_str(), ("Config ID " + configIdStr).c_str());
 	const int							waitFrames		= 5;
-	const eglu::NativeWindowFactory*	windowFactory	= eglu::selectNativeWindowFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
-	const eglu::NativePixmapFactory*	pixmapFactory	= eglu::selectNativePixmapFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
+	const eglu::NativeWindowFactory*	windowFactory;
+	const eglu::NativePixmapFactory*	pixmapFactory;
 
 	logConfigInfo(m_testCtx.getLog(), egl, display, config, m_nativeType, waitFrames);
 
-	checkSupport(m_nativeType, windowFactory, pixmapFactory);
+	try
+	{
+		windowFactory = &eglu::selectNativeWindowFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
+
+		if ((windowFactory->getCapabilities() & eglu::NativeWindow::CAPABILITY_READ_SCREEN_PIXELS) == 0)
+			TCU_THROW(NotSupportedError, "Native window doesn't support readPixels()");
+	}
+	catch (const tcu::NotSupportedError&)
+	{
+		if (m_nativeType == NATIVETYPE_WINDOW)
+			throw;
+		else
+			windowFactory = DE_NULL;
+	}
+
+	try
+	{
+		pixmapFactory = &eglu::selectNativePixmapFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
+
+		if (m_nativeType == NATIVETYPE_PIXMAP)
+		{
+			if ((pixmapFactory->getCapabilities() & eglu::NativePixmap::CAPABILITY_READ_PIXELS) == 0)
+				TCU_THROW(NotSupportedError, "Native pixmap doesn't support readPixels()");
+		}
+		else if (m_nativeType == NATIVETYPE_PBUFFER_COPY_TO_PIXMAP)
+		{
+			if ((pixmapFactory->getCapabilities() & eglu::NativePixmap::CAPABILITY_READ_PIXELS) == 0 ||
+				(pixmapFactory->getCapabilities() & eglu::NativePixmap::CAPABILITY_CREATE_SURFACE_LEGACY) == 0)
+				TCU_THROW(NotSupportedError, "Native pixmap doesn't support readPixels() or legacy create surface");
+		}
+	}
+	catch (const tcu::NotSupportedError&)
+	{
+		if (m_nativeType == NATIVETYPE_PIXMAP || m_nativeType == NATIVETYPE_PBUFFER_COPY_TO_PIXMAP)
+			throw;
+		else
+			pixmapFactory = DE_NULL;
+	}
+
+	DE_ASSERT(m_nativeType != NATIVETYPE_WINDOW || windowFactory);
+	DE_ASSERT((m_nativeType != NATIVETYPE_PIXMAP && m_nativeType != NATIVETYPE_PBUFFER_COPY_TO_PIXMAP) || pixmapFactory);
 
 	eglu::UniqueContext 	context		(egl, display, createGLES2Context(egl, display, config));
 	glw::Functions			gl;

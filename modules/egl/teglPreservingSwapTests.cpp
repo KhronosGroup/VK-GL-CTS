@@ -328,12 +328,9 @@ void readPixels (const glw::Functions& gl, tcu::Surface* screen)
 
 void PreservingSwapTest::initEGLSurface (EGLConfig config)
 {
-	const eglu::NativeWindowFactory*	factory	= eglu::selectNativeWindowFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
+	const eglu::NativeWindowFactory&	factory	= eglu::selectNativeWindowFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
 
-	if (!factory)
-		TCU_THROW(NotSupportedError, "Windows not supported");
-
-	m_window		= factory->createWindow(&m_eglTestCtx.getNativeDisplay(), m_eglDisplay, config, DE_NULL, eglu::WindowParams(480, 480, eglu::parseWindowVisibility(m_testCtx.getCommandLine())));
+	m_window		= factory.createWindow(&m_eglTestCtx.getNativeDisplay(), m_eglDisplay, config, DE_NULL, eglu::WindowParams(480, 480, eglu::parseWindowVisibility(m_testCtx.getCommandLine())));
 	m_eglSurface	= eglu::createWindowSurface(m_eglTestCtx.getNativeDisplay(), *m_window, m_eglDisplay, config, DE_NULL);
 }
 

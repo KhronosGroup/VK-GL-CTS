@@ -80,9 +80,9 @@ eglw::EGLDisplay				getAndInitDisplay			(NativeDisplay& nativeDisplay, Version* 
 eglw::EGLSurface				createWindowSurface			(NativeDisplay& nativeDisplay, NativeWindow& window, eglw::EGLDisplay display, eglw::EGLConfig config, const eglw::EGLAttrib* attribList);
 eglw::EGLSurface				createPixmapSurface			(NativeDisplay& nativeDisplay, NativePixmap& pixmap, eglw::EGLDisplay display, eglw::EGLConfig config, const eglw::EGLAttrib* attribList);
 
-const NativeDisplayFactory*		selectNativeDisplayFactory	(const NativeDisplayFactoryRegistry& registry, const tcu::CommandLine& cmdLine);
-const NativeWindowFactory*		selectNativeWindowFactory	(const NativeDisplayFactory& factory, const tcu::CommandLine& cmdLine);
-const NativePixmapFactory*		selectNativePixmapFactory	(const NativeDisplayFactory& factory, const tcu::CommandLine& cmdLine);
+const NativeDisplayFactory&		selectNativeDisplayFactory	(const NativeDisplayFactoryRegistry& registry, const tcu::CommandLine& cmdLine);
+const NativeWindowFactory&		selectNativeWindowFactory	(const NativeDisplayFactory& factory, const tcu::CommandLine& cmdLine);
+const NativePixmapFactory&		selectNativePixmapFactory	(const NativeDisplayFactory& factory, const tcu::CommandLine& cmdLine);
 
 WindowParams::Visibility		parseWindowVisibility		(const tcu::CommandLine& commandLine);
 eglw::EGLenum					parseClientAPI				(const std::string& api);

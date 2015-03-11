@@ -153,12 +153,9 @@ tcu::TestNode::IterateResult TestCaseWrapper::iterateTestCase (tcu::TestCase* te
 
 static const eglu::NativeDisplayFactory& getDefaultDisplayFactory (tcu::TestContext& testCtx)
 {
-	const eglu::NativeDisplayFactory* factory = eglu::selectNativeDisplayFactory(testCtx.getPlatform().getEGLPlatform().getNativeDisplayFactoryRegistry(), testCtx.getCommandLine());
+	const eglu::NativeDisplayFactory& factory = eglu::selectNativeDisplayFactory(testCtx.getPlatform().getEGLPlatform().getNativeDisplayFactoryRegistry(), testCtx.getCommandLine());
 
-	if (!factory)
-		TCU_THROW(InternalError, "No native display factories available");
-
-	return *factory;
+	return factory;
 }
 
 PackageContext::PackageContext (tcu::TestContext& testCtx)

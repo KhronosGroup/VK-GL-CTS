@@ -184,7 +184,7 @@ SyncTest::Extension getSyncTypeExtension (EGLenum syncType)
 void SyncTest::init (void)
 {
 	const Library&						egl				= m_eglTestCtx.getLibrary();
-	const eglu::NativeWindowFactory*	windowFactory	= eglu::selectNativeWindowFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
+	const eglu::NativeWindowFactory&	windowFactory	= eglu::selectNativeWindowFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
 
 	const EGLint displayAttribList[] =
 	{
@@ -200,9 +200,6 @@ void SyncTest::init (void)
 		EGL_NONE
 	};
 
-	if (!windowFactory)
-		TCU_THROW(NotSupportedError, "Windows not supported");
-
 	m_eglDisplay	= eglu::getAndInitDisplay(m_eglTestCtx.getNativeDisplay());
 	m_eglConfig 	= eglu::chooseSingleConfig(egl, m_eglDisplay, displayAttribList);
 
@@ -217,7 +214,7 @@ void SyncTest::init (void)
 	EGLU_CHECK_MSG(egl, "Failed to create GLES2 context");
 
 	// Create surface
-	m_nativeWindow = windowFactory->createWindow(&m_eglTestCtx.getNativeDisplay(), m_eglDisplay, m_eglConfig, DE_NULL, eglu::WindowParams(480, 480, eglu::parseWindowVisibility(m_testCtx.getCommandLine())));
+	m_nativeWindow = windowFactory.createWindow(&m_eglTestCtx.getNativeDisplay(), m_eglDisplay, m_eglConfig, DE_NULL, eglu::WindowParams(480, 480, eglu::parseWindowVisibility(m_testCtx.getCommandLine())));
 	m_eglSurface = eglu::createWindowSurface(m_eglTestCtx.getNativeDisplay(), *m_nativeWindow, m_eglDisplay, m_eglConfig, DE_NULL);
 
 	EGLU_CHECK_CALL(egl, makeCurrent(m_eglDisplay, m_eglSurface, m_eglSurface, m_eglContext));
