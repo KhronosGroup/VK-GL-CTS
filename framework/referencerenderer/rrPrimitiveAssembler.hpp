@@ -72,7 +72,7 @@ struct Triangle
 	VertexPacket*	v2;
 
 	int				provokingIndex;
-};
+} DE_WARN_UNUSED_TYPE;
 
 struct Triangles
 {
@@ -89,7 +89,7 @@ struct Triangles
 	{
 		return vertices / 3;
 	}
-};
+} DE_WARN_UNUSED_TYPE;
 
 struct TriangleStrip
 {
@@ -134,7 +134,7 @@ struct TriangleStrip
 	{
 		return (vertices < 3) ? (0) : (vertices - 2);
 	}
-};
+} DE_WARN_UNUSED_TYPE;
 
 struct TriangleFan
 {
@@ -158,7 +158,7 @@ struct TriangleFan
 	{
 		return (vertices < 3) ? (0) : (vertices - 2);
 	}
-};
+} DE_WARN_UNUSED_TYPE;
 
 struct Line
 {
@@ -197,7 +197,7 @@ struct Line
 	VertexPacket*	v1;
 
 	int				provokingIndex;
-};
+} DE_WARN_UNUSED_TYPE;
 
 struct Lines
 {
@@ -214,7 +214,7 @@ struct Lines
 	{
 		return vertices / 2;
 	}
-};
+} DE_WARN_UNUSED_TYPE;
 
 struct LineStrip
 {
@@ -240,7 +240,7 @@ struct LineStrip
 	{
 		return (vertices < 2) ? (0) : (vertices - 1);
 	}
-};
+} DE_WARN_UNUSED_TYPE;
 
 struct LineLoop
 {
@@ -268,7 +268,7 @@ struct LineLoop
 	{
 		return (vertices < 2) ? (0) : (vertices);
 	}
-};
+} DE_WARN_UNUSED_TYPE;
 
 struct Point
 {
@@ -288,7 +288,7 @@ struct Point
 	}
 
 	VertexPacket* v0;
-};
+} DE_WARN_UNUSED_TYPE;
 
 struct Points
 {
@@ -305,7 +305,7 @@ struct Points
 	{
 		return (vertices);
 	}
-};
+} DE_WARN_UNUSED_TYPE;
 
 struct LineAdjacency
 {
@@ -350,7 +350,7 @@ struct LineAdjacency
 	VertexPacket*	v3;
 
 	int				provokingIndex;
-};
+} DE_WARN_UNUSED_TYPE;
 
 struct LinesAdjacency
 {
@@ -367,7 +367,7 @@ struct LinesAdjacency
 	{
 		return vertices / 4;
 	}
-};
+} DE_WARN_UNUSED_TYPE;
 
 struct LineStripAdjacency
 {
@@ -384,7 +384,7 @@ struct LineStripAdjacency
 	{
 		return (vertices < 4) ? (0) : (vertices - 3);
 	}
-};
+} DE_WARN_UNUSED_TYPE;
 
 struct TriangleAdjacency
 {
@@ -436,7 +436,7 @@ struct TriangleAdjacency
 	VertexPacket*	v5;	//!< adjacent
 
 	int				provokingIndex;
-};
+} DE_WARN_UNUSED_TYPE;
 
 struct TrianglesAdjacency
 {
@@ -453,7 +453,7 @@ struct TrianglesAdjacency
 	{
 		return vertices / 6;
 	}
-};
+} DE_WARN_UNUSED_TYPE;
 
 struct TriangleStripAdjacency
 {
@@ -505,7 +505,7 @@ struct TriangleStripAdjacency
 	{
 		return (vertices < 6) ? 0 : ((vertices - 4) / 2);
 	}
-};
+} DE_WARN_UNUSED_TYPE;
 
 } // pa
 } // rr

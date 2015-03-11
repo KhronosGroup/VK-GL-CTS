@@ -93,7 +93,7 @@ private:
 	Mutex			m_readLock;
 
 	volatile deUint32	m_canceled;
-};
+} DE_WARN_UNUSED_TYPE;
 
 template <typename T>
 BlockBuffer<T>::BlockBuffer (int blockSize, int numBlocks)

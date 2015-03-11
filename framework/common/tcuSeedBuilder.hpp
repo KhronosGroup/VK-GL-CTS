@@ -45,7 +45,7 @@ public:
 
 private:
 	deUint32	m_hash;
-};
+} DE_WARN_UNUSED_TYPE;
 
 SeedBuilder& operator<< (SeedBuilder& builder, bool value);
 SeedBuilder& operator<< (SeedBuilder& builder, deInt8 value);

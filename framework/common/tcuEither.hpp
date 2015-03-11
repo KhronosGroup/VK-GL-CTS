@@ -78,7 +78,7 @@ private:
 		deUint8		m_data[sizeof(First) > sizeof(Second) ? sizeof(First) : sizeof(Second)];
 		deUint64	m_align;
 	};
-};
+} DE_WARN_UNUSED_TYPE;
 
 namespace EitherDetail
 {

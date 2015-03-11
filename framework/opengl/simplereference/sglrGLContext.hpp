@@ -243,7 +243,7 @@ private:
 	std::set<deUint32>					m_allocatedBuffers;
 	std::set<deUint32>					m_allocatedVaos;
 	std::vector<glu::ShaderProgram*>	m_programs;
-};
+} DE_WARN_UNUSED_TYPE;
 
 } // sglr
 

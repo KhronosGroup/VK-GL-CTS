@@ -115,7 +115,7 @@ private:
 			array.size			= 0;
 		};
 	} m_data;
-};
+} DE_WARN_UNUSED_TYPE;
 
 template <typename T>
 inline VarType varTypeOf (Precision prec = PRECISION_LAST) { return VarType(dataTypeOf<T>(), prec); }
@@ -135,7 +135,7 @@ public:
 private:
 	std::string			m_name;
 	VarType				m_type;
-};
+} DE_WARN_UNUSED_TYPE;
 
 class StructType
 {
@@ -165,7 +165,7 @@ public:
 private:
 	std::string					m_typeName;
 	std::vector<StructMember>	m_members;
-};
+} DE_WARN_UNUSED_TYPE;
 
 enum Storage
 {
@@ -251,7 +251,7 @@ struct Layout
 	int				offset;
 	FormatLayout	format;
 	MatrixOrder		matrixOrder;
-};
+} DE_WARN_UNUSED_TYPE;
 
 struct VariableDeclaration
 {
@@ -266,7 +266,7 @@ struct VariableDeclaration
 	VarType				varType;
 	deUint32			memoryAccessQualifierBits;
 	std::string			name;
-};
+} DE_WARN_UNUSED_TYPE;
 
 struct InterfaceBlock
 {
@@ -279,7 +279,7 @@ struct InterfaceBlock
 	std::string								instanceName;
 	std::vector<glu::VariableDeclaration>	variables;
 	std::vector<int>						dimensions;
-};
+} DE_WARN_UNUSED_TYPE;
 
 //! Internals for declare() utilities.
 namespace decl

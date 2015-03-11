@@ -75,7 +75,7 @@ private:
 
 
 	friend class VertexPacketAllocator;
-};
+} DE_WARN_UNUSED_TYPE;
 
 
 /*--------------------------------------------------------------------*//*!
@@ -109,7 +109,7 @@ private:
 	const size_t				m_numberOfVertexOutputs;
 	std::vector<deInt8*>		m_allocations;
 	std::vector<VertexPacket*>	m_singleAllocPool;
-};
+} DE_WARN_UNUSED_TYPE;
 
 } // rr
 

@@ -55,7 +55,7 @@ public:
 	const int								numColorBuffers;
 	const MultisamplePixelBufferAccess		depthBuffer;
 	const MultisamplePixelBufferAccess		stencilBuffer;
-};
+} DE_WARN_UNUSED_TYPE;
 
 struct Program
 {
@@ -69,7 +69,7 @@ struct Program
 	const VertexShader*			vertexShader;
 	const FragmentShader*		fragmentShader;
 	const GeometryShader*		geometryShader;
-};
+} DE_WARN_UNUSED_TYPE;
 
 struct DrawIndices
 {
@@ -81,7 +81,7 @@ struct DrawIndices
 	const void* const	indices;
 	const IndexType		indexType;
 	const int			baseVertex;
-};
+} DE_WARN_UNUSED_TYPE;
 
 class PrimitiveList
 {
@@ -125,7 +125,7 @@ public:
 	const VertexAttrib* const	vertexAttribs;
 
 	const PrimitiveList&		primitives;
-};
+} DE_WARN_UNUSED_TYPE;
 
 class Renderer
 {
@@ -135,7 +135,7 @@ public:
 
 	void			draw			(const DrawCommand& command) const;
 	void			drawInstanced	(const DrawCommand& command, int numInstances) const;
-};
+} DE_WARN_UNUSED_TYPE;
 
 } // rr
 

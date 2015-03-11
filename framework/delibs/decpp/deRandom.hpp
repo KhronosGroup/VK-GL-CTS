@@ -72,7 +72,7 @@ public:
 
 private:
 	deRandom		m_rnd;
-};
+} DE_WARN_UNUSED_TYPE;
 
 // Inline implementations
 

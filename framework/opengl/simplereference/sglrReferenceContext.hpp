@@ -959,7 +959,7 @@ private:
 	rr::FragmentProcessor						m_fragmentProcessor;
 	std::vector<rr::Fragment>					m_fragmentBuffer;
 	std::vector<float>							m_fragmentDepths;
-};
+} DE_WARN_UNUSED_TYPE;
 
 } // sglr
 

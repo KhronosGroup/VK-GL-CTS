@@ -52,7 +52,7 @@ private:
 	const glw::Functions&	m_gl;
 	tcu::TestLog&			m_log;
 	bool					m_enableLog;
-};
+} DE_WARN_UNUSED_TYPE;
 
 } // glu
 

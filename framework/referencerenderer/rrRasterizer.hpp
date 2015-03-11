@@ -159,7 +159,7 @@ private:
 	tcu::IVec2				m_bboxMin;		//!< Bounding box min (inclusive).
 	tcu::IVec2				m_bboxMax;		//!< Bounding box max (inclusive).
 	tcu::IVec2				m_curPos;		//!< Current rasterization position.
-};
+} DE_WARN_UNUSED_TYPE;
 
 
 /*--------------------------------------------------------------------*//*!
@@ -200,7 +200,7 @@ private:
 	tcu::IVec2						m_curPos;			//!< Current rasterization position.
 	deInt32							m_curRowFragment;	//!< Current rasterization position of one fragment in column of lineWidth fragments
 	float							m_lineWidth;
-};
+} DE_WARN_UNUSED_TYPE;
 
 
 /*--------------------------------------------------------------------*//*!
@@ -236,7 +236,7 @@ private:
 	// Per-line rasterization state.
 	TriangleRasterizer			m_triangleRasterizer0; //!< not in array because we want to initialize these in the initialization list
 	TriangleRasterizer			m_triangleRasterizer1;
-};
+} DE_WARN_UNUSED_TYPE;
 
 
 /*--------------------------------------------------------------------*//*!

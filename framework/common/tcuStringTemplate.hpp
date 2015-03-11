@@ -45,7 +45,7 @@ private:
 	StringTemplate&		operator=			(const StringTemplate&);		// not allowed!
 
 	std::string			m_template;
-};
+} DE_WARN_UNUSED_TYPE;
 
 } // tcu
 

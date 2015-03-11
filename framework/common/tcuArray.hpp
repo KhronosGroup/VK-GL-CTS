@@ -46,7 +46,7 @@ public:
 
 private:
 	T				m_data[Size];
-};
+} DE_WARN_UNUSED_TYPE;
 
 
 template <typename T, int Size>

@@ -125,7 +125,7 @@ public:
 
 private:
 	StorageType				m_value;
-};
+} DE_WARN_UNUSED_TYPE;
 
 // Common floating-point types.
 typedef Float<deUint16,  5, 10,   15, FLOAT_HAS_SIGN|FLOAT_SUPPORT_DENORM>	Float16;	//!< IEEE 754-2008 16-bit floating-point value

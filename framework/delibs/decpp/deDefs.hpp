@@ -132,4 +132,20 @@ const Elem& getArrayElement (const Elem (&array)[Size], int offset)
 #	define DE_EMPTY_CPP_FILE
 #endif
 
+// Warn if type is constructed, but left unused
+//
+// Used in types with non-trivial ctor/dtor but with ctor-dtor pair causing no (observable)
+// side-effects.
+//
+// \todo add attribute for GCC
+#if (DE_COMPILER == DE_COMPILER_CLANG) && defined(__has_attribute)
+#	if __has_attribute(warn_unused)
+#		define DE_WARN_UNUSED_TYPE __attribute__((warn_unused))
+#	else
+#		define DE_WARN_UNUSED_TYPE
+#	endif
+#else
+#	define DE_WARN_UNUSED_TYPE
+#endif
+
 #endif // _DEDEFS_HPP

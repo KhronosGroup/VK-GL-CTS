@@ -143,7 +143,7 @@ struct VertexAttrib
 		, generic			(generic_)
 	{
 	}
-};
+} DE_WARN_UNUSED_TYPE;
 
 bool		isValidVertexAttrib		(const VertexAttrib& vertexAttrib);
 // \todo [2013-04-01 pyry] Queries: isReadFloatValid(), isReadIntValid() ...

@@ -68,7 +68,7 @@ public:
 private:
 	void*			m_ptr;
 	size_t			m_cap;
-};
+} DE_WARN_UNUSED_TYPE;
 
 template <typename T, size_t Alignment, size_t Stride>
 ArrayBuffer<T,Alignment,Stride>::ArrayBuffer (void) throw()

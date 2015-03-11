@@ -111,7 +111,7 @@ protected:
 
 	std::vector<VertexInputInfo>			m_inputs;
 	std::vector<VertexOutputInfo>			m_outputs;
-};
+} DE_WARN_UNUSED_TYPE;
 
 /*--------------------------------------------------------------------*//*!
  * \brief Fragment shader interface
@@ -134,7 +134,7 @@ protected:
 
 	std::vector<FragmentInputInfo>			m_inputs;
 	std::vector<FragmentOutputInfo>			m_outputs;
-};
+} DE_WARN_UNUSED_TYPE;
 
 /*--------------------------------------------------------------------*//*!
  * \brief Geometry shader input primitive type
@@ -195,7 +195,7 @@ protected:
 
 	std::vector<GeometryInputInfo>			m_inputs;
 	std::vector<GeometryOutputInfo>			m_outputs;
-};
+} DE_WARN_UNUSED_TYPE;
 
 // Helpers for shader implementations.
 
