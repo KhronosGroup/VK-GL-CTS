@@ -110,10 +110,20 @@ def execArgs (args):
 	if retcode != 0:
 		raise Exception("Failed to execute '%s', got %d" % (str(args), retcode))
 
-def execArgsInDirectory (args, cwd):
-	# Make sure previous stdout prints have been written out.
-	sys.stdout.flush()
-	process = subprocess.Popen(args, cwd=cwd)
+def execArgsInDirectory (args, cwd, linePrefix=""):
+
+	def readApplyPrefixAndPrint (source, prefix, sink):
+		while True:
+			line = source.readline()
+			if len(line) == 0: # EOF
+				break;
+			sink.write(prefix + line)
+
+	process = subprocess.Popen(args, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+	stdoutJob = threading.Thread(target=readApplyPrefixAndPrint, args=(process.stdout, linePrefix, sys.stdout))
+	stderrJob = threading.Thread(target=readApplyPrefixAndPrint, args=(process.stdout, linePrefix, sys.stderr))
+	stdoutJob.start()
+	stderrJob.start()
 	retcode = process.wait()
 	if retcode != 0:
 		raise Exception("Failed to execute '%s', got %d" % (str(args), retcode))
