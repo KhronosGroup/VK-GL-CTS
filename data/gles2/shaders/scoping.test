@@ -106,6 +106,7 @@ group valid "Valid scoping and name redeclaration cases"
 
 	case while_condition_variable_hides_local_variable
 		version 100 es
+		require full_glsl_es_100_support
 		values
 		{
 			input int in0 = [ 1 | 2 | 3 ];
@@ -160,6 +161,7 @@ group valid "Valid scoping and name redeclaration cases"
 
 	case while_condition_variable_hides_global_variable
 		version 100 es
+		require full_glsl_es_100_support
 		values
 		{
 			input int in0 = [ 1 | 2 | 3 ];

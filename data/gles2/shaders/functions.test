@@ -2355,6 +2355,8 @@ group control_flow "Control Flow In Functions"
 	end
 
 	case return_after_loop_sequence
+		require full_glsl_es_100_support
+
 		values
 		{
 			input float in0		= [ -0.5 | 1.5 ];

@@ -121,6 +121,15 @@ ShaderCase::CaseRequirement ShaderCase::CaseRequirement::createLimitRequirement 
 	return retVal;
 }
 
+ShaderCase::CaseRequirement ShaderCase::CaseRequirement::createFullGLSLES100SpecificationRequirement (void)
+{
+	CaseRequirement retVal;
+
+	retVal.m_type = REQUIREMENTTYPE_FULL_GLSL_ES_100_SPEC;
+
+	return retVal;
+}
+
 void ShaderCase::CaseRequirement::checkRequirements (glu::RenderContext& renderCtx, const glu::ContextInfo& contextInfo)
 {
 	DE_UNREF(renderCtx);
@@ -173,6 +182,12 @@ void ShaderCase::CaseRequirement::checkRequirements (glu::RenderContext& renderC
 			if (!(value > m_referenceValue))
 				throw tcu::NotSupportedError("Test requires " + de::toString(glu::getGettableStateStr(m_enumName)) + " (" + de::toString(value) + ") > " + de::toString(m_referenceValue));
 
+			return;
+		}
+
+		case REQUIREMENTTYPE_FULL_GLSL_ES_100_SPEC:
+		{
+			// cannot be queried
 			return;
 		}
 
@@ -495,6 +510,19 @@ void ShaderCase::init (void)
 			DE_ASSERT(false);
 			break;
 	}
+
+	// sanity of arguments
+
+	if (anyProgramRequiresFullGLSLES100Specification())
+	{
+		// makes only sense in tests where shader compiles
+		DE_ASSERT(m_expectResult == EXPECT_PASS				||
+				  m_expectResult == EXPECT_VALIDATION_FAIL	||
+				  m_expectResult == EXPECT_BUILD_SUCCESSFUL);
+
+		// only makes sense for ES 100 programs
+		DE_ASSERT(m_targetVersion == glu::GLSL_VERSION_100_ES);
+	}
 }
 
 static void setUniformValue (const glw::Functions& gl, const std::vector<deUint32>& pipelinePrograms, const std::string& name, const ShaderCase::Value& val, int arrayNdx, tcu::TestLog& log)
@@ -576,6 +604,17 @@ bool ShaderCase::isTessellationPresent (void) const
 				!m_programs[0].programSources.sources[glu::SHADERTYPE_TESSELLATION_EVALUATION].empty();
 }
 
+bool ShaderCase::anyProgramRequiresFullGLSLES100Specification (void) const
+{
+	for (int programNdx = 0; programNdx < (int)m_programs.size(); ++programNdx)
+	for (int requirementNdx = 0; requirementNdx < (int)m_programs[programNdx].spec.requirements.size(); ++requirementNdx)
+	{
+		if (m_programs[programNdx].spec.requirements[requirementNdx].getType() == CaseRequirement::REQUIREMENTTYPE_FULL_GLSL_ES_100_SPEC)
+			return true;
+	}
+	return false;
+}
+
 bool ShaderCase::checkPixels (Surface& surface, int minX, int maxX, int minY, int maxY)
 {
 	TestLog&	log				= m_testCtx.getLog();
@@ -615,8 +654,8 @@ bool ShaderCase::checkPixels (Surface& surface, int minX, int maxX, int minY, in
 
 bool ShaderCase::execute (void)
 {
-	const float										quadSize			= 1.0f;
-	static const float								s_positions[4*4]	=
+	const float										quadSize				= 1.0f;
+	static const float								s_positions[4*4]		=
 	{
 		-quadSize, -quadSize, 0.0f, 1.0f,
 		-quadSize, +quadSize, 0.0f, 1.0f,
@@ -624,30 +663,31 @@ bool ShaderCase::execute (void)
 		+quadSize, +quadSize, 0.0f, 1.0f
 	};
 
-	static const deUint16							s_indices[2*3]		=
+	static const deUint16							s_indices[2*3]			=
 	{
 		0, 1, 2,
 		1, 3, 2
 	};
 
-	TestLog&										log					= m_testCtx.getLog();
-	const glw::Functions&							gl					= m_renderCtx.getFunctions();
+	TestLog&										log						= m_testCtx.getLog();
+	const glw::Functions&							gl						= m_renderCtx.getFunctions();
 
 	// Compute viewport.
-	const tcu::RenderTarget&						renderTarget		= m_renderCtx.getRenderTarget();
-	de::Random										rnd					(deStringHash(getName()));
-	const int										width				= deMin32(renderTarget.getWidth(),	VIEWPORT_WIDTH);
-	const int										height				= deMin32(renderTarget.getHeight(),	VIEWPORT_HEIGHT);
-	const int										viewportX			= rnd.getInt(0, renderTarget.getWidth()  - width);
-	const int										viewportY			= rnd.getInt(0, renderTarget.getHeight() - height);
-	const int										numVerticesPerDraw	= 4;
-	const bool										tessellationPresent	= isTessellationPresent();
+	const tcu::RenderTarget&						renderTarget			= m_renderCtx.getRenderTarget();
+	de::Random										rnd						(deStringHash(getName()));
+	const int										width					= deMin32(renderTarget.getWidth(),	VIEWPORT_WIDTH);
+	const int										height					= deMin32(renderTarget.getHeight(),	VIEWPORT_HEIGHT);
+	const int										viewportX				= rnd.getInt(0, renderTarget.getWidth()  - width);
+	const int										viewportY				= rnd.getInt(0, renderTarget.getHeight() - height);
+	const int										numVerticesPerDraw		= 4;
+	const bool										tessellationPresent		= isTessellationPresent();
+	const bool										requiresFullGLSLES100	= anyProgramRequiresFullGLSLES100Specification();
 
-	bool											allCompilesOk		= true;
-	bool											allLinksOk			= true;
-	const char*										failReason			= DE_NULL;
+	bool											allCompilesOk			= true;
+	bool											allLinksOk				= true;
+	const char*										failReason				= DE_NULL;
 
-	deUint32										vertexProgramID		= -1;
+	deUint32										vertexProgramID			= -1;
 	std::vector<deUint32>							pipelineProgramIDs;
 	std::vector<de::SharedPtr<glu::ShaderProgram> >	programs;
 	de::SharedPtr<glu::ProgramPipeline>				programPipeline;
@@ -761,9 +801,26 @@ bool ShaderCase::execute (void)
 		// \todo [2010-06-07 petri] These should be handled in the test case?
 		log << TestLog::Message << "ERROR: " << failReason << TestLog::EndMessage;
 
-		// If implementation parses shader at link time, report it as quality warning.
-		if (m_expectResult == EXPECT_COMPILE_FAIL && allCompilesOk && !allLinksOk)
+		if (requiresFullGLSLES100)
+		{
+			log	<< TestLog::Message
+				<< "Assuming build failure is caused by implementation not supporting full GLSL ES 100 specification, which is not required."
+				<< TestLog::EndMessage;
+
+			if (allCompilesOk && !allLinksOk)
+			{
+				// Used features are detectable at compile time. If implementation parses shader
+				// at link time, report it as quality warning.
+				m_testCtx.setTestResult(QP_TEST_RESULT_QUALITY_WARNING, failReason);
+			}
+			else
+				m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "Full GLSL ES 100 is not supported");
+		}
+		else if (m_expectResult == EXPECT_COMPILE_FAIL && allCompilesOk && !allLinksOk)
+		{
+			// If implementation parses shader at link time, report it as quality warning.
 			m_testCtx.setTestResult(QP_TEST_RESULT_QUALITY_WARNING, failReason);
+		}
 		else
 			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, failReason);
 		return false;
@@ -774,7 +831,7 @@ bool ShaderCase::execute (void)
 		m_expectResult == EXPECT_COMPILE_LINK_FAIL	||
 		m_expectResult == EXPECT_LINK_FAIL			||
 		m_expectResult == EXPECT_BUILD_SUCCESSFUL)
-		return (failReason == DE_NULL);
+		return true;
 
 	// Setup viewport.
 	gl.viewport(viewportX, viewportY, width, height);

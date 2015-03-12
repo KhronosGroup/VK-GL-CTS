@@ -107,19 +107,21 @@ public:
 		{
 			REQUIREMENTTYPE_EXTENSION = 0,
 			REQUIREMENTTYPE_IMPLEMENTATION_LIMIT,
+			REQUIREMENTTYPE_FULL_GLSL_ES_100_SPEC,	//!< Full support (as opposed to limited as specified for GLES 2.0 (See GLSL Appendix A)) cannot be queried
 
 			REQUIREMENTTYPE_LAST
 		};
 
-									CaseRequirement					(void);
+									CaseRequirement								(void);
 
-		static CaseRequirement		createAnyExtensionRequirement	(const std::vector<std::string>& requirements, deUint32 effectiveShaderStageFlags);
-		static CaseRequirement		createLimitRequirement			(deUint32 enumName, int ref);
-		void						checkRequirements				(glu::RenderContext& renderCtx, const glu::ContextInfo& contextInfo);
+		static CaseRequirement		createAnyExtensionRequirement				(const std::vector<std::string>& requirements, deUint32 effectiveShaderStageFlags);
+		static CaseRequirement		createLimitRequirement						(deUint32 enumName, int ref);
+		static CaseRequirement		createFullGLSLES100SpecificationRequirement	(void);
+		void						checkRequirements							(glu::RenderContext& renderCtx, const glu::ContextInfo& contextInfo);
 
-		RequirementType				getType							(void) const { return m_type; };
-		std::string					getSupportedExtension			(void) const { DE_ASSERT(m_type == REQUIREMENTTYPE_EXTENSION); DE_ASSERT(m_supportedExtensionNdx >= 0); return m_extensions[m_supportedExtensionNdx]; }
-		deUint32					getAffectedExtensionStageFlags	(void) const { DE_ASSERT(m_type == REQUIREMENTTYPE_EXTENSION); return m_effectiveShaderStageFlags; }
+		RequirementType				getType										(void) const { return m_type; };
+		std::string					getSupportedExtension						(void) const { DE_ASSERT(m_type == REQUIREMENTTYPE_EXTENSION); DE_ASSERT(m_supportedExtensionNdx >= 0); return m_extensions[m_supportedExtensionNdx]; }
+		deUint32					getAffectedExtensionStageFlags				(void) const { DE_ASSERT(m_type == REQUIREMENTTYPE_EXTENSION); return m_effectiveShaderStageFlags; }
 
 	private:
 		RequirementType				m_type;
@@ -174,42 +176,43 @@ public:
 	};
 
 	// Methods.
-									ShaderCase						(tcu::TestContext&				testCtx,
-																	 glu::RenderContext&			renderCtx,
-																	 const glu::ContextInfo&		contextInfo,
-																	 const char*					caseName,
-																	 const char*					description,
-																	 const ShaderCaseSpecification&	specification);
-									ShaderCase						(tcu::TestContext&					testCtx,
-																	 glu::RenderContext&				renderCtx,
-																	 const glu::ContextInfo&			contextInfo,
-																	 const char*						caseName,
-																	 const char*						description,
-																	 const PipelineCaseSpecification&	specification);
-	virtual							~ShaderCase						(void);
+									ShaderCase										(tcu::TestContext&				testCtx,
+																					 glu::RenderContext&			renderCtx,
+																					 const glu::ContextInfo&		contextInfo,
+																					 const char*					caseName,
+																					 const char*					description,
+																					 const ShaderCaseSpecification&	specification);
+									ShaderCase										(tcu::TestContext&					testCtx,
+																					 glu::RenderContext&				renderCtx,
+																					 const glu::ContextInfo&			contextInfo,
+																					 const char*						caseName,
+																					 const char*						description,
+																					 const PipelineCaseSpecification&	specification);
+	virtual							~ShaderCase										(void);
 
 private:
-	void							init							(void);
-	bool							execute							(void);
-	IterateResult					iterate							(void);
+	void							init											(void);
+	bool							execute											(void);
+	IterateResult					iterate											(void);
 
-									ShaderCase						(const ShaderCase&);		// not allowed!
-	ShaderCase&						operator=						(const ShaderCase&);		// not allowed!
+									ShaderCase										(const ShaderCase&);		// not allowed!
+	ShaderCase&						operator=										(const ShaderCase&);		// not allowed!
 
-	std::string						genVertexShader					(const ValueBlock& valueBlock) const;
-	std::string						genFragmentShader				(const ValueBlock& valueBlock) const;
-	std::string						specializeVertexShader			(const char* src, const ValueBlock& valueBlock) const;
-	std::string						specializeFragmentShader		(const char* src, const ValueBlock& valueBlock) const;
-	void							specializeVertexShaders			(glu::ProgramSources& dst, const std::vector<std::string>& sources, const ValueBlock& valueBlock, const std::vector<ShaderCase::CaseRequirement>& requirements) const;
-	void							specializeFragmentShaders		(glu::ProgramSources& dst, const std::vector<std::string>& sources, const ValueBlock& valueBlock, const std::vector<ShaderCase::CaseRequirement>& requirements) const;
-	void							specializeGeometryShaders		(glu::ProgramSources& dst, const std::vector<std::string>& sources, const ValueBlock& valueBlock, const std::vector<ShaderCase::CaseRequirement>& requirements) const;
-	void							specializeTessControlShaders	(glu::ProgramSources& dst, const std::vector<std::string>& sources, const ValueBlock& valueBlock, const std::vector<ShaderCase::CaseRequirement>& requirements) const;
-	void							specializeTessEvalShaders		(glu::ProgramSources& dst, const std::vector<std::string>& sources, const ValueBlock& valueBlock, const std::vector<ShaderCase::CaseRequirement>& requirements) const;
-	bool							isTessellationPresent			(void) const;
+	std::string						genVertexShader									(const ValueBlock& valueBlock) const;
+	std::string						genFragmentShader								(const ValueBlock& valueBlock) const;
+	std::string						specializeVertexShader							(const char* src, const ValueBlock& valueBlock) const;
+	std::string						specializeFragmentShader						(const char* src, const ValueBlock& valueBlock) const;
+	void							specializeVertexShaders							(glu::ProgramSources& dst, const std::vector<std::string>& sources, const ValueBlock& valueBlock, const std::vector<ShaderCase::CaseRequirement>& requirements) const;
+	void							specializeFragmentShaders						(glu::ProgramSources& dst, const std::vector<std::string>& sources, const ValueBlock& valueBlock, const std::vector<ShaderCase::CaseRequirement>& requirements) const;
+	void							specializeGeometryShaders						(glu::ProgramSources& dst, const std::vector<std::string>& sources, const ValueBlock& valueBlock, const std::vector<ShaderCase::CaseRequirement>& requirements) const;
+	void							specializeTessControlShaders					(glu::ProgramSources& dst, const std::vector<std::string>& sources, const ValueBlock& valueBlock, const std::vector<ShaderCase::CaseRequirement>& requirements) const;
+	void							specializeTessEvalShaders						(glu::ProgramSources& dst, const std::vector<std::string>& sources, const ValueBlock& valueBlock, const std::vector<ShaderCase::CaseRequirement>& requirements) const;
+	bool							isTessellationPresent							(void) const;
+	bool							anyProgramRequiresFullGLSLES100Specification	(void) const;
 
-	void							dumpValues						(const ValueBlock& valueBlock, int arrayNdx);
+	void							dumpValues										(const ValueBlock& valueBlock, int arrayNdx);
 
-	bool 							checkPixels						(tcu::Surface& surface, int minX, int maxX, int minY, int maxY);
+	bool 							checkPixels										(tcu::Surface& surface, int minX, int maxX, int minY, int maxY);
 
 	struct ProgramObject
 	{
