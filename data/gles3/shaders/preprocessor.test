@@ -800,6 +800,39 @@ group comments "Comment Tests"
 		""
 	end
 
+	case backslash_in_a_comment_1
+		version 300 es
+		expect build_successful
+		both ""
+			#version 300 es
+			// \\note these are some declarations
+			precision mediump float;
+			${DECLARATIONS}
+			// \\note this is the main function
+			void main()
+			{
+				// \\note this is a function body
+				${OUTPUT}
+			}
+		""
+	end
+
+	case backslash_in_a_comment_2
+		version 300 es
+		expect build_successful
+		both ""
+			#version 300 es
+			/* \\note these are some declarations */
+			precision mediump float;
+			${DECLARATIONS}
+			/* \\note this is the main function */
+			void main()
+			{
+				/* \\note this is a function body */
+				${OUTPUT}
+			}
+		""
+	end
 end # comments
 
 group line_continuation "Line Continuation Tests"
