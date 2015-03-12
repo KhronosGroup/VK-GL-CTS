@@ -306,6 +306,26 @@ void resetStateES (const RenderContext& renderCtx)
 		GLU_EXPECT_NO_ERROR(gl.getError(), "Texture state reset failed");
 	}
 
+	// Resetting state using non-indexed variants should be enough, but some
+	// implementations have bugs so we need to make sure indexed state gets
+	// set back to initial values.
+	if (ctxInfo->isExtensionSupported("GL_EXT_draw_buffers_indexed"))
+	{
+		int numDrawBuffers = 0;
+
+		gl.getIntegerv(GL_MAX_DRAW_BUFFERS, &numDrawBuffers);
+
+		for (int drawBufferNdx = 0; drawBufferNdx < numDrawBuffers; drawBufferNdx++)
+		{
+			gl.disablei			(GL_BLEND, drawBufferNdx);
+			gl.blendFunci		(drawBufferNdx, GL_ONE, GL_ZERO);
+			gl.blendEquationi	(drawBufferNdx, GL_FUNC_ADD);
+			gl.colorMaski		(drawBufferNdx, GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+		}
+
+		GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to reset indexed draw buffer state");
+	}
+
 	// Pixel operations.
 	{
 		const tcu::RenderTarget& renderTarget = renderCtx.getRenderTarget();
