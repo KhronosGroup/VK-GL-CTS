@@ -30,16 +30,42 @@
 #define DE_COMPILER_CLANG   3		/*!< LLVM Clang Compiler.														*/
 
 /* Compiler detection. */
-#if defined(DE_COMPILER)
-	/* Allow definitions from outside. */
-#elif defined(_MSC_VER)
-#	define DE_COMPILER DE_COMPILER_MSC	/*!< Compiler identification (set to one of DE_COMPILER_*). */
+#if defined(_MSC_VER)
+#	define DE_DETAIL_DETECTED_COMPILER DE_COMPILER_MSC
 #elif defined(__clang__)
-#	define DE_COMPILER DE_COMPILER_CLANG
+#	define DE_DETAIL_DETECTED_COMPILER DE_COMPILER_CLANG
 #elif defined(__GNUC__)
-#   define DE_COMPILER DE_COMPILER_GCC
+#   define DE_DETAIL_DETECTED_COMPILER DE_COMPILER_GCC
 #else
-#	error Unknown compiler.
+	/* DE_DETAIL_DETECTED_COMPILER not set */
+#endif
+
+/* Compiler setting. */
+#if defined(DE_COMPILER)
+	/* Allow definitions from outside, but fail early if it conflicts with our detection */
+#	if defined(DE_DETAIL_DETECTED_COMPILER) && (DE_COMPILER != DE_DETAIL_DETECTED_COMPILER)
+		/* conflict, print a nice error messages for the most common misconfigs,
+		 * GCC and Clang, and a generic for other conflicts.
+		 */
+#		if (DE_DETAIL_DETECTED_COMPILER == DE_COMPILER_CLANG) && (DE_COMPILER == DE_COMPILER_GCC)
+#			error Detected compiler is Clang, but got DE_COMPILER == DE_COMPILER_GCC
+#		elif (DE_DETAIL_DETECTED_COMPILER == DE_COMPILER_GCC) && (DE_COMPILER == DE_COMPILER_CLANG)
+#			error Detected compiler is GCC, but got DE_COMPILER == DE_COMPILER_CLANG
+#		else
+#			error Detected compiler does not match the supplied compiler.
+#		endif
+#	endif
+	/* Clear autodetect vars. */
+#	if defined(DE_DETAIL_DETECTED_COMPILER)
+#		undef DE_DETAIL_DETECTED_COMPILER
+#	endif
+#else
+	/* No definition given from outside, try to autodetect */
+#	if defined(DE_DETAIL_DETECTED_COMPILER)
+#		define DE_COMPILER DE_DETAIL_DETECTED_COMPILER /*!< Compiler identification (set to one of DE_COMPILER_*). */
+#	else
+#		error Unknown compiler.
+#	endif
 #endif
 
 /* Operating systems. */
@@ -47,7 +73,7 @@
 #define DE_OS_WIN32		1			/*!< Microsoft Windows desktop					*/
 #define DE_OS_UNIX      2			/*!< Unix (or compatible)						*/
 #define DE_OS_WINCE		3			/*!< Windows CE, Windows Mobile or Pocket PC	*/
-#define DE_OS_OSX       4           /*!< Mac OS X									*/
+#define DE_OS_OSX		4			/*!< Mac OS X									*/
 #define DE_OS_ANDROID	5			/*!< Android									*/
 #define DE_OS_SYMBIAN	6			/*!< Symbian OS									*/
 #define DE_OS_IOS		7			/*!< iOS										*/

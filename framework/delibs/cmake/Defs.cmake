@@ -61,6 +61,13 @@ DE_MAKE_ENV_BOOL("DE_OS" "OSX")
 DE_MAKE_ENV_BOOL("DE_OS" "ANDROID")
 DE_MAKE_ENV_BOOL("DE_OS" "IOS")
 
+# Prevent mixed compile with GCC and Clang
+if (NOT ("${CMAKE_C_COMPILER_ID}" MATCHES "GNU") EQUAL ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU"))
+	message(FATAL_ERROR "CMake C and CXX compilers do not match. Both or neither must be GNU.")
+elseif (NOT ("${CMAKE_C_COMPILER_ID}" MATCHES "Clang") EQUAL ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang"))
+	message(FATAL_ERROR "CMake C and CXX compilers do not match. Both or neither must be Clang.")
+endif ()
+
 # Compiler detection
 if (NOT DEFINED DE_COMPILER)
 	# \note " x" postfix is to work around bug in CMake that causes
