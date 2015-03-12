@@ -362,7 +362,7 @@ std::string IdentityGeometryShaderCase::getTessellationEvaluationSource (bool ge
 			"in highp vec4 v_patch_color[];\n"
 			"out highp vec4 " << colorOutputName << ";\n"
 			"\n"
-			"// \\note No need to use precise gl_Position since we do not require gapless geometry\n"
+			"// note: No need to use precise gl_Position since we do not require gapless geometry\n"
 			"void main (void)\n"
 			"{\n";
 
@@ -666,7 +666,7 @@ std::string IdentityTessellationShaderCase::getTessellationEvaluationSource (voi
 			"in highp vec4 v_control_color[];\n"
 			"out highp vec4 v_evaluated_color;\n"
 			"\n"
-			"// \\note No need to use precise gl_Position since we do not require gapless geometry\n"
+			"// note: No need to use precise gl_Position since we do not require gapless geometry\n"
 			"void main (void)\n"
 			"{\n";
 
@@ -1451,7 +1451,7 @@ std::string FeedbackPrimitiveTypeCase::getTessellationEvaluationSource (void) co
 			"\n"
 			"out highp vec4 v_tessellationCoords;\n"
 			"\n"
-			"// \\note No need to use precise gl_Position since we do not require gapless geometry\n"
+			"// note: No need to use precise gl_Position since we do not require gapless geometry\n"
 			"void main (void)\n"
 			"{\n"
 			"	if (gl_PatchVerticesIn != 9)\n"
@@ -2583,7 +2583,7 @@ std::string GridRenderCase::getTessellationEvaluationSource (int tessLevel)
 			"\n"
 			"out mediump ivec2 v_tessellationGridPosition;\n"
 			"\n"
-			"// \\note No need to use precise gl_Position since position does not depend on order\n"
+			"// note: No need to use precise gl_Position since position does not depend on order\n"
 			"void main (void)\n"
 			"{\n";
 
