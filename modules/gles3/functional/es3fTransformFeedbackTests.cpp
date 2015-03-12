@@ -520,14 +520,25 @@ static void computeTransformFeedbackOutputs (vector<Output>& transformFeedbackOu
 	}
 }
 
+static deUint32 signExtend (deUint32 value, deUint32 numBits)
+{
+	DE_ASSERT(numBits >= 1u && numBits <= 32u);
+	if (numBits == 32u)
+		return value;
+	else if ((value & (1u << (numBits-1u))) == 0u)
+		return value;
+	else
+		return value | ~((1u << numBits) - 1u);
+}
+
 static void genAttributeData (const Attribute& attrib, deUint8* basePtr, int stride, int numElements, de::Random& rnd)
 {
-	const int		elementSize	= (int)sizeof(deUint32);
-	bool			isFloat		= glu::isDataTypeFloatOrVec(attrib.type.getBasicType());
-	bool			isInt		= glu::isDataTypeIntOrIVec(attrib.type.getBasicType());
-	bool			isUint		= glu::isDataTypeIntOrIVec(attrib.type.getBasicType());
-	glu::Precision	precision	= attrib.type.getPrecision();
-	int				numComps	= glu::getDataTypeScalarSize(attrib.type.getBasicType());
+	const int				elementSize	= (int)sizeof(deUint32);
+	const bool				isFloat		= glu::isDataTypeFloatOrVec(attrib.type.getBasicType());
+	const bool				isInt		= glu::isDataTypeIntOrIVec(attrib.type.getBasicType());
+	const bool				isUint		= glu::isDataTypeUintOrUVec(attrib.type.getBasicType());
+	const glu::Precision	precision	= attrib.type.getPrecision();
+	const int				numComps	= glu::getDataTypeScalarSize(attrib.type.getBasicType());
 
 	for (int elemNdx = 0; elemNdx < numElements; elemNdx++)
 	{
@@ -551,9 +562,9 @@ static void genAttributeData (const Attribute& attrib, deUint8* basePtr, int str
 				int* comp = (int*)(basePtr+offset);
 				switch (precision)
 				{
-					case glu::PRECISION_LOWP:		*comp = (int)(rnd.getUint32()&0xff) << 24 >> 24;	break;
-					case glu::PRECISION_MEDIUMP:	*comp = (int)(rnd.getUint32()&0xffff) << 16 >> 16;	break;
-					case glu::PRECISION_HIGHP:		*comp = (int)rnd.getUint32();						break;
+					case glu::PRECISION_LOWP:		*comp = (int)signExtend(rnd.getUint32()&0xff, 8);		break;
+					case glu::PRECISION_MEDIUMP:	*comp = (int)signExtend(rnd.getUint32()&0xffff, 16);	break;
+					case glu::PRECISION_HIGHP:		*comp = (int)rnd.getUint32();							break;
 					default:
 						DE_ASSERT(false);
 				}
@@ -570,6 +581,8 @@ static void genAttributeData (const Attribute& attrib, deUint8* basePtr, int str
 						DE_ASSERT(false);
 				}
 			}
+			else
+				DE_ASSERT(false);
 		}
 	}
 }
