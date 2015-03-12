@@ -497,21 +497,21 @@ static bool reverifyConstantDerivateWithFlushRelaxations (tcu::TestLog&							lo
 			const int			maxValueExp				= de::max(de::max(tcu::Float32(forwardComponent.lo()).exponent(),   tcu::Float32(forwardComponent.hi()).exponent()),
 																  de::max(tcu::Float32(backwardComponent.lo()).exponent(),  tcu::Float32(backwardComponent.hi()).exponent()));
 
-			// subtraction in nominator will likely cause a cancellation of the most
+			// subtraction in numerator will likely cause a cancellation of the most
 			// significant bits. Apply error bounds.
 
-			const tcu::Interval	nominator				(forwardComponent - backwardComponent);
-			const int			nominatorLoExp			= tcu::Float32(nominator.lo()).exponent();
-			const int			nominatorHiExp			= tcu::Float32(nominator.hi()).exponent();
-			const int			nominatorLoBitsLost		= maxValueExp - nominatorLoExp;
-			const int			nominatorHiBitsLost		= maxValueExp - nominatorHiExp;
-			const int			nominatorLoBits			= de::max(0, numBits - nominatorLoBitsLost);
-			const int			nominatorHiBits			= de::max(0, numBits - nominatorHiBitsLost);
+			const tcu::Interval	numerator				(forwardComponent - backwardComponent);
+			const int			numeratorLoExp			= tcu::Float32(numerator.lo()).exponent();
+			const int			numeratorHiExp			= tcu::Float32(numerator.hi()).exponent();
+			const int			numeratorLoBitsLost		= de::max(0, maxValueExp - numeratorLoExp); //!< must clamp to zero since if forward and backward components have different
+			const int			numeratorHiBitsLost		= de::max(0, maxValueExp - numeratorHiExp); //!< sign, numerator might have larger exponent than its operands.
+			const int			numeratorLoBits			= de::max(0, numBits - numeratorLoBitsLost);
+			const int			numeratorHiBits			= de::max(0, numBits - numeratorHiBitsLost);
 
-			const tcu::Interval	nominatorRange			(convertFloorFlushToZero((float)nominator.lo(), minExponent, nominatorLoBits),
-														 convertCeilFlushToZero((float)nominator.hi(), minExponent, nominatorHiBits));
+			const tcu::Interval	numeratorRange			(convertFloorFlushToZero((float)numerator.lo(), minExponent, numeratorLoBits),
+														 convertCeilFlushToZero((float)numerator.hi(), minExponent, numeratorHiBits));
 
-			const tcu::Interval	divisionRange			= nominatorRange / 3.0f; // legal sample area is anywhere within this and neighboring pixels (i.e. size = 3)
+			const tcu::Interval	divisionRange			= numeratorRange / 3.0f; // legal sample area is anywhere within this and neighboring pixels (i.e. size = 3)
 			const tcu::Interval	divisionResultRange		(convertFloorFlushToZero(addErrorUlp((float)divisionRange.lo(), -divisionErrorUlps, numBits), minExponent, numBits),
 														 convertCeilFlushToZero(addErrorUlp((float)divisionRange.hi(), +divisionErrorUlps, numBits), minExponent, numBits));
 			const tcu::Interval	finalResultRange		(divisionResultRange.lo() - surfaceThreshold[c], divisionResultRange.hi() + surfaceThreshold[c]);
