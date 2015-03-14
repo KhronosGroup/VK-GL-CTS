@@ -1414,8 +1414,8 @@ std::vector<std::string> getProgramInterfaceResourceList (const ProgramInterface
 				else if (shaderType == glu::SHADERTYPE_TESSELLATION_CONTROL)
 				{
 					resources.push_back("gl_PerVertex.gl_Position");
-					resources.push_back("gl_TessLevelOuter");
-					resources.push_back("gl_TessLevelInner");
+					resources.push_back("gl_TessLevelOuter[0]");
+					resources.push_back("gl_TessLevelInner[0]");
 				}
 				else if (shaderType == glu::SHADERTYPE_TESSELLATION_EVALUATION)
 					resources.push_back("gl_Position");
