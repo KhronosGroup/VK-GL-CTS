@@ -22,6 +22,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "es31fProgramInterfaceDefinition.hpp"
+#include "es31fProgramInterfaceDefinitionUtil.hpp"
 #include "gluVarType.hpp"
 #include "gluShaderProgram.hpp"
 #include "deSTLUtil.hpp"
@@ -568,12 +569,13 @@ void Program::setTessellationNumOutputPatchVertices (deUint32 vertices)
 
 bool Program::isValid (void) const
 {
-	bool computePresent			= false;
-	bool vertexPresent			= false;
-	bool fragmentPresent		= false;
-	bool tessControlPresent		= false;
-	bool tessEvalPresent		= false;
-	bool geometryPresent		= false;
+	const bool	isOpenGLES			= (m_shaders.empty()) ? (false) : (glu::glslVersionIsES(m_shaders[0]->getVersion()));
+	bool		computePresent		= false;
+	bool		vertexPresent		= false;
+	bool		fragmentPresent		= false;
+	bool		tessControlPresent	= false;
+	bool		tessEvalPresent		= false;
+	bool		geometryPresent		= false;
 
 	if (m_shaders.empty())
 		return false;
@@ -628,6 +630,23 @@ bool Program::isValid (void) const
 
 	if ((m_geoNumOutputVertices != 0) != geometryPresent)
 		return false;
+
+	for (int ndx = 0; ndx < (int)m_xfbVaryings.size(); ++ndx)
+	{
+		// user-defined
+		if (m_xfbVaryings[ndx].find("gl_") != 0)
+		{
+			std::vector<ProgramInterfaceDefinition::VariablePathComponent> path;
+			if (!findProgramVariablePathByPathName(path, this, m_xfbVaryings[ndx], VariableSearchFilter::createShaderTypeStorageFilter(getProgramTransformFeedbackStage(this), glu::STORAGE_OUT)))
+				return false;
+			if (!path.back().isVariableType())
+				return false;
+
+			// Khronos bug #12787 disallowed capturing whole structs in OpenGL ES.
+			if (path.back().getVariableType()->isStructType() && isOpenGLES)
+				return false;
+		}
+	}
 
 	return true;
 }
