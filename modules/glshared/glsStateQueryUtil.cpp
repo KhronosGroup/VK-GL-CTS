@@ -35,6 +35,11 @@ namespace gls
 namespace StateQueryUtil
 {
 
+static glw::GLboolean mapBoolToGLBoolean (bool b)
+{
+	return (b ? GL_TRUE : GL_FALSE);
+}
+
 static bool checkError (tcu::ResultCollector& result, glu::CallLogWrapper& gl, const char* msg)
 {
 	const glw::GLenum errorCode = gl.glGetError();
@@ -122,6 +127,24 @@ QueriedState::QueriedState (const GLFloatVec4& v)
 	m_v.vFloatVec4[3] = v[3];
 }
 
+QueriedState::QueriedState (const BooleanVec4& v)
+	: m_type(DATATYPE_BOOLEAN_VEC4)
+{
+	m_v.vBooleanVec4[0] = v[0];
+	m_v.vBooleanVec4[1] = v[1];
+	m_v.vBooleanVec4[2] = v[2];
+	m_v.vBooleanVec4[3] = v[3];
+}
+
+QueriedState::QueriedState (const GLInt64Vec4& v)
+	: m_type(DATATYPE_INTEGER64_VEC4)
+{
+	m_v.vInt64Vec4[0] = v[0];
+	m_v.vInt64Vec4[1] = v[1];
+	m_v.vInt64Vec4[2] = v[2];
+	m_v.vInt64Vec4[3] = v[3];
+}
+
 bool QueriedState::isUndefined (void) const
 {
 	return m_type == DATATYPE_LAST;
@@ -192,6 +215,18 @@ QueriedState::GLFloatVec4& QueriedState::getFloatVec4Access (void)
 	return m_v.vFloatVec4;
 }
 
+QueriedState::BooleanVec4& QueriedState::getBooleanVec4Access (void)
+{
+	DE_ASSERT(m_type == DATATYPE_BOOLEAN_VEC4);
+	return m_v.vBooleanVec4;
+}
+
+QueriedState::GLInt64Vec4& QueriedState::getInt64Vec4Access (void)
+{
+	DE_ASSERT(m_type == DATATYPE_INTEGER64_VEC4);
+	return m_v.vInt64Vec4;
+}
+
 // query
 
 static bool verifyBooleanValidity (tcu::ResultCollector& result, glw::GLboolean v)
@@ -205,6 +240,32 @@ static bool verifyBooleanValidity (tcu::ResultCollector& result, glw::GLboolean 
 		result.fail(buf.str());
 		return false;
 	}
+}
+
+static bool verifyBooleanVec4Validity (tcu::ResultCollector& result, const glw::GLboolean v[4])
+{
+	bool valid = true;
+
+	for (int i = 0; i < 4; i++)
+	{
+		if (v[i] != GL_TRUE && v[i] != GL_FALSE)
+			valid = false;
+	}
+
+	if (!valid)
+	{
+		std::ostringstream buf;
+		buf << "Boolean vec4 value was not neither GL_TRUE nor GL_FALSE, got (";
+
+		for (int i = 0; i < 4; i++)
+			buf << (i > 0 ? ", " : "") << de::toString(tcu::Format::Hex<2>(v[i]));
+
+		buf << ")";
+
+		result.fail(buf.str());
+	}
+
+	return valid;
 }
 
 void queryState (tcu::ResultCollector& result, glu::CallLogWrapper& gl, QueryType type, glw::GLenum target, QueriedState& state)
@@ -297,6 +358,76 @@ void queryIndexedState (tcu::ResultCollector& result, glu::CallLogWrapper& gl, Q
 {
 	switch (type)
 	{
+		case QUERY_INDEXED_BOOLEAN_VEC4:
+		{
+			StateQueryMemoryWriteGuard<glw::GLboolean[4]> value;
+			gl.glGetBooleani_v(target, index, value);
+
+			if (!checkError(result, gl, "glGetBooleani_v"))
+				return;
+
+			if (!value.verifyValidity(result))
+				return;
+
+			if (!verifyBooleanVec4Validity(result, value))
+				return;
+
+			{
+				bool res[4];
+
+				for (int i = 0; i < 4; i++)
+					res[i] = value[i] == GL_TRUE;
+
+				state = QueriedState(res);
+			}
+
+			break;
+		}
+
+		case QUERY_INDEXED_INTEGER_VEC4:
+		{
+			StateQueryMemoryWriteGuard<glw::GLint[4]> value;
+			gl.glGetIntegeri_v(target, index, value);
+
+			if (!checkError(result, gl, "glGetIntegeri_v"))
+				return;
+
+			if (!value.verifyValidity(result))
+				return;
+
+			state = QueriedState(value);
+			break;
+		}
+
+		case QUERY_INDEXED_INTEGER64_VEC4:
+		{
+			StateQueryMemoryWriteGuard<glw::GLint64[4]> value;
+			gl.glGetInteger64i_v(target, index, value);
+
+			if (!checkError(result, gl, "glGetInteger64i_v"))
+				return;
+
+			if (!value.verifyValidity(result))
+				return;
+
+			state = QueriedState(value);
+			break;
+		}
+
+		case QUERY_INDEXED_ISENABLED:
+		{
+			const glw::GLboolean value = gl.glIsEnabledi(target, index);
+
+			if (!checkError(result, gl, "glIsEnabledi"))
+				return;
+
+			if (!verifyBooleanValidity(result, value))
+				return;
+
+			state = QueriedState(value == GL_TRUE);
+			break;
+		}
+
 		case QUERY_INDEXED_BOOLEAN:
 		{
 			StateQueryMemoryWriteGuard<glw::GLboolean> value;
@@ -847,11 +978,6 @@ void querySamplerState (tcu::ResultCollector& result, glu::CallLogWrapper& gl, Q
 
 // verify
 
-static const char* getGLBooleanStr (bool v)
-{
-	return (v) ? ("GL_TRUE") : ("GL_FALSE");
-}
-
 void verifyBoolean (tcu::ResultCollector& result, QueriedState& state, bool expected)
 {
 	switch (state.getType())
@@ -861,7 +987,7 @@ void verifyBoolean (tcu::ResultCollector& result, QueriedState& state, bool expe
 			if (state.getBoolAccess() != expected)
 			{
 				std::ostringstream buf;
-				buf << "Expected " << getGLBooleanStr(expected) << ", got " << getGLBooleanStr(state.getBoolAccess());
+				buf << "Expected " << glu::getBooleanStr(mapBoolToGLBoolean(expected)) << ", got " << glu::getBooleanStr(mapBoolToGLBoolean(state.getBoolAccess()));
 				result.fail(buf.str());
 			}
 			break;
@@ -919,7 +1045,7 @@ void verifyInteger (tcu::ResultCollector& result, QueriedState& state, int expec
 			if (state.getBoolAccess() != reference)
 			{
 				std::ostringstream buf;
-				buf << "Expected " << getGLBooleanStr(reference) << ", got " << getGLBooleanStr(state.getBoolAccess());
+				buf << "Expected " << glu::getBooleanStr(mapBoolToGLBoolean(reference)) << ", got " << glu::getBooleanStr(mapBoolToGLBoolean(state.getBoolAccess()));
 				result.fail(buf.str());
 			}
 			break;
@@ -1097,10 +1223,11 @@ void verifyFloat (tcu::ResultCollector& result, QueriedState& state, float expec
 		case DATATYPE_BOOLEAN:
 		{
 			const bool reference = (expected != 0.0f);
+
 			if (state.getBoolAccess() != reference)
 			{
 				std::ostringstream buf;
-				buf << "Expected " << getGLBooleanStr(reference) << ", got " << getGLBooleanStr(state.getBoolAccess());
+				buf << "Expected " << glu::getBooleanStr(mapBoolToGLBoolean(reference)) << ", got " << glu::getBooleanStr(mapBoolToGLBoolean(state.getBoolAccess()));
 				result.fail(buf.str());
 			}
 			break;
@@ -1361,6 +1488,132 @@ void verifyUnsignedIntegerVec4 (tcu::ResultCollector& result, QueriedState& stat
 			break;
 	}
 }
+
+void verifyBooleanVec4 (tcu::ResultCollector& result, QueriedState& state, const tcu::BVec4& expected)
+{
+	switch (state.getType())
+	{
+		case DATATYPE_BOOLEAN_VEC4:
+		{
+			const glw::GLboolean referenceVec4[4] =
+			{
+				mapBoolToGLBoolean(expected[0]),
+				mapBoolToGLBoolean(expected[1]),
+				mapBoolToGLBoolean(expected[2]),
+				mapBoolToGLBoolean(expected[3])
+			};
+
+			const glw::GLboolean resultVec4[4] =
+			{
+				mapBoolToGLBoolean(state.getBooleanVec4Access()[0]),
+				mapBoolToGLBoolean(state.getBooleanVec4Access()[1]),
+				mapBoolToGLBoolean(state.getBooleanVec4Access()[2]),
+				mapBoolToGLBoolean(state.getBooleanVec4Access()[3])
+			};
+
+			if (resultVec4[0] != referenceVec4[0] ||
+				resultVec4[1] != referenceVec4[1] ||
+				resultVec4[2] != referenceVec4[2] ||
+				resultVec4[3] != referenceVec4[3])
+			{
+				std::ostringstream buf;
+				buf << "Expected " << glu::getBooleanPointerStr(referenceVec4, 4) << ", got " << glu::getBooleanPointerStr(resultVec4, 4);
+				result.fail(buf.str());
+			}
+
+			break;
+		}
+		case DATATYPE_FLOAT_VEC4:
+		{
+			const glw::GLfloat reference[4] =
+			{
+				(expected[0] ? 1.0f : 0.0f),
+				(expected[1] ? 1.0f : 0.0f),
+				(expected[2] ? 1.0f : 0.0f),
+				(expected[3] ? 1.0f : 0.0f)
+			};
+
+			if (state.getFloatVec4Access()[0] != reference[0] ||
+				state.getFloatVec4Access()[1] != reference[1] ||
+				state.getFloatVec4Access()[2] != reference[2] ||
+				state.getFloatVec4Access()[3] != reference[3])
+			{
+				std::ostringstream buf;
+				buf << "Expected " << reference << ", got " << tcu::formatArray(state.getFloatVec4Access());
+				result.fail(buf.str());
+			}
+			break;
+		}
+		case DATATYPE_INTEGER_VEC4:
+		{
+			const glw::GLint reference[4] =
+			{
+				(expected[0] ? 1 : 0),
+				(expected[1] ? 1 : 0),
+				(expected[2] ? 1 : 0),
+				(expected[3] ? 1 : 0)
+			};
+
+			if (state.getIntVec4Access()[0] != reference[0] ||
+				state.getIntVec4Access()[1] != reference[1] ||
+				state.getIntVec4Access()[2] != reference[2] ||
+				state.getIntVec4Access()[3] != reference[3])
+			{
+				std::ostringstream buf;
+				buf << "Expected " << reference << ", got " << tcu::formatArray(state.getIntVec4Access());
+				result.fail(buf.str());
+			}
+			break;
+		}
+		case DATATYPE_INTEGER64_VEC4:
+		{
+			const glw::GLint64 reference[4] =
+			{
+				(expected[0] ? 1 : 0),
+				(expected[1] ? 1 : 0),
+				(expected[2] ? 1 : 0),
+				(expected[3] ? 1 : 0)
+			};
+
+			if (state.getInt64Vec4Access()[0] != reference[0] ||
+				state.getInt64Vec4Access()[1] != reference[1] ||
+				state.getInt64Vec4Access()[2] != reference[2] ||
+				state.getInt64Vec4Access()[3] != reference[3])
+			{
+				std::ostringstream buf;
+				buf << "Expected " << reference << ", got " << tcu::formatArray(state.getInt64Vec4Access());
+				result.fail(buf.str());
+			}
+			break;
+		}
+		case DATATYPE_UNSIGNED_INTEGER_VEC4:
+		{
+			const glw::GLuint reference[4] =
+			{
+				(expected[0] ? 1u : 0u),
+				(expected[1] ? 1u : 0u),
+				(expected[2] ? 1u : 0u),
+				(expected[3] ? 1u : 0u)
+			};
+
+			if (state.getUintVec4Access()[0] != reference[0] ||
+				state.getUintVec4Access()[1] != reference[1] ||
+				state.getUintVec4Access()[2] != reference[2] ||
+				state.getUintVec4Access()[3] != reference[3])
+			{
+				std::ostringstream buf;
+				buf << "Expected " << reference << ", got " << tcu::formatArray(state.getUintVec4Access());
+				result.fail(buf.str());
+			}
+			break;
+		}
+
+		default:
+			DE_ASSERT(DE_FALSE);
+			break;
+	}
+}
+
 
 void verifyFloatVec4 (tcu::ResultCollector& result, QueriedState& state, const tcu::Vec4& expected)
 {
@@ -1700,6 +1953,16 @@ void verifyStateIndexedBoolean (tcu::ResultCollector& result, glu::CallLogWrappe
 
 	if (!state.isUndefined())
 		verifyBoolean(result, state, expected);
+}
+
+void verifyStateIndexedBooleanVec4 (tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLenum target, int index, const tcu::BVec4& expected, QueryType type)
+{
+	QueriedState state;
+
+	queryIndexedState(result, gl, type, target, index, state);
+
+	if (!state.isUndefined())
+		verifyBooleanVec4(result, state, expected);
 }
 
 void verifyStateIndexedInteger (tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLenum target, int index, int expected, QueryType type)

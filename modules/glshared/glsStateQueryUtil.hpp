@@ -243,8 +243,12 @@ enum QueryType
 
 	// indexed
 	QUERY_INDEXED_BOOLEAN,
+	QUERY_INDEXED_BOOLEAN_VEC4,
+	QUERY_INDEXED_ISENABLED,
 	QUERY_INDEXED_INTEGER,
+	QUERY_INDEXED_INTEGER_VEC4,
 	QUERY_INDEXED_INTEGER64,
+	QUERY_INDEXED_INTEGER64_VEC4,
 
 	// attributes
 	QUERY_ATTRIBUTE_INTEGER,
@@ -308,7 +312,9 @@ enum DataType
 	DATATYPE_INTEGER_VEC3,
 	DATATYPE_FLOAT_VEC4,
 	DATATYPE_INTEGER_VEC4,
+	DATATYPE_INTEGER64_VEC4,
 	DATATYPE_UNSIGNED_INTEGER_VEC4,
+	DATATYPE_BOOLEAN_VEC4,
 	DATATYPE_POINTER,
 
 	DATATYPE_LAST
@@ -321,32 +327,38 @@ public:
 	typedef glw::GLint		GLIntVec4[4];
 	typedef glw::GLuint		GLUintVec4[4];
 	typedef glw::GLfloat	GLFloatVec4[4];
+	typedef bool			BooleanVec4[4];
+	typedef glw::GLint64	GLInt64Vec4[4];
 
-							QueriedState		(void);
-	explicit				QueriedState		(glw::GLint);
-	explicit				QueriedState		(glw::GLint64);
-	explicit				QueriedState		(bool);
-	explicit				QueriedState		(glw::GLfloat);
-	explicit				QueriedState		(glw::GLuint);
-	explicit				QueriedState		(const GLIntVec3&);
-	explicit				QueriedState		(void*);
-	explicit				QueriedState		(const GLIntVec4&);
-	explicit				QueriedState		(const GLUintVec4&);
-	explicit				QueriedState		(const GLFloatVec4&);
+							QueriedState			(void);
+	explicit				QueriedState			(glw::GLint);
+	explicit				QueriedState			(glw::GLint64);
+	explicit				QueriedState			(bool);
+	explicit				QueriedState			(glw::GLfloat);
+	explicit				QueriedState			(glw::GLuint);
+	explicit				QueriedState			(const GLIntVec3&);
+	explicit				QueriedState			(void*);
+	explicit				QueriedState			(const GLIntVec4&);
+	explicit				QueriedState			(const GLUintVec4&);
+	explicit				QueriedState			(const GLFloatVec4&);
+	explicit				QueriedState			(const BooleanVec4&);
+	explicit				QueriedState			(const GLInt64Vec4&);
 
-	bool					isUndefined			(void) const;
-	DataType				getType				(void) const;
+	bool					isUndefined				(void) const;
+	DataType				getType					(void) const;
 
-	glw::GLint&				getIntAccess		(void);
-	glw::GLint64&			getInt64Access		(void);
-	bool&					getBoolAccess		(void);
-	glw::GLfloat&			getFloatAccess		(void);
-	glw::GLuint&			getUintAccess		(void);
-	GLIntVec3&				getIntVec3Access	(void);
-	void*&					getPtrAccess		(void);
-	GLIntVec4&				getIntVec4Access	(void);
-	GLUintVec4&				getUintVec4Access	(void);
-	GLFloatVec4&			getFloatVec4Access	(void);
+	glw::GLint&				getIntAccess			(void);
+	glw::GLint64&			getInt64Access			(void);
+	bool&					getBoolAccess			(void);
+	glw::GLfloat&			getFloatAccess			(void);
+	glw::GLuint&			getUintAccess			(void);
+	GLIntVec3&				getIntVec3Access		(void);
+	void*&					getPtrAccess			(void);
+	GLIntVec4&				getIntVec4Access		(void);
+	GLUintVec4&				getUintVec4Access		(void);
+	GLFloatVec4&			getFloatVec4Access		(void);
+	BooleanVec4&			getBooleanVec4Access	(void);
+	GLInt64Vec4&			getInt64Vec4Access		(void);
 
 private:
 	DataType				m_type;
@@ -362,6 +374,8 @@ private:
 		GLIntVec4			vIntVec4;
 		GLUintVec4			vUintVec4;
 		GLFloatVec4			vFloatVec4;
+		BooleanVec4			vBooleanVec4;
+		GLInt64Vec4			vInt64Vec4;
 	} m_v;
 };
 
@@ -394,6 +408,7 @@ void verifyIntegerVec3							(tcu::ResultCollector& result, QueriedState& state,
 void verifyIntegerVec4							(tcu::ResultCollector& result, QueriedState& state, const tcu::IVec4& expected);
 void verifyUnsignedIntegerVec4					(tcu::ResultCollector& result, QueriedState& state, const tcu::UVec4& expected);
 void verifyFloatVec4							(tcu::ResultCollector& result, QueriedState& state, const tcu::Vec4& expected);
+void verifyBooleanVec4							(tcu::ResultCollector& result, QueriedState& state, const tcu::BVec4& expected);
 void verifyPointer								(tcu::ResultCollector& result, QueriedState& state, const void* expected);
 void verifyNormalizedI32Vec4					(tcu::ResultCollector& result, QueriedState& state, const tcu::IVec4& expected);
 
@@ -409,6 +424,7 @@ void verifyStateFloatMin						(tcu::ResultCollector& result, glu::CallLogWrapper
 void verifyStateFloatMax						(tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLenum target,		float maxValue,			QueryType type);
 void verifyStatePointer							(tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLenum target,		const void* expected,	QueryType type);
 void verifyStateIndexedBoolean					(tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLenum target,		int index,				bool expected,				QueryType type);
+void verifyStateIndexedBooleanVec4				(tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLenum target,		int index,				const tcu::BVec4& expected,	QueryType type);
 void verifyStateIndexedInteger					(tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLenum target,		int index,				int expected,				QueryType type);
 void verifyStateIndexedIntegerMin				(tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLenum target,		int index,				int minValue,				QueryType type);
 void verifyStateAttributeInteger				(tcu::ResultCollector& result, glu::CallLogWrapper& gl, glw::GLenum target,		int index,				int expected,				QueryType type);
