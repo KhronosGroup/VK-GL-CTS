@@ -29,6 +29,7 @@
 #include "deStringUtil.hpp"
 #include "deFloat16.h"
 #include "deUniquePtr.hpp"
+#include "deArrayUtil.hpp"
 
 #include "tcuTestLog.hpp"
 #include "tcuPixelFormat.hpp"

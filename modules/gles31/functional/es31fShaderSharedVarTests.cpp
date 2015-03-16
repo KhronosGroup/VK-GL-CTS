@@ -33,6 +33,7 @@
 #include "tcuVectorUtil.hpp"
 #include "tcuFormatUtil.hpp"
 #include "deRandom.hpp"
+#include "deArrayUtil.hpp"
 #include "glwFunctions.hpp"
 #include "glwEnums.hpp"
 

@@ -32,6 +32,7 @@
 #include "deRandom.hpp"
 #include "deMath.h"
 #include "deString.h"
+#include "deArrayUtil.hpp"
 
 namespace deqp
 {

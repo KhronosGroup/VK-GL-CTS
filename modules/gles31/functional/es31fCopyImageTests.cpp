@@ -53,6 +53,7 @@
 #include "deRandom.hpp"
 #include "deStringUtil.hpp"
 #include "deUniquePtr.hpp"
+#include "deArrayUtil.hpp"
 
 #include <map>
 #include <string>

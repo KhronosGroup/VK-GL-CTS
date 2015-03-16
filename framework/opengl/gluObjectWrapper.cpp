@@ -26,6 +26,7 @@
 #include "gluStrUtil.hpp"
 #include "glwFunctions.hpp"
 #include "glwEnums.hpp"
+#include "deArrayUtil.hpp"
 
 #include <sstream>
 

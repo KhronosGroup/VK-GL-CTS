@@ -23,6 +23,7 @@
 
 #include "gluShaderUtil.hpp"
 #include "glwEnums.hpp"
+#include "deArrayUtil.hpp"
 
 namespace glu
 {

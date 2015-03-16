@@ -50,6 +50,7 @@
 #include "tcuVectorUtil.hpp"
 
 #include "deRandom.hpp"
+#include "deArrayUtil.hpp"
 #include "deStringUtil.hpp"
 #include "deUniquePtr.hpp"
 

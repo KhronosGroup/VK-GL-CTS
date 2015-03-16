@@ -36,6 +36,7 @@
 #include "gluShaderProgram.hpp"
 #include "deMemory.h"
 #include "deStringUtil.hpp"
+#include "deArrayUtil.hpp"
 
 #include <algorithm>
 

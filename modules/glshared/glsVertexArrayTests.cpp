@@ -44,6 +44,7 @@
 
 #include "deMath.h"
 #include "deStringUtil.hpp"
+#include "deArrayUtil.hpp"
 
 #include <cstring>
 #include <cmath>
