@@ -6195,13 +6195,6 @@ static void generateTransformFeedbackResourceListBlockContents (Context& context
 		const ResourceDefinition::Node::SharedPtr variable	(new ResourceDefinition::Variable(xfbTarget, glu::TYPE_FLOAT_VEC4));
 		targetGroup->addChild(new FeedbackResourceListTestCase(context, variable, "default_block_basic_type"));
 	}
-	// .default_block_struct
-	{
-		const ResourceDefinition::Node::SharedPtr xfbTarget	(new ResourceDefinition::TransformFeedbackTarget(output));
-		const ResourceDefinition::Node::SharedPtr structMbr	(new ResourceDefinition::StructMember(xfbTarget));
-		const ResourceDefinition::Node::SharedPtr variable	(new ResourceDefinition::Variable(structMbr, glu::TYPE_FLOAT_VEC4));
-		targetGroup->addChild(new FeedbackResourceListTestCase(context, variable, "default_block_struct"));
-	}
 	// .default_block_struct_member
 	{
 		const ResourceDefinition::Node::SharedPtr structMbr	(new ResourceDefinition::StructMember(output));
@@ -6243,13 +6236,6 @@ static void generateTransformFeedbackVariableBlockContents (Context& context, co
 		const ResourceDefinition::Node::SharedPtr xfbTarget	(new ResourceDefinition::TransformFeedbackTarget(output));
 		const ResourceDefinition::Node::SharedPtr variable	(new ResourceDefinition::Variable(xfbTarget, glu::TYPE_FLOAT_VEC4));
 		targetGroup->addChild(new ResourceTestCase(context, variable, ProgramResourceQueryTestTarget(PROGRAMINTERFACE_TRANSFORM_FEEDBACK_VARYING, TargetProp), "default_block_basic_type"));
-	}
-	// .default_block_struct
-	{
-		const ResourceDefinition::Node::SharedPtr xfbTarget	(new ResourceDefinition::TransformFeedbackTarget(output));
-		const ResourceDefinition::Node::SharedPtr structMbr	(new ResourceDefinition::StructMember(xfbTarget));
-		const ResourceDefinition::Node::SharedPtr variable	(new ResourceDefinition::Variable(structMbr, glu::TYPE_FLOAT_VEC4));
-		targetGroup->addChild(new ResourceTestCase(context, variable, ProgramResourceQueryTestTarget(PROGRAMINTERFACE_TRANSFORM_FEEDBACK_VARYING, TargetProp), "default_block_struct"));
 	}
 	// .default_block_struct_member
 	{
