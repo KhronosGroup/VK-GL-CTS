@@ -992,10 +992,7 @@ TextureCubeGenMipmapCase::IterateResult TextureCubeGenMipmapCase::iterate (void)
 	tcu::TextureCube		resultTexture		(tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8), m_size);
 
 	const int				numLevels			= deLog2Floor32(m_size)+1;
-	tcu::Sampler			sampler				= glu::mapGLSampler(wrapS, wrapT, minFilter, magFilter);
 	vector<float>			texCoord;
-
-	sampler.seamlessCubeMap = true;
 
 	// Initialize texture level 0 with colored grid.
 	for (int face = 0; face < tcu::CUBEFACE_LAST; face++)
