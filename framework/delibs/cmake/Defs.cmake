@@ -39,6 +39,22 @@ macro (DE_MAKE_ENV_BOOL BASE VALUE)
 	endif ()
 endmacro ()
 
+# Add build type release with asserts
+set(CMAKE_CXX_FLAGS_RELEASEWITHASSERTS ${CMAKE_CXX_FLAGS_RELEASE})
+set(CMAKE_C_FLAGS_RELEASEWITHASSERTS ${CMAKE_C_FLAGS_RELEASE})
+set(CMAKE_EXE_LINKER_FLAGS_RELEASEWITHASSERTS ${CMAKE_EXE_LINKER_FLAGS_RELEASE})
+set(CMAKE_SHARED_LINKER_FLAGS_RELEASEWITHASSERTS ${CMAKE_SHARED_LINKER_FLAGS_RELEASE})
+
+# cmake doesn't validate build type.
+if (NOT CMAKE_BUILD_TYPE STREQUAL "Debug"
+	AND NOT CMAKE_BUILD_TYPE STREQUAL "Release"
+	AND NOT CMAKE_BUILD_TYPE STREQUAL "RelWithAsserts"
+	AND NOT CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo"
+	AND NOT CMAKE_BUILD_TYPE STREQUAL "MinSizeRel")
+
+	message(FATAL_ERROR "Unknown build type ${CMAKE_BUILD_TYPE} available build types Debug, Release, RelWithAsserts, RelWithDebInfo and MinSizeRel")
+endif()
+
 # Os detection
 if (NOT DEFINED DE_OS)
 	if (WIN32)
@@ -133,7 +149,7 @@ endif ()
 
 # Debug definitions
 if (NOT DEFINED DE_DEBUG)
-	if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+	if (CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "RelWithAsserts")
 		set(DE_DEBUG 1)
 	else ()
 		set(DE_DEBUG 0)
