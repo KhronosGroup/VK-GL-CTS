@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision 29570.
+ * Generated from Khronos GL API description (gl.xml) revision 30159.
  */
 
 const char* getErrorName (int value)
@@ -884,6 +884,8 @@ const char* getPixelFormatName (int value)
 		case GL_DEPTH_COMPONENT32:	return "GL_DEPTH_COMPONENT32";
 		case GL_SRGB:				return "GL_SRGB";
 		case GL_SRGB_ALPHA:			return "GL_SRGB_ALPHA";
+		case GL_SR8_EXT:			return "GL_SR8_EXT";
+		case GL_SRG8_EXT:			return "GL_SRG8_EXT";
 		default:					return DE_NULL;
 	}
 }

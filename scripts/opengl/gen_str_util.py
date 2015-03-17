@@ -554,6 +554,10 @@ ENUM_GROUPS = [
 		# EXT_sRGB
 		"SRGB",
 		"SRGB_ALPHA",
+
+		# GL_EXT_texture_sRGB_R8 & RG8
+		"SR8_EXT",
+		"SRG8_EXT",
 		]),
 
 	("CompressedTexFormat", [

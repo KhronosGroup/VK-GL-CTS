@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision 29570.
+ * Generated from Khronos GL API description (gl.xml) revision 30159.
  */
 #define GL_DEPTH_BUFFER_BIT												0x00000100
 #define GL_STENCIL_BUFFER_BIT											0x00000400
@@ -578,6 +578,7 @@
 #define GL_QUERY														0x82E3
 #define GL_QUERY_KHR													0x82E3
 #define GL_PROGRAM_PIPELINE												0x82E4
+#define GL_PROGRAM_PIPELINE_KHR											0x82E4
 #define GL_MAX_VERTEX_ATTRIB_STRIDE										0x82E5
 #define GL_SAMPLER														0x82E6
 #define GL_SAMPLER_KHR													0x82E6
@@ -585,7 +586,6 @@
 #define GL_MAX_LABEL_LENGTH_KHR											0x82E8
 #define GL_NUM_SHADING_LANGUAGE_VERSIONS								0x82E9
 #define GL_QUERY_TARGET													0x82EA
-#define GL_TEXTURE_BINDING												0x82EB
 #define GL_MAX_CULL_DISTANCES											0x82F9
 #define GL_MAX_COMBINED_CLIP_AND_CULL_DISTANCES							0x82FA
 #define GL_CONTEXT_RELEASE_BEHAVIOR										0x82FB
@@ -1214,6 +1214,8 @@
 #define GL_SIGNED_NORMALIZED											0x8F9C
 #define GL_PRIMITIVE_RESTART											0x8F9D
 #define GL_PRIMITIVE_RESTART_INDEX										0x8F9E
+#define GL_SR8_EXT														0x8FBD
+#define GL_SRG8_EXT														0x8FBE
 #define GL_DOUBLE_VEC2													0x8FFC
 #define GL_DOUBLE_VEC3													0x8FFD
 #define GL_DOUBLE_VEC4													0x8FFE

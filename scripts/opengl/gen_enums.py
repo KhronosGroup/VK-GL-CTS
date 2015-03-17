@@ -35,4 +35,4 @@ def genEnums (iface):
 if __name__ == "__main__":
 	import logging, sys
 	logging.basicConfig(stream=sys.stderr, level=logging.INFO)
-	genEnums(getGLInterface())
+	genEnums(getHybridInterface())
