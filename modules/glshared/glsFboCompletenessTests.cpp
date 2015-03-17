@@ -207,6 +207,16 @@ static const FormatKey s_oesRgb8Rgba8TexFormats[] =
 	GLS_UNSIZED_FORMATKEY(GL_RGBA,		GL_UNSIGNED_BYTE),
 };
 
+static const FormatKey s_extTextureSRGBR8Formats[] =
+{
+	GL_SR8_EXT,
+};
+
+static const FormatKey s_extTextureSRGBRG8Formats[] =
+{
+	GL_SRG8_EXT,
+};
+
 static const FormatExtEntry s_esExtFormats[] =
 {
 	{
@@ -377,6 +387,17 @@ static const FormatExtEntry s_esExtFormats[] =
 		"GL_EXT_texture_type_2_10_10_10_REV GL_OES_required_internalformat",
 		TEXTURE_VALID, // explicitly unrenderable
 		GLS_ARRAY_RANGE(s_oesRequiredInternalFormat10bitColorFormats)
+	},
+
+	{
+		"GL_EXT_texture_sRGB_R8",
+		TEXTURE_VALID,
+		GLS_ARRAY_RANGE(s_extTextureSRGBR8Formats)
+	},
+	{
+		"GL_EXT_texture_sRGB_RG8",
+		TEXTURE_VALID,
+		GLS_ARRAY_RANGE(s_extTextureSRGBRG8Formats)
 	},
 };
 
