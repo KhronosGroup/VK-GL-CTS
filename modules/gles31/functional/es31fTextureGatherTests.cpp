@@ -2267,7 +2267,9 @@ void TextureGatherTests::init (void)
 							}
 						}
 
-						if (!isDepthFormat(format)) // What shadow textures should return for incomplete textures is unclear.
+						// What shadow textures should return for incomplete textures is unclear.
+						// Integer and unsigned integer lookups from incomplete textures return undefined values.
+						if (!isDepthFormat(format) && !isSIntFormatType(format.type) && !isUIntFormatType(format.type))
 						{
 							TestCaseGroup* const incompleteGroup = new TestCaseGroup(m_context, "incomplete", "Test that textureGather* takes components from (0,0,0,1) for incomplete textures");
 							formatGroup->addChild(incompleteGroup);
