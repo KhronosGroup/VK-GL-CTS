@@ -1093,10 +1093,7 @@ void MultiThreadedObjectTest::createDestroyObjects (TestThread& thread, int coun
 
 				case TYPE_WINDOW:
 				{
-					const eglu::NativeWindowFactory*	windowFactory	= eglu::selectNativeWindowFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
-
-					if (!windowFactory)
-						TCU_THROW(NotSupportedError, "Windows not supported");
+					const eglu::NativeWindowFactory&	windowFactory	= eglu::selectNativeWindowFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
 
 					if ((m_types & TYPE_SINGLE_WINDOW) != 0)
 					{
@@ -1107,7 +1104,7 @@ void MultiThreadedObjectTest::createDestroyObjects (TestThread& thread, int coun
 
 							try
 							{
-								window = windowFactory->createWindow(&m_eglTestCtx.getNativeDisplay(), m_display, m_config, DE_NULL, eglu::WindowParams(64, 64, eglu::parseWindowVisibility(m_testCtx.getCommandLine())));
+								window = windowFactory.createWindow(&m_eglTestCtx.getNativeDisplay(), m_display, m_config, DE_NULL, eglu::WindowParams(64, 64, eglu::parseWindowVisibility(m_testCtx.getCommandLine())));
 								surface = eglu::createWindowSurface(m_eglTestCtx.getNativeDisplay(), *window, m_display, m_config, DE_NULL);
 
 								thread.getLog() << ThreadLog::BeginMessage << surface << " = eglCreateWindowSurface()" << ThreadLog::EndMessage;
@@ -1134,7 +1131,7 @@ void MultiThreadedObjectTest::createDestroyObjects (TestThread& thread, int coun
 
 						try
 						{
-							window	= windowFactory->createWindow(&m_eglTestCtx.getNativeDisplay(), m_display, m_config, DE_NULL, eglu::WindowParams(64, 64, eglu::parseWindowVisibility(m_testCtx.getCommandLine())));
+							window	= windowFactory.createWindow(&m_eglTestCtx.getNativeDisplay(), m_display, m_config, DE_NULL, eglu::WindowParams(64, 64, eglu::parseWindowVisibility(m_testCtx.getCommandLine())));
 							surface	= eglu::createWindowSurface(m_eglTestCtx.getNativeDisplay(), *window, m_display, m_config, DE_NULL);
 
 							thread.getLog() << ThreadLog::BeginMessage << surface << " = eglCreateWindowSurface()" << ThreadLog::EndMessage;
@@ -1153,13 +1150,13 @@ void MultiThreadedObjectTest::createDestroyObjects (TestThread& thread, int coun
 
 				case TYPE_PIXMAP:
 				{
-					const eglu::NativePixmapFactory*	pixmapFactory	= eglu::selectNativePixmapFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
+					const eglu::NativePixmapFactory&	pixmapFactory	= eglu::selectNativePixmapFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
 					eglu::NativePixmap* 				pixmap			= DE_NULL;
 					EGLSurface							surface			= EGL_NO_SURFACE;
 
 					try
 					{
-						pixmap	= pixmapFactory->createPixmap(&m_eglTestCtx.getNativeDisplay(), m_display, m_config, DE_NULL, 64, 64);
+						pixmap	= pixmapFactory.createPixmap(&m_eglTestCtx.getNativeDisplay(), m_display, m_config, DE_NULL, 64, 64);
 						surface	= eglu::createPixmapSurface(m_eglTestCtx.getNativeDisplay(), *pixmap, m_display, m_config, DE_NULL);
 
 						thread.getLog() << ThreadLog::BeginMessage << surface << " = eglCreatePixmapSurface()" << ThreadLog::EndMessage;

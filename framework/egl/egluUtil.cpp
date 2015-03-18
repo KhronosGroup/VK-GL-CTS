@@ -438,14 +438,14 @@ vector<EGLint> toLegacyAttribList (const EGLAttrib* attribs)
 }
 
 template<typename Factory>
-static const Factory* selectFactory (const tcu::FactoryRegistry<Factory>& registry, const char* objectTypeName, const char* cmdLineArg)
+static const Factory& selectFactory (const tcu::FactoryRegistry<Factory>& registry, const char* objectTypeName, const char* cmdLineArg)
 {
 	if (cmdLineArg)
 	{
 		const Factory* factory = registry.getFactoryByName(cmdLineArg);
 
 		if (factory)
-			return factory;
+			return *factory;
 		else
 		{
 			tcu::print("ERROR: Unknown or unsupported EGL %s type '%s'", objectTypeName, cmdLineArg);
@@ -457,22 +457,22 @@ static const Factory* selectFactory (const tcu::FactoryRegistry<Factory>& regist
 		}
 	}
 	else if (!registry.empty())
-		return registry.getDefaultFactory();
+		return *registry.getDefaultFactory();
 	else
-		return DE_NULL;
+		TCU_THROW(NotSupportedError, (string("No factory supporting EGL '") + objectTypeName + "' type").c_str());
 }
 
-const NativeDisplayFactory* selectNativeDisplayFactory (const NativeDisplayFactoryRegistry& registry, const tcu::CommandLine& cmdLine)
+const NativeDisplayFactory& selectNativeDisplayFactory (const NativeDisplayFactoryRegistry& registry, const tcu::CommandLine& cmdLine)
 {
 	return selectFactory(registry, "display", cmdLine.getEGLDisplayType());
 }
 
-const NativeWindowFactory* selectNativeWindowFactory (const NativeDisplayFactory& factory, const tcu::CommandLine& cmdLine)
+const NativeWindowFactory& selectNativeWindowFactory (const NativeDisplayFactory& factory, const tcu::CommandLine& cmdLine)
 {
 	return selectFactory(factory.getNativeWindowRegistry(), "window", cmdLine.getEGLWindowType());
 }
 
-const NativePixmapFactory* selectNativePixmapFactory (const NativeDisplayFactory& factory, const tcu::CommandLine& cmdLine)
+const NativePixmapFactory& selectNativePixmapFactory (const NativeDisplayFactory& factory, const tcu::CommandLine& cmdLine)
 {
 	return selectFactory(factory.getNativePixmapRegistry(), "pixmap", cmdLine.getEGLPixmapType());
 }

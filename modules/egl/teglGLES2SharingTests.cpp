@@ -149,14 +149,11 @@ TestCase::IterateResult GLES2SharingTest::iterate (void)
 	const Library&						egl				= m_eglTestCtx.getLibrary();
 	tcu::TestLog&						log				= m_testCtx.getLog();
 	eglu::UniqueDisplay					display			(egl, eglu::getAndInitDisplay(m_eglTestCtx.getNativeDisplay()));
-	const eglu::NativeWindowFactory*	windowFactory	= eglu::selectNativeWindowFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
+	const eglu::NativeWindowFactory&	windowFactory	= eglu::selectNativeWindowFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
 	EGLConfig							config;
 	bool								isOk			= true;
 	EGLContext							contextA		= EGL_NO_CONTEXT;
 	EGLContext							contextB		= EGL_NO_CONTEXT;
-
-	if (!windowFactory)
-		TCU_THROW(NotSupportedError, "Windows not supported");
 
 	{
 		const EGLint attribList[] =
@@ -172,7 +169,7 @@ TestCase::IterateResult GLES2SharingTest::iterate (void)
 
 	try
 	{
-		de::UniquePtr<eglu::NativeWindow>	window	(windowFactory->createWindow(&m_eglTestCtx.getNativeDisplay(), *display, config, DE_NULL, eglu::WindowParams(480, 480, eglu::parseWindowVisibility(m_testCtx.getCommandLine()))));
+		de::UniquePtr<eglu::NativeWindow>	window	(windowFactory.createWindow(&m_eglTestCtx.getNativeDisplay(), *display, config, DE_NULL, eglu::WindowParams(480, 480, eglu::parseWindowVisibility(m_testCtx.getCommandLine()))));
 		eglu::UniqueSurface					surface	(egl, *display, eglu::createWindowSurface(m_eglTestCtx.getNativeDisplay(), *window, *display, config, DE_NULL));
 
 		m_log << tcu::TestLog::Message << "Create context A (share_context = EGL_NO_CONTEXT)" << tcu::TestLog::EndMessage;

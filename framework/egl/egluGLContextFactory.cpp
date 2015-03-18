@@ -557,18 +557,30 @@ GLContextFactory::GLContextFactory (const NativeDisplayFactoryRegistry& displayF
 
 glu::RenderContext* GLContextFactory::createContext (const glu::RenderConfig& config, const tcu::CommandLine& cmdLine) const
 {
-	const NativeDisplayFactory* displayFactory = selectNativeDisplayFactory(m_displayFactoryRegistry, cmdLine);
+	const NativeDisplayFactory& displayFactory = selectNativeDisplayFactory(m_displayFactoryRegistry, cmdLine);
 
-	if (displayFactory)
+	const NativeWindowFactory*	windowFactory;
+	const NativePixmapFactory*	pixmapFactory;
+
+	try
 	{
-		// \note windowFactory & pixmapFactory are not mandatory
-		const NativeWindowFactory*	windowFactory	= selectNativeWindowFactory(*displayFactory, cmdLine);
-		const NativePixmapFactory*	pixmapFactory	= selectNativePixmapFactory(*displayFactory, cmdLine);
-
-		return new RenderContext(displayFactory, windowFactory, pixmapFactory, config);
+		windowFactory = &selectNativeWindowFactory(displayFactory, cmdLine);
 	}
-	else
-		TCU_THROW(NotSupportedError, "No EGL displays available");
+	catch (const tcu::NotSupportedError&)
+	{
+		windowFactory = DE_NULL;
+	}
+
+	try
+	{
+		pixmapFactory = &selectNativePixmapFactory(displayFactory, cmdLine);
+	}
+	catch (const tcu::NotSupportedError&)
+	{
+		pixmapFactory = DE_NULL;
+	}
+
+	return new RenderContext(&displayFactory, windowFactory, pixmapFactory, config);
 }
 
 } // eglu

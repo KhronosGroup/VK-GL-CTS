@@ -163,14 +163,11 @@ void ResizeTest::init (void)
 																		   EGL_CONFIG_ID);
 	const Visibility			visibility		= eglu::parseWindowVisibility(cmdLine);
 	NativeDisplay&				nativeDisplay	= m_eglTestCtx.getNativeDisplay();
-	const NativeWindowFactory*	windowFactory	= eglu::selectNativeWindowFactory(m_eglTestCtx.getNativeDisplayFactory(),
+	const NativeWindowFactory&	windowFactory	= eglu::selectNativeWindowFactory(m_eglTestCtx.getNativeDisplayFactory(),
 																				  cmdLine);
 
-	if (!windowFactory)
-		TCU_THROW(NotSupportedError, "Windows not supported");
-
 	const WindowParams			windowParams	(m_oldSize.x(), m_oldSize.y(), visibility);
-	MovePtr<NativeWindow>		nativeWindow	(windowFactory->createWindow(&nativeDisplay,
+	MovePtr<NativeWindow>		nativeWindow	(windowFactory.createWindow(&nativeDisplay,
 																			 eglDisplay,
 																			 eglConfig,
 																			 DE_NULL,

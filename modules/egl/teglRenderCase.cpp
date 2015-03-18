@@ -130,15 +130,12 @@ void RenderCase::executeForConfig (EGLDisplay display, EGLConfig config)
 							  string("Config") + de::toString(configId) + "-Window",
 							  string("Config ID ") + de::toString(configId) + ", window surface");
 
-		const eglu::NativeWindowFactory*	windowFactory	= eglu::selectNativeWindowFactory(displayFactory, m_testCtx.getCommandLine());
-
-		if (!windowFactory)
-			TCU_THROW(NotSupportedError, "Windows not supported");
+		const eglu::NativeWindowFactory&	windowFactory	= eglu::selectNativeWindowFactory(displayFactory, m_testCtx.getCommandLine());
 
 		try
 		{
 			const eglu::WindowParams			params		(width, height, eglu::parseWindowVisibility(m_testCtx.getCommandLine()));
-			de::UniquePtr<eglu::NativeWindow>	window		(windowFactory->createWindow(&nativeDisplay, display, config, DE_NULL, params));
+			de::UniquePtr<eglu::NativeWindow>	window		(windowFactory.createWindow(&nativeDisplay, display, config, DE_NULL, params));
 			EGLSurface							eglSurface	= createWindowSurface(nativeDisplay, *window, display, config, DE_NULL);
 			eglu::UniqueSurface					surface		(egl, display, eglSurface);
 
@@ -158,14 +155,11 @@ void RenderCase::executeForConfig (EGLDisplay display, EGLConfig config)
 							  string("Config") + de::toString(configId) + "-Pixmap",
 							  string("Config ID ") + de::toString(configId) + ", pixmap surface");
 
-		const eglu::NativePixmapFactory*	pixmapFactory	= eglu::selectNativePixmapFactory(displayFactory, m_testCtx.getCommandLine());
-
-		if (!pixmapFactory)
-			TCU_THROW(NotSupportedError, "Windows not supported");
+		const eglu::NativePixmapFactory&	pixmapFactory	= eglu::selectNativePixmapFactory(displayFactory, m_testCtx.getCommandLine());
 
 		try
 		{
-			std::auto_ptr<eglu::NativePixmap>	pixmap		(pixmapFactory->createPixmap(&nativeDisplay, display, config, DE_NULL, width, height));
+			std::auto_ptr<eglu::NativePixmap>	pixmap		(pixmapFactory.createPixmap(&nativeDisplay, display, config, DE_NULL, width, height));
 			EGLSurface							eglSurface	= createPixmapSurface(nativeDisplay, *pixmap, display, config, DE_NULL);
 			eglu::UniqueSurface					surface		(egl, display, eglSurface);
 

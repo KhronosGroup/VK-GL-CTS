@@ -272,17 +272,14 @@ void MakeCurrentPerfCase::createWindow (void)
 	const EGLint						width			= 256;
 	const EGLint						height			= 256;
 
-	const eglu::NativeWindowFactory*	windowFactory	= eglu::selectNativeWindowFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
+	const eglu::NativeWindowFactory&	windowFactory	= eglu::selectNativeWindowFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
 
 	eglu::NativeWindow* 				window			= DE_NULL;
 	EGLSurface							surface			= EGL_NO_SURFACE;
 
-	if (!windowFactory)
-		TCU_THROW(NotSupportedError, "Windows not supported");
-
 	try
 	{
-		window	= windowFactory->createWindow(&m_eglTestCtx.getNativeDisplay(), m_display, m_config, DE_NULL, eglu::WindowParams(width, height, eglu::parseWindowVisibility(m_eglTestCtx.getTestContext().getCommandLine())));
+		window	= windowFactory.createWindow(&m_eglTestCtx.getNativeDisplay(), m_display, m_config, DE_NULL, eglu::WindowParams(width, height, eglu::parseWindowVisibility(m_eglTestCtx.getTestContext().getCommandLine())));
 		surface	= eglu::createWindowSurface(m_eglTestCtx.getNativeDisplay(), *window, m_display, m_config, DE_NULL);
 	}
 	catch (...)
@@ -304,17 +301,14 @@ void MakeCurrentPerfCase::createPixmap (void)
 	const EGLint						width			= 256;
 	const EGLint						height			= 256;
 
-	const eglu::NativePixmapFactory*	pixmapFactory	= eglu::selectNativePixmapFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
+	const eglu::NativePixmapFactory&	pixmapFactory	= eglu::selectNativePixmapFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
 
 	eglu::NativePixmap* 				pixmap			= DE_NULL;
 	EGLSurface							surface			= EGL_NO_SURFACE;
 
-	if (!pixmapFactory)
-		TCU_THROW(NotSupportedError, "Pixmaps not supported");
-
 	try
 	{
-		pixmap	= pixmapFactory->createPixmap(&m_eglTestCtx.getNativeDisplay(), m_display, m_config, DE_NULL, width, height);
+		pixmap	= pixmapFactory.createPixmap(&m_eglTestCtx.getNativeDisplay(), m_display, m_config, DE_NULL, width, height);
 		surface	= eglu::createPixmapSurface(m_eglTestCtx.getNativeDisplay(), *pixmap, m_display, m_config, DE_NULL);
 	}
 	catch (...)

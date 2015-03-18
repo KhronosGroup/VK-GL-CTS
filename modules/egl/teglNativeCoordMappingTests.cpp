@@ -500,49 +500,6 @@ bool testNativePixmapCopy (TestLog& log, const Library& egl, eglu::NativePixmap&
 	return isOk;
 }
 
-void checkSupport (NativeCoordMappingCase::NativeType nativeType, const eglu::NativeWindowFactory* windowFactory, const eglu::NativePixmapFactory* pixmapFactory)
-{
-	switch (nativeType)
-	{
-		case NativeCoordMappingCase::NATIVETYPE_WINDOW:
-		{
-			if (!windowFactory)
-				TCU_THROW(NotSupportedError, "Windows not supported");
-
-			if ((windowFactory->getCapabilities() & eglu::NativeWindow::CAPABILITY_READ_SCREEN_PIXELS) == 0)
-				TCU_THROW(NotSupportedError, "Native window doesn't support readPixels()");
-
-			break;
-		}
-
-		case NativeCoordMappingCase::NATIVETYPE_PIXMAP:
-		{
-			if (!pixmapFactory)
-				TCU_THROW(NotSupportedError, "Pixmaps not supported");
-
-			if ((pixmapFactory->getCapabilities() & eglu::NativePixmap::CAPABILITY_READ_PIXELS) == 0)
-				TCU_THROW(NotSupportedError, "Native pixmap doesn't support readPixels()");
-
-			break;
-		}
-
-		case NativeCoordMappingCase::NATIVETYPE_PBUFFER_COPY_TO_PIXMAP:
-		{
-			if (!pixmapFactory)
-				TCU_THROW(NotSupportedError, "Pixmaps not supported");
-
-			if ((pixmapFactory->getCapabilities() & eglu::NativePixmap::CAPABILITY_READ_PIXELS) == 0 ||
-				(pixmapFactory->getCapabilities() & eglu::NativePixmap::CAPABILITY_CREATE_SURFACE_LEGACY) == 0)
-				TCU_THROW(NotSupportedError, "Native pixmap doesn't support readPixels() or legacy create surface");
-
-			break;
-		}
-
-		default:
-			DE_ASSERT(DE_FALSE);
-	}
-}
-
 void NativeCoordMappingCase::executeForConfig (EGLDisplay display, EGLConfig config)
 {
 	const Library&						egl				= m_eglTestCtx.getLibrary();
@@ -551,12 +508,52 @@ void NativeCoordMappingCase::executeForConfig (EGLDisplay display, EGLConfig con
 	const int							waitFrames		= 5;
 	const int							width			= 128;
 	const int							height			= 128;
-	const eglu::NativeWindowFactory*	windowFactory	= eglu::selectNativeWindowFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
-	const eglu::NativePixmapFactory*	pixmapFactory	= eglu::selectNativePixmapFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
+	const eglu::NativeWindowFactory*	windowFactory;
+	const eglu::NativePixmapFactory*	pixmapFactory;
 
 	logConfigInfo(m_testCtx.getLog(), egl, display, config, m_nativeType, waitFrames);
 
-	checkSupport(m_nativeType, windowFactory, pixmapFactory);
+	try
+	{
+		windowFactory = &eglu::selectNativeWindowFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
+
+		if ((windowFactory->getCapabilities() & eglu::NativeWindow::CAPABILITY_READ_SCREEN_PIXELS) == 0)
+			TCU_THROW(NotSupportedError, "Native window doesn't support readPixels()");
+	}
+	catch (const tcu::NotSupportedError&)
+	{
+		if (m_nativeType == NATIVETYPE_WINDOW)
+			throw;
+		else
+			windowFactory = DE_NULL;
+	}
+
+	try
+	{
+		pixmapFactory = &eglu::selectNativePixmapFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
+
+		if (m_nativeType == NATIVETYPE_PIXMAP)
+		{
+			if ((pixmapFactory->getCapabilities() & eglu::NativePixmap::CAPABILITY_READ_PIXELS) == 0)
+				TCU_THROW(NotSupportedError, "Native pixmap doesn't support readPixels()");
+		}
+		else if (m_nativeType == NATIVETYPE_PBUFFER_COPY_TO_PIXMAP)
+		{
+			if ((pixmapFactory->getCapabilities() & eglu::NativePixmap::CAPABILITY_READ_PIXELS) == 0 ||
+				(pixmapFactory->getCapabilities() & eglu::NativePixmap::CAPABILITY_CREATE_SURFACE_LEGACY) == 0)
+				TCU_THROW(NotSupportedError, "Native pixmap doesn't support readPixels() or legacy create surface");
+		}
+	}
+	catch (const tcu::NotSupportedError&)
+	{
+		if (m_nativeType == NATIVETYPE_PIXMAP || m_nativeType == NATIVETYPE_PBUFFER_COPY_TO_PIXMAP)
+			throw;
+		else
+			pixmapFactory = DE_NULL;
+	}
+
+	DE_ASSERT(m_nativeType != NATIVETYPE_WINDOW || windowFactory);
+	DE_ASSERT((m_nativeType != NATIVETYPE_PIXMAP && m_nativeType != NATIVETYPE_PBUFFER_COPY_TO_PIXMAP) || pixmapFactory);
 
 	eglu::UniqueContext 	context		(egl, display, createGLES2Context(egl, display, config));
 	glw::Functions			gl;

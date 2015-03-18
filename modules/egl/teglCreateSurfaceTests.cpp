@@ -118,21 +118,18 @@ public:
 		const Library&						egl				= m_eglTestCtx.getLibrary();
 		TestLog&							log				= m_testCtx.getLog();
 		EGLint								id				= eglu::getConfigID(egl, display, config);
-		const eglu::NativeWindowFactory*	windowFactory	= eglu::selectNativeWindowFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
-
-		if (!windowFactory)
-			TCU_THROW(NotSupportedError, "Windows not supported");
+		const eglu::NativeWindowFactory&	windowFactory	= eglu::selectNativeWindowFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
 
 		// \todo [2011-03-23 pyry] Iterate thru all possible combinations of EGL_RENDER_BUFFER, EGL_VG_COLORSPACE and EGL_VG_ALPHA_FORMAT
 
 		if (m_useLegacyCreate)
 		{
-			if ((windowFactory->getCapabilities() & eglu::NativeWindow::CAPABILITY_CREATE_SURFACE_LEGACY) == 0)
+			if ((windowFactory.getCapabilities() & eglu::NativeWindow::CAPABILITY_CREATE_SURFACE_LEGACY) == 0)
 				TCU_THROW(NotSupportedError, "Native window doesn't support legacy eglCreateWindowSurface()");
 		}
 		else
 		{
-			if ((windowFactory->getCapabilities() & eglu::NativeWindow::CAPABILITY_CREATE_SURFACE_PLATFORM) == 0)
+			if ((windowFactory.getCapabilities() & eglu::NativeWindow::CAPABILITY_CREATE_SURFACE_PLATFORM) == 0)
 				TCU_THROW(NotSupportedError, "Native window doesn't support eglCreatePlatformWindowSurfaceEXT()");
 		}
 
@@ -142,7 +139,7 @@ public:
 		{
 			const int							width			= 64;
 			const int							height			= 64;
-			de::UniquePtr<eglu::NativeWindow>	window			(windowFactory->createWindow(&m_eglTestCtx.getNativeDisplay(), display, config, DE_NULL, eglu::WindowParams(width, height, eglu::parseWindowVisibility(m_testCtx.getCommandLine()))));
+			de::UniquePtr<eglu::NativeWindow>	window			(windowFactory.createWindow(&m_eglTestCtx.getNativeDisplay(), display, config, DE_NULL, eglu::WindowParams(width, height, eglu::parseWindowVisibility(m_testCtx.getCommandLine()))));
 			eglu::UniqueSurface					surface			(egl, display, createWindowSurface(display, config, m_eglTestCtx.getNativeDisplay(), *window, m_useLegacyCreate));
 
 			EGLint								windowWidth		= 0;
@@ -179,21 +176,18 @@ public:
 		const Library&						egl				= m_eglTestCtx.getLibrary();
 		TestLog&							log				= m_testCtx.getLog();
 		EGLint								id				= eglu::getConfigID(egl, display, config);
-		const eglu::NativePixmapFactory*	pixmapFactory	= eglu::selectNativePixmapFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
-
-		if (!pixmapFactory)
-			TCU_THROW(NotSupportedError, "Pixmaps not supported");
+		const eglu::NativePixmapFactory&	pixmapFactory	= eglu::selectNativePixmapFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
 
 		// \todo [2011-03-23 pyry] Iterate thru all possible combinations of EGL_RENDER_BUFFER, EGL_VG_COLORSPACE and EGL_VG_ALPHA_FORMAT
 
 		if (m_useLegacyCreate)
 		{
-			if ((pixmapFactory->getCapabilities() & eglu::NativePixmap::CAPABILITY_CREATE_SURFACE_LEGACY) == 0)
+			if ((pixmapFactory.getCapabilities() & eglu::NativePixmap::CAPABILITY_CREATE_SURFACE_LEGACY) == 0)
 				TCU_THROW(NotSupportedError, "Native pixmap doesn't support legacy eglCreatePixmapSurface()");
 		}
 		else
 		{
-			if ((pixmapFactory->getCapabilities() & eglu::NativePixmap::CAPABILITY_CREATE_SURFACE_PLATFORM) == 0)
+			if ((pixmapFactory.getCapabilities() & eglu::NativePixmap::CAPABILITY_CREATE_SURFACE_PLATFORM) == 0)
 				TCU_THROW(NotSupportedError, "Native pixmap doesn't support eglCreatePlatformPixmapSurfaceEXT()");
 		}
 
@@ -203,7 +197,7 @@ public:
 		{
 			const int							width			= 64;
 			const int							height			= 64;
-			de::UniquePtr<eglu::NativePixmap>	pixmap			(pixmapFactory->createPixmap(&m_eglTestCtx.getNativeDisplay(), display, config, DE_NULL, width, height));
+			de::UniquePtr<eglu::NativePixmap>	pixmap			(pixmapFactory.createPixmap(&m_eglTestCtx.getNativeDisplay(), display, config, DE_NULL, width, height));
 			eglu::UniqueSurface					surface			(egl, display, createPixmapSurface(display, config, m_eglTestCtx.getNativeDisplay(), *pixmap, m_useLegacyCreate));
 			EGLint								pixmapWidth		= 0;
 			EGLint								pixmapHeight	= 0;

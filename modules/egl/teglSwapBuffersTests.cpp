@@ -270,12 +270,9 @@ void SwapBuffersTest::executeForConfig (EGLDisplay display, EGLConfig config)
 	const string						configIdStr	(getConfigIdString(egl, display, config));
 	tcu::ScopedLogSection				logSection	(m_testCtx.getLog(), ("Config ID " + configIdStr).c_str(), ("Config ID " + configIdStr).c_str());
 	const int							waitFrames	= 5;
-	const eglu::NativeWindowFactory*	factory		= eglu::selectNativeWindowFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
+	const eglu::NativeWindowFactory&	factory		= eglu::selectNativeWindowFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
 
-	if (!factory)
-		TCU_THROW(NotSupportedError, "Windows not supported");
-
-	if ((factory->getCapabilities() & eglu::NativeWindow::CAPABILITY_READ_SCREEN_PIXELS) == 0)
+	if ((factory.getCapabilities() & eglu::NativeWindow::CAPABILITY_READ_SCREEN_PIXELS) == 0)
 		TCU_THROW(NotSupportedError, "eglu::NativeWindow doesn't support readScreenPixels()");
 
 	{
@@ -292,7 +289,7 @@ void SwapBuffersTest::executeForConfig (EGLDisplay display, EGLConfig config)
 		log << TestLog::Message << "Waiting " << waitFrames * 16 << "ms after eglSwapBuffers() and glFinish() for frame to become visible" << TestLog::EndMessage;
 	}
 
-	de::UniquePtr<eglu::NativeWindow>	window	(factory->createWindow(&m_eglTestCtx.getNativeDisplay(), display, config, DE_NULL, eglu::WindowParams(128, 128, eglu::WindowParams::VISIBILITY_VISIBLE)));
+	de::UniquePtr<eglu::NativeWindow>	window	(factory.createWindow(&m_eglTestCtx.getNativeDisplay(), display, config, DE_NULL, eglu::WindowParams(128, 128, eglu::WindowParams::VISIBILITY_VISIBLE)));
 
 	eglu::UniqueSurface					surface	(egl, display, eglu::createWindowSurface(m_eglTestCtx.getNativeDisplay(), *window, display, config, DE_NULL));
 	eglu::UniqueContext					context	(egl, display, createGLES2Context(egl, display, config));

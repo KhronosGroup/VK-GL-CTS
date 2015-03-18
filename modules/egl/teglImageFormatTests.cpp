@@ -801,16 +801,13 @@ void ImageFormatCase::checkExtensions (void)
 void ImageFormatCase::init (void)
 {
 	const Library&						egl				= m_eglTestCtx.getLibrary();
-	const eglu::NativeWindowFactory*	windowFactory	= eglu::selectNativeWindowFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
-
-	if (!windowFactory)
-		TCU_THROW(NotSupportedError, "Windows not supported");
+	const eglu::NativeWindowFactory&	windowFactory	= eglu::selectNativeWindowFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
 
 	try
 	{
 		m_display	= eglu::getAndInitDisplay(m_eglTestCtx.getNativeDisplay());
 		m_config	= getConfig();
-		m_window	= windowFactory->createWindow(&m_eglTestCtx.getNativeDisplay(), m_display, m_config, DE_NULL, eglu::WindowParams(480, 480, eglu::parseWindowVisibility(m_testCtx.getCommandLine())));
+		m_window	= windowFactory.createWindow(&m_eglTestCtx.getNativeDisplay(), m_display, m_config, DE_NULL, eglu::WindowParams(480, 480, eglu::parseWindowVisibility(m_testCtx.getCommandLine())));
 		m_surface	= eglu::createWindowSurface(m_eglTestCtx.getNativeDisplay(), *m_window, m_display, m_config, DE_NULL);
 
 		{
