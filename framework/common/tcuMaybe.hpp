@@ -47,7 +47,7 @@ public:
 	const T&	operator*		(void) const { return get(); }
 
 	const T*	operator->		(void) const;
-				operator bool	(void) const { return m_ptr; }
+				operator bool	(void) const { return !!m_ptr; }
 
 private:
 	T*				m_ptr;

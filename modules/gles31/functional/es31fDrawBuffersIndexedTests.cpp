@@ -413,7 +413,7 @@ void genRenderbuffers (const glw::Functions&			gl,
 		GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to create renderbuffer.");
 	}
 
-	gl.drawBuffers(bufs.size(), &(bufs[0]));
+	gl.drawBuffers((glw::GLsizei)bufs.size(), &(bufs[0]));
 
 	for (int renderbufferNdx = 0; renderbufferNdx < (int)drawBuffers.size(); renderbufferNdx++)
 	{
@@ -995,7 +995,7 @@ void renderQuad (TestLog&						log,
 
 	setCommonBlendState(gl, postCommonBlendState);
 
-	gl.drawBuffers(bufs.size(), &(bufs[0]));
+	gl.drawBuffers((glw::GLsizei)bufs.size(), &(bufs[0]));
 
 	if (requiresBlendBarriers)
 		gl.blendBarrierKHR();
