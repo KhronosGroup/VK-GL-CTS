@@ -634,9 +634,6 @@ void NegativeApiTests::init (void)
 			{
 				expectNoSurface(eglCreatePixmapSurface(display, pixmapConfig, DE_NULL, s_emptyAttribList));
 				expectError(EGL_BAD_NATIVE_PIXMAP);
-
-				expectNoSurface(eglCreatePixmapSurface(display, pixmapConfig, (EGLNativePixmapType)-1, s_emptyAttribList));
-				expectError(EGL_BAD_NATIVE_PIXMAP);
 			}
 
 			log << TestLog::EndSection;
@@ -671,9 +668,6 @@ void NegativeApiTests::init (void)
 			if (getConfig(&windowConfig, FilterList() << surfaceBits<EGL_WINDOW_BIT>))
 			{
 				expectNoSurface(eglCreateWindowSurface(display, windowConfig, DE_NULL, s_emptyAttribList));
-				expectError(EGL_BAD_NATIVE_WINDOW);
-
-				expectNoSurface(eglCreateWindowSurface(display, windowConfig, (EGLNativeWindowType)-1, s_emptyAttribList));
 				expectError(EGL_BAD_NATIVE_WINDOW);
 			}
 
