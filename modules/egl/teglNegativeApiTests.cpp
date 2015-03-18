@@ -475,14 +475,13 @@ void NegativeApiTests::init (void)
 
 	static const EGLint s_invalidGenericPbufferAttrib0[] = { 0, EGL_NONE };
 	static const EGLint s_invalidGenericPbufferAttrib1[] = { (EGLint)0xffffffff };
-	static const EGLint s_invalidGenericPbufferAttrib2[] = { EGL_WIDTH, 64, EGL_HEIGHT, -1, EGL_NONE };
-	static const EGLint s_invalidGenericPbufferAttrib3[] = { EGL_WIDTH, -1, EGL_HEIGHT, 64, EGL_NONE };
+	static const EGLint s_negativeWidthPbufferAttrib[] = { EGL_WIDTH, -1, EGL_HEIGHT, 64, EGL_NONE };
+	static const EGLint s_negativeHeightPbufferAttrib[] = { EGL_WIDTH, 64, EGL_HEIGHT, -1, EGL_NONE };
+	static const EGLint s_negativeWidthAndHeightPbufferAttrib[] = { EGL_WIDTH, -1, EGL_HEIGHT, -1, EGL_NONE };
 	static const EGLint* s_invalidGenericPbufferAttribs[] =
 	{
 		s_invalidGenericPbufferAttrib0,
 		s_invalidGenericPbufferAttrib1,
-		s_invalidGenericPbufferAttrib2,
-		s_invalidGenericPbufferAttrib3
 	};
 
 	static const EGLint s_invalidNoEsPbufferAttrib0[] = { EGL_MIPMAP_TEXTURE, EGL_TRUE, EGL_WIDTH, 64, EGL_HEIGHT, 64, EGL_NONE };
@@ -602,6 +601,23 @@ void NegativeApiTests::init (void)
 			}
 
 			log << TestLog::EndSection;
+
+			log << TestLog::Section("Test8", "EGL_BAD_PARAMETER is generated if EGL_WIDTH or EGL_HEIGHT is negative");
+
+			if (getConfig(&genericConfig, FilterList() << surfaceBits<EGL_PBUFFER_BIT>))
+			{
+				expectNoSurface(eglCreatePbufferSurface(display, genericConfig, s_negativeWidthPbufferAttrib));
+				expectError(EGL_BAD_PARAMETER);
+
+				expectNoSurface(eglCreatePbufferSurface(display, genericConfig, s_negativeHeightPbufferAttrib));
+				expectError(EGL_BAD_PARAMETER);
+
+				expectNoSurface(eglCreatePbufferSurface(display, genericConfig, s_negativeWidthAndHeightPbufferAttrib));
+				expectError(EGL_BAD_PARAMETER);
+			}
+
+			log << TestLog::EndSection;
+
 		});
 
 	TEGL_ADD_API_CASE(create_pixmap_surface, "eglCreatePixmapSurface() negative tests",
