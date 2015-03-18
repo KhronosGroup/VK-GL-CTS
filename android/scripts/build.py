@@ -94,7 +94,7 @@ def buildNative (buildRoot, libTargetDir, nativeLib, buildType):
 	else:
 		assert not os.path.exists(os.path.join(libsDir, "gdbserver"))
 
-def buildApp (buildRoot, isRelease, javaApi):
+def buildApp (buildRoot, androidBuildType, javaApi):
 	appDir	= os.path.join(buildRoot, "package")
 
 	# Set up app
@@ -118,7 +118,7 @@ def buildApp (buildRoot, isRelease, javaApi):
 	# Build
 	common.execArgs([
 			common.ANT_BIN,
-			"release" if isRelease else "debug",
+			androidBuildType,
 			"-Dsource.dir=" + os.path.join(common.ANDROID_DIR, "package", "src"),
 			"-Dresource.absolute.dir=" + os.path.join(common.ANDROID_DIR, "package", "res")
 		])
@@ -144,7 +144,7 @@ def signApp (keystore, keyname, storepass, keypass):
 			'bin/dEQP-release.apk'
 		])
 
-def build (buildRoot=common.ANDROID_DIR, isRelease=False, nativeBuildType="Release", javaApi=common.ANDROID_JAVA_API, doParallelBuild=False):
+def build (buildRoot=common.ANDROID_DIR, androidBuildType='debug', nativeBuildType="Release", javaApi=common.ANDROID_JAVA_API, doParallelBuild=False):
 	curDir = os.getcwd()
 
 	try:
@@ -176,7 +176,7 @@ def build (buildRoot=common.ANDROID_DIR, isRelease=False, nativeBuildType="Relea
 			shutil.copytree(assetsSrcDir, assetsDstDir)
 
 		# Build java code and .apk
-		buildApp(buildRoot, isRelease, javaApi)
+		buildApp(buildRoot, androidBuildType, javaApi)
 
 	finally:
 		# Restore working dir
@@ -190,10 +190,11 @@ def dumpConfig ():
 
 if __name__ == "__main__":
 	nativeBuildTypes = ['Release', 'Debug', 'MinSizeRel', 'RelWithAsserts', 'RelWithDebInfo']
+	androidBuildTypes = ['debug', 'release']
 
 	parser = argparse.ArgumentParser()
-	parser.add_argument('--is-release', dest='isRelease', type=bool, default=False, help="Build android project in release mode.")
-	parser.add_argument('--native-build-type', dest='nativeBuildType', default="RelWithAsserts", choices=nativeBuildTypes, help="Build type passed cmake when building native code.")
+	parser.add_argument('--android-build-type', dest='androidBuildType', choices=androidBuildTypes, default='debug', help="Build type for android project..")
+	parser.add_argument('--native-build-type', dest='nativeBuildType', default="RelWithAsserts", choices=nativeBuildTypes, help="Build type passed to cmake when building native code.")
 	parser.add_argument('--build-root', dest='buildRoot', default=common.ANDROID_DIR, help="Root directory for storing build results.")
 	parser.add_argument('--dump-config', dest='dumpConfig', action='store_true', help="Print out all configurations variables")
 	parser.add_argument('--java-api', dest='javaApi', default=common.ANDROID_JAVA_API, help="Set the API signature for the java build.")
@@ -204,4 +205,4 @@ if __name__ == "__main__":
 	if args.dumpConfig:
 		dumpConfig()
 
-	build(buildRoot=os.path.abspath(args.buildRoot), isRelease=args.isRelease, nativeBuildType=args.nativeBuildType, javaApi=args.javaApi, doParallelBuild=args.parallelBuild)
+	build(buildRoot=os.path.abspath(args.buildRoot), androidBuildType=args.androidBuildType, nativeBuildType=args.nativeBuildType, javaApi=args.javaApi, doParallelBuild=args.parallelBuild)
