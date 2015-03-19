@@ -94,6 +94,17 @@ detail::EnumPointerFmt								getInvalidateAttachmentStr	(const deUint32* attach
 std::ostream&										operator<<					(std::ostream& str, ApiType apiType);
 std::ostream&										operator<<					(std::ostream& str, ContextType contextType);
 
+// prevent implicit conversions from bool to int.
+//
+// While it is well-defined that (int)true == GL_TRUE and (int)false == GL_FALSE,
+// using these functions to convert non-GL-types suggests a that the calling code is
+// mixing and matching GLboolean and bool types which may not be safe.
+//
+// \note return value is void to prevent compilation. Otherwise this would only break linking.
+void	getBooleanPointerStr	(const bool* value, deInt32 size);	// delete
+void	getBooleanStr			(bool);								// delete
+void	getBooleanName			(bool);								// delete
+
 #include "gluStrUtilPrototypes.inl"
 
 } // glu
