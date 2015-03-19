@@ -29,12 +29,13 @@
 #include "tcuSurface.hpp"
 #include "tcuTexture.hpp"
 #include "tcuVector.hpp"
-#include "gluRenderContext.hpp"
 #include "rrFragmentOperations.hpp"
 #include "rrRenderState.hpp"
 #include "rrRenderer.hpp"
 #include "rrMultisamplePixelBufferAccess.hpp"
+#include "gluRenderContext.hpp"
 #include "gluShaderUtil.hpp"
+#include "deArrayBuffer.hpp"
 
 #include <map>
 #include <vector>
@@ -117,11 +118,11 @@ public:
 										TextureLevelArray	(void);
 										~TextureLevelArray	(void);
 
-	bool								hasLevel			(int level) const	{ return level < DE_LENGTH_OF_ARRAY(m_data) && m_data[level];	}
-	const tcu::PixelBufferAccess&		getLevel			(int level)			{ DE_ASSERT(hasLevel(level)); return m_access[level];			}
-	const tcu::ConstPixelBufferAccess&	getLevel			(int level) const	{ DE_ASSERT(hasLevel(level)); return m_access[level];			}
+	bool								hasLevel			(int level) const	{ return deInBounds32(level, 0, DE_LENGTH_OF_ARRAY(m_data)) && !m_data[level].empty();	}
+	const tcu::PixelBufferAccess&		getLevel			(int level)			{ DE_ASSERT(hasLevel(level)); return m_access[level];									}
+	const tcu::ConstPixelBufferAccess&	getLevel			(int level) const	{ DE_ASSERT(hasLevel(level)); return m_access[level];									}
 
-	const tcu::ConstPixelBufferAccess*	getLevels			(void) const		{ return &m_access[0];											}
+	const tcu::ConstPixelBufferAccess*	getLevels			(void) const		{ return &m_access[0];																	}
 
 	void								allocLevel			(int level, const tcu::TextureFormat& format, int width, int height, int depth);
 	void								clearLevel			(int level);
@@ -129,7 +130,7 @@ public:
 	void								clear				(void);
 
 private:
-	deUint8*							m_data[MAX_TEXTURE_SIZE_LOG2];
+	de::ArrayBuffer<deUint8>			m_data[MAX_TEXTURE_SIZE_LOG2];
 	tcu::PixelBufferAccess				m_access[MAX_TEXTURE_SIZE_LOG2];
 };
 

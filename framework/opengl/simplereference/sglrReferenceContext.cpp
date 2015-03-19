@@ -4679,7 +4679,6 @@ namespace rc
 
 TextureLevelArray::TextureLevelArray (void)
 {
-	deMemset(&m_data[0], 0, sizeof(m_data));
 }
 
 TextureLevelArray::~TextureLevelArray (void)
@@ -4693,34 +4692,30 @@ void TextureLevelArray::clear (void)
 
 	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(m_data); ndx++)
 	{
-		delete[] m_data[ndx];
-
-		m_data[ndx]		= DE_NULL;
-		m_access[ndx]	= PixelBufferAccess();
+		m_data[ndx].clear();
+		m_access[ndx] = PixelBufferAccess();
 	}
 }
 
 void TextureLevelArray::allocLevel (int level, const tcu::TextureFormat& format, int width, int height, int depth)
 {
-	const int	dataSize	= format.getPixelSize()*width*height*depth;
+	const int dataSize = format.getPixelSize()*width*height*depth;
 
-	DE_ASSERT(level < DE_LENGTH_OF_ARRAY(m_data));
+	DE_ASSERT(deInBounds32(level, 0, DE_LENGTH_OF_ARRAY(m_data)));
 
 	if (hasLevel(level))
 		clearLevel(level);
 
-	m_data[level]	= new deUint8[dataSize];
-	m_access[level]	= PixelBufferAccess(format, width, height, depth, m_data[level]);
+	m_data[level].setStorage(dataSize);
+	m_access[level] = PixelBufferAccess(format, width, height, depth, m_data[level].getPtr());
 }
 
 void TextureLevelArray::clearLevel (int level)
 {
-	DE_ASSERT(level < DE_LENGTH_OF_ARRAY(m_data));
+	DE_ASSERT(deInBounds32(level, 0, DE_LENGTH_OF_ARRAY(m_data)));
 
-	delete[] m_data[level];
-
-	m_data[level]	= DE_NULL;
-	m_access[level]	= PixelBufferAccess();
+	m_data[level].clear();
+	m_access[level] = PixelBufferAccess();
 }
 
 Texture::Texture (deUint32 name, Type type)
