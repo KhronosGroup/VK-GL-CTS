@@ -23,8 +23,6 @@
 
 package com.drawelements.deqp.testercore;
 
-import android.os.Build;
-
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;

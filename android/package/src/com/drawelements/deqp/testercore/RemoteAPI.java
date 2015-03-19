@@ -27,11 +27,7 @@ import android.app.ActivityManager;
 import android.content.Context;
 import android.content.ComponentName;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.os.Process;
-import android.os.Build;
-import android.text.TextUtils;
-import java.lang.System;
 
 import java.util.List;
 

@@ -23,23 +23,11 @@
 
 package com.drawelements.deqp.testercore;
 
-import android.app.ActivityManager;
 import android.app.Instrumentation;
-import android.app.Activity;
-import android.app.NativeActivity;
-
-import android.content.Context;
-import android.content.Intent;
-import android.content.ComponentName;
-
 import android.os.Bundle;
 
-import java.util.List;
 import java.lang.Thread;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
 
 public class DeqpInstrumentation extends Instrumentation
 {

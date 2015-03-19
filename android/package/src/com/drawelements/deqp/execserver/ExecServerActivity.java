@@ -27,14 +27,11 @@
 package com.drawelements.deqp.execserver;
 
 import android.app.Activity;
-import android.content.Context;
 import android.content.Intent;
-import android.content.pm.ActivityInfo;
 import android.widget.TextView;
 import android.os.Bundle;
 
 import com.drawelements.deqp.testercore.Log;
-import com.drawelements.deqp.execserver.ExecService;
 import com.drawelements.deqp.R;
 
 public class ExecServerActivity extends Activity {
