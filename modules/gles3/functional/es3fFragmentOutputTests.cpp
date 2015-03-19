@@ -181,26 +181,27 @@ static glu::ShaderProgram* createProgram (const glu::RenderContext& context, con
 		const FragmentOutput&	output		= outputs[outNdx];
 		bool					isArray		= output.arrayLength > 0;
 		const char*				typeName	= glu::getDataTypeName(output.type);
-		const char*				precName	= glu::getPrecisionName(output.precision);
+		const char*				outputPrec	= glu::getPrecisionName(output.precision);
 		bool					isFloat		= glu::isDataTypeFloatOrVec(output.type);
 		const char*				interp		= isFloat ? "smooth" : "flat";
+		const char*				interpPrec	= isFloat ? "highp" : outputPrec;
 
 		if (isArray)
 		{
 			for (int elemNdx = 0; elemNdx < output.arrayLength; elemNdx++)
 			{
-				vtx << "in " << precName << " " << typeName << " in" << outNdx << "_" << elemNdx << ";\n"
-					<< interp << " out " << precName << " " << typeName << " var" << outNdx << "_" << elemNdx << ";\n";
-				frag << interp << " in " << precName << " " << typeName << " var" << outNdx << "_" << elemNdx << ";\n";
+				vtx << "in " << interpPrec << " " << typeName << " in" << outNdx << "_" << elemNdx << ";\n"
+					<< interp << " out " << interpPrec << " " << typeName << " var" << outNdx << "_" << elemNdx << ";\n";
+				frag << interp << " in " << interpPrec << " " << typeName << " var" << outNdx << "_" << elemNdx << ";\n";
 			}
-			frag << "layout(location = " << output.location << ") out " << precName << " " << typeName << " out" << outNdx << "[" << output.arrayLength << "];\n";
+			frag << "layout(location = " << output.location << ") out " << outputPrec << " " << typeName << " out" << outNdx << "[" << output.arrayLength << "];\n";
 		}
 		else
 		{
-			vtx << "in " << precName << " " << typeName << " in" << outNdx << ";\n"
-				<< interp << " out " << precName << " " << typeName << " var" << outNdx << ";\n";
-			frag << interp << " in " << precName << " " << typeName << " var" << outNdx << ";\n"
-				 << "layout(location = " << output.location << ") out " << precName << " " << typeName << " out" << outNdx << ";\n";
+			vtx << "in " << interpPrec << " " << typeName << " in" << outNdx << ";\n"
+				<< interp << " out " << interpPrec << " " << typeName << " var" << outNdx << ";\n";
+			frag << interp << " in " << interpPrec << " " << typeName << " var" << outNdx << ";\n"
+				 << "layout(location = " << output.location << ") out " << outputPrec << " " << typeName << " out" << outNdx << ";\n";
 		}
 	}
 
@@ -891,9 +892,10 @@ FragmentOutputCase::IterateResult FragmentOutputCase::iterate (void)
 		{
 			case tcu::TEXTURECHANNELCLASS_FLOATING_POINT:
 			{
-				UVec4		formatThreshold;		//!< Threshold computed based on format.
-				deUint32	precThreshold	= 0;	//!< Threshold computed based on output type precision
-				UVec4		finalThreshold;
+				const deUint32	interpThreshold		= 4;	//!< 4 ULP interpolation threshold (interpolation always in highp)
+				deUint32		outTypeThreshold	= 0;	//!< Threshold based on output type
+				UVec4			formatThreshold;			//!< Threshold computed based on format.
+				UVec4			finalThreshold;
 
 				// 1 ULP rounding error is allowed for smaller floating-point formats
 				switch (format.type)
@@ -906,17 +908,17 @@ FragmentOutputCase::IterateResult FragmentOutputCase::iterate (void)
 						break;
 				}
 
-				// 4 ULP interpolation
+				// 1 ULP rounding error for highp -> output precision cast
 				switch (outPrecision)
 				{
-					case glu::PRECISION_LOWP:		precThreshold	= (4<<(23-8));	break;
-					case glu::PRECISION_MEDIUMP:	precThreshold	= (4<<(23-10));	break;
-					case glu::PRECISION_HIGHP:		precThreshold	= 4;			break;
+					case glu::PRECISION_LOWP:		outTypeThreshold	= (1<<(23-8));	break;
+					case glu::PRECISION_MEDIUMP:	outTypeThreshold	= (1<<(23-10));	break;
+					case glu::PRECISION_HIGHP:		outTypeThreshold	= 0;			break;
 					default:
 						DE_ASSERT(false);
 				}
 
-				finalThreshold = select(max(formatThreshold, UVec4(precThreshold)), UVec4(~0u), cmpMask);
+				finalThreshold = select(max(formatThreshold, UVec4(deMax32(interpThreshold, outTypeThreshold))), UVec4(~0u), cmpMask);
 
 				isOk = tcu::floatUlpThresholdCompare(log, name.c_str(), desc.c_str(), reference, rendered, finalThreshold, tcu::COMPARE_LOG_RESULT);
 				break;
