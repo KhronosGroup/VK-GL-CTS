@@ -47,6 +47,8 @@ std::string					toUpper			(const std::string& s);
 std::string					capitalize		(const std::string& s);
 std::vector<std::string>	splitString		(const std::string& s, char delim='\0');
 std::string					floatToString	(float val, int precision);
+bool						beginsWith		(const std::string& s, const std::string& prefix);
+bool						endsWith		(const std::string& s, const std::string& suffix);
 char						toUpper			(char c);
 char						toLower			(char c);
 bool						isUpper			(char c);

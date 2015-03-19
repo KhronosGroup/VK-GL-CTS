@@ -22,6 +22,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "deStringUtil.hpp"
+#include "deString.h"
 
 #include <algorithm>
 #include <iterator>
@@ -113,6 +114,22 @@ std::string floatToString (float val, int precision)
 	return s.str();
 }
 
+bool beginsWith (const std::string& s, const std::string& prefix)
+{
+	return deStringBeginsWith(s.c_str(), prefix.c_str());
+}
+
+bool endsWith (const std::string& s, const std::string& suffix)
+{
+	if (suffix.length() > s.length())
+		return false;
+	else
+	{
+		const std::string::size_type offset = s.length() - suffix.length();
+		return s.find(suffix, offset) == offset;
+	}
+}
+
 char toUpper (char c)
 {
 	return std::toupper(c, std::locale::classic());
@@ -155,6 +172,25 @@ void StringUtil_selfTest (void)
 	}
 
 	DE_TEST_ASSERT(floatToString(4, 1) == "4.0");
+
+	DE_TEST_ASSERT(beginsWith("foobar", "foobar"));
+	DE_TEST_ASSERT(beginsWith("foobar", "foo"));
+	DE_TEST_ASSERT(beginsWith("foobar", "f"));
+	DE_TEST_ASSERT(beginsWith("foobar", ""));
+	DE_TEST_ASSERT(beginsWith("", ""));
+	DE_TEST_ASSERT(!beginsWith("foobar", "bar"));
+	DE_TEST_ASSERT(!beginsWith("foobar", "foobarbaz"));
+	DE_TEST_ASSERT(!beginsWith("", "foo"));
+
+	DE_TEST_ASSERT(endsWith("foobar", "foobar"));
+	DE_TEST_ASSERT(endsWith("foobar", "bar"));
+	DE_TEST_ASSERT(endsWith("foobar", "r"));
+	DE_TEST_ASSERT(endsWith("foobar", ""));
+	DE_TEST_ASSERT(endsWith("", ""));
+	DE_TEST_ASSERT(!endsWith("foobar", "foo"));
+	DE_TEST_ASSERT(!endsWith("foobar", "bazfoobar"));
+	DE_TEST_ASSERT(!endsWith("foobar", "foobarbaz"));
+	DE_TEST_ASSERT(!endsWith("", "foo"));
 
 	DE_TEST_ASSERT(toUpper('a') == 'A');
 	DE_TEST_ASSERT(toUpper('A') == 'A');

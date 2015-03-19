@@ -52,14 +52,6 @@ namespace Functional
 namespace
 {
 
-static bool stringEndsWith (const std::string& str, const std::string& suffix)
-{
-	if (suffix.length() > str.length())
-		return false;
-	else
-		return str.substr(str.length() - suffix.length()) == suffix;
-}
-
 static int getTypeSize (glu::DataType type)
 {
 	if (type == glu::TYPE_FLOAT)
@@ -1106,7 +1098,7 @@ bool ResourceListTestCase::verifyResourceIndexQuery (const std::vector<std::stri
 	{
 		for (int ndx = 0; ndx < (int)referenceResources.size(); ++ndx)
 		{
-			if (stringEndsWith(referenceResources[ndx], "[0]"))
+			if (de::endsWith(referenceResources[ndx], "[0]"))
 			{
 				const std::string	queryString	= referenceResources[ndx].substr(0, referenceResources[ndx].length()-3);
 				const glw::GLuint	index		= gl.getProgramResourceIndex(program, programInterface, queryString.c_str());
@@ -1233,7 +1225,7 @@ std::string ResourceListTestCase::genTestCaseName (ProgramInterface interface, c
 				if (arrayedInterface && isImplicitlySizedArray)
 				{
 					// omit implicit arrayness from name, i.e. remove trailing "_array"
-					DE_ASSERT(stringEndsWith(buf, "_array"));
+					DE_ASSERT(de::endsWith(buf, "_array"));
 					buf = buf.substr(0, buf.length() - 6);
 				}
 

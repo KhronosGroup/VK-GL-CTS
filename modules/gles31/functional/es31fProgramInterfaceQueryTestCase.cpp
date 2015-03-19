@@ -46,14 +46,6 @@ namespace
 using ProgramInterfaceDefinition::VariablePathComponent;
 using ProgramInterfaceDefinition::VariableSearchFilter;
 
-static bool stringEndsWith (const std::string& str, const std::string& suffix)
-{
-	if (suffix.length() > str.length())
-		return false;
-	else
-		return str.substr(str.length() - suffix.length()) == suffix;
-}
-
 static glw::GLenum getProgramDefaultBlockInterfaceFromStorage (glu::Storage storage)
 {
 	switch (storage)
@@ -1966,7 +1958,7 @@ static void queryAndValidateProps (tcu::TestContext&							testCtx,
 
 			if (recoveryStrategies[strategyNdx].removeTrailingArray)
 			{
-				if (stringEndsWith(resourceName, "[0]"))
+				if (de::endsWith(resourceName, "[0]"))
 					simplifiedResourceName = resourceName.substr(0, resourceName.length() - 3);
 				else
 					continue;
