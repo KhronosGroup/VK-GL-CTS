@@ -334,12 +334,12 @@ static IVec4 getChannelBitDepth (TextureFormat::ChannelType channelType)
 		case TextureFormat::UNSIGNED_INT16:					return IVec4(16);
 		case TextureFormat::UNSIGNED_INT32:					return IVec4(32);
 		case TextureFormat::UNSIGNED_INT_1010102_REV:		return IVec4(10,10,10,2);
-		case TextureFormat::UNSIGNED_INT_24_8:				return IVec4(24,0,0,8);
+		case TextureFormat::UNSIGNED_INT_24_8:				return IVec4(24,8,0,0);
 		case TextureFormat::HALF_FLOAT:						return IVec4(16);
 		case TextureFormat::FLOAT:							return IVec4(32);
 		case TextureFormat::UNSIGNED_INT_11F_11F_10F_REV:	return IVec4(11,11,10,0);
 		case TextureFormat::UNSIGNED_INT_999_E5_REV:		return IVec4(9,9,9,0);
-		case TextureFormat::FLOAT_UNSIGNED_INT_24_8_REV:	return IVec4(32,0,0,8);
+		case TextureFormat::FLOAT_UNSIGNED_INT_24_8_REV:	return IVec4(32,8,0,0);
 		default:
 			DE_ASSERT(false);
 			return IVec4(0);
@@ -396,7 +396,7 @@ static IVec4 getChannelMantissaBitDepth (TextureFormat::ChannelType channelType)
 		case TextureFormat::HALF_FLOAT:						return IVec4(10);
 		case TextureFormat::FLOAT:							return IVec4(23);
 		case TextureFormat::UNSIGNED_INT_11F_11F_10F_REV:	return IVec4(6,6,5,0);
-		case TextureFormat::FLOAT_UNSIGNED_INT_24_8_REV:	return IVec4(23,0,0,8);
+		case TextureFormat::FLOAT_UNSIGNED_INT_24_8_REV:	return IVec4(23,8,0,0);
 		default:
 			DE_ASSERT(false);
 			return IVec4(0);
