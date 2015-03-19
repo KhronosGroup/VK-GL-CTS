@@ -459,12 +459,12 @@ static void logAffectingExtensions (const char* prefix, const FormatDB& db, cons
 		extName = *it++;
 		while (it != requiredExtensions.end())
 		{
-			msg << extName;
+			msg << getExtensionDescription(extName);
 			extName = *it++;
 			msg << (it == requiredExtensions.end() ? " and " : ", ");
 		}
 
-		msg << extName << '\n';
+		msg << getExtensionDescription(extName) << '\n';
 	}
 }
 

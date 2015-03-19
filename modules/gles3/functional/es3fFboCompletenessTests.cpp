@@ -136,19 +136,39 @@ static const FormatKey s_extOESTextureStencil8[] =
 	GL_STENCIL_INDEX8,
 };
 
+// GL_EXT_render_snorm
+static const FormatKey s_extRenderSnorm[] =
+{
+	GL_R8_SNORM, GL_RG8_SNORM, GL_RGBA8_SNORM,
+};
 
 static const FormatExtEntry s_es3ExtFormats[] =
 {
-	{ "GL_EXT_color_buffer_float",
-	  // These are already texture-valid in ES3, the extension just adds RBO
-	  // support and makes them color-renderable.
-	  REQUIRED_RENDERABLE | COLOR_RENDERABLE | RENDERBUFFER_VALID,
-	  GLS_ARRAY_RANGE(s_extColorBufferFloatFormats) },
-	{ "GL_OES_texture_stencil8",
-	  // Note: es3 RBO tests actually cover the first two requirements
-      // - kept here for completeness
-      REQUIRED_RENDERABLE | STENCIL_RENDERABLE | TEXTURE_VALID,
-	  GLS_ARRAY_RANGE(s_extOESTextureStencil8) }
+	{
+		"GL_EXT_color_buffer_float",
+		// These are already texture-valid in ES3, the extension just adds RBO
+		// support and makes them color-renderable.
+		REQUIRED_RENDERABLE | COLOR_RENDERABLE | RENDERBUFFER_VALID,
+		GLS_ARRAY_RANGE(s_extColorBufferFloatFormats)
+	},
+	{
+		"GL_OES_texture_stencil8",
+		// \note: es3 RBO tests actually cover the first two requirements
+		// - kept here for completeness
+		REQUIRED_RENDERABLE | STENCIL_RENDERABLE | TEXTURE_VALID,
+		GLS_ARRAY_RANGE(s_extOESTextureStencil8)
+	},
+
+	// Since GLES31 is backwards compatible to GLES3, we might actually be running on a GLES31.
+	// Add rule changes of GLES31 that have no corresponding GLES3 extension.
+	//
+	// \note Not all feature changes are listed here but only those that alter GLES3 subset of
+	//       the formats
+	{
+		"DEQP_gles31_core_compatible GL_EXT_render_snorm",
+		REQUIRED_RENDERABLE | COLOR_RENDERABLE | TEXTURE_VALID | RENDERBUFFER_VALID,
+		GLS_ARRAY_RANGE(s_extRenderSnorm)
+	},
 };
 
 class ES3Checker : public Checker

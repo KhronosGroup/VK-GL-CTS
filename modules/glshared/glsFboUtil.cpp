@@ -162,6 +162,58 @@ bool FormatDB::ExtensionInfo::operator< (const ExtensionInfo& other) const
 		   ((requiredExtensions == other.requiredExtensions) && (flags < other.flags));
 }
 
+static bool detectGLESCompatibleContext (const RenderContext& ctx, int requiredMajor, int requiredMinor)
+{
+	const glw::Functions&	gl				= ctx.getFunctions();
+	glw::GLint				majorVersion	= 0;
+	glw::GLint				minorVersion	= 0;
+
+	// Detect compatible GLES context by querying GL_MAJOR_VERSION.
+	// This query does not exist on GLES2 so a failing query implies
+	// GLES2 context.
+
+	gl.getIntegerv(GL_MAJOR_VERSION, &majorVersion);
+	if (gl.getError() != GL_NO_ERROR)
+		majorVersion = 2;
+
+	gl.getIntegerv(GL_MINOR_VERSION, &minorVersion);
+	if (gl.getError() != GL_NO_ERROR)
+		minorVersion = 0;
+
+	return (majorVersion > requiredMajor) || (majorVersion == requiredMajor && minorVersion >= requiredMinor);
+}
+
+// Check support for GL_* and DEQP_* extensions
+static bool checkExtensionSupport (const ContextInfo& ctxInfo, const RenderContext& ctx, const std::string& extension)
+{
+	if (de::beginsWith(extension, "GL_"))
+		return ctxInfo.isExtensionSupported(extension.c_str());
+	else if (extension == "DEQP_gles3_core_compatible")
+		return detectGLESCompatibleContext(ctx, 3, 0);
+	else if (extension == "DEQP_gles31_core_compatible")
+		return detectGLESCompatibleContext(ctx, 3, 1);
+	else
+	{
+		DE_ASSERT(false);
+		return false;
+	}
+}
+
+std::string getExtensionDescription (const std::string& extension)
+{
+	if (de::beginsWith(extension, "GL_"))
+		return extension;
+	else if (extension == "DEQP_gles3_core_compatible")
+		return "GLES3 compatible context";
+	else if (extension == "DEQP_gles31_core_compatible")
+		return "GLES3.1 compatible context";
+	else
+	{
+		DE_ASSERT(false);
+		return "";
+	}
+}
+
 void addFormats (FormatDB& db, FormatEntries stdFmts)
 {
 	for (const FormatEntry* it = stdFmts.begin(); it != stdFmts.end(); it++)
@@ -196,7 +248,7 @@ void addExtFormats (FormatDB& db, FormatExtEntries extFmts, const RenderContext*
 		{
 			for (std::set<std::string>::const_iterator extIt = requiredExtensions.begin(); extIt != requiredExtensions.end(); ++extIt)
 			{
-				if (!ctxInfo->isExtensionSupported(extIt->c_str()))
+				if (!checkExtensionSupport(*ctxInfo, *ctx, *extIt))
 				{
 					supported = false;
 					break;

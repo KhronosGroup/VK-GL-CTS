@@ -181,10 +181,12 @@ struct FormatExtEntry
 
 typedef Range<FormatExtEntry>						FormatExtEntries;
 
-void				addFormats			(FormatDB& db, FormatEntries stdFmts);
-void				addExtFormats		(FormatDB& db, FormatExtEntries extFmts,
-										 const glu::RenderContext* ctx);
-glu::TransferFormat	transferImageFormat	(const ImageFormat& imgFormat);
+// Accepts GL_* and DEQP_* extension strings and converts DEQP_* strings to a human readable string
+std::string			getExtensionDescription		(const std::string& extensionName);
+
+void				addFormats					(FormatDB& db, FormatEntries stdFmts);
+void				addExtFormats				(FormatDB& db, FormatExtEntries extFmts, const glu::RenderContext* ctx);
+glu::TransferFormat	transferImageFormat			(const ImageFormat& imgFormat);
 
 namespace config
 {
