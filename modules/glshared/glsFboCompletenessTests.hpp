@@ -63,8 +63,9 @@ public:
 	RenderContext&			getRenderContext		(void) const { return m_renderCtx; }
 	TestContext&			getTestContext			(void) const { return m_testCtx; }
 	const FboVerifier&		getVerifier				(void) const { return m_verifier; }
-	const FormatDB&			getMinFormats			(void) const { return m_minFormats; }
+	const FormatDB&			getCoreFormats			(void) const { return m_coreFormats; }
 	const FormatDB&			getCtxFormats			(void) const { return m_ctxFormats; }
+	const FormatDB&			getAllFormats			(void) const { return m_allFormats; }
 	bool					haveMultiColorAtts		(void) const { return m_haveMultiColorAtts; }
 	void					setHaveMulticolorAtts	(bool have) { m_haveMultiColorAtts = have; }
 	void					addFormats				(FormatEntries fmtRange);
@@ -75,9 +76,9 @@ public:
 private:
 	TestContext&			m_testCtx;
 	RenderContext&			m_renderCtx;
-	FormatDB				m_minFormats;
+	FormatDB				m_coreFormats;
 	FormatDB				m_ctxFormats;
-	FormatDB				m_maxFormats;
+	FormatDB				m_allFormats;
 	FboVerifier				m_verifier;
 	bool					m_haveMultiColorAtts;
 };

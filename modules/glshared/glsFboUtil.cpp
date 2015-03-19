@@ -28,6 +28,7 @@
 #include "gluTextureUtil.hpp"
 #include "gluStrUtil.hpp"
 #include "deStringUtil.hpp"
+#include "deSTLUtil.hpp"
 #include <sstream>
 
 using namespace glw;
@@ -63,18 +64,64 @@ namespace gls
 namespace FboUtil
 {
 
-
-void FormatDB::addFormat (ImageFormat format, FormatFlags newFlags)
+#if defined(DE_DEBUG)
+static bool isFramebufferStatus (glw::GLenum fboStatus)
 {
-	FormatFlags& flags = m_map[format];
+	return glu::getFramebufferStatusName(fboStatus) != DE_NULL;
+}
+
+static bool isErrorCode (glw::GLenum errorCode)
+{
+	return glu::getErrorName(errorCode) != DE_NULL;
+}
+#endif
+
+std::ostream& operator<< (std::ostream& stream, const ImageFormat& format)
+{
+	if (format.unsizedType == GL_NONE)
+	{
+		// sized format
+		return stream << glu::getPixelFormatStr(format.format);
+	}
+	else
+	{
+		// unsized format
+		return stream << "(format = " << glu::getPixelFormatStr(format.format) << ", type = " << glu::getTypeStr(format.unsizedType) << ")";
+	}
+}
+
+void FormatDB::addCoreFormat (ImageFormat format, FormatFlags newFlags)
+{
+	FormatFlags& flags = m_formatFlags[format];
 	flags = FormatFlags(flags | newFlags);
+}
+
+void FormatDB::addExtensionFormat (ImageFormat format, FormatFlags newFlags, const std::set<std::string>& requiredExtensions)
+{
+	DE_ASSERT(!requiredExtensions.empty());
+
+	{
+		FormatFlags& flags = m_formatFlags[format];
+		flags = FormatFlags(flags | newFlags);
+	}
+
+	{
+		std::set<ExtensionInfo>&	extensionInfo	= m_formatExtensions[format];
+		ExtensionInfo				extensionRecord;
+
+		extensionRecord.flags				= newFlags;
+		extensionRecord.requiredExtensions	= requiredExtensions;
+
+		DE_ASSERT(!de::contains(extensionInfo, extensionRecord)); // extensions specified only once
+		extensionInfo.insert(extensionRecord);
+	}
 }
 
 // Not too fast at the moment, might consider indexing?
 Formats FormatDB::getFormats (FormatFlags requirements) const
 {
 	Formats ret;
-	for (FormatMap::const_iterator it = m_map.begin(); it != m_map.end(); it++)
+	for (FormatMap::const_iterator it = m_formatFlags.begin(); it != m_formatFlags.end(); it++)
 	{
 		if ((it->second & requirements) == requirements)
 			ret.insert(it->first);
@@ -82,9 +129,37 @@ Formats FormatDB::getFormats (FormatFlags requirements) const
 	return ret;
 }
 
-FormatFlags FormatDB::getFormatInfo (ImageFormat format, FormatFlags fallback) const
+bool FormatDB::isKnownFormat (ImageFormat format) const
 {
-	return lookupDefault(m_map, format, fallback);
+	return de::contains(m_formatFlags, format);
+}
+
+FormatFlags FormatDB::getFormatInfo (ImageFormat format) const
+{
+	DE_ASSERT(de::contains(m_formatFlags, format));
+	return de::lookup(m_formatFlags, format);
+}
+
+std::set<std::set<std::string> > FormatDB::getFormatFeatureExtensions (ImageFormat format, FormatFlags requirements) const
+{
+	DE_ASSERT(de::contains(m_formatExtensions, format));
+
+	const std::set<ExtensionInfo>&		extensionInfo	= de::lookup(m_formatExtensions, format);
+	std::set<std::set<std::string> >	ret;
+
+	for (std::set<ExtensionInfo>::const_iterator it = extensionInfo.begin(); it != extensionInfo.end(); ++it)
+	{
+		if ((it->flags & requirements) == requirements)
+			ret.insert(it->requiredExtensions);
+	}
+
+	return ret;
+}
+
+bool FormatDB::ExtensionInfo::operator< (const ExtensionInfo& other) const
+{
+	return (requiredExtensions < other.requiredExtensions) ||
+		   ((requiredExtensions == other.requiredExtensions) && (flags < other.flags));
 }
 
 void addFormats (FormatDB& db, FormatEntries stdFmts)
@@ -92,34 +167,46 @@ void addFormats (FormatDB& db, FormatEntries stdFmts)
 	for (const FormatEntry* it = stdFmts.begin(); it != stdFmts.end(); it++)
 	{
 		for (const FormatKey* it2 = it->second.begin(); it2 != it->second.end(); it2++)
-			db.addFormat(formatKeyInfo(*it2), it->first);
+			db.addCoreFormat(formatKeyInfo(*it2), it->first);
 	}
 }
 
 void addExtFormats (FormatDB& db, FormatExtEntries extFmts, const RenderContext* ctx)
 {
 	const UniquePtr<ContextInfo> ctxInfo(ctx != DE_NULL ? ContextInfo::create(*ctx) : DE_NULL);
-	for (const FormatExtEntry* it = extFmts.begin(); it != extFmts.end(); it++)
+	for (const FormatExtEntry* entryIt = extFmts.begin(); entryIt != extFmts.end(); entryIt++)
 	{
-		bool supported = true;
-		if (ctxInfo)
+		bool					supported			= true;
+		std::set<std::string>	requiredExtensions;
+
+		// parse required extensions
 		{
-			istringstream tokenStream(string(it->extensions));
+			istringstream tokenStream(string(entryIt->extensions));
 			istream_iterator<string> tokens((tokenStream)), end;
 
 			while (tokens != end)
 			{
-				if (!ctxInfo->isExtensionSupported(tokens->c_str()))
+				requiredExtensions.insert(*tokens);
+				++tokens;
+			}
+		}
+
+		// check support
+		if (ctxInfo)
+		{
+			for (std::set<std::string>::const_iterator extIt = requiredExtensions.begin(); extIt != requiredExtensions.end(); ++extIt)
+			{
+				if (!ctxInfo->isExtensionSupported(extIt->c_str()))
 				{
 					supported = false;
 					break;
 				}
-				++tokens;
 			}
 		}
+
 		if (supported)
-			for (const FormatKey* i2 = it->formats.begin(); i2 != it->formats.end(); i2++)
-				db.addFormat(formatKeyInfo(*i2), FormatFlags(it->flags));
+			for (const FormatKey* i2 = entryIt->formats.begin(); i2 != entryIt->formats.end(); i2++)
+				db.addExtensionFormat(formatKeyInfo(*i2), FormatFlags(entryIt->flags), requiredExtensions);
 	}
 }
 
@@ -139,6 +226,19 @@ FormatFlags formatFlag (GLenum context)
 			return DEPTH_RENDERABLE;
 		default:
 			DE_ASSERT(context >= GL_COLOR_ATTACHMENT0 && context <= GL_COLOR_ATTACHMENT15);
+			return COLOR_RENDERABLE;
+	}
+}
+
+static FormatFlags getAttachmentRenderabilityFlag (GLenum attachment)
+{
+	switch (attachment)
+	{
+		case GL_STENCIL_ATTACHMENT:			return STENCIL_RENDERABLE;
+		case GL_DEPTH_ATTACHMENT:			return DEPTH_RENDERABLE;
+
+		default:
+			DE_ASSERT(attachment >= GL_COLOR_ATTACHMENT0 && attachment <= GL_COLOR_ATTACHMENT15);
 			return COLOR_RENDERABLE;
 	}
 }
@@ -332,40 +432,60 @@ static void checkAttachmentCompleteness (Checker& cctx, const Attachment& attach
 			// FRAMEBUFFER_ATTACHMENT_TEXTURE_LAYER must be smaller than the
 			// number of layers in the texture.
 
-			cctx.require(textureLayer(*texAtt) < ltex->numLayers,
-						 GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT);
+			if (textureLayer(*texAtt) >= ltex->numLayers)
+				cctx.addFBOStatus(GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT, "Attached layer index is larger than present");
 		}
 
 	// "The width and height of image are non-zero."
-	cctx.require(image->width > 0 && image->height > 0, GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT);
+	if (image->width == 0 || image->height == 0)
+		cctx.addFBOStatus(GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT, "Width and height of an image are not non-zero");
 
 	// Check for renderability
-	FormatFlags flags = db.getFormatInfo(image->internalFormat, ANY_FORMAT);
-	// If the format does not have the proper renderability flag, the
-	// completeness check _must_ fail.
-	cctx.require((flags & formatFlag(attPoint)) != 0, GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT);
-	// If the format is only optionally renderable, the completeness check _can_ fail.
-	cctx.canRequire((flags & REQUIRED_RENDERABLE) != 0,
-					GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT);
+	if (db.isKnownFormat(image->internalFormat))
+	{
+		const FormatFlags flags = db.getFormatInfo(image->internalFormat);
+
+		// If the format does not have the proper renderability flag, the
+		// completeness check _must_ fail.
+		if ((flags & getAttachmentRenderabilityFlag(attPoint)) == 0)
+			cctx.addFBOStatus(GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT, "Attachment format is not renderable in this attachment");
+		// If the format is only optionally renderable, the completeness check _can_ fail.
+		else if ((flags & REQUIRED_RENDERABLE) == 0)
+			cctx.addPotentialFBOStatus(GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT, "Attachment format is not required renderable");
+	}
+	else
+		cctx.addFBOStatus(GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT, "Attachment format is not legal");
 }
 
 } // namespace config
 
 using namespace config;
 
-void Checker::require (bool condition, GLenum error)
+Checker::Checker (void)
 {
-	if (!condition)
-	{
-		m_statusCodes.erase(GL_FRAMEBUFFER_COMPLETE);
-		m_statusCodes.insert(error);
-	}
+	m_statusCodes.setAllowComplete(true);
 }
 
-void Checker::canRequire (bool condition, GLenum error)
+void Checker::addGLError (glw::GLenum error, const char* description)
 {
-	if (!condition)
-		m_statusCodes.insert(error);
+	m_statusCodes.addErrorCode(error, description);
+	m_statusCodes.setAllowComplete(false);
+}
+
+void Checker::addPotentialGLError (glw::GLenum error, const char* description)
+{
+	m_statusCodes.addErrorCode(error, description);
+}
+
+void Checker::addFBOStatus (GLenum status, const char* description)
+{
+	m_statusCodes.addFBOErrorStatus(status, description);
+	m_statusCodes.setAllowComplete(false);
+}
+
+void Checker::addPotentialFBOStatus (GLenum status, const char* description)
+{
+	m_statusCodes.addFBOErrorStatus(status, description);
 }
 
 FboVerifier::FboVerifier (const FormatDB& formats, CheckerFactory& factory)
@@ -391,7 +511,7 @@ FboVerifier::FboVerifier (const FormatDB& formats, CheckerFactory& factory)
  * `glCheckFramebufferStatus` was ever called.
  *
  *//*--------------------------------------------------------------------*/
-StatusCodes FboVerifier::validStatusCodes (const Framebuffer& fboConfig) const
+ValidStatusCodes FboVerifier::validStatusCodes (const Framebuffer& fboConfig) const
 {
 	const AttachmentMap& atts = fboConfig.attachments;
 	const UniquePtr<Checker> cctx(m_factory.createChecker());
@@ -399,29 +519,63 @@ StatusCodes FboVerifier::validStatusCodes (const Framebuffer& fboConfig) const
 	for (TextureMap::const_iterator it = fboConfig.textures.begin();
 		 it != fboConfig.textures.end(); it++)
 	{
-		const FormatFlags flags =
-			m_formats.getFormatInfo(it->second->internalFormat, ANY_FORMAT);
-		cctx->require((flags & TEXTURE_VALID) != 0, GL_INVALID_ENUM);
-		cctx->require((flags & TEXTURE_VALID) != 0, GL_INVALID_OPERATION);
-		cctx->require((flags & TEXTURE_VALID) != 0, GL_INVALID_VALUE);
+		std::string errorDescription;
+
+		if (m_formats.isKnownFormat(it->second->internalFormat))
+		{
+			const FormatFlags flags = m_formats.getFormatInfo(it->second->internalFormat);
+
+			if ((flags & TEXTURE_VALID) == 0)
+				errorDescription = "Format " + de::toString(it->second->internalFormat) + " is not a valid format for a texture";
+		}
+		else if (it->second->internalFormat.unsizedType == GL_NONE)
+		{
+			// sized format
+			errorDescription = "Format " + de::toString(it->second->internalFormat) + " does not exist";
+		}
+		else
+		{
+			// unsized type-format pair
+			errorDescription = "Format " + de::toString(it->second->internalFormat) + " is not a legal format";
+		}
+
+		if (!errorDescription.empty())
+		{
+			cctx->addGLError(GL_INVALID_ENUM,		errorDescription.c_str());
+			cctx->addGLError(GL_INVALID_OPERATION,	errorDescription.c_str());
+			cctx->addGLError(GL_INVALID_VALUE,		errorDescription.c_str());
+		}
 	}
 
 	for (RboMap::const_iterator it = fboConfig.rbos.begin(); it != fboConfig.rbos.end(); it++)
 	{
-		const FormatFlags flags =
-			m_formats.getFormatInfo(it->second->internalFormat, ANY_FORMAT);
-		cctx->require((flags & RENDERBUFFER_VALID) != 0, GL_INVALID_ENUM);
+		if (m_formats.isKnownFormat(it->second->internalFormat))
+		{
+			const FormatFlags flags = m_formats.getFormatInfo(it->second->internalFormat);
+			if ((flags & RENDERBUFFER_VALID) == 0)
+			{
+				const std::string reason = "Format " + de::toString(it->second->internalFormat) + " is not a valid format for a renderbuffer";
+				cctx->addGLError(GL_INVALID_ENUM, reason.c_str());
+			}
+		}
+		else
+		{
+			const std::string reason = "Internal format " + de::toString(it->second->internalFormat) + " does not exist";
+			cctx->addGLError(GL_INVALID_ENUM, reason.c_str());
+		}
 	}
 
 	// "There is at least one image attached to the framebuffer."
-	// TODO: support XXX_framebuffer_no_attachments
-	cctx->require(!atts.empty(), GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT);
+	// \todo support XXX_framebuffer_no_attachments
+	if (atts.empty())
+		cctx->addFBOStatus(GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT, "No images attached to the framebuffer");
 
 	for (AttachmentMap::const_iterator it = atts.begin(); it != atts.end(); it++)
 	{
 		const GLenum attPoint = it->first;
 		const Attachment& att = *it->second;
 		const Image* const image = fboConfig.getImage(attachmentType(att), att.imageName);
+
 		checkAttachmentCompleteness(*cctx, att, attPoint, image, m_formats);
 		cctx->check(it->first, *it->second, image);
 	}
@@ -443,9 +597,9 @@ const Image* Framebuffer::getImage (GLenum type, glw::GLuint imgName) const
 	switch (type)
 	{
 		case GL_TEXTURE:
-			return lookupDefault(textures, imgName, DE_NULL);
+			return de::lookupDefault(textures, imgName, DE_NULL);
 		case GL_RENDERBUFFER:
-			return lookupDefault(rbos, imgName, DE_NULL);
+			return de::lookupDefault(rbos, imgName, DE_NULL);
 		default:
 			DE_ASSERT(!"Bad image type");
 	}
@@ -473,7 +627,7 @@ static void logImage (const Image& img, TestLog& log, bool useType)
 	logField(log, "Internal format",	getPixelFormatName(img.internalFormat.format));
 	if (useType && type != GL_NONE)
 		logField(log, "Format type",	getTypeName(type));
-	logField(log, "Width", 				toString(img.width));
+	logField(log, "Width",				toString(img.width));
 	logField(log, "Height",				toString(img.height));
 }
 
@@ -520,32 +674,22 @@ void logFramebufferConfig (const Framebuffer& cfg, TestLog& log)
 {
 	log << TestLog::Section("Framebuffer", "Framebuffer configuration");
 
-	const string rboDesc = cfg.rbos.empty()
-		? "No renderbuffers were created"
-		: "Renderbuffers created";
-	log << TestLog::Section("Renderbuffers", rboDesc);
 	for (RboMap::const_iterator it = cfg.rbos.begin(); it != cfg.rbos.end(); ++it)
 	{
-		const string num = toString(it->first);
-		log << TestLog::Section(num, "Renderbuffer " + num);
-		logRenderbuffer(*it->second, log);
-		log << TestLog::EndSection;
-	}
-	log << TestLog::EndSection; // Renderbuffers
+		const string				num			= toString(it->first);
+		const tcu::ScopedLogSection	subsection	(log, num, "Renderbuffer " + num);
 
-	const string texDesc = cfg.textures.empty()
-		? "No textures were created"
-		: "Textures created";
-	log << TestLog::Section("Textures", texDesc);
-	for (TextureMap::const_iterator it = cfg.textures.begin();
-		 it != cfg.textures.end(); ++it)
-	{
-		const string num = toString(it->first);
-		log << TestLog::Section(num, "Texture " + num);
-		logTexture(*it->second, log);
-		log << TestLog::EndSection;
+		logRenderbuffer(*it->second, log);
 	}
-	log << TestLog::EndSection; // Textures
+
+	for (TextureMap::const_iterator it = cfg.textures.begin();
+		it != cfg.textures.end(); ++it)
+	{
+		const string				num			= toString(it->first);
+		const tcu::ScopedLogSection	subsection	(log, num, "Texture " + num);
+
+		logTexture(*it->second, log);
+	}
 
 	const string attDesc = cfg.attachments.empty()
 		? "Framebuffer has no attachments"
@@ -562,6 +706,166 @@ void logFramebufferConfig (const Framebuffer& cfg, TestLog& log)
 	log << TestLog::EndSection; // Attachments
 
 	log << TestLog::EndSection; // Framebuffer
+}
+
+ValidStatusCodes::ValidStatusCodes (void)
+	: m_allowComplete(false)
+{
+}
+
+bool ValidStatusCodes::isFBOStatusValid (glw::GLenum fboStatus) const
+{
+	if (fboStatus == GL_FRAMEBUFFER_COMPLETE)
+		return m_allowComplete;
+	else
+	{
+		// rule violation exists?
+		for (int ndx = 0; ndx < (int)m_errorStatuses.size(); ++ndx)
+		{
+			if (m_errorStatuses[ndx].errorCode == fboStatus)
+				return true;
+		}
+		return false;
+	}
+}
+
+bool ValidStatusCodes::isFBOStatusRequired (glw::GLenum fboStatus) const
+{
+	if (fboStatus == GL_FRAMEBUFFER_COMPLETE)
+		return m_allowComplete && m_errorStatuses.empty();
+	else
+		// fboStatus is the only allowed error status and succeeding is forbidden
+		return !m_allowComplete && m_errorStatuses.size() == 1 && m_errorStatuses.front().errorCode == fboStatus;
+}
+
+bool ValidStatusCodes::isErrorCodeValid (glw::GLenum errorCode) const
+{
+	if (errorCode == GL_NO_ERROR)
+		return m_errorCodes.empty();
+	else
+	{
+		// rule violation exists?
+		for (int ndx = 0; ndx < (int)m_errorCodes.size(); ++ndx)
+		{
+			if (m_errorCodes[ndx].errorCode == errorCode)
+				return true;
+		}
+		return false;
+	}
+}
+
+bool ValidStatusCodes::isErrorCodeRequired (glw::GLenum errorCode) const
+{
+	if (m_errorCodes.empty() && errorCode == GL_NO_ERROR)
+		return true;
+	else
+		// only this error code listed
+		return m_errorCodes.size() == 1 && m_errorCodes.front().errorCode == errorCode;
+}
+
+void ValidStatusCodes::addErrorCode (glw::GLenum error, const char* description)
+{
+	DE_ASSERT(isErrorCode(error));
+	DE_ASSERT(error != GL_NO_ERROR);
+	addViolation(m_errorCodes, error, description);
+}
+
+void ValidStatusCodes::addFBOErrorStatus (glw::GLenum status, const char* description)
+{
+	DE_ASSERT(isFramebufferStatus(status));
+	DE_ASSERT(status != GL_FRAMEBUFFER_COMPLETE);
+	addViolation(m_errorStatuses, status, description);
+}
+
+void ValidStatusCodes::setAllowComplete (bool b)
+{
+	m_allowComplete = b;
+}
+
+void ValidStatusCodes::logLegalResults (tcu::TestLog& log) const
+{
+	tcu::MessageBuilder			msg				(&log);
+	std::vector<std::string>	validResults;
+
+	for (int ndx = 0; ndx < (int)m_errorCodes.size(); ++ndx)
+		validResults.push_back(std::string(glu::getErrorName(m_errorCodes[ndx].errorCode)) + " (during FBO initialization)");
+
+	for (int ndx = 0; ndx < (int)m_errorStatuses.size(); ++ndx)
+		validResults.push_back(glu::getFramebufferStatusName(m_errorStatuses[ndx].errorCode));
+
+	if (m_allowComplete)
+		validResults.push_back("GL_FRAMEBUFFER_COMPLETE");
+
+	msg << "Expected ";
+	if (validResults.size() > 1)
+		msg << "one of ";
+
+	for (int ndx = 0; ndx < (int)validResults.size(); ++ndx)
+	{
+		const bool last			= ((ndx + 1) == (int)validResults.size());
+		const bool secondToLast	= ((ndx + 2) == (int)validResults.size());
+
+		msg << validResults[ndx];
+		if (!last)
+			msg << ((secondToLast) ? (" or ") : (", "));
+	}
+
+	msg << "." << TestLog::EndMessage;
+}
+
+void ValidStatusCodes::logRules (tcu::TestLog& log) const
+{
+	const tcu::ScopedLogSection section(log, "Rules", "Active rules");
+
+	for (int ndx = 0; ndx < (int)m_errorCodes.size(); ++ndx)
+		logRule(log, glu::getErrorName(m_errorCodes[ndx].errorCode), m_errorCodes[ndx].rules);
+
+	for (int ndx = 0; ndx < (int)m_errorStatuses.size(); ++ndx)
+		logRule(log, glu::getFramebufferStatusName(m_errorStatuses[ndx].errorCode), m_errorStatuses[ndx].rules);
+
+	if (m_allowComplete)
+	{
+		std::set<std::string> defaultRule;
+		defaultRule.insert("FBO is complete");
+		logRule(log, "GL_FRAMEBUFFER_COMPLETE", defaultRule);
+	}
+}
+
+void ValidStatusCodes::logRule (tcu::TestLog& log, const std::string& ruleName, const std::set<std::string>& rules) const
+{
+	if (!rules.empty())
+	{
+		const tcu::ScopedLogSection		section	(log, ruleName, ruleName);
+		tcu::MessageBuilder				msg		(&log);
+
+		msg << "Rules:\n";
+		for (std::set<std::string>::const_iterator it = rules.begin(); it != rules.end(); ++it)
+			msg << "\t * " << *it << "\n";
+		msg << TestLog::EndMessage;
+	}
+}
+
+void ValidStatusCodes::addViolation (std::vector<RuleViolation>& dst, glw::GLenum code, const char* description) const
+{
+	// rule violation already exists?
+	for (int ndx = 0; ndx < (int)dst.size(); ++ndx)
+	{
+		if (dst[ndx].errorCode == code)
+		{
+			dst[ndx].rules.insert(std::string(description));
+			return;
+		}
+	}
+
+	// new violation
+	{
+		RuleViolation violation;
+
+		violation.errorCode = code;
+		violation.rules.insert(std::string(description));
+
+		dst.push_back(violation);
+	}
 }
 
 FboBuilder::FboBuilder (GLuint fbo, GLenum target, const glw::Functions& gl)

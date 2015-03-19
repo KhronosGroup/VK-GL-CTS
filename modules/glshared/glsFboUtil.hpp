@@ -44,8 +44,6 @@ namespace deqp
 namespace gls
 {
 
-// Utilities for standard containers. \todo [2013-12-10 lauri] Move to decpp?
-
 //! A pair of iterators to present a range.
 //! \note This must be POD to allow static initialization.
 //! \todo [2013-12-03 lauri] Move this to decpp?
@@ -76,71 +74,6 @@ struct Pair
 	T2			second;
 };
 
-template<typename C>
-C intersection(const C& s1, const C& s2)
-{
-	C ret;
-	std::set_intersection(s1.begin(), s1.end(), s2.begin(), s2.end(),
-						  std::insert_iterator<C>(ret, ret.begin()));
-	return ret;
-}
-
-// \todo [2013-12-03 lauri] move to decpp?
-template<typename C>
-inline bool isMember (const typename C::key_type& key, const C& container)
-{
-	typename C::const_iterator it = container.find(key);
-	return (it != container.end());
-}
-
-template <typename M> inline
-const typename M::mapped_type* lookupMaybe (const M& map,
-											const typename M::key_type& key)
-{
-	typename M::const_iterator it = map.find(key);
-	if (it == map.end())
-		return DE_NULL;
-	return &it->second;
-}
-
-template<typename M> inline
-const typename M::mapped_type& lookupDefault (const M& map,
-											  const typename M::key_type& key,
-											  const typename M::mapped_type& fallback)
-{
-	const typename M::mapped_type* ptr = lookupMaybe(map, key);
-	return ptr == DE_NULL ? fallback : *ptr;
-}
-
-
-template<typename M>
-const typename M::mapped_type& lookup (const M& map,
-									   const typename M::key_type& key)
-{
-	const typename M::mapped_type* ptr = lookupMaybe(map, key);
-	if (ptr == DE_NULL)
-		throw std::out_of_range("key not found in map");
-	return *ptr;
-}
-
-template<typename C>
-inline bool contains (const C& container, const typename C::value_type& item)
-{
-	const typename C::const_iterator it = container.find(item);
-	return (it != container.end());
-}
-
-
-template<typename M> static inline
-bool insert(const typename M::key_type& key, const typename M::mapped_type& value, M& map)
-{
-	typename M::value_type entry(key, value);
-	std::pair<typename M::iterator,bool> ret = map.insert(entry);
-	return ret.second;
-}
-
-std::vector<std::string> splitString(const std::string& s);
-
 namespace FboUtil
 {
 
@@ -163,7 +96,7 @@ struct ImageFormat
 	//! Type if format is unsized, GL_NONE if sized.
 	glw::GLenum				unsizedType;
 
-	bool 					operator<		(const ImageFormat& other) const
+	bool					operator<		(const ImageFormat& other) const
 	{
 		return (format < other.format ||
 				(format == other.format && unsizedType < other.unsizedType));
@@ -175,6 +108,8 @@ struct ImageFormat
 		return fmt;
 	}
 };
+
+std::ostream& operator<< (std::ostream& stream, const ImageFormat& format);
 
 static inline ImageFormat formatKeyInfo(FormatKey key)
 {
@@ -205,15 +140,28 @@ typedef std::set<ImageFormat> Formats;
 class FormatDB
 {
 public:
-	void							addFormat		(ImageFormat format, FormatFlags flags);
-	Formats							getFormats		(FormatFlags requirements) const;
-	FormatFlags						getFormatInfo	(ImageFormat format,
-													 FormatFlags fallback) const;
+	void								addCoreFormat				(ImageFormat format, FormatFlags flags);
+	void								addExtensionFormat			(ImageFormat format, FormatFlags flags, const std::set<std::string>& requiredExtensions);
+
+	Formats								getFormats					(FormatFlags requirements) const;
+	bool								isKnownFormat				(ImageFormat format) const;
+	FormatFlags							getFormatInfo				(ImageFormat format) const;
+	std::set<std::set<std::string> >	getFormatFeatureExtensions	(ImageFormat format, FormatFlags requirements) const;
 
 private:
-	typedef std::map<ImageFormat, FormatFlags>		FormatMap;
+	struct ExtensionInfo
+	{
+		FormatFlags					flags;
+		std::set<std::string>		requiredExtensions;
 
-	FormatMap						m_map;
+		bool						operator<			(const ExtensionInfo& other) const;
+	};
+
+	typedef std::map<ImageFormat, FormatFlags>					FormatMap;
+	typedef std::map<ImageFormat, std::set<ExtensionInfo> >		FormatExtensionMap;
+
+	FormatMap							m_formatFlags;
+	FormatExtensionMap					m_formatExtensions;
 };
 
 typedef Pair<FormatFlags, FormatKeys>				FormatEntry;
@@ -234,7 +182,7 @@ struct FormatExtEntry
 typedef Range<FormatExtEntry>						FormatExtEntries;
 
 void				addFormats			(FormatDB& db, FormatEntries stdFmts);
-void 				addExtFormats		(FormatDB& db, FormatExtEntries extFmts,
+void				addExtFormats		(FormatDB& db, FormatExtEntries extFmts,
 										 const glu::RenderContext* ctx);
 glu::TransferFormat	transferImageFormat	(const ImageFormat& imgFormat);
 
@@ -243,7 +191,7 @@ namespace config
 
 struct Config
 {
-	virtual 					~Config			(void) {};
+	virtual						~Config			(void) {};
 };
 
 struct Image : public Config
@@ -270,7 +218,7 @@ struct Texture : public Image
 {
 							Texture			(void) : numLevels(1) {}
 
-	glw::GLint 				numLevels;
+	glw::GLint				numLevels;
 };
 
 struct TextureFlat : public Texture
@@ -303,8 +251,8 @@ struct Attachment : public Config
 {
 							Attachment		(void) : target(GL_FRAMEBUFFER), imageName(0) {}
 
-	glw::GLenum 			target;
-	glw::GLuint 			imageName;
+	glw::GLenum				target;
+	glw::GLuint				imageName;
 
 	//! Returns `true` iff this attachment is "framebuffer attachment
 	//! complete" when bound to attachment point `attPoint`, and the current
@@ -370,8 +318,6 @@ struct Framebuffer
 
 } // config
 
-void logFramebufferConfig(const config::Framebuffer& cfg, tcu::TestLog& log);
-
 class FboBuilder : public config::Framebuffer
 {
 public:
@@ -406,21 +352,58 @@ private:
 	Configs						m_configs;
 };
 
-typedef std::set<glw::GLenum> StatusCodes;
+struct ValidStatusCodes
+{
+								ValidStatusCodes		(void);
+
+	bool						isFBOStatusValid		(glw::GLenum fboStatus) const;
+	bool						isFBOStatusRequired		(glw::GLenum fboStatus) const;
+	bool						isErrorCodeValid		(glw::GLenum errorCode) const;
+	bool						isErrorCodeRequired		(glw::GLenum errorCode) const;
+
+	void						addErrorCode			(glw::GLenum error, const char* description);
+	void						addFBOErrorStatus		(glw::GLenum status, const char* description);
+	void						setAllowComplete		(bool);
+
+	void						logLegalResults			(tcu::TestLog& log) const;
+	void						logRules				(tcu::TestLog& log) const;
+
+private:
+	struct RuleViolation
+	{
+		glw::GLenum				errorCode;
+		std::set<std::string>	rules;
+	};
+
+	void						logRule					(tcu::TestLog& log, const std::string& ruleName, const std::set<std::string>& rules) const;
+	void						addViolation			(std::vector<RuleViolation>& dst, glw::GLenum code, const char* description) const;
+
+	std::vector<RuleViolation>	m_errorCodes;			//!< Allowed GL errors, GL_NO_ERROR is not allowed
+	std::vector<RuleViolation>	m_errorStatuses;		//!< Allowed FBO error statuses, GL_FRAMEBUFFER_COMPLETE is not allowed
+	bool						m_allowComplete;		//!< true if (GL_NO_ERROR && GL_FRAMEBUFFER_COMPLETE) is allowed
+};
+
+void logFramebufferConfig (const config::Framebuffer& cfg, tcu::TestLog& log);
 
 class Checker
 {
 public:
-					Checker			(void) { m_statusCodes.insert(GL_FRAMEBUFFER_COMPLETE); }
-	virtual			~Checker		(void) {}
-	void			require			(bool condition, glw::GLenum error);
-	void			canRequire		(bool condition, glw::GLenum error);
-	StatusCodes		getStatusCodes	(void) { return m_statusCodes; }
-	virtual void	check			(glw::GLenum attPoint, const config::Attachment& att,
-									 const config::Image* image) = 0;
+						Checker					(void);
+	virtual				~Checker				(void) {}
+
+	void				addGLError				(glw::GLenum error, const char* description);
+	void				addPotentialGLError		(glw::GLenum error, const char* description);
+	void				addFBOStatus			(glw::GLenum status, const char* description);
+	void				addPotentialFBOStatus	(glw::GLenum status, const char* description);
+
+	ValidStatusCodes	getStatusCodes			(void) { return m_statusCodes; }
+
+	virtual void		check					(glw::GLenum				attPoint,
+												 const config::Attachment&	att,
+												 const config::Image*		image) = 0;
 private:
 
-	StatusCodes		m_statusCodes;	//< Allowed return values for glCheckFramebufferStatus.
+	ValidStatusCodes	m_statusCodes;	//< Allowed return values for glCheckFramebufferStatus.
 };
 
 class CheckerFactory
@@ -438,7 +421,7 @@ public:
 								FboVerifier				(const FormatDB& formats,
 														 CheckerFactory& factory);
 
-	StatusCodes					validStatusCodes		(const config::Framebuffer& cfg) const;
+	ValidStatusCodes			validStatusCodes		(const config::Framebuffer& cfg) const;
 
 private:
 	const FormatDB&				m_formats;
