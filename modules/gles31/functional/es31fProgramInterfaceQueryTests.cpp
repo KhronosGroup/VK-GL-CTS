@@ -38,6 +38,7 @@
 #include "deSharedPtr.hpp"
 #include "deUniquePtr.hpp"
 #include "deSTLUtil.hpp"
+#include "deArrayUtil.hpp"
 
 #include <set>
 #include <map>

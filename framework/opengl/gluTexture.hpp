@@ -29,6 +29,7 @@
 #include "tcuResource.hpp"
 #include "gluRenderContext.hpp"
 #include "gluContextInfo.hpp"
+#include "deArrayBuffer.hpp"
 
 #include <vector>
 #include <string>

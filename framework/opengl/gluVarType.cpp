@@ -23,6 +23,7 @@
 
 #include "gluVarType.hpp"
 #include "deStringUtil.hpp"
+#include "deArrayUtil.hpp"
 
 namespace glu
 {

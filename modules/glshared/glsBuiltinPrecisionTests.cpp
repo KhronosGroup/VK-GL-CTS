@@ -32,6 +32,7 @@
 #include "deStringUtil.hpp"
 #include "deUniquePtr.hpp"
 #include "deSharedPtr.hpp"
+#include "deArrayUtil.hpp"
 
 #include "tcuCommandLine.hpp"
 #include "tcuFloatFormat.hpp"

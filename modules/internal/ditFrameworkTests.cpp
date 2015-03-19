@@ -30,8 +30,10 @@
 #include "rrRenderer.hpp"
 #include "tcuTextureUtil.hpp"
 #include "tcuVectorUtil.hpp"
-#include "deRandom.hpp"
 #include "tcuFloat.hpp"
+
+#include "deRandom.hpp"
+#include "deArrayUtil.hpp"
 
 namespace dit
 {

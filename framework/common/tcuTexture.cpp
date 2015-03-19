@@ -31,6 +31,7 @@
 #include "tcuFloat.hpp"
 #include "tcuTextureUtil.hpp"
 #include "deStringUtil.hpp"
+#include "deArrayUtil.hpp"
 
 #include <limits>
 
