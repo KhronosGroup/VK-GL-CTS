@@ -32,7 +32,7 @@ def install (extraArgs = [], printPrefix=""):
 	common.execArgsInDirectory([common.ADB_BIN] + extraArgs + [
 			'uninstall',
 			'com.drawelements.deqp'
-		], common.ANDROID_DIR)
+		], common.ANDROID_DIR, printPrefix)
 	print printPrefix + "Remove complete\n",
 
 	print printPrefix + "Installing dEQP Package...\n",
@@ -40,11 +40,15 @@ def install (extraArgs = [], printPrefix=""):
 			'install',
 			'-r',
 			'package/bin/dEQP-debug.apk'
-		], common.ANDROID_DIR)
+		], common.ANDROID_DIR, printPrefix)
 	print printPrefix + "Install complete\n",
 
 def installToDevice (device, printPrefix=""):
-	print printPrefix + "Installing to %s (%s)...\n" % (device.serial, device.model),
+	if len(printPrefix) == 0:
+		print "Installing to %s (%s)...\n" % (device.serial, device.model),
+	else:
+		print printPrefix + "Installing to %s\n" % device.serial,
+
 	install(['-s', device.serial], printPrefix)
 
 def installToAllDevices (doParallel):
