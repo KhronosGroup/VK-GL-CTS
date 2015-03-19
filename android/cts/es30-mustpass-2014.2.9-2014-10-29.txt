@@ -33203,7 +33203,6 @@ dEQP-GLES3.functional.fragment_out.array.uint.r8ui_highp_uvec3
 dEQP-GLES3.functional.fragment_out.array.uint.r8ui_highp_uvec4
 dEQP-GLES3.functional.fragment_out.random.1
 dEQP-GLES3.functional.fragment_out.random.2
-dEQP-GLES3.functional.fragment_out.random.3
 dEQP-GLES3.functional.fragment_out.random.4
 dEQP-GLES3.functional.fragment_out.random.5
 dEQP-GLES3.functional.fragment_out.random.6
@@ -33228,7 +33227,6 @@ dEQP-GLES3.functional.fragment_out.random.24
 dEQP-GLES3.functional.fragment_out.random.25
 dEQP-GLES3.functional.fragment_out.random.26
 dEQP-GLES3.functional.fragment_out.random.27
-dEQP-GLES3.functional.fragment_out.random.28
 dEQP-GLES3.functional.fragment_out.random.30
 dEQP-GLES3.functional.fragment_out.random.31
 dEQP-GLES3.functional.fragment_out.random.32
@@ -33247,7 +33245,6 @@ dEQP-GLES3.functional.fragment_out.random.44
 dEQP-GLES3.functional.fragment_out.random.45
 dEQP-GLES3.functional.fragment_out.random.46
 dEQP-GLES3.functional.fragment_out.random.47
-dEQP-GLES3.functional.fragment_out.random.48
 dEQP-GLES3.functional.fragment_out.random.49
 dEQP-GLES3.functional.fragment_out.random.51
 dEQP-GLES3.functional.fragment_out.random.52
@@ -33268,9 +33265,7 @@ dEQP-GLES3.functional.fragment_out.random.67
 dEQP-GLES3.functional.fragment_out.random.68
 dEQP-GLES3.functional.fragment_out.random.69
 dEQP-GLES3.functional.fragment_out.random.70
-dEQP-GLES3.functional.fragment_out.random.71
 dEQP-GLES3.functional.fragment_out.random.72
-dEQP-GLES3.functional.fragment_out.random.73
 dEQP-GLES3.functional.fragment_out.random.74
 dEQP-GLES3.functional.fragment_out.random.76
 dEQP-GLES3.functional.fragment_out.random.77
