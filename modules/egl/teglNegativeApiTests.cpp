@@ -24,6 +24,11 @@
 #include "teglNegativeApiTests.hpp"
 #include "teglApiCase.hpp"
 
+#include "egluNativeDisplay.hpp"
+#include "egluNativeWindow.hpp"
+#include "egluUtil.hpp"
+#include "egluUnique.hpp"
+
 #include <memory>
 
 using tcu::TestLog;
@@ -1311,14 +1316,44 @@ void NegativeApiTests::init (void)
 
 	TEGL_ADD_API_CASE(wait_native, "eglWaitNative() negative tests",
 		{
-			TestLog&	log			= m_testCtx.getLog();
+			EGLConfig				config			= DE_NULL;
+			bool					gotConfig		= getConfig(&config, FilterList() << renderable<EGL_OPENGL_ES2_BIT> << surfaceBits<EGL_WINDOW_BIT>);
 
-			log << TestLog::Section("Test1", "EGL_BAD_PARAMETER is generated if engine is not a recognized marking engine");
+			if (gotConfig)
+			{
+				TestLog&							log				= m_testCtx.getLog();
+				const Library&						egl				= m_eglTestCtx.getLibrary();
+				EGLDisplay							display			= getDisplay();
+				const eglu::NativeWindowFactory&	factory			= eglu::selectNativeWindowFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
+				de::UniquePtr<eglu::NativeWindow>	window			(factory.createWindow(&m_eglTestCtx.getNativeDisplay(), display, config, DE_NULL, eglu::WindowParams(256, 256, eglu::parseWindowVisibility(m_testCtx.getCommandLine()))));
+				eglu::UniqueSurface					surface			(egl, display, eglu::createWindowSurface(m_eglTestCtx.getNativeDisplay(), *window, display, config, DE_NULL));
+				EGLContext							context			= EGL_NO_CONTEXT;
 
-			expectFalse(eglWaitNative(-1));
-			expectError(EGL_BAD_PARAMETER);
+				expectTrue(eglBindAPI(EGL_OPENGL_ES_API));
+				expectError(EGL_SUCCESS);
 
-			log << TestLog::EndSection;
+				context = eglCreateContext(display, config, EGL_NO_CONTEXT, s_es2ContextAttribList);
+				expectError(EGL_SUCCESS);
+
+				expectTrue(eglMakeCurrent(display, *surface, *surface, context));
+				expectError(EGL_SUCCESS);
+
+				log << TestLog::Section("Test1", "EGL_BAD_PARAMETER is generated if engine is not a recognized marking engine");
+
+				expectFalse(eglWaitNative(-1));
+				expectError(EGL_BAD_PARAMETER);
+
+				log << TestLog::EndSection;
+
+				expectTrue(eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT));
+				expectError(EGL_SUCCESS);
+
+				if (context != EGL_NO_CONTEXT)
+				{
+					expectTrue(eglDestroyContext(display, context));
+					expectError(EGL_SUCCESS);
+				}
+			}
 		});
 }
 
