@@ -189,9 +189,11 @@ def dumpConfig ():
 	print " "
 
 if __name__ == "__main__":
+	nativeBuildTypes = ['Release', 'Debug', 'MinSizeRel', 'RelWithAsserts', 'RelWithDebInfo']
+
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--is-release', dest='isRelease', type=bool, default=False, help="Build android project in release mode.")
-	parser.add_argument('--native-build-type', dest='nativeBuildType', default="Release", help="Build type passed cmake when building native code.")
+	parser.add_argument('--native-build-type', dest='nativeBuildType', default="RelWithAsserts", choices=nativeBuildTypes, help="Build type passed cmake when building native code.")
 	parser.add_argument('--build-root', dest='buildRoot', default=common.ANDROID_DIR, help="Root directory for storing build results.")
 	parser.add_argument('--dump-config', dest='dumpConfig', action='store_true', help="Print out all configurations variables")
 	parser.add_argument('--java-api', dest='javaApi', default=common.ANDROID_JAVA_API, help="Set the API signature for the java build.")
