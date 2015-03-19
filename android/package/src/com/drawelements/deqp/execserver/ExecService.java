@@ -27,11 +27,8 @@ import android.app.Service;
 import android.app.Notification;
 import android.app.PendingIntent;
 import android.content.Intent;
-import android.content.Context;
-import android.content.ComponentName;
 import android.os.Binder;
 import android.os.IBinder;
-import android.os.Build;
 
 import com.drawelements.deqp.execserver.ExecServerActivity;
 import com.drawelements.deqp.R;

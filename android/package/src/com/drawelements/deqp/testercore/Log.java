@@ -23,11 +23,8 @@
 
 package com.drawelements.deqp.testercore;
 
-import javax.microedition.khronos.egl.*;
-
 public class Log {
 
-	private static final boolean	LOG_VERBOSE		= android.util.Log.isLoggable("dEQP", android.util.Log.VERBOSE);
 	private static final boolean	LOG_DEBUG		= android.util.Log.isLoggable("dEQP", android.util.Log.DEBUG);
 	private static final boolean	LOG_INFO		= true;
 	private static final boolean	LOG_WARNING		= true;

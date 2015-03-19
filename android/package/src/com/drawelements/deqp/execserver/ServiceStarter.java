@@ -27,7 +27,6 @@ import android.app.Activity;
 import android.os.Bundle;
 import com.drawelements.deqp.testercore.Log;
 import android.content.Intent;
-import com.drawelements.deqp.execserver.ExecService;
 
 public class ServiceStarter extends Activity
 {
