@@ -87,7 +87,7 @@ void ApiCase::expectError (EGLenum expected)
 	EGLenum err = m_eglTestCtx.getLibrary().getError();
 	if (err != expected)
 	{
-		m_testCtx.getLog() << TestLog::Message << "// ERROR: expected " << eglu::getErrorStr(expected) << TestLog::EndMessage;
+		m_testCtx.getLog() << TestLog::Message << "// ERROR expected: " << eglu::getErrorStr(expected) << ", Got: " << eglu::getErrorStr(err) << TestLog::EndMessage;
 		if (m_testCtx.getTestResult() == QP_TEST_RESULT_PASS)
 			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Got invalid error");
 	}
@@ -97,7 +97,7 @@ void ApiCase::expectBoolean (EGLBoolean expected, EGLBoolean got)
 {
 	if (expected != got)
 	{
-		m_testCtx.getLog() << TestLog::Message << "// ERROR: expected " << (expected ? "EGL_TRUE" : "EGL_FALSE") << TestLog::EndMessage;
+		m_testCtx.getLog() << TestLog::Message << "// ERROR expected: " << eglu::getBooleanStr(expected) <<  ", Got: " << eglu::getBooleanStr(got) << TestLog::EndMessage;
 		if (m_testCtx.getTestResult() == QP_TEST_RESULT_PASS)
 			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Got invalid value");
 	}
@@ -107,7 +107,7 @@ void ApiCase::expectNoContext (EGLContext got)
 {
 	if (got != EGL_NO_CONTEXT)
 	{
-		m_testCtx.getLog() << TestLog::Message << "// ERROR: expected EGL_NO_CONTEXT" << TestLog::EndMessage;
+		m_testCtx.getLog() << TestLog::Message << "// ERROR expected: EGL_NO_CONTEXT" << TestLog::EndMessage;
 		if (m_testCtx.getTestResult() == QP_TEST_RESULT_PASS)
 			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Got invalid value");
 		eglDestroyContext(getDisplay(), got);
@@ -118,7 +118,7 @@ void ApiCase::expectNoSurface (EGLSurface got)
 {
 	if (got != EGL_NO_CONTEXT)
 	{
-		m_testCtx.getLog() << TestLog::Message << "// ERROR: expected EGL_NO_SURFACE" << TestLog::EndMessage;
+		m_testCtx.getLog() << TestLog::Message << "// ERROR expected: EGL_NO_SURFACE" << TestLog::EndMessage;
 		if (m_testCtx.getTestResult() == QP_TEST_RESULT_PASS)
 			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Got invalid value");
 		eglDestroySurface(getDisplay(), got);
@@ -129,7 +129,7 @@ void ApiCase::expectNoDisplay (EGLDisplay got)
 {
 	if (got != EGL_NO_CONTEXT)
 	{
-		m_testCtx.getLog() << TestLog::Message << "// ERROR: expected EGL_NO_DISPLAY" << TestLog::EndMessage;
+		m_testCtx.getLog() << TestLog::Message << "// ERROR expected: EGL_NO_DISPLAY" << TestLog::EndMessage;
 		if (m_testCtx.getTestResult() == QP_TEST_RESULT_PASS)
 			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Got invalid value");
 	}
@@ -139,7 +139,7 @@ void ApiCase::expectNull (const void* got)
 {
 	if (got != EGL_NO_CONTEXT)
 	{
-		m_testCtx.getLog() << TestLog::Message << "// ERROR: expected NULL" << TestLog::EndMessage;
+		m_testCtx.getLog() << TestLog::Message << "// ERROR expected: NULL" << TestLog::EndMessage;
 		if (m_testCtx.getTestResult() == QP_TEST_RESULT_PASS)
 			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Got invalid value");
 	}
