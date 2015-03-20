@@ -178,7 +178,7 @@ int getChannelSize (TextureFormat::ChannelType type)
 int getNumUsedChannels (TextureFormat::ChannelOrder order)
 {
 	// make sure this table is updated if type table is updated
-	DE_STATIC_ASSERT(TextureFormat::CHANNELORDER_LAST == 16);
+	DE_STATIC_ASSERT(TextureFormat::CHANNELORDER_LAST == 18);
 
 	switch (order)
 	{
@@ -193,6 +193,8 @@ int getNumUsedChannels (TextureFormat::ChannelOrder order)
 		case TextureFormat::RGBA:		return 4;
 		case TextureFormat::ARGB:		return 4;
 		case TextureFormat::BGRA:		return 4;
+		case TextureFormat::sR:			return 1;
+		case TextureFormat::sRG:		return 2;
 		case TextureFormat::sRGB:		return 3;
 		case TextureFormat::sRGBA:		return 4;
 		case TextureFormat::D:			return 1;
@@ -382,7 +384,7 @@ tcu::Vec4 unpackRGB999E5 (deUint32 color)
 const TextureSwizzle& getChannelReadSwizzle (TextureFormat::ChannelOrder order)
 {
 	// make sure to update these tables when channel orders are updated
-	DE_STATIC_ASSERT(TextureFormat::CHANNELORDER_LAST == 16);
+	DE_STATIC_ASSERT(TextureFormat::CHANNELORDER_LAST == 18);
 
 	static const TextureSwizzle INV		= {{ TextureSwizzle::CHANNEL_ZERO,	TextureSwizzle::CHANNEL_ZERO,	TextureSwizzle::CHANNEL_ZERO,	TextureSwizzle::CHANNEL_ONE	}};
 	static const TextureSwizzle R		= {{ TextureSwizzle::CHANNEL_0,		TextureSwizzle::CHANNEL_ZERO,	TextureSwizzle::CHANNEL_ZERO,	TextureSwizzle::CHANNEL_ONE	}};
@@ -413,6 +415,8 @@ const TextureSwizzle& getChannelReadSwizzle (TextureFormat::ChannelOrder order)
 		case TextureFormat::RGBA:		return RGBA;
 		case TextureFormat::ARGB:		return ARGB;
 		case TextureFormat::BGRA:		return BGRA;
+		case TextureFormat::sR:			return R;
+		case TextureFormat::sRG:		return RG;
 		case TextureFormat::sRGB:		return RGB;
 		case TextureFormat::sRGBA:		return RGBA;
 		case TextureFormat::D:			return D;
@@ -427,7 +431,7 @@ const TextureSwizzle& getChannelReadSwizzle (TextureFormat::ChannelOrder order)
 const TextureSwizzle& getChannelWriteSwizzle (TextureFormat::ChannelOrder order)
 {
 	// make sure to update these tables when channel orders are updated
-	DE_STATIC_ASSERT(TextureFormat::CHANNELORDER_LAST == 16);
+	DE_STATIC_ASSERT(TextureFormat::CHANNELORDER_LAST == 18);
 
 	static const TextureSwizzle INV		= {{ TextureSwizzle::CHANNEL_LAST,	TextureSwizzle::CHANNEL_LAST,	TextureSwizzle::CHANNEL_LAST,	TextureSwizzle::CHANNEL_LAST	}};
 	static const TextureSwizzle R		= {{ TextureSwizzle::CHANNEL_0,		TextureSwizzle::CHANNEL_LAST,	TextureSwizzle::CHANNEL_LAST,	TextureSwizzle::CHANNEL_LAST	}};
@@ -458,6 +462,8 @@ const TextureSwizzle& getChannelWriteSwizzle (TextureFormat::ChannelOrder order)
 		case TextureFormat::RGBA:		return RGBA;
 		case TextureFormat::ARGB:		return ARGB;
 		case TextureFormat::BGRA:		return BGRA;
+		case TextureFormat::sR:			return R;
+		case TextureFormat::sRG:		return RG;
 		case TextureFormat::sRGB:		return RGB;
 		case TextureFormat::sRGBA:		return RGBA;
 		case TextureFormat::D:			return D;
@@ -3415,6 +3421,8 @@ std::ostream& operator<< (std::ostream& str, TextureFormat::ChannelOrder order)
 		"ARGB",
 		"BGRA",
 
+		"sR",
+		"sRG",
 		"sRGB",
 		"sRGBA",
 

@@ -53,6 +53,8 @@ public:
 		ARGB,
 		BGRA,
 
+		sR,
+		sRG,
 		sRGB,
 		sRGBA,
 

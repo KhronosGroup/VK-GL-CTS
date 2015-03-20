@@ -72,7 +72,10 @@ Vec4 linearToSRGB (const Vec4& cl)
 
 bool isSRGB (TextureFormat format)
 {
-	return format.order == TextureFormat::sRGB || format.order == TextureFormat::sRGBA;
+	return	format.order == TextureFormat::sR	||
+			format.order == TextureFormat::sRG	||
+			format.order == TextureFormat::sRGB	||
+			format.order == TextureFormat::sRGBA;
 }
 
 //! Get texture channel class for format
