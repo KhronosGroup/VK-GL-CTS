@@ -373,12 +373,11 @@ void qpCrashHandler_writeCrashInfo (qpCrashHandler* handler, qpWriteCrashInfoFun
 
 #else /* posix / generic implementation */
 
-#if (DE_OS == DE_OS_UNIX) || (DE_OS == DE_OS_ANDROID) || (DE_OS == DE_OS_OSX) || (DE_OS == DE_OS_IOS)
-#	define USE_SIGNAL_HANDLER 1
+#if defined(QP_USE_SIGNAL_HANDLER)
 #	include <signal.h>
 #endif
 
-#if defined(USE_SIGNAL_HANDLER)
+#if defined(QP_USE_SIGNAL_HANDLER)
 
 typedef struct SignalInfo_s
 {
@@ -397,7 +396,7 @@ static const SignalInfo s_signals[] =
 	{ SIGPIPE,		QP_CRASHTYPE_OTHER,					"SIGPIPE"	}
 };
 
-#endif /* USE_SIGNAL_HANDLER */
+#endif /* QP_USE_SIGNAL_HANDLER */
 
 struct qpCrashHandler_s
 {
@@ -407,7 +406,7 @@ struct qpCrashHandler_s
 	qpCrashInfo				crashInfo;
 	int						crashSignal;
 
-#if defined(USE_SIGNAL_HANDLER)
+#if defined(QP_USE_SIGNAL_HANDLER)
 	struct sigaction		oldHandlers[DE_LENGTH_OF_ARRAY(s_signals)];
 #endif
 };
@@ -424,7 +423,7 @@ static void assertFailureCallback (const char* expr, const char* file, int line)
 		g_crashHandler->crashHandlerFunc(g_crashHandler, g_crashHandler->handlerUserPointer);
 }
 
-#if defined(USE_SIGNAL_HANDLER)
+#if defined(QP_USE_SIGNAL_HANDLER)
 
 static const SignalInfo* getSignalInfo (int sigNum)
 {
@@ -449,7 +448,7 @@ static void signalHandler (int sigNum)
 		g_crashHandler->crashHandlerFunc(g_crashHandler, g_crashHandler->handlerUserPointer);
 }
 
-#endif /* USE_SIGNAL_HANDLER */
+#endif /* QP_USE_SIGNAL_HANDLER */
 
 qpCrashHandler* qpCrashHandler_create (qpCrashHandlerFunc handlerFunc, void* userPointer)
 {
@@ -471,7 +470,7 @@ qpCrashHandler* qpCrashHandler_create (qpCrashHandlerFunc handlerFunc, void* use
 	/* DE_ASSERT callback. */
 	deSetAssertFailureCallback(assertFailureCallback);
 
-#if defined(USE_SIGNAL_HANDLER)
+#if defined(QP_USE_SIGNAL_HANDLER)
 	/* Register signal handlers. */
 	{
 		struct sigaction	action;
@@ -497,7 +496,7 @@ void qpCrashHandler_destroy (qpCrashHandler* handler)
 
 	deSetAssertFailureCallback(DE_NULL);
 
-#if defined(USE_SIGNAL_HANDLER)
+#if defined(QP_USE_SIGNAL_HANDLER)
 	/* Restore old handlers. */
 	{
 		int sigNdx;
