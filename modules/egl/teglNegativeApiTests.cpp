@@ -907,19 +907,49 @@ void NegativeApiTests::init (void)
 	TEGL_ADD_API_CASE(get_current_surface, "eglGetCurrentSurface() negative tests",
 		{
 			TestLog&	log			= m_testCtx.getLog();
+			EGLDisplay	display		= getDisplay();
+			EGLConfig	config		= DE_NULL;
+			EGLContext	context		= EGL_NO_CONTEXT;
+			EGLSurface	surface		= EGL_NO_SURFACE;
+			bool		gotConfig	= getConfig(&config, FilterList() << renderable<EGL_OPENGL_ES2_BIT> << surfaceBits<EGL_PBUFFER_BIT>);
 
-			log << TestLog::Section("Test1", "EGL_BAD_PARAMETER is generated if readdraw is neither EGL_READ nor EGL_DRAW");
+			if (gotConfig)
+			{
+				expectTrue(eglBindAPI(EGL_OPENGL_ES_API));
+				expectError(EGL_SUCCESS);
 
-			expectNoSurface(eglGetCurrentSurface(EGL_NONE));
-			expectError(EGL_BAD_PARAMETER);
+				context = eglCreateContext(display, config, EGL_NO_CONTEXT, s_es2ContextAttribList);
+				expectError(EGL_SUCCESS);
 
-			log << TestLog::EndSection;
+				// Create simple pbuffer surface.
+				surface = eglCreatePbufferSurface(display, config, s_validGenericPbufferAttrib);
+				expectError(EGL_SUCCESS);
 
-			expectNoSurface(eglGetCurrentSurface(EGL_READ));
-			expectError(EGL_SUCCESS);
+				expectTrue(eglMakeCurrent(display, surface, surface, context));
+				expectError(EGL_SUCCESS);
 
-			expectNoSurface(eglGetCurrentSurface(EGL_DRAW));
-			expectError(EGL_SUCCESS);
+				log << TestLog::Section("Test1", "EGL_BAD_PARAMETER is generated if readdraw is neither EGL_READ nor EGL_DRAW");
+
+				expectNoSurface(eglGetCurrentSurface(EGL_NONE));
+				expectError(EGL_BAD_PARAMETER);
+
+				log << TestLog::EndSection;
+
+				expectTrue(eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT));
+				expectError(EGL_SUCCESS);
+
+				if (surface != EGL_NO_SURFACE)
+				{
+					expectTrue(eglDestroySurface(display, surface));
+					expectError(EGL_SUCCESS);
+				}
+
+				if (context != EGL_NO_CONTEXT)
+				{
+					expectTrue(eglDestroyContext(display, context));
+					expectError(EGL_SUCCESS);
+				}
+			}
 		});
 
 	TEGL_ADD_API_CASE(query_context, "eglQueryContext() negative tests",
