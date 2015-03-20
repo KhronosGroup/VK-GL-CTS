@@ -51,13 +51,6 @@ FileResource::FileResource (const char* filename)
 	m_file = fopen(filename, "rb");
 	if (!m_file)
 		throw ResourceError("Failed to open file", filename, __FILE__, __LINE__);
-
-/*	{
-		FILE* log = fopen("resources.log", "a");
-		fprintf(log, "%s\n", filename);
-		fflush(log);
-		fclose(log);
-	}*/
 }
 
 FileResource::~FileResource ()

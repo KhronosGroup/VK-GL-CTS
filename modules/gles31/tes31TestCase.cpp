@@ -18,7 +18,9 @@
  *
  *//*!
  * \file
- * \brief OpenGL ES 3plus test case.
+ * \brief OpenGL ES 3.1 test case.
  *//*--------------------------------------------------------------------*/
 
 #include "tes31TestCase.hpp"
+
+DE_EMPTY_CPP_FILE

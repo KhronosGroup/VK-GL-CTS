@@ -26,38 +26,11 @@
 #include "tcuDefs.hpp"
 #include "tcuTestPackage.hpp"
 #include "teglTestCase.hpp"
-#include "tcuResource.hpp"
 
 namespace deqp
 {
 namespace egl
 {
-
-class TestCaseWrapper : public tcu::TestCaseWrapper
-{
-public:
-									TestCaseWrapper			(EglTestContext& eglTestContext);
-									~TestCaseWrapper		(void);
-
-	bool							initTestCase			(tcu::TestCase* testCase);
-	bool							deinitTestCase			(tcu::TestCase* testCase);
-
-	tcu::TestNode::IterateResult	iterateTestCase			(tcu::TestCase* testCase);
-};
-
-class PackageContext
-{
-public:
-									PackageContext			(tcu::TestContext& testCtx);
-									~PackageContext			(void);
-
-	EglTestContext&					getEglTestContext		(void) { return m_eglTestCtx;	}
-	tcu::TestCaseWrapper&			getTestCaseWrapper		(void) { return m_caseWrapper;	}
-
-private:
-	EglTestContext					m_eglTestCtx;
-	TestCaseWrapper					m_caseWrapper;
-};
 
 class TestPackage : public tcu::TestPackage
 {
@@ -68,12 +41,10 @@ public:
 	virtual void					init					(void);
 	virtual void					deinit					(void);
 
-	tcu::TestCaseWrapper&			getTestCaseWrapper		(void) { return m_packageCtx->getTestCaseWrapper(); }
-	tcu::ResourcePrefix&			getArchive				(void) { return m_archive; }
+	tcu::TestCaseExecutor*			createExecutor			(void) const;
 
 private:
-	PackageContext*					m_packageCtx;
-	tcu::ResourcePrefix				m_archive;
+	EglTestContext*					m_eglTestCtx;
 };
 
 } // egl

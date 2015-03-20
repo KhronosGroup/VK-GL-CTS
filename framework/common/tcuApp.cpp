@@ -24,7 +24,8 @@
 #include "tcuApp.hpp"
 #include "tcuPlatform.hpp"
 #include "tcuTestContext.hpp"
-#include "tcuTestExecutor.hpp"
+#include "tcuTestSessionExecutor.hpp"
+#include "tcuTestHierarchyUtil.hpp"
 #include "tcuCommandLine.hpp"
 #include "tcuTestLog.hpp"
 #include "qpInfo.h"
@@ -33,19 +34,6 @@
 
 namespace tcu
 {
-
-static void watchDogTimeoutFunc (qpWatchDog* watchDog, void* userPtr)
-{
-	DE_UNREF(watchDog);
-	static_cast<App*>(userPtr)->onWatchdogTimeout();
-}
-
-static void crashHandlerFunc (qpCrashHandler* crashHandler, void* userPtr)
-{
-	DE_UNREF(crashHandler);
-	static_cast<App*>(userPtr)->onCrash();
-}
-
 
 /*--------------------------------------------------------------------*//*!
  * \brief Construct test application
@@ -61,6 +49,7 @@ App::App (Platform& platform, Archive& archive, TestLog& log, const CommandLine&
 	, m_crashHandler	(DE_NULL)
 	, m_crashed			(false)
 	, m_testCtx			(DE_NULL)
+	, m_testRoot		(DE_NULL)
 	, m_testExecutor	(DE_NULL)
 {
 	print("dEQP Core %s (0x%08x) starting..\n", qpGetReleaseName(), qpGetReleaseId());
@@ -71,29 +60,48 @@ App::App (Platform& platform, Archive& archive, TestLog& log, const CommandLine&
 
 	try
 	{
+		const RunMode	runMode	= cmdLine.getRunMode();
+
 		// Initialize watchdog
 		if (cmdLine.isWatchDogEnabled())
-			TCU_CHECK(m_watchDog = qpWatchDog_create(watchDogTimeoutFunc, this, 300, 30));
+			TCU_CHECK_INTERNAL(m_watchDog = qpWatchDog_create(onWatchdogTimeout, this, 300, 30));
 
 		// Initialize crash handler.
 		if (cmdLine.isCrashHandlingEnabled())
-			TCU_CHECK(m_crashHandler = qpCrashHandler_create(crashHandlerFunc, this));
+			TCU_CHECK_INTERNAL(m_crashHandler = qpCrashHandler_create(onCrash, this));
 
 		// Create test context
 		m_testCtx = new TestContext(m_platform, archive, log, cmdLine, m_watchDog);
 
-		// Create test executor
-		m_testExecutor = new TestExecutor(*m_testCtx, cmdLine);
+		// Create root from registry
+		m_testRoot = new TestPackageRoot(*m_testCtx, TestPackageRegistry::getSingleton());
+
+		// \note No executor is created if runmode is not EXECUTE
+		if (runMode == RUNMODE_EXECUTE)
+			m_testExecutor = new TestSessionExecutor(*m_testRoot, *m_testCtx);
+		else if (runMode == RUNMODE_DUMP_XML_CASELIST)
+			writeXmlCaselists(*m_testRoot, *m_testCtx, m_testCtx->getCommandLine());
+		else if (runMode == RUNMODE_DUMP_TEXT_CASELIST)
+			writeTxtCaselists(*m_testRoot, *m_testCtx, m_testCtx->getCommandLine());
+		else
+			DE_ASSERT(false);
 	}
 	catch (const std::exception& e)
 	{
+		cleanup();
 		die("Failed to initialize dEQP: %s", e.what());
 	}
 }
 
 App::~App (void)
 {
+	cleanup();
+}
+
+void App::cleanup (void)
+{
 	delete m_testExecutor;
+	delete m_testRoot;
 	delete m_testCtx;
 
 	if (m_crashHandler)
@@ -103,7 +111,6 @@ App::~App (void)
 		qpWatchDog_destroy(m_watchDog);
 }
 
-
 /*--------------------------------------------------------------------*//*!
  * \brief Step forward test execution
  * \return true if application should call iterate() again and false
@@ -111,8 +118,14 @@ App::~App (void)
  *//*--------------------------------------------------------------------*/
 bool App::iterate (void)
 {
+	if (!m_testExecutor)
+	{
+		DE_ASSERT(m_testCtx->getCommandLine().getRunMode() != RUNMODE_EXECUTE);
+		return false;
+	}
+
 	// Poll platform events
-	bool platformOk = m_platform.processEvents();
+	const bool platformOk = m_platform.processEvents();
 
 	// Iterate a step.
 	bool testExecOk = false;
@@ -138,7 +151,7 @@ bool App::iterate (void)
 		const RunMode runMode = m_testCtx->getCommandLine().getRunMode();
 		if (runMode == RUNMODE_EXECUTE)
 		{
-			const TestRunResult& result = m_testExecutor->getResult();
+			const TestRunStatus& result = m_testExecutor->getStatus();
 
 			// Report statistics.
 			print("\nTest run totals:\n");
@@ -154,13 +167,16 @@ bool App::iterate (void)
 	return platformOk && testExecOk;
 }
 
-/*--------------------------------------------------------------------*//*!
- * \brief Get test run result
- * \return Current test run result.
- *//*--------------------------------------------------------------------*/
-const TestRunResult& App::getResult (void) const
+void App::onWatchdogTimeout (qpWatchDog* watchDog, void* userPtr)
 {
-	return m_testExecutor->getResult();
+	DE_UNREF(watchDog);
+	static_cast<App*>(userPtr)->onWatchdogTimeout();
+}
+
+void App::onCrash (qpCrashHandler* crashHandler, void* userPtr)
+{
+	DE_UNREF(crashHandler);
+	static_cast<App*>(userPtr)->onCrash();
 }
 
 void App::onWatchdogTimeout (void)

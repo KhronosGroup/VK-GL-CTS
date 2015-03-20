@@ -38,6 +38,7 @@ LOCAL_SRC_FILES := \
 	framework/common/tcuCompressedTexture.cpp \
 	framework/common/tcuCPUWarmup.cpp \
 	framework/common/tcuDefs.cpp \
+	framework/common/tcuEither.cpp \
 	framework/common/tcuFactoryRegistry.cpp \
 	framework/common/tcuFloat.cpp \
 	framework/common/tcuFloatFormat.cpp \
@@ -47,29 +48,29 @@ LOCAL_SRC_FILES := \
 	framework/common/tcuImageIO.cpp \
 	framework/common/tcuInterval.cpp \
 	framework/common/tcuMatrix.cpp \
+	framework/common/tcuMaybe.cpp \
 	framework/common/tcuPlatform.cpp \
 	framework/common/tcuRandomValueIterator.cpp \
 	framework/common/tcuRenderTarget.cpp \
 	framework/common/tcuResource.cpp \
 	framework/common/tcuResultCollector.cpp \
 	framework/common/tcuRGBA.cpp \
-	framework/common/tcuEither.cpp \
+	framework/common/tcuSeedBuilder.cpp \
 	framework/common/tcuStringTemplate.cpp \
 	framework/common/tcuSurface.cpp \
 	framework/common/tcuTestCase.cpp \
-	framework/common/tcuTestCaseWrapper.cpp \
 	framework/common/tcuTestContext.cpp \
-	framework/common/tcuTestExecutor.cpp \
+	framework/common/tcuTestHierarchyIterator.cpp \
+	framework/common/tcuTestHierarchyUtil.cpp \
 	framework/common/tcuTestLog.cpp \
 	framework/common/tcuTestPackage.cpp \
+	framework/common/tcuTestSessionExecutor.cpp \
 	framework/common/tcuTexCompareVerifier.cpp \
 	framework/common/tcuTexLookupVerifier.cpp \
 	framework/common/tcuTexture.cpp \
 	framework/common/tcuTextureUtil.cpp \
 	framework/common/tcuTexVerifierUtil.cpp \
 	framework/common/tcuThreadUtil.cpp \
-	framework/common/tcuSeedBuilder.cpp \
-	framework/common/tcuMaybe.cpp \
 	framework/delibs/debase/deDefs.c \
 	framework/delibs/debase/deFloat16.c \
 	framework/delibs/debase/deInt32.c \
@@ -324,7 +325,6 @@ LOCAL_SRC_FILES := \
 	modules/gles31/tes31Context.cpp \
 	modules/gles31/tes31InfoTests.cpp \
 	modules/gles31/tes31TestCase.cpp \
-	modules/gles31/tes31TestCaseWrapper.cpp \
 	modules/gles31/tes31TestPackage.cpp \
 	modules/gles31/tes31TestPackageEntry.cpp \
 	modules/gles3/accuracy/es3aAccuracyTests.cpp \
@@ -463,7 +463,6 @@ LOCAL_SRC_FILES := \
 	modules/gles3/tes3Context.cpp \
 	modules/gles3/tes3InfoTests.cpp \
 	modules/gles3/tes3TestCase.cpp \
-	modules/gles3/tes3TestCaseWrapper.cpp \
 	modules/gles3/tes3TestPackage.cpp \
 	modules/gles3/tes3TestPackageEntry.cpp \
 	modules/glshared/glsAttributeLocationTests.cpp \

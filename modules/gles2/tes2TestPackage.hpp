@@ -25,7 +25,6 @@
 
 #include "tcuDefs.hpp"
 #include "tcuTestPackage.hpp"
-#include "tes2TestCaseWrapper.hpp"
 #include "tes2Context.hpp"
 #include "tcuResource.hpp"
 
@@ -33,20 +32,6 @@ namespace deqp
 {
 namespace gles2
 {
-
-class PackageContext
-{
-public:
-									PackageContext			(tcu::TestContext& testCtx);
-									~PackageContext			(void);
-
-	Context&						getContext				(void) { return *m_context;		}
-	tcu::TestCaseWrapper&			getTestCaseWrapper		(void) { return *m_caseWrapper; }
-
-private:
-	Context*						m_context;
-	TestCaseWrapper*				m_caseWrapper;
-};
 
 class TestPackage : public tcu::TestPackage
 {
@@ -57,12 +42,14 @@ public:
 	virtual void					init					(void);
 	virtual void					deinit					(void);
 
-	tcu::TestCaseWrapper&			getTestCaseWrapper		(void) { return m_packageCtx->getTestCaseWrapper(); }
-	tcu::Archive&					getArchive				(void) { return m_archive; }
+	tcu::TestCaseExecutor*			createExecutor			(void) const;
+
+	tcu::Archive*					getArchive				(void) { return &m_archive;	}
+	Context*						getContext				(void) { return m_context;	}
 
 private:
-	PackageContext*					m_packageCtx;
 	tcu::ResourcePrefix				m_archive;
+	Context*						m_context;
 };
 
 } // gles2

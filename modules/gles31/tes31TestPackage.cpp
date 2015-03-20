@@ -25,40 +25,81 @@
 #include "tes31InfoTests.hpp"
 #include "es31fFunctionalTests.hpp"
 #include "es31sStressTests.hpp"
+#include "gluStateReset.hpp"
+#include "gluRenderContext.hpp"
+#include "tcuTestLog.hpp"
 
 namespace deqp
 {
 namespace gles31
 {
 
-PackageContext::PackageContext (tcu::TestContext& testCtx)
-	: m_context		(DE_NULL)
-	, m_caseWrapper	(DE_NULL)
+class TestCaseWrapper : public tcu::TestCaseExecutor
 {
-	try
-	{
-		m_context		= new Context(testCtx);
-		m_caseWrapper	= new TestCaseWrapper(testCtx, m_context->getRenderContext());
-	}
-	catch (...)
-	{
-		delete m_caseWrapper;
-		delete m_context;
+public:
+									TestCaseWrapper		(TestPackage& package);
+									~TestCaseWrapper	(void);
 
-		throw;
-	}
+	void							init				(tcu::TestCase* testCase, const std::string& path);
+	void							deinit				(tcu::TestCase* testCase);
+	tcu::TestNode::IterateResult	iterate				(tcu::TestCase* testCase);
+
+private:
+	TestPackage&					m_testPackage;
+};
+
+TestCaseWrapper::TestCaseWrapper (TestPackage& package)
+	: m_testPackage(package)
+{
 }
 
-PackageContext::~PackageContext (void)
+TestCaseWrapper::~TestCaseWrapper (void)
 {
-	delete m_caseWrapper;
-	delete m_context;
+}
+
+void TestCaseWrapper::init (tcu::TestCase* testCase, const std::string&)
+{
+	testCase->init();
+}
+
+void TestCaseWrapper::deinit (tcu::TestCase* testCase)
+{
+	testCase->deinit();
+
+	DE_ASSERT(m_testPackage.getContext());
+	glu::resetState(m_testPackage.getContext()->getRenderContext());
+}
+
+tcu::TestNode::IterateResult TestCaseWrapper::iterate (tcu::TestCase* testCase)
+{
+	tcu::TestContext&					testCtx	= m_testPackage.getContext()->getTestContext();
+	const tcu::TestCase::IterateResult	result	= testCase->iterate();
+
+	// Call implementation specific post-iterate routine (usually handles native events and swaps buffers)
+	try
+	{
+		m_testPackage.getContext()->getRenderContext().postIterate();
+		return result;
+	}
+	catch (const tcu::ResourceError& e)
+	{
+		testCtx.getLog() << e;
+		testCtx.setTestResult(QP_TEST_RESULT_RESOURCE_ERROR, "Resource error in context post-iteration routine");
+		testCtx.setTerminateAfter(true);
+		return tcu::TestNode::STOP;
+	}
+	catch (const std::exception& e)
+	{
+		testCtx.getLog() << e;
+		testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Error in context post-iteration routine");
+		return tcu::TestNode::STOP;
+	}
 }
 
 TestPackage::TestPackage (tcu::TestContext& testCtx)
 	: tcu::TestPackage	(testCtx, "dEQP-GLES31", "dEQP OpenGL ES 3.1 Tests")
-	, m_packageCtx		(DE_NULL)
 	, m_archive			(testCtx.getRootArchive(), "gles31/")
+	, m_context			(DE_NULL)
 {
 }
 
@@ -66,7 +107,7 @@ TestPackage::~TestPackage (void)
 {
 	// Destroy children first since destructors may access context.
 	TestNode::deinit();
-	delete m_packageCtx;
+	delete m_context;
 }
 
 void TestPackage::init (void)
@@ -74,17 +115,17 @@ void TestPackage::init (void)
 	try
 	{
 		// Create context
-		m_packageCtx = new PackageContext(m_testCtx);
+		m_context = new Context(m_testCtx);
 
 		// Add main test groups
-		addChild(new InfoTests						(m_packageCtx->getContext()));
-		addChild(new Functional::FunctionalTests	(m_packageCtx->getContext()));
-		addChild(new Stress::StressTests			(m_packageCtx->getContext()));
+		addChild(new InfoTests						(*m_context));
+		addChild(new Functional::FunctionalTests	(*m_context));
+		addChild(new Stress::StressTests			(*m_context));
 	}
 	catch (...)
 	{
-		delete m_packageCtx;
-		m_packageCtx = DE_NULL;
+		delete m_context;
+		m_context = DE_NULL;
 
 		throw;
 	}
@@ -93,8 +134,13 @@ void TestPackage::init (void)
 void TestPackage::deinit (void)
 {
 	TestNode::deinit();
-	delete m_packageCtx;
-	m_packageCtx = DE_NULL;
+	delete m_context;
+	m_context = DE_NULL;
+}
+
+tcu::TestCaseExecutor* TestPackage::createExecutor (void) const
+{
+	return new TestCaseWrapper(const_cast<TestPackage&>(*this));
 }
 
 } // gles31

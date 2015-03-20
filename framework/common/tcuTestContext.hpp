@@ -69,7 +69,11 @@ public:
 
 	void					setTerminateAfter	(bool terminate)	{ m_terminateAfter = terminate;	}
 	bool					getTerminateAfter	(void) const		{ return m_terminateAfter; 		}
+
 protected:
+							TestContext			(const TestContext&);
+	TestContext&			operator=			(const TestContext&);
+
 	Platform&				m_platform;			//!< Platform port implementation.
 	Archive&				m_rootArchive;		//!< Root archive.
 	TestLog&				m_log;				//!< Test log.
@@ -81,7 +85,6 @@ protected:
 	std::string				m_testResultDesc;	//!< Latest test result description.
 	bool					m_terminateAfter;	//!< Should tester terminate after execution of the current test
 };
-
 
 } // tcu
 

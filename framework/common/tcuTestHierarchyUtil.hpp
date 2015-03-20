@@ -1,5 +1,5 @@
-#ifndef _TCUTESTCASEWRAPPER_HPP
-#define _TCUTESTCASEWRAPPER_HPP
+#ifndef _TCUTESTHIERARCHYUTIL_HPP
+#define _TCUTESTHIERARCHYUTIL_HPP
 /*-------------------------------------------------------------------------
  * drawElements Quality Program Tester Core
  * ----------------------------------------
@@ -20,33 +20,19 @@
  *
  *//*!
  * \file
- * \brief Test case wrapper for test execution.
+ * \brief Test hierarchy utilities.
  *//*--------------------------------------------------------------------*/
 
 #include "tcuDefs.hpp"
-#include "tcuTestContext.hpp"
-#include "tcuTestCase.hpp"
+#include "tcuTestHierarchyIterator.hpp"
 
 namespace tcu
 {
 
-class TestCaseWrapper
-{
-public:
-										TestCaseWrapper			(TestContext& testCtx);
-	virtual								~TestCaseWrapper		(void);
-
-	virtual bool						initTestCase			(TestCase* testCase);
-	virtual bool						deinitTestCase			(TestCase* testCase);
-
-	virtual TestNode::IterateResult		iterateTestCase			(TestCase* testCase);
-
-protected:
-	TestContext&						m_testCtx;
-
-	deUint64							m_testStartTime;		//!< For logging test case durations.
-};
+// \todo [2015-02-26 pyry] Remove TestContext requirement
+void	writeXmlCaselists	(TestPackageRoot& root, TestContext& testCtx, const tcu::CommandLine& cmdLine);
+void	writeTxtCaselists	(TestPackageRoot& root, TestContext& testCtx, const tcu::CommandLine& cmdLine);
 
 } // tcu
 
-#endif // _TCUTESTCASEWRAPPER_HPP
+#endif // _TCUTESTHIERARCHYUTIL_HPP

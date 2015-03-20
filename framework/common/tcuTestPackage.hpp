@@ -25,31 +25,59 @@
 
 #include "tcuDefs.hpp"
 #include "tcuTestCase.hpp"
-#include "tcuTestCaseWrapper.hpp"
 
 namespace tcu
 {
 
 /*--------------------------------------------------------------------*//*!
+ * \brief Test case execution interface.
+ *
+ * TestCaseExecutor provides package-specific resources & initialization
+ * for test cases.
+ *
+ * \todo [2015-03-18 pyry] Replace with following API:
+ *
+ * class TestInstance
+ * {
+ * public:
+ *     TestInstance (TestContext& testCtx);
+ *     tcu::TestResult iterate (void);
+ * };
+ *
+ * class TestInstanceFactory (???)
+ * {
+ * public:
+ *     TestInstance* createInstance (const TestCase* testCase, const std::string& path);
+ * };
+ *//*--------------------------------------------------------------------*/
+class TestCaseExecutor
+{
+public:
+	virtual								~TestCaseExecutor	(void) {}
+
+	virtual void						init				(TestCase* testCase, const std::string& path) = 0;
+	virtual void						deinit				(TestCase* testCase) = 0;
+	virtual TestNode::IterateResult		iterate				(TestCase* testCase) = 0;
+};
+
+/*--------------------------------------------------------------------*//*!
  * \brief Base class for test packages.
  *
- * Test packages are root-level test groups. Test case exposes couple of
- * extra customization points. Test package can define custom TestCaseWrapper
- * and archive (usually ResourcePrefix around default archive) for resources.
- *
- * Test package is typically responsible of setting up rendering context
- * for test cases.
+ * Test packages are root-level test groups. They also provide package-
+ * specific test case executor, see TestCaseExecutor.
  *//*--------------------------------------------------------------------*/
 class TestPackage : public TestNode
 {
 public:
-								TestPackage			(TestContext& testCtx, const char* name, const char* description);
-	virtual						~TestPackage		(void);
+									TestPackage			(TestContext& testCtx, const char* name, const char* description);
+	virtual							~TestPackage		(void);
 
-	virtual IterateResult		iterate				(void);
+	virtual TestCaseExecutor*		createExecutor		(void) const = 0;
 
-	virtual TestCaseWrapper&	getTestCaseWrapper	(void) = DE_NULL;
-	virtual Archive&			getArchive			(void) = DE_NULL;
+	// Deprecated
+	virtual Archive*				getArchive			(void) { return DE_NULL; }
+
+	virtual IterateResult			iterate				(void);
 };
 
 // TestPackageRegistry
@@ -101,6 +129,7 @@ class TestPackageRoot : public TestNode
 public:
 							TestPackageRoot		(TestContext& testCtx);
 							TestPackageRoot		(TestContext& testCtx, const std::vector<TestNode*>& children);
+							TestPackageRoot		(TestContext& testCtx, const TestPackageRegistry* packageRegistry);
 	virtual					~TestPackageRoot	(void);
 
 	virtual IterateResult	iterate				(void);

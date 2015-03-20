@@ -38,7 +38,7 @@ namespace dit
 
 using tcu::TestLog;
 
-static const char*	BASE_DIR			= "data/imagecompare";
+static const char*	BASE_DIR			= "internal/data/imagecompare";
 
 static void loadImageRGBA8 (tcu::TextureLevel& dst, const tcu::Archive& archive, const char* path)
 {

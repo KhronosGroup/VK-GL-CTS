@@ -144,6 +144,15 @@ TestPackageRoot::TestPackageRoot (TestContext& testCtx, const vector<TestNode*>&
 {
 }
 
+TestPackageRoot::TestPackageRoot (TestContext& testCtx, const TestPackageRegistry* packageRegistry)
+	: TestNode(testCtx, NODETYPE_ROOT, "", "")
+{
+	const vector<TestPackageRegistry::PackageInfo*>&	packageInfos	= packageRegistry->getPackageInfos();
+
+	for (int i = 0; i < (int)packageInfos.size(); i++)
+		addChild(packageInfos[i]->createFunc(testCtx));
+}
+
 TestPackageRoot::~TestPackageRoot (void)
 {
 }

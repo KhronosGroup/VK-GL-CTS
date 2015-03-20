@@ -176,6 +176,24 @@ public:
 	virtual			~TestCase			(void);
 };
 
+class TestStatus
+{
+public:
+						TestStatus		(qpTestResult code, const std::string& description) : m_code(code), m_description(description) {}
+
+	bool				isComplete		(void) const { return getCode() != QP_TEST_RESULT_LAST;			}
+	qpTestResult		getCode			(void) const { DE_ASSERT(isComplete()); return m_code;			}
+	const std::string&	getDescription	(void) const { DE_ASSERT(isComplete()); return m_description;	}
+
+	static TestStatus	pass			(const std::string& description)	{ return TestStatus(QP_TEST_RESULT_PASS,	description);	}
+	static TestStatus	fail			(const std::string& description)	{ return TestStatus(QP_TEST_RESULT_FAIL,	description);	}
+	static TestStatus	incomplete		(void)								{ return TestStatus(QP_TEST_RESULT_LAST,	"");			}
+
+private:
+	qpTestResult		m_code;
+	std::string			m_description;
+} DE_WARN_UNUSED_TYPE;
+
 } // tcu
 
 #endif // _TCUTESTCASE_HPP

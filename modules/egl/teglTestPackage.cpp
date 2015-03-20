@@ -127,29 +127,32 @@ public:
 	}
 };
 
-TestCaseWrapper::TestCaseWrapper (EglTestContext& eglTestCtx)
-	: tcu::TestCaseWrapper(eglTestCtx.getTestContext())
+class TestCaseWrapper : public tcu::TestCaseExecutor
 {
-}
+public:
+	TestCaseWrapper (void)
+	{
+	}
 
-TestCaseWrapper::~TestCaseWrapper (void)
-{
-}
+	~TestCaseWrapper (void)
+	{
+	}
 
-bool TestCaseWrapper::initTestCase (tcu::TestCase* testCase)
-{
-	return tcu::TestCaseWrapper::initTestCase(testCase);
-}
+	void init (tcu::TestCase* testCase, const std::string&)
+	{
+		testCase->init();
+	}
 
-bool TestCaseWrapper::deinitTestCase (tcu::TestCase* testCase)
-{
-	return tcu::TestCaseWrapper::deinitTestCase(testCase);
-}
+	void deinit (tcu::TestCase* testCase)
+	{
+		testCase->deinit();
+	}
 
-tcu::TestNode::IterateResult TestCaseWrapper::iterateTestCase (tcu::TestCase* testCase)
-{
-	return tcu::TestCaseWrapper::iterateTestCase(testCase);
-}
+	tcu::TestNode::IterateResult iterate (tcu::TestCase* testCase)
+	{
+		return testCase->iterate();
+	}
+};
 
 static const eglu::NativeDisplayFactory& getDefaultDisplayFactory (tcu::TestContext& testCtx)
 {
@@ -158,20 +161,9 @@ static const eglu::NativeDisplayFactory& getDefaultDisplayFactory (tcu::TestCont
 	return factory;
 }
 
-PackageContext::PackageContext (tcu::TestContext& testCtx)
-	: m_eglTestCtx	(testCtx, getDefaultDisplayFactory(testCtx))
-	, m_caseWrapper	(m_eglTestCtx)
-{
-}
-
-PackageContext::~PackageContext (void)
-{
-}
-
 TestPackage::TestPackage (tcu::TestContext& testCtx)
 	: tcu::TestPackage	(testCtx, "dEQP-EGL", "dEQP EGL Tests")
-	, m_packageCtx		(DE_NULL)
-	, m_archive			(testCtx.getRootArchive(), "egl/")
+	, m_eglTestCtx		(DE_NULL)
 {
 }
 
@@ -179,25 +171,25 @@ TestPackage::~TestPackage (void)
 {
 	// Destroy children first since destructors may access context.
 	TestNode::deinit();
-	delete m_packageCtx;
+	delete m_eglTestCtx;
 }
 
 void TestPackage::init (void)
 {
-	DE_ASSERT(!m_packageCtx);
-	m_packageCtx = new PackageContext(m_testCtx);
+	DE_ASSERT(!m_eglTestCtx);
+	m_eglTestCtx = new EglTestContext(m_testCtx, getDefaultDisplayFactory(m_testCtx));
 
 	try
 	{
-		addChild(new InfoTests			(m_packageCtx->getEglTestContext()));
-		addChild(new FunctionalTests	(m_packageCtx->getEglTestContext()));
-		addChild(new PerformanceTests	(m_packageCtx->getEglTestContext()));
-		addChild(new StressTests		(m_packageCtx->getEglTestContext()));
+		addChild(new InfoTests			(*m_eglTestCtx));
+		addChild(new FunctionalTests	(*m_eglTestCtx));
+		addChild(new PerformanceTests	(*m_eglTestCtx));
+		addChild(new StressTests		(*m_eglTestCtx));
 	}
 	catch (...)
 	{
-		delete m_packageCtx;
-		m_packageCtx = DE_NULL;
+		delete m_eglTestCtx;
+		m_eglTestCtx = DE_NULL;
 
 		throw;
 	}
@@ -206,8 +198,13 @@ void TestPackage::init (void)
 void TestPackage::deinit (void)
 {
 	tcu::TestNode::deinit();
-	delete m_packageCtx;
-	m_packageCtx = DE_NULL;
+	delete m_eglTestCtx;
+	m_eglTestCtx = DE_NULL;
+}
+
+tcu::TestCaseExecutor* TestPackage::createExecutor (void) const
+{
+	return new TestCaseWrapper();
 }
 
 } // egl

@@ -90,10 +90,10 @@ public:
 
 	void init (void)
 	{
-		addChild(new ImageReadCase(m_testCtx, "rgb24_256x256",	"data/imageio/rgb24_256x256.png",	0x6efad777));
-		addChild(new ImageReadCase(m_testCtx, "rgb24_209x181",	"data/imageio/rgb24_209x181.png",	0xfd6ea668));
-		addChild(new ImageReadCase(m_testCtx, "rgba32_256x256",	"data/imageio/rgba32_256x256.png",	0xcf4883da));
-		addChild(new ImageReadCase(m_testCtx, "rgba32_207x219",	"data/imageio/rgba32_207x219.png",	0x404ba06b));
+		addChild(new ImageReadCase(m_testCtx, "rgb24_256x256",	"internal/data/imageio/rgb24_256x256.png",	0x6efad777));
+		addChild(new ImageReadCase(m_testCtx, "rgb24_209x181",	"internal/data/imageio/rgb24_209x181.png",	0xfd6ea668));
+		addChild(new ImageReadCase(m_testCtx, "rgba32_256x256",	"internal/data/imageio/rgba32_256x256.png",	0xcf4883da));
+		addChild(new ImageReadCase(m_testCtx, "rgba32_207x219",	"internal/data/imageio/rgba32_207x219.png",	0x404ba06b));
 	}
 };
 

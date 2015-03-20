@@ -24,8 +24,6 @@ set(DEQP_GLES3_SRCS
 	tes3InfoTests.hpp
 	tes3TestCase.cpp
 	tes3TestCase.hpp
-	tes3TestCaseWrapper.cpp
-	tes3TestCaseWrapper.hpp
 	tes3TestPackage.cpp
 	tes3TestPackage.hpp
 	)

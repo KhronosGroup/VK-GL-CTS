@@ -63,7 +63,6 @@ private:
 	std::string		m_message;
 } DE_WARN_UNUSED_TYPE;
 
-
 } // tcu
 
 #endif // _TCURESULTCOLLECTOR_HPP

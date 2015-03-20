@@ -46,12 +46,10 @@ set(TCUTIL_SRCS
 	tcuSurface.hpp
 	tcuTestCase.cpp
 	tcuTestCase.hpp
-	tcuTestCaseWrapper.cpp
-	tcuTestCaseWrapper.hpp
 	tcuTestContext.cpp
 	tcuTestContext.hpp
-	tcuTestExecutor.cpp
-	tcuTestExecutor.hpp
+	tcuTestSessionExecutor.cpp
+	tcuTestSessionExecutor.hpp
 	tcuTestLog.cpp
 	tcuTestLog.hpp
 	tcuTestPackage.cpp
@@ -85,6 +83,10 @@ set(TCUTIL_SRCS
 	tcuMaybe.cpp
 	tcuEither.hpp
 	tcuEither.cpp
+	tcuTestHierarchyIterator.cpp
+	tcuTestHierarchyIterator.hpp
+	tcuTestHierarchyUtil.cpp
+	tcuTestHierarchyUtil.hpp
 	)
 
 set(TCUTIL_LIBS

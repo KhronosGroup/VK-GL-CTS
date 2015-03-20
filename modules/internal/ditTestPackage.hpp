@@ -37,13 +37,10 @@ public:
 	virtual							~TestPackage			(void);
 
 	virtual void					init					(void);
-	virtual void					deinit					(void);
-
-	tcu::TestCaseWrapper&			getTestCaseWrapper		(void) { return m_wrapper; }
-	tcu::Archive&					getArchive				(void) { return m_archive; }
+	tcu::TestCaseExecutor*			createExecutor			(void) const;
+	tcu::Archive*					getArchive				(void) { return &m_archive; }
 
 private:
-	tcu::TestCaseWrapper			m_wrapper;
 	tcu::ResourcePrefix				m_archive;
 };
 

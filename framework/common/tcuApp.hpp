@@ -37,12 +37,10 @@ namespace tcu
 class Archive;
 class Platform;
 class TestContext;
-class TestExecutor;
+class TestSessionExecutor;
 class CommandLine;
 class TestLog;
-
-// Defined in tcuTestExecutor.hpp
-class TestRunResult;
+class TestPackageRoot;
 
 /*--------------------------------------------------------------------*//*!
  * \brief Test application
@@ -58,7 +56,7 @@ class TestRunResult;
  * App is responsible of setting up crash handler (qpCrashHandler) and
  * watchdog (qpWatchDog).
  *
- * See tcuMain.cpp for example on how to implement application stub.
+ * See tcuMain.cpp for an example on how to implement application stub.
  *//*--------------------------------------------------------------------*/
 class App
 {
@@ -68,12 +66,15 @@ public:
 
 	bool					iterate				(void);
 
-	const TestRunResult&	getResult			(void) const;
+protected:
+	void					cleanup				(void);
 
 	void					onWatchdogTimeout	(void);
 	void					onCrash				(void);
 
-protected:
+	static void				onWatchdogTimeout	(qpWatchDog* watchDog, void* userPtr);
+	static void				onCrash				(qpCrashHandler* crashHandler, void* userPtr);
+
 	Platform&				m_platform;
 	qpWatchDog*				m_watchDog;
 	qpCrashHandler*			m_crashHandler;
@@ -81,7 +82,8 @@ protected:
 	bool					m_crashed;
 
 	TestContext*			m_testCtx;
-	TestExecutor*			m_testExecutor;
+	TestPackageRoot*		m_testRoot;
+	TestSessionExecutor*	m_testExecutor;
 };
 
 } // tcu
