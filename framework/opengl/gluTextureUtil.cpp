@@ -76,6 +76,8 @@ TransferFormat getTransferFormat (tcu::TextureFormat texFormat)
 		case TextureFormat::RG:		format = isInt ? GL_RG_INTEGER		: GL_RG;	break;
 		case TextureFormat::RGB:	format = isInt ? GL_RGB_INTEGER		: GL_RGB;	break;
 		case TextureFormat::RGBA:	format = isInt ? GL_RGBA_INTEGER	: GL_RGBA;	break;
+		case TextureFormat::sR:		format = GL_RED;								break;
+		case TextureFormat::sRG:	format = GL_RG;									break;
 		case TextureFormat::sRGB:	format = GL_RGB;								break;
 		case TextureFormat::sRGBA:	format = GL_RGBA;								break;
 		case TextureFormat::D:		format = GL_DEPTH_COMPONENT;					break;
@@ -190,6 +192,7 @@ deUint32 getInternalFormat (tcu::TextureFormat texFormat)
 		case FMT_CASE(RG,		SIGNED_INT8):					return GL_RG8I;
 		case FMT_CASE(RG,		UNSIGNED_INT8):					return GL_RG8UI;
 		case FMT_CASE(RG,		SNORM_INT8):					return GL_RG8_SNORM;
+		case FMT_CASE(sRG,		UNORM_INT8):					return GL_SRG8_EXT;
 
 		case FMT_CASE(R,		FLOAT):							return GL_R32F;
 		case FMT_CASE(R,		SIGNED_INT32):					return GL_R32I;
@@ -203,6 +206,7 @@ deUint32 getInternalFormat (tcu::TextureFormat texFormat)
 		case FMT_CASE(R,		SIGNED_INT8):					return GL_R8I;
 		case FMT_CASE(R,		UNSIGNED_INT8):					return GL_R8UI;
 		case FMT_CASE(R,		SNORM_INT8):					return GL_R8_SNORM;
+		case FMT_CASE(sR,		UNORM_INT8):					return GL_SR8_EXT;
 
 		case FMT_CASE(D,		FLOAT):							return GL_DEPTH_COMPONENT32F;
 		case FMT_CASE(D,		UNSIGNED_INT_24_8):				return GL_DEPTH_COMPONENT24;
@@ -512,6 +516,7 @@ tcu::TextureFormat mapGLInternalFormat (deUint32 internalFormat)
 		case GL_RG8I:				return TextureFormat(TextureFormat::RG,		TextureFormat::SIGNED_INT8);
 		case GL_RG8UI:				return TextureFormat(TextureFormat::RG,		TextureFormat::UNSIGNED_INT8);
 		case GL_RG8_SNORM:			return TextureFormat(TextureFormat::RG,		TextureFormat::SNORM_INT8);
+		case GL_SRG8_EXT:			return TextureFormat(TextureFormat::sRG,	TextureFormat::UNORM_INT8);
 
 		case GL_R32F:				return TextureFormat(TextureFormat::R,		TextureFormat::FLOAT);
 		case GL_R32I:				return TextureFormat(TextureFormat::R,		TextureFormat::SIGNED_INT32);
@@ -525,6 +530,7 @@ tcu::TextureFormat mapGLInternalFormat (deUint32 internalFormat)
 		case GL_R8I:				return TextureFormat(TextureFormat::R,		TextureFormat::SIGNED_INT8);
 		case GL_R8UI:				return TextureFormat(TextureFormat::R,		TextureFormat::UNSIGNED_INT8);
 		case GL_R8_SNORM:			return TextureFormat(TextureFormat::R,		TextureFormat::SNORM_INT8);
+		case GL_SR8_EXT:			return TextureFormat(TextureFormat::sR,		TextureFormat::UNORM_INT8);
 
 		case GL_DEPTH_COMPONENT32F:	return TextureFormat(TextureFormat::D,		TextureFormat::FLOAT);
 		case GL_DEPTH_COMPONENT24:	return TextureFormat(TextureFormat::D,		TextureFormat::UNSIGNED_INT_24_8);
@@ -553,6 +559,8 @@ bool isGLInternalColorFormatFilterable (deUint32 format)
 		case GL_RGBA8:
 		case GL_RGBA8_SNORM:
 		case GL_RGB10_A2:
+		case GL_SR8_EXT:
+		case GL_SRG8_EXT:
 		case GL_SRGB8:
 		case GL_SRGB8_ALPHA8:
 		case GL_R16F:
