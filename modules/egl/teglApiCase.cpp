@@ -93,6 +93,17 @@ void ApiCase::expectError (EGLenum expected)
 	}
 }
 
+void ApiCase::expectEitherError (EGLenum expectedA, EGLenum expectedB)
+{
+	EGLenum err = m_eglTestCtx.getLibrary().getError();
+	if (err != expectedA && err != expectedB)
+	{
+		m_testCtx.getLog() << TestLog::Message << "// ERROR expected: " << eglu::getErrorStr(expectedA) << " or " << eglu::getErrorStr(expectedB) << ", Got: " << eglu::getErrorStr(err) << TestLog::EndMessage;
+		if (m_testCtx.getTestResult() == QP_TEST_RESULT_PASS)
+			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Got invalid error");
+	}
+}
+
 void ApiCase::expectBoolean (EGLBoolean expected, EGLBoolean got)
 {
 	if (expected != got)
