@@ -1255,7 +1255,6 @@ void ReusableSyncTests::init (void)
 		invalid->addChild(new CreateInvalidDisplayTest(m_eglTestCtx, EGL_SYNC_REUSABLE_KHR));
 		invalid->addChild(new CreateInvalidTypeTest(m_eglTestCtx, EGL_SYNC_REUSABLE_KHR));
 		invalid->addChild(new CreateInvalidAttribsTest(m_eglTestCtx, EGL_SYNC_REUSABLE_KHR));
-		invalid->addChild(new CreateInvalidContextTest(m_eglTestCtx, EGL_SYNC_REUSABLE_KHR));
 
 		// eglClientWaitSyncKHR tests
 		invalid->addChild(new ClientWaitInvalidDisplayTest(m_eglTestCtx, EGL_SYNC_REUSABLE_KHR));
