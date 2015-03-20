@@ -549,6 +549,9 @@ bool GLES2ImageApi::RenderDepthbuffer::invokeGLES2 (GLES2ImageApi& api, MovePtr<
 bool GLES2ImageApi::RenderReadPixelsRenderbuffer::invokeGLES2 (GLES2ImageApi& api, MovePtr<UniqueImage>& img, tcu::Texture2D& reference) const
 {
 	const glw::Functions&	gl				= api.m_gl;
+	const tcu::IVec4		bitDepth		= tcu::getTextureFormatMantissaBitDepth(reference.getFormat());
+	const tcu::IVec4		threshold		(2 * (tcu::IVec4(1) << (tcu::IVec4(8) - bitDepth)));
+	const tcu::RGBA			threshold8		((deUint8)(de::clamp(threshold[0], 0, 255)), (deUint8)(de::clamp(threshold[1], 0, 255)), (deUint8)(de::clamp(threshold[2], 0, 255)), (deUint8)(de::clamp(threshold[3], 0, 255)));
 	tcu::TestLog&			log				= api.getLog();
 	Framebuffer				framebuffer		(gl);
 	Renderbuffer			renderbuffer	(gl);
@@ -572,7 +575,7 @@ bool GLES2ImageApi::RenderReadPixelsRenderbuffer::invokeGLES2 (GLES2ImageApi& ap
 
 	tcu::copy(refSurface.getAccess(), reference.getLevel(0));
 
-	return tcu::pixelThresholdCompare(log, "Renderbuffer read", "Result from reading renderbuffer", refSurface, screen, tcu::RGBA(1,1,1,1), tcu::COMPARE_LOG_RESULT);
+	return tcu::pixelThresholdCompare(log, "Renderbuffer read", "Result from reading renderbuffer", refSurface, screen, threshold8, tcu::COMPARE_LOG_RESULT);
 
 }
 
