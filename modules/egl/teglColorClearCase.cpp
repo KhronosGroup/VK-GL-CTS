@@ -220,6 +220,9 @@ void SingleThreadColorClearCase::executeForContexts (EGLDisplay display, EGLSurf
 		readPixels(api, funcs, frame);
 	}
 
+	egl.makeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+	EGLU_CHECK_MSG(egl, "eglMakeCurrent");
+
 	// Render reference.
 	renderReference(refFrame, clears, pixelFmt);
 
@@ -384,6 +387,9 @@ void MultiThreadColorClearCase::executeForContexts (EGLDisplay display, EGLSurfa
 
 		readPixels(api, funcs, frame);
 	}
+
+	egl.makeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+	EGLU_CHECK_MSG(egl, "eglMakeCurrent");
 
 	// Join threads.
 	for (int threadNdx = 0; threadNdx < numThreads; threadNdx++)

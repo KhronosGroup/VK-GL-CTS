@@ -525,6 +525,7 @@ TestCase::IterateResult MakeCurrentPerfCase::iterate (void)
 
 		m_samples.push_back(deGetMicroseconds() - beginTimeUs);
 
+		egl.makeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
 		EGLU_CHECK_MSG(egl, "eglMakeCurrent()");
 	}
 

@@ -989,6 +989,8 @@ void CreateContextExtCase::executeForSurface (EGLConfig config, EGLSurface surfa
 			m_isOk = false;
 		}
 	}
+
+	EGLU_CHECK_CALL(egl, makeCurrent(m_display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT));
 }
 
 class CreateContextExtGroup : public TestCaseGroup

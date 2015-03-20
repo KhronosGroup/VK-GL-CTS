@@ -712,6 +712,8 @@ void SingleThreadRenderCase::executeForContexts (EGLDisplay display, EGLSurface 
 		readPixels(m_gl, api, frame);
 	}
 
+	EGLU_CHECK_CALL(egl, makeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT));
+
 	// Render reference.
 	// \note Reference image is always generated using single-sampling.
 	renderReference(refFrame.getAccess(), drawOps, pixelFmt, depthBits, stencilBits, 1);
@@ -924,6 +926,8 @@ void MultiThreadRenderCase::executeForContexts (EGLDisplay display, EGLSurface s
 
 		readPixels(m_gl, api, frame);
 	}
+
+	EGLU_CHECK_CALL(egl, makeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT));
 
 	// Join threads.
 	for (int threadNdx = 0; threadNdx < numThreads; threadNdx++)
