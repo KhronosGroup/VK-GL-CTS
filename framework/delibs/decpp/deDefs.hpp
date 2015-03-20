@@ -71,17 +71,6 @@ template<typename T> struct ArrayDeleter
 	inline void operator() (T* ptr) const { delete[] ptr; }
 };
 
-template <typename T, bool Cond>
-struct EnableIf
-{
-};
-
-template <typename T>
-struct EnableIf<T, true>
-{
-	typedef T Type;
-};
-
 } // de
 
 /*--------------------------------------------------------------------*//*!

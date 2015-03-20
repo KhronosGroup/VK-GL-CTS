@@ -87,6 +87,7 @@ LOCAL_SRC_FILES := \
 	framework/delibs/decpp/deDynamicLibrary.cpp \
 	framework/delibs/decpp/deFilePath.cpp \
 	framework/delibs/decpp/deMemPool.cpp \
+	framework/delibs/decpp/deMeta.cpp \
 	framework/delibs/decpp/deMutex.cpp \
 	framework/delibs/decpp/dePoolArray.cpp \
 	framework/delibs/decpp/dePoolString.cpp \

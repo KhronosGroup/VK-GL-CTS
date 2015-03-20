@@ -1,5 +1,5 @@
-#ifndef _DEARRAYUTIL_HPP
-#define _DEARRAYUTIL_HPP
+#ifndef _DEMETA_HPP
+#define _DEMETA_HPP
 /*-------------------------------------------------------------------------
  * drawElements C++ Base Library
  * -----------------------------
@@ -20,31 +20,35 @@
  *
  *//*!
  * \file
- * \brief Array utils
+ * \brief Metaprogramming tools
  *//*--------------------------------------------------------------------*/
 
 #include "deDefs.hpp"
-#include "deMeta.hpp"
 
 namespace de
 {
-
-//! Get an element of an array with a specified size.
-template <int LastElementIndex, int Size, typename Elem>
-const Elem& getSizedArrayElement (const Elem (&array)[Size], typename de::meta::EnableIf<int, LastElementIndex==Size>::Type offset)
+namespace meta
 {
-	DE_ASSERT(inBounds(offset, 0, Size));
-	return array[offset];
-}
 
-//! Get an element of an array with a compile-time constant size.
-template <int Size, typename Elem>
-const Elem& getArrayElement (const Elem (&array)[Size], int offset)
+template <typename T, bool Cond>
+struct EnableIf { };
+
+template <typename T>
+struct EnableIf<T, true>
 {
-	DE_ASSERT(inBounds(offset, 0, Size));
-	return array[offset];
-}
+	typedef T Type;
+};
 
+template <bool Cond>
+struct Not
+{
+	enum
+	{
+		Value = !Cond
+	};
+};
+
+} // meta
 } // de
 
-#endif // _DEARRAYUTIL_HPP
+#endif // _DEMETA_HPP

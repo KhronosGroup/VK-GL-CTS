@@ -41,6 +41,7 @@
 #include "deRandom.hpp"
 #include "deMemory.h"
 #include "deThread.h"
+#include "deMeta.hpp"
 
 #include <algorithm>
 #include <iomanip>
@@ -57,6 +58,8 @@ namespace
 
 using gls::theilSenSiegelLinearRegression;
 using gls::LineParametersWithConfidence;
+using de::meta::EnableIf;
+using de::meta::Not;
 
 static const char* const s_dummyVertexShader =		"#version 300 es\n"
 													"in highp vec4 a_position;\n"
@@ -89,28 +92,6 @@ static const char* const s_colorFragmentShader =	"#version 300 es\n"
 													"{\n"
 													"	dEQP_FragColor = v_color;\n"
 													"}\n";
-
-template <typename TrueType, int cond>
-struct EnableIf
-{
-	typedef TrueType Type;
-};
-
-template <typename TrueType>
-struct EnableIf<TrueType, 0>
-{
-};
-
-template <typename TrueType, int cond>
-struct EnableIfNot
-{
-};
-
-template <typename TrueType>
-struct EnableIfNot<TrueType, 0>
-{
-	typedef TrueType Type;
-};
 
 struct SingleOperationDuration
 {
@@ -1159,35 +1140,35 @@ static typename EnableIf<void, SampleTypeTraits<SampleType>::HAS_ALLOC_STATS>::T
 }
 
 template <typename SampleType>
-static typename EnableIfNot<void, SampleTypeTraits<SampleType>::HAS_MAP_STATS>::Type logMapRangeStats (tcu::TestLog& log, const typename SampleTypeTraits<SampleType>::StatsType& stats)
+static typename EnableIf<void, Not<SampleTypeTraits<SampleType>::HAS_MAP_STATS>::Value>::Type logMapRangeStats (tcu::TestLog& log, const typename SampleTypeTraits<SampleType>::StatsType& stats)
 {
 	DE_UNREF(log);
 	DE_UNREF(stats);
 }
 
 template <typename SampleType>
-static typename EnableIfNot<void, SampleTypeTraits<SampleType>::HAS_UNMAP_STATS>::Type logUnmapStats (tcu::TestLog& log, const typename SampleTypeTraits<SampleType>::StatsType& stats)
+static typename EnableIf<void, Not<SampleTypeTraits<SampleType>::HAS_UNMAP_STATS>::Value>::Type logUnmapStats (tcu::TestLog& log, const typename SampleTypeTraits<SampleType>::StatsType& stats)
 {
 	DE_UNREF(log);
 	DE_UNREF(stats);
 }
 
 template <typename SampleType>
-static typename EnableIfNot<void, SampleTypeTraits<SampleType>::HAS_WRITE_STATS>::Type logWriteStats (tcu::TestLog& log, const typename SampleTypeTraits<SampleType>::StatsType& stats)
+static typename EnableIf<void, Not<SampleTypeTraits<SampleType>::HAS_WRITE_STATS>::Value>::Type logWriteStats (tcu::TestLog& log, const typename SampleTypeTraits<SampleType>::StatsType& stats)
 {
 	DE_UNREF(log);
 	DE_UNREF(stats);
 }
 
 template <typename SampleType>
-static typename EnableIfNot<void, SampleTypeTraits<SampleType>::HAS_FLUSH_STATS>::Type logFlushStats (tcu::TestLog& log, const typename SampleTypeTraits<SampleType>::StatsType& stats)
+static typename EnableIf<void, Not<SampleTypeTraits<SampleType>::HAS_FLUSH_STATS>::Value>::Type logFlushStats (tcu::TestLog& log, const typename SampleTypeTraits<SampleType>::StatsType& stats)
 {
 	DE_UNREF(log);
 	DE_UNREF(stats);
 }
 
 template <typename SampleType>
-static typename EnableIfNot<void, SampleTypeTraits<SampleType>::HAS_ALLOC_STATS>::Type logAllocStats (tcu::TestLog& log, const typename SampleTypeTraits<SampleType>::StatsType& stats)
+static typename EnableIf<void, Not<SampleTypeTraits<SampleType>::HAS_ALLOC_STATS>::Value>::Type logAllocStats (tcu::TestLog& log, const typename SampleTypeTraits<SampleType>::StatsType& stats)
 {
 	DE_UNREF(log);
 	DE_UNREF(stats);
@@ -1293,7 +1274,7 @@ static typename EnableIf<void, SampleTypeTraits<SampleType>::HAS_SECOND_RENDER_S
 }
 
 template <typename SampleType>
-static typename EnableIfNot<void, SampleTypeTraits<SampleType>::HAS_MAP_STATS>::Type logMapContribution (tcu::TestLog& log, const std::vector<UploadSampleResult<SampleType> >& samples, const typename SampleTypeTraits<SampleType>::StatsType& stats)
+static typename EnableIf<void, Not<SampleTypeTraits<SampleType>::HAS_MAP_STATS>::Value>::Type logMapContribution (tcu::TestLog& log, const std::vector<UploadSampleResult<SampleType> >& samples, const typename SampleTypeTraits<SampleType>::StatsType& stats)
 {
 	DE_UNREF(log);
 	DE_UNREF(samples);
@@ -1301,7 +1282,7 @@ static typename EnableIfNot<void, SampleTypeTraits<SampleType>::HAS_MAP_STATS>::
 }
 
 template <typename SampleType>
-static typename EnableIfNot<void, SampleTypeTraits<SampleType>::HAS_UNMAP_STATS>::Type logUnmapContribution (tcu::TestLog& log, const std::vector<UploadSampleResult<SampleType> >& samples, const typename SampleTypeTraits<SampleType>::StatsType& stats)
+static typename EnableIf<void, Not<SampleTypeTraits<SampleType>::HAS_UNMAP_STATS>::Value>::Type logUnmapContribution (tcu::TestLog& log, const std::vector<UploadSampleResult<SampleType> >& samples, const typename SampleTypeTraits<SampleType>::StatsType& stats)
 {
 	DE_UNREF(log);
 	DE_UNREF(samples);
@@ -1309,7 +1290,7 @@ static typename EnableIfNot<void, SampleTypeTraits<SampleType>::HAS_UNMAP_STATS>
 }
 
 template <typename SampleType>
-static typename EnableIfNot<void, SampleTypeTraits<SampleType>::HAS_WRITE_STATS>::Type logWriteContribution (tcu::TestLog& log, const std::vector<UploadSampleResult<SampleType> >& samples, const typename SampleTypeTraits<SampleType>::StatsType& stats)
+static typename EnableIf<void, Not<SampleTypeTraits<SampleType>::HAS_WRITE_STATS>::Value>::Type logWriteContribution (tcu::TestLog& log, const std::vector<UploadSampleResult<SampleType> >& samples, const typename SampleTypeTraits<SampleType>::StatsType& stats)
 {
 	DE_UNREF(log);
 	DE_UNREF(samples);
@@ -1317,7 +1298,7 @@ static typename EnableIfNot<void, SampleTypeTraits<SampleType>::HAS_WRITE_STATS>
 }
 
 template <typename SampleType>
-static typename EnableIfNot<void, SampleTypeTraits<SampleType>::HAS_FLUSH_STATS>::Type logFlushContribution (tcu::TestLog& log, const std::vector<UploadSampleResult<SampleType> >& samples, const typename SampleTypeTraits<SampleType>::StatsType& stats)
+static typename EnableIf<void, Not<SampleTypeTraits<SampleType>::HAS_FLUSH_STATS>::Value>::Type logFlushContribution (tcu::TestLog& log, const std::vector<UploadSampleResult<SampleType> >& samples, const typename SampleTypeTraits<SampleType>::StatsType& stats)
 {
 	DE_UNREF(log);
 	DE_UNREF(samples);
@@ -1325,7 +1306,7 @@ static typename EnableIfNot<void, SampleTypeTraits<SampleType>::HAS_FLUSH_STATS>
 }
 
 template <typename SampleType>
-static typename EnableIfNot<void, SampleTypeTraits<SampleType>::HAS_ALLOC_STATS>::Type logAllocContribution (tcu::TestLog& log, const std::vector<UploadSampleResult<SampleType> >& samples, const typename SampleTypeTraits<SampleType>::StatsType& stats)
+static typename EnableIf<void, Not<SampleTypeTraits<SampleType>::HAS_ALLOC_STATS>::Value>::Type logAllocContribution (tcu::TestLog& log, const std::vector<UploadSampleResult<SampleType> >& samples, const typename SampleTypeTraits<SampleType>::StatsType& stats)
 {
 	DE_UNREF(log);
 	DE_UNREF(samples);
@@ -1333,7 +1314,7 @@ static typename EnableIfNot<void, SampleTypeTraits<SampleType>::HAS_ALLOC_STATS>
 }
 
 template <typename SampleType>
-static typename EnableIfNot<void, SampleTypeTraits<SampleType>::HAS_RENDER_STATS>::Type logRenderContribution (tcu::TestLog& log, const std::vector<RenderSampleResult<SampleType> >& samples, const typename SampleTypeTraits<SampleType>::StatsType& stats)
+static typename EnableIf<void, Not<SampleTypeTraits<SampleType>::HAS_RENDER_STATS>::Value>::Type logRenderContribution (tcu::TestLog& log, const std::vector<RenderSampleResult<SampleType> >& samples, const typename SampleTypeTraits<SampleType>::StatsType& stats)
 {
 	DE_UNREF(log);
 	DE_UNREF(samples);
@@ -1341,7 +1322,7 @@ static typename EnableIfNot<void, SampleTypeTraits<SampleType>::HAS_RENDER_STATS
 }
 
 template <typename SampleType>
-static typename EnableIfNot<void, SampleTypeTraits<SampleType>::HAS_READ_STATS>::Type logReadContribution (tcu::TestLog& log, const std::vector<RenderSampleResult<SampleType> >& samples, const typename SampleTypeTraits<SampleType>::StatsType& stats)
+static typename EnableIf<void, Not<SampleTypeTraits<SampleType>::HAS_READ_STATS>::Value>::Type logReadContribution (tcu::TestLog& log, const std::vector<RenderSampleResult<SampleType> >& samples, const typename SampleTypeTraits<SampleType>::StatsType& stats)
 {
 	DE_UNREF(log);
 	DE_UNREF(samples);
@@ -1349,7 +1330,7 @@ static typename EnableIfNot<void, SampleTypeTraits<SampleType>::HAS_READ_STATS>:
 }
 
 template <typename SampleType>
-static typename EnableIfNot<void, SampleTypeTraits<SampleType>::HAS_UPLOAD_STATS>::Type logUploadContribution (tcu::TestLog& log, const std::vector<RenderSampleResult<SampleType> >& samples, const typename SampleTypeTraits<SampleType>::StatsType& stats)
+static typename EnableIf<void, Not<SampleTypeTraits<SampleType>::HAS_UPLOAD_STATS>::Value>::Type logUploadContribution (tcu::TestLog& log, const std::vector<RenderSampleResult<SampleType> >& samples, const typename SampleTypeTraits<SampleType>::StatsType& stats)
 {
 	DE_UNREF(log);
 	DE_UNREF(samples);
@@ -1357,7 +1338,7 @@ static typename EnableIfNot<void, SampleTypeTraits<SampleType>::HAS_UPLOAD_STATS
 }
 
 template <typename SampleType>
-static typename EnableIfNot<void, SampleTypeTraits<SampleType>::HAS_TOTAL_STATS>::Type logTotalContribution (tcu::TestLog& log, const std::vector<RenderSampleResult<SampleType> >& samples, const typename SampleTypeTraits<SampleType>::StatsType& stats)
+static typename EnableIf<void, Not<SampleTypeTraits<SampleType>::HAS_TOTAL_STATS>::Value>::Type logTotalContribution (tcu::TestLog& log, const std::vector<RenderSampleResult<SampleType> >& samples, const typename SampleTypeTraits<SampleType>::StatsType& stats)
 {
 	DE_UNREF(log);
 	DE_UNREF(samples);
@@ -1365,7 +1346,7 @@ static typename EnableIfNot<void, SampleTypeTraits<SampleType>::HAS_TOTAL_STATS>
 }
 
 template <typename SampleType>
-static typename EnableIfNot<void, SampleTypeTraits<SampleType>::HAS_FIRST_RENDER_STATS>::Type logFirstRenderContribution (tcu::TestLog& log, const std::vector<RenderSampleResult<SampleType> >& samples, const typename SampleTypeTraits<SampleType>::StatsType& stats)
+static typename EnableIf<void, Not<SampleTypeTraits<SampleType>::HAS_FIRST_RENDER_STATS>::Value>::Type logFirstRenderContribution (tcu::TestLog& log, const std::vector<RenderSampleResult<SampleType> >& samples, const typename SampleTypeTraits<SampleType>::StatsType& stats)
 {
 	DE_UNREF(log);
 	DE_UNREF(samples);
@@ -1373,7 +1354,7 @@ static typename EnableIfNot<void, SampleTypeTraits<SampleType>::HAS_FIRST_RENDER
 }
 
 template <typename SampleType>
-static typename EnableIfNot<void, SampleTypeTraits<SampleType>::HAS_SECOND_RENDER_STATS>::Type logSecondRenderContribution (tcu::TestLog& log, const std::vector<RenderSampleResult<SampleType> >& samples, const typename SampleTypeTraits<SampleType>::StatsType& stats)
+static typename EnableIf<void, Not<SampleTypeTraits<SampleType>::HAS_SECOND_RENDER_STATS>::Value>::Type logSecondRenderContribution (tcu::TestLog& log, const std::vector<RenderSampleResult<SampleType> >& samples, const typename SampleTypeTraits<SampleType>::StatsType& stats)
 {
 	DE_UNREF(log);
 	DE_UNREF(samples);

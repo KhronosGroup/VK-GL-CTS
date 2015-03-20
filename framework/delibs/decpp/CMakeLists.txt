@@ -23,6 +23,8 @@ set(DECPP_SRCS
 	deFilePath.hpp
 	deMemPool.cpp
 	deMemPool.hpp
+	deMeta.cpp
+	deMeta.hpp
 	deMutex.cpp
 	deMutex.hpp
 	dePoolArray.cpp
