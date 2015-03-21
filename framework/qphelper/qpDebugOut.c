@@ -23,6 +23,8 @@
 
 #include "qpDebugOut.h"
 
+#include "qpCrashHandler.h" /*!< for QP_USE_SIGNAL_HANDLER */
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -157,23 +159,37 @@ static void exitProcess (void)
 	TerminateProcess(curProc, -1);
 }
 
-#elif (DE_OS == DE_OS_IOS)
+#else
 
-#include "deThread.h"
+#if (DE_OS == DE_OS_IOS)
+#	include "deThread.h"	/*!< for deSleep() */
+#endif
+
+#if defined(QP_USE_SIGNAL_HANDLER)
+#	include <signal.h>
+#endif
 
 static void exitProcess (void)
 {
+#if (DE_OS == DE_OS_IOS)
 	/* Since tests are in the same process as execserver, we want to give it
 	   a chance to stream complete log data before terminating. */
 	deSleep(5000);
-	exit(-1);
-}
+#endif
 
+#if defined(QP_USE_SIGNAL_HANDLER)
+	/* QP_USE_SIGNAL_HANDLER defined, this means this function could have
+	   been called from a signal handler. Calling exit() inside a signal
+	   handler is not safe. */
+
+	/* Flush all open FILES */
+	fflush(DE_NULL);
+
+	/* Kill without calling any _at_exit handlers as those might hang */
+	raise(SIGKILL);
 #else
-
-static void exitProcess (void)
-{
 	exit(-1);
+#endif
 }
 
 #endif
