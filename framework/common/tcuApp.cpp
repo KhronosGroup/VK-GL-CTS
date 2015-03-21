@@ -176,18 +176,22 @@ void App::onWatchdogTimeout (void)
 
 static void writeCrashToLog (void* userPtr, const char* infoString)
 {
+	// \note THIS IS CALLED BY SIGNAL HANDLER! CALLING MALLOC/FREE IS NOT ALLOWED!
 	TestLog* log = static_cast<TestLog*>(userPtr);
-	*log << TestLog::Message << infoString << TestLog::EndMessage;
+	log->writeMessage(infoString);
 }
 
 static void writeCrashToConsole (void* userPtr, const char* infoString)
 {
+	// \note THIS IS CALLED BY SIGNAL HANDLER! CALLING MALLOC/FREE IS NOT ALLOWED!
 	DE_UNREF(userPtr);
-	print("%s", infoString);
+	qpPrint(infoString);
 }
 
 void App::onCrash (void)
 {
+	// \note THIS IS CALLED BY SIGNAL HANDLER! CALLING MALLOC/FREE IS NOT ALLOWED!
+
 	if (!m_crashLock.tryLock() || m_crashed)
 		return; // In crash handler already.
 
