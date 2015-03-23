@@ -26,6 +26,7 @@
 #include "gluVarType.hpp"
 #include "gluShaderProgram.hpp"
 #include "deSTLUtil.hpp"
+#include "deStringUtil.hpp"
 #include "glwEnums.hpp"
 
 #include <set>
@@ -634,7 +635,7 @@ bool Program::isValid (void) const
 	for (int ndx = 0; ndx < (int)m_xfbVaryings.size(); ++ndx)
 	{
 		// user-defined
-		if (m_xfbVaryings[ndx].find("gl_") != 0)
+		if (!de::beginsWith(m_xfbVaryings[ndx], "gl_"))
 		{
 			std::vector<ProgramInterfaceDefinition::VariablePathComponent> path;
 			if (!findProgramVariablePathByPathName(path, this, m_xfbVaryings[ndx], VariableSearchFilter::createShaderTypeStorageFilter(getProgramTransformFeedbackStage(this), glu::STORAGE_OUT)))
