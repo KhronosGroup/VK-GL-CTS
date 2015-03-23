@@ -289,19 +289,6 @@ static const FormatExtEntry s_esExtFormats[] =
 		GLS_ARRAY_RANGE(s_nvPackedFloatRboFormats)
 	},
 
-	// Some Tegra drivers report GL_EXT_packed_float even for ES. Treat it as
-	// a synonym for the NV_ version.
-	{
-		"GL_EXT_packed_float",
-		COLOR_RENDERABLE | TEXTURE_VALID,
-		GLS_ARRAY_RANGE(s_nvPackedFloatTexFormats)
-	},
-	{
-		"GL_EXT_packed_float GL_EXT_color_buffer_half_float",
-		REQUIRED_RENDERABLE | COLOR_RENDERABLE | RENDERBUFFER_VALID,
-		GLS_ARRAY_RANGE(s_nvPackedFloatRboFormats)
-	},
-
 	{
 		"GL_EXT_sRGB",
 		COLOR_RENDERABLE | TEXTURE_VALID,
