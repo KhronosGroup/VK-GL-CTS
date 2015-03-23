@@ -174,8 +174,9 @@ static const FormatExtEntry s_es3ExtFormats[] =
 class ES3Checker : public Checker
 {
 public:
-				ES3Checker	(void)
-					: m_numSamples			(-1)
+				ES3Checker	(const glu::RenderContext& ctx)
+					: Checker				(ctx)
+					, m_numSamples			(-1)
 					, m_depthStencilImage	(0)
 					, m_depthStencilType	(GL_NONE) {}
 	void		check 		(GLenum attPoint, const Attachment& att, const Image* image);
@@ -434,7 +435,7 @@ IterateResult NumSamplesTest::build (FboBuilder& builder)
 class ES3CheckerFactory : public CheckerFactory
 {
 public:
-	Checker*			createChecker	(void) { return new ES3Checker(); }
+	Checker*			createChecker	(const glu::RenderContext& ctx) { return new ES3Checker(ctx); }
 };
 
 class TestGroup : public TestCaseGroup

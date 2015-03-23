@@ -183,7 +183,6 @@ static bool detectGLESCompatibleContext (const RenderContext& ctx, int requiredM
 	return (majorVersion > requiredMajor) || (majorVersion == requiredMajor && minorVersion >= requiredMinor);
 }
 
-// Check support for GL_* and DEQP_* extensions
 static bool checkExtensionSupport (const ContextInfo& ctxInfo, const RenderContext& ctx, const std::string& extension)
 {
 	if (de::beginsWith(extension, "GL_"))
@@ -197,6 +196,12 @@ static bool checkExtensionSupport (const ContextInfo& ctxInfo, const RenderConte
 		DE_ASSERT(false);
 		return false;
 	}
+}
+
+bool checkExtensionSupport (const RenderContext& ctx, const std::string& extension)
+{
+	const de::UniquePtr<ContextInfo> info(ContextInfo::create(ctx));
+	return checkExtensionSupport(*info, ctx, extension);
 }
 
 std::string getExtensionDescription (const std::string& extension)
@@ -513,7 +518,8 @@ static void checkAttachmentCompleteness (Checker& cctx, const Attachment& attach
 
 using namespace config;
 
-Checker::Checker (void)
+Checker::Checker (const glu::RenderContext& ctx)
+	: m_renderCtx(ctx)
 {
 	m_statusCodes.setAllowComplete(true);
 }
@@ -540,9 +546,10 @@ void Checker::addPotentialFBOStatus (GLenum status, const char* description)
 	m_statusCodes.addFBOErrorStatus(status, description);
 }
 
-FboVerifier::FboVerifier (const FormatDB& formats, CheckerFactory& factory)
-	: m_formats				(formats)
-	, m_factory				(factory)
+FboVerifier::FboVerifier (const FormatDB& formats, CheckerFactory& factory, const glu::RenderContext& renderCtx)
+	: m_formats		(formats)
+	, m_factory		(factory)
+	, m_renderCtx	(renderCtx)
 {
 }
 
@@ -566,7 +573,7 @@ FboVerifier::FboVerifier (const FormatDB& formats, CheckerFactory& factory)
 ValidStatusCodes FboVerifier::validStatusCodes (const Framebuffer& fboConfig) const
 {
 	const AttachmentMap& atts = fboConfig.attachments;
-	const UniquePtr<Checker> cctx(m_factory.createChecker());
+	const UniquePtr<Checker> cctx(m_factory.createChecker(m_renderCtx));
 
 	for (TextureMap::const_iterator it = fboConfig.textures.begin();
 		 it != fboConfig.textures.end(); it++)

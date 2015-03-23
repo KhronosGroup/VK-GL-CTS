@@ -194,7 +194,7 @@ static const FormatExtEntry s_es2ExtFormats[] =
 class ES2Checker : public Checker
 {
 public:
-			ES2Checker				(void) : m_width(-1), m_height(-1) {}
+			ES2Checker				(const glu::RenderContext& ctx);
 	void	check					(GLenum attPoint, const Attachment& att,
 									 const Image* image);
 private:
@@ -202,7 +202,14 @@ private:
 	GLsizei	m_height;	//< The common height of images
 };
 
-void ES2Checker::check(GLenum attPoint, const Attachment& att, const Image* image)
+ES2Checker::ES2Checker (const glu::RenderContext& ctx)\
+	: Checker		(ctx)
+	, m_width		(-1)
+	, m_height		(-1)
+{
+}
+
+void ES2Checker::check (GLenum attPoint, const Attachment& att, const Image* image)
 {
 	DE_UNREF(attPoint);
 	DE_UNREF(att);
@@ -212,10 +219,16 @@ void ES2Checker::check(GLenum attPoint, const Attachment& att, const Image* imag
 		m_width = image->width;
 		m_height = image->height;
 	}
-	else
+	else if (image->width != m_width || image->height != m_height)
 	{
-		if (image->width != m_width || image->height != m_height)
+		// Since GLES3 is "backwards compatible" to GLES2, we might actually be running
+		// on a GLES3 context. On GLES3, FRAMEBUFFER_INCOMPLETE_DIMENSIONS is not generated
+		// if attachments have different sizes.
+		if (!gls::FboUtil::checkExtensionSupport(m_renderCtx, "DEQP_gles3_core_compatible"))
+		{
+			// running on GLES2
 			addFBOStatus(GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS, "Sizes of attachments differ");
+		}
 	}
 	// GLES2, 4.4.5: "some implementations may not support rendering to
 	// particular combinations of internal formats. If the combination of
@@ -321,9 +334,10 @@ IterateResult SupportedCombinationTest::iterate (void)
 	return STOP;
 }
 
-class ES2CheckerFactory : public CheckerFactory {
+class ES2CheckerFactory : public CheckerFactory
+{
 public:
-	Checker*			createChecker	(void) { return new ES2Checker(); }
+	Checker*			createChecker	(const glu::RenderContext& ctx) { return new ES2Checker(ctx); }
 };
 
 class TestGroup : public TestCaseGroup

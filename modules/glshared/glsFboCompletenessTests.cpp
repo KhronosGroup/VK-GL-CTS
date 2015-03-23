@@ -399,7 +399,7 @@ Context::Context (TestContext& testCtx,
 				  CheckerFactory& factory)
 	: m_testCtx				(testCtx)
 	, m_renderCtx			(renderCtx)
-	, m_verifier			(m_ctxFormats, factory)
+	, m_verifier			(m_ctxFormats, factory, renderCtx)
 	, m_haveMultiColorAtts	(false)
 {
 	FormatExtEntries extRange = GLS_ARRAY_RANGE(s_esExtFormats);
