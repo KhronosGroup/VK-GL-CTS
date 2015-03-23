@@ -862,31 +862,64 @@ void NegativeApiTests::init (void)
 				}
 			}
 
-			log << TestLog::Section("Test2", "EGL_BAD_SURFACE is generated if surface is not an EGL surface");
-
-			expectFalse(eglMakeCurrent(display, (EGLSurface)-1, (EGLSurface)-1, DE_NULL));
-			expectError(EGL_BAD_SURFACE);
-
-			if (surface)
+			// Create simple ES2 context
+			EGLContext context = EGL_NO_CONTEXT;
 			{
-				expectFalse(eglMakeCurrent(display, surface, (EGLSurface)-1, DE_NULL));
-				expectError(EGL_BAD_SURFACE);
-
-				expectFalse(eglMakeCurrent(display, (EGLSurface)-1, surface, DE_NULL));
-				expectError(EGL_BAD_SURFACE);
+				EGLConfig config;
+				if (getConfig(&config, FilterList() << renderable<EGL_OPENGL_ES2_BIT>))
+				{
+					context = eglCreateContext(display, config, EGL_NO_CONTEXT, s_es2ContextAttribList);
+					expectError(EGL_SUCCESS);
+				}
 			}
 
-			log << TestLog::EndSection;
+			if (surface != EGL_NO_SURFACE && context != EGL_NO_CONTEXT)
+			{
+				log << TestLog::Section("Test2", "EGL_BAD_SURFACE is generated if surface is not an EGL surface");
 
-			log << TestLog::Section("Test3", "EGL_BAD_CONTEXT is generated if context is not an EGL rendering context");
+				expectFalse(eglMakeCurrent(display, (EGLSurface)-1, (EGLSurface)-1, context));
+				expectError(EGL_BAD_SURFACE);
+
+				expectFalse(eglMakeCurrent(display, surface, (EGLSurface)-1, context));
+				expectError(EGL_BAD_SURFACE);
+
+				expectFalse(eglMakeCurrent(display, (EGLSurface)-1, surface, context));
+				expectError(EGL_BAD_SURFACE);
+
+				log << TestLog::EndSection;
+			}
 
 			if (surface)
 			{
+				log << TestLog::Section("Test3", "EGL_BAD_CONTEXT is generated if context is not an EGL rendering context");
+
 				expectFalse(eglMakeCurrent(display, surface, surface, (EGLContext)-1));
 				expectError(EGL_BAD_CONTEXT);
+
+				log << TestLog::EndSection;
 			}
 
-			log << TestLog::EndSection;
+			if (surface != EGL_NO_SURFACE)
+			{
+				log << TestLog::Section("Test4", "EGL_BAD_MATCH is generated if read or draw surface is not EGL_NO_SURFACE and context is EGL_NO_CONTEXT");
+
+				expectFalse(eglMakeCurrent(display, surface, EGL_NO_SURFACE, EGL_NO_CONTEXT));
+				expectError(EGL_BAD_MATCH);
+
+				expectFalse(eglMakeCurrent(display, EGL_NO_SURFACE, surface, EGL_NO_CONTEXT));
+				expectError(EGL_BAD_MATCH);
+
+				expectFalse(eglMakeCurrent(display, surface, surface, EGL_NO_CONTEXT));
+				expectError(EGL_BAD_MATCH);
+
+				log << TestLog::EndSection;
+			}
+
+			if (context)
+			{
+				eglDestroyContext(display, context);
+				expectError(EGL_SUCCESS);
+			}
 
 			if (surface)
 			{
