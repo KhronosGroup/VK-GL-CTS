@@ -456,10 +456,10 @@ void NegativeApiTests::init (void)
 
 			log << TestLog::EndSection;
 
-			log << TestLog::Section("Test2", "EGL_BAD_CONFIG is generated if config is not an EGL frame buffer configuration");
+			log << TestLog::Section("Test2", "EGL_BAD_CONFIG or EGL_BAD_PARAMETER is generated if config is not an EGL frame buffer configuration and if buffer is not valid OpenVG image");
 
-			expectNoSurface(eglCreatePbufferFromClientBuffer(display, EGL_OPENVG_IMAGE, 0, (EGLConfig)-1, DE_NULL));
-			expectError(EGL_BAD_CONFIG);
+			expectNoSurface(eglCreatePbufferFromClientBuffer(display, EGL_OPENVG_IMAGE, (EGLClientBuffer)-1, (EGLConfig)-1, DE_NULL));
+			expectEitherError(EGL_BAD_CONFIG, EGL_BAD_PARAMETER);
 
 			log << TestLog::EndSection;
 

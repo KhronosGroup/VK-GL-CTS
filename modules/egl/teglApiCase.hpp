@@ -51,6 +51,7 @@ protected:
 	virtual void		test					(void) = DE_NULL;
 
 	void				expectError				(eglw::EGLenum error);
+	void				expectEitherError		(eglw::EGLenum errorA, eglw::EGLenum errorB);
 	void				expectBoolean			(eglw::EGLBoolean expected, eglw::EGLBoolean got);
 
 	void				expectNoContext			(eglw::EGLContext got);
