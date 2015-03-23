@@ -5861,10 +5861,16 @@ void UserDefinedIOCase::init (void)
 		const glu::VarType	highpFloat		(glu::TYPE_FLOAT, glu::PRECISION_HIGHP);
 		glu::StructType&	structType		= m_structTypes.back();
 		const glu::VarType	structVarType	(&structType);
+		bool				usedStruct		= false;
 
 		structType.addMember("x", glu::VarType(glu::TYPE_INT, glu::PRECISION_HIGHP));
 		structType.addMember("y", glu::VarType(glu::TYPE_FLOAT_VEC4, glu::PRECISION_HIGHP));
-		structType.addMember("z", glu::VarType(highpFloat, 2));
+
+		if (useBlock)
+		{
+			// It is illegal to have a structure containing an array as an output variable
+			structType.addMember("z", glu::VarType(highpFloat, 2));
+		}
 
 		if (useBlock)
 		{
@@ -5876,20 +5882,32 @@ void UserDefinedIOCase::init (void)
 
 			m_tcsOutputs.push_back	(SharedPtr<TopLevelObject>(new IOBlock("TheBlock", "tcBlock", blockMembers)));
 			m_tesInputs.push_back	(SharedPtr<TopLevelObject>(new IOBlock("TheBlock", "teBlock", blockMembers)));
+
+			usedStruct = true;
 		}
 		else
 		{
 			const Variable var0("in_te_s", structVarType,	m_ioType != IO_TYPE_PER_PATCH);
 			const Variable var1("in_te_f", highpFloat,		m_ioType != IO_TYPE_PER_PATCH);
 
-			m_tcsOutputs.push_back	(SharedPtr<TopLevelObject>(new Variable(var0)));
-			m_tesInputs.push_back	(SharedPtr<TopLevelObject>(new Variable(var0)));
+			if (m_ioType != IO_TYPE_PER_PATCH_ARRAY)
+			{
+				// Arrays of structures are disallowed, add struct cases only if not arrayed variable
+				m_tcsOutputs.push_back	(SharedPtr<TopLevelObject>(new Variable(var0)));
+				m_tesInputs.push_back	(SharedPtr<TopLevelObject>(new Variable(var0)));
+
+				usedStruct = true;
+			}
+
 			m_tcsOutputs.push_back	(SharedPtr<TopLevelObject>(new Variable(var1)));
 			m_tesInputs.push_back	(SharedPtr<TopLevelObject>(new Variable(var1)));
 		}
 
 		tcsDeclarations += "in " + Variable("in_tc_attr", highpFloat, true).declare(vertexAttrArrayInputSize);
-		tcsDeclarations += de::toString(glu::declare(structType)) + ";\n";
+
+		if (usedStruct)
+			tcsDeclarations += de::toString(glu::declare(structType)) + ";\n";
+
 		tcsStatements += "\t{\n"
 						 "\t\thighp float v = 1.3;\n";
 
