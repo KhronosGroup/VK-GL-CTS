@@ -327,8 +327,10 @@ BufferStartCase::IterateResult BufferStartCase::iterate (void)
 			gl.glGetIntegerv(GL_SHADER_STORAGE_BUFFER_OFFSET_ALIGNMENT, &offset);
 			GLU_EXPECT_NO_ERROR(gl.glGetError(), "get align");
 		}
+		else
+			DE_ASSERT(false);
 
-		DE_ASSERT(offset != -1);
+		TCU_CHECK(offset >= 0);
 
 		{
 			const tcu::ScopedLogSection	section(m_testCtx.getLog(), "Generic", "After setting generic binding point");
