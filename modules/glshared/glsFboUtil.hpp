@@ -181,6 +181,9 @@ struct FormatExtEntry
 
 typedef Range<FormatExtEntry>						FormatExtEntries;
 
+// Check support for GL_* and DEQP_* extensions
+bool				checkExtensionSupport		(const glu::RenderContext& ctx, const std::string& extension);
+
 // Accepts GL_* and DEQP_* extension strings and converts DEQP_* strings to a human readable string
 std::string			getExtensionDescription		(const std::string& extensionName);
 
@@ -390,28 +393,31 @@ void logFramebufferConfig (const config::Framebuffer& cfg, tcu::TestLog& log);
 class Checker
 {
 public:
-						Checker					(void);
-	virtual				~Checker				(void) {}
+								Checker					(const glu::RenderContext&);
+	virtual						~Checker				(void) {}
 
-	void				addGLError				(glw::GLenum error, const char* description);
-	void				addPotentialGLError		(glw::GLenum error, const char* description);
-	void				addFBOStatus			(glw::GLenum status, const char* description);
-	void				addPotentialFBOStatus	(glw::GLenum status, const char* description);
+	void						addGLError				(glw::GLenum error, const char* description);
+	void						addPotentialGLError		(glw::GLenum error, const char* description);
+	void						addFBOStatus			(glw::GLenum status, const char* description);
+	void						addPotentialFBOStatus	(glw::GLenum status, const char* description);
 
-	ValidStatusCodes	getStatusCodes			(void) { return m_statusCodes; }
+	ValidStatusCodes			getStatusCodes			(void) { return m_statusCodes; }
 
-	virtual void		check					(glw::GLenum				attPoint,
-												 const config::Attachment&	att,
-												 const config::Image*		image) = 0;
+	virtual void				check					(glw::GLenum				attPoint,
+														 const config::Attachment&	att,
+														 const config::Image*		image) = 0;
+
+protected:
+	const glu::RenderContext&	m_renderCtx;
+
 private:
-
-	ValidStatusCodes	m_statusCodes;	//< Allowed return values for glCheckFramebufferStatus.
+	ValidStatusCodes			m_statusCodes;	//< Allowed return values for glCheckFramebufferStatus.
 };
 
 class CheckerFactory
 {
 public:
-	virtual Checker*	createChecker	(void) = 0;
+	virtual Checker*	createChecker	(const glu::RenderContext&) = 0;
 };
 
 typedef std::set<glw::GLenum> AttachmentPoints;
@@ -420,14 +426,16 @@ typedef std::set<ImageFormat> Formats;
 class FboVerifier
 {
 public:
-								FboVerifier				(const FormatDB& formats,
-														 CheckerFactory& factory);
+								FboVerifier				(const FormatDB&			formats,
+														 CheckerFactory&			factory,
+														 const glu::RenderContext&	renderCtx);
 
 	ValidStatusCodes			validStatusCodes		(const config::Framebuffer& cfg) const;
 
 private:
 	const FormatDB&				m_formats;
 	CheckerFactory&				m_factory;
+	const glu::RenderContext&	m_renderCtx;
 };
 
 } // FboUtil
