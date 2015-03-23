@@ -116,7 +116,7 @@ std::string floatToString (float val, int precision)
 
 bool beginsWith (const std::string& s, const std::string& prefix)
 {
-	return deStringBeginsWith(s.c_str(), prefix.c_str());
+	return deStringBeginsWith(s.c_str(), prefix.c_str()) == DE_TRUE;
 }
 
 bool endsWith (const std::string& s, const std::string& suffix)
