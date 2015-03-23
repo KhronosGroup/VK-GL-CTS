@@ -633,40 +633,6 @@ public:
 	}
 };
 
-class ClientWaitInvalidFlagTest : public SyncTest
-{
-public:
-					ClientWaitInvalidFlagTest	(EglTestContext& eglTestCtx, EGLenum syncType) : SyncTest(eglTestCtx, syncType, SyncTest::EXTENSION_NONE, "wait_invalid_flag", "wait_invalid_flag") {}
-
-	IterateResult	iterate						(void)
-	{
-		const Library&	egl		= m_eglTestCtx.getLibrary();
-		TestLog&		log		= m_testCtx.getLog();
-
-		m_sync = egl.createSyncKHR(m_eglDisplay, m_syncType, NULL);
-		log << TestLog::Message << m_sync << " = eglCreateSyncKHR(" << m_eglDisplay << ", " << getSyncTypeName(m_syncType) << ", NULL)" << TestLog::EndMessage;
-		EGLU_CHECK_MSG(egl, "eglCreateSyncKHR()");
-
-		EGLint status = egl.clientWaitSyncKHR(m_eglDisplay, m_sync, 0xFFFFFFFF, EGL_FOREVER_KHR);
-		log << TestLog::Message << status << " = eglClientWaitSyncKHR(" << m_eglDisplay << ", " << m_sync << ", 0xFFFFFFFF, EGL_FOREVER_KHR)" << TestLog::EndMessage;
-
-		EGLint error = egl.getError();
-		log << TestLog::Message << error << " = eglGetError()" << TestLog::EndMessage;
-
-		if (error != EGL_BAD_PARAMETER)
-		{
-			log << TestLog::Message << "Unexpected error '" << eglu::getErrorStr(error) << "' expected EGL_BAD_PARAMETER" << TestLog::EndMessage;
-			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
-			return STOP;
-		}
-
-		TCU_CHECK(status == EGL_FALSE);
-
-		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
-		return STOP;
-	}
-};
-
 class GetSyncTypeTest : public SyncTest
 {
 public:
@@ -1191,7 +1157,6 @@ void FenceSyncTests::init (void)
 		// eglClientWaitSyncKHR tests
 		invalid->addChild(new ClientWaitInvalidDisplayTest(m_eglTestCtx, EGL_SYNC_FENCE_KHR));
 		invalid->addChild(new ClientWaitInvalidSyncTest(m_eglTestCtx, EGL_SYNC_FENCE_KHR));
-		invalid->addChild(new ClientWaitInvalidFlagTest(m_eglTestCtx, EGL_SYNC_FENCE_KHR));
 
 		// eglGetSyncAttribKHR tests
 		invalid->addChild(new GetSyncInvalidDisplayTest(m_eglTestCtx, EGL_SYNC_FENCE_KHR));
@@ -1259,7 +1224,6 @@ void ReusableSyncTests::init (void)
 		// eglClientWaitSyncKHR tests
 		invalid->addChild(new ClientWaitInvalidDisplayTest(m_eglTestCtx, EGL_SYNC_REUSABLE_KHR));
 		invalid->addChild(new ClientWaitInvalidSyncTest(m_eglTestCtx, EGL_SYNC_REUSABLE_KHR));
-		invalid->addChild(new ClientWaitInvalidFlagTest(m_eglTestCtx, EGL_SYNC_REUSABLE_KHR));
 
 		// eglGetSyncAttribKHR tests
 		invalid->addChild(new GetSyncInvalidDisplayTest(m_eglTestCtx, EGL_SYNC_REUSABLE_KHR));
