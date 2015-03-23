@@ -45,6 +45,7 @@ using tcu::MessageBuilder;
 using tcu::TestNode;
 using std::string;
 using de::toString;
+using de::toLower;
 using namespace deqp::gls::FboUtil;
 using namespace deqp::gls::FboUtil::config;
 typedef TestCase::IterateResult IterateResult;
@@ -58,14 +59,6 @@ namespace fboc
 
 namespace details
 {
-// \todo [2013-12-04 lauri] Place in deStrUtil.hpp?
-
-string toLower (const string& str)
-{
-	string ret;
-	std::transform(str.begin(), str.end(), std::inserter(ret, ret.begin()), ::tolower);
-	return ret;
-}
 
 // The following extensions are applicable both to ES2 and ES3.
 
@@ -415,15 +408,15 @@ Context::Context (TestContext& testCtx,
 
 void Context::addFormats (FormatEntries fmtRange)
 {
-	FboUtil::addFormats(m_minFormats, fmtRange);
+	FboUtil::addFormats(m_coreFormats, fmtRange);
 	FboUtil::addFormats(m_ctxFormats, fmtRange);
-	FboUtil::addFormats(m_maxFormats, fmtRange);
+	FboUtil::addFormats(m_allFormats, fmtRange);
 }
 
 void Context::addExtFormats (FormatExtEntries extRange)
 {
 	FboUtil::addExtFormats(m_ctxFormats, extRange, &m_renderCtx);
-	FboUtil::addExtFormats(m_maxFormats, extRange, DE_NULL);
+	FboUtil::addExtFormats(m_allFormats, extRange, DE_NULL);
 }
 
 void TestBase::pass (void)
@@ -441,76 +434,249 @@ void TestBase::fail (const char* msg)
 	m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, msg);
 }
 
-static string statusName (GLenum status)
-{
-	const char* errorName = getErrorName(status);
-	if (status != GL_NO_ERROR && errorName != DE_NULL)
-		return string(errorName) + " (during FBO initialization)";
-
-	const char* fbStatusName = getFramebufferStatusName(status);
-	if (fbStatusName != DE_NULL)
-		return fbStatusName;
-
-	return "unknown value (" + toString(status) + ")";
-}
-
 const glw::Functions& gl (const TestBase& test)
 {
 	return test.getContext().getRenderContext().getFunctions();
 }
 
+static bool isFormatFeatureSupported (const FormatDB& db, const ImageFormat& format, FormatFlags feature)
+{
+	return db.isKnownFormat(format) && ((db.getFormatInfo(format) & feature) == feature);
+}
+
+static void logAffectingExtensions (const char* prefix, const FormatDB& db, const ImageFormat& format, FormatFlags feature, tcu::MessageBuilder& msg)
+{
+	const std::set<std::set<std::string> > rows = db.getFormatFeatureExtensions(format, feature);
+
+	for (std::set<std::set<std::string> >::const_iterator rowIt = rows.begin(); rowIt != rows.end(); ++rowIt)
+	{
+		const std::set<std::string>&			requiredExtensions	= *rowIt;
+		std::set<std::string>::const_iterator	it					= requiredExtensions.begin();
+		std::string								extName;
+
+		msg << prefix;
+
+		extName = *it++;
+		while (it != requiredExtensions.end())
+		{
+			msg << extName;
+			extName = *it++;
+			msg << (it == requiredExtensions.end() ? " and " : ", ");
+		}
+
+		msg << extName << '\n';
+	}
+}
+
+static void logFormatInfo (const config::Framebuffer& fbo, const FormatDB& ctxFormats, const FormatDB& coreFormats, const FormatDB& allFormats, tcu::TestLog& log)
+{
+	static const struct
+	{
+		const char*			name;
+		const FormatFlags	flag;
+	} s_renderability[] =
+	{
+		{ "color-renderable",	COLOR_RENDERABLE	},
+		{ "depth-renderable",	DEPTH_RENDERABLE	},
+		{ "stencil-renderable",	STENCIL_RENDERABLE	},
+	};
+
+	std::set<ImageFormat> formats;
+
+	for (config::TextureMap::const_iterator it = fbo.textures.begin(); it != fbo.textures.end(); ++it)
+		formats.insert(it->second->internalFormat);
+	for (config::RboMap::const_iterator it = fbo.rbos.begin(); it != fbo.rbos.end(); ++it)
+		formats.insert(it->second->internalFormat);
+
+	if (!formats.empty())
+	{
+		const tcu::ScopedLogSection supersection(log, "Format", "Format info");
+
+		for (std::set<ImageFormat>::const_iterator it = formats.begin(); it != formats.end(); ++it)
+		{
+			const tcu::ScopedLogSection section(log, "FormatInfo", de::toString(*it));
+
+			// texture validity
+			if (isFormatFeatureSupported(ctxFormats, *it, TEXTURE_VALID))
+			{
+				tcu::MessageBuilder msg(&log);
+				msg << "* Valid texture format\n";
+
+				if (isFormatFeatureSupported(coreFormats, *it, TEXTURE_VALID))
+					msg << "\t* core feature";
+				else
+				{
+					msg << "\t* defined in supported extension(s):\n";
+					logAffectingExtensions("\t\t- ", ctxFormats, *it, TEXTURE_VALID, msg);
+				}
+
+				msg << tcu::TestLog::EndMessage;
+			}
+			else
+			{
+				tcu::MessageBuilder msg(&log);
+				msg << "* Unsupported texture format\n";
+
+				if (isFormatFeatureSupported(allFormats, *it, TEXTURE_VALID))
+				{
+					msg << "\t* requires any of the extensions or combinations:\n";
+					logAffectingExtensions("\t\t- ", allFormats, *it, TEXTURE_VALID, msg);
+				}
+				else
+					msg << "\t* no extension can make this format valid";
+
+				msg << tcu::TestLog::EndMessage;
+			}
+
+			// RBO validity
+			if (isFormatFeatureSupported(ctxFormats, *it, RENDERBUFFER_VALID))
+			{
+				tcu::MessageBuilder msg(&log);
+				msg << "* Valid renderbuffer format\n";
+
+				if (isFormatFeatureSupported(coreFormats, *it, RENDERBUFFER_VALID))
+					msg << "\t* core feature";
+				else
+				{
+					msg << "\t* defined in supported extension(s):\n";
+					logAffectingExtensions("\t\t- ", ctxFormats, *it, RENDERBUFFER_VALID, msg);
+				}
+
+				msg << tcu::TestLog::EndMessage;
+			}
+			else
+			{
+				tcu::MessageBuilder msg(&log);
+				msg << "* Unsupported renderbuffer format\n";
+
+				if (isFormatFeatureSupported(allFormats, *it, RENDERBUFFER_VALID))
+				{
+					msg << "\t* requires any of the extensions or combinations:\n";
+					logAffectingExtensions("\t\t- ", allFormats, *it, RENDERBUFFER_VALID, msg);
+				}
+				else
+					msg << "\t* no extension can make this format valid";
+
+				msg << tcu::TestLog::EndMessage;
+			}
+
+			// renderability
+			for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(s_renderability); ++ndx)
+			{
+				if (isFormatFeatureSupported(ctxFormats, *it, s_renderability[ndx].flag | REQUIRED_RENDERABLE))
+				{
+					tcu::MessageBuilder msg(&log);
+					msg << "* Format is " << s_renderability[ndx].name << "\n";
+
+					if (isFormatFeatureSupported(coreFormats, *it, s_renderability[ndx].flag | REQUIRED_RENDERABLE))
+						msg << "\t* core feature";
+					else
+					{
+						msg << "\t* defined in supported extension(s):\n";
+						logAffectingExtensions("\t\t- ", ctxFormats, *it, s_renderability[ndx].flag | REQUIRED_RENDERABLE, msg);
+					}
+
+					msg << tcu::TestLog::EndMessage;
+				}
+				else if (isFormatFeatureSupported(ctxFormats, *it, s_renderability[ndx].flag))
+				{
+					tcu::MessageBuilder msg(&log);
+					msg << "* Format is allowed to be " << s_renderability[ndx].name << " but not required\n";
+
+					if (isFormatFeatureSupported(coreFormats, *it, s_renderability[ndx].flag))
+						msg << "\t* core feature";
+					else if (isFormatFeatureSupported(allFormats, *it, s_renderability[ndx].flag))
+					{
+						msg << "\t* extensions that would make format " << s_renderability[ndx].name << ":\n";
+						logAffectingExtensions("\t\t- ", allFormats, *it, s_renderability[ndx].flag, msg);
+					}
+					else
+						msg << "\t* no extension can make this format " << s_renderability[ndx].name;
+
+					msg << tcu::TestLog::EndMessage;
+				}
+				else
+				{
+					tcu::MessageBuilder msg(&log);
+					msg << "* Format is NOT " << s_renderability[ndx].name << "\n";
+
+					if (isFormatFeatureSupported(allFormats, *it, s_renderability[ndx].flag))
+					{
+						if (isFormatFeatureSupported(allFormats, *it, s_renderability[ndx].flag | REQUIRED_RENDERABLE))
+						{
+							msg << "\t* extensions that would make format " << s_renderability[ndx].name << ":\n";
+							logAffectingExtensions("\t\t- ", allFormats, *it, s_renderability[ndx].flag | REQUIRED_RENDERABLE, msg);
+						}
+						else
+						{
+							msg << "\t* extensions that are allowed to make format " << s_renderability[ndx].name << ":\n";
+							logAffectingExtensions("\t\t- ", allFormats, *it, s_renderability[ndx].flag, msg);
+						}
+					}
+					else
+						msg << "\t* no extension can make this format " << s_renderability[ndx].name;
+
+					msg << tcu::TestLog::EndMessage;
+				}
+			}
+		}
+	}
+}
+
 IterateResult TestBase::iterate (void)
 {
-	glu::Framebuffer fbo(m_ctx.getRenderContext());
-	FboBuilder builder(*fbo, GL_FRAMEBUFFER, gl(*this));
-	const IterateResult ret = build(builder);
-	const StatusCodes statuses = m_ctx.getVerifier().validStatusCodes(builder);
+	glu::Framebuffer		fbo			(m_ctx.getRenderContext());
+	FboBuilder				builder		(*fbo, GL_FRAMEBUFFER, gl(*this));
+	const IterateResult		ret			= build(builder);
+	const ValidStatusCodes	reference	= m_ctx.getVerifier().validStatusCodes(builder);
+	const GLenum			errorCode	= builder.getError();
 
-	GLenum glStatus = builder.getError();
-	if (glStatus == GL_NO_ERROR)
-		glStatus = gl(*this).checkFramebufferStatus(GL_FRAMEBUFFER);
+	logFramebufferConfig(builder, m_testCtx.getLog());
+	logFormatInfo(builder, m_ctx.getCtxFormats(), m_ctx.getCoreFormats(), m_ctx.getAllFormats(), m_testCtx.getLog());
+	reference.logRules(m_testCtx.getLog());
+	reference.logLegalResults(m_testCtx.getLog());
 
 	// \todo [2013-12-04 lauri] Check if drawing operations succeed.
 
-	StatusCodes::const_iterator it = statuses.begin();
-	GLenum err = *it++;
-	logFramebufferConfig(builder, m_testCtx.getLog());
-
-	MessageBuilder msg(&m_testCtx.getLog());
-
-	msg << "Expected ";
-	if (it != statuses.end())
+	if (errorCode != GL_NO_ERROR)
 	{
-		msg << "one of ";
-		while (it != statuses.end())
-		{
-			msg << statusName(err);
-			err = *it++;
-			msg << (it == statuses.end() ? " or " : ", ");
-		}
-	}
-	msg << statusName(err) << "." << TestLog::EndMessage;
-	m_testCtx.getLog() << TestLog::Message << "Received " << statusName(glStatus)
-			 << "." << TestLog::EndMessage;
+		m_testCtx.getLog()
+			<< TestLog::Message
+			<< "Received " << glu::getErrorStr(errorCode) << " (during FBO initialization)."
+			<< TestLog::EndMessage;
 
-	if (!contains(statuses, glStatus))
-	{
-		// The returned status value was not acceptable.
-		if (glStatus == GL_FRAMEBUFFER_COMPLETE)
-			fail("Framebuffer checked as complete, expected incomplete");
-		else if (statuses.size() == 1 && contains(statuses, GL_FRAMEBUFFER_COMPLETE))
-			fail("Framebuffer checked is incomplete, expected complete");
+		if (reference.isErrorCodeValid(errorCode))
+			pass();
+		else if (reference.isErrorCodeRequired(GL_NO_ERROR))
+			fail(("Expected no error but got " + de::toString(glu::getErrorStr(errorCode))).c_str());
 		else
-			// An incomplete status is allowed, but not _this_ incomplete status.
-			fail("Framebuffer checked as incomplete, but with wrong status");
-	}
-	else if (glStatus != GL_FRAMEBUFFER_COMPLETE &&
-			 contains(statuses, GL_FRAMEBUFFER_COMPLETE))
-	{
-		qualityWarning("Framebuffer object could have checked as complete but did not.");
+			fail("Got wrong error code");
 	}
 	else
-		pass();
+	{
+		const GLenum	fboStatus	= gl(*this).checkFramebufferStatus(GL_FRAMEBUFFER);
+		const bool		validStatus	= reference.isFBOStatusValid(fboStatus);
+
+		m_testCtx.getLog()
+			<< TestLog::Message
+			<< "Received " << glu::getFramebufferStatusStr(fboStatus) << "."
+			<< TestLog::EndMessage;
+
+		if (!validStatus)
+		{
+			if (fboStatus == GL_FRAMEBUFFER_COMPLETE)
+				fail("Framebuffer checked as complete, expected incomplete");
+			else if (reference.isFBOStatusRequired(GL_FRAMEBUFFER_COMPLETE))
+				fail("Framebuffer checked is incomplete, expected complete");
+			else
+				// An incomplete status is allowed, but not _this_ incomplete status.
+				fail("Framebuffer checked as incomplete, but with wrong status");
+		}
+		else if (fboStatus != GL_FRAMEBUFFER_COMPLETE && reference.isFBOStatusValid(GL_FRAMEBUFFER_COMPLETE))
+			qualityWarning("Framebuffer object could have checked as complete but did not.");
+		else
+			pass();
+	}
 
 	return ret;
 }
@@ -530,7 +696,7 @@ ImageFormat TestBase::getDefaultFormat (GLenum attPoint, GLenum bufType) const
 
 	// Prefer a standard format, if there is one, but if not, use a format
 	// provided by an extension.
-	Formats formats = m_ctx.getMinFormats().getFormats(formatFlag(attPoint) |
+	Formats formats = m_ctx.getCoreFormats().getFormats(formatFlag(attPoint) |
 														 formatFlag(bufType));
 	Formats::const_iterator it = formats.begin();
 	if (it == formats.end())
@@ -638,7 +804,7 @@ struct RenderableParams
 {
 	GLenum				attPoint;
 	GLenum				bufType;
-	ImageFormat 		format;
+	ImageFormat			format;
 	static string		getName				(const RenderableParams& params)
 	{
 		return formatName(params.format);
@@ -709,7 +875,7 @@ public:
 						: ParamTest<AttachmentParams> (group, params) {}
 
 protected:
-	IterateResult 	build				(FboBuilder& builder);
+	IterateResult	build				(FboBuilder& builder);
 	void			makeDepthAndStencil	(FboBuilder& builder);
 };
 
@@ -722,7 +888,7 @@ void AttachmentTest::makeDepthAndStencil (FboBuilder& builder)
 		// image for both attachments.
 		const FormatFlags flags =
 			DEPTH_RENDERABLE | STENCIL_RENDERABLE | formatFlag(m_params.stencilKind);
-		const Formats& formats = m_ctx.getMinFormats().getFormats(flags);
+		const Formats& formats = m_ctx.getCoreFormats().getFormats(flags);
 		Formats::const_iterator it = formats.begin();
 		if (it != formats.end())
 		{
@@ -816,9 +982,9 @@ TestCaseGroup* Context::createRenderableTests (void)
 		m_testCtx, "texture", "Tests for texture formats");
 
 	static const struct AttPoint {
-		GLenum 			attPoint;
-		const char* 	name;
-		const char* 	desc;
+		GLenum			attPoint;
+		const char*		name;
+		const char*		desc;
 	} attPoints[] =
 	{
 		{ GL_COLOR_ATTACHMENT0,		"color0",	"Tests for color attachments"	},
@@ -828,8 +994,8 @@ TestCaseGroup* Context::createRenderableTests (void)
 
 	// At each attachment point, iterate through all the possible formats to
 	// detect both false positives and false negatives.
-	const Formats rboFmts = m_maxFormats.getFormats(ANY_FORMAT);
-	const Formats texFmts = m_maxFormats.getFormats(ANY_FORMAT);
+	const Formats rboFmts = m_allFormats.getFormats(ANY_FORMAT);
+	const Formats texFmts = m_allFormats.getFormats(ANY_FORMAT);
 
 	for (const AttPoint* it = DE_ARRAY_BEGIN(attPoints); it != DE_ARRAY_END(attPoints); it++)
 	{

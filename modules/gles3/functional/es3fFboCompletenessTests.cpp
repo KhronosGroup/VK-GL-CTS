@@ -191,16 +191,16 @@ void ES3Checker::check (GLenum attPoint, const Attachment& att, const Image* ima
 
 		// Either all attachments are zero-sample renderbuffers and/or
 		// textures, or none of them are.
-		require((m_numSamples == 0) == (imgSamples == 0),
-				GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE);
+		if ((m_numSamples == 0) != (imgSamples == 0))
+			addFBOStatus(GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE, "Mixed multi- and single-sampled attachments");
 
 		// If the attachments requested a different number of samples, the
 		// implementation is allowed to report this as incomplete. However, it
 		// is also possible that despite the different requests, the
 		// implementation allocated the same number of samples to both. Hence
 		// reporting the framebuffer as complete is also legal.
-		canRequire(m_numSamples == imgSamples,
-				   GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE);
+		if (m_numSamples != imgSamples)
+			addPotentialFBOStatus(GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE, "Number of samples differ");
 	}
 
 	// "Depth and stencil attachments, if present, are the same image."
@@ -212,9 +212,10 @@ void ES3Checker::check (GLenum attPoint, const Attachment& att, const Image* ima
 			m_depthStencilType = attachmentType(att);
 		}
 		else
-			require(m_depthStencilImage == att.imageName &&
-					m_depthStencilType == attachmentType(att),
-					GL_FRAMEBUFFER_UNSUPPORTED);
+		{
+			if (m_depthStencilImage != att.imageName || m_depthStencilType != attachmentType(att))
+				addFBOStatus(GL_FRAMEBUFFER_UNSUPPORTED, "Depth and stencil attachments are not the same image");
+		}
 	}
 }
 

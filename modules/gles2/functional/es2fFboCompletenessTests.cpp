@@ -147,8 +147,8 @@ void ES2Checker::check(GLenum attPoint, const Attachment& att, const Image* imag
 	}
 	else
 	{
-		require(image->width == m_width && image->height == m_height,
-				GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS);
+		if (image->width != m_width || image->height != m_height)
+			addFBOStatus(GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS, "Sizes of attachments differ");
 	}
 	// GLES2, 4.4.5: "some implementations may not support rendering to
 	// particular combinations of internal formats. If the combination of
@@ -157,7 +157,7 @@ void ES2Checker::check(GLenum attPoint, const Attachment& att, const Image* imag
 	// under the clause labeled FRAMEBUFFER_UNSUPPORTED."
 	//
 	// Hence it is _always_ allowed to report FRAMEBUFFER_UNSUPPORTED.
-	canRequire(false, GL_FRAMEBUFFER_UNSUPPORTED);
+	addPotentialFBOStatus(GL_FRAMEBUFFER_UNSUPPORTED, "Particular format combinations need not to be supported");
 }
 
 struct FormatCombination
@@ -204,7 +204,7 @@ GLenum SupportedCombinationTest::formatKind (ImageFormat fmt)
 	if (fmt.format == GL_NONE)
 		return GL_NONE;
 
-	const FormatFlags flags = m_ctx.getMinFormats().getFormatInfo(fmt, ANY_FORMAT);
+	const FormatFlags flags = m_ctx.getCoreFormats().getFormatInfo(fmt);
 	const bool rbo = (flags & RENDERBUFFER_VALID) != 0;
 	// exactly one of renderbuffer and texture is supported by vanilla GLES2 formats
 	DE_ASSERT(rbo != ((flags & TEXTURE_VALID) != 0));
@@ -214,7 +214,7 @@ GLenum SupportedCombinationTest::formatKind (ImageFormat fmt)
 
 IterateResult SupportedCombinationTest::iterate (void)
 {
-	const FormatDB& db		= m_ctx.getMinFormats();
+	const FormatDB& db		= m_ctx.getCoreFormats();
 	const ImageFormat none	= ImageFormat::none();
 	Formats colorFmts		= db.getFormats(COLOR_RENDERABLE);
 	Formats depthFmts		= db.getFormats(DEPTH_RENDERABLE);
