@@ -6332,23 +6332,6 @@
 </TestCase>
 </TestSuite>
 <TestSuite name="user_defined_io">
-<TestSuite name="per_patch">
-<TestCase name="vertex_io_array_size_implicit">
-<Test name="triangles" />
-<Test name="quads" />
-<Test name="isolines" />
-</TestCase>
-<TestCase name="vertex_io_array_size_shader_builtin">
-<Test name="triangles" />
-<Test name="quads" />
-<Test name="isolines" />
-</TestCase>
-<TestCase name="vertex_io_array_size_query">
-<Test name="triangles" />
-<Test name="quads" />
-<Test name="isolines" />
-</TestCase>
-</TestSuite>
 <TestSuite name="per_vertex_block">
 <TestCase name="vertex_io_array_size_implicit">
 <Test name="triangles" />
