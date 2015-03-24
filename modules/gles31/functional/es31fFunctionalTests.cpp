@@ -189,6 +189,7 @@ public:
 		addChild(new ShaderMultisampleInterpolationTests(m_context));
 		addChild(new OpaqueTypeIndexingTests			(m_context));
 		addChild(new ShaderLibraryTest					(m_context, "functions", "Function Tests"));
+		addChild(new ShaderLibraryTest					(m_context, "arrays", "Arrays Tests"));
 		addChild(new ShaderLibraryTest					(m_context, "arrays_of_arrays", "Arrays of Arrays Tests"));
 		addChild(new ShaderLinkageTests					(m_context));
 		addChild(new ShaderBuiltinConstantTests			(m_context));
