@@ -5491,6 +5491,8 @@ public:
 	{
 		IO_TYPE_PER_PATCH = 0,
 		IO_TYPE_PER_PATCH_ARRAY,
+		IO_TYPE_PER_PATCH_BLOCK,
+		IO_TYPE_PER_PATCH_BLOCK_ARRAY,
 		IO_TYPE_PER_VERTEX,
 		IO_TYPE_PER_VERTEX_BLOCK,
 
@@ -5528,9 +5530,12 @@ private:
 		virtual			~TopLevelObject					(void) {}
 
 		virtual string	name							(void) const = 0;
-		virtual string	declare							(const string& arraySizeExpr) const = 0;
-		virtual string	glslTraverseBasicTypes			(int numArrayElements, //!< If negative, traverse just array[gl_InvocationID], not all indices.
+		virtual string	declare							(void) const = 0;
+		virtual string	declareArray					(const string& arraySizeExpr) const = 0;
+		virtual string	glslTraverseBasicTypeArray		(int numArrayElements, //!< If negative, traverse just array[gl_InvocationID], not all indices.
 														 int indentationDepth,
+														 BasicTypeVisitFunc) const = 0;
+		virtual string	glslTraverseBasicType			(int indentationDepth,
 														 BasicTypeVisitFunc) const = 0;
 		virtual int		numBasicSubobjectsInElementType	(void) const = 0;
 		virtual string	basicSubobjectAtIndex			(int index, int arraySize) const = 0;
@@ -5548,8 +5553,10 @@ private:
 		}
 
 		string	name								(void) const { return m_name; }
-		string	declare								(const string& arraySizeExpr) const;
-		string	glslTraverseBasicTypes				(int numArrayElements, int indentationDepth, BasicTypeVisitFunc) const;
+		string	declare								(void) const;
+		string	declareArray						(const string& arraySizeExpr) const;
+		string	glslTraverseBasicTypeArray			(int numArrayElements, int indentationDepth, BasicTypeVisitFunc) const;
+		string	glslTraverseBasicType				(int indentationDepth, BasicTypeVisitFunc) const;
 		int		numBasicSubobjectsInElementType		(void) const;
 		string	basicSubobjectAtIndex				(int index, int arraySize) const;
 
@@ -5577,8 +5584,10 @@ private:
 		}
 
 		string	name								(void) const { return m_interfaceName; }
-		string	declare								(const string& arraySizeExpr) const;
-		string	glslTraverseBasicTypes				(int numArrayElements, int indentationDepth, BasicTypeVisitFunc) const;
+		string	declare								(void) const;
+		string	declareArray						(const string& arraySizeExpr) const;
+		string	glslTraverseBasicTypeArray			(int numArrayElements, int indentationDepth, BasicTypeVisitFunc) const;
+		string	glslTraverseBasicType				(int indentationDepth, BasicTypeVisitFunc) const;
 		int		numBasicSubobjectsInElementType		(void) const;
 		string	basicSubobjectAtIndex				(int index, int arraySize) const;
 
@@ -5599,9 +5608,22 @@ private:
 	static int								numBasicSubobjectsInElementType		(const vector<SharedPtr<TopLevelObject> >&);
 	static string							basicSubobjectAtIndex				(int index, const vector<SharedPtr<TopLevelObject> >&, int topLevelArraySizes);
 
-	static const int						RENDER_SIZE = 256;
-	static const int						NUM_OUTPUT_VERTICES;
-	static const int						NUM_PER_PATCH_ARRAY_ELEMS;
+	enum
+	{
+		RENDER_SIZE = 256
+	};
+	enum
+	{
+		NUM_OUTPUT_VERTICES = 5
+	};
+	enum
+	{
+		NUM_PER_PATCH_ARRAY_ELEMS = 3
+	};
+	enum
+	{
+		NUM_PER_PATCH_BLOCKS = 2
+	};
 
 	const TessPrimitiveType					m_primitiveType;
 	const IOType							m_ioType;
@@ -5614,9 +5636,6 @@ private:
 
 	SharedPtr<const glu::ShaderProgram>		m_program;
 };
-
-const int UserDefinedIOCase::NUM_OUTPUT_VERTICES			= 5;
-const int UserDefinedIOCase::NUM_PER_PATCH_ARRAY_ELEMS		= 3;
 
 /*--------------------------------------------------------------------*//*!
  * \brief Generate GLSL code to traverse (possibly aggregate) object
@@ -5666,31 +5685,65 @@ string UserDefinedIOCase::glslTraverseBasicTypes (const string&			rootName,
 	}
 }
 
-string UserDefinedIOCase::Variable::declare (const string& sizeExpr) const
+string UserDefinedIOCase::Variable::declare (void) const
 {
-	return de::toString(glu::declare(m_type, m_name)) + (m_isArray ? "[" + sizeExpr + "]" : "") + ";\n";
+	DE_ASSERT(!m_isArray);
+	return de::toString(glu::declare(m_type, m_name)) + ";\n";
 }
 
-string UserDefinedIOCase::IOBlock::declare (const string& sizeExpr) const
+string UserDefinedIOCase::Variable::declareArray (const string& sizeExpr) const
 {
-	string result = m_blockName + "\n" +
-					"{\n";
+	DE_ASSERT(m_isArray);
+	return de::toString(glu::declare(m_type, m_name)) + "[" + sizeExpr + "];\n";
+}
+
+string UserDefinedIOCase::IOBlock::declare (void) const
+{
+	std::ostringstream buf;
+
+	buf << m_blockName << "\n"
+		<< "{\n";
+
 	for (int i = 0; i < (int)m_members.size(); i++)
-		result += "\t" + de::toString(glu::declare(m_members[i].type, m_members[i].name)) + ";\n";
-	result += "} " + m_interfaceName + "[" + sizeExpr + "]" + ";\n";
-	return result;
+		buf << "\t" << glu::declare(m_members[i].type, m_members[i].name) << ";\n";
+
+	buf << "} " << m_interfaceName << ";\n";
+	return buf.str();
 }
 
-string UserDefinedIOCase::Variable::glslTraverseBasicTypes (int numArrayElements, int indentationDepth, BasicTypeVisitFunc visit) const
+string UserDefinedIOCase::IOBlock::declareArray (const string& sizeExpr) const
 {
-	const bool				traverseAsArray		= m_isArray && numArrayElements >= 0;
-	const string			traversedName		= m_name + (m_isArray && !traverseAsArray ? "[gl_InvocationID]" : "");
+	std::ostringstream buf;
+
+	buf << m_blockName << "\n"
+		<< "{\n";
+
+	for (int i = 0; i < (int)m_members.size(); i++)
+		buf << "\t" << glu::declare(m_members[i].type, m_members[i].name) << ";\n";
+
+	buf << "} " << m_interfaceName << "[" << sizeExpr << "];\n";
+	return buf.str();
+}
+
+string UserDefinedIOCase::Variable::glslTraverseBasicTypeArray (int numArrayElements, int indentationDepth, BasicTypeVisitFunc visit) const
+{
+	DE_ASSERT(m_isArray);
+
+	const bool				traverseAsArray		= numArrayElements >= 0;
+	const string			traversedName		= m_name + (!traverseAsArray ? "[gl_InvocationID]" : "");
 	const glu::VarType		type				= traverseAsArray ? glu::VarType(m_type, numArrayElements) : m_type;
 
 	return UserDefinedIOCase::glslTraverseBasicTypes(traversedName, type, 0, indentationDepth, visit);
 }
 
-string UserDefinedIOCase::IOBlock::glslTraverseBasicTypes (int numArrayElements, int indentationDepth, BasicTypeVisitFunc visit) const
+string UserDefinedIOCase::Variable::glslTraverseBasicType (int indentationDepth, BasicTypeVisitFunc visit) const
+{
+	DE_ASSERT(!m_isArray);
+
+	return UserDefinedIOCase::glslTraverseBasicTypes(m_name, m_type, 0, indentationDepth, visit);
+}
+
+string UserDefinedIOCase::IOBlock::glslTraverseBasicTypeArray (int numArrayElements, int indentationDepth, BasicTypeVisitFunc visit) const
 {
 	if (numArrayElements >= 0)
 	{
@@ -5709,6 +5762,15 @@ string UserDefinedIOCase::IOBlock::glslTraverseBasicTypes (int numArrayElements,
 			result += UserDefinedIOCase::glslTraverseBasicTypes(m_interfaceName + "[gl_InvocationID]." + m_members[i].name, m_members[i].type, 0, indentationDepth, visit);
 		return result;
 	}
+}
+
+
+string UserDefinedIOCase::IOBlock::glslTraverseBasicType (int indentationDepth, BasicTypeVisitFunc visit) const
+{
+	string result;
+	for (int i = 0; i < (int)m_members.size(); i++)
+		result += UserDefinedIOCase::glslTraverseBasicTypes(m_interfaceName + "." + m_members[i].name, m_members[i].type, 0, indentationDepth, visit);
+	return result;
 }
 
 int UserDefinedIOCase::Variable::numBasicSubobjectsInElementType (void) const
@@ -5835,7 +5897,11 @@ void UserDefinedIOCase::init (void)
 	checkTessellationSupport(m_context);
 	checkRenderTargetSize(m_context.getRenderTarget(), RENDER_SIZE);
 
-	const bool			isPerPatchIO				= m_ioType == IO_TYPE_PER_PATCH || m_ioType == IO_TYPE_PER_PATCH_ARRAY;
+	const bool			isPerPatchIO				= m_ioType == IO_TYPE_PER_PATCH				||
+													  m_ioType == IO_TYPE_PER_PATCH_ARRAY		||
+													  m_ioType == IO_TYPE_PER_PATCH_BLOCK		||
+													  m_ioType == IO_TYPE_PER_PATCH_BLOCK_ARRAY;
+
 	const bool			isExplicitVertexArraySize	= m_vertexIOArraySize == VERTEX_IO_ARRAY_SIZE_EXPLICIT_SHADER_BUILTIN ||
 													  m_vertexIOArraySize == VERTEX_IO_ARRAY_SIZE_EXPLICIT_QUERY;
 
@@ -5847,7 +5913,9 @@ void UserDefinedIOCase::init (void)
 	const char* const	maybePatch					= isPerPatchIO ? "patch " : "";
 	const string		outMaybePatch				= string() + maybePatch + "out ";
 	const string		inMaybePatch				= string() + maybePatch + "in ";
-	const bool			useBlock					= m_ioType == IO_TYPE_PER_VERTEX_BLOCK;
+	const bool			useBlock					= m_ioType == IO_TYPE_PER_VERTEX_BLOCK		||
+													  m_ioType == IO_TYPE_PER_PATCH_BLOCK		||
+													  m_ioType == IO_TYPE_PER_PATCH_BLOCK_ARRAY;
 
 	string				tcsDeclarations;
 	string				tcsStatements;
@@ -5874,8 +5942,12 @@ void UserDefinedIOCase::init (void)
 
 		if (useBlock)
 		{
-			vector<IOBlock::Member> blockMembers;
-			blockMembers.push_back(IOBlock::Member("blockS",	structVarType));
+			const bool				useLightweightBlock = (m_ioType == IO_TYPE_PER_PATCH_BLOCK_ARRAY); // use leaner block to make sure it is not larger than allowed (per-patch storage is very limited)
+			vector<IOBlock::Member>	blockMembers;
+
+			if (!useLightweightBlock)
+				blockMembers.push_back(IOBlock::Member("blockS",	structVarType));
+
 			blockMembers.push_back(IOBlock::Member("blockFa",	glu::VarType(highpFloat, 3)));
 			blockMembers.push_back(IOBlock::Member("blockSa",	glu::VarType(structVarType, 2)));
 			blockMembers.push_back(IOBlock::Member("blockF",	highpFloat));
@@ -5903,7 +5975,7 @@ void UserDefinedIOCase::init (void)
 			m_tesInputs.push_back	(SharedPtr<TopLevelObject>(new Variable(var1)));
 		}
 
-		tcsDeclarations += "in " + Variable("in_tc_attr", highpFloat, true).declare(vertexAttrArrayInputSize);
+		tcsDeclarations += "in " + Variable("in_tc_attr", highpFloat, true).declareArray(vertexAttrArrayInputSize);
 
 		if (usedStruct)
 			tcsDeclarations += de::toString(glu::declare(structType)) + ";\n";
@@ -5913,35 +5985,72 @@ void UserDefinedIOCase::init (void)
 
 		for (int tcsOutputNdx = 0; tcsOutputNdx < (int)m_tcsOutputs.size(); tcsOutputNdx++)
 		{
-			const TopLevelObject& output = *m_tcsOutputs[tcsOutputNdx];
+			const TopLevelObject&	output		= *m_tcsOutputs[tcsOutputNdx];
+			const int				numElements	= !isPerPatchIO								? -1	//!< \note -1 means indexing with gl_InstanceID
+												: m_ioType == IO_TYPE_PER_PATCH				? 1
+												: m_ioType == IO_TYPE_PER_PATCH_ARRAY		? NUM_PER_PATCH_ARRAY_ELEMS
+												: m_ioType == IO_TYPE_PER_PATCH_BLOCK		? 1
+												: m_ioType == IO_TYPE_PER_PATCH_BLOCK_ARRAY	? NUM_PER_PATCH_BLOCKS
+												: -2;
+			const bool				isArray		= (numElements != 1);
 
-			tcsDeclarations += outMaybePatch + output.declare(m_ioType == IO_TYPE_PER_PATCH_ARRAY	? de::toString(NUM_PER_PATCH_ARRAY_ELEMS)
-															  : isExplicitVertexArraySize			? de::toString(NUM_OUTPUT_VERTICES)
-															  : "");
+			DE_ASSERT(numElements != -2);
+
+			if (isArray)
+				tcsDeclarations += outMaybePatch + output.declareArray(m_ioType == IO_TYPE_PER_PATCH_ARRAY			? de::toString(NUM_PER_PATCH_ARRAY_ELEMS)
+																	   : m_ioType == IO_TYPE_PER_PATCH_BLOCK_ARRAY	? de::toString(NUM_PER_PATCH_BLOCKS)
+																	   : isExplicitVertexArraySize					? de::toString(NUM_OUTPUT_VERTICES)
+																	   : "");
+			else
+				tcsDeclarations += outMaybePatch + output.declare();
+
 			if (!isPerPatchIO)
 				tcsStatements += "\t\tv += float(gl_InvocationID)*" + de::floatToString(0.4f*output.numBasicSubobjectsInElementType(), 1) + ";\n";
 
-			tcsStatements += "\n\t\t// Assign values to output " + output.name() + "\n" +
-							 output.glslTraverseBasicTypes(isPerPatchIO ? NUM_PER_PATCH_ARRAY_ELEMS : -1, 2, glslAssignBasicTypeObject);
+			tcsStatements += "\n\t\t// Assign values to output " + output.name() + "\n";
+			if (isArray)
+				tcsStatements += output.glslTraverseBasicTypeArray(numElements, 2, glslAssignBasicTypeObject);
+			else
+				tcsStatements += output.glslTraverseBasicType(2, glslAssignBasicTypeObject);
 
 			if (!isPerPatchIO)
 				tcsStatements += "\t\tv += float(" + de::toString(NUM_OUTPUT_VERTICES) + "-gl_InvocationID-1)*" + de::floatToString(0.4f*output.numBasicSubobjectsInElementType(), 1) + ";\n";
 		}
 		tcsStatements += "\t}\n";
 
-		tesDeclarations += de::toString(glu::declare(structType)) + ";\n";
+		if (usedStruct)
+			tesDeclarations += de::toString(glu::declare(structType)) + ";\n";
+
 		tesStatements += "\tbool allOk = true;\n"
 						 "\thighp uint firstFailedInputIndex = 0u;\n"
 						 "\t{\n"
 						 "\t\thighp float v = 1.3;\n";
 		for (int tesInputNdx = 0; tesInputNdx < (int)m_tesInputs.size(); tesInputNdx++)
 		{
-			const TopLevelObject& input = *m_tesInputs[tesInputNdx];
-			tesDeclarations += inMaybePatch + input.declare(m_ioType == IO_TYPE_PER_PATCH_ARRAY	? de::toString(NUM_PER_PATCH_ARRAY_ELEMS)
-														  : isExplicitVertexArraySize			? de::toString(vertexAttrArrayInputSize)
-														  : "");
-			tesStatements += "\n\t\t// Check values in input " + input.name() + "\n" +
-							 input.glslTraverseBasicTypes(isPerPatchIO ? NUM_PER_PATCH_ARRAY_ELEMS : NUM_OUTPUT_VERTICES, 2, glslCheckBasicTypeObject);
+			const TopLevelObject&	input		= *m_tesInputs[tesInputNdx];
+			const int				numElements	= !isPerPatchIO								? (int)NUM_OUTPUT_VERTICES
+												: m_ioType == IO_TYPE_PER_PATCH				? 1
+												: m_ioType == IO_TYPE_PER_PATCH_BLOCK		? 1
+												: m_ioType == IO_TYPE_PER_PATCH_ARRAY		? NUM_PER_PATCH_ARRAY_ELEMS
+												: m_ioType == IO_TYPE_PER_PATCH_BLOCK_ARRAY	? NUM_PER_PATCH_BLOCKS
+												: -2;
+			const bool				isArray		= (numElements != 1);
+
+			DE_ASSERT(numElements != -2);
+
+			if (isArray)
+				tesDeclarations += inMaybePatch + input.declareArray(m_ioType == IO_TYPE_PER_PATCH_ARRAY			? de::toString(NUM_PER_PATCH_ARRAY_ELEMS)
+																	 : m_ioType == IO_TYPE_PER_PATCH_BLOCK_ARRAY	? de::toString(NUM_PER_PATCH_BLOCKS)
+																	 : isExplicitVertexArraySize					? de::toString(vertexAttrArrayInputSize)
+																	 : "");
+			else
+				tesDeclarations += inMaybePatch + input.declare();
+
+			tesStatements += "\n\t\t// Check values in input " + input.name() + "\n";
+			if (isArray)
+				tesStatements += input.glslTraverseBasicTypeArray(numElements, 2, glslCheckBasicTypeObject);
+			else
+				tesStatements += input.glslTraverseBasicType(2, glslCheckBasicTypeObject);
 		}
 		tesStatements += "\t}\n";
 	}
@@ -6048,6 +6157,7 @@ UserDefinedIOCase::IterateResult UserDefinedIOCase::iterate (void)
 	const deUint32			programGL				= m_program->getProgram();
 	const int				numVertices				= referenceVertexCount(m_primitiveType, SPACINGMODE_EQUAL, false, &attributes[0], &attributes[2]);
 	const TFHandler			tfHandler				(renderCtx, numVertices);
+	tcu::ResultCollector	result;
 
 	gl.useProgram(programGL);
 	setViewport(gl, viewport);
@@ -6067,23 +6177,21 @@ UserDefinedIOCase::IterateResult UserDefinedIOCase::iterate (void)
 			const bool					success		= tcu::fuzzyCompare(log, "ImageComparison", "Image Comparison", reference.getAccess(), pixels.getAccess(), 0.02f, tcu::COMPARE_LOG_RESULT);
 
 			if (!success)
-			{
-				m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Image comparison failed");
-				return STOP;
-			}
+				result.fail("Image comparison failed");
 		}
 
 		if ((int)tfResult.varying.size() != numVertices)
 		{
 			log << TestLog::Message << "Failure: transform feedback returned " << tfResult.varying.size() << " vertices; expected " << numVertices << TestLog::EndMessage;
-			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Wrong number of vertices");
-			return STOP;
+			result.fail("Wrong number of vertices");
 		}
-
+		else
 		{
-			const int topLevelArraySize		= (m_ioType == IO_TYPE_PER_PATCH		? 1
-											 : m_ioType == IO_TYPE_PER_PATCH_ARRAY	? NUM_PER_PATCH_ARRAY_ELEMS
-											 : NUM_OUTPUT_VERTICES);
+			const int topLevelArraySize		= (m_ioType == IO_TYPE_PER_PATCH				? 1
+											 : m_ioType == IO_TYPE_PER_PATCH_ARRAY			? NUM_PER_PATCH_ARRAY_ELEMS
+											 : m_ioType == IO_TYPE_PER_PATCH_BLOCK			? 1
+											 : m_ioType == IO_TYPE_PER_PATCH_BLOCK_ARRAY	? NUM_PER_PATCH_BLOCKS
+											 : (int)NUM_OUTPUT_VERTICES);
 			const int numTEInputs			= numBasicSubobjectsInElementType(m_tesInputs) * topLevelArraySize;
 
 			for (int vertexNdx = 0; vertexNdx < (int)numVertices; vertexNdx++)
@@ -6092,21 +6200,19 @@ UserDefinedIOCase::IterateResult UserDefinedIOCase::iterate (void)
 				{
 					log << TestLog::Message << "Failure: out_te_firstFailedInputIndex has value " << tfResult.varying[vertexNdx]
 											<< ", should be in range [0, " << numTEInputs << "]" << TestLog::EndMessage;
-					m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Invalid transform feedback output");
-					return STOP;
+					result.fail("Invalid transform feedback output");
 				}
 				else if (tfResult.varying[vertexNdx] != (deUint32)numTEInputs)
 				{
 					log << TestLog::Message << "Failure: in tessellation evaluation shader, check for input "
 											<< basicSubobjectAtIndex(tfResult.varying[vertexNdx], m_tesInputs, topLevelArraySize) << " failed" << TestLog::EndMessage;
-					m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Invalid input value in tessellation evaluation shader");
-					return STOP;
+					result.fail("Invalid input value in tessellation evaluation shader");
 				}
 			}
 		}
 	}
 
-	m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+	result.setTestContextResult(m_testCtx);
 	return STOP;
 }
 
@@ -7417,23 +7523,27 @@ void TessellationTests::init (void)
 	}
 
 	{
+		static const struct
+		{
+			const char*					name;
+			const char*					description;
+			UserDefinedIOCase::IOType	ioType;
+		} ioCases[] =
+		{
+			{ "per_patch",					"Per-patch TCS outputs",					UserDefinedIOCase::IO_TYPE_PER_PATCH				},
+			{ "per_patch_array",			"Per-patch array TCS outputs",				UserDefinedIOCase::IO_TYPE_PER_PATCH_ARRAY			},
+			{ "per_patch_block",			"Per-patch TCS outputs in IO block",		UserDefinedIOCase::IO_TYPE_PER_PATCH_BLOCK			},
+			{ "per_patch_block_array",		"Per-patch TCS outputs in IO block array",	UserDefinedIOCase::IO_TYPE_PER_PATCH_BLOCK_ARRAY	},
+			{ "per_vertex",					"Per-vertex TCS outputs",					UserDefinedIOCase::IO_TYPE_PER_VERTEX				},
+			{ "per_vertex_block",			"Per-vertex TCS outputs in IO block",		UserDefinedIOCase::IO_TYPE_PER_VERTEX_BLOCK			},
+		};
+
 		TestCaseGroup* const userDefinedIOGroup = new TestCaseGroup(m_context, "user_defined_io", "Test non-built-in per-patch and per-vertex inputs and outputs");
 		addChild(userDefinedIOGroup);
 
-		for (int ioTypeI = 0; ioTypeI < UserDefinedIOCase::IO_TYPE_LAST; ioTypeI++)
+		for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(ioCases); ++ndx)
 		{
-			const UserDefinedIOCase::IOType		ioType			= (UserDefinedIOCase::IOType)ioTypeI;
-			TestCaseGroup* const				ioTypeGroup		= new TestCaseGroup(m_context,
-																					ioType == UserDefinedIOCase::IO_TYPE_PER_PATCH			? "per_patch"
-																				  : ioType == UserDefinedIOCase::IO_TYPE_PER_PATCH_ARRAY	? "per_patch_array"
-																				  : ioType == UserDefinedIOCase::IO_TYPE_PER_VERTEX			? "per_vertex"
-																				  : ioType == UserDefinedIOCase::IO_TYPE_PER_VERTEX_BLOCK	? "per_vertex_block"
-																				  : DE_NULL,
-																					ioType == UserDefinedIOCase::IO_TYPE_PER_PATCH			? "Per-patch TCS outputs"
-																				  : ioType == UserDefinedIOCase::IO_TYPE_PER_PATCH_ARRAY	? "Per-patch array TCS outputs"
-																				  : ioType == UserDefinedIOCase::IO_TYPE_PER_VERTEX			? "Per-vertex TCS outputs"
-																				  : ioType == UserDefinedIOCase::IO_TYPE_PER_VERTEX_BLOCK	? "Per-vertex TCS outputs in IO block"
-																				  : DE_NULL);
+			TestCaseGroup* const ioTypeGroup = new TestCaseGroup(m_context, ioCases[ndx].name, ioCases[ndx].description);
 			userDefinedIOGroup->addChild(ioTypeGroup);
 
 			for (int vertexArraySizeI = 0; vertexArraySizeI < UserDefinedIOCase::VERTEX_IO_ARRAY_SIZE_LAST; vertexArraySizeI++)
@@ -7453,7 +7563,7 @@ void TessellationTests::init (void)
 				for (int primitiveTypeI = 0; primitiveTypeI < TESSPRIMITIVETYPE_LAST; primitiveTypeI++)
 				{
 					const TessPrimitiveType primitiveType = (TessPrimitiveType)primitiveTypeI;
-					vertexArraySizeGroup->addChild(new UserDefinedIOCase(m_context, getTessPrimitiveTypeShaderName(primitiveType), "", primitiveType, ioType, vertexArraySize,
+					vertexArraySizeGroup->addChild(new UserDefinedIOCase(m_context, getTessPrimitiveTypeShaderName(primitiveType), "", primitiveType, ioCases[ndx].ioType, vertexArraySize,
 																		 (string() + "data/tessellation/user_defined_io_" + getTessPrimitiveTypeShaderName(primitiveType) + "_ref.png").c_str()));
 				}
 			}
