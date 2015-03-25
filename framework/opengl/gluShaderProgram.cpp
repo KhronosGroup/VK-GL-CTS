@@ -89,23 +89,45 @@ void Shader::compile (void)
 
 	GLU_EXPECT_NO_ERROR(m_gl.getError(), "glCompileShader()");
 
-	// Query status & log.
+	// Query status
 	{
-		int	compileStatus	= 0;
-		int	infoLogLen		= 0;
-		int	unusedLen;
+		int compileStatus = 0;
 
-		m_gl.getShaderiv(m_shader, GL_COMPILE_STATUS,		&compileStatus);
-		m_gl.getShaderiv(m_shader, GL_INFO_LOG_LENGTH,	&infoLogLen);
+		m_gl.getShaderiv(m_shader, GL_COMPILE_STATUS, &compileStatus);
 		GLU_EXPECT_NO_ERROR(m_gl.getError(), "glGetShaderiv()");
 
 		m_info.compileOk = compileStatus != GL_FALSE;
+	}
+
+	// Query log
+	{
+		int infoLogLen = 0;
+		int unusedLen;
+
+		m_gl.getShaderiv(m_shader, GL_INFO_LOG_LENGTH, &infoLogLen);
+		GLU_EXPECT_NO_ERROR(m_gl.getError(), "glGetShaderiv()");
 
 		if (infoLogLen > 0)
 		{
-			std::vector<char> infoLog(infoLogLen);
-			m_gl.getShaderInfoLog(m_shader, (int)infoLog.size(), &unusedLen, &infoLog[0]);
-			m_info.infoLog = std::string(&infoLog[0], infoLogLen);
+			// The INFO_LOG_LENGTH query and the buffer query implementations have
+			// very commonly off-by-one errors. Try to work around these issues.
+
+			// add tolerance for off-by-one in log length, buffer write, and for terminator
+			std::vector<char> infoLog(infoLogLen + 3, '\0');
+
+			// claim buf size is one smaller to protect from off-by-one writing over buffer bounds
+			m_gl.getShaderInfoLog(m_shader, (int)infoLog.size() - 1, &unusedLen, &infoLog[0]);
+
+			if (infoLog[(int)(infoLog.size()) - 1] != '\0')
+			{
+				// return whole buffer if null terminator was overwritten
+				m_info.infoLog = std::string(&infoLog[0], infoLog.size());
+			}
+			else
+			{
+				// read as C string. infoLog is guaranteed to be 0-terminated
+				m_info.infoLog = std::string(&infoLog[0]);
+			}
 		}
 	}
 }
