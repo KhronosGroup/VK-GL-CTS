@@ -41,6 +41,38 @@ inline const char* getEscapeEntity (char ch)
 		case '&':	return "&amp;";
 		case '\'':	return "&apos;";
 		case '"':	return "&quot;";
+
+		// Non-printable characters.
+		case 0:		return "&lt;NUL&gt;";
+		case 1:		return "&lt;SOH&gt;";
+		case 2:		return "&lt;STX&gt;";
+		case 3:		return "&lt;ETX&gt;";
+		case 4:		return "&lt;EOT&gt;";
+		case 5:		return "&lt;ENQ&gt;";
+		case 6:		return "&lt;ACK&gt;";
+		case 7:		return "&lt;BEL&gt;";
+		case 8:		return "&lt;BS&gt;";
+		case 11:	return "&lt;VT&gt;";
+		case 12:	return "&lt;FF&gt;";
+		case 14:	return "&lt;SO&gt;";
+		case 15:	return "&lt;SI&gt;";
+		case 16:	return "&lt;DLE&gt;";
+		case 17:	return "&lt;DC1&gt;";
+		case 18:	return "&lt;DC2&gt;";
+		case 19:	return "&lt;DC3&gt;";
+		case 20:	return "&lt;DC4&gt;";
+		case 21:	return "&lt;NAK&gt;";
+		case 22:	return "&lt;SYN&gt;";
+		case 23:	return "&lt;ETB&gt;";
+		case 24:	return "&lt;CAN&gt;";
+		case 25:	return "&lt;EM&gt;";
+		case 26:	return "&lt;SUB&gt;";
+		case 27:	return "&lt;ESC&gt;";
+		case 28:	return "&lt;FS&gt;";
+		case 29:	return "&lt;GS&gt;";
+		case 30:	return "&lt;RS&gt;";
+		case 31:	return "&lt;US&gt;";
+
 		default:	return DE_NULL;
 	}
 }
