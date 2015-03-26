@@ -26,12 +26,14 @@
 #include "tcuTestLog.hpp"
 #include "tcuRGBA.hpp"
 #include "tcuSurface.hpp"
+#include "tcuStringTemplate.hpp"
 #include "tcuRenderTarget.hpp"
 #include "gluContextInfo.hpp"
 #include "gluShaderProgram.hpp"
 #include "gluRenderContext.hpp"
 #include "glwFunctions.hpp"
 #include "glwEnums.hpp"
+#include "deArrayUtil.hpp"
 #include "deStringUtil.hpp"
 #include "deMath.h"
 
@@ -111,7 +113,7 @@ void MultisampleShadeCountRenderCase::init (void)
 {
 	// requirements
 	if (!m_context.getContextInfo().isExtensionSupported("GL_OES_shader_multisample_interpolation"))
-		throw tcu::NotSupportedError("Test requires GL_OES_shader_multisample_interpolation extension");
+		TCU_THROW(NotSupportedError, "Test requires GL_OES_shader_multisample_interpolation extension");
 
 	MultisampleShaderRenderUtil::MultisampleRenderCase::init();
 }
@@ -652,9 +654,9 @@ void SingleSampleInterpolateAtSampleCase::init (void)
 {
 	// requirements
 	if (!m_context.getContextInfo().isExtensionSupported("GL_OES_shader_multisample_interpolation"))
-		throw tcu::NotSupportedError("Test requires GL_OES_shader_multisample_interpolation extension");
+		TCU_THROW(NotSupportedError, "Test requires GL_OES_shader_multisample_interpolation extension");
 	if (m_renderTarget == TARGET_DEFAULT && m_context.getRenderTarget().getNumSamples() > 1)
-		throw tcu::NotSupportedError("Non-multisample framebuffer required");
+		TCU_THROW(NotSupportedError, "Non-multisample framebuffer required");
 
 	// test purpose and expectations
 	m_testCtx.getLog()
@@ -763,7 +765,7 @@ void CentroidRenderCase::init (void)
 {
 	// requirements
 	if (!m_context.getContextInfo().isExtensionSupported("GL_OES_shader_multisample_interpolation"))
-		throw tcu::NotSupportedError("Test requires GL_OES_shader_multisample_interpolation extension");
+		TCU_THROW(NotSupportedError, "Test requires GL_OES_shader_multisample_interpolation extension");
 
 	MultisampleShaderRenderUtil::MultisampleRenderCase::init();
 }
@@ -938,9 +940,9 @@ void InterpolateAtSampleIDCase::init (void)
 {
 	// requirements
 	if (!m_context.getContextInfo().isExtensionSupported("GL_OES_shader_multisample_interpolation"))
-		throw tcu::NotSupportedError("Test requires GL_OES_shader_multisample_interpolation extension");
+		TCU_THROW(NotSupportedError, "Test requires GL_OES_shader_multisample_interpolation extension");
 	if (!m_context.getContextInfo().isExtensionSupported("GL_OES_sample_variables"))
-		throw tcu::NotSupportedError("Test requires GL_OES_sample_variables extension");
+		TCU_THROW(NotSupportedError, "Test requires GL_OES_sample_variables extension");
 
 	// test purpose and expectations
 	m_testCtx.getLog()
@@ -1201,7 +1203,7 @@ void InterpolateAtOffsetCase::init (void)
 {
 	// requirements
 	if (!m_context.getContextInfo().isExtensionSupported("GL_OES_shader_multisample_interpolation"))
-		throw tcu::NotSupportedError("Test requires GL_OES_shader_multisample_interpolation extension");
+		TCU_THROW(NotSupportedError, "Test requires GL_OES_shader_multisample_interpolation extension");
 
 	// test purpose and expectations
 	m_testCtx.getLog()
@@ -1332,9 +1334,9 @@ void InterpolateAtSamplePositionCase::init (void)
 {
 	// requirements
 	if (!m_context.getContextInfo().isExtensionSupported("GL_OES_shader_multisample_interpolation"))
-		throw tcu::NotSupportedError("Test requires GL_OES_shader_multisample_interpolation extension");
+		TCU_THROW(NotSupportedError, "Test requires GL_OES_shader_multisample_interpolation extension");
 	if (!m_context.getContextInfo().isExtensionSupported("GL_OES_sample_variables"))
-		throw tcu::NotSupportedError("Test requires GL_OES_sample_variables extension");
+		TCU_THROW(NotSupportedError, "Test requires GL_OES_sample_variables extension");
 
 	// test purpose and expectations
 	m_testCtx.getLog()
@@ -1396,6 +1398,224 @@ bool InterpolateAtSamplePositionCase::verifyImage (const tcu::Surface& resultIma
 	return verifyGreenImage(resultImage, m_testCtx.getLog());
 }
 
+class NegativeCompileInterpolationCase : public TestCase
+{
+public:
+	enum CaseType
+	{
+		CASE_VEC4_IDENTITY_SWIZZLE = 0,
+		CASE_VEC4_CROP_SWIZZLE,
+		CASE_VEC4_MIXED_SWIZZLE,
+		CASE_INTERPOLATE_IVEC4,
+		CASE_INTERPOLATE_UVEC4,
+		CASE_INTERPOLATE_ARRAY,
+		CASE_INTERPOLATE_STRUCT,
+		CASE_INTERPOLATE_STRUCT_MEMBER,
+		CASE_INTERPOLATE_LOCAL,
+		CASE_INTERPOLATE_GLOBAL,
+		CASE_INTERPOLATE_CONSTANT,
+
+		CASE_LAST
+	};
+	enum InterpolatorType
+	{
+		INTERPOLATE_AT_SAMPLE = 0,
+		INTERPOLATE_AT_CENTROID,
+		INTERPOLATE_AT_OFFSET,
+
+		INTERPOLATE_LAST
+	};
+
+							NegativeCompileInterpolationCase	(Context& context, const char* name, const char* description, CaseType caseType, InterpolatorType interpolator);
+
+private:
+	void					init								(void);
+	IterateResult			iterate								(void);
+
+	std::string				genShaderSource						(void) const;
+
+	const CaseType			m_caseType;
+	const InterpolatorType	m_interpolation;
+};
+
+NegativeCompileInterpolationCase::NegativeCompileInterpolationCase (Context& context, const char* name, const char* description, CaseType caseType, InterpolatorType interpolator)
+	: TestCase			(context, name, description)
+	, m_caseType		(caseType)
+	, m_interpolation	(interpolator)
+{
+	DE_ASSERT(m_caseType < CASE_LAST);
+	DE_ASSERT(m_interpolation < INTERPOLATE_LAST);
+}
+
+void NegativeCompileInterpolationCase::init (void)
+{
+	if (!m_context.getContextInfo().isExtensionSupported("GL_OES_shader_multisample_interpolation"))
+		TCU_THROW(NotSupportedError, "Test requires GL_OES_shader_multisample_interpolation extension");
+
+	m_testCtx.getLog() << tcu::TestLog::Message << "Trying to compile illegal shader, expecting compile to fail." << tcu::TestLog::EndMessage;
+}
+
+NegativeCompileInterpolationCase::IterateResult NegativeCompileInterpolationCase::iterate (void)
+{
+	const std::string	source			= genShaderSource();
+	glu::Shader			shader			(m_context.getRenderContext(), glu::SHADERTYPE_FRAGMENT);
+	const char* const	sourceStrPtr	= source.c_str();
+
+	m_testCtx.getLog()	<< tcu::TestLog::Message
+						<< "Fragment shader source:"
+						<< tcu::TestLog::EndMessage
+						<< tcu::TestLog::KernelSource(source);
+
+	shader.setSources(1, &sourceStrPtr, DE_NULL);
+	shader.compile();
+
+	m_testCtx.getLog()	<< tcu::TestLog::Message
+						<< "Info log:"
+						<< tcu::TestLog::EndMessage
+						<< tcu::TestLog::KernelSource(shader.getInfoLog());
+
+	if (shader.getCompileStatus())
+	{
+		m_testCtx.getLog() << tcu::TestLog::Message << "ERROR: Illegal shader compiled successfully." << tcu::TestLog::EndMessage;
+		m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Unexpected compile status");
+	}
+	else
+	{
+		m_testCtx.getLog() << tcu::TestLog::Message << "Compile failed as expected." << tcu::TestLog::EndMessage;
+		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+	}
+	return STOP;
+}
+
+std::string NegativeCompileInterpolationCase::genShaderSource (void) const
+{
+	std::ostringstream	buf;
+	std::string			interpolation;
+	const char*			interpolationTemplate;
+	const char*			description;
+	const char*			globalDeclarations		= "";
+	const char*			localDeclarations		= "";
+	const char*			interpolationTarget		= "";
+	const char*			postSelector			= "";
+
+	switch (m_caseType)
+	{
+		case CASE_VEC4_IDENTITY_SWIZZLE:
+			globalDeclarations	= "in highp vec4 v_var;\n";
+			interpolationTarget	= "v_var.xyzw";
+			description			= "component selection is illegal";
+			break;
+
+		case CASE_VEC4_CROP_SWIZZLE:
+			globalDeclarations	= "in highp vec4 v_var;\n";
+			interpolationTarget	= "v_var.xy";
+			postSelector		= ".x";
+			description			= "component selection is illegal";
+			break;
+
+		case CASE_VEC4_MIXED_SWIZZLE:
+			globalDeclarations	= "in highp vec4 v_var;\n";
+			interpolationTarget	= "v_var.yzxw";
+			description			= "component selection is illegal";
+			break;
+
+		case CASE_INTERPOLATE_IVEC4:
+			globalDeclarations	= "flat in highp ivec4 v_var;\n";
+			interpolationTarget	= "v_var";
+			description			= "no overload for ivec";
+			break;
+
+		case CASE_INTERPOLATE_UVEC4:
+			globalDeclarations	= "flat in highp uvec4 v_var;\n";
+			interpolationTarget	= "v_var";
+			description			= "no overload for uvec";
+			break;
+
+		case CASE_INTERPOLATE_ARRAY:
+			globalDeclarations	= "in highp float v_var[2];\n";
+			interpolationTarget	= "v_var";
+			postSelector		= "[1]";
+			description			= "no overload for arrays";
+			break;
+
+		case CASE_INTERPOLATE_STRUCT:
+		case CASE_INTERPOLATE_STRUCT_MEMBER:
+			globalDeclarations	=	"struct S\n"
+									"{\n"
+									"	highp float a;\n"
+									"	highp float b;\n"
+									"};\n"
+									"in S v_var;\n";
+
+			interpolationTarget	= (m_caseType == CASE_INTERPOLATE_STRUCT) ? ("v_var")						: ("v_var.a");
+			postSelector		= (m_caseType == CASE_INTERPOLATE_STRUCT) ? (".a")							: ("");
+			description			= (m_caseType == CASE_INTERPOLATE_STRUCT) ? ("no overload for this type")	: ("<interpolant> is not an input variable (just a member of)");
+			break;
+
+		case CASE_INTERPOLATE_LOCAL:
+			localDeclarations	= "	highp vec4 local_var = gl_FragCoord;\n";
+			interpolationTarget	= "local_var";
+			description			= "<interpolant> is not an input variable";
+			break;
+
+		case CASE_INTERPOLATE_GLOBAL:
+			globalDeclarations	= "highp vec4 global_var;\n";
+			localDeclarations	= "	global_var = gl_FragCoord;\n";
+			interpolationTarget	= "global_var";
+			description			= "<interpolant> is not an input variable";
+			break;
+
+		case CASE_INTERPOLATE_CONSTANT:
+			globalDeclarations	= "const highp vec4 const_var = vec4(0.2);\n";
+			interpolationTarget	= "const_var";
+			description			= "<interpolant> is not an input variable";
+			break;
+
+		default:
+			DE_ASSERT(false);
+			return "";
+	}
+
+	switch (m_interpolation)
+	{
+		case INTERPOLATE_AT_SAMPLE:
+			interpolationTemplate = "interpolateAtSample(${TARGET}, 0)${POST_SELECTOR}";
+			break;
+
+		case INTERPOLATE_AT_CENTROID:
+			interpolationTemplate = "interpolateAtCentroid(${TARGET})${POST_SELECTOR}";
+			break;
+
+		case INTERPOLATE_AT_OFFSET:
+			interpolationTemplate = "interpolateAtOffset(${TARGET}, vec2(0.2, 0.2))${POST_SELECTOR}";
+			break;
+
+		default:
+			DE_ASSERT(false);
+			return "";
+	}
+
+	{
+		std::map<std::string, std::string> args;
+		args["TARGET"] = interpolationTarget;
+		args["POST_SELECTOR"] = postSelector;
+
+		interpolation = tcu::StringTemplate(interpolationTemplate).specialize(args);
+	}
+
+	buf <<	"#version 310 es\n"
+			"#extension GL_OES_shader_multisample_interpolation : require\n"
+		<<	globalDeclarations
+		<<	"layout(location = 0) out mediump vec4 fragColor;\n"
+			"void main (void)\n"
+			"{\n"
+		<<	localDeclarations
+		<<	"	fragColor = vec4(" << interpolation << "); // " << description << "\n"
+			"}\n";
+
+	return buf.str();
+}
+
 } // anonymous
 
 ShaderMultisampleInterpolationTests::ShaderMultisampleInterpolationTests (Context& context)
@@ -1432,6 +1652,26 @@ void ShaderMultisampleInterpolationTests::init (void)
 		{ "multisample_rbo_4",			"Test with multisample rbo",		4,	MultisampleRenderCase::TARGET_RENDERBUFFER	},
 		{ "multisample_rbo_8",			"Test with multisample rbo",		8,	MultisampleRenderCase::TARGET_RENDERBUFFER	},
 		{ "multisample_rbo_16",			"Test with multisample rbo",		16,	MultisampleRenderCase::TARGET_RENDERBUFFER	},
+	};
+
+	static const struct
+	{
+		const char*									name;
+		const char*									description;
+		NegativeCompileInterpolationCase::CaseType	caseType;
+	} negativeCompileCases[] =
+	{
+		{ "vec4_identity_swizzle",		"use identity swizzle",				NegativeCompileInterpolationCase::CASE_VEC4_IDENTITY_SWIZZLE		},
+		{ "vec4_crop_swizzle",			"use cropped identity swizzle",		NegativeCompileInterpolationCase::CASE_VEC4_CROP_SWIZZLE			},
+		{ "vec4_mixed_swizzle",			"use swizzle",						NegativeCompileInterpolationCase::CASE_VEC4_MIXED_SWIZZLE			},
+		{ "interpolate_ivec4",			"interpolate integer variable",		NegativeCompileInterpolationCase::CASE_INTERPOLATE_IVEC4			},
+		{ "interpolate_uvec4",			"interpolate integer variable",		NegativeCompileInterpolationCase::CASE_INTERPOLATE_UVEC4			},
+		{ "interpolate_array",			"interpolate whole array",			NegativeCompileInterpolationCase::CASE_INTERPOLATE_ARRAY			},
+		{ "interpolate_struct",			"interpolate whole struct",			NegativeCompileInterpolationCase::CASE_INTERPOLATE_STRUCT			},
+		{ "interpolate_struct_member",	"interpolate struct member",		NegativeCompileInterpolationCase::CASE_INTERPOLATE_STRUCT_MEMBER	},
+		{ "interpolate_local",			"interpolate local variable",		NegativeCompileInterpolationCase::CASE_INTERPOLATE_LOCAL			},
+		{ "interpolate_global",			"interpolate global variable",		NegativeCompileInterpolationCase::CASE_INTERPOLATE_GLOBAL			},
+		{ "interpolate_constant",		"interpolate constant variable",	NegativeCompileInterpolationCase::CASE_INTERPOLATE_CONSTANT			},
 	};
 
 	// .sample_qualifier
@@ -1491,11 +1731,24 @@ void ShaderMultisampleInterpolationTests::init (void)
 
 		// .at_sample_id
 		{
-			tcu::TestCaseGroup* const group = new tcu::TestCaseGroup(m_testCtx, "at_sample_id", "Test interpolateAtOffset at current sample id");
+			tcu::TestCaseGroup* const group = new tcu::TestCaseGroup(m_testCtx, "at_sample_id", "Test interpolateAtSample at current sample id");
 			interpolateAtSampleGroup->addChild(group);
 
 			for (int targetNdx = 0; targetNdx < DE_LENGTH_OF_ARRAY(targets); ++targetNdx)
 				group->addChild(new InterpolateAtSampleIDCase(m_context, targets[targetNdx].name, targets[targetNdx].desc, targets[targetNdx].numSamples, targets[targetNdx].target));
+		}
+
+		// .negative
+		{
+			tcu::TestCaseGroup* const group = new tcu::TestCaseGroup(m_testCtx, "negative", "interpolateAtSample negative tests");
+			interpolateAtSampleGroup->addChild(group);
+
+			for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(negativeCompileCases); ++ndx)
+				group->addChild(new NegativeCompileInterpolationCase(m_context,
+																	 negativeCompileCases[ndx].name,
+																	 negativeCompileCases[ndx].description,
+																	 negativeCompileCases[ndx].caseType,
+																	 NegativeCompileInterpolationCase::INTERPOLATE_AT_SAMPLE));
 		}
 	}
 
@@ -1520,6 +1773,19 @@ void ShaderMultisampleInterpolationTests::init (void)
 
 			for (int targetNdx = 0; targetNdx < DE_LENGTH_OF_ARRAY(targets); ++targetNdx)
 				group->addChild(new InterpolateAtCentroidCase(m_context, targets[targetNdx].name, targets[targetNdx].desc, targets[targetNdx].numSamples, targets[targetNdx].target, InterpolateAtCentroidCase::TEST_ARRAY_ELEMENT));
+		}
+
+		// .negative
+		{
+			tcu::TestCaseGroup* const group = new tcu::TestCaseGroup(m_testCtx, "negative", "interpolateAtCentroid negative tests");
+			methodGroup->addChild(group);
+
+			for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(negativeCompileCases); ++ndx)
+				group->addChild(new NegativeCompileInterpolationCase(m_context,
+																	 negativeCompileCases[ndx].name,
+																	 negativeCompileCases[ndx].description,
+																	 negativeCompileCases[ndx].caseType,
+																	 NegativeCompileInterpolationCase::INTERPOLATE_AT_CENTROID));
 		}
 	}
 
@@ -1567,6 +1833,19 @@ void ShaderMultisampleInterpolationTests::init (void)
 
 			for (int targetNdx = 0; targetNdx < DE_LENGTH_OF_ARRAY(targets); ++targetNdx)
 				group->addChild(new InterpolateAtOffsetCase(m_context, targets[targetNdx].name, targets[targetNdx].desc, targets[targetNdx].numSamples, targets[targetNdx].target, InterpolateAtOffsetCase::TEST_ARRAY_ELEMENT));
+		}
+
+		// .negative
+		{
+			tcu::TestCaseGroup* const group = new tcu::TestCaseGroup(m_testCtx, "negative", "interpolateAtOffset negative tests");
+			methodGroup->addChild(group);
+
+			for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(negativeCompileCases); ++ndx)
+				group->addChild(new NegativeCompileInterpolationCase(m_context,
+																	 negativeCompileCases[ndx].name,
+																	 negativeCompileCases[ndx].description,
+																	 negativeCompileCases[ndx].caseType,
+																	 NegativeCompileInterpolationCase::INTERPOLATE_AT_OFFSET));
 		}
 	}
 }
