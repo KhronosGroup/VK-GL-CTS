@@ -1325,6 +1325,12 @@ static bool verifyFractionalSpacingSingle (TestLog& log, SpacingMode spacingMode
 					return false;
 				}
 			}
+			else
+			{
+				// We have 2 segmentsA and 2 segmentsB, ensure segmentsB has the shorter lengths
+				if (segmentsB[0].length > segmentsA[0].length)
+					std::swap(segmentsA, segmentsB);
+			}
 
 			// Check that the additional segments are placed symmetrically.
 			if (segmentsB[0].index + segmentsB[1].index + 1 != (int)segments.size())
@@ -1341,8 +1347,8 @@ static bool verifyFractionalSpacingSingle (TestLog& log, SpacingMode spacingMode
 				additionalSegmentLocationDst = de::min(segmentsB[0].index, segmentsB[1].index);
 			else
 				additionalSegmentLocationDst = segmentsB[0].length < segmentsA[0].length - 0.001f ? de::min(segmentsB[0].index, segmentsB[1].index)
-											 : segmentsA[0].length < segmentsB[0].length - 0.001f ? de::min(segmentsA[0].index, segmentsA[1].index)
 											 : -1; // \note -1 when can't reliably decide which ones are the additional segments, a or b.
+
 			return true;
 		}
 	}
