@@ -119,6 +119,7 @@ bool TestSessionExecutor::iterate (void)
 				else
 				{
 					DE_ASSERT(hierIterState == TestHierarchyIterator::STATE_FINISHED);
+					m_status.isComplete = true;
 					return false;
 				}
 			}
