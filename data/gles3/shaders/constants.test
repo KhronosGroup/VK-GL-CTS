@@ -874,6 +874,38 @@ case uint_decimal_1
 	""
 end
 
+case uint_decimal_2
+	version 300 es
+	values { output uint out0 = 0; }
+	both ""
+		#version 300 es
+		${DECLARATIONS}
+		void main ()
+		{
+			${SETUP}
+			uint value = 0u;
+			out0 = value;
+			${OUTPUT}
+		}
+	""
+end
+
+case uint_decimal_3
+	version 300 es
+	values { output uint out0 = 0; }
+	both ""
+		#version 300 es
+		${DECLARATIONS}
+		void main ()
+		{
+			${SETUP}
+			uint value = 0U;
+			out0 = value;
+			${OUTPUT}
+		}
+	""
+end
+
 case uint_octal_0
 	version 300 es
 	values { output uint out0 = 15; }
@@ -952,6 +984,20 @@ case int_from_uint
 	""
 end
 
+case int_from_uint_2
+	expect compile_fail
+	version 300 es
+	both ""
+		#version 300 es
+		${DECLARATIONS}
+		void main ()
+		{
+			int value = 0u;
+			${POSITION_FRAG_COLOR} = vec4(0.0);
+		}
+	""
+end
+
 case uint_from_int
 	expect compile_fail
 	version 300 es
@@ -961,6 +1007,20 @@ case uint_from_int
 		void main ()
 		{
 			uint value = 7;
+			${POSITION_FRAG_COLOR} = vec4(0.0);
+		}
+	""
+end
+
+case uint_from_int_2
+	expect compile_fail
+	version 300 es
+	both ""
+		#version 300 es
+		${DECLARATIONS}
+		void main ()
+		{
+			uint value = 0;
 			${POSITION_FRAG_COLOR} = vec4(0.0);
 		}
 	""
