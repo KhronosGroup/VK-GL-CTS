@@ -555,8 +555,8 @@ void get_sampler_parameteriv (NegativeTestContext& ctx)
 
 void get_sampler_parameterfv (NegativeTestContext& ctx)
 {
-	float			params;
-	GLuint			sampler = 0;
+	float				params	= 0.0f;
+	GLuint				sampler = 0;
 	ctx.glGenSamplers	(1, &sampler);
 
 	ctx.beginSection("GL_INVALID_OPERATION is generated if sampler is not the name of a sampler object returned from a previous call to ctx.glGenSamplers.");
