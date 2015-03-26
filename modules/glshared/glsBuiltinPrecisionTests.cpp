@@ -5217,6 +5217,9 @@ void addBuiltinPrecisionTests (TestContext&					testCtx,
 							   const vector<ShaderType>&	shaderTypes,
 							   TestCaseGroup&				dstGroup)
 {
+	const int						userRandoms	= testCtx.getCommandLine().getTestIterationCount();
+	const int						defRandoms	= 16384;
+	const int						numRandoms	= userRandoms > 0 ? userRandoms : defRandoms;
 	const FloatFormat				highp		(-126, 127, 23, true,
 												 tcu::MAYBE,	// subnormals
 												 tcu::YES,		// infinities
@@ -5227,7 +5230,7 @@ void addBuiltinPrecisionTests (TestContext&					testCtx,
 	// exponent and support for subnormals.
 	const FloatFormat				lowp		(0, 0, 7, false, tcu::YES);
 	const PrecisionTestContext		ctx			(testCtx, renderCtx, highp, mediump, lowp,
-												 shaderTypes, 16384);
+												 shaderTypes, numRandoms);
 
 	for (size_t ndx = 0; ndx < cases.getFactories().size(); ++ndx)
 		dstGroup.addChild(createFuncGroup(ctx, *cases.getFactories()[ndx]));
