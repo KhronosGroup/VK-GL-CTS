@@ -23,6 +23,7 @@
 
 #include "es31fTessellationTests.hpp"
 #include "glsTextureTestUtil.hpp"
+#include "glsShaderLibrary.hpp"
 #include "glsStateQueryUtil.hpp"
 #include "gluShaderProgram.hpp"
 #include "gluRenderContext.hpp"
@@ -7567,6 +7568,17 @@ void TessellationTests::init (void)
 																		 (string() + "data/tessellation/user_defined_io_" + getTessPrimitiveTypeShaderName(primitiveType) + "_ref.png").c_str()));
 				}
 			}
+		}
+
+		{
+			TestCaseGroup* const				negativeGroup	= new TestCaseGroup(m_context, "negative", "Negative cases");
+			gls::ShaderLibrary					shaderLibrary	(m_testCtx, m_context.getRenderContext(), m_context.getContextInfo());
+			const std::vector<tcu::TestNode*>	children		= shaderLibrary.loadShaderFile("shaders/tessellation_negative_user_defined_io.test");
+
+			userDefinedIOGroup->addChild(negativeGroup);
+
+			for (int i = 0; i < (int)children.size(); i++)
+				negativeGroup->addChild(children[i]);
 		}
 	}
 }
