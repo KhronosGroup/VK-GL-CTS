@@ -1684,42 +1684,17 @@ void TextureLevel::setSize (int width, int height, int depth)
 
 Vec4 sampleLevelArray1D (const ConstPixelBufferAccess* levels, int numLevels, const Sampler& sampler, float s, int depth, float lod)
 {
-	bool					magnified	= lod <= sampler.lodThreshold;
-	Sampler::FilterMode		filterMode	= magnified ? sampler.magFilter : sampler.minFilter;
+	return sampleLevelArray1DOffset(levels, numLevels, sampler, s, lod, IVec2(0, depth)); // y-offset in 1D textures is layer selector
+}
 
-	switch (filterMode)
-	{
-		case Sampler::NEAREST:	return levels[0].sample1D(sampler, filterMode, s, depth);
-		case Sampler::LINEAR:	return levels[0].sample1D(sampler, filterMode, s, depth);
+Vec4 sampleLevelArray2D (const ConstPixelBufferAccess* levels, int numLevels, const Sampler& sampler, float s, float t, int depth, float lod)
+{
+	return sampleLevelArray2DOffset(levels, numLevels, sampler, s, t, lod, IVec3(0, 0, depth)); // z-offset in 2D textures is layer selector
+}
 
-		case Sampler::NEAREST_MIPMAP_NEAREST:
-		case Sampler::LINEAR_MIPMAP_NEAREST:
-		{
-			int					maxLevel	= (int)numLevels-1;
-			int					level		= deClamp32((int)deFloatCeil(lod + 0.5f) - 1, 0, maxLevel);
-			Sampler::FilterMode	levelFilter	= (filterMode == Sampler::LINEAR_MIPMAP_NEAREST) ? Sampler::LINEAR : Sampler::NEAREST;
-
-			return levels[level].sample1D(sampler, levelFilter, s, depth);
-		}
-
-		case Sampler::NEAREST_MIPMAP_LINEAR:
-		case Sampler::LINEAR_MIPMAP_LINEAR:
-		{
-			int					maxLevel	= (int)numLevels-1;
-			int					level0		= deClamp32((int)deFloatFloor(lod), 0, maxLevel);
-			int					level1		= de::min(maxLevel, level0 + 1);
-			Sampler::FilterMode	levelFilter	= (filterMode == Sampler::LINEAR_MIPMAP_LINEAR) ? Sampler::LINEAR : Sampler::NEAREST;
-			float				f			= deFloatFrac(lod);
-			tcu::Vec4			t0			= levels[level0].sample1D(sampler, levelFilter, s, depth);
-			tcu::Vec4			t1			= levels[level1].sample1D(sampler, levelFilter, s, depth);
-
-			return t0*(1.0f - f) + t1*f;
-		}
-
-		default:
-			DE_ASSERT(DE_FALSE);
-			return Vec4(0.0f);
-	}
+Vec4 sampleLevelArray3D (const ConstPixelBufferAccess* levels, int numLevels, const Sampler& sampler, float s, float t, float r, float lod)
+{
+	return sampleLevelArray3DOffset(levels, numLevels, sampler, s, t, r, lod, IVec3(0, 0, 0));
 }
 
 Vec4 sampleLevelArray1DOffset (const ConstPixelBufferAccess* levels, int numLevels, const Sampler& sampler, float s, float lod, const IVec2& offset)
@@ -1762,46 +1737,6 @@ Vec4 sampleLevelArray1DOffset (const ConstPixelBufferAccess* levels, int numLeve
 	}
 }
 
-Vec4 sampleLevelArray2D (const ConstPixelBufferAccess* levels, int numLevels, const Sampler& sampler, float s, float t, int depth, float lod)
-{
-	bool					magnified	= lod <= sampler.lodThreshold;
-	Sampler::FilterMode		filterMode	= magnified ? sampler.magFilter : sampler.minFilter;
-
-	switch (filterMode)
-	{
-		case Sampler::NEAREST:	return levels[0].sample2D(sampler, filterMode, s, t, depth);
-		case Sampler::LINEAR:	return levels[0].sample2D(sampler, filterMode, s, t, depth);
-
-		case Sampler::NEAREST_MIPMAP_NEAREST:
-		case Sampler::LINEAR_MIPMAP_NEAREST:
-		{
-			int					maxLevel	= (int)numLevels-1;
-			int					level		= deClamp32((int)deFloatCeil(lod + 0.5f) - 1, 0, maxLevel);
-			Sampler::FilterMode	levelFilter	= (filterMode == Sampler::LINEAR_MIPMAP_NEAREST) ? Sampler::LINEAR : Sampler::NEAREST;
-
-			return levels[level].sample2D(sampler, levelFilter, s, t, depth);
-		}
-
-		case Sampler::NEAREST_MIPMAP_LINEAR:
-		case Sampler::LINEAR_MIPMAP_LINEAR:
-		{
-			int					maxLevel	= (int)numLevels-1;
-			int					level0		= deClamp32((int)deFloatFloor(lod), 0, maxLevel);
-			int					level1		= de::min(maxLevel, level0 + 1);
-			Sampler::FilterMode	levelFilter	= (filterMode == Sampler::LINEAR_MIPMAP_LINEAR) ? Sampler::LINEAR : Sampler::NEAREST;
-			float				f			= deFloatFrac(lod);
-			tcu::Vec4			t0			= levels[level0].sample2D(sampler, levelFilter, s, t, depth);
-			tcu::Vec4			t1			= levels[level1].sample2D(sampler, levelFilter, s, t, depth);
-
-			return t0*(1.0f - f) + t1*f;
-		}
-
-		default:
-			DE_ASSERT(DE_FALSE);
-			return Vec4(0.0f);
-	}
-}
-
 Vec4 sampleLevelArray2DOffset (const ConstPixelBufferAccess* levels, int numLevels, const Sampler& sampler, float s, float t, float lod, const IVec3& offset)
 {
 	bool					magnified	= lod <= sampler.lodThreshold;
@@ -1832,46 +1767,6 @@ Vec4 sampleLevelArray2DOffset (const ConstPixelBufferAccess* levels, int numLeve
 			float				f			= deFloatFrac(lod);
 			tcu::Vec4			t0			= levels[level0].sample2DOffset(sampler, levelFilter, s, t, offset);
 			tcu::Vec4			t1			= levels[level1].sample2DOffset(sampler, levelFilter, s, t, offset);
-
-			return t0*(1.0f - f) + t1*f;
-		}
-
-		default:
-			DE_ASSERT(DE_FALSE);
-			return Vec4(0.0f);
-	}
-}
-
-Vec4 sampleLevelArray3D (const ConstPixelBufferAccess* levels, int numLevels, const Sampler& sampler, float s, float t, float r, float lod)
-{
-	bool					magnified	= lod <= sampler.lodThreshold;
-	Sampler::FilterMode		filterMode	= magnified ? sampler.magFilter : sampler.minFilter;
-
-	switch (filterMode)
-	{
-		case Sampler::NEAREST:	return levels[0].sample3D(sampler, filterMode, s, t, r);
-		case Sampler::LINEAR:	return levels[0].sample3D(sampler, filterMode, s, t, r);
-
-		case Sampler::NEAREST_MIPMAP_NEAREST:
-		case Sampler::LINEAR_MIPMAP_NEAREST:
-		{
-			int					maxLevel	= (int)numLevels-1;
-			int					level		= deClamp32((int)deFloatCeil(lod + 0.5f) - 1, 0, maxLevel);
-			Sampler::FilterMode	levelFilter	= (filterMode == Sampler::LINEAR_MIPMAP_NEAREST) ? Sampler::LINEAR : Sampler::NEAREST;
-
-			return levels[level].sample3D(sampler, levelFilter, s, t, r);
-		}
-
-		case Sampler::NEAREST_MIPMAP_LINEAR:
-		case Sampler::LINEAR_MIPMAP_LINEAR:
-		{
-			int					maxLevel	= (int)numLevels-1;
-			int					level0		= deClamp32((int)deFloatFloor(lod), 0, maxLevel);
-			int					level1		= de::min(maxLevel, level0 + 1);
-			Sampler::FilterMode	levelFilter	= (filterMode == Sampler::LINEAR_MIPMAP_LINEAR) ? Sampler::LINEAR : Sampler::NEAREST;
-			float				f			= deFloatFrac(lod);
-			tcu::Vec4			t0			= levels[level0].sample3D(sampler, levelFilter, s, t, r);
-			tcu::Vec4			t1			= levels[level1].sample3D(sampler, levelFilter, s, t, r);
 
 			return t0*(1.0f - f) + t1*f;
 		}
