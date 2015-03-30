@@ -429,7 +429,7 @@ void SharedPtr_selfTest (void)
 		bool exists = false;
 		bool deleterCalled = false;
 		{
-			SharedPtr<Object, CustomDeleter> ptr(new Object(exists), CustomDeleter(&deleterCalled));
+			SharedPtr<Object> ptr(new Object(exists), CustomDeleter(&deleterCalled));
 			DE_TEST_ASSERT(exists);
 			DE_TEST_ASSERT(!deleterCalled);
 			DE_TEST_ASSERT(ptr.get() != DE_NULL);

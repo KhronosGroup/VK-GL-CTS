@@ -38,86 +38,97 @@ void SharedPtr_selfTest (void);
 class DeadReferenceException : public std::exception
 {
 public:
-	DeadReferenceException (void) throw() : std::exception() {}
-	const char* what (void) const throw() { return "DeadReferenceException"; }
-};
-
-template<bool threadSafe>
-struct ReferenceCount;
-
-template<> struct ReferenceCount<true>	{ typedef volatile int	Type; };
-template<> struct ReferenceCount<false>	{ typedef int			Type; };
-
-template<class Deleter, bool threadSafe>
-struct SharedPtrState
-{
-	SharedPtrState (Deleter deleter_)
-		: strongRefCount	(0)
-		, weakRefCount		(0)
-		, deleter			(deleter_)
+				DeadReferenceException	(void) throw()
+		: std::exception()
 	{
 	}
 
-	typename ReferenceCount<threadSafe>::Type	strongRefCount;
-	typename ReferenceCount<threadSafe>::Type	weakRefCount;		//!< WeakPtr references + StrongPtr references.
-	Deleter										deleter;
+	const char*	what					(void) const throw()
+	{
+		return "DeadReferenceException";
+	}
 };
 
-template<typename DstDeleterType, typename SrcDeleterType, bool threadSafe>
-SharedPtrState<DstDeleterType, threadSafe>* sharedPtrStateCast (SharedPtrState<SrcDeleterType, threadSafe>* state)
+struct SharedPtrStateBase
 {
-	return reinterpret_cast<SharedPtrState<DstDeleterType, threadSafe>*>(state);
-}
+	SharedPtrStateBase (void)
+		: strongRefCount	(0)
+		, weakRefCount		(0)
+	{
+	}
 
-template<typename T, class Deleter, bool threadSafe>
+	virtual				~SharedPtrStateBase	(void) throw() {}
+	virtual void		deletePtr			(void) throw() = 0;
+
+	volatile deInt32	strongRefCount;
+	volatile deInt32	weakRefCount;		//!< WeakPtr references + StrongPtr references.
+};
+
+template<typename Type, typename Deleter>
+struct SharedPtrState : public SharedPtrStateBase
+{
+	SharedPtrState (Type* ptr, Deleter deleter)
+		: m_ptr		(ptr)
+		, m_deleter	(deleter)
+	{
+	}
+
+	virtual ~SharedPtrState (void) throw()
+	{
+		DE_ASSERT(!m_ptr);
+	}
+
+	virtual void deletePtr (void) throw()
+	{
+		m_deleter(m_ptr);
+		m_ptr = DE_NULL;
+	}
+
+private:
+	Type*		m_ptr;
+	Deleter		m_deleter;
+};
+
+template<typename T>
 class SharedPtr;
 
-template<typename T, class Deleter, bool threadSafe>
+template<typename T>
 class WeakPtr;
 
 /*--------------------------------------------------------------------*//*!
  * \brief Shared pointer
  *
  * SharedPtr is smart pointer for managing shared ownership to a pointer.
- * Multiple SharedPtr's can maintain ownership to the pointer and it is
+ * Multiple SharedPtrs can maintain ownership to the pointer and it is
  * destructed when last SharedPtr is destroyed.
  *
- * Shared pointers can be assigned (or initialized using copy constructor)
- * and in such case the previous reference is first freed and then a new
- * reference to the new pointer is acquired.
- *
- * SharedPtr can also be empty.
- *
- * If threadSafe template parameter is set to true, it is safe to share
- * data using SharedPtr across threads. SharedPtr object itself is not
- * thread safe and should not be mutated from multiple threads simultaneously.
- *
- * \todo [2012-10-26 pyry] Add custom deleter.
+ * SharedPtr can also be NULL.
  *//*--------------------------------------------------------------------*/
-template<typename T, class Deleter = DefaultDeleter<T>, bool threadSafe = true>
+template<typename T>
 class SharedPtr
 {
 public:
 								SharedPtr			(void);
-								SharedPtr			(const SharedPtr<T, Deleter, threadSafe>& other);
+								SharedPtr			(const SharedPtr<T>& other);
+	explicit					SharedPtr			(T* ptr);
+
+	template<typename Deleter>
+								SharedPtr			(T* ptr, Deleter deleter);
 
 	template<typename Y>
-	explicit					SharedPtr			(Y* ptr, Deleter deleter = Deleter());
+	explicit					SharedPtr			(const SharedPtr<Y>& other);
 
-	template<typename Y, class DeleterY>
-	explicit					SharedPtr			(const SharedPtr<Y, DeleterY, threadSafe>& other);
-
-	template<typename Y, class DeleterY>
-	explicit					SharedPtr			(const WeakPtr<Y, DeleterY, threadSafe>& other);
+	template<typename Y>
+	explicit					SharedPtr			(const WeakPtr<Y>& other);
 
 								~SharedPtr			(void);
 
-	template<typename Y, class DeleterY>
-	SharedPtr&					operator=			(const SharedPtr<Y, DeleterY, threadSafe>& other);
-	SharedPtr&					operator=			(const SharedPtr<T, Deleter, threadSafe>& other);
+	template<typename Y>
+	SharedPtr&					operator=			(const SharedPtr<Y>& other);
+	SharedPtr&					operator=			(const SharedPtr<T>& other);
 
-	template<typename Y, class DeleterY>
-	SharedPtr&					operator=			(const WeakPtr<Y, DeleterY, threadSafe>& other);
+	template<typename Y>
+	SharedPtr&					operator=			(const WeakPtr<Y>& other);
 
 	T*							get					(void) const throw() { return m_ptr;	}	//!< Get stored pointer.
 	T*							operator->			(void) const throw() { return m_ptr;	}	//!< Get stored pointer.
@@ -125,24 +136,24 @@ public:
 
 	operator					bool				(void) const throw() { return !!m_ptr;	}
 
-	void						swap				(SharedPtr<T, Deleter, threadSafe>& other);
+	void						swap				(SharedPtr<T>& other);
 
 	void						clear				(void);
 
-	template<typename Y, class DeleterY>
-	operator SharedPtr<Y, DeleterY, threadSafe>	(void) const;
+	template<typename Y>
+	operator SharedPtr<Y>		(void) const;
 
 private:
 	void						acquire				(void);
-	void						acquireFromWeak		(const WeakPtr<T, Deleter, threadSafe>& other);
+	void						acquireFromWeak		(const WeakPtr<T>& other);
 	void						release				(void);
 
-	T*												m_ptr;
-	SharedPtrState<Deleter, threadSafe>*			m_state;
+	T*							m_ptr;
+	SharedPtrStateBase*			m_state;
 
-	friend class WeakPtr<T, Deleter, threadSafe>;
+	friend class WeakPtr<T>;
 
-	template<typename U, class DeleterU, bool threadSafeU>
+	template<typename U>
 	friend class SharedPtr;
 };
 
@@ -157,31 +168,30 @@ private:
  * WeakPtr can be converted back to SharedPtr but that operation can fail
  * if the object is no longer live. In such case DeadReferenceException
  * will be thrown.
- *
- * \todo [2012-10-26 pyry] Add custom deleter.
  *//*--------------------------------------------------------------------*/
-template<typename T, class Deleter = DefaultDeleter<T>, bool threadSafe = true>
+template<typename T>
 class WeakPtr
 {
 public:
-						WeakPtr				(void);
-						WeakPtr				(const WeakPtr<T, Deleter, threadSafe>& other);
-	explicit			WeakPtr				(const SharedPtr<T, Deleter, threadSafe>& other);
-						~WeakPtr			(void);
+						WeakPtr		(void);
+						WeakPtr		(const WeakPtr<T>& other);
 
-	WeakPtr&			operator=			(const WeakPtr<T, Deleter, threadSafe>& other);
-	WeakPtr&			operator=			(const SharedPtr<T, Deleter, threadSafe>& other);
+	explicit			WeakPtr		(const SharedPtr<T>& other);
+						~WeakPtr	(void);
 
-	SharedPtr<T, Deleter, threadSafe>	lock	(void);
+	WeakPtr&			operator=	(const WeakPtr<T>& other);
+	WeakPtr&			operator=	(const SharedPtr<T>& other);
+
+	SharedPtr<T>		lock		(void);
 
 private:
-	void				acquire				(void);
-	void				release				(void);
+	void				acquire		(void);
+	void				release		(void);
 
-	T*										m_ptr;
-	SharedPtrState<Deleter, threadSafe>*	m_state;
+	T*					m_ptr;
+	SharedPtrStateBase*	m_state;
 
-	friend class SharedPtr<T, Deleter, threadSafe>;
+	friend class SharedPtr<T>;
 };
 
 // SharedPtr template implementation.
@@ -189,8 +199,8 @@ private:
 /*--------------------------------------------------------------------*//*!
  * \brief Construct empty shared pointer.
  *//*--------------------------------------------------------------------*/
-template<typename T, class Deleter, bool threadSafe>
-inline SharedPtr<T, Deleter, threadSafe>::SharedPtr (void)
+template<typename T>
+inline SharedPtr<T>::SharedPtr (void)
 	: m_ptr		(DE_NULL)
 	, m_state	(DE_NULL)
 {
@@ -203,24 +213,60 @@ inline SharedPtr<T, Deleter, threadSafe>::SharedPtr (void)
  * Ownership of the pointer will be transferred to SharedPtr and future
  * SharedPtr's initialized or assigned from this SharedPtr.
  *
- * Y* must be convertible to T*.
+ * If allocation of shared state fails. The "ptr" argument will not be
+ * released.
  *//*--------------------------------------------------------------------*/
-template<typename T, class Deleter, bool threadSafe>
-template<typename Y>
-inline SharedPtr<T, Deleter, threadSafe>::SharedPtr (Y* ptr, Deleter deleter)
+template<typename T>
+inline SharedPtr<T>::SharedPtr (T* ptr)
 	: m_ptr		(DE_NULL)
 	, m_state	(DE_NULL)
 {
 	try
 	{
 		m_ptr	= ptr;
-		m_state	= new SharedPtrState<Deleter, threadSafe>(deleter);
+		m_state	= new SharedPtrState<T, DefaultDeleter<T> >(ptr, DefaultDeleter<T>());
 		m_state->strongRefCount	= 1;
 		m_state->weakRefCount	= 1;
 	}
 	catch (...)
 	{
-		delete m_ptr;
+		// \note ptr is not released.
+		delete m_state;
+		throw;
+	}
+}
+
+/*--------------------------------------------------------------------*//*!
+ * \brief Construct shared pointer from pointer.
+ * \param ptr Pointer to be managed.
+ *
+ * Ownership of the pointer will be transferred to SharedPtr and future
+ * SharedPtr's initialized or assigned from this SharedPtr.
+ *
+ * Deleter must be callable type and deleter is called with the pointer
+ * argument when the reference count becomes 0.
+ *
+ * If allocation of shared state fails. The "ptr" argument will not be
+ * released.
+ *
+ * Calling deleter or calling destructor for deleter should never throw.
+ *//*--------------------------------------------------------------------*/
+template<typename T>
+template<typename Deleter>
+inline SharedPtr<T>::SharedPtr (T* ptr, Deleter deleter)
+	: m_ptr		(DE_NULL)
+	, m_state	(DE_NULL)
+{
+	try
+	{
+		m_ptr	= ptr;
+		m_state	= new SharedPtrState<T, Deleter>(ptr, deleter);
+		m_state->strongRefCount	= 1;
+		m_state->weakRefCount	= 1;
+	}
+	catch (...)
+	{
+		// \note ptr is not released.
 		delete m_state;
 		throw;
 	}
@@ -230,8 +276,8 @@ inline SharedPtr<T, Deleter, threadSafe>::SharedPtr (Y* ptr, Deleter deleter)
  * \brief Initialize shared pointer from another SharedPtr.
  * \param other Pointer to be shared.
  *//*--------------------------------------------------------------------*/
-template<typename T, class Deleter, bool threadSafe>
-inline SharedPtr<T, Deleter, threadSafe>::SharedPtr (const SharedPtr<T, Deleter, threadSafe>& other)
+template<typename T>
+inline SharedPtr<T>::SharedPtr (const SharedPtr<T>& other)
 	: m_ptr		(other.m_ptr)
 	, m_state	(other.m_state)
 {
@@ -244,11 +290,11 @@ inline SharedPtr<T, Deleter, threadSafe>::SharedPtr (const SharedPtr<T, Deleter,
  *
  * Y* must be convertible to T*.
  *//*--------------------------------------------------------------------*/
-template<typename T, class Deleter, bool threadSafe>
-template<typename Y, class DeleterY>
-inline SharedPtr<T, Deleter, threadSafe>::SharedPtr (const SharedPtr<Y, DeleterY, threadSafe>& other)
+template<typename T>
+template<typename Y>
+inline SharedPtr<T>::SharedPtr (const SharedPtr<Y>& other)
 	: m_ptr		(other.m_ptr)
-	, m_state	(sharedPtrStateCast<Deleter>(other.m_state))
+	, m_state	(other.m_state)
 {
 	acquire();
 }
@@ -259,17 +305,17 @@ inline SharedPtr<T, Deleter, threadSafe>::SharedPtr (const SharedPtr<Y, DeleterY
  *
  * Y* must be convertible to T*.
  *//*--------------------------------------------------------------------*/
-template<typename T, class Deleter, bool threadSafe>
-template<typename Y, class DeleterY>
-inline SharedPtr<T, Deleter, threadSafe>::SharedPtr (const WeakPtr<Y, DeleterY, threadSafe>& other)
+template<typename T>
+template<typename Y>
+inline SharedPtr<T>::SharedPtr (const WeakPtr<Y>& other)
 	: m_ptr		(DE_NULL)
 	, m_state	(DE_NULL)
 {
 	acquireFromWeak(other);
 }
 
-template<typename T, class Deleter, bool threadSafe>
-inline SharedPtr<T, Deleter, threadSafe>::~SharedPtr (void)
+template<typename T>
+inline SharedPtr<T>::~SharedPtr (void)
 {
 	release();
 }
@@ -279,16 +325,16 @@ inline SharedPtr<T, Deleter, threadSafe>::~SharedPtr (void)
  * \param other Pointer to be shared.
  * \return Reference to this SharedPtr.
  *
- * Reference to current pointer (if any) will be released first. Then a new
- * reference to the pointer managed by other will be acquired.
+ * Reference to current pointer is released and reference to new pointer is
+ * acquired.
  *
  * Y* must be convertible to T*.
  *//*--------------------------------------------------------------------*/
-template<typename T, class Deleter, bool threadSafe>
-template<typename Y, class DeleterY>
-inline SharedPtr<T, Deleter, threadSafe>& SharedPtr<T, Deleter, threadSafe>::operator= (const SharedPtr<Y, DeleterY, threadSafe>& other)
+template<typename T>
+template<typename Y>
+inline SharedPtr<T>& SharedPtr<T>::operator= (const SharedPtr<Y>& other)
 {
-	if (*this == other)
+	if (m_state == other.m_state)
 		return *this;
 
 	// Release current reference.
@@ -296,7 +342,7 @@ inline SharedPtr<T, Deleter, threadSafe>& SharedPtr<T, Deleter, threadSafe>::ope
 
 	// Copy from other and acquire reference.
 	m_ptr	= other.m_ptr;
-	m_state	= sharedPtrStateCast<Deleter>(other.m_state);
+	m_state	= other.m_state;
 
 	acquire();
 
@@ -308,13 +354,13 @@ inline SharedPtr<T, Deleter, threadSafe>& SharedPtr<T, Deleter, threadSafe>::ope
  * \param other Pointer to be shared.
  * \return Reference to this SharedPtr.
  *
- * Reference to current pointer (if any) will be released first. Then a new
- * reference to the pointer managed by other will be acquired.
+ * Reference to current pointer is released and reference to new pointer is
+ * acquired.
  *//*--------------------------------------------------------------------*/
-template<typename T, class Deleter, bool threadSafe>
-inline SharedPtr<T, Deleter, threadSafe>& SharedPtr<T, Deleter, threadSafe>::operator= (const SharedPtr<T, Deleter, threadSafe>& other)
+template<typename T>
+inline SharedPtr<T>& SharedPtr<T>::operator= (const SharedPtr<T>& other)
 {
-	if (*this == other)
+	if (m_state == other.m_state)
 		return *this;
 
 	// Release current reference.
@@ -334,25 +380,28 @@ inline SharedPtr<T, Deleter, threadSafe>& SharedPtr<T, Deleter, threadSafe>::ope
  * \param other Weak reference.
  * \return Reference to this SharedPtr.
  *
- * Reference to current pointer (if any) will be released first. Then a
- * reference to pointer managed by WeakPtr is acquired if the pointer
- * is still live (eg. there's at least one strong reference).
+ * Tries to acquire reference to WeakPtr, releases current reference and
+ * holds reference to new pointer.
  *
- * If pointer is no longer live, DeadReferenceException is thrown.
+ * If WeakPtr can't be acquired, throws DeadReferenceException and doesn't
+ * release the current reference.
+ *
+ * If WeakPtr references same pointer as SharedPtr this call will always
+ * succeed.
  *
  * Y* must be convertible to T*.
  *//*--------------------------------------------------------------------*/
-template<typename T, class Deleter, bool threadSafe>
-template<typename Y, class DeleterY>
-inline SharedPtr<T, Deleter, threadSafe>& SharedPtr<T, Deleter, threadSafe>::operator= (const WeakPtr<Y, DeleterY, threadSafe>& other)
+template<typename T>
+template<typename Y>
+inline SharedPtr<T>& SharedPtr<T>::operator= (const WeakPtr<Y>& other)
 {
-	// Release current reference.
-	release();
+	if (m_state == other.m_state)
+		return *this;
 
-	m_ptr	= DE_NULL;
-	m_state	= DE_NULL;
-
-	acquireFromWeak(other);
+	{
+		SharedPtr<T> sharedOther(other);
+		*this = other;
+	}
 
 	return *this;
 }
@@ -360,14 +409,13 @@ inline SharedPtr<T, Deleter, threadSafe>& SharedPtr<T, Deleter, threadSafe>::ope
 /*--------------------------------------------------------------------*//*!
  * \brief Type conversion operator.
  *
- * T* must be convertible to Y*. Since resulting SharedPtr will share the
- * ownership destroying Y* must be equal to destroying T*.
+ * T* must be convertible to Y*.
  *//*--------------------------------------------------------------------*/
-template<class T, class Deleter, bool threadSafe>
-template<typename Y, class DeleterY>
-inline SharedPtr<T, Deleter, threadSafe>::operator SharedPtr<Y, DeleterY, threadSafe> (void) const
+template<class T>
+template<typename Y>
+inline SharedPtr<T>::operator SharedPtr<Y> (void) const
 {
-	return SharedPtr<Y, DeleterY, threadSafe>(*this);
+	return SharedPtr<Y>(*this);
 }
 
 /*--------------------------------------------------------------------*//*!
@@ -376,8 +424,8 @@ inline SharedPtr<T, Deleter, threadSafe>::operator SharedPtr<Y, DeleterY, thread
  * \param b B
  * \return true if A and B point to same object, false otherwise.
  *//*--------------------------------------------------------------------*/
-template<class T, class DeleterT, bool threadSafeT, class U, class DeleterU, bool threadSafeU>
-inline bool operator== (const SharedPtr<T, DeleterT, threadSafeT>& a, const SharedPtr<U, DeleterU, threadSafeU>& b) throw()
+template<class T, class U>
+inline bool operator== (const SharedPtr<T>& a, const SharedPtr<U>& b) throw()
 {
 	return a.get() == b.get();
 }
@@ -388,15 +436,15 @@ inline bool operator== (const SharedPtr<T, DeleterT, threadSafeT>& a, const Shar
  * \param b B
  * \return true if A and B point to different objects, false otherwise.
  *//*--------------------------------------------------------------------*/
-template<class T, class DeleterT, bool threadSafeT, class U, class DeleterU, bool threadSafeU>
-inline bool operator!= (const SharedPtr<T, DeleterT, threadSafeT>& a, const SharedPtr<U, DeleterU, threadSafeU>& b) throw()
+template<class T, class U>
+inline bool operator!= (const SharedPtr<T>& a, const SharedPtr<U>& b) throw()
 {
 	return a.get() != b.get();
 }
 
 /** Swap pointer contents. */
-template<typename T, class Deleter, bool threadSafe>
-inline void SharedPtr<T, Deleter, threadSafe>::swap (SharedPtr<T, Deleter, threadSafe>& other)
+template<typename T>
+inline void SharedPtr<T>::swap (SharedPtr<T>& other)
 {
 	using std::swap;
 	swap(m_ptr,		other.m_ptr);
@@ -404,8 +452,8 @@ inline void SharedPtr<T, Deleter, threadSafe>::swap (SharedPtr<T, Deleter, threa
 }
 
 /** Swap operator for SharedPtr's. */
-template<typename T, class Deleter, bool threadSafe>
-inline void swap (SharedPtr<T, Deleter, threadSafe>& a, SharedPtr<T, Deleter, threadSafe>& b)
+template<typename T>
+inline void swap (SharedPtr<T>& a, SharedPtr<T>& b)
 {
 	a.swap(b);
 }
@@ -415,27 +463,26 @@ inline void swap (SharedPtr<T, Deleter, threadSafe>& a, SharedPtr<T, Deleter, th
  *
  * clear() removes current reference and sets pointer to null value.
  *//*--------------------------------------------------------------------*/
-template<typename T, class Deleter, bool threadSafe>
-inline void SharedPtr<T, Deleter, threadSafe>::clear (void)
+template<typename T>
+inline void SharedPtr<T>::clear (void)
 {
 	release();
 	m_ptr	= DE_NULL;
 	m_state	= DE_NULL;
 }
 
-template<typename T, class Deleter, bool threadSafe>
-inline void SharedPtr<T, Deleter, threadSafe>::acquireFromWeak (const WeakPtr<T, Deleter, threadSafe>& weakRef)
+template<typename T>
+inline void SharedPtr<T>::acquireFromWeak (const WeakPtr<T>& weakRef)
 {
 	DE_ASSERT(!m_ptr && !m_state);
 
-	SharedPtrState<Deleter, threadSafe>* state = weakRef.m_state;
+	SharedPtrStateBase* state = weakRef.m_state;
 
 	if (!state)
 		return; // Empty reference.
 
-	if (threadSafe)
 	{
-		int oldCount, newCount;
+		deInt32 oldCount, newCount;
 
 		// Do atomic compare and increment.
 		do
@@ -448,73 +495,36 @@ inline void SharedPtr<T, Deleter, threadSafe>::acquireFromWeak (const WeakPtr<T,
 
 		deAtomicIncrement32(&state->weakRefCount);
 	}
-	else
-	{
-		if (state->strongRefCount == 0)
-			throw DeadReferenceException();
-
-		state->strongRefCount	+= 1;
-		state->weakRefCount		+= 1;
-	}
 
 	m_ptr	= weakRef.m_ptr;
 	m_state	= state;
 }
 
-template<typename T, class Deleter, bool threadSafe>
-inline void SharedPtr<T, Deleter, threadSafe>::acquire (void)
+template<typename T>
+inline void SharedPtr<T>::acquire (void)
 {
 	if (m_state)
 	{
-		if (threadSafe)
-		{
-			deAtomicIncrement32((deInt32 volatile*)&m_state->strongRefCount);
-			deAtomicIncrement32((deInt32 volatile*)&m_state->weakRefCount);
-		}
-		else
-		{
-			m_state->strongRefCount	+= 1;
-			m_state->weakRefCount	+= 1;
-		}
+		deAtomicIncrement32(&m_state->strongRefCount);
+		deAtomicIncrement32(&m_state->weakRefCount);
 	}
 }
 
-template<typename T, class Deleter, bool threadSafe>
-inline void SharedPtr<T, Deleter, threadSafe>::release (void)
+template<typename T>
+inline void SharedPtr<T>::release (void)
 {
 	if (m_state)
 	{
-		if (threadSafe)
+		if (deAtomicDecrement32(&m_state->strongRefCount) == 0)
 		{
-			if (deAtomicDecrement32(&m_state->strongRefCount) == 0)
-			{
-				m_state->deleter(m_ptr);
-				m_ptr = DE_NULL;
-			}
-
-			if (deAtomicDecrement32(&m_state->weakRefCount) == 0)
-			{
-				delete m_state;
-				m_state = DE_NULL;
-			}
+			m_ptr = DE_NULL;
+			m_state->deletePtr();
 		}
-		else
+
+		if (deAtomicDecrement32(&m_state->weakRefCount) == 0)
 		{
-			m_state->strongRefCount	-= 1;
-			m_state->weakRefCount	-= 1;
-			DE_ASSERT(m_state->strongRefCount >= 0 && m_state->weakRefCount >= 0);
-
-			if (m_state->strongRefCount == 0)
-			{
-				m_state->deleter(m_ptr);
-				m_ptr = DE_NULL;
-			}
-
-			if (m_state->weakRefCount == 0)
-			{
-				delete m_state;
-				m_state = DE_NULL;
-			}
+			delete m_state;
+			m_state = DE_NULL;
 		}
 	}
 }
@@ -524,8 +534,8 @@ inline void SharedPtr<T, Deleter, threadSafe>::release (void)
 /*--------------------------------------------------------------------*//*!
  * \brief Construct empty weak pointer.
  *//*--------------------------------------------------------------------*/
-template<typename T, class Deleter, bool threadSafe>
-inline WeakPtr<T, Deleter, threadSafe>::WeakPtr (void)
+template<typename T>
+inline WeakPtr<T>::WeakPtr (void)
 	: m_ptr		(DE_NULL)
 	, m_state	(DE_NULL)
 {
@@ -535,8 +545,8 @@ inline WeakPtr<T, Deleter, threadSafe>::WeakPtr (void)
  * \brief Construct weak pointer from other weak reference.
  * \param other Weak reference.
  *//*--------------------------------------------------------------------*/
-template<typename T, class Deleter, bool threadSafe>
-inline WeakPtr<T, Deleter, threadSafe>::WeakPtr (const WeakPtr<T, Deleter, threadSafe>& other)
+template<typename T>
+inline WeakPtr<T>::WeakPtr (const WeakPtr<T>& other)
 	: m_ptr		(other.m_ptr)
 	, m_state	(other.m_state)
 {
@@ -547,16 +557,16 @@ inline WeakPtr<T, Deleter, threadSafe>::WeakPtr (const WeakPtr<T, Deleter, threa
  * \brief Construct weak pointer from shared pointer.
  * \param other Shared pointer.
  *//*--------------------------------------------------------------------*/
-template<typename T, class Deleter, bool threadSafe>
-inline WeakPtr<T, Deleter, threadSafe>::WeakPtr (const SharedPtr<T, Deleter, threadSafe>& other)
+template<typename T>
+inline WeakPtr<T>::WeakPtr (const SharedPtr<T>& other)
 	: m_ptr		(other.m_ptr)
 	, m_state	(other.m_state)
 {
 	acquire();
 }
 
-template<typename T, class Deleter, bool threadSafe>
-inline WeakPtr<T, Deleter, threadSafe>::~WeakPtr (void)
+template<typename T>
+inline WeakPtr<T>::~WeakPtr (void)
 {
 	release();
 }
@@ -569,8 +579,8 @@ inline WeakPtr<T, Deleter, threadSafe>::~WeakPtr (void)
  * The current weak reference is removed first and then a new weak reference
  * to the object pointed by other is taken.
  *//*--------------------------------------------------------------------*/
-template<typename T, class Deleter, bool threadSafe>
-inline WeakPtr<T, Deleter, threadSafe>& WeakPtr<T, Deleter, threadSafe>::operator= (const WeakPtr<T, Deleter, threadSafe>& other)
+template<typename T>
+inline WeakPtr<T>& WeakPtr<T>::operator= (const WeakPtr<T>& other)
 {
 	if (this == &other)
 		return *this;
@@ -593,8 +603,8 @@ inline WeakPtr<T, Deleter, threadSafe>& WeakPtr<T, Deleter, threadSafe>::operato
  * The current weak reference is removed first and then a new weak reference
  * to the object pointed by other is taken.
  *//*--------------------------------------------------------------------*/
-template<typename T, class Deleter, bool threadSafe>
-inline WeakPtr<T, Deleter, threadSafe>& WeakPtr<T, Deleter, threadSafe>::operator= (const SharedPtr<T, Deleter, threadSafe>& other)
+template<typename T>
+inline WeakPtr<T>& WeakPtr<T>::operator= (const SharedPtr<T>& other)
 {
 	release();
 
@@ -606,43 +616,23 @@ inline WeakPtr<T, Deleter, threadSafe>& WeakPtr<T, Deleter, threadSafe>::operato
 	return *this;
 }
 
-template<typename T, class Deleter, bool threadSafe>
-inline void WeakPtr<T, Deleter, threadSafe>::acquire (void)
+template<typename T>
+inline void WeakPtr<T>::acquire (void)
 {
 	if (m_state)
-	{
-		if (threadSafe)
-			deAtomicIncrement32(&m_state->weakRefCount);
-		else
-			m_state->weakRefCount += 1;
-	}
+		deAtomicIncrement32(&m_state->weakRefCount);
 }
 
-template<typename T, class Deleter, bool threadSafe>
-inline void WeakPtr<T, Deleter, threadSafe>::release (void)
+template<typename T>
+inline void WeakPtr<T>::release (void)
 {
 	if (m_state)
 	{
-		if (threadSafe)
+		if (deAtomicDecrement32(&m_state->weakRefCount) == 0)
 		{
-			if (deAtomicDecrement32(&m_state->weakRefCount) == 0)
-			{
-				delete m_state;
-				m_state	= DE_NULL;
-				m_ptr	= DE_NULL;
-			}
-		}
-		else
-		{
-			m_state->weakRefCount -= 1;
-			DE_ASSERT(m_state->weakRefCount >= 0);
-
-			if (m_state->weakRefCount == 0)
-			{
-				delete m_state;
-				m_state	= DE_NULL;
-				m_ptr	= DE_NULL;
-			}
+			delete m_state;
+			m_state	= DE_NULL;
+			m_ptr	= DE_NULL;
 		}
 	}
 }

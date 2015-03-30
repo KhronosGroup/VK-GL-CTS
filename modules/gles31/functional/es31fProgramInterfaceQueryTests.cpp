@@ -232,7 +232,7 @@ public:
 		TYPE_LAST
 	};
 
-	typedef de::SharedPtr<const Node, de::DefaultDeleter<const Node>, false> SharedPtr;
+	typedef de::SharedPtr<const Node> SharedPtr;
 
 							Node				(NodeType type, const SharedPtr& enclosingNode) : m_type(type), m_enclosingNode(enclosingNode) { DE_ASSERT(type < TYPE_LAST); }
 	virtual					~Node				(void) { }
