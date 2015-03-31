@@ -3774,10 +3774,10 @@ dEQP-GLES3.functional.shaders.arrays.invalid.multidimensional_array_in_uniform_b
 dEQP-GLES3.functional.shaders.arrays.invalid.multidimensional_array_in_uniform_block_fragment
 dEQP-GLES3.functional.shaders.arrays.invalid.dynamic_expression_array_size_vertex
 dEQP-GLES3.functional.shaders.arrays.invalid.dynamic_expression_array_size_fragment
-dEQP-GLES3.functional.shaders.arrays.invalid.constructor_c-style1_vertex
-dEQP-GLES3.functional.shaders.arrays.invalid.constructor_c-style1_fragment
-dEQP-GLES3.functional.shaders.arrays.invalid.constructor_c-style2_vertex
-dEQP-GLES3.functional.shaders.arrays.invalid.constructor_c-style2_fragment
+dEQP-GLES3.functional.shaders.arrays.invalid.constructor_c_style1_vertex
+dEQP-GLES3.functional.shaders.arrays.invalid.constructor_c_style1_fragment
+dEQP-GLES3.functional.shaders.arrays.invalid.constructor_c_style2_vertex
+dEQP-GLES3.functional.shaders.arrays.invalid.constructor_c_style2_fragment
 dEQP-GLES3.functional.shaders.keywords.keywords.const_vertex
 dEQP-GLES3.functional.shaders.keywords.keywords.const_fragment
 dEQP-GLES3.functional.shaders.keywords.keywords.uniform_vertex
