@@ -3986,10 +3986,10 @@
 <Test name="multidimensional_array_in_uniform_block_fragment" />
 <Test name="dynamic_expression_array_size_vertex" />
 <Test name="dynamic_expression_array_size_fragment" />
-<Test name="constructor_c-style1_vertex" />
-<Test name="constructor_c-style1_fragment" />
-<Test name="constructor_c-style2_vertex" />
-<Test name="constructor_c-style2_fragment" />
+<Test name="constructor_c_style1_vertex" />
+<Test name="constructor_c_style1_fragment" />
+<Test name="constructor_c_style2_vertex" />
+<Test name="constructor_c_style2_fragment" />
 </TestCase>
 </TestSuite>
 <TestSuite name="keywords">
