@@ -44,11 +44,6 @@ static bool isSamplerSupported (const Sampler& sampler)
 }
 #endif // DE_DEBUG
 
-static inline float lookupDepth (const ConstPixelBufferAccess& access, int i, int j, int k = 0)
-{
-	return access.getPixDepth(i, j, k);
-}
-
 struct CmpResultSet
 {
 	bool	isTrue;
@@ -129,6 +124,27 @@ static inline bool isResultInSet (const CmpResultSet resultSet, const float resu
 
 	return (resultSet.isTrue	&& de::inRange(1.0f, minR, maxR)) ||
 		   (resultSet.isFalse	&& de::inRange(0.0f, minR, maxR));
+}
+
+static inline bool coordsInBounds (const ConstPixelBufferAccess& access, int x, int y, int z)
+{
+	return de::inBounds(x, 0, access.getWidth()) && de::inBounds(y, 0, access.getHeight()) && de::inBounds(z, 0, access.getDepth());
+}
+
+static float lookupDepth (const tcu::ConstPixelBufferAccess& access, const Sampler& sampler, int i, int j, int k)
+{
+	if (coordsInBounds(access, i, j, k))
+		return access.getPixDepth(i, j, k);
+	else
+		return sampleTextureBorder<float>(access.getFormat(), sampler).x();
+}
+
+// lookup depth value at a point that is guaranteed to not sample border such as cube map faces.
+static float lookupDepthNoBorder (const tcu::ConstPixelBufferAccess& access, const Sampler& sampler, int i, int j, int k = 0)
+{
+	DE_UNREF(sampler);
+	DE_ASSERT(coordsInBounds(access, i, j, k));
+	return access.getPixDepth(i, j, k);
 }
 
 // Values are in order (0,0), (1,0), (0,1), (1,1)
@@ -543,7 +559,7 @@ static bool isNearestCompareResultValid (const ConstPixelBufferAccess&		level,
 		{
 			const int			x		= wrap(sampler.wrapS, i, level.getWidth());
 			const int			y		= wrap(sampler.wrapT, j, level.getHeight());
-			const float			depth	= lookupDepth(level, x, y, coordZ);
+			const float			depth	= lookupDepth(level, sampler, x, y, coordZ);
 			const CmpResultSet	resSet	= execCompare(sampler.compare, depth, cmpReference, prec.referenceBits, isFixedPointDepth);
 
 			if (isResultInSet(resSet, result, prec.resultBits))
@@ -593,10 +609,10 @@ static bool isLinearCompareResultValid (const ConstPixelBufferAccess&		level,
 			const float	minB	= de::clamp((vBounds.x()-0.5f)-float(j), 0.0f, 1.0f);
 			const float	maxB	= de::clamp((vBounds.y()-0.5f)-float(j), 0.0f, 1.0f);
 
-			const Vec4	depths	(lookupDepth(level, x0, y0, coordZ),
-								 lookupDepth(level, x1, y0, coordZ),
-								 lookupDepth(level, x0, y1, coordZ),
-								 lookupDepth(level, x1, y1, coordZ));
+			const Vec4	depths	(lookupDepth(level, sampler, x0, y0, coordZ),
+								 lookupDepth(level, sampler, x1, y0, coordZ),
+								 lookupDepth(level, sampler, x0, y1, coordZ),
+								 lookupDepth(level, sampler, x1, y1, coordZ));
 
 			if (isBilinearCompareValid(sampler.compare, prec, depths, Vec2(minA, maxA), Vec2(minB, maxB), cmpReference, result, isFixedPointDepth))
 				return true;
@@ -657,13 +673,13 @@ static bool isNearestMipmapLinearCompareResultValid (const ConstPixelBufferAcces
 	{
 		for (int i0 = minI0; i0 <= maxI0; i0++)
 		{
-			const float	depth0	= lookupDepth(level0, wrap(sampler.wrapS, i0, w0), wrap(sampler.wrapT, j0, h0), coordZ);
+			const float	depth0	= lookupDepth(level0, sampler, wrap(sampler.wrapS, i0, w0), wrap(sampler.wrapT, j0, h0), coordZ);
 
 			for (int j1 = minJ1; j1 <= maxJ1; j1++)
 			{
 				for (int i1 = minI1; i1 <= maxI1; i1++)
 				{
-					const float	depth1	= lookupDepth(level1, wrap(sampler.wrapS, i1, w1), wrap(sampler.wrapT, j1, h1), coordZ);
+					const float	depth1	= lookupDepth(level1, sampler, wrap(sampler.wrapS, i1, w1), wrap(sampler.wrapT, j1, h1), coordZ);
 
 					if (isLinearCompareValid(sampler.compare, prec, Vec2(depth0, depth1), fBounds, cmpReference, result, isFixedPointDepth))
 						return true;
@@ -726,10 +742,10 @@ static bool isLinearMipmapLinearCompareResultValid (const ConstPixelBufferAccess
 				const int	y0		= wrap(sampler.wrapT, j0  , h0);
 				const int	y1		= wrap(sampler.wrapT, j0+1, h0);
 
-				depths0[0] = lookupDepth(level0, x0, y0, coordZ);
-				depths0[1] = lookupDepth(level0, x1, y0, coordZ);
-				depths0[2] = lookupDepth(level0, x0, y1, coordZ);
-				depths0[3] = lookupDepth(level0, x1, y1, coordZ);
+				depths0[0] = lookupDepth(level0, sampler, x0, y0, coordZ);
+				depths0[1] = lookupDepth(level0, sampler, x1, y0, coordZ);
+				depths0[2] = lookupDepth(level0, sampler, x0, y1, coordZ);
+				depths0[3] = lookupDepth(level0, sampler, x1, y1, coordZ);
 			}
 
 			for (int j1 = minJ1; j1 <= maxJ1; j1++)
@@ -748,10 +764,10 @@ static bool isLinearMipmapLinearCompareResultValid (const ConstPixelBufferAccess
 						const int	y0		= wrap(sampler.wrapT, j1  , h1);
 						const int	y1		= wrap(sampler.wrapT, j1+1, h1);
 
-						depths1[0] = lookupDepth(level1, x0, y0, coordZ);
-						depths1[1] = lookupDepth(level1, x1, y0, coordZ);
-						depths1[2] = lookupDepth(level1, x0, y1, coordZ);
-						depths1[3] = lookupDepth(level1, x1, y1, coordZ);
+						depths1[0] = lookupDepth(level1, sampler, x0, y0, coordZ);
+						depths1[1] = lookupDepth(level1, sampler, x1, y0, coordZ);
+						depths1[2] = lookupDepth(level1, sampler, x0, y1, coordZ);
+						depths1[3] = lookupDepth(level1, sampler, x1, y1, coordZ);
 					}
 
 					if (isTrilinearCompareValid(sampler.compare, prec, depths0, depths1,
@@ -913,10 +929,10 @@ static bool isSeamplessLinearMipmapLinearCompareResultValid (const TextureCubeVi
 				if (c00.face == CUBEFACE_LAST || c01.face == CUBEFACE_LAST || c10.face == CUBEFACE_LAST || c11.face == CUBEFACE_LAST)
 					return true;
 
-				depths0[0] = lookupDepth(faces0[c00.face], c00.s, c00.t);
-				depths0[1] = lookupDepth(faces0[c10.face], c10.s, c10.t);
-				depths0[2] = lookupDepth(faces0[c01.face], c01.s, c01.t);
-				depths0[3] = lookupDepth(faces0[c11.face], c11.s, c11.t);
+				depths0[0] = lookupDepthNoBorder(faces0[c00.face], sampler, c00.s, c00.t);
+				depths0[1] = lookupDepthNoBorder(faces0[c10.face], sampler, c10.s, c10.t);
+				depths0[2] = lookupDepthNoBorder(faces0[c01.face], sampler, c01.s, c01.t);
+				depths0[3] = lookupDepthNoBorder(faces0[c11.face], sampler, c11.s, c11.t);
 			}
 
 			for (int j1 = minJ1; j1 <= maxJ1; j1++)
@@ -938,10 +954,10 @@ static bool isSeamplessLinearMipmapLinearCompareResultValid (const TextureCubeVi
 						if (c00.face == CUBEFACE_LAST || c01.face == CUBEFACE_LAST || c10.face == CUBEFACE_LAST || c11.face == CUBEFACE_LAST)
 							return true;
 
-						depths1[0] = lookupDepth(faces1[c00.face], c00.s, c00.t);
-						depths1[1] = lookupDepth(faces1[c10.face], c10.s, c10.t);
-						depths1[2] = lookupDepth(faces1[c01.face], c01.s, c01.t);
-						depths1[3] = lookupDepth(faces1[c11.face], c11.s, c11.t);
+						depths1[0] = lookupDepthNoBorder(faces1[c00.face], sampler, c00.s, c00.t);
+						depths1[1] = lookupDepthNoBorder(faces1[c10.face], sampler, c10.s, c10.t);
+						depths1[2] = lookupDepthNoBorder(faces1[c01.face], sampler, c01.s, c01.t);
+						depths1[3] = lookupDepthNoBorder(faces1[c11.face], sampler, c11.s, c11.t);
 					}
 
 
@@ -1029,10 +1045,10 @@ static bool isSeamlessLinearCompareResultValid (const TextureCubeView&		texture,
 			const float	maxB	= de::clamp((vBounds.y()-0.5f)-float(j), 0.0f, 1.0f);
 
 			Vec4 depths;
-			depths[0] = lookupDepth(faces[c00.face], c00.s, c00.t);
-			depths[1] = lookupDepth(faces[c10.face], c10.s, c10.t);
-			depths[2] = lookupDepth(faces[c01.face], c01.s, c01.t);
-			depths[3] = lookupDepth(faces[c11.face], c11.s, c11.t);
+			depths[0] = lookupDepthNoBorder(faces[c00.face], sampler, c00.s, c00.t);
+			depths[1] = lookupDepthNoBorder(faces[c10.face], sampler, c10.s, c10.t);
+			depths[2] = lookupDepthNoBorder(faces[c01.face], sampler, c01.s, c01.t);
+			depths[3] = lookupDepthNoBorder(faces[c11.face], sampler, c11.s, c11.t);
 
 			if (isBilinearCompareValid(sampler.compare, prec, depths, Vec2(minA, maxA), Vec2(minB, maxB), cmpReference, result, isFixedPointDepth))
 				return true;
@@ -1246,7 +1262,7 @@ static bool isGatherOffsetsCompareResultValid (const ConstPixelBufferAccess&	tex
 				// offNdx-th coordinate offset and then wrapped.
 				const int			x		= wrap(sampler.wrapS, i+offsets[offNdx].x(), w);
 				const int			y		= wrap(sampler.wrapT, j+offsets[offNdx].y(), h);
-				const float			depth	= lookupDepth(texture, x, y, coordZ);
+				const float			depth	= lookupDepth(texture, sampler, x, y, coordZ);
 				const CmpResultSet	resSet	= execCompare(sampler.compare, depth, cmpReference, prec.referenceBits, isFixedPointDepth);
 
 				if (!isResultInSet(resSet, result[offNdx], prec.resultBits))
@@ -1344,7 +1360,7 @@ static bool isGatherCompareResultValid (const TextureCubeView&		texture,
 				if (c.face == CUBEFACE_LAST)
 					return true;
 
-				const float			depth	= lookupDepth(faces[c.face], c.s, c.t);
+				const float			depth	= lookupDepthNoBorder(faces[c.face], sampler, c.s, c.t);
 				const CmpResultSet	resSet	= execCompare(sampler.compare, depth, cmpReference, prec.referenceBits, isFixedPointDepth);
 
 				if (!isResultInSet(resSet, result[offNdx], prec.resultBits))

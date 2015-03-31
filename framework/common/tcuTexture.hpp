@@ -25,6 +25,7 @@
 
 #include "tcuDefs.hpp"
 #include "tcuVector.hpp"
+#include "rrGenericVector.hpp"
 #include "deArrayBuffer.hpp"
 
 #include <vector>
@@ -221,8 +222,12 @@ public:
 	CompareMode			compare;
 	int					compareChannel;
 
-	// Border color
-	Vec4			borderColor;
+	// Border color.
+	// \note It is setter's responsibility to guarantee that the values are representable
+	//       in sampled texture's internal format.
+	// \note It is setter's responsibility to guarantee that the format is compatible with the
+	//       sampled texture's internal format. Otherwise results are undefined.
+	rr::GenericVec4		borderColor;
 
 	// Seamless cube map filtering
 	bool				seamlessCubeMap;
@@ -267,7 +272,7 @@ public:
 		, normalizedCoords	(true)
 		, compare			(COMPAREMODE_NONE)
 		, compareChannel	(0)
-		, borderColor		(0.0f, 0.0f, 0.0f, 0.0f)
+		, borderColor		(Vec4(0.0f, 0.0f, 0.0f, 0.0f))
 		, seamlessCubeMap	(false)
 		, depthStencilMode	(MODE_DEPTH)
 	{
