@@ -404,7 +404,7 @@ const TextureSwizzle& getChannelReadSwizzle (TextureFormat::ChannelOrder order)
 	static const TextureSwizzle BGRA	= {{ TextureSwizzle::CHANNEL_2,		TextureSwizzle::CHANNEL_1,		TextureSwizzle::CHANNEL_0,		TextureSwizzle::CHANNEL_3	}};
 	static const TextureSwizzle ARGB	= {{ TextureSwizzle::CHANNEL_1,		TextureSwizzle::CHANNEL_2,		TextureSwizzle::CHANNEL_3,		TextureSwizzle::CHANNEL_0	}};
 	static const TextureSwizzle D		= {{ TextureSwizzle::CHANNEL_0,		TextureSwizzle::CHANNEL_ZERO,	TextureSwizzle::CHANNEL_ZERO,	TextureSwizzle::CHANNEL_ONE	}};
-	static const TextureSwizzle S		= {{ TextureSwizzle::CHANNEL_ZERO,	TextureSwizzle::CHANNEL_ZERO,	TextureSwizzle::CHANNEL_ZERO,	TextureSwizzle::CHANNEL_0	}};
+	static const TextureSwizzle S		= {{ TextureSwizzle::CHANNEL_0,		TextureSwizzle::CHANNEL_ZERO,	TextureSwizzle::CHANNEL_ZERO,	TextureSwizzle::CHANNEL_ONE	}};
 	static const TextureSwizzle DS		= {{ TextureSwizzle::CHANNEL_0,		TextureSwizzle::CHANNEL_ZERO,	TextureSwizzle::CHANNEL_ZERO,	TextureSwizzle::CHANNEL_1	}};
 
 	switch (order)
@@ -451,7 +451,7 @@ const TextureSwizzle& getChannelWriteSwizzle (TextureFormat::ChannelOrder order)
 	static const TextureSwizzle BGRA	= {{ TextureSwizzle::CHANNEL_2,		TextureSwizzle::CHANNEL_1,		TextureSwizzle::CHANNEL_0,		TextureSwizzle::CHANNEL_3		}};
 	static const TextureSwizzle ARGB	= {{ TextureSwizzle::CHANNEL_3,		TextureSwizzle::CHANNEL_0,		TextureSwizzle::CHANNEL_1,		TextureSwizzle::CHANNEL_2		}};
 	static const TextureSwizzle D		= {{ TextureSwizzle::CHANNEL_0,		TextureSwizzle::CHANNEL_LAST,	TextureSwizzle::CHANNEL_LAST,	TextureSwizzle::CHANNEL_LAST	}};
-	static const TextureSwizzle S		= {{ TextureSwizzle::CHANNEL_3,		TextureSwizzle::CHANNEL_LAST,	TextureSwizzle::CHANNEL_LAST,	TextureSwizzle::CHANNEL_LAST	}};
+	static const TextureSwizzle S		= {{ TextureSwizzle::CHANNEL_0,		TextureSwizzle::CHANNEL_LAST,	TextureSwizzle::CHANNEL_LAST,	TextureSwizzle::CHANNEL_LAST	}};
 	static const TextureSwizzle DS		= {{ TextureSwizzle::CHANNEL_0,		TextureSwizzle::CHANNEL_3,		TextureSwizzle::CHANNEL_LAST,	TextureSwizzle::CHANNEL_LAST	}};
 
 	switch (order)

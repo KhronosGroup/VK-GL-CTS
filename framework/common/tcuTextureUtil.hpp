@@ -39,11 +39,12 @@ ConstPixelBufferAccess	getSubregion				(const ConstPixelBufferAccess& access, in
 PixelBufferAccess		flipYAccess					(const PixelBufferAccess& access);
 ConstPixelBufferAccess	flipYAccess					(const ConstPixelBufferAccess& access);
 
+bool					isCombinedDepthStencilType	(TextureFormat::ChannelType type);
+
 // sRGB - linear conversion.
 Vec4					sRGBToLinear				(const Vec4& cs);
 Vec4					linearToSRGB				(const Vec4& cl);
 bool					isSRGB						(TextureFormat format);
-bool					isCombinedDepthStencilType	(TextureFormat::ChannelType type);
 
 /*--------------------------------------------------------------------*//*!
  * \brief Color channel storage type

@@ -163,12 +163,13 @@ static void drawTestPattern (const glu::RenderContext& renderCtx, int width, int
 
 static void renderTestPatternReference (const tcu::PixelBufferAccess& dst)
 {
-	const int		stencilBits		= tcu::getTextureFormatBitDepth(dst.getFormat()).w();
+	const int		stencilBits		= tcu::getTextureFormatBitDepth(tcu::getEffectiveDepthStencilAccess(dst, tcu::Sampler::MODE_STENCIL).getFormat()).x();
 	const deUint32	stencilMask		= (1u<<stencilBits)-1u;
 	vector<IVec4>	rects;
 
 	DE_ASSERT(dst.getFormat().order == TextureFormat::S || dst.getFormat().order == TextureFormat::DS);
 
+	// clear depth and stencil
 	tcu::clear(dst, IVec4(0));
 
 	genTestRects(rects, dst.getWidth(), dst.getHeight());
@@ -385,8 +386,7 @@ static void blitStencilToColorCube (const glu::RenderContext& renderCtx, deUint3
 static inline tcu::ConstPixelBufferAccess stencilToRedAccess (const tcu::ConstPixelBufferAccess& access)
 {
 	DE_ASSERT(access.getFormat() == TextureFormat(TextureFormat::S, TextureFormat::UNSIGNED_INT8));
-	return tcu::ConstPixelBufferAccess(TextureFormat(TextureFormat::R, TextureFormat::UNSIGNED_INT8),
-									   access.getWidth(), access.getHeight(), access.getDepth(), access.getRowPitch(), access.getSlicePitch(), access.getDataPtr());
+	return tcu::ConstPixelBufferAccess(TextureFormat(TextureFormat::R, TextureFormat::UNSIGNED_INT8), access.getSize(), access.getPitch(), access.getDataPtr());
 }
 
 static bool compareStencilToRed (tcu::TestLog& log, const tcu::ConstPixelBufferAccess& stencilRef, const tcu::ConstPixelBufferAccess& result)
@@ -595,7 +595,7 @@ public:
 			if (levelNdx == ptrnLevel)
 				renderTestPatternReference(levelAccess);
 			else
-				tcu::clear(levelAccess, IVec4(0, 0, 0, levelNdx));
+				tcu::clearStencil(levelAccess, levelNdx);
 		}
 
 		gl.bindTexture(GL_TEXTURE_2D_ARRAY, *depthStencilTex);
@@ -681,7 +681,7 @@ public:
 			const int				stencilVal	= 42*faceNdx;
 
 			texData.allocLevel(face, 0);
-			tcu::clear(texData.getLevelFace(0, face), IVec4(0, 0, 0, stencilVal));
+			tcu::clearStencil(texData.getLevelFace(0, face), stencilVal);
 		}
 
 		gls::TextureTestUtil::computeQuadTexCoordCube(texCoord, tcu::CUBEFACE_NEGATIVE_X, Vec2(-1.5f, -1.3f), Vec2(1.3f, 1.4f));
@@ -845,7 +845,7 @@ public:
 				gl.scissor(x, y, clearW, clearH);
 				gl.clear(GL_STENCIL_BUFFER_BIT);
 
-				tcu::clear(tcu::getSubregion(reference.getAccess(), x, y, clearW, clearH), IVec4(0, 0, 0, stencil));
+				tcu::clearStencil(tcu::getSubregion(reference.getAccess(), x, y, clearW, clearH), stencil);
 			}
 		}
 
