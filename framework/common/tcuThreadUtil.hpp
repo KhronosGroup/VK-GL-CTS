@@ -41,22 +41,22 @@ namespace ThreadUtil
 class Event
 {
 public:
-	enum	Result
+	enum Result
 	{
-			RESULT_NOT_READY = 0,
-			RESULT_OK,
-			RESULT_FAILED
+		RESULT_NOT_READY = 0,
+		RESULT_OK,
+		RESULT_FAILED
 	};
 
-			Event 		(void);
-			~Event		(void);
-	void	setResult	(Result result);
-	Result	waitReady	(void);
-	Result	getResult	(void) const { return m_result; }
+					Event 		(void);
+					~Event		(void);
+	void			setResult	(Result result);
+	Result			waitReady	(void);
+	Result			getResult	(void) const { return m_result; }
 
 private:
-	Result			m_result;
-	int				m_waiterCount;
+	volatile Result	m_result;
+	volatile int	m_waiterCount;
 	de::Semaphore	m_waiters;
 	de::Mutex		m_lock;
 
@@ -69,13 +69,13 @@ private:
 class Object
 {
 public:
-					Object				(const char* type, de::SharedPtr<Event> createEvent);
-	virtual			~Object				(void);
-	const char*		getType				(void) const { return m_type; }
+										Object		(const char* type, de::SharedPtr<Event> createEvent);
+	virtual								~Object		(void);
+	const char*							getType		(void) const { return m_type; }
 
 	// Used by class Operation only
-	void			read				(de::SharedPtr<Event> event, std::vector<de::SharedPtr<Event> >& deps);
-	void			modify				(de::SharedPtr<Event> event, std::vector<de::SharedPtr<Event> >& deps);
+	void								read		(de::SharedPtr<Event> event, std::vector<de::SharedPtr<Event> >& deps);
+	void								modify		(de::SharedPtr<Event> event, std::vector<de::SharedPtr<Event> >& deps);
 
 private:
 	const char*							m_type;
@@ -83,8 +83,8 @@ private:
 	std::vector<de::SharedPtr<Event> >	m_reads;
 
 	// Disabled
-					Object				(const Object&);
-	Object&			operator=			(const Object&);
+										Object		(const Object&);
+	Object&								operator=	(const Object&);
 };
 
 class Thread;
@@ -121,33 +121,33 @@ public:
 	static const MessageBuilder::EndToken End;
 
 private:
-	deUint64		m_time;
-	std::string		m_message;
+	deUint64			m_time;
+	std::string			m_message;
 };
 
 // Base class for operations executed by threads
 class Operation
 {
 public:
-							Operation		(const char* name);
-	virtual					~Operation		(void);
+											Operation		(const char* name);
+	virtual									~Operation		(void);
 
-	const char*				getName			(void) const { return m_name; }
-	de::SharedPtr<Event>	getEvent		(void) { return m_event; }
+	const char*								getName			(void) const { return m_name; }
+	de::SharedPtr<Event>					getEvent		(void) { return m_event; }
 
-	void					readObject		(de::SharedPtr<Object> object) { object->read(m_event, m_deps); }
-	void					modifyObject	(de::SharedPtr<Object> object) { object->modify(m_event, m_deps); }
+	void									readObject		(de::SharedPtr<Object> object) { object->read(m_event, m_deps); }
+	void									modifyObject	(de::SharedPtr<Object> object) { object->modify(m_event, m_deps); }
 
-	virtual void			exec			(Thread& thread) = 0;	//!< Overwritten by inherited class to perform actual operation
-	virtual void			execute			(Thread& thread);		//!< May Be overwritten by inherited class to change how syncronization is done
+	virtual void							exec			(Thread& thread) = 0;	//!< Overwritten by inherited class to perform actual operation
+	virtual void							execute			(Thread& thread);		//!< May Be overwritten by inherited class to change how syncronization is done
 
 protected:
 	const char*								m_name;
 	std::vector<de::SharedPtr<Event> >		m_deps;
 	de::SharedPtr<Event>					m_event;
 
-						Operation		(const Operation&);
-	Operation&			operator=		(const Operation&);
+											Operation		(const Operation&);
+	Operation&								operator=		(const Operation&);
 };
 
 class Thread : public de::Thread
@@ -162,45 +162,46 @@ public:
 		THREADSTATUS_FAILED,
 		THREADSTATUS_NOT_SUPPORTED
 	};
-					Thread				(int seed);
-					~Thread				(void);
+							Thread				(int seed);
+							~Thread				(void);
 
-	virtual void	init				(void) {}	//!< Called first before any Operation
+	virtual void			init				(void) {}	//!< Called first before any Operation
 
 	// \todo [mika] Should the result of execution be passed to deinit?
-	virtual void	deinit				(void) {}	//!< Called after after operation
+	virtual void			deinit				(void) {}	//!< Called after after operation
 
-	void			addOperation		(Operation* operation);
+	void					addOperation		(Operation* operation);
 
-	void			exec				(void);
+	void					exec				(void);
 
-	deUint8*		getDummyData		(size_t size);	//!< Return data pointer that contains at least size bytes. Valid until next call
+	deUint8*				getDummyData		(size_t size);	//!< Return data pointer that contains at least size bytes. Valid until next call
 
-	ThreadStatus	getStatus			(void) const { return m_status; }
+	ThreadStatus			getStatus			(void) const { return m_status; }
 
-	MessageBuilder	newMessage			(void) { return MessageBuilder(*this); }
-	de::Random&		getRandom			(void) { return m_random; }
+	MessageBuilder			newMessage			(void) { return MessageBuilder(*this); }
+	de::Random&				getRandom			(void) { return m_random; }
 
 	// Used to by test case to read log messages
-	int				getMessageCount		(void) const { return (int)(m_messages.size()); }
-	const Message&	getMessage			(int index) const { return m_messages[index]; }
+	int						getMessageCount		(void) const;
+	Message					getMessage			(int index) const;
 
 	// Used by message builder
-	void			pushMessage			(const std::string& str);
+	void					pushMessage			(const std::string& str);
 
 private:
-	virtual void	run					(void);
+	virtual void			run					(void);
 
 	std::vector<Operation*>	m_operations;
 	de::Random				m_random;
 
+	mutable de::Mutex		m_messageLock;
 	std::vector<Message>	m_messages;
 	ThreadStatus			m_status;
 	std::vector<deUint8>	m_dummyData;
 
 	// Disabled
-					Thread				(const Thread&);
-	Thread			operator=			(const Thread&);
+							Thread				(const Thread&);
+	Thread					operator=			(const Thread&);
 };
 
 class DataBlock : public Object

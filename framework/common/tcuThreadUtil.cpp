@@ -22,6 +22,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "tcuThreadUtil.hpp"
+
 #include "deClock.h"
 #include "deMemory.h"
 
@@ -241,8 +242,22 @@ void Thread::exec (void)
 
 void Thread::pushMessage (const std::string& str)
 {
+	de::ScopedLock lock(m_messageLock);
 	m_messages.push_back(Message(deGetMicroseconds(), str.c_str()));
 }
+
+int Thread::getMessageCount	 (void) const
+{
+	de::ScopedLock lock(m_messageLock);
+	return (int)(m_messages.size());
+}
+
+Message Thread::getMessage (int index) const
+{
+	de::ScopedLock lock(m_messageLock);
+	return m_messages[index];
+}
+
 
 DataBlock::DataBlock (SharedPtr<Event> event)
 	: Object("DataBlock", event)

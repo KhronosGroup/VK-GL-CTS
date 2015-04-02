@@ -236,9 +236,9 @@ void EGLThread::deinit (void)
 			egl.makeCurrent(runtimeContext->display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
 
 		egl.destroyContext(runtimeContext->display, runtimeContext->context);
-		egl.destroySurface(runtimeContext->display, eglSurface);
+		runtimeContext->context = EGL_NO_CONTEXT;
 
-		runtimeContext->context	= EGL_NO_CONTEXT;
+		egl.destroySurface(runtimeContext->display, eglSurface);
 		eglSurface	= EGL_NO_SURFACE;
 	}
 
@@ -247,6 +247,7 @@ void EGLThread::deinit (void)
 
 EGLThread::~EGLThread (void)
 {
+	EGLThread::deinit();
 }
 
 class FenceSync
@@ -500,11 +501,11 @@ void Operation::execute (tcu::ThreadUtil::Thread& t)
 			m_event->setResult(tcu::ThreadUtil::Event::RESULT_FAILED);
 			throw;
 		}
-
-		m_event->setResult(tcu::ThreadUtil::Event::RESULT_OK);
 	}
 
-	if (!success)
+	if (success)
+		m_event->setResult(tcu::ThreadUtil::Event::RESULT_OK);
+	else
 		m_event->setResult(tcu::ThreadUtil::Event::RESULT_FAILED);
 
 	m_deps.clear();
@@ -2239,7 +2240,10 @@ void GLES2SharingRandomTest::init (void)
 void GLES2SharingRandomTest::deinit (void)
 {
 	for (int threadNdx = 0; threadNdx < (int)m_threads.size(); threadNdx++)
+	{
 		delete m_threads[threadNdx];
+		m_threads[threadNdx] = DE_NULL;
+	}
 
 	m_threads.clear();
 
@@ -2805,7 +2809,9 @@ tcu::TestCase::IterateResult GLES2SharingRandomTest::iterate (void)
 		int readyThreads = 0;
 		for (int threadNdx = 0; threadNdx < (int)m_threads.size(); threadNdx++)
 		{
-			if (m_threads[threadNdx]->getStatus() != tcu::ThreadUtil::Thread::THREADSTATUS_RUNNING)
+			const tcu::ThreadUtil::Thread::ThreadStatus status = m_threads[threadNdx]->getStatus();
+
+			if (status != tcu::ThreadUtil::Thread::THREADSTATUS_RUNNING && status != tcu::ThreadUtil::Thread::THREADSTATUS_NOT_STARTED)
 				readyThreads++;
 		}
 
@@ -2841,6 +2847,10 @@ tcu::TestCase::IterateResult GLES2SharingRandomTest::iterate (void)
 	if (m_executionReady)
 	{
 		std::vector<int> indices(m_threads.size(), 0);
+
+		if (m_timeOutTimeUs != 0)
+			m_log << tcu::TestLog::Message << "Execution timeout limit reached. Trying to get per thread logs. This is potentially dangerous." << tcu::TestLog::EndMessage;
+
 		while (true)
 		{
 			int 		firstThread = -1;
@@ -2869,34 +2879,42 @@ tcu::TestCase::IterateResult GLES2SharingRandomTest::iterate (void)
 					firstThread = threadNdx;
 			}
 
-			deUint64	time	= m_threads[firstThread]->getMessage(indices[firstThread]).getTime();
-			std::string	message	= m_threads[firstThread]->getMessage(indices[firstThread]).getMessage();
-			m_log << tcu::TestLog::Message << "[" << (time - m_beginTimeUs) << "] (" << firstThread << ") " << message << tcu::TestLog::EndMessage;
+			tcu::ThreadUtil::Message message = m_threads[firstThread]->getMessage(indices[firstThread]);
+
+			m_log << tcu::TestLog::Message << "[" << (message.getTime() - m_beginTimeUs) << "] (" << firstThread << ") " << message.getMessage() << tcu::TestLog::EndMessage;
 			indices[firstThread]++;
 		}
+
+		if (m_timeOutTimeUs != 0)
+			m_log << tcu::TestLog::Message << "[" << (m_timeOutTimeUs - m_beginTimeUs) << "] Execution timeout limit reached" << tcu::TestLog::EndMessage;
 
 		bool isOk = true;
 		bool notSupported = false;
 
 		for (int threadNdx = 0; threadNdx < (int)m_threads.size(); threadNdx++)
 		{
-			if (m_threads[threadNdx]->getStatus() == tcu::ThreadUtil::Thread::THREADSTATUS_FAILED)
-				isOk = false;
-			else if (m_threads[threadNdx]->getStatus() == tcu::ThreadUtil::Thread::THREADSTATUS_READY)
-				isOk &= true;
-			else if (m_threads[threadNdx]->getStatus() == tcu::ThreadUtil::Thread::THREADSTATUS_NOT_SUPPORTED)
-				notSupported = true;
-			else
+			const tcu::ThreadUtil::Thread::ThreadStatus status = m_threads[threadNdx]->getStatus();
+
+			switch (status)
 			{
-				isOk = false;
-				DE_ASSERT(false);
-			}
+				case tcu::ThreadUtil::Thread::THREADSTATUS_FAILED:
+				case tcu::ThreadUtil::Thread::THREADSTATUS_INIT_FAILED:
+				case tcu::ThreadUtil::Thread::THREADSTATUS_RUNNING:
+					isOk = false;
+					break;
 
-		}
+				case tcu::ThreadUtil::Thread::THREADSTATUS_NOT_SUPPORTED:
+					notSupported = true;
+					break;
 
-		if (m_timeOutTimeUs != 0)
-		{
-			m_log << tcu::TestLog::Message << "[" << (m_timeOutTimeUs - m_beginTimeUs) << "] Execution timeout limit reached" << tcu::TestLog::EndMessage;
+				case tcu::ThreadUtil::Thread::THREADSTATUS_READY:
+					// Nothing
+					break;
+
+				default:
+					DE_ASSERT(false);
+					isOk = false;
+			};
 		}
 
 		if (notSupported)
@@ -3573,7 +3591,10 @@ void GLES2ThreadedSharingTest::addProgramOperations (void)
 void GLES2ThreadedSharingTest::deinit (void)
 {
 	for (int threadNdx = 0; threadNdx < (int)m_threads.size(); threadNdx++)
+	{
 		delete m_threads[threadNdx];
+		m_threads[threadNdx] = DE_NULL;
+	}
 
 	m_threads.clear();
 
@@ -3639,9 +3660,13 @@ tcu::TestCase::IterateResult GLES2ThreadedSharingTest::iterate (void)
 	if (m_executionReady)
 	{
 		std::vector<int> indices(m_threads.size(), 0);
+
+		if (m_timeOutTimeUs != 0)
+			m_log << tcu::TestLog::Message << "Execution timeout limit reached. Trying to get per thread logs. This is potentially dangerous." << tcu::TestLog::EndMessage;
+
 		while (true)
 		{
-			int firstThread = -1;
+			int 		firstThread = -1;
 
 			// Find first thread with messages
 			for (int threadNdx = 0; threadNdx < (int)m_threads.size(); threadNdx++)
@@ -3667,33 +3692,42 @@ tcu::TestCase::IterateResult GLES2ThreadedSharingTest::iterate (void)
 					firstThread = threadNdx;
 			}
 
-			deUint64	time	= m_threads[firstThread]->getMessage(indices[firstThread]).getTime();
-			std::string	message	= m_threads[firstThread]->getMessage(indices[firstThread]).getMessage();
-			m_log << tcu::TestLog::Message << "[" << (time - m_beginTimeUs) << "] (" << firstThread << ") " << message << tcu::TestLog::EndMessage;
+			tcu::ThreadUtil::Message message = m_threads[firstThread]->getMessage(indices[firstThread]);
+
+			m_log << tcu::TestLog::Message << "[" << (message.getTime() - m_beginTimeUs) << "] (" << firstThread << ") " << message.getMessage() << tcu::TestLog::EndMessage;
 			indices[firstThread]++;
 		}
+
+		if (m_timeOutTimeUs != 0)
+			m_log << tcu::TestLog::Message << "[" << (m_timeOutTimeUs - m_beginTimeUs) << "] Execution timeout limit reached" << tcu::TestLog::EndMessage;
 
 		bool isOk = true;
 		bool notSupported = false;
 
 		for (int threadNdx = 0; threadNdx < (int)m_threads.size(); threadNdx++)
 		{
-			if (m_threads[threadNdx]->getStatus() == tcu::ThreadUtil::Thread::THREADSTATUS_FAILED)
-				isOk = false;
-			else if (m_threads[threadNdx]->getStatus() == tcu::ThreadUtil::Thread::THREADSTATUS_READY)
-				isOk &= true;
-			else if (m_threads[threadNdx]->getStatus() == tcu::ThreadUtil::Thread::THREADSTATUS_NOT_SUPPORTED)
-				notSupported = true;
-			else
-			{
-				isOk = false;
-				DE_ASSERT(false);
-			}
-		}
+			const tcu::ThreadUtil::Thread::ThreadStatus status = m_threads[threadNdx]->getStatus();
 
-		if (m_timeOutTimeUs != 0)
-		{
-			m_log << tcu::TestLog::Message << "[" << (m_timeOutTimeUs - m_beginTimeUs) << "] Execution timeout limit reached" << tcu::TestLog::EndMessage;
+			switch (status)
+			{
+				case tcu::ThreadUtil::Thread::THREADSTATUS_FAILED:
+				case tcu::ThreadUtil::Thread::THREADSTATUS_INIT_FAILED:
+				case tcu::ThreadUtil::Thread::THREADSTATUS_RUNNING:
+					isOk = false;
+					break;
+
+				case tcu::ThreadUtil::Thread::THREADSTATUS_NOT_SUPPORTED:
+					notSupported = true;
+					break;
+
+				case tcu::ThreadUtil::Thread::THREADSTATUS_READY:
+					// Nothing
+					break;
+
+				default:
+					DE_ASSERT(false);
+					isOk = false;
+			};
 		}
 
 		if (notSupported)
