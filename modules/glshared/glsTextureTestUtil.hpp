@@ -253,7 +253,7 @@ inline tcu::RGBA toRGBAMasked (const tcu::Vec4& v, deUint8 mask)
 	return tcu::RGBA((mask&tcu::RGBA::RED_MASK)		? tcu::floatToU8(v.x()) : 0,
 					 (mask&tcu::RGBA::GREEN_MASK)	? tcu::floatToU8(v.y()) : 0,
 					 (mask&tcu::RGBA::BLUE_MASK)	? tcu::floatToU8(v.z()) : 0,
-					 (mask&tcu::RGBA::ALPHA_MASK)	? tcu::floatToU8(v.w()) : 0);
+					 (mask&tcu::RGBA::ALPHA_MASK)	? tcu::floatToU8(v.w()) : 0xFF); //!< \note Alpha defaults to full saturation when reading masked format
 }
 
 inline tcu::Vec4 toVec4 (const tcu::RGBA& c)
