@@ -1,0 +1,2 @@
+# Derivate tests are known to be configuration-sensitive
+dEQP-GLES3.functional.shaders.derivate.*
