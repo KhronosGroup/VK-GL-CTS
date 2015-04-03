@@ -1,0 +1,29 @@
+# Bug 20013546
+dEQP-GLES31.functional.debug.negative_coverage.get_error.texture.compressedtexsubimage3d_invalid_buffer_target
+
+# Bug 20005726
+dEQP-GLES31.functional.debug.negative_coverage.get_error.state.get_internalformativ
+
+# Bug 19897810
+dEQP-GLES31.functional.copy_image.*srgb*renderbuffer
+
+# Bug 19641084
+dEQP-GLES31.functional.image_load_store.*.atomic.comp_swap_*_return_value
+
+# Bug 18323265
+dEQP-GLES31.functional.shaders.builtin_functions.precision.dot.highp_compute.vec4
+dEQP-GLES31.functional.shaders.builtin_functions.precision.atanh.highp_compute.scalar
+dEQP-GLES31.functional.shaders.builtin_functions.precision.atanh.highp_compute.vec2
+dEQP-GLES31.functional.shaders.builtin_functions.precision.atanh.highp_compute.vec3
+dEQP-GLES31.functional.shaders.builtin_functions.precision.atanh.highp_compute.vec4
+dEQP-GLES31.functional.shaders.builtin_functions.precision.acos.highp_compute.scalar
+dEQP-GLES31.functional.shaders.builtin_functions.precision.acos.highp_compute.vec2
+dEQP-GLES31.functional.shaders.builtin_functions.precision.acos.highp_compute.vec3
+dEQP-GLES31.functional.shaders.builtin_functions.precision.acos.highp_compute.vec4
+dEQP-GLES31.functional.shaders.builtin_functions.precision.smoothstep.mediump_compute.scalar
+dEQP-GLES31.functional.shaders.builtin_functions.precision.smoothstep.mediump_compute.vec2
+dEQP-GLES31.functional.shaders.builtin_functions.precision.smoothstep.mediump_compute.vec3
+dEQP-GLES31.functional.shaders.builtin_functions.precision.smoothstep.mediump_compute.vec4
+
+# Bug 18033342
+dEQP-GLES31.functional.debug.negative_coverage.get_error.state.get_framebuffer_attachment_parameteriv

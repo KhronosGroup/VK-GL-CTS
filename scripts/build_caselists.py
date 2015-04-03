@@ -1,5 +1,25 @@
 # -*- coding: utf-8 -*-
 
+#-------------------------------------------------------------------------
+# drawElements Quality Program utilities
+# --------------------------------------
+#
+# Copyright 2015 The Android Open Source Project
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+#-------------------------------------------------------------------------
+
 from build.common import *
 from build.config import *
 from build.build import *
@@ -57,29 +77,32 @@ def getBuiltModules (buildCfg):
 
 	return modules
 
-def getCaseListFileName (module):
-	return "%s-cases.xml" % module.name
+def getCaseListFileName (module, caseListType):
+	return "%s-cases.%s" % (module.name, caseListType)
 
-def genCaseList (buildCfg, generator, module):
+def getCaseListPath (buildCfg, module, caseListType):
+	return os.path.join(getModulesPath(buildCfg), module.dirName, getCaseListFileName(module, caseListType))
+
+def genCaseList (buildCfg, generator, module, caseListType):
 	workDir = os.path.join(getModulesPath(buildCfg), module.dirName)
 
 	pushWorkingDir(workDir)
 
 	try:
 		binPath = generator.getBinaryPath(buildCfg.getBuildType(), os.path.join(".", module.binName))
-		execute([binPath, "--deqp-runmode=xml-caselist"])
+		execute([binPath, "--deqp-runmode=%s-caselist" % caseListType])
 	finally:
 		popWorkingDir()
 
-def genAndCopyCaseList (buildCfg, generator, module, dstDir):
-	caseListFile	= getCaseListFileName(module)
-	srcPath			= os.path.join(getModulesPath(buildCfg), module.dirName, caseListFile)
+def genAndCopyCaseList (buildCfg, generator, module, dstDir, caseListType):
+	caseListFile	= getCaseListFileName(module, caseListType)
+	srcPath			= getCaseListPath(buildCfg, module, caseListType)
 	dstPath			= os.path.join(dstDir, caseListFile)
 
 	if os.path.exists(srcPath):
 		os.remove(srcPath)
 
-	genCaseList(buildCfg, generator, module)
+	genCaseList(buildCfg, generator, module, caseListType)
 
 	if not os.path.exists(srcPath):
 		raise Exception("%s not generated" % srcPath)
@@ -104,6 +127,10 @@ def parseArgs ():
 						dest="targetName",
 						default=DEFAULT_TARGET,
 						help="dEQP build target")
+	parser.add_argument("--case-list-type",
+						dest="caseListType",
+						default="xml",
+						help="Case list type (xml, txt)")
 	parser.add_argument("-m",
 						"--modules",
 						dest="modules",
@@ -132,4 +159,4 @@ if __name__ == "__main__":
 
 	for module in modules:
 		print "Generating test case list for %s" % module.name
-		genAndCopyCaseList(buildCfg, generator, module, args.dst)
+		genAndCopyCaseList(buildCfg, generator, module, args.dst, args.caseListType)
