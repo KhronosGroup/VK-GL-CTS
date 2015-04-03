@@ -8,6 +8,7 @@ dEQP-GLES3.functional.rasterization.interpolation.*
 dEQP-GLES3.functional.rasterizer_discard.basic.*
 dEQP-GLES3.functional.rasterizer_discard.scissor.*
 dEQP-GLES3.functional.read_pixels.*
+dEQP-GLES3.functional.dither.*
 dEQP-GLES3.functional.fence_sync.*
 dEQP-GLES3.functional.state_query.integers.implementation_color_read_*
 dEQP-GLES3.functional.state_query.integers.read_buffer_*
