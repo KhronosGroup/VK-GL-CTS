@@ -558,6 +558,9 @@ ENUM_GROUPS = [
 		# GL_EXT_texture_sRGB_R8 & RG8
 		"SR8_EXT",
 		"SRG8_EXT",
+
+		# GL_EXT_read_format_bgra
+		"BGRA",
 		]),
 
 	("CompressedTexFormat", [

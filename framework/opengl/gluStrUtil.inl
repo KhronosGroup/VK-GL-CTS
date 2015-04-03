@@ -886,6 +886,7 @@ const char* getPixelFormatName (int value)
 		case GL_SRGB_ALPHA:			return "GL_SRGB_ALPHA";
 		case GL_SR8_EXT:			return "GL_SR8_EXT";
 		case GL_SRG8_EXT:			return "GL_SRG8_EXT";
+		case GL_BGRA:				return "GL_BGRA";
 		default:					return DE_NULL;
 	}
 }
