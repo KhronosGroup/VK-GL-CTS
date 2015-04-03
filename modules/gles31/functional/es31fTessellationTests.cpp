@@ -5998,9 +5998,9 @@ void UserDefinedIOCase::init (void)
 			DE_ASSERT(numElements != -2);
 
 			if (isArray)
-				tcsDeclarations += outMaybePatch + output.declareArray(m_ioType == IO_TYPE_PER_PATCH_ARRAY			? de::toString(NUM_PER_PATCH_ARRAY_ELEMS)
-																	   : m_ioType == IO_TYPE_PER_PATCH_BLOCK_ARRAY	? de::toString(NUM_PER_PATCH_BLOCKS)
-																	   : isExplicitVertexArraySize					? de::toString(NUM_OUTPUT_VERTICES)
+				tcsDeclarations += outMaybePatch + output.declareArray(m_ioType == IO_TYPE_PER_PATCH_ARRAY			? de::toString(int(NUM_PER_PATCH_ARRAY_ELEMS))
+																	   : m_ioType == IO_TYPE_PER_PATCH_BLOCK_ARRAY	? de::toString(int(NUM_PER_PATCH_BLOCKS))
+																	   : isExplicitVertexArraySize					? de::toString(int(NUM_OUTPUT_VERTICES))
 																	   : "");
 			else
 				tcsDeclarations += outMaybePatch + output.declare();
@@ -6015,7 +6015,7 @@ void UserDefinedIOCase::init (void)
 				tcsStatements += output.glslTraverseBasicType(2, glslAssignBasicTypeObject);
 
 			if (!isPerPatchIO)
-				tcsStatements += "\t\tv += float(" + de::toString(NUM_OUTPUT_VERTICES) + "-gl_InvocationID-1)*" + de::floatToString(0.4f*output.numBasicSubobjectsInElementType(), 1) + ";\n";
+				tcsStatements += "\t\tv += float(" + de::toString(int(NUM_OUTPUT_VERTICES)) + "-gl_InvocationID-1)*" + de::floatToString(0.4f*output.numBasicSubobjectsInElementType(), 1) + ";\n";
 		}
 		tcsStatements += "\t}\n";
 
@@ -6040,8 +6040,8 @@ void UserDefinedIOCase::init (void)
 			DE_ASSERT(numElements != -2);
 
 			if (isArray)
-				tesDeclarations += inMaybePatch + input.declareArray(m_ioType == IO_TYPE_PER_PATCH_ARRAY			? de::toString(NUM_PER_PATCH_ARRAY_ELEMS)
-																	 : m_ioType == IO_TYPE_PER_PATCH_BLOCK_ARRAY	? de::toString(NUM_PER_PATCH_BLOCKS)
+				tesDeclarations += inMaybePatch + input.declareArray(m_ioType == IO_TYPE_PER_PATCH_ARRAY			? de::toString(int(NUM_PER_PATCH_ARRAY_ELEMS))
+																	 : m_ioType == IO_TYPE_PER_PATCH_BLOCK_ARRAY	? de::toString(int(NUM_PER_PATCH_BLOCKS))
 																	 : isExplicitVertexArraySize					? de::toString(vertexAttrArrayInputSize)
 																	 : "");
 			else
@@ -6070,7 +6070,7 @@ void UserDefinedIOCase::init (void)
 		<< glu::TessellationControlSource		("#version 310 es\n"
 												 "#extension GL_EXT_tessellation_shader : require\n"
 												 "\n"
-												 "layout (vertices = " + de::toString(NUM_OUTPUT_VERTICES) + ") out;\n"
+												 "layout (vertices = " + de::toString(int(NUM_OUTPUT_VERTICES)) + ") out;\n"
 												 "\n"
 												 + tcsDeclarations +
 												 "\n"
