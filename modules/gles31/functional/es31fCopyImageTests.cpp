@@ -664,7 +664,7 @@ void genRenderbufferImage (const glw::Functions&			gl,
 				gl.clearBufferfv(GL_COLOR, 0, (const float*)&color);
 				GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to clear renderbuffer.");
 
-				tcu::clear(refAccess, color);
+				tcu::clear(refAccess, (tcu::isSRGB(format) ? tcu::linearToSRGB(color) : color));
 			}
 			else if (isIntFormat(info.getFormat()))
 			{
@@ -673,6 +673,7 @@ void genRenderbufferImage (const glw::Functions&			gl,
 				gl.clearBufferiv(GL_COLOR, 0, (const deInt32*)&color);
 				GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to clear renderbuffer.");
 
+				DE_ASSERT(!tcu::isSRGB(format));
 				tcu::clear(refAccess, color);
 			}
 			else if (isUintFormat(info.getFormat()))
@@ -682,6 +683,7 @@ void genRenderbufferImage (const glw::Functions&			gl,
 				gl.clearBufferuiv(GL_COLOR, 0, (const deUint32*)&color);
 				GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to clear renderbuffer.");
 
+				DE_ASSERT(!tcu::isSRGB(format));
 				tcu::clear(refAccess, color);
 			}
 			else
@@ -692,7 +694,7 @@ void genRenderbufferImage (const glw::Functions&			gl,
 				gl.clear(GL_COLOR_BUFFER_BIT);
 				GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to clear renderbuffer.");
 
-				tcu::clear(refAccess, color);
+				tcu::clear(refAccess, (tcu::isSRGB(format) ? tcu::linearToSRGB(color) : color));
 			}
 		}
 	}
