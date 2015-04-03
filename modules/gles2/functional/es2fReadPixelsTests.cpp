@@ -32,6 +32,7 @@
 #include "deRandom.hpp"
 #include "deMath.h"
 #include "deString.h"
+#include "deStringUtil.hpp"
 
 #include "gluDefs.hpp"
 #include "gluShaderProgram.hpp"
@@ -147,9 +148,13 @@ void ReadPixelsTest::getFormatInfo (tcu::TextureFormat& format, GLint& glFormat,
 		GLU_CHECK_CALL(glGetIntegerv(GL_IMPLEMENTATION_COLOR_READ_FORMAT, &glFormat));
 		GLU_CHECK_CALL(glGetIntegerv(GL_IMPLEMENTATION_COLOR_READ_TYPE, &glType));
 
-		format = glu::mapGLTransferFormat(glFormat, glType);
+		if (glFormat != GL_RGBA && glFormat != GL_BGRA && glFormat != GL_RGB)
+			TCU_THROW(NotSupportedError, ("Unsupported IMPLEMENTATION_COLOR_READ_FORMAT: " + de::toString(glu::getPixelFormatStr(glFormat))).c_str());
+		if (glu::getTypeName(glType) == DE_NULL)
+			TCU_THROW(NotSupportedError, ("Unsupported GL_IMPLEMENTATION_COLOR_READ_TYPE: " + de::toString(tcu::Format::Hex<4>(glType))).c_str());
 
-		pixelSize	= format.getPixelSize();
+		format = glu::mapGLTransferFormat(glFormat, glType);
+		pixelSize = format.getPixelSize();
 	}
 	else
 	{
@@ -215,7 +220,17 @@ TestCase::IterateResult ReadPixelsTest::iterate (void)
 		const deUint8		blueThreshold	= (deUint8)deCeilFloatToInt32(256.0f * (2.0f / (1 << deMin32(m_context.getRenderTarget().getPixelFormat().blueBits,		formatBitDepths.z()))));
 		const deUint8		alphaThreshold	= (deUint8)deCeilFloatToInt32(256.0f * (2.0f / (1 << deMin32(m_context.getRenderTarget().getPixelFormat().alphaBits,	formatBitDepths.w()))));
 
-		if (tcu::bilinearCompare(m_testCtx.getLog(), "Result", "Result", reference.getLevel(0), tcu::PixelBufferAccess(format, width, height, 1, rowPitch, 0, &(pixelData[0])), tcu::RGBA(redThreshold, greenThreshold, blueThreshold, alphaThreshold), tcu::COMPARE_LOG_RESULT))
+		// bilinearCompare only accepts RGBA, UINT8
+		tcu::Texture2D		referenceRGBA8	(tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8), width, height);
+		tcu::Texture2D		resultRGBA8		(tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8), width, height);
+
+		referenceRGBA8.allocLevel(0);
+		resultRGBA8.allocLevel(0);
+
+		tcu::copy(referenceRGBA8.getLevel(0), reference.getLevel(0));
+		tcu::copy(resultRGBA8.getLevel(0), tcu::PixelBufferAccess(format, width, height, 1, rowPitch, 0, &(pixelData[0])));
+
+		if (tcu::bilinearCompare(m_testCtx.getLog(), "Result", "Result", referenceRGBA8.getLevel(0), resultRGBA8.getLevel(0), tcu::RGBA(redThreshold, greenThreshold, blueThreshold, alphaThreshold), tcu::COMPARE_LOG_RESULT))
 			m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
 		else
 			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
