@@ -564,7 +564,7 @@ public:
 		deUint8* const data = new deUint8[sizeof(value)];
 
 		deMemcpy(data, &value, sizeof(value));
-		de::insert(m_map, variable.getName(), SharedPtr<deUint8>(data));
+		de::insert(m_map, variable.getName(), SharedPtr<deUint8>(data, de::ArrayDeleter<deUint8>()));
 	}
 
 	template<typename T>
@@ -576,7 +576,7 @@ public:
 	}
 
 private:
-	map<string, SharedPtr<deUint8, de::ArrayDeleter<deUint8> > >	m_map;
+	map<string, SharedPtr<deUint8> >	m_map;
 };
 
 /*--------------------------------------------------------------------*//*!
