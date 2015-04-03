@@ -526,9 +526,16 @@ void LayoutBindingRenderCase::initRenderState (void)
 
 bool LayoutBindingRenderCase::drawAndVerifyResult (const Vec4& expectedColor)
 {
-	const glw::Functions&	gl			= m_context.getRenderContext().getFunctions();
-	const tcu::RGBA			threshold	= m_context.getRenderContext().getRenderTarget().getPixelFormat().getColorThreshold();
-	tcu::Surface			reference	(TEST_RENDER_WIDTH, TEST_RENDER_HEIGHT);
+	const glw::Functions&	gl					= m_context.getRenderContext().getFunctions();
+	tcu::Surface			reference			(TEST_RENDER_WIDTH, TEST_RENDER_HEIGHT);
+
+	// the point of these test is to check layout_binding. For this purpose, we can use quite
+	// large thresholds.
+	const tcu::RGBA			surfaceThreshold	= m_context.getRenderContext().getRenderTarget().getPixelFormat().getColorThreshold();
+	const tcu::RGBA			compareThreshold	= tcu::RGBA(de::clamp(2 * surfaceThreshold.getRed(),   0, 255),
+															de::clamp(2 * surfaceThreshold.getGreen(), 0, 255),
+															de::clamp(2 * surfaceThreshold.getBlue(),  0, 255),
+															de::clamp(2 * surfaceThreshold.getAlpha(), 0, 255));
 
 	gl.clear(GL_COLOR_BUFFER_BIT);
 
@@ -543,9 +550,9 @@ bool LayoutBindingRenderCase::drawAndVerifyResult (const Vec4& expectedColor)
 	GLU_EXPECT_NO_ERROR(gl.getError(), "Read pixels failed");
 
 	tcu::clear(reference.getAccess(), expectedColor);
-	m_testCtx.getLog() << tcu::TestLog::Message << "Verifying output image" << tcu::TestLog::EndMessage;
+	m_testCtx.getLog() << tcu::TestLog::Message << "Verifying output image, fragment output color is " << expectedColor << tcu::TestLog::EndMessage;
 
-	return tcu::pixelThresholdCompare(m_testCtx.getLog(), "Render result", "Result verification", reference, result, threshold, tcu::COMPARE_LOG_RESULT);
+	return tcu::pixelThresholdCompare(m_testCtx.getLog(), "Render result", "Result verification", reference, result, compareThreshold, tcu::COMPARE_LOG_RESULT);
 }
 
 void LayoutBindingRenderCase::setTestResult (bool queryTestPassed, bool imageTestPassed)
