@@ -2127,7 +2127,6 @@ GLES2SharingRandomTest::GLES2SharingRandomTest (EglTestContext& context, const T
 	, m_eglConfig		(0)
 	, m_lastOperation	(THREADOPERATIONID_NONE)
 {
-	m_eglTestCtx.initGLFunctions(&m_gl, glu::ApiType::es(2,0));
 }
 
 GLES2SharingRandomTest::~GLES2SharingRandomTest (void)
@@ -2149,6 +2148,8 @@ void GLES2SharingRandomTest::init (void)
 
 	m_eglDisplay	= eglu::getAndInitDisplay(m_eglTestCtx.getNativeDisplay());
 	m_eglConfig 	= eglu::chooseSingleConfig(egl, m_eglDisplay, attribList);
+
+	m_eglTestCtx.initGLFunctions(&m_gl, glu::ApiType::es(2,0));
 
 	// Check extensions
 	if (m_config.useFenceSync)
@@ -2242,7 +2243,11 @@ void GLES2SharingRandomTest::deinit (void)
 
 	m_threads.clear();
 
-	m_eglTestCtx.getLibrary().terminate(m_eglDisplay);
+	if (m_eglDisplay != EGL_NO_DISPLAY)
+	{
+		m_eglTestCtx.getLibrary().terminate(m_eglDisplay);
+		m_eglDisplay = EGL_NO_DISPLAY;
+	}
 
 	TCU_CHECK(!m_requiresRestart);
 }
@@ -2980,7 +2985,6 @@ GLES2ThreadedSharingTest::GLES2ThreadedSharingTest (EglTestContext& context, con
 	, m_eglDisplay		(EGL_NO_DISPLAY)
 	, m_eglConfig		(0)
 {
-	m_eglTestCtx.initGLFunctions(&m_gl, glu::ApiType::es(2,0));
 }
 
 GLES2ThreadedSharingTest::~GLES2ThreadedSharingTest (void)
@@ -3002,6 +3006,8 @@ void GLES2ThreadedSharingTest::init (void)
 
 	m_eglDisplay	= eglu::getAndInitDisplay(m_eglTestCtx.getNativeDisplay());
 	m_eglConfig 	= eglu::chooseSingleConfig(egl, m_eglDisplay, attribList);
+
+	m_eglTestCtx.initGLFunctions(&m_gl, glu::ApiType::es(2,0));
 
 	// Check extensions
 	if (m_config.useFenceSync)
@@ -3570,7 +3576,12 @@ void GLES2ThreadedSharingTest::deinit (void)
 		delete m_threads[threadNdx];
 
 	m_threads.clear();
-	m_eglTestCtx.getLibrary().terminate(m_eglDisplay);
+
+	if (m_eglDisplay != EGL_NO_DISPLAY)
+	{
+		m_eglTestCtx.getLibrary().terminate(m_eglDisplay);
+		m_eglDisplay = EGL_NO_DISPLAY;
+	}
 
 	TCU_CHECK(!m_requiresRestart);
 }

@@ -87,8 +87,11 @@ void SimpleConfigCase::init (void)
 
 void SimpleConfigCase::deinit (void)
 {
-	m_eglTestCtx.getLibrary().terminate(m_display);
-	m_display = EGL_NO_DISPLAY;
+	if (m_display != EGL_NO_DISPLAY)
+	{
+		m_eglTestCtx.getLibrary().terminate(m_display);
+		m_display = EGL_NO_DISPLAY;
+	}
 	m_configs.clear();
 }
 

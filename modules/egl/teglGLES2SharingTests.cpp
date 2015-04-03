@@ -92,6 +92,8 @@ public:
 
 					GLES2SharingTest	(EglTestContext& eglTestCtx, const char* name , const char* desc, const TestSpec& spec);
 
+	void			init				(void);
+
 	IterateResult	iterate				(void);
 
 private:
@@ -115,6 +117,10 @@ GLES2SharingTest::GLES2SharingTest (EglTestContext& eglTestCtx, const char* name
 	, m_spec	(spec)
 	, m_random	(deStringHash(name))
 	, m_log		(eglTestCtx.getTestContext().getLog())
+{
+}
+
+void GLES2SharingTest::init (void)
 {
 	m_eglTestCtx.initGLFunctions(&m_gl, glu::ApiType::es(2,0));
 }

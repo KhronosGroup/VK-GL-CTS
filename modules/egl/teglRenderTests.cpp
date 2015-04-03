@@ -610,6 +610,8 @@ class SingleThreadRenderCase : public MultiContextRenderCase
 public:
 						SingleThreadRenderCase		(EglTestContext& eglTestCtx, const char* name, const char* description, EGLint api, EGLint surfaceType, const eglu::FilterList& filters, int numContextsPerApi);
 
+	void				init						(void);
+
 private:
 	virtual void		executeForContexts			(EGLDisplay display, EGLSurface surface, const Config& config, const std::vector<std::pair<EGLint, EGLContext> >& contexts);
 
@@ -620,6 +622,10 @@ private:
 
 SingleThreadRenderCase::SingleThreadRenderCase (EglTestContext& eglTestCtx, const char* name, const char* description, EGLint api, EGLint surfaceType, const eglu::FilterList& filters, int numContextsPerApi)
 	: MultiContextRenderCase(eglTestCtx, name, description, api, surfaceType, filters, numContextsPerApi)
+{
+}
+
+void SingleThreadRenderCase::init (void)
 {
 	m_eglTestCtx.initGLFunctions(&m_gl, glu::ApiType::es(2,0));
 }
@@ -734,6 +740,8 @@ class MultiThreadRenderCase : public MultiContextRenderCase
 public:
 						MultiThreadRenderCase		(EglTestContext& eglTestCtx, const char* name, const char* description, EGLint api, EGLint surfaceType, const eglu::FilterList& filters, int numContextsPerApi);
 
+	void				init						(void);
+
 private:
 	virtual void		executeForContexts			(EGLDisplay display, EGLSurface surface, const Config& config, const std::vector<std::pair<EGLint, EGLContext> >& contexts);
 
@@ -809,6 +817,10 @@ private:
 
 MultiThreadRenderCase::MultiThreadRenderCase (EglTestContext& eglTestCtx, const char* name, const char* description, EGLint api, EGLint surfaceType, const eglu::FilterList& filters, int numContextsPerApi)
 	: MultiContextRenderCase(eglTestCtx, name, description, api, surfaceType, filters, numContextsPerApi)
+{
+}
+
+void MultiThreadRenderCase::init (void)
 {
 	m_eglTestCtx.initGLFunctions(&m_gl, glu::ApiType::es(2,0));
 }
