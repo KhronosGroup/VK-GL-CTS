@@ -111,7 +111,7 @@ void drawPrimitives (const glw::Functions& gl, deUint32 program, const deUint32 
 }
 
 template<typename T>
-void clearEdges(const tcu::PixelBufferAccess& access, const T& color, const IVec4& scissorArea)
+void clearEdges (const tcu::PixelBufferAccess& access, const T& color, const IVec4& scissorArea)
 {
 	for (int y = 0; y < access.getHeight(); y++)
 	for (int x = 0; x < access.getWidth(); x++)
@@ -194,6 +194,11 @@ ScissorCase::IterateResult ScissorCase::iterate (void)
 
 	const glw::Functions&		gl				= m_renderCtx.getFunctions();
 	TestLog&					log				= m_testCtx.getLog();
+	const tcu::PixelFormat		renderFormat	= m_renderCtx.getRenderTarget().getPixelFormat();
+	const tcu::Vec4				threshold		= 0.02f * Vec4(1u << de::max(0, 8 - renderFormat.redBits),
+															   1u << de::max(0, 8 - renderFormat.greenBits),
+															   1u << de::max(0, 8 - renderFormat.blueBits),
+															   1u << de::max(0, 8 - renderFormat.alphaBits));
 	const glu::ShaderProgram	shader			(m_renderCtx, genShaders(glu::getContextTypeGLSLVersion(m_renderCtx.getType())));
 
 	const RandomViewport		viewport		(m_renderCtx.getRenderTarget(), 256, 256, deStringHash(getName()));
@@ -268,7 +273,7 @@ ScissorCase::IterateResult ScissorCase::iterate (void)
 	log << TestLog::Message << "Clearing area outside scissor area from reference" << TestLog::EndMessage;
 	clearEdges(refImage.getAccess(), IVec4(32, 64, 128, 255), relScissorArea);
 
-	if (tcu::floatThresholdCompare(log, "ComparisonResult", "Image comparison result", refImage.getAccess(), resImage.getAccess(), Vec4(0.02f, 0.02f, 0.02f, 0.02f), tcu::COMPARE_LOG_RESULT))
+	if (tcu::floatThresholdCompare(log, "ComparisonResult", "Image comparison result", refImage.getAccess(), resImage.getAccess(), threshold, tcu::COMPARE_LOG_RESULT))
 		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
 	else
 		m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Image comparison failed");
