@@ -1051,6 +1051,9 @@ void SampleDepthCase::init (void)
 {
 	TestLog& log = m_testCtx.getLog();
 
+	if (m_context.getRenderTarget().getDepthBits() == 0)
+		TCU_THROW(NotSupportedError, "Test requires depth buffer");
+
 	MultisampleCase::init();
 
 	GLU_CHECK_CALL(glEnable(GL_DEPTH_TEST));
@@ -1096,12 +1099,21 @@ public:
 						SampleStencilCase		(Context& context, const char* name, const char* description, int numFboSamples = 0);
 						~SampleStencilCase		(void) {}
 
+	void				init					(void);
 	IterateResult		iterate					(void);
 };
 
 SampleStencilCase::SampleStencilCase (Context& context, const char* name, const char* description, int numFboSamples)
 	: MultisampleCase (context, name, description, 256, numFboSamples >= 0 ? FboParams(numFboSamples, false, true) : FboParams())
 {
+}
+
+void SampleStencilCase::init (void)
+{
+	if (m_context.getRenderTarget().getStencilBits() == 0)
+		TCU_THROW(NotSupportedError, "Test requires stencil buffer");
+
+	MultisampleCase::init();
 }
 
 SampleStencilCase::IterateResult SampleStencilCase::iterate (void)
