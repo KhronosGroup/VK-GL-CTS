@@ -407,25 +407,93 @@ LMP_MR1_GLES31_PKG			= Package(module = GLES31_MODULE, configurations = [
 
 MNC_GLES3_COMMON_FILTERS	= [exclude("gles3-hw-issues.txt"), exclude("gles3-test-issues.txt")]
 MNC_GLES3_PKG				= Package(module = GLES3_MODULE, configurations = [
+		# Master
 		Configuration(name			= "master",
 					  glconfig		= "rgba8888d24s8ms0",
 					  rotation		= "unspecified",
 					  surfacetype	= "window",
 					  filters		= MNC_GLES3_COMMON_FILTERS),
-		Configuration(name			= "rotate-0",
+		# Rotations
+		Configuration(name			= "rotate-portrait",
 					  glconfig		= "rgba8888d24s8ms0",
 					  rotation		= "0",
 					  surfacetype	= "window",
 					  filters		= MNC_GLES3_COMMON_FILTERS + [include("gles3-rotation.txt")]),
+		Configuration(name			= "rotate-landscape",
+					  glconfig		= "rgba8888d24s8ms0",
+					  rotation		= "90",
+					  surfacetype	= "window",
+					  filters		= MNC_GLES3_COMMON_FILTERS + [include("gles3-rotation.txt")]),
+		Configuration(name			= "rotate-reverse-portrait",
+					  glconfig		= "rgba8888d24s8ms0",
+					  rotation		= "180",
+					  surfacetype	= "window",
+					  filters		= MNC_GLES3_COMMON_FILTERS + [include("gles3-rotation.txt")]),
+		Configuration(name			= "rotate-reverse-landscape",
+					  glconfig		= "rgba8888d24s8ms0",
+					  rotation		= "270",
+					  surfacetype	= "window",
+					  filters		= MNC_GLES3_COMMON_FILTERS + [include("gles3-rotation.txt")]),
+
+		# MSAA
+		Configuration(name			= "multisample",
+					  glconfig		= "rgba8888d24s8ms4",
+					  rotation		= "unspecified",
+					  surfacetype	= "window",
+					  filters		= MNC_GLES3_COMMON_FILTERS + [include("gles3-multisample.txt")]),
+
+		# Pixel format
+		Configuration(name			= "565-no-depth-no-stencil",
+					  glconfig		= "rgb565d0s0ms0",
+					  rotation		= "unspecified",
+					  surfacetype	= "window",
+					  filters		= MNC_GLES3_COMMON_FILTERS + [include("gles3-pixelformat.txt")]),
 	])
 
 MNC_GLES31_COMMON_FILTERS	= [exclude("gles31-hw-issues.txt"), exclude("gles31-test-issues.txt")]
 MNC_GLES31_PKG				= Package(module = GLES31_MODULE, configurations = [
+		# Master
 		Configuration(name			= "master",
 					  glconfig		= "rgba8888d24s8ms0",
 					  rotation		= "unspecified",
 					  surfacetype	= "window",
 					  filters		= MNC_GLES31_COMMON_FILTERS),
+
+		# Rotations
+		Configuration(name			= "rotate-portrait",
+					  glconfig		= "rgba8888d24s8ms0",
+					  rotation		= "0",
+					  surfacetype	= "window",
+					  filters		= MNC_GLES31_COMMON_FILTERS + [include("gles31-rotation.txt")]),
+		Configuration(name			= "rotate-landscape",
+					  glconfig		= "rgba8888d24s8ms0",
+					  rotation		= "90",
+					  surfacetype	= "window",
+					  filters		= MNC_GLES31_COMMON_FILTERS + [include("gles31-rotation.txt")]),
+		Configuration(name			= "rotate-reverse-portrait",
+					  glconfig		= "rgba8888d24s8ms0",
+					  rotation		= "180",
+					  surfacetype	= "window",
+					  filters		= MNC_GLES31_COMMON_FILTERS + [include("gles31-rotation.txt")]),
+		Configuration(name			= "rotate-reverse-landscape",
+					  glconfig		= "rgba8888d24s8ms0",
+					  rotation		= "270",
+					  surfacetype	= "window",
+					  filters		= MNC_GLES31_COMMON_FILTERS + [include("gles31-rotation.txt")]),
+
+		# MSAA
+		Configuration(name			= "multisample",
+					  glconfig		= "rgba8888d24s8ms4",
+					  rotation		= "unspecified",
+					  surfacetype	= "window",
+					  filters		= MNC_GLES31_COMMON_FILTERS + [include("gles31-multisample.txt")]),
+
+		# Pixel format
+		Configuration(name			= "565-no-depth-no-stencil",
+					  glconfig		= "rgb565d0s0ms0",
+					  rotation		= "unspecified",
+					  surfacetype	= "window",
+					  filters		= MNC_GLES31_COMMON_FILTERS + [include("gles31-pixelformat.txt")]),
 	])
 
 MUSTPASS_LISTS				= [
