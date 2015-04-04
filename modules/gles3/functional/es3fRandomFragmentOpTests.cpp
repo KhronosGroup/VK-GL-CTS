@@ -293,6 +293,7 @@ void RandomFragmentOpCase::deinit (void)
 RandomFragmentOpCase::IterateResult RandomFragmentOpCase::iterate (void)
 {
 	const glw::Functions&	gl				= m_context.getRenderContext().getFunctions();
+	const bool				isMSAA			= m_context.getRenderTarget().getNumSamples() > 1;
 	const deUint32			iterSeed		= deUint32Hash(m_seed) ^ deInt32Hash(m_iterNdx) ^ deInt32Hash(m_testCtx.getCommandLine().getBaseSeed());
 	de::Random				rnd				(iterSeed);
 
@@ -368,9 +369,31 @@ RandomFragmentOpCase::IterateResult RandomFragmentOpCase::iterate (void)
 	m_iterNdx += 1;
 
 	// Compare to reference.
-	bool	isLastIter	= m_iterNdx >= NUM_ITERATIONS_PER_CASE;
-	bool	compareOk	= tcu::intThresholdCompare(m_testCtx.getLog(), "CompareResult", "Image Comparison Result", m_refColorBuffer->getAccess(), renderedImg.getAccess(), getCompareThreshold(),
-													 tcu::COMPARE_LOG_RESULT);
+	const bool			isLastIter	= m_iterNdx >= NUM_ITERATIONS_PER_CASE;
+	const tcu::UVec4	threshold	= getCompareThreshold();
+	bool				compareOk;
+
+	if (isMSAA)
+	{
+		// in MSAA cases, the sampling points could be anywhere in the pixel and we could
+		// even have multiple samples that are combined in resolve. Allow arbitrary sample
+		// positions by using bilinearCompare.
+		compareOk = tcu::bilinearCompare(m_testCtx.getLog(),
+										 "CompareResult",
+										 "Image Comparison Result",
+										 m_refColorBuffer->getAccess(),
+										 renderedImg.getAccess(),
+										 tcu::RGBA(threshold.x(), threshold.y(), threshold.z(), threshold.w()),
+										 tcu::COMPARE_LOG_RESULT);
+	}
+	else
+		compareOk = tcu::intThresholdCompare(m_testCtx.getLog(),
+											 "CompareResult",
+											 "Image Comparison Result",
+											 m_refColorBuffer->getAccess(),
+											 renderedImg.getAccess(),
+											 threshold,
+											 tcu::COMPARE_LOG_RESULT);
 
 	m_testCtx.getLog() << TestLog::Message << (compareOk ? "  Passed." : "  FAILED!") << TestLog::EndMessage;
 
