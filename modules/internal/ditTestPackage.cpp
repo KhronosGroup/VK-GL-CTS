@@ -78,8 +78,7 @@ public:
 };
 
 TestPackage::TestPackage (tcu::TestContext& testCtx)
-	: tcu::TestPackage	(testCtx, "dE-IT", "drawElements Internal Tests")
-	, m_archive			(testCtx.getRootArchive(), "internal/")
+	: tcu::TestPackage(testCtx, "dE-IT", "drawElements Internal Tests")
 {
 }
 

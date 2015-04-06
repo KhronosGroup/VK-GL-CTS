@@ -25,7 +25,6 @@
 
 #include "tcuDefs.hpp"
 #include "tcuTestPackage.hpp"
-#include "tcuResource.hpp"
 
 namespace dit
 {
@@ -38,10 +37,6 @@ public:
 
 	virtual void					init					(void);
 	tcu::TestCaseExecutor*			createExecutor			(void) const;
-	tcu::Archive*					getArchive				(void) { return &m_archive; }
-
-private:
-	tcu::ResourcePrefix				m_archive;
 };
 
 } // dit
