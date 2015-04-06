@@ -15924,6 +15924,7 @@ dEQP-GLES31.functional.debug.negative_coverage.get_error.state.get_buffer_parame
 dEQP-GLES31.functional.debug.negative_coverage.get_error.state.get_buffer_parameteri64v
 dEQP-GLES31.functional.debug.negative_coverage.get_error.state.get_buffer_pointerv
 dEQP-GLES31.functional.debug.negative_coverage.get_error.state.get_renderbuffer_parameteriv
+dEQP-GLES31.functional.debug.negative_coverage.get_error.state.get_internalformativ
 dEQP-GLES31.functional.debug.negative_coverage.get_error.state.get_queryiv
 dEQP-GLES31.functional.debug.negative_coverage.get_error.state.get_query_objectuiv
 dEQP-GLES31.functional.debug.negative_coverage.get_error.state.get_synciv

@@ -24,6 +24,7 @@
 #include "es31fNegativeStateApiTests.hpp"
 
 #include "gluCallLogWrapper.hpp"
+#include "gluContextInfo.hpp"
 #include "gluShaderProgram.hpp"
 
 #include "glwDefs.hpp"
@@ -970,8 +971,13 @@ void get_internalformativ (NegativeTestContext& ctx)
 	ctx.endSection();
 
 	ctx.beginSection("GL_INVALID_ENUM is generated if internalformat is not color-, depth-, or stencil-renderable.");
-	ctx.glGetInternalformativ	(GL_RENDERBUFFER, GL_RG8_SNORM, GL_NUM_SAMPLE_COUNTS, 16, &params[0]);
-	ctx.expectError				(GL_INVALID_ENUM);
+
+	if (!ctx.getContextInfo().isExtensionSupported("GL_EXT_render_snorm"))
+	{
+		ctx.glGetInternalformativ	(GL_RENDERBUFFER, GL_RG8_SNORM, GL_NUM_SAMPLE_COUNTS, 16, &params[0]);
+		ctx.expectError				(GL_INVALID_ENUM);
+	}
+
 	ctx.glGetInternalformativ	(GL_RENDERBUFFER, GL_COMPRESSED_RGB8_ETC2, GL_NUM_SAMPLE_COUNTS, 16, &params[0]);
 	ctx.expectError				(GL_INVALID_ENUM);
 	ctx.endSection();
