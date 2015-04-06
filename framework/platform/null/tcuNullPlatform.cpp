@@ -23,16 +23,18 @@
 
 #include "tcuNullPlatform.hpp"
 #include "tcuNullRenderContext.hpp"
+#include "egluNativeDisplay.hpp"
+#include "eglwLibrary.hpp"
 
 namespace tcu
 {
 namespace null
 {
 
-class NullContextFactory : public glu::ContextFactory
+class NullGLContextFactory : public glu::ContextFactory
 {
 public:
-	NullContextFactory (void)
+	NullGLContextFactory (void)
 		: glu::ContextFactory("null", "Null Render Context")
 	{
 	}
@@ -43,9 +45,42 @@ public:
 	}
 };
 
+class NullEGLDisplay : public eglu::NativeDisplay
+{
+public:
+	NullEGLDisplay (void)
+		: eglu::NativeDisplay(CAPABILITY_GET_DISPLAY_LEGACY)
+	{
+		// \note All functions in library are null
+	}
+
+	const eglw::Library& getLibrary (void) const
+	{
+		return m_library;
+	}
+
+private:
+	eglw::FuncPtrLibrary	m_library;
+};
+
+class NullEGLDisplayFactory : public eglu::NativeDisplayFactory
+{
+public:
+	NullEGLDisplayFactory (void)
+		: eglu::NativeDisplayFactory("null", "Null EGL Display", eglu::NativeDisplay::CAPABILITY_GET_DISPLAY_LEGACY)
+	{
+	}
+
+	eglu::NativeDisplay* createDisplay (const eglw::EGLAttrib*) const
+	{
+		return new NullEGLDisplay();
+	}
+};
+
 Platform::Platform (void)
 {
-	m_contextFactoryRegistry.registerFactory(new NullContextFactory());
+	m_contextFactoryRegistry.registerFactory(new NullGLContextFactory());
+	m_nativeDisplayFactoryRegistry.registerFactory(new NullEGLDisplayFactory());
 }
 
 Platform::~Platform (void)

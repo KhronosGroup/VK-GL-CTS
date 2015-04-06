@@ -26,19 +26,21 @@
 #include "tcuDefs.hpp"
 #include "tcuPlatform.hpp"
 #include "gluPlatform.hpp"
+#include "egluPlatform.hpp"
 
 namespace tcu
 {
 namespace null
 {
 
-class Platform : public tcu::Platform, private glu::Platform
+class Platform : public tcu::Platform, private glu::Platform, private eglu::Platform
 {
 public:
 									Platform		(void);
 	virtual							~Platform		(void);
 
 	virtual const glu::Platform&	getGLPlatform	(void) const { return static_cast<const glu::Platform&>(*this); }
+	virtual const eglu::Platform&	getEGLPlatform	(void) const { return static_cast<const eglu::Platform&>(*this); }
 };
 
 } // null
