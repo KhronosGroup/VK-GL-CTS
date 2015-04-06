@@ -405,7 +405,7 @@ LMP_MR1_GLES31_PKG			= Package(module = GLES31_MODULE, configurations = [
 					  filters		= [include("es31-lmp-mr1.txt")]),
 	])
 
-MNC_GLES3_COMMON_FILTERS	= [exclude("gles3-hw-issues.txt"), exclude("gles3-test-issues.txt")]
+MNC_GLES3_COMMON_FILTERS	= [include("gles3-master.txt"), exclude("gles3-hw-issues.txt"), exclude("gles3-test-issues.txt")]
 MNC_GLES3_PKG				= Package(module = GLES3_MODULE, configurations = [
 		# Master
 		Configuration(name			= "master",
@@ -450,7 +450,7 @@ MNC_GLES3_PKG				= Package(module = GLES3_MODULE, configurations = [
 					  filters		= MNC_GLES3_COMMON_FILTERS + [include("gles3-pixelformat.txt")]),
 	])
 
-MNC_GLES31_COMMON_FILTERS	= [exclude("gles31-hw-issues.txt"), exclude("gles31-test-issues.txt")]
+MNC_GLES31_COMMON_FILTERS	= [include("gles31-master.txt"), exclude("gles31-hw-issues.txt"), exclude("gles31-test-issues.txt")]
 MNC_GLES31_PKG				= Package(module = GLES31_MODULE, configurations = [
 		# Master
 		Configuration(name			= "master",
