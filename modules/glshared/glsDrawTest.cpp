@@ -3067,6 +3067,52 @@ DrawTestSpec::CompatibilityTestType DrawTestSpec::isCompatibilityTest (void) con
 		return COMPATIBILITY_NONE;
 }
 
+enum PrimitiveClass
+{
+	PRIMITIVECLASS_POINT = 0,
+	PRIMITIVECLASS_LINE,
+	PRIMITIVECLASS_TRIANGLE,
+
+	PRIMITIVECLASS_LAST
+};
+
+static PrimitiveClass getDrawPrimitiveClass (gls::DrawTestSpec::Primitive primitiveType)
+{
+	switch (primitiveType)
+	{
+		case gls::DrawTestSpec::PRIMITIVE_POINTS:
+			return PRIMITIVECLASS_POINT;
+
+		case gls::DrawTestSpec::PRIMITIVE_LINES:
+		case gls::DrawTestSpec::PRIMITIVE_LINE_STRIP:
+		case gls::DrawTestSpec::PRIMITIVE_LINE_LOOP:
+		case gls::DrawTestSpec::PRIMITIVE_LINES_ADJACENCY:
+		case gls::DrawTestSpec::PRIMITIVE_LINE_STRIP_ADJACENCY:
+			return PRIMITIVECLASS_LINE;
+
+		case gls::DrawTestSpec::PRIMITIVE_TRIANGLES:
+		case gls::DrawTestSpec::PRIMITIVE_TRIANGLE_FAN:
+		case gls::DrawTestSpec::PRIMITIVE_TRIANGLE_STRIP:
+		case gls::DrawTestSpec::PRIMITIVE_TRIANGLES_ADJACENCY:
+		case gls::DrawTestSpec::PRIMITIVE_TRIANGLE_STRIP_ADJACENCY:
+			return PRIMITIVECLASS_TRIANGLE;
+
+		default:
+			DE_ASSERT(false);
+			return PRIMITIVECLASS_LAST;
+	}
+}
+
+static bool containsLineCases (const std::vector<DrawTestSpec>& m_specs)
+{
+	for (int ndx = 0; ndx < (int)m_specs.size(); ++ndx)
+	{
+		if (getDrawPrimitiveClass(m_specs[ndx].primitive) == PRIMITIVECLASS_LINE)
+			return true;
+	}
+	return false;
+}
+
 // DrawTest
 
 DrawTest::DrawTest (tcu::TestContext& testCtx, glu::RenderContext& renderCtx, const DrawTestSpec& spec, const char* name, const char* desc)
@@ -3136,8 +3182,17 @@ void DrawTest::addIteration (const DrawTestSpec& spec, const char* description)
 
 void DrawTest::init (void)
 {
+	DE_ASSERT(!m_specs.empty());
+	DE_ASSERT(contextSupports(m_renderCtx.getType(), m_specs[0].apiType));
+
 	const int						renderTargetWidth	= de::min(MAX_RENDER_TARGET_SIZE, m_renderCtx.getRenderTarget().getWidth());
 	const int						renderTargetHeight	= de::min(MAX_RENDER_TARGET_SIZE, m_renderCtx.getRenderTarget().getHeight());
+
+	// lines have significantly different rasterization in MSAA mode
+	const bool						isLineCase			= containsLineCases(m_specs);
+	const bool						isMSAACase			= m_renderCtx.getRenderTarget().getNumSamples() > 1;
+	const int						renderTargetSamples	= (isMSAACase && isLineCase) ? (4) : (1);
+
 	sglr::ReferenceContextLimits	limits				(m_renderCtx);
 	bool							useVao				= false;
 
@@ -3150,10 +3205,7 @@ void DrawTest::init (void)
 	else
 		DE_ASSERT(!"Unknown context type");
 
-	DE_ASSERT(!m_specs.empty());
-	DE_ASSERT(contextSupports(m_renderCtx.getType(), m_specs[0].apiType));
-
-	m_refBuffers	= new sglr::ReferenceContextBuffers(m_renderCtx.getRenderTarget().getPixelFormat(), 0, 0, renderTargetWidth, renderTargetHeight);
+	m_refBuffers	= new sglr::ReferenceContextBuffers(m_renderCtx.getRenderTarget().getPixelFormat(), 0, 0, renderTargetWidth, renderTargetHeight, renderTargetSamples);
 	m_refContext	= new sglr::ReferenceContext(limits, m_refBuffers->getColorbuffer(), m_refBuffers->getDepthbuffer(), m_refBuffers->getStencilbuffer());
 
 	m_glArrayPack	= new AttributePack(m_testCtx, m_renderCtx, *m_glesContext, tcu::UVec2(renderTargetWidth, renderTargetHeight), useVao, true);
@@ -3354,42 +3406,6 @@ DrawTest::IterateResult DrawTest::iterate (void)
 
 	m_iteration++;
 	return iterateResult;
-}
-
-enum PrimitiveClass
-{
-	PRIMITIVECLASS_POINT = 0,
-	PRIMITIVECLASS_LINE,
-	PRIMITIVECLASS_TRIANGLE,
-
-	PRIMITIVECLASS_LAST
-};
-
-static PrimitiveClass getDrawPrimitiveClass (gls::DrawTestSpec::Primitive primitiveType)
-{
-	switch (primitiveType)
-	{
-		case gls::DrawTestSpec::PRIMITIVE_POINTS:
-			return PRIMITIVECLASS_POINT;
-
-		case gls::DrawTestSpec::PRIMITIVE_LINES:
-		case gls::DrawTestSpec::PRIMITIVE_LINE_STRIP:
-		case gls::DrawTestSpec::PRIMITIVE_LINE_LOOP:
-		case gls::DrawTestSpec::PRIMITIVE_LINES_ADJACENCY:
-		case gls::DrawTestSpec::PRIMITIVE_LINE_STRIP_ADJACENCY:
-			return PRIMITIVECLASS_LINE;
-
-		case gls::DrawTestSpec::PRIMITIVE_TRIANGLES:
-		case gls::DrawTestSpec::PRIMITIVE_TRIANGLE_FAN:
-		case gls::DrawTestSpec::PRIMITIVE_TRIANGLE_STRIP:
-		case gls::DrawTestSpec::PRIMITIVE_TRIANGLES_ADJACENCY:
-		case gls::DrawTestSpec::PRIMITIVE_TRIANGLE_STRIP_ADJACENCY:
-			return PRIMITIVECLASS_TRIANGLE;
-
-		default:
-			DE_ASSERT(false);
-			return PRIMITIVECLASS_LAST;
-	}
 }
 
 static bool isBlack (const tcu::RGBA& c)
@@ -3753,14 +3769,16 @@ bool DrawTest::compare (gls::DrawTestSpec::Primitive primitiveType)
 	}
 	else
 	{
-		const PrimitiveClass primitiveClass = getDrawPrimitiveClass(primitiveType);
+		const PrimitiveClass	primitiveClass							= getDrawPrimitiveClass(primitiveType);
+		const int				maxAllowedInvalidPixelsWithPoints		= 0;	//!< points are unlikely to have overlapping fragments
+		const int				maxAllowedInvalidPixelsWithLines		= 5;	//!< line are allowed to have a few bad pixels
+		const int				maxAllowedInvalidPixelsWithTriangles	= 10;
 
 		switch (primitiveClass)
 		{
 			case PRIMITIVECLASS_POINT:
 			{
 				// Point are extremely unlikely to have overlapping regions, don't allow any no extra / missing pixels
-				const int maxAllowedInvalidPixelsWithPoints = 0;
 				return tcu::intThresholdPositionDeviationErrorThresholdCompare(m_testCtx.getLog(),
 																			   "CompareResult",
 																			   "Result of rendering",
@@ -3779,7 +3797,6 @@ bool DrawTest::compare (gls::DrawTestSpec::Primitive primitiveType)
 				// false negatives in such pixels if for example the pixel in question is overdrawn by another line in the
 				// reference image but not in the resultin image. Relax comparison near line intersection points (areas) and
 				// compare only coverage, not color, in such pixels
-				const int maxAllowedInvalidPixelsWithLines = 5; // line are allowed to have a few bad pixels
 				return intersectionRelaxedLineImageCompare(m_testCtx.getLog(),
 														   "CompareResult",
 														   "Result of rendering",
@@ -3795,7 +3812,6 @@ bool DrawTest::compare (gls::DrawTestSpec::Primitive primitiveType)
 				// where there could be potential overlapping since the  pixels might be covered by one triangle in the
 				// reference image and by the other in the result image. Relax comparsion near primitive edges and
 				// compare only coverage, not color, in such pixels.
-				const int			maxAllowedInvalidPixelsWithTriangles	= 10;
 				const tcu::IVec3	renderTargetThreshold					= m_renderCtx.getRenderTarget().getPixelFormat().getColorThreshold().toIVec().xyz();
 
 				return edgeRelaxedImageCompare(m_testCtx.getLog(),
