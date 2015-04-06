@@ -627,6 +627,7 @@ SingleThreadRenderCase::SingleThreadRenderCase (EglTestContext& eglTestCtx, cons
 
 void SingleThreadRenderCase::init (void)
 {
+	MultiContextRenderCase::init();
 	m_eglTestCtx.initGLFunctions(&m_gl, glu::ApiType::es(2,0));
 }
 
@@ -822,6 +823,7 @@ MultiThreadRenderCase::MultiThreadRenderCase (EglTestContext& eglTestCtx, const 
 
 void MultiThreadRenderCase::init (void)
 {
+	MultiContextRenderCase::init();
 	m_eglTestCtx.initGLFunctions(&m_gl, glu::ApiType::es(2,0));
 }
 
