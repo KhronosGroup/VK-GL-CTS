@@ -81,3 +81,6 @@ dEQP-GLES3.functional.shaders.texture_functions.texturelodoffset.usampler3d_vert
 
 # Bug 20089522
 dEQP-GLES3.functional.fragment_ops.interaction.basic_shader.4
+
+# Bug 20092191
+dEQP-GLES3.functional.fragment_ops.interaction.basic_shader.20
