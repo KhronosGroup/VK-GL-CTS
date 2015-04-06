@@ -1,9 +1,6 @@
 # Bug 20013546
 dEQP-GLES31.functional.debug.negative_coverage.get_error.texture.compressedtexsubimage3d_invalid_buffer_target
 
-# Bug 20005726
-dEQP-GLES31.functional.debug.negative_coverage.get_error.state.get_internalformativ
-
 # Bug 19897810
 dEQP-GLES31.functional.copy_image.*srgb*renderbuffer
 
