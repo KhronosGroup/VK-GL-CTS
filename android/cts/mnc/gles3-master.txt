@@ -28922,7 +28922,6 @@ dEQP-GLES3.functional.fragment_ops.interaction.basic_shader.16
 dEQP-GLES3.functional.fragment_ops.interaction.basic_shader.17
 dEQP-GLES3.functional.fragment_ops.interaction.basic_shader.18
 dEQP-GLES3.functional.fragment_ops.interaction.basic_shader.19
-dEQP-GLES3.functional.fragment_ops.interaction.basic_shader.20
 dEQP-GLES3.functional.fragment_ops.interaction.basic_shader.21
 dEQP-GLES3.functional.fragment_ops.interaction.basic_shader.22
 dEQP-GLES3.functional.fragment_ops.interaction.basic_shader.23
