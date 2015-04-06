@@ -78,3 +78,6 @@ dEQP-GLES3.functional.shaders.random.all_features.fragment.16
 
 # Bug 18093986
 dEQP-GLES3.functional.shaders.texture_functions.texturelodoffset.usampler3d_vertex
+
+# Bug 20089522
+dEQP-GLES3.functional.fragment_ops.interaction.basic_shader.4
