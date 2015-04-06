@@ -305,7 +305,6 @@ public:
 
 	bool isMatch (const SurfaceConfig& config)
 	{
-		bool result = true;
 		for (std::map<EGLenum, AttribRule>::const_iterator iter = m_rules.begin(); iter != m_rules.end(); iter++)
 		{
 			const AttribRule rule = iter->second;
@@ -322,14 +321,25 @@ public:
 
 				switch (rule.criteria)
 				{
-					case CRITERIA_EXACT:	result = rule.value == cfgValue;				break;
-					case CRITERIA_AT_LEAST:	result = rule.value <= cfgValue;				break;
-					case CRITERIA_MASK:		result = (rule.value & cfgValue) == rule.value;	break;
-					default:				TCU_FAIL("Unknown criteria");
+					case CRITERIA_EXACT:
+						if (rule.value != cfgValue)
+							return false;
+						break;
+
+					case CRITERIA_AT_LEAST:
+						if (rule.value > cfgValue)
+							return false;
+						break;
+
+					case CRITERIA_MASK:
+						if ((rule.value & cfgValue) != rule.value)
+							return false;
+						break;
+
+					default:
+						TCU_FAIL("Unknown criteria");
 				}
 			}
-
-			if (result == false) return false;
 		}
 
 		return true;
@@ -337,7 +347,14 @@ public:
 
 	bool isColorBitsUnspecified (void)
 	{
-		const EGLenum	bitAttribs[]	= { EGL_RED_SIZE, EGL_GREEN_SIZE, EGL_BLUE_SIZE, EGL_LUMINANCE_SIZE };
+		const EGLenum bitAttribs[] =
+		{
+			EGL_RED_SIZE,
+			EGL_GREEN_SIZE,
+			EGL_BLUE_SIZE,
+			EGL_LUMINANCE_SIZE,
+			EGL_ALPHA_SIZE
+		};
 
 		for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(bitAttribs); ndx++)
 		{
