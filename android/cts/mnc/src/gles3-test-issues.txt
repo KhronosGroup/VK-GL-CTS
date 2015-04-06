@@ -70,6 +70,9 @@ dEQP-GLES3.functional.shaders.builtin_functions.precision.atan.mediump_fragment.
 dEQP-GLES3.functional.shaders.builtin_functions.precision.atan.mediump_fragment.vec3
 dEQP-GLES3.functional.shaders.builtin_functions.precision.atan.mediump_fragment.vec4
 
+# Bug 19408572
+dEQP-GLES3.functional.shaders.builtin_functions.precision.reflect.*
+
 # Bug 18323060
 dEQP-GLES3.functional.shaders.random.all_features.fragment.16
 
