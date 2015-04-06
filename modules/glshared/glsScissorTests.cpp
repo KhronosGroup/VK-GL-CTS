@@ -195,10 +195,10 @@ ScissorCase::IterateResult ScissorCase::iterate (void)
 	const glw::Functions&		gl				= m_renderCtx.getFunctions();
 	TestLog&					log				= m_testCtx.getLog();
 	const tcu::PixelFormat		renderFormat	= m_renderCtx.getRenderTarget().getPixelFormat();
-	const tcu::Vec4				threshold		= 0.02f * Vec4(1u << de::max(0, 8 - renderFormat.redBits),
-															   1u << de::max(0, 8 - renderFormat.greenBits),
-															   1u << de::max(0, 8 - renderFormat.blueBits),
-															   1u << de::max(0, 8 - renderFormat.alphaBits));
+	const tcu::Vec4				threshold		= 0.02f * UVec4(1u << de::max(0, 8 - renderFormat.redBits),
+																1u << de::max(0, 8 - renderFormat.greenBits),
+																1u << de::max(0, 8 - renderFormat.blueBits),
+																1u << de::max(0, 8 - renderFormat.alphaBits)).asFloat();
 	const glu::ShaderProgram	shader			(m_renderCtx, genShaders(glu::getContextTypeGLSLVersion(m_renderCtx.getType())));
 
 	const RandomViewport		viewport		(m_renderCtx.getRenderTarget(), 256, 256, deStringHash(getName()));
