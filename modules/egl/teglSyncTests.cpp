@@ -111,7 +111,6 @@ SyncTest::SyncTest (EglTestContext& eglTestCtx, EGLenum syncType, Extension exte
 	, m_eglContext		(EGL_NO_CONTEXT)
 	, m_sync			(EGL_NO_SYNC_KHR)
 {
-	m_eglTestCtx.initGLFunctions(&m_gl, glu::ApiType::es(2,0));
 }
 
 SyncTest::~SyncTest (void)
@@ -202,6 +201,8 @@ void SyncTest::init (void)
 
 	m_eglDisplay	= eglu::getAndInitDisplay(m_eglTestCtx.getNativeDisplay());
 	m_eglConfig 	= eglu::chooseSingleConfig(egl, m_eglDisplay, displayAttribList);
+
+	m_eglTestCtx.initGLFunctions(&m_gl, glu::ApiType::es(2,0));
 
 	{
 		const Extension syncTypeExtension = getSyncTypeExtension(m_syncType);

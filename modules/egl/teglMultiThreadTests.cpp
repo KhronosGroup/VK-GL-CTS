@@ -286,8 +286,11 @@ void MultiThreadedTest::init (void)
 
 void MultiThreadedTest::deinit (void)
 {
-	m_eglTestCtx.getLibrary().terminate(m_display);
-	m_display = EGL_NO_DISPLAY;
+	if (m_display != EGL_NO_DISPLAY)
+	{
+		m_eglTestCtx.getLibrary().terminate(m_display);
+		m_display = EGL_NO_DISPLAY;
+	}
 }
 
 void MultiThreadedTest::barrier (TestThread& thread)
