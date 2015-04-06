@@ -373,6 +373,51 @@ static int findShaderInputIndex (const vector<rsg::ShaderInput*>& vars, const ch
 	throw tcu::InternalError(string(name) + " not found in shader inputs");
 }
 
+static float getWellBehavingChannelColor (float v, int numBits)
+{
+	DE_ASSERT(de::inRange(numBits, 0, 32));
+
+	// clear color may not be accurately representable in the target format. If the clear color is
+	// on a representable value mapping range border, it could be rounded differently by the GL and in
+	// SGLR adding an unexpected error source. However, selecting an accurately representable background
+	// color would effectively disable dithering. To allow dithering and to prevent undefined rounding
+	// direction from affecting results, round accurate color to target color format with 8 sub-units
+	// (3 bits). If the selected sub-unit value is 3 or 4 (bordering 0.5), replace it with 2 and 5,
+	// respectively.
+
+	if (numBits == 0 || v <= 0.0f || v >= 1.0f)
+	{
+		// already accurately representable
+		return v;
+	}
+	else
+	{
+		const deUint64 numSubBits		= 3;
+		const deUint64 subUnitBorderLo	= (1u << (numSubBits - 1u)) - 1u;
+		const deUint64 subUnitBorderHi	= 1u << (numSubBits - 1u);
+		const deUint64 maxFixedValue	= (1u << (numBits + numSubBits)) - 1u;
+		const deUint64 fixedValue		= deRoundFloatToInt64(v * maxFixedValue);
+
+		const deUint64 units			= fixedValue >> numSubBits;
+		const deUint64 subUnits			= fixedValue & ((1u << numSubBits) - 1u);
+
+		const deUint64 tweakedSubUnits	= (subUnits == subUnitBorderLo) ? (subUnitBorderLo - 1)
+										: (subUnits == subUnitBorderHi) ? (subUnitBorderHi + 1)
+										: (subUnits);
+		const deUint64 tweakedValue		= (units << numSubBits) | (tweakedSubUnits);
+
+		return float(tweakedValue) / float(maxFixedValue);
+	}
+}
+
+static tcu::Vec4 getWellBehavingColor (const tcu::Vec4& accurateColor, const tcu::PixelFormat& format)
+{
+	return tcu::Vec4(getWellBehavingChannelColor(accurateColor[0], format.redBits),
+					 getWellBehavingChannelColor(accurateColor[1], format.greenBits),
+					 getWellBehavingChannelColor(accurateColor[2], format.blueBits),
+					 getWellBehavingChannelColor(accurateColor[3], format.alphaBits));
+}
+
 } // anonymous
 
 struct FragOpInteractionCase::ReferenceContext
@@ -525,11 +570,14 @@ FragOpInteractionCase::IterateResult FragOpInteractionCase::iterate (void)
 		renderCmds[cmdNdx].depth += 0.0231725f * float(cmdNdx);
 
 	{
-		const glu::VertexArrayPointer		posPtr			= getEntryWithPointer(vertexData, positionNdx).pointer;
+		const glu::VertexArrayPointer		posPtr				= getEntryWithPointer(vertexData, positionNdx).pointer;
 
-		sglr::Context* const				contexts[]		= { m_glCtx, &m_referenceCtx->context };
-		const deUint32						programs[]		= { m_glProgram, m_refProgram };
-		tcu::PixelBufferAccess				readDst[]		= { rendered.getAccess(), reference.getAccess() };
+		sglr::Context* const				contexts[]			= { m_glCtx, &m_referenceCtx->context };
+		const deUint32						programs[]			= { m_glProgram, m_refProgram };
+		tcu::PixelBufferAccess				readDst[]			= { rendered.getAccess(), reference.getAccess() };
+
+		const tcu::Vec4						accurateClearColor	= tcu::Vec4(0.0f, 0.25f, 0.5f, 1.0f);
+		const tcu::Vec4						clearColor			= getWellBehavingColor(accurateClearColor, m_renderCtx.getRenderTarget().getPixelFormat());
 
 		for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(contexts); ndx++)
 		{
@@ -542,7 +590,7 @@ FragOpInteractionCase::IterateResult FragOpInteractionCase::iterate (void)
 			ctx.colorMask	(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 			ctx.depthMask	(GL_TRUE);
 			ctx.stencilMask	(~0u);
-			ctx.clearColor	(0.0f, 0.25f, 0.5f, 1.0f);
+			ctx.clearColor	(clearColor.x(), clearColor.y(), clearColor.z(), clearColor.w());
 			ctx.clear		(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
 
 			ctx.useProgram	(program);
