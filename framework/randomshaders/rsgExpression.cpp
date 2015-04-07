@@ -523,6 +523,7 @@ inline DstType convert (SrcType src)
 // According to GLSL ES spec.
 template <> inline bool		convert<float, bool>	(float src)	{ return src != 0.0f;					}
 template <> inline bool		convert<int, bool>		(int src)	{ return src != 0;						}
+template <> inline bool		convert<bool, bool>		(bool src)	{ return src;							}
 template <> inline float	convert<bool, float>	(bool src)	{ return src ? 1.0f : 0.0f;				}
 template <> inline int		convert<bool, int>		(bool src)	{ return src ? 1 : 0;					}
 
