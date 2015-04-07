@@ -62,7 +62,7 @@ TestSessionExecutor::~TestSessionExecutor (void)
 
 bool TestSessionExecutor::iterate (void)
 {
-	for (;;)
+	while (!m_abortSession)
 	{
 		switch (m_state)
 		{
@@ -144,7 +144,6 @@ bool TestSessionExecutor::iterate (void)
 		}
 	}
 
-	DE_ASSERT(false);
 	return false;
 }
 
