@@ -2754,26 +2754,27 @@ void NegativeTextureApiTests::init (void)
 		{
 			deUint32					buf;
 			deUint32					texture;
-			std::vector<GLubyte>		data(512);
+			GLsizei						bufferSize = etc2EacDataSize(4, 4);
+			std::vector<GLubyte>		data(bufferSize);
 
 			glGenTextures				(1, &texture);
 			glBindTexture				(GL_TEXTURE_2D_ARRAY, texture);
 			glCompressedTexImage3D		(GL_TEXTURE_2D_ARRAY, 0, GL_COMPRESSED_RGBA8_ETC2_EAC, 16, 16, 1, 0, etc2EacDataSize(16, 16), 0);
 			glGenBuffers				(1, &buf);
 			glBindBuffer				(GL_PIXEL_UNPACK_BUFFER, buf);
-			glBufferData				(GL_PIXEL_UNPACK_BUFFER, 512, &data[0], GL_DYNAMIC_COPY);
+			glBufferData				(GL_PIXEL_UNPACK_BUFFER, bufferSize, &data[0], GL_DYNAMIC_COPY);
 			expectError					(GL_NO_ERROR);
 
 			m_log << TestLog::Section("", "GL_INVALID_OPERATION is generated if a non-zero buffer object name is bound to the GL_PIXEL_UNPACK_BUFFER target and...");
 			m_log << TestLog::Section("", "...the buffer object's data store is currently mapped.");
-			glMapBufferRange			(GL_PIXEL_UNPACK_BUFFER, 0, 512, GL_MAP_WRITE_BIT);
+			glMapBufferRange			(GL_PIXEL_UNPACK_BUFFER, 0, bufferSize, GL_MAP_WRITE_BIT);
 			glCompressedTexSubImage3D	(GL_TEXTURE_2D_ARRAY, 0, 0, 0, 0, 4, 4, 1, GL_COMPRESSED_RGBA8_ETC2_EAC, etc2EacDataSize(4, 4), 0);
 			expectError					(GL_INVALID_OPERATION);
 			glUnmapBuffer				(GL_PIXEL_UNPACK_BUFFER);
 			m_log << TestLog::EndSection;
 
 			m_log << TestLog::Section("", "...the data would be unpacked from the buffer object such that the memory reads required would exceed the data store size.");
-			glCompressedTexSubImage3D	(GL_TEXTURE_2D_ARRAY, 0, 0, 0, 0, 32, 32, 1, GL_COMPRESSED_RGBA8_ETC2_EAC, etc2EacDataSize(32, 32), 0);
+			glCompressedTexSubImage3D	(GL_TEXTURE_2D_ARRAY, 0, 0, 0, 0, 16, 16, 1, GL_COMPRESSED_RGBA8_ETC2_EAC, etc2EacDataSize(16, 16), 0);
 			expectError					(GL_INVALID_OPERATION);
 			m_log << TestLog::EndSection;
 			m_log << TestLog::EndSection;

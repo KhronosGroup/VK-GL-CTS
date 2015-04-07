@@ -2813,28 +2813,29 @@ void compressedtexsubimage3d_invalid_size (NegativeTestContext& ctx)
 
 void compressedtexsubimage3d_invalid_buffer_target (NegativeTestContext& ctx)
 {
-	deUint32					buf = 0x1234;
-	deUint32					texture = 0x1234;
-	std::vector<GLubyte>		data(512);
+	deUint32						buf = 0x1234;
+	deUint32						texture = 0x1234;
+	GLsizei							bufferSize =  etc2EacDataSize(4, 4);
+	std::vector<GLubyte>			data(bufferSize);
 
 	ctx.glGenTextures				(1, &texture);
 	ctx.glBindTexture				(GL_TEXTURE_2D_ARRAY, texture);
 	ctx.glCompressedTexImage3D		(GL_TEXTURE_2D_ARRAY, 0, GL_COMPRESSED_RGBA8_ETC2_EAC, 16, 16, 1, 0, etc2EacDataSize(16, 16), 0);
 	ctx.glGenBuffers				(1, &buf);
 	ctx.glBindBuffer				(GL_PIXEL_UNPACK_BUFFER, buf);
-	ctx.glBufferData				(GL_PIXEL_UNPACK_BUFFER, 512, &data[0], GL_DYNAMIC_COPY);
+	ctx.glBufferData				(GL_PIXEL_UNPACK_BUFFER, bufferSize, &data[0], GL_DYNAMIC_COPY);
 	ctx.expectError					(GL_NO_ERROR);
 
 	ctx.beginSection("GL_INVALID_OPERATION is generated if a non-zero buffer object name is bound to the GL_PIXEL_UNPACK_BUFFER target and...");
 	ctx.beginSection("...the buffer object's data store is currently mapped.");
-	ctx.glMapBufferRange			(GL_PIXEL_UNPACK_BUFFER, 0, 512, GL_MAP_WRITE_BIT);
+	ctx.glMapBufferRange			(GL_PIXEL_UNPACK_BUFFER, 0, bufferSize, GL_MAP_WRITE_BIT);
 	ctx.glCompressedTexSubImage3D	(GL_TEXTURE_2D_ARRAY, 0, 0, 0, 0, 4, 4, 1, GL_COMPRESSED_RGBA8_ETC2_EAC, etc2EacDataSize(4, 4), 0);
 	ctx.expectError					(GL_INVALID_OPERATION);
 	ctx.glUnmapBuffer				(GL_PIXEL_UNPACK_BUFFER);
 	ctx.endSection();
 
 	ctx.beginSection("...the data would be unpacked from the buffer object such that the memory reads required would exceed the data store size.");
-	ctx.glCompressedTexSubImage3D	(GL_TEXTURE_2D_ARRAY, 0, 0, 0, 0, 32, 32, 1, GL_COMPRESSED_RGBA8_ETC2_EAC, etc2EacDataSize(32, 32), 0);
+	ctx.glCompressedTexSubImage3D	(GL_TEXTURE_2D_ARRAY, 0, 0, 0, 0, 16, 16, 1, GL_COMPRESSED_RGBA8_ETC2_EAC, etc2EacDataSize(16, 16), 0);
 	ctx.expectError					(GL_INVALID_OPERATION);
 	ctx.endSection();
 	ctx.endSection();

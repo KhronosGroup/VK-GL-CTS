@@ -15769,6 +15769,7 @@ dEQP-GLES31.functional.debug.negative_coverage.get_error.texture.compressedtexsu
 dEQP-GLES31.functional.debug.negative_coverage.get_error.texture.compressedtexsubimage3d_invalid_offset
 dEQP-GLES31.functional.debug.negative_coverage.get_error.texture.compressedtexsubimage3d_neg_width_height_depth
 dEQP-GLES31.functional.debug.negative_coverage.get_error.texture.compressedtexsubimage3d_invalid_size
+dEQP-GLES31.functional.debug.negative_coverage.get_error.texture.compressedtexsubimage3d_invalid_buffer_target
 dEQP-GLES31.functional.debug.negative_coverage.get_error.texture.texstorage2d
 dEQP-GLES31.functional.debug.negative_coverage.get_error.texture.texstorage2d_invalid_binding
 dEQP-GLES31.functional.debug.negative_coverage.get_error.texture.texstorage2d_invalid_levels
