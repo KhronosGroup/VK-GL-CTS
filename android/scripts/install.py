@@ -24,6 +24,7 @@ import sys
 import os
 import time
 import string
+import argparse
 
 import common
 
@@ -51,31 +52,49 @@ def installToDevice (device, printPrefix=""):
 
 	install(['-s', device.serial], printPrefix)
 
-def installToAllDevices (doParallel):
-	devices = common.getDevices(common.ADB_BIN)
+def installToDevices (devices, doParallel):
 	padLen = max([len(device.model) for device in devices])+1
 	if doParallel:
 		common.parallelApply(installToDevice, [(device, ("(%s):%s" % (device.model, ' ' * (padLen - len(device.model))))) for device in devices]);
 	else:
 		common.serialApply(installToDevice, [(device, ) for device in devices]);
 
-if __name__ == "__main__":
-	if len(sys.argv) > 1:
-		if sys.argv[1] == '-a':
-			doParallel = '-p' in sys.argv[1:]
-			installToAllDevices(doParallel)
-		else:
-			install(sys.argv[1:])
-	else:
-		devices = common.getDevices(common.ADB_BIN)
-		if len(devices) == 0:
-			common.die('No devices connected')
-		elif len(devices) == 1:
-			installToDevice(devices[0])
-		else:
-			print "More than one device connected:"
-			for i in range(0, len(devices)):
-				print "%3d: %16s %s" % ((i+1), devices[i].serial, devices[i].model)
+def installToAllDevices (doParallel):
+	devices = common.getDevices(common.ADB_BIN)
+	installToDevices(devices, doParallel)
 
-			deviceNdx = int(raw_input("Choose device (1-%d): " % len(devices)))
-			installToDevice(devices[deviceNdx-1])
+if __name__ == "__main__":
+	parser = argparse.ArgumentParser()
+	parser.add_argument('-p', '--parallel', dest='doParallel', action="store_true", help="Install package in parallel.")
+	parser.add_argument('-s', '--serial', dest='serial', type=str, nargs='+', help="Install package to device with serial number.")
+	parser.add_argument('-a', '--all', dest='all', action="store_true", help="Install to all devices.")
+
+	args = parser.parse_args()
+
+	if args.all:
+		installToAllDevices(args.doParallel)
+	else:
+		if args.serial == None:
+			devices = common.getDevices(common.ADB_BIN)
+			if len(devices) == 0:
+				common.die('No devices connected')
+			elif len(devices) == 1:
+				installToDevice(devices[0])
+			else:
+				print "More than one device connected:"
+				for i in range(0, len(devices)):
+					print "%3d: %16s %s" % ((i+1), devices[i].serial, devices[i].model)
+
+				deviceNdx = int(raw_input("Choose device (1-%d): " % len(devices)))
+				installToDevice(devices[deviceNdx-1])
+		else:
+			devices = common.getDevices(common.ADB_BIN)
+
+			devices = [dev for dev in devices if dev.serial in args.serial]
+			devSerials = [dev.serial for dev in devices]
+			notFounds = [serial for serial in args.serial if not serial in devSerials]
+
+			for notFound in notFounds:
+				print("Couldn't find device matching serial '%s'" % notFound)
+
+			installToDevices(devices, args.doParallel)
