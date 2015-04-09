@@ -53,12 +53,16 @@ typedef struct deThreadAttributes_s
 	deThreadPriority		priority;
 } deThreadAttributes;
 
-void			deSleep					(deUint32 milliseconds);
-void			deYield					(void);
+void			deSleep							(deUint32 milliseconds);
+void			deYield							(void);
 
-deThread		deThread_create			(deThreadFunc func, void* arg, const deThreadAttributes* attributes);
-deBool			deThread_join			(deThread thread);
-void			deThread_destroy		(deThread thread);
+deThread		deThread_create					(deThreadFunc func, void* arg, const deThreadAttributes* attributes);
+deBool			deThread_join					(deThread thread);
+void			deThread_destroy				(deThread thread);
+
+deUint32		deGetNumTotalPhysicalCores		(void);
+deUint32		deGetNumTotalLogicalCores		(void);
+deUint32		deGetNumAvailableLogicalCores	(void);
 
 DE_END_EXTERN_C
 

@@ -37,8 +37,14 @@ if (DE_OS_IS_WIN32 OR DE_OS_IS_WINCE)
 		win32/deThreadLocalWin32.c
 		)
 
-elseif (DE_OS_IS_UNIX OR DE_OS_IS_ANDROID OR DE_OS_IS_SYMBIAN)
-	add_definitions(-D_XOPEN_SOURCE=600)
+elseif (DE_OS_IS_UNIX OR DE_OS_IS_ANDROID)
+	if (DE_OS_IS_UNIX)
+		add_definitions(-D_GNU_SOURCE)
+		set(DETHREAD_LIBS ${DETHREAD_LIBS} pthread)
+	else ()
+		add_definitions(-D_XOPEN_SOURCE=600)
+	endif ()
+
 	set(DETHREAD_SRCS
 		${DETHREAD_SRCS}
 		unix/deMutexUnix.c
@@ -46,13 +52,6 @@ elseif (DE_OS_IS_UNIX OR DE_OS_IS_ANDROID OR DE_OS_IS_SYMBIAN)
 		unix/deThreadUnix.c
 		unix/deThreadLocalUnix.c
 		)
-
-	if (DE_OS_IS_UNIX)
-		set(DETHREAD_LIBS ${DETHREAD_LIBS} pthread)
-	elseif (DE_OS_IS_SYMBIAN)
-		find_file(PTHREAD_LIB libpthread.dso PATHS ${SYMBIAN_LIB_DIR} NO_CMAKE_FIND_ROOT_PATH)
-		set(DETHREAD_LIBS ${DETHREAD_LIBS} ${PTHREAD_LIB})
-    endif ()
 
 elseif (DE_OS_IS_OSX OR DE_OS_IS_IOS)
 	add_definitions(-D_XOPEN_SOURCE=600)

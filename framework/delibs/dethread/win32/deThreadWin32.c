@@ -26,6 +26,7 @@
 #if (DE_OS == DE_OS_WIN32 || DE_OS == DE_OS_WINCE)
 
 #include "deMemory.h"
+#include "deInt32.h"
 
 #define VC_EXTRALEAN
 #define WIN32_LEAN_AND_MEAN
@@ -113,6 +114,106 @@ void deSleep (deUint32 milliseconds)
 void deYield (void)
 {
 	SwitchToThread();
+}
+
+static SYSTEM_LOGICAL_PROCESSOR_INFORMATION* getWin32ProcessorInfo (deUint32* numBytes)
+{
+	deUint32								curSize	= (deUint32)sizeof(PSYSTEM_LOGICAL_PROCESSOR_INFORMATION)*8;
+	SYSTEM_LOGICAL_PROCESSOR_INFORMATION*	info	= (SYSTEM_LOGICAL_PROCESSOR_INFORMATION*)deMalloc(curSize);
+
+	for (;;)
+	{
+		DWORD	inOutLen	= curSize;
+		DWORD	err;
+
+		if (GetLogicalProcessorInformation(info, &inOutLen))
+		{
+			*numBytes = inOutLen;
+			return info;
+		}
+		else
+		{
+			err = GetLastError();
+
+			if (err == ERROR_INSUFFICIENT_BUFFER)
+			{
+				curSize <<= 1;
+				info = deRealloc(info, curSize);
+			}
+			else
+			{
+				deFree(info);
+				return DE_NULL;
+			}
+		}
+	}
+}
+
+typedef struct ProcessorInfo_s
+{
+	deUint32	numPhysicalCores;
+	deUint32	numLogicalCores;
+} ProcessorInfo;
+
+void parseWin32ProcessorInfo (ProcessorInfo* dst, const SYSTEM_LOGICAL_PROCESSOR_INFORMATION* src, deUint32 numBytes)
+{
+	const SYSTEM_LOGICAL_PROCESSOR_INFORMATION*	cur		= src;
+
+	deMemset(dst, 0, sizeof(ProcessorInfo));
+
+	while (((const deUint8*)cur - (const deUint8*)src) + sizeof(SYSTEM_LOGICAL_PROCESSOR_INFORMATION) <= numBytes)
+	{
+		if (cur->Relationship == RelationProcessorCore)
+		{
+			dst->numPhysicalCores	+= 1;
+#if (DE_PTR_SIZE == 8)
+			dst->numLogicalCores	+= dePop64(cur->ProcessorMask);
+#else
+			dst->numLogicalCores	+= dePop32(cur->ProcessorMask);
+#endif
+		}
+
+		cur++;
+	}
+}
+
+deBool getProcessorInfo (ProcessorInfo* info)
+{
+	deUint32								numBytes	= 0;
+	SYSTEM_LOGICAL_PROCESSOR_INFORMATION*	rawInfo		= getWin32ProcessorInfo(&numBytes);
+
+	if (!numBytes)
+		return DE_FALSE;
+
+	parseWin32ProcessorInfo(info, rawInfo, numBytes);
+	deFree(rawInfo);
+
+	return DE_TRUE;
+}
+
+deUint32 deGetNumTotalPhysicalCores (void)
+{
+	ProcessorInfo	info;
+
+	if (!getProcessorInfo(&info))
+		return 1u;
+
+	return info.numPhysicalCores;
+}
+
+deUint32 deGetNumTotalLogicalCores (void)
+{
+	ProcessorInfo	info;
+
+	if (!getProcessorInfo(&info))
+		return 1u;
+
+	return info.numLogicalCores;
+}
+
+deUint32 deGetNumAvailableLogicalCores (void)
+{
+	return deGetNumTotalLogicalCores();
 }
 
 #endif /* DE_OS */

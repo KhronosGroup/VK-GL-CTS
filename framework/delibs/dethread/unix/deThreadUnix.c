@@ -28,7 +28,7 @@
 #include "deMemory.h"
 
 #if !defined(_XOPEN_SOURCE) || (_XOPEN_SOURCE < 500)
-#	error You are using too old posix API!
+#	error "You are using too old posix API!"
 #endif
 
 #include <unistd.h>
@@ -145,6 +145,40 @@ void deSleep (deUint32 milliseconds)
 void deYield (void)
 {
 	sched_yield();
+}
+
+#if (DE_OS == DE_OS_UNIX) && defined(_GNU_SOURCE)
+
+deUint32 deGetNumAvailableLogicalCores (void)
+{
+	cpu_set_t	cpuSet;
+
+	CPU_ZERO(&cpuSet);
+
+	if (sched_getaffinity(0, sizeof(cpuSet), &cpuSet) != 0)
+		return 1;
+
+	return (deUint32)(CPU_COUNT(&cpuSet));
+}
+
+#else
+
+deUint32 deGetNumAvailableLogicalCores (void)
+{
+	return (deUint32)sysconf(_SC_NPROCESSORS_ONLN);
+}
+
+#endif
+
+deUint32 deGetNumTotalLogicalCores (void)
+{
+	return (deUint32)sysconf(_SC_NPROCESSORS_CONF);
+}
+
+deUint32 deGetNumTotalPhysicalCores (void)
+{
+	/* \todo [2015-04-09 pyry] Parse /proc/cpuinfo perhaps? */
+	return deGetNumTotalLogicalCores();
 }
 
 #endif /* DE_OS */

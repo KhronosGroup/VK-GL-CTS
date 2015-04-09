@@ -22,6 +22,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "ditDelibsTests.hpp"
+#include "tcuTestLog.hpp"
 
 // depool
 #include "dePoolArray.h"
@@ -34,6 +35,7 @@
 
 // dethread
 #include "deThreadTest.h"
+#include "deThread.h"
 
 // deutil
 #include "deTimerTest.h"
@@ -53,6 +55,8 @@
 
 namespace dit
 {
+
+using tcu::TestLog;
 
 class DepoolTests : public tcu::TestCaseGroup
 {
@@ -74,6 +78,31 @@ public:
 	}
 };
 
+extern "C"
+{
+typedef deUint32	(*GetUint32Func)	(void);
+}
+
+class GetUint32Case : public tcu::TestCase
+{
+public:
+	GetUint32Case (tcu::TestContext& testCtx, const char* name, const char* description, GetUint32Func func)
+		: tcu::TestCase	(testCtx, name, description)
+		, m_func		(func)
+	{
+	}
+
+	IterateResult iterate (void)
+	{
+		m_testCtx.getLog() << TestLog::Message << getDescription() << " returned " << m_func() << TestLog::EndMessage;
+		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+		return STOP;
+	}
+
+private:
+	GetUint32Func	m_func;
+};
+
 class DethreadTests : public tcu::TestCaseGroup
 {
 public:
@@ -84,11 +113,14 @@ public:
 
 	void init (void)
 	{
-		addChild(new SelfCheckCase(m_testCtx, "thread",		"deThread_selfTest()",		deThread_selfTest));
-		addChild(new SelfCheckCase(m_testCtx, "mutex",		"deMutex_selfTest()",		deMutex_selfTest));
-		addChild(new SelfCheckCase(m_testCtx, "semaphore",	"deSemaphore_selfTest()",	deSemaphore_selfTest));
-		addChild(new SelfCheckCase(m_testCtx, "atomic",		"deAtomic_selfTest()",		deAtomic_selfTest));
-		addChild(new SelfCheckCase(m_testCtx, "singleton",	"deSingleton_selfTest()",	deSingleton_selfTest));
+		addChild(new SelfCheckCase(m_testCtx, "thread",						"deThread_selfTest()",				deThread_selfTest));
+		addChild(new SelfCheckCase(m_testCtx, "mutex",						"deMutex_selfTest()",				deMutex_selfTest));
+		addChild(new SelfCheckCase(m_testCtx, "semaphore",					"deSemaphore_selfTest()",			deSemaphore_selfTest));
+		addChild(new SelfCheckCase(m_testCtx, "atomic",						"deAtomic_selfTest()",				deAtomic_selfTest));
+		addChild(new SelfCheckCase(m_testCtx, "singleton",					"deSingleton_selfTest()",			deSingleton_selfTest));
+		addChild(new GetUint32Case(m_testCtx, "total_physical_cores",		"deGetNumTotalPhysicalCores()",		deGetNumTotalPhysicalCores));
+		addChild(new GetUint32Case(m_testCtx, "total_logical_cores",		"deGetNumTotalLogicalCores()",		deGetNumTotalLogicalCores));
+		addChild(new GetUint32Case(m_testCtx, "available_logical_cores",	"deGetNumAvailableLogicalCores()",	deGetNumAvailableLogicalCores));
 	}
 };
 
