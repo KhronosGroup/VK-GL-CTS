@@ -321,7 +321,7 @@ DE_INLINE deUint32 deLog2Clz(deInt32 a)
  * \param a	Input value.
  * \return The number of one bits in the input.
  *//*--------------------------------------------------------------------*/
-DE_INLINE int dePop32 (int a)
+DE_INLINE int dePop32 (deUint32 a)
 {
 	deUint32 mask0 = 0x55555555; /* 1-bit values. */
 	deUint32 mask1 = 0x33333333; /* 2-bit values. */
@@ -335,6 +335,11 @@ DE_INLINE int dePop32 (int a)
 	t = (t & mask3) + ((t>>8) & mask3);
 	t = (t & mask4) + (t>>16);
 	return (int)t;
+}
+
+DE_INLINE int dePop64 (deUint64 a)
+{
+	return dePop32((deUint32)(a & 0xffffffffull)) + dePop32((deUint32)(a >> 32));
 }
 
 /*--------------------------------------------------------------------*//*!
