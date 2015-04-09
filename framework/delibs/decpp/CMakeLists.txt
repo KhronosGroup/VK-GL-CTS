@@ -55,6 +55,8 @@ set(DECPP_SRCS
 	deThreadSafeRingBuffer.hpp
 	deUniquePtr.cpp
 	deUniquePtr.hpp
+	deSpinBarrier.cpp
+	deSpinBarrier.hpp
 	)
 
 add_library(decpp STATIC ${DECPP_SRCS})

@@ -52,6 +52,7 @@
 #include "deCommandLine.hpp"
 #include "deArrayBuffer.hpp"
 #include "deStringUtil.hpp"
+#include "deSpinBarrier.hpp"
 
 namespace dit
 {
@@ -159,6 +160,7 @@ public:
 		addChild(new SelfCheckCase(m_testCtx, "commandline",				"de::cmdline::selfTest()",				de::cmdline::selfTest));
 		addChild(new SelfCheckCase(m_testCtx, "array_buffer",				"de::ArrayBuffer_selfTest()",			de::ArrayBuffer_selfTest));
 		addChild(new SelfCheckCase(m_testCtx, "string_util",				"de::StringUtil_selfTest()",			de::StringUtil_selfTest));
+		addChild(new SelfCheckCase(m_testCtx, "spin_barrier",				"de::SpinBarrier_selfTest()",			de::SpinBarrier_selfTest));
 	}
 };
 

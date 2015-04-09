@@ -98,6 +98,7 @@ LOCAL_SRC_FILES := \
 	framework/delibs/decpp/deSemaphore.cpp \
 	framework/delibs/decpp/deSharedPtr.cpp \
 	framework/delibs/decpp/deSocket.cpp \
+	framework/delibs/decpp/deSpinBarrier.cpp \
 	framework/delibs/decpp/deSTLUtil.cpp \
 	framework/delibs/decpp/deStringUtil.cpp \
 	framework/delibs/decpp/deThread.cpp \
