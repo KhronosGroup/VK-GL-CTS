@@ -987,8 +987,13 @@ void get_internalformativ (NegativeTestContext& ctx)
 	ctx.expectError				(GL_INVALID_ENUM);
 	ctx.glGetInternalformativ	(GL_FRAMEBUFFER, GL_RGBA8, GL_NUM_SAMPLE_COUNTS, 16, &params[0]);
 	ctx.expectError				(GL_INVALID_ENUM);
-	ctx.glGetInternalformativ	(GL_TEXTURE_2D, GL_RGBA8, GL_NUM_SAMPLE_COUNTS, 16, &params[0]);
-	ctx.expectError				(GL_INVALID_ENUM);
+
+	if (!ctx.getContextInfo().isExtensionSupported("GL_EXT_sparse_texture"))
+	{
+		ctx.glGetInternalformativ	(GL_TEXTURE_2D, GL_RGBA8, GL_NUM_SAMPLE_COUNTS, 16, &params[0]);
+		ctx.expectError				(GL_INVALID_ENUM);
+	}
+
 	ctx.endSection();
 }
 
