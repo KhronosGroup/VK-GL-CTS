@@ -2465,32 +2465,32 @@ static bool isCubeGatherResultValid (const TextureCubeView&			texture,
 	return false;
 }
 
-bool isGatherResultValid (const TextureCubeView&		texture,
-								 const Sampler&				sampler,
-								 const LookupPrecision&		prec,
-								 const Vec3&				coord,
-								 int						componentNdx,
-								 const Vec4&				result)
+bool isGatherResultValid (const TextureCubeView&	texture,
+						  const Sampler&			sampler,
+						  const LookupPrecision&	prec,
+						  const Vec3&				coord,
+						  int						componentNdx,
+						  const Vec4&				result)
 {
 	return isCubeGatherResultValid(texture, sampler, prec, coord, componentNdx, result);
 }
 
 bool isGatherResultValid (const TextureCubeView&		texture,
-								 const Sampler&				sampler,
-								 const IntLookupPrecision&	prec,
-								 const Vec3&				coord,
-								 int						componentNdx,
-								 const IVec4&				result)
+						  const Sampler&				sampler,
+						  const IntLookupPrecision&		prec,
+						  const Vec3&					coord,
+						  int							componentNdx,
+						  const IVec4&					result)
 {
 	return isCubeGatherResultValid(texture, sampler, prec, coord, componentNdx, result);
 }
 
 bool isGatherResultValid (const TextureCubeView&		texture,
-								 const Sampler&				sampler,
-								 const IntLookupPrecision&	prec,
-								 const Vec3&				coord,
-								 int						componentNdx,
-								 const UVec4&				result)
+						  const Sampler&				sampler,
+						  const IntLookupPrecision&		prec,
+						  const Vec3&					coord,
+						  int							componentNdx,
+						  const UVec4&					result)
 {
 	return isCubeGatherResultValid(texture, sampler, prec, coord, componentNdx, result);
 }
