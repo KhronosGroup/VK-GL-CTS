@@ -203,6 +203,7 @@ public:
 		addChild(new ShaderLibraryTest			(m_context, "qualification_order",	"Order Of Qualification Tests"));
 		addChild(new ShaderLibraryTest			(m_context, "scoping",				"Scoping of Declarations"));
 		addChild(new ShaderLibraryTest			(m_context, "negative",				"Miscellaneous Negative Shader Compilation Tests"));
+		addChild(new ShaderLibraryTest			(m_context, "uniform_block",		"Uniform block tests"));
 
 		addChild(new ShaderDiscardTests			(m_context));
 		addChild(new ShaderIndexingTests		(m_context));
