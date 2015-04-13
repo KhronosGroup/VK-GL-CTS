@@ -1371,10 +1371,10 @@ void NegativeApiTests::init (void)
 				expectTrue(eglMakeCurrent(display, *surface, *surface, context));
 				expectError(EGL_SUCCESS);
 
-				log << TestLog::Section("Test1", "EGL_BAD_PARAMETER is generated if engine is not a recognized marking engine");
+				log << TestLog::Section("Test1", "EGL_BAD_PARAMETER is generated if engine is not a recognized marking engine and native rendering is supported by current surface");
 
-				expectFalse(eglWaitNative(-1));
-				expectError(EGL_BAD_PARAMETER);
+				eglWaitNative(-1);
+				expectEitherError(EGL_BAD_PARAMETER, EGL_NONE);
 
 				log << TestLog::EndSection;
 
