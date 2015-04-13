@@ -494,9 +494,9 @@ Rectangle randomViewport (const RenderContext& ctx, GLint maxWidth, GLint maxHei
 {
 	const RenderTarget&	target	= ctx.getRenderTarget();
 	const GLint			width	= de::min(target.getWidth(), maxWidth);
-	const GLint			xOff	= rnd.getInt(0, width - maxWidth);
+	const GLint			xOff	= rnd.getInt(0, target.getWidth() - width);
 	const GLint			height	= de::min(target.getHeight(), maxHeight);
-	const GLint			yOff	= rnd.getInt(0, height - maxHeight);
+	const GLint			yOff	= rnd.getInt(0, target.getHeight() - height);
 
 	return Rectangle(xOff, yOff, width, height);
 }
