@@ -1947,7 +1947,7 @@ void CallLogWrapper::glGetSamplerParameterfv (glw::GLuint sampler, glw::GLenum p
 		m_log << TestLog::Message << "glGetSamplerParameterfv(" << sampler << ", " << getTextureParameterStr(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getSamplerParameterfv(sampler, pname, params);
 	if (m_enableLog)
-		m_log << TestLog::Message << "// params = " << getPointerStr(params, 1) << TestLog::EndMessage;
+		m_log << TestLog::Message << "// params = " << getPointerStr(params, getTextureParamQueryNumArgsOut(pname)) << TestLog::EndMessage;
 }
 
 void CallLogWrapper::glGetSamplerParameteriv (glw::GLuint sampler, glw::GLenum pname, glw::GLint *params)
@@ -1956,7 +1956,7 @@ void CallLogWrapper::glGetSamplerParameteriv (glw::GLuint sampler, glw::GLenum p
 		m_log << TestLog::Message << "glGetSamplerParameteriv(" << sampler << ", " << getTextureParameterStr(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getSamplerParameteriv(sampler, pname, params);
 	if (m_enableLog)
-		m_log << TestLog::Message << "// params = " << getPointerStr(params, 1) << TestLog::EndMessage;
+		m_log << TestLog::Message << "// params = " << getPointerStr(params, getTextureParamQueryNumArgsOut(pname)) << TestLog::EndMessage;
 }
 
 void CallLogWrapper::glGetShaderInfoLog (glw::GLuint shader, glw::GLsizei bufSize, glw::GLsizei *length, glw::GLchar *infoLog)
@@ -2087,7 +2087,7 @@ void CallLogWrapper::glGetTexParameterfv (glw::GLenum target, glw::GLenum pname,
 		m_log << TestLog::Message << "glGetTexParameterfv(" << getTextureTargetStr(target) << ", " << getTextureParameterStr(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getTexParameterfv(target, pname, params);
 	if (m_enableLog)
-		m_log << TestLog::Message << "// params = " << getPointerStr(params, 1) << TestLog::EndMessage;
+		m_log << TestLog::Message << "// params = " << getPointerStr(params, getTextureParamQueryNumArgsOut(pname)) << TestLog::EndMessage;
 }
 
 void CallLogWrapper::glGetTexParameteriv (glw::GLenum target, glw::GLenum pname, glw::GLint *params)
@@ -2096,7 +2096,7 @@ void CallLogWrapper::glGetTexParameteriv (glw::GLenum target, glw::GLenum pname,
 		m_log << TestLog::Message << "glGetTexParameteriv(" << getTextureTargetStr(target) << ", " << getTextureParameterStr(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getTexParameteriv(target, pname, params);
 	if (m_enableLog)
-		m_log << TestLog::Message << "// params = " << getPointerStr(params, 1) << TestLog::EndMessage;
+		m_log << TestLog::Message << "// params = " << getPointerStr(params, getTextureParamQueryNumArgsOut(pname)) << TestLog::EndMessage;
 }
 
 void CallLogWrapper::glGetTextureImage (glw::GLuint texture, glw::GLint level, glw::GLenum format, glw::GLenum type, glw::GLsizei bufSize, void *pixels)
@@ -3362,7 +3362,7 @@ void CallLogWrapper::glSamplerParameterf (glw::GLuint sampler, glw::GLenum pname
 void CallLogWrapper::glSamplerParameterfv (glw::GLuint sampler, glw::GLenum pname, const glw::GLfloat *param)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glSamplerParameterfv(" << sampler << ", " << getTextureParameterStr(pname) << ", " << getPointerStr(param, 1) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glSamplerParameterfv(" << sampler << ", " << getTextureParameterStr(pname) << ", " << getPointerStr(param, getTextureParamNumArgs(pname)) << ");" << TestLog::EndMessage;
 	m_gl.samplerParameterfv(sampler, pname, param);
 }
 
@@ -3376,7 +3376,7 @@ void CallLogWrapper::glSamplerParameteri (glw::GLuint sampler, glw::GLenum pname
 void CallLogWrapper::glSamplerParameteriv (glw::GLuint sampler, glw::GLenum pname, const glw::GLint *param)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glSamplerParameteriv(" << sampler << ", " << getTextureParameterStr(pname) << ", " << getPointerStr(param, 1) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glSamplerParameteriv(" << sampler << ", " << getTextureParameterStr(pname) << ", " << getPointerStr(param, getTextureParamNumArgs(pname)) << ");" << TestLog::EndMessage;
 	m_gl.samplerParameteriv(sampler, pname, param);
 }
 
@@ -3544,7 +3544,7 @@ void CallLogWrapper::glTexParameterf (glw::GLenum target, glw::GLenum pname, glw
 void CallLogWrapper::glTexParameterfv (glw::GLenum target, glw::GLenum pname, const glw::GLfloat *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glTexParameterfv(" << getTextureTargetStr(target) << ", " << getTextureParameterStr(pname) << ", " << getPointerStr(params, 1) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glTexParameterfv(" << getTextureTargetStr(target) << ", " << getTextureParameterStr(pname) << ", " << getPointerStr(params, getTextureParamNumArgs(pname)) << ");" << TestLog::EndMessage;
 	m_gl.texParameterfv(target, pname, params);
 }
 
@@ -3558,7 +3558,7 @@ void CallLogWrapper::glTexParameteri (glw::GLenum target, glw::GLenum pname, glw
 void CallLogWrapper::glTexParameteriv (glw::GLenum target, glw::GLenum pname, const glw::GLint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glTexParameteriv(" << getTextureTargetStr(target) << ", " << getTextureParameterStr(pname) << ", " << getPointerStr(params, 1) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glTexParameteriv(" << getTextureTargetStr(target) << ", " << getTextureParameterStr(pname) << ", " << getPointerStr(params, getTextureParamNumArgs(pname)) << ");" << TestLog::EndMessage;
 	m_gl.texParameteriv(target, pname, params);
 }
 
