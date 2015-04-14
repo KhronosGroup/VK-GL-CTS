@@ -265,7 +265,7 @@ BlendCase::IterateResult BlendCase::iterate (void)
 	// Compare images.
 
 	UVec4 compareThreshold = m_context.getRenderTarget().getPixelFormat().getColorThreshold().toIVec().asUint()
-							 * UVec4(5) / UVec4(2) + UVec4(2); // \note Non-scientific ad hoc formula. Need big threshold when few color bits; blending brings extra inaccuracy.
+							 * UVec4(5) / UVec4(2) + UVec4(3); // \note Non-scientific ad hoc formula. Need big threshold when few color bits; blending brings extra inaccuracy.
 
 	bool comparePass = tcu::intThresholdCompare(m_testCtx.getLog(), "CompareResult", "Image Comparison Result", m_refColorBuffer->getAccess(), renderedImg.getAccess(), compareThreshold, tcu::COMPARE_LOG_RESULT);
 
