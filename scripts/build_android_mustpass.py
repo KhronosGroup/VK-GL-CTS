@@ -109,7 +109,7 @@ def getCTSPackageName (package):
 	return "com.drawelements.deqp." + getModuleShorthand(package.module)
 
 def getCommandLine (config):
-	return "--deqp-gl-config-name=%s --deqp-screen-rotation=%s --deqp-surface-type=%s" % (config.glconfig, config.rotation, config.surfacetype)
+	return "--deqp-gl-config-name=%s --deqp-screen-rotation=%s --deqp-surface-type=%s --deqp-watchdog=enable" % (config.glconfig, config.rotation, config.surfacetype)
 
 def readCaseList (filename):
 	cases = []
