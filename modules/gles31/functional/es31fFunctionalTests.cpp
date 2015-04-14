@@ -195,6 +195,7 @@ public:
 		addChild(new ShaderBuiltinConstantTests			(m_context));
 		addChild(new ShaderHelperInvocationTests		(m_context));
 		addChild(new ShaderLibraryTest					(m_context, "implicit_conversions", "GL_EXT_shader_implicit_conversions Tests"));
+		addChild(new ShaderLibraryTest					(m_context, "uniform_block", "Uniform block tests"));
 	}
 };
 
