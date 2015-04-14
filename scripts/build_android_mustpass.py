@@ -82,6 +82,7 @@ class GLESVersion:
 
 def getModuleGLESVersion (module):
 	versions = {
+		'dEQP-EGL':		GLESVersion(2,0),
 		'dEQP-GLES2':	GLESVersion(2,0),
 		'dEQP-GLES3':	GLESVersion(3,0),
 		'dEQP-GLES31':	GLESVersion(3,1)
@@ -372,17 +373,19 @@ def genMustpassLists (mustpassLists):
 	for mustpass in mustpassLists:
 		genMustpass(mustpass, moduleCaseLists)
 
-GLES3_MODULE				= Module(name = "dEQP-GLES3", dirName = "gles3", binName = "deqp-gles3")
-GLES31_MODULE				= Module(name = "dEQP-GLES31", dirName = "gles31", binName = "deqp-gles31")
+EGL_MODULE						= Module(name = "dEQP-EGL", dirName = "egl", binName = "deqp-egl")
+GLES2_MODULE					= Module(name = "dEQP-GLES2", dirName = "gles2", binName = "deqp-gles2")
+GLES3_MODULE					= Module(name = "dEQP-GLES3", dirName = "gles3", binName = "deqp-gles3")
+GLES31_MODULE					= Module(name = "dEQP-GLES31", dirName = "gles31", binName = "deqp-gles31")
 
-LMP_GLES3_PKG				= Package(module = GLES3_MODULE, configurations = [
+LMP_GLES3_PKG					= Package(module = GLES3_MODULE, configurations = [
 		Configuration(name			= "master",
 					  glconfig		= "rgba8888d24s8ms0",
 					  rotation		= "unspecified",
 					  surfacetype	= "window",
 					  filters		= [include("es30-lmp.txt")]),
 	])
-LMP_GLES31_PKG				= Package(module = GLES31_MODULE, configurations = [
+LMP_GLES31_PKG					= Package(module = GLES31_MODULE, configurations = [
 		Configuration(name			= "master",
 					  glconfig		= "rgba8888d24s8ms0",
 					  rotation		= "unspecified",
@@ -390,14 +393,14 @@ LMP_GLES31_PKG				= Package(module = GLES31_MODULE, configurations = [
 					  filters		= [include("es31-lmp.txt")]),
 	])
 
-LMP_MR1_GLES3_PKG			= Package(module = GLES3_MODULE, configurations = [
+LMP_MR1_GLES3_PKG				= Package(module = GLES3_MODULE, configurations = [
 		Configuration(name			= "master",
 					  glconfig		= "rgba8888d24s8ms0",
 					  rotation		= "unspecified",
 					  surfacetype	= "window",
 					  filters		= [include("es30-lmp-mr1.txt")]),
 	])
-LMP_MR1_GLES31_PKG			= Package(module = GLES31_MODULE, configurations = [
+LMP_MR1_GLES31_PKG				= Package(module = GLES31_MODULE, configurations = [
 		Configuration(name			= "master",
 					  glconfig		= "rgba8888d24s8ms0",
 					  rotation		= "unspecified",
@@ -405,7 +408,27 @@ LMP_MR1_GLES31_PKG			= Package(module = GLES31_MODULE, configurations = [
 					  filters		= [include("es31-lmp-mr1.txt")]),
 	])
 
-MASTER_GLES3_COMMON_FILTERS	= [include("gles3-master.txt"), exclude("gles3-hw-issues.txt"), exclude("gles3-test-issues.txt")]
+MASTER_EGL_COMMON_FILTERS		= [include("egl-master.txt"), exclude("egl-failures.txt")]
+MASTER_EGL_PKG					= Package(module = EGL_MODULE, configurations = [
+		# Master
+		Configuration(name			= "master",
+					  glconfig		= "rgba8888d24s8ms0",
+					  rotation		= "unspecified",
+					  surfacetype	= "window",
+					  filters		= MASTER_EGL_COMMON_FILTERS),
+	])
+
+MASTER_GLES2_COMMON_FILTERS		= [include("gles2-master.txt"), exclude("gles2-failures.txt")]
+MASTER_GLES2_PKG				= Package(module = GLES2_MODULE, configurations = [
+		# Master
+		Configuration(name			= "master",
+					  glconfig		= "rgba8888d24s8ms0",
+					  rotation		= "unspecified",
+					  surfacetype	= "window",
+					  filters		= MASTER_GLES2_COMMON_FILTERS),
+	])
+
+MASTER_GLES3_COMMON_FILTERS		= [include("gles3-master.txt"), exclude("gles3-hw-issues.txt"), exclude("gles3-test-issues.txt")]
 MASTER_GLES3_PKG				= Package(module = GLES3_MODULE, configurations = [
 		# Master
 		Configuration(name			= "master",
@@ -499,7 +522,7 @@ MASTER_GLES31_PKG				= Package(module = GLES31_MODULE, configurations = [
 MUSTPASS_LISTS				= [
 		Mustpass(version = "lmp",		packages = [LMP_GLES3_PKG, LMP_GLES31_PKG]),
 		Mustpass(version = "lmp-mr1",	packages = [LMP_MR1_GLES3_PKG, LMP_MR1_GLES31_PKG]),
-		Mustpass(version = "master",	packages = [MASTER_GLES3_PKG, MASTER_GLES31_PKG])
+		Mustpass(version = "master",	packages = [MASTER_EGL_PKG, MASTER_GLES2_PKG, MASTER_GLES3_PKG, MASTER_GLES31_PKG])
 	]
 
 if __name__ == "__main__":
