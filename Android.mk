@@ -192,11 +192,12 @@ LOCAL_SRC_FILES := \
 	framework/opengl/wrapper/glwWrapper.cpp \
 	framework/platform/android/tcuAndroidAssets.cpp \
 	framework/platform/android/tcuAndroidExecService.cpp \
+	framework/platform/android/tcuAndroidInternals.cpp \
 	framework/platform/android/tcuAndroidJNI.cpp \
 	framework/platform/android/tcuAndroidMain.cpp \
 	framework/platform/android/tcuAndroidNativeActivity.cpp \
-	framework/platform/android/tcuAndroidPlatform.cpp \
 	framework/platform/android/tcuAndroidPlatformCapabilityQueryJNI.cpp \
+	framework/platform/android/tcuAndroidPlatform.cpp \
 	framework/platform/android/tcuAndroidRenderActivity.cpp \
 	framework/platform/android/tcuAndroidTestActivity.cpp \
 	framework/platform/android/tcuAndroidUtil.cpp \
@@ -242,92 +243,153 @@ LOCAL_SRC_FILES := \
 	framework/referencerenderer/rrShadingContext.cpp \
 	framework/referencerenderer/rrVertexAttrib.cpp \
 	framework/referencerenderer/rrVertexPacket.cpp \
-	modules/gles31/functional/es31fAdvancedBlendTests.cpp \
-	modules/gles31/functional/es31fAndroidExtensionPackES31ATests.cpp \
-	modules/gles31/functional/es31fAtomicCounterTests.cpp \
-	modules/gles31/functional/es31fBasicComputeShaderTests.cpp \
-	modules/gles31/functional/es31fBuiltinPrecisionTests.cpp \
-	modules/gles31/functional/es31fComputeShaderBuiltinVarTests.cpp \
-	modules/gles31/functional/es31fDebugTests.cpp \
-	modules/gles31/functional/es31fDrawTests.cpp \
-	modules/gles31/functional/es31fFboColorbufferTests.cpp \
-	modules/gles31/functional/es31fFboNoAttachmentTests.cpp \
-	modules/gles31/functional/es31fFboTestCase.cpp \
-	modules/gles31/functional/es31fFboTestUtil.cpp \
-	modules/gles31/functional/es31fFunctionalTests.cpp \
-	modules/gles31/functional/es31fGeometryShaderTests.cpp \
-	modules/gles31/functional/es31fIndirectComputeDispatchTests.cpp \
-	modules/gles31/functional/es31fIntegerStateQueryTests.cpp \
-	modules/gles31/functional/es31fBooleanStateQueryTests.cpp \
-	modules/gles31/functional/es31fIndexedStateQueryTests.cpp \
-	modules/gles31/functional/es31fInternalFormatQueryTests.cpp \
-	modules/gles31/functional/es31fTextureStateQueryTests.cpp \
-	modules/gles31/functional/es31fFramebufferDefaultStateQueryTests.cpp \
-	modules/gles31/functional/es31fProgramPipelineStateQueryTests.cpp \
-	modules/gles31/functional/es31fProgramStateQueryTests.cpp \
-	modules/gles31/functional/es31fInfoLogQueryShared.cpp \
-	modules/gles31/functional/es31fLayoutBindingTests.cpp \
-	modules/gles31/functional/es31fMultisampleShaderRenderCase.cpp \
-	modules/gles31/functional/es31fMultisampleTests.cpp \
-	modules/gles31/functional/es31fNegativeBufferApiTests.cpp \
-	modules/gles31/functional/es31fNegativeFragmentApiTests.cpp \
-	modules/gles31/functional/es31fNegativeShaderApiTests.cpp \
-	modules/gles31/functional/es31fNegativeStateApiTests.cpp \
-	modules/gles31/functional/es31fNegativeTestShared.cpp \
-	modules/gles31/functional/es31fNegativeTextureApiTests.cpp \
-	modules/gles31/functional/es31fNegativeVertexArrayApiTests.cpp \
-	modules/gles31/functional/es31fOpaqueTypeIndexingTests.cpp \
-	modules/gles31/functional/es31fPrimitiveBoundingBoxTests.cpp \
-	modules/gles31/functional/es31fProgramInterfaceDefinition.cpp \
-	modules/gles31/functional/es31fProgramInterfaceDefinitionUtil.cpp \
-	modules/gles31/functional/es31fProgramInterfaceQueryTestCase.cpp \
-	modules/gles31/functional/es31fProgramInterfaceQueryTests.cpp \
-	modules/gles31/functional/es31fProgramUniformTests.cpp \
-	modules/gles31/functional/es31fSamplerStateQueryTests.cpp \
-	modules/gles31/functional/es31fSampleShadingTests.cpp \
-	modules/gles31/functional/es31fSampleVariableTests.cpp \
-	modules/gles31/functional/es31fSeparateShaderTests.cpp \
-	modules/gles31/functional/es31fShaderAtomicOpTests.cpp \
-	modules/gles31/functional/es31fShaderBuiltinConstantTests.cpp \
-	modules/gles31/functional/es31fShaderCommonFunctionTests.cpp \
-	modules/gles31/functional/es31fShaderHelperInvocationTests.cpp \
-	modules/gles31/functional/es31fShaderImageLoadStoreTests.cpp \
-	modules/gles31/functional/es31fShaderIntegerFunctionTests.cpp \
-	modules/gles31/functional/es31fShaderMultisampleInterpolationStateQueryTests.cpp \
-	modules/gles31/functional/es31fShaderMultisampleInterpolationTests.cpp \
-	modules/gles31/functional/es31fShaderPackingFunctionTests.cpp \
-	modules/gles31/functional/es31fShaderSharedVarTests.cpp \
-	modules/gles31/functional/es31fShaderStateQueryTests.cpp \
-	modules/gles31/functional/es31fShaderTextureSizeTests.cpp \
-	modules/gles31/functional/es31fSSBOArrayLengthTests.cpp \
-	modules/gles31/functional/es31fSSBOLayoutCase.cpp \
-	modules/gles31/functional/es31fSSBOLayoutTests.cpp \
-	modules/gles31/functional/es31fStencilTexturingTests.cpp \
-	modules/gles31/functional/es31fSynchronizationTests.cpp \
-	modules/gles31/functional/es31fTessellationGeometryInteractionTests.cpp \
-	modules/gles31/functional/es31fTessellationTests.cpp \
-	modules/gles31/functional/es31fTextureBufferTests.cpp \
-	modules/gles31/functional/es31fTextureFilteringTests.cpp \
-	modules/gles31/functional/es31fTextureFormatTests.cpp \
-	modules/gles31/functional/es31fTextureGatherTests.cpp \
-	modules/gles31/functional/es31fTextureLevelStateQueryTests.cpp \
-	modules/gles31/functional/es31fTextureMultisampleTests.cpp \
-	modules/gles31/functional/es31fTextureSpecificationTests.cpp \
-	modules/gles31/functional/es31fUniformBlockTests.cpp \
-	modules/gles31/functional/es31fUniformLocationTests.cpp \
-	modules/gles31/functional/es31fVertexAttributeBindingStateQueryTests.cpp \
-	modules/gles31/functional/es31fVertexAttributeBindingTests.cpp \
-	modules/gles31/functional/es31fCopyImageTests.cpp \
-	modules/gles31/functional/es31fDrawBuffersIndexedTests.cpp \
-	modules/gles31/stress/es31sDrawTests.cpp \
-	modules/gles31/stress/es31sStressTests.cpp \
-	modules/gles31/stress/es31sTessellationGeometryInteractionTests.cpp \
-	modules/gles31/stress/es31sVertexAttributeBindingTests.cpp \
-	modules/gles31/tes31Context.cpp \
-	modules/gles31/tes31InfoTests.cpp \
-	modules/gles31/tes31TestCase.cpp \
-	modules/gles31/tes31TestPackage.cpp \
-	modules/gles31/tes31TestPackageEntry.cpp \
+	modules/egl/teglAndroidUtil.cpp \
+	modules/egl/teglApiCase.cpp \
+	modules/egl/teglChooseConfigReference.cpp \
+	modules/egl/teglChooseConfigTests.cpp \
+	modules/egl/teglClientExtensionTests.cpp \
+	modules/egl/teglColorClearCase.cpp \
+	modules/egl/teglColorClearTests.cpp \
+	modules/egl/teglConfigList.cpp \
+	modules/egl/teglCreateContextExtTests.cpp \
+	modules/egl/teglCreateContextTests.cpp \
+	modules/egl/teglCreateSurfaceTests.cpp \
+	modules/egl/teglGetProcAddressTests.cpp \
+	modules/egl/teglGLES1RenderUtil.cpp \
+	modules/egl/teglGLES2RenderUtil.cpp \
+	modules/egl/teglGLES2SharedRenderingPerfTests.cpp \
+	modules/egl/teglGLES2SharingTests.cpp \
+	modules/egl/teglGLES2SharingThreadedTests.cpp \
+	modules/egl/teglImageFormatTests.cpp \
+	modules/egl/teglImageTests.cpp \
+	modules/egl/teglImageUtil.cpp \
+	modules/egl/teglInfoTests.cpp \
+	modules/egl/teglMakeCurrentPerfTests.cpp \
+	modules/egl/teglMemoryStressTests.cpp \
+	modules/egl/teglMultiThreadTests.cpp \
+	modules/egl/teglNativeColorMappingTests.cpp \
+	modules/egl/teglNativeCoordMappingTests.cpp \
+	modules/egl/teglNegativeApiTests.cpp \
+	modules/egl/teglPreservingSwapTests.cpp \
+	modules/egl/teglQueryConfigTests.cpp \
+	modules/egl/teglQueryContextTests.cpp \
+	modules/egl/teglQuerySurfaceTests.cpp \
+	modules/egl/teglRenderCase.cpp \
+	modules/egl/teglRenderTests.cpp \
+	modules/egl/teglResizeTests.cpp \
+	modules/egl/teglSimpleConfigCase.cpp \
+	modules/egl/teglSurfacelessContextTests.cpp \
+	modules/egl/teglSwapBuffersTests.cpp \
+	modules/egl/teglSyncTests.cpp \
+	modules/egl/teglTestCase.cpp \
+	modules/egl/teglTestPackage.cpp \
+	modules/egl/teglTestPackageEntry.cpp \
+	modules/egl/teglVGRenderUtil.cpp \
+	modules/gles2/tes2CapabilityTests.cpp \
+	modules/gles2/tes2Context.cpp \
+	modules/gles2/tes2InfoTests.cpp \
+	modules/gles2/tes2TestCase.cpp \
+	modules/gles2/tes2TestPackage.cpp \
+	modules/gles2/tes2TestPackageEntry.cpp \
+	modules/gles2/accuracy/es2aAccuracyTests.cpp \
+	modules/gles2/accuracy/es2aTextureFilteringTests.cpp \
+	modules/gles2/accuracy/es2aTextureMipmapTests.cpp \
+	modules/gles2/accuracy/es2aVaryingInterpolationTests.cpp \
+	modules/gles2/functional/es2fApiCase.cpp \
+	modules/gles2/functional/es2fAttribLocationTests.cpp \
+	modules/gles2/functional/es2fBlendTests.cpp \
+	modules/gles2/functional/es2fBooleanStateQueryTests.cpp \
+	modules/gles2/functional/es2fBufferObjectQueryTests.cpp \
+	modules/gles2/functional/es2fBufferTestUtil.cpp \
+	modules/gles2/functional/es2fBufferWriteTests.cpp \
+	modules/gles2/functional/es2fClippingTests.cpp \
+	modules/gles2/functional/es2fColorClearTest.cpp \
+	modules/gles2/functional/es2fDefaultVertexAttributeTests.cpp \
+	modules/gles2/functional/es2fDepthRangeTests.cpp \
+	modules/gles2/functional/es2fDepthStencilClearTests.cpp \
+	modules/gles2/functional/es2fDepthStencilTests.cpp \
+	modules/gles2/functional/es2fDepthTests.cpp \
+	modules/gles2/functional/es2fDitheringTests.cpp \
+	modules/gles2/functional/es2fDrawTests.cpp \
+	modules/gles2/functional/es2fFboApiTest.cpp \
+	modules/gles2/functional/es2fFboCompletenessTests.cpp \
+	modules/gles2/functional/es2fFboRenderTest.cpp \
+	modules/gles2/functional/es2fFboStateQueryTests.cpp \
+	modules/gles2/functional/es2fFloatStateQueryTests.cpp \
+	modules/gles2/functional/es2fFlushFinishTests.cpp \
+	modules/gles2/functional/es2fFragOpInteractionTests.cpp \
+	modules/gles2/functional/es2fFunctionalTests.cpp \
+	modules/gles2/functional/es2fImplementationLimitTests.cpp \
+	modules/gles2/functional/es2fIntegerStateQueryTests.cpp \
+	modules/gles2/functional/es2fLifetimeTests.cpp \
+	modules/gles2/functional/es2fLightAmountTest.cpp \
+	modules/gles2/functional/es2fMultisampleTests.cpp \
+	modules/gles2/functional/es2fNegativeBufferApiTests.cpp \
+	modules/gles2/functional/es2fNegativeFragmentApiTests.cpp \
+	modules/gles2/functional/es2fNegativeShaderApiTests.cpp \
+	modules/gles2/functional/es2fNegativeStateApiTests.cpp \
+	modules/gles2/functional/es2fNegativeTextureApiTests.cpp \
+	modules/gles2/functional/es2fNegativeVertexArrayApiTests.cpp \
+	modules/gles2/functional/es2fPolygonOffsetTests.cpp \
+	modules/gles2/functional/es2fPrerequisiteTests.cpp \
+	modules/gles2/functional/es2fRandomFragmentOpTests.cpp \
+	modules/gles2/functional/es2fRandomShaderTests.cpp \
+	modules/gles2/functional/es2fRasterizationTests.cpp \
+	modules/gles2/functional/es2fRboStateQueryTests.cpp \
+	modules/gles2/functional/es2fReadPixelsTests.cpp \
+	modules/gles2/functional/es2fScissorTests.cpp \
+	modules/gles2/functional/es2fShaderAlgorithmTests.cpp \
+	modules/gles2/functional/es2fShaderApiTests.cpp \
+	modules/gles2/functional/es2fShaderBuiltinVarTests.cpp \
+	modules/gles2/functional/es2fShaderConstExprTests.cpp \
+	modules/gles2/functional/es2fShaderDiscardTests.cpp \
+	modules/gles2/functional/es2fShaderExecuteTest.cpp \
+	modules/gles2/functional/es2fShaderFragDataTests.cpp \
+	modules/gles2/functional/es2fShaderIndexingTests.cpp \
+	modules/gles2/functional/es2fShaderInvarianceTests.cpp \
+	modules/gles2/functional/es2fShaderLoopTests.cpp \
+	modules/gles2/functional/es2fShaderMatrixTests.cpp \
+	modules/gles2/functional/es2fShaderOperatorTests.cpp \
+	modules/gles2/functional/es2fShaderReturnTests.cpp \
+	modules/gles2/functional/es2fShaderStateQueryTests.cpp \
+	modules/gles2/functional/es2fShaderStructTests.cpp \
+	modules/gles2/functional/es2fShaderTextureFunctionTests.cpp \
+	modules/gles2/functional/es2fStencilTests.cpp \
+	modules/gles2/functional/es2fStringQueryTests.cpp \
+	modules/gles2/functional/es2fTextureCompletenessTests.cpp \
+	modules/gles2/functional/es2fTextureFilteringTests.cpp \
+	modules/gles2/functional/es2fTextureFormatTests.cpp \
+	modules/gles2/functional/es2fTextureMipmapTests.cpp \
+	modules/gles2/functional/es2fTextureSizeTests.cpp \
+	modules/gles2/functional/es2fTextureSpecificationTests.cpp \
+	modules/gles2/functional/es2fTextureStateQueryTests.cpp \
+	modules/gles2/functional/es2fTextureUnitTests.cpp \
+	modules/gles2/functional/es2fTextureWrapTests.cpp \
+	modules/gles2/functional/es2fUniformApiTests.cpp \
+	modules/gles2/functional/es2fVertexArrayTest.cpp \
+	modules/gles2/functional/es2fVertexTextureTests.cpp \
+	modules/gles2/performance/es2pBlendTests.cpp \
+	modules/gles2/performance/es2pDrawCallBatchingTests.cpp \
+	modules/gles2/performance/es2pPerformanceTests.cpp \
+	modules/gles2/performance/es2pRedundantStateChangeTests.cpp \
+	modules/gles2/performance/es2pShaderCompilationCases.cpp \
+	modules/gles2/performance/es2pShaderCompilerTests.cpp \
+	modules/gles2/performance/es2pShaderControlStatementTests.cpp \
+	modules/gles2/performance/es2pShaderOperatorTests.cpp \
+	modules/gles2/performance/es2pShaderOptimizationTests.cpp \
+	modules/gles2/performance/es2pStateChangeCallTests.cpp \
+	modules/gles2/performance/es2pStateChangeTests.cpp \
+	modules/gles2/performance/es2pTextureCases.cpp \
+	modules/gles2/performance/es2pTextureCountTests.cpp \
+	modules/gles2/performance/es2pTextureFilteringTests.cpp \
+	modules/gles2/performance/es2pTextureFormatTests.cpp \
+	modules/gles2/performance/es2pTextureUploadTests.cpp \
+	modules/gles2/stress/es2sDrawTests.cpp \
+	modules/gles2/stress/es2sLongRunningTests.cpp \
+	modules/gles2/stress/es2sMemoryTests.cpp \
+	modules/gles2/stress/es2sSpecialFloatTests.cpp \
+	modules/gles2/stress/es2sStressTests.cpp \
+	modules/gles2/stress/es2sVertexArrayTests.cpp \
 	modules/gles3/accuracy/es3aAccuracyTests.cpp \
 	modules/gles3/accuracy/es3aTextureFilteringTests.cpp \
 	modules/gles3/accuracy/es3aTextureMipmapTests.cpp \
@@ -466,6 +528,92 @@ LOCAL_SRC_FILES := \
 	modules/gles3/tes3TestCase.cpp \
 	modules/gles3/tes3TestPackage.cpp \
 	modules/gles3/tes3TestPackageEntry.cpp \
+	modules/gles31/functional/es31fAdvancedBlendTests.cpp \
+	modules/gles31/functional/es31fAndroidExtensionPackES31ATests.cpp \
+	modules/gles31/functional/es31fAtomicCounterTests.cpp \
+	modules/gles31/functional/es31fBasicComputeShaderTests.cpp \
+	modules/gles31/functional/es31fBuiltinPrecisionTests.cpp \
+	modules/gles31/functional/es31fComputeShaderBuiltinVarTests.cpp \
+	modules/gles31/functional/es31fDebugTests.cpp \
+	modules/gles31/functional/es31fDrawTests.cpp \
+	modules/gles31/functional/es31fFboColorbufferTests.cpp \
+	modules/gles31/functional/es31fFboNoAttachmentTests.cpp \
+	modules/gles31/functional/es31fFboTestCase.cpp \
+	modules/gles31/functional/es31fFboTestUtil.cpp \
+	modules/gles31/functional/es31fFunctionalTests.cpp \
+	modules/gles31/functional/es31fGeometryShaderTests.cpp \
+	modules/gles31/functional/es31fIndirectComputeDispatchTests.cpp \
+	modules/gles31/functional/es31fIntegerStateQueryTests.cpp \
+	modules/gles31/functional/es31fBooleanStateQueryTests.cpp \
+	modules/gles31/functional/es31fIndexedStateQueryTests.cpp \
+	modules/gles31/functional/es31fInternalFormatQueryTests.cpp \
+	modules/gles31/functional/es31fTextureStateQueryTests.cpp \
+	modules/gles31/functional/es31fFramebufferDefaultStateQueryTests.cpp \
+	modules/gles31/functional/es31fProgramPipelineStateQueryTests.cpp \
+	modules/gles31/functional/es31fProgramStateQueryTests.cpp \
+	modules/gles31/functional/es31fInfoLogQueryShared.cpp \
+	modules/gles31/functional/es31fLayoutBindingTests.cpp \
+	modules/gles31/functional/es31fMultisampleShaderRenderCase.cpp \
+	modules/gles31/functional/es31fMultisampleTests.cpp \
+	modules/gles31/functional/es31fNegativeBufferApiTests.cpp \
+	modules/gles31/functional/es31fNegativeFragmentApiTests.cpp \
+	modules/gles31/functional/es31fNegativeShaderApiTests.cpp \
+	modules/gles31/functional/es31fNegativeStateApiTests.cpp \
+	modules/gles31/functional/es31fNegativeTestShared.cpp \
+	modules/gles31/functional/es31fNegativeTextureApiTests.cpp \
+	modules/gles31/functional/es31fNegativeVertexArrayApiTests.cpp \
+	modules/gles31/functional/es31fOpaqueTypeIndexingTests.cpp \
+	modules/gles31/functional/es31fPrimitiveBoundingBoxTests.cpp \
+	modules/gles31/functional/es31fProgramInterfaceDefinition.cpp \
+	modules/gles31/functional/es31fProgramInterfaceDefinitionUtil.cpp \
+	modules/gles31/functional/es31fProgramInterfaceQueryTestCase.cpp \
+	modules/gles31/functional/es31fProgramInterfaceQueryTests.cpp \
+	modules/gles31/functional/es31fProgramUniformTests.cpp \
+	modules/gles31/functional/es31fSamplerStateQueryTests.cpp \
+	modules/gles31/functional/es31fSampleShadingTests.cpp \
+	modules/gles31/functional/es31fSampleVariableTests.cpp \
+	modules/gles31/functional/es31fSeparateShaderTests.cpp \
+	modules/gles31/functional/es31fShaderAtomicOpTests.cpp \
+	modules/gles31/functional/es31fShaderBuiltinConstantTests.cpp \
+	modules/gles31/functional/es31fShaderCommonFunctionTests.cpp \
+	modules/gles31/functional/es31fShaderHelperInvocationTests.cpp \
+	modules/gles31/functional/es31fShaderImageLoadStoreTests.cpp \
+	modules/gles31/functional/es31fShaderIntegerFunctionTests.cpp \
+	modules/gles31/functional/es31fShaderMultisampleInterpolationStateQueryTests.cpp \
+	modules/gles31/functional/es31fShaderMultisampleInterpolationTests.cpp \
+	modules/gles31/functional/es31fShaderPackingFunctionTests.cpp \
+	modules/gles31/functional/es31fShaderSharedVarTests.cpp \
+	modules/gles31/functional/es31fShaderStateQueryTests.cpp \
+	modules/gles31/functional/es31fShaderTextureSizeTests.cpp \
+	modules/gles31/functional/es31fSSBOArrayLengthTests.cpp \
+	modules/gles31/functional/es31fSSBOLayoutCase.cpp \
+	modules/gles31/functional/es31fSSBOLayoutTests.cpp \
+	modules/gles31/functional/es31fStencilTexturingTests.cpp \
+	modules/gles31/functional/es31fSynchronizationTests.cpp \
+	modules/gles31/functional/es31fTessellationGeometryInteractionTests.cpp \
+	modules/gles31/functional/es31fTessellationTests.cpp \
+	modules/gles31/functional/es31fTextureBufferTests.cpp \
+	modules/gles31/functional/es31fTextureFilteringTests.cpp \
+	modules/gles31/functional/es31fTextureFormatTests.cpp \
+	modules/gles31/functional/es31fTextureGatherTests.cpp \
+	modules/gles31/functional/es31fTextureLevelStateQueryTests.cpp \
+	modules/gles31/functional/es31fTextureMultisampleTests.cpp \
+	modules/gles31/functional/es31fTextureSpecificationTests.cpp \
+	modules/gles31/functional/es31fUniformBlockTests.cpp \
+	modules/gles31/functional/es31fUniformLocationTests.cpp \
+	modules/gles31/functional/es31fVertexAttributeBindingStateQueryTests.cpp \
+	modules/gles31/functional/es31fVertexAttributeBindingTests.cpp \
+	modules/gles31/functional/es31fCopyImageTests.cpp \
+	modules/gles31/functional/es31fDrawBuffersIndexedTests.cpp \
+	modules/gles31/stress/es31sDrawTests.cpp \
+	modules/gles31/stress/es31sStressTests.cpp \
+	modules/gles31/stress/es31sTessellationGeometryInteractionTests.cpp \
+	modules/gles31/stress/es31sVertexAttributeBindingTests.cpp \
+	modules/gles31/tes31Context.cpp \
+	modules/gles31/tes31InfoTests.cpp \
+	modules/gles31/tes31TestCase.cpp \
+	modules/gles31/tes31TestPackage.cpp \
+	modules/gles31/tes31TestPackageEntry.cpp \
 	modules/glshared/glsAttributeLocationTests.cpp \
 	modules/glshared/glsBufferTestUtil.cpp \
 	modules/glshared/glsBuiltinPrecisionTests.cpp \
@@ -531,12 +679,17 @@ LOCAL_C_INCLUDES := \
 	$(deqp_dir)/framework/referencerenderer \
 	$(deqp_dir)/framework/opengl/simplereference \
 	$(deqp_dir)/framework/randomshaders \
+	$(deqp_dir)/modules/egl \
+	$(deqp_dir)/modules/gles2 \
+	$(deqp_dir)/modules/gles2/functional \
+	$(deqp_dir)/modules/gles2/accuracy \
+	$(deqp_dir)/modules/gles2/performance \
+	$(deqp_dir)/modules/gles2/stress \
 	$(deqp_dir)/modules/gles3 \
 	$(deqp_dir)/modules/gles3/functional \
 	$(deqp_dir)/modules/gles3/accuracy \
 	$(deqp_dir)/modules/gles3/performance \
 	$(deqp_dir)/modules/gles3/stress \
-	$(deqp_dir)/modules/gles3/usecases \
 	$(deqp_dir)/modules/gles31 \
 	$(deqp_dir)/modules/gles31/functional \
 	$(deqp_dir)/modules/gles31/stress \
