@@ -2642,20 +2642,62 @@ end # builtin
 
 group pragmas "Pragma Tests"
 
-	case pragma
+	case pragma_vertex
 		values { output float out0 = 1.0; }
-		both ""
-	#pragma
-	#pragma STDGL invariant(all)
-	#pragma debug(off)
-	#pragma optimize(off)
+
+		vertex ""
+			#pragma
+			#pragma STDGL invariant(all)
+			#pragma debug(off)
+			#pragma optimize(off)
 
 			precision mediump float;
-			${DECLARATIONS}
+			${VERTEX_DECLARATIONS}
+			varying float v_val;
 			void main()
 			{
-				out0 = 1.0;
-				${OUTPUT}
+				v_val = 1.0;
+				${VERTEX_OUTPUT}
+			}
+		""
+		fragment ""
+			precision mediump float;
+			${FRAGMENT_DECLARATIONS}
+			invariant varying float v_val;
+			void main()
+			{
+				out0 = v_val;
+				${FRAGMENT_OUTPUT}
+			}
+		""
+	end
+
+	case pragma_fragment
+		values { output float out0 = 1.0; }
+
+		vertex ""
+			precision mediump float;
+			${VERTEX_DECLARATIONS}
+			varying float v_val;
+			void main()
+			{
+				v_val = 1.0;
+				${VERTEX_OUTPUT}
+			}
+		""
+		fragment ""
+			#pragma
+			#pragma STDGL invariant(all)
+			#pragma debug(off)
+			#pragma optimize(off)
+
+			precision mediump float;
+			${FRAGMENT_DECLARATIONS}
+			varying float v_val;
+			void main()
+			{
+				out0 = v_val;
+				${FRAGMENT_OUTPUT}
 			}
 		""
 	end
