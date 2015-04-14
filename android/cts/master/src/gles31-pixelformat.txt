@@ -3,6 +3,3 @@
 dEQP-GLES31.info.*
 dEQP-GLES31.functional.shaders.sample_variables.*.default_framebuffer
 dEQP-GLES31.functional.sample_shading.*.default_framebuffer_*
-dEQP-GLES31.functional.blend_equation_advanced.basic.*
-dEQP-GLES31.functional.blend_equation_advanced.barrier.*
-dEQP-GLES31.functional.blend_equation_advanced.coherent.*
