@@ -610,6 +610,7 @@ void Texture2DArray::loadCompressed (int numLevels, const tcu::CompressedTexture
 
 Texture3D::Texture3D (const RenderContext& context, deUint32 format, deUint32 dataType, int width, int height, int depth)
 	: m_context			(context)
+	, m_isCompressed	(false)
 	, m_format			(format)
 	, m_refTexture		(mapGLTransferFormat(format, dataType), width, height, depth)
 	, m_glTexture		(0)
@@ -622,6 +623,7 @@ Texture3D::Texture3D (const RenderContext& context, deUint32 format, deUint32 da
 
 Texture3D::Texture3D (const RenderContext& context, deUint32 sizedFormat, int width, int height, int depth)
 	: m_context			(context)
+	, m_isCompressed	(false)
 	, m_format			(sizedFormat)
 	, m_refTexture		(mapGLInternalFormat(sizedFormat), width, height, depth)
 	, m_glTexture		(0)
@@ -630,6 +632,36 @@ Texture3D::Texture3D (const RenderContext& context, deUint32 sizedFormat, int wi
 	const glw::Functions& gl = m_context.getFunctions();
 	gl.genTextures(1, &m_glTexture);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glGenTextures() failed");
+}
+
+Texture3D::Texture3D (const RenderContext&					context,
+					  const ContextInfo&					contextInfo,
+					  int									numLevels,
+					  const tcu::CompressedTexture*			levels,
+					  const tcu::TexDecompressionParams&	decompressionParams)
+	: m_context			(context)
+	, m_isCompressed	(true)
+	, m_format			(getGLFormat(levels[0].getFormat()))
+	, m_refTexture		(getUncompressedFormat(levels[0].getFormat()), levels[0].getWidth(), levels[0].getHeight(), levels[0].getDepth())
+	, m_glTexture		(0)
+{
+	const glw::Functions& gl = context.getFunctions();
+
+	if (!contextInfo.isCompressedTextureFormatSupported(m_format))
+		throw tcu::NotSupportedError("Compressed texture format not supported", "", __FILE__, __LINE__);
+
+	gl.genTextures(1, &m_glTexture);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "glGenTextures() failed");
+
+	try
+	{
+		loadCompressed(numLevels, levels, decompressionParams);
+	}
+	catch (const std::exception&)
+	{
+		gl.deleteTextures(1, &m_glTexture);
+		throw;
+	}
 }
 
 Texture3D::~Texture3D (void)
@@ -641,6 +673,8 @@ Texture3D::~Texture3D (void)
 void Texture3D::upload (void)
 {
 	const glw::Functions& gl = m_context.getFunctions();
+
+	DE_ASSERT(!m_isCompressed);
 
 	if (!gl.texImage3D)
 		throw tcu::NotSupportedError("glTexImage3D() is not supported");
@@ -661,6 +695,37 @@ void Texture3D::upload (void)
 		DE_ASSERT(access.getRowPitch() == access.getFormat().getPixelSize()*access.getWidth());
 		DE_ASSERT(access.getSlicePitch() == access.getFormat().getPixelSize()*access.getWidth()*access.getHeight());
 		gl.texImage3D(GL_TEXTURE_3D, levelNdx, m_format, access.getWidth(), access.getHeight(), access.getDepth(), 0 /* border */, transferFormat.format, transferFormat.dataType, access.getDataPtr());
+	}
+
+	GLU_EXPECT_NO_ERROR(gl.getError(), "Texture upload failed");
+}
+
+void Texture3D::loadCompressed (int numLevels, const tcu::CompressedTexture* levels, const tcu::TexDecompressionParams& decompressionParams)
+{
+	const glw::Functions&	gl					= m_context.getFunctions();
+	deUint32				compressedFormat	= getGLFormat(levels[0].getFormat());
+
+	if (!gl.compressedTexImage3D)
+		throw tcu::NotSupportedError("glCompressedTexImage3D() is not supported");
+
+	TCU_CHECK(m_glTexture);
+	gl.bindTexture(GL_TEXTURE_3D, m_glTexture);
+
+	for (int levelNdx = 0; levelNdx < numLevels; levelNdx++)
+	{
+		const tcu::CompressedTexture& level = levels[levelNdx];
+
+		// Decompress to reference texture.
+		m_refTexture.allocLevel(levelNdx);
+		tcu::PixelBufferAccess refLevelAccess = m_refTexture.getLevel(levelNdx);
+		TCU_CHECK(level.getWidth()	== refLevelAccess.getWidth() &&
+				  level.getHeight()	== refLevelAccess.getHeight() &&
+				  level.getDepth()	== refLevelAccess.getDepth());
+		level.decompress(refLevelAccess, decompressionParams);
+
+		// Upload to GL texture in compressed form.
+		gl.compressedTexImage3D(GL_TEXTURE_3D, levelNdx, compressedFormat,
+								level.getWidth(), level.getHeight(), level.getDepth(), 0 /* border */, level.getDataSize(), level.getData());
 	}
 
 	GLU_EXPECT_NO_ERROR(gl.getError(), "Texture upload failed");

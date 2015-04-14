@@ -210,6 +210,7 @@ class Texture3D
 public:
 								Texture3D			(const RenderContext& context, deUint32 format, deUint32 dataType, int width, int height, int depth);
 								Texture3D			(const RenderContext& context, deUint32 internalFormat, int width, int height, int depth);
+								Texture3D			(const RenderContext& context, const ContextInfo& contextInfo, int numLevels, const tcu::CompressedTexture* levels, const tcu::TexDecompressionParams& decompressionParams = tcu::TexDecompressionParams());
 								~Texture3D			(void);
 
 	void						upload				(void);
@@ -222,8 +223,11 @@ private:
 								Texture3D			(const Texture3D& other); // Not allowed!
 	Texture3D&					operator=			(const Texture3D& other); // Not allowed!
 
+	void						loadCompressed		(int numLevels, const tcu::CompressedTexture* levels, const tcu::TexDecompressionParams& decompressionParams);
+
 	const RenderContext&		m_context;
 
+	bool						m_isCompressed;
 	deUint32					m_format;			//!< Internal format.
 
 	tcu::Texture3D				m_refTexture;
