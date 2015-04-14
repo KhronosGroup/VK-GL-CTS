@@ -254,6 +254,10 @@ GLuint getFboAttachment (const Functions& gl, GLuint fbo, GLenum requiredType)
 											   GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE,
 											   &type),
 		gl.getError());
+
+	if (GLenum(type) != requiredType || GLenum(type) == GL_NONE)
+		return 0;
+
 	GLU_CHECK_CALL_ERROR(
 		gl.getFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
 											   GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME,
@@ -262,8 +266,7 @@ GLuint getFboAttachment (const Functions& gl, GLuint fbo, GLenum requiredType)
 	gl.bindFramebuffer(GL_FRAMEBUFFER, 0);
 	GLU_CHECK_ERROR(gl.getError());
 
-	GLuint ret = GLenum(type) == requiredType ? name : 0;
-	return ret;
+	return name;
 }
 
 void FboAttacher::initAttachment (GLuint seed, GLuint element)
