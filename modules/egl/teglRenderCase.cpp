@@ -71,9 +71,8 @@ static void postSurface (const Library& egl, EGLDisplay display, EGLSurface surf
 
 // RenderCase
 
-RenderCase::RenderCase (EglTestContext& eglTestCtx, const char* name, const char* description, EGLint apiMask, EGLint surfaceTypeMask, const eglu::FilterList& filters)
+RenderCase::RenderCase (EglTestContext& eglTestCtx, const char* name, const char* description, EGLint surfaceTypeMask, const eglu::FilterList& filters)
 	: SimpleConfigCase	(eglTestCtx, name, description, filters)
-	, m_apiMask			(apiMask)
 	, m_surfaceTypeMask	(surfaceTypeMask)
 {
 }
@@ -207,7 +206,8 @@ void RenderCase::executeForConfig (EGLDisplay display, EGLConfig config)
 // SingleContextRenderCase
 
 SingleContextRenderCase::SingleContextRenderCase (EglTestContext& eglTestCtx, const char* name, const char* description, EGLint apiMask, EGLint surfaceTypeMask, const eglu::FilterList& filters)
-	: RenderCase(eglTestCtx, name, description, apiMask, surfaceTypeMask, filters)
+	: RenderCase	(eglTestCtx, name, description, surfaceTypeMask, filters)
+	, m_apiMask		(apiMask)
 {
 }
 
@@ -217,9 +217,10 @@ SingleContextRenderCase::~SingleContextRenderCase (void)
 
 void SingleContextRenderCase::executeForSurface (EGLDisplay display, EGLSurface surface, const Config& config)
 {
-	const Library&		egl		= m_eglTestCtx.getLibrary();
-	const EGLint		apis[]	= { EGL_OPENGL_ES2_BIT, EGL_OPENGL_ES3_BIT_KHR, EGL_OPENGL_ES_BIT, EGL_OPENVG_BIT };
-	tcu::TestLog&		log		= m_testCtx.getLog();
+	const Library&		egl				= m_eglTestCtx.getLibrary();
+	const EGLint		apis[]			= { EGL_OPENGL_ES2_BIT, EGL_OPENGL_ES3_BIT_KHR, EGL_OPENGL_ES_BIT, EGL_OPENVG_BIT };
+	tcu::TestLog&		log				= m_testCtx.getLog();
+	const EGLint		configApiMask	= eglu::getConfigAttribInt(egl, display, config.config, EGL_RENDERABLE_TYPE);
 
 	checkBuildClientAPISupport(m_apiMask);
 
@@ -227,8 +228,9 @@ void SingleContextRenderCase::executeForSurface (EGLDisplay display, EGLSurface 
 	{
 		EGLint apiBit = apis[apiNdx];
 
-		if ((apiBit & m_apiMask) == 0)
-			continue; // Skip this api.
+		// Skip API if build or current config doesn't support it.
+		if ((apiBit & m_apiMask) == 0 || (apiBit & configApiMask) == 0)
+			continue;
 
 		EGLint			api		= EGL_NONE;
 		const char*		apiName	= DE_NULL;
@@ -288,8 +290,9 @@ void SingleContextRenderCase::executeForSurface (EGLDisplay display, EGLSurface 
 // MultiContextRenderCase
 
 MultiContextRenderCase::MultiContextRenderCase (EglTestContext& eglTestCtx, const char* name, const char* description, EGLint api, EGLint surfaceType, const eglu::FilterList& filters, int numContextsPerApi)
-	: RenderCase			(eglTestCtx, name, description, api, surfaceType, filters)
+	: RenderCase			(eglTestCtx, name, description, surfaceType, filters)
 	, m_numContextsPerApi	(numContextsPerApi)
+	, m_apiMask				(api)
 {
 }
 
@@ -299,11 +302,15 @@ MultiContextRenderCase::~MultiContextRenderCase (void)
 
 void MultiContextRenderCase::executeForSurface (EGLDisplay display, EGLSurface surface, const Config& config)
 {
-	const Library&							egl		= m_eglTestCtx.getLibrary();
+	const Library&							egl				= m_eglTestCtx.getLibrary();
+	const EGLint							configApiMask	= eglu::getConfigAttribInt(egl, display, config.config, EGL_RENDERABLE_TYPE);
 	vector<std::pair<EGLint, EGLContext> >	contexts;
 	contexts.reserve(3*m_numContextsPerApi); // 3 types of contexts at maximum.
 
 	checkBuildClientAPISupport(m_apiMask);
+
+	// ConfigFilter should make sure that config always supports all of the APIs.
+	TCU_CHECK_INTERNAL((configApiMask & m_apiMask) == m_apiMask);
 
 	try
 	{
