@@ -86,6 +86,7 @@
 #include "es31fAndroidExtensionPackES31ATests.hpp"
 #include "es31fCopyImageTests.hpp"
 #include "es31fDrawBuffersIndexedTests.hpp"
+#include "es31fDefaultVertexArrayObjectTests.hpp"
 
 namespace deqp
 {
@@ -332,6 +333,7 @@ void FunctionalTests::init (void)
 	addChild(new AndroidExtensionPackES31ATests			(m_context));
 	addChild(createCopyImageTests						(m_context));
 	addChild(createDrawBuffersIndexedTests				(m_context));
+	addChild(new DefaultVertexArrayObjectTests			(m_context));
 }
 
 } // Functional

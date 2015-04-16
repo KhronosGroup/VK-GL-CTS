@@ -578,9 +578,11 @@ MixedVertexBindingDivisorCase::MixedVertexBindingDivisorCase (Context& context, 
 void MixedVertexBindingDivisorCase::test (tcu::ResultCollector& result)
 {
 	glu::CallLogWrapper gl					(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
+	glu::VertexArray	vao					(m_context.getRenderContext());
 
 	gl.enableLogging(true);
 
+	gl.glBindVertexArray(*vao);
 	gl.glVertexAttribDivisor(1, 4);
 	verifyStateIndexedInteger(result, gl, GL_VERTEX_BINDING_DIVISOR, 1, 4, m_verifier);
 }

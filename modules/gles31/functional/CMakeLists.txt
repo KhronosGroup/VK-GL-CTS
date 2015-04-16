@@ -11,6 +11,10 @@ set(DEQP_GLES31_FUNCTIONAL_SRCS
 	es31fComputeShaderBuiltinVarTests.hpp
 	es31fFunctionalTests.cpp
 	es31fFunctionalTests.hpp
+	es31fDebugTests.cpp
+	es31fDebugTests.hpp
+	es31fDefaultVertexArrayObjectTests.cpp
+	es31fDefaultVertexArrayObjectTests.hpp
 	es31fDrawTests.cpp
 	es31fDrawTests.hpp
 	es31fGeometryShaderTests.cpp
@@ -123,8 +127,6 @@ set(DEQP_GLES31_FUNCTIONAL_SRCS
 	es31fTessellationGeometryInteractionTests.hpp
 	es31fUniformBlockTests.cpp
 	es31fUniformBlockTests.hpp
-	es31fDebugTests.cpp
-	es31fDebugTests.hpp
 	es31fFboNoAttachmentTests.cpp
 	es31fFboNoAttachmentTests.hpp
 	es31fNegativeTestShared.cpp

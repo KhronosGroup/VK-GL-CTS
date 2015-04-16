@@ -1,0 +1,2 @@
+# Bug 13564
+dEQP-GLES31.functional.default_vertex_array_object.vertex_attrib_divisor

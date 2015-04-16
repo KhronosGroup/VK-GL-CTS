@@ -13,6 +13,8 @@ set(DEQP_GLES3_FUNCTIONAL_SRCS
 	es3fBufferWriteTests.hpp
 	es3fColorClearTest.cpp
 	es3fColorClearTest.hpp
+	es3fDefaultVertexArrayObjectTests.cpp
+	es3fDefaultVertexArrayObjectTests.hpp
 	es3fDefaultVertexAttributeTests.cpp
 	es3fDefaultVertexAttributeTests.hpp
 	es3fDepthStencilClearTests.cpp

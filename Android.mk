@@ -407,6 +407,7 @@ LOCAL_SRC_FILES := \
 	modules/gles3/functional/es3fClippingTests.cpp \
 	modules/gles3/functional/es3fColorClearTest.cpp \
 	modules/gles3/functional/es3fCompressedTextureTests.cpp \
+	modules/gles3/functional/es3fDefaultVertexArrayObjectTests.cpp \
 	modules/gles3/functional/es3fDefaultVertexAttributeTests.cpp \
 	modules/gles3/functional/es3fDepthStencilClearTests.cpp \
 	modules/gles3/functional/es3fDepthStencilTests.cpp \
@@ -535,6 +536,7 @@ LOCAL_SRC_FILES := \
 	modules/gles31/functional/es31fBuiltinPrecisionTests.cpp \
 	modules/gles31/functional/es31fComputeShaderBuiltinVarTests.cpp \
 	modules/gles31/functional/es31fDebugTests.cpp \
+	modules/gles31/functional/es31fDefaultVertexArrayObjectTests.cpp \
 	modules/gles31/functional/es31fDrawTests.cpp \
 	modules/gles31/functional/es31fFboColorbufferTests.cpp \
 	modules/gles31/functional/es31fFboNoAttachmentTests.cpp \
