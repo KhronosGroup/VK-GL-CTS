@@ -181,6 +181,7 @@ public:
 								Create					(MovePtr<ImageSource> imgSource) : m_imgSource(imgSource) {}
 		string					getRequiredExtension	(void) const { return m_imgSource->getRequiredExtension(); }
 		bool					invokeGLES2				(GLES2ImageApi& api, MovePtr<UniqueImage>& image, tcu::Texture2D& ref) const;
+		glw::GLenum				getFormat				(void) const { return m_imgSource->getFormat(); }
 
 	private:
 		UniquePtr<ImageSource>	m_imgSource;
@@ -209,6 +210,7 @@ public:
 	public:
 							ModifyTexSubImage		(GLenum format, GLenum type) : m_format(format), m_type(type) {}
 		bool				invokeGLES2				(GLES2ImageApi& api, MovePtr<UniqueImage>& image, tcu::Texture2D& ref) const;
+		GLenum				getFormat				(void) const { return m_format; }
 
 	private:
 		GLenum				m_format;
@@ -1117,6 +1119,63 @@ void ModifyTests::addModifyActions (void)
 	m_modifyActions.add("renderbuffer_clear_stencil",	MovePtr<Action>(new GLES2ImageApi::ModifyRenderbufferClearStencil(78)));
 }
 
+bool isCompatibleFormats (GLenum createFormat, GLenum modifyFormat)
+{
+	switch (createFormat)
+	{
+		case GL_RGB:
+		case GL_RGB8:
+		case GL_RGB565:
+			if (modifyFormat == GL_RGB
+				|| modifyFormat == GL_RGB8
+				|| modifyFormat == GL_RGB565)
+				return true;
+			else
+				return false;
+
+		case GL_RGBA:
+		case GL_RGBA4:
+		case GL_RGBA8:
+		case GL_RGB5_A1:
+			if (modifyFormat == GL_RGBA
+				|| modifyFormat == GL_RGBA8
+				|| modifyFormat == GL_RGBA4
+				|| modifyFormat == GL_RGB5_A1)
+				return true;
+			else
+				return false;
+
+		case GL_DEPTH_COMPONENT16:
+		case GL_STENCIL_INDEX8:
+			return false;
+
+		default:
+			DE_ASSERT(false);
+			return false;
+	}
+}
+
+bool isCompatibleCreateAndModifyActions (const Action& create, const Action& modify)
+{
+	if (const GLES2ImageApi::Create* gles2Create = dynamic_cast<const GLES2ImageApi::Create*>(&create))
+	{
+		const GLenum createFormat = gles2Create->getFormat();
+
+		if (const GLES2ImageApi::ModifyTexSubImage* gles2TexSubImageModify = dynamic_cast<const GLES2ImageApi::ModifyTexSubImage*>(&modify))
+		{
+			const GLenum modifyFormat  = gles2TexSubImageModify->getFormat();
+
+			return isCompatibleFormats(createFormat, modifyFormat);
+		}
+
+		return true;
+	}
+	else
+		DE_ASSERT(false);
+
+	return false;
+}
+
 void ModifyTests::init (void)
 {
 	addCreateTexture2DActions("tex_");
@@ -1131,6 +1190,10 @@ void ModifyTests::init (void)
 		for (int modifyNdx = 0; modifyNdx < m_modifyActions.size(); modifyNdx++)
 		{
 			LabeledAction& modifyAction = m_modifyActions[modifyNdx];
+
+			if (!isCompatibleCreateAndModifyActions(*createAction.action, *modifyAction.action))
+				continue;
+
 			TestSpec spec;
 			spec.name = createAction.label + "_" + modifyAction.label;
 			spec.desc = "gles2_tex_sub_image";

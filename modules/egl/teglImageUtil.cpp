@@ -180,6 +180,7 @@ class TextureImageSource : public GLImageSource
 public:
 							TextureImageSource	(GLenum format, GLenum type, bool useTexLevel0) : m_format(format), m_type(type), m_useTexLevel0(useTexLevel0) {}
 	MovePtr<ClientBuffer>	createBuffer		(const glw::Functions& gl, Texture2D* reference) const;
+	GLenum					getFormat			(void) const { return m_format; }
 
 protected:
 	AttribMap				getCreateAttribs	(void) const;
@@ -304,6 +305,7 @@ public:
 
 	string					getRequiredExtension	(void) const 	{ return "EGL_KHR_gl_renderbuffer_image"; }
 	MovePtr<ClientBuffer>	createBuffer			(const glw::Functions& gl, Texture2D* reference) const;
+	GLenum					getFormat				(void) const { return m_format; }
 
 protected:
 	EGLenum					getSource				(void) const	{ return EGL_GL_RENDERBUFFER_KHR; }
@@ -397,13 +399,15 @@ MovePtr<ClientBuffer> RenderbufferImageSource::createBuffer (const glw::Function
 class UnsupportedImageSource : public ImageSource
 {
 public:
-							UnsupportedImageSource	(const string& message) : m_message(message) {}
+							UnsupportedImageSource	(const string& message, GLenum format) : m_message(message), m_format(format) {}
 	string					getRequiredExtension	(void) const { fail(); return ""; }
 	MovePtr<ClientBuffer>	createBuffer			(const glw::Functions&, tcu::Texture2D*) const { fail(); return de::MovePtr<ClientBuffer>(); }
 	EGLImageKHR				createImage				(const Library& egl, EGLDisplay dpy, EGLContext ctx, EGLClientBuffer clientBuffer) const;
+	GLenum					getFormat				(void) const { return m_format; }
 
 private:
 	const string			m_message;
+	GLenum					m_format;
 
 	void					fail					(void) const { TCU_THROW(NotSupportedError, m_message.c_str()); }
 };
@@ -427,9 +431,9 @@ MovePtr<ImageSource> createRenderbufferImageSource (GLenum format)
 	return MovePtr<ImageSource>(new RenderbufferImageSource(format));
 }
 
-MovePtr<ImageSource> createUnsupportedImageSource (const string& message)
+MovePtr<ImageSource> createUnsupportedImageSource (const string& message, GLenum format)
 {
-	return MovePtr<ImageSource>(new UnsupportedImageSource(message));
+	return MovePtr<ImageSource>(new UnsupportedImageSource(message, format));
 }
 
 } // Image

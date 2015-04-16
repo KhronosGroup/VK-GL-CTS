@@ -51,9 +51,9 @@ using namespace eglw;
 
 #if (DE_OS != DE_OS_ANDROID)
 
-MovePtr<ImageSource> createAndroidNativeImageSource	(GLenum)
+MovePtr<ImageSource> createAndroidNativeImageSource	(GLenum format)
 {
-	return createUnsupportedImageSource("Not Android platform");
+	return createUnsupportedImageSource("Not Android platform", format);
 }
 
 #else // DE_OS == DE_OS_ANDROID
@@ -105,6 +105,7 @@ public:
 	MovePtr<ClientBuffer>	createBuffer 				(const glw::Functions&, Texture2D*) const;
 	string					getRequiredExtension		(void) const { return "EGL_ANDROID_image_native_buffer"; }
 	EGLImageKHR				createImage					(const Library& egl, EGLDisplay dpy, EGLContext ctx, EGLClientBuffer clientBuffer) const;
+	GLenum					getFormat					(void) const { return m_format; }
 
 protected:
 	GLenum					m_format;
@@ -158,7 +159,7 @@ MovePtr<ImageSource> createAndroidNativeImageSource	(GLenum format)
 	}
 	catch (std::runtime_error& exc)
 	{
-		return createUnsupportedImageSource(string("Android native buffers unsupported: ") + exc.what());
+		return createUnsupportedImageSource(string("Android native buffers unsupported: ") + exc.what(), format);
 	}
 }
 
