@@ -35,6 +35,7 @@ struct ANativeWindowBuffer;
 namespace android
 {
 class GraphicBuffer;
+class android_native_base_t;
 }
 
 namespace tcu
@@ -96,17 +97,28 @@ typedef deInt32 PixelFormat;
 // ui/GraphicBuffer.h
 struct GraphicBufferFunctions
 {
-	typedef android::GraphicBuffer*	(*constructorFunc)		(void* memory, deUint32 w, deUint32 h, PixelFormat format, deUint32 usage);
-	typedef void*					(*destructorFunc)		(android::GraphicBuffer* buffer);
+	typedef void					(*genericFunc)			();
+	typedef status_t				(*initCheckFunc)		(android::GraphicBuffer* buffer);
 	typedef status_t				(*lockFunc)				(android::GraphicBuffer* buffer, deUint32 usage, void** vaddr);
 	typedef status_t				(*unlockFunc)			(android::GraphicBuffer* buffer);
 	typedef ANativeWindowBuffer*	(*getNativeBufferFunc)	(const android::GraphicBuffer* buffer);
 
-	constructorFunc					constructor;
-	destructorFunc					destructor;
+	genericFunc						constructor;
+	genericFunc						destructor;
 	lockFunc						lock;
 	unlockFunc						unlock;
 	getNativeBufferFunc				getNativeBuffer;
+	initCheckFunc					initCheck;
+};
+
+// system/window.h
+struct NativeBaseFunctions
+{
+	typedef void	(*incRefFunc)			(android::android_native_base_t* base);
+	typedef void	(*decRefFunc)			(android::android_native_base_t* base);
+
+	incRefFunc		incRef;
+	decRefFunc		decRef;
 };
 
 struct LibUIFunctions
@@ -166,7 +178,7 @@ public:
 
 private:
 	const GraphicBufferFunctions&	m_functions;
-	std::vector<deUint8>			m_memory;
+	NativeBaseFunctions				m_baseFunctions;
 	android::GraphicBuffer*			m_impl;
 };
 
