@@ -4135,7 +4135,7 @@ group invalid "Invalid uniform interface block syntax tests."
 			}
 		""
 	end
-	case invalid_character_block_name_vertex
+	case invalid_number_block_name_vertex
 		version 300 es
 		expect compile_fail
 
@@ -4168,7 +4168,7 @@ group invalid "Invalid uniform interface block syntax tests."
 			}
 		""
 	end
-	case invalid_character_block_name_fragment
+	case invalid_number_block_name_fragment
 		version 300 es
 		expect compile_fail
 
@@ -4191,6 +4191,138 @@ group invalid "Invalid uniform interface block syntax tests."
 			layout(location=0) out vec4 o_color;
 
 			uniform 0UniformBlock
+			{
+				vec4 uniformMember;
+			} uniformBlock;
+
+			void main()
+			{
+				o_color = uniformBlock.uniformMember;
+			}
+		""
+	end
+	case invalid_hash_block_name_vertex
+		version 300 es
+		expect compile_fail
+
+		vertex ""
+			#version 300 es
+			precision highp float;
+
+
+
+			uniform #UniformBlock
+			{
+				vec4 uniformMember;
+			} uniformBlock;
+
+			void main()
+			{
+				gl_Position = uniformBlock.uniformMember;
+			}
+		""
+
+		fragment ""
+			#version 300 es
+			precision highp float;
+
+			layout(location=0) out vec4 o_color;
+
+			void main()
+			{
+				o_color = vec4(1.0);
+			}
+		""
+	end
+	case invalid_hash_block_name_fragment
+		version 300 es
+		expect compile_fail
+
+		vertex ""
+			#version 300 es
+			precision highp float;
+
+			in vec4 a_pos;
+
+			void main()
+			{
+				gl_Position = a_pos;
+			}
+		""
+
+		fragment ""
+			#version 300 es
+			precision highp float;
+
+			layout(location=0) out vec4 o_color;
+
+			uniform #UniformBlock
+			{
+				vec4 uniformMember;
+			} uniformBlock;
+
+			void main()
+			{
+				o_color = uniformBlock.uniformMember;
+			}
+		""
+	end
+	case invalid_dollar_block_name_vertex
+		version 300 es
+		expect compile_fail
+
+		vertex ""
+			#version 300 es
+			precision highp float;
+
+
+
+			uniform $UniformBlock
+			{
+				vec4 uniformMember;
+			} uniformBlock;
+
+			void main()
+			{
+				gl_Position = uniformBlock.uniformMember;
+			}
+		""
+
+		fragment ""
+			#version 300 es
+			precision highp float;
+
+			layout(location=0) out vec4 o_color;
+
+			void main()
+			{
+				o_color = vec4(1.0);
+			}
+		""
+	end
+	case invalid_dollar_block_name_fragment
+		version 300 es
+		expect compile_fail
+
+		vertex ""
+			#version 300 es
+			precision highp float;
+
+			in vec4 a_pos;
+
+			void main()
+			{
+				gl_Position = a_pos;
+			}
+		""
+
+		fragment ""
+			#version 300 es
+			precision highp float;
+
+			layout(location=0) out vec4 o_color;
+
+			uniform $UniformBlock
 			{
 				vec4 uniformMember;
 			} uniformBlock;
@@ -4335,7 +4467,7 @@ group invalid "Invalid uniform interface block syntax tests."
 			}
 		""
 	end
-	case invalid_character_instance_name_vertex
+	case invalid_number_instance_name_vertex
 		version 300 es
 		expect compile_fail
 
@@ -4368,7 +4500,7 @@ group invalid "Invalid uniform interface block syntax tests."
 			}
 		""
 	end
-	case invalid_character_instance_name_fragment
+	case invalid_number_instance_name_fragment
 		version 300 es
 		expect compile_fail
 
@@ -4398,6 +4530,138 @@ group invalid "Invalid uniform interface block syntax tests."
 			void main()
 			{
 				o_color = 0uniformBlock.uniformMember;
+			}
+		""
+	end
+	case invalid_hash_instance_name_vertex
+		version 300 es
+		expect compile_fail
+
+		vertex ""
+			#version 300 es
+			precision highp float;
+
+
+
+			uniform UniformInstance
+			{
+				vec4 uniformMember;
+			} $uniformBlock;
+
+			void main()
+			{
+				gl_Position = $uniformBlock.uniformMember;
+			}
+		""
+
+		fragment ""
+			#version 300 es
+			precision highp float;
+
+			layout(location=0) out vec4 o_color;
+
+			void main()
+			{
+				o_color = vec4(1.0);
+			}
+		""
+	end
+	case invalid_hash_instance_name_fragment
+		version 300 es
+		expect compile_fail
+
+		vertex ""
+			#version 300 es
+			precision highp float;
+
+			in vec4 a_pos;
+
+			void main()
+			{
+				gl_Position = a_pos;
+			}
+		""
+
+		fragment ""
+			#version 300 es
+			precision highp float;
+
+			layout(location=0) out vec4 o_color;
+
+			uniform UniformInstance
+			{
+				vec4 uniformMember;
+			} $uniformBlock;
+
+			void main()
+			{
+				o_color = $uniformBlock.uniformMember;
+			}
+		""
+	end
+	case invalid_dollar_instance_name_vertex
+		version 300 es
+		expect compile_fail
+
+		vertex ""
+			#version 300 es
+			precision highp float;
+
+
+
+			uniform UniformInstance
+			{
+				vec4 uniformMember;
+			} $uniformBlock;
+
+			void main()
+			{
+				gl_Position = $uniformBlock.uniformMember;
+			}
+		""
+
+		fragment ""
+			#version 300 es
+			precision highp float;
+
+			layout(location=0) out vec4 o_color;
+
+			void main()
+			{
+				o_color = vec4(1.0);
+			}
+		""
+	end
+	case invalid_dollar_instance_name_fragment
+		version 300 es
+		expect compile_fail
+
+		vertex ""
+			#version 300 es
+			precision highp float;
+
+			in vec4 a_pos;
+
+			void main()
+			{
+				gl_Position = a_pos;
+			}
+		""
+
+		fragment ""
+			#version 300 es
+			precision highp float;
+
+			layout(location=0) out vec4 o_color;
+
+			uniform UniformInstance
+			{
+				vec4 uniformMember;
+			} $uniformBlock;
+
+			void main()
+			{
+				o_color = $uniformBlock.uniformMember;
 			}
 		""
 	end
