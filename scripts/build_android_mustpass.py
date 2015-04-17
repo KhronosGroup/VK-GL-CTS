@@ -428,7 +428,12 @@ MASTER_GLES2_PKG				= Package(module = GLES2_MODULE, configurations = [
 					  filters		= MASTER_GLES2_COMMON_FILTERS),
 	])
 
-MASTER_GLES3_COMMON_FILTERS		= [include("gles3-master.txt"), exclude("gles3-hw-issues.txt"), exclude("gles3-test-issues.txt")]
+MASTER_GLES3_COMMON_FILTERS		= [
+		include("gles3-master.txt"),
+		exclude("gles3-hw-issues.txt"),
+		exclude("gles3-test-issues.txt"),
+		exclude("gles3-spec-issues.txt")
+	]
 MASTER_GLES3_PKG				= Package(module = GLES3_MODULE, configurations = [
 		# Master
 		Configuration(name			= "master",
@@ -473,7 +478,11 @@ MASTER_GLES3_PKG				= Package(module = GLES3_MODULE, configurations = [
 					  filters		= MASTER_GLES3_COMMON_FILTERS + [include("gles3-pixelformat.txt")]),
 	])
 
-MASTER_GLES31_COMMON_FILTERS	= [include("gles31-master.txt"), exclude("gles31-hw-issues.txt"), exclude("gles31-test-issues.txt")]
+MASTER_GLES31_COMMON_FILTERS	= [
+		include("gles31-master.txt"),
+		exclude("gles31-hw-issues.txt"),
+		exclude("gles31-test-issues.txt"),
+	]
 MASTER_GLES31_PKG				= Package(module = GLES31_MODULE, configurations = [
 		# Master
 		Configuration(name			= "master",
