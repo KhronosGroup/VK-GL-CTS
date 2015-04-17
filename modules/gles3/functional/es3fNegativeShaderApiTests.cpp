@@ -511,7 +511,7 @@ void NegativeShaderApiTests::init (void)
 		});
 	ES3F_ADD_API_CASE(get_sampler_parameteriv, "Invalid glGetSamplerParameteriv() usage",
 		{
-			int				params;
+			int				params	= -1;
 			GLuint			sampler;
 			glGenSamplers	(1, &sampler);
 
@@ -529,7 +529,7 @@ void NegativeShaderApiTests::init (void)
 		});
 	ES3F_ADD_API_CASE(get_sampler_parameterfv, "Invalid glGetSamplerParameterfv() usage",
 		{
-			float			params;
+			float			params	= 0.0f;
 			GLuint			sampler;
 			glGenSamplers	(1, &sampler);
 
@@ -564,7 +564,7 @@ void NegativeShaderApiTests::init (void)
 		});
 	ES3F_ADD_API_CASE(sampler_parameteriv, "Invalid glSamplerParameteriv() usage",
 		{
-			int				params;
+			int				params	= -1;
 			GLuint			sampler;
 			glGenSamplers	(1, &sampler);
 
@@ -601,7 +601,7 @@ void NegativeShaderApiTests::init (void)
 		});
 	ES3F_ADD_API_CASE(sampler_parameterfv, "Invalid glSamplerParameterfv() usage",
 		{
-			float			params;
+			float			params	= 0.0f;
 			GLuint			sampler;
 			glGenSamplers	(1, &sampler);
 
