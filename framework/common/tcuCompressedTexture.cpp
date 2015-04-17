@@ -329,7 +329,10 @@ inline deUint32 getBits (deUint64 src, int low, int high)
 {
 	const int numBits = (high-low) + 1;
 	DE_ASSERT(de::inRange(numBits, 1, 32));
-	return (src >> low) & ((1<<numBits)-1);
+	if (numBits < 32)
+		return (src >> low) & ((1u<<numBits)-1);
+	else
+		return (src >> low) & 0xFFFFFFFFu;
 }
 
 inline deUint8 extend4To8 (deUint8 src)
