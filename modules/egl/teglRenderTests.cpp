@@ -125,6 +125,22 @@ struct DrawPrimitiveOp
 	int				stencilRef;
 };
 
+static bool isANarrowScreenSpaceTriangle (const tcu::Vec4& p0, const tcu::Vec4& p1, const tcu::Vec4& p2)
+{
+	// to clip space
+	const tcu::Vec2	csp0 				= p0.swizzle(0, 1) / p0.w();
+	const tcu::Vec2	csp1 				= p1.swizzle(0, 1) / p1.w();
+	const tcu::Vec2	csp2 				= p2.swizzle(0, 1) / p2.w();
+
+	const tcu::Vec2	e01					= (csp1 - csp0);
+	const tcu::Vec2	e02					= (csp2 - csp0);
+
+	const float		minimumVisibleArea	= 0.4f; // must cover at least 10% of the surface
+	const float		visibleArea			= de::abs(e01.x() * e02.y() - e02.x() * e01.y()) * 0.5f;
+
+	return visibleArea < minimumVisibleArea;
+}
+
 void randomizeDrawOp (de::Random& rnd, DrawPrimitiveOp& drawOp)
 {
 	const int	minStencilRef	= 0;
@@ -172,6 +188,34 @@ void randomizeDrawOp (de::Random& rnd, DrawPrimitiveOp& drawOp)
 				color.y()		= rnd.getFloat(minRGB, maxRGB);
 				color.z()		= rnd.getFloat(minRGB, maxRGB);
 				color.w()		= rnd.getFloat(minAlpha, maxAlpha);
+			}
+
+			// avoid generating narrow triangles
+			{
+				const int	maxAttempts	= 40;
+				int			numAttempts	= 0;
+				tcu::Vec4&	p0			= drawOp.positions[triNdx*3 + 0];
+				tcu::Vec4&	p1			= drawOp.positions[triNdx*3 + 1];
+				tcu::Vec4&	p2			= drawOp.positions[triNdx*3 + 2];
+
+				while (isANarrowScreenSpaceTriangle(p0, p1, p2))
+				{
+					p1.x()	= cx + rnd.getFloat(-maxTriOffset, maxTriOffset);
+					p1.y()	= cy + rnd.getFloat(-maxTriOffset, maxTriOffset);
+					p1.z()	= rnd.getFloat(minDepth, maxDepth);
+					p1.w()	= 1.0f;
+
+					p2.x()	= cx + rnd.getFloat(-maxTriOffset, maxTriOffset);
+					p2.y()	= cy + rnd.getFloat(-maxTriOffset, maxTriOffset);
+					p2.z()	= rnd.getFloat(minDepth, maxDepth);
+					p2.w()	= 1.0f;
+
+					if (++numAttempts > maxAttempts)
+					{
+						DE_ASSERT(false);
+						break;
+					}
+				}
 			}
 		}
 	}
@@ -534,6 +578,8 @@ void drawGLES2 (const glw::Functions& gl, const Program& program, const DrawPrim
 		default:
 			DE_ASSERT(false);
 	}
+
+	gl.disable(GL_DITHER);
 
 	gl.vertexAttribPointer(gles2Program.getPositionLoc(), 4, GL_FLOAT, GL_FALSE, 0, &drawOp.positions[0]);
 	gl.vertexAttribPointer(gles2Program.getColorLoc(), 4, GL_FLOAT, GL_FALSE, 0, &drawOp.colors[0]);
