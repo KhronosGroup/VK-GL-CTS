@@ -2833,7 +2833,7 @@ void NegativeTextureApiTests::init (void)
 			glBindTexture	(GL_TEXTURE_2D, texture);
 
 			m_log << TestLog::Section("", "GL_INVALID_OPERATION is generated if the texture object currently bound to target already has GL_TEXTURE_IMMUTABLE_FORMAT set to GL_TRUE.");
-			deInt32			immutable;
+			deInt32			immutable	= -1;
 			glGetTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_IMMUTABLE_FORMAT, &immutable);
 			m_log << TestLog::Message << "// GL_TEXTURE_IMMUTABLE_FORMAT = " << ((immutable != 0) ? "GL_TRUE" : "GL_FALSE") << TestLog::EndMessage;
 			glTexStorage2D	(GL_TEXTURE_2D, 1, GL_RGBA8, 16, 16);
@@ -2923,7 +2923,7 @@ void NegativeTextureApiTests::init (void)
 			glBindTexture	(GL_TEXTURE_3D, texture);
 
 			m_log << TestLog::Section("", "GL_INVALID_OPERATION is generated if the texture object currently bound to target already has GL_TEXTURE_IMMUTABLE_FORMAT set to GL_TRUE.");
-			deInt32			immutable;
+			deInt32			immutable	= -1;
 			glGetTexParameteriv(GL_TEXTURE_3D, GL_TEXTURE_IMMUTABLE_FORMAT, &immutable);
 			m_log << TestLog::Message << "// GL_TEXTURE_IMMUTABLE_FORMAT = " << ((immutable != 0) ? "GL_TRUE" : "GL_FALSE") << TestLog::EndMessage;
 			glTexStorage3D	(GL_TEXTURE_3D, 1, GL_RGBA8, 4, 4, 4);
