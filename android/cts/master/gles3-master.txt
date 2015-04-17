@@ -39579,7 +39579,6 @@ dEQP-GLES3.functional.negative_api.texture.compressedtexsubimage2d_invalid_offse
 dEQP-GLES3.functional.negative_api.texture.compressedtexsubimage2d_neg_width_height
 dEQP-GLES3.functional.negative_api.texture.compressedtexsubimage2d_invalid_size
 dEQP-GLES3.functional.negative_api.texture.compressedtexsubimage2d_invalid_buffer_target
-dEQP-GLES3.functional.negative_api.texture.teximage3d
 dEQP-GLES3.functional.negative_api.texture.teximage3d_neg_level
 dEQP-GLES3.functional.negative_api.texture.teximage3d_max_level
 dEQP-GLES3.functional.negative_api.texture.teximage3d_neg_width_height_depth
