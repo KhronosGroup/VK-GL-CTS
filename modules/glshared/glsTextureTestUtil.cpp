@@ -181,15 +181,6 @@ inline float triangleInterpolate (const tcu::Vec3& v, float x, float y)
 	return triangleInterpolate(v.x(), v.y(), v.z(), x, y);
 }
 
-inline float triQuadInterpolate (float x, float y, const tcu::Vec4& quad)
-{
-	// \note Top left fill rule.
-	if (x + y < 1.0f)
-		return triangleInterpolate(quad.x(), quad.y(), quad.z(), x, y);
-	else
-		return triangleInterpolate(quad.w(), quad.z(), quad.y(), 1.0f-x, 1.0f-y);
-}
-
 SurfaceAccess::SurfaceAccess (tcu::Surface& surface, const tcu::PixelFormat& colorFmt, int x, int y, int width, int height)
 	: m_surface		(&surface)
 	, m_colorMask	(getColorMask(colorFmt))
@@ -1169,10 +1160,10 @@ glu::ShaderProgram* ProgramLibrary::getProgram (Program program)
 			case PROGRAM_2D_ARRAY_SHADOW:	sampler = "sampler2DArrayShadow";	lookup = "vec4(texture(u_sampler, vec4(v_texCoord, u_ref)), 0.0, 0.0, 1.0)";			break;
 			case PROGRAM_3D_FLOAT:			sampler = "sampler3D";				lookup = "texture(u_sampler, v_texCoord)";												break;
 			case PROGRAM_3D_INT:			sampler = "isampler3D";				lookup = "vec4(texture(u_sampler, v_texCoord))";										break;
-			case PROGRAM_3D_UINT:			sampler =" usampler3D";				lookup = "vec4(texture(u_sampler, v_texCoord))";										break;
+			case PROGRAM_3D_UINT:			sampler = "usampler3D";				lookup = "vec4(texture(u_sampler, v_texCoord))";										break;
 			case PROGRAM_3D_FLOAT_BIAS:		sampler = "sampler3D";				lookup = "texture(u_sampler, v_texCoord, u_bias)";										break;
 			case PROGRAM_3D_INT_BIAS:		sampler = "isampler3D";				lookup = "vec4(texture(u_sampler, v_texCoord, u_bias))";								break;
-			case PROGRAM_3D_UINT_BIAS:		sampler =" usampler3D";				lookup = "vec4(texture(u_sampler, v_texCoord, u_bias))";								break;
+			case PROGRAM_3D_UINT_BIAS:		sampler = "usampler3D";				lookup = "vec4(texture(u_sampler, v_texCoord, u_bias))";								break;
 			case PROGRAM_CUBE_ARRAY_FLOAT:	sampler = "samplerCubeArray";		lookup = "texture(u_sampler, v_texCoord)";												break;
 			case PROGRAM_CUBE_ARRAY_INT:	sampler = "isamplerCubeArray";		lookup = "vec4(texture(u_sampler, v_texCoord))";										break;
 			case PROGRAM_CUBE_ARRAY_UINT:	sampler = "usamplerCubeArray";		lookup = "vec4(texture(u_sampler, v_texCoord))";										break;
