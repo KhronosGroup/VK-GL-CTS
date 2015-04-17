@@ -687,13 +687,45 @@ void main()
 	${{OUTPUT}} = uniformBlock.uniformMember;
 }"""[1:]
 
-invalidCharacterBlockNameShaderTemplate = """
+invalidNumberBlockNameShaderTemplate = """
 #version 300 es
 precision highp float;
 
 ${{OUTPUT_DECLARATION}}
 
 uniform 0UniformBlock
+{
+	vec4 uniformMember;
+} uniformBlock;
+
+void main()
+{
+	${{OUTPUT}} = uniformBlock.uniformMember;
+}"""[1:]
+
+invalidHashBlockNameShaderTemplate = """
+#version 300 es
+precision highp float;
+
+${{OUTPUT_DECLARATION}}
+
+uniform #UniformBlock
+{
+	vec4 uniformMember;
+} uniformBlock;
+
+void main()
+{
+	${{OUTPUT}} = uniformBlock.uniformMember;
+}"""[1:]
+
+invalidDollarBlockNameShaderTemplate = """
+#version 300 es
+precision highp float;
+
+${{OUTPUT_DECLARATION}}
+
+uniform $UniformBlock
 {
 	vec4 uniformMember;
 } uniformBlock;
@@ -736,7 +768,7 @@ void main()
 	${{OUTPUT}} = uniformBlock.uniformMember;
 }""")[1:]
 
-invalidCharacterInstanceNameShaderTemplate = """
+invalidNumberInstanceNameShaderTemplate = """
 #version 300 es
 precision highp float;
 
@@ -750,6 +782,38 @@ uniform UniformInstance
 void main()
 {
 	${{OUTPUT}} = 0uniformBlock.uniformMember;
+}"""[1:]
+
+invalidHashInstanceNameShaderTemplate = """
+#version 300 es
+precision highp float;
+
+${{OUTPUT_DECLARATION}}
+
+uniform UniformInstance
+{
+	vec4 uniformMember;
+} #uniformBlock;
+
+void main()
+{
+	${{OUTPUT}} = #uniformBlock.uniformMember;
+}"""[1:]
+
+invalidDollarInstanceNameShaderTemplate = """
+#version 300 es
+precision highp float;
+
+${{OUTPUT_DECLARATION}}
+
+uniform UniformInstance
+{
+	vec4 uniformMember;
+} $uniformBlock;
+
+void main()
+{
+	${{OUTPUT}} = $uniformBlock.uniformMember;
 }"""[1:]
 
 invalidIdentifierInstanceNameShaderTemplate = """
@@ -837,10 +901,14 @@ invalidCases = (
 			+ sum([createCases("member_layout_%s" % qualifier, invalidMemberLayoutShaderTemplate % qualifier, False)
 					for qualifier in ["shared", "packed", "std140"]], [])
 			+ createCases("missing_block_name", missingBlockNameShaderTemplate, False)
-			+ createCases("invalid_character_block_name", invalidCharacterBlockNameShaderTemplate, False)
+			+ createCases("invalid_number_block_name", invalidNumberBlockNameShaderTemplate, False)
+			+ createCases("invalid_hash_block_name", invalidHashBlockNameShaderTemplate, False)
+			+ createCases("invalid_dollar_block_name", invalidDollarBlockNameShaderTemplate, False)
 			+ createCases("invalid_identifier_block_name", invalidIdentifierBlockNameShaderTemplate, False)
 			+ createCases("too_long_block_name", tooLongIdentifierBlockNameShaderTemplate, False)
-			+ createCases("invalid_character_instance_name", invalidCharacterInstanceNameShaderTemplate, False)
+			+ createCases("invalid_number_instance_name", invalidNumberInstanceNameShaderTemplate, False)
+			+ createCases("invalid_hash_instance_name", invalidDollarInstanceNameShaderTemplate, False)
+			+ createCases("invalid_dollar_instance_name", invalidDollarInstanceNameShaderTemplate, False)
 			+ createCases("invalid_identifier_instance_name", invalidIdentifierInstanceNameShaderTemplate, False)
 			+ createCases("double_underscore_block_name", doubleUnderscoreIdentifierBlockNameShaderTemplate, False)
 			+ createCases("double_underscore_instance_name", doubleUnderscoreIdentifierInstanceNameShaderTemplate, False)
