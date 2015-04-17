@@ -74,11 +74,12 @@ public:
 	virtual std::string					getRequiredExtension(void) const = 0;
 	virtual de::MovePtr<ClientBuffer>	createBuffer		(const glw::Functions& gl, tcu::Texture2D* reference = DE_NULL) const = 0;
 	virtual eglw::EGLImageKHR			createImage			(const eglw::Library& egl, eglw::EGLDisplay dpy, eglw::EGLContext ctx, eglw::EGLClientBuffer clientBuffer) const = 0;
+	virtual glw::GLenum					getFormat			(void) const = 0;
 };
 
 de::MovePtr<ImageSource> createTextureImageSource			(eglw::EGLenum source, glw::GLenum format, glw::GLenum type, bool useTexLevel0 = false);
 de::MovePtr<ImageSource> createRenderbufferImageSource		(glw::GLenum format);
-de::MovePtr<ImageSource> createUnsupportedImageSource		(const std::string& message);
+de::MovePtr<ImageSource> createUnsupportedImageSource		(const std::string& message, glw::GLenum format);
 
 } // Image
 } // egl
