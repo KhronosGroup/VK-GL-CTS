@@ -84,6 +84,11 @@ TransferFormat getTransferFormat (tcu::TextureFormat texFormat)
 		case TextureFormat::DS:		format = GL_DEPTH_STENCIL;						break;
 		case TextureFormat::S:		format = GL_STENCIL_INDEX;						break;
 
+		case TextureFormat::BGRA:
+			DE_ASSERT(!isInt);
+			format = GL_BGRA;
+			break;
+
 		default:
 			DE_ASSERT(false);
 	}
