@@ -422,6 +422,15 @@ IVec4 getTextureFormatMantissaBitDepth (const TextureFormat& format)
 	return select(chnBits.swizzle(chnSwz.x(), chnSwz.y(), chnSwz.z(), chnSwz.w()), IVec4(0), chnMask);
 }
 
+BVec4 getTextureFormatChannelMask (const TextureFormat& format)
+{
+	const TextureSwizzle::Channel* const map = getChannelReadSwizzle(format.order).components;
+	return BVec4(deInRange32(map[0], TextureSwizzle::CHANNEL_0, TextureSwizzle::CHANNEL_3) == DE_TRUE,
+				 deInRange32(map[1], TextureSwizzle::CHANNEL_0, TextureSwizzle::CHANNEL_3) == DE_TRUE,
+				 deInRange32(map[2], TextureSwizzle::CHANNEL_0, TextureSwizzle::CHANNEL_3) == DE_TRUE,
+				 deInRange32(map[3], TextureSwizzle::CHANNEL_0, TextureSwizzle::CHANNEL_3) == DE_TRUE);
+}
+
 static inline float linearInterpolate (float t, float minVal, float maxVal)
 {
 	return minVal + (maxVal - minVal) * t;
