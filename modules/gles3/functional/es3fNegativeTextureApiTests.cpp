@@ -1986,9 +1986,10 @@ void NegativeTextureApiTests::init (void)
 			expectError(GL_INVALID_ENUM);
 			m_log << TestLog::EndSection;
 
-			m_log << TestLog::Section("", "GL_INVALID_VALUE is generated if internalFormat is not one of the accepted resolution and format symbolic constants.");
+			m_log << TestLog::Section("", "GL_INVALID_VALUE is generated if internalFormat is not one of the accepted resolution and format symbolic constants "
+										  "or GL_INVALID_OPERATION is generated if internalformat, format and type are not compatible.");
 			glTexImage3D(GL_TEXTURE_3D, 0, 0, 1, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
-			expectError(GL_INVALID_VALUE);
+			expectError(GL_INVALID_VALUE, GL_INVALID_OPERATION);
 			m_log << TestLog::EndSection;
 
 			m_log << TestLog::Section("", "GL_INVALID_OPERATION is generated if target is GL_TEXTURE_3D and format is GL_DEPTH_COMPONENT, or GL_DEPTH_STENCIL.");
