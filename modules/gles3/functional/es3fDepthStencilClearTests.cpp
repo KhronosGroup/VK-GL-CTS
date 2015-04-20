@@ -93,7 +93,7 @@ tcu::TextureFormat getDepthFormat (int depthBits)
 	{
 		case 8:		return tcu::TextureFormat(tcu::TextureFormat::D, tcu::TextureFormat::UNORM_INT8);
 		case 16:	return tcu::TextureFormat(tcu::TextureFormat::D, tcu::TextureFormat::UNORM_INT16);
-		case 24:	return tcu::TextureFormat(tcu::TextureFormat::D, tcu::TextureFormat::UNSIGNED_INT_24_8);
+		case 24:	return tcu::TextureFormat(tcu::TextureFormat::D, tcu::TextureFormat::UNORM_INT24);
 		case 32:	return tcu::TextureFormat(tcu::TextureFormat::D, tcu::TextureFormat::FLOAT);
 		default:
 			TCU_FAIL("Can't map depth buffer format");
@@ -106,7 +106,7 @@ tcu::TextureFormat getStencilFormat (int stencilBits)
 	{
 		case 8:		return tcu::TextureFormat(tcu::TextureFormat::S, tcu::TextureFormat::UNSIGNED_INT8);
 		case 16:	return tcu::TextureFormat(tcu::TextureFormat::S, tcu::TextureFormat::UNSIGNED_INT16);
-		case 24:	return tcu::TextureFormat(tcu::TextureFormat::S, tcu::TextureFormat::UNSIGNED_INT_24_8);
+		case 24:	return tcu::TextureFormat(tcu::TextureFormat::S, tcu::TextureFormat::UNSIGNED_INT24);
 		case 32:	return tcu::TextureFormat(tcu::TextureFormat::S, tcu::TextureFormat::UNSIGNED_INT32);
 		default:
 			TCU_FAIL("Can't map depth buffer format");
