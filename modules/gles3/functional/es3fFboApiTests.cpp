@@ -65,6 +65,17 @@ static void checkError (tcu::TestContext& testCtx, sglr::Context& ctx, GLenum ex
 		testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Error code mismatch");
 }
 
+static void checkEitherError (tcu::TestContext& testCtx, sglr::Context& ctx, GLenum expectA, GLenum expectB)
+{
+	GLenum	result	= ctx.getError();
+	bool	isOk	= (result == expectA || result == expectB);
+
+	testCtx.getLog() << TestLog::Message << "// " << (isOk ? "Pass" : "Fail") << ", expected " << glu::getErrorStr(expectA) << " or " << glu::getErrorStr(expectB) << TestLog::EndMessage;
+
+	if (!isOk)
+		testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Error code mismatch");
+}
+
 static const char* getAttachmentName (GLenum attachment)
 {
 	switch (attachment)
@@ -325,13 +336,13 @@ static void attachmentQueryDefaultFboTest (tcu::TestContext& testCtx, sglr::Cont
 	// Check that proper error codes are returned
 	GLint unused = -1;
 	ctx.getFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE, &unused);
-	checkError(testCtx, ctx, GL_INVALID_ENUM);
+	checkEitherError(testCtx, ctx, GL_INVALID_ENUM, GL_INVALID_OPERATION);
 	ctx.getFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME, &unused);
-	checkError(testCtx, ctx, GL_INVALID_ENUM);
+	checkEitherError(testCtx, ctx, GL_INVALID_ENUM, GL_INVALID_OPERATION);
 	ctx.getFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_LEVEL, &unused);
-	checkError(testCtx, ctx, GL_INVALID_ENUM);
+	checkEitherError(testCtx, ctx, GL_INVALID_ENUM, GL_INVALID_OPERATION);
 	ctx.getFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_CUBE_MAP_FACE, &unused);
-	checkError(testCtx, ctx, GL_INVALID_ENUM);
+	checkEitherError(testCtx, ctx, GL_INVALID_ENUM, GL_INVALID_OPERATION);
 }
 
 static void attachmentQueryEmptyFboTest (tcu::TestContext& testCtx, sglr::Context& ctx)
