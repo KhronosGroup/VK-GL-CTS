@@ -2814,6 +2814,9 @@ int computeTextureCompareDiff (const tcu::ConstPixelBufferAccess&	result,
 				continue;
 			}
 
+			// Reference result is known to be a valid result, we can
+			// skip verification if thes results are equal
+			if (resPix.x() != refPix.x())
 			{
 				const float		wx		= (float)px + 0.5f;
 				const float		wy		= (float)py + 0.5f;
@@ -2917,6 +2920,7 @@ int computeTextureCompareDiff (const tcu::ConstPixelBufferAccess&	result,
 			const tcu::Vec4	resPix	= result.getPixel(px, py);
 			const tcu::Vec4	refPix	= reference.getPixel(px, py);
 
+			// Other channels should trivially match to reference.
 			if (!tcu::boolAll(tcu::lessThanEqual(tcu::abs(refPix.swizzle(1,2,3) - resPix.swizzle(1,2,3)), nonShadowThreshold)))
 			{
 				errorMask.setPixel(tcu::RGBA::red.toVec(), px, py);
@@ -2924,6 +2928,9 @@ int computeTextureCompareDiff (const tcu::ConstPixelBufferAccess&	result,
 				continue;
 			}
 
+			// Reference result is known to be a valid result, we can
+			// skip verification if thes results are equal
+			if (resPix.x() != refPix.x())
 			{
 				const float		wx		= (float)px + 0.5f;
 				const float		wy		= (float)py + 0.5f;
@@ -3035,6 +3042,7 @@ int computeTextureCompareDiff (const tcu::ConstPixelBufferAccess&	result,
 			const tcu::Vec4	resPix	= result.getPixel(px, py);
 			const tcu::Vec4	refPix	= reference.getPixel(px, py);
 
+			// Other channels should trivially match to reference.
 			if (!tcu::boolAll(tcu::lessThanEqual(tcu::abs(refPix.swizzle(1,2,3) - resPix.swizzle(1,2,3)), nonShadowThreshold)))
 			{
 				errorMask.setPixel(tcu::RGBA::red.toVec(), px, py);
@@ -3042,6 +3050,9 @@ int computeTextureCompareDiff (const tcu::ConstPixelBufferAccess&	result,
 				continue;
 			}
 
+			// Reference result is known to be a valid result, we can
+			// skip verification if thes results are equal
+			if (resPix.x() != refPix.x())
 			{
 				const float		wx		= (float)px + 0.5f;
 				const float		wy		= (float)py + 0.5f;
