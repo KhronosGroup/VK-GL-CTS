@@ -78,6 +78,15 @@ bool isSRGB (TextureFormat format)
 			format.order == TextureFormat::sRGBA;
 }
 
+bool isCombinedDepthStencilType (TextureFormat::ChannelType type)
+{
+	// make sure to update this if type table is updated
+	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 26);
+
+	return	type == TextureFormat::UNSIGNED_INT_24_8 ||
+			type == TextureFormat::FLOAT_UNSIGNED_INT_24_8_REV;
+}
+
 //! Get texture channel class for format
 TextureChannelClass getTextureChannelClass (TextureFormat::ChannelType channelType)
 {
@@ -994,6 +1003,121 @@ deUint32 packRGB999E5 (const tcu::Vec4& color)
 	DE_ASSERT((bs & ~((1<<9)-1)) == 0);
 
 	return rs | (gs << 9) | (bs << 18) | (exps << 27);
+}
+
+// Sampler utils
+
+static const void* addOffset (const void* ptr, int numBytes)
+{
+	return (const deUint8*)ptr + numBytes;
+}
+
+static void* addOffset (void* ptr, int numBytes)
+{
+	return (deUint8*)ptr + numBytes;
+}
+
+template <typename AccessType>
+static AccessType toSamplerAccess (const AccessType& baseAccess, Sampler::DepthStencilMode mode)
+{
+	// make sure to update this if type table is updated
+	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 26);
+
+	if (!isCombinedDepthStencilType(baseAccess.getFormat().type))
+		return baseAccess;
+	else
+	{
+#if (DE_ENDIANNESS == DE_LITTLE_ENDIAN)
+		const deUint32 uint32ByteOffsetBits0To8	= 0; //!< least significant byte in the lowest address
+		const deUint32 uint32ByteOffset8To32	= 1;
+#else
+		const deUint32 uint32ByteOffsetBits0To8	= 3; //!< least significant byte in the highest address
+		const deUint32 uint32ByteOffset8To32	= 0;
+#endif
+
+		// Sampled channel must exist
+		DE_ASSERT(baseAccess.getFormat().order == TextureFormat::DS ||
+				  (mode == Sampler::MODE_DEPTH && baseAccess.getFormat().order == TextureFormat::D) ||
+				  (mode == Sampler::MODE_STENCIL && baseAccess.getFormat().order == TextureFormat::S));
+
+		// combined formats have multiple channel classes, detect on sampler settings
+		switch (baseAccess.getFormat().type)
+		{
+			case TextureFormat::FLOAT_UNSIGNED_INT_24_8_REV:
+			{
+				if (mode == Sampler::MODE_DEPTH)
+				{
+					// select the float component
+					return AccessType(TextureFormat(TextureFormat::D, TextureFormat::FLOAT),
+									  baseAccess.getSize(),
+									  baseAccess.getPitch(),
+									  baseAccess.getDataPtr());
+				}
+				else if (mode == Sampler::MODE_STENCIL)
+				{
+					// select the uint 8 component
+					return AccessType(TextureFormat(TextureFormat::S, TextureFormat::UNSIGNED_INT8),
+									  baseAccess.getSize(),
+									  baseAccess.getPitch(),
+									  addOffset(baseAccess.getDataPtr(), 4 + uint32ByteOffsetBits0To8));
+				}
+				else
+				{
+					// unknown sampler mode
+					DE_ASSERT(false);
+					return AccessType();
+				}
+			}
+
+			case TextureFormat::UNSIGNED_INT_24_8:
+			{
+				if (mode == Sampler::MODE_DEPTH)
+				{
+					// select the unorm24 component
+					return AccessType(TextureFormat(TextureFormat::D, TextureFormat::UNORM_INT24),
+									  baseAccess.getSize(),
+									  baseAccess.getPitch(),
+									  addOffset(baseAccess.getDataPtr(), uint32ByteOffset8To32));
+				}
+				else if (mode == Sampler::MODE_STENCIL)
+				{
+					// select the uint 8 component
+					return AccessType(TextureFormat(TextureFormat::S, TextureFormat::UNSIGNED_INT8),
+									  baseAccess.getSize(),
+									  baseAccess.getPitch(),
+									  addOffset(baseAccess.getDataPtr(), uint32ByteOffsetBits0To8));
+				}
+				else
+				{
+					// unknown sampler mode
+					DE_ASSERT(false);
+					return AccessType();
+				}
+			}
+
+			default:
+			{
+				// unknown combined format
+				DE_ASSERT(false);
+				return AccessType();
+			}
+		}
+	}
+}
+
+PixelBufferAccess getEffectiveDepthStencilAccess (const PixelBufferAccess& baseAccess, Sampler::DepthStencilMode mode)
+{
+	return toSamplerAccess<PixelBufferAccess>(baseAccess, mode);
+}
+
+ConstPixelBufferAccess getEffectiveDepthStencilAccess (const ConstPixelBufferAccess& baseAccess, Sampler::DepthStencilMode mode)
+{
+	return toSamplerAccess<ConstPixelBufferAccess>(baseAccess, mode);
+}
+
+TextureFormat getEffectiveDepthStencilTextureFormat (const TextureFormat& baseFormat, Sampler::DepthStencilMode mode)
+{
+	return toSamplerAccess(ConstPixelBufferAccess(baseFormat, IVec3(0, 0, 0), DE_NULL), mode).getFormat();
 }
 
 } // tcu

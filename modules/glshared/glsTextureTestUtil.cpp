@@ -1760,7 +1760,7 @@ int computeTextureLookupDiff (const tcu::ConstPixelBufferAccess&	result,
 							  const tcu::PixelBufferAccess&			errorMask,
 							  const tcu::Texture2DView&				baseView,
 							  const float*							texCoord,
-							  const ReferenceParams&					sampleParams,
+							  const ReferenceParams&				sampleParams,
 							  const tcu::LookupPrecision&			lookupPrec,
 							  const tcu::LodPrecision&				lodPrec,
 							  qpWatchDog*							watchDog)

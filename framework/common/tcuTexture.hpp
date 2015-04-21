@@ -195,6 +195,14 @@ public:
 		COMPAREMODE_LAST
 	};
 
+	enum DepthStencilMode
+	{
+		MODE_DEPTH = 0,
+		MODE_STENCIL,
+
+		MODE_LAST
+	};
+
 	// Wrap control
 	WrapMode		wrapS;
 	WrapMode		wrapT;

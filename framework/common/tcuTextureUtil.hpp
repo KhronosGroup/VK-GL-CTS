@@ -30,19 +30,20 @@ namespace tcu
 {
 
 // PixelBufferAccess utilities.
-PixelBufferAccess		getSubregion	(const PixelBufferAccess& access, int x, int y, int z, int width, int height, int depth);
-ConstPixelBufferAccess	getSubregion	(const ConstPixelBufferAccess& access, int x, int y, int z, int width, int height, int depth);
+PixelBufferAccess		getSubregion				(const PixelBufferAccess& access, int x, int y, int z, int width, int height, int depth);
+ConstPixelBufferAccess	getSubregion				(const ConstPixelBufferAccess& access, int x, int y, int z, int width, int height, int depth);
 
-PixelBufferAccess		getSubregion	(const PixelBufferAccess& access, int x, int y, int width, int height);
-ConstPixelBufferAccess	getSubregion	(const ConstPixelBufferAccess& access, int x, int y, int width, int height);
+PixelBufferAccess		getSubregion				(const PixelBufferAccess& access, int x, int y, int width, int height);
+ConstPixelBufferAccess	getSubregion				(const ConstPixelBufferAccess& access, int x, int y, int width, int height);
 
-PixelBufferAccess		flipYAccess		(const PixelBufferAccess& access);
-ConstPixelBufferAccess	flipYAccess		(const ConstPixelBufferAccess& access);
+PixelBufferAccess		flipYAccess					(const PixelBufferAccess& access);
+ConstPixelBufferAccess	flipYAccess					(const ConstPixelBufferAccess& access);
 
 // sRGB - linear conversion.
-Vec4					sRGBToLinear	(const Vec4& cs);
-Vec4					linearToSRGB	(const Vec4& cl);
-bool					isSRGB			(TextureFormat format);
+Vec4					sRGBToLinear				(const Vec4& cs);
+Vec4					linearToSRGB				(const Vec4& cl);
+bool					isSRGB						(TextureFormat format);
+bool					isCombinedDepthStencilType	(TextureFormat::ChannelType type);
 
 /*--------------------------------------------------------------------*//*!
  * \brief Color channel storage type
@@ -127,6 +128,18 @@ inline deUint8 floatToU8 (float fv)
 }
 
 deUint32 packRGB999E5 (const tcu::Vec4& color);
+
+/*--------------------------------------------------------------------*//*!
+ * \brief Depth-stencil utilities
+ *//*--------------------------------------------------------------------*/
+
+TextureFormat				getEffectiveDepthStencilTextureFormat	(const TextureFormat& baseFormat, Sampler::DepthStencilMode mode);
+
+//! returns the currently effective access to an access with a given sampler mode, e.g.
+//! for combined depth stencil accesses and for sampler set to sample stencil returns
+//! stencil access. Identity for non-combined formats.
+PixelBufferAccess			getEffectiveDepthStencilAccess			(const PixelBufferAccess& baseAccess, Sampler::DepthStencilMode mode);
+ConstPixelBufferAccess		getEffectiveDepthStencilAccess			(const ConstPixelBufferAccess& baseAccess, Sampler::DepthStencilMode mode);
 
 } // tcu
 
