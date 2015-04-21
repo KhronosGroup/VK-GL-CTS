@@ -469,16 +469,67 @@ DE_INLINE deBool dePointerEqual (const void* a, const void* b)
  *	\brief	Modulo that generates the same sign as divisor and rounds toward
  *			negative infinity -- assuming c99 %-operator.
  */
-DE_INLINE deInt32 deInt32ModF(deInt32 n, deInt32 d)
+DE_INLINE deInt32 deInt32ModF (deInt32 n, deInt32 d)
 {
 	deInt32 r = n%d;
 	if ((r > 0 && d < 0) || (r < 0 && d > 0)) r = r+d;
 	return r;
 }
 
-DE_INLINE deBool deInt64InInt32Range(deInt64 x)
+DE_INLINE deBool deInt64InInt32Range (deInt64 x)
 {
 	return ((x >= (-1ll<<31)) && (x <= ((1ll<<31)-1)));
+}
+
+
+DE_INLINE deUint32 deBitMask32 (int leastSignificantBitNdx, int numBits)
+{
+	DE_ASSERT(deInRange32(leastSignificantBitNdx, 0, 32));
+	DE_ASSERT(deInRange32(numBits, 0, 32));
+	DE_ASSERT(deInRange32(leastSignificantBitNdx+numBits, 0, 32));
+
+	if (numBits < 32 && leastSignificantBitNdx < 32)
+		return ((1u<<numBits)-1u) << (deUint32)leastSignificantBitNdx;
+	else if (numBits == 0 && leastSignificantBitNdx == 32)
+		return 0u;
+	else
+	{
+		DE_ASSERT(numBits == 32 && leastSignificantBitNdx == 0);
+		return 0xFFFFFFFFu;
+	}
+}
+
+DE_INLINE deUint32 deUintMaxValue32 (int numBits)
+{
+	DE_ASSERT(deInRange32(numBits, 1, 32));
+	if (numBits < 32)
+		return ((1u<<numBits)-1u);
+	else
+		return 0xFFFFFFFFu;
+}
+
+DE_INLINE deInt32 deIntMaxValue32 (int numBits)
+{
+	DE_ASSERT(deInRange32(numBits, 1, 32));
+	if (numBits < 32)
+		return ((deInt32)1 << (numBits - 1)) - 1;
+	else
+	{
+		/* avoid undefined behavior of int overflow when shifting */
+		return 0x7FFFFFFF;
+	}
+}
+
+DE_INLINE deInt32 deIntMinValue32 (int numBits)
+{
+	DE_ASSERT(deInRange32(numBits, 1, 32));
+	if (numBits < 32)
+		return -((deInt32)1 << (numBits - 1));
+	else
+	{
+		/* avoid undefined behavior of int overflow when shifting */
+		return (deInt32)(-0x7FFFFFFF - 1);
+	}
 }
 
 DE_END_EXTERN_C

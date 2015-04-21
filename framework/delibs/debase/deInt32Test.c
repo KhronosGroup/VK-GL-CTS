@@ -130,6 +130,31 @@ void deInt32_selfTest (void)
 			DE_TEST_ASSERT(exp == numBits);
 		}
 	}
+
+	DE_TEST_ASSERT(deBitMask32(0, 0) == 0);
+	DE_TEST_ASSERT(deBitMask32(8, 0) == 0);
+	DE_TEST_ASSERT(deBitMask32(16, 0) == 0);
+	DE_TEST_ASSERT(deBitMask32(31, 0) == 0);
+	DE_TEST_ASSERT(deBitMask32(32, 0) == 0);
+
+	DE_TEST_ASSERT(deBitMask32(0, 2) == 3);
+	DE_TEST_ASSERT(deBitMask32(0, 32) == 0xFFFFFFFFu);
+
+	DE_TEST_ASSERT(deBitMask32(16, 16) == 0xFFFF0000u);
+	DE_TEST_ASSERT(deBitMask32(31, 1) == 0x80000000u);
+	DE_TEST_ASSERT(deBitMask32(8, 4) == 0xF00u);
+
+	DE_TEST_ASSERT(deUintMaxValue32(1) == 1);
+	DE_TEST_ASSERT(deUintMaxValue32(2) == 3);
+	DE_TEST_ASSERT(deUintMaxValue32(32) == 0xFFFFFFFFu);
+
+	DE_TEST_ASSERT(deIntMaxValue32(1) == 0);
+	DE_TEST_ASSERT(deIntMaxValue32(2) == 1);
+	DE_TEST_ASSERT(deIntMaxValue32(32) == 0x7FFFFFFF);
+
+	DE_TEST_ASSERT(deIntMinValue32(1) == -1);
+	DE_TEST_ASSERT(deIntMinValue32(2) == -2);
+	DE_TEST_ASSERT(deIntMinValue32(32) == -0x7FFFFFFF - 1);
 }
 
 DE_END_EXTERN_C

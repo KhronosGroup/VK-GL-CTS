@@ -37,9 +37,7 @@ typedef struct deCommandLine_s
 deCommandLine*	deCommandLine_parse		(const char* cmdLine);
 void			deCommandLine_destroy	(deCommandLine* cmdLine);
 
-#if defined(DE_DEBUG)
 void			deCommandLine_selfTest	(void);
-#endif
 
 DE_END_EXTERN_C
 

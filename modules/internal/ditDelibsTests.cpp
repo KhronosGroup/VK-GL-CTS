@@ -39,6 +39,10 @@
 
 // deutil
 #include "deTimerTest.h"
+#include "deCommandLine.h"
+
+// debase
+#include "deInt32.h"
 
 // decpp
 #include "deBlockBuffer.hpp"
@@ -53,6 +57,7 @@
 #include "deArrayBuffer.hpp"
 #include "deStringUtil.hpp"
 #include "deSpinBarrier.hpp"
+#include "deSTLUtil.hpp"
 
 namespace dit
 {
@@ -135,7 +140,22 @@ public:
 
 	void init (void)
 	{
-		addChild(new SelfCheckCase(m_testCtx, "timer",	"deTimer_selfTest()",	deTimer_selfTest));
+		addChild(new SelfCheckCase(m_testCtx, "timer",			"deTimer_selfTest()",		deTimer_selfTest));
+		addChild(new SelfCheckCase(m_testCtx, "command_line",	"deCommandLine_selfTest()",	deCommandLine_selfTest));
+	}
+};
+
+class DebaseTests : public tcu::TestCaseGroup
+{
+public:
+	DebaseTests (tcu::TestContext& testCtx)
+		: tcu::TestCaseGroup(testCtx, "debase", "debase self-tests")
+	{
+	}
+
+	void init (void)
+	{
+		addChild(new SelfCheckCase(m_testCtx, "int32",	"deInt32_selfTest()",	deInt32_selfTest));
 	}
 };
 
@@ -161,6 +181,7 @@ public:
 		addChild(new SelfCheckCase(m_testCtx, "array_buffer",				"de::ArrayBuffer_selfTest()",			de::ArrayBuffer_selfTest));
 		addChild(new SelfCheckCase(m_testCtx, "string_util",				"de::StringUtil_selfTest()",			de::StringUtil_selfTest));
 		addChild(new SelfCheckCase(m_testCtx, "spin_barrier",				"de::SpinBarrier_selfTest()",			de::SpinBarrier_selfTest));
+		addChild(new SelfCheckCase(m_testCtx, "stl_util",					"de::STLUtil_selfTest()",				de::STLUtil_selfTest));
 	}
 };
 
@@ -178,6 +199,7 @@ void DelibsTests::init (void)
 	addChild(new DepoolTests	(m_testCtx));
 	addChild(new DethreadTests	(m_testCtx));
 	addChild(new DeutilTests	(m_testCtx));
+	addChild(new DebaseTests	(m_testCtx));
 	addChild(new DecppTests		(m_testCtx));
 }
 

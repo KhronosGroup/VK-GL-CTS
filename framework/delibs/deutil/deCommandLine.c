@@ -143,7 +143,6 @@ void deCommandLine_destroy (deCommandLine* cmdLine)
 	deFree(cmdLine);
 }
 
-#if defined(DE_DEBUG)
 static void testParse (const char* cmdLine, const char* const* refArgs, int numArgs)
 {
 	deCommandLine*	parsedCmdLine	= deCommandLine_parse(cmdLine);
@@ -216,4 +215,3 @@ void deCommandLine_selfTest (void)
 		testParse(cmdLine, ref, DE_LENGTH_OF_ARRAY(ref));
 	}
 }
-#endif
