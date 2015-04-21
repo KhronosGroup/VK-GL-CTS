@@ -44,6 +44,11 @@ static bool isSamplerSupported (const Sampler& sampler)
 }
 #endif // DE_DEBUG
 
+static inline float lookupDepth (const ConstPixelBufferAccess& access, int i, int j, int k = 0)
+{
+	return access.getPixDepth(i, j, k);
+}
+
 struct CmpResultSet
 {
 	bool	isTrue;
@@ -538,7 +543,7 @@ static bool isNearestCompareResultValid (const ConstPixelBufferAccess&		level,
 		{
 			const int			x		= wrap(sampler.wrapS, i, level.getWidth());
 			const int			y		= wrap(sampler.wrapT, j, level.getHeight());
-			const float			depth	= level.getPixDepth(x, y, coordZ);
+			const float			depth	= lookupDepth(level, x, y, coordZ);
 			const CmpResultSet	resSet	= execCompare(sampler.compare, depth, cmpReference, prec.referenceBits, isFixedPointDepth);
 
 			if (isResultInSet(resSet, result, prec.resultBits))
@@ -588,10 +593,10 @@ static bool isLinearCompareResultValid (const ConstPixelBufferAccess&		level,
 			const float	minB	= de::clamp((vBounds.x()-0.5f)-float(j), 0.0f, 1.0f);
 			const float	maxB	= de::clamp((vBounds.y()-0.5f)-float(j), 0.0f, 1.0f);
 
-			const Vec4	depths	(level.getPixDepth(x0, y0, coordZ),
-								 level.getPixDepth(x1, y0, coordZ),
-								 level.getPixDepth(x0, y1, coordZ),
-								 level.getPixDepth(x1, y1, coordZ));
+			const Vec4	depths	(lookupDepth(level, x0, y0, coordZ),
+								 lookupDepth(level, x1, y0, coordZ),
+								 lookupDepth(level, x0, y1, coordZ),
+								 lookupDepth(level, x1, y1, coordZ));
 
 			if (isBilinearCompareValid(sampler.compare, prec, depths, Vec2(minA, maxA), Vec2(minB, maxB), cmpReference, result, isFixedPointDepth))
 				return true;
@@ -652,13 +657,13 @@ static bool isNearestMipmapLinearCompareResultValid (const ConstPixelBufferAcces
 	{
 		for (int i0 = minI0; i0 <= maxI0; i0++)
 		{
-			const float	depth0	= level0.getPixDepth(wrap(sampler.wrapS, i0, w0), wrap(sampler.wrapT, j0, h0), coordZ);
+			const float	depth0	= lookupDepth(level0, wrap(sampler.wrapS, i0, w0), wrap(sampler.wrapT, j0, h0), coordZ);
 
 			for (int j1 = minJ1; j1 <= maxJ1; j1++)
 			{
 				for (int i1 = minI1; i1 <= maxI1; i1++)
 				{
-					const float	depth1	= level1.getPixDepth(wrap(sampler.wrapS, i1, w1), wrap(sampler.wrapT, j1, h1), coordZ);
+					const float	depth1	= lookupDepth(level1, wrap(sampler.wrapS, i1, w1), wrap(sampler.wrapT, j1, h1), coordZ);
 
 					if (isLinearCompareValid(sampler.compare, prec, Vec2(depth0, depth1), fBounds, cmpReference, result, isFixedPointDepth))
 						return true;
@@ -721,10 +726,10 @@ static bool isLinearMipmapLinearCompareResultValid (const ConstPixelBufferAccess
 				const int	y0		= wrap(sampler.wrapT, j0  , h0);
 				const int	y1		= wrap(sampler.wrapT, j0+1, h0);
 
-				depths0[0] = level0.getPixDepth(x0, y0, coordZ);
-				depths0[1] = level0.getPixDepth(x1, y0, coordZ);
-				depths0[2] = level0.getPixDepth(x0, y1, coordZ);
-				depths0[3] = level0.getPixDepth(x1, y1, coordZ);
+				depths0[0] = lookupDepth(level0, x0, y0, coordZ);
+				depths0[1] = lookupDepth(level0, x1, y0, coordZ);
+				depths0[2] = lookupDepth(level0, x0, y1, coordZ);
+				depths0[3] = lookupDepth(level0, x1, y1, coordZ);
 			}
 
 			for (int j1 = minJ1; j1 <= maxJ1; j1++)
@@ -743,10 +748,10 @@ static bool isLinearMipmapLinearCompareResultValid (const ConstPixelBufferAccess
 						const int	y0		= wrap(sampler.wrapT, j1  , h1);
 						const int	y1		= wrap(sampler.wrapT, j1+1, h1);
 
-						depths1[0] = level1.getPixDepth(x0, y0, coordZ);
-						depths1[1] = level1.getPixDepth(x1, y0, coordZ);
-						depths1[2] = level1.getPixDepth(x0, y1, coordZ);
-						depths1[3] = level1.getPixDepth(x1, y1, coordZ);
+						depths1[0] = lookupDepth(level1, x0, y0, coordZ);
+						depths1[1] = lookupDepth(level1, x1, y0, coordZ);
+						depths1[2] = lookupDepth(level1, x0, y1, coordZ);
+						depths1[3] = lookupDepth(level1, x1, y1, coordZ);
 					}
 
 					if (isTrilinearCompareValid(sampler.compare, prec, depths0, depths1,
@@ -908,10 +913,10 @@ static bool isSeamplessLinearMipmapLinearCompareResultValid (const TextureCubeVi
 				if (c00.face == CUBEFACE_LAST || c01.face == CUBEFACE_LAST || c10.face == CUBEFACE_LAST || c11.face == CUBEFACE_LAST)
 					return true;
 
-				depths0[0] = faces0[c00.face].getPixDepth(c00.s, c00.t);
-				depths0[1] = faces0[c10.face].getPixDepth(c10.s, c10.t);
-				depths0[2] = faces0[c01.face].getPixDepth(c01.s, c01.t);
-				depths0[3] = faces0[c11.face].getPixDepth(c11.s, c11.t);
+				depths0[0] = lookupDepth(faces0[c00.face], c00.s, c00.t);
+				depths0[1] = lookupDepth(faces0[c10.face], c10.s, c10.t);
+				depths0[2] = lookupDepth(faces0[c01.face], c01.s, c01.t);
+				depths0[3] = lookupDepth(faces0[c11.face], c11.s, c11.t);
 			}
 
 			for (int j1 = minJ1; j1 <= maxJ1; j1++)
@@ -933,10 +938,10 @@ static bool isSeamplessLinearMipmapLinearCompareResultValid (const TextureCubeVi
 						if (c00.face == CUBEFACE_LAST || c01.face == CUBEFACE_LAST || c10.face == CUBEFACE_LAST || c11.face == CUBEFACE_LAST)
 							return true;
 
-						depths1[0] = faces1[c00.face].getPixDepth(c00.s, c00.t);
-						depths1[1] = faces1[c10.face].getPixDepth(c10.s, c10.t);
-						depths1[2] = faces1[c01.face].getPixDepth(c01.s, c01.t);
-						depths1[3] = faces1[c11.face].getPixDepth(c11.s, c11.t);
+						depths1[0] = lookupDepth(faces1[c00.face], c00.s, c00.t);
+						depths1[1] = lookupDepth(faces1[c10.face], c10.s, c10.t);
+						depths1[2] = lookupDepth(faces1[c01.face], c01.s, c01.t);
+						depths1[3] = lookupDepth(faces1[c11.face], c11.s, c11.t);
 					}
 
 
@@ -1024,10 +1029,10 @@ static bool isSeamlessLinearCompareResultValid (const TextureCubeView&		texture,
 			const float	maxB	= de::clamp((vBounds.y()-0.5f)-float(j), 0.0f, 1.0f);
 
 			Vec4 depths;
-			depths[0] = faces[c00.face].getPixDepth(c00.s, c00.t);
-			depths[1] = faces[c10.face].getPixDepth(c10.s, c10.t);
-			depths[2] = faces[c01.face].getPixDepth(c01.s, c01.t);
-			depths[3] = faces[c11.face].getPixDepth(c11.s, c11.t);
+			depths[0] = lookupDepth(faces[c00.face], c00.s, c00.t);
+			depths[1] = lookupDepth(faces[c10.face], c10.s, c10.t);
+			depths[2] = lookupDepth(faces[c01.face], c01.s, c01.t);
+			depths[3] = lookupDepth(faces[c11.face], c11.s, c11.t);
 
 			if (isBilinearCompareValid(sampler.compare, prec, depths, Vec2(minA, maxA), Vec2(minB, maxB), cmpReference, result, isFixedPointDepth))
 				return true;
@@ -1142,14 +1147,14 @@ bool isTexCompareResultValid (const Texture2DArrayView& texture, const Sampler& 
 	const int		minLayer	= de::clamp(deFloorFloatToInt32(minZ + 0.5f), 0, texture.getNumLayers()-1);
 	const int		maxLayer	= de::clamp(deFloorFloatToInt32(maxZ + 0.5f), 0, texture.getNumLayers()-1);
 
+	DE_ASSERT(isSamplerSupported(sampler));
+
 	for (int layer = minLayer; layer <= maxLayer; layer++)
 	{
 		const float		minLod			= lodBounds.x();
 		const float		maxLod			= lodBounds.y();
 		const bool		canBeMagnified	= minLod <= sampler.lodThreshold;
 		const bool		canBeMinified	= maxLod > sampler.lodThreshold;
-
-		DE_ASSERT(isSamplerSupported(sampler));
 
 		if (canBeMagnified)
 		{
@@ -1241,7 +1246,7 @@ static bool isGatherOffsetsCompareResultValid (const ConstPixelBufferAccess&	tex
 				// offNdx-th coordinate offset and then wrapped.
 				const int			x		= wrap(sampler.wrapS, i+offsets[offNdx].x(), w);
 				const int			y		= wrap(sampler.wrapT, j+offsets[offNdx].y(), h);
-				const float			depth	= texture.getPixDepth(x, y, coordZ);
+				const float			depth	= lookupDepth(texture, x, y, coordZ);
 				const CmpResultSet	resSet	= execCompare(sampler.compare, depth, cmpReference, prec.referenceBits, isFixedPointDepth);
 
 				if (!isResultInSet(resSet, result[offNdx], prec.resultBits))
@@ -1264,6 +1269,8 @@ bool isGatherOffsetsCompareResultValid (const Texture2DView&		texture,
 										float						cmpReference,
 										const Vec4&					result)
 {
+	DE_ASSERT(isSamplerSupported(sampler));
+
 	return isGatherOffsetsCompareResultValid(texture.getLevel(0), sampler, prec, coord, 0, offsets, cmpReference, result);
 }
 
@@ -1280,6 +1287,8 @@ bool isGatherOffsetsCompareResultValid (const Texture2DArrayView&	texture,
 	const float		maxZ		= coord.z()+depthErr;
 	const int		minLayer	= de::clamp(deFloorFloatToInt32(minZ + 0.5f), 0, texture.getNumLayers()-1);
 	const int		maxLayer	= de::clamp(deFloorFloatToInt32(maxZ + 0.5f), 0, texture.getNumLayers()-1);
+
+	DE_ASSERT(isSamplerSupported(sampler));
 
 	for (int layer = minLayer; layer <= maxLayer; layer++)
 	{
@@ -1335,7 +1344,7 @@ static bool isGatherCompareResultValid (const TextureCubeView&		texture,
 				if (c.face == CUBEFACE_LAST)
 					return true;
 
-				const float			depth	= faces[c.face].getPixDepth(c.s, c.t);
+				const float			depth	= lookupDepth(faces[c.face], c.s, c.t);
 				const CmpResultSet	resSet	= execCompare(sampler.compare, depth, cmpReference, prec.referenceBits, isFixedPointDepth);
 
 				if (!isResultInSet(resSet, result[offNdx], prec.resultBits))
@@ -1359,6 +1368,8 @@ bool isGatherCompareResultValid (const TextureCubeView&			texture,
 {
 	int			numPossibleFaces				= 0;
 	CubeFace	possibleFaces[CUBEFACE_LAST];
+
+	DE_ASSERT(isSamplerSupported(sampler));
 
 	getPossibleCubeFaces(coord, prec.coordBits, &possibleFaces[0], numPossibleFaces);
 
