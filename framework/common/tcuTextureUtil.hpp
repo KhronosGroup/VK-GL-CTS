@@ -96,11 +96,10 @@ void	fillWithRepeatableGradient		(const PixelBufferAccess& access, const Vec4& c
 void	fillWithMetaballs				(const PixelBufferAccess& access, int numMetaballs, deUint32 seed);
 void	fillWithRGBAQuads				(const PixelBufferAccess& access);
 
+//! Copies contents of src to dst. If formats of dst and src are equal, a bit-exact copy is made.
 void	copy							(const PixelBufferAccess& dst, const ConstPixelBufferAccess& src);
-void	scale							(const PixelBufferAccess& dst, const ConstPixelBufferAccess& src, Sampler::FilterMode filter);
 
-// Copy raw pixel data between buffers. Both buffers must have same pixel size.
-void	copyRawPixels					(const PixelBufferAccess& dst, const ConstPixelBufferAccess& src);
+void	scale							(const PixelBufferAccess& dst, const ConstPixelBufferAccess& src, Sampler::FilterMode filter);
 
 void	estimatePixelValueRange			(const ConstPixelBufferAccess& access, Vec4& minVal, Vec4& maxVal);
 void	computePixelScaleBias			(const ConstPixelBufferAccess& access, Vec4& scale, Vec4& bias);

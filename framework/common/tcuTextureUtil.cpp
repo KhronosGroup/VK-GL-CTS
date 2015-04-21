@@ -138,8 +138,8 @@ ConstPixelBufferAccess getSubregion (const ConstPixelBufferAccess& access, int x
 	DE_ASSERT(de::inBounds(z, 0, access.getDepth()));
 	DE_ASSERT(de::inRange(z+depth, z+1, access.getDepth()));
 
-	return ConstPixelBufferAccess(access.getFormat(), width, height, depth, access.getRowPitch(), access.getSlicePitch(),
-								  (const deUint8*)access.getDataPtr() + access.getFormat().getPixelSize()*x + access.getRowPitch()*y + access.getSlicePitch()*z);
+	return ConstPixelBufferAccess(access.getFormat(), tcu::IVec3(width, height, depth), access.getPitch(),
+								  (const deUint8*)access.getDataPtr() + access.getPixelPitch()*x + access.getRowPitch()*y + access.getSlicePitch()*z);
 }
 
 /*--------------------------------------------------------------------*//*!
@@ -164,8 +164,8 @@ PixelBufferAccess getSubregion (const PixelBufferAccess& access, int x, int y, i
 	DE_ASSERT(de::inBounds(z, 0, access.getDepth()));
 	DE_ASSERT(de::inRange(z+depth, z+1, access.getDepth()));
 
-	return PixelBufferAccess(access.getFormat(), width, height, depth, access.getRowPitch(), access.getSlicePitch(),
-							 (deUint8*)access.getDataPtr() + access.getFormat().getPixelSize()*x + access.getRowPitch()*y + access.getSlicePitch()*z);
+	return PixelBufferAccess(access.getFormat(), tcu::IVec3(width, height, depth), access.getPitch(),
+							 (deUint8*)access.getDataPtr() + access.getPixelPitch()*x + access.getRowPitch()*y + access.getSlicePitch()*z);
 }
 
 /*--------------------------------------------------------------------*//*!
@@ -203,11 +203,11 @@ ConstPixelBufferAccess getSubregion (const ConstPixelBufferAccess& access, int x
  *//*--------------------------------------------------------------------*/
 PixelBufferAccess flipYAccess (const PixelBufferAccess& access)
 {
-	const int	rowPitch		= access.getRowPitch();
-	const int	offsetToLast	= rowPitch*(access.getHeight()-1);
+	const int			rowPitch		= access.getRowPitch();
+	const int			offsetToLast	= rowPitch*(access.getHeight()-1);
+	const tcu::IVec3	pitch			(access.getPixelPitch(), -rowPitch, access.getSlicePitch());
 
-	return PixelBufferAccess(access.getFormat(), access.getWidth(), access.getHeight(), access.getDepth(),
-							 -rowPitch, access.getSlicePitch(), (deUint8*)access.getDataPtr() + offsetToLast);
+	return PixelBufferAccess(access.getFormat(), access.getSize(), pitch, (deUint8*)access.getDataPtr() + offsetToLast);
 }
 
 /*--------------------------------------------------------------------*//*!
@@ -217,11 +217,11 @@ PixelBufferAccess flipYAccess (const PixelBufferAccess& access)
  *//*--------------------------------------------------------------------*/
 ConstPixelBufferAccess flipYAccess (const ConstPixelBufferAccess& access)
 {
-	const int	rowPitch		= access.getRowPitch();
-	const int	offsetToLast	= rowPitch*(access.getHeight()-1);
+	const int			rowPitch		= access.getRowPitch();
+	const int			offsetToLast	= rowPitch*(access.getHeight()-1);
+	const tcu::IVec3	pitch			(access.getPixelPitch(), -rowPitch, access.getSlicePitch());
 
-	return ConstPixelBufferAccess(access.getFormat(), access.getWidth(), access.getHeight(), access.getDepth(),
-								  -rowPitch, access.getSlicePitch(), (const deUint8*)access.getDataPtr() + offsetToLast);
+	return ConstPixelBufferAccess(access.getFormat(), access.getSize(), pitch, (deUint8*)access.getDataPtr() + offsetToLast);
 }
 
 static Vec2 getChannelValueRange (TextureFormat::ChannelType channelType)
@@ -478,9 +478,12 @@ inline void fillRow (const PixelBufferAccess& dst, int y, int z, int pixelSize, 
 
 void clear (const PixelBufferAccess& access, const Vec4& color)
 {
-	int pixelSize = access.getFormat().getPixelSize();
+	const int	pixelSize				= access.getFormat().getPixelSize();
+	const int	pixelPitch				= access.getPixelPitch();
+	const bool	rowPixelsTightlyPacked	= (pixelSize == pixelPitch);
+
 	if (access.getWidth()*access.getHeight()*access.getDepth() >= CLEAR_OPTIMIZE_THRESHOLD &&
-		pixelSize < CLEAR_OPTIMIZE_MAX_PIXEL_SIZE)
+		pixelSize < CLEAR_OPTIMIZE_MAX_PIXEL_SIZE && rowPixelsTightlyPacked)
 	{
 		// Convert to destination format.
 		union
@@ -506,9 +509,12 @@ void clear (const PixelBufferAccess& access, const Vec4& color)
 
 void clear (const PixelBufferAccess& access, const IVec4& color)
 {
-	int pixelSize = access.getFormat().getPixelSize();
+	const int	pixelSize				= access.getFormat().getPixelSize();
+	const int	pixelPitch				= access.getPixelPitch();
+	const bool	rowPixelsTightlyPacked	= (pixelSize == pixelPitch);
+
 	if (access.getWidth()*access.getHeight()*access.getDepth() >= CLEAR_OPTIMIZE_THRESHOLD &&
-		pixelSize < CLEAR_OPTIMIZE_MAX_PIXEL_SIZE)
+		pixelSize < CLEAR_OPTIMIZE_MAX_PIXEL_SIZE && rowPixelsTightlyPacked)
 	{
 		// Convert to destination format.
 		union
@@ -539,9 +545,12 @@ void clear (const PixelBufferAccess& access, const UVec4& color)
 
 void clearDepth (const PixelBufferAccess& access, float depth)
 {
-	int pixelSize = access.getFormat().getPixelSize();
+	const int	pixelSize				= access.getFormat().getPixelSize();
+	const int	pixelPitch				= access.getPixelPitch();
+	const bool	rowPixelsTightlyPacked	= (pixelSize == pixelPitch);
+
 	if (access.getWidth()*access.getHeight()*access.getDepth() >= CLEAR_OPTIMIZE_THRESHOLD &&
-		pixelSize < CLEAR_OPTIMIZE_MAX_PIXEL_SIZE)
+		pixelSize < CLEAR_OPTIMIZE_MAX_PIXEL_SIZE && rowPixelsTightlyPacked)
 	{
 		// Convert to destination format.
 		union
@@ -567,9 +576,12 @@ void clearDepth (const PixelBufferAccess& access, float depth)
 
 void clearStencil (const PixelBufferAccess& access, int stencil)
 {
-	int pixelSize = access.getFormat().getPixelSize();
+	const int	pixelSize				= access.getFormat().getPixelSize();
+	const int	pixelPitch				= access.getPixelPitch();
+	const bool	rowPixelsTightlyPacked	= (pixelSize == pixelPitch);
+
 	if (access.getWidth()*access.getHeight()*access.getDepth() >= CLEAR_OPTIMIZE_THRESHOLD &&
-		pixelSize < CLEAR_OPTIMIZE_MAX_PIXEL_SIZE)
+		pixelSize < CLEAR_OPTIMIZE_MAX_PIXEL_SIZE && rowPixelsTightlyPacked)
 	{
 		// Convert to destination format.
 		union
@@ -788,22 +800,33 @@ void fillWithMetaballs (const PixelBufferAccess& dst, int numBalls, deUint32 see
 
 void copy (const PixelBufferAccess& dst, const ConstPixelBufferAccess& src)
 {
-	int		width		= dst.getWidth();
-	int		height		= dst.getHeight();
-	int		depth		= dst.getDepth();
+	DE_ASSERT(src.getSize() == dst.getSize());
 
-	DE_ASSERT(src.getWidth() == width && src.getHeight() == height && src.getDepth() == depth);
+	const int	width				= dst.getWidth();
+	const int	height				= dst.getHeight();
+	const int	depth				= dst.getDepth();
 
-	if (src.getFormat() == dst.getFormat())
+	const int	srcPixelSize		= src.getFormat().getPixelSize();
+	const int	dstPixelSize		= dst.getFormat().getPixelSize();
+	const int	srcPixelPitch		= src.getPixelPitch();
+	const int	dstPixelPitch		= dst.getPixelPitch();
+	const bool	srcTightlyPacked	= (srcPixelSize == srcPixelPitch);
+	const bool	dstTightlyPacked	= (dstPixelSize == dstPixelPitch);
+
+	if (src.getFormat() == dst.getFormat() && srcTightlyPacked && dstTightlyPacked)
 	{
 		// Fast-path for matching formats.
-		int pixelSize = src.getFormat().getPixelSize();
-
 		for (int z = 0; z < depth; z++)
 		for (int y = 0; y < height; y++)
-			deMemcpy((deUint8*)dst.getDataPtr()			+ z*dst.getSlicePitch() + y*dst.getRowPitch(),
-					 (const deUint8*)src.getDataPtr()	+ z*src.getSlicePitch() + y*src.getRowPitch(),
-					 pixelSize*width);
+			deMemcpy(dst.getPixelPtr(0, y, z), src.getPixelPtr(0, y, z), srcPixelSize*width);
+	}
+	else if (src.getFormat() == dst.getFormat())
+	{
+		// Bit-exact copy for matching formats.
+		for (int z = 0; z < depth; z++)
+		for (int y = 0; y < height; y++)
+		for (int x = 0; x < width; x++)
+			deMemcpy(dst.getPixelPtr(x, y, z), src.getPixelPtr(x, y, z), srcPixelSize);
 	}
 	else
 	{
@@ -941,30 +964,6 @@ int getCubeArrayFaceIndex (CubeFace face)
 
 		default:
 			return -1;
-	}
-}
-
-void copyRawPixels (const PixelBufferAccess& dst, const ConstPixelBufferAccess& src)
-{
-	DE_ASSERT(dst.getFormat().getPixelSize() == src.getFormat().getPixelSize());
-	DE_ASSERT(dst.getWidth() == src.getWidth());
-	DE_ASSERT(dst.getHeight() == src.getHeight());
-	DE_ASSERT(dst.getDepth() == src.getDepth());
-
-	const int pixelSize = dst.getFormat().getPixelSize();
-
-	for (int z = 0; z < dst.getDepth(); z++)
-	for (int y = 0; y < dst.getHeight(); y++)
-	{
-		const deUint8* const	srcPtr	= (const deUint8*)src.getDataPtr()
-										+ src.getRowPitch() * y
-										+ src.getSlicePitch() * z;
-
-		deUint8* const			dstPtr	= (deUint8*)dst.getDataPtr()
-										+ dst.getRowPitch() * y
-										+ dst.getSlicePitch() * z;
-
-		deMemcpy(dstPtr, srcPtr, dst.getWidth() * pixelSize);
 	}
 }
 

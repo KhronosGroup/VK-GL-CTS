@@ -2605,7 +2605,7 @@ void decompress (const PixelBufferAccess& dst, CompressedTexFormat fmt, const de
 
 		decompressBlock(fmt, blockAccess, blockPtr, params);
 
-		copyRawPixels(getSubregion(dst, dstPixelPos.x(), dstPixelPos.y(), dstPixelPos.z(), copySize.x(), copySize.y(), copySize.z()), getSubregion(blockAccess, 0, 0, 0, copySize.x(), copySize.y(), copySize.z()));
+		copy(getSubregion(dst, dstPixelPos.x(), dstPixelPos.y(), dstPixelPos.z(), copySize.x(), copySize.y(), copySize.z()), getSubregion(blockAccess, 0, 0, 0, copySize.x(), copySize.y(), copySize.z()));
 	}
 }
 
