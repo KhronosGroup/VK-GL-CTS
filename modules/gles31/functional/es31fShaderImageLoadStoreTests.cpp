@@ -1025,14 +1025,14 @@ static bool readBufferTextureWithMappingAndVerify (const RenderContext&			render
 {
 	tcu::TextureLevel			result			(textureFormat, imageSize, 1);
 	const PixelBufferAccess		resultAccess	= result.getAccess();
-	DE_ASSERT(resultAccess.getDataSize() == imageSize * textureFormat.getPixelSize());
+	const int					dataSize		= imageSize * textureFormat.getPixelSize();
 
 	const tcu::ScopedLogSection section(glLog.getLog(), "Verification", "Result verification (read texture's buffer with a mapping)");
 	glLog.glBindBuffer(GL_TEXTURE_BUFFER, bufferGL);
 
 	{
-		const BufferMemMap bufMap(renderCtx.getFunctions(), GL_TEXTURE_BUFFER, 0, resultAccess.getDataSize(), GL_MAP_READ_BIT);
-		deMemcpy(resultAccess.getDataPtr(), bufMap.getPtr(), resultAccess.getDataSize());
+		const BufferMemMap bufMap(renderCtx.getFunctions(), GL_TEXTURE_BUFFER, 0, dataSize, GL_MAP_READ_BIT);
+		deMemcpy(resultAccess.getDataPtr(), bufMap.getPtr(), dataSize);
 	}
 
 	return verifyLayer(glLog.getLog(), resultAccess, 0);

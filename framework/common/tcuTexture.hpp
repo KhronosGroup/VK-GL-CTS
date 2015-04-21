@@ -303,8 +303,6 @@ public:
 	const IVec3&			getPitch					(void) const	{ return m_pitch;					}
 
 	const void*				getDataPtr					(void) const	{ return m_data;					}
-	int						getDataSize					(void) const	{ return m_size.z()*m_pitch.z();	}
-
 	const void*				getPixelPtr					(int x, int y, int z = 0) const { return (const deUint8*)m_data + x * m_pitch.x() + y * m_pitch.y() + z * m_pitch.z(); }
 
 	Vec4					getPixel					(int x, int y, int z = 0) const;
@@ -357,7 +355,6 @@ public:
 	void*				getDataPtr			(void) const { return m_data; }
 	void*				getPixelPtr			(int x, int y, int z = 0) const { return (deUint8*)m_data + x * m_pitch.x() + y * m_pitch.y() + z * m_pitch.z(); }
 
-	void				setPixels			(const void* buf, int bufSize) const;
 	void				setPixel			(const tcu::Vec4& color, int x, int y, int z = 0) const;
 	void				setPixel			(const tcu::IVec4& color, int x, int y, int z = 0) const;
 	void				setPixel			(const tcu::UVec4& color, int x, int y, int z = 0) const { setPixel(color.cast<int>(), x, y, z); }

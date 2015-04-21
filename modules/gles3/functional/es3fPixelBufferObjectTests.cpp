@@ -533,18 +533,20 @@ TestCase::IterateResult ReadPixelsTest::iterate(void)
 		DE_ASSERT(false);
 	}
 
-	tcu::Texture2D readRefrence(readFormat, width, height);
+	tcu::Texture2D	readRefrence	(readFormat, width, height);
+	const int		readDataSize	= readRefrence.getWidth() * readRefrence.getHeight() * readFormat.getPixelSize();
+
 	readRefrence.allocLevel(0);
 
 	GLuint pixelBuffer = (GLuint)-1;
 
 	GLU_CHECK_CALL(glGenBuffers(1, &pixelBuffer));
 	GLU_CHECK_CALL(glBindBuffer(GL_PIXEL_PACK_BUFFER, pixelBuffer));
-	GLU_CHECK_CALL(glBufferData(GL_PIXEL_PACK_BUFFER, readRefrence.getLevel(0).getDataSize(), NULL, GL_STREAM_READ));
+	GLU_CHECK_CALL(glBufferData(GL_PIXEL_PACK_BUFFER, readDataSize, NULL, GL_STREAM_READ));
 
 	GLU_CHECK_CALL(glReadPixels(0, 0, width, height, readPixelsFormat, readPixelsType, 0));
 
-	const deUint8* bufferData = (const deUint8*)glMapBufferRange(GL_PIXEL_PACK_BUFFER, 0, readRefrence.getLevel(0).getDataSize(), GL_MAP_READ_BIT);
+	const deUint8* bufferData = (const deUint8*)glMapBufferRange(GL_PIXEL_PACK_BUFFER, 0, readDataSize, GL_MAP_READ_BIT);
 	GLU_CHECK_MSG("glMapBufferRange() failed");
 
 	tcu::ConstPixelBufferAccess readResult(readFormat, width, height, 1, bufferData);

@@ -600,12 +600,6 @@ PixelBufferAccess::PixelBufferAccess (TextureLevel& level)
 {
 }
 
-void PixelBufferAccess::setPixels (const void* buf, int bufSize) const
-{
-	DE_ASSERT(bufSize == getDataSize());
-	deMemcpy(getDataPtr(), buf, bufSize);
-}
-
 Vec4 ConstPixelBufferAccess::getPixel (int x, int y, int z) const
 {
 	DE_ASSERT(de::inBounds(x, 0, m_size.x()));
