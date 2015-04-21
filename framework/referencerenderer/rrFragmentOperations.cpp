@@ -745,6 +745,7 @@ void FragmentProcessor::render (const rr::MultisamplePixelBufferAccess&		msColor
 								const FragmentOperationState&				state)
 {
 	DE_ASSERT(fragmentFacing < FACETYPE_LAST);
+	DE_ASSERT(state.numStencilBits < 32); // code bitshifts numStencilBits, avoid undefined behavior
 
 	const tcu::PixelBufferAccess&	colorBuffer			= msColorBuffer.raw();
 	const tcu::PixelBufferAccess&	depthBuffer			= msDepthBuffer.raw();

@@ -2981,17 +2981,33 @@ static int getNumStencilBits (const tcu::TextureFormat& format)
 	}
 }
 
-static inline int maskStencil (int bits, int s) { return s & ((1<<bits)-1); }
-
-static inline void writeStencilOnly (const rr::MultisamplePixelBufferAccess& access, int s, int x, int y, int stencil, deUint32 writeMask)
+static inline deUint32 maskStencil (int numBits, deUint32 s)
 {
-	int const oldVal = access.raw().getPixelInt(s, x, y).w();
-	access.raw().setPixStencil((oldVal & ~writeMask) | (stencil & writeMask), s, x, y);
+	return s & deBitMask32(0, numBits);
+}
+
+static inline void writeMaskedStencil (const rr::MultisamplePixelBufferAccess& access, int s, int x, int y, deUint32 stencil, deUint32 writeMask)
+{
+	DE_ASSERT(access.raw().getFormat().order == tcu::TextureFormat::S);
+
+	const deUint32 oldVal = access.raw().getPixelUint(s, x, y).x();
+	const deUint32 newVal = (oldVal & ~writeMask) | (stencil & writeMask);
+	access.raw().setPixel(tcu::UVec4(newVal, 0u, 0u, 0u), s, x, y);
 }
 
 static inline void writeDepthOnly (const rr::MultisamplePixelBufferAccess& access, int s, int x, int y, float depth)
 {
 	access.raw().setPixDepth(depth, s, x, y);
+}
+
+static rr::MultisamplePixelBufferAccess getDepthMultisampleAccess (const rr::MultisamplePixelBufferAccess& combinedDSaccess)
+{
+	return rr::MultisamplePixelBufferAccess::fromMultisampleAccess(tcu::getEffectiveDepthStencilAccess(combinedDSaccess.raw(), tcu::Sampler::MODE_DEPTH));
+}
+
+static rr::MultisamplePixelBufferAccess getStencilMultisampleAccess (const rr::MultisamplePixelBufferAccess& combinedDSaccess)
+{
+	return rr::MultisamplePixelBufferAccess::fromMultisampleAccess(tcu::getEffectiveDepthStencilAccess(combinedDSaccess.raw(), tcu::Sampler::MODE_STENCIL));
 }
 
 deUint32 ReferenceContext::blitResolveMultisampleFramebuffer (deUint32 mask, const IVec4& srcRect, const IVec4& dstRect, bool flipX, bool flipY)
@@ -3037,7 +3053,7 @@ deUint32 ReferenceContext::blitResolveMultisampleFramebuffer (deUint32 mask, con
 
 	if (mask & GL_DEPTH_BUFFER_BIT)
 	{
-		rr::MultisampleConstPixelBufferAccess	src	= rr::getSubregion(getReadColorbuffer(), srcRect.x(), srcRect.y(), srcRect.z(), srcRect.w());
+		rr::MultisampleConstPixelBufferAccess	src	= rr::getSubregion(getReadDepthbuffer(), srcRect.x(), srcRect.y(), srcRect.z(), srcRect.w());
 		rr::MultisamplePixelBufferAccess		dst	= rr::getSubregion(getDrawDepthbuffer(), dstRect.x(), dstRect.y(), dstRect.z(), dstRect.w());
 
 		for (int x = 0; x < dstRect.z(); ++x)
@@ -3052,16 +3068,17 @@ deUint32 ReferenceContext::blitResolveMultisampleFramebuffer (deUint32 mask, con
 
 	if (mask & GL_STENCIL_BUFFER_BIT)
 	{
-		rr::MultisampleConstPixelBufferAccess	src	= rr::getSubregion(getReadColorbuffer(), srcRect.x(), srcRect.y(), srcRect.z(), srcRect.w());
-		rr::MultisamplePixelBufferAccess		dst	= rr::getSubregion(getDrawDepthbuffer(), dstRect.x(), dstRect.y(), dstRect.z(), dstRect.w());
+		rr::MultisampleConstPixelBufferAccess	src	= getStencilMultisampleAccess(rr::getSubregion(getReadStencilbuffer(), srcRect.x(), srcRect.y(), srcRect.z(), srcRect.w()));
+		rr::MultisamplePixelBufferAccess		dst	= getStencilMultisampleAccess(rr::getSubregion(getDrawStencilbuffer(), dstRect.x(), dstRect.y(), dstRect.z(), dstRect.w()));
 
 		for (int x = 0; x < dstRect.z(); ++x)
 		for (int y = 0; y < dstRect.w(); ++y)
 		{
-			int srcX = (flipX) ? (srcRect.z() - x - 1) : (x);
-			int srcY = (flipY) ? (srcRect.z() - y - 1) : (y);
+			int			srcX		= (flipX) ? (srcRect.z() - x - 1) : (x);
+			int			srcY		= (flipY) ? (srcRect.z() - y - 1) : (y);
+			deUint32	srcStencil	= src.raw().getPixelUint(0, srcX, srcY).x();
 
-			writeStencilOnly(dst, 0, x, y, src.raw().getPixelInt(0, srcX, srcY).w(), m_stencil[rr::FACETYPE_FRONT].writeMask);
+			writeMaskedStencil(dst, 0, x, y, srcStencil, m_stencil[rr::FACETYPE_FRONT].writeMask);
 		}
 	}
 
@@ -3218,21 +3235,22 @@ void ReferenceContext::blitFramebuffer (int srcX0, int srcY0, int srcX1, int src
 
 	if (mask & GL_STENCIL_BUFFER_BIT)
 	{
-		rr::MultisampleConstPixelBufferAccess	src		= rr::getSubregion(getReadStencilbuffer(), srcRect.x(), srcRect.y(), srcRect.z(), srcRect.w());
-		rr::MultisamplePixelBufferAccess		dst		= rr::getSubregion(getDrawStencilbuffer(), dstRect.x(), dstRect.y(), dstRect.z(), dstRect.w());
+		rr::MultisampleConstPixelBufferAccess	src	= getStencilMultisampleAccess(rr::getSubregion(getReadStencilbuffer(), srcRect.x(), srcRect.y(), srcRect.z(), srcRect.w()));
+		rr::MultisamplePixelBufferAccess		dst	= getStencilMultisampleAccess(rr::getSubregion(getDrawStencilbuffer(), dstRect.x(), dstRect.y(), dstRect.z(), dstRect.w()));
 
 		for (int yo = 0; yo < dstRect.w(); yo++)
 		{
 			for (int xo = 0; xo < dstRect.z(); xo++)
 			{
-				const int sampleNdx = 0; // multisample read buffer case is already handled
+				const int	sampleNdx = 0; // multisample read buffer case is already handled
 
-				float	dX	= (float)xo + 0.5f;
-				float	dY	= (float)yo + 0.5f;
-				float	sX	= transform(0, 0)*dX + transform(0, 1)*dY + transform(0, 2);
-				float	sY	= transform(1, 0)*dX + transform(1, 1)*dY + transform(1, 2);
+				float		dX			= (float)xo + 0.5f;
+				float		dY			= (float)yo + 0.5f;
+				float		sX			= transform(0, 0)*dX + transform(0, 1)*dY + transform(0, 2);
+				float		sY			= transform(1, 0)*dX + transform(1, 1)*dY + transform(1, 2);
+				deUint32	srcStencil	= src.raw().getPixelUint(sampleNdx, deFloorFloatToInt32(sX), deFloorFloatToInt32(sY)).x();
 
-				writeStencilOnly(dst, sampleNdx, xo, yo, src.raw().getPixelInt(sampleNdx, deFloorFloatToInt32(sX), deFloorFloatToInt32(sY)).w(), m_stencil[rr::FACETYPE_FRONT].writeMask);
+				writeMaskedStencil(dst, sampleNdx, xo, yo, srcStencil, m_stencil[rr::FACETYPE_FRONT].writeMask);
 			}
 		}
 	}
@@ -3275,42 +3293,22 @@ void ReferenceContext::invalidateSubFramebuffer (deUint32 target, int numAttachm
 		bool								isColor					= ndx == 0;
 		bool								isDepth					= ndx == 1;
 		bool								isStencil				= ndx == 2;
-		rr::MultisamplePixelBufferAccess	buf						= isColor ? getDrawColorbuffer() :
-																	  isDepth ? getDrawDepthbuffer() :
-																				getDrawStencilbuffer();
+		rr::MultisamplePixelBufferAccess	buf						= isColor ? getDrawColorbuffer()								:
+																	  isDepth ? getDepthMultisampleAccess(getDrawDepthbuffer())		:
+																				getStencilMultisampleAccess(getDrawStencilbuffer());
 
 		if (isEmpty(buf))
 			continue;
 
 		tcu::IVec4							area					= intersect(tcu::IVec4(0, 0, buf.raw().getHeight(), buf.raw().getDepth()), tcu::IVec4(x, y, width, height));
 		rr::MultisamplePixelBufferAccess	access					= rr::getSubregion(buf, area.x(), area.y(), area.z(), area.w());
-		bool								isSharedDepthStencil	= access.raw().getFormat().order == tcu::TextureFormat::DS;
 
-		if (isSharedDepthStencil)
-		{
-			for (int yo = 0; yo < access.raw().getDepth(); yo++)
-			{
-				for (int xo = 0; xo < access.raw().getHeight(); xo++)
-				{
-					for (int s = 0; s < access.getNumSamples(); s++)
-					{
-						if (isDepth)
-							writeDepthOnly(access, s, xo, yo, depthClearValue);
-						else if (isStencil)
-							writeStencilOnly(access, s, xo, yo, stencilClearValue, 0xffffffffu);
-					}
-				}
-			}
-		}
-		else
-		{
-			if (isColor)
-				rr::clear(access, colorClearValue);
-			else if (isDepth)
-				rr::clear(access, tcu::Vec4(depthClearValue));
-			else if (isStencil)
-				rr::clear(access, tcu::IVec4(stencilClearValue));
-		}
+		if (isColor)
+			rr::clear(access, colorClearValue);
+		else if (isDepth)
+			rr::clear(access, tcu::Vec4(depthClearValue));
+		else if (isStencil)
+			rr::clear(access, tcu::IVec4(stencilClearValue));
 	}
 }
 
@@ -3371,62 +3369,26 @@ void ReferenceContext::clear (deUint32 buffers)
 
 	if (hasDepth && (buffers & GL_DEPTH_BUFFER_BIT) != 0 && m_depthMask)
 	{
-		rr::MultisamplePixelBufferAccess	access					= rr::getSubregion(depthBuf, depthArea.x(), depthArea.y(), depthArea.z(), depthArea.w());
-		bool								isSharedDepthStencil	= depthBuf.raw().getFormat().order != tcu::TextureFormat::D;
-
-		if (isSharedDepthStencil)
-		{
-			// Slow path where stencil is masked out in write.
-			for (int y = 0; y < access.raw().getDepth(); y++)
-				for (int x = 0; x < access.raw().getHeight(); x++)
-					for (int s = 0; s < access.getNumSamples(); s++)
-						writeDepthOnly(access, s, x, y, m_clearDepth);
-		}
-		else
-		{
-			// Fast path.
-			int						pixelSize		= access.raw().getFormat().getPixelSize();
-			std::vector<deUint8>	row				(access.raw().getWidth()*access.raw().getHeight()*pixelSize);
-			tcu::PixelBufferAccess	rowAccess		(depthBuf.raw().getFormat(), access.raw().getWidth(), access.raw().getHeight(), 1, &row[0]);
-
-			for (int y = 0; y < rowAccess.getHeight(); y++)
-				for (int x = 0; x < rowAccess.getWidth(); x++)
-					rowAccess.setPixel(tcu::Vec4(m_clearDepth), x, y);
-
-			for (int y = 0; y < access.raw().getDepth(); y++)
-				deMemcpy((deUint8*)access.raw().getDataPtr() + access.raw().getSlicePitch()*y, &row[0], (int)row.size());
-		}
+		rr::MultisamplePixelBufferAccess access = getDepthMultisampleAccess(rr::getSubregion(depthBuf, depthArea.x(), depthArea.y(), depthArea.z(), depthArea.w()));
+		rr::clearDepth(access, m_clearDepth);
 	}
 
 	if (hasStencil && (buffers & GL_STENCIL_BUFFER_BIT) != 0)
 	{
-		rr::MultisamplePixelBufferAccess	access					= rr::getSubregion(stencilBuf, stencilArea.x(), stencilArea.y(), stencilArea.z(), stencilArea.w());
+		rr::MultisamplePixelBufferAccess	access					= getStencilMultisampleAccess(rr::getSubregion(stencilBuf, stencilArea.x(), stencilArea.y(), stencilArea.z(), stencilArea.w()));
 		int									stencilBits				= getNumStencilBits(stencilBuf.raw().getFormat());
 		int									stencil					= maskStencil(stencilBits, m_clearStencil);
-		bool								isSharedDepthStencil	= stencilBuf.raw().getFormat().order != tcu::TextureFormat::S;
 
-		if (isSharedDepthStencil || ((m_stencil[rr::FACETYPE_FRONT].writeMask & ((1u<<stencilBits)-1u)) != ((1u<<stencilBits)-1u)))
+		if ((m_stencil[rr::FACETYPE_FRONT].writeMask & ((1u<<stencilBits)-1u)) != ((1u<<stencilBits)-1u))
 		{
 			// Slow path where depth or stencil is masked out in write.
 			for (int y = 0; y < access.raw().getDepth(); y++)
 				for (int x = 0; x < access.raw().getHeight(); x++)
 					for (int s = 0; s < access.getNumSamples(); s++)
-						writeStencilOnly(access, s, x, y, stencil, m_stencil[rr::FACETYPE_FRONT].writeMask);
+						writeMaskedStencil(access, s, x, y, stencil, m_stencil[rr::FACETYPE_FRONT].writeMask);
 		}
 		else
-		{
-			// Fast path.
-			int						pixelSize		= access.raw().getFormat().getPixelSize();
-			std::vector<deUint8>	row				(access.raw().getWidth()*access.raw().getHeight()*pixelSize);
-			tcu::PixelBufferAccess	rowAccess		(stencilBuf.raw().getFormat(), access.raw().getWidth(), access.raw().getHeight(), 1, &row[0]);
-
-			for (int y = 0; y < rowAccess.getHeight(); y++)
-				for (int x = 0; x < rowAccess.getWidth(); x++)
-					rowAccess.setPixel(tcu::IVec4(stencil), x, y);
-
-			for (int y = 0; y < access.raw().getDepth(); y++)
-				deMemcpy((deUint8*)access.raw().getDataPtr() + access.raw().getSlicePitch()*y, &row[0], (int)row.size());
-		}
+			rr::clearStencil(access, stencil);
 	}
 }
 
@@ -3469,13 +3431,13 @@ void ReferenceContext::clearBufferiv (deUint32 buffer, int drawbuffer, const int
 
 		if (!isEmpty(area) && m_stencil[rr::FACETYPE_FRONT].writeMask != 0)
 		{
-			rr::MultisamplePixelBufferAccess	access		= rr::getSubregion(stencilBuf, area.x(), area.y(), area.z(), area.w());
+			rr::MultisamplePixelBufferAccess	access		= getStencilMultisampleAccess(rr::getSubregion(stencilBuf, area.x(), area.y(), area.z(), area.w()));
 			int									stencil		= value[0];
 
 			for (int y = 0; y < access.raw().getDepth(); y++)
 				for (int x = 0; x < access.raw().getHeight(); x++)
 					for (int s = 0; s < access.getNumSamples(); s++)
-						writeStencilOnly(access, s, x, y, stencil, m_stencil[rr::FACETYPE_FRONT].writeMask);
+						writeMaskedStencil(access, s, x, y, stencil, m_stencil[rr::FACETYPE_FRONT].writeMask);
 		}
 	}
 }
@@ -3525,10 +3487,7 @@ void ReferenceContext::clearBufferfv (deUint32 buffer, int drawbuffer, const flo
 			rr::MultisamplePixelBufferAccess	access		= rr::getSubregion(depthBuf, area.x(), area.y(), area.z(), area.w());
 			float								depth		= value[0];
 
-			for (int y = 0; y < access.raw().getDepth(); y++)
-				for (int x = 0; x < access.raw().getHeight(); x++)
-					for (int s = 0; s < access.getNumSamples(); s++)
-						writeDepthOnly(access, s, x, y, depth);
+			rr::clearDepth(access, depth);
 		}
 	}
 }
