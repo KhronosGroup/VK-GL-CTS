@@ -1236,6 +1236,13 @@ static inline Vec4 lookup (const ConstPixelBufferAccess& access, int i, int j, i
 	return isSRGB(access.getFormat()) ? sRGBToLinear(p) : p;
 }
 
+// Border texel lookup
+static inline Vec4 lookupBorder (const tcu::TextureFormat& format, const tcu::Sampler& sampler)
+{
+	DE_UNREF(format);
+	return sampler.borderColor;
+}
+
 static inline float execCompare (const tcu::Vec4& color, Sampler::CompareMode compare, int chanNdx, float ref_, bool isFixedPoint)
 {
 	const bool	clampValues	= isFixedPoint;	// if comparing against a floating point texture, ref (and value) is not clamped
@@ -1268,7 +1275,7 @@ static Vec4 sampleNearest1D (const ConstPixelBufferAccess& access, const Sampler
 
 	// Check for CLAMP_TO_BORDER.
 	if (sampler.wrapS == Sampler::CLAMP_TO_BORDER && !deInBounds32(x, 0, width))
-		return sampler.borderColor;
+		return lookupBorder(access.getFormat(), sampler);
 
 	int i = wrap(sampler.wrapS, x, width);
 
@@ -1286,7 +1293,7 @@ static Vec4 sampleNearest2D (const ConstPixelBufferAccess& access, const Sampler
 	// Check for CLAMP_TO_BORDER.
 	if ((sampler.wrapS == Sampler::CLAMP_TO_BORDER && !deInBounds32(x, 0, width)) ||
 		(sampler.wrapT == Sampler::CLAMP_TO_BORDER && !deInBounds32(y, 0, height)))
-		return sampler.borderColor;
+		return lookupBorder(access.getFormat(), sampler);
 
 	int i = wrap(sampler.wrapS, x, width);
 	int j = wrap(sampler.wrapT, y, height);
@@ -1308,7 +1315,7 @@ static Vec4 sampleNearest3D (const ConstPixelBufferAccess& access, const Sampler
 	if ((sampler.wrapS == Sampler::CLAMP_TO_BORDER && !deInBounds32(x, 0, width))	||
 		(sampler.wrapT == Sampler::CLAMP_TO_BORDER && !deInBounds32(y, 0, height))	||
 		(sampler.wrapR == Sampler::CLAMP_TO_BORDER && !deInBounds32(z, 0, depth)))
-		return sampler.borderColor;
+		return lookupBorder(access.getFormat(), sampler);
 
 	int i = wrap(sampler.wrapS, x, width);
 	int j = wrap(sampler.wrapT, y, height);
@@ -1333,8 +1340,8 @@ static Vec4 sampleLinear1D (const ConstPixelBufferAccess& access, const Sampler&
 	bool i1UseBorder = sampler.wrapS == Sampler::CLAMP_TO_BORDER && !de::inBounds(i1, 0, w);
 
 	// Border color for out-of-range coordinates if using CLAMP_TO_BORDER, otherwise execute lookups.
-	Vec4 p0 = i0UseBorder ? sampler.borderColor : lookup(access, i0, offset.y(), 0);
-	Vec4 p1 = i1UseBorder ? sampler.borderColor : lookup(access, i1, offset.y(), 0);
+	Vec4 p0 = i0UseBorder ? lookupBorder(access.getFormat(), sampler) : lookup(access, i0, offset.y(), 0);
+	Vec4 p1 = i1UseBorder ? lookupBorder(access.getFormat(), sampler) : lookup(access, i1, offset.y(), 0);
 
 	// Interpolate.
 	return p0 * (1.0f - a) + p1 * a;
@@ -1364,10 +1371,10 @@ static Vec4 sampleLinear2D (const ConstPixelBufferAccess& access, const Sampler&
 	bool j1UseBorder = sampler.wrapT == Sampler::CLAMP_TO_BORDER && !de::inBounds(j1, 0, h);
 
 	// Border color for out-of-range coordinates if using CLAMP_TO_BORDER, otherwise execute lookups.
-	Vec4 p00 = (i0UseBorder || j0UseBorder) ? sampler.borderColor : lookup(access, i0, j0, offset.z());
-	Vec4 p10 = (i1UseBorder || j0UseBorder) ? sampler.borderColor : lookup(access, i1, j0, offset.z());
-	Vec4 p01 = (i0UseBorder || j1UseBorder) ? sampler.borderColor : lookup(access, i0, j1, offset.z());
-	Vec4 p11 = (i1UseBorder || j1UseBorder) ? sampler.borderColor : lookup(access, i1, j1, offset.z());
+	Vec4 p00 = (i0UseBorder || j0UseBorder) ? lookupBorder(access.getFormat(), sampler) : lookup(access, i0, j0, offset.z());
+	Vec4 p10 = (i1UseBorder || j0UseBorder) ? lookupBorder(access.getFormat(), sampler) : lookup(access, i1, j0, offset.z());
+	Vec4 p01 = (i0UseBorder || j1UseBorder) ? lookupBorder(access.getFormat(), sampler) : lookup(access, i0, j1, offset.z());
+	Vec4 p11 = (i1UseBorder || j1UseBorder) ? lookupBorder(access.getFormat(), sampler) : lookup(access, i1, j1, offset.z());
 
 	// Interpolate.
 	return (p00*(1.0f-a)*(1.0f-b)) +
@@ -1392,8 +1399,8 @@ static float sampleLinear1DCompare (const ConstPixelBufferAccess& access, const 
 	bool i1UseBorder = sampler.wrapS == Sampler::CLAMP_TO_BORDER && !de::inBounds(i1, 0, w);
 
 	// Border color for out-of-range coordinates if using CLAMP_TO_BORDER, otherwise execute lookups.
-	Vec4 p0Clr = i0UseBorder  ? sampler.borderColor : lookup(access, i0, offset.y(), 0);
-	Vec4 p1Clr = i1UseBorder  ? sampler.borderColor : lookup(access, i1, offset.y(), 0);
+	Vec4 p0Clr = i0UseBorder  ? lookupBorder(access.getFormat(), sampler) : lookup(access, i0, offset.y(), 0);
+	Vec4 p1Clr = i1UseBorder  ? lookupBorder(access.getFormat(), sampler) : lookup(access, i1, offset.y(), 0);
 
 	// Execute comparisons.
 	float p0 = execCompare(p0Clr, sampler.compare, sampler.compareChannel, ref, isFixedPointDepthFormat);
@@ -1427,10 +1434,10 @@ static float sampleLinear2DCompare (const ConstPixelBufferAccess& access, const 
 	bool j1UseBorder = sampler.wrapT == Sampler::CLAMP_TO_BORDER && !de::inBounds(j1, 0, h);
 
 	// Border color for out-of-range coordinates if using CLAMP_TO_BORDER, otherwise execute lookups.
-	Vec4 p00Clr = (i0UseBorder || j0UseBorder) ? sampler.borderColor : lookup(access, i0, j0, offset.z());
-	Vec4 p10Clr = (i1UseBorder || j0UseBorder) ? sampler.borderColor : lookup(access, i1, j0, offset.z());
-	Vec4 p01Clr = (i0UseBorder || j1UseBorder) ? sampler.borderColor : lookup(access, i0, j1, offset.z());
-	Vec4 p11Clr = (i1UseBorder || j1UseBorder) ? sampler.borderColor : lookup(access, i1, j1, offset.z());
+	Vec4 p00Clr = (i0UseBorder || j0UseBorder) ? lookupBorder(access.getFormat(), sampler) : lookup(access, i0, j0, offset.z());
+	Vec4 p10Clr = (i1UseBorder || j0UseBorder) ? lookupBorder(access.getFormat(), sampler) : lookup(access, i1, j0, offset.z());
+	Vec4 p01Clr = (i0UseBorder || j1UseBorder) ? lookupBorder(access.getFormat(), sampler) : lookup(access, i0, j1, offset.z());
+	Vec4 p11Clr = (i1UseBorder || j1UseBorder) ? lookupBorder(access.getFormat(), sampler) : lookup(access, i1, j1, offset.z());
 
 	// Execute comparisons.
 	float p00 = execCompare(p00Clr, sampler.compare, sampler.compareChannel, ref, isFixedPointDepthFormat);
@@ -1477,14 +1484,14 @@ static Vec4 sampleLinear3D (const ConstPixelBufferAccess& access, const Sampler&
 	bool k1UseBorder = sampler.wrapR == Sampler::CLAMP_TO_BORDER && !de::inBounds(k1, 0, depth);
 
 	// Border color for out-of-range coordinates if using CLAMP_TO_BORDER, otherwise execute lookups.
-	Vec4 p000 = (i0UseBorder || j0UseBorder || k0UseBorder) ? sampler.borderColor : lookup(access, i0, j0, k0);
-	Vec4 p100 = (i1UseBorder || j0UseBorder || k0UseBorder) ? sampler.borderColor : lookup(access, i1, j0, k0);
-	Vec4 p010 = (i0UseBorder || j1UseBorder || k0UseBorder) ? sampler.borderColor : lookup(access, i0, j1, k0);
-	Vec4 p110 = (i1UseBorder || j1UseBorder || k0UseBorder) ? sampler.borderColor : lookup(access, i1, j1, k0);
-	Vec4 p001 = (i0UseBorder || j0UseBorder || k1UseBorder) ? sampler.borderColor : lookup(access, i0, j0, k1);
-	Vec4 p101 = (i1UseBorder || j0UseBorder || k1UseBorder) ? sampler.borderColor : lookup(access, i1, j0, k1);
-	Vec4 p011 = (i0UseBorder || j1UseBorder || k1UseBorder) ? sampler.borderColor : lookup(access, i0, j1, k1);
-	Vec4 p111 = (i1UseBorder || j1UseBorder || k1UseBorder) ? sampler.borderColor : lookup(access, i1, j1, k1);
+	Vec4 p000 = (i0UseBorder || j0UseBorder || k0UseBorder) ? lookupBorder(access.getFormat(), sampler) : lookup(access, i0, j0, k0);
+	Vec4 p100 = (i1UseBorder || j0UseBorder || k0UseBorder) ? lookupBorder(access.getFormat(), sampler) : lookup(access, i1, j0, k0);
+	Vec4 p010 = (i0UseBorder || j1UseBorder || k0UseBorder) ? lookupBorder(access.getFormat(), sampler) : lookup(access, i0, j1, k0);
+	Vec4 p110 = (i1UseBorder || j1UseBorder || k0UseBorder) ? lookupBorder(access.getFormat(), sampler) : lookup(access, i1, j1, k0);
+	Vec4 p001 = (i0UseBorder || j0UseBorder || k1UseBorder) ? lookupBorder(access.getFormat(), sampler) : lookup(access, i0, j0, k1);
+	Vec4 p101 = (i1UseBorder || j0UseBorder || k1UseBorder) ? lookupBorder(access.getFormat(), sampler) : lookup(access, i1, j0, k1);
+	Vec4 p011 = (i0UseBorder || j1UseBorder || k1UseBorder) ? lookupBorder(access.getFormat(), sampler) : lookup(access, i0, j1, k1);
+	Vec4 p111 = (i1UseBorder || j1UseBorder || k1UseBorder) ? lookupBorder(access.getFormat(), sampler) : lookup(access, i1, j1, k1);
 
 	// Interpolate.
 	return (p000*(1.0f-a)*(1.0f-b)*(1.0f-c)) +
@@ -1897,9 +1904,8 @@ float sampleLevelArray2DCompare (const ConstPixelBufferAccess* levels, int numLe
 	}
 }
 
-Vec4 gatherArray2DOffsets (const ConstPixelBufferAccess& src, const Sampler& sampler, float s, float t, int depth, int componentNdx, const IVec2 (&offsets)[4])
+static Vec4 fetchGatherArray2DOffsets (const ConstPixelBufferAccess& src, const Sampler& sampler, float s, float t, int depth, int componentNdx, const IVec2 (&offsets)[4])
 {
-	DE_ASSERT(sampler.compare == Sampler::COMPAREMODE_NONE);
 	DE_ASSERT(de::inBounds(componentNdx, 0, 4));
 
 	const int		w	= src.getWidth();
@@ -1909,19 +1915,31 @@ Vec4 gatherArray2DOffsets (const ConstPixelBufferAccess& src, const Sampler& sam
 	const int		x0	= deFloorFloatToInt32(u-0.5f);
 	const int		y0	= deFloorFloatToInt32(v-0.5f);
 
-	IVec2 samplePositions[4];
-	for (int i = 0; i < DE_LENGTH_OF_ARRAY(samplePositions); i++)
-		samplePositions[i] = IVec2(wrap(sampler.wrapS, x0 + offsets[i].x(), w),
-								   wrap(sampler.wrapT, y0 + offsets[i].y(), h));
+	Vec4			result;
 
-	Vec4 result;
 	for (int i = 0; i < 4; i++)
 	{
-		const Vec4 pixel = lookup(src, samplePositions[i].x(), samplePositions[i].y(), depth);
+		const int	sampleX	= wrap(sampler.wrapS, x0 + offsets[i].x(), w);
+		const int	sampleY	= wrap(sampler.wrapT, y0 + offsets[i].y(), h);
+		Vec4		pixel;
+
+		if (deInBounds32(sampleX, 0, w) && deInBounds32(sampleY, 0, h))
+			pixel = lookup(src, sampleX, sampleY, depth);
+		else
+			pixel = lookupBorder(src.getFormat(), sampler);
+
 		result[i] = pixel[componentNdx];
 	}
 
 	return result;
+}
+
+Vec4 gatherArray2DOffsets (const ConstPixelBufferAccess& src, const Sampler& sampler, float s, float t, int depth, int componentNdx, const IVec2 (&offsets)[4])
+{
+	DE_ASSERT(sampler.compare == Sampler::COMPAREMODE_NONE);
+	DE_ASSERT(de::inBounds(componentNdx, 0, 4));
+
+	return fetchGatherArray2DOffsets(src, sampler, s, t, depth, componentNdx, offsets);
 }
 
 Vec4 gatherArray2DOffsetsCompare (const ConstPixelBufferAccess& src, const Sampler& sampler, float ref, float s, float t, int depth, const IVec2 (&offsets)[4])
@@ -1930,12 +1948,10 @@ Vec4 gatherArray2DOffsetsCompare (const ConstPixelBufferAccess& src, const Sampl
 	DE_ASSERT(src.getFormat().order == TextureFormat::D || src.getFormat().order == TextureFormat::DS);
 	DE_ASSERT(sampler.compareChannel == 0);
 
-	Sampler noCompareSampler = sampler;
-	noCompareSampler.compare = Sampler::COMPAREMODE_NONE;
+	const bool						isFixedPoint	= isFixedPointDepthTextureFormat(src.getFormat());
+	const Vec4						gathered		= fetchGatherArray2DOffsets(src, sampler, s, t, depth, 0 /* component 0: depth */, offsets);
+	Vec4							result;
 
-	const Vec4	gathered			= gatherArray2DOffsets(src, noCompareSampler, s, t, depth, 0 /* component 0: depth */, offsets);
-	const bool	isFixedPoint		= isFixedPointDepthTextureFormat(src.getFormat());
-	Vec4 result;
 	for (int i = 0; i < 4; i++)
 		result[i] = execCompare(gathered, sampler.compare, i, ref, isFixedPoint);
 
