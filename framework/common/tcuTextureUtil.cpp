@@ -462,10 +462,12 @@ enum
 
 inline void fillRow (const PixelBufferAccess& dst, int y, int z, int pixelSize, const deUint8* pixel)
 {
-	deUint8*	dstPtr	= (deUint8*)dst.getDataPtr() + z*dst.getSlicePitch() + y*dst.getRowPitch();
+	DE_ASSERT(dst.getPixelPitch() == pixelSize); // only tightly packed
+
+	deUint8*	dstPtr	= (deUint8*)dst.getPixelPtr(0, y, z);
 	int			width	= dst.getWidth();
 
-	if (pixelSize == 8 && deIsAlignedPtr(dstPtr, pixelSize) && deIsAlignedPtr(dstPtr, pixelSize))
+	if (pixelSize == 8 && deIsAlignedPtr(dstPtr, pixelSize))
 	{
 		deUint64 val;
 		memcpy(&val, pixel, sizeof(val));
@@ -473,7 +475,7 @@ inline void fillRow (const PixelBufferAccess& dst, int y, int z, int pixelSize, 
 		for (int i = 0; i < width; i++)
 			((deUint64*)dstPtr)[i] = val;
 	}
-	else if (pixelSize == 4 && deIsAlignedPtr(dstPtr, pixelSize) && deIsAlignedPtr(dstPtr, pixelSize))
+	else if (pixelSize == 4 && deIsAlignedPtr(dstPtr, pixelSize))
 	{
 		deUint32 val;
 		memcpy(&val, pixel, sizeof(val));
@@ -558,64 +560,16 @@ void clear (const PixelBufferAccess& access, const UVec4& color)
 
 void clearDepth (const PixelBufferAccess& access, float depth)
 {
-	const int	pixelSize				= access.getFormat().getPixelSize();
-	const int	pixelPitch				= access.getPixelPitch();
-	const bool	rowPixelsTightlyPacked	= (pixelSize == pixelPitch);
+	DE_ASSERT(access.getFormat().order == TextureFormat::DS || access.getFormat().order == TextureFormat::D);
 
-	if (access.getWidth()*access.getHeight()*access.getDepth() >= CLEAR_OPTIMIZE_THRESHOLD &&
-		pixelSize < CLEAR_OPTIMIZE_MAX_PIXEL_SIZE && rowPixelsTightlyPacked)
-	{
-		// Convert to destination format.
-		union
-		{
-			deUint8		u8[CLEAR_OPTIMIZE_MAX_PIXEL_SIZE];
-			deUint64	u64; // Forces 64-bit alignment.
-		} pixel;
-		DE_STATIC_ASSERT(sizeof(pixel) == CLEAR_OPTIMIZE_MAX_PIXEL_SIZE);
-		PixelBufferAccess(access.getFormat(), 1, 1, 1, 0, 0, &pixel.u8[0]).setPixDepth(depth, 0, 0);
-
-		for (int z = 0; z < access.getDepth(); z++)
-			for (int y = 0; y < access.getHeight(); y++)
-				fillRow(access, y, z, pixelSize, &pixel.u8[0]);
-	}
-	else
-	{
-		for (int z = 0; z < access.getDepth(); z++)
-			for (int y = 0; y < access.getHeight(); y++)
-				for (int x = 0; x < access.getWidth(); x++)
-					access.setPixDepth(depth, x, y, z);
-	}
+	clear(getEffectiveDepthStencilAccess(access, Sampler::MODE_DEPTH), tcu::Vec4(depth, 0.0f, 0.0f, 0.0f));
 }
 
 void clearStencil (const PixelBufferAccess& access, int stencil)
 {
-	const int	pixelSize				= access.getFormat().getPixelSize();
-	const int	pixelPitch				= access.getPixelPitch();
-	const bool	rowPixelsTightlyPacked	= (pixelSize == pixelPitch);
+	DE_ASSERT(access.getFormat().order == TextureFormat::DS || access.getFormat().order == TextureFormat::S);
 
-	if (access.getWidth()*access.getHeight()*access.getDepth() >= CLEAR_OPTIMIZE_THRESHOLD &&
-		pixelSize < CLEAR_OPTIMIZE_MAX_PIXEL_SIZE && rowPixelsTightlyPacked)
-	{
-		// Convert to destination format.
-		union
-		{
-			deUint8		u8[CLEAR_OPTIMIZE_MAX_PIXEL_SIZE];
-			deUint64	u64; // Forces 64-bit alignment.
-		} pixel;
-		DE_STATIC_ASSERT(sizeof(pixel) == CLEAR_OPTIMIZE_MAX_PIXEL_SIZE);
-		PixelBufferAccess(access.getFormat(), 1, 1, 1, 0, 0, &pixel.u8[0]).setPixStencil(stencil, 0, 0);
-
-		for (int z = 0; z < access.getDepth(); z++)
-			for (int y = 0; y < access.getHeight(); y++)
-				fillRow(access, y, z, pixelSize, &pixel.u8[0]);
-	}
-	else
-	{
-		for (int z = 0; z < access.getDepth(); z++)
-			for (int y = 0; y < access.getHeight(); y++)
-				for (int x = 0; x < access.getWidth(); x++)
-					access.setPixStencil(stencil, x, y, z);
-	}
+	clear(getEffectiveDepthStencilAccess(access, Sampler::MODE_STENCIL), tcu::UVec4(stencil, 0u, 0u, 0u));
 }
 
 static void fillWithComponentGradients1D (const PixelBufferAccess& access, const Vec4& minVal, const Vec4& maxVal)
