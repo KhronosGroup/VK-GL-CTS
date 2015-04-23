@@ -205,39 +205,43 @@ public:
 	};
 
 	// Wrap control
-	WrapMode		wrapS;
-	WrapMode		wrapT;
-	WrapMode		wrapR;
+	WrapMode			wrapS;
+	WrapMode			wrapT;
+	WrapMode			wrapR;
 
 	// Minifcation & magnification
-	FilterMode		minFilter;
-	FilterMode		magFilter;
-	float			lodThreshold;		// lod <= lodThreshold ? magnified : minified
+	FilterMode			minFilter;
+	FilterMode			magFilter;
+	float				lodThreshold;		// lod <= lodThreshold ? magnified : minified
 
 	// Coordinate normalization
-	bool			normalizedCoords;
+	bool				normalizedCoords;
 
 	// Shadow comparison
-	CompareMode		compare;
-	int				compareChannel;
+	CompareMode			compare;
+	int					compareChannel;
 
 	// Border color
 	Vec4			borderColor;
 
 	// Seamless cube map filtering
-	bool			seamlessCubeMap;
+	bool				seamlessCubeMap;
 
-	Sampler (WrapMode		wrapS_,
-			 WrapMode		wrapT_,
-			 WrapMode		wrapR_,
-			 FilterMode		minFilter_,
-			 FilterMode		magFilter_,
-			 float			lodThreshold_		= 0.0f,
-			 bool			normalizedCoords_	= true,
-			 CompareMode	compare_			= COMPAREMODE_NONE,
-			 int			compareChannel_		= 0,
-			 const Vec4&	borderColor_		= Vec4(0.0f, 0.0f, 0.0f, 0.0f),
-			 bool			seamlessCubeMap_	= false)
+	// Depth stencil mode
+	DepthStencilMode	depthStencilMode;
+
+	Sampler (WrapMode			wrapS_,
+			 WrapMode			wrapT_,
+			 WrapMode			wrapR_,
+			 FilterMode			minFilter_,
+			 FilterMode			magFilter_,
+			 float				lodThreshold_		= 0.0f,
+			 bool				normalizedCoords_	= true,
+			 CompareMode		compare_			= COMPAREMODE_NONE,
+			 int				compareChannel_		= 0,
+			 const Vec4&		borderColor_		= Vec4(0.0f, 0.0f, 0.0f, 0.0f),
+			 bool				seamlessCubeMap_	= false,
+			 DepthStencilMode	depthStencilMode_	= MODE_DEPTH)
 		: wrapS				(wrapS_)
 		, wrapT				(wrapT_)
 		, wrapR				(wrapR_)
@@ -249,6 +253,7 @@ public:
 		, compareChannel	(compareChannel_)
 		, borderColor		(borderColor_)
 		, seamlessCubeMap	(seamlessCubeMap_)
+		, depthStencilMode	(depthStencilMode_)
 	{
 	}
 
@@ -264,6 +269,7 @@ public:
 		, compareChannel	(0)
 		, borderColor		(0.0f, 0.0f, 0.0f, 0.0f)
 		, seamlessCubeMap	(false)
+		, depthStencilMode	(MODE_DEPTH)
 	{
 	}
 } DE_WARN_UNUSED_TYPE;
