@@ -1158,4 +1158,16 @@ bool isSizedFormatColorRenderable (const RenderContext& renderCtx, const Context
 	return (renderable & RENDERABLE_COLOR) != 0;
 }
 
+const tcu::IVec2 (&getDefaultGatherOffsets (void))[4]
+{
+	static const tcu::IVec2 s_defaultOffsets[4] =
+	{
+		tcu::IVec2(0, 1),
+		tcu::IVec2(1, 1),
+		tcu::IVec2(1, 0),
+		tcu::IVec2(0, 0),
+	};
+	return s_defaultOffsets;
+}
+
 } // glu
