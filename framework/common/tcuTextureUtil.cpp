@@ -632,15 +632,31 @@ static void fillWithComponentGradients3D (const PixelBufferAccess& dst, const Ve
 
 void fillWithComponentGradients (const PixelBufferAccess& access, const Vec4& minVal, const Vec4& maxVal)
 {
-	if (access.getHeight() == 1 && access.getDepth() == 1)
-		fillWithComponentGradients1D(access, minVal, maxVal);
-	else if (access.getDepth() == 1)
-		fillWithComponentGradients2D(access, minVal, maxVal);
+	if (isCombinedDepthStencilType(access.getFormat().type))
+	{
+		const bool hasDepth		= access.getFormat().order == tcu::TextureFormat::DS || access.getFormat().order == tcu::TextureFormat::D;
+		const bool hasStencil	= access.getFormat().order == tcu::TextureFormat::DS || access.getFormat().order == tcu::TextureFormat::S;
+
+		DE_ASSERT(hasDepth || hasStencil);
+
+		// For combined formats, treat D and S as separate channels
+		if (hasDepth)
+			fillWithComponentGradients(getEffectiveDepthStencilAccess(access, tcu::Sampler::MODE_DEPTH), minVal, maxVal);
+		if (hasStencil)
+			fillWithComponentGradients(getEffectiveDepthStencilAccess(access, tcu::Sampler::MODE_STENCIL), minVal.swizzle(3,2,1,0), maxVal.swizzle(3,2,1,0));
+	}
 	else
-		fillWithComponentGradients3D(access, minVal, maxVal);
+	{
+		if (access.getHeight() == 1 && access.getDepth() == 1)
+			fillWithComponentGradients1D(access, minVal, maxVal);
+		else if (access.getDepth() == 1)
+			fillWithComponentGradients2D(access, minVal, maxVal);
+		else
+			fillWithComponentGradients3D(access, minVal, maxVal);
+	}
 }
 
-void fillWithGrid1D (const PixelBufferAccess& access, int cellSize, const Vec4& colorA, const Vec4& colorB)
+static void fillWithGrid1D (const PixelBufferAccess& access, int cellSize, const Vec4& colorA, const Vec4& colorB)
 {
 	for (int x = 0; x < access.getWidth(); x++)
 	{
@@ -653,7 +669,7 @@ void fillWithGrid1D (const PixelBufferAccess& access, int cellSize, const Vec4& 
 	}
 }
 
-void fillWithGrid2D (const PixelBufferAccess& access, int cellSize, const Vec4& colorA, const Vec4& colorB)
+static void fillWithGrid2D (const PixelBufferAccess& access, int cellSize, const Vec4& colorA, const Vec4& colorB)
 {
 	for (int y = 0; y < access.getHeight(); y++)
 	{
@@ -670,7 +686,7 @@ void fillWithGrid2D (const PixelBufferAccess& access, int cellSize, const Vec4& 
 	}
 }
 
-void fillWithGrid3D (const PixelBufferAccess& access, int cellSize, const Vec4& colorA, const Vec4& colorB)
+static void fillWithGrid3D (const PixelBufferAccess& access, int cellSize, const Vec4& colorA, const Vec4& colorB)
 {
 	for (int z = 0; z < access.getDepth(); z++)
 	{
@@ -693,12 +709,28 @@ void fillWithGrid3D (const PixelBufferAccess& access, int cellSize, const Vec4& 
 
 void fillWithGrid (const PixelBufferAccess& access, int cellSize, const Vec4& colorA, const Vec4& colorB)
 {
-	if (access.getHeight() == 1 && access.getDepth() == 1)
-		fillWithGrid1D(access, cellSize, colorA, colorB);
-	else if (access.getDepth() == 1)
-		fillWithGrid2D(access, cellSize, colorA, colorB);
+	if (isCombinedDepthStencilType(access.getFormat().type))
+	{
+		const bool hasDepth		= access.getFormat().order == tcu::TextureFormat::DS || access.getFormat().order == tcu::TextureFormat::D;
+		const bool hasStencil	= access.getFormat().order == tcu::TextureFormat::DS || access.getFormat().order == tcu::TextureFormat::S;
+
+		DE_ASSERT(hasDepth || hasStencil);
+
+		// For combined formats, treat D and S as separate channels
+		if (hasDepth)
+			fillWithComponentGradients(getEffectiveDepthStencilAccess(access, tcu::Sampler::MODE_DEPTH), colorA, colorB);
+		if (hasStencil)
+			fillWithComponentGradients(getEffectiveDepthStencilAccess(access, tcu::Sampler::MODE_STENCIL), colorA.swizzle(3,2,1,0), colorB.swizzle(3,2,1,0));
+	}
 	else
-		fillWithGrid3D(access, cellSize, colorA, colorB);
+	{
+		if (access.getHeight() == 1 && access.getDepth() == 1)
+			fillWithGrid1D(access, cellSize, colorA, colorB);
+		else if (access.getDepth() == 1)
+			fillWithGrid2D(access, cellSize, colorA, colorB);
+		else
+			fillWithGrid3D(access, cellSize, colorA, colorB);
+	}
 }
 
 void fillWithRepeatableGradient (const PixelBufferAccess& access, const Vec4& colorA, const Vec4& colorB)
@@ -780,6 +812,11 @@ void copy (const PixelBufferAccess& dst, const ConstPixelBufferAccess& src)
 	const bool	srcTightlyPacked	= (srcPixelSize == srcPixelPitch);
 	const bool	dstTightlyPacked	= (dstPixelSize == dstPixelPitch);
 
+	const bool	srcHasDepth			= (src.getFormat().order == tcu::TextureFormat::DS || src.getFormat().order == tcu::TextureFormat::D);
+	const bool	srcHasStencil		= (src.getFormat().order == tcu::TextureFormat::DS || src.getFormat().order == tcu::TextureFormat::S);
+	const bool	dstHasDepth			= (dst.getFormat().order == tcu::TextureFormat::DS || dst.getFormat().order == tcu::TextureFormat::D);
+	const bool	dstHasStencil		= (dst.getFormat().order == tcu::TextureFormat::DS || dst.getFormat().order == tcu::TextureFormat::S);
+
 	if (src.getFormat() == dst.getFormat() && srcTightlyPacked && dstTightlyPacked)
 	{
 		// Fast-path for matching formats.
@@ -794,6 +831,36 @@ void copy (const PixelBufferAccess& dst, const ConstPixelBufferAccess& src)
 		for (int y = 0; y < height; y++)
 		for (int x = 0; x < width; x++)
 			deMemcpy(dst.getPixelPtr(x, y, z), src.getPixelPtr(x, y, z), srcPixelSize);
+	}
+	else if (srcHasDepth || srcHasStencil || dstHasDepth || dstHasStencil)
+	{
+		DE_ASSERT((srcHasDepth && dstHasDepth) || (srcHasStencil && dstHasStencil)); // must have at least one common channel
+
+		if (dstHasDepth && srcHasDepth)
+		{
+			for (int z = 0; z < depth; z++)
+			for (int y = 0; y < height; y++)
+			for (int x = 0; x < width; x++)
+				dst.setPixDepth(src.getPixDepth(x, y, z), x, y, z);
+		}
+		else if (dstHasDepth && !srcHasDepth)
+		{
+			// consistency with color copies
+			tcu::clearDepth(dst, 0.0f);
+		}
+
+		if (dstHasStencil && srcHasStencil)
+		{
+			for (int z = 0; z < depth; z++)
+			for (int y = 0; y < height; y++)
+			for (int x = 0; x < width; x++)
+				dst.setPixStencil(src.getPixStencil(x, y, z), x, y, z);
+		}
+		else if (dstHasStencil && !srcHasStencil)
+		{
+			// consistency with color copies
+			tcu::clearStencil(dst, 0u);
+		}
 	}
 	else
 	{

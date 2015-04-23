@@ -125,9 +125,21 @@ static tcu::IVec4 getPixelFormatCompareDepth (const tcu::PixelFormat& pixelForma
 	}
 }
 
+static IVec4 getEffectiveTextureFormatBitDepth (tcu::TextureFormat textureFormat)
+{
+	if (textureFormat.order == tcu::TextureFormat::DS)
+	{
+		// When sampling depth-stencil texture, we actually sample just
+		// the depth component.
+		return tcu::getTextureFormatBitDepth(tcu::getEffectiveDepthStencilTextureFormat(textureFormat, tcu::Sampler::MODE_DEPTH));
+	}
+	else
+		return tcu::getTextureFormatBitDepth(textureFormat);
+}
+
 static tcu::UVec4 computeCompareThreshold (const tcu::PixelFormat& pixelFormat, tcu::TextureFormat textureFormat)
 {
-	const IVec4		texFormatBits		= tcu::getTextureFormatBitDepth(textureFormat);
+	const IVec4		texFormatBits		= getEffectiveTextureFormatBitDepth(textureFormat);
 	const IVec4		pixelFormatBits		= getPixelFormatCompareDepth(pixelFormat, textureFormat);
 	const IVec4		accurateFmtBits		= min(pixelFormatBits, texFormatBits);
 	const IVec4		compareBits			= select(accurateFmtBits, IVec4(8), greaterThan(accurateFmtBits, IVec4(0))) - 1;
