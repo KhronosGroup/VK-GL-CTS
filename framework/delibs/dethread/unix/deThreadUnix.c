@@ -35,6 +35,15 @@
 #include <pthread.h>
 #include <sched.h>
 
+#if (DE_OS == DE_OS_OSX) || (DE_OS == DE_OS_IOS)
+#	if !defined(_SC_NPROCESSORS_CONF)
+#		define _SC_NPROCESSORS_CONF 57
+#	endif
+#	if !defined(_SC_NPROCESSORS_ONLN)
+#		define _SC_NPROCESSORS_ONLN 58
+#	endif
+#endif
+
 typedef struct Thread_s
 {
 	pthread_t		thread;
