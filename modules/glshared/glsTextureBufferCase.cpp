@@ -791,7 +791,7 @@ void logImplementationInfo (TestLog& log, glu::RenderContext& renderContext)
 
 	if (glu::contextSupports(renderContext.getType(), glu::ApiType(3, 3, glu::PROFILE_CORE)))
 	{
-		deInt32 maxTextureSize;
+		deInt32 maxTextureSize = 0;
 
 		gl.getIntegerv(GL_MAX_TEXTURE_BUFFER_SIZE, &maxTextureSize);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glGetIntegerv(GL_MAX_TEXTURE_BUFFER_SIZE)");
@@ -801,7 +801,7 @@ void logImplementationInfo (TestLog& log, glu::RenderContext& renderContext)
 	else if (glu::contextSupports(renderContext.getType(), glu::ApiType(3, 1, glu::PROFILE_ES)) && info->isExtensionSupported("GL_EXT_texture_buffer"))
 	{
 		{
-			deInt32 maxTextureSize;
+			deInt32 maxTextureSize = 0;
 
 			gl.getIntegerv(GL_MAX_TEXTURE_BUFFER_SIZE, &maxTextureSize);
 			GLU_EXPECT_NO_ERROR(gl.getError(), "glGetIntegerv(GL_MAX_TEXTURE_BUFFER_SIZE_EXT)");
@@ -810,7 +810,7 @@ void logImplementationInfo (TestLog& log, glu::RenderContext& renderContext)
 		}
 
 		{
-			deInt32 textureBufferAlignment;
+			deInt32 textureBufferAlignment = 0;
 
 			gl.getIntegerv(GL_TEXTURE_BUFFER_OFFSET_ALIGNMENT, &textureBufferAlignment);
 			GLU_EXPECT_NO_ERROR(gl.getError(), "glGetIntegerv(GL_TEXTURE_BUFFER_OFFSET_ALIGNMENT_EXT)");
