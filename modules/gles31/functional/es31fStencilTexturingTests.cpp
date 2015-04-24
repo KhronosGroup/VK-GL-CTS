@@ -170,7 +170,9 @@ static void renderTestPatternReference (const tcu::PixelBufferAccess& dst)
 	DE_ASSERT(dst.getFormat().order == TextureFormat::S || dst.getFormat().order == TextureFormat::DS);
 
 	// clear depth and stencil
-	tcu::clear(dst, IVec4(0));
+	if (dst.getFormat().order == TextureFormat::DS)
+		tcu::clearDepth(dst, 0.0f);
+	tcu::clearStencil(dst, 0u);
 
 	genTestRects(rects, dst.getWidth(), dst.getHeight());
 
