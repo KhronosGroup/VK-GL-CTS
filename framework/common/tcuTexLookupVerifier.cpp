@@ -58,20 +58,21 @@ inline Vector<ScalarType, 4> lookup (const ConstPixelBufferAccess& access, const
 	if (coordsInBounds(access, i, j, k))
 		return access.getPixelT<ScalarType>(i, j, k);
 	else
-		return sampler.borderColor.cast<ScalarType>();
+		return sampleTextureBorder<ScalarType>(access.getFormat(), sampler);
 }
 
 template<>
 inline Vector<float, 4> lookup (const ConstPixelBufferAccess& access, const Sampler& sampler, int i, int j, int k)
 {
 	// Specialization for float lookups: sRGB conversion is performed as specified in format.
+	Vec4 p;
+
 	if (coordsInBounds(access, i, j, k))
-	{
-		const Vec4 p = access.getPixel(i, j, k);
-		return isSRGB(access.getFormat()) ? sRGBToLinear(p) : p;
-	}
+		p = access.getPixel(i, j, k);
 	else
-		return sampler.borderColor;
+		p = sampleTextureBorder<float>(access.getFormat(), sampler);
+
+	return isSRGB(access.getFormat()) ? sRGBToLinear(p) : p;
 }
 
 static inline bool isColorValid (const LookupPrecision& prec, const Vec4& ref, const Vec4& result)

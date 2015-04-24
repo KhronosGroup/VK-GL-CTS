@@ -153,6 +153,9 @@ tcu::Texture2DArrayView		getEffectiveTextureView					(const tcu::Texture2DArrayV
 tcu::TextureCubeView		getEffectiveTextureView					(const tcu::TextureCubeView&		src, std::vector<tcu::ConstPixelBufferAccess>& storage, const tcu::Sampler& sampler);
 tcu::TextureCubeArrayView	getEffectiveTextureView					(const tcu::TextureCubeArrayView&	src, std::vector<tcu::ConstPixelBufferAccess>& storage, const tcu::Sampler& sampler);
 
+template <typename ScalarType>
+tcu::Vector<ScalarType, 4>	sampleTextureBorder						(const TextureFormat& format, const Sampler& sampler);
+
 } // tcu
 
 #endif // _TCUTEXTUREUTIL_HPP

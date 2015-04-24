@@ -577,9 +577,9 @@ static void fillWithComponentGradients1D (const PixelBufferAccess& access, const
 	DE_ASSERT(access.getHeight() == 1);
 	for (int x = 0; x < access.getWidth(); x++)
 	{
-		float s	= ((float)x + 0.5f) / (float)access.getWidth();
+		float s = ((float)x + 0.5f) / (float)access.getWidth();
 
-		float r	= linearInterpolate(s, minVal.x(), maxVal.x());
+		float r = linearInterpolate(s, minVal.x(), maxVal.x());
 		float g = linearInterpolate(s, minVal.y(), maxVal.y());
 		float b = linearInterpolate(s, minVal.z(), maxVal.z());
 		float a = linearInterpolate(s, minVal.w(), maxVal.w());
@@ -594,10 +594,10 @@ static void fillWithComponentGradients2D (const PixelBufferAccess& access, const
 	{
 		for (int x = 0; x < access.getWidth(); x++)
 		{
-			float s	= ((float)x + 0.5f) / (float)access.getWidth();
-			float t	= ((float)y + 0.5f) / (float)access.getHeight();
+			float s = ((float)x + 0.5f) / (float)access.getWidth();
+			float t = ((float)y + 0.5f) / (float)access.getHeight();
 
-			float r	= linearInterpolate((      s  +       t) *0.5f, minVal.x(), maxVal.x());
+			float r = linearInterpolate((      s  +       t) *0.5f, minVal.x(), maxVal.x());
 			float g = linearInterpolate((      s  + (1.0f-t))*0.5f, minVal.y(), maxVal.y());
 			float b = linearInterpolate(((1.0f-s) +       t) *0.5f, minVal.z(), maxVal.z());
 			float a = linearInterpolate(((1.0f-s) + (1.0f-t))*0.5f, minVal.w(), maxVal.w());
@@ -1215,5 +1215,224 @@ tcu::TextureCubeArrayView getEffectiveTextureView (const tcu::TextureCubeArrayVi
 {
 	return getEffectiveTView(src, storage, sampler);
 }
+
+//! Returns the effective swizzle of a border color. The effective swizzle is the
+//! equal to first writing an RGBA color with a write swizzle and then reading
+//! it back using a read swizzle, i.e. BorderSwizzle(c) == readSwizzle(writeSwizzle(C))
+static const TextureSwizzle& getBorderColorReadSwizzle (TextureFormat::ChannelOrder order)
+{
+	// make sure to update these tables when channel orders are updated
+	DE_STATIC_ASSERT(TextureFormat::CHANNELORDER_LAST == 18);
+
+	static const TextureSwizzle INV		= {{ TextureSwizzle::CHANNEL_ZERO,	TextureSwizzle::CHANNEL_ZERO,	TextureSwizzle::CHANNEL_ZERO,	TextureSwizzle::CHANNEL_ONE	}};
+	static const TextureSwizzle R		= {{ TextureSwizzle::CHANNEL_0,		TextureSwizzle::CHANNEL_ZERO,	TextureSwizzle::CHANNEL_ZERO,	TextureSwizzle::CHANNEL_ONE	}};
+	static const TextureSwizzle A		= {{ TextureSwizzle::CHANNEL_ZERO,	TextureSwizzle::CHANNEL_ZERO,	TextureSwizzle::CHANNEL_ZERO,	TextureSwizzle::CHANNEL_3	}};
+	static const TextureSwizzle I		= {{ TextureSwizzle::CHANNEL_0,		TextureSwizzle::CHANNEL_0,		TextureSwizzle::CHANNEL_0,		TextureSwizzle::CHANNEL_0	}};
+	static const TextureSwizzle L		= {{ TextureSwizzle::CHANNEL_0,		TextureSwizzle::CHANNEL_0,		TextureSwizzle::CHANNEL_0,		TextureSwizzle::CHANNEL_ONE	}};
+	static const TextureSwizzle LA		= {{ TextureSwizzle::CHANNEL_0,		TextureSwizzle::CHANNEL_0,		TextureSwizzle::CHANNEL_0,		TextureSwizzle::CHANNEL_3	}};
+	static const TextureSwizzle RG		= {{ TextureSwizzle::CHANNEL_0,		TextureSwizzle::CHANNEL_1,		TextureSwizzle::CHANNEL_ZERO,	TextureSwizzle::CHANNEL_ONE	}};
+	static const TextureSwizzle RA		= {{ TextureSwizzle::CHANNEL_0,		TextureSwizzle::CHANNEL_ZERO,	TextureSwizzle::CHANNEL_ZERO,	TextureSwizzle::CHANNEL_3	}};
+	static const TextureSwizzle RGB		= {{ TextureSwizzle::CHANNEL_0,		TextureSwizzle::CHANNEL_1,		TextureSwizzle::CHANNEL_2,		TextureSwizzle::CHANNEL_ONE	}};
+	static const TextureSwizzle RGBA	= {{ TextureSwizzle::CHANNEL_0,		TextureSwizzle::CHANNEL_1,		TextureSwizzle::CHANNEL_2,		TextureSwizzle::CHANNEL_3	}};
+	static const TextureSwizzle D		= {{ TextureSwizzle::CHANNEL_0,		TextureSwizzle::CHANNEL_ZERO,	TextureSwizzle::CHANNEL_ZERO,	TextureSwizzle::CHANNEL_ONE	}};
+	static const TextureSwizzle S		= {{ TextureSwizzle::CHANNEL_0,		TextureSwizzle::CHANNEL_ZERO,	TextureSwizzle::CHANNEL_ZERO,	TextureSwizzle::CHANNEL_ONE	}};
+
+	const TextureSwizzle* swizzle;
+
+	switch (order)
+	{
+		case TextureFormat::R:			swizzle = &R;		break;
+		case TextureFormat::A:			swizzle = &A;		break;
+		case TextureFormat::I:			swizzle = &I;		break;
+		case TextureFormat::L:			swizzle = &L;		break;
+		case TextureFormat::LA:			swizzle = &LA;		break;
+		case TextureFormat::RG:			swizzle = &RG;		break;
+		case TextureFormat::RA:			swizzle = &RA;		break;
+		case TextureFormat::RGB:		swizzle = &RGB;		break;
+		case TextureFormat::RGBA:		swizzle = &RGBA;	break;
+		case TextureFormat::ARGB:		swizzle = &RGBA;	break;
+		case TextureFormat::BGRA:		swizzle = &RGBA;	break;
+		case TextureFormat::sR:			swizzle = &R;		break;
+		case TextureFormat::sRG:		swizzle = &RG;		break;
+		case TextureFormat::sRGB:		swizzle = &RGB;		break;
+		case TextureFormat::sRGBA:		swizzle = &RGBA;	break;
+		case TextureFormat::D:			swizzle = &D;		break;
+		case TextureFormat::S:			swizzle = &S;		break;
+
+		case TextureFormat::DS:
+			DE_ASSERT(false); // combined depth-stencil border color?
+			swizzle = &INV;
+			break;
+
+		default:
+			DE_ASSERT(false);
+			swizzle = &INV;
+			break;
+	}
+
+#ifdef DE_DEBUG
+
+	{
+		// check that BorderSwizzle(c) == readSwizzle(writeSwizzle(C))
+		const TextureSwizzle& readSwizzle	= getChannelReadSwizzle(order);
+		const TextureSwizzle& writeSwizzle	= getChannelWriteSwizzle(order);
+
+		for (int ndx = 0; ndx < 4; ++ndx)
+		{
+			TextureSwizzle::Channel writeRead = readSwizzle.components[ndx];
+			if (deInRange32(writeRead, TextureSwizzle::CHANNEL_0, TextureSwizzle::CHANNEL_3) == DE_TRUE)
+				writeRead = writeSwizzle.components[(int)writeRead];
+			DE_ASSERT(writeRead == swizzle->components[ndx]);
+		}
+	}
+
+#endif
+
+	return *swizzle;
+}
+
+static tcu::UVec4 getNBitUnsignedIntegerVec4MaxValue (const tcu::IVec4& numBits)
+{
+	return tcu::UVec4((numBits[0] > 0) ? (deUintMaxValue32(numBits[0])) : (0),
+					  (numBits[1] > 0) ? (deUintMaxValue32(numBits[1])) : (0),
+					  (numBits[2] > 0) ? (deUintMaxValue32(numBits[2])) : (0),
+					  (numBits[3] > 0) ? (deUintMaxValue32(numBits[3])) : (0));
+}
+
+static tcu::IVec4 getNBitSignedIntegerVec4MaxValue (const tcu::IVec4& numBits)
+{
+	return tcu::IVec4((numBits[0] > 0) ? (deIntMaxValue32(numBits[0])) : (0),
+					  (numBits[1] > 0) ? (deIntMaxValue32(numBits[1])) : (0),
+					  (numBits[2] > 0) ? (deIntMaxValue32(numBits[2])) : (0),
+					  (numBits[3] > 0) ? (deIntMaxValue32(numBits[3])) : (0));
+}
+
+static tcu::IVec4 getNBitSignedIntegerVec4MinValue (const tcu::IVec4& numBits)
+{
+	return tcu::IVec4((numBits[0] > 0) ? (deIntMinValue32(numBits[0])) : (0),
+					  (numBits[1] > 0) ? (deIntMinValue32(numBits[1])) : (0),
+					  (numBits[2] > 0) ? (deIntMinValue32(numBits[2])) : (0),
+					  (numBits[3] > 0) ? (deIntMinValue32(numBits[3])) : (0));
+}
+
+static tcu::Vec4 getTextureBorderColorFloat (const TextureFormat& format, const Sampler& sampler)
+{
+	const tcu::TextureChannelClass	channelClass 	= getTextureChannelClass(format.type);
+	const TextureSwizzle::Channel*	channelMap		= getBorderColorReadSwizzle(format.order).components;
+	const bool						isFloat			= channelClass == tcu::TEXTURECHANNELCLASS_FLOATING_POINT;
+	const bool						isSigned		= channelClass != tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT;
+	const float						valueMin		= (isSigned) ? (-1.0f) : (0.0f);
+	const float						valueMax		= 1.0f;
+	Vec4							result;
+
+	DE_ASSERT(channelClass == tcu::TEXTURECHANNELCLASS_FLOATING_POINT ||
+			  channelClass == tcu::TEXTURECHANNELCLASS_SIGNED_FIXED_POINT ||
+			  channelClass == tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT);
+
+	for (int c = 0; c < 4; c++)
+	{
+		const TextureSwizzle::Channel map = channelMap[c];
+		if (map == TextureSwizzle::CHANNEL_ZERO)
+			result[c] = 0.0f;
+		else if (map == TextureSwizzle::CHANNEL_ONE)
+			result[c] = 1.0f;
+		else if (isFloat)
+		{
+			// floating point values are not clamped
+			result[c] = sampler.borderColor.getAccess<float>()[(int)map];
+		}
+		else
+		{
+			// fixed point values are clamped to a representable range
+			result[c] = de::clamp(sampler.borderColor.getAccess<float>()[(int)map], valueMin, valueMax);
+		}
+	}
+
+	return isSRGB(format) ? sRGBToLinear(result) : result;
+}
+
+static tcu::IVec4 getTextureBorderColorInt (const TextureFormat& format, const Sampler& sampler)
+{
+	const tcu::TextureChannelClass	channelClass 	= getTextureChannelClass(format.type);
+	const TextureSwizzle::Channel*	channelMap		= getBorderColorReadSwizzle(format.order).components;
+	const IVec4						channelBits		= getChannelBitDepth(format.type);
+	const IVec4						valueMin		= getNBitSignedIntegerVec4MinValue(channelBits);
+	const IVec4						valueMax		= getNBitSignedIntegerVec4MaxValue(channelBits);
+	IVec4							result;
+
+	DE_ASSERT(channelClass == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER);
+
+	for (int c = 0; c < 4; c++)
+	{
+		const TextureSwizzle::Channel map = channelMap[c];
+		if (map == TextureSwizzle::CHANNEL_ZERO)
+			result[c] = 0;
+		else if (map == TextureSwizzle::CHANNEL_ONE)
+			result[c] = 1;
+		else
+		{
+			// integer values are clamped to a representable range
+			result[c] = de::clamp(sampler.borderColor.getAccess<deInt32>()[(int)map], valueMin[(int)map], valueMax[(int)map]);
+		}
+	}
+
+	return result;
+}
+
+static tcu::UVec4 getTextureBorderColorUint (const TextureFormat& format, const Sampler& sampler)
+{
+	const tcu::TextureChannelClass	channelClass 	= getTextureChannelClass(format.type);
+	const TextureSwizzle::Channel*	channelMap		= getBorderColorReadSwizzle(format.order).components;
+	const IVec4						channelBits		= getChannelBitDepth(format.type);
+	const UVec4						valueMax		= getNBitUnsignedIntegerVec4MaxValue(channelBits);
+	UVec4							result;
+
+	DE_ASSERT(channelClass == tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER);
+
+	for (int c = 0; c < 4; c++)
+	{
+		const TextureSwizzle::Channel map = channelMap[c];
+		if (map == TextureSwizzle::CHANNEL_ZERO)
+			result[c] = 0;
+		else if (map == TextureSwizzle::CHANNEL_ONE)
+			result[c] = 1;
+		else
+		{
+			// integer values are clamped to a representable range
+			result[c] = de::min(sampler.borderColor.getAccess<deUint32>()[(int)map], valueMax[(int)map]);
+		}
+	}
+
+	return result;
+}
+
+template <typename ScalarType>
+tcu::Vector<ScalarType, 4> sampleTextureBorder (const TextureFormat& format, const Sampler& sampler)
+{
+	const tcu::TextureChannelClass channelClass = getTextureChannelClass(format.type);
+
+	switch (channelClass)
+	{
+		case tcu::TEXTURECHANNELCLASS_FLOATING_POINT:
+		case tcu::TEXTURECHANNELCLASS_SIGNED_FIXED_POINT:
+		case tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT:
+			return getTextureBorderColorFloat(format, sampler).cast<ScalarType>();
+
+		case tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER:
+			return getTextureBorderColorInt(format, sampler).cast<ScalarType>();
+
+		case tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER:
+			return getTextureBorderColorUint(format, sampler).cast<ScalarType>();
+
+		default:
+			DE_ASSERT(false);
+			return tcu::Vector<ScalarType, 4>();
+	}
+}
+
+// instantiation
+template tcu::Vector<float, 4>		sampleTextureBorder (const TextureFormat& format, const Sampler& sampler);
+template tcu::Vector<deInt32, 4>	sampleTextureBorder (const TextureFormat& format, const Sampler& sampler);
+template tcu::Vector<deUint32, 4>	sampleTextureBorder (const TextureFormat& format, const Sampler& sampler);
 
 } // tcu

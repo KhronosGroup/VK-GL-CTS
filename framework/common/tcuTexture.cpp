@@ -1235,11 +1235,33 @@ static inline Vec4 lookup (const ConstPixelBufferAccess& access, int i, int j, i
 	return isSRGB(access.getFormat()) ? sRGBToLinear(p) : p;
 }
 
-// Border texel lookup
+// Border texel lookup with color conversion.
 static inline Vec4 lookupBorder (const tcu::TextureFormat& format, const tcu::Sampler& sampler)
 {
-	DE_UNREF(format);
-	return sampler.borderColor;
+	// "lookup" for a combined format does not make sense, disallow
+	DE_ASSERT(!isCombinedDepthStencilType(format.type));
+
+	const tcu::TextureChannelClass	channelClass 			= tcu::getTextureChannelClass(format.type);
+	const bool						isFloat					= channelClass == tcu::TEXTURECHANNELCLASS_FLOATING_POINT;
+	const bool						isFixed					= channelClass == tcu::TEXTURECHANNELCLASS_SIGNED_FIXED_POINT ||
+															  channelClass == tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT;
+	const bool						isPureInteger			= channelClass == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER;
+	const bool						isPureUnsignedInteger	= channelClass == tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER;
+
+	if (isFloat || isFixed)
+	{
+		const Vec4 p = sampleTextureBorder<float>(format, sampler);
+		return isSRGB(format) ? sRGBToLinear(p) : p;
+	}
+	else if (isPureInteger)
+		return sampleTextureBorder<deInt32>(format, sampler).cast<float>();
+	else if (isPureUnsignedInteger)
+		return sampleTextureBorder<deUint32>(format, sampler).cast<float>();
+	else
+	{
+		DE_ASSERT(false);
+		return Vec4(-1.0);
+	}
 }
 
 static inline float execCompare (const tcu::Vec4& color, Sampler::CompareMode compare, int chanNdx, float ref_, bool isFixedPoint)
@@ -1947,9 +1969,9 @@ Vec4 gatherArray2DOffsetsCompare (const ConstPixelBufferAccess& src, const Sampl
 	DE_ASSERT(src.getFormat().order == TextureFormat::D || src.getFormat().order == TextureFormat::DS);
 	DE_ASSERT(sampler.compareChannel == 0);
 
-	const bool						isFixedPoint	= isFixedPointDepthTextureFormat(src.getFormat());
-	const Vec4						gathered		= fetchGatherArray2DOffsets(src, sampler, s, t, depth, 0 /* component 0: depth */, offsets);
-	Vec4							result;
+	const bool	isFixedPoint	= isFixedPointDepthTextureFormat(src.getFormat());
+	const Vec4	gathered		= fetchGatherArray2DOffsets(src, sampler, s, t, depth, 0 /* component 0: depth */, offsets);
+	Vec4		result;
 
 	for (int i = 0; i < 4; i++)
 		result[i] = execCompare(gathered, sampler.compare, i, ref, isFixedPoint);
