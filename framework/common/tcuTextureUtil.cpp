@@ -1078,4 +1078,75 @@ TextureFormat getEffectiveDepthStencilTextureFormat (const TextureFormat& baseFo
 	return toSamplerAccess(ConstPixelBufferAccess(baseFormat, IVec3(0, 0, 0), DE_NULL), mode).getFormat();
 }
 
+template <typename ViewType>
+ViewType getEffectiveTView (const ViewType& src, std::vector<tcu::ConstPixelBufferAccess>& storage, const tcu::Sampler& sampler)
+{
+	storage.resize(src.getNumLevels());
+
+	ViewType view = ViewType(src.getNumLevels(), &storage[0]);
+
+	for (int levelNdx = 0; levelNdx < src.getNumLevels(); ++levelNdx)
+		storage[levelNdx] = tcu::getEffectiveDepthStencilAccess(src.getLevel(levelNdx), sampler.depthStencilMode);
+
+	return view;
+}
+
+tcu::TextureCubeView getEffectiveTView (const tcu::TextureCubeView& src, std::vector<tcu::ConstPixelBufferAccess>& storage, const tcu::Sampler& sampler)
+{
+	storage.resize(tcu::CUBEFACE_LAST * src.getNumLevels());
+
+	const tcu::ConstPixelBufferAccess* storagePtrs[tcu::CUBEFACE_LAST] =
+	{
+		&storage[0 * src.getNumLevels()],
+		&storage[1 * src.getNumLevels()],
+		&storage[2 * src.getNumLevels()],
+		&storage[3 * src.getNumLevels()],
+		&storage[4 * src.getNumLevels()],
+		&storage[5 * src.getNumLevels()],
+	};
+
+	tcu::TextureCubeView view = tcu::TextureCubeView(src.getNumLevels(), storagePtrs);
+
+	for (int faceNdx = 0; faceNdx < tcu::CUBEFACE_LAST; ++faceNdx)
+	for (int levelNdx = 0; levelNdx < src.getNumLevels(); ++levelNdx)
+		storage[faceNdx * src.getNumLevels() + levelNdx] = tcu::getEffectiveDepthStencilAccess(src.getLevelFace(levelNdx, (tcu::CubeFace)faceNdx), sampler.depthStencilMode);
+
+	return view;
+}
+
+tcu::Texture1DView getEffectiveTextureView (const tcu::Texture1DView& src, std::vector<tcu::ConstPixelBufferAccess>& storage, const tcu::Sampler& sampler)
+{
+	return getEffectiveTView(src, storage, sampler);
+}
+
+tcu::Texture2DView getEffectiveTextureView (const tcu::Texture2DView& src, std::vector<tcu::ConstPixelBufferAccess>& storage, const tcu::Sampler& sampler)
+{
+	return getEffectiveTView(src, storage, sampler);
+}
+
+tcu::Texture3DView getEffectiveTextureView (const tcu::Texture3DView& src, std::vector<tcu::ConstPixelBufferAccess>& storage, const tcu::Sampler& sampler)
+{
+	return getEffectiveTView(src, storage, sampler);
+}
+
+tcu::Texture1DArrayView getEffectiveTextureView (const tcu::Texture1DArrayView& src, std::vector<tcu::ConstPixelBufferAccess>& storage, const tcu::Sampler& sampler)
+{
+	return getEffectiveTView(src, storage, sampler);
+}
+
+tcu::Texture2DArrayView getEffectiveTextureView (const tcu::Texture2DArrayView& src, std::vector<tcu::ConstPixelBufferAccess>& storage, const tcu::Sampler& sampler)
+{
+	return getEffectiveTView(src, storage, sampler);
+}
+
+tcu::TextureCubeView getEffectiveTextureView (const tcu::TextureCubeView& src, std::vector<tcu::ConstPixelBufferAccess>& storage, const tcu::Sampler& sampler)
+{
+	return getEffectiveTView(src, storage, sampler);
+}
+
+tcu::TextureCubeArrayView getEffectiveTextureView (const tcu::TextureCubeArrayView& src, std::vector<tcu::ConstPixelBufferAccess>& storage, const tcu::Sampler& sampler)
+{
+	return getEffectiveTView(src, storage, sampler);
+}
+
 } // tcu

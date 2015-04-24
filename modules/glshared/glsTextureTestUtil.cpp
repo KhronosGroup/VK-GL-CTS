@@ -152,43 +152,6 @@ static tcu::TextureCubeArrayView getSubView (const tcu::TextureCubeArrayView& vi
 	return tcu::TextureCubeArrayView(numLevels, view.getLevels()+clampedBase);
 }
 
-template <typename ViewType>
-ViewType getEffectiveView (const ViewType& src, std::vector<tcu::ConstPixelBufferAccess>& storage, const tcu::Sampler& sampler)
-{
-	storage.resize(src.getNumLevels());
-
-	ViewType view = ViewType(src.getNumLevels(), &storage[0]);
-
-	for (int levelNdx = 0; levelNdx < src.getNumLevels(); ++levelNdx)
-		storage[levelNdx] = tcu::getEffectiveDepthStencilAccess(src.getLevel(levelNdx), sampler.depthStencilMode);
-
-	return view;
-}
-
-template <>
-tcu::TextureCubeView getEffectiveView (const tcu::TextureCubeView& src, std::vector<tcu::ConstPixelBufferAccess>& storage, const tcu::Sampler& sampler)
-{
-	storage.resize(tcu::CUBEFACE_LAST * src.getNumLevels());
-
-	const tcu::ConstPixelBufferAccess* storagePtrs[tcu::CUBEFACE_LAST] =
-	{
-		&storage[0 * src.getNumLevels()],
-		&storage[1 * src.getNumLevels()],
-		&storage[2 * src.getNumLevels()],
-		&storage[3 * src.getNumLevels()],
-		&storage[4 * src.getNumLevels()],
-		&storage[5 * src.getNumLevels()],
-	};
-
-	tcu::TextureCubeView view = tcu::TextureCubeView(src.getNumLevels(), storagePtrs);
-
-	for (int faceNdx = 0; faceNdx < tcu::CUBEFACE_LAST; ++faceNdx)
-	for (int levelNdx = 0; levelNdx < src.getNumLevels(); ++levelNdx)
-		storage[faceNdx * src.getNumLevels() + levelNdx] = tcu::getEffectiveDepthStencilAccess(src.getLevelFace(levelNdx, (tcu::CubeFace)faceNdx), sampler.depthStencilMode);
-
-	return view;
-}
-
 inline float linearInterpolate (float t, float minVal, float maxVal)
 {
 	return minVal + (maxVal - minVal) * t;
@@ -467,7 +430,7 @@ static void sampleTextureNonProjected (const SurfaceAccess& dst, const tcu::Text
 {
 	// Separate combined DS formats
 	std::vector<tcu::ConstPixelBufferAccess>	srcLevelStorage;
-	const tcu::Texture1DView					src					= getEffectiveView(rawSrc, srcLevelStorage, params.sampler);
+	const tcu::Texture1DView					src					= getEffectiveTextureView(rawSrc, srcLevelStorage, params.sampler);
 
 	float										lodBias				= (params.flags & ReferenceParams::USE_BIAS) ? params.bias : 0.0f;
 
@@ -502,7 +465,7 @@ static void sampleTextureNonProjected (const SurfaceAccess& dst, const tcu::Text
 {
 	// Separate combined DS formats
 	std::vector<tcu::ConstPixelBufferAccess>	srcLevelStorage;
-	const tcu::Texture2DView					src					= getEffectiveView(rawSrc, srcLevelStorage, params.sampler);
+	const tcu::Texture2DView					src					= getEffectiveTextureView(rawSrc, srcLevelStorage, params.sampler);
 
 	float										lodBias				= (params.flags & ReferenceParams::USE_BIAS) ? params.bias : 0.0f;
 
@@ -539,7 +502,7 @@ static void sampleTextureProjected (const SurfaceAccess& dst, const tcu::Texture
 {
 	// Separate combined DS formats
 	std::vector<tcu::ConstPixelBufferAccess>	srcLevelStorage;
-	const tcu::Texture1DView					src					= getEffectiveView(rawSrc, srcLevelStorage, params.sampler);
+	const tcu::Texture1DView					src					= getEffectiveTextureView(rawSrc, srcLevelStorage, params.sampler);
 
 	float										lodBias				= (params.flags & ReferenceParams::USE_BIAS) ? params.bias : 0.0f;
 	float										dstW				= (float)dst.getWidth();
@@ -579,7 +542,7 @@ static void sampleTextureProjected (const SurfaceAccess& dst, const tcu::Texture
 {
 	// Separate combined DS formats
 	std::vector<tcu::ConstPixelBufferAccess>	srcLevelStorage;
-	const tcu::Texture2DView					src					= getEffectiveView(rawSrc, srcLevelStorage, params.sampler);
+	const tcu::Texture2DView					src					= getEffectiveTextureView(rawSrc, srcLevelStorage, params.sampler);
 
 	float										lodBias				= (params.flags & ReferenceParams::USE_BIAS) ? params.bias : 0.0f;
 	float										dstW				= (float)dst.getWidth();
@@ -685,7 +648,7 @@ static void sampleTextureCube (const SurfaceAccess& dst, const tcu::TextureCubeV
 {
 	// Separate combined DS formats
 	std::vector<tcu::ConstPixelBufferAccess>	srcLevelStorage;
-	const tcu::TextureCubeView					src					= getEffectiveView(rawSrc, srcLevelStorage, params.sampler);
+	const tcu::TextureCubeView					src					= getEffectiveTextureView(rawSrc, srcLevelStorage, params.sampler);
 
 	const tcu::IVec2							dstSize				= tcu::IVec2(dst.getWidth(), dst.getHeight());
 	const float									dstW				= float(dstSize.x());
@@ -744,7 +707,7 @@ static void sampleTextureNonProjected (const SurfaceAccess& dst, const tcu::Text
 {
 	// Separate combined DS formats
 	std::vector<tcu::ConstPixelBufferAccess>	srcLevelStorage;
-	const tcu::Texture2DArrayView				src					= getEffectiveView(rawSrc, srcLevelStorage, params.sampler);
+	const tcu::Texture2DArrayView				src					= getEffectiveTextureView(rawSrc, srcLevelStorage, params.sampler);
 
 	float										lodBias				= (params.flags & ReferenceParams::USE_BIAS) ? params.bias : 0.0f;
 
@@ -793,7 +756,7 @@ static void sampleTextureNonProjected (const SurfaceAccess& dst, const tcu::Text
 {
 	// Separate combined DS formats
 	std::vector<tcu::ConstPixelBufferAccess>	srcLevelStorage;
-	const tcu::Texture1DArrayView				src					= getEffectiveView(rawSrc, srcLevelStorage, params.sampler);
+	const tcu::Texture1DArrayView				src					= getEffectiveTextureView(rawSrc, srcLevelStorage, params.sampler);
 
 	float										lodBias				= (params.flags & ReferenceParams::USE_BIAS) ? params.bias : 0.0f;
 
@@ -839,7 +802,7 @@ static void sampleTextureNonProjected (const SurfaceAccess& dst, const tcu::Text
 {
 	// Separate combined DS formats
 	std::vector<tcu::ConstPixelBufferAccess>	srcLevelStorage;
-	const tcu::Texture3DView					src					= getEffectiveView(rawSrc, srcLevelStorage, params.sampler);
+	const tcu::Texture3DView					src					= getEffectiveTextureView(rawSrc, srcLevelStorage, params.sampler);
 
 	float										lodBias				= (params.flags & ReferenceParams::USE_BIAS) ? params.bias : 0.0f;
 
@@ -878,7 +841,7 @@ static void sampleTextureProjected (const SurfaceAccess& dst, const tcu::Texture
 {
 	// Separate combined DS formats
 	std::vector<tcu::ConstPixelBufferAccess>	srcLevelStorage;
-	const tcu::Texture3DView					src					= getEffectiveView(rawSrc, srcLevelStorage, params.sampler);
+	const tcu::Texture3DView					src					= getEffectiveTextureView(rawSrc, srcLevelStorage, params.sampler);
 
 	float										lodBias				= (params.flags & ReferenceParams::USE_BIAS) ? params.bias : 0.0f;
 	float										dstW				= (float)dst.getWidth();
@@ -939,7 +902,7 @@ static void sampleTextureCubeArray (const SurfaceAccess& dst, const tcu::Texture
 {
 	// Separate combined DS formats
 	std::vector<tcu::ConstPixelBufferAccess>	srcLevelStorage;
-	const tcu::TextureCubeArrayView				src					= getEffectiveView(rawSrc, srcLevelStorage, params.sampler);
+	const tcu::TextureCubeArrayView				src					= getEffectiveTextureView(rawSrc, srcLevelStorage, params.sampler);
 
 	const float									dstW				= (float)dst.getWidth();
 	const float									dstH				= (float)dst.getHeight();
@@ -1744,7 +1707,7 @@ int computeTextureLookupDiff (const tcu::ConstPixelBufferAccess&	result,
 	DE_ASSERT(result.getWidth() == errorMask.getWidth() && result.getHeight() == errorMask.getHeight());
 
 	std::vector<tcu::ConstPixelBufferAccess>	srcLevelStorage;
-	const tcu::Texture1DView					src					= getEffectiveView(getSubView(baseView, sampleParams.baseLevel, sampleParams.maxLevel), srcLevelStorage, sampleParams.sampler);
+	const tcu::Texture1DView					src					= getEffectiveTextureView(getSubView(baseView, sampleParams.baseLevel, sampleParams.maxLevel), srcLevelStorage, sampleParams.sampler);
 
 	const tcu::Vec4								sq					= tcu::Vec4(texCoord[0], texCoord[1], texCoord[2], texCoord[3]);
 
@@ -1847,7 +1810,7 @@ int computeTextureLookupDiff (const tcu::ConstPixelBufferAccess&	result,
 	DE_ASSERT(result.getWidth() == errorMask.getWidth() && result.getHeight() == errorMask.getHeight());
 
 	std::vector<tcu::ConstPixelBufferAccess>	srcLevelStorage;
-	const tcu::Texture2DView					src					= getEffectiveView(getSubView(baseView, sampleParams.baseLevel, sampleParams.maxLevel), srcLevelStorage, sampleParams.sampler);
+	const tcu::Texture2DView					src					= getEffectiveTextureView(getSubView(baseView, sampleParams.baseLevel, sampleParams.maxLevel), srcLevelStorage, sampleParams.sampler);
 
 	const tcu::Vec4								sq					= tcu::Vec4(texCoord[0+0], texCoord[2+0], texCoord[4+0], texCoord[6+0]);
 	const tcu::Vec4								tq					= tcu::Vec4(texCoord[0+1], texCoord[2+1], texCoord[4+1], texCoord[6+1]);
@@ -2030,7 +1993,7 @@ int computeTextureLookupDiff (const tcu::ConstPixelBufferAccess&	result,
 	DE_ASSERT(result.getWidth() == errorMask.getWidth() && result.getHeight() == errorMask.getHeight());
 
 	std::vector<tcu::ConstPixelBufferAccess>	srcLevelStorage;
-	const tcu::TextureCubeView					src					= getEffectiveView(getSubView(baseView, sampleParams.baseLevel, sampleParams.maxLevel), srcLevelStorage, sampleParams.sampler);
+	const tcu::TextureCubeView					src					= getEffectiveTextureView(getSubView(baseView, sampleParams.baseLevel, sampleParams.maxLevel), srcLevelStorage, sampleParams.sampler);
 
 	const tcu::Vec4								sq					= tcu::Vec4(texCoord[0+0], texCoord[3+0], texCoord[6+0], texCoord[9+0]);
 	const tcu::Vec4								tq					= tcu::Vec4(texCoord[0+1], texCoord[3+1], texCoord[6+1], texCoord[9+1]);
@@ -2210,7 +2173,7 @@ int computeTextureLookupDiff (const tcu::ConstPixelBufferAccess&	result,
 	DE_ASSERT(result.getWidth() == errorMask.getWidth() && result.getHeight() == errorMask.getHeight());
 
 	std::vector<tcu::ConstPixelBufferAccess>	srcLevelStorage;
-	const tcu::Texture3DView					src					= getEffectiveView(getSubView(baseView, sampleParams.baseLevel, sampleParams.maxLevel), srcLevelStorage, sampleParams.sampler);
+	const tcu::Texture3DView					src					= getEffectiveTextureView(getSubView(baseView, sampleParams.baseLevel, sampleParams.maxLevel), srcLevelStorage, sampleParams.sampler);
 
 	const tcu::Vec4								sq					= tcu::Vec4(texCoord[0+0], texCoord[3+0], texCoord[6+0], texCoord[9+0]);
 	const tcu::Vec4								tq					= tcu::Vec4(texCoord[0+1], texCoord[3+1], texCoord[6+1], texCoord[9+1]);
@@ -2381,7 +2344,7 @@ int computeTextureLookupDiff (const tcu::ConstPixelBufferAccess&	result,
 	DE_ASSERT(result.getWidth() == errorMask.getWidth() && result.getHeight() == errorMask.getHeight());
 
 	std::vector<tcu::ConstPixelBufferAccess>	srcLevelStorage;
-	const tcu::Texture1DArrayView				src					= getEffectiveView(baseView, srcLevelStorage, sampleParams.sampler);
+	const tcu::Texture1DArrayView				src					= getEffectiveTextureView(baseView, srcLevelStorage, sampleParams.sampler);
 
 	const tcu::Vec4								sq					= tcu::Vec4(texCoord[0+0], texCoord[2+0], texCoord[4+0], texCoord[6+0]);
 	const tcu::Vec4								tq					= tcu::Vec4(texCoord[0+1], texCoord[2+1], texCoord[4+1], texCoord[6+1]);
@@ -2488,7 +2451,7 @@ int computeTextureLookupDiff (const tcu::ConstPixelBufferAccess&	result,
 	DE_ASSERT(result.getWidth() == errorMask.getWidth() && result.getHeight() == errorMask.getHeight());
 
 	std::vector<tcu::ConstPixelBufferAccess>	srcLevelStorage;
-	const tcu::Texture2DArrayView				src					= getEffectiveView(baseView, srcLevelStorage, sampleParams.sampler);
+	const tcu::Texture2DArrayView				src					= getEffectiveTextureView(baseView, srcLevelStorage, sampleParams.sampler);
 
 	const tcu::Vec4								sq					= tcu::Vec4(texCoord[0+0], texCoord[3+0], texCoord[6+0], texCoord[9+0]);
 	const tcu::Vec4								tq					= tcu::Vec4(texCoord[0+1], texCoord[3+1], texCoord[6+1], texCoord[9+1]);
@@ -2675,7 +2638,7 @@ int computeTextureLookupDiff (const tcu::ConstPixelBufferAccess&	result,
 	DE_ASSERT(result.getWidth() == errorMask.getWidth() && result.getHeight() == errorMask.getHeight());
 
 	std::vector<tcu::ConstPixelBufferAccess>	srcLevelStorage;
-	const tcu::TextureCubeArrayView				src					= getEffectiveView(getSubView(baseView, sampleParams.baseLevel, sampleParams.maxLevel), srcLevelStorage, sampleParams.sampler);
+	const tcu::TextureCubeArrayView				src					= getEffectiveTextureView(getSubView(baseView, sampleParams.baseLevel, sampleParams.maxLevel), srcLevelStorage, sampleParams.sampler);
 
 	const tcu::Vec4								sq					= tcu::Vec4(texCoord[0+0], texCoord[4+0], texCoord[8+0], texCoord[12+0]);
 	const tcu::Vec4								tq					= tcu::Vec4(texCoord[0+1], texCoord[4+1], texCoord[8+1], texCoord[12+1]);
