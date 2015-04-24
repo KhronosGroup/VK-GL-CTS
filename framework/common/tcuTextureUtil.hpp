@@ -141,6 +141,17 @@ TextureFormat				getEffectiveDepthStencilTextureFormat	(const TextureFormat& bas
 PixelBufferAccess			getEffectiveDepthStencilAccess			(const PixelBufferAccess& baseAccess, Sampler::DepthStencilMode mode);
 ConstPixelBufferAccess		getEffectiveDepthStencilAccess			(const ConstPixelBufferAccess& baseAccess, Sampler::DepthStencilMode mode);
 
+//! returns the currently effective view to an texture with a given sampler mode. Uses
+//! storage for access storage storage
+
+tcu::Texture1DView			getEffectiveTextureView					(const tcu::Texture1DView&			src, std::vector<tcu::ConstPixelBufferAccess>& storage, const tcu::Sampler& sampler);
+tcu::Texture2DView			getEffectiveTextureView					(const tcu::Texture2DView&			src, std::vector<tcu::ConstPixelBufferAccess>& storage, const tcu::Sampler& sampler);
+tcu::Texture3DView			getEffectiveTextureView					(const tcu::Texture3DView&			src, std::vector<tcu::ConstPixelBufferAccess>& storage, const tcu::Sampler& sampler);
+tcu::Texture1DArrayView		getEffectiveTextureView					(const tcu::Texture1DArrayView&		src, std::vector<tcu::ConstPixelBufferAccess>& storage, const tcu::Sampler& sampler);
+tcu::Texture2DArrayView		getEffectiveTextureView					(const tcu::Texture2DArrayView&		src, std::vector<tcu::ConstPixelBufferAccess>& storage, const tcu::Sampler& sampler);
+tcu::TextureCubeView		getEffectiveTextureView					(const tcu::TextureCubeView&		src, std::vector<tcu::ConstPixelBufferAccess>& storage, const tcu::Sampler& sampler);
+tcu::TextureCubeArrayView	getEffectiveTextureView					(const tcu::TextureCubeArrayView&	src, std::vector<tcu::ConstPixelBufferAccess>& storage, const tcu::Sampler& sampler);
+
 } // tcu
 
 #endif // _TCUTEXTUREUTIL_HPP
