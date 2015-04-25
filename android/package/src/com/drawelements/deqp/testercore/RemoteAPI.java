@@ -38,11 +38,13 @@ public class RemoteAPI {
 	private Context						m_context;
 	private String						m_processName;
 	private String						m_logFileName;
+	private boolean						m_canBeRunning;
 
 	public RemoteAPI (Context context, String logFileName) {
 		m_context			= context;
 		m_processName		= m_context.getPackageName() + ":testercore";
 		m_logFileName		= logFileName;
+		m_canBeRunning		= false;
 	}
 
 	private ComponentName getDefaultTesterComponent () {
@@ -101,11 +103,14 @@ public class RemoteAPI {
 			return false;
 		}
 
+		m_canBeRunning = true;
 		return true;
 	}
 
 	public boolean kill () {
 		ActivityManager.RunningAppProcessInfo processInfo = findProcess(m_processName);
+
+		// \note not mutating m_canBeRunning yet since process does not die immediately
 
 		if (processInfo != null) {
 			Log.d(LOG_TAG, "Killing " + m_processName);
@@ -119,7 +124,15 @@ public class RemoteAPI {
 	}
 
 	public boolean isRunning () {
-		return isProcessRunning(m_processName);
+		if (!m_canBeRunning) {
+			return false;
+		} else if (isProcessRunning(m_processName)) {
+			return true;
+		} else {
+			// Cache result. Safe, because only start() can spawn the process
+			m_canBeRunning = false;
+			return false;
+		}
 	}
 
 	public String getLogFileName () {
