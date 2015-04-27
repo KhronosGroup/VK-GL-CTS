@@ -461,6 +461,8 @@ void deSemaphore_selfTest (void)
 		deThread_destroy(producer);
 		deThread_destroy(consumer);
 
+		deSemaphore_destroy(testBuffer.empty);
+		deSemaphore_destroy(testBuffer.fill);
 		DE_TEST_ASSERT(testBuffer.producerSum == testBuffer.consumerSum);
 	}
 }
