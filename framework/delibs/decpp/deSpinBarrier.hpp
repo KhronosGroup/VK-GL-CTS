@@ -35,14 +35,21 @@ namespace de
  * SpinBarrier provides barrier implementation that uses spin loop for
  * waiting for other threads. Threads may choose to wait in tight loop
  * (WAIT_MODE_BUSY) or yield between iterations (WAIT_MODE_YIELD).
+ *
+ * It is not recommended to use WAIT_MODE_BUSY when there are more threads
+ * than number of cores participating in the barrier as it will lead to
+ * priority inversion and dramatic slowdown. For that reason WAIT_MODE_AUTO
+ * is provided, which selects between busy and yielding waiting based on
+ * number of threads.
  *//*--------------------------------------------------------------------*/
 class SpinBarrier
 {
 public:
 	enum WaitMode
 	{
-		WAIT_MODE_BUSY = 0,
-		WAIT_MODE_YIELD,
+		WAIT_MODE_BUSY = 0,	//! Wait in tight spin loop.
+		WAIT_MODE_YIELD,	//! Call deYield() between spin loop iterations.
+		WAIT_MODE_AUTO,		//! Use WAIT_MODE_BUSY loop if #threads <= #cores, otherwise WAIT_MODE_YIELD.
 
 		WAIT_MODE_LAST
 	};
@@ -50,15 +57,28 @@ public:
 						SpinBarrier		(deInt32 numThreads);
 						~SpinBarrier	(void);
 
+	//! Reset barrier. Not thread-safe, e.g. no other thread can
+	//! be calling sync() or removeThread() at the same time.
+	void				reset			(deUint32 numThreads);
+
+	//! Wait until all threads (determined by active thread count)
+	//! have entered sync().
 	void				sync			(WaitMode mode);
+
+	//! Remove thread from barrier (decrements active thread count).
+	//! Can be called concurrently with sync() or removeThread().
+	void				removeThread	(WaitMode mode);
 
 private:
 						SpinBarrier		(const SpinBarrier&);
 	SpinBarrier			operator=		(const SpinBarrier&);
 
-	const deInt32		m_numThreads;
+	const deUint32		m_numCores;
+
+	volatile deInt32	m_numThreads;
 	volatile deInt32	m_numEntered;
 	volatile deInt32	m_numLeaving;
+	volatile deInt32	m_numRemoved;
 };
 
 void	SpinBarrier_selfTest	(void);
