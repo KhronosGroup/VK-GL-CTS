@@ -52,26 +52,20 @@ VertexAttributeDivisorCase::VertexAttributeDivisorCase (Context& context, const 
 VertexAttributeDivisorCase::IterateResult VertexAttributeDivisorCase::iterate (void)
 {
 	glu::CallLogWrapper gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
-	deUint32			error;
 
 	m_testCtx.getLog()	<< tcu::TestLog::Message
 						<< "Using VertexAttribDivisor with default VAO.\n"
-						<< "Expecting INVALID_OPERATION."
+						<< "Expecting no error."
 						<< tcu::TestLog::EndMessage;
 
 	gl.enableLogging(true);
 	gl.glBindVertexArray(0);
 
-	// Using vertexAttribDivisor with default vao is an error in ES 3.1, but not
-	// in ES 3.0. See Khronos bug 13564 for details.
+	// Using vertexAttribDivisor with default vao is not an error in ES 3.1.
 	gl.glVertexAttribDivisor(0, 3);
-	error = gl.glGetError();
+	GLU_EXPECT_NO_ERROR(gl.glGetError(), "VertexAttribDivisor");
 
-	if (error == GL_INVALID_OPERATION)
-		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
-	else
-		m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Incorrect error value");
-
+	m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
 	return STOP;
 }
 

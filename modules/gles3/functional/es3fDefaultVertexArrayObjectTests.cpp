@@ -59,8 +59,7 @@ VertexAttributeDivisorCase::IterateResult VertexAttributeDivisorCase::iterate (v
 	gl.enableLogging(true);
 	gl.glBindVertexArray(0);
 
-	// Using vertexAttribDivisor with default vao is an error in ES 3.1, but not
-	// in ES 3.0. See Khronos bug 13564 for details.
+	// Using vertexAttribDivisor with default vao is not an error in ES 3.0.
 	gl.glVertexAttribDivisor(0, 3);
 	GLU_EXPECT_NO_ERROR(gl.glGetError(), "VertexAttribDivisor");
 
