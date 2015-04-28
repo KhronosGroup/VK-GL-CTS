@@ -344,6 +344,7 @@ GLW_APICALL void GLW_APIENTRY glGetIntegerv (GLenum pname, GLint* params)
 		case GL_MAX_CUBE_MAP_TEXTURE_SIZE:
 		case GL_MAX_3D_TEXTURE_SIZE:
 		case GL_MAX_RENDERBUFFER_SIZE:
+		case GL_MAX_TEXTURE_BUFFER_SIZE:
 			*params = 2048;
 			break;
 
