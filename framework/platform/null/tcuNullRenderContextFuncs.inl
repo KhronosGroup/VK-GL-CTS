@@ -1591,14 +1591,6 @@ GLW_APICALL void GLW_APIENTRY glGetAttachedShaders (GLuint program, GLsizei maxC
 
 }
 
-GLW_APICALL GLint GLW_APIENTRY glGetAttribLocation (GLuint program, const GLchar *name)
-{
-	DE_UNREF(program);
-	DE_UNREF(name);
-
-	return (GLint)0;
-}
-
 GLW_APICALL void GLW_APIENTRY glGetBooleani_v (GLenum target, GLuint index, GLboolean *data)
 {
 	DE_UNREF(target);
@@ -1772,16 +1764,6 @@ GLW_APICALL void GLW_APIENTRY glGetIntegeri_v (GLenum target, GLuint index, GLin
 }
 
 GLW_APICALL void GLW_APIENTRY glGetInternalformati64v (GLenum target, GLenum internalformat, GLenum pname, GLsizei bufSize, GLint64 *params)
-{
-	DE_UNREF(target);
-	DE_UNREF(internalformat);
-	DE_UNREF(pname);
-	DE_UNREF(bufSize);
-	DE_UNREF(params);
-
-}
-
-GLW_APICALL void GLW_APIENTRY glGetInternalformativ (GLenum target, GLenum internalformat, GLenum pname, GLsizei bufSize, GLint *params)
 {
 	DE_UNREF(target);
 	DE_UNREF(internalformat);

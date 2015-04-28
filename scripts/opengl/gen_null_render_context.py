@@ -43,11 +43,13 @@ OVERRIDE_FUNCS = set([
 	"glGenSamplers",
 	"glGenTransformFeedbacks",
 	"glGenProgramPipelines",
+	"glGetInternalformativ",
 	"glMapBufferRange",
 	"glCheckFramebufferStatus",
 	"glReadPixels",
 	"glBindBuffer",
-	"glDeleteBuffers"
+	"glDeleteBuffers",
+	"glGetAttribLocation",
 ])
 
 NULL_PLATFORM_DIR = os.path.normpath(os.path.join(SCRIPTS_DIR, "..", "..", "framework", "platform", "null"))

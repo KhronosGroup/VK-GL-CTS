@@ -92,6 +92,7 @@ public:
 	string					shadingLanguageVersion;
 	string					extensions;
 	vector<string>			extensionList;
+	vector<deUint32>		compressedTextureList;
 
 	GLenum					lastError;
 
@@ -146,7 +147,7 @@ Context::Context (ContextType ctxType_)
 		addExtension("GL_OES_sample_shading");
 		addExtension("GL_OES_sample_variables");
 		addExtension("GL_OES_shader_multisample_interpolation");
-		addExtension("GL_OES_shader_image_atomics");
+		addExtension("GL_OES_shader_image_atomic");
 		addExtension("GL_OES_texture_storage_multisample_2d_array");
 		addExtension("GL_KHR_blend_equation_advanced");
 		addExtension("GL_KHR_blend_equation_advanced_coherent");
@@ -156,6 +157,16 @@ Context::Context (ContextType ctxType_)
 		addExtension("GL_EXT_tessellation_shader");
 		addExtension("GL_EXT_tessellation_point_size");
 		addExtension("GL_EXT_gpu_shader5");
+		addExtension("GL_EXT_shader_implicit_conversions");
+		addExtension("GL_EXT_texture_buffer");
+		addExtension("GL_EXT_texture_cube_map_array");
+		addExtension("GL_EXT_draw_buffers_indexed");
+		addExtension("GL_EXT_texture_sRGB_decode");
+		addExtension("GL_EXT_texture_border_clamp");
+		addExtension("GL_KHR_debug");
+		addExtension("GL_EXT_primitive_bounding_box");
+		addExtension("GL_ANDROID_extension_pack_es31a");
+		addExtension("GL_EXT_copy_image");
 	}
 	else if (glu::isContextTypeGLCore(ctxType) && ctxType.getMajorVersion() == 3)
 	{
@@ -171,7 +182,61 @@ Context::Context (ContextType ctxType_)
 		throw tcu::NotSupportedError("Unsupported GL version", "", __FILE__, __LINE__);
 
 	if (isContextTypeES(ctxType))
+	{
 		addExtension("GL_EXT_color_buffer_float");
+		addExtension("GL_EXT_color_buffer_half_float");
+	}
+
+	// support compressed formats
+	{
+		static deUint32 compressedFormats[] =
+		{
+			GL_ETC1_RGB8_OES,
+			GL_COMPRESSED_R11_EAC,
+			GL_COMPRESSED_SIGNED_R11_EAC,
+			GL_COMPRESSED_RG11_EAC,
+			GL_COMPRESSED_SIGNED_RG11_EAC,
+			GL_COMPRESSED_RGB8_ETC2,
+			GL_COMPRESSED_SRGB8_ETC2,
+			GL_COMPRESSED_RGB8_PUNCHTHROUGH_ALPHA1_ETC2,
+			GL_COMPRESSED_SRGB8_PUNCHTHROUGH_ALPHA1_ETC2,
+			GL_COMPRESSED_RGBA8_ETC2_EAC,
+			GL_COMPRESSED_SRGB8_ALPHA8_ETC2_EAC,
+			GL_COMPRESSED_RGBA_ASTC_4x4_KHR,
+			GL_COMPRESSED_RGBA_ASTC_5x4_KHR,
+			GL_COMPRESSED_RGBA_ASTC_5x5_KHR,
+			GL_COMPRESSED_RGBA_ASTC_6x5_KHR,
+			GL_COMPRESSED_RGBA_ASTC_6x6_KHR,
+			GL_COMPRESSED_RGBA_ASTC_8x5_KHR,
+			GL_COMPRESSED_RGBA_ASTC_8x6_KHR,
+			GL_COMPRESSED_RGBA_ASTC_8x8_KHR,
+			GL_COMPRESSED_RGBA_ASTC_10x5_KHR,
+			GL_COMPRESSED_RGBA_ASTC_10x6_KHR,
+			GL_COMPRESSED_RGBA_ASTC_10x8_KHR,
+			GL_COMPRESSED_RGBA_ASTC_10x10_KHR,
+			GL_COMPRESSED_RGBA_ASTC_12x10_KHR,
+			GL_COMPRESSED_RGBA_ASTC_12x12_KHR,
+			GL_COMPRESSED_SRGB8_ALPHA8_ASTC_4x4_KHR,
+			GL_COMPRESSED_SRGB8_ALPHA8_ASTC_5x4_KHR,
+			GL_COMPRESSED_SRGB8_ALPHA8_ASTC_5x5_KHR,
+			GL_COMPRESSED_SRGB8_ALPHA8_ASTC_6x5_KHR,
+			GL_COMPRESSED_SRGB8_ALPHA8_ASTC_6x6_KHR,
+			GL_COMPRESSED_SRGB8_ALPHA8_ASTC_8x5_KHR,
+			GL_COMPRESSED_SRGB8_ALPHA8_ASTC_8x6_KHR,
+			GL_COMPRESSED_SRGB8_ALPHA8_ASTC_8x8_KHR,
+			GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x5_KHR,
+			GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x6_KHR,
+			GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x8_KHR,
+			GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x10_KHR,
+			GL_COMPRESSED_SRGB8_ALPHA8_ASTC_12x10_KHR,
+			GL_COMPRESSED_SRGB8_ALPHA8_ASTC_12x12_KHR,
+		};
+
+		addExtension("GL_KHR_texture_compression_astc_hdr");
+		addExtension("GL_KHR_texture_compression_astc_ldr");
+		for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(compressedFormats); ++ndx)
+			compressedTextureList.push_back(compressedFormats[ndx]);
+	}
 }
 
 Context::~Context (void)
@@ -234,7 +299,45 @@ GLW_APICALL void GLW_APIENTRY glGetIntegerv (GLenum pname, GLint* params)
 		case GL_MAX_GEOMETRY_TEXTURE_IMAGE_UNITS:
 		case GL_MAX_TESS_EVALUATION_TEXTURE_IMAGE_UNITS:
 		case GL_MAX_TESS_CONTROL_TEXTURE_IMAGE_UNITS:
-			*params = 16;
+			*params = 32;
+			break;
+
+		case GL_MAX_VERTEX_SHADER_STORAGE_BLOCKS:
+		case GL_MAX_FRAGMENT_SHADER_STORAGE_BLOCKS:
+		case GL_MAX_GEOMETRY_SHADER_STORAGE_BLOCKS:
+		case GL_MAX_TESS_CONTROL_SHADER_STORAGE_BLOCKS:
+		case GL_MAX_TESS_EVALUATION_SHADER_STORAGE_BLOCKS:
+		case GL_MAX_COMPUTE_SHADER_STORAGE_BLOCKS:
+			*params = 8;
+			break;
+
+		case GL_MAX_VERTEX_ATOMIC_COUNTER_BUFFERS:
+		case GL_MAX_FRAGMENT_ATOMIC_COUNTER_BUFFERS:
+		case GL_MAX_GEOMETRY_ATOMIC_COUNTER_BUFFERS:
+		case GL_MAX_TESS_CONTROL_ATOMIC_COUNTER_BUFFERS:
+		case GL_MAX_TESS_EVALUATION_ATOMIC_COUNTER_BUFFERS:
+		case GL_MAX_COMPUTE_ATOMIC_COUNTER_BUFFERS:
+			*params = 8;
+			break;
+
+		case GL_MAX_SHADER_STORAGE_BLOCK_SIZE:
+			*params = 1u << 25;
+			break;
+
+		case GL_MAX_GEOMETRY_OUTPUT_VERTICES:
+			*params = 256;
+			break;
+
+		case GL_MAX_GEOMETRY_TOTAL_OUTPUT_COMPONENTS:
+			*params = 2048;
+			break;
+
+		case GL_MAX_GEOMETRY_SHADER_INVOCATIONS:
+			*params = 4;
+			break;
+
+		case GL_MAX_COLOR_TEXTURE_SAMPLES:
+			*params = 8;
 			break;
 
 		case GL_MAX_TEXTURE_SIZE:
@@ -253,7 +356,11 @@ GLW_APICALL void GLW_APIENTRY glGetIntegerv (GLenum pname, GLint* params)
 			break;
 
 		case GL_NUM_COMPRESSED_TEXTURE_FORMATS:
-			*params = 0;
+			*params = (int)ctx->compressedTextureList.size();
+			break;
+
+		case GL_COMPRESSED_TEXTURE_FORMATS:
+			deMemcpy(params, &ctx->compressedTextureList[0], (int)ctx->compressedTextureList.size());
 			break;
 
 		case GL_MAX_TRANSFORM_FEEDBACK_SEPARATE_ATTRIBS:
@@ -306,6 +413,29 @@ GLW_APICALL void GLW_APIENTRY glGetFloatv (GLenum pname, GLfloat* params)
 		case GL_ALIASED_POINT_SIZE_RANGE:
 			params[0] = 0.0f;
 			params[1] = 64.0f;
+			break;
+
+		default:
+			break;
+	}
+}
+
+GLW_APICALL void GLW_APIENTRY glGetInternalformativ (GLenum target, GLenum internalformat, GLenum pname, GLsizei bufSize, GLint* params)
+{
+	static const int s_sampleCounts[] = { 16, 8, 4, 2, 1 };
+
+	DE_UNREF(internalformat);
+	DE_UNREF(target);
+
+	switch (pname)
+	{
+		case GL_NUM_SAMPLE_COUNTS:
+			if (bufSize >= 1)
+				*params = DE_LENGTH_OF_ARRAY(s_sampleCounts);
+			break;
+
+		case GL_SAMPLES:
+			deMemcpy(params, s_sampleCounts, de::min(bufSize, DE_LENGTH_OF_ARRAY(s_sampleCounts)));
 			break;
 
 		default:
@@ -577,6 +707,12 @@ GLW_APICALL void GLW_APIENTRY glDeleteBuffers (GLsizei n, const GLuint* buffers)
 	for (GLsizei ndx = 0; ndx < n; ++ndx)
 		if (buffers[ndx] && buffers[ndx] == ctx->pixelPackBufferBufferBinding)
 			ctx->pixelPackBufferBufferBinding = 0;
+}
+
+GLW_APICALL GLint GLW_APIENTRY glGetAttribLocation (GLuint program, const GLchar* name)
+{
+	DE_UNREF(program);
+	return (GLint)(deStringHash(name) & 0x7FFFFFFF);
 }
 
 void initFunctions (glw::Functions* gl)
