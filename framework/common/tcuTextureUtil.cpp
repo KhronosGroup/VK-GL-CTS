@@ -1361,6 +1361,7 @@ static tcu::IVec4 getTextureBorderColorInt (const TextureFormat& format, const S
 	IVec4							result;
 
 	DE_ASSERT(channelClass == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER);
+	DE_UNREF(channelClass);
 
 	for (int c = 0; c < 4; c++)
 	{
@@ -1388,6 +1389,7 @@ static tcu::UVec4 getTextureBorderColorUint (const TextureFormat& format, const 
 	UVec4							result;
 
 	DE_ASSERT(channelClass == tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER);
+	DE_UNREF(channelClass);
 
 	for (int c = 0; c < 4; c++)
 	{
