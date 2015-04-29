@@ -405,7 +405,6 @@ const TextureSwizzle& getChannelReadSwizzle (TextureFormat::ChannelOrder order)
 	static const TextureSwizzle ARGB	= {{ TextureSwizzle::CHANNEL_1,		TextureSwizzle::CHANNEL_2,		TextureSwizzle::CHANNEL_3,		TextureSwizzle::CHANNEL_0	}};
 	static const TextureSwizzle D		= {{ TextureSwizzle::CHANNEL_0,		TextureSwizzle::CHANNEL_ZERO,	TextureSwizzle::CHANNEL_ZERO,	TextureSwizzle::CHANNEL_ONE	}};
 	static const TextureSwizzle S		= {{ TextureSwizzle::CHANNEL_0,		TextureSwizzle::CHANNEL_ZERO,	TextureSwizzle::CHANNEL_ZERO,	TextureSwizzle::CHANNEL_ONE	}};
-	static const TextureSwizzle DS		= {{ TextureSwizzle::CHANNEL_0,		TextureSwizzle::CHANNEL_ZERO,	TextureSwizzle::CHANNEL_ZERO,	TextureSwizzle::CHANNEL_1	}};
 
 	switch (order)
 	{
@@ -426,7 +425,11 @@ const TextureSwizzle& getChannelReadSwizzle (TextureFormat::ChannelOrder order)
 		case TextureFormat::sRGBA:		return RGBA;
 		case TextureFormat::D:			return D;
 		case TextureFormat::S:			return S;
-		case TextureFormat::DS:			return DS;
+
+		case TextureFormat::DS:
+			DE_ASSERT(false); // combined formats cannot be read from
+			return INV;
+
 		default:
 			DE_ASSERT(DE_FALSE);
 			return INV;
@@ -452,7 +455,6 @@ const TextureSwizzle& getChannelWriteSwizzle (TextureFormat::ChannelOrder order)
 	static const TextureSwizzle ARGB	= {{ TextureSwizzle::CHANNEL_3,		TextureSwizzle::CHANNEL_0,		TextureSwizzle::CHANNEL_1,		TextureSwizzle::CHANNEL_2		}};
 	static const TextureSwizzle D		= {{ TextureSwizzle::CHANNEL_0,		TextureSwizzle::CHANNEL_LAST,	TextureSwizzle::CHANNEL_LAST,	TextureSwizzle::CHANNEL_LAST	}};
 	static const TextureSwizzle S		= {{ TextureSwizzle::CHANNEL_0,		TextureSwizzle::CHANNEL_LAST,	TextureSwizzle::CHANNEL_LAST,	TextureSwizzle::CHANNEL_LAST	}};
-	static const TextureSwizzle DS		= {{ TextureSwizzle::CHANNEL_0,		TextureSwizzle::CHANNEL_3,		TextureSwizzle::CHANNEL_LAST,	TextureSwizzle::CHANNEL_LAST	}};
 
 	switch (order)
 	{
@@ -473,7 +475,11 @@ const TextureSwizzle& getChannelWriteSwizzle (TextureFormat::ChannelOrder order)
 		case TextureFormat::sRGBA:		return RGBA;
 		case TextureFormat::D:			return D;
 		case TextureFormat::S:			return S;
-		case TextureFormat::DS:			return DS;
+
+		case TextureFormat::DS:
+			DE_ASSERT(false); // combined formats cannot be written to
+			return INV;
+
 		default:
 			DE_ASSERT(DE_FALSE);
 			return INV;
@@ -610,8 +616,10 @@ Vec4 ConstPixelBufferAccess::getPixel (int x, int y, int z) const
 	DE_ASSERT(de::inBounds(x, 0, m_size.x()));
 	DE_ASSERT(de::inBounds(y, 0, m_size.y()));
 	DE_ASSERT(de::inBounds(z, 0, m_size.z()));
+	DE_ASSERT(!isCombinedDepthStencilType(m_format.type)); // combined types cannot be accessed directly
+	DE_ASSERT(m_format.order != TextureFormat::DS); // combined formats cannot be accessed directly
 
-	const deUint8* pixelPtr = (const deUint8*)getDataPtr() + z*m_pitch.z() + y*m_pitch.y() + x*m_pitch.x();
+	const deUint8* pixelPtr = (const deUint8*)getPixelPtr(x, y, z);
 
 	// Optimized fomats.
 	if (m_format.type == TextureFormat::UNORM_INT8)
@@ -638,25 +646,6 @@ Vec4 ConstPixelBufferAccess::getPixel (int x, int y, int z) const
 		case TextureFormat::UNORM_INT_1010102_REV:		return Vec4(NB32( 0, 10), NB32(10, 10), NB32(20, 10), NB32(30, 2));
 		case TextureFormat::UNSIGNED_INT_1010102_REV:	return UVec4(UB32(0, 10), UB32(10, 10), UB32(20, 10), UB32(30, 2)).cast<float>();
 		case TextureFormat::UNSIGNED_INT_999_E5_REV:	return unpackRGB999E5(*((const deUint32*)pixelPtr));
-
-		case TextureFormat::UNSIGNED_INT_24_8:
-			switch (m_format.order)
-			{
-				// \note Stencil is always ignored.
-				case TextureFormat::D:	return Vec4(NB32(8, 24), 0.0f, 0.0f, 1.0f);
-				case TextureFormat::DS:	return Vec4(NB32(8, 24), 0.0f, 0.0f, 1.0f /* (float)UB32(0, 8) */);
-				default:
-					DE_ASSERT(false);
-			}
-
-		case TextureFormat::FLOAT_UNSIGNED_INT_24_8_REV:
-		{
-			DE_ASSERT(m_format.order == TextureFormat::DS);
-			float	d	= *((const float*)pixelPtr);
-			// \note Stencil is ignored.
-//			deUint8	s	= *((const deUint32*)(pixelPtr+4)) & 0xff;
-			return Vec4(d, 0.0f, 0.0f, 1.0f);
-		}
 
 		case TextureFormat::UNSIGNED_INT_11F_11F_10F_REV:
 			return Vec4(Float11(UB32(0, 11)).asFloat(), Float11(UB32(11, 11)).asFloat(), Float10(UB32(22, 10)).asFloat(), 1.0f);
@@ -707,8 +696,10 @@ IVec4 ConstPixelBufferAccess::getPixelInt (int x, int y, int z) const
 	DE_ASSERT(de::inBounds(x, 0, m_size.x()));
 	DE_ASSERT(de::inBounds(y, 0, m_size.y()));
 	DE_ASSERT(de::inBounds(z, 0, m_size.z()));
+	DE_ASSERT(!isCombinedDepthStencilType(m_format.type)); // combined types cannot be accessed directly
+	DE_ASSERT(m_format.order != TextureFormat::DS); // combined formats cannot be accessed directly
 
-	const deUint8* const	pixelPtr = (const deUint8*)getDataPtr() + z*m_pitch.z() + y*m_pitch.y() + x*m_pitch.x();
+	const deUint8* const	pixelPtr = (const deUint8*)getPixelPtr(x, y, z);
 	IVec4					result;
 
 	// Optimized fomats.
@@ -730,25 +721,6 @@ IVec4 ConstPixelBufferAccess::getPixelInt (int x, int y, int z) const
 		case TextureFormat::UNORM_INT_101010:			return UVec4(U32(22, 10), U32(12, 10), U32( 2, 10), 1).cast<int>();
 		case TextureFormat::UNORM_INT_1010102_REV:		return UVec4(U32( 0, 10), U32(10, 10), U32(20, 10), U32(30, 2)).cast<int>();
 		case TextureFormat::UNSIGNED_INT_1010102_REV:	return UVec4(U32( 0, 10), U32(10, 10), U32(20, 10), U32(30, 2)).cast<int>();
-
-		case TextureFormat::UNSIGNED_INT_24_8:
-			switch (m_format.order)
-			{
-				case TextureFormat::D:	return UVec4(U32(8, 24), 0, 0, 1).cast<int>();
-				case TextureFormat::S:	return UVec4(0, 0, 0, U32(8, 24)).cast<int>();
-				case TextureFormat::DS:	return UVec4(U32(8, 24), 0, 0, U32(0, 8)).cast<int>();
-				default:
-					DE_ASSERT(false);
-			}
-
-		case TextureFormat::FLOAT_UNSIGNED_INT_24_8_REV:
-		{
-			DE_ASSERT(m_format.order == TextureFormat::DS);
-			float	d	= *((const float*)pixelPtr);
-			deUint8	s	= *((const deUint32*)(pixelPtr+4)) & 0xffu;
-			// \note Returns bit-representation of depth floating-point value.
-			return UVec4(tcu::Float32(d).bits(), 0, 0, s).cast<int>();
-		}
 
 		default:
 			break; // To generic path.
@@ -812,7 +784,7 @@ float ConstPixelBufferAccess::getPixDepth (int x, int y, int z) const
 	DE_ASSERT(de::inBounds(y, 0, getHeight()));
 	DE_ASSERT(de::inBounds(z, 0, getDepth()));
 
-	const deUint8* const pixelPtr = (const deUint8*)getDataPtr() + z*m_pitch.z() + y*m_pitch.y() + x*m_pitch.x();
+	const deUint8* const pixelPtr = (const deUint8*)getPixelPtr(x, y, z);
 
 #define UB32(OFFS, COUNT) ((*((const deUint32*)pixelPtr) >> (OFFS)) & ((1<<(COUNT))-1))
 #define NB32(OFFS, COUNT) channelToNormFloat(UB32(OFFS, COUNT), (COUNT))
@@ -837,7 +809,7 @@ float ConstPixelBufferAccess::getPixDepth (int x, int y, int z) const
 			return *((const float*)pixelPtr);
 
 		default:
-			DE_ASSERT(m_format.order == TextureFormat::D || m_format.order == TextureFormat::DS);
+			DE_ASSERT(m_format.order == TextureFormat::D); // no other combined depth stencil types
 			return channelToFloat(pixelPtr, m_format.type);
 	}
 
@@ -851,7 +823,7 @@ int ConstPixelBufferAccess::getPixStencil (int x, int y, int z) const
 	DE_ASSERT(de::inBounds(y, 0, getHeight()));
 	DE_ASSERT(de::inBounds(z, 0, getDepth()));
 
-	const deUint8* const pixelPtr = (const deUint8*)getDataPtr() + z*m_pitch.z() + y*m_pitch.y() + x*m_pitch.x();
+	const deUint8* const pixelPtr = (const deUint8*)getPixelPtr(x, y, z);
 
 	switch (m_format.type)
 	{
@@ -872,14 +844,8 @@ int ConstPixelBufferAccess::getPixStencil (int x, int y, int z) const
 
 		default:
 		{
-			if (m_format.order == TextureFormat::S)
-				return channelToInt(pixelPtr, m_format.type);
-			else
-			{
-				DE_ASSERT(m_format.order == TextureFormat::DS);
-				const int stencilChannelIndex = 3;
-				return channelToInt(pixelPtr + getChannelSize(m_format.type)*stencilChannelIndex, m_format.type);
-			}
+			DE_ASSERT(m_format.order == TextureFormat::S); // no other combined depth stencil types
+			return channelToInt(pixelPtr, m_format.type);
 		}
 	}
 }
@@ -889,8 +855,10 @@ void PixelBufferAccess::setPixel (const Vec4& color, int x, int y, int z) const
 	DE_ASSERT(de::inBounds(x, 0, getWidth()));
 	DE_ASSERT(de::inBounds(y, 0, getHeight()));
 	DE_ASSERT(de::inBounds(z, 0, getDepth()));
+	DE_ASSERT(!isCombinedDepthStencilType(m_format.type)); // combined types cannot be accessed directly
+	DE_ASSERT(m_format.order != TextureFormat::DS); // combined formats cannot be accessed directly
 
-	deUint8* const pixelPtr = (deUint8*)getDataPtr() + z*m_pitch.z() + y*m_pitch.y() + x*m_pitch.x();
+	deUint8* const pixelPtr = (deUint8*)getPixelPtr(x, y, z);
 
 	// Optimized fomats.
 	if (m_format.type == TextureFormat::UNORM_INT8)
@@ -934,31 +902,6 @@ void PixelBufferAccess::setPixel (const Vec4& color, int x, int y, int z) const
 			*((deUint32*)pixelPtr) = packRGB999E5(color);
 			break;
 
-		case TextureFormat::UNSIGNED_INT_24_8:
-			switch (m_format.order)
-			{
-				case TextureFormat::D:		*((deUint32*)pixelPtr) = PN(color[0], 8, 24);									break;
-				case TextureFormat::S:		*((deUint32*)pixelPtr) = PN(color[3], 8, 24);									break;
-				case TextureFormat::DS:		*((deUint32*)pixelPtr) = PN(color[0], 8, 24) | PU((deUint32)color[3], 0, 8);	break;
-				default:
-					DE_ASSERT(false);
-			}
-			break;
-
-		case TextureFormat::FLOAT_UNSIGNED_INT_24_8_REV:
-			DE_ASSERT(m_format.order == TextureFormat::DS);
-			*((float*)pixelPtr)			= color[0];
-			*((deUint32*)(pixelPtr+4))	= PU((deUint32)color[3], 0, 8);
-			break;
-
-		case TextureFormat::FLOAT:
-			if (m_format.order == TextureFormat::D)
-			{
-				*((float*)pixelPtr) = color[0];
-				break;
-			}
-			// else fall-through to default case!
-
 		default:
 		{
 			// Generic path.
@@ -984,8 +927,10 @@ void PixelBufferAccess::setPixel (const IVec4& color, int x, int y, int z) const
 	DE_ASSERT(de::inBounds(x, 0, getWidth()));
 	DE_ASSERT(de::inBounds(y, 0, getHeight()));
 	DE_ASSERT(de::inBounds(z, 0, getDepth()));
+	DE_ASSERT(!isCombinedDepthStencilType(m_format.type)); // combined types cannot be accessed directly
+	DE_ASSERT(m_format.order != TextureFormat::DS); // combined formats cannot be accessed directly
 
-	deUint8* const pixelPtr = (deUint8*)getDataPtr() + z*m_pitch.z() + y*m_pitch.y() + x*m_pitch.x();
+	deUint8* const pixelPtr = (deUint8*)getPixelPtr(x, y, z);
 
 	// Optimized fomats.
 	if (m_format.type == TextureFormat::UNORM_INT8)
@@ -1005,23 +950,6 @@ void PixelBufferAccess::setPixel (const IVec4& color, int x, int y, int z) const
 		case TextureFormat::UNORM_INT_101010:			*((deUint32*)pixelPtr) = PU(color[0], 22, 10) | PU(color[1], 12, 10) | PU(color[2], 2, 10);									break;
 		case TextureFormat::UNORM_INT_1010102_REV:		*((deUint32*)pixelPtr) = PU(color[0],  0, 10) | PU(color[1], 10, 10) | PU(color[2], 20, 10) | PU(color[3], 30, 2);			break;
 		case TextureFormat::UNSIGNED_INT_1010102_REV:	*((deUint32*)pixelPtr) = PU(color[0],  0, 10) | PU(color[1], 10, 10) | PU(color[2], 20, 10) | PU(color[3], 30, 2);			break;
-
-		case TextureFormat::UNSIGNED_INT_24_8:
-			switch (m_format.order)
-			{
-				case TextureFormat::D:		*((deUint32*)pixelPtr) = PU(color[0], 8, 24);										break;
-				case TextureFormat::S:		*((deUint32*)pixelPtr) = PU(color[3], 8, 24);										break;
-				case TextureFormat::DS:		*((deUint32*)pixelPtr) = PU(color[0], 8, 24) | PU((deUint32)color[3], 0, 8);		break;
-				default:
-					DE_ASSERT(false);
-			}
-			break;
-
-		case TextureFormat::FLOAT_UNSIGNED_INT_24_8_REV:
-			DE_ASSERT(m_format.order == TextureFormat::DS);
-			*((deUint32*)pixelPtr)		= color[0];
-			*((deUint32*)(pixelPtr+4))	= PU((deUint32)color[3], 0, 8);
-			break;
 
 		default:
 		{
@@ -1048,7 +976,7 @@ void PixelBufferAccess::setPixDepth (float depth, int x, int y, int z) const
 	DE_ASSERT(de::inBounds(y, 0, getHeight()));
 	DE_ASSERT(de::inBounds(z, 0, getDepth()));
 
-	deUint8* const pixelPtr = (deUint8*)getDataPtr() + z*m_pitch.z() + y*m_pitch.y() + x*m_pitch.x();
+	deUint8* const pixelPtr = (deUint8*)getPixelPtr(x, y, z);
 
 #define PN(VAL, OFFS, BITS) (normFloatToChannel((VAL), (BITS)) << (OFFS))
 
@@ -1070,7 +998,7 @@ void PixelBufferAccess::setPixDepth (float depth, int x, int y, int z) const
 			break;
 
 		default:
-			DE_ASSERT(m_format.order == TextureFormat::D || m_format.order == TextureFormat::DS);
+			DE_ASSERT(m_format.order == TextureFormat::D); // no other combined depth stencil types
 			floatToChannel(pixelPtr, depth, m_format.type);
 			break;
 	}
@@ -1084,7 +1012,7 @@ void PixelBufferAccess::setPixStencil (int stencil, int x, int y, int z) const
 	DE_ASSERT(de::inBounds(y, 0, getHeight()));
 	DE_ASSERT(de::inBounds(z, 0, getDepth()));
 
-	deUint8* const pixelPtr = (deUint8*)getDataPtr() + z*m_pitch.z() + y*m_pitch.y() + x*m_pitch.x();
+	deUint8* const pixelPtr = (deUint8*)getPixelPtr(x, y, z);
 
 #define PU(VAL, OFFS, BITS) (uintToChannel((deUint32)(VAL), (BITS)) << (OFFS))
 
@@ -1106,15 +1034,8 @@ void PixelBufferAccess::setPixStencil (int stencil, int x, int y, int z) const
 			break;
 
 		default:
-			if (m_format.order == TextureFormat::S)
-				intToChannel(pixelPtr, stencil, m_format.type);
-			else
-			{
-				DE_ASSERT(m_format.order == TextureFormat::DS);
-				const int stencilChannelIndex = 3;
-				intToChannel(pixelPtr + getChannelSize(m_format.type)*stencilChannelIndex, stencil, m_format.type);
-			}
-
+			DE_ASSERT(m_format.order == TextureFormat::S);  // no other combined depth stencil types
+			intToChannel(pixelPtr, stencil, m_format.type);
 			break;
 	}
 
@@ -1201,31 +1122,18 @@ static inline float unnormalize (Sampler::WrapMode mode, float c, int size)
 
 static bool isFixedPointDepthTextureFormat (const tcu::TextureFormat& format)
 {
+	DE_ASSERT(format.order == TextureFormat::D);
+
 	const tcu::TextureChannelClass channelClass = tcu::getTextureChannelClass(format.type);
-
-	if (format.order == TextureFormat::D)
+	if (channelClass == tcu::TEXTURECHANNELCLASS_FLOATING_POINT)
+		return false;
+	else if (channelClass == tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT)
+		return true;
+	else
 	{
-		// depth internal formats cannot be non-normalized integers
-		return channelClass != tcu::TEXTURECHANNELCLASS_FLOATING_POINT;
+		DE_ASSERT(false);
+		return false;
 	}
-	else if (format.order == TextureFormat::DS)
-	{
-		// combined formats have no single channel class, detect format manually
-		switch (format.type)
-		{
-			case tcu::TextureFormat::FLOAT_UNSIGNED_INT_24_8_REV:	return false;
-			case tcu::TextureFormat::UNSIGNED_INT_24_8:				return true;
-
-			default:
-			{
-				// unknown format
-				DE_ASSERT(false);
-				return true;
-			}
-		}
-	}
-
-	return false;
 }
 
 // Texel lookup with color conversion.
