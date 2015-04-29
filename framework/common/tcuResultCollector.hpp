@@ -43,24 +43,25 @@ class TestContext;
 class ResultCollector
 {
 public:
-					ResultCollector			(void);
-					ResultCollector			(TestLog& log, const std::string& prefix = "");
+						ResultCollector			(void);
+						ResultCollector			(TestLog& log, const std::string& prefix = "");
 
-	qpTestResult	getResult				(void) const  { return m_result; }
+	qpTestResult		getResult				(void) const { return m_result;		}
+	const std::string	getMessage				(void) const { return m_message;	}
 
-	void			fail					(const std::string& msg);
-	bool			check					(bool condition, const std::string& msg);
+	void				fail					(const std::string& msg);
+	bool				check					(bool condition, const std::string& msg);
 
-	void			addResult				(qpTestResult result, const std::string& msg);
-	bool			checkResult				(bool condition, qpTestResult result, const std::string& msg);
+	void				addResult				(qpTestResult result, const std::string& msg);
+	bool				checkResult				(bool condition, qpTestResult result, const std::string& msg);
 
-	void			setTestContextResult	(TestContext& testCtx);
+	void				setTestContextResult	(TestContext& testCtx);
 
 private:
-	TestLog*		m_log;
-	std::string		m_prefix;
-	qpTestResult	m_result;
-	std::string		m_message;
+	TestLog* const		m_log;
+	const std::string	m_prefix;
+	qpTestResult		m_result;
+	std::string			m_message;
 } DE_WARN_UNUSED_TYPE;
 
 } // tcu
