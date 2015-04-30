@@ -609,26 +609,28 @@ public:
 	void								init					(void);
 	void								testRender				(void);
 
+protected:
+	const float							m_lineWidth;
+
 private:
 	std::vector<ColoredLineData>		convertToColoredLines	(const ColorlessLineData* linesBegin, const ColorlessLineData* linesEnd);
 
 	const std::vector<ColoredLineData>	m_lines;
-	const float							m_lineWidth;
 	const rr::WindowRectangle			m_viewport;
 };
 
 LineRenderTestCase::LineRenderTestCase (Context& context, const char* name, const char* description, const ColoredLineData* linesBegin, const ColoredLineData* linesEnd, float lineWidth, const rr::WindowRectangle& viewport)
 	: RenderTestCase	(context, name, description)
-	, m_lines			(linesBegin, linesEnd)
 	, m_lineWidth		(lineWidth)
+	, m_lines			(linesBegin, linesEnd)
 	, m_viewport		(viewport)
 {
 }
 
 LineRenderTestCase::LineRenderTestCase (Context& context, const char* name, const char* description, const ColorlessLineData* linesBegin, const ColorlessLineData* linesEnd, float lineWidth, const rr::WindowRectangle& viewport)
 	: RenderTestCase	(context, name, description)
-	, m_lines			(convertToColoredLines(linesBegin, linesEnd))
 	, m_lineWidth		(lineWidth)
+	, m_lines			(convertToColoredLines(linesBegin, linesEnd))
 	, m_viewport		(viewport)
 {
 }
@@ -741,11 +743,12 @@ LineCase::LineCase (Context& context, const char* name, const char* description,
 
 void LineCase::verifyImage (const tcu::ConstPixelBufferAccess& testImageAccess, const tcu::ConstPixelBufferAccess& referenceImageAccess)
 {
-	const int	faultyLimit = 6;
-	int			faultyPixels;
+	const int		faultyLimit		= 6;
+	int				faultyPixels;
 
-	tcu::TestLog&		log			= m_testCtx.getLog();
-	tcu::Surface		diffMask	(TEST_CANVAS_SIZE, TEST_CANVAS_SIZE);
+	const bool		isMsaa			= m_context.getRenderTarget().getNumSamples() > 1;
+	tcu::TestLog&	log				= m_testCtx.getLog();
+	tcu::Surface	diffMask		(TEST_CANVAS_SIZE, TEST_CANVAS_SIZE);
 
 	log << TestLog::Message << "Comparing images... " << TestLog::EndMessage;
 	log << TestLog::Message << "Deviation within radius of " << m_searchKernelSize << " is allowed." << TestLog::EndMessage;
@@ -762,7 +765,13 @@ void LineCase::verifyImage (const tcu::ConstPixelBufferAccess& testImageAccess, 
 			<< TestLog::EndImageSet
 			<< tcu::TestLog::Message << "Got " << faultyPixels << " faulty pixel(s)." << tcu::TestLog::EndMessage;
 
-		m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Got faulty pixels");
+		if (m_lineWidth != 1.0f && isMsaa)
+		{
+			log << TestLog::Message << "Wide line support is optional, reporting compatibility warning." << TestLog::EndMessage;
+			m_testCtx.setTestResult(QP_TEST_RESULT_COMPATIBILITY_WARNING, "Wide line clipping failed");
+		}
+		else
+			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Got faulty pixels");
 	}
 }
 
@@ -813,7 +822,15 @@ void ColoredLineCase::verifyImage (const tcu::ConstPixelBufferAccess& testImageA
 	{
 		const float threshold = 0.3f;
 		if (!tcu::fuzzyCompare(log, "Images", "", referenceImageAccess, testImageAccess, threshold, tcu::COMPARE_LOG_ON_ERROR))
-			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Got faulty pixels");
+		{
+			if (m_lineWidth != 1.0f)
+			{
+				log << TestLog::Message << "Wide line support is optional, reporting compatibility warning." << TestLog::EndMessage;
+				m_testCtx.setTestResult(QP_TEST_RESULT_COMPATIBILITY_WARNING, "Wide line clipping failed");
+			}
+			else
+				m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Got faulty pixels");
+		}
 	}
 }
 
