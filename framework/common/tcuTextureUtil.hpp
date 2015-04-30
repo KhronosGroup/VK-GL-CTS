@@ -45,6 +45,8 @@ bool					hasDepthComponent			(TextureFormat::ChannelOrder order);
 
 // sRGB - linear conversion.
 Vec4					sRGBToLinear				(const Vec4& cs);
+Vec4					sRGB8ToLinear				(const UVec4& cs);
+Vec4					sRGBA8ToLinear				(const UVec4& cs);
 Vec4					linearToSRGB				(const Vec4& cl);
 bool					isSRGB						(TextureFormat format);
 

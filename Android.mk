@@ -659,6 +659,7 @@ LOCAL_SRC_FILES := \
 	modules/glshared/glsUniformBlockCase.cpp \
 	modules/glshared/glsVertexArrayTests.cpp \
 	modules/internal/ditBuildInfoTests.cpp \
+	modules/internal/ditSRGB8ConversionTest.cpp \
 	modules/internal/ditDelibsTests.cpp \
 	modules/internal/ditFrameworkTests.cpp \
 	modules/internal/ditImageCompareTests.cpp \
