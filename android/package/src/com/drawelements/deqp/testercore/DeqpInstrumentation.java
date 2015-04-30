@@ -35,6 +35,7 @@ public class DeqpInstrumentation extends Instrumentation
 	private static final long	LAUNCH_TIMEOUT_MS		= 10000;
 	private static final long	NO_DATA_TIMEOUT_MS		= 1000;
 	private static final long	NO_ACTIVITY_SLEEP_MS	= 100;
+	private static final long	REMOTE_DEAD_SLEEP_MS	= 100;
 
 	private String				m_cmdLine;
 	private String				m_logFileName;
@@ -105,6 +106,20 @@ public class DeqpInstrumentation extends Instrumentation
 
 			parser.init(this, m_logFileName, m_logData);
 
+			// parse until tester dies
+			{
+				while (true)
+				{
+					if (!parser.parse())
+					{
+						Thread.sleep(NO_ACTIVITY_SLEEP_MS);
+						if (!remoteApi.isRunning())
+							break;
+					}
+				}
+			}
+
+			// parse remaining messages
 			{
 				long lastDataMs = System.currentTimeMillis();
 
@@ -112,15 +127,16 @@ public class DeqpInstrumentation extends Instrumentation
 				{
 					if (parser.parse())
 						lastDataMs = System.currentTimeMillis();
-					else if (!remoteApi.isRunning())
+					else
 					{
 						final long timeSinceLastDataMs = System.currentTimeMillis()-lastDataMs;
 
 						if (timeSinceLastDataMs > NO_DATA_TIMEOUT_MS)
 							break; // Assume no data is available for reading any more
+
+						// Remote is dead, wait a bit until trying to read again
+						Thread.sleep(REMOTE_DEAD_SLEEP_MS);
 					}
-					else
-						Thread.sleep(NO_ACTIVITY_SLEEP_MS);
 				}
 			}
 
