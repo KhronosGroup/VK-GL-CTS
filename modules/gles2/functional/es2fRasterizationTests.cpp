@@ -305,6 +305,7 @@ private:
 	const glw::GLenum		m_primitiveDrawType;
 	const PrimitiveWideness	m_primitiveWideness;
 	bool					m_allIterationsPassed;
+	bool					m_multisampleRelaxationRequired;
 
 	static const float		s_wideSize;
 };
@@ -312,12 +313,13 @@ private:
 const float BaseLineCase::s_wideSize = 5.0f;
 
 BaseLineCase::BaseLineCase (Context& context, const char* name, const char* desc, glw::GLenum primitiveDrawType, PrimitiveWideness wideness)
-	: BaseRenderingCase		(context, name, desc)
-	, m_iteration			(0)
-	, m_iterationCount		(3)
-	, m_primitiveDrawType	(primitiveDrawType)
-	, m_primitiveWideness	(wideness)
-	, m_allIterationsPassed	(true)
+	: BaseRenderingCase					(context, name, desc)
+	, m_iteration						(0)
+	, m_iterationCount					(3)
+	, m_primitiveDrawType				(primitiveDrawType)
+	, m_primitiveWideness				(wideness)
+	, m_allIterationsPassed				(true)
+	, m_multisampleRelaxationRequired	(false)
 {
 	DE_ASSERT(m_primitiveWideness < PRIMITIVEWIDENESS_LAST);
 	m_lineWidth = (m_primitiveWideness == PRIMITIVEWIDENESS_WIDE) ? (s_wideSize) : (1.0f);
@@ -368,6 +370,13 @@ BaseLineCase::IterateResult BaseLineCase::iterate (void)
 
 		compareOk = verifyLineGroupRasterization(resultImage, scene, args, m_testCtx.getLog());
 
+		// multisampled wide lines might not be supported
+		if (scene.lineWidth != 1.0f && m_numSamples > 1 && !compareOk)
+		{
+			m_multisampleRelaxationRequired = true;
+			compareOk = true;
+		}
+
 		if (!compareOk)
 			m_allIterationsPassed = false;
 	}
@@ -375,7 +384,9 @@ BaseLineCase::IterateResult BaseLineCase::iterate (void)
 	// result
 	if (++m_iteration == m_iterationCount)
 	{
-		if (m_allIterationsPassed)
+		if (m_allIterationsPassed && m_multisampleRelaxationRequired)
+			m_testCtx.setTestResult(QP_TEST_RESULT_COMPATIBILITY_WARNING, "Rasterization of multisampled wide lines failed");
+		else if (m_allIterationsPassed)
 			m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
 		else
 			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Incorrect rasterization");
@@ -1671,8 +1682,16 @@ LineInterpolationTest::IterateResult LineInterpolationTest::iterate (void)
 				break;
 
 			case LINEINTERPOLATION_INCORRECT:
-				// line interpolation is incorrect
-				m_result.addResult(QP_TEST_RESULT_FAIL, "Found invalid pixel values");
+				if (scene.lineWidth != 1.0f && m_numSamples > 1)
+				{
+					// multisampled wide lines might not be supported
+					m_result.addResult(QP_TEST_RESULT_COMPATIBILITY_WARNING, "Interpolation of multisampled wide lines failed");
+				}
+				else
+				{
+					// line interpolation is incorrect
+					m_result.addResult(QP_TEST_RESULT_FAIL, "Found invalid pixel values");
+				}
 				break;
 
 			default:
