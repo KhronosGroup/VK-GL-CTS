@@ -601,6 +601,7 @@ LOCAL_SRC_FILES := \
 	modules/gles31/functional/es31fTextureLevelStateQueryTests.cpp \
 	modules/gles31/functional/es31fTextureMultisampleTests.cpp \
 	modules/gles31/functional/es31fTextureSpecificationTests.cpp \
+	modules/gles31/functional/es31fTextureBorderClampTests.cpp \
 	modules/gles31/functional/es31fUniformBlockTests.cpp \
 	modules/gles31/functional/es31fUniformLocationTests.cpp \
 	modules/gles31/functional/es31fVertexAttributeBindingStateQueryTests.cpp \

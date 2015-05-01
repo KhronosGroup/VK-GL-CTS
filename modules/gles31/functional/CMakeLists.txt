@@ -77,6 +77,8 @@ set(DEQP_GLES31_FUNCTIONAL_SRCS
 	es31fTextureLevelStateQueryTests.cpp
 	es31fTextureSpecificationTests.hpp
 	es31fTextureSpecificationTests.cpp
+	es31fTextureBorderClampTests.hpp
+	es31fTextureBorderClampTests.cpp
 	es31fIntegerStateQueryTests.cpp
 	es31fIntegerStateQueryTests.hpp
 	es31fBooleanStateQueryTests.cpp
