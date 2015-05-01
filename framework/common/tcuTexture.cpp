@@ -1157,10 +1157,7 @@ static inline Vec4 lookupBorder (const tcu::TextureFormat& format, const tcu::Sa
 	const bool						isPureUnsignedInteger	= channelClass == tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER;
 
 	if (isFloat || isFixed)
-	{
-		const Vec4 p = sampleTextureBorder<float>(format, sampler);
-		return isSRGB(format) ? sRGBToLinear(p) : p;
-	}
+		return sampleTextureBorder<float>(format, sampler);
 	else if (isPureInteger)
 		return sampleTextureBorder<deInt32>(format, sampler).cast<float>();
 	else if (isPureUnsignedInteger)

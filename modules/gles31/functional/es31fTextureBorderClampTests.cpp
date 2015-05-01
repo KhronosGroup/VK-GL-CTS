@@ -417,6 +417,25 @@ rr::GenericVec4 mapToFormatColorRepresentable (const tcu::TextureFormat& texForm
 	de::ArrayBuffer<deUint8, 4>	buffer			(texFormat.getPixelSize());
 	tcu::PixelBufferAccess		access			(texFormat, tcu::IVec3(1, 1, 1), buffer.getPtr());
 
+	if (tcu::isSRGB(texFormat))
+	{
+		DE_ASSERT(texFormat.type == tcu::TextureFormat::UNORM_INT8);
+
+		// make sure border color (in linear space) can be converted to 8-bit sRGB space without
+		// significant loss.
+		const tcu::Vec4		sRGB		= tcu::linearToSRGB(normalizedRange);
+		const tcu::IVec4	sRGB8		= tcu::IVec4(tcu::floatToU8(sRGB[0]),
+													 tcu::floatToU8(sRGB[1]),
+													 tcu::floatToU8(sRGB[2]),
+													 tcu::floatToU8(sRGB[3]));
+		const tcu::Vec4		linearized	= tcu::sRGBToLinear(tcu::Vec4(sRGB8[0] / 255.0f,
+																	  sRGB8[1] / 255.0f,
+																	  sRGB8[2] / 255.0f,
+																	  sRGB8[3] / 255.0f));
+
+		return rr::GenericVec4(tcu::select(linearized, tcu::Vec4(0.0f), channelMask));
+	}
+
 	switch (tcu::getTextureChannelClass(texFormat.type))
 	{
 		case tcu::TEXTURECHANNELCLASS_SIGNED_FIXED_POINT:
