@@ -1402,6 +1402,8 @@ TextureBorderClampFormatCase::TextureBorderClampFormatCase	(Context&						contex
 			DE_ASSERT((m_texWidth % blockPixelSize.x()) == 0 && (m_texHeight % blockPixelSize.y()) == 0);
 		else
 			DE_ASSERT((m_texWidth % blockPixelSize.x()) != 0 && (m_texHeight % blockPixelSize.y()) != 0);
+
+		DE_UNREF(blockPixelSize);
 	}
 }
 
