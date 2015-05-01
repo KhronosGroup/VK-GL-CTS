@@ -394,8 +394,6 @@ validCases = (createCases("repeat_interface_qualifier", repeatShaderTemplate, Tr
 			+ createCases("no_instance_name", noInstanceNameShaderTemplate, True)
 			+ createCases("same_variable_and_block_name", sameVariableAndBlockNameShaderTemplate, True)
 			+ createCases("same_variable_and_instance_name", sameVariableAndInstanceNameShaderTemplate, True)
-			+ createCases("repeated_block", repeatedBlockShaderTemplate, True)
-			+ createCases("repeated_block_no_instance_name", repeatedBlockNoInstanceNameShaderTemplate, True)
 			+ createCases("struct_member", structMemberShaderTemplate, True)
 			+ sum([createCases("struct_member_layout_%s" % qualifier, layoutStructMemberQualifierShaderTemplate % qualifier, True)
 						for qualifier in ["row_major", "column_major"]], [])
@@ -912,6 +910,8 @@ invalidCases = (
 			+ createCases("invalid_identifier_instance_name", invalidIdentifierInstanceNameShaderTemplate, False)
 			+ createCases("double_underscore_block_name", doubleUnderscoreIdentifierBlockNameShaderTemplate, False)
 			+ createCases("double_underscore_instance_name", doubleUnderscoreIdentifierInstanceNameShaderTemplate, False)
+			+ createCases("repeated_block", repeatedBlockShaderTemplate, True)
+			+ createCases("repeated_block_no_instance_name", repeatedBlockNoInstanceNameShaderTemplate, True)
 		)
 
 allCases.append(CaseGroup("valid", "Valid uniform interface block syntax tests.", validCases))

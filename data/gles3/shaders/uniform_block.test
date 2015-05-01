@@ -1619,158 +1619,6 @@ group valid "Valid uniform interface block syntax tests."
 			}
 		""
 	end
-	case repeated_block_vertex
-		version 300 es
-		expect build_successful
-
-		vertex ""
-			#version 300 es
-			precision highp float;
-
-
-
-			uniform UniformBlock
-			{
-				vec4 uniformMember;
-			} uniformBlockA;
-
-			uniform UniformBlock
-			{
-				vec4 uniformMember;
-			} uniformBlockB;
-
-			void main()
-			{
-				gl_Position = uniformBlockA.uniformMember + uniformBlockB.uniformMember;
-			}
-		""
-
-		fragment ""
-			#version 300 es
-			precision highp float;
-
-			layout(location=0) out vec4 o_color;
-
-			void main()
-			{
-				o_color = vec4(1.0);
-			}
-		""
-	end
-	case repeated_block_fragment
-		version 300 es
-		expect build_successful
-
-		vertex ""
-			#version 300 es
-			precision highp float;
-
-			in vec4 a_pos;
-
-			void main()
-			{
-				gl_Position = a_pos;
-			}
-		""
-
-		fragment ""
-			#version 300 es
-			precision highp float;
-
-			layout(location=0) out vec4 o_color;
-
-			uniform UniformBlock
-			{
-				vec4 uniformMember;
-			} uniformBlockA;
-
-			uniform UniformBlock
-			{
-				vec4 uniformMember;
-			} uniformBlockB;
-
-			void main()
-			{
-				o_color = uniformBlockA.uniformMember + uniformBlockB.uniformMember;
-			}
-		""
-	end
-	case repeated_block_no_instance_name_vertex
-		version 300 es
-		expect build_successful
-
-		vertex ""
-			#version 300 es
-			precision highp float;
-
-
-
-			uniform UniformBlock
-			{
-				vec4 uniformMember;
-			} uniformBlock;
-
-			uniform UniformBlock
-			{
-				vec4 uniformMember;
-			};
-
-			void main()
-			{
-				gl_Position = uniformBlock.uniformMember + uniformMember;
-			}
-		""
-
-		fragment ""
-			#version 300 es
-			precision highp float;
-
-			layout(location=0) out vec4 o_color;
-
-			void main()
-			{
-				o_color = vec4(1.0);
-			}
-		""
-	end
-	case repeated_block_no_instance_name_fragment
-		version 300 es
-		expect build_successful
-
-		vertex ""
-			#version 300 es
-			precision highp float;
-
-			in vec4 a_pos;
-
-			void main()
-			{
-				gl_Position = a_pos;
-			}
-		""
-
-		fragment ""
-			#version 300 es
-			precision highp float;
-
-			layout(location=0) out vec4 o_color;
-
-			uniform UniformBlock
-			{
-				vec4 uniformMember;
-			} uniformBlock;
-
-			uniform UniformBlock
-			{
-				vec4 uniformMember;
-			};
-
-			void main()
-			{
-				o_color = uniformBlock.uniformMember + uniformMember;
-			}
-		""
-	end
 	case struct_member_vertex
 		version 300 es
 		expect build_successful
@@ -4860,6 +4708,158 @@ group invalid "Invalid uniform interface block syntax tests."
 			void main()
 			{
 				o_color = __.uniformMember;
+			}
+		""
+	end
+	case repeated_block_vertex
+		version 300 es
+		expect build_successful
+
+		vertex ""
+			#version 300 es
+			precision highp float;
+
+
+
+			uniform UniformBlock
+			{
+				vec4 uniformMember;
+			} uniformBlockA;
+
+			uniform UniformBlock
+			{
+				vec4 uniformMember;
+			} uniformBlockB;
+
+			void main()
+			{
+				gl_Position = uniformBlockA.uniformMember + uniformBlockB.uniformMember;
+			}
+		""
+
+		fragment ""
+			#version 300 es
+			precision highp float;
+
+			layout(location=0) out vec4 o_color;
+
+			void main()
+			{
+				o_color = vec4(1.0);
+			}
+		""
+	end
+	case repeated_block_fragment
+		version 300 es
+		expect build_successful
+
+		vertex ""
+			#version 300 es
+			precision highp float;
+
+			in vec4 a_pos;
+
+			void main()
+			{
+				gl_Position = a_pos;
+			}
+		""
+
+		fragment ""
+			#version 300 es
+			precision highp float;
+
+			layout(location=0) out vec4 o_color;
+
+			uniform UniformBlock
+			{
+				vec4 uniformMember;
+			} uniformBlockA;
+
+			uniform UniformBlock
+			{
+				vec4 uniformMember;
+			} uniformBlockB;
+
+			void main()
+			{
+				o_color = uniformBlockA.uniformMember + uniformBlockB.uniformMember;
+			}
+		""
+	end
+	case repeated_block_no_instance_name_vertex
+		version 300 es
+		expect build_successful
+
+		vertex ""
+			#version 300 es
+			precision highp float;
+
+
+
+			uniform UniformBlock
+			{
+				vec4 uniformMember;
+			} uniformBlock;
+
+			uniform UniformBlock
+			{
+				vec4 uniformMember;
+			};
+
+			void main()
+			{
+				gl_Position = uniformBlock.uniformMember + uniformMember;
+			}
+		""
+
+		fragment ""
+			#version 300 es
+			precision highp float;
+
+			layout(location=0) out vec4 o_color;
+
+			void main()
+			{
+				o_color = vec4(1.0);
+			}
+		""
+	end
+	case repeated_block_no_instance_name_fragment
+		version 300 es
+		expect build_successful
+
+		vertex ""
+			#version 300 es
+			precision highp float;
+
+			in vec4 a_pos;
+
+			void main()
+			{
+				gl_Position = a_pos;
+			}
+		""
+
+		fragment ""
+			#version 300 es
+			precision highp float;
+
+			layout(location=0) out vec4 o_color;
+
+			uniform UniformBlock
+			{
+				vec4 uniformMember;
+			} uniformBlock;
+
+			uniform UniformBlock
+			{
+				vec4 uniformMember;
+			};
+
+			void main()
+			{
+				o_color = uniformBlock.uniformMember + uniformMember;
 			}
 		""
 	end

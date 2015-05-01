@@ -4501,10 +4501,6 @@ dEQP-GLES3.functional.shaders.uniform_block.valid.same_variable_and_block_name_v
 dEQP-GLES3.functional.shaders.uniform_block.valid.same_variable_and_block_name_fragment
 dEQP-GLES3.functional.shaders.uniform_block.valid.same_variable_and_instance_name_vertex
 dEQP-GLES3.functional.shaders.uniform_block.valid.same_variable_and_instance_name_fragment
-dEQP-GLES3.functional.shaders.uniform_block.valid.repeated_block_vertex
-dEQP-GLES3.functional.shaders.uniform_block.valid.repeated_block_fragment
-dEQP-GLES3.functional.shaders.uniform_block.valid.repeated_block_no_instance_name_vertex
-dEQP-GLES3.functional.shaders.uniform_block.valid.repeated_block_no_instance_name_fragment
 dEQP-GLES3.functional.shaders.uniform_block.valid.struct_member_vertex
 dEQP-GLES3.functional.shaders.uniform_block.valid.struct_member_fragment
 dEQP-GLES3.functional.shaders.uniform_block.valid.struct_member_layout_row_major_vertex
@@ -4595,6 +4591,10 @@ dEQP-GLES3.functional.shaders.uniform_block.invalid.double_underscore_block_name
 dEQP-GLES3.functional.shaders.uniform_block.invalid.double_underscore_block_name_fragment
 dEQP-GLES3.functional.shaders.uniform_block.invalid.double_underscore_instance_name_vertex
 dEQP-GLES3.functional.shaders.uniform_block.invalid.double_underscore_instance_name_fragment
+dEQP-GLES3.functional.shaders.uniform_block.invalid.repeated_block_vertex
+dEQP-GLES3.functional.shaders.uniform_block.invalid.repeated_block_fragment
+dEQP-GLES3.functional.shaders.uniform_block.invalid.repeated_block_no_instance_name_vertex
+dEQP-GLES3.functional.shaders.uniform_block.invalid.repeated_block_no_instance_name_fragment
 dEQP-GLES3.functional.shaders.discard.basic_always
 dEQP-GLES3.functional.shaders.discard.basic_never
 dEQP-GLES3.functional.shaders.discard.basic_uniform
