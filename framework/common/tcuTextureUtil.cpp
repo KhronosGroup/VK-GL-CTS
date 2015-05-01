@@ -1348,7 +1348,7 @@ static tcu::Vec4 getTextureBorderColorFloat (const TextureFormat& format, const 
 		}
 	}
 
-	return isSRGB(format) ? sRGBToLinear(result) : result;
+	return result;
 }
 
 static tcu::IVec4 getTextureBorderColorInt (const TextureFormat& format, const Sampler& sampler)
