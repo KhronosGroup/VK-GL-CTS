@@ -80,6 +80,7 @@
 #include "es31fTextureGatherTests.hpp"
 #include "es31fTextureFormatTests.hpp"
 #include "es31fTextureBufferTests.hpp"
+#include "es31fTextureBorderClampTests.hpp"
 #include "es31fShaderBuiltinConstantTests.hpp"
 #include "es31fShaderHelperInvocationTests.hpp"
 #include "es31fPrimitiveBoundingBoxTests.hpp"
@@ -248,6 +249,7 @@ public:
 		addChild(new TextureMultisampleTests	(m_context));
 		addChild(new TextureGatherTests			(m_context));
 		addChild(createTextureBufferTests		(m_context));
+		addChild(new TextureBorderClampTests	(m_context));
 	}
 };
 
