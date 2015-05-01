@@ -293,6 +293,8 @@ static bool isBilinearRangeValid (const LookupPrecision&	prec,
 {
 	DE_ASSERT(xBounds.x() <= xBounds.y());
 	DE_ASSERT(yBounds.x() <= yBounds.y());
+	DE_ASSERT(xBounds.x() + searchStep > xBounds.x()); // step is not effectively 0
+	DE_ASSERT(xBounds.y() + searchStep > xBounds.y());
 
 	if (!isInColorBounds(prec, quad, result))
 		return false;
@@ -322,6 +324,10 @@ static bool isTrilinearRangeValid (const LookupPrecision&	prec,
 	DE_ASSERT(xBounds.x() <= xBounds.y());
 	DE_ASSERT(yBounds.x() <= yBounds.y());
 	DE_ASSERT(zBounds.x() <= zBounds.y());
+	DE_ASSERT(xBounds.x() + searchStep > xBounds.x()); // step is not effectively 0
+	DE_ASSERT(xBounds.y() + searchStep > xBounds.y());
+	DE_ASSERT(yBounds.x() + searchStep > yBounds.x());
+	DE_ASSERT(yBounds.y() + searchStep > yBounds.y());
 
 	if (!isInColorBounds(prec, quad0, quad1, result))
 		return false;
@@ -354,6 +360,10 @@ static bool is1DTrilinearFilterResultValid (const LookupPrecision&	prec,
 {
 	DE_ASSERT(xBounds0.x() <= xBounds0.y());
 	DE_ASSERT(xBounds1.x() <= xBounds1.y());
+	DE_ASSERT(xBounds0.x() + searchStep > xBounds0.x()); // step is not effectively 0
+	DE_ASSERT(xBounds0.y() + searchStep > xBounds0.y());
+	DE_ASSERT(xBounds1.x() + searchStep > xBounds1.x());
+	DE_ASSERT(xBounds1.y() + searchStep > xBounds1.y());
 
 	if (!isInColorBounds(prec, line0, line1, result))
 		return false;
@@ -391,6 +401,14 @@ static bool is2DTrilinearFilterResultValid (const LookupPrecision&	prec,
 	DE_ASSERT(yBounds0.x() <= yBounds0.y());
 	DE_ASSERT(xBounds1.x() <= xBounds1.y());
 	DE_ASSERT(yBounds1.x() <= yBounds1.y());
+	DE_ASSERT(xBounds0.x() + searchStep > xBounds0.x()); // step is not effectively 0
+	DE_ASSERT(xBounds0.y() + searchStep > xBounds0.y());
+	DE_ASSERT(yBounds0.x() + searchStep > yBounds0.x());
+	DE_ASSERT(yBounds0.y() + searchStep > yBounds0.y());
+	DE_ASSERT(xBounds1.x() + searchStep > xBounds1.x());
+	DE_ASSERT(xBounds1.y() + searchStep > xBounds1.y());
+	DE_ASSERT(yBounds1.x() + searchStep > yBounds1.x());
+	DE_ASSERT(yBounds1.y() + searchStep > yBounds1.y());
 
 	if (!isInColorBounds(prec, quad0, quad1, result))
 		return false;
@@ -442,6 +460,18 @@ static bool is3DTrilinearFilterResultValid (const LookupPrecision&	prec,
 	DE_ASSERT(xBounds1.x() <= xBounds1.y());
 	DE_ASSERT(yBounds1.x() <= yBounds1.y());
 	DE_ASSERT(zBounds1.x() <= zBounds1.y());
+	DE_ASSERT(xBounds0.x() + searchStep > xBounds0.x()); // step is not effectively 0
+	DE_ASSERT(xBounds0.y() + searchStep > xBounds0.y());
+	DE_ASSERT(yBounds0.x() + searchStep > yBounds0.x());
+	DE_ASSERT(yBounds0.y() + searchStep > yBounds0.y());
+	DE_ASSERT(zBounds0.x() + searchStep > zBounds0.x());
+	DE_ASSERT(zBounds0.y() + searchStep > zBounds0.y());
+	DE_ASSERT(xBounds1.x() + searchStep > xBounds1.x());
+	DE_ASSERT(xBounds1.y() + searchStep > xBounds1.y());
+	DE_ASSERT(yBounds1.x() + searchStep > yBounds1.x());
+	DE_ASSERT(yBounds1.y() + searchStep > yBounds1.y());
+	DE_ASSERT(zBounds1.x() + searchStep > zBounds1.x());
+	DE_ASSERT(zBounds1.y() + searchStep > zBounds1.y());
 
 	if (!isInColorBounds(prec, quad00, quad01, quad10, quad11, result))
 		return false;
@@ -603,6 +633,15 @@ bool isLinearSampleResultValid (const ConstPixelBufferAccess&		level,
 
 	const int					w				= level.getWidth();
 
+	const TextureFormat			format			= level.getFormat();
+	const TextureChannelClass	texClass		= getTextureChannelClass(format.type);
+
+	DE_ASSERT(texClass == TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT	||
+			  texClass == TEXTURECHANNELCLASS_SIGNED_FIXED_POINT	||
+			  texClass == TEXTURECHANNELCLASS_FLOATING_POINT);
+	DE_UNREF(texClass);
+	DE_UNREF(format);
+
 	for (int i = minI; i <= maxI; i++)
 	{
 		// Wrapped coordinates
@@ -646,6 +685,10 @@ bool isLinearSampleResultValid (const ConstPixelBufferAccess&		level,
 	float						searchStep		= texClass == TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT	? computeBilinearSearchStepForUnorm(prec) :
 												  texClass == TEXTURECHANNELCLASS_SIGNED_FIXED_POINT	? computeBilinearSearchStepForSnorm(prec) :
 												  0.0f; // Step is computed for floating-point quads based on texel values.
+
+	DE_ASSERT(texClass == TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT	||
+			  texClass == TEXTURECHANNELCLASS_SIGNED_FIXED_POINT	||
+			  texClass == TEXTURECHANNELCLASS_FLOATING_POINT);
 
 	// \todo [2013-07-03 pyry] This could be optimized by first computing ranges based on wrap mode.
 
@@ -705,6 +748,10 @@ static bool isLinearSampleResultValid (const ConstPixelBufferAccess&		level,
 	float						searchStep		= texClass == TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT	? computeBilinearSearchStepForUnorm(prec) :
 												  texClass == TEXTURECHANNELCLASS_SIGNED_FIXED_POINT	? computeBilinearSearchStepForSnorm(prec) :
 												  0.0f; // Step is computed for floating-point quads based on texel values.
+
+	DE_ASSERT(texClass == TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT	||
+			  texClass == TEXTURECHANNELCLASS_SIGNED_FIXED_POINT	||
+			  texClass == TEXTURECHANNELCLASS_FLOATING_POINT);
 
 	// \todo [2013-07-03 pyry] This could be optimized by first computing ranges based on wrap mode.
 
@@ -910,8 +957,8 @@ static bool isLinearMipmapLinearSampleResultValid (const ConstPixelBufferAccess&
 	const int					w0				= level0.getWidth();
 	const int					w1				= level1.getWidth();
 
-	const Vec2					uBounds0		= computeNonNormalizedCoordBounds(sampler.normalizedCoords, w0,	coordX, prec.coordBits.x(), prec.uvwBits.x());
-	const Vec2					uBounds1		= computeNonNormalizedCoordBounds(sampler.normalizedCoords, w1,	coordX, prec.coordBits.x(), prec.uvwBits.x());
+	const Vec2					uBounds0		= computeNonNormalizedCoordBounds(sampler.normalizedCoords, w0, coordX, prec.coordBits.x(), prec.uvwBits.x());
+	const Vec2					uBounds1		= computeNonNormalizedCoordBounds(sampler.normalizedCoords, w1, coordX, prec.coordBits.x(), prec.uvwBits.x());
 
 	// Integer coordinates - without wrap mode
 	const int					minI0			= deFloorFloatToInt32(uBounds0.x()-0.5f);
@@ -923,6 +970,10 @@ static bool isLinearMipmapLinearSampleResultValid (const ConstPixelBufferAccess&
 	const float					cSearchStep		= texClass == TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT	? computeBilinearSearchStepForUnorm(prec) :
 												  texClass == TEXTURECHANNELCLASS_SIGNED_FIXED_POINT	? computeBilinearSearchStepForSnorm(prec) :
 												  0.0f; // Step is computed for floating-point quads based on texel values.
+
+	DE_ASSERT(texClass == TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT	||
+			  texClass == TEXTURECHANNELCLASS_SIGNED_FIXED_POINT	||
+			  texClass == TEXTURECHANNELCLASS_FLOATING_POINT);
 
 	for (int i0 = minI0; i0 <= maxI0; i0++)
 	{
@@ -1006,6 +1057,10 @@ static bool isLinearMipmapLinearSampleResultValid (const ConstPixelBufferAccess&
 	const float					cSearchStep		= texClass == TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT	? computeBilinearSearchStepForUnorm(prec) :
 												  texClass == TEXTURECHANNELCLASS_SIGNED_FIXED_POINT	? computeBilinearSearchStepForSnorm(prec) :
 												  0.0f; // Step is computed for floating-point quads based on texel values.
+
+	DE_ASSERT(texClass == TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT	||
+			  texClass == TEXTURECHANNELCLASS_SIGNED_FIXED_POINT	||
+			  texClass == TEXTURECHANNELCLASS_FLOATING_POINT);
 
 	for (int j0 = minJ0; j0 <= maxJ0; j0++)
 	{
@@ -1111,6 +1166,10 @@ static bool isLinearMipmapLinearSampleResultValid (const ConstPixelBufferAccess&
 	const float					cSearchStep		= texClass == TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT	? computeBilinearSearchStepForUnorm(prec) :
 												  texClass == TEXTURECHANNELCLASS_SIGNED_FIXED_POINT	? computeBilinearSearchStepForSnorm(prec) :
 												  0.0f; // Step is computed for floating-point quads based on texel values.
+
+	DE_ASSERT(texClass == TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT	||
+			  texClass == TEXTURECHANNELCLASS_SIGNED_FIXED_POINT	||
+			  texClass == TEXTURECHANNELCLASS_FLOATING_POINT);
 
 	for (int k0 = minK0; k0 <= maxK0; k0++)
 	{
@@ -1403,6 +1462,10 @@ static bool isSeamlessLinearSampleResultValid (const ConstPixelBufferAccess (&fa
 												  texClass == TEXTURECHANNELCLASS_SIGNED_FIXED_POINT	? computeBilinearSearchStepForSnorm(prec) :
 												  0.0f; // Step is computed for floating-point quads based on texel values.
 
+	DE_ASSERT(texClass == TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT	||
+			  texClass == TEXTURECHANNELCLASS_SIGNED_FIXED_POINT	||
+			  texClass == TEXTURECHANNELCLASS_FLOATING_POINT);
+
 	for (int j = minJ; j <= maxJ; j++)
 	{
 		for (int i = minI; i <= maxI; i++)
@@ -1473,6 +1536,10 @@ static bool isSeamplessLinearMipmapLinearSampleResultValid (const ConstPixelBuff
 	const float					cSearchStep		= texClass == TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT	? computeBilinearSearchStepForUnorm(prec) :
 												  texClass == TEXTURECHANNELCLASS_SIGNED_FIXED_POINT	? computeBilinearSearchStepForSnorm(prec) :
 												  0.0f; // Step is computed for floating-point quads based on texel values.
+
+	DE_ASSERT(texClass == TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT	||
+			  texClass == TEXTURECHANNELCLASS_SIGNED_FIXED_POINT	||
+			  texClass == TEXTURECHANNELCLASS_FLOATING_POINT);
 
 	for (int j0 = minJ0; j0 <= maxJ0; j0++)
 	{
@@ -1570,7 +1637,7 @@ static bool isCubeLevelSampleResultValid (const ConstPixelBufferAccess		(&level)
 }
 
 static bool isCubeMipmapLinearSampleResultValid (const ConstPixelBufferAccess	(&faces0)[CUBEFACE_LAST],
-												const ConstPixelBufferAccess	(&faces1)[CUBEFACE_LAST],
+												 const ConstPixelBufferAccess	(&faces1)[CUBEFACE_LAST],
 												 const Sampler&					sampler,
 												 const Sampler::FilterMode		levelFilter,
 												 const LookupPrecision&			prec,
@@ -2264,8 +2331,8 @@ static bool isGatherOffsetsResultValid (const ConstPixelBufferAccess&	level,
 										const IVec2						(&offsets)[4],
 										const Vector<ScalarType, 4>&	result)
 {
-	const Vec2	uBounds		= computeNonNormalizedCoordBounds(sampler.normalizedCoords, level.getWidth(),	coord.x(), prec.coordBits.x(), prec.uvwBits.x());
-	const Vec2	vBounds		= computeNonNormalizedCoordBounds(sampler.normalizedCoords, level.getHeight(),	coord.y(), prec.coordBits.y(), prec.uvwBits.y());
+	const Vec2	uBounds		= computeNonNormalizedCoordBounds(sampler.normalizedCoords, level.getWidth(), coord.x(), prec.coordBits.x(), prec.uvwBits.x());
+	const Vec2	vBounds		= computeNonNormalizedCoordBounds(sampler.normalizedCoords, level.getHeight(), coord.y(), prec.coordBits.y(), prec.uvwBits.y());
 
 	// Integer coordinate bounds for (x0, y0) - without wrap mode
 	const int	minI		= deFloorFloatToInt32(uBounds.x()-0.5f);
