@@ -138,6 +138,11 @@ static bool	noDepth		(const eglu::CandidateConfig& c)	{ return c.depthSize() == 
 static bool	hasStencil	(const eglu::CandidateConfig& c)	{ return c.stencilSize() > 0;	}
 static bool	noStencil	(const eglu::CandidateConfig& c)	{ return c.stencilSize() == 0;	}
 
+static bool isConformant (const eglu::CandidateConfig& c)
+{
+	return c.get(EGL_CONFIG_CAVEAT) != EGL_NON_CONFORMANT_CONFIG;
+}
+
 void getDefaultFilterLists (vector<NamedFilterList>& lists, const FilterList& baseFilters)
 {
 	static const struct
@@ -185,7 +190,8 @@ void getDefaultFilterLists (vector<NamedFilterList>& lists, const FilterList& ba
 				filters << baseFilters
 						<< s_colorRules[colorRuleNdx].filter
 						<< s_depthRules[depthRuleNdx].filter
-						<< s_stencilRules[stencilRuleNdx].filter;
+						<< s_stencilRules[stencilRuleNdx].filter
+						<< isConformant;
 
 				lists.push_back(filters);
 			}
@@ -202,7 +208,8 @@ void getDefaultFilterLists (vector<NamedFilterList>& lists, const FilterList& ba
 				<< notColorBits<8, 8, 8, 0>
 				<< notColorBits<4, 4, 4, 4>
 				<< notColorBits<5, 5, 5, 1>
-				<< notColorBits<8, 8, 8, 8>;
+				<< notColorBits<8, 8, 8, 8>
+				<< isConformant;
 
 		lists.push_back(filters);
 	}
