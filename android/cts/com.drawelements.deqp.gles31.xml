@@ -9520,7 +9520,6 @@
 <Test name="exchange_r32ui_result" />
 <Test name="exchange_r32ui_return_value" />
 <Test name="comp_swap_r32ui_result" />
-<Test name="comp_swap_r32ui_return_value" />
 <Test name="add_r32i_result" />
 <Test name="add_r32i_return_value" />
 <Test name="min_r32i_result" />
@@ -9536,7 +9535,6 @@
 <Test name="exchange_r32i_result" />
 <Test name="exchange_r32i_return_value" />
 <Test name="comp_swap_r32i_result" />
-<Test name="comp_swap_r32i_return_value" />
 </TestCase>
 <TestCase name="qualifiers">
 <Test name="coherent_r32f" />
@@ -9693,7 +9691,6 @@
 <Test name="exchange_r32ui_result" />
 <Test name="exchange_r32ui_return_value" />
 <Test name="comp_swap_r32ui_result" />
-<Test name="comp_swap_r32ui_return_value" />
 <Test name="add_r32i_result" />
 <Test name="add_r32i_return_value" />
 <Test name="min_r32i_result" />
@@ -9709,7 +9706,6 @@
 <Test name="exchange_r32i_result" />
 <Test name="exchange_r32i_return_value" />
 <Test name="comp_swap_r32i_result" />
-<Test name="comp_swap_r32i_return_value" />
 </TestCase>
 <TestCase name="qualifiers">
 <Test name="coherent_r32f" />
@@ -9866,7 +9862,6 @@
 <Test name="exchange_r32ui_result" />
 <Test name="exchange_r32ui_return_value" />
 <Test name="comp_swap_r32ui_result" />
-<Test name="comp_swap_r32ui_return_value" />
 <Test name="add_r32i_result" />
 <Test name="add_r32i_return_value" />
 <Test name="min_r32i_result" />
@@ -9882,7 +9877,6 @@
 <Test name="exchange_r32i_result" />
 <Test name="exchange_r32i_return_value" />
 <Test name="comp_swap_r32i_result" />
-<Test name="comp_swap_r32i_return_value" />
 </TestCase>
 <TestCase name="qualifiers">
 <Test name="coherent_r32f" />
@@ -10039,7 +10033,6 @@
 <Test name="exchange_r32ui_result" />
 <Test name="exchange_r32ui_return_value" />
 <Test name="comp_swap_r32ui_result" />
-<Test name="comp_swap_r32ui_return_value" />
 <Test name="add_r32i_result" />
 <Test name="add_r32i_return_value" />
 <Test name="min_r32i_result" />
@@ -10055,7 +10048,6 @@
 <Test name="exchange_r32i_result" />
 <Test name="exchange_r32i_return_value" />
 <Test name="comp_swap_r32i_result" />
-<Test name="comp_swap_r32i_return_value" />
 </TestCase>
 <TestCase name="qualifiers">
 <Test name="coherent_r32f" />
@@ -10184,7 +10176,6 @@
 <Test name="exchange_r32ui_result" />
 <Test name="exchange_r32ui_return_value" />
 <Test name="comp_swap_r32ui_result" />
-<Test name="comp_swap_r32ui_return_value" />
 <Test name="add_r32i_result" />
 <Test name="add_r32i_return_value" />
 <Test name="min_r32i_result" />
@@ -10200,7 +10191,6 @@
 <Test name="exchange_r32i_result" />
 <Test name="exchange_r32i_return_value" />
 <Test name="comp_swap_r32i_result" />
-<Test name="comp_swap_r32i_return_value" />
 </TestCase>
 <TestCase name="qualifiers">
 <Test name="coherent_r32f" />
