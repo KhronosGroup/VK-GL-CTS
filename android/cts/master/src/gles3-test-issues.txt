@@ -98,3 +98,9 @@ dEQP-GLES3.functional.fbo.api.attachment_query_default_fbo
 
 # Bug 20340818
 dEQP-GLES3.functional.negative_api.texture.teximage3d
+
+# Bug 20699985
+dEQP-GLES3.functional.shaders.texture_functions.textureoffset.isampler3d_vertex
+
+# Bug 20700212
+dEQP-GLES3.functional.shaders.texture_functions.textureprojlodoffset.usampler3d_vertex
