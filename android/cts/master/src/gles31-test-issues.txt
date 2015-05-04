@@ -18,6 +18,10 @@ dEQP-GLES31.functional.shaders.builtin_functions.precision.smoothstep.mediump_co
 dEQP-GLES31.functional.shaders.builtin_functions.precision.smoothstep.mediump_compute.vec2
 dEQP-GLES31.functional.shaders.builtin_functions.precision.smoothstep.mediump_compute.vec3
 dEQP-GLES31.functional.shaders.builtin_functions.precision.smoothstep.mediump_compute.vec4
+dEQP-GLES31.functional.shaders.builtin_functions.precision.cos.mediump_compute.scalar
+dEQP-GLES31.functional.shaders.builtin_functions.precision.cos.mediump_compute.vec2
+dEQP-GLES31.functional.shaders.builtin_functions.precision.cos.mediump_compute.vec3
+dEQP-GLES31.functional.shaders.builtin_functions.precision.cos.mediump_compute.vec4
 
 # Bug 18033342
 dEQP-GLES31.functional.debug.negative_coverage.get_error.state.get_framebuffer_attachment_parameteriv
