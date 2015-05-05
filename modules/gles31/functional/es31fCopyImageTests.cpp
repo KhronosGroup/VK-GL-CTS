@@ -1618,21 +1618,26 @@ CopyImageTest::~CopyImageTest (void)
 	deinit();
 }
 
-void checkFormatSupport (glu::ContextInfo& info, deUint32 format)
+void checkFormatSupport (glu::ContextInfo& info, deUint32 format, deUint32 target)
 {
 	if (glu::isCompressedFormat(format))
 	{
 		if (isAstcFormat(glu::mapGLCompressedTexFormat(format)))
 		{
-			if (!info.isExtensionSupported("GL_KHR_texture_compression_astc_ldr")
-				&& !info.isExtensionSupported("GL_KHR_texture_compression_astc_hdr")
-				&& !info.isExtensionSupported("GL_OES_texture_compression_astc"))
-				throw tcu::NotSupportedError("Compressed astc texture not supported.", "", __FILE__, __LINE__);
+			DE_ASSERT(target != GL_RENDERBUFFER);
+			if (!info.isExtensionSupported("GL_KHR_texture_compression_astc_hdr") &&
+				!info.isExtensionSupported("GL_OES_texture_compression_astc"))
+			{
+				if (target != GL_TEXTURE_2D)
+					TCU_THROW(NotSupportedError, "Non-2D texture target requires HDR astc support.");
+				if (!info.isExtensionSupported("GL_KHR_texture_compression_astc_ldr"))
+					TCU_THROW(NotSupportedError, "Compressed astc texture not supported.");
+			}
 		}
 		else
 		{
 			if (!info.isCompressedTextureFormatSupported(format))
-				throw tcu::NotSupportedError("Compressed texture not supported.", "", __FILE__, __LINE__);
+				TCU_THROW(NotSupportedError, "Compressed texture not supported.");
 		}
 	}
 }
@@ -1644,8 +1649,8 @@ void CopyImageTest::init (void)
 	if (!ctxInfo->isExtensionSupported("GL_EXT_copy_image"))
 		throw tcu::NotSupportedError("Extension GL_EXT_copy_image not supported.", "", __FILE__, __LINE__);
 
-	checkFormatSupport(*ctxInfo, m_srcImageInfo.getFormat());
-	checkFormatSupport(*ctxInfo, m_dstImageInfo.getFormat());
+	checkFormatSupport(*ctxInfo, m_srcImageInfo.getFormat(), m_srcImageInfo.getTarget());
+	checkFormatSupport(*ctxInfo, m_dstImageInfo.getFormat(), m_dstImageInfo.getTarget());
 
 	{
 		SeedBuilder builder;
