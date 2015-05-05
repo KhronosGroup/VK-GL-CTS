@@ -910,8 +910,8 @@ invalidCases = (
 			+ createCases("invalid_identifier_instance_name", invalidIdentifierInstanceNameShaderTemplate, False)
 			+ createCases("double_underscore_block_name", doubleUnderscoreIdentifierBlockNameShaderTemplate, False)
 			+ createCases("double_underscore_instance_name", doubleUnderscoreIdentifierInstanceNameShaderTemplate, False)
-			+ createCases("repeated_block", repeatedBlockShaderTemplate, True)
-			+ createCases("repeated_block_no_instance_name", repeatedBlockNoInstanceNameShaderTemplate, True)
+			+ createCases("repeated_block", repeatedBlockShaderTemplate, False)
+			+ createCases("repeated_block_no_instance_name", repeatedBlockNoInstanceNameShaderTemplate, False)
 		)
 
 allCases.append(CaseGroup("valid", "Valid uniform interface block syntax tests.", validCases))

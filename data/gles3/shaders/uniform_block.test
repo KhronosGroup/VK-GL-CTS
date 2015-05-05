@@ -4713,7 +4713,7 @@ group invalid "Invalid uniform interface block syntax tests."
 	end
 	case repeated_block_vertex
 		version 300 es
-		expect build_successful
+		expect compile_fail
 
 		vertex ""
 			#version 300 es
@@ -4751,7 +4751,7 @@ group invalid "Invalid uniform interface block syntax tests."
 	end
 	case repeated_block_fragment
 		version 300 es
-		expect build_successful
+		expect compile_fail
 
 		vertex ""
 			#version 300 es
@@ -4789,7 +4789,7 @@ group invalid "Invalid uniform interface block syntax tests."
 	end
 	case repeated_block_no_instance_name_vertex
 		version 300 es
-		expect build_successful
+		expect compile_fail
 
 		vertex ""
 			#version 300 es
@@ -4827,7 +4827,7 @@ group invalid "Invalid uniform interface block syntax tests."
 	end
 	case repeated_block_no_instance_name_fragment
 		version 300 es
-		expect build_successful
+		expect compile_fail
 
 		vertex ""
 			#version 300 es
