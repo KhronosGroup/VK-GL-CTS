@@ -3894,6 +3894,8 @@ dEQP-GLES3.functional.shaders.arrays.declaration.multiple_declarations_single_st
 dEQP-GLES3.functional.shaders.arrays.declaration.multiple_declarations_single_statement_explicit_fragment
 dEQP-GLES3.functional.shaders.arrays.declaration.multiple_declarations_single_statement_implicit_vertex
 dEQP-GLES3.functional.shaders.arrays.declaration.multiple_declarations_single_statement_implicit_fragment
+dEQP-GLES3.functional.shaders.arrays.declaration.empty_declaration_without_var_name_vertex
+dEQP-GLES3.functional.shaders.arrays.declaration.empty_declaration_without_var_name_fragment
 dEQP-GLES3.functional.shaders.arrays.length.float_vertex
 dEQP-GLES3.functional.shaders.arrays.length.float_fragment
 dEQP-GLES3.functional.shaders.arrays.length.int_vertex
@@ -3912,8 +3914,6 @@ dEQP-GLES3.functional.shaders.arrays.invalid.multidimensional_array_in_uniform_b
 dEQP-GLES3.functional.shaders.arrays.invalid.multidimensional_array_in_uniform_block_fragment
 dEQP-GLES3.functional.shaders.arrays.invalid.dynamic_expression_array_size_vertex
 dEQP-GLES3.functional.shaders.arrays.invalid.dynamic_expression_array_size_fragment
-dEQP-GLES3.functional.shaders.arrays.invalid.empty_declaration_without_var_name_vertex
-dEQP-GLES3.functional.shaders.arrays.invalid.empty_declaration_without_var_name_fragment
 dEQP-GLES3.functional.shaders.arrays.invalid.empty_declaration_with_var_name_vertex
 dEQP-GLES3.functional.shaders.arrays.invalid.empty_declaration_with_var_name_fragment
 dEQP-GLES3.functional.shaders.arrays.invalid.constructor_c_style1_vertex
