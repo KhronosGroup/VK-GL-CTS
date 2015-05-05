@@ -69,6 +69,14 @@ dEQP-GLES3.functional.shaders.builtin_functions.precision.atan.mediump_fragment.
 dEQP-GLES3.functional.shaders.builtin_functions.precision.atan.mediump_fragment.vec2
 dEQP-GLES3.functional.shaders.builtin_functions.precision.atan.mediump_fragment.vec3
 dEQP-GLES3.functional.shaders.builtin_functions.precision.atan.mediump_fragment.vec4
+dEQP-GLES3.functional.shaders.builtin_functions.precision.cos.mediump_vertex.scalar
+dEQP-GLES3.functional.shaders.builtin_functions.precision.cos.mediump_vertex.vec2
+dEQP-GLES3.functional.shaders.builtin_functions.precision.cos.mediump_vertex.vec3
+dEQP-GLES3.functional.shaders.builtin_functions.precision.cos.mediump_vertex.vec4
+dEQP-GLES3.functional.shaders.builtin_functions.precision.cos.mediump_fragment.scalar
+dEQP-GLES3.functional.shaders.builtin_functions.precision.cos.mediump_fragment.vec2
+dEQP-GLES3.functional.shaders.builtin_functions.precision.cos.mediump_fragment.vec3
+dEQP-GLES3.functional.shaders.builtin_functions.precision.cos.mediump_fragment.vec4
 
 # Bug 19408572
 dEQP-GLES3.functional.shaders.builtin_functions.precision.reflect.*
