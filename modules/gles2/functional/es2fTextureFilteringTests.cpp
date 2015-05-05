@@ -301,11 +301,11 @@ Texture2DFilteringCase::IterateResult Texture2DFilteringCase::iterate (void)
 		tcu::LodPrecision		lodPrecision;
 		tcu::LookupPrecision	lookupPrecision;
 
-		lodPrecision.derivateBits		= 8;
-		lodPrecision.lodBits			= 6;
+		lodPrecision.derivateBits		= 7;
+		lodPrecision.lodBits			= 4;
 		lookupPrecision.colorThreshold	= tcu::computeFixedPointThreshold(colorBits) / refParams.colorScale;
-		lookupPrecision.coordBits		= tcu::IVec3(20,20,0);
-		lookupPrecision.uvwBits			= tcu::IVec3(7,7,0);
+		lookupPrecision.coordBits		= tcu::IVec3(9,9,0); // mediump interpolation
+		lookupPrecision.uvwBits			= tcu::IVec3(5,5,0);
 		lookupPrecision.colorMask		= getCompareMask(pixelFormat);
 
 		const bool isOk = verifyTextureResult(m_testCtx, rendered.getAccess(), curCase.texture->getRefTexture(),
@@ -590,8 +590,8 @@ TextureCubeFilteringCase::IterateResult TextureCubeFilteringCase::iterate (void)
 			lodPrecision.derivateBits		= 5;
 			lodPrecision.lodBits			= 3;
 			lookupPrecision.colorThreshold	= tcu::computeFixedPointThreshold(colorBits) / sampleParams.colorScale;
-			lookupPrecision.coordBits		= tcu::IVec3(10,10,10);
-			lookupPrecision.uvwBits			= tcu::IVec3(6,6,0);
+			lookupPrecision.coordBits		= tcu::IVec3(9,9,9); // mediump interpolation
+			lookupPrecision.uvwBits			= tcu::IVec3(5,5,0);
 			lookupPrecision.colorMask		= getCompareMask(pixelFormat);
 
 			const bool isOk = verifyTextureResult(m_testCtx, result.getAccess(), curCase.texture->getRefTexture(),
