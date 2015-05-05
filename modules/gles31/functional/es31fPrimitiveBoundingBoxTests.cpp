@@ -1837,12 +1837,12 @@ void LineRenderCase::verifyRenderResult (const IterationConfig& config)
 	// scan rows
 	for (int y = de::max(verificationArea.y(), viewportPatternArea.y()); y < de::min(verificationArea.w(), viewportPatternArea.w()); ++y)
 	{
-		const deUint8 result = !scanRow(viewportSurface.getAccess(),
-										y,
-										verificationArea.x(),
-										verificationArea.z(),
-										expectedVerticalLines,
-										messageLimitCounter);
+		const deUint8 result = scanRow(viewportSurface.getAccess(),
+									   y,
+									   verificationArea.x(),
+									   verificationArea.z(),
+									   expectedVerticalLines,
+									   messageLimitCounter);
 
 		if ((result & SCANRESULT_NUM_LINES_OK_BIT) == 0)
 			anyError = true;
@@ -1861,12 +1861,12 @@ void LineRenderCase::verifyRenderResult (const IterationConfig& config)
 	// scan columns
 	for (int x = de::max(verificationArea.x(), viewportPatternArea.x()); x < de::min(verificationArea.z(), viewportPatternArea.z()); ++x)
 	{
-		const deUint8 result = !scanColumn(viewportSurface.getAccess(),
-										   x,
-										   verificationArea.y(),
-										   verificationArea.w(),
-										   expectedHorizontalLines,
-										   messageLimitCounter);
+		const deUint8 result = scanColumn(viewportSurface.getAccess(),
+										  x,
+										  verificationArea.y(),
+										  verificationArea.w(),
+										  expectedHorizontalLines,
+										  messageLimitCounter);
 
 		if ((result & SCANRESULT_NUM_LINES_OK_BIT) == 0)
 			anyError = true;
