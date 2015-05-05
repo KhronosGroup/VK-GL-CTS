@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos EGL API description (egl.xml) revision 28861.
+ * Generated from Khronos EGL API description (egl.xml) revision 31042.
  */
 
 eglw::EGLBoolean CallLogWrapper::eglBindAPI (eglw::EGLenum api)
@@ -69,7 +69,7 @@ eglw::EGLContext CallLogWrapper::eglCreateContext (eglw::EGLDisplay dpy, eglw::E
 	return returnValue;
 }
 
-eglw::EGLImage CallLogWrapper::eglCreateImage (eglw::EGLDisplay dpy, eglw::EGLContext ctx, eglw::EGLenum target, eglw::EGLClientBuffer buffer, const eglw::EGLint *attrib_list)
+eglw::EGLImage CallLogWrapper::eglCreateImage (eglw::EGLDisplay dpy, eglw::EGLContext ctx, eglw::EGLenum target, eglw::EGLClientBuffer buffer, const eglw::EGLAttrib *attrib_list)
 {
 	if (m_enableLog)
 		m_log << TestLog::Message << "eglCreateImage(" << dpy << ", " << ctx << ", " << toHex(target) << ", " << toHex(buffer) << ", " << attrib_list << ");" << TestLog::EndMessage;

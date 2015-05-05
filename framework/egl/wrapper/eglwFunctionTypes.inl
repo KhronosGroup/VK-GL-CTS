@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos EGL API description (egl.xml) revision 28861.
+ * Generated from Khronos EGL API description (egl.xml) revision 31042.
  */
 typedef EGLW_APICALL EGLBoolean									(EGLW_APIENTRY* eglBindAPIFunc)							(EGLenum api);
 typedef EGLW_APICALL EGLBoolean									(EGLW_APIENTRY* eglBindTexImageFunc)					(EGLDisplay dpy, EGLSurface surface, EGLint buffer);
@@ -10,7 +10,7 @@ typedef EGLW_APICALL EGLint										(EGLW_APIENTRY* eglClientWaitSyncFunc)					
 typedef EGLW_APICALL EGLint										(EGLW_APIENTRY* eglClientWaitSyncKHRFunc)				(EGLDisplay dpy, EGLSyncKHR sync, EGLint flags, EGLTimeKHR timeout);
 typedef EGLW_APICALL EGLBoolean									(EGLW_APIENTRY* eglCopyBuffersFunc)						(EGLDisplay dpy, EGLSurface surface, EGLNativePixmapType target);
 typedef EGLW_APICALL EGLContext									(EGLW_APIENTRY* eglCreateContextFunc)					(EGLDisplay dpy, EGLConfig config, EGLContext share_context, const EGLint *attrib_list);
-typedef EGLW_APICALL EGLImage									(EGLW_APIENTRY* eglCreateImageFunc)						(EGLDisplay dpy, EGLContext ctx, EGLenum target, EGLClientBuffer buffer, const EGLint *attrib_list);
+typedef EGLW_APICALL EGLImage									(EGLW_APIENTRY* eglCreateImageFunc)						(EGLDisplay dpy, EGLContext ctx, EGLenum target, EGLClientBuffer buffer, const EGLAttrib *attrib_list);
 typedef EGLW_APICALL EGLImageKHR								(EGLW_APIENTRY* eglCreateImageKHRFunc)					(EGLDisplay dpy, EGLContext ctx, EGLenum target, EGLClientBuffer buffer, const EGLint *attrib_list);
 typedef EGLW_APICALL EGLSurface									(EGLW_APIENTRY* eglCreatePbufferFromClientBufferFunc)	(EGLDisplay dpy, EGLenum buftype, EGLClientBuffer buffer, EGLConfig config, const EGLint *attrib_list);
 typedef EGLW_APICALL EGLSurface									(EGLW_APIENTRY* eglCreatePbufferSurfaceFunc)			(EGLDisplay dpy, EGLConfig config, const EGLint *attrib_list);
