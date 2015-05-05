@@ -392,6 +392,11 @@ static bool surfaceType (const eglu::CandidateConfig& c)
 	return (c.surfaceType() & Type) == Type;
 }
 
+static bool isConformant (const eglu::CandidateConfig& c)
+{
+	return c.get(EGL_CONFIG_CAVEAT) != EGL_NON_CONFORMANT_CONFIG;
+}
+
 void getDefaultRenderFilterLists (vector<RenderFilterList>& filterLists, const eglu::FilterList& baseFilters)
 {
 	static const struct
@@ -428,7 +433,8 @@ void getDefaultRenderFilterLists (vector<RenderFilterList>& filterLists, const e
 
 			filters << baseFilters
 					<< s_colorRules[colorNdx].filter
-					<< s_surfaceRules[surfaceNdx].filter;
+					<< s_surfaceRules[surfaceNdx].filter
+					<< isConformant;
 
 			filterLists.push_back(filters);
 		}
@@ -443,7 +449,8 @@ void getDefaultRenderFilterLists (vector<RenderFilterList>& filterLists, const e
 				<< notColorBits<8, 8, 8, 0>
 				<< notColorBits<4, 4, 4, 4>
 				<< notColorBits<5, 5, 5, 1>
-				<< notColorBits<8, 8, 8, 8>;
+				<< notColorBits<8, 8, 8, 8>
+				<< isConformant;
 
 		filterLists.push_back(filters);
 	}
