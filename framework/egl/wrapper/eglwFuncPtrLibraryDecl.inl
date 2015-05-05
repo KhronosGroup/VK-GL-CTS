@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos EGL API description (egl.xml) revision 28861.
+ * Generated from Khronos EGL API description (egl.xml) revision 31042.
  */
 EGLBoolean									bindAPI							(EGLenum api) const;
 EGLBoolean									bindTexImage					(EGLDisplay dpy, EGLSurface surface, EGLint buffer) const;
@@ -10,7 +10,7 @@ EGLint										clientWaitSync					(EGLDisplay dpy, EGLSync sync, EGLint flags, 
 EGLint										clientWaitSyncKHR				(EGLDisplay dpy, EGLSyncKHR sync, EGLint flags, EGLTimeKHR timeout) const;
 EGLBoolean									copyBuffers						(EGLDisplay dpy, EGLSurface surface, EGLNativePixmapType target) const;
 EGLContext									createContext					(EGLDisplay dpy, EGLConfig config, EGLContext share_context, const EGLint *attrib_list) const;
-EGLImage									createImage						(EGLDisplay dpy, EGLContext ctx, EGLenum target, EGLClientBuffer buffer, const EGLint *attrib_list) const;
+EGLImage									createImage						(EGLDisplay dpy, EGLContext ctx, EGLenum target, EGLClientBuffer buffer, const EGLAttrib *attrib_list) const;
 EGLImageKHR									createImageKHR					(EGLDisplay dpy, EGLContext ctx, EGLenum target, EGLClientBuffer buffer, const EGLint *attrib_list) const;
 EGLSurface									createPbufferFromClientBuffer	(EGLDisplay dpy, EGLenum buftype, EGLClientBuffer buffer, EGLConfig config, const EGLint *attrib_list) const;
 EGLSurface									createPbufferSurface			(EGLDisplay dpy, EGLConfig config, const EGLint *attrib_list) const;

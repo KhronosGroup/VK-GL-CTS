@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos EGL API description (egl.xml) revision 28861.
+ * Generated from Khronos EGL API description (egl.xml) revision 31042.
  */
 
 EGLBoolean FuncPtrLibrary::bindAPI (EGLenum api) const
@@ -39,7 +39,7 @@ EGLContext FuncPtrLibrary::createContext (EGLDisplay dpy, EGLConfig config, EGLC
 	return m_egl.createContext(dpy, config, share_context, attrib_list);
 }
 
-EGLImage FuncPtrLibrary::createImage (EGLDisplay dpy, EGLContext ctx, EGLenum target, EGLClientBuffer buffer, const EGLint *attrib_list) const
+EGLImage FuncPtrLibrary::createImage (EGLDisplay dpy, EGLContext ctx, EGLenum target, EGLClientBuffer buffer, const EGLAttrib *attrib_list) const
 {
 	return m_egl.createImage(dpy, ctx, target, buffer, attrib_list);
 }

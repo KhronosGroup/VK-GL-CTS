@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos EGL API description (egl.xml) revision 28861.
+ * Generated from Khronos EGL API description (egl.xml) revision 31042.
  */
 #define EGL_PBUFFER_BIT										0x0001
 #define EGL_PIXMAP_BIT										0x0002
@@ -235,3 +235,28 @@
 #define EGL_LOSE_CONTEXT_ON_RESET_EXT						0x31BF
 #define EGL_PLATFORM_X11_EXT								0x31D5
 #define EGL_PLATFORM_X11_SCREEN_EXT							0x31D6
+#define EGL_YUV_BUFFER_EXT									0x3300
+#define EGL_YUV_ORDER_EXT									0x3301
+#define EGL_YUV_ORDER_YUV_EXT								0x3302
+#define EGL_YUV_ORDER_YVU_EXT								0x3303
+#define EGL_YUV_ORDER_YUYV_EXT								0x3304
+#define EGL_YUV_ORDER_UYVY_EXT								0x3305
+#define EGL_YUV_ORDER_YVYU_EXT								0x3306
+#define EGL_YUV_ORDER_VYUY_EXT								0x3307
+#define EGL_YUV_ORDER_AYUV_EXT								0x3308
+#define EGL_YUV_CSC_STANDARD_EXT							0x330A
+#define EGL_YUV_CSC_STANDARD_601_EXT						0x330B
+#define EGL_YUV_CSC_STANDARD_709_EXT						0x330C
+#define EGL_YUV_CSC_STANDARD_2020_EXT						0x330D
+#define EGL_YUV_NUMBER_OF_PLANES_EXT						0x3311
+#define EGL_YUV_SUBSAMPLE_EXT								0x3312
+#define EGL_YUV_SUBSAMPLE_4_2_0_EXT							0x3313
+#define EGL_YUV_SUBSAMPLE_4_2_2_EXT							0x3314
+#define EGL_YUV_SUBSAMPLE_4_4_4_EXT							0x3315
+#define EGL_YUV_DEPTH_RANGE_EXT								0x3317
+#define EGL_YUV_DEPTH_RANGE_LIMITED_EXT						0x3318
+#define EGL_YUV_DEPTH_RANGE_FULL_EXT						0x3319
+#define EGL_YUV_PLANE_BPP_EXT								0x331A
+#define EGL_YUV_PLANE_BPP_0_EXT								0x331B
+#define EGL_YUV_PLANE_BPP_8_EXT								0x331C
+#define EGL_YUV_PLANE_BPP_10_EXT							0x331D
