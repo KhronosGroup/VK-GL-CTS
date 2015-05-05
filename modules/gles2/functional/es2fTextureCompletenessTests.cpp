@@ -43,8 +43,6 @@
 
 #include "glw.h"
 
-#include <cstdlib>
-
 namespace deqp
 {
 namespace gles2
@@ -262,6 +260,12 @@ Incomplete2DSizeCase::Incomplete2DSizeCase (tcu::TestContext& testCtx, glu::Rend
 
 void Incomplete2DSizeCase::createTexture (void)
 {
+	static const char* const s_relaxingExtensions[] =
+	{
+		"GL_OES_texture_npot",
+		"GL_NV_texture_npot_2D_mipmap",
+	};
+
 	tcu::TextureFormat		fmt				= glu::mapGLTransferFormat(GL_RGBA, GL_UNSIGNED_BYTE);
 	tcu::TextureLevel		levelData		(fmt);
 	TestLog&				log				= m_testCtx.getLog();
@@ -291,11 +295,18 @@ void Incomplete2DSizeCase::createTexture (void)
 
 	GLU_CHECK_MSG("Set texturing state");
 
-	const char* extension = "GL_NV_texture_npot_2D_mipmap";
-	if (isExtensionSupported(m_ctxInfo, extension) && !deIsPowerOfTwo32(m_size.x()) && !deIsPowerOfTwo32(m_size.y()))
+	// If size not allowed in core, search for relaxing extensions
+	if (!deIsPowerOfTwo32(m_size.x()) && !deIsPowerOfTwo32(m_size.y()))
 	{
-		log << TestLog::Message << extension << " supported, assuming completeness test to pass." << TestLog::EndMessage;
-		m_compareColor = RGBA(0,0,255,255);
+		for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(s_relaxingExtensions); ++ndx)
+		{
+			if (isExtensionSupported(m_ctxInfo, s_relaxingExtensions[ndx]))
+			{
+				log << TestLog::Message << s_relaxingExtensions[ndx] << " supported, assuming completeness test to pass." << TestLog::EndMessage;
+				m_compareColor = RGBA(0,0,255,255);
+				break;
+			}
+		}
 	}
 }
 
