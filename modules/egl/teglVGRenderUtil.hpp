@@ -36,6 +36,7 @@ namespace vg
 
 void	clear		(int x, int y, int width, int height, const tcu::Vec4& color);
 void	readPixels	(tcu::Surface& dst, int x, int y, int width, int height);
+void	finish		(void);
 
 } // vg
 } // egl

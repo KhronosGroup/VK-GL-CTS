@@ -120,6 +120,19 @@ static void renderClear (EGLint api, const ApiFunctions& func, const ClearOp& cl
 	}
 }
 
+static void finish (EGLint api, const ApiFunctions& func)
+{
+	switch (api)
+	{
+		case EGL_OPENGL_ES_BIT:			gles1::finish();		break;
+		case EGL_OPENGL_ES2_BIT:		gles2::finish(func.gl);	break;
+		case EGL_OPENGL_ES3_BIT_KHR:	gles2::finish(func.gl);	break;
+		case EGL_OPENVG_BIT:			vg::finish();			break;
+		default:
+			DE_ASSERT(DE_FALSE);
+	}
+}
+
 static void readPixels (EGLint api, const ApiFunctions& func, tcu::Surface& dst)
 {
 	switch (api)
@@ -185,6 +198,7 @@ void SingleThreadColorClearCase::executeForContexts (EGLDisplay display, EGLSurf
 		EGLU_CHECK_MSG(egl, "eglMakeCurrent");
 
 		renderClear(api, funcs, clear);
+		finish(api, funcs);
 		clears.push_back(clear);
 	}
 
@@ -206,6 +220,8 @@ void SingleThreadColorClearCase::executeForContexts (EGLDisplay display, EGLSurf
 				renderClear(api, funcs, clear);
 				clears.push_back(clear);
 			}
+
+			finish(api, funcs);
 		}
 	}
 
@@ -286,6 +302,7 @@ public:
 			for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(packetIter->clears); ndx++)
 				renderClear(m_api, m_funcs, packetIter->clears[ndx]);
 
+			finish(m_api, m_funcs);
 			// Release context.
 			m_egl.makeCurrent(m_display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
 

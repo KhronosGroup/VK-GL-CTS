@@ -36,6 +36,7 @@ namespace gles1
 
 void	clear		(int x, int y, int width, int height, const tcu::Vec4& color);
 void	readPixels	(tcu::Surface& dst, int x, int y, int width, int height);
+void	finish		(void);
 
 } // gles1
 } // egl
