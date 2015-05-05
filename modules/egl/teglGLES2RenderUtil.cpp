@@ -47,6 +47,11 @@ void readPixels (const glw::Functions& gl, tcu::Surface& dst, int x, int y, int 
 	gl.readPixels(x, y, width, height, GL_RGBA, GL_UNSIGNED_BYTE, dst.getAccess().getDataPtr());
 }
 
+void finish (const glw::Functions& gl)
+{
+	gl.finish();
+}
+
 } // gles2
 } // egl
 } // deqp

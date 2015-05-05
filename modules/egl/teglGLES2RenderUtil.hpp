@@ -41,6 +41,7 @@ namespace gles2
 
 void	clear		(const glw::Functions& gl, int x, int y, int width, int height, const tcu::Vec4& color);
 void	readPixels	(const glw::Functions& gl, tcu::Surface& dst, int x, int y, int width, int height);
+void	finish		(const glw::Functions& gl);
 
 } // gles2
 } // egl
