@@ -55,6 +55,7 @@ public:
 	int					getMaxExp		(void) const { return m_maxExp; }
 	double				getMaxValue		(void) const { return m_maxValue; }
 	int					getFractionBits	(void) const { return m_fractionBits; }
+	YesNoMaybe			hasInf			(void) const { return m_hasInf; }
 	YesNoMaybe			hasSubnormal	(void) const { return m_hasSubnormal; }
 
 	double				ulp				(double x, double count = 1.0) const;
