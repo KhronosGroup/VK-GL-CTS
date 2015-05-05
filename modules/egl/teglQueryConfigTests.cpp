@@ -291,7 +291,12 @@ public:
 
 	void checkColorBufferType (EGLint value)
 	{
-		if (!(value == EGL_RGB_BUFFER || value == EGL_LUMINANCE_BUFFER))
+		const bool isRGBBuffer			= value == EGL_RGB_BUFFER;
+		const bool isLuminanceBuffer	= value == EGL_LUMINANCE_BUFFER;
+		const bool isYuvBuffer			= value == EGL_YUV_BUFFER_EXT;
+		const bool hasYuvSupport		= eglu::hasExtension(m_eglTestCtx.getLibrary(), m_display, "EGL_EXT_yuv_surface");
+
+		if (!(isRGBBuffer || isLuminanceBuffer || (isYuvBuffer && hasYuvSupport)))
 		{
 			TestLog&	log	= m_testCtx.getLog();
 
