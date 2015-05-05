@@ -53,6 +53,11 @@ void readPixels (tcu::Surface& dst, int x, int y, int width, int height)
 	glReadPixels(x, y, width, height, GL_RGBA, GL_UNSIGNED_BYTE, dst.getAccess().getDataPtr());
 }
 
+void finish (void)
+{
+	glFinish();
+}
+
 #else // DEQP_SUPPORT_GLES1
 
 void clear (int x, int y, int width, int height, const tcu::Vec4& color)
@@ -66,6 +71,11 @@ void readPixels (tcu::Surface& dst, int x, int y, int width, int height)
 {
 	DE_UNREF(x && y && width && height);
 	DE_UNREF(dst);
+	TCU_THROW(NotSupportedError, "OpenGL ES 1.x is not supported");
+}
+
+void finish (void)
+{
 	TCU_THROW(NotSupportedError, "OpenGL ES 1.x is not supported");
 }
 
