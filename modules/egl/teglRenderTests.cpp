@@ -637,6 +637,20 @@ static void readPixels (const glw::Functions& gl, EGLint api, tcu::Surface& dst)
 	}
 }
 
+static void finish (const glw::Functions& gl, EGLint api)
+{
+	switch (api)
+	{
+		case EGL_OPENGL_ES2_BIT:
+		case EGL_OPENGL_ES3_BIT_KHR:
+			gl.finish();
+			break;
+
+		default:
+			throw tcu::NotSupportedError("Unsupported API");
+	}
+}
+
 tcu::PixelFormat getPixelFormat (const Library& egl, EGLDisplay display, EGLConfig config)
 {
 	tcu::PixelFormat fmt;
@@ -735,6 +749,7 @@ void SingleThreadRenderCase::executeForContexts (EGLDisplay display, EGLSurface 
 		EGLU_CHECK_CALL(egl, makeCurrent(display, surface, surface, context));
 
 		clear(m_gl, api, CLEAR_COLOR, CLEAR_DEPTH, CLEAR_STENCIL);
+		finish(m_gl, api);
 	}
 
 	// Render.
@@ -752,6 +767,8 @@ void SingleThreadRenderCase::executeForContexts (EGLDisplay display, EGLSurface 
 				const DrawPrimitiveOp& drawOp = drawOps[iterNdx*numContexts*drawsPerCtx + ctxNdx*drawsPerCtx + drawNdx];
 				draw(m_gl, api, *programs[ctxNdx], drawOp);
 			}
+
+			finish(m_gl, api);
 		}
 	}
 
@@ -842,6 +859,8 @@ public:
 			// Execute rendering.
 			for (int ndx = 0; ndx < packetIter->numOps; ndx++)
 				draw(m_gl, m_api, m_program, packetIter->drawOps[ndx]);
+
+			finish(m_gl, m_api);
 
 			// Release context.
 			EGLU_CHECK_CALL(m_egl, makeCurrent(m_display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT));
@@ -961,6 +980,7 @@ void MultiThreadRenderCase::executeForContexts (EGLDisplay display, EGLSurface s
 		EGLU_CHECK_CALL(egl, makeCurrent(display, surface, surface, context));
 
 		clear(m_gl, api, CLEAR_COLOR, CLEAR_DEPTH, CLEAR_STENCIL);
+		finish(m_gl, api);
 
 		// Release context
 		EGLU_CHECK_CALL(egl, makeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT));
