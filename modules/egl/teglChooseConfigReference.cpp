@@ -105,6 +105,7 @@ private:
 		{
 			case EGL_RGB_BUFFER:			return 0;
 			case EGL_LUMINANCE_BUFFER:		return 1;
+			case EGL_YUV_BUFFER_EXT:		return 2;
 			default:
 				TCU_THROW(TestError, (std::string("Unknown color buffer type: ") + eglu::getColorBufferTypeStr(type).toString()).c_str());
 		}
@@ -141,6 +142,10 @@ private:
 
 				return (a.m_info.luminanceSize * mask[0] + a.m_info.alphaSize * mask[1]) > (b.m_info.luminanceSize * mask[0] + b.m_info.alphaSize * mask[1]);
 			}
+
+			case EGL_YUV_BUFFER_EXT:
+				// \todo [mika 2015-05-05] Sort YUV configs correctly. Currently all YUV configs are non-conformant and ordering can be relaxed.
+				return true;
 
 			default:
 				DE_ASSERT(DE_FALSE);
