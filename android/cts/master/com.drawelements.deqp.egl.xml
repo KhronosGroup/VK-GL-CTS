@@ -4892,6 +4892,12 @@
 					<Test name="egl_ext_device_base">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
+					<Test name="egl_ext_device_enumeration">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
+					<Test name="egl_ext_device_query">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
 					<Test name="egl_ext_output_base">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
@@ -4910,6 +4916,9 @@
 					<Test name="egl_khr_cl_event2">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
+					<Test name="egl_khr_fence_sync">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
 					<Test name="egl_khr_image">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
@@ -4920,6 +4929,9 @@
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
 					<Test name="egl_khr_lock_surface3">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
+					<Test name="egl_khr_partial_update">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
 					<Test name="egl_khr_reusable_sync">
@@ -4940,10 +4952,16 @@
 					<Test name="egl_khr_stream_producer_eglsurface">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
+					<Test name="egl_khr_swap_buffers_with_damage">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
 					<Test name="egl_khr_wait_sync">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
 					<Test name="egl_mesa_drm_image">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
+					<Test name="egl_mesa_image_dma_buf_export">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
 					<Test name="egl_nok_swap_region">
@@ -5072,6 +5090,9 @@
 					<Test name="gl_angle_translated_shader_source">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
+					<Test name="gl_ext_base_instance">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
 					<Test name="gl_ext_copy_image">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
@@ -5090,6 +5111,9 @@
 					<Test name="gl_ext_draw_buffers_indexed">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
+					<Test name="gl_ext_draw_elements_base_vertex">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
 					<Test name="gl_ext_draw_instanced">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
@@ -5097,6 +5121,9 @@
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
 					<Test name="gl_ext_instanced_arrays">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
+					<Test name="gl_ext_multi_draw_indirect">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
 					<Test name="gl_ext_multiview_draw_buffers">
@@ -5135,7 +5162,13 @@
 					<Test name="gl_khr_robustness">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
+					<Test name="gl_nv_bindless_texture">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
 					<Test name="gl_nv_blend_equation_advanced">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
+					<Test name="gl_nv_conditional_render">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
 					<Test name="gl_nv_copy_buffer">
@@ -5165,19 +5198,52 @@
 					<Test name="gl_nv_non_square_matrices">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
+					<Test name="gl_nv_path_rendering">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
 					<Test name="gl_nv_read_buffer">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
+					<Test name="gl_nv_viewport_array">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
+					<Test name="gl_oes_copy_image">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
+					<Test name="gl_oes_draw_buffers_indexed">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
+					<Test name="gl_oes_draw_elements_base_vertex">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
+					<Test name="gl_oes_geometry_shader">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
 					<Test name="gl_oes_get_program_binary">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
+					<Test name="gl_oes_primitive_bounding_box">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
 					<Test name="gl_oes_sample_shading">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
+					<Test name="gl_oes_tessellation_shader">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
 					<Test name="gl_oes_texture_3d">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
+					<Test name="gl_oes_texture_border_clamp">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
+					<Test name="gl_oes_texture_buffer">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
 					<Test name="gl_oes_texture_storage_multisample_2d_array">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
+					<Test name="gl_oes_texture_view">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
 					<Test name="gl_qcom_alpha_test">
