@@ -330,6 +330,9 @@ void initializeStencilRbo(const glw::Functions& gl, GLuint rbo, Texture2D& ref)
 		0x0F0CFDC7u,
 	};
 
+	const deUint32 numStencilBits	= tcu::getTextureFormatBitDepth(tcu::getEffectiveDepthStencilTextureFormat(ref.getLevel(0).getFormat(), tcu::Sampler::MODE_STENCIL)).x();
+	const deUint32 stencilMask		= deBitMask32(0, numStencilBits);
+
 	GLU_CHECK_GLW_CALL(gl, framebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT,
 												   GL_RENDERBUFFER, rbo));
 	GLU_CHECK_GLW_CALL(gl, clearStencil(0));
@@ -340,6 +343,7 @@ void initializeStencilRbo(const glw::Functions& gl, GLuint rbo, Texture2D& ref)
 	GLU_CHECK_GLW_CALL(gl, enable(GL_SCISSOR_TEST));
 	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(stencilValues); ++ndx)
 	{
+		const deUint32		stencil	= stencilValues[ndx] & stencilMask;
 		const tcu::IVec2	size	= tcu::IVec2((int)((DE_LENGTH_OF_ARRAY(stencilValues) - ndx) * (ref.getWidth() / float(DE_LENGTH_OF_ARRAY(stencilValues)))),
 												 (int)((DE_LENGTH_OF_ARRAY(stencilValues) - ndx) * (ref.getHeight() / float(DE_LENGTH_OF_ARRAY(stencilValues) + 4)))); // not symmetric
 
@@ -347,10 +351,10 @@ void initializeStencilRbo(const glw::Functions& gl, GLuint rbo, Texture2D& ref)
 			break;
 
 		GLU_CHECK_GLW_CALL(gl, scissor(0, 0, size.x(), size.y()));
-		GLU_CHECK_GLW_CALL(gl, clearStencil(stencilValues[ndx]));
+		GLU_CHECK_GLW_CALL(gl, clearStencil(stencil));
 		GLU_CHECK_GLW_CALL(gl, clear(GL_STENCIL_BUFFER_BIT));
 
-		tcu::clearStencil(tcu::getSubregion(ref.getLevel(0), 0, 0, size.x(), size.y()), stencilValues[ndx]);
+		tcu::clearStencil(tcu::getSubregion(ref.getLevel(0), 0, 0, size.x(), size.y()), stencil);
 	}
 
 	GLU_CHECK_GLW_CALL(gl, disable(GL_SCISSOR_TEST));
