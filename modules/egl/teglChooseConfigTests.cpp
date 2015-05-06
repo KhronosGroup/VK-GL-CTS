@@ -82,6 +82,27 @@ void logConfigAttrib (TestLog& log, EGLenum attrib, EGLint value)
 	log << TestLog::Message << "  " << attribStr << ": " << eglu::getConfigAttribValueStr(attrib, value) << TestLog::EndMessage;
 }
 
+bool configListEqual (const Library& egl, const EGLDisplay& display, const vector<EGLConfig>& as, const vector<EGLConfig>& bs)
+{
+	if (as.size() != bs.size())
+		return false;
+
+	for (int configNdx = 0; configNdx < (int)as.size(); configNdx++)
+	{
+		if (as[configNdx] != bs[configNdx])
+		{
+			// Allow lists to differ if both configs are non-conformant
+			const EGLint aCaveat = eglu::getConfigAttribInt(egl, display, as[configNdx], EGL_CONFIG_CAVEAT);
+			const EGLint bCaveat = eglu::getConfigAttribInt(egl, display, bs[configNdx], EGL_CONFIG_CAVEAT);
+
+			if (aCaveat != EGL_NON_CONFORMANT_CONFIG || bCaveat != EGL_NON_CONFORMANT_CONFIG)
+				return false;
+		}
+	}
+
+	return true;
+}
+
 } // anonymous
 
 class ChooseConfigCase : public TestCase
@@ -174,7 +195,7 @@ protected:
 		log << TestLog::Message << "Got:\n  " << configListToString(egl, m_display, resultConfigs) << TestLog::EndMessage;
 
 		bool isSetMatch		= (set<EGLConfig>(resultConfigs.begin(), resultConfigs.end()) == set<EGLConfig>(referenceConfigs.begin(), referenceConfigs.end()));
-		bool isExactMatch	= (resultConfigs == referenceConfigs);
+		bool isExactMatch	= configListEqual(egl, m_display, resultConfigs, referenceConfigs);
 		bool isMatch		= isSetMatch && (checkOrder ? isExactMatch : true);
 
 		if (isMatch)
