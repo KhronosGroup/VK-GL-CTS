@@ -5986,6 +5986,26 @@ group single_statement_multiple_declarations "Testing multiple arrays of arrays 
 
 end # single_statement_multiple_declarations
 
+group declaration "Array declaration"
+
+	case empty_declaration_without_var_name
+		version 310 es
+		desc "Testing that compiler doesn't allow only an empty declaration"
+
+		both ""
+			#version 310 es
+			precision mediump float;
+			${DECLARATIONS}
+
+			void main ()
+			{
+				float[][];
+				${OUTPUT}
+			}
+		""
+	end # empty_declaration_without_var_name
+
+end # declaration
 
 group invalid "Invalid functions"
 
@@ -6007,24 +6027,6 @@ group invalid "Invalid functions"
 			}
 		""
 	end # dynamic_expression_array_size
-
-	case empty_declaration_without_var_name
-		version 310 es
-		desc "Testing that compiler doesn't allow only an empty declaration"
-		expect compile_or_link_fail
-
-		both ""
-			#version 310 es
-			precision mediump float;
-			${DECLARATIONS}
-
-			void main ()
-			{
-				float[][];
-				${POSITION_FRAG_COLOR} = vec4(1.0);
-			}
-		""
-	end # empty_declaration_without_var_name
 
 	case empty_declaration_with_var_name
 		version 310 es
