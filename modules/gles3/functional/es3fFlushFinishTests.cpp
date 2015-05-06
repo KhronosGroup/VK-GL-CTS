@@ -32,6 +32,7 @@
 
 #include "tcuTestLog.hpp"
 #include "tcuRenderTarget.hpp"
+#include "tcuCPUWarmup.hpp"
 
 #include "glwEnums.hpp"
 #include "glwFunctions.hpp"
@@ -63,13 +64,15 @@ namespace
 enum
 {
 	MAX_VIEWPORT_SIZE		= 256,
-	MAX_SAMPLE_DURATION_US	= 200*1000,
-	WAIT_TIME_MS			= 150,
+	MAX_SAMPLE_DURATION_US	= 150*1000,
+	WAIT_TIME_MS			= 200,
 	MIN_DRAW_CALL_COUNT		= 10,
 	MAX_DRAW_CALL_COUNT		= 1<<20,
 	MAX_SHADER_ITER_COUNT	= 1<<10,
 	NUM_SAMPLES				= 50
 };
+
+DE_STATIC_ASSERT(MAX_SAMPLE_DURATION_US < 1000*WAIT_TIME_MS);
 
 const float		NO_CORR_COEF_THRESHOLD		= 0.1f;
 const float		FLUSH_COEF_THRESHOLD		= 0.2f;
@@ -492,8 +495,7 @@ FlushFinishCase::IterateResult FlushFinishCase::iterate (void)
 	vector<Sample>		samples		(NUM_SAMPLES);
 	CalibrationParams	params;
 
-	// Try to poke CPU into full speed. \todo [2013-12-26 pyry] Use more robust method.
-	busyWait(10);
+	tcu::warmupCPU();
 
 	setupRenderState();
 
