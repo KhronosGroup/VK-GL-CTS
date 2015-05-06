@@ -61,14 +61,14 @@ FloatFormat::FloatFormat (int			minExp,
 						  int			fractionBits,
 						  bool			exactPrecision,
 						  YesNoMaybe	hasSubnormal_,
-						  YesNoMaybe	hasInf,
-						  YesNoMaybe	hasNaN)
+						  YesNoMaybe	hasInf_,
+						  YesNoMaybe	hasNaN_)
 	: m_minExp			(minExp)
 	, m_maxExp			(maxExp)
 	, m_fractionBits	(fractionBits)
 	, m_hasSubnormal	(hasSubnormal_)
-	, m_hasInf			(hasInf)
-	, m_hasNaN			(hasNaN)
+	, m_hasInf			(hasInf_)
+	, m_hasNaN			(hasNaN_)
 	, m_exactPrecision	(exactPrecision)
 	, m_maxValue		(computeMaxValue(maxExp, fractionBits))
 {

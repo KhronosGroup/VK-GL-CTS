@@ -1987,16 +1987,23 @@ protected:
 		return ret;
 	}
 
-protected:
+	double		applyExact		(double x, double y) const { return x / y; }
 
-	double		applyExact	(double x, double y) const { return x / y; }
-
-	Interval	applyPoint	(const EvalContext&	ctx, double x, double y) const
+	Interval	applyPoint		(const EvalContext&	ctx, double x, double y) const
 	{
-		return FloatFunc2::applyPoint(ctx, x, y);
+		Interval ret = FloatFunc2::applyPoint(ctx, x, y);
+
+		if (!deIsInf(x) && !deIsInf(y) && y != 0.0)
+		{
+			const Interval dst = ctx.format.convert(ret);
+			if (dst.contains(-TCU_INFINITY)) ret |= -ctx.format.getMaxValue();
+			if (dst.contains(+TCU_INFINITY)) ret |= +ctx.format.getMaxValue();
+		}
+
+		return ret;
 	}
 
-	double		precision	(const EvalContext& ctx, double ret, double, double den) const
+	double		precision		(const EvalContext& ctx, double ret, double, double den) const
 	{
 		const FloatFormat&	fmt		= ctx.format;
 
@@ -2255,8 +2262,23 @@ protected:
 				return deLdExp(deAbs(arg), -12);
 			}
 		}
+		else if (ctx.floatPrecision == glu::PRECISION_MEDIUMP)
+		{
+			if (-DE_PI_DOUBLE <= arg && arg <= DE_PI_DOUBLE)
+			{
+				// from OpenCL half-float extension specification
+				return ctx.format.ulp(ret, 2.0);
+			}
+			else
+			{
+				// |x| * 2^-10, slightly larger than 2 ULP at x == pi
+				return deLdExp(deAbs(DE_PI_DOUBLE), -10);
+			}
+		}
 		else
 		{
+			DE_ASSERT(ctx.floatPrecision == glu::PRECISION_LOWP);
+
 			// from OpenCL half-float extension specification
 			return ctx.format.ulp(ret, 2.0);
 		}
@@ -2313,7 +2335,7 @@ protected:
 
 		if (ctx.floatPrecision == glu::PRECISION_HIGHP)
 		{
-			// Use OpenCL's precision
+			// Use OpenCL's fast relaxed math precision
 			return ctx.format.ulp(ret, m_precision);
 		}
 		else
@@ -2334,7 +2356,7 @@ protected:
 class ASin : public ArcTrigFunc
 {
 public:
-	ASin (void) : ArcTrigFunc("asin", deAsin, 4.0,
+	ASin (void) : ArcTrigFunc("asin", deAsin, 4096.0,
 							  Interval(-1.0, 1.0),
 							  Interval(-DE_PI_DOUBLE * 0.5, DE_PI_DOUBLE * 0.5)) {}
 };
@@ -2342,7 +2364,7 @@ public:
 class ACos : public ArcTrigFunc
 {
 public:
-	ACos (void) : ArcTrigFunc("acos", deAcos, 4.0,
+	ACos (void) : ArcTrigFunc("acos", deAcos, 4096.0,
 							  Interval(-1.0, 1.0),
 							  Interval(0.0, DE_PI_DOUBLE)) {}
 };
@@ -2350,7 +2372,7 @@ public:
 class ATan : public ArcTrigFunc
 {
 public:
-	ATan (void) : ArcTrigFunc("atan", deAtanOver, 5.0,
+	ATan (void) : ArcTrigFunc("atan", deAtanOver, 4096.0,
 							  Interval::unbounded(),
 							  Interval(-DE_PI_DOUBLE * 0.5, DE_PI_DOUBLE * 0.5)) {}
 };
@@ -2361,7 +2383,7 @@ public:
 				ATan2			(void) : CFloatFunc2 ("atan", deAtan2) {}
 
 protected:
-	Interval	innerExtrema	(const EvalContext&,
+	Interval	innerExtrema	(const EvalContext&		ctx,
 								 const Interval&		yi,
 								 const Interval& 		xi) const
 	{
@@ -2375,13 +2397,19 @@ protected:
 				ret |= Interval(-DE_PI_DOUBLE, DE_PI_DOUBLE);
 		}
 
+		if (ctx.format.hasInf() != YES && (!yi.isFinite() || !xi.isFinite()))
+		{
+			// Infinities may not be supported, allow anything, including NaN
+			ret |= TCU_NAN;
+		}
+
 		return ret;
 	}
 
 	double		precision		(const EvalContext& ctx, double ret, double, double) const
 	{
 		if (ctx.floatPrecision == glu::PRECISION_HIGHP)
-			return ctx.format.ulp(ret, 6.0);
+			return ctx.format.ulp(ret, 4096.0);
 		else
 			return ctx.format.ulp(ret, 2.0);
 	}
@@ -3131,7 +3159,7 @@ public:
 	}
 
 protected:
-	IRet	doApply				(const EvalContext&, const IArgs& iargs) const
+	IRet	doApply				(const EvalContext& ctx, const IArgs& iargs) const
 	{
 		Interval	fracIV;
 		Interval&	wholeIV		= const_cast<Interval&>(iargs.b);
@@ -3140,6 +3168,13 @@ protected:
 		TCU_INTERVAL_APPLY_MONOTONE1(fracIV, x, iargs.a, frac, frac = deModf(x, &intPart));
 		TCU_INTERVAL_APPLY_MONOTONE1(wholeIV, x, iargs.a, whole,
 									 deModf(x, &intPart); whole = intPart);
+
+		if ((ctx.format.hasInf() != YES) && !iargs.a.isFinite())
+		{
+			// Behavior on modf(Inf) not well-defined, allow anything as a fractional part
+			fracIV |= TCU_NAN;
+		}
+
 		return fracIV;
 	}
 
