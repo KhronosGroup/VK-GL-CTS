@@ -1786,16 +1786,10 @@
 					<Test name="gles2_texture_rgb8_read_pixels">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
-					<Test name="gles2_texture_rgb8_depth_buffer">
-						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-					</Test>
 					<Test name="gles2_texture_rgb565_texture">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
 					<Test name="gles2_texture_rgb565_read_pixels">
-						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-					</Test>
-					<Test name="gles2_texture_rgb565_depth_buffer">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
 					<Test name="gles2_texture_rgba8_texture">
@@ -1804,16 +1798,10 @@
 					<Test name="gles2_texture_rgba8_read_pixels">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
-					<Test name="gles2_texture_rgba8_depth_buffer">
-						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-					</Test>
 					<Test name="gles2_cubemap_positive_x_rgba_texture">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
 					<Test name="gles2_cubemap_positive_x_rgba_read_pixels">
-						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-					</Test>
-					<Test name="gles2_cubemap_positive_x_rgba_depth_buffer">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
 					<Test name="gles2_cubemap_positive_y_rgba_texture">
@@ -1822,16 +1810,10 @@
 					<Test name="gles2_cubemap_positive_y_rgba_read_pixels">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
-					<Test name="gles2_cubemap_positive_y_rgba_depth_buffer">
-						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-					</Test>
 					<Test name="gles2_cubemap_positive_z_rgba_texture">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
 					<Test name="gles2_cubemap_positive_z_rgba_read_pixels">
-						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-					</Test>
-					<Test name="gles2_cubemap_positive_z_rgba_depth_buffer">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
 					<Test name="gles2_cubemap_negative_x_rgba_texture">
@@ -1840,16 +1822,10 @@
 					<Test name="gles2_cubemap_negative_x_rgba_read_pixels">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
-					<Test name="gles2_cubemap_negative_x_rgba_depth_buffer">
-						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-					</Test>
 					<Test name="gles2_cubemap_negative_y_rgba_texture">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
 					<Test name="gles2_cubemap_negative_y_rgba_read_pixels">
-						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-					</Test>
-					<Test name="gles2_cubemap_negative_y_rgba_depth_buffer">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
 					<Test name="gles2_cubemap_negative_z_rgba_texture">
@@ -1858,16 +1834,10 @@
 					<Test name="gles2_cubemap_negative_z_rgba_read_pixels">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
-					<Test name="gles2_cubemap_negative_z_rgba_depth_buffer">
-						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-					</Test>
 					<Test name="gles2_cubemap_positive_x_rgb_texture">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
 					<Test name="gles2_cubemap_positive_x_rgb_read_pixels">
-						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-					</Test>
-					<Test name="gles2_cubemap_positive_x_rgb_depth_buffer">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
 					<Test name="gles2_cubemap_positive_y_rgb_texture">
@@ -1876,16 +1846,10 @@
 					<Test name="gles2_cubemap_positive_y_rgb_read_pixels">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
-					<Test name="gles2_cubemap_positive_y_rgb_depth_buffer">
-						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-					</Test>
 					<Test name="gles2_cubemap_positive_z_rgb_texture">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
 					<Test name="gles2_cubemap_positive_z_rgb_read_pixels">
-						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-					</Test>
-					<Test name="gles2_cubemap_positive_z_rgb_depth_buffer">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
 					<Test name="gles2_cubemap_negative_x_rgb_texture">
@@ -1894,25 +1858,16 @@
 					<Test name="gles2_cubemap_negative_x_rgb_read_pixels">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
-					<Test name="gles2_cubemap_negative_x_rgb_depth_buffer">
-						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-					</Test>
 					<Test name="gles2_cubemap_negative_y_rgb_texture">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
 					<Test name="gles2_cubemap_negative_y_rgb_read_pixels">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
-					<Test name="gles2_cubemap_negative_y_rgb_depth_buffer">
-						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-					</Test>
 					<Test name="gles2_cubemap_negative_z_rgb_texture">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
 					<Test name="gles2_cubemap_negative_z_rgb_read_pixels">
-						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-					</Test>
-					<Test name="gles2_cubemap_negative_z_rgb_depth_buffer">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
 				</TestCase>
@@ -1923,34 +1878,16 @@
 					<Test name="tex_rgb8_renderbuffer_clear_color">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
-					<Test name="tex_rgb8_renderbuffer_clear_depth">
-						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-					</Test>
-					<Test name="tex_rgb8_renderbuffer_clear_stencil">
-						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-					</Test>
 					<Test name="tex_rgb565_tex_subimage_rgb565">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
 					<Test name="tex_rgb565_renderbuffer_clear_color">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
-					<Test name="tex_rgb565_renderbuffer_clear_depth">
-						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-					</Test>
-					<Test name="tex_rgb565_renderbuffer_clear_stencil">
-						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-					</Test>
 					<Test name="tex_rgba8_tex_subimage_rgba8">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
 					<Test name="tex_rgba8_renderbuffer_clear_color">
-						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-					</Test>
-					<Test name="tex_rgba8_renderbuffer_clear_depth">
-						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-					</Test>
-					<Test name="tex_rgba8_renderbuffer_clear_stencil">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
 				</TestCase>
@@ -1961,16 +1898,10 @@
 					<Test name="gles2_texture_rgb8_read_pixels">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
-					<Test name="gles2_texture_rgb8_depth_buffer">
-						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-					</Test>
 					<Test name="gles2_texture_rgb565_texture">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
 					<Test name="gles2_texture_rgb565_read_pixels">
-						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-					</Test>
-					<Test name="gles2_texture_rgb565_depth_buffer">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
 					<Test name="gles2_texture_rgba8_texture">
@@ -1979,16 +1910,10 @@
 					<Test name="gles2_texture_rgba8_read_pixels">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
-					<Test name="gles2_texture_rgba8_depth_buffer">
-						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-					</Test>
 					<Test name="gles2_cubemap_positive_x_rgba8_texture">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
 					<Test name="gles2_cubemap_positive_x_rgba8_read_pixels">
-						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-					</Test>
-					<Test name="gles2_cubemap_positive_x_rgba8_depth_buffer">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
 					<Test name="gles2_cubemap_positive_y_rgba8_texture">
@@ -1997,16 +1922,10 @@
 					<Test name="gles2_cubemap_positive_y_rgba8_read_pixels">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
-					<Test name="gles2_cubemap_positive_y_rgba8_depth_buffer">
-						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-					</Test>
 					<Test name="gles2_cubemap_positive_z_rgba8_texture">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
 					<Test name="gles2_cubemap_positive_z_rgba8_read_pixels">
-						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-					</Test>
-					<Test name="gles2_cubemap_positive_z_rgba8_depth_buffer">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
 					<Test name="gles2_cubemap_negative_x_rgba8_texture">
@@ -2015,16 +1934,10 @@
 					<Test name="gles2_cubemap_negative_x_rgba8_read_pixels">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
-					<Test name="gles2_cubemap_negative_x_rgba8_depth_buffer">
-						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-					</Test>
 					<Test name="gles2_cubemap_negative_y_rgba8_texture">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
 					<Test name="gles2_cubemap_negative_y_rgba8_read_pixels">
-						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-					</Test>
-					<Test name="gles2_cubemap_negative_y_rgba8_depth_buffer">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
 					<Test name="gles2_cubemap_negative_z_rgba8_texture">
@@ -2033,16 +1946,10 @@
 					<Test name="gles2_cubemap_negative_z_rgba8_read_pixels">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
-					<Test name="gles2_cubemap_negative_z_rgba8_depth_buffer">
-						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-					</Test>
 					<Test name="gles2_cubemap_positive_x_rgb8_texture">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
 					<Test name="gles2_cubemap_positive_x_rgb8_read_pixels">
-						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-					</Test>
-					<Test name="gles2_cubemap_positive_x_rgb8_depth_buffer">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
 					<Test name="gles2_cubemap_positive_y_rgb8_texture">
@@ -2051,16 +1958,10 @@
 					<Test name="gles2_cubemap_positive_y_rgb8_read_pixels">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
-					<Test name="gles2_cubemap_positive_y_rgb8_depth_buffer">
-						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-					</Test>
 					<Test name="gles2_cubemap_positive_z_rgb8_texture">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
 					<Test name="gles2_cubemap_positive_z_rgb8_read_pixels">
-						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-					</Test>
-					<Test name="gles2_cubemap_positive_z_rgb8_depth_buffer">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
 					<Test name="gles2_cubemap_negative_x_rgb8_texture">
@@ -2069,25 +1970,16 @@
 					<Test name="gles2_cubemap_negative_x_rgb8_read_pixels">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
-					<Test name="gles2_cubemap_negative_x_rgb8_depth_buffer">
-						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-					</Test>
 					<Test name="gles2_cubemap_negative_y_rgb8_texture">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
 					<Test name="gles2_cubemap_negative_y_rgb8_read_pixels">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
-					<Test name="gles2_cubemap_negative_y_rgb8_depth_buffer">
-						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-					</Test>
 					<Test name="gles2_cubemap_negative_z_rgb8_texture">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
 					<Test name="gles2_cubemap_negative_z_rgb8_read_pixels">
-						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-					</Test>
-					<Test name="gles2_cubemap_negative_z_rgb8_depth_buffer">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
 				</TestCase>
