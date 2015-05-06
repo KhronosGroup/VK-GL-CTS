@@ -201,6 +201,7 @@ public:
 	class RenderTextureCubemap			: public Render { public: bool invokeGLES2 (GLES2ImageApi& api, MovePtr<UniqueImage>& image, tcu::Texture2D& ref) const; };
 	class RenderReadPixelsRenderbuffer	: public Render { public: bool invokeGLES2 (GLES2ImageApi& api, MovePtr<UniqueImage>& image, tcu::Texture2D& ref) const; };
 	class RenderDepthbuffer				: public Render { public: bool invokeGLES2 (GLES2ImageApi& api, MovePtr<UniqueImage>& image, tcu::Texture2D& ref) const; };
+	class RenderStencilbuffer			: public Render { public: bool invokeGLES2 (GLES2ImageApi& api, MovePtr<UniqueImage>& image, tcu::Texture2D& ref) const; };
 	class RenderTryAll					: public Render { public: bool invokeGLES2 (GLES2ImageApi& api, MovePtr<UniqueImage>& image, tcu::Texture2D& ref) const; };
 
 	class Modify : public GLES2Action
@@ -539,6 +540,7 @@ bool GLES2ImageApi::RenderDepthbuffer::invokeGLES2 (GLES2ImageApi& api, MovePtr<
 		GLU_CHECK_GLW_CALL(gl, drawArrays(GL_TRIANGLES, 0, 6));
 	}
 
+	GLU_CHECK_GLW_CALL(gl, depthMask(GL_TRUE));
 	GLU_CHECK_GLW_CALL(gl, disable(GL_DEPTH_TEST));
 	GLU_CHECK_GLW_CALL(gl, disableVertexAttribArray(coordLoc));
 
@@ -564,11 +566,128 @@ bool GLES2ImageApi::RenderDepthbuffer::invokeGLES2 (GLES2ImageApi& api, MovePtr<
 		}
 	}
 
-	GLU_CHECK_GLW_CALL(gl, depthMask(GL_TRUE));
 	GLU_CHECK_GLW_CALL(gl, bindFramebuffer(GL_FRAMEBUFFER, 0));
 	GLU_CHECK_GLW_CALL(gl, finish());
 
 	return tcu::pixelThresholdCompare(log, "Depth buffer rendering result", "Result from rendering with depth buffer", referenceScreen, screen, compareThreshold, tcu::COMPARE_LOG_RESULT);
+}
+
+bool GLES2ImageApi::RenderStencilbuffer::invokeGLES2 (GLES2ImageApi& api, MovePtr<UniqueImage>& img, tcu::Texture2D& reference) const
+{
+	// Branch only taken in TryAll case
+	if (reference.getFormat().order != tcu::TextureFormat::DS && reference.getFormat().order != tcu::TextureFormat::S)
+		throw IllegalRendererException(); // Skip, interpreting non-stencil data as stencil data is not meaningful
+
+	const glw::Functions&	gl					= api.m_gl;
+	tcu::TestLog&			log					= api.getLog();
+	Framebuffer				framebuffer			(gl);
+	Renderbuffer			renderbufferColor	(gl);
+	Renderbuffer			renderbufferStencil (gl);
+	const tcu::RGBA			compareThreshold	(32, 32, 32, 32); // layer colors are far apart, large thresholds are ok
+	const deUint32			numStencilBits		= tcu::getTextureFormatBitDepth(tcu::getEffectiveDepthStencilTextureFormat(reference.getLevel(0).getFormat(), tcu::Sampler::MODE_STENCIL)).x();
+	const deUint32			maxStencil			= deBitMask32(0, numStencilBits);
+
+	log << tcu::TestLog::Message << "Rendering with stencil buffer" << tcu::TestLog::EndMessage;
+
+	GLU_CHECK_GLW_CALL(gl, bindFramebuffer(GL_FRAMEBUFFER, *framebuffer));
+
+	GLU_CHECK_GLW_CALL(gl, bindRenderbuffer(GL_RENDERBUFFER, *renderbufferColor));
+	GLU_CHECK_GLW_CALL(gl, renderbufferStorage(GL_RENDERBUFFER, GL_RGBA4, reference.getWidth(), reference.getHeight()));
+	framebufferRenderbuffer(gl, GL_COLOR_ATTACHMENT0, *renderbufferColor);
+
+	GLU_CHECK_GLW_CALL(gl, bindRenderbuffer(GL_RENDERBUFFER, *renderbufferStencil));
+	imageTargetRenderbuffer(api.m_egl, gl, **img);
+	framebufferRenderbuffer(gl, GL_STENCIL_ATTACHMENT, *renderbufferStencil);
+	GLU_CHECK_GLW_CALL(gl, bindRenderbuffer(GL_RENDERBUFFER, 0));
+
+	GLU_CHECK_GLW_CALL(gl, viewport(0, 0, reference.getWidth(), reference.getHeight()));
+
+	// Render
+	const char* vertexShader =
+		"attribute highp vec2 a_coord;\n"
+		"void main(void) {\n"
+		"\tgl_Position = vec4(a_coord, 0.0, 1.0);\n"
+		"}\n";
+
+	const char* fragmentShader =
+		"uniform mediump vec4 u_color;\n"
+		"void main(void) {\n"
+		"\tgl_FragColor = u_color;\n"
+		"}";
+
+	Program program(gl, vertexShader, fragmentShader);
+	TCU_CHECK(program.isOk());
+
+	GLuint glProgram = program.getProgram();
+	GLU_CHECK_GLW_CALL(gl, useProgram(glProgram));
+
+	GLuint coordLoc = gl.getAttribLocation(glProgram, "a_coord");
+	TCU_CHECK_MSG((int)coordLoc != -1, "Couldn't find attribute a_coord");
+
+	GLuint colorLoc = gl.getUniformLocation(glProgram, "u_color");
+	TCU_CHECK_MSG((int)colorLoc != (int)-1, "Couldn't find uniform u_color");
+
+	GLU_CHECK_GLW_CALL(gl, clearColor(0.5f, 1.0f, 0.5f, 1.0f));
+	GLU_CHECK_GLW_CALL(gl, clear(GL_COLOR_BUFFER_BIT));
+
+	tcu::Vec4 stencilLevelColors[] = {
+		tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f),
+		tcu::Vec4(0.0f, 1.0f, 0.0f, 1.0f),
+		tcu::Vec4(1.0f, 1.0f, 0.0f, 1.0f),
+		tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f),
+		tcu::Vec4(1.0f, 0.0f, 1.0f, 1.0f),
+
+		tcu::Vec4(1.0f, 1.0f, 0.0f, 1.0f),
+		tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f),
+		tcu::Vec4(0.5f, 0.0f, 0.0f, 1.0f),
+		tcu::Vec4(0.0f, 0.5f, 0.0f, 1.0f),
+		tcu::Vec4(0.5f, 0.5f, 0.0f, 1.0f)
+	};
+
+	GLU_CHECK_GLW_CALL(gl, enableVertexAttribArray(coordLoc));
+	GLU_CHECK_GLW_CALL(gl, vertexAttribPointer(coordLoc, 2, GL_FLOAT, GL_FALSE, 0, squareTriangleCoords));
+
+	GLU_CHECK_GLW_CALL(gl, enable(GL_STENCIL_TEST));
+	GLU_CHECK_GLW_CALL(gl, stencilOp(GL_KEEP, GL_KEEP, GL_KEEP));
+
+	for (int level = 0; level < DE_LENGTH_OF_ARRAY(stencilLevelColors); level++)
+	{
+		const tcu::Vec4	color	= stencilLevelColors[level];
+		const int		stencil	= (int)(((level + 1) * 0.1f) * maxStencil);
+
+		GLU_CHECK_GLW_CALL(gl, stencilFunc(GL_LESS, stencil, 0xFFFFFFFFu));
+		GLU_CHECK_GLW_CALL(gl, uniform4f(colorLoc, color.x(), color.y(), color.z(), color.w()));
+		GLU_CHECK_GLW_CALL(gl, drawArrays(GL_TRIANGLES, 0, 6));
+	}
+
+	GLU_CHECK_GLW_CALL(gl, disable(GL_STENCIL_TEST));
+	GLU_CHECK_GLW_CALL(gl, disableVertexAttribArray(coordLoc));
+
+	const ConstPixelBufferAccess&	refAccess		= reference.getLevel(0);
+	tcu::Surface					screen			(reference.getWidth(), reference.getHeight());
+	tcu::Surface					referenceScreen	(reference.getWidth(), reference.getHeight());
+
+	gl.readPixels(0, 0, screen.getWidth(), screen.getHeight(), GL_RGBA, GL_UNSIGNED_BYTE, screen.getAccess().getDataPtr());
+
+	for (int y = 0; y < reference.getHeight(); y++)
+	for (int x = 0; x < reference.getWidth(); x++)
+	{
+		tcu::Vec4 result = tcu::Vec4(0.5f, 1.0f, 0.5f, 1.0f);
+
+		for (int level = 0; level < DE_LENGTH_OF_ARRAY(stencilLevelColors); level++)
+		{
+			const int levelStencil = (int)(((level + 1) * 0.1f) * maxStencil);
+			if (levelStencil < refAccess.getPixStencil(x, y))
+				result = stencilLevelColors[level];
+		}
+
+		referenceScreen.getAccess().setPixel(result, x, y);
+	}
+
+	GLU_CHECK_GLW_CALL(gl, bindFramebuffer(GL_FRAMEBUFFER, 0));
+	GLU_CHECK_GLW_CALL(gl, finish());
+
+	return tcu::pixelThresholdCompare(log, "StencilResult", "Result from rendering with stencil buffer", referenceScreen, screen, compareThreshold, tcu::COMPARE_LOG_RESULT);
 }
 
 bool GLES2ImageApi::RenderReadPixelsRenderbuffer::invokeGLES2 (GLES2ImageApi& api, MovePtr<UniqueImage>& img, tcu::Texture2D& reference) const
@@ -617,7 +736,8 @@ bool GLES2ImageApi::RenderTryAll::invokeGLES2 (GLES2ImageApi& api, MovePtr<Uniqu
 	GLES2ImageApi::RenderTexture2D				renderTex2D;
 	GLES2ImageApi::RenderReadPixelsRenderbuffer	renderReadPixels;
 	GLES2ImageApi::RenderDepthbuffer			renderDepth;
-	Action*										actions[] 				= { &renderTex2D, &renderReadPixels, &renderDepth };
+	GLES2ImageApi::RenderStencilbuffer			renderStencil;
+	Action*										actions[] 				= { &renderTex2D, &renderReadPixels, &renderDepth, &renderStencil };
 
 	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(actions); ++ndx)
 	{
@@ -1024,9 +1144,10 @@ protected:
 
 void RenderTests::addRenderActions (void)
 {
-	m_renderActions.add("texture",		MovePtr<Action>(new GLES2ImageApi::RenderTexture2D()));
-	m_renderActions.add("read_pixels",	MovePtr<Action>(new GLES2ImageApi::RenderReadPixelsRenderbuffer()));
-	m_renderActions.add("depth_buffer",	MovePtr<Action>(new GLES2ImageApi::RenderDepthbuffer()));
+	m_renderActions.add("texture",			MovePtr<Action>(new GLES2ImageApi::RenderTexture2D()));
+	m_renderActions.add("read_pixels",		MovePtr<Action>(new GLES2ImageApi::RenderReadPixelsRenderbuffer()));
+	m_renderActions.add("depth_buffer",		MovePtr<Action>(new GLES2ImageApi::RenderDepthbuffer()));
+	m_renderActions.add("stencil_buffer",	MovePtr<Action>(new GLES2ImageApi::RenderStencilbuffer()));
 }
 
 class SimpleCreationTests : public RenderTests
@@ -1111,6 +1232,14 @@ bool isCompatibleCreateAndRenderActions (const Action& create, const Action& ren
 			// Copying non-depth data to depth renderbuffer and expecting meaningful
 			// results just doesn't make any sense.
 			if (!isDepthFormat(createFormat))
+				return false;
+		}
+
+		if (dynamic_cast<const GLES2ImageApi::RenderStencilbuffer*>(&render))
+		{
+			// Copying non-stencil data to stencil renderbuffer and expecting meaningful
+			// results just doesn't make any sense.
+			if (!isStencilFormat(createFormat))
 				return false;
 		}
 
