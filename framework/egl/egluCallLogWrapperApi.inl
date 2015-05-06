@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos EGL API description (egl.xml) revision 28861.
+ * Generated from Khronos EGL API description (egl.xml) revision 31042.
  */
 eglw::EGLBoolean								eglBindAPI							(eglw::EGLenum api);
 eglw::EGLBoolean								eglBindTexImage						(eglw::EGLDisplay dpy, eglw::EGLSurface surface, eglw::EGLint buffer);
@@ -9,7 +9,7 @@ eglw::EGLBoolean								eglChooseConfig						(eglw::EGLDisplay dpy, const eglw::
 eglw::EGLint									eglClientWaitSync					(eglw::EGLDisplay dpy, eglw::EGLSync sync, eglw::EGLint flags, eglw::EGLTime timeout);
 eglw::EGLBoolean								eglCopyBuffers						(eglw::EGLDisplay dpy, eglw::EGLSurface surface, eglw::EGLNativePixmapType target);
 eglw::EGLContext								eglCreateContext					(eglw::EGLDisplay dpy, eglw::EGLConfig config, eglw::EGLContext share_context, const eglw::EGLint *attrib_list);
-eglw::EGLImage									eglCreateImage						(eglw::EGLDisplay dpy, eglw::EGLContext ctx, eglw::EGLenum target, eglw::EGLClientBuffer buffer, const eglw::EGLint *attrib_list);
+eglw::EGLImage									eglCreateImage						(eglw::EGLDisplay dpy, eglw::EGLContext ctx, eglw::EGLenum target, eglw::EGLClientBuffer buffer, const eglw::EGLAttrib *attrib_list);
 eglw::EGLSurface								eglCreatePbufferFromClientBuffer	(eglw::EGLDisplay dpy, eglw::EGLenum buftype, eglw::EGLClientBuffer buffer, eglw::EGLConfig config, const eglw::EGLint *attrib_list);
 eglw::EGLSurface								eglCreatePbufferSurface				(eglw::EGLDisplay dpy, eglw::EGLConfig config, const eglw::EGLint *attrib_list);
 eglw::EGLSurface								eglCreatePixmapSurface				(eglw::EGLDisplay dpy, eglw::EGLConfig config, eglw::EGLNativePixmapType pixmap, const eglw::EGLint *attrib_list);
