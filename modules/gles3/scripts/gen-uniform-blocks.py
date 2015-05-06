@@ -847,38 +847,6 @@ void main()
 	${{OUTPUT}} = """ + ("a" * 1025) + """.uniformMember;
 }""")[1:]
 
-doubleUnderscoreIdentifierInstanceNameShaderTemplate = ("""
-#version 300 es
-precision highp float;
-
-${{OUTPUT_DECLARATION}}
-
-uniform UniformBlock
-{
-	vec4 uniformMember;
-} __;
-
-void main()
-{
-	${{OUTPUT}} = __.uniformMember;
-}""")[1:]
-
-doubleUnderscoreIdentifierBlockNameShaderTemplate = ("""
-#version 300 es
-precision highp float;
-
-${{OUTPUT_DECLARATION}}
-
-uniform __
-{
-	vec4 uniformMember;
-} uniformBlock;
-
-void main()
-{
-	${{OUTPUT}} = uniformBlock.uniformMember;
-}""")[1:]
-
 invalidCases = (
 			sum([createCases("member_%s_interface_qualifier" % qualifier, invalidMemberInterfaceQualifierShaderTemplate % qualifier, False)
 					for qualifier in ["in", "out", "buffer", "attribute", "varying"]], [])
@@ -908,8 +876,6 @@ invalidCases = (
 			+ createCases("invalid_hash_instance_name", invalidDollarInstanceNameShaderTemplate, False)
 			+ createCases("invalid_dollar_instance_name", invalidDollarInstanceNameShaderTemplate, False)
 			+ createCases("invalid_identifier_instance_name", invalidIdentifierInstanceNameShaderTemplate, False)
-			+ createCases("double_underscore_block_name", doubleUnderscoreIdentifierBlockNameShaderTemplate, False)
-			+ createCases("double_underscore_instance_name", doubleUnderscoreIdentifierInstanceNameShaderTemplate, False)
 			+ createCases("repeated_block", repeatedBlockShaderTemplate, False)
 			+ createCases("repeated_block_no_instance_name", repeatedBlockNoInstanceNameShaderTemplate, False)
 		)
