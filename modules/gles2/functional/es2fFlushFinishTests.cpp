@@ -32,6 +32,7 @@
 
 #include "tcuTestLog.hpp"
 #include "tcuRenderTarget.hpp"
+#include "tcuCPUWarmup.hpp"
 
 #include "glwEnums.hpp"
 #include "glwFunctions.hpp"
@@ -421,8 +422,7 @@ FlushFinishCase::IterateResult FlushFinishCase::iterate (void)
 	vector<Sample>		samples		(NUM_SAMPLES);
 	CalibrationParams	params;
 
-	// Try to poke CPU into full speed. \todo [2013-12-26 pyry] Use more robust method.
-	busyWait(10);
+	tcu::warmupCPU();
 
 	setupRenderState();
 
