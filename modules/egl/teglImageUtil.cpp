@@ -314,40 +314,123 @@ protected:
 	GLenum					m_format;
 };
 
-void initializeStencilRbo(const glw::Functions& gl, GLuint rbo, GLint value, Texture2D& ref)
+void initializeStencilRbo(const glw::Functions& gl, GLuint rbo, Texture2D& ref)
 {
+	static const deUint32 stencilValues[] =
+	{
+		0xBF688C11u,
+		0xB43D2922u,
+		0x055D5FFBu,
+		0x9300655Eu,
+		0x63BE0DF2u,
+		0x0345C13Bu,
+		0x1C184832u,
+		0xD107040Fu,
+		0x9B91569Fu,
+		0x0F0CFDC7u,
+	};
+
 	GLU_CHECK_GLW_CALL(gl, framebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT,
 												   GL_RENDERBUFFER, rbo));
-	GLU_CHECK_GLW_CALL(gl, clearStencil(value));
+	GLU_CHECK_GLW_CALL(gl, clearStencil(0));
 	GLU_CHECK_GLW_CALL(gl, clear(GL_STENCIL_BUFFER_BIT));
+	tcu::clearStencil(ref.getLevel(0), 0);
+
+	// create a pattern
+	GLU_CHECK_GLW_CALL(gl, enable(GL_SCISSOR_TEST));
+	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(stencilValues); ++ndx)
+	{
+		const tcu::IVec2	size	= tcu::IVec2((int)((DE_LENGTH_OF_ARRAY(stencilValues) - ndx) * (ref.getWidth() / float(DE_LENGTH_OF_ARRAY(stencilValues)))),
+												 (int)((DE_LENGTH_OF_ARRAY(stencilValues) - ndx) * (ref.getHeight() / float(DE_LENGTH_OF_ARRAY(stencilValues) + 4)))); // not symmetric
+
+		if (size.x() == 0 || size.y() == 0)
+			break;
+
+		GLU_CHECK_GLW_CALL(gl, scissor(0, 0, size.x(), size.y()));
+		GLU_CHECK_GLW_CALL(gl, clearStencil(stencilValues[ndx]));
+		GLU_CHECK_GLW_CALL(gl, clear(GL_STENCIL_BUFFER_BIT));
+
+		tcu::clearStencil(tcu::getSubregion(ref.getLevel(0), 0, 0, size.x(), size.y()), stencilValues[ndx]);
+	}
+
+	GLU_CHECK_GLW_CALL(gl, disable(GL_SCISSOR_TEST));
 	GLU_CHECK_GLW_CALL(gl, framebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT,
 												   GL_RENDERBUFFER, 0));
-
-	tcu::clearStencil(ref.getLevel(0), value);
 }
 
-void initializeDepthRbo(const glw::Functions& gl, GLuint rbo, GLfloat value, Texture2D& ref)
+void initializeDepthRbo(const glw::Functions& gl, GLuint rbo, Texture2D& ref)
 {
+	const int NUM_STEPS = 13;
+
 	GLU_CHECK_GLW_CALL(gl, framebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
 												   GL_RENDERBUFFER, rbo));
-	GLU_CHECK_GLW_CALL(gl, clearDepthf(value));
+
+	GLU_CHECK_GLW_CALL(gl, clearDepthf(0.0f));
 	GLU_CHECK_GLW_CALL(gl, clear(GL_DEPTH_BUFFER_BIT));
+	tcu::clearDepth(ref.getLevel(0), 0.0f);
+
+	// create a pattern
+	GLU_CHECK_GLW_CALL(gl, enable(GL_SCISSOR_TEST));
+	for (int ndx = 0; ndx < NUM_STEPS; ++ndx)
+	{
+		const float			depth	= ndx / float(NUM_STEPS);
+		const tcu::IVec2	size	= tcu::IVec2((int)((NUM_STEPS - ndx) * (ref.getWidth() / float(NUM_STEPS))),
+												 (int)((NUM_STEPS - ndx) * (ref.getHeight() / float(NUM_STEPS + 4)))); // not symmetric
+
+		if (size.x() == 0 || size.y() == 0)
+			break;
+
+		GLU_CHECK_GLW_CALL(gl, scissor(0, 0, size.x(), size.y()));
+		GLU_CHECK_GLW_CALL(gl, clearDepthf(depth));
+		GLU_CHECK_GLW_CALL(gl, clear(GL_DEPTH_BUFFER_BIT));
+
+		tcu::clearDepth(tcu::getSubregion(ref.getLevel(0), 0, 0, size.x(), size.y()), depth);
+	}
+
+	GLU_CHECK_GLW_CALL(gl, disable(GL_SCISSOR_TEST));
 	GLU_CHECK_GLW_CALL(gl, framebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
 												   GL_RENDERBUFFER, 0));
 
-	tcu::clearDepth(ref.getLevel(0), value);
 }
 
-void initializeColorRbo(const glw::Functions& gl, GLuint rbo, GLfloat r, GLfloat g, GLfloat b, GLfloat a, Texture2D& ref)
+void initializeColorRbo(const glw::Functions& gl, GLuint rbo, Texture2D& ref)
 {
+	static const tcu::Vec4 colorValues[] =
+	{
+		tcu::Vec4(0.9f, 0.5f, 0.65f, 1.0f),
+		tcu::Vec4(0.5f, 0.7f, 0.65f, 1.0f),
+		tcu::Vec4(0.2f, 0.5f, 0.65f, 1.0f),
+		tcu::Vec4(0.3f, 0.1f, 0.5f, 1.0f),
+		tcu::Vec4(0.8f, 0.2f, 0.3f, 1.0f),
+		tcu::Vec4(0.9f, 0.4f, 0.8f, 1.0f),
+	};
+
 	GLU_CHECK_GLW_CALL(gl, framebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
 												   GL_RENDERBUFFER, rbo));
-	GLU_CHECK_GLW_CALL(gl, clearColor(r, g, b, a));
+	GLU_CHECK_GLW_CALL(gl, clearColor(1.0f, 1.0f, 0.0f, 1.0f));
 	GLU_CHECK_GLW_CALL(gl, clear(GL_COLOR_BUFFER_BIT));
+	tcu::clear(ref.getLevel(0), Vec4(1.0f, 1.0f, 0.0f, 1.0f));
+
+	// create a pattern
+	GLU_CHECK_GLW_CALL(gl, enable(GL_SCISSOR_TEST));
+	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(colorValues); ++ndx)
+	{
+		const tcu::IVec2	size	= tcu::IVec2((int)((DE_LENGTH_OF_ARRAY(colorValues) - ndx) * (ref.getWidth() / float(DE_LENGTH_OF_ARRAY(colorValues)))),
+												 (int)((DE_LENGTH_OF_ARRAY(colorValues) - ndx) * (ref.getHeight() / float(DE_LENGTH_OF_ARRAY(colorValues) + 4)))); // not symmetric
+
+		if (size.x() == 0 || size.y() == 0)
+			break;
+
+		GLU_CHECK_GLW_CALL(gl, scissor(0, 0, size.x(), size.y()));
+		GLU_CHECK_GLW_CALL(gl, clearColor(colorValues[ndx].x(), colorValues[ndx].y(), colorValues[ndx].z(), colorValues[ndx].w()));
+		GLU_CHECK_GLW_CALL(gl, clear(GL_COLOR_BUFFER_BIT));
+
+		tcu::clear(tcu::getSubregion(ref.getLevel(0), 0, 0, size.x(), size.y()), colorValues[ndx]);
+	}
+
+	GLU_CHECK_GLW_CALL(gl, disable(GL_SCISSOR_TEST));
 	GLU_CHECK_GLW_CALL(gl, framebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
 												   GL_RENDERBUFFER, 0));
-
-	tcu::clear(ref.getLevel(0), Vec4(r, g, b, a));
 }
 
 MovePtr<ClientBuffer> RenderbufferImageSource::createBuffer (const glw::Functions& gl, Texture2D* ref) const
@@ -372,19 +455,19 @@ MovePtr<ClientBuffer> RenderbufferImageSource::createBuffer (const glw::Function
 		switch (m_format)
 		{
 			case GL_STENCIL_INDEX8:
-				initializeStencilRbo(gl, rbo, 235, *ref);
+				initializeStencilRbo(gl, rbo, *ref);
 				break;
 			case GL_DEPTH_COMPONENT16:
-				initializeDepthRbo(gl, rbo, 0.5f, *ref);
+				initializeDepthRbo(gl, rbo, *ref);
 				break;
 			case GL_RGBA4:
-				initializeColorRbo(gl, rbo, 0.9f, 0.5f, 0.65f, 1.0f, *ref);
+				initializeColorRbo(gl, rbo, *ref);
 				break;
 			case GL_RGB5_A1:
-				initializeColorRbo(gl, rbo, 0.5f, 0.7f, 0.65f, 1.0f, *ref);
+				initializeColorRbo(gl, rbo, *ref);
 				break;
 			case GL_RGB565:
-				initializeColorRbo(gl, rbo, 0.2f, 0.5f, 0.65f, 1.0f, *ref);
+				initializeColorRbo(gl, rbo, *ref);
 				break;
 			default:
 				DE_ASSERT(!"Impossible");
