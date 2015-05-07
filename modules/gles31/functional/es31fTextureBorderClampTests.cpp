@@ -1321,6 +1321,8 @@ glu::ShaderProgram* TextureBorderClampTest::genGatherProgram (void) const
 				break;
 
 			default:
+				samplerType	= "";
+				lookup		= "";
 				DE_ASSERT(false);
 		}
 	}
@@ -1678,7 +1680,6 @@ private:
 	int								getNumIterations				(void) const;
 	IterationConfig					getIteration					(int ndx) const;
 
-	const SizeType					m_sizeType;
 	const deUint32					m_texSWrap;
 	const deUint32					m_texTWrap;
 	const deUint32					m_filter;
@@ -1705,7 +1706,6 @@ TextureBorderClampPerAxisCase2D::TextureBorderClampPerAxisCase2D (Context&						
 							 (sizeType == SIZE_POT) ? (16) : (7),
 							 (sizeType == SIZE_POT) ? (8) : (9),
 							 samplingFunction)
-	, m_sizeType			(sizeType)
 	, m_texSWrap			(texSWrap)
 	, m_texTWrap			(texTWrap)
 	, m_filter				(filter)
@@ -1991,16 +1991,15 @@ TextureBorderClampTest::IterationConfig TextureBorderClampUnusedChannelCase::get
 class TextureBorderClampPerAxisCase3D : public TestCase
 {
 public:
-														TextureBorderClampPerAxisCase3D	(Context&						context,
-																						 const char*					name,
-																						 const char*					description,
-																						 deUint32						texFormat,
-																						 tcu::Sampler::DepthStencilMode	depthStencilMode,
-																						 SizeType						size,
-																						 deUint32						filter,
-																						 deUint32						sWrap,
-																						 deUint32						tWrap,
-																						 deUint32						rWrap);
+														TextureBorderClampPerAxisCase3D	(Context&		context,
+																						 const char*	name,
+																						 const char*	description,
+																						 deUint32		texFormat,
+																						 SizeType		size,
+																						 deUint32		filter,
+																						 deUint32		sWrap,
+																						 deUint32		tWrap,
+																						 deUint32		rWrap);
 
 private:
 	void												init							(void);
@@ -2025,7 +2024,6 @@ private:
 	};
 
 	const deUint32										m_texFormat;
-	const tcu::Sampler::DepthStencilMode				m_depthStencilMode;
 	const tcu::TextureChannelClass						m_channelClass;
 	const tcu::IVec3									m_size;
 	const deUint32										m_filter;
@@ -2042,20 +2040,18 @@ private:
 	tcu::Vec4											m_lookupBias;
 };
 
-TextureBorderClampPerAxisCase3D::TextureBorderClampPerAxisCase3D (Context&							context,
-																  const char*						name,
-																  const char*						description,
-																  deUint32							texFormat,
-																  tcu::Sampler::DepthStencilMode	depthStencilMode,
-																  SizeType							size,
-																  deUint32							filter,
-																  deUint32							sWrap,
-																  deUint32							tWrap,
-																  deUint32							rWrap)
+TextureBorderClampPerAxisCase3D::TextureBorderClampPerAxisCase3D (Context&		context,
+																  const char*	name,
+																  const char*	description,
+																  deUint32		texFormat,
+																  SizeType		size,
+																  deUint32		filter,
+																  deUint32		sWrap,
+																  deUint32		tWrap,
+																  deUint32		rWrap)
 	: TestCase			(context, name, description)
 	, m_texFormat		(texFormat)
-	, m_depthStencilMode(depthStencilMode)
-	, m_channelClass	(getFormatChannelClass(texFormat, depthStencilMode))
+	, m_channelClass	(getFormatChannelClass(texFormat, tcu::Sampler::MODE_LAST))
 	, m_size			((size == SIZE_POT) ? (tcu::IVec3(8, 16, 4)) : (tcu::IVec3(13, 5, 7)))
 	, m_filter			(filter)
 	, m_sWrap			(sWrap)
@@ -2632,16 +2628,18 @@ void TextureBorderClampTests::init (void)
 																										 wrapConfigs[wrapNdx].tWrap,
 																										 s_filters[filterNdx].sampling));
 										else
+										{
+											DE_ASSERT(sampleMode == tcu::Sampler::MODE_LAST);
 											filteringGroup->addChild(new TextureBorderClampPerAxisCase3D(m_context,
 																										 (std::string() + wrapName + sizeNameExtension).c_str(),
 																										 "",
 																										 format,
-																										 sampleMode,
 																										 size,
 																										 filter,
 																										 wrapConfigs[wrapNdx].sWrap,
 																										 wrapConfigs[wrapNdx].tWrap,
 																										 wrapConfigs[wrapNdx].rWrap));
+										}
 									}
 								}
 							}
