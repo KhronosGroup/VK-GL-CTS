@@ -110,6 +110,10 @@ namespace Image
 
 class ImageApi;
 
+class IllegalRendererException : public std::exception
+{
+};
+
 class Action
 {
 public:
@@ -373,6 +377,12 @@ bool GLES2ImageApi::RenderTexture2D::invokeGLES2 (GLES2ImageApi& api, MovePtr<Un
 	tcu::TestLog&			log		= api.getLog();
 	Texture					srcTex	(gl);
 
+	// Branch only taken in TryAll case
+	if (reference.getFormat().order == tcu::TextureFormat::DS || reference.getFormat().order == tcu::TextureFormat::D)
+		throw IllegalRendererException(); // Skip, GLES2 does not support sampling depth textures
+	if (reference.getFormat().order == tcu::TextureFormat::S)
+		throw IllegalRendererException(); // Skip, GLES2 does not support sampling stencil textures
+
 	gl.clearColor(0.0, 0.0, 0.0, 0.0);
 	gl.viewport(0, 0, reference.getWidth(), reference.getHeight());
 	gl.clear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
@@ -389,7 +399,7 @@ bool GLES2ImageApi::RenderTexture2D::invokeGLES2 (GLES2ImageApi& api, MovePtr<Un
 	GLU_CHECK_GLW_CALL(gl, texParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
 	GLU_CHECK_GLW_CALL(gl, texParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
 
-	const char* vertexShader =
+	const char* const vertexShader =
 		"attribute highp vec2 a_coord;\n"
 		"varying mediump vec2 v_texCoord;\n"
 		"void main(void) {\n"
@@ -397,7 +407,7 @@ bool GLES2ImageApi::RenderTexture2D::invokeGLES2 (GLES2ImageApi& api, MovePtr<Un
 		"\tgl_Position = vec4(a_coord, -0.1, 1.0);\n"
 		"}\n";
 
-	const char* fragmentShader =
+	const char* const fragmentShader =
 		"varying mediump vec2 v_texCoord;\n"
 		"uniform sampler2D u_sampler;\n"
 		"void main(void) {\n"
@@ -446,6 +456,10 @@ bool GLES2ImageApi::RenderDepthbuffer::invokeGLES2 (GLES2ImageApi& api, MovePtr<
 	Renderbuffer			renderbufferColor	(gl);
 	Renderbuffer			renderbufferDepth	(gl);
 	log << tcu::TestLog::Message << "Rendering with depth buffer" << tcu::TestLog::EndMessage;
+
+	// Branch only taken in TryAll case
+	if (reference.getFormat().order != tcu::TextureFormat::DS && reference.getFormat().order != tcu::TextureFormat::D)
+		throw IllegalRendererException(); // Skip, interpreting non-depth data as depth data is not meaningful
 
 	GLU_CHECK_GLW_CALL(gl, bindFramebuffer(GL_FRAMEBUFFER, *framebuffer));
 
@@ -562,6 +576,12 @@ bool GLES2ImageApi::RenderReadPixelsRenderbuffer::invokeGLES2 (GLES2ImageApi& ap
 
 	log << tcu::TestLog::Message << "Reading with ReadPixels from renderbuffer" << tcu::TestLog::EndMessage;
 
+	// Branch only taken in TryAll case
+	if (reference.getFormat().order == tcu::TextureFormat::DS || reference.getFormat().order == tcu::TextureFormat::D)
+		throw IllegalRendererException(); // Skip, GLES2 does not support ReadPixels for depth attachments
+	if (reference.getFormat().order == tcu::TextureFormat::S)
+		throw IllegalRendererException(); // Skip, GLES2 does not support ReadPixels for stencil attachments
+
 	GLU_CHECK_GLW_CALL(gl, bindFramebuffer(GL_FRAMEBUFFER, *framebuffer));
 	GLU_CHECK_GLW_CALL(gl, bindRenderbuffer(GL_RENDERBUFFER, *renderbuffer));
 	imageTargetRenderbuffer(api.m_egl, gl, **img);
@@ -602,6 +622,10 @@ bool GLES2ImageApi::RenderTryAll::invokeGLES2 (GLES2ImageApi& api, MovePtr<Uniqu
 		catch (const tcu::NotSupportedError& error)
 		{
 			log << tcu::TestLog::Message << error.what() << tcu::TestLog::EndMessage;
+		}
+		catch (const IllegalRendererException&)
+		{
+			// not valid renderer
 		}
 	}
 
@@ -665,43 +689,40 @@ bool GLES2ImageApi::ModifyRenderbuffer::invokeGLES2 (GLES2ImageApi& api, MovePtr
 void GLES2ImageApi::ModifyRenderbufferClearColor::initializeRbo (GLES2ImageApi& api, GLuint renderbuffer, tcu::Texture2D& reference) const
 {
 	const glw::Functions&	gl		= api.m_gl;
-	const tcu::Vec4			color	(0.3f, 0.5f, 0.3f, 1.0f);
 
 	framebufferRenderbuffer(gl, GL_COLOR_ATTACHMENT0, renderbuffer);
 
 	GLU_CHECK_GLW_CALL(gl, viewport(0, 0, reference.getWidth(), reference.getHeight()));
-	GLU_CHECK_GLW_CALL(gl, clearColor(color.x(), color.y(), color.z(), color.w()));
+	GLU_CHECK_GLW_CALL(gl, clearColor(m_color.x(), m_color.y(), m_color.z(), m_color.w()));
 	GLU_CHECK_GLW_CALL(gl, clear(GL_COLOR_BUFFER_BIT));
 
-	tcu::clear(reference.getLevel(0), color);
+	tcu::clear(reference.getLevel(0), m_color);
 }
 
 void GLES2ImageApi::ModifyRenderbufferClearDepth::initializeRbo (GLES2ImageApi& api, GLuint renderbuffer, tcu::Texture2D& reference) const
 {
 	const glw::Functions&	gl		= api.m_gl;
-	const float				depth	= 0.7f;
 
 	framebufferRenderbuffer(gl, GL_DEPTH_ATTACHMENT, renderbuffer);
 
 	GLU_CHECK_GLW_CALL(gl, viewport(0, 0, reference.getWidth(), reference.getHeight()));
-	GLU_CHECK_GLW_CALL(gl, clearDepthf(depth));
+	GLU_CHECK_GLW_CALL(gl, clearDepthf(m_depth));
 	GLU_CHECK_GLW_CALL(gl, clear(GL_DEPTH_BUFFER_BIT));
 
-	tcu::clearDepth(reference.getLevel(0), depth);
+	tcu::clearDepth(reference.getLevel(0), m_depth);
 }
 
 void GLES2ImageApi::ModifyRenderbufferClearStencil::initializeRbo (GLES2ImageApi& api, GLuint renderbuffer, tcu::Texture2D& reference) const
 {
 	const glw::Functions&	gl		= api.m_gl;
-	const int				stencil	= 78;
 
 	framebufferRenderbuffer(gl, GL_STENCIL_ATTACHMENT, renderbuffer);
 
 	GLU_CHECK_GLW_CALL(gl, viewport(0, 0, reference.getWidth(), reference.getHeight()));
-	GLU_CHECK_GLW_CALL(gl, clearStencil(stencil));
+	GLU_CHECK_GLW_CALL(gl, clearStencil(m_stencil));
 	GLU_CHECK_GLW_CALL(gl, clear(GL_STENCIL_BUFFER_BIT));
 
-	tcu::clearStencil(reference.getLevel(0), stencil);
+	tcu::clearStencil(reference.getLevel(0), m_stencil);
 }
 
 class ImageFormatCase : public TestCase, private glu::CallLogWrapper
@@ -1006,6 +1027,92 @@ public:
 	void	init					(void);
 };
 
+bool isDepthFormat (GLenum format)
+{
+	switch (format)
+	{
+		case GL_RGB:
+		case GL_RGB8:
+		case GL_RGB565:
+		case GL_RGBA:
+		case GL_RGBA4:
+		case GL_RGBA8:
+		case GL_RGB5_A1:
+			return false;
+
+		case GL_DEPTH_COMPONENT16:
+			return true;
+
+		case GL_STENCIL_INDEX8:
+			return false;
+
+		default:
+			DE_ASSERT(false);
+			return false;
+	}
+}
+
+bool isStencilFormat (GLenum format)
+{
+	switch (format)
+	{
+		case GL_RGB:
+		case GL_RGB8:
+		case GL_RGB565:
+		case GL_RGBA:
+		case GL_RGBA4:
+		case GL_RGBA8:
+		case GL_RGB5_A1:
+			return false;
+
+		case GL_DEPTH_COMPONENT16:
+			return false;
+
+		case GL_STENCIL_INDEX8:
+			return true;
+
+		default:
+			DE_ASSERT(false);
+			return false;
+	}
+}
+
+bool isCompatibleCreateAndRenderActions (const Action& create, const Action& render)
+{
+	if (const GLES2ImageApi::Create* gles2Create = dynamic_cast<const GLES2ImageApi::Create*>(&create))
+	{
+		const GLenum createFormat = gles2Create->getFormat();
+
+		if (dynamic_cast<const GLES2ImageApi::RenderTexture2D*>(&render))
+		{
+			// GLES2 does not have depth or stencil textures
+			if (isDepthFormat(createFormat) || isStencilFormat(createFormat))
+				return false;
+		}
+
+		if (dynamic_cast<const GLES2ImageApi::RenderReadPixelsRenderbuffer*>(&render))
+		{
+			// GLES2 does not support readPixels for depth or stencil
+			if (isDepthFormat(createFormat) || isStencilFormat(createFormat))
+				return false;
+		}
+
+		if (dynamic_cast<const GLES2ImageApi::RenderDepthbuffer*>(&render))
+		{
+			// Copying non-depth data to depth renderbuffer and expecting meaningful
+			// results just doesn't make any sense.
+			if (!isDepthFormat(createFormat))
+				return false;
+		}
+
+		return true;
+	}
+	else
+		DE_ASSERT(false);
+
+	return false;
+}
+
 void SimpleCreationTests::init (void)
 {
 	addCreateTexture2DActions("texture_");
@@ -1023,6 +1130,9 @@ void SimpleCreationTests::init (void)
 		{
 			const LabeledAction&	renderAction	= m_renderActions[renderNdx];
 			TestSpec				spec;
+
+			if (!isCompatibleCreateAndRenderActions(*createAction.action, *renderAction.action))
+				continue;
 
 			spec.name = std::string("gles2_") + createAction.label + "_" + renderAction.label;
 			spec.desc = spec.name;
@@ -1068,6 +1178,10 @@ void MultiContextRenderTests::init (void)
 		{
 			const LabeledAction&	renderAction	= m_renderActions[renderNdx];
 			TestSpec				spec;
+
+			if (!isCompatibleCreateAndRenderActions(*createAction.action, *renderAction.action))
+				continue;
+
 			spec.name = std::string("gles2_") + createAction.label + "_" + renderAction.label;
 			spec.desc = spec.name;
 
@@ -1166,6 +1280,27 @@ bool isCompatibleCreateAndModifyActions (const Action& create, const Action& mod
 			const GLenum modifyFormat  = gles2TexSubImageModify->getFormat();
 
 			return isCompatibleFormats(createFormat, modifyFormat);
+		}
+
+		if (dynamic_cast<const GLES2ImageApi::ModifyRenderbufferClearColor*>(&modify))
+		{
+			// reintepreting color as non-color is not meaningful
+			if (isDepthFormat(createFormat) || isStencilFormat(createFormat))
+				return false;
+		}
+
+		if (dynamic_cast<const GLES2ImageApi::ModifyRenderbufferClearDepth*>(&modify))
+		{
+			// reintepreting depth as non-depth is not meaningful
+			if (!isDepthFormat(createFormat))
+				return false;
+		}
+
+		if (dynamic_cast<const GLES2ImageApi::ModifyRenderbufferClearStencil*>(&modify))
+		{
+			// reintepreting stencil as non-stencil is not meaningful
+			if (!isStencilFormat(createFormat))
+				return false;
 		}
 
 		return true;
