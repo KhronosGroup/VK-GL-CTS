@@ -455,11 +455,13 @@ bool GLES2ImageApi::RenderDepthbuffer::invokeGLES2 (GLES2ImageApi& api, MovePtr<
 	Framebuffer				framebuffer			(gl);
 	Renderbuffer			renderbufferColor	(gl);
 	Renderbuffer			renderbufferDepth	(gl);
-	log << tcu::TestLog::Message << "Rendering with depth buffer" << tcu::TestLog::EndMessage;
+	const tcu::RGBA			compareThreshold	(32, 32, 32, 32); // layer colors are far apart, large thresholds are ok
 
 	// Branch only taken in TryAll case
 	if (reference.getFormat().order != tcu::TextureFormat::DS && reference.getFormat().order != tcu::TextureFormat::D)
 		throw IllegalRendererException(); // Skip, interpreting non-depth data as depth data is not meaningful
+
+	log << tcu::TestLog::Message << "Rendering with depth buffer" << tcu::TestLog::EndMessage;
 
 	GLU_CHECK_GLW_CALL(gl, bindFramebuffer(GL_FRAMEBUFFER, *framebuffer));
 
@@ -503,6 +505,9 @@ bool GLES2ImageApi::RenderDepthbuffer::invokeGLES2 (GLES2ImageApi& api, MovePtr<
 	GLuint depthLoc = gl.getUniformLocation(glProgram, "u_depth");
 	TCU_CHECK_MSG((int)depthLoc != (int)-1, "Couldn't find uniform u_depth");
 
+	GLU_CHECK_GLW_CALL(gl, clearColor(0.5f, 1.0f, 0.5f, 1.0f));
+	GLU_CHECK_GLW_CALL(gl, clear(GL_COLOR_BUFFER_BIT));
+
 	tcu::Vec4 depthLevelColors[] = {
 		tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f),
 		tcu::Vec4(0.0f, 1.0f, 0.0f, 1.0f),
@@ -522,12 +527,15 @@ bool GLES2ImageApi::RenderDepthbuffer::invokeGLES2 (GLES2ImageApi& api, MovePtr<
 
 	GLU_CHECK_GLW_CALL(gl, enable(GL_DEPTH_TEST));
 	GLU_CHECK_GLW_CALL(gl, depthFunc(GL_LESS));
+	GLU_CHECK_GLW_CALL(gl, depthMask(GL_FALSE));
 
 	for (int level = 0; level < DE_LENGTH_OF_ARRAY(depthLevelColors); level++)
 	{
-		tcu::Vec4 color = depthLevelColors[level];
+		const tcu::Vec4	color		= depthLevelColors[level];
+		const float		clipDepth	= ((level + 1) * 0.1f) * 2.0f - 1.0f; // depth in clip coords
+
 		GLU_CHECK_GLW_CALL(gl, uniform4f(colorLoc, color.x(), color.y(), color.z(), color.w()));
-		GLU_CHECK_GLW_CALL(gl, uniform1f(depthLoc, (level + 1) * 0.1f));
+		GLU_CHECK_GLW_CALL(gl, uniform1f(depthLoc, clipDepth));
 		GLU_CHECK_GLW_CALL(gl, drawArrays(GL_TRIANGLES, 0, 6));
 	}
 
@@ -544,11 +552,11 @@ bool GLES2ImageApi::RenderDepthbuffer::invokeGLES2 (GLES2ImageApi& api, MovePtr<
 	{
 		for (int x = 0; x < reference.getWidth(); x++)
 		{
-			tcu::Vec4 result;
+			tcu::Vec4 result = tcu::Vec4(0.5f, 1.0f, 0.5f, 1.0f);
 
 			for (int level = 0; level < DE_LENGTH_OF_ARRAY(depthLevelColors); level++)
 			{
-				if (refAccess.getPixDepth(x, y) < (level + 1) * 0.1f)
+				if ((level + 1) * 0.1f < refAccess.getPixDepth(x, y))
 					result = depthLevelColors[level];
 			}
 
@@ -556,10 +564,11 @@ bool GLES2ImageApi::RenderDepthbuffer::invokeGLES2 (GLES2ImageApi& api, MovePtr<
 		}
 	}
 
+	GLU_CHECK_GLW_CALL(gl, depthMask(GL_TRUE));
 	GLU_CHECK_GLW_CALL(gl, bindFramebuffer(GL_FRAMEBUFFER, 0));
 	GLU_CHECK_GLW_CALL(gl, finish());
 
-	return tcu::pixelThresholdCompare(log, "Depth buffer rendering result", "Result from rendering with depth buffer", referenceScreen, screen, tcu::RGBA(1,1,1,1), tcu::COMPARE_LOG_RESULT);
+	return tcu::pixelThresholdCompare(log, "Depth buffer rendering result", "Result from rendering with depth buffer", referenceScreen, screen, compareThreshold, tcu::COMPARE_LOG_RESULT);
 }
 
 bool GLES2ImageApi::RenderReadPixelsRenderbuffer::invokeGLES2 (GLES2ImageApi& api, MovePtr<UniqueImage>& img, tcu::Texture2D& reference) const
@@ -574,13 +583,13 @@ bool GLES2ImageApi::RenderReadPixelsRenderbuffer::invokeGLES2 (GLES2ImageApi& ap
 	tcu::Surface			screen			(reference.getWidth(), reference.getHeight());
 	tcu::Surface			refSurface		(reference.getWidth(), reference.getHeight());
 
-	log << tcu::TestLog::Message << "Reading with ReadPixels from renderbuffer" << tcu::TestLog::EndMessage;
-
 	// Branch only taken in TryAll case
 	if (reference.getFormat().order == tcu::TextureFormat::DS || reference.getFormat().order == tcu::TextureFormat::D)
 		throw IllegalRendererException(); // Skip, GLES2 does not support ReadPixels for depth attachments
 	if (reference.getFormat().order == tcu::TextureFormat::S)
 		throw IllegalRendererException(); // Skip, GLES2 does not support ReadPixels for stencil attachments
+
+	log << tcu::TestLog::Message << "Reading with ReadPixels from renderbuffer" << tcu::TestLog::EndMessage;
 
 	GLU_CHECK_GLW_CALL(gl, bindFramebuffer(GL_FRAMEBUFFER, *framebuffer));
 	GLU_CHECK_GLW_CALL(gl, bindRenderbuffer(GL_RENDERBUFFER, *renderbuffer));
@@ -1150,89 +1159,6 @@ TestCaseGroup* createSimpleCreationTests (EglTestContext& eglTestCtx, const stri
 	return new SimpleCreationTests(eglTestCtx, name, desc);
 }
 
-class MultiContextRenderTests : public RenderTests
-{
-public:
-			MultiContextRenderTests		(EglTestContext& eglTestCtx, const string& name, const string& desc);
-	void	init						(void);
-};
-
-MultiContextRenderTests::MultiContextRenderTests (EglTestContext& eglTestCtx, const string& name, const string& desc)
-	: RenderTests	(eglTestCtx, name, desc)
-{
-}
-
-void MultiContextRenderTests::init (void)
-{
-	addCreateTexture2DActions("texture_");
-	addCreateTextureCubemapActions("_rgba8", GL_RGBA, GL_UNSIGNED_BYTE);
-	addCreateTextureCubemapActions("_rgb8", GL_RGB, GL_UNSIGNED_BYTE);
-	addCreateRenderbufferActions();
-	addCreateAndroidNativeActions();
-	addRenderActions();
-
-	for (int createNdx = 0; createNdx < m_createActions.size(); createNdx++)
-	{
-		const LabeledAction& createAction = m_createActions[createNdx];
-		for (int renderNdx = 0; renderNdx < m_renderActions.size(); renderNdx++)
-		{
-			const LabeledAction&	renderAction	= m_renderActions[renderNdx];
-			TestSpec				spec;
-
-			if (!isCompatibleCreateAndRenderActions(*createAction.action, *renderAction.action))
-				continue;
-
-			spec.name = std::string("gles2_") + createAction.label + "_" + renderAction.label;
-			spec.desc = spec.name;
-
-			spec.contexts.push_back(TestSpec::API_GLES2);
-			spec.contexts.push_back(TestSpec::API_GLES2);
-
-			spec.operations.push_back(TestSpec::Operation(0, *createAction.action));
-			spec.operations.push_back(TestSpec::Operation(1, *renderAction.action));
-			spec.operations.push_back(TestSpec::Operation(0, *renderAction.action));
-			spec.operations.push_back(TestSpec::Operation(1, *createAction.action));
-			spec.operations.push_back(TestSpec::Operation(1, *renderAction.action));
-			spec.operations.push_back(TestSpec::Operation(0, *renderAction.action));
-
-			addChild(new ImageFormatCase(m_eglTestCtx, spec));
-		}
-	}
-}
-
-TestCaseGroup* createMultiContextRenderTests (EglTestContext& eglTestCtx, const string& name, const string& desc)
-{
-	return new MultiContextRenderTests(eglTestCtx, name, desc);
-}
-
-class ModifyTests : public ImageTests
-{
-public:
-								ModifyTests		(EglTestContext& eglTestCtx, const string& name, const string& desc)
-									: ImageTests(eglTestCtx, name, desc) {}
-
-	void						init			(void);
-
-protected:
-	void						addModifyActions(void);
-
-	LabeledActions				m_modifyActions;
-	GLES2ImageApi::RenderTryAll	m_renderAction;
-};
-
-void ModifyTests::addModifyActions (void)
-{
-	m_modifyActions.add("tex_subimage_rgb8",			MovePtr<Action>(new GLES2ImageApi::ModifyTexSubImage(GL_RGB,	GL_UNSIGNED_BYTE)));
-	m_modifyActions.add("tex_subimage_rgb565",			MovePtr<Action>(new GLES2ImageApi::ModifyTexSubImage(GL_RGB, 	GL_UNSIGNED_SHORT_5_6_5)));
-	m_modifyActions.add("tex_subimage_rgba8",			MovePtr<Action>(new GLES2ImageApi::ModifyTexSubImage(GL_RGBA,	GL_UNSIGNED_BYTE)));
-	m_modifyActions.add("tex_subimage_rgba5_a1",		MovePtr<Action>(new GLES2ImageApi::ModifyTexSubImage(GL_RGBA,	GL_UNSIGNED_SHORT_5_5_5_1)));
-	m_modifyActions.add("tex_subimage_rgba4",			MovePtr<Action>(new GLES2ImageApi::ModifyTexSubImage(GL_RGBA,	GL_UNSIGNED_SHORT_4_4_4_4)));
-
-	m_modifyActions.add("renderbuffer_clear_color",		MovePtr<Action>(new GLES2ImageApi::ModifyRenderbufferClearColor(tcu::Vec4(0.3f, 0.5f, 0.3f, 1.0f))));
-	m_modifyActions.add("renderbuffer_clear_depth",		MovePtr<Action>(new GLES2ImageApi::ModifyRenderbufferClearDepth(0.7f)));
-	m_modifyActions.add("renderbuffer_clear_stencil",	MovePtr<Action>(new GLES2ImageApi::ModifyRenderbufferClearStencil(78)));
-}
-
 bool isCompatibleFormats (GLenum createFormat, GLenum modifyFormat)
 {
 	switch (createFormat)
@@ -1309,6 +1235,102 @@ bool isCompatibleCreateAndModifyActions (const Action& create, const Action& mod
 		DE_ASSERT(false);
 
 	return false;
+}
+
+class MultiContextRenderTests : public RenderTests
+{
+public:
+					MultiContextRenderTests		(EglTestContext& eglTestCtx, const string& name, const string& desc);
+	void			init						(void);
+	void			addClearActions				(void);
+private:
+	LabeledActions	m_clearActions;
+};
+
+MultiContextRenderTests::MultiContextRenderTests (EglTestContext& eglTestCtx, const string& name, const string& desc)
+	: RenderTests	(eglTestCtx, name, desc)
+{
+}
+
+void MultiContextRenderTests::addClearActions (void)
+{
+	m_clearActions.add("renderbuffer_clear_color",		MovePtr<Action>(new GLES2ImageApi::ModifyRenderbufferClearColor(tcu::Vec4(0.8f, 0.2f, 0.9f, 1.0f))));
+	m_clearActions.add("renderbuffer_clear_depth",		MovePtr<Action>(new GLES2ImageApi::ModifyRenderbufferClearDepth(0.75f)));
+	m_clearActions.add("renderbuffer_clear_stencil",	MovePtr<Action>(new GLES2ImageApi::ModifyRenderbufferClearStencil(97)));
+}
+
+void MultiContextRenderTests::init (void)
+{
+	addCreateTexture2DActions("texture_");
+	addCreateTextureCubemapActions("_rgba8", GL_RGBA, GL_UNSIGNED_BYTE);
+	addCreateTextureCubemapActions("_rgb8", GL_RGB, GL_UNSIGNED_BYTE);
+	addCreateRenderbufferActions();
+	addCreateAndroidNativeActions();
+	addRenderActions();
+	addClearActions();
+
+	for (int createNdx = 0; createNdx < m_createActions.size(); createNdx++)
+	for (int renderNdx = 0; renderNdx < m_renderActions.size(); renderNdx++)
+	for (int clearNdx = 0; clearNdx < m_clearActions.size(); clearNdx++)
+	{
+		const LabeledAction&	createAction	= m_createActions[createNdx];
+		const LabeledAction&	renderAction	= m_renderActions[renderNdx];
+		const LabeledAction&	clearAction		= m_clearActions[clearNdx];
+		TestSpec				spec;
+
+		if (!isCompatibleCreateAndRenderActions(*createAction.action, *renderAction.action))
+			continue;
+		if (!isCompatibleCreateAndModifyActions(*createAction.action, *clearAction.action))
+			continue;
+
+		spec.name = std::string("gles2_") + createAction.label + "_" + renderAction.label;
+		spec.desc = spec.name;
+
+		spec.contexts.push_back(TestSpec::API_GLES2);
+		spec.contexts.push_back(TestSpec::API_GLES2);
+
+		spec.operations.push_back(TestSpec::Operation(0, *createAction.action));
+		spec.operations.push_back(TestSpec::Operation(0, *renderAction.action));
+		spec.operations.push_back(TestSpec::Operation(0, *clearAction.action));
+		spec.operations.push_back(TestSpec::Operation(1, *createAction.action));
+		spec.operations.push_back(TestSpec::Operation(0, *renderAction.action));
+		spec.operations.push_back(TestSpec::Operation(1, *renderAction.action));
+
+		addChild(new ImageFormatCase(m_eglTestCtx, spec));
+	}
+}
+
+TestCaseGroup* createMultiContextRenderTests (EglTestContext& eglTestCtx, const string& name, const string& desc)
+{
+	return new MultiContextRenderTests(eglTestCtx, name, desc);
+}
+
+class ModifyTests : public ImageTests
+{
+public:
+								ModifyTests		(EglTestContext& eglTestCtx, const string& name, const string& desc)
+									: ImageTests(eglTestCtx, name, desc) {}
+
+	void						init			(void);
+
+protected:
+	void						addModifyActions(void);
+
+	LabeledActions				m_modifyActions;
+	GLES2ImageApi::RenderTryAll	m_renderAction;
+};
+
+void ModifyTests::addModifyActions (void)
+{
+	m_modifyActions.add("tex_subimage_rgb8",			MovePtr<Action>(new GLES2ImageApi::ModifyTexSubImage(GL_RGB,	GL_UNSIGNED_BYTE)));
+	m_modifyActions.add("tex_subimage_rgb565",			MovePtr<Action>(new GLES2ImageApi::ModifyTexSubImage(GL_RGB, 	GL_UNSIGNED_SHORT_5_6_5)));
+	m_modifyActions.add("tex_subimage_rgba8",			MovePtr<Action>(new GLES2ImageApi::ModifyTexSubImage(GL_RGBA,	GL_UNSIGNED_BYTE)));
+	m_modifyActions.add("tex_subimage_rgba5_a1",		MovePtr<Action>(new GLES2ImageApi::ModifyTexSubImage(GL_RGBA,	GL_UNSIGNED_SHORT_5_5_5_1)));
+	m_modifyActions.add("tex_subimage_rgba4",			MovePtr<Action>(new GLES2ImageApi::ModifyTexSubImage(GL_RGBA,	GL_UNSIGNED_SHORT_4_4_4_4)));
+
+	m_modifyActions.add("renderbuffer_clear_color",		MovePtr<Action>(new GLES2ImageApi::ModifyRenderbufferClearColor(tcu::Vec4(0.3f, 0.5f, 0.3f, 1.0f))));
+	m_modifyActions.add("renderbuffer_clear_depth",		MovePtr<Action>(new GLES2ImageApi::ModifyRenderbufferClearDepth(0.7f)));
+	m_modifyActions.add("renderbuffer_clear_stencil",	MovePtr<Action>(new GLES2ImageApi::ModifyRenderbufferClearStencil(78)));
 }
 
 void ModifyTests::init (void)
