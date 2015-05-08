@@ -24,7 +24,6 @@
 package com.drawelements.deqp.platformutil;
 
 import android.app.Instrumentation;
-
 import android.os.Bundle;
 
 public class DeqpPlatformCapabilityQueryInstrumentation extends Instrumentation
@@ -45,10 +44,11 @@ public class DeqpPlatformCapabilityQueryInstrumentation extends Instrumentation
 	@Override
 	public void onCreate (Bundle arguments) {
 		super.onCreate(arguments);
-		start();
 
 		m_queryType = arguments.getString("deqpQueryType");
 		m_cmdLine = arguments.getString("deqpCmdLine");
+
+		start();
 	}
 
 	@Override
@@ -66,6 +66,8 @@ public class DeqpPlatformCapabilityQueryInstrumentation extends Instrumentation
 			{
 				resultInfo = new Bundle();
 				resultInfo.putString("Error", "unknown query");
+				resultInfo.putString("QueryType", m_queryType);
+				resultInfo.putString("CmdLine", m_cmdLine);
 				resultCode = 2;
 			}
 		}
