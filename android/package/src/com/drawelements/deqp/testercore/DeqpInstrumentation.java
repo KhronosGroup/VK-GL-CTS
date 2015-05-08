@@ -44,7 +44,6 @@ public class DeqpInstrumentation extends Instrumentation
 	@Override
 	public void onCreate (Bundle arguments) {
 		super.onCreate(arguments);
-		start();
 
 		m_cmdLine		= arguments.getString("deqpCmdLine");
 		m_logFileName	= arguments.getString("deqpLogFilename");
@@ -64,6 +63,8 @@ public class DeqpInstrumentation extends Instrumentation
 		}
 		else
 			m_logData = false;
+
+		start();
 	}
 
 	@Override
