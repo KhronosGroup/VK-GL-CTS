@@ -32,6 +32,11 @@
 namespace tcu
 {
 
+enum
+{
+	MIN_ERR_THRESHOLD	= 4 // Magic to make small differences go away
+};
+
 using std::vector;
 
 template<int Channel>
@@ -105,17 +110,14 @@ inline void writeUnorm8<4> (const tcu::PixelBufferAccess& dst, int x, int y, deU
 }
 #endif
 
-static inline float compareColors (deUint32 pa, deUint32 pb, int minErrThreshold)
+static inline deUint32 colorDistSquared (deUint32 pa, deUint32 pb)
 {
-	int r = de::max<int>(de::abs((int)getChannel<0>(pa) - (int)getChannel<0>(pb)) - minErrThreshold, 0);
-	int g = de::max<int>(de::abs((int)getChannel<1>(pa) - (int)getChannel<1>(pb)) - minErrThreshold, 0);
-	int b = de::max<int>(de::abs((int)getChannel<2>(pa) - (int)getChannel<2>(pb)) - minErrThreshold, 0);
-	int a = de::max<int>(de::abs((int)getChannel<3>(pa) - (int)getChannel<3>(pb)) - minErrThreshold, 0);
+	const int	r	= de::max<int>(de::abs((int)getChannel<0>(pa) - (int)getChannel<0>(pb)) - MIN_ERR_THRESHOLD, 0);
+	const int	g	= de::max<int>(de::abs((int)getChannel<1>(pa) - (int)getChannel<1>(pb)) - MIN_ERR_THRESHOLD, 0);
+	const int	b	= de::max<int>(de::abs((int)getChannel<2>(pa) - (int)getChannel<2>(pb)) - MIN_ERR_THRESHOLD, 0);
+	const int	a	= de::max<int>(de::abs((int)getChannel<3>(pa) - (int)getChannel<3>(pb)) - MIN_ERR_THRESHOLD, 0);
 
-	float scale	= 1.0f/(255-minErrThreshold);
-	float sqSum	= (float)(r*r + g*g + b*b + a*a) * (scale*scale);
-
-	return deFloatSqrt(sqSum);
+	return deUint32(r*r + g*g + b*b + a*a);
 }
 
 template<int NumChannels>
@@ -208,14 +210,13 @@ static void separableConvolve (const PixelBufferAccess& dst, const ConstPixelBuf
 }
 
 template<int NumChannels>
-static float compareToNeighbor (const FuzzyCompareParams& params, de::Random& rnd, deUint32 pixel, const ConstPixelBufferAccess& surface, int x, int y)
+static deUint32 distSquaredToNeighbor (de::Random& rnd, deUint32 pixel, const ConstPixelBufferAccess& surface, int x, int y)
 {
-	float minErr = +100.f;
-
 	// (x, y) + (0, 0)
-	minErr = deFloatMin(minErr, compareColors(pixel, readUnorm8<NumChannels>(surface, x, y), params.minErrThreshold));
-	if (minErr == 0.0f)
-		return minErr;
+	deUint32	minDist		= colorDistSquared(pixel, readUnorm8<NumChannels>(surface, x, y));
+
+	if (minDist == 0)
+		return minDist;
 
 	// Area around (x, y)
 	static const int s_coords[][2] =
@@ -238,9 +239,9 @@ static float compareToNeighbor (const FuzzyCompareParams& params, de::Random& rn
 		if (!deInBounds32(dx, 0, surface.getWidth()) || !deInBounds32(dy, 0, surface.getHeight()))
 			continue;
 
-		minErr = deFloatMin(minErr, compareColors(pixel, readUnorm8<NumChannels>(surface, dx, dy), params.minErrThreshold));
-		if (minErr == 0.0f)
-			return minErr;
+		minDist = de::min(minDist, colorDistSquared(pixel, readUnorm8<NumChannels>(surface, dx, dy)));
+		if (minDist == 0)
+			return minDist;
 	}
 
 	// Random bilinear-interpolated samples around (x, y)
@@ -251,12 +252,12 @@ static float compareToNeighbor (const FuzzyCompareParams& params, de::Random& rn
 
 		deUint32 sample = bilinearSample<NumChannels>(surface, dx, dy);
 
-		minErr = deFloatMin(minErr, compareColors(pixel, sample, params.minErrThreshold));
-		if (minErr == 0.0f)
-			return minErr;
+		minDist = de::min(minDist, colorDistSquared(pixel, sample));
+		if (minDist == 0)
+			return minDist;
 	}
 
-	return minErr;
+	return minDist;
 }
 
 static inline float toGrayscale (const Vec4& c)
@@ -285,7 +286,7 @@ float fuzzyCompare (const FuzzyCompareParams& params, const ConstPixelBufferAcce
 	TextureLevel refFiltered(TextureFormat(TextureFormat::RGBA, TextureFormat::UNORM_INT8), width, height);
 	TextureLevel cmpFiltered(TextureFormat(TextureFormat::RGBA, TextureFormat::UNORM_INT8), width, height);
 
-	// Kernel = {0.15, 0.7, 0.15}
+	// Kernel = {0.1, 0.8, 0.1}
 	vector<float> kernel(3);
 	kernel[0] = kernel[2] = 0.1f; kernel[1]= 0.8f;
 	int shift = (int)(kernel.size() - 1) / 2;
@@ -306,8 +307,8 @@ float fuzzyCompare (const FuzzyCompareParams& params, const ConstPixelBufferAcce
 			DE_ASSERT(DE_FALSE);
 	}
 
-	int		numSamples	= 0;
-	float	errSum		= 0.0f;
+	int			numSamples	= 0;
+	deUint64	distSum4	= 0ull;
 
 	// Clear error mask to green.
 	clear(errorMask, Vec4(0.0f, 1.0f, 0.0f, 1.0f));
@@ -319,26 +320,35 @@ float fuzzyCompare (const FuzzyCompareParams& params, const ConstPixelBufferAcce
 	{
 		for (int x = 1; x < width-1; x += params.maxSampleSkip > 0 ? (int)rnd.getInt(0, params.maxSampleSkip) : 1)
 		{
-			float err = deFloatMin(compareToNeighbor<4>(params, rnd, readUnorm8<4>(refAccess, x, y), cmpAccess, x, y),
-								   compareToNeighbor<4>(params, rnd, readUnorm8<4>(cmpAccess, x, y), refAccess, x, y));
+			const deUint32	minDist2	= de::min(distSquaredToNeighbor<4>(rnd, readUnorm8<4>(refAccess, x, y), cmpAccess, x, y),
+												  distSquaredToNeighbor<4>(rnd, readUnorm8<4>(cmpAccess, x, y), refAccess, x, y));
+			const deUint64	newSum4		= distSum4 + minDist2*minDist2;
 
-			err = deFloatPow(err, params.errExp);
-
-			errSum		+= err;
+			distSum4	 = (newSum4 >= distSum4) ? newSum4 : ~0ull; // In case of overflow
 			numSamples	+= 1;
 
 			// Build error image.
-			float	red		= err * 500.0f;
-			float	luma	= toGrayscale(cmp.getPixel(x, y));
-			float	rF		= 0.7f + 0.3f*luma;
-			errorMask.setPixel(Vec4(red*rF, (1.0f-red)*rF, 0.0f, 1.0f), x, y);
+			{
+				const int	scale	= 255-MIN_ERR_THRESHOLD;
+				const float	err2	= float(minDist2) / float(scale*scale);
+				const float	err4	= err2*err2;
+				const float	red		= err4 * 500.0f;
+				const float	luma	= toGrayscale(cmp.getPixel(x, y));
+				const float	rF		= 0.7f + 0.3f*luma;
+
+				errorMask.setPixel(Vec4(red*rF, (1.0f-red)*rF, 0.0f, 1.0f), x, y);
+			}
 		}
 	}
 
-	// Scale error sum based on number of samples taken
-	errSum *= (float)((width-2) * (height-2)) / (float)numSamples;
+	{
+		// Scale error sum based on number of samples taken
+		const double	pSamples	= double((width-2) * (height-2)) / double(numSamples);
+		const deUint64	colScale	= deUint64(255-MIN_ERR_THRESHOLD);
+		const deUint64	colScale4	= colScale*colScale*colScale*colScale;
 
-	return errSum;
+		return float(double(distSum4) / double(colScale4) * pSamples);
+	}
 }
 
 } // tcu
