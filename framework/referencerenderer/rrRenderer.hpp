@@ -41,20 +41,22 @@ public:
 		MAX_COLOR_BUFFERS	= 4
 	};
 
-	RenderTarget (const MultisamplePixelBufferAccess& colorMultisampleBuffer,
-				  const MultisamplePixelBufferAccess& depthMultisampleBuffer	= MultisamplePixelBufferAccess(),
-				  const MultisamplePixelBufferAccess& stencilMultisampleBuffer	= MultisamplePixelBufferAccess())
-		: numColorBuffers	(1)
-		, depthBuffer		(depthMultisampleBuffer)
-		, stencilBuffer		(stencilMultisampleBuffer)
-	{
-		colorBuffers[0] = colorMultisampleBuffer;
-	}
+											RenderTarget		(const MultisamplePixelBufferAccess& colorMultisampleBuffer,
+																 const MultisamplePixelBufferAccess& depthMultisampleBuffer		= MultisamplePixelBufferAccess(),
+																 const MultisamplePixelBufferAccess& stencilMultisampleBuffer	= MultisamplePixelBufferAccess());
 
-	MultisamplePixelBufferAccess			colorBuffers[MAX_COLOR_BUFFERS];
-	const int								numColorBuffers;
-	const MultisamplePixelBufferAccess		depthBuffer;
-	const MultisamplePixelBufferAccess		stencilBuffer;
+	int										getNumSamples 		(void) const;
+
+	const MultisamplePixelBufferAccess&		getColorBuffer		(int ndx) const	{ DE_ASSERT(de::inRange(ndx, 0, m_numColorBuffers));	return m_colorBuffers[ndx];	}
+	int										getNumColorBuffers	(void) const	{ return m_numColorBuffers; }
+	const MultisamplePixelBufferAccess&		getStencilBuffer	(void) const	{														return m_stencilBuffer;		}
+	const MultisamplePixelBufferAccess&		getDepthBuffer		(void) const	{														return m_depthBuffer;		}
+
+private:
+	MultisamplePixelBufferAccess			m_colorBuffers[MAX_COLOR_BUFFERS];
+	const int								m_numColorBuffers;
+	const MultisamplePixelBufferAccess		m_depthBuffer;
+	const MultisamplePixelBufferAccess		m_stencilBuffer;
 } DE_WARN_UNUSED_TYPE;
 
 struct Program

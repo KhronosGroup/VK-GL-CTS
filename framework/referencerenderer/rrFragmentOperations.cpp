@@ -763,6 +763,10 @@ void FragmentProcessor::render (const rr::MultisamplePixelBufferAccess&		msColor
 	DE_ASSERT((!hasDepth || colorBuffer.getHeight() == depthBuffer.getHeight())	&& (!hasStencil || colorBuffer.getHeight() == stencilBuffer.getHeight()));
 	DE_ASSERT((!hasDepth || colorBuffer.getDepth() == depthBuffer.getDepth())	&& (!hasStencil || colorBuffer.getDepth() == stencilBuffer.getDepth()));
 
+	// Combined formats must be separated beforehand
+	DE_ASSERT(!hasDepth || (!tcu::isCombinedDepthStencilType(depthBuffer.getFormat().type) && depthBuffer.getFormat().order == tcu::TextureFormat::D));
+	DE_ASSERT(!hasStencil || (!tcu::isCombinedDepthStencilType(stencilBuffer.getFormat().type) && stencilBuffer.getFormat().order == tcu::TextureFormat::S));
+
 	int						numSamplesPerFragment		= colorBuffer.getWidth();
 	int						totalNumSamples				= numFragments*numSamplesPerFragment;
 	int						numSampleGroups				= (totalNumSamples - 1) / SAMPLE_REGISTER_SIZE + 1; // \note totalNumSamples/SAMPLE_REGISTER_SIZE rounded up.

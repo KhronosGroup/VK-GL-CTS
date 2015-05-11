@@ -1032,7 +1032,7 @@ void writeFragmentPackets (const RenderState&					state,
 						   const float*							depthValues,
 						   std::vector<Fragment>&				fragmentBuffer)
 {
-	const int			numSamples		= renderTarget.colorBuffers[0].getNumSamples();
+	const int			numSamples		= renderTarget.getNumSamples();
 	const size_t		numOutputs		= program.fragmentShader->getOutputs().size();
 	FragmentProcessor	fragProcessor;
 
@@ -1090,7 +1090,7 @@ void writeFragmentPackets (const RenderState&					state,
 			}
 
 			// Execute per-fragment ops and write
-			fragProcessor.render(renderTarget.colorBuffers[outputNdx], renderTarget.depthBuffer, renderTarget.stencilBuffer, &fragmentBuffer[0], fragCount, facetype, fragOpsState);
+			fragProcessor.render(renderTarget.getColorBuffer(outputNdx), renderTarget.getDepthBuffer(), renderTarget.getStencilBuffer(), &fragmentBuffer[0], fragCount, facetype, fragOpsState);
 		}
 	}
 }
@@ -1102,7 +1102,7 @@ void rasterizePrimitive (const RenderState&					state,
 						 const tcu::IVec4&					renderTargetRect,
 						 RasterizationInternalBuffers&		buffers)
 {
-	const int			numSamples		= renderTarget.colorBuffers[0].getNumSamples();
+	const int			numSamples		= renderTarget.getNumSamples();
 	const float			depthClampMin	= de::min(state.viewport.zn, state.viewport.zf);
 	const float			depthClampMax	= de::max(state.viewport.zn, state.viewport.zf);
 	TriangleRasterizer	rasterizer		(renderTargetRect, numSamples, state.rasterization);
@@ -1123,7 +1123,7 @@ void rasterizePrimitive (const RenderState&					state,
 	if (buffers.fragmentDepthBuffer && state.fragOps.polygonOffsetEnabled)
 	{
 		const float maximumDepthSlope			= findPrimitiveMaximumDepthSlope(triangle);
-		const float minimumResolvableDifference	= findPrimitiveMinimumResolvableDifference(triangle, renderTarget.depthBuffer);
+		const float minimumResolvableDifference	= findPrimitiveMinimumResolvableDifference(triangle, renderTarget.getDepthBuffer());
 
 		depthOffset = maximumDepthSlope * state.fragOps.polygonOffsetFactor + minimumResolvableDifference * state.fragOps.polygonOffsetUnits;
 	}
@@ -1170,7 +1170,7 @@ void rasterizePrimitive (const RenderState&					state,
 						 const tcu::IVec4&					renderTargetRect,
 						 RasterizationInternalBuffers&		buffers)
 {
-	const int					numSamples			= renderTarget.colorBuffers[0].getNumSamples();
+	const int					numSamples			= renderTarget.getNumSamples();
 	const float					depthClampMin		= de::min(state.viewport.zn, state.viewport.zf);
 	const float					depthClampMax		= de::max(state.viewport.zn, state.viewport.zf);
 	const bool					msaa				= numSamples > 1;
@@ -1223,7 +1223,7 @@ void rasterizePrimitive (const RenderState&					state,
 						 const tcu::IVec4&					renderTargetRect,
 						 RasterizationInternalBuffers&		buffers)
 {
-	const int			numSamples		= renderTarget.colorBuffers[0].getNumSamples();
+	const int			numSamples		= renderTarget.getNumSamples();
 	const float			depthClampMin	= de::min(state.viewport.zn, state.viewport.zf);
 	const float			depthClampMax	= de::max(state.viewport.zn, state.viewport.zf);
 	TriangleRasterizer	rasterizer1		(renderTargetRect, numSamples, state.rasterization);
@@ -1287,12 +1287,12 @@ void rasterize (const RenderState&					state,
 				const Program&						program,
 				const ContainerType&				list)
 {
-	const int						numSamples			= renderTarget.colorBuffers[0].getNumSamples();
+	const int						numSamples			= renderTarget.getNumSamples();
 	const int						numFragmentOutputs	= (int)program.fragmentShader->getOutputs().size();
 	const size_t					maxFragmentPackets	= 128;
 
 	const tcu::IVec4				viewportRect		= tcu::IVec4(state.viewport.rect.left, state.viewport.rect.bottom, state.viewport.rect.width, state.viewport.rect.height);
-	const tcu::IVec4				bufferRect			= getBufferSize(renderTarget.colorBuffers[0]);
+	const tcu::IVec4				bufferRect			= getBufferSize(renderTarget.getColorBuffer(0));
 	const tcu::IVec4				renderTargetRect	= rectIntersection(viewportRect, bufferRect);
 
 	// shared buffers for all primitives
@@ -1305,7 +1305,7 @@ void rasterize (const RenderState&					state,
 	RasterizationInternalBuffers	buffers;
 
 	// calculate depth only if we have a depth buffer
-	if (!isEmpty(renderTarget.depthBuffer))
+	if (!isEmpty(renderTarget.getDepthBuffer()))
 	{
 		depthValues.resize(maxFragmentPackets*4*numSamples);
 		depthBufferPointer = &depthValues[0];
@@ -1569,23 +1569,23 @@ bool isValidCommand (const DrawCommand& command, int numInstances)
 		return false;
 
 	// There is a fragment output sink for each output?
-	if ((size_t)command.renderTarget.numColorBuffers < command.program.fragmentShader->getOutputs().size())
+	if ((size_t)command.renderTarget.getNumColorBuffers() < command.program.fragmentShader->getOutputs().size())
 		return false;
 
 	// All destination buffers should have same number of samples and same size
-	for (int outputNdx = 0; outputNdx < command.renderTarget.numColorBuffers; ++outputNdx)
+	for (int outputNdx = 0; outputNdx < command.renderTarget.getNumColorBuffers(); ++outputNdx)
 	{
-		if (getBufferSize(command.renderTarget.colorBuffers[0]) != getBufferSize(command.renderTarget.colorBuffers[outputNdx]))
+		if (getBufferSize(command.renderTarget.getColorBuffer(0)) != getBufferSize(command.renderTarget.getColorBuffer(outputNdx)))
 			return false;
 
-		if (command.renderTarget.colorBuffers[0].getNumSamples() != command.renderTarget.colorBuffers[outputNdx].getNumSamples())
+		if (command.renderTarget.getNumSamples() != command.renderTarget.getColorBuffer(outputNdx).getNumSamples())
 			return false;
 	}
 
 	// All destination buffers should have same basic type as matching fragment output
 	for (size_t varyingNdx = 0; varyingNdx < command.program.fragmentShader->getOutputs().size(); ++varyingNdx)
 	{
-		const tcu::TextureChannelClass	colorbufferClass = tcu::getTextureChannelClass(command.renderTarget.colorBuffers[varyingNdx].raw().getFormat().type);
+		const tcu::TextureChannelClass	colorbufferClass = tcu::getTextureChannelClass(command.renderTarget.getColorBuffer(varyingNdx).raw().getFormat().type);
 		const GenericVecType			colorType		 = (colorbufferClass == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER) ? (rr::GENERICVECTYPE_INT32) : ((colorbufferClass == tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER) ? (rr::GENERICVECTYPE_UINT32) : (rr::GENERICVECTYPE_FLOAT));
 
 		if (command.program.fragmentShader->getOutputs()[varyingNdx].type != colorType)
@@ -1642,6 +1642,22 @@ bool isValidCommand (const DrawCommand& command, int numInstances)
 }
 
 } // anonymous
+
+RenderTarget::RenderTarget (const MultisamplePixelBufferAccess& colorMultisampleBuffer,
+							const MultisamplePixelBufferAccess& depthMultisampleBuffer,
+							const MultisamplePixelBufferAccess& stencilMultisampleBuffer)
+	: m_numColorBuffers	(1)
+	, m_depthBuffer		(MultisamplePixelBufferAccess::fromMultisampleAccess(tcu::getEffectiveDepthStencilAccess(depthMultisampleBuffer.raw(), tcu::Sampler::MODE_DEPTH)))
+	, m_stencilBuffer	(MultisamplePixelBufferAccess::fromMultisampleAccess(tcu::getEffectiveDepthStencilAccess(stencilMultisampleBuffer.raw(), tcu::Sampler::MODE_STENCIL)))
+{
+	m_colorBuffers[0] = colorMultisampleBuffer;
+}
+
+int RenderTarget::getNumSamples (void) const
+{
+	DE_ASSERT(m_numColorBuffers > 0);
+	return m_colorBuffers[0].getNumSamples();
+}
 
 DrawIndices::DrawIndices (const deUint32* ptr, int baseVertex_)
 	: indices	(ptr)

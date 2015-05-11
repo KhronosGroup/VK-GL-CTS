@@ -4286,7 +4286,7 @@ void ReferenceContext::drawWithReference (const rr::PrimitiveList& primitives, i
 	const bool							hasStencil	= !isEmpty(stencilBuf);
 	const int							stencilBits	= (hasStencil) ? (getNumStencilBits(stencilBuf.raw().getFormat())) : (0);
 
-	const rr::RenderTarget				renderTarget(colorBuf0, depthBuf,stencilBuf);
+	const rr::RenderTarget				renderTarget(colorBuf0, depthBuf, stencilBuf);
 	const rr::Program					program		(m_currentProgram->m_program->getVertexShader(),
 													 m_currentProgram->m_program->getFragmentShader(),
 													 (m_currentProgram->m_program->m_hasGeometryShader) ? (m_currentProgram->m_program->getGeometryShader()) : (DE_NULL));
