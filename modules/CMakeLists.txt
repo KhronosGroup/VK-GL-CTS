@@ -4,6 +4,7 @@ include(gles2/gles2.cmake				OPTIONAL)
 include(gles3/gles3.cmake				OPTIONAL)
 include(gles31/gles31.cmake				OPTIONAL)
 include(egl/egl.cmake					OPTIONAL)
+include(vulkan/vulkan.cmake				OPTIONAL)
 
 # Misc
 include(internal/internal.cmake			OPTIONAL)
