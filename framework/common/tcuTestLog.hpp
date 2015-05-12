@@ -253,15 +253,7 @@ public:
 
 	LogImage (const std::string& name, const std::string& description, const ConstPixelBufferAccess& access, qpImageCompressionMode compression = QP_IMAGE_COMPRESSION_MODE_BEST);
 
-	LogImage (const std::string& name, const std::string& description, const ConstPixelBufferAccess& access, const Vec4& scale, const Vec4& bias, qpImageCompressionMode compression = QP_IMAGE_COMPRESSION_MODE_BEST)
-		: m_name		(name)
-		, m_description	(description)
-		, m_access		(access)
-		, m_scale		(scale)
-		, m_bias		(bias)
-		, m_compression	(compression)
-	{
-	}
+	LogImage (const std::string& name, const std::string& description, const ConstPixelBufferAccess& access, const Vec4& scale, const Vec4& bias, qpImageCompressionMode compression = QP_IMAGE_COMPRESSION_MODE_BEST);
 
 	void write (TestLog& log) const;
 
@@ -476,11 +468,6 @@ inline SampleBuilder TestLog::operator<< (const BeginSampleToken&)
 inline void LogImageSet::write (TestLog& log) const
 {
 	log.startImageSet(m_name.c_str(), m_description.c_str());
-}
-
-inline void LogImage::write (TestLog& log) const
-{
-	log.writeImage(m_name.c_str(), m_description.c_str(), m_access, m_scale, m_bias, m_compression);
 }
 
 inline void LogSection::write (TestLog& log) const
