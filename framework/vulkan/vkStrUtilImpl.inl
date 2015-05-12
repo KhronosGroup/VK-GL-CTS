@@ -1,0 +1,1214 @@
+/* WARNING: This is auto-generated file. Do not modify, since changes will
+ * be lost! Modify the generating script instead.
+ */
+template<> const char*	getTypeName<VkObjectT>				(void) { return "VkObject";					}
+template<> const char*	getTypeName<VkInstanceT>			(void) { return "VkInstance";				}
+template<> const char*	getTypeName<VkPhysicalDeviceT>		(void) { return "VkPhysicalDevice";			}
+template<> const char*	getTypeName<VkDeviceT>				(void) { return "VkDevice";					}
+template<> const char*	getTypeName<VkQueueT>				(void) { return "VkQueue";					}
+template<> const char*	getTypeName<VkCmdBufferT>			(void) { return "VkCmdBuffer";				}
+template<> const char*	getTypeName<VkNonDispatchableT>		(void) { return "VkNonDispatchable";		}
+template<> const char*	getTypeName<VkDeviceMemoryT>		(void) { return "VkDeviceMemory";			}
+template<> const char*	getTypeName<VkBufferT>				(void) { return "VkBuffer";					}
+template<> const char*	getTypeName<VkBufferViewT>			(void) { return "VkBufferView";				}
+template<> const char*	getTypeName<VkImageT>				(void) { return "VkImage";					}
+template<> const char*	getTypeName<VkImageViewT>			(void) { return "VkImageView";				}
+template<> const char*	getTypeName<VkColorAttachmentViewT>	(void) { return "VkColorAttachmentView";	}
+template<> const char*	getTypeName<VkDepthStencilViewT>	(void) { return "VkDepthStencilView";		}
+template<> const char*	getTypeName<VkShaderT>				(void) { return "VkShader";					}
+template<> const char*	getTypeName<VkPipelineT>			(void) { return "VkPipeline";				}
+template<> const char*	getTypeName<VkPipelineLayoutT>		(void) { return "VkPipelineLayout";			}
+template<> const char*	getTypeName<VkSamplerT>				(void) { return "VkSampler";				}
+template<> const char*	getTypeName<VkDescriptorSetT>		(void) { return "VkDescriptorSet";			}
+template<> const char*	getTypeName<VkDescriptorSetLayoutT>	(void) { return "VkDescriptorSetLayout";	}
+template<> const char*	getTypeName<VkDescriptorPoolT>		(void) { return "VkDescriptorPool";			}
+template<> const char*	getTypeName<VkDynamicStateObjectT>	(void) { return "VkDynamicStateObject";		}
+template<> const char*	getTypeName<VkDynamicVpStateT>		(void) { return "VkDynamicVpState";			}
+template<> const char*	getTypeName<VkDynamicRsStateT>		(void) { return "VkDynamicRsState";			}
+template<> const char*	getTypeName<VkDynamicCbStateT>		(void) { return "VkDynamicCbState";			}
+template<> const char*	getTypeName<VkDynamicDsStateT>		(void) { return "VkDynamicDsState";			}
+template<> const char*	getTypeName<VkFenceT>				(void) { return "VkFence";					}
+template<> const char*	getTypeName<VkSemaphoreT>			(void) { return "VkSemaphore";				}
+template<> const char*	getTypeName<VkEventT>				(void) { return "VkEvent";					}
+template<> const char*	getTypeName<VkQueryPoolT>			(void) { return "VkQueryPool";				}
+template<> const char*	getTypeName<VkFramebufferT>			(void) { return "VkFramebuffer";			}
+template<> const char*	getTypeName<VkRenderPassT>			(void) { return "VkRenderPass";				}
+
+const char* getMemoryPriorityName (VkMemoryPriority value)
+{
+	switch (value)
+	{
+		case VK_MEMORY_PRIORITY_UNUSED:		return "VK_MEMORY_PRIORITY_UNUSED";
+		case VK_MEMORY_PRIORITY_VERY_LOW:	return "VK_MEMORY_PRIORITY_VERY_LOW";
+		case VK_MEMORY_PRIORITY_LOW:		return "VK_MEMORY_PRIORITY_LOW";
+		case VK_MEMORY_PRIORITY_NORMAL:		return "VK_MEMORY_PRIORITY_NORMAL";
+		case VK_MEMORY_PRIORITY_HIGH:		return "VK_MEMORY_PRIORITY_HIGH";
+		case VK_MEMORY_PRIORITY_VERY_HIGH:	return "VK_MEMORY_PRIORITY_VERY_HIGH";
+		default:							return DE_NULL;
+	}
+}
+
+const char* getImageLayoutName (VkImageLayout value)
+{
+	switch (value)
+	{
+		case VK_IMAGE_LAYOUT_UNDEFINED:							return "VK_IMAGE_LAYOUT_UNDEFINED";
+		case VK_IMAGE_LAYOUT_GENERAL:							return "VK_IMAGE_LAYOUT_GENERAL";
+		case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:			return "VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL";
+		case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:	return "VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL";
+		case VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL:	return "VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL";
+		case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:			return "VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL";
+		case VK_IMAGE_LAYOUT_CLEAR_OPTIMAL:						return "VK_IMAGE_LAYOUT_CLEAR_OPTIMAL";
+		case VK_IMAGE_LAYOUT_TRANSFER_SOURCE_OPTIMAL:			return "VK_IMAGE_LAYOUT_TRANSFER_SOURCE_OPTIMAL";
+		case VK_IMAGE_LAYOUT_TRANSFER_DESTINATION_OPTIMAL:		return "VK_IMAGE_LAYOUT_TRANSFER_DESTINATION_OPTIMAL";
+		default:												return DE_NULL;
+	}
+}
+
+const char* getPipeEventName (VkPipeEvent value)
+{
+	switch (value)
+	{
+		case VK_PIPE_EVENT_TOP_OF_PIPE:							return "VK_PIPE_EVENT_TOP_OF_PIPE";
+		case VK_PIPE_EVENT_VERTEX_PROCESSING_COMPLETE:			return "VK_PIPE_EVENT_VERTEX_PROCESSING_COMPLETE";
+		case VK_PIPE_EVENT_LOCAL_FRAGMENT_PROCESSING_COMPLETE:	return "VK_PIPE_EVENT_LOCAL_FRAGMENT_PROCESSING_COMPLETE";
+		case VK_PIPE_EVENT_FRAGMENT_PROCESSING_COMPLETE:		return "VK_PIPE_EVENT_FRAGMENT_PROCESSING_COMPLETE";
+		case VK_PIPE_EVENT_GRAPHICS_PIPELINE_COMPLETE:			return "VK_PIPE_EVENT_GRAPHICS_PIPELINE_COMPLETE";
+		case VK_PIPE_EVENT_COMPUTE_PIPELINE_COMPLETE:			return "VK_PIPE_EVENT_COMPUTE_PIPELINE_COMPLETE";
+		case VK_PIPE_EVENT_TRANSFER_COMPLETE:					return "VK_PIPE_EVENT_TRANSFER_COMPLETE";
+		case VK_PIPE_EVENT_COMMANDS_COMPLETE:					return "VK_PIPE_EVENT_COMMANDS_COMPLETE";
+		default:												return DE_NULL;
+	}
+}
+
+const char* getWaitEventName (VkWaitEvent value)
+{
+	switch (value)
+	{
+		case VK_WAIT_EVENT_TOP_OF_PIPE:				return "VK_WAIT_EVENT_TOP_OF_PIPE";
+		case VK_WAIT_EVENT_BEFORE_RASTERIZATION:	return "VK_WAIT_EVENT_BEFORE_RASTERIZATION";
+		default:									return DE_NULL;
+	}
+}
+
+const char* getAttachmentLoadOpName (VkAttachmentLoadOp value)
+{
+	switch (value)
+	{
+		case VK_ATTACHMENT_LOAD_OP_LOAD:		return "VK_ATTACHMENT_LOAD_OP_LOAD";
+		case VK_ATTACHMENT_LOAD_OP_CLEAR:		return "VK_ATTACHMENT_LOAD_OP_CLEAR";
+		case VK_ATTACHMENT_LOAD_OP_DONT_CARE:	return "VK_ATTACHMENT_LOAD_OP_DONT_CARE";
+		default:								return DE_NULL;
+	}
+}
+
+const char* getAttachmentStoreOpName (VkAttachmentStoreOp value)
+{
+	switch (value)
+	{
+		case VK_ATTACHMENT_STORE_OP_STORE:			return "VK_ATTACHMENT_STORE_OP_STORE";
+		case VK_ATTACHMENT_STORE_OP_RESOLVE_MSAA:	return "VK_ATTACHMENT_STORE_OP_RESOLVE_MSAA";
+		case VK_ATTACHMENT_STORE_OP_DONT_CARE:		return "VK_ATTACHMENT_STORE_OP_DONT_CARE";
+		default:									return DE_NULL;
+	}
+}
+
+const char* getImageTypeName (VkImageType value)
+{
+	switch (value)
+	{
+		case VK_IMAGE_TYPE_1D:	return "VK_IMAGE_TYPE_1D";
+		case VK_IMAGE_TYPE_2D:	return "VK_IMAGE_TYPE_2D";
+		case VK_IMAGE_TYPE_3D:	return "VK_IMAGE_TYPE_3D";
+		default:				return DE_NULL;
+	}
+}
+
+const char* getImageTilingName (VkImageTiling value)
+{
+	switch (value)
+	{
+		case VK_IMAGE_TILING_LINEAR:	return "VK_IMAGE_TILING_LINEAR";
+		case VK_IMAGE_TILING_OPTIMAL:	return "VK_IMAGE_TILING_OPTIMAL";
+		default:						return DE_NULL;
+	}
+}
+
+const char* getImageViewTypeName (VkImageViewType value)
+{
+	switch (value)
+	{
+		case VK_IMAGE_VIEW_TYPE_1D:		return "VK_IMAGE_VIEW_TYPE_1D";
+		case VK_IMAGE_VIEW_TYPE_2D:		return "VK_IMAGE_VIEW_TYPE_2D";
+		case VK_IMAGE_VIEW_TYPE_3D:		return "VK_IMAGE_VIEW_TYPE_3D";
+		case VK_IMAGE_VIEW_TYPE_CUBE:	return "VK_IMAGE_VIEW_TYPE_CUBE";
+		default:						return DE_NULL;
+	}
+}
+
+const char* getImageAspectName (VkImageAspect value)
+{
+	switch (value)
+	{
+		case VK_IMAGE_ASPECT_COLOR:		return "VK_IMAGE_ASPECT_COLOR";
+		case VK_IMAGE_ASPECT_DEPTH:		return "VK_IMAGE_ASPECT_DEPTH";
+		case VK_IMAGE_ASPECT_STENCIL:	return "VK_IMAGE_ASPECT_STENCIL";
+		default:						return DE_NULL;
+	}
+}
+
+const char* getBufferViewTypeName (VkBufferViewType value)
+{
+	switch (value)
+	{
+		case VK_BUFFER_VIEW_TYPE_RAW:		return "VK_BUFFER_VIEW_TYPE_RAW";
+		case VK_BUFFER_VIEW_TYPE_FORMATTED:	return "VK_BUFFER_VIEW_TYPE_FORMATTED";
+		default:							return DE_NULL;
+	}
+}
+
+const char* getChannelSwizzleName (VkChannelSwizzle value)
+{
+	switch (value)
+	{
+		case VK_CHANNEL_SWIZZLE_ZERO:	return "VK_CHANNEL_SWIZZLE_ZERO";
+		case VK_CHANNEL_SWIZZLE_ONE:	return "VK_CHANNEL_SWIZZLE_ONE";
+		case VK_CHANNEL_SWIZZLE_R:		return "VK_CHANNEL_SWIZZLE_R";
+		case VK_CHANNEL_SWIZZLE_G:		return "VK_CHANNEL_SWIZZLE_G";
+		case VK_CHANNEL_SWIZZLE_B:		return "VK_CHANNEL_SWIZZLE_B";
+		case VK_CHANNEL_SWIZZLE_A:		return "VK_CHANNEL_SWIZZLE_A";
+		default:						return DE_NULL;
+	}
+}
+
+const char* getDescriptorTypeName (VkDescriptorType value)
+{
+	switch (value)
+	{
+		case VK_DESCRIPTOR_TYPE_SAMPLER:				return "VK_DESCRIPTOR_TYPE_SAMPLER";
+		case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:	return "VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER";
+		case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:			return "VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE";
+		case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:			return "VK_DESCRIPTOR_TYPE_STORAGE_IMAGE";
+		case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:	return "VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER";
+		case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:	return "VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER";
+		case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:			return "VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER";
+		case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:			return "VK_DESCRIPTOR_TYPE_STORAGE_BUFFER";
+		case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:	return "VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC";
+		case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC:	return "VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC";
+		default:										return DE_NULL;
+	}
+}
+
+const char* getDescriptorPoolUsageName (VkDescriptorPoolUsage value)
+{
+	switch (value)
+	{
+		case VK_DESCRIPTOR_POOL_USAGE_ONE_SHOT:	return "VK_DESCRIPTOR_POOL_USAGE_ONE_SHOT";
+		case VK_DESCRIPTOR_POOL_USAGE_DYNAMIC:	return "VK_DESCRIPTOR_POOL_USAGE_DYNAMIC";
+		default:								return DE_NULL;
+	}
+}
+
+const char* getDescriptorUpdateModeName (VkDescriptorUpdateMode value)
+{
+	switch (value)
+	{
+		case VK_DESCRIPTOR_UPDATE_MODE_COPY:	return "VK_DESCRIPTOR_UPDATE_MODE_COPY";
+		case VK_DESCRIPTOR_UPDATE_MODE_FASTEST:	return "VK_DESCRIPTOR_UPDATE_MODE_FASTEST";
+		default:								return DE_NULL;
+	}
+}
+
+const char* getDescriptorSetUsageName (VkDescriptorSetUsage value)
+{
+	switch (value)
+	{
+		case VK_DESCRIPTOR_SET_USAGE_ONE_SHOT:	return "VK_DESCRIPTOR_SET_USAGE_ONE_SHOT";
+		case VK_DESCRIPTOR_SET_USAGE_STATIC:	return "VK_DESCRIPTOR_SET_USAGE_STATIC";
+		default:								return DE_NULL;
+	}
+}
+
+const char* getQueryTypeName (VkQueryType value)
+{
+	switch (value)
+	{
+		case VK_QUERY_TYPE_OCCLUSION:			return "VK_QUERY_TYPE_OCCLUSION";
+		case VK_QUERY_TYPE_PIPELINE_STATISTICS:	return "VK_QUERY_TYPE_PIPELINE_STATISTICS";
+		default:								return DE_NULL;
+	}
+}
+
+const char* getTimestampTypeName (VkTimestampType value)
+{
+	switch (value)
+	{
+		case VK_TIMESTAMP_TYPE_TOP:		return "VK_TIMESTAMP_TYPE_TOP";
+		case VK_TIMESTAMP_TYPE_BOTTOM:	return "VK_TIMESTAMP_TYPE_BOTTOM";
+		default:						return DE_NULL;
+	}
+}
+
+const char* getBorderColorName (VkBorderColor value)
+{
+	switch (value)
+	{
+		case VK_BORDER_COLOR_OPAQUE_WHITE:		return "VK_BORDER_COLOR_OPAQUE_WHITE";
+		case VK_BORDER_COLOR_TRANSPARENT_BLACK:	return "VK_BORDER_COLOR_TRANSPARENT_BLACK";
+		case VK_BORDER_COLOR_OPAQUE_BLACK:		return "VK_BORDER_COLOR_OPAQUE_BLACK";
+		default:								return DE_NULL;
+	}
+}
+
+const char* getPipelineBindPointName (VkPipelineBindPoint value)
+{
+	switch (value)
+	{
+		case VK_PIPELINE_BIND_POINT_COMPUTE:	return "VK_PIPELINE_BIND_POINT_COMPUTE";
+		case VK_PIPELINE_BIND_POINT_GRAPHICS:	return "VK_PIPELINE_BIND_POINT_GRAPHICS";
+		default:								return DE_NULL;
+	}
+}
+
+const char* getStateBindPointName (VkStateBindPoint value)
+{
+	switch (value)
+	{
+		case VK_STATE_BIND_POINT_VIEWPORT:		return "VK_STATE_BIND_POINT_VIEWPORT";
+		case VK_STATE_BIND_POINT_RASTER:		return "VK_STATE_BIND_POINT_RASTER";
+		case VK_STATE_BIND_POINT_COLOR_BLEND:	return "VK_STATE_BIND_POINT_COLOR_BLEND";
+		case VK_STATE_BIND_POINT_DEPTH_STENCIL:	return "VK_STATE_BIND_POINT_DEPTH_STENCIL";
+		default:								return DE_NULL;
+	}
+}
+
+const char* getPrimitiveTopologyName (VkPrimitiveTopology value)
+{
+	switch (value)
+	{
+		case VK_PRIMITIVE_TOPOLOGY_POINT_LIST:			return "VK_PRIMITIVE_TOPOLOGY_POINT_LIST";
+		case VK_PRIMITIVE_TOPOLOGY_LINE_LIST:			return "VK_PRIMITIVE_TOPOLOGY_LINE_LIST";
+		case VK_PRIMITIVE_TOPOLOGY_LINE_STRIP:			return "VK_PRIMITIVE_TOPOLOGY_LINE_STRIP";
+		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST:		return "VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST";
+		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP:		return "VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP";
+		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN:		return "VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN";
+		case VK_PRIMITIVE_TOPOLOGY_LINE_LIST_ADJ:		return "VK_PRIMITIVE_TOPOLOGY_LINE_LIST_ADJ";
+		case VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_ADJ:		return "VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_ADJ";
+		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_ADJ:	return "VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_ADJ";
+		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_ADJ:	return "VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_ADJ";
+		case VK_PRIMITIVE_TOPOLOGY_PATCH:				return "VK_PRIMITIVE_TOPOLOGY_PATCH";
+		default:										return DE_NULL;
+	}
+}
+
+const char* getIndexTypeName (VkIndexType value)
+{
+	switch (value)
+	{
+		case VK_INDEX_TYPE_UINT8:	return "VK_INDEX_TYPE_UINT8";
+		case VK_INDEX_TYPE_UINT16:	return "VK_INDEX_TYPE_UINT16";
+		case VK_INDEX_TYPE_UINT32:	return "VK_INDEX_TYPE_UINT32";
+		default:					return DE_NULL;
+	}
+}
+
+const char* getTexFilterName (VkTexFilter value)
+{
+	switch (value)
+	{
+		case VK_TEX_FILTER_NEAREST:	return "VK_TEX_FILTER_NEAREST";
+		case VK_TEX_FILTER_LINEAR:	return "VK_TEX_FILTER_LINEAR";
+		default:					return DE_NULL;
+	}
+}
+
+const char* getTexMipmapModeName (VkTexMipmapMode value)
+{
+	switch (value)
+	{
+		case VK_TEX_MIPMAP_MODE_BASE:		return "VK_TEX_MIPMAP_MODE_BASE";
+		case VK_TEX_MIPMAP_MODE_NEAREST:	return "VK_TEX_MIPMAP_MODE_NEAREST";
+		case VK_TEX_MIPMAP_MODE_LINEAR:		return "VK_TEX_MIPMAP_MODE_LINEAR";
+		default:							return DE_NULL;
+	}
+}
+
+const char* getTexAddressName (VkTexAddress value)
+{
+	switch (value)
+	{
+		case VK_TEX_ADDRESS_WRAP:			return "VK_TEX_ADDRESS_WRAP";
+		case VK_TEX_ADDRESS_MIRROR:			return "VK_TEX_ADDRESS_MIRROR";
+		case VK_TEX_ADDRESS_CLAMP:			return "VK_TEX_ADDRESS_CLAMP";
+		case VK_TEX_ADDRESS_MIRROR_ONCE:	return "VK_TEX_ADDRESS_MIRROR_ONCE";
+		case VK_TEX_ADDRESS_CLAMP_BORDER:	return "VK_TEX_ADDRESS_CLAMP_BORDER";
+		default:							return DE_NULL;
+	}
+}
+
+const char* getCompareOpName (VkCompareOp value)
+{
+	switch (value)
+	{
+		case VK_COMPARE_OP_NEVER:			return "VK_COMPARE_OP_NEVER";
+		case VK_COMPARE_OP_LESS:			return "VK_COMPARE_OP_LESS";
+		case VK_COMPARE_OP_EQUAL:			return "VK_COMPARE_OP_EQUAL";
+		case VK_COMPARE_OP_LESS_EQUAL:		return "VK_COMPARE_OP_LESS_EQUAL";
+		case VK_COMPARE_OP_GREATER:			return "VK_COMPARE_OP_GREATER";
+		case VK_COMPARE_OP_NOT_EQUAL:		return "VK_COMPARE_OP_NOT_EQUAL";
+		case VK_COMPARE_OP_GREATER_EQUAL:	return "VK_COMPARE_OP_GREATER_EQUAL";
+		case VK_COMPARE_OP_ALWAYS:			return "VK_COMPARE_OP_ALWAYS";
+		default:							return DE_NULL;
+	}
+}
+
+const char* getFillModeName (VkFillMode value)
+{
+	switch (value)
+	{
+		case VK_FILL_MODE_POINTS:		return "VK_FILL_MODE_POINTS";
+		case VK_FILL_MODE_WIREFRAME:	return "VK_FILL_MODE_WIREFRAME";
+		case VK_FILL_MODE_SOLID:		return "VK_FILL_MODE_SOLID";
+		default:						return DE_NULL;
+	}
+}
+
+const char* getCullModeName (VkCullMode value)
+{
+	switch (value)
+	{
+		case VK_CULL_MODE_NONE:				return "VK_CULL_MODE_NONE";
+		case VK_CULL_MODE_FRONT:			return "VK_CULL_MODE_FRONT";
+		case VK_CULL_MODE_BACK:				return "VK_CULL_MODE_BACK";
+		case VK_CULL_MODE_FRONT_AND_BACK:	return "VK_CULL_MODE_FRONT_AND_BACK";
+		default:							return DE_NULL;
+	}
+}
+
+const char* getFrontFaceName (VkFrontFace value)
+{
+	switch (value)
+	{
+		case VK_FRONT_FACE_CCW:	return "VK_FRONT_FACE_CCW";
+		case VK_FRONT_FACE_CW:	return "VK_FRONT_FACE_CW";
+		default:				return DE_NULL;
+	}
+}
+
+const char* getProvokingVertexName (VkProvokingVertex value)
+{
+	switch (value)
+	{
+		case VK_PROVOKING_VERTEX_FIRST:	return "VK_PROVOKING_VERTEX_FIRST";
+		case VK_PROVOKING_VERTEX_LAST:	return "VK_PROVOKING_VERTEX_LAST";
+		default:						return DE_NULL;
+	}
+}
+
+const char* getCoordinateOriginName (VkCoordinateOrigin value)
+{
+	switch (value)
+	{
+		case VK_COORDINATE_ORIGIN_UPPER_LEFT:	return "VK_COORDINATE_ORIGIN_UPPER_LEFT";
+		case VK_COORDINATE_ORIGIN_LOWER_LEFT:	return "VK_COORDINATE_ORIGIN_LOWER_LEFT";
+		default:								return DE_NULL;
+	}
+}
+
+const char* getDepthModeName (VkDepthMode value)
+{
+	switch (value)
+	{
+		case VK_DEPTH_MODE_ZERO_TO_ONE:			return "VK_DEPTH_MODE_ZERO_TO_ONE";
+		case VK_DEPTH_MODE_NEGATIVE_ONE_TO_ONE:	return "VK_DEPTH_MODE_NEGATIVE_ONE_TO_ONE";
+		default:								return DE_NULL;
+	}
+}
+
+const char* getBlendName (VkBlend value)
+{
+	switch (value)
+	{
+		case VK_BLEND_ZERO:						return "VK_BLEND_ZERO";
+		case VK_BLEND_ONE:						return "VK_BLEND_ONE";
+		case VK_BLEND_SRC_COLOR:				return "VK_BLEND_SRC_COLOR";
+		case VK_BLEND_ONE_MINUS_SRC_COLOR:		return "VK_BLEND_ONE_MINUS_SRC_COLOR";
+		case VK_BLEND_DEST_COLOR:				return "VK_BLEND_DEST_COLOR";
+		case VK_BLEND_ONE_MINUS_DEST_COLOR:		return "VK_BLEND_ONE_MINUS_DEST_COLOR";
+		case VK_BLEND_SRC_ALPHA:				return "VK_BLEND_SRC_ALPHA";
+		case VK_BLEND_ONE_MINUS_SRC_ALPHA:		return "VK_BLEND_ONE_MINUS_SRC_ALPHA";
+		case VK_BLEND_DEST_ALPHA:				return "VK_BLEND_DEST_ALPHA";
+		case VK_BLEND_ONE_MINUS_DEST_ALPHA:		return "VK_BLEND_ONE_MINUS_DEST_ALPHA";
+		case VK_BLEND_CONSTANT_COLOR:			return "VK_BLEND_CONSTANT_COLOR";
+		case VK_BLEND_ONE_MINUS_CONSTANT_COLOR:	return "VK_BLEND_ONE_MINUS_CONSTANT_COLOR";
+		case VK_BLEND_CONSTANT_ALPHA:			return "VK_BLEND_CONSTANT_ALPHA";
+		case VK_BLEND_ONE_MINUS_CONSTANT_ALPHA:	return "VK_BLEND_ONE_MINUS_CONSTANT_ALPHA";
+		case VK_BLEND_SRC_ALPHA_SATURATE:		return "VK_BLEND_SRC_ALPHA_SATURATE";
+		case VK_BLEND_SRC1_COLOR:				return "VK_BLEND_SRC1_COLOR";
+		case VK_BLEND_ONE_MINUS_SRC1_COLOR:		return "VK_BLEND_ONE_MINUS_SRC1_COLOR";
+		case VK_BLEND_SRC1_ALPHA:				return "VK_BLEND_SRC1_ALPHA";
+		case VK_BLEND_ONE_MINUS_SRC1_ALPHA:		return "VK_BLEND_ONE_MINUS_SRC1_ALPHA";
+		default:								return DE_NULL;
+	}
+}
+
+const char* getBlendOpName (VkBlendOp value)
+{
+	switch (value)
+	{
+		case VK_BLEND_OP_ADD:				return "VK_BLEND_OP_ADD";
+		case VK_BLEND_OP_SUBTRACT:			return "VK_BLEND_OP_SUBTRACT";
+		case VK_BLEND_OP_REVERSE_SUBTRACT:	return "VK_BLEND_OP_REVERSE_SUBTRACT";
+		case VK_BLEND_OP_MIN:				return "VK_BLEND_OP_MIN";
+		case VK_BLEND_OP_MAX:				return "VK_BLEND_OP_MAX";
+		default:							return DE_NULL;
+	}
+}
+
+const char* getStencilOpName (VkStencilOp value)
+{
+	switch (value)
+	{
+		case VK_STENCIL_OP_KEEP:		return "VK_STENCIL_OP_KEEP";
+		case VK_STENCIL_OP_ZERO:		return "VK_STENCIL_OP_ZERO";
+		case VK_STENCIL_OP_REPLACE:		return "VK_STENCIL_OP_REPLACE";
+		case VK_STENCIL_OP_INC_CLAMP:	return "VK_STENCIL_OP_INC_CLAMP";
+		case VK_STENCIL_OP_DEC_CLAMP:	return "VK_STENCIL_OP_DEC_CLAMP";
+		case VK_STENCIL_OP_INVERT:		return "VK_STENCIL_OP_INVERT";
+		case VK_STENCIL_OP_INC_WRAP:	return "VK_STENCIL_OP_INC_WRAP";
+		case VK_STENCIL_OP_DEC_WRAP:	return "VK_STENCIL_OP_DEC_WRAP";
+		default:						return DE_NULL;
+	}
+}
+
+const char* getLogicOpName (VkLogicOp value)
+{
+	switch (value)
+	{
+		case VK_LOGIC_OP_COPY:			return "VK_LOGIC_OP_COPY";
+		case VK_LOGIC_OP_CLEAR:			return "VK_LOGIC_OP_CLEAR";
+		case VK_LOGIC_OP_AND:			return "VK_LOGIC_OP_AND";
+		case VK_LOGIC_OP_AND_REVERSE:	return "VK_LOGIC_OP_AND_REVERSE";
+		case VK_LOGIC_OP_AND_INVERTED:	return "VK_LOGIC_OP_AND_INVERTED";
+		case VK_LOGIC_OP_NOOP:			return "VK_LOGIC_OP_NOOP";
+		case VK_LOGIC_OP_XOR:			return "VK_LOGIC_OP_XOR";
+		case VK_LOGIC_OP_OR:			return "VK_LOGIC_OP_OR";
+		case VK_LOGIC_OP_NOR:			return "VK_LOGIC_OP_NOR";
+		case VK_LOGIC_OP_EQUIV:			return "VK_LOGIC_OP_EQUIV";
+		case VK_LOGIC_OP_INVERT:		return "VK_LOGIC_OP_INVERT";
+		case VK_LOGIC_OP_OR_REVERSE:	return "VK_LOGIC_OP_OR_REVERSE";
+		case VK_LOGIC_OP_COPY_INVERTED:	return "VK_LOGIC_OP_COPY_INVERTED";
+		case VK_LOGIC_OP_OR_INVERTED:	return "VK_LOGIC_OP_OR_INVERTED";
+		case VK_LOGIC_OP_NAND:			return "VK_LOGIC_OP_NAND";
+		case VK_LOGIC_OP_SET:			return "VK_LOGIC_OP_SET";
+		default:						return DE_NULL;
+	}
+}
+
+const char* getSystemAllocTypeName (VkSystemAllocType value)
+{
+	switch (value)
+	{
+		case VK_SYSTEM_ALLOC_TYPE_API_OBJECT:		return "VK_SYSTEM_ALLOC_TYPE_API_OBJECT";
+		case VK_SYSTEM_ALLOC_TYPE_INTERNAL:			return "VK_SYSTEM_ALLOC_TYPE_INTERNAL";
+		case VK_SYSTEM_ALLOC_TYPE_INTERNAL_TEMP:	return "VK_SYSTEM_ALLOC_TYPE_INTERNAL_TEMP";
+		case VK_SYSTEM_ALLOC_TYPE_INTERNAL_SHADER:	return "VK_SYSTEM_ALLOC_TYPE_INTERNAL_SHADER";
+		case VK_SYSTEM_ALLOC_TYPE_DEBUG:			return "VK_SYSTEM_ALLOC_TYPE_DEBUG";
+		default:									return DE_NULL;
+	}
+}
+
+const char* getPhysicalDeviceTypeName (VkPhysicalDeviceType value)
+{
+	switch (value)
+	{
+		case VK_PHYSICAL_DEVICE_TYPE_OTHER:				return "VK_PHYSICAL_DEVICE_TYPE_OTHER";
+		case VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU:	return "VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU";
+		case VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU:		return "VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU";
+		case VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU:		return "VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU";
+		case VK_PHYSICAL_DEVICE_TYPE_CPU:				return "VK_PHYSICAL_DEVICE_TYPE_CPU";
+		default:										return DE_NULL;
+	}
+}
+
+const char* getPhysicalDeviceInfoTypeName (VkPhysicalDeviceInfoType value)
+{
+	switch (value)
+	{
+		case VK_PHYSICAL_DEVICE_INFO_TYPE_PROPERTIES:			return "VK_PHYSICAL_DEVICE_INFO_TYPE_PROPERTIES";
+		case VK_PHYSICAL_DEVICE_INFO_TYPE_PERFORMANCE:			return "VK_PHYSICAL_DEVICE_INFO_TYPE_PERFORMANCE";
+		case VK_PHYSICAL_DEVICE_INFO_TYPE_QUEUE_PROPERTIES:		return "VK_PHYSICAL_DEVICE_INFO_TYPE_QUEUE_PROPERTIES";
+		case VK_PHYSICAL_DEVICE_INFO_TYPE_MEMORY_PROPERTIES:	return "VK_PHYSICAL_DEVICE_INFO_TYPE_MEMORY_PROPERTIES";
+		default:												return DE_NULL;
+	}
+}
+
+const char* getExtensionInfoTypeName (VkExtensionInfoType value)
+{
+	switch (value)
+	{
+		case VK_EXTENSION_INFO_TYPE_COUNT:		return "VK_EXTENSION_INFO_TYPE_COUNT";
+		case VK_EXTENSION_INFO_TYPE_PROPERTIES:	return "VK_EXTENSION_INFO_TYPE_PROPERTIES";
+		default:								return DE_NULL;
+	}
+}
+
+const char* getFormatInfoTypeName (VkFormatInfoType value)
+{
+	switch (value)
+	{
+		case VK_FORMAT_INFO_TYPE_PROPERTIES:	return "VK_FORMAT_INFO_TYPE_PROPERTIES";
+		default:								return DE_NULL;
+	}
+}
+
+const char* getSubresourceInfoTypeName (VkSubresourceInfoType value)
+{
+	switch (value)
+	{
+		case VK_SUBRESOURCE_INFO_TYPE_LAYOUT:	return "VK_SUBRESOURCE_INFO_TYPE_LAYOUT";
+		default:								return DE_NULL;
+	}
+}
+
+const char* getObjectInfoTypeName (VkObjectInfoType value)
+{
+	switch (value)
+	{
+		case VK_OBJECT_INFO_TYPE_MEMORY_ALLOCATION_COUNT:	return "VK_OBJECT_INFO_TYPE_MEMORY_ALLOCATION_COUNT";
+		case VK_OBJECT_INFO_TYPE_MEMORY_REQUIREMENTS:		return "VK_OBJECT_INFO_TYPE_MEMORY_REQUIREMENTS";
+		default:											return DE_NULL;
+	}
+}
+
+const char* getVertexInputStepRateName (VkVertexInputStepRate value)
+{
+	switch (value)
+	{
+		case VK_VERTEX_INPUT_STEP_RATE_VERTEX:		return "VK_VERTEX_INPUT_STEP_RATE_VERTEX";
+		case VK_VERTEX_INPUT_STEP_RATE_INSTANCE:	return "VK_VERTEX_INPUT_STEP_RATE_INSTANCE";
+		case VK_VERTEX_INPUT_STEP_RATE_DRAW:		return "VK_VERTEX_INPUT_STEP_RATE_DRAW";
+		default:									return DE_NULL;
+	}
+}
+
+const char* getFormatName (VkFormat value)
+{
+	switch (value)
+	{
+		case VK_FORMAT_UNDEFINED:				return "VK_FORMAT_UNDEFINED";
+		case VK_FORMAT_R4G4_UNORM:				return "VK_FORMAT_R4G4_UNORM";
+		case VK_FORMAT_R4G4_USCALED:			return "VK_FORMAT_R4G4_USCALED";
+		case VK_FORMAT_R4G4B4A4_UNORM:			return "VK_FORMAT_R4G4B4A4_UNORM";
+		case VK_FORMAT_R4G4B4A4_USCALED:		return "VK_FORMAT_R4G4B4A4_USCALED";
+		case VK_FORMAT_R5G6B5_UNORM:			return "VK_FORMAT_R5G6B5_UNORM";
+		case VK_FORMAT_R5G6B5_USCALED:			return "VK_FORMAT_R5G6B5_USCALED";
+		case VK_FORMAT_R5G5B5A1_UNORM:			return "VK_FORMAT_R5G5B5A1_UNORM";
+		case VK_FORMAT_R5G5B5A1_USCALED:		return "VK_FORMAT_R5G5B5A1_USCALED";
+		case VK_FORMAT_R8_UNORM:				return "VK_FORMAT_R8_UNORM";
+		case VK_FORMAT_R8_SNORM:				return "VK_FORMAT_R8_SNORM";
+		case VK_FORMAT_R8_USCALED:				return "VK_FORMAT_R8_USCALED";
+		case VK_FORMAT_R8_SSCALED:				return "VK_FORMAT_R8_SSCALED";
+		case VK_FORMAT_R8_UINT:					return "VK_FORMAT_R8_UINT";
+		case VK_FORMAT_R8_SINT:					return "VK_FORMAT_R8_SINT";
+		case VK_FORMAT_R8_SRGB:					return "VK_FORMAT_R8_SRGB";
+		case VK_FORMAT_R8G8_UNORM:				return "VK_FORMAT_R8G8_UNORM";
+		case VK_FORMAT_R8G8_SNORM:				return "VK_FORMAT_R8G8_SNORM";
+		case VK_FORMAT_R8G8_USCALED:			return "VK_FORMAT_R8G8_USCALED";
+		case VK_FORMAT_R8G8_SSCALED:			return "VK_FORMAT_R8G8_SSCALED";
+		case VK_FORMAT_R8G8_UINT:				return "VK_FORMAT_R8G8_UINT";
+		case VK_FORMAT_R8G8_SINT:				return "VK_FORMAT_R8G8_SINT";
+		case VK_FORMAT_R8G8_SRGB:				return "VK_FORMAT_R8G8_SRGB";
+		case VK_FORMAT_R8G8B8_UNORM:			return "VK_FORMAT_R8G8B8_UNORM";
+		case VK_FORMAT_R8G8B8_SNORM:			return "VK_FORMAT_R8G8B8_SNORM";
+		case VK_FORMAT_R8G8B8_USCALED:			return "VK_FORMAT_R8G8B8_USCALED";
+		case VK_FORMAT_R8G8B8_SSCALED:			return "VK_FORMAT_R8G8B8_SSCALED";
+		case VK_FORMAT_R8G8B8_UINT:				return "VK_FORMAT_R8G8B8_UINT";
+		case VK_FORMAT_R8G8B8_SINT:				return "VK_FORMAT_R8G8B8_SINT";
+		case VK_FORMAT_R8G8B8_SRGB:				return "VK_FORMAT_R8G8B8_SRGB";
+		case VK_FORMAT_R8G8B8A8_UNORM:			return "VK_FORMAT_R8G8B8A8_UNORM";
+		case VK_FORMAT_R8G8B8A8_SNORM:			return "VK_FORMAT_R8G8B8A8_SNORM";
+		case VK_FORMAT_R8G8B8A8_USCALED:		return "VK_FORMAT_R8G8B8A8_USCALED";
+		case VK_FORMAT_R8G8B8A8_SSCALED:		return "VK_FORMAT_R8G8B8A8_SSCALED";
+		case VK_FORMAT_R8G8B8A8_UINT:			return "VK_FORMAT_R8G8B8A8_UINT";
+		case VK_FORMAT_R8G8B8A8_SINT:			return "VK_FORMAT_R8G8B8A8_SINT";
+		case VK_FORMAT_R8G8B8A8_SRGB:			return "VK_FORMAT_R8G8B8A8_SRGB";
+		case VK_FORMAT_R10G10B10A2_UNORM:		return "VK_FORMAT_R10G10B10A2_UNORM";
+		case VK_FORMAT_R10G10B10A2_SNORM:		return "VK_FORMAT_R10G10B10A2_SNORM";
+		case VK_FORMAT_R10G10B10A2_USCALED:		return "VK_FORMAT_R10G10B10A2_USCALED";
+		case VK_FORMAT_R10G10B10A2_SSCALED:		return "VK_FORMAT_R10G10B10A2_SSCALED";
+		case VK_FORMAT_R10G10B10A2_UINT:		return "VK_FORMAT_R10G10B10A2_UINT";
+		case VK_FORMAT_R10G10B10A2_SINT:		return "VK_FORMAT_R10G10B10A2_SINT";
+		case VK_FORMAT_R16_UNORM:				return "VK_FORMAT_R16_UNORM";
+		case VK_FORMAT_R16_SNORM:				return "VK_FORMAT_R16_SNORM";
+		case VK_FORMAT_R16_USCALED:				return "VK_FORMAT_R16_USCALED";
+		case VK_FORMAT_R16_SSCALED:				return "VK_FORMAT_R16_SSCALED";
+		case VK_FORMAT_R16_UINT:				return "VK_FORMAT_R16_UINT";
+		case VK_FORMAT_R16_SINT:				return "VK_FORMAT_R16_SINT";
+		case VK_FORMAT_R16_SFLOAT:				return "VK_FORMAT_R16_SFLOAT";
+		case VK_FORMAT_R16G16_UNORM:			return "VK_FORMAT_R16G16_UNORM";
+		case VK_FORMAT_R16G16_SNORM:			return "VK_FORMAT_R16G16_SNORM";
+		case VK_FORMAT_R16G16_USCALED:			return "VK_FORMAT_R16G16_USCALED";
+		case VK_FORMAT_R16G16_SSCALED:			return "VK_FORMAT_R16G16_SSCALED";
+		case VK_FORMAT_R16G16_UINT:				return "VK_FORMAT_R16G16_UINT";
+		case VK_FORMAT_R16G16_SINT:				return "VK_FORMAT_R16G16_SINT";
+		case VK_FORMAT_R16G16_SFLOAT:			return "VK_FORMAT_R16G16_SFLOAT";
+		case VK_FORMAT_R16G16B16_UNORM:			return "VK_FORMAT_R16G16B16_UNORM";
+		case VK_FORMAT_R16G16B16_SNORM:			return "VK_FORMAT_R16G16B16_SNORM";
+		case VK_FORMAT_R16G16B16_USCALED:		return "VK_FORMAT_R16G16B16_USCALED";
+		case VK_FORMAT_R16G16B16_SSCALED:		return "VK_FORMAT_R16G16B16_SSCALED";
+		case VK_FORMAT_R16G16B16_UINT:			return "VK_FORMAT_R16G16B16_UINT";
+		case VK_FORMAT_R16G16B16_SINT:			return "VK_FORMAT_R16G16B16_SINT";
+		case VK_FORMAT_R16G16B16_SFLOAT:		return "VK_FORMAT_R16G16B16_SFLOAT";
+		case VK_FORMAT_R16G16B16A16_UNORM:		return "VK_FORMAT_R16G16B16A16_UNORM";
+		case VK_FORMAT_R16G16B16A16_SNORM:		return "VK_FORMAT_R16G16B16A16_SNORM";
+		case VK_FORMAT_R16G16B16A16_USCALED:	return "VK_FORMAT_R16G16B16A16_USCALED";
+		case VK_FORMAT_R16G16B16A16_SSCALED:	return "VK_FORMAT_R16G16B16A16_SSCALED";
+		case VK_FORMAT_R16G16B16A16_UINT:		return "VK_FORMAT_R16G16B16A16_UINT";
+		case VK_FORMAT_R16G16B16A16_SINT:		return "VK_FORMAT_R16G16B16A16_SINT";
+		case VK_FORMAT_R16G16B16A16_SFLOAT:		return "VK_FORMAT_R16G16B16A16_SFLOAT";
+		case VK_FORMAT_R32_UINT:				return "VK_FORMAT_R32_UINT";
+		case VK_FORMAT_R32_SINT:				return "VK_FORMAT_R32_SINT";
+		case VK_FORMAT_R32_SFLOAT:				return "VK_FORMAT_R32_SFLOAT";
+		case VK_FORMAT_R32G32_UINT:				return "VK_FORMAT_R32G32_UINT";
+		case VK_FORMAT_R32G32_SINT:				return "VK_FORMAT_R32G32_SINT";
+		case VK_FORMAT_R32G32_SFLOAT:			return "VK_FORMAT_R32G32_SFLOAT";
+		case VK_FORMAT_R32G32B32_UINT:			return "VK_FORMAT_R32G32B32_UINT";
+		case VK_FORMAT_R32G32B32_SINT:			return "VK_FORMAT_R32G32B32_SINT";
+		case VK_FORMAT_R32G32B32_SFLOAT:		return "VK_FORMAT_R32G32B32_SFLOAT";
+		case VK_FORMAT_R32G32B32A32_UINT:		return "VK_FORMAT_R32G32B32A32_UINT";
+		case VK_FORMAT_R32G32B32A32_SINT:		return "VK_FORMAT_R32G32B32A32_SINT";
+		case VK_FORMAT_R32G32B32A32_SFLOAT:		return "VK_FORMAT_R32G32B32A32_SFLOAT";
+		case VK_FORMAT_R64_SFLOAT:				return "VK_FORMAT_R64_SFLOAT";
+		case VK_FORMAT_R64G64_SFLOAT:			return "VK_FORMAT_R64G64_SFLOAT";
+		case VK_FORMAT_R64G64B64_SFLOAT:		return "VK_FORMAT_R64G64B64_SFLOAT";
+		case VK_FORMAT_R64G64B64A64_SFLOAT:		return "VK_FORMAT_R64G64B64A64_SFLOAT";
+		case VK_FORMAT_R11G11B10_UFLOAT:		return "VK_FORMAT_R11G11B10_UFLOAT";
+		case VK_FORMAT_R9G9B9E5_UFLOAT:			return "VK_FORMAT_R9G9B9E5_UFLOAT";
+		case VK_FORMAT_D16_UNORM:				return "VK_FORMAT_D16_UNORM";
+		case VK_FORMAT_D24_UNORM:				return "VK_FORMAT_D24_UNORM";
+		case VK_FORMAT_D32_SFLOAT:				return "VK_FORMAT_D32_SFLOAT";
+		case VK_FORMAT_S8_UINT:					return "VK_FORMAT_S8_UINT";
+		case VK_FORMAT_D16_UNORM_S8_UINT:		return "VK_FORMAT_D16_UNORM_S8_UINT";
+		case VK_FORMAT_D24_UNORM_S8_UINT:		return "VK_FORMAT_D24_UNORM_S8_UINT";
+		case VK_FORMAT_D32_SFLOAT_S8_UINT:		return "VK_FORMAT_D32_SFLOAT_S8_UINT";
+		case VK_FORMAT_BC1_RGB_UNORM:			return "VK_FORMAT_BC1_RGB_UNORM";
+		case VK_FORMAT_BC1_RGB_SRGB:			return "VK_FORMAT_BC1_RGB_SRGB";
+		case VK_FORMAT_BC1_RGBA_UNORM:			return "VK_FORMAT_BC1_RGBA_UNORM";
+		case VK_FORMAT_BC1_RGBA_SRGB:			return "VK_FORMAT_BC1_RGBA_SRGB";
+		case VK_FORMAT_BC2_UNORM:				return "VK_FORMAT_BC2_UNORM";
+		case VK_FORMAT_BC2_SRGB:				return "VK_FORMAT_BC2_SRGB";
+		case VK_FORMAT_BC3_UNORM:				return "VK_FORMAT_BC3_UNORM";
+		case VK_FORMAT_BC3_SRGB:				return "VK_FORMAT_BC3_SRGB";
+		case VK_FORMAT_BC4_UNORM:				return "VK_FORMAT_BC4_UNORM";
+		case VK_FORMAT_BC4_SNORM:				return "VK_FORMAT_BC4_SNORM";
+		case VK_FORMAT_BC5_UNORM:				return "VK_FORMAT_BC5_UNORM";
+		case VK_FORMAT_BC5_SNORM:				return "VK_FORMAT_BC5_SNORM";
+		case VK_FORMAT_BC6H_UFLOAT:				return "VK_FORMAT_BC6H_UFLOAT";
+		case VK_FORMAT_BC6H_SFLOAT:				return "VK_FORMAT_BC6H_SFLOAT";
+		case VK_FORMAT_BC7_UNORM:				return "VK_FORMAT_BC7_UNORM";
+		case VK_FORMAT_BC7_SRGB:				return "VK_FORMAT_BC7_SRGB";
+		case VK_FORMAT_ETC2_R8G8B8_UNORM:		return "VK_FORMAT_ETC2_R8G8B8_UNORM";
+		case VK_FORMAT_ETC2_R8G8B8_SRGB:		return "VK_FORMAT_ETC2_R8G8B8_SRGB";
+		case VK_FORMAT_ETC2_R8G8B8A1_UNORM:		return "VK_FORMAT_ETC2_R8G8B8A1_UNORM";
+		case VK_FORMAT_ETC2_R8G8B8A1_SRGB:		return "VK_FORMAT_ETC2_R8G8B8A1_SRGB";
+		case VK_FORMAT_ETC2_R8G8B8A8_UNORM:		return "VK_FORMAT_ETC2_R8G8B8A8_UNORM";
+		case VK_FORMAT_ETC2_R8G8B8A8_SRGB:		return "VK_FORMAT_ETC2_R8G8B8A8_SRGB";
+		case VK_FORMAT_EAC_R11_UNORM:			return "VK_FORMAT_EAC_R11_UNORM";
+		case VK_FORMAT_EAC_R11_SNORM:			return "VK_FORMAT_EAC_R11_SNORM";
+		case VK_FORMAT_EAC_R11G11_UNORM:		return "VK_FORMAT_EAC_R11G11_UNORM";
+		case VK_FORMAT_EAC_R11G11_SNORM:		return "VK_FORMAT_EAC_R11G11_SNORM";
+		case VK_FORMAT_ASTC_4x4_UNORM:			return "VK_FORMAT_ASTC_4x4_UNORM";
+		case VK_FORMAT_ASTC_4x4_SRGB:			return "VK_FORMAT_ASTC_4x4_SRGB";
+		case VK_FORMAT_ASTC_5x4_UNORM:			return "VK_FORMAT_ASTC_5x4_UNORM";
+		case VK_FORMAT_ASTC_5x4_SRGB:			return "VK_FORMAT_ASTC_5x4_SRGB";
+		case VK_FORMAT_ASTC_5x5_UNORM:			return "VK_FORMAT_ASTC_5x5_UNORM";
+		case VK_FORMAT_ASTC_5x5_SRGB:			return "VK_FORMAT_ASTC_5x5_SRGB";
+		case VK_FORMAT_ASTC_6x5_UNORM:			return "VK_FORMAT_ASTC_6x5_UNORM";
+		case VK_FORMAT_ASTC_6x5_SRGB:			return "VK_FORMAT_ASTC_6x5_SRGB";
+		case VK_FORMAT_ASTC_6x6_UNORM:			return "VK_FORMAT_ASTC_6x6_UNORM";
+		case VK_FORMAT_ASTC_6x6_SRGB:			return "VK_FORMAT_ASTC_6x6_SRGB";
+		case VK_FORMAT_ASTC_8x5_UNORM:			return "VK_FORMAT_ASTC_8x5_UNORM";
+		case VK_FORMAT_ASTC_8x5_SRGB:			return "VK_FORMAT_ASTC_8x5_SRGB";
+		case VK_FORMAT_ASTC_8x6_UNORM:			return "VK_FORMAT_ASTC_8x6_UNORM";
+		case VK_FORMAT_ASTC_8x6_SRGB:			return "VK_FORMAT_ASTC_8x6_SRGB";
+		case VK_FORMAT_ASTC_8x8_UNORM:			return "VK_FORMAT_ASTC_8x8_UNORM";
+		case VK_FORMAT_ASTC_8x8_SRGB:			return "VK_FORMAT_ASTC_8x8_SRGB";
+		case VK_FORMAT_ASTC_10x5_UNORM:			return "VK_FORMAT_ASTC_10x5_UNORM";
+		case VK_FORMAT_ASTC_10x5_SRGB:			return "VK_FORMAT_ASTC_10x5_SRGB";
+		case VK_FORMAT_ASTC_10x6_UNORM:			return "VK_FORMAT_ASTC_10x6_UNORM";
+		case VK_FORMAT_ASTC_10x6_SRGB:			return "VK_FORMAT_ASTC_10x6_SRGB";
+		case VK_FORMAT_ASTC_10x8_UNORM:			return "VK_FORMAT_ASTC_10x8_UNORM";
+		case VK_FORMAT_ASTC_10x8_SRGB:			return "VK_FORMAT_ASTC_10x8_SRGB";
+		case VK_FORMAT_ASTC_10x10_UNORM:		return "VK_FORMAT_ASTC_10x10_UNORM";
+		case VK_FORMAT_ASTC_10x10_SRGB:			return "VK_FORMAT_ASTC_10x10_SRGB";
+		case VK_FORMAT_ASTC_12x10_UNORM:		return "VK_FORMAT_ASTC_12x10_UNORM";
+		case VK_FORMAT_ASTC_12x10_SRGB:			return "VK_FORMAT_ASTC_12x10_SRGB";
+		case VK_FORMAT_ASTC_12x12_UNORM:		return "VK_FORMAT_ASTC_12x12_UNORM";
+		case VK_FORMAT_ASTC_12x12_SRGB:			return "VK_FORMAT_ASTC_12x12_SRGB";
+		case VK_FORMAT_B4G4R4A4_UNORM:			return "VK_FORMAT_B4G4R4A4_UNORM";
+		case VK_FORMAT_B5G5R5A1_UNORM:			return "VK_FORMAT_B5G5R5A1_UNORM";
+		case VK_FORMAT_B5G6R5_UNORM:			return "VK_FORMAT_B5G6R5_UNORM";
+		case VK_FORMAT_B5G6R5_USCALED:			return "VK_FORMAT_B5G6R5_USCALED";
+		case VK_FORMAT_B8G8R8_UNORM:			return "VK_FORMAT_B8G8R8_UNORM";
+		case VK_FORMAT_B8G8R8_SNORM:			return "VK_FORMAT_B8G8R8_SNORM";
+		case VK_FORMAT_B8G8R8_USCALED:			return "VK_FORMAT_B8G8R8_USCALED";
+		case VK_FORMAT_B8G8R8_SSCALED:			return "VK_FORMAT_B8G8R8_SSCALED";
+		case VK_FORMAT_B8G8R8_UINT:				return "VK_FORMAT_B8G8R8_UINT";
+		case VK_FORMAT_B8G8R8_SINT:				return "VK_FORMAT_B8G8R8_SINT";
+		case VK_FORMAT_B8G8R8_SRGB:				return "VK_FORMAT_B8G8R8_SRGB";
+		case VK_FORMAT_B8G8R8A8_UNORM:			return "VK_FORMAT_B8G8R8A8_UNORM";
+		case VK_FORMAT_B8G8R8A8_SNORM:			return "VK_FORMAT_B8G8R8A8_SNORM";
+		case VK_FORMAT_B8G8R8A8_USCALED:		return "VK_FORMAT_B8G8R8A8_USCALED";
+		case VK_FORMAT_B8G8R8A8_SSCALED:		return "VK_FORMAT_B8G8R8A8_SSCALED";
+		case VK_FORMAT_B8G8R8A8_UINT:			return "VK_FORMAT_B8G8R8A8_UINT";
+		case VK_FORMAT_B8G8R8A8_SINT:			return "VK_FORMAT_B8G8R8A8_SINT";
+		case VK_FORMAT_B8G8R8A8_SRGB:			return "VK_FORMAT_B8G8R8A8_SRGB";
+		case VK_FORMAT_B10G10R10A2_UNORM:		return "VK_FORMAT_B10G10R10A2_UNORM";
+		case VK_FORMAT_B10G10R10A2_SNORM:		return "VK_FORMAT_B10G10R10A2_SNORM";
+		case VK_FORMAT_B10G10R10A2_USCALED:		return "VK_FORMAT_B10G10R10A2_USCALED";
+		case VK_FORMAT_B10G10R10A2_SSCALED:		return "VK_FORMAT_B10G10R10A2_SSCALED";
+		case VK_FORMAT_B10G10R10A2_UINT:		return "VK_FORMAT_B10G10R10A2_UINT";
+		case VK_FORMAT_B10G10R10A2_SINT:		return "VK_FORMAT_B10G10R10A2_SINT";
+		default:								return DE_NULL;
+	}
+}
+
+const char* getShaderStageName (VkShaderStage value)
+{
+	switch (value)
+	{
+		case VK_SHADER_STAGE_VERTEX:			return "VK_SHADER_STAGE_VERTEX";
+		case VK_SHADER_STAGE_TESS_CONTROL:		return "VK_SHADER_STAGE_TESS_CONTROL";
+		case VK_SHADER_STAGE_TESS_EVALUATION:	return "VK_SHADER_STAGE_TESS_EVALUATION";
+		case VK_SHADER_STAGE_GEOMETRY:			return "VK_SHADER_STAGE_GEOMETRY";
+		case VK_SHADER_STAGE_FRAGMENT:			return "VK_SHADER_STAGE_FRAGMENT";
+		case VK_SHADER_STAGE_COMPUTE:			return "VK_SHADER_STAGE_COMPUTE";
+		default:								return DE_NULL;
+	}
+}
+
+const char* getStructureTypeName (VkStructureType value)
+{
+	switch (value)
+	{
+		case VK_STRUCTURE_TYPE_APPLICATION_INFO:					return "VK_STRUCTURE_TYPE_APPLICATION_INFO";
+		case VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO:					return "VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_MEMORY_ALLOC_INFO:					return "VK_STRUCTURE_TYPE_MEMORY_ALLOC_INFO";
+		case VK_STRUCTURE_TYPE_MEMORY_OPEN_INFO:					return "VK_STRUCTURE_TYPE_MEMORY_OPEN_INFO";
+		case VK_STRUCTURE_TYPE_PEER_MEMORY_OPEN_INFO:				return "VK_STRUCTURE_TYPE_PEER_MEMORY_OPEN_INFO";
+		case VK_STRUCTURE_TYPE_BUFFER_VIEW_ATTACH_INFO:				return "VK_STRUCTURE_TYPE_BUFFER_VIEW_ATTACH_INFO";
+		case VK_STRUCTURE_TYPE_IMAGE_VIEW_ATTACH_INFO:				return "VK_STRUCTURE_TYPE_IMAGE_VIEW_ATTACH_INFO";
+		case VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO:				return "VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_COLOR_ATTACHMENT_VIEW_CREATE_INFO:	return "VK_STRUCTURE_TYPE_COLOR_ATTACHMENT_VIEW_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_DEPTH_STENCIL_VIEW_CREATE_INFO:		return "VK_STRUCTURE_TYPE_DEPTH_STENCIL_VIEW_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_SHADER_CREATE_INFO:					return "VK_STRUCTURE_TYPE_SHADER_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO:		return "VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO:					return "VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO:	return "VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_DYNAMIC_VP_STATE_CREATE_INFO:		return "VK_STRUCTURE_TYPE_DYNAMIC_VP_STATE_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_DYNAMIC_RS_STATE_CREATE_INFO:		return "VK_STRUCTURE_TYPE_DYNAMIC_RS_STATE_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_DYNAMIC_CB_STATE_CREATE_INFO:		return "VK_STRUCTURE_TYPE_DYNAMIC_CB_STATE_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_DYNAMIC_DS_STATE_CREATE_INFO:		return "VK_STRUCTURE_TYPE_DYNAMIC_DS_STATE_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_CMD_BUFFER_CREATE_INFO:				return "VK_STRUCTURE_TYPE_CMD_BUFFER_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_EVENT_CREATE_INFO:					return "VK_STRUCTURE_TYPE_EVENT_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_FENCE_CREATE_INFO:					return "VK_STRUCTURE_TYPE_FENCE_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO:				return "VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_SEMAPHORE_OPEN_INFO:					return "VK_STRUCTURE_TYPE_SEMAPHORE_OPEN_INFO";
+		case VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO:				return "VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO:	return "VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO:		return "VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_CREATE_INFO:	return "VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_PIPELINE_IA_STATE_CREATE_INFO:		return "VK_STRUCTURE_TYPE_PIPELINE_IA_STATE_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_PIPELINE_TESS_STATE_CREATE_INFO:		return "VK_STRUCTURE_TYPE_PIPELINE_TESS_STATE_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_PIPELINE_VP_STATE_CREATE_INFO:		return "VK_STRUCTURE_TYPE_PIPELINE_VP_STATE_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_PIPELINE_RS_STATE_CREATE_INFO:		return "VK_STRUCTURE_TYPE_PIPELINE_RS_STATE_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_PIPELINE_MS_STATE_CREATE_INFO:		return "VK_STRUCTURE_TYPE_PIPELINE_MS_STATE_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_PIPELINE_CB_STATE_CREATE_INFO:		return "VK_STRUCTURE_TYPE_PIPELINE_CB_STATE_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_PIPELINE_DS_STATE_CREATE_INFO:		return "VK_STRUCTURE_TYPE_PIPELINE_DS_STATE_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO:					return "VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO:					return "VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO:				return "VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO:				return "VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_CMD_BUFFER_BEGIN_INFO:				return "VK_STRUCTURE_TYPE_CMD_BUFFER_BEGIN_INFO";
+		case VK_STRUCTURE_TYPE_CMD_BUFFER_GRAPHICS_BEGIN_INFO:		return "VK_STRUCTURE_TYPE_CMD_BUFFER_GRAPHICS_BEGIN_INFO";
+		case VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO:				return "VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_LAYER_CREATE_INFO:					return "VK_STRUCTURE_TYPE_LAYER_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_MEMORY_BARRIER:						return "VK_STRUCTURE_TYPE_MEMORY_BARRIER";
+		case VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER:				return "VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER";
+		case VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER:				return "VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER";
+		case VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO:			return "VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_UPDATE_SAMPLERS:						return "VK_STRUCTURE_TYPE_UPDATE_SAMPLERS";
+		case VK_STRUCTURE_TYPE_UPDATE_SAMPLER_TEXTURES:				return "VK_STRUCTURE_TYPE_UPDATE_SAMPLER_TEXTURES";
+		case VK_STRUCTURE_TYPE_UPDATE_IMAGES:						return "VK_STRUCTURE_TYPE_UPDATE_IMAGES";
+		case VK_STRUCTURE_TYPE_UPDATE_BUFFERS:						return "VK_STRUCTURE_TYPE_UPDATE_BUFFERS";
+		case VK_STRUCTURE_TYPE_UPDATE_AS_COPY:						return "VK_STRUCTURE_TYPE_UPDATE_AS_COPY";
+		case VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO:				return "VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO:			return "VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO";
+		default:													return DE_NULL;
+	}
+}
+
+const char* getObjectTypeName (VkObjectType value)
+{
+	switch (value)
+	{
+		case VK_OBJECT_TYPE_INSTANCE:				return "VK_OBJECT_TYPE_INSTANCE";
+		case VK_OBJECT_TYPE_PHYSICAL_DEVICE:		return "VK_OBJECT_TYPE_PHYSICAL_DEVICE";
+		case VK_OBJECT_TYPE_DEVICE:					return "VK_OBJECT_TYPE_DEVICE";
+		case VK_OBJECT_TYPE_QUEUE:					return "VK_OBJECT_TYPE_QUEUE";
+		case VK_OBJECT_TYPE_COMMAND_BUFFER:			return "VK_OBJECT_TYPE_COMMAND_BUFFER";
+		case VK_OBJECT_TYPE_DEVICE_MEMORY:			return "VK_OBJECT_TYPE_DEVICE_MEMORY";
+		case VK_OBJECT_TYPE_BUFFER:					return "VK_OBJECT_TYPE_BUFFER";
+		case VK_OBJECT_TYPE_BUFFER_VIEW:			return "VK_OBJECT_TYPE_BUFFER_VIEW";
+		case VK_OBJECT_TYPE_IMAGE:					return "VK_OBJECT_TYPE_IMAGE";
+		case VK_OBJECT_TYPE_IMAGE_VIEW:				return "VK_OBJECT_TYPE_IMAGE_VIEW";
+		case VK_OBJECT_TYPE_COLOR_ATTACHMENT_VIEW:	return "VK_OBJECT_TYPE_COLOR_ATTACHMENT_VIEW";
+		case VK_OBJECT_TYPE_DEPTH_STENCIL_VIEW:		return "VK_OBJECT_TYPE_DEPTH_STENCIL_VIEW";
+		case VK_OBJECT_TYPE_SHADER:					return "VK_OBJECT_TYPE_SHADER";
+		case VK_OBJECT_TYPE_PIPELINE:				return "VK_OBJECT_TYPE_PIPELINE";
+		case VK_OBJECT_TYPE_PIPELINE_LAYOUT:		return "VK_OBJECT_TYPE_PIPELINE_LAYOUT";
+		case VK_OBJECT_TYPE_SAMPLER:				return "VK_OBJECT_TYPE_SAMPLER";
+		case VK_OBJECT_TYPE_DESCRIPTOR_SET:			return "VK_OBJECT_TYPE_DESCRIPTOR_SET";
+		case VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT:	return "VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT";
+		case VK_OBJECT_TYPE_DESCRIPTOR_POOL:		return "VK_OBJECT_TYPE_DESCRIPTOR_POOL";
+		case VK_OBJECT_TYPE_DYNAMIC_VP_STATE:		return "VK_OBJECT_TYPE_DYNAMIC_VP_STATE";
+		case VK_OBJECT_TYPE_DYNAMIC_RS_STATE:		return "VK_OBJECT_TYPE_DYNAMIC_RS_STATE";
+		case VK_OBJECT_TYPE_DYNAMIC_CB_STATE:		return "VK_OBJECT_TYPE_DYNAMIC_CB_STATE";
+		case VK_OBJECT_TYPE_DYNAMIC_DS_STATE:		return "VK_OBJECT_TYPE_DYNAMIC_DS_STATE";
+		case VK_OBJECT_TYPE_FENCE:					return "VK_OBJECT_TYPE_FENCE";
+		case VK_OBJECT_TYPE_SEMAPHORE:				return "VK_OBJECT_TYPE_SEMAPHORE";
+		case VK_OBJECT_TYPE_EVENT:					return "VK_OBJECT_TYPE_EVENT";
+		case VK_OBJECT_TYPE_QUERY_POOL:				return "VK_OBJECT_TYPE_QUERY_POOL";
+		case VK_OBJECT_TYPE_FRAMEBUFFER:			return "VK_OBJECT_TYPE_FRAMEBUFFER";
+		case VK_OBJECT_TYPE_RENDER_PASS:			return "VK_OBJECT_TYPE_RENDER_PASS";
+		default:									return DE_NULL;
+	}
+}
+
+const char* getResultName (VkResult value)
+{
+	switch (value)
+	{
+		case VK_SUCCESS:								return "VK_SUCCESS";
+		case VK_UNSUPPORTED:							return "VK_UNSUPPORTED";
+		case VK_NOT_READY:								return "VK_NOT_READY";
+		case VK_TIMEOUT:								return "VK_TIMEOUT";
+		case VK_EVENT_SET:								return "VK_EVENT_SET";
+		case VK_EVENT_RESET:							return "VK_EVENT_RESET";
+		case VK_ERROR_UNKNOWN:							return "VK_ERROR_UNKNOWN";
+		case VK_ERROR_UNAVAILABLE:						return "VK_ERROR_UNAVAILABLE";
+		case VK_ERROR_INITIALIZATION_FAILED:			return "VK_ERROR_INITIALIZATION_FAILED";
+		case VK_ERROR_OUT_OF_HOST_MEMORY:				return "VK_ERROR_OUT_OF_HOST_MEMORY";
+		case VK_ERROR_OUT_OF_DEVICE_MEMORY:				return "VK_ERROR_OUT_OF_DEVICE_MEMORY";
+		case VK_ERROR_DEVICE_ALREADY_CREATED:			return "VK_ERROR_DEVICE_ALREADY_CREATED";
+		case VK_ERROR_DEVICE_LOST:						return "VK_ERROR_DEVICE_LOST";
+		case VK_ERROR_INVALID_POINTER:					return "VK_ERROR_INVALID_POINTER";
+		case VK_ERROR_INVALID_VALUE:					return "VK_ERROR_INVALID_VALUE";
+		case VK_ERROR_INVALID_HANDLE:					return "VK_ERROR_INVALID_HANDLE";
+		case VK_ERROR_INVALID_ORDINAL:					return "VK_ERROR_INVALID_ORDINAL";
+		case VK_ERROR_INVALID_MEMORY_SIZE:				return "VK_ERROR_INVALID_MEMORY_SIZE";
+		case VK_ERROR_INVALID_EXTENSION:				return "VK_ERROR_INVALID_EXTENSION";
+		case VK_ERROR_INVALID_FLAGS:					return "VK_ERROR_INVALID_FLAGS";
+		case VK_ERROR_INVALID_ALIGNMENT:				return "VK_ERROR_INVALID_ALIGNMENT";
+		case VK_ERROR_INVALID_FORMAT:					return "VK_ERROR_INVALID_FORMAT";
+		case VK_ERROR_INVALID_IMAGE:					return "VK_ERROR_INVALID_IMAGE";
+		case VK_ERROR_INVALID_DESCRIPTOR_SET_DATA:		return "VK_ERROR_INVALID_DESCRIPTOR_SET_DATA";
+		case VK_ERROR_INVALID_QUEUE_TYPE:				return "VK_ERROR_INVALID_QUEUE_TYPE";
+		case VK_ERROR_INVALID_OBJECT_TYPE:				return "VK_ERROR_INVALID_OBJECT_TYPE";
+		case VK_ERROR_UNSUPPORTED_SHADER_IL_VERSION:	return "VK_ERROR_UNSUPPORTED_SHADER_IL_VERSION";
+		case VK_ERROR_BAD_SHADER_CODE:					return "VK_ERROR_BAD_SHADER_CODE";
+		case VK_ERROR_BAD_PIPELINE_DATA:				return "VK_ERROR_BAD_PIPELINE_DATA";
+		case VK_ERROR_TOO_MANY_MEMORY_REFERENCES:		return "VK_ERROR_TOO_MANY_MEMORY_REFERENCES";
+		case VK_ERROR_NOT_MAPPABLE:						return "VK_ERROR_NOT_MAPPABLE";
+		case VK_ERROR_MEMORY_MAP_FAILED:				return "VK_ERROR_MEMORY_MAP_FAILED";
+		case VK_ERROR_MEMORY_UNMAP_FAILED:				return "VK_ERROR_MEMORY_UNMAP_FAILED";
+		case VK_ERROR_INCOMPATIBLE_DEVICE:				return "VK_ERROR_INCOMPATIBLE_DEVICE";
+		case VK_ERROR_INCOMPATIBLE_DRIVER:				return "VK_ERROR_INCOMPATIBLE_DRIVER";
+		case VK_ERROR_INCOMPLETE_COMMAND_BUFFER:		return "VK_ERROR_INCOMPLETE_COMMAND_BUFFER";
+		case VK_ERROR_BUILDING_COMMAND_BUFFER:			return "VK_ERROR_BUILDING_COMMAND_BUFFER";
+		case VK_ERROR_MEMORY_NOT_BOUND:					return "VK_ERROR_MEMORY_NOT_BOUND";
+		case VK_ERROR_INCOMPATIBLE_QUEUE:				return "VK_ERROR_INCOMPATIBLE_QUEUE";
+		case VK_ERROR_NOT_SHAREABLE:					return "VK_ERROR_NOT_SHAREABLE";
+		default:										return DE_NULL;
+	}
+}
+
+tcu::Format::Bitfield<32> getDeviceCreateFlagsStr (VkDeviceCreateFlags value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_DEVICE_CREATE_VALIDATION_BIT,				"VK_DEVICE_CREATE_VALIDATION_BIT"),
+		tcu::Format::BitDesc(VK_DEVICE_CREATE_MULTI_DEVICE_IQ_MATCH_BIT,	"VK_DEVICE_CREATE_MULTI_DEVICE_IQ_MATCH_BIT"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getQueueFlagsStr (VkQueueFlags value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_QUEUE_GRAPHICS_BIT,	"VK_QUEUE_GRAPHICS_BIT"),
+		tcu::Format::BitDesc(VK_QUEUE_COMPUTE_BIT,	"VK_QUEUE_COMPUTE_BIT"),
+		tcu::Format::BitDesc(VK_QUEUE_DMA_BIT,		"VK_QUEUE_DMA_BIT"),
+		tcu::Format::BitDesc(VK_QUEUE_MEMMGR_BIT,	"VK_QUEUE_MEMMGR_BIT"),
+		tcu::Format::BitDesc(VK_QUEUE_EXTENDED_BIT,	"VK_QUEUE_EXTENDED_BIT"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getMemoryPropertyFlagsStr (VkMemoryPropertyFlags value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_MEMORY_PROPERTY_DEVICE_ONLY,				"VK_MEMORY_PROPERTY_DEVICE_ONLY"),
+		tcu::Format::BitDesc(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,			"VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT"),
+		tcu::Format::BitDesc(VK_MEMORY_PROPERTY_HOST_DEVICE_COHERENT_BIT,	"VK_MEMORY_PROPERTY_HOST_DEVICE_COHERENT_BIT"),
+		tcu::Format::BitDesc(VK_MEMORY_PROPERTY_HOST_UNCACHED_BIT,			"VK_MEMORY_PROPERTY_HOST_UNCACHED_BIT"),
+		tcu::Format::BitDesc(VK_MEMORY_PROPERTY_HOST_WRITE_COMBINED_BIT,	"VK_MEMORY_PROPERTY_HOST_WRITE_COMBINED_BIT"),
+		tcu::Format::BitDesc(VK_MEMORY_PROPERTY_PREFER_HOST_LOCAL,			"VK_MEMORY_PROPERTY_PREFER_HOST_LOCAL"),
+		tcu::Format::BitDesc(VK_MEMORY_PROPERTY_SHAREABLE_BIT,				"VK_MEMORY_PROPERTY_SHAREABLE_BIT"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getMemoryOutputFlagsStr (VkMemoryOutputFlags value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_MEMORY_OUTPUT_CPU_WRITE_BIT,				"VK_MEMORY_OUTPUT_CPU_WRITE_BIT"),
+		tcu::Format::BitDesc(VK_MEMORY_OUTPUT_SHADER_WRITE_BIT,				"VK_MEMORY_OUTPUT_SHADER_WRITE_BIT"),
+		tcu::Format::BitDesc(VK_MEMORY_OUTPUT_COLOR_ATTACHMENT_BIT,			"VK_MEMORY_OUTPUT_COLOR_ATTACHMENT_BIT"),
+		tcu::Format::BitDesc(VK_MEMORY_OUTPUT_DEPTH_STENCIL_ATTACHMENT_BIT,	"VK_MEMORY_OUTPUT_DEPTH_STENCIL_ATTACHMENT_BIT"),
+		tcu::Format::BitDesc(VK_MEMORY_OUTPUT_TRANSFER_BIT,					"VK_MEMORY_OUTPUT_TRANSFER_BIT"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getMemoryInputFlagsStr (VkMemoryInputFlags value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_MEMORY_INPUT_CPU_READ_BIT,					"VK_MEMORY_INPUT_CPU_READ_BIT"),
+		tcu::Format::BitDesc(VK_MEMORY_INPUT_INDIRECT_COMMAND_BIT,			"VK_MEMORY_INPUT_INDIRECT_COMMAND_BIT"),
+		tcu::Format::BitDesc(VK_MEMORY_INPUT_INDEX_FETCH_BIT,				"VK_MEMORY_INPUT_INDEX_FETCH_BIT"),
+		tcu::Format::BitDesc(VK_MEMORY_INPUT_VERTEX_ATTRIBUTE_FETCH_BIT,	"VK_MEMORY_INPUT_VERTEX_ATTRIBUTE_FETCH_BIT"),
+		tcu::Format::BitDesc(VK_MEMORY_INPUT_UNIFORM_READ_BIT,				"VK_MEMORY_INPUT_UNIFORM_READ_BIT"),
+		tcu::Format::BitDesc(VK_MEMORY_INPUT_SHADER_READ_BIT,				"VK_MEMORY_INPUT_SHADER_READ_BIT"),
+		tcu::Format::BitDesc(VK_MEMORY_INPUT_COLOR_ATTACHMENT_BIT,			"VK_MEMORY_INPUT_COLOR_ATTACHMENT_BIT"),
+		tcu::Format::BitDesc(VK_MEMORY_INPUT_DEPTH_STENCIL_ATTACHMENT_BIT,	"VK_MEMORY_INPUT_DEPTH_STENCIL_ATTACHMENT_BIT"),
+		tcu::Format::BitDesc(VK_MEMORY_INPUT_TRANSFER_BIT,					"VK_MEMORY_INPUT_TRANSFER_BIT"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getBufferUsageFlagsStr (VkBufferUsageFlags value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_BUFFER_USAGE_GENERAL,					"VK_BUFFER_USAGE_GENERAL"),
+		tcu::Format::BitDesc(VK_BUFFER_USAGE_TRANSFER_SOURCE_BIT,		"VK_BUFFER_USAGE_TRANSFER_SOURCE_BIT"),
+		tcu::Format::BitDesc(VK_BUFFER_USAGE_TRANSFER_DESTINATION_BIT,	"VK_BUFFER_USAGE_TRANSFER_DESTINATION_BIT"),
+		tcu::Format::BitDesc(VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT,	"VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT"),
+		tcu::Format::BitDesc(VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT,	"VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT"),
+		tcu::Format::BitDesc(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,		"VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT"),
+		tcu::Format::BitDesc(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,		"VK_BUFFER_USAGE_STORAGE_BUFFER_BIT"),
+		tcu::Format::BitDesc(VK_BUFFER_USAGE_INDEX_BUFFER_BIT,			"VK_BUFFER_USAGE_INDEX_BUFFER_BIT"),
+		tcu::Format::BitDesc(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,			"VK_BUFFER_USAGE_VERTEX_BUFFER_BIT"),
+		tcu::Format::BitDesc(VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT,		"VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getBufferCreateFlagsStr (VkBufferCreateFlags value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_BUFFER_CREATE_SHAREABLE_BIT,	"VK_BUFFER_CREATE_SHAREABLE_BIT"),
+		tcu::Format::BitDesc(VK_BUFFER_CREATE_SPARSE_BIT,		"VK_BUFFER_CREATE_SPARSE_BIT"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getShaderStageFlagsStr (VkShaderStageFlags value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_SHADER_STAGE_VERTEX_BIT,			"VK_SHADER_STAGE_VERTEX_BIT"),
+		tcu::Format::BitDesc(VK_SHADER_STAGE_TESS_CONTROL_BIT,		"VK_SHADER_STAGE_TESS_CONTROL_BIT"),
+		tcu::Format::BitDesc(VK_SHADER_STAGE_TESS_EVALUATION_BIT,	"VK_SHADER_STAGE_TESS_EVALUATION_BIT"),
+		tcu::Format::BitDesc(VK_SHADER_STAGE_GEOMETRY_BIT,			"VK_SHADER_STAGE_GEOMETRY_BIT"),
+		tcu::Format::BitDesc(VK_SHADER_STAGE_FRAGMENT_BIT,			"VK_SHADER_STAGE_FRAGMENT_BIT"),
+		tcu::Format::BitDesc(VK_SHADER_STAGE_COMPUTE_BIT,			"VK_SHADER_STAGE_COMPUTE_BIT"),
+		tcu::Format::BitDesc(VK_SHADER_STAGE_ALL,					"VK_SHADER_STAGE_ALL"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getImageUsageFlagsStr (VkImageUsageFlags value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_GENERAL,					"VK_IMAGE_USAGE_GENERAL"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_TRANSFER_SOURCE_BIT,		"VK_IMAGE_USAGE_TRANSFER_SOURCE_BIT"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_TRANSFER_DESTINATION_BIT,	"VK_IMAGE_USAGE_TRANSFER_DESTINATION_BIT"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_SAMPLED_BIT,				"VK_IMAGE_USAGE_SAMPLED_BIT"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_STORAGE_BIT,				"VK_IMAGE_USAGE_STORAGE_BIT"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,		"VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_DEPTH_STENCIL_BIT,			"VK_IMAGE_USAGE_DEPTH_STENCIL_BIT"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT,	"VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getImageCreateFlagsStr (VkImageCreateFlags value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_IMAGE_CREATE_INVARIANT_DATA_BIT,	"VK_IMAGE_CREATE_INVARIANT_DATA_BIT"),
+		tcu::Format::BitDesc(VK_IMAGE_CREATE_CLONEABLE_BIT,			"VK_IMAGE_CREATE_CLONEABLE_BIT"),
+		tcu::Format::BitDesc(VK_IMAGE_CREATE_SHAREABLE_BIT,			"VK_IMAGE_CREATE_SHAREABLE_BIT"),
+		tcu::Format::BitDesc(VK_IMAGE_CREATE_SPARSE_BIT,			"VK_IMAGE_CREATE_SPARSE_BIT"),
+		tcu::Format::BitDesc(VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT,	"VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT"),
+		tcu::Format::BitDesc(VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT,	"VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getDepthStencilViewCreateFlagsStr (VkDepthStencilViewCreateFlags value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_DEPTH_STENCIL_VIEW_CREATE_READ_ONLY_DEPTH_BIT,		"VK_DEPTH_STENCIL_VIEW_CREATE_READ_ONLY_DEPTH_BIT"),
+		tcu::Format::BitDesc(VK_DEPTH_STENCIL_VIEW_CREATE_READ_ONLY_STENCIL_BIT,	"VK_DEPTH_STENCIL_VIEW_CREATE_READ_ONLY_STENCIL_BIT"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getPipelineCreateFlagsStr (VkPipelineCreateFlags value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_DISABLE_OPTIMIZATION_BIT,	"VK_PIPELINE_CREATE_DISABLE_OPTIMIZATION_BIT"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT,		"VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getChannelFlagsStr (VkChannelFlags value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_CHANNEL_R_BIT,	"VK_CHANNEL_R_BIT"),
+		tcu::Format::BitDesc(VK_CHANNEL_G_BIT,	"VK_CHANNEL_G_BIT"),
+		tcu::Format::BitDesc(VK_CHANNEL_B_BIT,	"VK_CHANNEL_B_BIT"),
+		tcu::Format::BitDesc(VK_CHANNEL_A_BIT,	"VK_CHANNEL_A_BIT"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getFenceCreateFlagsStr (VkFenceCreateFlags value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_FENCE_CREATE_SIGNALED_BIT,	"VK_FENCE_CREATE_SIGNALED_BIT"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getSemaphoreCreateFlagsStr (VkSemaphoreCreateFlags value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_SEMAPHORE_CREATE_SHAREABLE_BIT,	"VK_SEMAPHORE_CREATE_SHAREABLE_BIT"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getFormatFeatureFlagsStr (VkFormatFeatureFlags value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT,				"VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT"),
+		tcu::Format::BitDesc(VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT,				"VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT"),
+		tcu::Format::BitDesc(VK_FORMAT_FEATURE_STORAGE_IMAGE_ATOMIC_BIT,		"VK_FORMAT_FEATURE_STORAGE_IMAGE_ATOMIC_BIT"),
+		tcu::Format::BitDesc(VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT,		"VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT"),
+		tcu::Format::BitDesc(VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT,		"VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT"),
+		tcu::Format::BitDesc(VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_ATOMIC_BIT,	"VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_ATOMIC_BIT"),
+		tcu::Format::BitDesc(VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT,				"VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT"),
+		tcu::Format::BitDesc(VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT,			"VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT"),
+		tcu::Format::BitDesc(VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT,		"VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT"),
+		tcu::Format::BitDesc(VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT,	"VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT"),
+		tcu::Format::BitDesc(VK_FORMAT_FEATURE_CONVERSION_BIT,					"VK_FORMAT_FEATURE_CONVERSION_BIT"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getQueryControlFlagsStr (VkQueryControlFlags value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_QUERY_CONTROL_CONSERVATIVE_BIT,	"VK_QUERY_CONTROL_CONSERVATIVE_BIT"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getQueryResultFlagsStr (VkQueryResultFlags value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_QUERY_RESULT_32_BIT,				"VK_QUERY_RESULT_32_BIT"),
+		tcu::Format::BitDesc(VK_QUERY_RESULT_64_BIT,				"VK_QUERY_RESULT_64_BIT"),
+		tcu::Format::BitDesc(VK_QUERY_RESULT_NO_WAIT_BIT,			"VK_QUERY_RESULT_NO_WAIT_BIT"),
+		tcu::Format::BitDesc(VK_QUERY_RESULT_WAIT_BIT,				"VK_QUERY_RESULT_WAIT_BIT"),
+		tcu::Format::BitDesc(VK_QUERY_RESULT_WITH_AVAILABILITY_BIT,	"VK_QUERY_RESULT_WITH_AVAILABILITY_BIT"),
+		tcu::Format::BitDesc(VK_QUERY_RESULT_PARTIAL_BIT,			"VK_QUERY_RESULT_PARTIAL_BIT"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getPhysicalDeviceCompatibilityFlagsStr (VkPhysicalDeviceCompatibilityFlags value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_PHYSICAL_DEVICE_COMPATIBILITY_FEATURES_BIT,					"VK_PHYSICAL_DEVICE_COMPATIBILITY_FEATURES_BIT"),
+		tcu::Format::BitDesc(VK_PHYSICAL_DEVICE_COMPATIBILITY_IQ_MATCH_BIT,					"VK_PHYSICAL_DEVICE_COMPATIBILITY_IQ_MATCH_BIT"),
+		tcu::Format::BitDesc(VK_PHYSICAL_DEVICE_COMPATIBILITY_PEER_TRANSFER_BIT,			"VK_PHYSICAL_DEVICE_COMPATIBILITY_PEER_TRANSFER_BIT"),
+		tcu::Format::BitDesc(VK_PHYSICAL_DEVICE_COMPATIBILITY_SHARED_MEMORY_BIT,			"VK_PHYSICAL_DEVICE_COMPATIBILITY_SHARED_MEMORY_BIT"),
+		tcu::Format::BitDesc(VK_PHYSICAL_DEVICE_COMPATIBILITY_SHARED_SYNC_BIT,				"VK_PHYSICAL_DEVICE_COMPATIBILITY_SHARED_SYNC_BIT"),
+		tcu::Format::BitDesc(VK_PHYSICAL_DEVICE_COMPATIBILITY_SHARED_DEVICE0_DISPLAY_BIT,	"VK_PHYSICAL_DEVICE_COMPATIBILITY_SHARED_DEVICE0_DISPLAY_BIT"),
+		tcu::Format::BitDesc(VK_PHYSICAL_DEVICE_COMPATIBILITY_SHARED_DEVICE1_DISPLAY_BIT,	"VK_PHYSICAL_DEVICE_COMPATIBILITY_SHARED_DEVICE1_DISPLAY_BIT"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getCmdBufferOptimizeFlagsStr (VkCmdBufferOptimizeFlags value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_CMD_BUFFER_OPTIMIZE_SMALL_BATCH_BIT,			"VK_CMD_BUFFER_OPTIMIZE_SMALL_BATCH_BIT"),
+		tcu::Format::BitDesc(VK_CMD_BUFFER_OPTIMIZE_PIPELINE_SWITCH_BIT,		"VK_CMD_BUFFER_OPTIMIZE_PIPELINE_SWITCH_BIT"),
+		tcu::Format::BitDesc(VK_CMD_BUFFER_OPTIMIZE_ONE_TIME_SUBMIT_BIT,		"VK_CMD_BUFFER_OPTIMIZE_ONE_TIME_SUBMIT_BIT"),
+		tcu::Format::BitDesc(VK_CMD_BUFFER_OPTIMIZE_DESCRIPTOR_SET_SWITCH_BIT,	"VK_CMD_BUFFER_OPTIMIZE_DESCRIPTOR_SET_SWITCH_BIT"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getQueryPipelineStatisticFlagsStr (VkQueryPipelineStatisticFlags value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_QUERY_PIPELINE_STATISTIC_IA_VERTICES_BIT,		"VK_QUERY_PIPELINE_STATISTIC_IA_VERTICES_BIT"),
+		tcu::Format::BitDesc(VK_QUERY_PIPELINE_STATISTIC_IA_PRIMITIVES_BIT,		"VK_QUERY_PIPELINE_STATISTIC_IA_PRIMITIVES_BIT"),
+		tcu::Format::BitDesc(VK_QUERY_PIPELINE_STATISTIC_VS_INVOCATIONS_BIT,	"VK_QUERY_PIPELINE_STATISTIC_VS_INVOCATIONS_BIT"),
+		tcu::Format::BitDesc(VK_QUERY_PIPELINE_STATISTIC_GS_INVOCATIONS_BIT,	"VK_QUERY_PIPELINE_STATISTIC_GS_INVOCATIONS_BIT"),
+		tcu::Format::BitDesc(VK_QUERY_PIPELINE_STATISTIC_GS_PRIMITIVES_BIT,		"VK_QUERY_PIPELINE_STATISTIC_GS_PRIMITIVES_BIT"),
+		tcu::Format::BitDesc(VK_QUERY_PIPELINE_STATISTIC_C_INVOCATIONS_BIT,		"VK_QUERY_PIPELINE_STATISTIC_C_INVOCATIONS_BIT"),
+		tcu::Format::BitDesc(VK_QUERY_PIPELINE_STATISTIC_C_PRIMITIVES_BIT,		"VK_QUERY_PIPELINE_STATISTIC_C_PRIMITIVES_BIT"),
+		tcu::Format::BitDesc(VK_QUERY_PIPELINE_STATISTIC_FS_INVOCATIONS_BIT,	"VK_QUERY_PIPELINE_STATISTIC_FS_INVOCATIONS_BIT"),
+		tcu::Format::BitDesc(VK_QUERY_PIPELINE_STATISTIC_TCS_PATCHES_BIT,		"VK_QUERY_PIPELINE_STATISTIC_TCS_PATCHES_BIT"),
+		tcu::Format::BitDesc(VK_QUERY_PIPELINE_STATISTIC_TES_INVOCATIONS_BIT,	"VK_QUERY_PIPELINE_STATISTIC_TES_INVOCATIONS_BIT"),
+		tcu::Format::BitDesc(VK_QUERY_PIPELINE_STATISTIC_CS_INVOCATIONS_BIT,	"VK_QUERY_PIPELINE_STATISTIC_CS_INVOCATIONS_BIT"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}

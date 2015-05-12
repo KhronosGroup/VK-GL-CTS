@@ -35,6 +35,11 @@ namespace eglu
 class Platform;
 }
 
+namespace vk
+{
+class Platform;
+}
+
 namespace tcu
 {
 
@@ -105,6 +110,8 @@ public:
 	 * \return Reference to EGL platform interface.
 	 *//*--------------------------------------------------------------------*/
 	virtual const eglu::Platform&	getEGLPlatform		(void) const;
+
+	virtual const vk::Platform&		getVulkanPlatform	(void) const;
 };
 
 } // tcu

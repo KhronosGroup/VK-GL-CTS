@@ -26,6 +26,7 @@
 #include "tcuDefs.hpp"
 #include "tcuPlatform.hpp"
 #include "gluPlatform.hpp"
+#include "vkPlatform.hpp"
 #include "tcuWin32API.h"
 
 #if defined(DEQP_SUPPORT_EGL)
@@ -37,7 +38,7 @@
 namespace tcu
 {
 
-class Win32Platform : public tcu::Platform, private glu::Platform
+class Win32Platform : public tcu::Platform, private glu::Platform, private vk::Platform
 #if defined(DEQP_SUPPORT_EGL)
 	, private eglu::Platform
 #endif
@@ -54,7 +55,11 @@ public:
 	const eglu::Platform&	getEGLPlatform		(void) const { return static_cast<const eglu::Platform&>(*this);	}
 #endif
 
+	const vk::Platform&		getVulkanPlatform	(void) const { return static_cast<const vk::Platform&>(*this);		}
+
 private:
+	vk::Library*			createLibrary		(void) const;
+
 	HINSTANCE				m_instance;
 };
 

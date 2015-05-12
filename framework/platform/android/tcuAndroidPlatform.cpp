@@ -183,6 +183,37 @@ eglu::NativeDisplay* NativeDisplayFactory::createDisplay (const EGLAttrib* attri
 	return new NativeDisplay();
 }
 
+// Vulkan
+
+static vk::GetProcAddrFunc loadGetProcAddr (const de::DynamicLibrary& library)
+{
+	const vk::GetProcAddrFunc	getProc	= (vk::GetProcAddrFunc)library.getFunction("vkGetProcAddr");
+
+	if (!getProc)
+		TCU_THROW(InternalError, "Failed to load vkGetProcAddr");
+
+	return getProc;
+}
+
+class VulkanLibrary : public vk::Library
+{
+public:
+	VulkanLibrary (void)
+		: m_library	("libvulkan.so")
+		, m_driver	(loadGetProcAddr(m_library))
+	{
+	}
+
+	const vk::PlatformInterface& getPlatformInterface (void) const
+	{
+		return m_driver;
+	}
+
+private:
+	const de::DynamicLibrary	m_library;
+	const vk::PlatformDriver	m_driver;
+};
+
 // Platform
 
 Platform::Platform (void)
@@ -199,6 +230,11 @@ bool Platform::processEvents (void)
 {
 	m_windowRegistry.garbageCollect();
 	return true;
+}
+
+vk::Library* Platform::createLibrary (void) const
+{
+	return new VulkanLibrary();
 }
 
 } // Android

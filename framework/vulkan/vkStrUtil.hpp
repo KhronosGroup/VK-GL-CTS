@@ -1,8 +1,10 @@
+#ifndef _VKSTRUTIL_HPP
+#define _VKSTRUTIL_HPP
 /*-------------------------------------------------------------------------
- * drawElements Quality Program Tester Core
- * ----------------------------------------
+ * drawElements Quality Program Vulkan Utilities
+ * -----------------------------------------------
  *
- * Copyright 2014 The Android Open Source Project
+ * Copyright 2015 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,40 +20,25 @@
  *
  *//*!
  * \file
- * \brief Platform (OS) specific services.
+ * \brief Pretty-printing and logging utilities.
  *//*--------------------------------------------------------------------*/
 
-#include "tcuPlatform.hpp"
+#include "vkDefs.hpp"
+#include "tcuFormatUtil.hpp"
 
-namespace tcu
+namespace vk
 {
 
-Platform::Platform (void)
+#include "vkStrUtil.inl"
+
+template<typename T>
+const char*	getTypeName	(void);
+
+inline std::ostream& operator<< (std::ostream& s, const ApiVersion& version)
 {
+	return s << version.major << "." << version.minor << "." << version.patch;
 }
 
-Platform::~Platform (void)
-{
-}
+} // vk
 
-bool Platform::processEvents (void)
-{
-	return true;
-}
-
-const glu::Platform& Platform::getGLPlatform (void) const
-{
-	TCU_THROW(NotSupportedError, "OpenGL (ES) is not supported");
-}
-
-const eglu::Platform& Platform::getEGLPlatform (void) const
-{
-	TCU_THROW(NotSupportedError, "EGL is not supported");
-}
-
-const vk::Platform& Platform::getVulkanPlatform (void) const
-{
-	TCU_THROW(NotSupportedError, "Vulkan is not supported");
-}
-
-} // tcu
+#endif // _VKSTRUTIL_HPP

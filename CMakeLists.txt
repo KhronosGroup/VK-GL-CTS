@@ -186,6 +186,7 @@ include_directories(
 	framework/randomshaders
 	framework/egl
 	framework/egl/wrapper
+	framework/vulkan
 	)
 
 if (DE_OS_IS_ANDROID OR DE_OS_IS_IOS)
