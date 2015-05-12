@@ -1675,22 +1675,6 @@ group declaration "Declaring arrays"
 		""
 	end
 
-	case empty_declaration_without_var_name
-		version 300 es
-
-		both ""
-			#version 300 es
-			precision mediump float;
-			${DECLARATIONS}
-
-			void main ()
-			{
-				int[];
-				${OUTPUT}
-			}
-		""
-	end
-
 end # declaration
 
 group length "Array length method"
@@ -1899,6 +1883,23 @@ group invalid "Invalid Functions"
 			{
 				int a = 5;
 				float[a] array;
+				${POSITION_FRAG_COLOR} = vec4(1.0);
+			}
+		""
+	end
+
+	case empty_declaration_without_var_name
+		version 300 es
+		expect compile_or_link_fail
+
+		both ""
+			#version 300 es
+			precision mediump float;
+			${DECLARATIONS}
+
+			void main ()
+			{
+				int[];
 				${POSITION_FRAG_COLOR} = vec4(1.0);
 			}
 		""

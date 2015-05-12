@@ -3894,8 +3894,6 @@ dEQP-GLES3.functional.shaders.arrays.declaration.multiple_declarations_single_st
 dEQP-GLES3.functional.shaders.arrays.declaration.multiple_declarations_single_statement_explicit_fragment
 dEQP-GLES3.functional.shaders.arrays.declaration.multiple_declarations_single_statement_implicit_vertex
 dEQP-GLES3.functional.shaders.arrays.declaration.multiple_declarations_single_statement_implicit_fragment
-dEQP-GLES3.functional.shaders.arrays.declaration.empty_declaration_without_var_name_vertex
-dEQP-GLES3.functional.shaders.arrays.declaration.empty_declaration_without_var_name_fragment
 dEQP-GLES3.functional.shaders.arrays.length.float_vertex
 dEQP-GLES3.functional.shaders.arrays.length.float_fragment
 dEQP-GLES3.functional.shaders.arrays.length.int_vertex

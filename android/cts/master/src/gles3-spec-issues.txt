@@ -506,3 +506,6 @@ dEQP-GLES3.functional.shaders.random.trigonometric.vertex.15
 dEQP-GLES3.functional.shaders.random.trigonometric.vertex.49
 dEQP-GLES3.functional.shaders.random.trigonometric.vertex.89
 dEQP-GLES3.functional.shaders.random.trigonometric.vertex.94
+
+# Khronos bugs 11207, 12408, internal bug 20699693
+dEQP-GLES3.functional.shaders.arrays.invalid.empty_declaration_without_var_name_*
