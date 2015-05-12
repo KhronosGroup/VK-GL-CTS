@@ -25,6 +25,7 @@
 #include "es3fApiCase.hpp"
 #include "gluContextInfo.hpp"
 #include "tcuFormatUtil.hpp"
+#include "gluTextureUtil.hpp"
 
 #include <vector>
 #include <algorithm>
@@ -42,6 +43,11 @@ namespace Functional
 {
 
 using tcu::TestLog;
+using tcu::CompressedTexFormat;
+using tcu::getBlockSize;
+using tcu::getBlockPixelSize;
+using tcu::IVec3;
+using glu::mapGLCompressedTexFormat;
 using std::vector;
 
 static inline int divRoundUp (int a, int b)
@@ -58,6 +64,38 @@ static inline int etc2EacDataSize (int width, int height)
 {
 	return 2 * etc2DataSize(width, height);
 }
+
+static const GLuint s_astcFormats[] =
+{
+	GL_COMPRESSED_RGBA_ASTC_4x4_KHR,
+	GL_COMPRESSED_RGBA_ASTC_5x4_KHR,
+	GL_COMPRESSED_RGBA_ASTC_5x5_KHR,
+	GL_COMPRESSED_RGBA_ASTC_6x5_KHR,
+	GL_COMPRESSED_RGBA_ASTC_6x6_KHR,
+	GL_COMPRESSED_RGBA_ASTC_8x5_KHR,
+	GL_COMPRESSED_RGBA_ASTC_8x6_KHR,
+	GL_COMPRESSED_RGBA_ASTC_8x8_KHR,
+	GL_COMPRESSED_RGBA_ASTC_10x5_KHR,
+	GL_COMPRESSED_RGBA_ASTC_10x6_KHR,
+	GL_COMPRESSED_RGBA_ASTC_10x8_KHR,
+	GL_COMPRESSED_RGBA_ASTC_10x10_KHR,
+	GL_COMPRESSED_RGBA_ASTC_12x10_KHR,
+	GL_COMPRESSED_RGBA_ASTC_12x12_KHR,
+	GL_COMPRESSED_SRGB8_ALPHA8_ASTC_4x4_KHR,
+	GL_COMPRESSED_SRGB8_ALPHA8_ASTC_5x4_KHR,
+	GL_COMPRESSED_SRGB8_ALPHA8_ASTC_5x5_KHR,
+	GL_COMPRESSED_SRGB8_ALPHA8_ASTC_6x5_KHR,
+	GL_COMPRESSED_SRGB8_ALPHA8_ASTC_6x6_KHR,
+	GL_COMPRESSED_SRGB8_ALPHA8_ASTC_8x5_KHR,
+	GL_COMPRESSED_SRGB8_ALPHA8_ASTC_8x6_KHR,
+	GL_COMPRESSED_SRGB8_ALPHA8_ASTC_8x8_KHR,
+	GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x5_KHR,
+	GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x6_KHR,
+	GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x8_KHR,
+	GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x10_KHR,
+	GL_COMPRESSED_SRGB8_ALPHA8_ASTC_12x10_KHR,
+	GL_COMPRESSED_SRGB8_ALPHA8_ASTC_12x12_KHR
+};
 
 static deUint32 cubeFaceToGLFace (tcu::CubeFace face)
 {
@@ -454,6 +492,43 @@ void NegativeTextureApiTests::init (void)
 			m_log << TestLog::EndSection;
 
 			glDeleteBuffers			(1, &buf);
+		});
+	ES3F_ADD_API_CASE(compressedteximage2d_invalid_astc_target, "Invalid glCompressedTexImage2D() ASTC 2D targets",
+		{
+			// GLES 3.0.4, Sec 3.8.6, p.147: For example, the
+			// compressed image format might be supported only for 2D
+			// textures ... result in an INVALID_OPERATION error.
+			// Also, if LDR is supported, formats cannot be invalid enums
+
+			if (m_context.getContextInfo().isExtensionSupported("GL_KHR_texture_compression_astc_hdr") ||
+				m_context.getContextInfo().isExtensionSupported("GL_OES_texture_compression_astc"))
+			{
+				m_log.writeMessage("Full ASTC supported. No negative API requirements.");
+			}
+			else
+			{
+				const GLuint requiredError = m_context.getContextInfo().isExtensionSupported("GL_KHR_texture_compression_astc_ldr") ? GL_INVALID_OPERATION : GL_INVALID_ENUM;
+
+				if (requiredError == GL_INVALID_OPERATION)
+					m_log.writeMessage("GL_INVALID_OPERATION should be generated if cube map targets work with LDR ASTC.");
+				else
+					m_log.writeMessage("GL_INVALID_ENUM should be generated if no ASTC extensions are present.");
+
+				for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(s_astcFormats); formatNdx++)
+				{
+					const GLuint 				format 		= s_astcFormats[formatNdx];
+					const CompressedTexFormat 	tcuFormat 	= mapGLCompressedTexFormat(format);
+					const IVec3 				blockPixels = getBlockPixelSize(tcuFormat);
+					const size_t 				blockBytes 	= getBlockSize(tcuFormat);
+					const vector<deUint8>		dummyData	(blockBytes);
+
+					FOR_CUBE_FACES(faceGL,
+					{
+						glCompressedTexImage2D(faceGL, 0, format, blockPixels.x(), blockPixels.y(), 0, blockBytes, &dummyData[0]);
+						expectError(requiredError);
+					});
+				}
+			}
 		});
 
 	// glCopyTexImage2D
@@ -2591,6 +2666,44 @@ void NegativeTextureApiTests::init (void)
 
 			glDeleteBuffers			(1, &buf);
 		});
+	ES3F_ADD_API_CASE(compressedteximage3d_invalid_astc_target, "Invalid glCompressedTexImage3D() ASTC 3D targets",
+		{
+			// GLES 3.0.4, Sec 3.8.6, p.147: For example, the
+			// compressed image format might be supported only for 2D
+			// textures ... result in an INVALID_OPERATION error.
+			// Also, if LDR is supported, formats cannot be invalid enums
+			// \todo [2015-05-14 kalle] The test is subject to change from Khronos bug 13921 and 13862
+
+			if (m_context.getContextInfo().isExtensionSupported("GL_KHR_texture_compression_astc_hdr") ||
+				m_context.getContextInfo().isExtensionSupported("GL_OES_texture_compression_astc"))
+			{
+				m_log.writeMessage("Full ASTC supported. No negative API requirements.");
+			}
+			else
+			{
+				const GLuint requiredError = m_context.getContextInfo().isExtensionSupported("GL_KHR_texture_compression_astc_ldr") ? GL_INVALID_OPERATION : GL_INVALID_ENUM;
+
+				if (requiredError == GL_INVALID_OPERATION)
+					m_log.writeMessage("GL_INVALID_OPERATION should be  generated if any TexImage3D target works with LDR ASTC.");
+				else
+					m_log.writeMessage("GL_INVALID_ENUM should be generated if no ASTC extensions are present.");
+
+				for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(s_astcFormats); formatNdx++)
+				{
+					const GLuint 				format 		= s_astcFormats[formatNdx];
+					const CompressedTexFormat 	tcuFormat 	= mapGLCompressedTexFormat(format);
+					const IVec3 				blockPixels = getBlockPixelSize(tcuFormat);
+					const size_t 				blockBytes 	= getBlockSize(tcuFormat);
+					const vector<deUint8>		dummyData	(blockBytes);
+
+					glCompressedTexImage3D(GL_TEXTURE_3D, 0, format, blockPixels.x(), blockPixels.y(), blockPixels.z(), 0, blockBytes, &dummyData[0]);
+					expectError(requiredError);
+
+					glCompressedTexImage3D(GL_TEXTURE_2D_ARRAY, 0, format, blockPixels.x(), blockPixels.y(), blockPixels.z(), 0, blockBytes, &dummyData[0]);
+					expectError(requiredError);
+				}
+			}
+		});
 
 	// glCompressedTexSubImage3D
 
@@ -2872,6 +2985,41 @@ void NegativeTextureApiTests::init (void)
 
 			glDeleteTextures(1, &texture);
 		});
+	ES3F_ADD_API_CASE(texstorage2d_invalid_astc_target, "Invalid glTexStorage2D() ASTC 2D targets",
+		{
+			// GLES 3.0.4, Sec 3.8.4, p.136: If there is no imageSize
+			// for which this command would have been valid, an
+			// INVALID_OPERATION error is generated. Also: If
+			// executing the pseudo-code would result in any other
+			// error, the error is generated and the command will have
+			// no effect.
+			// In conclusion: Expect same errors as with TexImage?D
+
+			if (m_context.getContextInfo().isExtensionSupported("GL_KHR_texture_compression_astc_hdr") ||
+				m_context.getContextInfo().isExtensionSupported("GL_OES_texture_compression_astc"))
+			{
+				m_log.writeMessage("Full ASTC supported. No negative API requirements.");
+			}
+			else
+			{
+				const GLuint requiredError = m_context.getContextInfo().isExtensionSupported("GL_KHR_texture_compression_astc_ldr") ? GL_INVALID_OPERATION : GL_INVALID_ENUM;
+
+				if (requiredError == GL_INVALID_OPERATION)
+					m_log.writeMessage("GL_INVALID_OPERATION should be generated if the cube map targets work with LDR ASTC.");
+				else
+					m_log.writeMessage("GL_INVALID_ENUM should be generated if no ASTC extensions are present.");
+
+				for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(s_astcFormats); formatNdx++)
+				{
+					const GLuint 				format 		= s_astcFormats[formatNdx];
+					const CompressedTexFormat 	tcuFormat 	= mapGLCompressedTexFormat(format);
+					const IVec3 				blockPixels = getBlockPixelSize(tcuFormat);
+
+					glTexStorage2D(GL_TEXTURE_CUBE_MAP, 1, format, blockPixels.x(), blockPixels.y());
+					expectError(requiredError);
+				}
+			}
+		});
 
 	// glTexStorage3D
 
@@ -2963,6 +3111,45 @@ void NegativeTextureApiTests::init (void)
 			m_log << TestLog::EndSection;
 
 			glDeleteTextures(1, &texture);
+		});
+
+	ES3F_ADD_API_CASE(texstorage3d_invalid_astc_target, "Invalid glTexStorage3D() ASTC 3D targets",
+		{
+			// GLES 3.0.4, Sec 3.8.4, p.136: If there is no imageSize
+			// for which this command would have been valid, an
+			// INVALID_OPERATION error is generated. Also: If
+			// executing the pseudo-code would result in any other
+			// error, the error is generated and the command will have
+			// no effect.
+			// In conclusion: Expect same errors as with TexImage?D
+
+			if (m_context.getContextInfo().isExtensionSupported("GL_KHR_texture_compression_astc_hdr") ||
+				m_context.getContextInfo().isExtensionSupported("GL_OES_texture_compression_astc"))
+			{
+				m_log.writeMessage("Full ASTC supported. No negative API requirements.");
+			}
+			else
+			{
+				const GLuint requiredError = m_context.getContextInfo().isExtensionSupported("GL_KHR_texture_compression_astc_ldr") ? GL_INVALID_OPERATION : GL_INVALID_ENUM;
+
+				if (requiredError == GL_INVALID_OPERATION)
+					m_log.writeMessage("GL_INVALID_OPERATION should be generated if any TexStorage3D target works with LDR.");
+				else
+					m_log.writeMessage("GL_INVALID_ENUM should be generated if no ASTC extensions are present.");
+
+				for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(s_astcFormats); formatNdx++)
+				{
+					const GLuint 				format 		= s_astcFormats[formatNdx];
+					const CompressedTexFormat 	tcuFormat 	= mapGLCompressedTexFormat(format);
+					const IVec3 				blockPixels = getBlockPixelSize(tcuFormat);
+
+					glTexStorage3D(GL_TEXTURE_3D, 1, format, blockPixels.x(), blockPixels.y(), blockPixels.z());
+					expectError(requiredError);
+
+					glTexStorage3D(GL_TEXTURE_2D_ARRAY, 1, format, blockPixels.x(), blockPixels.y(), blockPixels.z());
+					expectError(requiredError);
+				}
+			}
 		});
 }
 
