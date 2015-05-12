@@ -1090,7 +1090,7 @@ void writeFragmentPackets (const RenderState&					state,
 			}
 
 			// Execute per-fragment ops and write
-			fragProcessor.render(renderTarget.getColorBuffer(outputNdx), renderTarget.getDepthBuffer(), renderTarget.getStencilBuffer(), &fragmentBuffer[0], fragCount, facetype, fragOpsState);
+			fragProcessor.render(renderTarget.getColorBuffer((int)outputNdx), renderTarget.getDepthBuffer(), renderTarget.getStencilBuffer(), &fragmentBuffer[0], fragCount, facetype, fragOpsState);
 		}
 	}
 }
@@ -1585,7 +1585,7 @@ bool isValidCommand (const DrawCommand& command, int numInstances)
 	// All destination buffers should have same basic type as matching fragment output
 	for (size_t varyingNdx = 0; varyingNdx < command.program.fragmentShader->getOutputs().size(); ++varyingNdx)
 	{
-		const tcu::TextureChannelClass	colorbufferClass = tcu::getTextureChannelClass(command.renderTarget.getColorBuffer(varyingNdx).raw().getFormat().type);
+		const tcu::TextureChannelClass	colorbufferClass = tcu::getTextureChannelClass(command.renderTarget.getColorBuffer((int)varyingNdx).raw().getFormat().type);
 		const GenericVecType			colorType		 = (colorbufferClass == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER) ? (rr::GENERICVECTYPE_INT32) : ((colorbufferClass == tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER) ? (rr::GENERICVECTYPE_UINT32) : (rr::GENERICVECTYPE_FLOAT));
 
 		if (command.program.fragmentShader->getOutputs()[varyingNdx].type != colorType)
