@@ -363,7 +363,7 @@ tcu::TextureFormat getDepthFormat (const int depthBits)
 		case 0:		return tcu::TextureFormat();
 		case 8:		return tcu::TextureFormat(tcu::TextureFormat::D, tcu::TextureFormat::UNORM_INT8);
 		case 16:	return tcu::TextureFormat(tcu::TextureFormat::D, tcu::TextureFormat::UNORM_INT16);
-		case 24:	return tcu::TextureFormat(tcu::TextureFormat::D, tcu::TextureFormat::UNSIGNED_INT_24_8);
+		case 24:	return tcu::TextureFormat(tcu::TextureFormat::D, tcu::TextureFormat::UNORM_INT24);
 		case 32:
 		default:	return tcu::TextureFormat(tcu::TextureFormat::D, tcu::TextureFormat::FLOAT);
 	}
