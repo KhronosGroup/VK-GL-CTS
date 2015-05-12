@@ -63,7 +63,77 @@ LogImage::LogImage (const std::string& name, const std::string& description, con
 	, m_bias		(0.0f, 0.0f, 0.0f, 0.0f)
 	, m_compression	(compression)
 {
-	computePixelScaleBias(access, m_scale, m_bias);
+	// Simplify combined formats that only use a single channel
+	if (tcu::isCombinedDepthStencilType(m_access.getFormat().type))
+	{
+		if (m_access.getFormat().order == tcu::TextureFormat::D)
+			m_access = tcu::getEffectiveDepthStencilAccess(m_access, tcu::Sampler::MODE_DEPTH);
+		else if (m_access.getFormat().order == tcu::TextureFormat::S)
+			m_access = tcu::getEffectiveDepthStencilAccess(m_access, tcu::Sampler::MODE_STENCIL);
+	}
+
+	// Implicit scale and bias
+	if (m_access.getFormat().order != tcu::TextureFormat::DS)
+		computePixelScaleBias(m_access, m_scale, m_bias);
+	else
+	{
+		// Pack D and S bias and scale to R and G
+		const ConstPixelBufferAccess	depthAccess		= tcu::getEffectiveDepthStencilAccess(m_access, tcu::Sampler::MODE_DEPTH);
+		const ConstPixelBufferAccess	stencilAccess	= tcu::getEffectiveDepthStencilAccess(m_access, tcu::Sampler::MODE_STENCIL);
+		tcu::Vec4						depthScale;
+		tcu::Vec4						depthBias;
+		tcu::Vec4						stencilScale;
+		tcu::Vec4						stencilBias;
+
+		computePixelScaleBias(depthAccess, depthScale, depthBias);
+		computePixelScaleBias(stencilAccess, stencilScale, stencilBias);
+
+		m_scale = tcu::Vec4(depthScale.x(), stencilScale.x(), 0.0f, 0.0f);
+		m_bias = tcu::Vec4(depthBias.x(), stencilBias.x(), 0.0f, 0.0f);
+	}
+}
+
+LogImage::LogImage (const std::string& name, const std::string& description, const ConstPixelBufferAccess& access, const Vec4& scale, const Vec4& bias, qpImageCompressionMode compression)
+	: m_name		(name)
+	, m_description	(description)
+	, m_access		(access)
+	, m_scale		(scale)
+	, m_bias		(bias)
+	, m_compression	(compression)
+{
+	// Cannot set scale and bias of combined formats
+	DE_ASSERT(access.getFormat().order != tcu::TextureFormat::DS);
+
+	// Simplify access
+	if (tcu::isCombinedDepthStencilType(access.getFormat().type))
+	{
+		if (access.getFormat().order == tcu::TextureFormat::D)
+			m_access = tcu::getEffectiveDepthStencilAccess(access, tcu::Sampler::MODE_DEPTH);
+		if (access.getFormat().order == tcu::TextureFormat::S)
+			m_access = tcu::getEffectiveDepthStencilAccess(access, tcu::Sampler::MODE_STENCIL);
+		else
+		{
+			// Cannot log a DS format
+			DE_ASSERT(false);
+			return;
+		}
+	}
+}
+
+void LogImage::write (TestLog& log) const
+{
+	if (m_access.getFormat().order != tcu::TextureFormat::DS)
+		log.writeImage(m_name.c_str(), m_description.c_str(), m_access, m_scale, m_bias, m_compression);
+	else
+	{
+		const ConstPixelBufferAccess	depthAccess		= tcu::getEffectiveDepthStencilAccess(m_access, tcu::Sampler::MODE_DEPTH);
+		const ConstPixelBufferAccess	stencilAccess	= tcu::getEffectiveDepthStencilAccess(m_access, tcu::Sampler::MODE_STENCIL);
+
+		log.startImageSet(m_name.c_str(), m_description.c_str());
+		log.writeImage("Depth", "Depth channel", depthAccess, m_scale.swizzle(0, 0, 0, 0), m_bias.swizzle(0, 0, 0, 0), m_compression);
+		log.writeImage("Stencil", "Stencil channel", stencilAccess, m_scale.swizzle(1, 1, 1, 1), m_bias.swizzle(1, 1, 1, 1), m_compression);
+		log.endImageSet();
+	}
 }
 
 // MessageBuilder
@@ -169,6 +239,9 @@ void TestLog::writeImage (const char* name, const char* description, const Const
 	int						width		= access.getWidth();
 	int						height		= access.getHeight();
 	int						depth		= access.getDepth();
+
+	// Writing a combined image does not make sense
+	DE_ASSERT(!tcu::isCombinedDepthStencilType(access.getFormat().type));
 
 	// Do not bother with preprocessing if images are not stored
 	if ((qpTestLog_getLogFlags(m_log) & QP_TEST_LOG_EXCLUDE_IMAGES) != 0)

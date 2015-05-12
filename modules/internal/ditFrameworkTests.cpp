@@ -791,8 +791,8 @@ protected:
 																	  (subCase.vtx[1].z() == subCase.vtx[2].z());
 			const float						refDepth				= subCase.vtx[0].z()*(zf - zn)/2.0f + (zn + zf)/2.0f;
 
-			rr::resolveMultisampleColorBuffer(resolvedColor.getAccess(), rr::MultisampleConstPixelBufferAccess::fromMultisampleAccess(interpolated.getAccess()));
-			rr::resolveMultisampleColorBuffer(resolvedDepthStencil.getAccess(), rr::MultisampleConstPixelBufferAccess::fromMultisampleAccess(depthStencil.getAccess()));
+			rr::resolveMultisampleBuffer(resolvedColor.getAccess(), rr::MultisampleConstPixelBufferAccess::fromMultisampleAccess(interpolated.getAccess()));
+			rr::resolveMultisampleBuffer(resolvedDepthStencil.getAccess(), rr::MultisampleConstPixelBufferAccess::fromMultisampleAccess(depthStencil.getAccess()));
 			clear(errorAccess, Vec4(0.0f, 1.0f, 0.0f, 1.0f));
 
 			for (int y = 0; y < height; y++)

@@ -90,6 +90,9 @@ MultisamplePixelBufferAccess		getSubregion					(const MultisamplePixelBufferAcce
 MultisampleConstPixelBufferAccess	getSubregion					(const MultisampleConstPixelBufferAccess& access, int x, int y, int width, int height);
 
 void								resolveMultisampleColorBuffer	(const tcu::PixelBufferAccess& dst, const MultisampleConstPixelBufferAccess& src);
+void								resolveMultisampleDepthBuffer	(const tcu::PixelBufferAccess& dst, const MultisampleConstPixelBufferAccess& src);
+void								resolveMultisampleStencilBuffer	(const tcu::PixelBufferAccess& dst, const MultisampleConstPixelBufferAccess& src);
+void								resolveMultisampleBuffer		(const tcu::PixelBufferAccess& dst, const MultisampleConstPixelBufferAccess& src);
 tcu::Vec4							resolveMultisamplePixel			(const MultisampleConstPixelBufferAccess& access, int x, int y);
 
 void								clear							(const MultisamplePixelBufferAccess& access, const tcu::Vec4& color);
