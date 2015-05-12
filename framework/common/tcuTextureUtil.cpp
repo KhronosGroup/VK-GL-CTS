@@ -916,17 +916,15 @@ void estimatePixelValueRange (const ConstPixelBufferAccess& access, Vec4& minVal
 {
 	const TextureFormat& format = access.getFormat();
 
-	switch (format.type)
+	switch (getTextureChannelClass(format.type))
 	{
-		case TextureFormat::UNORM_INT8:
-		case TextureFormat::UNORM_INT16:
+		case TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT:
 			// Normalized unsigned formats.
 			minVal = Vec4(0.0f);
 			maxVal = Vec4(1.0f);
 			break;
 
-		case TextureFormat::SNORM_INT8:
-		case TextureFormat::SNORM_INT16:
+		case TEXTURECHANNELCLASS_SIGNED_FIXED_POINT:
 			// Normalized signed formats.
 			minVal = Vec4(-1.0f);
 			maxVal = Vec4(+1.0f);
