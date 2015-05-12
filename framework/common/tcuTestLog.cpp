@@ -247,9 +247,10 @@ void TestLog::writeImage (const char* name, const char* description, const Const
 	if ((qpTestLog_getLogFlags(m_log) & QP_TEST_LOG_EXCLUDE_IMAGES) != 0)
 		return;
 
-	if (depth == 1 && format.type == TextureFormat::UNORM_INT8 &&
-		width <= MAX_IMAGE_SIZE_2D && height <= MAX_IMAGE_SIZE_2D &&
-		(format.order == TextureFormat::RGB || format.order == TextureFormat::RGBA)
+	if (depth == 1 && format.type == TextureFormat::UNORM_INT8
+		&& width <= MAX_IMAGE_SIZE_2D && height <= MAX_IMAGE_SIZE_2D
+		&& (format.order == TextureFormat::RGB || format.order == TextureFormat::RGBA)
+		&& access.getPixelPitch() == access.getFormat().getPixelSize()
 		&& pixelBias[0] == 0.0f && pixelBias[1] == 0.0f && pixelBias[2] == 0.0f && pixelBias[3] == 0.0f
 		&& pixelScale[0] == 1.0f && pixelScale[1] == 1.0f && pixelScale[2] == 1.0f && pixelScale[3] == 1.0f)
 	{

@@ -42,11 +42,8 @@ const tcu::PixelBufferAccess MultisamplePixelBufferAccess::toSinglesampleAccess 
 	DE_ASSERT(getNumSamples() == 1);
 
 	return tcu::PixelBufferAccess(m_access.getFormat(),
-								  m_access.getHeight(),
-								  m_access.getDepth(),
-								  1,
-								  m_access.getSlicePitch(),
-								  m_access.getSlicePitch() * m_access.getDepth(),
+								  tcu::IVec3(m_access.getHeight(), m_access.getDepth(), 1),
+								  tcu::IVec3(m_access.getRowPitch(), m_access.getSlicePitch(), m_access.getSlicePitch() * m_access.getDepth()),
 								  m_access.getDataPtr());
 }
 
@@ -55,11 +52,8 @@ MultisamplePixelBufferAccess MultisamplePixelBufferAccess::fromSinglesampleAcces
 	return MultisamplePixelBufferAccess(
 				tcu::PixelBufferAccess(
 								original.getFormat(),
-								1,
-								original.getWidth(),
-								original.getHeight(),
-								original.getFormat().getPixelSize(),
-								original.getRowPitch(),
+								tcu::IVec3(1, original.getWidth(), original.getHeight()),
+								tcu::IVec3(original.getPixelPitch(), original.getPixelPitch(), original.getRowPitch()),
 								original.getDataPtr()));
 }
 
@@ -88,11 +82,8 @@ const tcu::ConstPixelBufferAccess MultisampleConstPixelBufferAccess::toSinglesam
 	DE_ASSERT(getNumSamples() == 1);
 
 	return tcu::ConstPixelBufferAccess(m_access.getFormat(),
-									   m_access.getHeight(),
-									   m_access.getDepth(),
-									   1,
-									   m_access.getSlicePitch(),
-									   m_access.getSlicePitch() * m_access.getDepth(),
+									   tcu::IVec3(m_access.getHeight(), m_access.getDepth(), 1),
+									   tcu::IVec3(m_access.getRowPitch(), m_access.getSlicePitch(), m_access.getSlicePitch() * m_access.getDepth()),
 									   m_access.getDataPtr());
 }
 
@@ -101,11 +92,8 @@ MultisampleConstPixelBufferAccess MultisampleConstPixelBufferAccess::fromSingles
 	return MultisampleConstPixelBufferAccess(
 				tcu::ConstPixelBufferAccess(
 								original.getFormat(),
-								1,
-								original.getWidth(),
-								original.getHeight(),
-								original.getFormat().getPixelSize(),
-								original.getRowPitch(),
+								tcu::IVec3(1, original.getWidth(), original.getHeight()),
+								tcu::IVec3(original.getPixelPitch(), original.getPixelPitch(), original.getRowPitch()),
 								original.getDataPtr()));
 }
 
