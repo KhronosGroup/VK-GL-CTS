@@ -27,6 +27,7 @@
 #include "tcuPlatform.hpp"
 #include "egluPlatform.hpp"
 #include "gluPlatform.hpp"
+#include "vkPlatform.hpp"
 #include "tcuAndroidWindow.hpp"
 
 namespace tcu
@@ -34,7 +35,7 @@ namespace tcu
 namespace Android
 {
 
-class Platform : public tcu::Platform, private eglu::Platform, private glu::Platform
+class Platform : public tcu::Platform, private eglu::Platform, private glu::Platform, private vk::Platform
 {
 public:
 									Platform			(void);
@@ -44,8 +45,11 @@ public:
 
 	virtual const glu::Platform&	getGLPlatform		(void) const { return static_cast<const glu::Platform&>(*this);		}
 	virtual const eglu::Platform&	getEGLPlatform		(void) const { return static_cast<const eglu::Platform&>(*this);	}
+	virtual const vk::Platform&		getVulkanPlatform	(void) const { return static_cast<const vk::Platform&>(*this);		}
 
 	WindowRegistry&					getWindowRegistry	(void) { return m_windowRegistry; }
+
+	vk::Library*					createLibrary		(void) const;
 
 private:
 	WindowRegistry					m_windowRegistry;

@@ -12,6 +12,9 @@ add_subdirectory(opengl)
 # EGL utilities
 add_subdirectory(egl)
 
+# Vulkan utilities
+add_subdirectory(vulkan)
+
 if (IS_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/randomshaders)
 	add_subdirectory(randomshaders)
 endif ()

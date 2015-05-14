@@ -108,6 +108,8 @@ if (DEQP_SUPPORT_EGL)
 	target_link_libraries(tcutil-platform eglutil eglwrapper)
 endif ()
 
+target_link_libraries(tcutil-platform vkutil)
+
 # X11 libraries
 if (DEQP_USE_X11)
 	find_package(X11 REQUIRED)
