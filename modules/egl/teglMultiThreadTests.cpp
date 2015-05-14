@@ -42,12 +42,14 @@
 #include "eglwEnums.hpp"
 
 #include <vector>
+#include <set>
 #include <string>
 #include <sstream>
 
 using std::vector;
 using std::string;
 using std::pair;
+using std::set;
 using std::ostringstream;
 
 using namespace eglw;
@@ -998,20 +1000,19 @@ void MultiThreadedObjectTest::createDestroyObjects (TestThread& thread, int coun
 	vector<pair<eglu::NativeWindow*, EGLSurface> >&	windows		= (thread.getId() == 0 ? m_nativeWindows0 : m_nativeWindows1);
 	vector<pair<eglu::NativePixmap*, EGLSurface> >&	pixmaps		= (thread.getId() == 0 ? m_nativePixmaps0 : m_nativePixmaps1);
 	vector<EGLContext>&								contexts	= (thread.getId() == 0 ? m_contexts0 : m_contexts1);
-
-	vector<Type>		objectTypes;
+	set<Type>										objectTypes;
 
 	if ((m_types & TYPE_PBUFFER) != 0)
-		objectTypes.push_back(TYPE_PBUFFER);
+		objectTypes.insert(TYPE_PBUFFER);
 
 	if ((m_types & TYPE_PIXMAP) != 0)
-		objectTypes.push_back(TYPE_PIXMAP);
+		objectTypes.insert(TYPE_PIXMAP);
 
 	if ((m_types & TYPE_WINDOW) != 0)
-		objectTypes.push_back(TYPE_WINDOW);
+		objectTypes.insert(TYPE_WINDOW);
 
 	if ((m_types & TYPE_CONTEXT) != 0)
-		objectTypes.push_back(TYPE_CONTEXT);
+		objectTypes.insert(TYPE_CONTEXT);
 
 	for (int createDestroyNdx = 0; createDestroyNdx < count; createDestroyNdx++)
 	{
@@ -1065,8 +1066,12 @@ void MultiThreadedObjectTest::createDestroyObjects (TestThread& thread, int coun
 		}
 		else
 		{
-			create	= rnd.getBool();
-			type	= rnd.choose<Type>(objectTypes.begin(), objectTypes.end());
+			create = rnd.getBool();
+
+			if (!create && windows.empty())
+				objectTypes.erase(TYPE_WINDOW);
+
+			type = rnd.choose<Type>(objectTypes.begin(), objectTypes.end());
 		}
 
 		if (create)
@@ -1349,7 +1354,7 @@ void MultiThreadedObjectTest::querySetSharedObjects (TestThread& thread, int cou
 	if ((m_types & TYPE_PIXMAP) != 0)
 		objectTypes.push_back(TYPE_PIXMAP);
 
-	if ((m_types & TYPE_WINDOW) != 0)
+	if (!m_sharedNativeWindows.empty() && (m_types & TYPE_WINDOW) != 0)
 		objectTypes.push_back(TYPE_WINDOW);
 
 	if ((m_types & TYPE_CONTEXT) != 0)
