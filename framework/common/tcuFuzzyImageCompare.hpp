@@ -33,18 +33,12 @@ class PixelBufferAccess;
 
 struct FuzzyCompareParams
 {
-	FuzzyCompareParams (int		maxSampleSkip_		= 8,
-						int		minErrThreshold_	= 4,
-						float	errExp_				= 4.0f)
-		: maxSampleSkip		(maxSampleSkip_)
-		, minErrThreshold	(minErrThreshold_)
-		, errExp			(errExp_)
+	FuzzyCompareParams (int maxSampleSkip_ = 8)
+		: maxSampleSkip(maxSampleSkip_)
 	{
 	}
 
 	int		maxSampleSkip;
-	int		minErrThreshold;
-	float	errExp;
 };
 
 float fuzzyCompare (const FuzzyCompareParams& params, const ConstPixelBufferAccess& ref, const ConstPixelBufferAccess& cmp, const PixelBufferAccess& errorMask);

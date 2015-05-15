@@ -83,6 +83,10 @@ public:
 			compareTime = deGetMicroseconds()-startTime;
 		}
 
+		m_testCtx.getLog() << TestLog::Image("RefImage",	"Reference Image",	refImg)
+						   << TestLog::Image("CmpImage",	"Compare Image",	cmpImg)
+						   << TestLog::Image("ErrorMask",	"Error Mask",		errorMask);
+
 		m_testCtx.getLog() << TestLog::Float("Result", "Result metric", "", QP_KEY_TAG_NONE, result)
 						   << TestLog::Float("MinBound", "Minimum bound", "", QP_KEY_TAG_NONE, m_minBound)
 						   << TestLog::Float("MaxBound", "Maximum bound", "", QP_KEY_TAG_NONE, m_maxBound)
@@ -164,7 +168,7 @@ public:
 		addChild(new FuzzyComparisonMetricCase(m_testCtx, "cube",			"cube_ref.png",				"cube_cmp.png",				0.0029f,		0.0031f));
 		addChild(new FuzzyComparisonMetricCase(m_testCtx, "cube_2",			"cube_2_ref.png",			"cube_2_cmp.png",			0.0134f,		0.0140f));
 		addChild(new FuzzyComparisonMetricCase(m_testCtx, "cube_sphere",	"cube_sphere_ref.png",		"cube_sphere_cmp.png",		0.0730f,		0.0801f));
-		addChild(new FuzzyComparisonMetricCase(m_testCtx, "cube_nmap",		"cube_nmap_ref.png",		"cube_nmap_cmp.png",		0.0024f,		0.0025f));
+		addChild(new FuzzyComparisonMetricCase(m_testCtx, "cube_nmap",		"cube_nmap_ref.png",		"cube_nmap_cmp.png",		0.0022f,		0.0025f));
 		addChild(new FuzzyComparisonMetricCase(m_testCtx, "cube_nmap_2",	"cube_nmap_2_ref.png",		"cube_nmap_2_cmp.png",		0.0172f,		0.0189f));
 		addChild(new FuzzyComparisonMetricCase(m_testCtx, "earth_diffuse",	"earth_diffuse_ref.png",	"earth_diffuse_cmp.png",	0.0f,			0.00002f));
 		addChild(new FuzzyComparisonMetricCase(m_testCtx, "eath_texture",	"earth_texture_ref.png",	"earth_texture_cmp.png",	0.0002f,		0.0003f));
@@ -172,7 +176,7 @@ public:
 		addChild(new FuzzyComparisonMetricCase(m_testCtx, "earth_light",	"earth_light_ref.png",		"earth_light_cmp.png",		1.7050f,		1.7070f));
 		addChild(new FuzzyComparisonMetricCase(m_testCtx, "lessThan0",		"lessThan0-reference.png",	"lessThan0-result.png",		0.0003f,		0.0004f));
 		addChild(new FuzzyComparisonMetricCase(m_testCtx, "cube_sphere_2",	"cube_sphere_2_ref.png",	"cube_sphere_2_cmp.png",	0.0207f,		0.0230f));
-		addChild(new FuzzyComparisonMetricCase(m_testCtx, "earth_to_empty",	"earth_spot_ref.png",		"empty_256x256.png",		77074.0f,		77076.0f));
+		addChild(new FuzzyComparisonMetricCase(m_testCtx, "earth_to_empty",	"earth_spot_ref.png",		"empty_256x256.png",		54951.0f,		54955.0f));
 	}
 };
 
