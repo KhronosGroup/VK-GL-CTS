@@ -12,4 +12,6 @@ set(TCUTIL_PLATFORM_SRCS
 	null/tcuNullPlatform.hpp
 	null/tcuNullRenderContext.cpp
 	null/tcuNullRenderContext.hpp
+	null/tcuNullContextFactory.cpp
+	null/tcuNullContextFactory.hpp
 	)
