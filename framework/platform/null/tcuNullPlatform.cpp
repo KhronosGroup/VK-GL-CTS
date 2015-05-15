@@ -22,6 +22,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "tcuNullPlatform.hpp"
+#include "tcuNullContextFactory.hpp"
 #include "tcuNullRenderContext.hpp"
 #include "egluNativeDisplay.hpp"
 #include "eglwLibrary.hpp"
@@ -30,20 +31,6 @@ namespace tcu
 {
 namespace null
 {
-
-class NullGLContextFactory : public glu::ContextFactory
-{
-public:
-	NullGLContextFactory (void)
-		: glu::ContextFactory("null", "Null Render Context")
-	{
-	}
-
-	glu::RenderContext* createContext (const glu::RenderConfig& config, const tcu::CommandLine&) const
-	{
-		return new RenderContext(config);
-	}
-};
 
 class NullEGLDisplay : public eglu::NativeDisplay
 {
