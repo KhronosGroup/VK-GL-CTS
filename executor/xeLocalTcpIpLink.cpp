@@ -62,7 +62,7 @@ void LocalTcpIpLink::start (const char* execServerPath, const char* workDir, int
 		deProcess_destroy(m_process);
 		m_process = DE_NULL;
 
-		XE_FAIL((std::string("Failed to start server: ") + err).c_str());
+		XE_FAIL((std::string("Failed to start ExecServer '") + execServerPath + "' : " + err).c_str());
 	}
 
 	try

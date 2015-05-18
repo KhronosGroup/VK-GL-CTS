@@ -480,6 +480,7 @@ void TcpIpLink::connect (const de::SocketAddress& address)
 	{
 		closeConnection();
 		m_state.setState(COMMLINKSTATE_ERROR, e.what());
+		throw;
 	}
 }
 
