@@ -58,7 +58,7 @@ dePoolStringBuilder* dePoolStringBuilder_create (deMemPool* pool)
 deBool dePoolStringBuilder_appendString (dePoolStringBuilder* builder, const char* str)
 {
 	StringBlock*	block		= DE_POOL_NEW(builder->pool, StringBlock);
-	int				len			= (int)strlen(str);
+	size_t			len			= strlen(str);
 	char*			blockStr	= (char*)deMemPool_alloc(builder->pool, len + 1);
 
 	if (!block || !blockStr)
@@ -84,7 +84,7 @@ deBool dePoolStringBuilder_appendString (dePoolStringBuilder* builder, const cha
 
 	builder->blockListTail = block;
 
-	builder->length += len;
+	builder->length += (int)len;
 
 	return DE_TRUE;
 }
@@ -117,7 +117,7 @@ char* dePoolStringBuilder_dupToString (dePoolStringBuilder* builder)
 
 char* dePoolStringBuilder_dupToPool (dePoolStringBuilder* builder, deMemPool* pool)
 {
-	char* resultStr = (char*)deMemPool_alloc(pool, builder->length + 1);
+	char* resultStr = (char*)deMemPool_alloc(pool, (size_t)builder->length + 1);
 
 	if (resultStr)
 	{

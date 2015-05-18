@@ -32,12 +32,12 @@ DE_BEGIN_EXTERN_C
 #define DE_NEW(TYPE)			((TYPE*)deMalloc(sizeof(TYPE)))
 #define DE_DELETE(TYPE, PTR)	deFree(PTR)
 
-void*	deMalloc		(int numBytes);
-void*	deCalloc		(int numBytes);
-void*	deRealloc		(void* ptr, int numBytes);
+void*	deMalloc		(size_t numBytes);
+void*	deCalloc		(size_t numBytes);
+void*	deRealloc		(void* ptr, size_t numBytes);
 void	deFree			(void* ptr);
 
-void*	deAlignedMalloc	(int numBytes, int alignBytes);
+void*	deAlignedMalloc	(size_t numBytes, deUint32 alignBytes);
 void	deAlignedFree	(void* ptr);
 
 char*	deStrdup		(const char* str);
@@ -48,13 +48,13 @@ char*	deStrdup		(const char* str);
  * \param value		Value to fill with.
  * \param numBytes	Number of bytes to write.
  *//*--------------------------------------------------------------------*/
-DE_INLINE void deMemset (void* ptr, int value, int numBytes)
+DE_INLINE void deMemset (void* ptr, int value, size_t numBytes)
 {
 	DE_ASSERT((value & 0xFF) == value);
 	memset(ptr, value, numBytes);
 }
 
-DE_INLINE int deMemCmp (const void* a, const void* b, int numBytes)
+DE_INLINE int deMemCmp (const void* a, const void* b, size_t numBytes)
 {
 	return memcmp(a, b, numBytes);
 }
@@ -66,12 +66,12 @@ DE_INLINE int deMemCmp (const void* a, const void* b, int numBytes)
  * \param numBytes	Number of bytes to copy
  * \return Destination buffer.
  *//*--------------------------------------------------------------------*/
-DE_INLINE void* deMemcpy (void* dst, const void* src, int numBytes)
+DE_INLINE void* deMemcpy (void* dst, const void* src, size_t numBytes)
 {
 	return memcpy(dst, src, numBytes);
 }
 
-DE_INLINE void* deMemmove (void* dst, const void* src, int numBytes)
+DE_INLINE void* deMemmove (void* dst, const void* src, size_t numBytes)
 {
 	return memmove(dst, src, numBytes);
 }

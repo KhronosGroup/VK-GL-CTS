@@ -67,7 +67,7 @@ deUint32 deStringHashLeading (const char* str, int numLeadingChars)
 	return hash;
 }
 
-deUint32 deMemoryHash (const void* ptr, int numBytes)
+deUint32 deMemoryHash (const void* ptr, size_t numBytes)
 {
 	/* \todo [2010-05-10 pyry] Better generic hash function? */
 	const deUint8*	input	= (const deUint8*)ptr;
@@ -80,7 +80,7 @@ deUint32 deMemoryHash (const void* ptr, int numBytes)
 	return hash;
 }
 
-deBool deMemoryEqual (const void* ptr, const void* cmp, int numBytes)
+deBool deMemoryEqual (const void* ptr, const void* cmp, size_t numBytes)
 {
 	return memcmp(ptr, cmp, numBytes) == 0;
 }

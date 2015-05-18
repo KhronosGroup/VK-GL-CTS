@@ -75,7 +75,7 @@ deBool			dePoolArray_reserve			(dePoolArray* arr, int size)
 		if (arr->pageTableCapacity < reqPageTableCapacity)
 		{
 			int		newPageTableCapacity	= deMax32(2*arr->pageTableCapacity, reqPageTableCapacity);
-			void**	newPageTable			= (void**)deMemPool_alloc(arr->pool, newPageTableCapacity * sizeof(void*));
+			void**	newPageTable			= (void**)deMemPool_alloc(arr->pool, (size_t)newPageTableCapacity * sizeof(void*));
 			int		i;
 
 			if (!newPageTable)
@@ -89,7 +89,7 @@ deBool			dePoolArray_reserve			(dePoolArray* arr, int size)
 
 			/* Grab information about old page table for recycling purposes. */
 			oldPageTable		= arr->pageTable;
-			oldPageTableSize	= arr->pageTableCapacity * sizeof(void*);
+			oldPageTableSize	= arr->pageTableCapacity * (int)sizeof(void*);
 
 			arr->pageTable			= newPageTable;
 			arr->pageTableCapacity	= newPageTableCapacity;
@@ -115,7 +115,7 @@ deBool			dePoolArray_reserve			(dePoolArray* arr, int size)
 			/* Allocate the rest of the needed pages from the pool. */
 			for (; pageTableNdx < reqPageTableCapacity; pageTableNdx++)
 			{
-				void* newPage = deMemPool_alloc(arr->pool, pageAllocSize);
+				void* newPage = deMemPool_alloc(arr->pool, (size_t)pageAllocSize);
 				if (!newPage)
 					return DE_FALSE;
 

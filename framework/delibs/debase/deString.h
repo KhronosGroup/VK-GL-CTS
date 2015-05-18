@@ -36,8 +36,8 @@ deUint32	deStringHashLeading		(const char* str, int numLeadingChars);
 deBool		deStringEqual			(const char* a, const char* b);
 deBool		deStringBeginsWith		(const char* str, const char* leading);
 
-deUint32	deMemoryHash			(const void* ptr, int numBytes);
-deBool		deMemoryEqual			(const void* ptr, const void* cmp, int numBytes);
+deUint32	deMemoryHash			(const void* ptr, size_t numBytes);
+deBool		deMemoryEqual			(const void* ptr, const void* cmp, size_t numBytes);
 
 deInt32		deVsprintf				(char* string, size_t size, const char* format, va_list args);
 deInt32		deSprintf				(char* string, size_t size, const char* format, ...) DE_PRINTF_FUNC_ATTR(3, 4);
