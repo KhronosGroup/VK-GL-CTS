@@ -131,8 +131,8 @@ deBool				deSocket_connect			(deSocket* socket, const deSocketAddress* address);
 deBool				deSocket_shutdown			(deSocket* socket, deUint32 channels);
 deBool				deSocket_close				(deSocket* socket);
 
-deSocketResult		deSocket_send				(deSocket* socket, const void* buf, int bufSize, int* numSent);
-deSocketResult		deSocket_receive			(deSocket* socket, void* buf, int bufSize, int* numReceived);
+deSocketResult		deSocket_send				(deSocket* socket, const void* buf, size_t bufSize, size_t* numSent);
+deSocketResult		deSocket_receive			(deSocket* socket, void* buf, size_t bufSize, size_t* numReceived);
 
 /* Utilities. */
 

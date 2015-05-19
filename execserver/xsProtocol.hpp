@@ -74,8 +74,8 @@ public:
 
 	virtual void	write			(std::vector<deUint8>& buf) const = DE_NULL;
 
-	static void		parseHeader		(const deUint8* data, int dataSize, MessageType& type, int& messageSize);
-	static void		writeHeader		(MessageType type, int messageSize, deUint8* dst, int bufSize);
+	static void		parseHeader		(const deUint8* data, size_t dataSize, MessageType& type, size_t& messageSize);
+	static void		writeHeader		(MessageType type, size_t messageSize, deUint8* dst, size_t bufSize);
 
 protected:
 	void			writeNoData		(std::vector<deUint8>& buf) const;
@@ -89,7 +89,7 @@ template <int MsgType>
 class SimpleMessage : public Message
 {
 public:
-					SimpleMessage	(const deUint8* data, int dataSize) : Message((MessageType)MsgType) { DE_UNREF(data); XS_CHECK_MSG(dataSize == 0, "No payload expected"); }
+					SimpleMessage	(const deUint8* data, size_t dataSize) : Message((MessageType)MsgType) { DE_UNREF(data); XS_CHECK_MSG(dataSize == 0, "No payload expected"); }
 					SimpleMessage	(void) : Message((MessageType)MsgType) {}
 					~SimpleMessage	(void) {}
 
@@ -105,7 +105,7 @@ class HelloMessage : public Message
 public:
 	int				version;
 
-					HelloMessage	(const deUint8* data, int dataSize);
+					HelloMessage	(const deUint8* data, size_t dataSize);
 					HelloMessage	(void) : Message(MESSAGETYPE_HELLO), version(PROTOCOL_VERSION) {}
 					~HelloMessage	(void) {}
 
@@ -120,7 +120,7 @@ public:
 	std::string		workDir;
 	std::string		caseList;
 
-					ExecuteBinaryMessage	(const deUint8* data, int dataSize);
+					ExecuteBinaryMessage	(const deUint8* data, size_t dataSize);
 					ExecuteBinaryMessage	(void) : Message(MESSAGETYPE_EXECUTE_BINARY) {}
 					~ExecuteBinaryMessage	(void) {};
 
@@ -132,7 +132,7 @@ class ProcessLogDataMessage : public Message
 public:
 	std::string		logData;
 
-					ProcessLogDataMessage		(const deUint8* data, int dataSize);
+					ProcessLogDataMessage		(const deUint8* data, size_t dataSize);
 					~ProcessLogDataMessage		(void) {}
 
 	void			write						(std::vector<deUint8>& buf) const;
@@ -143,7 +143,7 @@ class ProcessLaunchFailedMessage : public Message
 public:
 	std::string		reason;
 
-					ProcessLaunchFailedMessage			(const deUint8* data, int dataSize);
+					ProcessLaunchFailedMessage			(const deUint8* data, size_t dataSize);
 					ProcessLaunchFailedMessage			(const char* reason_) : Message(MESSAGETYPE_PROCESS_LAUNCH_FAILED), reason(reason_) {}
 					~ProcessLaunchFailedMessage			(void) {}
 
@@ -155,7 +155,7 @@ class ProcessFinishedMessage : public Message
 public:
 	int				exitCode;
 
-					ProcessFinishedMessage			(const deUint8* data, int dataSize);
+					ProcessFinishedMessage			(const deUint8* data, size_t dataSize);
 					ProcessFinishedMessage			(int exitCode_) : Message(MESSAGETYPE_PROCESS_FINISHED), exitCode(exitCode_) {}
 					~ProcessFinishedMessage			(void) {}
 
@@ -167,7 +167,7 @@ class InfoMessage : public Message
 public:
 	std::string		info;
 
-					InfoMessage			(const deUint8* data, int dataSize);
+					InfoMessage			(const deUint8* data, size_t dataSize);
 					~InfoMessage		(void) {}
 
 	void			write				(std::vector<deUint8>& buf) const;
@@ -179,7 +179,7 @@ class TestMessage : public Message
 public:
 	std::string		test;
 
-					TestMessage		(const deUint8* data, int dataSize);
+					TestMessage		(const deUint8* data, size_t dataSize);
 					~TestMessage	(void) {}
 
 	void			write			(std::vector<deUint8>& buf) const;

@@ -189,9 +189,13 @@ static deBool initWinsock (void)
 #if defined(DE_USE_WINSOCK)
 	/* \note SOCKET is unsigned type! */
 	typedef SOCKET					deSocketHandle;
+	typedef int						NativeSocklen;
+	typedef int						NativeSize;
 #	define DE_INVALID_SOCKET_HANDLE	INVALID_SOCKET
 #else
 	typedef int						deSocketHandle;
+	typedef socklen_t				NativeSocklen;
+	typedef size_t					NativeSize;
 #	define DE_INVALID_SOCKET_HANDLE	-1
 #endif
 
@@ -251,7 +255,7 @@ static int deSocketProtocolToBsdProtocol (deSocketProtocol protocol)
 	}
 }
 
-static deBool deSocketAddressToBsdAddress (const deSocketAddress* address, int bsdAddrBufSize, struct sockaddr* bsdAddr, int* bsdAddrLen)
+static deBool deSocketAddressToBsdAddress (const deSocketAddress* address, size_t bsdAddrBufSize, struct sockaddr* bsdAddr, NativeSocklen* bsdAddrLen)
 {
 	deMemset(bsdAddr, 0, bsdAddrBufSize);
 
@@ -275,28 +279,28 @@ static deBool deSocketAddressToBsdAddress (const deSocketAddress* address, int b
 
 		/* \note Always uses first address. */
 
-		if (bsdAddrBufSize < (int)result->ai_addrlen)
+		if (bsdAddrBufSize < (size_t)result->ai_addrlen)
 		{
 			DE_ASSERT(!"Too small bsdAddr buffer");
 			freeaddrinfo(result);
 			return DE_FALSE;
 		}
 
-		*bsdAddrLen	= (int)result->ai_addrlen;
+		*bsdAddrLen	= (NativeSocklen)result->ai_addrlen;
 
-		deMemcpy(bsdAddr, result->ai_addr, (int)result->ai_addrlen);
+		deMemcpy(bsdAddr, result->ai_addr, (size_t)result->ai_addrlen);
 		freeaddrinfo(result);
 
 		/* Add port. */
 		if (bsdAddr->sa_family == AF_INET)
 		{
-			if (*bsdAddrLen < (int)sizeof(struct sockaddr_in))
+			if (*bsdAddrLen < (NativeSocklen)sizeof(struct sockaddr_in))
 				return DE_FALSE;
 			((struct sockaddr_in*)bsdAddr)->sin_port = htons((deUint16)address->port);
 		}
 		else if (bsdAddr->sa_family == AF_INET6)
 		{
-			if (*bsdAddrLen < (int)sizeof(struct sockaddr_in6))
+			if (*bsdAddrLen < (NativeSocklen)sizeof(struct sockaddr_in6))
 				return DE_FALSE;
 			((struct sockaddr_in6*)bsdAddr)->sin6_port = htons((deUint16)address->port);
 		}
@@ -309,7 +313,7 @@ static deBool deSocketAddressToBsdAddress (const deSocketAddress* address, int b
 	{
 		struct sockaddr_in* addr4 = (struct sockaddr_in*)bsdAddr;
 
-		if (bsdAddrBufSize < (int)sizeof(struct sockaddr_in))
+		if (bsdAddrBufSize < sizeof(struct sockaddr_in))
 		{
 			DE_ASSERT(!"Too small bsdAddr buffer");
 			return DE_FALSE;
@@ -319,7 +323,7 @@ static deBool deSocketAddressToBsdAddress (const deSocketAddress* address, int b
 		addr4->sin_family		= AF_INET;
 		addr4->sin_addr.s_addr	= INADDR_ANY;
 
-		*bsdAddrLen	= sizeof(struct sockaddr_in);
+		*bsdAddrLen	= (NativeSocklen)sizeof(struct sockaddr_in);
 
 		return DE_TRUE;
 	}
@@ -327,7 +331,7 @@ static deBool deSocketAddressToBsdAddress (const deSocketAddress* address, int b
 	{
 		struct sockaddr_in6* addr6 = (struct sockaddr_in6*)bsdAddr;
 
-		if (bsdAddrBufSize < (int)sizeof(struct sockaddr_in6))
+		if (bsdAddrBufSize < sizeof(struct sockaddr_in6))
 		{
 			DE_ASSERT(!"Too small bsdAddr buffer");
 			return DE_FALSE;
@@ -336,7 +340,7 @@ static deBool deSocketAddressToBsdAddress (const deSocketAddress* address, int b
 		addr6->sin6_port	= htons((deUint16)address->port);
 		addr6->sin6_family	= AF_INET6;
 
-		*bsdAddrLen	= sizeof(struct sockaddr_in6);
+		*bsdAddrLen	= (NativeSocklen)sizeof(struct sockaddr_in6);
 
 		return DE_TRUE;
 	}
@@ -472,13 +476,13 @@ deBool deSocket_listen (deSocket* sock, const deSocketAddress* address)
 	const int			backlogSize	= 4;
 	deUint8				bsdAddrBuf[sizeof(struct sockaddr_in6)];
 	struct sockaddr*	bsdAddr		= (struct sockaddr*)&bsdAddrBuf[0];
-	int					bsdAddrLen;
+	NativeSocklen		bsdAddrLen;
 
 	if (sock->state != DE_SOCKETSTATE_CLOSED)
 		return DE_FALSE;
 
 	/* Resolve address. */
-	if (!deSocketAddressToBsdAddress(address, (int)sizeof(bsdAddrBuf), bsdAddr, &bsdAddrLen))
+	if (!deSocketAddressToBsdAddress(address, sizeof(bsdAddrBuf), bsdAddr, &bsdAddrLen))
 		return DE_FALSE;
 
 	/* Create socket. */
@@ -495,7 +499,7 @@ deBool deSocket_listen (deSocket* sock, const deSocketAddress* address)
 	}
 
 	/* Bind to address. */
-	if (bind(sock->handle, bsdAddr, bsdAddrLen) != 0)
+	if (bind(sock->handle, bsdAddr, (NativeSocklen)bsdAddrLen) != 0)
 	{
 		deSocket_close(sock);
 		return DE_FALSE;
@@ -519,19 +523,11 @@ deSocket* deSocket_accept (deSocket* sock, deSocketAddress* clientAddress)
 	deSocket*			newSock		= DE_NULL;
 	deUint8				bsdAddrBuf[sizeof(struct sockaddr_in6)];
 	struct sockaddr*	bsdAddr		= (struct sockaddr*)&bsdAddrBuf[0];
-#if defined(DE_USE_WINSOCK)
-	int					bsdAddrLen	= (int)sizeof(bsdAddrBuf);
-#else
-	socklen_t			bsdAddrLen	= (socklen_t)sizeof(bsdAddrBuf);
-#endif
+	NativeSocklen		bsdAddrLen	= (NativeSocklen)sizeof(bsdAddrBuf);
 
-	deMemset(bsdAddr, 0, (int)bsdAddrLen);
+	deMemset(bsdAddr, 0, (size_t)bsdAddrLen);
 
-#if defined(DE_USE_WINSOCK)
 	newFd = accept(sock->handle, bsdAddr, &bsdAddrLen);
-#else
-	newFd = accept(sock->handle, bsdAddr, (socklen_t*)&bsdAddrLen);
-#endif
 	if (!deSocketHandleIsValid(newFd))
 		return DE_NULL;
 
@@ -561,10 +557,10 @@ deBool deSocket_connect (deSocket* sock, const deSocketAddress* address)
 {
 	deUint8				bsdAddrBuf[sizeof(struct sockaddr_in6)];
 	struct sockaddr*	bsdAddr		= (struct sockaddr*)&bsdAddrBuf[0];
-	int					bsdAddrLen;
+	NativeSocklen		bsdAddrLen;
 
 	/* Resolve address. */
-	if (!deSocketAddressToBsdAddress(address, (int)sizeof(bsdAddrBuf), bsdAddr, &bsdAddrLen))
+	if (!deSocketAddressToBsdAddress(address, sizeof(bsdAddrBuf), bsdAddr, &bsdAddrLen))
 		return DE_FALSE;
 
 	/* Create socket. */
@@ -751,13 +747,13 @@ DE_INLINE void deSocket_setChannelsClosed (deSocket* sock, deUint32 channels)
 	deMutex_unlock(sock->stateLock);
 }
 
-deSocketResult deSocket_send (deSocket* sock, const void* buf, int bufSize, int* numSentPtr)
+deSocketResult deSocket_send (deSocket* sock, const void* buf, size_t bufSize, size_t* numSentPtr)
 {
-	int				numSent	= (int)send(sock->handle, (const char*)buf, bufSize, 0);
+	int				numSent	= (int)send(sock->handle, (const char*)buf, (NativeSize)bufSize, 0);
 	deSocketResult	result	= mapSendRecvResult(numSent);
 
 	if (numSentPtr)
-		*numSentPtr = numSent;
+		*numSentPtr = (numSent > 0) ? ((size_t)numSent) : (0);
 
 	/* Update state. */
 	if (result == DE_SOCKETRESULT_CONNECTION_CLOSED)
@@ -768,13 +764,13 @@ deSocketResult deSocket_send (deSocket* sock, const void* buf, int bufSize, int*
 	return result;
 }
 
-deSocketResult deSocket_receive (deSocket* sock, void* buf, int bufSize, int* numReceivedPtr)
+deSocketResult deSocket_receive (deSocket* sock, void* buf, size_t bufSize, size_t* numReceivedPtr)
 {
-	int				numRecv	= (int)recv(sock->handle, (char*)buf, bufSize, 0);
+	int				numRecv	= (int)recv(sock->handle, (char*)buf, (NativeSize)bufSize, 0);
 	deSocketResult	result	= mapSendRecvResult(numRecv);
 
 	if (numReceivedPtr)
-		*numReceivedPtr = numRecv;
+		*numReceivedPtr = (numRecv > 0) ? ((size_t)numRecv) : (0);
 
 	/* Update state. */
 	if (result == DE_SOCKETRESULT_CONNECTION_CLOSED)

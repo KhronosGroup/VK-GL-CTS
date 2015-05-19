@@ -67,11 +67,11 @@ void sendMessage (de::Socket& socket, const Message& message)
 	message.write(buf);
 
 	// Write to socket.
-	int pos = 0;
-	while (pos < (int)buf.size())
+	size_t pos = 0;
+	while (pos < buf.size())
 	{
-		int				numLeft		= (int)buf.size() - pos;
-		int				numSent		= 0;
+		size_t			numLeft		= buf.size() - pos;
+		size_t			numSent		= 0;
 		deSocketResult	result		= socket.send(&buf[pos], numLeft, &numSent);
 
 		if (result != DE_SOCKETRESULT_SUCCESS)
@@ -81,14 +81,14 @@ void sendMessage (de::Socket& socket, const Message& message)
 	}
 }
 
-void readBytes (de::Socket& socket, vector<deUint8>& dst, int numBytes)
+void readBytes (de::Socket& socket, vector<deUint8>& dst, size_t numBytes)
 {
-	int numRead = 0;
+	size_t numRead = 0;
 	dst.resize(numBytes);
 	while (numRead < numBytes)
 	{
-		int				numLeft		= numBytes - numRead;
-		int				curNumRead	= 0;
+		size_t			numLeft		= numBytes - numRead;
+		size_t			curNumRead	= 0;
 		deSocketResult	result		= socket.receive(&dst[numRead], numLeft, &curNumRead);
 
 		if (result != DE_SOCKETRESULT_SUCCESS)
@@ -105,7 +105,7 @@ Message* readMessage (de::Socket& socket)
 	readBytes(socket, header, MESSAGE_HEADER_SIZE);
 
 	MessageType	type;
-	int			messageSize;
+	size_t		messageSize;
 	Message::parseHeader(&header[0], (int)header.size(), type, messageSize);
 
 	// Simple messages without any data.

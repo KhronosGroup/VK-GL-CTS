@@ -47,7 +47,7 @@ template <> int hostToNetwork (int value) { return (int)swapEndianess((deUint32)
 class MessageParser
 {
 public:
-	MessageParser (const deUint8* data, int dataSize)
+	MessageParser (const deUint8* data, size_t dataSize)
 		: m_data	(data)
 		, m_size	(dataSize)
 		, m_pos		(0)
@@ -57,7 +57,7 @@ public:
 	template <typename T>
 	T get (void)
 	{
-		XS_CHECK_MSG(m_pos + (int)sizeof(T) <= m_size, "Invalid payload size");
+		XS_CHECK_MSG(m_pos + sizeof(T) <= m_size, "Invalid payload size");
 		T netValue;
 		deMemcpy(&netValue, &m_data[m_pos], sizeof(T));
 		m_pos += sizeof(T);
@@ -84,8 +84,8 @@ public:
 
 private:
 	const deUint8*	m_data;
-	int				m_size;
-	int				m_pos;
+	size_t			m_size;
+	size_t			m_pos;
 };
 
 class MessageWriter
@@ -138,18 +138,18 @@ void MessageWriter::put<const char*> (const char* value)
 	deMemcpy(&m_buf[curPos], &value[0], strLen+1);
 }
 
-void Message::parseHeader (const deUint8* data, int dataSize, MessageType& type, int& size)
+void Message::parseHeader (const deUint8* data, size_t dataSize, MessageType& type, size_t& size)
 {
 	XS_CHECK_MSG(dataSize >= MESSAGE_HEADER_SIZE, "Incomplete header");
 	MessageParser parser(data, dataSize);
-	size	= (MessageType)parser.get<int>();
+	size	= (size_t)(MessageType)parser.get<int>();
 	type	= (MessageType)parser.get<int>();
 }
 
-void Message::writeHeader (MessageType type, int messageSize, deUint8* dst, int bufSize)
+void Message::writeHeader (MessageType type, size_t messageSize, deUint8* dst, size_t bufSize)
 {
 	XS_CHECK_MSG(bufSize >= MESSAGE_HEADER_SIZE, "Incomplete header");
-	int netSize = hostToNetwork(messageSize);
+	int netSize = hostToNetwork((int)messageSize);
 	int netType = hostToNetwork((int)type);
 	deMemcpy(dst+0, &netSize, sizeof(netSize));
 	deMemcpy(dst+4, &netType, sizeof(netType));
@@ -160,7 +160,7 @@ void Message::writeNoData (vector<deUint8>& buf) const
 	MessageWriter writer(type, buf);
 }
 
-HelloMessage::HelloMessage (const deUint8* data, int dataSize)
+HelloMessage::HelloMessage (const deUint8* data, size_t dataSize)
 	: Message(MESSAGETYPE_HELLO)
 {
 	MessageParser parser(data, dataSize);
@@ -174,7 +174,7 @@ void HelloMessage::write (vector<deUint8>& buf) const
 	writer.put(version);
 }
 
-TestMessage::TestMessage (const deUint8* data, int dataSize)
+TestMessage::TestMessage (const deUint8* data, size_t dataSize)
 	: Message(MESSAGETYPE_TEST)
 {
 	MessageParser parser(data, dataSize);
@@ -188,7 +188,7 @@ void TestMessage::write (vector<deUint8>& buf) const
 	writer.put(test.c_str());
 }
 
-ExecuteBinaryMessage::ExecuteBinaryMessage (const deUint8* data, int dataSize)
+ExecuteBinaryMessage::ExecuteBinaryMessage (const deUint8* data, size_t dataSize)
 	: Message(MESSAGETYPE_EXECUTE_BINARY)
 {
 	MessageParser parser(data, dataSize);
@@ -208,7 +208,7 @@ void ExecuteBinaryMessage::write (vector<deUint8>& buf) const
 	writer.put(caseList.c_str());
 }
 
-ProcessLogDataMessage::ProcessLogDataMessage (const deUint8* data, int dataSize)
+ProcessLogDataMessage::ProcessLogDataMessage (const deUint8* data, size_t dataSize)
 	: Message(MESSAGETYPE_PROCESS_LOG_DATA)
 {
 	MessageParser parser(data, dataSize);
@@ -222,7 +222,7 @@ void ProcessLogDataMessage::write (vector<deUint8>& buf) const
 	writer.put(logData.c_str());
 }
 
-ProcessLaunchFailedMessage::ProcessLaunchFailedMessage (const deUint8* data, int dataSize)
+ProcessLaunchFailedMessage::ProcessLaunchFailedMessage (const deUint8* data, size_t dataSize)
 	: Message(MESSAGETYPE_PROCESS_LAUNCH_FAILED)
 {
 	MessageParser parser(data, dataSize);
@@ -236,7 +236,7 @@ void ProcessLaunchFailedMessage::write (vector<deUint8>& buf) const
 	writer.put(reason.c_str());
 }
 
-ProcessFinishedMessage::ProcessFinishedMessage (const deUint8* data, int dataSize)
+ProcessFinishedMessage::ProcessFinishedMessage (const deUint8* data, size_t dataSize)
 	: Message(MESSAGETYPE_PROCESS_FINISHED)
 {
 	MessageParser parser(data, dataSize);
@@ -250,7 +250,7 @@ void ProcessFinishedMessage::write (vector<deUint8>& buf) const
 	writer.put(exitCode);
 }
 
-InfoMessage::InfoMessage (const deUint8* data, int dataSize)
+InfoMessage::InfoMessage (const deUint8* data, size_t dataSize)
 	: Message(MESSAGETYPE_INFO)
 {
 	MessageParser parser(data, dataSize);

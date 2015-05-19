@@ -48,7 +48,7 @@ class PoolArrayIterator;
  *       to access next element(s) doesn't work.
  * \todo [2013-02-11 pyry] Make elements per page template argument.
  *//*--------------------------------------------------------------------*/
-template<typename T, deUint32 Alignment = (sizeof(T) > 4 ? 4 : sizeof(T))>
+template<typename T, deUint32 Alignment = (sizeof(T) > 4 ? 4 : (deUint32)sizeof(T))>
 class PoolArray
 {
 public:

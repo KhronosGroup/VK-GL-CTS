@@ -133,7 +133,7 @@ void TcpIpLinkState::setState (CommLinkState state, const char* error)
 		callback(userPtr, state, error);
 }
 
-void TcpIpLinkState::onTestLogData (const deUint8* bytes, int numBytes) const
+void TcpIpLinkState::onTestLogData (const deUint8* bytes, size_t numBytes) const
 {
 	CommLink::LogDataFunc	callback	= DE_NULL;
 	void*					userPtr		= DE_NULL;
@@ -147,7 +147,7 @@ void TcpIpLinkState::onTestLogData (const deUint8* bytes, int numBytes) const
 		callback(userPtr, bytes, numBytes);
 }
 
-void TcpIpLinkState::onInfoLogData (const deUint8* bytes, int numBytes) const
+void TcpIpLinkState::onInfoLogData (const deUint8* bytes, size_t numBytes) const
 {
 	CommLink::LogDataFunc	callback	= DE_NULL;
 	void*					userPtr		= DE_NULL;
@@ -206,8 +206,8 @@ void TcpIpSendThread::run (void)
 
 		while (!m_buffer.isCanceled())
 		{
-			int				numToSend	= 0;
-			int				numSent		= 0;
+			size_t			numToSend	= 0;
+			size_t			numSent		= 0;
 			deSocketResult	result		= DE_SOCKETRESULT_LAST;
 
 			try
@@ -234,7 +234,7 @@ void TcpIpSendThread::run (void)
 				else if (result == DE_SOCKETRESULT_WOULD_BLOCK)
 				{
 					// \note Socket should not be in non-blocking mode.
-					DE_ASSERT(numSent <= 0);
+					DE_ASSERT(numSent == 0);
 					deYield();
 				}
 				else
@@ -291,7 +291,7 @@ void TcpIpRecvThread::run (void)
 		{
 			bool				hasHeader		= m_curMsgPos >= xs::MESSAGE_HEADER_SIZE;
 			bool				hasPayload		= false;
-			int					messageSize		= 0;
+			size_t				messageSize		= 0;
 			xs::MessageType		messageType		= (xs::MessageType)0;
 
 			if (hasHeader)
@@ -309,12 +309,12 @@ void TcpIpRecvThread::run (void)
 			else
 			{
 				// Try to receive missing bytes.
-				int					curSize			= hasHeader ? messageSize : xs::MESSAGE_HEADER_SIZE;
-				int					bytesToRecv		= curSize-m_curMsgPos;
-				int					numRecv			= 0;
+				size_t				curSize			= hasHeader ? messageSize : (size_t)xs::MESSAGE_HEADER_SIZE;
+				size_t				bytesToRecv		= curSize-m_curMsgPos;
+				size_t				numRecv			= 0;
 				deSocketResult		result			= DE_SOCKETRESULT_LAST;
 
-				if ((int)m_curMsgBuf.size() < curSize)
+				if (m_curMsgBuf.size() < curSize)
 					m_curMsgBuf.resize(curSize);
 
 				result = m_socket.receive(&m_curMsgBuf[m_curMsgPos], bytesToRecv, &numRecv);
@@ -328,7 +328,7 @@ void TcpIpRecvThread::run (void)
 				else if (result == DE_SOCKETRESULT_WOULD_BLOCK)
 				{
 					// \note Socket should not be in non-blocking mode.
-					DE_ASSERT(numRecv <= 0);
+					DE_ASSERT(numRecv == 0);
 					deYield();
 				}
 				else
@@ -359,7 +359,7 @@ void TcpIpRecvThread::stop (void)
 	}
 }
 
-void TcpIpRecvThread::handleMessage (xs::MessageType messageType, const deUint8* data, int dataSize)
+void TcpIpRecvThread::handleMessage (xs::MessageType messageType, const deUint8* data, size_t dataSize)
 {
 	switch (messageType)
 	{

@@ -87,8 +87,8 @@ private:
 
 	// Callbacks for CommLink.
 	static void				enqueueStateChanged	(void* userPtr, CommLinkState state, const char* message);
-	static void				enqueueTestLogData	(void* userPtr, const deUint8* bytes, int numBytes);
-	static void				enqueueInfoLogData	(void* userPtr, const deUint8* bytes, int numBytes);
+	static void				enqueueTestLogData	(void* userPtr, const deUint8* bytes, size_t numBytes);
+	static void				enqueueInfoLogData	(void* userPtr, const deUint8* bytes, size_t numBytes);
 
 	// Called in CallQueue dispatch.
 	static void				dispatchStateChanged	(CallReader data);
