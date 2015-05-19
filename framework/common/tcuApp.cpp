@@ -155,10 +155,10 @@ bool App::iterate (void)
 
 			// Report statistics.
 			print("\nTest run totals:\n");
-			print("  Passed:        %d/%d (%.1f%%)\n", result.numPassed,		result.numExecuted, (result.numExecuted > 0 ? (100.0f * result.numPassed		/ result.numExecuted) : 0.0f));
-			print("  Failed:        %d/%d (%.1f%%)\n", result.numFailed,		result.numExecuted, (result.numExecuted > 0 ? (100.0f * result.numFailed		/ result.numExecuted) : 0.0f));
-			print("  Not supported: %d/%d (%.1f%%)\n", result.numNotSupported,	result.numExecuted, (result.numExecuted > 0 ? (100.0f * result.numNotSupported	/ result.numExecuted) : 0.0f));
-			print("  Warnings:      %d/%d (%.1f%%)\n", result.numWarnings,		result.numExecuted, (result.numExecuted > 0 ? (100.0f * result.numWarnings		/ result.numExecuted) : 0.0f));
+			print("  Passed:        %d/%d (%.1f%%)\n", result.numPassed,		result.numExecuted, (result.numExecuted > 0 ? (100.0f * (float)result.numPassed			/ (float)result.numExecuted) : 0.0f));
+			print("  Failed:        %d/%d (%.1f%%)\n", result.numFailed,		result.numExecuted, (result.numExecuted > 0 ? (100.0f * (float)result.numFailed			/ (float)result.numExecuted) : 0.0f));
+			print("  Not supported: %d/%d (%.1f%%)\n", result.numNotSupported,	result.numExecuted, (result.numExecuted > 0 ? (100.0f * (float)result.numNotSupported	/ (float)result.numExecuted) : 0.0f));
+			print("  Warnings:      %d/%d (%.1f%%)\n", result.numWarnings,		result.numExecuted, (result.numExecuted > 0 ? (100.0f * (float)result.numWarnings		/ (float)result.numExecuted) : 0.0f));
 			if (!result.isComplete)
 				print("Test run was ABORTED!\n");
 		}
