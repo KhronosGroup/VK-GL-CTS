@@ -250,7 +250,7 @@ deBool qpXmlWriter_endElement (qpXmlWriter* writer, const char* elementName)
 	return DE_TRUE;
 }
 
-deBool qpXmlWriter_writeBase64 (qpXmlWriter* writer, const deUint8* data, int numBytes)
+deBool qpXmlWriter_writeBase64 (qpXmlWriter* writer, const deUint8* data, size_t numBytes)
 {
 	static const char s_base64Table[64] =
 	{
@@ -262,7 +262,7 @@ deBool qpXmlWriter_writeBase64 (qpXmlWriter* writer, const deUint8* data, int nu
 	};
 
 	int			numWritten	= 0;
-	int			srcNdx		= 0;
+	size_t		srcNdx		= 0;
 	deBool		writeIndent	= DE_TRUE;
 	const char*	indentStr	= getIndentStr(writer->xmlElementDepth);
 
@@ -274,7 +274,7 @@ deBool qpXmlWriter_writeBase64 (qpXmlWriter* writer, const deUint8* data, int nu
 	/* Loop all input chars. */
 	while (srcNdx < numBytes)
 	{
-		int		numRead = deMin32(3, numBytes - srcNdx);
+		size_t	numRead = (size_t)deMin32(3, (int)(numBytes - srcNdx));
 		deUint8	s0 = data[srcNdx];
 		deUint8	s1 = (numRead >= 2) ? data[srcNdx+1] : 0;
 		deUint8	s2 = (numRead >= 3) ? data[srcNdx+2] : 0;
