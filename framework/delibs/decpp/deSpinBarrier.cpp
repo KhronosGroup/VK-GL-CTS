@@ -75,7 +75,8 @@ inline void wait (SpinBarrier::WaitMode mode)
 
 void SpinBarrier::sync (WaitMode requestedMode)
 {
-	const WaitMode	waitMode	= getWaitMode(requestedMode, m_numCores, m_numThreads);
+	const deInt32	cachedNumThreads	= m_numThreads;
+	const WaitMode	waitMode			= getWaitMode(requestedMode, m_numCores, cachedNumThreads);
 
 	deMemoryReadWriteFence();
 
@@ -92,17 +93,17 @@ void SpinBarrier::sync (WaitMode requestedMode)
 		}
 	}
 
-	if (deAtomicIncrement32(&m_numEntered) == m_numThreads)
+	// If m_numRemoved > 0, m_numThreads will decrease. If m_numThreads is decreased
+	// just after atomicOp and before comparison, the branch could be taken by multiple
+	// threads. Since m_numThreads only changes if all threads are inside the spinbarrier,
+	// cached value at snapshotted at the beginning of the function will be equal for
+	// all threads.
+	if (deAtomicIncrement32(&m_numEntered) == cachedNumThreads)
 	{
-		m_numLeaving  = m_numThreads;
-		deMemoryReadWriteFence();
-
-		// m_numLeaving must be set > 0 when manipulating m_numRemoved
-		// to prevent other threads from touching m_numRemoved.
-		// Since this thread has not been removed, m_numLeaving will be >= 1
-		// until m_numLeaving is decremented at the end of this function.
+		// Release all waiting threads. Since this thread has not been removed, m_numLeaving will
+		// be >= 1 until m_numLeaving is decremented at the end of this function.
 		m_numThreads -= m_numRemoved;
-		m_numLeaving -= m_numRemoved;
+		m_numLeaving  = m_numThreads;
 		m_numRemoved  = 0;
 
 		deMemoryReadWriteFence();
@@ -125,7 +126,8 @@ void SpinBarrier::sync (WaitMode requestedMode)
 
 void SpinBarrier::removeThread (WaitMode requestedMode)
 {
-	const WaitMode	waitMode	= getWaitMode(requestedMode, m_numCores, m_numThreads);
+	const deInt32	cachedNumThreads	= m_numThreads;
+	const WaitMode	waitMode			= getWaitMode(requestedMode, m_numCores, cachedNumThreads);
 
 	// Wait for other threads exiting previous barrier
 	if (m_numLeaving > 0)
@@ -142,22 +144,16 @@ void SpinBarrier::removeThread (WaitMode requestedMode)
 	// Ask for last thread entering barrier to adjust thread count
 	deAtomicIncrement32(&m_numRemoved);
 
-	if (deAtomicIncrement32(&m_numEntered) == m_numThreads)
+	// See sync() - use cached value
+	if (deAtomicIncrement32(&m_numEntered) == cachedNumThreads)
 	{
-		m_numLeaving  = m_numThreads;
-		deMemoryReadWriteFence();
-
-		// See sync() - m_numLeaving > 0 when manipulating m_numRemoved.
-		// This thread must not be removed from m_numLeaving until
-		// m_numRemoved has been updated.
+		// Release all waiting threads.
 		m_numThreads -= m_numRemoved;
-		m_numLeaving -= (m_numRemoved-1);
+		m_numLeaving  = m_numThreads;
 		m_numRemoved  = 0;
 
 		deMemoryReadWriteFence();
 		m_numEntered  = 0;
-
-		deAtomicDecrement32(&m_numLeaving);
 	}
 }
 
