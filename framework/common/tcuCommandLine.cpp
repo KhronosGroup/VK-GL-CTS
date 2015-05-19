@@ -54,33 +54,34 @@ namespace tcu
 namespace opt
 {
 
-DE_DECLARE_COMMAND_LINE_OPT(CasePath,			std::string);
-DE_DECLARE_COMMAND_LINE_OPT(CaseList,			std::string);
-DE_DECLARE_COMMAND_LINE_OPT(CaseListFile,		std::string);
-DE_DECLARE_COMMAND_LINE_OPT(StdinCaseList,		bool);
-DE_DECLARE_COMMAND_LINE_OPT(LogFilename,		std::string);
-DE_DECLARE_COMMAND_LINE_OPT(RunMode,			tcu::RunMode);
-DE_DECLARE_COMMAND_LINE_OPT(WatchDog,			bool);
-DE_DECLARE_COMMAND_LINE_OPT(CrashHandler,		bool);
-DE_DECLARE_COMMAND_LINE_OPT(BaseSeed,			int);
-DE_DECLARE_COMMAND_LINE_OPT(TestIterationCount,	int);
-DE_DECLARE_COMMAND_LINE_OPT(Visibility,			WindowVisibility);
-DE_DECLARE_COMMAND_LINE_OPT(SurfaceWidth,		int);
-DE_DECLARE_COMMAND_LINE_OPT(SurfaceHeight,		int);
-DE_DECLARE_COMMAND_LINE_OPT(SurfaceType,		tcu::SurfaceType);
-DE_DECLARE_COMMAND_LINE_OPT(ScreenRotation,		tcu::ScreenRotation);
-DE_DECLARE_COMMAND_LINE_OPT(GLContextType,		std::string);
-DE_DECLARE_COMMAND_LINE_OPT(GLConfigID,			int);
-DE_DECLARE_COMMAND_LINE_OPT(GLConfigName,		std::string);
-DE_DECLARE_COMMAND_LINE_OPT(GLContextFlags,		std::string);
-DE_DECLARE_COMMAND_LINE_OPT(CLPlatformID,		int);
-DE_DECLARE_COMMAND_LINE_OPT(CLDeviceIDs,		std::vector<int>);
-DE_DECLARE_COMMAND_LINE_OPT(CLBuildOptions,		std::string);
-DE_DECLARE_COMMAND_LINE_OPT(EGLDisplayType,		std::string);
-DE_DECLARE_COMMAND_LINE_OPT(EGLWindowType,		std::string);
-DE_DECLARE_COMMAND_LINE_OPT(EGLPixmapType,		std::string);
-DE_DECLARE_COMMAND_LINE_OPT(LogImages,			bool);
-DE_DECLARE_COMMAND_LINE_OPT(TestOOM,			bool);
+DE_DECLARE_COMMAND_LINE_OPT(CasePath,					std::string);
+DE_DECLARE_COMMAND_LINE_OPT(CaseList,					std::string);
+DE_DECLARE_COMMAND_LINE_OPT(CaseListFile,				std::string);
+DE_DECLARE_COMMAND_LINE_OPT(StdinCaseList,				bool);
+DE_DECLARE_COMMAND_LINE_OPT(LogFilename,				std::string);
+DE_DECLARE_COMMAND_LINE_OPT(RunMode,					tcu::RunMode);
+DE_DECLARE_COMMAND_LINE_OPT(ExportFilenamePattern,		std::string);
+DE_DECLARE_COMMAND_LINE_OPT(WatchDog,					bool);
+DE_DECLARE_COMMAND_LINE_OPT(CrashHandler,				bool);
+DE_DECLARE_COMMAND_LINE_OPT(BaseSeed,					int);
+DE_DECLARE_COMMAND_LINE_OPT(TestIterationCount,			int);
+DE_DECLARE_COMMAND_LINE_OPT(Visibility,					WindowVisibility);
+DE_DECLARE_COMMAND_LINE_OPT(SurfaceWidth,				int);
+DE_DECLARE_COMMAND_LINE_OPT(SurfaceHeight,				int);
+DE_DECLARE_COMMAND_LINE_OPT(SurfaceType,				tcu::SurfaceType);
+DE_DECLARE_COMMAND_LINE_OPT(ScreenRotation,				tcu::ScreenRotation);
+DE_DECLARE_COMMAND_LINE_OPT(GLContextType,				std::string);
+DE_DECLARE_COMMAND_LINE_OPT(GLConfigID,					int);
+DE_DECLARE_COMMAND_LINE_OPT(GLConfigName,				std::string);
+DE_DECLARE_COMMAND_LINE_OPT(GLContextFlags,				std::string);
+DE_DECLARE_COMMAND_LINE_OPT(CLPlatformID,				int);
+DE_DECLARE_COMMAND_LINE_OPT(CLDeviceIDs,				std::vector<int>);
+DE_DECLARE_COMMAND_LINE_OPT(CLBuildOptions,				std::string);
+DE_DECLARE_COMMAND_LINE_OPT(EGLDisplayType,				std::string);
+DE_DECLARE_COMMAND_LINE_OPT(EGLWindowType,				std::string);
+DE_DECLARE_COMMAND_LINE_OPT(EGLPixmapType,				std::string);
+DE_DECLARE_COMMAND_LINE_OPT(LogImages,					bool);
+DE_DECLARE_COMMAND_LINE_OPT(TestOOM,					bool);
 
 static void parseIntList (const char* src, std::vector<int>* dst)
 {
@@ -109,7 +110,8 @@ void registerOptions (de::cmdline::Parser& parser)
 	{
 		{ "execute",		RUNMODE_EXECUTE				},
 		{ "xml-caselist",	RUNMODE_DUMP_XML_CASELIST	},
-		{ "txt-caselist",	RUNMODE_DUMP_TEXT_CASELIST	}
+		{ "txt-caselist",	RUNMODE_DUMP_TEXT_CASELIST	},
+		{ "stdout-caselist",RUNMODE_DUMP_STDOUT_CASELIST}
 	};
 	static const NamedValue<WindowVisibility> s_visibilites[] =
 	{
@@ -141,6 +143,7 @@ void registerOptions (de::cmdline::Parser& parser)
 		<< Option<LogFilename>			(DE_NULL,	"deqp-log-filename",			"Write test results to given file",					"TestResults.qpa")
 		<< Option<RunMode>				(DE_NULL,	"deqp-runmode",					"Execute tests, or write list of test cases into a file",
 																																		s_runModes,			"execute")
+		<< Option<ExportFilenamePattern>(DE_NULL,	"deqp-caselist-export-file",	"Set the target file name pattern for caselist export",					"${packageName}-cases.${typeExtension}")
 		<< Option<WatchDog>				(DE_NULL,	"deqp-watchdog",				"Enable test watchdog",								s_enableNames,		"disable")
 		<< Option<CrashHandler>			(DE_NULL,	"deqp-crashhandler",			"Enable crash handling",							s_enableNames,		"disable")
 		<< Option<BaseSeed>				(DE_NULL,	"deqp-base-seed",				"Base seed for test cases that use randomization",						"0")
@@ -785,22 +788,23 @@ bool CommandLine::parse (const std::string& cmdLine)
 	return isOk;
 }
 
-const char*				CommandLine::getLogFileName				(void) const	{ return m_cmdLine.getOption<opt::LogFilename>().c_str();		}
-deUint32				CommandLine::getLogFlags				(void) const	{ return m_logFlags;											}
-RunMode					CommandLine::getRunMode					(void) const	{ return m_cmdLine.getOption<opt::RunMode>();					}
-WindowVisibility		CommandLine::getVisibility				(void) const	{ return m_cmdLine.getOption<opt::Visibility>();				}
-bool					CommandLine::isWatchDogEnabled			(void) const	{ return m_cmdLine.getOption<opt::WatchDog>();					}
-bool					CommandLine::isCrashHandlingEnabled		(void) const	{ return m_cmdLine.getOption<opt::CrashHandler>();				}
-int						CommandLine::getBaseSeed				(void) const	{ return m_cmdLine.getOption<opt::BaseSeed>();					}
-int						CommandLine::getTestIterationCount		(void) const	{ return m_cmdLine.getOption<opt::TestIterationCount>();		}
-int						CommandLine::getSurfaceWidth			(void) const	{ return m_cmdLine.getOption<opt::SurfaceWidth>();				}
-int						CommandLine::getSurfaceHeight			(void) const	{ return m_cmdLine.getOption<opt::SurfaceHeight>();				}
-SurfaceType				CommandLine::getSurfaceType				(void) const	{ return m_cmdLine.getOption<opt::SurfaceType>();				}
-ScreenRotation			CommandLine::getScreenRotation			(void) const	{ return m_cmdLine.getOption<opt::ScreenRotation>();			}
-int						CommandLine::getGLConfigId				(void) const	{ return m_cmdLine.getOption<opt::GLConfigID>();				}
-int						CommandLine::getCLPlatformId			(void) const	{ return m_cmdLine.getOption<opt::CLPlatformID>();				}
-const std::vector<int>&	CommandLine::getCLDeviceIds				(void) const	{ return m_cmdLine.getOption<opt::CLDeviceIDs>();				}
-bool					CommandLine::isOutOfMemoryTestEnabled	(void) const	{ return m_cmdLine.getOption<opt::TestOOM>();					}
+const char*				CommandLine::getLogFileName				(void) const	{ return m_cmdLine.getOption<opt::LogFilename>().c_str();		   }
+deUint32				CommandLine::getLogFlags				(void) const	{ return m_logFlags;											   }
+RunMode					CommandLine::getRunMode					(void) const	{ return m_cmdLine.getOption<opt::RunMode>();					   }
+const char*				CommandLine::getCaseListExportFile		(void) const	{ return m_cmdLine.getOption<opt::ExportFilenamePattern>().c_str();}
+WindowVisibility		CommandLine::getVisibility				(void) const	{ return m_cmdLine.getOption<opt::Visibility>();				   }
+bool					CommandLine::isWatchDogEnabled			(void) const	{ return m_cmdLine.getOption<opt::WatchDog>();					   }
+bool					CommandLine::isCrashHandlingEnabled		(void) const	{ return m_cmdLine.getOption<opt::CrashHandler>();				   }
+int						CommandLine::getBaseSeed				(void) const	{ return m_cmdLine.getOption<opt::BaseSeed>();					   }
+int						CommandLine::getTestIterationCount		(void) const	{ return m_cmdLine.getOption<opt::TestIterationCount>();		   }
+int						CommandLine::getSurfaceWidth			(void) const	{ return m_cmdLine.getOption<opt::SurfaceWidth>();				   }
+int						CommandLine::getSurfaceHeight			(void) const	{ return m_cmdLine.getOption<opt::SurfaceHeight>();				   }
+SurfaceType				CommandLine::getSurfaceType				(void) const	{ return m_cmdLine.getOption<opt::SurfaceType>();				   }
+ScreenRotation			CommandLine::getScreenRotation			(void) const	{ return m_cmdLine.getOption<opt::ScreenRotation>();			   }
+int						CommandLine::getGLConfigId				(void) const	{ return m_cmdLine.getOption<opt::GLConfigID>();				   }
+int						CommandLine::getCLPlatformId			(void) const	{ return m_cmdLine.getOption<opt::CLPlatformID>();				   }
+const std::vector<int>&	CommandLine::getCLDeviceIds				(void) const	{ return m_cmdLine.getOption<opt::CLDeviceIDs>();				   }
+bool					CommandLine::isOutOfMemoryTestEnabled	(void) const	{ return m_cmdLine.getOption<opt::TestOOM>();					   }
 
 const char* CommandLine::getGLContextType (void) const
 {
