@@ -25,6 +25,7 @@
 
 #include "tcuDefs.hpp"
 #include "tcuVector.hpp"
+#include "deMeta.hpp"
 #include "deMath.h"
 #include "deInt32.h"
 
@@ -55,7 +56,7 @@ template<typename T> inline T logicalAnd	(T a, T b)	{ return a && b; }
 template<typename T> inline T logicalOr		(T a, T b)	{ return a || b; }
 
 template<typename T>	inline T		mod		(T a, T b)			{ return a % b; }
-template<>				inline float	mod		(float x, float y)	{ return x - y * floor(x / y); }
+template<>				inline float	mod		(float x, float y)	{ return x - y * deFloatFloor(x / y); }
 
 template<typename T>	inline	T			negate				(T f)			{ return -f; }
 template<>				inline	deUint32	negate<deUint32>	(deUint32 f)	{ return (deUint32)-(int)f;	}
@@ -94,7 +95,7 @@ inline float refract		(float i, float n, float eta)
 	if (k < 0.0f)
 		return 0.0f;
 	else
-		return eta * i - (eta * cosAngle + ::sqrt(k)) * n;
+		return eta * i - (eta * cosAngle + deFloatSqrt(k)) * n;
 }
 
 inline float asinh			(float a) { return deFloatAsinh(a); }
@@ -148,9 +149,15 @@ inline T lengthSquared (const Vector<T, Size>& a)
 }
 
 template <typename T, int Size>
-inline T length (const Vector<T, Size>& a)
+inline typename de::meta::EnableIf<T, de::meta::TypesSame<T, double>::Value>::Type length (const Vector<T, Size>& a)
 {
 	return ::sqrt(lengthSquared(a));
+}
+
+template <typename T, int Size>
+inline typename de::meta::EnableIf<T, de::meta::TypesSame<T, float>::Value>::Type length (const Vector<T, Size>& a)
+{
+	return deFloatSqrt(lengthSquared(a));
 }
 
 template <typename T, int Size>
