@@ -121,7 +121,7 @@ def execArgsInDirectory (args, cwd, linePrefix=""):
 
 	process = subprocess.Popen(args, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 	stdoutJob = threading.Thread(target=readApplyPrefixAndPrint, args=(process.stdout, linePrefix, sys.stdout))
-	stderrJob = threading.Thread(target=readApplyPrefixAndPrint, args=(process.stdout, linePrefix, sys.stderr))
+	stderrJob = threading.Thread(target=readApplyPrefixAndPrint, args=(process.stderr, linePrefix, sys.stderr))
 	stdoutJob.start()
 	stderrJob.start()
 	retcode = process.wait()
