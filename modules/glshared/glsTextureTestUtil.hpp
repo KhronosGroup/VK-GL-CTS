@@ -240,14 +240,6 @@ public:
 	RandomViewport (const tcu::RenderTarget& renderTarget, int preferredWidth, int preferredHeight, deUint32 seed);
 };
 
-inline tcu::RGBA toRGBA (const tcu::Vec4& v)
-{
-	return tcu::RGBA(tcu::floatToU8(v.x()),
-					 tcu::floatToU8(v.y()),
-					 tcu::floatToU8(v.z()),
-					 tcu::floatToU8(v.w()));
-}
-
 inline tcu::RGBA toRGBAMasked (const tcu::Vec4& v, deUint8 mask)
 {
 	return tcu::RGBA((mask&tcu::RGBA::RED_MASK)		? tcu::floatToU8(v.x()) : 0,
@@ -256,12 +248,10 @@ inline tcu::RGBA toRGBAMasked (const tcu::Vec4& v, deUint8 mask)
 					 (mask&tcu::RGBA::ALPHA_MASK)	? tcu::floatToU8(v.w()) : 0xFF); //!< \note Alpha defaults to full saturation when reading masked format
 }
 
+// \todo[jarkko 2015-05-19] remove this
 inline tcu::Vec4 toVec4 (const tcu::RGBA& c)
 {
-	return tcu::Vec4(c.getRed()		/ 255.0f,
-					 c.getGreen()	/ 255.0f,
-					 c.getBlue()	/ 255.0f,
-					 c.getAlpha()	/ 255.0f);
+	return c.toVec();
 }
 
 inline deUint8 getColorMask (const tcu::PixelFormat& format)

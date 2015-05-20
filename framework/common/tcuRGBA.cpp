@@ -23,6 +23,7 @@
 
 #include "tcuRGBA.hpp"
 #include "tcuVector.hpp"
+#include "tcuTextureUtil.hpp"
 
 namespace tcu
 {
@@ -36,10 +37,10 @@ const RGBA	RGBA::black		(0x0,  0x0,	 0x0,  0xFF);
 
 RGBA::RGBA (const Vec4& v)
 {
-	int r = deClamp32(int(v.x() * 255.0f + 0.5f), 0, 255);
-	int g = deClamp32(int(v.y() * 255.0f + 0.5f), 0, 255);
-	int b = deClamp32(int(v.z() * 255.0f + 0.5f), 0, 255);
-	int a = deClamp32(int(v.w() * 255.0f + 0.5f), 0, 255);
+	const deUint32 r = (deUint32)floatToU8(v.x());
+	const deUint32 g = (deUint32)floatToU8(v.y());
+	const deUint32 b = (deUint32)floatToU8(v.z());
+	const deUint32 a = (deUint32)floatToU8(v.w());
 	m_value = (a << ALPHA_SHIFT) | (r << RED_SHIFT) | (g << GREEN_SHIFT) | (b << BLUE_SHIFT);
 }
 
