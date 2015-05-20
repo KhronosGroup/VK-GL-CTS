@@ -64,22 +64,6 @@ static const int			MAX_RENDER_WIDTH		= 128;
 static const int			MAX_RENDER_HEIGHT		= 112;
 static const tcu::Vec4		DEFAULT_CLEAR_COLOR		= tcu::Vec4(0.125f, 0.25f, 0.5f, 1.0f);
 
-inline RGBA toRGBA (const Vec4& a)
-{
-	return RGBA(deClamp32(deRoundFloatToInt32(a.x() * 255.0f), 0, 255),
-				deClamp32(deRoundFloatToInt32(a.y() * 255.0f), 0, 255),
-				deClamp32(deRoundFloatToInt32(a.z() * 255.0f), 0, 255),
-				deClamp32(deRoundFloatToInt32(a.w() * 255.0f), 0, 255));
-}
-
-inline tcu::Vec4 toVec (const RGBA& c)
-{
-	return tcu::Vec4(c.getRed()		/ 255.0f,
-					 c.getGreen()	/ 255.0f,
-					 c.getBlue()	/ 255.0f,
-					 c.getAlpha()	/ 255.0f);
-}
-
 // TextureBinding
 
 TextureBinding::TextureBinding (const glu::Texture2D* tex2D, const tcu::Sampler& sampler)
@@ -730,7 +714,7 @@ void ShaderRenderCase::computeVertexReference (Surface& result, const QuadGrid& 
 			const Vec4&	t2		= tri ? c10 : c01;
 			Vec4		color	= t0 + (t1-t0)*tx + (t2-t0)*ty;
 
-			result.setPixel(ix, iy, toRGBA(color));
+			result.setPixel(ix, iy, tcu::RGBA(color));
 		}
 	}
 }
@@ -758,7 +742,7 @@ void ShaderRenderCase::computeFragmentReference (Surface& result, const QuadGrid
 		if (!hasAlpha)
 			color.w() = 1.0f;
 
-		result.setPixel(x, y, toRGBA(color));
+		result.setPixel(x, y, tcu::RGBA(color));
 	}
 }
 

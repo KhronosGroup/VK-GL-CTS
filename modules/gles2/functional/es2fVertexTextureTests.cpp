@@ -348,7 +348,7 @@ static void setPixelColors (const vector<Vec4>& quadColors, const Rect& region, 
 			DE_ASSERT(deInBounds32(ix + region.x, 0, dst.getWidth()));
 			DE_ASSERT(deInBounds32(iy + region.y, 0, dst.getHeight()));
 
-			dst.setPixel(ix + region.x, iy + region.y, toRGBA(color));
+			dst.setPixel(ix + region.x, iy + region.y, tcu::RGBA(color));
 		}
 	}
 }
