@@ -460,8 +460,8 @@ void MakeCurrentPerfCase::logResults (void)
 		}
 
 		// Calculate mean and median
-		iterationTimeMeanUs		= ((float)(((double)totalTimeUs) / totalIterationCount));
-		iterationTimeMedianUs	= ((float)(((double)m_samples[m_samples.size() / 2]) / m_spec.iterationCount));
+		iterationTimeMeanUs		= ((float)(((double)totalTimeUs) / (double)totalIterationCount));
+		iterationTimeMedianUs	= ((float)(((double)m_samples[m_samples.size() / 2]) / (double)m_spec.iterationCount));
 
 		// Calculate variance
 		for (int sampleNdx = 0; sampleNdx < (int)m_samples.size(); sampleNdx++)
@@ -478,7 +478,7 @@ void MakeCurrentPerfCase::logResults (void)
 			iterationTimeMaxUs		= std::max<float>(iterationTimeMaxUs, iterationTimeUs);
 		}
 
-		iterationTimeVarianceUs /= m_samples.size();
+		iterationTimeVarianceUs /= (float)m_samples.size();
 
 		// Calculate skewness
 		for (int sampleNdx = 0; sampleNdx < (int)m_samples.size(); sampleNdx++)
@@ -501,7 +501,7 @@ void MakeCurrentPerfCase::logResults (void)
 			log << TestLog::Message << "Max: "			<< iterationTimeMaxUs		<< "us" << TestLog::EndMessage;
 		}
 
-		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, de::floatToString((float)(((double)totalTimeUs)/totalIterationCount), 2).c_str());
+		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, de::floatToString((float)(((double)totalTimeUs)/(double)totalIterationCount), 2).c_str());
 	}
 }
 

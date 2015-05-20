@@ -220,8 +220,8 @@ void clear (const glw::Functions& gl, const tcu::Vec4& color, int x, int y, int 
 
 tcu::Vec2 toGLCoord (int width, int height, int x, int y)
 {
-	const float xf = (float(2.0f * x) / width) - 1.0f;
-	const float yf = (float(2.0f * y) / height) -  1.0f;
+	const float xf = ((2.0f * float(x)) / (float)width)  - 1.0f;
+	const float yf = ((2.0f * float(y)) / (float)height) - 1.0f;
 
 	return tcu::Vec2(xf, yf);
 }

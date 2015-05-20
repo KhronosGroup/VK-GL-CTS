@@ -449,7 +449,7 @@ TestCase::IterateResult MemoryStressCase::iterate (void)
 		}
 		else
 		{
-			float change = (min - max) / ((float)(max));
+			float change = (float)(min - max) / ((float)(max));
 
 			if (change > threshold)
 			{

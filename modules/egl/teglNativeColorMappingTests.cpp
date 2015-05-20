@@ -258,10 +258,10 @@ bool validate (TestLog& log, const Library& egl, EGLDisplay display, EGLConfig c
 							  deMinu32(nativeBitDepth.z(), eglBitDepth.z()),
 							  deMinu32(nativeBitDepth.w(), eglBitDepth.w()));
 
-	const tcu::UVec4 uColor = tcu::UVec4((deUint32)(((1u << bitDepth.x()) - 1u) * color.x()),
-										 (deUint32)(((1u << bitDepth.y()) - 1u) * color.y()),
-										 (deUint32)(((1u << bitDepth.z()) - 1u) * color.z()),
-										 (deUint32)(((1u << bitDepth.w()) - 1u) * color.w()));
+	const tcu::UVec4 uColor = tcu::UVec4((deUint32)((float)((1u << bitDepth.x()) - 1u) * color.x()),
+										 (deUint32)((float)((1u << bitDepth.y()) - 1u) * color.y()),
+										 (deUint32)((float)((1u << bitDepth.z()) - 1u) * color.z()),
+										 (deUint32)((float)((1u << bitDepth.w()) - 1u) * color.w()));
 
 	tcu::TextureLevel reference(result.getFormat(), result.getWidth(), result.getHeight());
 
