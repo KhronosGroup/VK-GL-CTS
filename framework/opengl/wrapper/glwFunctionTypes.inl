@@ -317,6 +317,7 @@ typedef GLW_APICALL void			(GLW_APIENTRY* glGetnUniformfvFunc)									(GLuint p
 typedef GLW_APICALL void			(GLW_APIENTRY* glGetnUniformivFunc)									(GLuint program, GLint location, GLsizei bufSize, GLint *params);
 typedef GLW_APICALL void			(GLW_APIENTRY* glGetnUniformuivFunc)								(GLuint program, GLint location, GLsizei bufSize, GLuint *params);
 typedef GLW_APICALL void			(GLW_APIENTRY* glHintFunc)											(GLenum target, GLenum mode);
+typedef GLW_APICALL void			(GLW_APIENTRY* glInsertEventMarkerEXTFunc)							(GLsizei length, const GLchar *marker);
 typedef GLW_APICALL void			(GLW_APIENTRY* glInvalidateBufferDataFunc)							(GLuint buffer);
 typedef GLW_APICALL void			(GLW_APIENTRY* glInvalidateBufferSubDataFunc)						(GLuint buffer, GLintptr offset, GLsizeiptr length);
 typedef GLW_APICALL void			(GLW_APIENTRY* glInvalidateFramebufferFunc)							(GLenum target, GLsizei numAttachments, const GLenum *attachments);
@@ -381,6 +382,7 @@ typedef GLW_APICALL void			(GLW_APIENTRY* glPointSizeFunc)										(GLfloat siz
 typedef GLW_APICALL void			(GLW_APIENTRY* glPolygonModeFunc)									(GLenum face, GLenum mode);
 typedef GLW_APICALL void			(GLW_APIENTRY* glPolygonOffsetFunc)									(GLfloat factor, GLfloat units);
 typedef GLW_APICALL void			(GLW_APIENTRY* glPopDebugGroupFunc)									(void);
+typedef GLW_APICALL void			(GLW_APIENTRY* glPopGroupMarkerEXTFunc)								(void);
 typedef GLW_APICALL void			(GLW_APIENTRY* glPrimitiveBoundingBoxEXTFunc)						(GLfloat minX, GLfloat minY, GLfloat minZ, GLfloat minW, GLfloat maxX, GLfloat maxY, GLfloat maxZ, GLfloat maxW);
 typedef GLW_APICALL void			(GLW_APIENTRY* glPrimitiveRestartIndexFunc)							(GLuint index);
 typedef GLW_APICALL void			(GLW_APIENTRY* glProgramBinaryFunc)									(GLuint program, GLenum binaryFormat, const void *binary, GLsizei length);
@@ -437,6 +439,7 @@ typedef GLW_APICALL void			(GLW_APIENTRY* glProgramUniformMatrix4x3dvFunc)						
 typedef GLW_APICALL void			(GLW_APIENTRY* glProgramUniformMatrix4x3fvFunc)						(GLuint program, GLint location, GLsizei count, GLboolean transpose, const GLfloat *value);
 typedef GLW_APICALL void			(GLW_APIENTRY* glProvokingVertexFunc)								(GLenum mode);
 typedef GLW_APICALL void			(GLW_APIENTRY* glPushDebugGroupFunc)								(GLenum source, GLuint id, GLsizei length, const GLchar *message);
+typedef GLW_APICALL void			(GLW_APIENTRY* glPushGroupMarkerEXTFunc)							(GLsizei length, const GLchar *marker);
 typedef GLW_APICALL void			(GLW_APIENTRY* glQueryCounterFunc)									(GLuint id, GLenum target);
 typedef GLW_APICALL void			(GLW_APIENTRY* glReadBufferFunc)									(GLenum src);
 typedef GLW_APICALL void			(GLW_APIENTRY* glReadPixelsFunc)									(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, void *pixels);

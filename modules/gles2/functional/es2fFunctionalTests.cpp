@@ -98,6 +98,7 @@
 #include "es2fShaderStateQueryTests.hpp"
 
 #include "es2fReadPixelsTests.hpp"
+#include "es2fDebugMarkerTests.hpp"
 
 namespace deqp
 {
@@ -332,6 +333,7 @@ void FunctionalTests::init (void)
 	addChild(new FlushFinishTests			(m_context));
 	addChild(new DefaultVertexAttributeTests(m_context));
 	addChild(createLifetimeTests			(m_context));
+	addChild(createDebugMarkerTests			(m_context));
 }
 
 } // Functional

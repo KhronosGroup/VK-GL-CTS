@@ -317,6 +317,7 @@ void					glGetnUniformfv									(glw::GLuint program, glw::GLint location, glw:
 void					glGetnUniformiv									(glw::GLuint program, glw::GLint location, glw::GLsizei bufSize, glw::GLint *params);
 void					glGetnUniformuiv								(glw::GLuint program, glw::GLint location, glw::GLsizei bufSize, glw::GLuint *params);
 void					glHint											(glw::GLenum target, glw::GLenum mode);
+void					glInsertEventMarkerEXT							(glw::GLsizei length, const glw::GLchar *marker);
 void					glInvalidateBufferData							(glw::GLuint buffer);
 void					glInvalidateBufferSubData						(glw::GLuint buffer, glw::GLintptr offset, glw::GLsizeiptr length);
 void					glInvalidateFramebuffer							(glw::GLenum target, glw::GLsizei numAttachments, const glw::GLenum *attachments);
@@ -381,6 +382,7 @@ void					glPointSize										(glw::GLfloat size);
 void					glPolygonMode									(glw::GLenum face, glw::GLenum mode);
 void					glPolygonOffset									(glw::GLfloat factor, glw::GLfloat units);
 void					glPopDebugGroup									(void);
+void					glPopGroupMarkerEXT								(void);
 void					glPrimitiveBoundingBoxEXT						(glw::GLfloat minX, glw::GLfloat minY, glw::GLfloat minZ, glw::GLfloat minW, glw::GLfloat maxX, glw::GLfloat maxY, glw::GLfloat maxZ, glw::GLfloat maxW);
 void					glPrimitiveRestartIndex							(glw::GLuint index);
 void					glProgramBinary									(glw::GLuint program, glw::GLenum binaryFormat, const void *binary, glw::GLsizei length);
@@ -437,6 +439,7 @@ void					glProgramUniformMatrix4x3dv						(glw::GLuint program, glw::GLint locat
 void					glProgramUniformMatrix4x3fv						(glw::GLuint program, glw::GLint location, glw::GLsizei count, glw::GLboolean transpose, const glw::GLfloat *value);
 void					glProvokingVertex								(glw::GLenum mode);
 void					glPushDebugGroup								(glw::GLenum source, glw::GLuint id, glw::GLsizei length, const glw::GLchar *message);
+void					glPushGroupMarkerEXT							(glw::GLsizei length, const glw::GLchar *marker);
 void					glQueryCounter									(glw::GLuint id, glw::GLenum target);
 void					glReadBuffer									(glw::GLenum src);
 void					glReadPixels									(glw::GLint x, glw::GLint y, glw::GLsizei width, glw::GLsizei height, glw::GLenum format, glw::GLenum type, void *pixels);

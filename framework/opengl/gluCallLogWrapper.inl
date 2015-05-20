@@ -2374,6 +2374,13 @@ void CallLogWrapper::glHint (glw::GLenum target, glw::GLenum mode)
 	m_gl.hint(target, mode);
 }
 
+void CallLogWrapper::glInsertEventMarkerEXT (glw::GLsizei length, const glw::GLchar *marker)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glInsertEventMarkerEXT(" << length << ", " << getStringStr(marker) << ");" << TestLog::EndMessage;
+	m_gl.insertEventMarkerEXT(length, marker);
+}
+
 void CallLogWrapper::glInvalidateBufferData (glw::GLuint buffer)
 {
 	if (m_enableLog)
@@ -2876,6 +2883,13 @@ void CallLogWrapper::glPopDebugGroup (void)
 	m_gl.popDebugGroup();
 }
 
+void CallLogWrapper::glPopGroupMarkerEXT (void)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glPopGroupMarkerEXT(" << ");" << TestLog::EndMessage;
+	m_gl.popGroupMarkerEXT();
+}
+
 void CallLogWrapper::glPrimitiveBoundingBoxEXT (glw::GLfloat minX, glw::GLfloat minY, glw::GLfloat minZ, glw::GLfloat minW, glw::GLfloat maxX, glw::GLfloat maxY, glw::GLfloat maxZ, glw::GLfloat maxW)
 {
 	if (m_enableLog)
@@ -3266,6 +3280,13 @@ void CallLogWrapper::glPushDebugGroup (glw::GLenum source, glw::GLuint id, glw::
 	if (m_enableLog)
 		m_log << TestLog::Message << "glPushDebugGroup(" << getDebugMessageSourceStr(source) << ", " << id << ", " << length << ", " << getStringStr(message) << ");" << TestLog::EndMessage;
 	m_gl.pushDebugGroup(source, id, length, message);
+}
+
+void CallLogWrapper::glPushGroupMarkerEXT (glw::GLsizei length, const glw::GLchar *marker)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glPushGroupMarkerEXT(" << length << ", " << getStringStr(marker) << ");" << TestLog::EndMessage;
+	m_gl.pushGroupMarkerEXT(length, marker);
 }
 
 void CallLogWrapper::glQueryCounter (glw::GLuint id, glw::GLenum target)
