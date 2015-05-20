@@ -206,8 +206,8 @@ void computeRandomValueRangeForInfElements (GeneratorState& state, ValueRangeAcc
 				int rangeLen	= rnd.getInt(0, maxSteps);
 				int minStep		= rnd.getInt(0, maxSteps-rangeLen);
 
-				float minVal	= minFloatVal + step*minStep;
-				float maxVal	= minVal + step*rangeLen;
+				float minVal	= minFloatVal + step*(float)minStep;
+				float maxVal	= minVal + step*(float)rangeLen;
 
 				valueRange.getMin().component(ndx).asFloat() = minVal;
 				valueRange.getMax().component(ndx).asFloat() = maxVal;
@@ -377,7 +377,7 @@ FloatLiteral::FloatLiteral (GeneratorState& state, ConstValueRangeAccess valueRa
 
 	int numSteps = (int)((maxVal-minVal)/step) + 1;
 
-	float			value	= deFloatClamp(minVal + step*state.getRandom().getInt(0, numSteps), minVal, maxVal);
+	const float		value	= deFloatClamp(minVal + step*(float)state.getRandom().getInt(0, numSteps), minVal, maxVal);
 	ExecValueAccess	access	= m_value.getValue(VariableType::getScalarType(VariableType::TYPE_FLOAT));
 
 	for (int ndx = 0; ndx < EXEC_VEC_WIDTH; ndx++)
@@ -454,7 +454,7 @@ float IntLiteral::getWeight (const GeneratorState& state, ConstValueRangeAccess 
 		int rangeLength = maxVal - minVal;
 
 		DE_ASSERT(rangeLength >= 0);
-		return deFloatMax(0.1f, 1.0f - rangeLength/4.0f);
+		return deFloatMax(0.1f, 1.0f - (float)rangeLength/4.0f);
 	}
 	else if (type.isVoid())
 		return unusedValueWeight;
@@ -842,8 +842,8 @@ AssignOp::AssignOp (GeneratorState& state, ConstValueRangeAccess valueRange)
 		}
 	}
 
-	IsWritableIntersectingEntry::Iterator first	= state.getVariableManager().getBegin(IsWritableIntersectingEntry(m_valueRange));
-	IsWritableIntersectingEntry::Iterator end	= state.getVariableManager().getEnd(IsWritableIntersectingEntry(m_valueRange));
+	IsWritableIntersectingEntry::Iterator first	= state.getVariableManager().getBegin(IsWritableIntersectingEntry(m_valueRange.asAccess()));
+	IsWritableIntersectingEntry::Iterator end	= state.getVariableManager().getEnd(IsWritableIntersectingEntry(m_valueRange.asAccess()));
 
 	bool possiblyCreateVar = canAllocateVariable(state, m_valueRange.getType()) &&
 							 (first == end || getWeightedBool(state.getRandom(), 0.5f));
@@ -858,7 +858,7 @@ AssignOp::AssignOp (GeneratorState& state, ConstValueRangeAccess valueRange)
 		bool supersetExists = false;
 		for (IsWritableIntersectingEntry::Iterator i = first; i != end; i++)
 		{
-			if ((*i)->getValueRange().isSupersetOf(m_valueRange))
+			if ((*i)->getValueRange().isSupersetOf(m_valueRange.asAccess()))
 			{
 				supersetExists = true;
 				break;
@@ -871,7 +871,7 @@ AssignOp::AssignOp (GeneratorState& state, ConstValueRangeAccess valueRange)
 			// \todo [2011-02-03 pyry] Use some heuristics to select the range?
 			ConstValueRangeAccess selectedRange = state.getRandom().choose<const ValueEntry*>(first, end)->getValueRange();
 
-			ValueRange::computeIntersection(m_valueRange, m_valueRange, selectedRange);
+			ValueRange::computeIntersection(m_valueRange.asAccess(), m_valueRange.asAccess(), selectedRange);
 		}
 	}
 }
@@ -913,13 +913,13 @@ Expression* AssignOp::createNextChild (GeneratorState& state)
 		//  - variable valuerange is made unbound
 		//  - R-value is generated
 		//  - R-values in L-value are generated
-		m_lvalueExpr = Expression::createRandomLValue(state, m_valueRange);
+		m_lvalueExpr = Expression::createRandomLValue(state, m_valueRange.asAccess());
 		return m_lvalueExpr;
 	}
 	else if (m_rvalueExpr == DE_NULL)
 	{
 		// Construct value expr
-		m_rvalueExpr = Expression::createRandom(state, m_valueRange);
+		m_rvalueExpr = Expression::createRandom(state, m_valueRange.asAccess());
 		return m_rvalueExpr;
 	}
 	else
@@ -1094,7 +1094,7 @@ VariableRead::VariableRead (GeneratorState& state, ConstValueRangeAccess valueRa
 			ValueRange newVarRange(computeRandomType(state, maxScalars));
 			computeRandomValueRange(state, newVarRange.asAccess());
 
-			m_variable = allocateNewVariable(state, newVarRange);
+			m_variable = allocateNewVariable(state, newVarRange.asAccess());
 		}
 		else
 		{
@@ -1135,7 +1135,7 @@ VariableRead::VariableRead (GeneratorState& state, ConstValueRangeAccess valueRa
 			// Compute intersection
 			ValueRange intersection(m_variable->getType());
 			ValueRange::computeIntersection(intersection, entry->getValueRange(), valueRange);
-			state.getVariableManager().setValue(m_variable, intersection);
+			state.getVariableManager().setValue(m_variable, intersection.asAccess());
 		}
 	}
 }
@@ -1202,7 +1202,7 @@ VariableWrite::VariableWrite (GeneratorState& state, ConstValueRangeAccess value
 		ValueRange infRange(m_variable->getType());
 		setInfiniteRange(infRange);
 
-		state.getVariableManager().setValue(m_variable, infRange);
+		state.getVariableManager().setValue(m_variable, infRange.asAccess());
 	}
 }
 
@@ -1236,7 +1236,7 @@ Expression* ParenOp::createNextChild (GeneratorState& state)
 {
 	if (m_child == DE_NULL)
 	{
-		m_child = Expression::createRandom(state, m_valueRange);
+		m_child = Expression::createRandom(state, m_valueRange.asAccess());
 		return m_child;
 	}
 	else
@@ -1326,7 +1326,7 @@ Expression* SwizzleOp::createNextChild (GeneratorState& state)
 
 	// Create child.
 	state.pushPrecedence(swizzlePrecedence);
-	m_child = Expression::createRandom(state, inValueRange);
+	m_child = Expression::createRandom(state, inValueRange.asAccess());
 	state.popPrecedence();
 
 	return m_child;
@@ -1486,7 +1486,7 @@ Expression* TexLookup::createNextChild (GeneratorState& state)
 		ValueRange lodRange(VariableType(VariableType::TYPE_FLOAT, 1));
 		setInfiniteRange(lodRange); // Any value is valid.
 
-		m_lodBiasExpr = Expression::createRandom(state, lodRange);
+		m_lodBiasExpr = Expression::createRandom(state, lodRange.asAccess());
 		return m_lodBiasExpr;
 	}
 
@@ -1514,7 +1514,7 @@ Expression* TexLookup::createNextChild (GeneratorState& state)
 				}
 			}
 
-			m_coordExpr = Expression::createRandom(state, coordRange);
+			m_coordExpr = Expression::createRandom(state, coordRange.asAccess());
 		}
 		else
 		{
@@ -1532,7 +1532,7 @@ Expression* TexLookup::createNextChild (GeneratorState& state)
 				coordRange.getMax().component(2) = neg ? -0.25f : 4.0f;
 			}
 
-			m_coordExpr = Expression::createRandom(state, coordRange);
+			m_coordExpr = Expression::createRandom(state, coordRange.asAccess());
 		}
 
 		DE_ASSERT(m_coordExpr);
@@ -1613,7 +1613,7 @@ float TexLookup::getWeight (const GeneratorState& state, ConstValueRangeAccess v
 		texOutputRange.getMax().component(ndx) = 1.0f;
 	}
 
-	if (!valueRange.isSupersetOf(texOutputRange))
+	if (!valueRange.isSupersetOf(texOutputRange.asAccess()))
 		return 0.0f;
 
 	return state.getShaderParameters().texLookupBaseWeight;

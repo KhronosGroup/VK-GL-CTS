@@ -87,7 +87,7 @@ Expression* UnaryBuiltinVecFunc<GetValueRangeWeight, ComputeValueRange, Evaluate
 	if (m_child)
 		return DE_NULL;
 
-	m_child = Expression::createRandom(state, m_inValueRange);
+	m_child = Expression::createRandom(state, m_inValueRange.asAccess());
 	return m_child;
 }
 

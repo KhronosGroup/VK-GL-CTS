@@ -211,7 +211,7 @@ void ShaderGenerator::generate (const ShaderParameters& shaderParams, Shader& sh
 
 			fragColorVar->setLayoutLocation(0); // Bind color output to location 0 (applies to GLSL ES 3.0 onwards).
 
-			m_state.getVariableManager().setValue(fragColorVar, valueRange);
+			m_state.getVariableManager().setValue(fragColorVar, valueRange.asAccess());
 		}
 	}
 
@@ -259,7 +259,7 @@ void ShaderGenerator::generate (const ShaderParameters& shaderParams, Shader& sh
 			valueRange.getMin() = tcu::Vec4(-1.0f, -1.0f, 0.0f, 1.0f);
 			valueRange.getMax() = tcu::Vec4( 1.0f,  1.0f, 0.0f, 1.0f);
 
-			m_state.getVariableManager().setValue(qpPosVariable, valueRange); // \todo [2011-05-24 pyry] No expression should be able to use gl_Position or dEQP_Position..
+			m_state.getVariableManager().setValue(qpPosVariable, valueRange.asAccess()); // \todo [2011-05-24 pyry] No expression should be able to use gl_Position or dEQP_Position..
 
 			createAssignment(main.getBody(), glPosVariable, qpPosVariable);
 		}

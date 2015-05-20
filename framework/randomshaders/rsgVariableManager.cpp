@@ -477,7 +477,7 @@ void VariableManager::popValueScope (void)
 					if (!newTopScope.findEntry(var))
 						newTopScope.allocate(var);
 
-					newTopScope.setValue(var, intersectedValue);
+					newTopScope.setValue(var, intersectedValue.asAccess());
 
 					// Add entry from top scope to cache.
 					m_entryCache.push_back(newTopScope.findEntry(var));
