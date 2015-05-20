@@ -480,10 +480,10 @@ static void computePositions (vector<tcu::Vec2>& positions, int gridSizeX, int g
 	for (int y = 0; y < gridSizeY; y++)
 	for (int x = 0; x < gridSizeX; x++)
 	{
-		float	sx0			= (x+0) / (float)gridSizeX;
-		float	sy0			= (y+0) / (float)gridSizeY;
-		float	sx1			= (x+1) / (float)gridSizeX;
-		float	sy1			= (y+1) / (float)gridSizeY;
+		float	sx0			= (float)(x+0) / (float)gridSizeX;
+		float	sy0			= (float)(y+0) / (float)gridSizeY;
+		float	sx1			= (float)(x+1) / (float)gridSizeX;
+		float	sy1			= (float)(y+1) / (float)gridSizeY;
 		float	fx0			= 2.0f * sx0 - 1.0f;
 		float	fy0			= 2.0f * sy0 - 1.0f;
 		float	fx1			= 2.0f * sx1 - 1.0f;
@@ -549,8 +549,8 @@ static void renderQuadGridReference (tcu::Surface& dst, int numQuads, int rowLen
 		for (int y = 0; y < VERIFY_QUAD_SIZE; y++)
 		for (int x = 0; x < VERIFY_QUAD_SIZE; x++)
 		{
-			float		fx		= (float)(x+0.5f) / (float)VERIFY_QUAD_SIZE;
-			float		fy		= (float)(y+0.5f) / (float)VERIFY_QUAD_SIZE;
+			float		fx		= ((float)x+0.5f) / (float)VERIFY_QUAD_SIZE;
+			float		fy		= ((float)y+0.5f) / (float)VERIFY_QUAD_SIZE;
 
 			bool		tri		= fx + fy <= 1.0f;
 			float		tx		= tri ? fx : (1.0f-fx);

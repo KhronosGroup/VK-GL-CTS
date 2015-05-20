@@ -1728,7 +1728,7 @@ void verifyPointer (tcu::ResultCollector& result, QueriedState& state, const voi
 
 static float normalizeI32Float (deInt32 c)
 {
-	return de::max(c / float((1ul << 31) - 1u), -1.0f);
+	return de::max((float)c / float((1ul << 31) - 1u), -1.0f);
 }
 
 void verifyNormalizedI32Vec4 (tcu::ResultCollector& result, QueriedState& state, const tcu::IVec4& expected)

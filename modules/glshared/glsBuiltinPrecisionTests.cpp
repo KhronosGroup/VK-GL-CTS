@@ -3974,7 +3974,7 @@ public:
 		const int	exp		= rnd.getInt(0, getNumBits(prec)-2);
 		const int	sign	= rnd.getBool() ? -1 : 1;
 
-		return sign * rnd.getInt(0, 1L << exp);
+		return sign * rnd.getInt(0, (deInt32)1 << exp);
 	}
 
 	void	genFixeds	(const FloatFormat&, vector<int>& dst) const
@@ -4094,26 +4094,26 @@ void DefaultSampling<float>::genFixeds (const FloatFormat& format, vector<float>
 	for (int sign = -1; sign <= 1; sign += 2)
 	{
 		// Smallest subnormal
-		dst.push_back(sign * minQuantum);
+		dst.push_back((float)sign * minQuantum);
 
 		// Largest subnormal
-		dst.push_back(sign * (minNormalized - minQuantum));
+		dst.push_back((float)sign * (minNormalized - minQuantum));
 
 		// Smallest normalized
-		dst.push_back(sign * minNormalized);
+		dst.push_back((float)sign * minNormalized);
 
 		// Next smallest normalized
-		dst.push_back(sign * (minNormalized + minQuantum));
+		dst.push_back((float)sign * (minNormalized + minQuantum));
 
-		dst.push_back(sign * 0.5f);
-		dst.push_back(sign * 1.0f);
-		dst.push_back(sign * 2.0f);
+		dst.push_back((float)sign * 0.5f);
+		dst.push_back((float)sign * 1.0f);
+		dst.push_back((float)sign * 2.0f);
 
 		// Largest number
-		dst.push_back(sign * (deFloatLdExp(1.0f, maxExp) +
-							  (deFloatLdExp(1.0f, maxExp) - maxQuantum)));
+		dst.push_back((float)sign * (deFloatLdExp(1.0f, maxExp) +
+									(deFloatLdExp(1.0f, maxExp) - maxQuantum)));
 
-		dst.push_back(sign * TCU_INFINITY);
+		dst.push_back((float)sign * TCU_INFINITY);
 	}
 }
 

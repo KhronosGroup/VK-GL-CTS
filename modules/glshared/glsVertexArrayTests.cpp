@@ -172,21 +172,21 @@ int Array::inputTypeSize (InputType type)
 {
 	static const int size[] =
 	{
-		sizeof(float),		// INPUTTYPE_FLOAT = 0,
-		sizeof(deInt32),	// INPUTTYPE_FIXED,
-		sizeof(double),		// INPUTTYPE_DOUBLE
+		(int)sizeof(float),			// INPUTTYPE_FLOAT = 0,
+		(int)sizeof(deInt32),		// INPUTTYPE_FIXED,
+		(int)sizeof(double),		// INPUTTYPE_DOUBLE
 
-		sizeof(deInt8),		// INPUTTYPE_BYTE,
-		sizeof(deInt16),	// INPUTTYPE_SHORT,
+		(int)sizeof(deInt8),		// INPUTTYPE_BYTE,
+		(int)sizeof(deInt16),		// INPUTTYPE_SHORT,
 
-		sizeof(deUint8),	// INPUTTYPE_UNSIGNED_BYTE,
-		sizeof(deUint16),	// INPUTTYPE_UNSIGNED_SHORT,
+		(int)sizeof(deUint8),		// INPUTTYPE_UNSIGNED_BYTE,
+		(int)sizeof(deUint16),		// INPUTTYPE_UNSIGNED_SHORT,
 
-		sizeof(deInt32),		// INPUTTYPE_INT,
-		sizeof(deUint32),		// INPUTTYPE_UNSIGNED_INT,
-		sizeof(deFloat16),		// INPUTTYPE_HALF,
-		sizeof(deUint32) / 4,		// INPUTTYPE_UNSIGNED_INT_2_10_10_10,
-		sizeof(deUint32) / 4		// INPUTTYPE_INT_2_10_10_10,
+		(int)sizeof(deInt32),		// INPUTTYPE_INT,
+		(int)sizeof(deUint32),		// INPUTTYPE_UNSIGNED_INT,
+		(int)sizeof(deFloat16),		// INPUTTYPE_HALF,
+		(int)sizeof(deUint32) / 4,	// INPUTTYPE_UNSIGNED_INT_2_10_10_10,
+		(int)sizeof(deUint32) / 4	// INPUTTYPE_INT_2_10_10_10,
 	};
 
 	return de::getSizedArrayElement<Array::INPUTTYPE_LAST>(size, (int)type);
@@ -234,7 +234,7 @@ inline GLValue::Short getRandom (deRandom& rnd, GLValue::Short min, GLValue::Sho
 	if (max < min)
 		return min;
 
-	return GLValue::Short::create((min == max ? min : min + (deRandom_getUint32(&rnd) % (max.to<int>() - min.to<int>()))));
+	return GLValue::Short::create((min == max ? min : (deInt16)(min + (deRandom_getUint32(&rnd) % (max.to<int>() - min.to<int>())))));
 }
 
 template<>
@@ -243,7 +243,7 @@ inline GLValue::Ushort getRandom (deRandom& rnd, GLValue::Ushort min, GLValue::U
 	if (max < min)
 		return min;
 
-	return GLValue::Ushort::create((min == max ? min : min + (deRandom_getUint32(&rnd) % (max.to<int>() - min.to<int>()))));
+	return GLValue::Ushort::create((min == max ? min : (deUint16)(min + (deRandom_getUint32(&rnd) % (max.to<int>() - min.to<int>())))));
 }
 
 template<>
@@ -252,7 +252,7 @@ inline GLValue::Byte getRandom (deRandom& rnd, GLValue::Byte min, GLValue::Byte 
 	if (max < min)
 		return min;
 
-	return GLValue::Byte::create((min == max ? min : min + (deRandom_getUint32(&rnd) % (max.to<int>() - min.to<int>()))));
+	return GLValue::Byte::create((min == max ? min : (deInt8)(min + (deRandom_getUint32(&rnd) % (max.to<int>() - min.to<int>())))));
 }
 
 template<>
@@ -261,7 +261,7 @@ inline GLValue::Ubyte getRandom (deRandom& rnd, GLValue::Ubyte min, GLValue::Uby
 	if (max < min)
 		return min;
 
-	return GLValue::Ubyte::create((min == max ? min : min + (deRandom_getUint32(&rnd) % (max.to<int>() - min.to<int>()))));
+	return GLValue::Ubyte::create((min == max ? min : (deUint8)(min + (deRandom_getUint32(&rnd) % (max.to<int>() - min.to<int>())))));
 }
 
 template<>
@@ -1758,9 +1758,9 @@ VertexArrayTest::VertexArrayTest (tcu::TestContext& testCtx, glu::RenderContext&
 	, m_glArrayPack		(DE_NULL)
 	, m_rrArrayPack		(DE_NULL)
 	, m_isOk			(false)
-	, m_maxDiffRed		(deCeilFloatToInt32(256.0f * (2.0f / (1 << m_renderCtx.getRenderTarget().getPixelFormat().redBits))))
-	, m_maxDiffGreen	(deCeilFloatToInt32(256.0f * (2.0f / (1 << m_renderCtx.getRenderTarget().getPixelFormat().greenBits))))
-	, m_maxDiffBlue		(deCeilFloatToInt32(256.0f * (2.0f / (1 << m_renderCtx.getRenderTarget().getPixelFormat().blueBits))))
+	, m_maxDiffRed		(deCeilFloatToInt32(256.0f * (2.0f / (float)(1 << m_renderCtx.getRenderTarget().getPixelFormat().redBits))))
+	, m_maxDiffGreen	(deCeilFloatToInt32(256.0f * (2.0f / (float)(1 << m_renderCtx.getRenderTarget().getPixelFormat().greenBits))))
+	, m_maxDiffBlue		(deCeilFloatToInt32(256.0f * (2.0f / (float)(1 << m_renderCtx.getRenderTarget().getPixelFormat().blueBits))))
 {
 }
 
@@ -1843,9 +1843,9 @@ void VertexArrayTest::compare (void)
 							// Check reference pixel against screen pixel
 							{
 								tcu::RGBA	screenCmpPixel	= screen.getPixel(x+dx, y+dy);
-								deUint8		r				= deAbs32(refPixel.getRed()		- screenCmpPixel.getRed());
-								deUint8		g				= deAbs32(refPixel.getGreen()	- screenCmpPixel.getGreen());
-								deUint8		b				= deAbs32(refPixel.getBlue()	- screenCmpPixel.getBlue());
+								deUint8		r				= (deUint8)deAbs32(refPixel.getRed()	- screenCmpPixel.getRed());
+								deUint8		g				= (deUint8)deAbs32(refPixel.getGreen()	- screenCmpPixel.getGreen());
+								deUint8		b				= (deUint8)deAbs32(refPixel.getBlue()	- screenCmpPixel.getBlue());
 
 								if (r <= m_maxDiffRed && g <= m_maxDiffGreen && b <= m_maxDiffBlue)
 									isOkPixel = true;
@@ -1854,9 +1854,9 @@ void VertexArrayTest::compare (void)
 							// Check screen pixels against reference pixel
 							{
 								tcu::RGBA	refCmpPixel		= ref.getPixel(x+dx, y+dy);
-								deUint8		r				= deAbs32(refCmpPixel.getRed()		- screenPixel.getRed());
-								deUint8		g				= deAbs32(refCmpPixel.getGreen()	- screenPixel.getGreen());
-								deUint8		b				= deAbs32(refCmpPixel.getBlue()		- screenPixel.getBlue());
+								deUint8		r				= (deUint8)deAbs32(refCmpPixel.getRed()		- screenPixel.getRed());
+								deUint8		g				= (deUint8)deAbs32(refCmpPixel.getGreen()	- screenPixel.getGreen());
+								deUint8		b				= (deUint8)deAbs32(refCmpPixel.getBlue()	- screenPixel.getBlue());
 
 								if (r <= m_maxDiffRed && g <= m_maxDiffGreen && b <= m_maxDiffBlue)
 									isOkPixel = true;

@@ -103,7 +103,7 @@ bool compareColors (const tcu::RGBA& colorA, const tcu::RGBA& colorB, int redBit
 
 bool pixelNearLineSegment (const tcu::IVec2& pixel, const tcu::Vec2& p0, const tcu::Vec2& p1)
 {
-	const tcu::Vec2 pixelCenterPosition = tcu::Vec2(pixel.x() + 0.5f, pixel.y() + 0.5f);
+	const tcu::Vec2 pixelCenterPosition = tcu::Vec2((float)pixel.x() + 0.5f, (float)pixel.y() + 0.5f);
 
 	// "Near" = Distance from the line to the pixel is less than 2 * pixel_max_radius. (pixel_max_radius = sqrt(2) / 2)
 	const float maxPixelDistance		= 1.414f;
@@ -573,14 +573,14 @@ struct TriangleInterpolator
 	{
 		// allow anywhere in the pixel area in multisample
 		// allow only in the center subpixels (4 subpixels) in singlesample
-		const float testSquareSize = (multisample) ? (1.0f) : (2.0f / (1UL << subpixelBits));
+		const float testSquareSize = (multisample) ? (1.0f) : (2.0f / (float)(1UL << subpixelBits));
 		const float testSquarePos  = (multisample) ? (0.0f) : (0.5f - testSquareSize / 2);
 		const tcu::Vec2 corners[4] =
 		{
-			tcu::Vec2((pixel.x() + testSquarePos + 0.0f)           / viewportSize.x() * 2.0f - 1.0f, (pixel.y() + testSquarePos + 0.0f          ) / viewportSize.y() * 2.0f - 1.0f),
-			tcu::Vec2((pixel.x() + testSquarePos + 0.0f)           / viewportSize.x() * 2.0f - 1.0f, (pixel.y() + testSquarePos + testSquareSize) / viewportSize.y() * 2.0f - 1.0f),
-			tcu::Vec2((pixel.x() + testSquarePos + testSquareSize) / viewportSize.x() * 2.0f - 1.0f, (pixel.y() + testSquarePos + testSquareSize) / viewportSize.y() * 2.0f - 1.0f),
-			tcu::Vec2((pixel.x() + testSquarePos + testSquareSize) / viewportSize.x() * 2.0f - 1.0f, (pixel.y() + testSquarePos + 0.0f          ) / viewportSize.y() * 2.0f - 1.0f),
+			tcu::Vec2(((float)pixel.x() + testSquarePos + 0.0f)           / (float)viewportSize.x() * 2.0f - 1.0f, ((float)pixel.y() + testSquarePos + 0.0f          ) / (float)viewportSize.y() * 2.0f - 1.0f),
+			tcu::Vec2(((float)pixel.x() + testSquarePos + 0.0f)           / (float)viewportSize.x() * 2.0f - 1.0f, ((float)pixel.y() + testSquarePos + testSquareSize) / (float)viewportSize.y() * 2.0f - 1.0f),
+			tcu::Vec2(((float)pixel.x() + testSquarePos + testSquareSize) / (float)viewportSize.x() * 2.0f - 1.0f, ((float)pixel.y() + testSquarePos + testSquareSize) / (float)viewportSize.y() * 2.0f - 1.0f),
+			tcu::Vec2(((float)pixel.x() + testSquarePos + testSquareSize) / (float)viewportSize.x() * 2.0f - 1.0f, ((float)pixel.y() + testSquarePos + 0.0f          ) / (float)viewportSize.y() * 2.0f - 1.0f),
 		};
 		const InterpolationRange weights[4] =
 		{
@@ -622,18 +622,18 @@ struct MultisampleLineInterpolator
 		// allow interpolation weights anywhere in the pixel
 		const tcu::Vec2 corners[4] =
 		{
-			tcu::Vec2(pixel.x() + 0.0f, pixel.y() + 0.0f),
-			tcu::Vec2(pixel.x() + 0.0f, pixel.y() + 1.0f),
-			tcu::Vec2(pixel.x() + 1.0f, pixel.y() + 1.0f),
-			tcu::Vec2(pixel.x() + 1.0f, pixel.y() + 0.0f),
+			tcu::Vec2((float)pixel.x() + 0.0f, (float)pixel.y() + 0.0f),
+			tcu::Vec2((float)pixel.x() + 0.0f, (float)pixel.y() + 1.0f),
+			tcu::Vec2((float)pixel.x() + 1.0f, (float)pixel.y() + 1.0f),
+			tcu::Vec2((float)pixel.x() + 1.0f, (float)pixel.y() + 0.0f),
 		};
 
 		const float		wa = scene.lines[lineNdx].positions[0].w();
 		const float		wb = scene.lines[lineNdx].positions[1].w();
-		const tcu::Vec2	pa = tcu::Vec2((scene.lines[lineNdx].positions[0].x() / wa + 1.0f) * 0.5f * viewportSize.x(),
-									   (scene.lines[lineNdx].positions[0].y() / wa + 1.0f) * 0.5f * viewportSize.y());
-		const tcu::Vec2	pb = tcu::Vec2((scene.lines[lineNdx].positions[1].x() / wb + 1.0f) * 0.5f * viewportSize.x(),
-									   (scene.lines[lineNdx].positions[1].y() / wb + 1.0f) * 0.5f * viewportSize.y());
+		const tcu::Vec2	pa = tcu::Vec2((scene.lines[lineNdx].positions[0].x() / wa + 1.0f) * 0.5f * (float)viewportSize.x(),
+									   (scene.lines[lineNdx].positions[0].y() / wa + 1.0f) * 0.5f * (float)viewportSize.y());
+		const tcu::Vec2	pb = tcu::Vec2((scene.lines[lineNdx].positions[1].x() / wb + 1.0f) * 0.5f * (float)viewportSize.x(),
+									   (scene.lines[lineNdx].positions[1].y() / wb + 1.0f) * 0.5f * (float)viewportSize.y());
 
 		// calculate interpolation as a line
 		const LineInterpolationRange weights[4] =
@@ -1458,10 +1458,10 @@ void setMaskMapCoverageBitForLine (int bitNdx, const tcu::Vec2& screenSpaceP0, c
 					DE_ASSERT(deInBounds32(fragPos.x(), 0, maskMap.getWidth()));
 					DE_ASSERT(deInBounds32(fragPos.y(), 0, maskMap.getHeight()));
 
-					const int			previousMask	= maskMap.getPixelInt(fragPos.x(), fragPos.y()).x();
-					const int			newMask			= (previousMask) | (1UL << bitNdx);
+					const deUint32		previousMask	= maskMap.getPixelUint(fragPos.x(), fragPos.y()).x();
+					const deUint32		newMask			= (previousMask) | ((deUint32)1u << bitNdx);
 
-					maskMap.setPixel(tcu::IVec4(newMask, 0, 0, 0), fragPos.x(), fragPos.y());
+					maskMap.setPixel(tcu::UVec4(newMask, 0, 0, 0), fragPos.x(), fragPos.y());
 				}
 			}
 		}
@@ -1562,12 +1562,12 @@ bool verifyLineGroupPixelIndependentInterpolation (const tcu::Surface&				surfac
 				const tcu::Vec4					valueMin		= de::clamp(range.min.x(), 0.0f, 1.0f) * scene.lines[lineNdx].colors[0] + de::clamp(range.min.y(), 0.0f, 1.0f) * scene.lines[lineNdx].colors[1];
 				const tcu::Vec4					valueMax		= de::clamp(range.max.x(), 0.0f, 1.0f) * scene.lines[lineNdx].colors[0] + de::clamp(range.max.y(), 0.0f, 1.0f) * scene.lines[lineNdx].colors[1];
 
-				const tcu::Vec3					colorMinF		(de::clamp(valueMin.x() * formatLimit.x(), 0.0f, (float)formatLimit.x()),
-																 de::clamp(valueMin.y() * formatLimit.y(), 0.0f, (float)formatLimit.y()),
-																 de::clamp(valueMin.z() * formatLimit.z(), 0.0f, (float)formatLimit.z()));
-				const tcu::Vec3					colorMaxF		(de::clamp(valueMax.x() * formatLimit.x(), 0.0f, (float)formatLimit.x()),
-																 de::clamp(valueMax.y() * formatLimit.y(), 0.0f, (float)formatLimit.y()),
-																 de::clamp(valueMax.z() * formatLimit.z(), 0.0f, (float)formatLimit.z()));
+				const tcu::Vec3					colorMinF		(de::clamp(valueMin.x() * (float)formatLimit.x(), 0.0f, (float)formatLimit.x()),
+																 de::clamp(valueMin.y() * (float)formatLimit.y(), 0.0f, (float)formatLimit.y()),
+																 de::clamp(valueMin.z() * (float)formatLimit.z(), 0.0f, (float)formatLimit.z()));
+				const tcu::Vec3					colorMaxF		(de::clamp(valueMax.x() * (float)formatLimit.x(), 0.0f, (float)formatLimit.x()),
+																 de::clamp(valueMax.y() * (float)formatLimit.y(), 0.0f, (float)formatLimit.y()),
+																 de::clamp(valueMax.z() * (float)formatLimit.z(), 0.0f, (float)formatLimit.z()));
 				const tcu::IVec3				colorMin		((int)deFloatFloor(colorMinF.x()),
 																 (int)deFloatFloor(colorMinF.y()),
 																 (int)deFloatFloor(colorMinF.z()));
@@ -1916,18 +1916,18 @@ bool verifySinglesampleWideLineGroupInterpolation (const tcu::Surface& surface, 
 					const tcu::Vec4					valueMin		= de::clamp(range.min.x(), 0.0f, 1.0f) * scene.lines[lineNdx].colors[0] + de::clamp(range.min.y(), 0.0f, 1.0f) * scene.lines[lineNdx].colors[1];
 					const tcu::Vec4					valueMax		= de::clamp(range.max.x(), 0.0f, 1.0f) * scene.lines[lineNdx].colors[0] + de::clamp(range.max.y(), 0.0f, 1.0f) * scene.lines[lineNdx].colors[1];
 
-					const tcu::Vec3					colorMinF		(de::clamp(valueMin.x() * formatLimit.x(), 0.0f, (float)formatLimit.x()),
-																	de::clamp(valueMin.y() * formatLimit.y(), 0.0f, (float)formatLimit.y()),
-																	de::clamp(valueMin.z() * formatLimit.z(), 0.0f, (float)formatLimit.z()));
-					const tcu::Vec3					colorMaxF		(de::clamp(valueMax.x() * formatLimit.x(), 0.0f, (float)formatLimit.x()),
-																	de::clamp(valueMax.y() * formatLimit.y(), 0.0f, (float)formatLimit.y()),
-																	de::clamp(valueMax.z() * formatLimit.z(), 0.0f, (float)formatLimit.z()));
+					const tcu::Vec3					colorMinF		(de::clamp(valueMin.x() * (float)formatLimit.x(), 0.0f, (float)formatLimit.x()),
+																	 de::clamp(valueMin.y() * (float)formatLimit.y(), 0.0f, (float)formatLimit.y()),
+																	 de::clamp(valueMin.z() * (float)formatLimit.z(), 0.0f, (float)formatLimit.z()));
+					const tcu::Vec3					colorMaxF		(de::clamp(valueMax.x() * (float)formatLimit.x(), 0.0f, (float)formatLimit.x()),
+																	 de::clamp(valueMax.y() * (float)formatLimit.y(), 0.0f, (float)formatLimit.y()),
+																	 de::clamp(valueMax.z() * (float)formatLimit.z(), 0.0f, (float)formatLimit.z()));
 					const tcu::IVec3				colorMin		((int)deFloatFloor(colorMinF.x()),
-																	(int)deFloatFloor(colorMinF.y()),
-																	(int)deFloatFloor(colorMinF.z()));
+																	 (int)deFloatFloor(colorMinF.y()),
+																	 (int)deFloatFloor(colorMinF.z()));
 					const tcu::IVec3				colorMax		((int)deFloatCeil (colorMaxF.x()),
-																	(int)deFloatCeil (colorMaxF.y()),
-																	(int)deFloatCeil (colorMaxF.z()));
+																	 (int)deFloatCeil (colorMaxF.y()),
+																	 (int)deFloatCeil (colorMaxF.z()));
 
 					// Verify validity
 					if (pixelNativeColor.x() < colorMin.x() ||
@@ -2086,9 +2086,9 @@ CoverageType calculateTriangleCoverage (const tcu::Vec4& p0, const tcu::Vec4& p1
 		const I64Vec2 pixelCenterPosition = I64Vec2(pixel.x(), pixel.y()) * I64Vec2(numSubPixels, numSubPixels) + I64Vec2(numSubPixels / 2, numSubPixels / 2);
 		const I64Vec2 triangleSubPixelSpaceRound[3] =
 		{
-			I64Vec2(deRoundFloatToInt32(triangleScreenSpace[0].x()*numSubPixels), deRoundFloatToInt32(triangleScreenSpace[0].y()*numSubPixels)),
-			I64Vec2(deRoundFloatToInt32(triangleScreenSpace[1].x()*numSubPixels), deRoundFloatToInt32(triangleScreenSpace[1].y()*numSubPixels)),
-			I64Vec2(deRoundFloatToInt32(triangleScreenSpace[2].x()*numSubPixels), deRoundFloatToInt32(triangleScreenSpace[2].y()*numSubPixels)),
+			I64Vec2(deRoundFloatToInt32(triangleScreenSpace[0].x() * (float)numSubPixels), deRoundFloatToInt32(triangleScreenSpace[0].y() * (float)numSubPixels)),
+			I64Vec2(deRoundFloatToInt32(triangleScreenSpace[1].x() * (float)numSubPixels), deRoundFloatToInt32(triangleScreenSpace[1].y() * (float)numSubPixels)),
+			I64Vec2(deRoundFloatToInt32(triangleScreenSpace[2].x() * (float)numSubPixels), deRoundFloatToInt32(triangleScreenSpace[2].y() * (float)numSubPixels)),
 		};
 
 		// Check (using cross product) if pixel center is
@@ -2138,15 +2138,15 @@ CoverageType calculateTriangleCoverage (const tcu::Vec4& p0, const tcu::Vec4& p1
 		// both rounding directions
 		const I64Vec2 triangleSubPixelSpaceFloor[3] =
 		{
-			I64Vec2(deFloorFloatToInt32(triangleScreenSpace[0].x()*numSubPixels), deFloorFloatToInt32(triangleScreenSpace[0].y()*numSubPixels)),
-			I64Vec2(deFloorFloatToInt32(triangleScreenSpace[1].x()*numSubPixels), deFloorFloatToInt32(triangleScreenSpace[1].y()*numSubPixels)),
-			I64Vec2(deFloorFloatToInt32(triangleScreenSpace[2].x()*numSubPixels), deFloorFloatToInt32(triangleScreenSpace[2].y()*numSubPixels)),
+			I64Vec2(deFloorFloatToInt32(triangleScreenSpace[0].x() * (float)numSubPixels), deFloorFloatToInt32(triangleScreenSpace[0].y() * (float)numSubPixels)),
+			I64Vec2(deFloorFloatToInt32(triangleScreenSpace[1].x() * (float)numSubPixels), deFloorFloatToInt32(triangleScreenSpace[1].y() * (float)numSubPixels)),
+			I64Vec2(deFloorFloatToInt32(triangleScreenSpace[2].x() * (float)numSubPixels), deFloorFloatToInt32(triangleScreenSpace[2].y() * (float)numSubPixels)),
 		};
 		const I64Vec2 triangleSubPixelSpaceCeil[3] =
 		{
-			I64Vec2(deCeilFloatToInt32(triangleScreenSpace[0].x()*numSubPixels), deCeilFloatToInt32(triangleScreenSpace[0].y()*numSubPixels)),
-			I64Vec2(deCeilFloatToInt32(triangleScreenSpace[1].x()*numSubPixels), deCeilFloatToInt32(triangleScreenSpace[1].y()*numSubPixels)),
-			I64Vec2(deCeilFloatToInt32(triangleScreenSpace[2].x()*numSubPixels), deCeilFloatToInt32(triangleScreenSpace[2].y()*numSubPixels)),
+			I64Vec2(deCeilFloatToInt32(triangleScreenSpace[0].x() * (float)numSubPixels), deCeilFloatToInt32(triangleScreenSpace[0].y() * (float)numSubPixels)),
+			I64Vec2(deCeilFloatToInt32(triangleScreenSpace[1].x() * (float)numSubPixels), deCeilFloatToInt32(triangleScreenSpace[1].y() * (float)numSubPixels)),
+			I64Vec2(deCeilFloatToInt32(triangleScreenSpace[2].x() * (float)numSubPixels), deCeilFloatToInt32(triangleScreenSpace[2].y() * (float)numSubPixels)),
 		};
 		const I64Vec2* const corners = (multisample) ? (pixelCorners) : (pixelCenterCorners);
 

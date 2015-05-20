@@ -154,8 +154,8 @@ void computeRandomRenderState (de::Random& rnd, RenderState& state, glu::ApiType
 
 	if (state.scissorTestEnabled)
 	{
-		int minScissorW		= deCeilFloatToInt32(minScissorSize*targetWidth);
-		int minScissorH		= deCeilFloatToInt32(minScissorSize*targetHeight);
+		int minScissorW		= deCeilFloatToInt32(minScissorSize * (float)targetWidth);
+		int minScissorH		= deCeilFloatToInt32(minScissorSize * (float)targetHeight);
 		int maxScissorW		= targetWidth + 2*maxScissorOutOfBounds;
 		int maxScissorH		= targetHeight + 2*maxScissorOutOfBounds;
 
@@ -227,8 +227,8 @@ void computeRandomQuad (de::Random& rnd, gls::FragmentOpUtil::IntegerQuad& quad,
 	const int		maxOutOfBounds		= 0;
 	const float		minSize				= 0.5f;
 
-	int minW		= deCeilFloatToInt32(minSize*targetWidth);
-	int minH		= deCeilFloatToInt32(minSize*targetHeight);
+	int minW		= deCeilFloatToInt32(minSize * (float)targetWidth);
+	int minH		= deCeilFloatToInt32(minSize * (float)targetHeight);
 	int maxW		= targetWidth + 2*maxOutOfBounds;
 	int maxH		= targetHeight + 2*maxOutOfBounds;
 

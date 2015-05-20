@@ -397,10 +397,10 @@ public:
 		static WrappedType<Type>	create			(Type value)							{ WrappedType<Type> v; v.m_value = value; return v; }
 		inline Type					getValue		(void) const							{ return m_value; }
 
-		inline WrappedType<Type>	operator+		(const WrappedType<Type>& other) const	{ return WrappedType<Type>::create(m_value + other.getValue()); }
-		inline WrappedType<Type>	operator*		(const WrappedType<Type>& other) const	{ return WrappedType<Type>::create(m_value * other.getValue()); }
-		inline WrappedType<Type>	operator/		(const WrappedType<Type>& other) const	{ return WrappedType<Type>::create(m_value / other.getValue()); }
-		inline WrappedType<Type>	operator-		(const WrappedType<Type>& other) const	{ return WrappedType<Type>::create(m_value - other.getValue()); }
+		inline WrappedType<Type>	operator+		(const WrappedType<Type>& other) const	{ return WrappedType<Type>::create((Type)(m_value + other.getValue())); }
+		inline WrappedType<Type>	operator*		(const WrappedType<Type>& other) const	{ return WrappedType<Type>::create((Type)(m_value * other.getValue())); }
+		inline WrappedType<Type>	operator/		(const WrappedType<Type>& other) const	{ return WrappedType<Type>::create((Type)(m_value / other.getValue())); }
+		inline WrappedType<Type>	operator-		(const WrappedType<Type>& other) const	{ return WrappedType<Type>::create((Type)(m_value - other.getValue())); }
 
 		inline WrappedType<Type>&	operator+=		(const WrappedType<Type>& other)		{ m_value += other.getValue(); return *this; }
 		inline WrappedType<Type>&	operator*=		(const WrappedType<Type>& other)		{ m_value *= other.getValue(); return *this; }
@@ -689,7 +689,7 @@ inline GLValue::Short getRandom (deRandom& rnd, GLValue::Short min, GLValue::Sho
 	if (max < min)
 		return min;
 
-	return GLValue::Short::create((min == max ? min : min + (deRandom_getUint32(&rnd) % (max.to<int>() - min.to<int>()))));
+	return GLValue::Short::create((min == max ? min : (deInt16)(min + (deRandom_getUint32(&rnd) % (max.to<int>() - min.to<int>())))));
 }
 
 template<>
@@ -698,7 +698,7 @@ inline GLValue::Ushort getRandom (deRandom& rnd, GLValue::Ushort min, GLValue::U
 	if (max < min)
 		return min;
 
-	return GLValue::Ushort::create((min == max ? min : min + (deRandom_getUint32(&rnd) % (max.to<int>() - min.to<int>()))));
+	return GLValue::Ushort::create((min == max ? min : (deUint16)(min + (deRandom_getUint32(&rnd) % (max.to<int>() - min.to<int>())))));
 }
 
 template<>
@@ -707,7 +707,7 @@ inline GLValue::Byte getRandom (deRandom& rnd, GLValue::Byte min, GLValue::Byte 
 	if (max < min)
 		return min;
 
-	return GLValue::Byte::create((min == max ? min : min + (deRandom_getUint32(&rnd) % (max.to<int>() - min.to<int>()))));
+	return GLValue::Byte::create((min == max ? min : (deInt8)(min + (deRandom_getUint32(&rnd) % (max.to<int>() - min.to<int>())))));
 }
 
 template<>
@@ -716,7 +716,7 @@ inline GLValue::Ubyte getRandom (deRandom& rnd, GLValue::Ubyte min, GLValue::Uby
 	if (max < min)
 		return min;
 
-	return GLValue::Ubyte::create((min == max ? min : min + (deRandom_getUint32(&rnd) % (max.to<int>() - min.to<int>()))));
+	return GLValue::Ubyte::create((min == max ? min : (deUint8)(min + (deRandom_getUint32(&rnd) % (max.to<int>() - min.to<int>())))));
 }
 
 template<>
@@ -2463,21 +2463,21 @@ int DrawTestSpec::inputTypeSize (InputType type)
 {
 	static const int size[] =
 	{
-		sizeof(float),		// INPUTTYPE_FLOAT = 0,
-		sizeof(deInt32),	// INPUTTYPE_FIXED,
-		sizeof(double),		// INPUTTYPE_DOUBLE
+		(int)sizeof(float),			// INPUTTYPE_FLOAT = 0,
+		(int)sizeof(deInt32),		// INPUTTYPE_FIXED,
+		(int)sizeof(double),		// INPUTTYPE_DOUBLE
 
-		sizeof(deInt8),		// INPUTTYPE_BYTE,
-		sizeof(deInt16),	// INPUTTYPE_SHORT,
+		(int)sizeof(deInt8),		// INPUTTYPE_BYTE,
+		(int)sizeof(deInt16),		// INPUTTYPE_SHORT,
 
-		sizeof(deUint8),	// INPUTTYPE_UNSIGNED_BYTE,
-		sizeof(deUint16),	// INPUTTYPE_UNSIGNED_SHORT,
+		(int)sizeof(deUint8),		// INPUTTYPE_UNSIGNED_BYTE,
+		(int)sizeof(deUint16),		// INPUTTYPE_UNSIGNED_SHORT,
 
-		sizeof(deInt32),		// INPUTTYPE_INT,
-		sizeof(deUint32),		// INPUTTYPE_UNSIGNED_INT,
-		sizeof(deFloat16),		// INPUTTYPE_HALF,
-		sizeof(deUint32) / 4,		// INPUTTYPE_UNSIGNED_INT_2_10_10_10,
-		sizeof(deUint32) / 4		// INPUTTYPE_INT_2_10_10_10,
+		(int)sizeof(deInt32),		// INPUTTYPE_INT,
+		(int)sizeof(deUint32),		// INPUTTYPE_UNSIGNED_INT,
+		(int)sizeof(deFloat16),		// INPUTTYPE_HALF,
+		(int)sizeof(deUint32) / 4,	// INPUTTYPE_UNSIGNED_INT_2_10_10_10,
+		(int)sizeof(deUint32) / 4	// INPUTTYPE_INT_2_10_10_10,
 	};
 
 	return de::getSizedArrayElement<DrawTestSpec::INPUTTYPE_LAST>(size, (int)type);
@@ -3211,9 +3211,9 @@ void DrawTest::init (void)
 	m_glArrayPack	= new AttributePack(m_testCtx, m_renderCtx, *m_glesContext, tcu::UVec2(renderTargetWidth, renderTargetHeight), useVao, true);
 	m_rrArrayPack	= new AttributePack(m_testCtx, m_renderCtx, *m_refContext,  tcu::UVec2(renderTargetWidth, renderTargetHeight), useVao, false);
 
-	m_maxDiffRed	= deCeilFloatToInt32(256.0f * (6.0f / (1 << m_renderCtx.getRenderTarget().getPixelFormat().redBits)));
-	m_maxDiffGreen	= deCeilFloatToInt32(256.0f * (6.0f / (1 << m_renderCtx.getRenderTarget().getPixelFormat().greenBits)));
-	m_maxDiffBlue	= deCeilFloatToInt32(256.0f * (6.0f / (1 << m_renderCtx.getRenderTarget().getPixelFormat().blueBits)));
+	m_maxDiffRed	= deCeilFloatToInt32(256.0f * (6.0f / (float)(1 << m_renderCtx.getRenderTarget().getPixelFormat().redBits)));
+	m_maxDiffGreen	= deCeilFloatToInt32(256.0f * (6.0f / (float)(1 << m_renderCtx.getRenderTarget().getPixelFormat().greenBits)));
+	m_maxDiffBlue	= deCeilFloatToInt32(256.0f * (6.0f / (float)(1 << m_renderCtx.getRenderTarget().getPixelFormat().blueBits)));
 }
 
 void DrawTest::deinit (void)
@@ -3849,14 +3849,14 @@ float DrawTest::getCoordScale (const DrawTestSpec& spec) const
 			if (attribSpec.normalize)
 				attrMaxValue += 1.0f;
 			else
-				attrMaxValue += 1024.0;
+				attrMaxValue += 1024.0f;
 		}
 		else if (attribSpec.inputType == DrawTestSpec::INPUTTYPE_INT_2_10_10_10)
 		{
 			if (attribSpec.normalize)
 				attrMaxValue += 1.0f;
 			else
-				attrMaxValue += 512.0;
+				attrMaxValue += 512.0f;
 		}
 		else
 		{
@@ -3891,12 +3891,12 @@ float DrawTest::getColorScale (const DrawTestSpec& spec) const
 		if (attribSpec.inputType == DrawTestSpec::INPUTTYPE_UNSIGNED_INT_2_10_10_10)
 		{
 			if (!attribSpec.normalize)
-				colorScale *= 1.0 / 1024.0;
+				colorScale *= 1.0f / 1024.0f;
 		}
 		else if (attribSpec.inputType == DrawTestSpec::INPUTTYPE_INT_2_10_10_10)
 		{
 			if (!attribSpec.normalize)
-				colorScale *= 1.0 / 512.0;
+				colorScale *= 1.0f / 512.0f;
 		}
 		else
 		{

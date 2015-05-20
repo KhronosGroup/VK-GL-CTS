@@ -202,10 +202,10 @@ ScissorCase::IterateResult ScissorCase::iterate (void)
 	const glu::ShaderProgram	shader			(m_renderCtx, genShaders(glu::getContextTypeGLSLVersion(m_renderCtx.getType())));
 
 	const RandomViewport		viewport		(m_renderCtx.getRenderTarget(), 256, 256, deStringHash(getName()));
-	const IVec4					relScissorArea	(int(m_scissorArea.x()*viewport.width),
-												 int(m_scissorArea.y()*viewport.height),
-												 int(m_scissorArea.z()*viewport.width),
-												 int(m_scissorArea.w()*viewport.height));
+	const IVec4					relScissorArea	(int(m_scissorArea.x() * (float)viewport.width),
+												 int(m_scissorArea.y() * (float)viewport.height),
+												 int(m_scissorArea.z() * (float)viewport.width),
+												 int(m_scissorArea.w() * (float)viewport.height));
 	const IVec4					absScissorArea	(relScissorArea.x() + viewport.x,
 												 relScissorArea.y() + viewport.y,
 												 relScissorArea.z(),
@@ -380,7 +380,7 @@ void ScissorPrimitiveCase::render (GLuint program, const IVec4&) const
 		}
 
 		for (int ndx = 0; ndx < indexCount; ndx++)
-			indices[primNdx*indexCount + ndx] = baseIndices[ndx] + primNdx*vertexCount;
+			indices[primNdx*indexCount + ndx] = (deUint16)(baseIndices[ndx] + primNdx*vertexCount);
 	}
 
 	gl.uniform4fv(gl.getUniformLocation(program, "u_color"), 1, white.m_data);

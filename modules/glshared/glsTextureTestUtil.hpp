@@ -266,10 +266,10 @@ inline tcu::Vec4 toVec4 (const tcu::RGBA& c)
 
 inline deUint8 getColorMask (const tcu::PixelFormat& format)
 {
-	return (format.redBits		? tcu::RGBA::RED_MASK	: 0) |
-		   (format.greenBits	? tcu::RGBA::GREEN_MASK	: 0) |
-		   (format.blueBits		? tcu::RGBA::BLUE_MASK	: 0) |
-		   (format.alphaBits	? tcu::RGBA::ALPHA_MASK	: 0);
+	return (deUint8)((format.redBits	? tcu::RGBA::RED_MASK	: 0) |
+					 (format.greenBits	? tcu::RGBA::GREEN_MASK	: 0) |
+					 (format.blueBits	? tcu::RGBA::BLUE_MASK	: 0) |
+					 (format.alphaBits	? tcu::RGBA::ALPHA_MASK	: 0));
 }
 
 inline tcu::IVec4 getBitsVec (const tcu::PixelFormat& format)

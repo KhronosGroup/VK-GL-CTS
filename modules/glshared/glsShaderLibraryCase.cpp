@@ -947,7 +947,7 @@ bool ShaderCase::execute (void)
 						DE_ASSERT(scalarSize == numCols*numRows);
 
 						for (int i = 0; i < numCols; i++)
-							vertexArrays.push_back(va::Float(attribLoc + i, numRows, numVerticesPerDraw, scalarSize*sizeof(float), &scalars[i * numRows]));
+							vertexArrays.push_back(va::Float(attribLoc + i, numRows, numVerticesPerDraw, scalarSize*(int)sizeof(float), &scalars[i * numRows]));
 					}
 					else
 					{
@@ -1017,10 +1017,10 @@ bool ShaderCase::execute (void)
 				// Read back results.
 				Surface			surface			(width, height);
 				const float		w				= s_positions[3];
-				const int		minY			= deCeilFloatToInt32 (((-quadSize / w) * 0.5f + 0.5f) * height + 1.0f);
-				const int		maxY			= deFloorFloatToInt32(((+quadSize / w) * 0.5f + 0.5f) * height - 0.5f);
-				const int		minX			= deCeilFloatToInt32 (((-quadSize / w) * 0.5f + 0.5f) * width + 1.0f);
-				const int		maxX			= deFloorFloatToInt32(((+quadSize / w) * 0.5f + 0.5f) * width - 0.5f);
+				const int		minY			= deCeilFloatToInt32 (((-quadSize / w) * 0.5f + 0.5f) * (float)height + 1.0f);
+				const int		maxY			= deFloorFloatToInt32(((+quadSize / w) * 0.5f + 0.5f) * (float)height - 0.5f);
+				const int		minX			= deCeilFloatToInt32 (((-quadSize / w) * 0.5f + 0.5f) * (float)width + 1.0f);
+				const int		maxX			= deFloorFloatToInt32(((+quadSize / w) * 0.5f + 0.5f) * (float)width - 0.5f);
 
 				GLU_EXPECT_NO_ERROR(postDrawError, "draw");
 
