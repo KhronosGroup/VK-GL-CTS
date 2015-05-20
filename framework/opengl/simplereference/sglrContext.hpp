@@ -168,8 +168,8 @@ public:
 	virtual void		uniform2iv				(deInt32 index, deInt32 count, const deInt32*)				= DE_NULL;
 	virtual void		uniform3iv				(deInt32 index, deInt32 count, const deInt32*)				= DE_NULL;
 	virtual void		uniform4iv				(deInt32 index, deInt32 count, const deInt32*)				= DE_NULL;
-	virtual void		uniformMatrix3fv		(deInt32 location, deInt32 count, deInt32 transpose, const float *value)	= DE_NULL;
-	virtual void		uniformMatrix4fv		(deInt32 location, deInt32 count, deInt32 transpose, const float *value)	= DE_NULL;
+	virtual void		uniformMatrix3fv		(deInt32 location, deInt32 count, deBool transpose, const float *value)	= DE_NULL;
+	virtual void		uniformMatrix4fv		(deInt32 location, deInt32 count, deBool transpose, const float *value)	= DE_NULL;
 	virtual deInt32		getUniformLocation		(deUint32 program, const char *name)						= DE_NULL;
 
 	virtual void		lineWidth				(float)														= DE_NULL;

@@ -3859,7 +3859,7 @@ void ReferenceContext::uniform4iv (deInt32 location, deInt32 count, const deInt3
 	uniformv(location, glu::TYPE_INT_VEC4, count, v);
 }
 
-void ReferenceContext::uniformMatrix3fv (deInt32 location, deInt32 count, deInt32 transpose, const float *value)
+void ReferenceContext::uniformMatrix3fv (deInt32 location, deInt32 count, deBool transpose, const float *value)
 {
 	RC_IF_ERROR(m_currentProgram == DE_NULL, GL_INVALID_OPERATION, RC_RET_VOID);
 
@@ -3897,7 +3897,7 @@ void ReferenceContext::uniformMatrix3fv (deInt32 location, deInt32 count, deInt3
 	}
 }
 
-void ReferenceContext::uniformMatrix4fv (deInt32 location, deInt32 count, deInt32 transpose, const float *value)
+void ReferenceContext::uniformMatrix4fv (deInt32 location, deInt32 count, deBool transpose, const float *value)
 {
 	RC_IF_ERROR(m_currentProgram == DE_NULL, GL_INVALID_OPERATION, RC_RET_VOID);
 
@@ -4785,7 +4785,7 @@ tcu::Vec4 Texture1D::sample (float s, float lod) const
 
 void Texture1D::sample4 (tcu::Vec4 output[4], const float packetTexcoords[4], float lodBias) const
 {
-	const int texWidth  = m_view.getWidth();
+	const float texWidth = (float)m_view.getWidth();
 
 	const float dFdx0 = packetTexcoords[1] - packetTexcoords[0];
 	const float dFdx1 = packetTexcoords[3] - packetTexcoords[2];
@@ -4904,8 +4904,8 @@ tcu::Vec4 Texture2D::sample (float s, float t, float lod) const
 
 void Texture2D::sample4 (tcu::Vec4 output[4], const tcu::Vec2 packetTexcoords[4], float lodBias) const
 {
-	const int texWidth  = m_view.getWidth();
-	const int texHeight = m_view.getHeight();
+	const float texWidth  = (float)m_view.getWidth();
+	const float texHeight = (float)m_view.getHeight();
 
 	const tcu::Vec2 dFdx0 = packetTexcoords[1] - packetTexcoords[0];
 	const tcu::Vec2 dFdx1 = packetTexcoords[3] - packetTexcoords[2];
@@ -5022,7 +5022,7 @@ tcu::Vec4 TextureCube::sample (float s, float t, float p, float lod) const
 
 void TextureCube::sample4 (tcu::Vec4 output[4], const tcu::Vec3 packetTexcoords[4], float lodBias) const
 {
-	const int	cubeSide	= m_view.getSize();
+	const float cubeSide = (float)m_view.getSize();
 
 	// Each tex coord might be in a different face.
 
@@ -5137,8 +5137,8 @@ tcu::Vec4 Texture2DArray::sample (float s, float t, float r, float lod) const
 
 void Texture2DArray::sample4 (tcu::Vec4 output[4], const tcu::Vec3 packetTexcoords[4], float lodBias) const
 {
-	const int texWidth  = m_view.getWidth();
-	const int texHeight = m_view.getHeight();
+	const float texWidth  = (float)m_view.getWidth();
+	const float texHeight = (float)m_view.getHeight();
 
 	const tcu::Vec3 dFdx0 = packetTexcoords[1] - packetTexcoords[0];
 	const tcu::Vec3 dFdx1 = packetTexcoords[3] - packetTexcoords[2];
@@ -5243,7 +5243,7 @@ tcu::Vec4 TextureCubeArray::sample (float s, float t, float r, float q, float lo
 
 void TextureCubeArray::sample4 (tcu::Vec4 output[4], const tcu::Vec4 packetTexcoords[4], float lodBias) const
 {
-	const int		cubeSide		= m_view.getSize();
+	const float		cubeSide		= (float)m_view.getSize();
 	const tcu::Vec3	cubeCoords[4]	=
 	{
 		packetTexcoords[0].toWidth<3>(),
@@ -5346,9 +5346,9 @@ tcu::Vec4 Texture3D::sample (float s, float t, float r, float lod) const
 
 void Texture3D::sample4 (tcu::Vec4 output[4], const tcu::Vec3 packetTexcoords[4], float lodBias) const
 {
-	const int texWidth  = m_view.getWidth();
-	const int texHeight = m_view.getHeight();
-	const int texDepth  = m_view.getDepth();
+	const float texWidth  = (float)m_view.getWidth();
+	const float texHeight = (float)m_view.getHeight();
+	const float texDepth  = (float)m_view.getDepth();
 
 	const tcu::Vec3 dFdx0 = packetTexcoords[1] - packetTexcoords[0];
 	const tcu::Vec3 dFdx1 = packetTexcoords[3] - packetTexcoords[2];
