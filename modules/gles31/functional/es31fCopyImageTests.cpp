@@ -1046,7 +1046,7 @@ void verifyTexture3DView (tcu::TestContext&			testContext,
 		for (int slice = 0; slice < levelSize.z(); slice++)
 		{
 			const RandomViewport	viewport		(renderContext.getRenderTarget(), levelSize.x(), levelSize.y(), rng.getUint32());
-			const float				r				= (float(slice) + 0.5f) / levelSize.z();
+			const float				r				= (float(slice) + 0.5f) / (float)levelSize.z();
 			tcu::Surface			renderedFrame	(viewport.width, viewport.height);
 			tcu::Surface			referenceFrame	(viewport.width, viewport.height);
 			vector<float>			texCoord;

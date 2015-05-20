@@ -207,7 +207,7 @@ void InterInvocationTestCase::init (void)
 	if (m_storage == STORAGE_BUFFER)
 	{
 		const int				bufferElements	= m_workWidth * m_workHeight * m_elementsPerInvocation;
-		const int				bufferSize		= bufferElements * sizeof(deUint32);
+		const int				bufferSize		= bufferElements * (int)sizeof(deUint32);
 		std::vector<deUint32>	zeroBuffer		(bufferElements, 0);
 
 		m_testCtx.getLog() << tcu::TestLog::Message << "Allocating zero-filled buffer for storage, size " << bufferElements << " elements, " << bufferSize << " bytes." << tcu::TestLog::EndMessage;
@@ -220,7 +220,7 @@ void InterInvocationTestCase::init (void)
 	else if (m_storage == STORAGE_IMAGE)
 	{
 		const int				bufferElements	= m_workWidth * m_workHeight * m_elementsPerInvocation;
-		const int				bufferSize		= bufferElements * sizeof(deUint32);
+		const int				bufferSize		= bufferElements * (int)sizeof(deUint32);
 
 		m_testCtx.getLog() << tcu::TestLog::Message << "Allocating image for storage, size " << m_workWidth << "x" << m_workHeight * m_elementsPerInvocation << ", " << bufferSize << " bytes." << tcu::TestLog::EndMessage;
 
@@ -247,7 +247,7 @@ void InterInvocationTestCase::init (void)
 
 	{
 		const int				bufferElements	= m_workWidth * m_workHeight;
-		const int				bufferSize		= bufferElements * sizeof(deUint32);
+		const int				bufferSize		= bufferElements * (int)sizeof(deUint32);
 		std::vector<deInt32>	negativeBuffer	(bufferElements, -1);
 
 		m_testCtx.getLog() << tcu::TestLog::Message << "Allocating -1 filled buffer for results, size " << bufferElements << " elements, " << bufferSize << " bytes." << tcu::TestLog::EndMessage;
@@ -1628,7 +1628,7 @@ glw::GLuint InterCallTestCase::genStorage (int friendlyName)
 	if (m_storage == STORAGE_BUFFER)
 	{
 		const int		numElements		= m_invocationGridSize * m_invocationGridSize * m_perInvocationSize;
-		const int		bufferSize		= numElements * ((m_formatInteger) ? (sizeof(deInt32)) : (sizeof(glw::GLfloat)));
+		const int		bufferSize		= numElements * (int)((m_formatInteger) ? (sizeof(deInt32)) : (sizeof(glw::GLfloat)));
 		glw::GLuint		retVal			= 0;
 
 		m_testCtx.getLog() << tcu::TestLog::Message << "Creating buffer #" << friendlyName << ", size " << bufferSize << " bytes." << tcu::TestLog::EndMessage;

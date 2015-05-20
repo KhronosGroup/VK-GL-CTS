@@ -820,8 +820,8 @@ void InstancedGridRenderTest::renderTo (sglr::Context& ctx, sglr::ShaderProgram&
 	deInt32 offsetLocation	= ctx.getAttribLocation(programID, "a_offset");
 	deInt32 colorLocation	= ctx.getAttribLocation(programID, "a_color");
 
-	float cellW	= 2.0f / m_gridSide;
-	float cellH	= 2.0f / m_gridSide;
+	float cellW	= 2.0f / (float)m_gridSide;
+	float cellH	= 2.0f / (float)m_gridSide;
 	const tcu::Vec4 vertexPositions[] =
 	{
 		tcu::Vec4(0,		0,		0, 1),
@@ -842,7 +842,7 @@ void InstancedGridRenderTest::renderTo (sglr::Context& ctx, sglr::ShaderProgram&
 	std::vector<tcu::Vec4> offsets;
 	for (int x = 0; x < m_gridSide; ++x)
 	for (int y = 0; y < m_gridSide; ++y)
-		offsets.push_back(tcu::Vec4(x * cellW - 1.0f, y * cellW - 1.0f, 0, 0));
+		offsets.push_back(tcu::Vec4((float)x * cellW - 1.0f, (float)y * cellW - 1.0f, 0, 0));
 
 	std::vector<tcu::Vec4> colors;
 	for (int x = 0; x < m_gridSide; ++x)
@@ -1034,7 +1034,7 @@ ComputeShaderGeneratedCase::ComputeShaderGeneratedCase (Context& context, const 
 	, m_computeCmd		(computeCmd)
 	, m_computeData		(computeData)
 	, m_computeIndices	(computeIndices)
-	, m_commandSize		((method==DRAWMETHOD_DRAWARRAYS) ? (sizeof(DrawArraysCommand)) : (sizeof(DrawElementsCommand)))
+	, m_commandSize		((method==DRAWMETHOD_DRAWARRAYS) ? ((int)sizeof(DrawArraysCommand)) : ((int)sizeof(DrawElementsCommand)))
 	, m_numDrawCmds		(drawCallCount)
 	, m_gridSize		(gridSize)
 	, m_cmdBufferID		(0)
@@ -1410,8 +1410,8 @@ void ComputeShaderGeneratedCase::createDrawData (void)
 		for (int y = 0; y < m_gridSize; ++y)
 		for (int x = 0; x < m_gridSize; ++x)
 		{
-			const float 		posX		= (x / (float)m_gridSize) * 2.0f - 1.0f;
-			const float 		posY		= (y / (float)m_gridSize) * 2.0f - 1.0f;
+			const float 		posX		= ((float)x / (float)m_gridSize) * 2.0f - 1.0f;
+			const float 		posY		= ((float)y / (float)m_gridSize) * 2.0f - 1.0f;
 			const float			cellSize	= 2.0f / (float)m_gridSize;
 			const tcu::Vec4&	color		= ((x + y)%2) ? (yellow) : (green);
 
@@ -1444,8 +1444,8 @@ void ComputeShaderGeneratedCase::createDrawData (void)
 		for (int y = 0; y < m_gridSize+1; ++y)
 		for (int x = 0; x < m_gridSize+1; ++x)
 		{
-			const float 		posX		= (x / (float)m_gridSize) * 2.0f - 1.0f;
-			const float 		posY		= (y / (float)m_gridSize) * 2.0f - 1.0f;
+			const float 		posX		= ((float)x / (float)m_gridSize) * 2.0f - 1.0f;
+			const float 		posY		= ((float)y / (float)m_gridSize) * 2.0f - 1.0f;
 
 			buffer[(y * (m_gridSize+1) + x) * 4 + 0] = tcu::Vec4(posX, posY, 0.0f, 1.0f);
 			buffer[(y * (m_gridSize+1) + x) * 4 + 1] = green;
@@ -1502,8 +1502,8 @@ void ComputeShaderGeneratedCase::renderTo (tcu::Surface& dst)
 	// Setup buffers
 
 	gl.bindBuffer(GL_ARRAY_BUFFER, m_dataBufferID);
-	gl.vertexAttribPointer(positionLoc, 4, GL_FLOAT, GL_FALSE, 8 * sizeof(float), DE_NULL);
-	gl.vertexAttribPointer(colorLoc,    4, GL_FLOAT, GL_FALSE, 8 * sizeof(float), ((const deUint8*)DE_NULL) + 4*sizeof(float));
+	gl.vertexAttribPointer(positionLoc, 4, GL_FLOAT, GL_FALSE, 8 * (int)sizeof(float), DE_NULL);
+	gl.vertexAttribPointer(colorLoc,    4, GL_FLOAT, GL_FALSE, 8 * (int)sizeof(float), ((const deUint8*)DE_NULL) + 4*sizeof(float));
 	gl.enableVertexAttribArray(positionLoc);
 	gl.enableVertexAttribArray(colorLoc);
 

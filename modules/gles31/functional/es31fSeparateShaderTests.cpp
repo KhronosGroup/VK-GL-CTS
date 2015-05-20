@@ -671,9 +671,9 @@ struct ProgramParams
 ProgramParams genProgramParams (Random& rnd)
 {
 	const deUint32	vtxSeed		= rnd.getUint32();
-	const GLfloat	vtxScale	= rnd.getInt(8, 16) / 16.0f;
+	const GLfloat	vtxScale	= (float)rnd.getInt(8, 16) / 16.0f;
 	const deUint32	frgSeed		= rnd.getUint32();
-	const GLfloat	frgScale	= rnd.getInt(0, 16) / 16.0f;
+	const GLfloat	frgScale	= (float)rnd.getInt(0, 16) / 16.0f;
 
 	return ProgramParams(vtxSeed, vtxScale, frgSeed, frgScale);
 }
