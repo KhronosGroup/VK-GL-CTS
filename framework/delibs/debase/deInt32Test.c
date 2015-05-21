@@ -43,8 +43,8 @@ void deInt32_computeLUTs (void)
 
 	for (ndx = 0; ndx < (1<<RCP_LUT_BITS); ndx++)
 	{
-		deUint32	val = (1u << RCP_LUT_BITS) | ndx;
-		deUint32	rcp = (int)((1u << DE_RCP_FRAC_BITS) / ((double)val / (1<<RCP_LUT_BITS)));
+		deUint32	val = (1u << RCP_LUT_BITS) | (deUint32)ndx;
+		deUint32	rcp = (deUint32)((1u << DE_RCP_FRAC_BITS) / ((double)val / (1<<RCP_LUT_BITS)));
 
 		if ((ndx & 3) == 0)
 			printf("\t");
@@ -87,8 +87,8 @@ void deInt32_selfTest (void)
 	DE_TEST_ASSERT(deClz32(0x80000000) == 0);
 
 	/* Test simple inputs for dePop32(). */
-	DE_TEST_ASSERT(dePop32(0) == 0);
-	DE_TEST_ASSERT(dePop32(~0) == 32);
+	DE_TEST_ASSERT(dePop32(0u) == 0);
+	DE_TEST_ASSERT(dePop32(~0u) == 32);
 	DE_TEST_ASSERT(dePop32(0xFF) == 8);
 	DE_TEST_ASSERT(dePop32(0xFF00FF) == 16);
 	DE_TEST_ASSERT(dePop32(0x3333333) == 14);
@@ -97,8 +97,8 @@ void deInt32_selfTest (void)
 	/* dePop32(): Check exp2(N) values and inverses. */
 	for (numBits = 0; numBits < 32; numBits++)
 	{
-		DE_TEST_ASSERT(dePop32(1<<numBits) == 1);
-		DE_TEST_ASSERT(dePop32(~(1<<numBits)) == 31);
+		DE_TEST_ASSERT(dePop32(1u<<numBits) == 1);
+		DE_TEST_ASSERT(dePop32(~(1u<<numBits)) == 31);
 	}
 
 	/* Check exp2(N) values. */
@@ -119,10 +119,10 @@ void deInt32_selfTest (void)
 
 		for (iter = 0; iter < NUM_ITERS; iter++)
 		{
-			const int	EPS = 1 << (DE_RCP_FRAC_BITS - NUM_ACCURATE_BITS);
+			const deUint32	EPS = 1 << (DE_RCP_FRAC_BITS - NUM_ACCURATE_BITS);
 
-			deUint32	val = (deRandom_getUint32(&rnd) & ((1u<<numBits)-1)) | (1u<<numBits);
-			deUint32	ref = (deUint32)(((1.0f / (double)val) * (double)(1<<DE_RCP_FRAC_BITS)) * (double)(1u<<numBits));
+			deUint32		val = (deRandom_getUint32(&rnd) & ((1u<<numBits)-1)) | (1u<<numBits);
+			deUint32		ref = (deUint32)(((1.0f / (double)val) * (double)(1<<DE_RCP_FRAC_BITS)) * (double)(1u<<numBits));
 
 			deRcp32(val, &rcp, &exp);
 
