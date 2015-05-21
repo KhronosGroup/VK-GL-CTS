@@ -48,7 +48,7 @@ static void inStreamCopy (void* arg)
 {
 	deThreadInStream* threadStream = (deThreadInStream*)arg;
 
-	deUint8* buffer = malloc(sizeof(deUint8) * threadStream->bufferSize);
+	deUint8* buffer = malloc(sizeof(deUint8) * (size_t)threadStream->bufferSize);
 
 	for(;;)
 	{
