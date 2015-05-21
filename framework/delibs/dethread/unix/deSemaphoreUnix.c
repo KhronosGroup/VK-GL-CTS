@@ -36,11 +36,12 @@ deSemaphore deSemaphore_create (int initialValue, const deSemaphoreAttributes* a
 	sem_t*	sem	= (sem_t*)deMalloc(sizeof(sem_t));
 
 	DE_UNREF(attributes);
+	DE_ASSERT(initialValue >= 0);
 
 	if (!sem)
 		return 0;
 
-	if (sem_init(sem, 0, initialValue) != 0)
+	if (sem_init(sem, 0, (unsigned int)initialValue) != 0)
 	{
 		deFree(sem);
 		return 0;

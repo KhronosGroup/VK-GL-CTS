@@ -172,12 +172,12 @@ deUint32 deGetNumAvailableLogicalCores (void)
 
 	if (ret > 0)
 	{
-		return dePop64(mask);
+		return (deUint32)dePop64(mask);
 	}
 	else
 	{
 #if defined(_SC_NPROCESSORS_ONLN)
-		const int count = sysconf(_SC_NPROCESSORS_ONLN);
+		const long count = sysconf(_SC_NPROCESSORS_ONLN);
 
 		if (count <= 0)
 			return 1;
@@ -194,7 +194,7 @@ deUint32 deGetNumAvailableLogicalCores (void)
 deUint32 deGetNumAvailableLogicalCores (void)
 {
 #if defined(_SC_NPROCESSORS_ONLN)
-	const int count = sysconf(_SC_NPROCESSORS_ONLN);
+	const long count = sysconf(_SC_NPROCESSORS_ONLN);
 
 	if (count <= 0)
 		return 1;
@@ -210,7 +210,7 @@ deUint32 deGetNumAvailableLogicalCores (void)
 deUint32 deGetNumTotalLogicalCores (void)
 {
 #if defined(_SC_NPROCESSORS_CONF)
-	const int count = sysconf(_SC_NPROCESSORS_CONF);
+	const long count = sysconf(_SC_NPROCESSORS_CONF);
 
 	if (count <= 0)
 		return 1;
