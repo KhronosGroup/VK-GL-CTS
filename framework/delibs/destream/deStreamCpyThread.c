@@ -28,7 +28,7 @@
 void cpyStream (void* arg)
 {
 	deStreamCpyThread* thread = (deStreamCpyThread*)arg;
-	deUint8* buffer = malloc(sizeof(deUint8) * thread->bufferSize);
+	deUint8* buffer = malloc(sizeof(deUint8) * (size_t)thread->bufferSize);
 
 	for(;;)
 	{

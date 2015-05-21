@@ -59,8 +59,8 @@ deRingbuffer* deRingbuffer_create (deInt32 blockSize, deInt32 blockCount)
 
 	ringbuffer->blockSize	= blockSize;
 	ringbuffer->blockCount	= blockCount;
-	ringbuffer->buffer		= (deUint8*)deMalloc(sizeof(deUint8) * blockSize * blockCount);
-	ringbuffer->blockUsage	= (deInt32*)deMalloc(sizeof(deUint32) * blockCount);
+	ringbuffer->buffer		= (deUint8*)deMalloc(sizeof(deUint8) * (size_t)blockSize * (size_t)blockCount);
+	ringbuffer->blockUsage	= (deInt32*)deMalloc(sizeof(deUint32) * (size_t)blockCount);
 	ringbuffer->emptyCount	= deSemaphore_create(ringbuffer->blockCount, DE_NULL);
 	ringbuffer->fullCount	= deSemaphore_create(0, DE_NULL);
 
@@ -79,7 +79,7 @@ deRingbuffer* deRingbuffer_create (deInt32 blockSize, deInt32 blockCount)
 		return DE_NULL;
 	}
 
-	memset(ringbuffer->blockUsage, 0, sizeof(deInt32) * blockCount);
+	memset(ringbuffer->blockUsage, 0, sizeof(deInt32) * (size_t)blockCount);
 
 	ringbuffer->outBlock	= 0;
 	ringbuffer->outPos		= 0;
@@ -141,7 +141,7 @@ static deStreamResult producerStream_write (deStreamData* stream, const void* bu
 		dst			= ringbuffer->buffer + ringbuffer->blockSize * ringbuffer->inBlock + ringbuffer->inPos;
 		src			= (deUint8*)buf + *written;
 
-		deMemcpy(dst, src, writeSize);
+		deMemcpy(dst, src, (size_t)writeSize);
 
 		ringbuffer->inPos += writeSize;
 		*written += writeSize;
@@ -238,7 +238,7 @@ static deStreamResult consumerStream_read (deStreamData* stream, void* buf, deIn
 		src			= ringbuffer->buffer + ringbuffer->blockSize * ringbuffer->outBlock + ringbuffer->outPos;
 		dst			= (deUint8*)buf + *read;
 
-		deMemcpy(dst, src, writeSize);
+		deMemcpy(dst, src, (size_t)writeSize);
 
 		ringbuffer->outPos += writeSize;
 		*read += writeSize;
