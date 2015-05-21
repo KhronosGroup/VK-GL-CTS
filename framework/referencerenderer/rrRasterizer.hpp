@@ -42,7 +42,7 @@ enum
 //! Get coverage bit value.
 inline deUint64 getCoverageBit (int numSamples, int x, int y, int sampleNdx)
 {
-	const int	numBits		= sizeof(deUint64)*8;
+	const int	numBits		= (int)sizeof(deUint64)*8;
 	const int	maxSamples	= numBits/4;
 	DE_STATIC_ASSERT(maxSamples >= RASTERIZER_MAX_SAMPLES_PER_FRAGMENT);
 	DE_ASSERT(de::inRange(numSamples, 1, maxSamples) && de::inBounds(x, 0, 2) && de::inBounds(y, 0, 2));
