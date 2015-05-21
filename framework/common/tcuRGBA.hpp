@@ -85,7 +85,7 @@ public:
 	bool		isBelowThreshold		(RGBA thr) const	{ return (getRed() <= thr.getRed()) && (getGreen() <= thr.getGreen()) && (getBlue() <= thr.getBlue()) && (getAlpha() <= thr.getAlpha()); }
 
 	static RGBA	fromBytes				(const deUint8* bytes)	{ return RGBA(bytes[0], bytes[1], bytes[2], bytes[3]); }
-	void		toBytes					(deUint8* bytes) const	{ bytes[0] = getRed(); bytes[1] = getGreen(); bytes[2] = getBlue(); bytes[3] = getAlpha(); }
+	void		toBytes					(deUint8* bytes) const	{ bytes[0] = (deUint8)getRed(); bytes[1] = (deUint8)getGreen(); bytes[2] = (deUint8)getBlue(); bytes[3] = (deUint8)getAlpha(); }
 	Vec4		toVec					(void) const;
 	IVec4		toIVec					(void) const;
 
