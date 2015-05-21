@@ -146,7 +146,7 @@ deBool			qpXmlWriter_writeString (qpXmlWriter* writer, const char* content);
  * \param numBytes	Length of data in bytes
  * \return true on success, false on error
  *//*--------------------------------------------------------------------*/
-deBool			qpXmlWriter_writeBase64 (qpXmlWriter* writer, const deUint8* data, int numBytes);
+deBool			qpXmlWriter_writeBase64 (qpXmlWriter* writer, const deUint8* data, size_t numBytes);
 
 /*--------------------------------------------------------------------*//*!
  * \brief Convenience function for writing XML element
