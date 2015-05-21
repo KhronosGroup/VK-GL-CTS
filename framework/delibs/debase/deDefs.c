@@ -123,7 +123,7 @@ void deAssertFail (const char* reason, const char* file, int line)
 #elif ((DE_OS == DE_OS_WIN32) && (DE_COMPILER == DE_COMPILER_CLANG))
 	_assert(reason, file, line);
 #elif (DE_OS == DE_OS_UNIX)
-	__assert_fail(reason, file, line, "Unknown function");
+	__assert_fail(reason, file, (unsigned int)line, "Unknown function");
 #elif (DE_OS == DE_OS_SYMBIAN)
 	__assert("Unknown function", file, line, reason);
 #elif (DE_OS == DE_OS_OSX) || (DE_OS == DE_OS_IOS)

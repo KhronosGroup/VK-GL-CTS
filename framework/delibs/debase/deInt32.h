@@ -158,9 +158,9 @@ DE_INLINE int deSign32 (int a)
  * \param a	Input value.
  * \return 0x80000000 if a<0, 0 otherwise.
  *//*--------------------------------------------------------------------*/
-DE_INLINE int deSignBit32 (int a)
+DE_INLINE deInt32 deSignBit32 (deInt32 a)
 {
-	return (a & 0x80000000);
+	return (deInt32)((deUint32)a & 0x80000000u);
 }
 
 /*--------------------------------------------------------------------*//*!
@@ -293,7 +293,7 @@ DE_INLINE int deClz32 (deUint32 a)
 DE_INLINE int deLog2Floor32 (deInt32 a)
 {
 	DE_ASSERT(a > 0);
-	return 31 - deClz32(a);
+	return 31 - deClz32((deUint32)a);
 }
 
 /*--------------------------------------------------------------------*//*!
@@ -401,11 +401,11 @@ DE_INLINE deInt64 deAbs64 (deInt64 a)
 	return (a >= 0) ? a : -a;
 }
 
-DE_INLINE int deClz64 (deInt64 a)
+DE_INLINE int deClz64 (deUint64 a)
 {
-	if (((deUint64)a >> 32) != 0)
-		return deClz32((deInt32)(a >> 32));
-	return deClz32((deInt32)a) + 32;
+	if ((a >> 32) != 0)
+		return deClz32((deUint32)(a >> 32));
+	return deClz32((deUint32)a) + 32;
 }
 
 /* Common hash & compare functions. */
@@ -413,7 +413,7 @@ DE_INLINE int deClz64 (deInt64 a)
 DE_INLINE deUint32 deInt32Hash (deInt32 a)
 {
 	/* From: http://www.concentric.net/~Ttwang/tech/inthash.htm */
-	deUint32 key = a;
+	deUint32 key = (deUint32)a;
 	key = (key ^ 61) ^ (key >> 16);
 	key = key + (key << 3);
 	key = key ^ (key >> 4);
@@ -425,7 +425,7 @@ DE_INLINE deUint32 deInt32Hash (deInt32 a)
 DE_INLINE deUint32 deInt64Hash (deInt64 a)
 {
 	/* From: http://www.concentric.net/~Ttwang/tech/inthash.htm */
-	deUint64 key = a;
+	deUint64 key = (deUint64)a;
 	key = (~key) + (key << 21); /* key = (key << 21) - key - 1; */
 	key = key ^ (key >> 24);
 	key = (key + (key << 3)) + (key << 8); /* key * 265 */
@@ -436,10 +436,10 @@ DE_INLINE deUint32 deInt64Hash (deInt64 a)
 	return (deUint32)key;
 }
 
-DE_INLINE int		deInt16Hash		(deInt16 v)					{ return deInt32Hash(v);			}
-DE_INLINE int		deUint16Hash	(deUint16 v)				{ return deInt32Hash((deInt32)v);	}
-DE_INLINE int		deUint32Hash	(deUint32 v)				{ return deInt32Hash((deInt32)v);	}
-DE_INLINE int		deUint64Hash	(deUint64 v)				{ return deInt64Hash((deInt64)v);	}
+DE_INLINE deUint32	deInt16Hash		(deInt16 v)					{ return deInt32Hash(v);			}
+DE_INLINE deUint32	deUint16Hash	(deUint16 v)				{ return deInt32Hash((deInt32)v);	}
+DE_INLINE deUint32	deUint32Hash	(deUint32 v)				{ return deInt32Hash((deInt32)v);	}
+DE_INLINE deUint32	deUint64Hash	(deUint64 v)				{ return deInt64Hash((deInt64)v);	}
 
 DE_INLINE deBool	deInt16Equal	(deInt16 a, deInt16 b)		{ return (a == b);	}
 DE_INLINE deBool	deUint16Equal	(deUint16 a, deUint16 b)	{ return (a == b);	}
@@ -448,7 +448,7 @@ DE_INLINE deBool	deUint32Equal	(deUint32 a, deUint32 b)	{ return (a == b);	}
 DE_INLINE deBool	deInt64Equal	(deInt64 a, deInt64 b)		{ return (a == b);	}
 DE_INLINE deBool	deUint64Equal	(deUint64 a, deUint64 b)	{ return (a == b);	}
 
-DE_INLINE int dePointerHash (const void* ptr)
+DE_INLINE deUint32	dePointerHash (const void* ptr)
 {
 	deUintptr val = (deUintptr)ptr;
 #if (DE_PTR_SIZE == 4)
