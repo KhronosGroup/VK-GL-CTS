@@ -330,33 +330,33 @@ inline deUint32 getBits (deUint64 src, int low, int high)
 	const int numBits = (high-low) + 1;
 	DE_ASSERT(de::inRange(numBits, 1, 32));
 	if (numBits < 32)
-		return (src >> low) & ((1u<<numBits)-1);
+		return (deUint32)((src >> low) & ((1u<<numBits)-1));
 	else
-		return (src >> low) & 0xFFFFFFFFu;
+		return (deUint32)((src >> low) & 0xFFFFFFFFu);
 }
 
 inline deUint8 extend4To8 (deUint8 src)
 {
 	DE_ASSERT((src & ~((1<<4)-1)) == 0);
-	return (src << 4) | src;
+	return (deUint8)((src << 4) | src);
 }
 
 inline deUint8 extend5To8 (deUint8 src)
 {
 	DE_ASSERT((src & ~((1<<5)-1)) == 0);
-	return (src << 3) | (src >> 2);
+	return (deUint8)((src << 3) | (src >> 2));
 }
 
 inline deUint8 extend6To8 (deUint8 src)
 {
 	DE_ASSERT((src & ~((1<<6)-1)) == 0);
-	return (src << 2) | (src >> 4);
+	return (deUint8)((src << 2) | (src >> 4));
 }
 
 inline deUint8 extend7To8 (deUint8 src)
 {
 	DE_ASSERT((src & ~((1<<7)-1)) == 0);
-	return (src << 1) | (src >> 6);
+	return (deUint8)((src << 1) | (src >> 6));
 }
 
 inline deInt8 extendSigned3To8 (deUint8 src)
@@ -374,13 +374,13 @@ inline deUint8 extend5Delta3To8 (deUint8 base5, deUint8 delta3)
 inline deUint16 extend11To16 (deUint16 src)
 {
 	DE_ASSERT((src & ~((1<<11)-1)) == 0);
-	return (src << 5) | (src >> 6);
+	return (deUint8)((src << 5) | (src >> 6));
 }
 
 inline deInt16 extend11To16WithSign (deInt16 src)
 {
 	if (src < 0)
-		return -(deInt16)extend11To16(-src);
+		return (deInt16)(-(deInt16)extend11To16((deUint16)(-src)));
 	else
 		return (deInt16)extend11To16(src);
 }
@@ -591,7 +591,7 @@ void decompressETC2Block (deUint8 dst[ETC2_UNCOMPRESSED_BLOCK_SIZE_RGB8], deUint
 			const deUint32	distNdx		= (getBits(src, 34, 35) << 1) | getBit(src, 32);
 			const int		dist		= distTable[distNdx];
 
-			paintR[0] = extend4To8((R1a << 2) | R1b);
+			paintR[0] = extend4To8((deUint8)((R1a << 2) | R1b));
 			paintG[0] = extend4To8(G1);
 			paintB[0] = extend4To8(B1);
 			paintR[2] = extend4To8(R2);
@@ -623,8 +623,8 @@ void decompressETC2Block (deUint8 dst[ETC2_UNCOMPRESSED_BLOCK_SIZE_RGB8], deUint
 			int				dist;
 
 			baseR[0]		= extend4To8(R1);
-			baseG[0]		= extend4To8((G1a << 1) | G1b);
-			baseB[0]		= extend4To8((B1a << 3) | B1b);
+			baseG[0]		= extend4To8((deUint8)((G1a << 1) | G1b));
+			baseB[0]		= extend4To8((deUint8)((B1a << 3) | B1b));
 			baseR[1]		= extend4To8(R2);
 			baseG[1]		= extend4To8(G2);
 			baseB[1]		= extend4To8(B2);
@@ -685,9 +685,9 @@ void decompressETC2Block (deUint8 dst[ETC2_UNCOMPRESSED_BLOCK_SIZE_RGB8], deUint
 		const deUint8 RH1	= (deUint8)getBits(src, 34, 38);
 		const deUint8 RH2	= (deUint8)getBit(src, 32);
 		const deUint8 RO	= extend6To8((deUint8)getBits(src, 57, 62));
-		const deUint8 GO	= extend7To8((GO1 << 6) | GO2);
-		const deUint8 BO	= extend6To8((BO1 << 5) | (BO2 << 3) | BO3);
-		const deUint8 RH	= extend6To8((RH1 << 1) | RH2);
+		const deUint8 GO	= extend7To8((deUint8)((GO1 << 6) | GO2));
+		const deUint8 BO	= extend6To8((deUint8)((BO1 << 5) | (BO2 << 3) | BO3));
+		const deUint8 RH	= extend6To8((deUint8)((RH1 << 1) | RH2));
 		const deUint8 GH	= extend7To8((deUint8)getBits(src, 25, 31));
 		const deUint8 BH	= extend6To8((deUint8)getBits(src, 19, 24));
 		const deUint8 RV	= extend6To8((deUint8)getBits(src, 13, 18));
@@ -1103,7 +1103,7 @@ public:
 		// \note "foo << bar << 1" done instead of "foo << (bar+1)" to avoid overflow, i.e. shift amount being too big.
 
 		if (word0Ndx == word1Ndx)
-			return (m_words[word0Ndx] & ((((Word)1 << high%WORD_BITS << 1) - 1))) >> ((Word)low % WORD_BITS);
+			return (deUint32)((m_words[word0Ndx] & ((((Word)1 << high%WORD_BITS << 1) - 1))) >> ((Word)low % WORD_BITS));
 		else
 		{
 			DE_ASSERT(word1Ndx == word0Ndx + 1);
@@ -1409,7 +1409,7 @@ void decodeVoidExtentBlock (void* dst, const Block128& blockData, int blockWidth
 		deUint8* const dstU = (deUint8*)dst;
 		for (int i = 0; i < blockWidth*blockHeight; i++)
 		for (int c = 0; c < 4; c++)
-			dstU[i*4 + c] = (rgba[c] & 0xff00) >> 8;
+			dstU[i*4 + c] = (deUint8)((rgba[c] & 0xff00) >> 8);
 	}
 	else
 	{
@@ -1419,7 +1419,7 @@ void decodeVoidExtentBlock (void* dst, const Block128& blockData, int blockWidth
 		{
 			for (int c = 0; c < 4; c++)
 			{
-				if (isFloat16InfOrNan(rgba[c]))
+				if (isFloat16InfOrNan((deFloat16)rgba[c]))
 					throw InternalError("Infinity or NaN color component in HDR void extent block in ASTC texture (behavior undefined by ASTC specification)");
 			}
 
@@ -2264,23 +2264,31 @@ int computeTexelPartition (deUint32 seedIn, deUint32 xIn, deUint32 yIn, deUint32
 	const deUint32	z		= smallBlock ? zIn << 1 : zIn;
 	const deUint32	seed	= seedIn + 1024*(numPartitions-1);
 	const deUint32	rnum	= hash52(seed);
-	deUint8			seed1	=  rnum							& 0xf;
-	deUint8			seed2	= (rnum >>  4)					& 0xf;
-	deUint8			seed3	= (rnum >>  8)					& 0xf;
-	deUint8			seed4	= (rnum >> 12)					& 0xf;
-	deUint8			seed5	= (rnum >> 16)					& 0xf;
-	deUint8			seed6	= (rnum >> 20)					& 0xf;
-	deUint8			seed7	= (rnum >> 24)					& 0xf;
-	deUint8			seed8	= (rnum >> 28)					& 0xf;
-	deUint8			seed9	= (rnum >> 18)					& 0xf;
-	deUint8			seed10	= (rnum >> 22)					& 0xf;
-	deUint8			seed11	= (rnum >> 26)					& 0xf;
-	deUint8			seed12	= ((rnum >> 30) | (rnum << 2))	& 0xf;
+	deUint8			seed1	= (deUint8)( rnum							& 0xf);
+	deUint8			seed2	= (deUint8)((rnum >>  4)					& 0xf);
+	deUint8			seed3	= (deUint8)((rnum >>  8)					& 0xf);
+	deUint8			seed4	= (deUint8)((rnum >> 12)					& 0xf);
+	deUint8			seed5	= (deUint8)((rnum >> 16)					& 0xf);
+	deUint8			seed6	= (deUint8)((rnum >> 20)					& 0xf);
+	deUint8			seed7	= (deUint8)((rnum >> 24)					& 0xf);
+	deUint8			seed8	= (deUint8)((rnum >> 28)					& 0xf);
+	deUint8			seed9	= (deUint8)((rnum >> 18)					& 0xf);
+	deUint8			seed10	= (deUint8)((rnum >> 22)					& 0xf);
+	deUint8			seed11	= (deUint8)((rnum >> 26)					& 0xf);
+	deUint8			seed12	= (deUint8)(((rnum >> 30) | (rnum << 2))	& 0xf);
 
-	seed1 *= seed1;		seed5 *= seed5;		seed9  *= seed9;
-	seed2 *= seed2;		seed6 *= seed6;		seed10 *= seed10;
-	seed3 *= seed3;		seed7 *= seed7;		seed11 *= seed11;
-	seed4 *= seed4;		seed8 *= seed8;		seed12 *= seed12;
+	seed1  = (deUint8)(seed1  * seed1 );
+	seed2  = (deUint8)(seed2  * seed2 );
+	seed3  = (deUint8)(seed3  * seed3 );
+	seed4  = (deUint8)(seed4  * seed4 );
+	seed5  = (deUint8)(seed5  * seed5 );
+	seed6  = (deUint8)(seed6  * seed6 );
+	seed7  = (deUint8)(seed7  * seed7 );
+	seed8  = (deUint8)(seed8  * seed8 );
+	seed9  = (deUint8)(seed9  * seed9 );
+	seed10 = (deUint8)(seed10 * seed10);
+	seed11 = (deUint8)(seed11 * seed11);
+	seed12 = (deUint8)(seed12 * seed12);
 
 	const int shA = (seed & 2) != 0		? 4		: 5;
 	const int shB = numPartitions == 3	? 6		: 5;
@@ -2288,9 +2296,18 @@ int computeTexelPartition (deUint32 seedIn, deUint32 xIn, deUint32 yIn, deUint32
 	const int sh2 = (seed & 1) != 0		? shB	: shA;
 	const int sh3 = (seed & 0x10) != 0	? sh1	: sh2;
 
-	seed1 >>= sh1;		seed2  >>= sh2;		seed3  >>= sh1;		seed4  >>= sh2;
-	seed5 >>= sh1;		seed6  >>= sh2;		seed7  >>= sh1;		seed8  >>= sh2;
-	seed9 >>= sh3;		seed10 >>= sh3;		seed11 >>= sh3;		seed12 >>= sh3;
+	seed1  = (deUint8)(seed1  >> sh1);
+	seed2  = (deUint8)(seed2  >> sh2);
+	seed3  = (deUint8)(seed3  >> sh1);
+	seed4  = (deUint8)(seed4  >> sh2);
+	seed5  = (deUint8)(seed5  >> sh1);
+	seed6  = (deUint8)(seed6  >> sh2);
+	seed7  = (deUint8)(seed7  >> sh1);
+	seed8  = (deUint8)(seed8  >> sh2);
+	seed9  = (deUint8)(seed9  >> sh3);
+	seed10 = (deUint8)(seed10 >> sh3);
+	seed11 = (deUint8)(seed11 >> sh3);
+	seed12 = (deUint8)(seed12 >> sh3);
 
 	const int a =						0x3f & (seed1*x + seed2*y + seed11*z + (rnum >> 14));
 	const int b =						0x3f & (seed3*x + seed4*y + seed12*z + (rnum >> 10));
@@ -2351,7 +2368,7 @@ void setTexelColors (void* dst, ColorEndpointPair* colorEndpoints, TexelWeightPa
 					const deUint32 c	= (c0*(64-w) + c1*w + 32) / 64;
 
 					if (isSRGB)
-						((deUint8*)dst)[texelNdx*4 + channelNdx] = (c & 0xff00) >> 8;
+						((deUint8*)dst)[texelNdx*4 + channelNdx] = (deUint8)((c & 0xff00) >> 8);
 					else
 						((float*)dst)[texelNdx*4 + channelNdx] = c == 65535 ? 1.0f : (float)c / 65536.0f;
 				}
@@ -2367,7 +2384,7 @@ void setTexelColors (void* dst, ColorEndpointPair* colorEndpoints, TexelWeightPa
 					const deUint32		mt	= m < 512		? 3*m
 											: m >= 1536		? 5*m - 2048
 											:				  4*m - 512;
-					const deFloat16		cf	= (e << 10) + (mt >> 3);
+					const deFloat16		cf	= (deFloat16)((e << 10) + (mt >> 3));
 
 					((float*)dst)[texelNdx*4 + channelNdx] = deFloat16To32(isFloat16InfOrNan(cf) ? 0x7bff : cf);
 				}

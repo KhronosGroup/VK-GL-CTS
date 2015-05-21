@@ -214,7 +214,7 @@ static inline deUint16 readBigEndianShort (tcu::Resource* resource)
 {
 	deUint16 val;
 	resource->read((deUint8*)&val, sizeof(val));
-	return ((val >> 8) & 0xFF) | ((val << 8) & 0xFF00);
+	return (deUint16)(((val >> 8) & 0xFF) | ((val << 8) & 0xFF00));
 }
 
 /*--------------------------------------------------------------------*//*!

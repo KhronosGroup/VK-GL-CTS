@@ -57,17 +57,17 @@ inline IVec4	readRGB888Int		(const deUint8* ptr) { return IVec4(ptr[0], ptr[1], 
 
 inline void writeRGBA8888Int (deUint8* ptr, const IVec4& val)
 {
-	ptr[0] = de::clamp(val[0], 0, 255);
-	ptr[1] = de::clamp(val[1], 0, 255);
-	ptr[2] = de::clamp(val[2], 0, 255);
-	ptr[3] = de::clamp(val[3], 0, 255);
+	ptr[0] = (deUint8)de::clamp(val[0], 0, 255);
+	ptr[1] = (deUint8)de::clamp(val[1], 0, 255);
+	ptr[2] = (deUint8)de::clamp(val[2], 0, 255);
+	ptr[3] = (deUint8)de::clamp(val[3], 0, 255);
 }
 
 inline void writeRGB888Int (deUint8* ptr, const IVec4& val)
 {
-	ptr[0] = de::clamp(val[0], 0, 255);
-	ptr[1] = de::clamp(val[1], 0, 255);
-	ptr[2] = de::clamp(val[2], 0, 255);
+	ptr[0] = (deUint8)de::clamp(val[0], 0, 255);
+	ptr[1] = (deUint8)de::clamp(val[1], 0, 255);
+	ptr[2] = (deUint8)de::clamp(val[2], 0, 255);
 }
 
 inline void writeRGBA8888Float (deUint8* ptr, const Vec4& val)
