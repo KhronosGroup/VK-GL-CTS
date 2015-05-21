@@ -57,14 +57,14 @@ Expression* BinaryOp<Precedence, Assoc>::createNextChild (GeneratorState& state)
 	if (m_rightValueExpr == DE_NULL)
 	{
 		state.pushPrecedence(rightPrec);
-		m_rightValueExpr = Expression::createRandom(state, m_rightValueRange);
+		m_rightValueExpr = Expression::createRandom(state, m_rightValueRange.asAccess());
 		state.popPrecedence();
 		return m_rightValueExpr;
 	}
 	else if (m_leftValueExpr == DE_NULL)
 	{
 		state.pushPrecedence(leftPrec);
-		m_leftValueExpr = Expression::createRandom(state, m_leftValueRange);
+		m_leftValueExpr = Expression::createRandom(state, m_leftValueRange.asAccess());
 		state.popPrecedence();
 		return m_leftValueExpr;
 	}
@@ -239,13 +239,13 @@ void ComputeMulRange::operator() (de::Random& rnd, float dstMin, float dstMax, f
 	bMax = scale;
 	for (int i = 0; i < 5; i++)
 	{
-		if (de::inBounds(aMin*(scale-i*scaleStep), dstMin, dstMax) &&
-			de::inBounds(aMax*(scale-i*scaleStep), dstMin, dstMax))
-			bMin = scale-i*scaleStep;
+		if (de::inBounds(aMin*(scale-(float)i*scaleStep), dstMin, dstMax) &&
+			de::inBounds(aMax*(scale-(float)i*scaleStep), dstMin, dstMax))
+			bMin = scale-(float)i*scaleStep;
 
-		if (de::inBounds(aMin*(scale+i*scaleStep), dstMin, dstMax) &&
-			de::inBounds(aMax*(scale+i*scaleStep), dstMin, dstMax))
-			bMax = scale+i*scaleStep;
+		if (de::inBounds(aMin*(scale+(float)i*scaleStep), dstMin, dstMax) &&
+			de::inBounds(aMax*(scale+(float)i*scaleStep), dstMin, dstMax))
+			bMax = scale+(float)i*scaleStep;
 	}
 
 	// Negative scale?

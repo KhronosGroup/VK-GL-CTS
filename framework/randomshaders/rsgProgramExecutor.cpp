@@ -195,8 +195,8 @@ inline tcu::IVec4 computeVertexIndices (float cellWidth, float cellHeight, int g
 
 inline tcu::Vec2 computeGridCellWeights (float cellWidth, float cellHeight, int x, int y)
 {
-	float gx = (x + 0.5f) / cellWidth;
-	float gy = (y + 0.5f) / cellHeight;
+	float gx = ((float)x + 0.5f) / cellWidth;
+	float gy = ((float)y + 0.5f) / cellHeight;
 	return tcu::Vec2(deFloatFrac(gx), deFloatFrac(gy));
 }
 

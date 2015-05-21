@@ -225,8 +225,8 @@ void computeRandomValueRange (GeneratorState& state, ValueRangeAccess valueRange
 				int rangeLen	= rnd.getInt(0, maxSteps);
 				int minStep		= rnd.getInt(0, maxSteps-rangeLen);
 
-				float minVal	= minFloatVal + step*minStep;
-				float maxVal	= minVal + step*rangeLen;
+				float minVal	= minFloatVal + step*(float)minStep;
+				float maxVal	= minVal + step*(float)rangeLen;
 
 				valueRange.getMin().component(ndx).asFloat() = minVal;
 				valueRange.getMax().component(ndx).asFloat() = maxVal;
