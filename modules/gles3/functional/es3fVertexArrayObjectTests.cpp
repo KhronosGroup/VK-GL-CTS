@@ -327,13 +327,13 @@ deUint8* VertexArrayObjectTest::createRandomBufferData (const BufferSpec& buffer
 	{
 		switch (buffer.type)
 		{
-			case GL_FLOAT:			stride = buffer.componentCount * sizeof(GLfloat);	break;
-			case GL_INT:			stride = buffer.componentCount * sizeof(GLint);		break;
-			case GL_UNSIGNED_INT:	stride = buffer.componentCount * sizeof(GLuint);	break;
-			case GL_SHORT:			stride = buffer.componentCount * sizeof(GLshort);	break;
-			case GL_UNSIGNED_SHORT:	stride = buffer.componentCount * sizeof(GLushort);	break;
-			case GL_BYTE:			stride = buffer.componentCount * sizeof(GLbyte);	break;
-			case GL_UNSIGNED_BYTE:	stride = buffer.componentCount * sizeof(GLubyte);	break;
+			case GL_FLOAT:			stride = buffer.componentCount * (int)sizeof(GLfloat);	break;
+			case GL_INT:			stride = buffer.componentCount * (int)sizeof(GLint);	break;
+			case GL_UNSIGNED_INT:	stride = buffer.componentCount * (int)sizeof(GLuint);	break;
+			case GL_SHORT:			stride = buffer.componentCount * (int)sizeof(GLshort);	break;
+			case GL_UNSIGNED_SHORT:	stride = buffer.componentCount * (int)sizeof(GLushort);	break;
+			case GL_BYTE:			stride = buffer.componentCount * (int)sizeof(GLbyte);	break;
+			case GL_UNSIGNED_BYTE:	stride = buffer.componentCount * (int)sizeof(GLubyte);	break;
 
 			default:
 				stride = 0;
@@ -376,7 +376,7 @@ deUint8* VertexArrayObjectTest::createRandomBufferData (const BufferSpec& buffer
 
 				case GL_SHORT:
 				{
-					GLshort v = m_random.getInt(buffer.intRangeMin, buffer.intRangeMax);
+					GLshort v = (GLshort)m_random.getInt(buffer.intRangeMin, buffer.intRangeMax);
 					deMemcpy(componentItr, &v, sizeof(v));
 					componentItr += sizeof(v);
 					break;
@@ -384,7 +384,7 @@ deUint8* VertexArrayObjectTest::createRandomBufferData (const BufferSpec& buffer
 
 				case GL_UNSIGNED_SHORT:
 				{
-					GLushort v = m_random.getInt(buffer.intRangeMin, buffer.intRangeMax);
+					GLushort v = (GLushort)m_random.getInt(buffer.intRangeMin, buffer.intRangeMax);
 					deMemcpy(componentItr, &v, sizeof(v));
 					componentItr += sizeof(v);
 					break;
@@ -392,7 +392,7 @@ deUint8* VertexArrayObjectTest::createRandomBufferData (const BufferSpec& buffer
 
 				case GL_BYTE:
 				{
-					GLbyte v = m_random.getInt(buffer.intRangeMin, buffer.intRangeMax);
+					GLbyte v = (GLbyte)m_random.getInt(buffer.intRangeMin, buffer.intRangeMax);
 					deMemcpy(componentItr, &v, sizeof(v));
 					componentItr += sizeof(v);
 					break;
@@ -400,7 +400,7 @@ deUint8* VertexArrayObjectTest::createRandomBufferData (const BufferSpec& buffer
 
 				case GL_UNSIGNED_BYTE:
 				{
-					GLubyte v = m_random.getInt(buffer.intRangeMin, buffer.intRangeMax);
+					GLubyte v = (GLubyte)m_random.getInt(buffer.intRangeMin, buffer.intRangeMax);
 					deMemcpy(componentItr, &v, sizeof(v));
 					componentItr += sizeof(v);
 					break;
@@ -437,12 +437,12 @@ glu::ShaderProgram* VertexArrayObjectTest::createProgram (const VertexArrayState
 
 			switch (state.attributes[0].type)
 			{
-				case GL_SHORT:			scale  = (1.0f/((1u<<14)-1));	break;
-				case GL_UNSIGNED_SHORT:	scale  = (1.0f/((1u<<15)-1));	break;
-				case GL_INT:			scale  = (1.0f/((1u<<30)-1));	break;
-				case GL_UNSIGNED_INT:	scale  = (1.0f/((1u<<31)-1));	break;
-				case GL_BYTE:			scale  = (1.0f/((1u<<6)-1));	break;
-				case GL_UNSIGNED_BYTE:	scale  = (1.0f/((1u<<7)-1));	break;
+				case GL_SHORT:			scale  = (1.0f/float((1u<<14)-1u));	break;
+				case GL_UNSIGNED_SHORT:	scale  = (1.0f/float((1u<<15)-1u));	break;
+				case GL_INT:			scale  = (1.0f/float((1u<<30)-1u));	break;
+				case GL_UNSIGNED_INT:	scale  = (1.0f/float((1u<<31)-1u));	break;
+				case GL_BYTE:			scale  = (1.0f/float((1u<<6)-1u));	break;
+				case GL_UNSIGNED_BYTE:	scale  = (1.0f/float((1u<<7)-1u));	break;
 
 				default:
 					DE_ASSERT(DE_FALSE);
@@ -455,12 +455,12 @@ glu::ShaderProgram* VertexArrayObjectTest::createProgram (const VertexArrayState
 
 			switch (state.attributes[0].type)
 			{
-				case GL_SHORT:			scale  = (0.5f/((1u<<14)-1));	break;
-				case GL_UNSIGNED_SHORT:	scale  = (0.5f/((1u<<15)-1));	break;
-				case GL_INT:			scale  = (0.5f/((1u<<30)-1));	break;
-				case GL_UNSIGNED_INT:	scale  = (0.5f/((1u<<31)-1));	break;
-				case GL_BYTE:			scale  = (0.5f/((1u<<6)-1));	break;
-				case GL_UNSIGNED_BYTE:	scale  = (0.5f/((1u<<7)-1));	break;
+				case GL_SHORT:			scale  = (0.5f/float((1u<<14)-1u));	break;
+				case GL_UNSIGNED_SHORT:	scale  = (0.5f/float((1u<<15)-1u));	break;
+				case GL_INT:			scale  = (0.5f/float((1u<<30)-1u));	break;
+				case GL_UNSIGNED_INT:	scale  = (0.5f/float((1u<<31)-1u));	break;
+				case GL_BYTE:			scale  = (0.5f/float((1u<<6)-1u));	break;
+				case GL_UNSIGNED_BYTE:	scale  = (0.5f/float((1u<<7)-1u));	break;
 
 				default:
 					DE_ASSERT(DE_FALSE);
@@ -483,12 +483,12 @@ glu::ShaderProgram* VertexArrayObjectTest::createProgram (const VertexArrayState
 
 		switch (state.attributes[0].type)
 		{
-			case GL_SHORT:			scale  = (1.0f/((1u<<14)-1));	break;
-			case GL_UNSIGNED_SHORT:	scale  = (1.0f/((1u<<15)-1));	break;
-			case GL_INT:			scale  = (1.0f/((1u<<30)-1));	break;
-			case GL_UNSIGNED_INT:	scale  = (1.0f/((1u<<31)-1));	break;
-			case GL_BYTE:			scale  = (1.0f/((1u<<6)-1));	break;
-			case GL_UNSIGNED_BYTE:	scale  = (1.0f/((1u<<7)-1));	break;
+			case GL_SHORT:			scale  = (1.0f/float((1u<<14)-1u));	break;
+			case GL_UNSIGNED_SHORT:	scale  = (1.0f/float((1u<<15)-1u));	break;
+			case GL_INT:			scale  = (1.0f/float((1u<<30)-1u));	break;
+			case GL_UNSIGNED_INT:	scale  = (1.0f/float((1u<<31)-1u));	break;
+			case GL_BYTE:			scale  = (1.0f/float((1u<<6)-1u));	break;
+			case GL_UNSIGNED_BYTE:	scale  = (1.0f/float((1u<<7)-1u));	break;
 
 			default:
 				DE_ASSERT(DE_FALSE);
@@ -512,18 +512,18 @@ glu::ShaderProgram* VertexArrayObjectTest::createProgram (const VertexArrayState
 
 			switch (state.attributes[0].type)
 			{
-				case GL_SHORT:			scale  = (1.0f/((1u<<14)-1));	break;
-				case GL_UNSIGNED_SHORT:	scale  = (1.0f/((1u<<15)-1));	break;
-				case GL_INT:			scale  = (1.0f/((1u<<30)-1));	break;
-				case GL_UNSIGNED_INT:	scale  = (1.0f/((1u<<31)-1));	break;
-				case GL_BYTE:			scale  = (1.0f/((1u<<6)-1));	break;
-				case GL_UNSIGNED_BYTE:	scale  = (1.0f/((1u<<7)-1));	break;
+				case GL_SHORT:			scale  = (1.0f/float((1u<<14)-1u));	break;
+				case GL_UNSIGNED_SHORT:	scale  = (1.0f/float((1u<<15)-1u));	break;
+				case GL_INT:			scale  = (1.0f/float((1u<<30)-1u));	break;
+				case GL_UNSIGNED_INT:	scale  = (1.0f/float((1u<<31)-1u));	break;
+				case GL_BYTE:			scale  = (1.0f/float((1u<<6)-1u));	break;
+				case GL_UNSIGNED_BYTE:	scale  = (1.0f/float((1u<<7)-1u));	break;
 
 				default:
 					DE_ASSERT(DE_FALSE);
 			}
 
-			scale *= 0.5;
+			scale *= 0.5f;
 
 			vertexShaderStream
 				<< "\tgl_Position = vec4(" << scale << " * " <<  "a_attrib0.xyz, 1.0);\n"
@@ -903,13 +903,13 @@ deUint8* MultiVertexArrayObjectTest::createRandomBufferData (const BufferSpec& b
 	{
 		switch (buffer.type)
 		{
-			case GL_FLOAT:			stride = buffer.componentCount * sizeof(GLfloat);	break;
-			case GL_INT:			stride = buffer.componentCount * sizeof(GLint);		break;
-			case GL_UNSIGNED_INT:	stride = buffer.componentCount * sizeof(GLuint);	break;
-			case GL_SHORT:			stride = buffer.componentCount * sizeof(GLshort);	break;
-			case GL_UNSIGNED_SHORT:	stride = buffer.componentCount * sizeof(GLushort);	break;
-			case GL_BYTE:			stride = buffer.componentCount * sizeof(GLbyte);	break;
-			case GL_UNSIGNED_BYTE:	stride = buffer.componentCount * sizeof(GLubyte);	break;
+			case GL_FLOAT:			stride = buffer.componentCount * (int)sizeof(GLfloat);	break;
+			case GL_INT:			stride = buffer.componentCount * (int)sizeof(GLint);	break;
+			case GL_UNSIGNED_INT:	stride = buffer.componentCount * (int)sizeof(GLuint);	break;
+			case GL_SHORT:			stride = buffer.componentCount * (int)sizeof(GLshort);	break;
+			case GL_UNSIGNED_SHORT:	stride = buffer.componentCount * (int)sizeof(GLushort);	break;
+			case GL_BYTE:			stride = buffer.componentCount * (int)sizeof(GLbyte);	break;
+			case GL_UNSIGNED_BYTE:	stride = buffer.componentCount * (int)sizeof(GLubyte);	break;
 
 			default:
 				stride = 0;
@@ -944,7 +944,7 @@ deUint8* MultiVertexArrayObjectTest::createRandomBufferData (const BufferSpec& b
 
 				case GL_UNSIGNED_INT:
 				{
-					GLuint v = m_random.getInt(buffer.intRangeMin, buffer.intRangeMax);
+					GLuint v = (GLuint)m_random.getInt(buffer.intRangeMin, buffer.intRangeMax);
 					deMemcpy(componentItr, &v, sizeof(v));
 					componentItr += sizeof(v);
 					break;
@@ -952,7 +952,7 @@ deUint8* MultiVertexArrayObjectTest::createRandomBufferData (const BufferSpec& b
 
 				case GL_SHORT:
 				{
-					GLshort v = m_random.getInt(buffer.intRangeMin, buffer.intRangeMax);
+					GLshort v = (GLshort)m_random.getInt(buffer.intRangeMin, buffer.intRangeMax);
 					deMemcpy(componentItr, &v, sizeof(v));
 					componentItr += sizeof(v);
 					break;
@@ -960,7 +960,7 @@ deUint8* MultiVertexArrayObjectTest::createRandomBufferData (const BufferSpec& b
 
 				case GL_UNSIGNED_SHORT:
 				{
-					GLushort v = m_random.getInt(buffer.intRangeMin, buffer.intRangeMax);
+					GLushort v = (GLushort)m_random.getInt(buffer.intRangeMin, buffer.intRangeMax);
 					deMemcpy(componentItr, &v, sizeof(v));
 					componentItr += sizeof(v);
 					break;
@@ -968,7 +968,7 @@ deUint8* MultiVertexArrayObjectTest::createRandomBufferData (const BufferSpec& b
 
 				case GL_BYTE:
 				{
-					GLbyte v = m_random.getInt(buffer.intRangeMin, buffer.intRangeMax);
+					GLbyte v = (GLbyte)m_random.getInt(buffer.intRangeMin, buffer.intRangeMax);
 					deMemcpy(componentItr, &v, sizeof(v));
 					componentItr += sizeof(v);
 					break;
@@ -976,7 +976,7 @@ deUint8* MultiVertexArrayObjectTest::createRandomBufferData (const BufferSpec& b
 
 				case GL_UNSIGNED_BYTE:
 				{
-					GLubyte v = m_random.getInt(buffer.intRangeMin, buffer.intRangeMax);
+					GLubyte v = (GLubyte)m_random.getInt(buffer.intRangeMin, buffer.intRangeMax);
 					deMemcpy(componentItr, &v, sizeof(v));
 					componentItr += sizeof(v);
 					break;
@@ -1013,12 +1013,12 @@ glu::ShaderProgram* MultiVertexArrayObjectTest::createProgram (const VertexArray
 
 			switch (state.attributes[0].type)
 			{
-				case GL_SHORT:			scale  = (1.0f/((1u<<14)-1));	break;
-				case GL_UNSIGNED_SHORT:	scale  = (1.0f/((1u<<15)-1));	break;
-				case GL_INT:			scale  = (1.0f/((1u<<30)-1));	break;
-				case GL_UNSIGNED_INT:	scale  = (1.0f/((1u<<31)-1));	break;
-				case GL_BYTE:			scale  = (1.0f/((1u<<6)-1));	break;
-				case GL_UNSIGNED_BYTE:	scale  = (1.0f/((1u<<7)-1));	break;
+				case GL_SHORT:			scale  = (1.0f/float((1u<<14)-1u));	break;
+				case GL_UNSIGNED_SHORT:	scale  = (1.0f/float((1u<<15)-1u));	break;
+				case GL_INT:			scale  = (1.0f/float((1u<<30)-1u));	break;
+				case GL_UNSIGNED_INT:	scale  = (1.0f/float((1u<<31)-1u));	break;
+				case GL_BYTE:			scale  = (1.0f/float((1u<<6)-1u));	break;
+				case GL_UNSIGNED_BYTE:	scale  = (1.0f/float((1u<<7)-1u));	break;
 
 				default:
 					DE_ASSERT(DE_FALSE);
@@ -1031,12 +1031,12 @@ glu::ShaderProgram* MultiVertexArrayObjectTest::createProgram (const VertexArray
 
 			switch (state.attributes[0].type)
 			{
-				case GL_SHORT:			scale  = (0.5f/((1u<<14)-1));	break;
-				case GL_UNSIGNED_SHORT:	scale  = (0.5f/((1u<<15)-1));	break;
-				case GL_INT:			scale  = (0.5f/((1u<<30)-1));	break;
-				case GL_UNSIGNED_INT:	scale  = (0.5f/((1u<<31)-1));	break;
-				case GL_BYTE:			scale  = (0.5f/((1u<<6)-1));	break;
-				case GL_UNSIGNED_BYTE:	scale  = (0.5f/((1u<<7)-1));	break;
+				case GL_SHORT:			scale  = (0.5f/float((1u<<14)-1u));	break;
+				case GL_UNSIGNED_SHORT:	scale  = (0.5f/float((1u<<15)-1u));	break;
+				case GL_INT:			scale  = (0.5f/float((1u<<30)-1u));	break;
+				case GL_UNSIGNED_INT:	scale  = (0.5f/float((1u<<31)-1u));	break;
+				case GL_BYTE:			scale  = (0.5f/float((1u<<6)-1u));	break;
+				case GL_UNSIGNED_BYTE:	scale  = (0.5f/float((1u<<7)-1u));	break;
 
 				default:
 					DE_ASSERT(DE_FALSE);
@@ -1059,12 +1059,12 @@ glu::ShaderProgram* MultiVertexArrayObjectTest::createProgram (const VertexArray
 
 		switch (state.attributes[0].type)
 		{
-			case GL_SHORT:			scale  = (1.0f/((1u<<14)-1));	break;
-			case GL_UNSIGNED_SHORT:	scale  = (1.0f/((1u<<15)-1));	break;
-			case GL_INT:			scale  = (1.0f/((1u<<30)-1));	break;
-			case GL_UNSIGNED_INT:	scale  = (1.0f/((1u<<31)-1));	break;
-			case GL_BYTE:			scale  = (1.0f/((1u<<6)-1));	break;
-			case GL_UNSIGNED_BYTE:	scale  = (1.0f/((1u<<7)-1));	break;
+			case GL_SHORT:			scale  = (1.0f/float((1u<<14)-1u));	break;
+			case GL_UNSIGNED_SHORT:	scale  = (1.0f/float((1u<<15)-1u));	break;
+			case GL_INT:			scale  = (1.0f/float((1u<<30)-1u));	break;
+			case GL_UNSIGNED_INT:	scale  = (1.0f/float((1u<<31)-1u));	break;
+			case GL_BYTE:			scale  = (1.0f/float((1u<<6)-1u));	break;
+			case GL_UNSIGNED_BYTE:	scale  = (1.0f/float((1u<<7)-1u));	break;
 
 
 			default:
@@ -1089,18 +1089,18 @@ glu::ShaderProgram* MultiVertexArrayObjectTest::createProgram (const VertexArray
 
 			switch (state.attributes[0].type)
 			{
-				case GL_SHORT:			scale  = (1.0f/((1u<<14)-1));	break;
-				case GL_UNSIGNED_SHORT:	scale  = (1.0f/((1u<<15)-1));	break;
-				case GL_INT:			scale  = (1.0f/((1u<<30)-1));	break;
-				case GL_UNSIGNED_INT:	scale  = (1.0f/((1u<<31)-1));	break;
-				case GL_BYTE:			scale  = (1.0f/((1u<<6)-1));	break;
-				case GL_UNSIGNED_BYTE:	scale  = (1.0f/((1u<<7)-1));	break;
+				case GL_SHORT:			scale  = (1.0f/float((1u<<14)-1u));	break;
+				case GL_UNSIGNED_SHORT:	scale  = (1.0f/float((1u<<15)-1u));	break;
+				case GL_INT:			scale  = (1.0f/float((1u<<30)-1u));	break;
+				case GL_UNSIGNED_INT:	scale  = (1.0f/float((1u<<31)-1u));	break;
+				case GL_BYTE:			scale  = (1.0f/float((1u<<6)-1u));	break;
+				case GL_UNSIGNED_BYTE:	scale  = (1.0f/float((1u<<7)-1u));	break;
 
 				default:
 					DE_ASSERT(DE_FALSE);
 			}
 
-			scale *= 0.5;
+			scale *= 0.5f;
 
 			vertexShaderStream
 				<< "\tgl_Position = vec4(" << scale << " * " <<  "vec3(a_attrib0.xyz), 1.0);\n"
