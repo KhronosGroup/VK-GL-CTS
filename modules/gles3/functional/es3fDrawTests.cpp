@@ -688,8 +688,8 @@ void InstancedGridRenderTest::renderTo (sglr::Context& ctx, sglr::ShaderProgram&
 	deInt32 offsetLocation	= ctx.getAttribLocation(programID, "a_offset");
 	deInt32 colorLocation	= ctx.getAttribLocation(programID, "a_color");
 
-	float cellW	= 2.0f / m_gridSide;
-	float cellH	= 2.0f / m_gridSide;
+	float cellW	= 2.0f / (float)m_gridSide;
+	float cellH	= 2.0f / (float)m_gridSide;
 	const tcu::Vec4 vertexPositions[] =
 	{
 		tcu::Vec4(0,		0,		0, 1),
@@ -710,7 +710,7 @@ void InstancedGridRenderTest::renderTo (sglr::Context& ctx, sglr::ShaderProgram&
 	std::vector<tcu::Vec4> offsets;
 	for (int x = 0; x < m_gridSide; ++x)
 	for (int y = 0; y < m_gridSide; ++y)
-		offsets.push_back(tcu::Vec4(x * cellW - 1.0f, y * cellW - 1.0f, 0, 0));
+		offsets.push_back(tcu::Vec4((float)x * cellW - 1.0f, (float)y * cellW - 1.0f, 0, 0));
 
 	std::vector<tcu::Vec4> colors;
 	for (int x = 0; x < m_gridSide; ++x)
