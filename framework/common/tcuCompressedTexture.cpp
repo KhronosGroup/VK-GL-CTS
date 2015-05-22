@@ -374,7 +374,7 @@ inline deUint8 extend5Delta3To8 (deUint8 base5, deUint8 delta3)
 inline deUint16 extend11To16 (deUint16 src)
 {
 	DE_ASSERT((src & ~((1<<11)-1)) == 0);
-	return (deUint8)((src << 5) | (src >> 6));
+	return (deUint16)((src << 5) | (src >> 6));
 }
 
 inline deInt16 extend11To16WithSign (deInt16 src)
