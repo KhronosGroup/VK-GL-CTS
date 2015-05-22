@@ -524,7 +524,7 @@ void NegativeTextureApiTests::init (void)
 
 					FOR_CUBE_FACES(faceGL,
 					{
-						glCompressedTexImage2D(faceGL, 0, format, blockPixels.x(), blockPixels.y(), 0, blockBytes, &dummyData[0]);
+						glCompressedTexImage2D(faceGL, 0, format, blockPixels.x(), blockPixels.y(), 0, (int)blockBytes, &dummyData[0]);
 						expectError(requiredError);
 					});
 				}
@@ -2696,10 +2696,10 @@ void NegativeTextureApiTests::init (void)
 					const size_t 				blockBytes 	= getBlockSize(tcuFormat);
 					const vector<deUint8>		dummyData	(blockBytes);
 
-					glCompressedTexImage3D(GL_TEXTURE_3D, 0, format, blockPixels.x(), blockPixels.y(), blockPixels.z(), 0, blockBytes, &dummyData[0]);
+					glCompressedTexImage3D(GL_TEXTURE_3D, 0, format, blockPixels.x(), blockPixels.y(), blockPixels.z(), 0, (int)blockBytes, &dummyData[0]);
 					expectError(requiredError);
 
-					glCompressedTexImage3D(GL_TEXTURE_2D_ARRAY, 0, format, blockPixels.x(), blockPixels.y(), blockPixels.z(), 0, blockBytes, &dummyData[0]);
+					glCompressedTexImage3D(GL_TEXTURE_2D_ARRAY, 0, format, blockPixels.x(), blockPixels.y(), blockPixels.z(), 0, (int)blockBytes, &dummyData[0]);
 					expectError(requiredError);
 				}
 			}
