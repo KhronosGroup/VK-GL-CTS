@@ -1387,10 +1387,10 @@ static void generateBlockCaseTestData (vector<deUint8>& dst, CompressedTexFormat
 				{
 					// Void extent block.
 					const bool		isVoidExtentHDR		= rnd.getBool();
-					const deUint16	r					= isVoidExtentHDR ? deFloat32To16(rnd.getFloat(0.0f, 1.0f)) : rnd.getInt(0, 0xffff);
-					const deUint16	g					= isVoidExtentHDR ? deFloat32To16(rnd.getFloat(0.0f, 1.0f)) : rnd.getInt(0, 0xffff);
-					const deUint16	b					= isVoidExtentHDR ? deFloat32To16(rnd.getFloat(0.0f, 1.0f)) : rnd.getInt(0, 0xffff);
-					const deUint16	a					= isVoidExtentHDR ? deFloat32To16(rnd.getFloat(0.0f, 1.0f)) : rnd.getInt(0, 0xffff);
+					const deUint16	r					= isVoidExtentHDR ? deFloat32To16(rnd.getFloat(0.0f, 1.0f)) : (deUint16)rnd.getInt(0, 0xffff);
+					const deUint16	g					= isVoidExtentHDR ? deFloat32To16(rnd.getFloat(0.0f, 1.0f)) : (deUint16)rnd.getInt(0, 0xffff);
+					const deUint16	b					= isVoidExtentHDR ? deFloat32To16(rnd.getFloat(0.0f, 1.0f)) : (deUint16)rnd.getInt(0, 0xffff);
+					const deUint16	a					= isVoidExtentHDR ? deFloat32To16(rnd.getFloat(0.0f, 1.0f)) : (deUint16)rnd.getInt(0, 0xffff);
 					generateVoidExtentBlock(VoidExtentParams(isVoidExtentHDR, r, g, b, a)).pushBytesToVector(dst);
 				}
 				else
