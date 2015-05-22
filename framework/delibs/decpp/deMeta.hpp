@@ -48,6 +48,24 @@ struct Not
 	};
 };
 
+template <typename A, typename B>
+struct TypesSame
+{
+	enum
+	{
+		Value = false
+	};
+};
+
+template <typename A>
+struct TypesSame<A, A>
+{
+	enum
+	{
+		Value = true
+	};
+};
+
 } // meta
 } // de
 
