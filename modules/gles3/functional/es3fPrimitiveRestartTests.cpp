@@ -413,7 +413,7 @@ void PrimitiveRestartCase::init (void)
 
 			for (int i = 0; i < numVertices; i++)
 			{
-				float fx = -0.9f + 1.8f * ((i/3) + (i%3 == 2 ? 0.8f : 0.0f)) * 3 / numRows;
+				float fx = -0.9f + 1.8f * ((float)(i/3) + (i%3 == 2 ? 0.8f : 0.0f)) * 3 / numRows;
 				float fy = -0.9f + 1.8f * ((float)rowNdx + (i%3 == 0 ? 0.0f : 0.8f)) / numRows;
 
 				m_positions.push_back(fx);
