@@ -540,8 +540,8 @@ public:
 			{
 				for (int xo = 0; xo < w; xo++)
 				{
-					const float			xf		= float(xo+0.5f) / float(w);
-					const float			yf		= float((h-yo-1)+0.5f) / float(h);
+					const float			xf		= (float(xo)+0.5f) / float(w);
+					const float			yf		= (float(h-yo-1)+0.5f) / float(h);
 					const tcu::Vec4		color	(xf, yf, 0.0f, 1.0f);
 					const int			dx		= x0+xo;
 					const int			dy		= y0+yo;
