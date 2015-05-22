@@ -706,7 +706,7 @@ protected:
 		IVec2					quadSizePixels			(m_numSamples == 0 ? getWidth() : de::min(128, getWidth()),
 														 m_numSamples == 0 ? getHeight() : de::min(128, getHeight()));
 		Vec2					quadNDCLeftBottomXY		(-1.0f, -1.0f);
-		Vec2					quadNDCSize				(2.0f*quadSizePixels.x()/getWidth(), 2.0f*quadSizePixels.y()/getHeight());
+		Vec2					quadNDCSize				(2.0f*(float)quadSizePixels.x()/(float)getWidth(), 2.0f*(float)quadSizePixels.y()/(float)getHeight());
 		Vec2					quadNDCRightTopXY		= quadNDCLeftBottomXY + quadNDCSize;
 		tcu::TextureFormat		depthStencilFmt			= m_depthStencilFmt != GL_NONE ? glu::mapGLInternalFormat(m_depthStencilFmt) : tcu::TextureFormat();
 		bool					depth					= depthStencilFmt.order == tcu::TextureFormat::D || depthStencilFmt.order == tcu::TextureFormat::DS;
@@ -1085,7 +1085,7 @@ protected:
 		IVec2					quadSizePixels			(m_numSamples == 0 ? getWidth() : de::min(128, getWidth()),
 														 m_numSamples == 0 ? getHeight() : de::min(128, getHeight()));
 		Vec2					quadNDCLeftBottomXY		(-1.0f, -1.0f);
-		Vec2					quadNDCSize				(2.0f*quadSizePixels.x()/getWidth(), 2.0f*quadSizePixels.y()/getHeight());
+		Vec2					quadNDCSize				(2.0f*(float)quadSizePixels.x()/(float)getWidth(), 2.0f*(float)quadSizePixels.y()/(float)getHeight());
 		Vec2					quadNDCRightTopXY		= quadNDCLeftBottomXY + quadNDCSize;
 		tcu::TextureFormat		depthStencilFmt			= m_depthStencilFmt != GL_NONE ? glu::mapGLInternalFormat(m_depthStencilFmt) : tcu::TextureFormat();
 		bool					depth					= depthStencilFmt.order == tcu::TextureFormat::D || depthStencilFmt.order == tcu::TextureFormat::DS;
