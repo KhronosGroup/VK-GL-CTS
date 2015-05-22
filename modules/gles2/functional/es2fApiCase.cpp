@@ -86,7 +86,12 @@ void ApiCase::expectError (deUint32 expected0, deUint32 expected1)
 
 void ApiCase::checkBooleans (deUint8 value, deUint8 expected)
 {
-	if (value != expected)
+	checkBooleans((deInt32)value, expected);
+}
+
+void ApiCase::checkBooleans (deInt32 value, deUint8 expected)
+{
+	if (value != (deInt32)expected)
 	{
 		m_log << tcu::TestLog::Message << "// ERROR: expected " << (expected	? "GL_TRUE" : "GL_FALSE") << tcu::TestLog::EndMessage;
 		if (m_testCtx.getTestResult() == QP_TEST_RESULT_PASS)
