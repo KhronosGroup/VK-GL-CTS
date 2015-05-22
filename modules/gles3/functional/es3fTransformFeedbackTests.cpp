@@ -440,12 +440,12 @@ static void computeInputLayout (vector<Attribute>& attributes, int& inputStride,
 
 	// Add position.
 	attributes.push_back(Attribute("a_position", glu::VarType(glu::TYPE_FLOAT_VEC4, glu::PRECISION_HIGHP), inputStride));
-	inputStride += 4*sizeof(deUint32);
+	inputStride += 4*(int)sizeof(deUint32);
 
 	if (usePointSize)
 	{
 		attributes.push_back(Attribute("a_pointSize", glu::VarType(glu::TYPE_FLOAT, glu::PRECISION_HIGHP), inputStride));
-		inputStride += 1*sizeof(deUint32);
+		inputStride += 1*(int)sizeof(deUint32);
 	}
 
 	// Compute attribute vector.
@@ -457,7 +457,7 @@ static void computeInputLayout (vector<Attribute>& attributes, int& inputStride,
 			string			name	= getAttributeName(var->name.c_str(), vecIter.getPath());
 
 			attributes.push_back(Attribute(name, type, inputStride));
-			inputStride += glu::getDataTypeScalarSize(type.getBasicType())*sizeof(deUint32);
+			inputStride += glu::getDataTypeScalarSize(type.getBasicType())*(int)sizeof(deUint32);
 		}
 	}
 }
@@ -516,7 +516,7 @@ static void computeTransformFeedbackOutputs (vector<Output>& transformFeedbackOu
 			}
 		}
 
-		accumulatedSize += output.type.getScalarSize()*sizeof(deUint32);
+		accumulatedSize += output.type.getScalarSize()*(int)sizeof(deUint32);
 	}
 }
 
@@ -776,7 +776,7 @@ static bool compareTransformFeedbackOutput (tcu::TestLog& log, deUint32 primitiv
 		if (!isOk)
 			break;
 
-		outOffset += numComponents*sizeof(deUint32);
+		outOffset += numComponents*(int)sizeof(deUint32);
 	}
 
 	return isOk;
@@ -959,13 +959,13 @@ void TransformFeedbackCase::init (void)
 	if (m_bufferMode == GL_SEPARATE_ATTRIBS)
 	{
 		for (vector<Output>::const_iterator outIter = m_transformFeedbackOutputs.begin(); outIter != m_transformFeedbackOutputs.end(); outIter++)
-			m_bufferStrides.push_back(outIter->type.getScalarSize()*sizeof(deUint32));
+			m_bufferStrides.push_back(outIter->type.getScalarSize()*(int)sizeof(deUint32));
 	}
 	else
 	{
 		int totalSize = 0;
 		for (vector<Output>::const_iterator outIter = m_transformFeedbackOutputs.begin(); outIter != m_transformFeedbackOutputs.end(); outIter++)
-			totalSize += outIter->type.getScalarSize()*sizeof(deUint32);
+			totalSize += outIter->type.getScalarSize()*(int)sizeof(deUint32);
 
 		m_bufferStrides.push_back(totalSize);
 	}
