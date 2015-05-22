@@ -831,8 +831,8 @@ void VertexIDCase::init (void)
 		const int	quadY		= quadNdx/maxQuadsX;
 		const int	quadX		= quadNdx%maxQuadsX;
 
-		const float	x0			= -1.0f + quadX*w;
-		const float	y0			= -1.0f + quadY*h;
+		const float	x0			= -1.0f + float(quadX)*w;
+		const float	y0			= -1.0f + float(quadY)*h;
 
 		if (triNdx%2 == 0)
 		{
