@@ -235,7 +235,7 @@ FragDepthCompareCase::IterateResult FragDepthCompareCase::iterate (void)
 	// Render reference.
 	for (int y = 0; y < referenceFrame.getHeight(); y++)
 	{
-		float	yf		= ((float)y + 0.5f) / referenceFrame.getHeight();
+		float	yf		= ((float)y + 0.5f) / (float)referenceFrame.getHeight();
 		int		half	= de::clamp((int)((float)referenceFrame.getWidth()*0.5f + 0.5f), 0, referenceFrame.getWidth());
 
 		// Fill left half - comparison to constant 0.5
@@ -252,7 +252,7 @@ FragDepthCompareCase::IterateResult FragDepthCompareCase::iterate (void)
 		for (int x = half; x < referenceFrame.getWidth(); x++)
 		{
 			float	xf		= ((float)x + 0.5f) / (float)referenceFrame.getWidth();
-			float	xh		= ((float)x - half + 0.5f) / (float)(referenceFrame.getWidth()-half);
+			float	xh		= ((float)(x - half) + 0.5f) / (float)(referenceFrame.getWidth()-half);
 			float	rd		= 1.0f - (xh + yf) * 0.5f;
 			float	d		= m_evalFunc(Vec2(xf, yf));
 			bool	dpass	= compare(m_compareFunc, d, rd);
