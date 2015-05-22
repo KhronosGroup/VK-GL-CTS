@@ -343,7 +343,7 @@ void ShaderTextureFunctionCase::initTexture (void)
 			m_texture2D = new glu::Texture2D(m_renderCtx, m_textureSpec.format, m_textureSpec.dataType, m_textureSpec.width, m_textureSpec.height);
 			for (int level = 0; level < m_textureSpec.numLevels; level++)
 			{
-				float	fA		= level*cStep;
+				float	fA		= float(level)*cStep;
 				float	fB		= 1.0f-fA;
 				Vec4	colorA	= cBias + cScale*Vec4(fA, fB, fA, fB);
 				Vec4	colorB	= cBias + cScale*Vec4(fB, fA, fB, fA);
@@ -354,8 +354,8 @@ void ShaderTextureFunctionCase::initTexture (void)
 			m_texture2D->upload();
 
 			// Compute LOD.
-			float dudx = (m_lookupSpec.maxCoord[0]-m_lookupSpec.minCoord[0])*proj*m_textureSpec.width	/ (float)viewportSize[0];
-			float dvdy = (m_lookupSpec.maxCoord[1]-m_lookupSpec.minCoord[1])*proj*m_textureSpec.height	/ (float)viewportSize[1];
+			float dudx = (m_lookupSpec.maxCoord[0]-m_lookupSpec.minCoord[0])*proj*(float)m_textureSpec.width	/ (float)viewportSize[0];
+			float dvdy = (m_lookupSpec.maxCoord[1]-m_lookupSpec.minCoord[1])*proj*(float)m_textureSpec.height	/ (float)viewportSize[1];
 			m_lookupParams.lod = computeLodFromDerivates(dudx, 0.0f, 0.0f, dvdy);
 
 			// Append to texture list.
@@ -374,7 +374,7 @@ void ShaderTextureFunctionCase::initTexture (void)
 			m_textureCube = new glu::TextureCube(m_renderCtx, m_textureSpec.format, m_textureSpec.dataType, m_textureSpec.width);
 			for (int level = 0; level < m_textureSpec.numLevels; level++)
 			{
-				float	fA		= level*cStep;
+				float	fA		= float(level)*cStep;
 				float	fB		= 1.0f-fA;
 				Vec2	f		(fA, fB);
 
@@ -399,8 +399,8 @@ void ShaderTextureFunctionCase::initTexture (void)
 			tcu::CubeFaceFloatCoords	c00		= tcu::getCubeFaceCoords(Vec3(m_lookupSpec.minCoord[0]*proj, m_lookupSpec.minCoord[1]*proj, m_lookupSpec.minCoord[2]*proj));
 			tcu::CubeFaceFloatCoords	c10		= tcu::getCubeFaceCoords(Vec3(m_lookupSpec.maxCoord[0]*proj, m_lookupSpec.minCoord[1]*proj, m_lookupSpec.minCoord[2]*proj));
 			tcu::CubeFaceFloatCoords	c01		= tcu::getCubeFaceCoords(Vec3(m_lookupSpec.minCoord[0]*proj, m_lookupSpec.maxCoord[1]*proj, m_lookupSpec.minCoord[2]*proj));
-			float						dudx	= (c10.s - c00.s)*m_textureSpec.width	/ (float)viewportSize[0];
-			float						dvdy	= (c01.t - c00.t)*m_textureSpec.height	/ (float)viewportSize[1];
+			float						dudx	= (c10.s - c00.s)*(float)m_textureSpec.width	/ (float)viewportSize[0];
+			float						dvdy	= (c01.t - c00.t)*(float)m_textureSpec.height	/ (float)viewportSize[1];
 
 			m_lookupParams.lod = computeLodFromDerivates(dudx, 0.0f, 0.0f, dvdy);
 
