@@ -624,13 +624,13 @@ VertexAttributeCase::IterateResult VertexAttributeCase::iterate (void)
 	{
 		const int baseNdx = (x * (DE_LENGTH_OF_ARRAY(s_specialFloats) - 1) + y) * 6;
 
-		indices[baseNdx + 0] = (x+0) * DE_LENGTH_OF_ARRAY(s_specialFloats) + (y+0);
-		indices[baseNdx + 1] = (x+1) * DE_LENGTH_OF_ARRAY(s_specialFloats) + (y+1);
-		indices[baseNdx + 2] = (x+1) * DE_LENGTH_OF_ARRAY(s_specialFloats) + (y+0);
+		indices[baseNdx + 0] = (deUint16)((x+0) * DE_LENGTH_OF_ARRAY(s_specialFloats) + (y+0));
+		indices[baseNdx + 1] = (deUint16)((x+1) * DE_LENGTH_OF_ARRAY(s_specialFloats) + (y+1));
+		indices[baseNdx + 2] = (deUint16)((x+1) * DE_LENGTH_OF_ARRAY(s_specialFloats) + (y+0));
 
-		indices[baseNdx + 3] = (x+0) * DE_LENGTH_OF_ARRAY(s_specialFloats) + (y+0);
-		indices[baseNdx + 4] = (x+1) * DE_LENGTH_OF_ARRAY(s_specialFloats) + (y+1);
-		indices[baseNdx + 5] = (x+0) * DE_LENGTH_OF_ARRAY(s_specialFloats) + (y+1);
+		indices[baseNdx + 3] = (deUint16)((x+0) * DE_LENGTH_OF_ARRAY(s_specialFloats) + (y+0));
+		indices[baseNdx + 4] = (deUint16)((x+1) * DE_LENGTH_OF_ARRAY(s_specialFloats) + (y+1));
+		indices[baseNdx + 5] = (deUint16)((x+0) * DE_LENGTH_OF_ARRAY(s_specialFloats) + (y+1));
 	}
 
 	m_testCtx.getLog() << tcu::TestLog::Message << "Drawing a grid with the shader. Setting a_attr for each vertex to (special, special, 1, 1)." << tcu::TestLog::EndMessage;
@@ -843,13 +843,13 @@ UniformCase::IterateResult UniformCase::iterate (void)
 	{
 		const int baseNdx = (x * (DE_LENGTH_OF_ARRAY(s_specialFloats)) + y) * 6;
 
-		indices[baseNdx + 0] = (x+0) * (DE_LENGTH_OF_ARRAY(s_specialFloats) + 1) + (y+0);
-		indices[baseNdx + 1] = (x+1) * (DE_LENGTH_OF_ARRAY(s_specialFloats) + 1) + (y+1);
-		indices[baseNdx + 2] = (x+1) * (DE_LENGTH_OF_ARRAY(s_specialFloats) + 1) + (y+0);
+		indices[baseNdx + 0] = (deUint16)((x+0) * (DE_LENGTH_OF_ARRAY(s_specialFloats) + 1) + (y+0));
+		indices[baseNdx + 1] = (deUint16)((x+1) * (DE_LENGTH_OF_ARRAY(s_specialFloats) + 1) + (y+1));
+		indices[baseNdx + 2] = (deUint16)((x+1) * (DE_LENGTH_OF_ARRAY(s_specialFloats) + 1) + (y+0));
 
-		indices[baseNdx + 3] = (x+0) * (DE_LENGTH_OF_ARRAY(s_specialFloats) + 1) + (y+0);
-		indices[baseNdx + 4] = (x+1) * (DE_LENGTH_OF_ARRAY(s_specialFloats) + 1) + (y+1);
-		indices[baseNdx + 5] = (x+0) * (DE_LENGTH_OF_ARRAY(s_specialFloats) + 1) + (y+1);
+		indices[baseNdx + 3] = (deUint16)((x+0) * (DE_LENGTH_OF_ARRAY(s_specialFloats) + 1) + (y+0));
+		indices[baseNdx + 4] = (deUint16)((x+1) * (DE_LENGTH_OF_ARRAY(s_specialFloats) + 1) + (y+1));
+		indices[baseNdx + 5] = (deUint16)((x+0) * (DE_LENGTH_OF_ARRAY(s_specialFloats) + 1) + (y+1));
 	}
 
 	m_testCtx.getLog() << tcu::TestLog::Message << "Drawing a grid with the shader. Setting u_special for vertex each tile to (special, special, 1, 1)." << tcu::TestLog::EndMessage;
@@ -1148,13 +1148,13 @@ TextureSamplerCase::IterateResult TextureSamplerCase::iterate (void)
 	{
 		const int baseNdx = (x * (DE_LENGTH_OF_ARRAY(s_specialFloats) - 1) + y) * 6;
 
-		indices[baseNdx + 0] = (x+0) * DE_LENGTH_OF_ARRAY(s_specialFloats) + (y+0);
-		indices[baseNdx + 1] = (x+1) * DE_LENGTH_OF_ARRAY(s_specialFloats) + (y+1);
-		indices[baseNdx + 2] = (x+1) * DE_LENGTH_OF_ARRAY(s_specialFloats) + (y+0);
+		indices[baseNdx + 0] = (deUint16)((x+0) * DE_LENGTH_OF_ARRAY(s_specialFloats) + (y+0));
+		indices[baseNdx + 1] = (deUint16)((x+1) * DE_LENGTH_OF_ARRAY(s_specialFloats) + (y+1));
+		indices[baseNdx + 2] = (deUint16)((x+1) * DE_LENGTH_OF_ARRAY(s_specialFloats) + (y+0));
 
-		indices[baseNdx + 3] = (x+0) * DE_LENGTH_OF_ARRAY(s_specialFloats) + (y+0);
-		indices[baseNdx + 4] = (x+1) * DE_LENGTH_OF_ARRAY(s_specialFloats) + (y+1);
-		indices[baseNdx + 5] = (x+0) * DE_LENGTH_OF_ARRAY(s_specialFloats) + (y+1);
+		indices[baseNdx + 3] = (deUint16)((x+0) * DE_LENGTH_OF_ARRAY(s_specialFloats) + (y+0));
+		indices[baseNdx + 4] = (deUint16)((x+1) * DE_LENGTH_OF_ARRAY(s_specialFloats) + (y+1));
+		indices[baseNdx + 5] = (deUint16)((x+0) * DE_LENGTH_OF_ARRAY(s_specialFloats) + (y+1));
 	}
 
 	m_testCtx.getLog() << tcu::TestLog::Message << "Drawing a textured grid with the shader. Sampling from the texture using special floating point values." << tcu::TestLog::EndMessage;
@@ -1335,13 +1335,13 @@ void OutputCase::testFBO (void)
 	{
 		const int baseNdx = y * 6;
 
-		indices[baseNdx + 0] = (y + 0) * 2;
-		indices[baseNdx + 1] = (y + 1) * 2;
-		indices[baseNdx + 2] = (y + 1) * 2 + 1;
+		indices[baseNdx + 0] = (deUint16)((y + 0) * 2);
+		indices[baseNdx + 1] = (deUint16)((y + 1) * 2);
+		indices[baseNdx + 2] = (deUint16)((y + 1) * 2 + 1);
 
-		indices[baseNdx + 3] = (y + 0) * 2;
-		indices[baseNdx + 4] = (y + 1) * 2 + 1;
-		indices[baseNdx + 5] = (y + 0) * 2 + 1;
+		indices[baseNdx + 3] = (deUint16)((y + 0) * 2);
+		indices[baseNdx + 4] = (deUint16)((y + 1) * 2 + 1);
+		indices[baseNdx + 5] = (deUint16)((y + 0) * 2 + 1);
 	}
 
 	// Draw grids
@@ -1531,13 +1531,13 @@ void BlendingCase::testFBO (void)
 	{
 		const int baseNdx = (x * numBlendFuncs + y) * 6;
 
-		indices[baseNdx + 0] = (x+0) * (numBlendFuncs + 1) + (y+0);
-		indices[baseNdx + 1] = (x+1) * (numBlendFuncs + 1) + (y+1);
-		indices[baseNdx + 2] = (x+1) * (numBlendFuncs + 1) + (y+0);
+		indices[baseNdx + 0] = (deUint16)((x+0) * (numBlendFuncs + 1) + (y+0));
+		indices[baseNdx + 1] = (deUint16)((x+1) * (numBlendFuncs + 1) + (y+1));
+		indices[baseNdx + 2] = (deUint16)((x+1) * (numBlendFuncs + 1) + (y+0));
 
-		indices[baseNdx + 3] = (x+0) * (numBlendFuncs + 1) + (y+0);
-		indices[baseNdx + 4] = (x+1) * (numBlendFuncs + 1) + (y+1);
-		indices[baseNdx + 5] = (x+0) * (numBlendFuncs + 1) + (y+1);
+		indices[baseNdx + 3] = (deUint16)((x+0) * (numBlendFuncs + 1) + (y+0));
+		indices[baseNdx + 4] = (deUint16)((x+1) * (numBlendFuncs + 1) + (y+1));
+		indices[baseNdx + 5] = (deUint16)((x+0) * (numBlendFuncs + 1) + (y+1));
 	}
 
 	// Draw tiles
@@ -1670,9 +1670,9 @@ void BlendingCase::drawTestImage (tcu::PixelBufferAccess dst, GLuint uColorLoc, 
 		gl.uniform4fv(uColorLoc, 1, color.getPtr());
 
 		deUint16 indices[3];
-		indices[0] = rnd.getInt(0, maxVertexIndex);
-		indices[1] = rnd.getInt(0, maxVertexIndex);
-		indices[2] = rnd.getInt(0, maxVertexIndex);
+		indices[0] = (deUint16)rnd.getInt(0, maxVertexIndex);
+		indices[1] = (deUint16)rnd.getInt(0, maxVertexIndex);
+		indices[2] = (deUint16)rnd.getInt(0, maxVertexIndex);
 
 		gl.drawElements(GL_TRIANGLES, 3, GL_UNSIGNED_SHORT, indices);
 	}
