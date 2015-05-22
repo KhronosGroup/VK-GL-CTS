@@ -175,9 +175,9 @@ void DrawCallBatchingTest::createIndexData (void)
 		{
 			for (int triangleNdx = 0; triangleNdx < m_spec.triangleCount; triangleNdx++)
 			{
-				m_dynamicIndexData.push_back(triangleNdx * 3);
-				m_dynamicIndexData.push_back(triangleNdx * 3 + 1);
-				m_dynamicIndexData.push_back(triangleNdx * 3 + 2);
+				m_dynamicIndexData.push_back(deUint8(triangleNdx * 3));
+				m_dynamicIndexData.push_back(deUint8(triangleNdx * 3 + 1));
+				m_dynamicIndexData.push_back(deUint8(triangleNdx * 3 + 2));
 			}
 		}
 	}
@@ -187,9 +187,9 @@ void DrawCallBatchingTest::createIndexData (void)
 		{
 			for (int triangleNdx = 0; triangleNdx < m_spec.triangleCount; triangleNdx++)
 			{
-				m_staticIndexData.push_back(triangleNdx * 3);
-				m_staticIndexData.push_back(triangleNdx * 3 + 1);
-				m_staticIndexData.push_back(triangleNdx * 3 + 2);
+				m_staticIndexData.push_back(deUint8(triangleNdx * 3));
+				m_staticIndexData.push_back(deUint8(triangleNdx * 3 + 1));
+				m_staticIndexData.push_back(deUint8(triangleNdx * 3 + 2));
 			}
 		}
 	}
@@ -277,18 +277,18 @@ void DrawCallBatchingTest::createAttributeDatas (void)
 			{
 				int sign = (m_spec.triangleCount % 2 == 1 || i % 2 == 0 ? 1 : -1);
 
-				data.push_back(-127 * sign);
-				data.push_back(-127 * sign);
+				data.push_back(deInt8(-127 * sign));
+				data.push_back(deInt8(-127 * sign));
 				data.push_back(0);
 				data.push_back(127);
 
-				data.push_back(127 * sign);
-				data.push_back(-127 * sign);
+				data.push_back(deInt8(127 * sign));
+				data.push_back(deInt8(-127 * sign));
 				data.push_back(0);
 				data.push_back(127);
 
-				data.push_back(127 * sign);
-				data.push_back(127 * sign);
+				data.push_back(deInt8(127 * sign));
+				data.push_back(deInt8(127 * sign));
 				data.push_back(0);
 				data.push_back(127);
 			}
@@ -298,7 +298,7 @@ void DrawCallBatchingTest::createAttributeDatas (void)
 			data.reserve(4 * 3 * m_spec.triangleCount * m_spec.drawCallCount);
 
 			for (int i = 0; i < 4 * 3 * m_spec.triangleCount * m_spec.drawCallCount; i++)
-				data.push_back(m_rnd.getUint32());
+				data.push_back((deInt8)m_rnd.getUint32());
 		}
 
 		m_staticAttributeDatas.push_back(data);
@@ -317,18 +317,18 @@ void DrawCallBatchingTest::createAttributeDatas (void)
 			{
 				int sign = (i % 2 == 0 ? 1 : -1);
 
-				data.push_back(-127 * sign);
-				data.push_back(-127 * sign);
+				data.push_back(deInt8(-127 * sign));
+				data.push_back(deInt8(-127 * sign));
 				data.push_back(0);
 				data.push_back(127);
 
-				data.push_back(127 * sign);
-				data.push_back(-127 * sign);
+				data.push_back(deInt8(127 * sign));
+				data.push_back(deInt8(-127 * sign));
 				data.push_back(0);
 				data.push_back(127);
 
-				data.push_back(127 * sign);
-				data.push_back(127 * sign);
+				data.push_back(deInt8(127 * sign));
+				data.push_back(deInt8(127 * sign));
 				data.push_back(0);
 				data.push_back(127);
 			}
@@ -338,7 +338,7 @@ void DrawCallBatchingTest::createAttributeDatas (void)
 			data.reserve(4 * 3 * m_spec.triangleCount * m_spec.drawCallCount);
 
 			for (int i = 0; i < 4 * 3 * m_spec.triangleCount * m_spec.drawCallCount; i++)
-				data.push_back(m_rnd.getUint32());
+				data.push_back((deInt8)m_rnd.getUint32());
 		}
 
 		m_dynamicAttributeDatas.push_back(data);
@@ -859,7 +859,7 @@ tcu::TestCase::IterateResult DrawCallBatchingTest::iterate (void)
 	}
 	else if (m_state == STATE_SAMPLE)
 	{
-		if ((int)m_unbatchedSamplesUs.size() < m_unbatchedSampleCount && (m_unbatchedSamplesUs.size() / ((double)m_unbatchedSampleCount) < m_batchedSamplesUs.size() / ((double)m_batchedSampleCount) || (int)m_batchedSamplesUs.size() >= m_batchedSampleCount))
+		if ((int)m_unbatchedSamplesUs.size() < m_unbatchedSampleCount && ((double)m_unbatchedSamplesUs.size() / ((double)m_unbatchedSampleCount) < (double)m_batchedSamplesUs.size() / ((double)m_batchedSampleCount) || (int)m_batchedSamplesUs.size() >= m_batchedSampleCount))
 			m_unbatchedSamplesUs.push_back(renderUnbatched());
 		else if ((int)m_batchedSamplesUs.size() < m_batchedSampleCount)
 			m_batchedSamplesUs.push_back(renderBatched());
