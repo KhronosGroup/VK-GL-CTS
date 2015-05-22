@@ -187,7 +187,7 @@ protected:
 
 			for (int ndx = 0; ndx < numSteps; ndx++)
 			{
-				float d = -1.0f + step*ndx;
+				float d = -1.0f + step*(float)ndx;
 				float c = (float)ndx / (float)(numSteps-1);
 
 				flatShader.setColor(*getCurrentContext(), flatShaderID, Vec4(0.0f, 0.0f, c, 1.0f) * (colorFmtInfo.valueMax-colorFmtInfo.valueMin) + colorFmtInfo.valueMin);
