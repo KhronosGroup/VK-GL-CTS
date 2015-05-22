@@ -111,12 +111,12 @@ static void rectsToTriangles (const vector<IVec4>& rects, int width, int height,
 		positions[rectNdx*4 + 2] = Vec2(x0, y1);
 		positions[rectNdx*4 + 3] = Vec2(x1, y1);
 
-		indices[rectNdx*6 + 0] = rectNdx*4 + 0;
-		indices[rectNdx*6 + 1] = rectNdx*4 + 1;
-		indices[rectNdx*6 + 2] = rectNdx*4 + 2;
-		indices[rectNdx*6 + 3] = rectNdx*4 + 2;
-		indices[rectNdx*6 + 4] = rectNdx*4 + 1;
-		indices[rectNdx*6 + 5] = rectNdx*4 + 3;
+		indices[rectNdx*6 + 0] = (deUint16)(rectNdx*4 + 0);
+		indices[rectNdx*6 + 1] = (deUint16)(rectNdx*4 + 1);
+		indices[rectNdx*6 + 2] = (deUint16)(rectNdx*4 + 2);
+		indices[rectNdx*6 + 3] = (deUint16)(rectNdx*4 + 2);
+		indices[rectNdx*6 + 4] = (deUint16)(rectNdx*4 + 1);
+		indices[rectNdx*6 + 5] = (deUint16)(rectNdx*4 + 3);
 	}
 }
 

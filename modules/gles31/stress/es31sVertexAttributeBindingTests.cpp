@@ -450,12 +450,12 @@ void SingleBindingCase::createBuffers (void)
 		const tcu::Vec4&	color = ((x + y) % 2 == 0) ? (colorA) : (colorB);
 		const tcu::Vec4		positions[6] =
 		{
-			tcu::Vec4((x+0) / float(GRID_SIZE) * 2.0f - 1.0f, (y+0) / float(GRID_SIZE) * 2.0f - 1.0f, 0.0f, 1.0f),
-			tcu::Vec4((x+0) / float(GRID_SIZE) * 2.0f - 1.0f, (y+1) / float(GRID_SIZE) * 2.0f - 1.0f, 0.0f, 1.0f),
-			tcu::Vec4((x+1) / float(GRID_SIZE) * 2.0f - 1.0f, (y+1) / float(GRID_SIZE) * 2.0f - 1.0f, 0.0f, 1.0f),
-			tcu::Vec4((x+0) / float(GRID_SIZE) * 2.0f - 1.0f, (y+0) / float(GRID_SIZE) * 2.0f - 1.0f, 0.0f, 1.0f),
-			tcu::Vec4((x+1) / float(GRID_SIZE) * 2.0f - 1.0f, (y+1) / float(GRID_SIZE) * 2.0f - 1.0f, 0.0f, 1.0f),
-			tcu::Vec4((x+1) / float(GRID_SIZE) * 2.0f - 1.0f, (y+0) / float(GRID_SIZE) * 2.0f - 1.0f, 0.0f, 1.0f),
+			tcu::Vec4(float(x+0) / float(GRID_SIZE) * 2.0f - 1.0f, float(y+0) / float(GRID_SIZE) * 2.0f - 1.0f, 0.0f, 1.0f),
+			tcu::Vec4(float(x+0) / float(GRID_SIZE) * 2.0f - 1.0f, float(y+1) / float(GRID_SIZE) * 2.0f - 1.0f, 0.0f, 1.0f),
+			tcu::Vec4(float(x+1) / float(GRID_SIZE) * 2.0f - 1.0f, float(y+1) / float(GRID_SIZE) * 2.0f - 1.0f, 0.0f, 1.0f),
+			tcu::Vec4(float(x+0) / float(GRID_SIZE) * 2.0f - 1.0f, float(y+0) / float(GRID_SIZE) * 2.0f - 1.0f, 0.0f, 1.0f),
+			tcu::Vec4(float(x+1) / float(GRID_SIZE) * 2.0f - 1.0f, float(y+1) / float(GRID_SIZE) * 2.0f - 1.0f, 0.0f, 1.0f),
+			tcu::Vec4(float(x+1) / float(GRID_SIZE) * 2.0f - 1.0f, float(y+0) / float(GRID_SIZE) * 2.0f - 1.0f, 0.0f, 1.0f),
 		};
 
 		// copy cell vertices to the buffer.

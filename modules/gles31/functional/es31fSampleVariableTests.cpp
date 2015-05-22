@@ -154,7 +154,7 @@ SampleAverageVerifier::SampleAverageVerifier (int _numSamples)
 	, m_distanceThreshold			(0.0f)
 {
 	// approximate Bates distribution as normal
-	const float variance			= (1.0f / (12.0f * m_numSamples));
+	const float variance			= (1.0f / (12.0f * (float)m_numSamples));
 	const float standardDeviation	= deFloatSqrt(variance);
 
 	// 95% of means of sample positions are within 2 standard deviations if
@@ -168,7 +168,7 @@ bool SampleAverageVerifier::verify (const tcu::RGBA& testColor, const tcu::IVec2
 	DE_UNREF(position);
 	DE_ASSERT(m_isStatisticallySignificant);
 
-	const tcu::Vec2	avgPosition				(testColor.getGreen() / 255.0f, testColor.getBlue() / 255.0f);
+	const tcu::Vec2	avgPosition				((float)testColor.getGreen() / 255.0f, (float)testColor.getBlue() / 255.0f);
 	const tcu::Vec2	distanceFromCenter		= tcu::abs(avgPosition - tcu::Vec2(0.5f, 0.5f));
 
 	return distanceFromCenter.x() < m_distanceThreshold && distanceFromCenter.y() < m_distanceThreshold;
@@ -557,7 +557,7 @@ bool SampleIDCase::verifySampleBuffers (const std::vector<tcu::Surface>& resultB
 	{
 		// sample id should be sample index
 		const int threshold = 255 / 4 / m_numTargetSamples + 1;
-		const float sampleIdColor = sampleNdx / (float)m_numTargetSamples;
+		const float sampleIdColor = (float)sampleNdx / (float)m_numTargetSamples;
 
 		m_testCtx.getLog() << tcu::TestLog::Message << "Verifying sample " << (sampleNdx+1) << "/" << (int)resultBuffers.size() << tcu::TestLog::EndMessage;
 		allOk &= verifyImageWithVerifier(resultBuffers[sampleNdx], m_testCtx.getLog(), ColorVerifier(tcu::Vec3(0.0f, sampleIdColor, 1.0f), tcu::IVec3(1, threshold, 1)), false);
@@ -737,7 +737,7 @@ bool SamplePosDistributionCase::verifySampleBuffers (const std::vector<tcu::Surf
 			for (int sampleNdx = 0; sampleNdx < (int)resultBuffers.size(); ++sampleNdx)
 			{
 				const tcu::RGBA color = resultBuffers[sampleNdx].getPixel(x, y);
-				samplePositions[sampleNdx] = tcu::Vec2(color.getGreen() / 255.0f, color.getBlue() / 255.0f);
+				samplePositions[sampleNdx] = tcu::Vec2((float)color.getGreen() / 255.0f, (float)color.getBlue() / 255.0f);
 			}
 
 			// Just check there are no two samples with same positions
@@ -1534,7 +1534,7 @@ bool SampleMaskUniqueCase::verifySampleBuffers (const std::vector<tcu::Surface>&
 			for (int sampleNdx = 0; sampleNdx < (int)resultBuffers.size(); ++sampleNdx)
 			{
 				const tcu::RGBA color = resultBuffers[sampleNdx].getPixel(x, y);
-				maskBitIndices[sampleNdx] = (int)deFloatRound(color.getGreen() / 255.0f * m_numTargetSamples);
+				maskBitIndices[sampleNdx] = (int)deFloatRound((float)color.getGreen() / 255.0f * (float)m_numTargetSamples);
 			}
 
 			// just check there are no two invocations with the same bit index
@@ -1748,16 +1748,16 @@ void SampleMaskUniqueSetCase::postTest (void)
 			deUint16			high;
 
 			{
-				int redBits		= (int)deFloatRound(lowColor.getRed() / 255.0f * 31);
-				int greenBits	= (int)deFloatRound(lowColor.getGreen() / 255.0f * 63);
-				int blueBits	= (int)deFloatRound(lowColor.getBlue() / 255.0f * 31);
+				int redBits		= (int)deFloatRound((float)lowColor.getRed() / 255.0f * 31);
+				int greenBits	= (int)deFloatRound((float)lowColor.getGreen() / 255.0f * 63);
+				int blueBits	= (int)deFloatRound((float)lowColor.getBlue() / 255.0f * 31);
 
 				low = (deUint16)(redBits | (greenBits << 5) | (blueBits << 11));
 			}
 			{
-				int redBits		= (int)deFloatRound(highColor.getRed() / 255.0f * 31);
-				int greenBits	= (int)deFloatRound(highColor.getGreen() / 255.0f * 63);
-				int blueBits	= (int)deFloatRound(highColor.getBlue() / 255.0f * 31);
+				int redBits		= (int)deFloatRound((float)highColor.getRed() / 255.0f * 31);
+				int greenBits	= (int)deFloatRound((float)highColor.getGreen() / 255.0f * 63);
+				int blueBits	= (int)deFloatRound((float)highColor.getBlue() / 255.0f * 31);
 
 				high = (deUint16)(redBits | (greenBits << 5) | (blueBits << 11));
 			}

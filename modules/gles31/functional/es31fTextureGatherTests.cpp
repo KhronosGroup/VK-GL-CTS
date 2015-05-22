@@ -641,7 +641,7 @@ public:
 
 	float operator() (const IVec2& pixCoord) const
 	{
-		return (float)(pixCoord.x() + 0.5f) / (float)m_renderSize.x();
+		return ((float)pixCoord.x() + 0.5f) / (float)m_renderSize.x();
 	}
 
 private:

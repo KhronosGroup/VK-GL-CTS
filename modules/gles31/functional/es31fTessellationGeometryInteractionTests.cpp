@@ -1233,7 +1233,7 @@ void FeedbackPrimitiveTypeCase::verifyRenderedImage (const tcu::Surface& image, 
 		// This minimal error could result in a difference in rounding => allow one additional pixel in deviation
 
 		const int			rasterDeviation	= 2;
-		const tcu::IVec2	rasterPos		((int)deFloatRound((vertices[ndx].x() * 0.5f + 0.5f) * image.getWidth()), (int)deFloatRound((vertices[ndx].y() * 0.5f + 0.5f) * image.getHeight()));
+		const tcu::IVec2	rasterPos		((int)deFloatRound((vertices[ndx].x() * 0.5f + 0.5f) * (float)image.getWidth()), (int)deFloatRound((vertices[ndx].y() * 0.5f + 0.5f) * (float)image.getHeight()));
 
 		// Find produced rasterization results
 		bool				found			= false;

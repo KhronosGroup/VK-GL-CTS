@@ -101,7 +101,7 @@ static std::vector<deUint32> genAllSetToNthBitSampleMask (int nthBit)
 	for (int ndx = 0; ndx < numWords - 1; ++ndx)
 		mask[ndx] = 0xFFFFFFFF;
 
-	mask[numWords - 1] = (deUint32)((1ULL << topWordBits) - (deUint32)1);
+	mask[numWords - 1] = deBitMask32(0, (int)topWordBits);
 	return mask;
 }
 
@@ -490,7 +490,7 @@ void MaskInvertCase::drawPattern (bool invert) const
 	for (int triNdx = 0; triNdx < numTriangles; triNdx++)
 	{
 		const float	angle0	= 2.0f*DE_PI * (float)triNdx			/ (float)numTriangles;
-		const float	angle1	= 2.0f*DE_PI * (float)(triNdx + 0.5f)	/ (float)numTriangles;
+		const float	angle1	= 2.0f*DE_PI * ((float)triNdx + 0.5f)	/ (float)numTriangles;
 		const Vec4	color	= Vec4(0.4f + (float)triNdx/(float)numTriangles*0.6f,
 		                           0.5f + (float)triNdx/(float)numTriangles*0.3f,
 		                           0.6f - (float)triNdx/(float)numTriangles*0.5f,
@@ -499,7 +499,7 @@ void MaskInvertCase::drawPattern (bool invert) const
 
 		const int			wordCount		= getEffectiveSampleMaskWordCount(m_numSamples - 1);
 		const GLbitfield	finalWordBits	= m_numSamples - 32 * ((m_numSamples-1) / 32);
-		const GLbitfield	finalWordMask	= (GLbitfield)(1ULL << finalWordBits) - 1UL;
+		const GLbitfield	finalWordMask	= (GLbitfield)deBitMask32(0, (int)finalWordBits);
 
 		for (int wordNdx = 0; wordNdx < wordCount; ++wordNdx)
 		{
@@ -809,7 +809,7 @@ MaskConstancyCase::IterateResult MaskConstancyCase::iterate (void)
 			{
 				const int			wordCount		= getEffectiveSampleMaskWordCount(m_numSamples - 1);
 				const GLbitfield	finalWordBits	= m_numSamples - 32 * ((m_numSamples-1) / 32);
-				const GLbitfield	finalWordMask	= (GLbitfield)(1ULL << finalWordBits) - 1UL;
+				const GLbitfield	finalWordMask	= (GLbitfield)deBitMask32(0, (int)finalWordBits);
 
 				for (int wordNdx = 0; wordNdx < wordCount; ++wordNdx)
 				{
@@ -936,7 +936,7 @@ SampleMaskHighBitsCase::IterateResult SampleMaskHighBitsCase::iterate (void)
 
 			const int			wordCount		= getEffectiveSampleMaskWordCount(m_numSamples - 1);
 			const GLbitfield	finalWordBits	= m_numSamples - 32 * ((m_numSamples-1) / 32);
-			const GLbitfield	finalWordMask	= (GLbitfield)(1ULL << finalWordBits) - 1UL;
+			const GLbitfield	finalWordMask	= (GLbitfield)deBitMask32(0, (int)finalWordBits);
 
 			for (int wordNdx = 0; wordNdx < wordCount; ++wordNdx)
 			{

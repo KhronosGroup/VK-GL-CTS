@@ -204,7 +204,7 @@ float UniformLocationCase::getExpectedValue (glu::DataType type, int id, const c
 	else if (glu::isDataTypeUintOrUVec(adjustedType))
 		return float(hash%255);
 	else if (glu::isDataTypeFloatOrVec(adjustedType))
-		return (hash%255)/255.0f;
+		return float(hash%255)/255.0f;
 	else if (glu::isDataTypeBoolOrBVec(adjustedType))
 		return float(hash%2);
 	else
