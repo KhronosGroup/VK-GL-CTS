@@ -169,7 +169,7 @@ static bool configMatches (const eglw::Library& egl, eglw::EGLDisplay display, e
 			return false;
 	}
 
-	if (renderConfig.surfaceType != (glu::RenderConfig::SurfaceType)glu::RenderConfig::DONT_CARE)
+	if (renderConfig.surfaceType != glu::RenderConfig::SURFACETYPE_DONT_CARE)
 	{
 		EGLint		surfaceType		= 0;
 		EGLint		requiredSurface	= 0;
