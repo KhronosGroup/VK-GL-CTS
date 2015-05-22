@@ -87,7 +87,7 @@ SeedBuilder& operator<< (SeedBuilder& builder, deInt8 value)
 
 SeedBuilder& operator<< (SeedBuilder& builder, deUint8 value)
 {
-	const deInt8 val = value ^ 140u;
+	const deUint8 val = value ^ 140u;
 
 	builder.feed(sizeof(val), &val);
 	return builder;

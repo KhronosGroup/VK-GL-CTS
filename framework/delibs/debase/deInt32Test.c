@@ -119,7 +119,7 @@ void deInt32_selfTest (void)
 
 		for (iter = 0; iter < NUM_ITERS; iter++)
 		{
-			const deUint32	EPS = 1 << (DE_RCP_FRAC_BITS - NUM_ACCURATE_BITS);
+			const deUint32	EPS = 1u << (DE_RCP_FRAC_BITS - NUM_ACCURATE_BITS);
 
 			deUint32		val = (deRandom_getUint32(&rnd) & ((1u<<numBits)-1)) | (1u<<numBits);
 			deUint32		ref = (deUint32)(((1.0f / (double)val) * (double)(1<<DE_RCP_FRAC_BITS)) * (double)(1u<<numBits));

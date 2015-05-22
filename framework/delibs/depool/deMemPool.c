@@ -155,7 +155,7 @@ static void MemPage_destroy (MemPage* page)
 #if defined(DE_DEBUG)
 	/* Fill with garbage to hopefully catch dangling pointer bugs easier. */
 	deUint8* dataPtr = (deUint8*)(page + 1);
-	memset(dataPtr, 0xCD, page->capacity);
+	memset(dataPtr, 0xCD, (size_t)page->capacity);
 #endif
 	deFree(page);
 }
@@ -457,7 +457,7 @@ DE_INLINE void* deMemPool_allocInternal (deMemPool* pool, int numBytes, deUint32
 #endif
 
 	DE_ASSERT(curPage);
-	DE_ASSERT(deIsPowerOfTwo32(alignBytes));
+	DE_ASSERT(deIsPowerOfTwo32((int)alignBytes));
 	{
 		void*	curPagePtr		= (void*)((deUint8*)(curPage + 1) + curPage->bytesAllocated);
 		void*	alignedPtr		= deAlignPtr(curPagePtr, alignBytes);

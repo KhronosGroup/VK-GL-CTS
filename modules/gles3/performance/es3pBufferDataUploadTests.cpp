@@ -4939,7 +4939,7 @@ void GenericUploadRenderTimeCase<SampleType>::runSample (SampleResult& sample)
 
 			// upload to 25% - 75% range
 			target	= GL_ELEMENT_ARRAY_BUFFER;
-			size	= (glw::GLsizeiptr)deAlign32((glw::GLsizeiptr)((int)(indexData.size() * sizeof(deUint32))) / 2, 4);
+			size	= (glw::GLsizeiptr)deAlign32((deInt32)(indexData.size() * sizeof(deUint32)) / 2, 4);
 			offset	= (glw::GLintptr)deAlign32((int)size / 2, 4);
 			source	= (const deUint8*)&indexData[0] + offset;
 		}
@@ -5275,7 +5275,7 @@ void BufferInUseRenderTimeCase::runSample (SampleResult& sample)
 		{
 			// upload to 25% - 75% range
 			target	= GL_ELEMENT_ARRAY_BUFFER;
-			size	= (glw::GLsizeiptr)deAlign32((glw::GLsizeiptr)((int)(indexData.size() * sizeof(deUint32))) / 2, 4);
+			size	= (glw::GLsizeiptr)deAlign32((deInt32)(indexData.size() * sizeof(deUint32)) / 2, 4);
 			offset	= (glw::GLintptr)deAlign32((int)size / 2, 4);
 			source	= (const deUint8*)&indexData[0] + offset;
 		}

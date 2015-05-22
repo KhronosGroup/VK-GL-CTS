@@ -163,7 +163,7 @@ void MessageBuilder::operator<< (const EndToken&)
 	m_thread.pushMessage(m_stream.str());
 }
 
-Thread::Thread (int seed)
+Thread::Thread (deUint32 seed)
 	: m_random	(seed)
 	, m_status	(THREADSTATUS_NOT_STARTED)
 {
@@ -267,7 +267,7 @@ DataBlock::DataBlock (SharedPtr<Event> event)
 void DataBlock::setData (size_t size, const void* data)
 {
 	m_data = std::vector<deUint8>(size);
-	deMemcpy(&(m_data[0]), data, (int)size);
+	deMemcpy(&(m_data[0]), data, size);
 }
 
 CompareData::CompareData (SharedPtr<DataBlock> a, SharedPtr<DataBlock> b)
