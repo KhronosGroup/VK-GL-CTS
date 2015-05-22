@@ -248,13 +248,13 @@ PosTexCoordQuadGrid<TexType>::PosTexCoordQuadGrid (int gridSize, const IVec2& re
 		for (int i = 0; i < DE_LENGTH_OF_ARRAY(quadVertices); i++)
 			m_positions.push_back(safeCoords(quadVertices[i], renderSize, Vec2(0.0f)) * 2.0f - 1.0f);
 
-		m_indices.push_back(firstNdx + 0);
-		m_indices.push_back(firstNdx + 1);
-		m_indices.push_back(firstNdx + 2);
+		m_indices.push_back(deUint16(firstNdx + 0));
+		m_indices.push_back(deUint16(firstNdx + 1));
+		m_indices.push_back(deUint16(firstNdx + 2));
 
-		m_indices.push_back(firstNdx + 1);
-		m_indices.push_back(firstNdx + 3);
-		m_indices.push_back(firstNdx + 2);
+		m_indices.push_back(deUint16(firstNdx + 1));
+		m_indices.push_back(deUint16(firstNdx + 3));
+		m_indices.push_back(deUint16(firstNdx + 2));
 	}
 
 	m_texCoords.reserve(m_gridSize*m_gridSize*4);
