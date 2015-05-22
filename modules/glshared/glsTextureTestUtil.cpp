@@ -3247,10 +3247,10 @@ static int compareGenMipmapVeryLenient (const tcu::ConstPixelBufferAccess& dst, 
 	for (int x = 0; x < dst.getWidth(); x++)
 	{
 		const tcu::Vec4	result	= dst.getPixel(x, y);
-		const int		minX		= deFloorFloatToInt32(float(x-0.5f) / dstW * srcW);
-		const int		minY		= deFloorFloatToInt32(float(y-0.5f) / dstH * srcH);
-		const int		maxX		= deCeilFloatToInt32(float(x+1.5f) / dstW * srcW);
-		const int		maxY		= deCeilFloatToInt32(float(y+1.5f) / dstH * srcH);
+		const int		minX		= deFloorFloatToInt32(((float)x-0.5f) / dstW * srcW);
+		const int		minY		= deFloorFloatToInt32(((float)y-0.5f) / dstH * srcH);
+		const int		maxX		= deCeilFloatToInt32(((float)x+1.5f) / dstW * srcW);
+		const int		maxY		= deCeilFloatToInt32(((float)y+1.5f) / dstH * srcH);
 		tcu::Vec4		minVal, maxVal;
 		bool			isOk;
 

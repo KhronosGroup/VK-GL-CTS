@@ -82,16 +82,9 @@ enum
 
 deUint8 extend2BitsToByte (deUint8 bits)
 {
-	deUint8 x = 0;
-
 	DE_ASSERT((bits & (~0x03u)) == 0);
 
-	x |= bits << 6;
-	x |= bits << 4;
-	x |= bits << 2;
-	x |= bits;
-
-	return x;
+	return (deUint8)(bits | (bits << 2) | (bits << 4) | (bits << 6));
 }
 
 void genRandomCoords (de::Random rng, vector<deUint8>& coords, size_t offset, size_t size)
@@ -445,7 +438,7 @@ void modifyBufferSubData (TestLog&				log,
 						  glu::TextureBuffer&	texture)
 {
 	const size_t				minSize		= 4*16;
-	const size_t				size		= de::max<size_t>(minSize, size_t((texture.getSize() != 0 ? texture.getSize() : texture.getBufferSize()) * (0.7 + 0.3 * rng.getFloat())));
+	const size_t				size		= de::max<size_t>(minSize, size_t((float)(texture.getSize() != 0 ? texture.getSize() : texture.getBufferSize()) * (0.7f + 0.3f * rng.getFloat())));
 	const size_t				minOffset	= texture.getOffset();
 	const size_t				offset		= minOffset + (rng.getUint32() % (texture.getBufferSize() - (size + minOffset)));
 	vector<deUint8>				data;
@@ -468,7 +461,7 @@ void modifyMapWrite (TestLog&				log,
 					 glu::TextureBuffer&	texture)
 {
 	const size_t				minSize		= 4*16;
-	const size_t				size		= de::max<size_t>(minSize, size_t((texture.getSize() != 0 ? texture.getSize() : texture.getBufferSize()) * (0.7 + 0.3 * rng.getFloat())));
+	const size_t				size		= de::max<size_t>(minSize, size_t((float)(texture.getSize() != 0 ? texture.getSize() : texture.getBufferSize()) * (0.7f + 0.3f * rng.getFloat())));
 	const size_t				minOffset	= texture.getOffset();
 	const size_t				offset		= minOffset + (rng.getUint32() % (texture.getBufferSize() - (size + minOffset)));
 	vector<deUint8>				data;
@@ -502,7 +495,7 @@ void modifyMapReadWrite (TestLog&				log,
 						 glu::TextureBuffer&	texture)
 {
 	const size_t				minSize		= 4*16;
-	const size_t				size		= de::max<size_t>(minSize, size_t((texture.getSize() != 0 ? texture.getSize() : texture.getBufferSize()) * (0.7 + 0.3 * rng.getFloat())));
+	const size_t				size		= de::max<size_t>(minSize, size_t((float)(texture.getSize() != 0 ? texture.getSize() : texture.getBufferSize()) * (0.7f + 0.3f * rng.getFloat())));
 	const size_t				minOffset	= texture.getOffset();
 	const size_t				offset		= minOffset + (rng.getUint32() % (texture.getBufferSize() - (size + minOffset)));
 	vector<deUint8>				data;

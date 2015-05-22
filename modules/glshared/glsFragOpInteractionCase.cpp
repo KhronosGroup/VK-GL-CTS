@@ -186,8 +186,8 @@ static Quad getRandomQuad (de::Random& rnd, int targetW, int targetH)
 	const int		maxOutOfBounds	= 0;
 	const float		minSize			= 0.5f;
 
-	const int		minW			= deCeilFloatToInt32(minSize*targetW);
-	const int		minH			= deCeilFloatToInt32(minSize*targetH);
+	const int		minW			= deCeilFloatToInt32(minSize * (float)targetW);
+	const int		minH			= deCeilFloatToInt32(minSize * (float)targetH);
 	const int		maxW			= targetW + 2*maxOutOfBounds;
 	const int		maxH			= targetH + 2*maxOutOfBounds;
 
@@ -396,7 +396,7 @@ static float getWellBehavingChannelColor (float v, int numBits)
 		const deUint64 subUnitBorderLo	= (1u << (numSubBits - 1u)) - 1u;
 		const deUint64 subUnitBorderHi	= 1u << (numSubBits - 1u);
 		const deUint64 maxFixedValue	= (1u << (numBits + numSubBits)) - 1u;
-		const deUint64 fixedValue		= deRoundFloatToInt64(v * maxFixedValue);
+		const deUint64 fixedValue		= deRoundFloatToInt64(v * (float)maxFixedValue);
 
 		const deUint64 units			= fixedValue >> numSubBits;
 		const deUint64 subUnits			= fixedValue & ((1u << numSubBits) - 1u);
