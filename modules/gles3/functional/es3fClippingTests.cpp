@@ -1995,8 +1995,8 @@ void PolyVertexClipTestGroup::init (void)
 		const tcu::IVec3 r1		= outside[ndx1];
 		const tcu::IVec3 r2		= outside[ndx2];
 		const tcu::Vec4 p0		= tcu::Vec4(r0.x() * w0, r0.y() * w0, r0.z() * w0, w0);
-		const tcu::Vec4 p1		= tcu::Vec4(r1.x() * far * w1, r1.y() * far * w1, r1.z() * far * w1, w1);
-		const tcu::Vec4 p2		= tcu::Vec4(r2.x() * far * w2, r2.y() * far * w2, r2.z() * far * w2, w2);
+		const tcu::Vec4 p1		= tcu::Vec4(float(r1.x()) * far * w1, float(r1.y()) * far * w1, float(r1.z()) * far * w1, w1);
+		const tcu::Vec4 p2		= tcu::Vec4(float(r2.x()) * far * w2, float(r2.y()) * far * w2, float(r2.z()) * far * w2, w2);
 
 		const std::string name	= std::string("clip") +
 			(outside[ndx1].x() > 0 ? "_pos_x" : (outside[ndx1].x() < 0 ? "_neg_x" : "")) +
@@ -2027,9 +2027,9 @@ void PolyVertexClipTestGroup::init (void)
 		const tcu::IVec3 r0		= outside[ndx1];
 		const tcu::IVec3 r1		= outside[ndx2];
 		const tcu::IVec3 r2		= outside[ndx3];
-		const tcu::Vec4 p0		= tcu::Vec4(r0.x() * far * w0, r0.y() * far * w0, r0.z() * far * w0, w0);
-		const tcu::Vec4 p1		= tcu::Vec4(r1.x() * far * w1, r1.y() * far * w1, r1.z() * far * w1, w1);
-		const tcu::Vec4 p2		= tcu::Vec4(r2.x() * far * w2, r2.y() * far * w2, r2.z() * far * w2, w2);
+		const tcu::Vec4 p0		= tcu::Vec4(float(r0.x()) * far * w0, float(r0.y()) * far * w0, float(r0.z()) * far * w0, w0);
+		const tcu::Vec4 p1		= tcu::Vec4(float(r1.x()) * far * w1, float(r1.y()) * far * w1, float(r1.z()) * far * w1, w1);
+		const tcu::Vec4 p2		= tcu::Vec4(float(r2.x()) * far * w2, float(r2.y()) * far * w2, float(r2.z()) * far * w2, w2);
 
 		// ignore cases where polygon is along xz or yz planes
 		if (pointsOnLine(r0.swizzle(0, 1), r1.swizzle(0, 1), r2.swizzle(0, 1)))
