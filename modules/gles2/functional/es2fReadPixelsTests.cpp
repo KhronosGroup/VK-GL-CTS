@@ -123,10 +123,10 @@ void ReadPixelsTest::render (tcu::Texture2D& reference)
 
 	// Render reference
 
-	const int coordX1 = (int)((-0.5f * reference.getWidth()		/ 2.0f) + reference.getWidth() / 2.0f);
-	const int coordY1 = (int)((-0.5f * reference.getHeight()	/ 2.0f) + reference.getHeight() / 2.0f);
-	const int coordX2 = (int)(( 0.5f * reference.getWidth()		/ 2.0f) + reference.getWidth() / 2.0f);
-	const int coordY2 = (int)(( 0.5f * reference.getHeight()	/ 2.0f) + reference.getHeight() / 2.0f);
+	const int coordX1 = (int)((-0.5f * (float)reference.getWidth()	/ 2.0f) + (float)reference.getWidth() / 2.0f);
+	const int coordY1 = (int)((-0.5f * (float)reference.getHeight()	/ 2.0f) + (float)reference.getHeight() / 2.0f);
+	const int coordX2 = (int)(( 0.5f * (float)reference.getWidth()	/ 2.0f) + (float)reference.getWidth() / 2.0f);
+	const int coordY2 = (int)(( 0.5f * (float)reference.getHeight()	/ 2.0f) + (float)reference.getHeight() / 2.0f);
 
 	for (int x = 0; x < reference.getWidth(); x++)
 	{
@@ -205,7 +205,7 @@ TestCase::IterateResult ReadPixelsTest::iterate (void)
 	render(reference);
 
 	std::vector<deUint8> pixelData;
-	const int rowPitch = m_alignment * deCeilFloatToInt32(pixelSize * width / (float)m_alignment);
+	const int rowPitch = m_alignment * deCeilFloatToInt32(float(pixelSize * width) / (float)m_alignment);
 
 	pixelData.resize(rowPitch * height, 0);
 
@@ -215,10 +215,10 @@ TestCase::IterateResult ReadPixelsTest::iterate (void)
 	if (m_context.getRenderTarget().getNumSamples() > 1)
 	{
 		const tcu::IVec4	formatBitDepths	= tcu::getTextureFormatBitDepth(format);
-		const deUint8		redThreshold	= (deUint8)deCeilFloatToInt32(256.0f * (2.0f / (1 << deMin32(m_context.getRenderTarget().getPixelFormat().redBits,		formatBitDepths.x()))));
-		const deUint8		greenThreshold	= (deUint8)deCeilFloatToInt32(256.0f * (2.0f / (1 << deMin32(m_context.getRenderTarget().getPixelFormat().greenBits,	formatBitDepths.y()))));
-		const deUint8		blueThreshold	= (deUint8)deCeilFloatToInt32(256.0f * (2.0f / (1 << deMin32(m_context.getRenderTarget().getPixelFormat().blueBits,		formatBitDepths.z()))));
-		const deUint8		alphaThreshold	= (deUint8)deCeilFloatToInt32(256.0f * (2.0f / (1 << deMin32(m_context.getRenderTarget().getPixelFormat().alphaBits,	formatBitDepths.w()))));
+		const deUint8		redThreshold	= (deUint8)deCeilFloatToInt32(256.0f * (2.0f / (float)(1 << deMin32(m_context.getRenderTarget().getPixelFormat().redBits,	formatBitDepths.x()))));
+		const deUint8		greenThreshold	= (deUint8)deCeilFloatToInt32(256.0f * (2.0f / (float)(1 << deMin32(m_context.getRenderTarget().getPixelFormat().greenBits,	formatBitDepths.y()))));
+		const deUint8		blueThreshold	= (deUint8)deCeilFloatToInt32(256.0f * (2.0f / (float)(1 << deMin32(m_context.getRenderTarget().getPixelFormat().blueBits,	formatBitDepths.z()))));
+		const deUint8		alphaThreshold	= (deUint8)deCeilFloatToInt32(256.0f * (2.0f / (float)(1 << deMin32(m_context.getRenderTarget().getPixelFormat().alphaBits,	formatBitDepths.w()))));
 
 		// bilinearCompare only accepts RGBA, UINT8
 		tcu::Texture2D		referenceRGBA8	(tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8), width, height);
@@ -238,10 +238,10 @@ TestCase::IterateResult ReadPixelsTest::iterate (void)
 	else
 	{
 		const tcu::IVec4	formatBitDepths	= tcu::getTextureFormatBitDepth(format);
-		const float			redThreshold	= 2.0f / (1 << deMin32(m_context.getRenderTarget().getPixelFormat().redBits,	formatBitDepths.x()));
-		const float			greenThreshold	= 2.0f / (1 << deMin32(m_context.getRenderTarget().getPixelFormat().greenBits,	formatBitDepths.y()));
-		const float			blueThreshold	= 2.0f / (1 << deMin32(m_context.getRenderTarget().getPixelFormat().blueBits,	formatBitDepths.z()));
-		const float			alphaThreshold	= 2.0f / (1 << deMin32(m_context.getRenderTarget().getPixelFormat().alphaBits,	formatBitDepths.w()));
+		const float			redThreshold	= 2.0f / (float)(1 << deMin32(m_context.getRenderTarget().getPixelFormat().redBits,		formatBitDepths.x()));
+		const float			greenThreshold	= 2.0f / (float)(1 << deMin32(m_context.getRenderTarget().getPixelFormat().greenBits,	formatBitDepths.y()));
+		const float			blueThreshold	= 2.0f / (float)(1 << deMin32(m_context.getRenderTarget().getPixelFormat().blueBits,	formatBitDepths.z()));
+		const float			alphaThreshold	= 2.0f / (float)(1 << deMin32(m_context.getRenderTarget().getPixelFormat().alphaBits,	formatBitDepths.w()));
 
 		// Compare
 		if (tcu::floatThresholdCompare(m_testCtx.getLog(), "Result", "Result", reference.getLevel(0), tcu::PixelBufferAccess(format, width, height, 1, rowPitch, 0, &(pixelData[0])), tcu::Vec4(redThreshold, greenThreshold, blueThreshold, alphaThreshold), tcu::COMPARE_LOG_RESULT))
