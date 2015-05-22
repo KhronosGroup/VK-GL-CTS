@@ -147,7 +147,7 @@ TestCase::IterateResult ColorClearCase::iterate (void)
 		int		b = (int)(rnd.getUint32() & 0xFF);
 		int		a = m_testAlpha ? (int)(rnd.getUint32() & 0xFF) : 0xFF;
 		RGBA	clearCol(r, g, b, a);
-		gl.clearColor(r/255.0f, g/255.0f, b/255.0f, a/255.0f);
+		gl.clearColor(float(r)/255.0f, float(g)/255.0f, float(b)/255.0f, float(a)/255.0f);
 
 		// Mask.
 		deUint8	clearMask;
