@@ -668,7 +668,7 @@ void PolygonNumSamplesCase::renderPattern (void) const
 	for (int i = 0; i < numTriangles; i++)
 	{
 		float angle0 = 2.0f*DE_PI * (float)i			/ (float)numTriangles + 0.001f*(float)m_currentIteration;
-		float angle1 = 2.0f*DE_PI * (float)(i + 0.5f)	/ (float)numTriangles + 0.001f*(float)m_currentIteration;
+		float angle1 = 2.0f*DE_PI * ((float)i + 0.5f)	/ (float)numTriangles + 0.001f*(float)m_currentIteration;
 
 		renderTriangle(Vec2(0.0f, 0.0f),
 					   Vec2(deFloatCos(angle0)*0.95f, deFloatSin(angle0)*0.95f),
@@ -1138,7 +1138,7 @@ SampleStencilCase::IterateResult SampleStencilCase::iterate (void)
 		for (int i = 0; i < numTriangles; i++)
 		{
 			float angle0 = 2.0f*DE_PI * (float)i			/ (float)numTriangles;
-			float angle1 = 2.0f*DE_PI * (float)(i + 0.5f)	/ (float)numTriangles;
+			float angle1 = 2.0f*DE_PI * ((float)i + 0.5f)	/ (float)numTriangles;
 
 			renderTriangle(Vec2(0.0f, 0.0f),
 						   Vec2(deFloatCos(angle0)*0.95f, deFloatSin(angle0)*0.95f),
@@ -1544,7 +1544,7 @@ void CoverageMaskInvertCase::drawPattern (bool invertSampleCoverage) const
 		GLU_CHECK_CALL(glSampleCoverage((float)i / (float)(numTriangles-1), invertSampleCoverage ? GL_TRUE : GL_FALSE));
 
 		float angle0 = 2.0f*DE_PI * (float)i			/ (float)numTriangles;
-		float angle1 = 2.0f*DE_PI * (float)(i + 0.5f)	/ (float)numTriangles;
+		float angle1 = 2.0f*DE_PI * ((float)i + 0.5f)	/ (float)numTriangles;
 
 		renderTriangle(Vec2(0.0f, 0.0f),
 					   Vec2(deFloatCos(angle0)*0.95f, deFloatSin(angle0)*0.95f),
