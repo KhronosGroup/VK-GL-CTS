@@ -597,11 +597,11 @@ FragmentOutputCase::IterateResult FragmentOutputCase::iterate (void)
 		int	quadY	= quadNdx / (gridWidth-1);
 		int quadX	= quadNdx - quadY*(gridWidth-1);
 
-		indices[quadNdx*6+0] = quadX + quadY*gridWidth;
-		indices[quadNdx*6+1] = quadX + (quadY+1)*gridWidth;
-		indices[quadNdx*6+2] = quadX + quadY*gridWidth + 1;
+		indices[quadNdx*6+0] = deUint16(quadX + quadY*gridWidth);
+		indices[quadNdx*6+1] = deUint16(quadX + (quadY+1)*gridWidth);
+		indices[quadNdx*6+2] = deUint16(quadX + quadY*gridWidth + 1);
 		indices[quadNdx*6+3] = indices[quadNdx*6+1];
-		indices[quadNdx*6+4] = quadX + (quadY+1)*gridWidth + 1;
+		indices[quadNdx*6+4] = deUint16(quadX + (quadY+1)*gridWidth + 1);
 		indices[quadNdx*6+5] = indices[quadNdx*6+2];
 	}
 
