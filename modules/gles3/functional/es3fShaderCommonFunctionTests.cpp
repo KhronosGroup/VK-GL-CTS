@@ -1051,17 +1051,17 @@ public:
 	{
 		const glu::DataType		type			= m_spec.inputs[0].varType.getBasicType();
 		const int				scalarSize		= glu::getDataTypeScalarSize(type);
-		const int				maxUlpDiff		= 0;
+		const deUint32			maxUlpDiff		= 0;
 
 		for (int compNdx = 0; compNdx < scalarSize; compNdx++)
 		{
 			const float		in0			= ((const float*)inputs[0])[compNdx];
 			const float		out0		= ((const float*)outputs[0])[compNdx];
-			const int		ulpDiff		= de::abs((int)in0 - (int)out0);
+			const deUint32	ulpDiff		= getUlpDiff(in0, out0);
 
 			if (ulpDiff > maxUlpDiff)
 			{
-				m_failMsg << "Expected [" << compNdx << "] = " << tcu::toHex(in0) << " with ULP threshold "
+				m_failMsg << "Expected [" << compNdx << "] = " << tcu::toHex(tcu::Float32(in0).bits()) << " with ULP threshold "
 							<< tcu::toHex(maxUlpDiff) << ", got ULP diff " << tcu::toHex(ulpDiff);
 				return false;
 			}
