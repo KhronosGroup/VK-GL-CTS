@@ -327,7 +327,7 @@ void DepthStencilClearCase::renderGL (tcu::Surface& dst, const vector<Clear>& cl
 	if (m_testDepth)
 	{
 		int		numSteps	= DEPTH_STEPS;
-		float	step		= 2.0f / numSteps;
+		float	step		= 2.0f / (float)numSteps;
 
 		gl.enable	(GL_DEPTH_TEST);
 		gl.depthFunc(GL_LESS);
@@ -336,7 +336,7 @@ void DepthStencilClearCase::renderGL (tcu::Surface& dst, const vector<Clear>& cl
 
 		for (int ndx = 0; ndx < numSteps; ndx++)
 		{
-			float	d		= -1.0f + step*ndx;
+			float	d		= -1.0f + step*(float)ndx;
 			float	c		= (float)ndx / (float)(numSteps-1);
 			float	pos[]	=
 			{

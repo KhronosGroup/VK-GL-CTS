@@ -271,10 +271,10 @@ void generateBaseClearAndDepthCommands (const TestRenderTarget& target, vector<C
 	// Compute depth values
 	{
 		int		numValues		= DE_LENGTH_OF_ARRAY(depthValues);
-		float	depthStep		= 2.0f/(numValues-1);
+		float	depthStep		= 2.0f/(float)(numValues-1);
 
 		for (int ndx = 0; ndx < numValues; ndx++)
-			depthValues[ndx] = -1.0f + depthStep*ndx;
+			depthValues[ndx] = -1.0f + depthStep*(float)ndx;
 	}
 
 	for (int y0 = 0; y0 < numL0CellsY; y0++)
@@ -322,7 +322,7 @@ void generateDepthVisualizeCommands (const TestRenderTarget& target, vector<Rend
 
 		cmd.params.visibleFace		= rr::FACETYPE_FRONT;
 		cmd.rect					= rr::WindowRectangle(0, 0, target.width, target.height);
-		cmd.color					= Vec4(0.0f, 0.0f, colorStep*ndx, 0.0f);
+		cmd.color					= Vec4(0.0f, 0.0f, colorStep*(float)ndx, 0.0f);
 		cmd.colorMask				= tcu::BVec4(false, false, true, false);
 		cmd.params.depth			= depthSteps[ndx]+epsilon;
 		cmd.params.depthTestEnabled	= true;
@@ -347,7 +347,7 @@ void generateStencilVisualizeCommands (const TestRenderTarget& target, vector<Re
 
 		cmd.params.visibleFace							= rr::FACETYPE_FRONT;
 		cmd.rect										= rr::WindowRectangle(0, 0, target.width, target.height);
-		cmd.color										= Vec4(0.0f, colorStep*(ndx+1), 0.0f, 0.0f);
+		cmd.color										= Vec4(0.0f, colorStep*float(ndx+1), 0.0f, 0.0f);
 		cmd.colorMask									= tcu::BVec4(false, true, false, false);
 		cmd.params.stencilTestEnabled					= true;
 
