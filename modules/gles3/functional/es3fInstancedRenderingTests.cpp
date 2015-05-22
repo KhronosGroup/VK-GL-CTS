@@ -336,14 +336,14 @@ void InstancedRenderingCase::init (void)
 				int ndx11 = (y + 1)*(QUAD_GRID_SIZE + 1) + x + 1;
 
 				// Lower-left triangle of a quad.
-				m_gridIndices.push_back(ndx00);
-				m_gridIndices.push_back(ndx10);
-				m_gridIndices.push_back(ndx01);
+				m_gridIndices.push_back((deUint16)ndx00);
+				m_gridIndices.push_back((deUint16)ndx10);
+				m_gridIndices.push_back((deUint16)ndx01);
 
 				// Upper-right triangle of a quad.
-				m_gridIndices.push_back(ndx11);
-				m_gridIndices.push_back(ndx01);
-				m_gridIndices.push_back(ndx10);
+				m_gridIndices.push_back((deUint16)ndx11);
+				m_gridIndices.push_back((deUint16)ndx01);
+				m_gridIndices.push_back((deUint16)ndx10);
 			}
 	}
 	else
@@ -495,7 +495,7 @@ void InstancedRenderingCase::setupVarAttribPointer (const void* attrPtr, int loc
 			int numRows = glu::getDataTypeMatrixNumRows(m_rgbAttrType);
 			int numCols = glu::getDataTypeMatrixNumColumns(m_rgbAttrType);
 
-			glVertexAttribPointer(curLoc, numRows, GL_FLOAT, GL_FALSE, numCols*numRows*sizeof(float), attrPtr);
+			glVertexAttribPointer(curLoc, numRows, GL_FLOAT, GL_FALSE, numCols*numRows*(int)sizeof(float), attrPtr);
 		}
 		else
 			DE_ASSERT(DE_FALSE);
@@ -586,18 +586,18 @@ void InstancedRenderingCase::computeReference (tcu::Surface& dst)
 			deInt32 intR = (deInt32)(r*FLOAT_INT_SCALE + FLOAT_INT_BIAS);
 			deInt32 intG = (deInt32)(g*FLOAT_INT_SCALE + FLOAT_INT_BIAS);
 			deInt32 intB = (deInt32)(b*FLOAT_INT_SCALE + FLOAT_INT_BIAS);
-			r = (float)(intR - FLOAT_INT_BIAS) / FLOAT_INT_SCALE;
-			g = (float)(intG - FLOAT_INT_BIAS) / FLOAT_INT_SCALE;
-			b = (float)(intB - FLOAT_INT_BIAS) / FLOAT_INT_SCALE;
+			r = ((float)intR - FLOAT_INT_BIAS) / FLOAT_INT_SCALE;
+			g = ((float)intG - FLOAT_INT_BIAS) / FLOAT_INT_SCALE;
+			b = ((float)intB - FLOAT_INT_BIAS) / FLOAT_INT_SCALE;
 		}
 		else if(glu::isDataTypeUintOrUVec(m_rgbAttrType))
 		{
 			deUint32 uintR = (deInt32)(r*FLOAT_UINT_SCALE + FLOAT_UINT_BIAS);
 			deUint32 uintG = (deInt32)(g*FLOAT_UINT_SCALE + FLOAT_UINT_BIAS);
 			deUint32 uintB = (deInt32)(b*FLOAT_UINT_SCALE + FLOAT_UINT_BIAS);
-			r = (float)(uintR - FLOAT_UINT_BIAS) / FLOAT_UINT_SCALE;
-			g = (float)(uintG - FLOAT_UINT_BIAS) / FLOAT_UINT_SCALE;
-			b = (float)(uintB - FLOAT_UINT_BIAS) / FLOAT_UINT_SCALE;
+			r = ((float)uintR - FLOAT_UINT_BIAS) / FLOAT_UINT_SCALE;
+			g = ((float)uintG - FLOAT_UINT_BIAS) / FLOAT_UINT_SCALE;
+			b = ((float)uintB - FLOAT_UINT_BIAS) / FLOAT_UINT_SCALE;
 		}
 
 		// Draw rectangle.
