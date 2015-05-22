@@ -344,8 +344,8 @@ void initializeStencilRbo(const glw::Functions& gl, GLuint rbo, Texture2D& ref)
 	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(stencilValues); ++ndx)
 	{
 		const deUint32		stencil	= stencilValues[ndx] & stencilMask;
-		const tcu::IVec2	size	= tcu::IVec2((int)((DE_LENGTH_OF_ARRAY(stencilValues) - ndx) * (ref.getWidth() / float(DE_LENGTH_OF_ARRAY(stencilValues)))),
-												 (int)((DE_LENGTH_OF_ARRAY(stencilValues) - ndx) * (ref.getHeight() / float(DE_LENGTH_OF_ARRAY(stencilValues) + 4)))); // not symmetric
+		const tcu::IVec2	size	= tcu::IVec2((int)((float)(DE_LENGTH_OF_ARRAY(stencilValues) - ndx) * ((float)ref.getWidth() / float(DE_LENGTH_OF_ARRAY(stencilValues)))),
+												 (int)((float)(DE_LENGTH_OF_ARRAY(stencilValues) - ndx) * ((float)ref.getHeight() / float(DE_LENGTH_OF_ARRAY(stencilValues) + 4)))); // not symmetric
 
 		if (size.x() == 0 || size.y() == 0)
 			break;
@@ -377,9 +377,9 @@ void initializeDepthRbo(const glw::Functions& gl, GLuint rbo, Texture2D& ref)
 	GLU_CHECK_GLW_CALL(gl, enable(GL_SCISSOR_TEST));
 	for (int ndx = 0; ndx < NUM_STEPS; ++ndx)
 	{
-		const float			depth	= ndx / float(NUM_STEPS);
-		const tcu::IVec2	size	= tcu::IVec2((int)((NUM_STEPS - ndx) * (ref.getWidth() / float(NUM_STEPS))),
-												 (int)((NUM_STEPS - ndx) * (ref.getHeight() / float(NUM_STEPS + 4)))); // not symmetric
+		const float			depth	= (float)ndx / float(NUM_STEPS);
+		const tcu::IVec2	size	= tcu::IVec2((int)((float)(NUM_STEPS - ndx) * ((float)ref.getWidth() / float(NUM_STEPS))),
+												 (int)((float)(NUM_STEPS - ndx) * ((float)ref.getHeight() / float(NUM_STEPS + 4)))); // not symmetric
 
 		if (size.x() == 0 || size.y() == 0)
 			break;
@@ -419,8 +419,8 @@ void initializeColorRbo(const glw::Functions& gl, GLuint rbo, Texture2D& ref)
 	GLU_CHECK_GLW_CALL(gl, enable(GL_SCISSOR_TEST));
 	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(colorValues); ++ndx)
 	{
-		const tcu::IVec2	size	= tcu::IVec2((int)((DE_LENGTH_OF_ARRAY(colorValues) - ndx) * (ref.getWidth() / float(DE_LENGTH_OF_ARRAY(colorValues)))),
-												 (int)((DE_LENGTH_OF_ARRAY(colorValues) - ndx) * (ref.getHeight() / float(DE_LENGTH_OF_ARRAY(colorValues) + 4)))); // not symmetric
+		const tcu::IVec2	size	= tcu::IVec2((int)((float)(DE_LENGTH_OF_ARRAY(colorValues) - ndx) * ((float)ref.getWidth() / float(DE_LENGTH_OF_ARRAY(colorValues)))),
+												 (int)((float)(DE_LENGTH_OF_ARRAY(colorValues) - ndx) * ((float)ref.getHeight() / float(DE_LENGTH_OF_ARRAY(colorValues) + 4)))); // not symmetric
 
 		if (size.x() == 0 || size.y() == 0)
 			break;

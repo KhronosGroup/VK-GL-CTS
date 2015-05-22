@@ -366,24 +366,24 @@ void GLES2BufferSharingTest::renderResource (tcu::Surface* screen, tcu::Surface*
 
 	for (int i = 0; i < (int)m_buffer.size() / 4; i++)
 	{
-		indices.push_back(i*4);
-		indices.push_back(i*4 + 1);
-		indices.push_back(i*4 + 2);
-		indices.push_back(i*4 + 2);
-		indices.push_back(i*4 + 3);
-		indices.push_back(i*4);
+		indices.push_back((deUint16)(i*4));
+		indices.push_back((deUint16)(i*4 + 1));
+		indices.push_back((deUint16)(i*4 + 2));
+		indices.push_back((deUint16)(i*4 + 2));
+		indices.push_back((deUint16)(i*4 + 3));
+		indices.push_back((deUint16)(i*4));
 
-		coords.push_back(0.125f * (i % 16) - 1.0f);
-		coords.push_back(0.125f * ((int)(i / 16.0f)) - 1.0f);
+		coords.push_back(0.125f * (float)(i % 16) - 1.0f);
+		coords.push_back(0.125f * (float)((int)((float)i / 16.0f)) - 1.0f);
 
-		coords.push_back(0.125f * (i % 16) - 1.0f);
-		coords.push_back(0.125f * ((int)(i / 16.0f) + 1) - 1.0f);
+		coords.push_back(0.125f * (float)(i % 16) - 1.0f);
+		coords.push_back(0.125f * (float)((int)((float)i / 16.0f) + 1) - 1.0f);
 
-		coords.push_back(0.125f * ((i % 16) + 1) - 1.0f);
-		coords.push_back(0.125f * ((int)(i / 16.0f) + 1) - 1.0f);
+		coords.push_back(0.125f * (float)((i % 16) + 1) - 1.0f);
+		coords.push_back(0.125f * (float)((int)((float)i / 16.0f) + 1) - 1.0f);
 
-		coords.push_back(0.125f * ((i % 16) + 1) - 1.0f);
-		coords.push_back(0.125f * ((int)(i / 16.0f)) - 1.0f);
+		coords.push_back(0.125f * (float)((i % 16) + 1) - 1.0f);
+		coords.push_back(0.125f * (float)((int)((float)i / 16.0f)) - 1.0f);
 	}
 
 	int width = 240;
@@ -431,17 +431,17 @@ void GLES2BufferSharingTest::renderResource (tcu::Surface* screen, tcu::Surface*
 		m_gl.readPixels(0, 0, screen->getWidth(), screen->getHeight(), GL_RGBA, GL_UNSIGNED_BYTE, screen->getAccess().getDataPtr());
 		for (int i = 0; i < (int)m_buffer.size() / 4; i++)
 		{
-			float fx1 = 0.125f * (i % 16) - 1.0f;
-			float fy1 = 0.125f * ((int)(i / 16.0f)) - 1.0f;
-			float fx2 = 0.125f * ((i % 16) + 1) - 1.0f;
-			float fy2 = 0.125f * ((int)((i / 16.0f) + 1)) - 1.0f;
+			float fx1 = 0.125f * (float)(i % 16) - 1.0f;
+			float fy1 = 0.125f * (float)((int)((float)i / 16.0f)) - 1.0f;
+			float fx2 = 0.125f * (float)((i % 16) + 1) - 1.0f;
+			float fy2 = 0.125f * (float)((int)((float)i / 16.0f) + 1) - 1.0f;
 
-			int ox = deRoundFloatToInt32(width		/ 2.0f);
-			int oy = deRoundFloatToInt32(height		/ 2.0f);
-			int x1 = deRoundFloatToInt32((width		 * fx1 / 2.0f) + ox);
-			int y1 = deRoundFloatToInt32((height	 * fy1 / 2.0f) + oy);
-			int x2 = deRoundFloatToInt32((width		 * fx2 / 2.0f) + ox);
-			int y2 = deRoundFloatToInt32((height	 * fy2 / 2.0f) + oy);
+			int ox = deRoundFloatToInt32((float)width	/ 2.0f);
+			int oy = deRoundFloatToInt32((float)height	/ 2.0f);
+			int x1 = deRoundFloatToInt32(((float)width	 * fx1 / 2.0f) + (float)ox);
+			int y1 = deRoundFloatToInt32(((float)height	 * fy1 / 2.0f) + (float)oy);
+			int x2 = deRoundFloatToInt32(((float)width	 * fx2 / 2.0f) + (float)ox);
+			int y2 = deRoundFloatToInt32(((float)height	 * fy2 / 2.0f) + (float)oy);
 
 			for (int x = x1; x < x2; x++)
 			{
@@ -610,8 +610,8 @@ void GLES2TextureSharingTest::renderResource (tcu::Surface* screen, tcu::Surface
 		{
 			for (int y = 0; y < height; y++)
 			{
-				float t = ((float)x / (width - 1.0f));
-				float s = ((float)y / (height - 1.0f));
+				float t = ((float)x / ((float)width - 1.0f));
+				float s = ((float)y / ((float)height - 1.0f));
 				float lod = 0.0f;
 
 				tcu::Vec4 color = m_texture.sample(tcu::Sampler(tcu::Sampler::REPEAT_GL, tcu::Sampler::REPEAT_GL, tcu::Sampler::REPEAT_GL, tcu::Sampler::LINEAR, tcu::Sampler::LINEAR), t, s, lod);
@@ -741,17 +741,17 @@ void GLES2ProgramSharingTest::renderResource (tcu::Surface* screen, tcu::Surface
 
 		tcu::clear(reference->getAccess(), tcu::IVec4(0xff, 0, 0, 0xff));
 
-		int x1 = (int)((width/2.0f) * (-0.9f) + (width/2.0f));
-		int x2 = (int)((width/2.0f) * 0.9f + (width/2.0f));
-		int y1 = (int)((height/2.0f) * (-0.9f) + (height/2.0f));
-		int y2 = (int)((height/2.0f) * 0.9f + (height/2.0f));
+		int x1 = (int)(((float)width/2.0f)  * (-0.9f) + ((float)width/2.0f));
+		int x2 = (int)(((float)width/2.0f)  *   0.9f  + ((float)width/2.0f));
+		int y1 = (int)(((float)height/2.0f) * (-0.9f) + ((float)height/2.0f));
+		int y2 = (int)(((float)height/2.0f) *   0.9f  + ((float)height/2.0f));
 
 		for (int x = x1; x <= x2; x++)
 		{
 			for (int y = y1; y <= y2; y++)
 			{
-				float t = ((float)(x-x1) / (x2 - x1));
-				float s = ((float)(y-y1) / (y2-y1));
+				float t = ((float)(x-x1) / (float)(x2-x1));
+				float s = ((float)(y-y1) / (float)(y2-y1));
 				bool isUpper = t > s;
 
 				tcu::Vec4 a(colors[0],		colors[1],		colors[2],		colors[3]);
@@ -1030,17 +1030,17 @@ void GLES2ShaderSharingTest::renderResource (tcu::Surface* screen, tcu::Surface*
 
 		tcu::clear(reference->getAccess(), tcu::IVec4(0xff, 0, 0, 0xff));
 
-		int x1 = (int)((width/2.0f) * (-0.9f) + (width/2.0f));
-		int x2 = (int)((width/2.0f) * 0.9f + (width/2.0f));
-		int y1 = (int)((height/2.0f) * (-0.9f) + (height/2.0f));
-		int y2 = (int)((height/2.0f) * 0.9f + (height/2.0f));
+		int x1 = (int)(((float)width/2.0f)  * (-0.9f) + ((float)width/2.0f));
+		int x2 = (int)(((float)width/2.0f)  *   0.9f  + ((float)width/2.0f));
+		int y1 = (int)(((float)height/2.0f) * (-0.9f) + ((float)height/2.0f));
+		int y2 = (int)(((float)height/2.0f) *   0.9f  + ((float)height/2.0f));
 
 		for (int x = x1; x <= x2; x++)
 		{
 			for (int y = y1; y <= y2; y++)
 			{
-				float t = ((float)(x-x1) / (x2 - x1));
-				float s = ((float)(y-y1) / (y2-y1));
+				float t = ((float)(x-x1) / (float)(x2-x1));
+				float s = ((float)(y-y1) / (float)(y2-y1));
 				bool isUpper = t > s;
 
 				tcu::Vec4 a(colors[0],		colors[1],		colors[2],		colors[3]);
