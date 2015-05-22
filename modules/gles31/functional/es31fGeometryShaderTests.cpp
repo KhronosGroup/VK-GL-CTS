@@ -835,8 +835,8 @@ void OutputCountShader::shadePrimitives (rr::GeometryEmitter& output, int vertic
 
 		for (int ndx = 0; ndx < emitCount / 2; ++ndx)
 		{
-			output.EmitVertex(vertex->position + tcu::Vec4(2 * ndx * colWidth, 0.0,       0.0, 0.0), vertex->pointSize, vertex->outputs, packets[packetNdx].primitiveIDIn);
-			output.EmitVertex(vertex->position + tcu::Vec4(2 * ndx * colWidth, rowHeight, 0.0, 0.0), vertex->pointSize, vertex->outputs, packets[packetNdx].primitiveIDIn);
+			output.EmitVertex(vertex->position + tcu::Vec4(2 * (float)ndx * colWidth, 0.0,       0.0, 0.0), vertex->pointSize, vertex->outputs, packets[packetNdx].primitiveIDIn);
+			output.EmitVertex(vertex->position + tcu::Vec4(2 * (float)ndx * colWidth, rowHeight, 0.0, 0.0), vertex->pointSize, vertex->outputs, packets[packetNdx].primitiveIDIn);
 		}
 		output.EndPrimitive();
 	}
@@ -1283,7 +1283,7 @@ void VaryingOutputCountShader::shadePrimitives (rr::GeometryEmitter& output, int
 		else if (m_test == READ_TEXTURE)
 		{
 			const int			primitiveNdx	= (m_instanced) ? (invocationID) : ((int)vertex->outputs[0].get<float>().x());
-			const tcu::Vec2		texCoord		= tcu::Vec2(1.0f / 8.0f + primitiveNdx / 4.0f, 0.5f);
+			const tcu::Vec2		texCoord		= tcu::Vec2(1.0f / 8.0f + (float)primitiveNdx / 4.0f, 0.5f);
 			const tcu::Vec4		texColor		= m_sampler.sampler.tex2D->sample(texCoord.x(), texCoord.y(), 0.0f);
 
 			DE_ASSERT(primitiveNdx >= 0);
@@ -2456,7 +2456,7 @@ void OutputCountCase::genVertexAttribData (void)
 
 	for (int ndx = 0; ndx < m_primitiveCount; ++ndx)
 	{
-		m_vertexPosData[ndx] = tcu::Vec4(-1.0f, ((float)ndx) / m_primitiveCount * 2.0f - 1.0f, 0.0f, 1.0f);
+		m_vertexPosData[ndx] = tcu::Vec4(-1.0f, ((float)ndx) / (float)m_primitiveCount * 2.0f - 1.0f, 0.0f, 1.0f);
 		m_vertexAttrData[ndx] = (ndx % 2 == 0) ? tcu::Vec4(1, 1, 1, 1) : tcu::Vec4(1, 0, 0, 1);
 	}
 
@@ -3346,7 +3346,7 @@ bool LayeredRenderCase::verifyLayerContent (const tcu::Surface& layer, int layer
 			if (layerNdx == 0)
 				return verifyEmptyImage(layer);
 			else
-				return verifyImageSingleColoredRow(layer, layerNdx / (float)m_numLayers, white);
+				return verifyImageSingleColoredRow(layer, (float)layerNdx / (float)m_numLayers, white);
 
 		case TEST_LAYER_ID:
 		{
@@ -3388,7 +3388,7 @@ bool LayeredRenderCase::verifyImageSingleColoredRow (const tcu::Surface& layer, 
 {
 	DE_ASSERT(rowWidthRatio > 0.0f);
 
-	const int		barLength			= (int)(rowWidthRatio*layer.getWidth());
+	const int		barLength			= (int)(rowWidthRatio * (float)layer.getWidth());
 	const int		barLengthThreshold	= 1;
 	tcu::Surface	errorMask			(layer.getWidth(), layer.getHeight());
 	bool			allPixelsOk			= true;
@@ -4589,12 +4589,12 @@ PrimitivesGeneratedQueryCase::IterateResult PrimitivesGeneratedQueryCase::iterat
 		gl.bindBuffer(GL_ARRAY_BUFFER, *buffer);
 		gl.bufferData(GL_ARRAY_BUFFER, (int)sizeof(vertexData), vertexData, GL_STATIC_DRAW);
 
-		gl.vertexAttribPointer(positionLocation, 4, GL_FLOAT, GL_FALSE, 2 * sizeof(tcu::Vec4), DE_NULL);
+		gl.vertexAttribPointer(positionLocation, 4, GL_FLOAT, GL_FALSE, 2 * (int)sizeof(tcu::Vec4), DE_NULL);
 		gl.enableVertexAttribArray(positionLocation);
 
 		if (oneLocation != -1)
 		{
-			gl.vertexAttribPointer(oneLocation, 4, GL_FLOAT, GL_FALSE, 2 * sizeof(tcu::Vec4), (const tcu::Vec4*)DE_NULL + 1);
+			gl.vertexAttribPointer(oneLocation, 4, GL_FLOAT, GL_FALSE, 2 * (int)sizeof(tcu::Vec4), (const tcu::Vec4*)DE_NULL + 1);
 			gl.enableVertexAttribArray(oneLocation);
 		}
 
@@ -5360,7 +5360,7 @@ void VertexFeedbackCase::init (void)
 		};
 
 		const glw::Functions&	gl				= m_context.getRenderContext().getFunctions();
-		const int				feedbackSize	= 8 * sizeof(float[4]);
+		const int				feedbackSize	= 8 * (int)sizeof(float[4]);
 
 		m_vao = new glu::VertexArray(m_context.getRenderContext());
 		gl.bindVertexArray(**m_vao);

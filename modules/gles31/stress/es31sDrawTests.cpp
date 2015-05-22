@@ -197,7 +197,7 @@ InvalidDrawCase::IterateResult InvalidDrawCase::iterate (void)
 		std::vector<deUint16>	indices			(indexBufferSize);
 
 		for (int ndx = 0; ndx < (int)indices.size(); ++ndx)
-			indices[ndx] = (m_op == INVALID_INDEX) ? (overBoundDrawCount + ndx) : (ndx);
+			indices[ndx] = (deUint16)((m_op == INVALID_INDEX) ? (overBoundDrawCount + ndx) : (ndx));
 
 		gl.glGenBuffers(1, &m_indexBufferID);
 		gl.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_indexBufferID);

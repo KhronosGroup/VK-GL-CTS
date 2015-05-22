@@ -329,7 +329,7 @@ int findBlockIndex (const BufferLayout& layout, const string& name)
 
 int getDataTypeByteSize (glu::DataType type)
 {
-	return glu::getDataTypeScalarSize(type)*sizeof(deUint32);
+	return glu::getDataTypeScalarSize(type)*(int)sizeof(deUint32);
 }
 
 int getDataTypeByteAlignment (glu::DataType type)
@@ -339,12 +339,12 @@ int getDataTypeByteAlignment (glu::DataType type)
 		case glu::TYPE_FLOAT:
 		case glu::TYPE_INT:
 		case glu::TYPE_UINT:
-		case glu::TYPE_BOOL:		return 1*sizeof(deUint32);
+		case glu::TYPE_BOOL:		return 1*(int)sizeof(deUint32);
 
 		case glu::TYPE_FLOAT_VEC2:
 		case glu::TYPE_INT_VEC2:
 		case glu::TYPE_UINT_VEC2:
-		case glu::TYPE_BOOL_VEC2:	return 2*sizeof(deUint32);
+		case glu::TYPE_BOOL_VEC2:	return 2*(int)sizeof(deUint32);
 
 		case glu::TYPE_FLOAT_VEC3:
 		case glu::TYPE_INT_VEC3:
@@ -354,7 +354,7 @@ int getDataTypeByteAlignment (glu::DataType type)
 		case glu::TYPE_FLOAT_VEC4:
 		case glu::TYPE_INT_VEC4:
 		case glu::TYPE_UINT_VEC4:
-		case glu::TYPE_BOOL_VEC4:	return 4*sizeof(deUint32);
+		case glu::TYPE_BOOL_VEC4:	return 4*(int)sizeof(deUint32);
 
 		default:
 			DE_ASSERT(false);
@@ -370,7 +370,7 @@ static inline int deRoundUp32 (int a, int b)
 
 int computeStd140BaseAlignment (const VarType& type, deUint32 layoutFlags)
 {
-	const int vec4Alignment = sizeof(deUint32)*4;
+	const int vec4Alignment = (int)sizeof(deUint32)*4;
 
 	if (type.isBasicType())
 	{
@@ -597,7 +597,7 @@ int computeReferenceLayout (BufferLayout& layout, int curBlockNdx, const std::st
 		const int		topLevelArraySize	= varType.getArraySize() == VarType::UNSIZED_ARRAY ? 0 : varType.getArraySize();
 		const string	prefix				= blockPrefix + bufVar.getName() + "[0]";
 		const bool		isStd140			= (blockLayoutFlags & LAYOUT_STD140) != 0;
-		const int		vec4Align			= sizeof(deUint32)*4;
+		const int		vec4Align			= (int)sizeof(deUint32)*4;
 		const int		baseAlignment		= isStd140 ? computeStd140BaseAlignment(varType, combinedFlags)
 													   : computeStd430BaseAlignment(varType, combinedFlags);
 		int				curOffset			= deAlign32(baseOffset, baseAlignment);

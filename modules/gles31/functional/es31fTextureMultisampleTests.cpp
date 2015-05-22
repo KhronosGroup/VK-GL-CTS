@@ -666,12 +666,12 @@ void SampleMaskCase::init (void)
 		for (int y = 0; y < m_gridsize; ++y)
 		for (int x = 0; x < m_gridsize; ++x)
 		{
-			gridData[(y * m_gridsize + x)*6 + 0] = tcu::Vec4(((float)(x+0) / m_gridsize) * 2.0f - 1.0f, ((float)(y+0) / m_gridsize) * 2.0f - 1.0f, 0.0f, 1.0f);
-			gridData[(y * m_gridsize + x)*6 + 1] = tcu::Vec4(((float)(x+0) / m_gridsize) * 2.0f - 1.0f, ((float)(y+1) / m_gridsize) * 2.0f - 1.0f, 0.0f, 1.0f);
-			gridData[(y * m_gridsize + x)*6 + 2] = tcu::Vec4(((float)(x+1) / m_gridsize) * 2.0f - 1.0f, ((float)(y+1) / m_gridsize) * 2.0f - 1.0f, 0.0f, 1.0f);
-			gridData[(y * m_gridsize + x)*6 + 3] = tcu::Vec4(((float)(x+0) / m_gridsize) * 2.0f - 1.0f, ((float)(y+0) / m_gridsize) * 2.0f - 1.0f, 0.0f, 1.0f);
-			gridData[(y * m_gridsize + x)*6 + 4] = tcu::Vec4(((float)(x+1) / m_gridsize) * 2.0f - 1.0f, ((float)(y+1) / m_gridsize) * 2.0f - 1.0f, 0.0f, 1.0f);
-			gridData[(y * m_gridsize + x)*6 + 5] = tcu::Vec4(((float)(x+1) / m_gridsize) * 2.0f - 1.0f, ((float)(y+0) / m_gridsize) * 2.0f - 1.0f, 0.0f, 1.0f);
+			gridData[(y * m_gridsize + x)*6 + 0] = tcu::Vec4(((float)(x+0) / (float)m_gridsize) * 2.0f - 1.0f, ((float)(y+0) / (float)m_gridsize) * 2.0f - 1.0f, 0.0f, 1.0f);
+			gridData[(y * m_gridsize + x)*6 + 1] = tcu::Vec4(((float)(x+0) / (float)m_gridsize) * 2.0f - 1.0f, ((float)(y+1) / (float)m_gridsize) * 2.0f - 1.0f, 0.0f, 1.0f);
+			gridData[(y * m_gridsize + x)*6 + 2] = tcu::Vec4(((float)(x+1) / (float)m_gridsize) * 2.0f - 1.0f, ((float)(y+1) / (float)m_gridsize) * 2.0f - 1.0f, 0.0f, 1.0f);
+			gridData[(y * m_gridsize + x)*6 + 3] = tcu::Vec4(((float)(x+0) / (float)m_gridsize) * 2.0f - 1.0f, ((float)(y+0) / (float)m_gridsize) * 2.0f - 1.0f, 0.0f, 1.0f);
+			gridData[(y * m_gridsize + x)*6 + 4] = tcu::Vec4(((float)(x+1) / (float)m_gridsize) * 2.0f - 1.0f, ((float)(y+1) / (float)m_gridsize) * 2.0f - 1.0f, 0.0f, 1.0f);
+			gridData[(y * m_gridsize + x)*6 + 5] = tcu::Vec4(((float)(x+1) / (float)m_gridsize) * 2.0f - 1.0f, ((float)(y+0) / (float)m_gridsize) * 2.0f - 1.0f, 0.0f, 1.0f);
 		}
 
 		gl.bufferData			(GL_ARRAY_BUFFER, (int)(gridData.size() * sizeof(tcu::Vec4)), gridData[0].getPtr(), GL_STATIC_DRAW);
@@ -911,7 +911,7 @@ void SampleMaskCase::updateTexture (int sample)
 	for (int x = 0; x < m_gridsize; ++x)
 	{
 		if (m_flags & FLAGS_SAMPLE_COVERAGE)
-			gl.sampleCoverage((y*m_gridsize + x) / float(m_gridsize*m_gridsize), GL_FALSE);
+			gl.sampleCoverage((float)(y*m_gridsize + x) / float(m_gridsize*m_gridsize), GL_FALSE);
 
 		gl.drawArrays				(GL_TRIANGLES, (y*m_gridsize + x) * 6, 6);
 		GLU_EXPECT_NO_ERROR			(gl.getError(), "drawArrays");
@@ -1661,8 +1661,8 @@ NegativeFramebufferCase::IterateResult NegativeFramebufferCase::iterate (void)
 {
 	const bool				colorAttachmentTexture	= (m_caseType == CASE_DIFFERENT_N_SAMPLES_TEX) || (m_caseType == CASE_DIFFERENT_FIXED_TEX);
 	const bool				colorAttachmentRbo		= (m_caseType == CASE_DIFFERENT_N_SAMPLES_RBO) || (m_caseType == CASE_DIFFERENT_FIXED_RBO);
-	const glw::GLenum		fixedSampleLocations0	= (m_caseType == CASE_DIFFERENT_N_SAMPLES_RBO) ? (GL_TRUE) : (GL_FALSE);
-	const glw::GLenum		fixedSampleLocations1	= ((m_caseType == CASE_DIFFERENT_FIXED_TEX) || (m_caseType == CASE_DIFFERENT_FIXED_RBO)) ? (GL_TRUE) : (GL_FALSE);
+	const glw::GLboolean	fixedSampleLocations0	= (m_caseType == CASE_DIFFERENT_N_SAMPLES_RBO) ? (GL_TRUE) : (GL_FALSE);
+	const glw::GLboolean	fixedSampleLocations1	= ((m_caseType == CASE_DIFFERENT_FIXED_TEX) || (m_caseType == CASE_DIFFERENT_FIXED_RBO)) ? (GL_TRUE) : (GL_FALSE);
 	glu::CallLogWrapper		gl						(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
 	glw::GLuint				fboId					= 0;
 	glw::GLuint				rboId					= 0;

@@ -312,7 +312,7 @@ void SampleShadingRenderingCase::setShadingValue (int sampleCount)
 		// Minimum number of samples is max(ceil(<mss> * <samples>),1). Decrease mss with epsilon to prevent
 		// ceiling to a too large sample count.
 		const float epsilon	= 0.25f / (float)m_numTargetSamples;
-		const float ratio	= (sampleCount / (float)m_numTargetSamples) - epsilon;
+		const float ratio	= ((float)sampleCount / (float)m_numTargetSamples) - epsilon;
 
 		gl.enable(GL_SAMPLE_SHADING);
 		gl.minSampleShading(ratio);
@@ -321,8 +321,8 @@ void SampleShadingRenderingCase::setShadingValue (int sampleCount)
 		m_testCtx.getLog()
 			<< tcu::TestLog::Message
 			<< "Setting MIN_SAMPLE_SHADING_VALUE = " << ratio << "\n"
-			<< "Requested sample count: shadingValue * numSamples = " << ratio << " * " << m_numTargetSamples << " = " << (ratio * m_numTargetSamples) << "\n"
-			<< "Minimum sample count: ceil(shadingValue * numSamples) = ceil(" << (ratio * m_numTargetSamples) << ") = " << sampleCount
+			<< "Requested sample count: shadingValue * numSamples = " << ratio << " * " << m_numTargetSamples << " = " << (ratio * (float)m_numTargetSamples) << "\n"
+			<< "Minimum sample count: ceil(shadingValue * numSamples) = ceil(" << (ratio * (float)m_numTargetSamples) << ") = " << sampleCount
 			<< tcu::TestLog::EndMessage;
 
 		// can't fail with reasonable values of numSamples

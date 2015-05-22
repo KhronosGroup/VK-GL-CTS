@@ -428,10 +428,10 @@ rr::GenericVec4 mapToFormatColorRepresentable (const tcu::TextureFormat& texForm
 													 tcu::floatToU8(sRGB[1]),
 													 tcu::floatToU8(sRGB[2]),
 													 tcu::floatToU8(sRGB[3]));
-		const tcu::Vec4		linearized	= tcu::sRGBToLinear(tcu::Vec4(sRGB8[0] / 255.0f,
-																	  sRGB8[1] / 255.0f,
-																	  sRGB8[2] / 255.0f,
-																	  sRGB8[3] / 255.0f));
+		const tcu::Vec4		linearized	= tcu::sRGBToLinear(tcu::Vec4((float)sRGB8[0] / 255.0f,
+																	  (float)sRGB8[1] / 255.0f,
+																	  (float)sRGB8[2] / 255.0f,
+																	  (float)sRGB8[3] / 255.0f));
 
 		return rr::GenericVec4(tcu::select(linearized, tcu::Vec4(0.0f), channelMask));
 	}

@@ -108,10 +108,10 @@ static tcu::IVec4 getViewportBoundingBoxArea (const ProjectedBBox& bbox, const t
 	tcu::Vec4	vertexBox;
 	tcu::IVec4	pixelBox;
 
-	vertexBox.x() = (bbox.min.x() * 0.5f + 0.5f) * viewportSize.x();
-	vertexBox.y() = (bbox.min.y() * 0.5f + 0.5f) * viewportSize.y();
-	vertexBox.z() = (bbox.max.x() * 0.5f + 0.5f) * viewportSize.x();
-	vertexBox.w() = (bbox.max.y() * 0.5f + 0.5f) * viewportSize.y();
+	vertexBox.x() = (bbox.min.x() * 0.5f + 0.5f) * (float)viewportSize.x();
+	vertexBox.y() = (bbox.min.y() * 0.5f + 0.5f) * (float)viewportSize.y();
+	vertexBox.z() = (bbox.max.x() * 0.5f + 0.5f) * (float)viewportSize.x();
+	vertexBox.w() = (bbox.max.y() * 0.5f + 0.5f) * (float)viewportSize.y();
 
 	pixelBox.x() = deFloorFloatToInt32(vertexBox.x() - size/2.0f);
 	pixelBox.y() = deFloorFloatToInt32(vertexBox.y() - size/2.0f);
@@ -775,10 +775,10 @@ tcu::IVec4 BBoxRenderCase::getViewportPatternArea (const tcu::Vec2& patternPos, 
 	tcu::Vec4	vertexBox;
 	tcu::IVec4	pixelBox;
 
-	vertexBox.x() = (patternPos.x() * 0.5f + 0.5f) * viewportSize.x();
-	vertexBox.y() = (patternPos.y() * 0.5f + 0.5f) * viewportSize.y();
-	vertexBox.z() = ((patternPos.x() + patternSize.x()) * 0.5f + 0.5f) * viewportSize.x();
-	vertexBox.w() = ((patternPos.y() + patternSize.y()) * 0.5f + 0.5f) * viewportSize.y();
+	vertexBox.x() = (patternPos.x() * 0.5f + 0.5f) * (float)viewportSize.x();
+	vertexBox.y() = (patternPos.y() * 0.5f + 0.5f) * (float)viewportSize.y();
+	vertexBox.z() = ((patternPos.x() + patternSize.x()) * 0.5f + 0.5f) * (float)viewportSize.x();
+	vertexBox.w() = ((patternPos.y() + patternSize.y()) * 0.5f + 0.5f) * (float)viewportSize.y();
 
 	if (roundDir == ROUND_INWARDS)
 	{
@@ -1230,17 +1230,17 @@ void GridRenderCase::getAttributeData (std::vector<tcu::Vec4>& data) const
 		const int			cellY		= cellNdx / m_gridSize;
 		const tcu::Vec4&	cellColor	= ((cellX+cellY)%2 == 0) ? (green) : (yellow);
 
-		data[(ndx * 6 + 0) * VA_NUM_ATTRIB_VECS + VA_POS_VEC_NDX] = tcu::Vec4((cellX+0) / float(m_gridSize), (cellY+0) / float(m_gridSize), 0.0f, 1.0f);
+		data[(ndx * 6 + 0) * VA_NUM_ATTRIB_VECS + VA_POS_VEC_NDX] = tcu::Vec4(float(cellX+0) / float(m_gridSize), float(cellY+0) / float(m_gridSize), 0.0f, 1.0f);
 		data[(ndx * 6 + 0) * VA_NUM_ATTRIB_VECS + VA_COL_VEC_NDX] = cellColor;
-		data[(ndx * 6 + 1) * VA_NUM_ATTRIB_VECS + VA_POS_VEC_NDX] = tcu::Vec4((cellX+1) / float(m_gridSize), (cellY+1) / float(m_gridSize), 0.0f, 1.0f);
+		data[(ndx * 6 + 1) * VA_NUM_ATTRIB_VECS + VA_POS_VEC_NDX] = tcu::Vec4(float(cellX+1) / float(m_gridSize), float(cellY+1) / float(m_gridSize), 0.0f, 1.0f);
 		data[(ndx * 6 + 1) * VA_NUM_ATTRIB_VECS + VA_COL_VEC_NDX] = cellColor;
-		data[(ndx * 6 + 2) * VA_NUM_ATTRIB_VECS + VA_POS_VEC_NDX] = tcu::Vec4((cellX+0) / float(m_gridSize), (cellY+1) / float(m_gridSize), 0.0f, 1.0f);
+		data[(ndx * 6 + 2) * VA_NUM_ATTRIB_VECS + VA_POS_VEC_NDX] = tcu::Vec4(float(cellX+0) / float(m_gridSize), float(cellY+1) / float(m_gridSize), 0.0f, 1.0f);
 		data[(ndx * 6 + 2) * VA_NUM_ATTRIB_VECS + VA_COL_VEC_NDX] = cellColor;
-		data[(ndx * 6 + 3) * VA_NUM_ATTRIB_VECS + VA_POS_VEC_NDX] = tcu::Vec4((cellX+0) / float(m_gridSize), (cellY+0) / float(m_gridSize), 0.0f, 1.0f);
+		data[(ndx * 6 + 3) * VA_NUM_ATTRIB_VECS + VA_POS_VEC_NDX] = tcu::Vec4(float(cellX+0) / float(m_gridSize), float(cellY+0) / float(m_gridSize), 0.0f, 1.0f);
 		data[(ndx * 6 + 3) * VA_NUM_ATTRIB_VECS + VA_COL_VEC_NDX] = cellColor;
-		data[(ndx * 6 + 4) * VA_NUM_ATTRIB_VECS + VA_POS_VEC_NDX] = tcu::Vec4((cellX+1) / float(m_gridSize), (cellY+0) / float(m_gridSize), 0.0f, 1.0f);
+		data[(ndx * 6 + 4) * VA_NUM_ATTRIB_VECS + VA_POS_VEC_NDX] = tcu::Vec4(float(cellX+1) / float(m_gridSize), float(cellY+0) / float(m_gridSize), 0.0f, 1.0f);
 		data[(ndx * 6 + 4) * VA_NUM_ATTRIB_VECS + VA_COL_VEC_NDX] = cellColor;
-		data[(ndx * 6 + 5) * VA_NUM_ATTRIB_VECS + VA_POS_VEC_NDX] = tcu::Vec4((cellX+1) / float(m_gridSize), (cellY+1) / float(m_gridSize), 0.0f, 1.0f);
+		data[(ndx * 6 + 5) * VA_NUM_ATTRIB_VECS + VA_POS_VEC_NDX] = tcu::Vec4(float(cellX+1) / float(m_gridSize), float(cellY+1) / float(m_gridSize), 0.0f, 1.0f);
 		data[(ndx * 6 + 5) * VA_NUM_ATTRIB_VECS + VA_COL_VEC_NDX] = cellColor;
 	}
 }
@@ -1702,8 +1702,8 @@ LineRenderCase::IterationConfig LineRenderCase::generateConfig (int iteration, c
 	{
 		const IterationConfig& config = generateRandomConfig((0xDEDEDEu * (deUint32)iteration) ^ (0xABAB13 * attemptNdx), renderTargetSize);
 
-		if (config.viewportSize.x() * (config.patternSize.x() * 0.5f) > 2.5f * m_patternSide * m_wideLineLineWidth &&
-			config.viewportSize.y() * (config.patternSize.y() * 0.5f) > 2.5f * m_patternSide * m_wideLineLineWidth)
+		if ((float)config.viewportSize.x() * (config.patternSize.x() * 0.5f) > 2.5f * (float)m_patternSide * (float)m_wideLineLineWidth &&
+			(float)config.viewportSize.y() * (config.patternSize.y() * 0.5f) > 2.5f * (float)m_patternSide * (float)m_wideLineLineWidth)
 		{
 			return config;
 		}
@@ -1735,16 +1735,16 @@ void LineRenderCase::getAttributeData (std::vector<tcu::Vec4>& data) const
 
 		if (direction)
 		{
-			data[(ndx * 2 + 0) * VA_NUM_ATTRIB_VECS + VA_POS_VEC_NDX] = tcu::Vec4(minorCoord / float(m_patternSide), majorCoord / float(m_patternSide), 0.0f, 1.0f);
+			data[(ndx * 2 + 0) * VA_NUM_ATTRIB_VECS + VA_POS_VEC_NDX] = tcu::Vec4(float(minorCoord) / float(m_patternSide), float(majorCoord) / float(m_patternSide), 0.0f, 1.0f);
 			data[(ndx * 2 + 0) * VA_NUM_ATTRIB_VECS + VA_COL_VEC_NDX] = green;
-			data[(ndx * 2 + 1) * VA_NUM_ATTRIB_VECS + VA_POS_VEC_NDX] = tcu::Vec4(minorCoord / float(m_patternSide), (majorCoord + 1) / float(m_patternSide), 0.0f, 1.0f);
+			data[(ndx * 2 + 1) * VA_NUM_ATTRIB_VECS + VA_POS_VEC_NDX] = tcu::Vec4(float(minorCoord) / float(m_patternSide), float(majorCoord + 1) / float(m_patternSide), 0.0f, 1.0f);
 			data[(ndx * 2 + 1) * VA_NUM_ATTRIB_VECS + VA_COL_VEC_NDX] = green;
 		}
 		else
 		{
-			data[(ndx * 2 + 0) * VA_NUM_ATTRIB_VECS + VA_POS_VEC_NDX] = tcu::Vec4(majorCoord / float(m_patternSide), minorCoord / float(m_patternSide), 0.0f, 1.0f);
+			data[(ndx * 2 + 0) * VA_NUM_ATTRIB_VECS + VA_POS_VEC_NDX] = tcu::Vec4(float(majorCoord) / float(m_patternSide), float(minorCoord) / float(m_patternSide), 0.0f, 1.0f);
 			data[(ndx * 2 + 0) * VA_NUM_ATTRIB_VECS + VA_COL_VEC_NDX] = blue;
-			data[(ndx * 2 + 1) * VA_NUM_ATTRIB_VECS + VA_POS_VEC_NDX] = tcu::Vec4((majorCoord + 1) / float(m_patternSide), minorCoord / float(m_patternSide), 0.0f, 1.0f);
+			data[(ndx * 2 + 1) * VA_NUM_ATTRIB_VECS + VA_POS_VEC_NDX] = tcu::Vec4(float(majorCoord + 1) / float(m_patternSide), float(minorCoord) / float(m_patternSide), 0.0f, 1.0f);
 			data[(ndx * 2 + 1) * VA_NUM_ATTRIB_VECS + VA_COL_VEC_NDX] = blue;
 		}
 	}
@@ -1773,7 +1773,7 @@ void LineRenderCase::renderTestPattern (const IterationConfig& config)
 	if (m_isWideLineCase)
 		gl.lineWidth((float)m_wideLineLineWidth);
 
-	gl.uniform1f(gl.getUniformLocation(m_program->getProgram(), "u_lineWidth"), (m_isWideLineCase) ? (m_wideLineLineWidth) : (1.0f));
+	gl.uniform1f(gl.getUniformLocation(m_program->getProgram(), "u_lineWidth"), (m_isWideLineCase) ? ((float)m_wideLineLineWidth) : (1.0f));
 
 	m_testCtx.getLog() << tcu::TestLog::Message << "Rendering pattern." << tcu::TestLog::EndMessage;
 
@@ -1790,7 +1790,7 @@ void LineRenderCase::verifyRenderResult (const IterationConfig& config)
 	const glw::Functions&	gl						= m_context.getRenderContext().getFunctions();
 	const bool				isMsaa					= m_context.getRenderTarget().getNumSamples() > 1;
 	const ProjectedBBox		projectedBBox			= projectBoundingBox(config.bbox);
-	const float				lineWidth				= (m_isWideLineCase) ? (m_wideLineLineWidth) : (1.0f);
+	const float				lineWidth				= (m_isWideLineCase) ? ((float)m_wideLineLineWidth) : (1.0f);
 	const tcu::IVec4		viewportBBoxArea		= getViewportBoundingBoxArea(projectedBBox, config.viewportSize, lineWidth);
 	const tcu::IVec4		viewportPatternArea		= getViewportPatternArea(config.patternPos, config.patternSize, config.viewportSize, ROUND_INWARDS);
 	const tcu::IVec2		expectedHorizontalLines	= getNumberOfLinesRange(viewportBBoxArea.y(), viewportBBoxArea.w(), config.patternPos.y(), config.patternSize.y(), config.viewportSize.y(), DIRECTION_VERTICAL);
@@ -1926,18 +1926,18 @@ tcu::IVec2 LineRenderCase::getNumberOfLinesRange (int queryAreaBegin, int queryA
 
 	for (int lineNdx = patternStartNdx; lineNdx < patternEndNdx; ++lineNdx)
 	{
-		const float linePos		= (patternStart + (lineNdx / float(m_patternSide)) * patternSize) * 0.5f + 0.5f;
-		const float lineWidth	= (m_isWideLineCase) ? (m_wideLineLineWidth) : (1.0f);
+		const float linePos		= (patternStart + (float(lineNdx) / float(m_patternSide)) * patternSize) * 0.5f + 0.5f;
+		const float lineWidth	= (m_isWideLineCase) ? ((float)m_wideLineLineWidth) : (1.0f);
 
-		if (linePos * viewportArea > queryAreaBegin + 1.0f &&
-			linePos * viewportArea < queryAreaEnd   - 1.0f)
+		if (linePos * (float)viewportArea > (float)queryAreaBegin + 1.0f &&
+			linePos * (float)viewportArea < (float)queryAreaEnd   - 1.0f)
 		{
 			// line center is within the area
 			++numLinesMin;
 			++numLinesMax;
 		}
-		else if (linePos * viewportArea > queryAreaBegin - lineWidth*0.5f - 1.0f &&
-		         linePos * viewportArea < queryAreaEnd   + lineWidth*0.5f + 1.0f)
+		else if (linePos * (float)viewportArea > (float)queryAreaBegin - lineWidth*0.5f - 1.0f &&
+		         linePos * (float)viewportArea < (float)queryAreaEnd   + lineWidth*0.5f + 1.0f)
 		{
 			// line could leak into area
 			++numLinesMax;
@@ -1952,8 +1952,8 @@ deUint8 LineRenderCase::scanRow (const tcu::ConstPixelBufferAccess& access, int 
 	const bool numLinesOk	= checkAreaNumLines(access, tcu::IVec4(rowBegin, row, rowEnd - rowBegin, 1), messageLimitCounter, SCAN_ROW_COMPONENT_NDX, numLines);
 	const bool lineWidthOk	= checkLineWidths(access, tcu::IVec2(rowBegin, row), tcu::IVec2(rowEnd, row), SCAN_ROW_COMPONENT_NDX, messageLimitCounter);
 
-	return	(numLinesOk		? (deUint8)SCANRESULT_NUM_LINES_OK_BIT	: 0u) |
-			(lineWidthOk	? (deUint8)SCANRESULT_LINE_WIDTH_OK_BIT	: 0u);
+	return	(deUint8)((numLinesOk	? (deUint8)SCANRESULT_NUM_LINES_OK_BIT	: 0u) |
+					  (lineWidthOk	? (deUint8)SCANRESULT_LINE_WIDTH_OK_BIT	: 0u));
 }
 
 deUint8 LineRenderCase::scanColumn (const tcu::ConstPixelBufferAccess& access, int column, int columnBegin, int columnEnd, const tcu::IVec2& numLines, int& messageLimitCounter) const
@@ -1961,8 +1961,8 @@ deUint8 LineRenderCase::scanColumn (const tcu::ConstPixelBufferAccess& access, i
 	const bool numLinesOk	= checkAreaNumLines(access, tcu::IVec4(column, columnBegin, 1, columnEnd - columnBegin), messageLimitCounter, SCAN_COL_COMPONENT_NDX, numLines);
 	const bool lineWidthOk	= checkLineWidths(access, tcu::IVec2(column, columnBegin), tcu::IVec2(column, columnEnd), SCAN_COL_COMPONENT_NDX, messageLimitCounter);
 
-	return	(numLinesOk		? (deUint8)SCANRESULT_NUM_LINES_OK_BIT	: 0u) |
-			(lineWidthOk	? (deUint8)SCANRESULT_LINE_WIDTH_OK_BIT	: 0u);
+	return	(deUint8)((numLinesOk	? (deUint8)SCANRESULT_NUM_LINES_OK_BIT	: 0u) |
+					  (lineWidthOk	? (deUint8)SCANRESULT_LINE_WIDTH_OK_BIT	: 0u));
 }
 
 bool LineRenderCase::checkAreaNumLines (const tcu::ConstPixelBufferAccess& access, const tcu::IVec4& area, int& messageLimitCounter, int componentNdx, const tcu::IVec2& numLines) const
@@ -2567,12 +2567,12 @@ void PointRenderCase::generateAttributeData (void)
 
 		if (direction)
 		{
-			m_attribData[ndx * VA_NUM_ATTRIB_VECS + VA_POS_VEC_NDX] = tcu::Vec4(minorCoord / float(m_numStripes), majorCoord / float(m_numStripes), 0.0f, 1.0f);
+			m_attribData[ndx * VA_NUM_ATTRIB_VECS + VA_POS_VEC_NDX] = tcu::Vec4(float(minorCoord) / float(m_numStripes), float(majorCoord) / float(m_numStripes), 0.0f, 1.0f);
 			m_attribData[ndx * VA_NUM_ATTRIB_VECS + VA_COL_VEC_NDX] = green;
 		}
 		else
 		{
-			m_attribData[ndx * VA_NUM_ATTRIB_VECS + VA_POS_VEC_NDX] = tcu::Vec4((majorCoord + 0.5f) / float(m_numStripes), (minorCoord + 0.5f) / float(m_numStripes), 0.0f, 1.0f);
+			m_attribData[ndx * VA_NUM_ATTRIB_VECS + VA_POS_VEC_NDX] = tcu::Vec4(((float)majorCoord + 0.5f) / float(m_numStripes), ((float)minorCoord + 0.5f) / float(m_numStripes), 0.0f, 1.0f);
 			m_attribData[ndx * VA_NUM_ATTRIB_VECS + VA_COL_VEC_NDX] = blue;
 		}
 	}
@@ -2791,7 +2791,8 @@ bool PointRenderCase::verifyNarrowPointPattern (const tcu::Surface& viewport, co
 		else
 		{
 			// transform to viewport coords
-			const tcu::IVec2 pixelCenter(deRoundFloatToInt32((refPoint.center.x() * 0.5f + 0.5f) * viewport.getWidth()), deRoundFloatToInt32((refPoint.center.y() * 0.5f + 0.5f) * viewport.getHeight()));
+			const tcu::IVec2 pixelCenter(deRoundFloatToInt32((refPoint.center.x() * 0.5f + 0.5f) * (float)viewport.getWidth()),
+										 deRoundFloatToInt32((refPoint.center.y() * 0.5f + 0.5f) * (float)viewport.getHeight()));
 
 			// find rasterized point in the result
 			if (pixelCenter.x() < 1 || pixelCenter.y() < 1 || pixelCenter.x() >= viewport.getWidth()-1 || pixelCenter.y() >= viewport.getHeight()-1)
@@ -2850,10 +2851,10 @@ bool PointRenderCase::verifyWidePointPattern (const tcu::Surface& viewport, cons
 			// point fully in the bounding box
 			anyError |= !verifyWidePoint(viewport, refPoint, bbox, POINT_FULL, logFloodCounter);
 		}
-		else if (refPoint.center.x() >= bbox.min.x() + refPoint.size / 2.0f &&
-				 refPoint.center.y() >= bbox.min.y() - refPoint.size / 2.0f &&
-				 refPoint.center.x() <= bbox.max.x() + refPoint.size / 2.0f &&
-				 refPoint.center.y() <= bbox.max.y() - refPoint.size / 2.0f)
+		else if (refPoint.center.x() >= bbox.min.x() + (float)refPoint.size / 2.0f &&
+				 refPoint.center.y() >= bbox.min.y() - (float)refPoint.size / 2.0f &&
+				 refPoint.center.x() <= bbox.max.x() + (float)refPoint.size / 2.0f &&
+				 refPoint.center.y() <= bbox.max.y() - (float)refPoint.size / 2.0f)
 		{
 			// point leaks into bounding box
 			anyError |= !verifyWidePoint(viewport, refPoint, bbox, POINT_PARTIAL, logFloodCounter);
@@ -2873,8 +2874,8 @@ bool PointRenderCase::verifyWidePoint (const tcu::Surface& viewport, const Gener
 														 de::max(viewportBBoxArea.y(), 0),
 														 de::min(viewportBBoxArea.z(), viewport.getWidth()),
 														 de::min(viewportBBoxArea.w(), viewport.getHeight()));
-	const tcu::IVec2	pointPos			= tcu::IVec2(deRoundFloatToInt32((refPoint.center.x()*0.5f + 0.5f) * viewport.getWidth()),
-														 deRoundFloatToInt32((refPoint.center.y()*0.5f + 0.5f) * viewport.getHeight()));
+	const tcu::IVec2	pointPos			= tcu::IVec2(deRoundFloatToInt32((refPoint.center.x()*0.5f + 0.5f) * (float)viewport.getWidth()),
+														 deRoundFloatToInt32((refPoint.center.y()*0.5f + 0.5f) * (float)viewport.getHeight()));
 
 	// find any fragment within the point that is inside the bbox, start search at the center
 
@@ -3604,8 +3605,8 @@ void DepthDrawCase::init (void)
 		m_layers.resize(m_numLayers);
 		for (int layerNdx = 0; layerNdx < m_numLayers; ++layerNdx)
 		{
-			m_layers[layerNdx].zOffset	= ((float)layerNdx / m_numLayers) * 2.0f - 1.0f;
-			m_layers[layerNdx].zScale	= (2.0f / m_numLayers);
+			m_layers[layerNdx].zOffset	= ((float)layerNdx / (float)m_numLayers) * 2.0f - 1.0f;
+			m_layers[layerNdx].zScale	= (2.0f / (float)m_numLayers);
 			m_layers[layerNdx].color1	= (layerNdx == 0) ? (tcu::Vec4(0.0f, 1.0f, 0.0f, 1.0f)) : (tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f));
 			m_layers[layerNdx].color2	= (layerNdx == 0) ? (tcu::Vec4(1.0f, 1.0f, 0.0f, 1.0f)) : (tcu::Vec4(1.0f, 0.0f, 1.0f, 1.0f));
 		}
@@ -3861,12 +3862,12 @@ void DepthDrawCase::generateAttributeData (std::vector<tcu::Vec4>& data) const
 		const int			cellY		= cellNdx / m_gridSize;
 		const tcu::Vec4&	cellColor	= ((cellX+cellY)%2 == 0) ? (color1) : (color2);
 
-		data[ndx * 6 * 2 +  0] = tcu::Vec4((cellX+0) / float(m_gridSize) * 2.0f - 1.0f, (cellY+0) / float(m_gridSize) * 2.0f - 1.0f, 0.0f, 0.0f);	data[ndx * 6 * 2 +  1] = cellColor;
-		data[ndx * 6 * 2 +  2] = tcu::Vec4((cellX+1) / float(m_gridSize) * 2.0f - 1.0f, (cellY+1) / float(m_gridSize) * 2.0f - 1.0f, 0.0f, 0.0f);	data[ndx * 6 * 2 +  3] = cellColor;
-		data[ndx * 6 * 2 +  4] = tcu::Vec4((cellX+0) / float(m_gridSize) * 2.0f - 1.0f, (cellY+1) / float(m_gridSize) * 2.0f - 1.0f, 0.0f, 0.0f);	data[ndx * 6 * 2 +  5] = cellColor;
-		data[ndx * 6 * 2 +  6] = tcu::Vec4((cellX+0) / float(m_gridSize) * 2.0f - 1.0f, (cellY+0) / float(m_gridSize) * 2.0f - 1.0f, 0.0f, 0.0f);	data[ndx * 6 * 2 +  7] = cellColor;
-		data[ndx * 6 * 2 +  8] = tcu::Vec4((cellX+1) / float(m_gridSize) * 2.0f - 1.0f, (cellY+0) / float(m_gridSize) * 2.0f - 1.0f, 0.0f, 0.0f);	data[ndx * 6 * 2 +  9] = cellColor;
-		data[ndx * 6 * 2 + 10] = tcu::Vec4((cellX+1) / float(m_gridSize) * 2.0f - 1.0f, (cellY+1) / float(m_gridSize) * 2.0f - 1.0f, 0.0f, 0.0f);	data[ndx * 6 * 2 + 11] = cellColor;
+		data[ndx * 6 * 2 +  0] = tcu::Vec4(float(cellX+0) / float(m_gridSize) * 2.0f - 1.0f, float(cellY+0) / float(m_gridSize) * 2.0f - 1.0f, 0.0f, 0.0f);	data[ndx * 6 * 2 +  1] = cellColor;
+		data[ndx * 6 * 2 +  2] = tcu::Vec4(float(cellX+1) / float(m_gridSize) * 2.0f - 1.0f, float(cellY+1) / float(m_gridSize) * 2.0f - 1.0f, 0.0f, 0.0f);	data[ndx * 6 * 2 +  3] = cellColor;
+		data[ndx * 6 * 2 +  4] = tcu::Vec4(float(cellX+0) / float(m_gridSize) * 2.0f - 1.0f, float(cellY+1) / float(m_gridSize) * 2.0f - 1.0f, 0.0f, 0.0f);	data[ndx * 6 * 2 +  5] = cellColor;
+		data[ndx * 6 * 2 +  6] = tcu::Vec4(float(cellX+0) / float(m_gridSize) * 2.0f - 1.0f, float(cellY+0) / float(m_gridSize) * 2.0f - 1.0f, 0.0f, 0.0f);	data[ndx * 6 * 2 +  7] = cellColor;
+		data[ndx * 6 * 2 +  8] = tcu::Vec4(float(cellX+1) / float(m_gridSize) * 2.0f - 1.0f, float(cellY+0) / float(m_gridSize) * 2.0f - 1.0f, 0.0f, 0.0f);	data[ndx * 6 * 2 +  9] = cellColor;
+		data[ndx * 6 * 2 + 10] = tcu::Vec4(float(cellX+1) / float(m_gridSize) * 2.0f - 1.0f, float(cellY+1) / float(m_gridSize) * 2.0f - 1.0f, 0.0f, 0.0f);	data[ndx * 6 * 2 + 11] = cellColor;
 
 		// Fill Z with random values (fake Z)
 		for (int vtxNdx = 0; vtxNdx < 6; ++vtxNdx)
@@ -4580,15 +4581,15 @@ void ViewportCallOrderCase::genVbo (void)
 
 		if (cellSide)
 		{
-			data[ndx * 3 + 0] = tcu::Vec4((cellX+0) / float(gridSize), ((cellY+0) / float(gridSize)) * 2.0f - 1.0f, 0.0f, 1.0f);
-			data[ndx * 3 + 1] = tcu::Vec4((cellX+1) / float(gridSize), ((cellY+1) / float(gridSize)) * 2.0f - 1.0f, 0.0f, 1.0f);
-			data[ndx * 3 + 2] = tcu::Vec4((cellX+0) / float(gridSize), ((cellY+1) / float(gridSize)) * 2.0f - 1.0f, 0.0f, 1.0f);
+			data[ndx * 3 + 0] = tcu::Vec4(float(cellX+0) / float(gridSize), (float(cellY+0) / float(gridSize)) * 2.0f - 1.0f, 0.0f, 1.0f);
+			data[ndx * 3 + 1] = tcu::Vec4(float(cellX+1) / float(gridSize), (float(cellY+1) / float(gridSize)) * 2.0f - 1.0f, 0.0f, 1.0f);
+			data[ndx * 3 + 2] = tcu::Vec4(float(cellX+0) / float(gridSize), (float(cellY+1) / float(gridSize)) * 2.0f - 1.0f, 0.0f, 1.0f);
 		}
 		else
 		{
-			data[ndx * 3 + 0] = tcu::Vec4((cellX+0) / float(gridSize), ((cellY+0) / float(gridSize)) * 2.0f - 1.0f, 0.0f, 1.0f);
-			data[ndx * 3 + 1] = tcu::Vec4((cellX+1) / float(gridSize), ((cellY+0) / float(gridSize)) * 2.0f - 1.0f, 0.0f, 1.0f);
-			data[ndx * 3 + 2] = tcu::Vec4((cellX+1) / float(gridSize), ((cellY+1) / float(gridSize)) * 2.0f - 1.0f, 0.0f, 1.0f);
+			data[ndx * 3 + 0] = tcu::Vec4(float(cellX+0) / float(gridSize), (float(cellY+0) / float(gridSize)) * 2.0f - 1.0f, 0.0f, 1.0f);
+			data[ndx * 3 + 1] = tcu::Vec4(float(cellX+1) / float(gridSize), (float(cellY+0) / float(gridSize)) * 2.0f - 1.0f, 0.0f, 1.0f);
+			data[ndx * 3 + 2] = tcu::Vec4(float(cellX+1) / float(gridSize), (float(cellY+1) / float(gridSize)) * 2.0f - 1.0f, 0.0f, 1.0f);
 		}
 	}
 
@@ -4620,8 +4621,8 @@ void ViewportCallOrderCase::genProgram (void)
 
 bool ViewportCallOrderCase::verifyImage (const tcu::PixelBufferAccess& result)
 {
-	const tcu::IVec2	insideBorder	(deCeilFloatToInt32(0.25f * result.getWidth()) + 1, deFloorFloatToInt32(0.5f * result.getWidth()) - 1);
-	const tcu::IVec2	outsideBorder	(deFloorFloatToInt32(0.25f * result.getWidth()) - 1, deCeilFloatToInt32(0.5f * result.getWidth()) + 1);
+	const tcu::IVec2	insideBorder	(deCeilFloatToInt32(0.25f * (float)result.getWidth()) + 1, deFloorFloatToInt32(0.5f * (float)result.getWidth()) - 1);
+	const tcu::IVec2	outsideBorder	(deFloorFloatToInt32(0.25f * (float)result.getWidth()) - 1, deCeilFloatToInt32(0.5f * (float)result.getWidth()) + 1);
 	tcu::Surface		errorMask		(result.getWidth(), result.getHeight());
 	bool				anyError		= false;
 

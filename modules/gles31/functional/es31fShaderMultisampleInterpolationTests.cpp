@@ -781,26 +781,26 @@ void CentroidRenderCase::setupRenderData (void)
 	m_renderSceneDescription = "triangle fan of narrow triangles";
 
 	m_renderAttribs["a_position"].offset = 0;
-	m_renderAttribs["a_position"].stride = sizeof(float[4]) * 3;
-	m_renderAttribs["a_barycentricsA"].offset = sizeof(float[4]);
-	m_renderAttribs["a_barycentricsA"].stride = sizeof(float[4]) * 3;
-	m_renderAttribs["a_barycentricsB"].offset = sizeof(float[4]) * 2;
-	m_renderAttribs["a_barycentricsB"].stride = sizeof(float[4]) * 3;
+	m_renderAttribs["a_position"].stride = (int)sizeof(float[4]) * 3;
+	m_renderAttribs["a_barycentricsA"].offset = (int)sizeof(float[4]);
+	m_renderAttribs["a_barycentricsA"].stride = (int)sizeof(float[4]) * 3;
+	m_renderAttribs["a_barycentricsB"].offset = (int)sizeof(float[4]) * 2;
+	m_renderAttribs["a_barycentricsB"].stride = (int)sizeof(float[4]) * 3;
 
 	for (int triangleNdx = 0; triangleNdx < numTriangles; ++triangleNdx)
 	{
-		const float angle		= ((float)triangleNdx) / numTriangles * 2.0f * DE_PI;
-		const float nextAngle	= ((float)triangleNdx + 1.0f) / numTriangles * 2.0f * DE_PI;
+		const float angle		= ((float)triangleNdx) / (float)numTriangles * 2.0f * DE_PI;
+		const float nextAngle	= ((float)triangleNdx + 1.0f) / (float)numTriangles * 2.0f * DE_PI;
 
 		data[(triangleNdx * 3 + 0) * 3 + 0] = tcu::Vec4(0.2f, -0.3f, 0.0f, 1.0f);
 		data[(triangleNdx * 3 + 0) * 3 + 1] = tcu::Vec4(1.0f,  0.0f, 0.0f, 0.0f);
 		data[(triangleNdx * 3 + 0) * 3 + 2] = tcu::Vec4(1.0f,  0.0f, 0.0f, 0.0f);
 
-		data[(triangleNdx * 3 + 1) * 3 + 0] = tcu::Vec4(2.0f * cos(angle), 2.0f * sin(angle), 0.0f, 1.0f);
+		data[(triangleNdx * 3 + 1) * 3 + 0] = tcu::Vec4(2.0f * deFloatCos(angle), 2.0f * deFloatSin(angle), 0.0f, 1.0f);
 		data[(triangleNdx * 3 + 1) * 3 + 1] = tcu::Vec4(0.0f,  1.0f, 0.0f, 0.0f);
 		data[(triangleNdx * 3 + 1) * 3 + 2] = tcu::Vec4(0.0f,  1.0f, 0.0f, 0.0f);
 
-		data[(triangleNdx * 3 + 2) * 3 + 0] = tcu::Vec4(2.0f * cos(nextAngle), 2.0f * sin(nextAngle), 0.0f, 1.0f);
+		data[(triangleNdx * 3 + 2) * 3 + 0] = tcu::Vec4(2.0f * deFloatCos(nextAngle), 2.0f * deFloatSin(nextAngle), 0.0f, 1.0f);
 		data[(triangleNdx * 3 + 2) * 3 + 1] = tcu::Vec4(0.0f,  0.0f, 1.0f, 0.0f);
 		data[(triangleNdx * 3 + 2) * 3 + 2] = tcu::Vec4(0.0f,  0.0f, 1.0f, 0.0f);
 	}

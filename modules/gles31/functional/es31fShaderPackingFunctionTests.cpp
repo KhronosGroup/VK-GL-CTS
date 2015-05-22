@@ -672,7 +672,7 @@ public:
 					const int		s			= rnd.getBool() ? 1 : -1;
 					const int		exp			= rnd.getInt(minExp, maxExp);
 					const deUint32	mantissa	= rnd.getUint32() & ((1<<mantBits)-1);
-					const deUint16	value		= tcu::Float16::construct(s, exp ? exp : 1 /* avoid denorm */, (1u<<10) | mantissa).bits();
+					const deUint16	value		= tcu::Float16::construct(s, exp ? exp : 1 /* avoid denorm */, (deUint16)((1u<<10) | mantissa)).bits();
 
 					inVal |= value << (16*c);
 				}

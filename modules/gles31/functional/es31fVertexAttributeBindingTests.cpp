@@ -456,12 +456,12 @@ void SingleBindingCase::createBuffers (void)
 		const tcu::Vec4&	color = ((x + y) % 2 == 0) ? (colorA) : (colorB);
 		const tcu::Vec4		positions[6] =
 		{
-			tcu::Vec4((x+0) / float(GRID_SIZE) * 2.0f - 1.0f, (y+0) / float(GRID_SIZE) * 2.0f - 1.0f, 0.0f, 1.0f),
-			tcu::Vec4((x+0) / float(GRID_SIZE) * 2.0f - 1.0f, (y+1) / float(GRID_SIZE) * 2.0f - 1.0f, 0.0f, 1.0f),
-			tcu::Vec4((x+1) / float(GRID_SIZE) * 2.0f - 1.0f, (y+1) / float(GRID_SIZE) * 2.0f - 1.0f, 0.0f, 1.0f),
-			tcu::Vec4((x+0) / float(GRID_SIZE) * 2.0f - 1.0f, (y+0) / float(GRID_SIZE) * 2.0f - 1.0f, 0.0f, 1.0f),
-			tcu::Vec4((x+1) / float(GRID_SIZE) * 2.0f - 1.0f, (y+1) / float(GRID_SIZE) * 2.0f - 1.0f, 0.0f, 1.0f),
-			tcu::Vec4((x+1) / float(GRID_SIZE) * 2.0f - 1.0f, (y+0) / float(GRID_SIZE) * 2.0f - 1.0f, 0.0f, 1.0f),
+			tcu::Vec4(float(x+0) / float(GRID_SIZE) * 2.0f - 1.0f, float(y+0) / float(GRID_SIZE) * 2.0f - 1.0f, 0.0f, 1.0f),
+			tcu::Vec4(float(x+0) / float(GRID_SIZE) * 2.0f - 1.0f, float(y+1) / float(GRID_SIZE) * 2.0f - 1.0f, 0.0f, 1.0f),
+			tcu::Vec4(float(x+1) / float(GRID_SIZE) * 2.0f - 1.0f, float(y+1) / float(GRID_SIZE) * 2.0f - 1.0f, 0.0f, 1.0f),
+			tcu::Vec4(float(x+0) / float(GRID_SIZE) * 2.0f - 1.0f, float(y+0) / float(GRID_SIZE) * 2.0f - 1.0f, 0.0f, 1.0f),
+			tcu::Vec4(float(x+1) / float(GRID_SIZE) * 2.0f - 1.0f, float(y+1) / float(GRID_SIZE) * 2.0f - 1.0f, 0.0f, 1.0f),
+			tcu::Vec4(float(x+1) / float(GRID_SIZE) * 2.0f - 1.0f, float(y+0) / float(GRID_SIZE) * 2.0f - 1.0f, 0.0f, 1.0f),
 		};
 
 		// copy cell vertices to the buffer.
@@ -748,12 +748,12 @@ void MultipleBindingCase::createBuffers (void)
 		for (int y = 0; y < GRID_SIZE; ++y)
 		for (int x = 0; x < GRID_SIZE; ++x)
 		{
-			primitiveData[(y * GRID_SIZE + x) * 6 + 0] = tcu::Vec4((x+0) / float(GRID_SIZE) * 2.0f - 1.0f, (y+0) / float(GRID_SIZE) * 2.0f - 1.0f, 0.0f, 1.0f);
-			primitiveData[(y * GRID_SIZE + x) * 6 + 1] = tcu::Vec4((x+0) / float(GRID_SIZE) * 2.0f - 1.0f, (y+1) / float(GRID_SIZE) * 2.0f - 1.0f, 0.0f, 1.0f);
-			primitiveData[(y * GRID_SIZE + x) * 6 + 2] = tcu::Vec4((x+1) / float(GRID_SIZE) * 2.0f - 1.0f, (y+1) / float(GRID_SIZE) * 2.0f - 1.0f, 0.0f, 1.0f);
-			primitiveData[(y * GRID_SIZE + x) * 6 + 3] = tcu::Vec4((x+0) / float(GRID_SIZE) * 2.0f - 1.0f, (y+0) / float(GRID_SIZE) * 2.0f - 1.0f, 0.0f, 1.0f);
-			primitiveData[(y * GRID_SIZE + x) * 6 + 4] = tcu::Vec4((x+1) / float(GRID_SIZE) * 2.0f - 1.0f, (y+1) / float(GRID_SIZE) * 2.0f - 1.0f, 0.0f, 1.0f);
-			primitiveData[(y * GRID_SIZE + x) * 6 + 5] = tcu::Vec4((x+1) / float(GRID_SIZE) * 2.0f - 1.0f, (y+0) / float(GRID_SIZE) * 2.0f - 1.0f, 0.0f, 1.0f);
+			primitiveData[(y * GRID_SIZE + x) * 6 + 0] = tcu::Vec4(float(x+0) / float(GRID_SIZE) * 2.0f - 1.0f, float(y+0) / float(GRID_SIZE) * 2.0f - 1.0f, 0.0f, 1.0f);
+			primitiveData[(y * GRID_SIZE + x) * 6 + 1] = tcu::Vec4(float(x+0) / float(GRID_SIZE) * 2.0f - 1.0f, float(y+1) / float(GRID_SIZE) * 2.0f - 1.0f, 0.0f, 1.0f);
+			primitiveData[(y * GRID_SIZE + x) * 6 + 2] = tcu::Vec4(float(x+1) / float(GRID_SIZE) * 2.0f - 1.0f, float(y+1) / float(GRID_SIZE) * 2.0f - 1.0f, 0.0f, 1.0f);
+			primitiveData[(y * GRID_SIZE + x) * 6 + 3] = tcu::Vec4(float(x+0) / float(GRID_SIZE) * 2.0f - 1.0f, float(y+0) / float(GRID_SIZE) * 2.0f - 1.0f, 0.0f, 1.0f);
+			primitiveData[(y * GRID_SIZE + x) * 6 + 4] = tcu::Vec4(float(x+1) / float(GRID_SIZE) * 2.0f - 1.0f, float(y+1) / float(GRID_SIZE) * 2.0f - 1.0f, 0.0f, 1.0f);
+			primitiveData[(y * GRID_SIZE + x) * 6 + 5] = tcu::Vec4(float(x+1) / float(GRID_SIZE) * 2.0f - 1.0f, float(y+0) / float(GRID_SIZE) * 2.0f - 1.0f, 0.0f, 1.0f);
 		}
 	}
 
@@ -772,7 +772,7 @@ void MultipleBindingCase::createBuffers (void)
 			const tcu::Vec4& color = ((x + y) % 2 == 0) ? (green) : (yellow);
 
 			colorOffsetWritePtr[(y * GRID_SIZE + x) * 2 + 0] = color;
-			colorOffsetWritePtr[(y * GRID_SIZE + x) * 2 + 1] = tcu::Vec4(x / float(GRID_SIZE) * 2.0f - 1.0f, y / float(GRID_SIZE) * 2.0f - 1.0f, 0.0f, 0.0f);
+			colorOffsetWritePtr[(y * GRID_SIZE + x) * 2 + 1] = tcu::Vec4(float(x) / float(GRID_SIZE) * 2.0f - 1.0f, float(y) / float(GRID_SIZE) * 2.0f - 1.0f, 0.0f, 0.0f);
 		}
 	}
 	else
@@ -1031,7 +1031,7 @@ void MixedBindingCase::createBuffers (void)
 			const tcu::Vec4& color = ((x + y) % 2 == 0) ? (green) : (yellow);
 
 			colorOffsetData[((y * GRID_SIZE + x) * numInstanceElementsPerCell + v) * 2 + 0] = color;
-			colorOffsetData[((y * GRID_SIZE + x) * numInstanceElementsPerCell + v) * 2 + 1] = tcu::Vec4(x / float(GRID_SIZE) * 2.0f - 1.0f, y / float(GRID_SIZE) * 2.0f - 1.0f, 0.0f, 0.0f);
+			colorOffsetData[((y * GRID_SIZE + x) * numInstanceElementsPerCell + v) * 2 + 1] = tcu::Vec4(float(x) / float(GRID_SIZE) * 2.0f - 1.0f, float(y) / float(GRID_SIZE) * 2.0f - 1.0f, 0.0f, 0.0f);
 		}
 	}
 
@@ -1246,17 +1246,17 @@ void MixedApiCase::createBuffers (void)
 	{
 		const tcu::Vec4& color = ((x + y) % 2 == 0) ? (green) : (yellow);
 
-		vertexData[(y * GRID_SIZE + x) * 12 +  0] = tcu::Vec4((x+0) / float(GRID_SIZE) * 2.0f - 1.0f, (y+0) / float(GRID_SIZE) * 2.0f - 1.0f, 0.0f, 1.0f);
+		vertexData[(y * GRID_SIZE + x) * 12 +  0] = tcu::Vec4(float(x+0) / float(GRID_SIZE) * 2.0f - 1.0f, float(y+0) / float(GRID_SIZE) * 2.0f - 1.0f, 0.0f, 1.0f);
 		vertexData[(y * GRID_SIZE + x) * 12 +  1] = color;
-		vertexData[(y * GRID_SIZE + x) * 12 +  2] = tcu::Vec4((x+0) / float(GRID_SIZE) * 2.0f - 1.0f, (y+1) / float(GRID_SIZE) * 2.0f - 1.0f, 0.0f, 1.0f);
+		vertexData[(y * GRID_SIZE + x) * 12 +  2] = tcu::Vec4(float(x+0) / float(GRID_SIZE) * 2.0f - 1.0f, float(y+1) / float(GRID_SIZE) * 2.0f - 1.0f, 0.0f, 1.0f);
 		vertexData[(y * GRID_SIZE + x) * 12 +  3] = color;
-		vertexData[(y * GRID_SIZE + x) * 12 +  4] = tcu::Vec4((x+1) / float(GRID_SIZE) * 2.0f - 1.0f, (y+1) / float(GRID_SIZE) * 2.0f - 1.0f, 0.0f, 1.0f);
+		vertexData[(y * GRID_SIZE + x) * 12 +  4] = tcu::Vec4(float(x+1) / float(GRID_SIZE) * 2.0f - 1.0f, float(y+1) / float(GRID_SIZE) * 2.0f - 1.0f, 0.0f, 1.0f);
 		vertexData[(y * GRID_SIZE + x) * 12 +  5] = color;
-		vertexData[(y * GRID_SIZE + x) * 12 +  6] = tcu::Vec4((x+0) / float(GRID_SIZE) * 2.0f - 1.0f, (y+0) / float(GRID_SIZE) * 2.0f - 1.0f, 0.0f, 1.0f);
+		vertexData[(y * GRID_SIZE + x) * 12 +  6] = tcu::Vec4(float(x+0) / float(GRID_SIZE) * 2.0f - 1.0f, float(y+0) / float(GRID_SIZE) * 2.0f - 1.0f, 0.0f, 1.0f);
 		vertexData[(y * GRID_SIZE + x) * 12 +  7] = color;
-		vertexData[(y * GRID_SIZE + x) * 12 +  8] = tcu::Vec4((x+1) / float(GRID_SIZE) * 2.0f - 1.0f, (y+1) / float(GRID_SIZE) * 2.0f - 1.0f, 0.0f, 1.0f);
+		vertexData[(y * GRID_SIZE + x) * 12 +  8] = tcu::Vec4(float(x+1) / float(GRID_SIZE) * 2.0f - 1.0f, float(y+1) / float(GRID_SIZE) * 2.0f - 1.0f, 0.0f, 1.0f);
 		vertexData[(y * GRID_SIZE + x) * 12 +  9] = color;
-		vertexData[(y * GRID_SIZE + x) * 12 + 10] = tcu::Vec4((x+1) / float(GRID_SIZE) * 2.0f - 1.0f, (y+0) / float(GRID_SIZE) * 2.0f - 1.0f, 0.0f, 1.0f);
+		vertexData[(y * GRID_SIZE + x) * 12 + 10] = tcu::Vec4(float(x+1) / float(GRID_SIZE) * 2.0f - 1.0f, float(y+0) / float(GRID_SIZE) * 2.0f - 1.0f, 0.0f, 1.0f);
 		vertexData[(y * GRID_SIZE + x) * 12 + 11] = color;
 	}
 

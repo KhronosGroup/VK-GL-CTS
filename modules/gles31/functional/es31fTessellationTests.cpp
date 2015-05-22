@@ -1062,7 +1062,7 @@ static void drawTessCoordPoint (tcu::Surface& dst, TessPrimitiveType primitiveTy
 
 					  : Vec2(-1.0f);
 
-	drawPoint(dst, (int)(dstPos.x()*dst.getWidth()), (int)(dstPos.y()*dst.getHeight()), color, size);
+	drawPoint(dst, (int)(dstPos.x() * (float)dst.getWidth()), (int)(dstPos.y() * (float)dst.getHeight()), color, size);
 }
 
 static void drawTessCoordVisualization (tcu::Surface& dst, TessPrimitiveType primitiveType, const vector<Vec3>& coords)
@@ -1431,8 +1431,8 @@ static bool verifyFractionalSpacingMultiple (TestLog& log, SpacingMode spacingMo
 			if (curFinalLevel != prevFinalLevel)
 				continue;
 
-			const float			curFraction		= curFinalLevel - curClampedLevel;
-			const float			prevFraction	= prevFinalLevel - prevClampedLevel;
+			const float			curFraction		= (float)curFinalLevel - curClampedLevel;
+			const float			prevFraction	= (float)prevFinalLevel - prevClampedLevel;
 
 			if (curData.additionalSegmentLength < prevData.additionalSegmentLength ||
 				(curClampedLevel == prevClampedLevel && curData.additionalSegmentLength != prevData.additionalSegmentLength))
@@ -1736,12 +1736,12 @@ CommonEdgeCase::IterateResult CommonEdgeCase::iterate (void)
 		for (int i = 0; i < gridHeight; i++)
 		for (int j = 0; j < gridWidth; j++)
 		{
-			const int corners[4] =
+			const deUint16 corners[4] =
 			{
-				(i+0)*(gridWidth+1) + j+0,
-				(i+0)*(gridWidth+1) + j+1,
-				(i+1)*(gridWidth+1) + j+0,
-				(i+1)*(gridWidth+1) + j+1
+				(deUint16)((i+0)*(gridWidth+1) + j+0),
+				(deUint16)((i+0)*(gridWidth+1) + j+1),
+				(deUint16)((i+1)*(gridWidth+1) + j+0),
+				(deUint16)((i+1)*(gridWidth+1) + j+1)
 			};
 
 			const int secondTriangleVertexIndexOffset = m_caseType == CASETYPE_BASIC	? 0
@@ -1764,7 +1764,7 @@ CommonEdgeCase::IterateResult CommonEdgeCase::iterate (void)
 			//		 share a vertices, it's at the same index for everyone.
 			for (int m = 0; m < 2; m++)
 			for (int n = 0; n < 2; n++)
-				gridIndices.push_back((i+(i+m)%2)*(gridWidth+1) + j+(j+n)%2);
+				gridIndices.push_back((deUint16)((i+(i+m)%2)*(gridWidth+1) + j+(j+n)%2));
 
 			if(m_caseType == CASETYPE_PRECISE && (i+j) % 2 == 0)
 				std::reverse(gridIndices.begin() + (gridIndices.size() - 4),
@@ -6006,7 +6006,7 @@ void UserDefinedIOCase::init (void)
 				tcsDeclarations += outMaybePatch + output.declare();
 
 			if (!isPerPatchIO)
-				tcsStatements += "\t\tv += float(gl_InvocationID)*" + de::floatToString(0.4f*output.numBasicSubobjectsInElementType(), 1) + ";\n";
+				tcsStatements += "\t\tv += float(gl_InvocationID)*" + de::floatToString(0.4f * (float)output.numBasicSubobjectsInElementType(), 1) + ";\n";
 
 			tcsStatements += "\n\t\t// Assign values to output " + output.name() + "\n";
 			if (isArray)
@@ -6015,7 +6015,7 @@ void UserDefinedIOCase::init (void)
 				tcsStatements += output.glslTraverseBasicType(2, glslAssignBasicTypeObject);
 
 			if (!isPerPatchIO)
-				tcsStatements += "\t\tv += float(" + de::toString(int(NUM_OUTPUT_VERTICES)) + "-gl_InvocationID-1)*" + de::floatToString(0.4f*output.numBasicSubobjectsInElementType(), 1) + ";\n";
+				tcsStatements += "\t\tv += float(" + de::toString(int(NUM_OUTPUT_VERTICES)) + "-gl_InvocationID-1)*" + de::floatToString(0.4f * (float)output.numBasicSubobjectsInElementType(), 1) + ";\n";
 		}
 		tcsStatements += "\t}\n";
 
