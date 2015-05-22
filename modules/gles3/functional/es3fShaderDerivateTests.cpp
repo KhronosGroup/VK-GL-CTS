@@ -478,11 +478,11 @@ static bool reverifyConstantDerivateWithFlushRelaxations (tcu::TestLog&							lo
 		// * non-linearity may happen around zero or with very high function values due to subnorms not
 		//   behaving well.
 		const tcu::Vec4	functionValueForward	= (derivateFunc == DERIVATE_DFDX)
-													? (function.evaluateAt(x + 2.0f, y + 0.5f))
-													: (function.evaluateAt(x + 0.5f, y + 2.0f));
+													? (function.evaluateAt((float)x + 2.0f, (float)y + 0.5f))
+													: (function.evaluateAt((float)x + 0.5f, (float)y + 2.0f));
 		const tcu::Vec4	functionValueBackward	= (derivateFunc == DERIVATE_DFDX)
-													? (function.evaluateAt(x - 1.0f, y + 0.5f))
-													: (function.evaluateAt(x + 0.5f, y - 1.0f));
+													? (function.evaluateAt((float)x - 1.0f, (float)y + 0.5f))
+													: (function.evaluateAt((float)x + 0.5f, (float)y - 1.0f));
 
 		bool	anyComponentFailed				= false;
 
