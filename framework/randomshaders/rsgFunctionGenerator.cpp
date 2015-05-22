@@ -75,8 +75,8 @@ void FunctionGenerator::generate (void)
 		// Remove value entry from this scope. After this entry ptr is invalid.
 		m_state.getVariableManager().removeValueFromCurrentScope(variable);
 
-		if (!isUndefinedValueRange(valueRange))
-			m_function.getBody().addChild(new AssignStatement(m_state, variable, valueRange));
+		if (!isUndefinedValueRange(valueRange.asAccess()))
+			m_function.getBody().addChild(new AssignStatement(m_state, variable, valueRange.asAccess()));
 	}
 }
 

@@ -53,7 +53,7 @@ float			computeDynamicRangeWeight		(ConstValueRangeAccess valueRange);
 inline float getQuantizedFloat (de::Random& rnd, float min, float max, float step)
 {
 	int numSteps = (int)((max-min)/step);
-	return min + step*rnd.getInt(0, numSteps);
+	return min + step * (float)rnd.getInt(0, numSteps);
 }
 
 inline bool quantizeFloatRange (float& min, float& max)
