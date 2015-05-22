@@ -28,12 +28,46 @@
 #include "tcuTestHierarchyUtil.hpp"
 #include "tcuCommandLine.hpp"
 #include "tcuTestLog.hpp"
+
 #include "qpInfo.h"
 #include "qpDebugOut.h"
+
 #include "deMath.h"
+
+#include <iostream>
 
 namespace tcu
 {
+
+using std::string;
+
+/*--------------------------------------------------------------------*//*!
+ *  Writes all packages found stdout without any
+ *  separations. Recommended to be used with a single package
+ *  only. It's possible to use test selectors for limiting the export
+ *  to one package in a multipackage binary.
+ *//*--------------------------------------------------------------------*/
+static void writeCaselistsToStdout (TestPackageRoot& root, TestContext& testCtx, const CommandLine& cmdLine)
+{
+	DefaultHierarchyInflater	inflater	(testCtx);
+	TestHierarchyIterator		iter		(root, inflater, cmdLine);
+
+	while (iter.getState() != TestHierarchyIterator::STATE_FINISHED)
+	{
+		iter.next();
+
+		while (iter.getNode()->getNodeType() != NODETYPE_PACKAGE)
+		{
+			if (iter.getState() == TestHierarchyIterator::STATE_ENTER_NODE)
+				std::cout << (isTestNodeTypeExecutable(iter.getNode()->getNodeType()) ? "TEST" : "GROUP") << ": " << iter.getNodePath() << "\n";
+			iter.next();
+		}
+
+		DE_ASSERT(iter.getState() == TestHierarchyIterator::STATE_LEAVE_NODE &&
+				  iter.getNode()->getNodeType() == NODETYPE_PACKAGE);
+		iter.next();
+	}
+}
 
 /*--------------------------------------------------------------------*//*!
  * \brief Construct test application
@@ -79,10 +113,12 @@ App::App (Platform& platform, Archive& archive, TestLog& log, const CommandLine&
 		// \note No executor is created if runmode is not EXECUTE
 		if (runMode == RUNMODE_EXECUTE)
 			m_testExecutor = new TestSessionExecutor(*m_testRoot, *m_testCtx);
+		else if (runMode == RUNMODE_DUMP_STDOUT_CASELIST)
+			writeCaselistsToStdout(*m_testRoot, *m_testCtx, cmdLine);
 		else if (runMode == RUNMODE_DUMP_XML_CASELIST)
-			writeXmlCaselists(*m_testRoot, *m_testCtx, m_testCtx->getCommandLine());
+			writeXmlCaselistsToFiles(*m_testRoot, *m_testCtx, cmdLine);
 		else if (runMode == RUNMODE_DUMP_TEXT_CASELIST)
-			writeTxtCaselists(*m_testRoot, *m_testCtx, m_testCtx->getCommandLine());
+			writeTxtCaselistsToFiles(*m_testRoot, *m_testCtx, cmdLine);
 		else
 			DE_ASSERT(false);
 	}
