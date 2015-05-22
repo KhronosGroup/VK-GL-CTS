@@ -2258,7 +2258,7 @@ void GLES2SharingRandomTest::deinit (void)
 
 void GLES2SharingRandomTest::addRandomOperation (GLES2ThreadTest::EGLResourceManager& resourceManager)
 {
-	int threadNdx	= m_random.getUint32() % m_threads.size();
+	int threadNdx	= m_random.getUint32() % (deUint32)m_threads.size();
 
 	std::vector<OperationId>	operations;
 	std::vector<float>			weights;

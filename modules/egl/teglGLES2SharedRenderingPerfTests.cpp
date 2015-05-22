@@ -262,9 +262,9 @@ void createTextureData (vector<deUint8>& data, const TestConfig& config)
 	{
 		for (int y = 0; y < config.textureHeight; y++)
 		{
-			data.push_back((255*x)/255);
-			data.push_back((255*y)/255);
-			data.push_back((255*x*y)/(255*255));
+			data.push_back((deUint8)((255*x)/255));
+			data.push_back((deUint8)((255*y)/255));
+			data.push_back((deUint8)((255*x*y)/(255*255)));
 			data.push_back(255);
 		}
 	}
@@ -966,22 +966,22 @@ void logAndSetResults (tcu::TestContext& testCtx, const vector<deUint64>& r)
 
 	deviation = 0.0;
 	for (int resultNdx = 0; resultNdx < (int)resultsUs.size(); resultNdx++)
-		deviation += (resultsUs[resultNdx] - average) * (resultsUs[resultNdx] - average);
+		deviation += (double)((resultsUs[resultNdx] - average) * (resultsUs[resultNdx] - average));
 
-	deviation = std::sqrt((double)(deviation/resultsUs.size()));
+	deviation = std::sqrt(deviation/(double)resultsUs.size());
 
 	{
 		tcu::ScopedLogSection	section(log, "Statistics from results", "Statistics from results");
 
 		log << TestLog::Message
-		<< "Average: "					<< (average/1000.0)											<< "ms\n"
-		<< "Standart deviation: "		<< (deviation/1000.0)										<< "ms\n"
-		<< "Standart error of mean: "	<< ((deviation/std::sqrt((double)resultsUs.size()))/1000.0)	<< "ms\n"
-		<< "Median: "					<< (median/1000.0)											<< "ms\n"
+		<< "Average: "					<< ((double)average/1000.0)											<< "ms\n"
+		<< "Standard deviation: "		<< ((double)deviation/1000.0)										<< "ms\n"
+		<< "Standard error of mean: "	<< (((double)deviation/std::sqrt((double)resultsUs.size()))/1000.0)	<< "ms\n"
+		<< "Median: "					<< ((double)median/1000.0)											<< "ms\n"
 		<< TestLog::EndMessage;
 	}
 
-	testCtx.setTestResult(QP_TEST_RESULT_PASS, de::floatToString((float)(average/1000.0), 2).c_str());
+	testCtx.setTestResult(QP_TEST_RESULT_PASS, de::floatToString((float)((double)average/1000.0), 2).c_str());
 }
 
 void logTestConfig (TestLog& log, const TestConfig& config)

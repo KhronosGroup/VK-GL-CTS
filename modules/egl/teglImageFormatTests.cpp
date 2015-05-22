@@ -533,7 +533,7 @@ bool GLES2ImageApi::RenderDepthbuffer::invokeGLES2 (GLES2ImageApi& api, MovePtr<
 	for (int level = 0; level < DE_LENGTH_OF_ARRAY(depthLevelColors); level++)
 	{
 		const tcu::Vec4	color		= depthLevelColors[level];
-		const float		clipDepth	= ((level + 1) * 0.1f) * 2.0f - 1.0f; // depth in clip coords
+		const float		clipDepth	= ((float)(level + 1) * 0.1f) * 2.0f - 1.0f; // depth in clip coords
 
 		GLU_CHECK_GLW_CALL(gl, uniform4f(colorLoc, color.x(), color.y(), color.z(), color.w()));
 		GLU_CHECK_GLW_CALL(gl, uniform1f(depthLoc, clipDepth));
@@ -558,7 +558,7 @@ bool GLES2ImageApi::RenderDepthbuffer::invokeGLES2 (GLES2ImageApi& api, MovePtr<
 
 			for (int level = 0; level < DE_LENGTH_OF_ARRAY(depthLevelColors); level++)
 			{
-				if ((level + 1) * 0.1f < refAccess.getPixDepth(x, y))
+				if ((float)(level + 1) * 0.1f < refAccess.getPixDepth(x, y))
 					result = depthLevelColors[level];
 			}
 
@@ -653,7 +653,7 @@ bool GLES2ImageApi::RenderStencilbuffer::invokeGLES2 (GLES2ImageApi& api, MovePt
 	for (int level = 0; level < DE_LENGTH_OF_ARRAY(stencilLevelColors); level++)
 	{
 		const tcu::Vec4	color	= stencilLevelColors[level];
-		const int		stencil	= (int)(((level + 1) * 0.1f) * maxStencil);
+		const int		stencil	= (int)(((float)(level + 1) * 0.1f) * (float)maxStencil);
 
 		GLU_CHECK_GLW_CALL(gl, stencilFunc(GL_LESS, stencil, 0xFFFFFFFFu));
 		GLU_CHECK_GLW_CALL(gl, uniform4f(colorLoc, color.x(), color.y(), color.z(), color.w()));
@@ -676,7 +676,7 @@ bool GLES2ImageApi::RenderStencilbuffer::invokeGLES2 (GLES2ImageApi& api, MovePt
 
 		for (int level = 0; level < DE_LENGTH_OF_ARRAY(stencilLevelColors); level++)
 		{
-			const int levelStencil = (int)(((level + 1) * 0.1f) * maxStencil);
+			const int levelStencil = (int)(((float)(level + 1) * 0.1f) * (float)maxStencil);
 			if (levelStencil < refAccess.getPixStencil(x, y))
 				result = stencilLevelColors[level];
 		}

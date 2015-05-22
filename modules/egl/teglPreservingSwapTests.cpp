@@ -212,11 +212,11 @@ void GLES2Program::render (int width, int height, float x1, float y1, float x2, 
 		const int px	= width;
 		const int py	= height;
 
-		const int x1i	= (int)((px/2.0f) * x1 + ox);
-		const int y1i	= (int)((py/2.0f) * y1 + oy);
+		const int x1i	= (int)(((float)px/2.0f) * x1 + (float)ox);
+		const int y1i	= (int)(((float)py/2.0f) * y1 + (float)oy);
 
-		const int x2i	= (int)((px/2.0f) * x2 + ox);
-		const int y2i	= (int)((py/2.0f) * y2 + oy);
+		const int x2i	= (int)(((float)px/2.0f) * x2 + (float)ox);
+		const int y2i	= (int)(((float)py/2.0f) * y2 + (float)oy);
 
 		m_gl.enable(GL_SCISSOR_TEST);
 		m_gl.scissor(x1i, y1i, x2i-x1i, y2i-y1i);
@@ -501,11 +501,11 @@ TestCase::IterateResult PreservingSwapTest::iterate (void)
 		const int px	= width;
 		const int py	= height;
 
-		const int x1i	= (int)((px/2.0f) * postSwapX1 + ox);
-		const int y1i	= (int)((py/2.0f) * postSwapY1 + oy);
+		const int x1i	= (int)(((float)px/2.0f) * postSwapX1 + (float)ox);
+		const int y1i	= (int)(((float)py/2.0f) * postSwapY1 + (float)oy);
 
-		const int x2i	= (int)((px/2.0f) * postSwapX2 + ox);
-		const int y2i	= (int)((py/2.0f) * postSwapY2 + oy);
+		const int x2i	= (int)(((float)px/2.0f) * postSwapX2 + (float)ox);
+		const int y2i	= (int)(((float)py/2.0f) * postSwapY2 + (float)oy);
 
 		if (m_readPixelsBeforeSwap)
 			isOk = isOk && compareToReference(log, "Compare pre-swap framebuffer to reference", "Compare pre-swap framebuffer to reference", preSwapFramebufferReference, preSwapFramebuffer, 0, 0, width, height);
