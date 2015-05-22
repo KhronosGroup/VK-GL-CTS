@@ -138,7 +138,7 @@ TestCase::IterateResult ClearColorCase::iterate (void)
 
 	};
 
-	glClearColor(r/255.0f, g/255.0f, b/255.0f, a/255.0f);
+	glClearColor(float(r)/255.0f, float(g)/255.0f, float(b)/255.0f, float(a)/255.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	GLU_CHECK_MSG("CLES2 ClearColor failed.");
@@ -225,7 +225,7 @@ TestCase::IterateResult ReadPixelsCase::iterate (void)
 	int b = (int)(deRandom_getUint32(&rnd) & 0xFF);
 
 	tcu::clear(refImage.getAccess(), tcu::IVec4(r, g, b, 255));
-	glClearColor(r/255.0f, g/255.0f, b/255.0f, 1.0f);
+	glClearColor(float(r)/255.0f, float(g)/255.0f, float(b)/255.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	glu::readPixels(m_context.getRenderContext(), x, y, resImage.getAccess());
