@@ -1046,14 +1046,14 @@ float computeEntryReadWeight (ConstValueRangeAccess entryValueRange, ConstValueR
 					continue;
 
 				// Intersection to entry value range length ratio.
-				int intersectionMin			= deMax32(entryMin, readMin);
-				int intersectionMax			= deMin32(entryMax, readMax);
-				int entryRangeLen			= entryMax - entryMin;
-				int readRangeLen			= readMax - readMin;
-				int intersectionLen			= intersectionMax - intersectionMin;
-				float entryRatio			= (entryRangeLen	> 0) ? ((float)intersectionLen / (float)entryRangeLen)	: 1.0f;
-				float readRatio				= (readRangeLen		> 0) ? ((float)intersectionLen / (float)readRangeLen)	: 1.0f;
-				float elementWeight			= 0.5f*readRatio + 0.5f*entryRatio;
+				int		intersectionMin			= deMax32(entryMin, readMin);
+				int		intersectionMax			= deMin32(entryMax, readMax);
+				deInt64 entryRangeLen			= (deInt64)entryMax - (deInt64)entryMin;
+				deInt64	readRangeLen			= (deInt64)readMax - (deInt64)readMin;
+				deInt64	intersectionLen			= (deInt64)intersectionMax - (deInt64)intersectionMin;
+				float	entryRatio				= (entryRangeLen	> 0) ? ((float)intersectionLen / (float)entryRangeLen)	: 1.0f;
+				float	readRatio				= (readRangeLen		> 0) ? ((float)intersectionLen / (float)readRangeLen)	: 1.0f;
+				float 	elementWeight			= 0.5f*readRatio + 0.5f*entryRatio;
 
 				weight = combineWeight(weight, elementWeight);
 			}
