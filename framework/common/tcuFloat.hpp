@@ -264,7 +264,7 @@ Float<StorageType, ExponentBits, MantissaBits, ExponentBias, Flags>::convert
 		const int			eMin	= 1 - ExponentBias;
 		const int			eMax	= ((1<<ExponentBits)-2) - ExponentBias;
 
-		const StorageType	s		= StorageType(other.signBit()) << StorageType(ExponentBits+MantissaBits); // \note Not sign, but sign bit.
+		const StorageType	s		= StorageType((StorageType(other.signBit())) << (StorageType(ExponentBits+MantissaBits))); // \note Not sign, but sign bit.
 		int					e		= other.exponent();
 		deUint64			m		= other.mantissa();
 
