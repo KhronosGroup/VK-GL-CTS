@@ -2028,10 +2028,10 @@ ShaderCompilerCase::IterateResult ShaderCompilerCase::iterate (void)
 			// Log this measurement.
 			log << TestLog::Float("Measurement" + de::toString(ndx) + "CompilationTime",
 								  "Measurement " + de::toString(ndx) + " compilation time",
-								  "ms", QP_KEY_TAG_TIME, timeWithoutDraw / 1000.0f)
+								  "ms", QP_KEY_TAG_TIME, (float)timeWithoutDraw / 1000.0f)
 				<< TestLog::Float("Measurement" + de::toString(ndx) + "SpecializationTime",
 								  "Measurement " + de::toString(ndx) + " specialization time",
-								  "ms", QP_KEY_TAG_TIME, specializationTime / 1000.0f);
+								  "ms", QP_KEY_TAG_TIME, (float)specializationTime / 1000.0f);
 		}
 
 		// Log some statistics.
@@ -2565,7 +2565,7 @@ InvalidShaderCompilerCase::IterateResult InvalidShaderCompilerCase::iterate (voi
 			// Log this measurement.
 			log << TestLog::Float("Measurement" + de::toString(ndx) + "Time",
 								  "Measurement " + de::toString(ndx) + " time",
-								  "ms", QP_KEY_TAG_TIME, measurements[ndx].totalTime()/1000.0f);
+								  "ms", QP_KEY_TAG_TIME, (float)measurements[ndx].totalTime()/1000.0f);
 		}
 
 		// Log some statistics.
