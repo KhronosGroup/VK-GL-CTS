@@ -165,7 +165,7 @@ inline IVec4	sequenceNoSideEffCase3 (const Vec4& in0, const IVec4& in1, const BV
 // Reference for expression "in0++, in1 = in0 + in2, in2 = in1"
 inline Vec4		sequenceSideEffCase0 (const Vec4& in0, const Vec4& in1, const Vec4& in2)		{ DE_UNREF(in1); return in0 + 1.0f + in2; }
 // Reference for expression "in1++, in0 = float(in1), in1 = int(in0 + in2)"
-inline int		sequenceSideEffCase1 (float in0, int in1, float in2)							{ DE_UNREF(in0); return (int)(in1 + 1.0f + in2); }
+inline int		sequenceSideEffCase1 (float in0, int in1, float in2)							{ DE_UNREF(in0); return (int)(float(in1) + 1.0f + in2); }
 // Reference for expression "in1 = in0, in2++, in2 = in2 + vec2(in1), ivec2(in2)"
 inline IVec2	sequenceSideEffCase2 (bool in0, bool in1, const Vec2& in2)						{ DE_UNREF(in1); return (in2 + Vec2(1.0f) + Vec2((float)in0)).asInt(); }
 // Reference for expression "in0 = in0 + vec4(in2), in1 = in1 + ivec4(in0), in1++"
