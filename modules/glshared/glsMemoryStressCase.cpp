@@ -920,7 +920,7 @@ tcu::TestCase::IterateResult MemoryStressCase::iterate (void)
 		}
 		else
 		{
-			const float change = (min - max) / ((float)(max));
+			const float change = (float)(min - max) / (float)(max);
 			if (change > threshold)
 			{
 				log << TestLog::Message << "Allocated objects max: " << max << ", min: " << min << ", difference: " << change << "% threshold: " << threshold << "%" << TestLog::EndMessage;

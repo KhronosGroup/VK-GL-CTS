@@ -244,10 +244,10 @@ public:
 		static WrappedType<Type>	create			(Type value)							{ WrappedType<Type> v; v.m_value = value; return v; }
 		inline Type					getValue		(void) const							{ return m_value; }
 
-		inline WrappedType<Type>	operator+		(const WrappedType<Type>& other) const	{ return WrappedType<Type>::create(m_value + other.getValue()); }
-		inline WrappedType<Type>	operator*		(const WrappedType<Type>& other) const	{ return WrappedType<Type>::create(m_value * other.getValue()); }
-		inline WrappedType<Type>	operator/		(const WrappedType<Type>& other) const	{ return WrappedType<Type>::create(m_value / other.getValue()); }
-		inline WrappedType<Type>	operator-		(const WrappedType<Type>& other) const	{ return WrappedType<Type>::create(m_value - other.getValue()); }
+		inline WrappedType<Type>	operator+		(const WrappedType<Type>& other) const	{ return WrappedType<Type>::create((Type)(m_value + other.getValue())); }
+		inline WrappedType<Type>	operator*		(const WrappedType<Type>& other) const	{ return WrappedType<Type>::create((Type)(m_value * other.getValue())); }
+		inline WrappedType<Type>	operator/		(const WrappedType<Type>& other) const	{ return WrappedType<Type>::create((Type)(m_value / other.getValue())); }
+		inline WrappedType<Type>	operator-		(const WrappedType<Type>& other) const	{ return WrappedType<Type>::create((Type)(m_value - other.getValue())); }
 
 		inline WrappedType<Type>&	operator+=		(const WrappedType<Type>& other)		{ m_value += other.getValue(); return *this; }
 		inline WrappedType<Type>&	operator*=		(const WrappedType<Type>& other)		{ m_value *= other.getValue(); return *this; }

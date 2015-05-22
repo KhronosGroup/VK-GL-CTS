@@ -385,13 +385,13 @@ void DebugInfoRenderer::addTextToBuffer (const string& text, const int yOffset)
 				{
 					const int vtxNdx = (int)m_posBuf.size()/2;
 
-					m_ndxBuf.push_back(vtxNdx+0);
-					m_ndxBuf.push_back(vtxNdx+1);
-					m_ndxBuf.push_back(vtxNdx+2);
+					m_ndxBuf.push_back(deUint16(vtxNdx+0));
+					m_ndxBuf.push_back(deUint16(vtxNdx+1));
+					m_ndxBuf.push_back(deUint16(vtxNdx+2));
 
-					m_ndxBuf.push_back(vtxNdx+2);
-					m_ndxBuf.push_back(vtxNdx+1);
-					m_ndxBuf.push_back(vtxNdx+3);
+					m_ndxBuf.push_back(deUint16(vtxNdx+2));
+					m_ndxBuf.push_back(deUint16(vtxNdx+1));
+					m_ndxBuf.push_back(deUint16(vtxNdx+3));
 
 					m_posBuf.push_back(ax);
 					m_posBuf.push_back(ay);
@@ -1494,7 +1494,7 @@ LongStressCase::IterateResult LongStressCase::iterate (void)
 				<< TestLog::Message << "Frame number: " << m_currentIteration << TestLog::EndMessage
 				<< TestLog::Message << "Time since last log entry: " << timeDiff << "s" << TestLog::EndMessage
 				<< TestLog::Message << "Frames since last log entry: " << iterDiff << TestLog::EndMessage
-				<< TestLog::Message << "Average frame time since last log entry: " << de::floatToString((float)timeDiff / iterDiff, 2) << "s" << TestLog::EndMessage
+				<< TestLog::Message << "Average frame time since last log entry: " << de::floatToString((float)timeDiff / (float)iterDiff, 2) << "s" << TestLog::EndMessage
 				<< TestLog::Message << "Approximate texture memory usage: "
 									<< de::floatToString((float)m_textures->computeApproxMemUsage() / Mi, 2) << " MiB / "
 									<< de::floatToString((float)m_maxTexMemoryUsageBytes / Mi, 2) << " MiB"

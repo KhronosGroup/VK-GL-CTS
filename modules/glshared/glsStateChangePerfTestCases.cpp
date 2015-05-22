@@ -71,7 +71,7 @@ ResultStats calculateStats (const vector<deUint64>& values)
 	for (int i = 0; i < (int)values.size(); i++)
 		sum += values[i];
 
-	result.mean = ((double)sum) / values.size();
+	result.mean = ((double)sum) / (double)values.size();
 
 	for (int i = 0; i < (int)values.size(); i++)
 	{
@@ -79,7 +79,7 @@ ResultStats calculateStats (const vector<deUint64>& values)
 		result.variance += (val - result.mean) * (val - result.mean);
 	}
 
-	result.variance /= values.size();
+	result.variance /= (double)values.size();
 
 	{
 		const int n = (int)(values.size()/2);
@@ -107,9 +107,9 @@ void genIndices (vector<GLushort>& indices, int triangleCount)
 
 	for (int triangleNdx = 0; triangleNdx < triangleCount; triangleNdx++)
 	{
-		indices.push_back((GLushort)triangleNdx*3);
-		indices.push_back((GLushort)triangleNdx*3+1);
-		indices.push_back((GLushort)triangleNdx*3+2);
+		indices.push_back((GLushort)(triangleNdx*3));
+		indices.push_back((GLushort)(triangleNdx*3+1));
+		indices.push_back((GLushort)(triangleNdx*3+2));
 	}
 }
 
@@ -173,7 +173,7 @@ double calculateVariance (const vector<deUint64>& values, double avg)
 		sum += (value - avg) * (value - avg);
 	}
 
-	return sum / values.size();
+	return sum / (double)values.size();
 }
 
 deUint64 findMin (const vector<deUint64>& values)
@@ -681,7 +681,7 @@ double calculateAverage (const vector<deUint64>& values)
 	for (int valueNdx = 0; valueNdx < (int)values.size(); valueNdx++)
 		sum += values[valueNdx];
 
-	return ((double)sum) / values.size();
+	return ((double)sum) / (double)values.size();
 }
 
 void StateChangeCallPerformanceCase::logAndSetTestResult (void)

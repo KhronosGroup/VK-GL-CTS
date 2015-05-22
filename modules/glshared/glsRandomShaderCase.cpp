@@ -202,12 +202,12 @@ void RandomShaderCase::init (void)
 		int	quadY	= quadNdx / (m_gridWidth);
 		int quadX	= quadNdx - quadY*m_gridWidth;
 
-		m_indices[quadNdx*6+0] = quadX + quadY*(m_gridWidth+1);
-		m_indices[quadNdx*6+1] = quadX + (quadY+1)*(m_gridWidth+1);
-		m_indices[quadNdx*6+2] = quadX + quadY*(m_gridWidth+1) + 1;
-		m_indices[quadNdx*6+3] = m_indices[quadNdx*6+2];
-		m_indices[quadNdx*6+4] = m_indices[quadNdx*6+1];
-		m_indices[quadNdx*6+5] = quadX + (quadY+1)*(m_gridWidth+1) + 1;
+		m_indices[quadNdx*6+0] = (deUint16)(quadX + quadY*(m_gridWidth+1));
+		m_indices[quadNdx*6+1] = (deUint16)(quadX + (quadY+1)*(m_gridWidth+1));
+		m_indices[quadNdx*6+2] = (deUint16)(quadX + quadY*(m_gridWidth+1) + 1);
+		m_indices[quadNdx*6+3] = (deUint16)(m_indices[quadNdx*6+2]);
+		m_indices[quadNdx*6+4] = (deUint16)(m_indices[quadNdx*6+1]);
+		m_indices[quadNdx*6+5] = (deUint16)(quadX + (quadY+1)*(m_gridWidth+1) + 1);
 	}
 
 	// Create textures.
