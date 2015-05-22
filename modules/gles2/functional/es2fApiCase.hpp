@@ -50,6 +50,7 @@ protected:
 	void				expectError				(deUint32 error0, deUint32 error1);
 	void				getSupportedExtensions	(const deUint32 numSupportedValues, const deUint32 extension, std::vector<int>& values);
 	void				checkBooleans			(deUint8 value, deUint8 expected);
+	void				checkBooleans			(deInt32 value, deUint8 expected);
 
 	tcu::TestLog&		m_log;
 };
