@@ -1412,8 +1412,8 @@ void FillRuleCase::generateTriangles (int iteration, std::vector<tcu::Vec4>& out
 			for (int col = 0; col < numColumns; ++col)
 			for (int row = 0; row < numRows;    ++row)
 			{
-				const tcu::Vec2 center		= tcu::Vec2((row + 0.5f) / numRows * 2.0f - 1.0f, (col + 0.5f) / numColumns * 2.0f - 1.0f);
-				const float		rotation	= (iteration * numColumns * numRows + col * numRows + row) / (float)(m_iterationCount * numColumns * numRows) * DE_PI / 2.0f;
+				const tcu::Vec2 center		= tcu::Vec2(((float)row + 0.5f) / (float)numRows * 2.0f - 1.0f, ((float)col + 0.5f) / (float)numColumns * 2.0f - 1.0f);
+				const float		rotation	= (float)(iteration * numColumns * numRows + col * numRows + row) / (float)(m_iterationCount * numColumns * numRows) * DE_PI / 2.0f;
 				const tcu::Vec2 sideH		= quadSide * tcu::Vec2(deFloatCos(rotation), deFloatSin(rotation));
 				const tcu::Vec2 sideV		= tcu::Vec2(sideH.y(), -sideH.x());
 				const tcu::Vec2 quad[4]		=
@@ -1468,7 +1468,7 @@ void FillRuleCase::generateTriangles (int iteration, std::vector<tcu::Vec4>& out
 		{
 			const float		quadSide	= (m_caseType == FILLRULECASE_CLIPPED_PARTIAL) ? (1.0f) : (2.0f);
 			const tcu::Vec2 center		= (m_caseType == FILLRULECASE_CLIPPED_PARTIAL) ? (tcu::Vec2(0.5f, 0.5f)) : (tcu::Vec2(0.0f, 0.0f));
-			const float		rotation	= (iteration) / (float)(m_iterationCount - 1) * DE_PI / 2.0f;
+			const float		rotation	= (float)(iteration) / (float)(m_iterationCount - 1) * DE_PI / 2.0f;
 			const tcu::Vec2 sideH		= quadSide * tcu::Vec2(deFloatCos(rotation), deFloatSin(rotation));
 			const tcu::Vec2 sideV		= tcu::Vec2(sideH.y(), -sideH.x());
 			const tcu::Vec2 quad[4]		=
