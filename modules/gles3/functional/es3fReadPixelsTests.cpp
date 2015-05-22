@@ -353,7 +353,7 @@ TestCase::IterateResult ReadPixelsTest::iterate (void)
 	clearColor(reference, pixelData, pixelSize);
 
 	const int							rowWidth		= (m_rowLength == 0 ? m_width : m_rowLength);
-	const int							rowPitch		= m_alignment * deCeilFloatToInt32(pixelSize * rowWidth / (float)m_alignment);
+	const int							rowPitch		= m_alignment * deCeilFloatToInt32((float)(pixelSize * rowWidth) / (float)m_alignment);
 	const tcu::ConstPixelBufferAccess	resultAccess	= tcu::ConstPixelBufferAccess(format, m_width, m_height, 1, rowPitch, 0, &(pixelData[pixelSize * m_skipPixels + m_skipRows * rowPitch]));
 
 	// \note Renderbuffers are never multisampled
