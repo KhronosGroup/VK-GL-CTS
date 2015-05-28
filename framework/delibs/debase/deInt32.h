@@ -532,6 +532,23 @@ DE_INLINE deInt32 deIntMinValue32 (int numBits)
 	}
 }
 
+DE_INLINE deInt32 deSignExtendTo32 (deInt32 value, int numBits)
+{
+	DE_ASSERT(deInRange32(numBits, 1, 32));
+
+	if (numBits < 32)
+	{
+		deBool		signSet		= ((deUint32)value & (1u<<(numBits-1))) != 0;
+		deUint32	signMask	= deBitMask32(numBits, 32-numBits);
+
+		DE_ASSERT(((deUint32)value & signMask) == 0u);
+
+		return (deInt32)((deUint32)value | (signSet ? signMask : 0u));
+	}
+	else
+		return value;
+}
+
 DE_END_EXTERN_C
 
 #endif /* _DEINT32_H */

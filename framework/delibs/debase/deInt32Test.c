@@ -155,6 +155,19 @@ void deInt32_selfTest (void)
 	DE_TEST_ASSERT(deIntMinValue32(1) == -1);
 	DE_TEST_ASSERT(deIntMinValue32(2) == -2);
 	DE_TEST_ASSERT(deIntMinValue32(32) == -0x7FFFFFFF - 1);
+
+	DE_TEST_ASSERT(deSignExtendTo32((int)0x0, 1) == 0);
+	DE_TEST_ASSERT(deSignExtendTo32((int)0x1, 1) == (int)0xFFFFFFFF);
+	DE_TEST_ASSERT(deSignExtendTo32((int)0x3, 3) == 3);
+	DE_TEST_ASSERT(deSignExtendTo32((int)0x6, 3) == (int)0xFFFFFFFE);
+	DE_TEST_ASSERT(deSignExtendTo32((int)0x3, 4) == 3);
+	DE_TEST_ASSERT(deSignExtendTo32((int)0xC, 4) == (int)0xFFFFFFFC);
+	DE_TEST_ASSERT(deSignExtendTo32((int)0x7FC3, 16) == (int)0x7FC3);
+	DE_TEST_ASSERT(deSignExtendTo32((int)0x84A0, 16) == (int)0xFFFF84A0);
+	DE_TEST_ASSERT(deSignExtendTo32((int)0xFFC3, 17) == (int)0xFFC3);
+	DE_TEST_ASSERT(deSignExtendTo32((int)0x184A0, 17) == (int)0xFFFF84A0);
+	DE_TEST_ASSERT(deSignExtendTo32((int)0x7A016601, 32) == (int)0x7A016601);
+	DE_TEST_ASSERT(deSignExtendTo32((int)0x8A016601, 32) == (int)0x8A016601);
 }
 
 DE_END_EXTERN_C
