@@ -162,7 +162,7 @@ public:
 		THREADSTATUS_FAILED,
 		THREADSTATUS_NOT_SUPPORTED
 	};
-							Thread				(int seed);
+							Thread				(deUint32 seed);
 							~Thread				(void);
 
 	virtual void			init				(void) {}	//!< Called first before any Operation

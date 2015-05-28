@@ -149,7 +149,7 @@ public:
 		if (name)
 			return stream << name;
 		else
-			return stream << Hex<NumBytes*2>(m_value);
+			return stream << Hex<NumBytes*2>((deUint64)m_value);
 	}
 
 	std::string toString (void) const
@@ -158,7 +158,7 @@ public:
 		if (name)
 			return std::string(name);
 		else
-			return Hex<NumBytes*2>(m_value).toString();
+			return Hex<NumBytes*2>((deUint64)m_value).toString();
 	}
 
 private:

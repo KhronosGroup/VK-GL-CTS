@@ -212,7 +212,7 @@ static WindowParams::Visibility getNativeWindowVisibility (glu::RenderConfig::Vi
 		case RenderConfig::VISIBILITY_VISIBLE:		return WindowParams::VISIBILITY_VISIBLE;
 		case RenderConfig::VISIBILITY_FULLSCREEN:	return WindowParams::VISIBILITY_FULLSCREEN;
 		default:
-			DE_ASSERT(visibility == (RenderConfig::Visibility)RenderConfig::DONT_CARE);
+			DE_ASSERT((int)visibility == RenderConfig::DONT_CARE);
 			return WindowParams::VISIBILITY_DONT_CARE;
 	}
 }

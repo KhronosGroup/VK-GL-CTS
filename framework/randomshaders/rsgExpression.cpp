@@ -838,7 +838,7 @@ AssignOp::AssignOp (GeneratorState& state, ConstValueRangeAccess valueRange)
 
 			computeRandomValueRangeForInfElements(state, m_valueRange.asAccess());
 
-			DE_ASSERT(state.getVariableManager().hasEntry(IsWritableIntersectingEntry(m_valueRange)));
+			DE_ASSERT(state.getVariableManager().hasEntry(IsWritableIntersectingEntry(m_valueRange.asAccess())));
 		}
 	}
 

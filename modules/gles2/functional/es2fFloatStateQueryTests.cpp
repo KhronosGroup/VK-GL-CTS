@@ -131,7 +131,7 @@ void GetBooleanVerifier::verifyFloat (tcu::TestContext& testCtx, GLenum name, GL
 	if (!state.verifyValidity(testCtx))
 		return;
 
-	const GLboolean expectedGLState = reference ? GL_TRUE : GL_FALSE;
+	const GLboolean expectedGLState = reference != 0.0f ? GL_TRUE : GL_FALSE;
 
 	if (state != expectedGLState)
 	{
@@ -156,8 +156,8 @@ void GetBooleanVerifier::verifyFloat2Expanded (tcu::TestContext& testCtx, GLenum
 
 	const GLboolean referenceAsGLBoolean[] =
 	{
-		reference0 ? GLboolean(GL_TRUE) : GLboolean(GL_FALSE),
-		reference1 ? GLboolean(GL_TRUE) : GLboolean(GL_FALSE),
+		reference0 != 0.0f ? GLboolean(GL_TRUE) : GLboolean(GL_FALSE),
+		reference1 != 0.0f ? GLboolean(GL_TRUE) : GLboolean(GL_FALSE),
 	};
 
 	StateQueryMemoryWriteGuard<GLboolean[2]> boolVector2;
@@ -185,10 +185,10 @@ void GetBooleanVerifier::verifyFloat4Color (tcu::TestContext& testCtx, GLenum na
 
 	const GLboolean referenceAsGLBoolean[] =
 	{
-		reference0 ? GLboolean(GL_TRUE) : GLboolean(GL_FALSE),
-		reference1 ? GLboolean(GL_TRUE) : GLboolean(GL_FALSE),
-		reference2 ? GLboolean(GL_TRUE) : GLboolean(GL_FALSE),
-		reference3 ? GLboolean(GL_TRUE) : GLboolean(GL_FALSE),
+		reference0 != 0.0f ? GLboolean(GL_TRUE) : GLboolean(GL_FALSE),
+		reference1 != 0.0f ? GLboolean(GL_TRUE) : GLboolean(GL_FALSE),
+		reference2 != 0.0f ? GLboolean(GL_TRUE) : GLboolean(GL_FALSE),
+		reference3 != 0.0f ? GLboolean(GL_TRUE) : GLboolean(GL_FALSE),
 	};
 
 	StateQueryMemoryWriteGuard<GLboolean[4]> boolVector4;

@@ -62,7 +62,7 @@ public:
 		DE_ASSERT(deInRange32(g, 0, 255));
 		DE_ASSERT(deInRange32(b, 0, 255));
 		DE_ASSERT(deInRange32(a, 0, 255));
-		m_value = (a << ALPHA_SHIFT) | (r << RED_SHIFT) | (g << GREEN_SHIFT) | (b << BLUE_SHIFT);
+		m_value = ((deUint32)a << ALPHA_SHIFT) | ((deUint32)r << RED_SHIFT) | ((deUint32)g << GREEN_SHIFT) | ((deUint32)b << BLUE_SHIFT);
 	}
 
 	explicit RGBA (deUint32 val)
@@ -72,14 +72,14 @@ public:
 
 	explicit	RGBA					(const Vec4& v);
 
-	void		setRed					(int v) { DE_ASSERT(deInRange32(v, 0, 255)); m_value = (m_value & ~(0xFF << RED_SHIFT)) | (v << RED_SHIFT); }
-	void		setGreen				(int v) { DE_ASSERT(deInRange32(v, 0, 255)); m_value = (m_value & ~(0xFF << GREEN_SHIFT)) | (v << GREEN_SHIFT); }
-	void		setBlue					(int v) { DE_ASSERT(deInRange32(v, 0, 255)); m_value = (m_value & ~(0xFF << BLUE_SHIFT)) | (v << BLUE_SHIFT); }
-	void		setAlpha				(int v) { DE_ASSERT(deInRange32(v, 0, 255)); m_value = (m_value & ~(0xFF << ALPHA_SHIFT)) | (v << ALPHA_SHIFT); }
-	int			getRed					(void) const { return (m_value >> RED_SHIFT) & 0xFF; }
-	int			getGreen				(void) const { return (m_value >> GREEN_SHIFT) & 0xFF; }
-	int			getBlue					(void) const { return (m_value >> BLUE_SHIFT) & 0xFF; }
-	int			getAlpha				(void) const { return (m_value >> ALPHA_SHIFT) & 0xFF; }
+	void		setRed					(int v) { DE_ASSERT(deInRange32(v, 0, 255)); m_value = (m_value & ~((deUint32)0xFFu << RED_SHIFT))   | ((deUint32)v << RED_SHIFT);   }
+	void		setGreen				(int v) { DE_ASSERT(deInRange32(v, 0, 255)); m_value = (m_value & ~((deUint32)0xFFu << GREEN_SHIFT)) | ((deUint32)v << GREEN_SHIFT); }
+	void		setBlue					(int v) { DE_ASSERT(deInRange32(v, 0, 255)); m_value = (m_value & ~((deUint32)0xFFu << BLUE_SHIFT))  | ((deUint32)v << BLUE_SHIFT);  }
+	void		setAlpha				(int v) { DE_ASSERT(deInRange32(v, 0, 255)); m_value = (m_value & ~((deUint32)0xFFu << ALPHA_SHIFT)) | ((deUint32)v << ALPHA_SHIFT); }
+	int			getRed					(void) const { return (int)((m_value >> (deUint32)RED_SHIFT)   & 0xFFu); }
+	int			getGreen				(void) const { return (int)((m_value >> (deUint32)GREEN_SHIFT) & 0xFFu); }
+	int			getBlue					(void) const { return (int)((m_value >> (deUint32)BLUE_SHIFT)  & 0xFFu); }
+	int			getAlpha				(void) const { return (int)((m_value >> (deUint32)ALPHA_SHIFT) & 0xFFu); }
 	deUint32	getPacked				(void) const { return m_value; }
 
 	bool		isBelowThreshold		(RGBA thr) const	{ return (getRed() <= thr.getRed()) && (getGreen() <= thr.getGreen()) && (getBlue() <= thr.getBlue()) && (getAlpha() <= thr.getAlpha()); }

@@ -587,11 +587,11 @@ public:
 									~TextureLevelPyramid(void);
 
 	const TextureFormat&			getFormat			(void) const			{ return m_format;					}
-	bool							isLevelEmpty		(int levelNdx) const	{ return m_data[levelNdx].empty();	}
-
 	int								getNumLevels		(void) const			{ return (int)m_access.size();		}
-	const ConstPixelBufferAccess&	getLevel			(int ndx) const			{ return m_access[ndx];				}
-	const PixelBufferAccess&		getLevel			(int ndx)				{ return m_access[ndx];				}
+
+	bool							isLevelEmpty		(int levelNdx) const	{ DE_ASSERT(de::inBounds(levelNdx, 0, getNumLevels())); return m_data[(size_t)levelNdx].empty();	}
+	const ConstPixelBufferAccess&	getLevel			(int levelNdx) const	{ DE_ASSERT(de::inBounds(levelNdx, 0, getNumLevels())); return m_access[(size_t)levelNdx];			}
+	const PixelBufferAccess&		getLevel			(int levelNdx)			{ DE_ASSERT(de::inBounds(levelNdx, 0, getNumLevels())); return m_access[(size_t)levelNdx];			}
 
 	const ConstPixelBufferAccess*	getLevels			(void) const			{ return &m_access[0];				}
 	const PixelBufferAccess*		getLevels			(void)					{ return &m_access[0];				}
@@ -763,12 +763,12 @@ public:
 	int								getSize				(void) const	{ return m_size;	}
 
 	int								getNumLevels		(void) const					{ return (int)m_access[0].size();	}
-	const ConstPixelBufferAccess&	getLevelFace		(int ndx, CubeFace face) const	{ return m_access[face][ndx];		}
-	const PixelBufferAccess&		getLevelFace		(int ndx, CubeFace face)		{ return m_access[face][ndx];		}
+	const ConstPixelBufferAccess&	getLevelFace		(int ndx, CubeFace face) const	{ DE_ASSERT(de::inBounds(ndx, 0, getNumLevels())); return m_access[face][(size_t)ndx];	}
+	const PixelBufferAccess&		getLevelFace		(int ndx, CubeFace face)		{ DE_ASSERT(de::inBounds(ndx, 0, getNumLevels())); return m_access[face][(size_t)ndx];	}
 
 	void							allocLevel			(CubeFace face, int levelNdx);
 	void							clearLevel			(CubeFace face, int levelNdx);
-	bool							isLevelEmpty		(CubeFace face, int levelNdx) const		{ return m_data[face][levelNdx].empty();	}
+	bool							isLevelEmpty		(CubeFace face, int levelNdx) const	{ DE_ASSERT(de::inBounds(levelNdx, 0, getNumLevels())); return m_data[face][(size_t)levelNdx].empty();	}
 
 	Vec4							sample				(const Sampler& sampler, float s, float t, float p, float lod) const;
 	float							sampleCompare		(const Sampler& sampler, float ref, float s, float t, float r, float lod) const;

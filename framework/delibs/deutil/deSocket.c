@@ -603,7 +603,7 @@ deBool deSocket_shutdown (deSocket* sock, deUint32 channels)
 		return DE_FALSE;
 	}
 
-	DE_ASSERT(channels != 0 && (channels & ~DE_SOCKETCHANNEL_BOTH) == 0);
+	DE_ASSERT(channels != 0 && (channels & ~(deUint32)DE_SOCKETCHANNEL_BOTH) == 0);
 
 	/* Don't attempt to close already closed channels on partially open socket. */
 	channels &= sock->openChannels;
