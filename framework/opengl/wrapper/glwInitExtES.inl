@@ -89,3 +89,10 @@ if (de::contains(extSet, "GL_EXT_texture_border_clamp"))
 	gl->texParameterIiv			= (glTexParameterIivFunc)			loader->get("glTexParameterIivEXT");
 	gl->texParameterIuiv		= (glTexParameterIuivFunc)			loader->get("glTexParameterIuivEXT");
 }
+
+if (de::contains(extSet, "GL_EXT_debug_marker"))
+{
+	gl->insertEventMarkerEXT	= (glInsertEventMarkerEXTFunc)	loader->get("glInsertEventMarkerEXT");
+	gl->popGroupMarkerEXT		= (glPopGroupMarkerEXTFunc)		loader->get("glPopGroupMarkerEXT");
+	gl->pushGroupMarkerEXT		= (glPushGroupMarkerEXTFunc)	loader->get("glPushGroupMarkerEXT");
+}

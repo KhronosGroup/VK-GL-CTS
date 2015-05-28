@@ -317,6 +317,7 @@
 #define			glGetnUniformiv									glwGetnUniformiv
 #define			glGetnUniformuiv								glwGetnUniformuiv
 #define			glHint											glwHint
+#define			glInsertEventMarkerEXT							glwInsertEventMarkerEXT
 #define			glInvalidateBufferData							glwInvalidateBufferData
 #define			glInvalidateBufferSubData						glwInvalidateBufferSubData
 #define			glInvalidateFramebuffer							glwInvalidateFramebuffer
@@ -381,6 +382,7 @@
 #define			glPolygonMode									glwPolygonMode
 #define			glPolygonOffset									glwPolygonOffset
 #define			glPopDebugGroup									glwPopDebugGroup
+#define			glPopGroupMarkerEXT								glwPopGroupMarkerEXT
 #define			glPrimitiveBoundingBoxEXT						glwPrimitiveBoundingBoxEXT
 #define			glPrimitiveRestartIndex							glwPrimitiveRestartIndex
 #define			glProgramBinary									glwProgramBinary
@@ -437,6 +439,7 @@
 #define			glProgramUniformMatrix4x3fv						glwProgramUniformMatrix4x3fv
 #define			glProvokingVertex								glwProvokingVertex
 #define			glPushDebugGroup								glwPushDebugGroup
+#define			glPushGroupMarkerEXT							glwPushGroupMarkerEXT
 #define			glQueryCounter									glwQueryCounter
 #define			glReadBuffer									glwReadBuffer
 #define			glReadPixels									glwReadPixels
@@ -974,6 +977,7 @@ void			glwGetnUniformfv								(GLuint program, GLint location, GLsizei bufSize,
 void			glwGetnUniformiv								(GLuint program, GLint location, GLsizei bufSize, GLint *params);
 void			glwGetnUniformuiv								(GLuint program, GLint location, GLsizei bufSize, GLuint *params);
 void			glwHint											(GLenum target, GLenum mode);
+void			glwInsertEventMarkerEXT							(GLsizei length, const GLchar *marker);
 void			glwInvalidateBufferData							(GLuint buffer);
 void			glwInvalidateBufferSubData						(GLuint buffer, GLintptr offset, GLsizeiptr length);
 void			glwInvalidateFramebuffer						(GLenum target, GLsizei numAttachments, const GLenum *attachments);
@@ -1038,6 +1042,7 @@ void			glwPointSize									(GLfloat size);
 void			glwPolygonMode									(GLenum face, GLenum mode);
 void			glwPolygonOffset								(GLfloat factor, GLfloat units);
 void			glwPopDebugGroup								();
+void			glwPopGroupMarkerEXT							();
 void			glwPrimitiveBoundingBoxEXT						(GLfloat minX, GLfloat minY, GLfloat minZ, GLfloat minW, GLfloat maxX, GLfloat maxY, GLfloat maxZ, GLfloat maxW);
 void			glwPrimitiveRestartIndex						(GLuint index);
 void			glwProgramBinary								(GLuint program, GLenum binaryFormat, const void *binary, GLsizei length);
@@ -1094,6 +1099,7 @@ void			glwProgramUniformMatrix4x3dv					(GLuint program, GLint location, GLsizei
 void			glwProgramUniformMatrix4x3fv					(GLuint program, GLint location, GLsizei count, GLboolean transpose, const GLfloat *value);
 void			glwProvokingVertex								(GLenum mode);
 void			glwPushDebugGroup								(GLenum source, GLuint id, GLsizei length, const GLchar *message);
+void			glwPushGroupMarkerEXT							(GLsizei length, const GLchar *marker);
 void			glwQueryCounter									(GLuint id, GLenum target);
 void			glwReadBuffer									(GLenum src);
 void			glwReadPixels									(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, void *pixels);

@@ -14103,3 +14103,5 @@ dEQP-GLES2.functional.lifetime.attach.deleted_input.renderbuffer_framebuffer
 dEQP-GLES2.functional.lifetime.attach.deleted_input.shader_program
 dEQP-GLES2.functional.lifetime.attach.deleted_output.texture_framebuffer
 dEQP-GLES2.functional.lifetime.attach.deleted_output.renderbuffer_framebuffer
+dEQP-GLES2.functional.debug_marker.supported
+dEQP-GLES2.functional.debug_marker.random
