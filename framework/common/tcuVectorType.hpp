@@ -35,18 +35,22 @@ namespace tcu
 template <typename T, int Size>
 class Vector;
 
+typedef Vector<float, 1>	Vec1;
 typedef Vector<float, 2>	Vec2;
 typedef Vector<float, 3>	Vec3;
 typedef Vector<float, 4>	Vec4;
 
+typedef Vector<int, 1>		IVec1;
 typedef Vector<int, 2>		IVec2;
 typedef Vector<int, 3>		IVec3;
 typedef Vector<int, 4>		IVec4;
 
+typedef Vector<deUint32, 1>	UVec1;
 typedef Vector<deUint32, 2>	UVec2;
 typedef Vector<deUint32, 3>	UVec3;
 typedef Vector<deUint32, 4>	UVec4;
 
+typedef Vector<bool, 1>		BVec1;
 typedef Vector<bool, 2>		BVec2;
 typedef Vector<bool, 3>		BVec3;
 typedef Vector<bool, 4>		BVec4;

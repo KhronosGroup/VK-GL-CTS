@@ -617,31 +617,31 @@ template <typename T, int Size>
 Vector<T, Size> nop (const Vector<T, Size>& v) { return v; }
 
 #define DECLARE_UNARY_GENTYPE_FUNCS(FUNC_NAME)																			\
-	void eval_##FUNC_NAME##_float	(ShaderEvalContext& c) { c.color.x()	= FUNC_NAME(c.in[0].z()); }					\
+	void eval_##FUNC_NAME##_float	(ShaderEvalContext& c) { c.color.x()	= FUNC_NAME(c.in[0].swizzle(2)).x(); }			\
 	void eval_##FUNC_NAME##_vec2	(ShaderEvalContext& c) { c.color.yz()	= FUNC_NAME(c.in[0].swizzle(3, 1)); }		\
 	void eval_##FUNC_NAME##_vec3	(ShaderEvalContext& c) { c.color.xyz()	= FUNC_NAME(c.in[0].swizzle(2, 0, 1)); }	\
 	void eval_##FUNC_NAME##_vec4	(ShaderEvalContext& c) { c.color		= FUNC_NAME(c.in[0].swizzle(1, 2, 3, 0)); }
 
 #define DECLARE_BINARY_GENTYPE_FUNCS(FUNC_NAME)																											\
-	void eval_##FUNC_NAME##_float	(ShaderEvalContext& c) { c.color.x()	= FUNC_NAME(c.in[0].z(),                 c.in[1].x()); }					\
+	void eval_##FUNC_NAME##_float	(ShaderEvalContext& c) { c.color.x()	= FUNC_NAME(c.in[0].swizzle(2),          c.in[1].swizzle(0)).x(); }			\
 	void eval_##FUNC_NAME##_vec2	(ShaderEvalContext& c) { c.color.yz()	= FUNC_NAME(c.in[0].swizzle(3, 1),       c.in[1].swizzle(1, 0)); }			\
 	void eval_##FUNC_NAME##_vec3	(ShaderEvalContext& c) { c.color.xyz()	= FUNC_NAME(c.in[0].swizzle(2, 0, 1),    c.in[1].swizzle(1, 2, 0)); }		\
 	void eval_##FUNC_NAME##_vec4	(ShaderEvalContext& c) { c.color		= FUNC_NAME(c.in[0].swizzle(1, 2, 3, 0), c.in[1].swizzle(3, 2, 1, 0)); }
 
 #define DECLARE_TERNARY_GENTYPE_FUNCS(FUNC_NAME)																																	\
-	void eval_##FUNC_NAME##_float	(ShaderEvalContext& c) { c.color.x()	= FUNC_NAME(c.in[0].z(),                 c.in[1].x(),                 c.in[2].y()); }					\
+	void eval_##FUNC_NAME##_float	(ShaderEvalContext& c) { c.color.x()	= FUNC_NAME(c.in[0].swizzle(2),          c.in[1].swizzle(0),          c.in[2].swizzle(1)).x(); }		\
 	void eval_##FUNC_NAME##_vec2	(ShaderEvalContext& c) { c.color.yz()	= FUNC_NAME(c.in[0].swizzle(3, 1),       c.in[1].swizzle(1, 0),       c.in[2].swizzle(2, 1)); }			\
 	void eval_##FUNC_NAME##_vec3	(ShaderEvalContext& c) { c.color.xyz()	= FUNC_NAME(c.in[0].swizzle(2, 0, 1),    c.in[1].swizzle(1, 2, 0),    c.in[2].swizzle(3, 1, 2)); }		\
 	void eval_##FUNC_NAME##_vec4	(ShaderEvalContext& c) { c.color		= FUNC_NAME(c.in[0].swizzle(1, 2, 3, 0), c.in[1].swizzle(3, 2, 1, 0), c.in[2].swizzle(0, 3, 2, 1)); }
 
 #define DECLARE_UNARY_SCALAR_GENTYPE_FUNCS(FUNC_NAME)																	\
-	void eval_##FUNC_NAME##_float	(ShaderEvalContext& c) { c.color.x()	= FUNC_NAME(c.in[0].z()); }					\
+	void eval_##FUNC_NAME##_float	(ShaderEvalContext& c) { c.color.x()	= FUNC_NAME(c.in[0].swizzle(2)); }			\
 	void eval_##FUNC_NAME##_vec2	(ShaderEvalContext& c) { c.color.x()	= FUNC_NAME(c.in[0].swizzle(3, 1)); }		\
 	void eval_##FUNC_NAME##_vec3	(ShaderEvalContext& c) { c.color.x()	= FUNC_NAME(c.in[0].swizzle(2, 0, 1)); }	\
 	void eval_##FUNC_NAME##_vec4	(ShaderEvalContext& c) { c.color.x()	= FUNC_NAME(c.in[0].swizzle(1, 2, 3, 0)); }
 
 #define DECLARE_BINARY_SCALAR_GENTYPE_FUNCS(FUNC_NAME)																									\
-	void eval_##FUNC_NAME##_float	(ShaderEvalContext& c) { c.color.x()	= FUNC_NAME(c.in[0].z(),                 c.in[1].x()); }					\
+	void eval_##FUNC_NAME##_float	(ShaderEvalContext& c) { c.color.x()	= FUNC_NAME(c.in[0].swizzle(2),          c.in[1].swizzle(0)); }				\
 	void eval_##FUNC_NAME##_vec2	(ShaderEvalContext& c) { c.color.x()	= FUNC_NAME(c.in[0].swizzle(3, 1),       c.in[1].swizzle(1, 0)); }			\
 	void eval_##FUNC_NAME##_vec3	(ShaderEvalContext& c) { c.color.x()	= FUNC_NAME(c.in[0].swizzle(2, 0, 1),    c.in[1].swizzle(1, 2, 0)); }		\
 	void eval_##FUNC_NAME##_vec4	(ShaderEvalContext& c) { c.color.x()	= FUNC_NAME(c.in[0].swizzle(1, 2, 3, 0), c.in[1].swizzle(3, 2, 1, 0)); }
