@@ -141,7 +141,7 @@ public:
 	VecAccess<T, Size, 4>	xyzw		(void) { DE_ASSERT(Size >= 4); return VecAccess<T, Size, 4>(*this, 0, 1, 2, 3); }
 
 	// Swizzles.
-	const T&				swizzle		(int a) const { DE_ASSERT(a >= 0 && a < Size); return m_data[a]; }
+	Vector<T, 1>			swizzle		(int a) const { DE_ASSERT(a >= 0 && a < Size); return Vector<T, 1>(m_data[a]); }
 	Vector<T, 2>			swizzle		(int a, int b) const { DE_ASSERT(a >= 0 && a < Size); DE_ASSERT(b >= 0 && b < Size); return Vector<T, 2>(m_data[a], m_data[b]); }
 	Vector<T, 3>			swizzle		(int a, int b, int c) const { DE_ASSERT(a >= 0 && a < Size); DE_ASSERT(b >= 0 && b < Size); DE_ASSERT(c >= 0 && c < Size); return Vector<T, 3>(m_data[a], m_data[b], m_data[c]); }
 	Vector<T, 4>			swizzle		(int a, int b, int c, int d) const { DE_ASSERT(a >= 0 && a < Size); DE_ASSERT(b >= 0 && b < Size); DE_ASSERT(c >= 0 && c < Size); DE_ASSERT(d >= 0 && d < Size); return Vector<T, 4>(m_data[a], m_data[b], m_data[c], m_data[d]); }
