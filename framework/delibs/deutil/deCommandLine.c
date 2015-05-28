@@ -56,7 +56,7 @@ deCommandLine* deCommandLine_parse (const char* commandLine)
 	DE_ASSERT(commandLine);
 
 	/* Create buffer for args (no expansion can happen). */
-	buf		= (char*)deCalloc((int)strlen(commandLine)+1);
+	buf		= (char*)deCalloc(strlen(commandLine)+1);
 	pos		= 0;
 	argNdx	= 0;
 	outPtr	= buf;
@@ -118,7 +118,7 @@ deCommandLine* deCommandLine_parse (const char* commandLine)
 	{
 		deCommandLine* cmdLine = (deCommandLine*)deCalloc(sizeof(deCommandLine));
 
-		if (!cmdLine || !(cmdLine->args = (char**)deCalloc(sizeof(char*)*CharPtrArray_getNumElements(args))))
+		if (!cmdLine || !(cmdLine->args = (char**)deCalloc(sizeof(char*)*(size_t)CharPtrArray_getNumElements(args))))
 		{
 			deFree(cmdLine);
 			deFree(buf);

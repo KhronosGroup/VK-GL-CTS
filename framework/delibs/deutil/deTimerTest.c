@@ -68,9 +68,9 @@ void deTimer_selfTest (void)
 
 		DE_TEST_ASSERT(scheduleOk);
 
-		deSleep(interval*intervalSleepMultiplier);
+		deSleep((deUint32)(interval*intervalSleepMultiplier));
 		deTimer_disable(timer);
-		deSleep(interval);
+		deSleep((deUint32)interval);
 
 		printf("  timer fired %d times, expected %d\n", numCalls, expectedCalls);
 		DE_TEST_ASSERT(!isSingle || numCalls == 1);

@@ -50,8 +50,8 @@ struct Message
 	{
 	}
 
-	deUint16 getThreadId	(void) const { return data >> 16;		}
-	deUint16 getPayload		(void) const { return data & 0xffff;	}
+	deUint16 getThreadId	(void) const { return (deUint16)(data >> 16);		}
+	deUint16 getPayload		(void) const { return (deUint16)(data & 0xffff);	}
 };
 
 typedef BlockBuffer<Message> MessageBuffer;
@@ -208,7 +208,7 @@ void runTest (void)
 		{
 			deUint32 cmpSum = 0;
 			for (int j = 0; j < numConsumers; j++)
-				cmpSum += consumers[j]->getPayloadSum(i);
+				cmpSum += consumers[j]->getPayloadSum((deUint16)i);
 			DE_TEST_ASSERT(refSum == cmpSum);
 		}
 

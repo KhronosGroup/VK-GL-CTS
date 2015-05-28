@@ -95,8 +95,8 @@ public:
 
 	void				close				(void);
 
-	deSocketResult		send				(const void* buf, int bufSize, int* numSent)	{ return deSocket_send(m_socket, buf, bufSize, numSent);	}
-	deSocketResult		receive				(void* buf, int bufSize, int* numRecv)			{ return deSocket_receive(m_socket, buf, bufSize, numRecv);	}
+	deSocketResult		send				(const void* buf, size_t bufSize, size_t* numSent)	{ return deSocket_send(m_socket, buf, bufSize, numSent);	}
+	deSocketResult		receive				(void* buf, size_t bufSize, size_t* numRecv)		{ return deSocket_receive(m_socket, buf, bufSize, numRecv);	}
 
 private:
 						Socket				(deSocket* socket) : m_socket(socket) {}

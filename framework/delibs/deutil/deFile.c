@@ -185,7 +185,7 @@ static deFileResult mapReadWriteResult (deInt64 numBytes)
 
 deFileResult deFile_read (deFile* file, void* buf, deInt64 bufSize, deInt64* numReadPtr)
 {
-	deInt64 numRead = read(file->fd, buf, bufSize);
+	deInt64 numRead = read(file->fd, buf, (size_t)bufSize);
 
 	if (numReadPtr)
 		*numReadPtr = numRead;
@@ -195,7 +195,7 @@ deFileResult deFile_read (deFile* file, void* buf, deInt64 bufSize, deInt64* num
 
 deFileResult deFile_write (deFile* file, const void* buf, deInt64 bufSize, deInt64* numWrittenPtr)
 {
-	deInt64 numWritten = write(file->fd, buf, bufSize);
+	deInt64 numWritten = write(file->fd, buf, (size_t)bufSize);
 
 	if (numWrittenPtr)
 		*numWrittenPtr = numWritten;

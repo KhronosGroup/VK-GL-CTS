@@ -72,14 +72,14 @@ public:
 
 	bool					isComplete			(void) const;
 	MessageType				getMessageType		(void) const	{ return m_messageType;	}
-	int						getMessageSize		(void) const	{ return m_messageSize; }
+	size_t					getMessageSize		(void) const	{ return m_messageSize; }
 	const deUint8*			getMessageData		(void) const;
-	int						getMessageDataSize	(void) const;
+	size_t					getMessageDataSize	(void) const;
 
 private:
 	std::vector<deUint8>	m_buffer;
 	MessageType				m_messageType;
-	int						m_messageSize;
+	size_t					m_messageSize;
 };
 
 class ExecutionRequestHandler : public ConnectionHandler
@@ -96,7 +96,7 @@ private:
 	ExecutionRequestHandler&	operator=						(const ExecutionRequestHandler& handler);
 
 	void						processSession					(void);
-	void						processMessage					(MessageType type, const deUint8* data, int dataSize);
+	void						processMessage					(MessageType type, const deUint8* data, size_t dataSize);
 
 	inline TestDriver*			getTestDriver					(void) { if (!m_testDriver) acquireTestDriver(); return m_testDriver; }
 	void						acquireTestDriver				(void);

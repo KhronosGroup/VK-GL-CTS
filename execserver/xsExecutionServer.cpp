@@ -43,7 +43,7 @@ inline bool MessageBuilder::isComplete (void) const
 	if (m_buffer.size() < MESSAGE_HEADER_SIZE)
 		return false;
 	else
-		return (int)m_buffer.size() == getMessageSize();
+		return m_buffer.size() == getMessageSize();
 }
 
 const deUint8* MessageBuilder::getMessageData (void) const
@@ -51,10 +51,10 @@ const deUint8* MessageBuilder::getMessageData (void) const
 	return m_buffer.size() > MESSAGE_HEADER_SIZE ? &m_buffer[MESSAGE_HEADER_SIZE] : DE_NULL;
 }
 
-int MessageBuilder::getMessageDataSize (void) const
+size_t MessageBuilder::getMessageDataSize (void) const
 {
 	DE_ASSERT(isComplete());
-	return (int)m_buffer.size() - MESSAGE_HEADER_SIZE;
+	return m_buffer.size() - MESSAGE_HEADER_SIZE;
 }
 
 void MessageBuilder::read (ByteBuffer& src)
@@ -78,15 +78,15 @@ void MessageBuilder::read (ByteBuffer& src)
 	if (m_buffer.size() >= MESSAGE_HEADER_SIZE)
 	{
 		// We have header.
-		int msgSize			= getMessageSize();
-		int numBytesLeft	= msgSize - (int)m_buffer.size();
-		int	numToRead		= de::min(src.getNumElements(), numBytesLeft);
+		size_t msgSize			= getMessageSize();
+		size_t numBytesLeft		= msgSize - m_buffer.size();
+		size_t numToRead		= (size_t)de::min(src.getNumElements(), (int)numBytesLeft);
 
 		if (numToRead > 0)
 		{
 			int curBufPos = (int)m_buffer.size();
 			m_buffer.resize(curBufPos+numToRead);
-			src.popBack(&m_buffer[curBufPos], numToRead);
+			src.popBack(&m_buffer[curBufPos], (int)numToRead);
 		}
 	}
 }
@@ -257,7 +257,7 @@ void ExecutionRequestHandler::processSession (void)
 	}
 }
 
-void ExecutionRequestHandler::processMessage (MessageType type, const deUint8* data, int dataSize)
+void ExecutionRequestHandler::processMessage (MessageType type, const deUint8* data, size_t dataSize)
 {
 	switch (type)
 	{
@@ -341,17 +341,17 @@ void ExecutionRequestHandler::pollKeepAlives (void)
 
 bool ExecutionRequestHandler::receive (void)
 {
-	int maxLen = de::min<int>((int)m_sendRecvTmpBuf.size(), m_bufferIn.getNumFree());
+	size_t maxLen = de::min(m_sendRecvTmpBuf.size(), (size_t)m_bufferIn.getNumFree());
 
 	if (maxLen > 0)
 	{
-		int				numRecv;
+		size_t			numRecv;
 		deSocketResult	result	= m_socket->receive(&m_sendRecvTmpBuf[0], maxLen, &numRecv);
 
 		if (result == DE_SOCKETRESULT_SUCCESS)
 		{
 			DE_ASSERT(numRecv > 0);
-			m_bufferIn.pushFront(&m_sendRecvTmpBuf[0], numRecv);
+			m_bufferIn.pushFront(&m_sendRecvTmpBuf[0], (int)numRecv);
 			return true;
 		}
 		else if (result == DE_SOCKETRESULT_CONNECTION_CLOSED)
@@ -372,19 +372,19 @@ bool ExecutionRequestHandler::receive (void)
 
 bool ExecutionRequestHandler::send (void)
 {
-	int maxLen = de::min<int>((int)m_sendRecvTmpBuf.size(), m_bufferOut.getNumElements());
+	size_t maxLen = de::min(m_sendRecvTmpBuf.size(), (size_t)m_bufferOut.getNumElements());
 
 	if (maxLen > 0)
 	{
-		m_bufferOut.peekBack(&m_sendRecvTmpBuf[0], maxLen);
+		m_bufferOut.peekBack(&m_sendRecvTmpBuf[0], (int)maxLen);
 
-		int				numSent;
+		size_t			numSent;
 		deSocketResult	result	= m_socket->send(&m_sendRecvTmpBuf[0], maxLen, &numSent);
 
 		if (result == DE_SOCKETRESULT_SUCCESS)
 		{
 			DE_ASSERT(numSent > 0);
-			m_bufferOut.popBack(numSent);
+			m_bufferOut.popBack((int)numSent);
 			return true;
 		}
 		else if (result == DE_SOCKETRESULT_CONNECTION_CLOSED)

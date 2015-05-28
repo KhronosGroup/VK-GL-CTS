@@ -353,7 +353,7 @@ void BatchExecutor::enqueueStateChanged (void* userPtr, CommLinkState state, con
 	writer.enqueue();
 }
 
-void BatchExecutor::enqueueTestLogData (void* userPtr, const deUint8* bytes, int numBytes)
+void BatchExecutor::enqueueTestLogData (void* userPtr, const deUint8* bytes, size_t numBytes)
 {
 	BatchExecutor*	executor	= static_cast<BatchExecutor*>(userPtr);
 	CallWriter		writer		(&executor->m_dispatcher, BatchExecutor::dispatchTestLogData);
@@ -365,7 +365,7 @@ void BatchExecutor::enqueueTestLogData (void* userPtr, const deUint8* bytes, int
 	writer.enqueue();
 }
 
-void BatchExecutor::enqueueInfoLogData (void* userPtr, const deUint8* bytes, int numBytes)
+void BatchExecutor::enqueueInfoLogData (void* userPtr, const deUint8* bytes, size_t numBytes)
 {
 	BatchExecutor*	executor	= static_cast<BatchExecutor*>(userPtr);
 	CallWriter		writer		(&executor->m_dispatcher, BatchExecutor::dispatchInfoLogData);
