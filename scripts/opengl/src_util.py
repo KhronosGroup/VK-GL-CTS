@@ -64,6 +64,7 @@ EXTENSIONS			= [
 	'GL_EXT_texture_border_clamp',
 	'GL_EXT_texture_sRGB_R8',
 	'GL_EXT_texture_sRGB_RG8',
+	'GL_EXT_debug_marker',
 ]
 
 def getGLRegistry ():
