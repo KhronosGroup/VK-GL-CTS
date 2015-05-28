@@ -2516,6 +2516,14 @@ void glwHint (GLenum target, GLenum mode)
 	gl->hint(target, mode);
 }
 
+void glwInsertEventMarkerEXT (GLsizei length, const GLchar *marker)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->insertEventMarkerEXT(length, marker);
+}
+
 void glwInvalidateBufferData (GLuint buffer)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
@@ -3028,6 +3036,14 @@ void glwPopDebugGroup (void)
 	gl->popDebugGroup();
 }
 
+void glwPopGroupMarkerEXT (void)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->popGroupMarkerEXT();
+}
+
 void glwPrimitiveBoundingBoxEXT (GLfloat minX, GLfloat minY, GLfloat minZ, GLfloat minW, GLfloat maxX, GLfloat maxY, GLfloat maxZ, GLfloat maxW)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
@@ -3474,6 +3490,14 @@ void glwPushDebugGroup (GLenum source, GLuint id, GLsizei length, const GLchar *
 	if (!gl)
 		return;
 	gl->pushDebugGroup(source, id, length, message);
+}
+
+void glwPushGroupMarkerEXT (GLsizei length, const GLchar *marker)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->pushGroupMarkerEXT(length, marker);
 }
 
 void glwQueryCounter (GLuint id, GLenum target)

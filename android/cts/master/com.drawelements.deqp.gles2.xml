@@ -43421,6 +43421,14 @@
 					</TestCase>
 				</TestSuite>
 			</TestSuite>
+			<TestCase name="debug_marker">
+				<Test name="supported">
+					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+				</Test>
+				<Test name="random">
+					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+				</Test>
+			</TestCase>
 		</TestSuite>
 	</TestSuite>
 </TestPackage>

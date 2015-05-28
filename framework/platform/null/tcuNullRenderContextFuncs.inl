@@ -2554,6 +2554,13 @@ GLW_APICALL void GLW_APIENTRY glHint (GLenum target, GLenum mode)
 
 }
 
+GLW_APICALL void GLW_APIENTRY glInsertEventMarkerEXT (GLsizei length, const GLchar *marker)
+{
+	DE_UNREF(length);
+	DE_UNREF(marker);
+
+}
+
 GLW_APICALL void GLW_APIENTRY glInvalidateBufferData (GLuint buffer)
 {
 	DE_UNREF(buffer);
@@ -3041,6 +3048,11 @@ GLW_APICALL void GLW_APIENTRY glPolygonOffset (GLfloat factor, GLfloat units)
 }
 
 GLW_APICALL void GLW_APIENTRY glPopDebugGroup (void)
+{
+
+}
+
+GLW_APICALL void GLW_APIENTRY glPopGroupMarkerEXT (void)
 {
 
 }
@@ -3569,6 +3581,13 @@ GLW_APICALL void GLW_APIENTRY glPushDebugGroup (GLenum source, GLuint id, GLsize
 	DE_UNREF(id);
 	DE_UNREF(length);
 	DE_UNREF(message);
+
+}
+
+GLW_APICALL void GLW_APIENTRY glPushGroupMarkerEXT (GLsizei length, const GLchar *marker)
+{
+	DE_UNREF(length);
+	DE_UNREF(marker);
 
 }
 

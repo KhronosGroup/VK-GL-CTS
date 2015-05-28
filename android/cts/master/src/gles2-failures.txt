@@ -108,6 +108,7 @@ dEQP-GLES2.functional.clipping.triangle_vertex.clip_two.clip_neg_x_neg_y_pos_z_a
 dEQP-GLES2.functional.clipping.triangle_vertex.clip_two.clip_neg_x_pos_y_pos_z_and_pos_x_neg_y_neg_z
 dEQP-GLES2.functional.clipping.triangle_vertex.clip_two.clip_pos_x_neg_y_pos_z_and_neg_x_pos_y_neg_z
 dEQP-GLES2.functional.clipping.triangle_vertex.clip_two.clip_pos_x_pos_y_pos_z_and_neg_x_neg_y_neg_z
+dEQP-GLES2.functional.debug_marker.invalid
 dEQP-GLES2.functional.depth_stencil_clear.depth_scissored_masked
 dEQP-GLES2.functional.depth_stencil_clear.depth_stencil_masked
 dEQP-GLES2.functional.depth_stencil_clear.depth_stencil_scissored_masked
