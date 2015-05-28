@@ -49,8 +49,8 @@ public:
 	void						setCallbacks				(CommLink::StateChangedFunc stateChangedCallback, CommLink::LogDataFunc testLogDataCallback, CommLink::LogDataFunc infoLogDataCallback, void* userPtr);
 
 	void						setState					(CommLinkState state, const char* error = "");
-	void						onTestLogData				(const deUint8* bytes, int numBytes) const;
-	void						onInfoLogData				(const deUint8* bytes, int numBytes) const;
+	void						onTestLogData				(const deUint8* bytes, size_t numBytes) const;
+	void						onInfoLogData				(const deUint8* bytes, size_t numBytes) const;
 
 	void						onKeepaliveReceived			(void);
 	deUint64					getLastKeepaliveRecevied	(void) const;
@@ -104,13 +104,13 @@ public:
 	bool						isRunning				(void) const { return m_isRunning; }
 
 private:
-	void						handleMessage			(xs::MessageType messageType, const deUint8* data, int dataSize);
+	void						handleMessage			(xs::MessageType messageType, const deUint8* data, size_t dataSize);
 
 	de::Socket&					m_socket;
 	TcpIpLinkState&				m_state;
 
 	std::vector<deUint8>		m_curMsgBuf;
-	int							m_curMsgPos;
+	size_t						m_curMsgPos;
 
 	bool						m_isRunning;
 };

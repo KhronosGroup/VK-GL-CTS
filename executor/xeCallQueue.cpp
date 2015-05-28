@@ -160,14 +160,14 @@ CallReader::CallReader (Call* call)
 {
 }
 
-void CallReader::read (deUint8* bytes, int numBytes)
+void CallReader::read (deUint8* bytes, size_t numBytes)
 {
 	DE_ASSERT(m_curPos + numBytes <= m_call->getDataSize());
 	deMemcpy(bytes, m_call->getData()+m_curPos, numBytes);
 	m_curPos += numBytes;
 }
 
-const deUint8* CallReader::getDataBlock (int numBytes)
+const deUint8* CallReader::getDataBlock (size_t numBytes)
 {
 	DE_ASSERT(m_curPos + numBytes <= m_call->getDataSize());
 
@@ -209,10 +209,10 @@ CallWriter::~CallWriter (void)
 		m_queue->freeCall(m_call);
 }
 
-void CallWriter::write (const deUint8* bytes, int numBytes)
+void CallWriter::write (const deUint8* bytes, size_t numBytes)
 {
 	DE_ASSERT(!m_enqueued);
-	int curPos = m_call->getDataSize();
+	size_t curPos = m_call->getDataSize();
 	m_call->setDataSize(curPos+numBytes);
 	deMemcpy(m_call->getData()+curPos, bytes, numBytes);
 }

@@ -48,7 +48,7 @@ class CommLink
 {
 public:
 	typedef void (*StateChangedFunc)	(void* userPtr, CommLinkState state, const char* message);
-	typedef void (*LogDataFunc)			(void* userPtr, const deUint8* bytes, int numBytes);
+	typedef void (*LogDataFunc)			(void* userPtr, const deUint8* bytes, size_t numBytes);
 
 								CommLink				(void);
 	virtual						~CommLink				(void);

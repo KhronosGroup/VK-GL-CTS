@@ -802,11 +802,11 @@ void TestResultParser::handleData (void)
 				deUint8		decodedBits	= 0;
 
 				if (de::inRange<deInt8>(byte, 'A', 'Z'))
-					decodedBits = byte - 'A';
+					decodedBits = (deUint8)(byte - 'A');
 				else if (de::inRange<deInt8>(byte, 'a', 'z'))
-					decodedBits = ('Z'-'A'+1) + (byte-'a');
+					decodedBits = (deUint8)(('Z'-'A'+1) + (byte-'a'));
 				else if (de::inRange<deInt8>(byte, '0', '9'))
-					decodedBits = ('Z'-'A'+1) + ('z'-'a'+1) + (byte-'0');
+					decodedBits = (deUint8)(('Z'-'A'+1) + ('z'-'a'+1) + (byte-'0'));
 				else if (byte == '+')
 					decodedBits = ('Z'-'A'+1) + ('z'-'a'+1) + ('9'-'0'+1);
 				else if (byte == '/')
@@ -833,10 +833,10 @@ void TestResultParser::handleData (void)
 
 				switch (phase)
 				{
-					case 0: outPtr[0] |= decodedBits<<2;											break;
-					case 1: outPtr[0] |= (decodedBits>>4);	outPtr[1] |= ((decodedBits&0xF)<<4);	break;
-					case 2: outPtr[1] |= (decodedBits>>2);	outPtr[2] |= ((decodedBits&0x3)<<6);	break;
-					case 3: outPtr[2] |= decodedBits;												break;
+					case 0: outPtr[0] |= (deUint8)(decodedBits<<2);													break;
+					case 1: outPtr[0] |= (deUint8)(decodedBits>>4);	outPtr[1] |= (deUint8)((decodedBits&0xF)<<4);	break;
+					case 2: outPtr[1] |= (deUint8)(decodedBits>>2);	outPtr[2] |= (deUint8)((decodedBits&0x3)<<6);	break;
+					case 3: outPtr[2] |= decodedBits;																break;
 					default:
 						DE_ASSERT(false);
 				}

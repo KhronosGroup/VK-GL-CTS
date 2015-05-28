@@ -55,8 +55,8 @@ public:
 	Function					getFunction			(void) const	{ return m_func;				}
 	void						setFunction			(Function func)	{ m_func = func;				}
 
-	int							getDataSize			(void) const	{ return (int)m_data.size();	}
-	void						setDataSize			(int size)		{ m_data.resize(size);			}
+	size_t						getDataSize			(void) const	{ return m_data.size();			}
+	void						setDataSize			(size_t size)	{ m_data.resize(size);			}
 
 	const deUint8*				getData				(void) const	{ return m_data.empty() ? DE_NULL : &m_data[0];	}
 	deUint8*					getData				(void)			{ return m_data.empty() ? DE_NULL : &m_data[0];	}
@@ -72,12 +72,12 @@ public:
 					CallReader			(Call* call);
 					CallReader			(void) : m_call(DE_NULL), m_curPos(0) {}
 
-	void			read				(deUint8* bytes, int numBytes);
-	const deUint8*	getDataBlock		(int numBytes);					//!< \note Valid only during call.
+	void			read				(deUint8* bytes, size_t numBytes);
+	const deUint8*	getDataBlock		(size_t numBytes);					//!< \note Valid only during call.
 
 private:
 	Call*			m_call;
-	int				m_curPos;
+	size_t			m_curPos;
 };
 
 class CallWriter
@@ -86,7 +86,7 @@ public:
 					CallWriter			(CallQueue* queue, Call::Function function);
 					~CallWriter			(void);
 
-	void			write				(const deUint8* bytes, int numBytes);
+	void			write				(const deUint8* bytes, size_t numBytes);
 	void			enqueue				(void);
 
 private:

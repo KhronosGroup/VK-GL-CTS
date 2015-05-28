@@ -60,8 +60,9 @@ struct deProcess_s
 
 static void die (int statusPipe, const char* message)
 {
-	int msgLen = strlen(message);
-	int res = 0;
+	size_t	msgLen	= strlen(message);
+	int		res		= 0;
+
 	printf("Process launch failed: %s\n", message);
 	res = (int)write(statusPipe, message, msgLen+1);
 	DE_UNREF(res); /* No need to check result. */
@@ -78,7 +79,7 @@ static void dieLastError (int statusPipe, const char* message)
 
 DE_INLINE deBool beginsWithPath (const char* fileName, const char* pathPrefix)
 {
-	int pathLen = strlen(pathPrefix);
+	size_t pathLen = strlen(pathPrefix);
 
 	/* Strip trailing / */
 	while (pathLen > 0 && pathPrefix[pathLen-1] == '/')
@@ -89,8 +90,8 @@ DE_INLINE deBool beginsWithPath (const char* fileName, const char* pathPrefix)
 
 static void stripLeadingPath (char* fileName, const char* pathPrefix)
 {
-	int pathLen		= strlen(pathPrefix);
-	int fileNameLen	= strlen(fileName);
+	size_t pathLen		= strlen(pathPrefix);
+	size_t fileNameLen	= strlen(fileName);
 
 	DE_ASSERT(beginsWithPath(fileName, pathPrefix));
 
@@ -108,7 +109,7 @@ static void stripLeadingPath (char* fileName, const char* pathPrefix)
 static void execProcess (const char* commandLine, const char* workingDirectory, int statusPipe)
 {
 	deCommandLine*	cmdLine		= deCommandLine_parse(commandLine);
-	char**			argList		= cmdLine ? (char**)deCalloc(sizeof(char*)*(cmdLine->numArgs+1)) : DE_NULL;
+	char**			argList		= cmdLine ? (char**)deCalloc(sizeof(char*)*((size_t)cmdLine->numArgs+1)) : DE_NULL;
 
 	if (!cmdLine || !argList)
 		die(statusPipe, "Command line parsing failed (out of memory)");
@@ -299,7 +300,7 @@ deBool deProcess_start (deProcess* process, const char* commandLine, const char*
 		/* Check status. */
 		{
 			char	errBuf[256];
-			int		result	= 0;
+			ssize_t	result = 0;
 
 			close(statusPipe[1]);
 			while ((result = read(statusPipe[0], errBuf, 1)) == -1)
@@ -307,6 +308,8 @@ deBool deProcess_start (deProcess* process, const char* commandLine, const char*
 
 			if (result > 0)
 			{
+				int procStatus = 0;
+
 				/* Read full error msg. */
 				int errPos = 1;
 				while (errPos < DE_LENGTH_OF_ARRAY(errBuf))
@@ -328,7 +331,7 @@ deBool deProcess_start (deProcess* process, const char* commandLine, const char*
 				closePipe(pipeErr);
 
 				/* Run waitpid to clean up zombie. */
-				waitpid(pid, &result, 0);
+				waitpid(pid, &procStatus, 0);
 
 				deProcess_setError(process, errBuf);
 
@@ -348,9 +351,9 @@ deBool deProcess_start (deProcess* process, const char* commandLine, const char*
 		close(pipeOut[1]);
 		close(pipeErr[1]);
 
-		process->standardIn		= deFile_createFromHandle(pipeIn[1]);
-		process->standardOut	= deFile_createFromHandle(pipeOut[0]);
-		process->standardErr	= deFile_createFromHandle(pipeErr[0]);
+		process->standardIn		= deFile_createFromHandle((deUintptr)pipeIn[1]);
+		process->standardOut	= deFile_createFromHandle((deUintptr)pipeOut[0]);
+		process->standardErr	= deFile_createFromHandle((deUintptr)pipeErr[0]);
 
 		if (!process->standardIn)
 			close(pipeIn[1]);
