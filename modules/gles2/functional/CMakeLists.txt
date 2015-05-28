@@ -159,6 +159,8 @@ set(DEQP_GLES2_FUNCTIONAL_SRCS
 	es2fFlushFinishTests.hpp
 	es2fShaderFragDataTests.cpp
 	es2fShaderFragDataTests.hpp
+	es2fDebugMarkerTests.cpp
+	es2fDebugMarkerTests.hpp
 	)
 
 add_library(deqp-gles2-functional STATIC ${DEQP_GLES2_FUNCTIONAL_SRCS})
