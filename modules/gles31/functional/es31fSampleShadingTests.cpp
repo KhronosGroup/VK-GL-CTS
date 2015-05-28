@@ -326,7 +326,7 @@ void SampleShadingRenderingCase::setShadingValue (int sampleCount)
 			<< tcu::TestLog::EndMessage;
 
 		// can't fail with reasonable values of numSamples
-		DE_ASSERT(deFloatCeil(ratio * m_numTargetSamples) == float(sampleCount));
+		DE_ASSERT(deFloatCeil(ratio * (float)m_numTargetSamples) == float(sampleCount));
 	}
 }
 

@@ -340,7 +340,7 @@ struct Traits<bool> : ScalarTraits<bool>
 										 const float&		value,
 										 ostream&			os)
 	{
-		os << (value ? "true" : "false");
+		os << (value != 0.0f ? "true" : "false");
 	}
 
 	static void			doPrintIVal		(const FloatFormat&,
