@@ -28,14 +28,14 @@
 #include "vkPlatform.hpp"
 #include "vkStrUtil.hpp"
 #include "vkRef.hpp"
+#include "vkDeviceUtil.hpp"
+#include "vkQueryUtil.hpp"
 
 #include "tcuTestLog.hpp"
 #include "tcuFormatUtil.hpp"
 
 #include "deUniquePtr.hpp"
 #include "deStringUtil.hpp"
-
-#include "qpInfo.h"
 
 namespace vkt
 {
@@ -47,29 +47,9 @@ using tcu::TestLog;
 
 tcu::TestStatus enumeratePhysicalDevices (Context& context)
 {
-	const struct VkApplicationInfo		appInfo			=
-	{
-		VK_STRUCTURE_TYPE_APPLICATION_INFO,		//	VkStructureType	sType;
-		DE_NULL,								//	const void*		pNext;
-		"deqp",									//	const char*		pAppName;
-		qpGetReleaseId(),						//	deUint32		appVersion;
-		"deqp",									//	const char*		pEngineName;
-		qpGetReleaseId(),						//	deUint32		engineVersion;
-		VK_API_VERSION							//	deUint32		apiVersion;
-	};
-	const struct VkInstanceCreateInfo	instanceInfo	=
-	{
-		VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,	// VkStructureType				sType;
-		DE_NULL,								//	const void*					pNext;
-		&appInfo,								//	const VkApplicationInfo*	pAppInfo;
-		DE_NULL,								//	const VkAllocCallbacks*		pAllocCb;
-		0u,										//	deUint32					extensionCount;
-		DE_NULL									//	const char*const*			ppEnabledExtensionNames;
-	};
-
 	const PlatformInterface&	vkPlatform	= context.getPlatformInterface();
 	TestLog&					log			= context.getTestContext().getLog();
-	const Unique<VkInstanceT>	instance	(createInstance(vkPlatform, &instanceInfo));
+	const Unique<VkInstanceT>	instance	(createDefaultInstance(vkPlatform));
 	vector<VkPhysicalDevice>	devices;
 	deUint32					numDevices	= 0;
 
@@ -91,29 +71,9 @@ tcu::TestStatus enumeratePhysicalDevices (Context& context)
 
 tcu::TestStatus deviceProperties (Context& context)
 {
-	const struct VkApplicationInfo		appInfo			=
-	{
-		VK_STRUCTURE_TYPE_APPLICATION_INFO,		//	VkStructureType	sType;
-		DE_NULL,								//	const void*		pNext;
-		"deqp",									//	const char*		pAppName;
-		qpGetReleaseId(),						//	deUint32		appVersion;
-		"deqp",									//	const char*		pEngineName;
-		qpGetReleaseId(),						//	deUint32		engineVersion;
-		VK_API_VERSION							//	deUint32		apiVersion;
-	};
-	const struct VkInstanceCreateInfo	instanceInfo	=
-	{
-		VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,	// VkStructureType				sType;
-		DE_NULL,								//	const void*					pNext;
-		&appInfo,								//	const VkApplicationInfo*	pAppInfo;
-		DE_NULL,								//	const VkAllocCallbacks*		pAllocCb;
-		0u,										//	deUint32					extensionCount;
-		DE_NULL									//	const char*const*			ppEnabledExtensionNames;
-	};
-
 	const PlatformInterface&	vkPlatform	= context.getPlatformInterface();
 	TestLog&					log			= context.getTestContext().getLog();
-	const Unique<VkInstanceT>	instance	(createInstance(vkPlatform, &instanceInfo));
+	const Unique<VkInstanceT>	instance	(createDefaultInstance(vkPlatform));
 	vector<VkPhysicalDevice>	devices;
 	deUint32					numDevices	= 0;
 
@@ -126,13 +86,10 @@ tcu::TestStatus deviceProperties (Context& context)
 
 		for (deUint32 ndx = 0; ndx < numDevices; ndx++)
 		{
-			const VkPhysicalDevice		physicalDevice		= devices[ndx];
-			const tcu::ScopedLogSection	section				(log, string("Device") + de::toString(ndx), string("Device ") + de::toString(ndx) + " (" + de::toString(tcu::toHex(physicalDevice)) + ")");
-			const vk::DeviceDriver		vkDevice			(vkPlatform, physicalDevice);
-			VkPhysicalDeviceProperties	properties;
-			deUintptr					propertiesSize		= sizeof(properties);
-
-			VK_CHECK(vkDevice.getPhysicalDeviceInfo(physicalDevice, VK_PHYSICAL_DEVICE_INFO_TYPE_PROPERTIES, &propertiesSize, &properties));
+			const VkPhysicalDevice				physicalDevice	= devices[ndx];
+			const tcu::ScopedLogSection			section			(log, string("Device") + de::toString(ndx), string("Device ") + de::toString(ndx) + " (" + de::toString(tcu::toHex(physicalDevice)) + ")");
+			const vk::DeviceDriver				vkDevice		(vkPlatform, physicalDevice);
+			const VkPhysicalDeviceProperties	properties		= getPhysicalDeviceInfo<VK_PHYSICAL_DEVICE_INFO_TYPE_PROPERTIES>(vkDevice, physicalDevice);
 
 			log << TestLog::Message << "apiVersion = " << unpackVersion(properties.apiVersion) << "\n"
 									<< "driverVersion = " << tcu::toHex(properties.driverVersion) << "\n"
