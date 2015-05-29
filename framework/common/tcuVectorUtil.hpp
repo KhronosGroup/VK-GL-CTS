@@ -63,8 +63,6 @@ template<>				inline	deUint32	negate<deUint32>	(deUint32 f)	{ return (deUint32)-
 
 inline float radians		(float f) { return deFloatRadians(f); }
 inline float degrees		(float f) { return deFloatDegrees(f); }
-inline float exp2			(float f) { return deFloatExp2(f); }
-inline float log2			(float f) { return deFloatLog2(f); }
 inline float inverseSqrt	(float f) { return deFloatRsq(f); }
 inline float sign			(float f) { return (f < 0.0f) ? -1.0f : ((f > 0.0f) ? +1.0f : 0.0f); }
 inline float fract			(float f) { return f - deFloatFloor(f); }
@@ -98,10 +96,6 @@ inline float refract		(float i, float n, float eta)
 		return eta * i - (eta * cosAngle + deFloatSqrt(k)) * n;
 }
 
-inline float asinh			(float a) { return deFloatAsinh(a); }
-inline float acosh			(float a) { return deFloatAcosh(a); }
-inline float atanh			(float a) { return deFloatAtanh(a); }
-
 template<typename T> inline bool	lessThan			(T a, T b) { return (a < b); }
 template<typename T> inline bool	lessThanEqual		(T a, T b) { return (a <= b); }
 template<typename T> inline bool	greaterThan			(T a, T b) { return (a > b); }
@@ -114,8 +108,6 @@ template<typename T> inline bool	anyNotEqual			(T a, T b) { return (a != b); }
 inline bool boolNot				(bool a) { return !a; }
 
 inline int chopToInt			(float a) { return deChopFloatToInt32(a); }
-
-inline float trunc				(float a) { return (float)chopToInt(a); }
 
 inline float roundToEven (float a)
 {
@@ -457,7 +449,7 @@ TCU_DECLARE_VECTOR_UNARY_FUNC(inverseSqrt, deFloatRsq)
 TCU_DECLARE_VECTOR_UNARY_FUNC(abs, de::abs)
 TCU_DECLARE_VECTOR_UNARY_FUNC(sign, deFloatSign)
 TCU_DECLARE_VECTOR_UNARY_FUNC(floor, deFloatFloor)
-TCU_DECLARE_VECTOR_UNARY_FUNC(trunc, trunc)
+TCU_DECLARE_VECTOR_UNARY_FUNC(trunc, deFloatTrunc)
 TCU_DECLARE_VECTOR_UNARY_FUNC(roundToEven, roundToEven)
 TCU_DECLARE_VECTOR_UNARY_FUNC(ceil, deFloatCeil)
 TCU_DECLARE_VECTOR_UNARY_FUNC(fract, deFloatFrac)
