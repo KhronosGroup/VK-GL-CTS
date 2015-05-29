@@ -887,7 +887,7 @@ void GLContext::deleteProgram (deUint32 program)
 		}
 	}
 
-	DE_ASSERT(!"invalid delete");
+	DE_FATAL("invalid delete");
 }
 
 void GLContext::useProgram (deUint32 program)

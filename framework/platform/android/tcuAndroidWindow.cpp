@@ -76,7 +76,7 @@ void Window::release (void)
 	else if (m_state == STATE_PENDING_DESTROY)
 		m_state = STATE_READY_FOR_DESTROY;
 	else
-		DE_ASSERT(!"Invalid window state");
+		DE_FATAL("Invalid window state");
 }
 
 void Window::markForDestroy (void)
@@ -88,7 +88,7 @@ void Window::markForDestroy (void)
 	else if (m_state == STATE_IN_USE)
 		m_state = STATE_PENDING_DESTROY;
 	else
-		DE_ASSERT(!"Invalid window state");
+		DE_FATAL("Invalid window state");
 }
 
 bool Window::isPendingDestroy (void) const
@@ -128,7 +128,7 @@ WindowRegistry::~WindowRegistry (void)
 		else
 		{
 			print("ERROR: Window was not available for deletion, leaked tcu::Android::Window!\n");
-			DE_ASSERT(!"Window leaked");
+			DE_FATAL("Window leaked");
 		}
 	}
 }

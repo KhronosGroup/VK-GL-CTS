@@ -281,7 +281,7 @@ static deBool deSocketAddressToBsdAddress (const deSocketAddress* address, size_
 
 		if (bsdAddrBufSize < (size_t)result->ai_addrlen)
 		{
-			DE_ASSERT(!"Too small bsdAddr buffer");
+			DE_FATAL("Too small bsdAddr buffer");
 			freeaddrinfo(result);
 			return DE_FALSE;
 		}
@@ -315,7 +315,7 @@ static deBool deSocketAddressToBsdAddress (const deSocketAddress* address, size_
 
 		if (bsdAddrBufSize < sizeof(struct sockaddr_in))
 		{
-			DE_ASSERT(!"Too small bsdAddr buffer");
+			DE_FATAL("Too small bsdAddr buffer");
 			return DE_FALSE;
 		}
 
@@ -333,7 +333,7 @@ static deBool deSocketAddressToBsdAddress (const deSocketAddress* address, size_
 
 		if (bsdAddrBufSize < sizeof(struct sockaddr_in6))
 		{
-			DE_ASSERT(!"Too small bsdAddr buffer");
+			DE_FATAL("Too small bsdAddr buffer");
 			return DE_FALSE;
 		}
 

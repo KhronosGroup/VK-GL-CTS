@@ -317,7 +317,7 @@ GLXContext GlxVisual::createContext (const GlxContextFactory&	factory,
 			profileMask = GLX_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB;
 			break;
 		default:
-			DE_ASSERT(!"Impossible context profile");
+			DE_FATAL("Impossible context profile");
 	}
 
 	const int attribs[] =
@@ -413,7 +413,7 @@ static deUint32 surfaceTypeToDrawableBits (RenderConfig::SurfaceType type)
 		case RenderConfig::SURFACETYPE_DONT_CARE:
 			return GLX_WINDOW_BIT | GLX_PIXMAP_BIT | GLX_PBUFFER_BIT;
 		default:
-			DE_ASSERT(!"Impossible case");
+			DE_FATAL("Impossible case");
 	}
 	return 0;
 }
@@ -583,7 +583,7 @@ GlxDrawable* createDrawable (GlxVisual& visual, const RenderConfig& config)
 	switch (surfaceType)
 	{
 		case RenderConfig::SURFACETYPE_DONT_CARE:
-			DE_ASSERT(!"Impossible case");
+			DE_FATAL("Impossible case");
 
 		case RenderConfig::SURFACETYPE_WINDOW:
 			return new GlxWindow(visual, config);

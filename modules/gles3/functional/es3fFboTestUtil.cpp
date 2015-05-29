@@ -1009,7 +1009,7 @@ glu::DataType getFragmentOutputType (const tcu::TextureFormat& format)
 			return glu::TYPE_INT_VEC4;
 
 		default:
-			DE_ASSERT(!"Unknown format");
+			DE_FATAL("Unknown format");
 			return glu::TYPE_LAST;
 	}
 }
@@ -1032,7 +1032,7 @@ tcu::TextureFormat getFramebufferReadFormat (const tcu::TextureFormat& format)
 			return tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::SIGNED_INT32);
 
 		default:
-			DE_ASSERT(!"Unknown format");
+			DE_FATAL("Unknown format");
 			return tcu::TextureFormat();
 	}
 }

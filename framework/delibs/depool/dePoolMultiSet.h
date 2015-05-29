@@ -243,7 +243,7 @@ deBool TYPENAME##_intersect (TYPENAME* to, const TYPENAME* a, const TYPENAME* b)
 \
 void TYPENAME##_intersectInplace (TYPENAME* a, const TYPENAME* b)	\
 {	\
-	DE_ASSERT(!"Not implemented.");	\
+	DE_FATAL("Not implemented.");	\
 }	\
 \
 deBool TYPENAME##_sum (TYPENAME* to, const TYPENAME* a, const TYPENAME* b)	\
@@ -288,7 +288,7 @@ deBool TYPENAME##_difference (TYPENAME* to, const TYPENAME* a, const TYPENAME* b
 \
 void TYPENAME##_differenceInplace (TYPENAME* a, const TYPENAME* b)	\
 {	\
-	DE_ASSERT(!"Not implemented.");	\
+	DE_FATAL("Not implemented.");	\
 }	\
 \
 struct TYPENAME##SetwiseImplementDummy_s { int dummy; }

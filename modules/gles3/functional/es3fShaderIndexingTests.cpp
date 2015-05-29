@@ -110,7 +110,7 @@ static ShaderEvalFunc getArrayCoordsEvalFunc (DataType dataType)
 	else if (dataType == TYPE_FLOAT_VEC3)	return evalArrayCoordsVec3;
 	else if (dataType == TYPE_FLOAT_VEC4)	return evalArrayCoordsVec4;
 
-	DE_ASSERT(!"Invalid data type.");
+	DE_FATAL("Invalid data type.");
 	return NULL;
 }
 
@@ -126,7 +126,7 @@ static ShaderEvalFunc getArrayUniformEvalFunc (DataType dataType)
 	else if (dataType == TYPE_FLOAT_VEC3)	return evalArrayUniformVec3;
 	else if (dataType == TYPE_FLOAT_VEC4)	return evalArrayUniformVec4;
 
-	DE_ASSERT(!"Invalid data type.");
+	DE_FATAL("Invalid data type.");
 	return NULL;
 }
 
@@ -595,7 +595,7 @@ static ShaderEvalFunc getVectorSubscriptEvalFunc (DataType dataType)
 	else if (dataType == TYPE_FLOAT_VEC3)	return evalSubscriptVec3;
 	else if (dataType == TYPE_FLOAT_VEC4)	return evalSubscriptVec4;
 
-	DE_ASSERT(!"Invalid data type.");
+	DE_FATAL("Invalid data type.");
 	return NULL;
 }
 
@@ -794,7 +794,7 @@ static ShaderEvalFunc getMatrixSubscriptEvalFunc (DataType dataType)
 		case TYPE_FLOAT_MAT4:		return evalSubscriptMat4;
 
 		default:
-			DE_ASSERT(!"Invalid data type.");
+			DE_FATAL("Invalid data type.");
 			return DE_NULL;
 	}
 }

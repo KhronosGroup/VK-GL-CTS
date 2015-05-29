@@ -575,7 +575,7 @@ static void setUniformValue (const glw::Functions& gl, const std::vector<deUint3
 
 			case TYPE_SAMPLER_2D:
 			case TYPE_SAMPLER_CUBE:
-				DE_ASSERT(!"implement!");
+				DE_FATAL("implement!");
 				break;
 
 			default:

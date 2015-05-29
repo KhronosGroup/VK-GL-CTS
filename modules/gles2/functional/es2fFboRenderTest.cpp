@@ -441,7 +441,7 @@ Framebuffer::Framebuffer (sglr::Context& context, const FboConfig& config, int w
 			break;
 
 		case GL_TEXTURE_CUBE_MAP:
-			DE_ASSERT(!"TODO");
+			DE_FATAL("TODO");
 			break;
 
 		case GL_RENDERBUFFER:

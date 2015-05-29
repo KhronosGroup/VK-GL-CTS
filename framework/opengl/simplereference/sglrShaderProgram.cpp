@@ -208,7 +208,7 @@ const UniformSlot& ShaderProgram::getUniformByName (const char* name) const
 		if (m_uniforms[ndx].name == std::string(name))
 			return m_uniforms[ndx];
 
-	DE_ASSERT(!"Invalid uniform name, uniform not found.");
+	DE_FATAL("Invalid uniform name, uniform not found.");
 	return m_uniforms[0];
 }
 

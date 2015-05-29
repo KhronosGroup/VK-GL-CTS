@@ -138,7 +138,7 @@ DataType randomType (Random& rnd)
 		return getDataTypeVector(scalarType, size);
 	}
 
-	DE_ASSERT(!"Impossible");
+	DE_FATAL("Impossible");
 	return TYPE_INVALID;
 }
 
@@ -163,7 +163,7 @@ glu::Interpolation getGluInterpolation (VaryingInterpolation interpolation)
 		case VARYINGINTERPOLATION_CENTROID:	return glu::INTERPOLATION_CENTROID;
 		case VARYINGINTERPOLATION_DEFAULT:	return glu::INTERPOLATION_LAST;		//!< Last means no qualifier, i.e. default
 		default:
-			DE_ASSERT(!"Invalid interpolation");
+			DE_FATAL("Invalid interpolation");
 			return glu::INTERPOLATION_LAST;
 	}
 }
@@ -179,7 +179,7 @@ VaryingInterpolation getVaryingInterpolation (glu::Interpolation interpolation)
 		case glu::INTERPOLATION_CENTROID:	return VARYINGINTERPOLATION_CENTROID;
 		case glu::INTERPOLATION_LAST:		return VARYINGINTERPOLATION_DEFAULT;		//!< Last means no qualifier, i.e. default
 		default:
-			DE_ASSERT(!"Invalid interpolation");
+			DE_FATAL("Invalid interpolation");
 			return VARYINGINTERPOLATION_LAST;
 	}
 }
@@ -218,7 +218,7 @@ void printInputColor (ostringstream& oss, const VariableDeclaration& input)
 		}
 
 		default:
-			DE_ASSERT(!"Impossible");
+			DE_FATAL("Impossible");
 	}
 
 	if (isDataTypeScalarOrVector(basicType))
@@ -238,7 +238,7 @@ void printInputColor (ostringstream& oss, const VariableDeclaration& input)
 				oss << exp;
 				break;
 			default:
-				DE_ASSERT(!"Impossible");
+				DE_FATAL("Impossible");
 		}
 	}
 	else if (isDataTypeMatrix(basicType))
@@ -262,7 +262,7 @@ void printInputColor (ostringstream& oss, const VariableDeclaration& input)
 		}
 	}
 	else
-		DE_ASSERT(!"Impossible");
+		DE_FATAL("Impossible");
 }
 
 // Representation for the varyings between vertex and fragment shaders
@@ -432,7 +432,7 @@ void printRandomInitializer (ostringstream& oss, DataType type, Random& rnd)
 				break;
 
 			default:
-				DE_ASSERT(!"Impossible");
+				DE_FATAL("Impossible");
 		}
 	}
 
@@ -842,7 +842,7 @@ void logParams (TestLog& log, const TestParams& params)
 				msg << "randomly either by name or by location.\n";
 				break;
 			default:
-				DE_ASSERT(!"Impossible");
+				DE_FATAL("Impossible");
 		}
 
 		msg << "In the vertex shader the varyings are qualified ";
@@ -1157,7 +1157,7 @@ MovePtr<ProgramWrapper> SeparateShaderTest::createSingleShaderProgram (ShaderTyp
 			case glu::SHADERTYPE_FRAGMENT:
 				return createShaderProgram(DE_NULL, &src, true);
 			default:
-				DE_ASSERT(!"Impossible case");
+				DE_FATAL("Impossible case");
 		}
 	}
 	return MovePtr<ProgramWrapper>(); // Shut up compiler warnings.
@@ -1756,7 +1756,7 @@ TestCaseGroup* createSeparateShaderTests (Context& ctx)
 				desc << "Varyings have same name, ";
 				break;
 			default:
-				DE_ASSERT(!"Impossible");
+				DE_FATAL("Impossible");
 		}
 
 		describeInterpolation("vertex", vtxInterp, name, desc);

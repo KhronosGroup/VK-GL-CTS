@@ -159,7 +159,7 @@ glu::ProgramSources genShaders(glu::GLSLVersion version)
 			break;
 
 		default:
-			DE_ASSERT(!"Unsupported version");
+			DE_FATAL("Unsupported version");
 	}
 
 	return glu::makeVtxFragSources(tcu::StringTemplate(vtxSource).specialize(params), tcu::StringTemplate(frgSource).specialize(params));
@@ -767,7 +767,7 @@ BufferFmtDesc FramebufferClearCase::getBufferFormat (ClearType type)
 		case CLEAR_COLOR_FLOAT:
 			retval.colorFmt	= GL_RGBA16F;
 			retval.texFmt	= tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::HALF_FLOAT);
-			DE_ASSERT(!"Floating point clear not implemented");// \todo [2014-1-23 otto] pixel read format & type, nothing guaranteed, need extension...
+			DE_FATAL("Floating point clear not implemented");// \todo [2014-1-23 otto] pixel read format & type, nothing guaranteed, need extension...
 			break;
 
 		case CLEAR_COLOR_INT:

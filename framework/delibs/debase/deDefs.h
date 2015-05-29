@@ -263,6 +263,10 @@ extern "C" {
 /* Assertion macro family. */
 void deAssertFail(const char* reason, const char* file, int line);
 
+/* Assertion failure callback. Requires DE_ASSERT_FAILURE_CALLBACK to be defined or otherwise has no effect. */
+typedef void (*deAssertFailureCallbackFunc) (const char* reason, const char* file, int line);
+void deSetAssertFailureCallback (deAssertFailureCallbackFunc callback);
+
 DE_INLINE deBool deGetFalse (void) { return DE_FALSE; }
 DE_INLINE deBool deGetTrue (void) { return DE_TRUE; }
 
@@ -273,10 +277,6 @@ DE_INLINE deBool deGetTrue (void) { return DE_TRUE; }
 #	define DE_ASSERT(X) /*@ -noeffect*/ ((void)0)	/*!< Assertion macro. */
 #endif
 
-/* Assertion failure callback. Requires DE_ASSERT_FAILURE_CALLBACK to be defined or otherwise has no effect. */
-typedef void (*deAssertFailureCallbackFunc) (const char* reason, const char* file, int line);
-void deSetAssertFailureCallback (deAssertFailureCallbackFunc callback);
-
 /* Verify macro. Behaves like assert in debug build, but executes statement in release build. */
 #if defined(DE_DEBUG)
 #	define DE_VERIFY(X) do { if ((!deGetFalse() && (X)) ? DE_FALSE : DE_TRUE) deAssertFail(#X, __FILE__, __LINE__); } while(deGetFalse())
@@ -284,16 +284,24 @@ void deSetAssertFailureCallback (deAssertFailureCallbackFunc callback);
 #	define DE_VERIFY(X) X
 #endif
 
+/* Fatal macro. */
+#if defined(DE_DEBUG) && !defined(DE_COVERAGE_BUILD)
+#	define DE_FATAL(MSG) do { deAssertFail("" /* force to string literal */ MSG, __FILE__, __LINE__); } while(deGetFalse())
+#else
+#	define DE_FATAL(MSG) /*@ -noeffect*/ ((void)0)	/*!< Fatal macro. */
+#endif
+
 /** Test assert macro for use in testers (same as DE_ASSERT, but always enabled). */
 #define DE_TEST_ASSERT(X) do { if ((!deGetFalse() && (X)) ? DE_FALSE : DE_TRUE) deAssertFail(#X, __FILE__, __LINE__); } while(deGetFalse())
 
-/** Compile-time assertion macro. */
 #if (DE_COMPILER == DE_COMPILER_GCC)
 	/* GCC 4.8 and newer warns about unused typedefs. */
 #	define DE_UNUSED_TYPEDEF_ATTR __attribute__((unused))
 #else
 #	define DE_UNUSED_TYPEDEF_ATTR
 #endif
+
+/** Compile-time assertion macro. */
 #define DE_STATIC_ASSERT(X)						typedef char DE_UNIQUE_NAME[(X) ? 1 : -1] DE_UNUSED_TYPEDEF_ATTR
 #define DE_HEADER_STATIC_ASSERT(HEADERTOKEN, X)	typedef char DE_HEADER_UNIQUE_NAME(HEADERTOKEN)[(X) ? 1 : -1] DE_UNUSED_TYPEDEF_ATTR
 
@@ -312,7 +320,7 @@ void deSetAssertFailureCallback (deAssertFailureCallbackFunc callback);
 #elif (DE_CPU == DE_CPU_ARM) && (DE_COMPILER == DE_COMPILER_MSC)
 #	define DE_BREAKPOINT() do { printf("Software breakpoint encountered in %s, line %d\n", __FILE__, __LINE__); DebugBreak(); } while (deGetFalse())
 #else
-#	define DE_BREAKPOINT() DE_ASSERT(!"Software breakpoint encountered!")
+#	define DE_BREAKPOINT() DE_FATAL("Software breakpoint encountered!")
 #endif
 
 /** Swap two values. */

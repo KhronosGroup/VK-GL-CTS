@@ -43,7 +43,7 @@ static int testResultSeverity (qpTestResult testResult)
 		case QP_TEST_RESULT_RESOURCE_ERROR:			return 110;
 		case QP_TEST_RESULT_INTERNAL_ERROR:			return 120;
 		case QP_TEST_RESULT_CRASH:					return 150;
-		default:									DE_ASSERT(!"Impossible case");
+		default:									DE_FATAL("Impossible case");
 	}
 	return 0;
 }

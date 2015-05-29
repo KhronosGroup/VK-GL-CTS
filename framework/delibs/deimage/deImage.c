@@ -76,7 +76,7 @@ deARGB deImage_getPixel (const deImage* image, int x, int y)
 		case DE_IMAGEFORMAT_XRGB8888:	return *(deARGB*)addr;
 		case DE_IMAGEFORMAT_ARGB8888:	return *(deARGB*)addr;
 		default:
-			DE_ASSERT(!"deImage_getPixel(): invalid format");
+			DE_FATAL("deImage_getPixel(): invalid format");
 			return deARGB_black();
 	}
 }
@@ -89,7 +89,7 @@ void deImage_setPixel (deImage* image, int x, int y, deARGB argb)
 		case DE_IMAGEFORMAT_XRGB8888:	*(deARGB*)addr = argb;	break;
 		case DE_IMAGEFORMAT_ARGB8888:	*(deARGB*)addr = argb;	break;
 		default:
-			DE_ASSERT(!"deImage_getPixel(): invalid format");
+			DE_FATAL("deImage_getPixel(): invalid format");
 	}
 }
 
