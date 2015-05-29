@@ -43,7 +43,7 @@ DE_BEGIN_EXTERN_C
  * \param numBytes	Number of bytes to allocate.
  * \return Pointer to the allocated memory (or null on failure).
  *//*--------------------------------------------------------------------*/
-void* deMalloc (int numBytes)
+void* deMalloc (size_t numBytes)
 {
 	void* ptr;
 
@@ -73,7 +73,7 @@ void* deMalloc (int numBytes)
  * \param numBytes	Number of bytes to allocate.
  * \return Pointer to the allocated memory (or null on failure).
  *//*--------------------------------------------------------------------*/
-void* deCalloc (int numBytes)
+void* deCalloc (size_t numBytes)
 {
 	void* ptr = deMalloc(numBytes);
 	if (ptr)
@@ -81,15 +81,17 @@ void* deCalloc (int numBytes)
 	return ptr;
 }
 
-void* deAlignedMalloc (int numBytes, int alignBytes)
+void* deAlignedMalloc (size_t numBytes, deUint32 alignBytes)
 {
-	int			ptrSize		= sizeof(void*);
-	deUintptr	origPtr		= (deUintptr)deMalloc(numBytes + ptrSize + alignBytes);
+	size_t		ptrSize		= sizeof(void*);
+	deUintptr	origPtr		= (deUintptr)deMalloc(numBytes + ptrSize + (size_t)alignBytes);
+
+	DE_ASSERT(deInRange32(alignBytes, 0, 256) && deIsPowerOfTwo32(alignBytes));
+
 	if (origPtr)
 	{
-		deUintptr	alignedPtr	= (deUintptr)deAlignPtr((void*)(origPtr + ptrSize), alignBytes);
+		deUintptr	alignedPtr	= (deUintptr)deAlignPtr((void*)(origPtr + ptrSize), (deUintptr)alignBytes);
 		deUintptr	ptrPtr		= (alignedPtr - ptrSize);
-		DE_ASSERT(deInRange32(alignBytes, 0, 256) && deIsPowerOfTwo32(alignBytes));
 		*(deUintptr*)ptrPtr = origPtr;
 		return (void*)alignedPtr;
 	}
@@ -103,9 +105,9 @@ void* deAlignedMalloc (int numBytes, int alignBytes)
  * \param numBytes	New size in bytes
  * \return Pointer to the reallocated (and possibly moved) memory block
  *//*--------------------------------------------------------------------*/
-void* deRealloc (void* ptr, int numBytes)
+void* deRealloc (void* ptr, size_t numBytes)
 {
-	return realloc(ptr, (size_t)numBytes);
+	return realloc(ptr, numBytes);
 }
 
 /*--------------------------------------------------------------------*//*!
@@ -121,7 +123,7 @@ void deAlignedFree (void* ptr)
 {
 	if (ptr)
 	{
-		int			ptrSize		= sizeof(void*);
+		size_t		ptrSize		= sizeof(void*);
 		deUintptr	ptrPtr		= (deUintptr)ptr - ptrSize;
 		deUintptr	origPtr		= *(deUintptr*)ptrPtr;
 		DE_ASSERT(ptrPtr - origPtr < 256);

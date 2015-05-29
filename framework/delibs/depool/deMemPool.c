@@ -118,13 +118,13 @@ struct deMemPool_s
  * \param page		Memory page to initialize.
  * \param capacity	Capacity allocated for the memory page.
  *//*--------------------------------------------------------------------*/
-static void MemPage_init (MemPage* page, int capacity)
+static void MemPage_init (MemPage* page, size_t capacity)
 {
 	memset(page, 0, sizeof(MemPage));
 #if defined(DE_DEBUG)
 	memset(page + 1, 0xCD, capacity);
 #endif
-	page->capacity = capacity;
+	page->capacity = (int)capacity;
 }
 
 /*--------------------------------------------------------------------*//*!
@@ -133,7 +133,7 @@ static void MemPage_init (MemPage* page, int capacity)
  * \param capacity	Capacity for the memory page.
  * \return The created memory page (or null on failure).
  *//*--------------------------------------------------------------------*/
-static MemPage* MemPage_create (int capacity)
+static MemPage* MemPage_create (size_t capacity)
 {
 	MemPage* page = (MemPage*)deMalloc(sizeof(MemPage) + capacity);
 	if (!page)
@@ -423,7 +423,7 @@ int deMemPool_getCapacity (const deMemPool* pool, deBool recurse)
 	return numCapacityBytes;
 }
 
-DE_INLINE void* deMemPool_allocInternal (deMemPool* pool, int numBytes, deUint32 alignBytes)
+DE_INLINE void* deMemPool_allocInternal (deMemPool* pool, size_t numBytes, deUint32 alignBytes)
 {
 	MemPage* curPage = pool->currentPage;
 
@@ -461,15 +461,15 @@ DE_INLINE void* deMemPool_allocInternal (deMemPool* pool, int numBytes, deUint32
 	{
 		void*	curPagePtr		= (void*)((deUint8*)(curPage + 1) + curPage->bytesAllocated);
 		void*	alignedPtr		= deAlignPtr(curPagePtr, alignBytes);
-		int		alignPadding	= (int)((deUintptr)alignedPtr - (deUintptr)curPagePtr);
+		size_t	alignPadding	= (size_t)((deUintptr)alignedPtr - (deUintptr)curPagePtr);
 
-		if (numBytes + alignPadding > curPage->capacity - curPage->bytesAllocated)
+		if (numBytes + alignPadding > (size_t)(curPage->capacity - curPage->bytesAllocated))
 		{
 			/* Does not fit to current page. */
-			int		maxAlignPadding		= deMax32(0, alignBytes-MEM_PAGE_BASE_ALIGN);
-			int		newPageCapacity		= deMax32(deMin32(2*curPage->capacity, MAX_PAGE_SIZE), numBytes+maxAlignPadding);
+			int		maxAlignPadding		= deMax32(0, ((int)alignBytes)-MEM_PAGE_BASE_ALIGN);
+			int		newPageCapacity		= deMax32(deMin32(2*curPage->capacity, MAX_PAGE_SIZE), ((int)numBytes)+maxAlignPadding);
 
-			curPage = MemPage_create(newPageCapacity);
+			curPage = MemPage_create((size_t)newPageCapacity);
 			if (!curPage)
 				return DE_NULL;
 
@@ -480,12 +480,12 @@ DE_INLINE void* deMemPool_allocInternal (deMemPool* pool, int numBytes, deUint32
 
 			curPagePtr			= (void*)(curPage + 1);
 			alignedPtr			= deAlignPtr(curPagePtr, alignBytes);
-			alignPadding		= (int)((deUintptr)alignedPtr - (deUintptr)curPagePtr);
+			alignPadding		= (size_t)((deUintptr)alignedPtr - (deUintptr)curPagePtr);
 
-			DE_ASSERT(numBytes + alignPadding <= curPage->capacity);
+			DE_ASSERT(numBytes + alignPadding <= (size_t)curPage->capacity);
 		}
 
-		curPage->bytesAllocated += numBytes+alignPadding;
+		curPage->bytesAllocated += (int)(numBytes + alignPadding);
 		return alignedPtr;
 	}
 }
@@ -496,7 +496,7 @@ DE_INLINE void* deMemPool_allocInternal (deMemPool* pool, int numBytes, deUint32
  * \param numBytes	Number of bytes to allocate.
  * \return Pointer to the allocate memory (or null on failure).
  *//*--------------------------------------------------------------------*/
-void* deMemPool_alloc (deMemPool* pool, int numBytes)
+void* deMemPool_alloc (deMemPool* pool, size_t numBytes)
 {
 	void* ptr;
 	DE_ASSERT(pool);
@@ -514,7 +514,7 @@ void* deMemPool_alloc (deMemPool* pool, int numBytes)
  * \param alignBytes	Required alignment in bytes, must be power of two.
  * \return Pointer to the allocate memory (or null on failure).
  *//*--------------------------------------------------------------------*/
-void* deMemPool_alignedAlloc (deMemPool* pool, int numBytes, deUint32 alignBytes)
+void* deMemPool_alignedAlloc (deMemPool* pool, size_t numBytes, deUint32 alignBytes)
 {
 	void* ptr;
 	DE_ASSERT(pool);
@@ -533,7 +533,7 @@ void* deMemPool_alignedAlloc (deMemPool* pool, int numBytes, deUint32 alignBytes
  * \param ptr	Piece of memory to duplicate.
  * \return Pointer to the copied memory block (or null on failure).
  *//*--------------------------------------------------------------------*/
-void* deMemPool_memDup (deMemPool* pool, const void* ptr, int numBytes)
+void* deMemPool_memDup (deMemPool* pool, const void* ptr, size_t numBytes)
 {
 	void* newPtr = deMemPool_alloc(pool, numBytes);
 	if (newPtr)
@@ -549,7 +549,7 @@ void* deMemPool_memDup (deMemPool* pool, const void* ptr, int numBytes)
  *//*--------------------------------------------------------------------*/
 char* deMemPool_strDup (deMemPool* pool, const char* str)
 {
-	int		len		= (int)strlen(str);
+	size_t	len		= strlen(str);
 	char*	newStr	= (char*)deMemPool_alloc(pool, len+1);
 	if (newStr)
 		memcpy(newStr, str, len+1);
@@ -565,8 +565,11 @@ char* deMemPool_strDup (deMemPool* pool, const char* str)
  *//*--------------------------------------------------------------------*/
 char* deMemPool_strnDup (deMemPool* pool, const char* str, int maxLength)
 {
-	int		len			= deMin32((int)strlen(str), maxLength);
+	size_t	len			= (size_t)deMin32((int)strlen(str), deMax32(0, maxLength));
 	char*	newStr		= (char*)deMemPool_alloc(pool, len + 1);
+
+	DE_ASSERT(maxLength >= 0);
+
 	if (newStr)
 	{
 		memcpy(newStr, str, len);

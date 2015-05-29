@@ -265,7 +265,7 @@ deBool TYPENAME##_rehash (TYPENAME* set, int newSlotTableSize)    \
 	if (newSlotTableSize > set->slotTableSize)    \
 	{ \
 		TYPENAME##Slot**	oldSlotTable = set->slotTable; \
-		TYPENAME##Slot**	newSlotTable = (TYPENAME##Slot**)deMemPool_alloc(set->pool, sizeof(TYPENAME##Slot*) * newSlotTableSize); \
+		TYPENAME##Slot**	newSlotTable = (TYPENAME##Slot**)deMemPool_alloc(set->pool, sizeof(TYPENAME##Slot*) * (size_t)newSlotTableSize); \
 		int					oldSlotTableSize = set->slotTableSize; \
 		int					slotNdx; \
 \
@@ -306,7 +306,7 @@ deBool TYPENAME##_exists (const TYPENAME* set, KEYTYPE key)    \
 {    \
 	if (set->numElements > 0) \
 	{	\
-		int				slotNdx	= HASHFUNC(key) & (set->slotTableSize - 1); \
+		int				slotNdx	= (int)(HASHFUNC(key) & (deUint32)(set->slotTableSize - 1)); \
 		TYPENAME##Slot*	slot	= set->slotTable[slotNdx]; \
 		DE_ASSERT(deInBounds32(slotNdx, 0, set->slotTableSize)); \
 	\
@@ -337,7 +337,7 @@ deBool TYPENAME##_insert (TYPENAME* set, KEYTYPE key)    \
 		if (!TYPENAME##_rehash(set, deMax32(4, 2*set->slotTableSize))) \
 			return DE_FALSE; \
 \
-	slotNdx	= HASHFUNC(key) & (set->slotTableSize - 1); \
+	slotNdx	= (int)(HASHFUNC(key) & (deUint32)(set->slotTableSize - 1)); \
 	DE_ASSERT(slotNdx >= 0 && slotNdx < set->slotTableSize); \
 	slot	= set->slotTable[slotNdx]; \
 \
@@ -379,7 +379,7 @@ void TYPENAME##_delete (TYPENAME* set, KEYTYPE key)    \
 	TYPENAME##Slot*	prevSlot = DE_NULL; \
 \
 	DE_ASSERT(set->numElements > 0); \
-	slotNdx	= HASHFUNC(key) & (set->slotTableSize - 1); \
+	slotNdx	= (int)(HASHFUNC(key) & (deUint32)(set->slotTableSize - 1)); \
 	DE_ASSERT(slotNdx >= 0 && slotNdx < set->slotTableSize); \
 	slot	= set->slotTable[slotNdx]; \
 	DE_ASSERT(slot); \
