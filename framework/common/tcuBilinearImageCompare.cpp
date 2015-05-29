@@ -173,8 +173,8 @@ bool comparePixelRGBA8 (const ConstPixelBufferAccess& reference, const ConstPixe
 
 		for (int sampleNdx = 0; sampleNdx < DE_LENGTH_OF_ARRAY(s_offsets); sampleNdx++)
 		{
-			const int u = ((x-1)<<NUM_SUBPIXEL_BITS) + (int)s_offsets[sampleNdx][0];
-			const int v = ((y-1)<<NUM_SUBPIXEL_BITS) + (int)s_offsets[sampleNdx][1];
+			const int u = (x<<NUM_SUBPIXEL_BITS) + (int)s_offsets[sampleNdx][0] - (1<<NUM_SUBPIXEL_BITS);
+			const int v = (y<<NUM_SUBPIXEL_BITS) + (int)s_offsets[sampleNdx][1] - (1<<NUM_SUBPIXEL_BITS);
 
 			if (!de::inBounds(u, 0, (reference.getWidth()-1)<<NUM_SUBPIXEL_BITS) ||
 				!de::inBounds(v, 0, (reference.getHeight()-1)<<NUM_SUBPIXEL_BITS))

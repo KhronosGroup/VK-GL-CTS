@@ -355,12 +355,12 @@ void deMutex_selfTest (void)
 
 typedef struct TestBuffer_s
 {
-	deInt32			buffer[32];
+	deUint32		buffer[32];
 	deSemaphore		empty;
 	deSemaphore		fill;
 
-	deInt32			producerSum;
-	deInt32			consumerSum;
+	deUint32		producerHash;
+	deUint32		consumerHash;
 } TestBuffer;
 
 void producerThread (void* arg)
@@ -375,16 +375,16 @@ void producerThread (void* arg)
 
 	for (ndx = 0; ndx <= numToProduce; ndx++)
 	{
-		deInt32 val;
+		deUint32 val;
 
 		if (ndx == numToProduce)
 		{
-			val = 0; /* End. */
+			val = 0u; /* End. */
 		}
 		else
 		{
-			val = (deInt32)deRandom_getUint32(&random);
-			val = val ? val : 1;
+			val = deRandom_getUint32(&random);
+			val = val ? val : 1u;
 		}
 
 		deSemaphore_decrement(buffer->empty);
@@ -394,7 +394,7 @@ void producerThread (void* arg)
 
 		deSemaphore_increment(buffer->fill);
 
-		buffer->producerSum += val;
+		buffer->producerHash ^= val;
 	}
 }
 
@@ -414,7 +414,7 @@ void consumerThread (void* arg)
 
 		deSemaphore_increment(buffer->empty);
 
-		buffer->consumerSum += val;
+		buffer->consumerHash ^= val;
 
 		if (val == 0)
 			break;
@@ -463,7 +463,7 @@ void deSemaphore_selfTest (void)
 
 		deSemaphore_destroy(testBuffer.empty);
 		deSemaphore_destroy(testBuffer.fill);
-		DE_TEST_ASSERT(testBuffer.producerSum == testBuffer.consumerSum);
+		DE_TEST_ASSERT(testBuffer.producerHash == testBuffer.consumerHash);
 	}
 }
 
