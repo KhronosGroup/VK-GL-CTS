@@ -45,7 +45,7 @@ class CallQueue;
 class Call
 {
 public:
-	typedef void (*Function) (CallReader data);
+	typedef void (*Function) (CallReader& data);
 
 								Call				(void);
 								~Call				(void);
@@ -74,8 +74,12 @@ public:
 
 	void			read				(deUint8* bytes, size_t numBytes);
 	const deUint8*	getDataBlock		(size_t numBytes);					//!< \note Valid only during call.
+	bool			isDataConsumed		(void) const;						//!< all data has been consumed
 
 private:
+					CallReader			(const CallReader& other);	//!< disallowed
+	CallReader&		operator=			(const CallReader& other);	//!< disallowed
+
 	Call*			m_call;
 	size_t			m_curPos;
 };

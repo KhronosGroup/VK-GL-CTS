@@ -66,7 +66,12 @@ void CallQueue::callNext (void)
 	try
 	{
 		// \note Enqueue lock is not held during call so it is possible to enqueue more work from dispatched call.
-		call->getFunction()(CallReader(call));
+		CallReader reader(call);
+
+		call->getFunction()(reader);
+
+		// check callee consumed all
+		DE_ASSERT(reader.isDataConsumed());
 		call->clear();
 	}
 	catch (const std::exception&)
@@ -175,6 +180,11 @@ const deUint8* CallReader::getDataBlock (size_t numBytes)
 	m_curPos += numBytes;
 
 	return ptr;
+}
+
+bool CallReader::isDataConsumed (void) const
+{
+	return m_curPos == m_call->getDataSize();
 }
 
 CallReader& operator>> (CallReader& reader, std::string& value)

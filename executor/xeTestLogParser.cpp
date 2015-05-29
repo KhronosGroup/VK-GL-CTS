@@ -49,7 +49,7 @@ void TestLogParser::reset (void)
 	m_inSession		= false;
 }
 
-void TestLogParser::parse (const deUint8* bytes, int numBytes)
+void TestLogParser::parse (const deUint8* bytes, size_t numBytes)
 {
 	m_containerParser.feed(bytes, numBytes);
 
