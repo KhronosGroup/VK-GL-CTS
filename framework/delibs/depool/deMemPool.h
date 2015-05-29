@@ -69,9 +69,9 @@ int			deMemPool_getNumChildren			(const deMemPool* pool);
 int			deMemPool_getNumAllocatedBytes		(const deMemPool* pool, deBool recurse);
 int			deMemPool_getCapacity				(const deMemPool* pool, deBool recurse);
 
-void*		deMemPool_alloc						(deMemPool* pool, int numBytes);
-void*		deMemPool_alignedAlloc				(deMemPool* pool, int numBytes, deUint32 alignBytes);
-void*		deMemPool_memDup					(deMemPool* pool, const void* ptr, int numBytes);
+void*		deMemPool_alloc						(deMemPool* pool, size_t numBytes);
+void*		deMemPool_alignedAlloc				(deMemPool* pool, size_t numBytes, deUint32 alignBytes);
+void*		deMemPool_memDup					(deMemPool* pool, const void* ptr, size_t numBytes);
 char*		deMemPool_strDup					(deMemPool* pool, const char* str);
 char*		deMemPool_strnDup					(deMemPool* pool, const char* str, int maxLength);
 
