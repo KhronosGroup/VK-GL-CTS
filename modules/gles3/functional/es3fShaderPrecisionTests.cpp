@@ -331,8 +331,8 @@ bool ShaderFloatPrecisionCase::compare (float in0, float in1, double reference, 
 	{
 		const deUint64	refBits				= tcu::Float64(reference).bits();
 		const deUint64	resBits				= tcu::Float64(result).bits();
-		const deUint64	accurateRefBits		= refBits >> maskBits;
-		const deUint64	accurateResBits		= resBits >> maskBits;
+		const deUint64	accurateRefBits		= maskBits < 32u ? refBits >> maskBits : 0u;
+		const deUint64	accurateResBits		= maskBits < 32u ? resBits >> maskBits : 0u;
 		const deUint64	ulpDiff				= (deUint64)de::abs((deInt64)accurateRefBits - (deInt64)accurateResBits);
 
 		if (ulpDiff > (deUint64)roundingUlpError)
@@ -559,11 +559,6 @@ void ShaderIntPrecisionCase::deinit (void)
 	m_renderbuffer	= 0;
 }
 
-inline int extendTo32Bit (int value, int bits)
-{
-	return (value & ((1<<(bits-1))-1)) | (((value & (1<<(bits-1))) << (32-bits)) >> (32-bits));
-}
-
 ShaderIntPrecisionCase::IterateResult ShaderIntPrecisionCase::iterate (void)
 {
 	// Constant data.
@@ -604,10 +599,10 @@ ShaderIntPrecisionCase::IterateResult ShaderIntPrecisionCase::iterate (void)
 	// Compute values and reference.
 	for (int testNdx = 0; testNdx < m_numTestsPerIter; testNdx++)
 	{
-		int		in0			= extendTo32Bit(((isMaxRangeA ? (int)m_rnd.getUint32() : m_rnd.getInt(m_rangeA.x(), m_rangeA.y())) & mask), m_bits);
-		int		in1			= extendTo32Bit(((isMaxRangeB ? (int)m_rnd.getUint32() : m_rnd.getInt(m_rangeB.x(), m_rangeB.y())) & mask), m_bits);
+		int		in0			= deSignExtendTo32(((isMaxRangeA ? (int)m_rnd.getUint32() : m_rnd.getInt(m_rangeA.x(), m_rangeA.y())) & mask), m_bits);
+		int		in1			= deSignExtendTo32(((isMaxRangeB ? (int)m_rnd.getUint32() : m_rnd.getInt(m_rangeB.x(), m_rangeB.y())) & mask), m_bits);
 		int		refMasked	= m_evalFunc(in0, in1) & mask;
-		int		refOut		= extendTo32Bit(refMasked, m_bits);
+		int		refOut		= deSignExtendTo32(refMasked, m_bits);
 
 		log << TestLog::Message << "iter " << m_iterNdx << ", test " << testNdx << ": "
 								<< "in0 = " << in0 << ", in1 = " << in1 << ", ref out = " << refOut << " / " << tcu::toHex(refMasked)

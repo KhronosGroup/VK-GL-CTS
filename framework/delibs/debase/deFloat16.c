@@ -27,19 +27,19 @@ DE_BEGIN_EXTERN_C
 
 deFloat16 deFloat32To16 (float val32)
 {
-	int sign;
-	int expotent;
-	int mantissa;
+	deUint32	sign;
+	int			expotent;
+	deUint32	mantissa;
 	union
 	{
-		float	f;
-		int		i;
+		float		f;
+		deUint32	u;
 	} x;
 
 	x.f 		= val32;
-	sign		= (x.i >> 16) & 0x00008000;
-	expotent	= ((x.i >> 23) & 0x000000ff) - (127 - 15);
-	mantissa	= x.i & 0x007fffff;
+	sign		= (x.u >> 16u) & 0x00008000u;
+	expotent	= (int)((x.u >> 23u) & 0x000000ffu) - (127 - 15);
+	mantissa	= x.u & 0x007fffffu;
 
 	if (expotent <= 0)
 	{
@@ -50,13 +50,13 @@ deFloat16 deFloat32To16 (float val32)
 		}
 
 		/* Converted to denormalized half, add leading 1 to significand. */
-		mantissa = mantissa | 0x00800000;
+		mantissa = mantissa | 0x00800000u;
 
 		/* Round mantissa to nearest (10+e) */
 		{
-			int t = 14 - expotent;
-			int a = (1 << (t - 1)) - 1;
-			int b = (mantissa >> t) & 1;
+			deUint32 t = 14u - expotent;
+			deUint32 a = (1u << (t - 1u)) - 1u;
+			deUint32 b = (mantissa >> t) & 1u;
 
 			mantissa = (mantissa + a + b) >> t;
 		}
@@ -65,99 +65,99 @@ deFloat16 deFloat32To16 (float val32)
 	}
 	else if (expotent == 0xff - (127 - 15))
 	{
-		if (mantissa == 0)
+		if (mantissa == 0u)
 		{
 			/* InF */
-			return (deFloat16) (sign | 0x7c00);
+			return (deFloat16) (sign | 0x7c00u);
 		}
 		else
 		{
 			/* NaN */
-			mantissa >>= 13;
-			return (deFloat16) (sign | 0x7c00 | mantissa | (mantissa == 0));
+			mantissa >>= 13u;
+			return (deFloat16) (sign | 0x7c00u | mantissa | (mantissa == 0u));
 		}
 	}
 	else
 	{
 		/* Normalized float. */
-		mantissa = mantissa + 0x00000fff + ((mantissa >> 13) & 1);
+		mantissa = mantissa + 0x00000fffu + ((mantissa >> 13u) & 1u);
 
-		if (mantissa & 0x00800000)
+		if (mantissa & 0x00800000u)
 		{
 			/* Overflow in mantissa. */
-			mantissa  = 0;
+			mantissa  = 0u;
 			expotent += 1;
 		}
 
 		if (expotent > 30)
 		{
 			/* \todo [pyry] Cause hw fp overflow */
-			return (deFloat16) (sign | 0x7c00);
+			return (deFloat16) (sign | 0x7c00u);
 		}
 
-		return (deFloat16) (sign | (expotent << 10) | (mantissa >> 13));
+		return (deFloat16) (sign | ((deUint32)expotent << 10u) | (mantissa >> 13u));
 	}
 }
 
 float deFloat16To32 (deFloat16 val16)
 {
-	int sign;
-	int expotent;
-	int mantissa;
+	deUint32 sign;
+	deUint32 expotent;
+	deUint32 mantissa;
 	union
 	{
-		float	f;
-		int		i;
+		float		f;
+		deUint32	u;
 	} x;
 
-	x.i			= 0;
+	x.u			= 0u;
 
-	sign		= ((int) val16 >> 15) & 0x00000001;
-	expotent	= ((int) val16 >> 10) & 0x0000001f;
-	mantissa	= (int) val16 & 0x000003ff;
+	sign		= ((deUint32)val16 >> 15u) & 0x00000001u;
+	expotent	= ((deUint32)val16 >> 10u) & 0x0000001fu;
+	mantissa	= (deUint32)val16 & 0x000003ffu;
 
-	if (expotent == 0)
+	if (expotent == 0u)
 	{
-		if (mantissa == 0)
+		if (mantissa == 0u)
 		{
 			/* +/- 0 */
-			x.i = sign << 31;
+			x.u = sign << 31u;
 			return x.f;
 		}
 		else
 		{
 			/* Denormalized, normalize it. */
 
-			while (!(mantissa & 0x00000400))
+			while (!(mantissa & 0x00000400u))
 			{
-				mantissa <<= 1;
-				expotent -=  1;
+				mantissa <<= 1u;
+				expotent -=  1u;
 			}
 
-			expotent += 1;
-			mantissa &= ~0x00000400;
+			expotent += 1u;
+			mantissa &= ~0x00000400u;
 		}
 	}
-	else if (expotent == 31)
+	else if (expotent == 31u)
 	{
-		if (mantissa == 0)
+		if (mantissa == 0u)
 		{
 			/* +/- InF */
-			x.i = (sign << 31) | 0x7f800000;
+			x.u = (sign << 31u) | 0x7f800000u;
 			return x.f;
 		}
 		else
 		{
 			/* +/- NaN */
-			x.i = (sign << 31) | 0x7f800000 | (mantissa << 13);
+			x.u = (sign << 31u) | 0x7f800000u | (mantissa << 13u);
 			return x.f;
 		}
 	}
 
-	expotent = expotent + (127 - 15);
-	mantissa = mantissa << 13;
+	expotent = expotent + (127u - 15u);
+	mantissa = mantissa << 13u;
 
-	x.i = (sign << 31) | (expotent << 23) | mantissa;
+	x.u = (sign << 31u) | (expotent << 23u) | mantissa;
 	return x.f;
 }
 
