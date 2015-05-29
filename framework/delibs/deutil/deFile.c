@@ -148,7 +148,7 @@ static int mapSeekPosition (deFilePosition position)
 
 deBool deFile_seek (deFile* file, deFilePosition base, deInt64 offset)
 {
-	return lseek(file->fd, offset, mapSeekPosition(base)) >= 0;
+	return lseek(file->fd, (off_t)offset, mapSeekPosition(base)) >= 0;
 }
 
 deInt64 deFile_getPosition (const deFile* file)
@@ -168,7 +168,7 @@ deInt64 deFile_getSize (const deFile* file)
 		return -1;
 
 	size = lseek(file->fd, 0, SEEK_CUR);
-	lseek(file->fd, curPos, SEEK_SET);
+	lseek(file->fd, (off_t)curPos, SEEK_SET);
 
 	return size;
 }

@@ -521,15 +521,15 @@ LineInterpolationRange calcSingleSampleLineInterpolationRangeWithWeightEquation 
 																				 WeightEquation		weightEquation)
 {
 	// allow interpolation weights anywhere in the central subpixels
-	const float testSquareSize = (2.0f / (1UL << subpixelBits));
+	const float testSquareSize = (2.0f / (float)(1UL << subpixelBits));
 	const float testSquarePos  = (0.5f - testSquareSize / 2);
 
 	const tcu::Vec2 corners[4] =
 	{
-		tcu::Vec2(pixel.x() + testSquarePos + 0.0f,				pixel.y() + testSquarePos + 0.0f),
-		tcu::Vec2(pixel.x() + testSquarePos + 0.0f,				pixel.y() + testSquarePos + testSquareSize),
-		tcu::Vec2(pixel.x() + testSquarePos + testSquareSize,	pixel.y() + testSquarePos + testSquareSize),
-		tcu::Vec2(pixel.x() + testSquarePos + testSquareSize,	pixel.y() + testSquarePos + 0.0f),
+		tcu::Vec2((float)pixel.x() + testSquarePos + 0.0f,				(float)pixel.y() + testSquarePos + 0.0f),
+		tcu::Vec2((float)pixel.x() + testSquarePos + 0.0f,				(float)pixel.y() + testSquarePos + testSquareSize),
+		tcu::Vec2((float)pixel.x() + testSquarePos + testSquareSize,	(float)pixel.y() + testSquarePos + testSquareSize),
+		tcu::Vec2((float)pixel.x() + testSquarePos + testSquareSize,	(float)pixel.y() + testSquarePos + 0.0f),
 	};
 
 	// calculate interpolation as a line
@@ -792,12 +792,12 @@ bool verifyTriangleGroupInterpolationWithInterpolator (const tcu::Surface& surfa
 			const tcu::Vec3		valueRangeMax	= tcu::Vec3(colorStackMax.xyz());
 
 			const tcu::IVec3	formatLimit		((1 << args.redBits) - 1, (1 << args.greenBits) - 1, (1 << args.blueBits) - 1);
-			const tcu::Vec3		colorMinF		(de::clamp(valueRangeMin.x() * formatLimit.x(), 0.0f, (float)formatLimit.x()),
-												 de::clamp(valueRangeMin.y() * formatLimit.y(), 0.0f, (float)formatLimit.y()),
-												 de::clamp(valueRangeMin.z() * formatLimit.z(), 0.0f, (float)formatLimit.z()));
-			const tcu::Vec3		colorMaxF		(de::clamp(valueRangeMax.x() * formatLimit.x(), 0.0f, (float)formatLimit.x()),
-												 de::clamp(valueRangeMax.y() * formatLimit.y(), 0.0f, (float)formatLimit.y()),
-												 de::clamp(valueRangeMax.z() * formatLimit.z(), 0.0f, (float)formatLimit.z()));
+			const tcu::Vec3		colorMinF		(de::clamp(valueRangeMin.x() * (float)formatLimit.x(), 0.0f, (float)formatLimit.x()),
+												 de::clamp(valueRangeMin.y() * (float)formatLimit.y(), 0.0f, (float)formatLimit.y()),
+												 de::clamp(valueRangeMin.z() * (float)formatLimit.z(), 0.0f, (float)formatLimit.z()));
+			const tcu::Vec3		colorMaxF		(de::clamp(valueRangeMax.x() * (float)formatLimit.x(), 0.0f, (float)formatLimit.x()),
+												 de::clamp(valueRangeMax.y() * (float)formatLimit.y(), 0.0f, (float)formatLimit.y()),
+												 de::clamp(valueRangeMax.z() * (float)formatLimit.z(), 0.0f, (float)formatLimit.z()));
 			const tcu::IVec3	colorMin		((int)deFloatFloor(colorMinF.x()),
 												 (int)deFloatFloor(colorMinF.y()),
 												 (int)deFloatFloor(colorMinF.z()));

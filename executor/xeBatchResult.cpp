@@ -37,10 +37,10 @@ InfoLog::InfoLog (void)
 {
 }
 
-void InfoLog::append (const deUint8* bytes, int numBytes)
+void InfoLog::append (const deUint8* bytes, size_t numBytes)
 {
 	DE_ASSERT(numBytes > 0);
-	int oldSize = (int)m_data.size();
+	const size_t oldSize = m_data.size();
 	m_data.resize(oldSize+numBytes);
 	deMemcpy(&m_data[oldSize], bytes, numBytes);
 }

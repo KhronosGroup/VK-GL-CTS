@@ -55,10 +55,10 @@ class InfoLog
 public:
 							InfoLog			(void);
 
-	int						getSize			(void) const { return (int)m_data.size();						}
+	size_t					getSize			(void) const { return m_data.size();							}
 	const deUint8*			getBytes		(void) const { return !m_data.empty() ? &m_data[0] : DE_NULL;	}
 
-	void					append			(const deUint8* bytes, int numBytes);
+	void					append			(const deUint8* bytes, size_t numBytes);
 
 private:
 							InfoLog			(const InfoLog& other);

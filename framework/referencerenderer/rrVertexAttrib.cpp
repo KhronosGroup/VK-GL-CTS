@@ -216,10 +216,10 @@ inline void readSnorm2101010RevScaleOrder (tcu::Vec4& dst, const int size, const
 	deUint32 aligned;
 	deMemcpy(&aligned, ptr, sizeof(deUint32));
 
-				   dst[Order::T0] = (float(extendSign<10>((aligned >>  0) & ((1 << 10) - 1)) * 2.0f + 1.0f) / float(range10));
-	if (size >= 2) dst[Order::T1] = (float(extendSign<10>((aligned >> 10) & ((1 << 10) - 1)) * 2.0f + 1.0f) / float(range10));
-	if (size >= 3) dst[Order::T2] = (float(extendSign<10>((aligned >> 20) & ((1 << 10) - 1)) * 2.0f + 1.0f) / float(range10));
-	if (size >= 4) dst[Order::T3] = (float(extendSign< 2>((aligned >> 30) & ((1 <<  2) - 1)) * 2.0f + 1.0f) / float(range2));
+				   dst[Order::T0] = (float(extendSign<10>((aligned >>  0) & ((1 << 10) - 1))) * 2.0f + 1.0f) / float(range10);
+	if (size >= 2) dst[Order::T1] = (float(extendSign<10>((aligned >> 10) & ((1 << 10) - 1))) * 2.0f + 1.0f) / float(range10);
+	if (size >= 3) dst[Order::T2] = (float(extendSign<10>((aligned >> 20) & ((1 << 10) - 1))) * 2.0f + 1.0f) / float(range10);
+	if (size >= 4) dst[Order::T3] = (float(extendSign< 2>((aligned >> 30) & ((1 <<  2) - 1))) * 2.0f + 1.0f) / float(range2);
 }
 
 // ordered readers

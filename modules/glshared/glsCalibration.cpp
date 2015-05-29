@@ -105,7 +105,7 @@ static float linearSample (const std::vector<T>& values, float position)
 	DE_ASSERT(position <= 1.0f);
 
 	const int	maxNdx				= (int)values.size() - 1;
-	const float	floatNdx			= maxNdx * position;
+	const float	floatNdx			= (float)maxNdx * position;
 	const int	lowerNdx			= (int)deFloatFloor(floatNdx);
 	const int	higherNdx			= lowerNdx + (lowerNdx == maxNdx ? 0 : 1); // Use only last element if position is 1.0
 	const float	interpolationFactor = floatNdx - (float)lowerNdx;
