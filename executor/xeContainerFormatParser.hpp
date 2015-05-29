@@ -58,7 +58,7 @@ public:
 
 	void						clear						(void);
 
-	void						feed						(const deUint8* bytes, int numBytes);
+	void						feed						(const deUint8* bytes, size_t numBytes);
 	void						advance						(void);
 
 	ContainerElement			getElement					(void) const { return m_element; }

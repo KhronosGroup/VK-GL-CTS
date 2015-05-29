@@ -62,14 +62,14 @@ void ContainerFormatParser::error (const std::string& what)
 	throw ContainerParseError(what);
 }
 
-void ContainerFormatParser::feed (const deUint8* bytes, int numBytes)
+void ContainerFormatParser::feed (const deUint8* bytes, size_t numBytes)
 {
 	// Grow buffer if necessary.
-	if (m_buf.getNumFree() < numBytes)
-		m_buf.resize(getNextBufferSize(m_buf.getSize(), m_buf.getNumElements()+numBytes));
+	if (m_buf.getNumFree() < (int)numBytes)
+		m_buf.resize(getNextBufferSize(m_buf.getSize(), m_buf.getNumElements()+(int)numBytes));
 
 	// Append to front.
-	m_buf.pushFront(bytes, numBytes);
+	m_buf.pushFront(bytes, (int)numBytes);
 
 	// If we haven't parsed complete element, re-try after data feed.
 	if (m_element == CONTAINERELEMENT_INCOMPLETE)

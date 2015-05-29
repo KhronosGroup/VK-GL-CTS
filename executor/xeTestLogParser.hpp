@@ -56,7 +56,7 @@ public:
 
 	void					reset					(void);
 
-	void					parse					(const deUint8* bytes, int numBytes);
+	void					parse					(const deUint8* bytes, size_t numBytes);
 
 private:
 							TestLogParser			(const TestLogParser& other);

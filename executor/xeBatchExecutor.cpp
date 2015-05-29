@@ -278,7 +278,7 @@ void BatchExecutor::onStateChanged (CommLinkState state, const char* message)
 	}
 }
 
-void BatchExecutor::onTestLogData (const deUint8* bytes, int numBytes)
+void BatchExecutor::onTestLogData (const deUint8* bytes, size_t numBytes)
 {
 	try
 	{
@@ -291,7 +291,7 @@ void BatchExecutor::onTestLogData (const deUint8* bytes, int numBytes)
 	}
 }
 
-void BatchExecutor::onInfoLogData (const deUint8* bytes, int numBytes)
+void BatchExecutor::onInfoLogData (const deUint8* bytes, size_t numBytes)
 {
 	if (numBytes > 0 && m_infoLog)
 		m_infoLog->append(bytes, numBytes);
@@ -377,7 +377,7 @@ void BatchExecutor::enqueueInfoLogData (void* userPtr, const deUint8* bytes, siz
 	writer.enqueue();
 }
 
-void BatchExecutor::dispatchStateChanged (CallReader data)
+void BatchExecutor::dispatchStateChanged (CallReader& data)
 {
 	BatchExecutor*	executor	= DE_NULL;
 	CommLinkState	state		= COMMLINKSTATE_LAST;
@@ -390,10 +390,10 @@ void BatchExecutor::dispatchStateChanged (CallReader data)
 	executor->onStateChanged(state, message.c_str());
 }
 
-void BatchExecutor::dispatchTestLogData (CallReader data)
+void BatchExecutor::dispatchTestLogData (CallReader& data)
 {
 	BatchExecutor*	executor	= DE_NULL;
-	int				numBytes;
+	size_t			numBytes;
 
 	data >> executor
 		 >> numBytes;
@@ -401,10 +401,10 @@ void BatchExecutor::dispatchTestLogData (CallReader data)
 	executor->onTestLogData(data.getDataBlock(numBytes), numBytes);
 }
 
-void BatchExecutor::dispatchInfoLogData (CallReader data)
+void BatchExecutor::dispatchInfoLogData (CallReader& data)
 {
 	BatchExecutor*	executor	= DE_NULL;
-	int				numBytes;
+	size_t			numBytes;
 
 	data >> executor
 		 >> numBytes;
