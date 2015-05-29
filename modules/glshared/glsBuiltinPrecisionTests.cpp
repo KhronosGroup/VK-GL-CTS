@@ -3055,6 +3055,8 @@ class Reflect : public DerivedFunc<
 {
 public:
 	typedef typename	Reflect::Ret		Ret;
+	typedef typename	Reflect::Arg0		Arg0;
+	typedef typename	Reflect::Arg1		Arg1;
 	typedef typename	Reflect::ArgExprs	ArgExprs;
 
 	string		getName		(void) const
@@ -3063,9 +3065,14 @@ public:
 	}
 
 protected:
-	ExprP<Ret>	doExpand	(ExpandContext&, const ArgExprs& args) const
+	ExprP<Ret>	doExpand	(ExpandContext& ctx, const ArgExprs& args) const
 	{
-		return args.a - (args.b * dot(args.b, args.a) * constant(2.0f));
+		const ExprP<Arg0>&	i		= args.a;
+		const ExprP<Arg1>&	n		= args.b;
+		const ExprP<float>	dotNI	= bindExpression("dotNI", ctx, dot(n, i));
+
+		return i - alternatives((n * dotNI) * constant(2.0f),
+								n * (dotNI * constant(2.0f)));
 	}
 };
 
