@@ -211,7 +211,7 @@ Float<StorageType, ExponentBits, MantissaBits, ExponentBias, Flags>::construct
 	// Handles the typical notation for zero (min exponent, mantissa 0). Note that the exponent usually used exponent (-ExponentBias) for zero/subnormals is not used.
 	// Instead zero/subnormals have the (normally implicit) leading mantissa bit set to zero.
 	const bool			isDenormOrZero	= (exponent == 1 - ExponentBias) && (mantissa >> MantissaBits == 0);
-	const StorageType	s				= StorageType(StorageType(sign < 0 ? 1 : 0) << StorageType(ExponentBits+MantissaBits));
+	const StorageType	s				= StorageType((StorageType(sign < 0 ? 1 : 0)) << (StorageType(ExponentBits+MantissaBits)));
 	const StorageType	exp				= (isShorthandZero  || isDenormOrZero) ? StorageType(0) : StorageType(exponent + ExponentBias);
 
 	DE_ASSERT(sign == +1 || sign == -1);
