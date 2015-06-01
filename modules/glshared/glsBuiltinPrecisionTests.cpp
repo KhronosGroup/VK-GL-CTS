@@ -3247,7 +3247,8 @@ ExprP<float> clamp(const ExprP<float>& x, const ExprP<float>& minVal, const Expr
 	return app<Clamp>(x, minVal, maxVal);
 }
 
-DEFINE_DERIVED_FLOAT3(Mix, mix, x, y, a, (x * (constant(1.0f) - a)) + y * a);
+DEFINE_DERIVED_FLOAT3(Mix, mix, x, y, a, alternatives((x * (constant(1.0f) - a)) + y * a,
+													  x + (y - x) * a));
 
 static double step (double edge, double x)
 {
