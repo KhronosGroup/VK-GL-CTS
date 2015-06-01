@@ -1628,8 +1628,8 @@ void checkFormatSupport (glu::ContextInfo& info, deUint32 format, deUint32 targe
 			if (!info.isExtensionSupported("GL_KHR_texture_compression_astc_hdr") &&
 				!info.isExtensionSupported("GL_OES_texture_compression_astc"))
 			{
-				if (target != GL_TEXTURE_2D)
-					TCU_THROW(NotSupportedError, "Non-2D texture target requires HDR astc support.");
+				if (target == GL_TEXTURE_3D)
+					TCU_THROW(NotSupportedError, "TEXTURE_3D target requires HDR astc support.");
 				if (!info.isExtensionSupported("GL_KHR_texture_compression_astc_ldr"))
 					TCU_THROW(NotSupportedError, "Compressed astc texture not supported.");
 			}
