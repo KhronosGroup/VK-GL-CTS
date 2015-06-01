@@ -1302,6 +1302,31 @@ protected:
 	ArgExprs			m_args;
 };
 
+template<typename T>
+class Alternatives : public Func<Signature<T, T, T> >
+{
+public:
+	typedef typename	Alternatives::Sig		Sig;
+
+protected:
+	typedef typename	Alternatives::IRet		IRet;
+	typedef typename	Alternatives::IArgs		IArgs;
+
+	virtual string		getName				(void) const			{ return "alternatives"; }
+	virtual void		doPrintDefinition	(std::ostream&) const	{}
+	void				doGetUsedFuncs		(FuncSet&) const		{}
+
+	virtual IRet		doApply				(const EvalContext&, const IArgs& args) const
+	{
+		return unionIVal<T>(args.a, args.b);
+	}
+
+	virtual void		doPrint				(ostream& os, const BaseArgExprs& args)	const
+	{
+		os << "{" << *args[0] << " | " << *args[1] << "}";
+	}
+};
+
 template <typename Sig>
 ExprP<typename Sig::Ret> createApply (const Func<Sig>&						func,
 									  const typename Func<Sig>::ArgExprs&	args)
@@ -1346,6 +1371,13 @@ typename F::IRet call (const EvalContext&			ctx,
 					   const typename F::IArg3&		arg3 = Void())
 {
 	return instance<F>().apply(ctx, arg0, arg1, arg2, arg3);
+}
+
+template <typename T>
+ExprP<T> alternatives (const ExprP<T>& arg0,
+					   const ExprP<T>& arg1)
+{
+	return createApply<typename Alternatives<T>::Sig>(instance<Alternatives<T> >(), arg0, arg1);
 }
 
 template <typename Sig>
