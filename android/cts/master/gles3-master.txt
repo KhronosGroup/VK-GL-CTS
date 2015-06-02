@@ -1582,7 +1582,7 @@ dEQP-GLES3.functional.shaders.linkage.uniform.struct.precision_conflict_3
 dEQP-GLES3.functional.shaders.linkage.uniform.struct.precision_conflict_4
 dEQP-GLES3.functional.shaders.linkage.uniform.struct.light_struct_highp
 dEQP-GLES3.functional.shaders.linkage.uniform.struct.light_struct_mediump
-dEQP-GLES3.functional.shaders.linkage.uniform.block.precision_mismatch
+dEQP-GLES3.functional.shaders.linkage.uniform.block.differing_precision
 dEQP-GLES3.functional.shaders.linkage.uniform.block.type_mismatch
 dEQP-GLES3.functional.shaders.linkage.uniform.block.members_mismatch
 dEQP-GLES3.functional.shaders.linkage.uniform.block.layout_qualifier_mismatch_1
