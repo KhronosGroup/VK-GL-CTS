@@ -22,49 +22,58 @@
  *//*--------------------------------------------------------------------*/
 
 #include "xeBatchExecutor.hpp"
-#include "xeTestCaseListParser.hpp"
-#include "xeTcpIpLink.hpp"
 #include "xeLocalTcpIpLink.hpp"
-#include "xeTestResultParser.hpp"
+#include "xeTcpIpLink.hpp"
+#include "xeTestCaseListParser.hpp"
 #include "xeTestLogWriter.hpp"
-#include "deDirectoryIterator.hpp"
+#include "xeTestResultParser.hpp"
+
 #include "deCommandLine.hpp"
+#include "deDirectoryIterator.hpp"
+#include "deStringUtil.hpp"
+
 #include "deString.h"
 
-#include <vector>
-#include <string>
+#include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 #include <fstream>
-#include <memory>
-#include <algorithm>
 #include <iostream>
+#include <memory>
 #include <sstream>
+#include <string>
+#include <vector>
+
+using std::vector;
+using std::string;
+
+namespace
+{
 
 // Command line arguments.
 namespace opt
 {
 
-DE_DECLARE_COMMAND_LINE_OPT(StartServer,	std::string);
-DE_DECLARE_COMMAND_LINE_OPT(Host,			std::string);
+DE_DECLARE_COMMAND_LINE_OPT(StartServer,	string);
+DE_DECLARE_COMMAND_LINE_OPT(Host,			string);
 DE_DECLARE_COMMAND_LINE_OPT(Port,			int);
-DE_DECLARE_COMMAND_LINE_OPT(CaseListDir,	std::string);
-DE_DECLARE_COMMAND_LINE_OPT(TestSet,		std::vector<std::string>);
-DE_DECLARE_COMMAND_LINE_OPT(ExcludeSet,		std::vector<std::string>);
-DE_DECLARE_COMMAND_LINE_OPT(ContinueFile,	std::string);
-DE_DECLARE_COMMAND_LINE_OPT(TestLogFile,	std::string);
-DE_DECLARE_COMMAND_LINE_OPT(InfoLogFile,	std::string);
+DE_DECLARE_COMMAND_LINE_OPT(CaseListDir,	string);
+DE_DECLARE_COMMAND_LINE_OPT(TestSet,		vector<string>);
+DE_DECLARE_COMMAND_LINE_OPT(ExcludeSet,		vector<string>);
+DE_DECLARE_COMMAND_LINE_OPT(ContinueFile,	string);
+DE_DECLARE_COMMAND_LINE_OPT(TestLogFile,	string);
+DE_DECLARE_COMMAND_LINE_OPT(InfoLogFile,	string);
 DE_DECLARE_COMMAND_LINE_OPT(Summary,		bool);
 
 // TargetConfiguration
-DE_DECLARE_COMMAND_LINE_OPT(BinaryName,		std::string);
-DE_DECLARE_COMMAND_LINE_OPT(WorkingDir,		std::string);
-DE_DECLARE_COMMAND_LINE_OPT(CmdLineArgs,	std::string);
+DE_DECLARE_COMMAND_LINE_OPT(BinaryName,		string);
+DE_DECLARE_COMMAND_LINE_OPT(WorkingDir,		string);
+DE_DECLARE_COMMAND_LINE_OPT(CmdLineArgs,	string);
 
-static void parseCommaSeparatedList (const char* src, std::vector<std::string>* dst)
+void parseCommaSeparatedList (const char* src, vector<string>* dst)
 {
 	std::istringstream	inStr	(src);
-	std::string			comp;
+	string			comp;
 
 	while (std::getline(inStr, comp, ','))
 		dst->push_back(comp);
@@ -81,25 +90,28 @@ void registerOptions (de::cmdline::Parser& parser)
 		{ "no",		false	}
 	};
 
-	parser << Option<StartServer>	("s",		"start-server",	"Start local execserver",								"")
-		   << Option<Host>			("c",		"connect",		"Connect to host",										"127.0.0.1")
-		   << Option<Port>			("p",		"port",			"Select TCP port to use",								"50016")
-		   << Option<CaseListDir>	("cd",		"caselistdir",	"Path to test case XML files",							".")
-		   << Option<TestSet>		("t",		"testset",		"Test set",												parseCommaSeparatedList,	"")
-		   << Option<ExcludeSet>	("e",		"exclude",		"Comma-separated list of exclude filters",				parseCommaSeparatedList,	"")
-		   << Option<ContinueFile>	(DE_NULL,	"continue",		"Continue execution by initializing results from existing test log", "")
-		   << Option<TestLogFile>	("o",		"out",			"Output test log filename",								"")
-		   << Option<InfoLogFile>	("i",		"info",			"Output info log filename",								"")
-		   << Option<Summary>		(DE_NULL,	"summary",		"Print summary at the end",								s_yesNo,	"yes")
-		   << Option<BinaryName>	("b",		"binaryname",	"Test binary path, relative to working directory",		"")
-		   << Option<WorkingDir>	("wd",		"workdir",		"Working directory for test execution",					"")
-		   << Option<CmdLineArgs>	(DE_NULL,	"cmdline",		"Additional command line arguments for test binary",	"");
+	parser << Option<StartServer>	("s",		"start-server",	"Start local execserver. Path to the execserver binary.")
+		   << Option<Host>			("c",		"connect",		"Connect to host. Address of the execserver.")
+		   << Option<Port>			("p",		"port",			"TCP port of the execserver.",											"50016")
+		   << Option<CaseListDir>	("cd",		"caselistdir",	"Path to the directory containing test case XML files.",				".")
+		   << Option<TestSet>		("t",		"testset",		"Comma-separated list of include filters.",								parseCommaSeparatedList)
+		   << Option<ExcludeSet>	("e",		"exclude",		"Comma-separated list of exclude filters.",								parseCommaSeparatedList, "")
+		   << Option<ContinueFile>	(DE_NULL,	"continue",		"Continue execution by initializing results from existing test log.")
+		   << Option<TestLogFile>	("o",		"out",			"Output test log filename.",											"TestLog.qpa")
+		   << Option<InfoLogFile>	("i",		"info",			"Output info log filename.",											"InfoLog.txt")
+		   << Option<Summary>		(DE_NULL,	"summary",		"Print summary after running tests.",									s_yesNo, "yes")
+		   << Option<BinaryName>	("b",		"binaryname",	"Test binary path. Relative to working directory.",						"<Unused>")
+		   << Option<WorkingDir>	("wd",		"workdir",		"Working directory for the test execution.",							".")
+		   << Option<CmdLineArgs>	(DE_NULL,	"cmdline",		"Additional command line arguments for the test binary.",				"");
 }
 
 } // opt
 
-using std::vector;
-using std::string;
+enum RunMode
+{
+	RUNMODE_CONNECT,
+	RUNMODE_START_SERVER
+};
 
 struct CommandLine
 {
@@ -109,20 +121,20 @@ struct CommandLine
 	{
 	}
 
-	xe::TargetConfiguration		targetCfg;
-	std::string					serverBin;
-	std::string					host;
-	int							port;
-	std::string					caseListDir;
-	std::vector<std::string>	testset;
-	std::vector<std::string>	exclude;
-	std::string					inFile;
-	std::string					outFile;
-	std::string					infoFile;
-	bool						summary;
+	xe::TargetConfiguration	targetCfg;
+	RunMode					runMode;
+	string					serverBinOrAddress;
+	int						port;
+	string					caseListDir;
+	vector<string>			testset;
+	vector<string>			exclude;
+	string					inFile;
+	string					outFile;
+	string					infoFile;
+	bool					summary;
 };
 
-static bool parseCommandLine (CommandLine& cmdLine, int argc, const char* const* argv)
+bool parseCommandLine (CommandLine& cmdLine, int argc, const char* const* argv)
 {
 	de::cmdline::Parser			parser;
 	de::cmdline::CommandLine	opts;
@@ -138,13 +150,49 @@ static bool parseCommandLine (CommandLine& cmdLine, int argc, const char* const*
 		return false;
 	}
 
-	cmdLine.serverBin				= opts.getOption<opt::StartServer>();
-	cmdLine.host					= opts.getOption<opt::Host>();
+	if (opts.hasOption<opt::StartServer>() && opts.hasOption<opt::Host>())
+	{
+		std::cout << "Invalid command line arguments. Both --start-server and --connect defined." << std::endl;
+		return false;
+	}
+	else if (!opts.hasOption<opt::StartServer>() && !opts.hasOption<opt::Host>())
+	{
+		std::cout << "Invalid command line arguments. Must define either --start-server or --connect." << std::endl;
+		return false;
+	}
+
+	if (!opts.hasOption<opt::TestSet>())
+	{
+		std::cout << "Invalid command line arguments. --testset not defined." << std::endl;
+		return false;
+	}
+
+	if (opts.hasOption<opt::StartServer>())
+	{
+		cmdLine.runMode				= RUNMODE_START_SERVER;
+		cmdLine.serverBinOrAddress	= opts.getOption<opt::StartServer>();
+	}
+	else
+	{
+		cmdLine.runMode				= RUNMODE_CONNECT;
+		cmdLine.serverBinOrAddress	= opts.getOption<opt::Host>();
+	}
+
+	if (opts.hasOption<opt::ContinueFile>())
+	{
+		cmdLine.inFile = opts.getOption<opt::ContinueFile>();
+
+		if (cmdLine.inFile.empty())
+		{
+			std::cout << "Invalid command line arguments. --continue argument is empty." << std::endl;
+			return false;
+		}
+	}
+
 	cmdLine.port					= opts.getOption<opt::Port>();
 	cmdLine.caseListDir				= opts.getOption<opt::CaseListDir>();
 	cmdLine.testset					= opts.getOption<opt::TestSet>();
 	cmdLine.exclude					= opts.getOption<opt::ExcludeSet>();
-	cmdLine.inFile					= opts.getOption<opt::ContinueFile>();
 	cmdLine.outFile					= opts.getOption<opt::TestLogFile>();
 	cmdLine.infoFile				= opts.getOption<opt::InfoLogFile>();
 	cmdLine.summary					= opts.getOption<opt::Summary>();
@@ -155,7 +203,7 @@ static bool parseCommandLine (CommandLine& cmdLine, int argc, const char* const*
 	return true;
 }
 
-static bool checkCasePathPatternMatch (const char* pattern, const char* casePath, bool isTestGroup)
+bool checkCasePathPatternMatch (const char* pattern, const char* casePath, bool isTestGroup)
 {
 	int ptrnPos = 0;
 	int casePos = 0;
@@ -199,7 +247,7 @@ static bool checkCasePathPatternMatch (const char* pattern, const char* casePath
 	return false;
 }
 
-static void readCaseList (xe::TestGroup* root, const char* filename)
+void readCaseList (xe::TestGroup* root, const char* filename)
 {
 	xe::TestCaseListParser	caseListParser;
 	std::ifstream			in				(filename, std::ios_base::binary);
@@ -222,9 +270,10 @@ static void readCaseList (xe::TestGroup* root, const char* filename)
 	}
 }
 
-static void readCaseLists (xe::TestRoot& root, const char* caseListDir)
+void readCaseLists (xe::TestRoot& root, const char* caseListDir)
 {
-	de::DirectoryIterator iter(caseListDir);
+	int						testCaseListCount	= 0;
+	de::DirectoryIterator	iter				(caseListDir);
 
 	for (; iter.hasItem(); iter.next())
 	{
@@ -232,25 +281,29 @@ static void readCaseLists (xe::TestRoot& root, const char* caseListDir)
 
 		if (item.getType() == de::FilePath::TYPE_FILE)
 		{
-			std::string baseName = item.getBaseName();
+			string baseName = item.getBaseName();
 			if (baseName.find("-cases.xml") == baseName.length()-10)
 			{
-				std::string		packageName	= baseName.substr(0, baseName.length()-10);
+				string		packageName	= baseName.substr(0, baseName.length()-10);
 				xe::TestGroup*	package		= root.createGroup(packageName.c_str(), "");
 
 				readCaseList(package, item.getPath());
+				testCaseListCount++;
 			}
 		}
 	}
+
+	if (testCaseListCount == 0)
+		throw xe::Error("Couldn't find test case lists from test case list directory: '" + string(caseListDir)  + "'");
 }
 
-static void addMatchingCases (const xe::TestGroup& group, xe::TestSet& testSet, const char* filter)
+void addMatchingCases (const xe::TestGroup& group, xe::TestSet& testSet, const char* filter)
 {
 	for (int childNdx = 0; childNdx < group.getNumChildren(); childNdx++)
 	{
 		const xe::TestNode* child		= group.getChild(childNdx);
 		const bool			isGroup		= child->getNodeType() == xe::TESTNODETYPE_GROUP;
-		const std::string	fullPath	= child->getFullPath();
+		const string	 	fullPath	= child->getFullPath();
 
 		if (checkCasePathPatternMatch(filter, fullPath.c_str(), isGroup))
 		{
@@ -268,13 +321,13 @@ static void addMatchingCases (const xe::TestGroup& group, xe::TestSet& testSet, 
 	}
 }
 
-static void removeMatchingCases (const xe::TestGroup& group, xe::TestSet& testSet, const char* filter)
+void removeMatchingCases (const xe::TestGroup& group, xe::TestSet& testSet, const char* filter)
 {
 	for (int childNdx = 0; childNdx < group.getNumChildren(); childNdx++)
 	{
 		const xe::TestNode* child		= group.getChild(childNdx);
 		const bool			isGroup		= child->getNodeType() == xe::TESTNODETYPE_GROUP;
-		const std::string	fullPath	= child->getFullPath();
+		const string		fullPath	= child->getFullPath();
 
 		if (checkCasePathPatternMatch(filter, fullPath.c_str(), isGroup))
 		{
@@ -326,7 +379,7 @@ private:
 	xe::BatchResult* m_batchResult;
 };
 
-static void readLogFile (xe::BatchResult* batchResult, const char* filename)
+void readLogFile (xe::BatchResult* batchResult, const char* filename)
 {
 	std::ifstream		in		(filename, std::ifstream::binary|std::ifstream::in);
 	BatchResultHandler	handler	(batchResult);
@@ -348,7 +401,7 @@ static void readLogFile (xe::BatchResult* batchResult, const char* filename)
 	in.close();
 }
 
-static void printBatchResultSummary (const xe::TestNode* root, const xe::TestSet& testSet, const xe::BatchResult& batchResult)
+void printBatchResultSummary (const xe::TestNode* root, const xe::TestSet& testSet, const xe::BatchResult& batchResult)
 {
 	int countByStatusCode[xe::TESTSTATUSCODE_LAST];
 	std::fill(&countByStatusCode[0], &countByStatusCode[0]+DE_LENGTH_OF_ARRAY(countByStatusCode), 0);
@@ -359,7 +412,7 @@ static void printBatchResultSummary (const xe::TestNode* root, const xe::TestSet
 		if (node->getNodeType() == xe::TESTNODETYPE_TEST_CASE && testSet.hasNode(node))
 		{
 			const xe::TestCase*				testCase		= static_cast<const xe::TestCase*>(node);
-			std::string						fullPath;
+			string							fullPath;
 			xe::TestStatusCode				statusCode		= xe::TESTSTATUSCODE_PENDING;
 			testCase->getFullPath(fullPath);
 
@@ -390,7 +443,7 @@ static void printBatchResultSummary (const xe::TestNode* root, const xe::TestSet
 	printf("  %20s: %5d\n", "Total", totalCases);
 }
 
-static void writeInfoLog (const xe::InfoLog& log, const char* filename)
+void writeInfoLog (const xe::InfoLog& log, const char* filename)
 {
 	std::ofstream out(filename, std::ios_base::binary);
 	XE_CHECK(out.good());
@@ -398,15 +451,43 @@ static void writeInfoLog (const xe::InfoLog& log, const char* filename)
 	out.close();
 }
 
-static xe::CommLink* createCommLink (const CommandLine& cmdLine)
+xe::CommLink* createCommLink (const CommandLine& cmdLine)
 {
-	if (!cmdLine.serverBin.empty())
+	if (cmdLine.runMode == RUNMODE_START_SERVER)
 	{
 		xe::LocalTcpIpLink* link = new xe::LocalTcpIpLink();
 		try
 		{
-			link->start(cmdLine.serverBin.c_str(), DE_NULL, cmdLine.port);
+			link->start(cmdLine.serverBinOrAddress.c_str(), DE_NULL, cmdLine.port);
 			return link;
+		}
+		catch (...)
+		{
+			delete link;
+			throw;
+		}
+	}
+	else if (cmdLine.runMode == RUNMODE_CONNECT)
+	{
+		de::SocketAddress address;
+
+		address.setFamily(DE_SOCKETFAMILY_INET4);
+		address.setProtocol(DE_SOCKETPROTOCOL_TCP);
+		address.setHost(cmdLine.serverBinOrAddress.c_str());
+		address.setPort(cmdLine.port);
+
+		xe::TcpIpLink* link = new xe::TcpIpLink();
+		try
+		{
+			std::string error;
+
+			link->connect(address);
+			return link;
+		}
+		catch (const std::exception& error)
+		{
+			delete link;
+			throw xe::Error("Failed to connect to ExecServer at: " + cmdLine.serverBinOrAddress + ":" + de::toString(cmdLine.port) + ", " + error.what());
 		}
 		catch (...)
 		{
@@ -416,27 +497,12 @@ static xe::CommLink* createCommLink (const CommandLine& cmdLine)
 	}
 	else
 	{
-		de::SocketAddress address;
-		address.setFamily(DE_SOCKETFAMILY_INET4);
-		address.setProtocol(DE_SOCKETPROTOCOL_TCP);
-		address.setHost(cmdLine.host.c_str());
-		address.setPort(cmdLine.port);
-
-		xe::TcpIpLink* link = new xe::TcpIpLink();
-		try
-		{
-			link->connect(address);
-			return link;
-		}
-		catch (...)
-		{
-			delete link;
-			throw;
-		}
+		DE_ASSERT(false);
+		return DE_NULL;
 	}
 }
 
-static void runExecutor (const CommandLine& cmdLine)
+void runExecutor (const CommandLine& cmdLine)
 {
 	xe::TestRoot root;
 
@@ -449,6 +515,9 @@ static void runExecutor (const CommandLine& cmdLine)
 	// Build test set.
 	for (vector<string>::const_iterator filterIter = cmdLine.testset.begin(); filterIter != cmdLine.testset.end(); ++filterIter)
 		addMatchingCases(root, testSet, filterIter->c_str());
+
+	if (testSet.empty())
+		throw xe::Error("None of the test case lists contains tests matching any of the test sets.");
 
 	// Remove excluded cases.
 	for (vector<string>::const_iterator filterIter = cmdLine.exclude.begin(); filterIter != cmdLine.exclude.end(); ++filterIter)
@@ -485,6 +554,8 @@ static void runExecutor (const CommandLine& cmdLine)
 	if (cmdLine.summary)
 		printBatchResultSummary(&root, testSet, batchResult);
 }
+
+} // anonymous
 
 int main (int argc, const char* const* argv)
 {
