@@ -431,6 +431,7 @@ MASTER_GLES2_PKG				= Package(module = GLES2_MODULE, configurations = [
 MASTER_GLES3_COMMON_FILTERS		= [
 		include("gles3-master.txt"),
 		exclude("gles3-hw-issues.txt"),
+		exclude("gles3-driver-issues.txt"),
 		exclude("gles3-test-issues.txt"),
 		exclude("gles3-spec-issues.txt")
 	]

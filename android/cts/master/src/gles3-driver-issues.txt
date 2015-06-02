@@ -1,0 +1,2 @@
+# Bug 21495208
+dEQP-GLES3.functional.attribute_location.bind_aliasing.*
