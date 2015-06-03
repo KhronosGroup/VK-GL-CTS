@@ -624,9 +624,9 @@ Vec4 ConstPixelBufferAccess::getPixel (int x, int y, int z) const
 	// Optimized fomats.
 	if (m_format.type == TextureFormat::UNORM_INT8)
 	{
-		if (m_format.order == TextureFormat::RGBA)
+		if (m_format.order == TextureFormat::RGBA || m_format.order == TextureFormat::sRGBA)
 			return readRGBA8888Float(pixelPtr);
-		else if (m_format.order == TextureFormat::RGB)
+		else if (m_format.order == TextureFormat::RGB || m_format.order == TextureFormat::sRGB)
 			return readRGB888Float(pixelPtr);
 	}
 
@@ -705,8 +705,10 @@ IVec4 ConstPixelBufferAccess::getPixelInt (int x, int y, int z) const
 	// Optimized fomats.
 	if (m_format.type == TextureFormat::UNORM_INT8)
 	{
-		if (m_format.order == TextureFormat::RGBA)		return readRGBA8888Int(pixelPtr);
-		else if (m_format.order == TextureFormat::RGB)	return readRGB888Int(pixelPtr);
+		if (m_format.order == TextureFormat::RGBA || m_format.order == TextureFormat::sRGBA)
+			return readRGBA8888Int(pixelPtr);
+		else if (m_format.order == TextureFormat::RGB || m_format.order == TextureFormat::sRGB)
+			return readRGB888Int(pixelPtr);
 	}
 
 #define U16(OFFS, COUNT)		((*((const deUint16*)pixelPtr) >> (OFFS)) & ((1<<(COUNT))-1))
@@ -863,12 +865,12 @@ void PixelBufferAccess::setPixel (const Vec4& color, int x, int y, int z) const
 	// Optimized fomats.
 	if (m_format.type == TextureFormat::UNORM_INT8)
 	{
-		if (m_format.order == TextureFormat::RGBA)
+		if (m_format.order == TextureFormat::RGBA || m_format.order == TextureFormat::sRGBA)
 		{
 			writeRGBA8888Float(pixelPtr, color);
 			return;
 		}
-		else if (m_format.order == TextureFormat::RGB)
+		else if (m_format.order == TextureFormat::RGB || m_format.order == TextureFormat::sRGB)
 		{
 			writeRGB888Float(pixelPtr, color);
 			return;
@@ -935,8 +937,16 @@ void PixelBufferAccess::setPixel (const IVec4& color, int x, int y, int z) const
 	// Optimized fomats.
 	if (m_format.type == TextureFormat::UNORM_INT8)
 	{
-		if (m_format.order == TextureFormat::RGBA)		{ writeRGBA8888Int(pixelPtr, color);	return; }
-		else if (m_format.order == TextureFormat::RGB)	{ writeRGB888Int(pixelPtr, color);		return; }
+		if (m_format.order == TextureFormat::RGBA || m_format.order == TextureFormat::sRGBA)
+		{
+			writeRGBA8888Int(pixelPtr, color);
+			return;
+		}
+		else if (m_format.order == TextureFormat::RGB || m_format.order == TextureFormat::sRGB)
+		{
+			writeRGB888Int(pixelPtr, color);
+			return;
+		}
 	}
 
 #define PU(VAL, OFFS, BITS)		(uintToChannel((deUint32)(VAL), (BITS)) << (OFFS))
