@@ -3488,9 +3488,9 @@ group uniform "Uniform linkage"
 	end
 
 	group block "Uniform blocks"
-		case precision_mismatch
+		case differing_precision
 			version 300 es
-			expect link_fail
+			expect build_successful
 			vertex ""
 				#version 300 es
 
