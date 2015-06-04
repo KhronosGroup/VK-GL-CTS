@@ -15487,7 +15487,6 @@ dEQP-GLES3.functional.shaders.texture_functions.texture.sampler2dshadow_bias_fra
 dEQP-GLES3.functional.shaders.texture_functions.texture.samplercubeshadow_vertex
 dEQP-GLES3.functional.shaders.texture_functions.texture.samplercubeshadow_fragment
 dEQP-GLES3.functional.shaders.texture_functions.texture.samplercubeshadow_bias_fragment
-dEQP-GLES3.functional.shaders.texture_functions.texture.sampler2darrayshadow_vertex
 dEQP-GLES3.functional.shaders.texture_functions.texture.sampler2darrayshadow_fragment
 dEQP-GLES3.functional.shaders.texture_functions.textureoffset.sampler2d_fixed_vertex
 dEQP-GLES3.functional.shaders.texture_functions.textureoffset.sampler2d_fixed_fragment
