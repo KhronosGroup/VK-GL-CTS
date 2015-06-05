@@ -26,10 +26,13 @@
 #include "gluShaderProgram.hpp"
 #include "gluPixelTransfer.hpp"
 #include "gluTextureUtil.hpp"
+#include "gluStrUtil.hpp"
 
 #include "tcuImageCompare.hpp"
 #include "tcuTestLog.hpp"
+
 #include "deRandom.hpp"
+#include "deStringUtil.hpp"
 
 #include "rsgProgramGenerator.hpp"
 #include "rsgProgramExecutor.hpp"
@@ -39,6 +42,7 @@
 #include "tcuRenderTarget.hpp"
 
 #include "glw.h"
+#include "glwFunctions.hpp"
 
 using std::vector;
 using std::string;
@@ -136,6 +140,10 @@ void RandomShaderCase::init (void)
 	rsg::ProgramGenerator programGenerator;
 	programGenerator.generate(m_parameters, m_vertexShader, m_fragmentShader);
 
+	checkShaderLimits(m_vertexShader);
+	checkShaderLimits(m_fragmentShader);
+	checkProgramLimits(m_vertexShader, m_fragmentShader);
+
 	// Compute uniform values
 	std::vector<const rsg::ShaderInput*>	unifiedUniforms;
 	de::Random								rnd(m_parameters.seed);
@@ -226,6 +234,60 @@ void RandomShaderCase::init (void)
 			m_texManager.bindTexture(unitNdx, getTexCube());
 		else
 			DE_ASSERT(DE_FALSE);
+	}
+}
+
+static int getNumSamplerUniforms (const std::vector<rsg::ShaderInput*>& uniforms)
+{
+	int numSamplers = 0;
+
+	for (std::vector<rsg::ShaderInput*>::const_iterator it = uniforms.begin(); it != uniforms.end(); ++it)
+	{
+		if ((*it)->getVariable()->getType().isSampler())
+			++numSamplers;
+	}
+
+	return numSamplers;
+}
+
+void RandomShaderCase::checkShaderLimits (const rsg::Shader& shader) const
+{
+	const int numRequiredSamplers = getNumSamplerUniforms(shader.getUniforms());
+
+	if (numRequiredSamplers > 0)
+	{
+		const GLenum	pname			= (shader.getType() == rsg::Shader::TYPE_VERTEX) ? (GL_MAX_VERTEX_TEXTURE_IMAGE_UNITS) : (GL_MAX_TEXTURE_IMAGE_UNITS);
+		int				numSupported	= -1;
+		GLenum			error;
+
+		m_renderCtx.getFunctions().getIntegerv(pname, &numSupported);
+		error = m_renderCtx.getFunctions().getError();
+
+		if (error != GL_NO_ERROR)
+			throw tcu::TestError("Limit query failed: " + de::toString(glu::getErrorStr(error)));
+
+		if (numSupported < numRequiredSamplers)
+			throw tcu::NotSupportedError("Shader requires " + de::toString(numRequiredSamplers) + " sampler(s). Implementation supports " + de::toString(numSupported));
+	}
+}
+
+void RandomShaderCase::checkProgramLimits (const rsg::Shader& vtxShader, const rsg::Shader& frgShader) const
+{
+	const int numRequiredCombinedSamplers = getNumSamplerUniforms(vtxShader.getUniforms()) + getNumSamplerUniforms(frgShader.getUniforms());
+
+	if (numRequiredCombinedSamplers > 0)
+	{
+		int				numSupported	= -1;
+		GLenum			error;
+
+		m_renderCtx.getFunctions().getIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, &numSupported);
+		error = m_renderCtx.getFunctions().getError();
+
+		if (error != GL_NO_ERROR)
+			throw tcu::TestError("Limit query failed: " + de::toString(glu::getErrorStr(error)));
+
+		if (numSupported < numRequiredCombinedSamplers)
+			throw tcu::NotSupportedError("Program requires " + de::toString(numRequiredCombinedSamplers) + " sampler(s). Implementation supports " + de::toString(numSupported));
 	}
 }
 
