@@ -85,6 +85,10 @@ public:
 	virtual void					deinit					(void);
 	virtual IterateResult			iterate					(void);
 
+private:
+	void							checkShaderLimits		(const rsg::Shader& shader) const;
+	void							checkProgramLimits		(const rsg::Shader& vtxShader, const rsg::Shader& frgShader) const;
+
 protected:
 	glu::RenderContext&				m_renderCtx;
 
