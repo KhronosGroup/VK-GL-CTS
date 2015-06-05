@@ -474,7 +474,7 @@ MovePtr<ClientBuffer> RenderbufferImageSource::createBuffer (const glw::Function
 				initializeColorRbo(gl, rbo, *ref);
 				break;
 			default:
-				DE_ASSERT(!"Impossible");
+				DE_FATAL("Impossible");
 		}
 
 		gl.bindFramebuffer(GL_FRAMEBUFFER, 0);

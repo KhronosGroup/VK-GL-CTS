@@ -2356,17 +2356,17 @@ tcu::TestCase* createTexParamTest (tcu::TestContext& testCtx, const glu::RenderC
 {
 	if (isMultisampleTarget(target) && isSamplerStateTester(tester))
 	{
-		DE_ASSERT(!"Multisample textures have no sampler state");
+		DE_FATAL("Multisample textures have no sampler state");
 		return DE_NULL;
 	}
 	if (target == GL_TEXTURE_BUFFER)
 	{
-		DE_ASSERT(!"Buffer textures have no texture state");
+		DE_FATAL("Buffer textures have no texture state");
 		return DE_NULL;
 	}
 	if (target != GL_TEXTURE_3D && mapTesterToPname(tester) == GL_TEXTURE_WRAP_R)
 	{
-		DE_ASSERT(!"Only 3D textures have wrap r filter");
+		DE_FATAL("Only 3D textures have wrap r filter");
 		return DE_NULL;
 	}
 

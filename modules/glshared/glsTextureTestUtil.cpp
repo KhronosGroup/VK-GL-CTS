@@ -1148,7 +1148,7 @@ glu::ShaderProgram* ProgramLibrary::getProgram (Program program)
 		params["FRAG_COLOR"]	= "dEQP_FragColor";
 	}
 	else
-		DE_ASSERT(!"Unsupported version");
+		DE_FATAL("Unsupported version");
 
 	params["PRECISION"]		= glu::getPrecisionName(m_texCoordPrecision);
 
@@ -1234,7 +1234,7 @@ glu::ShaderProgram* ProgramLibrary::getProgram (Program program)
 		}
 	}
 	else
-		DE_ASSERT(!"Unsupported version");
+		DE_FATAL("Unsupported version");
 
 	params["SAMPLER_TYPE"]	= sampler;
 	params["LOOKUP"]		= lookup;

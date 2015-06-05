@@ -164,7 +164,7 @@ void assignMasked (ExecValueAccess dst, ExecConstValueAccess src, ExecConstValue
 		}
 
 		default:
-			DE_ASSERT(!"Unsupported");
+			DE_FATAL("Unsupported");
 			break;
 	}
 }

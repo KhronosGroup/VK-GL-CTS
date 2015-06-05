@@ -568,7 +568,7 @@ int	getDataTypeNumLocations	(DataType dataType)
 	else if (isDataTypeMatrix(dataType))
 		return getDataTypeMatrixNumColumns(dataType);
 
-	DE_ASSERT(!"Illegal datatype.");
+	DE_FATAL("Illegal datatype.");
 	return 0;
 }
 
@@ -579,7 +579,7 @@ int	getDataTypeNumComponents (DataType dataType)
 	else if (isDataTypeMatrix(dataType))
 		return getDataTypeMatrixNumRows(dataType);
 
-	DE_ASSERT(!"Illegal datatype.");
+	DE_FATAL("Illegal datatype.");
 	return 0;
 }
 

@@ -317,7 +317,7 @@ static int getMinimumSampleCount (deUint32 format)
 			return 0;
 
 		default:
-			DE_ASSERT(!"Unknown format");
+			DE_FATAL("Unknown format");
 			return 0;
 	}
 }

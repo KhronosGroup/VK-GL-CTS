@@ -90,7 +90,7 @@ public:
 	virtual glu::ContextType		getType					(void) const { return m_type;							}
 	virtual const glw::Functions&	getFunctions			(void) const { return m_functions;						}
 	virtual const RenderTarget&		getRenderTarget			(void) const { return m_emptyTarget;					}
-	virtual deUint32				getDefaultFramebuffer	(void) const { DE_ASSERT(!"No framebuffer"); return 0;	}
+	virtual deUint32				getDefaultFramebuffer	(void) const { DE_FATAL("No framebuffer"); return 0;	}
 	virtual void					postIterate				(void);
 
 protected:

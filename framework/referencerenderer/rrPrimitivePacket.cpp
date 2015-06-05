@@ -41,7 +41,7 @@ void GeometryEmitter::EmitVertex (const tcu::Vec4& position, float pointSize, co
 
 	if (++m_numEmitted > m_maxVertices)
 	{
-		DE_ASSERT(!"Undefined results, too many vertices emitted.");
+		DE_FATAL("Undefined results, too many vertices emitted.");
 		return;
 	}
 

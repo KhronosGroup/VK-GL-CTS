@@ -199,7 +199,7 @@ static ShaderEvalFunc getLoopEvalFunc (int numIters)
 		case 3:	return evalLoop3Iters;
 	}
 
-	DE_ASSERT(!"Invalid loop iteration count.");
+	DE_FATAL("Invalid loop iteration count.");
 	return NULL;
 }
 
