@@ -35,7 +35,7 @@ namespace Format
 {
 
 // Hexadecimal value formatter.
-template <int NumDigits>
+template <size_t NumDigits>
 class Hex
 {
 public:
@@ -63,7 +63,7 @@ private:
 	deUint64 value;
 };
 
-template <int NumDigits>
+template <size_t NumDigits>
 std::ostream& operator<< (std::ostream& stream, tcu::Format::Hex<NumDigits> hex)
 {
 	return hex.toStream(stream);
@@ -82,7 +82,7 @@ public:
 
 #define TCU_BIT_DESC(BIT) tcu::Format::BitDesc(BIT, #BIT)
 
-template <int BitfieldSize>
+template <size_t BitfieldSize>
 class Bitfield
 {
 public:
@@ -123,7 +123,7 @@ private:
 	const BitDesc*		m_end;
 };
 
-template <int BitfieldSize>
+template <size_t BitfieldSize>
 inline std::ostream& operator<< (std::ostream& stream, Bitfield<BitfieldSize> decoder)
 {
 	return decoder.toStream(stream);
@@ -131,7 +131,7 @@ inline std::ostream& operator<< (std::ostream& stream, Bitfield<BitfieldSize> de
 
 // Enum formatter.
 // \todo [2012-10-30 pyry] Use template for GetName.
-template <typename T, int NumBytes = sizeof(T)>
+template <typename T, size_t NumBytes = sizeof(T)>
 class Enum
 {
 public:
@@ -166,7 +166,7 @@ private:
 	const T				m_value;
 };
 
-template <typename T, int NumBytes>
+template <typename T, size_t NumBytes>
 inline std::ostream& operator<< (std::ostream& stream, const Enum<T, NumBytes>& fmt) { return fmt.toStream(stream); }
 
 // Array formatters.
@@ -245,7 +245,7 @@ template <>				inline deUint64 makeMask64<64>		(void)				{ return ~0ull;								
 template <typename T>	inline deUint64	toUint64			(T value)			{ return (deUint64)value & makeMask64<sizeof(T)*8>();	}
 
 /** Format value as hexadecimal number. */
-template <int NumDigits, typename T>
+template <size_t NumDigits, typename T>
 inline Format::Hex<NumDigits> toHex (T value)
 {
 	return Format::Hex<NumDigits>(toUint64(value));

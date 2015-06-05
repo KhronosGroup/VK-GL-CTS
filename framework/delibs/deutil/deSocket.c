@@ -219,6 +219,17 @@ struct deSocket_s
 
 /* Common socket functions. */
 
+static deUint16 deHostOrderShortToNetworkOrder (deUint16 v)
+{
+	/*
+	 * On some platforms htons is defined as a macro which expands to something
+	 * that evaluates to some other type than uint16_t (i.e. does not conform
+	 * to POSIX-1-2001 or Winsock). Do a redundant uint16 conversion to work
+	 * around conversion warnings on these platforms.
+	 */
+	return (deUint16)htons(v);
+}
+
 static int deSocketFamilyToBsdFamily (deSocketFamily family)
 {
 	switch (family)
@@ -296,13 +307,13 @@ static deBool deSocketAddressToBsdAddress (const deSocketAddress* address, size_
 		{
 			if (*bsdAddrLen < (NativeSocklen)sizeof(struct sockaddr_in))
 				return DE_FALSE;
-			((struct sockaddr_in*)bsdAddr)->sin_port = htons((deUint16)address->port);
+			((struct sockaddr_in*)bsdAddr)->sin_port = deHostOrderShortToNetworkOrder((deUint16)address->port);
 		}
 		else if (bsdAddr->sa_family == AF_INET6)
 		{
 			if (*bsdAddrLen < (NativeSocklen)sizeof(struct sockaddr_in6))
 				return DE_FALSE;
-			((struct sockaddr_in6*)bsdAddr)->sin6_port = htons((deUint16)address->port);
+			((struct sockaddr_in6*)bsdAddr)->sin6_port = deHostOrderShortToNetworkOrder((deUint16)address->port);
 		}
 		else
 			return DE_FALSE;
@@ -319,7 +330,7 @@ static deBool deSocketAddressToBsdAddress (const deSocketAddress* address, size_
 			return DE_FALSE;
 		}
 
-		addr4->sin_port			= htons((deUint16)address->port);
+		addr4->sin_port			= deHostOrderShortToNetworkOrder((deUint16)address->port);
 		addr4->sin_family		= AF_INET;
 		addr4->sin_addr.s_addr	= INADDR_ANY;
 
@@ -337,7 +348,7 @@ static deBool deSocketAddressToBsdAddress (const deSocketAddress* address, size_
 			return DE_FALSE;
 		}
 
-		addr6->sin6_port	= htons((deUint16)address->port);
+		addr6->sin6_port	= deHostOrderShortToNetworkOrder((deUint16)address->port);
 		addr6->sin6_family	= AF_INET6;
 
 		*bsdAddrLen	= (NativeSocklen)sizeof(struct sockaddr_in6);
