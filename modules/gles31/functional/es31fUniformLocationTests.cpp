@@ -184,7 +184,7 @@ glu::DataType getDataTypeSamplerSampleType (glu::DataType type)
 	else if (type >= TYPE_SAMPLER_1D_SHADOW && type <=	TYPE_SAMPLER_2D_ARRAY_SHADOW)
 		return TYPE_FLOAT;
 	else
-		DE_ASSERT(!"Unknown sampler type");
+		DE_FATAL("Unknown sampler type");
 
 	return TYPE_INVALID;
 }
@@ -208,7 +208,7 @@ float UniformLocationCase::getExpectedValue (glu::DataType type, int id, const c
 	else if (glu::isDataTypeBoolOrBVec(adjustedType))
 		return float(hash%2);
 	else
-		DE_ASSERT(!"Unkown primitive type");
+		DE_FATAL("Unkown primitive type");
 
 	return glu::TYPE_INVALID;
 }
@@ -482,7 +482,7 @@ deUint32 getTextureFormat (glu::DataType samplerType)
 			return GL_RGBA8UI;
 
 		default:
-			DE_ASSERT(!"Unsupported (sampler) type");
+			DE_FATAL("Unsupported (sampler) type");
 			return 0;
 	}
 }

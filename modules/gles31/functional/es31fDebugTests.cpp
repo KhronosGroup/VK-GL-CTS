@@ -830,7 +830,7 @@ void GetErrorCase::expectMessage (GLenum source, GLenum type)
 {
 	DE_UNREF(source);
 	DE_UNREF(type);
-	DE_ASSERT(!"GetErrorCase cannot handle anything other than error codes");
+	DE_FATAL("GetErrorCase cannot handle anything other than error codes");
 }
 
 void GetErrorCase::expectError (glw::GLenum error0, glw::GLenum error1)
@@ -1706,7 +1706,7 @@ LabelCase::IterateResult LabelCase::iterate (void)
 			break;
 
 		default:
-			DE_ASSERT(!"Invalid identifier");
+			DE_FATAL("Invalid identifier");
 	}
 
 	gl.objectLabel(m_identifier, object, -1, msg);
@@ -1742,7 +1742,7 @@ LabelCase::IterateResult LabelCase::iterate (void)
 		case GL_FRAMEBUFFER:		gl.deleteFramebuffers(1, &object);			break;
 
 		default:
-			DE_ASSERT(!"Invalid identifier");
+			DE_FATAL("Invalid identifier");
 	}
 
 	return STOP;
@@ -2864,7 +2864,7 @@ tcu::TestNode* createCase (CaseType type, Context& ctx, const char* name, const 
 		case CASETYPE_GETERROR: return new GetErrorCase(ctx, name, desc, function);
 
 		default:
-			DE_ASSERT(!"Invalid type");
+			DE_FATAL("Invalid type");
 	}
 
 	return DE_NULL;

@@ -713,7 +713,7 @@ Image* makeImage (GLenum bufType, ImageFormat format,
 			image = &builder.makeConfig<Texture2D>();
 			break;
 		default:
-			DE_ASSERT(!"Impossible case");
+			DE_FATAL("Impossible case");
 	}
 	image->internalFormat = format;
 	image->width = width;
@@ -827,7 +827,7 @@ string attTypeName (GLenum bufType)
 		case GL_TEXTURE:
 			return "tex";
 		default:
-			DE_ASSERT(!"Impossible case");
+			DE_FATAL("Impossible case");
 	}
 	return ""; // Shut up compiler
 }

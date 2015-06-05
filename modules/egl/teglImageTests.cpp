@@ -324,7 +324,7 @@ public:
 			case EGL_NATIVE_BUFFER_ANDROID:
 				return createAndroidNativeImageSource(format);
 			default:
-				DE_ASSERT(!"Impossible");
+				DE_FATAL("Impossible");
 				return MovePtr<ImageSource>();
 		}
 	}

@@ -1776,7 +1776,7 @@ char* RandomArrayGenerator::createIndices (int seed, int elementCount, int offse
 	if (min < 0 || (size_t)min > std::numeric_limits<T>::max() ||
 		max < 0 || (size_t)max > std::numeric_limits<T>::max() ||
 		min > max)
-		DE_ASSERT(!"Invalid range");
+		DE_FATAL("Invalid range");
 
 	for (int elementNdx = 0; elementNdx < elementCount; ++elementNdx)
 	{
@@ -3203,7 +3203,7 @@ void DrawTest::init (void)
 	else if (contextSupports(m_renderCtx.getType(), glu::ApiType::es(3,1)) || glu::isContextTypeGLCore(m_renderCtx.getType()))
 		useVao = true;
 	else
-		DE_ASSERT(!"Unknown context type");
+		DE_FATAL("Unknown context type");
 
 	m_refBuffers	= new sglr::ReferenceContextBuffers(m_renderCtx.getRenderTarget().getPixelFormat(), 0, 0, renderTargetWidth, renderTargetHeight, renderTargetSamples);
 	m_refContext	= new sglr::ReferenceContext(limits, m_refBuffers->getColorbuffer(), m_refBuffers->getDepthbuffer(), m_refBuffers->getStencilbuffer());

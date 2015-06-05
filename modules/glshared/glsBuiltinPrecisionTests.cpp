@@ -168,7 +168,7 @@ const char* dataTypeNameOf (void)
 template <>
 const char* dataTypeNameOf<Void> (void)
 {
-	DE_ASSERT(!"Impossible");
+	DE_FATAL("Impossible");
 	return DE_NULL;
 }
 
@@ -182,7 +182,7 @@ VarType getVarTypeOf (Precision prec = glu::PRECISION_LAST)
 template <>
 VarType getVarTypeOf<Void> (Precision)
 {
-	DE_ASSERT(!"Impossible");
+	DE_FATAL("Impossible");
 	return VarType();
 }
 
@@ -2090,7 +2090,7 @@ protected:
 			case glu::PRECISION_LOWP:
 				return ctx.format.ulp(ret, 2.0);
 			default:
-				DE_ASSERT(!"Impossible");
+				DE_FATAL("Impossible");
 		}
 		return 0;
 	}
@@ -2128,7 +2128,7 @@ protected:
 			case glu::PRECISION_LOWP:
 				return ctx.format.ulp(ret, 2.0);
 			default:
-				DE_ASSERT(!"Impossible");
+				DE_FATAL("Impossible");
 		}
 
 		return 0;
@@ -4944,7 +4944,7 @@ PrecisionCase* createFuncCase (const Context&	context,
 		case 1:
 			return new InOutFuncCase<Sig>(context, name, func);
 		default:
-			DE_ASSERT(!"Impossible");
+			DE_FATAL("Impossible");
 	}
 	return DE_NULL;
 }

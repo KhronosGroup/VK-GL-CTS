@@ -538,7 +538,7 @@ deBool TYPENAME##_intersect (TYPENAME* to, const TYPENAME* a, const TYPENAME* b)
 void TYPENAME##_intersectInplace (TYPENAME* a, const TYPENAME* b)	\
 {	\
 	DE_UNREF(a && b);	\
-	DE_ASSERT(!"Not implemented.");	\
+	DE_FATAL("Not implemented.");	\
 }	\
 \
 deBool TYPENAME##_difference (TYPENAME* to, const TYPENAME* a, const TYPENAME* b)	\

@@ -293,7 +293,7 @@ IterateResult NumLayersTest::build (FboBuilder& builder)
 			texCfg = &builder.makeConfig<Texture2DArray>();
 			break;
 		default:
-			DE_ASSERT(!"Impossible case");
+			DE_FATAL("Impossible case");
 	}
 	texCfg->internalFormat = getDefaultFormat(target, GL_TEXTURE);
 	texCfg->width = 64;

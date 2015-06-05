@@ -42,7 +42,7 @@ Interval chooseInterval(YesNoMaybe choice, const Interval& no, const Interval& y
 		case NO:	return no;
 		case YES:	return yes;
 		case MAYBE:	return no | yes;
-		default:	DE_ASSERT(!"Impossible case");
+		default:	DE_FATAL("Impossible case");
 	}
 
 	return Interval();

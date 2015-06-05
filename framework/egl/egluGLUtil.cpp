@@ -50,7 +50,7 @@ glw::GLenum getImageGLTarget (EGLenum source)
 		case EGL_GL_TEXTURE_CUBE_MAP_NEGATIVE_Z_KHR:	return GL_TEXTURE_CUBE_MAP_NEGATIVE_Z;
 		case EGL_GL_TEXTURE_3D_KHR:						return GL_TEXTURE_3D;
 		case EGL_GL_RENDERBUFFER_KHR:					return GL_RENDERBUFFER;
-		default:	DE_ASSERT(!"Impossible");			return GL_NONE;
+		default:	DE_FATAL("Impossible");				return GL_NONE;
 	}
 }
 
@@ -67,10 +67,10 @@ EGLint apiRenderableType (glu::ApiType apiType)
 				case 1:		return EGL_OPENGL_ES_BIT;
 				case 2:		return EGL_OPENGL_ES2_BIT;
 				case 3:		return EGL_OPENGL_ES3_BIT_KHR;
-				default:	DE_ASSERT(!"Unknown OpenGL ES version");
+				default:	DE_FATAL("Unknown OpenGL ES version");
 			}
 		default:
-			DE_ASSERT(!"Unknown GL API");
+			DE_FATAL("Unknown GL API");
 	}
 
 	return 0;

@@ -322,7 +322,7 @@ static GLenum glTarget (const Image& img)
 	if (dynamic_cast<const Texture2DArray*>(&img) != DE_NULL)
 		return GL_TEXTURE_2D_ARRAY;
 
-	DE_ASSERT(!"Impossible image type");
+	DE_FATAL("Impossible image type");
 	return GL_NONE;
 }
 
@@ -411,7 +411,7 @@ static GLuint glCreate (const Image& cfg, const glw::Functions& gl)
 		gl.bindTexture(glTarget(*tex), 0);
 	}
 	else
-		DE_ASSERT(!"Impossible image type");
+		DE_FATAL("Impossible image type");
 	return ret;
 }
 
@@ -422,7 +422,7 @@ static void glDelete (const Image& cfg, GLuint img, const glw::Functions& gl)
 	else if (dynamic_cast<const Texture*>(&cfg) != DE_NULL)
 		gl.deleteTextures(1, &img);
 	else
-		DE_ASSERT(!"Impossible image type");
+		DE_FATAL("Impossible image type");
 }
 
 static void attachAttachment (const Attachment& att, GLenum attPoint,
@@ -441,7 +441,7 @@ static void attachAttachment (const Attachment& att, GLenum attPoint,
 		gl.framebufferTextureLayer(lAtt->target, attPoint,
 								   lAtt->imageName, lAtt->level, lAtt->layer);
 	else
-		DE_ASSERT(!"Impossible attachment type");
+		DE_FATAL("Impossible attachment type");
 }
 
 GLenum attachmentType (const Attachment& att)
@@ -451,7 +451,7 @@ GLenum attachmentType (const Attachment& att)
 	else if (dynamic_cast<const TextureAttachment*>(&att) != DE_NULL)
 		return GL_TEXTURE;
 
-	DE_ASSERT(!"Impossible attachment type");
+	DE_FATAL("Impossible attachment type");
 	return GL_NONE;
 }
 
@@ -463,7 +463,7 @@ static GLsizei textureLayer (const TextureAttachment& tAtt)
 			 dynamic_cast<const TextureLayerAttachment*>(&tAtt))
 		return lAtt->layer;
 
-	DE_ASSERT(!"Impossible attachment type");
+	DE_FATAL("Impossible attachment type");
 	return 0;
 }
 
@@ -660,7 +660,7 @@ const Image* Framebuffer::getImage (GLenum type, glw::GLuint imgName) const
 		case GL_RENDERBUFFER:
 			return de::lookupDefault(rbos, imgName, DE_NULL);
 		default:
-			DE_ASSERT(!"Bad image type");
+			DE_FATAL("Bad image type");
 	}
 	return DE_NULL; // shut up compiler warning
 }
