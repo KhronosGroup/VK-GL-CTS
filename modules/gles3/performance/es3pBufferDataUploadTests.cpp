@@ -652,7 +652,7 @@ static float linearSample (const std::vector<T>& values, float position)
 	DE_ASSERT(position >= 0.0f);
 	DE_ASSERT(position <= 1.0f);
 
-	const float	floatNdx			= ((int)values.size() - 1) * position;
+	const float	floatNdx			= (float)(values.size() - 1) * position;
 	const int	lowerNdx			= (int)deFloatFloor(floatNdx);
 	const int	higherNdx			= lowerNdx + 1;
 	const float	interpolationFactor = floatNdx - (float)lowerNdx;
@@ -698,8 +698,8 @@ void calculateBasicStatistics (StatisticsType& stats, const LineParametersWithCo
 
 		for (int ndx = 0; ndx < (int)samples.size(); ++ndx)
 		{
-			const float timeInSeconds = values[ndx] / 1000.0f / 1000.0f;
-			processingRates[ndx] = samples[ndx].*predictor / timeInSeconds;
+			const float timeInSeconds = (float)values[ndx] / 1000.0f / 1000.0f;
+			processingRates[ndx] = (float)(samples[ndx].*predictor) / timeInSeconds;
 		}
 
 		std::sort(processingRates.begin(), processingRates.end());
@@ -713,7 +713,7 @@ void calculateBasicStatistics (StatisticsType& stats, const LineParametersWithCo
 
 		for (int ndx = 0; ndx < (int)samples.size(); ++ndx)
 		{
-			const float prediction	= samples[ndx].*predictor * fit.coefficient + fit.offset;
+			const float prediction	= (float)(samples[ndx].*predictor) * fit.coefficient + fit.offset;
 			const float actual		= (float)values[ndx];
 			timeDiffs[ndx] = actual - prediction;
 		}
@@ -730,7 +730,7 @@ void calculateBasicStatistics (StatisticsType& stats, const LineParametersWithCo
 
 		for (int ndx = 0; ndx < (int)samples.size(); ++ndx)
 		{
-			const float prediction	= samples[ndx].*predictor * fit.coefficient + fit.offset;
+			const float prediction	= (float)(samples[ndx].*predictor) * fit.coefficient + fit.offset;
 			const float actual		= (float)values[ndx];
 
 			// Ignore cases where we predict negative times, or if
@@ -1082,7 +1082,7 @@ static void bucketizeSamplesUniformly (const std::vector<UploadSampleResult<Dura
 
 	for (int sampleNdx = 0; sampleNdx < (int)samples.size(); ++sampleNdx)
 	{
-		const float bucketNdxFloat	= (samples[sampleNdx].allocatedSize - minBufferSize) / (float)(maxBufferSize - minBufferSize) * numBuckets;
+		const float bucketNdxFloat	= (float)(samples[sampleNdx].allocatedSize - minBufferSize) / (float)(maxBufferSize - minBufferSize) * (float)numBuckets;
 		const int bucketNdx			= de::clamp((int)deFloatFloor(bucketNdxFloat), 0, numBuckets-1);
 
 		buckets[bucketNdx].push_back(samples[sampleNdx]);
@@ -1709,8 +1709,8 @@ static UploadSampleAnalyzeResult analyzeSampleResults (tcu::TestLog& log, const 
 
 			// Print a nice result summary
 
-			const int												bucketRangeMin	= minBufferSize + (int)(( bucketNdx    / (float)numBuckets) * (maxBufferSize - minBufferSize));
-			const int												bucketRangeMax	= minBufferSize + (int)(((bucketNdx+1) / (float)numBuckets) * (maxBufferSize - minBufferSize));
+			const int												bucketRangeMin	= minBufferSize + (int)(((float) bucketNdx    / (float)numBuckets) * (float)(maxBufferSize - minBufferSize));
+			const int												bucketRangeMax	= minBufferSize + (int)(((float)(bucketNdx+1) / (float)numBuckets) * (float)(maxBufferSize - minBufferSize));
 			const typename SampleTypeTraits<SampleType>::StatsType	stats			= calculateSampleStatistics(theilSenFitting, buckets[bucketNdx]);
 			const tcu::ScopedLogSection								section			(log, "BufferSizeRange", std::string("Transfer performance with buffer size in range [").append(getHumanReadableByteSize(bucketRangeMin).append(", ").append(getHumanReadableByteSize(bucketRangeMax).append("]"))));
 
@@ -1752,13 +1752,13 @@ static UploadSampleAnalyzeResult analyzeSampleResults (tcu::TestLog& log, const 
 		const tcu::ScopedLogSection	section(log, "Results", "Results");
 
 		const int	medianBufferSize					= (samples.front().bufferSize + samples.back().bufferSize) / 2;
-		const float	approximatedTransferTime			= (theilSenFitting.offset + theilSenFitting.coefficient * medianBufferSize) / 1000.0f / 1000.0f;
-		const float	approximatedTransferTimeNoConstant	= (theilSenFitting.coefficient * medianBufferSize) / 1000.0f / 1000.0f;
+		const float	approximatedTransferTime			= (theilSenFitting.offset + theilSenFitting.coefficient * (float)medianBufferSize) / 1000.0f / 1000.0f;
+		const float	approximatedTransferTimeNoConstant	= (theilSenFitting.coefficient * (float)medianBufferSize) / 1000.0f / 1000.0f;
 		const float	sampleLinearity						= calculateSampleFitLinearity(samples);
 		const float	sampleTemporalStability				= calculateSampleTemporalStability(samples);
 
-		approximatedTransferRateNoConstant				= medianBufferSize / approximatedTransferTimeNoConstant;
-		approximatedTransferRate						= medianBufferSize / approximatedTransferTime;
+		approximatedTransferRateNoConstant				= (float)medianBufferSize / approximatedTransferTimeNoConstant;
+		approximatedTransferRate						= (float)medianBufferSize / approximatedTransferTime;
 
 		log	<< tcu::TestLog::Float("ResultLinearity", "Sample linearity", "%", QP_KEY_TAG_QUALITY, sampleLinearity * 100.0f)
 			<< tcu::TestLog::Float("SampleTemporalStability", "Sample temporal stability", "%", QP_KEY_TAG_QUALITY, sampleTemporalStability * 100.0f)
@@ -1819,13 +1819,13 @@ static RenderSampleAnalyzeResult analyzeSampleResults (tcu::TestLog& log, const 
 		const tcu::ScopedLogSection	section(log, "Results", "Results");
 
 		const int	medianDataSize						= (samples.front().renderDataSize + samples.back().renderDataSize) / 2;
-		const float	approximatedRenderTime				= (theilSenFitting.offset + theilSenFitting.coefficient * medianDataSize) / 1000.0f / 1000.0f;
-		const float	approximatedRenderTimeNoConstant	= (theilSenFitting.coefficient * medianDataSize) / 1000.0f / 1000.0f;
+		const float	approximatedRenderTime				= (theilSenFitting.offset + theilSenFitting.coefficient * (float)medianDataSize) / 1000.0f / 1000.0f;
+		const float	approximatedRenderTimeNoConstant	= (theilSenFitting.coefficient * (float)medianDataSize) / 1000.0f / 1000.0f;
 		const float	sampleLinearity						= calculateSampleFitLinearity(samples);
 		const float	sampleTemporalStability				= calculateSampleTemporalStability(samples);
 
-		approximatedProcessingRateNoConstant			= medianDataSize / approximatedRenderTimeNoConstant;
-		approximatedProcessingRate						= medianDataSize / approximatedRenderTime;
+		approximatedProcessingRateNoConstant			= (float)medianDataSize / approximatedRenderTimeNoConstant;
+		approximatedProcessingRate						= (float)medianDataSize / approximatedRenderTime;
 
 		log	<< tcu::TestLog::Float("ResultLinearity", "Sample linearity", "%", QP_KEY_TAG_QUALITY, sampleLinearity * 100.0f)
 			<< tcu::TestLog::Float("SampleTemporalStability", "Sample temporal stability", "%", QP_KEY_TAG_QUALITY, sampleTemporalStability * 100.0f)
@@ -1945,9 +1945,9 @@ BasicBufferCase<SampleType>::BasicBufferCase (Context& context, const char* name
 	// choose buffer sizes
 	for (int sampleNdx = 0; sampleNdx < m_numSamples; ++sampleNdx)
 	{
-		const int rawBufferSize			= (int)deFloatFloor(bufferSizeMin + (bufferSizeMax - bufferSizeMin) * ((float)(sampleNdx + 1) / m_numSamples));
+		const int rawBufferSize			= (int)deFloatFloor((float)bufferSizeMin + (float)(bufferSizeMax - bufferSizeMin) * ((float)(sampleNdx + 1) / (float)m_numSamples));
 		const int bufferSize			= deAlign32(rawBufferSize, 16);
-		const int allocatedBufferSize	= deAlign32((m_allocateLargerBuffer) ? ((int)(bufferSize * 1.5f)) : (bufferSize), 16);
+		const int allocatedBufferSize	= deAlign32((m_allocateLargerBuffer) ? ((int)((float)bufferSize * 1.5f)) : (bufferSize), 16);
 
 		m_results[sampleNdx].bufferSize		= bufferSize;
 		m_results[sampleNdx].allocatedSize	= allocatedBufferSize;
@@ -6007,7 +6007,7 @@ static float sumOfRanks (const std::vector<deUint64>& testSamples, const std::ve
 		const int		upperIndex		= (int)(std::upper_bound(allSamples.begin(), allSamples.end(), testSample, comparer) - allSamples.begin());
 		const int		lowerRank		= lowerIndex + 1;	// convert zero-indexed to rank
 		const int		upperRank		= upperIndex;		// convert zero-indexed to rank, upperIndex is last equal + 1
-		const float		rankMidpoint	= (lowerRank + upperRank) / 2.0f;
+		const float		rankMidpoint	= (float)(lowerRank + upperRank) / 2.0f;
 
 		sum += rankMidpoint;
 	}
@@ -6031,14 +6031,14 @@ static DistributionCompareResult distributionCompare (const std::vector<deUint64
 	{
 		const float					R1		= sumOfRanks(orderedObservationsA, allSamples, comparer);
 
-		const float					U1		= n1*n2 + n1*(n1 + 1)/2 - R1;
-		const float					U2		= (n1 * n2) - U1;
+		const float					U1		= (float)(n1*n2 + n1*(n1 + 1)/2) - R1;
+		const float					U2		= (float)(n1 * n2) - U1;
 		const float					U		= de::min(U1, U2);
 
 		// \note: sample sizes might not be large enough to expect normal distribution but we do it anyway
 
-		const float					mU		= n1*n2 / 2.0f;
-		const float					sigmaU	= deFloatSqrt((n1*n2*(n1+n2+1)) / 12.0f);
+		const float					mU		= (float)(n1 * n2) / 2.0f;
+		const float					sigmaU	= deFloatSqrt((float)(n1*n2*(n1+n2+1)) / 12.0f);
 		const float					z		= (U - mU) / sigmaU;
 
 		DistributionCompareResult	result;
@@ -6063,8 +6063,8 @@ struct ThresholdComparer
 		// thresholds
 		if (diff <= (float)absoluteThreshold)
 			return false;
-		if (diff <= a*relativeThreshold ||
-			diff <= b*relativeThreshold)
+		if (diff <= float(a)*relativeThreshold ||
+			diff <= float(b)*relativeThreshold)
 			return false;
 
 		// cmp

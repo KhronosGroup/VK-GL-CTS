@@ -781,10 +781,10 @@ void calcShaderColorCoord (tcu::Vec2& coord, tcu::Vec3& color, const tcu::Vector
 	if (isCoordinate)
 		switch (numComponents)
 		{
-			case 1:	coord = tcu::Vec2((float)attribValue.x(),					(float)attribValue.x());					break;
-			case 2:	coord = tcu::Vec2((float)attribValue.x(),					(float)attribValue.y());					break;
-			case 3:	coord = tcu::Vec2((float)attribValue.x() + attribValue.z(),	(float)attribValue.y());					break;
-			case 4:	coord = tcu::Vec2((float)attribValue.x() + attribValue.z(),	(float)attribValue.y() + attribValue.w());	break;
+			case 1:	coord = tcu::Vec2((float)attribValue.x(),							(float)attribValue.x());							break;
+			case 2:	coord = tcu::Vec2((float)attribValue.x(),							(float)attribValue.y());							break;
+			case 3:	coord = tcu::Vec2((float)attribValue.x() + (float)attribValue.z(),	(float)attribValue.y());							break;
+			case 4:	coord = tcu::Vec2((float)attribValue.x() + (float)attribValue.z(),	(float)attribValue.y() + (float)attribValue.w());	break;
 
 			default:
 				DE_ASSERT(false);
@@ -798,20 +798,20 @@ void calcShaderColorCoord (tcu::Vec2& coord, tcu::Vec3& color, const tcu::Vector
 				break;
 
 			case 2:
-				color.x() = color.x() * attribValue.x();
-				color.y() = color.y() * attribValue.y();
+				color.x() = color.x() * (float)attribValue.x();
+				color.y() = color.y() * (float)attribValue.y();
 				break;
 
 			case 3:
-				color.x() = color.x() * attribValue.x();
-				color.y() = color.y() * attribValue.y();
-				color.z() = color.z() * attribValue.z();
+				color.x() = color.x() * (float)attribValue.x();
+				color.y() = color.y() * (float)attribValue.y();
+				color.z() = color.z() * (float)attribValue.z();
 				break;
 
 			case 4:
-				color.x() = color.x() * attribValue.x() * attribValue.w();
-				color.y() = color.y() * attribValue.y() * attribValue.w();
-				color.z() = color.z() * attribValue.z() * attribValue.w();
+				color.x() = color.x() * (float)attribValue.x() * (float)attribValue.w();
+				color.y() = color.y() * (float)attribValue.y() * (float)attribValue.w();
+				color.z() = color.z() * (float)attribValue.z() * (float)attribValue.w();
 				break;
 
 			default:
