@@ -1967,24 +1967,8 @@ void RecreateBuffersTest<Buffers>::render (sglr::Context& ctx, Surface& dst)
 
 	ctx.disable(GL_DEPTH_TEST);
 
-	if (fbo.getConfig().colorbufferType == GL_TEXTURE_2D)
-	{
-		// Unbind fbo
-		ctx.bindFramebuffer(GL_FRAMEBUFFER, 0);
-
-		// Draw to screen
-		ctx.bindTexture(GL_TEXTURE_2D, fbo.getColorbuffer());
-		ctx.viewport(0, 0, ctx.getWidth(), ctx.getHeight());
-		sglr::drawQuad(ctx, texShaderID, Vec3(-1.0f, -1.0f, 0.0f), Vec3(1.0f, 1.0f, 0.0f));
-
-		// Read from screen
-		ctx.readPixels(dst, 0, 0, ctx.getWidth(), ctx.getHeight());
-	}
-	else
-	{
-		// Read from fbo
-		ctx.readPixels(dst, 0, 0, width, height);
-	}
+	// Read from fbo
+	ctx.readPixels(dst, 0, 0, width, height);
 }
 
 class RepeatedClearCase : public FboRenderCase
