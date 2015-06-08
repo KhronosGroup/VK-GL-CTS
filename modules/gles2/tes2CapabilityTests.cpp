@@ -52,7 +52,7 @@ public:
 
 	IterateResult iterate (void)
 	{
-		GLint value;
+		GLint value = 0;
 		GLU_CHECK_CALL(glGetIntegerv(m_param, &value));
 
 		m_testCtx.getLog() << TestLog::Message << glu::getParamQueryStr(m_param) << " = " << value << TestLog::EndMessage;
