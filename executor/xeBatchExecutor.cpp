@@ -224,6 +224,12 @@ void BatchExecutor::run (void)
 	m_commLink->setCallbacks(DE_NULL, DE_NULL, DE_NULL, DE_NULL);
 }
 
+void BatchExecutor::cancel (void)
+{
+	m_state = STATE_FINISHED;
+	m_dispatcher.cancel();
+}
+
 void BatchExecutor::onStateChanged (CommLinkState state, const char* message)
 {
 	switch (state)
