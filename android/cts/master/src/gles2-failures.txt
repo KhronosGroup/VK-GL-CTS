@@ -2585,9 +2585,7 @@ dEQP-GLES2.functional.texture.size.cube.15x15_rgb888
 dEQP-GLES2.functional.texture.size.cube.15x15_rgba4444
 dEQP-GLES2.functional.texture.size.cube.15x15_rgba8888
 dEQP-GLES2.functional.texture.size.cube.16x16_l8_mipmap
-dEQP-GLES2.functional.texture.size.cube.256x256_rgba4444
 dEQP-GLES2.functional.texture.size.cube.256x256_rgba4444_mipmap
-dEQP-GLES2.functional.texture.size.cube.512x512_rgba4444
 dEQP-GLES2.functional.texture.size.cube.512x512_rgba4444_mipmap
 dEQP-GLES2.functional.texture.specification.teximage2d_align.cube_l8_63_1
 dEQP-GLES2.functional.texture.specification.teximage2d_align.cube_l8_63_2
