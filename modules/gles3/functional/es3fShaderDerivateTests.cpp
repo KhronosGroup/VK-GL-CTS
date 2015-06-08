@@ -267,7 +267,7 @@ static float getSingleULPForValue (float value, int numMantissaBits)
 	return getSingleULPForExponent(exp, numMantissaBits);
 }
 
-static float convertFloorFlushToZero (float value, int minExponent, int numAccurateBits)
+static float convertFloatFlushToZeroRtn (float value, int minExponent, int numAccurateBits)
 {
 	if (value == 0.0f)
 	{
@@ -308,9 +308,9 @@ static float convertFloorFlushToZero (float value, int minExponent, int numAccur
 	}
 }
 
-static float convertCeilFlushToZero (float value, int minExponent, int numAccurateBits)
+static float convertFloatFlushToZeroRtp (float value, int minExponent, int numAccurateBits)
 {
-	return -convertFloorFlushToZero(-value, minExponent, numAccurateBits);
+	return -convertFloatFlushToZeroRtn(-value, minExponent, numAccurateBits);
 }
 
 static float addErrorUlp (float value, float numUlps, int numMantissaBits)
@@ -489,11 +489,11 @@ static bool reverifyConstantDerivateWithFlushRelaxations (tcu::TestLog&							lo
 		// check components separately
 		for (int c = 0; c < numComponents; ++c)
 		{
-			// interpolation value range
-			const tcu::Interval	forwardComponent		(convertFloorFlushToZero(functionValueForward[c], minExponent, numVaryingSampleBits),
-														 convertCeilFlushToZero(functionValueForward[c], minExponent, numVaryingSampleBits));
-			const tcu::Interval	backwardComponent		(convertFloorFlushToZero(functionValueBackward[c], minExponent, numVaryingSampleBits),
-														 convertCeilFlushToZero(functionValueBackward[c], minExponent, numVaryingSampleBits));
+			// Simulate interpolation. Add allowed interpolation error and round to target precision. Allow one half ULP (i.e. correct rounding)
+			const tcu::Interval	forwardComponent		(convertFloatFlushToZeroRtn(addErrorUlp((float)functionValueForward[c],  -0.5f, numVaryingSampleBits), minExponent, numBits),
+														 convertFloatFlushToZeroRtp(addErrorUlp((float)functionValueForward[c],  +0.5f, numVaryingSampleBits), minExponent, numBits));
+			const tcu::Interval	backwardComponent		(convertFloatFlushToZeroRtn(addErrorUlp((float)functionValueBackward[c], -0.5f, numVaryingSampleBits), minExponent, numBits),
+														 convertFloatFlushToZeroRtp(addErrorUlp((float)functionValueBackward[c], +0.5f, numVaryingSampleBits), minExponent, numBits));
 			const int			maxValueExp				= de::max(de::max(tcu::Float32(forwardComponent.lo()).exponent(),   tcu::Float32(forwardComponent.hi()).exponent()),
 																  de::max(tcu::Float32(backwardComponent.lo()).exponent(),  tcu::Float32(backwardComponent.hi()).exponent()));
 
@@ -508,12 +508,12 @@ static bool reverifyConstantDerivateWithFlushRelaxations (tcu::TestLog&							lo
 			const int			numeratorLoBits			= de::max(0, numBits - numeratorLoBitsLost);
 			const int			numeratorHiBits			= de::max(0, numBits - numeratorHiBitsLost);
 
-			const tcu::Interval	numeratorRange			(convertFloorFlushToZero((float)numerator.lo(), minExponent, numeratorLoBits),
-														 convertCeilFlushToZero((float)numerator.hi(), minExponent, numeratorHiBits));
+			const tcu::Interval	numeratorRange			(convertFloatFlushToZeroRtn((float)numerator.lo(), minExponent, numeratorLoBits),
+														 convertFloatFlushToZeroRtp((float)numerator.hi(), minExponent, numeratorHiBits));
 
 			const tcu::Interval	divisionRange			= numeratorRange / 3.0f; // legal sample area is anywhere within this and neighboring pixels (i.e. size = 3)
-			const tcu::Interval	divisionResultRange		(convertFloorFlushToZero(addErrorUlp((float)divisionRange.lo(), -divisionErrorUlps, numBits), minExponent, numBits),
-														 convertCeilFlushToZero(addErrorUlp((float)divisionRange.hi(), +divisionErrorUlps, numBits), minExponent, numBits));
+			const tcu::Interval	divisionResultRange		(convertFloatFlushToZeroRtn(addErrorUlp((float)divisionRange.lo(), -divisionErrorUlps, numBits), minExponent, numBits),
+														 convertFloatFlushToZeroRtp(addErrorUlp((float)divisionRange.hi(), +divisionErrorUlps, numBits), minExponent, numBits));
 			const tcu::Interval	finalResultRange		(divisionResultRange.lo() - surfaceThreshold[c], divisionResultRange.hi() + surfaceThreshold[c]);
 
 			if (resultDerivative[c] >= finalResultRange.lo() && resultDerivative[c] <= finalResultRange.hi())
