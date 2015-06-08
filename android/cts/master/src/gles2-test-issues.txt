@@ -1,0 +1,3 @@
+# Bug 21526557
+dEQP-GLES2.functional.texture.size.cube.256x256_rgba4444
+dEQP-GLES2.functional.texture.size.cube.512x512_rgba4444
