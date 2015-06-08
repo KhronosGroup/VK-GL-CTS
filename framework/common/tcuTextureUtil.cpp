@@ -718,9 +718,9 @@ void fillWithGrid (const PixelBufferAccess& access, int cellSize, const Vec4& co
 
 		// For combined formats, treat D and S as separate channels
 		if (hasDepth)
-			fillWithComponentGradients(getEffectiveDepthStencilAccess(access, tcu::Sampler::MODE_DEPTH), colorA, colorB);
+			fillWithGrid(getEffectiveDepthStencilAccess(access, tcu::Sampler::MODE_DEPTH), cellSize, colorA, colorB);
 		if (hasStencil)
-			fillWithComponentGradients(getEffectiveDepthStencilAccess(access, tcu::Sampler::MODE_STENCIL), colorA.swizzle(3,2,1,0), colorB.swizzle(3,2,1,0));
+			fillWithGrid(getEffectiveDepthStencilAccess(access, tcu::Sampler::MODE_STENCIL), cellSize, colorA.swizzle(3,2,1,0), colorB.swizzle(3,2,1,0));
 	}
 	else
 	{
