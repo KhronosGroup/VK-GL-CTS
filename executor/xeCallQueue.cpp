@@ -38,7 +38,8 @@ namespace xe
 // CallQueue
 
 CallQueue::CallQueue (void)
-	: m_callSem		(0)
+	: m_canceled	(false)
+	, m_callSem		(0)
 	, m_callQueue	(64)
 {
 }
@@ -50,12 +51,21 @@ CallQueue::~CallQueue (void)
 		delete *i;
 }
 
+void CallQueue::cancel (void)
+{
+	m_canceled = true;
+	m_callSem.increment();
+}
+
 void CallQueue::callNext (void)
 {
 	Call* call = DE_NULL;
 
 	// Wait for a call.
 	m_callSem.decrement();
+
+	if (m_canceled)
+		return;
 
 	// Acquire call from buffer.
 	{

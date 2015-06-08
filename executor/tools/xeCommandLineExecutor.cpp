@@ -44,6 +44,10 @@
 #include <string>
 #include <vector>
 
+#if (DE_OS == DE_OS_UNIX) || (DE_OS == DE_OS_ANDROID) || (DE_OS == DE_OS_WIN32)
+#	include <signal.h>
+#endif
+
 using std::vector;
 using std::string;
 
@@ -502,6 +506,74 @@ xe::CommLink* createCommLink (const CommandLine& cmdLine)
 	}
 }
 
+#if (DE_OS == DE_OS_UNIX) || (DE_OS == DE_OS_ANDROID)
+
+static xe::BatchExecutor* s_executor = DE_NULL;
+
+void signalHandler (int, siginfo_t*, void*)
+{
+	if (s_executor)
+		s_executor->cancel();
+}
+
+void setupSignalHandler (xe::BatchExecutor* executor)
+{
+	s_executor = executor;
+	struct sigaction sa;
+
+	sa.sa_sigaction = signalHandler;
+	sa.sa_flags = SA_SIGINFO | SA_RESTART;
+	sigfillset(&sa.sa_mask);
+
+	sigaction(SIGINT, &sa, DE_NULL);
+}
+
+void resetSignalHandler (void)
+{
+	struct sigaction sa;
+
+	sa.sa_handler = SIG_DFL;
+	sa.sa_flags = SA_RESTART;
+	sigfillset(&sa.sa_mask);
+
+	sigaction(SIGINT, &sa, DE_NULL);
+	s_executor = DE_NULL;
+}
+
+#elif (DE_OS == DE_OS_WIN32)
+
+static xe::BatchExecutor* s_executor = DE_NULL;
+
+void signalHandler (int)
+{
+	if (s_executor)
+		s_executor->cancel();
+}
+
+void setupSignalHandler (xe::BatchExecutor* executor)
+{
+	s_executor = executor;
+	signal(SIGINT, signalHandler);
+}
+
+void resetSignalHandler (void)
+{
+	signal(SIGINT, SIG_DFL);
+	s_executor = DE_NULL;
+}
+
+#else
+
+void setupSignalHandler (xe::BatchExecutor*)
+{
+}
+
+void resetSignalHandler (void)
+{
+}
+
+#endif
+
 void runExecutor (const CommandLine& cmdLine)
 {
 	xe::TestRoot root;
@@ -535,9 +607,34 @@ void runExecutor (const CommandLine& cmdLine)
 	std::auto_ptr<xe::CommLink> commLink(createCommLink(cmdLine));
 
 	xe::BatchExecutor executor(cmdLine.targetCfg, commLink.get(), &root, testSet, &batchResult, &infoLog);
-	executor.run();
 
-	commLink.reset();
+	try
+	{
+		setupSignalHandler(&executor);
+		executor.run();
+		resetSignalHandler();
+	}
+	catch (...)
+	{
+		resetSignalHandler();
+
+		if (!cmdLine.outFile.empty())
+		{
+			xe::writeBatchResultToFile(batchResult, cmdLine.outFile.c_str());
+			printf("Test log written to %s\n", cmdLine.outFile.c_str());
+		}
+
+		if (!cmdLine.infoFile.empty())
+		{
+			writeInfoLog(infoLog, cmdLine.infoFile.c_str());
+			printf("Info log written to %s\n", cmdLine.infoFile.c_str());
+		}
+
+		if (cmdLine.summary)
+			printBatchResultSummary(&root, testSet, batchResult);
+
+		throw;
+	}
 
 	if (!cmdLine.outFile.empty())
 	{
@@ -553,6 +650,13 @@ void runExecutor (const CommandLine& cmdLine)
 
 	if (cmdLine.summary)
 		printBatchResultSummary(&root, testSet, batchResult);
+
+	{
+		string err;
+
+		if (commLink->getState(err) == xe::COMMLINKSTATE_ERROR)
+			throw xe::Error(err);
+	}
 }
 
 } // anonymous

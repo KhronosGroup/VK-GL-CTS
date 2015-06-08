@@ -113,11 +113,13 @@ public:
 	Call*					getEmptyCall		(void);
 	void					enqueue				(Call* call);
 	void					freeCall			(Call* call);
+	void					cancel				(void);
 
 private:
 							CallQueue			(const CallQueue& other);
 	CallQueue&				operator=			(const CallQueue& other);
 
+	bool					m_canceled;
 	de::Semaphore			m_callSem;
 
 	de::Mutex				m_lock;
