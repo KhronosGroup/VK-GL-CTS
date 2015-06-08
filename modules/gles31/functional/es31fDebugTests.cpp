@@ -1644,8 +1644,8 @@ LabelCase::IterateResult LabelCase::iterate (void)
 	const glw::Functions&	gl			= m_context.getRenderContext().getFunctions();
 	const char*	const		msg			= "This is a debug label";
 	GLuint					object		= 0;
+	int						outlen		= -1;
 	char					buffer[64];
-	int						outlen		= 0;
 
 	switch(m_identifier)
 	{
@@ -1787,8 +1787,8 @@ SyncLabelCase::IterateResult SyncLabelCase::iterate (void)
 
 	const glw::Functions&	gl			= m_context.getRenderContext().getFunctions();
 	const char*	const		msg			= "This is a debug label";
+	int						outlen		= -1;
 	char					buffer[64];
-	int						outlen		= 0;
 
 	glw::GLsync				sync		= gl.fenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "fenceSync");
@@ -1835,10 +1835,10 @@ InitialLabelCase::IterateResult InitialLabelCase::iterate (void)
 
 	const glw::Functions&	gl			= m_context.getRenderContext().getFunctions();
 	tcu::ResultCollector	result		(m_testCtx.getLog(), " // ERROR: ");
+	int						outlen		= -1;
 	GLuint					shader;
 	glw::GLsync				sync;
 	char					buffer[64];
-	int						outlen;
 
 	sync = gl.fenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
 	GLS_COLLECT_GL_ERROR(result, gl.getError(), "fenceSync");
@@ -1917,10 +1917,10 @@ ClearLabelCase::IterateResult ClearLabelCase::iterate (void)
 	const glw::Functions&	gl			= m_context.getRenderContext().getFunctions();
 	tcu::ResultCollector	result		(m_testCtx.getLog(), " // ERROR: ");
 	const char*	const		msg			= "This is a debug label";
+	int						outlen		= -1;
 	GLuint					shader;
 	glw::GLsync				sync;
 	char					buffer[64];
-	int						outlen;
 
 	sync = gl.fenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
 	GLS_COLLECT_GL_ERROR(result, gl.getError(), "fenceSync");
@@ -2011,10 +2011,10 @@ SpecifyWithLengthCase::IterateResult SpecifyWithLengthCase::iterate (void)
 	tcu::ResultCollector	result		(m_testCtx.getLog(), " // ERROR: ");
 	const char*	const		msg			= "This is a debug label";
 	const char*	const		clipMsg		= "This is a de";
+	int						outlen		= -1;
 	GLuint					shader;
 	glw::GLsync				sync;
 	char					buffer[64];
-	int						outlen;
 
 	sync = gl.fenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
 	GLS_COLLECT_GL_ERROR(result, gl.getError(), "fenceSync");
@@ -2120,10 +2120,10 @@ BufferLimitedLabelCase::IterateResult BufferLimitedLabelCase::iterate (void)
 	const glw::Functions&	gl			= m_context.getRenderContext().getFunctions();
 	tcu::ResultCollector	result		(m_testCtx.getLog(), " // ERROR: ");
 	const char*	const		msg			= "This is a debug label";
+	int						outlen		= -1;
 	GLuint					shader;
 	glw::GLsync				sync;
 	char					buffer[64];
-	int						outlen;
 
 	sync = gl.fenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
 	GLS_COLLECT_GL_ERROR(result, gl.getError(), "fenceSync");
@@ -2349,9 +2349,9 @@ LabelMaxSizeCase::IterateResult LabelMaxSizeCase::iterate (void)
 	const glw::Functions&	gl			= m_context.getRenderContext().getFunctions();
 	tcu::ResultCollector	result		(m_testCtx.getLog(), " // ERROR: ");
 	int						maxLabelLen	= -1;
+	int						outlen		= -1;
 	GLuint					shader;
 	glw::GLsync				sync;
-	int						outlen;
 
 	gl.getIntegerv(GL_MAX_LABEL_LENGTH, &maxLabelLen);
 	GLS_COLLECT_GL_ERROR(result, gl.getError(), "GL_MAX_LABEL_LENGTH");
@@ -2476,9 +2476,9 @@ LabelLengthCase::IterateResult LabelLengthCase::iterate (void)
 	const glw::Functions&	gl			= m_context.getRenderContext().getFunctions();
 	tcu::ResultCollector	result		(m_testCtx.getLog(), " // ERROR: ");
 	const char*	const		msg			= "This is a debug label";
+	int						outlen		= -1;
 	GLuint					shader;
 	glw::GLsync				sync;
-	int						outlen;
 
 	sync = gl.fenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
 	GLS_COLLECT_GL_ERROR(result, gl.getError(), "fenceSync");
