@@ -285,7 +285,7 @@ static tcu::Vector<float, 16> arrTo16 (const tcu::Array<float, Size>& arr)
 static string getShaderInfoLog (const glw::Functions& gl, deUint32 shader)
 {
 	string			result;
-	int				infoLogLen;
+	int				infoLogLen = 0;
 	vector<char>	infoLogBuf;
 
 	gl.getShaderiv(shader, GL_INFO_LOG_LENGTH, &infoLogLen);
@@ -299,7 +299,7 @@ static string getShaderInfoLog (const glw::Functions& gl, deUint32 shader)
 static string getProgramInfoLog (const glw::Functions& gl, deUint32 program)
 {
 	string			result;
-	int				infoLogLen;
+	int				infoLogLen = 0;
 	vector<char>	infoLogBuf;
 
 	gl.getProgramiv(program, GL_INFO_LOG_LENGTH, &infoLogLen);
@@ -1730,7 +1730,7 @@ void ShaderCompilerCase::setShaderSources (deUint32 vertShader, deUint32 fragSha
 bool ShaderCompilerCase::compileShader (deUint32 shader) const
 {
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
-	GLint status;
+	GLint status = 0;
 	gl.compileShader(shader);
 	gl.getShaderiv(shader, GL_COMPILE_STATUS, &status);
 	return status != 0;
@@ -1739,7 +1739,7 @@ bool ShaderCompilerCase::compileShader (deUint32 shader) const
 bool ShaderCompilerCase::linkAndUseProgram (deUint32 program) const
 {
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
-	GLint linkStatus;
+	GLint linkStatus = 0;
 
 	gl.linkProgram(program);
 	gl.getProgramiv(program, GL_LINK_STATUS, &linkStatus);
