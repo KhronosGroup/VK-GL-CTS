@@ -22,6 +22,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "deMath.h"
+#include "deInt32.h"
 
 #if (DE_COMPILER == DE_COMPILER_MSC)
 #	include <float.h>
@@ -132,4 +133,57 @@ double deRoundEven (double a)
 	if (fabs(fract) == 0.5)
 		return 2.0 * deRound(a / 2.0);
 	return deRound(a);
+}
+
+float deInt32ToFloatRoundToNegInf (deInt32 x)
+{
+	/* \note Sign bit is separate so the range is symmetric */
+	if (x >= -0xFFFFFF && x <= 0xFFFFFF)
+	{
+		/* 24 bits are representable (23 mantissa + 1 implicit). */
+		return (float)x;
+	}
+	else if (x != -0x7FFFFFFF - 1)
+	{
+		/* we are losing bits */
+		const int		exponent	= 31 - deClz32((deUint32)deAbs32(x));
+		const int		numLostBits	= exponent - 23;
+		const deUint32	lostMask	= deBitMask32(0, numLostBits);
+
+		DE_ASSERT(numLostBits > 0);
+
+		if (x > 0)
+		{
+			/* Mask out lost bits to floor to a representable value */
+			return (float)(deInt32)(~lostMask & (deUint32)x);
+		}
+		else if ((lostMask & (deUint32)-x) == 0u)
+		{
+			/* this was a representable value */
+			DE_ASSERT( (deInt32)(float)x == x );
+			return (float)x;
+		}
+		else
+		{
+			/* not representable, choose the next lower */
+			const float nearestHigher	= (float)-(deInt32)(~lostMask & (deUint32)-x);
+			const float oneUlp			= (float)(1u << (deUint32)numLostBits);
+			const float nearestLower	= nearestHigher - oneUlp;
+
+			/* check sanity */
+			DE_ASSERT((deInt32)(float)nearestHigher > (deInt32)(float)nearestLower);
+
+			return nearestLower;
+		}
+	}
+	else
+		return -(float)0x80000000u;
+}
+
+float deInt32ToFloatRoundToPosInf (deInt32 x)
+{
+	if (x == -0x7FFFFFFF - 1)
+		return -(float)0x80000000u;
+	else
+		return -deInt32ToFloatRoundToNegInf(-x);
 }

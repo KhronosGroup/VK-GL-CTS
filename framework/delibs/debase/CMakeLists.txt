@@ -14,6 +14,7 @@ set(DEBASE_SRCS
 	deInt32Test.c
 	deMath.c
 	deMath.h
+	deMathTest.c
 	deMemory.c
 	deMemory.h
 	deRandom.c
