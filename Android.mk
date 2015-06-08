@@ -76,6 +76,7 @@ LOCAL_SRC_FILES := \
 	framework/delibs/debase/deInt32.c \
 	framework/delibs/debase/deInt32Test.c \
 	framework/delibs/debase/deMath.c \
+	framework/delibs/debase/deMathTest.c \
 	framework/delibs/debase/deMemory.c \
 	framework/delibs/debase/deRandom.c \
 	framework/delibs/debase/deString.c \

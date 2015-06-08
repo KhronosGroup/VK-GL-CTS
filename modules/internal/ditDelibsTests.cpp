@@ -43,6 +43,7 @@
 
 // debase
 #include "deInt32.h"
+#include "deMath.h"
 
 // decpp
 #include "deBlockBuffer.hpp"
@@ -156,6 +157,7 @@ public:
 	void init (void)
 	{
 		addChild(new SelfCheckCase(m_testCtx, "int32",	"deInt32_selfTest()",	deInt32_selfTest));
+		addChild(new SelfCheckCase(m_testCtx, "math",	"deMath_selfTest()",	deMath_selfTest));
 	}
 };
 
