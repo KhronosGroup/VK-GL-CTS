@@ -56,6 +56,8 @@ typedef enum deRoundingMode_e
 deRoundingMode		deGetRoundingMode	(void);
 deBool				deSetRoundingMode	(deRoundingMode mode);
 
+void				deMath_selfTest		(void);
+
 /* Float properties */
 
 /* \note The NaN test probably won't work with -ffast-math */
@@ -186,11 +188,27 @@ DE_INLINE deBool	deFloatCmpLE		(float a, float b)			{ return (a <= b); }
 DE_INLINE deBool	deFloatCmpGT		(float a, float b)			{ return (a > b);  }
 DE_INLINE deBool	deFloatCmpGE		(float a, float b)			{ return (a >= b); }
 
+/* Convert int to float. If the value cannot be represented exactly in native single precision format, return
+ * either the nearest lower or the nearest higher representable value, chosen in an implementation-defined manner.
+ *
+ * \note Choosing either nearest lower or nearest higher means that implementation could for example consistently
+ *       choose the lower value, i.e. this function does not round towards nearest.
+ * \note Value returned is in native single precision format. For example with x86 extended precision, the value
+ *       returned might not be representable in IEEE single precision float.
+ */
+DE_INLINE float		deInt32ToFloat				(deInt32 x)					{ return (float)x; }
+
+/* Convert to float. If the value cannot be represented exactly in IEEE single precision floating point format,
+ * return the nearest lower (round towards negative inf). */
+float				deInt32ToFloatRoundToNegInf	(deInt32 x);
+
+/* Convert to float. If the value cannot be represented exactly IEEE single precision floating point format,
+ * return the nearest higher (round towards positive inf). */
+float				deInt32ToFloatRoundToPosInf	(deInt32 x);
+
 /* Conversion to integer. */
 
-DE_INLINE float		deInt32ToFloat		(deInt32 x)					{ return (float)x; }
 DE_INLINE deInt32	deChopFloatToInt32	(float x)					{ return (deInt32)x; }
-
 DE_INLINE deInt32	deFloorFloatToInt32	(float x)					{ return (deInt32)(deFloatFloor(x)); }
 DE_INLINE deInt32	deCeilFloatToInt32	(float x)					{ return (deInt32)(deFloatCeil(x)); }
 
