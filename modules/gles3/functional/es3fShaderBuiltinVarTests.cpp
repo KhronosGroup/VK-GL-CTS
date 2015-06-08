@@ -73,7 +73,7 @@ static int getVectorsFromComps (const glw::Functions& gl, deUint32 pname)
 	int value = -1;
 	gl.getIntegerv(pname, &value);
 	GLU_EXPECT_NO_ERROR(gl.getError(), ("glGetIntegerv(" + glu::getGettableStateStr((int)pname).toString() + ")").c_str());
-	TCU_CHECK_MSG(value%4 == 0, ("Expected " + glu::getGettableStateStr((int)pname).toString() + " to be divisible by 4").c_str());
+	// Accept truncated division. According to the spec, the number of vectors is number of components divided by four, plain and simple.
 	return value/4;
 }
 
