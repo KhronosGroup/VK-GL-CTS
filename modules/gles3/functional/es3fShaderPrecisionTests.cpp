@@ -331,8 +331,8 @@ bool ShaderFloatPrecisionCase::compare (float in0, float in1, double reference, 
 	{
 		const deUint64	refBits				= tcu::Float64(reference).bits();
 		const deUint64	resBits				= tcu::Float64(result).bits();
-		const deUint64	accurateRefBits		= maskBits < 32 ? refBits >> maskBits : 0u;
-		const deUint64	accurateResBits		= maskBits < 32 ? resBits >> maskBits : 0u;
+		const deUint64	accurateRefBits		= maskBits < 64 ? refBits >> (deUint64)maskBits : 0u;
+		const deUint64	accurateResBits		= maskBits < 64 ? resBits >> (deUint64)maskBits : 0u;
 		const deUint64	ulpDiff				= (deUint64)de::abs((deInt64)accurateRefBits - (deInt64)accurateResBits);
 
 		if (ulpDiff > (deUint64)roundingUlpError)
