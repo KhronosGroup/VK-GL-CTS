@@ -1940,29 +1940,37 @@ bool GeometryShaderRenderTest::compare (void)
 		const int		colorComponentThreshold	= 20;
 		bool			testResult				= true;
 
-		for (int x = 1; x + 1 < m_viewportSize.x(); ++x)
-		for (int y = 1; y + 1 < m_viewportSize.y(); ++y)
+		for (int x = 0; x < m_viewportSize.x(); ++x)
+		for (int y = 0; y < m_viewportSize.y(); ++y)
 		{
-			bool found = false;
-			const tcu::RGBA refcolor = m_refResult->getPixel(x, y);
-
-			// Got to find similar pixel near this pixel (3x3 kernel)
-			for (int dx = -1; dx <= 1; ++dx)
-			for (int dy = -1; dy <= 1; ++dy)
+			if (x == 0 || y == 0 || x + 1 == m_viewportSize.x() || y + 1 == m_viewportSize.y())
 			{
-				const tcu::RGBA		testColor	= m_glResult->getPixel(x + dx, y + dy);
-				const tcu::IVec4	colDiff		= tcu::abs(testColor.toIVec() - refcolor.toIVec());
-
-				const int			maxColDiff	= de::max(de::max(colDiff.x(), colDiff.y()), colDiff.z()); // check RGB channels
-
-				if (maxColDiff <= colorComponentThreshold)
-					found = true;
+				// Mark edge pixels as correct since their neighbourhood is undefined
+				errorMask.setPixel(x, y, green);
 			}
+			else
+			{
+				const tcu::RGBA	refcolor	= m_refResult->getPixel(x, y);
+				bool			found		= false;
 
-			if (!found)
-				testResult = false;
+				// Got to find similar pixel near this pixel (3x3 kernel)
+				for (int dx = -1; dx <= 1; ++dx)
+				for (int dy = -1; dy <= 1; ++dy)
+				{
+					const tcu::RGBA		testColor	= m_glResult->getPixel(x + dx, y + dy);
+					const tcu::IVec4	colDiff		= tcu::abs(testColor.toIVec() - refcolor.toIVec());
 
-			errorMask.setPixel(x, y, (found) ? (green) : (red));
+					const int			maxColDiff	= de::max(de::max(colDiff.x(), colDiff.y()), colDiff.z()); // check RGB channels
+
+					if (maxColDiff <= colorComponentThreshold)
+						found = true;
+				}
+
+				if (!found)
+					testResult = false;
+
+				errorMask.setPixel(x, y, (found) ? (green) : (red));
+			}
 		}
 
 		if (testResult)
