@@ -1817,13 +1817,20 @@ void VertexArrayTest::compare (void)
 
 		m_isOk = true;
 
-		for (int y = 1; y < ref.getHeight()-1; y++)
+		for (int y = 0; y < ref.getHeight(); y++)
 		{
-			for (int x = 1; x < ref.getWidth()-1; x++)
+			for (int x = 0; x < ref.getWidth(); x++)
 			{
 				tcu::RGBA	refPixel		= ref.getPixel(x, y);
 				tcu::RGBA	screenPixel		= screen.getPixel(x, y);
 				bool		isOkPixel		= false;
+
+				if (y == 0 || y + 1 == ref.getHeight() || x == 0 || x + 1 == ref.getWidth())
+				{
+					// Don't check borders since the pixel neighborhood is undefined
+					error.setPixel(x, y, tcu::RGBA(screenPixel.getRed(), (screenPixel.getGreen() + 255) / 2, screenPixel.getBlue(), 255));
+					continue;
+				}
 
 				// Don't do comparisons for this pixel if it belongs to a one-pixel-thin part (i.e. it doesn't have similar-color neighbors in both x and y directions) in both result and reference.
 				// This fixes some false negatives.
