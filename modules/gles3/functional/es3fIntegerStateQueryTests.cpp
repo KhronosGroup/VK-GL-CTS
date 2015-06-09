@@ -22,12 +22,18 @@
  *//*--------------------------------------------------------------------*/
 
 #include "es3fIntegerStateQueryTests.hpp"
-#include "glsStateQueryUtil.hpp"
 #include "es3fApiCase.hpp"
+
+#include "glsStateQueryUtil.hpp"
+
 #include "gluRenderContext.hpp"
 #include "gluContextInfo.hpp"
+#include "gluStrUtil.hpp"
+
 #include "tcuRenderTarget.hpp"
+
 #include "deRandom.hpp"
+
 #include "glwEnums.hpp"
 
 using namespace glw; // GLint and other GL types
@@ -903,128 +909,7 @@ namespace
 {
 
 using namespace IntegerStateQueryVerifiers;
-
-static const char* transformFeedbackTestVertSource	=	"#version 300 es\n"
-														"void main (void)\n"
-														"{\n"
-														"	gl_Position = vec4(0.0);\n"
-														"}\n\0";
-static const char* transformFeedbackTestFragSource	=	"#version 300 es\n"
-														"layout(location = 0) out mediump vec4 fragColor;"
-														"void main (void)\n"
-														"{\n"
-														"	fragColor = vec4(0.0);\n"
-														"}\n\0";
-
-static const char* testVertSource					=	"#version 300 es\n"
-														"void main (void)\n"
-														"{\n"
-														"	gl_Position = vec4(0.0);\n"
-														"}\n\0";
-static const char* testFragSource					=	"#version 300 es\n"
-														"layout(location = 0) out mediump vec4 fragColor;"
-														"void main (void)\n"
-														"{\n"
-														"	fragColor = vec4(0.0);\n"
-														"}\n\0";
-
-class TransformFeedbackTestCase : public ApiCase
-{
-public:
-	TransformFeedbackTestCase (Context& context, StateVerifier* verifier, const char* name, const char* description)
-		: ApiCase				(context, name, description)
-		, m_verifier			(verifier)
-		, m_transformfeedback	(0)
-	{
-	}
-
-	void test (void)
-	{
-		glGenTransformFeedbacks(1, &m_transformfeedback);
-		expectError(GL_NO_ERROR);
-
-		GLuint shaderVert = glCreateShader(GL_VERTEX_SHADER);
-		glShaderSource(shaderVert, 1, &transformFeedbackTestVertSource, DE_NULL);
-		glCompileShader(shaderVert);
-		expectError(GL_NO_ERROR);
-		GLint compileStatus;
-		glGetShaderiv(shaderVert, GL_COMPILE_STATUS, &compileStatus);
-		checkBooleans(compileStatus, GL_TRUE);
-
-		GLuint shaderFrag = glCreateShader(GL_FRAGMENT_SHADER);
-		glShaderSource(shaderFrag, 1, &transformFeedbackTestFragSource, DE_NULL);
-		glCompileShader(shaderFrag);
-		expectError(GL_NO_ERROR);
-		glGetShaderiv(shaderFrag, GL_COMPILE_STATUS, &compileStatus);
-		checkBooleans(compileStatus, GL_TRUE);
-
-		GLuint shaderProg = glCreateProgram();
-		glAttachShader(shaderProg, shaderVert);
-		glAttachShader(shaderProg, shaderFrag);
-		const char* transform_feedback_outputs = "gl_Position";
-		glTransformFeedbackVaryings(shaderProg, 1, &transform_feedback_outputs, GL_INTERLEAVED_ATTRIBS);
-		glLinkProgram(shaderProg);
-		expectError(GL_NO_ERROR);
-		GLint linkStatus;
-		glGetProgramiv(shaderProg, GL_LINK_STATUS, &linkStatus);
-		checkBooleans(linkStatus, GL_TRUE);
-
-		glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, m_transformfeedback);
-		expectError(GL_NO_ERROR);
-
-		GLuint feedbackBufferId;
-		glGenBuffers(1, &feedbackBufferId);
-		glBindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, feedbackBufferId);
-		glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, 16, NULL, GL_DYNAMIC_READ);
-		glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, feedbackBufferId);
-		expectError(GL_NO_ERROR);
-
-		glUseProgram(shaderProg);
-
-		testTransformFeedback();
-
-		glUseProgram(0);
-		glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, 0);
-		glDeleteTransformFeedbacks(1, &m_transformfeedback);
-		glDeleteBuffers(1, &feedbackBufferId);
-		glDeleteShader(shaderVert);
-		glDeleteShader(shaderFrag);
-		glDeleteProgram(shaderProg);
-		expectError(GL_NO_ERROR);
-	}
-
-	virtual void testTransformFeedback (void) = DE_NULL;
-
-protected:
-	StateVerifier*	m_verifier;
-	GLuint			m_transformfeedback;
-};
-
-class TransformFeedbackBindingTestCase : public TransformFeedbackTestCase
-{
-public:
-	TransformFeedbackBindingTestCase (Context& context, StateVerifier* verifier, const char* name)
-		: TransformFeedbackTestCase	(context, verifier, name, "GL_TRANSFORM_FEEDBACK_BINDING")
-	{
-	}
-
-protected:
-	void beforeTransformFeedbackTest (void)
-	{
-		m_verifier->verifyInteger(m_testCtx, GL_TRANSFORM_FEEDBACK_BINDING, 0);
-		expectError(GL_NO_ERROR);
-	}
-	void testTransformFeedback (void)
-	{
-		m_verifier->verifyInteger(m_testCtx, GL_TRANSFORM_FEEDBACK_BINDING, m_transformfeedback);
-		expectError(GL_NO_ERROR);
-	}
-	void afterTransformFeedbackTest (void)
-	{
-		m_verifier->verifyInteger(m_testCtx, GL_TRANSFORM_FEEDBACK_BINDING, 0);
-		expectError(GL_NO_ERROR);
-	}
-};
+using namespace deqp::gls::StateQueryUtil;
 
 class ConstantMinimumValueTestCase : public ApiCase
 {
@@ -1986,222 +1871,384 @@ private:
 	int				m_minValue;
 };
 
-class CurrentProgramBindingTestCase : public ApiCase
+class BindingTest : public TestCase
 {
 public:
-	CurrentProgramBindingTestCase (Context& context, StateVerifier* verifier, const char* name, const char* description)
-		: ApiCase		(context, name, description)
-		, m_verifier	(verifier)
+						BindingTest	(Context&					context,
+									 const char*				name,
+									 const char*				desc,
+									 QueryType					type);
+
+	IterateResult		iterate		(void);
+
+	virtual void		test		(glu::CallLogWrapper& gl, tcu::ResultCollector& result) const = 0;
+
+protected:
+	const QueryType		m_type;
+};
+
+BindingTest::BindingTest (Context&		context,
+						  const char*	name,
+						  const char*	desc,
+						  QueryType		type)
+	: TestCase	(context, name, desc)
+	, m_type	(type)
+{
+}
+
+BindingTest::IterateResult BindingTest::iterate (void)
+{
+	glu::CallLogWrapper		gl		(m_context.getRenderContext().getFunctions(), m_context.getTestContext().getLog());
+	tcu::ResultCollector	result	(m_context.getTestContext().getLog(), " // ERROR: ");
+
+	gl.enableLogging(true);
+
+	test(gl, result);
+
+	result.setTestContextResult(m_testCtx);
+	return STOP;
+}
+
+class TransformFeedbackBindingTestCase : public BindingTest
+{
+public:
+	TransformFeedbackBindingTestCase (Context& context, QueryType type, const char* name)
+		: BindingTest(context, name, "GL_TRANSFORM_FEEDBACK_BINDING", type)
 	{
 	}
 
-	void test (void)
+	void test (glu::CallLogWrapper& gl, tcu::ResultCollector& result) const
 	{
-		m_verifier->verifyInteger(m_testCtx, GL_CURRENT_PROGRAM, 0);
-		expectError(GL_NO_ERROR);
+		static const char* transformFeedbackTestVertSource =
+			"#version 300 es\n"
+			"void main (void)\n"
+			"{\n"
+			"	gl_Position = vec4(0.0);\n"
+			"}\n\0";
+		static const char* transformFeedbackTestFragSource =
+			"#version 300 es\n"
+			"layout(location = 0) out mediump vec4 fragColor;"
+			"void main (void)\n"
+			"{\n"
+			"	fragColor = vec4(0.0);\n"
+			"}\n\0";
+
+		GLuint	shaderVert;
+		GLuint	shaderFrag;
+		GLuint	shaderProg;
+		GLuint	transformfeedback = 0;
+		GLuint	feedbackBufferId = 0;
 
 		{
-			GLuint shaderVert = glCreateShader(GL_VERTEX_SHADER);
-			glShaderSource(shaderVert, 1, &testVertSource, DE_NULL);
-			glCompileShader(shaderVert);
-			expectError(GL_NO_ERROR);
-			GLint compileStatus;
-			glGetShaderiv(shaderVert, GL_COMPILE_STATUS, &compileStatus);
-			checkBooleans(compileStatus, GL_TRUE);
-
-			GLuint shaderFrag = glCreateShader(GL_FRAGMENT_SHADER);
-			glShaderSource(shaderFrag, 1, &testFragSource, DE_NULL);
-			glCompileShader(shaderFrag);
-			expectError(GL_NO_ERROR);
-			glGetShaderiv(shaderFrag, GL_COMPILE_STATUS, &compileStatus);
-			checkBooleans(compileStatus, GL_TRUE);
-
-			GLuint shaderProg = glCreateProgram();
-			glAttachShader(shaderProg, shaderVert);
-			glAttachShader(shaderProg, shaderFrag);
-			glLinkProgram(shaderProg);
-			expectError(GL_NO_ERROR);
-			GLint linkStatus;
-			glGetProgramiv(shaderProg, GL_LINK_STATUS, &linkStatus);
-			checkBooleans(linkStatus, GL_TRUE);
-
-			glUseProgram(shaderProg);
-			expectError(GL_NO_ERROR);
-
-			m_verifier->verifyInteger(m_testCtx, GL_CURRENT_PROGRAM, shaderProg);
-			expectError(GL_NO_ERROR);
-
-			glDeleteShader(shaderVert);
-			glDeleteShader(shaderFrag);
-			glDeleteProgram(shaderProg);
-			expectError(GL_NO_ERROR);
-
-			m_verifier->verifyInteger(m_testCtx, GL_CURRENT_PROGRAM, shaderProg);
-			expectError(GL_NO_ERROR);
+			const tcu::ScopedLogSection section(gl.getLog(), "Initial", "Initial");
+			verifyStateInteger(result, gl, GL_TRANSFORM_FEEDBACK_BINDING, 0, m_type);
 		}
 
-		glUseProgram(0);
-		expectError(GL_NO_ERROR);
-		m_verifier->verifyInteger(m_testCtx, GL_CURRENT_PROGRAM, 0);
-		expectError(GL_NO_ERROR);
-	}
+		gl.glGenTransformFeedbacks(1, &transformfeedback);
+		GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glGenTransformFeedbacks");
 
-private:
-	StateVerifier*		m_verifier;
+		{
+			const tcu::ScopedLogSection section(gl.getLog(), "VertexShader", "Vertex Shader");
+
+			GLint compileStatus = -1;
+
+			shaderVert = gl.glCreateShader(GL_VERTEX_SHADER);
+			gl.glShaderSource(shaderVert, 1, &transformFeedbackTestVertSource, DE_NULL);
+			gl.glCompileShader(shaderVert);
+			GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glCompileShader");
+
+			gl.glGetShaderiv(shaderVert, GL_COMPILE_STATUS, &compileStatus);
+			if (compileStatus != GL_TRUE)
+				result.fail("expected GL_TRUE");
+		}
+		{
+			const tcu::ScopedLogSection section(gl.getLog(), "FragmentShader", "Fragment Shader");
+
+			GLint compileStatus = -1;
+
+			shaderFrag = gl.glCreateShader(GL_FRAGMENT_SHADER);
+			gl.glShaderSource(shaderFrag, 1, &transformFeedbackTestFragSource, DE_NULL);
+			gl.glCompileShader(shaderFrag);
+			GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glCompileShader");
+
+			gl.glGetShaderiv(shaderFrag, GL_COMPILE_STATUS, &compileStatus);
+			if (compileStatus != GL_TRUE)
+				result.fail("expected GL_TRUE");
+		}
+		{
+			const tcu::ScopedLogSection section(gl.getLog(), "Program", "Create and bind program");
+
+			const char*	transform_feedback_outputs	= "gl_Position";
+			GLint		linkStatus					= -1;
+
+			shaderProg = gl.glCreateProgram();
+			gl.glAttachShader(shaderProg, shaderVert);
+			gl.glAttachShader(shaderProg, shaderFrag);
+			gl.glTransformFeedbackVaryings(shaderProg, 1, &transform_feedback_outputs, GL_INTERLEAVED_ATTRIBS);
+			gl.glLinkProgram(shaderProg);
+			GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glLinkProgram");
+
+			gl.glGetProgramiv(shaderProg, GL_LINK_STATUS, &linkStatus);
+			if (linkStatus != GL_TRUE)
+				result.fail("expected GL_TRUE");
+		}
+
+		gl.glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, transformfeedback);
+		GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glBindTransformFeedback");
+
+		gl.glGenBuffers(1, &feedbackBufferId);
+		gl.glBindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, feedbackBufferId);
+		gl.glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, 16, NULL, GL_DYNAMIC_READ);
+		gl.glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, feedbackBufferId);
+		GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "bind buffers");
+
+		gl.glUseProgram(shaderProg);
+
+		verifyStateInteger(result, gl, GL_TRANSFORM_FEEDBACK_BINDING, transformfeedback, m_type);
+
+		gl.glUseProgram(0);
+		gl.glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, 0);
+		gl.glDeleteTransformFeedbacks(1, &transformfeedback);
+
+		verifyStateInteger(result, gl, GL_TRANSFORM_FEEDBACK_BINDING, 0, m_type);
+
+		gl.glDeleteBuffers(1, &feedbackBufferId);
+		gl.glDeleteShader(shaderVert);
+		gl.glDeleteShader(shaderFrag);
+		gl.glDeleteProgram(shaderProg);
+		GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glDeleteProgram");
+	}
 };
 
-class VertexArrayBindingTestCase : public ApiCase
+class CurrentProgramBindingTestCase : public BindingTest
 {
 public:
-	VertexArrayBindingTestCase (Context& context, StateVerifier* verifier, const char* name, const char* description)
-		: ApiCase		(context, name, description)
-		, m_verifier	(verifier)
+	CurrentProgramBindingTestCase (Context& context, QueryType type, const char* name, const char* description)
+		: BindingTest(context, name, description, type)
 	{
 	}
 
-	void test(void)
+	void test (glu::CallLogWrapper& gl, tcu::ResultCollector& result) const
 	{
-		m_verifier->verifyInteger(m_testCtx, GL_VERTEX_ARRAY_BINDING, 0);
-		expectError(GL_NO_ERROR);
+		static const char* testVertSource =
+			"#version 300 es\n"
+			"void main (void)\n"
+			"{\n"
+			"	gl_Position = vec4(0.0);\n"
+			"}\n\0";
+		static const char* testFragSource =
+			"#version 300 es\n"
+			"layout(location = 0) out mediump vec4 fragColor;"
+			"void main (void)\n"
+			"{\n"
+			"	fragColor = vec4(0.0);\n"
+			"}\n\0";
+
+		GLuint	shaderVert;
+		GLuint	shaderFrag;
+		GLuint	shaderProg;
+
+		{
+			const tcu::ScopedLogSection section(gl.getLog(), "Initial", "Initial");
+
+			verifyStateInteger(result, gl, GL_CURRENT_PROGRAM, 0, m_type);
+		}
+		{
+			const tcu::ScopedLogSection section(gl.getLog(), "VertexShader", "Vertex Shader");
+
+			GLint compileStatus = -1;
+
+			shaderVert = gl.glCreateShader(GL_VERTEX_SHADER);
+			gl.glShaderSource(shaderVert, 1, &testVertSource, DE_NULL);
+			gl.glCompileShader(shaderVert);
+			GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glCompileShader");
+
+			gl.glGetShaderiv(shaderVert, GL_COMPILE_STATUS, &compileStatus);
+			if (compileStatus != GL_TRUE)
+				result.fail("expected GL_TRUE");
+		}
+		{
+			const tcu::ScopedLogSection section(gl.getLog(), "FragmentShader", "Fragment Shader");
+
+			GLint compileStatus = -1;
+
+			shaderFrag = gl.glCreateShader(GL_FRAGMENT_SHADER);
+			gl.glShaderSource(shaderFrag, 1, &testFragSource, DE_NULL);
+			gl.glCompileShader(shaderFrag);
+			GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glCompileShader");
+
+			gl.glGetShaderiv(shaderFrag, GL_COMPILE_STATUS, &compileStatus);
+			if (compileStatus != GL_TRUE)
+				result.fail("expected GL_TRUE");
+		}
+		{
+			const tcu::ScopedLogSection section(gl.getLog(), "Program", "Create and bind program");
+
+			GLint linkStatus = -1;
+
+			shaderProg = gl.glCreateProgram();
+			gl.glAttachShader(shaderProg, shaderVert);
+			gl.glAttachShader(shaderProg, shaderFrag);
+			gl.glLinkProgram(shaderProg);
+			GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glLinkProgram");
+
+			gl.glGetProgramiv(shaderProg, GL_LINK_STATUS, &linkStatus);
+			if (linkStatus != GL_TRUE)
+				result.fail("expected GL_TRUE");
+
+			gl.glUseProgram(shaderProg);
+			GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glUseProgram");
+
+			verifyStateInteger(result, gl, GL_CURRENT_PROGRAM, shaderProg, m_type);
+		}
+		{
+			const tcu::ScopedLogSection section(gl.getLog(), "Delete", "Delete program while in use");
+
+			gl.glDeleteShader(shaderVert);
+			gl.glDeleteShader(shaderFrag);
+			gl.glDeleteProgram(shaderProg);
+			GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glDeleteProgram");
+
+			verifyStateInteger(result, gl, GL_CURRENT_PROGRAM, shaderProg, m_type);
+		}
+		{
+			const tcu::ScopedLogSection section(gl.getLog(), "Unbind", "Unbind program");
+			gl.glUseProgram(0);
+			GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glUseProgram");
+
+			verifyStateInteger(result, gl, GL_CURRENT_PROGRAM, 0, m_type);
+		}
+	}
+};
+
+class VertexArrayBindingTestCase : public BindingTest
+{
+public:
+	VertexArrayBindingTestCase (Context& context, QueryType type, const char* name, const char* description)
+		: BindingTest(context, name, description, type)
+	{
+	}
+
+	void test (glu::CallLogWrapper& gl, tcu::ResultCollector& result) const
+	{
+		verifyStateInteger(result, gl, GL_VERTEX_ARRAY_BINDING, 0, m_type);
 
 		GLuint vertexArrayObject = 0;
-		glGenVertexArrays(1, &vertexArrayObject);
-		expectError(GL_NO_ERROR);
+		gl.glGenVertexArrays(1, &vertexArrayObject);
+		GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glGenVertexArrays");
 
-		glBindVertexArray(vertexArrayObject);
-		m_verifier->verifyInteger(m_testCtx, GL_VERTEX_ARRAY_BINDING, vertexArrayObject);
-		expectError(GL_NO_ERROR);
+		gl.glBindVertexArray(vertexArrayObject);
+		verifyStateInteger(result, gl, GL_VERTEX_ARRAY_BINDING, vertexArrayObject, m_type);
 
-		glDeleteVertexArrays(1, &vertexArrayObject);
-		m_verifier->verifyInteger(m_testCtx, GL_VERTEX_ARRAY_BINDING, 0);
-		expectError(GL_NO_ERROR);
+		gl.glDeleteVertexArrays(1, &vertexArrayObject);
+		verifyStateInteger(result, gl, GL_VERTEX_ARRAY_BINDING, 0, m_type);
 	}
-
-private:
-	StateVerifier*		m_verifier;
 };
 
-class BufferBindingTestCase : public ApiCase
+class BufferBindingTestCase : public BindingTest
 {
 public:
-	BufferBindingTestCase (Context& context, StateVerifier* verifier, const char* name, const char* description, GLenum bufferBindingName, GLenum bufferType)
-		: ApiCase				(context, name, description)
-		, m_verifier			(verifier)
+	BufferBindingTestCase (Context& context, QueryType type, const char* name, const char* description, GLenum bufferBindingName, GLenum bufferType)
+		: BindingTest			(context, name, description, type)
 		, m_bufferBindingName	(bufferBindingName)
 		, m_bufferType			(bufferType)
 	{
 	}
 
-	void test (void)
+	void test (glu::CallLogWrapper& gl, tcu::ResultCollector& result) const
 	{
-		m_verifier->verifyInteger(m_testCtx, m_bufferBindingName, 0);
-		expectError(GL_NO_ERROR);
+		verifyStateInteger(result, gl, m_bufferBindingName, 0, m_type);
 
 		GLuint bufferObject = 0;
-		glGenBuffers(1, &bufferObject);
-		expectError(GL_NO_ERROR);
+		gl.glGenBuffers(1, &bufferObject);
+		GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glGenBuffers");
 
-		glBindBuffer(m_bufferType, bufferObject);
-		m_verifier->verifyInteger(m_testCtx, m_bufferBindingName, bufferObject);
-		expectError(GL_NO_ERROR);
+		gl.glBindBuffer(m_bufferType, bufferObject);
+		verifyStateInteger(result, gl, m_bufferBindingName, bufferObject, m_type);
 
-		glDeleteBuffers(1, &bufferObject);
-		m_verifier->verifyInteger(m_testCtx, m_bufferBindingName, 0);
-		expectError(GL_NO_ERROR);
+		gl.glDeleteBuffers(1, &bufferObject);
+		GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glDeleteBuffers");
+
+		verifyStateInteger(result, gl, m_bufferBindingName, 0, m_type);
 	}
 
 private:
-	StateVerifier*	m_verifier;
-	GLenum			m_bufferBindingName;
-	GLenum			m_bufferType;
+	const GLenum	m_bufferBindingName;
+	const GLenum	m_bufferType;
 };
 
-class ElementArrayBufferBindingTestCase : public ApiCase
+class ElementArrayBufferBindingTestCase : public BindingTest
 {
 public:
-	ElementArrayBufferBindingTestCase (Context& context, StateVerifier* verifier, const char* name)
-		: ApiCase		(context, name, "GL_ELEMENT_ARRAY_BUFFER_BINDING")
-		, m_verifier	(verifier)
+	ElementArrayBufferBindingTestCase (Context& context, QueryType type, const char* name)
+		: BindingTest(context, name, "GL_ELEMENT_ARRAY_BUFFER_BINDING", type)
 	{
 	}
 
-	void test (void)
+	void test (glu::CallLogWrapper& gl, tcu::ResultCollector& result) const
 	{
 		// Test with default VAO
 		{
-			const tcu::ScopedLogSection section(m_log, "DefaultVAO", "Test with default VAO");
+			const tcu::ScopedLogSection section(gl.getLog(), "DefaultVAO", "Test with default VAO");
 
-			m_verifier->verifyInteger(m_testCtx, GL_ELEMENT_ARRAY_BUFFER_BINDING, 0);
-			expectError(GL_NO_ERROR);
+			verifyStateInteger(result, gl, GL_ELEMENT_ARRAY_BUFFER_BINDING, 0, m_type);
 
 			GLuint bufferObject = 0;
-			glGenBuffers(1, &bufferObject);
-			expectError(GL_NO_ERROR);
+			gl.glGenBuffers(1, &bufferObject);
+			GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glGenBuffers");
 
-			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bufferObject);
-			m_verifier->verifyInteger(m_testCtx, GL_ELEMENT_ARRAY_BUFFER_BINDING, bufferObject);
-			expectError(GL_NO_ERROR);
+			gl.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bufferObject);
+			verifyStateInteger(result, gl, GL_ELEMENT_ARRAY_BUFFER_BINDING, bufferObject, m_type);
 
-			glDeleteBuffers(1, &bufferObject);
-			m_verifier->verifyInteger(m_testCtx, GL_ELEMENT_ARRAY_BUFFER_BINDING, 0);
-			expectError(GL_NO_ERROR);
+			gl.glDeleteBuffers(1, &bufferObject);
+			verifyStateInteger(result, gl, GL_ELEMENT_ARRAY_BUFFER_BINDING, 0, m_type);
 		}
 
 		// Test with multiple VAOs
 		{
-			const tcu::ScopedLogSection section(m_log, "WithVAO", "Test with VAO");
+			const tcu::ScopedLogSection section(gl.getLog(), "WithVAO", "Test with VAO");
 
 			GLuint vaos[2]		= {0};
 			GLuint buffers[2]	= {0};
 
-			glGenVertexArrays(2, vaos);
-			expectError(GL_NO_ERROR);
+			gl.glGenVertexArrays(2, vaos);
+			GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glGenVertexArrays");
 
-			glGenBuffers(2, buffers);
-			expectError(GL_NO_ERROR);
+			gl.glGenBuffers(2, buffers);
+			GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glGenBuffers");
 
 			// initial
-			glBindVertexArray(vaos[0]);
-			m_verifier->verifyInteger(m_testCtx, GL_ELEMENT_ARRAY_BUFFER_BINDING, 0);
-			expectError(GL_NO_ERROR);
+			gl.glBindVertexArray(vaos[0]);
+			verifyStateInteger(result, gl, GL_ELEMENT_ARRAY_BUFFER_BINDING, 0, m_type);
 
 			// after setting
-			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffers[0]);
-			m_verifier->verifyInteger(m_testCtx, GL_ELEMENT_ARRAY_BUFFER_BINDING, buffers[0]);
-			expectError(GL_NO_ERROR);
+			gl.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffers[0]);
+			verifyStateInteger(result, gl, GL_ELEMENT_ARRAY_BUFFER_BINDING, buffers[0], m_type);
 
 			// initial of vao 2
-			glBindVertexArray(vaos[1]);
-			m_verifier->verifyInteger(m_testCtx, GL_ELEMENT_ARRAY_BUFFER_BINDING, 0);
-			expectError(GL_NO_ERROR);
+			gl.glBindVertexArray(vaos[1]);
+			verifyStateInteger(result, gl, GL_ELEMENT_ARRAY_BUFFER_BINDING, 0, m_type);
 
 			// after setting to 2
-			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffers[1]);
-			m_verifier->verifyInteger(m_testCtx, GL_ELEMENT_ARRAY_BUFFER_BINDING, buffers[1]);
-			expectError(GL_NO_ERROR);
+			gl.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffers[1]);
+			verifyStateInteger(result, gl, GL_ELEMENT_ARRAY_BUFFER_BINDING, buffers[1], m_type);
 
 			// vao 1 still has buffer 1 bound?
-			glBindVertexArray(vaos[0]);
-			m_verifier->verifyInteger(m_testCtx, GL_ELEMENT_ARRAY_BUFFER_BINDING, buffers[0]);
-			expectError(GL_NO_ERROR);
+			gl.glBindVertexArray(vaos[0]);
+			verifyStateInteger(result, gl, GL_ELEMENT_ARRAY_BUFFER_BINDING, buffers[0], m_type);
 
 			// deleting clears from bound vaos ...
-			glDeleteBuffers(2, buffers);
-			m_verifier->verifyInteger(m_testCtx, GL_ELEMENT_ARRAY_BUFFER_BINDING, 0);
-			expectError(GL_NO_ERROR);
+			gl.glDeleteBuffers(2, buffers);
+			verifyStateInteger(result, gl, GL_ELEMENT_ARRAY_BUFFER_BINDING, 0, m_type);
 
 			// ... but does not from non-bound vaos?
-			glBindVertexArray(vaos[1]);
-			m_verifier->verifyInteger(m_testCtx, GL_ELEMENT_ARRAY_BUFFER_BINDING, buffers[1]);
-			expectError(GL_NO_ERROR);
+			gl.glBindVertexArray(vaos[1]);
+			verifyStateInteger(result, gl, GL_ELEMENT_ARRAY_BUFFER_BINDING, buffers[1], m_type);
 
-			glDeleteVertexArrays(2, vaos);
-			expectError(GL_NO_ERROR);
+			gl.glDeleteVertexArrays(2, vaos);
+			GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glDeleteVertexArrays");
 		}
 	}
-
-private:
-	StateVerifier*	m_verifier;
 };
 
 class StencilClearValueTestCase : public ApiCase
@@ -2268,201 +2315,176 @@ private:
 	StateVerifier*		m_verifier;
 };
 
-class RenderbufferBindingTestCase : public ApiCase
+class RenderbufferBindingTestCase : public BindingTest
 {
 public:
-	RenderbufferBindingTestCase	(Context& context, StateVerifier* verifier, const char* name, const char* description)
-		: ApiCase		(context, name, description)
-		, m_verifier	(verifier)
+	RenderbufferBindingTestCase (Context& context, QueryType type, const char* name, const char* description)
+		: BindingTest(context, name, description, type)
 	{
 	}
 
-	void test (void)
+	void test (glu::CallLogWrapper& gl, tcu::ResultCollector& result) const
 	{
-		m_verifier->verifyInteger(m_testCtx, GL_RENDERBUFFER_BINDING, 0);
-		expectError(GL_NO_ERROR);
+		verifyStateInteger(result, gl, GL_RENDERBUFFER_BINDING, 0, m_type);
 
 		GLuint renderBuffer = 0;
-		glGenRenderbuffers(1, &renderBuffer);
-		expectError(GL_NO_ERROR);
+		gl.glGenRenderbuffers(1, &renderBuffer);
+		GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glGenRenderbuffers");
 
-		glBindRenderbuffer(GL_RENDERBUFFER, renderBuffer);
-		expectError(GL_NO_ERROR);
+		gl.glBindRenderbuffer(GL_RENDERBUFFER, renderBuffer);
+		GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glBindRenderbuffer");
 
-		m_verifier->verifyInteger(m_testCtx, GL_RENDERBUFFER_BINDING, renderBuffer);
-		expectError(GL_NO_ERROR);
+		verifyStateInteger(result, gl, GL_RENDERBUFFER_BINDING, renderBuffer, m_type);
 
-		glDeleteRenderbuffers(1, &renderBuffer);
-		m_verifier->verifyInteger(m_testCtx, GL_RENDERBUFFER_BINDING, 0);
-		expectError(GL_NO_ERROR);
+		gl.glDeleteRenderbuffers(1, &renderBuffer);
+		GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glDeleteRenderbuffers");
+
+		verifyStateInteger(result, gl, GL_RENDERBUFFER_BINDING, 0, m_type);
 	}
-
-private:
-	StateVerifier*		m_verifier;
 };
 
-class SamplerObjectBindingTestCase : public ApiCase
+class SamplerObjectBindingTestCase : public BindingTest
 {
 public:
-	SamplerObjectBindingTestCase (Context& context, StateVerifier* verifier, const char* name, const char* description)
-		: ApiCase		(context, name, description)
-		, m_verifier	(verifier)
+	SamplerObjectBindingTestCase (Context& context, QueryType type, const char* name, const char* description)
+		: BindingTest(context, name, description, type)
 	{
 	}
-	void test (void)
+
+	void test (glu::CallLogWrapper& gl, tcu::ResultCollector& result) const
 	{
-		m_verifier->verifyInteger(m_testCtx, GL_SAMPLER_BINDING, 0);
-		expectError(GL_NO_ERROR);
+		verifyStateInteger(result, gl, GL_SAMPLER_BINDING, 0, m_type);
 
 		{
-			const tcu::ScopedLogSection section(m_log, "SingleUnit", "Single unit");
+			const tcu::ScopedLogSection section(gl.getLog(), "SingleUnit", "Single unit");
+
 			GLuint sampler = 0;
-			glGenSamplers(1, &sampler);
-			expectError(GL_NO_ERROR);
+			gl.glGenSamplers(1, &sampler);
+			GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glGenSamplers");
 
-			glBindSampler(0, sampler);
-			expectError(GL_NO_ERROR);
+			gl.glBindSampler(0, sampler);
+			GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glBindSampler");
 
-			m_verifier->verifyInteger(m_testCtx, GL_SAMPLER_BINDING, sampler);
-			expectError(GL_NO_ERROR);
+			verifyStateInteger(result, gl, GL_SAMPLER_BINDING, sampler, m_type);
 
-			glDeleteSamplers(1, &sampler);
-			m_verifier->verifyInteger(m_testCtx, GL_SAMPLER_BINDING, 0);
-			expectError(GL_NO_ERROR);
+			gl.glDeleteSamplers(1, &sampler);
+			verifyStateInteger(result, gl, GL_SAMPLER_BINDING, 0, m_type);
 		}
 
 		{
-			const tcu::ScopedLogSection section(m_log, "MultipleUnits", "Multiple units");
+			const tcu::ScopedLogSection section(gl.getLog(), "MultipleUnits", "Multiple units");
 
 			GLuint samplerA = 0;
 			GLuint samplerB = 0;
-			glGenSamplers(1, &samplerA);
-			glGenSamplers(1, &samplerB);
-			expectError(GL_NO_ERROR);
+			gl.glGenSamplers(1, &samplerA);
+			gl.glGenSamplers(1, &samplerB);
+			GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glGenSamplers");
 
-			glBindSampler(1, samplerA);
-			glBindSampler(2, samplerB);
-			expectError(GL_NO_ERROR);
+			gl.glBindSampler(1, samplerA);
+			gl.glBindSampler(2, samplerB);
+			GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glBindSampler");
 
-			m_verifier->verifyInteger(m_testCtx, GL_SAMPLER_BINDING, 0);
-			expectError(GL_NO_ERROR);
+			verifyStateInteger(result, gl, GL_SAMPLER_BINDING, 0, m_type);
 
-			glActiveTexture(GL_TEXTURE1);
-			m_verifier->verifyInteger(m_testCtx, GL_SAMPLER_BINDING, samplerA);
-			expectError(GL_NO_ERROR);
+			gl.glActiveTexture(GL_TEXTURE1);
+			verifyStateInteger(result, gl, GL_SAMPLER_BINDING, samplerA, m_type);
 
-			glActiveTexture(GL_TEXTURE2);
-			m_verifier->verifyInteger(m_testCtx, GL_SAMPLER_BINDING, samplerB);
-			expectError(GL_NO_ERROR);
+			gl.glActiveTexture(GL_TEXTURE2);
+			verifyStateInteger(result, gl, GL_SAMPLER_BINDING, samplerB, m_type);
 
-			glDeleteSamplers(1, &samplerB);
-			glDeleteSamplers(1, &samplerA);
-			expectError(GL_NO_ERROR);
+			gl.glDeleteSamplers(1, &samplerB);
+			gl.glDeleteSamplers(1, &samplerA);
+			GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glDeleteSamplers");
 		}
 	}
-
-private:
-	StateVerifier*		m_verifier;
 };
 
-class TextureBindingTestCase : public ApiCase
+class TextureBindingTestCase : public BindingTest
 {
 public:
-	TextureBindingTestCase (Context& context, StateVerifier* verifier, const char* name, const char* description, GLenum testBindingName, GLenum textureType)
-		: ApiCase				(context, name, description)
-		, m_verifier			(verifier)
+	TextureBindingTestCase (Context& context, QueryType type, const char* name, const char* description, GLenum testBindingName, GLenum textureType)
+		: BindingTest			(context, name, description, type)
 		, m_testBindingName		(testBindingName)
 		, m_textureType			(textureType)
 	{
 	}
 
-	void test (void)
+	void test (glu::CallLogWrapper& gl, tcu::ResultCollector& result) const
 	{
-		m_verifier->verifyInteger(m_testCtx, m_testBindingName, 0);
-		expectError(GL_NO_ERROR);
+		verifyStateInteger(result, gl, m_testBindingName, 0, m_type);
 
 		GLuint texture = 0;
-		glGenTextures(1, &texture);
-		expectError(GL_NO_ERROR);
+		gl.glGenTextures(1, &texture);
+		GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glGenTextures");
 
-		glBindTexture(m_textureType, texture);
-		m_verifier->verifyInteger(m_testCtx, m_testBindingName, texture);
+		gl.glBindTexture(m_textureType, texture);
+		GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glBindTexture");
 
-		glDeleteTextures(1, &texture);
-		expectError(GL_NO_ERROR);
+		verifyStateInteger(result, gl, m_testBindingName, texture, m_type);
 
-		m_verifier->verifyInteger(m_testCtx, m_testBindingName, 0);
-		expectError(GL_NO_ERROR);
+		gl.glDeleteTextures(1, &texture);
+		GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glDeleteTextures");
+
+		verifyStateInteger(result, gl, m_testBindingName, 0, m_type);
 	}
 private:
-	StateVerifier*	m_verifier;
-	GLenum		m_testBindingName;
-	GLenum		m_textureType;
+	const GLenum	m_testBindingName;
+	const GLenum	m_textureType;
 };
 
-class FrameBufferBindingTestCase : public ApiCase
+class FrameBufferBindingTestCase : public BindingTest
 {
 public:
-	FrameBufferBindingTestCase (Context& context, StateVerifier* verifier, const char* name, const char* description)
-		: ApiCase		(context, name, description)
-		, m_verifier	(verifier)
+	FrameBufferBindingTestCase (Context& context, QueryType type, const char* name, const char* description)
+		: BindingTest(context, name, description, type)
 	{
 	}
 
-	void test (void)
+	void test (glu::CallLogWrapper& gl, tcu::ResultCollector& result) const
 	{
-		m_verifier->verifyInteger(m_testCtx, GL_DRAW_FRAMEBUFFER_BINDING,	0);
-		m_verifier->verifyInteger(m_testCtx, GL_FRAMEBUFFER_BINDING,			0);
-		m_verifier->verifyInteger(m_testCtx, GL_READ_FRAMEBUFFER_BINDING,	0);
-		expectError(GL_NO_ERROR);
+		verifyStateInteger(result, gl, GL_DRAW_FRAMEBUFFER_BINDING,	0, m_type);
+		verifyStateInteger(result, gl, GL_FRAMEBUFFER_BINDING,		0, m_type);
+		verifyStateInteger(result, gl, GL_READ_FRAMEBUFFER_BINDING,	0, m_type);
 
 		GLuint framebufferId = 0;
-		glGenFramebuffers(1, &framebufferId);
-		expectError(GL_NO_ERROR);
+		gl.glGenFramebuffers(1, &framebufferId);
+		GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glGenFramebuffers");
 
-		glBindFramebuffer(GL_FRAMEBUFFER, framebufferId);
-		expectError(GL_NO_ERROR);
+		gl.glBindFramebuffer(GL_FRAMEBUFFER, framebufferId);
+		GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "bind GL_FRAMEBUFFER");
 
-		m_verifier->verifyInteger(m_testCtx, GL_DRAW_FRAMEBUFFER_BINDING,	framebufferId);
-		m_verifier->verifyInteger(m_testCtx, GL_FRAMEBUFFER_BINDING,		framebufferId);
-		m_verifier->verifyInteger(m_testCtx, GL_READ_FRAMEBUFFER_BINDING,	framebufferId);
-		expectError(GL_NO_ERROR);
+		verifyStateInteger(result, gl, GL_DRAW_FRAMEBUFFER_BINDING,	framebufferId, m_type);
+		verifyStateInteger(result, gl, GL_FRAMEBUFFER_BINDING,		framebufferId, m_type);
+		verifyStateInteger(result, gl, GL_READ_FRAMEBUFFER_BINDING,	framebufferId, m_type);
 
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		expectError(GL_NO_ERROR);
+		gl.glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "unbind GL_FRAMEBUFFER");
 
-		m_verifier->verifyInteger(m_testCtx, GL_DRAW_FRAMEBUFFER_BINDING,	0);
-		m_verifier->verifyInteger(m_testCtx, GL_FRAMEBUFFER_BINDING,			0);
-		m_verifier->verifyInteger(m_testCtx, GL_READ_FRAMEBUFFER_BINDING,	0);
-		expectError(GL_NO_ERROR);
+		verifyStateInteger(result, gl, GL_DRAW_FRAMEBUFFER_BINDING,	0, m_type);
+		verifyStateInteger(result, gl, GL_FRAMEBUFFER_BINDING,		0, m_type);
+		verifyStateInteger(result, gl, GL_READ_FRAMEBUFFER_BINDING,	0, m_type);
 
-		glBindFramebuffer(GL_READ_FRAMEBUFFER, framebufferId);
-		expectError(GL_NO_ERROR);
+		gl.glBindFramebuffer(GL_READ_FRAMEBUFFER, framebufferId);
+		GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "bind GL_READ_FRAMEBUFFER");
 
-		m_verifier->verifyInteger(m_testCtx, GL_DRAW_FRAMEBUFFER_BINDING,	0);
-		m_verifier->verifyInteger(m_testCtx, GL_FRAMEBUFFER_BINDING,		0);
-		m_verifier->verifyInteger(m_testCtx, GL_READ_FRAMEBUFFER_BINDING,	framebufferId);
-		expectError(GL_NO_ERROR);
+		verifyStateInteger(result, gl, GL_DRAW_FRAMEBUFFER_BINDING,	0,				m_type);
+		verifyStateInteger(result, gl, GL_FRAMEBUFFER_BINDING,		0,				m_type);
+		verifyStateInteger(result, gl, GL_READ_FRAMEBUFFER_BINDING,	framebufferId,	m_type);
 
-		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, framebufferId);
-		expectError(GL_NO_ERROR);
+		gl.glBindFramebuffer(GL_DRAW_FRAMEBUFFER, framebufferId);
+		GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "bind GL_DRAW_FRAMEBUFFER");
 
-		m_verifier->verifyInteger(m_testCtx, GL_DRAW_FRAMEBUFFER_BINDING,	framebufferId);
-		m_verifier->verifyInteger(m_testCtx, GL_FRAMEBUFFER_BINDING,		framebufferId);
-		m_verifier->verifyInteger(m_testCtx, GL_READ_FRAMEBUFFER_BINDING,	framebufferId);
-		expectError(GL_NO_ERROR);
+		verifyStateInteger(result, gl, GL_DRAW_FRAMEBUFFER_BINDING,	framebufferId, m_type);
+		verifyStateInteger(result, gl, GL_FRAMEBUFFER_BINDING,		framebufferId, m_type);
+		verifyStateInteger(result, gl, GL_READ_FRAMEBUFFER_BINDING,	framebufferId, m_type);
 
-		glDeleteFramebuffers(1, &framebufferId);
-		expectError(GL_NO_ERROR);
+		gl.glDeleteFramebuffers(1, &framebufferId);
+		GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glDeleteFramebuffers");
 
-		m_verifier->verifyInteger(m_testCtx, GL_DRAW_FRAMEBUFFER_BINDING,	0);
-		m_verifier->verifyInteger(m_testCtx, GL_FRAMEBUFFER_BINDING,		0);
-		m_verifier->verifyInteger(m_testCtx, GL_READ_FRAMEBUFFER_BINDING,	0);
-		expectError(GL_NO_ERROR);
+		verifyStateInteger(result, gl, GL_DRAW_FRAMEBUFFER_BINDING,	0, m_type);
+		verifyStateInteger(result, gl, GL_FRAMEBUFFER_BINDING,		0, m_type);
+		verifyStateInteger(result, gl, GL_READ_FRAMEBUFFER_BINDING,	0, m_type);
 	}
-
-private:
-	StateVerifier*	m_verifier;
 };
 
 class ImplementationColorReadTestCase : public ApiCase
@@ -2668,11 +2690,32 @@ private:
 	StateVerifier*	m_verifier;
 };
 
+static const char* getQueryTypeSuffix (QueryType type)
+{
+	switch (type)
+	{
+		case QUERY_BOOLEAN:		return "_getboolean";
+		case QUERY_INTEGER:		return "_getinteger";
+		case QUERY_INTEGER64:	return "_getinteger64";
+		case QUERY_FLOAT:		return "_getfloat";
+		default:
+			DE_ASSERT(DE_FALSE);
+			return DE_NULL;
+	}
+}
+
 #define FOR_EACH_VERIFIER(VERIFIERS, CODE_BLOCK)												\
 	for (int _verifierNdx = 0; _verifierNdx < DE_LENGTH_OF_ARRAY(VERIFIERS); _verifierNdx++)	\
 	{																							\
 		StateVerifier* verifier = VERIFIERS[_verifierNdx];										\
 		CODE_BLOCK;																				\
+	}
+
+#define FOR_EACH_QUERYTYPE(QUERYTYPES, CODE_BLOCK)													\
+	for (int _queryTypeNdx = 0; _queryTypeNdx < DE_LENGTH_OF_ARRAY(QUERYTYPES); _queryTypeNdx++)	\
+	{																								\
+		const QueryType queryType = QUERYTYPES[_queryTypeNdx];										\
+		CODE_BLOCK;																					\
 	}
 
 } // anonymous
@@ -2693,6 +2736,14 @@ IntegerStateQueryTests::~IntegerStateQueryTests (void)
 
 void IntegerStateQueryTests::init (void)
 {
+	static const QueryType queryTypes[] =
+	{
+		QUERY_BOOLEAN,
+		QUERY_INTEGER,
+		QUERY_INTEGER64,
+		QUERY_FLOAT,
+	};
+
 	DE_ASSERT(m_verifierBoolean == DE_NULL);
 	DE_ASSERT(m_verifierInteger == DE_NULL);
 	DE_ASSERT(m_verifierInteger64 == DE_NULL);
@@ -2928,17 +2979,17 @@ void IntegerStateQueryTests::init (void)
 	};
 	for (int testNdx = 0; testNdx < DE_LENGTH_OF_ARRAY(bufferBindingStates); testNdx++)
 	{
-		FOR_EACH_VERIFIER(normalVerifiers, addChild(new BufferBindingTestCase(m_context, verifier, (std::string(bufferBindingStates[testNdx].name) + verifier->getTestNamePostfix()).c_str(), bufferBindingStates[testNdx].description, bufferBindingStates[testNdx].target, bufferBindingStates[testNdx].type)));
+		FOR_EACH_QUERYTYPE(queryTypes, addChild(new BufferBindingTestCase(m_context, queryType, (std::string(bufferBindingStates[testNdx].name) + getQueryTypeSuffix(queryType)).c_str(), bufferBindingStates[testNdx].description, bufferBindingStates[testNdx].target, bufferBindingStates[testNdx].type)));
 	}
 
-	FOR_EACH_VERIFIER(normalVerifiers, addChild(new ElementArrayBufferBindingTestCase	(m_context, verifier, (std::string("element_array_buffer_binding")	+ verifier->getTestNamePostfix()).c_str())));
-	FOR_EACH_VERIFIER(normalVerifiers, addChild(new TransformFeedbackBindingTestCase	(m_context, verifier, (std::string("transform_feedback_binding")	+ verifier->getTestNamePostfix()).c_str())));
-	FOR_EACH_VERIFIER(normalVerifiers, addChild(new CurrentProgramBindingTestCase		(m_context, verifier, (std::string("current_program_binding")		+ verifier->getTestNamePostfix()).c_str(),	"CURRENT_PROGRAM")));
-	FOR_EACH_VERIFIER(normalVerifiers, addChild(new VertexArrayBindingTestCase			(m_context, verifier, (std::string("vertex_array_binding")			+ verifier->getTestNamePostfix()).c_str(),	"VERTEX_ARRAY_BINDING")));
+	FOR_EACH_QUERYTYPE(queryTypes,     addChild(new ElementArrayBufferBindingTestCase	(m_context, queryType, (std::string("element_array_buffer_binding")	+ getQueryTypeSuffix(queryType)).c_str())));
+	FOR_EACH_QUERYTYPE(queryTypes,     addChild(new TransformFeedbackBindingTestCase	(m_context, queryType, (std::string("transform_feedback_binding")	+ getQueryTypeSuffix(queryType)).c_str())));
+	FOR_EACH_QUERYTYPE(queryTypes,     addChild(new CurrentProgramBindingTestCase		(m_context, queryType, (std::string("current_program_binding")		+ getQueryTypeSuffix(queryType)).c_str(),	"CURRENT_PROGRAM")));
+	FOR_EACH_QUERYTYPE(queryTypes,     addChild(new VertexArrayBindingTestCase			(m_context, queryType, (std::string("vertex_array_binding")			+ getQueryTypeSuffix(queryType)).c_str(),	"VERTEX_ARRAY_BINDING")));
 	FOR_EACH_VERIFIER(normalVerifiers, addChild(new StencilClearValueTestCase			(m_context, verifier, (std::string("stencil_clear_value")			+ verifier->getTestNamePostfix()).c_str(),	"STENCIL_CLEAR_VALUE")));
 	FOR_EACH_VERIFIER(normalVerifiers, addChild(new ActiveTextureTestCase				(m_context, verifier, (std::string("active_texture")				+ verifier->getTestNamePostfix()).c_str(),	"ACTIVE_TEXTURE")));
-	FOR_EACH_VERIFIER(normalVerifiers, addChild(new RenderbufferBindingTestCase			(m_context, verifier, (std::string("renderbuffer_binding")			+ verifier->getTestNamePostfix()).c_str(),	"RENDERBUFFER_BINDING")));
-	FOR_EACH_VERIFIER(normalVerifiers, addChild(new SamplerObjectBindingTestCase		(m_context, verifier, (std::string("sampler_binding")				+ verifier->getTestNamePostfix()).c_str(),	"SAMPLER_BINDING")));
+	FOR_EACH_QUERYTYPE(queryTypes,     addChild(new RenderbufferBindingTestCase			(m_context, queryType, (std::string("renderbuffer_binding")			+ getQueryTypeSuffix(queryType)).c_str(),	"RENDERBUFFER_BINDING")));
+	FOR_EACH_QUERYTYPE(queryTypes,     addChild(new SamplerObjectBindingTestCase		(m_context, queryType, (std::string("sampler_binding")				+ getQueryTypeSuffix(queryType)).c_str(),	"SAMPLER_BINDING")));
 
 	const struct TextureBinding
 	{
@@ -2956,11 +3007,11 @@ void IntegerStateQueryTests::init (void)
 
 	for (int testNdx = 0; testNdx < DE_LENGTH_OF_ARRAY(textureBindings); testNdx++)
 	{
-		FOR_EACH_VERIFIER(normalVerifiers, addChild(new TextureBindingTestCase(m_context, verifier, (std::string(textureBindings[testNdx].name) + verifier->getTestNamePostfix()).c_str(), textureBindings[testNdx].description, textureBindings[testNdx].target, textureBindings[testNdx].type)));
+		FOR_EACH_QUERYTYPE(queryTypes, addChild(new TextureBindingTestCase(m_context, queryType, (std::string(textureBindings[testNdx].name) + getQueryTypeSuffix(queryType)).c_str(), textureBindings[testNdx].description, textureBindings[testNdx].target, textureBindings[testNdx].type)));
 	}
 
 
-	FOR_EACH_VERIFIER(normalVerifiers, addChild(new FrameBufferBindingTestCase		(m_context, verifier, (std::string("framebuffer_binding")			+ verifier->getTestNamePostfix()).c_str(),	"DRAW_FRAMEBUFFER_BINDING and READ_FRAMEBUFFER_BINDING")));
+	FOR_EACH_QUERYTYPE(queryTypes,     addChild(new FrameBufferBindingTestCase		(m_context, queryType, (std::string("framebuffer_binding")			+ getQueryTypeSuffix(queryType)).c_str(),	"DRAW_FRAMEBUFFER_BINDING and READ_FRAMEBUFFER_BINDING")));
 	FOR_EACH_VERIFIER(normalVerifiers, addChild(new ImplementationColorReadTestCase	(m_context, verifier, (std::string("implementation_color_read")		+ verifier->getTestNamePostfix()).c_str(),	"IMPLEMENTATION_COLOR_READ_TYPE and IMPLEMENTATION_COLOR_READ_FORMAT")));
 	FOR_EACH_VERIFIER(normalVerifiers, addChild(new ReadBufferCase					(m_context, verifier, (std::string("read_buffer")					+ verifier->getTestNamePostfix()).c_str(),	"READ_BUFFER")));
 	FOR_EACH_VERIFIER(normalVerifiers, addChild(new DrawBufferCase					(m_context, verifier, (std::string("draw_buffer")					+ verifier->getTestNamePostfix()).c_str(),	"DRAW_BUFFER")));
