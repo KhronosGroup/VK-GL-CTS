@@ -3287,12 +3287,14 @@ group pragmas "Pragma Tests"
 		""
 	end
 
-	case invalid_pragma_invalid_debug
+	case pragma_unrecognized_debug
 		version 300 es
-		expect compile_fail
+		expect build_successful
 		both ""
 			#version 300 es
 			#pragma debug(1.23)
+
+			// unrecognized preprocessor token
 
 			precision mediump float;
 			${DECLARATIONS}
@@ -3303,12 +3305,14 @@ group pragmas "Pragma Tests"
 		""
 	end
 
-	case invalid_pragma_invalid_token
+	case pragma_unrecognized_token
 		version 300 es
-		expect compile_fail
+		expect build_successful
 		both ""
 			#version 300 es
 			#pragma ¤¤½
+
+			// trailing bytes form a valid but unrecognized preprocessor token
 
 			precision mediump float;
 			${DECLARATIONS}

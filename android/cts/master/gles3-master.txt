@@ -1143,10 +1143,6 @@ dEQP-GLES3.functional.shaders.preprocessor.pragmas.pragma_vertex
 dEQP-GLES3.functional.shaders.preprocessor.pragmas.pragma_fragment
 dEQP-GLES3.functional.shaders.preprocessor.pragmas.pragma_macro_exp_vertex
 dEQP-GLES3.functional.shaders.preprocessor.pragmas.pragma_macro_exp_fragment
-dEQP-GLES3.functional.shaders.preprocessor.pragmas.invalid_pragma_invalid_debug_vertex
-dEQP-GLES3.functional.shaders.preprocessor.pragmas.invalid_pragma_invalid_debug_fragment
-dEQP-GLES3.functional.shaders.preprocessor.pragmas.invalid_pragma_invalid_token_vertex
-dEQP-GLES3.functional.shaders.preprocessor.pragmas.invalid_pragma_invalid_token_fragment
 dEQP-GLES3.functional.shaders.preprocessor.extensions.basic_vertex
 dEQP-GLES3.functional.shaders.preprocessor.extensions.basic_fragment
 dEQP-GLES3.functional.shaders.preprocessor.extensions.macro_exp_vertex
