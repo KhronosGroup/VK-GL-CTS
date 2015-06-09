@@ -369,14 +369,19 @@ FramebufferMinimumValueCase::IterateResult FramebufferMinimumValueCase::iterate 
 	gl.enableLogging(true);
 
 	{
-		const tcu::ScopedLogSection	section(m_testCtx.getLog(), "Minimum", "Minimum is " + de::toString(m_minValue));
+		const tcu::ScopedLogSection	section(m_testCtx.getLog(), "Minimum", "Specified minimum is " + de::toString(m_minValue));
 
 		verifyStateIntegerMin(result, gl, m_target, m_minValue, m_verifierType);
 	}
 	{
-		const tcu::ScopedLogSection	section(m_testCtx.getLog(), "Ties", "Tied to " + de::toString(glu::getGettableStateStr(m_tiedTo)));
+		const tcu::ScopedLogSection				section		(m_testCtx.getLog(), "Ties", "The limit is tied to the value of " + de::toString(glu::getGettableStateStr(m_tiedTo)));
+		StateQueryMemoryWriteGuard<glw::GLint>	tiedToValue;
 
-		verifyStateIntegerEqualToOther(result, gl, m_target, m_tiedTo, m_verifierType);
+		gl.glGetIntegerv(m_tiedTo, &tiedToValue);
+		GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "glGetIntegerv");
+
+		if (tiedToValue.verifyValidity(result))
+			verifyStateIntegerMin(result, gl, m_target, tiedToValue, m_verifierType);
 	}
 
 	result.setTestContextResult(m_testCtx);
