@@ -41,7 +41,7 @@ group types "Types"
 		""
 		fragment ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${FRAGMENT_DECLARATIONS}
 			in mediump float te_out;
 			void main()
@@ -93,7 +93,7 @@ group types "Types"
 		""
 		fragment ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${FRAGMENT_DECLARATIONS}
 			in vec2 te_out;
 			void main()
@@ -145,7 +145,7 @@ group types "Types"
 		""
 		fragment ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${FRAGMENT_DECLARATIONS}
 			in vec3 te_out;
 			void main()
@@ -197,7 +197,7 @@ group types "Types"
 		""
 		fragment ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${FRAGMENT_DECLARATIONS}
 			in vec4 te_out;
 			void main()
@@ -249,7 +249,7 @@ group types "Types"
 		""
 		fragment ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${FRAGMENT_DECLARATIONS}
 			in mat2 te_out;
 			void main()
@@ -301,7 +301,7 @@ group types "Types"
 		""
 		fragment ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${FRAGMENT_DECLARATIONS}
 			in mat2x3 te_out;
 			void main()
@@ -353,7 +353,7 @@ group types "Types"
 		""
 		fragment ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${FRAGMENT_DECLARATIONS}
 			in mat2x4 te_out;
 			void main()
@@ -405,7 +405,7 @@ group types "Types"
 		""
 		fragment ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${FRAGMENT_DECLARATIONS}
 			in mat3x2 te_out;
 			void main()
@@ -457,7 +457,7 @@ group types "Types"
 		""
 		fragment ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${FRAGMENT_DECLARATIONS}
 			in mat3 te_out;
 			void main()
@@ -509,7 +509,7 @@ group types "Types"
 		""
 		fragment ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${FRAGMENT_DECLARATIONS}
 			in mat3x4 te_out;
 			void main()
@@ -561,7 +561,7 @@ group types "Types"
 		""
 		fragment ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${FRAGMENT_DECLARATIONS}
 			in mat4x2 te_out;
 			void main()
@@ -613,7 +613,7 @@ group types "Types"
 		""
 		fragment ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${FRAGMENT_DECLARATIONS}
 			in mat4x3 te_out;
 			void main()
@@ -665,7 +665,7 @@ group types "Types"
 		""
 		fragment ""
 			#version 310 es
-			precision mediump float;
+			precision highp float;
 			${FRAGMENT_DECLARATIONS}
 			in mat4 te_out;
 			void main()
@@ -718,6 +718,7 @@ group types "Types"
 		""
 		fragment ""
 			#version 310 es
+			precision highp int;
 			${FRAGMENT_DECLARATIONS}
 			flat in int te_out;
 			void main()
@@ -770,6 +771,7 @@ group types "Types"
 		""
 		fragment ""
 			#version 310 es
+			precision highp int;
 			${FRAGMENT_DECLARATIONS}
 			flat in ivec2 te_out;
 			void main()
@@ -822,6 +824,7 @@ group types "Types"
 		""
 		fragment ""
 			#version 310 es
+			precision highp int;
 			${FRAGMENT_DECLARATIONS}
 			flat in ivec3 te_out;
 			void main()
@@ -874,6 +877,7 @@ group types "Types"
 		""
 		fragment ""
 			#version 310 es
+			precision highp int;
 			${FRAGMENT_DECLARATIONS}
 			flat in ivec4 te_out;
 			void main()
@@ -926,6 +930,7 @@ group types "Types"
 		""
 		fragment ""
 			#version 310 es
+			precision highp int;
 			${FRAGMENT_DECLARATIONS}
 			flat in uint te_out;
 			void main()
@@ -978,6 +983,7 @@ group types "Types"
 		""
 		fragment ""
 			#version 310 es
+			precision highp int;
 			${FRAGMENT_DECLARATIONS}
 			flat in uvec2 te_out;
 			void main()
@@ -1030,6 +1036,7 @@ group types "Types"
 		""
 		fragment ""
 			#version 310 es
+			precision highp int;
 			${FRAGMENT_DECLARATIONS}
 			flat in uvec3 te_out;
 			void main()
@@ -1082,6 +1089,7 @@ group types "Types"
 		""
 		fragment ""
 			#version 310 es
+			precision highp int;
 			${FRAGMENT_DECLARATIONS}
 			flat in uvec4 te_out;
 			void main()
