@@ -951,8 +951,6 @@ dEQP-GLES3.functional.shaders.preprocessor.predefined_macros.gl_es_2_vertex
 dEQP-GLES3.functional.shaders.preprocessor.predefined_macros.gl_es_2_fragment
 dEQP-GLES3.functional.shaders.preprocessor.predefined_macros.line_1_vertex
 dEQP-GLES3.functional.shaders.preprocessor.predefined_macros.line_1_fragment
-dEQP-GLES3.functional.shaders.preprocessor.predefined_macros.line_2_vertex
-dEQP-GLES3.functional.shaders.preprocessor.predefined_macros.line_2_fragment
 dEQP-GLES3.functional.shaders.preprocessor.predefined_macros.file_vertex
 dEQP-GLES3.functional.shaders.preprocessor.predefined_macros.file_fragment
 dEQP-GLES3.functional.shaders.preprocessor.predefined_macros.if_gl_es_vertex
