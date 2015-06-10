@@ -1717,7 +1717,7 @@ void ShaderOperatorTests::init (void)
 		<< BuiltinFuncInfo("tanh",			"tanh",			GT,	Value(GT, -1.5f, 5.5f),		notUsed,					notUsed,					0.5f, 0.5f,		PRECMASK_LOWP,				FLOAT_GENTYPE_FUNCS(tanh) )
 		<< BuiltinFuncInfo("asinh",			"asinh",		GT,	Value(GT, -1.0f, 1.0f),		notUsed,					notUsed,					1.0f, 0.0f,		PRECMASK_MEDIUMP_HIGHP,		FLOAT_GENTYPE_FUNCS(asinh) )
 		<< BuiltinFuncInfo("acosh",			"acosh",		GT,	Value(GT, 1.0f, 2.2f),		notUsed,					notUsed,					1.0f, 0.0f,		PRECMASK_MEDIUMP_HIGHP,		FLOAT_GENTYPE_FUNCS(acosh) )
-		<< BuiltinFuncInfo("atanh",			"atanh",		GT,	Value(GT, -1.0f, 1.0f),		notUsed,					notUsed,					1.0f, 0.0f,		PRECMASK_MEDIUMP_HIGHP,		FLOAT_GENTYPE_FUNCS(atanh) )
+		<< BuiltinFuncInfo("atanh",			"atanh",		GT,	Value(GT, -0.99f, 0.99f),	notUsed,					notUsed,					1.0f, 0.0f,		PRECMASK_MEDIUMP_HIGHP,		FLOAT_GENTYPE_FUNCS(atanh) )
 	);
 
 	// 8.2 Exponential Functions.
