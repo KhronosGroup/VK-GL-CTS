@@ -1079,11 +1079,20 @@ void verifyInteger (tcu::ResultCollector& result, QueriedState& state, int expec
 
 		case DATATYPE_FLOAT:
 		{
-			const glw::GLfloat reference = (glw::GLfloat)expected;
-			if (state.getFloatAccess() != reference)
+			const glw::GLfloat refValueMin = deInt32ToFloatRoundToNegInf(expected);
+			const glw::GLfloat refValueMax = deInt32ToFloatRoundToPosInf(expected);
+
+			if (state.getFloatAccess() < refValueMin ||
+				state.getFloatAccess() > refValueMax ||
+				deIsNaN(state.getFloatAccess()))
 			{
 				std::ostringstream buf;
-				buf << "Expected " << reference << ", got " << state.getFloatAccess();
+
+				if (refValueMin == refValueMax)
+					buf << "Expected " << refValueMin << ", got " << state.getFloatAccess();
+				else
+					buf << "Expected in range [" << refValueMin << ", " << refValueMax << "], got " << state.getFloatAccess();
+
 				result.fail(buf.str());
 			}
 			break;
@@ -1147,7 +1156,7 @@ void verifyIntegerMin (tcu::ResultCollector& result, QueriedState& state, int mi
 
 		case DATATYPE_FLOAT:
 		{
-			if (state.getFloatAccess() < minValue)
+			if (state.getFloatAccess() < deInt32ToFloatRoundToNegInf(minValue) || deIsNaN(state.getFloatAccess()))
 			{
 				std::ostringstream buf;
 				buf << "Expected greater or equal to " << minValue << ", got " << state.getFloatAccess();
@@ -1201,7 +1210,7 @@ void verifyIntegerMax (tcu::ResultCollector& result, QueriedState& state, int ma
 
 		case DATATYPE_FLOAT:
 		{
-			if (state.getFloatAccess() > maxValue)
+			if (state.getFloatAccess() > deInt32ToFloatRoundToPosInf(maxValue) || deIsNaN(state.getFloatAccess()))
 			{
 				std::ostringstream buf;
 				buf << "Expected less or equal to " << maxValue << ", got " << state.getFloatAccess();
@@ -1336,7 +1345,7 @@ void verifyFloatMin (tcu::ResultCollector& result, QueriedState& state, float mi
 
 		case DATATYPE_FLOAT:
 		{
-			if (state.getFloatAccess() < minValue)
+			if (state.getFloatAccess() < minValue || deIsNaN(state.getFloatAccess()))
 			{
 				std::ostringstream buf;
 				buf << "Expected greater or equal to " << minValue << ", got " << state.getFloatAccess();
@@ -1390,7 +1399,7 @@ void verifyFloatMax (tcu::ResultCollector& result, QueriedState& state, float ma
 
 		case DATATYPE_FLOAT:
 		{
-			if (state.getFloatAccess() > maxValue)
+			if (state.getFloatAccess() > maxValue || deIsNaN(state.getFloatAccess()))
 			{
 				std::ostringstream buf;
 				buf << "Expected less or equal to " << maxValue << ", got " << state.getFloatAccess();
@@ -1613,7 +1622,6 @@ void verifyBooleanVec4 (tcu::ResultCollector& result, QueriedState& state, const
 			break;
 	}
 }
-
 
 void verifyFloatVec4 (tcu::ResultCollector& result, QueriedState& state, const tcu::Vec4& expected)
 {
