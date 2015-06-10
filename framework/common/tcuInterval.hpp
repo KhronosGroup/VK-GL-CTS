@@ -118,7 +118,7 @@ public:
 
 	bool		intersects		(const Interval& other) const
 	{
-		return ((other.hi() >= lo() && other.lo() >= hi()) ||
+		return ((other.hi() >= lo() && other.lo() <= hi()) ||
 				(other.hasNaN() && hasNaN()));
 	}
 
