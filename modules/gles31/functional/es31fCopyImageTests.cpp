@@ -902,6 +902,12 @@ void verifyTexture2DView (tcu::TestContext&			testContext,
 		tcu::Surface			renderedFrame	(viewport.width, viewport.height);
 		tcu::Surface			referenceFrame	(viewport.width, viewport.height);
 
+		renderParams.baseLevel	= level;
+		renderParams.maxLevel	= level;
+
+		gl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, level);
+		gl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, level);
+
 		computeQuadTexCoord2D(texCoord, tcu::Vec2(0.0f, 0.0f), tcu::Vec2(1.0f, 1.0f));
 
 		// Setup base viewport.
@@ -921,6 +927,9 @@ void verifyTexture2DView (tcu::TestContext&			testContext,
 		else
 			log << TestLog::Message << "Image comparison of level " << level << " passed." << TestLog::EndMessage;
 	}
+
+	gl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
+	gl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 1000);
 
 	gl.bindTexture(GL_TEXTURE_2D, 0);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to unbind texture.");
@@ -1043,6 +1052,12 @@ void verifyTexture3DView (tcu::TestContext&			testContext,
 	{
 		const IVec3 levelSize = getLevelSize(info.getTarget(), info.getSize(), level);
 
+		renderParams.baseLevel	= level;
+		renderParams.maxLevel	= level;
+
+		gl.texParameteri(GL_TEXTURE_3D, GL_TEXTURE_BASE_LEVEL, level);
+		gl.texParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAX_LEVEL, level);
+
 		for (int slice = 0; slice < levelSize.z(); slice++)
 		{
 			const RandomViewport	viewport		(renderContext.getRenderTarget(), levelSize.x(), levelSize.y(), rng.getUint32());
@@ -1071,6 +1086,9 @@ void verifyTexture3DView (tcu::TestContext&			testContext,
 				log << TestLog::Message << "Image comparison of level " << level << " and slice " << slice << " passed." << TestLog::EndMessage;;
 		}
 	}
+
+	gl.texParameteri(GL_TEXTURE_3D, GL_TEXTURE_BASE_LEVEL, 0);
+	gl.texParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAX_LEVEL, 1000);
 
 	gl.bindTexture(GL_TEXTURE_3D, 0);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to unbind texture.");
@@ -1147,6 +1165,12 @@ void verifyTextureCubemapView (tcu::TestContext&			testContext,
 		if (levelSize.x() < 4 && levelSize.y() < 4)
 			continue;
 
+		renderParams.baseLevel	= level;
+		renderParams.maxLevel	= level;
+
+		gl.texParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_BASE_LEVEL, level);
+		gl.texParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAX_LEVEL, level);
+
 		for (int face = 0; face < 6; face++)
 		{
 			const RandomViewport	viewport		(renderContext.getRenderTarget(), levelSize.x(), levelSize.y(), rng.getUint32());
@@ -1175,6 +1199,9 @@ void verifyTextureCubemapView (tcu::TestContext&			testContext,
 				log << TestLog::Message << "Image comparison of level " << level << " and face " << cubemapFaceName << " passed." << TestLog::EndMessage;
 		}
 	}
+
+	gl.texParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_BASE_LEVEL, 0);
+	gl.texParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAX_LEVEL, 1000);
 
 	gl.bindTexture(GL_TEXTURE_CUBE_MAP, 0);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to unbind texture.");
@@ -1307,6 +1334,12 @@ void verifyTexture2DArrayView (tcu::TestContext&				testContext,
 	{
 		const IVec3 levelSize = getLevelSize(info.getTarget(), info.getSize(), level);
 
+		renderParams.baseLevel	= level;
+		renderParams.maxLevel	= level;
+
+		gl.texParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_BASE_LEVEL, level);
+		gl.texParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAX_LEVEL, level);
+
 		for (int layer = 0; layer < levelSize.z(); layer++)
 		{
 			const RandomViewport	viewport		(renderContext.getRenderTarget(), levelSize.x(), levelSize.y(), rng.getUint32());
@@ -1334,6 +1367,9 @@ void verifyTexture2DArrayView (tcu::TestContext&				testContext,
 				log << TestLog::Message << "Image comparison of level " << level << " and layer " << layer << " passed." << TestLog::EndMessage;
 		}
 	}
+
+	gl.texParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_BASE_LEVEL, 0);
+	gl.texParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAX_LEVEL, 1000);
 
 	gl.bindTexture(GL_TEXTURE_2D_ARRAY, 0);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to unbind texture.");
