@@ -32124,3 +32124,4 @@ dEQP-GLES31.functional.draw_buffers_indexed.random.max_implementation_draw_buffe
 dEQP-GLES31.functional.draw_buffers_indexed.random.max_implementation_draw_buffers.17
 dEQP-GLES31.functional.draw_buffers_indexed.random.max_implementation_draw_buffers.18
 dEQP-GLES31.functional.draw_buffers_indexed.random.max_implementation_draw_buffers.19
+dEQP-GLES31.functional.default_vertex_array_object.vertex_attrib_divisor
