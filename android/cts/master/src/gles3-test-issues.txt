@@ -64,3 +64,7 @@ dEQP-GLES3.functional.shaders.texture_functions.textureprojlodoffset.usampler3d_
 
 # Bug 21620051
 dEQP-GLES3.functional.shaders.texture_functions.texture.sampler2darrayshadow_vertex
+
+# Bug 21725534
+dEQP-GLES3.functional.shaders.preprocessor.pragmas.pragma_unrecognized_debug_*
+dEQP-GLES3.functional.shaders.preprocessor.pragmas.pragma_unrecognized_token_*
