@@ -31,6 +31,7 @@
 #include "tcuRGBA.hpp"
 #include "tcuTexture.hpp"
 #include "tcuTextureUtil.hpp"
+#include "tcuFloat.hpp"
 
 #include <string.h>
 
@@ -392,6 +393,74 @@ int measurePixelDiffAccuracy (TestLog& log, const char* imageSetName, const char
 }
 
 /*--------------------------------------------------------------------*//*!
+ * Returns the index of float in a float space without denormals
+ * so that:
+ * 1) f(0.0) = 0
+ * 2) f(-0.0) = 0
+ * 3) f(b) = f(a) + 1  <==>  b = nextAfter(a)
+ *
+ * See computeFloatFlushRelaxedULPDiff for details
+ *//*--------------------------------------------------------------------*/
+static deInt32 getPositionOfIEEEFloatWithoutDenormals (float x)
+{
+	DE_ASSERT(!deIsNaN(x)); // not sane
+
+	if (x == 0.0f)
+		return 0;
+	else if (x < 0.0f)
+		return -getPositionOfIEEEFloatWithoutDenormals(-x);
+	else
+	{
+		DE_ASSERT(x > 0.0f);
+
+		const tcu::Float32 f(x);
+
+		if (f.isDenorm())
+		{
+			// Denorms are flushed to zero
+			return 0;
+		}
+		else
+		{
+			// sign is 0, and it's a normal number. Natural position is its bit
+			// pattern but since we've collapsed the denorms, we must remove
+			// the gap here too to keep the float enumeration continuous.
+			//
+			// Denormals occupy one exponent pattern. Removing one from
+			// exponent should to the trick.
+			return (deInt32)(f.bits() - (1u << 23u));
+		}
+	}
+}
+
+static deUint32 computeFloatFlushRelaxedULPDiff (float a, float b)
+{
+	if (deIsNaN(a) && deIsNaN(b))
+		return 0;
+	else if (deIsNaN(a) || deIsNaN(b))
+	{
+		return 0xFFFFFFFFu;
+	}
+	else
+	{
+		// Using the "definition 5" in Muller, Jean-Michel. "On the definition of ulp (x)" (2005)
+		// assuming a floating point space is IEEE single precision floating point space without
+		// denormals (and signed zeros).
+		const deInt32 aIndex = getPositionOfIEEEFloatWithoutDenormals(a);
+		const deInt32 bIndex = getPositionOfIEEEFloatWithoutDenormals(b);
+		return (deUint32)de::abs(aIndex - bIndex);
+	}
+}
+
+static tcu::UVec4 computeFlushRelaxedULPDiff (const tcu::Vec4& a, const tcu::Vec4& b)
+{
+	return tcu::UVec4(computeFloatFlushRelaxedULPDiff(a.x(), b.x()),
+					  computeFloatFlushRelaxedULPDiff(a.y(), b.y()),
+					  computeFloatFlushRelaxedULPDiff(a.z(), b.z()),
+					  computeFloatFlushRelaxedULPDiff(a.w(), b.w()));
+}
+
+/*--------------------------------------------------------------------*//*!
  * \brief Per-pixel threshold-based comparison
  *
  * This compare computes per-pixel differences between result and reference
@@ -399,7 +468,8 @@ int measurePixelDiffAccuracy (TestLog& log, const char* imageSetName, const char
  *
  * This comparison uses ULP (units in last place) metric for computing the
  * difference between floating-point values and thus this function can
- * be used only for comparing floating-point texture data.
+ * be used only for comparing floating-point texture data. In ULP calculation
+ * the denormal numbers are allowed to be flushed to zero.
  *
  * On failure error image is generated that shows where the failing pixels
  * are.
@@ -432,17 +502,10 @@ bool floatUlpThresholdCompare (TestLog& log, const char* imageSetName, const cha
 		{
 			for (int x = 0; x < width; x++)
 			{
-				Vec4	refPix		= reference.getPixel(x, y, z);
-				Vec4	cmpPix		= result.getPixel(x, y, z);
-				UVec4	refBits;
-				UVec4	cmpBits;
-
-				// memcpy() is the way to do float->uint32 reinterpretation.
-				memcpy(refBits.getPtr(), refPix.getPtr(), 4*sizeof(deUint32));
-				memcpy(cmpBits.getPtr(), cmpPix.getPtr(), 4*sizeof(deUint32));
-
-				UVec4	diff		= abs(refBits.cast<int>() - cmpBits.cast<int>()).cast<deUint32>();
-				bool	isOk		= boolAll(lessThanEqual(diff, threshold));
+				const Vec4	refPix	= reference.getPixel(x, y, z);
+				const Vec4	cmpPix	= result.getPixel(x, y, z);
+				const UVec4	diff	= computeFlushRelaxedULPDiff(refPix, cmpPix);
+				const bool	isOk	= boolAll(lessThanEqual(diff, threshold));
 
 				maxDiff = max(maxDiff, diff);
 
