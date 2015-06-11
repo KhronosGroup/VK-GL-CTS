@@ -11,6 +11,12 @@ set(VKUTIL_SRCS
 	vkPrograms.hpp
 	vkStrUtil.cpp
 	vkStrUtil.hpp
+	vkQueryUtil.cpp
+	vkQueryUtil.hpp
+	vkMemUtil.cpp
+	vkMemUtil.hpp
+	vkDeviceUtil.cpp
+	vkDeviceUtil.hpp
 	)
 
 set(VKUTIL_LIBS

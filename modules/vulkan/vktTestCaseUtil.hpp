@@ -122,7 +122,7 @@ inline TestCase* createFunctionCase (tcu::TestContext&				testCtx,
 									 const std::string&				desc,
 									 FunctionInstance0::Function	testFunction)
 {
-	return new InstanceFactory1<FunctionInstance0, typename FunctionInstance0::Function>(testCtx, type, name, desc, testFunction);
+	return new InstanceFactory1<FunctionInstance0, FunctionInstance0::Function>(testCtx, type, name, desc, testFunction);
 }
 
 template<typename Arg0>
