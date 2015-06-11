@@ -5998,10 +5998,12 @@ void UserDefinedIOCase::init (void)
 			DE_ASSERT(numElements != -2);
 
 			if (isArray)
+			{
+				// \note: TCS output arrays are always implicitly-sized
 				tcsDeclarations += outMaybePatch + output.declareArray(m_ioType == IO_TYPE_PER_PATCH_ARRAY			? de::toString(int(NUM_PER_PATCH_ARRAY_ELEMS))
 																	   : m_ioType == IO_TYPE_PER_PATCH_BLOCK_ARRAY	? de::toString(int(NUM_PER_PATCH_BLOCKS))
-																	   : isExplicitVertexArraySize					? de::toString(int(NUM_OUTPUT_VERTICES))
 																	   : "");
+			}
 			else
 				tcsDeclarations += outMaybePatch + output.declare();
 
