@@ -2631,6 +2631,7 @@ static bool checkShaderResourceUsage (const ProgramInterfaceDefinition::Program*
 				{ GL_MAX_TESS_CONTROL_TEXTURE_IMAGE_UNITS,				usage.numSamplers										},
 				{ GL_MAX_TESS_CONTROL_ATOMIC_COUNTER_BUFFERS,			usage.numAtomicCounterBuffers							},
 				{ GL_MAX_TESS_CONTROL_ATOMIC_COUNTERS,					usage.numAtomicCounters									},
+				{ GL_MAX_TESS_CONTROL_IMAGE_UNIFORMS,					usage.numImages											},
 				{ GL_MAX_TESS_CONTROL_SHADER_STORAGE_BLOCKS,			usage.numShaderStorageBlocks							},
 			};
 
@@ -2660,6 +2661,7 @@ static bool checkShaderResourceUsage (const ProgramInterfaceDefinition::Program*
 				{ GL_MAX_TESS_EVALUATION_TEXTURE_IMAGE_UNITS,			usage.numSamplers										},
 				{ GL_MAX_TESS_EVALUATION_ATOMIC_COUNTER_BUFFERS,		usage.numAtomicCounterBuffers							},
 				{ GL_MAX_TESS_EVALUATION_ATOMIC_COUNTERS,				usage.numAtomicCounters									},
+				{ GL_MAX_TESS_EVALUATION_IMAGE_UNIFORMS,				usage.numImages											},
 				{ GL_MAX_TESS_EVALUATION_SHADER_STORAGE_BLOCKS,			usage.numShaderStorageBlocks							},
 			};
 
