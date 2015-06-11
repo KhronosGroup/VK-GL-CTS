@@ -29,6 +29,7 @@
 #include "gluTextureUtil.hpp"
 #include "gluProgramInterfaceQuery.hpp"
 #include "gluPixelTransfer.hpp"
+#include "gluStrUtil.hpp"
 #include "tcuTestLog.hpp"
 #include "glwFunctions.hpp"
 #include "glwEnums.hpp"
@@ -71,6 +72,21 @@ static void checkExtension (const glu::RenderContext& renderCtx, const std::stri
 {
 	if (!isExtensionSupported(renderCtx, extension))
 		throw tcu::NotSupportedError(extension + " is not supported");
+}
+
+static void checkLimit (const glu::RenderContext& renderCtx, deUint32 pname, int required)
+{
+	const glw::Functions&	gl					= renderCtx.getFunctions();
+	int						implementationLimit	= -1;
+	deUint32				error;
+
+	gl.getIntegerv(pname, &implementationLimit);
+	error = gl.getError();
+
+	if (error != GL_NO_ERROR)
+		throw tcu::TestError("Failed to query " + de::toString(glu::getGettableStateStr(pname)) + " - got " + de::toString(glu::getErrorStr(error)));
+	if (implementationLimit < required)
+		throw tcu::NotSupportedError("Test requires " + de::toString(glu::getGettableStateStr(pname)) + " >= " + de::toString(required) + ", got " + de::toString(implementationLimit));
 }
 
 // Shader utilities
@@ -1282,10 +1298,25 @@ static std::string generateVertexShaderForTess (glu::GLSLVersion version)
 class CheckTessSupport
 {
 public:
-	inline CheckTessSupport (const glu::RenderContext& renderCtx)
+	enum Stage
 	{
+		STAGE_CONTROL = 0,
+		STAGE_EVAL,
+	};
+
+	inline CheckTessSupport (const glu::RenderContext& renderCtx, Stage stage)
+	{
+		const int numBlockRequired = 2; // highest binding is always 1 (output) i.e. count == 2
+
 		if (renderCtx.getType().getAPI().getProfile() == glu::PROFILE_ES)
 			checkExtension(renderCtx, "GL_EXT_tessellation_shader");
+
+		if (stage == STAGE_CONTROL)
+			checkLimit(renderCtx, GL_MAX_TESS_CONTROL_SHADER_STORAGE_BLOCKS, numBlockRequired);
+		else if (stage == STAGE_EVAL)
+			checkLimit(renderCtx, GL_MAX_TESS_EVALUATION_SHADER_STORAGE_BLOCKS, numBlockRequired);
+		else
+			DE_ASSERT(false);
 	}
 };
 
@@ -1356,7 +1387,7 @@ static std::string generateEmptyTessEvalShader (glu::GLSLVersion version)
 }
 
 TessControlExecutor::TessControlExecutor (const glu::RenderContext& renderCtx, const ShaderSpec& shaderSpec)
-	: CheckTessSupport	(renderCtx)
+	: CheckTessSupport	(renderCtx, STAGE_CONTROL)
 	, BufferIoExecutor	(renderCtx, shaderSpec, glu::ProgramSources()
 							<< glu::VertexSource(generateVertexShaderForTess(shaderSpec.version))
 							<< glu::TessellationControlSource(generateTessControlShader(shaderSpec))
@@ -1459,7 +1490,7 @@ std::string TessEvaluationExecutor::generateTessEvalShader (const ShaderSpec& sh
 }
 
 TessEvaluationExecutor::TessEvaluationExecutor (const glu::RenderContext& renderCtx, const ShaderSpec& shaderSpec)
-	: CheckTessSupport	(renderCtx)
+	: CheckTessSupport	(renderCtx, STAGE_EVAL)
 	, BufferIoExecutor	(renderCtx, shaderSpec, glu::ProgramSources()
 							<< glu::VertexSource(generateVertexShaderForTess(shaderSpec.version))
 							<< glu::TessellationControlSource(generatePassthroughTessControlShader(shaderSpec.version))
