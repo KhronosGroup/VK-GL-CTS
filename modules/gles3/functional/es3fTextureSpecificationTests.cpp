@@ -658,7 +658,7 @@ protected:
 	void createTexture (void)
 	{
 		deUint32			tex			= 0;
-		tcu::TextureLevel	levelData	(m_texFormat);
+		tcu::TextureLevel	levelData	(glu::mapGLTransferFormat(m_format, m_dataType));
 		de::Random			rnd			(deStringHash(getName()));
 
 		glGenTextures(1, &tex);
@@ -713,7 +713,7 @@ protected:
 	void createTexture (void)
 	{
 		deUint32			tex			= 0;
-		tcu::TextureLevel	levelData	(m_texFormat);
+		tcu::TextureLevel	levelData	(glu::mapGLTransferFormat(m_format, m_dataType));
 		de::Random			rnd			(deStringHash(getName()));
 
 		glGenTextures(1, &tex);
@@ -757,9 +757,9 @@ protected:
 	void createTexture (void)
 	{
 		deUint32				tex			= 0;
-		tcu::TextureLevel		levelData	(m_texFormat);
 		de::Random				rnd			(deStringHash(getName()));
 		glu::TransferFormat		transferFmt	= glu::getTransferFormat(m_texFormat);
+		tcu::TextureLevel		levelData	(glu::mapGLTransferFormat(transferFmt.format, transferFmt.dataType));
 
 		glGenTextures(1, &tex);
 		glBindTexture(GL_TEXTURE_2D_ARRAY, tex);
@@ -796,9 +796,9 @@ protected:
 	void createTexture (void)
 	{
 		deUint32				tex			= 0;
-		tcu::TextureLevel		levelData	(m_texFormat);
 		de::Random				rnd			(deStringHash(getName()));
 		glu::TransferFormat		transferFmt	= glu::getTransferFormat(m_texFormat);
+		tcu::TextureLevel		levelData	(glu::mapGLTransferFormat(transferFmt.format, transferFmt.dataType));
 
 		glGenTextures(1, &tex);
 		glBindTexture(GL_TEXTURE_3D, tex);
@@ -849,7 +849,7 @@ protected:
 	void createTexture (void)
 	{
 		deUint32			tex			= 0;
-		tcu::TextureLevel	levelData	(m_texFormat);
+		tcu::TextureLevel	levelData	(glu::mapGLTransferFormat(m_format, m_dataType));
 		de::Random			rnd			(deStringHash(getName()));
 
 		glGenTextures(1, &tex);
@@ -909,7 +909,7 @@ protected:
 	void createTexture (void)
 	{
 		deUint32			tex			= 0;
-		tcu::TextureLevel	levelData	(m_texFormat);
+		tcu::TextureLevel	levelData	(glu::mapGLTransferFormat(m_format, m_dataType));
 		de::Random			rnd			(deStringHash(getName()));
 
 		glGenTextures(1, &tex);
@@ -2128,7 +2128,7 @@ protected:
 		tcu::TextureFormat		fmt				= glu::mapGLInternalFormat(m_internalFormat);
 		glu::TransferFormat		transferFmt		= glu::getTransferFormat(fmt);
 		deUint32				tex				= 0;
-		tcu::TextureLevel		levelData		(fmt);
+		tcu::TextureLevel		levelData		(glu::mapGLTransferFormat(transferFmt.format, transferFmt.dataType));
 		de::Random				rnd				(deStringHash(getName()));
 
 		glGenTextures(1, &tex);
@@ -2170,7 +2170,7 @@ protected:
 		tcu::TextureFormat		fmt				= glu::mapGLInternalFormat(m_internalFormat);
 		glu::TransferFormat		transferFmt		= glu::getTransferFormat(fmt);
 		deUint32				tex				= 0;
-		tcu::TextureLevel		levelData		(fmt);
+		tcu::TextureLevel		levelData		(glu::mapGLTransferFormat(transferFmt.format, transferFmt.dataType));
 		de::Random				rnd				(deStringHash(getName()));
 
 		glGenTextures(1, &tex);
@@ -2214,9 +2214,9 @@ protected:
 	void createTexture (void)
 	{
 		deUint32				tex			= 0;
-		tcu::TextureLevel		levelData	(m_texFormat);
 		de::Random				rnd			(deStringHash(getName()));
 		glu::TransferFormat		transferFmt	= glu::getTransferFormat(m_texFormat);
+		tcu::TextureLevel		levelData	(glu::mapGLTransferFormat(transferFmt.format, transferFmt.dataType));
 
 		glGenTextures	(1, &tex);
 		glBindTexture	(GL_TEXTURE_2D_ARRAY, tex);
@@ -2255,9 +2255,9 @@ protected:
 	void createTexture (void)
 	{
 		deUint32				tex			= 0;
-		tcu::TextureLevel		levelData	(m_texFormat);
 		de::Random				rnd			(deStringHash(getName()));
 		glu::TransferFormat		transferFmt	= glu::getTransferFormat(m_texFormat);
+		tcu::TextureLevel		levelData	(glu::mapGLTransferFormat(transferFmt.format, transferFmt.dataType));
 
 		glGenTextures	(1, &tex);
 		glBindTexture	(GL_TEXTURE_3D, tex);
@@ -3032,7 +3032,7 @@ public:
 	{
 		glu::TransferFormat	fmt			= glu::getTransferFormat(m_texFormat);
 		deUint32			tex			= 0;
-		tcu::TextureLevel	levelData	(m_texFormat);
+		tcu::TextureLevel	levelData	(glu::mapGLTransferFormat(fmt.format, fmt.dataType));
 
 		glGenTextures(1, &tex);
 		glBindTexture(GL_TEXTURE_2D, tex);
@@ -3079,7 +3079,7 @@ public:
 	{
 		glu::TransferFormat	fmt			= glu::getTransferFormat(m_texFormat);
 		deUint32			tex			= 0;
-		tcu::TextureLevel	levelData	(m_texFormat);
+		tcu::TextureLevel	levelData	(glu::mapGLTransferFormat(fmt.format, fmt.dataType));
 
 		glGenTextures(1, &tex);
 		glBindTexture(GL_TEXTURE_2D_ARRAY, tex);
@@ -3126,7 +3126,7 @@ public:
 		glu::TransferFormat	fmt			= glu::getTransferFormat(m_texFormat);
 		de::Random			rnd			(deStringHash(getName()));
 		deUint32			tex			= 0;
-		tcu::TextureLevel	levelData	(m_texFormat);
+		tcu::TextureLevel	levelData	(glu::mapGLTransferFormat(fmt.format, fmt.dataType));
 
 		glGenTextures(1, &tex);
 		glBindTexture(GL_TEXTURE_2D, tex);
@@ -3196,7 +3196,7 @@ public:
 		glu::TransferFormat	fmt			= glu::getTransferFormat(m_texFormat);
 		de::Random			rnd			(deStringHash(getName()));
 		deUint32			tex			= 0;
-		tcu::TextureLevel	levelData	(m_texFormat);
+		tcu::TextureLevel	levelData	(glu::mapGLTransferFormat(fmt.format, fmt.dataType));
 
 		glGenTextures(1, &tex);
 		glBindTexture(GL_TEXTURE_2D_ARRAY, tex);
