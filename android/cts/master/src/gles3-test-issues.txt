@@ -68,3 +68,6 @@ dEQP-GLES3.functional.shaders.texture_functions.texture.sampler2darrayshadow_ver
 # Bug 21725534
 dEQP-GLES3.functional.shaders.preprocessor.pragmas.pragma_unrecognized_debug_*
 dEQP-GLES3.functional.shaders.preprocessor.pragmas.pragma_unrecognized_token_*
+
+# Bug 21791303
+dEQP-GLES3.functional.uniform_api.random.23
