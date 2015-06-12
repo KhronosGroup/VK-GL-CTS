@@ -234,6 +234,11 @@ EGLBoolean FuncPtrLibrary::releaseThread (void) const
 	return m_egl.releaseThread();
 }
 
+EGLBoolean FuncPtrLibrary::setDamageRegionKHR (EGLDisplay dpy, EGLSurface surface, EGLint *rects, EGLint n_rects) const
+{
+	return m_egl.setDamageRegionKHR(dpy, surface, rects, n_rects);
+}
+
 EGLBoolean FuncPtrLibrary::signalSyncKHR (EGLDisplay dpy, EGLSyncKHR sync, EGLenum mode) const
 {
 	return m_egl.signalSyncKHR(dpy, sync, mode);
@@ -247,6 +252,11 @@ EGLBoolean FuncPtrLibrary::surfaceAttrib (EGLDisplay dpy, EGLSurface surface, EG
 EGLBoolean FuncPtrLibrary::swapBuffers (EGLDisplay dpy, EGLSurface surface) const
 {
 	return m_egl.swapBuffers(dpy, surface);
+}
+
+EGLBoolean FuncPtrLibrary::swapBuffersWithDamageKHR (EGLDisplay dpy, EGLSurface surface, EGLint *rects, EGLint n_rects) const
+{
+	return m_egl.swapBuffersWithDamageKHR(dpy, surface, rects, n_rects);
 }
 
 EGLBoolean FuncPtrLibrary::swapInterval (EGLDisplay dpy, EGLint interval) const

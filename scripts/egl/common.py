@@ -60,7 +60,10 @@ EXTENSIONS			= [
 	"EGL_EXT_platform_base",
 	"EGL_EXT_platform_x11",
 	"EGL_ANDROID_image_native_buffer",
-	"EGL_EXT_yuv_surface"
+	"EGL_EXT_yuv_surface",
+	"EGL_EXT_buffer_age",
+	"EGL_KHR_partial_update",
+	"EGL_KHR_swap_buffers_with_damage"
 ]
 PROTECTS			= [
 	"KHRONOS_SUPPORT_INT64"
