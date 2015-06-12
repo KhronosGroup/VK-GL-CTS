@@ -111,6 +111,50 @@ inline deUint32 readUint24 (const deUint8* src)
 #endif
 }
 
+inline deUint8 readUint32Low8 (const deUint8* src)
+{
+#if (DE_ENDIANNESS == DE_LITTLE_ENDIAN)
+	const deUint32 uint32ByteOffsetBits0To8	= 0; //!< least significant byte in the lowest address
+#else
+	const deUint32 uint32ByteOffsetBits0To8	= 3; //!< least significant byte in the highest address
+#endif
+
+	return src[uint32ByteOffsetBits0To8];
+}
+
+inline void writeUint32Low8 (deUint8* dst, deUint8 val)
+{
+#if (DE_ENDIANNESS == DE_LITTLE_ENDIAN)
+	const deUint32 uint32ByteOffsetBits0To8	= 0; //!< least significant byte in the lowest address
+#else
+	const deUint32 uint32ByteOffsetBits0To8	= 3; //!< least significant byte in the highest address
+#endif
+
+	dst[uint32ByteOffsetBits0To8] = val;
+}
+
+inline deUint32 readUint32High24 (const deUint8* src)
+{
+#if (DE_ENDIANNESS == DE_LITTLE_ENDIAN)
+	const deUint32 uint32ByteOffset8To32	= 1;
+#else
+	const deUint32 uint32ByteOffset8To32	= 0;
+#endif
+
+	return readUint24(src + uint32ByteOffset8To32);
+}
+
+inline void writeUint32High24 (deUint8* dst, deUint32 val)
+{
+#if (DE_ENDIANNESS == DE_LITTLE_ENDIAN)
+	const deUint32 uint32ByteOffset8To32	= 1;
+#else
+	const deUint32 uint32ByteOffset8To32	= 0;
+#endif
+
+	writeUint24(dst + uint32ByteOffset8To32, val);
+}
+
 // \todo [2011-09-21 pyry] Move to tcutil?
 template <typename T>
 inline T convertSatRte (float f)
@@ -788,9 +832,6 @@ float ConstPixelBufferAccess::getPixDepth (int x, int y, int z) const
 
 	const deUint8* const pixelPtr = (const deUint8*)getPixelPtr(x, y, z);
 
-#define UB32(OFFS, COUNT) ((*((const deUint32*)pixelPtr) >> (OFFS)) & ((1<<(COUNT))-1))
-#define NB32(OFFS, COUNT) channelToNormFloat(UB32(OFFS, COUNT), (COUNT))
-
 	DE_ASSERT(m_format.order == TextureFormat::DS || m_format.order == TextureFormat::D);
 
 	switch (m_format.type)
@@ -800,7 +841,8 @@ float ConstPixelBufferAccess::getPixDepth (int x, int y, int z) const
 			{
 				case TextureFormat::D:
 				case TextureFormat::DS: // \note Fall-through.
-					return NB32(8, 24);
+					return (float)readUint32High24(pixelPtr) / 16777215.0f;
+
 				default:
 					DE_ASSERT(false);
 					return 0.0f;
@@ -814,9 +856,6 @@ float ConstPixelBufferAccess::getPixDepth (int x, int y, int z) const
 			DE_ASSERT(m_format.order == TextureFormat::D); // no other combined depth stencil types
 			return channelToFloat(pixelPtr, m_format.type);
 	}
-
-#undef UB32
-#undef NB32
 }
 
 int ConstPixelBufferAccess::getPixStencil (int x, int y, int z) const
@@ -832,8 +871,9 @@ int ConstPixelBufferAccess::getPixStencil (int x, int y, int z) const
 		case TextureFormat::UNSIGNED_INT_24_8:
 			switch (m_format.order)
 			{
-				case TextureFormat::S:		return (int)(*((const deUint32*)pixelPtr) >> 8);
-				case TextureFormat::DS:		return (int)(*((const deUint32*)pixelPtr) & 0xff);
+				case TextureFormat::S:
+				case TextureFormat::DS:
+					return (int)readUint32Low8(pixelPtr);
 
 				default:
 					DE_ASSERT(false);
@@ -842,7 +882,7 @@ int ConstPixelBufferAccess::getPixStencil (int x, int y, int z) const
 
 		case TextureFormat::FLOAT_UNSIGNED_INT_24_8_REV:
 			DE_ASSERT(m_format.order == TextureFormat::DS);
-			return *((const deUint32*)(pixelPtr+4)) & 0xff;
+			return (int)readUint32Low8(pixelPtr + 4);
 
 		default:
 		{
@@ -988,15 +1028,16 @@ void PixelBufferAccess::setPixDepth (float depth, int x, int y, int z) const
 
 	deUint8* const pixelPtr = (deUint8*)getPixelPtr(x, y, z);
 
-#define PN(VAL, OFFS, BITS) (normFloatToChannel((VAL), (BITS)) << (OFFS))
-
 	switch (m_format.type)
 	{
 		case TextureFormat::UNSIGNED_INT_24_8:
 			switch (m_format.order)
 			{
-				case TextureFormat::D:		*((deUint32*)pixelPtr) = PN(depth, 8, 24);											break;
-				case TextureFormat::DS:		*((deUint32*)pixelPtr) = (*((deUint32*)pixelPtr) & 0x000000ff) | PN(depth, 8, 24);	break;
+				case TextureFormat::D:
+				case TextureFormat::DS:
+					writeUint32High24(pixelPtr,  convertSatRteUint24(depth * 16777215.0f));
+					break;
+
 				default:
 					DE_ASSERT(false);
 			}
@@ -1012,8 +1053,6 @@ void PixelBufferAccess::setPixDepth (float depth, int x, int y, int z) const
 			floatToChannel(pixelPtr, depth, m_format.type);
 			break;
 	}
-
-#undef PN
 }
 
 void PixelBufferAccess::setPixStencil (int stencil, int x, int y, int z) const
@@ -1024,15 +1063,16 @@ void PixelBufferAccess::setPixStencil (int stencil, int x, int y, int z) const
 
 	deUint8* const pixelPtr = (deUint8*)getPixelPtr(x, y, z);
 
-#define PU(VAL, OFFS, BITS) (uintToChannel((deUint32)(VAL), (BITS)) << (OFFS))
-
 	switch (m_format.type)
 	{
 		case TextureFormat::UNSIGNED_INT_24_8:
 			switch (m_format.order)
 			{
-				case TextureFormat::S:		*((deUint32*)pixelPtr) = PU(stencil, 8, 24);										break;
-				case TextureFormat::DS:		*((deUint32*)pixelPtr) = (*((deUint32*)pixelPtr) & 0xffffff00) | PU(stencil, 0, 8);	break;
+				case TextureFormat::S:
+				case TextureFormat::DS:
+					writeUint32Low8(pixelPtr, convertSat<deUint8>((deUint32)stencil));
+					break;
+
 				default:
 					DE_ASSERT(false);
 			}
@@ -1040,7 +1080,7 @@ void PixelBufferAccess::setPixStencil (int stencil, int x, int y, int z) const
 
 		case TextureFormat::FLOAT_UNSIGNED_INT_24_8_REV:
 			DE_ASSERT(m_format.order == TextureFormat::DS);
-			*((deUint32*)(pixelPtr+4))	= PU((deUint32)stencil, 0, 8);
+			writeUint32Low8(pixelPtr + 4, convertSat<deUint8>((deUint32)stencil));
 			break;
 
 		default:
@@ -1048,8 +1088,6 @@ void PixelBufferAccess::setPixStencil (int stencil, int x, int y, int z) const
 			intToChannel(pixelPtr, stencil, m_format.type);
 			break;
 	}
-
-#undef PU
 }
 
 static inline int imod (int a, int b)
