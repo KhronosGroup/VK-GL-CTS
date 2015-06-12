@@ -427,8 +427,9 @@ static deInt32 getPositionOfIEEEFloatWithoutDenormals (float x)
 			// the gap here too to keep the float enumeration continuous.
 			//
 			// Denormals occupy one exponent pattern. Removing one from
-			// exponent should to the trick.
-			return (deInt32)(f.bits() - (1u << 23u));
+			// exponent should to the trick. Add one since the removed range
+			// contained one representable value, 0.
+			return (deInt32)(f.bits() - (1u << 23u) + 1u);
 		}
 	}
 }
