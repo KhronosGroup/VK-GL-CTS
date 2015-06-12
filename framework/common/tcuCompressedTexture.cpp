@@ -2140,7 +2140,7 @@ void computeColorEndpoints (ColorEndpointPair* dst, const Block128& blockData, c
 	}
 }
 
-void unquantizeWeights (deUint32* dst, const ISEDecodedResult* weightGrid, const ASTCBlockMode& blockMode)
+void unquantizeWeights (deUint32 dst[64], const ISEDecodedResult* weightGrid, const ASTCBlockMode& blockMode)
 {
 	const int			numWeights	= computeNumWeights(blockMode);
 	const ISEParams&	iseParams	= blockMode.weightISEParams;
@@ -2194,6 +2194,11 @@ void unquantizeWeights (deUint32* dst, const ISEDecodedResult* weightGrid, const
 
 	for (int weightNdx = 0; weightNdx < numWeights; weightNdx++)
 		dst[weightNdx] += dst[weightNdx] > 32 ? 1 : 0;
+
+	// Initialize nonexistent weights to poison values
+	for (int weightNdx = numWeights; weightNdx < 64; weightNdx++)
+		dst[weightNdx] = ~0u;
+
 }
 
 void interpolateWeights (TexelWeightPair* dst, const deUint32* unquantizedWeights, int blockWidth, int blockHeight, const ASTCBlockMode& blockMode)
