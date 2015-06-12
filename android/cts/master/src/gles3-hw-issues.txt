@@ -847,3 +847,11 @@ dEQP-GLES3.functional.shaders.texture_functions.textureprojlod.usampler3d_vertex
 
 # Bug 20681533
 dEQP-GLES3.functional.texture.mipmap.cube.projected.nearest_nearest
+
+# Bug 21804494
+dEQP-GLES3.functional.rasterization.interpolation.basic.lines_wide
+dEQP-GLES3.functional.rasterization.interpolation.basic.line_strip_wide
+dEQP-GLES3.functional.rasterization.interpolation.basic.line_loop_wide
+dEQP-GLES3.functional.rasterization.interpolation.projected.lines_wide
+dEQP-GLES3.functional.rasterization.interpolation.projected.line_strip_wide
+dEQP-GLES3.functional.rasterization.interpolation.projected.line_loop_wide

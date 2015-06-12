@@ -858,15 +858,9 @@ dEQP-GLES3.functional.rasterization.primitives.line_loop_wide
 dEQP-GLES3.functional.rasterization.interpolation.basic.lines
 dEQP-GLES3.functional.rasterization.interpolation.basic.line_strip
 dEQP-GLES3.functional.rasterization.interpolation.basic.line_loop
-dEQP-GLES3.functional.rasterization.interpolation.basic.lines_wide
-dEQP-GLES3.functional.rasterization.interpolation.basic.line_strip_wide
-dEQP-GLES3.functional.rasterization.interpolation.basic.line_loop_wide
 dEQP-GLES3.functional.rasterization.interpolation.projected.lines
 dEQP-GLES3.functional.rasterization.interpolation.projected.line_strip
 dEQP-GLES3.functional.rasterization.interpolation.projected.line_loop
-dEQP-GLES3.functional.rasterization.interpolation.projected.lines_wide
-dEQP-GLES3.functional.rasterization.interpolation.projected.line_strip_wide
-dEQP-GLES3.functional.rasterization.interpolation.projected.line_loop_wide
 dEQP-GLES3.functional.rasterization.flatshading.lines
 dEQP-GLES3.functional.rasterization.flatshading.line_strip
 dEQP-GLES3.functional.rasterization.flatshading.line_loop
