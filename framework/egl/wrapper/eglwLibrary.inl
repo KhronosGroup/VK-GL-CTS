@@ -49,9 +49,11 @@ virtual const char *								queryString						(EGLDisplay dpy, EGLint name) const
 virtual EGLBoolean									querySurface					(EGLDisplay dpy, EGLSurface surface, EGLint attribute, EGLint *value) const										= 0;
 virtual EGLBoolean									releaseTexImage					(EGLDisplay dpy, EGLSurface surface, EGLint buffer) const														= 0;
 virtual EGLBoolean									releaseThread					(void) const																									= 0;
+virtual EGLBoolean									setDamageRegionKHR				(EGLDisplay dpy, EGLSurface surface, EGLint *rects, EGLint n_rects) const										= 0;
 virtual EGLBoolean									signalSyncKHR					(EGLDisplay dpy, EGLSyncKHR sync, EGLenum mode) const															= 0;
 virtual EGLBoolean									surfaceAttrib					(EGLDisplay dpy, EGLSurface surface, EGLint attribute, EGLint value) const										= 0;
 virtual EGLBoolean									swapBuffers						(EGLDisplay dpy, EGLSurface surface) const																		= 0;
+virtual EGLBoolean									swapBuffersWithDamageKHR		(EGLDisplay dpy, EGLSurface surface, EGLint *rects, EGLint n_rects) const										= 0;
 virtual EGLBoolean									swapInterval					(EGLDisplay dpy, EGLint interval) const																			= 0;
 virtual EGLBoolean									terminate						(EGLDisplay dpy) const																							= 0;
 virtual EGLBoolean									unlockSurfaceKHR				(EGLDisplay dpy, EGLSurface surface) const																		= 0;
