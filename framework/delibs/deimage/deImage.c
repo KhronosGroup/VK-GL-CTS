@@ -125,8 +125,8 @@ deImage* deImage_scale (const deImage* srcImage, int dstWidth, int dstHeight)
 	{
 		for (x = 0; x < dstWidth; x++)
 		{
-			float	xFloat	= (float)(x + 0.5f) / (float)dstWidth * (float)srcImage->width - 0.5f;
-			float	yFloat	= (float)(y + 0.5f) / (float)dstHeight * (float)srcImage->height - 0.5f;
+			float	xFloat	= ((float)x + 0.5f) / (float)dstWidth * (float)srcImage->width - 0.5f;
+			float	yFloat	= ((float)y + 0.5f) / (float)dstHeight * (float)srcImage->height - 0.5f;
 			int		xFixed	= deFloorFloatToInt32(xFloat * 256.0f);
 			int		yFixed	= deFloorFloatToInt32(yFloat * 256.0f);
 			int		xFactor	= (xFixed & 0xFF);
