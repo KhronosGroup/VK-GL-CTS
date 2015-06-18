@@ -3511,7 +3511,7 @@ group comparisons "Comparisons"
 				values
 				{
 					input ivec2 in0 = [ ivec2(1, 2) | ivec2(2, 1) | ivec2(3, 7) ];
-					output bool out0 = [ false | false | false ];
+					output bool out0 = [ true | false | false ];
 				}
 
 				both ""
@@ -3533,7 +3533,7 @@ group comparisons "Comparisons"
 				values
 				{
 					input ivec2 in0 = [ ivec2(1, 2) | ivec2(2, 1) | ivec2(3, 7) ];
-					output bool out0 = [ false | false | false ];
+					output bool out0 = [ true | false | false ];
 				}
 
 				both ""
@@ -3577,7 +3577,7 @@ group comparisons "Comparisons"
 				values
 				{
 					input ivec3 in0 = [ ivec3(1, 2, 3) | ivec3(2, 1, 2) | ivec3(3, 7, 2) ];
-					output bool out0 = [ false | false | false ];
+					output bool out0 = [ true | false | false ];
 				}
 
 				both ""
@@ -3599,7 +3599,7 @@ group comparisons "Comparisons"
 				values
 				{
 					input ivec3 in0 = [ ivec3(1, 2, 3) | ivec3(2, 1, 2) | ivec3(3, 7, 2) ];
-					output bool out0 = [ false | false | false ];
+					output bool out0 = [ true | false | false ];
 				}
 
 				both ""
@@ -3643,7 +3643,7 @@ group comparisons "Comparisons"
 				values
 				{
 					input ivec4 in0 = [ ivec4(1, 2, 3, 4) | ivec4(2, 1, 2, 6) | ivec4(3, 7, 2, 5) ];
-					output bool out0 = [ false | false | false ];
+					output bool out0 = [ true | false | false ];
 				}
 
 				both ""
@@ -3665,7 +3665,7 @@ group comparisons "Comparisons"
 				values
 				{
 					input ivec4 in0 = [ ivec4(1, 2, 3, 4) | ivec4(2, 1, 2, 6) | ivec4(3, 7, 2, 5) ];
-					output bool out0 = [ false | false | false ];
+					output bool out0 = [ true | false | false ];
 				}
 
 				both ""
@@ -3779,7 +3779,7 @@ group comparisons "Comparisons"
 				values
 				{
 					input ivec2 in0 = [ ivec2(1, 2) | ivec2(2, 1) | ivec2(3, 7) ];
-					output bool out0 = [ true | true | true ];
+					output bool out0 = [ false | true | true ];
 				}
 
 				both ""
@@ -3801,7 +3801,7 @@ group comparisons "Comparisons"
 				values
 				{
 					input ivec2 in0 = [ ivec2(1, 2) | ivec2(2, 1) | ivec2(3, 7) ];
-					output bool out0 = [ true | true | true ];
+					output bool out0 = [ false | true | true ];
 				}
 
 				both ""
@@ -3845,7 +3845,7 @@ group comparisons "Comparisons"
 				values
 				{
 					input ivec3 in0 = [ ivec3(1, 2, 3) | ivec3(2, 1, 2) | ivec3(3, 7, 2) ];
-					output bool out0 = [ true | true | true ];
+					output bool out0 = [ false | true | true ];
 				}
 
 				both ""
@@ -3867,7 +3867,7 @@ group comparisons "Comparisons"
 				values
 				{
 					input ivec3 in0 = [ ivec3(1, 2, 3) | ivec3(2, 1, 2) | ivec3(3, 7, 2) ];
-					output bool out0 = [ true | true | true ];
+					output bool out0 = [ false | true | true ];
 				}
 
 				both ""
@@ -3911,7 +3911,7 @@ group comparisons "Comparisons"
 				values
 				{
 					input ivec4 in0 = [ ivec4(1, 2, 3, 4) | ivec4(2, 1, 2, 6) | ivec4(3, 7, 2, 5) ];
-					output bool out0 = [ true | true | true ];
+					output bool out0 = [ false | true | true ];
 				}
 
 				both ""
@@ -3933,7 +3933,7 @@ group comparisons "Comparisons"
 				values
 				{
 					input ivec4 in0 = [ ivec4(1, 2, 3, 4) | ivec4(2, 1, 2, 6) | ivec4(3, 7, 2, 5) ];
-					output bool out0 = [ true | true | true ];
+					output bool out0 = [ false | true | true ];
 				}
 
 				both ""
@@ -4331,7 +4331,7 @@ group comparisons "Comparisons"
 				values
 				{
 					input ivec2 in0 = [ ivec2(1, 2) | ivec2(2, 1) | ivec2(3, 7) ];
-					output bool out0 = [ false | false | false ];
+					output bool out0 = [ true | false | false ];
 				}
 
 				both ""
@@ -4353,7 +4353,7 @@ group comparisons "Comparisons"
 				values
 				{
 					input ivec2 in0 = [ ivec2(1, 2) | ivec2(2, 1) | ivec2(3, 7) ];
-					output bool out0 = [ false | false | false ];
+					output bool out0 = [ true | false | false ];
 				}
 
 				both ""
@@ -4397,7 +4397,7 @@ group comparisons "Comparisons"
 				values
 				{
 					input ivec3 in0 = [ ivec3(1, 2, 3) | ivec3(2, 1, 2) | ivec3(3, 7, 2) ];
-					output bool out0 = [ false | false | false ];
+					output bool out0 = [ true | false | false ];
 				}
 
 				both ""
@@ -4419,7 +4419,7 @@ group comparisons "Comparisons"
 				values
 				{
 					input ivec3 in0 = [ ivec3(1, 2, 3) | ivec3(2, 1, 2) | ivec3(3, 7, 2) ];
-					output bool out0 = [ false | false | false ];
+					output bool out0 = [ true | false | false ];
 				}
 
 				both ""
@@ -4463,7 +4463,7 @@ group comparisons "Comparisons"
 				values
 				{
 					input ivec4 in0 = [ ivec4(1, 2, 3, 4) | ivec4(2, 1, 2, 6) | ivec4(3, 7, 2, 5) ];
-					output bool out0 = [ false | false | false ];
+					output bool out0 = [ true | false | false ];
 				}
 
 				both ""
@@ -4485,7 +4485,7 @@ group comparisons "Comparisons"
 				values
 				{
 					input ivec4 in0 = [ ivec4(1, 2, 3, 4) | ivec4(2, 1, 2, 6) | ivec4(3, 7, 2, 5) ];
-					output bool out0 = [ false | false | false ];
+					output bool out0 = [ true | false | false ];
 				}
 
 				both ""
@@ -4599,7 +4599,7 @@ group comparisons "Comparisons"
 				values
 				{
 					input ivec2 in0 = [ ivec2(1, 2) | ivec2(2, 1) | ivec2(3, 7) ];
-					output bool out0 = [ true | true | true ];
+					output bool out0 = [ false | true | true ];
 				}
 
 				both ""
@@ -4621,7 +4621,7 @@ group comparisons "Comparisons"
 				values
 				{
 					input ivec2 in0 = [ ivec2(1, 2) | ivec2(2, 1) | ivec2(3, 7) ];
-					output bool out0 = [ true | true | true ];
+					output bool out0 = [ false | true | true ];
 				}
 
 				both ""
@@ -4665,7 +4665,7 @@ group comparisons "Comparisons"
 				values
 				{
 					input ivec3 in0 = [ ivec3(1, 2, 3) | ivec3(2, 1, 2) | ivec3(3, 7, 2) ];
-					output bool out0 = [ true | true | true ];
+					output bool out0 = [ false | true | true ];
 				}
 
 				both ""
@@ -4687,7 +4687,7 @@ group comparisons "Comparisons"
 				values
 				{
 					input ivec3 in0 = [ ivec3(1, 2, 3) | ivec3(2, 1, 2) | ivec3(3, 7, 2) ];
-					output bool out0 = [ true | true | true ];
+					output bool out0 = [ false | true | true ];
 				}
 
 				both ""
@@ -4731,7 +4731,7 @@ group comparisons "Comparisons"
 				values
 				{
 					input ivec4 in0 = [ ivec4(1, 2, 3, 4) | ivec4(2, 1, 2, 6) | ivec4(3, 7, 2, 5) ];
-					output bool out0 = [ true | true | true ];
+					output bool out0 = [ false | true | true ];
 				}
 
 				both ""
@@ -4753,7 +4753,7 @@ group comparisons "Comparisons"
 				values
 				{
 					input ivec4 in0 = [ ivec4(1, 2, 3, 4) | ivec4(2, 1, 2, 6) | ivec4(3, 7, 2, 5) ];
-					output bool out0 = [ true | true | true ];
+					output bool out0 = [ false | true | true ];
 				}
 
 				both ""
