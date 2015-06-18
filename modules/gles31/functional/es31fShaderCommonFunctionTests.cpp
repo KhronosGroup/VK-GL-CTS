@@ -1737,13 +1737,14 @@ public:
 
 	bool compare (const void* const* inputs, const void* const* outputs)
 	{
-		const glu::DataType		type			= m_spec.inputs[0].varType.getBasicType();
-		const glu::Precision	precision		= m_spec.inputs[0].varType.getPrecision();
-		const int				scalarSize		= glu::getDataTypeScalarSize(type);
-		const bool				signedZero		= supportsSignedZero(precision);
+		const glu::DataType		type						= m_spec.inputs[0].varType.getBasicType();
+		const glu::Precision	precision					= m_spec.inputs[0].varType.getPrecision();
+		const int				scalarSize					= glu::getDataTypeScalarSize(type);
+		const bool				transitSupportsSignedZero	= (m_shaderType != glu::SHADERTYPE_FRAGMENT); // executor cannot reliably transit negative zero to fragment stage
+		const bool				signedZero					= supportsSignedZero(precision) && transitSupportsSignedZero;
 
-		const int				mantissaBits	= getMinMantissaBits(precision);
-		const deUint32			maxUlpDiff		= getMaxUlpDiffFromBits(mantissaBits);
+		const int				mantissaBits				= getMinMantissaBits(precision);
+		const deUint32			maxUlpDiff					= getMaxUlpDiffFromBits(mantissaBits);
 
 		for (int compNdx = 0; compNdx < scalarSize; compNdx++)
 		{
