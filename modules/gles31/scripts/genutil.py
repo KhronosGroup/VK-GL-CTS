@@ -366,6 +366,12 @@ class Vec(object):
 	def __init__(self):
 		pass
 
+	def __eq__(self, other):
+		return self.isEqual(other)
+
+	def __ne__(self, other):
+		return not self.isEqual(other)
+
 class Vec2(Vec):
 	def __init__(self, x, y):
 		assert(x.__class__ == y.__class__)
