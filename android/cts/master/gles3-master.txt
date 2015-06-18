@@ -36003,7 +36003,6 @@ dEQP-GLES3.functional.uniform_api.random.19
 dEQP-GLES3.functional.uniform_api.random.20
 dEQP-GLES3.functional.uniform_api.random.21
 dEQP-GLES3.functional.uniform_api.random.22
-dEQP-GLES3.functional.uniform_api.random.23
 dEQP-GLES3.functional.uniform_api.random.24
 dEQP-GLES3.functional.uniform_api.random.25
 dEQP-GLES3.functional.uniform_api.random.26
