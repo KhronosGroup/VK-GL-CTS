@@ -85,6 +85,17 @@ static inline bool supportsFragmentHighp (glu::GLSLVersion version)
 	return version != glu::GLSL_VERSION_100_ES;
 }
 
+static int queryGLInt (const glu::RenderContext& renderCtx, deUint32 pname)
+{
+	const glw::Functions&	gl		= renderCtx.getFunctions();
+	glw::GLint				value	= 0;
+
+	gl.getIntegerv(pname, &value);
+	GLU_EXPECT_NO_ERROR(gl.getError(), ("query " + de::toString(glu::getGettableStateStr(pname))).c_str());
+
+	return value;
+}
+
 ShaderCase::ValueBlock::ValueBlock (void)
 	: arrayLength(0)
 {
@@ -1493,13 +1504,15 @@ string ShaderCase::specializeFragmentShader (const char* src, const ValueBlock& 
 	return withExt;
 }
 
-static map<string, string> generateVertexSpecialization (glu::GLSLVersion targetVersion, const ShaderCase::ValueBlock& valueBlock)
+static map<string, string> generateVertexSpecialization (const glu::RenderContext& renderCtx, glu::GLSLVersion targetVersion, const ShaderCase::ValueBlock& valueBlock)
 {
 	const bool				usesInout	= usesShaderInoutQualifiers(targetVersion);
 	const char*				vtxIn		= usesInout ? "in" : "attribute";
 	ostringstream			decl;
 	ostringstream			setup;
 	map<string, string>		params;
+
+	DE_UNREF(renderCtx);
 
 	decl << vtxIn << " highp vec4 dEQP_Position;\n";
 
@@ -1534,7 +1547,7 @@ static map<string, string> generateVertexSpecialization (glu::GLSLVersion target
 	return params;
 }
 
-static map<string, string> generateFragmentSpecialization (glu::GLSLVersion targetVersion, const ShaderCase::ValueBlock& valueBlock)
+static map<string, string> generateFragmentSpecialization (const glu::RenderContext& renderCtx, glu::GLSLVersion targetVersion, const ShaderCase::ValueBlock& valueBlock)
 {
 	const bool			usesInout		= usesShaderInoutQualifiers(targetVersion);
 	const bool			customColorOut	= usesInout;
@@ -1542,6 +1555,8 @@ static map<string, string> generateFragmentSpecialization (glu::GLSLVersion targ
 	ostringstream		decl;
 	ostringstream		output;
 	map<string, string>	params;
+
+	DE_UNREF(renderCtx);
 
 	genCompareFunctions(decl, valueBlock, false);
 	genCompareOp(output, fragColor, valueBlock, "", DE_NULL);
@@ -1573,11 +1588,12 @@ static map<string, string> generateFragmentSpecialization (glu::GLSLVersion targ
 	return params;
 }
 
-static map<string, string> generateGeometrySpecialization (glu::GLSLVersion targetVersion, const ShaderCase::ValueBlock& valueBlock)
+static map<string, string> generateGeometrySpecialization (const glu::RenderContext& renderCtx, glu::GLSLVersion targetVersion, const ShaderCase::ValueBlock& valueBlock)
 {
 	ostringstream		decl;
 	map<string, string>	params;
 
+	DE_UNREF(renderCtx);
 	DE_UNREF(targetVersion);
 
 	decl << "layout (triangles) in;\n";
@@ -1601,7 +1617,7 @@ static map<string, string> generateGeometrySpecialization (glu::GLSLVersion targ
 	return params;
 }
 
-static map<string, string> generateTessControlSpecialization (glu::GLSLVersion targetVersion, const ShaderCase::ValueBlock& valueBlock)
+static map<string, string> generateTessControlSpecialization (const glu::RenderContext& renderCtx, glu::GLSLVersion targetVersion, const ShaderCase::ValueBlock& valueBlock)
 {
 	ostringstream		decl;
 	ostringstream		output;
@@ -1635,10 +1651,11 @@ static map<string, string> generateTessControlSpecialization (glu::GLSLVersion t
 
 	params.insert(pair<string, string>("TESSELLATION_CONTROL_DECLARATIONS",	decl.str()));
 	params.insert(pair<string, string>("TESSELLATION_CONTROL_OUTPUT",		output.str()));
+	params.insert(pair<string, string>("GL_MAX_PATCH_VERTICES",				de::toString(queryGLInt(renderCtx, GL_MAX_PATCH_VERTICES))));
 	return params;
 }
 
-static map<string, string> generateTessEvalSpecialization (glu::GLSLVersion targetVersion, const ShaderCase::ValueBlock& valueBlock)
+static map<string, string> generateTessEvalSpecialization (const glu::RenderContext& renderCtx, glu::GLSLVersion targetVersion, const ShaderCase::ValueBlock& valueBlock)
 {
 	ostringstream		decl;
 	ostringstream		output;
@@ -1666,14 +1683,22 @@ static map<string, string> generateTessEvalSpecialization (glu::GLSLVersion targ
 
 	params.insert(pair<string, string>("TESSELLATION_EVALUATION_DECLARATIONS",	decl.str()));
 	params.insert(pair<string, string>("TESSELLATION_EVALUATION_OUTPUT",		output.str()));
+	params.insert(pair<string, string>("GL_MAX_PATCH_VERTICES",					de::toString(queryGLInt(renderCtx, GL_MAX_PATCH_VERTICES))));
 	return params;
 }
 
-static void specializeShaders (glu::ProgramSources& dst, glu::ShaderType shaderType, const std::vector<std::string>& sources, const ShaderCase::ValueBlock& valueBlock, glu::GLSLVersion targetVersion, const std::vector<ShaderCase::CaseRequirement>& requirements, std::map<std::string, std::string> (*specializationGenerator)(glu::GLSLVersion, const ShaderCase::ValueBlock&))
+static void specializeShaders (const glu::RenderContext&						renderCtx,
+							   glu::ProgramSources&								dst,
+							   glu::ShaderType									shaderType,
+							   const std::vector<std::string>&					sources,
+							   const ShaderCase::ValueBlock&					valueBlock,
+							   glu::GLSLVersion									targetVersion,
+							   const std::vector<ShaderCase::CaseRequirement>&	requirements,
+							   std::map<std::string, std::string>				(*specializationGenerator)(const glu::RenderContext&, glu::GLSLVersion, const ShaderCase::ValueBlock&))
 {
 	if (!sources.empty())
 	{
-		const std::map<std::string, std::string> specializationParams = specializationGenerator(targetVersion, valueBlock);
+		const std::map<std::string, std::string> specializationParams = specializationGenerator(renderCtx, targetVersion, valueBlock);
 
 		for (int ndx = 0; ndx < (int)sources.size(); ++ndx)
 		{
@@ -1688,27 +1713,27 @@ static void specializeShaders (glu::ProgramSources& dst, glu::ShaderType shaderT
 
 void ShaderCase::specializeVertexShaders (glu::ProgramSources& dst, const std::vector<std::string>& sources, const ValueBlock& valueBlock, const std::vector<ShaderCase::CaseRequirement>& requirements) const
 {
-	specializeShaders(dst, glu::SHADERTYPE_VERTEX, sources, valueBlock, m_targetVersion, requirements, generateVertexSpecialization);
+	specializeShaders(m_renderCtx, dst, glu::SHADERTYPE_VERTEX, sources, valueBlock, m_targetVersion, requirements, generateVertexSpecialization);
 }
 
 void ShaderCase::specializeFragmentShaders (glu::ProgramSources& dst, const std::vector<std::string>& sources, const ValueBlock& valueBlock, const std::vector<ShaderCase::CaseRequirement>& requirements) const
 {
-	specializeShaders(dst, glu::SHADERTYPE_FRAGMENT, sources, valueBlock, m_targetVersion, requirements, generateFragmentSpecialization);
+	specializeShaders(m_renderCtx, dst, glu::SHADERTYPE_FRAGMENT, sources, valueBlock, m_targetVersion, requirements, generateFragmentSpecialization);
 }
 
 void ShaderCase::specializeGeometryShaders (glu::ProgramSources& dst, const std::vector<std::string>& sources, const ValueBlock& valueBlock, const std::vector<ShaderCase::CaseRequirement>& requirements) const
 {
-	specializeShaders(dst, glu::SHADERTYPE_GEOMETRY, sources, valueBlock, m_targetVersion, requirements, generateGeometrySpecialization);
+	specializeShaders(m_renderCtx, dst, glu::SHADERTYPE_GEOMETRY, sources, valueBlock, m_targetVersion, requirements, generateGeometrySpecialization);
 }
 
 void ShaderCase::specializeTessControlShaders (glu::ProgramSources& dst, const std::vector<std::string>& sources, const ValueBlock& valueBlock, const std::vector<ShaderCase::CaseRequirement>& requirements) const
 {
-	specializeShaders(dst, glu::SHADERTYPE_TESSELLATION_CONTROL, sources, valueBlock, m_targetVersion, requirements, generateTessControlSpecialization);
+	specializeShaders(m_renderCtx, dst, glu::SHADERTYPE_TESSELLATION_CONTROL, sources, valueBlock, m_targetVersion, requirements, generateTessControlSpecialization);
 }
 
 void ShaderCase::specializeTessEvalShaders (glu::ProgramSources& dst, const std::vector<std::string>& sources, const ValueBlock& valueBlock, const std::vector<ShaderCase::CaseRequirement>& requirements) const
 {
-	specializeShaders(dst, glu::SHADERTYPE_TESSELLATION_EVALUATION, sources, valueBlock, m_targetVersion, requirements, generateTessEvalSpecialization);
+	specializeShaders(m_renderCtx, dst, glu::SHADERTYPE_TESSELLATION_EVALUATION, sources, valueBlock, m_targetVersion, requirements, generateTessEvalSpecialization);
 }
 
 void ShaderCase::dumpValues (const ValueBlock& valueBlock, int arrayNdx)

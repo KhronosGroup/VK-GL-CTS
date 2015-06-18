@@ -488,6 +488,7 @@ MASTER_GLES31_COMMON_FILTERS	= [
 		exclude("gles31-hw-issues.txt"),
 		exclude("gles31-test-issues.txt"),
 		exclude("gles31-spec-issues.txt"),
+		exclude("gles31-new-tests.txt"),
 	]
 MASTER_GLES31_PKG				= Package(module = GLES31_MODULE, configurations = [
 		# Master
