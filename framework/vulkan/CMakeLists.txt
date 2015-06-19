@@ -17,11 +17,25 @@ set(VKUTIL_SRCS
 	vkMemUtil.hpp
 	vkDeviceUtil.cpp
 	vkDeviceUtil.hpp
+	vkGlslToSpirV.cpp
+	vkGlslToSpirV.hpp
 	)
+
+# \note Code interfacing with glslang needs to include third-party headers
+#       that cause all sorts of warnings to appear.
+set_source_files_properties(
+	FILES vkGlslToSpirV.cpp
+	PROPERTIES COMPILE_FLAGS ${DE_3RD_PARTY_CXX_FLAGS})
 
 set(VKUTIL_LIBS
 	tcutil
 	)
+
+if (DEQP_HAVE_GLSLANG)
+	include_directories(${GLSLANG_INCLUDE_PATH})
+	add_definitions(-DDEQP_HAVE_GLSLANG=1)
+	set(VKUTIL_LIBS ${VKUTIL_LIBS} ${GLSLANG_LIBRARY})
+endif ()
 
 add_library(vkutil STATIC ${VKUTIL_SRCS})
 target_link_libraries(vkutil ${VKUTIL_LIBS})

@@ -24,6 +24,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vkDefs.hpp"
+#include "vkRef.hpp"
 #include "gluShaderProgram.hpp"
 #include "deUniquePtr.hpp"
 #include "deSTLUtil.hpp"
@@ -35,7 +36,10 @@ namespace vk
 
 enum ProgramFormat
 {
-	PROGRAM_FORMAT_GLSL = 0
+	PROGRAM_FORMAT_GLSL_SOURCE = 0,
+	PROGRAM_FORMAT_SPIRV,
+
+	PROGRAM_FORMAT_LAST
 };
 
 class ProgramBinary
@@ -152,8 +156,8 @@ typedef ProgramCollection<glu::ProgramSources>	SourceCollection;
 typedef ProgramCollection<ProgramBinary>		BinaryCollection;
 
 // \todo [2015-03-13 pyry] Likely need BinaryBuilder abstraction for this
-ProgramBinary*	buildProgram		(const glu::ProgramSources& program, ProgramFormat binaryFormat);
-void			setShaderBinary		(const DeviceInterface& deviceInterface, VkShader shader, const ProgramBinary& binary);
+ProgramBinary*		buildProgram	(const glu::ProgramSources& program, ProgramFormat binaryFormat);
+Move<VkShaderT>		createShader	(const DeviceInterface& deviceInterface, VkDevice device, const ProgramBinary& binary, VkShaderCreateFlags flags);
 
 } // vk
 

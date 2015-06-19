@@ -96,7 +96,7 @@ void TestCaseExecutor::init (tcu::TestCase* testCase, const std::string& casePat
 	{
 		const std::string&				name		= progIter.getName();
 		const glu::ProgramSources&		srcProg		= progIter.getProgram();
-		de::MovePtr<vk::ProgramBinary>	binProg		= de::MovePtr<vk::ProgramBinary>(vk::buildProgram(srcProg, vk::PROGRAM_FORMAT_GLSL));
+		de::MovePtr<vk::ProgramBinary>	binProg		= de::MovePtr<vk::ProgramBinary>(vk::buildProgram(srcProg, vk::PROGRAM_FORMAT_SPIRV));
 
 		m_progCollection.add(name, binProg);
 	}

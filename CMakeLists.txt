@@ -75,6 +75,9 @@ if (NOT PNG_INCLUDE_PATH OR NOT PNG_LIBRARY)
 	# \note PNG_LIBRARY and PNG_INCLUDE_PATH are promoted from external/libpng/CMakeLists.txt
 endif ()
 
+# glslang
+add_subdirectory(external/glslang)
+
 include_directories(${PNG_INCLUDE_PATH})
 
 message(STATUS "DEQP_TARGET_NAME        = ${DEQP_TARGET_NAME}")
