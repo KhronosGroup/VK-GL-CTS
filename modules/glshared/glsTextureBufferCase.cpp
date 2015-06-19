@@ -838,7 +838,7 @@ void logTextureInfo (TestLog&	log,
 {
 	const tcu::ScopedLogSection	section(log, "Texture Info", "Texture Info");
 
-	log << TestLog::Message << "Texture format : " << glu::getPixelFormatStr(format) << TestLog::EndMessage;
+	log << TestLog::Message << "Texture format : " << glu::getTextureFormatStr(format) << TestLog::EndMessage;
 	log << TestLog::Message << "Buffer size : " << bufferSize << TestLog::EndMessage;
 
 	if (offset != 0 || size != 0)

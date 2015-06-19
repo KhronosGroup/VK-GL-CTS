@@ -493,7 +493,7 @@ static void checkDepthStencilFormatSupport (const glu::ContextInfo& ctxInfo, deU
 	{
 		const char* reqExt = "GL_OES_texture_stencil8";
 		if (!ctxInfo.isExtensionSupported(reqExt))
-			throw tcu::NotSupportedError(glu::getPixelFormatStr(format).toString() + " requires " + reqExt);
+			throw tcu::NotSupportedError(glu::getTextureFormatStr(format).toString() + " requires " + reqExt);
 	}
 	else
 	{
@@ -515,7 +515,7 @@ class UploadTex2DCase : public TestCase
 {
 public:
 	UploadTex2DCase (Context& context, const char* name, deUint32 format)
-		: TestCase	(context, name, glu::getPixelFormatName(format))
+		: TestCase	(context, name, glu::getTextureFormatName(format))
 		, m_format	(format)
 	{
 	}
@@ -570,7 +570,7 @@ class UploadTex2DArrayCase : public TestCase
 {
 public:
 	UploadTex2DArrayCase (Context& context, const char* name, deUint32 format)
-		: TestCase	(context, name, glu::getPixelFormatName(format))
+		: TestCase	(context, name, glu::getTextureFormatName(format))
 		, m_format	(format)
 	{
 	}
@@ -656,7 +656,7 @@ class UploadTexCubeCase : public TestCase
 {
 public:
 	UploadTexCubeCase (Context& context, const char* name, deUint32 format)
-		: TestCase	(context, name, glu::getPixelFormatName(format))
+		: TestCase	(context, name, glu::getTextureFormatName(format))
 		, m_format	(format)
 	{
 	}
@@ -745,7 +745,7 @@ class RenderTex2DCase : public TestCase
 {
 public:
 	RenderTex2DCase (Context& context, const char* name, deUint32 format)
-		: TestCase	(context, name, glu::getPixelFormatName(format))
+		: TestCase	(context, name, glu::getTextureFormatName(format))
 		, m_format	(format)
 	{
 	}
@@ -802,7 +802,7 @@ class ClearTex2DCase : public TestCase
 {
 public:
 	ClearTex2DCase (Context& context, const char* name, deUint32 format)
-		: TestCase	(context, name, glu::getPixelFormatName(format))
+		: TestCase	(context, name, glu::getTextureFormatName(format))
 		, m_format	(format)
 	{
 	}
@@ -876,7 +876,7 @@ class CompareModeCase : public TestCase
 {
 public:
 	CompareModeCase (Context& context, const char* name, deUint32 format)
-		: TestCase	(context, name, glu::getPixelFormatName(format))
+		: TestCase	(context, name, glu::getTextureFormatName(format))
 		, m_format	(format)
 	{
 	}
@@ -935,7 +935,7 @@ class BaseLevelCase : public TestCase
 {
 public:
 	BaseLevelCase (Context& context, const char* name, deUint32 format)
-		: TestCase	(context, name, glu::getPixelFormatName(format))
+		: TestCase	(context, name, glu::getTextureFormatName(format))
 		, m_format	(format)
 	{
 	}

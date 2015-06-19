@@ -276,7 +276,7 @@ void AdvancedBlendCase::init (void)
 		const int		numSamples	= m_rtType == RENDERTARGETTYPE_MSAA_FBO ? 4 : 0;
 
 		m_testCtx.getLog() << TestLog::Message << "Using FBO of size (" << m_renderWidth << ", " << m_renderHeight << ") with format "
-											   << glu::getPixelFormatStr(format) << " and " << numSamples << " samples"
+											   << glu::getTextureFormatStr(format) << " and " << numSamples << " samples"
 						   << TestLog::EndMessage;
 
 		gl.genRenderbuffers(1, &m_colorRbo);

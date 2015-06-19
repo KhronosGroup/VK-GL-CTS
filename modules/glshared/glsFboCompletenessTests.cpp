@@ -34,7 +34,7 @@
 using namespace glw;
 using glu::RenderContext;
 using glu::getFramebufferStatusName;
-using glu::getPixelFormatName;
+using glu::getTextureFormatName;
 using glu::getTypeName;
 using glu::getErrorName;
 using glu::Framebuffer;
@@ -762,7 +762,7 @@ void TestBase::attachTargetToNew (GLenum target, GLenum bufType, ImageFormat for
 
 static string formatName (ImageFormat format)
 {
-	const string s = getPixelFormatName(format.format);
+	const string s = getTextureFormatName(format.format);
 	const string fmtStr = toLower(s.substr(3));
 
 	if (format.unsizedType != GL_NONE)
@@ -776,7 +776,7 @@ static string formatName (ImageFormat format)
 
 static string formatDesc (ImageFormat format)
 {
-	const string fmtStr = getPixelFormatName(format.format);
+	const string fmtStr = getTextureFormatName(format.format);
 
 	if (format.unsizedType != GL_NONE)
 	{

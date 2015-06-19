@@ -674,7 +674,7 @@ void TextureBorderClampTest::init (void)
 	m_texture = genDummyTexture<glu::Texture2D>(m_context.getRenderContext(), m_context.getContextInfo(), m_texFormat, tcu::IVec2(m_texWidth, m_texHeight));
 
 	m_testCtx.getLog()	<< tcu::TestLog::Message
-						<< "Created texture with format " << ((glu::isCompressedFormat(m_texFormat)) ? (glu::getCompressedTexFormatName(m_texFormat)) : (glu::getPixelFormatName(m_texFormat)))
+						<< "Created texture with format " << glu::getTextureFormatName(m_texFormat)
 						<< ", size (" << m_texture->getRefTexture().getWidth() << ", " << m_texture->getRefTexture().getHeight() << ")\n"
 						<< "Setting sampling state using " << ((m_stateType == STATE_TEXTURE_PARAM) ? ("texture state") : ("sampler state"))
 						<< tcu::TestLog::EndMessage;
@@ -2085,7 +2085,7 @@ void TextureBorderClampPerAxisCase3D::init (void)
 
 	// texture info
 	m_testCtx.getLog()	<< tcu::TestLog::Message
-						<< "Created 3D texture with format " << ((glu::isCompressedFormat(m_texFormat)) ? (glu::getCompressedTexFormatName(m_texFormat)) : (glu::getPixelFormatName(m_texFormat)))
+						<< "Created 3D texture with format " << glu::getTextureFormatName(m_texFormat)
 						<< ", size (" << m_texture->getRefTexture().getWidth() << ", " << m_texture->getRefTexture().getHeight() << ", " << m_texture->getRefTexture().getDepth() << ")\n"
 						<< tcu::TestLog::EndMessage;
 

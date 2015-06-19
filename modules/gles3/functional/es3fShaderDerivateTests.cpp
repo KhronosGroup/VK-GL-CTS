@@ -664,7 +664,7 @@ TriangleDerivateCase::IterateResult TriangleDerivateCase::iterate (void)
 	if (useFbo)
 	{
 		m_testCtx.getLog() << TestLog::Message
-						   << "Rendering to FBO, format = " << glu::getPixelFormatStr(fboFormat)
+						   << "Rendering to FBO, format = " << glu::getTextureFormatStr(fboFormat)
 						   << ", samples = " << m_numSamples
 						   << TestLog::EndMessage;
 

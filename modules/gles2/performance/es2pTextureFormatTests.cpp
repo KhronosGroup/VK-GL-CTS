@@ -74,7 +74,7 @@ void TextureFormatTests::init (void)
 		deUint32	minFilter		= GL_NEAREST;
 		deUint32	magFilter		= GL_NEAREST;
 		int			numTextures		= 1;
-		string		descriptionBase	= string(glu::getPixelFormatName(format)) + ", " + glu::getTypeName(dataType);
+		string		descriptionBase	= string(glu::getTextureFormatName(format)) + ", " + glu::getTypeName(dataType);
 
 		addChild(new Texture2DRenderCase(m_context, nameBase.c_str(), descriptionBase.c_str(), format, dataType, wrapS, wrapT, minFilter, magFilter, tcu::Mat3(), numTextures, false /* npot */));
 	}
