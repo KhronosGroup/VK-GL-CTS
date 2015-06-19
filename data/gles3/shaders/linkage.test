@@ -2342,6 +2342,125 @@ group varying "Varying linkage"
 end
 
 group uniform "Uniform linkage"
+	group basic "Default block uniforms of scalar and vector types"
+		case precision_conflict_1
+			version 300 es
+			desc "Vertex side uniform has highp, fragment side uniform mediump."
+			expect link_fail
+			values {output float out0 = 3.0;}
+			vertex ""
+				#version 300 es
+				${VERTEX_DECLARATIONS}
+				uniform highp float u_val;
+				out mediump float res;
+				void main()
+				{
+					res = u_val;
+					${VERTEX_OUTPUT}
+				}
+			""
+			fragment ""
+				#version 300 es
+				precision mediump float;
+				uniform float u_val;
+				${FRAGMENT_DECLARATIONS}
+				in mediump float res;
+				void main()
+				{
+					out0 = u_val + res;
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+		case precision_conflict_2
+			version 300 es
+			desc "Vertex side uniform has highp, fragment side uniform mediump."
+			expect link_fail
+			values {output float out0 = 3.0;}
+			vertex ""
+				#version 300 es
+				${VERTEX_DECLARATIONS}
+				uniform highp float u_val;
+				out mediump float res;
+				void main()
+				{
+					res = u_val;
+					${VERTEX_OUTPUT}
+				}
+			""
+			fragment ""
+				#version 300 es
+				precision highp float;
+				uniform mediump float u_val;
+				${FRAGMENT_DECLARATIONS}
+				in mediump float res;
+				void main()
+				{
+					out0 = u_val + res;
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+		case precision_conflict_3
+			version 300 es
+			desc "Vertex side uniform has lowp, fragment side uniform highp."
+			expect link_fail
+			values {output float out0 = 3.0;}
+			vertex ""
+				#version 300 es
+				${VERTEX_DECLARATIONS}
+				uniform lowp int u_val;
+				out mediump float res;
+				void main()
+				{
+					res = float(u_val);
+					${VERTEX_OUTPUT}
+				}
+			""
+			fragment ""
+				#version 300 es
+				precision highp float;
+				uniform highp int u_val;
+				${FRAGMENT_DECLARATIONS}
+				in mediump float res;
+				void main()
+				{
+					out0 = float(u_val) + res;
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+		case precision_conflict_4
+			version 300 es
+			desc "Vertex side uniform has lowp, fragment side uniform mediump."
+			expect link_fail
+			values {output float out0 = 3.0;}
+			vertex ""
+				#version 300 es
+				${VERTEX_DECLARATIONS}
+				uniform lowp vec3 u_val;
+				out mediump float res;
+				void main()
+				{
+					res = u_val.y;
+					${VERTEX_OUTPUT}
+				}
+			""
+			fragment ""
+				#version 300 es
+				precision highp float;
+				uniform mediump vec3 u_val;
+				${FRAGMENT_DECLARATIONS}
+				in mediump float res;
+				void main()
+				{
+					out0 = u_val.z + res;
+					${FRAGMENT_OUTPUT}
+				}
+			""
+		end
+	end
+
 	group struct "Uniform structs"
 		# Struct linkage handling
 		case basic
