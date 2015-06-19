@@ -41,6 +41,9 @@ dEQP-GLES3.functional.shaders.builtin_functions.precision.atan.mediump_fragment.
 # Bug 18323060
 dEQP-GLES3.functional.shaders.random.all_features.fragment.16
 
+# Bug 21851700
+dEQP-GLES3.functional.shaders.random.all_features.fragment.56
+
 # Bug 18093986
 dEQP-GLES3.functional.shaders.texture_functions.texturelodoffset.usampler3d_vertex
 
