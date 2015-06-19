@@ -1543,6 +1543,10 @@ dEQP-GLES3.functional.shaders.linkage.varying.interpolation.centroid
 dEQP-GLES3.functional.shaders.linkage.varying.interpolation.flat
 dEQP-GLES3.functional.shaders.linkage.varying.usage.readback_1
 dEQP-GLES3.functional.shaders.linkage.varying.usage.writeback_1
+dEQP-GLES3.functional.shaders.linkage.uniform.basic.precision_conflict_1
+dEQP-GLES3.functional.shaders.linkage.uniform.basic.precision_conflict_2
+dEQP-GLES3.functional.shaders.linkage.uniform.basic.precision_conflict_3
+dEQP-GLES3.functional.shaders.linkage.uniform.basic.precision_conflict_4
 dEQP-GLES3.functional.shaders.linkage.uniform.struct.basic
 dEQP-GLES3.functional.shaders.linkage.uniform.struct.vertex_only
 dEQP-GLES3.functional.shaders.linkage.uniform.struct.fragment_only
