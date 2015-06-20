@@ -657,16 +657,7 @@ void genRenderbufferImage (const glw::Functions&			gl,
 		{
 			const tcu::ConstPixelBufferAccess texelAccess (format, 1, 1, 1, &(texelBlock[0]));
 
-			if (isFloatFormat(info.getFormat()))
-			{
-				const tcu::Vec4 color = texelAccess.getPixel(0, 0, 0);
-
-				gl.clearBufferfv(GL_COLOR, 0, (const float*)&color);
-				GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to clear renderbuffer.");
-
-				tcu::clear(refAccess, (tcu::isSRGB(format) ? tcu::linearToSRGB(color) : color));
-			}
-			else if (isIntFormat(info.getFormat()))
+			if (isIntFormat(info.getFormat()))
 			{
 				const tcu::IVec4 color = texelAccess.getPixelInt(0, 0, 0);
 
@@ -688,13 +679,27 @@ void genRenderbufferImage (const glw::Functions&			gl,
 			}
 			else
 			{
-				const tcu::Vec4 color = texelAccess.getPixel(0, 0, 0);
+				const tcu::Vec4 rawColor	= texelAccess.getPixel(0, 0, 0);
+				const tcu::Vec4 linearColor	= (tcu::isSRGB(format) ? tcu::sRGBToLinear(rawColor) : rawColor);
 
-				gl.clearColor(color.x(), color.y(), color.z(), color.w());
-				gl.clear(GL_COLOR_BUFFER_BIT);
+				// rawColor bit pattern has been chosen to be "safe" in the destination format. For sRGB
+				// formats, the clear color is in linear space. Since we want the resulting bit pattern
+				// to be safe after implementation linear->sRGB transform, we must apply the inverting
+				// transform to the clear color.
+
+				if (isFloatFormat(info.getFormat()))
+				{
+					gl.clearBufferfv(GL_COLOR, 0, (const float*)&linearColor);
+				}
+				else
+				{
+					// fixed-point
+					gl.clearColor(linearColor.x(), linearColor.y(), linearColor.z(), linearColor.w());
+					gl.clear(GL_COLOR_BUFFER_BIT);
+				}
 				GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to clear renderbuffer.");
 
-				tcu::clear(refAccess, (tcu::isSRGB(format) ? tcu::linearToSRGB(color) : color));
+				tcu::clear(refAccess, rawColor);
 			}
 		}
 	}
