@@ -74,3 +74,7 @@ dEQP-GLES3.functional.shaders.preprocessor.pragmas.pragma_unrecognized_token_*
 
 # Bug 21791303
 dEQP-GLES3.functional.uniform_api.random.23
+
+# Bug 22006723
+dEQP-GLES3.functional.shaders.builtin_functions.precision.atan2.mediump_*
+dEQP-GLES3.functional.shaders.builtin_functions.precision.atan2.highp_*
