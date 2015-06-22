@@ -48,7 +48,8 @@ namespace FloatStateQueryVerifiers
 namespace
 {
 
-const int FLOAT_EXPANSION_E = 0x3FFF;
+const int FLOAT_EXPANSION_E		= 0x03FF; // 10 bits error allowed, requires 22 accurate bits
+const int FLOAT_EXPANSION_E_64	= 0x07FF;
 
 GLint64 expandGLFloatToInteger (GLfloat f)
 {
@@ -476,8 +477,8 @@ void GetInteger64Verifier::verifyFloatExpanded (tcu::TestContext& testCtx, GLenu
 	using tcu::TestLog;
 	using tcu::toHex;
 
-	const GLint64 expectedGLStateMax = expandGLFloatToInteger(reference) + FLOAT_EXPANSION_E;
-	const GLint64 expectedGLStateMin = expandGLFloatToInteger(reference) - FLOAT_EXPANSION_E;
+	const GLint64 expectedGLStateMax = expandGLFloatToInteger(reference) + FLOAT_EXPANSION_E_64;
+	const GLint64 expectedGLStateMin = expandGLFloatToInteger(reference) - FLOAT_EXPANSION_E_64;
 
 	StateQueryMemoryWriteGuard<GLint64> state;
 	glGetInteger64v(name, &state);
@@ -503,13 +504,13 @@ void GetInteger64Verifier::verifyFloat2Expanded (tcu::TestContext& testCtx, GLen
 
 	const GLint64 referenceAsGLintMin[] =
 	{
-		expandGLFloatToInteger(reference0) - FLOAT_EXPANSION_E,
-		expandGLFloatToInteger(reference1) - FLOAT_EXPANSION_E
+		expandGLFloatToInteger(reference0) - FLOAT_EXPANSION_E_64,
+		expandGLFloatToInteger(reference1) - FLOAT_EXPANSION_E_64
 	};
 	const GLint64 referenceAsGLintMax[] =
 	{
-		expandGLFloatToInteger(reference0) + FLOAT_EXPANSION_E,
-		expandGLFloatToInteger(reference1) + FLOAT_EXPANSION_E
+		expandGLFloatToInteger(reference0) + FLOAT_EXPANSION_E_64,
+		expandGLFloatToInteger(reference1) + FLOAT_EXPANSION_E_64
 	};
 
 	StateQueryMemoryWriteGuard<GLint64[2]> floatVector2;
@@ -541,17 +542,17 @@ void GetInteger64Verifier::verifyFloat4Color (tcu::TestContext& testCtx, GLenum 
 
 	const GLint64 referenceAsGLintMin[] =
 	{
-		expandGLFloatToInteger(reference0) - FLOAT_EXPANSION_E,
-		expandGLFloatToInteger(reference1) - FLOAT_EXPANSION_E,
-		expandGLFloatToInteger(reference2) - FLOAT_EXPANSION_E,
-		expandGLFloatToInteger(reference3) - FLOAT_EXPANSION_E
+		expandGLFloatToInteger(reference0) - FLOAT_EXPANSION_E_64,
+		expandGLFloatToInteger(reference1) - FLOAT_EXPANSION_E_64,
+		expandGLFloatToInteger(reference2) - FLOAT_EXPANSION_E_64,
+		expandGLFloatToInteger(reference3) - FLOAT_EXPANSION_E_64
 	};
 	const GLint64 referenceAsGLintMax[] =
 	{
-		expandGLFloatToInteger(reference0) + FLOAT_EXPANSION_E,
-		expandGLFloatToInteger(reference1) + FLOAT_EXPANSION_E,
-		expandGLFloatToInteger(reference2) + FLOAT_EXPANSION_E,
-		expandGLFloatToInteger(reference3) + FLOAT_EXPANSION_E
+		expandGLFloatToInteger(reference0) + FLOAT_EXPANSION_E_64,
+		expandGLFloatToInteger(reference1) + FLOAT_EXPANSION_E_64,
+		expandGLFloatToInteger(reference2) + FLOAT_EXPANSION_E_64,
+		expandGLFloatToInteger(reference3) + FLOAT_EXPANSION_E_64
 	};
 
 	StateQueryMemoryWriteGuard<GLint64[4]> floatVector4;
