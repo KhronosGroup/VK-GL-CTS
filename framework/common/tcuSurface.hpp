@@ -27,7 +27,7 @@
 #include "tcuRGBA.hpp"
 #include "tcuTexture.hpp"
 
-#include <vector>
+#include "deArrayBuffer.hpp"
 
 namespace tcu
 {
@@ -62,9 +62,9 @@ public:
 private:
 	// \note Copy constructor and assignment operators are public and auto-generated
 
-	int						m_width;
-	int 					m_height;
-	std::vector<deUint32>	m_pixels;
+	int							m_width;
+	int 						m_height;
+	de::ArrayBuffer<deUint32>	m_pixels;
 } DE_WARN_UNUSED_TYPE;
 
 inline void Surface::setPixel (int x, int y, RGBA col)
@@ -72,7 +72,7 @@ inline void Surface::setPixel (int x, int y, RGBA col)
 	DE_ASSERT(de::inBounds(x, 0, m_width) && de::inBounds(y, 0, m_height));
 
 	const int		pixOffset	= y*m_width + x;
-	deUint32*		pixAddr		= &m_pixels[pixOffset];
+	deUint32*		pixAddr		= m_pixels.getElementPtr(pixOffset);
 
 #if (DE_ENDIANNESS == DE_LITTLE_ENDIAN)
 	*pixAddr = col.getPacked();
@@ -89,7 +89,7 @@ inline RGBA Surface::getPixel (int x, int y) const
 	DE_ASSERT(de::inBounds(x, 0, m_width) && de::inBounds(y, 0, m_height));
 
 	const int		pixOffset	= y*m_width + x;
-	const deUint32*	pixAddr		= &m_pixels[pixOffset];
+	const deUint32*	pixAddr		= m_pixels.getElementPtr(pixOffset);
 
 	DE_STATIC_ASSERT(RGBA::RED_SHIFT == 0 && RGBA::GREEN_SHIFT == 8 && RGBA::BLUE_SHIFT == 16 && RGBA::ALPHA_SHIFT == 24);
 
@@ -104,13 +104,13 @@ inline RGBA Surface::getPixel (int x, int y) const
 /** Get pixel buffer access from surface. */
 inline ConstPixelBufferAccess Surface::getAccess (void) const
 {
-	return ConstPixelBufferAccess(TextureFormat(TextureFormat::RGBA, TextureFormat::UNORM_INT8), m_width, m_height, 1, m_pixels.empty() ? DE_NULL : &m_pixels[0]);
+	return ConstPixelBufferAccess(TextureFormat(TextureFormat::RGBA, TextureFormat::UNORM_INT8), m_width, m_height, 1, m_pixels.empty() ? DE_NULL : m_pixels.getPtr());
 }
 
 /** Get pixel buffer access from surface. */
 inline PixelBufferAccess Surface::getAccess (void)
 {
-	return PixelBufferAccess(TextureFormat(TextureFormat::RGBA, TextureFormat::UNORM_INT8), m_width, m_height, 1, m_pixels.empty() ? DE_NULL : &m_pixels[0]);
+	return PixelBufferAccess(TextureFormat(TextureFormat::RGBA, TextureFormat::UNORM_INT8), m_width, m_height, 1, m_pixels.empty() ? DE_NULL : m_pixels.getPtr());
 }
 
 } // tcu
