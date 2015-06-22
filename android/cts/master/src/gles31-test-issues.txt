@@ -27,3 +27,7 @@ dEQP-GLES31.functional.copy_image.non_compressed.viewclass_8_bits.*_r8_snorm.*
 # Bug 20453509
 dEQP-GLES31.functional.shaders.multisample_interpolation.interpolate_at_centroid.consistency.*
 dEQP-GLES31.functional.shaders.multisample_interpolation.interpolate_at_centroid.array_element.*
+
+# Bug 22006723
+dEQP-GLES31.functional.shaders.builtin_functions.precision.atan2.mediump_*
+dEQP-GLES31.functional.shaders.builtin_functions.precision.atan2.highp_*
