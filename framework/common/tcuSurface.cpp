@@ -53,5 +53,5 @@ void Surface::setSize (int width, int height)
 {
 	m_width		= width;
 	m_height	= height;
-	m_pixels.resize(width*height);
+	m_pixels.setStorage(width * height);
 }
