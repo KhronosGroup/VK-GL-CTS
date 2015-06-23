@@ -855,3 +855,14 @@ dEQP-GLES3.functional.rasterization.interpolation.basic.line_loop_wide
 dEQP-GLES3.functional.rasterization.interpolation.projected.lines_wide
 dEQP-GLES3.functional.rasterization.interpolation.projected.line_strip_wide
 dEQP-GLES3.functional.rasterization.interpolation.projected.line_loop_wide
+
+# Bug 21844307
+dEQP-GLES3.functional.shaders.derivate.dfdx.fbo_msaa*
+dEQP-GLES3.functional.shaders.derivate.dfdx.fastest.fbo_msaa*
+dEQP-GLES3.functional.shaders.derivate.dfdx.nicest.fbo_msaa*
+dEQP-GLES3.functional.shaders.derivate.dfdy.fbo_msaa*
+dEQP-GLES3.functional.shaders.derivate.dfdy.fastest.fbo_msaa*
+dEQP-GLES3.functional.shaders.derivate.dfdy.nicest.fbo_msaa*
+dEQP-GLES3.functional.shaders.derivate.fwidth.fbo_msaa*
+dEQP-GLES3.functional.shaders.derivate.fwidth.fastest.fbo_msaa*
+dEQP-GLES3.functional.shaders.derivate.fwidth.nicest.fbo_msaa*
