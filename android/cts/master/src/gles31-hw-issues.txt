@@ -57,3 +57,6 @@ dEQP-GLES31.functional.texture.gather.basic.cube.depth32f.size_pot.compare_great
 dEQP-GLES31.functional.texture.gather.basic.cube.depth32f.size_pot.compare_less.clamp_to_edge_repeat
 dEQP-GLES31.functional.texture.gather.basic.cube.depth32f.size_pot.compare_less.mirrored_repeat_clamp_to_edge
 dEQP-GLES31.functional.texture.gather.basic.cube.depth32f.size_pot.compare_less.repeat_mirrored_repeat
+
+# Bug 21816937
+dEQP-GLES31.functional.shaders.builtin_functions.precision.reflect.highp_compute.vec4
