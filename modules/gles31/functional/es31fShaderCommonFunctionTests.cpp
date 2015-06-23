@@ -189,6 +189,49 @@ static int getMinNormalizedValueExponent (glu::Precision precision)
 	return exponent[precision];
 }
 
+static float makeFloatRepresentable (float f, glu::Precision precision)
+{
+	if (precision == glu::PRECISION_HIGHP)
+	{
+		// \note: assuming f is not extended-precision
+		return f;
+	}
+	else
+	{
+		const int			numMantissaBits				= getMinMantissaBits(precision);
+		const int			maxNormalizedValueExponent	= getMaxNormalizedValueExponent(precision);
+		const int			minNormalizedValueExponent	= getMinNormalizedValueExponent(precision);
+		const deUint32		representableMantissaMask	= ((deUint32(1) << numMantissaBits) - 1) << (23 - (deUint32)numMantissaBits);
+		const float			largestRepresentableValue	= tcu::Float32::constructBits(+1, maxNormalizedValueExponent, ((1u << numMantissaBits) - 1u) << (23u - (deUint32)numMantissaBits)).asFloat();
+		const bool			zeroNotRepresentable		= (precision == glu::PRECISION_LOWP);
+
+		// if zero is not required to be representable, use smallest positive non-subnormal value
+		const float			zeroValue					= (zeroNotRepresentable) ? (tcu::Float32::constructBits(+1, minNormalizedValueExponent, 1).asFloat()) : (0.0f);
+
+		const tcu::Float32	float32Representation		(f);
+
+		if (float32Representation.exponent() < minNormalizedValueExponent)
+		{
+			// flush too small values to zero
+			return zeroValue;
+		}
+		else if (float32Representation.exponent() > maxNormalizedValueExponent)
+		{
+			// clamp too large values
+			return (float32Representation.sign() == +1) ? (largestRepresentableValue) : (-largestRepresentableValue);
+		}
+		else
+		{
+			// remove unrepresentable mantissa bits
+			const tcu::Float32 targetRepresentation(tcu::Float32::constructBits(float32Representation.sign(),
+													float32Representation.exponent(),
+													float32Representation.mantissaBits() & representableMantissaMask));
+
+			return targetRepresentation.asFloat();
+		}
+	}
+}
+
 // CommonFunctionCase
 
 class CommonFunctionCase : public TestCase
@@ -1733,6 +1776,17 @@ public:
 		}
 
 		fillRandomScalars(rnd, ranges[precision].x(), ranges[precision].y(), (float*)values[0] + 8*scalarSize, (numValues-8)*scalarSize);
+
+		// Make sure the values are representable in the target format
+		for (int caseNdx = 0; caseNdx < numValues; ++caseNdx)
+		{
+			for (int scalarNdx = 0; scalarNdx < scalarSize; scalarNdx++)
+			{
+				float* const valuePtr = &((float*)values[0])[caseNdx * scalarSize + scalarNdx];
+
+				*valuePtr = makeFloatRepresentable(*valuePtr, precision);
+			}
+		}
 	}
 
 	bool compare (const void* const* inputs, const void* const* outputs)
@@ -1942,10 +1996,6 @@ public:
 		const glu::DataType		type						= m_spec.inputs[0].varType.getBasicType();
 		const glu::Precision	precision					= m_spec.inputs[0].varType.getPrecision();
 		const int				scalarSize					= glu::getDataTypeScalarSize(type);
-		const int				numMantissaBits				= getMinMantissaBits(precision);
-		const int				maxNormalizedValueExponent	= getMaxNormalizedValueExponent(precision);
-		const int				minNormalizedValueExponent	= getMinNormalizedValueExponent(precision);
-		const deUint32			representableMantissaMask	= ((deUint32(1) << numMantissaBits) - 1) << (23 - (deUint32)numMantissaBits);
 		const float				specialCases[][3]			=
 		{
 			// a		b		c
@@ -1982,42 +2032,15 @@ public:
 		}
 
 		// Make sure the values are representable in the target format
-		if (precision != glu::PRECISION_HIGHP)
+		for (int inputNdx = 0; inputNdx < 3; inputNdx++)
 		{
-			const float	largestRepresentableValue	= tcu::Float32::constructBits(+1, maxNormalizedValueExponent, ((1u << numMantissaBits) - 1u) << (23u - (deUint32)numMantissaBits)).asFloat();
-
-			// zero is not required to be representable, use smallest positive non-subnormal value
-			const float zeroReplacement				= tcu::Float32::constructBits(+1, minNormalizedValueExponent, 1).asFloat();
-
-			for (int inputNdx = 0; inputNdx < 3; inputNdx++)
+			for (int caseNdx = 0; caseNdx < numValues; ++caseNdx)
 			{
-				for (int caseNdx = 0; caseNdx < numValues; ++caseNdx)
+				for (int scalarNdx = 0; scalarNdx < scalarSize; scalarNdx++)
 				{
-					for (int scalarNdx = 0; scalarNdx < scalarSize; scalarNdx++)
-					{
-						float&				value					= ((float*)values[inputNdx])[caseNdx * scalarSize + scalarNdx];
-						const tcu::Float32	float32Representation	(value);
+					float* const valuePtr = &((float*)values[inputNdx])[caseNdx * scalarSize + scalarNdx];
 
-						// flush too small values to zero
-						if (float32Representation.exponent() < minNormalizedValueExponent)
-						{
-							value = zeroReplacement;
-						}
-						// clamp too large values
-						else if (float32Representation.exponent() > maxNormalizedValueExponent)
-						{
-							value = (float32Representation.sign() == +1) ? (largestRepresentableValue) : (-largestRepresentableValue);
-						}
-						// remove unrepresentable mantissa bits
-						else
-						{
-							const tcu::Float32	targetRepresentation	(tcu::Float32::constructBits(float32Representation.sign(),
-																									 float32Representation.exponent(),
-																									 float32Representation.mantissaBits() & representableMantissaMask));
-
-							value = targetRepresentation.asFloat();
-						}
-					}
+					*valuePtr = makeFloatRepresentable(*valuePtr, precision);
 				}
 			}
 		}
