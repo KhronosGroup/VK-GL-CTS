@@ -1362,7 +1362,7 @@ void NegativeApiTests::init (void)
 				log << TestLog::Section("Test1", "EGL_BAD_PARAMETER is generated if engine is not a recognized marking engine and native rendering is supported by current surface");
 
 				eglWaitNative(-1);
-				expectEitherError(EGL_BAD_PARAMETER, EGL_NONE);
+				expectEitherError(EGL_BAD_PARAMETER, EGL_SUCCESS);
 
 				log << TestLog::EndSection;
 
