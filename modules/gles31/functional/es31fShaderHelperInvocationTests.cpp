@@ -100,10 +100,11 @@ static glu::PrimitiveType getGluPrimitiveType (PrimitiveType primType)
 
 static void genVertices (PrimitiveType primType, int numPrimitives, de::Random* rnd, vector<Vec2>* dst)
 {
-	const bool		isTri		= primType == PRIMITIVETYPE_TRIANGLE;
-	const float		minCoord	= isTri ? -1.5f : -1.0f;
-	const float		maxCoord	= isTri ? +1.5f : +1.0f;
-	const int		numVert		= getNumVerticesPerPrimitive(primType)*numPrimitives;
+	const bool	isTri					= primType == PRIMITIVETYPE_TRIANGLE;
+	const float	minCoord				= isTri ? -1.5f : -1.0f;
+	const float	maxCoord				= isTri ? +1.5f : +1.0f;
+	const int	numVerticesPerPrimitive	= getNumVerticesPerPrimitive(primType);
+	const int	numVert					= numVerticesPerPrimitive*numPrimitives;
 
 	dst->resize(numVert);
 
@@ -111,6 +112,34 @@ static void genVertices (PrimitiveType primType, int numPrimitives, de::Random* 
 	{
 		(*dst)[ndx][0] = rnd->getFloat(minCoord, maxCoord);
 		(*dst)[ndx][1] = rnd->getFloat(minCoord, maxCoord);
+	}
+
+	// Don't produce completely or almost completely discardable primitives.
+	// \note: This doesn't guarantee that resulting primitives are visible or
+	//        produce any fragments. This just removes trivially discardable
+	//        primitives.
+	for (int primitiveNdx = 0; primitiveNdx < numPrimitives; ++primitiveNdx)
+	for (int component = 0; component < 2; ++component)
+	{
+		bool negativeClip = true;
+		bool positiveClip = true;
+
+		for (int vertexNdx = 0; vertexNdx < numVerticesPerPrimitive; ++vertexNdx)
+		{
+			const float p = (*dst)[primitiveNdx * numVerticesPerPrimitive + vertexNdx][component];
+			// \note 0.9 instead of 1.0 to avoid just barely visible primitives
+			if (p > -0.9f)
+				negativeClip = false;
+			if (p < +0.9f)
+				positiveClip = false;
+		}
+
+		// if discardable, just mirror first vertex along center
+		if (negativeClip || positiveClip)
+		{
+			(*dst)[primitiveNdx * numVerticesPerPrimitive + 0][0] *= -1.0f;
+			(*dst)[primitiveNdx * numVerticesPerPrimitive + 0][1] *= -1.0f;
+		}
 	}
 }
 
@@ -180,6 +209,7 @@ public:
 private:
 	const glu::RenderContext&	m_renderCtx;
 	const int					m_numSamples;
+	const IVec2					m_size;
 
 	glu::Renderbuffer			m_colorbuffer;
 	glu::Framebuffer			m_framebuffer;
@@ -190,6 +220,7 @@ private:
 FboHelper::FboHelper (const glu::RenderContext& renderCtx, int width, int height, deUint32 format, int numSamples)
 	: m_renderCtx			(renderCtx)
 	, m_numSamples			(numSamples)
+	, m_size				(width, height)
 	, m_colorbuffer			(renderCtx)
 	, m_framebuffer			(renderCtx)
 	, m_resolveColorbuffer	(renderCtx)
@@ -229,6 +260,8 @@ void FboHelper::bindForRendering (void)
 	const glw::Functions& gl = m_renderCtx.getFunctions();
 	gl.bindFramebuffer(GL_FRAMEBUFFER, *m_framebuffer);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glBindFramebuffer()");
+	gl.viewport(0, 0, m_size.x(), m_size.y());
+	GLU_EXPECT_NO_ERROR(gl.getError(), "viewport()");
 }
 
 void FboHelper::readPixels (int x, int y, const tcu::PixelBufferAccess& dst)
@@ -351,16 +384,21 @@ static bool verifyHelperInvocationValue (TestLog& log, const tcu::Surface& resul
 	const tcu::RGBA		fgRef				(0, 255, 0, 255);
 	const tcu::RGBA		threshold			(1, isMultiSample ? 254 : 1, 1, 1);
 	int					numInvalidPixels	= 0;
+	bool				renderedSomething	= false;
 
 	for (int y = 0; y < result.getHeight(); ++y)
 	{
 		for (int x = 0; x < result.getWidth(); ++x)
 		{
 			const tcu::RGBA	resPix	= result.getPixel(x, y);
+			const bool		isBg	= tcu::compareThreshold(resPix, bgRef, threshold);
+			const bool		isFg	= tcu::compareThreshold(resPix, fgRef, threshold);
 
-			if (!tcu::compareThreshold(resPix, bgRef, threshold) &&
-				!tcu::compareThreshold(resPix, fgRef, threshold))
+			if (!isBg && !isFg)
 				numInvalidPixels += 1;
+
+			if (isFg)
+				renderedSomething = true;
 		}
 	}
 
@@ -368,11 +406,19 @@ static bool verifyHelperInvocationValue (TestLog& log, const tcu::Surface& resul
 	{
 		log << TestLog::Image("Result", "Result image", result);
 		log << TestLog::Message << "ERROR: Found " << numInvalidPixels << " invalid result pixels!" << TestLog::EndMessage;
+		return false;
+	}
+	else if (!renderedSomething)
+	{
+		log << TestLog::Image("Result", "Result image", result);
+		log << TestLog::Message << "ERROR: Result image was empty!" << TestLog::EndMessage;
+		return false;
 	}
 	else
+	{
 		log << TestLog::Message << "All result pixels are valid" << TestLog::EndMessage;
-
-	return numInvalidPixels == 0;
+		return true;
+	}
 }
 
 HelperInvocationValueCase::IterateResult HelperInvocationValueCase::iterate (void)
@@ -403,7 +449,7 @@ HelperInvocationValueCase::IterateResult HelperInvocationValueCase::iterate (voi
 class HelperInvocationDerivateCase : public TestCase
 {
 public:
-							HelperInvocationDerivateCase	(Context& context, const char* name, const char* description, PrimitiveType primType, int numSamples, const char* derivateFunc);
+							HelperInvocationDerivateCase	(Context& context, const char* name, const char* description, PrimitiveType primType, int numSamples, const char* derivateFunc, bool checkAbsoluteValue);
 							~HelperInvocationDerivateCase	(void);
 
 	void					init							(void);
@@ -414,6 +460,7 @@ private:
 	const PrimitiveType		m_primitiveType;
 	const int				m_numSamples;
 	const std::string		m_derivateFunc;
+	const bool				m_checkAbsoluteValue;
 
 	const int				m_numIters;
 
@@ -422,11 +469,12 @@ private:
 	int						m_iterNdx;
 };
 
-HelperInvocationDerivateCase::HelperInvocationDerivateCase (Context& context, const char* name, const char* description, PrimitiveType primType, int numSamples, const char* derivateFunc)
+HelperInvocationDerivateCase::HelperInvocationDerivateCase (Context& context, const char* name, const char* description, PrimitiveType primType, int numSamples, const char* derivateFunc, bool checkAbsoluteValue)
 	: TestCase					(context, name, description)
 	, m_primitiveType			(primType)
 	, m_numSamples				(numSamples)
 	, m_derivateFunc			(derivateFunc)
+	, m_checkAbsoluteValue		(checkAbsoluteValue)
 	, m_numIters				(16)
 	, m_iterNdx					(0)
 {
@@ -443,6 +491,7 @@ void HelperInvocationDerivateCase::init (void)
 	const glw::Functions&		gl				= renderCtx.getFunctions();
 	const int					maxSamples		= getInteger(gl, GL_MAX_SAMPLES);
 	const int					actualSamples	= m_numSamples == NUM_SAMPLES_MAX ? maxSamples : m_numSamples;
+	const std::string			funcSource		= (m_checkAbsoluteValue) ? ("abs(" + m_derivateFunc + "(value))") : (m_derivateFunc + "(value)");
 
 	m_program = MovePtr<ShaderProgram>(new ShaderProgram(m_context.getRenderContext(),
 		glu::ProgramSources()
@@ -461,7 +510,7 @@ void HelperInvocationDerivateCase::init (void)
 				"void main (void)\n"
 				"{\n"
 				"	highp float value		= gl_HelperInvocation ? 1.0 : 0.0;\n"
-				"	highp float derivate	= ") + m_derivateFunc + "(value);\n"
+				"	highp float derivate	= ") + funcSource + ";\n"
 				"	if (gl_HelperInvocation)\n"
 				"		o_color = vec4(1.0, 0.0, derivate, 1.0);\n"
 				"	else\n"
@@ -534,6 +583,7 @@ static bool verifyHelperInvocationDerivate (TestLog& log, const tcu::Surface& re
 	const tcu::RGBA		isFgThreshold		(1, isMultiSample ? 254 : 1, 255, 1);
 	int					numInvalidPixels	= 0;
 	int					numNonZeroDeriv		= 0;
+	bool				renderedSomething	= false;
 
 	for (int y = 0; y < result.getHeight(); ++y)
 	{
@@ -551,20 +601,31 @@ static bool verifyHelperInvocationDerivate (TestLog& log, const tcu::Surface& re
 			if ((!isBg && !isFg) ||				// Neither of valid colors (ignoring blue channel that has derivate)
 				(nonZeroDeriv && !neighborBg))	// Has non-zero derivate, but sample not at primitive edge
 				numInvalidPixels += 1;
+
+			if (isFg)
+				renderedSomething = true;
 		}
 	}
+
+	log << TestLog::Message << "Found " << numNonZeroDeriv << " pixels with non-zero derivate (neighbor sample has gl_HelperInvocation = true)" << TestLog::EndMessage;
 
 	if (numInvalidPixels > 0)
 	{
 		log << TestLog::Image("Result", "Result image", result);
 		log << TestLog::Message << "ERROR: Found " << numInvalidPixels << " invalid result pixels!" << TestLog::EndMessage;
+		return false;
+	}
+	else if (!renderedSomething)
+	{
+		log << TestLog::Image("Result", "Result image", result);
+		log << TestLog::Message << "ERROR: Result image was empty!" << TestLog::EndMessage;
+		return false;
 	}
 	else
+	{
 		log << TestLog::Message << "All result pixels are valid" << TestLog::EndMessage;
-
-	log << TestLog::Message << "Found " << numNonZeroDeriv << " pixels with non-zero derivate (neighbor sample has gl_HelperInvocation = true)" << TestLog::EndMessage;
-
-	return numInvalidPixels == 0;
+		return true;
+	}
 }
 
 HelperInvocationDerivateCase::IterateResult HelperInvocationDerivateCase::iterate (void)
@@ -660,9 +721,9 @@ void ShaderHelperInvocationTests::init (void)
 				const PrimitiveType	primType	= s_primTypes[primTypeNdx].primType;
 				const int			numSamples	= s_sampleCounts[sampleCountNdx].numSamples;
 
-				derivateGroup->addChild(new HelperInvocationDerivateCase(m_context, (name + "_dfdx").c_str(),	"", primType, numSamples, "dFdx"));
-				derivateGroup->addChild(new HelperInvocationDerivateCase(m_context, (name + "_dfdy").c_str(),	"", primType, numSamples, "dFdy"));
-				derivateGroup->addChild(new HelperInvocationDerivateCase(m_context, (name + "_fwidth").c_str(),	"", primType, numSamples, "fwidth"));
+				derivateGroup->addChild(new HelperInvocationDerivateCase(m_context, (name + "_dfdx").c_str(),	"", primType, numSamples, "dFdx",	true));
+				derivateGroup->addChild(new HelperInvocationDerivateCase(m_context, (name + "_dfdy").c_str(),	"", primType, numSamples, "dFdy",	true));
+				derivateGroup->addChild(new HelperInvocationDerivateCase(m_context, (name + "_fwidth").c_str(),	"", primType, numSamples, "fwidth",	false));
 			}
 		}
 	}
