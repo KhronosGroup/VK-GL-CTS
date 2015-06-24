@@ -22,6 +22,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vkPrograms.hpp"
+#include "vkGlslToSpirV.hpp"
 #include "deArrayUtil.hpp"
 #include "deMemory.h"
 
@@ -55,10 +56,6 @@ struct BinaryHeader
 };
 
 DE_STATIC_ASSERT(sizeof(BinaryHeader) == sizeof(deUint32)*7);
-
-#if (DE_ENDIANNESS != DE_LITTLE_ENDIAN)
-#	error Big-endian not supported
-#endif
 
 size_t computeSrcArrayTotalLength (const vector<string>& sources)
 {
@@ -154,38 +151,65 @@ VkShaderStage getShaderStage (glu::ShaderType type)
 
 ProgramBinary* buildProgram (const glu::ProgramSources& program, ProgramFormat binaryFormat)
 {
-	if (binaryFormat == PROGRAM_FORMAT_GLSL)
+	if (binaryFormat == PROGRAM_FORMAT_GLSL_SOURCE)
 	{
 		vector<deUint8> binary;
 		encodeGLSLBinary(program, binary);
+		return new ProgramBinary(binaryFormat, binary.size(), &binary[0]);
+	}
+	else if (binaryFormat == PROGRAM_FORMAT_SPIRV)
+	{
+		vector<deUint8> binary;
+		glslToSpirV(program, binary);
 		return new ProgramBinary(binaryFormat, binary.size(), &binary[0]);
 	}
 	else
 		TCU_THROW(NotSupportedError, "Unsupported program format");
 }
 
-void setShaderBinary (const DeviceInterface& vk, VkShader shader, const ProgramBinary& binary)
+Move<VkShaderT> createShader (const DeviceInterface& deviceInterface, VkDevice device, const ProgramBinary& binary, VkShaderCreateFlags flags)
 {
-	DE_UNREF(vk);
-	DE_UNREF(shader);
-	DE_UNREF(binary);
-#if 0
-	if (binary.getFormat() == PROGRAM_FORMAT_GLSL)
+	if (binary.getFormat() == PROGRAM_FORMAT_GLSL_SOURCE)
 	{
+		// HACK: just concatenate everything
 		glu::ProgramSources	sources;
+		std::string			concatenated;
 
 		decodeGLSLBinary(binary.getSize(), binary.getBinary(), sources);
 
 		for (int shaderType = 0; shaderType < glu::SHADERTYPE_LAST; shaderType++)
 		{
-			DE_ASSERT(sources.sources[shaderType].size() <= 1);
+			for (size_t ndx = 0; ndx < sources.sources[shaderType].size(); ++ndx)
+				concatenated += sources.sources[shaderType][ndx];
+		}
 
-			if (!sources.sources[shaderType].empty())
-				vk.programSetSource(program, getShaderStage(static_cast<glu::ShaderType>(shaderType)), sources.sources[shaderType][0].c_str());
+		{
+			const struct VkShaderCreateInfo		shaderInfo	=
+			{
+				VK_STRUCTURE_TYPE_SHADER_CREATE_INFO,	//	VkStructureType		sType;
+				DE_NULL,								//	const void*			pNext;
+				(deUintptr)concatenated.size(),			//	deUintptr			codeSize;
+				concatenated.c_str(),					//	const void*			pCode;
+				flags,									//	VkShaderCreateFlags	flags;
+			};
+
+			return createShader(deviceInterface, device, &shaderInfo);
 		}
 	}
+	else if (binary.getFormat() == PROGRAM_FORMAT_SPIRV)
+	{
+		const struct VkShaderCreateInfo		shaderInfo	=
+		{
+			VK_STRUCTURE_TYPE_SHADER_CREATE_INFO,	//	VkStructureType		sType;
+			DE_NULL,								//	const void*			pNext;
+			(deUintptr)binary.getSize(),			//	deUintptr			codeSize;
+			binary.getBinary(),						//	const void*			pCode;
+			flags,									//	VkShaderCreateFlags	flags;
+		};
+
+		return createShader(deviceInterface, device, &shaderInfo);
+	}
 	else
-#endif
 		TCU_THROW(NotSupportedError, "Unsupported program format");
 }
 
