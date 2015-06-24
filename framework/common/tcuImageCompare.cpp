@@ -101,9 +101,9 @@ static int findNumPositionDeviationFailingPixels (const PixelBufferAccess& error
 	const int			beginX				= (acceptOutOfBoundsAsAnyValue) ? (maxPositionDeviation.x()) : (0);
 	const int			beginY				= (acceptOutOfBoundsAsAnyValue) ? (maxPositionDeviation.y()) : (0);
 	const int			beginZ				= (acceptOutOfBoundsAsAnyValue) ? (maxPositionDeviation.z()) : (0);
-	const int			endX				= (acceptOutOfBoundsAsAnyValue) ? (width  - maxPositionDeviation.x()) : (0);
-	const int			endY				= (acceptOutOfBoundsAsAnyValue) ? (height - maxPositionDeviation.y()) : (0);
-	const int			endZ				= (acceptOutOfBoundsAsAnyValue) ? (depth  - maxPositionDeviation.z()) : (0);
+	const int			endX				= (acceptOutOfBoundsAsAnyValue) ? (width  - maxPositionDeviation.x()) : (width);
+	const int			endY				= (acceptOutOfBoundsAsAnyValue) ? (height - maxPositionDeviation.y()) : (height);
+	const int			endZ				= (acceptOutOfBoundsAsAnyValue) ? (depth  - maxPositionDeviation.z()) : (depth);
 
 	TCU_CHECK_INTERNAL(result.getWidth() == width && result.getHeight() == height && result.getDepth() == depth);
 
