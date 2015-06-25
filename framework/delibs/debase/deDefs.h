@@ -294,7 +294,7 @@ DE_INLINE deBool deGetTrue (void) { return DE_TRUE; }
 /** Test assert macro for use in testers (same as DE_ASSERT, but always enabled). */
 #define DE_TEST_ASSERT(X) do { if ((!deGetFalse() && (X)) ? DE_FALSE : DE_TRUE) deAssertFail(#X, __FILE__, __LINE__); } while(deGetFalse())
 
-#if (DE_COMPILER == DE_COMPILER_GCC)
+#if (DE_COMPILER == DE_COMPILER_GCC) || (DE_COMPILER == DE_COMPILER_CLANG)
 	/* GCC 4.8 and newer warns about unused typedefs. */
 #	define DE_UNUSED_TYPEDEF_ATTR __attribute__((unused))
 #else
