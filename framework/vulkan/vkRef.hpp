@@ -200,21 +200,20 @@ template<typename T>
 class RefBase
 {
 public:
-										~RefBase	(void);
+											~RefBase	(void);
 
-	inline typename Traits<T>::Type		get			(void) const throw() { return m_data.object;	}
-	inline typename Traits<T>::Type		operator*	(void) const throw() { return get();		}
-	inline operator						bool		(void) const throw() { return !!get();		}
-
+	inline const typename Traits<T>::Type&	get			(void) const throw() { return m_data.object;	}
+	inline const typename Traits<T>::Type&	operator*	(void) const throw() { return get();			}
+	inline operator							bool		(void) const throw() { return !!get();			}
 protected:
-										RefBase		(RefData<T> data) : m_data(data)	{}
+											RefBase		(RefData<T> data) : m_data(data)	{}
 
-	void								reset		(void);				//!< Release previous object, set to null.
-	RefData<T>							disown		(void) throw();		//!< Disown and return object (ownership transferred to caller).
-	void								assign		(RefData<T> data);	//!< Set new pointer, release previous pointer.
+	void									reset		(void);				//!< Release previous object, set to null.
+	RefData<T>								disown		(void) throw();		//!< Disown and return object (ownership transferred to caller).
+	void									assign		(RefData<T> data);	//!< Set new pointer, release previous pointer.
 
 private:
-	RefData<T>							m_data;
+	RefData<T>								m_data;
 };
 
 /*--------------------------------------------------------------------*//*!
