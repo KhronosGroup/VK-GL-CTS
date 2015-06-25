@@ -467,7 +467,7 @@ def writeRefUtilImpl (api, filename):
 			yield "Move<%sT> %s (%s)" % (function.objectType, function.name, argListToStr([function.iface] + function.arguments))
 			yield "{"
 			yield "\t%s object = 0;" % function.objectType
-			yield "\tvk.%s(%s);" % (function.name, ", ".join([a.name for a in function.arguments] + ["&object"]))
+			yield "\tVK_CHECK(vk.%s(%s));" % (function.name, ", ".join([a.name for a in function.arguments] + ["&object"]))
 			yield "\treturn Move<%sT>(vk%s, check<%sT>(object));" % (function.objectType, maybeDevice, function.objectType)
 			yield "}"
 			yield ""
