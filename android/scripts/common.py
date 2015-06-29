@@ -241,8 +241,8 @@ NATIVE_LIB_NAME			= "libdeqp.so"
 
 def selectNDKPath ():
 	candidates =  [
-		os.path.expanduser("~/android-ndk-r10c"),
-		"C:/android/android-ndk-r10c",
+		os.path.expanduser("~/android-ndk-r10e"),
+		"C:/android/android-ndk-r10e",
 		os.environ.get("ANDROID_NDK_PATH", None), # If not defined, return None
 	]
 
@@ -262,7 +262,7 @@ def noneSafePathJoin (*components):
 # NDK paths
 ANDROID_NDK_PATH				= selectNDKPath()
 ANDROID_NDK_HOST_OS				= getNDKHostOsName(ANDROID_NDK_PATH)
-ANDROID_NDK_TOOLCHAIN_VERSION	= "r10c" # Toolchain file is selected based on this
+ANDROID_NDK_TOOLCHAIN_VERSION	= "r10e" # Toolchain file is selected based on this
 
 # Native code build settings
 CMAKE_GENERATOR			= selectByOS({

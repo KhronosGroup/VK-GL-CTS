@@ -59,5 +59,21 @@ set(DECPP_SRCS
 	deSpinBarrier.hpp
 	)
 
+set(DECPP_LIBS
+	debase
+	depool
+	dethread
+	deutil
+	)
+
+# \note [pyry] Somewhat kludgy that toolchain file doesn't set it, but there is no easy way
+if (DE_OS_IS_ANDROID)
+	if (DEFINED ANDROID_CXX_LIBRARY)
+		set(DECPP_LIBS ${DECPP_LIBS} ${ANDROID_CXX_LIBRARY})
+	else ()
+		message(STATUS "Warning: ANDROID_CXX_LIBRARY not defined")
+	endif ()
+endif ()
+
 add_library(decpp STATIC ${DECPP_SRCS})
-target_link_libraries(decpp debase depool dethread deutil)
+target_link_libraries(decpp ${DECPP_LIBS})
