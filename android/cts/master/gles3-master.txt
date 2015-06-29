@@ -20982,7 +20982,6 @@ dEQP-GLES3.functional.texture.size.cube.128x128_rgba8888
 dEQP-GLES3.functional.texture.size.cube.128x128_rgba8888_mipmap
 dEQP-GLES3.functional.texture.size.cube.256x256_l8
 dEQP-GLES3.functional.texture.size.cube.256x256_l8_mipmap
-dEQP-GLES3.functional.texture.size.cube.256x256_rgba4444
 dEQP-GLES3.functional.texture.size.cube.256x256_rgba4444_mipmap
 dEQP-GLES3.functional.texture.size.cube.256x256_rgb888
 dEQP-GLES3.functional.texture.size.cube.256x256_rgb888_mipmap
@@ -20990,7 +20989,6 @@ dEQP-GLES3.functional.texture.size.cube.256x256_rgba8888
 dEQP-GLES3.functional.texture.size.cube.256x256_rgba8888_mipmap
 dEQP-GLES3.functional.texture.size.cube.512x512_l8
 dEQP-GLES3.functional.texture.size.cube.512x512_l8_mipmap
-dEQP-GLES3.functional.texture.size.cube.512x512_rgba4444
 dEQP-GLES3.functional.texture.size.cube.512x512_rgba4444_mipmap
 dEQP-GLES3.functional.texture.size.cube.512x512_rgb888
 dEQP-GLES3.functional.texture.size.cube.512x512_rgb888_mipmap

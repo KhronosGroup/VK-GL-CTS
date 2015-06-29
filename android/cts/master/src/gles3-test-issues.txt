@@ -75,3 +75,7 @@ dEQP-GLES3.functional.uniform_api.random.23
 # Bug 22006723
 dEQP-GLES3.functional.shaders.builtin_functions.precision.atan2.mediump_*
 dEQP-GLES3.functional.shaders.builtin_functions.precision.atan2.highp_*
+
+# Bug 22173211
+dEQP-GLES3.functional.texture.size.cube.256x256_rgba4444
+dEQP-GLES3.functional.texture.size.cube.512x512_rgba4444
