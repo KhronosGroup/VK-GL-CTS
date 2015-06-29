@@ -4041,9 +4041,6 @@ dEQP-GLES31.functional.shaders.helper_invocation.derivate.triangles_4_samples_fw
 dEQP-GLES31.functional.shaders.helper_invocation.derivate.lines_4_samples_dfdx
 dEQP-GLES31.functional.shaders.helper_invocation.derivate.lines_4_samples_dfdy
 dEQP-GLES31.functional.shaders.helper_invocation.derivate.lines_4_samples_fwidth
-dEQP-GLES31.functional.shaders.helper_invocation.derivate.wide_lines_4_samples_dfdx
-dEQP-GLES31.functional.shaders.helper_invocation.derivate.wide_lines_4_samples_dfdy
-dEQP-GLES31.functional.shaders.helper_invocation.derivate.wide_lines_4_samples_fwidth
 dEQP-GLES31.functional.shaders.helper_invocation.derivate.points_4_samples_dfdx
 dEQP-GLES31.functional.shaders.helper_invocation.derivate.points_4_samples_dfdy
 dEQP-GLES31.functional.shaders.helper_invocation.derivate.points_4_samples_fwidth
@@ -4056,9 +4053,6 @@ dEQP-GLES31.functional.shaders.helper_invocation.derivate.triangles_8_samples_fw
 dEQP-GLES31.functional.shaders.helper_invocation.derivate.lines_8_samples_dfdx
 dEQP-GLES31.functional.shaders.helper_invocation.derivate.lines_8_samples_dfdy
 dEQP-GLES31.functional.shaders.helper_invocation.derivate.lines_8_samples_fwidth
-dEQP-GLES31.functional.shaders.helper_invocation.derivate.wide_lines_8_samples_dfdx
-dEQP-GLES31.functional.shaders.helper_invocation.derivate.wide_lines_8_samples_dfdy
-dEQP-GLES31.functional.shaders.helper_invocation.derivate.wide_lines_8_samples_fwidth
 dEQP-GLES31.functional.shaders.helper_invocation.derivate.points_8_samples_dfdx
 dEQP-GLES31.functional.shaders.helper_invocation.derivate.points_8_samples_dfdy
 dEQP-GLES31.functional.shaders.helper_invocation.derivate.points_8_samples_fwidth
@@ -4071,9 +4065,6 @@ dEQP-GLES31.functional.shaders.helper_invocation.derivate.triangles_max_samples_
 dEQP-GLES31.functional.shaders.helper_invocation.derivate.lines_max_samples_dfdx
 dEQP-GLES31.functional.shaders.helper_invocation.derivate.lines_max_samples_dfdy
 dEQP-GLES31.functional.shaders.helper_invocation.derivate.lines_max_samples_fwidth
-dEQP-GLES31.functional.shaders.helper_invocation.derivate.wide_lines_max_samples_dfdx
-dEQP-GLES31.functional.shaders.helper_invocation.derivate.wide_lines_max_samples_dfdy
-dEQP-GLES31.functional.shaders.helper_invocation.derivate.wide_lines_max_samples_fwidth
 dEQP-GLES31.functional.shaders.helper_invocation.derivate.points_max_samples_dfdx
 dEQP-GLES31.functional.shaders.helper_invocation.derivate.points_max_samples_dfdy
 dEQP-GLES31.functional.shaders.helper_invocation.derivate.points_max_samples_fwidth
