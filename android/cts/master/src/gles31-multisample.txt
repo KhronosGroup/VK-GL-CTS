@@ -3,7 +3,6 @@
 dEQP-GLES31.info.*
 dEQP-GLES31.functional.shaders.sample_variables.*.default_framebuffer
 dEQP-GLES31.functional.shaders.multisample_interpolation.*.default_framebuffer
-dEQP-GLES31.functional.shaders.helper_invocation.*
 dEQP-GLES31.functional.image_load_store.early_fragment_tests.no_early_fragment_tests_depth
 dEQP-GLES31.functional.image_load_store.early_fragment_tests.no_early_fragment_tests_stencil
 dEQP-GLES31.functional.image_load_store.early_fragment_tests.early_fragment_tests_depth
