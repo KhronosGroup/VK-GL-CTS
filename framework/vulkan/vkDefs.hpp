@@ -100,6 +100,22 @@ union VkClearColorValue
 {
 	float		floatColor[4];
 	deUint32	rawColor[4];
+
+	VkClearColorValue (float r, float g, float b, float a)
+	{
+		floatColor[0] = r;
+		floatColor[1] = g;
+		floatColor[2] = b;
+		floatColor[3] = a;
+	}
+
+	VkClearColorValue (deUint32 r, deUint32 g, deUint32 b, deUint32 a)
+	{
+		rawColor[0] = r;
+		rawColor[1] = g;
+		rawColor[2] = b;
+		rawColor[3] = a;
+	}
 };
 
 #include "vkStructTypes.inl"
