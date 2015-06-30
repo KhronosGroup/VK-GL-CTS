@@ -60,7 +60,6 @@ using tcu::RGBA;
 using gls::TextureTestUtil::TextureRenderer;
 using gls::TextureTestUtil::computeQuadTexCoord2D;
 using gls::TextureTestUtil::computeQuadTexCoordCube;
-using gls::TextureTestUtil::clear;
 
 static const GLenum s_cubeTargets[] =
 {

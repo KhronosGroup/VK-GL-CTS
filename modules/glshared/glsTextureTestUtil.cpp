@@ -982,13 +982,6 @@ void fetchTexture (const SurfaceAccess& dst, const tcu::ConstPixelBufferAccess& 
 	}
 }
 
-void clear (const SurfaceAccess& dst, const tcu::Vec4& color)
-{
-	for (int y = 0; y < dst.getHeight(); y++)
-		for (int x = 0; x < dst.getWidth(); x++)
-			dst.setPixel(color, x, y);
-}
-
 bool compareImages (TestLog& log, const tcu::Surface& reference, const tcu::Surface& rendered, tcu::RGBA threshold)
 {
 	return tcu::pixelThresholdCompare(log, "Result", "Image comparison result", reference, rendered, threshold, tcu::COMPARE_LOG_RESULT);
