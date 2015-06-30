@@ -356,6 +356,16 @@ DE_INLINE deUint32 deReverseBytes32 (deUint32 v)
 	return b0|b1|b2|b3;
 }
 
+/*--------------------------------------------------------------------*//*!
+ * \brief Reverse bytes in 16-bit integer (for example MSB -> LSB).
+ * \param a	Input value.
+ * \return The input with bytes reversed
+ *//*--------------------------------------------------------------------*/
+DE_INLINE deUint16 deReverseBytes16 (deUint16 v)
+{
+	return (deUint16)((v << 8) | (v >> 8));
+}
+
 DE_INLINE deInt32 deSafeMul32 (deInt32 a, deInt32 b)
 {
 	deInt32 res = a * b;
