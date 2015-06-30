@@ -87,6 +87,12 @@ RT* callConstructor4 (GenericFptr fptr, void* memory, size_t memorySize, T1 para
 	((ABIFptr)fptr)(memory, param1, param2, param3, param4);
 	return reinterpret_cast<RT*>(memory);
 #else
+	DE_UNREF(fptr);
+	DE_UNREF(memory);
+	DE_UNREF(param1);
+	DE_UNREF(param2);
+	DE_UNREF(param3);
+	DE_UNREF(param4);
 	TCU_THROW(NotSupportedError, "ABI not supported");
 	return DE_NULL;
 #endif
@@ -112,6 +118,8 @@ void callDestructor (GenericFptr fptr, T* obj)
 	typedef void (*ABIFptr)(T* obj);
 	((ABIFptr)fptr)(obj);
 #else
+	DE_UNREF(fptr);
+	DE_UNREF(obj);
 	TCU_THROW(NotSupportedError, "ABI not supported");
 #endif
 }
