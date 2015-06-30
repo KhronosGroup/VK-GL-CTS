@@ -176,6 +176,9 @@ public:
 	//! Get EGL native pixmap factory (--deqp-egl-pixmap-type)
 	const char*						getEGLPixmapType			(void) const;
 
+	//! Get Vulkan device ID (--deqp-vk-device-id)
+	int								getVKDeviceId				(void) const;
+
 	//! Should we run tests that exhaust memory (--deqp-test-oom)
 	bool							isOutOfMemoryTestEnabled(void) const;
 

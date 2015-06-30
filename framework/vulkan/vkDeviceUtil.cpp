@@ -23,6 +23,8 @@
 
 #include "vkDeviceUtil.hpp"
 
+#include "tcuCommandLine.hpp"
+
 #include "qpInfo.h"
 
 #include <vector>
@@ -57,7 +59,7 @@ Move<VkInstanceT> createDefaultInstance (const PlatformInterface& vkPlatform)
 	return createInstance(vkPlatform, &instanceInfo);
 }
 
-VkPhysicalDevice chooseDevice (const PlatformInterface& vkPlatform, VkInstance instance, const tcu::CommandLine&)
+VkPhysicalDevice chooseDevice (const PlatformInterface& vkPlatform, VkInstance instance, const tcu::CommandLine& cmdLine)
 {
 	vector<VkPhysicalDevice>	devices;
 	deUint32					numDevices	= 0;
@@ -72,8 +74,10 @@ VkPhysicalDevice chooseDevice (const PlatformInterface& vkPlatform, VkInstance i
 		if (numDevices != devices.size())
 			TCU_FAIL("Number of devices changed between queries");
 
-		// \todo [2015-05-28 pyry] Add --deqp-vk-device=N command line option
-		return devices[0];
+		if (!de::inBounds(cmdLine.getVKDeviceId(), 1, (int)devices.size()+1))
+			TCU_THROW(InternalError, "Invalid --deqp-vk-device-id");
+
+		return devices[(size_t)(cmdLine.getVKDeviceId()-1)];
 	}
 	else
 		TCU_THROW(NotSupportedError, "No Vulkan devices available");
