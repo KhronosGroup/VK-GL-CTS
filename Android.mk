@@ -713,7 +713,9 @@ deqp_compile_flags := \
 	-DDEQP_TARGET_NAME=\"android\" \
 	-DDEQP_GLES3_RUNTIME_LOAD=1 \
 	-DDEQP_GLES2_RUNTIME_LOAD=1 \
-	-DQP_SUPPORT_PNG=1
+	-DQP_SUPPORT_PNG=1 \
+	-Wconversion \
+	-Wno-sign-conversion
 
 LOCAL_SHARED_LIBRARIES := \
 		libEGL \
