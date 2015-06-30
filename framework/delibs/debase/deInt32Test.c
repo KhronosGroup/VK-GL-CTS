@@ -168,6 +168,11 @@ void deInt32_selfTest (void)
 	DE_TEST_ASSERT(deSignExtendTo32((int)0x184A0, 17) == (int)0xFFFF84A0);
 	DE_TEST_ASSERT(deSignExtendTo32((int)0x7A016601, 32) == (int)0x7A016601);
 	DE_TEST_ASSERT(deSignExtendTo32((int)0x8A016601, 32) == (int)0x8A016601);
+
+	DE_TEST_ASSERT(deReverseBytes32(0x11223344) == 0x44332211);
+	DE_TEST_ASSERT(deReverseBytes32(0xfecddeef) == 0xefdecdfe);
+	DE_TEST_ASSERT(deReverseBytes16(0x1122) == 0x2211);
+	DE_TEST_ASSERT(deReverseBytes16(0xdeef) == 0xefde);
 }
 
 DE_END_EXTERN_C
