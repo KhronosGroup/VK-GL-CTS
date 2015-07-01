@@ -1,0 +1,2299 @@
+// asciidoc -b html5 -d book -f apitests.conf apitests.adoc
+
+:toc:
+:numbered:
+:docinfo:
+:revnumber: 3
+
+Vulkan API Test Plan
+====================
+
+NOTE: Document currently targets API revision 90
+
+This document currently outlines Vulkan API testing plan. The document splits API into features, and for each the important testing objectives are described. The technical implementation is not currently planned or documented here, except in select cases.
+
+In the future this document will likely evolve into a description of various tests and test coverage.
+
+Test framework
+--------------
+
+Test framework will provide tests access to Vulkan platform interface. In addition a library of generic utilties will be provided.
+
+Test case base class
+~~~~~~~~~~~~~~~~~~~~
+
+Vulkan test cases will use a slightly different interface from traditional +tcu::TestCase+ to facilitate following:
+
+ * Ability to generate shaders in high-level language, and pre-compile them without running the tests
+ * Cleaner separation between test case parameters and execution instance
+
+[source,cpp]
+----
+class TestCase : public tcu::TestCase
+{
+public:
+                            TestCase        (tcu::TestContext& testCtx, const std::string& name, const std::string& description);
+                            TestCase        (tcu::TestContext& testCtx, tcu::TestNodeType type, const std::string& name, const std::string& description);
+    virtual                 ~TestCase       (void) {}
+
+    virtual void            initPrograms    (vk::ProgramCollection<glu::ProgramSources>& programCollection) const;
+    virtual TestInstance*   createInstance  (Context& context) const = 0;
+
+    IterateResult           iterate         (void) { DE_ASSERT(false); return STOP; } // Deprecated in this module
+};
+
+class TestInstance
+{
+public:
+                                TestInstance    (Context& context) : m_context(context) {}
+    virtual                     ~TestInstance   (void) {}
+
+    virtual tcu::TestStatus     iterate         (void) = 0;
+
+protected:
+    Context&                    m_context;
+};
+----
+
+In addition for simple tests a utility to wrap a function as a test case is provided:
+
+[source,cpp]
+----
+tcu::TestStatus createSamplerTest (Context& context)
+{
+    TestLog&                log         = context.getTestContext().getLog();
+    const DefaultDevice     device      (context.getPlatformInterface(), context.getTestContext().getCommandLine());
+    const VkDevice          vkDevice    = device.getDevice();
+    const DeviceInterface&  vk          = device.getInterface();
+
+    {
+        const struct VkSamplerCreateInfo        samplerInfo =
+        {
+            VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,  //  VkStructureType sType;
+            DE_NULL,                                //  const void*     pNext;
+            VK_TEX_FILTER_NEAREST,                  //  VkTexFilter     magFilter;
+            VK_TEX_FILTER_NEAREST,                  //  VkTexFilter     minFilter;
+            VK_TEX_MIPMAP_MODE_BASE,                //  VkTexMipmapMode mipMode;
+            VK_TEX_ADDRESS_CLAMP,                   //  VkTexAddress    addressU;
+            VK_TEX_ADDRESS_CLAMP,                   //  VkTexAddress    addressV;
+            VK_TEX_ADDRESS_CLAMP,                   //  VkTexAddress    addressW;
+            0.0f,                                   //  float           mipLodBias;
+            0u,                                     //  deUint32        maxAnisotropy;
+            VK_COMPARE_OP_ALWAYS,                   //  VkCompareOp     compareOp;
+            0.0f,                                   //  float           minLod;
+            0.0f,                                   //  float           maxLod;
+            VK_BORDER_COLOR_TRANSPARENT_BLACK,      //  VkBorderColor   borderColor;
+        };
+
+        Move<VkSamplerT>    tmpSampler  = createSampler(vk, vkDevice, &samplerInfo);
+    }
+
+    return tcu::TestStatus::pass("Creating sampler succeeded");
+}
+
+tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+{
+    de::MovePtr<tcu::TestCaseGroup> apiTests    (new tcu::TestCaseGroup(testCtx, "api", "API Tests"));
+    
+    addFunctionCase(apiTests.get(), "create_sampler",   "", createSamplerTest);
+
+    return apiTests.release();
+}
+----
+
++vkt::Context+, which is passed to +vkt::TestInstance+ will provide access to Vulkan platform interface, and a default device instance. Most test cases should use default device instance:
+
+ * Creating device can take up to tens of milliseconds
+ * --deqp-vk-device-id=N command line option can be used to change device
+ * Framework can force validation layers (--deqp-vk-layers=validation,...)
+
+Other considerations:
+
+ * Rather than using default header, deqp uses custom header & interface wrappers
+ ** See +vk::PlatformInterface+ and +vk::DeviceInterface+
+ ** Enables optional run-time dependency to Vulkan driver (required for Android, useful in general)
+ ** Various logging & other analysis facilities can be layered on top of that interface
+ * Expose validation state to tests to be able to test validation
+ * Extensions are opt-in, some tests will require certain extensions to work
+ ** --deqp-vk-extensions? enable all by default?
+ ** Probably good to be able to override extensions as well (verify that tests report correct results without extensions)
+
+Common utilities
+~~~~~~~~~~~~~~~~
+
+Test case independent Vulkan utilities will be provided in +vk+ namespace, and can be found under +framework/vulkan+. These include:
+
+ * +Unique<T>+ and +Move<T>+ wrappers for Vulkan API objects
+ * Creating all types of work with configurable parameters:
+ ** Workload "size" (not really comparable between types)
+ ** Consume & produce memory contents
+ *** Simple checksumming / other verification against reference data typically fine
+
+.TODO
+ * Document important utilities (vkRef.hpp for example).
+ * Document Vulkan platform port.
+
+Object management
+-----------------
+
+Object management tests verify that the driver is able to create and destroy objects of all types. The tests don't attempt to use the objects (unless necessary for testing object construction) as that is covered by feature-specific tests. For all object types the object management tests cover:
+
+ * Creating objects with a relevant set of parameters
+ ** Not exhaustive, guided by what might actually make driver to take different path
+ * Allocating multiple objects of same type
+ ** Reasonable limit depends on object type
+ * Creating objects from multiple threads concurrently (where possible)
+ * Freeing objects from multiple threads
+
+NOTE: tests for various +vkCreate*()+ functions are documented in feature-specific sections.
+
+Multithreaded scaling
+---------------------
+
+Vulkan API is free-threaded and suggests that many operations (such as constructing command buffers) will scale with number of app threads. Tests are needed for proving that such scalability actually exists, and there are no locks in important functionality preventing that.
+
+NOTE: Khronos CTS has not traditionally included any performance testing, and the tests may not be part of conformance criteria. The tests may however be useful for IHVs for driver optimization, and could be enforced by platform-specific conformance tests, such as Android CTS.
+
+Destructor functions
+~~~~~~~~~~~~~~~~~~~~
+
+[source,c]
+----
+VkResult VKAPI vkDestroyInstance(
+    VkInstance                                  instance);
+
+VkResult VKAPI vkDestroyDevice(
+    VkDevice                                    device);
+
+VkResult VKAPI vkDestroyObject(
+    VkDevice                                    device,
+    VkObjectType                                objType,
+    VkObject                                    object);
+----
+
+API Queries
+-----------
+
+Objective of API query tests is to validate that various +vkGet*+ functions return correct values. Generic checks that apply to all query types are:
+
+ * Returned value size is equal or multiple of relevant struct size
+ * Query doesn't write outside the provided pointer
+ * Query values (where expected) don't change between subsequent queries
+ * Concurrent queries from multiple threads work
+
+Platform queries
+~~~~~~~~~~~~~~~~
+
+Platform query tests will validate that all queries work as expected and return sensible values.
+
+ * Sensible device properties
+ ** May have some Android-specific requirements
+ *** TBD queue 0 must be universal queue (all command types supported)
+ * All required functions present
+ ** Both platform (physicalDevice = 0) and device-specific
+ ** Culled based on enabled extension list?
+
+[source,c]
+----
+typedef enum VkPhysicalDeviceInfoType_
+{
+    // Info type for vkGetPhysicalDeviceInfo()
+    VK_PHYSICAL_DEVICE_INFO_TYPE_PROPERTIES                 = 0x00000000,
+    VK_PHYSICAL_DEVICE_INFO_TYPE_PERFORMANCE                = 0x00000001,
+    VK_PHYSICAL_DEVICE_INFO_TYPE_QUEUE_PROPERTIES           = 0x00000002,
+    VK_PHYSICAL_DEVICE_INFO_TYPE_MEMORY_PROPERTIES          = 0x00000003,
+
+    VK_ENUM_RANGE(PHYSICAL_DEVICE_INFO_TYPE, PROPERTIES, MEMORY_PROPERTIES)
+} VkPhysicalDeviceInfoType;
+
+typedef enum VkExtensionInfoType_
+{
+    // Info type for vkGetGlobalExtensionInfo() and vkGetPhysicalDeviceExtensionInfo()
+    VK_EXTENSION_INFO_TYPE_COUNT                            = 0x00000000,
+    VK_EXTENSION_INFO_TYPE_PROPERTIES                       = 0x00000001,
+
+    VK_ENUM_RANGE(EXTENSION_INFO_TYPE, COUNT, PROPERTIES)
+} VkExtensionInfoType;
+
+VkResult VKAPI vkEnumeratePhysicalDevices(
+    VkInstance                                  instance,
+    uint32_t*                                   pPhysicalDeviceCount,
+    VkPhysicalDevice*                           pPhysicalDevices);
+
+VkResult VKAPI vkGetPhysicalDeviceInfo(
+    VkPhysicalDevice                            physicalDevice,
+    VkPhysicalDeviceInfoType                    infoType,
+    size_t*                                     pDataSize,
+    void*                                       pData);
+
+void * VKAPI vkGetProcAddr(
+    VkPhysicalDevice                            physicalDevice,
+    const char*                                 pName);
+
+// Extension discovery functions
+
+VkResult VKAPI vkGetGlobalExtensionInfo(
+    VkExtensionInfoType                         infoType,
+    uint32_t                                    extensionIndex,
+    size_t*                                     pDataSize,
+    void*                                       pData);
+
+VkResult VKAPI vkGetPhysicalDeviceExtensionInfo(
+    VkPhysicalDevice                            physicalDevice,
+    VkExtensionInfoType                         infoType,
+    uint32_t                                    extensionIndex,
+    size_t*                                     pDataSize,
+    void*                                       pData);
+
+// Layer discovery functions
+
+VkResult VKAPI vkEnumerateLayers(
+    VkPhysicalDevice                            physicalDevice,
+    size_t                                      maxStringSize,
+    size_t*                                     pLayerCount,
+    char* const*                                pOutLayers,
+    void*                                       pReserved);
+----
+
+Device queries
+~~~~~~~~~~~~~~
+
+[source,c]
+----
+VkResult VKAPI vkGetDeviceQueue(
+    VkDevice                                    device,
+    uint32_t                                    queueNodeIndex,
+    uint32_t                                    queueIndex,
+    VkQueue*                                    pQueue);
+----
+
+Object queries
+~~~~~~~~~~~~~~
+
+ * +MEMORY_REQUIREMENTS+: verify that for buffers the returned size is at least the size of the buffer (?)
+
+[source,c]
+----
+typedef enum VkObjectInfoType_
+{
+    // Info type for vkGetObjectInfo()
+    VK_OBJECT_INFO_TYPE_MEMORY_REQUIREMENTS                 = 0x00000000,
+
+    VK_ENUM_RANGE(OBJECT_INFO_TYPE, MEMORY_REQUIREMENTS, MEMORY_REQUIREMENTS)
+} VkObjectInfoType;
+
+typedef struct VkMemoryRequirements_
+{
+    VkDeviceSize                                size;                       // Specified in bytes
+    VkDeviceSize                                alignment;                  // Specified in bytes
+    VkDeviceSize                                granularity;                // Granularity at which memory can be bound to resource sub-ranges specified in bytes (usually the page size)
+    VkMemoryPropertyFlags                       memPropsAllowed;            // Allowed memory property flags
+    VkMemoryPropertyFlags                       memPropsRequired;           // Required memory property flags
+} VkMemoryRequirements;
+
+VkResult VKAPI vkGetObjectInfo(
+    VkDevice                                    device,
+    VkObjectType                                objType,
+    VkObject                                    object,
+    VkObjectInfoType                            infoType,
+    size_t*                                     pDataSize,
+    void*                                       pData);
+----
+
+Format capabilities
+~~~~~~~~~~~~~~~~~~~
+
+[source,c]
+----
+typedef enum VkFormatInfoType_
+{
+    // Info type for vkGetFormatInfo()
+    VK_FORMAT_INFO_TYPE_PROPERTIES                          = 0x00000000,
+
+    VK_ENUM_RANGE(FORMAT_INFO_TYPE, PROPERTIES, PROPERTIES)
+} VkFormatInfoType;
+
+typedef VkFlags VkFormatFeatureFlags;
+typedef enum VkFormatFeatureFlagBits_
+{
+    VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT                     = VK_BIT(0),    // Format can be used for sampled images (SAMPLED_IMAGE and COMBINED_IMAGE_SAMPLER descriptor types)
+    VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT                     = VK_BIT(1),    // Format can be used for storage images (STORAGE_IMAGE descriptor type)
+    VK_FORMAT_FEATURE_STORAGE_IMAGE_ATOMIC_BIT              = VK_BIT(2),    // Format supports atomic operations in case it's used for storage images
+    VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT              = VK_BIT(3),    // Format can be used for uniform texel buffers (TBOs)
+    VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT              = VK_BIT(4),    // Format can be used for storage texel buffers (IBOs)
+    VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_ATOMIC_BIT       = VK_BIT(5),    // Format supports atomic operations in case it's used for storage texel buffers
+    VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT                     = VK_BIT(6),    // Format can be used for vertex buffers (VBOs)
+    VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT                  = VK_BIT(7),    // Format can be used for color attachment images
+    VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT            = VK_BIT(8),    // Format supports blending in case it's used for color attachment images
+    VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT          = VK_BIT(9),    // Format can be used for depth/stencil attachment images
+    VK_FORMAT_FEATURE_CONVERSION_BIT                        = VK_BIT(10),   // Format can be used as the source or destination of format converting blits
+} VkFormatFeatureFlagBits;
+
+typedef struct VkFormatProperties_
+{
+    VkFormatFeatureFlags                        linearTilingFeatures;       // Format features in case of linear tiling
+    VkFormatFeatureFlags                        optimalTilingFeatures;      // Format features in case of optimal tiling
+} VkFormatProperties;
+
+VkResult VKAPI vkGetFormatInfo(
+    VkDevice                                    device,
+    VkFormat                                    format,
+    VkFormatInfoType                            infoType,
+    size_t*                                     pDataSize,
+    void*                                       pData);
+----
+
+Image queries
+~~~~~~~~~~~~~
+
+[source,c]
+----
+typedef enum VkSubresourceInfoType_
+{
+    // Info type for vkGetImageSubresourceInfo()
+    VK_SUBRESOURCE_INFO_TYPE_LAYOUT                         = 0x00000000,
+
+    VK_ENUM_RANGE(SUBRESOURCE_INFO_TYPE, LAYOUT, LAYOUT)
+} VkSubresourceInfoType;
+
+VkResult VKAPI vkGetImageSubresourceInfo(
+    VkDevice                                    device,
+    VkImage                                     image,
+    const VkImageSubresource*                   pSubresource,
+    VkSubresourceInfoType                       infoType,
+    size_t*                                     pDataSize,
+    void*                                       pData);
+----
+
+Memory management
+-----------------
+
+Memory management tests cover memory allocation, sub-allocation, access, and CPU and GPU cache control. Testing some areas such as cache control will require stress-testing memory accesses from CPU and various pipeline stages.
+
+Memory allocation
+~~~~~~~~~~~~~~~~~
+
+[source,c]
+----
+// Memory properties passed into vkAllocMemory().
+typedef VkFlags VkMemoryPropertyFlags;
+typedef enum VkMemoryPropertyFlagBits_
+{
+    VK_MEMORY_PROPERTY_DEVICE_ONLY                          = 0,            // If otherwise stated, then allocate memory on device
+    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT                     = VK_BIT(0),    // Memory should be mappable by host
+    VK_MEMORY_PROPERTY_HOST_NON_COHERENT_BIT                = VK_BIT(1),    // Memory may not have i/o coherency so vkFlushMappedMemoryRanges and
+                                                                            // vkInvalidateMappedMemoryRanges must be used flush/invalidate host cache
+    VK_MEMORY_PROPERTY_HOST_UNCACHED_BIT                    = VK_BIT(2),    // Memory should not be cached by the host
+    VK_MEMORY_PROPERTY_HOST_WRITE_COMBINED_BIT              = VK_BIT(3),    // Memory should support host write combining
+    VK_MEMORY_PROPERTY_PREFER_HOST_LOCAL                    = VK_BIT(4),    // If set, prefer host access
+    VK_MEMORY_PROPERTY_SHAREABLE_BIT                        = VK_BIT(5),
+} VkMemoryPropertyFlagBits;
+
+typedef struct VkMemoryAllocInfo_
+{
+    VkStructureType                             sType;                      // Must be VK_STRUCTURE_TYPE_MEMORY_ALLOC_INFO
+    const void*                                 pNext;                      // Pointer to next structure
+    VkDeviceSize                                allocationSize;             // Size of memory allocation
+    VkMemoryPropertyFlags                       memProps;                   // Memory property flags
+} VkMemoryAllocInfo;
+
+VkResult VKAPI vkAllocMemory(
+    VkDevice                                    device,
+    const VkMemoryAllocInfo*                    pAllocInfo,
+    VkDeviceMemory*                             pMem);
+
+VkResult VKAPI vkFreeMemory(
+    VkDevice                                    device,
+    VkDeviceMemory                              mem);
+----
+
+ * Test combination of:
+ ** Various allocation sizes
+ ** All (supported) combinations of property flags
+ * Allocations that exceed total available memory size (expected to fail)
+ * Concurrent allocation and free from multiple threads
+ * Memory leak tests (may not work on platforms that overcommit)
+ ** Allocate memory until fails, free all and repeat
+ ** Total allocated memory size should remain stable over iterations
+ ** Allocate and free in random order
+
+.Spec issues
+
+What are the alignment guarantees for the returned memory allocation? Will it satisfy alignment requirements for all object types? If not, app needs to know the alignment, or alignment parameter needs to be added to +VkMemoryAllocInfo+.
+
+Minimum allocation size? If 1, presumably implementation has to round it up to next page size at least? Is there a query for that? What happens when accessing the added padding?
+
+Mapping memory and CPU access
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+[source,c]
+----
+VkResult VKAPI vkMapMemory(
+    VkDevice                                    device,
+    VkDeviceMemory                              mem,
+    VkDeviceSize                                offset,
+    VkDeviceSize                                size,
+    VkMemoryMapFlags                            flags,
+    void**                                      ppData);
+
+VkResult VKAPI vkUnmapMemory(
+    VkDevice                                    device,
+    VkDeviceMemory                              mem);
+----
+
+ * Verify that mapping of all host-visible allocations succeed and accessing memory works
+ * Verify mapping of sub-ranges
+ * Access still works after un-mapping and re-mapping memory
+ * Attaching or detaching memory allocation from buffer/image doesn't affect mapped memory access or contents
+ ** Images: test with various formats, mip-levels etc.
+
+.Spec issues
+ * Man pages say vkMapMemory is thread-safe, but to what extent?
+ ** Mapping different VkDeviceMemory allocs concurrently?
+ ** Mapping different sub-ranges of same VkDeviceMemory?
+ ** Mapping overlapping sub-ranges of same VkDeviceMemory?
+ * Okay to re-map same or overlapping range? What pointers should be returned in that case?
+ * Can re-mapping same block return different virtual address?
+ * Alignment of returned CPU pointer?
+ ** Access using SIMD instructions can benefit from alignment
+
+CPU cache control
+~~~~~~~~~~~~~~~~~
+
+[source,c]
+----
+typedef struct VkMappedMemoryRange_
+{
+    VkStructureType                             sType;                      // Must be VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE
+    const void*                                 pNext;                      // Pointer to next structure
+    VkDeviceMemory                              mem;                        // Mapped memory object
+    VkDeviceSize                                offset;                     // Offset within the mapped memory the range starts from
+    VkDeviceSize                                size;                       // Size of the range within the mapped memory
+} VkMappedMemoryRange;
+
+VkResult VKAPI vkFlushMappedMemoryRanges(
+    VkDevice                                    device,
+    uint32_t                                    memRangeCount,
+    const VkMappedMemoryRange*                  pMemRanges);
+
+VkResult VKAPI vkInvalidateMappedMemoryRanges(
+    VkDevice                                    device,
+    uint32_t                                    memRangeCount,
+    const VkMappedMemoryRange*                  pMemRanges);
+----
+
+ * TODO Semantics discussed at https://cvs.khronos.org/bugzilla/show_bug.cgi?id=13690
+ ** Invalidate relevant for HOST_NON_COHERENT_BIT, flushes CPU read caches
+ ** Flush flushes CPU write caches?
+ * Test behavior with all possible mem alloc types & various sizes
+ * Corner-cases:
+ ** Empty list
+ ** Empty ranges
+ ** Same range specified multiple times
+ ** Partial overlap between ranges
+
+.Spec issues
+ * Thread-safety? Okay to flush different ranges concurrently?
+
+GPU cache control
+~~~~~~~~~~~~~~~~~
+
+Validate that GPU caches are invalidated where instructed. This includes visibility of memory writes made by both CPU and GPU to both CPU and GPU pipeline stages.
+
+[source,c]
+----
+void VKAPI vkCmdPipelineBarrier(
+    VkCmdBuffer                                 cmdBuffer,
+    VkWaitEvent                                 waitEvent,
+    uint32_t                                    pipeEventCount,
+    const VkPipeEvent*                          pPipeEvents,
+    uint32_t                                    memBarrierCount,
+    const void**                                ppMemBarriers);
+
+// \note vkCmdWaitEvents includes memory barriers as well
+----
+
+ * Image layout transitions may need special care
+
+Binding memory to objects
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+[source,c]
+----
+VkResult VKAPI vkBindObjectMemory(
+    VkDevice                                    device,
+    VkObjectType                                objType,
+    VkObject                                    object,
+    VkDeviceMemory                              mem,
+    VkDeviceSize                                memOffset);
+----
+
+ * Buffers and images only
+ * Straightforward mapping where allocation size matches object size and memOffset = 0
+ * Sub-allocation of larger allocations
+ * Re-binding object to different memory allocation
+ * Binding multiple objects to same or partially overlapping memory ranges
+ ** Aliasing writable resources? Access granularity?
+ * Binding various (supported) types of memory allocations
+
+.Spec issues
+ * When binding multiple objects to same memory, will data in memory be visible for all objects?
+ ** Reinterpretation rules?
+ * Memory contents after re-binding memory to a different object?
+
+Sparse resources
+----------------
+
+Sparse memory resources are treated as separate feature from basic memory management. Details TBD still.
+
+[source,c]
+----
+VkResult VKAPI vkQueueBindSparseBufferMemory(
+    VkQueue                                     queue,
+    VkBuffer                                    buffer,
+    VkDeviceSize                                rangeOffset,
+    VkDeviceSize                                rangeSize,
+    VkDeviceMemory                              mem,
+    VkDeviceSize                                memOffset);
+
+typedef struct VkImageSubresource_
+{
+    VkImageAspect                               aspect;
+    uint32_t                                    mipLevel;
+    uint32_t                                    arraySlice;
+} VkImageSubresource;
+
+typedef struct VkImageMemoryBindInfo_
+{
+    VkImageSubresource                          subresource;
+    VkOffset3D                                  offset;
+    VkExtent3D                                  extent;
+} VkImageMemoryBindInfo;
+
+VkResult VKAPI vkQueueBindSparseImageMemory(
+    VkQueue                                     queue,
+    VkImage                                     image,
+    const VkImageMemoryBindInfo*                pBindInfo,
+    VkDeviceMemory                              mem,
+    VkDeviceSize                                memOffset);
+----
+
+Binding model
+-------------
+
+The objective of the binding model tests is to verify:
+
+ * All valid descriptor sets can be created
+ * Accessing resources from shaders using various layouts
+ * Descriptor updates
+ * Descriptor set chaining
+ * Descriptor set limits
+
+As a necessary side effect, the tests will provide coverage for allocating and accessing all types of resources from all shader stages.
+
+Descriptor set functions
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+[source,c]
+----
+typedef struct VkDescriptorSetLayoutBinding_
+{
+    VkDescriptorType                            descriptorType;     // Type of the descriptors in this binding
+    uint32_t                                    arraySize;          // Number of descriptors in this binding
+    VkShaderStageFlags                          stageFlags;         // Shader stages this binding is visible to
+    const VkSampler*                            pImmutableSamplers; // Immutable samplers (used if descriptor type is SAMPLER or COMBINED_IMAGE_SAMPLER, is either NULL or contains <count> number of elements)
+} VkDescriptorSetLayoutBinding;
+
+typedef struct VkDescriptorSetLayoutCreateInfo_
+{
+    VkStructureType                             sType;              // Must be VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO
+    const void*                                 pNext;              // Pointer to next structure
+    uint32_t                                    count;              // Number of bindings in the descriptor set layout
+    const VkDescriptorSetLayoutBinding*         pBinding;           // Array of descriptor set layout bindings
+} VkDescriptorSetLayoutCreateInfo;
+
+VkResult VKAPI vkCreateDescriptorSetLayout(
+    VkDevice                                    device,
+    const VkDescriptorSetLayoutCreateInfo*      pCreateInfo,
+    VkDescriptorSetLayout*                      pSetLayout);
+
+typedef struct VkDescriptorTypeCount_
+{
+    VkDescriptorType                            type;
+    uint32_t                                    count;
+} VkDescriptorTypeCount;
+
+typedef struct VkDescriptorPoolCreateInfo_
+{
+    VkStructureType                             sType;              // Must be VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO
+    const void*                                 pNext;              // Pointer to next structure
+    uint32_t                                    count;
+    const VkDescriptorTypeCount*                pTypeCount;
+} VkDescriptorPoolCreateInfo;
+
+VkResult VKAPI vkCreateDescriptorPool(
+    VkDevice                                    device,
+    VkDescriptorPoolUsage                       poolUsage,
+    uint32_t                                    maxSets,
+    const VkDescriptorPoolCreateInfo*           pCreateInfo,
+    VkDescriptorPool*                           pDescriptorPool);
+
+VkResult VKAPI vkResetDescriptorPool(
+    VkDevice                                    device,
+    VkDescriptorPool                            descriptorPool);
+
+VkResult VKAPI vkAllocDescriptorSets(
+    VkDevice                                    device,
+    VkDescriptorPool                            descriptorPool,
+    VkDescriptorSetUsage                        setUsage,
+    uint32_t                                    count,
+    const VkDescriptorSetLayout*                pSetLayouts,
+    VkDescriptorSet*                            pDescriptorSets,
+    uint32_t*                                   pCount);
+
+void VKAPI vkClearDescriptorSets(
+    VkDevice                                    device,
+    VkDescriptorPool                            descriptorPool,
+    uint32_t                                    count,
+    const VkDescriptorSet*                      pDescriptorSets);
+
+typedef struct VkDescriptorInfo_
+{
+    VkBufferView                                bufferView;                 // Buffer view to write to the descriptor (in case it's a buffer descriptor, otherwise should be VK_NULL_HANDLE)
+    VkSampler                                   sampler;                    // Sampler to write to the descriptor (in case it's a SAMPLER or COMBINED_IMAGE_SAMPLER descriptor, otherwise should be VK_NULL_HANDLE)
+    VkImageView                                 imageView;                  // Image view to write to the descriptor (in case it's a SAMPLED_IMAGE, STORAGE_IMAGE, or COMBINED_IMAGE_SAMPLER descriptor, otherwise should be VK_NULL_HANDLE)
+    VkImageLayout                               imageLayout;                // Layout the image is expected to be in when accessed using this descriptor (only used if <imageView> is not VK_NULL_HANDLE)
+} VkDescriptorInfo;
+
+typedef struct VkWriteDescriptorSet_
+{
+    VkStructureType                             sType;                      // Must be VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET
+    const void*                                 pNext;                      // Pointer to next structure
+
+    VkDescriptorSet                             destSet;                    // Destination descriptor set
+    uint32_t                                    destBinding;                // Binding within the destination descriptor set to write
+    uint32_t                                    destArrayElement;           // Array element within the destination binding to write
+
+    uint32_t                                    count;                      // Number of descriptors to write (determines the size of the array pointed by <pDescriptors>)
+
+    VkDescriptorType                            descriptorType;             // Descriptor type to write (determines which fields of the array pointed by <pDescriptors> are going to be used)
+    const VkDescriptorInfo*                     pDescriptors;               // Array of info structures describing the descriptors to write
+} VkWriteDescriptorSet;
+
+typedef struct VkCopyDescriptorSet_
+{
+    VkStructureType                             sType;                      // Must be VK_STRUCTURE_TYPE_COPY_DESCRIPTOR_SET
+    const void*                                 pNext;                      // Pointer to next structure
+
+    VkDescriptorSet                             srcSet;                     // Source descriptor set
+    uint32_t                                    srcBinding;                 // Binding within the source descriptor set to copy from
+    uint32_t                                    srcArrayElement;            // Array element within the source binding to copy from
+
+    VkDescriptorSet                             destSet;                    // Destination descriptor set
+    uint32_t                                    destBinding;                // Binding within the destination descriptor set to copy to
+    uint32_t                                    destArrayElement;           // Array element within the destination binding to copy to
+
+    uint32_t                                    count;                      // Number of descriptors to copy
+} VkCopyDescriptorSet;
+
+VkResult VKAPI vkUpdateDescriptorSets(
+    VkDevice                                    device,
+    uint32_t                                    writeCount,
+    const VkWriteDescriptorSet*                 pDescriptorWrites,
+    uint32_t                                    copyCount,
+    const VkCopyDescriptorSet*                  pDescriptorCopies);
+----
+
+Pipeline layout functions
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Pipeline layouts will be covered mostly by tests that use various layouts, but in addition some corner-case tests are needed:
+
+ * Creating empty layouts for shaders that don't use any resources
+ ** For example: vertex data generated with +gl_VertexID+ only
+
+[source,c]
+----
+typedef struct VkPipelineLayoutCreateInfo_
+{
+    VkStructureType                             sType;              // Must be VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO
+    const void*                                 pNext;              // Pointer to next structure
+
+    uint32_t                                    descriptorSetCount; // Number of descriptor sets interfaced by the pipeline
+    const VkDescriptorSetLayout*                pSetLayouts;        // Array of <setCount> number of descriptor set layout objects defining the layout of the 
+} VkPipelineLayoutCreateInfo;
+
+VkResult VKAPI vkCreatePipelineLayout(
+    VkDevice                                    device,
+    const VkPipelineLayoutCreateInfo*           pCreateInfo,
+    VkPipelineLayout*                           pPipelineLayout);
+----
+
+Multipass
+---------
+
+Multipass tests will verify:
+
+ * Various possible multipass data flow configurations
+ ** Target formats, number of targets, load, store, resolve, dependencies, ...
+ ** Exhaustive tests for selected dimensions
+ ** Randomized tests
+ * Interaction with other features
+ ** Blending
+ ** Tessellation, geometry shaders (esp. massive geometry expansion)
+ ** Barriers that may cause tiler flushes
+ ** Queries
+ * Large passes that may require tiler flushes
+
+NOTE: Multipass API is still TBD, the API below is current v99 Pass API.
+
+[source,c]
+----
+typedef struct VkFramebufferCreateInfo_
+{
+    VkStructureType                             sType;  // Must be VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO
+    const void*                                 pNext;  // Pointer to next structure
+
+    uint32_t                                    colorAttachmentCount;
+    const VkColorAttachmentBindInfo*            pColorAttachments;
+    const VkDepthStencilBindInfo*               pDepthStencilAttachment;
+
+    uint32_t                                    sampleCount;
+    uint32_t                                    width;
+    uint32_t                                    height;
+    uint32_t                                    layers;
+} VkFramebufferCreateInfo;
+
+VkResult VKAPI vkCreateFramebuffer(
+    VkDevice                                    device,
+    const VkFramebufferCreateInfo*              pCreateInfo,
+    VkFramebuffer*                              pFramebuffer);
+
+VkResult VKAPI vkCreateRenderPass(
+    VkDevice                                    device,
+    const VkRenderPassCreateInfo*               pCreateInfo,
+    VkRenderPass*                               pRenderPass);
+
+void VKAPI vkCmdBeginRenderPass(
+    VkCmdBuffer                                 cmdBuffer,
+    const VkRenderPassBegin*                    pRenderPassBegin);
+
+void VKAPI vkCmdEndRenderPass(
+    VkCmdBuffer                                 cmdBuffer,
+    VkRenderPass                                renderPass);
+----
+
+Device initialization
+---------------------
+
+Device initialization tests verify that all reported devices can be created, with various possible configurations.
+
+[source,c]
+----
+typedef struct VkApplicationInfo_
+{
+    VkStructureType                             sType;              // Type of structure. Should be VK_STRUCTURE_TYPE_APPLICATION_INFO
+    const void*                                 pNext;              // Next structure in chain
+    const char*                                 pAppName;
+    uint32_t                                    appVersion;
+    const char*                                 pEngineName;
+    uint32_t                                    engineVersion;
+    uint32_t                                    apiVersion;
+} VkApplicationInfo;
+
+typedef void* (VKAPI *PFN_vkAllocFunction)(
+    void*                                       pUserData,
+    size_t                                      size,
+    size_t                                      alignment,
+    VkSystemAllocType                           allocType);
+
+typedef void (VKAPI *PFN_vkFreeFunction)(
+    void*                                       pUserData,
+    void*                                       pMem);
+
+typedef struct VkAllocCallbacks_
+{
+    void*                                       pUserData;
+    PFN_vkAllocFunction                         pfnAlloc;
+    PFN_vkFreeFunction                          pfnFree;
+} VkAllocCallbacks;
+
+typedef struct VkInstanceCreateInfo_
+{
+    VkStructureType                             sType;                      // Should be VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO
+    const void*                                 pNext;                      // Pointer to next structure
+    const VkApplicationInfo*                    pAppInfo;
+    const VkAllocCallbacks*                     pAllocCb;
+    uint32_t                                    extensionCount;
+    const char*const*                           ppEnabledExtensionNames;    // layer or extension name to be enabled
+} VkInstanceCreateInfo;
+
+VkResult VKAPI vkCreateInstance(
+    const VkInstanceCreateInfo*                 pCreateInfo,
+    VkInstance*                                 pInstance);
+----
+
+ - +VkApplicationInfo+ parameters
+   * Arbitrary +pAppName+ / +pEngineName+ (spaces, utf-8, ...)
+   * +pAppName+ / +pEngineName+ = NULL?
+   * +appVersion+ / +engineVersion+ for 0, ~0, couple of values
+   * Valid +apiVersion+
+   * Invalid +apiVersion+ (expected to fail?)
+ - +VkAllocCallbacks+
+   * Want to be able to run all tests with and without callbacks?
+   ** See discussion about default device in framework section
+   * Custom allocators that provide guardbands and check them at free
+   * Override malloc / free and verify that driver doesn't call if callbacks provided
+   ** As part of object mgmt tests
+   * Must be inherited to all devices created from instance
+ - +VkInstanceCreateInfo+
+   * Empty extension list
+   * Unsupported extensions (expect VK_UNSUPPORTED)
+   * Various combinations of supported extensions
+   ** Any dependencies between extensions (enabling Y requires enabling X)?
+
+.Spec issues
+ * Only VkPhysicalDevice is passed to vkCreateDevice, ICD-specific magic needed for passing callbacks down to VkDevice instance
+
+[source,c]
+----
+typedef VkFlags VkDeviceCreateFlags;
+typedef enum VkDeviceCreateFlagBits_
+{
+    VK_DEVICE_CREATE_VALIDATION_BIT                         = VK_BIT(0),
+    VK_DEVICE_CREATE_MULTI_DEVICE_IQ_MATCH_BIT              = VK_BIT(1),
+} VkDeviceCreateFlagBits;
+
+typedef struct VkDeviceQueueCreateInfo_
+{
+    uint32_t                                    queueNodeIndex;
+    uint32_t                                    queueCount;
+} VkDeviceQueueCreateInfo;
+
+typedef struct VkDeviceCreateInfo_
+{
+    VkStructureType                             sType;                      // Should be VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO
+    const void*                                 pNext;                      // Pointer to next structure
+    uint32_t                                    queueRecordCount;
+    const VkDeviceQueueCreateInfo*              pRequestedQueues;
+    uint32_t                                    extensionCount;
+    const char*const*                           ppEnabledExtensionNames;
+    VkDeviceCreateFlags                         flags;                      // Device creation flags
+} VkDeviceCreateInfo;
+
+VkResult VKAPI vkCreateDevice(
+    VkPhysicalDevice                            physicalDevice,
+    const VkDeviceCreateInfo*                   pCreateInfo,
+    VkDevice*                                   pDevice);
+----
+
+ * Creating multiple devices from single physical device
+ * Different queue configurations
+ ** Combinations of supported node indexes
+ ** Use of all queues simultaneously for various operations
+ ** Various queue counts
+ * Various extension combinations
+ * Flags
+ ** Enabling validation (see spec issues)
+ ** VK_DEVICE_CREATE_MULTI_DEVICE_IQ_MATCH_BIT not relevant for Android
+
+.Spec issues
+ * Can same queue node index used multiple times in +pRequestedQueues+ list?
+ * VK_DEVICE_CREATE_VALIDATION_BIT vs. layers
+
+Queue functions
+---------------
+
+Queue functions (one currently) will have a lot of indicental coverage from other tests, so only targeted corner-case tests are needed:
+
+ * +cmdBufferCount+ = 0
+ * Submitting empty VkCmdBuffer
+
+[source,c]
+----
+VkResult VKAPI vkQueueSubmit(
+    VkQueue                                     queue,
+    uint32_t                                    cmdBufferCount,
+    const VkCmdBuffer*                          pCmdBuffers,
+    VkFence                                     fence);
+----
+
+.Spec issues
+ * Can +fence+ be +NULL+ if app doesn't need it?
+
+Multi-device functions
+----------------------
+
+NOTE: Multi-device support is going to be removed from v1.0.
+
+[source,c]
+----
+VkResult VKAPI vkGetMultiDeviceCompatibility(
+    VkPhysicalDevice                            physicalDevice0,
+    VkPhysicalDevice                            physicalDevice1,
+    VkPhysicalDeviceCompatibilityInfo*          pInfo);
+
+VkResult VKAPI vkOpenSharedMemory(
+    VkDevice                                    device,
+    const VkMemoryOpenInfo*                     pOpenInfo,
+    VkDeviceMemory*                             pMem);
+
+VkResult VKAPI vkOpenSharedSemaphore(
+    VkDevice                                    device,
+    const VkSemaphoreOpenInfo*                  pOpenInfo,
+    VkSemaphore*                                pSemaphore);
+
+VkResult VKAPI vkOpenPeerMemory(
+    VkDevice                                    device,
+    const VkPeerMemoryOpenInfo*                 pOpenInfo,
+    VkDeviceMemory*                             pMem);
+
+VkResult VKAPI vkOpenPeerImage(
+    VkDevice                                    device,
+    const VkPeerImageOpenInfo*                  pOpenInfo,
+    VkImage*                                    pImage,
+    VkDeviceMemory*                             pMem);
+
+----
+
+Synchronization
+---------------
+
+Synchronization tests will verify that all execution ordering primitives provided by the API will function as expected. Testing scheduling and synchronization robustness will require generating non-trivial workloads and possibly randomization to reveal potential issues.
+
+[source,c]
+----
+VkResult VKAPI vkQueueWaitIdle(
+    VkQueue                                     queue);
+
+VkResult VKAPI vkDeviceWaitIdle(
+    VkDevice                                    device);
+----
+
+ * Verify that all sync objects signaled after *WaitIdle() returns
+ ** Fences (vkGetFenceStatus)
+ ** Events (vkEventGetStatus)
+ ** No way to query semaphore status?
+ * Threads blocking at vkWaitForFences() must be resumed
+ * Various amounts of work queued (from nothing to large command buffers)
+ * vkDeviceWaitIdle() concurrently with commands that submit more work
+ * all types of work
+
+Fences
+~~~~~~
+
+[source,c]
+----
+typedef VkFlags VkFenceCreateFlags;
+typedef enum VkFenceCreateFlagBits_
+{
+    VK_FENCE_CREATE_SIGNALED_BIT                            = VK_BIT(0),
+} VkFenceCreateFlagBits;
+
+typedef struct VkFenceCreateInfo_
+{
+    VkStructureType                             sType;      // Must be VK_STRUCTURE_TYPE_FENCE_CREATE_INFO
+    const void*                                 pNext;      // Pointer to next structure
+    VkFenceCreateFlags                          flags;      // Fence creation flags
+} VkFenceCreateInfo;
+
+VkResult VKAPI vkCreateFence(
+    VkDevice                                    device,
+    const VkFenceCreateInfo*                    pCreateInfo,
+    VkFence*                                    pFence);
+
+VkResult VKAPI vkResetFences(
+    VkDevice                                    device,
+    uint32_t                                    fenceCount,
+    VkFence*                                    pFences);
+
+VkResult VKAPI vkGetFenceStatus(
+    VkDevice                                    device,
+    VkFence                                     fence);
+
+VkResult VKAPI vkWaitForFences(
+    VkDevice                                    device,
+    uint32_t                                    fenceCount,
+    const VkFence*                              pFences,
+    bool32_t                                    waitAll,
+    uint64_t                                    timeout); // timeout in nanoseconds
+----
+
+ * Basic waiting on fences
+ ** All types of commands
+ ** Waiting on a different thread than the thread that submitted the work
+ * Reusing fences (vkResetFences)
+ * Waiting on a fence / querying status of a fence before it has been submitted to be signaled
+ * Waiting on a fence / querying status of a fence has just been created with CREATE_SIGNALED_BIT
+ ** Reuse in different queue
+ ** Different queues
+
+.Spec issues
+ * Using same fence in multiple vkQueueSubmit calls without waiting/resetting in between
+ ** Completion of first cmdbuf will reset fence and others won't do anything?
+ * Waiting on same fence from multiple threads?
+
+Semaphores
+~~~~~~~~~~
+
+[source,c]
+----
+typedef VkFlags VkSemaphoreCreateFlags;
+typedef enum VkSemaphoreCreateFlagBits_
+{
+    VK_SEMAPHORE_CREATE_SHAREABLE_BIT                       = VK_BIT(0),
+} VkSemaphoreCreateFlagBits;
+
+typedef struct VkSemaphoreCreateInfo_
+{
+    VkStructureType                             sType;      // Must be VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO
+    const void*                                 pNext;      // Pointer to next structure
+    uint32_t                                    initialCount;
+    VkSemaphoreCreateFlags                      flags;      // Semaphore creation flags
+} VkSemaphoreCreateInfo;
+
+VkResult VKAPI vkCreateSemaphore(
+    VkDevice                                    device,
+    const VkSemaphoreCreateInfo*                pCreateInfo,
+    VkSemaphore*                                pSemaphore);
+
+VkResult VKAPI vkQueueSignalSemaphore(
+    VkQueue                                     queue,
+    VkSemaphore                                 semaphore);
+
+VkResult VKAPI vkQueueWaitSemaphore(
+    VkQueue                                     queue,
+    VkSemaphore                                 semaphore);
+----
+
+ * All types of commands waiting & signaling semaphore
+ * Cross-queue semaphores
+ * Queuing wait on initially signaled semaphore
+ * Queuing wait immediately after queuing signaling
+ * vkQueueWaitIdle & vkDeviceWaitIdle waiting on semaphore
+ * Multiple queues waiting on same semaphore
+
+NOTE: Semaphores might change; counting is causing problems for some IHVs.
+
+Events
+~~~~~~
+
+[source,c]
+----
+typedef struct VkEventCreateInfo_
+{
+    VkStructureType                             sType;      // Must be VK_STRUCTURE_TYPE_EVENT_CREATE_INFO
+    const void*                                 pNext;      // Pointer to next structure
+    VkEventCreateFlags                          flags;      // Event creation flags (currently none)
+} VkEventCreateInfo;
+
+VkResult VKAPI vkCreateEvent(
+    VkDevice                                    device,
+    const VkEventCreateInfo*                    pCreateInfo,
+    VkEvent*                                    pEvent);
+
+VkResult VKAPI vkGetEventStatus(
+    VkDevice                                    device,
+    VkEvent                                     event);
+
+VkResult VKAPI vkSetEvent(
+    VkDevice                                    device,
+    VkEvent                                     event);
+
+VkResult VKAPI vkResetEvent(
+    VkDevice                                    device,
+    VkEvent                                     event);
+
+typedef enum VkPipeEvent_
+{
+    VK_PIPE_EVENT_TOP_OF_PIPE                               = 0x00000001,   // Set event before the device starts processing subsequent command
+    VK_PIPE_EVENT_VERTEX_PROCESSING_COMPLETE                = 0x00000002,   // Set event when all pending vertex processing is complete
+    VK_PIPE_EVENT_LOCAL_FRAGMENT_PROCESSING_COMPLETE        = 0x00000003,   // Set event when all pending fragment shader executions are complete, within each fragment location
+    VK_PIPE_EVENT_FRAGMENT_PROCESSING_COMPLETE              = 0x00000004,   // Set event when all pending fragment shader executions are complete
+    VK_PIPE_EVENT_GRAPHICS_PIPELINE_COMPLETE                = 0x00000005,   // Set event when all pending graphics operations are complete
+    VK_PIPE_EVENT_COMPUTE_PIPELINE_COMPLETE                 = 0x00000006,   // Set event when all pending compute operations are complete
+    VK_PIPE_EVENT_TRANSFER_COMPLETE                         = 0x00000007,   // Set event when all pending transfer operations are complete
+    VK_PIPE_EVENT_COMMANDS_COMPLETE                         = 0x00000008,   // Set event when all pending work is complete
+
+    VK_ENUM_RANGE(PIPE_EVENT, TOP_OF_PIPE, COMMANDS_COMPLETE)
+} VkPipeEvent;
+
+void VKAPI vkCmdSetEvent(
+    VkCmdBuffer                                 cmdBuffer,
+    VkEvent                                     event,
+    VkPipeEvent                                 pipeEvent);
+
+void VKAPI vkCmdResetEvent(
+    VkCmdBuffer                                 cmdBuffer,
+    VkEvent                                     event,
+    VkPipeEvent                                 pipeEvent);
+
+void VKAPI vkCmdWaitEvents(
+    VkCmdBuffer                                 cmdBuffer,
+    VkWaitEvent                                 waitEvent,
+    uint32_t                                    eventCount,
+    const VkEvent*                              pEvents,
+    uint32_t                                    memBarrierCount,
+    const void**                                ppMemBarriers);
+----
+
+ * All types of work waiting on all types of events
+ ** Including signaling from CPU side (vkSetEvent)
+ ** Memory barrier
+ * Polling event status (vkGetEventStatus)
+ * Memory barriers (see also GPU cache control)
+ * Corner-cases:
+ ** Re-setting event before it has been signaled
+ ** Polling status of event concurrently with signaling it or re-setting it from another thread
+ ** Multiple commands (maybe multiple queues as well) setting same event
+ *** Presumably first set will take effect, rest have no effect before event is re-set
+
+Pipeline queries
+----------------
+
+Pipeline query test details TBD. These are of lower priority initially.
+
+NOTE: Currently contains only exact occlusion query as mandatory. Might be problematic for some, and may change?
+
+[source,c]
+----
+typedef enum VkQueryType_
+{
+    VK_QUERY_TYPE_OCCLUSION                                 = 0x00000000,
+    VK_QUERY_TYPE_PIPELINE_STATISTICS                       = 0x00000001, // Optional
+
+    VK_ENUM_RANGE(QUERY_TYPE, OCCLUSION, PIPELINE_STATISTICS)
+} VkQueryType;
+
+typedef VkFlags VkQueryPipelineStatisticFlags;
+typedef enum VkQueryPipelineStatisticFlagBits_ {
+    VK_QUERY_PIPELINE_STATISTIC_IA_VERTICES_BIT             = VK_BIT(0),  // Optional
+    VK_QUERY_PIPELINE_STATISTIC_IA_PRIMITIVES_BIT           = VK_BIT(1),  // Optional
+    VK_QUERY_PIPELINE_STATISTIC_VS_INVOCATIONS_BIT          = VK_BIT(2),  // Optional
+    VK_QUERY_PIPELINE_STATISTIC_GS_INVOCATIONS_BIT          = VK_BIT(3),  // Optional
+    VK_QUERY_PIPELINE_STATISTIC_GS_PRIMITIVES_BIT           = VK_BIT(4),  // Optional
+    VK_QUERY_PIPELINE_STATISTIC_C_INVOCATIONS_BIT           = VK_BIT(5),  // Optional
+    VK_QUERY_PIPELINE_STATISTIC_C_PRIMITIVES_BIT            = VK_BIT(6),  // Optional
+    VK_QUERY_PIPELINE_STATISTIC_FS_INVOCATIONS_BIT          = VK_BIT(7),  // Optional
+    VK_QUERY_PIPELINE_STATISTIC_TCS_PATCHES_BIT             = VK_BIT(8),  // Optional
+    VK_QUERY_PIPELINE_STATISTIC_TES_INVOCATIONS_BIT         = VK_BIT(9),  // Optional
+    VK_QUERY_PIPELINE_STATISTIC_CS_INVOCATIONS_BIT          = VK_BIT(10), // Optional
+} VkQueryPipelineStatisticFlagBits;
+
+typedef struct VkQueryPoolCreateInfo_
+{
+    VkStructureType                             sType;              // Must be VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO
+    const void*                                 pNext;              // Pointer to next structure
+    VkQueryType                                 queryType;
+    uint32_t                                    slots;
+    VkQueryPipelineStatisticFlags               pipelineStatistics; // Optional
+} VkQueryPoolCreateInfo;
+
+VkResult VKAPI vkCreateQueryPool(
+    VkDevice                                    device,
+    const VkQueryPoolCreateInfo*                pCreateInfo,
+    VkQueryPool*                                pQueryPool);
+
+typedef VkFlags VkQueryResultFlags;
+typedef enum VkQueryResultFlagBits_
+{
+    VK_QUERY_RESULT_32_BIT                                  = 0,           // Results of the queries are written to the destination buffer as 32-bit values
+    VK_QUERY_RESULT_64_BIT                                  = VK_BIT(0),   // Results of the queries are written to the destination buffer as 64-bit values
+    VK_QUERY_RESULT_NO_WAIT_BIT                             = 0,           // Results of the queries aren't waited on before proceeding with the result copy
+    VK_QUERY_RESULT_WAIT_BIT                                = VK_BIT(1),   // Results of the queries are waited on before proceeding with the result copy
+    VK_QUERY_RESULT_WITH_AVAILABILITY_BIT                   = VK_BIT(2),   // Besides the results of the query, the availability of the results is also written
+    VK_QUERY_RESULT_PARTIAL_BIT                             = VK_BIT(3),   // Copy the partial results of the query even if the final results aren't available
+} VkQueryResultFlagBits;
+
+VkResult VKAPI vkGetQueryPoolResults(
+    VkDevice                                    device,
+    VkQueryPool                                 queryPool,
+    uint32_t                                    startQuery,
+    uint32_t                                    queryCount,
+    size_t*                                     pDataSize,
+    void*                                       pData,
+    VkQueryResultFlags                          flags);
+
+void VKAPI vkCmdBeginQuery(
+    VkCmdBuffer                                 cmdBuffer,
+    VkQueryPool                                 queryPool,
+    uint32_t                                    slot,
+    VkQueryControlFlags                         flags);
+
+void VKAPI vkCmdEndQuery(
+    VkCmdBuffer                                 cmdBuffer,
+    VkQueryPool                                 queryPool,
+    uint32_t                                    slot);
+
+void VKAPI vkCmdResetQueryPool(
+    VkCmdBuffer                                 cmdBuffer,
+    VkQueryPool                                 queryPool,
+    uint32_t                                    startQuery,
+    uint32_t                                    queryCount);
+
+void VKAPI vkCmdCopyQueryPoolResults(
+    VkCmdBuffer                                 cmdBuffer,
+    VkQueryPool                                 queryPool,
+    uint32_t                                    startQuery,
+    uint32_t                                    queryCount,
+    VkBuffer                                    destBuffer,
+    VkDeviceSize                                destOffset,
+    VkDeviceSize                                destStride,
+    VkQueryResultFlags                          flags);
+----
+
+Buffers
+-------
+
+Buffers will have a lot of coverage from memory management and access tests. Targeted buffer tests need to verify that various corner-cases and more excotic configurations work as expected.
+
+.Spec issues
+ * Does +VK_BUFFER_USAGE_GENERAL+ allow buffer to be used in any situation?
+ * All combinations of usage flags are valid?
+
+[source,c]
+----
+typedef VkFlags VkBufferCreateFlags;
+typedef enum VkBufferCreateFlagBits_
+{
+    VK_BUFFER_CREATE_SHAREABLE_BIT                          = VK_BIT(0),    // Buffer should be shareable
+    VK_BUFFER_CREATE_SPARSE_BIT                             = VK_BIT(1),    // Buffer should support sparse backing
+} VkBufferCreateFlagBits;
+
+// Buffer usage flags
+typedef VkFlags VkBufferUsageFlags;
+typedef enum VkBufferUsageFlagBits_
+{
+    VK_BUFFER_USAGE_GENERAL                                 = 0,            // No special usage
+    VK_BUFFER_USAGE_TRANSFER_SOURCE_BIT                     = VK_BIT(0),    // Can be used as a source of transfer operations
+    VK_BUFFER_USAGE_TRANSFER_DESTINATION_BIT                = VK_BIT(1),    // Can be used as a destination of transfer operations
+    VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT                = VK_BIT(2),    // Can be used as TBO
+    VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT                = VK_BIT(3),    // Can be used as IBO
+    VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT                      = VK_BIT(4),    // Can be used as UBO
+    VK_BUFFER_USAGE_STORAGE_BUFFER_BIT                      = VK_BIT(5),    // Can be used as SSBO
+    VK_BUFFER_USAGE_INDEX_BUFFER_BIT                        = VK_BIT(6),    // Can be used as source of fixed function index fetch (index buffer)
+    VK_BUFFER_USAGE_VERTEX_BUFFER_BIT                       = VK_BIT(7),    // Can be used as source of fixed function vertex fetch (VBO)
+    VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT                     = VK_BIT(8),    // Can be the source of indirect parameters (e.g. indirect buffer, parameter buffer)
+} VkBufferUsageFlagBits;
+
+typedef struct VkBufferCreateInfo_
+{
+    VkStructureType                             sType;                      // Must be VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO
+    const void*                                 pNext;                      // Pointer to next structure.
+    VkDeviceSize                                size;                       // Specified in bytes
+    VkBufferUsageFlags                          usage;                      // Buffer usage flags
+    VkBufferCreateFlags                         flags;                      // Buffer creation flags
+} VkBufferCreateInfo;
+
+VkResult VKAPI vkCreateBuffer(
+    VkDevice                                    device,
+    const VkBufferCreateInfo*                   pCreateInfo,
+    VkBuffer*                                   pBuffer);
+----
+
+ * All (valid and supported) combinations of create and usage flags work
+ * Buffers of various sizes can be created and they report sensible memory requirements
+ * Sparse buffers: very large (limit TBD) buffers can be created
+
+[source,c]
+----
+typedef enum VkBufferViewType_
+{
+    VK_BUFFER_VIEW_TYPE_RAW                                 = 0x00000000,   // Raw buffer without special structure (UBO, SSBO)
+    VK_BUFFER_VIEW_TYPE_FORMATTED                           = 0x00000001,   // Buffer with format (TBO, IBO)
+
+    VK_ENUM_RANGE(BUFFER_VIEW_TYPE, RAW, FORMATTED)
+} VkBufferViewType;
+
+typedef struct VkBufferViewCreateInfo_
+{
+    VkStructureType                             sType;                      // Must be VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO
+    const void*                                 pNext;                      // Pointer to next structure.
+    VkBuffer                                    buffer;
+    VkBufferViewType                            viewType;
+    VkFormat                                    format;                     // Optionally specifies format of elements
+    VkDeviceSize                                offset;                     // Specified in bytes
+    VkDeviceSize                                range;                      // View size specified in bytes
+} VkBufferViewCreateInfo;
+
+VkResult VKAPI vkCreateBufferView(
+    VkDevice                                    device,
+    const VkBufferViewCreateInfo*               pCreateInfo,
+    VkBufferView*                               pView);
+----
+
+ * Buffer views of all (valid) types and formats can be created from all (compatible) buffers
+ * Various view sizes
+ ** Complete buffer
+ ** Partial buffer
+ * View can be created before and after attaching memory to buffer
+ * Changing memory binding makes memory contents visible in already created views
+ ** Concurrently changing memory binding and creating views
+
+.Spec issues
+ * Alignment or size requirements for buffer views?
+
+Images
+------
+
+Like buffers, images will have significant coverage from other test groups that focus on various ways to access image data. Additional coverage not provided by those tests will be included in this feature group.
+
+Image functions
+~~~~~~~~~~~~~~~
+
+.Spec issues
+ * +VK_IMAGE_USAGE_GENERAL+?
+
+[source,c]
+----
+typedef enum VkImageType_
+{
+    VK_IMAGE_TYPE_1D                                        = 0x00000000,
+    VK_IMAGE_TYPE_2D                                        = 0x00000001,
+    VK_IMAGE_TYPE_3D                                        = 0x00000002,
+
+    VK_ENUM_RANGE(IMAGE_TYPE, 1D, 3D)
+} VkImageType;
+
+typedef enum VkImageTiling_
+{
+    VK_IMAGE_TILING_LINEAR                                  = 0x00000000,
+    VK_IMAGE_TILING_OPTIMAL                                 = 0x00000001,
+
+    VK_ENUM_RANGE(IMAGE_TILING, LINEAR, OPTIMAL)
+} VkImageTiling;
+
+typedef VkFlags VkImageUsageFlags;
+typedef enum VkImageUsageFlagBits_
+{
+    VK_IMAGE_USAGE_GENERAL                                  = 0,            // No special usage
+    VK_IMAGE_USAGE_TRANSFER_SOURCE_BIT                      = VK_BIT(0),    // Can be used as a source of transfer operations
+    VK_IMAGE_USAGE_TRANSFER_DESTINATION_BIT                 = VK_BIT(1),    // Can be used as a destination of transfer operations
+    VK_IMAGE_USAGE_SAMPLED_BIT                              = VK_BIT(2),    // Can be sampled from (SAMPLED_IMAGE and COMBINED_IMAGE_SAMPLER descriptor types)
+    VK_IMAGE_USAGE_STORAGE_BIT                              = VK_BIT(3),    // Can be used as storage image (STORAGE_IMAGE descriptor type)
+    VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT                     = VK_BIT(4),    // Can be used as framebuffer color attachment
+    VK_IMAGE_USAGE_DEPTH_STENCIL_BIT                        = VK_BIT(5),    // Can be used as framebuffer depth/stencil attachment
+    VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT                 = VK_BIT(6),    // Image data not needed outside of rendering
+} VkImageUsageFlagBits;
+
+typedef VkFlags VkImageCreateFlags;
+typedef enum VkImageCreateFlagBits_
+{
+    VK_IMAGE_CREATE_INVARIANT_DATA_BIT                      = VK_BIT(0),
+    VK_IMAGE_CREATE_SHAREABLE_BIT                           = VK_BIT(1),    // Image should be shareable
+    VK_IMAGE_CREATE_SPARSE_BIT                              = VK_BIT(2),    // Image should support sparse backing
+    VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT                      = VK_BIT(3),    // Allows image views to have different format than the base image
+    VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT                     = VK_BIT(4),    // Allows creating image views with cube type from the created image
+} VkImageCreateFlagBits;
+
+typedef struct VkImageCreateInfo_
+{
+    VkStructureType                             sType;                      // Must be VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO
+    const void*                                 pNext;                      // Pointer to next structure.
+    VkImageType                                 imageType;
+    VkFormat                                    format;
+    VkExtent3D                                  extent;
+    uint32_t                                    mipLevels;
+    uint32_t                                    arraySize;
+    uint32_t                                    samples;
+    VkImageTiling                               tiling;
+    VkImageUsageFlags                           usage;                      // Image usage flags
+    VkImageCreateFlags                          flags;                      // Image creation flags
+} VkImageCreateInfo;
+
+VkResult VKAPI vkCreateImage(
+    VkDevice                                    device,
+    const VkImageCreateInfo*                    pCreateInfo,
+    VkImage*                                    pImage);
+----
+
+ * All valid and supported combinations of image parameters
+ ** Sampling verification with nearest only (other modes will be covered separately)
+ * Various image sizes
+ * Linear-layout images & writing data from CPU
+ * Copying data between identical opaque-layout images on CPU?
+
+Image view functions
+~~~~~~~~~~~~~~~~~~~~
+
+.Spec issues
+ * What are format compatibility rules?
+ * Can color/depth/stencil attachments to write to image which has different format?
+ ** Can I create DS view of RGBA texture and write to only one component by creating VkDepthStencilView for example?
+ * Image view granularity
+ ** All sub-rects allowed? In all use cases (RTs for example)?
+ * Memory access granularity
+ ** Writing concurrently to different areas of same memory backed by same/different image or view
+
+[source,c]
+----
+typedef enum VkImageViewType_
+{
+    VK_IMAGE_VIEW_TYPE_1D                                   = 0x00000000,
+    VK_IMAGE_VIEW_TYPE_2D                                   = 0x00000001,
+    VK_IMAGE_VIEW_TYPE_3D                                   = 0x00000002,
+    VK_IMAGE_VIEW_TYPE_CUBE                                 = 0x00000003,
+
+    VK_ENUM_RANGE(IMAGE_VIEW_TYPE, 1D, CUBE)
+} VkImageViewType;
+
+typedef struct VkChannelMapping_
+{
+    VkChannelSwizzle                            r;
+    VkChannelSwizzle                            g;
+    VkChannelSwizzle                            b;
+    VkChannelSwizzle                            a;
+} VkChannelMapping;
+
+typedef enum VkImageAspect_
+{
+    VK_IMAGE_ASPECT_COLOR                                   = 0x00000000,
+    VK_IMAGE_ASPECT_DEPTH                                   = 0x00000001,
+    VK_IMAGE_ASPECT_STENCIL                                 = 0x00000002,
+
+    VK_ENUM_RANGE(IMAGE_ASPECT, COLOR, STENCIL)
+} VkImageAspect;
+
+typedef struct VkImageSubresourceRange_
+{
+    VkImageAspect                               aspect;
+    uint32_t                                    baseMipLevel;
+    uint32_t                                    mipLevels;
+    uint32_t                                    baseArraySlice;
+    uint32_t                                    arraySize;
+} VkImageSubresourceRange;
+
+typedef struct VkImageViewCreateInfo_
+{
+    VkStructureType                             sType;                  // Must be VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO
+    const void*                                 pNext;                  // Pointer to next structure
+    VkImage                                     image;
+    VkImageViewType                             viewType;
+    VkFormat                                    format;
+    VkChannelMapping                            channels;
+    VkImageSubresourceRange                     subresourceRange;
+    float                                       minLod;
+} VkImageViewCreateInfo;
+
+VkResult VKAPI vkCreateImageView(
+    VkDevice                                    device,
+    const VkImageViewCreateInfo*                pCreateInfo,
+    VkImageView*                                pView);
+----
+
+ * Image views of all (valid) types and formats can be created from all (compatible) images
+ * Channel swizzles
+ * Depth- and stencil-mode
+ * Different formats
+ * Various view sizes
+ ** Complete image
+ ** Partial image (mip- or array slice)
+ * View can be created before and after attaching memory to image
+ * Changing memory binding makes memory contents visible in already created views
+ ** Concurrently changing memory binding and creating views
+
+[source,c]
+----
+typedef struct VkColorAttachmentViewCreateInfo_
+{
+    VkStructureType                             sType;                  // Must be VK_STRUCTURE_TYPE_COLOR_ATTACHMENT_VIEW_CREATE_INFO
+    const void*                                 pNext;                  // Pointer to next structure
+    VkImage                                     image;
+    VkFormat                                    format;
+    uint32_t                                    mipLevel;
+    uint32_t                                    baseArraySlice;
+    uint32_t                                    arraySize;
+    VkImage                                     msaaResolveImage;
+    VkImageSubresourceRange                     msaaResolveSubResource;
+} VkColorAttachmentViewCreateInfo;
+
+VkResult VKAPI vkCreateColorAttachmentView(
+    VkDevice                                    device,
+    const VkColorAttachmentViewCreateInfo*      pCreateInfo,
+    VkColorAttachmentView*                      pView);
+
+typedef struct VkDepthStencilViewCreateInfo_
+{
+    VkStructureType                             sType;                  // Must be VK_STRUCTURE_TYPE_DEPTH_STENCIL_VIEW_CREATE_INFO
+    const void*                                 pNext;                  // Pointer to next structure
+    VkImage                                     image;
+    uint32_t                                    mipLevel;
+    uint32_t                                    baseArraySlice;
+    uint32_t                                    arraySize;
+    VkImage                                     msaaResolveImage;
+    VkImageSubresourceRange                     msaaResolveSubResource;
+    VkDepthStencilViewCreateFlags               flags;                  // Depth stencil attachment view flags
+} VkDepthStencilViewCreateInfo;
+
+VkResult VKAPI vkCreateDepthStencilView(
+    VkDevice                                    device,
+    const VkDepthStencilViewCreateInfo*         pCreateInfo,
+    VkDepthStencilView*                         pView);
+----
+
+ * Writing to color/depth/stencil attachments in various view configurations
+ ** Multipass tests will contain some coverage for this
+ ** Image layout
+ ** View size
+ ** Image mip- or array sub-range
+ * +msaaResolveImage+
+ ** TODO What is exactly this?
+
+Shaders
+-------
+
+Shader API test will verify that shader loading functions behave as expected. Verifying that various SPIR-V constructs are accepted and executed correctly however is not an objective; that will be covered more extensively by a separate SPIR-V test set.
+
+NOTE: Shader API is expected to change with introduction of multiple entry points to SPIR-V.
+
+[source,c]
+----
+typedef struct VkShaderCreateInfo_
+{
+    VkStructureType                             sType;              // Must be VK_STRUCTURE_TYPE_SHADER_CREATE_INFO
+    const void*                                 pNext;              // Pointer to next structure
+    size_t                                      codeSize;           // Specified in bytes
+    const void*                                 pCode;
+    VkShaderCreateFlags                         flags;              // Reserved
+} VkShaderCreateInfo;
+
+VkResult VKAPI vkCreateShader(
+    VkDevice                                    device,
+    const VkShaderCreateInfo*                   pCreateInfo,
+    VkShader*                                   pShader);
+----
+
+Pipelines
+---------
+
+Construction
+~~~~~~~~~~~~
+
+Pipeline tests will create various pipelines and verify that rendering results appear to match (resulting HW pipeline is correct). Fixed-function unit corner-cases nor accuracy is verified. It is not possible to exhaustively test all pipeline configurations so tests have to test some areas in isolation and extend coverage with randomized tests.
+
+[source,c]
+----
+typedef struct VkPipelineShader_
+{
+    VkShaderStage                               stage;
+    VkShader                                    shader;
+    uint32_t                                    linkConstBufferCount;
+    const VkLinkConstBuffer*                    pLinkConstBufferInfo;
+    const VkSpecializationInfo*                 pSpecializationInfo;
+} VkPipelineShader;
+
+typedef struct VkComputePipelineCreateInfo_
+{
+    VkStructureType                             sType;          // Must be VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO
+    const void*                                 pNext;          // Pointer to next structure
+    VkPipelineShader                            cs;
+    VkPipelineCreateFlags                       flags;          // Pipeline creation flags
+    VkPipelineLayout                            layout;         // Interface layout of the pipeline
+} VkComputePipelineCreateInfo;
+
+typedef struct VkVertexInputBindingDescription_
+{
+    uint32_t                                    binding;        // Vertex buffer binding id
+    uint32_t                                    strideInBytes;  // Distance between vertices in bytes (0 = no advancement)
+
+    VkVertexInputStepRate                       stepRate;       // Rate at which binding is incremented
+} VkVertexInputBindingDescription;
+
+typedef struct VkVertexInputAttributeDescription_
+{
+    uint32_t                                    location;       // location of the shader vertex attrib
+    uint32_t                                    binding;        // Vertex buffer binding id
+
+    VkFormat                                    format;         // format of source data
+
+    uint32_t                                    offsetInBytes;  // Offset of first element in bytes from base of vertex
+} VkVertexInputAttributeDescription;
+
+typedef struct VkPipelineVertexInputCreateInfo_
+{
+    VkStructureType                             sType;          // Should be VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_CREATE_INFO
+    const void*                                 pNext;          // Pointer to next structure
+
+    uint32_t                                    bindingCount;   // number of bindings
+    const VkVertexInputBindingDescription*      pVertexBindingDescriptions;
+
+    uint32_t                                    attributeCount; // number of attributes
+    const VkVertexInputAttributeDescription*    pVertexAttributeDescriptions;
+} VkPipelineVertexInputCreateInfo;
+
+typedef struct VkPipelineIaStateCreateInfo_
+{
+    VkStructureType                             sType;      // Must be VK_STRUCTURE_TYPE_PIPELINE_IA_STATE_CREATE_INFO
+    const void*                                 pNext;      // Pointer to next structure
+    VkPrimitiveTopology                         topology;
+    bool32_t                                    disableVertexReuse;         // optional
+    bool32_t                                    primitiveRestartEnable;
+    uint32_t                                    primitiveRestartIndex;      // optional (GL45)
+} VkPipelineIaStateCreateInfo;
+
+typedef struct VkPipelineTessStateCreateInfo_
+{
+    VkStructureType                             sType;      // Must be VK_STRUCTURE_TYPE_PIPELINE_TESS_STATE_CREATE_INFO
+    const void*                                 pNext;      // Pointer to next structure
+    uint32_t                                    patchControlPoints;
+} VkPipelineTessStateCreateInfo;
+
+typedef struct VkPipelineVpStateCreateInfo_
+{
+    VkStructureType                             sType;      // Must be VK_STRUCTURE_TYPE_PIPELINE_VP_STATE_CREATE_INFO
+    const void*                                 pNext;      // Pointer to next structure
+    uint32_t                                    viewportCount;
+    VkCoordinateOrigin                          clipOrigin;                 // optional (GL45)
+    VkDepthMode                                 depthMode;                  // optional (GL45)
+} VkPipelineVpStateCreateInfo;
+
+typedef struct VkPipelineRsStateCreateInfo_
+{
+    VkStructureType                             sType;      // Must be VK_STRUCTURE_TYPE_PIPELINE_RS_STATE_CREATE_INFO
+    const void*                                 pNext;      // Pointer to next structure
+    bool32_t                                    depthClipEnable;
+    bool32_t                                    rasterizerDiscardEnable;
+    bool32_t                                    programPointSize;           // optional (GL45)
+    VkCoordinateOrigin                          pointOrigin;                // optional (GL45)
+    VkProvokingVertex                           provokingVertex;            // optional (GL45)
+    VkFillMode                                  fillMode;                   // optional (GL45)
+    VkCullMode                                  cullMode;
+    VkFrontFace                                 frontFace;
+} VkPipelineRsStateCreateInfo;
+
+typedef struct VkPipelineMsStateCreateInfo_
+{
+    VkStructureType                             sType;      // Must be VK_STRUCTURE_TYPE_PIPELINE_MS_STATE_CREATE_INFO
+    const void*                                 pNext;      // Pointer to next structure
+    uint32_t                                    samples;
+    bool32_t                                    multisampleEnable;          // optional (GL45)
+    bool32_t                                    sampleShadingEnable;        // optional (GL45)
+    float                                       minSampleShading;           // optional (GL45)
+    VkSampleMask                                sampleMask;
+} VkPipelineMsStateCreateInfo;
+
+typedef struct VkPipelineCbAttachmentState_
+{
+    bool32_t                                    blendEnable;
+    VkFormat                                    format;
+    VkBlend                                     srcBlendColor;
+    VkBlend                                     destBlendColor;
+    VkBlendOp                                   blendOpColor;
+    VkBlend                                     srcBlendAlpha;
+    VkBlend                                     destBlendAlpha;
+    VkBlendOp                                   blendOpAlpha;
+    VkChannelFlags                              channelWriteMask;
+} VkPipelineCbAttachmentState;
+
+typedef struct VkPipelineCbStateCreateInfo_
+{
+    VkStructureType                             sType;      // Must be VK_STRUCTURE_TYPE_PIPELINE_CB_STATE_CREATE_INFO
+    const void*                                 pNext;      // Pointer to next structure
+    bool32_t                                    alphaToCoverageEnable;
+    bool32_t                                    logicOpEnable;
+    VkLogicOp                                   logicOp;
+    uint32_t                                    attachmentCount;    // # of pAttachments
+    const VkPipelineCbAttachmentState*          pAttachments;
+} VkPipelineCbStateCreateInfo;
+
+typedef struct VkStencilOpState_
+{
+    VkStencilOp                                 stencilFailOp;
+    VkStencilOp                                 stencilPassOp;
+    VkStencilOp                                 stencilDepthFailOp;
+    VkCompareOp                                 stencilCompareOp;
+} VkStencilOpState;
+
+typedef struct VkPipelineDsStateCreateInfo_
+{
+    VkStructureType                             sType;      // Must be VK_STRUCTURE_TYPE_PIPELINE_DS_STATE_CREATE_INFO
+    const void*                                 pNext;      // Pointer to next structure
+    VkFormat                                    format;
+    bool32_t                                    depthTestEnable;
+    bool32_t                                    depthWriteEnable;
+    VkCompareOp                                 depthCompareOp;
+    bool32_t                                    depthBoundsEnable;          // optional (depth_bounds_test)
+    bool32_t                                    stencilTestEnable;
+    VkStencilOpState                            front;
+    VkStencilOpState                            back;
+} VkPipelineDsStateCreateInfo;
+
+typedef struct VkPipelineShaderStageCreateInfo_
+{
+    VkStructureType                             sType;      // Must be VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO
+    const void*                                 pNext;      // Pointer to next structure
+    VkPipelineShader                            shader;
+} VkPipelineShaderStageCreateInfo;
+
+typedef struct VkGraphicsPipelineCreateInfo_
+{
+    VkStructureType                             sType;      // Must be VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO
+    const void*                                 pNext;      // Pointer to next structure
+    VkPipelineCreateFlags                       flags;      // Pipeline creation flags
+    VkPipelineLayout                            layout;     // Interface layout of the pipeline
+} VkGraphicsPipelineCreateInfo;
+
+VkResult VKAPI vkCreateGraphicsPipeline(
+    VkDevice                                    device,
+    const VkGraphicsPipelineCreateInfo*         pCreateInfo,
+    VkPipeline*                                 pPipeline);
+
+VkResult VKAPI vkCreateGraphicsPipelineDerivative(
+    VkDevice                                    device,
+    const VkGraphicsPipelineCreateInfo*         pCreateInfo,
+    VkPipeline                                  basePipeline,
+    VkPipeline*                                 pPipeline);
+
+VkResult VKAPI vkCreateComputePipeline(
+    VkDevice                                    device,
+    const VkComputePipelineCreateInfo*          pCreateInfo,
+    VkPipeline*                                 pPipeline);
+----
+
+Storing and loading pipelines
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Extend pipeline tests to cases that create a pipeline, store it, recreate all resources (including device) and load previously stored pipeline. Rendering results should remain identical.
+
+[source,c]
+----
+VkResult VKAPI vkStorePipeline(
+    VkDevice                                    device,
+    VkPipeline                                  pipeline,
+    size_t*                                     pDataSize,
+    void*                                       pData);
+
+VkResult VKAPI vkLoadPipeline(
+    VkDevice                                    device,
+    size_t                                      dataSize,
+    const void*                                 pData,
+    VkPipeline*                                 pPipeline);
+
+VkResult VKAPI vkLoadPipelineDerivative(
+    VkDevice                                    device,
+    size_t                                      dataSize,
+    const void*                                 pData,
+    VkPipeline                                  basePipeline,
+    VkPipeline*                                 pPipeline);
+----
+
+Pipeline state
+~~~~~~~~~~~~~~
+
+Pipeline tests, as they need to verify rendering results, will provide a lot of coverage for pipeline state manipulation. In addition some corner-case tests are needed:
+
+ * Re-setting pipeline state bits before use
+ * Carrying / manipulating only part of state over draw calls
+ * Submitting command buffers that have only pipeline state manipulation calls (should be no-op)
+
+.Spec issues
+ * Does vkCmdBindPipeline invalidate other state bits?
+
+[source,c]
+----
+void VKAPI vkCmdBindPipeline(
+    VkCmdBuffer                                 cmdBuffer,
+    VkPipelineBindPoint                         pipelineBindPoint,
+    VkPipeline                                  pipeline);
+
+void VKAPI vkCmdBindDescriptorSets(
+    VkCmdBuffer                                 cmdBuffer,
+    VkPipelineBindPoint                         pipelineBindPoint,
+    uint32_t                                    firstSet,
+    uint32_t                                    setCount,
+    const VkDescriptorSet*                      pDescriptorSets,
+    uint32_t                                    dynamicOffsetCount,
+    const uint32_t*                             pDynamicOffsets);
+
+void VKAPI vkCmdBindIndexBuffer(
+    VkCmdBuffer                                 cmdBuffer,
+    VkBuffer                                    buffer,
+    VkDeviceSize                                offset,
+    VkIndexType                                 indexType);
+
+void VKAPI vkCmdBindVertexBuffers(
+    VkCmdBuffer                                 cmdBuffer,
+    uint32_t                                    startBinding,
+    uint32_t                                    bindingCount,
+    const VkBuffer*                             pBuffers,
+    const VkDeviceSize*                         pOffsets);
+----
+
+Samplers
+--------
+
+Sampler tests verify that sampler parameters are mapped to correct HW state. That will be verified by sampling various textures in certain configurations (as listed below). More exhaustive texture filtering verification will be done separately.
+
+ * All valid sampler state configurations
+ * Selected texture formats (RGBA8, FP16, integer textures)
+ * All texture types
+ * Mip-mapping with explicit and implicit LOD
+
+[source,c]
+----
+typedef struct VkSamplerCreateInfo_
+{
+    VkStructureType                             sType;          // Must be VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO
+    const void*                                 pNext;          // Pointer to next structure
+    VkTexFilter                                 magFilter;      // Filter mode for magnification
+    VkTexFilter                                 minFilter;      // Filter mode for minifiation
+    VkTexMipmapMode                             mipMode;        // Mipmap selection mode
+    VkTexAddress                                addressU;
+    VkTexAddress                                addressV;
+    VkTexAddress                                addressW;
+    float                                       mipLodBias;
+    uint32_t                                    maxAnisotropy;
+    VkCompareOp                                 compareOp;
+    float                                       minLod;
+    float                                       maxLod;
+    VkBorderColor                               borderColor;
+} VkSamplerCreateInfo;
+
+VkResult VKAPI vkCreateSampler(
+    VkDevice                                    device,
+    const VkSamplerCreateInfo*                  pCreateInfo,
+    VkSampler*                                  pSampler);
+----
+
+Dynamic state objects
+---------------------
+
+Pipeline tests will include coverage for most dynamic state object usage as some pipeline configurations need corresponding dynamic state objects. In addition there are couple of corner-cases worth exploring separately:
+
+ * Re-setting dynamic state bindings one or more times before first use
+ * Dynamic state object binding persistence over pipeline changes
+ * Large amounts of unique dynamic state objects in a command buffer, pass, or multipass
+
+[source,c]
+----
+typedef enum VkStateBindPoint_
+{
+    VK_STATE_BIND_POINT_VIEWPORT                            = 0x00000000,
+    VK_STATE_BIND_POINT_RASTER                              = 0x00000001,
+    VK_STATE_BIND_POINT_COLOR_BLEND                         = 0x00000002,
+    VK_STATE_BIND_POINT_DEPTH_STENCIL                       = 0x00000003,
+
+    VK_ENUM_RANGE(STATE_BIND_POINT, VIEWPORT, DEPTH_STENCIL)
+} VkStateBindPoint;
+
+void VKAPI vkCmdBindDynamicStateObject(
+    VkCmdBuffer                                 cmdBuffer,
+    VkStateBindPoint                            stateBindPoint,
+    VkDynamicStateObject                        dynamicState);
+
+typedef struct VkDynamicVpStateCreateInfo_
+{
+    VkStructureType                             sType;      // Must be VK_STRUCTURE_TYPE_DYNAMIC_VP_STATE_CREATE_INFO
+    const void*                                 pNext;      // Pointer to next structure
+    uint32_t                                    viewportAndScissorCount;  // number of entries in pViewports and pScissors
+    const VkViewport*                           pViewports;
+    const VkRect*                               pScissors;
+} VkDynamicVpStateCreateInfo;
+
+VkResult VKAPI vkCreateDynamicViewportState(
+    VkDevice                                    device,
+    const VkDynamicVpStateCreateInfo*           pCreateInfo,
+    VkDynamicVpState*                           pState);
+
+typedef struct VkDynamicRsStateCreateInfo_
+{
+    VkStructureType                             sType;      // Must be VK_STRUCTURE_TYPE_DYNAMIC_RS_STATE_CREATE_INFO
+    const void*                                 pNext;      // Pointer to next structure
+    float                                       depthBias;
+    float                                       depthBiasClamp;
+    float                                       slopeScaledDepthBias;
+    float                                       lineWidth;          // optional (GL45) - Width of lines
+} VkDynamicRsStateCreateInfo;
+
+VkResult VKAPI vkCreateDynamicRasterState(
+    VkDevice                                    device,
+    const VkDynamicRsStateCreateInfo*           pCreateInfo,
+    VkDynamicRsState*                           pState);
+
+typedef struct VkDynamicCbStateCreateInfo_
+{
+    VkStructureType                             sType;      // Must be VK_STRUCTURE_TYPE_DYNAMIC_CB_STATE_CREATE_INFO
+    const void*                                 pNext;      // Pointer to next structure
+    float                                       blendConst[4];
+} VkDynamicCbStateCreateInfo;
+
+VkResult VKAPI vkCreateDynamicColorBlendState(
+    VkDevice                                    device,
+    const VkDynamicCbStateCreateInfo*           pCreateInfo,
+    VkDynamicCbState*                           pState);
+
+typedef struct VkDynamicDsStateCreateInfo_
+{
+    VkStructureType                             sType;      // Must be VK_STRUCTURE_TYPE_DYNAMIC_DS_STATE_CREATE_INFO
+    const void*                                 pNext;      // Pointer to next structure
+    float                                       minDepth;               // optional (depth_bounds_test)
+    float                                       maxDepth;               // optional (depth_bounds_test)
+    uint32_t                                    stencilReadMask;
+    uint32_t                                    stencilWriteMask;
+    uint32_t                                    stencilFrontRef;
+    uint32_t                                    stencilBackRef;
+} VkDynamicDsStateCreateInfo;
+
+VkResult VKAPI vkCreateDynamicDepthStencilState(
+    VkDevice                                    device,
+    const VkDynamicDsStateCreateInfo*           pCreateInfo,
+    VkDynamicDsState*                           pState);
+----
+
+Command buffers
+---------------
+
+Tests for various rendering features will provide significant coverage for command buffer recording. Additional coverage will be needed for:
+
+ * Re-setting command buffers
+ * Very small (empty) and large command buffers
+ * Various optimize flags combined with various command buffer sizes and contents
+ ** Forcing optimize flags in other tests might be useful for finding cases that may break
+
+[source,c]
+----
+typedef struct VkCmdBufferCreateInfo_
+{
+    VkStructureType                             sType;      // Must be VK_STRUCTURE_TYPE_CMD_BUFFER_CREATE_INFO
+    const void*                                 pNext;      // Pointer to next structure
+    uint32_t                                    queueNodeIndex;
+    VkCmdBufferCreateFlags                      flags;      // Command buffer creation flags
+} VkCmdBufferCreateInfo;
+
+// Command buffer optimization flags
+typedef VkFlags VkCmdBufferOptimizeFlags;
+typedef enum VkCmdBufferOptimizeFlagBits_
+{
+    VK_CMD_BUFFER_OPTIMIZE_SMALL_BATCH_BIT                  = VK_BIT(0),
+    VK_CMD_BUFFER_OPTIMIZE_PIPELINE_SWITCH_BIT              = VK_BIT(1),
+    VK_CMD_BUFFER_OPTIMIZE_ONE_TIME_SUBMIT_BIT              = VK_BIT(2),
+    VK_CMD_BUFFER_OPTIMIZE_DESCRIPTOR_SET_SWITCH_BIT        = VK_BIT(3),
+} VkCmdBufferOptimizeFlagBits;
+
+typedef struct VkCmdBufferBeginInfo_
+{
+    VkStructureType                             sType;      // Must be VK_STRUCTURE_TYPE_CMD_BUFFER_BEGIN_INFO
+    const void*                                 pNext;      // Pointer to next structure
+
+    VkCmdBufferOptimizeFlags                    flags;      // Command buffer optimization flags
+} VkCmdBufferBeginInfo;
+
+VkResult VKAPI vkCreateCommandBuffer(
+    VkDevice                                    device,
+    const VkCmdBufferCreateInfo*                pCreateInfo,
+    VkCmdBuffer*                                pCmdBuffer);
+
+VkResult VKAPI vkBeginCommandBuffer(
+    VkCmdBuffer                                 cmdBuffer,
+    const VkCmdBufferBeginInfo*                 pBeginInfo);
+
+VkResult VKAPI vkEndCommandBuffer(
+    VkCmdBuffer                                 cmdBuffer);
+
+VkResult VKAPI vkResetCommandBuffer(
+    VkCmdBuffer                                 cmdBuffer);
+----
+
+Draw commands
+-------------
+
+Draw command tests verify that all draw parameters are respected (including vertex input state) and various draw call sizes work correctly. The tests won't however validate that all side effects of shader invocations happen as intended (covered by feature-specific tests) nor that primitive rasterization is fully correct (will be covered by separate targeted tests).
+
+[source,c]
+----
+void VKAPI vkCmdDraw(
+    VkCmdBuffer                                 cmdBuffer,
+    uint32_t                                    firstVertex,
+    uint32_t                                    vertexCount,
+    uint32_t                                    firstInstance,
+    uint32_t                                    instanceCount);
+
+void VKAPI vkCmdDrawIndexed(
+    VkCmdBuffer                                 cmdBuffer,
+    uint32_t                                    firstIndex,
+    uint32_t                                    indexCount,
+    int32_t                                     vertexOffset,
+    uint32_t                                    firstInstance,
+    uint32_t                                    instanceCount);
+
+void VKAPI vkCmdDrawIndirect(
+    VkCmdBuffer                                 cmdBuffer,
+    VkBuffer                                    buffer,
+    VkDeviceSize                                offset,
+    uint32_t                                    count,
+    uint32_t                                    stride);
+
+void VKAPI vkCmdDrawIndexedIndirect(
+    VkCmdBuffer                                 cmdBuffer,
+    VkBuffer                                    buffer,
+    VkDeviceSize                                offset,
+    uint32_t                                    count,
+    uint32_t                                    stride);
+----
+
+Compute
+-------
+
+Like draw tests, compute dispatch tests will validate that call parameters have desired effects. In addition compute tests need to verify that various dispatch parameters (number of work groups, invocation IDs) are passed correctly to the shader invocations.
+
+NOTE: Assuming that compute-specific shader features, such as shared memory access, is covered by SPIR-V tests.
+
+[source,c]
+----
+void VKAPI vkCmdDispatch(
+    VkCmdBuffer                                 cmdBuffer,
+    uint32_t                                    x,
+    uint32_t                                    y,
+    uint32_t                                    z);
+
+void VKAPI vkCmdDispatchIndirect(
+    VkCmdBuffer                                 cmdBuffer,
+    VkBuffer                                    buffer,
+    VkDeviceSize                                offset);
+----
+
+Copies and blits
+----------------
+
+Buffer copies
+~~~~~~~~~~~~~
+
+Buffer copy tests need to validate that copies and updates happen as expected for both simple and more complex cases:
+
+ * Whole-buffer, partial copies
+ * Small (1 byte) to very large copies and updates
+ * Copies between objects backed by same memory
+
+NOTE: GPU cache control tests need to verify copy source and destination visibility as well.
+
+.Spec issues
+ * Overlapping copies?
+ ** Simple overlap (same buffer)
+ ** Backed by same memory object
+
+[source,c]
+----
+typedef struct VkBufferCopy_
+{
+    VkDeviceSize                                srcOffset;              // Specified in bytes
+    VkDeviceSize                                destOffset;             // Specified in bytes
+    VkDeviceSize                                copySize;               // Specified in bytes
+} VkBufferCopy;
+
+void VKAPI vkCmdCopyBuffer(
+    VkCmdBuffer                                 cmdBuffer,
+    VkBuffer                                    srcBuffer,
+    VkBuffer                                    destBuffer,
+    uint32_t                                    regionCount,
+    const VkBufferCopy*                         pRegions);
+
+void VKAPI vkCmdUpdateBuffer(
+    VkCmdBuffer                                 cmdBuffer,
+    VkBuffer                                    destBuffer,
+    VkDeviceSize                                destOffset,
+    VkDeviceSize                                dataSize,
+    const uint32_t*                             pData);
+
+void VKAPI vkCmdFillBuffer(
+    VkCmdBuffer                                 cmdBuffer,
+    VkBuffer                                    destBuffer,
+    VkDeviceSize                                destOffset,
+    VkDeviceSize                                fillSize,
+    uint32_t                                    data);
+----
+
+Image copies
+~~~~~~~~~~~~
+
+.Spec issues
+ * What kind of copies are allowed? Blits?
+ * Copy is simply reinterpretation of data?
+ * Does blit unpack & pack data like in GL?
+ ** sRGB conversions
+
+[source,c]
+----
+typedef struct VkImageCopy_
+{
+    VkImageSubresource                          srcSubresource;
+    VkOffset3D                                  srcOffset;             // Specified in pixels for both compressed and uncompressed images
+    VkImageSubresource                          destSubresource;
+    VkOffset3D                                  destOffset;            // Specified in pixels for both compressed and uncompressed images
+    VkExtent3D                                  extent;                // Specified in pixels for both compressed and uncompressed images
+} VkImageCopy;
+
+void VKAPI vkCmdCopyImage(
+    VkCmdBuffer                                 cmdBuffer,
+    VkImage                                     srcImage,
+    VkImageLayout                               srcImageLayout,
+    VkImage                                     destImage,
+    VkImageLayout                               destImageLayout,
+    uint32_t                                    regionCount,
+    const VkImageCopy*                          pRegions);
+
+typedef struct VkImageBlit_
+{
+    VkImageSubresource                          srcSubresource;
+    VkOffset3D                                  srcOffset;              // Specified in pixels for both compressed and uncompressed images
+    VkExtent3D                                  srcExtent;              // Specified in pixels for both compressed and uncompressed images
+    VkImageSubresource                          destSubresource;
+    VkOffset3D                                  destOffset;             // Specified in pixels for both compressed and uncompressed images
+    VkExtent3D                                  destExtent;             // Specified in pixels for both compressed and uncompressed images
+} VkImageBlit;
+
+void VKAPI vkCmdBlitImage(
+    VkCmdBuffer                                 cmdBuffer,
+    VkImage                                     srcImage,
+    VkImageLayout                               srcImageLayout,
+    VkImage                                     destImage,
+    VkImageLayout                               destImageLayout,
+    uint32_t                                    regionCount,
+    const VkImageBlit*                          pRegions,
+    VkTexFilter                                 filter);
+----
+
+Copies between buffers and images
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+[source,c]
+----
+typedef struct VkBufferImageCopy_
+{
+    VkDeviceSize                                bufferOffset;           // Specified in bytes
+    VkImageSubresource                          imageSubresource;
+    VkOffset3D                                  imageOffset;            // Specified in pixels for both compressed and uncompressed images
+    VkExtent3D                                  imageExtent;            // Specified in pixels for both compressed and uncompressed images
+} VkBufferImageCopy;
+
+void VKAPI vkCmdCopyBufferToImage(
+    VkCmdBuffer                                 cmdBuffer,
+    VkBuffer                                    srcBuffer,
+    VkImage                                     destImage,
+    VkImageLayout                               destImageLayout,
+    uint32_t                                    regionCount,
+    const VkBufferImageCopy*                    pRegions);
+
+void VKAPI vkCmdCopyImageToBuffer(
+    VkCmdBuffer                                 cmdBuffer,
+    VkImage                                     srcImage,
+    VkImageLayout                               srcImageLayout,
+    VkBuffer                                    destBuffer,
+    uint32_t                                    regionCount,
+    const VkBufferImageCopy*                    pRegions);
+----
+
+Clearing images
+~~~~~~~~~~~~~~~
+
+[source,c]
+----
+void VKAPI vkCmdClearColorImage(
+    VkCmdBuffer                                 cmdBuffer,
+    VkImage                                     image,
+    VkImageLayout                               imageLayout,
+    const VkClearColor*                         pColor,
+    uint32_t                                    rangeCount,
+    const VkImageSubresourceRange*              pRanges);
+
+void VKAPI vkCmdClearDepthStencil(
+    VkCmdBuffer                                 cmdBuffer,
+    VkImage                                     image,
+    VkImageLayout                               imageLayout,
+    float                                       depth,
+    uint32_t                                    stencil,
+    uint32_t                                    rangeCount,
+    const VkImageSubresourceRange*              pRanges);
+----
+
+Multisample resolve
+~~~~~~~~~~~~~~~~~~~
+
+[source,c]
+----
+typedef struct VkImageResolve_
+{
+    VkImageSubresource                          srcSubresource;
+    VkOffset3D                                  srcOffset;
+    VkImageSubresource                          destSubresource;
+    VkOffset3D                                  destOffset;
+    VkExtent3D                                  extent;
+} VkImageResolve;
+
+void VKAPI vkCmdResolveImage(
+    VkCmdBuffer                                 cmdBuffer,
+    VkImage                                     srcImage,
+    VkImageLayout                               srcImageLayout,
+    VkImage                                     destImage,
+    VkImageLayout                               destImageLayout,
+    uint32_t                                    regionCount,
+    const VkImageResolve*                       pRegions);
+----
+
+GPU timestamps
+--------------
+
+[source,c]
+----
+typedef enum VkTimestampType_
+{
+    VK_TIMESTAMP_TYPE_TOP                                   = 0x00000000,
+    VK_TIMESTAMP_TYPE_BOTTOM                                = 0x00000001,
+
+    VK_ENUM_RANGE(TIMESTAMP_TYPE, TOP, BOTTOM)
+} VkTimestampType;
+
+void VKAPI vkCmdWriteTimestamp(
+    VkCmdBuffer                                 cmdBuffer,
+    VkTimestampType                             timestampType,
+    VkBuffer                                    destBuffer,
+    VkDeviceSize                                destOffset);
+----
+
+ * All timestamp types
+ * Various commands before and after timestamps
+ * Command buffers that only record timestamps
+ * Sanity check (to the extent possible) for timestamps
+ ** TOP >= BOTTOM
+
+.Spec issues
+ * How many bytes timestamp is? Do we need to support both 32-bit and 64-bit?
+ * destOffset probably needs to be aligned?
+ * TOP vs. BOTTOM not well specified
+
+Atomic counters
+---------------
+
+NOTE: Atomic counters are most likely not going into core API.
+
+[source,c]
+----
+void VKAPI vkCmdInitAtomicCounters(
+    VkCmdBuffer                                 cmdBuffer,
+    VkPipelineBindPoint                         pipelineBindPoint,
+    uint32_t                                    startCounter,
+    uint32_t                                    counterCount,
+    const uint32_t*                             pData);
+
+void VKAPI vkCmdLoadAtomicCounters(
+    VkCmdBuffer                                 cmdBuffer,
+    VkPipelineBindPoint                         pipelineBindPoint,
+    uint32_t                                    startCounter,
+    uint32_t                                    counterCount,
+    VkBuffer                                    srcBuffer,
+    VkDeviceSize                                srcOffset);
+
+void VKAPI vkCmdSaveAtomicCounters(
+    VkCmdBuffer                                 cmdBuffer,
+    VkPipelineBindPoint                         pipelineBindPoint,
+    uint32_t                                    startCounter,
+    uint32_t                                    counterCount,
+    VkBuffer                                    destBuffer,
+    VkDeviceSize                                destOffset);
+----
+
+Validation layer tests
+----------------------
+
+Validation layer tests exercise all relevant invalid API usage patterns and verify that correct return values and error messages are generated. In addition validation tests would try to load invalid SPIR-V binaries and verify that all generic SPIR-V, and Vulkan SPIR-V environment rules are checked.
+
+Android doesn't plan to ship validation layer as part of the system image so validation tests are not required by Android CTS and thus are of very low priority currently.
