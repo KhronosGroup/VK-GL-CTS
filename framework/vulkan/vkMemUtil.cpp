@@ -49,7 +49,7 @@ class SimpleAllocation : public Allocation
 {
 public:
 							SimpleAllocation	(const DeviceInterface& vk, VkDevice device, VkDeviceMemory memory);
-	virtual 				~SimpleAllocation	(void);
+	virtual					~SimpleAllocation	(void);
 
 private:
 	const DeviceInterface&	m_vk;

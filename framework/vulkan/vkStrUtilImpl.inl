@@ -1212,3 +1212,1173 @@ tcu::Format::Bitfield<32> getQueryPipelineStatisticFlagsStr (VkQueryPipelineStat
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
+
+std::ostream& operator<< (std::ostream& s, const VkOffset2D& value)
+{
+	s << "VkOffset2D = {\n";
+	s << "x = " << value.x << '\n';
+	s << "y = " << value.y << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkOffset3D& value)
+{
+	s << "VkOffset3D = {\n";
+	s << "x = " << value.x << '\n';
+	s << "y = " << value.y << '\n';
+	s << "z = " << value.z << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkExtent2D& value)
+{
+	s << "VkExtent2D = {\n";
+	s << "width = " << value.width << '\n';
+	s << "height = " << value.height << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkExtent3D& value)
+{
+	s << "VkExtent3D = {\n";
+	s << "width = " << value.width << '\n';
+	s << "height = " << value.height << '\n';
+	s << "depth = " << value.depth << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkViewport& value)
+{
+	s << "VkViewport = {\n";
+	s << "originX = " << value.originX << '\n';
+	s << "originY = " << value.originY << '\n';
+	s << "width = " << value.width << '\n';
+	s << "height = " << value.height << '\n';
+	s << "minDepth = " << value.minDepth << '\n';
+	s << "maxDepth = " << value.maxDepth << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkRect& value)
+{
+	s << "VkRect = {\n";
+	s << "offset = " << value.offset << '\n';
+	s << "extent = " << value.extent << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkChannelMapping& value)
+{
+	s << "VkChannelMapping = {\n";
+	s << "r = " << value.r << '\n';
+	s << "g = " << value.g << '\n';
+	s << "b = " << value.b << '\n';
+	s << "a = " << value.a << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceProperties& value)
+{
+	s << "VkPhysicalDeviceProperties = {\n";
+	s << "apiVersion = " << value.apiVersion << '\n';
+	s << "driverVersion = " << value.driverVersion << '\n';
+	s << "vendorId = " << value.vendorId << '\n';
+	s << "deviceId = " << value.deviceId << '\n';
+	s << "deviceType = " << value.deviceType << '\n';
+	s << "deviceName = " << (const char*)value.deviceName << '\n';
+	s << "maxInlineMemoryUpdateSize = " << value.maxInlineMemoryUpdateSize << '\n';
+	s << "maxBoundDescriptorSets = " << value.maxBoundDescriptorSets << '\n';
+	s << "maxThreadGroupSize = " << value.maxThreadGroupSize << '\n';
+	s << "timestampFrequency = " << value.timestampFrequency << '\n';
+	s << "multiColorAttachmentClears = " << value.multiColorAttachmentClears << '\n';
+	s << "maxDescriptorSets = " << value.maxDescriptorSets << '\n';
+	s << "maxViewports = " << value.maxViewports << '\n';
+	s << "maxColorAttachments = " << value.maxColorAttachments << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDevicePerformance& value)
+{
+	s << "VkPhysicalDevicePerformance = {\n";
+	s << "maxDeviceClock = " << value.maxDeviceClock << '\n';
+	s << "aluPerClock = " << value.aluPerClock << '\n';
+	s << "texPerClock = " << value.texPerClock << '\n';
+	s << "primsPerClock = " << value.primsPerClock << '\n';
+	s << "pixelsPerClock = " << value.pixelsPerClock << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceCompatibilityInfo& value)
+{
+	s << "VkPhysicalDeviceCompatibilityInfo = {\n";
+	s << "compatibilityFlags = " << getPhysicalDeviceCompatibilityFlagsStr(value.compatibilityFlags) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkExtensionProperties& value)
+{
+	s << "VkExtensionProperties = {\n";
+	s << "extName = " << (const char*)value.extName << '\n';
+	s << "version = " << value.version << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkApplicationInfo& value)
+{
+	s << "VkApplicationInfo = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "pAppName = " << value.pAppName << '\n';
+	s << "appVersion = " << value.appVersion << '\n';
+	s << "pEngineName = " << value.pEngineName << '\n';
+	s << "engineVersion = " << value.engineVersion << '\n';
+	s << "apiVersion = " << value.apiVersion << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkAllocCallbacks& value)
+{
+	s << "VkAllocCallbacks = {\n";
+	s << "pUserData = " << value.pUserData << '\n';
+	s << "pfnAlloc = " << value.pfnAlloc << '\n';
+	s << "pfnFree = " << value.pfnFree << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDeviceQueueCreateInfo& value)
+{
+	s << "VkDeviceQueueCreateInfo = {\n";
+	s << "queueNodeIndex = " << value.queueNodeIndex << '\n';
+	s << "queueCount = " << value.queueCount << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDeviceCreateInfo& value)
+{
+	s << "VkDeviceCreateInfo = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "queueRecordCount = " << value.queueRecordCount << '\n';
+	s << "pRequestedQueues = " << value.pRequestedQueues << '\n';
+	s << "extensionCount = " << value.extensionCount << '\n';
+	s << "ppEnabledExtensionNames = " << value.ppEnabledExtensionNames << '\n';
+	s << "flags = " << getDeviceCreateFlagsStr(value.flags) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkInstanceCreateInfo& value)
+{
+	s << "VkInstanceCreateInfo = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "pAppInfo = " << value.pAppInfo << '\n';
+	s << "pAllocCb = " << value.pAllocCb << '\n';
+	s << "extensionCount = " << value.extensionCount << '\n';
+	s << "ppEnabledExtensionNames = " << value.ppEnabledExtensionNames << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkLayerCreateInfo& value)
+{
+	s << "VkLayerCreateInfo = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "layerCount = " << value.layerCount << '\n';
+	s << "ppActiveLayerNames = " << value.ppActiveLayerNames << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceQueueProperties& value)
+{
+	s << "VkPhysicalDeviceQueueProperties = {\n";
+	s << "queueFlags = " << getQueueFlagsStr(value.queueFlags) << '\n';
+	s << "queueCount = " << value.queueCount << '\n';
+	s << "maxAtomicCounters = " << value.maxAtomicCounters << '\n';
+	s << "supportsTimestamps = " << value.supportsTimestamps << '\n';
+	s << "maxMemReferences = " << value.maxMemReferences << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceMemoryProperties& value)
+{
+	s << "VkPhysicalDeviceMemoryProperties = {\n";
+	s << "supportsMigration = " << value.supportsMigration << '\n';
+	s << "supportsPinning = " << value.supportsPinning << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkMemoryAllocInfo& value)
+{
+	s << "VkMemoryAllocInfo = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "allocationSize = " << value.allocationSize << '\n';
+	s << "memProps = " << getMemoryPropertyFlagsStr(value.memProps) << '\n';
+	s << "memPriority = " << value.memPriority << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkMemoryOpenInfo& value)
+{
+	s << "VkMemoryOpenInfo = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "sharedMem = " << value.sharedMem << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPeerMemoryOpenInfo& value)
+{
+	s << "VkPeerMemoryOpenInfo = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "originalMem = " << value.originalMem << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkMemoryRequirements& value)
+{
+	s << "VkMemoryRequirements = {\n";
+	s << "size = " << value.size << '\n';
+	s << "alignment = " << value.alignment << '\n';
+	s << "granularity = " << value.granularity << '\n';
+	s << "memPropsAllowed = " << getMemoryPropertyFlagsStr(value.memPropsAllowed) << '\n';
+	s << "memPropsRequired = " << getMemoryPropertyFlagsStr(value.memPropsRequired) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkFormatProperties& value)
+{
+	s << "VkFormatProperties = {\n";
+	s << "linearTilingFeatures = " << getFormatFeatureFlagsStr(value.linearTilingFeatures) << '\n';
+	s << "optimalTilingFeatures = " << getFormatFeatureFlagsStr(value.optimalTilingFeatures) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkBufferViewAttachInfo& value)
+{
+	s << "VkBufferViewAttachInfo = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "view = " << value.view << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkImageViewAttachInfo& value)
+{
+	s << "VkImageViewAttachInfo = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "view = " << value.view << '\n';
+	s << "layout = " << value.layout << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkUpdateSamplers& value)
+{
+	s << "VkUpdateSamplers = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "binding = " << value.binding << '\n';
+	s << "arrayIndex = " << value.arrayIndex << '\n';
+	s << "count = " << value.count << '\n';
+	s << "pSamplers = " << value.pSamplers << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSamplerImageViewInfo& value)
+{
+	s << "VkSamplerImageViewInfo = {\n";
+	s << "sampler = " << value.sampler << '\n';
+	s << "pImageView = " << value.pImageView << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkUpdateSamplerTextures& value)
+{
+	s << "VkUpdateSamplerTextures = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "binding = " << value.binding << '\n';
+	s << "arrayIndex = " << value.arrayIndex << '\n';
+	s << "count = " << value.count << '\n';
+	s << "pSamplerImageViews = " << value.pSamplerImageViews << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkUpdateImages& value)
+{
+	s << "VkUpdateImages = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "descriptorType = " << value.descriptorType << '\n';
+	s << "binding = " << value.binding << '\n';
+	s << "arrayIndex = " << value.arrayIndex << '\n';
+	s << "count = " << value.count << '\n';
+	s << "pImageViews = " << value.pImageViews << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkUpdateBuffers& value)
+{
+	s << "VkUpdateBuffers = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "descriptorType = " << value.descriptorType << '\n';
+	s << "binding = " << value.binding << '\n';
+	s << "arrayIndex = " << value.arrayIndex << '\n';
+	s << "count = " << value.count << '\n';
+	s << "pBufferViews = " << value.pBufferViews << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkUpdateAsCopy& value)
+{
+	s << "VkUpdateAsCopy = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "descriptorType = " << value.descriptorType << '\n';
+	s << "descriptorSet = " << value.descriptorSet << '\n';
+	s << "binding = " << value.binding << '\n';
+	s << "arrayElement = " << value.arrayElement << '\n';
+	s << "count = " << value.count << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkBufferCreateInfo& value)
+{
+	s << "VkBufferCreateInfo = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "size = " << value.size << '\n';
+	s << "usage = " << getBufferUsageFlagsStr(value.usage) << '\n';
+	s << "flags = " << getBufferCreateFlagsStr(value.flags) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkBufferViewCreateInfo& value)
+{
+	s << "VkBufferViewCreateInfo = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "buffer = " << value.buffer << '\n';
+	s << "viewType = " << value.viewType << '\n';
+	s << "format = " << value.format << '\n';
+	s << "offset = " << value.offset << '\n';
+	s << "range = " << value.range << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkImageSubresource& value)
+{
+	s << "VkImageSubresource = {\n";
+	s << "aspect = " << value.aspect << '\n';
+	s << "mipLevel = " << value.mipLevel << '\n';
+	s << "arraySlice = " << value.arraySlice << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkImageSubresourceRange& value)
+{
+	s << "VkImageSubresourceRange = {\n";
+	s << "aspect = " << value.aspect << '\n';
+	s << "baseMipLevel = " << value.baseMipLevel << '\n';
+	s << "mipLevels = " << value.mipLevels << '\n';
+	s << "baseArraySlice = " << value.baseArraySlice << '\n';
+	s << "arraySize = " << value.arraySize << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkMemoryBarrier& value)
+{
+	s << "VkMemoryBarrier = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "outputMask = " << getMemoryOutputFlagsStr(value.outputMask) << '\n';
+	s << "inputMask = " << getMemoryInputFlagsStr(value.inputMask) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkBufferMemoryBarrier& value)
+{
+	s << "VkBufferMemoryBarrier = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "outputMask = " << getMemoryOutputFlagsStr(value.outputMask) << '\n';
+	s << "inputMask = " << getMemoryInputFlagsStr(value.inputMask) << '\n';
+	s << "buffer = " << value.buffer << '\n';
+	s << "offset = " << value.offset << '\n';
+	s << "size = " << value.size << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkImageMemoryBarrier& value)
+{
+	s << "VkImageMemoryBarrier = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "outputMask = " << getMemoryOutputFlagsStr(value.outputMask) << '\n';
+	s << "inputMask = " << getMemoryInputFlagsStr(value.inputMask) << '\n';
+	s << "oldLayout = " << value.oldLayout << '\n';
+	s << "newLayout = " << value.newLayout << '\n';
+	s << "image = " << value.image << '\n';
+	s << "subresourceRange = " << value.subresourceRange << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkImageCreateInfo& value)
+{
+	s << "VkImageCreateInfo = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "imageType = " << value.imageType << '\n';
+	s << "format = " << value.format << '\n';
+	s << "extent = " << value.extent << '\n';
+	s << "mipLevels = " << value.mipLevels << '\n';
+	s << "arraySize = " << value.arraySize << '\n';
+	s << "samples = " << value.samples << '\n';
+	s << "tiling = " << value.tiling << '\n';
+	s << "usage = " << getImageUsageFlagsStr(value.usage) << '\n';
+	s << "flags = " << getImageCreateFlagsStr(value.flags) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPeerImageOpenInfo& value)
+{
+	s << "VkPeerImageOpenInfo = {\n";
+	s << "originalImage = " << value.originalImage << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSubresourceLayout& value)
+{
+	s << "VkSubresourceLayout = {\n";
+	s << "offset = " << value.offset << '\n';
+	s << "size = " << value.size << '\n';
+	s << "rowPitch = " << value.rowPitch << '\n';
+	s << "depthPitch = " << value.depthPitch << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkImageViewCreateInfo& value)
+{
+	s << "VkImageViewCreateInfo = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "image = " << value.image << '\n';
+	s << "viewType = " << value.viewType << '\n';
+	s << "format = " << value.format << '\n';
+	s << "channels = " << value.channels << '\n';
+	s << "subresourceRange = " << value.subresourceRange << '\n';
+	s << "minLod = " << value.minLod << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkColorAttachmentViewCreateInfo& value)
+{
+	s << "VkColorAttachmentViewCreateInfo = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "image = " << value.image << '\n';
+	s << "format = " << value.format << '\n';
+	s << "mipLevel = " << value.mipLevel << '\n';
+	s << "baseArraySlice = " << value.baseArraySlice << '\n';
+	s << "arraySize = " << value.arraySize << '\n';
+	s << "msaaResolveImage = " << value.msaaResolveImage << '\n';
+	s << "msaaResolveSubResource = " << value.msaaResolveSubResource << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDepthStencilViewCreateInfo& value)
+{
+	s << "VkDepthStencilViewCreateInfo = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "image = " << value.image << '\n';
+	s << "mipLevel = " << value.mipLevel << '\n';
+	s << "baseArraySlice = " << value.baseArraySlice << '\n';
+	s << "arraySize = " << value.arraySize << '\n';
+	s << "msaaResolveImage = " << value.msaaResolveImage << '\n';
+	s << "msaaResolveSubResource = " << value.msaaResolveSubResource << '\n';
+	s << "flags = " << getDepthStencilViewCreateFlagsStr(value.flags) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkColorAttachmentBindInfo& value)
+{
+	s << "VkColorAttachmentBindInfo = {\n";
+	s << "view = " << value.view << '\n';
+	s << "layout = " << value.layout << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDepthStencilBindInfo& value)
+{
+	s << "VkDepthStencilBindInfo = {\n";
+	s << "view = " << value.view << '\n';
+	s << "layout = " << value.layout << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkBufferCopy& value)
+{
+	s << "VkBufferCopy = {\n";
+	s << "srcOffset = " << value.srcOffset << '\n';
+	s << "destOffset = " << value.destOffset << '\n';
+	s << "copySize = " << value.copySize << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkImageMemoryBindInfo& value)
+{
+	s << "VkImageMemoryBindInfo = {\n";
+	s << "subresource = " << value.subresource << '\n';
+	s << "offset = " << value.offset << '\n';
+	s << "extent = " << value.extent << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkImageCopy& value)
+{
+	s << "VkImageCopy = {\n";
+	s << "srcSubresource = " << value.srcSubresource << '\n';
+	s << "srcOffset = " << value.srcOffset << '\n';
+	s << "destSubresource = " << value.destSubresource << '\n';
+	s << "destOffset = " << value.destOffset << '\n';
+	s << "extent = " << value.extent << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkImageBlit& value)
+{
+	s << "VkImageBlit = {\n";
+	s << "srcSubresource = " << value.srcSubresource << '\n';
+	s << "srcOffset = " << value.srcOffset << '\n';
+	s << "srcExtent = " << value.srcExtent << '\n';
+	s << "destSubresource = " << value.destSubresource << '\n';
+	s << "destOffset = " << value.destOffset << '\n';
+	s << "destExtent = " << value.destExtent << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkBufferImageCopy& value)
+{
+	s << "VkBufferImageCopy = {\n";
+	s << "bufferOffset = " << value.bufferOffset << '\n';
+	s << "imageSubresource = " << value.imageSubresource << '\n';
+	s << "imageOffset = " << value.imageOffset << '\n';
+	s << "imageExtent = " << value.imageExtent << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkImageResolve& value)
+{
+	s << "VkImageResolve = {\n";
+	s << "srcSubresource = " << value.srcSubresource << '\n';
+	s << "srcOffset = " << value.srcOffset << '\n';
+	s << "destSubresource = " << value.destSubresource << '\n';
+	s << "destOffset = " << value.destOffset << '\n';
+	s << "extent = " << value.extent << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkShaderCreateInfo& value)
+{
+	s << "VkShaderCreateInfo = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "codeSize = " << value.codeSize << '\n';
+	s << "pCode = " << value.pCode << '\n';
+	s << "flags = " << value.flags << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDescriptorSetLayoutBinding& value)
+{
+	s << "VkDescriptorSetLayoutBinding = {\n";
+	s << "descriptorType = " << value.descriptorType << '\n';
+	s << "count = " << value.count << '\n';
+	s << "stageFlags = " << getShaderStageFlagsStr(value.stageFlags) << '\n';
+	s << "pImmutableSamplers = " << value.pImmutableSamplers << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDescriptorSetLayoutCreateInfo& value)
+{
+	s << "VkDescriptorSetLayoutCreateInfo = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "count = " << value.count << '\n';
+	s << "pBinding = " << value.pBinding << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDescriptorTypeCount& value)
+{
+	s << "VkDescriptorTypeCount = {\n";
+	s << "type = " << value.type << '\n';
+	s << "count = " << value.count << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDescriptorPoolCreateInfo& value)
+{
+	s << "VkDescriptorPoolCreateInfo = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "count = " << value.count << '\n';
+	s << "pTypeCount = " << value.pTypeCount << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkLinkConstBuffer& value)
+{
+	s << "VkLinkConstBuffer = {\n";
+	s << "bufferId = " << value.bufferId << '\n';
+	s << "bufferSize = " << value.bufferSize << '\n';
+	s << "pBufferData = " << value.pBufferData << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSpecializationMapEntry& value)
+{
+	s << "VkSpecializationMapEntry = {\n";
+	s << "constantId = " << value.constantId << '\n';
+	s << "offset = " << value.offset << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSpecializationInfo& value)
+{
+	s << "VkSpecializationInfo = {\n";
+	s << "mapEntryCount = " << value.mapEntryCount << '\n';
+	s << "pMap = " << value.pMap << '\n';
+	s << "pData = " << value.pData << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPipelineShader& value)
+{
+	s << "VkPipelineShader = {\n";
+	s << "stage = " << value.stage << '\n';
+	s << "shader = " << value.shader << '\n';
+	s << "linkConstBufferCount = " << value.linkConstBufferCount << '\n';
+	s << "pLinkConstBufferInfo = " << value.pLinkConstBufferInfo << '\n';
+	s << "pSpecializationInfo = " << value.pSpecializationInfo << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkComputePipelineCreateInfo& value)
+{
+	s << "VkComputePipelineCreateInfo = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "cs = " << value.cs << '\n';
+	s << "flags = " << getPipelineCreateFlagsStr(value.flags) << '\n';
+	s << "layout = " << value.layout << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkVertexInputBindingDescription& value)
+{
+	s << "VkVertexInputBindingDescription = {\n";
+	s << "binding = " << value.binding << '\n';
+	s << "strideInBytes = " << value.strideInBytes << '\n';
+	s << "stepRate = " << value.stepRate << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkVertexInputAttributeDescription& value)
+{
+	s << "VkVertexInputAttributeDescription = {\n";
+	s << "location = " << value.location << '\n';
+	s << "binding = " << value.binding << '\n';
+	s << "format = " << value.format << '\n';
+	s << "offsetInBytes = " << value.offsetInBytes << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPipelineVertexInputCreateInfo& value)
+{
+	s << "VkPipelineVertexInputCreateInfo = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "bindingCount = " << value.bindingCount << '\n';
+	s << "pVertexBindingDescriptions = " << value.pVertexBindingDescriptions << '\n';
+	s << "attributeCount = " << value.attributeCount << '\n';
+	s << "pVertexAttributeDescriptions = " << value.pVertexAttributeDescriptions << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPipelineIaStateCreateInfo& value)
+{
+	s << "VkPipelineIaStateCreateInfo = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "topology = " << value.topology << '\n';
+	s << "disableVertexReuse = " << value.disableVertexReuse << '\n';
+	s << "primitiveRestartEnable = " << value.primitiveRestartEnable << '\n';
+	s << "primitiveRestartIndex = " << value.primitiveRestartIndex << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPipelineTessStateCreateInfo& value)
+{
+	s << "VkPipelineTessStateCreateInfo = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "patchControlPoints = " << value.patchControlPoints << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPipelineVpStateCreateInfo& value)
+{
+	s << "VkPipelineVpStateCreateInfo = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "viewportCount = " << value.viewportCount << '\n';
+	s << "clipOrigin = " << value.clipOrigin << '\n';
+	s << "depthMode = " << value.depthMode << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPipelineRsStateCreateInfo& value)
+{
+	s << "VkPipelineRsStateCreateInfo = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "depthClipEnable = " << value.depthClipEnable << '\n';
+	s << "rasterizerDiscardEnable = " << value.rasterizerDiscardEnable << '\n';
+	s << "programPointSize = " << value.programPointSize << '\n';
+	s << "pointOrigin = " << value.pointOrigin << '\n';
+	s << "provokingVertex = " << value.provokingVertex << '\n';
+	s << "fillMode = " << value.fillMode << '\n';
+	s << "cullMode = " << value.cullMode << '\n';
+	s << "frontFace = " << value.frontFace << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPipelineMsStateCreateInfo& value)
+{
+	s << "VkPipelineMsStateCreateInfo = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "samples = " << value.samples << '\n';
+	s << "multisampleEnable = " << value.multisampleEnable << '\n';
+	s << "sampleShadingEnable = " << value.sampleShadingEnable << '\n';
+	s << "minSampleShading = " << value.minSampleShading << '\n';
+	s << "sampleMask = " << value.sampleMask << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPipelineCbAttachmentState& value)
+{
+	s << "VkPipelineCbAttachmentState = {\n";
+	s << "blendEnable = " << value.blendEnable << '\n';
+	s << "format = " << value.format << '\n';
+	s << "srcBlendColor = " << value.srcBlendColor << '\n';
+	s << "destBlendColor = " << value.destBlendColor << '\n';
+	s << "blendOpColor = " << value.blendOpColor << '\n';
+	s << "srcBlendAlpha = " << value.srcBlendAlpha << '\n';
+	s << "destBlendAlpha = " << value.destBlendAlpha << '\n';
+	s << "blendOpAlpha = " << value.blendOpAlpha << '\n';
+	s << "channelWriteMask = " << getChannelFlagsStr(value.channelWriteMask) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPipelineCbStateCreateInfo& value)
+{
+	s << "VkPipelineCbStateCreateInfo = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "alphaToCoverageEnable = " << value.alphaToCoverageEnable << '\n';
+	s << "logicOpEnable = " << value.logicOpEnable << '\n';
+	s << "logicOp = " << value.logicOp << '\n';
+	s << "attachmentCount = " << value.attachmentCount << '\n';
+	s << "pAttachments = " << value.pAttachments << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkStencilOpState& value)
+{
+	s << "VkStencilOpState = {\n";
+	s << "stencilFailOp = " << value.stencilFailOp << '\n';
+	s << "stencilPassOp = " << value.stencilPassOp << '\n';
+	s << "stencilDepthFailOp = " << value.stencilDepthFailOp << '\n';
+	s << "stencilCompareOp = " << value.stencilCompareOp << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPipelineDsStateCreateInfo& value)
+{
+	s << "VkPipelineDsStateCreateInfo = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "format = " << value.format << '\n';
+	s << "depthTestEnable = " << value.depthTestEnable << '\n';
+	s << "depthWriteEnable = " << value.depthWriteEnable << '\n';
+	s << "depthCompareOp = " << value.depthCompareOp << '\n';
+	s << "depthBoundsEnable = " << value.depthBoundsEnable << '\n';
+	s << "stencilTestEnable = " << value.stencilTestEnable << '\n';
+	s << "front = " << value.front << '\n';
+	s << "back = " << value.back << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPipelineShaderStageCreateInfo& value)
+{
+	s << "VkPipelineShaderStageCreateInfo = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "shader = " << value.shader << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkGraphicsPipelineCreateInfo& value)
+{
+	s << "VkGraphicsPipelineCreateInfo = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "flags = " << getPipelineCreateFlagsStr(value.flags) << '\n';
+	s << "layout = " << value.layout << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPipelineLayoutCreateInfo& value)
+{
+	s << "VkPipelineLayoutCreateInfo = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "descriptorSetCount = " << value.descriptorSetCount << '\n';
+	s << "pSetLayouts = " << value.pSetLayouts << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSamplerCreateInfo& value)
+{
+	s << "VkSamplerCreateInfo = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "magFilter = " << value.magFilter << '\n';
+	s << "minFilter = " << value.minFilter << '\n';
+	s << "mipMode = " << value.mipMode << '\n';
+	s << "addressU = " << value.addressU << '\n';
+	s << "addressV = " << value.addressV << '\n';
+	s << "addressW = " << value.addressW << '\n';
+	s << "mipLodBias = " << value.mipLodBias << '\n';
+	s << "maxAnisotropy = " << value.maxAnisotropy << '\n';
+	s << "compareOp = " << value.compareOp << '\n';
+	s << "minLod = " << value.minLod << '\n';
+	s << "maxLod = " << value.maxLod << '\n';
+	s << "borderColor = " << value.borderColor << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDynamicVpStateCreateInfo& value)
+{
+	s << "VkDynamicVpStateCreateInfo = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "viewportAndScissorCount = " << value.viewportAndScissorCount << '\n';
+	s << "pViewports = " << value.pViewports << '\n';
+	s << "pScissors = " << value.pScissors << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDynamicRsStateCreateInfo& value)
+{
+	s << "VkDynamicRsStateCreateInfo = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "depthBias = " << value.depthBias << '\n';
+	s << "depthBiasClamp = " << value.depthBiasClamp << '\n';
+	s << "slopeScaledDepthBias = " << value.slopeScaledDepthBias << '\n';
+	s << "pointSize = " << value.pointSize << '\n';
+	s << "pointFadeThreshold = " << value.pointFadeThreshold << '\n';
+	s << "lineWidth = " << value.lineWidth << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDynamicCbStateCreateInfo& value)
+{
+	s << "VkDynamicCbStateCreateInfo = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "blendConst = " << tcu::formatArray(DE_ARRAY_BEGIN(value.blendConst), DE_ARRAY_END(value.blendConst)) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDynamicDsStateCreateInfo& value)
+{
+	s << "VkDynamicDsStateCreateInfo = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "minDepth = " << value.minDepth << '\n';
+	s << "maxDepth = " << value.maxDepth << '\n';
+	s << "stencilReadMask = " << value.stencilReadMask << '\n';
+	s << "stencilWriteMask = " << value.stencilWriteMask << '\n';
+	s << "stencilFrontRef = " << value.stencilFrontRef << '\n';
+	s << "stencilBackRef = " << value.stencilBackRef << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkCmdBufferCreateInfo& value)
+{
+	s << "VkCmdBufferCreateInfo = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "queueNodeIndex = " << value.queueNodeIndex << '\n';
+	s << "flags = " << value.flags << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkCmdBufferBeginInfo& value)
+{
+	s << "VkCmdBufferBeginInfo = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "flags = " << getCmdBufferOptimizeFlagsStr(value.flags) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkRenderPassBegin& value)
+{
+	s << "VkRenderPassBegin = {\n";
+	s << "renderPass = " << value.renderPass << '\n';
+	s << "framebuffer = " << value.framebuffer << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkCmdBufferGraphicsBeginInfo& value)
+{
+	s << "VkCmdBufferGraphicsBeginInfo = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "renderPassContinue = " << value.renderPassContinue << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkClearColor& value)
+{
+	s << "VkClearColor = {\n";
+	s << "color = " << value.color << '\n';
+	s << "useRawValue = " << value.useRawValue << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkRenderPassCreateInfo& value)
+{
+	s << "VkRenderPassCreateInfo = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "renderArea = " << value.renderArea << '\n';
+	s << "colorAttachmentCount = " << value.colorAttachmentCount << '\n';
+	s << "extent = " << value.extent << '\n';
+	s << "sampleCount = " << value.sampleCount << '\n';
+	s << "layers = " << value.layers << '\n';
+	s << "pColorFormats = " << value.pColorFormats << '\n';
+	s << "pColorLayouts = " << value.pColorLayouts << '\n';
+	s << "pColorLoadOps = " << value.pColorLoadOps << '\n';
+	s << "pColorStoreOps = " << value.pColorStoreOps << '\n';
+	s << "pColorLoadClearValues = " << value.pColorLoadClearValues << '\n';
+	s << "depthStencilFormat = " << value.depthStencilFormat << '\n';
+	s << "depthStencilLayout = " << value.depthStencilLayout << '\n';
+	s << "depthLoadOp = " << value.depthLoadOp << '\n';
+	s << "depthLoadClearValue = " << value.depthLoadClearValue << '\n';
+	s << "depthStoreOp = " << value.depthStoreOp << '\n';
+	s << "stencilLoadOp = " << value.stencilLoadOp << '\n';
+	s << "stencilLoadClearValue = " << value.stencilLoadClearValue << '\n';
+	s << "stencilStoreOp = " << value.stencilStoreOp << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkEventCreateInfo& value)
+{
+	s << "VkEventCreateInfo = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "flags = " << value.flags << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkFenceCreateInfo& value)
+{
+	s << "VkFenceCreateInfo = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "flags = " << getFenceCreateFlagsStr(value.flags) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSemaphoreCreateInfo& value)
+{
+	s << "VkSemaphoreCreateInfo = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "initialCount = " << value.initialCount << '\n';
+	s << "flags = " << getSemaphoreCreateFlagsStr(value.flags) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSemaphoreOpenInfo& value)
+{
+	s << "VkSemaphoreOpenInfo = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "sharedSemaphore = " << value.sharedSemaphore << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkQueryPoolCreateInfo& value)
+{
+	s << "VkQueryPoolCreateInfo = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "queryType = " << value.queryType << '\n';
+	s << "slots = " << value.slots << '\n';
+	s << "pipelineStatistics = " << getQueryPipelineStatisticFlagsStr(value.pipelineStatistics) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkFramebufferCreateInfo& value)
+{
+	s << "VkFramebufferCreateInfo = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "colorAttachmentCount = " << value.colorAttachmentCount << '\n';
+	s << "pColorAttachments = " << value.pColorAttachments << '\n';
+	s << "pDepthStencilAttachment = " << value.pDepthStencilAttachment << '\n';
+	s << "sampleCount = " << value.sampleCount << '\n';
+	s << "width = " << value.width << '\n';
+	s << "height = " << value.height << '\n';
+	s << "layers = " << value.layers << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDrawIndirectCmd& value)
+{
+	s << "VkDrawIndirectCmd = {\n";
+	s << "vertexCount = " << value.vertexCount << '\n';
+	s << "instanceCount = " << value.instanceCount << '\n';
+	s << "firstVertex = " << value.firstVertex << '\n';
+	s << "firstInstance = " << value.firstInstance << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDrawIndexedIndirectCmd& value)
+{
+	s << "VkDrawIndexedIndirectCmd = {\n";
+	s << "indexCount = " << value.indexCount << '\n';
+	s << "instanceCount = " << value.instanceCount << '\n';
+	s << "firstIndex = " << value.firstIndex << '\n';
+	s << "vertexOffset = " << value.vertexOffset << '\n';
+	s << "firstInstance = " << value.firstInstance << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDispatchIndirectCmd& value)
+{
+	s << "VkDispatchIndirectCmd = {\n";
+	s << "x = " << value.x << '\n';
+	s << "y = " << value.y << '\n';
+	s << "z = " << value.z << '\n';
+	s << '}';
+	return s;
+}
