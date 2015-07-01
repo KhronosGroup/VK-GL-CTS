@@ -26,6 +26,7 @@
 #include "tcuPlatform.hpp"
 #include "vkPlatform.hpp"
 #include "vkPrograms.hpp"
+#include "vkBinaryRegistry.hpp"
 #include "deUniquePtr.hpp"
 
 #include "vktInfo.hpp"
@@ -91,14 +92,28 @@ void TestCaseExecutor::init (tcu::TestCase* testCase, const std::string& casePat
 	m_progCollection.clear();
 	vktCase->initPrograms(sourceProgs);
 
-	// \todo [2015-03-13 pyry] Need abstraction for this - sometimes built on run-time, sometimes loaded from archive
 	for (vk::SourceCollection::Iterator progIter = sourceProgs.begin(); progIter != sourceProgs.end(); ++progIter)
 	{
-		const std::string&				name		= progIter.getName();
-		const glu::ProgramSources&		srcProg		= progIter.getProgram();
-		de::MovePtr<vk::ProgramBinary>	binProg		= de::MovePtr<vk::ProgramBinary>(vk::buildProgram(srcProg, vk::PROGRAM_FORMAT_SPIRV));
+		const vk::ProgramIdentifier		progId		(casePath, progIter.getName());
+		de::MovePtr<vk::ProgramBinary>	binProg;
 
-		m_progCollection.add(name, binProg);
+		// \todo [2015-07-01 pyry] Command line parameter to control cache vs. build order?
+
+		try
+		{
+			binProg	= de::MovePtr<vk::ProgramBinary>(vk::buildProgram(progIter.getProgram(), vk::PROGRAM_FORMAT_SPIRV));
+		}
+		catch (const tcu::NotSupportedError&)
+		{
+			// Try to load from cache
+			const vk::BinaryRegistryReader	registry	(m_context.getTestContext().getArchive(), "vulkan/prebuilt");
+
+			binProg = de::MovePtr<vk::ProgramBinary>(registry.loadProgram(progId));
+		}
+
+		TCU_CHECK_INTERNAL(binProg);
+
+		m_progCollection.add(progId.programName, binProg);
 	}
 
 	DE_ASSERT(!m_instance);

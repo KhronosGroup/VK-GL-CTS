@@ -18,7 +18,7 @@
  *
  *//*!
  * \file
- * \brief
+ * \brief Utility for pre-compiling source programs to SPIR-V
  *//*--------------------------------------------------------------------*/
 
 #include "tcuDefs.hpp"
@@ -29,8 +29,11 @@
 #include "tcuTestHierarchyIterator.hpp"
 #include "deUniquePtr.hpp"
 #include "vkPrograms.hpp"
+#include "vkBinaryRegistry.hpp"
 #include "vktTestCase.hpp"
 #include "vktTestPackage.hpp"
+#include "deUniquePtr.hpp"
+#include "deCommandLine.hpp"
 
 #include <iostream>
 
@@ -48,11 +51,35 @@ tcu::TestPackageRoot* createRoot (tcu::TestContext& testCtx)
 	return new tcu::TestPackageRoot(testCtx, children);
 }
 
-void buildPrograms (tcu::TestContext& testCtx)
+enum BuildMode
+{
+	BUILDMODE_BUILD = 0,
+	BUILDMODE_VERIFY,
+
+	BUILDMODE_LAST
+};
+
+struct BuildStats
+{
+	int		numSucceeded;
+	int		numFailed;
+
+	BuildStats (void)
+		: numSucceeded	(0)
+		, numFailed		(0)
+	{
+	}
+};
+
+BuildStats buildPrograms (tcu::TestContext& testCtx, const std::string& dstPath, BuildMode mode)
 {
 	const UniquePtr<tcu::TestPackageRoot>	root		(createRoot(testCtx));
 	tcu::DefaultHierarchyInflater			inflater	(testCtx);
 	tcu::TestHierarchyIterator				iterator	(*root, inflater, testCtx.getCommandLine());
+	const tcu::DirArchive					srcArchive	(dstPath.c_str());
+	UniquePtr<vk::BinaryRegistryWriter>		writer		(mode == BUILDMODE_BUILD	? new vk::BinaryRegistryWriter(dstPath)			: DE_NULL);
+	UniquePtr<vk::BinaryRegistryReader>		reader		(mode == BUILDMODE_VERIFY	? new vk::BinaryRegistryReader(srcArchive, "")	: DE_NULL);
+	BuildStats								stats;
 
 	while (iterator.getState() != tcu::TestHierarchyIterator::STATE_FINISHED)
 	{
@@ -60,46 +87,107 @@ void buildPrograms (tcu::TestContext& testCtx)
 			tcu::isTestNodeTypeExecutable(iterator.getNode()->getNodeType()))
 		{
 			const TestCase* const		testCase	= dynamic_cast<TestCase*>(iterator.getNode());
-			const string				path		= iterator.getNodePath();
+			const string				casePath	= iterator.getNodePath();
 			vk::SourceCollection		progs;
 
-			tcu::print("%s\n", path.c_str());
+			tcu::print("%s\n", casePath.c_str());
 
 			testCase->initPrograms(progs);
 
 			for (vk::SourceCollection::Iterator progIter = progs.begin(); progIter != progs.end(); ++progIter)
 			{
-				tcu::print("    %s\n", progIter.getName().c_str());
+				try
+				{
+					const vk::ProgramIdentifier			progId		(casePath, progIter.getName());
+					const UniquePtr<vk::ProgramBinary>	binary		(vk::buildProgram(progIter.getProgram(), vk::PROGRAM_FORMAT_SPIRV));
 
-				// \todo [2015-03-20 pyry] This is POC level, next steps:
-				//  - actually build programs
-				//  - eliminate duplicates
-				//  - store as binaries + name -> prog file map
+					if (mode == BUILDMODE_BUILD)
+						writer->storeProgram(progId, *binary);
+					else
+					{
+						DE_ASSERT(mode == BUILDMODE_VERIFY);
+
+						const UniquePtr<vk::ProgramBinary>	storedBinary	(reader->loadProgram(progId));
+
+						if (binary->getSize() != storedBinary->getSize())
+							throw tcu::Exception("Binary size doesn't match");
+
+						if (deMemCmp(binary->getBinary(), storedBinary->getBinary(), binary->getSize()))
+							throw tcu::Exception("Binary contents don't match");
+					}
+
+					tcu::print("  OK: %s\n", progIter.getName().c_str());
+					stats.numSucceeded += 1;
+				}
+				catch (const std::exception& e)
+				{
+					tcu::print("  ERROR: %s: %s\n", progIter.getName().c_str(), e.what());
+					stats.numFailed += 1;
+				}
 			}
 		}
 
 		iterator.next();
 	}
+
+	return stats;
 }
 
 } // vkt
 
+namespace opt
+{
+
+DE_DECLARE_COMMAND_LINE_OPT(DstPath,	std::string);
+DE_DECLARE_COMMAND_LINE_OPT(Mode,		vkt::BuildMode);
+
+} // opt
+
+void registerOptions (de::cmdline::Parser& parser)
+{
+	using de::cmdline::Option;
+	using de::cmdline::NamedValue;
+
+	static const NamedValue<vkt::BuildMode> s_modes[] =
+	{
+		{ "build",	vkt::BUILDMODE_BUILD	},
+		{ "verify",	vkt::BUILDMODE_VERIFY	}
+	};
+
+	parser << Option<opt::DstPath>	("d", "dst-path",	"Destination path",	".")
+		   << Option<opt::Mode>		("m", "mode",		"Build mode",		s_modes,	"build");
+}
+
 int main (int argc, const char* argv[])
 {
+	de::cmdline::CommandLine	cmdLine;
+
+	{
+		de::cmdline::Parser		parser;
+		registerOptions(parser);
+		if (!parser.parse(argc, argv, &cmdLine, std::cerr))
+		{
+			parser.help(std::cout);
+			return -1;
+		}
+	}
+
 	try
 	{
-		const tcu::CommandLine	cmdLine		(argc, argv);
-		tcu::DirArchive			archive		(".");
-		tcu::TestLog			log			(cmdLine.getLogFileName(), cmdLine.getLogFlags());
+		const tcu::CommandLine	deqpCmdLine		("unused");
+		tcu::DirArchive			archive			(".");
+		tcu::TestLog			log				(deqpCmdLine.getLogFileName(), deqpCmdLine.getLogFlags());
 		tcu::Platform			platform;
-		tcu::TestContext		testCtx		(platform, archive, log, cmdLine, DE_NULL);
+		tcu::TestContext		testCtx			(platform, archive, log, deqpCmdLine, DE_NULL);
 
-		vkt::buildPrograms(testCtx);
+		const vkt::BuildStats	stats			= vkt::buildPrograms(testCtx, cmdLine.getOption<opt::DstPath>(), cmdLine.getOption<opt::Mode>());
+
+		tcu::print("DONE: %d passed, %d failed\n", stats.numSucceeded, stats.numFailed);
+
+		return stats.numFailed == 0 ? 0 : -1;
 	}
 	catch (const std::exception& e)
 	{
 		tcu::die("%s", e.what());
 	}
-
-	return 0;
 }

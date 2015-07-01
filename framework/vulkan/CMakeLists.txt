@@ -19,6 +19,8 @@ set(VKUTIL_SRCS
 	vkDeviceUtil.hpp
 	vkGlslToSpirV.cpp
 	vkGlslToSpirV.hpp
+	vkBinaryRegistry.cpp
+	vkBinaryRegistry.hpp
 	)
 
 # \note Code interfacing with glslang needs to include third-party headers
