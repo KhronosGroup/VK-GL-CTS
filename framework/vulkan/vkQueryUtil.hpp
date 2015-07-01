@@ -52,7 +52,9 @@ struct QUERY_CLASS##Traits<QUERY_PARAM>	\
 }
 
 VK_DECLARE_QUERY_TRAITS(PhysicalDeviceInfo, VK_PHYSICAL_DEVICE_INFO_TYPE_PROPERTIES,		VkPhysicalDeviceProperties,			SINGLE);
+VK_DECLARE_QUERY_TRAITS(PhysicalDeviceInfo, VK_PHYSICAL_DEVICE_INFO_TYPE_PERFORMANCE,		VkPhysicalDevicePerformance,		SINGLE);
 VK_DECLARE_QUERY_TRAITS(PhysicalDeviceInfo,	VK_PHYSICAL_DEVICE_INFO_TYPE_QUEUE_PROPERTIES,	VkPhysicalDeviceQueueProperties,	MULTIPLE);
+VK_DECLARE_QUERY_TRAITS(PhysicalDeviceInfo,	VK_PHYSICAL_DEVICE_INFO_TYPE_MEMORY_PROPERTIES,	VkPhysicalDeviceMemoryProperties,	MULTIPLE);
 
 template<VkPhysicalDeviceInfoType InfoType>
 std::vector<typename PhysicalDeviceInfoTraits<InfoType>::Type> getPhysicalDeviceInfoImpl (const DeviceInterface& vk, VkPhysicalDevice physicalDevice)
@@ -138,6 +140,8 @@ std::vector<typename ObjectInfoTraits<InfoType>::Type> getObjectInfo (typename d
 
 using querydetails::getPhysicalDeviceInfo;
 using querydetails::getObjectInfo;
+
+std::vector<VkPhysicalDevice>	enumeratePhysicalDevices	(const PlatformInterface& vk, VkInstance instance);
 
 } // vk
 

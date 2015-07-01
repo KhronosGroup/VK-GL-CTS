@@ -23,4 +23,26 @@
 
 #include "vkQueryUtil.hpp"
 
-DE_EMPTY_CPP_FILE
+namespace vk
+{
+
+std::vector<VkPhysicalDevice> enumeratePhysicalDevices (const PlatformInterface& vk, VkInstance instance)
+{
+	deUint32						numDevices	= 0;
+	std::vector<VkPhysicalDevice>	devices;
+
+	VK_CHECK(vk.enumeratePhysicalDevices(instance, &numDevices, DE_NULL));
+
+	if (numDevices > 0)
+	{
+		devices.resize(numDevices);
+		VK_CHECK(vk.enumeratePhysicalDevices(instance, &numDevices, &devices[0]));
+
+		if ((size_t)numDevices != devices.size())
+			TCU_FAIL("Returned device count changed between queries");
+	}
+
+	return devices;
+}
+
+} // vk
