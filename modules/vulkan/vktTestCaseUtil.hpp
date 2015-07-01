@@ -32,7 +32,7 @@ namespace vkt
 template<typename Arg0>
 struct NoPrograms1
 {
-	void	init	(vk::ProgramCollection<glu::ProgramSources>&, const Arg0&) const {}
+	void	init	(vk::ProgramCollection<glu::ProgramSources>&, Arg0) const {}
 };
 
 template<typename Instance, typename Arg0, typename Programs = NoPrograms1<Arg0> >
@@ -79,7 +79,7 @@ template<typename Arg0>
 class FunctionInstance1 : public TestInstance
 {
 public:
-	typedef tcu::TestStatus	(*Function)	(Context& context, const Arg0& arg0);
+	typedef tcu::TestStatus	(*Function)	(Context& context, Arg0 arg0);
 
 	struct Args
 	{
@@ -119,7 +119,7 @@ template<typename Arg0>
 class FunctionPrograms1
 {
 public:
-	typedef void	(*Function)		(vk::ProgramCollection<glu::ProgramSources>& dst, const Arg0& arg0);
+	typedef void	(*Function)		(vk::ProgramCollection<glu::ProgramSources>& dst, Arg0 arg0);
 
 					FunctionPrograms1	(Function func)
 						: m_func(func)
@@ -159,7 +159,7 @@ TestCase* createFunctionCase (tcu::TestContext&								testCtx,
 							  const std::string&							name,
 							  const std::string&							desc,
 							  typename FunctionInstance1<Arg0>::Function	testFunction,
-							  const Arg0&									arg0)
+							  Arg0											arg0)
 {
 	return new InstanceFactory1<FunctionInstance1<Arg0>, typename FunctionInstance1<Arg0>::Args>(
 		testCtx, type, name, desc, typename FunctionInstance1<Arg0>::Args(testFunction, arg0));
@@ -172,7 +172,7 @@ TestCase* createFunctionCaseWithPrograms (tcu::TestContext&								testCtx,
 										  const std::string&							desc,
 										  typename FunctionPrograms1<Arg0>::Function	initPrograms,
 										  typename FunctionInstance1<Arg0>::Function	testFunction,
-										  const Arg0&									arg0)
+										  Arg0											arg0)
 {
 	return new InstanceFactory1<FunctionInstance1<Arg0>, typename FunctionInstance1<Arg0>::Args, FunctionPrograms1<Arg0> >(
 		testCtx, type, name, desc, FunctionPrograms1<Arg0>(initPrograms), typename FunctionInstance1<Arg0>::Args(testFunction, arg0));
@@ -202,7 +202,7 @@ void addFunctionCase (tcu::TestCaseGroup*							group,
 					  const std::string&							name,
 					  const std::string&							desc,
 					  typename FunctionInstance1<Arg0>::Function	testFunc,
-					  const Arg0&									arg0)
+					  Arg0											arg0)
 {
 	group->addChild(createFunctionCase(group->getTestContext(), tcu::NODETYPE_SELF_VALIDATE, name, desc, testFunc, arg0));
 }
@@ -213,7 +213,7 @@ void addFunctionCase (tcu::TestCaseGroup*							group,
 					  const std::string&							name,
 					  const std::string&							desc,
 					  typename FunctionInstance1<Arg0>::Function	testFunc,
-					  const Arg0&									arg0)
+					  Arg0											arg0)
 {
 	group->addChild(createFunctionCase(group->getTestContext(), type, name, desc, testFunc, arg0));
 }
@@ -224,7 +224,7 @@ void addFunctionCaseWithPrograms (tcu::TestCaseGroup*							group,
 								  const std::string&							desc,
 								  typename FunctionPrograms1<Arg0>::Function	initPrograms,
 								  typename FunctionInstance1<Arg0>::Function	testFunc,
-								  const Arg0&									arg0)
+								  Arg0											arg0)
 {
 	group->addChild(createFunctionCase(group->getTestContext(), tcu::NODETYPE_SELF_VALIDATE, name, desc, initPrograms, testFunc, arg0));
 }
@@ -236,7 +236,7 @@ void addFunctionCaseWithPrograms (tcu::TestCaseGroup*							group,
 								  const std::string&							desc,
 								  typename FunctionPrograms1<Arg0>::Function	initPrograms,
 								  typename FunctionInstance1<Arg0>::Function	testFunc,
-								  const Arg0&									arg0)
+								  Arg0											arg0)
 {
 	group->addChild(createFunctionCase(group->getTestContext(), type, name, desc, initPrograms, testFunc, arg0));
 }
