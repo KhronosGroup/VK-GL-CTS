@@ -392,6 +392,9 @@ def writeStrUtilProto (api, filename):
 		yield ""
 		for line in indentLines(["tcu::Format::Bitfield<32>\tget%sStr\t(%s value);" % (bitfield.name[2:], bitfield.name) for bitfield in api.bitfields]):
 			yield line
+		yield ""
+		for line in indentLines(["std::ostream&\toperator<<\t(std::ostream& s, const %s& value);" % (s.name) for s in api.structs]):
+			yield line
 
 	writeInlFile(filename, INL_HEADER, makeStrUtilProto())
 
@@ -422,6 +425,33 @@ def writeStrUtilImpl (api, filename):
 			yield "\t};"
 			yield "\treturn tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));"
 			yield "}"
+
+		bitfieldTypeNames = set([bitfield.name for bitfield in api.bitfields])
+
+		for struct in api.structs:
+			yield ""
+			yield "std::ostream& operator<< (std::ostream& s, const %s& value)" % struct.name
+			yield "{"
+			yield "\ts << \"%s = {\\n\";" % struct.name
+			for member in struct.members:
+				memberName	= member.name
+				valFmt		= None
+				if member.type in bitfieldTypeNames:
+					valFmt = "get%sStr(value.%s)" % (member.type[2:], member.name)
+				elif '[' in member.name:
+					baseName = member.name[:member.name.find('[')]
+					if baseName == "extName" or baseName == "deviceName":
+						valFmt = "(const char*)value.%s" % baseName
+					else:
+						valFmt = "tcu::formatArray(DE_ARRAY_BEGIN(value.%s), DE_ARRAY_END(value.%s))" % (baseName, baseName)
+					memberName = baseName
+				else:
+					valFmt = "value.%s" % member.name
+				yield ("\ts << \"%s = \" << " % memberName) + valFmt + " << '\\n';"
+			yield "\ts << '}';"
+			yield "\treturn s;"
+			yield "}"
+
 
 	writeInlFile(filename, INL_HEADER, makeStrUtilImpl())
 

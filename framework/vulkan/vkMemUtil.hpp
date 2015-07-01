@@ -33,7 +33,7 @@ namespace vk
 class Allocation
 {
 public:
-	virtual 				~Allocation	(void);
+	virtual					~Allocation	(void);
 
 	VkDeviceMemory			getMemory	(void) const { return m_memory;	}
 	VkDeviceSize			getOffset	(void) const { return m_offset;	}

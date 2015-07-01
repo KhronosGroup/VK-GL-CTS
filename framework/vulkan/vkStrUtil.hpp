@@ -39,6 +39,12 @@ inline std::ostream& operator<< (std::ostream& s, const ApiVersion& version)
 	return s << version.major << "." << version.minor << "." << version.patch;
 }
 
+inline std::ostream& operator<< (std::ostream& s, const VkClearColorValue& value)
+{
+	return s << "{ floatColor = " << tcu::formatArray(DE_ARRAY_BEGIN(value.floatColor), DE_ARRAY_END(value.floatColor))
+			 << ", rawColor = " << tcu::formatArray(tcu::Format::HexIterator<deUint32>(DE_ARRAY_BEGIN(value.rawColor)), tcu::Format::HexIterator<deUint32>(DE_ARRAY_END(value.rawColor))) << " }";
+}
+
 } // vk
 
 #endif // _VKSTRUTIL_HPP
