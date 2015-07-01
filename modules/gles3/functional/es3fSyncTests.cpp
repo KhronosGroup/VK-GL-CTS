@@ -282,17 +282,17 @@ void SyncTests::init (void)
 	// Fence sync tests.
 
 	addChild(new FenceSyncCase(m_context, "wait_sync_smalldraw",	"",	10,		COMMAND_WAIT_SYNC,	0, GL_TIMEOUT_IGNORED,	0));
-	addChild(new FenceSyncCase(m_context, "wait_sync_largedraw",	"",	100000,	COMMAND_WAIT_SYNC,	0, GL_TIMEOUT_IGNORED,	0));
+	addChild(new FenceSyncCase(m_context, "wait_sync_largedraw",	"",	10000,	COMMAND_WAIT_SYNC,	0, GL_TIMEOUT_IGNORED,	0));
 
 	addChild(new FenceSyncCase(m_context, "client_wait_sync_smalldraw",			"",	10,		COMMAND_CLIENT_WAIT_SYNC,	0, 0,	0));
-	addChild(new FenceSyncCase(m_context, "client_wait_sync_largedraw",			"",	100000,	COMMAND_CLIENT_WAIT_SYNC,	0, 0,	0));
+	addChild(new FenceSyncCase(m_context, "client_wait_sync_largedraw",			"",	10000,	COMMAND_CLIENT_WAIT_SYNC,	0, 0,	0));
 	addChild(new FenceSyncCase(m_context, "client_wait_sync_timeout_smalldraw",	"",	10,		COMMAND_CLIENT_WAIT_SYNC,	0, 10,	0));
-	addChild(new FenceSyncCase(m_context, "client_wait_sync_timeout_largedraw",	"",	100000,	COMMAND_CLIENT_WAIT_SYNC,	0, 10,	0));
+	addChild(new FenceSyncCase(m_context, "client_wait_sync_timeout_largedraw",	"",	10000,	COMMAND_CLIENT_WAIT_SYNC,	0, 10,	0));
 
-	addChild(new FenceSyncCase(m_context, "client_wait_sync_flush_auto",	"",	100000, COMMAND_CLIENT_WAIT_SYNC,	GL_SYNC_FLUSH_COMMANDS_BIT, 0,	0));
-	addChild(new FenceSyncCase(m_context, "client_wait_sync_flush_manual",	"",	100000, COMMAND_CLIENT_WAIT_SYNC,	0,							0,	CASE_FLUSH_BEFORE_WAIT));
-	addChild(new FenceSyncCase(m_context, "client_wait_sync_noflush",		"",	100000, COMMAND_CLIENT_WAIT_SYNC,	0,							0,	0));
-	addChild(new FenceSyncCase(m_context, "client_wait_sync_finish",		"",	100000, COMMAND_CLIENT_WAIT_SYNC,	0,							0,	CASE_FINISH_BEFORE_WAIT));
+	addChild(new FenceSyncCase(m_context, "client_wait_sync_flush_auto",	"",	10000, COMMAND_CLIENT_WAIT_SYNC,	GL_SYNC_FLUSH_COMMANDS_BIT, 0,	0));
+	addChild(new FenceSyncCase(m_context, "client_wait_sync_flush_manual",	"",	10000, COMMAND_CLIENT_WAIT_SYNC,	0,							0,	CASE_FLUSH_BEFORE_WAIT));
+	addChild(new FenceSyncCase(m_context, "client_wait_sync_noflush",		"",	10000, COMMAND_CLIENT_WAIT_SYNC,	0,							0,	0));
+	addChild(new FenceSyncCase(m_context, "client_wait_sync_finish",		"",	10000, COMMAND_CLIENT_WAIT_SYNC,	0,							0,	CASE_FINISH_BEFORE_WAIT));
 }
 
 } // Functional
