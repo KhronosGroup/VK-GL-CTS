@@ -79,3 +79,13 @@ dEQP-GLES3.functional.shaders.builtin_functions.precision.atan2.highp_*
 # Bug 22173211
 dEQP-GLES3.functional.texture.size.cube.256x256_rgba4444
 dEQP-GLES3.functional.texture.size.cube.512x512_rgba4444
+
+# Bug 22209622
+dEQP-GLES3.functional.shaders.texture_functions.textureoffset.isampler3d_fragment
+dEQP-GLES3.functional.shaders.texture_functions.textureoffset.sampler3d_fixed_fragment
+dEQP-GLES3.functional.shaders.texture_functions.textureoffset.sampler3d_float_fragment
+dEQP-GLES3.functional.shaders.texture_functions.textureoffset.usampler3d_fragment
+dEQP-GLES3.functional.shaders.texture_functions.textureprojoffset.isampler3d_fragment
+dEQP-GLES3.functional.shaders.texture_functions.textureprojoffset.sampler3d_fixed_fragment
+dEQP-GLES3.functional.shaders.texture_functions.textureprojoffset.sampler3d_float_fragment
+dEQP-GLES3.functional.shaders.texture_functions.textureprojoffset.usampler3d_fragment
