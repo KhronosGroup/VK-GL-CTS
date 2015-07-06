@@ -213,7 +213,7 @@ SurfaceAccess::SurfaceAccess (const SurfaceAccess& parent, int x, int y, int wid
 
 // 1D lookup LOD computation.
 
-inline float computeLodFromDerivates (LodMode mode, float dudx, float dudy)
+float computeLodFromDerivates (LodMode mode, float dudx, float dudy)
 {
 	float p = 0.0f;
 	switch (mode)
@@ -244,7 +244,7 @@ static float computeNonProjectedTriLod (LodMode mode, const tcu::IVec2& dstSize,
 
 // 2D lookup LOD computation.
 
-inline float computeLodFromDerivates (LodMode mode, float dudx, float dvdx, float dudy, float dvdy)
+float computeLodFromDerivates (LodMode mode, float dudx, float dvdx, float dudy, float dvdy)
 {
 	float p = 0.0f;
 	switch (mode)
@@ -284,7 +284,7 @@ static float computeNonProjectedTriLod (LodMode mode, const tcu::IVec2& dstSize,
 
 // 3D lookup LOD computation.
 
-inline float computeLodFromDerivates (LodMode mode, float dudx, float dvdx, float dwdx, float dudy, float dvdy, float dwdy)
+float computeLodFromDerivates (LodMode mode, float dudx, float dvdx, float dwdx, float dudy, float dvdy, float dwdy)
 {
 	float p = 0.0f;
 	switch (mode)

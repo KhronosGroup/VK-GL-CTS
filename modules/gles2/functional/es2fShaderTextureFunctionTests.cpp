@@ -24,6 +24,7 @@
 #include "es2fShaderTextureFunctionTests.hpp"
 #include "glsShaderRenderCase.hpp"
 #include "glsShaderLibrary.hpp"
+#include "glsTextureTestUtil.hpp"
 #include "gluTexture.hpp"
 #include "gluTextureUtil.hpp"
 #include "tcuTextureUtil.hpp"
@@ -180,12 +181,6 @@ using tcu::Vec4;
 using tcu::IVec2;
 using tcu::IVec3;
 using tcu::IVec4;
-
-inline float computeLodFromDerivates (float dudx, float dvdx, float dudy, float dvdy)
-{
-	float p = de::max(deFloatSqrt(dudx*dudx + dvdx*dvdx), deFloatSqrt(dudy*dudy + dvdy*dvdy));
-	return deFloatLog2(p);
-}
 
 typedef void (*TexEvalFunc) (gls::ShaderEvalContext& c, const TexLookupParams& lookupParams);
 
@@ -356,7 +351,7 @@ void ShaderTextureFunctionCase::initTexture (void)
 			// Compute LOD.
 			float dudx = (m_lookupSpec.maxCoord[0]-m_lookupSpec.minCoord[0])*proj*(float)m_textureSpec.width	/ (float)viewportSize[0];
 			float dvdy = (m_lookupSpec.maxCoord[1]-m_lookupSpec.minCoord[1])*proj*(float)m_textureSpec.height	/ (float)viewportSize[1];
-			m_lookupParams.lod = computeLodFromDerivates(dudx, 0.0f, 0.0f, dvdy);
+			m_lookupParams.lod = gls::TextureTestUtil::computeLodFromDerivates(gls::TextureTestUtil::LODMODE_EXACT, dudx, 0.0f, 0.0f, dvdy);
 
 			// Append to texture list.
 			m_textures.push_back(gls::TextureBinding(m_texture2D, m_textureSpec.sampler));
@@ -402,7 +397,7 @@ void ShaderTextureFunctionCase::initTexture (void)
 			float						dudx	= (c10.s - c00.s)*(float)m_textureSpec.width	/ (float)viewportSize[0];
 			float						dvdy	= (c01.t - c00.t)*(float)m_textureSpec.height	/ (float)viewportSize[1];
 
-			m_lookupParams.lod = computeLodFromDerivates(dudx, 0.0f, 0.0f, dvdy);
+			m_lookupParams.lod = gls::TextureTestUtil::computeLodFromDerivates(gls::TextureTestUtil::LODMODE_EXACT, dudx, 0.0f, 0.0f, dvdy);
 
 			m_textures.push_back(gls::TextureBinding(m_textureCube, m_textureSpec.sampler));
 			break;
