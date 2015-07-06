@@ -37364,7 +37364,6 @@ dEQP-GLES3.functional.rasterization.fbo.texture_2d.fill_rules.clipped_partly
 dEQP-GLES3.functional.rasterization.fbo.texture_2d.fill_rules.projected
 dEQP-GLES3.functional.rasterization.fbo.texture_2d.interpolation.triangles
 dEQP-GLES3.functional.rasterization.fbo.texture_2d.interpolation.lines
-dEQP-GLES3.functional.rasterization.fbo.texture_2d.interpolation.lines_wide
 dEQP-GLES3.functional.rasterization.fbo.rbo_singlesample.primitives.triangles
 dEQP-GLES3.functional.rasterization.fbo.rbo_singlesample.primitives.lines
 dEQP-GLES3.functional.rasterization.fbo.rbo_singlesample.primitives.lines_wide
@@ -37376,7 +37375,6 @@ dEQP-GLES3.functional.rasterization.fbo.rbo_singlesample.fill_rules.clipped_part
 dEQP-GLES3.functional.rasterization.fbo.rbo_singlesample.fill_rules.projected
 dEQP-GLES3.functional.rasterization.fbo.rbo_singlesample.interpolation.triangles
 dEQP-GLES3.functional.rasterization.fbo.rbo_singlesample.interpolation.lines
-dEQP-GLES3.functional.rasterization.fbo.rbo_singlesample.interpolation.lines_wide
 dEQP-GLES3.functional.rasterization.fbo.rbo_multisample_4.primitives.triangles
 dEQP-GLES3.functional.rasterization.fbo.rbo_multisample_4.primitives.lines
 dEQP-GLES3.functional.rasterization.fbo.rbo_multisample_4.primitives.lines_wide
