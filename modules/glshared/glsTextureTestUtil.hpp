@@ -355,6 +355,10 @@ void			sampleTexture				(const SurfaceAccess& dst, const tcu::TextureCubeArrayVi
 void			sampleTexture				(const SurfaceAccess& dst, const tcu::Texture1DView&		src, const float* texCoord, const ReferenceParams& params);
 void			sampleTexture				(const SurfaceAccess& dst, const tcu::Texture1DArrayView&	src, const float* texCoord, const ReferenceParams& params);
 
+float			computeLodFromDerivates		(LodMode mode, float dudx, float dudy);
+float			computeLodFromDerivates		(LodMode mode, float dudx, float dvdx, float dudy, float dvdy);
+float			computeLodFromDerivates		(LodMode mode, float dudx, float dvdx, float dwdx, float dudy, float dvdy, float dwdy);
+
 void			computeQuadTexCoord1D			(std::vector<float>& dst, float left, float right);
 void			computeQuadTexCoord1DArray		(std::vector<float>& dst, int layerNdx, float left, float right);
 void			computeQuadTexCoord2D			(std::vector<float>& dst, const tcu::Vec2& bottomLeft, const tcu::Vec2& topRight);
