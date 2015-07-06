@@ -344,8 +344,6 @@ struct ReferenceParams : public RenderParams
 	int					maxLevel;
 };
 
-void			clear						(const SurfaceAccess& dst, const tcu::Vec4& color);
-
 // Similar to sampleTexture() except uses texelFetch.
 void			fetchTexture				(const SurfaceAccess& dst, const tcu::ConstPixelBufferAccess& src, const float* texCoord, const tcu::Vec4& colorScale, const tcu::Vec4& colorBias);
 
