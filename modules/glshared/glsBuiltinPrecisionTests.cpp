@@ -2304,7 +2304,7 @@ protected:
 			else
 			{
 				// |x| * 2^-10, slightly larger than 2 ULP at x == pi
-				return deLdExp(deAbs(DE_PI_DOUBLE), -10);
+				return deLdExp(deAbs(arg), -10);
 			}
 		}
 		else
