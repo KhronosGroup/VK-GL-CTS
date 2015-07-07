@@ -56,6 +56,7 @@
 #include "teglNativeColorMappingTests.hpp"
 #include "teglNativeCoordMappingTests.hpp"
 #include "teglResizeTests.hpp"
+#include "teglBufferAgeTests.hpp"
 
 namespace deqp
 {
@@ -124,6 +125,7 @@ public:
 		addChild(new NativeCoordMappingTests	(m_eglTestCtx));
 		addChild(new ReusableSyncTests			(m_eglTestCtx));
 		addChild(new ResizeTests				(m_eglTestCtx));
+		addChild(new BufferAgeTests				(m_eglTestCtx));
 	}
 };
 

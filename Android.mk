@@ -246,6 +246,7 @@ LOCAL_SRC_FILES := \
 	framework/referencerenderer/rrVertexPacket.cpp \
 	modules/egl/teglAndroidUtil.cpp \
 	modules/egl/teglApiCase.cpp \
+	modules/egl/teglBufferAgeTests.cpp \
 	modules/egl/teglChooseConfigReference.cpp \
 	modules/egl/teglChooseConfigTests.cpp \
 	modules/egl/teglClientExtensionTests.cpp \
