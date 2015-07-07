@@ -2346,6 +2346,31 @@ ExprP<float> cos (const ExprP<float>& x) { return app<Cos>(x); }
 
 DEFINE_DERIVED_FLOAT1(Tan, tan, x, sin(x) * (constant(1.0f) / cos(x)));
 
+class ASin : public CFloatFunc1
+{
+public:
+					ASin		(void) : CFloatFunc1("asin", deAsin) {}
+
+protected:
+	double			precision	(const EvalContext& ctx, double, double x) const
+	{
+		if (!de::inBounds(x, -1.0, 1.0))
+			return TCU_NAN;
+
+		if (ctx.floatPrecision == glu::PRECISION_HIGHP)
+		{
+			// Absolute error of 2^-11
+			return deLdExp(1.0, -11);
+		}
+		else
+		{
+			// Absolute error of 2^-8
+			return deLdExp(1.0, -8);
+		}
+
+	}
+};
+
 class ArcTrigFunc : public CFloatFunc1
 {
 public:
@@ -2383,14 +2408,6 @@ protected:
 	const double	m_precision;
 	const Interval	m_domain;
 	const Interval	m_codomain;
-};
-
-class ASin : public ArcTrigFunc
-{
-public:
-	ASin (void) : ArcTrigFunc("asin", deAsin, 4096.0,
-							  Interval(-1.0, 1.0),
-							  Interval(-DE_PI_DOUBLE * 0.5, DE_PI_DOUBLE * 0.5)) {}
 };
 
 class ACos : public ArcTrigFunc
