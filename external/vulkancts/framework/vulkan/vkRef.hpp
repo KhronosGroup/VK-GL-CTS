@@ -207,6 +207,12 @@ inline void destroyObject<VkDeviceT> (const RefData<VkDeviceT>& ref)
 	ref.vk->destroyDevice(ref.object);
 }
 
+template<>
+inline void destroyObject<VkDeviceMemoryT> (const RefData<VkDeviceMemoryT>& ref)
+{
+	ref.vk->freeMemory(ref.device, ref.object);
+}
+
 template<typename T>
 class RefBase
 {

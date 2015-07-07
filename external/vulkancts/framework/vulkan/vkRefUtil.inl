@@ -3,6 +3,7 @@
  */
 Move<VkInstanceT>				createInstance						(const PlatformInterface& vk, const VkInstanceCreateInfo* pCreateInfo);
 Move<VkDeviceT>					createDevice						(const DeviceInterface& vk, VkPhysicalDevice physicalDevice, const VkDeviceCreateInfo* pCreateInfo);
+Move<VkDeviceMemoryT>			allocMemory							(const DeviceInterface& vk, VkDevice device, const VkMemoryAllocInfo* pAllocInfo);
 Move<VkFenceT>					createFence							(const DeviceInterface& vk, VkDevice device, const VkFenceCreateInfo* pCreateInfo);
 Move<VkSemaphoreT>				createSemaphore						(const DeviceInterface& vk, VkDevice device, const VkSemaphoreCreateInfo* pCreateInfo);
 Move<VkEventT>					createEvent							(const DeviceInterface& vk, VkDevice device, const VkEventCreateInfo* pCreateInfo);
