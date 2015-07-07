@@ -60,3 +60,8 @@ dEQP-GLES31.functional.texture.gather.basic.cube.depth32f.size_pot.compare_less.
 
 # Bug 21816937
 dEQP-GLES31.functional.shaders.builtin_functions.precision.reflect.highp_compute.vec4
+
+# Bug 21668605
+dEQP-GLES31.functional.shaders.builtin_functions.precision.sin.mediump_*
+dEQP-GLES31.functional.shaders.builtin_functions.precision.cos.mediump_*
+dEQP-GLES31.functional.shaders.builtin_functions.precision.tan.mediump_*
