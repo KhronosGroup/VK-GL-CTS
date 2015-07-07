@@ -802,11 +802,9 @@ dEQP-GLES3.functional.rasterization.flatshading.line_loop_wide
 dEQP-GLES3.functional.rasterization.fbo.texture_2d.primitives.lines
 dEQP-GLES3.functional.rasterization.fbo.texture_2d.primitives.lines_wide
 dEQP-GLES3.functional.rasterization.fbo.texture_2d.interpolation.lines
-dEQP-GLES3.functional.rasterization.fbo.texture_2d.interpolation.lines_wide
 dEQP-GLES3.functional.rasterization.fbo.rbo_singlesample.primitives.lines
 dEQP-GLES3.functional.rasterization.fbo.rbo_singlesample.primitives.lines_wide
 dEQP-GLES3.functional.rasterization.fbo.rbo_singlesample.interpolation.lines
-dEQP-GLES3.functional.rasterization.fbo.rbo_singlesample.interpolation.lines_wide
 dEQP-GLES3.functional.rasterization.fbo.rbo_multisample_4.primitives.lines
 dEQP-GLES3.functional.rasterization.fbo.rbo_multisample_4.primitives.lines_wide
 dEQP-GLES3.functional.rasterization.fbo.rbo_multisample_4.interpolation.lines
