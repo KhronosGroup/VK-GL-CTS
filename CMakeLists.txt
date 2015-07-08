@@ -189,7 +189,7 @@ include_directories(
 	framework/randomshaders
 	framework/egl
 	framework/egl/wrapper
-	framework/vulkan
+	external/vulkancts/framework/vulkan
 	)
 
 if (DE_OS_IS_ANDROID OR DE_OS_IS_IOS)
@@ -272,12 +272,14 @@ macro (add_data_file MODULE_NAME SRC_FILE DST_FILE)
 endmacro (add_data_file)
 
 add_subdirectory(framework)
+add_subdirectory(external/vulkancts/framework/vulkan)
 
 if (DE_COMPILER_IS_MSC)
 	add_compile_options(/bigobj) # Required by glsBuiltinPrecisionTests.cpp
 endif ()
 
 add_subdirectory(modules)
+add_subdirectory(external/vulkancts/modules/vulkan)
 
 # Single-binary targets
 if (DE_OS_IS_ANDROID)
