@@ -498,7 +498,7 @@ class ConstructorFunction:
 def getConstructorFunctions (api):
 	funcs = []
 	for function in api.functions:
-		if function.name[:8] == "vkCreate":
+		if function.name[:8] == "vkCreate" or function.name == "vkAllocMemory":
 			# \todo [pyry] Rather hacky
 			iface = None
 			if function.getType() == Function.TYPE_PLATFORM:

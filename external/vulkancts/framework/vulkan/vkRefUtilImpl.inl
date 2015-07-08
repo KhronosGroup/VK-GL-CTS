@@ -15,6 +15,13 @@ Move<VkDeviceT> createDevice (const DeviceInterface& vk, VkPhysicalDevice physic
 	return Move<VkDeviceT>(vk, check<VkDeviceT>(object));
 }
 
+Move<VkDeviceMemoryT> allocMemory (const DeviceInterface& vk, VkDevice device, const VkMemoryAllocInfo* pAllocInfo)
+{
+	VkDeviceMemory object = 0;
+	VK_CHECK(vk.allocMemory(device, pAllocInfo, &object));
+	return Move<VkDeviceMemoryT>(vk, device, check<VkDeviceMemoryT>(object));
+}
+
 Move<VkFenceT> createFence (const DeviceInterface& vk, VkDevice device, const VkFenceCreateInfo* pCreateInfo)
 {
 	VkFence object = 0;
