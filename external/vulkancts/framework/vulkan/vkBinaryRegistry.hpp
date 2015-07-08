@@ -76,7 +76,7 @@ public:
 
 private:
 	const tcu::Archive&	m_archive;
-	const std::string&	m_srcPath;
+	const std::string	m_srcPath;
 };
 
 class BinaryRegistryWriter
