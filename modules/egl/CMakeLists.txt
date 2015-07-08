@@ -41,6 +41,8 @@ set(DEQP_EGL_SRCS
 	teglInfoTests.hpp
 	teglNegativeApiTests.cpp
 	teglNegativeApiTests.hpp
+	teglPartialUpdateTests.cpp
+	teglPartialUpdateTests.hpp
 	teglRenderCase.cpp
 	teglRenderCase.hpp
 	teglRenderTests.cpp

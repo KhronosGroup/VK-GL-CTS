@@ -1,2 +1,3 @@
 # Feature Request 20761474
 dEQP-EGL.functional.buffer_age.*
+dEQP-EGL.functional.partial_update.*
