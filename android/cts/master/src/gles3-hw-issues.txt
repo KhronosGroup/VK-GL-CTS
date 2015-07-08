@@ -868,3 +868,8 @@ dEQP-GLES3.functional.shaders.derivate.dfdy.nicest.fbo_msaa*
 dEQP-GLES3.functional.shaders.derivate.fwidth.fbo_msaa*
 dEQP-GLES3.functional.shaders.derivate.fwidth.fastest.fbo_msaa*
 dEQP-GLES3.functional.shaders.derivate.fwidth.nicest.fbo_msaa*
+
+# Bug 21668605
+dEQP-GLES3.functional.shaders.builtin_functions.precision.sin.mediump_*
+dEQP-GLES3.functional.shaders.builtin_functions.precision.cos.mediump_*
+dEQP-GLES3.functional.shaders.builtin_functions.precision.tan.mediump_*
