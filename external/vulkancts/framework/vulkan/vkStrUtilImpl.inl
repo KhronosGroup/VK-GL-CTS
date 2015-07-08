@@ -1,507 +1,141 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  */
-template<> const char*	getTypeName<VkObjectT>				(void) { return "VkObject";					}
-template<> const char*	getTypeName<VkInstanceT>			(void) { return "VkInstance";				}
-template<> const char*	getTypeName<VkPhysicalDeviceT>		(void) { return "VkPhysicalDevice";			}
-template<> const char*	getTypeName<VkDeviceT>				(void) { return "VkDevice";					}
-template<> const char*	getTypeName<VkQueueT>				(void) { return "VkQueue";					}
-template<> const char*	getTypeName<VkCmdBufferT>			(void) { return "VkCmdBuffer";				}
-template<> const char*	getTypeName<VkNonDispatchableT>		(void) { return "VkNonDispatchable";		}
-template<> const char*	getTypeName<VkDeviceMemoryT>		(void) { return "VkDeviceMemory";			}
-template<> const char*	getTypeName<VkBufferT>				(void) { return "VkBuffer";					}
-template<> const char*	getTypeName<VkBufferViewT>			(void) { return "VkBufferView";				}
-template<> const char*	getTypeName<VkImageT>				(void) { return "VkImage";					}
-template<> const char*	getTypeName<VkImageViewT>			(void) { return "VkImageView";				}
-template<> const char*	getTypeName<VkColorAttachmentViewT>	(void) { return "VkColorAttachmentView";	}
-template<> const char*	getTypeName<VkDepthStencilViewT>	(void) { return "VkDepthStencilView";		}
-template<> const char*	getTypeName<VkShaderT>				(void) { return "VkShader";					}
-template<> const char*	getTypeName<VkPipelineT>			(void) { return "VkPipeline";				}
-template<> const char*	getTypeName<VkPipelineLayoutT>		(void) { return "VkPipelineLayout";			}
-template<> const char*	getTypeName<VkSamplerT>				(void) { return "VkSampler";				}
-template<> const char*	getTypeName<VkDescriptorSetT>		(void) { return "VkDescriptorSet";			}
-template<> const char*	getTypeName<VkDescriptorSetLayoutT>	(void) { return "VkDescriptorSetLayout";	}
-template<> const char*	getTypeName<VkDescriptorPoolT>		(void) { return "VkDescriptorPool";			}
-template<> const char*	getTypeName<VkDynamicStateObjectT>	(void) { return "VkDynamicStateObject";		}
-template<> const char*	getTypeName<VkDynamicVpStateT>		(void) { return "VkDynamicVpState";			}
-template<> const char*	getTypeName<VkDynamicRsStateT>		(void) { return "VkDynamicRsState";			}
-template<> const char*	getTypeName<VkDynamicCbStateT>		(void) { return "VkDynamicCbState";			}
-template<> const char*	getTypeName<VkDynamicDsStateT>		(void) { return "VkDynamicDsState";			}
-template<> const char*	getTypeName<VkFenceT>				(void) { return "VkFence";					}
-template<> const char*	getTypeName<VkSemaphoreT>			(void) { return "VkSemaphore";				}
-template<> const char*	getTypeName<VkEventT>				(void) { return "VkEvent";					}
-template<> const char*	getTypeName<VkQueryPoolT>			(void) { return "VkQueryPool";				}
-template<> const char*	getTypeName<VkFramebufferT>			(void) { return "VkFramebuffer";			}
-template<> const char*	getTypeName<VkRenderPassT>			(void) { return "VkRenderPass";				}
+template<> const char*	getTypeName<VkInstance>					(void) { return "VkInstance";					}
+template<> const char*	getTypeName<VkPhysicalDevice>			(void) { return "VkPhysicalDevice";				}
+template<> const char*	getTypeName<VkDevice>					(void) { return "VkDevice";						}
+template<> const char*	getTypeName<VkQueue>					(void) { return "VkQueue";						}
+template<> const char*	getTypeName<VkCmdBuffer>				(void) { return "VkCmdBuffer";					}
+template<> const char*	getTypeName<VkFence>					(void) { return "VkFence";						}
+template<> const char*	getTypeName<VkDeviceMemory>				(void) { return "VkDeviceMemory";				}
+template<> const char*	getTypeName<VkBuffer>					(void) { return "VkBuffer";						}
+template<> const char*	getTypeName<VkImage>					(void) { return "VkImage";						}
+template<> const char*	getTypeName<VkSemaphore>				(void) { return "VkSemaphore";					}
+template<> const char*	getTypeName<VkEvent>					(void) { return "VkEvent";						}
+template<> const char*	getTypeName<VkQueryPool>				(void) { return "VkQueryPool";					}
+template<> const char*	getTypeName<VkBufferView>				(void) { return "VkBufferView";					}
+template<> const char*	getTypeName<VkImageView>				(void) { return "VkImageView";					}
+template<> const char*	getTypeName<VkAttachmentView>			(void) { return "VkAttachmentView";				}
+template<> const char*	getTypeName<VkShaderModule>				(void) { return "VkShaderModule";				}
+template<> const char*	getTypeName<VkShader>					(void) { return "VkShader";						}
+template<> const char*	getTypeName<VkPipelineCache>			(void) { return "VkPipelineCache";				}
+template<> const char*	getTypeName<VkPipelineLayout>			(void) { return "VkPipelineLayout";				}
+template<> const char*	getTypeName<VkRenderPass>				(void) { return "VkRenderPass";					}
+template<> const char*	getTypeName<VkPipeline>					(void) { return "VkPipeline";					}
+template<> const char*	getTypeName<VkDescriptorSetLayout>		(void) { return "VkDescriptorSetLayout";		}
+template<> const char*	getTypeName<VkSampler>					(void) { return "VkSampler";					}
+template<> const char*	getTypeName<VkDescriptorPool>			(void) { return "VkDescriptorPool";				}
+template<> const char*	getTypeName<VkDescriptorSet>			(void) { return "VkDescriptorSet";				}
+template<> const char*	getTypeName<VkDynamicViewportState>		(void) { return "VkDynamicViewportState";		}
+template<> const char*	getTypeName<VkDynamicRasterState>		(void) { return "VkDynamicRasterState";			}
+template<> const char*	getTypeName<VkDynamicColorBlendState>	(void) { return "VkDynamicColorBlendState";		}
+template<> const char*	getTypeName<VkDynamicDepthStencilState>	(void) { return "VkDynamicDepthStencilState";	}
+template<> const char*	getTypeName<VkFramebuffer>				(void) { return "VkFramebuffer";				}
+template<> const char*	getTypeName<VkCmdPool>					(void) { return "VkCmdPool";					}
 
-const char* getMemoryPriorityName (VkMemoryPriority value)
+const char* getResultName (VkResult value)
 {
 	switch (value)
 	{
-		case VK_MEMORY_PRIORITY_UNUSED:		return "VK_MEMORY_PRIORITY_UNUSED";
-		case VK_MEMORY_PRIORITY_VERY_LOW:	return "VK_MEMORY_PRIORITY_VERY_LOW";
-		case VK_MEMORY_PRIORITY_LOW:		return "VK_MEMORY_PRIORITY_LOW";
-		case VK_MEMORY_PRIORITY_NORMAL:		return "VK_MEMORY_PRIORITY_NORMAL";
-		case VK_MEMORY_PRIORITY_HIGH:		return "VK_MEMORY_PRIORITY_HIGH";
-		case VK_MEMORY_PRIORITY_VERY_HIGH:	return "VK_MEMORY_PRIORITY_VERY_HIGH";
-		default:							return DE_NULL;
-	}
-}
-
-const char* getImageLayoutName (VkImageLayout value)
-{
-	switch (value)
-	{
-		case VK_IMAGE_LAYOUT_UNDEFINED:							return "VK_IMAGE_LAYOUT_UNDEFINED";
-		case VK_IMAGE_LAYOUT_GENERAL:							return "VK_IMAGE_LAYOUT_GENERAL";
-		case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:			return "VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL";
-		case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:	return "VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL";
-		case VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL:	return "VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL";
-		case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:			return "VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL";
-		case VK_IMAGE_LAYOUT_CLEAR_OPTIMAL:						return "VK_IMAGE_LAYOUT_CLEAR_OPTIMAL";
-		case VK_IMAGE_LAYOUT_TRANSFER_SOURCE_OPTIMAL:			return "VK_IMAGE_LAYOUT_TRANSFER_SOURCE_OPTIMAL";
-		case VK_IMAGE_LAYOUT_TRANSFER_DESTINATION_OPTIMAL:		return "VK_IMAGE_LAYOUT_TRANSFER_DESTINATION_OPTIMAL";
-		default:												return DE_NULL;
-	}
-}
-
-const char* getPipeEventName (VkPipeEvent value)
-{
-	switch (value)
-	{
-		case VK_PIPE_EVENT_TOP_OF_PIPE:							return "VK_PIPE_EVENT_TOP_OF_PIPE";
-		case VK_PIPE_EVENT_VERTEX_PROCESSING_COMPLETE:			return "VK_PIPE_EVENT_VERTEX_PROCESSING_COMPLETE";
-		case VK_PIPE_EVENT_LOCAL_FRAGMENT_PROCESSING_COMPLETE:	return "VK_PIPE_EVENT_LOCAL_FRAGMENT_PROCESSING_COMPLETE";
-		case VK_PIPE_EVENT_FRAGMENT_PROCESSING_COMPLETE:		return "VK_PIPE_EVENT_FRAGMENT_PROCESSING_COMPLETE";
-		case VK_PIPE_EVENT_GRAPHICS_PIPELINE_COMPLETE:			return "VK_PIPE_EVENT_GRAPHICS_PIPELINE_COMPLETE";
-		case VK_PIPE_EVENT_COMPUTE_PIPELINE_COMPLETE:			return "VK_PIPE_EVENT_COMPUTE_PIPELINE_COMPLETE";
-		case VK_PIPE_EVENT_TRANSFER_COMPLETE:					return "VK_PIPE_EVENT_TRANSFER_COMPLETE";
-		case VK_PIPE_EVENT_COMMANDS_COMPLETE:					return "VK_PIPE_EVENT_COMMANDS_COMPLETE";
-		default:												return DE_NULL;
-	}
-}
-
-const char* getWaitEventName (VkWaitEvent value)
-{
-	switch (value)
-	{
-		case VK_WAIT_EVENT_TOP_OF_PIPE:				return "VK_WAIT_EVENT_TOP_OF_PIPE";
-		case VK_WAIT_EVENT_BEFORE_RASTERIZATION:	return "VK_WAIT_EVENT_BEFORE_RASTERIZATION";
-		default:									return DE_NULL;
-	}
-}
-
-const char* getAttachmentLoadOpName (VkAttachmentLoadOp value)
-{
-	switch (value)
-	{
-		case VK_ATTACHMENT_LOAD_OP_LOAD:		return "VK_ATTACHMENT_LOAD_OP_LOAD";
-		case VK_ATTACHMENT_LOAD_OP_CLEAR:		return "VK_ATTACHMENT_LOAD_OP_CLEAR";
-		case VK_ATTACHMENT_LOAD_OP_DONT_CARE:	return "VK_ATTACHMENT_LOAD_OP_DONT_CARE";
-		default:								return DE_NULL;
-	}
-}
-
-const char* getAttachmentStoreOpName (VkAttachmentStoreOp value)
-{
-	switch (value)
-	{
-		case VK_ATTACHMENT_STORE_OP_STORE:			return "VK_ATTACHMENT_STORE_OP_STORE";
-		case VK_ATTACHMENT_STORE_OP_RESOLVE_MSAA:	return "VK_ATTACHMENT_STORE_OP_RESOLVE_MSAA";
-		case VK_ATTACHMENT_STORE_OP_DONT_CARE:		return "VK_ATTACHMENT_STORE_OP_DONT_CARE";
-		default:									return DE_NULL;
-	}
-}
-
-const char* getImageTypeName (VkImageType value)
-{
-	switch (value)
-	{
-		case VK_IMAGE_TYPE_1D:	return "VK_IMAGE_TYPE_1D";
-		case VK_IMAGE_TYPE_2D:	return "VK_IMAGE_TYPE_2D";
-		case VK_IMAGE_TYPE_3D:	return "VK_IMAGE_TYPE_3D";
-		default:				return DE_NULL;
-	}
-}
-
-const char* getImageTilingName (VkImageTiling value)
-{
-	switch (value)
-	{
-		case VK_IMAGE_TILING_LINEAR:	return "VK_IMAGE_TILING_LINEAR";
-		case VK_IMAGE_TILING_OPTIMAL:	return "VK_IMAGE_TILING_OPTIMAL";
-		default:						return DE_NULL;
-	}
-}
-
-const char* getImageViewTypeName (VkImageViewType value)
-{
-	switch (value)
-	{
-		case VK_IMAGE_VIEW_TYPE_1D:		return "VK_IMAGE_VIEW_TYPE_1D";
-		case VK_IMAGE_VIEW_TYPE_2D:		return "VK_IMAGE_VIEW_TYPE_2D";
-		case VK_IMAGE_VIEW_TYPE_3D:		return "VK_IMAGE_VIEW_TYPE_3D";
-		case VK_IMAGE_VIEW_TYPE_CUBE:	return "VK_IMAGE_VIEW_TYPE_CUBE";
-		default:						return DE_NULL;
-	}
-}
-
-const char* getImageAspectName (VkImageAspect value)
-{
-	switch (value)
-	{
-		case VK_IMAGE_ASPECT_COLOR:		return "VK_IMAGE_ASPECT_COLOR";
-		case VK_IMAGE_ASPECT_DEPTH:		return "VK_IMAGE_ASPECT_DEPTH";
-		case VK_IMAGE_ASPECT_STENCIL:	return "VK_IMAGE_ASPECT_STENCIL";
-		default:						return DE_NULL;
-	}
-}
-
-const char* getBufferViewTypeName (VkBufferViewType value)
-{
-	switch (value)
-	{
-		case VK_BUFFER_VIEW_TYPE_RAW:		return "VK_BUFFER_VIEW_TYPE_RAW";
-		case VK_BUFFER_VIEW_TYPE_FORMATTED:	return "VK_BUFFER_VIEW_TYPE_FORMATTED";
-		default:							return DE_NULL;
-	}
-}
-
-const char* getChannelSwizzleName (VkChannelSwizzle value)
-{
-	switch (value)
-	{
-		case VK_CHANNEL_SWIZZLE_ZERO:	return "VK_CHANNEL_SWIZZLE_ZERO";
-		case VK_CHANNEL_SWIZZLE_ONE:	return "VK_CHANNEL_SWIZZLE_ONE";
-		case VK_CHANNEL_SWIZZLE_R:		return "VK_CHANNEL_SWIZZLE_R";
-		case VK_CHANNEL_SWIZZLE_G:		return "VK_CHANNEL_SWIZZLE_G";
-		case VK_CHANNEL_SWIZZLE_B:		return "VK_CHANNEL_SWIZZLE_B";
-		case VK_CHANNEL_SWIZZLE_A:		return "VK_CHANNEL_SWIZZLE_A";
-		default:						return DE_NULL;
-	}
-}
-
-const char* getDescriptorTypeName (VkDescriptorType value)
-{
-	switch (value)
-	{
-		case VK_DESCRIPTOR_TYPE_SAMPLER:				return "VK_DESCRIPTOR_TYPE_SAMPLER";
-		case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:	return "VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER";
-		case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:			return "VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE";
-		case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:			return "VK_DESCRIPTOR_TYPE_STORAGE_IMAGE";
-		case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:	return "VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER";
-		case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:	return "VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER";
-		case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:			return "VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER";
-		case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:			return "VK_DESCRIPTOR_TYPE_STORAGE_BUFFER";
-		case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:	return "VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC";
-		case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC:	return "VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC";
+		case VK_SUCCESS:								return "VK_SUCCESS";
+		case VK_UNSUPPORTED:							return "VK_UNSUPPORTED";
+		case VK_NOT_READY:								return "VK_NOT_READY";
+		case VK_TIMEOUT:								return "VK_TIMEOUT";
+		case VK_EVENT_SET:								return "VK_EVENT_SET";
+		case VK_EVENT_RESET:							return "VK_EVENT_RESET";
+		case VK_INCOMPLETE:								return "VK_INCOMPLETE";
+		case VK_ERROR_UNKNOWN:							return "VK_ERROR_UNKNOWN";
+		case VK_ERROR_UNAVAILABLE:						return "VK_ERROR_UNAVAILABLE";
+		case VK_ERROR_INITIALIZATION_FAILED:			return "VK_ERROR_INITIALIZATION_FAILED";
+		case VK_ERROR_OUT_OF_HOST_MEMORY:				return "VK_ERROR_OUT_OF_HOST_MEMORY";
+		case VK_ERROR_OUT_OF_DEVICE_MEMORY:				return "VK_ERROR_OUT_OF_DEVICE_MEMORY";
+		case VK_ERROR_DEVICE_ALREADY_CREATED:			return "VK_ERROR_DEVICE_ALREADY_CREATED";
+		case VK_ERROR_DEVICE_LOST:						return "VK_ERROR_DEVICE_LOST";
+		case VK_ERROR_INVALID_POINTER:					return "VK_ERROR_INVALID_POINTER";
+		case VK_ERROR_INVALID_VALUE:					return "VK_ERROR_INVALID_VALUE";
+		case VK_ERROR_INVALID_HANDLE:					return "VK_ERROR_INVALID_HANDLE";
+		case VK_ERROR_INVALID_ORDINAL:					return "VK_ERROR_INVALID_ORDINAL";
+		case VK_ERROR_INVALID_MEMORY_SIZE:				return "VK_ERROR_INVALID_MEMORY_SIZE";
+		case VK_ERROR_INVALID_EXTENSION:				return "VK_ERROR_INVALID_EXTENSION";
+		case VK_ERROR_INVALID_FLAGS:					return "VK_ERROR_INVALID_FLAGS";
+		case VK_ERROR_INVALID_ALIGNMENT:				return "VK_ERROR_INVALID_ALIGNMENT";
+		case VK_ERROR_INVALID_FORMAT:					return "VK_ERROR_INVALID_FORMAT";
+		case VK_ERROR_INVALID_IMAGE:					return "VK_ERROR_INVALID_IMAGE";
+		case VK_ERROR_INVALID_DESCRIPTOR_SET_DATA:		return "VK_ERROR_INVALID_DESCRIPTOR_SET_DATA";
+		case VK_ERROR_INVALID_QUEUE_TYPE:				return "VK_ERROR_INVALID_QUEUE_TYPE";
+		case VK_ERROR_UNSUPPORTED_SHADER_IL_VERSION:	return "VK_ERROR_UNSUPPORTED_SHADER_IL_VERSION";
+		case VK_ERROR_BAD_SHADER_CODE:					return "VK_ERROR_BAD_SHADER_CODE";
+		case VK_ERROR_BAD_PIPELINE_DATA:				return "VK_ERROR_BAD_PIPELINE_DATA";
+		case VK_ERROR_NOT_MAPPABLE:						return "VK_ERROR_NOT_MAPPABLE";
+		case VK_ERROR_MEMORY_MAP_FAILED:				return "VK_ERROR_MEMORY_MAP_FAILED";
+		case VK_ERROR_MEMORY_UNMAP_FAILED:				return "VK_ERROR_MEMORY_UNMAP_FAILED";
+		case VK_ERROR_INCOMPATIBLE_DEVICE:				return "VK_ERROR_INCOMPATIBLE_DEVICE";
+		case VK_ERROR_INCOMPATIBLE_DRIVER:				return "VK_ERROR_INCOMPATIBLE_DRIVER";
+		case VK_ERROR_INCOMPLETE_COMMAND_BUFFER:		return "VK_ERROR_INCOMPLETE_COMMAND_BUFFER";
+		case VK_ERROR_BUILDING_COMMAND_BUFFER:			return "VK_ERROR_BUILDING_COMMAND_BUFFER";
+		case VK_ERROR_MEMORY_NOT_BOUND:					return "VK_ERROR_MEMORY_NOT_BOUND";
+		case VK_ERROR_INCOMPATIBLE_QUEUE:				return "VK_ERROR_INCOMPATIBLE_QUEUE";
+		case VK_ERROR_INVALID_LAYER:					return "VK_ERROR_INVALID_LAYER";
 		default:										return DE_NULL;
 	}
 }
 
-const char* getDescriptorPoolUsageName (VkDescriptorPoolUsage value)
+const char* getStructureTypeName (VkStructureType value)
 {
 	switch (value)
 	{
-		case VK_DESCRIPTOR_POOL_USAGE_ONE_SHOT:	return "VK_DESCRIPTOR_POOL_USAGE_ONE_SHOT";
-		case VK_DESCRIPTOR_POOL_USAGE_DYNAMIC:	return "VK_DESCRIPTOR_POOL_USAGE_DYNAMIC";
-		default:								return DE_NULL;
-	}
-}
-
-const char* getDescriptorUpdateModeName (VkDescriptorUpdateMode value)
-{
-	switch (value)
-	{
-		case VK_DESCRIPTOR_UPDATE_MODE_COPY:	return "VK_DESCRIPTOR_UPDATE_MODE_COPY";
-		case VK_DESCRIPTOR_UPDATE_MODE_FASTEST:	return "VK_DESCRIPTOR_UPDATE_MODE_FASTEST";
-		default:								return DE_NULL;
-	}
-}
-
-const char* getDescriptorSetUsageName (VkDescriptorSetUsage value)
-{
-	switch (value)
-	{
-		case VK_DESCRIPTOR_SET_USAGE_ONE_SHOT:	return "VK_DESCRIPTOR_SET_USAGE_ONE_SHOT";
-		case VK_DESCRIPTOR_SET_USAGE_STATIC:	return "VK_DESCRIPTOR_SET_USAGE_STATIC";
-		default:								return DE_NULL;
-	}
-}
-
-const char* getQueryTypeName (VkQueryType value)
-{
-	switch (value)
-	{
-		case VK_QUERY_TYPE_OCCLUSION:			return "VK_QUERY_TYPE_OCCLUSION";
-		case VK_QUERY_TYPE_PIPELINE_STATISTICS:	return "VK_QUERY_TYPE_PIPELINE_STATISTICS";
-		default:								return DE_NULL;
-	}
-}
-
-const char* getTimestampTypeName (VkTimestampType value)
-{
-	switch (value)
-	{
-		case VK_TIMESTAMP_TYPE_TOP:		return "VK_TIMESTAMP_TYPE_TOP";
-		case VK_TIMESTAMP_TYPE_BOTTOM:	return "VK_TIMESTAMP_TYPE_BOTTOM";
-		default:						return DE_NULL;
-	}
-}
-
-const char* getBorderColorName (VkBorderColor value)
-{
-	switch (value)
-	{
-		case VK_BORDER_COLOR_OPAQUE_WHITE:		return "VK_BORDER_COLOR_OPAQUE_WHITE";
-		case VK_BORDER_COLOR_TRANSPARENT_BLACK:	return "VK_BORDER_COLOR_TRANSPARENT_BLACK";
-		case VK_BORDER_COLOR_OPAQUE_BLACK:		return "VK_BORDER_COLOR_OPAQUE_BLACK";
-		default:								return DE_NULL;
-	}
-}
-
-const char* getPipelineBindPointName (VkPipelineBindPoint value)
-{
-	switch (value)
-	{
-		case VK_PIPELINE_BIND_POINT_COMPUTE:	return "VK_PIPELINE_BIND_POINT_COMPUTE";
-		case VK_PIPELINE_BIND_POINT_GRAPHICS:	return "VK_PIPELINE_BIND_POINT_GRAPHICS";
-		default:								return DE_NULL;
-	}
-}
-
-const char* getStateBindPointName (VkStateBindPoint value)
-{
-	switch (value)
-	{
-		case VK_STATE_BIND_POINT_VIEWPORT:		return "VK_STATE_BIND_POINT_VIEWPORT";
-		case VK_STATE_BIND_POINT_RASTER:		return "VK_STATE_BIND_POINT_RASTER";
-		case VK_STATE_BIND_POINT_COLOR_BLEND:	return "VK_STATE_BIND_POINT_COLOR_BLEND";
-		case VK_STATE_BIND_POINT_DEPTH_STENCIL:	return "VK_STATE_BIND_POINT_DEPTH_STENCIL";
-		default:								return DE_NULL;
-	}
-}
-
-const char* getPrimitiveTopologyName (VkPrimitiveTopology value)
-{
-	switch (value)
-	{
-		case VK_PRIMITIVE_TOPOLOGY_POINT_LIST:			return "VK_PRIMITIVE_TOPOLOGY_POINT_LIST";
-		case VK_PRIMITIVE_TOPOLOGY_LINE_LIST:			return "VK_PRIMITIVE_TOPOLOGY_LINE_LIST";
-		case VK_PRIMITIVE_TOPOLOGY_LINE_STRIP:			return "VK_PRIMITIVE_TOPOLOGY_LINE_STRIP";
-		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST:		return "VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST";
-		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP:		return "VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP";
-		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN:		return "VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN";
-		case VK_PRIMITIVE_TOPOLOGY_LINE_LIST_ADJ:		return "VK_PRIMITIVE_TOPOLOGY_LINE_LIST_ADJ";
-		case VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_ADJ:		return "VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_ADJ";
-		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_ADJ:	return "VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_ADJ";
-		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_ADJ:	return "VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_ADJ";
-		case VK_PRIMITIVE_TOPOLOGY_PATCH:				return "VK_PRIMITIVE_TOPOLOGY_PATCH";
-		default:										return DE_NULL;
-	}
-}
-
-const char* getIndexTypeName (VkIndexType value)
-{
-	switch (value)
-	{
-		case VK_INDEX_TYPE_UINT8:	return "VK_INDEX_TYPE_UINT8";
-		case VK_INDEX_TYPE_UINT16:	return "VK_INDEX_TYPE_UINT16";
-		case VK_INDEX_TYPE_UINT32:	return "VK_INDEX_TYPE_UINT32";
-		default:					return DE_NULL;
-	}
-}
-
-const char* getTexFilterName (VkTexFilter value)
-{
-	switch (value)
-	{
-		case VK_TEX_FILTER_NEAREST:	return "VK_TEX_FILTER_NEAREST";
-		case VK_TEX_FILTER_LINEAR:	return "VK_TEX_FILTER_LINEAR";
-		default:					return DE_NULL;
-	}
-}
-
-const char* getTexMipmapModeName (VkTexMipmapMode value)
-{
-	switch (value)
-	{
-		case VK_TEX_MIPMAP_MODE_BASE:		return "VK_TEX_MIPMAP_MODE_BASE";
-		case VK_TEX_MIPMAP_MODE_NEAREST:	return "VK_TEX_MIPMAP_MODE_NEAREST";
-		case VK_TEX_MIPMAP_MODE_LINEAR:		return "VK_TEX_MIPMAP_MODE_LINEAR";
-		default:							return DE_NULL;
-	}
-}
-
-const char* getTexAddressName (VkTexAddress value)
-{
-	switch (value)
-	{
-		case VK_TEX_ADDRESS_WRAP:			return "VK_TEX_ADDRESS_WRAP";
-		case VK_TEX_ADDRESS_MIRROR:			return "VK_TEX_ADDRESS_MIRROR";
-		case VK_TEX_ADDRESS_CLAMP:			return "VK_TEX_ADDRESS_CLAMP";
-		case VK_TEX_ADDRESS_MIRROR_ONCE:	return "VK_TEX_ADDRESS_MIRROR_ONCE";
-		case VK_TEX_ADDRESS_CLAMP_BORDER:	return "VK_TEX_ADDRESS_CLAMP_BORDER";
-		default:							return DE_NULL;
-	}
-}
-
-const char* getCompareOpName (VkCompareOp value)
-{
-	switch (value)
-	{
-		case VK_COMPARE_OP_NEVER:			return "VK_COMPARE_OP_NEVER";
-		case VK_COMPARE_OP_LESS:			return "VK_COMPARE_OP_LESS";
-		case VK_COMPARE_OP_EQUAL:			return "VK_COMPARE_OP_EQUAL";
-		case VK_COMPARE_OP_LESS_EQUAL:		return "VK_COMPARE_OP_LESS_EQUAL";
-		case VK_COMPARE_OP_GREATER:			return "VK_COMPARE_OP_GREATER";
-		case VK_COMPARE_OP_NOT_EQUAL:		return "VK_COMPARE_OP_NOT_EQUAL";
-		case VK_COMPARE_OP_GREATER_EQUAL:	return "VK_COMPARE_OP_GREATER_EQUAL";
-		case VK_COMPARE_OP_ALWAYS:			return "VK_COMPARE_OP_ALWAYS";
-		default:							return DE_NULL;
-	}
-}
-
-const char* getFillModeName (VkFillMode value)
-{
-	switch (value)
-	{
-		case VK_FILL_MODE_POINTS:		return "VK_FILL_MODE_POINTS";
-		case VK_FILL_MODE_WIREFRAME:	return "VK_FILL_MODE_WIREFRAME";
-		case VK_FILL_MODE_SOLID:		return "VK_FILL_MODE_SOLID";
-		default:						return DE_NULL;
-	}
-}
-
-const char* getCullModeName (VkCullMode value)
-{
-	switch (value)
-	{
-		case VK_CULL_MODE_NONE:				return "VK_CULL_MODE_NONE";
-		case VK_CULL_MODE_FRONT:			return "VK_CULL_MODE_FRONT";
-		case VK_CULL_MODE_BACK:				return "VK_CULL_MODE_BACK";
-		case VK_CULL_MODE_FRONT_AND_BACK:	return "VK_CULL_MODE_FRONT_AND_BACK";
-		default:							return DE_NULL;
-	}
-}
-
-const char* getFrontFaceName (VkFrontFace value)
-{
-	switch (value)
-	{
-		case VK_FRONT_FACE_CCW:	return "VK_FRONT_FACE_CCW";
-		case VK_FRONT_FACE_CW:	return "VK_FRONT_FACE_CW";
-		default:				return DE_NULL;
-	}
-}
-
-const char* getProvokingVertexName (VkProvokingVertex value)
-{
-	switch (value)
-	{
-		case VK_PROVOKING_VERTEX_FIRST:	return "VK_PROVOKING_VERTEX_FIRST";
-		case VK_PROVOKING_VERTEX_LAST:	return "VK_PROVOKING_VERTEX_LAST";
-		default:						return DE_NULL;
-	}
-}
-
-const char* getCoordinateOriginName (VkCoordinateOrigin value)
-{
-	switch (value)
-	{
-		case VK_COORDINATE_ORIGIN_UPPER_LEFT:	return "VK_COORDINATE_ORIGIN_UPPER_LEFT";
-		case VK_COORDINATE_ORIGIN_LOWER_LEFT:	return "VK_COORDINATE_ORIGIN_LOWER_LEFT";
-		default:								return DE_NULL;
-	}
-}
-
-const char* getDepthModeName (VkDepthMode value)
-{
-	switch (value)
-	{
-		case VK_DEPTH_MODE_ZERO_TO_ONE:			return "VK_DEPTH_MODE_ZERO_TO_ONE";
-		case VK_DEPTH_MODE_NEGATIVE_ONE_TO_ONE:	return "VK_DEPTH_MODE_NEGATIVE_ONE_TO_ONE";
-		default:								return DE_NULL;
-	}
-}
-
-const char* getBlendName (VkBlend value)
-{
-	switch (value)
-	{
-		case VK_BLEND_ZERO:						return "VK_BLEND_ZERO";
-		case VK_BLEND_ONE:						return "VK_BLEND_ONE";
-		case VK_BLEND_SRC_COLOR:				return "VK_BLEND_SRC_COLOR";
-		case VK_BLEND_ONE_MINUS_SRC_COLOR:		return "VK_BLEND_ONE_MINUS_SRC_COLOR";
-		case VK_BLEND_DEST_COLOR:				return "VK_BLEND_DEST_COLOR";
-		case VK_BLEND_ONE_MINUS_DEST_COLOR:		return "VK_BLEND_ONE_MINUS_DEST_COLOR";
-		case VK_BLEND_SRC_ALPHA:				return "VK_BLEND_SRC_ALPHA";
-		case VK_BLEND_ONE_MINUS_SRC_ALPHA:		return "VK_BLEND_ONE_MINUS_SRC_ALPHA";
-		case VK_BLEND_DEST_ALPHA:				return "VK_BLEND_DEST_ALPHA";
-		case VK_BLEND_ONE_MINUS_DEST_ALPHA:		return "VK_BLEND_ONE_MINUS_DEST_ALPHA";
-		case VK_BLEND_CONSTANT_COLOR:			return "VK_BLEND_CONSTANT_COLOR";
-		case VK_BLEND_ONE_MINUS_CONSTANT_COLOR:	return "VK_BLEND_ONE_MINUS_CONSTANT_COLOR";
-		case VK_BLEND_CONSTANT_ALPHA:			return "VK_BLEND_CONSTANT_ALPHA";
-		case VK_BLEND_ONE_MINUS_CONSTANT_ALPHA:	return "VK_BLEND_ONE_MINUS_CONSTANT_ALPHA";
-		case VK_BLEND_SRC_ALPHA_SATURATE:		return "VK_BLEND_SRC_ALPHA_SATURATE";
-		case VK_BLEND_SRC1_COLOR:				return "VK_BLEND_SRC1_COLOR";
-		case VK_BLEND_ONE_MINUS_SRC1_COLOR:		return "VK_BLEND_ONE_MINUS_SRC1_COLOR";
-		case VK_BLEND_SRC1_ALPHA:				return "VK_BLEND_SRC1_ALPHA";
-		case VK_BLEND_ONE_MINUS_SRC1_ALPHA:		return "VK_BLEND_ONE_MINUS_SRC1_ALPHA";
-		default:								return DE_NULL;
-	}
-}
-
-const char* getBlendOpName (VkBlendOp value)
-{
-	switch (value)
-	{
-		case VK_BLEND_OP_ADD:				return "VK_BLEND_OP_ADD";
-		case VK_BLEND_OP_SUBTRACT:			return "VK_BLEND_OP_SUBTRACT";
-		case VK_BLEND_OP_REVERSE_SUBTRACT:	return "VK_BLEND_OP_REVERSE_SUBTRACT";
-		case VK_BLEND_OP_MIN:				return "VK_BLEND_OP_MIN";
-		case VK_BLEND_OP_MAX:				return "VK_BLEND_OP_MAX";
-		default:							return DE_NULL;
-	}
-}
-
-const char* getStencilOpName (VkStencilOp value)
-{
-	switch (value)
-	{
-		case VK_STENCIL_OP_KEEP:		return "VK_STENCIL_OP_KEEP";
-		case VK_STENCIL_OP_ZERO:		return "VK_STENCIL_OP_ZERO";
-		case VK_STENCIL_OP_REPLACE:		return "VK_STENCIL_OP_REPLACE";
-		case VK_STENCIL_OP_INC_CLAMP:	return "VK_STENCIL_OP_INC_CLAMP";
-		case VK_STENCIL_OP_DEC_CLAMP:	return "VK_STENCIL_OP_DEC_CLAMP";
-		case VK_STENCIL_OP_INVERT:		return "VK_STENCIL_OP_INVERT";
-		case VK_STENCIL_OP_INC_WRAP:	return "VK_STENCIL_OP_INC_WRAP";
-		case VK_STENCIL_OP_DEC_WRAP:	return "VK_STENCIL_OP_DEC_WRAP";
-		default:						return DE_NULL;
-	}
-}
-
-const char* getLogicOpName (VkLogicOp value)
-{
-	switch (value)
-	{
-		case VK_LOGIC_OP_COPY:			return "VK_LOGIC_OP_COPY";
-		case VK_LOGIC_OP_CLEAR:			return "VK_LOGIC_OP_CLEAR";
-		case VK_LOGIC_OP_AND:			return "VK_LOGIC_OP_AND";
-		case VK_LOGIC_OP_AND_REVERSE:	return "VK_LOGIC_OP_AND_REVERSE";
-		case VK_LOGIC_OP_AND_INVERTED:	return "VK_LOGIC_OP_AND_INVERTED";
-		case VK_LOGIC_OP_NOOP:			return "VK_LOGIC_OP_NOOP";
-		case VK_LOGIC_OP_XOR:			return "VK_LOGIC_OP_XOR";
-		case VK_LOGIC_OP_OR:			return "VK_LOGIC_OP_OR";
-		case VK_LOGIC_OP_NOR:			return "VK_LOGIC_OP_NOR";
-		case VK_LOGIC_OP_EQUIV:			return "VK_LOGIC_OP_EQUIV";
-		case VK_LOGIC_OP_INVERT:		return "VK_LOGIC_OP_INVERT";
-		case VK_LOGIC_OP_OR_REVERSE:	return "VK_LOGIC_OP_OR_REVERSE";
-		case VK_LOGIC_OP_COPY_INVERTED:	return "VK_LOGIC_OP_COPY_INVERTED";
-		case VK_LOGIC_OP_OR_INVERTED:	return "VK_LOGIC_OP_OR_INVERTED";
-		case VK_LOGIC_OP_NAND:			return "VK_LOGIC_OP_NAND";
-		case VK_LOGIC_OP_SET:			return "VK_LOGIC_OP_SET";
-		default:						return DE_NULL;
+		case VK_STRUCTURE_TYPE_APPLICATION_INFO:							return "VK_STRUCTURE_TYPE_APPLICATION_INFO";
+		case VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO:							return "VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_MEMORY_ALLOC_INFO:							return "VK_STRUCTURE_TYPE_MEMORY_ALLOC_INFO";
+		case VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO:						return "VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_ATTACHMENT_VIEW_CREATE_INFO:					return "VK_STRUCTURE_TYPE_ATTACHMENT_VIEW_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO:					return "VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_SHADER_CREATE_INFO:							return "VK_STRUCTURE_TYPE_SHADER_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO:				return "VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO:							return "VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO:			return "VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_DYNAMIC_VIEWPORT_STATE_CREATE_INFO:			return "VK_STRUCTURE_TYPE_DYNAMIC_VIEWPORT_STATE_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_DYNAMIC_RASTER_STATE_CREATE_INFO:			return "VK_STRUCTURE_TYPE_DYNAMIC_RASTER_STATE_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_DYNAMIC_COLOR_BLEND_STATE_CREATE_INFO:		return "VK_STRUCTURE_TYPE_DYNAMIC_COLOR_BLEND_STATE_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_DYNAMIC_DEPTH_STENCIL_STATE_CREATE_INFO:		return "VK_STRUCTURE_TYPE_DYNAMIC_DEPTH_STENCIL_STATE_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_CMD_BUFFER_CREATE_INFO:						return "VK_STRUCTURE_TYPE_CMD_BUFFER_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_EVENT_CREATE_INFO:							return "VK_STRUCTURE_TYPE_EVENT_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_FENCE_CREATE_INFO:							return "VK_STRUCTURE_TYPE_FENCE_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO:						return "VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO:						return "VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO:			return "VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO:				return "VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO:		return "VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO:	return "VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO:		return "VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO:			return "VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_PIPELINE_RASTER_STATE_CREATE_INFO:			return "VK_STRUCTURE_TYPE_PIPELINE_RASTER_STATE_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO:		return "VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO:		return "VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO:	return "VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO:							return "VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO:							return "VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO:						return "VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO:						return "VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_CMD_BUFFER_BEGIN_INFO:						return "VK_STRUCTURE_TYPE_CMD_BUFFER_BEGIN_INFO";
+		case VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO:						return "VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_LAYER_CREATE_INFO:							return "VK_STRUCTURE_TYPE_LAYER_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_MEMORY_BARRIER:								return "VK_STRUCTURE_TYPE_MEMORY_BARRIER";
+		case VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER:						return "VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER";
+		case VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER:						return "VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER";
+		case VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO:					return "VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET:						return "VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET";
+		case VK_STRUCTURE_TYPE_COPY_DESCRIPTOR_SET:							return "VK_STRUCTURE_TYPE_COPY_DESCRIPTOR_SET";
+		case VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO:						return "VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO:					return "VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE:							return "VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE";
+		case VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO:					return "VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION:						return "VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION";
+		case VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION:							return "VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION";
+		case VK_STRUCTURE_TYPE_SUBPASS_DEPENDENCY:							return "VK_STRUCTURE_TYPE_SUBPASS_DEPENDENCY";
+		case VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO:						return "VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO";
+		case VK_STRUCTURE_TYPE_CMD_POOL_CREATE_INFO:						return "VK_STRUCTURE_TYPE_CMD_POOL_CREATE_INFO";
+		default:															return DE_NULL;
 	}
 }
 
@@ -514,80 +148,6 @@ const char* getSystemAllocTypeName (VkSystemAllocType value)
 		case VK_SYSTEM_ALLOC_TYPE_INTERNAL_TEMP:	return "VK_SYSTEM_ALLOC_TYPE_INTERNAL_TEMP";
 		case VK_SYSTEM_ALLOC_TYPE_INTERNAL_SHADER:	return "VK_SYSTEM_ALLOC_TYPE_INTERNAL_SHADER";
 		case VK_SYSTEM_ALLOC_TYPE_DEBUG:			return "VK_SYSTEM_ALLOC_TYPE_DEBUG";
-		default:									return DE_NULL;
-	}
-}
-
-const char* getPhysicalDeviceTypeName (VkPhysicalDeviceType value)
-{
-	switch (value)
-	{
-		case VK_PHYSICAL_DEVICE_TYPE_OTHER:				return "VK_PHYSICAL_DEVICE_TYPE_OTHER";
-		case VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU:	return "VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU";
-		case VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU:		return "VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU";
-		case VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU:		return "VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU";
-		case VK_PHYSICAL_DEVICE_TYPE_CPU:				return "VK_PHYSICAL_DEVICE_TYPE_CPU";
-		default:										return DE_NULL;
-	}
-}
-
-const char* getPhysicalDeviceInfoTypeName (VkPhysicalDeviceInfoType value)
-{
-	switch (value)
-	{
-		case VK_PHYSICAL_DEVICE_INFO_TYPE_PROPERTIES:			return "VK_PHYSICAL_DEVICE_INFO_TYPE_PROPERTIES";
-		case VK_PHYSICAL_DEVICE_INFO_TYPE_PERFORMANCE:			return "VK_PHYSICAL_DEVICE_INFO_TYPE_PERFORMANCE";
-		case VK_PHYSICAL_DEVICE_INFO_TYPE_QUEUE_PROPERTIES:		return "VK_PHYSICAL_DEVICE_INFO_TYPE_QUEUE_PROPERTIES";
-		case VK_PHYSICAL_DEVICE_INFO_TYPE_MEMORY_PROPERTIES:	return "VK_PHYSICAL_DEVICE_INFO_TYPE_MEMORY_PROPERTIES";
-		default:												return DE_NULL;
-	}
-}
-
-const char* getExtensionInfoTypeName (VkExtensionInfoType value)
-{
-	switch (value)
-	{
-		case VK_EXTENSION_INFO_TYPE_COUNT:		return "VK_EXTENSION_INFO_TYPE_COUNT";
-		case VK_EXTENSION_INFO_TYPE_PROPERTIES:	return "VK_EXTENSION_INFO_TYPE_PROPERTIES";
-		default:								return DE_NULL;
-	}
-}
-
-const char* getFormatInfoTypeName (VkFormatInfoType value)
-{
-	switch (value)
-	{
-		case VK_FORMAT_INFO_TYPE_PROPERTIES:	return "VK_FORMAT_INFO_TYPE_PROPERTIES";
-		default:								return DE_NULL;
-	}
-}
-
-const char* getSubresourceInfoTypeName (VkSubresourceInfoType value)
-{
-	switch (value)
-	{
-		case VK_SUBRESOURCE_INFO_TYPE_LAYOUT:	return "VK_SUBRESOURCE_INFO_TYPE_LAYOUT";
-		default:								return DE_NULL;
-	}
-}
-
-const char* getObjectInfoTypeName (VkObjectInfoType value)
-{
-	switch (value)
-	{
-		case VK_OBJECT_INFO_TYPE_MEMORY_ALLOCATION_COUNT:	return "VK_OBJECT_INFO_TYPE_MEMORY_ALLOCATION_COUNT";
-		case VK_OBJECT_INFO_TYPE_MEMORY_REQUIREMENTS:		return "VK_OBJECT_INFO_TYPE_MEMORY_REQUIREMENTS";
-		default:											return DE_NULL;
-	}
-}
-
-const char* getVertexInputStepRateName (VkVertexInputStepRate value)
-{
-	switch (value)
-	{
-		case VK_VERTEX_INPUT_STEP_RATE_VERTEX:		return "VK_VERTEX_INPUT_STEP_RATE_VERTEX";
-		case VK_VERTEX_INPUT_STEP_RATE_INSTANCE:	return "VK_VERTEX_INPUT_STEP_RATE_INSTANCE";
-		case VK_VERTEX_INPUT_STEP_RATE_DRAW:		return "VK_VERTEX_INPUT_STEP_RATE_DRAW";
 		default:									return DE_NULL;
 	}
 }
@@ -774,6 +334,111 @@ const char* getFormatName (VkFormat value)
 	}
 }
 
+const char* getImageTypeName (VkImageType value)
+{
+	switch (value)
+	{
+		case VK_IMAGE_TYPE_1D:	return "VK_IMAGE_TYPE_1D";
+		case VK_IMAGE_TYPE_2D:	return "VK_IMAGE_TYPE_2D";
+		case VK_IMAGE_TYPE_3D:	return "VK_IMAGE_TYPE_3D";
+		default:				return DE_NULL;
+	}
+}
+
+const char* getImageTilingName (VkImageTiling value)
+{
+	switch (value)
+	{
+		case VK_IMAGE_TILING_LINEAR:	return "VK_IMAGE_TILING_LINEAR";
+		case VK_IMAGE_TILING_OPTIMAL:	return "VK_IMAGE_TILING_OPTIMAL";
+		default:						return DE_NULL;
+	}
+}
+
+const char* getPhysicalDeviceTypeName (VkPhysicalDeviceType value)
+{
+	switch (value)
+	{
+		case VK_PHYSICAL_DEVICE_TYPE_OTHER:				return "VK_PHYSICAL_DEVICE_TYPE_OTHER";
+		case VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU:	return "VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU";
+		case VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU:		return "VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU";
+		case VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU:		return "VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU";
+		case VK_PHYSICAL_DEVICE_TYPE_CPU:				return "VK_PHYSICAL_DEVICE_TYPE_CPU";
+		default:										return DE_NULL;
+	}
+}
+
+const char* getImageAspectName (VkImageAspect value)
+{
+	switch (value)
+	{
+		case VK_IMAGE_ASPECT_COLOR:		return "VK_IMAGE_ASPECT_COLOR";
+		case VK_IMAGE_ASPECT_DEPTH:		return "VK_IMAGE_ASPECT_DEPTH";
+		case VK_IMAGE_ASPECT_STENCIL:	return "VK_IMAGE_ASPECT_STENCIL";
+		case VK_IMAGE_ASPECT_METADATA:	return "VK_IMAGE_ASPECT_METADATA";
+		default:						return DE_NULL;
+	}
+}
+
+const char* getQueryTypeName (VkQueryType value)
+{
+	switch (value)
+	{
+		case VK_QUERY_TYPE_OCCLUSION:			return "VK_QUERY_TYPE_OCCLUSION";
+		case VK_QUERY_TYPE_PIPELINE_STATISTICS:	return "VK_QUERY_TYPE_PIPELINE_STATISTICS";
+		default:								return DE_NULL;
+	}
+}
+
+const char* getSharingModeName (VkSharingMode value)
+{
+	switch (value)
+	{
+		case VK_SHARING_MODE_EXCLUSIVE:		return "VK_SHARING_MODE_EXCLUSIVE";
+		case VK_SHARING_MODE_CONCURRENT:	return "VK_SHARING_MODE_CONCURRENT";
+		default:							return DE_NULL;
+	}
+}
+
+const char* getBufferViewTypeName (VkBufferViewType value)
+{
+	switch (value)
+	{
+		case VK_BUFFER_VIEW_TYPE_RAW:		return "VK_BUFFER_VIEW_TYPE_RAW";
+		case VK_BUFFER_VIEW_TYPE_FORMATTED:	return "VK_BUFFER_VIEW_TYPE_FORMATTED";
+		default:							return DE_NULL;
+	}
+}
+
+const char* getImageViewTypeName (VkImageViewType value)
+{
+	switch (value)
+	{
+		case VK_IMAGE_VIEW_TYPE_1D:			return "VK_IMAGE_VIEW_TYPE_1D";
+		case VK_IMAGE_VIEW_TYPE_2D:			return "VK_IMAGE_VIEW_TYPE_2D";
+		case VK_IMAGE_VIEW_TYPE_3D:			return "VK_IMAGE_VIEW_TYPE_3D";
+		case VK_IMAGE_VIEW_TYPE_CUBE:		return "VK_IMAGE_VIEW_TYPE_CUBE";
+		case VK_IMAGE_VIEW_TYPE_1D_ARRAY:	return "VK_IMAGE_VIEW_TYPE_1D_ARRAY";
+		case VK_IMAGE_VIEW_TYPE_2D_ARRAY:	return "VK_IMAGE_VIEW_TYPE_2D_ARRAY";
+		case VK_IMAGE_VIEW_TYPE_CUBE_ARRAY:	return "VK_IMAGE_VIEW_TYPE_CUBE_ARRAY";
+		default:							return DE_NULL;
+	}
+}
+
+const char* getChannelSwizzleName (VkChannelSwizzle value)
+{
+	switch (value)
+	{
+		case VK_CHANNEL_SWIZZLE_ZERO:	return "VK_CHANNEL_SWIZZLE_ZERO";
+		case VK_CHANNEL_SWIZZLE_ONE:	return "VK_CHANNEL_SWIZZLE_ONE";
+		case VK_CHANNEL_SWIZZLE_R:		return "VK_CHANNEL_SWIZZLE_R";
+		case VK_CHANNEL_SWIZZLE_G:		return "VK_CHANNEL_SWIZZLE_G";
+		case VK_CHANNEL_SWIZZLE_B:		return "VK_CHANNEL_SWIZZLE_B";
+		case VK_CHANNEL_SWIZZLE_A:		return "VK_CHANNEL_SWIZZLE_A";
+		default:						return DE_NULL;
+	}
+}
+
 const char* getShaderStageName (VkShaderStage value)
 {
 	switch (value)
@@ -788,158 +453,370 @@ const char* getShaderStageName (VkShaderStage value)
 	}
 }
 
-const char* getStructureTypeName (VkStructureType value)
+const char* getVertexInputStepRateName (VkVertexInputStepRate value)
 {
 	switch (value)
 	{
-		case VK_STRUCTURE_TYPE_APPLICATION_INFO:					return "VK_STRUCTURE_TYPE_APPLICATION_INFO";
-		case VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO:					return "VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO";
-		case VK_STRUCTURE_TYPE_MEMORY_ALLOC_INFO:					return "VK_STRUCTURE_TYPE_MEMORY_ALLOC_INFO";
-		case VK_STRUCTURE_TYPE_MEMORY_OPEN_INFO:					return "VK_STRUCTURE_TYPE_MEMORY_OPEN_INFO";
-		case VK_STRUCTURE_TYPE_PEER_MEMORY_OPEN_INFO:				return "VK_STRUCTURE_TYPE_PEER_MEMORY_OPEN_INFO";
-		case VK_STRUCTURE_TYPE_BUFFER_VIEW_ATTACH_INFO:				return "VK_STRUCTURE_TYPE_BUFFER_VIEW_ATTACH_INFO";
-		case VK_STRUCTURE_TYPE_IMAGE_VIEW_ATTACH_INFO:				return "VK_STRUCTURE_TYPE_IMAGE_VIEW_ATTACH_INFO";
-		case VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO:				return "VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO";
-		case VK_STRUCTURE_TYPE_COLOR_ATTACHMENT_VIEW_CREATE_INFO:	return "VK_STRUCTURE_TYPE_COLOR_ATTACHMENT_VIEW_CREATE_INFO";
-		case VK_STRUCTURE_TYPE_DEPTH_STENCIL_VIEW_CREATE_INFO:		return "VK_STRUCTURE_TYPE_DEPTH_STENCIL_VIEW_CREATE_INFO";
-		case VK_STRUCTURE_TYPE_SHADER_CREATE_INFO:					return "VK_STRUCTURE_TYPE_SHADER_CREATE_INFO";
-		case VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO:		return "VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO";
-		case VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO:					return "VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO";
-		case VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO:	return "VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO";
-		case VK_STRUCTURE_TYPE_DYNAMIC_VP_STATE_CREATE_INFO:		return "VK_STRUCTURE_TYPE_DYNAMIC_VP_STATE_CREATE_INFO";
-		case VK_STRUCTURE_TYPE_DYNAMIC_RS_STATE_CREATE_INFO:		return "VK_STRUCTURE_TYPE_DYNAMIC_RS_STATE_CREATE_INFO";
-		case VK_STRUCTURE_TYPE_DYNAMIC_CB_STATE_CREATE_INFO:		return "VK_STRUCTURE_TYPE_DYNAMIC_CB_STATE_CREATE_INFO";
-		case VK_STRUCTURE_TYPE_DYNAMIC_DS_STATE_CREATE_INFO:		return "VK_STRUCTURE_TYPE_DYNAMIC_DS_STATE_CREATE_INFO";
-		case VK_STRUCTURE_TYPE_CMD_BUFFER_CREATE_INFO:				return "VK_STRUCTURE_TYPE_CMD_BUFFER_CREATE_INFO";
-		case VK_STRUCTURE_TYPE_EVENT_CREATE_INFO:					return "VK_STRUCTURE_TYPE_EVENT_CREATE_INFO";
-		case VK_STRUCTURE_TYPE_FENCE_CREATE_INFO:					return "VK_STRUCTURE_TYPE_FENCE_CREATE_INFO";
-		case VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO:				return "VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO";
-		case VK_STRUCTURE_TYPE_SEMAPHORE_OPEN_INFO:					return "VK_STRUCTURE_TYPE_SEMAPHORE_OPEN_INFO";
-		case VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO:				return "VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO";
-		case VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO:	return "VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO";
-		case VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO:		return "VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO";
-		case VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_CREATE_INFO:	return "VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_CREATE_INFO";
-		case VK_STRUCTURE_TYPE_PIPELINE_IA_STATE_CREATE_INFO:		return "VK_STRUCTURE_TYPE_PIPELINE_IA_STATE_CREATE_INFO";
-		case VK_STRUCTURE_TYPE_PIPELINE_TESS_STATE_CREATE_INFO:		return "VK_STRUCTURE_TYPE_PIPELINE_TESS_STATE_CREATE_INFO";
-		case VK_STRUCTURE_TYPE_PIPELINE_VP_STATE_CREATE_INFO:		return "VK_STRUCTURE_TYPE_PIPELINE_VP_STATE_CREATE_INFO";
-		case VK_STRUCTURE_TYPE_PIPELINE_RS_STATE_CREATE_INFO:		return "VK_STRUCTURE_TYPE_PIPELINE_RS_STATE_CREATE_INFO";
-		case VK_STRUCTURE_TYPE_PIPELINE_MS_STATE_CREATE_INFO:		return "VK_STRUCTURE_TYPE_PIPELINE_MS_STATE_CREATE_INFO";
-		case VK_STRUCTURE_TYPE_PIPELINE_CB_STATE_CREATE_INFO:		return "VK_STRUCTURE_TYPE_PIPELINE_CB_STATE_CREATE_INFO";
-		case VK_STRUCTURE_TYPE_PIPELINE_DS_STATE_CREATE_INFO:		return "VK_STRUCTURE_TYPE_PIPELINE_DS_STATE_CREATE_INFO";
-		case VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO:					return "VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO";
-		case VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO:					return "VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO";
-		case VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO:				return "VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO";
-		case VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO:				return "VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO";
-		case VK_STRUCTURE_TYPE_CMD_BUFFER_BEGIN_INFO:				return "VK_STRUCTURE_TYPE_CMD_BUFFER_BEGIN_INFO";
-		case VK_STRUCTURE_TYPE_CMD_BUFFER_GRAPHICS_BEGIN_INFO:		return "VK_STRUCTURE_TYPE_CMD_BUFFER_GRAPHICS_BEGIN_INFO";
-		case VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO:				return "VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO";
-		case VK_STRUCTURE_TYPE_LAYER_CREATE_INFO:					return "VK_STRUCTURE_TYPE_LAYER_CREATE_INFO";
-		case VK_STRUCTURE_TYPE_MEMORY_BARRIER:						return "VK_STRUCTURE_TYPE_MEMORY_BARRIER";
-		case VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER:				return "VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER";
-		case VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER:				return "VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER";
-		case VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO:			return "VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO";
-		case VK_STRUCTURE_TYPE_UPDATE_SAMPLERS:						return "VK_STRUCTURE_TYPE_UPDATE_SAMPLERS";
-		case VK_STRUCTURE_TYPE_UPDATE_SAMPLER_TEXTURES:				return "VK_STRUCTURE_TYPE_UPDATE_SAMPLER_TEXTURES";
-		case VK_STRUCTURE_TYPE_UPDATE_IMAGES:						return "VK_STRUCTURE_TYPE_UPDATE_IMAGES";
-		case VK_STRUCTURE_TYPE_UPDATE_BUFFERS:						return "VK_STRUCTURE_TYPE_UPDATE_BUFFERS";
-		case VK_STRUCTURE_TYPE_UPDATE_AS_COPY:						return "VK_STRUCTURE_TYPE_UPDATE_AS_COPY";
-		case VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO:				return "VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO";
-		case VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO:			return "VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO";
-		default:													return DE_NULL;
-	}
-}
-
-const char* getObjectTypeName (VkObjectType value)
-{
-	switch (value)
-	{
-		case VK_OBJECT_TYPE_INSTANCE:				return "VK_OBJECT_TYPE_INSTANCE";
-		case VK_OBJECT_TYPE_PHYSICAL_DEVICE:		return "VK_OBJECT_TYPE_PHYSICAL_DEVICE";
-		case VK_OBJECT_TYPE_DEVICE:					return "VK_OBJECT_TYPE_DEVICE";
-		case VK_OBJECT_TYPE_QUEUE:					return "VK_OBJECT_TYPE_QUEUE";
-		case VK_OBJECT_TYPE_COMMAND_BUFFER:			return "VK_OBJECT_TYPE_COMMAND_BUFFER";
-		case VK_OBJECT_TYPE_DEVICE_MEMORY:			return "VK_OBJECT_TYPE_DEVICE_MEMORY";
-		case VK_OBJECT_TYPE_BUFFER:					return "VK_OBJECT_TYPE_BUFFER";
-		case VK_OBJECT_TYPE_BUFFER_VIEW:			return "VK_OBJECT_TYPE_BUFFER_VIEW";
-		case VK_OBJECT_TYPE_IMAGE:					return "VK_OBJECT_TYPE_IMAGE";
-		case VK_OBJECT_TYPE_IMAGE_VIEW:				return "VK_OBJECT_TYPE_IMAGE_VIEW";
-		case VK_OBJECT_TYPE_COLOR_ATTACHMENT_VIEW:	return "VK_OBJECT_TYPE_COLOR_ATTACHMENT_VIEW";
-		case VK_OBJECT_TYPE_DEPTH_STENCIL_VIEW:		return "VK_OBJECT_TYPE_DEPTH_STENCIL_VIEW";
-		case VK_OBJECT_TYPE_SHADER:					return "VK_OBJECT_TYPE_SHADER";
-		case VK_OBJECT_TYPE_PIPELINE:				return "VK_OBJECT_TYPE_PIPELINE";
-		case VK_OBJECT_TYPE_PIPELINE_LAYOUT:		return "VK_OBJECT_TYPE_PIPELINE_LAYOUT";
-		case VK_OBJECT_TYPE_SAMPLER:				return "VK_OBJECT_TYPE_SAMPLER";
-		case VK_OBJECT_TYPE_DESCRIPTOR_SET:			return "VK_OBJECT_TYPE_DESCRIPTOR_SET";
-		case VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT:	return "VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT";
-		case VK_OBJECT_TYPE_DESCRIPTOR_POOL:		return "VK_OBJECT_TYPE_DESCRIPTOR_POOL";
-		case VK_OBJECT_TYPE_DYNAMIC_VP_STATE:		return "VK_OBJECT_TYPE_DYNAMIC_VP_STATE";
-		case VK_OBJECT_TYPE_DYNAMIC_RS_STATE:		return "VK_OBJECT_TYPE_DYNAMIC_RS_STATE";
-		case VK_OBJECT_TYPE_DYNAMIC_CB_STATE:		return "VK_OBJECT_TYPE_DYNAMIC_CB_STATE";
-		case VK_OBJECT_TYPE_DYNAMIC_DS_STATE:		return "VK_OBJECT_TYPE_DYNAMIC_DS_STATE";
-		case VK_OBJECT_TYPE_FENCE:					return "VK_OBJECT_TYPE_FENCE";
-		case VK_OBJECT_TYPE_SEMAPHORE:				return "VK_OBJECT_TYPE_SEMAPHORE";
-		case VK_OBJECT_TYPE_EVENT:					return "VK_OBJECT_TYPE_EVENT";
-		case VK_OBJECT_TYPE_QUERY_POOL:				return "VK_OBJECT_TYPE_QUERY_POOL";
-		case VK_OBJECT_TYPE_FRAMEBUFFER:			return "VK_OBJECT_TYPE_FRAMEBUFFER";
-		case VK_OBJECT_TYPE_RENDER_PASS:			return "VK_OBJECT_TYPE_RENDER_PASS";
+		case VK_VERTEX_INPUT_STEP_RATE_VERTEX:		return "VK_VERTEX_INPUT_STEP_RATE_VERTEX";
+		case VK_VERTEX_INPUT_STEP_RATE_INSTANCE:	return "VK_VERTEX_INPUT_STEP_RATE_INSTANCE";
 		default:									return DE_NULL;
 	}
 }
 
-const char* getResultName (VkResult value)
+const char* getPrimitiveTopologyName (VkPrimitiveTopology value)
 {
 	switch (value)
 	{
-		case VK_SUCCESS:								return "VK_SUCCESS";
-		case VK_UNSUPPORTED:							return "VK_UNSUPPORTED";
-		case VK_NOT_READY:								return "VK_NOT_READY";
-		case VK_TIMEOUT:								return "VK_TIMEOUT";
-		case VK_EVENT_SET:								return "VK_EVENT_SET";
-		case VK_EVENT_RESET:							return "VK_EVENT_RESET";
-		case VK_ERROR_UNKNOWN:							return "VK_ERROR_UNKNOWN";
-		case VK_ERROR_UNAVAILABLE:						return "VK_ERROR_UNAVAILABLE";
-		case VK_ERROR_INITIALIZATION_FAILED:			return "VK_ERROR_INITIALIZATION_FAILED";
-		case VK_ERROR_OUT_OF_HOST_MEMORY:				return "VK_ERROR_OUT_OF_HOST_MEMORY";
-		case VK_ERROR_OUT_OF_DEVICE_MEMORY:				return "VK_ERROR_OUT_OF_DEVICE_MEMORY";
-		case VK_ERROR_DEVICE_ALREADY_CREATED:			return "VK_ERROR_DEVICE_ALREADY_CREATED";
-		case VK_ERROR_DEVICE_LOST:						return "VK_ERROR_DEVICE_LOST";
-		case VK_ERROR_INVALID_POINTER:					return "VK_ERROR_INVALID_POINTER";
-		case VK_ERROR_INVALID_VALUE:					return "VK_ERROR_INVALID_VALUE";
-		case VK_ERROR_INVALID_HANDLE:					return "VK_ERROR_INVALID_HANDLE";
-		case VK_ERROR_INVALID_ORDINAL:					return "VK_ERROR_INVALID_ORDINAL";
-		case VK_ERROR_INVALID_MEMORY_SIZE:				return "VK_ERROR_INVALID_MEMORY_SIZE";
-		case VK_ERROR_INVALID_EXTENSION:				return "VK_ERROR_INVALID_EXTENSION";
-		case VK_ERROR_INVALID_FLAGS:					return "VK_ERROR_INVALID_FLAGS";
-		case VK_ERROR_INVALID_ALIGNMENT:				return "VK_ERROR_INVALID_ALIGNMENT";
-		case VK_ERROR_INVALID_FORMAT:					return "VK_ERROR_INVALID_FORMAT";
-		case VK_ERROR_INVALID_IMAGE:					return "VK_ERROR_INVALID_IMAGE";
-		case VK_ERROR_INVALID_DESCRIPTOR_SET_DATA:		return "VK_ERROR_INVALID_DESCRIPTOR_SET_DATA";
-		case VK_ERROR_INVALID_QUEUE_TYPE:				return "VK_ERROR_INVALID_QUEUE_TYPE";
-		case VK_ERROR_INVALID_OBJECT_TYPE:				return "VK_ERROR_INVALID_OBJECT_TYPE";
-		case VK_ERROR_UNSUPPORTED_SHADER_IL_VERSION:	return "VK_ERROR_UNSUPPORTED_SHADER_IL_VERSION";
-		case VK_ERROR_BAD_SHADER_CODE:					return "VK_ERROR_BAD_SHADER_CODE";
-		case VK_ERROR_BAD_PIPELINE_DATA:				return "VK_ERROR_BAD_PIPELINE_DATA";
-		case VK_ERROR_TOO_MANY_MEMORY_REFERENCES:		return "VK_ERROR_TOO_MANY_MEMORY_REFERENCES";
-		case VK_ERROR_NOT_MAPPABLE:						return "VK_ERROR_NOT_MAPPABLE";
-		case VK_ERROR_MEMORY_MAP_FAILED:				return "VK_ERROR_MEMORY_MAP_FAILED";
-		case VK_ERROR_MEMORY_UNMAP_FAILED:				return "VK_ERROR_MEMORY_UNMAP_FAILED";
-		case VK_ERROR_INCOMPATIBLE_DEVICE:				return "VK_ERROR_INCOMPATIBLE_DEVICE";
-		case VK_ERROR_INCOMPATIBLE_DRIVER:				return "VK_ERROR_INCOMPATIBLE_DRIVER";
-		case VK_ERROR_INCOMPLETE_COMMAND_BUFFER:		return "VK_ERROR_INCOMPLETE_COMMAND_BUFFER";
-		case VK_ERROR_BUILDING_COMMAND_BUFFER:			return "VK_ERROR_BUILDING_COMMAND_BUFFER";
-		case VK_ERROR_MEMORY_NOT_BOUND:					return "VK_ERROR_MEMORY_NOT_BOUND";
-		case VK_ERROR_INCOMPATIBLE_QUEUE:				return "VK_ERROR_INCOMPATIBLE_QUEUE";
-		case VK_ERROR_NOT_SHAREABLE:					return "VK_ERROR_NOT_SHAREABLE";
+		case VK_PRIMITIVE_TOPOLOGY_POINT_LIST:			return "VK_PRIMITIVE_TOPOLOGY_POINT_LIST";
+		case VK_PRIMITIVE_TOPOLOGY_LINE_LIST:			return "VK_PRIMITIVE_TOPOLOGY_LINE_LIST";
+		case VK_PRIMITIVE_TOPOLOGY_LINE_STRIP:			return "VK_PRIMITIVE_TOPOLOGY_LINE_STRIP";
+		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST:		return "VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST";
+		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP:		return "VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP";
+		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN:		return "VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN";
+		case VK_PRIMITIVE_TOPOLOGY_LINE_LIST_ADJ:		return "VK_PRIMITIVE_TOPOLOGY_LINE_LIST_ADJ";
+		case VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_ADJ:		return "VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_ADJ";
+		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_ADJ:	return "VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_ADJ";
+		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_ADJ:	return "VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_ADJ";
+		case VK_PRIMITIVE_TOPOLOGY_PATCH:				return "VK_PRIMITIVE_TOPOLOGY_PATCH";
 		default:										return DE_NULL;
 	}
 }
 
-tcu::Format::Bitfield<32> getDeviceCreateFlagsStr (VkDeviceCreateFlags value)
+const char* getFillModeName (VkFillMode value)
+{
+	switch (value)
+	{
+		case VK_FILL_MODE_POINTS:		return "VK_FILL_MODE_POINTS";
+		case VK_FILL_MODE_WIREFRAME:	return "VK_FILL_MODE_WIREFRAME";
+		case VK_FILL_MODE_SOLID:		return "VK_FILL_MODE_SOLID";
+		default:						return DE_NULL;
+	}
+}
+
+const char* getCullModeName (VkCullMode value)
+{
+	switch (value)
+	{
+		case VK_CULL_MODE_NONE:				return "VK_CULL_MODE_NONE";
+		case VK_CULL_MODE_FRONT:			return "VK_CULL_MODE_FRONT";
+		case VK_CULL_MODE_BACK:				return "VK_CULL_MODE_BACK";
+		case VK_CULL_MODE_FRONT_AND_BACK:	return "VK_CULL_MODE_FRONT_AND_BACK";
+		default:							return DE_NULL;
+	}
+}
+
+const char* getFrontFaceName (VkFrontFace value)
+{
+	switch (value)
+	{
+		case VK_FRONT_FACE_CCW:	return "VK_FRONT_FACE_CCW";
+		case VK_FRONT_FACE_CW:	return "VK_FRONT_FACE_CW";
+		default:				return DE_NULL;
+	}
+}
+
+const char* getCompareOpName (VkCompareOp value)
+{
+	switch (value)
+	{
+		case VK_COMPARE_OP_NEVER:			return "VK_COMPARE_OP_NEVER";
+		case VK_COMPARE_OP_LESS:			return "VK_COMPARE_OP_LESS";
+		case VK_COMPARE_OP_EQUAL:			return "VK_COMPARE_OP_EQUAL";
+		case VK_COMPARE_OP_LESS_EQUAL:		return "VK_COMPARE_OP_LESS_EQUAL";
+		case VK_COMPARE_OP_GREATER:			return "VK_COMPARE_OP_GREATER";
+		case VK_COMPARE_OP_NOT_EQUAL:		return "VK_COMPARE_OP_NOT_EQUAL";
+		case VK_COMPARE_OP_GREATER_EQUAL:	return "VK_COMPARE_OP_GREATER_EQUAL";
+		case VK_COMPARE_OP_ALWAYS:			return "VK_COMPARE_OP_ALWAYS";
+		default:							return DE_NULL;
+	}
+}
+
+const char* getStencilOpName (VkStencilOp value)
+{
+	switch (value)
+	{
+		case VK_STENCIL_OP_KEEP:		return "VK_STENCIL_OP_KEEP";
+		case VK_STENCIL_OP_ZERO:		return "VK_STENCIL_OP_ZERO";
+		case VK_STENCIL_OP_REPLACE:		return "VK_STENCIL_OP_REPLACE";
+		case VK_STENCIL_OP_INC_CLAMP:	return "VK_STENCIL_OP_INC_CLAMP";
+		case VK_STENCIL_OP_DEC_CLAMP:	return "VK_STENCIL_OP_DEC_CLAMP";
+		case VK_STENCIL_OP_INVERT:		return "VK_STENCIL_OP_INVERT";
+		case VK_STENCIL_OP_INC_WRAP:	return "VK_STENCIL_OP_INC_WRAP";
+		case VK_STENCIL_OP_DEC_WRAP:	return "VK_STENCIL_OP_DEC_WRAP";
+		default:						return DE_NULL;
+	}
+}
+
+const char* getLogicOpName (VkLogicOp value)
+{
+	switch (value)
+	{
+		case VK_LOGIC_OP_CLEAR:			return "VK_LOGIC_OP_CLEAR";
+		case VK_LOGIC_OP_AND:			return "VK_LOGIC_OP_AND";
+		case VK_LOGIC_OP_AND_REVERSE:	return "VK_LOGIC_OP_AND_REVERSE";
+		case VK_LOGIC_OP_COPY:			return "VK_LOGIC_OP_COPY";
+		case VK_LOGIC_OP_AND_INVERTED:	return "VK_LOGIC_OP_AND_INVERTED";
+		case VK_LOGIC_OP_NOOP:			return "VK_LOGIC_OP_NOOP";
+		case VK_LOGIC_OP_XOR:			return "VK_LOGIC_OP_XOR";
+		case VK_LOGIC_OP_OR:			return "VK_LOGIC_OP_OR";
+		case VK_LOGIC_OP_NOR:			return "VK_LOGIC_OP_NOR";
+		case VK_LOGIC_OP_EQUIV:			return "VK_LOGIC_OP_EQUIV";
+		case VK_LOGIC_OP_INVERT:		return "VK_LOGIC_OP_INVERT";
+		case VK_LOGIC_OP_OR_REVERSE:	return "VK_LOGIC_OP_OR_REVERSE";
+		case VK_LOGIC_OP_COPY_INVERTED:	return "VK_LOGIC_OP_COPY_INVERTED";
+		case VK_LOGIC_OP_OR_INVERTED:	return "VK_LOGIC_OP_OR_INVERTED";
+		case VK_LOGIC_OP_NAND:			return "VK_LOGIC_OP_NAND";
+		case VK_LOGIC_OP_SET:			return "VK_LOGIC_OP_SET";
+		default:						return DE_NULL;
+	}
+}
+
+const char* getBlendName (VkBlend value)
+{
+	switch (value)
+	{
+		case VK_BLEND_ZERO:						return "VK_BLEND_ZERO";
+		case VK_BLEND_ONE:						return "VK_BLEND_ONE";
+		case VK_BLEND_SRC_COLOR:				return "VK_BLEND_SRC_COLOR";
+		case VK_BLEND_ONE_MINUS_SRC_COLOR:		return "VK_BLEND_ONE_MINUS_SRC_COLOR";
+		case VK_BLEND_DEST_COLOR:				return "VK_BLEND_DEST_COLOR";
+		case VK_BLEND_ONE_MINUS_DEST_COLOR:		return "VK_BLEND_ONE_MINUS_DEST_COLOR";
+		case VK_BLEND_SRC_ALPHA:				return "VK_BLEND_SRC_ALPHA";
+		case VK_BLEND_ONE_MINUS_SRC_ALPHA:		return "VK_BLEND_ONE_MINUS_SRC_ALPHA";
+		case VK_BLEND_DEST_ALPHA:				return "VK_BLEND_DEST_ALPHA";
+		case VK_BLEND_ONE_MINUS_DEST_ALPHA:		return "VK_BLEND_ONE_MINUS_DEST_ALPHA";
+		case VK_BLEND_CONSTANT_COLOR:			return "VK_BLEND_CONSTANT_COLOR";
+		case VK_BLEND_ONE_MINUS_CONSTANT_COLOR:	return "VK_BLEND_ONE_MINUS_CONSTANT_COLOR";
+		case VK_BLEND_CONSTANT_ALPHA:			return "VK_BLEND_CONSTANT_ALPHA";
+		case VK_BLEND_ONE_MINUS_CONSTANT_ALPHA:	return "VK_BLEND_ONE_MINUS_CONSTANT_ALPHA";
+		case VK_BLEND_SRC_ALPHA_SATURATE:		return "VK_BLEND_SRC_ALPHA_SATURATE";
+		case VK_BLEND_SRC1_COLOR:				return "VK_BLEND_SRC1_COLOR";
+		case VK_BLEND_ONE_MINUS_SRC1_COLOR:		return "VK_BLEND_ONE_MINUS_SRC1_COLOR";
+		case VK_BLEND_SRC1_ALPHA:				return "VK_BLEND_SRC1_ALPHA";
+		case VK_BLEND_ONE_MINUS_SRC1_ALPHA:		return "VK_BLEND_ONE_MINUS_SRC1_ALPHA";
+		default:								return DE_NULL;
+	}
+}
+
+const char* getBlendOpName (VkBlendOp value)
+{
+	switch (value)
+	{
+		case VK_BLEND_OP_ADD:				return "VK_BLEND_OP_ADD";
+		case VK_BLEND_OP_SUBTRACT:			return "VK_BLEND_OP_SUBTRACT";
+		case VK_BLEND_OP_REVERSE_SUBTRACT:	return "VK_BLEND_OP_REVERSE_SUBTRACT";
+		case VK_BLEND_OP_MIN:				return "VK_BLEND_OP_MIN";
+		case VK_BLEND_OP_MAX:				return "VK_BLEND_OP_MAX";
+		default:							return DE_NULL;
+	}
+}
+
+const char* getTexFilterName (VkTexFilter value)
+{
+	switch (value)
+	{
+		case VK_TEX_FILTER_NEAREST:	return "VK_TEX_FILTER_NEAREST";
+		case VK_TEX_FILTER_LINEAR:	return "VK_TEX_FILTER_LINEAR";
+		default:					return DE_NULL;
+	}
+}
+
+const char* getTexMipmapModeName (VkTexMipmapMode value)
+{
+	switch (value)
+	{
+		case VK_TEX_MIPMAP_MODE_BASE:		return "VK_TEX_MIPMAP_MODE_BASE";
+		case VK_TEX_MIPMAP_MODE_NEAREST:	return "VK_TEX_MIPMAP_MODE_NEAREST";
+		case VK_TEX_MIPMAP_MODE_LINEAR:		return "VK_TEX_MIPMAP_MODE_LINEAR";
+		default:							return DE_NULL;
+	}
+}
+
+const char* getTexAddressName (VkTexAddress value)
+{
+	switch (value)
+	{
+		case VK_TEX_ADDRESS_WRAP:			return "VK_TEX_ADDRESS_WRAP";
+		case VK_TEX_ADDRESS_MIRROR:			return "VK_TEX_ADDRESS_MIRROR";
+		case VK_TEX_ADDRESS_CLAMP:			return "VK_TEX_ADDRESS_CLAMP";
+		case VK_TEX_ADDRESS_MIRROR_ONCE:	return "VK_TEX_ADDRESS_MIRROR_ONCE";
+		case VK_TEX_ADDRESS_CLAMP_BORDER:	return "VK_TEX_ADDRESS_CLAMP_BORDER";
+		default:							return DE_NULL;
+	}
+}
+
+const char* getBorderColorName (VkBorderColor value)
+{
+	switch (value)
+	{
+		case VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK:	return "VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK";
+		case VK_BORDER_COLOR_INT_TRANSPARENT_BLACK:		return "VK_BORDER_COLOR_INT_TRANSPARENT_BLACK";
+		case VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK:		return "VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK";
+		case VK_BORDER_COLOR_INT_OPAQUE_BLACK:			return "VK_BORDER_COLOR_INT_OPAQUE_BLACK";
+		case VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE:		return "VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE";
+		case VK_BORDER_COLOR_INT_OPAQUE_WHITE:			return "VK_BORDER_COLOR_INT_OPAQUE_WHITE";
+		default:										return DE_NULL;
+	}
+}
+
+const char* getDescriptorTypeName (VkDescriptorType value)
+{
+	switch (value)
+	{
+		case VK_DESCRIPTOR_TYPE_SAMPLER:				return "VK_DESCRIPTOR_TYPE_SAMPLER";
+		case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:	return "VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER";
+		case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:			return "VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE";
+		case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:			return "VK_DESCRIPTOR_TYPE_STORAGE_IMAGE";
+		case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:	return "VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER";
+		case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:	return "VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER";
+		case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:			return "VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER";
+		case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:			return "VK_DESCRIPTOR_TYPE_STORAGE_BUFFER";
+		case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:	return "VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC";
+		case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC:	return "VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC";
+		case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT:		return "VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT";
+		default:										return DE_NULL;
+	}
+}
+
+const char* getDescriptorPoolUsageName (VkDescriptorPoolUsage value)
+{
+	switch (value)
+	{
+		case VK_DESCRIPTOR_POOL_USAGE_ONE_SHOT:	return "VK_DESCRIPTOR_POOL_USAGE_ONE_SHOT";
+		case VK_DESCRIPTOR_POOL_USAGE_DYNAMIC:	return "VK_DESCRIPTOR_POOL_USAGE_DYNAMIC";
+		default:								return DE_NULL;
+	}
+}
+
+const char* getDescriptorSetUsageName (VkDescriptorSetUsage value)
+{
+	switch (value)
+	{
+		case VK_DESCRIPTOR_SET_USAGE_ONE_SHOT:	return "VK_DESCRIPTOR_SET_USAGE_ONE_SHOT";
+		case VK_DESCRIPTOR_SET_USAGE_STATIC:	return "VK_DESCRIPTOR_SET_USAGE_STATIC";
+		default:								return DE_NULL;
+	}
+}
+
+const char* getImageLayoutName (VkImageLayout value)
+{
+	switch (value)
+	{
+		case VK_IMAGE_LAYOUT_UNDEFINED:							return "VK_IMAGE_LAYOUT_UNDEFINED";
+		case VK_IMAGE_LAYOUT_GENERAL:							return "VK_IMAGE_LAYOUT_GENERAL";
+		case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:			return "VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL";
+		case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:	return "VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL";
+		case VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL:	return "VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL";
+		case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:			return "VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL";
+		case VK_IMAGE_LAYOUT_TRANSFER_SOURCE_OPTIMAL:			return "VK_IMAGE_LAYOUT_TRANSFER_SOURCE_OPTIMAL";
+		case VK_IMAGE_LAYOUT_TRANSFER_DESTINATION_OPTIMAL:		return "VK_IMAGE_LAYOUT_TRANSFER_DESTINATION_OPTIMAL";
+		default:												return DE_NULL;
+	}
+}
+
+const char* getAttachmentLoadOpName (VkAttachmentLoadOp value)
+{
+	switch (value)
+	{
+		case VK_ATTACHMENT_LOAD_OP_LOAD:		return "VK_ATTACHMENT_LOAD_OP_LOAD";
+		case VK_ATTACHMENT_LOAD_OP_CLEAR:		return "VK_ATTACHMENT_LOAD_OP_CLEAR";
+		case VK_ATTACHMENT_LOAD_OP_DONT_CARE:	return "VK_ATTACHMENT_LOAD_OP_DONT_CARE";
+		default:								return DE_NULL;
+	}
+}
+
+const char* getAttachmentStoreOpName (VkAttachmentStoreOp value)
+{
+	switch (value)
+	{
+		case VK_ATTACHMENT_STORE_OP_STORE:		return "VK_ATTACHMENT_STORE_OP_STORE";
+		case VK_ATTACHMENT_STORE_OP_DONT_CARE:	return "VK_ATTACHMENT_STORE_OP_DONT_CARE";
+		default:								return DE_NULL;
+	}
+}
+
+const char* getPipelineBindPointName (VkPipelineBindPoint value)
+{
+	switch (value)
+	{
+		case VK_PIPELINE_BIND_POINT_COMPUTE:	return "VK_PIPELINE_BIND_POINT_COMPUTE";
+		case VK_PIPELINE_BIND_POINT_GRAPHICS:	return "VK_PIPELINE_BIND_POINT_GRAPHICS";
+		default:								return DE_NULL;
+	}
+}
+
+const char* getCmdBufferLevelName (VkCmdBufferLevel value)
+{
+	switch (value)
+	{
+		case VK_CMD_BUFFER_LEVEL_PRIMARY:	return "VK_CMD_BUFFER_LEVEL_PRIMARY";
+		case VK_CMD_BUFFER_LEVEL_SECONDARY:	return "VK_CMD_BUFFER_LEVEL_SECONDARY";
+		default:							return DE_NULL;
+	}
+}
+
+const char* getIndexTypeName (VkIndexType value)
+{
+	switch (value)
+	{
+		case VK_INDEX_TYPE_UINT16:	return "VK_INDEX_TYPE_UINT16";
+		case VK_INDEX_TYPE_UINT32:	return "VK_INDEX_TYPE_UINT32";
+		default:					return DE_NULL;
+	}
+}
+
+const char* getTimestampTypeName (VkTimestampType value)
+{
+	switch (value)
+	{
+		case VK_TIMESTAMP_TYPE_TOP:		return "VK_TIMESTAMP_TYPE_TOP";
+		case VK_TIMESTAMP_TYPE_BOTTOM:	return "VK_TIMESTAMP_TYPE_BOTTOM";
+		default:						return DE_NULL;
+	}
+}
+
+const char* getRenderPassContentsName (VkRenderPassContents value)
+{
+	switch (value)
+	{
+		case VK_RENDER_PASS_CONTENTS_INLINE:				return "VK_RENDER_PASS_CONTENTS_INLINE";
+		case VK_RENDER_PASS_CONTENTS_SECONDARY_CMD_BUFFERS:	return "VK_RENDER_PASS_CONTENTS_SECONDARY_CMD_BUFFERS";
+		default:											return DE_NULL;
+	}
+}
+
+tcu::Format::Bitfield<32> getFormatFeatureFlagsStr (VkFormatFeatureFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_DEVICE_CREATE_VALIDATION_BIT,				"VK_DEVICE_CREATE_VALIDATION_BIT"),
-		tcu::Format::BitDesc(VK_DEVICE_CREATE_MULTI_DEVICE_IQ_MATCH_BIT,	"VK_DEVICE_CREATE_MULTI_DEVICE_IQ_MATCH_BIT"),
+		tcu::Format::BitDesc(VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT,				"VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT"),
+		tcu::Format::BitDesc(VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT,				"VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT"),
+		tcu::Format::BitDesc(VK_FORMAT_FEATURE_STORAGE_IMAGE_ATOMIC_BIT,		"VK_FORMAT_FEATURE_STORAGE_IMAGE_ATOMIC_BIT"),
+		tcu::Format::BitDesc(VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT,		"VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT"),
+		tcu::Format::BitDesc(VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT,		"VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT"),
+		tcu::Format::BitDesc(VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_ATOMIC_BIT,	"VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_ATOMIC_BIT"),
+		tcu::Format::BitDesc(VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT,				"VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT"),
+		tcu::Format::BitDesc(VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT,			"VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT"),
+		tcu::Format::BitDesc(VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT,		"VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT"),
+		tcu::Format::BitDesc(VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT,	"VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT"),
+		tcu::Format::BitDesc(VK_FORMAT_FEATURE_CONVERSION_BIT,					"VK_FORMAT_FEATURE_CONVERSION_BIT"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getImageUsageFlagsStr (VkImageUsageFlags value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_GENERAL,					"VK_IMAGE_USAGE_GENERAL"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_TRANSFER_SOURCE_BIT,		"VK_IMAGE_USAGE_TRANSFER_SOURCE_BIT"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_TRANSFER_DESTINATION_BIT,	"VK_IMAGE_USAGE_TRANSFER_DESTINATION_BIT"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_SAMPLED_BIT,				"VK_IMAGE_USAGE_SAMPLED_BIT"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_STORAGE_BIT,				"VK_IMAGE_USAGE_STORAGE_BIT"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,		"VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_DEPTH_STENCIL_BIT,			"VK_IMAGE_USAGE_DEPTH_STENCIL_BIT"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT,	"VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,		"VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -948,11 +825,11 @@ tcu::Format::Bitfield<32> getQueueFlagsStr (VkQueueFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_QUEUE_GRAPHICS_BIT,	"VK_QUEUE_GRAPHICS_BIT"),
-		tcu::Format::BitDesc(VK_QUEUE_COMPUTE_BIT,	"VK_QUEUE_COMPUTE_BIT"),
-		tcu::Format::BitDesc(VK_QUEUE_DMA_BIT,		"VK_QUEUE_DMA_BIT"),
-		tcu::Format::BitDesc(VK_QUEUE_MEMMGR_BIT,	"VK_QUEUE_MEMMGR_BIT"),
-		tcu::Format::BitDesc(VK_QUEUE_EXTENDED_BIT,	"VK_QUEUE_EXTENDED_BIT"),
+		tcu::Format::BitDesc(VK_QUEUE_GRAPHICS_BIT,			"VK_QUEUE_GRAPHICS_BIT"),
+		tcu::Format::BitDesc(VK_QUEUE_COMPUTE_BIT,			"VK_QUEUE_COMPUTE_BIT"),
+		tcu::Format::BitDesc(VK_QUEUE_DMA_BIT,				"VK_QUEUE_DMA_BIT"),
+		tcu::Format::BitDesc(VK_QUEUE_SPARSE_MEMMGR_BIT,	"VK_QUEUE_SPARSE_MEMMGR_BIT"),
+		tcu::Format::BitDesc(VK_QUEUE_EXTENDED_BIT,			"VK_QUEUE_EXTENDED_BIT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -963,41 +840,89 @@ tcu::Format::Bitfield<32> getMemoryPropertyFlagsStr (VkMemoryPropertyFlags value
 	{
 		tcu::Format::BitDesc(VK_MEMORY_PROPERTY_DEVICE_ONLY,				"VK_MEMORY_PROPERTY_DEVICE_ONLY"),
 		tcu::Format::BitDesc(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,			"VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT"),
-		tcu::Format::BitDesc(VK_MEMORY_PROPERTY_HOST_DEVICE_COHERENT_BIT,	"VK_MEMORY_PROPERTY_HOST_DEVICE_COHERENT_BIT"),
+		tcu::Format::BitDesc(VK_MEMORY_PROPERTY_HOST_NON_COHERENT_BIT,		"VK_MEMORY_PROPERTY_HOST_NON_COHERENT_BIT"),
 		tcu::Format::BitDesc(VK_MEMORY_PROPERTY_HOST_UNCACHED_BIT,			"VK_MEMORY_PROPERTY_HOST_UNCACHED_BIT"),
 		tcu::Format::BitDesc(VK_MEMORY_PROPERTY_HOST_WRITE_COMBINED_BIT,	"VK_MEMORY_PROPERTY_HOST_WRITE_COMBINED_BIT"),
-		tcu::Format::BitDesc(VK_MEMORY_PROPERTY_PREFER_HOST_LOCAL,			"VK_MEMORY_PROPERTY_PREFER_HOST_LOCAL"),
-		tcu::Format::BitDesc(VK_MEMORY_PROPERTY_SHAREABLE_BIT,				"VK_MEMORY_PROPERTY_SHAREABLE_BIT"),
+		tcu::Format::BitDesc(VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT,		"VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
-tcu::Format::Bitfield<32> getMemoryOutputFlagsStr (VkMemoryOutputFlags value)
+tcu::Format::Bitfield<32> getMemoryHeapFlagsStr (VkMemoryHeapFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_MEMORY_OUTPUT_CPU_WRITE_BIT,				"VK_MEMORY_OUTPUT_CPU_WRITE_BIT"),
-		tcu::Format::BitDesc(VK_MEMORY_OUTPUT_SHADER_WRITE_BIT,				"VK_MEMORY_OUTPUT_SHADER_WRITE_BIT"),
-		tcu::Format::BitDesc(VK_MEMORY_OUTPUT_COLOR_ATTACHMENT_BIT,			"VK_MEMORY_OUTPUT_COLOR_ATTACHMENT_BIT"),
-		tcu::Format::BitDesc(VK_MEMORY_OUTPUT_DEPTH_STENCIL_ATTACHMENT_BIT,	"VK_MEMORY_OUTPUT_DEPTH_STENCIL_ATTACHMENT_BIT"),
-		tcu::Format::BitDesc(VK_MEMORY_OUTPUT_TRANSFER_BIT,					"VK_MEMORY_OUTPUT_TRANSFER_BIT"),
+		tcu::Format::BitDesc(VK_MEMORY_HEAP_HOST_LOCAL,	"VK_MEMORY_HEAP_HOST_LOCAL"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
-tcu::Format::Bitfield<32> getMemoryInputFlagsStr (VkMemoryInputFlags value)
+tcu::Format::Bitfield<32> getDeviceCreateFlagsStr (VkDeviceCreateFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_MEMORY_INPUT_CPU_READ_BIT,					"VK_MEMORY_INPUT_CPU_READ_BIT"),
-		tcu::Format::BitDesc(VK_MEMORY_INPUT_INDIRECT_COMMAND_BIT,			"VK_MEMORY_INPUT_INDIRECT_COMMAND_BIT"),
-		tcu::Format::BitDesc(VK_MEMORY_INPUT_INDEX_FETCH_BIT,				"VK_MEMORY_INPUT_INDEX_FETCH_BIT"),
-		tcu::Format::BitDesc(VK_MEMORY_INPUT_VERTEX_ATTRIBUTE_FETCH_BIT,	"VK_MEMORY_INPUT_VERTEX_ATTRIBUTE_FETCH_BIT"),
-		tcu::Format::BitDesc(VK_MEMORY_INPUT_UNIFORM_READ_BIT,				"VK_MEMORY_INPUT_UNIFORM_READ_BIT"),
-		tcu::Format::BitDesc(VK_MEMORY_INPUT_SHADER_READ_BIT,				"VK_MEMORY_INPUT_SHADER_READ_BIT"),
-		tcu::Format::BitDesc(VK_MEMORY_INPUT_COLOR_ATTACHMENT_BIT,			"VK_MEMORY_INPUT_COLOR_ATTACHMENT_BIT"),
-		tcu::Format::BitDesc(VK_MEMORY_INPUT_DEPTH_STENCIL_ATTACHMENT_BIT,	"VK_MEMORY_INPUT_DEPTH_STENCIL_ATTACHMENT_BIT"),
-		tcu::Format::BitDesc(VK_MEMORY_INPUT_TRANSFER_BIT,					"VK_MEMORY_INPUT_TRANSFER_BIT"),
+		tcu::Format::BitDesc(VK_DEVICE_CREATE_VALIDATION_BIT,	"VK_DEVICE_CREATE_VALIDATION_BIT"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getSparseImageFormatFlagsStr (VkSparseImageFormatFlags value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_SPARSE_IMAGE_FMT_SINGLE_MIPTAIL_BIT,	"VK_SPARSE_IMAGE_FMT_SINGLE_MIPTAIL_BIT"),
+		tcu::Format::BitDesc(VK_SPARSE_IMAGE_FMT_ALIGNED_MIP_SIZE_BIT,	"VK_SPARSE_IMAGE_FMT_ALIGNED_MIP_SIZE_BIT"),
+		tcu::Format::BitDesc(VK_SPARSE_IMAGE_FMT_NONSTD_BLOCK_SIZE_BIT,	"VK_SPARSE_IMAGE_FMT_NONSTD_BLOCK_SIZE_BIT"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getSparseMemoryBindFlagsStr (VkSparseMemoryBindFlags value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_SPARSE_MEMORY_BIND_REPLICATE_64KIB_BLOCK_BIT,	"VK_SPARSE_MEMORY_BIND_REPLICATE_64KIB_BLOCK_BIT"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getFenceCreateFlagsStr (VkFenceCreateFlags value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_FENCE_CREATE_SIGNALED_BIT,	"VK_FENCE_CREATE_SIGNALED_BIT"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getQueryPipelineStatisticFlagsStr (VkQueryPipelineStatisticFlags value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_QUERY_PIPELINE_STATISTIC_IA_VERTICES_BIT,		"VK_QUERY_PIPELINE_STATISTIC_IA_VERTICES_BIT"),
+		tcu::Format::BitDesc(VK_QUERY_PIPELINE_STATISTIC_IA_PRIMITIVES_BIT,		"VK_QUERY_PIPELINE_STATISTIC_IA_PRIMITIVES_BIT"),
+		tcu::Format::BitDesc(VK_QUERY_PIPELINE_STATISTIC_VS_INVOCATIONS_BIT,	"VK_QUERY_PIPELINE_STATISTIC_VS_INVOCATIONS_BIT"),
+		tcu::Format::BitDesc(VK_QUERY_PIPELINE_STATISTIC_GS_INVOCATIONS_BIT,	"VK_QUERY_PIPELINE_STATISTIC_GS_INVOCATIONS_BIT"),
+		tcu::Format::BitDesc(VK_QUERY_PIPELINE_STATISTIC_GS_PRIMITIVES_BIT,		"VK_QUERY_PIPELINE_STATISTIC_GS_PRIMITIVES_BIT"),
+		tcu::Format::BitDesc(VK_QUERY_PIPELINE_STATISTIC_C_INVOCATIONS_BIT,		"VK_QUERY_PIPELINE_STATISTIC_C_INVOCATIONS_BIT"),
+		tcu::Format::BitDesc(VK_QUERY_PIPELINE_STATISTIC_C_PRIMITIVES_BIT,		"VK_QUERY_PIPELINE_STATISTIC_C_PRIMITIVES_BIT"),
+		tcu::Format::BitDesc(VK_QUERY_PIPELINE_STATISTIC_FS_INVOCATIONS_BIT,	"VK_QUERY_PIPELINE_STATISTIC_FS_INVOCATIONS_BIT"),
+		tcu::Format::BitDesc(VK_QUERY_PIPELINE_STATISTIC_TCS_PATCHES_BIT,		"VK_QUERY_PIPELINE_STATISTIC_TCS_PATCHES_BIT"),
+		tcu::Format::BitDesc(VK_QUERY_PIPELINE_STATISTIC_TES_INVOCATIONS_BIT,	"VK_QUERY_PIPELINE_STATISTIC_TES_INVOCATIONS_BIT"),
+		tcu::Format::BitDesc(VK_QUERY_PIPELINE_STATISTIC_CS_INVOCATIONS_BIT,	"VK_QUERY_PIPELINE_STATISTIC_CS_INVOCATIONS_BIT"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getQueryResultFlagsStr (VkQueryResultFlags value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_QUERY_RESULT_DEFAULT,				"VK_QUERY_RESULT_DEFAULT"),
+		tcu::Format::BitDesc(VK_QUERY_RESULT_64_BIT,				"VK_QUERY_RESULT_64_BIT"),
+		tcu::Format::BitDesc(VK_QUERY_RESULT_WAIT_BIT,				"VK_QUERY_RESULT_WAIT_BIT"),
+		tcu::Format::BitDesc(VK_QUERY_RESULT_WITH_AVAILABILITY_BIT,	"VK_QUERY_RESULT_WITH_AVAILABILITY_BIT"),
+		tcu::Format::BitDesc(VK_QUERY_RESULT_PARTIAL_BIT,			"VK_QUERY_RESULT_PARTIAL_BIT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -1024,8 +949,56 @@ tcu::Format::Bitfield<32> getBufferCreateFlagsStr (VkBufferCreateFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_BUFFER_CREATE_SHAREABLE_BIT,	"VK_BUFFER_CREATE_SHAREABLE_BIT"),
-		tcu::Format::BitDesc(VK_BUFFER_CREATE_SPARSE_BIT,		"VK_BUFFER_CREATE_SPARSE_BIT"),
+		tcu::Format::BitDesc(VK_BUFFER_CREATE_SPARSE_BIT,			"VK_BUFFER_CREATE_SPARSE_BIT"),
+		tcu::Format::BitDesc(VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT,	"VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT"),
+		tcu::Format::BitDesc(VK_BUFFER_CREATE_SPARSE_ALIASED_BIT,	"VK_BUFFER_CREATE_SPARSE_ALIASED_BIT"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getImageCreateFlagsStr (VkImageCreateFlags value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_IMAGE_CREATE_SPARSE_BIT,			"VK_IMAGE_CREATE_SPARSE_BIT"),
+		tcu::Format::BitDesc(VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT,	"VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT"),
+		tcu::Format::BitDesc(VK_IMAGE_CREATE_SPARSE_ALIASED_BIT,	"VK_IMAGE_CREATE_SPARSE_ALIASED_BIT"),
+		tcu::Format::BitDesc(VK_IMAGE_CREATE_INVARIANT_DATA_BIT,	"VK_IMAGE_CREATE_INVARIANT_DATA_BIT"),
+		tcu::Format::BitDesc(VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT,	"VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT"),
+		tcu::Format::BitDesc(VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT,	"VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getAttachmentViewCreateFlagsStr (VkAttachmentViewCreateFlags value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_ATTACHMENT_VIEW_CREATE_READ_ONLY_DEPTH_BIT,		"VK_ATTACHMENT_VIEW_CREATE_READ_ONLY_DEPTH_BIT"),
+		tcu::Format::BitDesc(VK_ATTACHMENT_VIEW_CREATE_READ_ONLY_STENCIL_BIT,	"VK_ATTACHMENT_VIEW_CREATE_READ_ONLY_STENCIL_BIT"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getChannelFlagsStr (VkChannelFlags value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_CHANNEL_R_BIT,	"VK_CHANNEL_R_BIT"),
+		tcu::Format::BitDesc(VK_CHANNEL_G_BIT,	"VK_CHANNEL_G_BIT"),
+		tcu::Format::BitDesc(VK_CHANNEL_B_BIT,	"VK_CHANNEL_B_BIT"),
+		tcu::Format::BitDesc(VK_CHANNEL_A_BIT,	"VK_CHANNEL_A_BIT"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getPipelineCreateFlagsStr (VkPipelineCreateFlags value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_DISABLE_OPTIMIZATION_BIT,	"VK_PIPELINE_CREATE_DISABLE_OPTIMIZATION_BIT"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT,		"VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_DERIVATIVE_BIT,				"VK_PIPELINE_CREATE_DERIVATIVE_BIT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -1045,139 +1018,86 @@ tcu::Format::Bitfield<32> getShaderStageFlagsStr (VkShaderStageFlags value)
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
-tcu::Format::Bitfield<32> getImageUsageFlagsStr (VkImageUsageFlags value)
+tcu::Format::Bitfield<32> getSubpassDescriptionFlagsStr (VkSubpassDescriptionFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_IMAGE_USAGE_GENERAL,					"VK_IMAGE_USAGE_GENERAL"),
-		tcu::Format::BitDesc(VK_IMAGE_USAGE_TRANSFER_SOURCE_BIT,		"VK_IMAGE_USAGE_TRANSFER_SOURCE_BIT"),
-		tcu::Format::BitDesc(VK_IMAGE_USAGE_TRANSFER_DESTINATION_BIT,	"VK_IMAGE_USAGE_TRANSFER_DESTINATION_BIT"),
-		tcu::Format::BitDesc(VK_IMAGE_USAGE_SAMPLED_BIT,				"VK_IMAGE_USAGE_SAMPLED_BIT"),
-		tcu::Format::BitDesc(VK_IMAGE_USAGE_STORAGE_BIT,				"VK_IMAGE_USAGE_STORAGE_BIT"),
-		tcu::Format::BitDesc(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,		"VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT"),
-		tcu::Format::BitDesc(VK_IMAGE_USAGE_DEPTH_STENCIL_BIT,			"VK_IMAGE_USAGE_DEPTH_STENCIL_BIT"),
-		tcu::Format::BitDesc(VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT,	"VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT"),
+		tcu::Format::BitDesc(VK_SUBPASS_DESCRIPTION_NO_OVERDRAW_BIT,	"VK_SUBPASS_DESCRIPTION_NO_OVERDRAW_BIT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
-tcu::Format::Bitfield<32> getImageCreateFlagsStr (VkImageCreateFlags value)
+tcu::Format::Bitfield<32> getPipelineStageFlagsStr (VkPipelineStageFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_IMAGE_CREATE_INVARIANT_DATA_BIT,	"VK_IMAGE_CREATE_INVARIANT_DATA_BIT"),
-		tcu::Format::BitDesc(VK_IMAGE_CREATE_CLONEABLE_BIT,			"VK_IMAGE_CREATE_CLONEABLE_BIT"),
-		tcu::Format::BitDesc(VK_IMAGE_CREATE_SHAREABLE_BIT,			"VK_IMAGE_CREATE_SHAREABLE_BIT"),
-		tcu::Format::BitDesc(VK_IMAGE_CREATE_SPARSE_BIT,			"VK_IMAGE_CREATE_SPARSE_BIT"),
-		tcu::Format::BitDesc(VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT,	"VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT"),
-		tcu::Format::BitDesc(VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT,	"VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT"),
+		tcu::Format::BitDesc(VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,				"VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT"),
+		tcu::Format::BitDesc(VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT,			"VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT"),
+		tcu::Format::BitDesc(VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,			"VK_PIPELINE_STAGE_VERTEX_INPUT_BIT"),
+		tcu::Format::BitDesc(VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,			"VK_PIPELINE_STAGE_VERTEX_SHADER_BIT"),
+		tcu::Format::BitDesc(VK_PIPELINE_STAGE_TESS_CONTROL_SHADER_BIT,		"VK_PIPELINE_STAGE_TESS_CONTROL_SHADER_BIT"),
+		tcu::Format::BitDesc(VK_PIPELINE_STAGE_TESS_EVALUATION_SHADER_BIT,	"VK_PIPELINE_STAGE_TESS_EVALUATION_SHADER_BIT"),
+		tcu::Format::BitDesc(VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT,			"VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT"),
+		tcu::Format::BitDesc(VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,			"VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT"),
+		tcu::Format::BitDesc(VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,	"VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT"),
+		tcu::Format::BitDesc(VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,		"VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT"),
+		tcu::Format::BitDesc(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,	"VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT"),
+		tcu::Format::BitDesc(VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,			"VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT"),
+		tcu::Format::BitDesc(VK_PIPELINE_STAGE_TRANSFER_BIT,				"VK_PIPELINE_STAGE_TRANSFER_BIT"),
+		tcu::Format::BitDesc(VK_PIPELINE_STAGE_TRANSITION_BIT,				"VK_PIPELINE_STAGE_TRANSITION_BIT"),
+		tcu::Format::BitDesc(VK_PIPELINE_STAGE_HOST_BIT,					"VK_PIPELINE_STAGE_HOST_BIT"),
+		tcu::Format::BitDesc(VK_PIPELINE_STAGE_ALL_GRAPHICS,				"VK_PIPELINE_STAGE_ALL_GRAPHICS"),
+		tcu::Format::BitDesc(VK_PIPELINE_STAGE_ALL_GPU_COMMANDS,			"VK_PIPELINE_STAGE_ALL_GPU_COMMANDS"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
-tcu::Format::Bitfield<32> getDepthStencilViewCreateFlagsStr (VkDepthStencilViewCreateFlags value)
+tcu::Format::Bitfield<32> getMemoryOutputFlagsStr (VkMemoryOutputFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_DEPTH_STENCIL_VIEW_CREATE_READ_ONLY_DEPTH_BIT,		"VK_DEPTH_STENCIL_VIEW_CREATE_READ_ONLY_DEPTH_BIT"),
-		tcu::Format::BitDesc(VK_DEPTH_STENCIL_VIEW_CREATE_READ_ONLY_STENCIL_BIT,	"VK_DEPTH_STENCIL_VIEW_CREATE_READ_ONLY_STENCIL_BIT"),
+		tcu::Format::BitDesc(VK_MEMORY_OUTPUT_HOST_WRITE_BIT,				"VK_MEMORY_OUTPUT_HOST_WRITE_BIT"),
+		tcu::Format::BitDesc(VK_MEMORY_OUTPUT_SHADER_WRITE_BIT,				"VK_MEMORY_OUTPUT_SHADER_WRITE_BIT"),
+		tcu::Format::BitDesc(VK_MEMORY_OUTPUT_COLOR_ATTACHMENT_BIT,			"VK_MEMORY_OUTPUT_COLOR_ATTACHMENT_BIT"),
+		tcu::Format::BitDesc(VK_MEMORY_OUTPUT_DEPTH_STENCIL_ATTACHMENT_BIT,	"VK_MEMORY_OUTPUT_DEPTH_STENCIL_ATTACHMENT_BIT"),
+		tcu::Format::BitDesc(VK_MEMORY_OUTPUT_TRANSFER_BIT,					"VK_MEMORY_OUTPUT_TRANSFER_BIT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
-tcu::Format::Bitfield<32> getPipelineCreateFlagsStr (VkPipelineCreateFlags value)
+tcu::Format::Bitfield<32> getMemoryInputFlagsStr (VkMemoryInputFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_PIPELINE_CREATE_DISABLE_OPTIMIZATION_BIT,	"VK_PIPELINE_CREATE_DISABLE_OPTIMIZATION_BIT"),
-		tcu::Format::BitDesc(VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT,		"VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT"),
+		tcu::Format::BitDesc(VK_MEMORY_INPUT_HOST_READ_BIT,					"VK_MEMORY_INPUT_HOST_READ_BIT"),
+		tcu::Format::BitDesc(VK_MEMORY_INPUT_INDIRECT_COMMAND_BIT,			"VK_MEMORY_INPUT_INDIRECT_COMMAND_BIT"),
+		tcu::Format::BitDesc(VK_MEMORY_INPUT_INDEX_FETCH_BIT,				"VK_MEMORY_INPUT_INDEX_FETCH_BIT"),
+		tcu::Format::BitDesc(VK_MEMORY_INPUT_VERTEX_ATTRIBUTE_FETCH_BIT,	"VK_MEMORY_INPUT_VERTEX_ATTRIBUTE_FETCH_BIT"),
+		tcu::Format::BitDesc(VK_MEMORY_INPUT_UNIFORM_READ_BIT,				"VK_MEMORY_INPUT_UNIFORM_READ_BIT"),
+		tcu::Format::BitDesc(VK_MEMORY_INPUT_SHADER_READ_BIT,				"VK_MEMORY_INPUT_SHADER_READ_BIT"),
+		tcu::Format::BitDesc(VK_MEMORY_INPUT_COLOR_ATTACHMENT_BIT,			"VK_MEMORY_INPUT_COLOR_ATTACHMENT_BIT"),
+		tcu::Format::BitDesc(VK_MEMORY_INPUT_DEPTH_STENCIL_ATTACHMENT_BIT,	"VK_MEMORY_INPUT_DEPTH_STENCIL_ATTACHMENT_BIT"),
+		tcu::Format::BitDesc(VK_MEMORY_INPUT_INPUT_ATTACHMENT_BIT,			"VK_MEMORY_INPUT_INPUT_ATTACHMENT_BIT"),
+		tcu::Format::BitDesc(VK_MEMORY_INPUT_TRANSFER_BIT,					"VK_MEMORY_INPUT_TRANSFER_BIT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
-tcu::Format::Bitfield<32> getChannelFlagsStr (VkChannelFlags value)
+tcu::Format::Bitfield<32> getCmdPoolCreateFlagsStr (VkCmdPoolCreateFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_CHANNEL_R_BIT,	"VK_CHANNEL_R_BIT"),
-		tcu::Format::BitDesc(VK_CHANNEL_G_BIT,	"VK_CHANNEL_G_BIT"),
-		tcu::Format::BitDesc(VK_CHANNEL_B_BIT,	"VK_CHANNEL_B_BIT"),
-		tcu::Format::BitDesc(VK_CHANNEL_A_BIT,	"VK_CHANNEL_A_BIT"),
+		tcu::Format::BitDesc(VK_CMD_POOL_CREATE_TRANSIENT_BIT,				"VK_CMD_POOL_CREATE_TRANSIENT_BIT"),
+		tcu::Format::BitDesc(VK_CMD_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,	"VK_CMD_POOL_CREATE_RESET_COMMAND_BUFFER_BIT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
-tcu::Format::Bitfield<32> getFenceCreateFlagsStr (VkFenceCreateFlags value)
+tcu::Format::Bitfield<32> getCmdPoolResetFlagsStr (VkCmdPoolResetFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_FENCE_CREATE_SIGNALED_BIT,	"VK_FENCE_CREATE_SIGNALED_BIT"),
-	};
-	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
-}
-
-tcu::Format::Bitfield<32> getSemaphoreCreateFlagsStr (VkSemaphoreCreateFlags value)
-{
-	static const tcu::Format::BitDesc s_desc[] =
-	{
-		tcu::Format::BitDesc(VK_SEMAPHORE_CREATE_SHAREABLE_BIT,	"VK_SEMAPHORE_CREATE_SHAREABLE_BIT"),
-	};
-	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
-}
-
-tcu::Format::Bitfield<32> getFormatFeatureFlagsStr (VkFormatFeatureFlags value)
-{
-	static const tcu::Format::BitDesc s_desc[] =
-	{
-		tcu::Format::BitDesc(VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT,				"VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT"),
-		tcu::Format::BitDesc(VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT,				"VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT"),
-		tcu::Format::BitDesc(VK_FORMAT_FEATURE_STORAGE_IMAGE_ATOMIC_BIT,		"VK_FORMAT_FEATURE_STORAGE_IMAGE_ATOMIC_BIT"),
-		tcu::Format::BitDesc(VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT,		"VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT"),
-		tcu::Format::BitDesc(VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT,		"VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT"),
-		tcu::Format::BitDesc(VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_ATOMIC_BIT,	"VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_ATOMIC_BIT"),
-		tcu::Format::BitDesc(VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT,				"VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT"),
-		tcu::Format::BitDesc(VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT,			"VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT"),
-		tcu::Format::BitDesc(VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT,		"VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT"),
-		tcu::Format::BitDesc(VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT,	"VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT"),
-		tcu::Format::BitDesc(VK_FORMAT_FEATURE_CONVERSION_BIT,					"VK_FORMAT_FEATURE_CONVERSION_BIT"),
-	};
-	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
-}
-
-tcu::Format::Bitfield<32> getQueryControlFlagsStr (VkQueryControlFlags value)
-{
-	static const tcu::Format::BitDesc s_desc[] =
-	{
-		tcu::Format::BitDesc(VK_QUERY_CONTROL_CONSERVATIVE_BIT,	"VK_QUERY_CONTROL_CONSERVATIVE_BIT"),
-	};
-	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
-}
-
-tcu::Format::Bitfield<32> getQueryResultFlagsStr (VkQueryResultFlags value)
-{
-	static const tcu::Format::BitDesc s_desc[] =
-	{
-		tcu::Format::BitDesc(VK_QUERY_RESULT_32_BIT,				"VK_QUERY_RESULT_32_BIT"),
-		tcu::Format::BitDesc(VK_QUERY_RESULT_64_BIT,				"VK_QUERY_RESULT_64_BIT"),
-		tcu::Format::BitDesc(VK_QUERY_RESULT_NO_WAIT_BIT,			"VK_QUERY_RESULT_NO_WAIT_BIT"),
-		tcu::Format::BitDesc(VK_QUERY_RESULT_WAIT_BIT,				"VK_QUERY_RESULT_WAIT_BIT"),
-		tcu::Format::BitDesc(VK_QUERY_RESULT_WITH_AVAILABILITY_BIT,	"VK_QUERY_RESULT_WITH_AVAILABILITY_BIT"),
-		tcu::Format::BitDesc(VK_QUERY_RESULT_PARTIAL_BIT,			"VK_QUERY_RESULT_PARTIAL_BIT"),
-	};
-	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
-}
-
-tcu::Format::Bitfield<32> getPhysicalDeviceCompatibilityFlagsStr (VkPhysicalDeviceCompatibilityFlags value)
-{
-	static const tcu::Format::BitDesc s_desc[] =
-	{
-		tcu::Format::BitDesc(VK_PHYSICAL_DEVICE_COMPATIBILITY_FEATURES_BIT,					"VK_PHYSICAL_DEVICE_COMPATIBILITY_FEATURES_BIT"),
-		tcu::Format::BitDesc(VK_PHYSICAL_DEVICE_COMPATIBILITY_IQ_MATCH_BIT,					"VK_PHYSICAL_DEVICE_COMPATIBILITY_IQ_MATCH_BIT"),
-		tcu::Format::BitDesc(VK_PHYSICAL_DEVICE_COMPATIBILITY_PEER_TRANSFER_BIT,			"VK_PHYSICAL_DEVICE_COMPATIBILITY_PEER_TRANSFER_BIT"),
-		tcu::Format::BitDesc(VK_PHYSICAL_DEVICE_COMPATIBILITY_SHARED_MEMORY_BIT,			"VK_PHYSICAL_DEVICE_COMPATIBILITY_SHARED_MEMORY_BIT"),
-		tcu::Format::BitDesc(VK_PHYSICAL_DEVICE_COMPATIBILITY_SHARED_SYNC_BIT,				"VK_PHYSICAL_DEVICE_COMPATIBILITY_SHARED_SYNC_BIT"),
-		tcu::Format::BitDesc(VK_PHYSICAL_DEVICE_COMPATIBILITY_SHARED_DEVICE0_DISPLAY_BIT,	"VK_PHYSICAL_DEVICE_COMPATIBILITY_SHARED_DEVICE0_DISPLAY_BIT"),
-		tcu::Format::BitDesc(VK_PHYSICAL_DEVICE_COMPATIBILITY_SHARED_DEVICE1_DISPLAY_BIT,	"VK_PHYSICAL_DEVICE_COMPATIBILITY_SHARED_DEVICE1_DISPLAY_BIT"),
+		tcu::Format::BitDesc(VK_CMD_POOL_RESET_RELEASE_RESOURCES,	"VK_CMD_POOL_RESET_RELEASE_RESOURCES"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -1190,148 +1110,39 @@ tcu::Format::Bitfield<32> getCmdBufferOptimizeFlagsStr (VkCmdBufferOptimizeFlags
 		tcu::Format::BitDesc(VK_CMD_BUFFER_OPTIMIZE_PIPELINE_SWITCH_BIT,		"VK_CMD_BUFFER_OPTIMIZE_PIPELINE_SWITCH_BIT"),
 		tcu::Format::BitDesc(VK_CMD_BUFFER_OPTIMIZE_ONE_TIME_SUBMIT_BIT,		"VK_CMD_BUFFER_OPTIMIZE_ONE_TIME_SUBMIT_BIT"),
 		tcu::Format::BitDesc(VK_CMD_BUFFER_OPTIMIZE_DESCRIPTOR_SET_SWITCH_BIT,	"VK_CMD_BUFFER_OPTIMIZE_DESCRIPTOR_SET_SWITCH_BIT"),
+		tcu::Format::BitDesc(VK_CMD_BUFFER_OPTIMIZE_NO_SIMULTANEOUS_USE_BIT,	"VK_CMD_BUFFER_OPTIMIZE_NO_SIMULTANEOUS_USE_BIT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
-tcu::Format::Bitfield<32> getQueryPipelineStatisticFlagsStr (VkQueryPipelineStatisticFlags value)
+tcu::Format::Bitfield<32> getCmdBufferResetFlagsStr (VkCmdBufferResetFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_QUERY_PIPELINE_STATISTIC_IA_VERTICES_BIT,		"VK_QUERY_PIPELINE_STATISTIC_IA_VERTICES_BIT"),
-		tcu::Format::BitDesc(VK_QUERY_PIPELINE_STATISTIC_IA_PRIMITIVES_BIT,		"VK_QUERY_PIPELINE_STATISTIC_IA_PRIMITIVES_BIT"),
-		tcu::Format::BitDesc(VK_QUERY_PIPELINE_STATISTIC_VS_INVOCATIONS_BIT,	"VK_QUERY_PIPELINE_STATISTIC_VS_INVOCATIONS_BIT"),
-		tcu::Format::BitDesc(VK_QUERY_PIPELINE_STATISTIC_GS_INVOCATIONS_BIT,	"VK_QUERY_PIPELINE_STATISTIC_GS_INVOCATIONS_BIT"),
-		tcu::Format::BitDesc(VK_QUERY_PIPELINE_STATISTIC_GS_PRIMITIVES_BIT,		"VK_QUERY_PIPELINE_STATISTIC_GS_PRIMITIVES_BIT"),
-		tcu::Format::BitDesc(VK_QUERY_PIPELINE_STATISTIC_C_INVOCATIONS_BIT,		"VK_QUERY_PIPELINE_STATISTIC_C_INVOCATIONS_BIT"),
-		tcu::Format::BitDesc(VK_QUERY_PIPELINE_STATISTIC_C_PRIMITIVES_BIT,		"VK_QUERY_PIPELINE_STATISTIC_C_PRIMITIVES_BIT"),
-		tcu::Format::BitDesc(VK_QUERY_PIPELINE_STATISTIC_FS_INVOCATIONS_BIT,	"VK_QUERY_PIPELINE_STATISTIC_FS_INVOCATIONS_BIT"),
-		tcu::Format::BitDesc(VK_QUERY_PIPELINE_STATISTIC_TCS_PATCHES_BIT,		"VK_QUERY_PIPELINE_STATISTIC_TCS_PATCHES_BIT"),
-		tcu::Format::BitDesc(VK_QUERY_PIPELINE_STATISTIC_TES_INVOCATIONS_BIT,	"VK_QUERY_PIPELINE_STATISTIC_TES_INVOCATIONS_BIT"),
-		tcu::Format::BitDesc(VK_QUERY_PIPELINE_STATISTIC_CS_INVOCATIONS_BIT,	"VK_QUERY_PIPELINE_STATISTIC_CS_INVOCATIONS_BIT"),
+		tcu::Format::BitDesc(VK_CMD_BUFFER_RESET_RELEASE_RESOURCES,	"VK_CMD_BUFFER_RESET_RELEASE_RESOURCES"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
-std::ostream& operator<< (std::ostream& s, const VkOffset2D& value)
+tcu::Format::Bitfield<32> getImageAspectFlagsStr (VkImageAspectFlags value)
 {
-	s << "VkOffset2D = {\n";
-	s << "x = " << value.x << '\n';
-	s << "y = " << value.y << '\n';
-	s << '}';
-	return s;
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_IMAGE_ASPECT_COLOR_BIT,		"VK_IMAGE_ASPECT_COLOR_BIT"),
+		tcu::Format::BitDesc(VK_IMAGE_ASPECT_DEPTH_BIT,		"VK_IMAGE_ASPECT_DEPTH_BIT"),
+		tcu::Format::BitDesc(VK_IMAGE_ASPECT_STENCIL_BIT,	"VK_IMAGE_ASPECT_STENCIL_BIT"),
+		tcu::Format::BitDesc(VK_IMAGE_ASPECT_METADATA_BIT,	"VK_IMAGE_ASPECT_METADATA_BIT"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
-std::ostream& operator<< (std::ostream& s, const VkOffset3D& value)
+tcu::Format::Bitfield<32> getQueryControlFlagsStr (VkQueryControlFlags value)
 {
-	s << "VkOffset3D = {\n";
-	s << "x = " << value.x << '\n';
-	s << "y = " << value.y << '\n';
-	s << "z = " << value.z << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkExtent2D& value)
-{
-	s << "VkExtent2D = {\n";
-	s << "width = " << value.width << '\n';
-	s << "height = " << value.height << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkExtent3D& value)
-{
-	s << "VkExtent3D = {\n";
-	s << "width = " << value.width << '\n';
-	s << "height = " << value.height << '\n';
-	s << "depth = " << value.depth << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkViewport& value)
-{
-	s << "VkViewport = {\n";
-	s << "originX = " << value.originX << '\n';
-	s << "originY = " << value.originY << '\n';
-	s << "width = " << value.width << '\n';
-	s << "height = " << value.height << '\n';
-	s << "minDepth = " << value.minDepth << '\n';
-	s << "maxDepth = " << value.maxDepth << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkRect& value)
-{
-	s << "VkRect = {\n";
-	s << "offset = " << value.offset << '\n';
-	s << "extent = " << value.extent << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkChannelMapping& value)
-{
-	s << "VkChannelMapping = {\n";
-	s << "r = " << value.r << '\n';
-	s << "g = " << value.g << '\n';
-	s << "b = " << value.b << '\n';
-	s << "a = " << value.a << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceProperties& value)
-{
-	s << "VkPhysicalDeviceProperties = {\n";
-	s << "apiVersion = " << value.apiVersion << '\n';
-	s << "driverVersion = " << value.driverVersion << '\n';
-	s << "vendorId = " << value.vendorId << '\n';
-	s << "deviceId = " << value.deviceId << '\n';
-	s << "deviceType = " << value.deviceType << '\n';
-	s << "deviceName = " << (const char*)value.deviceName << '\n';
-	s << "maxInlineMemoryUpdateSize = " << value.maxInlineMemoryUpdateSize << '\n';
-	s << "maxBoundDescriptorSets = " << value.maxBoundDescriptorSets << '\n';
-	s << "maxThreadGroupSize = " << value.maxThreadGroupSize << '\n';
-	s << "timestampFrequency = " << value.timestampFrequency << '\n';
-	s << "multiColorAttachmentClears = " << value.multiColorAttachmentClears << '\n';
-	s << "maxDescriptorSets = " << value.maxDescriptorSets << '\n';
-	s << "maxViewports = " << value.maxViewports << '\n';
-	s << "maxColorAttachments = " << value.maxColorAttachments << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkPhysicalDevicePerformance& value)
-{
-	s << "VkPhysicalDevicePerformance = {\n";
-	s << "maxDeviceClock = " << value.maxDeviceClock << '\n';
-	s << "aluPerClock = " << value.aluPerClock << '\n';
-	s << "texPerClock = " << value.texPerClock << '\n';
-	s << "primsPerClock = " << value.primsPerClock << '\n';
-	s << "pixelsPerClock = " << value.pixelsPerClock << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceCompatibilityInfo& value)
-{
-	s << "VkPhysicalDeviceCompatibilityInfo = {\n";
-	s << "compatibilityFlags = " << getPhysicalDeviceCompatibilityFlagsStr(value.compatibilityFlags) << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkExtensionProperties& value)
-{
-	s << "VkExtensionProperties = {\n";
-	s << "extName = " << (const char*)value.extName << '\n';
-	s << "version = " << value.version << '\n';
-	s << '}';
-	return s;
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_QUERY_CONTROL_CONSERVATIVE_BIT,	"VK_QUERY_CONTROL_CONSERVATIVE_BIT"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
 std::ostream& operator<< (std::ostream& s, const VkApplicationInfo& value)
@@ -1358,29 +1169,6 @@ std::ostream& operator<< (std::ostream& s, const VkAllocCallbacks& value)
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkDeviceQueueCreateInfo& value)
-{
-	s << "VkDeviceQueueCreateInfo = {\n";
-	s << "queueNodeIndex = " << value.queueNodeIndex << '\n';
-	s << "queueCount = " << value.queueCount << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkDeviceCreateInfo& value)
-{
-	s << "VkDeviceCreateInfo = {\n";
-	s << "sType = " << value.sType << '\n';
-	s << "pNext = " << value.pNext << '\n';
-	s << "queueRecordCount = " << value.queueRecordCount << '\n';
-	s << "pRequestedQueues = " << value.pRequestedQueues << '\n';
-	s << "extensionCount = " << value.extensionCount << '\n';
-	s << "ppEnabledExtensionNames = " << value.ppEnabledExtensionNames << '\n';
-	s << "flags = " << getDeviceCreateFlagsStr(value.flags) << '\n';
-	s << '}';
-	return s;
-}
-
 std::ostream& operator<< (std::ostream& s, const VkInstanceCreateInfo& value)
 {
 	s << "VkInstanceCreateInfo = {\n";
@@ -1388,84 +1176,75 @@ std::ostream& operator<< (std::ostream& s, const VkInstanceCreateInfo& value)
 	s << "pNext = " << value.pNext << '\n';
 	s << "pAppInfo = " << value.pAppInfo << '\n';
 	s << "pAllocCb = " << value.pAllocCb << '\n';
+	s << "layerCount = " << value.layerCount << '\n';
+	s << "ppEnabledLayerNames = " << value.ppEnabledLayerNames << '\n';
 	s << "extensionCount = " << value.extensionCount << '\n';
 	s << "ppEnabledExtensionNames = " << value.ppEnabledExtensionNames << '\n';
 	s << '}';
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkLayerCreateInfo& value)
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceFeatures& value)
 {
-	s << "VkLayerCreateInfo = {\n";
-	s << "sType = " << value.sType << '\n';
-	s << "pNext = " << value.pNext << '\n';
-	s << "layerCount = " << value.layerCount << '\n';
-	s << "ppActiveLayerNames = " << value.ppActiveLayerNames << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceQueueProperties& value)
-{
-	s << "VkPhysicalDeviceQueueProperties = {\n";
-	s << "queueFlags = " << getQueueFlagsStr(value.queueFlags) << '\n';
-	s << "queueCount = " << value.queueCount << '\n';
-	s << "maxAtomicCounters = " << value.maxAtomicCounters << '\n';
-	s << "supportsTimestamps = " << value.supportsTimestamps << '\n';
-	s << "maxMemReferences = " << value.maxMemReferences << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceMemoryProperties& value)
-{
-	s << "VkPhysicalDeviceMemoryProperties = {\n";
-	s << "supportsMigration = " << value.supportsMigration << '\n';
-	s << "supportsPinning = " << value.supportsPinning << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkMemoryAllocInfo& value)
-{
-	s << "VkMemoryAllocInfo = {\n";
-	s << "sType = " << value.sType << '\n';
-	s << "pNext = " << value.pNext << '\n';
-	s << "allocationSize = " << value.allocationSize << '\n';
-	s << "memProps = " << getMemoryPropertyFlagsStr(value.memProps) << '\n';
-	s << "memPriority = " << value.memPriority << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkMemoryOpenInfo& value)
-{
-	s << "VkMemoryOpenInfo = {\n";
-	s << "sType = " << value.sType << '\n';
-	s << "pNext = " << value.pNext << '\n';
-	s << "sharedMem = " << value.sharedMem << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkPeerMemoryOpenInfo& value)
-{
-	s << "VkPeerMemoryOpenInfo = {\n";
-	s << "sType = " << value.sType << '\n';
-	s << "pNext = " << value.pNext << '\n';
-	s << "originalMem = " << value.originalMem << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkMemoryRequirements& value)
-{
-	s << "VkMemoryRequirements = {\n";
-	s << "size = " << value.size << '\n';
-	s << "alignment = " << value.alignment << '\n';
-	s << "granularity = " << value.granularity << '\n';
-	s << "memPropsAllowed = " << getMemoryPropertyFlagsStr(value.memPropsAllowed) << '\n';
-	s << "memPropsRequired = " << getMemoryPropertyFlagsStr(value.memPropsRequired) << '\n';
+	s << "VkPhysicalDeviceFeatures = {\n";
+	s << "robustBufferAccess = " << value.robustBufferAccess << '\n';
+	s << "fullDrawIndexUint32 = " << value.fullDrawIndexUint32 << '\n';
+	s << "imageCubeArray = " << value.imageCubeArray << '\n';
+	s << "independentBlend = " << value.independentBlend << '\n';
+	s << "geometryShader = " << value.geometryShader << '\n';
+	s << "tessellationShader = " << value.tessellationShader << '\n';
+	s << "sampleRateShading = " << value.sampleRateShading << '\n';
+	s << "dualSourceBlend = " << value.dualSourceBlend << '\n';
+	s << "logicOp = " << value.logicOp << '\n';
+	s << "instancedDrawIndirect = " << value.instancedDrawIndirect << '\n';
+	s << "depthClip = " << value.depthClip << '\n';
+	s << "depthBiasClamp = " << value.depthBiasClamp << '\n';
+	s << "fillModeNonSolid = " << value.fillModeNonSolid << '\n';
+	s << "depthBounds = " << value.depthBounds << '\n';
+	s << "wideLines = " << value.wideLines << '\n';
+	s << "largePoints = " << value.largePoints << '\n';
+	s << "textureCompressionETC2 = " << value.textureCompressionETC2 << '\n';
+	s << "textureCompressionASTC_LDR = " << value.textureCompressionASTC_LDR << '\n';
+	s << "textureCompressionBC = " << value.textureCompressionBC << '\n';
+	s << "pipelineStatisticsQuery = " << value.pipelineStatisticsQuery << '\n';
+	s << "vertexSideEffects = " << value.vertexSideEffects << '\n';
+	s << "tessellationSideEffects = " << value.tessellationSideEffects << '\n';
+	s << "geometrySideEffects = " << value.geometrySideEffects << '\n';
+	s << "fragmentSideEffects = " << value.fragmentSideEffects << '\n';
+	s << "shaderTessellationPointSize = " << value.shaderTessellationPointSize << '\n';
+	s << "shaderGeometryPointSize = " << value.shaderGeometryPointSize << '\n';
+	s << "shaderTextureGatherExtended = " << value.shaderTextureGatherExtended << '\n';
+	s << "shaderStorageImageExtendedFormats = " << value.shaderStorageImageExtendedFormats << '\n';
+	s << "shaderStorageImageMultisample = " << value.shaderStorageImageMultisample << '\n';
+	s << "shaderStorageBufferArrayConstantIndexing = " << value.shaderStorageBufferArrayConstantIndexing << '\n';
+	s << "shaderStorageImageArrayConstantIndexing = " << value.shaderStorageImageArrayConstantIndexing << '\n';
+	s << "shaderUniformBufferArrayDynamicIndexing = " << value.shaderUniformBufferArrayDynamicIndexing << '\n';
+	s << "shaderSampledImageArrayDynamicIndexing = " << value.shaderSampledImageArrayDynamicIndexing << '\n';
+	s << "shaderStorageBufferArrayDynamicIndexing = " << value.shaderStorageBufferArrayDynamicIndexing << '\n';
+	s << "shaderStorageImageArrayDynamicIndexing = " << value.shaderStorageImageArrayDynamicIndexing << '\n';
+	s << "shaderClipDistance = " << value.shaderClipDistance << '\n';
+	s << "shaderCullDistance = " << value.shaderCullDistance << '\n';
+	s << "shaderFloat64 = " << value.shaderFloat64 << '\n';
+	s << "shaderInt64 = " << value.shaderInt64 << '\n';
+	s << "shaderFloat16 = " << value.shaderFloat16 << '\n';
+	s << "shaderInt16 = " << value.shaderInt16 << '\n';
+	s << "shaderResourceResidency = " << value.shaderResourceResidency << '\n';
+	s << "shaderResourceMinLOD = " << value.shaderResourceMinLOD << '\n';
+	s << "sparse = " << value.sparse << '\n';
+	s << "sparseResidencyBuffer = " << value.sparseResidencyBuffer << '\n';
+	s << "sparseResidencyImage2D = " << value.sparseResidencyImage2D << '\n';
+	s << "sparseResidencyImage3D = " << value.sparseResidencyImage3D << '\n';
+	s << "sparseResidency2Samples = " << value.sparseResidency2Samples << '\n';
+	s << "sparseResidency4Samples = " << value.sparseResidency4Samples << '\n';
+	s << "sparseResidency8Samples = " << value.sparseResidency8Samples << '\n';
+	s << "sparseResidency16Samples = " << value.sparseResidency16Samples << '\n';
+	s << "sparseResidencyStandard2DBlockShape = " << value.sparseResidencyStandard2DBlockShape << '\n';
+	s << "sparseResidencyStandard2DMSBlockShape = " << value.sparseResidencyStandard2DMSBlockShape << '\n';
+	s << "sparseResidencyStandard3DBlockShape = " << value.sparseResidencyStandard3DBlockShape << '\n';
+	s << "sparseResidencyAlignedMipSize = " << value.sparseResidencyAlignedMipSize << '\n';
+	s << "sparseResidencyNonResident = " << value.sparseResidencyNonResident << '\n';
+	s << "sparseResidencyNonResidentStrict = " << value.sparseResidencyNonResidentStrict << '\n';
+	s << "sparseResidencyAliased = " << value.sparseResidencyAliased << '\n';
 	s << '}';
 	return s;
 }
@@ -1479,100 +1258,360 @@ std::ostream& operator<< (std::ostream& s, const VkFormatProperties& value)
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkBufferViewAttachInfo& value)
+std::ostream& operator<< (std::ostream& s, const VkImageFormatProperties& value)
 {
-	s << "VkBufferViewAttachInfo = {\n";
-	s << "sType = " << value.sType << '\n';
-	s << "pNext = " << value.pNext << '\n';
-	s << "view = " << value.view << '\n';
+	s << "VkImageFormatProperties = {\n";
+	s << "maxResourceSize = " << value.maxResourceSize << '\n';
+	s << "maxSamples = " << value.maxSamples << '\n';
 	s << '}';
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkImageViewAttachInfo& value)
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceLimits& value)
 {
-	s << "VkImageViewAttachInfo = {\n";
-	s << "sType = " << value.sType << '\n';
-	s << "pNext = " << value.pNext << '\n';
-	s << "view = " << value.view << '\n';
-	s << "layout = " << value.layout << '\n';
+	s << "VkPhysicalDeviceLimits = {\n";
+	s << "maxImageDimension1D = " << value.maxImageDimension1D << '\n';
+	s << "maxImageDimension2D = " << value.maxImageDimension2D << '\n';
+	s << "maxImageDimension3D = " << value.maxImageDimension3D << '\n';
+	s << "maxImageDimensionCube = " << value.maxImageDimensionCube << '\n';
+	s << "maxImageArrayLayers = " << value.maxImageArrayLayers << '\n';
+	s << "maxTexelBufferSize = " << value.maxTexelBufferSize << '\n';
+	s << "maxUniformBufferSize = " << value.maxUniformBufferSize << '\n';
+	s << "maxStorageBufferSize = " << value.maxStorageBufferSize << '\n';
+	s << "maxPushConstantsSize = " << value.maxPushConstantsSize << '\n';
+	s << "maxMemoryAllocationCount = " << value.maxMemoryAllocationCount << '\n';
+	s << "bufferImageGranularity = " << value.bufferImageGranularity << '\n';
+	s << "maxBoundDescriptorSets = " << value.maxBoundDescriptorSets << '\n';
+	s << "maxDescriptorSets = " << value.maxDescriptorSets << '\n';
+	s << "maxPerStageDescriptorSamplers = " << value.maxPerStageDescriptorSamplers << '\n';
+	s << "maxPerStageDescriptorUniformBuffers = " << value.maxPerStageDescriptorUniformBuffers << '\n';
+	s << "maxPerStageDescriptorStorageBuffers = " << value.maxPerStageDescriptorStorageBuffers << '\n';
+	s << "maxPerStageDescriptorSampledImages = " << value.maxPerStageDescriptorSampledImages << '\n';
+	s << "maxPerStageDescriptorStorageImages = " << value.maxPerStageDescriptorStorageImages << '\n';
+	s << "maxDescriptorSetSamplers = " << value.maxDescriptorSetSamplers << '\n';
+	s << "maxDescriptorSetUniformBuffers = " << value.maxDescriptorSetUniformBuffers << '\n';
+	s << "maxDescriptorSetStorageBuffers = " << value.maxDescriptorSetStorageBuffers << '\n';
+	s << "maxDescriptorSetSampledImages = " << value.maxDescriptorSetSampledImages << '\n';
+	s << "maxDescriptorSetStorageImages = " << value.maxDescriptorSetStorageImages << '\n';
+	s << "maxVertexInputAttributes = " << value.maxVertexInputAttributes << '\n';
+	s << "maxVertexInputAttributeOffset = " << value.maxVertexInputAttributeOffset << '\n';
+	s << "maxVertexInputBindingStride = " << value.maxVertexInputBindingStride << '\n';
+	s << "maxVertexOutputComponents = " << value.maxVertexOutputComponents << '\n';
+	s << "maxTessGenLevel = " << value.maxTessGenLevel << '\n';
+	s << "maxTessPatchSize = " << value.maxTessPatchSize << '\n';
+	s << "maxTessControlPerVertexInputComponents = " << value.maxTessControlPerVertexInputComponents << '\n';
+	s << "maxTessControlPerVertexOutputComponents = " << value.maxTessControlPerVertexOutputComponents << '\n';
+	s << "maxTessControlPerPatchOutputComponents = " << value.maxTessControlPerPatchOutputComponents << '\n';
+	s << "maxTessControlTotalOutputComponents = " << value.maxTessControlTotalOutputComponents << '\n';
+	s << "maxTessEvaluationInputComponents = " << value.maxTessEvaluationInputComponents << '\n';
+	s << "maxTessEvaluationOutputComponents = " << value.maxTessEvaluationOutputComponents << '\n';
+	s << "maxGeometryShaderInvocations = " << value.maxGeometryShaderInvocations << '\n';
+	s << "maxGeometryInputComponents = " << value.maxGeometryInputComponents << '\n';
+	s << "maxGeometryOutputComponents = " << value.maxGeometryOutputComponents << '\n';
+	s << "maxGeometryOutputVertices = " << value.maxGeometryOutputVertices << '\n';
+	s << "maxGeometryTotalOutputComponents = " << value.maxGeometryTotalOutputComponents << '\n';
+	s << "maxFragmentInputComponents = " << value.maxFragmentInputComponents << '\n';
+	s << "maxFragmentOutputBuffers = " << value.maxFragmentOutputBuffers << '\n';
+	s << "maxFragmentDualSourceBuffers = " << value.maxFragmentDualSourceBuffers << '\n';
+	s << "maxFragmentCombinedOutputResources = " << value.maxFragmentCombinedOutputResources << '\n';
+	s << "maxComputeSharedMemorySize = " << value.maxComputeSharedMemorySize << '\n';
+	s << "maxComputeWorkGroupCount = " << tcu::formatArray(DE_ARRAY_BEGIN(value.maxComputeWorkGroupCount), DE_ARRAY_END(value.maxComputeWorkGroupCount)) << '\n';
+	s << "maxComputeWorkGroupInvocations = " << value.maxComputeWorkGroupInvocations << '\n';
+	s << "maxComputeWorkGroupSize = " << tcu::formatArray(DE_ARRAY_BEGIN(value.maxComputeWorkGroupSize), DE_ARRAY_END(value.maxComputeWorkGroupSize)) << '\n';
+	s << "subPixelPrecisionBits = " << value.subPixelPrecisionBits << '\n';
+	s << "subTexelPrecisionBits = " << value.subTexelPrecisionBits << '\n';
+	s << "mipmapPrecisionBits = " << value.mipmapPrecisionBits << '\n';
+	s << "maxDrawIndexedIndexValue = " << value.maxDrawIndexedIndexValue << '\n';
+	s << "maxDrawIndirectInstanceCount = " << value.maxDrawIndirectInstanceCount << '\n';
+	s << "primitiveRestartForPatches = " << value.primitiveRestartForPatches << '\n';
+	s << "maxSamplerLodBias = " << value.maxSamplerLodBias << '\n';
+	s << "maxSamplerAnisotropy = " << value.maxSamplerAnisotropy << '\n';
+	s << "maxViewports = " << value.maxViewports << '\n';
+	s << "maxDynamicViewportStates = " << value.maxDynamicViewportStates << '\n';
+	s << "maxViewportDimensions = " << tcu::formatArray(DE_ARRAY_BEGIN(value.maxViewportDimensions), DE_ARRAY_END(value.maxViewportDimensions)) << '\n';
+	s << "viewportBoundsRange = " << tcu::formatArray(DE_ARRAY_BEGIN(value.viewportBoundsRange), DE_ARRAY_END(value.viewportBoundsRange)) << '\n';
+	s << "viewportSubPixelBits = " << value.viewportSubPixelBits << '\n';
+	s << "minMemoryMapAlignment = " << value.minMemoryMapAlignment << '\n';
+	s << "minTexelBufferOffsetAlignment = " << value.minTexelBufferOffsetAlignment << '\n';
+	s << "minUniformBufferOffsetAlignment = " << value.minUniformBufferOffsetAlignment << '\n';
+	s << "minStorageBufferOffsetAlignment = " << value.minStorageBufferOffsetAlignment << '\n';
+	s << "minTexelOffset = " << value.minTexelOffset << '\n';
+	s << "maxTexelOffset = " << value.maxTexelOffset << '\n';
+	s << "minTexelGatherOffset = " << value.minTexelGatherOffset << '\n';
+	s << "maxTexelGatherOffset = " << value.maxTexelGatherOffset << '\n';
+	s << "minInterpolationOffset = " << value.minInterpolationOffset << '\n';
+	s << "maxInterpolationOffset = " << value.maxInterpolationOffset << '\n';
+	s << "subPixelInterpolationOffsetBits = " << value.subPixelInterpolationOffsetBits << '\n';
+	s << "maxFramebufferWidth = " << value.maxFramebufferWidth << '\n';
+	s << "maxFramebufferHeight = " << value.maxFramebufferHeight << '\n';
+	s << "maxFramebufferLayers = " << value.maxFramebufferLayers << '\n';
+	s << "maxFramebufferColorSamples = " << value.maxFramebufferColorSamples << '\n';
+	s << "maxFramebufferDepthSamples = " << value.maxFramebufferDepthSamples << '\n';
+	s << "maxFramebufferStencilSamples = " << value.maxFramebufferStencilSamples << '\n';
+	s << "maxColorAttachments = " << value.maxColorAttachments << '\n';
+	s << "maxSampledImageColorSamples = " << value.maxSampledImageColorSamples << '\n';
+	s << "maxSampledImageDepthSamples = " << value.maxSampledImageDepthSamples << '\n';
+	s << "maxSampledImageIntegerSamples = " << value.maxSampledImageIntegerSamples << '\n';
+	s << "maxStorageImageSamples = " << value.maxStorageImageSamples << '\n';
+	s << "maxSampleMaskWords = " << value.maxSampleMaskWords << '\n';
+	s << "timestampFrequency = " << value.timestampFrequency << '\n';
+	s << "maxClipDistances = " << value.maxClipDistances << '\n';
+	s << "maxCullDistances = " << value.maxCullDistances << '\n';
+	s << "maxCombinedClipAndCullDistances = " << value.maxCombinedClipAndCullDistances << '\n';
+	s << "pointSizeRange = " << tcu::formatArray(DE_ARRAY_BEGIN(value.pointSizeRange), DE_ARRAY_END(value.pointSizeRange)) << '\n';
+	s << "lineWidthRange = " << tcu::formatArray(DE_ARRAY_BEGIN(value.lineWidthRange), DE_ARRAY_END(value.lineWidthRange)) << '\n';
+	s << "pointSizeGranularity = " << value.pointSizeGranularity << '\n';
+	s << "lineWidthGranularity = " << value.lineWidthGranularity << '\n';
 	s << '}';
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkUpdateSamplers& value)
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceProperties& value)
 {
-	s << "VkUpdateSamplers = {\n";
-	s << "sType = " << value.sType << '\n';
-	s << "pNext = " << value.pNext << '\n';
-	s << "binding = " << value.binding << '\n';
-	s << "arrayIndex = " << value.arrayIndex << '\n';
-	s << "count = " << value.count << '\n';
-	s << "pSamplers = " << value.pSamplers << '\n';
+	s << "VkPhysicalDeviceProperties = {\n";
+	s << "apiVersion = " << value.apiVersion << '\n';
+	s << "driverVersion = " << value.driverVersion << '\n';
+	s << "vendorId = " << value.vendorId << '\n';
+	s << "deviceId = " << value.deviceId << '\n';
+	s << "deviceType = " << value.deviceType << '\n';
+	s << "deviceName = " << (const char*)value.deviceName << '\n';
+	s << "pipelineCacheUUID = " << tcu::formatArray(DE_ARRAY_BEGIN(value.pipelineCacheUUID), DE_ARRAY_END(value.pipelineCacheUUID)) << '\n';
 	s << '}';
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkSamplerImageViewInfo& value)
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceQueueProperties& value)
 {
-	s << "VkSamplerImageViewInfo = {\n";
-	s << "sampler = " << value.sampler << '\n';
-	s << "pImageView = " << value.pImageView << '\n';
+	s << "VkPhysicalDeviceQueueProperties = {\n";
+	s << "queueFlags = " << getQueueFlagsStr(value.queueFlags) << '\n';
+	s << "queueCount = " << value.queueCount << '\n';
+	s << "supportsTimestamps = " << value.supportsTimestamps << '\n';
 	s << '}';
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkUpdateSamplerTextures& value)
+std::ostream& operator<< (std::ostream& s, const VkMemoryType& value)
 {
-	s << "VkUpdateSamplerTextures = {\n";
-	s << "sType = " << value.sType << '\n';
-	s << "pNext = " << value.pNext << '\n';
-	s << "binding = " << value.binding << '\n';
-	s << "arrayIndex = " << value.arrayIndex << '\n';
-	s << "count = " << value.count << '\n';
-	s << "pSamplerImageViews = " << value.pSamplerImageViews << '\n';
+	s << "VkMemoryType = {\n";
+	s << "propertyFlags = " << getMemoryPropertyFlagsStr(value.propertyFlags) << '\n';
+	s << "heapIndex = " << value.heapIndex << '\n';
 	s << '}';
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkUpdateImages& value)
+std::ostream& operator<< (std::ostream& s, const VkMemoryHeap& value)
 {
-	s << "VkUpdateImages = {\n";
-	s << "sType = " << value.sType << '\n';
-	s << "pNext = " << value.pNext << '\n';
-	s << "descriptorType = " << value.descriptorType << '\n';
-	s << "binding = " << value.binding << '\n';
-	s << "arrayIndex = " << value.arrayIndex << '\n';
-	s << "count = " << value.count << '\n';
-	s << "pImageViews = " << value.pImageViews << '\n';
+	s << "VkMemoryHeap = {\n";
+	s << "size = " << value.size << '\n';
+	s << "flags = " << getMemoryHeapFlagsStr(value.flags) << '\n';
 	s << '}';
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkUpdateBuffers& value)
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceMemoryProperties& value)
 {
-	s << "VkUpdateBuffers = {\n";
-	s << "sType = " << value.sType << '\n';
-	s << "pNext = " << value.pNext << '\n';
-	s << "descriptorType = " << value.descriptorType << '\n';
-	s << "binding = " << value.binding << '\n';
-	s << "arrayIndex = " << value.arrayIndex << '\n';
-	s << "count = " << value.count << '\n';
-	s << "pBufferViews = " << value.pBufferViews << '\n';
+	s << "VkPhysicalDeviceMemoryProperties = {\n";
+	s << "memoryTypeCount = " << value.memoryTypeCount << '\n';
+	s << "memoryTypes = " << tcu::formatArray(DE_ARRAY_BEGIN(value.memoryTypes), DE_ARRAY_END(value.memoryTypes)) << '\n';
+	s << "memoryHeapCount = " << value.memoryHeapCount << '\n';
+	s << "memoryHeaps = " << tcu::formatArray(DE_ARRAY_BEGIN(value.memoryHeaps), DE_ARRAY_END(value.memoryHeaps)) << '\n';
 	s << '}';
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkUpdateAsCopy& value)
+std::ostream& operator<< (std::ostream& s, const VkDeviceQueueCreateInfo& value)
 {
-	s << "VkUpdateAsCopy = {\n";
+	s << "VkDeviceQueueCreateInfo = {\n";
+	s << "queueFamilyIndex = " << value.queueFamilyIndex << '\n';
+	s << "queueCount = " << value.queueCount << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDeviceCreateInfo& value)
+{
+	s << "VkDeviceCreateInfo = {\n";
 	s << "sType = " << value.sType << '\n';
 	s << "pNext = " << value.pNext << '\n';
-	s << "descriptorType = " << value.descriptorType << '\n';
-	s << "descriptorSet = " << value.descriptorSet << '\n';
-	s << "binding = " << value.binding << '\n';
-	s << "arrayElement = " << value.arrayElement << '\n';
-	s << "count = " << value.count << '\n';
+	s << "queueRecordCount = " << value.queueRecordCount << '\n';
+	s << "pRequestedQueues = " << value.pRequestedQueues << '\n';
+	s << "layerCount = " << value.layerCount << '\n';
+	s << "ppEnabledLayerNames = " << value.ppEnabledLayerNames << '\n';
+	s << "extensionCount = " << value.extensionCount << '\n';
+	s << "ppEnabledExtensionNames = " << value.ppEnabledExtensionNames << '\n';
+	s << "pEnabledFeatures = " << value.pEnabledFeatures << '\n';
+	s << "flags = " << getDeviceCreateFlagsStr(value.flags) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkExtensionProperties& value)
+{
+	s << "VkExtensionProperties = {\n";
+	s << "extName = " << (const char*)value.extName << '\n';
+	s << "specVersion = " << value.specVersion << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkLayerProperties& value)
+{
+	s << "VkLayerProperties = {\n";
+	s << "layerName = " << tcu::formatArray(DE_ARRAY_BEGIN(value.layerName), DE_ARRAY_END(value.layerName)) << '\n';
+	s << "specVersion = " << value.specVersion << '\n';
+	s << "implVersion = " << value.implVersion << '\n';
+	s << "description = " << tcu::formatArray(DE_ARRAY_BEGIN(value.description), DE_ARRAY_END(value.description)) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkMemoryAllocInfo& value)
+{
+	s << "VkMemoryAllocInfo = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "allocationSize = " << value.allocationSize << '\n';
+	s << "memoryTypeIndex = " << value.memoryTypeIndex << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkMappedMemoryRange& value)
+{
+	s << "VkMappedMemoryRange = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "mem = " << value.mem << '\n';
+	s << "offset = " << value.offset << '\n';
+	s << "size = " << value.size << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkMemoryRequirements& value)
+{
+	s << "VkMemoryRequirements = {\n";
+	s << "size = " << value.size << '\n';
+	s << "alignment = " << value.alignment << '\n';
+	s << "memoryTypeBits = " << value.memoryTypeBits << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkExtent3D& value)
+{
+	s << "VkExtent3D = {\n";
+	s << "width = " << value.width << '\n';
+	s << "height = " << value.height << '\n';
+	s << "depth = " << value.depth << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSparseImageFormatProperties& value)
+{
+	s << "VkSparseImageFormatProperties = {\n";
+	s << "aspect = " << value.aspect << '\n';
+	s << "imageGranularity = " << value.imageGranularity << '\n';
+	s << "flags = " << getSparseImageFormatFlagsStr(value.flags) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSparseImageMemoryRequirements& value)
+{
+	s << "VkSparseImageMemoryRequirements = {\n";
+	s << "formatProps = " << value.formatProps << '\n';
+	s << "imageMipTailStartLOD = " << value.imageMipTailStartLOD << '\n';
+	s << "imageMipTailSize = " << value.imageMipTailSize << '\n';
+	s << "imageMipTailOffset = " << value.imageMipTailOffset << '\n';
+	s << "imageMipTailStride = " << value.imageMipTailStride << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSparseMemoryBindInfo& value)
+{
+	s << "VkSparseMemoryBindInfo = {\n";
+	s << "offset = " << value.offset << '\n';
+	s << "memOffset = " << value.memOffset << '\n';
+	s << "mem = " << value.mem << '\n';
+	s << "flags = " << getSparseMemoryBindFlagsStr(value.flags) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkImageSubresource& value)
+{
+	s << "VkImageSubresource = {\n";
+	s << "aspect = " << value.aspect << '\n';
+	s << "mipLevel = " << value.mipLevel << '\n';
+	s << "arraySlice = " << value.arraySlice << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkOffset3D& value)
+{
+	s << "VkOffset3D = {\n";
+	s << "x = " << value.x << '\n';
+	s << "y = " << value.y << '\n';
+	s << "z = " << value.z << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSparseImageMemoryBindInfo& value)
+{
+	s << "VkSparseImageMemoryBindInfo = {\n";
+	s << "subresource = " << value.subresource << '\n';
+	s << "offset = " << value.offset << '\n';
+	s << "extent = " << value.extent << '\n';
+	s << "memOffset = " << value.memOffset << '\n';
+	s << "mem = " << value.mem << '\n';
+	s << "flags = " << getSparseMemoryBindFlagsStr(value.flags) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkFenceCreateInfo& value)
+{
+	s << "VkFenceCreateInfo = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "flags = " << getFenceCreateFlagsStr(value.flags) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSemaphoreCreateInfo& value)
+{
+	s << "VkSemaphoreCreateInfo = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "flags = " << value.flags << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkEventCreateInfo& value)
+{
+	s << "VkEventCreateInfo = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "flags = " << value.flags << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkQueryPoolCreateInfo& value)
+{
+	s << "VkQueryPoolCreateInfo = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "queryType = " << value.queryType << '\n';
+	s << "slots = " << value.slots << '\n';
+	s << "pipelineStatistics = " << getQueryPipelineStatisticFlagsStr(value.pipelineStatistics) << '\n';
 	s << '}';
 	return s;
 }
@@ -1585,6 +1624,9 @@ std::ostream& operator<< (std::ostream& s, const VkBufferCreateInfo& value)
 	s << "size = " << value.size << '\n';
 	s << "usage = " << getBufferUsageFlagsStr(value.usage) << '\n';
 	s << "flags = " << getBufferCreateFlagsStr(value.flags) << '\n';
+	s << "sharingMode = " << value.sharingMode << '\n';
+	s << "queueFamilyCount = " << value.queueFamilyCount << '\n';
+	s << "pQueueFamilyIndices = " << value.pQueueFamilyIndices << '\n';
 	s << '}';
 	return s;
 }
@@ -1603,12 +1645,45 @@ std::ostream& operator<< (std::ostream& s, const VkBufferViewCreateInfo& value)
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkImageSubresource& value)
+std::ostream& operator<< (std::ostream& s, const VkImageCreateInfo& value)
 {
-	s << "VkImageSubresource = {\n";
-	s << "aspect = " << value.aspect << '\n';
-	s << "mipLevel = " << value.mipLevel << '\n';
-	s << "arraySlice = " << value.arraySlice << '\n';
+	s << "VkImageCreateInfo = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "imageType = " << value.imageType << '\n';
+	s << "format = " << value.format << '\n';
+	s << "extent = " << value.extent << '\n';
+	s << "mipLevels = " << value.mipLevels << '\n';
+	s << "arraySize = " << value.arraySize << '\n';
+	s << "samples = " << value.samples << '\n';
+	s << "tiling = " << value.tiling << '\n';
+	s << "usage = " << getImageUsageFlagsStr(value.usage) << '\n';
+	s << "flags = " << getImageCreateFlagsStr(value.flags) << '\n';
+	s << "sharingMode = " << value.sharingMode << '\n';
+	s << "queueFamilyCount = " << value.queueFamilyCount << '\n';
+	s << "pQueueFamilyIndices = " << value.pQueueFamilyIndices << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSubresourceLayout& value)
+{
+	s << "VkSubresourceLayout = {\n";
+	s << "offset = " << value.offset << '\n';
+	s << "size = " << value.size << '\n';
+	s << "rowPitch = " << value.rowPitch << '\n';
+	s << "depthPitch = " << value.depthPitch << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkChannelMapping& value)
+{
+	s << "VkChannelMapping = {\n";
+	s << "r = " << value.r << '\n';
+	s << "g = " << value.g << '\n';
+	s << "b = " << value.b << '\n';
+	s << "a = " << value.a << '\n';
 	s << '}';
 	return s;
 }
@@ -1625,83 +1700,6 @@ std::ostream& operator<< (std::ostream& s, const VkImageSubresourceRange& value)
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkMemoryBarrier& value)
-{
-	s << "VkMemoryBarrier = {\n";
-	s << "sType = " << value.sType << '\n';
-	s << "pNext = " << value.pNext << '\n';
-	s << "outputMask = " << getMemoryOutputFlagsStr(value.outputMask) << '\n';
-	s << "inputMask = " << getMemoryInputFlagsStr(value.inputMask) << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkBufferMemoryBarrier& value)
-{
-	s << "VkBufferMemoryBarrier = {\n";
-	s << "sType = " << value.sType << '\n';
-	s << "pNext = " << value.pNext << '\n';
-	s << "outputMask = " << getMemoryOutputFlagsStr(value.outputMask) << '\n';
-	s << "inputMask = " << getMemoryInputFlagsStr(value.inputMask) << '\n';
-	s << "buffer = " << value.buffer << '\n';
-	s << "offset = " << value.offset << '\n';
-	s << "size = " << value.size << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkImageMemoryBarrier& value)
-{
-	s << "VkImageMemoryBarrier = {\n";
-	s << "sType = " << value.sType << '\n';
-	s << "pNext = " << value.pNext << '\n';
-	s << "outputMask = " << getMemoryOutputFlagsStr(value.outputMask) << '\n';
-	s << "inputMask = " << getMemoryInputFlagsStr(value.inputMask) << '\n';
-	s << "oldLayout = " << value.oldLayout << '\n';
-	s << "newLayout = " << value.newLayout << '\n';
-	s << "image = " << value.image << '\n';
-	s << "subresourceRange = " << value.subresourceRange << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkImageCreateInfo& value)
-{
-	s << "VkImageCreateInfo = {\n";
-	s << "sType = " << value.sType << '\n';
-	s << "pNext = " << value.pNext << '\n';
-	s << "imageType = " << value.imageType << '\n';
-	s << "format = " << value.format << '\n';
-	s << "extent = " << value.extent << '\n';
-	s << "mipLevels = " << value.mipLevels << '\n';
-	s << "arraySize = " << value.arraySize << '\n';
-	s << "samples = " << value.samples << '\n';
-	s << "tiling = " << value.tiling << '\n';
-	s << "usage = " << getImageUsageFlagsStr(value.usage) << '\n';
-	s << "flags = " << getImageCreateFlagsStr(value.flags) << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkPeerImageOpenInfo& value)
-{
-	s << "VkPeerImageOpenInfo = {\n";
-	s << "originalImage = " << value.originalImage << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkSubresourceLayout& value)
-{
-	s << "VkSubresourceLayout = {\n";
-	s << "offset = " << value.offset << '\n';
-	s << "size = " << value.size << '\n';
-	s << "rowPitch = " << value.rowPitch << '\n';
-	s << "depthPitch = " << value.depthPitch << '\n';
-	s << '}';
-	return s;
-}
-
 std::ostream& operator<< (std::ostream& s, const VkImageViewCreateInfo& value)
 {
 	s << "VkImageViewCreateInfo = {\n";
@@ -1712,14 +1710,13 @@ std::ostream& operator<< (std::ostream& s, const VkImageViewCreateInfo& value)
 	s << "format = " << value.format << '\n';
 	s << "channels = " << value.channels << '\n';
 	s << "subresourceRange = " << value.subresourceRange << '\n';
-	s << "minLod = " << value.minLod << '\n';
 	s << '}';
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkColorAttachmentViewCreateInfo& value)
+std::ostream& operator<< (std::ostream& s, const VkAttachmentViewCreateInfo& value)
 {
-	s << "VkColorAttachmentViewCreateInfo = {\n";
+	s << "VkAttachmentViewCreateInfo = {\n";
 	s << "sType = " << value.sType << '\n';
 	s << "pNext = " << value.pNext << '\n';
 	s << "image = " << value.image << '\n';
@@ -1727,117 +1724,14 @@ std::ostream& operator<< (std::ostream& s, const VkColorAttachmentViewCreateInfo
 	s << "mipLevel = " << value.mipLevel << '\n';
 	s << "baseArraySlice = " << value.baseArraySlice << '\n';
 	s << "arraySize = " << value.arraySize << '\n';
-	s << "msaaResolveImage = " << value.msaaResolveImage << '\n';
-	s << "msaaResolveSubResource = " << value.msaaResolveSubResource << '\n';
+	s << "flags = " << getAttachmentViewCreateFlagsStr(value.flags) << '\n';
 	s << '}';
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkDepthStencilViewCreateInfo& value)
+std::ostream& operator<< (std::ostream& s, const VkShaderModuleCreateInfo& value)
 {
-	s << "VkDepthStencilViewCreateInfo = {\n";
-	s << "sType = " << value.sType << '\n';
-	s << "pNext = " << value.pNext << '\n';
-	s << "image = " << value.image << '\n';
-	s << "mipLevel = " << value.mipLevel << '\n';
-	s << "baseArraySlice = " << value.baseArraySlice << '\n';
-	s << "arraySize = " << value.arraySize << '\n';
-	s << "msaaResolveImage = " << value.msaaResolveImage << '\n';
-	s << "msaaResolveSubResource = " << value.msaaResolveSubResource << '\n';
-	s << "flags = " << getDepthStencilViewCreateFlagsStr(value.flags) << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkColorAttachmentBindInfo& value)
-{
-	s << "VkColorAttachmentBindInfo = {\n";
-	s << "view = " << value.view << '\n';
-	s << "layout = " << value.layout << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkDepthStencilBindInfo& value)
-{
-	s << "VkDepthStencilBindInfo = {\n";
-	s << "view = " << value.view << '\n';
-	s << "layout = " << value.layout << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkBufferCopy& value)
-{
-	s << "VkBufferCopy = {\n";
-	s << "srcOffset = " << value.srcOffset << '\n';
-	s << "destOffset = " << value.destOffset << '\n';
-	s << "copySize = " << value.copySize << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkImageMemoryBindInfo& value)
-{
-	s << "VkImageMemoryBindInfo = {\n";
-	s << "subresource = " << value.subresource << '\n';
-	s << "offset = " << value.offset << '\n';
-	s << "extent = " << value.extent << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkImageCopy& value)
-{
-	s << "VkImageCopy = {\n";
-	s << "srcSubresource = " << value.srcSubresource << '\n';
-	s << "srcOffset = " << value.srcOffset << '\n';
-	s << "destSubresource = " << value.destSubresource << '\n';
-	s << "destOffset = " << value.destOffset << '\n';
-	s << "extent = " << value.extent << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkImageBlit& value)
-{
-	s << "VkImageBlit = {\n";
-	s << "srcSubresource = " << value.srcSubresource << '\n';
-	s << "srcOffset = " << value.srcOffset << '\n';
-	s << "srcExtent = " << value.srcExtent << '\n';
-	s << "destSubresource = " << value.destSubresource << '\n';
-	s << "destOffset = " << value.destOffset << '\n';
-	s << "destExtent = " << value.destExtent << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkBufferImageCopy& value)
-{
-	s << "VkBufferImageCopy = {\n";
-	s << "bufferOffset = " << value.bufferOffset << '\n';
-	s << "imageSubresource = " << value.imageSubresource << '\n';
-	s << "imageOffset = " << value.imageOffset << '\n';
-	s << "imageExtent = " << value.imageExtent << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkImageResolve& value)
-{
-	s << "VkImageResolve = {\n";
-	s << "srcSubresource = " << value.srcSubresource << '\n';
-	s << "srcOffset = " << value.srcOffset << '\n';
-	s << "destSubresource = " << value.destSubresource << '\n';
-	s << "destOffset = " << value.destOffset << '\n';
-	s << "extent = " << value.extent << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkShaderCreateInfo& value)
-{
-	s << "VkShaderCreateInfo = {\n";
+	s << "VkShaderModuleCreateInfo = {\n";
 	s << "sType = " << value.sType << '\n';
 	s << "pNext = " << value.pNext << '\n';
 	s << "codeSize = " << value.codeSize << '\n';
@@ -1847,11 +1741,300 @@ std::ostream& operator<< (std::ostream& s, const VkShaderCreateInfo& value)
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkShaderCreateInfo& value)
+{
+	s << "VkShaderCreateInfo = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "module = " << value.module << '\n';
+	s << "pName = " << value.pName << '\n';
+	s << "flags = " << value.flags << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPipelineCacheCreateInfo& value)
+{
+	s << "VkPipelineCacheCreateInfo = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "initialSize = " << value.initialSize << '\n';
+	s << "initialData = " << value.initialData << '\n';
+	s << "maxSize = " << value.maxSize << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSpecializationMapEntry& value)
+{
+	s << "VkSpecializationMapEntry = {\n";
+	s << "constantId = " << value.constantId << '\n';
+	s << "size = " << value.size << '\n';
+	s << "offset = " << value.offset << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSpecializationInfo& value)
+{
+	s << "VkSpecializationInfo = {\n";
+	s << "mapEntryCount = " << value.mapEntryCount << '\n';
+	s << "pMap = " << value.pMap << '\n';
+	s << "dataSize = " << value.dataSize << '\n';
+	s << "pData = " << value.pData << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPipelineShaderStageCreateInfo& value)
+{
+	s << "VkPipelineShaderStageCreateInfo = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "stage = " << value.stage << '\n';
+	s << "shader = " << value.shader << '\n';
+	s << "pSpecializationInfo = " << value.pSpecializationInfo << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkVertexInputBindingDescription& value)
+{
+	s << "VkVertexInputBindingDescription = {\n";
+	s << "binding = " << value.binding << '\n';
+	s << "strideInBytes = " << value.strideInBytes << '\n';
+	s << "stepRate = " << value.stepRate << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkVertexInputAttributeDescription& value)
+{
+	s << "VkVertexInputAttributeDescription = {\n";
+	s << "location = " << value.location << '\n';
+	s << "binding = " << value.binding << '\n';
+	s << "format = " << value.format << '\n';
+	s << "offsetInBytes = " << value.offsetInBytes << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPipelineVertexInputStateCreateInfo& value)
+{
+	s << "VkPipelineVertexInputStateCreateInfo = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "bindingCount = " << value.bindingCount << '\n';
+	s << "pVertexBindingDescriptions = " << value.pVertexBindingDescriptions << '\n';
+	s << "attributeCount = " << value.attributeCount << '\n';
+	s << "pVertexAttributeDescriptions = " << value.pVertexAttributeDescriptions << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPipelineInputAssemblyStateCreateInfo& value)
+{
+	s << "VkPipelineInputAssemblyStateCreateInfo = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "topology = " << value.topology << '\n';
+	s << "primitiveRestartEnable = " << value.primitiveRestartEnable << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPipelineTessellationStateCreateInfo& value)
+{
+	s << "VkPipelineTessellationStateCreateInfo = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "patchControlPoints = " << value.patchControlPoints << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPipelineViewportStateCreateInfo& value)
+{
+	s << "VkPipelineViewportStateCreateInfo = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "viewportCount = " << value.viewportCount << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPipelineRasterStateCreateInfo& value)
+{
+	s << "VkPipelineRasterStateCreateInfo = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "depthClipEnable = " << value.depthClipEnable << '\n';
+	s << "rasterizerDiscardEnable = " << value.rasterizerDiscardEnable << '\n';
+	s << "fillMode = " << value.fillMode << '\n';
+	s << "cullMode = " << value.cullMode << '\n';
+	s << "frontFace = " << value.frontFace << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPipelineMultisampleStateCreateInfo& value)
+{
+	s << "VkPipelineMultisampleStateCreateInfo = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "rasterSamples = " << value.rasterSamples << '\n';
+	s << "sampleShadingEnable = " << value.sampleShadingEnable << '\n';
+	s << "minSampleShading = " << value.minSampleShading << '\n';
+	s << "sampleMask = " << value.sampleMask << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkStencilOpState& value)
+{
+	s << "VkStencilOpState = {\n";
+	s << "stencilFailOp = " << value.stencilFailOp << '\n';
+	s << "stencilPassOp = " << value.stencilPassOp << '\n';
+	s << "stencilDepthFailOp = " << value.stencilDepthFailOp << '\n';
+	s << "stencilCompareOp = " << value.stencilCompareOp << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPipelineDepthStencilStateCreateInfo& value)
+{
+	s << "VkPipelineDepthStencilStateCreateInfo = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "depthTestEnable = " << value.depthTestEnable << '\n';
+	s << "depthWriteEnable = " << value.depthWriteEnable << '\n';
+	s << "depthCompareOp = " << value.depthCompareOp << '\n';
+	s << "depthBoundsEnable = " << value.depthBoundsEnable << '\n';
+	s << "stencilTestEnable = " << value.stencilTestEnable << '\n';
+	s << "front = " << value.front << '\n';
+	s << "back = " << value.back << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPipelineColorBlendAttachmentState& value)
+{
+	s << "VkPipelineColorBlendAttachmentState = {\n";
+	s << "blendEnable = " << value.blendEnable << '\n';
+	s << "srcBlendColor = " << value.srcBlendColor << '\n';
+	s << "destBlendColor = " << value.destBlendColor << '\n';
+	s << "blendOpColor = " << value.blendOpColor << '\n';
+	s << "srcBlendAlpha = " << value.srcBlendAlpha << '\n';
+	s << "destBlendAlpha = " << value.destBlendAlpha << '\n';
+	s << "blendOpAlpha = " << value.blendOpAlpha << '\n';
+	s << "channelWriteMask = " << getChannelFlagsStr(value.channelWriteMask) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPipelineColorBlendStateCreateInfo& value)
+{
+	s << "VkPipelineColorBlendStateCreateInfo = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "alphaToCoverageEnable = " << value.alphaToCoverageEnable << '\n';
+	s << "logicOpEnable = " << value.logicOpEnable << '\n';
+	s << "logicOp = " << value.logicOp << '\n';
+	s << "attachmentCount = " << value.attachmentCount << '\n';
+	s << "pAttachments = " << value.pAttachments << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkGraphicsPipelineCreateInfo& value)
+{
+	s << "VkGraphicsPipelineCreateInfo = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "stageCount = " << value.stageCount << '\n';
+	s << "pStages = " << value.pStages << '\n';
+	s << "pVertexInputState = " << value.pVertexInputState << '\n';
+	s << "pInputAssemblyState = " << value.pInputAssemblyState << '\n';
+	s << "pTessellationState = " << value.pTessellationState << '\n';
+	s << "pViewportState = " << value.pViewportState << '\n';
+	s << "pRasterState = " << value.pRasterState << '\n';
+	s << "pMultisampleState = " << value.pMultisampleState << '\n';
+	s << "pDepthStencilState = " << value.pDepthStencilState << '\n';
+	s << "pColorBlendState = " << value.pColorBlendState << '\n';
+	s << "flags = " << getPipelineCreateFlagsStr(value.flags) << '\n';
+	s << "layout = " << value.layout << '\n';
+	s << "renderPass = " << value.renderPass << '\n';
+	s << "subpass = " << value.subpass << '\n';
+	s << "basePipelineHandle = " << value.basePipelineHandle << '\n';
+	s << "basePipelineIndex = " << value.basePipelineIndex << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkComputePipelineCreateInfo& value)
+{
+	s << "VkComputePipelineCreateInfo = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "cs = " << value.cs << '\n';
+	s << "flags = " << getPipelineCreateFlagsStr(value.flags) << '\n';
+	s << "layout = " << value.layout << '\n';
+	s << "basePipelineHandle = " << value.basePipelineHandle << '\n';
+	s << "basePipelineIndex = " << value.basePipelineIndex << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPushConstantRange& value)
+{
+	s << "VkPushConstantRange = {\n";
+	s << "stageFlags = " << getShaderStageFlagsStr(value.stageFlags) << '\n';
+	s << "start = " << value.start << '\n';
+	s << "length = " << value.length << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPipelineLayoutCreateInfo& value)
+{
+	s << "VkPipelineLayoutCreateInfo = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "descriptorSetCount = " << value.descriptorSetCount << '\n';
+	s << "pSetLayouts = " << value.pSetLayouts << '\n';
+	s << "pushConstantRangeCount = " << value.pushConstantRangeCount << '\n';
+	s << "pPushConstantRanges = " << value.pPushConstantRanges << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSamplerCreateInfo& value)
+{
+	s << "VkSamplerCreateInfo = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "magFilter = " << value.magFilter << '\n';
+	s << "minFilter = " << value.minFilter << '\n';
+	s << "mipMode = " << value.mipMode << '\n';
+	s << "addressU = " << value.addressU << '\n';
+	s << "addressV = " << value.addressV << '\n';
+	s << "addressW = " << value.addressW << '\n';
+	s << "mipLodBias = " << value.mipLodBias << '\n';
+	s << "maxAnisotropy = " << value.maxAnisotropy << '\n';
+	s << "compareEnable = " << value.compareEnable << '\n';
+	s << "compareOp = " << value.compareOp << '\n';
+	s << "minLod = " << value.minLod << '\n';
+	s << "maxLod = " << value.maxLod << '\n';
+	s << "borderColor = " << value.borderColor << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkDescriptorSetLayoutBinding& value)
 {
 	s << "VkDescriptorSetLayoutBinding = {\n";
 	s << "descriptorType = " << value.descriptorType << '\n';
-	s << "count = " << value.count << '\n';
+	s << "arraySize = " << value.arraySize << '\n';
 	s << "stageFlags = " << getShaderStageFlagsStr(value.stageFlags) << '\n';
 	s << "pImmutableSamplers = " << value.pImmutableSamplers << '\n';
 	s << '}';
@@ -1889,273 +2072,92 @@ std::ostream& operator<< (std::ostream& s, const VkDescriptorPoolCreateInfo& val
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkLinkConstBuffer& value)
+std::ostream& operator<< (std::ostream& s, const VkDescriptorInfo& value)
 {
-	s << "VkLinkConstBuffer = {\n";
-	s << "bufferId = " << value.bufferId << '\n';
-	s << "bufferSize = " << value.bufferSize << '\n';
-	s << "pBufferData = " << value.pBufferData << '\n';
+	s << "VkDescriptorInfo = {\n";
+	s << "bufferView = " << value.bufferView << '\n';
+	s << "sampler = " << value.sampler << '\n';
+	s << "imageView = " << value.imageView << '\n';
+	s << "attachmentView = " << value.attachmentView << '\n';
+	s << "imageLayout = " << value.imageLayout << '\n';
 	s << '}';
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkSpecializationMapEntry& value)
+std::ostream& operator<< (std::ostream& s, const VkWriteDescriptorSet& value)
 {
-	s << "VkSpecializationMapEntry = {\n";
-	s << "constantId = " << value.constantId << '\n';
+	s << "VkWriteDescriptorSet = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "destSet = " << value.destSet << '\n';
+	s << "destBinding = " << value.destBinding << '\n';
+	s << "destArrayElement = " << value.destArrayElement << '\n';
+	s << "count = " << value.count << '\n';
+	s << "descriptorType = " << value.descriptorType << '\n';
+	s << "pDescriptors = " << value.pDescriptors << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkCopyDescriptorSet& value)
+{
+	s << "VkCopyDescriptorSet = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "srcSet = " << value.srcSet << '\n';
+	s << "srcBinding = " << value.srcBinding << '\n';
+	s << "srcArrayElement = " << value.srcArrayElement << '\n';
+	s << "destSet = " << value.destSet << '\n';
+	s << "destBinding = " << value.destBinding << '\n';
+	s << "destArrayElement = " << value.destArrayElement << '\n';
+	s << "count = " << value.count << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkViewport& value)
+{
+	s << "VkViewport = {\n";
+	s << "originX = " << value.originX << '\n';
+	s << "originY = " << value.originY << '\n';
+	s << "width = " << value.width << '\n';
+	s << "height = " << value.height << '\n';
+	s << "minDepth = " << value.minDepth << '\n';
+	s << "maxDepth = " << value.maxDepth << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkOffset2D& value)
+{
+	s << "VkOffset2D = {\n";
+	s << "x = " << value.x << '\n';
+	s << "y = " << value.y << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkExtent2D& value)
+{
+	s << "VkExtent2D = {\n";
+	s << "width = " << value.width << '\n';
+	s << "height = " << value.height << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkRect2D& value)
+{
+	s << "VkRect2D = {\n";
 	s << "offset = " << value.offset << '\n';
+	s << "extent = " << value.extent << '\n';
 	s << '}';
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkSpecializationInfo& value)
+std::ostream& operator<< (std::ostream& s, const VkDynamicViewportStateCreateInfo& value)
 {
-	s << "VkSpecializationInfo = {\n";
-	s << "mapEntryCount = " << value.mapEntryCount << '\n';
-	s << "pMap = " << value.pMap << '\n';
-	s << "pData = " << value.pData << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkPipelineShader& value)
-{
-	s << "VkPipelineShader = {\n";
-	s << "stage = " << value.stage << '\n';
-	s << "shader = " << value.shader << '\n';
-	s << "linkConstBufferCount = " << value.linkConstBufferCount << '\n';
-	s << "pLinkConstBufferInfo = " << value.pLinkConstBufferInfo << '\n';
-	s << "pSpecializationInfo = " << value.pSpecializationInfo << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkComputePipelineCreateInfo& value)
-{
-	s << "VkComputePipelineCreateInfo = {\n";
-	s << "sType = " << value.sType << '\n';
-	s << "pNext = " << value.pNext << '\n';
-	s << "cs = " << value.cs << '\n';
-	s << "flags = " << getPipelineCreateFlagsStr(value.flags) << '\n';
-	s << "layout = " << value.layout << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkVertexInputBindingDescription& value)
-{
-	s << "VkVertexInputBindingDescription = {\n";
-	s << "binding = " << value.binding << '\n';
-	s << "strideInBytes = " << value.strideInBytes << '\n';
-	s << "stepRate = " << value.stepRate << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkVertexInputAttributeDescription& value)
-{
-	s << "VkVertexInputAttributeDescription = {\n";
-	s << "location = " << value.location << '\n';
-	s << "binding = " << value.binding << '\n';
-	s << "format = " << value.format << '\n';
-	s << "offsetInBytes = " << value.offsetInBytes << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkPipelineVertexInputCreateInfo& value)
-{
-	s << "VkPipelineVertexInputCreateInfo = {\n";
-	s << "sType = " << value.sType << '\n';
-	s << "pNext = " << value.pNext << '\n';
-	s << "bindingCount = " << value.bindingCount << '\n';
-	s << "pVertexBindingDescriptions = " << value.pVertexBindingDescriptions << '\n';
-	s << "attributeCount = " << value.attributeCount << '\n';
-	s << "pVertexAttributeDescriptions = " << value.pVertexAttributeDescriptions << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkPipelineIaStateCreateInfo& value)
-{
-	s << "VkPipelineIaStateCreateInfo = {\n";
-	s << "sType = " << value.sType << '\n';
-	s << "pNext = " << value.pNext << '\n';
-	s << "topology = " << value.topology << '\n';
-	s << "disableVertexReuse = " << value.disableVertexReuse << '\n';
-	s << "primitiveRestartEnable = " << value.primitiveRestartEnable << '\n';
-	s << "primitiveRestartIndex = " << value.primitiveRestartIndex << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkPipelineTessStateCreateInfo& value)
-{
-	s << "VkPipelineTessStateCreateInfo = {\n";
-	s << "sType = " << value.sType << '\n';
-	s << "pNext = " << value.pNext << '\n';
-	s << "patchControlPoints = " << value.patchControlPoints << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkPipelineVpStateCreateInfo& value)
-{
-	s << "VkPipelineVpStateCreateInfo = {\n";
-	s << "sType = " << value.sType << '\n';
-	s << "pNext = " << value.pNext << '\n';
-	s << "viewportCount = " << value.viewportCount << '\n';
-	s << "clipOrigin = " << value.clipOrigin << '\n';
-	s << "depthMode = " << value.depthMode << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkPipelineRsStateCreateInfo& value)
-{
-	s << "VkPipelineRsStateCreateInfo = {\n";
-	s << "sType = " << value.sType << '\n';
-	s << "pNext = " << value.pNext << '\n';
-	s << "depthClipEnable = " << value.depthClipEnable << '\n';
-	s << "rasterizerDiscardEnable = " << value.rasterizerDiscardEnable << '\n';
-	s << "programPointSize = " << value.programPointSize << '\n';
-	s << "pointOrigin = " << value.pointOrigin << '\n';
-	s << "provokingVertex = " << value.provokingVertex << '\n';
-	s << "fillMode = " << value.fillMode << '\n';
-	s << "cullMode = " << value.cullMode << '\n';
-	s << "frontFace = " << value.frontFace << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkPipelineMsStateCreateInfo& value)
-{
-	s << "VkPipelineMsStateCreateInfo = {\n";
-	s << "sType = " << value.sType << '\n';
-	s << "pNext = " << value.pNext << '\n';
-	s << "samples = " << value.samples << '\n';
-	s << "multisampleEnable = " << value.multisampleEnable << '\n';
-	s << "sampleShadingEnable = " << value.sampleShadingEnable << '\n';
-	s << "minSampleShading = " << value.minSampleShading << '\n';
-	s << "sampleMask = " << value.sampleMask << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkPipelineCbAttachmentState& value)
-{
-	s << "VkPipelineCbAttachmentState = {\n";
-	s << "blendEnable = " << value.blendEnable << '\n';
-	s << "format = " << value.format << '\n';
-	s << "srcBlendColor = " << value.srcBlendColor << '\n';
-	s << "destBlendColor = " << value.destBlendColor << '\n';
-	s << "blendOpColor = " << value.blendOpColor << '\n';
-	s << "srcBlendAlpha = " << value.srcBlendAlpha << '\n';
-	s << "destBlendAlpha = " << value.destBlendAlpha << '\n';
-	s << "blendOpAlpha = " << value.blendOpAlpha << '\n';
-	s << "channelWriteMask = " << getChannelFlagsStr(value.channelWriteMask) << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkPipelineCbStateCreateInfo& value)
-{
-	s << "VkPipelineCbStateCreateInfo = {\n";
-	s << "sType = " << value.sType << '\n';
-	s << "pNext = " << value.pNext << '\n';
-	s << "alphaToCoverageEnable = " << value.alphaToCoverageEnable << '\n';
-	s << "logicOpEnable = " << value.logicOpEnable << '\n';
-	s << "logicOp = " << value.logicOp << '\n';
-	s << "attachmentCount = " << value.attachmentCount << '\n';
-	s << "pAttachments = " << value.pAttachments << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkStencilOpState& value)
-{
-	s << "VkStencilOpState = {\n";
-	s << "stencilFailOp = " << value.stencilFailOp << '\n';
-	s << "stencilPassOp = " << value.stencilPassOp << '\n';
-	s << "stencilDepthFailOp = " << value.stencilDepthFailOp << '\n';
-	s << "stencilCompareOp = " << value.stencilCompareOp << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkPipelineDsStateCreateInfo& value)
-{
-	s << "VkPipelineDsStateCreateInfo = {\n";
-	s << "sType = " << value.sType << '\n';
-	s << "pNext = " << value.pNext << '\n';
-	s << "format = " << value.format << '\n';
-	s << "depthTestEnable = " << value.depthTestEnable << '\n';
-	s << "depthWriteEnable = " << value.depthWriteEnable << '\n';
-	s << "depthCompareOp = " << value.depthCompareOp << '\n';
-	s << "depthBoundsEnable = " << value.depthBoundsEnable << '\n';
-	s << "stencilTestEnable = " << value.stencilTestEnable << '\n';
-	s << "front = " << value.front << '\n';
-	s << "back = " << value.back << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkPipelineShaderStageCreateInfo& value)
-{
-	s << "VkPipelineShaderStageCreateInfo = {\n";
-	s << "sType = " << value.sType << '\n';
-	s << "pNext = " << value.pNext << '\n';
-	s << "shader = " << value.shader << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkGraphicsPipelineCreateInfo& value)
-{
-	s << "VkGraphicsPipelineCreateInfo = {\n";
-	s << "sType = " << value.sType << '\n';
-	s << "pNext = " << value.pNext << '\n';
-	s << "flags = " << getPipelineCreateFlagsStr(value.flags) << '\n';
-	s << "layout = " << value.layout << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkPipelineLayoutCreateInfo& value)
-{
-	s << "VkPipelineLayoutCreateInfo = {\n";
-	s << "sType = " << value.sType << '\n';
-	s << "pNext = " << value.pNext << '\n';
-	s << "descriptorSetCount = " << value.descriptorSetCount << '\n';
-	s << "pSetLayouts = " << value.pSetLayouts << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkSamplerCreateInfo& value)
-{
-	s << "VkSamplerCreateInfo = {\n";
-	s << "sType = " << value.sType << '\n';
-	s << "pNext = " << value.pNext << '\n';
-	s << "magFilter = " << value.magFilter << '\n';
-	s << "minFilter = " << value.minFilter << '\n';
-	s << "mipMode = " << value.mipMode << '\n';
-	s << "addressU = " << value.addressU << '\n';
-	s << "addressV = " << value.addressV << '\n';
-	s << "addressW = " << value.addressW << '\n';
-	s << "mipLodBias = " << value.mipLodBias << '\n';
-	s << "maxAnisotropy = " << value.maxAnisotropy << '\n';
-	s << "compareOp = " << value.compareOp << '\n';
-	s << "minLod = " << value.minLod << '\n';
-	s << "maxLod = " << value.maxLod << '\n';
-	s << "borderColor = " << value.borderColor << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkDynamicVpStateCreateInfo& value)
-{
-	s << "VkDynamicVpStateCreateInfo = {\n";
+	s << "VkDynamicViewportStateCreateInfo = {\n";
 	s << "sType = " << value.sType << '\n';
 	s << "pNext = " << value.pNext << '\n';
 	s << "viewportAndScissorCount = " << value.viewportAndScissorCount << '\n';
@@ -2165,24 +2167,22 @@ std::ostream& operator<< (std::ostream& s, const VkDynamicVpStateCreateInfo& val
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkDynamicRsStateCreateInfo& value)
+std::ostream& operator<< (std::ostream& s, const VkDynamicRasterStateCreateInfo& value)
 {
-	s << "VkDynamicRsStateCreateInfo = {\n";
+	s << "VkDynamicRasterStateCreateInfo = {\n";
 	s << "sType = " << value.sType << '\n';
 	s << "pNext = " << value.pNext << '\n';
 	s << "depthBias = " << value.depthBias << '\n';
 	s << "depthBiasClamp = " << value.depthBiasClamp << '\n';
 	s << "slopeScaledDepthBias = " << value.slopeScaledDepthBias << '\n';
-	s << "pointSize = " << value.pointSize << '\n';
-	s << "pointFadeThreshold = " << value.pointFadeThreshold << '\n';
 	s << "lineWidth = " << value.lineWidth << '\n';
 	s << '}';
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkDynamicCbStateCreateInfo& value)
+std::ostream& operator<< (std::ostream& s, const VkDynamicColorBlendStateCreateInfo& value)
 {
-	s << "VkDynamicCbStateCreateInfo = {\n";
+	s << "VkDynamicColorBlendStateCreateInfo = {\n";
 	s << "sType = " << value.sType << '\n';
 	s << "pNext = " << value.pNext << '\n';
 	s << "blendConst = " << tcu::formatArray(DE_ARRAY_BEGIN(value.blendConst), DE_ARRAY_END(value.blendConst)) << '\n';
@@ -2190,17 +2190,128 @@ std::ostream& operator<< (std::ostream& s, const VkDynamicCbStateCreateInfo& val
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkDynamicDsStateCreateInfo& value)
+std::ostream& operator<< (std::ostream& s, const VkDynamicDepthStencilStateCreateInfo& value)
 {
-	s << "VkDynamicDsStateCreateInfo = {\n";
+	s << "VkDynamicDepthStencilStateCreateInfo = {\n";
 	s << "sType = " << value.sType << '\n';
 	s << "pNext = " << value.pNext << '\n';
-	s << "minDepth = " << value.minDepth << '\n';
-	s << "maxDepth = " << value.maxDepth << '\n';
+	s << "minDepthBounds = " << value.minDepthBounds << '\n';
+	s << "maxDepthBounds = " << value.maxDepthBounds << '\n';
 	s << "stencilReadMask = " << value.stencilReadMask << '\n';
 	s << "stencilWriteMask = " << value.stencilWriteMask << '\n';
 	s << "stencilFrontRef = " << value.stencilFrontRef << '\n';
 	s << "stencilBackRef = " << value.stencilBackRef << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkAttachmentBindInfo& value)
+{
+	s << "VkAttachmentBindInfo = {\n";
+	s << "view = " << value.view << '\n';
+	s << "layout = " << value.layout << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkFramebufferCreateInfo& value)
+{
+	s << "VkFramebufferCreateInfo = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "renderPass = " << value.renderPass << '\n';
+	s << "attachmentCount = " << value.attachmentCount << '\n';
+	s << "pAttachments = " << value.pAttachments << '\n';
+	s << "width = " << value.width << '\n';
+	s << "height = " << value.height << '\n';
+	s << "layers = " << value.layers << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkAttachmentDescription& value)
+{
+	s << "VkAttachmentDescription = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "format = " << value.format << '\n';
+	s << "samples = " << value.samples << '\n';
+	s << "loadOp = " << value.loadOp << '\n';
+	s << "storeOp = " << value.storeOp << '\n';
+	s << "stencilLoadOp = " << value.stencilLoadOp << '\n';
+	s << "stencilStoreOp = " << value.stencilStoreOp << '\n';
+	s << "initialLayout = " << value.initialLayout << '\n';
+	s << "finalLayout = " << value.finalLayout << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkAttachmentReference& value)
+{
+	s << "VkAttachmentReference = {\n";
+	s << "attachment = " << value.attachment << '\n';
+	s << "layout = " << value.layout << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSubpassDescription& value)
+{
+	s << "VkSubpassDescription = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "pipelineBindPoint = " << value.pipelineBindPoint << '\n';
+	s << "flags = " << getSubpassDescriptionFlagsStr(value.flags) << '\n';
+	s << "inputCount = " << value.inputCount << '\n';
+	s << "inputAttachments = " << value.inputAttachments << '\n';
+	s << "colorCount = " << value.colorCount << '\n';
+	s << "colorAttachments = " << value.colorAttachments << '\n';
+	s << "resolveAttachments = " << value.resolveAttachments << '\n';
+	s << "depthStencilAttachment = " << value.depthStencilAttachment << '\n';
+	s << "preserveCount = " << value.preserveCount << '\n';
+	s << "preserveAttachments = " << value.preserveAttachments << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSubpassDependency& value)
+{
+	s << "VkSubpassDependency = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "srcSubpass = " << value.srcSubpass << '\n';
+	s << "destSubpass = " << value.destSubpass << '\n';
+	s << "srcStageMask = " << getPipelineStageFlagsStr(value.srcStageMask) << '\n';
+	s << "destStageMask = " << getPipelineStageFlagsStr(value.destStageMask) << '\n';
+	s << "outputMask = " << getMemoryOutputFlagsStr(value.outputMask) << '\n';
+	s << "inputMask = " << getMemoryInputFlagsStr(value.inputMask) << '\n';
+	s << "byRegion = " << value.byRegion << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkRenderPassCreateInfo& value)
+{
+	s << "VkRenderPassCreateInfo = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "attachmentCount = " << value.attachmentCount << '\n';
+	s << "pAttachments = " << value.pAttachments << '\n';
+	s << "subpassCount = " << value.subpassCount << '\n';
+	s << "pSubpasses = " << value.pSubpasses << '\n';
+	s << "dependencyCount = " << value.dependencyCount << '\n';
+	s << "pDependencies = " << value.pDependencies << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkCmdPoolCreateInfo& value)
+{
+	s << "VkCmdPoolCreateInfo = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "queueFamilyIndex = " << value.queueFamilyIndex << '\n';
+	s << "flags = " << getCmdPoolCreateFlagsStr(value.flags) << '\n';
 	s << '}';
 	return s;
 }
@@ -2210,7 +2321,8 @@ std::ostream& operator<< (std::ostream& s, const VkCmdBufferCreateInfo& value)
 	s << "VkCmdBufferCreateInfo = {\n";
 	s << "sType = " << value.sType << '\n';
 	s << "pNext = " << value.pNext << '\n';
-	s << "queueNodeIndex = " << value.queueNodeIndex << '\n';
+	s << "cmdPool = " << value.cmdPool << '\n';
+	s << "level = " << value.level << '\n';
 	s << "flags = " << value.flags << '\n';
 	s << '}';
 	return s;
@@ -2222,141 +2334,145 @@ std::ostream& operator<< (std::ostream& s, const VkCmdBufferBeginInfo& value)
 	s << "sType = " << value.sType << '\n';
 	s << "pNext = " << value.pNext << '\n';
 	s << "flags = " << getCmdBufferOptimizeFlagsStr(value.flags) << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkRenderPassBegin& value)
-{
-	s << "VkRenderPassBegin = {\n";
 	s << "renderPass = " << value.renderPass << '\n';
 	s << "framebuffer = " << value.framebuffer << '\n';
 	s << '}';
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkCmdBufferGraphicsBeginInfo& value)
+std::ostream& operator<< (std::ostream& s, const VkBufferCopy& value)
 {
-	s << "VkCmdBufferGraphicsBeginInfo = {\n";
-	s << "sType = " << value.sType << '\n';
-	s << "pNext = " << value.pNext << '\n';
-	s << "renderPassContinue = " << value.renderPassContinue << '\n';
+	s << "VkBufferCopy = {\n";
+	s << "srcOffset = " << value.srcOffset << '\n';
+	s << "destOffset = " << value.destOffset << '\n';
+	s << "copySize = " << value.copySize << '\n';
 	s << '}';
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkClearColor& value)
+std::ostream& operator<< (std::ostream& s, const VkImageCopy& value)
 {
-	s << "VkClearColor = {\n";
-	s << "color = " << value.color << '\n';
-	s << "useRawValue = " << value.useRawValue << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkRenderPassCreateInfo& value)
-{
-	s << "VkRenderPassCreateInfo = {\n";
-	s << "sType = " << value.sType << '\n';
-	s << "pNext = " << value.pNext << '\n';
-	s << "renderArea = " << value.renderArea << '\n';
-	s << "colorAttachmentCount = " << value.colorAttachmentCount << '\n';
+	s << "VkImageCopy = {\n";
+	s << "srcSubresource = " << value.srcSubresource << '\n';
+	s << "srcOffset = " << value.srcOffset << '\n';
+	s << "destSubresource = " << value.destSubresource << '\n';
+	s << "destOffset = " << value.destOffset << '\n';
 	s << "extent = " << value.extent << '\n';
-	s << "sampleCount = " << value.sampleCount << '\n';
-	s << "layers = " << value.layers << '\n';
-	s << "pColorFormats = " << value.pColorFormats << '\n';
-	s << "pColorLayouts = " << value.pColorLayouts << '\n';
-	s << "pColorLoadOps = " << value.pColorLoadOps << '\n';
-	s << "pColorStoreOps = " << value.pColorStoreOps << '\n';
-	s << "pColorLoadClearValues = " << value.pColorLoadClearValues << '\n';
-	s << "depthStencilFormat = " << value.depthStencilFormat << '\n';
-	s << "depthStencilLayout = " << value.depthStencilLayout << '\n';
-	s << "depthLoadOp = " << value.depthLoadOp << '\n';
-	s << "depthLoadClearValue = " << value.depthLoadClearValue << '\n';
-	s << "depthStoreOp = " << value.depthStoreOp << '\n';
-	s << "stencilLoadOp = " << value.stencilLoadOp << '\n';
-	s << "stencilLoadClearValue = " << value.stencilLoadClearValue << '\n';
-	s << "stencilStoreOp = " << value.stencilStoreOp << '\n';
 	s << '}';
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkEventCreateInfo& value)
+std::ostream& operator<< (std::ostream& s, const VkImageBlit& value)
 {
-	s << "VkEventCreateInfo = {\n";
+	s << "VkImageBlit = {\n";
+	s << "srcSubresource = " << value.srcSubresource << '\n';
+	s << "srcOffset = " << value.srcOffset << '\n';
+	s << "srcExtent = " << value.srcExtent << '\n';
+	s << "destSubresource = " << value.destSubresource << '\n';
+	s << "destOffset = " << value.destOffset << '\n';
+	s << "destExtent = " << value.destExtent << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkBufferImageCopy& value)
+{
+	s << "VkBufferImageCopy = {\n";
+	s << "bufferOffset = " << value.bufferOffset << '\n';
+	s << "bufferRowLength = " << value.bufferRowLength << '\n';
+	s << "bufferImageHeight = " << value.bufferImageHeight << '\n';
+	s << "imageSubresource = " << value.imageSubresource << '\n';
+	s << "imageOffset = " << value.imageOffset << '\n';
+	s << "imageExtent = " << value.imageExtent << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkClearColorValue& value)
+{
+	s << "VkClearColorValue = {\n";
+	s << "f32 = " << tcu::formatArray(DE_ARRAY_BEGIN(value.f32), DE_ARRAY_END(value.f32)) << '\n';
+	s << "s32 = " << tcu::formatArray(DE_ARRAY_BEGIN(value.s32), DE_ARRAY_END(value.s32)) << '\n';
+	s << "u32 = " << tcu::formatArray(DE_ARRAY_BEGIN(value.u32), DE_ARRAY_END(value.u32)) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkRect3D& value)
+{
+	s << "VkRect3D = {\n";
+	s << "offset = " << value.offset << '\n';
+	s << "extent = " << value.extent << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkImageResolve& value)
+{
+	s << "VkImageResolve = {\n";
+	s << "srcSubresource = " << value.srcSubresource << '\n';
+	s << "srcOffset = " << value.srcOffset << '\n';
+	s << "destSubresource = " << value.destSubresource << '\n';
+	s << "destOffset = " << value.destOffset << '\n';
+	s << "extent = " << value.extent << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkClearDepthStencilValue& value)
+{
+	s << "VkClearDepthStencilValue = {\n";
+	s << "depth = " << value.depth << '\n';
+	s << "stencil = " << value.stencil << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkClearValue& value)
+{
+	s << "VkClearValue = {\n";
+	s << "color = " << value.color << '\n';
+	s << "ds = " << value.ds << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkRenderPassBeginInfo& value)
+{
+	s << "VkRenderPassBeginInfo = {\n";
 	s << "sType = " << value.sType << '\n';
 	s << "pNext = " << value.pNext << '\n';
-	s << "flags = " << value.flags << '\n';
+	s << "renderPass = " << value.renderPass << '\n';
+	s << "framebuffer = " << value.framebuffer << '\n';
+	s << "renderArea = " << value.renderArea << '\n';
+	s << "attachmentCount = " << value.attachmentCount << '\n';
+	s << "pAttachmentClearValues = " << value.pAttachmentClearValues << '\n';
 	s << '}';
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkFenceCreateInfo& value)
+std::ostream& operator<< (std::ostream& s, const VkBufferMemoryBarrier& value)
 {
-	s << "VkFenceCreateInfo = {\n";
+	s << "VkBufferMemoryBarrier = {\n";
 	s << "sType = " << value.sType << '\n';
 	s << "pNext = " << value.pNext << '\n';
-	s << "flags = " << getFenceCreateFlagsStr(value.flags) << '\n';
+	s << "outputMask = " << getMemoryOutputFlagsStr(value.outputMask) << '\n';
+	s << "inputMask = " << getMemoryInputFlagsStr(value.inputMask) << '\n';
+	s << "srcQueueFamilyIndex = " << value.srcQueueFamilyIndex << '\n';
+	s << "destQueueFamilyIndex = " << value.destQueueFamilyIndex << '\n';
+	s << "buffer = " << value.buffer << '\n';
+	s << "offset = " << value.offset << '\n';
+	s << "size = " << value.size << '\n';
 	s << '}';
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkSemaphoreCreateInfo& value)
+std::ostream& operator<< (std::ostream& s, const VkDispatchIndirectCmd& value)
 {
-	s << "VkSemaphoreCreateInfo = {\n";
-	s << "sType = " << value.sType << '\n';
-	s << "pNext = " << value.pNext << '\n';
-	s << "initialCount = " << value.initialCount << '\n';
-	s << "flags = " << getSemaphoreCreateFlagsStr(value.flags) << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkSemaphoreOpenInfo& value)
-{
-	s << "VkSemaphoreOpenInfo = {\n";
-	s << "sType = " << value.sType << '\n';
-	s << "pNext = " << value.pNext << '\n';
-	s << "sharedSemaphore = " << value.sharedSemaphore << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkQueryPoolCreateInfo& value)
-{
-	s << "VkQueryPoolCreateInfo = {\n";
-	s << "sType = " << value.sType << '\n';
-	s << "pNext = " << value.pNext << '\n';
-	s << "queryType = " << value.queryType << '\n';
-	s << "slots = " << value.slots << '\n';
-	s << "pipelineStatistics = " << getQueryPipelineStatisticFlagsStr(value.pipelineStatistics) << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkFramebufferCreateInfo& value)
-{
-	s << "VkFramebufferCreateInfo = {\n";
-	s << "sType = " << value.sType << '\n';
-	s << "pNext = " << value.pNext << '\n';
-	s << "colorAttachmentCount = " << value.colorAttachmentCount << '\n';
-	s << "pColorAttachments = " << value.pColorAttachments << '\n';
-	s << "pDepthStencilAttachment = " << value.pDepthStencilAttachment << '\n';
-	s << "sampleCount = " << value.sampleCount << '\n';
-	s << "width = " << value.width << '\n';
-	s << "height = " << value.height << '\n';
-	s << "layers = " << value.layers << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkDrawIndirectCmd& value)
-{
-	s << "VkDrawIndirectCmd = {\n";
-	s << "vertexCount = " << value.vertexCount << '\n';
-	s << "instanceCount = " << value.instanceCount << '\n';
-	s << "firstVertex = " << value.firstVertex << '\n';
-	s << "firstInstance = " << value.firstInstance << '\n';
+	s << "VkDispatchIndirectCmd = {\n";
+	s << "x = " << value.x << '\n';
+	s << "y = " << value.y << '\n';
+	s << "z = " << value.z << '\n';
 	s << '}';
 	return s;
 }
@@ -2373,12 +2489,41 @@ std::ostream& operator<< (std::ostream& s, const VkDrawIndexedIndirectCmd& value
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkDispatchIndirectCmd& value)
+std::ostream& operator<< (std::ostream& s, const VkDrawIndirectCmd& value)
 {
-	s << "VkDispatchIndirectCmd = {\n";
-	s << "x = " << value.x << '\n';
-	s << "y = " << value.y << '\n';
-	s << "z = " << value.z << '\n';
+	s << "VkDrawIndirectCmd = {\n";
+	s << "vertexCount = " << value.vertexCount << '\n';
+	s << "instanceCount = " << value.instanceCount << '\n';
+	s << "firstVertex = " << value.firstVertex << '\n';
+	s << "firstInstance = " << value.firstInstance << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkImageMemoryBarrier& value)
+{
+	s << "VkImageMemoryBarrier = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "outputMask = " << getMemoryOutputFlagsStr(value.outputMask) << '\n';
+	s << "inputMask = " << getMemoryInputFlagsStr(value.inputMask) << '\n';
+	s << "oldLayout = " << value.oldLayout << '\n';
+	s << "newLayout = " << value.newLayout << '\n';
+	s << "srcQueueFamilyIndex = " << value.srcQueueFamilyIndex << '\n';
+	s << "destQueueFamilyIndex = " << value.destQueueFamilyIndex << '\n';
+	s << "image = " << value.image << '\n';
+	s << "subresourceRange = " << value.subresourceRange << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkMemoryBarrier& value)
+{
+	s << "VkMemoryBarrier = {\n";
+	s << "sType = " << value.sType << '\n';
+	s << "pNext = " << value.pNext << '\n';
+	s << "outputMask = " << getMemoryOutputFlagsStr(value.outputMask) << '\n';
+	s << "inputMask = " << getMemoryInputFlagsStr(value.inputMask) << '\n';
 	s << '}';
 	return s;
 }

@@ -64,34 +64,24 @@ public:
 									Allocator	(void) {}
 	virtual							~Allocator	(void) {}
 
-	virtual de::MovePtr<Allocation>	allocate	(const VkMemoryAllocInfo* allocInfo, VkDeviceSize alignment) = 0;
+	virtual de::MovePtr<Allocation>	allocate	(const VkMemoryAllocInfo& allocInfo, VkDeviceSize alignment) = 0;
+	virtual de::MovePtr<Allocation>	allocate	(const VkMemoryRequirements& memRequirements, VkMemoryPropertyFlags allocProps) = 0;
 };
 
 //! Allocator that backs every allocation with its own VkDeviceMemory
 class SimpleAllocator : public Allocator
 {
 public:
-								SimpleAllocator	(const DeviceInterface& vk, VkDevice device);
+											SimpleAllocator	(const DeviceInterface& vk, VkDevice device, const VkPhysicalDeviceMemoryProperties& deviceMemProps);
 
-	de::MovePtr<Allocation>		allocate		(const VkMemoryAllocInfo* allocInfo, VkDeviceSize alignment);
+	de::MovePtr<Allocation>					allocate		(const VkMemoryAllocInfo& allocInfo, VkDeviceSize alignment);
+	de::MovePtr<Allocation>					allocate		(const VkMemoryRequirements& memRequirements, VkMemoryPropertyFlags allocProps);
 
 private:
-	const DeviceInterface&		m_vk;
-	VkDevice					m_device;
+	const DeviceInterface&					m_vk;
+	const VkDevice							m_device;
+	const VkPhysicalDeviceMemoryProperties	m_memProps;
 };
-
-// Utilities
-
-de::MovePtr<Allocation>		allocate	(Allocator&						allocator,
-										 VkDeviceSize					allocationSize,
-										 VkMemoryPropertyFlags			memProps,
-										 VkDeviceSize					alignment,
-										 VkMemoryPriority				memPriority = VK_MEMORY_PRIORITY_UNUSED);
-
-de::MovePtr<Allocation>		allocate	(Allocator&						allocator,
-										 const VkMemoryRequirements&	requirements,
-										 VkMemoryPropertyFlags			memProps = 0u,
-										 VkMemoryPriority				priority = VK_MEMORY_PRIORITY_UNUSED);
 
 } // vk
 

@@ -49,9 +49,9 @@ namespace vkt
 using std::vector;
 using namespace vk;
 
-static deUint32 findQueueNodeIndexWithCaps (const DeviceInterface& vkDevice, VkPhysicalDevice physicalDevice, VkQueueFlags requiredCaps)
+static deUint32 findQueueNodeIndexWithCaps (const InstanceInterface& vkInstance, VkPhysicalDevice physicalDevice, VkQueueFlags requiredCaps)
 {
-	const vector<VkPhysicalDeviceQueueProperties>	queueProps	= getPhysicalDeviceInfo<VK_PHYSICAL_DEVICE_INFO_TYPE_QUEUE_PROPERTIES>(vkDevice, physicalDevice);
+	const vector<VkPhysicalDeviceQueueProperties>	queueProps	= getPhysicalDeviceQueueProperties(vkInstance, physicalDevice);
 
 	for (size_t queueNdx = 0; queueNdx < queueProps.size(); queueNdx++)
 	{
@@ -64,15 +64,21 @@ static deUint32 findQueueNodeIndexWithCaps (const DeviceInterface& vkDevice, VkP
 
 struct DeviceCreateInfoHelper
 {
+	VkPhysicalDeviceFeatures	enabledFeatures;
 	VkDeviceQueueCreateInfo		queueInfo;
 	VkDeviceCreateInfo			deviceInfo;
 
 	DeviceCreateInfoHelper (deUint32 queueIndex)
 	{
-		deMemset(&queueInfo, 0, sizeof(queueInfo));
-		deMemset(&deviceInfo, 0, sizeof(deviceInfo));
+		deMemset(&enabledFeatures,	0, sizeof(enabledFeatures));
+		deMemset(&queueInfo,		0, sizeof(queueInfo));
+		deMemset(&deviceInfo,		0, sizeof(deviceInfo));
 
-		queueInfo.queueNodeIndex			= queueIndex;
+		// \todo [2015-07-09 pyry] What's the policy for enabling features?
+		//  * Enable all supported by default, and expose that to test cases
+		//  * More limited enabled set could be used for verifying that tests behave correctly
+
+		queueInfo.queueFamilyIndex			= queueIndex;
 		queueInfo.queueCount				= 1u;
 
 		deviceInfo.sType					= VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -81,6 +87,7 @@ struct DeviceCreateInfoHelper
 		deviceInfo.pRequestedQueues			= &queueInfo;
 		deviceInfo.extensionCount			= 0u;
 		deviceInfo.ppEnabledExtensionNames	= DE_NULL;
+		deviceInfo.pEnabledFeatures			= &enabledFeatures;
 		deviceInfo.flags					= 0u;
 	}
 };
@@ -92,28 +99,37 @@ public:
 									~DefaultDevice			(void);
 
 	VkInstance						getInstance				(void) const	{ return *m_instance;			}
+	const InstanceInterface&		getInstanceInterface	(void) const	{ return m_instanceInterface;	}
+
 	VkPhysicalDevice				getPhysicalDevice		(void) const	{ return m_physicalDevice;		}
+
 	VkDevice						getDevice				(void) const	{ return *m_device;				}
-	const DeviceInterface&			getInterface			(void) const	{ return m_deviceInterface;		}
+	const DeviceInterface&			getDeviceInterface		(void) const	{ return m_deviceInterface;		}
+
 	deUint32						getUniversalQueueIndex	(void) const	{ return m_universalQueueIndex;	}
 	VkQueue							getUniversalQueue		(void) const;
 
 private:
-	const Unique<VkInstanceT>		m_instance;
+	const Unique<VkInstance>		m_instance;
+	const InstanceDriver			m_instanceInterface;
+
 	const VkPhysicalDevice			m_physicalDevice;
-	const DeviceDriver				m_deviceInterface;
+
 	const deUint32					m_universalQueueIndex;
 	const DeviceCreateInfoHelper	m_deviceCreateInfo;
-	const Unique<VkDeviceT>			m_device;
+
+	const Unique<VkDevice>			m_device;
+	const DeviceDriver				m_deviceInterface;
 };
 
 DefaultDevice::DefaultDevice (const PlatformInterface& vkPlatform, const tcu::CommandLine& cmdLine)
 	: m_instance			(createDefaultInstance(vkPlatform))
-	, m_physicalDevice		(chooseDevice(vkPlatform, *m_instance, cmdLine))
-	, m_deviceInterface		(vkPlatform, m_physicalDevice)
-	, m_universalQueueIndex	(findQueueNodeIndexWithCaps(m_deviceInterface, m_physicalDevice, VK_QUEUE_GRAPHICS_BIT|VK_QUEUE_COMPUTE_BIT|VK_QUEUE_DMA_BIT|VK_QUEUE_MEMMGR_BIT))
+	, m_instanceInterface	(vkPlatform, *m_instance)
+	, m_physicalDevice		(chooseDevice(m_instanceInterface, *m_instance, cmdLine))
+	, m_universalQueueIndex	(findQueueNodeIndexWithCaps(m_instanceInterface, m_physicalDevice, VK_QUEUE_GRAPHICS_BIT|VK_QUEUE_COMPUTE_BIT|VK_QUEUE_DMA_BIT))
 	, m_deviceCreateInfo	(m_universalQueueIndex)
-	, m_device				(createDevice(m_deviceInterface, m_physicalDevice, &m_deviceCreateInfo.deviceInfo))
+	, m_device				(createDevice(m_instanceInterface, m_physicalDevice, &m_deviceCreateInfo.deviceInfo))
+	, m_deviceInterface		(m_instanceInterface, *m_device)
 {
 }
 
@@ -145,12 +161,13 @@ Context::~Context (void)
 	delete m_device;
 }
 
-vk::VkInstance				Context::getInstance			(void) const { return m_device->getInstance();				}
-vk::VkPhysicalDevice		Context::getPhysicalDevice		(void) const { return m_device->getPhysicalDevice();		}
-vk::VkDevice				Context::getDevice				(void) const { return m_device->getDevice();				}
-const vk::DeviceInterface&	Context::getDeviceInterface		(void) const { return m_device->getInterface();				}
-deUint32					Context::getUniversalQueueIndex	(void) const { return m_device->getUniversalQueueIndex();	}
-vk::VkQueue					Context::getUniversalQueue		(void) const { return m_device->getUniversalQueue();		}
+vk::VkInstance					Context::getInstance			(void) const { return m_device->getInstance();				}
+const vk::InstanceInterface&	Context::getInstanceInterface	(void) const { return m_device->getInstanceInterface();		}
+vk::VkPhysicalDevice			Context::getPhysicalDevice		(void) const { return m_device->getPhysicalDevice();		}
+vk::VkDevice					Context::getDevice				(void) const { return m_device->getDevice();				}
+const vk::DeviceInterface&		Context::getDeviceInterface		(void) const { return m_device->getDeviceInterface();		}
+deUint32						Context::getUniversalQueueIndex	(void) const { return m_device->getUniversalQueueIndex();	}
+vk::VkQueue						Context::getUniversalQueue		(void) const { return m_device->getUniversalQueue();		}
 
 // TestCase
 

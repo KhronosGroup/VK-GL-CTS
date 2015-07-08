@@ -7,17 +7,7 @@ VkResult PlatformDriver::createInstance (const VkInstanceCreateInfo* pCreateInfo
 	return m_vk.createInstance(pCreateInfo, pInstance);
 }
 
-VkResult PlatformDriver::destroyInstance (VkInstance instance) const
+PFN_vkVoidFunction PlatformDriver::getInstanceProcAddr (VkInstance instance, const char* pName) const
 {
-	return m_vk.destroyInstance(instance);
-}
-
-VkResult PlatformDriver::enumeratePhysicalDevices (VkInstance instance, deUint32* pPhysicalDeviceCount, VkPhysicalDevice* pPhysicalDevices) const
-{
-	return m_vk.enumeratePhysicalDevices(instance, pPhysicalDeviceCount, pPhysicalDevices);
-}
-
-FunctionPtr PlatformDriver::getProcAddr (VkPhysicalDevice physicalDevice, const char* pName) const
-{
-	return m_vk.getProcAddr(physicalDevice, pName);
+	return m_vk.getInstanceProcAddr(instance, pName);
 }

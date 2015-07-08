@@ -47,8 +47,7 @@ namespace vk
 
 enum ProgramFormat
 {
-	PROGRAM_FORMAT_GLSL_SOURCE = 0,
-	PROGRAM_FORMAT_SPIRV,
+	PROGRAM_FORMAT_SPIRV = 0,
 
 	PROGRAM_FORMAT_LAST
 };
@@ -167,8 +166,8 @@ typedef ProgramCollection<glu::ProgramSources>	SourceCollection;
 typedef ProgramCollection<ProgramBinary>		BinaryCollection;
 
 // \todo [2015-03-13 pyry] Likely need BinaryBuilder abstraction for this
-ProgramBinary*		buildProgram	(const glu::ProgramSources& program, ProgramFormat binaryFormat);
-Move<VkShaderT>		createShader	(const DeviceInterface& deviceInterface, VkDevice device, const ProgramBinary& binary, VkShaderCreateFlags flags);
+ProgramBinary*			buildProgram		(const glu::ProgramSources& program, ProgramFormat binaryFormat);
+Move<VkShaderModule>	createShaderModule	(const DeviceInterface& deviceInterface, VkDevice device, const ProgramBinary& binary, VkShaderModuleCreateFlags flags);
 
 } // vk
 
