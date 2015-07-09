@@ -24,6 +24,7 @@
 #include "es3fNegativeStateApiTests.hpp"
 #include "es3fApiCase.hpp"
 #include "gluShaderProgram.hpp"
+#include "gluContextInfo.hpp"
 #include "deMemory.h"
 
 #include "glwDefs.hpp"
@@ -945,8 +946,12 @@ void NegativeStateApiTests::init (void)
 			m_log << TestLog::EndSection;
 
 			m_log << TestLog::Section("", "GL_INVALID_ENUM is generated if internalformat is not color-, depth-, or stencil-renderable.");
-			glGetInternalformativ	(GL_RENDERBUFFER, GL_RG8_SNORM, GL_NUM_SAMPLE_COUNTS, 16, &params[0]);
-			expectError				(GL_INVALID_ENUM);
+			if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_render_snorm"))
+			{
+				glGetInternalformativ	(GL_RENDERBUFFER, GL_RG8_SNORM, GL_NUM_SAMPLE_COUNTS, 16, &params[0]);
+				expectError				(GL_INVALID_ENUM);
+			}
+
 			glGetInternalformativ	(GL_RENDERBUFFER, GL_COMPRESSED_RGB8_ETC2, GL_NUM_SAMPLE_COUNTS, 16, &params[0]);
 			expectError				(GL_INVALID_ENUM);
 			m_log << TestLog::EndSection;
@@ -956,8 +961,12 @@ void NegativeStateApiTests::init (void)
 			expectError				(GL_INVALID_ENUM);
 			glGetInternalformativ	(GL_FRAMEBUFFER, GL_RGBA8, GL_NUM_SAMPLE_COUNTS, 16, &params[0]);
 			expectError				(GL_INVALID_ENUM);
-			glGetInternalformativ	(GL_TEXTURE_2D, GL_RGBA8, GL_NUM_SAMPLE_COUNTS, 16, &params[0]);
-			expectError				(GL_INVALID_ENUM);
+
+			if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_sparse_texture"))
+			{
+				glGetInternalformativ	(GL_TEXTURE_2D, GL_RGBA8, GL_NUM_SAMPLE_COUNTS, 16, &params[0]);
+				expectError				(GL_INVALID_ENUM);
+			}
 			m_log << TestLog::EndSection;
 		});
 
