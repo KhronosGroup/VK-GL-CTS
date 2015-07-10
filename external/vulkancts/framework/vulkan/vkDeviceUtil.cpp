@@ -33,6 +33,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vkDeviceUtil.hpp"
+#include "vkQueryUtil.hpp"
 
 #include "tcuCommandLine.hpp"
 
@@ -45,7 +46,7 @@ namespace vk
 
 using std::vector;
 
-Move<VkInstanceT> createDefaultInstance (const PlatformInterface& vkPlatform)
+Move<VkInstance> createDefaultInstance (const PlatformInterface& vkPlatform)
 {
 	const struct VkApplicationInfo		appInfo			=
 	{
@@ -59,10 +60,12 @@ Move<VkInstanceT> createDefaultInstance (const PlatformInterface& vkPlatform)
 	};
 	const struct VkInstanceCreateInfo	instanceInfo	=
 	{
-		VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,	// VkStructureType				sType;
+		VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,	//	VkStructureType				sType;
 		DE_NULL,								//	const void*					pNext;
 		&appInfo,								//	const VkApplicationInfo*	pAppInfo;
 		DE_NULL,								//	const VkAllocCallbacks*		pAllocCb;
+		0u,										//	deUint32					layerCount;
+		DE_NULL,								//	const char*const*			ppEnabledLayerNames;
 		0u,										//	deUint32					extensionCount;
 		DE_NULL									//	const char*const*			ppEnabledExtensionNames;
 	};
@@ -70,28 +73,17 @@ Move<VkInstanceT> createDefaultInstance (const PlatformInterface& vkPlatform)
 	return createInstance(vkPlatform, &instanceInfo);
 }
 
-VkPhysicalDevice chooseDevice (const PlatformInterface& vkPlatform, VkInstance instance, const tcu::CommandLine& cmdLine)
+VkPhysicalDevice chooseDevice (const InstanceInterface& vkInstance, VkInstance instance, const tcu::CommandLine& cmdLine)
 {
-	vector<VkPhysicalDevice>	devices;
-	deUint32					numDevices	= 0;
+	const vector<VkPhysicalDevice>	devices	= enumeratePhysicalDevices(vkInstance, instance);
 
-	VK_CHECK(vkPlatform.enumeratePhysicalDevices(instance, &numDevices, DE_NULL));
-
-	if (numDevices > 0)
-	{
-		devices.resize(numDevices);
-		VK_CHECK(vkPlatform.enumeratePhysicalDevices(instance, &numDevices, &devices[0]));
-
-		if (numDevices != devices.size())
-			TCU_FAIL("Number of devices changed between queries");
-
-		if (!de::inBounds(cmdLine.getVKDeviceId(), 1, (int)devices.size()+1))
-			TCU_THROW(InternalError, "Invalid --deqp-vk-device-id");
-
-		return devices[(size_t)(cmdLine.getVKDeviceId()-1)];
-	}
-	else
+	if (devices.empty())
 		TCU_THROW(NotSupportedError, "No Vulkan devices available");
+
+	if (!de::inBounds(cmdLine.getVKDeviceId(), 1, (int)devices.size()+1))
+		TCU_THROW(InternalError, "Invalid --deqp-vk-device-id");
+
+	return devices[(size_t)(cmdLine.getVKDeviceId()-1)];
 }
 
 } // vk

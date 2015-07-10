@@ -39,6 +39,7 @@
 
 DE_STATIC_ASSERT(sizeof(vk::VkImageType)	== sizeof(deUint32));
 DE_STATIC_ASSERT(sizeof(vk::VkResult)		== sizeof(deUint32));
+DE_STATIC_ASSERT(sizeof(vk::VkDevice)		== sizeof(deUint64));
 
 namespace vk
 {
@@ -118,6 +119,14 @@ deUint32 pack (const ApiVersion& version)
 	return (version.major << 22) | (version.minor << 12) | version.patch;
 }
 
-#include "vkGetObjectTypeImpl.inl"
+VkClearValue clearValueColorF32 (float r, float g, float b, float a)
+{
+	VkClearValue v;
+	v.color.f32[0] = r;
+	v.color.f32[1] = g;
+	v.color.f32[2] = b;
+	v.color.f32[3] = a;
+	return v;
+}
 
 } // vk

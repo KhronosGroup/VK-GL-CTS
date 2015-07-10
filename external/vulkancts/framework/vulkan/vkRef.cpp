@@ -39,4 +39,18 @@ namespace vk
 
 #include "vkRefUtilImpl.inl"
 
+Move<VkPipeline> createGraphicsPipeline (const DeviceInterface& vk, VkDevice device, VkPipelineCache pipelineCache, const VkGraphicsPipelineCreateInfo* pCreateInfo)
+{
+	VkPipeline object = 0;
+	VK_CHECK(vk.createGraphicsPipelines(device, pipelineCache, 1u, pCreateInfo, &object));
+	return Move<VkPipeline>(check<VkPipeline>(object), Deleter<VkPipeline>(vk, device));
+}
+
+Move<VkPipeline> createComputePipeline (const DeviceInterface& vk, VkDevice device, VkPipelineCache pipelineCache, const VkComputePipelineCreateInfo* pCreateInfo)
+{
+	VkPipeline object = 0;
+	VK_CHECK(vk.createComputePipelines(device, pipelineCache, 1u, pCreateInfo, &object));
+	return Move<VkPipeline>(check<VkPipeline>(object), Deleter<VkPipeline>(vk, device));
+}
+
 } // vk

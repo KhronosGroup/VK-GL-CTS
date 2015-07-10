@@ -69,6 +69,7 @@ public:
 
 	// Default instance & device, selected with --deqp-vk-device-id=N
 	vk::VkInstance								getInstance				(void) const;
+	const vk::InstanceInterface&				getInstanceInterface	(void) const;
 	vk::VkPhysicalDevice						getPhysicalDevice		(void) const;
 	vk::VkDevice								getDevice				(void) const;
 	const vk::DeviceInterface&					getDeviceInterface		(void) const;

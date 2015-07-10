@@ -45,8 +45,8 @@ class CommandLine;
 namespace vk
 {
 
-Move<VkInstanceT>	createDefaultInstance	(const PlatformInterface& vkPlatform);
-VkPhysicalDevice	chooseDevice			(const PlatformInterface& vkPlatform, VkInstance instance, const tcu::CommandLine& cmdLine);
+Move<VkInstance>	createDefaultInstance	(const PlatformInterface& vkPlatform);
+VkPhysicalDevice	chooseDevice			(const InstanceInterface& vkInstance, VkInstance instance, const tcu::CommandLine& cmdLine);
 
 } // vk
 

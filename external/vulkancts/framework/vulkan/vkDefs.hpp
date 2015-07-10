@@ -52,31 +52,8 @@
 #	define VK_APIENTRY
 #endif
 
-#define VK_DEFINE_HANDLE_TYPE_TRAITS(HANDLE)			\
-	struct HANDLE##T { private: HANDLE##T (void); };	\
-	template<>											\
-	struct Traits<HANDLE##T>							\
-	{													\
-		typedef HANDLE		Type;						\
-	}
-
-#if (DE_PTR_SIZE == 8)
-#	define VK_DEFINE_PTR_HANDLE(HANDLE)						\
-		struct HANDLE##_s { private: HANDLE##_s (void); };	\
-		typedef HANDLE##_s*	HANDLE
-
-#	define VK_DEFINE_PTR_SUBCLASS_HANDLE(HANDLE, PARENT)						\
-		struct HANDLE##_s : public PARENT##_s { private: HANDLE##_s (void); };	\
-		typedef HANDLE##_s* HANDLE
-
-#	define VK_DEFINE_BASE_HANDLE(HANDLE)						VK_DEFINE_PTR_HANDLE(HANDLE)
-#	define VK_DEFINE_DISP_SUBCLASS_HANDLE(HANDLE, PARENT)		VK_DEFINE_PTR_SUBCLASS_HANDLE(HANDLE, PARENT)
-#	define VK_DEFINE_NONDISP_SUBCLASS_HANDLE(HANDLE, PARENT)	VK_DEFINE_PTR_SUBCLASS_HANDLE(HANDLE, PARENT)
-#else
-#	define VK_DEFINE_BASE_HANDLE(HANDLE)						typedef deUint64 HANDLE
-#	define VK_DEFINE_DISP_SUBCLASS_HANDLE(HANDLE, PARENT)		typedef deUintptr HANDLE
-#	define VK_DEFINE_NONDISP_SUBCLASS_HANDLE(HANDLE, PARENT)	typedef deUint64 HANDLE
-#endif
+#define VK_DEFINE_HANDLE(NAME, TYPE)			typedef Handle<TYPE> NAME
+#define VK_DEFINE_NONDISP_HANDLE(NAME, TYPE)	VK_DEFINE_HANDLE(NAME, TYPE)
 
 #define VK_MAKE_VERSION(MAJOR, MINOR, PATCH)	((MAJOR << 22) | (MINOR << 12) | PATCH)
 #define VK_BIT(NUM)								(1<<NUM)
@@ -92,55 +69,91 @@ namespace vk
 
 typedef deUint64	VkDeviceSize;
 typedef deUint32	VkSampleMask;
+typedef deUint32	VkBool32;
 
 typedef deUint32	VkShaderCreateFlags;		// Reserved
 typedef deUint32	VkEventCreateFlags;			// Reserved
 typedef deUint32	VkCmdBufferCreateFlags;		// Reserved
+typedef deUint32	VkSemaphoreCreateFlags;		// Reserved
+typedef deUint32	VkShaderModuleCreateFlags;	// Reserved
 typedef deUint32	VkMemoryMapFlags;			// \todo [2015-05-08 pyry] Reserved? Not documented
 
-template<typename T> struct Traits;
+// enum HandleType { HANDLE_TYPE_INSTANCE, ... };
+#include "vkHandleType.inl"
+
+template<HandleType Type>
+class Handle
+{
+public:
+				Handle		(void) {} // \note Left uninitialized on purpose
+				Handle		(deUint64 internal) : m_internal(internal) {}
+
+	Handle&		operator=	(deUint64 internal)					{ m_internal = internal; return *this;			}
+
+	bool		operator==	(const Handle<Type>& other) const	{ return this->m_internal == other.m_internal;	}
+	bool		operator!=	(const Handle<Type>& other) const	{ return this->m_internal != other.m_internal;	}
+
+	bool		operator!	(void) const						{ return !m_internal;							}
+
+	deUint64	getInternal	(void) const						{ return m_internal;							}
+
+	enum { HANDLE_TYPE = Type };
+
+private:
+	deUint64	m_internal;
+};
 
 #include "vkBasicTypes.inl"
 
-typedef VK_APICALL void		(VK_APIENTRY* FunctionPtr)			(void);
+typedef VK_APICALL void		(VK_APIENTRY* PFN_vkVoidFunction)	(void);
 
 typedef VK_APICALL void*	(VK_APIENTRY* PFN_vkAllocFunction)	(void* pUserData, deUintptr size, deUintptr alignment, VkSystemAllocType allocType);
 typedef VK_APICALL void		(VK_APIENTRY* PFN_vkFreeFunction)	(void* pUserData, void* pMem);
 
-union VkClearColorValue
-{
-	float		floatColor[4];
-	deUint32	rawColor[4];
-
-	VkClearColorValue (float r, float g, float b, float a)
-	{
-		floatColor[0] = r;
-		floatColor[1] = g;
-		floatColor[2] = b;
-		floatColor[3] = a;
-	}
-
-	VkClearColorValue (deUint32 r, deUint32 g, deUint32 b, deUint32 a)
-	{
-		rawColor[0] = r;
-		rawColor[1] = g;
-		rawColor[2] = b;
-		rawColor[3] = a;
-	}
-};
-
 #include "vkStructTypes.inl"
+
+extern "C"
+{
+#include "vkFunctionPointerTypes.inl"
+}
 
 class PlatformInterface
 {
 public:
 #include "vkVirtualPlatformInterface.inl"
+
+protected:
+						PlatformInterface	(void) {}
+
+private:
+						PlatformInterface	(const PlatformInterface&);
+	PlatformInterface&	operator=			(const PlatformInterface&);
+};
+
+class InstanceInterface
+{
+public:
+#include "vkVirtualInstanceInterface.inl"
+
+protected:
+						InstanceInterface	(void) {}
+
+private:
+						InstanceInterface	(const InstanceInterface&);
+	InstanceInterface&	operator=			(const InstanceInterface&);
 };
 
 class DeviceInterface
 {
 public:
 #include "vkVirtualDeviceInterface.inl"
+
+protected:
+						DeviceInterface		(void) {}
+
+private:
+						DeviceInterface		(const DeviceInterface&);
+	DeviceInterface&	operator=			(const DeviceInterface&);
 };
 
 struct ApiVersion
@@ -185,14 +198,12 @@ private:
 	const VkResult	m_error;
 };
 
-ApiVersion		unpackVersion	(deUint32 version);
-deUint32		pack			(const ApiVersion& version);
+void			checkResult			(VkResult result, const char* message, const char* file, int line);
 
-void			checkResult		(VkResult result, const char* message, const char* file, int line);
+ApiVersion		unpackVersion		(deUint32 version);
+deUint32		pack				(const ApiVersion& version);
 
-//! Map Vk{Object}T to VK_OBJECT_TYPE_{OBJECT}. Defined for leaf objects only.
-template<typename T>
-VkObjectType	getObjectType	(void);
+VkClearValue	clearValueColorF32	(float r, float g, float b, float a);
 
 } // vk
 

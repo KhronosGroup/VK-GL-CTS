@@ -23,6 +23,7 @@
 
 #include "tcuWin32Platform.hpp"
 #include "tcuWGLContextFactory.hpp"
+#include "tcuFunctionLibrary.hpp"
 
 #if defined(DEQP_SUPPORT_EGL)
 #	include "tcuWin32EGLNativeDisplayFactory.hpp"
@@ -32,22 +33,12 @@
 namespace tcu
 {
 
-static vk::GetProcAddrFunc loadGetProcAddr (const de::DynamicLibrary& library)
-{
-	const vk::GetProcAddrFunc	getProc	= (vk::GetProcAddrFunc)library.getFunction("vkGetProcAddr");
-
-	if (!getProc)
-		TCU_THROW(InternalError, "Failed to load vkGetProcAddr");
-
-	return getProc;
-}
-
 class VulkanLibrary : public vk::Library
 {
 public:
 	VulkanLibrary (void)
 		: m_library	("vulkan.dll")
-		, m_driver	(loadGetProcAddr(m_library))
+		, m_driver	(m_library)
 	{
 	}
 
@@ -57,8 +48,8 @@ public:
 	}
 
 private:
-	const de::DynamicLibrary	m_library;
-	const vk::PlatformDriver	m_driver;
+	const tcu::DynamicFunctionLibrary	m_library;
+	const vk::PlatformDriver			m_driver;
 };
 
 Win32Platform::Win32Platform (void)

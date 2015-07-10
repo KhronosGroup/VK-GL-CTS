@@ -37,7 +37,7 @@
 namespace vk
 {
 
-std::vector<VkPhysicalDevice> enumeratePhysicalDevices (const PlatformInterface& vk, VkInstance instance)
+std::vector<VkPhysicalDevice> enumeratePhysicalDevices (const InstanceInterface& vk, VkInstance instance)
 {
 	deUint32						numDevices	= 0;
 	std::vector<VkPhysicalDevice>	devices;
@@ -54,6 +54,43 @@ std::vector<VkPhysicalDevice> enumeratePhysicalDevices (const PlatformInterface&
 	}
 
 	return devices;
+}
+
+
+std::vector<VkPhysicalDeviceQueueProperties> getPhysicalDeviceQueueProperties (const InstanceInterface& vk, VkPhysicalDevice physicalDevice)
+{
+	deUint32										numQueues	= 0;
+	std::vector<VkPhysicalDeviceQueueProperties>	properties;
+
+	VK_CHECK(vk.getPhysicalDeviceQueueCount(physicalDevice, &numQueues));
+
+	if (numQueues > 0)
+	{
+		properties.resize(numQueues);
+		VK_CHECK(vk.getPhysicalDeviceQueueProperties(physicalDevice, numQueues, &properties[0]));
+	}
+
+	return properties;
+}
+
+VkPhysicalDeviceMemoryProperties getPhysicalDeviceMemoryProperties (const InstanceInterface& vk, VkPhysicalDevice physicalDevice)
+{
+	VkPhysicalDeviceMemoryProperties	properties;
+	VK_CHECK(vk.getPhysicalDeviceMemoryProperties(physicalDevice, &properties));
+	return properties;
+}
+
+VkMemoryRequirements getBufferMemoryRequirements (const DeviceInterface& vk, VkDevice device, VkBuffer buffer)
+{
+	VkMemoryRequirements req;
+	VK_CHECK(vk.getBufferMemoryRequirements(device, buffer, &req));
+	return req;
+}
+VkMemoryRequirements getImageMemoryRequirements (const DeviceInterface& vk, VkDevice device, VkImage image)
+{
+	VkMemoryRequirements req;
+	VK_CHECK(vk.getImageMemoryRequirements(device, image, &req));
+	return req;
 }
 
 } // vk

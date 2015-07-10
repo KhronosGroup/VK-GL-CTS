@@ -50,41 +50,44 @@ INL_HEADER = """\
 
 PLATFORM_FUNCTIONS	= [
 	"vkCreateInstance",
+	"vkGetInstanceProcAddr"
+]
+INSTANCE_FUNCTIONS	= [
 	"vkDestroyInstance",
 	"vkEnumeratePhysicalDevices",
+	"vkGetPhysicalDeviceFeatures",
+	"vkGetPhysicalDeviceFormatProperties",
+	"vkGetPhysicalDeviceImageFormatProperties",
+	"vkGetPhysicalDeviceLimits",
+	"vkGetPhysicalDeviceProperties",
+	"vkGetPhysicalDeviceQueueCount",
+	"vkGetPhysicalDeviceQueueProperties",
+	"vkGetPhysicalDeviceMemoryProperties",
+	"vkCreateDevice",
+	"vkGetDeviceProcAddr"
 ]
-GET_PROC_ADDR		= "vkGetProcAddr"
-
-OBJECT_TYPE_REPL	= {
-	"VkObject":				None,
-	"VkNonDispatchable":	None,
-	"VkDynamicStateObject":	None,
-	"VkCmdBuffer":			"VK_OBJECT_TYPE_COMMAND_BUFFER",
-}
 
 DEFINITIONS			= [
 	"VK_API_VERSION",
 	"VK_MAX_PHYSICAL_DEVICE_NAME",
-	"VK_MAX_EXTENSION_NAME"
+	"VK_MAX_EXTENSION_NAME",
+	"VK_UUID_LENGTH",
+	"VK_MAX_MEMORY_TYPES",
+	"VK_MAX_MEMORY_HEAPS",
+	"VK_MAX_DESCRIPTION"
 ]
 
 class Handle:
-	TYPE_ROOT		= 0
-	TYPE_DISP		= 1
-	TYPE_NONDISP	= 2
+	TYPE_DISP		= 0
+	TYPE_NONDISP	= 1
 
-	def __init__ (self, type, name, parent = None):
-		assert (type == Handle.TYPE_ROOT) == (parent == None)
+	def __init__ (self, type, name):
 		self.type	= type
 		self.name	= name
-		self.parent	= parent
 
-	def getObjectType (self):
-		if self.name in OBJECT_TYPE_REPL:
-			return OBJECT_TYPE_REPL[self.name]
-		else:
-			name = re.sub(r'([A-Z])', r'_\1', self.name)
-			return "VK_OBJECT_TYPE_" + name[4:].upper()
+	def getHandleType (self):
+		name = re.sub(r'([A-Z])', r'_\1', self.name)
+		return "HANDLE_TYPE_" + name[4:].upper()
 
 class Enum:
 	def __init__ (self, name, values):
@@ -101,15 +104,23 @@ class Variable:
 		self.type	= type
 		self.name	= name
 
-class Struct:
-	def __init__ (self, name, members):
+class CompositeType:
+	CLASS_STRUCT	= 0
+	CLASS_UNION		= 1
+
+	def __init__ (self, typeClass, name, members):
+		self.typeClass	= typeClass
 		self.name		= name
 		self.members	= members
 
+	def getClassName (self):
+		names = {CompositeType.CLASS_STRUCT: 'struct', CompositeType.CLASS_UNION: 'union'}
+		return names[self.typeClass]
+
 class Function:
-	TYPE_GET_PROC_ADDR	= 0 # Special
-	TYPE_PLATFORM		= 1 # Not bound to VkPhysicalDevice
-	TYPE_DEVICE			= 2 # Bound to VkPhysicalDevice
+	TYPE_PLATFORM		= 0 # Not bound to anything
+	TYPE_INSTANCE		= 1 # Bound to VkInstance
+	TYPE_DEVICE			= 2 # Bound to VkDevice
 
 	def __init__ (self, name, returnType, arguments):
 		self.name		= name
@@ -117,20 +128,20 @@ class Function:
 		self.arguments	= arguments
 
 	def getType (self):
-		if self.name == GET_PROC_ADDR:
-			return Function.TYPE_GET_PROC_ADDR
-		elif self.name in PLATFORM_FUNCTIONS:
+		if self.name in PLATFORM_FUNCTIONS:
 			return Function.TYPE_PLATFORM
+		elif self.name in INSTANCE_FUNCTIONS:
+			return Function.TYPE_INSTANCE
 		else:
 			return Function.TYPE_DEVICE
 
 class API:
-	def __init__ (self, definitions, handles, enums, bitfields, structs, functions):
+	def __init__ (self, definitions, handles, enums, bitfields, compositeTypes, functions):
 		self.definitions	= definitions
 		self.handles		= handles
 		self.enums			= enums
 		self.bitfields		= bitfields
-		self.structs		= structs
+		self.compositeTypes	= compositeTypes
 		self.functions		= functions
 
 def readFile (filename):
@@ -174,9 +185,6 @@ def fixupFunction (function):
 	fixedArgs		= [Variable(fixupType(a.type), a.name) for a in function.arguments]
 	fixedReturnType	= fixupType(function.returnType)
 
-	if function.name == "vkGetProcAddr":
-		fixedReturnType = "FunctionPtr"
-
 	return Function(function.name, fixedReturnType, fixedArgs)
 
 def getInterfaceName (function):
@@ -206,7 +214,7 @@ def parseEnum (name, src):
 
 # \note Parses raw enums, some are mapped to bitfields later
 def parseEnums (src):
-	matches	= re.findall(r'typedef enum ' + IDENT_PTRN + r'\s*{([^}]*)}\s*(' + IDENT_PTRN + r')\s*;', src)
+	matches	= re.findall(r'typedef enum\s*{([^}]*)}\s*(' + IDENT_PTRN + r')\s*;', src)
 	enums	= []
 
 	for contents, name in matches:
@@ -214,38 +222,31 @@ def parseEnums (src):
 
 	return enums
 
-def parseStruct (name, src):
+def parseCompositeType (type, name, src):
 	# \todo [pyry] Array support is currently a hack (size coupled with name)
 	typeNamePtrn	= r'(' + TYPE_PTRN + ')(\s' + IDENT_PTRN + r'(\[[^\]]+\])*)\s*;'
 	matches			= re.findall(typeNamePtrn, src)
 	members			= [Variable(fixupType(t.strip()), n.strip()) for t, n, a in matches]
 
-	return Struct(name, members)
+	return CompositeType(type, name, members)
 
-def parseStructs (src):
-	matches	= re.findall(r'typedef struct ' + IDENT_PTRN + r'\s*{([^}]*)}\s*(' + IDENT_PTRN + r')\s*;', src)
-	structs	= []
+def parseCompositeTypes (src):
+	typeMap	= { 'struct': CompositeType.CLASS_STRUCT, 'union': CompositeType.CLASS_UNION }
+	matches	= re.findall(r'typedef (struct|union)\s*{([^}]*)}\s*(' + IDENT_PTRN + r')\s*;', src)
+	types	= []
 
-	for contents, name in matches:
-		structs.append(parseStruct(name, contents))
+	for type, contents, name in matches:
+		types.append(parseCompositeType(typeMap[type], name, contents))
 
-	return structs
+	return types
 
 def parseHandles (src):
-	matches	= re.findall(r'VK_DEFINE_(NONDISP|DISP)_SUBCLASS_HANDLE\((' + IDENT_PTRN + r'),\s*(' + IDENT_PTRN + r')\)[ \t]*[\n\r]', src)
+	matches	= re.findall(r'VK_DEFINE(_NONDISP|)_HANDLE\((' + IDENT_PTRN + r')\)[ \t]*[\n\r]', src)
 	handles	= []
-	typeMap	= {'DISP': Handle.TYPE_DISP, 'NONDISP': Handle.TYPE_NONDISP}
-	byName	= {}
-	root	= Handle(Handle.TYPE_ROOT, 'VkObject')
+	typeMap	= {'': Handle.TYPE_DISP, '_NONDISP': Handle.TYPE_NONDISP}
 
-	byName[root.name] = root
-	handles.append(root)
-
-	for type, name, parentName in matches:
-		parent	= byName[parentName]
-		handle	= Handle(typeMap[type], name, parent)
-
-		byName[handle.name] = handle
+	for type, name in matches:
+		handle = Handle(typeMap[type], name)
 		handles.append(handle)
 
 	return handles
@@ -291,12 +292,25 @@ def parseAPI (src):
 			enums.append(enum)
 
 	return API(
-		definitions	= definitions,
-		handles		= parseHandles(src),
-		enums		= enums,
-		bitfields	= bitfields,
-		structs		= parseStructs(src),
-		functions	= parseFunctions(src))
+		definitions		= definitions,
+		handles			= parseHandles(src),
+		enums			= enums,
+		bitfields		= bitfields,
+		compositeTypes	= parseCompositeTypes(src),
+		functions		= parseFunctions(src))
+
+def writeHandleType (api, filename):
+	def gen ():
+		yield "enum HandleType"
+		yield "{"
+		yield "\t%s = 0," % api.handles[0].getHandleType()
+		for handle in api.handles[1:]:
+			yield "\t%s," % handle.getHandleType()
+		yield "\tHANDLE_TYPE_LAST"
+		yield "};"
+		yield ""
+
+	writeInlFile(filename, INL_HEADER, gen())
 
 def genEnumSrc (enum):
 	yield "enum %s" % enum.name
@@ -313,22 +327,20 @@ def genBitfieldSrc (bitfield):
 	yield "};"
 	yield "typedef deUint32 %s;" % bitfield.name
 
-def genStructSrc (struct):
-	yield "struct %s" % struct.name
+def genCompositeTypeSrc (type):
+	yield "%s %s" % (type.getClassName(), type.name)
 	yield "{"
-	for line in indentLines(["\t%s\t%s;" % (m.type, m.name) for m in struct.members]):
+	for line in indentLines(["\t%s\t%s;" % (m.type, m.name) for m in type.members]):
 		yield line
 	yield "};"
 
 def genHandlesSrc (handles):
 	def genLines (handles):
 		for handle in handles:
-			if handle.type == Handle.TYPE_ROOT:
-				yield "VK_DEFINE_BASE_HANDLE\t(%s);" % handle.name
-			elif handle.type == Handle.TYPE_DISP:
-				yield "VK_DEFINE_DISP_SUBCLASS_HANDLE\t(%s,\t%s);" % (handle.name, handle.parent.name)
+			if handle.type == Handle.TYPE_DISP:
+				yield "VK_DEFINE_HANDLE\t(%s,\t%s);" % (handle.name, handle.getHandleType())
 			elif handle.type == Handle.TYPE_NONDISP:
-				yield "VK_DEFINE_NONDISP_SUBCLASS_HANDLE\t(%s,\t%s);" % (handle.name, handle.parent.name)
+				yield "VK_DEFINE_NONDISP_HANDLE\t(%s,\t%s);" % (handle.name, handle.getHandleType())
 
 	for line in indentLines(genLines(handles)):
 		yield line
@@ -349,22 +361,13 @@ def writeBasicTypes (api, filename):
 			for line in genBitfieldSrc(bitfield):
 				yield line
 			yield ""
-		for line in indentLines(["VK_DEFINE_HANDLE_TYPE_TRAITS(%s);" % handle.name for handle in api.handles]):
-			yield line
 
 	writeInlFile(filename, INL_HEADER, gen())
 
-def writeGetObjectTypeImpl (api, filename):
+def writeCompositeTypes (api, filename):
 	def gen ():
-		for line in indentLines(["template<> VkObjectType\tgetObjectType<%sT>\t(void) { return %s;\t}" % (handle.name, handle.getObjectType()) for handle in api.handles if handle.getObjectType() != None]):
-			yield line
-
-	writeInlFile(filename, INL_HEADER, gen())
-
-def writeStructTypes (api, filename):
-	def gen ():
-		for struct in api.structs:
-			for line in genStructSrc(struct):
+		for type in api.compositeTypes:
+			for line in genCompositeTypeSrc(type):
 				yield line
 			yield ""
 
@@ -426,14 +429,14 @@ def writeStrUtilProto (api, filename):
 		for line in indentLines(["tcu::Format::Bitfield<32>\tget%sStr\t(%s value);" % (bitfield.name[2:], bitfield.name) for bitfield in api.bitfields]):
 			yield line
 		yield ""
-		for line in indentLines(["std::ostream&\toperator<<\t(std::ostream& s, const %s& value);" % (s.name) for s in api.structs]):
+		for line in indentLines(["std::ostream&\toperator<<\t(std::ostream& s, const %s& value);" % (s.name) for s in api.compositeTypes]):
 			yield line
 
 	writeInlFile(filename, INL_HEADER, makeStrUtilProto())
 
 def writeStrUtilImpl (api, filename):
 	def makeStrUtilImpl ():
-		for line in indentLines(["template<> const char*\tgetTypeName<%sT>\t(void) { return \"%s\";\t}" % (handle.name, handle.name) for handle in api.handles]):
+		for line in indentLines(["template<> const char*\tgetTypeName<%s>\t(void) { return \"%s\";\t}" % (handle.name, handle.name) for handle in api.handles]):
 			yield line
 
 		for enum in api.enums:
@@ -461,12 +464,12 @@ def writeStrUtilImpl (api, filename):
 
 		bitfieldTypeNames = set([bitfield.name for bitfield in api.bitfields])
 
-		for struct in api.structs:
+		for type in api.compositeTypes:
 			yield ""
-			yield "std::ostream& operator<< (std::ostream& s, const %s& value)" % struct.name
+			yield "std::ostream& operator<< (std::ostream& s, const %s& value)" % type.name
 			yield "{"
-			yield "\ts << \"%s = {\\n\";" % struct.name
-			for member in struct.members:
+			yield "\ts << \"%s = {\\n\";" % type.name
+			for member in type.members:
 				memberName	= member.name
 				valFmt		= None
 				if member.type in bitfieldTypeNames:
@@ -489,7 +492,8 @@ def writeStrUtilImpl (api, filename):
 	writeInlFile(filename, INL_HEADER, makeStrUtilImpl())
 
 class ConstructorFunction:
-	def __init__ (self, name, objectType, iface, arguments):
+	def __init__ (self, type, name, objectType, iface, arguments):
+		self.type		= type
 		self.name		= name
 		self.objectType	= objectType
 		self.iface		= iface
@@ -498,16 +502,18 @@ class ConstructorFunction:
 def getConstructorFunctions (api):
 	funcs = []
 	for function in api.functions:
-		if function.name[:8] == "vkCreate" or function.name == "vkAllocMemory":
+		if (function.name[:8] == "vkCreate" or function.name == "vkAllocMemory") and not "count" in [a.name for a in function.arguments]:
 			# \todo [pyry] Rather hacky
 			iface = None
 			if function.getType() == Function.TYPE_PLATFORM:
 				iface = Variable("const PlatformInterface&", "vk")
+			elif function.getType() == Function.TYPE_INSTANCE:
+				iface = Variable("const InstanceInterface&", "vk")
 			else:
 				iface = Variable("const DeviceInterface&", "vk")
 			objectType	= function.arguments[-1].type.replace("*", "").strip()
 			arguments	= function.arguments[:-1]
-			funcs.append(ConstructorFunction(getInterfaceName(function), objectType, iface, arguments))
+			funcs.append(ConstructorFunction(function.getType(), getInterfaceName(function), objectType, iface, arguments))
 	return funcs
 
 def writeRefUtilProto (api, filename):
@@ -515,7 +521,7 @@ def writeRefUtilProto (api, filename):
 
 	def makeRefUtilProto ():
 		unindented = []
-		for line in indentLines(["Move<%sT>\t%s\t(%s);" % (function.objectType, function.name, argListToStr([function.iface] + function.arguments)) for function in functions]):
+		for line in indentLines(["Move<%s>\t%s\t(%s);" % (function.objectType, function.name, argListToStr([function.iface] + function.arguments)) for function in functions]):
 			yield line
 
 	writeInlFile(filename, INL_HEADER, makeRefUtilProto())
@@ -524,14 +530,33 @@ def writeRefUtilImpl (api, filename):
 	functions = getConstructorFunctions(api)
 
 	def makeRefUtilImpl ():
-		for function in functions:
-			maybeDevice = ", device" if "device" in set([a.name for a in function.arguments]) else ""
+		yield "namespace refdetails"
+		yield "{"
+		yield ""
 
-			yield "Move<%sT> %s (%s)" % (function.objectType, function.name, argListToStr([function.iface] + function.arguments))
+		for function in api.functions:
+			if function.getType() == Function.TYPE_DEVICE \
+			   and (function.name[:9] == "vkDestroy" or function.name == "vkFreeMemory") \
+			   and not function.name == "vkDestroyDevice":
+				objectType = function.arguments[-1].type
+				yield "template<>"
+				yield "void Deleter<%s>::operator() (%s obj) const" % (objectType, objectType)
+				yield "{"
+				yield "\tDE_TEST_ASSERT(m_deviceIface->%s(m_device, obj) == VK_SUCCESS);" % (getInterfaceName(function))
+				yield "}"
+				yield ""
+
+		yield "} // refdetails"
+		yield ""
+
+		for function in functions:
+			dtorObj = "device" if function.type == Function.TYPE_DEVICE else "object"
+
+			yield "Move<%s> %s (%s)" % (function.objectType, function.name, argListToStr([function.iface] + function.arguments))
 			yield "{"
 			yield "\t%s object = 0;" % function.objectType
 			yield "\tVK_CHECK(vk.%s(%s));" % (function.name, ", ".join([a.name for a in function.arguments] + ["&object"]))
-			yield "\treturn Move<%sT>(vk%s, check<%sT>(object));" % (function.objectType, maybeDevice, function.objectType)
+			yield "\treturn Move<%s>(check<%s>(object), Deleter<%s>(vk, %s));" % (function.objectType, function.objectType, function.objectType, dtorObj)
 			yield "}"
 			yield ""
 
@@ -540,22 +565,28 @@ def writeRefUtilImpl (api, filename):
 if __name__ == "__main__":
 	src				= readFile(sys.argv[1])
 	api				= parseAPI(src)
-	platformFuncs	= set([Function.TYPE_GET_PROC_ADDR, Function.TYPE_PLATFORM])
+	platformFuncs	= set([Function.TYPE_PLATFORM])
+	instanceFuncs	= set([Function.TYPE_INSTANCE])
 	deviceFuncs		= set([Function.TYPE_DEVICE])
 
+	writeHandleType				(api, os.path.join(VULKAN_DIR, "vkHandleType.inl"))
 	writeBasicTypes				(api, os.path.join(VULKAN_DIR, "vkBasicTypes.inl"))
-	writeStructTypes			(api, os.path.join(VULKAN_DIR, "vkStructTypes.inl"))
-	writeGetObjectTypeImpl		(api, os.path.join(VULKAN_DIR, "vkGetObjectTypeImpl.inl"))
+	writeCompositeTypes			(api, os.path.join(VULKAN_DIR, "vkStructTypes.inl"))
 	writeInterfaceDecl			(api, os.path.join(VULKAN_DIR, "vkVirtualPlatformInterface.inl"),		functionTypes = platformFuncs,	concrete = False)
+	writeInterfaceDecl			(api, os.path.join(VULKAN_DIR, "vkVirtualInstanceInterface.inl"),		functionTypes = instanceFuncs,	concrete = False)
 	writeInterfaceDecl			(api, os.path.join(VULKAN_DIR, "vkVirtualDeviceInterface.inl"),			functionTypes = deviceFuncs,	concrete = False)
 	writeInterfaceDecl			(api, os.path.join(VULKAN_DIR, "vkConcretePlatformInterface.inl"),		functionTypes = platformFuncs,	concrete = True)
+	writeInterfaceDecl			(api, os.path.join(VULKAN_DIR, "vkConcreteInstanceInterface.inl"),		functionTypes = instanceFuncs,	concrete = True)
 	writeInterfaceDecl			(api, os.path.join(VULKAN_DIR, "vkConcreteDeviceInterface.inl"),		functionTypes = deviceFuncs,	concrete = True)
 	writeFunctionPtrTypes		(api, os.path.join(VULKAN_DIR, "vkFunctionPointerTypes.inl"))
 	writeFunctionPointers		(api, os.path.join(VULKAN_DIR, "vkPlatformFunctionPointers.inl"),		functionTypes = platformFuncs)
+	writeFunctionPointers		(api, os.path.join(VULKAN_DIR, "vkInstanceFunctionPointers.inl"),		functionTypes = instanceFuncs)
 	writeFunctionPointers		(api, os.path.join(VULKAN_DIR, "vkDeviceFunctionPointers.inl"),			functionTypes = deviceFuncs)
-	writeInitFunctionPointers	(api, os.path.join(VULKAN_DIR, "vkInitPlatformFunctionPointers.inl"),	functionTypes = set([Function.TYPE_PLATFORM])) # \note No vkGetProcAddr
+	writeInitFunctionPointers	(api, os.path.join(VULKAN_DIR, "vkInitPlatformFunctionPointers.inl"),	functionTypes = platformFuncs)
+	writeInitFunctionPointers	(api, os.path.join(VULKAN_DIR, "vkInitInstanceFunctionPointers.inl"),	functionTypes = instanceFuncs)
 	writeInitFunctionPointers	(api, os.path.join(VULKAN_DIR, "vkInitDeviceFunctionPointers.inl"),		functionTypes = deviceFuncs)
 	writeFuncPtrInterfaceImpl	(api, os.path.join(VULKAN_DIR, "vkPlatformDriverImpl.inl"),				functionTypes = platformFuncs,	className = "PlatformDriver")
+	writeFuncPtrInterfaceImpl	(api, os.path.join(VULKAN_DIR, "vkInstanceDriverImpl.inl"),				functionTypes = instanceFuncs,	className = "InstanceDriver")
 	writeFuncPtrInterfaceImpl	(api, os.path.join(VULKAN_DIR, "vkDeviceDriverImpl.inl"),				functionTypes = deviceFuncs,	className = "DeviceDriver")
 	writeStrUtilProto			(api, os.path.join(VULKAN_DIR, "vkStrUtil.inl"))
 	writeStrUtilImpl			(api, os.path.join(VULKAN_DIR, "vkStrUtilImpl.inl"))

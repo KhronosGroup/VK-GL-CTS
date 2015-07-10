@@ -35,7 +35,11 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vkDefs.hpp"
-#include "tcuFunctionLibrary.hpp"
+
+namespace tcu
+{
+class FunctionLibrary;
+}
 
 namespace vk
 {
@@ -49,16 +53,10 @@ public:
 	virtual const PlatformInterface&	getPlatformInterface	(void) const = 0;
 };
 
-DE_BEGIN_EXTERN_C
-
-#include "vkFunctionPointerTypes.inl"
-
-DE_END_EXTERN_C
-
 class PlatformDriver : public PlatformInterface
 {
 public:
-				PlatformDriver	(GetProcAddrFunc getProc);
+				PlatformDriver	(const tcu::FunctionLibrary& library);
 				~PlatformDriver	(void);
 
 #include "vkConcretePlatformInterface.inl"
@@ -72,10 +70,27 @@ protected:
 	Functions	m_vk;
 };
 
+class InstanceDriver : public InstanceInterface
+{
+public:
+				InstanceDriver	(const PlatformInterface& platformInterface, VkInstance instance);
+				~InstanceDriver	(void);
+
+#include "vkConcreteInstanceInterface.inl"
+
+protected:
+	struct Functions
+	{
+#include "vkInstanceFunctionPointers.inl"
+	};
+
+	Functions	m_vk;
+};
+
 class DeviceDriver : public DeviceInterface
 {
 public:
-				DeviceDriver	(const PlatformInterface& platformInterface, VkPhysicalDevice device);
+				DeviceDriver	(const InstanceInterface& instanceInterface, VkDevice device);
 				~DeviceDriver	(void);
 
 #include "vkConcreteDeviceInterface.inl"

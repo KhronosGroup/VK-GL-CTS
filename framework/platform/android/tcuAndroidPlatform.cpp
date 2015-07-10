@@ -29,6 +29,7 @@
 #include "egluUtil.hpp"
 #include "eglwLibrary.hpp"
 #include "eglwEnums.hpp"
+#include "tcuFunctionLibrary.hpp"
 
 // Assume no call translation is needed
 #include <android/native_window.h>
@@ -185,22 +186,12 @@ eglu::NativeDisplay* NativeDisplayFactory::createDisplay (const EGLAttrib* attri
 
 // Vulkan
 
-static vk::GetProcAddrFunc loadGetProcAddr (const de::DynamicLibrary& library)
-{
-	const vk::GetProcAddrFunc	getProc	= (vk::GetProcAddrFunc)library.getFunction("vkGetProcAddr");
-
-	if (!getProc)
-		TCU_THROW(InternalError, "Failed to load vkGetProcAddr");
-
-	return getProc;
-}
-
 class VulkanLibrary : public vk::Library
 {
 public:
 	VulkanLibrary (void)
 		: m_library	("libvulkan.so")
-		, m_driver	(loadGetProcAddr(m_library))
+		, m_driver	(m_library)
 	{
 	}
 
@@ -210,8 +201,8 @@ public:
 	}
 
 private:
-	const de::DynamicLibrary	m_library;
-	const vk::PlatformDriver	m_driver;
+	const tcu::DynamicFunctionLibrary	m_library;
+	const vk::PlatformDriver			m_driver;
 };
 
 // Platform

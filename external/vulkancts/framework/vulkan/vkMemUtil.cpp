@@ -34,6 +34,9 @@
 
 #include "vkMemUtil.hpp"
 #include "vkStrUtil.hpp"
+#include "vkQueryUtil.hpp"
+#include "vkRef.hpp"
+#include "deInt32.h"
 
 #include <sstream>
 
@@ -41,6 +44,23 @@ namespace vk
 {
 
 using de::MovePtr;
+
+namespace
+{
+
+deUint32 selectMemoryTypeWithProperties (const VkPhysicalDeviceMemoryProperties& deviceMemProps, deUint32 allowedMemTypeBits, VkMemoryPropertyFlags allocProps)
+{
+	for (deUint32 memoryTypeNdx = 0; memoryTypeNdx < deviceMemProps.memoryTypeCount; memoryTypeNdx++)
+	{
+		if ((allowedMemTypeBits & (1u << memoryTypeNdx)) != 0 &&
+			(deviceMemProps.memoryTypes[memoryTypeNdx].propertyFlags & allocProps) == allocProps)
+			return memoryTypeNdx;
+	}
+
+	TCU_THROW(NotSupportedError, "No compatible memory type found");
+}
+
+} // anonymous
 
 // Allocation
 
@@ -59,78 +79,48 @@ Allocation::~Allocation (void)
 class SimpleAllocation : public Allocation
 {
 public:
-							SimpleAllocation	(const DeviceInterface& vk, VkDevice device, VkDeviceMemory memory);
-	virtual					~SimpleAllocation	(void);
+									SimpleAllocation	(Move<VkDeviceMemory> mem);
+	virtual							~SimpleAllocation	(void);
 
 private:
-	const DeviceInterface&	m_vk;
-	const VkDevice			m_device;
+	const Unique<VkDeviceMemory>	m_memHolder;
 };
 
-SimpleAllocation::SimpleAllocation (const DeviceInterface& vk, VkDevice device, VkDeviceMemory memory)
-	: Allocation(memory, (VkDeviceSize)0)
-	, m_vk		(vk)
-	, m_device	(device)
+SimpleAllocation::SimpleAllocation (Move<VkDeviceMemory> mem)
+	: Allocation	(*mem, (VkDeviceSize)0)
+	, m_memHolder	(mem)
 {
 }
 
 SimpleAllocation::~SimpleAllocation (void)
 {
-	m_vk.freeMemory(m_device, getMemory());
 }
 
-SimpleAllocator::SimpleAllocator (const DeviceInterface& vk, VkDevice device)
+SimpleAllocator::SimpleAllocator (const DeviceInterface& vk, VkDevice device, const VkPhysicalDeviceMemoryProperties& deviceMemProps)
 	: m_vk		(vk)
 	, m_device	(device)
+	, m_memProps(deviceMemProps)
 {
 }
 
-MovePtr<Allocation> SimpleAllocator::allocate (const VkMemoryAllocInfo* allocInfo, VkDeviceSize alignment)
+MovePtr<Allocation> SimpleAllocator::allocate (const VkMemoryAllocInfo& allocInfo, VkDeviceSize alignment)
 {
-	VkDeviceMemory	mem	= DE_NULL;
-
-	VK_CHECK(m_vk.allocMemory(m_device, allocInfo, &mem));
-	TCU_CHECK(mem);
-
 	DE_UNREF(alignment);
-
-	try
-	{
-		return MovePtr<Allocation>(new SimpleAllocation(m_vk, m_device, mem));
-	}
-	catch (...)
-	{
-		m_vk.freeMemory(m_device, mem);
-		throw;
-	}
+	return MovePtr<Allocation>(new SimpleAllocation(allocMemory(m_vk, m_device, &allocInfo)));
 }
 
-// Utils
-
-MovePtr<Allocation> allocate (Allocator& allocator, VkDeviceSize allocationSize, VkMemoryPropertyFlags memProps, VkDeviceSize alignment, VkMemoryPriority memPriority)
+MovePtr<Allocation> SimpleAllocator::allocate (const VkMemoryRequirements& memReqs, VkMemoryPropertyFlags allocProps)
 {
+	const deUint32			memoryTypeNdx	= selectMemoryTypeWithProperties(m_memProps, memReqs.memoryTypeBits, allocProps);
 	const VkMemoryAllocInfo	allocInfo	=
 	{
 		VK_STRUCTURE_TYPE_MEMORY_ALLOC_INFO,	//	VkStructureType			sType;
 		DE_NULL,								//	const void*				pNext;
-		allocationSize,							//	VkDeviceSize			allocationSize;
-		memProps,								//	VkMemoryPropertyFlags	memProps;
-		memPriority,							//	VkMemoryPriority		memPriority;
+		memReqs.size,							//	VkDeviceSize			allocationSize;
+		memoryTypeNdx,							//	deUint32				memoryTypeIndex;
 	};
 
-	return allocator.allocate(&allocInfo, alignment);
-}
-
-MovePtr<Allocation> allocate (Allocator& allocator, const VkMemoryRequirements& requirements, VkMemoryPropertyFlags memProps, VkMemoryPriority priority)
-{
-	if ((requirements.memPropsAllowed & memProps) != memProps)
-	{
-		std::ostringstream	msg;
-		msg << getMemoryPropertyFlagsStr(memProps & ~requirements.memPropsAllowed) << " not supported by object type";
-		TCU_THROW(NotSupportedError, msg.str().c_str());
-	}
-
-	return allocate(allocator, requirements.size, memProps | requirements.memPropsRequired, requirements.alignment, priority);
+	return allocate(allocInfo, memReqs.alignment);
 }
 
 } // vk

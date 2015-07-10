@@ -33,15 +33,14 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vkPlatform.hpp"
+#include "tcuFunctionLibrary.hpp"
 
 namespace vk
 {
 
-PlatformDriver::PlatformDriver (GetProcAddrFunc getProc)
+PlatformDriver::PlatformDriver (const tcu::FunctionLibrary& library)
 {
-	m_vk.getProcAddr = getProc;
-
-#define GET_PROC_ADDR(NAME) getProc(DE_NULL, NAME)
+#define GET_PROC_ADDR(NAME) library.getFunction(NAME)
 #include "vkInitPlatformFunctionPointers.inl"
 #undef GET_PROC_ADDR
 }
@@ -50,9 +49,20 @@ PlatformDriver::~PlatformDriver (void)
 {
 }
 
-DeviceDriver::DeviceDriver (const PlatformInterface& platformInterface, VkPhysicalDevice device)
+InstanceDriver::InstanceDriver (const PlatformInterface& platformInterface, VkInstance instance)
 {
-#define GET_PROC_ADDR(NAME) platformInterface.getProcAddr(device, NAME)
+#define GET_PROC_ADDR(NAME) platformInterface.getInstanceProcAddr(instance, NAME)
+#include "vkInitInstanceFunctionPointers.inl"
+#undef GET_PROC_ADDR
+}
+
+InstanceDriver::~InstanceDriver (void)
+{
+}
+
+DeviceDriver::DeviceDriver (const InstanceInterface& instanceInterface, VkDevice device)
+{
+#define GET_PROC_ADDR(NAME) instanceInterface.getDeviceProcAddr(device, NAME)
 #include "vkInitDeviceFunctionPointers.inl"
 #undef GET_PROC_ADDR
 }
@@ -62,6 +72,7 @@ DeviceDriver::~DeviceDriver (void)
 }
 
 #include "vkPlatformDriverImpl.inl"
+#include "vkInstanceDriverImpl.inl"
 #include "vkDeviceDriverImpl.inl"
 
 } // vk
