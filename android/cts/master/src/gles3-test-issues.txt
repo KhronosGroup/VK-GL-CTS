@@ -89,3 +89,7 @@ dEQP-GLES3.functional.shaders.texture_functions.textureprojoffset.isampler3d_fra
 dEQP-GLES3.functional.shaders.texture_functions.textureprojoffset.sampler3d_fixed_fragment
 dEQP-GLES3.functional.shaders.texture_functions.textureprojoffset.sampler3d_float_fragment
 dEQP-GLES3.functional.shaders.texture_functions.textureprojoffset.usampler3d_fragment
+
+# Bug 22302334
+dEQP-GLES3.functional.shaders.builtin_functions.precision.acosh.highp_*
+dEQP-GLES3.functional.shaders.builtin_functions.precision.atanh.highp_*
