@@ -2473,8 +2473,8 @@ DEFINE_DERIVED_FLOAT1(Tanh, tanh, x, sinh(x) / cosh(x));
 // These are not defined as derived forms in the GLSL ES spec, but
 // that gives us a reasonable precision.
 DEFINE_DERIVED_FLOAT1(ASinh, asinh, x, log(x + sqrt(x * x + constant(1.0f))));
-DEFINE_DERIVED_FLOAT1(ACosh, acosh, x, log(x + sqrt((x + constant(1.0f)) *
-													(x - constant(1.0f)))));
+DEFINE_DERIVED_FLOAT1(ACosh, acosh, x, log(x + sqrt(alternatives((x + constant(1.0f)) * (x - constant(1.0f)),
+																 (x*x - constant(1.0f))))));
 DEFINE_DERIVED_FLOAT1(ATanh, atanh, x, constant(0.5f) * log((constant(1.0f) + x) /
 															(constant(1.0f) - x)));
 
