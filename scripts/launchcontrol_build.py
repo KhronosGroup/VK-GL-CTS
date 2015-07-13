@@ -25,14 +25,27 @@ from build.common import *
 from build.build import *
 from argparse import ArgumentParser
 import multiprocessing
+from build_android_mustpass import *
+
+class LaunchControlConfig:
+	def __init__ (self, buildArgs, checkMustpassLists):
+		self.buildArgs 			= buildArgs
+		self.checkMustpassLists = checkMustpassLists
+
+	def getBuildArgs (self):
+		return self.buildArgs
+
+	def getCheckMustpassLists (self):
+		return self.checkMustpassLists
 
 # This is a bit silly, but CMake needs to know the word width prior to
 # parsing the project files, hence cannot use our own defines.
 X86_64_ARGS = ["-DDE_CPU=DE_CPU_X86_64", "-DCMAKE_C_FLAGS=-m64", "-DCMAKE_CXX_FLAGS=-m64"]
 
 BUILD_CONFIGS = {
-	"gcc-x86_64-x11_glx":   X86_64_ARGS + ["-DDEQP_TARGET=x11_glx"],
-	"clang-x86_64-x11_glx": X86_64_ARGS + ["-DDEQP_TARGET=x11_glx", "-DCMAKE_C_COMPILER=clang", "-DCMAKE_CXX_COMPILER=clang++"]
+	"gcc-x86_64-x11_glx":   LaunchControlConfig(X86_64_ARGS + ["-DDEQP_TARGET=x11_glx"], False),
+	"clang-x86_64-x11_glx": LaunchControlConfig(X86_64_ARGS + ["-DDEQP_TARGET=x11_glx", "-DCMAKE_C_COMPILER=clang", "-DCMAKE_CXX_COMPILER=clang++"], False),
+	"gcc-x86_64-null":		LaunchControlConfig(X86_64_ARGS + ["-DDEQP_TARGET=null"], True)
 }
 
 def buildWithMake (workingDir):
@@ -41,6 +54,12 @@ def buildWithMake (workingDir):
 	threadCount = multiprocessing.cpu_count() + 1
 	print "Invoke make with %d threads" % threadCount
 	execute(["make", "-j%d" % threadCount])
+	popWorkingDir()
+
+def checkForChanges ():
+	pushWorkingDir(DEQP_DIR)
+	# If there are changed files, exit code will be non-zero and the script terminates immediately.
+	execute(["git", "diff", "--exit-code"])
 	popWorkingDir()
 
 def parseOptions ():
@@ -72,9 +91,14 @@ if __name__ == "__main__":
 	print "# %s %s BUILD" % (options.config.upper(), options.buildType.upper())
 	print "############################################################\n"
 
+	launchControlConfig = BUILD_CONFIGS[options.config]
 	buildDir = os.path.realpath(os.path.normpath(options.buildDir))
-	config = BuildConfig(buildDir, options.buildType, BUILD_CONFIGS[options.config])
+	config = BuildConfig(buildDir, options.buildType, launchControlConfig.getBuildArgs())
 	initBuildDir(config, MAKEFILE_GENERATOR)
 	buildWithMake(buildDir)
+
+	if launchControlConfig.getCheckMustpassLists():
+		genMustpassLists(MUSTPASS_LISTS, MAKEFILE_GENERATOR, config)
+		checkForChanges()
 
 	print "\n--- BUILD SCRIPT COMPLETE"
