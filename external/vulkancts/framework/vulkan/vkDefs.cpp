@@ -39,7 +39,8 @@
 
 DE_STATIC_ASSERT(sizeof(vk::VkImageType)	== sizeof(deUint32));
 DE_STATIC_ASSERT(sizeof(vk::VkResult)		== sizeof(deUint32));
-DE_STATIC_ASSERT(sizeof(vk::VkDevice)		== sizeof(deUint64));
+DE_STATIC_ASSERT(sizeof(vk::VkDevice)		== sizeof(void*));
+DE_STATIC_ASSERT(sizeof(vk::VkBuffer)		== sizeof(deUint64));
 
 namespace vk
 {
