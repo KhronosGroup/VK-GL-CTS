@@ -172,20 +172,20 @@ tcu::TestStatus renderTriangleTest (Context& context)
 
 	const VkImageCreateInfo					imageParams				=
 	{
-		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,	//	VkStructureType		sType;
-		DE_NULL,								//	const void*			pNext;
-		VK_IMAGE_TYPE_2D,						//	VkImageType			imageType;
-		VK_FORMAT_R8G8B8A8_UNORM,				//	VkFormat			format;
-		{ renderSize.x(), renderSize.y(), 1 },	//	VkExtent3D			extent;
-		1u,										//	deUint32			mipLevels;
-		1u,										//	deUint32			arraySize;
-		1u,										//	deUint32			samples;
-		VK_IMAGE_TILING_OPTIMAL,				//	VkImageTiling		tiling;
-		VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,	//	VkImageUsageFlags	usage;
-		0u,										//	VkImageCreateFlags	flags;
-		VK_SHARING_MODE_EXCLUSIVE,				//	VkSharingMode		sharingMode;
-		1u,										//	deUint32			queueFamilyCount;
-		&queueIndex,							//	const deUint32*		pQueueFamilyIndices;
+		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,									//	VkStructureType		sType;
+		DE_NULL,																//	const void*			pNext;
+		VK_IMAGE_TYPE_2D,														//	VkImageType			imageType;
+		VK_FORMAT_R8G8B8A8_UNORM,												//	VkFormat			format;
+		{ renderSize.x(), renderSize.y(), 1 },									//	VkExtent3D			extent;
+		1u,																		//	deUint32			mipLevels;
+		1u,																		//	deUint32			arraySize;
+		1u,																		//	deUint32			samples;
+		VK_IMAGE_TILING_OPTIMAL,												//	VkImageTiling		tiling;
+		VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT|VK_IMAGE_USAGE_TRANSFER_SOURCE_BIT,	//	VkImageUsageFlags	usage;
+		0u,																		//	VkImageCreateFlags	flags;
+		VK_SHARING_MODE_EXCLUSIVE,												//	VkSharingMode		sharingMode;
+		1u,																		//	deUint32			queueFamilyCount;
+		&queueIndex,															//	const deUint32*		pQueueFamilyIndices;
 	};
 
 	const Unique<VkImage>					image					(createImage(vk, vkDevice, &imageParams));
@@ -223,6 +223,7 @@ tcu::TestStatus renderTriangleTest (Context& context)
 		{ ~0u, VK_IMAGE_LAYOUT_GENERAL },				//	VkAttachmentReference			depthStencilAttachment;
 		0u,												//	deUint32						preserveCount;
 		DE_NULL,										//	const VkAttachmentReference*	preserveAttachments;
+
 	};
 	const VkRenderPassCreateInfo			renderPassParams		=
 	{
@@ -421,7 +422,7 @@ tcu::TestStatus renderTriangleTest (Context& context)
 		&blendParams,											//	const VkPipelineColorBlendStateCreateInfo*		pColorBlendState;
 		0u,														//	VkPipelineCreateFlags							flags;
 		*pipelineLayout,										//	VkPipelineLayout								layout;
-		DE_NULL,												//	VkRenderPass									renderPass;
+		*renderPass,											//	VkRenderPass									renderPass;
 		0u,														//	deUint32										subpass;
 		DE_NULL,												//	VkPipeline										basePipelineHandle;
 		0u,														//	deInt32											basePipelineIndex;
@@ -469,7 +470,7 @@ tcu::TestStatus renderTriangleTest (Context& context)
 			renderSize.y(),											//	deInt32	height;
 		},														//	VkExtent2D	extent;
 	};
-	const VkDynamicViewportStateCreateInfo	viewportStateParams		=
+	const VkDynamicViewportStateCreateInfo	dynViewportStateParams		=
 	{
 		VK_STRUCTURE_TYPE_DYNAMIC_VIEWPORT_STATE_CREATE_INFO,	//	VkStructureType		sType;
 		DE_NULL,												//	const void*			pNext;
@@ -477,7 +478,31 @@ tcu::TestStatus renderTriangleTest (Context& context)
 		&viewport0,												//	const VkViewport*	pViewports;
 		&scissor0,												//	const VkRect*		pScissors;
 	};
-	const Unique<VkDynamicViewportState>	viewportState			(createDynamicViewportState(vk, vkDevice, &viewportStateParams));
+	const Unique<VkDynamicViewportState>	dynViewportState		(createDynamicViewportState(vk, vkDevice, &dynViewportStateParams));
+
+	const VkDynamicRasterStateCreateInfo	dynRasterStateParams	=
+	{
+		VK_STRUCTURE_TYPE_DYNAMIC_RASTER_STATE_CREATE_INFO,		//	VkStructureType	sType;
+		DE_NULL,												//	const void*		pNext;
+		0.0f,													//	float			depthBias;
+		0.0f,													//	float			depthBiasClamp;
+		0.0f,													//	float			slopeScaledDepthBias;
+		1.0f,													//	float			lineWidth;
+	};
+	const Unique<VkDynamicRasterState>		dynRasterState			(createDynamicRasterState(vk, vkDevice, &dynRasterStateParams));
+
+	const VkDynamicDepthStencilStateCreateInfo	dynDepthStencilParams	=
+	{
+		VK_STRUCTURE_TYPE_DYNAMIC_DEPTH_STENCIL_STATE_CREATE_INFO,	//	VkStructureType	sType;
+		DE_NULL,													//	const void*		pNext;
+		0.0f,														//	float			minDepthBounds;
+		1.0f,														//	float			maxDepthBounds;
+		0u,															//	deUint32		stencilReadMask;
+		0u,															//	deUint32		stencilWriteMask;
+		0u,															//	deUint32		stencilFrontRef;
+		0u,															//	deUint32		stencilBackRef;
+	};
+	const Unique<VkDynamicDepthStencilState>	dynDepthStencilState	(createDynamicDepthStencilState(vk, vkDevice, &dynDepthStencilParams));
 
 	// Command buffer
 	const VkCmdBufferCreateInfo				cmdBufParams			=
@@ -495,8 +520,8 @@ tcu::TestStatus renderTriangleTest (Context& context)
 		VK_STRUCTURE_TYPE_CMD_BUFFER_BEGIN_INFO,				//	VkStructureType				sType;
 		DE_NULL,												//	const void*					pNext;
 		0u,														//	VkCmdBufferOptimizeFlags	flags;
-		*renderPass,											//	VkRenderPass				renderPass;
-		*framebuffer,											//	VkFramebuffer				framebuffer;
+		DE_NULL,												//	VkRenderPass				renderPass;
+		DE_NULL,												//	VkFramebuffer				framebuffer;
 	};
 
 	// Attach memory
@@ -554,7 +579,9 @@ tcu::TestStatus renderTriangleTest (Context& context)
 		vk.cmdBeginRenderPass(*cmdBuf, &passBeginParams, VK_RENDER_PASS_CONTENTS_INLINE);
 	}
 
-	vk.cmdBindDynamicViewportState(*cmdBuf, *viewportState);
+	vk.cmdBindDynamicViewportState(*cmdBuf, *dynViewportState);
+	vk.cmdBindDynamicRasterState(*cmdBuf, *dynRasterState);
+	vk.cmdBindDynamicDepthStencilState(*cmdBuf, *dynDepthStencilState);
 	vk.cmdBindPipeline(*cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
 	{
 		const VkDeviceSize bindingOffset = 0;
@@ -657,9 +684,18 @@ tcu::TestStatus renderTriangleTest (Context& context)
 
 	// Map & log image
 	{
+		const VkMappedMemoryRange	range	=
+		{
+			VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,	//	VkStructureType	sType;
+			DE_NULL,								//	const void*		pNext;
+			readImageBufferMemory->getMemory(),		//	VkDeviceMemory	mem;
+			0,										//	VkDeviceSize	offset;
+			imageSizeBytes,							//	VkDeviceSize	size;
+		};
 		void*	imagePtr	= DE_NULL;
 
 		VK_CHECK(vk.mapMemory(vkDevice, readImageBufferMemory->getMemory(), readImageBufferMemory->getOffset(), imageSizeBytes, 0u, &imagePtr));
+		VK_CHECK(vk.invalidateMappedMemoryRanges(vkDevice, 1u, &range));
 		context.getTestContext().getLog() << TestLog::Image("Result", "Result", tcu::ConstPixelBufferAccess(tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8), renderSize.x(), renderSize.y(), 1, imagePtr));
 		VK_CHECK(vk.unmapMemory(vkDevice, readImageBufferMemory->getMemory()));
 	}
