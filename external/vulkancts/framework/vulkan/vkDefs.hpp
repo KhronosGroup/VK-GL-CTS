@@ -52,8 +52,8 @@
 #	define VK_APIENTRY
 #endif
 
-#define VK_DEFINE_HANDLE(NAME, TYPE)			typedef Handle<TYPE> NAME
-#define VK_DEFINE_NONDISP_HANDLE(NAME, TYPE)	VK_DEFINE_HANDLE(NAME, TYPE)
+#define VK_DEFINE_HANDLE(NAME, TYPE)			typedef struct NAME##_s* NAME
+#define VK_DEFINE_NONDISP_HANDLE(NAME, TYPE)	typedef Handle<TYPE> NAME
 
 #define VK_MAKE_VERSION(MAJOR, MINOR, PATCH)	((MAJOR << 22) | (MINOR << 12) | PATCH)
 #define VK_BIT(NUM)								(1<<NUM)
