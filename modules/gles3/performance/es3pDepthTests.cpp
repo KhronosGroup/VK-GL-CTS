@@ -921,8 +921,8 @@ int RelativeChangeCase::calibrate (void) const
 														10, // Max iteration frames
 														20.0f, // Iteration shortcut threshold ms
 														20, // Max iterations
-														10.0f, // Target frame time
-														15.0f, // Frame time cap
+														33.0f, // Target frame time
+														40.0f, // Frame time cap
 														1000.0f // Target measurement duration
 														));
 
