@@ -119,13 +119,9 @@ def readCaseList (filename):
 				cases.append(line[6:].strip())
 	return cases
 
-def getCaseList (mustpass, module):
-	generator	= ANY_GENERATOR
-	buildCfg	= getBuildConfig(DEFAULT_BUILD_DIR, DEFAULT_TARGET, "Debug")
-
+def getCaseList (buildCfg, generator, module):
 	build(buildCfg, generator, [module.binName])
 	genCaseList(buildCfg, generator, module, "txt")
-
 	return readCaseList(getCaseListPath(buildCfg, module, "txt"))
 
 def readPatternList (filename):
@@ -361,14 +357,14 @@ def genMustpass (mustpass, moduleCaseLists):
 
 	print "Done!"
 
-def genMustpassLists (mustpassLists):
+def genMustpassLists (mustpassLists, generator, buildCfg):
 	moduleCaseLists = {}
 
 	# Getting case lists involves invoking build, so we want to cache the results
 	for mustpass in mustpassLists:
 		for package in mustpass.packages:
 			if not package.module in moduleCaseLists:
-				moduleCaseLists[package.module] = getCaseList(mustpass, package.module)
+				moduleCaseLists[package.module] = getCaseList(buildCfg, generator, package.module)
 
 	for mustpass in mustpassLists:
 		genMustpass(mustpass, moduleCaseLists)
@@ -542,4 +538,4 @@ MUSTPASS_LISTS				= [
 	]
 
 if __name__ == "__main__":
-	genMustpassLists(MUSTPASS_LISTS)
+	genMustpassLists(MUSTPASS_LISTS, ANY_GENERATOR, getBuildConfig(DEFAULT_BUILD_DIR, DEFAULT_TARGET, "Debug"))
