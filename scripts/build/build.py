@@ -22,6 +22,7 @@
 
 import os
 import sys
+import shutil
 
 from common import *
 from config import *
@@ -39,12 +40,23 @@ def initBuildDir (config, generator):
 		os.makedirs(config.buildDir)
 
 	pushWorkingDir(config.getBuildDir())
-	execute(["cmake", config.getSrcPath()] + cfgArgs)
-	popWorkingDir()
+
+	try:
+		execute(["cmake", config.getSrcPath()] + cfgArgs)
+	finally:
+		popWorkingDir()
 
 def build (config, generator, targets = None):
-	# Initialize or update build dir.
-	initBuildDir(config, generator)
+	if os.path.exists(config.buildDir):
+		try:
+			initBuildDir(config, generator)
+		except Exception as e:
+			print e
+			print "WARNING: Using existing build directory failed; re-creating build directory"
+			shutil.rmtree(config.buildDir)
+			initBuildDir(config, generator)
+	else:
+		initBuildDir(config, generator)
 
 	baseCmd		= ['cmake', '--build', '.']
 	buildArgs	= generator.getBuildArgs(config.getBuildType())
