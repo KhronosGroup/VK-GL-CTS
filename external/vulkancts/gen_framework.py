@@ -483,7 +483,7 @@ def writeStrUtilImpl (api, filename):
 					memberName = baseName
 				else:
 					valFmt = "value.%s" % member.name
-				yield ("\ts << \"%s = \" << " % memberName) + valFmt + " << '\\n';"
+				yield ("\ts << \"\\t%s = \" << " % memberName) + valFmt + " << '\\n';"
 			yield "\ts << '}';"
 			yield "\treturn s;"
 			yield "}"
