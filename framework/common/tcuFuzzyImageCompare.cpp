@@ -319,8 +319,9 @@ float fuzzyCompare (const FuzzyCompareParams& params, const ConstPixelBufferAcce
 	{
 		for (int x = 1; x < width-1; x += params.maxSampleSkip > 0 ? (int)rnd.getInt(0, params.maxSampleSkip) : 1)
 		{
-			float err = deFloatMin(compareToNeighbor<4>(params, rnd, readUnorm8<4>(refAccess, x, y), cmpAccess, x, y),
-								   compareToNeighbor<4>(params, rnd, readUnorm8<4>(cmpAccess, x, y), refAccess, x, y));
+			const float	err0	= compareToNeighbor<4>(params, rnd, readUnorm8<4>(refAccess, x, y), cmpAccess, x, y);
+			const float	err1	= compareToNeighbor<4>(params, rnd, readUnorm8<4>(cmpAccess, x, y), refAccess, x, y);
+			float		err		= deFloatMin(err0, err1);
 
 			err = deFloatPow(err, params.errExp);
 
