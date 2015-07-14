@@ -219,6 +219,9 @@ public:
 				Move		(RefData<T> data)
 								: RefBase<T>(data)
 				{}
+				Move		(Move<T>& other)
+								: RefBase<T>(other.disown())
+				{}
 				Move		(void)
 								: RefBase<T>(RefData<T>())
 				{}
@@ -262,6 +265,10 @@ public:
 				Unique		(RefData<T> data)
 								: RefBase<T>(data)
 				{}
+
+private:
+				Unique		(const Unique<T>&);
+	Unique<T>&	operator=	(const Unique<T>&);
 };
 
 } // refdetails
