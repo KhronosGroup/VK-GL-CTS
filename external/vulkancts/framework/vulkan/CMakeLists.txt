@@ -21,6 +21,8 @@ set(VKUTIL_SRCS
 	vkGlslToSpirV.hpp
 	vkBinaryRegistry.cpp
 	vkBinaryRegistry.hpp
+	vkNullDriver.cpp
+	vkNullDriver.hpp
 	)
 
 # \note Code interfacing with glslang needs to include third-party headers

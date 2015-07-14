@@ -562,6 +562,95 @@ def writeRefUtilImpl (api, filename):
 
 	writeInlFile(filename, INL_HEADER, makeRefUtilImpl())
 
+def writeNullDriverImpl (api, filename):
+	def genNullDriverImpl ():
+		specialFuncNames	= [
+				"vkCreateGraphicsPipelines",
+				"vkCreateComputePipelines",
+				"vkGetInstanceProcAddr",
+				"vkGetDeviceProcAddr",
+				"vkEnumeratePhysicalDevices",
+				"vkGetPhysicalDeviceProperties",
+				"vkGetPhysicalDeviceQueueCount",
+				"vkGetPhysicalDeviceQueueProperties",
+				"vkGetPhysicalDeviceMemoryProperties",
+				"vkGetBufferMemoryRequirements",
+				"vkGetImageMemoryRequirements",
+				"vkMapMemory"
+			]
+		specialFuncs		= [f for f in api.functions if f.name in specialFuncNames]
+		createFuncs			= [f for f in api.functions if (f.name[:8] == "vkCreate" or f.name == "vkAllocMemory") and not f in specialFuncs]
+		destroyFuncs		= [f for f in api.functions if (f.name[:9] == "vkDestroy" or f.name == "vkFreeMemory") and not f in specialFuncs]
+		dummyFuncs			= [f for f in api.functions if f not in specialFuncs + createFuncs + destroyFuncs]
+
+		def getHandle (name):
+			for handle in api.handles:
+				if handle.name == name:
+					return handle
+			raise Exception("No such handle: %s" % name)
+
+		for function in createFuncs:
+			objectType	= function.arguments[-1].type.replace("*", "").strip()
+			argsStr		= ", ".join([a.name for a in function.arguments[:-1]])
+
+			yield "%s %s (%s)" % (function.returnType, getInterfaceName(function), argListToStr(function.arguments))
+			yield "{"
+
+			if getHandle(objectType).type == Handle.TYPE_NONDISP:
+				yield "\tVK_NULL_RETURN(*%s = %s((deUint64)(deUintptr)new %s(%s)));" % (function.arguments[-1].name, objectType, objectType[2:], argsStr)
+			else:
+				yield "\tVK_NULL_RETURN(*%s = reinterpret_cast<%s>(new %s(%s)));" % (function.arguments[-1].name, objectType, objectType[2:], argsStr)
+
+			yield "}"
+			yield ""
+
+		for function in destroyFuncs:
+			yield "%s %s (%s)" % (function.returnType, getInterfaceName(function), argListToStr(function.arguments))
+			yield "{"
+			for arg in function.arguments[:-1]:
+				yield "\tDE_UNREF(%s);" % arg.name
+
+			if getHandle(function.arguments[-1].type).type == Handle.TYPE_NONDISP:
+				yield "\tVK_NULL_RETURN(delete reinterpret_cast<%s*>((deUintptr)%s.getInternal()));" % (function.arguments[-1].type[2:], function.arguments[-1].name)
+			else:
+				yield "\tVK_NULL_RETURN(delete reinterpret_cast<%s*>(%s));" % (function.arguments[-1].type[2:], function.arguments[-1].name)
+
+			yield "}"
+			yield ""
+
+		for function in dummyFuncs:
+			yield "%s %s (%s)" % (function.returnType, getInterfaceName(function), argListToStr(function.arguments))
+			yield "{"
+			for arg in function.arguments:
+				yield "\tDE_UNREF(%s);" % arg.name
+			if function.returnType != "void":
+				yield "\treturn VK_SUCCESS;"
+			yield "}"
+			yield ""
+
+		def genFuncEntryTable (type, name):
+			funcs = [f for f in api.functions if f.getType() == type]
+
+			yield "static const tcu::StaticFunctionLibrary::Entry %s[] =" % name
+			yield "{"
+			for line in indentLines(["\tVK_NULL_FUNC_ENTRY(%s,\t%s)," % (function.name, getInterfaceName(function)) for function in funcs]):
+				yield line
+			yield "};"
+			yield ""
+
+		# Func tables
+		for line in genFuncEntryTable(Function.TYPE_PLATFORM, "s_platformFunctions"):
+			yield line
+
+		for line in genFuncEntryTable(Function.TYPE_INSTANCE, "s_instanceFunctions"):
+			yield line
+
+		for line in genFuncEntryTable(Function.TYPE_DEVICE, "s_deviceFunctions"):
+			yield line
+
+
+	writeInlFile(filename, INL_HEADER, genNullDriverImpl())
+
 if __name__ == "__main__":
 	src				= readFile(sys.argv[1])
 	api				= parseAPI(src)
@@ -592,3 +681,4 @@ if __name__ == "__main__":
 	writeStrUtilImpl			(api, os.path.join(VULKAN_DIR, "vkStrUtilImpl.inl"))
 	writeRefUtilProto			(api, os.path.join(VULKAN_DIR, "vkRefUtil.inl"))
 	writeRefUtilImpl			(api, os.path.join(VULKAN_DIR, "vkRefUtilImpl.inl"))
+	writeNullDriverImpl			(api, os.path.join(VULKAN_DIR, "vkNullDriverImpl.inl"))
