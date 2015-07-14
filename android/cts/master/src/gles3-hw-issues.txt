@@ -873,3 +873,9 @@ dEQP-GLES3.functional.shaders.derivate.fwidth.nicest.fbo_msaa*
 dEQP-GLES3.functional.shaders.builtin_functions.precision.sin.mediump_*
 dEQP-GLES3.functional.shaders.builtin_functions.precision.cos.mediump_*
 dEQP-GLES3.functional.shaders.builtin_functions.precision.tan.mediump_*
+
+# Bug 22450044
+dEQP-GLES3.functional.shaders.builtin_functions.precision.dot.mediump_fragment.vec4
+dEQP-GLES3.functional.shaders.builtin_functions.precision.reflect.highp_vertex.vec4
+dEQP-GLES3.functional.shaders.builtin_functions.precision.reflect.highp_fragment.vec4
+dEQP-GLES3.functional.texture.filtering.3d.formats.rgba16f_linear_mipmap_linear
