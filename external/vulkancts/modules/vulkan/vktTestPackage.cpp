@@ -35,15 +35,21 @@
 #include "vktTestPackage.hpp"
 
 #include "tcuPlatform.hpp"
+#include "tcuTestCase.hpp"
+#include "tcuTestLog.hpp"
+
 #include "vkPlatform.hpp"
 #include "vkPrograms.hpp"
 #include "vkBinaryRegistry.hpp"
+#include "vkGlslToSpirV.hpp"
+
 #include "deUniquePtr.hpp"
 
 #include "vktInfo.hpp"
 #include "vktApiTests.hpp"
 
 #include <vector>
+#include <sstream>
 
 namespace vkt
 {
@@ -51,6 +57,7 @@ namespace vkt
 using std::vector;
 using de::UniquePtr;
 using de::MovePtr;
+using tcu::TestLog;
 
 // TestCaseExecutor
 
@@ -93,6 +100,7 @@ TestCaseExecutor::~TestCaseExecutor (void)
 void TestCaseExecutor::init (tcu::TestCase* testCase, const std::string& casePath)
 {
 	const TestCase*			vktCase		= dynamic_cast<TestCase*>(testCase);
+	tcu::TestLog&			log			= m_context.getTestContext().getLog();
 	vk::SourceCollection	sourceProgs;
 
 	DE_UNREF(casePath); // \todo [2015-03-13 pyry] Use this to identify ProgramCollection storage path
@@ -106,23 +114,49 @@ void TestCaseExecutor::init (tcu::TestCase* testCase, const std::string& casePat
 	for (vk::SourceCollection::Iterator progIter = sourceProgs.begin(); progIter != sourceProgs.end(); ++progIter)
 	{
 		const vk::ProgramIdentifier		progId		(casePath, progIter.getName());
+		const tcu::ScopedLogSection		progSection	(log, progIter.getName(), "Program: " + progIter.getName());
 		de::MovePtr<vk::ProgramBinary>	binProg;
+		glu::ShaderProgramInfo			buildInfo;
 
 		// \todo [2015-07-01 pyry] Command line parameter to control cache vs. build order?
 
 		try
 		{
-			binProg	= de::MovePtr<vk::ProgramBinary>(vk::buildProgram(progIter.getProgram(), vk::PROGRAM_FORMAT_SPIRV));
+			binProg	= de::MovePtr<vk::ProgramBinary>(vk::buildProgram(progIter.getProgram(), vk::PROGRAM_FORMAT_SPIRV, &buildInfo));
+			log << buildInfo;
 		}
-		catch (const tcu::NotSupportedError&)
+		catch (const tcu::NotSupportedError& err)
 		{
 			// Try to load from cache
 			const vk::BinaryRegistryReader	registry	(m_context.getTestContext().getArchive(), "vulkan/prebuilt");
 
+			log << err << TestLog::Message << "Building from source not supported, loading stored binary instead" << TestLog::EndMessage;
+
 			binProg = de::MovePtr<vk::ProgramBinary>(registry.loadProgram(progId));
+
+			log << progIter.getProgram();
+		}
+		catch (const tcu::Exception&)
+		{
+			// Build failed for other reason
+			log << buildInfo;
+			throw;
 		}
 
 		TCU_CHECK_INTERNAL(binProg);
+
+		try
+		{
+			std::ostringstream disasm;
+
+			vk::disassembleSpirV(binProg->getSize(), binProg->getBinary(), &disasm);
+
+			log << TestLog::KernelSource(disasm.str());
+		}
+		catch (const tcu::NotSupportedError& err)
+		{
+			log << err;
+		}
 
 		m_progCollection.add(progId.programName, binProg);
 	}

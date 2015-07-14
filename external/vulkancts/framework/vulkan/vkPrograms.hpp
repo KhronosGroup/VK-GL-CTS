@@ -40,7 +40,13 @@
 #include "deUniquePtr.hpp"
 #include "deSTLUtil.hpp"
 
+#include <vector>
 #include <map>
+
+namespace tcu
+{
+class TestLog;
+} // tcu
 
 namespace vk
 {
@@ -166,7 +172,7 @@ typedef ProgramCollection<glu::ProgramSources>	SourceCollection;
 typedef ProgramCollection<ProgramBinary>		BinaryCollection;
 
 // \todo [2015-03-13 pyry] Likely need BinaryBuilder abstraction for this
-ProgramBinary*			buildProgram		(const glu::ProgramSources& program, ProgramFormat binaryFormat);
+ProgramBinary*			buildProgram		(const glu::ProgramSources& program, ProgramFormat binaryFormat, glu::ShaderProgramInfo* buildInfo);
 Move<VkShaderModule>	createShaderModule	(const DeviceInterface& deviceInterface, VkDevice device, const ProgramBinary& binary, VkShaderModuleCreateFlags flags);
 
 } // vk

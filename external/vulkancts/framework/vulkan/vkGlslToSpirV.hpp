@@ -35,13 +35,19 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vkDefs.hpp"
+#include "vkPrograms.hpp"
 #include "gluShaderProgram.hpp"
+
+#include <ostream>
 
 namespace vk
 {
 
 //! Compile GLSL program to SPIR-V. Will fail with NotSupportedError if compiler is not available.
-void	glslToSpirV		(const glu::ProgramSources& src, std::vector<deUint8>& dst);
+void	glslToSpirV			(const glu::ProgramSources& src, std::vector<deUint8>* dst, glu::ShaderProgramInfo* buildInfo);
+
+//! Disassemble SPIR-V binary
+void	disassembleSpirV	(size_t binarySize, const deUint8* binary, std::ostream* dst);
 
 } // vk
 

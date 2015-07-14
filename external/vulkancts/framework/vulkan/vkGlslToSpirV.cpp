@@ -35,6 +35,7 @@
 #include "vkGlslToSpirV.hpp"
 #include "deArrayUtil.hpp"
 #include "deMemory.h"
+#include "deClock.h"
 #include "qpDebugOut.h"
 
 #if defined(DEQP_HAVE_GLSLANG)
@@ -42,10 +43,17 @@
 #	include "deMutex.hpp"
 
 #	include "SPIRV/GlslangToSpv.h"
+#	include "SPIRV/disassemble.h"
+#	include "SPIRV/GLSL450Lib.h"
+#	include "SPIRV/doc.h"
 #	include "glslang/Include/InfoSink.h"
 #	include "glslang/Include/ShHandle.h"
 #	include "glslang/MachineIndependent/localintermediate.h"
 #	include "glslang/Public/ShaderLang.h"
+
+// Required by SPIR-V disassembler
+const char* GlslStd450DebugNames[GLSL_STD_450::Count];
+
 #endif
 
 namespace vk
@@ -78,7 +86,12 @@ static de::Mutex					s_glslangLock;
 
 void initGlslang (void*)
 {
+	// Main compiler
 	ShInitialize();
+
+	// SPIR-V disassembly
+	spv::Parameterize();
+	GLSL_STD_450::GetDebugNames(GlslStd450DebugNames);
 }
 
 void prepareGlslang (void)
@@ -220,7 +233,7 @@ void getDefaultBuiltInResources (TBuiltInResource* builtin)
 
 } // anonymous
 
-void glslToSpirV (const glu::ProgramSources& program, std::vector<deUint8>& dst)
+void glslToSpirV (const glu::ProgramSources& program, std::vector<deUint8>* dst, glu::ShaderProgramInfo* buildInfo)
 {
 	TBuiltInResource	builtinRes;
 
@@ -232,27 +245,42 @@ void glslToSpirV (const glu::ProgramSources& program, std::vector<deUint8>& dst)
 	{
 		if (!program.sources[shaderType].empty())
 		{
-			de::ScopedLock		compileLock	(s_glslangLock);
-			const char* const	srcText		= program.sources[shaderType][0].c_str();
-			const int			srcLen		= (int)program.sources[shaderType][0].size();
+			de::ScopedLock		compileLock			(s_glslangLock);
+			const std::string&	srcText				= program.sources[shaderType][0];
+			const char*			srcPtrs[]			= { srcText.c_str() };
+			int					srcLengths[]		= { (int)srcText.size() };
 			vector<deUint32>	spvBlob;
 			TInfoSink			infoSink;
-			SpvGenerator		compiler	(getGlslangStage(glu::ShaderType(shaderType)), spvBlob, infoSink);
-			const int			compileOk	= ShCompile(static_cast<ShHandle>(&compiler), &srcText, 1, &srcLen, EShOptNone, &builtinRes, 0);
+			SpvGenerator		compiler			(getGlslangStage(glu::ShaderType(shaderType)), spvBlob, infoSink);
+			const deUint64		compileStartTime	= deGetMicroseconds();
+			const int			compileOk			= ShCompile(static_cast<ShHandle>(&compiler), srcPtrs, DE_LENGTH_OF_ARRAY(srcPtrs), srcLengths, EShOptNone, &builtinRes, 0);
 
-			if (compileOk == 0)
 			{
-				// \todo [2015-06-19 pyry] Create special CompileException and pass error messages through that
-				qpPrint(infoSink.info.c_str());
-				TCU_FAIL("Failed to compile shader");
+				glu::ShaderInfo	shaderBuildInfo;
+
+				shaderBuildInfo.type			= (glu::ShaderType)shaderType;
+				shaderBuildInfo.source			= srcText;
+				shaderBuildInfo.infoLog			= infoSink.info.c_str(); // \todo [2015-07-13 pyry] Include debug log?
+				shaderBuildInfo.compileTimeUs	= deGetMicroseconds()-compileStartTime;
+				shaderBuildInfo.compileOk		= (compileOk != 0);
+
+				buildInfo->shaders.push_back(shaderBuildInfo);
 			}
 
-			dst.resize(spvBlob.size() * sizeof(deUint32));
+			buildInfo->program.infoLog		= "(No linking performed)";
+			buildInfo->program.linkOk		= (compileOk != 0);
+			buildInfo->program.linkTimeUs	= 0;
+
+			if (compileOk == 0)
+				TCU_FAIL("Failed to compile shader");
+
+			dst->resize(spvBlob.size() * sizeof(deUint32));
 #if (DE_ENDIANNESS == DE_LITTLE_ENDIAN)
-			deMemcpy(&dst[0], &spvBlob[0], dst.size());
+			deMemcpy(&(*dst)[0], &spvBlob[0], dst->size());
 #else
 #	error "Big-endian not supported"
 #endif
+
 			return;
 		}
 	}
@@ -260,11 +288,31 @@ void glslToSpirV (const glu::ProgramSources& program, std::vector<deUint8>& dst)
 	TCU_THROW(InternalError, "Can't compile empty program");
 }
 
+void disassembleSpirV (size_t binarySize, const deUint8* binary, std::ostream* dst)
+{
+	std::vector<deUint32>	binForDisasm	(binarySize/4);
+
+	DE_ASSERT(binarySize%4 == 0);
+
+#if (DE_ENDIANNESS == DE_LITTLE_ENDIAN)
+	deMemcpy(&binForDisasm[0], binary, binarySize);
+#else
+#	error "Big-endian not supported"
+#endif
+
+	spv::Disassemble(*dst, binForDisasm);
+}
+
 #else // defined(DEQP_HAVE_GLSLANG)
 
-void glslToSpirV (const glu::ProgramSources&, std::vector<deUint8>&)
+void glslToSpirV (const glu::ProgramSources&, std::vector<deUint8>*, glu::ShaderProgramInfo*)
 {
 	TCU_THROW(NotSupportedError, "GLSL to SPIR-V compilation not supported (DEQP_HAVE_GLSLANG not defined)");
+}
+
+void disassembleSpirV (size_t, const deUint8*, std::ostream*)
+{
+	TCU_THROW(NotSupportedError, "SPIR-V disassembling not supported (DEQP_HAVE_GLSLANG not defined)");
 }
 
 #endif
