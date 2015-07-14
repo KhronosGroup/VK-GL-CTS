@@ -320,9 +320,10 @@ float fuzzyCompare (const FuzzyCompareParams& params, const ConstPixelBufferAcce
 	{
 		for (int x = 1; x < width-1; x += params.maxSampleSkip > 0 ? (int)rnd.getInt(0, params.maxSampleSkip) : 1)
 		{
-			const deUint32	minDist2	= de::min(distSquaredToNeighbor<4>(rnd, readUnorm8<4>(refAccess, x, y), cmpAccess, x, y),
-												  distSquaredToNeighbor<4>(rnd, readUnorm8<4>(cmpAccess, x, y), refAccess, x, y));
-			const deUint64	newSum4		= distSum4 + minDist2*minDist2;
+			const deUint32	minDist2RefToCmp	= distSquaredToNeighbor<4>(rnd, readUnorm8<4>(refAccess, x, y), cmpAccess, x, y);
+			const deUint32	minDist2CmpToRef	= distSquaredToNeighbor<4>(rnd, readUnorm8<4>(cmpAccess, x, y), refAccess, x, y);
+			const deUint32	minDist2			= de::min(minDist2RefToCmp, minDist2CmpToRef);
+			const deUint64	newSum4				= distSum4 + minDist2*minDist2;
 
 			distSum4	 = (newSum4 >= distSum4) ? newSum4 : ~0ull; // In case of overflow
 			numSamples	+= 1;
