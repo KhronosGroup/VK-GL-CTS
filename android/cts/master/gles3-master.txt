@@ -17846,7 +17846,6 @@ dEQP-GLES3.functional.shaders.builtin_functions.precision.dot.mediump_vertex.vec
 dEQP-GLES3.functional.shaders.builtin_functions.precision.dot.mediump_fragment.scalar
 dEQP-GLES3.functional.shaders.builtin_functions.precision.dot.mediump_fragment.vec2
 dEQP-GLES3.functional.shaders.builtin_functions.precision.dot.mediump_fragment.vec3
-dEQP-GLES3.functional.shaders.builtin_functions.precision.dot.mediump_fragment.vec4
 dEQP-GLES3.functional.shaders.builtin_functions.precision.dot.highp_vertex.vec3
 dEQP-GLES3.functional.shaders.builtin_functions.precision.dot.highp_fragment.vec3
 dEQP-GLES3.functional.shaders.builtin_functions.precision.cross.lowp_vertex
@@ -17922,11 +17921,9 @@ dEQP-GLES3.functional.shaders.builtin_functions.precision.reflect.mediump_fragme
 dEQP-GLES3.functional.shaders.builtin_functions.precision.reflect.highp_vertex.scalar
 dEQP-GLES3.functional.shaders.builtin_functions.precision.reflect.highp_vertex.vec2
 dEQP-GLES3.functional.shaders.builtin_functions.precision.reflect.highp_vertex.vec3
-dEQP-GLES3.functional.shaders.builtin_functions.precision.reflect.highp_vertex.vec4
 dEQP-GLES3.functional.shaders.builtin_functions.precision.reflect.highp_fragment.scalar
 dEQP-GLES3.functional.shaders.builtin_functions.precision.reflect.highp_fragment.vec2
 dEQP-GLES3.functional.shaders.builtin_functions.precision.reflect.highp_fragment.vec3
-dEQP-GLES3.functional.shaders.builtin_functions.precision.reflect.highp_fragment.vec4
 dEQP-GLES3.functional.shaders.builtin_functions.precision.refract.lowp_vertex.scalar
 dEQP-GLES3.functional.shaders.builtin_functions.precision.refract.lowp_vertex.vec2
 dEQP-GLES3.functional.shaders.builtin_functions.precision.refract.lowp_vertex.vec3
@@ -22741,7 +22738,6 @@ dEQP-GLES3.functional.texture.filtering.3d.formats.rgba16f_linear
 dEQP-GLES3.functional.texture.filtering.3d.formats.rgba16f_nearest_mipmap_nearest
 dEQP-GLES3.functional.texture.filtering.3d.formats.rgba16f_linear_mipmap_nearest
 dEQP-GLES3.functional.texture.filtering.3d.formats.rgba16f_nearest_mipmap_linear
-dEQP-GLES3.functional.texture.filtering.3d.formats.rgba16f_linear_mipmap_linear
 dEQP-GLES3.functional.texture.filtering.3d.formats.r11f_g11f_b10f_nearest
 dEQP-GLES3.functional.texture.filtering.3d.formats.r11f_g11f_b10f_linear
 dEQP-GLES3.functional.texture.filtering.3d.formats.r11f_g11f_b10f_nearest_mipmap_nearest
