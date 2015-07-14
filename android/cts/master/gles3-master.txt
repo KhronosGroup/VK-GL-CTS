@@ -1585,7 +1585,6 @@ dEQP-GLES3.functional.shaders.linkage.uniform.block.type_mismatch
 dEQP-GLES3.functional.shaders.linkage.uniform.block.members_mismatch
 dEQP-GLES3.functional.shaders.linkage.uniform.block.layout_qualifier_mismatch_1
 dEQP-GLES3.functional.shaders.linkage.uniform.block.layout_qualifier_mismatch_2
-dEQP-GLES3.functional.shaders.linkage.uniform.block.layout_qualifier_mismatch_3
 dEQP-GLES3.functional.shaders.linkage.uniform.block.layout_qualifier_mismatch_4
 dEQP-GLES3.functional.shaders.linkage.uniform.block.layout_qualifier_mismatch_5
 dEQP-GLES3.functional.shaders.conversions.scalar_to_scalar.float_to_float_vertex
