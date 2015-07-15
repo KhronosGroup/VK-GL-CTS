@@ -67,6 +67,15 @@ struct ProgramInfo
 };
 
 /*--------------------------------------------------------------------*//*!
+ * \brief Combined shader compilation and program linking info.
+ *//*--------------------------------------------------------------------*/
+struct ShaderProgramInfo
+{
+	glu::ProgramInfo				program;
+	std::vector<glu::ShaderInfo>	shaders;
+};
+
+/*--------------------------------------------------------------------*//*!
  * \brief Shader object.
  *//*--------------------------------------------------------------------*/
 class Shader
@@ -201,6 +210,9 @@ deUint32		getGLShaderType		(ShaderType shaderType);
 deUint32		getGLShaderTypeBit	(ShaderType shaderType);
 qpShaderType	getLogShaderType	(ShaderType shaderType);
 
+tcu::TestLog&	operator<<			(tcu::TestLog& log, const ShaderInfo& shaderInfo);
+tcu::TestLog&	operator<<			(tcu::TestLog& log, const ShaderProgramInfo& shaderProgramInfo);
+tcu::TestLog&	operator<<			(tcu::TestLog& log, const ProgramSources& sources);
 tcu::TestLog&	operator<<			(tcu::TestLog& log, const Shader& shader);
 tcu::TestLog&	operator<<			(tcu::TestLog& log, const ShaderProgram& program);
 

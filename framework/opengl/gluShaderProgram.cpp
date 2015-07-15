@@ -432,7 +432,7 @@ qpShaderType getLogShaderType (ShaderType shaderType)
 	return s_typeMap[shaderType];
 }
 
-static tcu::TestLog& operator<< (tcu::TestLog& log, const ShaderInfo& shaderInfo)
+tcu::TestLog& operator<< (tcu::TestLog& log, const ShaderInfo& shaderInfo)
 {
 	return log << tcu::TestLog::Shader(getLogShaderType(shaderInfo.type), shaderInfo.source, shaderInfo.compileOk, shaderInfo.infoLog);
 }
@@ -442,20 +442,13 @@ tcu::TestLog& operator<< (tcu::TestLog& log, const Shader& shader)
 	return log << tcu::TestLog::ShaderProgram(false, "Plain shader") << shader.getInfo() << tcu::TestLog::EndShaderProgram;
 }
 
-tcu::TestLog& operator<< (tcu::TestLog& log, const ShaderProgram& program)
+static void logShaderProgram (tcu::TestLog& log, const ProgramInfo& programInfo, size_t numShaders, const ShaderInfo* const* shaderInfos)
 {
-	const ProgramInfo& progInfo = program.getProgramInfo();
-
-	log << tcu::TestLog::ShaderProgram(progInfo.linkOk, progInfo.infoLog);
+	log << tcu::TestLog::ShaderProgram(programInfo.linkOk, programInfo.infoLog);
 	try
 	{
-		for (int shaderTypeNdx = 0; shaderTypeNdx < SHADERTYPE_LAST; shaderTypeNdx++)
-		{
-			const glu::ShaderType shaderType = (glu::ShaderType)shaderTypeNdx;
-
-			for (int shaderNdx = 0; shaderNdx < program.getNumShaders(shaderType); ++shaderNdx)
-				log << program.getShaderInfo(shaderType, shaderNdx);
-		}
+		for (size_t shaderNdx = 0; shaderNdx < numShaders; ++shaderNdx)
+			log << *shaderInfos[shaderNdx];
 	}
 	catch (...)
 	{
@@ -487,17 +480,69 @@ tcu::TestLog& operator<< (tcu::TestLog& log, const ShaderProgram& program)
 		{
 			const glu::ShaderType shaderType = (glu::ShaderType)shaderTypeNdx;
 
-			for (int shaderNdx = 0; shaderNdx < program.getNumShaders(shaderType); ++shaderNdx)
+			for (size_t shaderNdx = 0; shaderNdx < numShaders; ++shaderNdx)
 			{
-				const ShaderInfo& shaderInfo = program.getShaderInfo(shaderType, shaderNdx);
+				const ShaderInfo& shaderInfo = *shaderInfos[shaderNdx];
 				log << tcu::TestLog::Float(s_compileTimeDesc[shaderType].name, s_compileTimeDesc[shaderType].description, "ms", QP_KEY_TAG_TIME, (float)shaderInfo.compileTimeUs / 1000.0f);
 				allShadersOk = allShadersOk && shaderInfo.compileOk;
 			}
 		}
 
 		if (allShadersOk)
-			log << tcu::TestLog::Float("LinkTime", "Link time", "ms", QP_KEY_TAG_TIME, (float)progInfo.linkTimeUs / 1000.0f);
+			log << tcu::TestLog::Float("LinkTime", "Link time", "ms", QP_KEY_TAG_TIME, (float)programInfo.linkTimeUs / 1000.0f);
 	}
+}
+
+tcu::TestLog& operator<< (tcu::TestLog& log, const ShaderProgramInfo& shaderProgramInfo)
+{
+	std::vector<const ShaderInfo*>	shaderPtrs	(shaderProgramInfo.shaders.size());
+
+	for (size_t ndx = 0; ndx < shaderPtrs.size(); ndx++)
+		shaderPtrs[ndx] = &shaderProgramInfo.shaders[ndx];
+
+	logShaderProgram(log, shaderProgramInfo.program, shaderPtrs.size(), shaderPtrs.empty() ? DE_NULL : &shaderPtrs[0]);
+
+	return log;
+}
+
+tcu::TestLog& operator<< (tcu::TestLog& log, const ShaderProgram& shaderProgram)
+{
+	std::vector<const ShaderInfo*>	shaderPtrs;
+
+	for (int shaderType = 0; shaderType < SHADERTYPE_LAST; shaderType++)
+	{
+		for (int shaderNdx = 0; shaderNdx < shaderProgram.getNumShaders((ShaderType)shaderType); shaderNdx++)
+			shaderPtrs.push_back(&shaderProgram.getShaderInfo((ShaderType)shaderType, shaderNdx));
+	}
+
+	logShaderProgram(log, shaderProgram.getProgramInfo(), shaderPtrs.size(), shaderPtrs.empty() ? DE_NULL : &shaderPtrs[0]);
+
+	return log;
+}
+
+tcu::TestLog& operator<< (tcu::TestLog& log, const ProgramSources& sources)
+{
+	log << tcu::TestLog::ShaderProgram(false, "(Source only)");
+
+	try
+	{
+		for (int shaderType = 0; shaderType < SHADERTYPE_LAST; shaderType++)
+		{
+			for (size_t shaderNdx = 0; shaderNdx < sources.sources[shaderType].size(); shaderNdx++)
+			{
+				log << tcu::TestLog::Shader(getLogShaderType((ShaderType)shaderType),
+											sources.sources[shaderType][shaderNdx],
+											false, "");
+			}
+		}
+	}
+	catch (...)
+	{
+		log << tcu::TestLog::EndShaderProgram;
+		throw;
+	}
+
+	log << tcu::TestLog::EndShaderProgram;
 
 	return log;
 }
