@@ -20,6 +20,7 @@ set(DEQP_VK_COMMON_SRCS
 set(DEQP_VK_COMMON_LIBS
 	tcutil
 	vkutil
+	glutil
 	deqp-vk-api
 	)
 

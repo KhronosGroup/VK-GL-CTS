@@ -34,6 +34,9 @@
 
 #include "vkPrograms.hpp"
 #include "vkGlslToSpirV.hpp"
+
+#include "tcuTestLog.hpp"
+
 #include "deArrayUtil.hpp"
 #include "deMemory.h"
 
@@ -42,6 +45,7 @@ namespace vk
 
 using std::string;
 using std::vector;
+using tcu::TestLog;
 
 // ProgramBinary
 
@@ -53,12 +57,12 @@ ProgramBinary::ProgramBinary (ProgramFormat format, size_t binarySize, const deU
 
 // Utils
 
-ProgramBinary* buildProgram (const glu::ProgramSources& program, ProgramFormat binaryFormat)
+ProgramBinary* buildProgram (const glu::ProgramSources& program, ProgramFormat binaryFormat, glu::ShaderProgramInfo* buildInfo)
 {
 	if (binaryFormat == PROGRAM_FORMAT_SPIRV)
 	{
 		vector<deUint8> binary;
-		glslToSpirV(program, binary);
+		glslToSpirV(program, &binary, buildInfo);
 		return new ProgramBinary(binaryFormat, binary.size(), &binary[0]);
 	}
 	else

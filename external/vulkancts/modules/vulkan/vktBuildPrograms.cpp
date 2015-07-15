@@ -110,7 +110,8 @@ BuildStats buildPrograms (tcu::TestContext& testCtx, const std::string& dstPath,
 				try
 				{
 					const vk::ProgramIdentifier			progId		(casePath, progIter.getName());
-					const UniquePtr<vk::ProgramBinary>	binary		(vk::buildProgram(progIter.getProgram(), vk::PROGRAM_FORMAT_SPIRV));
+					glu::ShaderProgramInfo				buildInfo;
+					const UniquePtr<vk::ProgramBinary>	binary		(vk::buildProgram(progIter.getProgram(), vk::PROGRAM_FORMAT_SPIRV, &buildInfo));
 
 					if (mode == BUILDMODE_BUILD)
 						writer->storeProgram(progId, *binary);

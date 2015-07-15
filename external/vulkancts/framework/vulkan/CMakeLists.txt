@@ -26,6 +26,7 @@ set(VKUTIL_SRCS
 	)
 
 set(VKUTIL_LIBS
+	glutil
 	tcutil
 	)
 
