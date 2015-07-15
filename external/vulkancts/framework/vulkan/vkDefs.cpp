@@ -113,11 +113,11 @@ ApiVersion unpackVersion (deUint32 version)
 
 deUint32 pack (const ApiVersion& version)
 {
-	DE_ASSERT((version.major & ~0x3FF) == 0);
-	DE_ASSERT((version.minor & ~0x3FF) == 0);
-	DE_ASSERT((version.patch & ~0xFFF) == 0);
+	DE_ASSERT((version.majorNum & ~0x3FF) == 0);
+	DE_ASSERT((version.minorNum & ~0x3FF) == 0);
+	DE_ASSERT((version.patchNum & ~0xFFF) == 0);
 
-	return (version.major << 22) | (version.minor << 12) | version.patch;
+	return (version.majorNum << 22) | (version.minorNum << 12) | version.patchNum;
 }
 
 VkClearValue clearValueColorF32 (float r, float g, float b, float a)

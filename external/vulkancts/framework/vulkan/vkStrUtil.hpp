@@ -53,7 +53,7 @@ inline std::ostream& operator<< (std::ostream& s, const Handle<Type>& handle)
 
 inline std::ostream& operator<< (std::ostream& s, const ApiVersion& version)
 {
-	return s << version.major << "." << version.minor << "." << version.patch;
+	return s << version.majorNum << "." << version.minorNum << "." << version.patchNum;
 }
 
 } // vk

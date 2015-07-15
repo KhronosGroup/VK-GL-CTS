@@ -21,13 +21,9 @@ set(VKUTIL_SRCS
 	vkGlslToSpirV.hpp
 	vkBinaryRegistry.cpp
 	vkBinaryRegistry.hpp
+	vkNullDriver.cpp
+	vkNullDriver.hpp
 	)
-
-# \note Code interfacing with glslang needs to include third-party headers
-#       that cause all sorts of warnings to appear.
-set_source_files_properties(
-	FILES vkGlslToSpirV.cpp
-	PROPERTIES COMPILE_FLAGS ${DE_3RD_PARTY_CXX_FLAGS})
 
 set(VKUTIL_LIBS
 	tcutil
@@ -36,6 +32,15 @@ set(VKUTIL_LIBS
 if (DEQP_HAVE_GLSLANG)
 	include_directories(${GLSLANG_INCLUDE_PATH})
 	add_definitions(-DDEQP_HAVE_GLSLANG=1)
+
+	# \note Code interfacing with glslang needs to include third-party headers
+	#       that cause all sorts of warnings to appear.
+	if (DE_COMPILER_IS_GCC OR DE_COMPILER_IS_CLANG)
+		set_source_files_properties(
+			FILES vkGlslToSpirV.cpp
+			PROPERTIES COMPILE_FLAGS "${DE_3RD_PARTY_CXX_FLAGS} -std=c++11")
+	endif ()
+
 	set(VKUTIL_LIBS ${VKUTIL_LIBS} ${GLSLANG_LIBRARY})
 endif ()
 

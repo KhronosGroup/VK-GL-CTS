@@ -158,16 +158,16 @@ private:
 
 struct ApiVersion
 {
-	deUint32	major;
-	deUint32	minor;
-	deUint32	patch;
+	deUint32	majorNum;
+	deUint32	minorNum;
+	deUint32	patchNum;
 
-	ApiVersion (deUint32	major_,
-				deUint32	minor_,
-				deUint32	patch_)
-		: major	(major_)
-		, minor	(minor_)
-		, patch	(patch_)
+	ApiVersion (deUint32	majorNum_,
+				deUint32	minorNum_,
+				deUint32	patchNum_)
+		: majorNum	(majorNum_)
+		, minorNum	(minorNum_)
+		, patchNum	(patchNum_)
 	{
 	}
 };
