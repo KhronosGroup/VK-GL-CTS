@@ -4,3 +4,7 @@ dEQP-GLES3.functional.attribute_location.bind_aliasing.*
 # Bug 21737600
 dEQP-GLES3.functional.shaders.preprocessor.predefined_macros.line_2_vertex
 dEQP-GLES3.functional.shaders.preprocessor.predefined_macros.line_2_fragment
+
+# Bug 22488431
+dEQP-GLES3.functional.shaders.fragdata.draw_buffers
+dEQP-GLES3.functional.shaders.fragdata.invalid_assign_to_1
