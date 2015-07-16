@@ -49,6 +49,16 @@ eglw::EGLint CallLogWrapper::eglClientWaitSync (eglw::EGLDisplay dpy, eglw::EGLS
 	return returnValue;
 }
 
+eglw::EGLint CallLogWrapper::eglClientWaitSyncKHR (eglw::EGLDisplay dpy, eglw::EGLSyncKHR sync, eglw::EGLint flags, eglw::EGLTimeKHR timeout)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "eglClientWaitSyncKHR(" << dpy << ", " << sync << ", " << flags << ", " << timeout << ");" << TestLog::EndMessage;
+	eglw::EGLint returnValue = m_egl.clientWaitSyncKHR(dpy, sync, flags, timeout);
+	if (m_enableLog)
+		m_log << TestLog::Message << "// " << returnValue << " returned" << TestLog::EndMessage;
+	return returnValue;
+}
+
 eglw::EGLBoolean CallLogWrapper::eglCopyBuffers (eglw::EGLDisplay dpy, eglw::EGLSurface surface, eglw::EGLNativePixmapType target)
 {
 	if (m_enableLog)
@@ -74,6 +84,16 @@ eglw::EGLImage CallLogWrapper::eglCreateImage (eglw::EGLDisplay dpy, eglw::EGLCo
 	if (m_enableLog)
 		m_log << TestLog::Message << "eglCreateImage(" << dpy << ", " << ctx << ", " << toHex(target) << ", " << toHex(buffer) << ", " << attrib_list << ");" << TestLog::EndMessage;
 	eglw::EGLImage returnValue = m_egl.createImage(dpy, ctx, target, buffer, attrib_list);
+	if (m_enableLog)
+		m_log << TestLog::Message << "// " << returnValue << " returned" << TestLog::EndMessage;
+	return returnValue;
+}
+
+eglw::EGLImageKHR CallLogWrapper::eglCreateImageKHR (eglw::EGLDisplay dpy, eglw::EGLContext ctx, eglw::EGLenum target, eglw::EGLClientBuffer buffer, const eglw::EGLint *attrib_list)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "eglCreateImageKHR(" << dpy << ", " << ctx << ", " << toHex(target) << ", " << toHex(buffer) << ", " << attrib_list << ");" << TestLog::EndMessage;
+	eglw::EGLImageKHR returnValue = m_egl.createImageKHR(dpy, ctx, target, buffer, attrib_list);
 	if (m_enableLog)
 		m_log << TestLog::Message << "// " << returnValue << " returned" << TestLog::EndMessage;
 	return returnValue;
@@ -119,6 +139,16 @@ eglw::EGLSurface CallLogWrapper::eglCreatePlatformPixmapSurface (eglw::EGLDispla
 	return returnValue;
 }
 
+eglw::EGLSurface CallLogWrapper::eglCreatePlatformPixmapSurfaceEXT (eglw::EGLDisplay dpy, eglw::EGLConfig config, void *native_pixmap, const eglw::EGLint *attrib_list)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "eglCreatePlatformPixmapSurfaceEXT(" << dpy << ", " << toHex(config) << ", " << native_pixmap << ", " << attrib_list << ");" << TestLog::EndMessage;
+	eglw::EGLSurface returnValue = m_egl.createPlatformPixmapSurfaceEXT(dpy, config, native_pixmap, attrib_list);
+	if (m_enableLog)
+		m_log << TestLog::Message << "// " << toHex(returnValue) << " returned" << TestLog::EndMessage;
+	return returnValue;
+}
+
 eglw::EGLSurface CallLogWrapper::eglCreatePlatformWindowSurface (eglw::EGLDisplay dpy, eglw::EGLConfig config, void *native_window, const eglw::EGLAttrib *attrib_list)
 {
 	if (m_enableLog)
@@ -129,11 +159,31 @@ eglw::EGLSurface CallLogWrapper::eglCreatePlatformWindowSurface (eglw::EGLDispla
 	return returnValue;
 }
 
+eglw::EGLSurface CallLogWrapper::eglCreatePlatformWindowSurfaceEXT (eglw::EGLDisplay dpy, eglw::EGLConfig config, void *native_window, const eglw::EGLint *attrib_list)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "eglCreatePlatformWindowSurfaceEXT(" << dpy << ", " << toHex(config) << ", " << native_window << ", " << attrib_list << ");" << TestLog::EndMessage;
+	eglw::EGLSurface returnValue = m_egl.createPlatformWindowSurfaceEXT(dpy, config, native_window, attrib_list);
+	if (m_enableLog)
+		m_log << TestLog::Message << "// " << toHex(returnValue) << " returned" << TestLog::EndMessage;
+	return returnValue;
+}
+
 eglw::EGLSync CallLogWrapper::eglCreateSync (eglw::EGLDisplay dpy, eglw::EGLenum type, const eglw::EGLAttrib *attrib_list)
 {
 	if (m_enableLog)
 		m_log << TestLog::Message << "eglCreateSync(" << dpy << ", " << toHex(type) << ", " << attrib_list << ");" << TestLog::EndMessage;
 	eglw::EGLSync returnValue = m_egl.createSync(dpy, type, attrib_list);
+	if (m_enableLog)
+		m_log << TestLog::Message << "// " << returnValue << " returned" << TestLog::EndMessage;
+	return returnValue;
+}
+
+eglw::EGLSyncKHR CallLogWrapper::eglCreateSyncKHR (eglw::EGLDisplay dpy, eglw::EGLenum type, const eglw::EGLint *attrib_list)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "eglCreateSyncKHR(" << dpy << ", " << toHex(type) << ", " << attrib_list << ");" << TestLog::EndMessage;
+	eglw::EGLSyncKHR returnValue = m_egl.createSyncKHR(dpy, type, attrib_list);
 	if (m_enableLog)
 		m_log << TestLog::Message << "// " << returnValue << " returned" << TestLog::EndMessage;
 	return returnValue;
@@ -169,6 +219,16 @@ eglw::EGLBoolean CallLogWrapper::eglDestroyImage (eglw::EGLDisplay dpy, eglw::EG
 	return returnValue;
 }
 
+eglw::EGLBoolean CallLogWrapper::eglDestroyImageKHR (eglw::EGLDisplay dpy, eglw::EGLImageKHR image)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "eglDestroyImageKHR(" << dpy << ", " << image << ");" << TestLog::EndMessage;
+	eglw::EGLBoolean returnValue = m_egl.destroyImageKHR(dpy, image);
+	if (m_enableLog)
+		m_log << TestLog::Message << "// " << getBooleanStr(returnValue) << " returned" << TestLog::EndMessage;
+	return returnValue;
+}
+
 eglw::EGLBoolean CallLogWrapper::eglDestroySurface (eglw::EGLDisplay dpy, eglw::EGLSurface surface)
 {
 	if (m_enableLog)
@@ -184,6 +244,16 @@ eglw::EGLBoolean CallLogWrapper::eglDestroySync (eglw::EGLDisplay dpy, eglw::EGL
 	if (m_enableLog)
 		m_log << TestLog::Message << "eglDestroySync(" << dpy << ", " << sync << ");" << TestLog::EndMessage;
 	eglw::EGLBoolean returnValue = m_egl.destroySync(dpy, sync);
+	if (m_enableLog)
+		m_log << TestLog::Message << "// " << getBooleanStr(returnValue) << " returned" << TestLog::EndMessage;
+	return returnValue;
+}
+
+eglw::EGLBoolean CallLogWrapper::eglDestroySyncKHR (eglw::EGLDisplay dpy, eglw::EGLSyncKHR sync)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "eglDestroySyncKHR(" << dpy << ", " << sync << ");" << TestLog::EndMessage;
+	eglw::EGLBoolean returnValue = m_egl.destroySyncKHR(dpy, sync);
 	if (m_enableLog)
 		m_log << TestLog::Message << "// " << getBooleanStr(returnValue) << " returned" << TestLog::EndMessage;
 	return returnValue;
@@ -273,6 +343,16 @@ eglw::EGLDisplay CallLogWrapper::eglGetPlatformDisplay (eglw::EGLenum platform, 
 	return returnValue;
 }
 
+eglw::EGLDisplay CallLogWrapper::eglGetPlatformDisplayEXT (eglw::EGLenum platform, void *native_display, const eglw::EGLint *attrib_list)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "eglGetPlatformDisplayEXT(" << toHex(platform) << ", " << native_display << ", " << attrib_list << ");" << TestLog::EndMessage;
+	eglw::EGLDisplay returnValue = m_egl.getPlatformDisplayEXT(platform, native_display, attrib_list);
+	if (m_enableLog)
+		m_log << TestLog::Message << "// " << returnValue << " returned" << TestLog::EndMessage;
+	return returnValue;
+}
+
 eglw::__eglMustCastToProperFunctionPointerType CallLogWrapper::eglGetProcAddress (const char *procname)
 {
 	if (m_enableLog)
@@ -293,11 +373,31 @@ eglw::EGLBoolean CallLogWrapper::eglGetSyncAttrib (eglw::EGLDisplay dpy, eglw::E
 	return returnValue;
 }
 
+eglw::EGLBoolean CallLogWrapper::eglGetSyncAttribKHR (eglw::EGLDisplay dpy, eglw::EGLSyncKHR sync, eglw::EGLint attribute, eglw::EGLint *value)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "eglGetSyncAttribKHR(" << dpy << ", " << sync << ", " << attribute << ", " << value << ");" << TestLog::EndMessage;
+	eglw::EGLBoolean returnValue = m_egl.getSyncAttribKHR(dpy, sync, attribute, value);
+	if (m_enableLog)
+		m_log << TestLog::Message << "// " << getBooleanStr(returnValue) << " returned" << TestLog::EndMessage;
+	return returnValue;
+}
+
 eglw::EGLBoolean CallLogWrapper::eglInitialize (eglw::EGLDisplay dpy, eglw::EGLint *major, eglw::EGLint *minor)
 {
 	if (m_enableLog)
 		m_log << TestLog::Message << "eglInitialize(" << dpy << ", " << major << ", " << minor << ");" << TestLog::EndMessage;
 	eglw::EGLBoolean returnValue = m_egl.initialize(dpy, major, minor);
+	if (m_enableLog)
+		m_log << TestLog::Message << "// " << getBooleanStr(returnValue) << " returned" << TestLog::EndMessage;
+	return returnValue;
+}
+
+eglw::EGLBoolean CallLogWrapper::eglLockSurfaceKHR (eglw::EGLDisplay dpy, eglw::EGLSurface surface, const eglw::EGLint *attrib_list)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "eglLockSurfaceKHR(" << dpy << ", " << toHex(surface) << ", " << attrib_list << ");" << TestLog::EndMessage;
+	eglw::EGLBoolean returnValue = m_egl.lockSurfaceKHR(dpy, surface, attrib_list);
 	if (m_enableLog)
 		m_log << TestLog::Message << "// " << getBooleanStr(returnValue) << " returned" << TestLog::EndMessage;
 	return returnValue;
@@ -381,6 +481,26 @@ eglw::EGLBoolean CallLogWrapper::eglReleaseThread ()
 	return returnValue;
 }
 
+eglw::EGLBoolean CallLogWrapper::eglSetDamageRegionKHR (eglw::EGLDisplay dpy, eglw::EGLSurface surface, eglw::EGLint *rects, eglw::EGLint n_rects)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "eglSetDamageRegionKHR(" << dpy << ", " << toHex(surface) << ", " << rects << ", " << n_rects << ");" << TestLog::EndMessage;
+	eglw::EGLBoolean returnValue = m_egl.setDamageRegionKHR(dpy, surface, rects, n_rects);
+	if (m_enableLog)
+		m_log << TestLog::Message << "// " << getBooleanStr(returnValue) << " returned" << TestLog::EndMessage;
+	return returnValue;
+}
+
+eglw::EGLBoolean CallLogWrapper::eglSignalSyncKHR (eglw::EGLDisplay dpy, eglw::EGLSyncKHR sync, eglw::EGLenum mode)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "eglSignalSyncKHR(" << dpy << ", " << sync << ", " << toHex(mode) << ");" << TestLog::EndMessage;
+	eglw::EGLBoolean returnValue = m_egl.signalSyncKHR(dpy, sync, mode);
+	if (m_enableLog)
+		m_log << TestLog::Message << "// " << getBooleanStr(returnValue) << " returned" << TestLog::EndMessage;
+	return returnValue;
+}
+
 eglw::EGLBoolean CallLogWrapper::eglSurfaceAttrib (eglw::EGLDisplay dpy, eglw::EGLSurface surface, eglw::EGLint attribute, eglw::EGLint value)
 {
 	if (m_enableLog)
@@ -401,6 +521,16 @@ eglw::EGLBoolean CallLogWrapper::eglSwapBuffers (eglw::EGLDisplay dpy, eglw::EGL
 	return returnValue;
 }
 
+eglw::EGLBoolean CallLogWrapper::eglSwapBuffersWithDamageKHR (eglw::EGLDisplay dpy, eglw::EGLSurface surface, eglw::EGLint *rects, eglw::EGLint n_rects)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "eglSwapBuffersWithDamageKHR(" << dpy << ", " << toHex(surface) << ", " << rects << ", " << n_rects << ");" << TestLog::EndMessage;
+	eglw::EGLBoolean returnValue = m_egl.swapBuffersWithDamageKHR(dpy, surface, rects, n_rects);
+	if (m_enableLog)
+		m_log << TestLog::Message << "// " << getBooleanStr(returnValue) << " returned" << TestLog::EndMessage;
+	return returnValue;
+}
+
 eglw::EGLBoolean CallLogWrapper::eglSwapInterval (eglw::EGLDisplay dpy, eglw::EGLint interval)
 {
 	if (m_enableLog)
@@ -416,6 +546,16 @@ eglw::EGLBoolean CallLogWrapper::eglTerminate (eglw::EGLDisplay dpy)
 	if (m_enableLog)
 		m_log << TestLog::Message << "eglTerminate(" << dpy << ");" << TestLog::EndMessage;
 	eglw::EGLBoolean returnValue = m_egl.terminate(dpy);
+	if (m_enableLog)
+		m_log << TestLog::Message << "// " << getBooleanStr(returnValue) << " returned" << TestLog::EndMessage;
+	return returnValue;
+}
+
+eglw::EGLBoolean CallLogWrapper::eglUnlockSurfaceKHR (eglw::EGLDisplay dpy, eglw::EGLSurface surface)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "eglUnlockSurfaceKHR(" << dpy << ", " << toHex(surface) << ");" << TestLog::EndMessage;
+	eglw::EGLBoolean returnValue = m_egl.unlockSurfaceKHR(dpy, surface);
 	if (m_enableLog)
 		m_log << TestLog::Message << "// " << getBooleanStr(returnValue) << " returned" << TestLog::EndMessage;
 	return returnValue;
@@ -458,5 +598,15 @@ eglw::EGLBoolean CallLogWrapper::eglWaitSync (eglw::EGLDisplay dpy, eglw::EGLSyn
 	eglw::EGLBoolean returnValue = m_egl.waitSync(dpy, sync, flags);
 	if (m_enableLog)
 		m_log << TestLog::Message << "// " << getBooleanStr(returnValue) << " returned" << TestLog::EndMessage;
+	return returnValue;
+}
+
+eglw::EGLint CallLogWrapper::eglWaitSyncKHR (eglw::EGLDisplay dpy, eglw::EGLSyncKHR sync, eglw::EGLint flags)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "eglWaitSyncKHR(" << dpy << ", " << sync << ", " << flags << ");" << TestLog::EndMessage;
+	eglw::EGLint returnValue = m_egl.waitSyncKHR(dpy, sync, flags);
+	if (m_enableLog)
+		m_log << TestLog::Message << "// " << returnValue << " returned" << TestLog::EndMessage;
 	return returnValue;
 }
