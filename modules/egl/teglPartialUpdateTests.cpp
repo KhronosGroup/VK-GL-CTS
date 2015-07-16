@@ -91,6 +91,11 @@ public:
 	IterateResult				iterate					(void);
 
 private:
+	eglu::NativeWindow*			m_window;
+	EGLConfig					m_eglConfig;
+	EGLContext					m_eglContext;
+
+protected:
 	void						initEGLSurface			(EGLConfig config);
 	void						initEGLContext			(EGLConfig config);
 
@@ -100,15 +105,11 @@ private:
 
 	bool 						m_supportBufferAge;
 	EGLDisplay					m_eglDisplay;
-	eglu::NativeWindow*			m_window;
 	EGLSurface					m_eglSurface;
-	EGLConfig					m_eglConfig;
-	EGLContext					m_eglContext;
 	glw::Functions				m_gl;
 
 	GLES2Renderer*				m_gles2Renderer;
 	ReferenceRenderer*			m_refRenderer;
-
 };
 
 struct ColoredRect
@@ -153,7 +154,6 @@ Frame::Frame (int width_, int height_)
 	, height(height_)
 {
 }
-
 
 // (x1,y1) lie in the lower-left quadrant while (x2,y2) lie in the upper-right.
 // the coords are multiplied by 4 to amplify the minimial difference between coords to 4 (if not zero)
@@ -316,11 +316,11 @@ void GLES2Renderer::render (int width, int height, const Frame& frame) const
 class ReferenceRenderer
 {
 public:
-						ReferenceRenderer 	(void);
-	void				render			  	(tcu::Surface* target, const Frame& frame) const;
+						ReferenceRenderer		(void);
+	void				render					(tcu::Surface* target, const Frame& frame) const;
 private:
-						ReferenceRenderer	(const ReferenceRenderer&);
-	ReferenceRenderer&	operator=		  	(const ReferenceRenderer&);
+						ReferenceRenderer		(const ReferenceRenderer&);
+	ReferenceRenderer&	operator=				(const ReferenceRenderer&);
 };
 
 ReferenceRenderer::ReferenceRenderer(void)
@@ -348,14 +348,14 @@ PartialUpdateTest::PartialUpdateTest (EglTestContext& eglTestCtx,
 									  const vector<DrawType>& evenFrameDrawType,
 									  const char* name, const char* description)
 	: TestCase				(eglTestCtx, name, description)
+	, m_window				(DE_NULL)
+	, m_eglContext			(EGL_NO_CONTEXT)
 	, m_seed				(deStringHash(name))
 	, m_oddFrameDrawType	(oddFrameDrawType)
 	, m_evenFrameDrawType	(evenFrameDrawType)
 	, m_supportBufferAge	(false)
 	, m_eglDisplay			(EGL_NO_DISPLAY)
-	, m_window				(DE_NULL)
 	, m_eglSurface			(EGL_NO_SURFACE)
-	, m_eglContext			(EGL_NO_CONTEXT)
 	, m_gles2Renderer		(DE_NULL)
 	, m_refRenderer			(DE_NULL)
 {
@@ -475,6 +475,8 @@ vector<EGLint> getDamageRegion (const Frame& frame, int marginLeft, int marginBo
 		damageRegion.push_back(rect.topRight.x() - rect.bottomLeft.x() + marginLeft + marginRight);
 		damageRegion.push_back(rect.topRight.y() - rect.bottomLeft.y() + marginBottom + marginTop);
 	}
+
+	DE_ASSERT(damageRegion.size() % 4 == 0);
 	return damageRegion;
 }
 
@@ -509,7 +511,7 @@ TestCase::IterateResult PartialUpdateTest::iterate (void)
 
 		frameSequence.push_back(newFrame);
 
-		EGLU_CHECK_CALL(egl, querySurface(m_eglDisplay, m_eglSurface, EGL_BUFFER_AGE_EXT, &currentBufferAge));
+		EGLU_CHECK_CALL(egl, querySurface(m_eglDisplay, m_eglSurface, EGL_BUFFER_AGE_KHR, &currentBufferAge));
 
 		if (currentBufferAge > frameNdx || currentBufferAge < 0) // invalid buffer age
 		{
@@ -531,7 +533,7 @@ TestCase::IterateResult PartialUpdateTest::iterate (void)
 			else
 				damageRegion = getDamageRegion(newFrame, 0, 0, 0, 0);
 
-			EGLU_CHECK_CALL(egl, setDamageRegionKHR(m_eglDisplay, m_eglSurface, &damageRegion[0], (EGLint)damageRegion.size()));
+			EGLU_CHECK_CALL(egl, setDamageRegionKHR(m_eglDisplay, m_eglSurface, &damageRegion[0], (EGLint)damageRegion.size()/4));
 		}
 		else
 		{
@@ -646,6 +648,125 @@ bool compareToReference (tcu::TestLog& log,	 const tcu::Surface& reference, cons
 													 tcu::UVec4(8, 8, 8, 0), tcu::IVec3(2,2,0), true, tcu::COMPARE_LOG_RESULT);
 }
 
+class RenderOutsideDamageRegion : public PartialUpdateTest
+{
+public:
+								RenderOutsideDamageRegion		(EglTestContext& eglTestCtx);
+	TestCase::IterateResult		iterate							(void);
+};
+
+RenderOutsideDamageRegion::RenderOutsideDamageRegion (EglTestContext& eglTestCtx)
+	: PartialUpdateTest (eglTestCtx, vector<DrawType>(1, DRAWTYPE_GLES2_RENDER), vector<DrawType>(1, DRAWTYPE_GLES2_RENDER), "render_outside_damage_region", "")
+{
+}
+
+TestCase::IterateResult RenderOutsideDamageRegion::iterate (void)
+{
+	de::Random			rnd				(m_seed);
+	const Library&		egl				= m_eglTestCtx.getLibrary();
+	tcu::TestLog&		log				= m_testCtx.getLog();
+	const int			width			= eglu::querySurfaceInt(egl, m_eglDisplay, m_eglSurface, EGL_WIDTH);
+	const int			height			= eglu::querySurfaceInt(egl, m_eglDisplay, m_eglSurface, EGL_HEIGHT);
+	const float			clearRed		= rnd.getFloat();
+	const float			clearGreen		= rnd.getFloat();
+	const float			clearBlue		= rnd.getFloat();
+	const tcu::Vec4		clearColor		(clearRed, clearGreen, clearBlue, 1.0f);
+	tcu::Surface		currentBuffer	(width, height);
+	tcu::Surface		refBuffer		(width, height);
+	Frame				frame			(width, height);
+
+	generateRandomFrame(frame, m_evenFrameDrawType, rnd);
+
+	{
+		// render outside the region
+		EGLint		   bufferAge	= -1;
+		vector<EGLint> damageRegion = getDamageRegion(frame, 0, 0, 0, 0);
+
+		EGLU_CHECK_CALL(egl, querySurface(m_eglDisplay, m_eglSurface, EGL_BUFFER_AGE_KHR, &bufferAge));
+		EGLU_CHECK_CALL(egl, setDamageRegionKHR(m_eglDisplay, m_eglSurface, &damageRegion[0], (EGLint)damageRegion.size()/4));
+		clearColorScreen(m_gl, clearColor);
+		m_gles2Renderer->render(width, height, frame);
+
+		// next line will make the bug on Nexus 6 disappear
+		// readPixels(m_gl, &currentBuffer);
+	}
+
+	EGLU_CHECK_CALL(egl, swapBuffers(m_eglDisplay, m_eglSurface));
+
+	// render a new frame
+	clearColorScreen(m_gl, clearColor);
+	m_gles2Renderer->render(width, height, frame);
+	clearColorReference(&refBuffer, clearColor);
+	m_refRenderer->render(&refBuffer, frame);
+	readPixels(m_gl, &currentBuffer);
+
+	if (!compareToReference(log, refBuffer, currentBuffer, 0, 0))
+		m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail, fail to recover after rendering outside damageRegion");
+	else
+		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+
+	return STOP;
+}
+
+class RenderBeforeSetDamageRegion : public PartialUpdateTest
+{
+public:
+								RenderBeforeSetDamageRegion		(EglTestContext& eglTestCtx);
+	TestCase::IterateResult		iterate							(void);
+};
+
+RenderBeforeSetDamageRegion::RenderBeforeSetDamageRegion (EglTestContext& eglTestCtx)
+	: PartialUpdateTest (eglTestCtx, vector<DrawType>(1, DRAWTYPE_GLES2_RENDER), vector<DrawType>(1, DRAWTYPE_GLES2_RENDER), "render_before_set_damage_region", "")
+{
+}
+
+TestCase::IterateResult RenderBeforeSetDamageRegion::iterate (void)
+{
+	de::Random			rnd				(m_seed);
+	const Library&		egl				= m_eglTestCtx.getLibrary();
+	tcu::TestLog&		log				= m_testCtx.getLog();
+	const int			width			= eglu::querySurfaceInt(egl, m_eglDisplay, m_eglSurface, EGL_WIDTH);
+	const int			height			= eglu::querySurfaceInt(egl, m_eglDisplay, m_eglSurface, EGL_HEIGHT);
+	const float			clearRed		= rnd.getFloat();
+	const float			clearGreen		= rnd.getFloat();
+	const float			clearBlue		= rnd.getFloat();
+	const tcu::Vec4		clearColor		(clearRed, clearGreen, clearBlue, 1.0f);
+	tcu::Surface		currentBuffer	(width, height);
+	tcu::Surface		refBuffer		(width, height);
+	Frame				frame			(width, height);
+
+	generateRandomFrame(frame, m_evenFrameDrawType, rnd);
+
+	{
+		// render before setDamageRegion
+		EGLint		   bufferAge	= -1;
+		vector<EGLint> damageRegion = getDamageRegion(frame, 0, 0, 0, 0);
+
+		m_gles2Renderer->render(width, height, frame);
+		EGLU_CHECK_CALL(egl, querySurface(m_eglDisplay, m_eglSurface, EGL_BUFFER_AGE_KHR, &bufferAge));
+		EGLU_CHECK_CALL(egl, setDamageRegionKHR(m_eglDisplay, m_eglSurface, &damageRegion[0], (EGLint)damageRegion.size()/4));
+
+		// next line will make the bug on Nexus 6 disappear
+		// readPixels(m_gl, &currentBuffer);
+	}
+
+	EGLU_CHECK_CALL(egl, swapBuffers(m_eglDisplay, m_eglSurface));
+
+	// render a new frame
+	clearColorScreen(m_gl, clearColor);
+	m_gles2Renderer->render(width, height, frame);
+	clearColorReference(&refBuffer, clearColor);
+	m_refRenderer->render(&refBuffer, frame);
+	readPixels(m_gl, &currentBuffer);
+
+	if (!compareToReference(log, refBuffer, currentBuffer, 0, 0))
+		m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
+	else
+		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+
+	return STOP;
+}
+
 } // anonymous
 
 PartialUpdateTests::PartialUpdateTests (EglTestContext& eglTestCtx)
@@ -690,6 +811,8 @@ void PartialUpdateTests::init (void)
 			addChild(new PartialUpdateTest(m_eglTestCtx, oddFrameDrawType, evenFrameDrawType, name.c_str(), ""));
 		}
 	}
+	addChild(new RenderOutsideDamageRegion(m_eglTestCtx));
+	addChild(new RenderBeforeSetDamageRegion(m_eglTestCtx));
 }
 
 } // egl
