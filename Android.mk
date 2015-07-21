@@ -284,6 +284,7 @@ LOCAL_SRC_FILES := \
 	modules/egl/teglSimpleConfigCase.cpp \
 	modules/egl/teglSurfacelessContextTests.cpp \
 	modules/egl/teglSwapBuffersTests.cpp \
+	modules/egl/teglSwapBuffersWithDamageTests.cpp \
 	modules/egl/teglSyncTests.cpp \
 	modules/egl/teglTestCase.cpp \
 	modules/egl/teglTestPackage.cpp \
