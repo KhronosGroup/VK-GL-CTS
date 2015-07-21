@@ -38,6 +38,7 @@
 #include "glwFunctions.hpp"
 
 #include "deRandom.hpp"
+#include "deStringUtil.hpp"
 #include "deClock.h"
 #include "deThread.h"
 #include "deMath.h"
@@ -63,20 +64,23 @@ namespace
 
 enum
 {
-	MAX_VIEWPORT_SIZE		= 256,
-	MAX_SAMPLE_DURATION_US	= 150*1000,
-	WAIT_TIME_MS			= 200,
-	MIN_DRAW_CALL_COUNT		= 10,
-	MAX_DRAW_CALL_COUNT		= 1<<20,
-	MAX_SHADER_ITER_COUNT	= 1<<10,
-	NUM_SAMPLES				= 50
+	MAX_VIEWPORT_SIZE			= 256,
+	MAX_SAMPLE_DURATION_US		= 150*1000,
+	WAIT_TIME_MS				= 200,
+	MIN_DRAW_CALL_COUNT			= 10,
+	MAX_DRAW_CALL_COUNT			= 1<<20,
+	MAX_SHADER_ITER_COUNT		= 1<<10,
+	NUM_SAMPLES					= 50,
+	NUM_VERIFICATION_SAMPLES	= 3,
+	MAX_CALIBRATION_ATTEMPTS	= 5
 };
 
 DE_STATIC_ASSERT(MAX_SAMPLE_DURATION_US < 1000*WAIT_TIME_MS);
 
-const float		NO_CORR_COEF_THRESHOLD		= 0.1f;
-const float		FLUSH_COEF_THRESHOLD		= 0.2f;
-const float		CORRELATED_COEF_THRESHOLD	= 0.3f;
+const float		NO_CORR_COEF_THRESHOLD				= 0.1f;
+const float		FLUSH_COEF_THRESHOLD				= 0.2f;
+const float		CORRELATED_COEF_THRESHOLD			= 0.5f;
+const float		CALIBRATION_VERIFICATION_THRESHOLD	= 0.10f;	// Rendering time needs to be within 10% of MAX_SAMPLE_DURATION_US
 
 static void busyWait (int milliseconds)
 {
@@ -124,6 +128,7 @@ public:
 	struct Sample
 	{
 		int			numDrawCalls;
+		deUint64	submitTime;
 		deUint64	waitTime;
 		deUint64	readPixelsTime;
 	};
@@ -142,6 +147,8 @@ private:
 	FlushFinishCase&		operator=			(const FlushFinishCase&);
 
 	CalibrationParams		calibrate			(void);
+	void					verifyCalibration	(const CalibrationParams& params);
+
 	void					analyzeResults		(const std::vector<Sample>& samples, const CalibrationParams& calibrationParams);
 
 	void					setupRenderState	(void);
@@ -222,7 +229,7 @@ void FlushFinishCase::deinit (void)
 
 tcu::TestLog& operator<< (tcu::TestLog& log, const FlushFinishCase::Sample& sample)
 {
-	log << TestLog::Message << sample.numDrawCalls << " calls:\t" << sample.waitTime << " us wait,\t" << sample.readPixelsTime << " us read" << TestLog::EndMessage;
+	log << TestLog::Message << sample.numDrawCalls << " calls:\t" << sample.submitTime << " us submit,\t" << sample.waitTime << " us wait,\t" << sample.readPixelsTime << " us read" << TestLog::EndMessage;
 	return log;
 }
 
@@ -298,10 +305,10 @@ FlushFinishCase::CalibrationParams FlushFinishCase::calibrate (void)
 			deUint64 curDuration;
 
 			setShaderIterCount(curIterCount);
+			render(1); // \note Submit time is ignored
 
 			{
-				const deUint64	startTime	= deGetMicroseconds();
-				render(1);
+				const deUint64 startTime = deGetMicroseconds();
 				readPixels();
 				curDuration = deGetMicroseconds()-startTime;
 			}
@@ -352,9 +359,10 @@ FlushFinishCase::CalibrationParams FlushFinishCase::calibrate (void)
 		{
 			deUint64 curDuration;
 
+			render(curDrawCount); // \note Submit time is ignored
+
 			{
-				const deUint64	startTime	= deGetMicroseconds();
-				render(curDrawCount);
+				const deUint64 startTime = deGetMicroseconds();
 				readPixels();
 				curDuration = deGetMicroseconds()-startTime;
 			}
@@ -396,6 +404,34 @@ FlushFinishCase::CalibrationParams FlushFinishCase::calibrate (void)
 		throw CalibrationFailedException("Calibration failed, maximum draw call count is too low");
 
 	return params;
+}
+
+void FlushFinishCase::verifyCalibration (const CalibrationParams& params)
+{
+	setShaderIterCount(params.numItersInShader);
+
+	for (int sampleNdx = 0; sampleNdx < NUM_VERIFICATION_SAMPLES; sampleNdx++)
+	{
+		deUint64 readStartTime;
+
+		render(params.maxDrawCalls);
+
+		readStartTime = deGetMicroseconds();
+		readPixels();
+
+		{
+			const deUint64	renderDuration	= deGetMicroseconds()-readStartTime;
+			const float		relativeDelta	= float(double(renderDuration) / double(MAX_SAMPLE_DURATION_US)) - 1.0f;
+
+			if (!de::inBounds(relativeDelta, -CALIBRATION_VERIFICATION_THRESHOLD, CALIBRATION_VERIFICATION_THRESHOLD))
+			{
+				std::ostringstream msg;
+				msg << "ERROR: Unstable performance, got " << renderDuration << " us read time, "
+					<< de::floatToString(relativeDelta*100.0f, 1) << "% diff to estimated " << (int)MAX_SAMPLE_DURATION_US << " us";
+				throw CalibrationFailedException(msg.str());
+			}
+		}
+	}
 }
 
 struct CompareSampleDrawCount
@@ -507,14 +543,31 @@ FlushFinishCase::IterateResult FlushFinishCase::iterate (void)
 	}
 
 	// Calibrate.
-	try
+	for (int calibrationRoundNdx = 0; /* until done */; calibrationRoundNdx++)
 	{
-		params = calibrate();
-	}
-	catch (const CalibrationFailedException& e)
-	{
-		m_testCtx.setTestResult(QP_TEST_RESULT_COMPATIBILITY_WARNING, e.what());
-		return STOP;
+		try
+		{
+			m_testCtx.touchWatchdog();
+			params = calibrate();
+			verifyCalibration(params);
+			break;
+		}
+		catch (const CalibrationFailedException& e)
+		{
+			m_testCtx.getLog() << e;
+
+			if (calibrationRoundNdx < MAX_CALIBRATION_ATTEMPTS)
+			{
+				m_testCtx.getLog() << TestLog::Message
+								   << "Retrying calibration (" << (calibrationRoundNdx+1) << " / " << (int)MAX_CALIBRATION_ATTEMPTS << ")"
+								   << TestLog::EndMessage;
+			}
+			else
+			{
+				m_testCtx.setTestResult(QP_TEST_RESULT_COMPATIBILITY_WARNING, e.what());
+				return STOP;
+			}
+		}
 	}
 
 	// Do measurement.
@@ -525,10 +578,11 @@ FlushFinishCase::IterateResult FlushFinishCase::iterate (void)
 
 		for (size_t ndx = 0; ndx < samples.size(); ndx++)
 		{
-			const int	drawCallCount	= rnd.getInt(1, params.maxDrawCalls);
-			deUint64	waitStartTime;
-			deUint64	readStartTime;
-			deUint64	readFinishTime;
+			const int		drawCallCount	= rnd.getInt(1, params.maxDrawCalls);
+			const deUint64	submitStartTime	= deGetMicroseconds();
+			deUint64		waitStartTime;
+			deUint64		readStartTime;
+			deUint64		readFinishTime;
 
 			render(drawCallCount);
 
@@ -540,11 +594,11 @@ FlushFinishCase::IterateResult FlushFinishCase::iterate (void)
 			readFinishTime = deGetMicroseconds();
 
 			samples[ndx].numDrawCalls	= drawCallCount;
+			samples[ndx].submitTime		= waitStartTime-submitStartTime;
 			samples[ndx].waitTime		= readStartTime-waitStartTime;
 			samples[ndx].readPixelsTime	= readFinishTime-readStartTime;
 
-			if (m_testCtx.getWatchDog())
-				qpWatchDog_touch(m_testCtx.getWatchDog());
+			m_testCtx.touchWatchdog();
 		}
 	}
 
