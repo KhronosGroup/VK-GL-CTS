@@ -3215,7 +3215,7 @@ public:
 	}
 
 protected:
-	IRet	doApply				(const EvalContext& ctx, const IArgs& iargs) const
+	IRet	doApply				(const EvalContext&, const IArgs& iargs) const
 	{
 		Interval	fracIV;
 		Interval&	wholeIV		= const_cast<Interval&>(iargs.b);
