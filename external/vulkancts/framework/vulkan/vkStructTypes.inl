@@ -270,7 +270,7 @@ struct VkLayerProperties
 	char		layerName[VK_MAX_EXTENSION_NAME];
 	deUint32	specVersion;
 	deUint32	implVersion;
-	const char*	description[VK_MAX_DESCRIPTION];
+	char		description[VK_MAX_DESCRIPTION];
 };
 
 struct VkMemoryAllocInfo
@@ -509,7 +509,7 @@ struct VkSpecializationInfo
 {
 	deUint32						mapEntryCount;
 	const VkSpecializationMapEntry*	pMap;
-	const deUintptr					dataSize;
+	deUintptr						dataSize;
 	const void*						pData;
 };
 

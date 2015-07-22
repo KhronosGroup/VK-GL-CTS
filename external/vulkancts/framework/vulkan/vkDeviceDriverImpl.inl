@@ -377,6 +377,11 @@ VkResult DeviceDriver::allocDescriptorSets (VkDevice device, VkDescriptorPool de
 	return m_vk.allocDescriptorSets(device, descriptorPool, setUsage, count, pSetLayouts, pDescriptorSets, pCount);
 }
 
+VkResult DeviceDriver::freeDescriptorSets (VkDevice device, VkDescriptorPool descriptorPool, deUint32 count, const VkDescriptorSet* pDescriptorSets) const
+{
+	return m_vk.freeDescriptorSets(device, descriptorPool, count, pDescriptorSets);
+}
+
 VkResult DeviceDriver::updateDescriptorSets (VkDevice device, deUint32 writeCount, const VkWriteDescriptorSet* pDescriptorWrites, deUint32 copyCount, const VkCopyDescriptorSet* pDescriptorCopies) const
 {
 	return m_vk.updateDescriptorSets(device, writeCount, pDescriptorWrites, copyCount, pDescriptorCopies);

@@ -76,6 +76,7 @@ virtual VkResult	createDescriptorPool							(VkDevice device, VkDescriptorPoolUs
 virtual VkResult	destroyDescriptorPool							(VkDevice device, VkDescriptorPool descriptorPool) const = 0;
 virtual VkResult	resetDescriptorPool								(VkDevice device, VkDescriptorPool descriptorPool) const = 0;
 virtual VkResult	allocDescriptorSets								(VkDevice device, VkDescriptorPool descriptorPool, VkDescriptorSetUsage setUsage, deUint32 count, const VkDescriptorSetLayout* pSetLayouts, VkDescriptorSet* pDescriptorSets, deUint32* pCount) const = 0;
+virtual VkResult	freeDescriptorSets								(VkDevice device, VkDescriptorPool descriptorPool, deUint32 count, const VkDescriptorSet* pDescriptorSets) const = 0;
 virtual VkResult	updateDescriptorSets							(VkDevice device, deUint32 writeCount, const VkWriteDescriptorSet* pDescriptorWrites, deUint32 copyCount, const VkCopyDescriptorSet* pDescriptorCopies) const = 0;
 virtual VkResult	createDynamicViewportState						(VkDevice device, const VkDynamicViewportStateCreateInfo* pCreateInfo, VkDynamicViewportState* pState) const = 0;
 virtual VkResult	destroyDynamicViewportState						(VkDevice device, VkDynamicViewportState dynamicViewportState) const = 0;
