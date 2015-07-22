@@ -778,12 +778,15 @@ dEQP-EGL.functional.sharing.gles2.multithread.random_egl_server_sync.images.texi
 dEQP-EGL.functional.sharing.gles2.multithread.random_egl_server_sync.images.teximage2d.2
 dEQP-EGL.functional.sharing.gles2.multithread.random_egl_server_sync.images.texsubimage2d.1
 dEQP-EGL.functional.sharing.gles2.multithread.random_egl_server_sync.images.texsubimage2d.11
+dEQP-EGL.functional.sharing.gles2.multithread.random_egl_server_sync.images.texsubimage2d.13
 dEQP-EGL.functional.sharing.gles2.multithread.random_egl_server_sync.images.texsubimage2d.15
+dEQP-EGL.functional.sharing.gles2.multithread.random_egl_server_sync.images.texsubimage2d.16
 dEQP-EGL.functional.sharing.gles2.multithread.random_egl_server_sync.images.texsubimage2d.17
 dEQP-EGL.functional.sharing.gles2.multithread.random_egl_server_sync.images.texsubimage2d.18
 dEQP-EGL.functional.sharing.gles2.multithread.random_egl_server_sync.images.texsubimage2d.4
 dEQP-EGL.functional.sharing.gles2.multithread.random_egl_server_sync.images.texsubimage2d.6
 dEQP-EGL.functional.sharing.gles2.multithread.random_egl_server_sync.images.texsubimage2d.9
+dEQP-EGL.functional.sharing.gles2.multithread.random_egl_server_sync.programs.attach_detach.19
 dEQP-EGL.functional.sharing.gles2.multithread.random_egl_server_sync.programs.create_destroy.17
 dEQP-EGL.functional.sharing.gles2.multithread.random_egl_server_sync.programs.link.1
 dEQP-EGL.functional.sharing.gles2.multithread.random_egl_server_sync.programs.link.10
@@ -1039,6 +1042,7 @@ dEQP-EGL.functional.sharing.gles2.multithread.random.images.teximage2d.8
 dEQP-EGL.functional.sharing.gles2.multithread.random.images.texsubimage2d.0
 dEQP-EGL.functional.sharing.gles2.multithread.random.images.texsubimage2d.1
 dEQP-EGL.functional.sharing.gles2.multithread.random.images.texsubimage2d.10
+dEQP-EGL.functional.sharing.gles2.multithread.random.images.texsubimage2d.13
 dEQP-EGL.functional.sharing.gles2.multithread.random.images.texsubimage2d.14
 dEQP-EGL.functional.sharing.gles2.multithread.random.images.texsubimage2d.15
 dEQP-EGL.functional.sharing.gles2.multithread.random.images.texsubimage2d.16
@@ -1071,6 +1075,7 @@ dEQP-EGL.functional.sharing.gles2.multithread.random.shaders.compile.12
 dEQP-EGL.functional.sharing.gles2.multithread.random.shaders.compile.17
 dEQP-EGL.functional.sharing.gles2.multithread.random.shaders.create_destroy.1
 dEQP-EGL.functional.sharing.gles2.multithread.random.shaders.create_destroy.12
+dEQP-EGL.functional.sharing.gles2.multithread.random.shaders.create_destroy.13
 dEQP-EGL.functional.sharing.gles2.multithread.random.shaders.create_destroy.15
 dEQP-EGL.functional.sharing.gles2.multithread.random.shaders.create_destroy.17
 dEQP-EGL.functional.sharing.gles2.multithread.random.shaders.create_destroy.2
