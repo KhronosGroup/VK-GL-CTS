@@ -39444,7 +39444,6 @@ dEQP-GLES3.functional.negative_api.texture.compressedteximage3d_max_width_height
 dEQP-GLES3.functional.negative_api.texture.compressedteximage3d_invalid_border
 dEQP-GLES3.functional.negative_api.texture.compressedteximage3d_invalid_size
 dEQP-GLES3.functional.negative_api.texture.compressedteximage3d_invalid_buffer_target
-dEQP-GLES3.functional.negative_api.texture.compressedteximage3d_invalid_astc_target
 dEQP-GLES3.functional.negative_api.texture.compressedtexsubimage3d
 dEQP-GLES3.functional.negative_api.texture.compressedtexsubimage3d_neg_level
 dEQP-GLES3.functional.negative_api.texture.compressedtexsubimage3d_max_level
@@ -39460,7 +39459,6 @@ dEQP-GLES3.functional.negative_api.texture.texstorage2d_invalid_astc_target
 dEQP-GLES3.functional.negative_api.texture.texstorage3d
 dEQP-GLES3.functional.negative_api.texture.texstorage3d_invalid_binding
 dEQP-GLES3.functional.negative_api.texture.texstorage3d_invalid_levels
-dEQP-GLES3.functional.negative_api.texture.texstorage3d_invalid_astc_target
 dEQP-GLES3.functional.negative_api.shader.create_shader
 dEQP-GLES3.functional.negative_api.shader.shader_source
 dEQP-GLES3.functional.negative_api.shader.compile_shader
