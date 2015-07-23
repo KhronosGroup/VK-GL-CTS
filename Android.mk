@@ -272,6 +272,7 @@ LOCAL_SRC_FILES := \
 	modules/egl/teglNativeColorMappingTests.cpp \
 	modules/egl/teglNativeCoordMappingTests.cpp \
 	modules/egl/teglNegativeApiTests.cpp \
+	modules/egl/teglNegativePartialUpdateTests.cpp \
 	modules/egl/teglPreservingSwapTests.cpp \
 	modules/egl/teglPartialUpdateTests.cpp \
 	modules/egl/teglQueryConfigTests.cpp \

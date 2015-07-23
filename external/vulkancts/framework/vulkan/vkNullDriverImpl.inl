@@ -619,6 +619,15 @@ VkResult allocDescriptorSets (VkDevice device, VkDescriptorPool descriptorPool, 
 	return VK_SUCCESS;
 }
 
+VkResult freeDescriptorSets (VkDevice device, VkDescriptorPool descriptorPool, deUint32 count, const VkDescriptorSet* pDescriptorSets)
+{
+	DE_UNREF(device);
+	DE_UNREF(descriptorPool);
+	DE_UNREF(count);
+	DE_UNREF(pDescriptorSets);
+	return VK_SUCCESS;
+}
+
 VkResult updateDescriptorSets (VkDevice device, deUint32 writeCount, const VkWriteDescriptorSet* pDescriptorWrites, deUint32 copyCount, const VkCopyDescriptorSet* pDescriptorCopies)
 {
 	DE_UNREF(device);
@@ -1112,6 +1121,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkDestroyDescriptorPool,							destroyDescriptorPool),
 	VK_NULL_FUNC_ENTRY(vkResetDescriptorPool,							resetDescriptorPool),
 	VK_NULL_FUNC_ENTRY(vkAllocDescriptorSets,							allocDescriptorSets),
+	VK_NULL_FUNC_ENTRY(vkFreeDescriptorSets,							freeDescriptorSets),
 	VK_NULL_FUNC_ENTRY(vkUpdateDescriptorSets,							updateDescriptorSets),
 	VK_NULL_FUNC_ENTRY(vkCreateDynamicViewportState,					createDynamicViewportState),
 	VK_NULL_FUNC_ENTRY(vkDestroyDynamicViewportState,					destroyDynamicViewportState),

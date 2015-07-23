@@ -76,6 +76,7 @@ CreateDescriptorPoolFunc							createDescriptorPool;
 DestroyDescriptorPoolFunc							destroyDescriptorPool;
 ResetDescriptorPoolFunc								resetDescriptorPool;
 AllocDescriptorSetsFunc								allocDescriptorSets;
+FreeDescriptorSetsFunc								freeDescriptorSets;
 UpdateDescriptorSetsFunc							updateDescriptorSets;
 CreateDynamicViewportStateFunc						createDynamicViewportState;
 DestroyDynamicViewportStateFunc						destroyDynamicViewportState;

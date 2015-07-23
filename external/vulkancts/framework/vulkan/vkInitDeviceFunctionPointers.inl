@@ -76,6 +76,7 @@ m_vk.createDescriptorPool							= (CreateDescriptorPoolFunc)							GET_PROC_ADDR
 m_vk.destroyDescriptorPool							= (DestroyDescriptorPoolFunc)							GET_PROC_ADDR("vkDestroyDescriptorPool");
 m_vk.resetDescriptorPool							= (ResetDescriptorPoolFunc)								GET_PROC_ADDR("vkResetDescriptorPool");
 m_vk.allocDescriptorSets							= (AllocDescriptorSetsFunc)								GET_PROC_ADDR("vkAllocDescriptorSets");
+m_vk.freeDescriptorSets								= (FreeDescriptorSetsFunc)								GET_PROC_ADDR("vkFreeDescriptorSets");
 m_vk.updateDescriptorSets							= (UpdateDescriptorSetsFunc)							GET_PROC_ADDR("vkUpdateDescriptorSets");
 m_vk.createDynamicViewportState						= (CreateDynamicViewportStateFunc)						GET_PROC_ADDR("vkCreateDynamicViewportState");
 m_vk.destroyDynamicViewportState					= (DestroyDynamicViewportStateFunc)						GET_PROC_ADDR("vkDestroyDynamicViewportState");

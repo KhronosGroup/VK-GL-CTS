@@ -3215,7 +3215,7 @@ public:
 	}
 
 protected:
-	IRet	doApply				(const EvalContext& ctx, const IArgs& iargs) const
+	IRet	doApply				(const EvalContext&, const IArgs& iargs) const
 	{
 		Interval	fracIV;
 		Interval&	wholeIV		= const_cast<Interval&>(iargs.b);
@@ -3225,9 +3225,10 @@ protected:
 		TCU_INTERVAL_APPLY_MONOTONE1(wholeIV, x, iargs.a, whole,
 									 deModf(x, &intPart); whole = intPart);
 
-		if ((ctx.format.hasInf() != YES) && !iargs.a.isFinite())
+		if (!iargs.a.isFinite())
 		{
 			// Behavior on modf(Inf) not well-defined, allow anything as a fractional part
+			// See Khronos bug 13907
 			fracIV |= TCU_NAN;
 		}
 

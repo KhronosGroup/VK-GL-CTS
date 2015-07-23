@@ -90,6 +90,7 @@ typedef VK_APICALL VkResult				(VK_APIENTRY* CreateDescriptorPoolFunc)							(Vk
 typedef VK_APICALL VkResult				(VK_APIENTRY* DestroyDescriptorPoolFunc)						(VkDevice device, VkDescriptorPool descriptorPool);
 typedef VK_APICALL VkResult				(VK_APIENTRY* ResetDescriptorPoolFunc)							(VkDevice device, VkDescriptorPool descriptorPool);
 typedef VK_APICALL VkResult				(VK_APIENTRY* AllocDescriptorSetsFunc)							(VkDevice device, VkDescriptorPool descriptorPool, VkDescriptorSetUsage setUsage, deUint32 count, const VkDescriptorSetLayout* pSetLayouts, VkDescriptorSet* pDescriptorSets, deUint32* pCount);
+typedef VK_APICALL VkResult				(VK_APIENTRY* FreeDescriptorSetsFunc)							(VkDevice device, VkDescriptorPool descriptorPool, deUint32 count, const VkDescriptorSet* pDescriptorSets);
 typedef VK_APICALL VkResult				(VK_APIENTRY* UpdateDescriptorSetsFunc)							(VkDevice device, deUint32 writeCount, const VkWriteDescriptorSet* pDescriptorWrites, deUint32 copyCount, const VkCopyDescriptorSet* pDescriptorCopies);
 typedef VK_APICALL VkResult				(VK_APIENTRY* CreateDynamicViewportStateFunc)					(VkDevice device, const VkDynamicViewportStateCreateInfo* pCreateInfo, VkDynamicViewportState* pState);
 typedef VK_APICALL VkResult				(VK_APIENTRY* DestroyDynamicViewportStateFunc)					(VkDevice device, VkDynamicViewportState dynamicViewportState);

@@ -32,10 +32,9 @@ import library
 def gen ():
 	registry	= getEGLRegistry()
 	iface		= getDefaultInterface()
-	noExtIface	= getInterface(registry, 'egl', VERSION)
 
 	str_util.gen(iface)
-	call_log_wrapper.gen(noExtIface)
+	call_log_wrapper.gen(iface)
 	proc_address_tests.gen()
 	enums.gen(iface)
 	func_ptrs.gen(iface)
