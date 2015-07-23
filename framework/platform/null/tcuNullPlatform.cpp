@@ -26,6 +26,7 @@
 #include "tcuNullRenderContext.hpp"
 #include "egluNativeDisplay.hpp"
 #include "eglwLibrary.hpp"
+#include "vkNullDriver.hpp"
 
 namespace tcu
 {
@@ -72,6 +73,11 @@ Platform::Platform (void)
 
 Platform::~Platform (void)
 {
+}
+
+vk::Library* Platform::createLibrary (void) const
+{
+	return vk::createNullDriver();
 }
 
 } // null
