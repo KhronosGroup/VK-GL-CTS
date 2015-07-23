@@ -1481,12 +1481,6 @@
 						<Test name="unopened_parenthesis_fragment">
 							<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 						</Test>
-						<Test name="unclosed_parenthesis_vertex">
-							<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-						</Test>
-						<Test name="unclosed_parenthesis_fragment">
-							<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-						</Test>
 					</TestCase>
 					<TestCase name="operator_precedence">
 						<Test name="modulo_vs_not_vertex">
@@ -27063,12 +27057,6 @@
 							<Test name="la88_nicest">
 								<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 							</Test>
-							<Test name="la88_non_square_fastest">
-								<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-							</Test>
-							<Test name="la88_non_square_nicest">
-								<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-							</Test>
 							<Test name="rgb565_fastest">
 								<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 							</Test>
@@ -35788,9 +35776,6 @@
 					<Test name="bind_buffer">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
-					<Test name="gen_buffers">
-						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-					</Test>
 					<Test name="buffer_data">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
@@ -35807,12 +35792,6 @@
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
 					<Test name="check_framebuffer_status">
-						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-					</Test>
-					<Test name="gen_framebuffers">
-						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-					</Test>
-					<Test name="gen_renderbuffers">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
 				</TestCase>
@@ -36216,9 +36195,6 @@
 					<Test name="generatemipmap_incomplete_cube">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
-					<Test name="gentextures_invalid_size">
-						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-					</Test>
 					<Test name="pixelstorei_invalid_pname">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
@@ -36229,9 +36205,6 @@
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
 					<Test name="teximage2d_invalid_type">
-						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-					</Test>
-					<Test name="teximage2d_inequal_width_height_cube">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
 					<Test name="teximage2d_neg_level_tex2d">
@@ -36544,16 +36517,10 @@
 					<Test name="vec3">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
-					<Test name="vec4">
-						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-					</Test>
 					<Test name="mat2">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
 					<Test name="mat3">
-						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-					</Test>
-					<Test name="mat4">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
 				</TestCase>
@@ -36567,16 +36534,10 @@
 					<Test name="max_inactive_vec3">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
-					<Test name="max_inactive_vec4">
-						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-					</Test>
 					<Test name="max_inactive_mat2">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
 					<Test name="max_inactive_mat3">
-						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-					</Test>
-					<Test name="max_inactive_mat4">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
 				</TestCase>
@@ -36590,13 +36551,7 @@
 					<Test name="vec3">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
-					<Test name="mat2">
-						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-					</Test>
 					<Test name="mat3">
-						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-					</Test>
-					<Test name="mat4">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
 				</TestCase>
@@ -41142,9 +41097,6 @@
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
 					<Test name="program_attached_shaders">
-						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-					</Test>
-					<Test name="program_active_uniform_name">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
 					<Test name="program_active_uniform_types">
