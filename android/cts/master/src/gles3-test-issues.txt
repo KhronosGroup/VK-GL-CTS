@@ -99,3 +99,7 @@ dEQP-GLES3.functional.shaders.builtin_functions.precision.atanh.highp_*
 
 # Bug 22405868
 dEQP-GLES3.functional.shaders.texture_functions.textureprojlodoffset.sampler3d_float_vertex
+
+# Bug 22628471
+dEQP-GLES3.functional.shaders.derivate.dfdx.*_float.*_highp
+dEQP-GLES3.functional.shaders.derivate.dfdy.*_float.*_highp
