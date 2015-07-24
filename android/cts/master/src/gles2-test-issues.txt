@@ -1,3 +1,6 @@
 # Bug 21526557
 dEQP-GLES2.functional.texture.size.cube.256x256_rgba4444
 dEQP-GLES2.functional.texture.size.cube.512x512_rgba4444
+# Bug 22665757
+dEQP-GLES2.functional.fbo.completeness.renderable.renderbuffer.color0.rgb16f
+dEQP-GLES2.functional.fbo.completeness.renderable.texture.color0.rgb16f
