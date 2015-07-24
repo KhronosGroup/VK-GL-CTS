@@ -65,3 +65,11 @@ dEQP-GLES31.functional.shaders.builtin_functions.precision.reflect.highp_compute
 dEQP-GLES31.functional.shaders.builtin_functions.precision.sin.mediump_*
 dEQP-GLES31.functional.shaders.builtin_functions.precision.cos.mediump_*
 dEQP-GLES31.functional.shaders.builtin_functions.precision.tan.mediump_*
+
+# Bug 22713865
+dEQP-GLES31.functional.primitive_bounding_box.lines.global_state.vertex_geometry_fragment.fbo_bbox_equal
+dEQP-GLES31.functional.primitive_bounding_box.lines.global_state.vertex_geometry_fragment.fbo_bbox_larger
+dEQP-GLES31.functional.primitive_bounding_box.lines.global_state.vertex_geometry_fragment.fbo_bbox_smaller
+dEQP-GLES31.functional.primitive_bounding_box.wide_lines.global_state.vertex_geometry_fragment.fbo_bbox_equal
+dEQP-GLES31.functional.primitive_bounding_box.wide_lines.global_state.vertex_geometry_fragment.fbo_bbox_larger
+dEQP-GLES31.functional.primitive_bounding_box.wide_lines.global_state.vertex_geometry_fragment.fbo_bbox_smaller
