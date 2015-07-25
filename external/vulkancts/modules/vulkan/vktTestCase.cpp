@@ -37,6 +37,7 @@
 #include "vkRef.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkDeviceUtil.hpp"
+#include "vkMemUtil.hpp"
 #include "vkPlatform.hpp"
 
 #include "deMemory.h"
@@ -144,6 +145,16 @@ VkQueue DefaultDevice::getUniversalQueue (void) const
 	return queue;
 }
 
+// Allocator utilities
+
+vk::Allocator* createAllocator (DefaultDevice* device)
+{
+	const VkPhysicalDeviceMemoryProperties memoryProperties = vk::getPhysicalDeviceMemoryProperties(device->getInstanceInterface(), device->getPhysicalDevice());
+
+	// \todo [2015-07-24 jarkko] support allocator selection/configuration from command line (or compile time)
+	return new SimpleAllocator(device->getDeviceInterface(), device->getDevice(), memoryProperties);
+}
+
 // Context
 
 Context::Context (tcu::TestContext&							testCtx,
@@ -153,12 +164,12 @@ Context::Context (tcu::TestContext&							testCtx,
 	, m_platformInterface	(platformInterface)
 	, m_progCollection		(progCollection)
 	, m_device				(new DefaultDevice(m_platformInterface, testCtx.getCommandLine()))
+	, m_allocator			(createAllocator(m_device.get()))
 {
 }
 
 Context::~Context (void)
 {
-	delete m_device;
 }
 
 vk::VkInstance					Context::getInstance					(void) const { return m_device->getInstance();					}
@@ -168,6 +179,7 @@ vk::VkDevice					Context::getDevice						(void) const { return m_device->getDevi
 const vk::DeviceInterface&		Context::getDeviceInterface				(void) const { return m_device->getDeviceInterface();			}
 deUint32						Context::getUniversalQueueFamilyIndex	(void) const { return m_device->getUniversalQueueFamilyIndex();	}
 vk::VkQueue						Context::getUniversalQueue				(void) const { return m_device->getUniversalQueue();			}
+vk::Allocator&					Context::getDefaultAllocator			(void) const { return *m_allocator;							}
 
 // TestCase
 

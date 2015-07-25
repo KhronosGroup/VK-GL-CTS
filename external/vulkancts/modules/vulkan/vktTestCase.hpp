@@ -37,6 +37,7 @@
 #include "tcuDefs.hpp"
 #include "tcuTestCase.hpp"
 #include "vkDefs.hpp"
+#include "deUniquePtr.hpp"
 
 namespace glu
 {
@@ -48,6 +49,7 @@ namespace vk
 class PlatformInterface;
 class ProgramBinary;
 template<typename Program> class ProgramCollection;
+class Allocator;
 }
 
 namespace vkt
@@ -76,12 +78,15 @@ public:
 	deUint32									getUniversalQueueFamilyIndex	(void) const;
 	vk::VkQueue									getUniversalQueue				(void) const;
 
+	vk::Allocator&								getDefaultAllocator				(void) const;
+
 protected:
 	tcu::TestContext&							m_testCtx;
 	const vk::PlatformInterface&				m_platformInterface;
 	vk::ProgramCollection<vk::ProgramBinary>&	m_progCollection;
 
-	DefaultDevice* const						m_device;
+	const de::UniquePtr<DefaultDevice>			m_device;
+	const de::UniquePtr<vk::Allocator>			m_allocator;
 
 private:
 												Context							(const Context&); // Not allowed
