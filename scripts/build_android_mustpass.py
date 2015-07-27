@@ -482,6 +482,7 @@ MASTER_GLES3_PKG				= Package(module = GLES3_MODULE, configurations = [
 MASTER_GLES31_COMMON_FILTERS	= [
 		include("gles31-master.txt"),
 		exclude("gles31-hw-issues.txt"),
+		exclude("gles31-driver-issues.txt"),
 		exclude("gles31-test-issues.txt"),
 		exclude("gles31-spec-issues.txt"),
 		exclude("gles31-new-tests.txt"),

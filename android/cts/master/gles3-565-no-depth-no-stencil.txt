@@ -3101,7 +3101,6 @@ dEQP-GLES3.functional.fragment_ops.interaction.basic_shader.23
 dEQP-GLES3.functional.fragment_ops.interaction.basic_shader.24
 dEQP-GLES3.functional.fragment_ops.interaction.basic_shader.25
 dEQP-GLES3.functional.fragment_ops.interaction.basic_shader.26
-dEQP-GLES3.functional.fragment_ops.interaction.basic_shader.27
 dEQP-GLES3.functional.fragment_ops.interaction.basic_shader.28
 dEQP-GLES3.functional.fragment_ops.interaction.basic_shader.29
 dEQP-GLES3.functional.fragment_ops.interaction.basic_shader.30
@@ -3118,7 +3117,6 @@ dEQP-GLES3.functional.fragment_ops.interaction.basic_shader.40
 dEQP-GLES3.functional.fragment_ops.interaction.basic_shader.41
 dEQP-GLES3.functional.fragment_ops.interaction.basic_shader.42
 dEQP-GLES3.functional.fragment_ops.interaction.basic_shader.43
-dEQP-GLES3.functional.fragment_ops.interaction.basic_shader.44
 dEQP-GLES3.functional.fragment_ops.interaction.basic_shader.45
 dEQP-GLES3.functional.fragment_ops.interaction.basic_shader.46
 dEQP-GLES3.functional.fragment_ops.interaction.basic_shader.47
@@ -3152,13 +3150,11 @@ dEQP-GLES3.functional.fragment_ops.interaction.basic_shader.74
 dEQP-GLES3.functional.fragment_ops.interaction.basic_shader.75
 dEQP-GLES3.functional.fragment_ops.interaction.basic_shader.76
 dEQP-GLES3.functional.fragment_ops.interaction.basic_shader.77
-dEQP-GLES3.functional.fragment_ops.interaction.basic_shader.78
 dEQP-GLES3.functional.fragment_ops.interaction.basic_shader.79
 dEQP-GLES3.functional.fragment_ops.interaction.basic_shader.80
 dEQP-GLES3.functional.fragment_ops.interaction.basic_shader.81
 dEQP-GLES3.functional.fragment_ops.interaction.basic_shader.82
 dEQP-GLES3.functional.fragment_ops.interaction.basic_shader.83
-dEQP-GLES3.functional.fragment_ops.interaction.basic_shader.84
 dEQP-GLES3.functional.fragment_ops.interaction.basic_shader.85
 dEQP-GLES3.functional.fragment_ops.interaction.basic_shader.86
 dEQP-GLES3.functional.fragment_ops.interaction.basic_shader.87
@@ -3332,7 +3328,3 @@ dEQP-GLES3.functional.state_query.integers.read_buffer_getboolean
 dEQP-GLES3.functional.state_query.integers.read_buffer_getinteger
 dEQP-GLES3.functional.state_query.integers.read_buffer_getinteger64
 dEQP-GLES3.functional.state_query.integers.read_buffer_getfloat
-dEQP-GLES3.functional.state_query.integers.draw_buffer_getboolean
-dEQP-GLES3.functional.state_query.integers.draw_buffer_getinteger
-dEQP-GLES3.functional.state_query.integers.draw_buffer_getinteger64
-dEQP-GLES3.functional.state_query.integers.draw_buffer_getfloat
