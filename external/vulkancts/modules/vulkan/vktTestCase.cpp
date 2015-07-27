@@ -49,7 +49,7 @@ namespace vkt
 using std::vector;
 using namespace vk;
 
-static deUint32 findQueueNodeIndexWithCaps (const InstanceInterface& vkInstance, VkPhysicalDevice physicalDevice, VkQueueFlags requiredCaps)
+static deUint32 findQueueFamilyIndexWithCaps (const InstanceInterface& vkInstance, VkPhysicalDevice physicalDevice, VkQueueFlags requiredCaps)
 {
 	const vector<VkPhysicalDeviceQueueProperties>	queueProps	= getPhysicalDeviceQueueProperties(vkInstance, physicalDevice);
 
@@ -95,19 +95,19 @@ struct DeviceCreateInfoHelper
 class DefaultDevice
 {
 public:
-									DefaultDevice			(const PlatformInterface& vkPlatform, const tcu::CommandLine& cmdLine);
-									~DefaultDevice			(void);
+									DefaultDevice					(const PlatformInterface& vkPlatform, const tcu::CommandLine& cmdLine);
+									~DefaultDevice					(void);
 
-	VkInstance						getInstance				(void) const	{ return *m_instance;			}
-	const InstanceInterface&		getInstanceInterface	(void) const	{ return m_instanceInterface;	}
+	VkInstance						getInstance						(void) const	{ return *m_instance;					}
+	const InstanceInterface&		getInstanceInterface			(void) const	{ return m_instanceInterface;			}
 
-	VkPhysicalDevice				getPhysicalDevice		(void) const	{ return m_physicalDevice;		}
+	VkPhysicalDevice				getPhysicalDevice				(void) const	{ return m_physicalDevice;				}
 
-	VkDevice						getDevice				(void) const	{ return *m_device;				}
-	const DeviceInterface&			getDeviceInterface		(void) const	{ return m_deviceInterface;		}
+	VkDevice						getDevice						(void) const	{ return *m_device;						}
+	const DeviceInterface&			getDeviceInterface				(void) const	{ return m_deviceInterface;				}
 
-	deUint32						getUniversalQueueIndex	(void) const	{ return m_universalQueueIndex;	}
-	VkQueue							getUniversalQueue		(void) const;
+	deUint32						getUniversalQueueFamilyIndex	(void) const	{ return m_universalQueueFamilyIndex;	}
+	VkQueue							getUniversalQueue				(void) const;
 
 private:
 	const Unique<VkInstance>		m_instance;
@@ -115,7 +115,7 @@ private:
 
 	const VkPhysicalDevice			m_physicalDevice;
 
-	const deUint32					m_universalQueueIndex;
+	const deUint32					m_universalQueueFamilyIndex;
 	const DeviceCreateInfoHelper	m_deviceCreateInfo;
 
 	const Unique<VkDevice>			m_device;
@@ -123,13 +123,13 @@ private:
 };
 
 DefaultDevice::DefaultDevice (const PlatformInterface& vkPlatform, const tcu::CommandLine& cmdLine)
-	: m_instance			(createDefaultInstance(vkPlatform))
-	, m_instanceInterface	(vkPlatform, *m_instance)
-	, m_physicalDevice		(chooseDevice(m_instanceInterface, *m_instance, cmdLine))
-	, m_universalQueueIndex	(findQueueNodeIndexWithCaps(m_instanceInterface, m_physicalDevice, VK_QUEUE_GRAPHICS_BIT|VK_QUEUE_COMPUTE_BIT|VK_QUEUE_DMA_BIT))
-	, m_deviceCreateInfo	(m_universalQueueIndex)
-	, m_device				(createDevice(m_instanceInterface, m_physicalDevice, &m_deviceCreateInfo.deviceInfo))
-	, m_deviceInterface		(m_instanceInterface, *m_device)
+	: m_instance					(createDefaultInstance(vkPlatform))
+	, m_instanceInterface			(vkPlatform, *m_instance)
+	, m_physicalDevice				(chooseDevice(m_instanceInterface, *m_instance, cmdLine))
+	, m_universalQueueFamilyIndex	(findQueueFamilyIndexWithCaps(m_instanceInterface, m_physicalDevice, VK_QUEUE_GRAPHICS_BIT|VK_QUEUE_COMPUTE_BIT|VK_QUEUE_DMA_BIT))
+	, m_deviceCreateInfo			(m_universalQueueFamilyIndex)
+	, m_device						(createDevice(m_instanceInterface, m_physicalDevice, &m_deviceCreateInfo.deviceInfo))
+	, m_deviceInterface				(m_instanceInterface, *m_device)
 {
 }
 
@@ -140,7 +140,7 @@ DefaultDevice::~DefaultDevice (void)
 VkQueue DefaultDevice::getUniversalQueue (void) const
 {
 	VkQueue	queue	= 0;
-	VK_CHECK(m_deviceInterface.getDeviceQueue(*m_device, m_universalQueueIndex, 0, &queue));
+	VK_CHECK(m_deviceInterface.getDeviceQueue(*m_device, m_universalQueueFamilyIndex, 0, &queue));
 	return queue;
 }
 
@@ -161,13 +161,13 @@ Context::~Context (void)
 	delete m_device;
 }
 
-vk::VkInstance					Context::getInstance			(void) const { return m_device->getInstance();				}
-const vk::InstanceInterface&	Context::getInstanceInterface	(void) const { return m_device->getInstanceInterface();		}
-vk::VkPhysicalDevice			Context::getPhysicalDevice		(void) const { return m_device->getPhysicalDevice();		}
-vk::VkDevice					Context::getDevice				(void) const { return m_device->getDevice();				}
-const vk::DeviceInterface&		Context::getDeviceInterface		(void) const { return m_device->getDeviceInterface();		}
-deUint32						Context::getUniversalQueueIndex	(void) const { return m_device->getUniversalQueueIndex();	}
-vk::VkQueue						Context::getUniversalQueue		(void) const { return m_device->getUniversalQueue();		}
+vk::VkInstance					Context::getInstance					(void) const { return m_device->getInstance();					}
+const vk::InstanceInterface&	Context::getInstanceInterface			(void) const { return m_device->getInstanceInterface();			}
+vk::VkPhysicalDevice			Context::getPhysicalDevice				(void) const { return m_device->getPhysicalDevice();			}
+vk::VkDevice					Context::getDevice						(void) const { return m_device->getDevice();					}
+const vk::DeviceInterface&		Context::getDeviceInterface				(void) const { return m_device->getDeviceInterface();			}
+deUint32						Context::getUniversalQueueFamilyIndex	(void) const { return m_device->getUniversalQueueFamilyIndex();	}
+vk::VkQueue						Context::getUniversalQueue				(void) const { return m_device->getUniversalQueue();			}
 
 // TestCase
 
