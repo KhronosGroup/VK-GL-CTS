@@ -2326,6 +2326,8 @@ dEQP-GLES2.functional.shaders.texture_functions.invalid.texturecube_bias_in_vert
 dEQP-GLES2.functional.shaders.texture_functions.vertex.texture2dlod
 dEQP-GLES2.functional.shaders.texture_functions.vertex.texturecubelod
 dEQP-GLES2.functional.state_query.fbo.framebuffer_attachment_texture_cube_map_face
+dEQP-GLES2.functional.state_query.floats.color_clear_value_getinteger
+dEQP-GLES2.functional.state_query.floats.depth_clear_value_getinteger
 dEQP-GLES2.functional.state_query.floats.depth_range_getinteger
 dEQP-GLES2.functional.state_query.floats.line_width_getinteger
 dEQP-GLES2.functional.state_query.floats.polygon_offset_factor_getinteger
@@ -2718,6 +2720,9 @@ dEQP-GLES2.functional.uniform_api.info_query.struct_in_array.mat4_mat2_both
 dEQP-GLES2.functional.uniform_api.info_query.struct_in_array.mat4_mat2_fragment
 dEQP-GLES2.functional.uniform_api.info_query.struct_in_array.mat4_mat2_vertex
 dEQP-GLES2.functional.uniform_api.info_query.unused_uniforms.bool_bvec4_both
+dEQP-GLES2.functional.uniform_api.info_query.unused_uniforms.mat4_mat2_both
+dEQP-GLES2.functional.uniform_api.info_query.unused_uniforms.mat4_mat2_fragment
+dEQP-GLES2.functional.uniform_api.info_query.unused_uniforms.mat4_mat2_vertex
 dEQP-GLES2.functional.uniform_api.random.0
 dEQP-GLES2.functional.uniform_api.random.13
 dEQP-GLES2.functional.uniform_api.random.15
@@ -2751,6 +2756,7 @@ dEQP-GLES2.functional.uniform_api.random.87
 dEQP-GLES2.functional.uniform_api.random.88
 dEQP-GLES2.functional.uniform_api.random.9
 dEQP-GLES2.functional.uniform_api.random.91
+dEQP-GLES2.functional.uniform_api.random.94
 dEQP-GLES2.functional.uniform_api.value.assigned.basic_array_assign_full.array_in_struct.bool_bvec4_both
 dEQP-GLES2.functional.uniform_api.value.assigned.basic_array_assign_full.array_in_struct.int_ivec4_vertex
 dEQP-GLES2.functional.uniform_api.value.assigned.basic_array_assign_full.array_in_struct.mat4_mat2_both
@@ -2906,6 +2912,9 @@ dEQP-GLES2.functional.uniform_api.value.assigned.by_value.render.struct_in_array
 dEQP-GLES2.functional.uniform_api.value.assigned.by_value.render.struct_in_array.sampler2D_samplerCube_fragment
 dEQP-GLES2.functional.uniform_api.value.assigned.by_value.render.struct_in_array.sampler2D_samplerCube_vertex
 dEQP-GLES2.functional.uniform_api.value.assigned.unused_uniforms.bool_bvec4_both
+dEQP-GLES2.functional.uniform_api.value.assigned.unused_uniforms.mat4_mat2_both
+dEQP-GLES2.functional.uniform_api.value.assigned.unused_uniforms.mat4_mat2_fragment
+dEQP-GLES2.functional.uniform_api.value.assigned.unused_uniforms.mat4_mat2_vertex
 dEQP-GLES2.functional.uniform_api.value.initial.get_uniform.array_in_struct.bool_bvec4_both
 dEQP-GLES2.functional.uniform_api.value.initial.get_uniform.array_in_struct.mat4_mat2_both
 dEQP-GLES2.functional.uniform_api.value.initial.get_uniform.array_in_struct.mat4_mat2_fragment
