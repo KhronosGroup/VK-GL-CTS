@@ -12061,9 +12061,6 @@ dEQP-GLES2.functional.uniform_api.info_query.multiple_nested_structs_arrays.frag
 dEQP-GLES2.functional.uniform_api.info_query.unused_uniforms.float_vec4_vertex
 dEQP-GLES2.functional.uniform_api.info_query.unused_uniforms.float_vec4_fragment
 dEQP-GLES2.functional.uniform_api.info_query.unused_uniforms.float_vec4_both
-dEQP-GLES2.functional.uniform_api.info_query.unused_uniforms.mat4_mat2_vertex
-dEQP-GLES2.functional.uniform_api.info_query.unused_uniforms.mat4_mat2_fragment
-dEQP-GLES2.functional.uniform_api.info_query.unused_uniforms.mat4_mat2_both
 dEQP-GLES2.functional.uniform_api.info_query.unused_uniforms.int_ivec4_vertex
 dEQP-GLES2.functional.uniform_api.info_query.unused_uniforms.int_ivec4_fragment
 dEQP-GLES2.functional.uniform_api.info_query.unused_uniforms.int_ivec4_both
@@ -12879,9 +12876,6 @@ dEQP-GLES2.functional.uniform_api.value.assigned.basic_array_assign_partial.mult
 dEQP-GLES2.functional.uniform_api.value.assigned.unused_uniforms.float_vec4_vertex
 dEQP-GLES2.functional.uniform_api.value.assigned.unused_uniforms.float_vec4_fragment
 dEQP-GLES2.functional.uniform_api.value.assigned.unused_uniforms.float_vec4_both
-dEQP-GLES2.functional.uniform_api.value.assigned.unused_uniforms.mat4_mat2_vertex
-dEQP-GLES2.functional.uniform_api.value.assigned.unused_uniforms.mat4_mat2_fragment
-dEQP-GLES2.functional.uniform_api.value.assigned.unused_uniforms.mat4_mat2_both
 dEQP-GLES2.functional.uniform_api.value.assigned.unused_uniforms.int_ivec4_vertex
 dEQP-GLES2.functional.uniform_api.value.assigned.unused_uniforms.int_ivec4_fragment
 dEQP-GLES2.functional.uniform_api.value.assigned.unused_uniforms.int_ivec4_both
@@ -12951,7 +12945,6 @@ dEQP-GLES2.functional.uniform_api.random.89
 dEQP-GLES2.functional.uniform_api.random.90
 dEQP-GLES2.functional.uniform_api.random.92
 dEQP-GLES2.functional.uniform_api.random.93
-dEQP-GLES2.functional.uniform_api.random.94
 dEQP-GLES2.functional.uniform_api.random.95
 dEQP-GLES2.functional.uniform_api.random.96
 dEQP-GLES2.functional.uniform_api.random.97
@@ -13318,10 +13311,8 @@ dEQP-GLES2.functional.state_query.floats.polygon_offset_units_getfloat
 dEQP-GLES2.functional.state_query.floats.sample_coverage_value_getboolean
 dEQP-GLES2.functional.state_query.floats.sample_coverage_value_getfloat
 dEQP-GLES2.functional.state_query.floats.color_clear_value_getboolean
-dEQP-GLES2.functional.state_query.floats.color_clear_value_getinteger
 dEQP-GLES2.functional.state_query.floats.color_clear_value_getfloat
 dEQP-GLES2.functional.state_query.floats.depth_clear_value_getboolean
-dEQP-GLES2.functional.state_query.floats.depth_clear_value_getinteger
 dEQP-GLES2.functional.state_query.floats.depth_clear_value_getfloat
 dEQP-GLES2.functional.state_query.floats.aliased_point_size_range_getboolean
 dEQP-GLES2.functional.state_query.floats.aliased_point_size_range_getinteger
