@@ -58,23 +58,23 @@ class DefaultDevice;
 class Context
 {
 public:
-												Context					(tcu::TestContext&							testCtx,
-																		 const vk::PlatformInterface&				platformInterface,
-																		 vk::ProgramCollection<vk::ProgramBinary>&	progCollection);
-												~Context				(void);
+												Context							(tcu::TestContext&							testCtx,
+																				 const vk::PlatformInterface&				platformInterface,
+																				 vk::ProgramCollection<vk::ProgramBinary>&	progCollection);
+												~Context						(void);
 
-	tcu::TestContext&							getTestContext			(void) const { return m_testCtx;			}
-	const vk::PlatformInterface&				getPlatformInterface	(void) const { return m_platformInterface;	}
-	vk::ProgramCollection<vk::ProgramBinary>&	getBinaryCollection		(void) const { return m_progCollection;		}
+	tcu::TestContext&							getTestContext					(void) const { return m_testCtx;			}
+	const vk::PlatformInterface&				getPlatformInterface			(void) const { return m_platformInterface;	}
+	vk::ProgramCollection<vk::ProgramBinary>&	getBinaryCollection				(void) const { return m_progCollection;		}
 
 	// Default instance & device, selected with --deqp-vk-device-id=N
-	vk::VkInstance								getInstance				(void) const;
-	const vk::InstanceInterface&				getInstanceInterface	(void) const;
-	vk::VkPhysicalDevice						getPhysicalDevice		(void) const;
-	vk::VkDevice								getDevice				(void) const;
-	const vk::DeviceInterface&					getDeviceInterface		(void) const;
-	deUint32									getUniversalQueueIndex	(void) const;
-	vk::VkQueue									getUniversalQueue		(void) const;
+	vk::VkInstance								getInstance						(void) const;
+	const vk::InstanceInterface&				getInstanceInterface			(void) const;
+	vk::VkPhysicalDevice						getPhysicalDevice				(void) const;
+	vk::VkDevice								getDevice						(void) const;
+	const vk::DeviceInterface&					getDeviceInterface				(void) const;
+	deUint32									getUniversalQueueFamilyIndex	(void) const;
+	vk::VkQueue									getUniversalQueue				(void) const;
 
 protected:
 	tcu::TestContext&							m_testCtx;
@@ -84,8 +84,8 @@ protected:
 	DefaultDevice* const						m_device;
 
 private:
-												Context					(const Context&); // Not allowed
-	Context&									operator=				(const Context&); // Not allowed
+												Context							(const Context&); // Not allowed
+	Context&									operator=						(const Context&); // Not allowed
 };
 
 class TestInstance;

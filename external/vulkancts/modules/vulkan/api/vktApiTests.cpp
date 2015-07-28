@@ -130,7 +130,7 @@ tcu::TestStatus renderTriangleTest (Context& context)
 	const VkDevice							vkDevice				= context.getDevice();
 	const DeviceInterface&					vk						= context.getDeviceInterface();
 	const VkQueue							queue					= context.getUniversalQueue();
-	const deUint32							queueIndex				= context.getUniversalQueueIndex();
+	const deUint32							queueFamilyIndex		= context.getUniversalQueueFamilyIndex();
 	SimpleAllocator							memAlloc				(vk, vkDevice, getPhysicalDeviceMemoryProperties(context.getInstanceInterface(), context.getPhysicalDevice()));
 	const tcu::IVec2						renderSize				(256, 256);
 
@@ -150,7 +150,7 @@ tcu::TestStatus renderTriangleTest (Context& context)
 		0u,										//	VkBufferCreateFlags	flags;
 		VK_SHARING_MODE_EXCLUSIVE,				//	VkSharingMode		sharingMode;
 		1u,										//	deUint32			queueFamilyCount;
-		&queueIndex,							//	const deUint32*		pQueueFamilyIndices;
+		&queueFamilyIndex,						//	const deUint32*		pQueueFamilyIndices;
 	};
 	const Unique<VkBuffer>					vertexBuffer			(createBuffer(vk, vkDevice, &vertexBufferParams));
 	const UniquePtr<Allocation>				vertexBufferMemory		(memAlloc.allocate(getBufferMemoryRequirements(vk, vkDevice, *vertexBuffer), VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT));
@@ -165,7 +165,7 @@ tcu::TestStatus renderTriangleTest (Context& context)
 		0u,											//	VkBufferCreateFlags	flags;
 		VK_SHARING_MODE_EXCLUSIVE,					//	VkSharingMode		sharingMode;
 		1u,											//	deUint32			queueFamilyCount;
-		&queueIndex,								//	const deUint32*		pQueueFamilyIndices;
+		&queueFamilyIndex,							//	const deUint32*		pQueueFamilyIndices;
 	};
 	const Unique<VkBuffer>					readImageBuffer			(createBuffer(vk, vkDevice, &readImageBufferParams));
 	const UniquePtr<Allocation>				readImageBufferMemory	(memAlloc.allocate(getBufferMemoryRequirements(vk, vkDevice, *readImageBuffer), VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT));
@@ -185,7 +185,7 @@ tcu::TestStatus renderTriangleTest (Context& context)
 		0u,																		//	VkImageCreateFlags	flags;
 		VK_SHARING_MODE_EXCLUSIVE,												//	VkSharingMode		sharingMode;
 		1u,																		//	deUint32			queueFamilyCount;
-		&queueIndex,															//	const deUint32*		pQueueFamilyIndices;
+		&queueFamilyIndex,														//	const deUint32*		pQueueFamilyIndices;
 	};
 
 	const Unique<VkImage>					image					(createImage(vk, vkDevice, &imageParams));
@@ -549,8 +549,8 @@ tcu::TestStatus renderTriangleTest (Context& context)
 			0u,											//	VkMemoryInputFlags		inputMask;
 			VK_IMAGE_LAYOUT_UNDEFINED,					//	VkImageLayout			oldLayout;
 			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,	//	VkImageLayout			newLayout;
-			queueIndex,									//	deUint32				srcQueueFamilyIndex;
-			queueIndex,									//	deUint32				destQueueFamilyIndex;
+			queueFamilyIndex,							//	deUint32				srcQueueFamilyIndex;
+			queueFamilyIndex,							//	deUint32				destQueueFamilyIndex;
 			*image,										//	VkImage					image;
 			{
 				VK_IMAGE_ASPECT_COLOR,						//	VkImageAspect	aspect;
@@ -599,8 +599,8 @@ tcu::TestStatus renderTriangleTest (Context& context)
 			VK_MEMORY_INPUT_TRANSFER_BIT,				//	VkMemoryInputFlags		inputMask;
 			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,	//	VkImageLayout			oldLayout;
 			VK_IMAGE_LAYOUT_TRANSFER_SOURCE_OPTIMAL,	//	VkImageLayout			newLayout;
-			queueIndex,									//	deUint32				srcQueueFamilyIndex;
-			queueIndex,									//	deUint32				destQueueFamilyIndex;
+			queueFamilyIndex,							//	deUint32				srcQueueFamilyIndex;
+			queueFamilyIndex,							//	deUint32				destQueueFamilyIndex;
 			*image,										//	VkImage					image;
 			{
 				VK_IMAGE_ASPECT_COLOR,						//	VkImageAspect	aspect;
@@ -638,8 +638,8 @@ tcu::TestStatus renderTriangleTest (Context& context)
 			DE_NULL,									//	const void*			pNext;
 			VK_MEMORY_OUTPUT_TRANSFER_BIT,				//	VkMemoryOutputFlags	outputMask;
 			VK_MEMORY_INPUT_HOST_READ_BIT,				//	VkMemoryInputFlags	inputMask;
-			queueIndex,									//	deUint32			srcQueueFamilyIndex;
-			queueIndex,									//	deUint32			destQueueFamilyIndex;
+			queueFamilyIndex,							//	deUint32			srcQueueFamilyIndex;
+			queueFamilyIndex,							//	deUint32			destQueueFamilyIndex;
 			*readImageBuffer,							//	VkBuffer			buffer;
 			0u,											//	VkDeviceSize		offset;
 			imageSizeBytes								//	VkDeviceSize		size;
