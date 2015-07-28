@@ -35,6 +35,7 @@
 #include "vktTestCase.hpp"
 
 #include "vkRef.hpp"
+#include "vkRefUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkDeviceUtil.hpp"
 #include "vkPlatform.hpp"

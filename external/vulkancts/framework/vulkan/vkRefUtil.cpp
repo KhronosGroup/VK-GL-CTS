@@ -29,9 +29,40 @@
  *
  *//*!
  * \file
- * \brief Vulkan object reference holder.
+ * \brief Vulkan object reference holder utilities.
  *//*--------------------------------------------------------------------*/
 
-#include "vkRef.hpp"
+#include "vkRefUtil.hpp"
 
-DE_EMPTY_CPP_FILE
+namespace vk
+{
+
+#include "vkRefUtilImpl.inl"
+
+Move<VkPipeline> createGraphicsPipeline (const DeviceInterface& vk, VkDevice device, VkPipelineCache pipelineCache, const VkGraphicsPipelineCreateInfo* pCreateInfo)
+{
+	VkPipeline object = 0;
+	VK_CHECK(vk.createGraphicsPipelines(device, pipelineCache, 1u, pCreateInfo, &object));
+	return Move<VkPipeline>(check<VkPipeline>(object), Deleter<VkPipeline>(vk, device));
+}
+
+Move<VkPipeline> createComputePipeline (const DeviceInterface& vk, VkDevice device, VkPipelineCache pipelineCache, const VkComputePipelineCreateInfo* pCreateInfo)
+{
+	VkPipeline object = 0;
+	VK_CHECK(vk.createComputePipelines(device, pipelineCache, 1u, pCreateInfo, &object));
+	return Move<VkPipeline>(check<VkPipeline>(object), Deleter<VkPipeline>(vk, device));
+}
+
+Move<VkDescriptorSet> allocDescriptorSet (const DeviceInterface& vk, vk::VkDevice device, VkDescriptorPool descriptorPool, VkDescriptorSetUsage setUsage, VkDescriptorSetLayout layout)
+{
+	VkDescriptorSet	descriptorSet	= 0u;
+	deUint32		numCreated		= 0;
+
+	VK_CHECK(vk.allocDescriptorSets(device, descriptorPool, setUsage, 1, &layout, &descriptorSet, &numCreated));
+	if (numCreated != 1u)
+		throw tcu::TestError("failed to allocate descriptor sets");
+
+	return Move<VkDescriptorSet>(check<VkDescriptorSet>(descriptorSet), Deleter<VkDescriptorSet>(vk, device, descriptorPool));
+}
+
+} // vk

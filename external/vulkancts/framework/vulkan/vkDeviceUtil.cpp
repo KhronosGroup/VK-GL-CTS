@@ -34,6 +34,7 @@
 
 #include "vkDeviceUtil.hpp"
 #include "vkQueryUtil.hpp"
+#include "vkRefUtil.hpp"
 
 #include "tcuCommandLine.hpp"
 

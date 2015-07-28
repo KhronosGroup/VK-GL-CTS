@@ -40,6 +40,7 @@
 #include "vkPlatform.hpp"
 #include "vkStrUtil.hpp"
 #include "vkRef.hpp"
+#include "vkRefUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkMemUtil.hpp"
 #include "vkDeviceUtil.hpp"

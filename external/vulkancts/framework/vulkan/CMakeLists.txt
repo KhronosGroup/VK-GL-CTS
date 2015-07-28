@@ -5,6 +5,8 @@ set(VKUTIL_SRCS
 	vkDefs.hpp
 	vkRef.cpp
 	vkRef.hpp
+	vkRefUtil.cpp
+	vkRefUtil.hpp
 	vkPlatform.cpp
 	vkPlatform.hpp
 	vkPrograms.cpp

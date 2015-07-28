@@ -36,6 +36,7 @@
 #include "vkStrUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkRef.hpp"
+#include "vkRefUtil.hpp"
 #include "deInt32.h"
 
 #include <sstream>

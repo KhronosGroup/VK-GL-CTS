@@ -1,3 +1,5 @@
+#ifndef _VKREFUTIL_HPP
+#define _VKREFUTIL_HPP
 /*-------------------------------------------------------------------------
  * Vulkan CTS Framework
  * --------------------
@@ -29,9 +31,21 @@
  *
  *//*!
  * \file
- * \brief Vulkan object reference holder.
+ * \brief Vulkan object reference holder utilities.
  *//*--------------------------------------------------------------------*/
 
+#include "vkDefs.hpp"
 #include "vkRef.hpp"
 
-DE_EMPTY_CPP_FILE
+namespace vk
+{
+
+#include "vkRefUtil.inl"
+
+Move<VkPipeline>		createGraphicsPipeline	(const DeviceInterface& vk, VkDevice device, VkPipelineCache pipelineCache, const VkGraphicsPipelineCreateInfo* pCreateInfo);
+Move<VkPipeline>		createComputePipeline	(const DeviceInterface& vk, VkDevice device, VkPipelineCache pipelineCache, const VkComputePipelineCreateInfo* pCreateInfo);
+Move<VkDescriptorSet>	allocDescriptorSet		(const DeviceInterface& vk, vk::VkDevice device, VkDescriptorPool descriptorPool, VkDescriptorSetUsage setUsage, VkDescriptorSetLayout layout);
+
+} // vk
+
+#endif // _VKREFUTIL_HPP
