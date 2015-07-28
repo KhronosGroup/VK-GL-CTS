@@ -104,3 +104,6 @@ dEQP-GLES3.functional.shaders.derivate.dfdy.*_float.*_highp
 # Bug 22665757
 dEQP-GLES3.functional.fbo.completeness.renderable.renderbuffer.color0.rgb16f
 dEQP-GLES3.functional.fbo.completeness.renderable.texture.color0.rgb16f
+
+# Bug 22794757
+dEQP-GLES3.functional.texture.mipmap.cube.projected.*
