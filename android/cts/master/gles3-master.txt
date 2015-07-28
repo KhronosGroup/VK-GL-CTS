@@ -22358,8 +22358,6 @@ dEQP-GLES3.functional.texture.mipmap.cube.basic.nearest_nearest
 dEQP-GLES3.functional.texture.mipmap.cube.basic.linear_nearest
 dEQP-GLES3.functional.texture.mipmap.cube.basic.nearest_linear
 dEQP-GLES3.functional.texture.mipmap.cube.basic.linear_linear
-dEQP-GLES3.functional.texture.mipmap.cube.projected.linear_nearest
-dEQP-GLES3.functional.texture.mipmap.cube.projected.nearest_linear
 dEQP-GLES3.functional.texture.mipmap.cube.bias.nearest_nearest
 dEQP-GLES3.functional.texture.mipmap.cube.bias.nearest_linear
 dEQP-GLES3.functional.texture.mipmap.cube.generate.a8_fastest
