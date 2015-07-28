@@ -110,3 +110,6 @@ dEQP-GLES3.functional.fbo.completeness.renderable.texture.color0.rgb16f
 
 # Bug 22794757
 dEQP-GLES3.functional.texture.mipmap.cube.projected.*
+
+# Bug 22794704
+dEQP-GLES3.functional.shaders.texture_functions.texturelodoffset.sampler3d_float_vertex
