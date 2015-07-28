@@ -15327,7 +15327,6 @@ dEQP-GLES3.functional.shaders.texture_functions.texturelodoffset.isampler2darray
 dEQP-GLES3.functional.shaders.texture_functions.texturelodoffset.usampler2darray_fragment
 dEQP-GLES3.functional.shaders.texture_functions.texturelodoffset.sampler3d_fixed_vertex
 dEQP-GLES3.functional.shaders.texture_functions.texturelodoffset.sampler3d_fixed_fragment
-dEQP-GLES3.functional.shaders.texture_functions.texturelodoffset.sampler3d_float_vertex
 dEQP-GLES3.functional.shaders.texture_functions.texturelodoffset.sampler3d_float_fragment
 dEQP-GLES3.functional.shaders.texture_functions.texturelodoffset.isampler3d_vertex
 dEQP-GLES3.functional.shaders.texture_functions.texturelodoffset.isampler3d_fragment
