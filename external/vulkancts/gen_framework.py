@@ -576,7 +576,9 @@ def writeNullDriverImpl (api, filename):
 				"vkGetPhysicalDeviceMemoryProperties",
 				"vkGetBufferMemoryRequirements",
 				"vkGetImageMemoryRequirements",
-				"vkMapMemory"
+				"vkMapMemory",
+				"vkAllocDescriptorSets",
+				"vkFreeDescriptorSets",
 			]
 		specialFuncs		= [f for f in api.functions if f.name in specialFuncNames]
 		createFuncs			= [f for f in api.functions if (f.name[:8] == "vkCreate" or f.name == "vkAllocMemory") and not f in specialFuncs]
