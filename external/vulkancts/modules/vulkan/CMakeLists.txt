@@ -2,10 +2,12 @@
 
 add_subdirectory(api)
 add_subdirectory(pipeline)
+add_subdirectory(binding_model)
 
 include_directories(
 	api
 	pipeline
+	binding_model
 	)
 
 set(DEQP_VK_COMMON_SRCS
@@ -25,6 +27,7 @@ set(DEQP_VK_COMMON_LIBS
 	glutil
 	deqp-vk-api
 	deqp-vk-pipeline
+	deqp-vk-binding-model
 	)
 
 if (DE_OS_IS_WIN32 OR DE_OS_IS_UNIX OR DE_OS_IS_OSX)
