@@ -496,6 +496,8 @@ TestCase::IterateResult PartialUpdateTest::iterate (void)
 	vector<int> 	bufferAges;
 	bool			hasPositiveAge  = false;
 
+	EGLU_CHECK_CALL(egl, surfaceAttrib(m_eglDisplay, m_eglSurface, EGL_SWAP_BEHAVIOR, EGL_BUFFER_DESTROYED));
+
 	for (int frameNdx = 0; frameNdx < numFrames; frameNdx++)
 	{
 		tcu::Surface	currentBuffer	 (width, height);
