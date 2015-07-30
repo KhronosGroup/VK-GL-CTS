@@ -48,8 +48,11 @@ template <typename T, size_t Alignment = (sizeof(T) > 4 ? 4 : sizeof(T)), size_t
 class ArrayBuffer
 {
 public:
+	DE_STATIC_ASSERT(Stride >= sizeof(T));
+
 					ArrayBuffer		(void) throw();
 					ArrayBuffer		(size_t numElements);
+					ArrayBuffer		(const T* ptr, size_t numElements);
 					ArrayBuffer		(const ArrayBuffer& other);
 					~ArrayBuffer	(void) throw();
 	ArrayBuffer&	operator=		(const ArrayBuffer& other);
@@ -93,6 +96,33 @@ ArrayBuffer<T,Alignment,Stride>::ArrayBuffer (size_t numElements)
 
 		m_ptr = ptr;
 		m_cap = numElements;
+	}
+}
+
+template <typename T, size_t Alignment, size_t Stride>
+ArrayBuffer<T,Alignment,Stride>::ArrayBuffer (const T* ptr, size_t numElements)
+	: m_ptr	(DE_NULL)
+	, m_cap	(0)
+{
+	if (numElements)
+	{
+		// create new buffer of wanted size, copy to it, and swap to it
+		ArrayBuffer<T,Alignment,Stride> tmp(numElements);
+
+		if (Stride == sizeof(T))
+		{
+			// tightly packed
+			const size_t storageSize = sizeof(T) * numElements;
+			deMemcpy(tmp.m_ptr, ptr, (int)storageSize);
+		}
+		else
+		{
+			// sparsely packed
+			for (size_t ndx = 0; ndx < numElements; ++ndx)
+				*tmp.getElementPtr(ndx) = ptr[ndx];
+		}
+
+		swap(tmp);
 	}
 }
 
