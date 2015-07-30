@@ -113,7 +113,7 @@ PACKAGES = [
 				  "zlib-1.2.8.tar.gz",
 				  "36658cb768a54c1d4dec43c3116c27ed893e88b02ecfcb44f2166f9c0b7f2a0d",
 				  "zlib"),
-	SourcePackage("ftp://ftp.simplesystems.org/pub/libpng/png/src/libpng16/libpng-1.6.17.tar.gz",
+	SourcePackage("http://prdownloads.sourceforge.net/libpng/libpng-1.6.17.tar.gz",
 				  "libpng-1.6.17.tar.gz",
 				  "a18233c99e1dc59a256180e6871d9305a42e91b3f98799b3ceb98e87e9ec5e31",
 				  "libpng",
