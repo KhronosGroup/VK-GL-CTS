@@ -154,6 +154,7 @@ tcu::TestStatus renderTriangleTest (Context& context)
 	};
 	const Unique<VkBuffer>					vertexBuffer			(createBuffer(vk, vkDevice, &vertexBufferParams));
 	const UniquePtr<Allocation>				vertexBufferMemory		(memAlloc.allocate(getBufferMemoryRequirements(vk, vkDevice, *vertexBuffer), VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT));
+	VK_CHECK(vk.bindBufferMemory(vkDevice, *vertexBuffer, vertexBufferMemory->getMemory(), vertexBufferMemory->getOffset()));
 
 	const VkDeviceSize						imageSizeBytes			= (VkDeviceSize)(sizeof(deUint32)*renderSize.x()*renderSize.y());
 	const VkBufferCreateInfo				readImageBufferParams	=
@@ -169,6 +170,7 @@ tcu::TestStatus renderTriangleTest (Context& context)
 	};
 	const Unique<VkBuffer>					readImageBuffer			(createBuffer(vk, vkDevice, &readImageBufferParams));
 	const UniquePtr<Allocation>				readImageBufferMemory	(memAlloc.allocate(getBufferMemoryRequirements(vk, vkDevice, *readImageBuffer), VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT));
+	VK_CHECK(vk.bindBufferMemory(vkDevice, *readImageBuffer, readImageBufferMemory->getMemory(), readImageBufferMemory->getOffset()));
 
 	const VkImageCreateInfo					imageParams				=
 	{
@@ -190,6 +192,7 @@ tcu::TestStatus renderTriangleTest (Context& context)
 
 	const Unique<VkImage>					image					(createImage(vk, vkDevice, &imageParams));
 	const UniquePtr<Allocation>				imageMemory				(memAlloc.allocate(getImageMemoryRequirements(vk, vkDevice, *image), 0u));
+	VK_CHECK(vk.bindImageMemory(vkDevice, *image, imageMemory->getMemory(), imageMemory->getOffset()));
 
 	const VkAttachmentDescription			colorAttDesc			=
 	{
@@ -523,12 +526,6 @@ tcu::TestStatus renderTriangleTest (Context& context)
 		DE_NULL,												//	VkRenderPass				renderPass;
 		DE_NULL,												//	VkFramebuffer				framebuffer;
 	};
-
-	// Attach memory
-	// \note [pyry] Should be able to do this after creating CmdBuffer but one driver crashes at vkCopyImageToBuffer if memory is not attached at that point
-	VK_CHECK(vk.bindBufferMemory(vkDevice, *vertexBuffer, vertexBufferMemory->getMemory(), vertexBufferMemory->getOffset()));
-	VK_CHECK(vk.bindBufferMemory(vkDevice, *readImageBuffer, readImageBufferMemory->getMemory(), readImageBufferMemory->getOffset()));
-	VK_CHECK(vk.bindImageMemory(vkDevice, *image, imageMemory->getMemory(), imageMemory->getOffset()));
 
 	// Record commands
 	VK_CHECK(vk.beginCommandBuffer(*cmdBuf, &cmdBufBeginParams));
