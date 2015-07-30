@@ -1,13 +1,17 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  */
-#define VK_API_VERSION				VK_MAKE_VERSION(0, 138, 1)
-#define VK_MAX_PHYSICAL_DEVICE_NAME	256
-#define VK_MAX_EXTENSION_NAME		256
-#define VK_UUID_LENGTH				16
-#define VK_MAX_MEMORY_TYPES			32
-#define VK_MAX_MEMORY_HEAPS			16
-#define VK_MAX_DESCRIPTION			256
+enum { VK_API_VERSION				= VK_MAKE_VERSION(0, 138, 1)	};
+enum { VK_MAX_PHYSICAL_DEVICE_NAME	= 256							};
+enum { VK_MAX_EXTENSION_NAME		= 256							};
+enum { VK_UUID_LENGTH				= 16							};
+enum { VK_MAX_MEMORY_TYPES			= 32							};
+enum { VK_MAX_MEMORY_HEAPS			= 16							};
+enum { VK_MAX_DESCRIPTION			= 256							};
+enum { VK_QUEUE_FAMILY_IGNORED		= UINT32_MAX					};
+enum { VK_NO_ATTACHMENT				= UINT32_MAX					};
+enum { VK_FALSE						= 0								};
+enum { VK_TRUE						= 1								};
 
 VK_DEFINE_HANDLE			(VkInstance,					HANDLE_TYPE_INSTANCE);
 VK_DEFINE_HANDLE			(VkPhysicalDevice,				HANDLE_TYPE_PHYSICAL_DEVICE);
