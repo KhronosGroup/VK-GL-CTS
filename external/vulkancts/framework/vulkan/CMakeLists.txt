@@ -1,6 +1,8 @@
 # vk - Vulkan utilites
 
 set(VKUTIL_SRCS
+	vkApiVersion.cpp
+	vkApiVersion.hpp
 	vkDefs.cpp
 	vkDefs.hpp
 	vkRef.cpp

@@ -1,5 +1,3 @@
-#ifndef _VKSTRUTIL_HPP
-#define _VKSTRUTIL_HPP
 /*-------------------------------------------------------------------------
  * Vulkan CTS Framework
  * --------------------
@@ -31,26 +29,28 @@
  *
  *//*!
  * \file
- * \brief Pretty-printing and logging utilities.
+ * \brief Vulkan api version.
  *//*--------------------------------------------------------------------*/
 
-#include "vkDefs.hpp"
-#include "tcuFormatUtil.hpp"
+#include "vkApiVersion.hpp"
 
 namespace vk
 {
 
-#include "vkStrUtil.inl"
-
-template<typename T>
-const char*	getTypeName	(void);
-
-template<HandleType Type>
-inline std::ostream& operator<< (std::ostream& s, const Handle<Type>& handle)
+ApiVersion unpackVersion (deUint32 version)
 {
-	return s << tcu::toHex(handle.getInternal());
+	return ApiVersion((version & 0xFFC00000) >> 22,
+					  (version & 0x003FF000) >> 12,
+					   version & 0x00000FFF);
+}
+
+deUint32 pack (const ApiVersion& version)
+{
+	DE_ASSERT((version.majorNum & ~0x3FF) == 0);
+	DE_ASSERT((version.minorNum & ~0x3FF) == 0);
+	DE_ASSERT((version.patchNum & ~0xFFF) == 0);
+
+	return (version.majorNum << 22) | (version.minorNum << 12) | version.patchNum;
 }
 
 } // vk
-
-#endif // _VKSTRUTIL_HPP

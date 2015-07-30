@@ -1,5 +1,5 @@
-#ifndef _VKSTRUTIL_HPP
-#define _VKSTRUTIL_HPP
+#ifndef _VKAPIVERSION_HPP
+#define _VKAPIVERSION_HPP
 /*-------------------------------------------------------------------------
  * Vulkan CTS Framework
  * --------------------
@@ -31,26 +31,40 @@
  *
  *//*!
  * \file
- * \brief Pretty-printing and logging utilities.
+ * \brief Vulkan api version.
  *//*--------------------------------------------------------------------*/
 
 #include "vkDefs.hpp"
-#include "tcuFormatUtil.hpp"
+
+#include <ostream>
 
 namespace vk
 {
 
-#include "vkStrUtil.inl"
-
-template<typename T>
-const char*	getTypeName	(void);
-
-template<HandleType Type>
-inline std::ostream& operator<< (std::ostream& s, const Handle<Type>& handle)
+struct ApiVersion
 {
-	return s << tcu::toHex(handle.getInternal());
+	deUint32	majorNum;
+	deUint32	minorNum;
+	deUint32	patchNum;
+
+	ApiVersion (deUint32	majorNum_,
+				deUint32	minorNum_,
+				deUint32	patchNum_)
+		: majorNum	(majorNum_)
+		, minorNum	(minorNum_)
+		, patchNum	(patchNum_)
+	{
+	}
+};
+
+ApiVersion		unpackVersion		(deUint32 version);
+deUint32		pack				(const ApiVersion& version);
+
+inline std::ostream& operator<< (std::ostream& s, const ApiVersion& version)
+{
+	return s << version.majorNum << "." << version.minorNum << "." << version.patchNum;
 }
 
 } // vk
 
-#endif // _VKSTRUTIL_HPP
+#endif // _VKAPIVERSION_HPP
