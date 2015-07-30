@@ -154,7 +154,7 @@ tcu::TestStatus renderTriangleTest (Context& context)
 		&queueFamilyIndex,						//	const deUint32*		pQueueFamilyIndices;
 	};
 	const Unique<VkBuffer>					vertexBuffer			(createBuffer(vk, vkDevice, &vertexBufferParams));
-	const UniquePtr<Allocation>				vertexBufferMemory		(memAlloc.allocate(getBufferMemoryRequirements(vk, vkDevice, *vertexBuffer), VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT));
+	const UniquePtr<Allocation>				vertexBufferMemory		(memAlloc.allocate(getBufferMemoryRequirements(vk, vkDevice, *vertexBuffer), MemoryRequirement::HostVisible));
 
 	const VkDeviceSize						imageSizeBytes			= (VkDeviceSize)(sizeof(deUint32)*renderSize.x()*renderSize.y());
 	const VkBufferCreateInfo				readImageBufferParams	=
@@ -169,7 +169,7 @@ tcu::TestStatus renderTriangleTest (Context& context)
 		&queueFamilyIndex,							//	const deUint32*		pQueueFamilyIndices;
 	};
 	const Unique<VkBuffer>					readImageBuffer			(createBuffer(vk, vkDevice, &readImageBufferParams));
-	const UniquePtr<Allocation>				readImageBufferMemory	(memAlloc.allocate(getBufferMemoryRequirements(vk, vkDevice, *readImageBuffer), VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT));
+	const UniquePtr<Allocation>				readImageBufferMemory	(memAlloc.allocate(getBufferMemoryRequirements(vk, vkDevice, *readImageBuffer), MemoryRequirement::HostVisible));
 
 	const VkImageCreateInfo					imageParams				=
 	{
@@ -190,7 +190,7 @@ tcu::TestStatus renderTriangleTest (Context& context)
 	};
 
 	const Unique<VkImage>					image					(createImage(vk, vkDevice, &imageParams));
-	const UniquePtr<Allocation>				imageMemory				(memAlloc.allocate(getImageMemoryRequirements(vk, vkDevice, *image), 0u));
+	const UniquePtr<Allocation>				imageMemory				(memAlloc.allocate(getImageMemoryRequirements(vk, vkDevice, *image), MemoryRequirement::Any));
 
 	const VkAttachmentDescription			colorAttDesc			=
 	{
