@@ -44,7 +44,7 @@ namespace vk
 
 Move<VkPipeline>		createGraphicsPipeline	(const DeviceInterface& vk, VkDevice device, VkPipelineCache pipelineCache, const VkGraphicsPipelineCreateInfo* pCreateInfo);
 Move<VkPipeline>		createComputePipeline	(const DeviceInterface& vk, VkDevice device, VkPipelineCache pipelineCache, const VkComputePipelineCreateInfo* pCreateInfo);
-Move<VkDescriptorSet>	allocDescriptorSet		(const DeviceInterface& vk, vk::VkDevice device, VkDescriptorPool descriptorPool, VkDescriptorSetUsage setUsage, VkDescriptorSetLayout layout);
+Move<VkDescriptorSet>	allocDescriptorSet		(const DeviceInterface& vk, VkDevice device, VkDescriptorPool descriptorPool, VkDescriptorSetUsage setUsage, VkDescriptorSetLayout layout);
 
 } // vk
 

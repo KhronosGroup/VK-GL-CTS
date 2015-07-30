@@ -53,7 +53,7 @@ Move<VkPipeline> createComputePipeline (const DeviceInterface& vk, VkDevice devi
 	return Move<VkPipeline>(check<VkPipeline>(object), Deleter<VkPipeline>(vk, device));
 }
 
-Move<VkDescriptorSet> allocDescriptorSet (const DeviceInterface& vk, vk::VkDevice device, VkDescriptorPool descriptorPool, VkDescriptorSetUsage setUsage, VkDescriptorSetLayout layout)
+Move<VkDescriptorSet> allocDescriptorSet (const DeviceInterface& vk, VkDevice device, VkDescriptorPool descriptorPool, VkDescriptorSetUsage setUsage, VkDescriptorSetLayout layout)
 {
 	VkDescriptorSet	descriptorSet	= 0u;
 	deUint32		numCreated		= 0;
