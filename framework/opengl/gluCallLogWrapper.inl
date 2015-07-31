@@ -119,7 +119,7 @@ void CallLogWrapper::glBindFramebuffer (glw::GLenum target, glw::GLuint framebuf
 void CallLogWrapper::glBindImageTexture (glw::GLuint unit, glw::GLuint texture, glw::GLint level, glw::GLboolean layered, glw::GLint layer, glw::GLenum access, glw::GLenum format)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glBindImageTexture(" << unit << ", " << texture << ", " << level << ", " << getBooleanStr(layered) << ", " << layer << ", " << getImageAccessStr(access) << ", " << getPixelFormatStr(format) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glBindImageTexture(" << unit << ", " << texture << ", " << level << ", " << getBooleanStr(layered) << ", " << layer << ", " << getImageAccessStr(access) << ", " << getUncompressedTextureFormatStr(format) << ");" << TestLog::EndMessage;
 	m_gl.bindImageTexture(unit, texture, level, layered, layer, access, format);
 }
 
@@ -520,14 +520,14 @@ void CallLogWrapper::glCompressedTexImage1D (glw::GLenum target, glw::GLint leve
 void CallLogWrapper::glCompressedTexImage2D (glw::GLenum target, glw::GLint level, glw::GLenum internalformat, glw::GLsizei width, glw::GLsizei height, glw::GLint border, glw::GLsizei imageSize, const void *data)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glCompressedTexImage2D(" << getTextureTargetStr(target) << ", " << level << ", " << getCompressedTexFormatStr(internalformat) << ", " << width << ", " << height << ", " << border << ", " << imageSize << ", " << data << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glCompressedTexImage2D(" << getTextureTargetStr(target) << ", " << level << ", " << getCompressedTextureFormatStr(internalformat) << ", " << width << ", " << height << ", " << border << ", " << imageSize << ", " << data << ");" << TestLog::EndMessage;
 	m_gl.compressedTexImage2D(target, level, internalformat, width, height, border, imageSize, data);
 }
 
 void CallLogWrapper::glCompressedTexImage3D (glw::GLenum target, glw::GLint level, glw::GLenum internalformat, glw::GLsizei width, glw::GLsizei height, glw::GLsizei depth, glw::GLint border, glw::GLsizei imageSize, const void *data)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glCompressedTexImage3D(" << toHex(target) << ", " << level << ", " << toHex(internalformat) << ", " << width << ", " << height << ", " << depth << ", " << border << ", " << imageSize << ", " << data << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glCompressedTexImage3D(" << getTextureTargetStr(target) << ", " << level << ", " << getCompressedTextureFormatStr(internalformat) << ", " << width << ", " << height << ", " << depth << ", " << border << ", " << imageSize << ", " << data << ");" << TestLog::EndMessage;
 	m_gl.compressedTexImage3D(target, level, internalformat, width, height, depth, border, imageSize, data);
 }
 
@@ -541,14 +541,14 @@ void CallLogWrapper::glCompressedTexSubImage1D (glw::GLenum target, glw::GLint l
 void CallLogWrapper::glCompressedTexSubImage2D (glw::GLenum target, glw::GLint level, glw::GLint xoffset, glw::GLint yoffset, glw::GLsizei width, glw::GLsizei height, glw::GLenum format, glw::GLsizei imageSize, const void *data)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glCompressedTexSubImage2D(" << getTextureTargetStr(target) << ", " << level << ", " << xoffset << ", " << yoffset << ", " << width << ", " << height << ", " << getCompressedTexFormatStr(format) << ", " << imageSize << ", " << data << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glCompressedTexSubImage2D(" << getTextureTargetStr(target) << ", " << level << ", " << xoffset << ", " << yoffset << ", " << width << ", " << height << ", " << getCompressedTextureFormatStr(format) << ", " << imageSize << ", " << data << ");" << TestLog::EndMessage;
 	m_gl.compressedTexSubImage2D(target, level, xoffset, yoffset, width, height, format, imageSize, data);
 }
 
 void CallLogWrapper::glCompressedTexSubImage3D (glw::GLenum target, glw::GLint level, glw::GLint xoffset, glw::GLint yoffset, glw::GLint zoffset, glw::GLsizei width, glw::GLsizei height, glw::GLsizei depth, glw::GLenum format, glw::GLsizei imageSize, const void *data)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glCompressedTexSubImage3D(" << toHex(target) << ", " << level << ", " << xoffset << ", " << yoffset << ", " << zoffset << ", " << width << ", " << height << ", " << depth << ", " << toHex(format) << ", " << imageSize << ", " << data << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glCompressedTexSubImage3D(" << getTextureTargetStr(target) << ", " << level << ", " << xoffset << ", " << yoffset << ", " << zoffset << ", " << width << ", " << height << ", " << depth << ", " << getCompressedTextureFormatStr(format) << ", " << imageSize << ", " << data << ");" << TestLog::EndMessage;
 	m_gl.compressedTexSubImage3D(target, level, xoffset, yoffset, zoffset, width, height, depth, format, imageSize, data);
 }
 
@@ -597,14 +597,14 @@ void CallLogWrapper::glCopyNamedBufferSubData (glw::GLuint readBuffer, glw::GLui
 void CallLogWrapper::glCopyTexImage1D (glw::GLenum target, glw::GLint level, glw::GLenum internalformat, glw::GLint x, glw::GLint y, glw::GLsizei width, glw::GLint border)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glCopyTexImage1D(" << getTextureTargetStr(target) << ", " << level << ", " << getPixelFormatStr(internalformat) << ", " << x << ", " << y << ", " << width << ", " << border << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glCopyTexImage1D(" << getTextureTargetStr(target) << ", " << level << ", " << getUncompressedTextureFormatStr(internalformat) << ", " << x << ", " << y << ", " << width << ", " << border << ");" << TestLog::EndMessage;
 	m_gl.copyTexImage1D(target, level, internalformat, x, y, width, border);
 }
 
 void CallLogWrapper::glCopyTexImage2D (glw::GLenum target, glw::GLint level, glw::GLenum internalformat, glw::GLint x, glw::GLint y, glw::GLsizei width, glw::GLsizei height, glw::GLint border)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glCopyTexImage2D(" << getTextureTargetStr(target) << ", " << level << ", " << getPixelFormatStr(internalformat) << ", " << x << ", " << y << ", " << width << ", " << height << ", " << border << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glCopyTexImage2D(" << getTextureTargetStr(target) << ", " << level << ", " << getUncompressedTextureFormatStr(internalformat) << ", " << x << ", " << y << ", " << width << ", " << height << ", " << border << ");" << TestLog::EndMessage;
 	m_gl.copyTexImage2D(target, level, internalformat, x, y, width, height, border);
 }
 
@@ -1643,7 +1643,7 @@ void CallLogWrapper::glGetInternalformati64v (glw::GLenum target, glw::GLenum in
 void CallLogWrapper::glGetInternalformativ (glw::GLenum target, glw::GLenum internalformat, glw::GLenum pname, glw::GLsizei bufSize, glw::GLint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetInternalformativ(" << getInternalFormatTargetStr(target) << ", " << getPixelFormatStr(internalformat) << ", " << getInternalFormatParameterStr(pname) << ", " << bufSize << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetInternalformativ(" << getInternalFormatTargetStr(target) << ", " << getUncompressedTextureFormatStr(internalformat) << ", " << getInternalFormatParameterStr(pname) << ", " << bufSize << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getInternalformativ(target, internalformat, pname, bufSize, params);
 	if (m_enableLog)
 		m_log << TestLog::Message << "// params = " << getPointerStr(params, bufSize) << TestLog::EndMessage;
@@ -3306,7 +3306,7 @@ void CallLogWrapper::glReadBuffer (glw::GLenum src)
 void CallLogWrapper::glReadPixels (glw::GLint x, glw::GLint y, glw::GLsizei width, glw::GLsizei height, glw::GLenum format, glw::GLenum type, void *pixels)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glReadPixels(" << x << ", " << y << ", " << width << ", " << height << ", " << getPixelFormatStr(format) << ", " << getTypeStr(type) << ", " << pixels << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glReadPixels(" << x << ", " << y << ", " << width << ", " << height << ", " << getUncompressedTextureFormatStr(format) << ", " << getTypeStr(type) << ", " << pixels << ");" << TestLog::EndMessage;
 	m_gl.readPixels(x, y, width, height, format, type, pixels);
 }
 
@@ -3327,14 +3327,14 @@ void CallLogWrapper::glReleaseShaderCompiler (void)
 void CallLogWrapper::glRenderbufferStorage (glw::GLenum target, glw::GLenum internalformat, glw::GLsizei width, glw::GLsizei height)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glRenderbufferStorage(" << getFramebufferTargetStr(target) << ", " << getPixelFormatStr(internalformat) << ", " << width << ", " << height << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glRenderbufferStorage(" << getFramebufferTargetStr(target) << ", " << getUncompressedTextureFormatStr(internalformat) << ", " << width << ", " << height << ");" << TestLog::EndMessage;
 	m_gl.renderbufferStorage(target, internalformat, width, height);
 }
 
 void CallLogWrapper::glRenderbufferStorageMultisample (glw::GLenum target, glw::GLsizei samples, glw::GLenum internalformat, glw::GLsizei width, glw::GLsizei height)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glRenderbufferStorageMultisample(" << getFramebufferTargetStr(target) << ", " << samples << ", " << getPixelFormatStr(internalformat) << ", " << width << ", " << height << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glRenderbufferStorageMultisample(" << getFramebufferTargetStr(target) << ", " << samples << ", " << getUncompressedTextureFormatStr(internalformat) << ", " << width << ", " << height << ");" << TestLog::EndMessage;
 	m_gl.renderbufferStorageMultisample(target, samples, internalformat, width, height);
 }
 
@@ -3495,42 +3495,42 @@ void CallLogWrapper::glStencilOpSeparate (glw::GLenum face, glw::GLenum sfail, g
 void CallLogWrapper::glTexBuffer (glw::GLenum target, glw::GLenum internalformat, glw::GLuint buffer)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glTexBuffer(" << getBufferTargetStr(target) << ", " << getPixelFormatStr(internalformat) << ", " << buffer << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glTexBuffer(" << getBufferTargetStr(target) << ", " << getUncompressedTextureFormatStr(internalformat) << ", " << buffer << ");" << TestLog::EndMessage;
 	m_gl.texBuffer(target, internalformat, buffer);
 }
 
 void CallLogWrapper::glTexBufferRange (glw::GLenum target, glw::GLenum internalformat, glw::GLuint buffer, glw::GLintptr offset, glw::GLsizeiptr size)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glTexBufferRange(" << getBufferTargetStr(target) << ", " << getPixelFormatStr(internalformat) << ", " << buffer << ", " << offset << ", " << size << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glTexBufferRange(" << getBufferTargetStr(target) << ", " << getUncompressedTextureFormatStr(internalformat) << ", " << buffer << ", " << offset << ", " << size << ");" << TestLog::EndMessage;
 	m_gl.texBufferRange(target, internalformat, buffer, offset, size);
 }
 
 void CallLogWrapper::glTexImage1D (glw::GLenum target, glw::GLint level, glw::GLint internalformat, glw::GLsizei width, glw::GLint border, glw::GLenum format, glw::GLenum type, const void *pixels)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glTexImage1D(" << getTextureTargetStr(target) << ", " << level << ", " << getPixelFormatStr(internalformat) << ", " << width << ", " << border << ", " << getPixelFormatStr(format) << ", " << getTypeStr(type) << ", " << pixels << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glTexImage1D(" << getTextureTargetStr(target) << ", " << level << ", " << getUncompressedTextureFormatStr(internalformat) << ", " << width << ", " << border << ", " << getUncompressedTextureFormatStr(format) << ", " << getTypeStr(type) << ", " << pixels << ");" << TestLog::EndMessage;
 	m_gl.texImage1D(target, level, internalformat, width, border, format, type, pixels);
 }
 
 void CallLogWrapper::glTexImage2D (glw::GLenum target, glw::GLint level, glw::GLint internalformat, glw::GLsizei width, glw::GLsizei height, glw::GLint border, glw::GLenum format, glw::GLenum type, const void *pixels)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glTexImage2D(" << getTextureTargetStr(target) << ", " << level << ", " << getPixelFormatStr(internalformat) << ", " << width << ", " << height << ", " << border << ", " << getPixelFormatStr(format) << ", " << getTypeStr(type) << ", " << pixels << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glTexImage2D(" << getTextureTargetStr(target) << ", " << level << ", " << getUncompressedTextureFormatStr(internalformat) << ", " << width << ", " << height << ", " << border << ", " << getUncompressedTextureFormatStr(format) << ", " << getTypeStr(type) << ", " << pixels << ");" << TestLog::EndMessage;
 	m_gl.texImage2D(target, level, internalformat, width, height, border, format, type, pixels);
 }
 
 void CallLogWrapper::glTexImage2DMultisample (glw::GLenum target, glw::GLsizei samples, glw::GLenum internalformat, glw::GLsizei width, glw::GLsizei height, glw::GLboolean fixedsamplelocations)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glTexImage2DMultisample(" << getTextureTargetStr(target) << ", " << samples << ", " << getPixelFormatStr(internalformat) << ", " << width << ", " << height << ", " << getBooleanStr(fixedsamplelocations) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glTexImage2DMultisample(" << getTextureTargetStr(target) << ", " << samples << ", " << getUncompressedTextureFormatStr(internalformat) << ", " << width << ", " << height << ", " << getBooleanStr(fixedsamplelocations) << ");" << TestLog::EndMessage;
 	m_gl.texImage2DMultisample(target, samples, internalformat, width, height, fixedsamplelocations);
 }
 
 void CallLogWrapper::glTexImage3D (glw::GLenum target, glw::GLint level, glw::GLint internalformat, glw::GLsizei width, glw::GLsizei height, glw::GLsizei depth, glw::GLint border, glw::GLenum format, glw::GLenum type, const void *pixels)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glTexImage3D(" << getTextureTargetStr(target) << ", " << level << ", " << getPixelFormatStr(internalformat) << ", " << width << ", " << height << ", " << depth << ", " << border << ", " << getPixelFormatStr(format) << ", " << getTypeStr(type) << ", " << pixels << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glTexImage3D(" << getTextureTargetStr(target) << ", " << level << ", " << getUncompressedTextureFormatStr(internalformat) << ", " << width << ", " << height << ", " << depth << ", " << border << ", " << getUncompressedTextureFormatStr(format) << ", " << getTypeStr(type) << ", " << pixels << ");" << TestLog::EndMessage;
 	m_gl.texImage3D(target, level, internalformat, width, height, depth, border, format, type, pixels);
 }
 
@@ -3593,49 +3593,49 @@ void CallLogWrapper::glTexStorage1D (glw::GLenum target, glw::GLsizei levels, gl
 void CallLogWrapper::glTexStorage2D (glw::GLenum target, glw::GLsizei levels, glw::GLenum internalformat, glw::GLsizei width, glw::GLsizei height)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glTexStorage2D(" << getTextureTargetStr(target) << ", " << levels << ", " << getPixelFormatStr(internalformat) << ", " << width << ", " << height << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glTexStorage2D(" << getTextureTargetStr(target) << ", " << levels << ", " << getTextureFormatStr(internalformat) << ", " << width << ", " << height << ");" << TestLog::EndMessage;
 	m_gl.texStorage2D(target, levels, internalformat, width, height);
 }
 
 void CallLogWrapper::glTexStorage2DMultisample (glw::GLenum target, glw::GLsizei samples, glw::GLenum internalformat, glw::GLsizei width, glw::GLsizei height, glw::GLboolean fixedsamplelocations)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glTexStorage2DMultisample(" << getTextureTargetStr(target) << ", " << samples << ", " << getPixelFormatStr(internalformat) << ", " << width << ", " << height << ", " << getBooleanStr(fixedsamplelocations) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glTexStorage2DMultisample(" << getTextureTargetStr(target) << ", " << samples << ", " << getUncompressedTextureFormatStr(internalformat) << ", " << width << ", " << height << ", " << getBooleanStr(fixedsamplelocations) << ");" << TestLog::EndMessage;
 	m_gl.texStorage2DMultisample(target, samples, internalformat, width, height, fixedsamplelocations);
 }
 
 void CallLogWrapper::glTexStorage3D (glw::GLenum target, glw::GLsizei levels, glw::GLenum internalformat, glw::GLsizei width, glw::GLsizei height, glw::GLsizei depth)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glTexStorage3D(" << getTextureTargetStr(target) << ", " << levels << ", " << getPixelFormatStr(internalformat) << ", " << width << ", " << height << ", " << depth << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glTexStorage3D(" << getTextureTargetStr(target) << ", " << levels << ", " << getTextureFormatStr(internalformat) << ", " << width << ", " << height << ", " << depth << ");" << TestLog::EndMessage;
 	m_gl.texStorage3D(target, levels, internalformat, width, height, depth);
 }
 
 void CallLogWrapper::glTexStorage3DMultisample (glw::GLenum target, glw::GLsizei samples, glw::GLenum internalformat, glw::GLsizei width, glw::GLsizei height, glw::GLsizei depth, glw::GLboolean fixedsamplelocations)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glTexStorage3DMultisample(" << getTextureTargetStr(target) << ", " << samples << ", " << getPixelFormatStr(internalformat) << ", " << width << ", " << height << ", " << depth << ", " << getBooleanStr(fixedsamplelocations) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glTexStorage3DMultisample(" << getTextureTargetStr(target) << ", " << samples << ", " << getUncompressedTextureFormatStr(internalformat) << ", " << width << ", " << height << ", " << depth << ", " << getBooleanStr(fixedsamplelocations) << ");" << TestLog::EndMessage;
 	m_gl.texStorage3DMultisample(target, samples, internalformat, width, height, depth, fixedsamplelocations);
 }
 
 void CallLogWrapper::glTexSubImage1D (glw::GLenum target, glw::GLint level, glw::GLint xoffset, glw::GLsizei width, glw::GLenum format, glw::GLenum type, const void *pixels)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glTexSubImage1D(" << getTextureTargetStr(target) << ", " << level << ", " << xoffset << ", " << width << ", " << getPixelFormatStr(format) << ", " << getTypeStr(type) << ", " << pixels << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glTexSubImage1D(" << getTextureTargetStr(target) << ", " << level << ", " << xoffset << ", " << width << ", " << getUncompressedTextureFormatStr(format) << ", " << getTypeStr(type) << ", " << pixels << ");" << TestLog::EndMessage;
 	m_gl.texSubImage1D(target, level, xoffset, width, format, type, pixels);
 }
 
 void CallLogWrapper::glTexSubImage2D (glw::GLenum target, glw::GLint level, glw::GLint xoffset, glw::GLint yoffset, glw::GLsizei width, glw::GLsizei height, glw::GLenum format, glw::GLenum type, const void *pixels)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glTexSubImage2D(" << getTextureTargetStr(target) << ", " << level << ", " << xoffset << ", " << yoffset << ", " << width << ", " << height << ", " << getPixelFormatStr(format) << ", " << getTypeStr(type) << ", " << pixels << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glTexSubImage2D(" << getTextureTargetStr(target) << ", " << level << ", " << xoffset << ", " << yoffset << ", " << width << ", " << height << ", " << getUncompressedTextureFormatStr(format) << ", " << getTypeStr(type) << ", " << pixels << ");" << TestLog::EndMessage;
 	m_gl.texSubImage2D(target, level, xoffset, yoffset, width, height, format, type, pixels);
 }
 
 void CallLogWrapper::glTexSubImage3D (glw::GLenum target, glw::GLint level, glw::GLint xoffset, glw::GLint yoffset, glw::GLint zoffset, glw::GLsizei width, glw::GLsizei height, glw::GLsizei depth, glw::GLenum format, glw::GLenum type, const void *pixels)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glTexSubImage3D(" << getTextureTargetStr(target) << ", " << level << ", " << xoffset << ", " << yoffset << ", " << zoffset << ", " << width << ", " << height << ", " << depth << ", " << getPixelFormatStr(format) << ", " << getTypeStr(type) << ", " << pixels << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glTexSubImage3D(" << getTextureTargetStr(target) << ", " << level << ", " << xoffset << ", " << yoffset << ", " << zoffset << ", " << width << ", " << height << ", " << depth << ", " << getUncompressedTextureFormatStr(format) << ", " << getTypeStr(type) << ", " << pixels << ");" << TestLog::EndMessage;
 	m_gl.texSubImage3D(target, level, xoffset, yoffset, zoffset, width, height, depth, format, type, pixels);
 }
 

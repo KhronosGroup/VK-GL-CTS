@@ -125,9 +125,9 @@ void Texture2DFormatCase::init (void)
 	std::ostringstream		fmtName;
 
 	if (m_dataType)
-		fmtName << glu::getPixelFormatStr(m_format) << ", " << glu::getTypeStr(m_dataType);
+		fmtName << glu::getTextureFormatStr(m_format) << ", " << glu::getTypeStr(m_dataType);
 	else
-		fmtName << glu::getPixelFormatStr(m_format);
+		fmtName << glu::getTextureFormatStr(m_format);
 
 	log << TestLog::Message << "2D texture, " << fmtName.str() << ", " << m_width << "x" << m_height
 							<< ",\n  fill with " << formatGradient(&spec.valueMin, &spec.valueMax) << " gradient"
@@ -290,9 +290,9 @@ void TextureCubeFormatCase::init (void)
 	std::ostringstream		fmtName;
 
 	if (m_dataType)
-		fmtName << glu::getPixelFormatStr(m_format) << ", " << glu::getTypeStr(m_dataType);
+		fmtName << glu::getTextureFormatStr(m_format) << ", " << glu::getTypeStr(m_dataType);
 	else
-		fmtName << glu::getPixelFormatStr(m_format);
+		fmtName << glu::getTextureFormatStr(m_format);
 
 	log << TestLog::Message << "Cube map texture, " << fmtName.str() << ", " << m_width << "x" << m_height
 							<< ",\n  fill with " << formatGradient(&spec.valueMin, &spec.valueMax) << " gradient"
@@ -1302,7 +1302,7 @@ void TextureFormatTests::init (void)
 		deUint32	format			= texFormats[formatNdx].format;
 		deUint32	dataType		= texFormats[formatNdx].dataType;
 		string	nameBase		= texFormats[formatNdx].name;
-		string	descriptionBase	= string(glu::getPixelFormatName(format)) + ", " + glu::getTypeName(dataType);
+		string	descriptionBase	= string(glu::getTextureFormatName(format)) + ", " + glu::getTypeName(dataType);
 
 		unsizedGroup->addChild(new Texture2DFormatCase			(m_testCtx, m_context.getRenderContext(),	(nameBase + "_2d_pot").c_str(),			(descriptionBase + ", GL_TEXTURE_2D").c_str(),			format, dataType, 128, 128));
 		unsizedGroup->addChild(new Texture2DFormatCase			(m_testCtx, m_context.getRenderContext(),	(nameBase + "_2d_npot").c_str(),		(descriptionBase + ", GL_TEXTURE_2D").c_str(),			format, dataType,  63, 112));
@@ -1389,7 +1389,7 @@ void TextureFormatTests::init (void)
 	{
 		deUint32	internalFormat	= sizedColorFormats[formatNdx].internalFormat;
 		string	nameBase		= sizedColorFormats[formatNdx].name;
-		string	descriptionBase	= glu::getPixelFormatName(internalFormat);
+		string	descriptionBase	= glu::getTextureFormatName(internalFormat);
 
 		sized2DGroup->addChild		(new Texture2DFormatCase		(m_testCtx, m_context.getRenderContext(),	(nameBase + "_pot").c_str(),	(descriptionBase + ", GL_TEXTURE_2D").c_str(),			internalFormat, 128, 128));
 		sized2DGroup->addChild		(new Texture2DFormatCase		(m_testCtx, m_context.getRenderContext(),	(nameBase + "_npot").c_str(),	(descriptionBase + ", GL_TEXTURE_2D").c_str(),			internalFormat,  63, 112));
@@ -1405,7 +1405,7 @@ void TextureFormatTests::init (void)
 	{
 		deUint32	internalFormat	= sizedDepthStencilFormats[formatNdx].internalFormat;
 		string	nameBase		= sizedDepthStencilFormats[formatNdx].name;
-		string	descriptionBase	= glu::getPixelFormatName(internalFormat);
+		string	descriptionBase	= glu::getTextureFormatName(internalFormat);
 
 		sized2DGroup->addChild		(new Texture2DFormatCase		(m_testCtx, m_context.getRenderContext(),	(nameBase + "_pot").c_str(),	(descriptionBase + ", GL_TEXTURE_2D").c_str(),			internalFormat, 128, 128));
 		sized2DGroup->addChild		(new Texture2DFormatCase		(m_testCtx, m_context.getRenderContext(),	(nameBase + "_npot").c_str(),	(descriptionBase + ", GL_TEXTURE_2D").c_str(),			internalFormat,  63, 112));

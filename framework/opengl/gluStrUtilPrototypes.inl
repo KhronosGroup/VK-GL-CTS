@@ -46,8 +46,8 @@ const char*							getTextureCompareModeName				(int value);
 const char*							getCubeMapFaceName						(int value);
 const char*							getTextureDepthStencilModeName			(int value);
 const char*							getPixelStoreParameterName				(int value);
-const char*							getPixelFormatName						(int value);
-const char*							getCompressedTexFormatName				(int value);
+const char*							getUncompressedTextureFormatName		(int value);
+const char*							getCompressedTextureFormatName			(int value);
 const char*							getShaderVarTypeName					(int value);
 const char*							getShaderParamName						(int value);
 const char*							getVertexAttribParameterNameName		(int value);
@@ -73,6 +73,7 @@ const char*							getDebugMessageTypeName					(int value);
 const char*							getDebugMessageSeverityName				(int value);
 const char*							getPipelineParamName					(int value);
 const char*							getPatchParamName						(int value);
+const char*							getTextureFormatName					(int value);
 tcu::Format::Bitfield<16>			getBufferMaskStr						(int value);
 tcu::Format::Bitfield<16>			getBufferMapFlagsStr					(int value);
 tcu::Format::Bitfield<16>			getMemoryBarrierFlagsStr				(int value);
@@ -120,8 +121,8 @@ inline tcu::Format::Enum<int, 2>	getTextureCompareModeStr				(int value)		{ retu
 inline tcu::Format::Enum<int, 2>	getCubeMapFaceStr						(int value)		{ return tcu::Format::Enum<int, 2>(getCubeMapFaceName, value); }
 inline tcu::Format::Enum<int, 2>	getTextureDepthStencilModeStr			(int value)		{ return tcu::Format::Enum<int, 2>(getTextureDepthStencilModeName, value); }
 inline tcu::Format::Enum<int, 2>	getPixelStoreParameterStr				(int value)		{ return tcu::Format::Enum<int, 2>(getPixelStoreParameterName, value); }
-inline tcu::Format::Enum<int, 2>	getPixelFormatStr						(int value)		{ return tcu::Format::Enum<int, 2>(getPixelFormatName, value); }
-inline tcu::Format::Enum<int, 2>	getCompressedTexFormatStr				(int value)		{ return tcu::Format::Enum<int, 2>(getCompressedTexFormatName, value); }
+inline tcu::Format::Enum<int, 2>	getUncompressedTextureFormatStr			(int value)		{ return tcu::Format::Enum<int, 2>(getUncompressedTextureFormatName, value); }
+inline tcu::Format::Enum<int, 2>	getCompressedTextureFormatStr			(int value)		{ return tcu::Format::Enum<int, 2>(getCompressedTextureFormatName, value); }
 inline tcu::Format::Enum<int, 2>	getShaderVarTypeStr						(int value)		{ return tcu::Format::Enum<int, 2>(getShaderVarTypeName, value); }
 inline tcu::Format::Enum<int, 2>	getShaderParamStr						(int value)		{ return tcu::Format::Enum<int, 2>(getShaderParamName, value); }
 inline tcu::Format::Enum<int, 2>	getVertexAttribParameterNameStr			(int value)		{ return tcu::Format::Enum<int, 2>(getVertexAttribParameterNameName, value); }
@@ -147,4 +148,5 @@ inline tcu::Format::Enum<int, 2>	getDebugMessageTypeStr					(int value)		{ retur
 inline tcu::Format::Enum<int, 2>	getDebugMessageSeverityStr				(int value)		{ return tcu::Format::Enum<int, 2>(getDebugMessageSeverityName, value); }
 inline tcu::Format::Enum<int, 2>	getPipelineParamStr						(int value)		{ return tcu::Format::Enum<int, 2>(getPipelineParamName, value); }
 inline tcu::Format::Enum<int, 2>	getPatchParamStr						(int value)		{ return tcu::Format::Enum<int, 2>(getPatchParamName, value); }
+inline tcu::Format::Enum<int, 2>	getTextureFormatStr						(int value)		{ return tcu::Format::Enum<int, 2>(getTextureFormatName, value); }
 inline tcu::Format::Enum<int, 1>	getBooleanStr							(deUint8 value)	{ return tcu::Format::Enum<int, 1>(getBooleanName, (int)value); }

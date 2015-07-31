@@ -38,7 +38,7 @@ using tcu::NotSupportedError;
 using glu::TransferFormat;
 using glu::mapGLInternalFormat;
 using glu::mapGLTransferFormat;
-using glu::getPixelFormatName;
+using glu::getTextureFormatName;
 using glu::getTypeName;
 using glu::getFramebufferTargetName;
 using glu::getFramebufferAttachmentName;
@@ -81,12 +81,12 @@ std::ostream& operator<< (std::ostream& stream, const ImageFormat& format)
 	if (format.unsizedType == GL_NONE)
 	{
 		// sized format
-		return stream << glu::getPixelFormatStr(format.format);
+		return stream << glu::getTextureFormatStr(format.format);
 	}
 	else
 	{
 		// unsized format
-		return stream << "(format = " << glu::getPixelFormatStr(format.format) << ", type = " << glu::getTypeStr(format.unsizedType) << ")";
+		return stream << "(format = " << glu::getTextureFormatStr(format.format) << ", type = " << glu::getTypeStr(format.unsizedType) << ")";
 	}
 }
 
@@ -683,7 +683,7 @@ static void logField (TestLog& log, const string& field, const string& value)
 static void logImage (const Image& img, TestLog& log, bool useType)
 {
 	const GLenum type = img.internalFormat.unsizedType;
-	logField(log, "Internal format",	getPixelFormatName(img.internalFormat.format));
+	logField(log, "Internal format",	getTextureFormatName(img.internalFormat.format));
 	if (useType && type != GL_NONE)
 		logField(log, "Format type",	getTypeName(type));
 	logField(log, "Width",				toString(img.width));

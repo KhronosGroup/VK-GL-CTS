@@ -475,6 +475,8 @@ TestCase::IterateResult BufferAgeTest::iterate (void)
 
 	if (m_preserveColorBuffer)
 		EGLU_CHECK_CALL(egl, surfaceAttrib(m_eglDisplay, m_eglSurface, EGL_SWAP_BEHAVIOR, EGL_BUFFER_PRESERVED));
+	else
+		EGLU_CHECK_CALL(egl, surfaceAttrib(m_eglDisplay, m_eglSurface, EGL_SWAP_BEHAVIOR, EGL_BUFFER_DESTROYED));
 
 	for (int frameNdx = 0; frameNdx < numFrames; frameNdx++)
 	{

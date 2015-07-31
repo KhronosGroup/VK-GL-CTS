@@ -75,7 +75,7 @@ void TextureCountTests::init (void)
 			deUint32	magFilter		= GL_NEAREST;
 			int			numTextures		= texCounts[cntNdx];
 			string		name			= string(texFormats[formatNdx].name) + "_" + de::toString(numTextures);
-			string		description 	= string(glu::getPixelFormatName(format)) + ", " + glu::getTypeName(dataType);
+			string		description 	= string(glu::getTextureFormatName(format)) + ", " + glu::getTypeName(dataType);
 
 			addChild(new Texture2DRenderCase(m_context, name.c_str(), description.c_str(), format, dataType, wrapS, wrapT, minFilter, magFilter, tcu::Mat3(), numTextures, false /* npot */));
 		}

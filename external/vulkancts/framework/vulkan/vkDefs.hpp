@@ -156,22 +156,6 @@ private:
 	DeviceInterface&	operator=			(const DeviceInterface&);
 };
 
-struct ApiVersion
-{
-	deUint32	majorNum;
-	deUint32	minorNum;
-	deUint32	patchNum;
-
-	ApiVersion (deUint32	majorNum_,
-				deUint32	minorNum_,
-				deUint32	patchNum_)
-		: majorNum	(majorNum_)
-		, minorNum	(minorNum_)
-		, patchNum	(patchNum_)
-	{
-	}
-};
-
 class Error : public tcu::TestError
 {
 public:
@@ -200,9 +184,7 @@ private:
 
 void			checkResult			(VkResult result, const char* message, const char* file, int line);
 
-ApiVersion		unpackVersion		(deUint32 version);
-deUint32		pack				(const ApiVersion& version);
-
+// \todo [2015-07-30 jarkko] move to vkStructUtil/TypeUtils
 VkClearValue	clearValueColorF32	(float r, float g, float b, float a);
 
 } // vk

@@ -36,7 +36,6 @@
 
 #include "vkDefs.hpp"
 #include "vkStrUtil.hpp"
-#include "deUniquePtr.hpp"
 #include "deMeta.hpp"
 
 #include <algorithm>
@@ -134,6 +133,29 @@ public:
 
 private:
 	DestroyDeviceFunc		m_destroyDevice;
+};
+
+template<>
+class Deleter<VkDescriptorSet>
+{
+public:
+							Deleter		(const DeviceInterface& deviceIface, VkDevice device, VkDescriptorPool pool)
+								: m_deviceIface	(&deviceIface)
+								, m_device		(device)
+								, m_pool		(pool)
+							{}
+							Deleter		(void)
+								: m_deviceIface	(DE_NULL)
+								, m_device		(DE_NULL)
+								, m_pool		(DE_NULL)
+							{}
+
+	void					operator()	(VkDescriptorSet obj) const { DE_TEST_ASSERT(m_deviceIface->freeDescriptorSets(m_device, m_pool, 1, &obj) == VK_SUCCESS); }
+
+private:
+	const DeviceInterface*	m_deviceIface;
+	VkDevice				m_device;
+	VkDescriptorPool		m_pool;
 };
 
 template<typename T>
@@ -279,11 +301,6 @@ using refdetails::Deleter;
 using refdetails::check;
 using refdetails::notNull;
 using refdetails::allowNull;
-
-#include "vkRefUtil.inl"
-
-Move<VkPipeline>	createGraphicsPipeline	(const DeviceInterface& vk, VkDevice device, VkPipelineCache pipelineCache, const VkGraphicsPipelineCreateInfo* pCreateInfo);
-Move<VkPipeline>	createComputePipeline	(const DeviceInterface& vk, VkDevice device, VkPipelineCache pipelineCache, const VkComputePipelineCreateInfo* pCreateInfo);
 
 } // vk
 

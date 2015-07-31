@@ -41,6 +41,7 @@
 #include "gluShaderUtil.hpp"
 #include "gluStrUtil.hpp"
 #include "gluTexture.hpp"
+#include "gluTextureUtil.hpp"
 
 #include "glwEnums.hpp"
 #include "glwFunctions.hpp"
@@ -204,7 +205,7 @@ public:
 	}
 
 private:
-	const tcu::ConstPixelBufferAccess& m_texture;
+	const tcu::ConstPixelBufferAccess m_texture;
 };
 
 class CoordFragmentShader : public rr::FragmentShader
@@ -287,7 +288,7 @@ public:
 	}
 
 private:
-	const tcu::ConstPixelBufferAccess& m_texture;
+	const tcu::ConstPixelBufferAccess m_texture;
 };
 
 string generateVertexShaderTemplate (RenderBits renderBits)
@@ -428,7 +429,12 @@ void modifyBufferData (TestLog&				log,
 
 	log << TestLog::Message << "BufferData, Size: " << data.size() << TestLog::EndMessage;
 
-	texture.bufferData(&(data[0]), data.size());
+	{
+		// replace getRefBuffer with a new buffer
+		de::ArrayBuffer<deUint8> buffer(&(data[0]), data.size());
+		texture.getRefBuffer().swap(buffer);
+	}
+
 	texture.upload();
 }
 
@@ -452,7 +458,7 @@ void modifyBufferSubData (TestLog&				log,
 	gl.bindBuffer(GL_TEXTURE_BUFFER, 0);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to update data with glBufferSubData()");
 
-	deMemcpy(texture.getRefBuffer() + offset, &(data[0]), int(data.size()));
+	deMemcpy((deUint8*)texture.getRefBuffer().getPtr() + offset, &(data[0]), int(data.size()));
 }
 
 void modifyMapWrite (TestLog&				log,
@@ -485,7 +491,7 @@ void modifyMapWrite (TestLog&				log,
 	gl.bindBuffer(GL_TEXTURE_BUFFER, 0);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to update data with glMapBufferRange()");
 
-	deMemcpy(texture.getRefBuffer()+offset, &(data[0]), int(data.size()));
+	deMemcpy((deUint8*)texture.getRefBuffer().getPtr()+offset, &(data[0]), int(data.size()));
 }
 
 void modifyMapReadWrite (TestLog&				log,
@@ -498,6 +504,7 @@ void modifyMapReadWrite (TestLog&				log,
 	const size_t				size		= de::max<size_t>(minSize, size_t((float)(texture.getSize() != 0 ? texture.getSize() : texture.getBufferSize()) * (0.7f + 0.3f * rng.getFloat())));
 	const size_t				minOffset	= texture.getOffset();
 	const size_t				offset		= minOffset + (rng.getUint32() % (texture.getBufferSize() - (size + minOffset)));
+	deUint8* const				refPtr		= (deUint8*)texture.getRefBuffer().getPtr() + offset;
 	vector<deUint8>				data;
 
 	genRandomCoords(rng, data, offset, size);
@@ -514,10 +521,10 @@ void modifyMapReadWrite (TestLog&				log,
 
 		for (int i = 0; i < (int)data.size(); i++)
 		{
-			if (ptr[i] != texture.getRefBuffer()[offset+i])
+			if (ptr[i] != refPtr[i])
 			{
 				if (invalidBytes < 24)
-					log << TestLog::Message << "Invalid byte in mapped buffer. " << tcu::Format::Hex<2>(data[i]).toString() << " at " << i << ", expected " << tcu::Format::Hex<2>(texture.getRefBuffer()[i]).toString() << TestLog::EndMessage;
+					log << TestLog::Message << "Invalid byte in mapped buffer. " << tcu::Format::Hex<2>(data[i]).toString() << " at " << i << ", expected " << tcu::Format::Hex<2>(refPtr[i]).toString() << TestLog::EndMessage;
 
 				invalidBytes++;
 			}
@@ -538,7 +545,7 @@ void modifyMapReadWrite (TestLog&				log,
 	GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to update data with glMapBufferRange()");
 
 	for (int i = 0; i < (int)data.size(); i++)
-		texture.getRefBuffer()[offset+i] = data[i];
+		refPtr[i] = data[i];
 }
 
 void modify (TestLog&						log,
@@ -649,31 +656,34 @@ void renderGL (glu::RenderContext&		renderContext,
 void renderReference (RenderBits					renderBits,
 					  deUint32						coordSeed,
 					  int							triangleCount,
-					  glu::TextureBuffer&			texture,
+					  const glu::TextureBuffer&		texture,
+					  int							maxTextureBufferSize,
 					  const tcu::PixelBufferAccess&	target)
 {
-	const CoordVertexShader			coordVertexShader;
-	const TextureVertexShader		textureVertexShader		(texture.getRefTexture());
-	const rr::VertexShader* const	vertexShader			= (renderBits & RENDERBITS_AS_VERTEX_TEXTURE ? static_cast<const rr::VertexShader*>(&textureVertexShader) : &coordVertexShader);
+	const tcu::ConstPixelBufferAccess	effectiveAccess			= glu::getTextureBufferEffectiveRefTexture(texture, maxTextureBufferSize);
 
-	const CoordFragmentShader		coordFragmmentShader;
-	const TextureFragmentShader		textureFragmentShader	(texture.getRefTexture());
-	const rr::FragmentShader* const	fragmentShader			= (renderBits & RENDERBITS_AS_FRAGMENT_TEXTURE ? static_cast<const rr::FragmentShader*>(&textureFragmentShader) : &coordFragmmentShader);
+	const CoordVertexShader				coordVertexShader;
+	const TextureVertexShader			textureVertexShader		(effectiveAccess);
+	const rr::VertexShader* const		vertexShader			= (renderBits & RENDERBITS_AS_VERTEX_TEXTURE ? static_cast<const rr::VertexShader*>(&textureVertexShader) : &coordVertexShader);
 
-	const rr::Renderer				renderer;
-	const rr::RenderState			renderState(rr::ViewportState(rr::WindowRectangle(0, 0, target.getWidth(), target.getHeight())));
-	const rr::RenderTarget			renderTarget(rr::MultisamplePixelBufferAccess::fromSinglesampleAccess(target));
+	const CoordFragmentShader			coordFragmmentShader;
+	const TextureFragmentShader			textureFragmentShader	(effectiveAccess);
+	const rr::FragmentShader* const		fragmentShader			= (renderBits & RENDERBITS_AS_FRAGMENT_TEXTURE ? static_cast<const rr::FragmentShader*>(&textureFragmentShader) : &coordFragmmentShader);
 
-	const rr::Program				program(vertexShader, fragmentShader);
+	const rr::Renderer					renderer;
+	const rr::RenderState				renderState(rr::ViewportState(rr::WindowRectangle(0, 0, target.getWidth(), target.getHeight())));
+	const rr::RenderTarget				renderTarget(rr::MultisamplePixelBufferAccess::fromSinglesampleAccess(target));
 
-	rr::VertexAttrib				vertexAttribs[1];
-	vector<deUint8>					coords;
+	const rr::Program					program(vertexShader, fragmentShader);
+
+	rr::VertexAttrib					vertexAttribs[1];
+	vector<deUint8>						coords;
 
 	if (renderBits & RENDERBITS_AS_VERTEX_ARRAY)
 	{
 		vertexAttribs[0].type			= rr::VERTEXATTRIBTYPE_NONPURE_UNORM8;
 		vertexAttribs[0].size			= 2;
-		vertexAttribs[0].pointer		= texture.getRefBuffer();
+		vertexAttribs[0].pointer		= texture.getRefBuffer().getPtr();
 	}
 	else
 	{
@@ -688,7 +698,7 @@ void renderReference (RenderBits					renderBits,
 
 	if (renderBits & RENDERBITS_AS_INDEX_ARRAY)
 	{
-		const rr::PrimitiveList	primitives(rr::PRIMITIVETYPE_TRIANGLES, triangleCount * 3, rr::DrawIndices((const void*)texture.getRefBuffer(), rr::INDEXTYPE_UINT8));
+		const rr::PrimitiveList	primitives(rr::PRIMITIVETYPE_TRIANGLES, triangleCount * 3, rr::DrawIndices(texture.getRefBuffer().getPtr(), rr::INDEXTYPE_UINT8));
 		const rr::DrawCommand	cmd(renderState, renderTarget, program, 1, vertexAttribs, primitives);
 
 		renderer.draw(cmd);
@@ -752,14 +762,19 @@ void render (TestLog&						log,
 			 glu::TextureBuffer&			texture,
 			 const tcu::PixelBufferAccess&	target)
 {
-	const tcu::ScopedLogSection	renderSection	(log, "Render Texture buffer", "Render Texture Buffer");
-	const int					triangleCount	= 8;
-	const deUint32				coordSeed		= rng.getUint32();
+	const tcu::ScopedLogSection	renderSection			(log, "Render Texture buffer", "Render Texture Buffer");
+	const int					triangleCount			= 8;
+	const deUint32				coordSeed				= rng.getUint32();
+	int							maxTextureBufferSize	= 0;
+
+	renderContext.getFunctions().getIntegerv(GL_MAX_TEXTURE_BUFFER_SIZE, &maxTextureBufferSize);
+	GLU_EXPECT_NO_ERROR(renderContext.getFunctions().getError(), "query GL_MAX_TEXTURE_BUFFER_SIZE");
+	DE_ASSERT(maxTextureBufferSize > 0); // checked in init()
 
 	logRendering(log, renderBits);
 
 	renderGL(renderContext, renderBits, coordSeed, triangleCount, program, texture);
-	renderReference(renderBits, coordSeed, triangleCount, texture, target);
+	renderReference(renderBits, coordSeed, triangleCount, texture, maxTextureBufferSize, target);
 }
 
 void verifyScreen (TestLog&								log,
@@ -823,7 +838,7 @@ void logTextureInfo (TestLog&	log,
 {
 	const tcu::ScopedLogSection	section(log, "Texture Info", "Texture Info");
 
-	log << TestLog::Message << "Texture format : " << glu::getPixelFormatStr(format) << TestLog::EndMessage;
+	log << TestLog::Message << "Texture format : " << glu::getTextureFormatStr(format) << TestLog::EndMessage;
 	log << TestLog::Message << "Buffer size : " << bufferSize << TestLog::EndMessage;
 
 	if (offset != 0 || size != 0)
@@ -950,6 +965,12 @@ void TextureBufferCase::init (void)
 	if (!glu::contextSupports(m_renderCtx.getType(), glu::ApiType(3, 3, glu::PROFILE_CORE))
 		&& !(glu::contextSupports(m_renderCtx.getType(), glu::ApiType(3, 1, glu::PROFILE_ES)) && info->isExtensionSupported("GL_EXT_texture_buffer")))
 		throw tcu::NotSupportedError("Texture buffers not supported", "", __FILE__, __LINE__);
+
+	{
+		const int maxTextureBufferSize = info->getInt(GL_MAX_TEXTURE_BUFFER_SIZE);
+		if (maxTextureBufferSize <= 0)
+			TCU_THROW(NotSupportedError, "GL_MAX_TEXTURE_BUFFER_SIZE > 0 required");
+	}
 
 	if (m_preRender != 0)
 	{

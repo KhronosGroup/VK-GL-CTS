@@ -15,7 +15,13 @@ dEQP-GLES2.functional.attribute_location.bind_aliasing.max_cond_mat4
 dEQP-GLES2.functional.attribute_location.bind_aliasing.max_cond_vec2
 dEQP-GLES2.functional.attribute_location.bind_aliasing.max_cond_vec3
 dEQP-GLES2.functional.attribute_location.bind_aliasing.max_cond_vec4
+dEQP-GLES2.functional.attribute_location.bind_aliasing.max_inactive_mat4
+dEQP-GLES2.functional.attribute_location.bind_aliasing.max_inactive_vec4
+dEQP-GLES2.functional.attribute_location.bind_hole.mat2
+dEQP-GLES2.functional.attribute_location.bind_hole.mat4
 dEQP-GLES2.functional.attribute_location.bind_hole.vec4
+dEQP-GLES2.functional.attribute_location.bind_max_attributes.mat4
+dEQP-GLES2.functional.attribute_location.bind_max_attributes.vec4
 dEQP-GLES2.functional.attribute_location.bind_relink_hole.float
 dEQP-GLES2.functional.attribute_location.bind_relink_hole.mat2
 dEQP-GLES2.functional.attribute_location.bind_relink_hole.mat3
@@ -781,6 +787,9 @@ dEQP-GLES2.functional.negative_api.buffer.delete_framebuffers
 dEQP-GLES2.functional.negative_api.buffer.delete_renderbuffers
 dEQP-GLES2.functional.negative_api.buffer.framebuffer_renderbuffer
 dEQP-GLES2.functional.negative_api.buffer.framebuffer_texture2d
+dEQP-GLES2.functional.negative_api.buffer.gen_buffers
+dEQP-GLES2.functional.negative_api.buffer.gen_framebuffers
+dEQP-GLES2.functional.negative_api.buffer.gen_renderbuffers
 dEQP-GLES2.functional.negative_api.buffer.read_pixels
 dEQP-GLES2.functional.negative_api.buffer.read_pixels_format_mismatch
 dEQP-GLES2.functional.negative_api.buffer.renderbuffer_storage
@@ -818,6 +827,8 @@ dEQP-GLES2.functional.negative_api.texture.deletetextures_invalid_number
 dEQP-GLES2.functional.negative_api.texture.deletetextures_invalid_number_bind
 dEQP-GLES2.functional.negative_api.texture.generatemipmap_npot_wdt_hgt
 dEQP-GLES2.functional.negative_api.texture.generatemipmap_zero_level_array_compressed
+dEQP-GLES2.functional.negative_api.texture.gentextures_invalid_size
+dEQP-GLES2.functional.negative_api.texture.teximage2d_inequal_width_height_cube
 dEQP-GLES2.functional.negative_api.texture.teximage2d_invalid_format
 dEQP-GLES2.functional.negative_api.texture.teximage2d_invalid_internalformat
 dEQP-GLES2.functional.negative_api.texture.texsubimage2d_invalid_format
@@ -1909,6 +1920,8 @@ dEQP-GLES2.functional.shaders.preprocessor.invalid_conditionals.tokens_after_end
 dEQP-GLES2.functional.shaders.preprocessor.invalid_conditionals.tokens_after_endif_vertex
 dEQP-GLES2.functional.shaders.preprocessor.invalid_definitions.undef_non_identifier_2_fragment
 dEQP-GLES2.functional.shaders.preprocessor.invalid_definitions.undef_non_identifier_2_vertex
+dEQP-GLES2.functional.shaders.preprocessor.invalid_expressions.unclosed_parenthesis_fragment
+dEQP-GLES2.functional.shaders.preprocessor.invalid_expressions.unclosed_parenthesis_vertex
 dEQP-GLES2.functional.shaders.preprocessor.invalid_redefinitions.invalid_identifier_2_fragment
 dEQP-GLES2.functional.shaders.preprocessor.invalid_redefinitions.invalid_identifier_2_vertex
 dEQP-GLES2.functional.shaders.preprocessor.object_redefinitions.redefine_object_1_fragment
@@ -1941,11 +1954,11 @@ dEQP-GLES2.functional.shaders.preprocessor.operator_precedence.mul_vs_plus_fragm
 dEQP-GLES2.functional.shaders.preprocessor.operator_precedence.mul_vs_plus_vertex
 dEQP-GLES2.functional.shaders.preprocessor.operator_precedence.xor_vs_bitwise_and_fragment
 dEQP-GLES2.functional.shaders.preprocessor.operator_precedence.xor_vs_bitwise_and_vertex
+dEQP-GLES2.functional.shaders.preprocessor.pragmas.pragma_fragment
 dEQP-GLES2.functional.shaders.preprocessor.pragmas.pragma_unrecognized_debug_fragment
 dEQP-GLES2.functional.shaders.preprocessor.pragmas.pragma_unrecognized_debug_vertex
 dEQP-GLES2.functional.shaders.preprocessor.pragmas.pragma_unrecognized_token_fragment
 dEQP-GLES2.functional.shaders.preprocessor.pragmas.pragma_unrecognized_token_vertex
-dEQP-GLES2.functional.shaders.preprocessor.pragmas.pragma_fragment
 dEQP-GLES2.functional.shaders.preprocessor.pragmas.pragma_vertex
 dEQP-GLES2.functional.shaders.preprocessor.predefined_macros.line_2_fragment
 dEQP-GLES2.functional.shaders.preprocessor.predefined_macros.line_2_vertex
@@ -2313,6 +2326,8 @@ dEQP-GLES2.functional.shaders.texture_functions.invalid.texturecube_bias_in_vert
 dEQP-GLES2.functional.shaders.texture_functions.vertex.texture2dlod
 dEQP-GLES2.functional.shaders.texture_functions.vertex.texturecubelod
 dEQP-GLES2.functional.state_query.fbo.framebuffer_attachment_texture_cube_map_face
+dEQP-GLES2.functional.state_query.floats.color_clear_value_getinteger
+dEQP-GLES2.functional.state_query.floats.depth_clear_value_getinteger
 dEQP-GLES2.functional.state_query.floats.depth_range_getinteger
 dEQP-GLES2.functional.state_query.floats.line_width_getinteger
 dEQP-GLES2.functional.state_query.floats.polygon_offset_factor_getinteger
@@ -2326,6 +2341,7 @@ dEQP-GLES2.functional.state_query.integers.stencil_value_mask_separate_both_getf
 dEQP-GLES2.functional.state_query.integers.stencil_value_mask_separate_getfloat
 dEQP-GLES2.functional.state_query.rbo.renderbuffer_internal_format
 dEQP-GLES2.functional.state_query.rbo.renderbuffer_size
+dEQP-GLES2.functional.state_query.shader.program_active_uniform_name
 dEQP-GLES2.functional.state_query.shader.program_info_log_length
 dEQP-GLES2.functional.state_query.shader.shader_info_log_length
 dEQP-GLES2.functional.state_query.shader.shader_source_length
@@ -2556,6 +2572,8 @@ dEQP-GLES2.functional.texture.mipmap.2d.generate.a8_non_square_fastest
 dEQP-GLES2.functional.texture.mipmap.2d.generate.a8_non_square_nicest
 dEQP-GLES2.functional.texture.mipmap.2d.generate.l8_non_square_fastest
 dEQP-GLES2.functional.texture.mipmap.2d.generate.l8_non_square_nicest
+dEQP-GLES2.functional.texture.mipmap.2d.generate.la88_non_square_fastest
+dEQP-GLES2.functional.texture.mipmap.2d.generate.la88_non_square_nicest
 dEQP-GLES2.functional.texture.mipmap.2d.projected.linear_linear_clamp
 dEQP-GLES2.functional.texture.mipmap.2d.projected.linear_linear_mirror
 dEQP-GLES2.functional.texture.mipmap.2d.projected.linear_linear_repeat
@@ -2700,6 +2718,9 @@ dEQP-GLES2.functional.uniform_api.info_query.struct_in_array.mat4_mat2_both
 dEQP-GLES2.functional.uniform_api.info_query.struct_in_array.mat4_mat2_fragment
 dEQP-GLES2.functional.uniform_api.info_query.struct_in_array.mat4_mat2_vertex
 dEQP-GLES2.functional.uniform_api.info_query.unused_uniforms.bool_bvec4_both
+dEQP-GLES2.functional.uniform_api.info_query.unused_uniforms.mat4_mat2_both
+dEQP-GLES2.functional.uniform_api.info_query.unused_uniforms.mat4_mat2_fragment
+dEQP-GLES2.functional.uniform_api.info_query.unused_uniforms.mat4_mat2_vertex
 dEQP-GLES2.functional.uniform_api.random.0
 dEQP-GLES2.functional.uniform_api.random.13
 dEQP-GLES2.functional.uniform_api.random.15
@@ -2733,6 +2754,7 @@ dEQP-GLES2.functional.uniform_api.random.87
 dEQP-GLES2.functional.uniform_api.random.88
 dEQP-GLES2.functional.uniform_api.random.9
 dEQP-GLES2.functional.uniform_api.random.91
+dEQP-GLES2.functional.uniform_api.random.94
 dEQP-GLES2.functional.uniform_api.value.assigned.basic_array_assign_full.array_in_struct.bool_bvec4_both
 dEQP-GLES2.functional.uniform_api.value.assigned.basic_array_assign_full.array_in_struct.int_ivec4_vertex
 dEQP-GLES2.functional.uniform_api.value.assigned.basic_array_assign_full.array_in_struct.mat4_mat2_both
@@ -2888,6 +2910,9 @@ dEQP-GLES2.functional.uniform_api.value.assigned.by_value.render.struct_in_array
 dEQP-GLES2.functional.uniform_api.value.assigned.by_value.render.struct_in_array.sampler2D_samplerCube_fragment
 dEQP-GLES2.functional.uniform_api.value.assigned.by_value.render.struct_in_array.sampler2D_samplerCube_vertex
 dEQP-GLES2.functional.uniform_api.value.assigned.unused_uniforms.bool_bvec4_both
+dEQP-GLES2.functional.uniform_api.value.assigned.unused_uniforms.mat4_mat2_both
+dEQP-GLES2.functional.uniform_api.value.assigned.unused_uniforms.mat4_mat2_fragment
+dEQP-GLES2.functional.uniform_api.value.assigned.unused_uniforms.mat4_mat2_vertex
 dEQP-GLES2.functional.uniform_api.value.initial.get_uniform.array_in_struct.bool_bvec4_both
 dEQP-GLES2.functional.uniform_api.value.initial.get_uniform.array_in_struct.mat4_mat2_both
 dEQP-GLES2.functional.uniform_api.value.initial.get_uniform.array_in_struct.mat4_mat2_fragment

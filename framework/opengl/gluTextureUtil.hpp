@@ -34,6 +34,7 @@ namespace glu
 
 class RenderContext;
 class ContextInfo;
+class TextureBuffer;
 
 /*--------------------------------------------------------------------*//*!
  * \brief GL pixel transfer format.
@@ -87,6 +88,9 @@ bool							isSizedFormatColorRenderable		(const RenderContext& renderCtx, const 
 bool							isCompressedFormat					(deUint32 internalFormat);
 
 const tcu::IVec2				(&getDefaultGatherOffsets			(void))[4];
+
+tcu::PixelBufferAccess			getTextureBufferEffectiveRefTexture	(TextureBuffer& buffer, int maxTextureBufferSize);
+tcu::ConstPixelBufferAccess		getTextureBufferEffectiveRefTexture	(const TextureBuffer& buffer, int maxTextureBufferSize);
 
 } // glu
 

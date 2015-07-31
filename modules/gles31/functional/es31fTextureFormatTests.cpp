@@ -240,10 +240,10 @@ TextureCubeArrayFormatCase::IterateResult TextureCubeArrayFormatCase::iterate (v
 
 // TextureBufferFormatCase
 
-class TextureBufferFormatCase : public tcu::TestCase
+class TextureBufferFormatCase : public TestCase
 {
 public:
-								TextureBufferFormatCase		(tcu::TestContext& testCtx, glu::RenderContext& renderCtx, const char* name, const char* description, deUint32 internalFormat, int width);
+								TextureBufferFormatCase		(Context& ctx, glu::RenderContext& renderCtx, const char* name, const char* description, deUint32 internalFormat, int width);
 								~TextureBufferFormatCase	(void);
 
 	void						init						(void);
@@ -258,18 +258,20 @@ private:
 
 	deUint32					m_format;
 	int							m_width;
+	int							m_maxTextureBufferSize;
 
 	glu::TextureBuffer*			m_texture;
 	TextureRenderer				m_renderer;
 };
 
-TextureBufferFormatCase::TextureBufferFormatCase (tcu::TestContext& testCtx, glu::RenderContext& renderCtx, const char* name, const char* description, deUint32 internalFormat, int width)
-	: TestCase		(testCtx, name, description)
-	, m_renderCtx	(renderCtx)
-	, m_format		(internalFormat)
-	, m_width		(width)
-	, m_texture		(DE_NULL)
-	, m_renderer	(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_310_ES, glu::PRECISION_HIGHP)
+TextureBufferFormatCase::TextureBufferFormatCase (Context& ctx, glu::RenderContext& renderCtx, const char* name, const char* description, deUint32 internalFormat, int width)
+	: TestCase					(ctx, name, description)
+	, m_renderCtx				(renderCtx)
+	, m_format					(internalFormat)
+	, m_width					(width)
+	, m_maxTextureBufferSize	(0)
+	, m_texture					(DE_NULL)
+	, m_renderer				(renderCtx, ctx.getTestContext().getLog(), glu::GLSL_VERSION_310_ES, glu::PRECISION_HIGHP)
 {
 }
 
@@ -285,18 +287,19 @@ void TextureBufferFormatCase::init (void)
 	tcu::TextureFormatInfo	spec	= tcu::getTextureFormatInfo(fmt);
 	tcu::Vec4				colorA	(spec.valueMin.x(), spec.valueMax.y(), spec.valueMin.z(), spec.valueMax.w());
 	tcu::Vec4				colorB	(spec.valueMax.x(), spec.valueMin.y(), spec.valueMax.z(), spec.valueMin.w());
-	std::ostringstream		fmtName;
 
-	fmtName << glu::getPixelFormatStr(m_format);
+	m_maxTextureBufferSize = m_context.getContextInfo().getInt(GL_MAX_TEXTURE_BUFFER_SIZE);
+	if (m_maxTextureBufferSize <= 0)
+		TCU_THROW(NotSupportedError, "GL_MAX_TEXTURE_BUFFER_SIZE > 0 required");
 
-	log << TestLog::Message << "Buffer texture, " << fmtName.str() << ", " << m_width
+	log << TestLog::Message << "Buffer texture, " << glu::getTextureFormatStr(m_format) << ", " << m_width
 							<< ",\n  fill with " << formatGradient(&colorA, &colorB) << " gradient"
 		<< TestLog::EndMessage;
 
 	m_texture = new glu::TextureBuffer(m_renderCtx, m_format, m_width * fmt.getPixelSize());
 
 	// Fill level 0.
-	tcu::fillWithComponentGradients(m_texture->getRefTexture(), colorA, colorB);
+	tcu::fillWithComponentGradients(m_texture->getFullRefTexture(), colorA, colorB);
 }
 
 void TextureBufferFormatCase::deinit (void)
@@ -309,22 +312,23 @@ void TextureBufferFormatCase::deinit (void)
 
 TextureBufferFormatCase::IterateResult TextureBufferFormatCase::iterate (void)
 {
-	TestLog&				log					= m_testCtx.getLog();
-	const glw::Functions&	gl					= m_renderCtx.getFunctions();
-	RandomViewport			viewport			(m_renderCtx.getRenderTarget(), m_width, 1, deStringHash(getName()));
-	tcu::Surface			renderedFrame		(viewport.width, viewport.height);
-	tcu::Surface			referenceFrame		(viewport.width, viewport.height);
-	tcu::RGBA				threshold			= m_renderCtx.getRenderTarget().getPixelFormat().getColorThreshold() + tcu::RGBA(1,1,1,1);
-	vector<float>			texCoord;
-	RenderParams			renderParams		(TEXTURETYPE_BUFFER);
-	tcu::TextureFormatInfo	spec				= tcu::getTextureFormatInfo(m_texture->getRefTexture().getFormat());
+	TestLog&							log						= m_testCtx.getLog();
+	const glw::Functions&				gl						= m_renderCtx.getFunctions();
+	RandomViewport						viewport				(m_renderCtx.getRenderTarget(), m_width, 1, deStringHash(getName()));
+	tcu::Surface						renderedFrame			(viewport.width, viewport.height);
+	tcu::Surface						referenceFrame			(viewport.width, viewport.height);
+	tcu::RGBA							threshold				= m_renderCtx.getRenderTarget().getPixelFormat().getColorThreshold() + tcu::RGBA(1,1,1,1);
+	vector<float>						texCoord;
+	RenderParams						renderParams			(TEXTURETYPE_BUFFER);
+	const tcu::ConstPixelBufferAccess	effectiveRefTexture		= glu::getTextureBufferEffectiveRefTexture(*m_texture, m_maxTextureBufferSize);
+	tcu::TextureFormatInfo				spec					= tcu::getTextureFormatInfo(effectiveRefTexture.getFormat());
 
 	renderParams.flags			|= RenderParams::LOG_ALL;
-	renderParams.samplerType	= getFetchSamplerType(m_texture->getRefTexture().getFormat());
+	renderParams.samplerType	= getFetchSamplerType(effectiveRefTexture.getFormat());
 	renderParams.colorScale		= spec.lookupScale;
 	renderParams.colorBias		= spec.lookupBias;
 
-	computeQuadTexCoord1D(texCoord, 0.0f, (float)(m_texture->getRefTexture().getWidth()));
+	computeQuadTexCoord1D(texCoord, 0.0f, (float)(effectiveRefTexture.getWidth()));
 
 	gl.clearColor(0.125f, 0.25f, 0.5f, 1.0f);
 	gl.clear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
@@ -349,7 +353,7 @@ TextureBufferFormatCase::IterateResult TextureBufferFormatCase::iterate (void)
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glReadPixels()");
 
 	// Compute reference.
-	fetchTexture(SurfaceAccess(referenceFrame, m_renderCtx.getRenderTarget().getPixelFormat()), m_texture->getRefTexture(), &texCoord[0], spec.lookupScale, spec.lookupBias);
+	fetchTexture(SurfaceAccess(referenceFrame, m_renderCtx.getRenderTarget().getPixelFormat()), effectiveRefTexture, &texCoord[0], spec.lookupScale, spec.lookupBias);
 
 	// Compare and log.
 	bool isOk = compareImages(log, referenceFrame, renderedFrame, threshold);
@@ -414,7 +418,7 @@ void TextureFormatTests::init (void)
 		deUint32	format		= texFormats[formatNdx].format;
 		deUint32	dataType	= texFormats[formatNdx].dataType;
 		string	nameBase		= texFormats[formatNdx].name;
-		string	descriptionBase	= string(glu::getPixelFormatName(format)) + ", " + glu::getTypeName(dataType);
+		string	descriptionBase	= string(glu::getTextureFormatName(format)) + ", " + glu::getTypeName(dataType);
 
 		unsizedGroup->addChild(new TextureCubeArrayFormatCase (m_testCtx, m_context.getRenderContext(), m_context.getContextInfo(), (nameBase + "_cube_array_pot").c_str(),		(descriptionBase + ", GL_TEXTURE_CUBE_MAP_ARRAY").c_str(), format, dataType, 64, 12));
 		unsizedGroup->addChild(new TextureCubeArrayFormatCase (m_testCtx, m_context.getRenderContext(), m_context.getContextInfo(), (nameBase + "_cube_array_npot").c_str(),	(descriptionBase + ", GL_TEXTURE_CUBE_MAP_ARRAY").c_str(), format, dataType, 64, 12));
@@ -495,7 +499,7 @@ void TextureFormatTests::init (void)
 	{
 		deUint32	internalFormat	= sizedColorFormats[formatNdx].internalFormat;
 		string		nameBase		= sizedColorFormats[formatNdx].name;
-		string		descriptionBase	= glu::getPixelFormatName(internalFormat);
+		string		descriptionBase	= glu::getTextureFormatName(internalFormat);
 
 		sizedCubeArrayGroup->addChild(new TextureCubeArrayFormatCase (m_testCtx, m_context.getRenderContext(), m_context.getContextInfo(), (nameBase + "_pot").c_str(),		(descriptionBase + ", GL_TEXTURE_CUBE_MAP_ARRAY").c_str(), internalFormat, 64, 12));
 		sizedCubeArrayGroup->addChild(new TextureCubeArrayFormatCase (m_testCtx, m_context.getRenderContext(), m_context.getContextInfo(), (nameBase + "_npot").c_str(),	(descriptionBase + ", GL_TEXTURE_CUBE_MAP_ARRAY").c_str(), internalFormat, 64, 12));
@@ -505,7 +509,7 @@ void TextureFormatTests::init (void)
 	{
 		deUint32	internalFormat	= sizedDepthStencilFormats[formatNdx].internalFormat;
 		string		nameBase		= sizedDepthStencilFormats[formatNdx].name;
-		string		descriptionBase	= glu::getPixelFormatName(internalFormat);
+		string		descriptionBase	= glu::getTextureFormatName(internalFormat);
 
 		sizedCubeArrayGroup->addChild(new TextureCubeArrayFormatCase (m_testCtx, m_context.getRenderContext(), m_context.getContextInfo(), (nameBase + "_pot").c_str(),		(descriptionBase + ", GL_TEXTURE_CUBE_MAP_ARRAY").c_str(), internalFormat, 64, 12));
 		sizedCubeArrayGroup->addChild(new TextureCubeArrayFormatCase (m_testCtx, m_context.getRenderContext(), m_context.getContextInfo(), (nameBase + "_npot").c_str(),	(descriptionBase + ", GL_TEXTURE_CUBE_MAP_ARRAY").c_str(), internalFormat, 64, 12));
@@ -551,10 +555,10 @@ void TextureFormatTests::init (void)
 	{
 		deUint32	internalFormat	= bufferColorFormats[formatNdx].internalFormat;
 		string		nameBase		= bufferColorFormats[formatNdx].name;
-		string		descriptionBase	= glu::getPixelFormatName(internalFormat);
+		string		descriptionBase	= glu::getTextureFormatName(internalFormat);
 
-		sizedBufferGroup->addChild	(new TextureBufferFormatCase	(m_testCtx, m_context.getRenderContext(),	(nameBase + "_pot").c_str(),	(descriptionBase + ", GL_TEXTURE_BUFFER").c_str(),	internalFormat, 64));
-		sizedBufferGroup->addChild	(new TextureBufferFormatCase	(m_testCtx, m_context.getRenderContext(),	(nameBase + "_npot").c_str(),	(descriptionBase + ", GL_TEXTURE_BUFFER").c_str(),	internalFormat, 112));
+		sizedBufferGroup->addChild	(new TextureBufferFormatCase	(m_context, m_context.getRenderContext(),	(nameBase + "_pot").c_str(),	(descriptionBase + ", GL_TEXTURE_BUFFER").c_str(),	internalFormat, 64));
+		sizedBufferGroup->addChild	(new TextureBufferFormatCase	(m_context, m_context.getRenderContext(),	(nameBase + "_npot").c_str(),	(descriptionBase + ", GL_TEXTURE_BUFFER").c_str(),	internalFormat, 112));
 	}
 }
 

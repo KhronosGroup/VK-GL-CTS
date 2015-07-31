@@ -85,7 +85,7 @@ void CompressedTextureTests::init (void)
 				if (tcu::isAstcSRGBFormat(format) && isBlockTestTypeHDROnly(astcTestType))
 					continue;
 
-				testTypeGroup->addChild(new ASTCBlockCase2D(m_context, getASTCFormatShortName(format).c_str(), glu::getCompressedTexFormatName(glu::getGLFormat(format)), astcTestType, format));
+				testTypeGroup->addChild(new ASTCBlockCase2D(m_context, getASTCFormatShortName(format).c_str(), glu::getCompressedTextureFormatName(glu::getGLFormat(format)), astcTestType, format));
 			}
 		}
 
@@ -102,7 +102,7 @@ void CompressedTextureTests::init (void)
 				if (!tcu::isAstcFormat(format))
 					continue;
 
-				blockSizeRemainderGroup->addChild(new ASTCBlockSizeRemainderCase2D(m_context, getASTCFormatShortName(format).c_str(), glu::getCompressedTexFormatName(glu::getGLFormat(format)), format));
+				blockSizeRemainderGroup->addChild(new ASTCBlockSizeRemainderCase2D(m_context, getASTCFormatShortName(format).c_str(), glu::getCompressedTextureFormatName(glu::getGLFormat(format)), format));
 			}
 		}
 	}

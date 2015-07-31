@@ -276,11 +276,13 @@ public:
 
 										~TextureBuffer		(void);
 
-	const tcu::PixelBufferAccess&		getRefTexture		(void)			{ return m_refTexture;			}
-	const tcu::ConstPixelBufferAccess&	getRefTexture		(void) const	{ return m_refTexture;			}
+	// \note Effective pixel buffer access must be limited to w <= GL_MAX_TEXTURE_BUFFER_SIZE
+	const tcu::PixelBufferAccess		getFullRefTexture	(void);
+	const tcu::ConstPixelBufferAccess	getFullRefTexture	(void) const;
 
-	deUint8*							getRefBuffer		(void)			{ return &(m_refBuffer[0]);		}
-	const deUint8*						getRefBuffer		(void) const	{ return &(m_refBuffer[0]);		}
+	// \note mutating buffer storage will invalidate existing pixel buffer accesses
+	de::ArrayBuffer<deUint8>&			getRefBuffer		(void)			{ return m_refBuffer;			}
+	const de::ArrayBuffer<deUint8>&		getRefBuffer		(void) const	{ return m_refBuffer;			}
 
 	size_t								getSize				(void) const	{ return m_size;				}
 	size_t								getOffset			(void) const	{ return m_offset;				}
@@ -289,25 +291,21 @@ public:
 	deUint32							getGLTexture		(void) const	{ return m_glTexture;			}
 	deUint32							getGLBuffer			(void) const	{ return m_glBuffer;			}
 
-	// \note Resizes reference buffer. Invalidates old pixel buffer acceses.
-	// \note Doesn't upload data.
-	void								bufferData			(const deUint8* data, size_t size);
 	void								upload				(void);
 
 private:
-	void					init					(deUint32 internalFormat, size_t bufferSize, size_t offset, size_t size, const void* data);
-							TextureBuffer			(const TextureBuffer& other); // Not allowed!
-	TextureBuffer&			operator=				(const TextureBuffer& other); // Not allowed!
+	void								init				(deUint32 internalFormat, size_t bufferSize, size_t offset, size_t size, const void* data);
+										TextureBuffer		(const TextureBuffer& other); // Not allowed!
+	TextureBuffer&						operator=			(const TextureBuffer& other); // Not allowed!
 
-	const RenderContext&	m_context;
-	deUint32				m_format;		//!< Internal format.
-	std::vector<deUint8>	m_refBuffer;
-	size_t					m_offset;
-	size_t					m_size;
+	const RenderContext&				m_context;
+	deUint32							m_format;		//!< Internal format.
+	de::ArrayBuffer<deUint8>			m_refBuffer;
+	size_t								m_offset;
+	size_t								m_size;
 
-	tcu::PixelBufferAccess	m_refTexture;
-	deUint32				m_glTexture;
-	deUint32				m_glBuffer;
+	deUint32							m_glTexture;
+	deUint32							m_glBuffer;
 } DE_WARN_UNUSED_TYPE;
 
 } // glu

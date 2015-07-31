@@ -99,3 +99,17 @@ dEQP-GLES3.functional.shaders.builtin_functions.precision.atanh.highp_*
 
 # Bug 22405868
 dEQP-GLES3.functional.shaders.texture_functions.textureprojlodoffset.sampler3d_float_vertex
+
+# Bug 22628471
+dEQP-GLES3.functional.shaders.derivate.dfdx.*_float.*_highp
+dEQP-GLES3.functional.shaders.derivate.dfdy.*_float.*_highp
+
+# Bug 22665757
+dEQP-GLES3.functional.fbo.completeness.renderable.renderbuffer.color0.rgb16f
+dEQP-GLES3.functional.fbo.completeness.renderable.texture.color0.rgb16f
+
+# Bug 22794757
+dEQP-GLES3.functional.texture.mipmap.cube.projected.*
+
+# Bug 22794704
+dEQP-GLES3.functional.shaders.texture_functions.texturelodoffset.sampler3d_float_vertex

@@ -34,6 +34,7 @@
 
 #include "vkPrograms.hpp"
 #include "vkGlslToSpirV.hpp"
+#include "vkRefUtil.hpp"
 
 #include "tcuTestLog.hpp"
 

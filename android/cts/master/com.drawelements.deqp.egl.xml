@@ -2510,9 +2510,6 @@
 									<Test name="11">
 										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 									</Test>
-									<Test name="13">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
 									<Test name="14">
 										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 									</Test>
@@ -2861,9 +2858,6 @@
 										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 									</Test>
 									<Test name="12">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="13">
 										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 									</Test>
 								</TestCase>
@@ -4423,9 +4417,6 @@
 									<Test name="18">
 										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 									</Test>
-									<Test name="19">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
 								</TestCase>
 								<TestCase name="link">
 									<Test name="0">
@@ -4583,13 +4574,7 @@
 									<Test name="12">
 										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 									</Test>
-									<Test name="13">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
 									<Test name="14">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="16">
 										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 									</Test>
 									<Test name="19">

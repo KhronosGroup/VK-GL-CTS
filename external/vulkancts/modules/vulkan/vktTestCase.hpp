@@ -37,6 +37,7 @@
 #include "tcuDefs.hpp"
 #include "tcuTestCase.hpp"
 #include "vkDefs.hpp"
+#include "deUniquePtr.hpp"
 
 namespace glu
 {
@@ -48,6 +49,7 @@ namespace vk
 class PlatformInterface;
 class ProgramBinary;
 template<typename Program> class ProgramCollection;
+class Allocator;
 }
 
 namespace vkt
@@ -58,34 +60,37 @@ class DefaultDevice;
 class Context
 {
 public:
-												Context					(tcu::TestContext&							testCtx,
-																		 const vk::PlatformInterface&				platformInterface,
-																		 vk::ProgramCollection<vk::ProgramBinary>&	progCollection);
-												~Context				(void);
+												Context							(tcu::TestContext&							testCtx,
+																				 const vk::PlatformInterface&				platformInterface,
+																				 vk::ProgramCollection<vk::ProgramBinary>&	progCollection);
+												~Context						(void);
 
-	tcu::TestContext&							getTestContext			(void) const { return m_testCtx;			}
-	const vk::PlatformInterface&				getPlatformInterface	(void) const { return m_platformInterface;	}
-	vk::ProgramCollection<vk::ProgramBinary>&	getBinaryCollection		(void) const { return m_progCollection;		}
+	tcu::TestContext&							getTestContext					(void) const { return m_testCtx;			}
+	const vk::PlatformInterface&				getPlatformInterface			(void) const { return m_platformInterface;	}
+	vk::ProgramCollection<vk::ProgramBinary>&	getBinaryCollection				(void) const { return m_progCollection;		}
 
 	// Default instance & device, selected with --deqp-vk-device-id=N
-	vk::VkInstance								getInstance				(void) const;
-	const vk::InstanceInterface&				getInstanceInterface	(void) const;
-	vk::VkPhysicalDevice						getPhysicalDevice		(void) const;
-	vk::VkDevice								getDevice				(void) const;
-	const vk::DeviceInterface&					getDeviceInterface		(void) const;
-	deUint32									getUniversalQueueIndex	(void) const;
-	vk::VkQueue									getUniversalQueue		(void) const;
+	vk::VkInstance								getInstance						(void) const;
+	const vk::InstanceInterface&				getInstanceInterface			(void) const;
+	vk::VkPhysicalDevice						getPhysicalDevice				(void) const;
+	vk::VkDevice								getDevice						(void) const;
+	const vk::DeviceInterface&					getDeviceInterface				(void) const;
+	deUint32									getUniversalQueueFamilyIndex	(void) const;
+	vk::VkQueue									getUniversalQueue				(void) const;
+
+	vk::Allocator&								getDefaultAllocator				(void) const;
 
 protected:
 	tcu::TestContext&							m_testCtx;
 	const vk::PlatformInterface&				m_platformInterface;
 	vk::ProgramCollection<vk::ProgramBinary>&	m_progCollection;
 
-	DefaultDevice* const						m_device;
+	const de::UniquePtr<DefaultDevice>			m_device;
+	const de::UniquePtr<vk::Allocator>			m_allocator;
 
 private:
-												Context					(const Context&); // Not allowed
-	Context&									operator=				(const Context&); // Not allowed
+												Context							(const Context&); // Not allowed
+	Context&									operator=						(const Context&); // Not allowed
 };
 
 class TestInstance;

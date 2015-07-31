@@ -96,6 +96,12 @@ public:
 	DescriptorPool (VkDevice, VkDescriptorPoolUsage, deUint32, const VkDescriptorPoolCreateInfo*) {}
 };
 
+class DescriptorSet
+{
+public:
+	DescriptorSet (VkDevice, VkDescriptorPool, VkDescriptorSetUsage, VkDescriptorSetLayout) {}
+};
+
 class Pipeline
 {
 public:
@@ -279,6 +285,41 @@ VkResult mapMemory (VkDevice, VkDeviceMemory memHandle, VkDeviceSize offset, VkD
 	DE_UNREF(flags);
 
 	*ppData = (deUint8*)memory->getPtr() + offset;
+
+	return VK_SUCCESS;
+}
+
+VkResult allocDescriptorSets (VkDevice device, VkDescriptorPool descriptorPool, VkDescriptorSetUsage setUsage, deUint32 count, const VkDescriptorSetLayout* pSetLayouts, VkDescriptorSet* pDescriptorSets, deUint32* pCount)
+{
+	for (deUint32 ndx = 0; ndx < count; ++ndx)
+	{
+		try
+		{
+			pDescriptorSets[ndx] = VkDescriptorSet((deUint64)(deUintptr)new DescriptorSet(device, descriptorPool, setUsage, pSetLayouts[ndx]));
+		}
+		catch (const std::bad_alloc&)
+		{
+			*pCount = ndx;
+			return VK_ERROR_OUT_OF_HOST_MEMORY;
+		}
+		catch (VkResult res)
+		{
+			*pCount = ndx;
+			return res;
+		}
+	}
+
+	*pCount = count;
+	return VK_SUCCESS;
+}
+
+VkResult freeDescriptorSets (VkDevice, VkDescriptorPool, deUint32 count, const VkDescriptorSet* pDescriptorSets)
+{
+	for (deUint32 ndx = 0; ndx < count; ++ndx)
+	{
+		// \note: delete cannot fail
+		delete reinterpret_cast<DescriptorSet*>((deUintptr)pDescriptorSets[ndx].getInternal());
+	}
 
 	return VK_SUCCESS;
 }

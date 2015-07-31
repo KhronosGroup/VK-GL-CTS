@@ -839,26 +839,15 @@ void TextureBuffer::init (deUint32 internalFormat, size_t bufferSize, size_t off
 		}
 	}
 
-	m_refBuffer.resize(bufferSize, 0);
-
+	m_refBuffer.setStorage(bufferSize);
 	if (data)
-		deMemcpy(&m_refBuffer[0], data, (int)bufferSize);
+		deMemcpy(m_refBuffer.getPtr(), data, (int)bufferSize);
 
 	m_format	= internalFormat;
 	m_offset	= offset;
 	m_size		= size;
 
 	DE_ASSERT(size != 0 || offset == 0);
-
-	{
-		const tcu::TextureFormat	format			= mapGLInternalFormat(internalFormat);
-		deInt32						maxTextureSize	= 0;
-
-		gl.getIntegerv(GL_MAX_TEXTURE_BUFFER_SIZE, &maxTextureSize);
-		GLU_EXPECT_NO_ERROR(gl.getError(), "glGetIntegerv(GL_MAX_TEXTURE_BUFFER_SIZE) failed");
-
-		m_refTexture = tcu::PixelBufferAccess(format, de::min<int>((int)maxTextureSize, (int)((m_size != 0 ? m_size : bufferSize) / format.getPixelSize())), 1, 1, &(m_refBuffer[m_offset]));
-	}
 
 	{
 		gl.genTextures(1, &m_glTexture);
@@ -868,7 +857,7 @@ void TextureBuffer::init (deUint32 internalFormat, size_t bufferSize, size_t off
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glGenBuffers() failed");
 
 		gl.bindBuffer(GL_TEXTURE_BUFFER, m_glBuffer);
-		gl.bufferData(GL_TEXTURE_BUFFER, (glw::GLsizei)m_refBuffer.size(), &(m_refBuffer[0]), GL_STATIC_DRAW);
+		gl.bufferData(GL_TEXTURE_BUFFER, (glw::GLsizei)m_refBuffer.size(), data, GL_STATIC_DRAW);
 		gl.bindBuffer(GL_TEXTURE_BUFFER, 0);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to create buffer");
 
@@ -893,31 +882,31 @@ TextureBuffer::~TextureBuffer (void)
 		m_context.getFunctions().deleteBuffers(1, &m_glBuffer);
 }
 
+
+const tcu::PixelBufferAccess TextureBuffer::getFullRefTexture (void)
+{
+	const tcu::TextureFormat	format				= mapGLInternalFormat(m_format);
+	const size_t				bufferLengthBytes	= (m_size != 0) ? (m_size) : (m_refBuffer.size());
+	const int					bufferLengthPixels	= (int)bufferLengthBytes / format.getPixelSize();
+
+	return tcu::PixelBufferAccess(format,
+								  tcu::IVec3(bufferLengthPixels, 1, 1),
+								  (deUint8*)m_refBuffer.getPtr() + m_offset);
+}
+
+const tcu::ConstPixelBufferAccess TextureBuffer::getFullRefTexture (void) const
+{
+	return const_cast<TextureBuffer*>(this)->getFullRefTexture();
+}
+
 void TextureBuffer::upload (void)
 {
 	const glw::Functions& gl = m_context.getFunctions();
 
 	gl.bindBuffer(GL_TEXTURE_BUFFER, m_glBuffer);
-	gl.bufferData(GL_TEXTURE_BUFFER, (glw::GLsizei)m_refBuffer.size(), &(m_refBuffer[0]), GL_STATIC_DRAW);
+	gl.bufferData(GL_TEXTURE_BUFFER, (glw::GLsizei)m_refBuffer.size(), m_refBuffer.getPtr(), GL_STATIC_DRAW);
 	gl.bindBuffer(GL_TEXTURE_BUFFER, 0);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to upload buffer");
-}
-
-void TextureBuffer::bufferData (const deUint8* data, size_t size)
-{
-	const glw::Functions& gl = m_context.getFunctions();
-
-	m_refBuffer = vector<deUint8>(data, data+size);
-
-	{
-		const tcu::TextureFormat	format			= mapGLInternalFormat(m_format);
-		deInt32						maxTextureSize	= 0;
-
-		gl.getIntegerv(GL_MAX_TEXTURE_BUFFER_SIZE, &maxTextureSize);
-		GLU_EXPECT_NO_ERROR(gl.getError(), "glGetIntegerv(GL_MAX_TEXTURE_BUFFER_SIZE) failed");
-
-		m_refTexture = tcu::PixelBufferAccess(format, de::min<int>((int)maxTextureSize, (int)((m_size != 0 ? m_size : m_refBuffer.size())  / format.getPixelSize())), 1, 1, &(m_refBuffer[m_offset]));
-	}
 }
 
 } // glu

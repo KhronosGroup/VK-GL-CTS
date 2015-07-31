@@ -299,7 +299,7 @@ void GLContext::copyTexImage1D (deUint32 target, int level, deUint32 internalFor
 		m_log << TestLog::Message << "glCopyTexImage1D("
 								  << glu::getTextureTargetStr(target) << ", "
 								  << level << ", "
-								  << glu::getPixelFormatStr(internalFormat) << ", "
+								  << glu::getTextureFormatStr(internalFormat) << ", "
 								  << x << ", " << y << ", "
 								  << width << ", " << border << ")"
 			  << TestLog::EndMessage;
@@ -315,7 +315,7 @@ void GLContext::copyTexImage2D (deUint32 target, int level, deUint32 internalFor
 		m_log << TestLog::Message << "glCopyTexImage2D("
 								  << glu::getTextureTargetStr(target) << ", "
 								  << level << ", "
-								  << glu::getPixelFormatStr(internalFormat) << ", "
+								  << glu::getTextureFormatStr(internalFormat) << ", "
 								  << x << ", " << y << ", "
 								  << width << ", " << height
 								  << ", " << border << ")"
@@ -901,7 +901,7 @@ void GLContext::readPixels (int x, int y, int width, int height, deUint32 format
 	if ((m_logFlags & GLCONTEXT_LOG_CALLS) != 0)
 		m_log << TestLog::Message << "glReadPixels("
 								  << x << ", " << y << ", " << width << ", " << height << ", "
-								  << glu::getPixelFormatStr(format) << ", "
+								  << glu::getTextureFormatStr(format) << ", "
 								  << glu::getTypeStr(type) << ", " << data << ")"
 			  << TestLog::EndMessage;
 

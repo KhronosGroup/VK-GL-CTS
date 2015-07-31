@@ -51,11 +51,6 @@ inline std::ostream& operator<< (std::ostream& s, const Handle<Type>& handle)
 	return s << tcu::toHex(handle.getInternal());
 }
 
-inline std::ostream& operator<< (std::ostream& s, const ApiVersion& version)
-{
-	return s << version.majorNum << "." << version.minorNum << "." << version.patchNum;
-}
-
 } // vk
 
 #endif // _VKSTRUTIL_HPP

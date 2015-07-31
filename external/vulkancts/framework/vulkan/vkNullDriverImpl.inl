@@ -607,27 +607,6 @@ VkResult resetDescriptorPool (VkDevice device, VkDescriptorPool descriptorPool)
 	return VK_SUCCESS;
 }
 
-VkResult allocDescriptorSets (VkDevice device, VkDescriptorPool descriptorPool, VkDescriptorSetUsage setUsage, deUint32 count, const VkDescriptorSetLayout* pSetLayouts, VkDescriptorSet* pDescriptorSets, deUint32* pCount)
-{
-	DE_UNREF(device);
-	DE_UNREF(descriptorPool);
-	DE_UNREF(setUsage);
-	DE_UNREF(count);
-	DE_UNREF(pSetLayouts);
-	DE_UNREF(pDescriptorSets);
-	DE_UNREF(pCount);
-	return VK_SUCCESS;
-}
-
-VkResult freeDescriptorSets (VkDevice device, VkDescriptorPool descriptorPool, deUint32 count, const VkDescriptorSet* pDescriptorSets)
-{
-	DE_UNREF(device);
-	DE_UNREF(descriptorPool);
-	DE_UNREF(count);
-	DE_UNREF(pDescriptorSets);
-	return VK_SUCCESS;
-}
-
 VkResult updateDescriptorSets (VkDevice device, deUint32 writeCount, const VkWriteDescriptorSet* pDescriptorWrites, deUint32 copyCount, const VkCopyDescriptorSet* pDescriptorCopies)
 {
 	DE_UNREF(device);
