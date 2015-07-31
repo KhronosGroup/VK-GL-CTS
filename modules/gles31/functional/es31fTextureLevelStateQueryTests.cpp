@@ -164,8 +164,8 @@ struct IntegerPrinter
 
 struct PixelFormatPrinter
 {
-	static std::string	getIntegerName	(int v)		{ return de::toString(glu::getPixelFormatStr(v));		}
-	static std::string	getFloatName	(float v)	{ return de::toString(glu::getPixelFormatStr((int)v));	}
+	static std::string	getIntegerName	(int v)		{ return de::toString(glu::getTextureFormatStr(v));		}
+	static std::string	getFloatName	(float v)	{ return de::toString(glu::getTextureFormatStr((int)v));	}
 };
 
 template <typename Printer>
@@ -225,7 +225,7 @@ static bool verifyTextureLevelParameterInternalFormatAnyOf (glu::CallLogWrapper&
 		{
 			if (ndx != 0)
 				msg << ", ";
-			msg << glu::getPixelFormatStr(refValues[ndx]);
+			msg << glu::getTextureFormatStr(refValues[ndx]);
 		}
 		msg << "}";
 		msg << tcu::TestLog::EndMessage;
@@ -244,7 +244,7 @@ static bool verifyTextureLevelParameterInternalFormatAnyOf (glu::CallLogWrapper&
 				if (state.getIntAccess() == refValues[ndx])
 					return true;
 
-			gl.getLog() << tcu::TestLog::Message << "Error: got " << state.getIntAccess() << ", (" << glu::getPixelFormatStr(state.getIntAccess()) << ")" << tcu::TestLog::EndMessage;
+			gl.getLog() << tcu::TestLog::Message << "Error: got " << state.getIntAccess() << ", (" << glu::getTextureFormatStr(state.getIntAccess()) << ")" << tcu::TestLog::EndMessage;
 			return false;
 		}
 		case DATATYPE_FLOAT:
@@ -253,7 +253,7 @@ static bool verifyTextureLevelParameterInternalFormatAnyOf (glu::CallLogWrapper&
 				if (state.getFloatAccess() == (float)refValues[ndx])
 					return true;
 
-			gl.getLog() << tcu::TestLog::Message << "Error: got " << state.getFloatAccess() << ", (" << glu::getPixelFormatStr((int)state.getFloatAccess()) << ")" << tcu::TestLog::EndMessage;
+			gl.getLog() << tcu::TestLog::Message << "Error: got " << state.getFloatAccess() << ", (" << glu::getTextureFormatStr((int)state.getFloatAccess()) << ")" << tcu::TestLog::EndMessage;
 			return false;
 		}
 		default:
@@ -623,7 +623,7 @@ static void generateInternalFormatTextureGenerationGroup (std::vector<TextureGen
 		texGen.queryTarget		= queryTarget;
 		texGen.immutable		= true;
 		texGen.sampleCount		= (isMultisampleTarget(target) ? (1) : (0));
-		texGen.description		= glu::getTextureTargetStr(target).toString() + ", internal format " + glu::getPixelFormatName(internalFormats[internalFormatNdx]);
+		texGen.description		= glu::getTextureTargetStr(target).toString() + ", internal format " + glu::getTextureFormatName(internalFormats[internalFormatNdx]);
 
 		if (target == GL_TEXTURE_BUFFER)
 		{

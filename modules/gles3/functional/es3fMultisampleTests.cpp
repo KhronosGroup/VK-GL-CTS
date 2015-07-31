@@ -446,7 +446,7 @@ void MultisampleCase::init (void)
 			m_numSamples = m_fboParams.numSamples;
 		else
 		{
-			log << TestLog::Message << "Querying maximum number of samples for " << glu::getPixelFormatName(FBO_COLOR_FORMAT) << " with glGetInternalformativ()" << TestLog::EndMessage;
+			log << TestLog::Message << "Querying maximum number of samples for " << glu::getTextureFormatName(FBO_COLOR_FORMAT) << " with glGetInternalformativ()" << TestLog::EndMessage;
 			GLU_CHECK_CALL(glGetInternalformativ(GL_RENDERBUFFER, FBO_COLOR_FORMAT, GL_SAMPLES, 1, &m_numSamples));
 		}
 
@@ -497,7 +497,7 @@ void MultisampleCase::init (void)
 			GLint maxSampleCount = -1;
 			GLU_CHECK_CALL(glGetInternalformativ(GL_RENDERBUFFER, FBO_COLOR_FORMAT, GL_SAMPLES, 1, &maxSampleCount));
 			if (maxSampleCount < m_numSamples)
-				throw tcu::NotSupportedError(std::string("") + "Maximum sample count returned by glGetInternalformativ() for " + glu::getPixelFormatName(FBO_COLOR_FORMAT) + " is only " + de::toString(maxSampleCount));
+				throw tcu::NotSupportedError(std::string("") + "Maximum sample count returned by glGetInternalformativ() for " + glu::getTextureFormatName(FBO_COLOR_FORMAT) + " is only " + de::toString(maxSampleCount));
 			else
 				throw;
 		}

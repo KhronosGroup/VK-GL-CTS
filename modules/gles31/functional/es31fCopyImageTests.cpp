@@ -176,9 +176,9 @@ string formatToName (deUint32 format)
 	string enumName;
 
 	if (glu::isCompressedFormat(format))
-		enumName = glu::getCompressedTexFormatStr(format).toString().substr(14); // Strip GL_COMPRESSED_
+		enumName = glu::getCompressedTextureFormatStr(format).toString().substr(14); // Strip GL_COMPRESSED_
 	else
-		enumName = glu::getPixelFormatStr(format).toString().substr(3); // Strip GL_
+		enumName = glu::getUncompressedTextureFormatStr(format).toString().substr(3); // Strip GL_
 
 	return de::toLower(enumName);
 }

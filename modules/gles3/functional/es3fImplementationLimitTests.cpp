@@ -298,7 +298,7 @@ public:
 		// Log formats.
 		m_testCtx.getLog() << TestLog::Message << "Reported:" << TestLog::EndMessage;
 		for (vector<GLint>::const_iterator fmt = formats.begin(); fmt != formats.end(); fmt++)
-			m_testCtx.getLog() << TestLog::Message << glu::getCompressedTexFormatStr(*fmt) << TestLog::EndMessage;
+			m_testCtx.getLog() << TestLog::Message << glu::getCompressedTextureFormatStr(*fmt) << TestLog::EndMessage;
 
 		// Check that all required formats are in list.
 		{
@@ -311,7 +311,7 @@ public:
 
 				if (!found)
 				{
-					m_testCtx.getLog() << TestLog::Message << "ERROR: " << glu::getCompressedTexFormatStr(fmt) << " is missing!" << TestLog::EndMessage;
+					m_testCtx.getLog() << TestLog::Message << "ERROR: " << glu::getCompressedTextureFormatStr(fmt) << " is missing!" << TestLog::EndMessage;
 					allFormatsOk = false;
 				}
 			}

@@ -450,8 +450,8 @@ void FramebufferRenderCase::init (void)
 		}
 
 		m_testCtx.getLog() << tcu::TestLog::Message
-			<< "Creating fbo. Texture internalFormat = " << glu::getPixelFormatStr(internalFormat)
-			<< ", format = " << glu::getPixelFormatStr(format)
+			<< "Creating fbo. Texture internalFormat = " << glu::getTextureFormatStr(internalFormat)
+			<< ", format = " << glu::getTextureFormatStr(format)
 			<< ", type = " << glu::getTypeStr(type)
 			<< tcu::TestLog::EndMessage;
 

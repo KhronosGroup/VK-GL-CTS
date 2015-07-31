@@ -292,7 +292,7 @@ void TextureBufferFormatCase::init (void)
 	if (m_maxTextureBufferSize <= 0)
 		TCU_THROW(NotSupportedError, "GL_MAX_TEXTURE_BUFFER_SIZE > 0 required");
 
-	log << TestLog::Message << "Buffer texture, " << glu::getPixelFormatStr(m_format) << ", " << m_width
+	log << TestLog::Message << "Buffer texture, " << glu::getTextureFormatStr(m_format) << ", " << m_width
 							<< ",\n  fill with " << formatGradient(&colorA, &colorB) << " gradient"
 		<< TestLog::EndMessage;
 
@@ -418,7 +418,7 @@ void TextureFormatTests::init (void)
 		deUint32	format		= texFormats[formatNdx].format;
 		deUint32	dataType	= texFormats[formatNdx].dataType;
 		string	nameBase		= texFormats[formatNdx].name;
-		string	descriptionBase	= string(glu::getPixelFormatName(format)) + ", " + glu::getTypeName(dataType);
+		string	descriptionBase	= string(glu::getTextureFormatName(format)) + ", " + glu::getTypeName(dataType);
 
 		unsizedGroup->addChild(new TextureCubeArrayFormatCase (m_testCtx, m_context.getRenderContext(), m_context.getContextInfo(), (nameBase + "_cube_array_pot").c_str(),		(descriptionBase + ", GL_TEXTURE_CUBE_MAP_ARRAY").c_str(), format, dataType, 64, 12));
 		unsizedGroup->addChild(new TextureCubeArrayFormatCase (m_testCtx, m_context.getRenderContext(), m_context.getContextInfo(), (nameBase + "_cube_array_npot").c_str(),	(descriptionBase + ", GL_TEXTURE_CUBE_MAP_ARRAY").c_str(), format, dataType, 64, 12));
@@ -499,7 +499,7 @@ void TextureFormatTests::init (void)
 	{
 		deUint32	internalFormat	= sizedColorFormats[formatNdx].internalFormat;
 		string		nameBase		= sizedColorFormats[formatNdx].name;
-		string		descriptionBase	= glu::getPixelFormatName(internalFormat);
+		string		descriptionBase	= glu::getTextureFormatName(internalFormat);
 
 		sizedCubeArrayGroup->addChild(new TextureCubeArrayFormatCase (m_testCtx, m_context.getRenderContext(), m_context.getContextInfo(), (nameBase + "_pot").c_str(),		(descriptionBase + ", GL_TEXTURE_CUBE_MAP_ARRAY").c_str(), internalFormat, 64, 12));
 		sizedCubeArrayGroup->addChild(new TextureCubeArrayFormatCase (m_testCtx, m_context.getRenderContext(), m_context.getContextInfo(), (nameBase + "_npot").c_str(),	(descriptionBase + ", GL_TEXTURE_CUBE_MAP_ARRAY").c_str(), internalFormat, 64, 12));
@@ -509,7 +509,7 @@ void TextureFormatTests::init (void)
 	{
 		deUint32	internalFormat	= sizedDepthStencilFormats[formatNdx].internalFormat;
 		string		nameBase		= sizedDepthStencilFormats[formatNdx].name;
-		string		descriptionBase	= glu::getPixelFormatName(internalFormat);
+		string		descriptionBase	= glu::getTextureFormatName(internalFormat);
 
 		sizedCubeArrayGroup->addChild(new TextureCubeArrayFormatCase (m_testCtx, m_context.getRenderContext(), m_context.getContextInfo(), (nameBase + "_pot").c_str(),		(descriptionBase + ", GL_TEXTURE_CUBE_MAP_ARRAY").c_str(), internalFormat, 64, 12));
 		sizedCubeArrayGroup->addChild(new TextureCubeArrayFormatCase (m_testCtx, m_context.getRenderContext(), m_context.getContextInfo(), (nameBase + "_npot").c_str(),	(descriptionBase + ", GL_TEXTURE_CUBE_MAP_ARRAY").c_str(), internalFormat, 64, 12));
@@ -555,7 +555,7 @@ void TextureFormatTests::init (void)
 	{
 		deUint32	internalFormat	= bufferColorFormats[formatNdx].internalFormat;
 		string		nameBase		= bufferColorFormats[formatNdx].name;
-		string		descriptionBase	= glu::getPixelFormatName(internalFormat);
+		string		descriptionBase	= glu::getTextureFormatName(internalFormat);
 
 		sizedBufferGroup->addChild	(new TextureBufferFormatCase	(m_context, m_context.getRenderContext(),	(nameBase + "_pot").c_str(),	(descriptionBase + ", GL_TEXTURE_BUFFER").c_str(),	internalFormat, 64));
 		sizedBufferGroup->addChild	(new TextureBufferFormatCase	(m_context, m_context.getRenderContext(),	(nameBase + "_npot").c_str(),	(descriptionBase + ", GL_TEXTURE_BUFFER").c_str(),	internalFormat, 112));

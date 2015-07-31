@@ -1126,7 +1126,7 @@ void MultisampleTextureUsageCase::init (void)
 		if (m_numSamples > maxSamples)
 			throw tcu::NotSupportedError("Requested sample count is greater than supported");
 
-		m_testCtx.getLog() << tcu::TestLog::Message << "Max sample count for " << glu::getPixelFormatStr(internalFormat) << ": " << maxSamples << tcu::TestLog::EndMessage;
+		m_testCtx.getLog() << tcu::TestLog::Message << "Max sample count for " << glu::getTextureFormatStr(internalFormat) << ": " << maxSamples << tcu::TestLog::EndMessage;
 	}
 
 	{

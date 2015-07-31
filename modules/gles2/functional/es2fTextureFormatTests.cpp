@@ -112,7 +112,7 @@ void Texture2DFormatCase::init (void)
 	tcu::TextureFormatInfo	spec	= tcu::getTextureFormatInfo(fmt);
 	std::ostringstream		fmtName;
 
-	fmtName << getPixelFormatStr(m_format) << ", " << getTypeStr(m_dataType);
+	fmtName << getTextureFormatStr(m_format) << ", " << getTypeStr(m_dataType);
 
 	log << TestLog::Message << "2D texture, " << fmtName.str() << ", " << m_width << "x" << m_height
 							<< ",\n  fill with " << formatGradient(&spec.valueMin, &spec.valueMax) << " gradient"
@@ -259,9 +259,9 @@ void TextureCubeFormatCase::init (void)
 	std::ostringstream		fmtName;
 
 	if (m_dataType)
-		fmtName << getPixelFormatStr(m_format) << ", " << getTypeStr(m_dataType);
+		fmtName << getTextureFormatStr(m_format) << ", " << getTypeStr(m_dataType);
 	else
-		fmtName << getPixelFormatStr(m_format);
+		fmtName << getTextureFormatStr(m_format);
 
 	log << TestLog::Message << "Cube map texture, " << fmtName.str() << ", " << m_width << "x" << m_height
 							<< ",\n  fill with " << formatGradient(&spec.valueMin, &spec.valueMax) << " gradient"
@@ -647,7 +647,7 @@ void TextureFormatTests::init (void)
 		deUint32	format			= texFormats[formatNdx].format;
 		deUint32	dataType		= texFormats[formatNdx].dataType;
 		string	nameBase		= texFormats[formatNdx].name;
-		string	descriptionBase	= string(glu::getPixelFormatName(format)) + ", " + glu::getTypeName(dataType);
+		string	descriptionBase	= string(glu::getTextureFormatName(format)) + ", " + glu::getTypeName(dataType);
 
 		addChild(new Texture2DFormatCase	(m_testCtx, m_context.getRenderContext(),	(nameBase + "_2d_pot").c_str(),		(descriptionBase + ", GL_TEXTURE_2D").c_str(),			format, dataType, 128, 128));
 		addChild(new Texture2DFormatCase	(m_testCtx, m_context.getRenderContext(),	(nameBase + "_2d_npot").c_str(),	(descriptionBase + ", GL_TEXTURE_2D").c_str(),			format, dataType,  63, 112));

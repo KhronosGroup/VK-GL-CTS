@@ -120,7 +120,7 @@ void Texture2DRenderCase::init (void)
 												  Vec4(p11.x(), p11.y(), 0.0f, 0.0f)));
 
 	log << TestLog::Message << "Size: " << width << "x" << height << TestLog::EndMessage;
-	log << TestLog::Message << "Format: " <<glu::getPixelFormatName(m_format) << " " << glu::getTypeName(m_dataType) << TestLog::EndMessage;
+	log << TestLog::Message << "Format: " <<glu::getTextureFormatName(m_format) << " " << glu::getTypeName(m_dataType) << TestLog::EndMessage;
 	log << TestLog::Message << "Coords: " << p00 << ", " << p10 << ", " << p01 << ", " << p11 << TestLog::EndMessage;
 	log << TestLog::Message << "Wrap: " << glu::getTextureWrapModeStr(m_wrapS) << " / " << glu::getTextureWrapModeStr(m_wrapT) << TestLog::EndMessage;
 	log << TestLog::Message << "Filter: " << glu::getTextureFilterStr(m_minFilter) << " / " << glu::getTextureFilterStr(m_magFilter) << TestLog::EndMessage;

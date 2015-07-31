@@ -149,7 +149,7 @@ void ReadPixelsTest::getFormatInfo (tcu::TextureFormat& format, GLint& glFormat,
 		GLU_CHECK_CALL(glGetIntegerv(GL_IMPLEMENTATION_COLOR_READ_TYPE, &glType));
 
 		if (glFormat != GL_RGBA && glFormat != GL_BGRA && glFormat != GL_RGB)
-			TCU_THROW(NotSupportedError, ("Unsupported IMPLEMENTATION_COLOR_READ_FORMAT: " + de::toString(glu::getPixelFormatStr(glFormat))).c_str());
+			TCU_THROW(NotSupportedError, ("Unsupported IMPLEMENTATION_COLOR_READ_FORMAT: " + de::toString(glu::getTextureFormatStr(glFormat))).c_str());
 		if (glu::getTypeName(glType) == DE_NULL)
 			TCU_THROW(NotSupportedError, ("Unsupported GL_IMPLEMENTATION_COLOR_READ_TYPE: " + de::toString(tcu::Format::Hex<4>(glType))).c_str());
 
@@ -179,7 +179,7 @@ TestCase::IterateResult ReadPixelsTest::iterate (void)
 	GLint						glType;
 
 	getFormatInfo(format, glFormat, glType, pixelSize);
-	m_testCtx.getLog() << tcu::TestLog::Message << "Format: " << glu::getPixelFormatStr(glFormat) << ", Type: " << glu::getTypeStr(glType) << tcu::TestLog::EndMessage;
+	m_testCtx.getLog() << tcu::TestLog::Message << "Format: " << glu::getTextureFormatStr(glFormat) << ", Type: " << glu::getTypeStr(glType) << tcu::TestLog::EndMessage;
 
 	tcu::Texture2D reference(format, width, height);
 	reference.allocLevel(0);

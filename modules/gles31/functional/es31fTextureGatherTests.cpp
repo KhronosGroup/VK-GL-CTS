@@ -1262,7 +1262,7 @@ void TextureGatherCase::init (void)
 	GLU_EXPECT_NO_ERROR(gl.getError(), "Create and setup framebuffer object");
 
 	log << TestLog::Message << "Using a framebuffer object with renderbuffer with format "
-							<< glu::getPixelFormatName(glu::getInternalFormat(m_colorBufferFormat))
+							<< glu::getTextureFormatName(glu::getInternalFormat(m_colorBufferFormat))
 							<< " and size " << RENDER_SIZE << TestLog::EndMessage;
 
 	// Generate subclass-specific iterations.

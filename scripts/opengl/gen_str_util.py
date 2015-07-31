@@ -460,7 +460,7 @@ ENUM_GROUPS = [
 		"PACK_ROW_LENGTH",
 		"PACK_SKIP_ROWS",
 		"PACK_SKIP_PIXELS"]),
-	("PixelFormat", [
+	("UncompressedTextureFormat", [
 		# GLES2 unsized formats
 		"LUMINANCE",
 		"LUMINANCE_ALPHA",
@@ -563,7 +563,7 @@ ENUM_GROUPS = [
 		"BGRA",
 		]),
 
-	("CompressedTexFormat", [
+	("CompressedTextureFormat", [
 		# ETC2/EAC formats
 		"COMPRESSED_R11_EAC",
 		"COMPRESSED_SIGNED_R11_EAC",
@@ -934,10 +934,21 @@ ENUM_GROUPS = [
 	("PatchParam", [
 		"PATCH_VERTICES",
 	]),
+
+	("TextureFormat", [
+		# generated: UncompressedTextureFormat + CompressedTextureFormat
+	]),
 ]
 
+def getEnumGroupByName (name):
+	# \note: will raise an (index out of bounds) error if no such group
+	return [x for x in ENUM_GROUPS if x[0]==name][0][1]
+
 # EnableCap EnumGroups are also GettableState EnumGroups
-[x for x in ENUM_GROUPS if x[0]=="GettableState"][0][1].extend([x for x in ENUM_GROUPS if x[0]=="EnableCap"][0][1])
+getEnumGroupByName("GettableState").extend(getEnumGroupByName("EnableCap"))
+
+# TextureFormat = UncompressedTextureFormat + CompressedTextureFormat
+getEnumGroupByName("TextureFormat").extend(getEnumGroupByName("UncompressedTextureFormat") + getEnumGroupByName("CompressedTextureFormat"))
 
 def genStrUtil (iface):
 	enumGroups		= addValuePrefix(ENUM_GROUPS, "GL_")
