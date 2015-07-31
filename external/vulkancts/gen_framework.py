@@ -74,7 +74,11 @@ DEFINITIONS			= [
 	"VK_UUID_LENGTH",
 	"VK_MAX_MEMORY_TYPES",
 	"VK_MAX_MEMORY_HEAPS",
-	"VK_MAX_DESCRIPTION"
+	"VK_MAX_DESCRIPTION",
+	"VK_QUEUE_FAMILY_IGNORED",
+	"VK_NO_ATTACHMENT",
+	"VK_FALSE",
+	"VK_TRUE",
 ]
 
 class Handle:
@@ -204,7 +208,10 @@ def getBitfieldNameForBitEnum (bitEnumName):
 	return bitEnumName[:-4] + "s"
 
 def parsePreprocDefinedValue (src, name):
-	return re.search(r'#\s*define\s+' + name + r'\s+([^\n]+)\n', src).group(1).strip()
+	definition = re.search(r'#\s*define\s+' + name + r'\s+([^\n]+)\n', src)
+	if definition is None:
+		raise Exception("No such definition: %s" % name)
+	return definition.group(1).strip()
 
 def parseEnum (name, src):
 	keyValuePtrn	= '(' + IDENT_PTRN + r')\s*=\s*([^\s,}]+)\s*[,}]'
@@ -347,7 +354,7 @@ def genHandlesSrc (handles):
 
 def writeBasicTypes (api, filename):
 	def gen ():
-		for line in indentLines(["#define %s\t%s" % define for define in api.definitions]):
+		for line in indentLines(["enum { %s\t= %s\t};" % define for define in api.definitions]):
 			yield line
 		yield ""
 		for line in genHandlesSrc(api.handles):
