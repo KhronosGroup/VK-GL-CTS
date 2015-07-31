@@ -88,7 +88,7 @@ def extract (pkg):
 
 	extractedEntries = os.listdir(tmpPath)
 	if len(extractedEntries) != 1 or not os.path.isdir(os.path.join(tmpPath, extractedEntries[0])):
-		raise Exception("%s doesn't contain single top-level directory") % pkg.filename
+		raise Exception("%s doesn't contain single top-level directory" % pkg.filename)
 
 	topLevelPath = os.path.join(tmpPath, extractedEntries[0])
 
