@@ -49,12 +49,12 @@ using de::MovePtr;
 namespace
 {
 
-deUint32 selectMemoryTypeWithProperties (const VkPhysicalDeviceMemoryProperties& deviceMemProps, deUint32 allowedMemTypeBits, VkMemoryPropertyFlags allocProps)
+deUint32 selectMatchingMemoryType (const VkPhysicalDeviceMemoryProperties& deviceMemProps, deUint32 allowedMemTypeBits, MemoryRequirement requirement)
 {
 	for (deUint32 memoryTypeNdx = 0; memoryTypeNdx < deviceMemProps.memoryTypeCount; memoryTypeNdx++)
 	{
 		if ((allowedMemTypeBits & (1u << memoryTypeNdx)) != 0 &&
-			(deviceMemProps.memoryTypes[memoryTypeNdx].propertyFlags & allocProps) == allocProps)
+			requirement.matchesHeap(deviceMemProps.memoryTypes[memoryTypeNdx].propertyFlags))
 			return memoryTypeNdx;
 	}
 
@@ -73,6 +73,39 @@ Allocation::Allocation (VkDeviceMemory memory, VkDeviceSize offset)
 
 Allocation::~Allocation (void)
 {
+}
+
+// MemoryRequirement
+
+const MemoryRequirement MemoryRequirement::Any				= MemoryRequirement(0x0u);
+const MemoryRequirement MemoryRequirement::HostVisible		= MemoryRequirement(MemoryRequirement::FLAG_HOST_VISIBLE);
+const MemoryRequirement MemoryRequirement::Coherent			= MemoryRequirement(MemoryRequirement::FLAG_COHERENT);
+const MemoryRequirement MemoryRequirement::LazilyAllocated	= MemoryRequirement(MemoryRequirement::FLAG_LAZY_ALLOCATION);
+
+bool MemoryRequirement::matchesHeap (VkMemoryPropertyFlags heapFlags) const
+{
+	// host-visible
+	if ((m_flags & FLAG_HOST_VISIBLE) && !(heapFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT))
+		return false;
+
+	// coherent
+	if ((m_flags & FLAG_COHERENT) && (heapFlags & VK_MEMORY_PROPERTY_HOST_NON_COHERENT_BIT))
+		return false;
+
+	// lazy
+	if ((m_flags & FLAG_LAZY_ALLOCATION) && !(heapFlags & VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT))
+		return false;
+
+	return true;
+}
+
+MemoryRequirement::MemoryRequirement (deUint32 flags)
+	: m_flags(flags)
+{
+	if ((flags & FLAG_COHERENT) && !(flags & FLAG_HOST_VISIBLE))
+		DE_FATAL("Coherent memory must be host-visible");
+	if ((flags & FLAG_HOST_VISIBLE) && (flags & FLAG_LAZY_ALLOCATION))
+		DE_FATAL("Lazily allocated memory cannot be mappable");
 }
 
 // SimpleAllocator
@@ -110,9 +143,9 @@ MovePtr<Allocation> SimpleAllocator::allocate (const VkMemoryAllocInfo& allocInf
 	return MovePtr<Allocation>(new SimpleAllocation(allocMemory(m_vk, m_device, &allocInfo)));
 }
 
-MovePtr<Allocation> SimpleAllocator::allocate (const VkMemoryRequirements& memReqs, VkMemoryPropertyFlags allocProps)
+MovePtr<Allocation> SimpleAllocator::allocate (const VkMemoryRequirements& memReqs, MemoryRequirement requirement)
 {
-	const deUint32			memoryTypeNdx	= selectMemoryTypeWithProperties(m_memProps, memReqs.memoryTypeBits, allocProps);
+	const deUint32			memoryTypeNdx	= selectMatchingMemoryType(m_memProps, memReqs.memoryTypeBits, requirement);
 	const VkMemoryAllocInfo	allocInfo	=
 	{
 		VK_STRUCTURE_TYPE_MEMORY_ALLOC_INFO,	//	VkStructureType			sType;

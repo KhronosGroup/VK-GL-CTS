@@ -57,6 +57,35 @@ private:
 	const VkDeviceSize		m_offset;
 };
 
+//! Memory allocation requirements
+class MemoryRequirement
+{
+public:
+	static const MemoryRequirement	Any;
+	static const MemoryRequirement	HostVisible;
+	static const MemoryRequirement	Coherent;
+	static const MemoryRequirement	LazilyAllocated;
+
+	inline MemoryRequirement		operator|			(MemoryRequirement requirement) const
+	{
+		return MemoryRequirement(m_flags | requirement.m_flags);
+	}
+
+	bool							matchesHeap			(VkMemoryPropertyFlags heapFlags) const;
+
+private:
+	explicit						MemoryRequirement	(deUint32 flags);
+
+	const deUint32					m_flags;
+
+	enum Flags
+	{
+		FLAG_HOST_VISIBLE		= 1u << 0u,
+		FLAG_COHERENT			= 1u << 1u,
+		FLAG_LAZY_ALLOCATION	= 1u << 2u,
+	};
+};
+
 //! Memory allocator interface
 class Allocator
 {
@@ -65,7 +94,7 @@ public:
 	virtual							~Allocator	(void) {}
 
 	virtual de::MovePtr<Allocation>	allocate	(const VkMemoryAllocInfo& allocInfo, VkDeviceSize alignment) = 0;
-	virtual de::MovePtr<Allocation>	allocate	(const VkMemoryRequirements& memRequirements, VkMemoryPropertyFlags allocProps) = 0;
+	virtual de::MovePtr<Allocation>	allocate	(const VkMemoryRequirements& memRequirements, MemoryRequirement requirement) = 0;
 };
 
 //! Allocator that backs every allocation with its own VkDeviceMemory
@@ -75,7 +104,7 @@ public:
 											SimpleAllocator	(const DeviceInterface& vk, VkDevice device, const VkPhysicalDeviceMemoryProperties& deviceMemProps);
 
 	de::MovePtr<Allocation>					allocate		(const VkMemoryAllocInfo& allocInfo, VkDeviceSize alignment);
-	de::MovePtr<Allocation>					allocate		(const VkMemoryRequirements& memRequirements, VkMemoryPropertyFlags allocProps);
+	de::MovePtr<Allocation>					allocate		(const VkMemoryRequirements& memRequirements, MemoryRequirement requirement);
 
 private:
 	const DeviceInterface&					m_vk;
