@@ -24,6 +24,7 @@
 #include "gluTextureUtil.hpp"
 #include "gluRenderContext.hpp"
 #include "gluContextInfo.hpp"
+#include "gluTexture.hpp"
 #include "tcuTextureUtil.hpp"
 #include "tcuFormatUtil.hpp"
 #include "glwEnums.hpp"
@@ -1168,6 +1169,23 @@ const tcu::IVec2 (&getDefaultGatherOffsets (void))[4]
 		tcu::IVec2(0, 0),
 	};
 	return s_defaultOffsets;
+}
+
+tcu::PixelBufferAccess getTextureBufferEffectiveRefTexture (TextureBuffer& buffer, int maxTextureBufferSize)
+{
+	DE_ASSERT(maxTextureBufferSize > 0);
+
+	const tcu::PixelBufferAccess& fullAccess = buffer.getFullRefTexture();
+
+	return tcu::PixelBufferAccess(fullAccess.getFormat(),
+								  tcu::IVec3(de::min(fullAccess.getWidth(), maxTextureBufferSize), 1, 1),
+								  fullAccess.getPitch(),
+								  fullAccess.getDataPtr());
+}
+
+tcu::ConstPixelBufferAccess getTextureBufferEffectiveRefTexture (const TextureBuffer& buffer, int maxTextureBufferSize)
+{
+	return getTextureBufferEffectiveRefTexture(const_cast<TextureBuffer&>(buffer), maxTextureBufferSize);
 }
 
 } // glu
