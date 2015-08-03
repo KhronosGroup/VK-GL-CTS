@@ -2607,7 +2607,6 @@ dEQP-GLES31.functional.shaders.builtin_functions.precision.reflect.lowp_compute.
 dEQP-GLES31.functional.shaders.builtin_functions.precision.reflect.lowp_compute.vec2
 dEQP-GLES31.functional.shaders.builtin_functions.precision.reflect.lowp_compute.vec3
 dEQP-GLES31.functional.shaders.builtin_functions.precision.reflect.lowp_compute.vec4
-dEQP-GLES31.functional.shaders.builtin_functions.precision.reflect.mediump_compute.scalar
 dEQP-GLES31.functional.shaders.builtin_functions.precision.reflect.mediump_compute.vec2
 dEQP-GLES31.functional.shaders.builtin_functions.precision.reflect.mediump_compute.vec3
 dEQP-GLES31.functional.shaders.builtin_functions.precision.reflect.mediump_compute.vec4
@@ -8759,7 +8758,6 @@ dEQP-GLES31.functional.ubo.random.basic_type_arrays.22
 dEQP-GLES31.functional.ubo.random.basic_type_arrays.23
 dEQP-GLES31.functional.ubo.random.basic_type_arrays.24
 dEQP-GLES31.functional.ubo.random.all_per_block_buffers.0
-dEQP-GLES31.functional.ubo.random.all_per_block_buffers.1
 dEQP-GLES31.functional.ubo.random.all_per_block_buffers.2
 dEQP-GLES31.functional.ubo.random.all_per_block_buffers.3
 dEQP-GLES31.functional.ubo.random.all_per_block_buffers.4
@@ -8786,7 +8784,6 @@ dEQP-GLES31.functional.ubo.random.all_per_block_buffers.25
 dEQP-GLES31.functional.ubo.random.all_per_block_buffers.26
 dEQP-GLES31.functional.ubo.random.all_per_block_buffers.27
 dEQP-GLES31.functional.ubo.random.all_per_block_buffers.28
-dEQP-GLES31.functional.ubo.random.all_per_block_buffers.29
 dEQP-GLES31.functional.ubo.random.all_per_block_buffers.30
 dEQP-GLES31.functional.ubo.random.all_per_block_buffers.31
 dEQP-GLES31.functional.ubo.random.all_per_block_buffers.32
