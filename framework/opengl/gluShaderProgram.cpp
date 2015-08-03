@@ -476,16 +476,15 @@ static void logShaderProgram (tcu::TestLog& log, const ProgramInfo& programInfo,
 
 		bool allShadersOk = true;
 
-		for (int shaderTypeNdx = 0; shaderTypeNdx < SHADERTYPE_LAST; shaderTypeNdx++)
+		for (size_t shaderNdx = 0; shaderNdx < numShaders; ++shaderNdx)
 		{
-			const glu::ShaderType shaderType = (glu::ShaderType)shaderTypeNdx;
+			const ShaderInfo&	shaderInfo	= *shaderInfos[shaderNdx];
 
-			for (size_t shaderNdx = 0; shaderNdx < numShaders; ++shaderNdx)
-			{
-				const ShaderInfo& shaderInfo = *shaderInfos[shaderNdx];
-				log << tcu::TestLog::Float(s_compileTimeDesc[shaderType].name, s_compileTimeDesc[shaderType].description, "ms", QP_KEY_TAG_TIME, (float)shaderInfo.compileTimeUs / 1000.0f);
-				allShadersOk = allShadersOk && shaderInfo.compileOk;
-			}
+			log << tcu::TestLog::Float(s_compileTimeDesc[shaderInfo.type].name,
+									   s_compileTimeDesc[shaderInfo.type].description,
+									   "ms", QP_KEY_TAG_TIME, (float)shaderInfo.compileTimeUs / 1000.0f);
+
+			allShadersOk = allShadersOk && shaderInfo.compileOk;
 		}
 
 		if (allShadersOk)
