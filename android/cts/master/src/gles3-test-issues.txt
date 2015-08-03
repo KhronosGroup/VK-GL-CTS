@@ -101,6 +101,40 @@ dEQP-GLES3.functional.shaders.texture_functions.textureprojlodoffset.sampler3d_f
 dEQP-GLES3.functional.shaders.derivate.dfdx.*_float.*_highp
 dEQP-GLES3.functional.shaders.derivate.dfdy.*_float.*_highp
 
+# Bug 22921258
+dEQP-GLES3.functional.shaders.derivate.dfdx.fastest.default.vec4_mediump
+dEQP-GLES3.functional.shaders.derivate.dfdx.fastest.fbo_float.vec2_lowp
+dEQP-GLES3.functional.shaders.derivate.dfdx.fastest.fbo_float.vec4_lowp
+dEQP-GLES3.functional.shaders.derivate.dfdx.fastest.fbo_float.vec4_mediump
+dEQP-GLES3.functional.shaders.derivate.dfdx.fbo.vec4_mediump
+dEQP-GLES3.functional.shaders.derivate.dfdx.fbo_float.vec2_lowp
+dEQP-GLES3.functional.shaders.derivate.dfdx.fbo_float.vec4_lowp
+dEQP-GLES3.functional.shaders.derivate.dfdx.fbo_float.vec4_mediump
+dEQP-GLES3.functional.shaders.derivate.dfdx.in_function.vec4_mediump
+dEQP-GLES3.functional.shaders.derivate.dfdx.linear.vec4_lowp
+dEQP-GLES3.functional.shaders.derivate.dfdx.linear.vec4_mediump
+dEQP-GLES3.functional.shaders.derivate.dfdx.nicest.default.vec4_mediump
+dEQP-GLES3.functional.shaders.derivate.dfdx.nicest.fbo_float.vec2_lowp
+dEQP-GLES3.functional.shaders.derivate.dfdx.nicest.fbo_float.vec4_lowp
+dEQP-GLES3.functional.shaders.derivate.dfdx.nicest.fbo_float.vec4_mediump
+dEQP-GLES3.functional.shaders.derivate.dfdx.static_if.vec4_mediump
+dEQP-GLES3.functional.shaders.derivate.dfdx.static_loop.vec4_mediump
+dEQP-GLES3.functional.shaders.derivate.dfdx.static_switch.vec4_mediump
+dEQP-GLES3.functional.shaders.derivate.dfdx.uniform_if.vec4_mediump
+dEQP-GLES3.functional.shaders.derivate.dfdx.uniform_loop.vec4_mediump
+dEQP-GLES3.functional.shaders.derivate.dfdx.uniform_switch.vec4_mediump
+dEQP-GLES3.functional.shaders.derivate.dfdy.fastest.default.vec4_mediump
+dEQP-GLES3.functional.shaders.derivate.dfdy.fbo.vec4_mediump
+dEQP-GLES3.functional.shaders.derivate.dfdy.in_function.vec4_mediump
+dEQP-GLES3.functional.shaders.derivate.dfdy.linear.vec4_mediump
+dEQP-GLES3.functional.shaders.derivate.dfdy.nicest.default.vec4_mediump
+dEQP-GLES3.functional.shaders.derivate.dfdy.static_if.vec4_mediump
+dEQP-GLES3.functional.shaders.derivate.dfdy.static_loop.vec4_mediump
+dEQP-GLES3.functional.shaders.derivate.dfdy.static_switch.vec4_mediump
+dEQP-GLES3.functional.shaders.derivate.dfdy.uniform_if.vec4_mediump
+dEQP-GLES3.functional.shaders.derivate.dfdy.uniform_loop.vec4_mediump
+dEQP-GLES3.functional.shaders.derivate.dfdy.uniform_switch.vec4_mediump
+
 # Bug 22665757
 dEQP-GLES3.functional.fbo.completeness.renderable.renderbuffer.color0.rgb16f
 dEQP-GLES3.functional.fbo.completeness.renderable.texture.color0.rgb16f
@@ -110,3 +144,6 @@ dEQP-GLES3.functional.texture.mipmap.cube.projected.*
 
 # Bug 22794704
 dEQP-GLES3.functional.shaders.texture_functions.texturelodoffset.sampler3d_float_vertex
+
+# Bug 22859221
+dEQP-GLES3.functional.shaders.builtin_functions.precision.reflect.*mediump*.scalar
