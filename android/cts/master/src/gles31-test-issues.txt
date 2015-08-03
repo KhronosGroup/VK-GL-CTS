@@ -38,3 +38,6 @@ dEQP-GLES31.functional.shaders.helper_invocation.derivate.wide_lines_*_samples_*
 # Bug 22302334
 dEQP-GLES31.functional.shaders.builtin_functions.precision.acosh.highp_*
 dEQP-GLES31.functional.shaders.builtin_functions.precision.atanh.highp_*
+
+# Bug 22859221
+dEQP-GLES31.functional.shaders.builtin_functions.precision.reflect.*mediump*.scalar

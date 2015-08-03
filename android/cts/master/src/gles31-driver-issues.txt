@@ -860,4 +860,6 @@ dEQP-GLES31.functional.texture.border_clamp.unused_channels.depth32f_stencil8_sa
 dEQP-GLES31.functional.texture.border_clamp.unused_channels.stencil_index8
 
 # Bug 22632106
+dEQP-GLES31.functional.ubo.random.all_per_block_buffers.1
 dEQP-GLES31.functional.ubo.random.all_per_block_buffers.20
+dEQP-GLES31.functional.ubo.random.all_per_block_buffers.29
