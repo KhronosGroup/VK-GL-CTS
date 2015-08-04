@@ -35,8 +35,10 @@
 #include "vkBinaryRegistry.hpp"
 #include "tcuResource.hpp"
 #include "deFilePath.hpp"
+#include "deStringUtil.hpp"
 
 #include <fstream>
+#include <sstream>
 
 namespace vk
 {
@@ -44,10 +46,17 @@ namespace vk
 using std::string;
 using std::vector;
 
-static string getProgramFileName (const ProgramIdentifier& id)
+static string getProgramPath (const ProgramIdentifier& id)
 {
-	// \todo [2015-06-26 pyry] Sanitize progName
-	return id.testCasePath + "." + id.programName + ".spirv";
+	const vector<string>	casePathComps	= de::splitString(id.testCasePath, '.');
+	std::ostringstream		path;
+
+	for (size_t compNdx = 0; compNdx < casePathComps.size(); compNdx++)
+		path << casePathComps[compNdx] << '/';
+
+	path << id.programName << ".spv";
+
+	return path.str();
 }
 
 // BinaryRegistryWriter
@@ -63,14 +72,20 @@ BinaryRegistryWriter::~BinaryRegistryWriter (void)
 
 void BinaryRegistryWriter::storeProgram (const ProgramIdentifier& id, const ProgramBinary& binary)
 {
-	const string	fullPath	= de::FilePath::join(m_dstPath, getProgramFileName(id)).getPath();
-	std::ofstream	out			(fullPath.c_str(), std::ios_base::binary);
+	const de::FilePath	fullPath	= de::FilePath::join(m_dstPath, getProgramPath(id));
 
-	if (!out.is_open() || !out.good())
-		throw tcu::Exception("Failed to open " + fullPath);
+	if (!de::FilePath(fullPath.getDirName()).exists())
+		de::createDirectoryAndParents(fullPath.getDirName().c_str());
 
-	out.write((const char*)binary.getBinary(), binary.getSize());
-	out.close();
+	{
+		std::ofstream	out		(fullPath.getPath(), std::ios_base::binary);
+
+		if (!out.is_open() || !out.good())
+			throw tcu::Exception("Failed to open " + string(fullPath.getPath()));
+
+		out.write((const char*)binary.getBinary(), binary.getSize());
+		out.close();
+	}
 }
 
 // BinaryRegistryReader
@@ -87,7 +102,7 @@ BinaryRegistryReader::~BinaryRegistryReader (void)
 
 ProgramBinary* BinaryRegistryReader::loadProgram (const ProgramIdentifier& id) const
 {
-	const string	fullPath	= de::FilePath::join(m_srcPath, getProgramFileName(id)).getPath();
+	const string	fullPath	= de::FilePath::join(m_srcPath, getProgramPath(id)).getPath();
 
 	try
 	{
