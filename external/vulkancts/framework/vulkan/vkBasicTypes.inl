@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  */
-enum { VK_API_VERSION				= VK_MAKE_VERSION(0, 138, 1)	};
+enum { VK_API_VERSION				= VK_MAKE_VERSION(0, 138, 2)	};
 enum { VK_MAX_PHYSICAL_DEVICE_NAME	= 256							};
 enum { VK_MAX_EXTENSION_NAME		= 256							};
 enum { VK_UUID_LENGTH				= 16							};

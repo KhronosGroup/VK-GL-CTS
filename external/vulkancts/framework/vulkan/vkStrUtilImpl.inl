@@ -1532,7 +1532,8 @@ std::ostream& operator<< (std::ostream& s, const VkSparseImageMemoryRequirements
 std::ostream& operator<< (std::ostream& s, const VkSparseMemoryBindInfo& value)
 {
 	s << "VkSparseMemoryBindInfo = {\n";
-	s << "\toffset = " << value.offset << '\n';
+	s << "\trangeOffset = " << value.rangeOffset << '\n';
+	s << "\trangeSize = " << value.rangeSize << '\n';
 	s << "\tmemOffset = " << value.memOffset << '\n';
 	s << "\tmem = " << value.mem << '\n';
 	s << "\tflags = " << getSparseMemoryBindFlagsStr(value.flags) << '\n';

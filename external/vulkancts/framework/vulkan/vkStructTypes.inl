@@ -322,7 +322,8 @@ struct VkSparseImageMemoryRequirements
 
 struct VkSparseMemoryBindInfo
 {
-	VkDeviceSize			offset;
+	VkDeviceSize			rangeOffset;
+	VkDeviceSize			rangeSize;
 	VkDeviceSize			memOffset;
 	VkDeviceMemory			mem;
 	VkSparseMemoryBindFlags	flags;
