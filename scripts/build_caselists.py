@@ -68,12 +68,11 @@ def getModulesPath (buildCfg):
 def getBuiltModules (buildCfg):
 	modules		= []
 	modulesDir	= getModulesPath(buildCfg)
-	modMap		= {m.dirName: m for m in MODULES}
 
-	for entry in os.listdir(modulesDir):
-		fullPath = os.path.join(modulesDir, entry)
-		if os.path.isdir(fullPath) and entry in modMap:
-			modules.append(modMap[entry])
+	for module in MODULES:
+		fullPath = os.path.join(modulesDir, module.dirName)
+		if os.path.exists(fullPath) and os.path.isdir(fullPath):
+			modules.append(module)
 
 	return modules
 
