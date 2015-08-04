@@ -156,6 +156,8 @@ tcu::TestStatus renderTriangleTest (Context& context)
 	const Unique<VkBuffer>					vertexBuffer			(createBuffer(vk, vkDevice, &vertexBufferParams));
 	const UniquePtr<Allocation>				vertexBufferMemory		(memAlloc.allocate(getBufferMemoryRequirements(vk, vkDevice, *vertexBuffer), MemoryRequirement::HostVisible));
 
+	VK_CHECK(vk.bindBufferMemory(vkDevice, *vertexBuffer, vertexBufferMemory->getMemory(), vertexBufferMemory->getOffset()));
+
 	const VkDeviceSize						imageSizeBytes			= (VkDeviceSize)(sizeof(deUint32)*renderSize.x()*renderSize.y());
 	const VkBufferCreateInfo				readImageBufferParams	=
 	{
@@ -170,6 +172,8 @@ tcu::TestStatus renderTriangleTest (Context& context)
 	};
 	const Unique<VkBuffer>					readImageBuffer			(createBuffer(vk, vkDevice, &readImageBufferParams));
 	const UniquePtr<Allocation>				readImageBufferMemory	(memAlloc.allocate(getBufferMemoryRequirements(vk, vkDevice, *readImageBuffer), MemoryRequirement::HostVisible));
+
+	VK_CHECK(vk.bindBufferMemory(vkDevice, *readImageBuffer, readImageBufferMemory->getMemory(), readImageBufferMemory->getOffset()));
 
 	const VkImageCreateInfo					imageParams				=
 	{
@@ -191,6 +195,8 @@ tcu::TestStatus renderTriangleTest (Context& context)
 
 	const Unique<VkImage>					image					(createImage(vk, vkDevice, &imageParams));
 	const UniquePtr<Allocation>				imageMemory				(memAlloc.allocate(getImageMemoryRequirements(vk, vkDevice, *image), MemoryRequirement::Any));
+
+	VK_CHECK(vk.bindImageMemory(vkDevice, *image, imageMemory->getMemory(), imageMemory->getOffset()));
 
 	const VkAttachmentDescription			colorAttDesc			=
 	{
@@ -221,7 +227,7 @@ tcu::TestStatus renderTriangleTest (Context& context)
 		1u,												//	deUint32						colorCount;
 		&colorAttRef,									//	const VkAttachmentReference*	colorAttachments;
 		DE_NULL,										//	const VkAttachmentReference*	resolveAttachments;
-		{ ~0u, VK_IMAGE_LAYOUT_GENERAL },				//	VkAttachmentReference			depthStencilAttachment;
+		{ VK_NO_ATTACHMENT, VK_IMAGE_LAYOUT_GENERAL },	//	VkAttachmentReference			depthStencilAttachment;
 		0u,												//	deUint32						preserveCount;
 		DE_NULL,										//	const VkAttachmentReference*	preserveAttachments;
 
@@ -505,12 +511,21 @@ tcu::TestStatus renderTriangleTest (Context& context)
 	};
 	const Unique<VkDynamicDepthStencilState>	dynDepthStencilState	(createDynamicDepthStencilState(vk, vkDevice, &dynDepthStencilParams));
 
+	const VkCmdPoolCreateInfo				cmdPoolParams			=
+	{
+		VK_STRUCTURE_TYPE_CMD_POOL_CREATE_INFO,						//	VkStructureType			sType;
+		DE_NULL,													//	const void*				pNext;
+		queueFamilyIndex,											//	deUint32				queueFamilyIndex;
+		VK_CMD_POOL_CREATE_RESET_COMMAND_BUFFER_BIT					//	VkCmdPoolCreateFlags	flags;
+	};
+	const Unique<VkCmdPool>					cmdPool					(createCommandPool(vk, vkDevice, &cmdPoolParams));
+
 	// Command buffer
 	const VkCmdBufferCreateInfo				cmdBufParams			=
 	{
 		VK_STRUCTURE_TYPE_CMD_BUFFER_CREATE_INFO,				//	VkStructureType			sType;
 		DE_NULL,												//	const void*				pNext;
-		DE_NULL,												//	VkCmdPool				pool;
+		*cmdPool,												//	VkCmdPool				pool;
 		VK_CMD_BUFFER_LEVEL_PRIMARY,							//	VkCmdBufferLevel		level;
 		0u,														//	VkCmdBufferCreateFlags	flags;
 	};
@@ -524,12 +539,6 @@ tcu::TestStatus renderTriangleTest (Context& context)
 		DE_NULL,												//	VkRenderPass				renderPass;
 		DE_NULL,												//	VkFramebuffer				framebuffer;
 	};
-
-	// Attach memory
-	// \note [pyry] Should be able to do this after creating CmdBuffer but one driver crashes at vkCopyImageToBuffer if memory is not attached at that point
-	VK_CHECK(vk.bindBufferMemory(vkDevice, *vertexBuffer, vertexBufferMemory->getMemory(), vertexBufferMemory->getOffset()));
-	VK_CHECK(vk.bindBufferMemory(vkDevice, *readImageBuffer, readImageBufferMemory->getMemory(), readImageBufferMemory->getOffset()));
-	VK_CHECK(vk.bindImageMemory(vkDevice, *image, imageMemory->getMemory(), imageMemory->getOffset()));
 
 	// Record commands
 	VK_CHECK(vk.beginCommandBuffer(*cmdBuf, &cmdBufBeginParams));
@@ -547,7 +556,7 @@ tcu::TestStatus renderTriangleTest (Context& context)
 			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		//	VkStructureType			sType;
 			DE_NULL,									//	const void*				pNext;
 			0u,											//	VkMemoryOutputFlags		outputMask;
-			0u,											//	VkMemoryInputFlags		inputMask;
+			VK_MEMORY_INPUT_COLOR_ATTACHMENT_BIT,		//	VkMemoryInputFlags		inputMask;
 			VK_IMAGE_LAYOUT_UNDEFINED,					//	VkImageLayout			oldLayout;
 			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,	//	VkImageLayout			newLayout;
 			queueFamilyIndex,							//	deUint32				srcQueueFamilyIndex;
@@ -619,8 +628,8 @@ tcu::TestStatus renderTriangleTest (Context& context)
 		const VkBufferImageCopy	copyParams	=
 		{
 			(VkDeviceSize)0u,						//	VkDeviceSize		bufferOffset;
-			(deUint32)(renderSize.x()*4),			//	deUint32			bufferRowLength;
-			0u,										//	deUint32			bufferImageHeight;
+			(deUint32)renderSize.x(),				//	deUint32			bufferRowLength;
+			(deUint32)renderSize.y(),				//	deUint32			bufferImageHeight;
 			{
 				VK_IMAGE_ASPECT_COLOR,					//	VkImageAspect	aspect;
 				0u,										//	deUint32		mipLevel;
