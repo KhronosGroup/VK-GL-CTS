@@ -84,6 +84,12 @@ const MemoryRequirement MemoryRequirement::LazilyAllocated	= MemoryRequirement(M
 
 bool MemoryRequirement::matchesHeap (VkMemoryPropertyFlags heapFlags) const
 {
+	// sanity check
+	if ((m_flags & FLAG_COHERENT) && !(m_flags & FLAG_HOST_VISIBLE))
+		DE_FATAL("Coherent memory must be host-visible");
+	if ((m_flags & FLAG_HOST_VISIBLE) && (m_flags & FLAG_LAZY_ALLOCATION))
+		DE_FATAL("Lazily allocated memory cannot be mappable");
+
 	// host-visible
 	if ((m_flags & FLAG_HOST_VISIBLE) && !(heapFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT))
 		return false;
@@ -102,10 +108,6 @@ bool MemoryRequirement::matchesHeap (VkMemoryPropertyFlags heapFlags) const
 MemoryRequirement::MemoryRequirement (deUint32 flags)
 	: m_flags(flags)
 {
-	if ((flags & FLAG_COHERENT) && !(flags & FLAG_HOST_VISIBLE))
-		DE_FATAL("Coherent memory must be host-visible");
-	if ((flags & FLAG_HOST_VISIBLE) && (flags & FLAG_LAZY_ALLOCATION))
-		DE_FATAL("Lazily allocated memory cannot be mappable");
 }
 
 // SimpleAllocator
@@ -146,7 +148,7 @@ MovePtr<Allocation> SimpleAllocator::allocate (const VkMemoryAllocInfo& allocInf
 MovePtr<Allocation> SimpleAllocator::allocate (const VkMemoryRequirements& memReqs, MemoryRequirement requirement)
 {
 	const deUint32			memoryTypeNdx	= selectMatchingMemoryType(m_memProps, memReqs.memoryTypeBits, requirement);
-	const VkMemoryAllocInfo	allocInfo	=
+	const VkMemoryAllocInfo	allocInfo		=
 	{
 		VK_STRUCTURE_TYPE_MEMORY_ALLOC_INFO,	//	VkStructureType			sType;
 		DE_NULL,								//	const void*				pNext;

@@ -111,19 +111,19 @@ public:
 	class Location
 	{
 	public:
-		static inline Location	binding				(deUint32 binding)
+		static inline Location	binding				(deUint32 binding_)
 		{
-			return Location(binding, 0u);
+			return Location(binding_, 0u);
 		}
-		static inline Location	bindingArrayElement	(deUint32 binding, deUint32 arrayElement)
+		static inline Location	bindingArrayElement	(deUint32 binding_, deUint32 arrayElement)
 		{
-			return Location(binding, arrayElement);
+			return Location(binding_, arrayElement);
 		}
 
 	private:
 		// \note private to force use of factory methods that have more descriptive names
-		inline					Location			(deUint32 binding, deUint32 arrayElement)
-			: m_binding			(binding)
+		inline					Location			(deUint32 binding_, deUint32 arrayElement)
+			: m_binding			(binding_)
 			, m_arrayElement	(arrayElement)
 		{
 		}

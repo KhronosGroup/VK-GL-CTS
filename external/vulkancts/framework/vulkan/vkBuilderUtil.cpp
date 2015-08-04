@@ -141,7 +141,7 @@ DescriptorSetUpdateBuilder& DescriptorSetUpdateBuilder::write (VkDescriptorSet		
 															   VkDescriptorType			descriptorType,
 															   const VkDescriptorInfo*	pDescriptors)
 {
-	const VkWriteDescriptorSet write =
+	const VkWriteDescriptorSet writeParams =
 	{
 		VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
 		DE_NULL,
@@ -152,7 +152,7 @@ DescriptorSetUpdateBuilder& DescriptorSetUpdateBuilder::write (VkDescriptorSet		
 		descriptorType,		//!< descriptorType
 		pDescriptors,		//!< pDescriptors
 	};
-	m_writes.push_back(write);
+	m_writes.push_back(writeParams);
 	return *this;
 }
 
@@ -164,7 +164,7 @@ DescriptorSetUpdateBuilder& DescriptorSetUpdateBuilder::copy (VkDescriptorSet	sr
 															  deUint32			destArrayElement,
 															  deUint32			count)
 {
-	const VkCopyDescriptorSet copy =
+	const VkCopyDescriptorSet copyParams =
 	{
 		VK_STRUCTURE_TYPE_COPY_DESCRIPTOR_SET,
 		DE_NULL,
@@ -176,7 +176,7 @@ DescriptorSetUpdateBuilder& DescriptorSetUpdateBuilder::copy (VkDescriptorSet	sr
 		destArrayElement,	//!< destArrayElement
 		count,				//!< count
 	};
-	m_copies.push_back(copy);
+	m_copies.push_back(copyParams);
 	return *this;
 }
 
