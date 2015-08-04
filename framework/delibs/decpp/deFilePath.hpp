@@ -68,6 +68,7 @@ public:
 	FilePath&			normalize			(void);
 
 	void				split				(std::vector<std::string>& components) const;
+	static FilePath		join				(const std::vector<std::string>& components);
 
 	bool				isAbsolutePath		(void) const;
 
