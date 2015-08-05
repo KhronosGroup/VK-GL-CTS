@@ -227,7 +227,7 @@ tcu::TestStatus renderTriangleTest (Context& context)
 		1u,												//	deUint32						colorCount;
 		&colorAttRef,									//	const VkAttachmentReference*	colorAttachments;
 		DE_NULL,										//	const VkAttachmentReference*	resolveAttachments;
-		{ ~0u, VK_IMAGE_LAYOUT_GENERAL },				//	VkAttachmentReference			depthStencilAttachment;
+		{ VK_NO_ATTACHMENT, VK_IMAGE_LAYOUT_GENERAL },	//	VkAttachmentReference			depthStencilAttachment;
 		0u,												//	deUint32						preserveCount;
 		DE_NULL,										//	const VkAttachmentReference*	preserveAttachments;
 
@@ -511,12 +511,21 @@ tcu::TestStatus renderTriangleTest (Context& context)
 	};
 	const Unique<VkDynamicDepthStencilState>	dynDepthStencilState	(createDynamicDepthStencilState(vk, vkDevice, &dynDepthStencilParams));
 
+	const VkCmdPoolCreateInfo				cmdPoolParams			=
+	{
+		VK_STRUCTURE_TYPE_CMD_POOL_CREATE_INFO,						//	VkStructureType			sType;
+		DE_NULL,													//	const void*				pNext;
+		queueFamilyIndex,											//	deUint32				queueFamilyIndex;
+		VK_CMD_POOL_CREATE_RESET_COMMAND_BUFFER_BIT					//	VkCmdPoolCreateFlags	flags;
+	};
+	const Unique<VkCmdPool>					cmdPool					(createCommandPool(vk, vkDevice, &cmdPoolParams));
+
 	// Command buffer
 	const VkCmdBufferCreateInfo				cmdBufParams			=
 	{
 		VK_STRUCTURE_TYPE_CMD_BUFFER_CREATE_INFO,				//	VkStructureType			sType;
 		DE_NULL,												//	const void*				pNext;
-		DE_NULL,												//	VkCmdPool				pool;
+		*cmdPool,												//	VkCmdPool				pool;
 		VK_CMD_BUFFER_LEVEL_PRIMARY,							//	VkCmdBufferLevel		level;
 		0u,														//	VkCmdBufferCreateFlags	flags;
 	};
@@ -547,7 +556,7 @@ tcu::TestStatus renderTriangleTest (Context& context)
 			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		//	VkStructureType			sType;
 			DE_NULL,									//	const void*				pNext;
 			0u,											//	VkMemoryOutputFlags		outputMask;
-			0u,											//	VkMemoryInputFlags		inputMask;
+			VK_MEMORY_INPUT_COLOR_ATTACHMENT_BIT,		//	VkMemoryInputFlags		inputMask;
 			VK_IMAGE_LAYOUT_UNDEFINED,					//	VkImageLayout			oldLayout;
 			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,	//	VkImageLayout			newLayout;
 			queueFamilyIndex,							//	deUint32				srcQueueFamilyIndex;
@@ -619,8 +628,8 @@ tcu::TestStatus renderTriangleTest (Context& context)
 		const VkBufferImageCopy	copyParams	=
 		{
 			(VkDeviceSize)0u,						//	VkDeviceSize		bufferOffset;
-			(deUint32)(renderSize.x()*4),			//	deUint32			bufferRowLength;
-			0u,										//	deUint32			bufferImageHeight;
+			(deUint32)renderSize.x(),				//	deUint32			bufferRowLength;
+			(deUint32)renderSize.y(),				//	deUint32			bufferImageHeight;
 			{
 				VK_IMAGE_ASPECT_COLOR,					//	VkImageAspect	aspect;
 				0u,										//	deUint32		mipLevel;

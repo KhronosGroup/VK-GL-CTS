@@ -49,9 +49,9 @@ namespace de
 
 FilePath::FilePath (const std::vector<std::string>& components)
 {
-	for (int ndx = 0; ndx < (int)components.size(); ndx++)
+	for (size_t ndx = 0; ndx < components.size(); ndx++)
 	{
-		if (ndx > 0)
+		if (!m_path.empty() && !isSeparator(m_path[m_path.size()-1]))
 			m_path += separator;
 		m_path += components[ndx];
 	}
@@ -64,9 +64,14 @@ void FilePath::split (std::vector<std::string>& components) const
 	int curCompStart = 0;
 	int pos;
 
+	if (isWinNetPath())
+		components.push_back(separator + separator);
+	else if (isRootPath() && !beginsWithDrive())
+		components.push_back(separator);
+
 	for (pos = 0; pos < (int)m_path.length(); pos++)
 	{
-		char c = m_path[pos];
+		const char c = m_path[pos];
 
 		if (isSeparator(c))
 		{
@@ -81,12 +86,16 @@ void FilePath::split (std::vector<std::string>& components) const
 		components.push_back(m_path.substr(curCompStart, pos - curCompStart));
 }
 
+FilePath FilePath::join (const std::vector<std::string>& components)
+{
+	return FilePath(components);
+}
+
 FilePath& FilePath::normalize (void)
 {
-	bool						rootPath	= isRootPath();
-	bool						winNetPath	= isWinNetPath();
-	bool						hasDrive	= beginsWithDrive();
 	std::vector<std::string>	components;
+	std::vector<std::string>	reverseNormalizedComponents;
+
 	split(components);
 
 	m_path = "";
@@ -96,7 +105,7 @@ FilePath& FilePath::normalize (void)
 	// Do in reverse order and eliminate any . or .. components
 	for (int ndx = (int)components.size()-1; ndx >= 0; ndx--)
 	{
-		const std::string comp = components[ndx];
+		const std::string& comp = components[ndx];
 		if (comp == "..")
 			numUp += 1;
 		else if (comp == ".")
@@ -104,30 +113,20 @@ FilePath& FilePath::normalize (void)
 		else if (numUp > 0)
 			numUp -= 1; // Skip part
 		else
-		{
-			if (m_path.length() > 0)
-				m_path = comp + separator + m_path;
-			else
-				m_path = comp;
-		}
+			reverseNormalizedComponents.push_back(comp);
 	}
 
-	// Append necessary ".." components
+	if (isAbsolutePath() && numUp > 0)
+		throw std::runtime_error("Cannot normalize path: invalid path");
+
+	// Prepend necessary ".." components
 	while (numUp--)
-	{
-		if (m_path.length() > 0)
-			m_path = ".." + separator + m_path;
-		else
-			m_path = "..";
-	}
+		reverseNormalizedComponents.push_back("..");
 
-	if (winNetPath)
-		m_path = separator + separator + m_path;
-	else if (rootPath && !hasDrive)
-		m_path = separator + m_path;
+	if (reverseNormalizedComponents.empty() && components.back() == ".")
+		reverseNormalizedComponents.push_back("."); // Composed of "." components only
 
-	if (m_path.length() == 0 && !components.empty())
-		m_path = "."; // Composed of "." components only
+	*this = join(std::vector<std::string>(reverseNormalizedComponents.rbegin(), reverseNormalizedComponents.rend()));
 
 	return *this;
 }
@@ -239,6 +238,7 @@ void FilePath_selfTest (void)
 	DE_TEST_ASSERT(FilePath("foo/bar/"		).getDirName()	== "foo");
 	DE_TEST_ASSERT(FilePath("foo\\bar"		).getDirName()	== "foo");
 	DE_TEST_ASSERT(FilePath("foo\\bar\\"	).getDirName()	== "foo");
+	DE_TEST_ASSERT(FilePath("/foo/bar/baz"	).getDirName()	== FilePath::separator + "foo" + FilePath::separator + "bar");
 }
 
 static void createDirectoryImpl (const char* path)
@@ -247,7 +247,7 @@ static void createDirectoryImpl (const char* path)
 	if (!CreateDirectory(path, DE_NULL))
 		throw std::runtime_error("Failed to create directory");
 #elif (DE_OS == DE_OS_UNIX) || (DE_OS == DE_OS_OSX) || (DE_OS == DE_OS_IOS) || (DE_OS == DE_OS_ANDROID) || (DE_OS == DE_OS_SYMBIAN)
-	if (mkdir(path, 01777) != 0)
+	if (mkdir(path, 0777) != 0)
 		throw std::runtime_error("Failed to create directory");
 #else
 #	error Implement createDirectoryImpl() for your platform.

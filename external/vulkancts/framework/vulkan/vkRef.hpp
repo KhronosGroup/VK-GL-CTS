@@ -242,23 +242,24 @@ public:
 								: RefBase<T>(data)
 				{}
 				Move		(Move<T>& other)
-								: RefBase<T>(other.disown())
+								: RefBase<T>(other.RefBase<T>::disown())
 				{}
 				Move		(void)
 								: RefBase<T>(RefData<T>())
 				{}
 
+	T			disown		(void) { return this->RefBase<T>::disown().object; }
 	Move<T>&	operator=	(Move<T>& other);
 	Move<T>&	operator=	(RefData<T> data);
 
-	operator	RefData<T>	(void) { return this->disown(); }
+	operator	RefData<T>	(void) { return this->RefBase<T>::disown(); }
 };
 
 template<typename T>
 inline Move<T>& Move<T>::operator= (Move<T>& other)
 {
 	if (this != &other)
-		this->assign(other.disown());
+		this->assign(other.RefBase<T>::disown());
 
 	return *this;
 }

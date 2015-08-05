@@ -8,8 +8,6 @@ enum { VK_UUID_LENGTH				= 16							};
 enum { VK_MAX_MEMORY_TYPES			= 32							};
 enum { VK_MAX_MEMORY_HEAPS			= 16							};
 enum { VK_MAX_DESCRIPTION			= 256							};
-enum { VK_QUEUE_FAMILY_IGNORED		= UINT32_MAX					};
-enum { VK_NO_ATTACHMENT				= UINT32_MAX					};
 enum { VK_FALSE						= 0								};
 enum { VK_TRUE						= 1								};
 

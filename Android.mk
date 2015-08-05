@@ -741,11 +741,6 @@ LOCAL_NDK_STL_VARIANT := gnustl_static
 LOCAL_RTTI_FLAG := -frtti -fexceptions
 LOCAL_MULTILIB := both
 
-# b/18934246, failed to link libtestercore for clang mips.
-ifeq ($(TARGET_ARCH),mips)
-  LOCAL_CLANG := false
-endif
-
 include $(BUILD_SHARED_LIBRARY)
 
 include $(LOCAL_PATH)/android/package/Android.mk

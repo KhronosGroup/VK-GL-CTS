@@ -105,6 +105,9 @@ private:
 
 #include "vkBasicTypes.inl"
 
+enum { VK_QUEUE_FAMILY_IGNORED		= 0xffffffff	};
+enum { VK_NO_ATTACHMENT				= 0xffffffff	};
+
 typedef VK_APICALL void		(VK_APIENTRY* PFN_vkVoidFunction)	(void);
 
 typedef VK_APICALL void*	(VK_APIENTRY* PFN_vkAllocFunction)	(void* pUserData, deUintptr size, deUintptr alignment, VkSystemAllocType allocType);
