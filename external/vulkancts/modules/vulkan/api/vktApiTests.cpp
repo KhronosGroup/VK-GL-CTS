@@ -264,7 +264,7 @@ tcu::TestStatus renderTriangleTest (Context& context)
 		VK_STRUCTURE_TYPE_SHADER_CREATE_INFO,			//	VkStructureType		sType;
 		DE_NULL,										//	const void*			pNext;
 		*vertShaderModule,								//	VkShaderModule		module;
-		DE_NULL,										//	const char*			pName;
+		"main",											//	const char*			pName;
 		0u,												//	VkShaderCreateFlags	flags;
 	};
 	const Unique<VkShader>					vertShader				(createShader(vk, vkDevice, &vertShaderParams));
@@ -274,7 +274,7 @@ tcu::TestStatus renderTriangleTest (Context& context)
 		VK_STRUCTURE_TYPE_SHADER_CREATE_INFO,			//	VkStructureType		sType;
 		DE_NULL,										//	const void*			pNext;
 		*fragShaderModule,								//	VkShaderModule		module;
-		DE_NULL,										//	const char*			pName;
+		"main",											//	const char*			pName;
 		0u,												//	VkShaderCreateFlags	flags;
 	};
 	const Unique<VkShader>					fragShader				(createShader(vk, vkDevice, &fragShaderParams));
@@ -310,7 +310,7 @@ tcu::TestStatus renderTriangleTest (Context& context)
 		},
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	//	VkStructureType				sType;
-			&vertShaderParams,										//	const void*					pNext;
+			DE_NULL,												//	const void*					pNext;
 			VK_SHADER_STAGE_FRAGMENT,								//	VkShaderStage				stage;
 			*fragShader,											//	VkShader					shader;
 			&emptyShaderSpecParams,									//	const VkSpecializationInfo*	pSpecializationInfo;
@@ -319,7 +319,7 @@ tcu::TestStatus renderTriangleTest (Context& context)
 	const VkPipelineDepthStencilStateCreateInfo	depthStencilParams		=
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,	//	VkStructureType		sType;
-		&fragShaderParams,											//	const void*			pNext;
+		DE_NULL,													//	const void*			pNext;
 		DE_FALSE,													//	deUint32			depthTestEnable;
 		DE_FALSE,													//	deUint32			depthWriteEnable;
 		VK_COMPARE_OP_ALWAYS,										//	VkCompareOp			depthCompareOp;
@@ -341,7 +341,7 @@ tcu::TestStatus renderTriangleTest (Context& context)
 	const VkPipelineViewportStateCreateInfo		viewportParams			=
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,		//	VkStructureType		sType;
-		&depthStencilParams,										//	const void*			pNext;
+		DE_NULL,													//	const void*			pNext;
 		1u,															//	deUint32			viewportCount;
 	};
 	const VkPipelineMultisampleStateCreateInfo	multisampleParams		=
