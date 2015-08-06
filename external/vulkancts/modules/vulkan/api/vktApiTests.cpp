@@ -253,7 +253,7 @@ tcu::TestStatus renderTriangleTest (Context& context)
 		VK_FORMAT_R8G8B8A8_UNORM,						//	VkFormat					format;
 		0u,												//	deUint32					mipLevel;
 		0u,												//	deUint32					baseArraySlice;
-		0u,												//	deUint32					arraySize;
+		1u,												//	deUint32					arraySize;
 		0u,												//	VkAttachmentViewCreateFlags	flags;
 	};
 	const Unique<VkAttachmentView>			colorAttView			(createAttachmentView(vk, vkDevice, &colorAttViewParams));
