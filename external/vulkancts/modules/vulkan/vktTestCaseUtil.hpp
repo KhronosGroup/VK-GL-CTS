@@ -215,7 +215,7 @@ void addFunctionCase (tcu::TestCaseGroup*							group,
 					  typename FunctionInstance1<Arg0>::Function	testFunc,
 					  Arg0											arg0)
 {
-	group->addChild(createFunctionCase(group->getTestContext(), tcu::NODETYPE_SELF_VALIDATE, name, desc, testFunc, arg0));
+	group->addChild(createFunctionCase<Arg0>(group->getTestContext(), tcu::NODETYPE_SELF_VALIDATE, name, desc, testFunc, arg0));
 }
 
 template<typename Arg0>
@@ -226,7 +226,7 @@ void addFunctionCase (tcu::TestCaseGroup*							group,
 					  typename FunctionInstance1<Arg0>::Function	testFunc,
 					  Arg0											arg0)
 {
-	group->addChild(createFunctionCase(group->getTestContext(), type, name, desc, testFunc, arg0));
+	group->addChild(createFunctionCase<Arg0>(group->getTestContext(), type, name, desc, testFunc, arg0));
 }
 
 template<typename Arg0>
@@ -237,7 +237,7 @@ void addFunctionCaseWithPrograms (tcu::TestCaseGroup*							group,
 								  typename FunctionInstance1<Arg0>::Function	testFunc,
 								  Arg0											arg0)
 {
-	group->addChild(createFunctionCase(group->getTestContext(), tcu::NODETYPE_SELF_VALIDATE, name, desc, initPrograms, testFunc, arg0));
+	group->addChild(createFunctionCaseWithPrograms<Arg0>(group->getTestContext(), tcu::NODETYPE_SELF_VALIDATE, name, desc, initPrograms, testFunc, arg0));
 }
 
 template<typename Arg0>
@@ -249,7 +249,7 @@ void addFunctionCaseWithPrograms (tcu::TestCaseGroup*							group,
 								  typename FunctionInstance1<Arg0>::Function	testFunc,
 								  Arg0											arg0)
 {
-	group->addChild(createFunctionCase(group->getTestContext(), type, name, desc, initPrograms, testFunc, arg0));
+	group->addChild(createFunctionCaseWithPrograms<Arg0>(group->getTestContext(), type, name, desc, initPrograms, testFunc, arg0));
 }
 
 } // vkt
