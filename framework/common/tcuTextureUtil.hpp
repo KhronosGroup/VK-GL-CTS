@@ -40,6 +40,8 @@ PixelBufferAccess		flipYAccess					(const PixelBufferAccess& access);
 ConstPixelBufferAccess	flipYAccess					(const ConstPixelBufferAccess& access);
 
 bool					isCombinedDepthStencilType	(TextureFormat::ChannelType type);
+bool					hasStencilComponent			(TextureFormat::ChannelOrder order);
+bool					hasDepthComponent			(TextureFormat::ChannelOrder order);
 
 // sRGB - linear conversion.
 Vec4					sRGBToLinear				(const Vec4& cs);
