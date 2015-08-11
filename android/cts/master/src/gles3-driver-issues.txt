@@ -719,6 +719,14 @@ dEQP-GLES3.functional.shaders.derivate.fwidth.fbo_float.vec3_lowp
 dEQP-GLES3.functional.shaders.derivate.fwidth.fbo_float.vec3_mediump
 dEQP-GLES3.functional.shaders.derivate.fwidth.fbo_float.vec3_highp
 dEQP-GLES3.functional.shaders.derivate.fwidth.fbo_float.vec4_highp
+dEQP-GLES3.functional.shaders.derivate.fwidth.fastest.fbo_float.float_highp
+dEQP-GLES3.functional.shaders.derivate.fwidth.fastest.fbo_float.vec2_highp
+dEQP-GLES3.functional.shaders.derivate.fwidth.fastest.fbo_float.vec3_highp
+dEQP-GLES3.functional.shaders.derivate.fwidth.fastest.fbo_float.vec4_highp
+dEQP-GLES3.functional.shaders.derivate.fwidth.nicest.fbo_float.float_highp
+dEQP-GLES3.functional.shaders.derivate.fwidth.nicest.fbo_float.vec2_highp
+dEQP-GLES3.functional.shaders.derivate.fwidth.nicest.fbo_float.vec3_highp
+dEQP-GLES3.functional.shaders.derivate.fwidth.nicest.fbo_float.vec4_highp
 dEQP-GLES3.functional.shaders.keywords.reserved_keywords.coherent_vertex
 dEQP-GLES3.functional.shaders.keywords.reserved_keywords.coherent_fragment
 dEQP-GLES3.functional.shaders.keywords.reserved_keywords.atomic_uint_vertex
