@@ -52,6 +52,7 @@
 #include "vktBindingModelTests.hpp"
 #include "vktSpvAsmTests.hpp"
 #include "vktShaderLibrary.hpp"
+#include "vktRenderPassTests.hpp"
 
 #include <vector>
 #include <sstream>
@@ -283,6 +284,7 @@ void TestPackage::init (void)
 	addChild(BindingModel::createTests	(m_testCtx));
 	addChild(SpirVAssembly::createTests	(m_testCtx));
 	addChild(new GlslGroup				(m_testCtx));
+	addChild(createRenderPassTests		(m_testCtx));
 }
 
 } // vkt

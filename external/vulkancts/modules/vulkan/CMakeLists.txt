@@ -23,6 +23,8 @@ set(DEQP_VK_COMMON_SRCS
 	vktInfo.hpp
 	vktShaderLibrary.cpp
 	vktShaderLibrary.hpp
+	vktRenderPassTests.cpp
+	vktRenderPassTests.hpp
 	)
 
 set(DEQP_VK_COMMON_LIBS
