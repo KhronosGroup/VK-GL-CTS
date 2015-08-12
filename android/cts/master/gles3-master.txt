@@ -15021,7 +15021,6 @@ dEQP-GLES3.functional.shaders.fragdepth.write.no_write
 dEQP-GLES3.functional.shaders.fragdepth.write.const
 dEQP-GLES3.functional.shaders.fragdepth.write.uniform
 dEQP-GLES3.functional.shaders.fragdepth.write.dynamic
-dEQP-GLES3.functional.shaders.fragdepth.write.fragcoord_z
 dEQP-GLES3.functional.shaders.fragdepth.write.uniform_conditional_write
 dEQP-GLES3.functional.shaders.fragdepth.write.dynamic_conditional_write
 dEQP-GLES3.functional.shaders.fragdepth.write.uniform_loop_write
@@ -40347,7 +40346,6 @@ dEQP-GLES3.functional.draw.random.44
 dEQP-GLES3.functional.draw.random.45
 dEQP-GLES3.functional.draw.random.48
 dEQP-GLES3.functional.draw.random.49
-dEQP-GLES3.functional.draw.random.50
 dEQP-GLES3.functional.draw.random.51
 dEQP-GLES3.functional.draw.random.52
 dEQP-GLES3.functional.draw.random.55
