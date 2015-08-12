@@ -36,7 +36,6 @@ dEQP-GLES3.functional.depth_stencil_clear.stencil_scissored_masked
 dEQP-GLES3.functional.depth_stencil_clear.depth_stencil
 dEQP-GLES3.functional.depth_stencil_clear.depth_stencil_masked
 dEQP-GLES3.functional.depth_stencil_clear.depth_stencil_scissored
-dEQP-GLES3.functional.depth_stencil_clear.depth_stencil_scissored_masked
 dEQP-GLES3.functional.shaders.builtin_variable.depth_range_vertex
 dEQP-GLES3.functional.shaders.builtin_variable.depth_range_fragment
 dEQP-GLES3.functional.shaders.builtin_variable.fragcoord_xyz
@@ -523,16 +522,11 @@ dEQP-GLES3.functional.pbo.renderbuffer.rgba32ui_triangles
 dEQP-GLES3.functional.pbo.renderbuffer.rgba32ui_clears
 dEQP-GLES3.functional.pbo.renderbuffer.srgb8_alpha8_triangles
 dEQP-GLES3.functional.pbo.renderbuffer.srgb8_alpha8_clears
-dEQP-GLES3.functional.pbo.renderbuffer.rgb10_a2_triangles
-dEQP-GLES3.functional.pbo.renderbuffer.rgb10_a2_clears
 dEQP-GLES3.functional.pbo.renderbuffer.rgb10_a2ui_triangles
 dEQP-GLES3.functional.pbo.renderbuffer.rgb10_a2ui_clears
 dEQP-GLES3.functional.pbo.renderbuffer.rgba4_triangles
 dEQP-GLES3.functional.pbo.renderbuffer.rgba4_clears
-dEQP-GLES3.functional.pbo.renderbuffer.rgb5_a1_triangles
-dEQP-GLES3.functional.pbo.renderbuffer.rgb5_a1_clears
 dEQP-GLES3.functional.pbo.renderbuffer.rgb8_triangles
-dEQP-GLES3.functional.pbo.renderbuffer.rgb565_triangles
 dEQP-GLES3.functional.pbo.renderbuffer.rgb565_clears
 dEQP-GLES3.functional.pbo.renderbuffer.r11f_g11f_b10f_triangles
 dEQP-GLES3.functional.pbo.renderbuffer.r11f_g11f_b10f_clears
