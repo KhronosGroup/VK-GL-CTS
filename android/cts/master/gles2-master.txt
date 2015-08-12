@@ -620,7 +620,6 @@ dEQP-GLES2.functional.shaders.constants.const_float_assign_user_func_fragment
 dEQP-GLES2.functional.shaders.linkage.varying_1
 dEQP-GLES2.functional.shaders.linkage.varying_2
 dEQP-GLES2.functional.shaders.linkage.varying_3
-dEQP-GLES2.functional.shaders.linkage.varying_4
 dEQP-GLES2.functional.shaders.linkage.varying_5
 dEQP-GLES2.functional.shaders.linkage.varying_6
 dEQP-GLES2.functional.shaders.linkage.varying_7
@@ -6632,7 +6631,6 @@ dEQP-GLES2.functional.shaders.builtin_variable.max_combined_texture_image_units_
 dEQP-GLES2.functional.shaders.builtin_variable.max_combined_texture_image_units_fragment
 dEQP-GLES2.functional.shaders.builtin_variable.depth_range_vertex
 dEQP-GLES2.functional.shaders.builtin_variable.depth_range_fragment
-dEQP-GLES2.functional.shaders.builtin_variable.fragcoord_xyz
 dEQP-GLES2.functional.shaders.builtin_variable.fragcoord_w
 dEQP-GLES2.functional.shaders.builtin_variable.pointcoord
 dEQP-GLES2.functional.shaders.builtin_variable.frontfacing
@@ -12941,7 +12939,6 @@ dEQP-GLES2.functional.uniform_api.random.82
 dEQP-GLES2.functional.uniform_api.random.84
 dEQP-GLES2.functional.uniform_api.random.85
 dEQP-GLES2.functional.uniform_api.random.86
-dEQP-GLES2.functional.uniform_api.random.89
 dEQP-GLES2.functional.uniform_api.random.90
 dEQP-GLES2.functional.uniform_api.random.92
 dEQP-GLES2.functional.uniform_api.random.93
