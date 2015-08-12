@@ -1771,6 +1771,11 @@ dEQP-GLES2.functional.shaders.loops.while_uniform_iterations.unconditional_conti
 dEQP-GLES2.functional.shaders.loops.while_uniform_iterations.unconditional_continue_vertex
 dEQP-GLES2.functional.shaders.loops.while_uniform_iterations.vector_counter_vertex
 dEQP-GLES2.functional.shaders.matrix.add.uniform_highp_mat2_mat2_fragment
+dEQP-GLES2.functional.shaders.matrix.add.uniform_highp_mat4_mat4_fragment
+dEQP-GLES2.functional.shaders.matrix.add.uniform_lowp_mat4_mat4_fragment
+dEQP-GLES2.functional.shaders.matrix.add.uniform_mediump_mat4_mat4_fragment
+dEQP-GLES2.functional.shaders.matrix.div.uniform_highp_mat4_mat4_fragment
+dEQP-GLES2.functional.shaders.matrix.div.uniform_mediump_mat4_mat4_fragment
 dEQP-GLES2.functional.shaders.matrix.div_assign.dynamic_lowp_mat3_fragment
 dEQP-GLES2.functional.shaders.matrix.div_assign.dynamic_lowp_mat4_fragment
 dEQP-GLES2.functional.shaders.matrix.div.const_lowp_mat2_float_fragment
@@ -1799,6 +1804,9 @@ dEQP-GLES2.functional.shaders.matrix.mul.uniform_mediump_mat4_mat4_fragment
 dEQP-GLES2.functional.shaders.matrix.post_decrement.dynamic_lowp_mat4_fragment
 dEQP-GLES2.functional.shaders.matrix.post_increment.dynamic_lowp_mat4_fragment
 dEQP-GLES2.functional.shaders.matrix.sub.uniform_lowp_mat2_mat2_fragment
+dEQP-GLES2.functional.shaders.matrix.sub.uniform_highp_mat4_mat4_fragment
+dEQP-GLES2.functional.shaders.matrix.sub.uniform_lowp_mat4_mat4_fragment
+dEQP-GLES2.functional.shaders.matrix.sub.uniform_mediump_mat4_mat4_fragment
 dEQP-GLES2.functional.shaders.operator.angle_and_trigonometry.atan2.highp_vec2_fragment
 dEQP-GLES2.functional.shaders.operator.angle_and_trigonometry.atan2.highp_vec2_vertex
 dEQP-GLES2.functional.shaders.operator.angle_and_trigonometry.atan2.highp_vec3_fragment

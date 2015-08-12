@@ -17910,9 +17910,6 @@
 						<Test name="uniform_lowp_mat4_mat4_vertex">
 							<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 						</Test>
-						<Test name="uniform_lowp_mat4_mat4_fragment">
-							<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-						</Test>
 						<Test name="uniform_mediump_mat4_float_vertex">
 							<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 						</Test>
@@ -17922,9 +17919,6 @@
 						<Test name="uniform_mediump_mat4_mat4_vertex">
 							<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 						</Test>
-						<Test name="uniform_mediump_mat4_mat4_fragment">
-							<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-						</Test>
 						<Test name="uniform_highp_mat4_float_vertex">
 							<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 						</Test>
@@ -17932,9 +17926,6 @@
 							<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 						</Test>
 						<Test name="uniform_highp_mat4_mat4_vertex">
-							<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-						</Test>
-						<Test name="uniform_highp_mat4_mat4_fragment">
 							<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 						</Test>
 						<Test name="dynamic_lowp_mat2_float_vertex">
@@ -18233,9 +18224,6 @@
 						<Test name="uniform_lowp_mat4_mat4_vertex">
 							<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 						</Test>
-						<Test name="uniform_lowp_mat4_mat4_fragment">
-							<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-						</Test>
 						<Test name="uniform_mediump_mat4_float_vertex">
 							<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 						</Test>
@@ -18245,9 +18233,6 @@
 						<Test name="uniform_mediump_mat4_mat4_vertex">
 							<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 						</Test>
-						<Test name="uniform_mediump_mat4_mat4_fragment">
-							<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-						</Test>
 						<Test name="uniform_highp_mat4_float_vertex">
 							<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 						</Test>
@@ -18255,9 +18240,6 @@
 							<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 						</Test>
 						<Test name="uniform_highp_mat4_mat4_vertex">
-							<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-						</Test>
-						<Test name="uniform_highp_mat4_mat4_fragment">
 							<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 						</Test>
 						<Test name="dynamic_lowp_mat2_float_vertex">
@@ -19161,9 +19143,6 @@
 						<Test name="uniform_mediump_mat4_mat4_vertex">
 							<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 						</Test>
-						<Test name="uniform_mediump_mat4_mat4_fragment">
-							<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-						</Test>
 						<Test name="uniform_highp_mat4_float_vertex">
 							<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 						</Test>
@@ -19171,9 +19150,6 @@
 							<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 						</Test>
 						<Test name="uniform_highp_mat4_mat4_vertex">
-							<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-						</Test>
-						<Test name="uniform_highp_mat4_mat4_fragment">
 							<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 						</Test>
 						<Test name="dynamic_lowp_mat2_float_vertex">
