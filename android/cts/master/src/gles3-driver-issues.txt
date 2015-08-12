@@ -811,6 +811,10 @@ dEQP-GLES3.functional.shaders.keywords.reserved_keywords.usamplerBuffer_vertex
 dEQP-GLES3.functional.shaders.keywords.reserved_keywords.usamplerBuffer_fragment
 dEQP-GLES3.functional.shaders.keywords.invalid_identifiers.max_length_vertex
 dEQP-GLES3.functional.shaders.keywords.invalid_identifiers.max_length_fragment
+dEQP-GLES3.functional.shaders.linkage.uniform.basic.precision_conflict_1
+dEQP-GLES3.functional.shaders.linkage.uniform.basic.precision_conflict_2
+dEQP-GLES3.functional.shaders.linkage.uniform.basic.precision_conflict_3
+dEQP-GLES3.functional.shaders.linkage.uniform.basic.precision_conflict_4
 dEQP-GLES3.functional.shaders.linkage.varying.rules.struct_type_mismatch_1
 dEQP-GLES3.functional.shaders.linkage.varying.struct.float_uvec2_vec3
 dEQP-GLES3.functional.shaders.operator.unary_operator.pre_decrement_effect.lowp_uint_vertex
