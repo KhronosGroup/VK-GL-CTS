@@ -429,6 +429,7 @@ dEQP-GLES3.functional.attribute_location.mixed_relink_hole.mat4x2
 dEQP-GLES3.functional.attribute_location.mixed_relink_hole.mat4x3
 dEQP-GLES3.functional.attribute_location.mixed_relink_hole.mat4x4
 dEQP-GLES3.functional.depth_stencil_clear.depth_stencil_scissored_masked
+dEQP-GLES3.functional.draw.random.50
 dEQP-GLES3.functional.fbo.completeness.renderable.texture.color0.red_unsigned_byte
 dEQP-GLES3.functional.fbo.completeness.renderable.texture.color0.red_float
 dEQP-GLES3.functional.fbo.completeness.renderable.texture.color0.rg_unsigned_byte
@@ -543,6 +544,7 @@ dEQP-GLES3.functional.shaders.declarations.invalid_declarations.uniform_block_ou
 dEQP-GLES3.functional.shaders.declarations.invalid_declarations.uniform_block_out_fragment
 dEQP-GLES3.functional.shaders.declarations.invalid_declarations.uniform_block_const_vertex
 dEQP-GLES3.functional.shaders.declarations.invalid_declarations.uniform_block_const_fragment
+dEQP-GLES3.functional.shaders.fragdepth.write.fragcoord_z
 dEQP-GLES3.functional.shaders.functions.datatypes.bool_bvec2_vertex
 dEQP-GLES3.functional.shaders.functions.datatypes.bool_bvec2_fragment
 dEQP-GLES3.functional.shaders.functions.invalid.overload_builtin_function_vertex

@@ -858,6 +858,7 @@ dEQP-GLES2.functional.rasterization.interpolation.projected.lines_wide
 dEQP-GLES2.functional.rasterization.primitives.line_loop_wide
 dEQP-GLES2.functional.rasterization.primitives.line_strip_wide
 dEQP-GLES2.functional.rasterization.primitives.lines_wide
+dEQP-GLES2.functional.shaders.builtin_variable.fragcoord_xyz
 dEQP-GLES2.functional.shaders.builtin_variable.max_draw_buffers_fragment
 dEQP-GLES2.functional.shaders.builtin_variable.max_draw_buffers_vertex
 dEQP-GLES2.functional.shaders.builtin_variable.max_varying_vectors_fragment
@@ -1465,6 +1466,7 @@ dEQP-GLES2.functional.shaders.linkage.uniform_struct_precision_conflict_4
 dEQP-GLES2.functional.shaders.linkage.uniform_struct_type_conflict_1
 dEQP-GLES2.functional.shaders.linkage.uniform_struct_type_conflict_2
 dEQP-GLES2.functional.shaders.linkage.uniform_struct_type_conflict_3
+dEQP-GLES2.functional.shaders.linkage.varying_4
 dEQP-GLES2.functional.shaders.linkage.varying_differing_precision_2
 dEQP-GLES2.functional.shaders.linkage.varying_illegal_usage_1
 dEQP-GLES2.functional.shaders.linkage.varying_type_mismatch_1
@@ -2754,6 +2756,7 @@ dEQP-GLES2.functional.uniform_api.random.81
 dEQP-GLES2.functional.uniform_api.random.83
 dEQP-GLES2.functional.uniform_api.random.87
 dEQP-GLES2.functional.uniform_api.random.88
+dEQP-GLES2.functional.uniform_api.random.89
 dEQP-GLES2.functional.uniform_api.random.9
 dEQP-GLES2.functional.uniform_api.random.91
 dEQP-GLES2.functional.uniform_api.random.94

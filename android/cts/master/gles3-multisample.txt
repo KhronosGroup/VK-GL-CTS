@@ -65,7 +65,6 @@ dEQP-GLES3.functional.shaders.fragdepth.write.no_write
 dEQP-GLES3.functional.shaders.fragdepth.write.const
 dEQP-GLES3.functional.shaders.fragdepth.write.uniform
 dEQP-GLES3.functional.shaders.fragdepth.write.dynamic
-dEQP-GLES3.functional.shaders.fragdepth.write.fragcoord_z
 dEQP-GLES3.functional.shaders.fragdepth.write.uniform_conditional_write
 dEQP-GLES3.functional.shaders.fragdepth.write.dynamic_conditional_write
 dEQP-GLES3.functional.shaders.fragdepth.write.uniform_loop_write
