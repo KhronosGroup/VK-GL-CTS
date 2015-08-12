@@ -36,7 +36,6 @@ dEQP-GLES3.functional.depth_stencil_clear.stencil_scissored_masked
 dEQP-GLES3.functional.depth_stencil_clear.depth_stencil
 dEQP-GLES3.functional.depth_stencil_clear.depth_stencil_masked
 dEQP-GLES3.functional.depth_stencil_clear.depth_stencil_scissored
-dEQP-GLES3.functional.depth_stencil_clear.depth_stencil_scissored_masked
 dEQP-GLES3.functional.shaders.discard.basic_always
 dEQP-GLES3.functional.shaders.discard.basic_never
 dEQP-GLES3.functional.shaders.discard.basic_uniform
