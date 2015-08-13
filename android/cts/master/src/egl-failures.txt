@@ -518,6 +518,8 @@ dEQP-EGL.functional.image.render_multiple_contexts.gles2_texture_rgba4_texture
 dEQP-EGL.functional.image.render_multiple_contexts.gles2_texture_rgba5_a1_read_pixels
 dEQP-EGL.functional.image.render_multiple_contexts.gles2_texture_rgba5_a1_texture
 dEQP-EGL.functional.multithread.pbuffer_context
+dEQP-EGL.functional.multithread.pbuffer_pixmap
+dEQP-EGL.functional.multithread.pbuffer_pixmap_context
 dEQP-EGL.functional.multithread.pbuffer_pixmap_single_window
 dEQP-EGL.functional.multithread.pbuffer_pixmap_single_window_context
 dEQP-EGL.functional.multithread.pbuffer_pixmap_window
