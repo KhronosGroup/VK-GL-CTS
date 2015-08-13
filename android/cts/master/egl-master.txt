@@ -743,11 +743,9 @@ dEQP-EGL.functional.multithread.pbuffer
 dEQP-EGL.functional.multithread.pixmap
 dEQP-EGL.functional.multithread.single_window
 dEQP-EGL.functional.multithread.context
-dEQP-EGL.functional.multithread.pbuffer_pixmap
 dEQP-EGL.functional.multithread.pixmap_window
 dEQP-EGL.functional.multithread.pixmap_single_window
 dEQP-EGL.functional.multithread.pixmap_context
-dEQP-EGL.functional.multithread.pbuffer_pixmap_context
 dEQP-EGL.functional.multithread.pixmap_single_window_context
 dEQP-EGL.functional.get_proc_address.extension.egl_android_blob_cache
 dEQP-EGL.functional.get_proc_address.extension.egl_android_native_fence_sync
