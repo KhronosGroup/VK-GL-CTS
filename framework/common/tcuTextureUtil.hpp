@@ -88,6 +88,11 @@ IVec4				getTextureFormatBitDepth			(const TextureFormat& format);
 IVec4				getTextureFormatMantissaBitDepth	(const TextureFormat& format);
 BVec4				getTextureFormatChannelMask			(const TextureFormat& format);
 
+IVec4				getFormatMinIntValue				(const TextureFormat& format);
+IVec4				getFormatMaxIntValue				(const TextureFormat& format);
+
+UVec4				getFormatMaxUintValue				(const TextureFormat& format);
+
 // Texture fill.
 void	clear							(const PixelBufferAccess& access, const Vec4& color);
 void	clear							(const PixelBufferAccess& access, const IVec4& color);
