@@ -234,7 +234,7 @@ ConstPixelBufferAccess flipYAccess (const ConstPixelBufferAccess& access)
 	return ConstPixelBufferAccess(access.getFormat(), access.getSize(), pitch, (deUint8*)access.getDataPtr() + offsetToLast);
 }
 
-static Vec2 getChannelValueRange (TextureFormat::ChannelType channelType)
+static Vec2 getFloatChannelValueRange (TextureFormat::ChannelType channelType)
 {
 	// make sure this table is updated if format table is updated
 	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 27);
@@ -306,7 +306,7 @@ TextureFormatInfo getTextureFormatInfo (const TextureFormat& format)
 								 Vec4(1.0f, 1.0f, 1.0f, 1.0f),
 								 Vec4(0.0f, 0.0f, 0.0f, 0.0f));
 
-	const Vec2						cRange		= getChannelValueRange(format.type);
+	const Vec2						cRange		= getFloatChannelValueRange(format.type);
 	const TextureSwizzle::Channel*	map			= getChannelReadSwizzle(format.order).components;
 	const BVec4						chnMask		= BVec4(deInRange32(map[0], TextureSwizzle::CHANNEL_0, TextureSwizzle::CHANNEL_3) == DE_TRUE,
 														deInRange32(map[1], TextureSwizzle::CHANNEL_0, TextureSwizzle::CHANNEL_3) == DE_TRUE,
@@ -319,6 +319,58 @@ TextureFormatInfo getTextureFormatInfo (const TextureFormat& format)
 							 select(cRange[1],	0.0f, chnMask),
 							 select(scale,		1.0f, chnMask),
 							 select(bias,		0.0f, chnMask));
+}
+
+IVec4 getFormatMinIntValue (const TextureFormat& format)
+{
+	DE_ASSERT(getTextureChannelClass(format.type) == TEXTURECHANNELCLASS_SIGNED_INTEGER);
+
+	switch (format.type)
+	{
+		case TextureFormat::SIGNED_INT8:	return IVec4(-128);
+		case TextureFormat::SIGNED_INT16:	return IVec4(-32768);
+		case TextureFormat::SIGNED_INT32:	return IVec4(-2147483648);
+
+		default:
+			DE_FATAL("Invalid channel type");
+			return IVec4(0);
+	}
+}
+
+IVec4 getFormatMaxIntValue (const TextureFormat& format)
+{
+	DE_ASSERT(getTextureChannelClass(format.type) == TEXTURECHANNELCLASS_SIGNED_INTEGER);
+
+	switch (format.type)
+	{
+		case TextureFormat::SIGNED_INT8:	return IVec4(127);
+		case TextureFormat::SIGNED_INT16:	return IVec4(32767);
+		case TextureFormat::SIGNED_INT32:	return IVec4(2147483647);
+
+		default:
+			DE_FATAL("Invalid channel type");
+			return IVec4(0);
+	}
+}
+
+UVec4 getFormatMaxUintValue (const TextureFormat& format)
+{
+	DE_ASSERT(getTextureChannelClass(format.type) == TEXTURECHANNELCLASS_UNSIGNED_INTEGER);
+
+	if (format == TextureFormat(TextureFormat::RGBA, TextureFormat::UNSIGNED_INT_1010102_REV))
+		return UVec4(1023u, 1023u, 1023u, 3u);
+
+	switch (format.type)
+	{
+		case TextureFormat::UNSIGNED_INT8:	return UVec4(255u);
+		case TextureFormat::UNSIGNED_INT16:	return UVec4(65535u);
+		case TextureFormat::UNSIGNED_INT24:	return UVec4(16777215u);
+		case TextureFormat::UNSIGNED_INT32:	return UVec4(4294967295u);
+
+		default:
+			DE_FATAL("Invalid channel type");
+			return UVec4(0);
+	}
 }
 
 static IVec4 getChannelBitDepth (TextureFormat::ChannelType channelType)
