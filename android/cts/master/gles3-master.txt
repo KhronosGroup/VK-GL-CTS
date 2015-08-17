@@ -17271,9 +17271,7 @@ dEQP-GLES3.functional.shaders.builtin_functions.precision.reflect.mediump_vertex
 dEQP-GLES3.functional.shaders.builtin_functions.precision.reflect.mediump_vertex.vec4
 dEQP-GLES3.functional.shaders.builtin_functions.precision.reflect.mediump_fragment.vec3
 dEQP-GLES3.functional.shaders.builtin_functions.precision.reflect.mediump_fragment.vec4
-dEQP-GLES3.functional.shaders.builtin_functions.precision.reflect.highp_vertex.scalar
 dEQP-GLES3.functional.shaders.builtin_functions.precision.reflect.highp_vertex.vec3
-dEQP-GLES3.functional.shaders.builtin_functions.precision.reflect.highp_fragment.scalar
 dEQP-GLES3.functional.shaders.builtin_functions.precision.reflect.highp_fragment.vec3
 dEQP-GLES3.functional.shaders.builtin_functions.precision.matrixcompmult.lowp_vertex.mat2
 dEQP-GLES3.functional.shaders.builtin_functions.precision.matrixcompmult.lowp_vertex.mat2x3
