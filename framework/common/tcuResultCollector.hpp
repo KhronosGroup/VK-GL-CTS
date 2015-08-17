@@ -46,8 +46,8 @@ public:
 						ResultCollector			(void);
 						ResultCollector			(TestLog& log, const std::string& prefix = "");
 
-	qpTestResult		getResult				(void) const { return m_result;		}
-	const std::string	getMessage				(void) const { return m_message;	}
+	qpTestResult		getResult				(void) const;
+	const std::string	getMessage				(void) const { return m_message; }
 
 	void				fail					(const std::string& msg);
 	bool				check					(bool condition, const std::string& msg);

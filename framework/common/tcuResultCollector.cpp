@@ -64,6 +64,14 @@ ResultCollector::ResultCollector (TestLog& log, const std::string& prefix)
 {
 }
 
+qpTestResult ResultCollector::getResult (void) const
+{
+	if (m_result == QP_TEST_RESULT_LAST)
+		return QP_TEST_RESULT_PASS;
+	else
+		return m_result;
+}
+
 void ResultCollector::addResult (qpTestResult result, const std::string& msg)
 {
 	if (m_log != DE_NULL)
@@ -95,10 +103,7 @@ bool ResultCollector::check (bool condition, const std::string& msg)
 
 void ResultCollector::setTestContextResult (TestContext& testCtx)
 {
-	if (m_result == QP_TEST_RESULT_LAST)
-		testCtx.setTestResult(QP_TEST_RESULT_PASS, m_message.c_str());
-	else
-		testCtx.setTestResult(m_result, m_message.c_str());
+	testCtx.setTestResult(getResult(), getMessage().c_str());
 }
 
 } // tcu
