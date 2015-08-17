@@ -2610,7 +2610,6 @@ dEQP-GLES31.functional.shaders.builtin_functions.precision.reflect.lowp_compute.
 dEQP-GLES31.functional.shaders.builtin_functions.precision.reflect.mediump_compute.vec2
 dEQP-GLES31.functional.shaders.builtin_functions.precision.reflect.mediump_compute.vec3
 dEQP-GLES31.functional.shaders.builtin_functions.precision.reflect.mediump_compute.vec4
-dEQP-GLES31.functional.shaders.builtin_functions.precision.reflect.highp_compute.scalar
 dEQP-GLES31.functional.shaders.builtin_functions.precision.reflect.highp_compute.vec2
 dEQP-GLES31.functional.shaders.builtin_functions.precision.reflect.highp_compute.vec3
 dEQP-GLES31.functional.shaders.builtin_functions.precision.matrixcompmult.lowp_compute.mat2
