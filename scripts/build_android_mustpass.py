@@ -477,7 +477,8 @@ MASTER_GLES3_PKG				= Package(module = GLES3_MODULE, configurations = [
 					  glconfig		= "rgb565d0s0ms0",
 					  rotation		= "unspecified",
 					  surfacetype	= "window",
-					  filters		= MASTER_GLES3_COMMON_FILTERS + [include("gles3-pixelformat.txt")]),
+					  filters		= MASTER_GLES3_COMMON_FILTERS + [include("gles3-pixelformat.txt"),
+																	 exclude("gles3-pixelformat-issues.txt")]),
 	])
 
 MASTER_GLES31_COMMON_FILTERS	= [
