@@ -147,3 +147,4 @@ dEQP-GLES3.functional.shaders.texture_functions.texturelodoffset.sampler3d_float
 
 # Bug 22859221
 dEQP-GLES3.functional.shaders.builtin_functions.precision.reflect.*mediump*.scalar
+dEQP-GLES3.functional.shaders.builtin_functions.precision.reflect.*highp*.scalar
