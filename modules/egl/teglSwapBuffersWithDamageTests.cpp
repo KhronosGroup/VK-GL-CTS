@@ -528,6 +528,9 @@ TestCase::IterateResult SwapBuffersWithDamageAndBufferAgeTest::iterate (void)
 
 	for (int iterationNdx = 0; iterationNdx < m_iterationTimes; iterationNdx++)
 	{
+		clearColorScreen(m_gl, clearColor);
+		EGLU_CHECK_CALL(egl, swapBuffersWithDamageKHR(m_eglDisplay, m_eglSurface, DE_NULL, 0));
+
 		for (int frameNdx = 0; frameNdx < numFrames; frameNdx++)
 		{
 			vector<EGLint>	damageRegion;
