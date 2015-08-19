@@ -3288,7 +3288,6 @@ dEQP-GLES3.functional.read_pixels.skip.choose_0_3
 dEQP-GLES3.functional.read_pixels.skip.choose_3_0
 dEQP-GLES3.functional.read_pixels.skip.choose_3_3
 dEQP-GLES3.functional.read_pixels.skip.choose_3_5
-dEQP-GLES3.functional.dither.disabled.gradient_white
 dEQP-GLES3.functional.dither.disabled.gradient_red
 dEQP-GLES3.functional.dither.disabled.gradient_green
 dEQP-GLES3.functional.dither.disabled.gradient_blue
