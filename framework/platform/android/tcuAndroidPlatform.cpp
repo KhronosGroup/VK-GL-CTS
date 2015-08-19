@@ -190,7 +190,7 @@ class VulkanLibrary : public vk::Library
 {
 public:
 	VulkanLibrary (void)
-		: m_library	("libvulkan.so")
+		: m_library	("/vendor/lib/libVK_IMG.so")
 		, m_driver	(m_library)
 	{
 	}

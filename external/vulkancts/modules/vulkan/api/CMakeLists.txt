@@ -5,6 +5,8 @@ include_directories(..)
 set(DEQP_VK_API_SRCS
 	vktApiTests.cpp
 	vktApiTests.hpp
+	vktDeviceInitializationTests.cpp
+	vktDeviceInitializationTests.hpp
 	)
 
 set(DEQP_VK_API_LIBS
