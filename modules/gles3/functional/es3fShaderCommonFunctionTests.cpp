@@ -532,16 +532,16 @@ public:
 		if (glu::isDataTypeFloatOrVec(type))
 		{
 			// Special cases.
-			std::fill((float*)values[0], (float*)values[0] + scalarSize, +1.0f);
-			std::fill((float*)values[0], (float*)values[0] + scalarSize, -1.0f);
-			std::fill((float*)values[0], (float*)values[0] + scalarSize,  0.0f);
+			std::fill((float*)values[0],				(float*)values[0] + scalarSize,		+1.0f);
+			std::fill((float*)values[0] + scalarSize*1,	(float*)values[0] + scalarSize*2,	-1.0f);
+			std::fill((float*)values[0] + scalarSize*2,	(float*)values[0] + scalarSize*3,	0.0f);
 			fillRandomScalars(rnd, floatRanges[precision].x(), floatRanges[precision].y(), (float*)values[0] + scalarSize*3, (numValues-3)*scalarSize);
 		}
 		else
 		{
-			std::fill((int*)values[0], (int*)values[0] + scalarSize, +1);
-			std::fill((int*)values[0], (int*)values[0] + scalarSize, -1);
-			std::fill((int*)values[0], (int*)values[0] + scalarSize,  0);
+			std::fill((int*)values[0],					(int*)values[0] + scalarSize,		+1);
+			std::fill((int*)values[0] + scalarSize*1,	(int*)values[0] + scalarSize*2,		-1);
+			std::fill((int*)values[0] + scalarSize*2,	(int*)values[0] + scalarSize*3,		0);
 			fillRandomScalars(rnd, intRanges[precision].x(), intRanges[precision].y(), (int*)values[0] + scalarSize*3, (numValues-3)*scalarSize);
 		}
 	}
