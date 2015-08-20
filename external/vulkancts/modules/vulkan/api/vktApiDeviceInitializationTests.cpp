@@ -32,7 +32,7 @@
  * \brief Device Initialization Tests
  *//*--------------------------------------------------------------------*/
 
-#include "vktDeviceInitializationTests.hpp"
+#include "vktApiDeviceInitializationTests.hpp"
 #include "vktTestCaseUtil.hpp"
 
 #include "vkDefs.hpp"
@@ -55,7 +55,10 @@
 
 namespace vkt
 {
-namespace deviceInit
+namespace api
+{
+
+namespace
 {
 
 using namespace vk;
@@ -225,7 +228,7 @@ tcu::TestStatus createInstanceWithInvalidApiVersionTest (Context& context)
 
 			resultCollector.fail("Fail, instance creation with invalid apiVersion is not rejected");
 		}
-		catch (const tcu::NotSupportedError& err)
+		catch (const tcu::NotSupportedError&)
 		{
 			log << TestLog::Message << "Pass, instance creation with invalid apiVesion is rejected" << TestLog::EndMessage;
 		}
@@ -272,7 +275,7 @@ tcu::TestStatus createInstanceWithUnsupportedExtensionsTest (Context& context)
 
 		return tcu::TestStatus::fail("Fail, creating instance with unsupported extensions succeeded.");
 	}
-	catch (const tcu::NotSupportedError& err)
+	catch (const tcu::NotSupportedError&)
 	{
 		return tcu::TestStatus::pass("Pass, creating instance with unsupported extension was rejected.");
 	}
@@ -442,16 +445,16 @@ tcu::TestStatus createDeviceWithUnsupportedExtensionsTest (Context& context)
 
 		return tcu::TestStatus::fail("Fail, create device with unsupported extension but succeed.");
 	}
-	catch (const tcu::NotSupportedError& err)
+	catch (const tcu::NotSupportedError&)
 	{
-		return tcu::TestStatus::pass("Pass, create device with unsuppoerted extension is rejected.");
+		return tcu::TestStatus::pass("Pass, create device with unsupported extension is rejected.");
 	}
 }
 
-tcu::TestStatus createDeviceWithVariousQueueCountTest (Context& context)
+tcu::TestStatus createDeviceWithVariousQueueCountsTest (Context& context)
 {
 	tcu::TestLog&										log								= context.getTestContext().getLog();
-	const int											queueCountDiff					= 3;
+	const int											queueCountDiff					= 1;
 	const PlatformInterface&							platformInterface				= context.getPlatformInterface();
 	const Unique<VkInstance>							instance						(createDefaultInstance(platformInterface));
 	const InstanceDriver								instanceDriver					(platformInterface, instance.get());
@@ -529,20 +532,22 @@ tcu::TestStatus createDeviceWithVariousQueueCountTest (Context& context)
 	return tcu::TestStatus::pass("Pass");
 }
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+} // anonymous
+
+tcu::TestCaseGroup* createDeviceInitializationTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup>	deviceInitializationTests (new tcu::TestCaseGroup(testCtx, "device_init", "Device Initialization Tests"));
 
-	addFunctionCase(deviceInitializationTests.get(), "create_instance_name_version", "", createInstanceTest);
-	addFunctionCase(deviceInitializationTests.get(), "create_instance_invalid_api_version", "", createInstanceWithInvalidApiVersionTest);
-	addFunctionCase(deviceInitializationTests.get(), "create_instance_unsupported_extensions", "", createInstanceWithUnsupportedExtensionsTest);
-	addFunctionCase(deviceInitializationTests.get(), "create_device", "", createDeviceTest);
-	addFunctionCase(deviceInitializationTests.get(), "create_multiple_devices", "", createMultipleDevicesTest);
-	addFunctionCase(deviceInitializationTests.get(), "create_device_unsupported_extensions", "", createDeviceWithUnsupportedExtensionsTest);
-	addFunctionCase(deviceInitializationTests.get(), "create_device_various_queue_count", "", createDeviceWithVariousQueueCountTest);
+	addFunctionCase(deviceInitializationTests.get(), "create_instance_name_version",			"", createInstanceTest);
+	addFunctionCase(deviceInitializationTests.get(), "create_instance_invalid_api_version",		"", createInstanceWithInvalidApiVersionTest);
+	addFunctionCase(deviceInitializationTests.get(), "create_instance_unsupported_extensions",	"", createInstanceWithUnsupportedExtensionsTest);
+	addFunctionCase(deviceInitializationTests.get(), "create_device",							"", createDeviceTest);
+	addFunctionCase(deviceInitializationTests.get(), "create_multiple_devices",					"", createMultipleDevicesTest);
+	addFunctionCase(deviceInitializationTests.get(), "create_device_unsupported_extensions",	"", createDeviceWithUnsupportedExtensionsTest);
+	addFunctionCase(deviceInitializationTests.get(), "create_device_various_queue_counts",		"", createDeviceWithVariousQueueCountsTest);
 
 	return deviceInitializationTests.release();
 }
 
-} // deviceInit
+} // api
 } // vkt

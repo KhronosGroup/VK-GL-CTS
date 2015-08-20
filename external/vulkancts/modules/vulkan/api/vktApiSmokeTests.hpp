@@ -1,5 +1,5 @@
-#ifndef _VKTDEVICEINITIALIZATIONTESTS_HPP
-#define _VKTDEVICEINITIALIZATIONTESTS_HPP
+#ifndef _VKTAPISMOKETESTS_HPP
+#define _VKTAPISMOKETESTS_HPP
 /*-------------------------------------------------------------------------
  * Vulkan Conformance Tests
  * ------------------------
@@ -31,7 +31,7 @@
  *
  *//*!
  * \file
- * \brief DEVICEINITIALIZATION tests
+ * \brief Simple Smoke Tests
  *//*--------------------------------------------------------------------*/
 
 #include "tcuDefs.hpp"
@@ -39,12 +39,12 @@
 
 namespace vkt
 {
-namespace deviceInit
+namespace api
 {
 
-tcu::TestCaseGroup*		createTests		(tcu::TestContext& testCtx);
+tcu::TestCaseGroup*		createSmokeTests		(tcu::TestContext& testCtx);
 
-} // deviceInit
+} // api
 } // vkt
 
-#endif // _VKTDEVICEINITIALIZATIONTESTS_HPP
+#endif // _VKTAPISMOKETESTS_HPP

@@ -1,3 +1,5 @@
+#ifndef _VKTAPIDEVICEINITIALIZATIONTESTS_HPP
+#define _VKTAPIDEVICEINITIALIZATIONTESTS_HPP
 /*-------------------------------------------------------------------------
  * Vulkan Conformance Tests
  * ------------------------
@@ -29,30 +31,20 @@
  *
  *//*!
  * \file
- * \brief API Tests
+ * \brief Device Initialization tests
  *//*--------------------------------------------------------------------*/
 
-#include "vktApiTests.hpp"
-
-#include "deUniquePtr.hpp"
-
-#include "vktApiSmokeTests.hpp"
-#include "vktApiDeviceInitializationTests.hpp"
+#include "tcuDefs.hpp"
+#include "tcuTestCase.hpp"
 
 namespace vkt
 {
 namespace api
 {
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
-{
-	de::MovePtr<tcu::TestCaseGroup>	apiTests	(new tcu::TestCaseGroup(testCtx, "api", "API Tests"));
-
-	apiTests->addChild(createSmokeTests					(testCtx));
-	apiTests->addChild(createDeviceInitializationTests	(testCtx));
-
-	return apiTests.release();
-}
+tcu::TestCaseGroup*		createDeviceInitializationTests		(tcu::TestContext& testCtx);
 
 } // api
 } // vkt
+
+#endif // _VKTAPIDEVICEINITIALIZATIONTESTS_HPP

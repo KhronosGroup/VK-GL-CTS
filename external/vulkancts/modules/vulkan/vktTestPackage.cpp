@@ -47,7 +47,6 @@
 
 #include "vktInfo.hpp"
 #include "vktApiTests.hpp"
-#include "vktDeviceInitializationTests.hpp"
 
 #include <vector>
 #include <sstream>
@@ -209,7 +208,6 @@ void TestPackage::init (void)
 {
 	addChild(createInfoTests	(m_testCtx));
 	addChild(api::createTests	(m_testCtx));
-	addChild(deviceInit::createTests (m_testCtx));
 }
 
 } // vkt
