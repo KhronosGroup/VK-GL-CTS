@@ -87,6 +87,36 @@ bool isCombinedDepthStencilType (TextureFormat::ChannelType type)
 			type == TextureFormat::FLOAT_UNSIGNED_INT_24_8_REV;
 }
 
+bool hasStencilComponent (TextureFormat::ChannelOrder order)
+{
+	DE_STATIC_ASSERT(TextureFormat::CHANNELORDER_LAST == 18);
+
+	switch (order)
+	{
+		case TextureFormat::S:
+		case TextureFormat::DS:
+			return true;
+
+		default:
+			return false;
+	}
+}
+
+bool hasDepthComponent (TextureFormat::ChannelOrder order)
+{
+	DE_STATIC_ASSERT(TextureFormat::CHANNELORDER_LAST == 18);
+
+	switch (order)
+	{
+		case TextureFormat::D:
+		case TextureFormat::DS:
+			return true;
+
+		default:
+			return false;
+	}
+}
+
 //! Get texture channel class for format
 TextureChannelClass getTextureChannelClass (TextureFormat::ChannelType channelType)
 {
