@@ -37,6 +37,26 @@
 namespace vk
 {
 
+struct CharPtr
+{
+	const char*	ptr;
+
+	CharPtr (const char* ptr_) : ptr(ptr_) {}
+};
+
+std::ostream& operator<< (std::ostream& str, const CharPtr& ptr)
+{
+	if (!ptr.ptr)
+		return str << "(null)";
+	else
+		return str << '"' << ptr.ptr << '"';
+}
+
+inline CharPtr getCharPtrStr (const char* ptr)
+{
+	return CharPtr(ptr);
+}
+
 #include "vkStrUtilImpl.inl"
 
 } // vk

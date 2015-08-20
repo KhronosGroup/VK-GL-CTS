@@ -1149,9 +1149,9 @@ std::ostream& operator<< (std::ostream& s, const VkApplicationInfo& value)
 	s << "VkApplicationInfo = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tpAppName = " << value.pAppName << '\n';
+	s << "\tpAppName = " << getCharPtrStr(value.pAppName) << '\n';
 	s << "\tappVersion = " << value.appVersion << '\n';
-	s << "\tpEngineName = " << value.pEngineName << '\n';
+	s << "\tpEngineName = " << getCharPtrStr(value.pEngineName) << '\n';
 	s << "\tengineVersion = " << value.engineVersion << '\n';
 	s << "\tapiVersion = " << value.apiVersion << '\n';
 	s << '}';
@@ -1747,7 +1747,7 @@ std::ostream& operator<< (std::ostream& s, const VkShaderCreateInfo& value)
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tmodule = " << value.module << '\n';
-	s << "\tpName = " << value.pName << '\n';
+	s << "\tpName = " << getCharPtrStr(value.pName) << '\n';
 	s << "\tflags = " << value.flags << '\n';
 	s << '}';
 	return s;

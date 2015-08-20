@@ -485,6 +485,8 @@ def writeStrUtilImpl (api, filename):
 				valFmt		= None
 				if member.type in bitfieldTypeNames:
 					valFmt = "get%sStr(value.%s)" % (member.type[2:], member.name)
+				elif member.type == "const char*" or member.type == "char*":
+					valFmt = "getCharPtrStr(value.%s)" % member.name
 				elif '[' in member.name:
 					baseName = member.name[:member.name.find('[')]
 					if baseName == "extName" or baseName == "deviceName":
