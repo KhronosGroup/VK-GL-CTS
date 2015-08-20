@@ -327,9 +327,9 @@ IVec4 getFormatMinIntValue (const TextureFormat& format)
 
 	switch (format.type)
 	{
-		case TextureFormat::SIGNED_INT8:	return IVec4(-128);
-		case TextureFormat::SIGNED_INT16:	return IVec4(-32768);
-		case TextureFormat::SIGNED_INT32:	return IVec4(-2147483648);
+		case TextureFormat::SIGNED_INT8:	return IVec4(std::numeric_limits<deInt8>::min());
+		case TextureFormat::SIGNED_INT16:	return IVec4(std::numeric_limits<deInt16>::min());
+		case TextureFormat::SIGNED_INT32:	return IVec4(std::numeric_limits<deInt32>::min());
 
 		default:
 			DE_FATAL("Invalid channel type");
@@ -343,9 +343,9 @@ IVec4 getFormatMaxIntValue (const TextureFormat& format)
 
 	switch (format.type)
 	{
-		case TextureFormat::SIGNED_INT8:	return IVec4(127);
-		case TextureFormat::SIGNED_INT16:	return IVec4(32767);
-		case TextureFormat::SIGNED_INT32:	return IVec4(2147483647);
+		case TextureFormat::SIGNED_INT8:	return IVec4(std::numeric_limits<deInt8>::max());
+		case TextureFormat::SIGNED_INT16:	return IVec4(std::numeric_limits<deInt16>::max());
+		case TextureFormat::SIGNED_INT32:	return IVec4(std::numeric_limits<deInt32>::max());
 
 		default:
 			DE_FATAL("Invalid channel type");
@@ -362,10 +362,10 @@ UVec4 getFormatMaxUintValue (const TextureFormat& format)
 
 	switch (format.type)
 	{
-		case TextureFormat::UNSIGNED_INT8:	return UVec4(255u);
-		case TextureFormat::UNSIGNED_INT16:	return UVec4(65535u);
-		case TextureFormat::UNSIGNED_INT24:	return UVec4(16777215u);
-		case TextureFormat::UNSIGNED_INT32:	return UVec4(4294967295u);
+		case TextureFormat::UNSIGNED_INT8:	return UVec4(std::numeric_limits<deUint8>::max());
+		case TextureFormat::UNSIGNED_INT16:	return UVec4(std::numeric_limits<deUint16>::max());
+		case TextureFormat::UNSIGNED_INT24:	return UVec4(0xffffffu);
+		case TextureFormat::UNSIGNED_INT32:	return UVec4(std::numeric_limits<deUint32>::max());
 
 		default:
 			DE_FATAL("Invalid channel type");
