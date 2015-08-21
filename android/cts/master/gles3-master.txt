@@ -35578,11 +35578,6 @@ dEQP-GLES3.functional.fragment_out.basic.uint.rgba16ui_highp_uvec4
 dEQP-GLES3.functional.fragment_out.basic.uint.rgba8ui_lowp_uint
 dEQP-GLES3.functional.fragment_out.basic.uint.rgba8ui_lowp_uvec2
 dEQP-GLES3.functional.fragment_out.basic.uint.rgba8ui_lowp_uvec3
-dEQP-GLES3.functional.fragment_out.basic.uint.rgba8ui_lowp_uvec4
-dEQP-GLES3.functional.fragment_out.basic.uint.rgba8ui_mediump_uint
-dEQP-GLES3.functional.fragment_out.basic.uint.rgba8ui_mediump_uvec2
-dEQP-GLES3.functional.fragment_out.basic.uint.rgba8ui_mediump_uvec3
-dEQP-GLES3.functional.fragment_out.basic.uint.rgba8ui_mediump_uvec4
 dEQP-GLES3.functional.fragment_out.basic.uint.rgba8ui_highp_uint
 dEQP-GLES3.functional.fragment_out.basic.uint.rgba8ui_highp_uvec2
 dEQP-GLES3.functional.fragment_out.basic.uint.rgba8ui_highp_uvec3
