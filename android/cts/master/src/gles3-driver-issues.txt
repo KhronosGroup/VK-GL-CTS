@@ -445,6 +445,11 @@ dEQP-GLES3.functional.fragment_ops.interaction.basic_shader.27
 dEQP-GLES3.functional.fragment_ops.interaction.basic_shader.44
 dEQP-GLES3.functional.fragment_ops.interaction.basic_shader.78
 dEQP-GLES3.functional.fragment_ops.interaction.basic_shader.84
+dEQP-GLES3.functional.fragment_out.basic.uint.rgba8ui_lowp_uvec4
+dEQP-GLES3.functional.fragment_out.basic.uint.rgba8ui_mediump_uint
+dEQP-GLES3.functional.fragment_out.basic.uint.rgba8ui_mediump_uvec2
+dEQP-GLES3.functional.fragment_out.basic.uint.rgba8ui_mediump_uvec3
+dEQP-GLES3.functional.fragment_out.basic.uint.rgba8ui_mediump_uvec4
 dEQP-GLES3.functional.negative_api.buffer.read_buffer
 dEQP-GLES3.functional.negative_api.shader.program_parameteri
 dEQP-GLES3.functional.multisample.default_framebuffer.stencil
