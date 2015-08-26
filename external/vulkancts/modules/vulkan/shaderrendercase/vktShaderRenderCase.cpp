@@ -279,47 +279,6 @@ void ShaderEvaluator::evaluate (ShaderEvalContext& ctx)
     m_evalFunc(ctx);
 }
 
-// ShaderRenderCase
-ShaderRenderCase::ShaderRenderCase	(tcu::TestContext& testCtx,
-									const string& name,
-									const string& description,
-									bool isVertexCase,
-									ShaderEvalFunc evalFunc)
-	: vkt::TestCase(testCtx, name, description)
-	, m_isVertexCase(isVertexCase)
-	, m_evaluator(new ShaderEvaluator(evalFunc))
-{
-}
-
-ShaderRenderCase::ShaderRenderCase	(tcu::TestContext& testCtx,
-									const string& name,
-									const string& description,
-									bool isVertexCase,
-									ShaderEvaluator* evaluator)
-	: vkt::TestCase(testCtx, name, description)
-	, m_isVertexCase(isVertexCase)
-	, m_evaluator(evaluator)
-{
-}
-
-ShaderRenderCase::~ShaderRenderCase (void)
-{
-}
-
-void ShaderRenderCase::initPrograms (vk::ProgramCollection<glu::ProgramSources>& programCollection) const
-{
-	if (!m_vertShaderSource.empty())
-		programCollection.add(m_name + "_vert") << glu::VertexSource(m_vertShaderSource);
-
-	if (!m_fragShaderSource.empty())
-		programCollection.add(m_name + "_frag") << glu::FragmentSource(m_fragShaderSource);
-}
-
-TestInstance* ShaderRenderCase::createInstance (Context& context) const
-{
-	return new ShaderRenderCaseInstance(context, m_name, m_isVertexCase, *m_evaluator);
-}
-
 // ShaderRenderCaseInstance.
 
 ShaderRenderCaseInstance::ShaderRenderCaseInstance (Context& context, const string& name, bool isVertexCase, ShaderEvaluator& evaluator)

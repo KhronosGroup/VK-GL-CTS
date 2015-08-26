@@ -141,6 +141,7 @@ private:
 };
 
 
+template<typename Instance>
 class ShaderRenderCase : public vkt::TestCase
 {
 public:
@@ -148,16 +149,34 @@ public:
 												const std::string& name,
 												const std::string& description,
 												bool isVertexCase,
-												ShaderEvalFunc evalFunc);
+												ShaderEvalFunc evalFunc)
+								: vkt::TestCase(testCtx, name, description)
+								, m_isVertexCase(isVertexCase)
+								, m_evaluator(new ShaderEvaluator(evalFunc))
+							{}
+
 							ShaderRenderCase	(tcu::TestContext& testCtx,
 												const std::string& name,
 												const std::string& description,
 												bool isVertexCase,
-												ShaderEvaluator* evaulator);
+												ShaderEvaluator* evaluator)
+								: vkt::TestCase(testCtx, name, description)
+								, m_isVertexCase(isVertexCase)
+								, m_evaluator(evaluator)
+							{}
 
-	virtual					~ShaderRenderCase	(void);
-	virtual	void			initPrograms		(vk::ProgramCollection<glu::ProgramSources>& programCollection) const;
-	virtual	TestInstance*	createInstance		(Context& context) const;
+
+	virtual					~ShaderRenderCase	(void) {}
+	virtual	void			initPrograms		(vk::ProgramCollection<glu::ProgramSources>& programCollection) const
+							{
+								if (!m_vertShaderSource.empty())
+									programCollection.add(m_name + "_vert") << glu::VertexSource(m_vertShaderSource);
+
+								if (!m_fragShaderSource.empty())
+									programCollection.add(m_name + "_frag") << glu::FragmentSource(m_fragShaderSource);
+							}
+
+	virtual	TestInstance*	createInstance		(Context& context) const { return new Instance(context, m_name, m_isVertexCase, *m_evaluator); }
 
 protected:
     std::string				m_vertShaderSource;
