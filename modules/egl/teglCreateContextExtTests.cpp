@@ -438,20 +438,6 @@ void CreateContextExtCase::checkRequiredExtensions (void)
 		TCU_THROW(NotSupportedError, "Required extensions not supported");
 }
 
-bool hasExtension (const glw::Functions& gl, const char* extension)
-{
-	std::istringstream	stream((const char*)gl.getString(GL_EXTENSIONS));
-	string				ext;
-
-	while (std::getline(stream, ext, ' '))
-	{
-		if (ext == extension)
-			return true;
-	}
-
-	return false;
-}
-
 bool checkVersionString (TestLog& log, const glw::Functions& gl, bool desktop, int major, int minor)
 {
 	const char* const	versionStr	= (const char*)gl.getString(GL_VERSION);
@@ -568,7 +554,7 @@ bool checkVersionString (TestLog& log, const glw::Functions& gl, bool desktop, i
 		{
 			if (majorVersion == 3 && minorVersion == 1)
 			{
-				if (hasExtension(gl, "GL_ARB_compatibility"))
+				if (glu::hasExtension(gl, glu::ApiType::core(3, 1), "GL_ARB_compatibility"))
 					return true;
 				else
 				{
@@ -841,7 +827,7 @@ bool CreateContextExtCase::validateCurrentContext (const glw::Functions& gl)
 	{
 		if (m_api == EGL_OPENGL_API)
 		{
-			if (!hasExtension(gl, "GL_ARB_robustness"))
+			if (!glu::hasExtension(gl, glu::ApiType::core(majorVersion, minorVersion), "GL_ARB_robustness"))
 			{
 				log << TestLog::Message << "Created robustness context but it doesn't support GL_ARB_robustness." << TestLog::EndMessage;
 				isOk = false;
@@ -849,7 +835,7 @@ bool CreateContextExtCase::validateCurrentContext (const glw::Functions& gl)
 		}
 		else if (m_api == EGL_OPENGL_ES_API)
 		{
-			if (!hasExtension(gl, "GL_EXT_robustness"))
+			if (!glu::hasExtension(gl, glu::ApiType::es(majorVersion, minorVersion), "GL_EXT_robustness"))
 			{
 				log << TestLog::Message << "Created robustness context but it doesn't support GL_EXT_robustness." << TestLog::EndMessage;
 				isOk = false;

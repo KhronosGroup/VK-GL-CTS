@@ -1085,7 +1085,7 @@ protected:
 
 void ImageTests::addCreateTexture (const string& name, EGLenum source, GLenum format, GLenum type)
 {
-	m_createActions.add(name, MovePtr<Action>(new GLES2ImageApi::Create(createTextureImageSource(source, format, type))));
+	m_createActions.add(name, MovePtr<Action>(new GLES2ImageApi::Create(createTextureImageSource(source, format, format, type))));
 }
 
 void ImageTests::addCreateRenderbuffer (const string& name, GLenum format)
