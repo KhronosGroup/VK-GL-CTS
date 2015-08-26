@@ -35,17 +35,15 @@
 #include "tcuTexture.hpp"
 #include "tcuSurface.hpp"
 
+#include "deMemory.h"
+#include "deUniquePtr.hpp"
+
 #include "vktTestCaseUtil.hpp"
 
 #include "vkDefs.hpp"
-/*#include "vkPlatform.hpp"
-#include "vkStrUtil.hpp"
-#include "vkRef.hpp"
-#include "vkRefUtil.hpp"
-#include "vkQueryUtil.hpp"
-#include "vkMemUtil.hpp"
-#include "vkDeviceUtil.hpp"*/
 #include "vkPrograms.hpp"
+#include "vkRef.hpp"
+#include "vkMemUtil.hpp"
 
 namespace vkt
 {
@@ -169,11 +167,8 @@ public:
 	virtual					~ShaderRenderCase	(void) {}
 	virtual	void			initPrograms		(vk::ProgramCollection<glu::ProgramSources>& programCollection) const
 							{
-								if (!m_vertShaderSource.empty())
-									programCollection.add(m_name + "_vert") << glu::VertexSource(m_vertShaderSource);
-
-								if (!m_fragShaderSource.empty())
-									programCollection.add(m_name + "_frag") << glu::FragmentSource(m_fragShaderSource);
+								programCollection.add(m_name + "_vert") << glu::VertexSource(m_vertShaderSource);
+								programCollection.add(m_name + "_frag") << glu::FragmentSource(m_fragShaderSource);
 							}
 
 	virtual	TestInstance*	createInstance		(Context& context) const { return new Instance(context, m_name, m_isVertexCase, *m_evaluator); }
@@ -223,6 +218,34 @@ private:
 	const tcu::IVec2		m_renderSize;
 	const vk::VkFormat		m_colorFormat;
 
+	vk::Move<vk::VkImage>				m_colorImage;
+	de::MovePtr<vk::Allocation>			m_colorImageAlloc;
+	vk::Move<vk::VkAttachmentView> 		m_colorAttachmentView;
+
+	vk::Move<vk::VkRenderPass>			m_renderPass;
+	vk::Move<vk::VkFramebuffer>			m_framebuffer;
+	vk::Move<vk::VkPipelineLayout>		m_pipelineLayout;
+	vk::Move<vk::VkPipeline>			m_graphicsPipeline;
+
+	vk::Move<vk::VkShaderModule>		m_vertexShaderModule;
+	vk::Move<vk::VkShaderModule>		m_fragmentShaderModule;
+	vk::Move<vk::VkShader>				m_vertexShader;
+	vk::Move<vk::VkShader>				m_fragmentShader;
+
+	vk::Move<vk::VkDynamicViewportState>		m_viewportState;
+	vk::Move<vk::VkDynamicRasterState>			m_rasterState;
+	vk::Move<vk::VkDynamicColorBlendState>		m_colorBlendState;
+
+	vk::Move<vk::VkBuffer>						m_vertexBuffer;
+	de::MovePtr<vk::Allocation>				m_vertexBufferAlloc;
+
+	vk::Move<vk::VkBuffer>						m_indiceBuffer;
+	de::MovePtr<vk::Allocation>				m_indiceBufferAlloc;
+
+	vk::Move<vk::VkCmdPool>						m_cmdPool;
+	vk::Move<vk::VkCmdBuffer>					m_cmdBuffer;
+
+	vk::Move<vk::VkFence>				m_fence;
 };
 
 
