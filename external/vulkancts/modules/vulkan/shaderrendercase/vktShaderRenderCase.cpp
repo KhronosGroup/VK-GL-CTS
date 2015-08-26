@@ -30,13 +30,14 @@
  * \brief Vulkan ShaderRenderCase
  *//*--------------------------------------------------------------------*/
 
-#ifndef _VKTSHADERRENDERCASE_HPP
-
 #include "vktShaderRenderCase.hpp"
 
+#include "tcuImageCompare.hpp"
 #include "tcuSurface.hpp"
 #include "tcuVector.hpp"
 #include "tcuTestLog.hpp"
+
+#include "deMath.h"
 
 #include <vector>
 #include <string>
@@ -48,6 +49,12 @@ namespace shaderrendercase
 
 using namespace std;
 using namespace tcu;
+
+static const int		GRID_SIZE			= 64;
+static const int		MAX_RENDER_WIDTH	= 128;
+static const int		MAX_RENDER_HEIGHT	= 112;
+static const tcu::Vec4	DEFAULT_CLEAR_COLOR	= tcu::Vec4(0.125f, 0.25f, 0.5f, 1.0f);
+
 // QuadGrid.
 
 class QuadGrid
@@ -218,6 +225,10 @@ ShaderEvalContext::ShaderEvalContext (const QuadGrid& quadGrid_)
 */
 }
 
+ShaderEvalContext::~ShaderEvalContext (void)
+{
+}
+
 void ShaderEvalContext::reset (float sx, float sy)
 {
     // Clear old values
@@ -237,9 +248,11 @@ void ShaderEvalContext::reset (float sx, float sy)
 
 tcu::Vec4 ShaderEvalContext::texture2D (int unitNdx, const tcu::Vec2& texCoords)
 {
-    if (textures[unitNdx].tex2D)
+	// TODO: add texture binding
+/*    if (textures[unitNdx].tex2D)
         return textures[unitNdx].tex2D->sample(textures[unitNdx].sampler, texCoords.x(), texCoords.y(), 0.0f);
     else
+*/
         return tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f);
 }
 
@@ -295,20 +308,28 @@ ShaderRenderCase::~ShaderRenderCase (void)
 
 void ShaderRenderCase::initPrograms (vk::ProgramCollection<glu::ProgramSources>& programCollection) const
 {
-	// TODO??
+	if (!m_vertShaderSource.empty())
+		programCollection.add(m_name + "_vert") << glu::VertexSource(m_vertShaderSource);
+
+	if (!m_fragShaderSource.empty())
+		programCollection.add(m_name + "_frag") << glu::FragmentSource(m_fragShaderSource);
 }
 
 TestInstance* ShaderRenderCase::createInstance (Context& context) const
 {
-	return new ShaderRenderCaseInstance(context, m_isVertexCase, *m_evaluator);
+	return new ShaderRenderCaseInstance(context, m_name, m_isVertexCase, *m_evaluator);
 }
 
 // ShaderRenderCaseInstance.
 
-ShaderRenderCaseInstance::ShaderRenderCaseInstance (Context& context, bool isVertexCase, ShaderEvaluator& evaluator)
+ShaderRenderCaseInstance::ShaderRenderCaseInstance (Context& context, const string& name, bool isVertexCase, ShaderEvaluator& evaluator)
 	: vkt::TestInstance(context)
+	, m_name(name)
 	, m_isVertexCase(isVertexCase)
 	, m_evaluator(evaluator)
+	, m_clearColor(DEFAULT_CLEAR_COLOR)
+	, m_renderSize(100, 100)
+	, m_colorFormat(vk::VK_FORMAT_R8G8B8A8_UNORM)
 {
 }
 
@@ -318,10 +339,191 @@ ShaderRenderCaseInstance::~ShaderRenderCaseInstance (void)
 
 tcu::TestStatus ShaderRenderCaseInstance::iterate (void)
 {
-	return tcu::TestStatus::pass("Dummy test ok");
+	// Create quad grid.
+	IVec2	viewportSize	= getViewportSize();
+	int		width			= viewportSize.x();
+	int 	height			= viewportSize.y();
+
+	QuadGrid quadGrid(m_isVertexCase ? GRID_SIZE : 4, width, height, Vec4(0.125f, 0.25f, 0.5f, 1.0f), m_userAttribTransforms/*, m_textures*/);
+
+	// Render result.
+	Surface resImage(width, height);
+	render(resImage, quadGrid);
+
+	// Compute reference.
+	Surface refImage(width, height);
+	if (m_isVertexCase)
+		computeVertexReference(refImage, quadGrid);
+	else
+		computeFragmentReference(refImage, quadGrid);
+
+	//m_context.getTestContext().getLog() << TestLog::Image("Result", "Result", refImage.getAccess());
+/*tcu::ConstPixelBufferAccess(tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8), m_renderSize.x(), m_renderSize.y(), 1, imagePtr)*/
+
+	// Compare.
+	bool compareOk = compareImages(resImage, refImage, 0.05f);
+
+	if (compareOk)
+		return tcu::TestStatus::pass("Result image matches reference");
+	else
+		return tcu::TestStatus::fail("Image mismatch");
 }
+
+void ShaderRenderCaseInstance::setupShaderData (void)
+{
+	// TODO!!!
+}
+
+void ShaderRenderCaseInstance::setup (void)
+{
+	// TODO!!
+}
+
+void ShaderRenderCaseInstance::setupUniforms (const Vec4& constCoords)
+{
+	// TODO!!
+	DE_UNREF(constCoords);
+}
+
+tcu::IVec2 ShaderRenderCaseInstance::getViewportSize (void) const
+{
+	return tcu::IVec2(de::min(m_renderSize.x(), MAX_RENDER_WIDTH),
+					  de::min(m_renderSize.y(), MAX_RENDER_HEIGHT));
+}
+
+void ShaderRenderCaseInstance::setupDefaultInputs (void)
+{
+	// TODO!!
+	// SetupUniforms: map unifrom ids and set the values
+}
+
+void ShaderRenderCaseInstance::render (Surface& result, const QuadGrid& quadGrid)
+{
+	// TODO!! Vk rendering
+}
+
+void ShaderRenderCaseInstance::computeVertexReference (Surface& result, const QuadGrid& quadGrid)
+{
+	// TODO!!
+	// Buffer info.
+	int					width		= result.getWidth();
+	int					height		= result.getHeight();
+	int					gridSize	= quadGrid.getGridSize();
+	int					stride		= gridSize + 1;
+	//bool				hasAlpha	= m_context.getRenderTarget().getPixelFormat().alphaBits > 0;
+	bool				hasAlpha	= true;
+	ShaderEvalContext	evalCtx		(quadGrid);
+
+	// Evaluate color for each vertex.
+	vector<Vec4> colors((gridSize+1)*(gridSize+1));
+	for (int y = 0; y < gridSize+1; y++)
+	for (int x = 0; x < gridSize+1; x++)
+	{
+		float				sx			= (float)x / (float)gridSize;
+		float				sy			= (float)y / (float)gridSize;
+		int					vtxNdx		= ((y * (gridSize+1)) + x);
+
+		evalCtx.reset(sx, sy);
+		m_evaluator.evaluate(evalCtx);
+		DE_ASSERT(!evalCtx.isDiscarded); // Discard is not available in vertex shader.
+		Vec4 color = evalCtx.color;
+
+		if (!hasAlpha)
+			color.w() = 1.0f;
+
+		colors[vtxNdx] = color;
+	}
+
+	// Render quads.
+	for (int y = 0; y < gridSize; y++)
+	for (int x = 0; x < gridSize; x++)
+	{
+		float x0 = (float)x       / (float)gridSize;
+		float x1 = (float)(x + 1) / (float)gridSize;
+		float y0 = (float)y       / (float)gridSize;
+		float y1 = (float)(y + 1) / (float)gridSize;
+
+		float sx0 = x0 * (float)width;
+		float sx1 = x1 * (float)width;
+		float sy0 = y0 * (float)height;
+		float sy1 = y1 * (float)height;
+		float oosx = 1.0f / (sx1 - sx0);
+		float oosy = 1.0f / (sy1 - sy0);
+
+		int ix0 = deCeilFloatToInt32(sx0 - 0.5f);
+		int ix1 = deCeilFloatToInt32(sx1 - 0.5f);
+		int iy0 = deCeilFloatToInt32(sy0 - 0.5f);
+		int iy1 = deCeilFloatToInt32(sy1 - 0.5f);
+
+		int		v00 = (y * stride) + x;
+		int		v01 = (y * stride) + x + 1;
+		int		v10 = ((y + 1) * stride) + x;
+		int		v11 = ((y + 1) * stride) + x + 1;
+		Vec4	c00 = colors[v00];
+		Vec4	c01 = colors[v01];
+		Vec4	c10 = colors[v10];
+		Vec4	c11 = colors[v11];
+
+		//printf("(%d,%d) -> (%f..%f, %f..%f) (%d..%d, %d..%d)\n", x, y, sx0, sx1, sy0, sy1, ix0, ix1, iy0, iy1);
+
+		for (int iy = iy0; iy < iy1; iy++)
+		for (int ix = ix0; ix < ix1; ix++)
+		{
+			DE_ASSERT(deInBounds32(ix, 0, width));
+			DE_ASSERT(deInBounds32(iy, 0, height));
+
+			float		sfx		= (float)ix + 0.5f;
+			float		sfy		= (float)iy + 0.5f;
+			float		fx1		= deFloatClamp((sfx - sx0) * oosx, 0.0f, 1.0f);
+			float		fy1		= deFloatClamp((sfy - sy0) * oosy, 0.0f, 1.0f);
+
+			// Triangle quad interpolation.
+			bool		tri		= fx1 + fy1 <= 1.0f;
+			float		tx		= tri ? fx1 : (1.0f-fx1);
+			float		ty		= tri ? fy1 : (1.0f-fy1);
+			const Vec4&	t0		= tri ? c00 : c11;
+			const Vec4&	t1		= tri ? c01 : c10;
+			const Vec4&	t2		= tri ? c10 : c01;
+			Vec4		color	= t0 + (t1-t0)*tx + (t2-t0)*ty;
+
+			result.setPixel(ix, iy, tcu::RGBA(color));
+		}
+	}
+}
+
+void ShaderRenderCaseInstance::computeFragmentReference (Surface& result, const QuadGrid& quadGrid)
+{
+    // Buffer info.
+	int					width		= result.getWidth();
+	int					height		= result.getHeight();
+	//bool				hasAlpha	= m_renderCtx.getRenderTarget().getPixelFormat().alphaBits > 0;
+	bool				hasAlpha	= true;
+	ShaderEvalContext	evalCtx		(quadGrid);
+
+	// Render.
+	for (int y = 0; y < height; y++)
+	for (int x = 0; x < width; x++)
+	{
+		float sx = ((float)x + 0.5f) / (float)width;
+		float sy = ((float)y + 0.5f) / (float)height;
+
+		evalCtx.reset(sx, sy);
+		m_evaluator.evaluate(evalCtx);
+		// Select either clear color or computed color based on discarded bit.
+		Vec4 color = evalCtx.isDiscarded ? m_clearColor : evalCtx.color;
+
+		if (!hasAlpha)
+			color.w() = 1.0f;
+
+		result.setPixel(x, y, tcu::RGBA(color));
+	}
+}
+
+bool ShaderRenderCaseInstance::compareImages (const Surface& resImage, const Surface& refImage, float errorThreshold)
+{
+	return tcu::fuzzyCompare(m_context.getTestContext().getLog(), "ComparisonResult", "Image comparison result", refImage, resImage, errorThreshold, tcu::COMPARE_LOG_RESULT);
+}
+
 
 } // shaderrendercase
 } // vkt
-
-#endif // _VKTSHADERRENDERCASE_HPP

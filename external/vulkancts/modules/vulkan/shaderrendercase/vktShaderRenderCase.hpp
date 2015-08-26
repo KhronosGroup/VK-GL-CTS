@@ -1,3 +1,5 @@
+#ifndef _VKTSHADERRENDERCASE_HPP
+#define _VKTSHADERRENDERCASE_HPP
 /*------------------------------------------------------------------------
  * Copyright (c) 2015 The Khronos Group Inc.
  * Copyright (c) 2015 Samsung Electronics Co., Ltd.
@@ -30,11 +32,19 @@
  * \brief Vulkan ShaderRenderCase
  *//*--------------------------------------------------------------------*/
 
-#ifndef _VKTSHADERRENDERCASE_HPP
-
 #include "tcuTexture.hpp"
+#include "tcuSurface.hpp"
 
-#include "vktTestCase.hpp"
+#include "vktTestCaseUtil.hpp"
+
+#include "vkDefs.hpp"
+/*#include "vkPlatform.hpp"
+#include "vkStrUtil.hpp"
+#include "vkRef.hpp"
+#include "vkRefUtil.hpp"
+#include "vkQueryUtil.hpp"
+#include "vkMemUtil.hpp"
+#include "vkDeviceUtil.hpp"*/
 #include "vkPrograms.hpp"
 
 namespace vkt
@@ -149,9 +159,14 @@ public:
 	virtual	void			initPrograms		(vk::ProgramCollection<glu::ProgramSources>& programCollection) const;
 	virtual	TestInstance*	createInstance		(Context& context) const;
 
+protected:
+    std::string				m_vertShaderSource;
+    std::string				m_fragShaderSource;
+
 private:
 	bool 					m_isVertexCase;
 	ShaderEvaluator*		m_evaluator;
+
 };
 
 // ShaderRenderCaseInstance.
@@ -159,13 +174,36 @@ private:
 class ShaderRenderCaseInstance : public vkt::TestInstance
 {
 public:
-							ShaderRenderCaseInstance	(Context& context, bool isVertexCase, ShaderEvaluator& evaluator);
+							ShaderRenderCaseInstance	(Context& context, const std::string& name, bool isVertexCase, ShaderEvaluator& evaluator);
 	virtual					~ShaderRenderCaseInstance	(void);
 	virtual tcu::TestStatus	iterate						(void);
 
+protected:
+	virtual void			setupShaderData				(void);
+	virtual void			setup						(void);
+	virtual void			setupUniforms				(const tcu::Vec4& constCoords);
+
+	tcu::IVec2				getViewportSize				(void) const;
+
+	std::vector<tcu::Mat4>	m_userAttribTransforms;
+	tcu::Vec4				m_clearColor;
+
 private:
-	bool				m_isVertexCase;
-	ShaderEvaluator&	m_evaluator;
+
+	void					setupDefaultInputs			(void);
+
+	void					render						(tcu::Surface& result, const QuadGrid& quadGrid);
+	void					computeVertexReference		(tcu::Surface& result, const QuadGrid& quadGrid);
+	void					computeFragmentReference	(tcu::Surface& result, const QuadGrid& quadGrid);
+	bool					compareImages				(const tcu::Surface& resImage, const tcu::Surface& refImage, float errorThreshold);
+
+	std::string				m_name;
+	bool					m_isVertexCase;
+	ShaderEvaluator&		m_evaluator;
+
+	const tcu::IVec2		m_renderSize;
+	const vk::VkFormat		m_colorFormat;
+
 };
 
 
