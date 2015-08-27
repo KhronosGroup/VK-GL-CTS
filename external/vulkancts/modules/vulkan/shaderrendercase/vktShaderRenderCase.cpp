@@ -569,7 +569,7 @@ void ShaderRenderCaseInstance::render (Surface& result, const QuadGrid& quadGrid
 		};
 
 		// TODO adapt input attribute locations!!!
-		const VkVertexInputAttributeDescription vertexInputAttributeDescriptions[1] =
+		const VkVertexInputAttributeDescription vertexInputAttributeDescriptions[2] =
 		{
 			{
 				0u,								// deUint32	location;
@@ -577,13 +577,12 @@ void ShaderRenderCaseInstance::render (Surface& result, const QuadGrid& quadGrid
 				VK_FORMAT_R32G32B32A32_SFLOAT,	// VkFormat	format;
 				0u								// deUint32	offsetInBytes;
 			},
-/*			{
+			{
 				1u,									// deUint32	location;
 				0u,									// deUint32	binding;
 				VK_FORMAT_R32G32B32A32_SFLOAT,		// VkFormat	format;
-				DE_OFFSET_OF(Vertex4RGBA, color),	// deUint32	offsetInBytes;
+				quadGrid.getNumVertices() * sizeof(Vec4),						// deUint32	offsetInBytes;
 			}
-*/
 		};
 
 		const VkPipelineVertexInputStateCreateInfo vertexInputStateParams =
@@ -592,7 +591,7 @@ void ShaderRenderCaseInstance::render (Surface& result, const QuadGrid& quadGrid
 			DE_NULL,														// const void*								pNext;
 			1u,																// deUint32									bindingCount;
 			&vertexInputBindingDescription,									// const VkVertexInputBindingDescription*	pVertexBindingDescriptions;
-			1u,																// deUint32									attributeCount;
+			2u,																// deUint32									attributeCount;
 			vertexInputAttributeDescriptions								// const VkVertexInputAttributeDescription*	pVertexAttributeDescriptions;
 		};
 
@@ -726,7 +725,9 @@ void ShaderRenderCaseInstance::render (Surface& result, const QuadGrid& quadGrid
 	// Create vertex buffer
 	{
 		// TODO: upload all inputs
-		const VkDeviceSize vertexBufferSize = quadGrid.getNumVertices() * sizeof(Vec4);
+		const VkDeviceSize vertexSize = quadGrid.getNumVertices() * sizeof(Vec4);
+		const VkDeviceSize coordSize = quadGrid.getNumVertices() * sizeof(Vec4);
+		const VkDeviceSize vertexBufferSize = vertexSize + coordSize;
 
 		const VkBufferCreateInfo vertexBufferParams =
 		{
@@ -748,7 +749,8 @@ void ShaderRenderCaseInstance::render (Surface& result, const QuadGrid& quadGrid
 		// Load vertices into vertex buffer
 		void* bufferPtr;
 		VK_CHECK(vk.mapMemory(vkDevice, m_vertexBufferAlloc->getMemory(), 0, vertexBufferSize, 0, &bufferPtr));
-		deMemcpy(bufferPtr, quadGrid.getPositions(), vertexBufferSize);
+		deMemcpy(bufferPtr, quadGrid.getPositions(), vertexSize);
+		deMemcpy(bufferPtr + vertexSize, quadGrid.getCoords(), coordSize);
 		VK_CHECK(vk.unmapMemory(vkDevice, m_vertexBufferAlloc->getMemory()));
 	}
 
@@ -987,11 +989,11 @@ void ShaderRenderCaseInstance::computeVertexReference (Surface& result, const Qu
 	int					gridSize	= quadGrid.getGridSize();
 	int					stride		= gridSize + 1;
 	//bool				hasAlpha	= m_context.getRenderTarget().getPixelFormat().alphaBits > 0;
-	bool				hasAlpha	= true;
+	bool				hasAlpha	= false;
 	ShaderEvalContext	evalCtx		(quadGrid);
 
 	// Evaluate color for each vertex.
-	vector<Vec4> colors((gridSize+1)*(gridSize+1));
+	vector<Vec4> colors((gridSize + 1) * (gridSize + 1));
 	for (int y = 0; y < gridSize+1; y++)
 	for (int x = 0; x < gridSize+1; x++)
 	{
