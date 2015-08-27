@@ -36,8 +36,10 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 	std::string base_vertex = "#version 300 es\n"
         "layout(location = 0) in highp vec4 a_position;\n"
         "layout(location = 1) in highp vec4 a_coords;\n"
+        "layout(location = 2) in highp vec4 a_unitCoords;\n"
+        "layout(location = 3) in mediump float a_one;\n"
 		"out mediump vec4 v_color;\n"
-        "void main (void) { gl_Position = a_position; v_color = vec4(a_coords.xyz, 1.0); }\n";
+        "void main (void) { gl_Position = a_position; v_color = vec4(a_coords.xyz, a_one); }\n";
 
 	std::string base_fragment = "#version 300 es\n"
         "layout(location = 0) out lowp vec4 o_color;\n"

@@ -65,6 +65,15 @@ static const int		MAX_RENDER_WIDTH	= 128;
 static const int		MAX_RENDER_HEIGHT	= 112;
 static const tcu::Vec4	DEFAULT_CLEAR_COLOR	= tcu::Vec4(0.125f, 0.25f, 0.5f, 1.0f);
 
+
+struct BaseVertexAttributes
+{
+	Vec4 	position;
+	Vec4 	coord;		 //!< Near-unit coordinates, roughly [-2.0 .. 2.0].
+	Vec4 	unitCoord;	 //!< Positive-only coordinates [0.0 .. 1.5].
+	float	one;
+};
+
 // QuadGrid.
 
 class QuadGrid
@@ -82,10 +91,9 @@ public:
 	// TODO:
     //const vector<TextureBinding>&   getTextures     (void) const { return m_textures; }
 
-    const Vec4*             getPositions            (void) const { return &m_positions[0]; }
-    const float*            getAttribOne            (void) const { return &m_attribOne[0]; }
-    const Vec4*             getCoords               (void) const { return &m_coords[0]; }
-    const Vec4*             getUnitCoords           (void) const { return &m_unitCoords[0]; }
+	const BaseVertexAttributes*	getBaseAttributes	(void) const { return &m_baseAttribs[0]; }
+	deUint32				getBaseAttributesSize	(void) const { return (deUint32)(m_numVertices * sizeof(BaseVertexAttributes)); }
+
     const Vec4*             getUserAttrib           (int attribNdx) const { return &m_userAttribs[attribNdx][0]; }
     const deUint16*         getIndices              (void) const { return &m_indices[0]; }
 
@@ -105,10 +113,7 @@ private:
     // vector<TextureBinding>  m_textures;
 
     vector<Vec4>            m_screenPos;
-    vector<Vec4>            m_positions;
-    vector<Vec4>            m_coords;           //!< Near-unit coordinates, roughly [-2.0 .. 2.0].
-    vector<Vec4>            m_unitCoords;       //!< Positive-only coordinates [0.0 .. 1.5].
-    vector<float>           m_attribOne;
+	vector<BaseVertexAttributes>	m_baseAttribs;
     vector<Vec4>            m_userAttribs[ShaderEvalContext::MAX_TEXTURES];
     vector<deUint16>        m_indices;
 };
@@ -125,10 +130,7 @@ QuadGrid::QuadGrid (int gridSize, int width, int height, const Vec4& constCoords
     Vec4 viewportScale = Vec4((float)width, (float)height, 0.0f, 0.0f);
 
     // Compute vertices.
-    m_positions.resize(m_numVertices);
-    m_coords.resize(m_numVertices);
-    m_unitCoords.resize(m_numVertices);
-    m_attribOne.resize(m_numVertices);
+	m_baseAttribs.resize(m_numVertices);
     m_screenPos.resize(m_numVertices);
 
     // User attributes.
@@ -144,11 +146,12 @@ QuadGrid::QuadGrid (int gridSize, int width, int height, const Vec4& constCoords
         float               fy          = 2.0f * sy - 1.0f;
         int                 vtxNdx      = ((y * (gridSize+1)) + x);
 
-        m_positions[vtxNdx]     = Vec4(fx, fy, 0.0f, 1.0f);
-        m_attribOne[vtxNdx]     = 1.0f;
+		m_baseAttribs[vtxNdx].position = Vec4(fx, fy, 0.0f, 1.0f);
+		m_baseAttribs[vtxNdx].coord = getCoords(sx, sy);
+		m_baseAttribs[vtxNdx].unitCoord= getUnitCoords(sx, sy);
+		m_baseAttribs[vtxNdx].one = 1.0f;
+
         m_screenPos[vtxNdx]     = Vec4(sx, sy, 0.0f, 1.0f) * viewportScale;
-        m_coords[vtxNdx]        = getCoords(sx, sy);
-        m_unitCoords[vtxNdx]    = getUnitCoords(sx, sy);
 
         for (int attribNdx = 0; attribNdx < getNumUserAttribs(); attribNdx++)
             m_userAttribs[attribNdx][vtxNdx] = getUserAttrib(attribNdx, sx, sy);
@@ -560,38 +563,61 @@ void ShaderRenderCaseInstance::render (Surface& result, const QuadGrid& quadGrid
 		};
 
 		// TODO: adapt input parameters!!!
-		const VkVertexInputBindingDescription vertexInputBindingDescription =
+		const VkVertexInputBindingDescription vertexInputBindingDescription[] =
 		{
-			0u,										// deUint32					binding;
-		// TODO: adapt sizes
-			sizeof(Vec4),							// deUint32					strideInBytes;
-			VK_VERTEX_INPUT_STEP_RATE_VERTEX		// VkVertexInputStepRate	stepRate;
+			{
+				0u,										// deUint32					binding;
+				sizeof(BaseVertexAttributes),							// deUint32					strideInBytes;
+				VK_VERTEX_INPUT_STEP_RATE_VERTEX		// VkVertexInputStepRate	stepRate;
+			}
 		};
+		const deUint32 numberOfBindings = DE_LENGTH_OF_ARRAY(vertexInputBindingDescription);
 
 		// TODO adapt input attribute locations!!!
-		const VkVertexInputAttributeDescription vertexInputAttributeDescriptions[2] =
+		/* Configuration of the vertex input attributes:
+			a_position   is at location 0
+			a_coords     is at location 1
+			a_unitCoords is at location 2
+			a_one        is at location 3
+
+		  User attributes starts from at the location 4 and ends at the location 6.
+		*/
+		const VkVertexInputAttributeDescription vertexInputAttributeDescriptions[] =
 		{
 			{
 				0u,								// deUint32	location;
 				0u,								// deUint32	binding;
 				VK_FORMAT_R32G32B32A32_SFLOAT,	// VkFormat	format;
-				0u								// deUint32	offsetInBytes;
+				DE_OFFSET_OF(BaseVertexAttributes, position)	// deUint32	offsetInBytes;
 			},
 			{
 				1u,									// deUint32	location;
 				0u,									// deUint32	binding;
 				VK_FORMAT_R32G32B32A32_SFLOAT,		// VkFormat	format;
-				quadGrid.getNumVertices() * sizeof(Vec4),						// deUint32	offsetInBytes;
+				DE_OFFSET_OF(BaseVertexAttributes, coord)		// deUint32	offsetInBytes;
+			},
+			{
+				2u,									// deUint32	location;
+				0u,									// deUint32	binding;
+				VK_FORMAT_R32G32B32A32_SFLOAT,		// VkFormat	format;
+				DE_OFFSET_OF(BaseVertexAttributes, unitCoord)	// deUint32	offsetInBytes;
+			},
+			{
+				3u,									// deUint32	location;
+				0u,									// deUint32	binding;
+				VK_FORMAT_R32_SFLOAT,				// VkFormat	format;
+				DE_OFFSET_OF(BaseVertexAttributes, one)			// deUint32	offsetInBytes;
 			}
 		};
 
+		const deUint32 numberOfAttributes = DE_LENGTH_OF_ARRAY(vertexInputAttributeDescriptions);
 		const VkPipelineVertexInputStateCreateInfo vertexInputStateParams =
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,		// VkStructureType							sType;
 			DE_NULL,														// const void*								pNext;
-			1u,																// deUint32									bindingCount;
-			&vertexInputBindingDescription,									// const VkVertexInputBindingDescription*	pVertexBindingDescriptions;
-			2u,																// deUint32									attributeCount;
+			numberOfBindings,												// deUint32									bindingCount;
+			vertexInputBindingDescription,									// const VkVertexInputBindingDescription*	pVertexBindingDescriptions;
+			numberOfAttributes,												// deUint32									attributeCount;
 			vertexInputAttributeDescriptions								// const VkVertexInputAttributeDescription*	pVertexAttributeDescriptions;
 		};
 
@@ -725,15 +751,11 @@ void ShaderRenderCaseInstance::render (Surface& result, const QuadGrid& quadGrid
 	// Create vertex buffer
 	{
 		// TODO: upload all inputs
-		const VkDeviceSize vertexSize = quadGrid.getNumVertices() * sizeof(Vec4);
-		const VkDeviceSize coordSize = quadGrid.getNumVertices() * sizeof(Vec4);
-		const VkDeviceSize vertexBufferSize = vertexSize + coordSize;
-
 		const VkBufferCreateInfo vertexBufferParams =
 		{
 			VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,		// VkStructureType		sType;
 			DE_NULL,									// const void*			pNext;
-			vertexBufferSize,							// VkDeviceSize			size;
+			quadGrid.getBaseAttributesSize(),			// VkDeviceSize			size;
 			VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,			// VkBufferUsageFlags	usage;
 			0u,											// VkBufferCreateFlags	flags;
 			VK_SHARING_MODE_EXCLUSIVE,					// VkSharingMode		sharingMode;
@@ -748,9 +770,8 @@ void ShaderRenderCaseInstance::render (Surface& result, const QuadGrid& quadGrid
 
 		// Load vertices into vertex buffer
 		void* bufferPtr;
-		VK_CHECK(vk.mapMemory(vkDevice, m_vertexBufferAlloc->getMemory(), 0, vertexBufferSize, 0, &bufferPtr));
-		deMemcpy(bufferPtr, quadGrid.getPositions(), vertexSize);
-		deMemcpy(bufferPtr + vertexSize, quadGrid.getCoords(), coordSize);
+		VK_CHECK(vk.mapMemory(vkDevice, m_vertexBufferAlloc->getMemory(), 0, quadGrid.getBaseAttributesSize(), 0, &bufferPtr));
+		deMemcpy(bufferPtr, quadGrid.getBaseAttributes(), quadGrid.getBaseAttributesSize());
 		VK_CHECK(vk.unmapMemory(vkDevice, m_vertexBufferAlloc->getMemory()));
 	}
 
