@@ -5,6 +5,7 @@ add_subdirectory(pipeline)
 add_subdirectory(binding_model)
 add_subdirectory(spirv_assembly)
 add_subdirectory(shaderrender)
+add_subdirectory(shaderexecutor)
 add_subdirectory(memory)
 
 include_directories(
@@ -13,6 +14,7 @@ include_directories(
 	binding_model
 	spirv_assembly
 	shaderrender
+	shaderexecutor
 	memory
 	)
 
@@ -40,6 +42,7 @@ set(DEQP_VK_COMMON_LIBS
 	deqp-vk-binding-model
 	deqp-vk-spirv-assembly
 	deqp-vk-shaderrender
+	deqp-vk-shaderexecutor
 	deqp-vk-memory
 	)
 
