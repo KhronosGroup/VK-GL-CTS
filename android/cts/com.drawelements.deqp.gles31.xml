@@ -11696,18 +11696,6 @@
 <Test name="repeat_mirrored_repeat" />
 <Test name="mirrored_repeat_clamp_to_edge" />
 </TestCase>
-<TestSuite name="no_corners">
-<TestCase name="size_pot">
-<Test name="clamp_to_edge_repeat" />
-<Test name="repeat_mirrored_repeat" />
-<Test name="mirrored_repeat_clamp_to_edge" />
-</TestCase>
-<TestCase name="size_npot">
-<Test name="clamp_to_edge_repeat" />
-<Test name="repeat_mirrored_repeat" />
-<Test name="mirrored_repeat_clamp_to_edge" />
-</TestCase>
-</TestSuite>
 <TestCase name="texture_swizzle">
 <Test name="green_blue_alpha_zero" />
 <Test name="blue_alpha_zero_one" />
@@ -11738,18 +11726,6 @@
 <Test name="repeat_mirrored_repeat" />
 <Test name="mirrored_repeat_clamp_to_edge" />
 </TestCase>
-<TestSuite name="no_corners">
-<TestCase name="size_pot">
-<Test name="clamp_to_edge_repeat" />
-<Test name="repeat_mirrored_repeat" />
-<Test name="mirrored_repeat_clamp_to_edge" />
-</TestCase>
-<TestCase name="size_npot">
-<Test name="clamp_to_edge_repeat" />
-<Test name="repeat_mirrored_repeat" />
-<Test name="mirrored_repeat_clamp_to_edge" />
-</TestCase>
-</TestSuite>
 <TestCase name="texture_swizzle">
 <Test name="green_blue_alpha_zero" />
 <Test name="blue_alpha_zero_one" />
@@ -11776,18 +11752,6 @@
 <Test name="repeat_mirrored_repeat" />
 <Test name="mirrored_repeat_clamp_to_edge" />
 </TestCase>
-<TestSuite name="no_corners">
-<TestCase name="size_pot">
-<Test name="clamp_to_edge_repeat" />
-<Test name="repeat_mirrored_repeat" />
-<Test name="mirrored_repeat_clamp_to_edge" />
-</TestCase>
-<TestCase name="size_npot">
-<Test name="clamp_to_edge_repeat" />
-<Test name="repeat_mirrored_repeat" />
-<Test name="mirrored_repeat_clamp_to_edge" />
-</TestCase>
-</TestSuite>
 <TestCase name="texture_swizzle">
 <Test name="green_blue_alpha_zero" />
 <Test name="blue_alpha_zero_one" />
@@ -11804,7 +11768,6 @@
 </TestCase>
 </TestSuite>
 <TestSuite name="depth32f">
-<TestSuite name="no_corners">
 <TestSuite name="size_pot">
 <TestCase name="compare_less">
 <Test name="clamp_to_edge_repeat" />
@@ -11829,7 +11792,13 @@
 <Test name="mirrored_repeat_clamp_to_edge" />
 </TestCase>
 </TestSuite>
-</TestSuite>
+<TestCase name="filter_mode">
+<Test name="min_linear_mag_linear" />
+</TestCase>
+<TestCase name="base_level">
+<Test name="level_1" />
+<Test name="level_2" />
+</TestCase>
 </TestSuite>
 </TestSuite>
 </TestSuite>
@@ -15447,6 +15416,7 @@
 <Test name="mismatch_member_type" />
 <Test name="mismatch_member_name" />
 <Test name="mismatch_member_precision" />
+<Test name="match_different_member_interpolation" />
 <Test name="mismatch_member_array_size" />
 <Test name="match_different_member_struct_names" />
 <Test name="mismatch_member_struct_member_name" />
@@ -15846,6 +15816,7 @@
 <Test name="tessellation_output_triangles_point_mode_geometry_output_lines" />
 <Test name="tessellation_output_quads_point_mode_geometry_output_lines" />
 <Test name="tessellation_output_isolines_point_mode_geometry_output_triangles" />
+<Test name="record_variable_selection" />
 </TestCase>
 <TestCase name="point_size">
 <Test name="vertex_set" />
