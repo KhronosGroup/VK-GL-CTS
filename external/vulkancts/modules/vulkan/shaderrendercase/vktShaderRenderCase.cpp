@@ -499,6 +499,115 @@ void ShaderRenderCaseInstance::render (Surface& result, const QuadGrid& quadGrid
 		m_framebuffer = createFramebuffer(vk, vkDevice, &framebufferParams);
 	}
 
+	// Create descriptors
+	{
+		const VkDescriptorSetLayoutBinding layoutBindings[1] =
+		{
+			{
+				VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,		    // VkDescriptorType		descriptorType;
+				1u,											// deUint32				arraySize;
+				VK_SHADER_STAGE_VERTEX_BIT,					// VkShaderStageFlags	stageFlags;
+				DE_NULL										// const VkSampler*		pImmutableSamplers;
+			},
+		};
+
+		const VkDescriptorSetLayoutCreateInfo descriptorLayoutParams =
+		{
+			VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,	// VkStructureType						sType;
+			DE_NULL,												// cost void*							pNexŧ;
+			DE_LENGTH_OF_ARRAY(layoutBindings),						// deUint32								count;
+			layoutBindings											// const VkDescriptorSetLayoutBinding	pBinding;
+		};
+
+		m_descriptorSetLayout = createDescriptorSetLayout(vk, vkDevice, &descriptorLayoutParams);
+
+
+		const float uniformData[] = { 1.0f };
+		const VkDeviceSize uniformSize = DE_LENGTH_OF_ARRAY(uniformData) * sizeof(float);
+		const VkBufferCreateInfo uniformBufferParams =
+		{
+			VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,		// VkStructureType		sType;
+			DE_NULL,									// const void*			pNext;
+			uniformSize,			// VkDeviceSize			size;
+			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,			// VkBufferUsageFlags	usage;
+			0u,											// VkBufferCreateFlags	flags;
+			VK_SHARING_MODE_EXCLUSIVE,					// VkSharingMode		sharingMode;
+			1u,											// deUint32				queueFamilyCount;
+			&queueFamilyIndex							// const deUint32*		pQueueFamilyIndices;
+		};
+
+		m_uniformBuffer			= createBuffer(vk, vkDevice, &uniformBufferParams);
+		m_uniformBufferAlloc	= memAlloc.allocate(getBufferMemoryRequirements(vk, vkDevice, *m_uniformBuffer), MemoryRequirement::HostVisible);
+
+		VK_CHECK(vk.bindBufferMemory(vkDevice, *m_uniformBuffer, m_uniformBufferAlloc->getMemory(), 0));
+
+		void* bufferPtr;
+		VK_CHECK(vk.mapMemory(vkDevice, m_uniformBufferAlloc->getMemory(), 0, uniformSize, 0, &bufferPtr));
+		deMemcpy(bufferPtr, uniformData, uniformSize);
+		VK_CHECK(vk.unmapMemory(vkDevice, m_uniformBufferAlloc->getMemory()));
+
+		const VkBufferViewCreateInfo viewInfo =
+		{
+			VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO, 	// VkStructureType	sType;
+			DE_NULL,									// void* 			pNext;
+			*m_uniformBuffer,							// VkBuffer			buffer;
+			VK_BUFFER_VIEW_TYPE_FORMATTED,					// VkBufferViewType	viewType;
+			VK_FORMAT_R32_SFLOAT,						// VkFormat	format;
+			0u,											// VkDeviceSize	offset;
+			uniformSize									// VkDeviceSize	range;
+		};
+
+		m_uniformBufferView = createBufferView(vk, vkDevice, &viewInfo);
+
+		const VkDescriptorTypeCount descriptorTypes[] =
+		{
+			{
+				VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,				// VkDescriptorType		type;
+				1												// deUint32				count;
+			}
+		};
+
+		const VkDescriptorPoolCreateInfo descriptorPoolParams =
+		{
+			VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO, 	// VkStructureType					sType;
+			DE_NULL,										// void* 							pNext;
+			DE_LENGTH_OF_ARRAY(descriptorTypes),			// deUint32							count;
+			descriptorTypes									// const VkDescriptorTypeCount* 	pTypeCount
+		};
+
+		m_descriptorPool = createDescriptorPool(vk, vkDevice, VK_DESCRIPTOR_POOL_USAGE_ONE_SHOT, 1, &descriptorPoolParams);
+
+		m_descriptorSet = allocDescriptorSet(vk, vkDevice, *m_descriptorPool, VK_DESCRIPTOR_SET_USAGE_STATIC, *m_descriptorSetLayout);
+
+		const VkDescriptorInfo descriptorInfos[] =
+		{
+			{
+				*m_uniformBufferView,						// VkBufferView		bufferView;
+				0,											// VkSampler		sampler;
+				0,											// VkImageView		imageView;
+				0,											// VkAttachmentView	attachmentView;
+				(VkImageLayout)0,							// VkImageLayout	imageLayout;
+
+			}
+		};
+
+		const VkWriteDescriptorSet writeDescritporSets[] =
+		{
+			{
+				VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,		// VkStructureType		sType;
+				DE_NULL,									// const void*		 pNext;
+				*m_descriptorSet,							// VkDescriptorSet		destSet;
+				0,											// deUint32		destBinding;
+				0,											// deUint32		destArrayElement;
+				1, 											// deUint32		count;
+				VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,			// VkDescriptorType		descriptorType;
+				descriptorInfos, 							// const VkDescriptorInfo*	pDescriptors;
+			}
+		};
+
+		VK_CHECK(vk.updateDescriptorSets(vkDevice, 1, writeDescritporSets, 0u, DE_NULL));
+	}
+
 	// Create pipeline layout
 	{
 		// TODO:: Connect uniforms here?
@@ -506,8 +615,8 @@ void ShaderRenderCaseInstance::render (Surface& result, const QuadGrid& quadGrid
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,		// VkStructureType				sType;
 			DE_NULL,											// const void*					pNext;
-			0u,													// deUint32						descriptorSetCount;
-			DE_NULL,											// const VkDescriptorSetLayout*	pSetLayouts;
+			1u,													// deUint32						descriptorSetCount;
+			&*m_descriptorSetLayout,							// const VkDescriptorSetLayout*	pSetLayouts;
 			0u,													// deUint32						pushConstantRangeCount;
 			DE_NULL												// const VkPushConstantRange*	pPushConstantRanges;
 		};
@@ -861,6 +970,8 @@ void ShaderRenderCaseInstance::render (Surface& result, const QuadGrid& quadGrid
 		//vk.cmdBindDynamicColorBlendState(*m_cmdBuffer, *m_colorBlendState);
 
 		vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_graphicsPipeline);
+
+		vk.cmdBindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 0u, 1, &*m_descriptorSet, 0u, DE_NULL);
 
 		vk.cmdBindIndexBuffer(*m_cmdBuffer, *m_indiceBuffer, 0, VK_INDEX_TYPE_UINT16);
 

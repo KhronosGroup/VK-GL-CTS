@@ -242,6 +242,14 @@ private:
 	vk::Move<vk::VkBuffer>						m_indiceBuffer;
 	de::MovePtr<vk::Allocation>				m_indiceBufferAlloc;
 
+	vk::Move<vk::VkDescriptorSetLayout>		m_descriptorSetLayout;
+	vk::Move<vk::VkBuffer>						m_uniformBuffer;
+	de::MovePtr<vk::Allocation>				m_uniformBufferAlloc;
+	vk::Move<vk::VkBufferView>				m_uniformBufferView;
+
+	vk::Move<vk::VkDescriptorPool>		m_descriptorPool;
+	vk::Move<vk::VkDescriptorSet>		m_descriptorSet;
+
 	vk::Move<vk::VkCmdPool>						m_cmdPool;
 	vk::Move<vk::VkCmdBuffer>					m_cmdBuffer;
 

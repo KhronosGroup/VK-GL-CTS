@@ -33,13 +33,21 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> shaderRenderCaseTests (new tcu::TestCaseGroup(testCtx, "shaderRenderCase", "ShaderRenderCase Tests"));
 
-	std::string base_vertex = "#version 300 es\n"
+	std::string base_vertex = "#version 140\n"
+		"#extension GL_ARB_separate_shader_objects : enable\n"
+		"#extension GL_ARB_shading_language_420pack : enable\n"
+
         "layout(location = 0) in highp vec4 a_position;\n"
         "layout(location = 1) in highp vec4 a_coords;\n"
         "layout(location = 2) in highp vec4 a_unitCoords;\n"
         "layout(location = 3) in mediump float a_one;\n"
+
+		"layout (set=0, binding=0) uniform buf {\n"
+		"	float item;\n"
+		"};\n"
+
 		"out mediump vec4 v_color;\n"
-        "void main (void) { gl_Position = a_position; v_color = vec4(a_coords.xyz, a_one); }\n";
+        "void main (void) { gl_Position = a_position; v_color = vec4(a_coords.xyz, item); }\n";
 
 	std::string base_fragment = "#version 300 es\n"
         "layout(location = 0) out lowp vec4 o_color;\n"
