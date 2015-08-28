@@ -825,21 +825,23 @@ FragmentOutputCase::IterateResult FragmentOutputCase::iterate (void)
 				deUint32	precThreshold	= 0;	//!< Threshold computed based on output type precision
 				UVec4		finalThreshold;
 
+				// 1 ULP rounding error is allowed for smaller floating-point formats
 				switch (format.type)
 				{
-					case tcu::TextureFormat::FLOAT:							formatThreshold = UVec4(4);										break;
-					case tcu::TextureFormat::HALF_FLOAT:					formatThreshold = UVec4((1<<13) + 4);							break;
-					case tcu::TextureFormat::UNSIGNED_INT_11F_11F_10F_REV:	formatThreshold = UVec4((1<<17) + 4, (1<<17)+4, (1<<18)+4, 4);	break;
+					case tcu::TextureFormat::FLOAT:							formatThreshold = UVec4(0);											break;
+					case tcu::TextureFormat::HALF_FLOAT:					formatThreshold = UVec4((1<<(23-10)));								break;
+					case tcu::TextureFormat::UNSIGNED_INT_11F_11F_10F_REV:	formatThreshold = UVec4((1<<(23-6)), (1<<(23-6)), (1<<(23-5)), 0);	break;
 					default:
 						DE_ASSERT(false);
 						break;
 				}
 
+				// 4 ULP interpolation
 				switch (outPrecision)
 				{
-					case glu::PRECISION_LOWP:		precThreshold	= (1<<21);	break;
-					case glu::PRECISION_MEDIUMP:	precThreshold	= (1<<13);	break;
-					case glu::PRECISION_HIGHP:		precThreshold	= 0;		break;
+					case glu::PRECISION_LOWP:		precThreshold	= (4<<(23-8));	break;
+					case glu::PRECISION_MEDIUMP:	precThreshold	= (4<<(23-10));	break;
+					case glu::PRECISION_HIGHP:		precThreshold	= 4;			break;
 					default:
 						DE_ASSERT(false);
 				}
