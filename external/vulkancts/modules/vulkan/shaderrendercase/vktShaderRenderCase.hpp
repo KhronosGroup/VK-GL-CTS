@@ -44,6 +44,7 @@
 #include "vkPrograms.hpp"
 #include "vkRef.hpp"
 #include "vkMemUtil.hpp"
+#include "vkBuilderUtil.hpp"
 
 namespace vkt
 {
@@ -138,6 +139,9 @@ private:
     ShaderEvalFunc      m_evalFunc;
 };
 
+class ShaderRenderCaseInstance;
+
+typedef void (*UniformSetupFunc) (ShaderRenderCaseInstance& instance);
 
 template<typename Instance>
 class ShaderRenderCase : public vkt::TestCase
@@ -147,20 +151,24 @@ public:
 												const std::string& name,
 												const std::string& description,
 												bool isVertexCase,
-												ShaderEvalFunc evalFunc)
+												ShaderEvalFunc evalFunc,
+												UniformSetupFunc uniformFunc)
 								: vkt::TestCase(testCtx, name, description)
 								, m_isVertexCase(isVertexCase)
 								, m_evaluator(new ShaderEvaluator(evalFunc))
+								, m_uniformFunc(uniformFunc)
 							{}
 
 							ShaderRenderCase	(tcu::TestContext& testCtx,
 												const std::string& name,
 												const std::string& description,
 												bool isVertexCase,
-												ShaderEvaluator* evaluator)
+												ShaderEvaluator* evaluator,
+												UniformSetupFunc uniformFunc)
 								: vkt::TestCase(testCtx, name, description)
 								, m_isVertexCase(isVertexCase)
 								, m_evaluator(evaluator)
+								, m_uniformFunc(uniformFunc)
 							{}
 
 
@@ -171,7 +179,7 @@ public:
 								programCollection.add(m_name + "_frag") << glu::FragmentSource(m_fragShaderSource);
 							}
 
-	virtual	TestInstance*	createInstance		(Context& context) const { return new Instance(context, m_name, m_isVertexCase, *m_evaluator); }
+	virtual	TestInstance*	createInstance		(Context& context) const { return new Instance(context, m_name, m_isVertexCase, *m_evaluator, m_uniformFunc); }
 
 protected:
     std::string				m_vertShaderSource;
@@ -180,17 +188,22 @@ protected:
 private:
 	bool 					m_isVertexCase;
 	ShaderEvaluator*		m_evaluator;
-
+	UniformSetupFunc 		m_uniformFunc;
 };
+
+
 
 // ShaderRenderCaseInstance.
 
 class ShaderRenderCaseInstance : public vkt::TestInstance
 {
 public:
-							ShaderRenderCaseInstance	(Context& context, const std::string& name, bool isVertexCase, ShaderEvaluator& evaluator);
+							ShaderRenderCaseInstance	(Context& context, const std::string& name, bool isVertexCase, ShaderEvaluator& evaluator, UniformSetupFunc uniformFunc);
 	virtual					~ShaderRenderCaseInstance	(void);
 	virtual tcu::TestStatus	iterate						(void);
+
+	void					addUniform					(deUint32 bindingLocation, vk::VkDescriptorType descriptorType, float data);
+	void					addUniform					(deUint32 bindingLocation, vk::VkDescriptorType descriptorType, tcu::Vec4 data);
 
 protected:
 	virtual void			setupShaderData				(void);
@@ -202,8 +215,11 @@ protected:
 	std::vector<tcu::Mat4>	m_userAttribTransforms;
 	tcu::Vec4				m_clearColor;
 
+	vk::SimpleAllocator				memAlloc;
+
 private:
 
+	void					setupUniformData			(deUint32 size, void* dataPtr);
 	void					setupDefaultInputs			(void);
 
 	void					render						(tcu::Surface& result, const QuadGrid& quadGrid);
@@ -214,6 +230,7 @@ private:
 	std::string				m_name;
 	bool					m_isVertexCase;
 	ShaderEvaluator&		m_evaluator;
+	UniformSetupFunc 		m_uniformFunc;
 
 	const tcu::IVec2		m_renderSize;
 	const vk::VkFormat		m_colorFormat;
@@ -243,9 +260,6 @@ private:
 	de::MovePtr<vk::Allocation>				m_indiceBufferAlloc;
 
 	vk::Move<vk::VkDescriptorSetLayout>		m_descriptorSetLayout;
-	vk::Move<vk::VkBuffer>						m_uniformBuffer;
-	de::MovePtr<vk::Allocation>				m_uniformBufferAlloc;
-	vk::Move<vk::VkBufferView>				m_uniformBufferView;
 
 	vk::Move<vk::VkDescriptorPool>		m_descriptorPool;
 	vk::Move<vk::VkDescriptorSet>		m_descriptorSet;
@@ -254,6 +268,16 @@ private:
 	vk::Move<vk::VkCmdBuffer>					m_cmdBuffer;
 
 	vk::Move<vk::VkFence>				m_fence;
+
+	vk::DescriptorSetLayoutBuilder			m_descriptorSetLayoutBuilder;
+	vk::DescriptorPoolBuilder				m_descriptorPoolBuilder;
+	vk::DescriptorSetUpdateBuilder 			m_descriptorSetUpdateBuilder;
+
+	std::vector<deUint32>	m_uniformLocations;
+	std::vector<vk::VkBuffer>			m_uniformBuffers;
+	std::vector<vk::Allocation*>		m_uniformBufferAllocs;
+	std::vector<vk::VkBufferView>		m_uniformBufferViews;
+	std::vector<vk::VkDescriptorInfo>	m_uniformDescriptorInfos;
 };
 
 

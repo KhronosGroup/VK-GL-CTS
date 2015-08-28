@@ -47,7 +47,6 @@
 #include "vkQueryUtil.hpp"
 #include "vkDeviceUtil.hpp"
 
-
 #include <vector>
 #include <string>
 
@@ -294,12 +293,14 @@ void ShaderEvaluator::evaluate (ShaderEvalContext& ctx)
 
 // ShaderRenderCaseInstance.
 
-ShaderRenderCaseInstance::ShaderRenderCaseInstance (Context& context, const string& name, bool isVertexCase, ShaderEvaluator& evaluator)
+ShaderRenderCaseInstance::ShaderRenderCaseInstance (Context& context, const string& name, bool isVertexCase, ShaderEvaluator& evaluator, UniformSetupFunc uniformFunc)
 	: vkt::TestInstance(context)
 	, m_clearColor(DEFAULT_CLEAR_COLOR)
+	, memAlloc(m_context.getDeviceInterface(), m_context.getDevice(), getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice()))
 	, m_name(name)
 	, m_isVertexCase(isVertexCase)
 	, m_evaluator(evaluator)
+	, m_uniformFunc(uniformFunc)
 	, m_renderSize(100, 100)
 	, m_colorFormat(VK_FORMAT_R8G8B8A8_UNORM)
 {
@@ -338,6 +339,94 @@ tcu::TestStatus ShaderRenderCaseInstance::iterate (void)
 		return tcu::TestStatus::fail("Image mismatch");
 }
 
+void ShaderRenderCaseInstance::setupUniformData (deUint32 size, void* dataPtr)
+{
+	const VkDevice				vkDevice			= m_context.getDevice();
+	const DeviceInterface&		vk					= m_context.getDeviceInterface();
+	const deUint32				queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
+
+	const VkBufferCreateInfo uniformBufferParams =
+	{
+		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,		// VkStructureType		sType;
+		DE_NULL,									// const void*			pNext;
+		size,										// VkDeviceSize			size;
+		VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,			// VkBufferUsageFlags	usage;
+		0u,											// VkBufferCreateFlags	flags;
+		VK_SHARING_MODE_EXCLUSIVE,					// VkSharingMode		sharingMode;
+		1u,											// deUint32				queueFamilyCount;
+		&queueFamilyIndex							// const deUint32*		pQueueFamilyIndices;
+	};
+
+	Move<VkBuffer> buffer = createBuffer(vk, vkDevice, &uniformBufferParams);
+	de::MovePtr<Allocation> alloc = memAlloc.allocate(getBufferMemoryRequirements(vk, vkDevice, *buffer), MemoryRequirement::HostVisible);
+	VK_CHECK(vk.bindBufferMemory(vkDevice, *buffer, alloc->getMemory(), 0));
+
+	void* bufferPtr;
+	VK_CHECK(vk.mapMemory(vkDevice, alloc->getMemory(), 0, size, 0, &bufferPtr));
+	deMemcpy(bufferPtr, dataPtr, size);
+	VK_CHECK(vk.unmapMemory(vkDevice, alloc->getMemory()));
+
+	const VkBufferViewCreateInfo viewInfo =
+	{
+		VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO, 	// VkStructureType	sType;
+		DE_NULL,									// void* 			pNext;
+		*buffer,									// VkBuffer			buffer;
+		VK_BUFFER_VIEW_TYPE_FORMATTED,				// VkBufferViewType	viewType;
+		VK_FORMAT_R32_SFLOAT,						// VkFormat	format;
+		0u,											// VkDeviceSize	offset;
+		size										// VkDeviceSize	range;
+	};
+
+	m_uniformBufferViews.push_back(createBufferView(vk, vkDevice, &viewInfo).disown());
+
+	m_uniformBuffers.push_back(buffer.disown());
+	m_uniformBufferAllocs.push_back(alloc.release());
+}
+
+
+void ShaderRenderCaseInstance::addUniform (deUint32 bindingLocation, VkDescriptorType descriptorType, float data)
+{
+	m_descriptorSetLayoutBuilder.addSingleBinding(descriptorType, VK_SHADER_STAGE_VERTEX_BIT);
+	m_descriptorPoolBuilder.addType(descriptorType);
+
+	setupUniformData(sizeof(data), &data);
+
+	const VkDescriptorInfo view =
+	{
+		m_uniformBufferViews[m_uniformBufferViews.size() - 1],											// VkBufferView		bufferView;
+		0,											// VkSampler		sampler;
+		0,											// VkImageView		imageView;
+		0,											// VkAttachmentView	attachmentView;
+		(VkImageLayout)0,							// VkImageLayout	imageLayout;
+	};
+
+	m_uniformDescriptorInfos.push_back(view);
+
+	m_uniformLocations.push_back(bindingLocation);
+}
+
+void ShaderRenderCaseInstance::addUniform (deUint32 bindingLocation, VkDescriptorType descriptorType, tcu::Vec4 data)
+{
+	m_descriptorSetLayoutBuilder.addSingleBinding(descriptorType, VK_SHADER_STAGE_VERTEX_BIT);
+	m_descriptorPoolBuilder.addType(descriptorType);
+
+	setupUniformData(sizeof(data), &data[0]);
+
+	const VkDescriptorInfo view =
+	{
+		m_uniformBufferViews[m_uniformBufferViews.size() - 1],											// VkBufferView		bufferView;
+		0,											// VkSampler		sampler;
+		0,											// VkImageView		imageView;
+		0,											// VkAttachmentView	attachmentView;
+		(VkImageLayout)0,							// VkImageLayout	imageLayout;
+	};
+
+	m_uniformDescriptorInfos.push_back(view);
+
+	m_uniformLocations.push_back(bindingLocation);
+}
+
+
 void ShaderRenderCaseInstance::setupShaderData (void)
 {
 	// TODO!!!
@@ -352,6 +441,7 @@ void ShaderRenderCaseInstance::setupUniforms (const Vec4& constCoords)
 {
 	// TODO!!
 	DE_UNREF(constCoords);
+	m_uniformFunc(*this);
 }
 
 tcu::IVec2 ShaderRenderCaseInstance::getViewportSize (void) const
@@ -373,7 +463,7 @@ void ShaderRenderCaseInstance::render (Surface& result, const QuadGrid& quadGrid
 	const DeviceInterface&		vk					= m_context.getDeviceInterface();
 	const VkQueue				queue				= m_context.getUniversalQueue();
 	const deUint32				queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
-	SimpleAllocator				memAlloc			(vk, vkDevice, getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice()));
+	//SimpleAllocator				memAlloc			(vk, vkDevice, getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice()));
 
 	// Create color image
 	{
@@ -501,111 +591,18 @@ void ShaderRenderCaseInstance::render (Surface& result, const QuadGrid& quadGrid
 
 	// Create descriptors
 	{
-		const VkDescriptorSetLayoutBinding layoutBindings[1] =
-		{
-			{
-				VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,		    // VkDescriptorType		descriptorType;
-				1u,											// deUint32				arraySize;
-				VK_SHADER_STAGE_VERTEX_BIT,					// VkShaderStageFlags	stageFlags;
-				DE_NULL										// const VkSampler*		pImmutableSamplers;
-			},
-		};
+		setupUniforms(quadGrid.getConstCoords());
 
-		const VkDescriptorSetLayoutCreateInfo descriptorLayoutParams =
-		{
-			VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,	// VkStructureType						sType;
-			DE_NULL,												// cost void*							pNexŧ;
-			DE_LENGTH_OF_ARRAY(layoutBindings),						// deUint32								count;
-			layoutBindings											// const VkDescriptorSetLayoutBinding	pBinding;
-		};
-
-		m_descriptorSetLayout = createDescriptorSetLayout(vk, vkDevice, &descriptorLayoutParams);
-
-
-		const float uniformData[] = { 1.0f };
-		const VkDeviceSize uniformSize = DE_LENGTH_OF_ARRAY(uniformData) * sizeof(float);
-		const VkBufferCreateInfo uniformBufferParams =
-		{
-			VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,		// VkStructureType		sType;
-			DE_NULL,									// const void*			pNext;
-			uniformSize,			// VkDeviceSize			size;
-			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,			// VkBufferUsageFlags	usage;
-			0u,											// VkBufferCreateFlags	flags;
-			VK_SHARING_MODE_EXCLUSIVE,					// VkSharingMode		sharingMode;
-			1u,											// deUint32				queueFamilyCount;
-			&queueFamilyIndex							// const deUint32*		pQueueFamilyIndices;
-		};
-
-		m_uniformBuffer			= createBuffer(vk, vkDevice, &uniformBufferParams);
-		m_uniformBufferAlloc	= memAlloc.allocate(getBufferMemoryRequirements(vk, vkDevice, *m_uniformBuffer), MemoryRequirement::HostVisible);
-
-		VK_CHECK(vk.bindBufferMemory(vkDevice, *m_uniformBuffer, m_uniformBufferAlloc->getMemory(), 0));
-
-		void* bufferPtr;
-		VK_CHECK(vk.mapMemory(vkDevice, m_uniformBufferAlloc->getMemory(), 0, uniformSize, 0, &bufferPtr));
-		deMemcpy(bufferPtr, uniformData, uniformSize);
-		VK_CHECK(vk.unmapMemory(vkDevice, m_uniformBufferAlloc->getMemory()));
-
-		const VkBufferViewCreateInfo viewInfo =
-		{
-			VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO, 	// VkStructureType	sType;
-			DE_NULL,									// void* 			pNext;
-			*m_uniformBuffer,							// VkBuffer			buffer;
-			VK_BUFFER_VIEW_TYPE_FORMATTED,					// VkBufferViewType	viewType;
-			VK_FORMAT_R32_SFLOAT,						// VkFormat	format;
-			0u,											// VkDeviceSize	offset;
-			uniformSize									// VkDeviceSize	range;
-		};
-
-		m_uniformBufferView = createBufferView(vk, vkDevice, &viewInfo);
-
-		const VkDescriptorTypeCount descriptorTypes[] =
-		{
-			{
-				VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,				// VkDescriptorType		type;
-				1												// deUint32				count;
-			}
-		};
-
-		const VkDescriptorPoolCreateInfo descriptorPoolParams =
-		{
-			VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO, 	// VkStructureType					sType;
-			DE_NULL,										// void* 							pNext;
-			DE_LENGTH_OF_ARRAY(descriptorTypes),			// deUint32							count;
-			descriptorTypes									// const VkDescriptorTypeCount* 	pTypeCount
-		};
-
-		m_descriptorPool = createDescriptorPool(vk, vkDevice, VK_DESCRIPTOR_POOL_USAGE_ONE_SHOT, 1, &descriptorPoolParams);
-
+		m_descriptorSetLayout = m_descriptorSetLayoutBuilder.build(vk, vkDevice);
+		m_descriptorPool = m_descriptorPoolBuilder.build(vk, vkDevice, VK_DESCRIPTOR_POOL_USAGE_ONE_SHOT, 1u);
 		m_descriptorSet = allocDescriptorSet(vk, vkDevice, *m_descriptorPool, VK_DESCRIPTOR_SET_USAGE_STATIC, *m_descriptorSetLayout);
 
-		const VkDescriptorInfo descriptorInfos[] =
+		for(deUint32 i = 0; i < m_uniformDescriptorInfos.size(); i++)
 		{
-			{
-				*m_uniformBufferView,						// VkBufferView		bufferView;
-				0,											// VkSampler		sampler;
-				0,											// VkImageView		imageView;
-				0,											// VkAttachmentView	attachmentView;
-				(VkImageLayout)0,							// VkImageLayout	imageLayout;
+			m_descriptorSetUpdateBuilder.writeSingle(*m_descriptorSet, DescriptorSetUpdateBuilder::Location::binding(m_uniformLocations[i]), VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &m_uniformDescriptorInfos[i]);
+		}
 
-			}
-		};
-
-		const VkWriteDescriptorSet writeDescritporSets[] =
-		{
-			{
-				VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,		// VkStructureType		sType;
-				DE_NULL,									// const void*		 pNext;
-				*m_descriptorSet,							// VkDescriptorSet		destSet;
-				0,											// deUint32		destBinding;
-				0,											// deUint32		destArrayElement;
-				1, 											// deUint32		count;
-				VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,			// VkDescriptorType		descriptorType;
-				descriptorInfos, 							// const VkDescriptorInfo*	pDescriptors;
-			}
-		};
-
-		VK_CHECK(vk.updateDescriptorSets(vkDevice, 1, writeDescritporSets, 0u, DE_NULL));
+		m_descriptorSetUpdateBuilder.update(vk, vkDevice);
 	}
 
 	// Create pipeline layout
