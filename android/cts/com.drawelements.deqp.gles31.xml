@@ -14984,6 +14984,7 @@
 <Test name="mismatch_member_type" />
 <Test name="mismatch_member_name" />
 <Test name="mismatch_member_precision" />
+<Test name="match_different_member_interpolation" />
 <Test name="mismatch_member_array_size" />
 <Test name="match_different_member_struct_names" />
 <Test name="mismatch_member_struct_member_name" />
