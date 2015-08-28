@@ -54,6 +54,7 @@
 #include "vktShaderLibrary.hpp"
 #include "vktRenderPassTests.hpp"
 #include "vktShaderRenderTests.hpp"
+#include "vktMemoryTests.hpp"
 
 #include <vector>
 #include <sstream>
@@ -293,6 +294,7 @@ void TestPackage::init (void)
 	addChild(new GlslGroup				(m_testCtx));
 	addChild(createRenderPassTests		(m_testCtx));
 	addChild(sr::createTests			(m_testCtx));
+	addChild(memory::createTests		(m_testCtx));
 }
 
 } // vkt
