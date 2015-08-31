@@ -308,6 +308,21 @@ ShaderRenderCaseInstance::ShaderRenderCaseInstance (Context& context, const stri
 
 ShaderRenderCaseInstance::~ShaderRenderCaseInstance (void)
 {
+	const VkDevice				vkDevice			= m_context.getDevice();
+	const DeviceInterface&		vk					= m_context.getDeviceInterface();
+
+	for (size_t i = 0; i < m_vertexBuffers.size(); i++)
+	{
+		VK_CHECK(vk.freeMemory(vkDevice, m_vertexBufferAllocs[i]->getMemory()));
+		VK_CHECK(vk.destroyBuffer(vkDevice, m_vertexBuffers[i]));
+	}
+
+	for (size_t i = 0; i < m_uniformInfos.size(); i++)
+	{
+		VK_CHECK(vk.destroyBufferView(vkDevice, m_uniformInfos[i].view));
+		VK_CHECK(vk.freeMemory(vkDevice, m_uniformInfos[i].alloc->getMemory()));
+		VK_CHECK(vk.destroyBuffer(vkDevice, m_uniformInfos[i].buffer));
+	}
 }
 
 tcu::TestStatus ShaderRenderCaseInstance::iterate (void)
@@ -339,7 +354,7 @@ tcu::TestStatus ShaderRenderCaseInstance::iterate (void)
 		return tcu::TestStatus::fail("Image mismatch");
 }
 
-void ShaderRenderCaseInstance::setupUniformData (deUint32 size, const void* dataPtr)
+void ShaderRenderCaseInstance::setupUniformData (deUint32 bindingLocation, deUint32 size, const void* dataPtr)
 {
 	const VkDevice				vkDevice			= m_context.getDevice();
 	const DeviceInterface&		vk					= m_context.getDeviceInterface();
@@ -377,10 +392,27 @@ void ShaderRenderCaseInstance::setupUniformData (deUint32 size, const void* data
 		size										// VkDeviceSize	range;
 	};
 
-	m_uniformBufferViews.push_back(createBufferView(vk, vkDevice, &viewInfo).disown());
+	VkBufferView bufferView = createBufferView(vk, vkDevice, &viewInfo).disown();
 
-	m_uniformBuffers.push_back(buffer.disown());
-	m_uniformBufferAllocs.push_back(alloc.release());
+	const VkDescriptorInfo descriptor =
+	{
+		bufferView,									// VkBufferView		bufferView;
+		0,											// VkSampler		sampler;
+		0,											// VkImageView		imageView;
+		0,											// VkAttachmentView	attachmentView;
+		(vk::VkImageLayout)0,						// VkImageLayout	imageLayout;
+	};
+
+	const UniformInfo uniformInfo =
+	{
+		buffer.disown(),							// VkBuffer			buffer;
+		alloc.release(),							// Allocation*		alloc;
+		bufferView,									// VkBufferView		view;
+		descriptor,									// VkDescriptorInfo	descriptor
+		bindingLocation								// deUint32 		location;
+	};
+
+	m_uniformInfos.push_back(uniformInfo);
 }
 
 
@@ -620,9 +652,10 @@ void ShaderRenderCaseInstance::render (Surface& result, const QuadGrid& quadGrid
 		m_descriptorPool = m_descriptorPoolBuilder.build(vk, vkDevice, VK_DESCRIPTOR_POOL_USAGE_ONE_SHOT, 1u);
 		m_descriptorSet = allocDescriptorSet(vk, vkDevice, *m_descriptorPool, VK_DESCRIPTOR_SET_USAGE_STATIC, *m_descriptorSetLayout);
 
-		for(deUint32 i = 0; i < m_uniformDescriptorInfos.size(); i++)
+		for(deUint32 i = 0; i < m_uniformInfos.size(); i++)
 		{
-			m_descriptorSetUpdateBuilder.writeSingle(*m_descriptorSet, DescriptorSetUpdateBuilder::Location::binding(m_uniformLocations[i]), VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &m_uniformDescriptorInfos[i]);
+			deUint32 location = m_uniformInfos[i].location;
+			m_descriptorSetUpdateBuilder.writeSingle(*m_descriptorSet, DescriptorSetUpdateBuilder::Location::binding(location), VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &m_uniformInfos[i].descriptor);
 		}
 
 		m_descriptorSetUpdateBuilder.update(vk, vkDevice);

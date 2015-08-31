@@ -227,7 +227,7 @@ protected:
 
 private:
 
-	void					setupUniformData			(deUint32 size, const void* dataPtr);
+	void					setupUniformData			(deUint32 bindingLocation, deUint32 size, const void* dataPtr);
 	void					setupDefaultInputs			(const QuadGrid& quadGrid);
 
 	void					render						(tcu::Surface& result, const QuadGrid& quadGrid);
@@ -282,11 +282,15 @@ private:
 	vk::DescriptorPoolBuilder				m_descriptorPoolBuilder;
 	vk::DescriptorSetUpdateBuilder 			m_descriptorSetUpdateBuilder;
 
-	std::vector<deUint32>	m_uniformLocations;
-	std::vector<vk::VkBuffer>			m_uniformBuffers;
-	std::vector<vk::Allocation*>		m_uniformBufferAllocs;
-	std::vector<vk::VkBufferView>		m_uniformBufferViews;
-	std::vector<vk::VkDescriptorInfo>	m_uniformDescriptorInfos;
+	struct UniformInfo
+	{
+		vk::VkBuffer				buffer;
+		vk::Allocation*				alloc;
+		vk::VkBufferView			view;
+		vk::VkDescriptorInfo		descriptor;
+		deUint32					location;
+	};
+	std::vector<UniformInfo>		m_uniformInfos;
 
 	std::vector<vk::VkVertexInputBindingDescription>	m_vertexBindingDescription;
 	std::vector<vk::VkVertexInputAttributeDescription>	m_vertexattributeDescription;
@@ -300,20 +304,7 @@ void ShaderRenderCaseInstance::addUniform (deUint32 bindingLocation, vk::VkDescr
 	m_descriptorSetLayoutBuilder.addSingleBinding(descriptorType, vk::VK_SHADER_STAGE_VERTEX_BIT);
 	m_descriptorPoolBuilder.addType(descriptorType);
 
-	setupUniformData(sizeof(T), &data);
-
-	const vk::VkDescriptorInfo view =
-	{
-		m_uniformBufferViews[m_uniformBufferViews.size() - 1],											// VkBufferView		bufferView;
-		0,											// VkSampler		sampler;
-		0,											// VkImageView		imageView;
-		0,											// VkAttachmentView	attachmentView;
-		(vk::VkImageLayout)0,							// VkImageLayout	imageLayout;
-	};
-
-	m_uniformDescriptorInfos.push_back(view);
-
-	m_uniformLocations.push_back(bindingLocation);
+	setupUniformData(bindingLocation, sizeof(T), &data);
 }
 
 
