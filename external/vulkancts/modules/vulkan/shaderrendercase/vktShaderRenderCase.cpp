@@ -292,11 +292,10 @@ void ShaderEvaluator::evaluate (ShaderEvalContext& ctx)
 
 // ShaderRenderCaseInstance.
 
-ShaderRenderCaseInstance::ShaderRenderCaseInstance (Context& context, const string& name, bool isVertexCase, ShaderEvaluator& evaluator, UniformSetupFunc uniformFunc, AttributeSetupFunc attribFunc)
+ShaderRenderCaseInstance::ShaderRenderCaseInstance (Context& context, bool isVertexCase, ShaderEvaluator& evaluator, UniformSetupFunc uniformFunc, AttributeSetupFunc attribFunc)
 	: vkt::TestInstance(context)
 	, m_clearColor(DEFAULT_CLEAR_COLOR)
 	, memAlloc(m_context.getDeviceInterface(), m_context.getDevice(), getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice()))
-	, m_name(name)
 	, m_isVertexCase(isVertexCase)
 	, m_evaluator(evaluator)
 	, m_uniformFunc(uniformFunc)
@@ -679,8 +678,8 @@ void ShaderRenderCaseInstance::render (Surface& result, const QuadGrid& quadGrid
 
 	// Create shaders
 	{
-		m_vertexShaderModule	= createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get(m_name + "_vert"), 0);
-		m_fragmentShaderModule	= createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get(m_name + "_frag"), 0);
+		m_vertexShaderModule	= createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("vert"), 0);
+		m_fragmentShaderModule	= createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("frag"), 0);
 
 		const VkShaderCreateInfo vertexShaderParams =
 		{

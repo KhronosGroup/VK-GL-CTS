@@ -180,11 +180,11 @@ public:
 	virtual					~ShaderRenderCase	(void) {}
 	virtual	void			initPrograms		(vk::ProgramCollection<glu::ProgramSources>& programCollection) const
 							{
-								programCollection.add(m_name + "_vert") << glu::VertexSource(m_vertShaderSource);
-								programCollection.add(m_name + "_frag") << glu::FragmentSource(m_fragShaderSource);
+								programCollection.add("vert") << glu::VertexSource(m_vertShaderSource);
+								programCollection.add("frag") << glu::FragmentSource(m_fragShaderSource);
 							}
 
-	virtual	TestInstance*	createInstance		(Context& context) const { return new Instance(context, m_name, m_isVertexCase, *m_evaluator, m_uniformFunc, m_attribFunc); }
+	virtual	TestInstance*	createInstance		(Context& context) const { return new Instance(context, m_isVertexCase, *m_evaluator, m_uniformFunc, m_attribFunc); }
 
 protected:
     std::string				m_vertShaderSource;
@@ -205,7 +205,6 @@ class ShaderRenderCaseInstance : public vkt::TestInstance
 {
 public:
 														ShaderRenderCaseInstance	(Context& context,
-																					const std::string& name,
 																					bool isVertexCase,
 																					ShaderEvaluator& evaluator,
 																					UniformSetupFunc uniformFunc,
@@ -249,7 +248,6 @@ private:
 																					const tcu::Surface& refImage,
 																					float errorThreshold);
 
-	std::string											m_name;
 	bool												m_isVertexCase;
 	ShaderEvaluator&									m_evaluator;
 	UniformSetupFunc 									m_uniformFunc;
