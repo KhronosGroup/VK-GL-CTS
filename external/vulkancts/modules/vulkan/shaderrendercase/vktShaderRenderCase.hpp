@@ -204,83 +204,94 @@ private:
 class ShaderRenderCaseInstance : public vkt::TestInstance
 {
 public:
-							ShaderRenderCaseInstance	(Context& context, const std::string& name, bool isVertexCase, ShaderEvaluator& evaluator, UniformSetupFunc uniformFunc, AttributeSetupFunc attribFunc);
-	virtual					~ShaderRenderCaseInstance	(void);
-	virtual tcu::TestStatus	iterate						(void);
+														ShaderRenderCaseInstance	(Context& context,
+																					const std::string& name,
+																					bool isVertexCase,
+																					ShaderEvaluator& evaluator,
+																					UniformSetupFunc uniformFunc,
+																					AttributeSetupFunc attribFunc);
 
-	void					addAttribute				(deUint32 bindingLocation, vk::VkFormat, deUint32 sizePerElement, deUint32 count, const void* data);
+	virtual												~ShaderRenderCaseInstance	(void);
+	virtual tcu::TestStatus								iterate						(void);
+
+	void												addAttribute				(deUint32 bindingLocation,
+																					vk::VkFormat format,
+																					deUint32 sizePerElement,
+																					deUint32 count,
+																					const void* data);
 
 	template<typename T>
-	void					addUniform					(deUint32 bindingLocation, vk::VkDescriptorType descriptorType, const T data);
+	void												addUniform					(deUint32 bindingLocation,
+																					vk::VkDescriptorType descriptorType,
+																					const T data);
 
 protected:
-	virtual void			setupShaderData				(void);
-	virtual void			setup						(void);
-	virtual void			setupUniforms				(const tcu::Vec4& constCoords);
+	virtual void										setupShaderData				(void);
+	virtual void										setup						(void);
+	virtual void										setupUniforms				(const tcu::Vec4& constCoords);
 
-	tcu::IVec2				getViewportSize				(void) const;
+	tcu::IVec2											getViewportSize				(void) const;
 
-	std::vector<tcu::Mat4>	m_userAttribTransforms;
-	tcu::Vec4				m_clearColor;
+	std::vector<tcu::Mat4>								m_userAttribTransforms;
+	tcu::Vec4											m_clearColor;
 
-	vk::SimpleAllocator				memAlloc;
+	vk::SimpleAllocator									memAlloc;
 
 private:
 
-	void					setupUniformData			(deUint32 bindingLocation, deUint32 size, const void* dataPtr);
-	void					setupDefaultInputs			(const QuadGrid& quadGrid);
+	void												setupUniformData			(deUint32 bindingLocation, deUint32 size, const void* dataPtr);
+	void												setupDefaultInputs			(const QuadGrid& quadGrid);
 
-	void					render						(tcu::Surface& result, const QuadGrid& quadGrid);
-	void					computeVertexReference		(tcu::Surface& result, const QuadGrid& quadGrid);
-	void					computeFragmentReference	(tcu::Surface& result, const QuadGrid& quadGrid);
-	bool					compareImages				(const tcu::Surface& resImage, const tcu::Surface& refImage, float errorThreshold);
+	void												render						(tcu::Surface& result, const QuadGrid& quadGrid);
+	void												computeVertexReference		(tcu::Surface& result, const QuadGrid& quadGrid);
+	void												computeFragmentReference	(tcu::Surface& result, const QuadGrid& quadGrid);
+	bool												compareImages				(const tcu::Surface& resImage,
+																					const tcu::Surface& refImage,
+																					float errorThreshold);
 
-	std::string				m_name;
-	bool					m_isVertexCase;
-	ShaderEvaluator&		m_evaluator;
-	UniformSetupFunc 		m_uniformFunc;
-	AttributeSetupFunc		m_attribFunc;
+	std::string											m_name;
+	bool												m_isVertexCase;
+	ShaderEvaluator&									m_evaluator;
+	UniformSetupFunc 									m_uniformFunc;
+	AttributeSetupFunc									m_attribFunc;
 
-	const tcu::IVec2		m_renderSize;
-	const vk::VkFormat		m_colorFormat;
+	const tcu::IVec2									m_renderSize;
+	const vk::VkFormat									m_colorFormat;
 
-	vk::Move<vk::VkImage>				m_colorImage;
-	de::MovePtr<vk::Allocation>			m_colorImageAlloc;
-	vk::Move<vk::VkAttachmentView> 		m_colorAttachmentView;
+	vk::Move<vk::VkImage>								m_colorImage;
+	de::MovePtr<vk::Allocation>							m_colorImageAlloc;
+	vk::Move<vk::VkAttachmentView> 						m_colorAttachmentView;
 
-	vk::Move<vk::VkRenderPass>			m_renderPass;
-	vk::Move<vk::VkFramebuffer>			m_framebuffer;
-	vk::Move<vk::VkPipelineLayout>		m_pipelineLayout;
-	vk::Move<vk::VkPipeline>			m_graphicsPipeline;
+	vk::Move<vk::VkRenderPass>							m_renderPass;
+	vk::Move<vk::VkFramebuffer>							m_framebuffer;
+	vk::Move<vk::VkPipelineLayout>						m_pipelineLayout;
+	vk::Move<vk::VkPipeline>							m_graphicsPipeline;
 
-	vk::Move<vk::VkShaderModule>		m_vertexShaderModule;
-	vk::Move<vk::VkShaderModule>		m_fragmentShaderModule;
-	vk::Move<vk::VkShader>				m_vertexShader;
-	vk::Move<vk::VkShader>				m_fragmentShader;
+	vk::Move<vk::VkShaderModule>						m_vertexShaderModule;
+	vk::Move<vk::VkShaderModule>						m_fragmentShaderModule;
+	vk::Move<vk::VkShader>								m_vertexShader;
+	vk::Move<vk::VkShader>								m_fragmentShader;
 
-	vk::Move<vk::VkDynamicViewportState>		m_viewportState;
-	vk::Move<vk::VkDynamicRasterState>			m_rasterState;
-	vk::Move<vk::VkDynamicColorBlendState>		m_colorBlendState;
+	vk::Move<vk::VkDynamicViewportState>				m_viewportState;
+	vk::Move<vk::VkDynamicRasterState>					m_rasterState;
+	vk::Move<vk::VkDynamicColorBlendState>				m_colorBlendState;
 
-	vk::Move<vk::VkBuffer>						m_vertexBuffer;
-	de::MovePtr<vk::Allocation>				m_vertexBufferAlloc;
+	vk::Move<vk::VkBuffer>								m_indiceBuffer;
+	de::MovePtr<vk::Allocation>							m_indiceBufferAlloc;
 
-	vk::Move<vk::VkBuffer>						m_indiceBuffer;
-	de::MovePtr<vk::Allocation>				m_indiceBufferAlloc;
+	vk::Move<vk::VkDescriptorSetLayout>					m_descriptorSetLayout;
 
-	vk::Move<vk::VkDescriptorSetLayout>		m_descriptorSetLayout;
+	vk::Move<vk::VkDescriptorPool>						m_descriptorPool;
+	vk::Move<vk::VkDescriptorSet>						m_descriptorSet;
 
-	vk::Move<vk::VkDescriptorPool>		m_descriptorPool;
-	vk::Move<vk::VkDescriptorSet>		m_descriptorSet;
+	vk::Move<vk::VkCmdPool>								m_cmdPool;
+	vk::Move<vk::VkCmdBuffer>							m_cmdBuffer;
 
-	vk::Move<vk::VkCmdPool>						m_cmdPool;
-	vk::Move<vk::VkCmdBuffer>					m_cmdBuffer;
+	vk::Move<vk::VkFence>								m_fence;
 
-	vk::Move<vk::VkFence>				m_fence;
-
-	vk::DescriptorSetLayoutBuilder			m_descriptorSetLayoutBuilder;
-	vk::DescriptorPoolBuilder				m_descriptorPoolBuilder;
-	vk::DescriptorSetUpdateBuilder 			m_descriptorSetUpdateBuilder;
+	vk::DescriptorSetLayoutBuilder						m_descriptorSetLayoutBuilder;
+	vk::DescriptorPoolBuilder							m_descriptorPoolBuilder;
+	vk::DescriptorSetUpdateBuilder 						m_descriptorSetUpdateBuilder;
 
 	struct UniformInfo
 	{
@@ -290,7 +301,7 @@ private:
 		vk::VkDescriptorInfo		descriptor;
 		deUint32					location;
 	};
-	std::vector<UniformInfo>		m_uniformInfos;
+	std::vector<UniformInfo>							m_uniformInfos;
 
 	std::vector<vk::VkVertexInputBindingDescription>	m_vertexBindingDescription;
 	std::vector<vk::VkVertexInputAttributeDescription>	m_vertexattributeDescription;
@@ -306,8 +317,6 @@ void ShaderRenderCaseInstance::addUniform (deUint32 bindingLocation, vk::VkDescr
 
 	setupUniformData(bindingLocation, sizeof(T), &data);
 }
-
-
 
 } // shaderrendercase
 } // vkt
