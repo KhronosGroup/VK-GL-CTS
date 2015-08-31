@@ -339,7 +339,7 @@ tcu::TestStatus ShaderRenderCaseInstance::iterate (void)
 		return tcu::TestStatus::fail("Image mismatch");
 }
 
-void ShaderRenderCaseInstance::setupUniformData (deUint32 size, void* dataPtr)
+void ShaderRenderCaseInstance::setupUniformData (deUint32 size, const void* dataPtr)
 {
 	const VkDevice				vkDevice			= m_context.getDevice();
 	const DeviceInterface&		vk					= m_context.getDeviceInterface();
@@ -439,49 +439,6 @@ void ShaderRenderCaseInstance::addAttribute (deUint32 bindingLocation, vk::VkFor
 	m_vertexBuffers.push_back(buffer.disown());
 	m_vertexBufferAllocs.push_back(alloc.release());
 }
-
-void ShaderRenderCaseInstance::addUniform (deUint32 bindingLocation, VkDescriptorType descriptorType, float data)
-{
-	m_descriptorSetLayoutBuilder.addSingleBinding(descriptorType, VK_SHADER_STAGE_VERTEX_BIT);
-	m_descriptorPoolBuilder.addType(descriptorType);
-
-	setupUniformData(sizeof(data), &data);
-
-	const VkDescriptorInfo view =
-	{
-		m_uniformBufferViews[m_uniformBufferViews.size() - 1],											// VkBufferView		bufferView;
-		0,											// VkSampler		sampler;
-		0,											// VkImageView		imageView;
-		0,											// VkAttachmentView	attachmentView;
-		(VkImageLayout)0,							// VkImageLayout	imageLayout;
-	};
-
-	m_uniformDescriptorInfos.push_back(view);
-
-	m_uniformLocations.push_back(bindingLocation);
-}
-
-void ShaderRenderCaseInstance::addUniform (deUint32 bindingLocation, VkDescriptorType descriptorType, tcu::Vec4 data)
-{
-	m_descriptorSetLayoutBuilder.addSingleBinding(descriptorType, VK_SHADER_STAGE_VERTEX_BIT);
-	m_descriptorPoolBuilder.addType(descriptorType);
-
-	setupUniformData(sizeof(data), &data[0]);
-
-	const VkDescriptorInfo view =
-	{
-		m_uniformBufferViews[m_uniformBufferViews.size() - 1],											// VkBufferView		bufferView;
-		0,											// VkSampler		sampler;
-		0,											// VkImageView		imageView;
-		0,											// VkAttachmentView	attachmentView;
-		(VkImageLayout)0,							// VkImageLayout	imageLayout;
-	};
-
-	m_uniformDescriptorInfos.push_back(view);
-
-	m_uniformLocations.push_back(bindingLocation);
-}
-
 
 void ShaderRenderCaseInstance::setupShaderData (void)
 {

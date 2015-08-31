@@ -12,7 +12,15 @@ namespace shaderrendercase
 
 inline void eval_DEBUG      (ShaderEvalContext& c) { c.color = tcu::Vec4(1, 0, 1, 1); }
 
-void empty_uniform (ShaderRenderCaseInstance& instance) {}
+void empty_uniform (ShaderRenderCaseInstance& /* instance */) {}
+
+struct  test_struct {
+	tcu::Vec4 a;
+	tcu::Vec4 b;
+	tcu::Vec4 c;
+	tcu::Vec4 d;
+};
+
 
 
 void dummy_uniforms (ShaderRenderCaseInstance& instance)
@@ -20,13 +28,23 @@ void dummy_uniforms (ShaderRenderCaseInstance& instance)
 	instance.addUniform(0u, vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1.0f);
 	instance.addUniform(1u, vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0.5f);
 	instance.addUniform(2u, vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, tcu::Vec4(1, 0.5f, 1.0f, 0.5f));
+
+	test_struct data =
+	{
+		tcu::Vec4(0.1f),
+		tcu::Vec4(0.2f),
+		tcu::Vec4(0.3f),
+		tcu::Vec4(0.4f),
+	};
+
+	instance.addUniform<test_struct>(3u, vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, data);
 }
 
 void dummy_attributes (ShaderRenderCaseInstance& instance, deUint32 numVertices)
 {
 	std::vector<float> data;
 	data.resize(numVertices);
-	for(int i = 0; i < numVertices; i++)
+	for(deUint32 i = 0; i < numVertices; i++)
 		data[i] = 1.0;
 
 	instance.addAttribute(4u, vk::VK_FORMAT_R32_SFLOAT, sizeof(float), numVertices, &data[0]);
@@ -78,8 +96,15 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 		"	vec4 item3;\n"
 		"};\n"
 
+		"struct FF { highp float a, b; };\n"
+		"layout (set=0, binding=3) uniform buf4 {\n"
+		"	FF f_1;\n"
+		"	FF f_2;\n"
+		"	highp vec2 f_3[2];\n"
+		"};\n"
+
 		"out mediump vec4 v_color;\n"
-        "void main (void) { gl_Position = a_position; v_color = vec4(a_coords.xyz, a_in1); }\n";
+        "void main (void) { gl_Position = a_position; v_color = vec4(a_coords.xyz, f_1.a + f_2.a + f_3[0].x + f_3[1].x); }\n";
 
 	std::string base_fragment = "#version 300 es\n"
         "layout(location = 0) out lowp vec4 o_color;\n"
