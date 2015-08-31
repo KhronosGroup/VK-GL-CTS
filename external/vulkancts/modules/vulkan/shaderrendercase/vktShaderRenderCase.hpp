@@ -142,6 +142,7 @@ private:
 class ShaderRenderCaseInstance;
 
 typedef void (*UniformSetupFunc) (ShaderRenderCaseInstance& instance);
+typedef void (*AttributeSetupFunc) (ShaderRenderCaseInstance& instance, deUint32 numVertices);
 
 template<typename Instance>
 class ShaderRenderCase : public vkt::TestCase
@@ -152,11 +153,13 @@ public:
 												const std::string& description,
 												bool isVertexCase,
 												ShaderEvalFunc evalFunc,
-												UniformSetupFunc uniformFunc)
+												UniformSetupFunc uniformFunc,
+												AttributeSetupFunc attribFunc)
 								: vkt::TestCase(testCtx, name, description)
 								, m_isVertexCase(isVertexCase)
 								, m_evaluator(new ShaderEvaluator(evalFunc))
 								, m_uniformFunc(uniformFunc)
+								, m_attribFunc(attribFunc)
 							{}
 
 							ShaderRenderCase	(tcu::TestContext& testCtx,
@@ -164,11 +167,13 @@ public:
 												const std::string& description,
 												bool isVertexCase,
 												ShaderEvaluator* evaluator,
-												UniformSetupFunc uniformFunc)
+												UniformSetupFunc uniformFunc,
+												AttributeSetupFunc attribFunc)
 								: vkt::TestCase(testCtx, name, description)
 								, m_isVertexCase(isVertexCase)
 								, m_evaluator(evaluator)
 								, m_uniformFunc(uniformFunc)
+								, m_attribFunc(attribFunc)
 							{}
 
 
@@ -179,7 +184,7 @@ public:
 								programCollection.add(m_name + "_frag") << glu::FragmentSource(m_fragShaderSource);
 							}
 
-	virtual	TestInstance*	createInstance		(Context& context) const { return new Instance(context, m_name, m_isVertexCase, *m_evaluator, m_uniformFunc); }
+	virtual	TestInstance*	createInstance		(Context& context) const { return new Instance(context, m_name, m_isVertexCase, *m_evaluator, m_uniformFunc, m_attribFunc); }
 
 protected:
     std::string				m_vertShaderSource;
@@ -189,6 +194,7 @@ private:
 	bool 					m_isVertexCase;
 	ShaderEvaluator*		m_evaluator;
 	UniformSetupFunc 		m_uniformFunc;
+	AttributeSetupFunc		m_attribFunc;
 };
 
 
@@ -198,9 +204,11 @@ private:
 class ShaderRenderCaseInstance : public vkt::TestInstance
 {
 public:
-							ShaderRenderCaseInstance	(Context& context, const std::string& name, bool isVertexCase, ShaderEvaluator& evaluator, UniformSetupFunc uniformFunc);
+							ShaderRenderCaseInstance	(Context& context, const std::string& name, bool isVertexCase, ShaderEvaluator& evaluator, UniformSetupFunc uniformFunc, AttributeSetupFunc attribFunc);
 	virtual					~ShaderRenderCaseInstance	(void);
 	virtual tcu::TestStatus	iterate						(void);
+
+	void					addAttribute				(deUint32 bindingLocation, vk::VkFormat, deUint32 sizePerElement, deUint32 count, const void* data);
 
 	void					addUniform					(deUint32 bindingLocation, vk::VkDescriptorType descriptorType, float data);
 	void					addUniform					(deUint32 bindingLocation, vk::VkDescriptorType descriptorType, tcu::Vec4 data);
@@ -220,7 +228,7 @@ protected:
 private:
 
 	void					setupUniformData			(deUint32 size, void* dataPtr);
-	void					setupDefaultInputs			(void);
+	void					setupDefaultInputs			(const QuadGrid& quadGrid);
 
 	void					render						(tcu::Surface& result, const QuadGrid& quadGrid);
 	void					computeVertexReference		(tcu::Surface& result, const QuadGrid& quadGrid);
@@ -231,6 +239,7 @@ private:
 	bool					m_isVertexCase;
 	ShaderEvaluator&		m_evaluator;
 	UniformSetupFunc 		m_uniformFunc;
+	AttributeSetupFunc		m_attribFunc;
 
 	const tcu::IVec2		m_renderSize;
 	const vk::VkFormat		m_colorFormat;
@@ -278,6 +287,11 @@ private:
 	std::vector<vk::Allocation*>		m_uniformBufferAllocs;
 	std::vector<vk::VkBufferView>		m_uniformBufferViews;
 	std::vector<vk::VkDescriptorInfo>	m_uniformDescriptorInfos;
+
+	std::vector<vk::VkVertexInputBindingDescription>	m_vertexBindingDescription;
+	std::vector<vk::VkVertexInputAttributeDescription>	m_vertexattributeDescription;
+	std::vector<vk::VkBuffer>							m_vertexBuffers;
+	std::vector<vk::Allocation*>						m_vertexBufferAllocs;
 };
 
 

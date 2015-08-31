@@ -22,6 +22,17 @@ void dummy_uniforms (ShaderRenderCaseInstance& instance)
 	instance.addUniform(2u, vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, tcu::Vec4(1, 0.5f, 1.0f, 0.5f));
 }
 
+void dummy_attributes (ShaderRenderCaseInstance& instance, deUint32 numVertices)
+{
+	std::vector<float> data;
+	data.resize(numVertices);
+	for(int i = 0; i < numVertices; i++)
+		data[i] = 1.0;
+
+	instance.addAttribute(4u, vk::VK_FORMAT_R32_SFLOAT, sizeof(float), numVertices, &data[0]);
+}
+
+
 class DummyShaderRenderCaseInstance;
 
 class DummyTestRenderCase : public ShaderRenderCase<ShaderRenderCaseInstance>
@@ -34,7 +45,7 @@ public:
 						ShaderEvalFunc evalFunc,
 						std::string vertexShader,
 						std::string fragmentShader)
-		: ShaderRenderCase(testCtx, name, description, isVertexCase, evalFunc, dummy_uniforms)
+		: ShaderRenderCase(testCtx, name, description, isVertexCase, evalFunc, dummy_uniforms, dummy_attributes)
 	{
 		m_vertShaderSource = vertexShader;
 		m_fragShaderSource = fragmentShader;
@@ -53,6 +64,7 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
         "layout(location = 1) in highp vec4 a_coords;\n"
         "layout(location = 2) in highp vec4 a_unitCoords;\n"
         "layout(location = 3) in mediump float a_one;\n"
+		"layout(location = 4) in mediump float a_in1;\n"
 
 		"layout (set=0, binding=0) uniform buf {\n"
 		"	float item;\n"
@@ -67,7 +79,7 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 		"};\n"
 
 		"out mediump vec4 v_color;\n"
-        "void main (void) { gl_Position = a_position; v_color = vec4(a_coords.xyz, item3.x); }\n";
+        "void main (void) { gl_Position = a_position; v_color = vec4(a_coords.xyz, a_in1); }\n";
 
 	std::string base_fragment = "#version 300 es\n"
         "layout(location = 0) out lowp vec4 o_color;\n"
