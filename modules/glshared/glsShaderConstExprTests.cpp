@@ -37,6 +37,41 @@ namespace gls
 namespace ShaderConstExpr
 {
 
+static void addOutputVar (glu::sl::ValueBlock* dst, glu::DataType type, float output)
+{
+	dst->outputs.push_back(glu::sl::Value());
+
+	{
+		glu::sl::Value&	value	= dst->outputs.back();
+
+		value.name	= "out0";
+		value.type	= glu::VarType(type, glu::PRECISION_LAST);
+		value.elements.resize(1);
+
+		switch (type)
+		{
+			case glu::TYPE_INT:
+				value.elements[0].int32 = (int)output;
+				break;
+
+			case glu::TYPE_UINT:
+				value.elements[0].int32 = (unsigned int)output;
+				break;
+
+			case glu::TYPE_BOOL:
+				value.elements[0].bool32 = output!=0.0f;
+				break;
+
+			case glu::TYPE_FLOAT:
+				value.elements[0].float32 = output;
+				break;
+
+			default:
+				DE_ASSERT(false);
+		}
+	}
+}
+
 std::vector<tcu::TestNode*> createTests (tcu::TestContext&			testContext,
 										 glu::RenderContext&		renderContext,
 										 const glu::ContextInfo&	contextInfo,
@@ -47,7 +82,7 @@ std::vector<tcu::TestNode*> createTests (tcu::TestContext&			testContext,
 {
 	using std::string;
 	using std::vector;
-	using gls::sl::ShaderCase;
+	using gls::ShaderLibraryCase;
 
 	// Needed for autogenerating shader code for increased component counts
 	DE_STATIC_ASSERT(glu::TYPE_FLOAT+1 == glu::TYPE_FLOAT_VEC2);
@@ -80,17 +115,8 @@ std::vector<tcu::TestNode*> createTests (tcu::TestContext&			testContext,
 		"	${OUTPUT}\n"
 		"}\n";
 
-	const tcu::StringTemplate		shaderTemplate	(shaderTemplateSrc);
-	vector<tcu::TestNode*>			ret;
-	vector<ShaderCase::ValueBlock>	shaderOutput	(1);
-
-	shaderOutput[0].arrayLength = 1;
-	shaderOutput[0].values.push_back(ShaderCase::Value());
-	shaderOutput[0].values[0].storageType		= ShaderCase::Value::STORAGE_OUTPUT;
-	shaderOutput[0].values[0].valueName			= "out0";
-	shaderOutput[0].values[0].dataType			= glu::TYPE_FLOAT;
-	shaderOutput[0].values[0].arrayLength		= 1;
-	shaderOutput[0].values[0].elements.push_back(ShaderCase::Value::Element());
+	const tcu::StringTemplate	shaderTemplate	(shaderTemplateSrc);
+	vector<tcu::TestNode*>		ret;
 
 	for (int caseNdx = 0; caseNdx < numCases; caseNdx++)
 	{
@@ -102,31 +128,6 @@ std::vector<tcu::TestNode*> createTests (tcu::TestContext&			testContext,
 		const string				expression		= cases[caseNdx].expression;
 		// Check for presence of func(vec, scalar) style specialization, use as gatekeeper for applying said specialization
 		const bool					alwaysScalar	= expression.find("${MT}")!=string::npos;
-		ShaderCase::Value&			expected		= shaderOutput[0].values[0];
-
-		switch (outType)
-		{
-			case glu::TYPE_INT:
-				expected.elements[0].int32 = (int)cases[caseNdx].output;
-				break;
-
-			case glu::TYPE_UINT:
-				expected.elements[0].int32 = (unsigned int)cases[caseNdx].output;
-				break;
-
-			case glu::TYPE_BOOL:
-				expected.elements[0].bool32 = cases[caseNdx].output!=0.0f;
-				break;
-
-			case glu::TYPE_FLOAT:
-				expected.elements[0].float32 = cases[caseNdx].output;
-				break;
-
-			default:
-				DE_ASSERT(false);
-		}
-
-		expected.dataType = outType;
 
 		shaderTemplateParams["GLES_VERSION"]	= version == glu::GLSL_VERSION_300_ES ? "300 es" : "100";
 		shaderTemplateParams["CASE_BASE_TYPE"]	= glu::getDataTypeName(outType);
@@ -153,26 +154,46 @@ std::vector<tcu::TestNode*> createTests (tcu::TestContext&			testContext,
 				const string mapped = shaderTemplate.specialize(shaderTemplateParams);
 
 				if (testStage & SHADER_VERTEX)
-					ret.push_back(new ShaderCase(testContext,
-												 renderContext,
-												 contextInfo,
-												 (caseName + "_vertex").c_str(),
-												 "",
-												 ShaderCase::ShaderCaseSpecification::generateSharedSourceVertexCase(ShaderCase::EXPECT_PASS,
-																													 version,
-																													 shaderOutput,
-																													 mapped)));
+				{
+					glu::sl::ShaderCaseSpecification	spec;
+
+					spec.targetVersion	= version;
+					spec.expectResult	= glu::sl::EXPECT_PASS;
+					spec.caseType		= glu::sl::CASETYPE_VERTEX_ONLY;
+					spec.programs.resize(1);
+
+					spec.programs[0].sources << glu::VertexSource(mapped);
+
+					addOutputVar(&spec.values, outType, cases[caseNdx].output);
+
+					ret.push_back(new ShaderLibraryCase(testContext,
+														renderContext,
+														contextInfo,
+														(caseName + "_vertex").c_str(),
+														"",
+														spec));
+				}
 
 				if (testStage & SHADER_FRAGMENT)
-					ret.push_back(new ShaderCase(testContext,
-												 renderContext,
-												 contextInfo,
-												 (caseName + "_fragment").c_str(),
-												 "",
-												 ShaderCase::ShaderCaseSpecification::generateSharedSourceFragmentCase(ShaderCase::EXPECT_PASS,
-																													   version,
-																													   shaderOutput,
-																													   mapped)));
+				{
+					glu::sl::ShaderCaseSpecification	spec;
+
+					spec.targetVersion	= version;
+					spec.expectResult	= glu::sl::EXPECT_PASS;
+					spec.caseType		= glu::sl::CASETYPE_FRAGMENT_ONLY;
+					spec.programs.resize(1);
+
+					spec.programs[0].sources << glu::FragmentSource(mapped);
+
+					addOutputVar(&spec.values, outType, cases[caseNdx].output);
+
+					ret.push_back(new ShaderLibraryCase(testContext,
+														renderContext,
+														contextInfo,
+														(caseName + "_fragment").c_str(),
+														"",
+														spec));
+				}
 			}
 
 			// Deal with functions that allways accept one ore more scalar parameters even when others are vectors
@@ -187,26 +208,46 @@ std::vector<tcu::TestNode*> createTests (tcu::TestContext&			testContext,
 					const string mapped = shaderTemplate.specialize(shaderTemplateParams);
 
 					if (testStage & SHADER_VERTEX)
-						ret.push_back(new ShaderCase(testContext,
-													 renderContext,
-													 contextInfo,
-													 (scalarCaseName + "_vertex").c_str(),
-													 "",
-													 ShaderCase::ShaderCaseSpecification::generateSharedSourceVertexCase(ShaderCase::EXPECT_PASS,
-																														 version,
-																														 shaderOutput,
-																														 mapped)));
+					{
+						glu::sl::ShaderCaseSpecification	spec;
+
+						spec.targetVersion	= version;
+						spec.expectResult	= glu::sl::EXPECT_PASS;
+						spec.caseType		= glu::sl::CASETYPE_VERTEX_ONLY;
+						spec.programs.resize(1);
+
+						spec.programs[0].sources << glu::VertexSource(mapped);
+
+						addOutputVar(&spec.values, outType, cases[caseNdx].output);
+
+						ret.push_back(new ShaderLibraryCase(testContext,
+															renderContext,
+															contextInfo,
+															(scalarCaseName + "_vertex").c_str(),
+															"",
+															spec));
+					}
 
 					if (testStage & SHADER_FRAGMENT)
-						ret.push_back(new ShaderCase(testContext,
-													 renderContext,
-													 contextInfo,
-													 (scalarCaseName + "_fragment").c_str(),
-													 "",
-													 ShaderCase::ShaderCaseSpecification::generateSharedSourceFragmentCase(ShaderCase::EXPECT_PASS,
-																														   version,
-																														   shaderOutput,
-																														   mapped)));
+					{
+						glu::sl::ShaderCaseSpecification	spec;
+
+						spec.targetVersion	= version;
+						spec.expectResult	= glu::sl::EXPECT_PASS;
+						spec.caseType		= glu::sl::CASETYPE_FRAGMENT_ONLY;
+						spec.programs.resize(1);
+
+						spec.programs[0].sources << glu::FragmentSource(mapped);
+
+						addOutputVar(&spec.values, outType, cases[caseNdx].output);
+
+						ret.push_back(new ShaderLibraryCase(testContext,
+															renderContext,
+															contextInfo,
+															(scalarCaseName + "_fragment").c_str(),
+															"",
+															spec));
+					}
 				}
 			}
 		}

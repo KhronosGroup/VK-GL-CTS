@@ -52,6 +52,8 @@ set(GLUTIL_SRCS
 	gluDummyRenderContext.hpp
 	gluPlatform.cpp
 	gluPlatform.hpp
+	gluShaderLibrary.cpp
+	gluShaderLibrary.hpp
 	)
 
 set(GLUTIL_LIBS
