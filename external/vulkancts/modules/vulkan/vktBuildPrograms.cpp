@@ -82,7 +82,7 @@ struct BuildStats
 	}
 };
 
-BuildStats buildPrograms (tcu::TestContext& testCtx, const std::string& dstPath, BuildMode mode)
+BuildStats buildPrograms (tcu::TestContext& testCtx, const std::string& dstPath, BuildMode mode, bool verbose)
 {
 	const UniquePtr<tcu::TestPackageRoot>	root		(createRoot(testCtx));
 	tcu::DefaultHierarchyInflater			inflater	(testCtx);
@@ -91,6 +91,7 @@ BuildStats buildPrograms (tcu::TestContext& testCtx, const std::string& dstPath,
 	UniquePtr<vk::BinaryRegistryWriter>		writer		(mode == BUILDMODE_BUILD	? new vk::BinaryRegistryWriter(dstPath)			: DE_NULL);
 	UniquePtr<vk::BinaryRegistryReader>		reader		(mode == BUILDMODE_VERIFY	? new vk::BinaryRegistryReader(srcArchive, "")	: DE_NULL);
 	BuildStats								stats;
+	const bool								printLogs	= verbose;
 
 	while (iterator.getState() != tcu::TestHierarchyIterator::STATE_FINISHED)
 	{
@@ -107,10 +108,11 @@ BuildStats buildPrograms (tcu::TestContext& testCtx, const std::string& dstPath,
 
 			for (vk::SourceCollection::Iterator progIter = progs.begin(); progIter != progs.end(); ++progIter)
 			{
+				glu::ShaderProgramInfo	buildInfo;
+
 				try
 				{
 					const vk::ProgramIdentifier			progId		(casePath, progIter.getName());
-					glu::ShaderProgramInfo				buildInfo;
 					const UniquePtr<vk::ProgramBinary>	binary		(vk::buildProgram(progIter.getProgram(), vk::PROGRAM_FORMAT_SPIRV, &buildInfo));
 
 					if (mode == BUILDMODE_BUILD)
@@ -134,6 +136,19 @@ BuildStats buildPrograms (tcu::TestContext& testCtx, const std::string& dstPath,
 				catch (const std::exception& e)
 				{
 					tcu::print("  ERROR: %s: %s\n", progIter.getName().c_str(), e.what());
+
+					if (printLogs)
+					{
+						for (size_t shaderNdx = 0; shaderNdx < buildInfo.shaders.size(); shaderNdx++)
+						{
+							const glu::ShaderInfo&	shaderInfo	= buildInfo.shaders[shaderNdx];
+							const char* const		shaderName	= getShaderTypeName(shaderInfo.type);
+
+							tcu::print("%s source:\n---\n%s\n---\n", shaderName, shaderInfo.source.c_str());
+							tcu::print("%s compile log:\n---\n%s\n---\n", shaderName, shaderInfo.infoLog.c_str());
+						}
+					}
+
 					stats.numFailed += 1;
 				}
 			}
@@ -152,6 +167,7 @@ namespace opt
 
 DE_DECLARE_COMMAND_LINE_OPT(DstPath,	std::string);
 DE_DECLARE_COMMAND_LINE_OPT(Mode,		vkt::BuildMode);
+DE_DECLARE_COMMAND_LINE_OPT(Verbose,	bool);
 
 } // opt
 
@@ -166,8 +182,9 @@ void registerOptions (de::cmdline::Parser& parser)
 		{ "verify",	vkt::BUILDMODE_VERIFY	}
 	};
 
-	parser << Option<opt::DstPath>	("d", "dst-path",	"Destination path",	".")
-		   << Option<opt::Mode>		("m", "mode",		"Build mode",		s_modes,	"build");
+	parser << Option<opt::DstPath>	("d", "dst-path",	"Destination path",	"out")
+		   << Option<opt::Mode>		("m", "mode",		"Build mode",		s_modes,	"build")
+		   << Option<opt::Verbose>	("v", "verbose",	"Verbose output");
 }
 
 int main (int argc, const char* argv[])
@@ -192,7 +209,10 @@ int main (int argc, const char* argv[])
 		tcu::Platform			platform;
 		tcu::TestContext		testCtx			(platform, archive, log, deqpCmdLine, DE_NULL);
 
-		const vkt::BuildStats	stats			= vkt::buildPrograms(testCtx, cmdLine.getOption<opt::DstPath>(), cmdLine.getOption<opt::Mode>());
+		const vkt::BuildStats	stats			= vkt::buildPrograms(testCtx,
+																	 cmdLine.getOption<opt::DstPath>(),
+																	 cmdLine.getOption<opt::Mode>(),
+																	 cmdLine.getOption<opt::Verbose>());
 
 		tcu::print("DONE: %d passed, %d failed\n", stats.numSucceeded, stats.numFailed);
 
