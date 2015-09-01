@@ -56,8 +56,11 @@ struct  test_struct {
 
 void dummy_uniforms (ShaderRenderCaseInstance& instance)
 {
-	instance.addUniform(0u, vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1.0f);
-	instance.addUniform(1u, vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0.5f);
+	instance.useUniform(0u, UI_ZERO);
+	instance.useUniform(1u, UI_ONE);
+	instance.useUniform(5u, UV4_WHITE);
+	//instance.addUniform(1u, vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1.0f);
+	//instance.addUniform(0u, vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0.5f);
 	instance.addUniform(2u, vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, tcu::Vec4(1, 0.5f, 1.0f, 0.5f));
 
 	test_struct data =
@@ -116,11 +119,11 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 		"layout(location = 4) in mediump float a_in1;\n"
 
 		"layout (set=0, binding=0) uniform buf {\n"
-		"	float item;\n"
+		"	bool item;\n"
 		"};\n"
 
 		"layout (set=0, binding=1) uniform buf2 {\n"
-		"	float item2;\n"
+		"	int item2;\n"
 		"};\n"
 
 		"layout (set=0, binding=2) uniform buf3 {\n"
@@ -135,7 +138,7 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 		"};\n"
 
 		"out mediump vec4 v_color;\n"
-        "void main (void) { gl_Position = a_position; v_color = vec4(a_coords.xyz, f_1.a + f_2.a + f_3[0].x + f_3[1].x); }\n";
+        "void main (void) { gl_Position = a_position; v_color = vec4(a_coords.xyz, f_1.a + f_2.a + f_3[0].x + f_3[1].x - (item ? item2 : 0)); }\n";
 
 	std::string base_fragment = "#version 300 es\n"
         "layout(location = 0) out lowp vec4 o_color;\n"

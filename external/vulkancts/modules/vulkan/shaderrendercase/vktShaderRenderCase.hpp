@@ -198,6 +198,105 @@ private:
 };
 
 
+enum BaseUniformType
+{
+// Bool
+	UB_FALSE,
+	UB_TRUE,
+
+// BVec4
+	UB4_FALSE,
+	UB4_TRUE,
+
+// Integers
+	UI_ZERO,
+	UI_ONE,
+	UI_TWO,
+	UI_THREE,
+	UI_FOUR,
+	UI_FIVE,
+	UI_SIX,
+	UI_SEVEN,
+	UI_EIGTH,
+	UI_ONEHUNDREDONE,
+
+// IVec2
+	UI2_MINUS_ONE,
+	UI2_ZERO,
+	UI2_ONE,
+	UI2_TWO,
+	UI2_THREE,
+	UI2_FOUR,
+	UI2_FIVE,
+
+// IVec3
+	UI3_MINUS_ONE,
+	UI3_ZERO,
+	UI3_ONE,
+	UI3_TWO,
+	UI3_THREE,
+	UI3_FOUR,
+	UI3_FIVE,
+
+// IVec4
+	UI4_MINUS_ONE,
+	UI4_ZERO,
+	UI4_ONE,
+	UI4_TWO,
+	UI4_THREE,
+	UI4_FOUR,
+	UI4_FIVE,
+
+// Float
+	UF_ZERO,
+	UF_ONE,
+	UF_TWO,
+	UF_THREE,
+	UF_FOUR,
+	UF_FIVE,
+	UF_SIX,
+	UF_SEVEN,
+	UF_EIGTH,
+
+	UF_HALF,
+	UF_THIRD,
+	UF_FOURTH,
+	UF_FIFTH,
+	UF_SIXTH,
+	UF_SEVENTH,
+	UF_EIGHTH,
+
+// Vec2
+	UV2_MINUS_ONE,
+	UV2_ZERO,
+	UV2_ONE,
+	UV2_TWO,
+	UV2_THREE,
+
+	UV2_HALF,
+
+// Vec3
+	UV3_MINUS_ONE,
+	UV3_ZERO,
+	UV3_ONE,
+	UV3_TWO,
+	UV3_THREE,
+
+	UV3_HALF,
+
+// Vec4
+	UV4_MINUS_ONE,
+	UV4_ZERO,
+	UV4_ONE,
+	UV4_TWO,
+	UV4_THREE,
+
+	UV4_HALF,
+
+	UV4_BLACK,
+	UV4_GRAY,
+	UV4_WHITE
+};
 
 // ShaderRenderCaseInstance.
 
@@ -223,6 +322,8 @@ public:
 	void												addUniform					(deUint32 bindingLocation,
 																					vk::VkDescriptorType descriptorType,
 																					const T data);
+	void												useUniform					(deUint32 bindingLocation,
+																					BaseUniformType type);
 
 protected:
 	virtual void										setupShaderData				(void);

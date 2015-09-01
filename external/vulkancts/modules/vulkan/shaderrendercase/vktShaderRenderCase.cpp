@@ -488,6 +488,119 @@ void ShaderRenderCaseInstance::setupUniforms (const Vec4& constCoords)
 	m_uniformFunc(*this);
 }
 
+void ShaderRenderCaseInstance::useUniform (deUint32 bindingLocation, BaseUniformType type)
+{
+	#define CASE(type, value) case type: addUniform(bindingLocation, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, value); break
+
+	switch(type)
+	{
+		// Bool
+		// TODO: size correction might be needed
+		CASE(UB_FALSE,	0);
+		CASE(UB_TRUE,	1);
+
+		// BVec4
+		CASE(UB4_FALSE,	Vec4(0));
+		CASE(UB4_TRUE,	Vec4(1));
+
+		// Integer
+		CASE(UI_ZERO, 	0);
+		CASE(UI_ONE, 	1);
+		CASE(UI_TWO, 	2);
+		CASE(UI_THREE, 	3);
+		CASE(UI_FOUR, 	4);
+		CASE(UI_FIVE, 	5);
+		CASE(UI_SIX, 	6);
+		CASE(UI_SEVEN, 	7);
+		CASE(UI_EIGTH, 	8);
+		CASE(UI_ONEHUNDREDONE, 101);
+
+		// IVec2
+		CASE(UI2_MINUS_ONE, IVec2(-1));
+		CASE(UI2_ZERO,		IVec2(0));
+		CASE(UI2_ONE,		IVec2(1));
+		CASE(UI2_TWO,		IVec2(2));
+		CASE(UI2_THREE,		IVec2(3));
+		CASE(UI2_FOUR,		IVec2(4));
+		CASE(UI2_FIVE,		IVec2(5));
+
+		// IVec3
+		CASE(UI3_MINUS_ONE,	IVec3(-1));
+		CASE(UI3_ZERO,		IVec3(0));
+		CASE(UI3_ONE,		IVec3(1));
+		CASE(UI3_TWO,		IVec3(2));
+		CASE(UI3_THREE,		IVec3(3));
+		CASE(UI3_FOUR,		IVec3(4));
+		CASE(UI3_FIVE,		IVec3(5));
+
+		// IVec4
+		CASE(UI4_MINUS_ONE, IVec4(-1));
+		CASE(UI4_ZERO,		IVec4(0));
+		CASE(UI4_ONE,		IVec4(1));
+		CASE(UI4_TWO,		IVec4(2));
+		CASE(UI4_THREE,		IVec4(3));
+		CASE(UI4_FOUR,		IVec4(4));
+		CASE(UI4_FIVE,		IVec4(5));
+
+		// Float
+		CASE(UF_ZERO,		0.0f);
+		CASE(UF_ONE,		1.0f);
+		CASE(UF_TWO,		2.0f);
+		CASE(UF_THREE,		3.0f);
+		CASE(UF_FOUR,		4.0f);
+		CASE(UF_FIVE,		5.0f);
+		CASE(UF_SIX,		6.0f);
+		CASE(UF_SEVEN,		7.0f);
+		CASE(UF_EIGTH,		8.0f);
+
+		CASE(UF_HALF,		1.0f / 2.0f);
+		CASE(UF_THIRD,		1.0f / 3.0f);
+		CASE(UF_FOURTH,		1.0f / 4.0f);
+		CASE(UF_FIFTH,		1.0f / 5.0f);
+		CASE(UF_SIXTH,		1.0f / 6.0f);
+		CASE(UF_SEVENTH,	1.0f / 7.0f);
+		CASE(UF_EIGHTH,		1.0f / 8.0f);
+
+		// Vec2
+		CASE(UV2_MINUS_ONE,	Vec2(-1.0f));
+		CASE(UV2_ZERO,		Vec2(0.0f));
+		CASE(UV2_ONE,		Vec2(1.0f));
+		CASE(UV2_TWO,		Vec2(2.0f));
+		CASE(UV2_THREE,		Vec2(3.0f));
+
+		CASE(UV2_HALF,		Vec2(1.0f / 2.0f));
+
+		// Vec3
+		CASE(UV3_MINUS_ONE,	Vec3(-1.0f));
+		CASE(UV3_ZERO,		Vec3(0.0f));
+		CASE(UV3_ONE,		Vec3(1.0f));
+		CASE(UV3_TWO,		Vec3(2.0f));
+		CASE(UV3_THREE,		Vec3(3.0f));
+
+		CASE(UV3_HALF,		Vec3(1.0f / 2.0f));
+
+		// Vec4
+		CASE(UV4_MINUS_ONE,	Vec4(-1.0f));
+		CASE(UV4_ZERO,		Vec4(0.0f));
+		CASE(UV4_ONE,		Vec4(1.0f));
+		CASE(UV4_TWO,		Vec4(2.0f));
+		CASE(UV4_THREE,		Vec4(3.0f));
+
+		CASE(UV4_HALF,		Vec4(1.0f / 2.0f));
+
+		CASE(UV4_BLACK,		Vec4(0.0f, 0.0f, 0.0f, 1.0f));
+		CASE(UV4_GRAY,		Vec4(0.5f, 0.5f, 0.5f, 1.0f));
+		CASE(UV4_WHITE,		Vec4(1.0f, 1.0f, 1.0f, 1.0f));
+
+		default:
+			m_context.getTestContext().getLog() << TestLog::Message << "Unknown Uniform type: " << type << TestLog::EndMessage;
+			break;
+	}
+
+	#undef CASE
+}
+
+
 tcu::IVec2 ShaderRenderCaseInstance::getViewportSize (void) const
 {
 	return tcu::IVec2(de::min(m_renderSize.x(), MAX_RENDER_WIDTH),
