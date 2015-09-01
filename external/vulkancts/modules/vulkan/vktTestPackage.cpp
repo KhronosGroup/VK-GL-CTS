@@ -51,6 +51,7 @@
 #include "vktPipelineTests.hpp"
 #include "vktBindingModelTests.hpp"
 #include "vktSpvAsmTests.hpp"
+#include "vktShaderLibrary.hpp"
 
 #include <vector>
 #include <sstream>
@@ -221,6 +222,43 @@ tcu::TestNode::IterateResult TestCaseExecutor::iterate (tcu::TestCase*)
 		return tcu::TestNode::CONTINUE;
 }
 
+// ShaderLibrary-based GLSL tests
+
+class GlslGroup : public tcu::TestCaseGroup
+{
+public:
+	GlslGroup (tcu::TestContext& testCtx)
+		: tcu::TestCaseGroup(testCtx, "glsl", "GLSL shader execution tests")
+	{
+	}
+
+	void init (void)
+	{
+		static const struct
+		{
+			const char*		name;
+			const char*		description;
+		} s_es310Tests[] =
+		{
+			{ "arrays",						"Arrays"					},
+			{ "conditionals",				"Conditional statements"	},
+			{ "constant_expressions",		"Constant expressions"		},
+			{ "constants",					"Constants"					},
+			{ "conversions",				"Type conversions"			},
+			{ "functions",					"Functions"					},
+			{ "linkage",					"Linking"					},
+			{ "scoping",					"Scoping"					},
+			{ "swizzles",					"Swizzles"					},
+		};
+
+		for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(s_es310Tests); ndx++)
+			addChild(createShaderLibraryGroup(m_testCtx,
+											  s_es310Tests[ndx].name,
+											  s_es310Tests[ndx].description,
+											  std::string("vulkan/glsl/es310/") + s_es310Tests[ndx].name + ".test").release());
+	}
+};
+
 // TestPackage
 
 TestPackage::TestPackage (tcu::TestContext& testCtx)
@@ -244,6 +282,7 @@ void TestPackage::init (void)
 	addChild(pipeline::createTests		(m_testCtx));
 	addChild(BindingModel::createTests	(m_testCtx));
 	addChild(SpirVAssembly::createTests	(m_testCtx));
+	addChild(new GlslGroup				(m_testCtx));
 }
 
 } // vkt
