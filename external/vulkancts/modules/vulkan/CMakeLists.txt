@@ -21,6 +21,8 @@ set(DEQP_VK_COMMON_SRCS
 	vktTestPackage.hpp
 	vktInfo.cpp
 	vktInfo.hpp
+	vktShaderLibrary.cpp
+	vktShaderLibrary.hpp
 	)
 
 set(DEQP_VK_COMMON_LIBS
@@ -39,6 +41,7 @@ if (DE_OS_IS_WIN32 OR DE_OS_IS_UNIX OR DE_OS_IS_OSX)
 
 	add_executable(vk-build-programs vktBuildPrograms.cpp)
 	target_link_libraries(vk-build-programs deqp-vk-common)
+	add_dependencies(vk-build-programs deqp-vk-data)
 
 	set(DEQP_VK_SRCS	)
 	set(DEQP_VK_LIBS	deqp-vk-common)
