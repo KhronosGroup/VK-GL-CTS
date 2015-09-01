@@ -58,7 +58,7 @@ void dummy_uniforms (ShaderRenderCaseInstance& instance)
 {
 	instance.useUniform(0u, UI_ZERO);
 	instance.useUniform(1u, UI_ONE);
-	instance.useUniform(5u, UV4_WHITE);
+	instance.useUniform(4u, UV4_WHITE);
 	//instance.addUniform(1u, vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1.0f);
 	//instance.addUniform(0u, vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0.5f);
 	instance.addUniform(2u, vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, tcu::Vec4(1, 0.5f, 1.0f, 0.5f));
