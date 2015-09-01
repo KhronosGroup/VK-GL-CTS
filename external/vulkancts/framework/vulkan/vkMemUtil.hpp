@@ -40,21 +40,46 @@
 namespace vk
 {
 
-//! Memory allocation interface
+/*--------------------------------------------------------------------*//*!
+ * \brief Memory allocation interface
+ *
+ * Allocation represents block of device memory and is allocated by
+ * Allocator implementation. Test code should use Allocator for allocating
+ * memory, unless there is a reason not to (for example testing vkAllocMemory).
+ *
+ * Allocation doesn't necessarily correspond to a whole VkDeviceMemory, but
+ * instead it may represent sub-allocation. Thus whenever VkDeviceMemory
+ * (getMemory()) managed by Allocation is passed to Vulkan API calls,
+ * offset given by getOffset() must be used.
+ *
+ * If host-visible memory was requested, host pointer to the memory can
+ * be queried with getHostPtr(). No offset is needed when accessing host
+ * pointer, i.e. the pointer is already adjusted in case of sub-allocation.
+ *
+ * Memory mappings are managed solely by Allocation, i.e. unmapping or
+ * re-mapping VkDeviceMemory owned by Allocation is not allowed.
+ *//*--------------------------------------------------------------------*/
 class Allocation
 {
 public:
 	virtual					~Allocation	(void);
 
-	VkDeviceMemory			getMemory	(void) const { return m_memory;	}
-	VkDeviceSize			getOffset	(void) const { return m_offset;	}
+	//! Get VkDeviceMemory backing this allocation
+	VkDeviceMemory			getMemory	(void) const { return m_memory;							}
+
+	//! Get offset in VkDeviceMemory for this allocation
+	VkDeviceSize			getOffset	(void) const { return m_offset;							}
+
+	//! Get host pointer for this allocation. Only available for host-visible allocations
+	void*					getHostPtr	(void) const { DE_ASSERT(m_hostPtr); return m_hostPtr;	}
 
 protected:
-							Allocation	(VkDeviceMemory memory, VkDeviceSize offset);
+							Allocation	(VkDeviceMemory memory, VkDeviceSize offset, void* hostPtr);
 
 private:
 	const VkDeviceMemory	m_memory;
 	const VkDeviceSize		m_offset;
+	void* const				m_hostPtr;
 };
 
 //! Memory allocation requirements
@@ -71,7 +96,14 @@ public:
 		return MemoryRequirement(m_flags | requirement.m_flags);
 	}
 
+	inline MemoryRequirement		operator&			(MemoryRequirement requirement) const
+	{
+		return MemoryRequirement(m_flags & requirement.m_flags);
+	}
+
 	bool							matchesHeap			(VkMemoryPropertyFlags heapFlags) const;
+
+	inline operator					bool				(void) const { return m_flags != 0u; }
 
 private:
 	explicit						MemoryRequirement	(deUint32 flags);

@@ -665,7 +665,7 @@ tcu::TestStatus renderTriangleTest (Context& context)
 
 	// Upload vertex data
 	{
-		const VkMappedMemoryRange	range	=
+		const VkMappedMemoryRange	range			=
 		{
 			VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,	//	VkStructureType	sType;
 			DE_NULL,								//	const void*		pNext;
@@ -673,12 +673,10 @@ tcu::TestStatus renderTriangleTest (Context& context)
 			0,										//	VkDeviceSize	offset;
 			(VkDeviceSize)sizeof(vertices),			//	VkDeviceSize	size;
 		};
-		void*	vertexBufPtr	= DE_NULL;
+		void*						vertexBufPtr	= vertexBufferMemory->getHostPtr();
 
-		VK_CHECK(vk.mapMemory(vkDevice, vertexBufferMemory->getMemory(), vertexBufferMemory->getOffset(), (VkDeviceSize)sizeof(vertices), 0u, &vertexBufPtr));
 		deMemcpy(vertexBufPtr, &vertices[0], sizeof(vertices));
 		VK_CHECK(vk.flushMappedMemoryRanges(vkDevice, 1u, &range));
-		VK_CHECK(vk.unmapMemory(vkDevice, vertexBufferMemory->getMemory()));
 	}
 
 	// Submit & wait for completion
@@ -695,9 +693,9 @@ tcu::TestStatus renderTriangleTest (Context& context)
 		VK_CHECK(vk.waitForFences(vkDevice, 1u, &fence.get(), DE_TRUE, ~0ull));
 	}
 
-	// Map & log image
+	// Log image
 	{
-		const VkMappedMemoryRange	range	=
+		const VkMappedMemoryRange	range		=
 		{
 			VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,	//	VkStructureType	sType;
 			DE_NULL,								//	const void*		pNext;
@@ -705,12 +703,10 @@ tcu::TestStatus renderTriangleTest (Context& context)
 			0,										//	VkDeviceSize	offset;
 			imageSizeBytes,							//	VkDeviceSize	size;
 		};
-		void*	imagePtr	= DE_NULL;
+		void*						imagePtr	= readImageBufferMemory->getHostPtr();
 
-		VK_CHECK(vk.mapMemory(vkDevice, readImageBufferMemory->getMemory(), readImageBufferMemory->getOffset(), imageSizeBytes, 0u, &imagePtr));
 		VK_CHECK(vk.invalidateMappedMemoryRanges(vkDevice, 1u, &range));
 		context.getTestContext().getLog() << TestLog::Image("Result", "Result", tcu::ConstPixelBufferAccess(tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8), renderSize.x(), renderSize.y(), 1, imagePtr));
-		VK_CHECK(vk.unmapMemory(vkDevice, readImageBufferMemory->getMemory()));
 	}
 
 	return tcu::TestStatus::pass("Rendering succeeded");
