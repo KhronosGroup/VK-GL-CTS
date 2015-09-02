@@ -33,6 +33,7 @@
 #include "tcuPlatform.hpp"
 #include "tcuCommandLine.hpp"
 #include "deStringUtil.hpp"
+#include "deSTLUtil.hpp"
 
 namespace glu
 {
@@ -221,6 +222,13 @@ static std::vector<std::string> getExtensions (const glw::Functions& gl, ApiType
 
 		return extensions;
 	}
+}
+
+bool hasExtension (const glw::Functions& gl, ApiType apiType, const std::string& extension)
+{
+	std::vector<std::string> extensions(getExtensions(gl, apiType));
+
+	return de::contains(extensions.begin(), extensions.end(), extension);
 }
 
 void initCoreFunctions (glw::Functions* dst, const glw::FunctionLoader* loader, ApiType apiType)

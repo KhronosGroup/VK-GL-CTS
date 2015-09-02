@@ -171,6 +171,11 @@ public:
 		m_display = EGL_NO_DISPLAY;
 	}
 
+	bool		isGLRedSupported	(void)
+	{
+		return m_api.getMajorVersion() >= 3 || glu::hasExtension(m_gl, m_api, "GL_EXT_texture_rg");
+	}
+
 protected:
 	glw::Functions	m_gl;
 	ApiType			m_api;
@@ -292,6 +297,10 @@ public:
 	{
 		switch (storage)
 		{
+			case GL_RED:				return "red";
+			case GL_RG:					return "rg";
+			case GL_LUMINANCE:			return "luminance";
+			case GL_LUMINANCE_ALPHA:	return "luminance_alpha";
 			case GL_RGB:				return "rgb";
 			case GL_RGBA:				return "rgba";
 			case GL_DEPTH_COMPONENT16:	return "depth_component_16";
@@ -307,7 +316,7 @@ public:
 		}
 	}
 
-	MovePtr<ImageSource> getImageSource (EGLint target, GLenum format, bool useTexLevel0)
+	MovePtr<ImageSource> getImageSource (EGLint target, GLenum format, bool useTexLevel0, GLenum internalFormat)
 	{
 		switch (target)
 		{
@@ -318,7 +327,7 @@ public:
 			case EGL_GL_TEXTURE_CUBE_MAP_NEGATIVE_Y_KHR:
 			case EGL_GL_TEXTURE_CUBE_MAP_POSITIVE_Z_KHR:
 			case EGL_GL_TEXTURE_CUBE_MAP_NEGATIVE_Z_KHR:
-				return createTextureImageSource(target, format, GL_UNSIGNED_BYTE, useTexLevel0);
+				return createTextureImageSource(target, internalFormat, format, GL_UNSIGNED_BYTE, useTexLevel0);
 			case EGL_GL_RENDERBUFFER_KHR:
 				return createRenderbufferImageSource(format);
 			case EGL_NATIVE_BUFFER_ANDROID:
@@ -329,9 +338,10 @@ public:
 		}
 	}
 
-	CreateImageGLES2 (EglTestContext& eglTestCtx, EGLint target, GLenum storage, bool useTexLevel0 = false)
-		: ImageTestCase		(eglTestCtx, ApiType::es(2, 0), string("create_image_gles2_") + getTargetName(target) + "_" + getStorageName(storage) + (useTexLevel0 ? "_level0_only" : ""), "Create EGLImage from GLES2 object")
-		, m_source			(getImageSource(target, storage, useTexLevel0))
+	CreateImageGLES2 (EglTestContext& eglTestCtx, EGLint target, GLenum storage, bool useTexLevel0 = false, GLenum internalFormat = GLenum(0))
+		: ImageTestCase			(eglTestCtx, ApiType::es(2, 0), string("create_image_gles2_") + getTargetName(target) + "_" + getStorageName(storage) + (useTexLevel0 ? "_level0_only" : ""), "Create EGLImage from GLES2 object")
+		, m_source				(getImageSource(target, storage, useTexLevel0, internalFormat))
+		, m_format				(target)
 	{
 	}
 
@@ -351,6 +361,9 @@ public:
 		const ContextType		contextType		(ApiType::es(2, 0));
 		Context					context			(m_eglTestCtx, dpy, contextType, 64, 64);
 		const EGLContext		eglContext		= context.getEglContext();
+
+		if ((m_format == GL_RED || m_format == GL_RG) && !isGLRedSupported())
+			TCU_THROW(NotSupportedError, "Unsupported extension: GL_EXT_texture_rg");
 
 		log << TestLog::Message << "Using EGL config " << eglu::getConfigID(egl, dpy, context.getConfig()) << TestLog::EndMessage;
 
@@ -373,6 +386,7 @@ public:
 
 private:
 	UniquePtr<ImageSource>	m_source;
+	GLenum					m_format;
 };
 
 class ImageTargetGLES2 : public ImageTestCase
@@ -485,6 +499,12 @@ public:
 	void init (void)
 	{
 		addChild(new Image::InvalidCreateImage(m_eglTestCtx));
+
+		addChild(new Image::CreateImageGLES2(m_eglTestCtx, EGL_GL_TEXTURE_2D_KHR, GL_RED, false, GL_R8));
+		addChild(new Image::CreateImageGLES2(m_eglTestCtx, EGL_GL_TEXTURE_2D_KHR, GL_RG, false, GL_RG8));
+
+		addChild(new Image::CreateImageGLES2(m_eglTestCtx, EGL_GL_TEXTURE_2D_KHR, GL_LUMINANCE));
+		addChild(new Image::CreateImageGLES2(m_eglTestCtx, EGL_GL_TEXTURE_2D_KHR, GL_LUMINANCE_ALPHA));
 
 		addChild(new Image::CreateImageGLES2(m_eglTestCtx, EGL_GL_TEXTURE_2D_KHR, GL_RGB));
 		addChild(new Image::CreateImageGLES2(m_eglTestCtx, EGL_GL_TEXTURE_2D_KHR, GL_RGBA));
