@@ -1,9 +1,11 @@
 # dEQP-VK
 
 add_subdirectory(api)
+add_subdirectory(pipeline)
 
 include_directories(
 	api
+	pipeline
 	)
 
 set(DEQP_VK_COMMON_SRCS
@@ -22,6 +24,7 @@ set(DEQP_VK_COMMON_LIBS
 	vkutil
 	glutil
 	deqp-vk-api
+	deqp-vk-pipeline
 	)
 
 if (DE_OS_IS_WIN32 OR DE_OS_IS_UNIX OR DE_OS_IS_OSX)
