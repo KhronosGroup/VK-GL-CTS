@@ -228,6 +228,8 @@ void				initExtensionFunctions			(glw::Functions* dst, const glw::FunctionLoader
 void				initFunctions					(glw::Functions* dst, const glw::FunctionLoader* loader, ApiType apiType);
 void				initExtensionFunctions			(glw::Functions* dst, const glw::FunctionLoader* loader, ApiType apiType);
 
+bool				hasExtension					(const glw::Functions& gl, ApiType apiType, const std::string& extension);
+
 } // glu
 
 #endif // _GLURENDERCONTEXT_HPP

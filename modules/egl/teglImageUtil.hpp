@@ -77,7 +77,7 @@ public:
 	virtual glw::GLenum					getFormat			(void) const = 0;
 };
 
-de::MovePtr<ImageSource> createTextureImageSource			(eglw::EGLenum source, glw::GLenum format, glw::GLenum type, bool useTexLevel0 = false);
+de::MovePtr<ImageSource> createTextureImageSource			(eglw::EGLenum source, glw::GLenum internalFormat, glw::GLenum format, glw::GLenum type, bool useTexLevel0 = false);
 de::MovePtr<ImageSource> createRenderbufferImageSource		(glw::GLenum format);
 de::MovePtr<ImageSource> createUnsupportedImageSource		(const std::string& message, glw::GLenum format);
 
