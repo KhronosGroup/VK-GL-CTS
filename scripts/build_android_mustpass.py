@@ -374,6 +374,8 @@ GLES2_MODULE					= Module(name = "dEQP-GLES2", dirName = "gles2", binName = "deq
 GLES3_MODULE					= Module(name = "dEQP-GLES3", dirName = "gles3", binName = "deqp-gles3")
 GLES31_MODULE					= Module(name = "dEQP-GLES31", dirName = "gles31", binName = "deqp-gles31")
 
+# Lollipop
+
 LMP_GLES3_PKG					= Package(module = GLES3_MODULE, configurations = [
 		Configuration(name			= "master",
 					  glconfig		= "rgba8888d24s8ms0",
@@ -388,6 +390,8 @@ LMP_GLES31_PKG					= Package(module = GLES31_MODULE, configurations = [
 					  surfacetype	= "window",
 					  filters		= [include("es31-lmp.txt")]),
 	])
+
+# Lollipop MR1
 
 LMP_MR1_GLES3_PKG				= Package(module = GLES3_MODULE, configurations = [
 		Configuration(name			= "master",
@@ -404,7 +408,119 @@ LMP_MR1_GLES31_PKG				= Package(module = GLES31_MODULE, configurations = [
 					  filters		= [include("es31-lmp-mr1.txt")]),
 	])
 
-MASTER_EGL_COMMON_FILTERS		= [include("egl-master.txt"), exclude("egl-failures.txt"), exclude("egl-new-tests.txt")]
+# Marshmallow
+
+MNC_EGL_PKG						= Package(module = EGL_MODULE, configurations = [
+		# Master
+		Configuration(name			= "master",
+					  glconfig		= "rgba8888d24s8ms0",
+					  rotation		= "unspecified",
+					  surfacetype	= "window",
+					  filters		= [include("egl-master.txt")]),
+	])
+MNC_GLES2_PKG					= Package(module = GLES2_MODULE, configurations = [
+		# Master
+		Configuration(name			= "master",
+					  glconfig		= "rgba8888d24s8ms0",
+					  rotation		= "unspecified",
+					  surfacetype	= "window",
+					  filters		= [include("gles2-master.txt")]),
+	])
+MNC_GLES3_PKG					= Package(module = GLES3_MODULE, configurations = [
+		# Master
+		Configuration(name			= "master",
+					  glconfig		= "rgba8888d24s8ms0",
+					  rotation		= "unspecified",
+					  surfacetype	= "window",
+					  filters		= [include("gles3-master.txt")]),
+		# Rotations
+		Configuration(name			= "rotate-portrait",
+					  glconfig		= "rgba8888d24s8ms0",
+					  rotation		= "0",
+					  surfacetype	= "window",
+					  filters		= [include("gles3-master.txt"), include("gles3-rotation.txt")]),
+		Configuration(name			= "rotate-landscape",
+					  glconfig		= "rgba8888d24s8ms0",
+					  rotation		= "90",
+					  surfacetype	= "window",
+					  filters		= [include("gles3-master.txt"), include("gles3-rotation.txt")]),
+		Configuration(name			= "rotate-reverse-portrait",
+					  glconfig		= "rgba8888d24s8ms0",
+					  rotation		= "180",
+					  surfacetype	= "window",
+					  filters		= [include("gles3-master.txt"), include("gles3-rotation.txt")]),
+		Configuration(name			= "rotate-reverse-landscape",
+					  glconfig		= "rgba8888d24s8ms0",
+					  rotation		= "270",
+					  surfacetype	= "window",
+					  filters		= [include("gles3-master.txt"), include("gles3-rotation.txt")]),
+
+		# MSAA
+		Configuration(name			= "multisample",
+					  glconfig		= "rgba8888d24s8ms4",
+					  rotation		= "unspecified",
+					  surfacetype	= "window",
+					  filters		= [include("gles3-master.txt"),
+									   include("gles3-multisample.txt"),
+									   exclude("gles3-multisample-issues.txt")]),
+
+		# Pixel format
+		Configuration(name			= "565-no-depth-no-stencil",
+					  glconfig		= "rgb565d0s0ms0",
+					  rotation		= "unspecified",
+					  surfacetype	= "window",
+					  filters		= [include("gles3-master.txt"),
+									   include("gles3-pixelformat.txt"),
+									   exclude("gles3-pixelformat-issues.txt")]),
+	])
+MNC_GLES31_PKG					= Package(module = GLES31_MODULE, configurations = [
+		# Master
+		Configuration(name			= "master",
+					  glconfig		= "rgba8888d24s8ms0",
+					  rotation		= "unspecified",
+					  surfacetype	= "window",
+					  filters		= [include("gles31-master.txt")]),
+
+		# Rotations
+		Configuration(name			= "rotate-portrait",
+					  glconfig		= "rgba8888d24s8ms0",
+					  rotation		= "0",
+					  surfacetype	= "window",
+					  filters		= [include("gles31-master.txt"), include("gles31-rotation.txt")]),
+		Configuration(name			= "rotate-landscape",
+					  glconfig		= "rgba8888d24s8ms0",
+					  rotation		= "90",
+					  surfacetype	= "window",
+					  filters		= [include("gles31-master.txt"), include("gles31-rotation.txt")]),
+		Configuration(name			= "rotate-reverse-portrait",
+					  glconfig		= "rgba8888d24s8ms0",
+					  rotation		= "180",
+					  surfacetype	= "window",
+					  filters		= [include("gles31-master.txt"), include("gles31-rotation.txt")]),
+		Configuration(name			= "rotate-reverse-landscape",
+					  glconfig		= "rgba8888d24s8ms0",
+					  rotation		= "270",
+					  surfacetype	= "window",
+					  filters		= [include("gles31-master.txt"), include("gles31-rotation.txt")]),
+
+		# MSAA
+		Configuration(name			= "multisample",
+					  glconfig		= "rgba8888d24s8ms4",
+					  rotation		= "unspecified",
+					  surfacetype	= "window",
+					  filters		= [include("gles31-master.txt"), include("gles31-multisample.txt")]),
+
+		# Pixel format
+		Configuration(name			= "565-no-depth-no-stencil",
+					  glconfig		= "rgb565d0s0ms0",
+					  rotation		= "unspecified",
+					  surfacetype	= "window",
+					  filters		= [include("gles31-master.txt"), include("gles31-pixelformat.txt")]),
+	])
+
+# Master
+
+MASTER_EGL_COMMON_FILTERS		= [include("egl-master.txt"), exclude("egl-failures.txt")]
 MASTER_EGL_PKG					= Package(module = EGL_MODULE, configurations = [
 		# Master
 		Configuration(name			= "master",
@@ -487,7 +603,6 @@ MASTER_GLES31_COMMON_FILTERS	= [
 		exclude("gles31-driver-issues.txt"),
 		exclude("gles31-test-issues.txt"),
 		exclude("gles31-spec-issues.txt"),
-		exclude("gles31-new-tests.txt"),
 	]
 MASTER_GLES31_PKG				= Package(module = GLES31_MODULE, configurations = [
 		# Master
@@ -537,6 +652,7 @@ MASTER_GLES31_PKG				= Package(module = GLES31_MODULE, configurations = [
 MUSTPASS_LISTS				= [
 		Mustpass(version = "lmp",		packages = [LMP_GLES3_PKG, LMP_GLES31_PKG]),
 		Mustpass(version = "lmp-mr1",	packages = [LMP_MR1_GLES3_PKG, LMP_MR1_GLES31_PKG]),
+		Mustpass(version = "mnc",		packages = [MNC_EGL_PKG, MNC_GLES2_PKG, MNC_GLES3_PKG, MNC_GLES31_PKG]),
 		Mustpass(version = "master",	packages = [MASTER_EGL_PKG, MASTER_GLES2_PKG, MASTER_GLES3_PKG, MASTER_GLES31_PKG])
 	]
 

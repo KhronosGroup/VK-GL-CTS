@@ -1,5 +1,0 @@
-# Feature Request 20761474
-dEQP-EGL.functional.buffer_age.*
-dEQP-EGL.functional.partial_update.*
-dEQP-EGL.functional.negative_partial_update.*
-dEQP-EGL.functional.swap_buffers_with_damage.*
