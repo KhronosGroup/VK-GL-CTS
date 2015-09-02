@@ -29,6 +29,8 @@ set(VKUTIL_SRCS
 	vkBinaryRegistry.hpp
 	vkNullDriver.cpp
 	vkNullDriver.hpp
+	vkImageUtil.cpp
+	vkImageUtil.hpp
 	)
 
 set(VKUTIL_LIBS
