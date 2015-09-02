@@ -42,13 +42,11 @@ public:
 								~ShaderLibrary		(void);
 
 	std::vector<tcu::TestNode*>	loadShaderFile		(const char* fileName);
-	std::vector<tcu::TestNode*>	parseShader			(const char* shaderSource);
 
 private:
 								ShaderLibrary		(const ShaderLibrary&);		// not allowed!
 	ShaderLibrary&				operator=			(const ShaderLibrary&);		// not allowed!
 
-	// Member variables.
 	tcu::TestContext&			m_testCtx;
 	glu::RenderContext&			m_renderCtx;
 	const glu::ContextInfo&		m_contextInfo;
