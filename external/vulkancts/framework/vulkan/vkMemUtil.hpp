@@ -144,6 +144,9 @@ private:
 	const VkPhysicalDeviceMemoryProperties	m_memProps;
 };
 
+void	flushMappedMemoryRange		(const DeviceInterface& vkd, VkDevice device, VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size);
+void	invalidateMappedMemoryRange	(const DeviceInterface& vkd, VkDevice device, VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size);
+
 } // vk
 
 #endif // _VKMEMUTIL_HPP

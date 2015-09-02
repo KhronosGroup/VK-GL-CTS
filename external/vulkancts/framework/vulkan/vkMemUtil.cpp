@@ -221,4 +221,32 @@ MovePtr<Allocation> SimpleAllocator::allocate (const VkMemoryRequirements& memRe
 	return MovePtr<Allocation>(new SimpleAllocation(mem, hostPtr));
 }
 
+void flushMappedMemoryRange (const DeviceInterface& vkd, VkDevice device, VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size)
+{
+	const VkMappedMemoryRange	range	=
+	{
+		VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
+		DE_NULL,
+		memory,
+		offset,
+		size
+	};
+
+	VK_CHECK(vkd.flushMappedMemoryRanges(device, 1u, &range));
+}
+
+void invalidateMappedMemoryRange (const DeviceInterface& vkd, VkDevice device, VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size)
+{
+	const VkMappedMemoryRange	range	=
+	{
+		VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
+		DE_NULL,
+		memory,
+		offset,
+		size
+	};
+
+	VK_CHECK(vkd.invalidateMappedMemoryRanges(device, 1u, &range));
+}
+
 } // vk
