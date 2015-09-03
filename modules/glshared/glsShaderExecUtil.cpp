@@ -1480,7 +1480,7 @@ std::string TessEvaluationExecutor::generateTessEvalShader (const ShaderSpec& sh
 
 	src << "void main (void)\n{\n"
 		<< "\tgl_Position = vec4(gl_TessCoord.x, 0.0, 0.0, 1.0);\n"
-		<< "\thighp uint invocationId = uint(gl_PrimitiveID) + (gl_TessCoord.x > 0.5 ? 1u : 0u);\n";
+		<< "\thighp uint invocationId = uint(gl_PrimitiveID)*2u + (gl_TessCoord.x > 0.5 ? 1u : 0u);\n";
 
 	generateExecBufferIo(src, shaderSpec, "invocationId");
 
@@ -1523,7 +1523,7 @@ void TessEvaluationExecutor::execute (int numValues, const void* const* inputs, 
 
 	// Render patches
 	gl.patchParameteri(GL_PATCH_VERTICES, 2);
-	gl.drawArrays(GL_PATCHES, 0, 2*alignedValues);
+	gl.drawArrays(GL_PATCHES, 0, alignedValues);
 
 	// Read back data
 	readOutputBuffer(outputs, numValues);
