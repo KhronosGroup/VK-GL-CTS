@@ -38,13 +38,14 @@
 #include "deMemory.h"
 #include "deUniquePtr.hpp"
 
-#include "vktTestCaseUtil.hpp"
-
 #include "vkDefs.hpp"
 #include "vkPrograms.hpp"
 #include "vkRef.hpp"
 #include "vkMemUtil.hpp"
 #include "vkBuilderUtil.hpp"
+
+#include "vktTestCaseUtil.hpp"
+#include "vktTexture.hpp"
 
 namespace vkt
 {
@@ -55,6 +56,31 @@ class QuadGrid;
 
 class TextureBinding
 {
+public:
+	enum Type
+	{
+		TYPE_NONE = 0,
+		TYPE_2D,
+		TYPE_CUBE_MAP,
+		TYPE_2D_ARRAY,
+		TYPE_3D,
+
+		TYPE_LAST
+	};
+
+							TextureBinding		(const Texture2D* tex2D, const tcu::Sampler& sampler);
+
+	Type					getType				(void) const { return m_type; 		}
+	const tcu::Sampler&		getSampler			(void) const { return m_sampler;	}
+	const Texture2D*		get2D				(void) const { DE_ASSERT(getType() == TYPE_2D);		return m_binding.tex2D; }
+
+private:
+	Type					m_type;
+	tcu::Sampler			m_sampler;
+	union
+	{
+		const Texture2D*	tex2D;
+	} m_binding;
 };
 
 // ShaderEvalContext.
@@ -324,6 +350,8 @@ public:
 																					const T data);
 	void												useUniform					(deUint32 bindingLocation,
 																					BaseUniformType type);
+	void												useSampler2D				(deUint32 bindingLocation,
+																					deUint32 textureId);
 
 protected:
 	virtual void										setupShaderData				(void);
@@ -334,11 +362,13 @@ protected:
 
 	std::vector<tcu::Mat4>								m_userAttribTransforms;
 	tcu::Vec4											m_clearColor;
+	std::vector<TextureBinding>							m_textures;
 
 	vk::SimpleAllocator									memAlloc;
 
 private:
 
+	void												setupTextures				(void);
 	void												setupUniformData			(deUint32 bindingLocation, deUint32 size, const void* dataPtr);
 	void												setupDefaultInputs			(const QuadGrid& quadGrid);
 
@@ -396,7 +426,7 @@ private:
 	{
 		vk::VkBuffer				buffer;
 		vk::Allocation*				alloc;
-		vk::VkBufferView			view;
+		vk::VkDescriptorType		type;
 		vk::VkDescriptorInfo		descriptor;
 		deUint32					location;
 	};

@@ -69,8 +69,7 @@ static const tcu::Vec4	DEFAULT_CLEAR_COLOR	= tcu::Vec4(0.125f, 0.25f, 0.5f, 1.0f
 class QuadGrid
 {
 public:
-                            QuadGrid                (int gridSize, int screenWidth, int screenHeight, const Vec4& constCoords, const vector<Mat4>& userAttribTransforms
-/*, const vector<TextureBinding>& textures*/);
+                            QuadGrid                (int gridSize, int screenWidth, int screenHeight, const Vec4& constCoords, const vector<Mat4>& userAttribTransforms, const vector<TextureBinding>& textures);
                             ~QuadGrid               (void);
 
     int                     getGridSize             (void) const { return m_gridSize; }
@@ -78,8 +77,7 @@ public:
     int                     getNumTriangles         (void) const { return m_numTriangles; }
     const Vec4&             getConstCoords          (void) const { return m_constCoords; }
     const vector<Mat4>      getUserAttribTransforms (void) const { return m_userAttribTransforms; }
-	// TODO:
-    //const vector<TextureBinding>&   getTextures     (void) const { return m_textures; }
+	const vector<TextureBinding>&   getTextures     (void) const { return m_textures; }
 
 	const Vec4*				getPositions			(void) const { return &m_positions[0]; }
 	const float*			getAttribOne			(void) const { return &m_attribOne[0]; }
@@ -101,8 +99,8 @@ private:
     int                     m_numTriangles;
     Vec4                    m_constCoords;
     vector<Mat4>            m_userAttribTransforms;
-	// TODO:
-    // vector<TextureBinding>  m_textures;
+
+    vector<TextureBinding>  m_textures;
 
     vector<Vec4>            m_screenPos;
 	vector<Vec4>                    m_positions;
@@ -113,14 +111,13 @@ private:
     vector<deUint16>        m_indices;
 };
 
-QuadGrid::QuadGrid (int gridSize, int width, int height, const Vec4& constCoords, const vector<Mat4>& userAttribTransforms
-/*, const vector<TextureBinding>& textures*/)
+QuadGrid::QuadGrid (int gridSize, int width, int height, const Vec4& constCoords, const vector<Mat4>& userAttribTransforms, const vector<TextureBinding>& textures)
     : m_gridSize                (gridSize)
     , m_numVertices             ((gridSize + 1) * (gridSize + 1))
     , m_numTriangles            (gridSize * gridSize * 2)
     , m_constCoords             (constCoords)
     , m_userAttribTransforms    (userAttribTransforms)
-//    , m_textures                (textures)
+    , m_textures                (textures)
 {
     Vec4 viewportScale = Vec4((float)width, (float)height, 0.0f, 0.0f);
 
@@ -199,6 +196,16 @@ inline Vec4 QuadGrid::getUserAttrib (int attribNdx, float sx, float sy) const
     return m_userAttribTransforms[attribNdx] * Vec4(sx, sy, 0.0f, 1.0f);
 }
 
+// TextureBinding
+
+TextureBinding::TextureBinding (const Texture2D* tex2D, const tcu::Sampler& sampler)
+	: m_type	(TYPE_2D)
+	, m_sampler	(sampler)
+{
+	m_binding.tex2D = tex2D;
+}
+
+
 
 
 // ShaderEvalContext.
@@ -208,8 +215,6 @@ ShaderEvalContext::ShaderEvalContext (const QuadGrid& quadGrid_)
 	, isDiscarded(false)
 	, quadGrid(quadGrid_)
 {
-	// TODO...
-/*
     const vector<TextureBinding>& bindings = quadGrid.getTextures();
     DE_ASSERT((int)bindings.size() <= MAX_TEXTURES);
 
@@ -226,14 +231,14 @@ ShaderEvalContext::ShaderEvalContext (const QuadGrid& quadGrid_)
         switch (binding.getType())
         {
             case TextureBinding::TYPE_2D:       textures[ndx].tex2D         = &binding.get2D()->getRefTexture();        break;
-            case TextureBinding::TYPE_CUBE_MAP: textures[ndx].texCube       = &binding.getCube()->getRefTexture();      break;
+/*            case TextureBinding::TYPE_CUBE_MAP: textures[ndx].texCube       = &binding.getCube()->getRefTexture();      break;
             case TextureBinding::TYPE_2D_ARRAY: textures[ndx].tex2DArray    = &binding.get2DArray()->getRefTexture();   break;
-            case TextureBinding::TYPE_3D:       textures[ndx].tex3D         = &binding.get3D()->getRefTexture();        break;
+            case TextureBinding::TYPE_3D:       textures[ndx].tex3D         = &binding.get3D()->getRefTexture();        break;*/
             default:
                 DE_ASSERT(DE_FALSE);
         }
     }
-*/
+
 }
 
 ShaderEvalContext::~ShaderEvalContext (void)
@@ -257,13 +262,11 @@ void ShaderEvalContext::reset (float sx, float sy)
         in[attribNdx] = quadGrid.getUserAttrib(attribNdx, sx, sy);
 }
 
-tcu::Vec4 ShaderEvalContext::texture2D (int /* unitNdx */, const tcu::Vec2& /* texCoords */)
+tcu::Vec4 ShaderEvalContext::texture2D (int unitNdx, const tcu::Vec2& texCoords)
 {
-	// TODO: add texture binding
-/*    if (textures[unitNdx].tex2D)
+    if (textures[unitNdx].tex2D)
         return textures[unitNdx].tex2D->sample(textures[unitNdx].sampler, texCoords.x(), texCoords.y(), 0.0f);
     else
-*/
         return tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f);
 }
 
@@ -316,22 +319,35 @@ ShaderRenderCaseInstance::~ShaderRenderCaseInstance (void)
 		VK_CHECK(vk.destroyBuffer(vkDevice, m_vertexBuffers[i]));
 	}
 
+
 	for (size_t i = 0; i < m_uniformInfos.size(); i++)
 	{
-		VK_CHECK(vk.destroyBufferView(vkDevice, m_uniformInfos[i].view));
-		VK_CHECK(vk.freeMemory(vkDevice, m_uniformInfos[i].alloc->getMemory()));
-		VK_CHECK(vk.destroyBuffer(vkDevice, m_uniformInfos[i].buffer));
+		if (m_uniformInfos[i].type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+		{
+			VK_CHECK(vk.destroyBufferView(vkDevice, m_uniformInfos[i].descriptor.bufferView));
+			VK_CHECK(vk.freeMemory(vkDevice, m_uniformInfos[i].alloc->getMemory()));
+			VK_CHECK(vk.destroyBuffer(vkDevice, m_uniformInfos[i].buffer));
+		}
+		else if (m_uniformInfos[i].type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
+		{
+			VK_CHECK(vk.destroyImageView(vkDevice, m_uniformInfos[i].descriptor.imageView));
+			VK_CHECK(vk.destroySampler(vkDevice, m_uniformInfos[i].descriptor.sampler));
+		}
+		else
+			DE_ASSERT(false);
 	}
 }
 
 tcu::TestStatus ShaderRenderCaseInstance::iterate (void)
 {
+	setup();
+
 	// Create quad grid.
 	IVec2	viewportSize	= getViewportSize();
 	int		width			= viewportSize.x();
 	int 	height			= viewportSize.y();
 
-	QuadGrid quadGrid(m_isVertexCase ? GRID_SIZE : 4, width, height, Vec4(0.125f, 0.25f, 0.5f, 1.0f), m_userAttribTransforms/*, m_textures*/);
+	QuadGrid quadGrid(m_isVertexCase ? GRID_SIZE : 4, width, height, Vec4(0.125f, 0.25f, 0.5f, 1.0f), m_userAttribTransforms, m_textures);
 
 	// Render result.
 	Surface resImage(width, height);
@@ -391,25 +407,23 @@ void ShaderRenderCaseInstance::setupUniformData (deUint32 bindingLocation, deUin
 		size										// VkDeviceSize	range;
 	};
 
-	VkBufferView bufferView = createBufferView(vk, vkDevice, &viewInfo).disown();
+	Move<VkBufferView> bufferView = createBufferView(vk, vkDevice, &viewInfo);
 
 	const VkDescriptorInfo descriptor =
 	{
-		bufferView,									// VkBufferView		bufferView;
+		bufferView.disown(),						// VkBufferView		bufferView;
 		0,											// VkSampler		sampler;
 		0,											// VkImageView		imageView;
 		0,											// VkAttachmentView	attachmentView;
 		(vk::VkImageLayout)0,						// VkImageLayout	imageLayout;
 	};
 
-	const UniformInfo uniformInfo =
-	{
-		buffer.disown(),							// VkBuffer			buffer;
-		alloc.release(),							// Allocation*		alloc;
-		bufferView,									// VkBufferView		view;
-		descriptor,									// VkDescriptorInfo	descriptor
-		bindingLocation								// deUint32 		location;
-	};
+	UniformInfo uniformInfo;
+	uniformInfo.buffer = buffer.disown();
+	uniformInfo.alloc = alloc.release();
+	uniformInfo.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	uniformInfo.descriptor = descriptor;
+	uniformInfo.location = bindingLocation;
 
 	m_uniformInfos.push_back(uniformInfo);
 }
@@ -607,6 +621,77 @@ tcu::IVec2 ShaderRenderCaseInstance::getViewportSize (void) const
 					  de::min(m_renderSize.y(), MAX_RENDER_HEIGHT));
 }
 
+void ShaderRenderCaseInstance::useSampler2D (deUint32 bindingLocation, deUint32 textureID)
+{
+	const VkDevice				vkDevice			= m_context.getDevice();
+	const DeviceInterface&		vk					= m_context.getDeviceInterface();
+
+	DE_ASSERT(textureID < m_textures.size());
+
+	const TextureBinding& textureBinding = m_textures[textureID];
+	const Texture2D* texture = textureBinding.get2D();
+	const tcu::Sampler& refSampler = textureBinding.getSampler();
+
+	// Create sampler
+	const VkSamplerCreateInfo samplerParams =
+	{
+		VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+		DE_NULL,
+		mapTexFilter(refSampler.magFilter),
+		mapTexFilter(refSampler.minFilter),
+		mapTexMipmapMode(refSampler.minFilter),
+		mapWrapMode(refSampler.wrapS),
+		mapWrapMode(refSampler.wrapT),
+		mapWrapMode(refSampler.wrapR),
+		refSampler.lodThreshold,
+		1,
+		(refSampler.compare != tcu::Sampler::COMPAREMODE_NONE),
+		mapCompareMode(refSampler.compare),
+		0.0f,
+		0.0f,
+		VK_BORDER_COLOR_INT_OPAQUE_WHITE
+	};
+
+	Move<VkSampler> sampler = createSampler(vk, vkDevice, &samplerParams);
+
+	const VkImageViewCreateInfo viewParams =
+	{
+		.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+		.pNext = NULL,
+		.image = *texture->getVkTexture(),
+		.viewType = VK_IMAGE_VIEW_TYPE_2D,
+		.format = texture->getVkFormat(),
+		.channels = { VK_CHANNEL_SWIZZLE_R,
+						VK_CHANNEL_SWIZZLE_G,
+						VK_CHANNEL_SWIZZLE_B,
+						VK_CHANNEL_SWIZZLE_A },
+		.subresourceRange = { VK_IMAGE_ASPECT_COLOR, 0, 1, 0, 1 },
+	};
+
+	Move<VkImageView> imageView = createImageView(vk, vkDevice, &viewParams);
+
+	const vk::VkDescriptorInfo descriptor =
+	{
+		0,											// VkBufferView		bufferView;
+		sampler.disown(),							// VkSampler		sampler;
+		imageView.disown(),							// VkImageView		imageView;
+		0,											// VkAttachmentView	attachmentView;
+		vk::VK_IMAGE_LAYOUT_GENERAL,				// VkImageLayout	imageLayout;
+	};
+
+	UniformInfo newUniformInfo;
+	m_uniformInfos.push_back(newUniformInfo);
+
+	UniformInfo& uniformInfo = m_uniformInfos[m_uniformInfos.size() - 1];
+
+	uniformInfo.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	uniformInfo.descriptor = descriptor;
+	uniformInfo.location = bindingLocation;
+
+	m_descriptorSetLayoutBuilder.addSingleSamplerBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, vk::VK_SHADER_STAGE_FRAGMENT_BIT, &uniformInfo.descriptor.sampler);
+	m_descriptorPoolBuilder.addType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+}
+
 void ShaderRenderCaseInstance::setupDefaultInputs (const QuadGrid& quadGrid)
 {
 	/* Configuration of the vertex input attributes:
@@ -767,7 +852,7 @@ void ShaderRenderCaseInstance::render (Surface& result, const QuadGrid& quadGrid
 		for(deUint32 i = 0; i < m_uniformInfos.size(); i++)
 		{
 			deUint32 location = m_uniformInfos[i].location;
-			m_descriptorSetUpdateBuilder.writeSingle(*m_descriptorSet, DescriptorSetUpdateBuilder::Location::binding(location), VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &m_uniformInfos[i].descriptor);
+			m_descriptorSetUpdateBuilder.writeSingle(*m_descriptorSet, DescriptorSetUpdateBuilder::Location::binding(location), m_uniformInfos[i].type, &m_uniformInfos[i].descriptor);
 		}
 
 		m_descriptorSetUpdateBuilder.update(vk, vkDevice);
@@ -1060,6 +1145,41 @@ void ShaderRenderCaseInstance::render (Surface& result, const QuadGrid& quadGrid
 		m_cmdBuffer = createCommandBuffer(vk, vkDevice, &cmdBufferParams);
 
 		VK_CHECK(vk.beginCommandBuffer(*m_cmdBuffer, &cmdBufferBeginInfo));
+
+		// Add texture barrier
+		std::vector<VkImageMemoryBarrier> barriers;
+		std::vector<void*> barrierPtrs;
+
+		for(size_t i = 0; i < m_textures.size(); i++)
+		{
+			const TextureBinding& textureBinding = m_textures[i];
+			const Texture2D* texture = textureBinding.get2D();
+			VkImageMemoryBarrier textureBarrier =
+			{
+				VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+				DE_NULL,
+				VK_MEMORY_OUTPUT_HOST_WRITE_BIT | VK_MEMORY_OUTPUT_TRANSFER_BIT,
+				0,
+				VK_IMAGE_LAYOUT_UNDEFINED,
+				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+				queueFamilyIndex,
+				queueFamilyIndex,
+				*texture->getVkTexture(),
+				{
+					VK_IMAGE_ASPECT_COLOR,
+					0,
+					1,
+					0,
+					0
+				}
+			};
+
+			barriers.push_back(textureBarrier);
+			barrierPtrs.push_back((void*)&barriers[i]);
+		}
+
+		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, false, (deUint32)barrierPtrs.size(), (const void * const*)&barrierPtrs[0]);
+
 		vk.cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfo, VK_RENDER_PASS_CONTENTS_INLINE);
 
 		vk.cmdBindDynamicViewportState(*m_cmdBuffer, *m_viewportState);

@@ -5,6 +5,8 @@ include_directories(
 set(DEQP_VK_SHADERRENDERCASE_SRCS
 	vktShaderRenderCase.cpp
 	vktShaderRenderCaseTests.cpp
+
+	vktTexture.cpp
 )
 
 set(DEQP_VK_SHADERRENDERCASE_LIBS

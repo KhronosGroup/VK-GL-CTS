@@ -33,6 +33,7 @@
 #include "vktShaderRenderCaseTests.hpp"
 
 #include "vktShaderRenderCase.hpp"
+#include "vktTexture.hpp"
 
 #include "deUniquePtr.hpp"
 
@@ -42,6 +43,7 @@ namespace shaderrendercase
 {
 
 inline void eval_DEBUG      (ShaderEvalContext& c) { c.color = tcu::Vec4(1, 0, 1, 1); }
+inline void eval_DEBUG_TEX  (ShaderEvalContext& c) { c.color.xyz() = c.texture2D(0, c.coords.swizzle(0, 1)).swizzle(0,1,2); }
 
 void empty_uniform (ShaderRenderCaseInstance& /* instance */) {}
 
@@ -58,7 +60,6 @@ void dummy_uniforms (ShaderRenderCaseInstance& instance)
 {
 	instance.useUniform(0u, UI_ZERO);
 	instance.useUniform(1u, UI_ONE);
-	instance.useUniform(4u, UV4_WHITE);
 	//instance.addUniform(1u, vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1.0f);
 	//instance.addUniform(0u, vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0.5f);
 	instance.addUniform(2u, vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, tcu::Vec4(1, 0.5f, 1.0f, 0.5f));
@@ -72,6 +73,7 @@ void dummy_uniforms (ShaderRenderCaseInstance& instance)
 	};
 
 	instance.addUniform<test_struct>(3u, vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, data);
+	instance.useSampler2D(4u, 0u);
 }
 
 void dummy_attributes (ShaderRenderCaseInstance& instance, deUint32 numVertices)
@@ -85,9 +87,41 @@ void dummy_attributes (ShaderRenderCaseInstance& instance, deUint32 numVertices)
 }
 
 
-class DummyShaderRenderCaseInstance;
+class DummyShaderRenderCaseInstance : public ShaderRenderCaseInstance
+{
+public:
+					DummyShaderRenderCaseInstance	(Context& context,
+													bool isVertexCase,
+													ShaderEvaluator& evaluator,
+													UniformSetupFunc uniformFunc,
+													AttributeSetupFunc attribFunc)
+						: ShaderRenderCaseInstance(context, isVertexCase, evaluator, uniformFunc, attribFunc)
+					{}
 
-class DummyTestRenderCase : public ShaderRenderCase<ShaderRenderCaseInstance>
+	virtual			~DummyShaderRenderCaseInstance	(void)
+					{
+						delete m_brickTexture;
+						m_brickTexture = DE_NULL;
+					}
+
+protected:
+	virtual void	setup							(void)
+					{
+						fprintf(stderr, "LOLOOLLLLL\n");
+						m_brickTexture = Texture2D::create(m_context, m_context.getTestContext().getArchive(), "data/brick.png");
+						m_textures.push_back(TextureBinding(m_brickTexture, tcu::Sampler(tcu::Sampler::CLAMP_TO_EDGE,
+																						tcu::Sampler::CLAMP_TO_EDGE,
+																						tcu::Sampler::CLAMP_TO_EDGE,
+																						tcu::Sampler::LINEAR,
+																						tcu::Sampler::LINEAR)));
+					}
+
+	Texture2D*		m_brickTexture;
+};
+
+
+
+class DummyTestRenderCase : public ShaderRenderCase<DummyShaderRenderCaseInstance>
 {
 public:
 	DummyTestRenderCase	(tcu::TestContext& testCtx,
@@ -137,8 +171,13 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 		"	highp vec2 f_3[2];\n"
 		"};\n"
 
-		"out mediump vec4 v_color;\n"
-        "void main (void) { gl_Position = a_position; v_color = vec4(a_coords.xyz, f_1.a + f_2.a + f_3[0].x + f_3[1].x - (item ? item2 : 0)); }\n";
+		"layout(location=0) out mediump vec4 v_color;\n"
+		"layout(location=1) out mediump vec4 v_coords;\n"
+        "void main (void) { \n"
+		"	gl_Position = a_position;\n"
+		"	v_coords = a_coords;\n"
+		"	v_color = vec4(a_coords.xyz, f_1.a + f_2.a + f_3[0].x + f_3[1].x - (item ? item2 : 0));\n"
+		"}\n";
 
 	std::string base_fragment = "#version 300 es\n"
         "layout(location = 0) out lowp vec4 o_color;\n"
@@ -149,18 +188,21 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 		"#extension GL_ARB_separate_shader_objects : enable\n"
 		"#extension GL_ARB_shading_language_420pack : enable\n"
 
+		"layout(location=0) in vec4 v_color;\n"
+		"layout(location=1) in vec4 v_coords;\n"
         "layout(location = 0) out lowp vec4 o_color;\n"
 
-		"layout (set=0, binding=2) uniform buf {\n"
+		"layout (set=0, binding=3) uniform buf {\n"
 		"	float item[4];\n"
 		"};\n"
 
-        "in mediump vec4 v_color;\n"
-        "void main (void) { o_color = vec4(1,0,item[0],1); }\n";
+		"layout (set=0, binding=4) uniform sampler2D tex;\n"
+
+        "void main (void) { o_color = texture(tex, v_coords.xy); }\n";
 
 
 	shaderRenderCaseTests->addChild(new DummyTestRenderCase(testCtx, "testVertex", "testVertex", true, evalCoordsPassthrough, base_vertex, base_fragment));
-	shaderRenderCaseTests->addChild(new DummyTestRenderCase(testCtx, "testFragment", "testFragment", false, eval_DEBUG, base_vertex, debug_fragment));
+	shaderRenderCaseTests->addChild(new DummyTestRenderCase(testCtx, "testFragment", "testFragment", false, eval_DEBUG_TEX, base_vertex, debug_fragment));
 
 	return shaderRenderCaseTests.release();
 }
