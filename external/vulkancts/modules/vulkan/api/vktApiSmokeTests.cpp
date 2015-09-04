@@ -100,9 +100,9 @@ tcu::TestStatus createSamplerTest (Context& context)
 	return tcu::TestStatus::pass("Creating sampler succeeded");
 }
 
-void createShaderProgs (SourceCollection& dst)
+void createShaderProgs (SourceCollections& dst)
 {
-	dst.add("test") << glu::VertexSource(
+	dst.glslSources.add("test") << glu::VertexSource(
 		"#version 300 es\n"
 		"in highp vec4 a_position;\n"
 		"void main (void) { gl_Position = a_position; }\n");
@@ -117,13 +117,81 @@ tcu::TestStatus createShaderModuleTest (Context& context)
 	return tcu::TestStatus::pass("Creating shader module succeeded");
 }
 
-void createTriangleProgs (SourceCollection& dst)
+void createTriangleAsmProgs (SourceCollections& dst)
 {
-	dst.add("vert") << glu::VertexSource(
+	dst.spirvAsmSources.add("vert") <<
+		"		 OpSource ESSL 300\n"
+		"		 OpCapability Shader\n"
+		"%1 =	 OpExtInstImport \"GLSL.std.450\"\n"
+		"		 OpMemoryModel Logical GLSL450\n"
+		"		 OpEntryPoint Vertex %4 \"main\"\n"
+		"		 OpName %4 \"main\"\n"
+		"		 OpName %10 \"gl_Position\"\n"
+		"		 OpName %12 \"a_position\"\n"
+		"		 OpName %16 \"gl_VertexID\"\n"
+		"		 OpName %17 \"gl_InstanceID\"\n"
+		"		 OpDecorate %10 BuiltIn Position\n"
+		"		 OpDecorate %12 Location 0\n"
+		"		 OpDecorate %16 BuiltIn VertexId\n"
+		"		 OpDecorate %16 NoStaticUse\n"
+		"		 OpDecorate %17 BuiltIn InstanceId\n"
+		"		 OpDecorate %17 NoStaticUse\n"
+		"%2 =	 OpTypeVoid\n"
+		"%3 =	 OpTypeFunction %2\n"
+		"%7 =	 OpTypeFloat 32\n"
+		"%8 =	 OpTypeVector %7 4\n"
+		"%9 =	 OpTypePointer Output %8\n"
+		"%10 =	 OpVariable %9 Output\n"
+		"%11 =	 OpTypePointer Input %8\n"
+		"%12 =	 OpVariable %11 Input\n"
+		"%14 =	 OpTypeInt 32 1\n"
+		"%15 =	 OpTypePointer Input %14\n"
+		"%16 =	 OpVariable %15 Input\n"
+		"%17 =	 OpVariable %15 Input\n"
+		"%4 =	 OpFunction %2 None %3\n"
+		"%5 =	 OpLabel\n"
+		"%13 =	 OpLoad %8 %12\n"
+		"		 OpStore %10 %13\n"
+		"		 OpBranch %6\n"
+		"%6 =	 OpLabel\n"
+		"		 OpReturn\n"
+		"		 OpFunctionEnd\n";
+	dst.spirvAsmSources.add("frag") <<
+		"		OpSource ESSL 300\n"
+		"		OpCapability Shader\n"
+		"%1 =	OpExtInstImport \"GLSL.std.450\"\n"
+		"		OpMemoryModel Logical GLSL450\n"
+		"		OpEntryPoint Fragment %4 \"main\"\n"
+		"		OpExecutionMode %4 OriginLowerLeft\n"
+		"		OpName %4 \"main\"\n"
+		"		OpName %10 \"o_color\"\n"
+		"		OpDecorate %10 RelaxedPrecision\n"
+		"		OpDecorate %10 Location 0\n"
+		"%2 =	OpTypeVoid\n"
+		"%3 =	OpTypeFunction %2\n"
+		"%7 =	OpTypeFloat 32\n"
+		"%8 =	OpTypeVector %7 4\n"
+		"%9 =	OpTypePointer Output %8\n"
+		"%10 =	OpVariable %9 Output\n"
+		"%11 =	OpConstant %7 1065353216\n"
+		"%12 =	OpConstant %7 0\n"
+		"%13 =	OpConstantComposite %8 %11 %12 %11 %11\n"
+		"%4 =	OpFunction %2 None %3\n"
+		"%5 =	OpLabel\n"
+		"		OpStore %10 %13\n"
+		"		OpBranch %6\n"
+		"%6 =	OpLabel\n"
+		"		OpReturn\n"
+		"		OpFunctionEnd\n";
+}
+
+void createTriangleProgs (SourceCollections& dst)
+{
+	dst.glslSources.add("vert") << glu::VertexSource(
 		"#version 300 es\n"
 		"layout(location = 0) in highp vec4 a_position;\n"
 		"void main (void) { gl_Position = a_position; }\n");
-	dst.add("frag") << glu::FragmentSource(
+	dst.glslSources.add("frag") << glu::FragmentSource(
 		"#version 300 es\n"
 		"layout(location = 0) out lowp vec4 o_color;\n"
 		"void main (void) { o_color = vec4(1.0, 0.0, 1.0, 1.0); }\n");
@@ -721,6 +789,7 @@ tcu::TestCaseGroup* createSmokeTests (tcu::TestContext& testCtx)
 	addFunctionCase				(smokeTests.get(), "create_sampler",	"",	createSamplerTest);
 	addFunctionCaseWithPrograms	(smokeTests.get(), "create_shader",		"", createShaderProgs,		createShaderModuleTest);
 	addFunctionCaseWithPrograms	(smokeTests.get(), "triangle",			"", createTriangleProgs,	renderTriangleTest);
+	addFunctionCaseWithPrograms	(smokeTests.get(), "asm_triangle",		"", createTriangleAsmProgs,	renderTriangleTest);
 
 	return smokeTests.release();
 }

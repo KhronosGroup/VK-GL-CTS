@@ -36,6 +36,7 @@
 
 #include "vkDefs.hpp"
 #include "vkRef.hpp"
+#include "vkSpirVProgram.hpp"
 #include "gluShaderProgram.hpp"
 #include "deUniquePtr.hpp"
 #include "deSTLUtil.hpp"
@@ -168,11 +169,20 @@ const Program& ProgramCollection<Program>::get (const std::string& name) const
 	return *m_programs.find(name)->second;
 }
 
-typedef ProgramCollection<glu::ProgramSources>	SourceCollection;
+typedef vk::ProgramCollection<glu::ProgramSources>	GlslSourceCollection;
+typedef vk::ProgramCollection<vk::SpirVAsmSource>	SpirVAsmCollection;
+
+struct SourceCollections
+{
+	GlslSourceCollection	glslSources;
+	SpirVAsmCollection		spirvAsmSources;
+};
+
 typedef ProgramCollection<ProgramBinary>		BinaryCollection;
 
 // \todo [2015-03-13 pyry] Likely need BinaryBuilder abstraction for this
 ProgramBinary*			buildProgram		(const glu::ProgramSources& program, ProgramFormat binaryFormat, glu::ShaderProgramInfo* buildInfo);
+ProgramBinary*			assembleProgram		(const vk::SpirVAsmSource& program, SpirVProgramInfo* buildInfo);
 Move<VkShaderModule>	createShaderModule	(const DeviceInterface& deviceInterface, VkDevice device, const ProgramBinary& binary, VkShaderModuleCreateFlags flags);
 
 } // vk

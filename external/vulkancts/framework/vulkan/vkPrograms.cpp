@@ -34,6 +34,7 @@
 
 #include "vkPrograms.hpp"
 #include "vkGlslToSpirV.hpp"
+#include "vkSpirVAsm.hpp"
 #include "vkRefUtil.hpp"
 
 #include "tcuTestLog.hpp"
@@ -68,6 +69,13 @@ ProgramBinary* buildProgram (const glu::ProgramSources& program, ProgramFormat b
 	}
 	else
 		TCU_THROW(NotSupportedError, "Unsupported program format");
+}
+
+ProgramBinary* assembleProgram (const SpirVAsmSource& program, SpirVProgramInfo* buildInfo)
+{
+	vector<deUint8> binary;
+	assembleSpirV(&program, &binary, buildInfo);
+	return new ProgramBinary(PROGRAM_FORMAT_SPIRV, binary.size(), &binary[0]);
 }
 
 Move<VkShaderModule> createShaderModule (const DeviceInterface& deviceInterface, VkDevice device, const ProgramBinary& binary, VkShaderModuleCreateFlags flags)

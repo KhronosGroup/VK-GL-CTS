@@ -82,6 +82,82 @@ struct BuildStats
 	}
 };
 
+namespace // anonymous
+{
+
+vk::ProgramBinary* compileProgram (const glu::ProgramSources& source, glu::ShaderProgramInfo* buildInfo)
+{
+	return vk::buildProgram(source, vk::PROGRAM_FORMAT_SPIRV, buildInfo);
+}
+
+vk::ProgramBinary* compileProgram (const vk::SpirVAsmSource& source, vk::SpirVProgramInfo* buildInfo)
+{
+	return vk::assembleProgram(source, buildInfo);
+}
+
+void writeVerboseLogs (const glu::ShaderProgramInfo& buildInfo)
+{
+	for (size_t shaderNdx = 0; shaderNdx < buildInfo.shaders.size(); shaderNdx++)
+	{
+		const glu::ShaderInfo&	shaderInfo	= buildInfo.shaders[shaderNdx];
+		const char* const		shaderName	= getShaderTypeName(shaderInfo.type);
+
+		tcu::print("%s source:\n---\n%s\n---\n", shaderName, shaderInfo.source.c_str());
+		tcu::print("%s compile log:\n---\n%s\n---\n", shaderName, shaderInfo.infoLog.c_str());
+	}
+}
+
+void writeVerboseLogs (const vk::SpirVProgramInfo& buildInfo)
+{
+	tcu::print("source:\n---\n%s\n---\n", buildInfo.source->program.str().c_str());
+	tcu::print("compile log:\n---\n%s\n---\n", buildInfo.infoLog.c_str());
+}
+
+template <typename InfoType, typename IteratorType>
+void buildProgram (const std::string&			casePath,
+				   bool							printLogs,
+				   IteratorType					iter,
+				   BuildMode					mode,
+				   BuildStats*					stats,
+				   vk::BinaryRegistryReader*	reader,
+				   vk::BinaryRegistryWriter*	writer)
+{
+	InfoType							buildInfo;
+	try
+	{
+		const vk::ProgramIdentifier			progId		(casePath, iter.getName());
+		const UniquePtr<vk::ProgramBinary>	binary		(compileProgram(iter.getProgram(), &buildInfo));
+
+		if (mode == BUILDMODE_BUILD)
+			writer->storeProgram(progId, *binary);
+		else
+		{
+			DE_ASSERT(mode == BUILDMODE_VERIFY);
+
+			const UniquePtr<vk::ProgramBinary>	storedBinary	(reader->loadProgram(progId));
+
+			if (binary->getSize() != storedBinary->getSize())
+				throw tcu::Exception("Binary size doesn't match");
+
+			if (deMemCmp(binary->getBinary(), storedBinary->getBinary(), binary->getSize()))
+				throw tcu::Exception("Binary contents don't match");
+		}
+
+		tcu::print("  OK: %s\n", iter.getName().c_str());
+		stats->numSucceeded += 1;
+	}
+	catch (const std::exception& e)
+	{
+		tcu::print("  ERROR: %s: %s\n", iter.getName().c_str(), e.what());
+		if (printLogs)
+		{
+			writeVerboseLogs(buildInfo);
+		}
+		stats->numFailed += 1;
+	}
+}
+
+} // anonymous
 BuildStats buildPrograms (tcu::TestContext& testCtx, const std::string& dstPath, BuildMode mode, bool verbose)
 {
 	const UniquePtr<tcu::TestPackageRoot>	root		(createRoot(testCtx));
@@ -100,57 +176,20 @@ BuildStats buildPrograms (tcu::TestContext& testCtx, const std::string& dstPath,
 		{
 			const TestCase* const		testCase	= dynamic_cast<TestCase*>(iterator.getNode());
 			const string				casePath	= iterator.getNodePath();
-			vk::SourceCollection		progs;
+			vk::SourceCollections		progs;
 
 			tcu::print("%s\n", casePath.c_str());
 
 			testCase->initPrograms(progs);
 
-			for (vk::SourceCollection::Iterator progIter = progs.begin(); progIter != progs.end(); ++progIter)
+			for (vk::GlslSourceCollection::Iterator progIter = progs.glslSources.begin(); progIter != progs.glslSources.end(); ++progIter)
 			{
-				glu::ShaderProgramInfo	buildInfo;
+				buildProgram<glu::ShaderProgramInfo, vk::GlslSourceCollection::Iterator>(casePath, printLogs, progIter, mode, &stats, reader.get(), writer.get());
+			}
 
-				try
-				{
-					const vk::ProgramIdentifier			progId		(casePath, progIter.getName());
-					const UniquePtr<vk::ProgramBinary>	binary		(vk::buildProgram(progIter.getProgram(), vk::PROGRAM_FORMAT_SPIRV, &buildInfo));
-
-					if (mode == BUILDMODE_BUILD)
-						writer->storeProgram(progId, *binary);
-					else
-					{
-						DE_ASSERT(mode == BUILDMODE_VERIFY);
-
-						const UniquePtr<vk::ProgramBinary>	storedBinary	(reader->loadProgram(progId));
-
-						if (binary->getSize() != storedBinary->getSize())
-							throw tcu::Exception("Binary size doesn't match");
-
-						if (deMemCmp(binary->getBinary(), storedBinary->getBinary(), binary->getSize()))
-							throw tcu::Exception("Binary contents don't match");
-					}
-
-					tcu::print("  OK: %s\n", progIter.getName().c_str());
-					stats.numSucceeded += 1;
-				}
-				catch (const std::exception& e)
-				{
-					tcu::print("  ERROR: %s: %s\n", progIter.getName().c_str(), e.what());
-
-					if (printLogs)
-					{
-						for (size_t shaderNdx = 0; shaderNdx < buildInfo.shaders.size(); shaderNdx++)
-						{
-							const glu::ShaderInfo&	shaderInfo	= buildInfo.shaders[shaderNdx];
-							const char* const		shaderName	= getShaderTypeName(shaderInfo.type);
-
-							tcu::print("%s source:\n---\n%s\n---\n", shaderName, shaderInfo.source.c_str());
-							tcu::print("%s compile log:\n---\n%s\n---\n", shaderName, shaderInfo.infoLog.c_str());
-						}
-					}
-
-					stats.numFailed += 1;
-				}
+			for (vk::SpirVAsmCollection::Iterator progIter = progs.spirvAsmSources.begin(); progIter != progs.spirvAsmSources.end(); ++progIter)
+			{
+				buildProgram<vk::SpirVProgramInfo, vk::SpirVAsmCollection::Iterator>(casePath, printLogs, progIter, mode, &stats, reader.get(), writer.get());
 			}
 		}
 

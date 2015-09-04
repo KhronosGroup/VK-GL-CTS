@@ -184,7 +184,7 @@ vk::Allocator&					Context::getDefaultAllocator			(void) const { return *m_alloc
 
 // TestCase
 
-void TestCase::initPrograms (vk::ProgramCollection<glu::ProgramSources>&) const
+void TestCase::initPrograms (SourceCollections&) const
 {
 }
 
