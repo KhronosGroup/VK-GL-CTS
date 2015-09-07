@@ -165,9 +165,28 @@ private:
     ShaderEvalFunc      m_evalFunc;
 };
 
+
 class ShaderRenderCaseInstance;
 
-typedef void (*UniformSetupFunc) (ShaderRenderCaseInstance& instance);
+// UniformSetup
+
+typedef void (*UniformSetupFunc) (ShaderRenderCaseInstance& instance, const tcu::Vec4& constCoords);
+
+class UniformSetup
+{
+public:
+						UniformSetup			(void);
+						UniformSetup			(UniformSetupFunc setup);
+	virtual				~UniformSetup			(void);
+	virtual void		setup					(ShaderRenderCaseInstance& instance, const tcu::Vec4& constCoords);
+
+private:
+						UniformSetup			(const UniformSetup&);	// not allowed!
+	UniformSetup&		operator=				(const UniformSetup&);	// not allowed!
+
+	UniformSetupFunc	m_setupFunc;
+};
+
 typedef void (*AttributeSetupFunc) (ShaderRenderCaseInstance& instance, deUint32 numVertices);
 
 template<typename Instance>
@@ -179,12 +198,12 @@ public:
 												const std::string& description,
 												bool isVertexCase,
 												ShaderEvalFunc evalFunc,
-												UniformSetupFunc uniformFunc,
+												UniformSetup* uniformSetup,
 												AttributeSetupFunc attribFunc)
 								: vkt::TestCase(testCtx, name, description)
 								, m_isVertexCase(isVertexCase)
 								, m_evaluator(new ShaderEvaluator(evalFunc))
-								, m_uniformFunc(uniformFunc)
+								, m_uniformSetup(uniformSetup)
 								, m_attribFunc(attribFunc)
 							{}
 
@@ -193,12 +212,12 @@ public:
 												const std::string& description,
 												bool isVertexCase,
 												ShaderEvaluator* evaluator,
-												UniformSetupFunc uniformFunc,
+												UniformSetup* uniformSetup,
 												AttributeSetupFunc attribFunc)
 								: vkt::TestCase(testCtx, name, description)
 								, m_isVertexCase(isVertexCase)
 								, m_evaluator(evaluator)
-								, m_uniformFunc(uniformFunc)
+								, m_uniformSetup(uniformSetup)
 								, m_attribFunc(attribFunc)
 							{}
 
@@ -210,7 +229,12 @@ public:
 								programCollection.add("frag") << glu::FragmentSource(m_fragShaderSource);
 							}
 
-	virtual	TestInstance*	createInstance		(Context& context) const { return new Instance(context, m_isVertexCase, *m_evaluator, m_uniformFunc, m_attribFunc); }
+	virtual	TestInstance*	createInstance		(Context& context) const
+							{
+								DE_ASSERT(m_evaluator != DE_NULL);
+								DE_ASSERT(m_uniformSetup != DE_NULL);
+								return new Instance(context, m_isVertexCase, *m_evaluator, *m_uniformSetup, m_attribFunc);
+							}
 
 protected:
     std::string				m_vertShaderSource;
@@ -219,7 +243,7 @@ protected:
 private:
 	bool 					m_isVertexCase;
 	ShaderEvaluator*		m_evaluator;
-	UniformSetupFunc 		m_uniformFunc;
+	UniformSetup*	 		m_uniformSetup;
 	AttributeSetupFunc		m_attribFunc;
 };
 
@@ -332,7 +356,7 @@ public:
 														ShaderRenderCaseInstance	(Context& context,
 																					bool isVertexCase,
 																					ShaderEvaluator& evaluator,
-																					UniformSetupFunc uniformFunc,
+																					UniformSetup& uniformSetup,
 																					AttributeSetupFunc attribFunc);
 
 	virtual												~ShaderRenderCaseInstance	(void);
@@ -348,6 +372,10 @@ public:
 	void												addUniform					(deUint32 bindingLocation,
 																					vk::VkDescriptorType descriptorType,
 																					const T data);
+	void												addUniform					(deUint32 bindingLocation,
+																					vk::VkDescriptorType descriptorType,
+																					deUint32 dataSize,
+																					const void* data);
 	void												useUniform					(deUint32 bindingLocation,
 																					BaseUniformType type);
 	void												useSampler2D				(deUint32 bindingLocation,
@@ -381,7 +409,7 @@ private:
 
 	bool												m_isVertexCase;
 	ShaderEvaluator&									m_evaluator;
-	UniformSetupFunc 									m_uniformFunc;
+	UniformSetup&	 									m_uniformSetup;
 	AttributeSetupFunc									m_attribFunc;
 
 	const tcu::IVec2									m_renderSize;
@@ -441,10 +469,7 @@ private:
 template<typename T>
 void ShaderRenderCaseInstance::addUniform (deUint32 bindingLocation, vk::VkDescriptorType descriptorType, const T data)
 {
-	m_descriptorSetLayoutBuilder.addSingleBinding(descriptorType, vk::VK_SHADER_STAGE_VERTEX_BIT);
-	m_descriptorPoolBuilder.addType(descriptorType);
-
-	setupUniformData(bindingLocation, sizeof(T), &data);
+	addUniform(bindingLocation, descriptorType, sizeof(T), &data);
 }
 
 } // shaderrendercase

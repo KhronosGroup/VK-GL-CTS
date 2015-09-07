@@ -56,8 +56,9 @@ struct  test_struct {
 
 
 
-void dummy_uniforms (ShaderRenderCaseInstance& instance)
+void dummy_uniforms (ShaderRenderCaseInstance& instance, const tcu::Vec4& constCoords)
 {
+	DE_UNREF(constCoords);
 	instance.useUniform(0u, UI_ZERO);
 	instance.useUniform(1u, UI_ONE);
 	//instance.addUniform(1u, vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1.0f);
@@ -93,9 +94,9 @@ public:
 					DummyShaderRenderCaseInstance	(Context& context,
 													bool isVertexCase,
 													ShaderEvaluator& evaluator,
-													UniformSetupFunc uniformFunc,
+													UniformSetup& uniformSetup,
 													AttributeSetupFunc attribFunc)
-						: ShaderRenderCaseInstance(context, isVertexCase, evaluator, uniformFunc, attribFunc)
+						: ShaderRenderCaseInstance(context, isVertexCase, evaluator, uniformSetup, attribFunc)
 					{}
 
 	virtual			~DummyShaderRenderCaseInstance	(void)
@@ -130,7 +131,7 @@ public:
 						ShaderEvalFunc evalFunc,
 						std::string vertexShader,
 						std::string fragmentShader)
-		: ShaderRenderCase(testCtx, name, description, isVertexCase, evalFunc, dummy_uniforms, dummy_attributes)
+		: ShaderRenderCase(testCtx, name, description, isVertexCase, evalFunc, new UniformSetup(dummy_uniforms), dummy_attributes)
 	{
 		m_vertShaderSource = vertexShader;
 		m_fragShaderSource = fragmentShader;

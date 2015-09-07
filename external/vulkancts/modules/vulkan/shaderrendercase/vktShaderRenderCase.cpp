@@ -296,15 +296,38 @@ void ShaderEvaluator::evaluate (ShaderEvalContext& ctx)
     m_evalFunc(ctx);
 }
 
+
+// UniformSetup.
+
+UniformSetup::UniformSetup (void)
+	: m_setupFunc(DE_NULL)
+{
+}
+
+UniformSetup::UniformSetup (UniformSetupFunc setupFunc)
+	: m_setupFunc(setupFunc)
+{
+}
+
+UniformSetup::~UniformSetup (void)
+{
+}
+
+void UniformSetup::setup (ShaderRenderCaseInstance& instance, const tcu::Vec4& constCoords)
+{
+	if (m_setupFunc)
+		m_setupFunc(instance, constCoords);
+}
+
 // ShaderRenderCaseInstance.
 
-ShaderRenderCaseInstance::ShaderRenderCaseInstance (Context& context, bool isVertexCase, ShaderEvaluator& evaluator, UniformSetupFunc uniformFunc, AttributeSetupFunc attribFunc)
+ShaderRenderCaseInstance::ShaderRenderCaseInstance (Context& context, bool isVertexCase, ShaderEvaluator& evaluator, UniformSetup& uniformSetup, AttributeSetupFunc attribFunc)
 	: vkt::TestInstance(context)
 	, m_clearColor(DEFAULT_CLEAR_COLOR)
 	, memAlloc(m_context.getDeviceInterface(), m_context.getDevice(), getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice()))
 	, m_isVertexCase(isVertexCase)
 	, m_evaluator(evaluator)
-	, m_uniformFunc(uniformFunc)
+	, m_uniformSetup(uniformSetup)
 	, m_attribFunc(attribFunc)
 	, m_renderSize(100, 100)
 	, m_colorFormat(VK_FORMAT_R8G8B8A8_UNORM)
@@ -431,6 +454,13 @@ void ShaderRenderCaseInstance::setupUniformData (deUint32 bindingLocation, deUin
 	m_uniformInfos.push_back(uniformInfo);
 }
 
+void ShaderRenderCaseInstance::addUniform (deUint32 bindingLocation, vk::VkDescriptorType descriptorType, deUint32 dataSize, const void* data)
+{
+	m_descriptorSetLayoutBuilder.addSingleBinding(descriptorType, vk::VK_SHADER_STAGE_VERTEX_BIT);
+	m_descriptorPoolBuilder.addType(descriptorType);
+
+	setupUniformData(bindingLocation, dataSize, data);
+}
 
 void ShaderRenderCaseInstance::addAttribute (deUint32 bindingLocation, vk::VkFormat format, deUint32 sizePerElement, deUint32 count, const void* dataPtr)
 {
@@ -502,7 +532,7 @@ void ShaderRenderCaseInstance::setupUniforms (const Vec4& constCoords)
 {
 	// TODO!!
 	DE_UNREF(constCoords);
-	m_uniformFunc(*this);
+	m_uniformSetup.setup(*this, constCoords);
 }
 
 void ShaderRenderCaseInstance::useUniform (deUint32 bindingLocation, BaseUniformType type)
