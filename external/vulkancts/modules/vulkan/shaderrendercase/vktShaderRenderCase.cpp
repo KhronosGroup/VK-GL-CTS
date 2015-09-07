@@ -231,11 +231,14 @@ ShaderEvalContext::ShaderEvalContext (const QuadGrid& quadGrid_)
         switch (binding.getType())
         {
             case TextureBinding::TYPE_2D:       textures[ndx].tex2D         = &binding.get2D()->getRefTexture();        break;
-/*            case TextureBinding::TYPE_CUBE_MAP: textures[ndx].texCube       = &binding.getCube()->getRefTexture();      break;
+			// \todo [2015-09-07 elecro] Add support for the other binding types
+			/*
+			case TextureBinding::TYPE_CUBE_MAP: textures[ndx].texCube       = &binding.getCube()->getRefTexture();      break;
             case TextureBinding::TYPE_2D_ARRAY: textures[ndx].tex2DArray    = &binding.get2DArray()->getRefTexture();   break;
-            case TextureBinding::TYPE_3D:       textures[ndx].tex3D         = &binding.get3D()->getRefTexture();        break;*/
+            case TextureBinding::TYPE_3D:       textures[ndx].tex3D         = &binding.get3D()->getRefTexture();        break;
+			*/
             default:
-                DE_ASSERT(DE_FALSE);
+				TCU_THROW(InternalError, "Handling of texture binding type not implemented");
         }
     }
 
@@ -710,7 +713,6 @@ void ShaderRenderCaseInstance::setupDefaultInputs (const QuadGrid& quadGrid)
 
 void ShaderRenderCaseInstance::render (Surface& result, const QuadGrid& quadGrid)
 {
-	// TODO!! Vk rendering
 	const VkDevice				vkDevice			= m_context.getDevice();
 	const DeviceInterface&		vk					= m_context.getDeviceInterface();
 	const VkQueue				queue				= m_context.getUniversalQueue();
@@ -860,7 +862,6 @@ void ShaderRenderCaseInstance::render (Surface& result, const QuadGrid& quadGrid
 
 	// Create pipeline layout
 	{
-		// TODO:: Connect uniforms here?
 		const VkPipelineLayoutCreateInfo pipelineLayoutParams =
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,		// VkStructureType				sType;
@@ -1184,19 +1185,14 @@ void ShaderRenderCaseInstance::render (Surface& result, const QuadGrid& quadGrid
 
 		vk.cmdBindDynamicViewportState(*m_cmdBuffer, *m_viewportState);
 		vk.cmdBindDynamicRasterState(*m_cmdBuffer, *m_rasterState);
-		//vk.cmdBindDynamicColorBlendState(*m_cmdBuffer, *m_colorBlendState);
 
 		vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_graphicsPipeline);
-
 		vk.cmdBindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 0u, 1, &*m_descriptorSet, 0u, DE_NULL);
-
 		vk.cmdBindIndexBuffer(*m_cmdBuffer, *m_indiceBuffer, 0, VK_INDEX_TYPE_UINT16);
 
-		const deUint32 numberOfVertexAttributes = (deUint32)m_vertexBuffers.size();
-		std::vector<VkDeviceSize> offsets;
 
-		for (deUint32 i = 0; i < numberOfVertexAttributes; i++)
-			offsets.push_back(0);
+		const deUint32 numberOfVertexAttributes = (deUint32)m_vertexBuffers.size();
+		std::vector<VkDeviceSize> offsets(numberOfVertexAttributes, 0);
 
 		vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, numberOfVertexAttributes, &m_vertexBuffers[0], &offsets[0]);
 		vk.cmdDrawIndexed(*m_cmdBuffer, 0, quadGrid.getNumTriangles() * 3, 0, 0, 1);
@@ -1334,14 +1330,12 @@ void ShaderRenderCaseInstance::render (Surface& result, const QuadGrid& quadGrid
 
 void ShaderRenderCaseInstance::computeVertexReference (Surface& result, const QuadGrid& quadGrid)
 {
-	// TODO!!
 	// Buffer info.
 	int					width		= result.getWidth();
 	int					height		= result.getHeight();
 	int					gridSize	= quadGrid.getGridSize();
 	int					stride		= gridSize + 1;
-	//bool				hasAlpha	= m_context.getRenderTarget().getPixelFormat().alphaBits > 0;
-	bool				hasAlpha	= false;
+	bool				hasAlpha	= true; // \todo [2015-09-07 elecro] add correct alpha check
 	ShaderEvalContext	evalCtx		(quadGrid);
 
 	// Evaluate color for each vertex.
@@ -1426,8 +1420,7 @@ void ShaderRenderCaseInstance::computeFragmentReference (Surface& result, const 
 	// Buffer info.
 	int					width		= result.getWidth();
 	int					height		= result.getHeight();
-	//bool				hasAlpha	= m_renderCtx.getRenderTarget().getPixelFormat().alphaBits > 0;
-	bool				hasAlpha	= true;
+	bool				hasAlpha	= true;  // \todo [2015-09-07 elecro] add correct alpha check
 	ShaderEvalContext	evalCtx		(quadGrid);
 
 	// Render.

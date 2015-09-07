@@ -178,10 +178,15 @@ static tcu::TestCaseGroup* dummyTests (tcu::TestContext& testCtx)
 		"	v_color = vec4(a_coords.xyz, f_1.a + f_2.a + f_3[0].x + f_3[1].x - (item ? item2 : 0));\n"
 		"}\n";
 
-	std::string base_fragment = "#version 300 es\n"
-        "layout(location = 0) out lowp vec4 o_color;\n"
-        "in mediump vec4 v_color;\n"
-        "void main (void) { o_color = v_color; }\n";
+	std::string base_fragment = "#version 140\n"
+		"#extension GL_ARB_separate_shader_objects : enable\n"
+		"#extension GL_ARB_shading_language_420pack : enable\n"
+        "layout(location = 0) out mediump vec4 o_color;\n"
+
+        "layout(location=0) in mediump vec4 v_color;\n"
+        "layout(location=1) in mediump vec4 v_coords;\n"
+
+        "void main (void) { o_color = v_coords; }\n";
 
 	std::string debug_fragment = "#version 140 \n"
 		"#extension GL_ARB_separate_shader_objects : enable\n"
