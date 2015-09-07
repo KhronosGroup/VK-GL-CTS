@@ -39,6 +39,7 @@
 #include "vktPipelineVertexUtil.hpp"
 #include "vktPipelineReferenceRenderer.hpp"
 #include "vktTestCase.hpp"
+#include "vktTestCaseUtil.hpp"
 #include "vkImageUtil.hpp"
 #include "vkMemUtil.hpp"
 #include "vkPrograms.hpp"
@@ -61,6 +62,54 @@ using namespace vk;
 
 namespace
 {
+
+bool isSupportedDepthStencilFormat (const InstanceInterface& instanceInterface, VkPhysicalDevice device, VkFormat format)
+{
+	VkFormatProperties formatProps;
+
+	VK_CHECK(instanceInterface.getPhysicalDeviceFormatProperties(device, format, &formatProps));
+
+	return formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT;
+}
+
+tcu::TestStatus testSupportsDepthStencilFormat (Context& context, VkFormat format)
+{
+	DE_ASSERT(vk::isDepthStencilFormat(format));
+
+	if (isSupportedDepthStencilFormat(context.getInstanceInterface(), context.getPhysicalDevice(), format))
+		return tcu::TestStatus::pass("Format can be used in depth/stencil attachment");
+	else
+		return tcu::TestStatus::fail("Unsupported depth/stencil attachment format");
+}
+
+tcu::TestStatus testSupportsAtLeastOneDepthStencilFormat (Context& context, const std::vector<VkFormat> formats)
+{
+	std::ostringstream	supportedFormatsMsg;
+	bool				pass					= false;
+
+	DE_ASSERT(!formats.empty());
+
+	for (size_t formatNdx = 0; formatNdx < formats.size(); formatNdx++)
+	{
+		const VkFormat format = formats[formatNdx];
+
+		DE_ASSERT(vk::isDepthStencilFormat(format));
+
+		if (isSupportedDepthStencilFormat(context.getInstanceInterface(), context.getPhysicalDevice(), format))
+		{
+			pass = true;
+			supportedFormatsMsg << vk::getFormatName(format);
+
+			if (formatNdx < formats.size() - 1)
+				supportedFormatsMsg << ", ";
+		}
+	}
+
+	if (pass)
+		return tcu::TestStatus::pass(std::string("Supported depth/stencil formats: ") + supportedFormatsMsg.str());
+	else
+		return tcu::TestStatus::fail("All depth/stencil formats are unsupported");
+}
 
 class DepthTest : public vkt::TestCase
 {
@@ -102,7 +151,6 @@ private:
 	const VkFormat						m_colorFormat;
 	const VkFormat						m_depthFormat;
 
-	VkImageCreateInfo					m_colorImageCreateInfo;
 	Move<VkImage>						m_colorImage;
 	de::MovePtr<Allocation>				m_colorImageAlloc;
 	Move<VkImage>						m_depthImage;
@@ -222,8 +270,7 @@ DepthTestInstance::DepthTestInstance (Context&				context,
 			&queueFamilyIndex															// const deUint32*		pQueueFamilyIndices;
 		};
 
-		m_colorImageCreateInfo	= colorImageParams;
-		m_colorImage			= createImage(vk, vkDevice, &m_colorImageCreateInfo);
+		m_colorImage			= createImage(vk, vkDevice, &colorImageParams);
 
 		// Allocate and bind color image memory
 		m_colorImageAlloc		= memAlloc.allocate(getImageMemoryRequirements(vk, vkDevice, *m_colorImage), MemoryRequirement::Any);
@@ -232,6 +279,10 @@ DepthTestInstance::DepthTestInstance (Context&				context,
 
 	// Create depth image
 	{
+		// Check format support
+		if (!isSupportedDepthStencilFormat(context.getInstanceInterface(), context.getPhysicalDevice(), m_depthFormat))
+			throw tcu::NotSupportedError(std::string("Unsupported depth/stencil format: ") + getFormatName(m_depthFormat));
+
 		const VkImageCreateInfo depthImageParams =
 		{
 			VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,			// VkStructureType		sType;
@@ -988,28 +1039,62 @@ tcu::TestCaseGroup* createDepthTests (tcu::TestContext& testCtx)
 		{ VK_COMPARE_OP_NOT_EQUAL,		VK_COMPARE_OP_LESS_EQUAL,		VK_COMPARE_OP_NOT_EQUAL,		VK_COMPARE_OP_GREATER }
 	};
 
-	de::MovePtr<tcu::TestCaseGroup>	depthTests	(new tcu::TestCaseGroup(testCtx, "depth", "Depth tests"));
-	de::MovePtr<tcu::TestCaseGroup>	formatTests	(new tcu::TestCaseGroup(testCtx, "format", "Uses different depth formats"));
+	de::MovePtr<tcu::TestCaseGroup> depthTests (new tcu::TestCaseGroup(testCtx, "depth", "Depth tests"));
 
-	for (size_t formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(depthFormats); formatNdx++)
+	// Tests for format features
 	{
-		de::MovePtr<tcu::TestCaseGroup>	formatTest		(new tcu::TestCaseGroup(testCtx,
-																				getFormatName(depthFormats[formatNdx]),
-																				(std::string("Uses format ") + getFormatName(depthFormats[formatNdx])).c_str()));
-		de::MovePtr<tcu::TestCaseGroup>	compareOpsTests	(new tcu::TestCaseGroup(testCtx, "compare_ops", "Combines depth compare operators"));
+		de::MovePtr<tcu::TestCaseGroup> formatFeaturesTests (new tcu::TestCaseGroup(testCtx, "format_features", "Checks depth format features"));
 
-		for (size_t opsNdx = 0; opsNdx < DE_LENGTH_OF_ARRAY(depthOps); opsNdx++)
-		{
-			compareOpsTests->addChild(new DepthTest(testCtx,
-													getCompareOpsName(depthOps[opsNdx]),
-													getCompareOpsDescription(depthOps[opsNdx]),
-													depthFormats[formatNdx],
-													depthOps[opsNdx]));
-		}
-		formatTest->addChild(compareOpsTests.release());
-		formatTests->addChild(formatTest.release());
+		// Formats that must be supported in all implementations
+		addFunctionCase(formatFeaturesTests.get(),
+						"support_d16_unorm",
+						"Tests if VK_FORMAT_D16_UNORM is supported as depth/stencil attachment format",
+						testSupportsDepthStencilFormat,
+						VK_FORMAT_D16_UNORM);
+
+		// Sets where at least one of the formats must be supported
+		const VkFormat	depthOnlyFormats[]		= { VK_FORMAT_D24_UNORM, VK_FORMAT_D32_SFLOAT };
+		const VkFormat	depthStencilFormats[]	= { VK_FORMAT_D24_UNORM_S8_UINT, VK_FORMAT_D32_SFLOAT_S8_UINT };
+
+		addFunctionCase(formatFeaturesTests.get(),
+						"support_d24_unorm_or_d32_sfloat",
+						"Tests if any of VK_FORMAT_D24_UNORM or VK_FORMAT_D32_SFLOAT are supported as depth/stencil attachment format",
+						testSupportsAtLeastOneDepthStencilFormat,
+						std::vector<VkFormat>(depthOnlyFormats, depthOnlyFormats + DE_LENGTH_OF_ARRAY(depthOnlyFormats)));
+
+		addFunctionCase(formatFeaturesTests.get(),
+						"support_d24_unorm_s8_uint_or_d32_sfloat_s8_uint",
+						"Tests if any of VK_FORMAT_D24_UNORM_S8_UINT or VK_FORMAT_D32_SFLOAT_S8_UINT are supported as depth/stencil attachment format",
+						testSupportsAtLeastOneDepthStencilFormat,
+						std::vector<VkFormat>(depthStencilFormats, depthStencilFormats + DE_LENGTH_OF_ARRAY(depthStencilFormats)));
+
+		depthTests->addChild(formatFeaturesTests.release());
 	}
-	depthTests->addChild(formatTests.release());
+
+	// Tests for format and compare operators
+	{
+		de::MovePtr<tcu::TestCaseGroup> formatTests (new tcu::TestCaseGroup(testCtx, "format", "Uses different depth formats"));
+
+		for (size_t formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(depthFormats); formatNdx++)
+		{
+			de::MovePtr<tcu::TestCaseGroup>	formatTest		(new tcu::TestCaseGroup(testCtx,
+																					getFormatName(depthFormats[formatNdx]),
+																					(std::string("Uses format ") + getFormatName(depthFormats[formatNdx])).c_str()));
+			de::MovePtr<tcu::TestCaseGroup>	compareOpsTests	(new tcu::TestCaseGroup(testCtx, "compare_ops", "Combines depth compare operators"));
+
+			for (size_t opsNdx = 0; opsNdx < DE_LENGTH_OF_ARRAY(depthOps); opsNdx++)
+			{
+				compareOpsTests->addChild(new DepthTest(testCtx,
+														getCompareOpsName(depthOps[opsNdx]),
+														getCompareOpsDescription(depthOps[opsNdx]),
+														depthFormats[formatNdx],
+														depthOps[opsNdx]));
+			}
+			formatTest->addChild(compareOpsTests.release());
+			formatTests->addChild(formatTest.release());
+		}
+		depthTests->addChild(formatTests.release());
+	}
 
 	return depthTests.release();
 }
