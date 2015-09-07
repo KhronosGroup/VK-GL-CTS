@@ -107,7 +107,6 @@ public:
 protected:
 	virtual void	setup							(void)
 					{
-						fprintf(stderr, "LOLOOLLLLL\n");
 						m_brickTexture = Texture2D::create(m_context, m_context.getTestContext().getArchive(), "data/brick.png");
 						m_textures.push_back(TextureBinding(m_brickTexture, tcu::Sampler(tcu::Sampler::CLAMP_TO_EDGE,
 																						tcu::Sampler::CLAMP_TO_EDGE,
@@ -138,9 +137,9 @@ public:
 	}
 };
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+static tcu::TestCaseGroup* dummyTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> shaderRenderCaseTests (new tcu::TestCaseGroup(testCtx, "shaderRenderCase", "ShaderRenderCase Tests"));
+	de::MovePtr<tcu::TestCaseGroup> dummyTests (new tcu::TestCaseGroup(testCtx, "dummy", "Dummy ShaderRenderCase based Tests"));
 
 	std::string base_vertex = "#version 140\n"
 		"#extension GL_ARB_separate_shader_objects : enable\n"
@@ -201,8 +200,17 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
         "void main (void) { o_color = texture(tex, v_coords.xy); }\n";
 
 
-	shaderRenderCaseTests->addChild(new DummyTestRenderCase(testCtx, "testVertex", "testVertex", true, evalCoordsPassthrough, base_vertex, base_fragment));
-	shaderRenderCaseTests->addChild(new DummyTestRenderCase(testCtx, "testFragment", "testFragment", false, eval_DEBUG_TEX, base_vertex, debug_fragment));
+	dummyTests->addChild(new DummyTestRenderCase(testCtx, "testVertex", "testVertex", true, evalCoordsPassthrough, base_vertex, base_fragment));
+	dummyTests->addChild(new DummyTestRenderCase(testCtx, "testFragment", "testFragment", false, eval_DEBUG_TEX, base_vertex, debug_fragment));
+
+	return dummyTests.release();
+}
+
+tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup> shaderRenderCaseTests (new tcu::TestCaseGroup(testCtx, "shaderRenderCase", "ShaderRenderCase Tests"));
+
+	shaderRenderCaseTests->addChild(dummyTests(testCtx));
 
 	return shaderRenderCaseTests.release();
 }
