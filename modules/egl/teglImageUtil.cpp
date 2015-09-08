@@ -188,10 +188,10 @@ protected:
 	virtual void			initTexture			(const glw::Functions& gl) const = 0;
 	virtual GLenum			getGLTarget			(void) const = 0;
 
-	GLenum					m_internalFormat;
-	GLenum					m_format;
-	GLenum					m_type;
-	bool					m_useTexLevel0;
+	const GLenum			m_internalFormat;
+	const GLenum			m_format;
+	const GLenum			m_type;
+	const bool				m_useTexLevel0;
 };
 
 AttribMap TextureImageSource::getCreateAttribs (void) const
@@ -262,7 +262,7 @@ void Texture2DImageSource::initTexture (const glw::Functions& gl) const
 class TextureCubeMapImageSource : public TextureImageSource
 {
 public:
-					TextureCubeMapImageSource	(GLenum internalFormat, EGLenum source, GLenum format, GLenum type, bool useTexLevel0) : TextureImageSource(internalFormat, format, type, useTexLevel0), m_source(source) {}
+					TextureCubeMapImageSource	(EGLenum source, GLenum internalFormat, GLenum format, GLenum type, bool useTexLevel0) : TextureImageSource(internalFormat, format, type, useTexLevel0), m_source(source) {}
 	EGLenum			getSource					(void) const { return m_source; }
 	string			getRequiredExtension		(void) const { return "EGL_KHR_gl_texture_cubemap_image"; }
 	GLenum			getGLTarget					(void) const { return GL_TEXTURE_CUBE_MAP; }
