@@ -97,12 +97,16 @@ public:
 													UniformSetup& uniformSetup,
 													AttributeSetupFunc attribFunc)
 						: ShaderRenderCaseInstance(context, isVertexCase, evaluator, uniformSetup, attribFunc)
+						, m_brickTexture(DE_NULL)
 					{}
 
 	virtual			~DummyShaderRenderCaseInstance	(void)
 					{
-						delete m_brickTexture;
-						m_brickTexture = DE_NULL;
+						if (m_brickTexture)
+						{
+							delete m_brickTexture;
+							m_brickTexture = DE_NULL;
+						}
 					}
 
 protected:
