@@ -112,7 +112,7 @@ void assembleSpirV (const SpirVAsmSource* program, std::vector<deUint8>* dst, Sp
 
 #else // defined(DEQP_HAVE_SPIRV_TOOLS)
 
-void assembleSpirV (const SpirvProgram* program, std::vector<deUint8>* dst, SpirvProgramInfo* buildInfo)
+void assembleSpirV (const SpirVAsmSource*, std::vector<deUint8>*, SpirVProgramInfo*)
 {
 	TCU_THROW(NotSupportedError, "SPIR-V assembly not supported (DEQP_HAVE_SPIRV_TOOLS not defined)");
 }
