@@ -1,0 +1,189 @@
+#ifndef _VKTPIPELINEREFERENCERENDERER_HPP
+#define _VKTPIPELINEREFERENCERENDERER_HPP
+/*------------------------------------------------------------------------
+ * Vulkan Conformance Tests
+ * ------------------------
+ *
+ * Copyright (c) 2015 The Khronos Group Inc.
+ * Copyright (c) 2015 Imagination Technologies Ltd.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and/or associated documentation files (the
+ * "Materials"), to deal in the Materials without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish,
+ * distribute, sublicense, and/or sell copies of the Materials, and to
+ * permit persons to whom the Materials are furnished to do so, subject to
+ * the following conditions:
+ *
+ * The above copyright notice(s) and this permission notice shall be included
+ * in all copies or substantial portions of the Materials.
+ *
+ * The Materials are Confidential Information as defined by the
+ * Khronos Membership Agreement until designated non-confidential by Khronos,
+ * at which point this condition clause shall be removed.
+ *
+ * THE MATERIALS ARE PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+ * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+ * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
+ *
+ *//*!
+ * \file
+ * \brief Reference renderer.
+ *//*--------------------------------------------------------------------*/
+
+#include "vkDefs.hpp"
+#include "vktPipelineVertexUtil.hpp"
+#include "tcuVector.hpp"
+#include "tcuVectorType.hpp"
+#include "tcuTexture.hpp"
+#include "tcuTextureUtil.hpp"
+#include "rrRenderState.hpp"
+#include "rrRenderer.hpp"
+#include <cstring>
+
+namespace vkt
+{
+
+namespace pipeline
+{
+
+class ColorVertexShader : public rr::VertexShader
+{
+public:
+	ColorVertexShader (void) : rr::VertexShader(2, 2)
+	{
+		m_inputs[0].type	= rr::GENERICVECTYPE_FLOAT;
+		m_inputs[1].type	= rr::GENERICVECTYPE_FLOAT;
+
+		m_outputs[0].type	= rr::GENERICVECTYPE_FLOAT;
+		m_outputs[1].type	= rr::GENERICVECTYPE_FLOAT;
+	}
+
+	virtual ~ColorVertexShader (void) {}
+
+	virtual void shadeVertices (const rr::VertexAttrib*		inputs,
+								rr::VertexPacket* const*	packets,
+								const int					numPackets) const
+	{
+		tcu::Vec4 position;
+		tcu::Vec4 color;
+
+		for (int packetNdx = 0; packetNdx < numPackets; packetNdx++)
+		{
+			rr::VertexPacket* const packet	= packets[packetNdx];
+
+			readVertexAttrib(position, inputs[0], packet->instanceNdx, packet->vertexNdx);
+			readVertexAttrib(color, inputs[1], packet->instanceNdx, packet->vertexNdx);
+
+			packet->outputs[0]	= position;
+			packet->outputs[1]	= color;
+			packet->position	= position;
+		}
+	}
+};
+
+class ColorFragmentShader : public rr::FragmentShader
+{
+private:
+	const tcu::TextureFormat		m_colorFormat;
+	const tcu::TextureFormatInfo	m_colorFormatInfo;
+	const tcu::TextureFormat		m_depthStencilFormat;
+
+public:
+	ColorFragmentShader (const tcu::TextureFormat& colorFormat,
+						 const tcu::TextureFormat& depthStencilFormat)
+		: rr::FragmentShader	(2, 1)
+		, m_colorFormat			(colorFormat)
+		, m_colorFormatInfo		(tcu::getTextureFormatInfo(colorFormat))
+		, m_depthStencilFormat	(depthStencilFormat)
+	{
+		const tcu::TextureChannelClass channelClass = tcu::getTextureChannelClass(m_colorFormat.type);
+
+		m_inputs[0].type	= rr::GENERICVECTYPE_FLOAT;
+		m_inputs[1].type	= rr::GENERICVECTYPE_FLOAT;
+		m_outputs[0].type	= (channelClass == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER)? rr::GENERICVECTYPE_INT32 :
+							  (channelClass == tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER)? rr::GENERICVECTYPE_UINT32
+							  : rr::GENERICVECTYPE_FLOAT;
+	}
+
+	virtual ~ColorFragmentShader (void) {}
+
+	virtual void shadeFragments (rr::FragmentPacket*				packets,
+								 const int							numPackets,
+								 const rr::FragmentShadingContext&	context) const
+	{
+		for (int packetNdx = 0; packetNdx < numPackets; packetNdx++)
+		{
+			const rr::FragmentPacket& packet = packets[packetNdx];
+
+			if (m_depthStencilFormat.order == tcu::TextureFormat::D || m_depthStencilFormat.order == tcu::TextureFormat::DS)
+			{
+				for (int fragNdx = 0; fragNdx < 4; fragNdx++)
+				{
+					const tcu::Vec4 vtxPosition = rr::readVarying<float>(packet, context, 0, fragNdx);
+					rr::writeFragmentDepth(context, packetNdx, fragNdx, 0, vtxPosition.z());
+				}
+			}
+
+			for (int fragNdx = 0; fragNdx < 4; fragNdx++)
+			{
+				const tcu::Vec4 vtxColor = rr::readVarying<float>(packet, context, 1, fragNdx);
+
+				rr::writeFragmentOutput(context,
+										packetNdx,
+										fragNdx,
+										0,
+										(vtxColor - m_colorFormatInfo.lookupBias) / m_colorFormatInfo.lookupScale);
+			}
+		}
+	}
+};
+
+class ReferenceRenderer
+{
+public:
+								ReferenceRenderer		(int							surfaceWidth,
+														 int							surfaceHeight,
+														 int							numSamples,
+														 const tcu::TextureFormat&		colorFormat,
+														 const tcu::TextureFormat&		depthStencilFormat,
+														 const rr::Program* const		program);
+
+	virtual						~ReferenceRenderer		(void);
+
+	void						draw					(const rr::RenderState&				renderState,
+														 const rr::PrimitiveType			primitive,
+														 const std::vector<Vertex4RGBA>&	vertexBuffer);
+	tcu::PixelBufferAccess		getAccess				(void);
+	const rr::ViewportState		getViewportState		(void) const;
+
+private:
+	rr::Renderer				m_renderer;
+
+	const int					m_surfaceWidth;
+	const int					m_surfaceHeight;
+	const int					m_numSamples;
+
+	const tcu::TextureFormat	m_colorFormat;
+	const tcu::TextureFormat	m_depthStencilFormat;
+
+	tcu::TextureLevel			m_colorBuffer;
+	tcu::TextureLevel			m_resolveColorBuffer;
+	tcu::TextureLevel			m_depthStencilBuffer;
+
+	rr::RenderTarget*			m_renderTarget;
+	const rr::Program*			m_program;
+};
+
+rr::TestFunc					mapVkCompareOp			(vk::VkCompareOp compareFunc);
+rr::PrimitiveType				mapVkPrimitiveTopology	(vk::VkPrimitiveTopology primitiveTopology);
+
+} // pipeline
+} // vkt
+
+#endif // _VKTPIPELINEREFERENCERENDERER_HPP
+
