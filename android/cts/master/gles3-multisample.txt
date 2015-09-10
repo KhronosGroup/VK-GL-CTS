@@ -3681,6 +3681,7 @@ dEQP-GLES3.functional.multisample.default_framebuffer.common_edge_small_quads
 dEQP-GLES3.functional.multisample.default_framebuffer.common_edge_big_quad
 dEQP-GLES3.functional.multisample.default_framebuffer.common_edge_viewport_quad
 dEQP-GLES3.functional.multisample.default_framebuffer.depth
+dEQP-GLES3.functional.multisample.default_framebuffer.stencil
 dEQP-GLES3.functional.multisample.default_framebuffer.sample_coverage_invert
 dEQP-GLES3.functional.multisample.default_framebuffer.proportionality_alpha_to_coverage
 dEQP-GLES3.functional.multisample.default_framebuffer.proportionality_sample_coverage
@@ -4217,5 +4218,7 @@ dEQP-GLES3.functional.clipping.triangle_vertex.clip_three.clip_pos_x_pos_y_pos_z
 dEQP-GLES3.functional.clipping.triangle_vertex.clip_three.clip_neg_x_pos_y_pos_z_and_neg_x_neg_y_neg_z_and_pos_x_neg_y_neg_z
 dEQP-GLES3.functional.clipping.triangle_vertex.clip_three.clip_neg_x_pos_y_pos_z_and_pos_x_neg_y_neg_z_and_pos_x_pos_y_neg_z
 dEQP-GLES3.functional.polygon_offset.default_enable
+dEQP-GLES3.functional.polygon_offset.default_displacement_with_units
+dEQP-GLES3.functional.polygon_offset.default_render_with_units
 dEQP-GLES3.functional.polygon_offset.default_render_with_factor
 dEQP-GLES3.functional.polygon_offset.default_factor_0_slope
