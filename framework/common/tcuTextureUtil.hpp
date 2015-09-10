@@ -40,6 +40,8 @@ PixelBufferAccess		flipYAccess					(const PixelBufferAccess& access);
 ConstPixelBufferAccess	flipYAccess					(const ConstPixelBufferAccess& access);
 
 bool					isCombinedDepthStencilType	(TextureFormat::ChannelType type);
+bool					hasStencilComponent			(TextureFormat::ChannelOrder order);
+bool					hasDepthComponent			(TextureFormat::ChannelOrder order);
 
 // sRGB - linear conversion.
 Vec4					sRGBToLinear				(const Vec4& cs);
@@ -85,6 +87,11 @@ TextureFormatInfo	getTextureFormatInfo				(const TextureFormat& format);
 IVec4				getTextureFormatBitDepth			(const TextureFormat& format);
 IVec4				getTextureFormatMantissaBitDepth	(const TextureFormat& format);
 BVec4				getTextureFormatChannelMask			(const TextureFormat& format);
+
+IVec4				getFormatMinIntValue				(const TextureFormat& format);
+IVec4				getFormatMaxIntValue				(const TextureFormat& format);
+
+UVec4				getFormatMaxUintValue				(const TextureFormat& format);
 
 // Texture fill.
 void	clear							(const PixelBufferAccess& access, const Vec4& color);

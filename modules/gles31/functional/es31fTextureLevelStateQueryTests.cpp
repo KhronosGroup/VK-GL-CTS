@@ -182,7 +182,7 @@ static bool verifyTextureLevelParameterEqualWithPrinter (glu::CallLogWrapper& gl
 
 	verifyInteger(result, state, refValue);
 
-	return result.getResult() == QP_TEST_RESULT_LAST;
+	return result.getResult() == QP_TEST_RESULT_PASS;
 }
 
 static bool verifyTextureLevelParameterEqual (glu::CallLogWrapper& gl, glw::GLenum target, int level, glw::GLenum pname, int refValue, QueryType type)
@@ -208,7 +208,7 @@ static bool verifyTextureLevelParameterGreaterOrEqual (glu::CallLogWrapper& gl, 
 
 	verifyIntegerMin(result, state, refValue);
 
-	return result.getResult() == QP_TEST_RESULT_LAST;
+	return result.getResult() == QP_TEST_RESULT_PASS;
 }
 
 static bool verifyTextureLevelParameterInternalFormatAnyOf (glu::CallLogWrapper& gl, glw::GLenum target, int level, glw::GLenum pname, const int* refValues, int numRefValues, QueryType type)

@@ -170,6 +170,7 @@ LOCAL_SRC_FILES := \
 	framework/opengl/gluProgramInterfaceQuery.cpp \
 	framework/opengl/gluRenderConfig.cpp \
 	framework/opengl/gluRenderContext.cpp \
+	framework/opengl/gluShaderLibrary.cpp \
 	framework/opengl/gluShaderProgram.cpp \
 	framework/opengl/gluShaderUtil.cpp \
 	framework/opengl/gluStateReset.cpp \

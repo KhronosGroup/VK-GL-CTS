@@ -1745,6 +1745,18 @@
 					<Test name="invalid_create_image">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
+					<Test name="create_image_gles2_tex2d_red">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
+					<Test name="create_image_gles2_tex2d_rg">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
+					<Test name="create_image_gles2_tex2d_luminance">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
+					<Test name="create_image_gles2_tex2d_luminance_alpha">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
 					<Test name="create_image_gles2_tex2d_rgb">
 						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 					</Test>
@@ -2140,729 +2152,6 @@
 								</TestCase>
 							</TestSuite>
 						</TestSuite>
-						<TestSuite name="random">
-							<TestSuite name="textures">
-								<TestCase name="gen_delete">
-									<Test name="0">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="1">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="2">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="3">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="5">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="6">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="7">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="9">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="10">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="11">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="12">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="13">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="14">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="15">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="16">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="17">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="18">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-								</TestCase>
-								<TestCase name="teximage2d">
-									<Test name="0">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="1">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="3">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="4">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="5">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="6">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="7">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="8">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="9">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="10">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="11">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="13">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="14">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="15">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="16">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="17">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="18">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="19">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-								</TestCase>
-								<TestCase name="texsubimage2d">
-									<Test name="0">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="1">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="2">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="3">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="4">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="5">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="6">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="8">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="9">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="10">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="11">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="12">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="13">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="14">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="15">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="16">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="17">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="18">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="19">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-								</TestCase>
-							</TestSuite>
-							<TestSuite name="buffers">
-								<TestCase name="gen_delete">
-									<Test name="1">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="2">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="3">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="4">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="5">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="6">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="7">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="8">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="9">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="10">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="11">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="12">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="13">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="16">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="17">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="18">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="19">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-								</TestCase>
-								<TestCase name="bufferdata">
-									<Test name="0">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="1">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="2">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="3">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="4">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="5">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="6">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="7">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="8">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="9">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="10">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="11">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="13">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="14">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="15">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="16">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="17">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="18">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="19">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-								</TestCase>
-								<TestCase name="buffersubdata">
-									<Test name="0">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="1">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="2">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="3">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="4">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="5">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="6">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="7">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="8">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="9">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="10">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="11">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="12">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="13">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="14">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="15">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="16">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="17">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="18">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="19">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-								</TestCase>
-							</TestSuite>
-							<TestSuite name="shaders">
-								<TestCase name="create_destroy">
-									<Test name="0">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="5">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="6">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="7">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="8">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="10">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="11">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="14">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="16">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="18">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="19">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-								</TestCase>
-								<TestCase name="source">
-									<Test name="0">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="1">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="2">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="4">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="6">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="7">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="8">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="9">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="11">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="12">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="14">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="15">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="17">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="18">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="19">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-								</TestCase>
-								<TestCase name="compile">
-									<Test name="0">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="1">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="2">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="3">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="4">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="5">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="6">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="7">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="8">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="9">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="10">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="11">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="13">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="14">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="15">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="16">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="18">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="19">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-								</TestCase>
-							</TestSuite>
-							<TestSuite name="programs">
-								<TestCase name="create_destroy">
-									<Test name="0">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="1">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="2">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="3">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="4">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="5">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="6">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="7">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="8">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="9">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="10">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="11">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="13">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="14">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="15">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="17">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="18">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-								</TestCase>
-								<TestCase name="attach_detach">
-									<Test name="0">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="1">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="3">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="4">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="6">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="7">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="8">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="9">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="10">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="12">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="13">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="15">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="16">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="17">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="19">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-								</TestCase>
-								<TestCase name="link">
-									<Test name="1">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="3">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="4">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="5">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="7">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="9">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="12">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="13">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="15">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="17">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="18">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-								</TestCase>
-							</TestSuite>
-							<TestSuite name="images">
-								<TestCase name="create_destroy">
-									<Test name="0">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="2">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="3">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="5">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="7">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="8">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="10">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="12">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="14">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="16">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="18">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="19">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-								</TestCase>
-								<TestCase name="teximage2d">
-									<Test name="0">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="1">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="2">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="4">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="6">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="7">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="9">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="11">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="12">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="13">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="14">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="16">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="18">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-								</TestCase>
-								<TestCase name="texsubimage2d">
-									<Test name="2">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="3">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="7">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="11">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="12">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-								</TestCase>
-							</TestSuite>
-						</TestSuite>
 						<TestSuite name="simple_egl_sync">
 							<TestCase name="buffers">
 								<Test name="gen_delete">
@@ -2937,738 +2226,6 @@
 								</TestCase>
 							</TestSuite>
 						</TestSuite>
-						<TestSuite name="random_egl_sync">
-							<TestSuite name="textures">
-								<TestCase name="gen_delete">
-									<Test name="0">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="1">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="2">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="3">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="4">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="5">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="6">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="7">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="8">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="9">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="10">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="11">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="12">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="13">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="14">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="15">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="16">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="17">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="18">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="19">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-								</TestCase>
-								<TestCase name="teximage2d">
-									<Test name="0">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="1">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="2">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="3">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="4">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="5">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="6">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="7">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="8">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="9">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="10">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="11">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="12">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="13">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="14">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="15">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="16">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="17">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="18">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="19">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-								</TestCase>
-								<TestCase name="texsubimage2d">
-									<Test name="0">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="1">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="2">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="3">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="5">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="7">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="8">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="9">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="10">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="11">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="12">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="13">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="14">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="15">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="16">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="17">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="18">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="19">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-								</TestCase>
-							</TestSuite>
-							<TestSuite name="buffers">
-								<TestCase name="gen_delete">
-									<Test name="0">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="1">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="2">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="3">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="4">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="5">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="6">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="7">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="8">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="10">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="11">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="12">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="13">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="14">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="15">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="16">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="17">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="18">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="19">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-								</TestCase>
-								<TestCase name="bufferdata">
-									<Test name="0">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="1">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="2">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="3">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="4">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="5">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="6">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="7">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="8">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="9">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="10">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="11">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="12">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="13">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="14">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="15">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="16">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="17">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="18">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="19">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-								</TestCase>
-								<TestCase name="buffersubdata">
-									<Test name="0">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="1">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="2">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="3">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="4">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="5">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="6">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="7">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="8">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="10">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="11">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="12">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="13">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="14">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="15">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="16">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="17">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="18">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="19">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-								</TestCase>
-							</TestSuite>
-							<TestSuite name="shaders">
-								<TestCase name="create_destroy">
-									<Test name="0">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="1">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="2">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="3">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="4">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="5">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="6">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="7">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="8">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="9">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="10">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="11">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="13">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="14">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="15">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="16">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="17">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="18">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="19">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-								</TestCase>
-								<TestCase name="source">
-									<Test name="0">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="1">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="2">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="3">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="4">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="5">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="6">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="7">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="8">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="9">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="10">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="11">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="12">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="13">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="14">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="15">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="16">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="17">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="18">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="19">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-								</TestCase>
-								<TestCase name="compile">
-									<Test name="0">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="1">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="2">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="3">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="4">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="5">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="6">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="7">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="8">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="9">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="10">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="11">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="12">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="13">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="14">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="15">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="16">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="17">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="18">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="19">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-								</TestCase>
-							</TestSuite>
-							<TestSuite name="programs">
-								<TestCase name="create_destroy">
-									<Test name="0">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="2">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="3">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="4">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="5">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="6">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="7">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="8">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="9">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="10">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="11">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="12">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="13">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="15">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="16">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="18">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="19">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-								</TestCase>
-								<TestCase name="attach_detach">
-									<Test name="0">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="1">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="2">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="5">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="6">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="7">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="8">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="9">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="10">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="11">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="12">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="13">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="14">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="15">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="16">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="17">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-								</TestCase>
-								<TestCase name="link">
-									<Test name="0">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="2">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="3">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="4">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="5">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="7">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="8">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="9">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="11">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="12">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="13">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="15">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="18">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-								</TestCase>
-							</TestSuite>
-							<TestSuite name="images">
-								<TestCase name="create_destroy">
-									<Test name="5">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="8">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="10">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="12">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-								</TestCase>
-								<TestCase name="teximage2d">
-									<Test name="0">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="5">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="15">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="18">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-								</TestCase>
-								<TestCase name="texsubimage2d">
-									<Test name="11">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-								</TestCase>
-							</TestSuite>
-						</TestSuite>
 						<TestSuite name="simple_egl_server_sync">
 							<TestCase name="buffers">
 								<Test name="gen_delete">
@@ -3735,849 +2292,6 @@
 										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 									</Test>
 									<Test name="teximage2d">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-								</TestCase>
-							</TestSuite>
-						</TestSuite>
-						<TestSuite name="random_egl_server_sync">
-							<TestSuite name="textures">
-								<TestCase name="gen_delete">
-									<Test name="0">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="1">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="2">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="3">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="4">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="5">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="6">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="7">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="8">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="9">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="10">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="11">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="12">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="13">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="14">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="15">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="16">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="17">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="18">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="19">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-								</TestCase>
-								<TestCase name="teximage2d">
-									<Test name="0">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="1">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="2">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="4">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="5">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="6">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="7">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="8">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="9">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="10">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="11">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="12">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="13">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="14">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="15">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="16">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="17">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="18">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="19">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-								</TestCase>
-								<TestCase name="texsubimage2d">
-									<Test name="0">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="1">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="2">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="3">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="4">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="5">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="6">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="7">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="8">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="9">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="10">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="11">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="12">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="13">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="14">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="15">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="16">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="17">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="18">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="19">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-								</TestCase>
-							</TestSuite>
-							<TestSuite name="buffers">
-								<TestCase name="gen_delete">
-									<Test name="0">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="1">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="2">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="3">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="4">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="5">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="6">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="7">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="8">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="9">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="10">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="11">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="12">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="13">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="14">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="15">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="16">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="17">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="18">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="19">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-								</TestCase>
-								<TestCase name="bufferdata">
-									<Test name="0">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="1">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="2">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="3">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="4">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="5">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="6">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="7">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="8">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="9">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="10">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="11">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="13">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="14">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="15">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="16">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="17">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="18">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="19">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-								</TestCase>
-								<TestCase name="buffersubdata">
-									<Test name="0">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="1">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="2">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="3">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="4">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="5">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="6">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="7">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="8">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="9">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="10">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="11">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="12">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="13">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="14">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="15">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="16">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="17">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="18">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="19">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-								</TestCase>
-							</TestSuite>
-							<TestSuite name="shaders">
-								<TestCase name="create_destroy">
-									<Test name="0">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="1">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="2">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="3">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="4">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="5">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="6">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="7">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="8">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="9">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="10">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="11">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="12">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="13">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="14">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="15">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="16">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="17">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="18">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="19">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-								</TestCase>
-								<TestCase name="source">
-									<Test name="0">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="1">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="2">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="3">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="4">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="5">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="6">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="7">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="8">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="9">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="10">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="11">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="12">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="13">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="14">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="15">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="16">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="17">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="18">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="19">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-								</TestCase>
-								<TestCase name="compile">
-									<Test name="0">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="1">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="2">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="3">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="4">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="5">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="6">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="7">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="8">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="9">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="10">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="11">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="12">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="13">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="14">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="15">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="16">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="17">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="18">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="19">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-								</TestCase>
-							</TestSuite>
-							<TestSuite name="programs">
-								<TestCase name="create_destroy">
-									<Test name="0">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="1">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="2">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="3">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="4">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="5">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="6">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="7">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="8">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="9">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="10">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="11">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="12">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="13">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="14">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="15">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="16">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="18">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="19">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-								</TestCase>
-								<TestCase name="attach_detach">
-									<Test name="0">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="1">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="2">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="3">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="4">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="5">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="6">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="7">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="8">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="9">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="10">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="11">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="12">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="13">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="14">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="15">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="16">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="17">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="18">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-								</TestCase>
-								<TestCase name="link">
-									<Test name="0">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="2">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="4">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="5">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="6">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="7">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="8">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="9">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="11">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="12">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="13">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="14">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="15">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="17">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="18">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-								</TestCase>
-							</TestSuite>
-							<TestSuite name="images">
-								<TestCase name="create_destroy">
-									<Test name="1">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="2">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="3">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="5">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="7">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="9">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="10">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="11">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="12">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="14">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="17">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="19">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-								</TestCase>
-								<TestCase name="teximage2d">
-									<Test name="0">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="1">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="3">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="4">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="5">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="6">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="7">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="8">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="9">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="10">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="14">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="15">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="17">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="19">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-								</TestCase>
-								<TestCase name="texsubimage2d">
-									<Test name="0">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="2">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="3">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="5">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="7">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="8">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="10">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="12">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="14">
-										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-									</Test>
-									<Test name="19">
 										<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 									</Test>
 								</TestCase>
@@ -4736,9 +2450,6 @@
 				<Test name="context">
 					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 				</Test>
-				<Test name="pbuffer_pixmap">
-					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-				</Test>
 				<Test name="pixmap_window">
 					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 				</Test>
@@ -4746,9 +2457,6 @@
 					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 				</Test>
 				<Test name="pixmap_context">
-					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-				</Test>
-				<Test name="pbuffer_pixmap_context">
 					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 				</Test>
 				<Test name="pixmap_single_window_context">
@@ -6904,6 +4612,348 @@
 					</Test>
 				</TestCase>
 			</TestSuite>
+			<TestSuite name="buffer_age">
+				<TestCase name="preserve">
+					<Test name="odd_none_even_none">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
+					<Test name="odd_clear_even_none">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
+					<Test name="odd_render_even_none">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
+					<Test name="odd_clear_clear_even_none">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
+					<Test name="odd_render_render_even_none">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
+					<Test name="odd_clear_render_even_none">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
+					<Test name="odd_render_clear_even_none">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
+					<Test name="odd_clear_even_clear">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
+					<Test name="odd_render_even_clear">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
+					<Test name="odd_clear_clear_even_clear">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
+					<Test name="odd_render_render_even_clear">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
+					<Test name="odd_clear_render_even_clear">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
+					<Test name="odd_render_clear_even_clear">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
+					<Test name="odd_render_even_render">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
+					<Test name="odd_clear_clear_even_render">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
+					<Test name="odd_render_render_even_render">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
+					<Test name="odd_clear_render_even_render">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
+					<Test name="odd_render_clear_even_render">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
+					<Test name="odd_clear_clear_even_clear_clear">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
+					<Test name="odd_render_render_even_clear_clear">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
+					<Test name="odd_clear_render_even_clear_clear">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
+					<Test name="odd_render_clear_even_clear_clear">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
+					<Test name="odd_render_render_even_render_render">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
+					<Test name="odd_clear_render_even_render_render">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
+					<Test name="odd_render_clear_even_render_render">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
+					<Test name="odd_clear_render_even_clear_render">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
+					<Test name="odd_render_clear_even_clear_render">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
+					<Test name="odd_render_clear_even_render_clear">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
+				</TestCase>
+				<TestCase name="no_preserve">
+					<Test name="odd_none_even_none">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
+					<Test name="odd_clear_even_none">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
+					<Test name="odd_render_even_none">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
+					<Test name="odd_clear_clear_even_none">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
+					<Test name="odd_render_render_even_none">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
+					<Test name="odd_clear_render_even_none">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
+					<Test name="odd_render_clear_even_none">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
+					<Test name="odd_clear_even_clear">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
+					<Test name="odd_render_even_clear">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
+					<Test name="odd_clear_clear_even_clear">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
+					<Test name="odd_render_render_even_clear">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
+					<Test name="odd_clear_render_even_clear">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
+					<Test name="odd_render_clear_even_clear">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
+					<Test name="odd_render_even_render">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
+					<Test name="odd_clear_clear_even_render">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
+					<Test name="odd_render_render_even_render">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
+					<Test name="odd_clear_render_even_render">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
+					<Test name="odd_render_clear_even_render">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
+					<Test name="odd_clear_clear_even_clear_clear">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
+					<Test name="odd_render_render_even_clear_clear">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
+					<Test name="odd_clear_render_even_clear_clear">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
+					<Test name="odd_render_clear_even_clear_clear">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
+					<Test name="odd_render_render_even_render_render">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
+					<Test name="odd_clear_render_even_render_render">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
+					<Test name="odd_render_clear_even_render_render">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
+					<Test name="odd_clear_render_even_clear_render">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
+					<Test name="odd_render_clear_even_clear_render">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
+					<Test name="odd_render_clear_even_render_clear">
+						<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+					</Test>
+				</TestCase>
+			</TestSuite>
+			<TestCase name="partial_update">
+				<Test name="odd_clear_even_none">
+					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+				</Test>
+				<Test name="odd_render_even_none">
+					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+				</Test>
+				<Test name="odd_clear_clear_even_none">
+					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+				</Test>
+				<Test name="odd_render_render_even_none">
+					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+				</Test>
+				<Test name="odd_clear_render_even_none">
+					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+				</Test>
+				<Test name="odd_render_clear_even_none">
+					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+				</Test>
+				<Test name="odd_clear_even_clear">
+					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+				</Test>
+				<Test name="odd_render_even_clear">
+					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+				</Test>
+				<Test name="odd_clear_clear_even_clear">
+					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+				</Test>
+				<Test name="odd_render_render_even_clear">
+					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+				</Test>
+				<Test name="odd_clear_render_even_clear">
+					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+				</Test>
+				<Test name="odd_render_clear_even_clear">
+					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+				</Test>
+				<Test name="odd_render_even_render">
+					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+				</Test>
+				<Test name="odd_clear_clear_even_render">
+					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+				</Test>
+				<Test name="odd_render_render_even_render">
+					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+				</Test>
+				<Test name="odd_clear_render_even_render">
+					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+				</Test>
+				<Test name="odd_render_clear_even_render">
+					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+				</Test>
+				<Test name="odd_clear_clear_even_clear_clear">
+					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+				</Test>
+				<Test name="odd_render_render_even_clear_clear">
+					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+				</Test>
+				<Test name="odd_clear_render_even_clear_clear">
+					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+				</Test>
+				<Test name="odd_render_clear_even_clear_clear">
+					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+				</Test>
+				<Test name="odd_render_render_even_render_render">
+					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+				</Test>
+				<Test name="odd_clear_render_even_render_render">
+					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+				</Test>
+				<Test name="odd_render_clear_even_render_render">
+					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+				</Test>
+				<Test name="odd_clear_render_even_clear_render">
+					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+				</Test>
+				<Test name="odd_render_clear_even_clear_render">
+					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+				</Test>
+				<Test name="odd_render_clear_even_render_clear">
+					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+				</Test>
+				<Test name="render_outside_damage_region">
+					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+				</Test>
+				<Test name="render_before_set_damage_region">
+					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+				</Test>
+			</TestCase>
+			<TestCase name="negative_partial_update">
+				<Test name="not_postable_surface">
+					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+				</Test>
+				<Test name="not_current_surface">
+					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+				</Test>
+				<Test name="buffer_preserved">
+					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+				</Test>
+				<Test name="set_damage_region_twice">
+					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+				</Test>
+				<Test name="set_damage_region_before_query_age">
+					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+				</Test>
+				<Test name="pass_null_0_as_params">
+					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+				</Test>
+				<Test name="not_current_surface2">
+					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+				</Test>
+			</TestCase>
+			<TestCase name="swap_buffers_with_damage">
+				<Test name="clear">
+					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+				</Test>
+				<Test name="render">
+					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+				</Test>
+				<Test name="clear_clear">
+					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+				</Test>
+				<Test name="render_render">
+					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+				</Test>
+				<Test name="clear_render">
+					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+				</Test>
+				<Test name="render_clear">
+					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+				</Test>
+				<Test name="preserve_buffer_clear">
+					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+				</Test>
+				<Test name="preserve_buffer_render">
+					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+				</Test>
+				<Test name="preserve_buffer_clear_clear">
+					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+				</Test>
+				<Test name="preserve_buffer_render_render">
+					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+				</Test>
+				<Test name="preserve_buffer_clear_render">
+					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+				</Test>
+				<Test name="preserve_buffer_render_clear">
+					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+				</Test>
+				<Test name="buffer_age_clear">
+					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+				</Test>
+				<Test name="buffer_age_render">
+					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+				</Test>
+				<Test name="buffer_age_clear_clear">
+					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+				</Test>
+				<Test name="buffer_age_render_render">
+					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+				</Test>
+				<Test name="buffer_age_clear_render">
+					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+				</Test>
+				<Test name="buffer_age_render_clear">
+					<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+				</Test>
+			</TestCase>
 		</TestSuite>
 	</TestSuite>
 </TestPackage>

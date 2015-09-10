@@ -171,6 +171,11 @@ public:
 		m_display = EGL_NO_DISPLAY;
 	}
 
+	bool		isGLRedSupported	(void)
+	{
+		return m_api.getMajorVersion() >= 3 || glu::hasExtension(m_gl, m_api, "GL_EXT_texture_rg");
+	}
+
 protected:
 	glw::Functions	m_gl;
 	ApiType			m_api;
@@ -292,6 +297,10 @@ public:
 	{
 		switch (storage)
 		{
+			case GL_RED:				return "red";
+			case GL_RG:					return "rg";
+			case GL_LUMINANCE:			return "luminance";
+			case GL_LUMINANCE_ALPHA:	return "luminance_alpha";
 			case GL_RGB:				return "rgb";
 			case GL_RGBA:				return "rgba";
 			case GL_DEPTH_COMPONENT16:	return "depth_component_16";
@@ -307,7 +316,7 @@ public:
 		}
 	}
 
-	MovePtr<ImageSource> getImageSource (EGLint target, GLenum format, bool useTexLevel0)
+	MovePtr<ImageSource> getImageSource (EGLint target, GLenum internalFormat, GLenum format, GLenum type, bool useTexLevel0)
 	{
 		switch (target)
 		{
@@ -318,20 +327,27 @@ public:
 			case EGL_GL_TEXTURE_CUBE_MAP_NEGATIVE_Y_KHR:
 			case EGL_GL_TEXTURE_CUBE_MAP_POSITIVE_Z_KHR:
 			case EGL_GL_TEXTURE_CUBE_MAP_NEGATIVE_Z_KHR:
-				return createTextureImageSource(target, format, GL_UNSIGNED_BYTE, useTexLevel0);
+				DE_ASSERT(format != 0u && type != 0u);
+				return createTextureImageSource(target, internalFormat, format, type, useTexLevel0);
+
 			case EGL_GL_RENDERBUFFER_KHR:
-				return createRenderbufferImageSource(format);
+				DE_ASSERT(format == 0u && type == 0u);
+				return createRenderbufferImageSource(internalFormat);
+
 			case EGL_NATIVE_BUFFER_ANDROID:
-				return createAndroidNativeImageSource(format);
+				DE_ASSERT(format == 0u && type == 0u);
+				return createAndroidNativeImageSource(internalFormat);
+
 			default:
 				DE_FATAL("Impossible");
 				return MovePtr<ImageSource>();
 		}
 	}
 
-	CreateImageGLES2 (EglTestContext& eglTestCtx, EGLint target, GLenum storage, bool useTexLevel0 = false)
-		: ImageTestCase		(eglTestCtx, ApiType::es(2, 0), string("create_image_gles2_") + getTargetName(target) + "_" + getStorageName(storage) + (useTexLevel0 ? "_level0_only" : ""), "Create EGLImage from GLES2 object")
-		, m_source			(getImageSource(target, storage, useTexLevel0))
+	CreateImageGLES2 (EglTestContext& eglTestCtx, EGLint target, GLenum internalFormat, GLenum format, GLenum type, bool useTexLevel0 = false)
+		: ImageTestCase		(eglTestCtx, ApiType::es(2, 0), string("create_image_gles2_") + getTargetName(target) + "_" + getStorageName(internalFormat) + (useTexLevel0 ? "_level0_only" : ""), "Create EGLImage from GLES2 object")
+		, m_source			(getImageSource(target, internalFormat, format, type, useTexLevel0))
+		, m_internalFormat	(internalFormat)
 	{
 	}
 
@@ -351,6 +367,9 @@ public:
 		const ContextType		contextType		(ApiType::es(2, 0));
 		Context					context			(m_eglTestCtx, dpy, contextType, 64, 64);
 		const EGLContext		eglContext		= context.getEglContext();
+
+		if ((m_internalFormat == GL_RED || m_internalFormat == GL_RG) && !isGLRedSupported())
+			TCU_THROW(NotSupportedError, "Unsupported extension: GL_EXT_texture_rg");
 
 		log << TestLog::Message << "Using EGL config " << eglu::getConfigID(egl, dpy, context.getConfig()) << TestLog::EndMessage;
 
@@ -372,7 +391,8 @@ public:
 	}
 
 private:
-	UniquePtr<ImageSource>	m_source;
+	const UniquePtr<ImageSource>	m_source;
+	const GLenum					m_internalFormat;
 };
 
 class ImageTargetGLES2 : public ImageTestCase
@@ -486,19 +506,25 @@ public:
 	{
 		addChild(new Image::InvalidCreateImage(m_eglTestCtx));
 
-		addChild(new Image::CreateImageGLES2(m_eglTestCtx, EGL_GL_TEXTURE_2D_KHR, GL_RGB));
-		addChild(new Image::CreateImageGLES2(m_eglTestCtx, EGL_GL_TEXTURE_2D_KHR, GL_RGBA));
-		addChild(new Image::CreateImageGLES2(m_eglTestCtx, EGL_GL_TEXTURE_2D_KHR, GL_RGBA, true));
+		addChild(new Image::CreateImageGLES2(m_eglTestCtx, EGL_GL_TEXTURE_2D_KHR, GL_RED, GL_RED, GL_UNSIGNED_BYTE, false));
+		addChild(new Image::CreateImageGLES2(m_eglTestCtx, EGL_GL_TEXTURE_2D_KHR, GL_RG, GL_RG, GL_UNSIGNED_BYTE, false));
 
-		addChild(new Image::CreateImageGLES2(m_eglTestCtx, EGL_GL_TEXTURE_CUBE_MAP_POSITIVE_X_KHR, GL_RGB));
-		addChild(new Image::CreateImageGLES2(m_eglTestCtx, EGL_GL_TEXTURE_CUBE_MAP_POSITIVE_X_KHR, GL_RGBA));
-		addChild(new Image::CreateImageGLES2(m_eglTestCtx, EGL_GL_TEXTURE_CUBE_MAP_POSITIVE_X_KHR, GL_RGBA, true));
+		addChild(new Image::CreateImageGLES2(m_eglTestCtx, EGL_GL_TEXTURE_2D_KHR, GL_LUMINANCE, GL_LUMINANCE, GL_UNSIGNED_BYTE));
+		addChild(new Image::CreateImageGLES2(m_eglTestCtx, EGL_GL_TEXTURE_2D_KHR, GL_LUMINANCE_ALPHA, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE));
 
-		addChild(new Image::CreateImageGLES2(m_eglTestCtx, EGL_GL_TEXTURE_CUBE_MAP_NEGATIVE_X_KHR, GL_RGBA));
-		addChild(new Image::CreateImageGLES2(m_eglTestCtx, EGL_GL_TEXTURE_CUBE_MAP_POSITIVE_Y_KHR, GL_RGBA));
-		addChild(new Image::CreateImageGLES2(m_eglTestCtx, EGL_GL_TEXTURE_CUBE_MAP_NEGATIVE_Y_KHR, GL_RGBA));
-		addChild(new Image::CreateImageGLES2(m_eglTestCtx, EGL_GL_TEXTURE_CUBE_MAP_POSITIVE_Z_KHR, GL_RGBA));
-		addChild(new Image::CreateImageGLES2(m_eglTestCtx, EGL_GL_TEXTURE_CUBE_MAP_NEGATIVE_Z_KHR, GL_RGBA));
+		addChild(new Image::CreateImageGLES2(m_eglTestCtx, EGL_GL_TEXTURE_2D_KHR, GL_RGB, GL_RGB, GL_UNSIGNED_BYTE));
+		addChild(new Image::CreateImageGLES2(m_eglTestCtx, EGL_GL_TEXTURE_2D_KHR, GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE));
+		addChild(new Image::CreateImageGLES2(m_eglTestCtx, EGL_GL_TEXTURE_2D_KHR, GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE, true));
+
+		addChild(new Image::CreateImageGLES2(m_eglTestCtx, EGL_GL_TEXTURE_CUBE_MAP_POSITIVE_X_KHR, GL_RGB, GL_RGB, GL_UNSIGNED_BYTE));
+		addChild(new Image::CreateImageGLES2(m_eglTestCtx, EGL_GL_TEXTURE_CUBE_MAP_POSITIVE_X_KHR, GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE));
+		addChild(new Image::CreateImageGLES2(m_eglTestCtx, EGL_GL_TEXTURE_CUBE_MAP_POSITIVE_X_KHR, GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE, true));
+
+		addChild(new Image::CreateImageGLES2(m_eglTestCtx, EGL_GL_TEXTURE_CUBE_MAP_NEGATIVE_X_KHR, GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE));
+		addChild(new Image::CreateImageGLES2(m_eglTestCtx, EGL_GL_TEXTURE_CUBE_MAP_POSITIVE_Y_KHR, GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE));
+		addChild(new Image::CreateImageGLES2(m_eglTestCtx, EGL_GL_TEXTURE_CUBE_MAP_NEGATIVE_Y_KHR, GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE));
+		addChild(new Image::CreateImageGLES2(m_eglTestCtx, EGL_GL_TEXTURE_CUBE_MAP_POSITIVE_Z_KHR, GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE));
+		addChild(new Image::CreateImageGLES2(m_eglTestCtx, EGL_GL_TEXTURE_CUBE_MAP_NEGATIVE_Z_KHR, GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE));
 
 		static const GLenum rboStorages[] =
 		{
@@ -509,7 +535,7 @@ public:
 			GL_STENCIL_INDEX8
 		};
 		for (int storageNdx = 0; storageNdx < DE_LENGTH_OF_ARRAY(rboStorages); storageNdx++)
-			addChild(new Image::CreateImageGLES2(m_eglTestCtx, EGL_GL_RENDERBUFFER_KHR, rboStorages[storageNdx]));
+			addChild(new Image::CreateImageGLES2(m_eglTestCtx, EGL_GL_RENDERBUFFER_KHR, rboStorages[storageNdx], (GLenum)0, (GLenum)0));
 
 		static const GLenum androidFormats[] =
 		{
@@ -521,7 +547,7 @@ public:
 		};
 
 		for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(androidFormats); ++formatNdx)
-			addChild(new Image::CreateImageGLES2(m_eglTestCtx, EGL_NATIVE_BUFFER_ANDROID, androidFormats[formatNdx]));
+			addChild(new Image::CreateImageGLES2(m_eglTestCtx, EGL_NATIVE_BUFFER_ANDROID, androidFormats[formatNdx], (GLenum)0, (GLenum)0));
 
 		addChild(new Image::ImageTargetGLES2(m_eglTestCtx, GL_TEXTURE_2D));
 		addChild(new Image::ImageTargetGLES2(m_eglTestCtx, GL_RENDERBUFFER));

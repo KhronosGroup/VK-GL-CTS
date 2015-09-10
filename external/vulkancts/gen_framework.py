@@ -77,6 +77,7 @@ DEFINITIONS			= [
 	"VK_MAX_DESCRIPTION",
 	"VK_FALSE",
 	"VK_TRUE",
+	"VK_ATTACHMENT_UNUSED"
 ]
 
 class Handle:
@@ -209,7 +210,12 @@ def parsePreprocDefinedValue (src, name):
 	definition = re.search(r'#\s*define\s+' + name + r'\s+([^\n]+)\n', src)
 	if definition is None:
 		raise Exception("No such definition: %s" % name)
-	return definition.group(1).strip()
+	value = definition.group(1).strip()
+
+	if value == "UINT32_MAX":
+		value = "(~0u)"
+
+	return value
 
 def parseEnum (name, src):
 	keyValuePtrn	= '(' + IDENT_PTRN + r')\s*=\s*([^\s,}]+)\s*[,}]'
@@ -479,6 +485,8 @@ def writeStrUtilImpl (api, filename):
 				valFmt		= None
 				if member.type in bitfieldTypeNames:
 					valFmt = "get%sStr(value.%s)" % (member.type[2:], member.name)
+				elif member.type == "const char*" or member.type == "char*":
+					valFmt = "getCharPtrStr(value.%s)" % member.name
 				elif '[' in member.name:
 					baseName = member.name[:member.name.find('[')]
 					if baseName == "extName" or baseName == "deviceName":

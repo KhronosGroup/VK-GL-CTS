@@ -1,11 +1,12 @@
 #ifndef _VKIMAGEUTIL_HPP
 #define _VKIMAGEUTIL_HPP
-/*------------------------------------------------------------------------
- * Vulkan Conformance Tests
- * ------------------------
+/*-------------------------------------------------------------------------
+ * Vulkan CTS Framework
+ * --------------------
  *
  * Copyright (c) 2015 The Khronos Group Inc.
  * Copyright (c) 2015 Imagination Technologies Ltd.
+ * Copyright (c) 2015 Google Inc.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and/or associated documentation files (the
@@ -15,12 +16,12 @@
  * permit persons to whom the Materials are furnished to do so, subject to
  * the following conditions:
  *
- * The above copyright notice(s) and this permission notice shall be included
- * in all copies or substantial portions of the Materials.
+ * The above copyright notice(s) and this permission notice shall be
+ * included in all copies or substantial portions of the Materials.
  *
  * The Materials are Confidential Information as defined by the
- * Khronos Membership Agreement until designated non-confidential by Khronos,
- * at which point this condition clause shall be removed.
+ * Khronos Membership Agreement until designated non-confidential by
+ * Khronos, at which point this condition clause shall be removed.
  *
  * THE MATERIALS ARE PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
@@ -35,25 +36,22 @@
  * \brief Utilities for images.
  *//*--------------------------------------------------------------------*/
 
-#include "tcuDefs.hpp"
 #include "vkDefs.hpp"
-#include "vkPlatform.hpp"
-#include "vkMemUtil.hpp"
-#include "vkRef.hpp"
 #include "tcuTexture.hpp"
 
 namespace vk
 {
 
-bool				isFloatFormat				(VkFormat format);
-bool				isUnormFormat				(VkFormat format);
-bool				isSnormFormat				(VkFormat format);
-bool				isIntFormat					(VkFormat format);
-bool				isUintFormat				(VkFormat format);
-bool				isDepthStencilFormat		(VkFormat format);
-bool				isCompressedFormat			(VkFormat format);
+bool				isFloatFormat			(VkFormat format);
+bool				isUnormFormat			(VkFormat format);
+bool				isSnormFormat			(VkFormat format);
+bool				isIntFormat				(VkFormat format);
+bool				isUintFormat			(VkFormat format);
+bool				isDepthStencilFormat	(VkFormat format);
+bool				isCompressedFormat		(VkFormat format);
 
-tcu::TextureFormat	mapVkFormat					(VkFormat format);
+tcu::TextureFormat	mapVkFormat				(VkFormat format);
+VkFormat			mapTextureFormat		(const tcu::TextureFormat& format);
 
 } // vk
 

@@ -178,18 +178,20 @@ EGLImageKHR GLImageSource::createImage (const Library& egl, EGLDisplay dpy, EGLC
 class TextureImageSource : public GLImageSource
 {
 public:
-							TextureImageSource	(GLenum format, GLenum type, bool useTexLevel0) : m_format(format), m_type(type), m_useTexLevel0(useTexLevel0) {}
+							TextureImageSource	(GLenum internalFormat, GLenum format, GLenum type, bool useTexLevel0) : m_internalFormat(internalFormat), m_format(format), m_type(type), m_useTexLevel0(useTexLevel0) {}
 	MovePtr<ClientBuffer>	createBuffer		(const glw::Functions& gl, Texture2D* reference) const;
 	GLenum					getFormat			(void) const { return m_format; }
+	GLenum					getInternalFormat	(void) const { return m_internalFormat; }
 
 protected:
 	AttribMap				getCreateAttribs	(void) const;
 	virtual void			initTexture			(const glw::Functions& gl) const = 0;
 	virtual GLenum			getGLTarget			(void) const = 0;
 
-	GLenum					m_format;
-	GLenum					m_type;
-	bool					m_useTexLevel0;
+	const GLenum			m_internalFormat;
+	const GLenum			m_format;
+	const GLenum			m_type;
+	const bool				m_useTexLevel0;
 };
 
 AttribMap TextureImageSource::getCreateAttribs (void) const
@@ -231,7 +233,7 @@ MovePtr<ClientBuffer> TextureImageSource::createBuffer (const glw::Functions& gl
 		GLU_CHECK_GLW_CALL(gl, texParameteri(target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
 		GLU_CHECK_GLW_CALL(gl, texParameteri(target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
 
-		GLU_CHECK_GLW_CALL(gl, texImage2D(imgTarget, 0, m_format, IMAGE_WIDTH, IMAGE_HEIGHT,
+		GLU_CHECK_GLW_CALL(gl, texImage2D(imgTarget, 0, m_internalFormat, IMAGE_WIDTH, IMAGE_HEIGHT,
 										  0, m_format, m_type, ref->getLevel(0).getDataPtr()));
 	}
 	GLU_CHECK_GLW_CALL(gl, bindTexture(target, 0));
@@ -241,7 +243,7 @@ MovePtr<ClientBuffer> TextureImageSource::createBuffer (const glw::Functions& gl
 class Texture2DImageSource : public TextureImageSource
 {
 public:
-					Texture2DImageSource	(GLenum format, GLenum type, bool useTexLevel0) : TextureImageSource(format, type, useTexLevel0) {}
+					Texture2DImageSource	(GLenum internalFormat, GLenum format, GLenum type, bool useTexLevel0) : TextureImageSource(internalFormat, format, type, useTexLevel0) {}
 	EGLenum			getSource				(void) const { return EGL_GL_TEXTURE_2D_KHR; }
 	string			getRequiredExtension	(void) const { return "EGL_KHR_gl_texture_2D_image"; }
 	GLenum			getGLTarget				(void) const { return GL_TEXTURE_2D; }
@@ -253,14 +255,14 @@ protected:
 void Texture2DImageSource::initTexture (const glw::Functions& gl) const
 {
 	// Specify mipmap level 0
-	GLU_CHECK_CALL_ERROR(gl.texImage2D(GL_TEXTURE_2D, 0, m_format, IMAGE_WIDTH, IMAGE_HEIGHT, 0, m_format, m_type, DE_NULL),
+	GLU_CHECK_CALL_ERROR(gl.texImage2D(GL_TEXTURE_2D, 0, m_internalFormat, IMAGE_WIDTH, IMAGE_HEIGHT, 0, m_format, m_type, DE_NULL),
 						 gl.getError());
 }
 
 class TextureCubeMapImageSource : public TextureImageSource
 {
 public:
-					TextureCubeMapImageSource	(EGLenum source, GLenum format, GLenum type, bool useTexLevel0) : TextureImageSource(format, type, useTexLevel0), m_source(source) {}
+					TextureCubeMapImageSource	(EGLenum source, GLenum internalFormat, GLenum format, GLenum type, bool useTexLevel0) : TextureImageSource(internalFormat, format, type, useTexLevel0), m_source(source) {}
 	EGLenum			getSource					(void) const { return m_source; }
 	string			getRequiredExtension		(void) const { return "EGL_KHR_gl_texture_cubemap_image"; }
 	GLenum			getGLTarget					(void) const { return GL_TEXTURE_CUBE_MAP; }
@@ -285,7 +287,7 @@ void TextureCubeMapImageSource::initTexture (const glw::Functions& gl) const
 	};
 
 	for (int faceNdx = 0; faceNdx < DE_LENGTH_OF_ARRAY(faces); faceNdx++)
-		GLU_CHECK_GLW_CALL(gl, texImage2D(faces[faceNdx], 0, m_format, IMAGE_WIDTH, IMAGE_HEIGHT, 0, m_format, m_type, DE_NULL));
+		GLU_CHECK_GLW_CALL(gl, texImage2D(faces[faceNdx], 0, m_internalFormat, IMAGE_WIDTH, IMAGE_HEIGHT, 0, m_format, m_type, DE_NULL));
 }
 
 class RenderbufferClientBuffer : public GLClientBuffer
@@ -505,12 +507,12 @@ EGLImageKHR	UnsupportedImageSource::createImage (const Library&, EGLDisplay, EGL
 	return EGL_NO_IMAGE_KHR;
 }
 
-MovePtr<ImageSource> createTextureImageSource (EGLenum source, GLenum format, GLenum type, bool useTexLevel0)
+MovePtr<ImageSource> createTextureImageSource (EGLenum source, GLenum internalFormat, GLenum format, GLenum type, bool useTexLevel0)
 {
 	if (source == EGL_GL_TEXTURE_2D_KHR)
-		return MovePtr<ImageSource>(new Texture2DImageSource(format, type, useTexLevel0));
+		return MovePtr<ImageSource>(new Texture2DImageSource(internalFormat, format, type, useTexLevel0));
 	else
-		return MovePtr<ImageSource>(new TextureCubeMapImageSource(source, format, type, useTexLevel0));
+		return MovePtr<ImageSource>(new TextureCubeMapImageSource(source, internalFormat, format, type, useTexLevel0));
 }
 
 MovePtr<ImageSource> createRenderbufferImageSource (GLenum format)

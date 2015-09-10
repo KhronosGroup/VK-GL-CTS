@@ -44,10 +44,47 @@
 namespace vk
 {
 
+using de::UniquePtr;
 using de::MovePtr;
 
 namespace
 {
+
+class HostPtr
+{
+public:
+								HostPtr		(const DeviceInterface& vkd, VkDevice device, VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size, VkMemoryMapFlags flags);
+								~HostPtr	(void);
+
+	void*						get			(void) const { return m_ptr; }
+
+private:
+	const DeviceInterface&		m_vkd;
+	const VkDevice				m_device;
+	const VkDeviceMemory		m_memory;
+	void* const					m_ptr;
+};
+
+void* mapMemory (const DeviceInterface& vkd, VkDevice device, VkDeviceMemory mem, VkDeviceSize offset, VkDeviceSize size, VkMemoryMapFlags flags)
+{
+	void* hostPtr = DE_NULL;
+	VK_CHECK(vkd.mapMemory(device, mem, offset, size, flags, &hostPtr));
+	TCU_CHECK(hostPtr);
+	return hostPtr;
+}
+
+HostPtr::HostPtr (const DeviceInterface& vkd, VkDevice device, VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size, VkMemoryMapFlags flags)
+	: m_vkd		(vkd)
+	, m_device	(device)
+	, m_memory	(memory)
+	, m_ptr		(mapMemory(vkd, device, memory, offset, size, flags))
+{
+}
+
+HostPtr::~HostPtr (void)
+{
+	m_vkd.unmapMemory(m_device, m_memory);
+}
 
 deUint32 selectMatchingMemoryType (const VkPhysicalDeviceMemoryProperties& deviceMemProps, deUint32 allowedMemTypeBits, MemoryRequirement requirement)
 {
@@ -61,13 +98,20 @@ deUint32 selectMatchingMemoryType (const VkPhysicalDeviceMemoryProperties& devic
 	TCU_THROW(NotSupportedError, "No compatible memory type found");
 }
 
+bool isHostVisibleMemory (const VkPhysicalDeviceMemoryProperties& deviceMemProps, deUint32 memoryTypeNdx)
+{
+	DE_ASSERT(memoryTypeNdx < deviceMemProps.memoryTypeCount);
+	return (deviceMemProps.memoryTypes[memoryTypeNdx].propertyFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) != 0u;
+}
+
 } // anonymous
 
 // Allocation
 
-Allocation::Allocation (VkDeviceMemory memory, VkDeviceSize offset)
+Allocation::Allocation (VkDeviceMemory memory, VkDeviceSize offset, void* hostPtr)
 	: m_memory	(memory)
 	, m_offset	(offset)
+	, m_hostPtr	(hostPtr)
 {
 }
 
@@ -115,16 +159,18 @@ MemoryRequirement::MemoryRequirement (deUint32 flags)
 class SimpleAllocation : public Allocation
 {
 public:
-									SimpleAllocation	(Move<VkDeviceMemory> mem);
+									SimpleAllocation	(Move<VkDeviceMemory> mem, MovePtr<HostPtr> hostPtr);
 	virtual							~SimpleAllocation	(void);
 
 private:
 	const Unique<VkDeviceMemory>	m_memHolder;
+	const UniquePtr<HostPtr>		m_hostPtr;
 };
 
-SimpleAllocation::SimpleAllocation (Move<VkDeviceMemory> mem)
-	: Allocation	(*mem, (VkDeviceSize)0)
+SimpleAllocation::SimpleAllocation (Move<VkDeviceMemory> mem, MovePtr<HostPtr> hostPtr)
+	: Allocation	(*mem, (VkDeviceSize)0, hostPtr ? hostPtr->get() : DE_NULL)
 	, m_memHolder	(mem)
+	, m_hostPtr		(hostPtr)
 {
 }
 
@@ -142,7 +188,14 @@ SimpleAllocator::SimpleAllocator (const DeviceInterface& vk, VkDevice device, co
 MovePtr<Allocation> SimpleAllocator::allocate (const VkMemoryAllocInfo& allocInfo, VkDeviceSize alignment)
 {
 	DE_UNREF(alignment);
-	return MovePtr<Allocation>(new SimpleAllocation(allocMemory(m_vk, m_device, &allocInfo)));
+
+	Move<VkDeviceMemory>	mem		= allocMemory(m_vk, m_device, &allocInfo);
+	MovePtr<HostPtr>		hostPtr;
+
+	if (isHostVisibleMemory(m_memProps, allocInfo.memoryTypeIndex))
+		hostPtr = MovePtr<HostPtr>(new HostPtr(m_vk, m_device, *mem, 0u, allocInfo.allocationSize, 0u));
+
+	return MovePtr<Allocation>(new SimpleAllocation(mem, hostPtr));
 }
 
 MovePtr<Allocation> SimpleAllocator::allocate (const VkMemoryRequirements& memReqs, MemoryRequirement requirement)
@@ -156,7 +209,44 @@ MovePtr<Allocation> SimpleAllocator::allocate (const VkMemoryRequirements& memRe
 		memoryTypeNdx,							//	deUint32				memoryTypeIndex;
 	};
 
-	return allocate(allocInfo, memReqs.alignment);
+	Move<VkDeviceMemory>	mem				= allocMemory(m_vk, m_device, &allocInfo);
+	MovePtr<HostPtr>		hostPtr;
+
+	if (requirement & MemoryRequirement::HostVisible)
+	{
+		DE_ASSERT(isHostVisibleMemory(m_memProps, allocInfo.memoryTypeIndex));
+		hostPtr = MovePtr<HostPtr>(new HostPtr(m_vk, m_device, *mem, 0u, allocInfo.allocationSize, 0u));
+	}
+
+	return MovePtr<Allocation>(new SimpleAllocation(mem, hostPtr));
+}
+
+void flushMappedMemoryRange (const DeviceInterface& vkd, VkDevice device, VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size)
+{
+	const VkMappedMemoryRange	range	=
+	{
+		VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
+		DE_NULL,
+		memory,
+		offset,
+		size
+	};
+
+	VK_CHECK(vkd.flushMappedMemoryRanges(device, 1u, &range));
+}
+
+void invalidateMappedMemoryRange (const DeviceInterface& vkd, VkDevice device, VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size)
+{
+	const VkMappedMemoryRange	range	=
+	{
+		VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
+		DE_NULL,
+		memory,
+		offset,
+		size
+	};
+
+	VK_CHECK(vkd.invalidateMappedMemoryRanges(device, 1u, &range));
 }
 
 } // vk

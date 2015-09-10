@@ -78,6 +78,9 @@ endif ()
 # glslang
 add_subdirectory(external/glslang)
 
+# spirv-tools
+add_subdirectory(external/spirv-tools)
+
 include_directories(${PNG_INCLUDE_PATH})
 
 message(STATUS "DEQP_TARGET_NAME        = ${DEQP_TARGET_NAME}")

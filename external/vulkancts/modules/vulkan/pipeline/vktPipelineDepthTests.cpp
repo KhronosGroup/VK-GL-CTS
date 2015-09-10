@@ -69,7 +69,7 @@ bool isSupportedDepthStencilFormat (const InstanceInterface& instanceInterface, 
 
 	VK_CHECK(instanceInterface.getPhysicalDeviceFormatProperties(device, format, &formatProps));
 
-	return formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT;
+	return (formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) != 0u;
 }
 
 tcu::TestStatus testSupportsDepthStencilFormat (Context& context, VkFormat format)
@@ -127,7 +127,7 @@ public:
 																 const VkFormat			depthFormat,
 																 const VkCompareOp		depthCompareOps[QUAD_COUNT]);
 	virtual								~DepthTest				(void);
-	virtual void						initPrograms			(SourceCollection& programCollection) const;
+	virtual void						initPrograms			(SourceCollections& programCollection) const;
 	virtual TestInstance*				createInstance			(Context& context) const;
 
 private:
@@ -211,9 +211,9 @@ TestInstance* DepthTest::createInstance (Context& context) const
 	return new DepthTestInstance(context, m_depthFormat, m_depthCompareOps);
 }
 
-void DepthTest::initPrograms (SourceCollection& programCollection) const
+void DepthTest::initPrograms (SourceCollections& programCollection) const
 {
-	programCollection.add("color_vert") << glu::VertexSource(
+	programCollection.glslSources.add("color_vert") << glu::VertexSource(
 		"#version 310 es\n"
 		"layout(location = 0) in vec4 position;\n"
 		"layout(location = 1) in vec4 color;\n"
@@ -224,7 +224,7 @@ void DepthTest::initPrograms (SourceCollection& programCollection) const
 		"	vtxColor = color;\n"
 		"}\n");
 
-	programCollection.add("color_frag") << glu::FragmentSource(
+	programCollection.glslSources.add("color_frag") << glu::FragmentSource(
 		"#version 310 es\n"
 		"layout(location = 0) in highp vec4 vtxColor;\n"
 		"layout(location = 0) out highp vec4 fragColor;\n"

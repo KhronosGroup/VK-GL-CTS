@@ -50,6 +50,7 @@ class PlatformInterface;
 class ProgramBinary;
 template<typename Program> class ProgramCollection;
 class Allocator;
+struct SourceCollections;
 }
 
 namespace vkt
@@ -93,6 +94,7 @@ private:
 	Context&									operator=						(const Context&); // Not allowed
 };
 
+
 class TestInstance;
 
 class TestCase : public tcu::TestCase
@@ -102,7 +104,7 @@ public:
 							TestCase		(tcu::TestContext& testCtx, tcu::TestNodeType type, const std::string& name, const std::string& description);
 	virtual					~TestCase		(void) {}
 
-	virtual void			initPrograms	(vk::ProgramCollection<glu::ProgramSources>& programCollection) const;
+	virtual void			initPrograms	(vk::SourceCollections& programCollection) const;
 	virtual TestInstance*	createInstance	(Context& context) const = 0;
 
 	IterateResult			iterate			(void) { DE_ASSERT(false); return STOP; } // Deprecated in this module

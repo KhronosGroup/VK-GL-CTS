@@ -37,11 +37,18 @@ from the official repository to directory next to 'deqp':
 $ cd .. # assuming you were in 'deqp' source directory
 $ git clone https://github.com/KhronosGroup/glslang.git glslang
 
+spirv-tools is optional, but enables SPIRV assembly. Check out spirv-tools
+from the google branch of the gitlab repository next to 'deqp':
+
+$ cd .. # assuming you were in 'deqp' source directory
+$ git clone -b google https://gitlab.khronos.org/spirv/spirv-tools.git
+
 I.e the final directory structure should look like this:
 
 src/
     deqp/
     glslang/
+    spirv-tools/
 
 After downloading all dependencies, please follow instructions at
 http://source.android.com/devices/graphics/build-tests.html

@@ -888,7 +888,10 @@ EGLConfig ImageFormatCase::getConfig (void)
 	{
 		EGL_RENDERABLE_TYPE, 	EGL_OPENGL_ES2_BIT,
 		EGL_SURFACE_TYPE,	 	EGL_WINDOW_BIT,
-		EGL_ALPHA_SIZE,			1,
+		EGL_RED_SIZE,			8,
+		EGL_BLUE_SIZE,			8,
+		EGL_GREEN_SIZE,			8,
+		EGL_ALPHA_SIZE,			8,
 		EGL_DEPTH_SIZE,			8,
 		EGL_NONE
 	};
@@ -1069,20 +1072,20 @@ protected:
 					ImageTests						(EglTestContext& eglTestCtx, const string& name, const string& desc)
 						: TestCaseGroup(eglTestCtx, name.c_str(), desc.c_str()) {}
 
-	void			addCreateTexture				(const string& name, EGLenum source, GLenum format, GLenum type);
+	void			addCreateTexture				(const string& name, EGLenum source, GLenum internalFormat, GLenum format, GLenum type);
 	void			addCreateRenderbuffer			(const string& name, GLenum format);
 	void			addCreateAndroidNative			(const string& name, GLenum format);
 	void			addCreateTexture2DActions		(const string& prefix);
-	void			addCreateTextureCubemapActions	(const string& suffix, GLenum format, GLenum type);
+	void			addCreateTextureCubemapActions	(const string& suffix, GLenum internalFormat, GLenum format, GLenum type);
 	void			addCreateRenderbufferActions	(void);
 	void			addCreateAndroidNativeActions	(void);
 
 	LabeledActions	m_createActions;
 };
 
-void ImageTests::addCreateTexture (const string& name, EGLenum source, GLenum format, GLenum type)
+void ImageTests::addCreateTexture (const string& name, EGLenum source, GLenum internalFormat, GLenum format, GLenum type)
 {
-	m_createActions.add(name, MovePtr<Action>(new GLES2ImageApi::Create(createTextureImageSource(source, format, type))));
+	m_createActions.add(name, MovePtr<Action>(new GLES2ImageApi::Create(createTextureImageSource(source, internalFormat, format, type))));
 }
 
 void ImageTests::addCreateRenderbuffer (const string& name, GLenum format)
@@ -1097,21 +1100,21 @@ void ImageTests::addCreateAndroidNative (const string& name, GLenum format)
 
 void ImageTests::addCreateTexture2DActions (const string& prefix)
 {
-	addCreateTexture(prefix + "rgb8", 		EGL_GL_TEXTURE_2D_KHR,	GL_RGB,		GL_UNSIGNED_BYTE);
-	addCreateTexture(prefix + "rgb565",		EGL_GL_TEXTURE_2D_KHR,	GL_RGB,		GL_UNSIGNED_SHORT_5_6_5);
-	addCreateTexture(prefix + "rgba8",		EGL_GL_TEXTURE_2D_KHR,	GL_RGBA,	GL_UNSIGNED_BYTE);
-	addCreateTexture(prefix + "rgba5_a1",	EGL_GL_TEXTURE_2D_KHR,	GL_RGBA,	GL_UNSIGNED_SHORT_5_5_5_1);
-	addCreateTexture(prefix + "rgba4",		EGL_GL_TEXTURE_2D_KHR,	GL_RGBA,	GL_UNSIGNED_SHORT_4_4_4_4);
+	addCreateTexture(prefix + "rgb8", 		EGL_GL_TEXTURE_2D_KHR,	GL_RGB,		GL_RGB,		GL_UNSIGNED_BYTE);
+	addCreateTexture(prefix + "rgb565",		EGL_GL_TEXTURE_2D_KHR,	GL_RGB,		GL_RGB,		GL_UNSIGNED_SHORT_5_6_5);
+	addCreateTexture(prefix + "rgba8",		EGL_GL_TEXTURE_2D_KHR,	GL_RGBA,	GL_RGBA,	GL_UNSIGNED_BYTE);
+	addCreateTexture(prefix + "rgba5_a1",	EGL_GL_TEXTURE_2D_KHR,	GL_RGBA,	GL_RGBA,	GL_UNSIGNED_SHORT_5_5_5_1);
+	addCreateTexture(prefix + "rgba4",		EGL_GL_TEXTURE_2D_KHR,	GL_RGBA,	GL_RGBA,	GL_UNSIGNED_SHORT_4_4_4_4);
 }
 
-void ImageTests::addCreateTextureCubemapActions (const string& suffix, GLenum format, GLenum type)
+void ImageTests::addCreateTextureCubemapActions (const string& suffix, GLenum internalFormat, GLenum format, GLenum type)
 {
-	addCreateTexture("cubemap_positive_x" + suffix,	EGL_GL_TEXTURE_CUBE_MAP_POSITIVE_X_KHR,	format,	type);
-	addCreateTexture("cubemap_positive_y" + suffix,	EGL_GL_TEXTURE_CUBE_MAP_POSITIVE_Y_KHR,	format,	type);
-	addCreateTexture("cubemap_positive_z" + suffix,	EGL_GL_TEXTURE_CUBE_MAP_POSITIVE_Z_KHR,	format,	type);
-	addCreateTexture("cubemap_negative_x" + suffix,	EGL_GL_TEXTURE_CUBE_MAP_NEGATIVE_X_KHR,	format,	type);
-	addCreateTexture("cubemap_negative_y" + suffix,	EGL_GL_TEXTURE_CUBE_MAP_NEGATIVE_Y_KHR,	format,	type);
-	addCreateTexture("cubemap_negative_z" + suffix,	EGL_GL_TEXTURE_CUBE_MAP_NEGATIVE_Z_KHR,	format,	type);
+	addCreateTexture("cubemap_positive_x" + suffix,	EGL_GL_TEXTURE_CUBE_MAP_POSITIVE_X_KHR, internalFormat,	format,	type);
+	addCreateTexture("cubemap_positive_y" + suffix,	EGL_GL_TEXTURE_CUBE_MAP_POSITIVE_Y_KHR, internalFormat,	format,	type);
+	addCreateTexture("cubemap_positive_z" + suffix,	EGL_GL_TEXTURE_CUBE_MAP_POSITIVE_Z_KHR, internalFormat,	format,	type);
+	addCreateTexture("cubemap_negative_x" + suffix,	EGL_GL_TEXTURE_CUBE_MAP_NEGATIVE_X_KHR, internalFormat,	format,	type);
+	addCreateTexture("cubemap_negative_y" + suffix,	EGL_GL_TEXTURE_CUBE_MAP_NEGATIVE_Y_KHR, internalFormat,	format,	type);
+	addCreateTexture("cubemap_negative_z" + suffix,	EGL_GL_TEXTURE_CUBE_MAP_NEGATIVE_Z_KHR, internalFormat,	format,	type);
 }
 
 void ImageTests::addCreateRenderbufferActions (void)
@@ -1254,8 +1257,8 @@ bool isCompatibleCreateAndRenderActions (const Action& create, const Action& ren
 void SimpleCreationTests::init (void)
 {
 	addCreateTexture2DActions("texture_");
-	addCreateTextureCubemapActions("_rgba", GL_RGBA, GL_UNSIGNED_BYTE);
-	addCreateTextureCubemapActions("_rgb", GL_RGB, GL_UNSIGNED_BYTE);
+	addCreateTextureCubemapActions("_rgba", GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE);
+	addCreateTextureCubemapActions("_rgb", GL_RGB, GL_RGB, GL_UNSIGNED_BYTE);
 	addCreateRenderbufferActions();
 	addCreateAndroidNativeActions();
 	addRenderActions();
@@ -1391,8 +1394,8 @@ void MultiContextRenderTests::addClearActions (void)
 void MultiContextRenderTests::init (void)
 {
 	addCreateTexture2DActions("texture_");
-	addCreateTextureCubemapActions("_rgba8", GL_RGBA, GL_UNSIGNED_BYTE);
-	addCreateTextureCubemapActions("_rgb8", GL_RGB, GL_UNSIGNED_BYTE);
+	addCreateTextureCubemapActions("_rgba8", GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE);
+	addCreateTextureCubemapActions("_rgb8", GL_RGB, GL_RGB, GL_UNSIGNED_BYTE);
 	addCreateRenderbufferActions();
 	addCreateAndroidNativeActions();
 	addRenderActions();

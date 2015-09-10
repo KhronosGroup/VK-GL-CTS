@@ -42,6 +42,7 @@
 #include "vkPrograms.hpp"
 #include "vkBinaryRegistry.hpp"
 #include "vkGlslToSpirV.hpp"
+#include "vkSpirVAsm.hpp"
 
 #include "deUniquePtr.hpp"
 
@@ -51,6 +52,62 @@
 
 #include <vector>
 #include <sstream>
+
+namespace // compilation
+{
+
+vk::ProgramBinary* compileProgram (const glu::ProgramSources& source, glu::ShaderProgramInfo* buildInfo)
+{
+	return vk::buildProgram(source, vk::PROGRAM_FORMAT_SPIRV, buildInfo);
+}
+
+vk::ProgramBinary* compileProgram (const vk::SpirVAsmSource& source, vk::SpirVProgramInfo* buildInfo)
+{
+	return vk::assembleProgram(source, buildInfo);
+}
+
+template <typename InfoType, typename IteratorType>
+vk::ProgramBinary* buildProgram (const std::string& casePath, IteratorType iter, vkt::Context* context, vk::BinaryCollection* progCollection)
+{
+	tcu::TestLog&					log			= context->getTestContext().getLog();
+	const vk::ProgramIdentifier		progId		(casePath, iter.getName());
+	const tcu::ScopedLogSection		progSection	(log, iter.getName(), "Program: " + iter.getName());
+	de::MovePtr<vk::ProgramBinary>	binProg;
+	InfoType						buildInfo;
+
+	try
+	{
+		binProg	= de::MovePtr<vk::ProgramBinary>(compileProgram(iter.getProgram(), &buildInfo));
+		log << buildInfo;
+	}
+	catch (const tcu::NotSupportedError& err)
+	{
+		// Try to load from cache
+		const vk::BinaryRegistryReader	registry	(context->getTestContext().getArchive(), "vulkan/prebuilt");
+
+		log << err << tcu::TestLog::Message << "Building from source not supported, loading stored binary instead" << tcu::TestLog::EndMessage;
+
+		binProg = de::MovePtr<vk::ProgramBinary>(registry.loadProgram(progId));
+
+		log << iter.getProgram();
+	}
+	catch (const tcu::Exception&)
+	{
+		// Build failed for other reason
+		log << buildInfo;
+		throw;
+	}
+
+	TCU_CHECK_INTERNAL(binProg);
+
+	vk::ProgramBinary* returnBinary = binProg.get();
+
+	progCollection->add(progId.programName, binProg);
+
+	return returnBinary;
+}
+
+} // anonymous(compilation)
 
 namespace vkt
 {
@@ -102,7 +159,7 @@ void TestCaseExecutor::init (tcu::TestCase* testCase, const std::string& casePat
 {
 	const TestCase*			vktCase		= dynamic_cast<TestCase*>(testCase);
 	tcu::TestLog&			log			= m_context.getTestContext().getLog();
-	vk::SourceCollection	sourceProgs;
+	vk::SourceCollections	sourceProgs;
 
 	DE_UNREF(casePath); // \todo [2015-03-13 pyry] Use this to identify ProgramCollection storage path
 
@@ -112,39 +169,9 @@ void TestCaseExecutor::init (tcu::TestCase* testCase, const std::string& casePat
 	m_progCollection.clear();
 	vktCase->initPrograms(sourceProgs);
 
-	for (vk::SourceCollection::Iterator progIter = sourceProgs.begin(); progIter != sourceProgs.end(); ++progIter)
+	for (vk::GlslSourceCollection::Iterator progIter = sourceProgs.glslSources.begin(); progIter != sourceProgs.glslSources.end(); ++progIter)
 	{
-		const vk::ProgramIdentifier		progId		(casePath, progIter.getName());
-		const tcu::ScopedLogSection		progSection	(log, progIter.getName(), "Program: " + progIter.getName());
-		de::MovePtr<vk::ProgramBinary>	binProg;
-		glu::ShaderProgramInfo			buildInfo;
-
-		// \todo [2015-07-01 pyry] Command line parameter to control cache vs. build order?
-
-		try
-		{
-			binProg	= de::MovePtr<vk::ProgramBinary>(vk::buildProgram(progIter.getProgram(), vk::PROGRAM_FORMAT_SPIRV, &buildInfo));
-			log << buildInfo;
-		}
-		catch (const tcu::NotSupportedError& err)
-		{
-			// Try to load from cache
-			const vk::BinaryRegistryReader	registry	(m_context.getTestContext().getArchive(), "vulkan/prebuilt");
-
-			log << err << TestLog::Message << "Building from source not supported, loading stored binary instead" << TestLog::EndMessage;
-
-			binProg = de::MovePtr<vk::ProgramBinary>(registry.loadProgram(progId));
-
-			log << progIter.getProgram();
-		}
-		catch (const tcu::Exception&)
-		{
-			// Build failed for other reason
-			log << buildInfo;
-			throw;
-		}
-
-		TCU_CHECK_INTERNAL(binProg);
+		vk::ProgramBinary* binProg = buildProgram<glu::ShaderProgramInfo, vk::GlslSourceCollection::Iterator>(casePath, progIter, &m_context, &m_progCollection);
 
 		try
 		{
@@ -158,8 +185,11 @@ void TestCaseExecutor::init (tcu::TestCase* testCase, const std::string& casePat
 		{
 			log << err;
 		}
+	}
 
-		m_progCollection.add(progId.programName, binProg);
+	for (vk::SpirVAsmCollection::Iterator asmIterator = sourceProgs.spirvAsmSources.begin(); asmIterator != sourceProgs.spirvAsmSources.end(); ++asmIterator)
+	{
+		buildProgram<vk::SpirVProgramInfo, vk::SpirVAsmCollection::Iterator>(casePath, asmIterator, &m_context, &m_progCollection);
 	}
 
 	DE_ASSERT(!m_instance);

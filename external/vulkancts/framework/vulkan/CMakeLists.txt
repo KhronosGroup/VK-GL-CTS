@@ -25,6 +25,10 @@ set(VKUTIL_SRCS
 	vkDeviceUtil.hpp
 	vkGlslToSpirV.cpp
 	vkGlslToSpirV.hpp
+	vkSpirVAsm.hpp
+	vkSpirVAsm.cpp
+	vkSpirVProgram.hpp
+	vkSpirVProgram.cpp
 	vkBinaryRegistry.cpp
 	vkBinaryRegistry.hpp
 	vkNullDriver.cpp
@@ -52,6 +56,14 @@ if (DEQP_HAVE_GLSLANG)
 
 	set(VKUTIL_LIBS ${VKUTIL_LIBS} ${GLSLANG_LIBRARY})
 endif ()
+
+if(DEQP_HAVE_SPIRV_TOOLS)
+	include_directories(${spirv-tools_SOURCE_DIR}/include)
+	include_directories(${spirv-tools_SOURCE_DIR}/external/include)
+
+	add_definitions(-DDEQP_HAVE_SPIRV_TOOLS=1)
+	set(VKUTIL_LIBS ${VKUTIL_LIBS} SPIRV-TOOLS)
+endif()
 
 add_library(vkutil STATIC ${VKUTIL_SRCS})
 target_link_libraries(vkutil ${VKUTIL_LIBS})
