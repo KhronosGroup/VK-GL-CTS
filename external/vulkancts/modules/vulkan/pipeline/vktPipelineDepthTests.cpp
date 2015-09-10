@@ -48,6 +48,7 @@
 #include "vkRefUtil.hpp"
 #include "tcuImageCompare.hpp"
 #include "deUniquePtr.hpp"
+#include "deStringUtil.hpp"
 #include "deMemory.h"
 
 #include <sstream>
@@ -892,7 +893,7 @@ tcu::TestStatus DepthTestInstance::verifyImage (void)
 															  tcu::UVec4(2, 2, 2, 2),
 															  tcu::IVec3(1, 1, 0),
 															  true,
-															  tcu::COMPARE_LOG_EVERYTHING);
+															  tcu::COMPARE_LOG_RESULT);
 	}
 
 	if (compareOk)
@@ -901,13 +902,26 @@ tcu::TestStatus DepthTestInstance::verifyImage (void)
 		return tcu::TestStatus::fail("Image mismatch");
 }
 
+std::string getFormatCaseName (const VkFormat format)
+{
+	const std::string	fullName	= getFormatName(format);
+
+	DE_ASSERT(de::beginsWith(fullName, "VK_FORMAT_"));
+
+	return de::toLower(fullName.substr(10));
+}
+
 std::string	getCompareOpsName (const VkCompareOp quadDepthOps[DepthTest::QUAD_COUNT])
 {
 	std::ostringstream name;
 
 	for (int quadNdx = 0; quadNdx < DepthTest::QUAD_COUNT; quadNdx++)
 	{
-		name << getCompareOpName(quadDepthOps[quadNdx]);
+		const std::string	fullOpName	= getCompareOpName(quadDepthOps[quadNdx]);
+
+		DE_ASSERT(de::beginsWith(fullOpName, "VK_COMPARE_OP_"));
+
+		name << de::toLower(fullOpName.substr(14));
 
 		if (quadNdx < DepthTest::QUAD_COUNT - 1)
 			name << "_";
@@ -1065,7 +1079,7 @@ tcu::TestCaseGroup* createDepthTests (tcu::TestContext& testCtx)
 		for (size_t formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(depthFormats); formatNdx++)
 		{
 			de::MovePtr<tcu::TestCaseGroup>	formatTest		(new tcu::TestCaseGroup(testCtx,
-																					getFormatName(depthFormats[formatNdx]),
+																					getFormatCaseName(depthFormats[formatNdx]).c_str(),
 																					(std::string("Uses format ") + getFormatName(depthFormats[formatNdx])).c_str()));
 			de::MovePtr<tcu::TestCaseGroup>	compareOpsTests	(new tcu::TestCaseGroup(testCtx, "compare_ops", "Combines depth compare operators"));
 
