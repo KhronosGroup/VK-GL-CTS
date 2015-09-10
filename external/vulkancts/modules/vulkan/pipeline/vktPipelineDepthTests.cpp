@@ -740,21 +740,8 @@ DepthTestInstance::DepthTestInstance (Context&				context,
 				m_vertices[quadNdx * 6 + vertexNdx].position.z() = DepthTest::quadDepths[quadNdx];
 
 		// Load vertices into vertex buffer
-
-		const VkMappedMemoryRange flushRange =
-		{
-			VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,	// VkStructureType	sType;
-			DE_NULL,								// const void*		pNext;
-			m_vertexBufferAlloc->getMemory(),		// VkDeviceMemory	mem;
-			m_vertexBufferAlloc->getOffset(),		// VkDeviceSize	offset;
-			vertexBufferParams.size					// VkDeviceSize	size;
-		};
-
-		void* bufferPtr;
-		VK_CHECK(vk.mapMemory(vkDevice, m_vertexBufferAlloc->getMemory(), m_vertexBufferAlloc->getOffset(), vertexBufferParams.size, 0, &bufferPtr));
-		deMemcpy(bufferPtr, m_vertices.data(), m_vertices.size() * sizeof(Vertex4RGBA));
-		vk.flushMappedMemoryRanges(vkDevice, 1, &flushRange);
-		VK_CHECK(vk.unmapMemory(vkDevice, m_vertexBufferAlloc->getMemory()));
+		deMemcpy(m_vertexBufferAlloc->getHostPtr(), m_vertices.data(), m_vertices.size() * sizeof(Vertex4RGBA));
+		flushMappedMemoryRange(vk, vkDevice, m_vertexBufferAlloc->getMemory(), m_vertexBufferAlloc->getOffset(), vertexBufferParams.size);
 	}
 
 	// Create command pool

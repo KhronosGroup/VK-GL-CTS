@@ -188,23 +188,9 @@ de::MovePtr<tcu::TextureLevel> readColorAttachment (const vk::DeviceInterface&	v
 	VK_CHECK(vk.queueSubmit(queue, 1, &cmdBuffer.get(), *fence));
 	VK_CHECK(vk.waitForFences(device, 1, &fence.get(), 0, ~(0ull) /* infinity */));
 
-
-	// Map and read buffer data
-
-	const VkMappedMemoryRange memoryRange =
-	{
-		VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,		// VkStructureType	sType;
-		DE_NULL,									// const void*		pNext;
-		bufferAlloc->getMemory(),					// VkDeviceMemory	mem;
-		bufferAlloc->getOffset(),					// VkDeviceSize		offset;
-		pixelDataSize								// VkDeviceSize		size;
-	};
-
-	void* bufferPtr;
-	VK_CHECK(vk.mapMemory(device, bufferAlloc->getMemory(), bufferAlloc->getOffset(), pixelDataSize, 0, &bufferPtr));
-	VK_CHECK(vk.invalidateMappedMemoryRanges(device, 1, &memoryRange));
-	tcu::copy(*resultLevel, tcu::ConstPixelBufferAccess(resultLevel->getFormat(), resultLevel->getSize(), bufferPtr));
-	VK_CHECK(vk.unmapMemory(device, bufferAlloc->getMemory()));
+	// Read buffer data
+	invalidateMappedMemoryRange(vk, device, bufferAlloc->getMemory(), bufferAlloc->getOffset(), pixelDataSize);
+	tcu::copy(*resultLevel, tcu::ConstPixelBufferAccess(resultLevel->getFormat(), resultLevel->getSize(), bufferAlloc->getHostPtr()));
 
 	return resultLevel;
 }
