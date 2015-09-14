@@ -62,14 +62,14 @@ static			spv_ext_inst_table	s_spirvExtInstTable;
 
 void initSpirVTools (void*)
 {
-	spvCheck(spvOpcodeTableGet(&s_spirvOpcodeTable) != SPV_SUCCESS,
-			 TCU_THROW(InternalError, "Cannot get opcode table for assembly"));
+	if (spvOpcodeTableGet(&s_spirvOpcodeTable) != SPV_SUCCESS)
+			 TCU_THROW(InternalError, "Cannot get opcode table for assembly");
 
-	spvCheck(spvOperandTableGet(&s_spirvOperandTable) != SPV_SUCCESS,
-			 TCU_THROW(InternalError, "Cannot get operand table for assembly"));
+	if (spvOperandTableGet(&s_spirvOperandTable) != SPV_SUCCESS)
+			 TCU_THROW(InternalError, "Cannot get operand table for assembly");
 
-	spvCheck(spvExtInstTableGet(&s_spirvExtInstTable) != SPV_SUCCESS,
-			 TCU_THROW(InternalError, "Cannot get external instruction table for assembly"));
+	if (spvExtInstTableGet(&s_spirvExtInstTable) != SPV_SUCCESS)
+			 TCU_THROW(InternalError, "Cannot get external instruction table for assembly");)
 }
 
 void prepareSpirvTools (void)
