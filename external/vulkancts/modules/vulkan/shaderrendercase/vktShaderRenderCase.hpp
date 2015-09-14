@@ -53,6 +53,7 @@ namespace shaderrendercase
 {
 
 class QuadGrid;
+class ShaderRenderCaseInstance;
 
 class TextureBinding
 {
@@ -72,7 +73,7 @@ public:
 
 	Type					getType				(void) const { return m_type; 		}
 	const tcu::Sampler&		getSampler			(void) const { return m_sampler;	}
-	const Texture2D*		get2D				(void) const { DE_ASSERT(getType() == TYPE_2D);		return m_binding.tex2D; }
+	const Texture2D*		get2D				(void) const { DE_ASSERT(getType() == TYPE_2D); return m_binding.tex2D; }
 
 private:
 	Type					m_type;
@@ -88,63 +89,63 @@ private:
 class ShaderEvalContext
 {
 public:
-    // Limits.
-    enum
-    {
-        MAX_USER_ATTRIBS    = 4,
-        MAX_TEXTURES        = 4,
-    };
+	// Limits.
+	enum
+	{
+		MAX_USER_ATTRIBS	= 4,
+		MAX_TEXTURES		= 4
+	};
 
-    struct ShaderSampler
-    {
-        tcu::Sampler                sampler;
-        const tcu::Texture2D*       tex2D;
-        const tcu::TextureCube*     texCube;
-        const tcu::Texture2DArray*  tex2DArray;
-        const tcu::Texture3D*       tex3D;
+	struct ShaderSampler
+	{
+		tcu::Sampler				sampler;
+		const tcu::Texture2D*		tex2D;
+		const tcu::TextureCube*		texCube;
+		const tcu::Texture2DArray*	tex2DArray;
+		const tcu::Texture3D*		tex3D;
 
-        inline ShaderSampler (void)
-            : tex2D     (DE_NULL)
-            , texCube   (DE_NULL)
-            , tex2DArray(DE_NULL)
-            , tex3D     (DE_NULL)
-        {
-        }
-    };
+		inline ShaderSampler (void)
+			: tex2D	 (DE_NULL)
+			, texCube   (DE_NULL)
+			, tex2DArray(DE_NULL)
+			, tex3D	 (DE_NULL)
+		{
+		}
+	};
 
-                            ShaderEvalContext       (const QuadGrid& quadGrid);
-                            ~ShaderEvalContext      (void);
+							ShaderEvalContext		(const QuadGrid& quadGrid);
+							~ShaderEvalContext		(void);
 
-    void                    reset                   (float sx, float sy);
+	void					reset					(float sx, float sy);
 
-    // Inputs.
-    tcu::Vec4               coords;
-    tcu::Vec4               unitCoords;
-    tcu::Vec4               constCoords;
+	// Inputs.
+	tcu::Vec4				coords;
+	tcu::Vec4				unitCoords;
+	tcu::Vec4				constCoords;
 
-    tcu::Vec4               in[MAX_USER_ATTRIBS];
-    ShaderSampler           textures[MAX_TEXTURES];
+	tcu::Vec4				in[MAX_USER_ATTRIBS];
+	ShaderSampler			textures[MAX_TEXTURES];
 
-    // Output.
-    tcu::Vec4               color;
-    bool                    isDiscarded;
+	// Output.
+	tcu::Vec4				color;
+	bool					isDiscarded;
 
-    // Functions.
-    inline void             discard                 (void)  { isDiscarded = true; }
-    tcu::Vec4               texture2D               (int unitNdx, const tcu::Vec2& coords);
+	// Functions.
+	inline void				discard					(void)  { isDiscarded = true; }
+	tcu::Vec4				texture2D				(int unitNdx, const tcu::Vec2& coords);
 
 private:
-    const QuadGrid&         quadGrid;
+	const QuadGrid&		 quadGrid;
 };
 
 
 typedef void (*ShaderEvalFunc) (ShaderEvalContext& c);
 
-inline void evalCoordsPassthroughX      (ShaderEvalContext& c) { c.color.x() = c.coords.x(); }
-inline void evalCoordsPassthroughXY     (ShaderEvalContext& c) { c.color.xy() = c.coords.swizzle(0,1); }
-inline void evalCoordsPassthroughXYZ    (ShaderEvalContext& c) { c.color.xyz() = c.coords.swizzle(0,1,2); }
-inline void evalCoordsPassthrough       (ShaderEvalContext& c) { c.color = c.coords; }
-inline void evalCoordsSwizzleWZYX       (ShaderEvalContext& c) { c.color = c.coords.swizzle(3,2,1,0); }
+inline void evalCoordsPassthroughX		(ShaderEvalContext& c) { c.color.x() = c.coords.x(); }
+inline void evalCoordsPassthroughXY		(ShaderEvalContext& c) { c.color.xy() = c.coords.swizzle(0,1); }
+inline void evalCoordsPassthroughXYZ	(ShaderEvalContext& c) { c.color.xyz() = c.coords.swizzle(0,1,2); }
+inline void evalCoordsPassthrough		(ShaderEvalContext& c) { c.color = c.coords; }
+inline void evalCoordsSwizzleWZYX		(ShaderEvalContext& c) { c.color = c.coords.swizzle(3,2,1,0); }
 
 // ShaderEvaluator
 // Either inherit a class with overridden evaluate() or just pass in an evalFunc.
@@ -152,21 +153,18 @@ inline void evalCoordsSwizzleWZYX       (ShaderEvalContext& c) { c.color = c.coo
 class ShaderEvaluator
 {
 public:
-                        ShaderEvaluator         (void);
-                        ShaderEvaluator         (ShaderEvalFunc evalFunc);
-    virtual             ~ShaderEvaluator        (void);
+						ShaderEvaluator			(void);
+						ShaderEvaluator			(ShaderEvalFunc evalFunc);
+	virtual				~ShaderEvaluator		(void);
 
-    virtual void        evaluate                (ShaderEvalContext& ctx);
+	virtual void		evaluate				(ShaderEvalContext& ctx);
 
 private:
-                        ShaderEvaluator         (const ShaderEvaluator&);   // not allowed!
-    ShaderEvaluator&    operator=               (const ShaderEvaluator&);   // not allowed!
+						ShaderEvaluator			(const ShaderEvaluator&);   // not allowed!
+	ShaderEvaluator&	operator=				(const ShaderEvaluator&);   // not allowed!
 
-    ShaderEvalFunc      m_evalFunc;
+	ShaderEvalFunc		m_evalFunc;
 };
-
-
-class ShaderRenderCaseInstance;
 
 // UniformSetup
 
@@ -194,12 +192,12 @@ class ShaderRenderCase : public vkt::TestCase
 {
 public:
 							ShaderRenderCase	(tcu::TestContext& testCtx,
-												const std::string& name,
-												const std::string& description,
-												bool isVertexCase,
-												ShaderEvalFunc evalFunc,
-												UniformSetup* uniformSetup,
-												AttributeSetupFunc attribFunc)
+												 const std::string& name,
+												 const std::string& description,
+												 bool isVertexCase,
+												 ShaderEvalFunc evalFunc,
+												 UniformSetup* uniformSetup,
+												 AttributeSetupFunc attribFunc)
 								: vkt::TestCase(testCtx, name, description)
 								, m_isVertexCase(isVertexCase)
 								, m_evaluator(new ShaderEvaluator(evalFunc))
@@ -208,21 +206,28 @@ public:
 							{}
 
 							ShaderRenderCase	(tcu::TestContext& testCtx,
-												const std::string& name,
-												const std::string& description,
-												bool isVertexCase,
-												ShaderEvaluator* evaluator,
-												UniformSetup* uniformSetup,
-												AttributeSetupFunc attribFunc)
+												 const std::string& name,
+												 const std::string& description,
+												 bool isVertexCase,
+												 ShaderEvaluator* evaluator,
+												 UniformSetup* uniformSetup,
+												 AttributeSetupFunc attribFunc)
 								: vkt::TestCase(testCtx, name, description)
 								, m_isVertexCase(isVertexCase)
 								, m_evaluator(evaluator)
-								, m_uniformSetup(uniformSetup)
+								, m_uniformSetup(uniformSetup ? uniformSetup : new UniformSetup())
 								, m_attribFunc(attribFunc)
 							{}
 
 
-	virtual					~ShaderRenderCase	(void) {}
+	virtual					~ShaderRenderCase	(void)
+							{
+								delete m_evaluator;
+								m_evaluator = DE_NULL;
+								delete m_uniformSetup;
+								m_uniformSetup = DE_NULL;
+							}
+
 	virtual	void			initPrograms		(vk::ProgramCollection<glu::ProgramSources>& programCollection) const
 							{
 								programCollection.add("vert") << glu::VertexSource(m_vertShaderSource);
@@ -237,12 +242,12 @@ public:
 							}
 
 protected:
-    std::string				m_vertShaderSource;
-    std::string				m_fragShaderSource;
+	std::string				m_vertShaderSource;
+	std::string				m_fragShaderSource;
 
 	bool 					m_isVertexCase;
 	ShaderEvaluator*		m_evaluator;
-	UniformSetup*	 		m_uniformSetup;
+	UniformSetup*			m_uniformSetup;
 	AttributeSetupFunc		m_attribFunc;
 };
 
@@ -413,7 +418,7 @@ protected:
 	tcu::Vec4											m_clearColor;
 	std::vector<TextureBinding>							m_textures;
 
-	vk::SimpleAllocator									memAlloc;
+	vk::SimpleAllocator									m_memAlloc;
 
 private:
 

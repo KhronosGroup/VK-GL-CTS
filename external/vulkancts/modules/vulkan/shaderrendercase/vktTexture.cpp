@@ -56,7 +56,7 @@ static tcu::TextureFormat::ChannelType mapVkChannelType (deUint32 dataType, bool
 {
 	// TODO!!
 	switch (dataType)
-    {
+	{
 		default:	return normalized ? tcu::TextureFormat::UNORM_INT8	: tcu::TextureFormat::UNSIGNED_INT8;
 	}
 }
@@ -118,13 +118,12 @@ Texture2D::~Texture2D (void)
 
 void Texture2D::upload (const Context& context)
 {
-	const vk::VkDevice vkDevice = context.getDevice();
-	const vk::DeviceInterface& vk = context.getDeviceInterface();
-	const deUint32 queueFamilyIndex = context.getUniversalQueueFamilyIndex();
+	const vk::VkDevice			vkDevice			= context.getDevice();
+	const vk::DeviceInterface&	vk					= context.getDeviceInterface();
+	const deUint32				queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
+	vk::SimpleAllocator			memAlloc			(vk, vkDevice, vk::getPhysicalDeviceMemoryProperties(context.getInstanceInterface(), context.getPhysicalDevice()));
 
-	vk::SimpleAllocator memAlloc(vk, vkDevice, vk::getPhysicalDeviceMemoryProperties(context.getInstanceInterface(), context.getPhysicalDevice()));
-
-	const vk::VkImageCreateInfo imageCreateInfo =
+	const vk::VkImageCreateInfo	imageCreateInfo	=
 	{
 		vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,					// VkStructureType			sType;
 		DE_NULL,													// const void*				pnext;
@@ -145,10 +144,10 @@ void Texture2D::upload (const Context& context)
 	m_vkTexture = vk::createImage(vk, vkDevice, &imageCreateInfo);
 
 	// Allocate and bind color image memory
-	m_allocation = memAlloc.allocate(vk::getImageMemoryRequirements(vk, vkDevice, *m_vkTexture), vk::MemoryRequirement::HostVisible);
+	m_allocation = memAlloc.allocate(vk::getImageMemoryRequirements(vk, vkDevice, *m_vkTexture), vk::MemoryRequirement::Any);
 	VK_CHECK(vk.bindImageMemory(vkDevice, *m_vkTexture, m_allocation->getMemory(), 0));
 
-	const vk::VkImageSubresource subres =
+	const vk::VkImageSubresource subres	=
 	{
 		vk::VK_IMAGE_ASPECT_COLOR,
 		0u,
@@ -167,14 +166,14 @@ void Texture2D::upload (const Context& context)
 
 	const vk::VkMappedMemoryRange range =
 	{
-		vk::VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,  //  VkStructureType sType;
-		DE_NULL,                                	//  const void*     pNext;
-		m_allocation->getMemory(),        			//  VkDeviceMemory  mem;
-		0,                                      	//  VkDeviceSize    offset;
-		layout.size,				         		//  VkDeviceSize    size;
-    };
+		vk::VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,		// VkStructureType	sType;
+		DE_NULL,										// const void*		pNext;
+		m_allocation->getMemory(),						// VkDeviceMemory	mem;
+		0,												// VkDeviceSize		offset;
+		layout.size,									// VkDeviceSize		size;
+	};
 
-    VK_CHECK(vk.flushMappedMemoryRanges(vkDevice, 1u, &range));
+	VK_CHECK(vk.flushMappedMemoryRanges(vkDevice, 1u, &range));
 	VK_CHECK(vk.unmapMemory(vkDevice, m_allocation->getMemory()));
 }
 
@@ -249,11 +248,12 @@ void Texture2D::loadCompressed (int numLevels, const tcu::CompressedTexture* lev
 		level.decompress(refLevelAccess, decompressionParams);
 
 		// \todo [2015-09-07 elecro] add 'upload' logic for compressed image
+		TCU_THROW(InternalError, "Compressed image upload not supported yet.");
 	}
 }
 
 
-vk::VkTexFilter mapTexFilter(const tcu::Sampler::FilterMode& filterMode)
+vk::VkTexFilter mapTexFilter (const tcu::Sampler::FilterMode& filterMode)
 {
 	// \todo [2015-09-07 elecro] dobule check the mappings
 	switch(filterMode)
@@ -270,7 +270,7 @@ vk::VkTexFilter mapTexFilter(const tcu::Sampler::FilterMode& filterMode)
 	return vk::VK_TEX_FILTER_NEAREST;
 }
 
-vk::VkTexMipmapMode mapTexMipmapMode(const tcu::Sampler::FilterMode& filterMode)
+vk::VkTexMipmapMode mapTexMipmapMode (const tcu::Sampler::FilterMode& filterMode)
 {
 	// \todo [2015-09-07 elecro] dobule check the mappings
 	switch(filterMode)
@@ -287,7 +287,7 @@ vk::VkTexMipmapMode mapTexMipmapMode(const tcu::Sampler::FilterMode& filterMode)
 	return vk::VK_TEX_MIPMAP_MODE_BASE;
 }
 
-vk::VkTexAddress mapWrapMode(const tcu::Sampler::WrapMode& wrapMode)
+vk::VkTexAddress mapWrapMode (const tcu::Sampler::WrapMode& wrapMode)
 {
 	// \todo [2015-09-07 elecro] dobule check the mappings
 	switch(wrapMode)
@@ -305,7 +305,7 @@ vk::VkTexAddress mapWrapMode(const tcu::Sampler::WrapMode& wrapMode)
 	return vk::VK_TEX_ADDRESS_WRAP;
 }
 
-vk::VkCompareOp mapCompareMode(const tcu::Sampler::CompareMode& mode)
+vk::VkCompareOp mapCompareMode (const tcu::Sampler::CompareMode& mode)
 {
 	// \todo [2015-09-07 elecro] dobule check the mappings
 	switch(mode)

@@ -97,10 +97,10 @@ private:
 };
 
 
-vk::VkTexFilter mapTexFilter(const tcu::Sampler::FilterMode& filterMode);
-vk::VkTexMipmapMode mapTexMipmapMode(const tcu::Sampler::FilterMode& filterMode);
-vk::VkTexAddress mapWrapMode(const tcu::Sampler::WrapMode& wrapMode);
-vk::VkCompareOp mapCompareMode(const tcu::Sampler::CompareMode& mode);
+vk::VkTexFilter mapTexFilter (const tcu::Sampler::FilterMode& filterMode);
+vk::VkTexMipmapMode mapTexMipmapMode (const tcu::Sampler::FilterMode& filterMode);
+vk::VkTexAddress mapWrapMode (const tcu::Sampler::WrapMode& wrapMode);
+vk::VkCompareOp mapCompareMode (const tcu::Sampler::CompareMode& mode);
 
 } // vkt
 
