@@ -677,6 +677,8 @@ TestCase::IterateResult RenderOutsideDamageRegion::iterate (void)
 	tcu::Surface		refBuffer		(width, height);
 	Frame				frame			(width, height);
 
+	EGLU_CHECK_CALL(egl, surfaceAttrib(m_eglDisplay, m_eglSurface, EGL_SWAP_BEHAVIOR, EGL_BUFFER_DESTROYED));
+
 	generateRandomFrame(frame, m_evenFrameDrawType, rnd);
 
 	{
@@ -736,6 +738,8 @@ TestCase::IterateResult RenderBeforeSetDamageRegion::iterate (void)
 	tcu::Surface		currentBuffer	(width, height);
 	tcu::Surface		refBuffer		(width, height);
 	Frame				frame			(width, height);
+
+	EGLU_CHECK_CALL(egl, surfaceAttrib(m_eglDisplay, m_eglSurface, EGL_SWAP_BEHAVIOR, EGL_BUFFER_DESTROYED));
 
 	generateRandomFrame(frame, m_evenFrameDrawType, rnd);
 
