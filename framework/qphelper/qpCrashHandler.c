@@ -31,6 +31,14 @@
 
 #include <stdio.h>
 #include <stdarg.h>
+#include <stdlib.h>
+
+#if DE_OS == DE_OS_UNIX
+#	include <unistd.h>
+#	include <execinfo.h>
+#	include <errno.h>
+#	include <inttypes.h>
+#endif
 
 #if 0
 #	define DBGPRINT(X) qpPrintf X
@@ -510,9 +518,115 @@ void qpCrashHandler_destroy (qpCrashHandler* handler)
 	deFree(handler);
 }
 
+#if (DE_PTR_SIZE  == 8)
+#	define PTR_FMT "0x%016"
+#elif (DE_PTR_SIZE  == 4)
+#	define PTR_FMT "0x%08"
+#else
+#	error Unknwon DE_PTR_SIZE
+#endif
+
 void qpCrashHandler_writeCrashInfo (qpCrashHandler* crashHandler, qpWriteCrashInfoFunc writeInfo, void* userPtr)
 {
 	qpCrashInfo_write(&crashHandler->crashInfo, writeInfo, userPtr);
+
+#if (DE_OS == DE_OS_UNIX)
+	{
+		char	tmpFileName[]	= "backtrace-XXXXXX";
+		int		tmpFile			= mkstemp(tmpFileName);
+
+		if (tmpFile == -1)
+		{
+			writeInfoFormat(writeInfo, userPtr, "Failed to create tmpfile '%s' for the backtrace %s.", tmpFileName, strerror(errno));
+			return;
+		}
+		else
+		{
+			void*	symbols[32];
+			int		symbolCount;
+			int		symbolNdx;
+
+			/* Remove file from filesystem. */
+			remove(tmpFileName);
+
+			symbolCount = backtrace(symbols, DE_LENGTH_OF_ARRAY(symbols));
+			backtrace_symbols_fd(symbols, symbolCount, tmpFile);
+
+			if (lseek(tmpFile, 0, SEEK_SET) < 0)
+			{
+				writeInfoFormat(writeInfo, userPtr, "Failed to seek to the beginning of the trace file %s.", strerror(errno));
+				close(tmpFile);
+				return;
+			}
+
+			for (symbolNdx = 0; symbolNdx < symbolCount; symbolNdx++)
+			{
+				char	nameBuffer[256];
+				size_t	symbolNameLength = 0;
+				char	c;
+
+				{
+					const int ret = snprintf(nameBuffer, DE_LENGTH_OF_ARRAY(nameBuffer), PTR_FMT  PRIXPTR " : ", (uintptr_t)symbols[symbolNdx]);
+
+					if (ret < 0)
+					{
+						writeInfoFormat(writeInfo, userPtr, "Failed to print symbol pointer.");
+						symbolNameLength = 0;
+					}
+					else if (ret >= DE_LENGTH_OF_ARRAY(nameBuffer))
+					{
+						symbolNameLength = DE_LENGTH_OF_ARRAY(nameBuffer) - 1;
+						nameBuffer[DE_LENGTH_OF_ARRAY(nameBuffer) - 1] = '\0';
+					}
+					else
+						symbolNameLength = ret;
+				}
+
+				for (;;)
+				{
+					if (read(tmpFile, &c, 1) == 1)
+					{
+						if (c == '\n')
+						{
+							/* Flush nameBuffer and move to next symbol. */
+							nameBuffer[symbolNameLength] = '\0';
+							writeInfo(userPtr, nameBuffer);
+							break;
+						}
+						else
+						{
+							/* Add character to buffer if there is still space left. */
+							if (symbolNameLength+1 < DE_LENGTH_OF_ARRAY(nameBuffer))
+							{
+								nameBuffer[symbolNameLength] = c;
+								symbolNameLength++;
+							}
+						}
+					}
+					else
+					{
+						/* Flush nameBuffer. */
+						nameBuffer[symbolNameLength] = '\0';
+						writeInfo(userPtr, nameBuffer);
+
+						/* Temp file ended unexpectedly? */
+						writeInfoFormat(writeInfo, userPtr, "Unexpected EOF reading backtrace file '%s'", tmpFileName);
+						close(tmpFile);
+						tmpFile = -1;
+
+						break;
+					}
+				}
+
+				if (tmpFile == -1)
+					break;
+			}
+
+			if (tmpFile != -1)
+				close(tmpFile);
+		}
+	}
+#endif
 }
 
 #endif /* generic */
