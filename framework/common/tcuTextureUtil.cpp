@@ -40,6 +40,19 @@ static inline float sRGBChannelToLinear (float cs)
 		return deFloatPow((cs + 0.055f) / 1.055f, 2.4f);
 }
 
+static const deUint32 s_srgb8Lut[256] =
+{
+#include "tcuSRGB8Lut.inl"
+};
+
+static inline float sRGB8ChannelToLinear (deUint32 cs)
+{
+	DE_ASSERT(cs < 256);
+
+	// \note This triggers UB, but in practice it doesn't cause any problems
+	return ((const float*)s_srgb8Lut)[cs];
+}
+
 static inline float linearChannelToSRGB (float cl)
 {
 	if (cl <= 0.0f)
@@ -59,6 +72,22 @@ Vec4 sRGBToLinear (const Vec4& cs)
 				sRGBChannelToLinear(cs[1]),
 				sRGBChannelToLinear(cs[2]),
 				cs[3]);
+}
+
+Vec4 sRGB8ToLinear (const UVec4& cs)
+{
+	return Vec4(sRGB8ChannelToLinear(cs[0]),
+				sRGB8ChannelToLinear(cs[1]),
+				sRGB8ChannelToLinear(cs[2]),
+				1.0f);
+}
+
+Vec4 sRGBA8ToLinear (const UVec4& cs)
+{
+	return Vec4(sRGB8ChannelToLinear(cs[0]),
+				sRGB8ChannelToLinear(cs[1]),
+				sRGB8ChannelToLinear(cs[2]),
+				(float)cs[3] / 255.0f);
 }
 
 //! Convert from linear to sRGB colorspace

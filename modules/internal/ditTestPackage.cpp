@@ -29,9 +29,26 @@
 #include "ditImageCompareTests.hpp"
 #include "ditTestLogTests.hpp"
 #include "ditSeedBuilderTests.hpp"
+#include "ditSRGB8ConversionTest.hpp"
 
 namespace dit
 {
+namespace
+{
+
+class TextureTests : public tcu::TestCaseGroup
+{
+public:
+	TextureTests (tcu::TestContext& testCtx)
+		: tcu::TestCaseGroup(testCtx, "texture", "Tests for tcu::Texture and utils.")
+	{
+	}
+
+	void init (void)
+	{
+		addChild(createSRGB8ConversionTest(m_testCtx));
+	}
+};
 
 class DeqpTests : public tcu::TestCaseGroup
 {
@@ -46,9 +63,12 @@ public:
 		addChild(new TestLogTests		(m_testCtx));
 		addChild(new ImageIOTests		(m_testCtx));
 		addChild(new ImageCompareTests	(m_testCtx));
+		addChild(new TextureTests		(m_testCtx));
 		addChild(createSeedBuilderTests	(m_testCtx));
 	}
 };
+
+} // anonymous
 
 class TestCaseExecutor : public tcu::TestCaseExecutor
 {
