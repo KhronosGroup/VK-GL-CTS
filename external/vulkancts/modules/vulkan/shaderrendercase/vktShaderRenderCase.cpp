@@ -456,7 +456,7 @@ void ShaderRenderCaseInstance::setupUniformData (deUint32 bindingLocation, deUin
 
 void ShaderRenderCaseInstance::addUniform (deUint32 bindingLocation, vk::VkDescriptorType descriptorType, deUint32 dataSize, const void* data)
 {
-	m_descriptorSetLayoutBuilder.addSingleBinding(descriptorType, vk::VK_SHADER_STAGE_VERTEX_BIT);
+	m_descriptorSetLayoutBuilder.addSingleBinding(descriptorType, vk::VK_SHADER_STAGE_VERTEX_BIT | vk::VK_SHADER_STAGE_FRAGMENT_BIT);
 	m_descriptorPoolBuilder.addType(descriptorType);
 
 	setupUniformData(bindingLocation, dataSize, data);
@@ -516,6 +516,16 @@ void ShaderRenderCaseInstance::addAttribute (deUint32 bindingLocation, vk::VkFor
 
 	m_vertexBuffers.push_back(buffer.disown());
 	m_vertexBufferAllocs.push_back(alloc.release());
+}
+
+void ShaderRenderCaseInstance::useAttribute (deUint32 bindingLocation, BaseAttributeType type)
+{
+	const EnabledBaseAttribute attribute =
+	{
+		bindingLocation,
+		type
+	};
+	m_enabledBaseAttributes.push_back(attribute);
 }
 
 void ShaderRenderCaseInstance::setupShaderData (void)
@@ -739,6 +749,60 @@ void ShaderRenderCaseInstance::setupDefaultInputs (const QuadGrid& quadGrid)
 	addAttribute(1u, VK_FORMAT_R32G32B32A32_SFLOAT, sizeof(Vec4), quadGrid.getNumVertices(), quadGrid.getCoords());
 	addAttribute(2u, VK_FORMAT_R32G32B32A32_SFLOAT, sizeof(Vec4), quadGrid.getNumVertices(), quadGrid.getUnitCoords());
 	addAttribute(3u, VK_FORMAT_R32_SFLOAT, sizeof(float), quadGrid.getNumVertices(), quadGrid.getAttribOne());
+
+	static const struct
+	{
+		BaseAttributeType	type;
+		int					userNdx;
+	} userAttributes[] =
+	{
+		{ A_IN0, 0 },
+		{ A_IN1, 1 },
+		{ A_IN2, 2 },
+		{ A_IN3, 3 }
+	};
+
+	static const struct
+	{
+		BaseAttributeType	matrixType;
+		int					numCols;
+		int					numRows;
+	} matrices[] =
+	{
+		{ MAT2,		2, 2 },
+		{ MAT2x3,	2, 3 },
+		{ MAT2x4,	2, 4 },
+		{ MAT3,		3, 3 },
+		{ MAT3x4,	3, 4 },
+		{ MAT4x2,	4, 2 },
+		{ MAT4x3,	4, 3 },
+		{ MAT4,		4, 4 }
+	};
+
+	for (size_t i = 0; i < m_enabledBaseAttributes.size(); i++)
+	{
+		for (int userNdx = 0; userNdx < DE_LENGTH_OF_ARRAY(userAttributes); userNdx++)
+		{
+			if (userAttributes[userNdx].type != m_enabledBaseAttributes[i].type)
+				continue;
+
+			addAttribute(m_enabledBaseAttributes[i].location, VK_FORMAT_R32G32B32A32_SFLOAT, sizeof(Vec4), quadGrid.getNumVertices(), quadGrid.getUserAttrib(userNdx));
+		}
+
+		for (int matNdx = 0; matNdx < DE_LENGTH_OF_ARRAY(matrices); matNdx++)
+		{
+
+			if (matrices[matNdx].matrixType != m_enabledBaseAttributes[i].type)
+				continue;
+
+			int numCols = matrices[matNdx].numCols;
+
+			for (int colNdx = 0; colNdx < numCols; colNdx++)
+			{
+				addAttribute(m_enabledBaseAttributes[i].location + colNdx, VK_FORMAT_R32G32B32A32_SFLOAT, 4 * sizeof(float), quadGrid.getNumVertices(), quadGrid.getUserAttrib(colNdx));
+			}
+		}
+	}
 }
 
 void ShaderRenderCaseInstance::render (Surface& result, const QuadGrid& quadGrid)
@@ -953,12 +1017,12 @@ void ShaderRenderCaseInstance::render (Surface& result, const QuadGrid& quadGrid
 		};
 
 		// Add base attributes
-		setupDefaultInputs(quadGrid);
 
 		// Add test case specific attributes
 		if (m_attribFunc)
 			m_attribFunc(*this, quadGrid.getNumVertices());
 
+		setupDefaultInputs(quadGrid);
 
 		const VkPipelineVertexInputStateCreateInfo vertexInputStateParams =
 		{

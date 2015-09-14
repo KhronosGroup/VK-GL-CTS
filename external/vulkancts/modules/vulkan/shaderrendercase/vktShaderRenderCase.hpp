@@ -240,7 +240,6 @@ protected:
     std::string				m_vertShaderSource;
     std::string				m_fragShaderSource;
 
-private:
 	bool 					m_isVertexCase;
 	ShaderEvaluator*		m_evaluator;
 	UniformSetup*	 		m_uniformSetup;
@@ -348,6 +347,26 @@ enum BaseUniformType
 	UV4_WHITE
 };
 
+enum BaseAttributeType
+{
+// User attributes
+	A_IN0,
+	A_IN1,
+	A_IN2,
+	A_IN3,
+
+// Matrices
+	MAT2,
+	MAT2x3,
+	MAT2x4,
+	MAT3x2,
+	MAT3,
+	MAT3x4,
+	MAT4x2,
+	MAT4x3,
+	MAT4
+};
+
 // ShaderRenderCaseInstance.
 
 class ShaderRenderCaseInstance : public vkt::TestInstance
@@ -367,6 +386,8 @@ public:
 																					deUint32 sizePerElement,
 																					deUint32 count,
 																					const void* data);
+	void												useAttribute				(deUint32 bindingLocation,
+																					BaseAttributeType type);
 
 	template<typename T>
 	void												addUniform					(deUint32 bindingLocation,
@@ -411,6 +432,13 @@ private:
 	ShaderEvaluator&									m_evaluator;
 	UniformSetup&	 									m_uniformSetup;
 	AttributeSetupFunc									m_attribFunc;
+
+	struct EnabledBaseAttribute
+	{
+		deUint32			location;
+		BaseAttributeType	type;
+	};
+	std::vector<EnabledBaseAttribute>					m_enabledBaseAttributes;
 
 	const tcu::IVec2									m_renderSize;
 	const vk::VkFormat									m_colorFormat;
