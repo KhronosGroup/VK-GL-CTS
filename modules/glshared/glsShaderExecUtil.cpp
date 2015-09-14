@@ -726,33 +726,34 @@ VertexShaderExecutor::~VertexShaderExecutor (void)
 
 // GeometryShaderExecutor
 
-class CheckGeomSupport
+class GeometryShaderExecutor : public FragmentOutExecutor
 {
 public:
-	inline CheckGeomSupport (const glu::RenderContext& renderCtx)
-	{
-		if (renderCtx.getType().getAPI().getProfile() == glu::PROFILE_ES)
-			checkExtension(renderCtx, "GL_EXT_geometry_shader");
-	}
-};
+	static GeometryShaderExecutor*	create					(const glu::RenderContext& renderCtx, const ShaderSpec& shaderSpec);
 
-class GeometryShaderExecutor : private CheckGeomSupport, public FragmentOutExecutor
-{
-public:
-								GeometryShaderExecutor	(const glu::RenderContext& renderCtx, const ShaderSpec& shaderSpec);
-								~GeometryShaderExecutor	(void);
+									~GeometryShaderExecutor	(void);
 
-	bool						isOk					(void) const				{ return m_program.isOk();			}
-	void						log						(tcu::TestLog& dst) const	{ dst << m_program;					}
-	deUint32					getProgram				(void) const				{ return m_program.getProgram();	}
+	bool							isOk					(void) const				{ return m_program.isOk();			}
+	void							log						(tcu::TestLog& dst) const	{ dst << m_program;					}
+	deUint32						getProgram				(void) const				{ return m_program.getProgram();	}
 
 protected:
-	const glu::ShaderProgram	m_program;
+	const glu::ShaderProgram		m_program;
+
+private:
+									GeometryShaderExecutor	(const glu::RenderContext& renderCtx, const ShaderSpec& shaderSpec);
 };
 
+GeometryShaderExecutor* GeometryShaderExecutor::create (const glu::RenderContext& renderCtx, const ShaderSpec& shaderSpec)
+{
+	if (glu::glslVersionIsES(shaderSpec.version) && shaderSpec.version <= glu::GLSL_VERSION_310_ES)
+		checkExtension(renderCtx, "GL_EXT_geometry_shader");
+
+	return new GeometryShaderExecutor(renderCtx, shaderSpec);
+}
+
 GeometryShaderExecutor::GeometryShaderExecutor (const glu::RenderContext& renderCtx, const ShaderSpec& shaderSpec)
-	: CheckGeomSupport		(renderCtx)
-	, FragmentOutExecutor	(renderCtx, shaderSpec)
+	: FragmentOutExecutor	(renderCtx, shaderSpec)
 	, m_program				(renderCtx,
 							 glu::ProgramSources() << glu::VertexSource(generatePassthroughVertexShader(shaderSpec, "a_", "vtx_out_"))
 												   << glu::GeometrySource(generateGeometryShader(shaderSpec, "vtx_out_", "geom_out_"))
@@ -1252,44 +1253,46 @@ static std::string generateVertexShaderForTess (glu::GLSLVersion version)
 	return src.str();
 }
 
-class CheckTessSupport
+void checkTessSupport (const glu::RenderContext& renderCtx, const ShaderSpec& shaderSpec, glu::ShaderType stage)
 {
-public:
-	enum Stage
-	{
-		STAGE_CONTROL = 0,
-		STAGE_EVAL,
-	};
+	const int numBlockRequired = 2; // highest binding is always 1 (output) i.e. count == 2
 
-	inline CheckTessSupport (const glu::RenderContext& renderCtx, Stage stage)
-	{
-		const int numBlockRequired = 2; // highest binding is always 1 (output) i.e. count == 2
+	if (glu::glslVersionIsES(shaderSpec.version) && shaderSpec.version <= glu::GLSL_VERSION_310_ES)
+		checkExtension(renderCtx, "GL_EXT_tessellation_shader");
 
-		if (renderCtx.getType().getAPI().getProfile() == glu::PROFILE_ES)
-			checkExtension(renderCtx, "GL_EXT_tessellation_shader");
-
-		if (stage == STAGE_CONTROL)
-			checkLimit(renderCtx, GL_MAX_TESS_CONTROL_SHADER_STORAGE_BLOCKS, numBlockRequired);
-		else if (stage == STAGE_EVAL)
-			checkLimit(renderCtx, GL_MAX_TESS_EVALUATION_SHADER_STORAGE_BLOCKS, numBlockRequired);
-		else
-			DE_ASSERT(false);
-	}
-};
+	if (stage == glu::SHADERTYPE_TESSELLATION_CONTROL)
+		checkLimit(renderCtx, GL_MAX_TESS_CONTROL_SHADER_STORAGE_BLOCKS, numBlockRequired);
+	else if (stage == glu::SHADERTYPE_TESSELLATION_EVALUATION)
+		checkLimit(renderCtx, GL_MAX_TESS_EVALUATION_SHADER_STORAGE_BLOCKS, numBlockRequired);
+	else
+		DE_ASSERT(false);
+}
 
 // TessControlExecutor
 
-class TessControlExecutor : private CheckTessSupport, public BufferIoExecutor
+class TessControlExecutor : public BufferIoExecutor
 {
 public:
-						TessControlExecutor			(const glu::RenderContext& renderCtx, const ShaderSpec& shaderSpec);
-						~TessControlExecutor		(void);
+	static TessControlExecutor*	create						(const glu::RenderContext& renderCtx, const ShaderSpec& shaderSpec);
 
-	void				execute						(int numValues, const void* const* inputs, void* const* outputs);
+								~TessControlExecutor		(void);
+
+	void						execute						(int numValues, const void* const* inputs, void* const* outputs);
+
 
 protected:
-	static std::string	generateTessControlShader	(const ShaderSpec& shaderSpec);
+	static std::string			generateTessControlShader	(const ShaderSpec& shaderSpec);
+
+private:
+								TessControlExecutor			(const glu::RenderContext& renderCtx, const ShaderSpec& shaderSpec);
 };
+
+TessControlExecutor* TessControlExecutor::create (const glu::RenderContext& renderCtx, const ShaderSpec& shaderSpec)
+{
+	checkTessSupport(renderCtx, shaderSpec, glu::SHADERTYPE_TESSELLATION_CONTROL);
+
+	return new TessControlExecutor(renderCtx, shaderSpec);
+}
 
 std::string TessControlExecutor::generateTessControlShader (const ShaderSpec& shaderSpec)
 {
@@ -1297,7 +1300,7 @@ std::string TessControlExecutor::generateTessControlShader (const ShaderSpec& sh
 
 	src << glu::getGLSLVersionDeclaration(shaderSpec.version) << "\n";
 
-	if (shaderSpec.version == glu::GLSL_VERSION_310_ES)
+	if (glu::glslVersionIsES(shaderSpec.version) && shaderSpec.version <= glu::GLSL_VERSION_310_ES)
 		src << "#extension GL_EXT_tessellation_shader : require\n";
 
 	if (!shaderSpec.globalDeclarations.empty())
@@ -1331,7 +1334,7 @@ static std::string generateEmptyTessEvalShader (glu::GLSLVersion version)
 
 	src << glu::getGLSLVersionDeclaration(version) << "\n";
 
-	if (version == glu::GLSL_VERSION_310_ES)
+	if (glu::glslVersionIsES(version) && version <= glu::GLSL_VERSION_310_ES)
 		src << "#extension GL_EXT_tessellation_shader : require\n\n";
 
 	src << "layout(triangles, ccw) in;\n";
@@ -1344,8 +1347,7 @@ static std::string generateEmptyTessEvalShader (glu::GLSLVersion version)
 }
 
 TessControlExecutor::TessControlExecutor (const glu::RenderContext& renderCtx, const ShaderSpec& shaderSpec)
-	: CheckTessSupport	(renderCtx, STAGE_CONTROL)
-	, BufferIoExecutor	(renderCtx, shaderSpec, glu::ProgramSources()
+	: BufferIoExecutor	(renderCtx, shaderSpec, glu::ProgramSources()
 							<< glu::VertexSource(generateVertexShaderForTess(shaderSpec.version))
 							<< glu::TessellationControlSource(generateTessControlShader(shaderSpec))
 							<< glu::TessellationEvaluationSource(generateEmptyTessEvalShader(shaderSpec.version))
@@ -1381,17 +1383,29 @@ void TessControlExecutor::execute (int numValues, const void* const* inputs, voi
 
 // TessEvaluationExecutor
 
-class TessEvaluationExecutor : private CheckTessSupport, public BufferIoExecutor
+class TessEvaluationExecutor : public BufferIoExecutor
 {
 public:
-						TessEvaluationExecutor	(const glu::RenderContext& renderCtx, const ShaderSpec& shaderSpec);
-						~TessEvaluationExecutor	(void);
+	static TessEvaluationExecutor*	create					(const glu::RenderContext& renderCtx, const ShaderSpec& shaderSpec);
 
-	void				execute					(int numValues, const void* const* inputs, void* const* outputs);
+									~TessEvaluationExecutor	(void);
+
+	void							execute					(int numValues, const void* const* inputs, void* const* outputs);
+
 
 protected:
-	static std::string	generateTessEvalShader	(const ShaderSpec& shaderSpec);
+	static std::string				generateTessEvalShader	(const ShaderSpec& shaderSpec);
+
+private:
+									TessEvaluationExecutor	(const glu::RenderContext& renderCtx, const ShaderSpec& shaderSpec);
 };
+
+TessEvaluationExecutor* TessEvaluationExecutor::create (const glu::RenderContext& renderCtx, const ShaderSpec& shaderSpec)
+{
+	checkTessSupport(renderCtx, shaderSpec, glu::SHADERTYPE_TESSELLATION_EVALUATION);
+
+	return new TessEvaluationExecutor(renderCtx, shaderSpec);
+}
 
 static std::string generatePassthroughTessControlShader (glu::GLSLVersion version)
 {
@@ -1399,7 +1413,7 @@ static std::string generatePassthroughTessControlShader (glu::GLSLVersion versio
 
 	src << glu::getGLSLVersionDeclaration(version) << "\n";
 
-	if (version == glu::GLSL_VERSION_310_ES)
+	if (glu::glslVersionIsES(version) && version <= glu::GLSL_VERSION_310_ES)
 		src << "#extension GL_EXT_tessellation_shader : require\n\n";
 
 	src << "layout(vertices = 1) out;\n\n";
@@ -1423,7 +1437,7 @@ std::string TessEvaluationExecutor::generateTessEvalShader (const ShaderSpec& sh
 
 	src << glu::getGLSLVersionDeclaration(shaderSpec.version) << "\n";
 
-	if (shaderSpec.version == glu::GLSL_VERSION_310_ES)
+	if (glu::glslVersionIsES(shaderSpec.version) && shaderSpec.version <= glu::GLSL_VERSION_310_ES)
 		src << "#extension GL_EXT_tessellation_shader : require\n";
 
 	if (!shaderSpec.globalDeclarations.empty())
@@ -1447,8 +1461,7 @@ std::string TessEvaluationExecutor::generateTessEvalShader (const ShaderSpec& sh
 }
 
 TessEvaluationExecutor::TessEvaluationExecutor (const glu::RenderContext& renderCtx, const ShaderSpec& shaderSpec)
-	: CheckTessSupport	(renderCtx, STAGE_EVAL)
-	, BufferIoExecutor	(renderCtx, shaderSpec, glu::ProgramSources()
+	: BufferIoExecutor	(renderCtx, shaderSpec, glu::ProgramSources()
 							<< glu::VertexSource(generateVertexShaderForTess(shaderSpec.version))
 							<< glu::TessellationControlSource(generatePassthroughTessControlShader(shaderSpec.version))
 							<< glu::TessellationEvaluationSource(generateTessEvalShader(shaderSpec))
@@ -1492,12 +1505,12 @@ ShaderExecutor* createExecutor (const glu::RenderContext& renderCtx, glu::Shader
 {
 	switch (shaderType)
 	{
-		case glu::SHADERTYPE_VERTEX:					return new VertexShaderExecutor		(renderCtx, shaderSpec);
-		case glu::SHADERTYPE_TESSELLATION_CONTROL:		return new TessControlExecutor		(renderCtx, shaderSpec);
-		case glu::SHADERTYPE_TESSELLATION_EVALUATION:	return new TessEvaluationExecutor	(renderCtx, shaderSpec);
-		case glu::SHADERTYPE_GEOMETRY:					return new GeometryShaderExecutor	(renderCtx, shaderSpec);
-		case glu::SHADERTYPE_FRAGMENT:					return new FragmentShaderExecutor	(renderCtx, shaderSpec);
-		case glu::SHADERTYPE_COMPUTE:					return new ComputeShaderExecutor	(renderCtx, shaderSpec);
+		case glu::SHADERTYPE_VERTEX:					return new VertexShaderExecutor			(renderCtx, shaderSpec);
+		case glu::SHADERTYPE_TESSELLATION_CONTROL:		return TessControlExecutor::create		(renderCtx, shaderSpec);
+		case glu::SHADERTYPE_TESSELLATION_EVALUATION:	return TessEvaluationExecutor::create	(renderCtx, shaderSpec);
+		case glu::SHADERTYPE_GEOMETRY:					return GeometryShaderExecutor::create	(renderCtx, shaderSpec);
+		case glu::SHADERTYPE_FRAGMENT:					return new FragmentShaderExecutor		(renderCtx, shaderSpec);
+		case glu::SHADERTYPE_COMPUTE:					return new ComputeShaderExecutor		(renderCtx, shaderSpec);
 		default:
 			throw tcu::InternalError("Unsupported shader type");
 	}
