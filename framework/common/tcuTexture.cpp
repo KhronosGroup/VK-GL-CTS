@@ -1187,8 +1187,21 @@ static bool isFixedPointDepthTextureFormat (const tcu::TextureFormat& format)
 // Texel lookup with color conversion.
 static inline Vec4 lookup (const ConstPixelBufferAccess& access, int i, int j, int k)
 {
-	Vec4 p = access.getPixel(i, j, k);
-	return isSRGB(access.getFormat()) ? sRGBToLinear(p) : p;
+	const TextureFormat&	format	= access.getFormat();
+
+	if (isSRGB(format))
+	{
+		if (format.type == TextureFormat::UNORM_INT8 && format.order == TextureFormat::sRGB)
+				return sRGB8ToLinear(access.getPixelUint(i, j, k));
+		else if (format.type == TextureFormat::UNORM_INT8 && format.order == TextureFormat::sRGBA)
+				return sRGBA8ToLinear(access.getPixelUint(i, j, k));
+		else
+			return sRGBToLinear(access.getPixel(i, j, k));
+	}
+	else
+	{
+		return access.getPixel(i, j, k);
+	}
 }
 
 // Border texel lookup with color conversion.
