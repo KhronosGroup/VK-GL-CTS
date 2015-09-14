@@ -1,3 +1,5 @@
+#ifndef _VKTSHADERDISCARDTESTS_HPP
+#define _VKTSHADERDISCARDTESTS_HPP
 /*------------------------------------------------------------------------
  * Copyright (c) 2015 The Khronos Group Inc.
  * Copyright (c) 2015 Samsung Electronics Co., Ltd.
@@ -27,31 +29,30 @@
  *
  *//*!
  * \file
- * \brief Vulkan shader render test cases
+ * \brief Shader discard statement tests.
  *//*--------------------------------------------------------------------*/
 
-#include "vktShaderRenderCaseTests.hpp"
-
 #include "vktShaderRenderCase.hpp"
-#include "vktTexture.hpp"
-
-#include "deUniquePtr.hpp"
-
-#include "vktShaderDiscardTests.hpp"
 
 namespace vkt
 {
 namespace shaderrendercase
 {
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+class ShaderDiscardTests : public tcu::TestCaseGroup
 {
-	de::MovePtr<tcu::TestCaseGroup> shaderRenderCaseTests (new tcu::TestCaseGroup(testCtx, "shaderRenderCase", "ShaderRenderCase Tests"));
+public:
+							ShaderDiscardTests		(tcu::TestContext& textCtx);
+	virtual					~ShaderDiscardTests		(void);
 
-	shaderRenderCaseTests->addChild(new ShaderDiscardTests(testCtx));
+	virtual void			init					(void);
 
-	return shaderRenderCaseTests.release();
-}
+private:
+							ShaderDiscardTests		(const ShaderDiscardTests&);		// not allowed!
+	ShaderDiscardTests&		operator=				(const ShaderDiscardTests&);		// not allowed!
+};
 
 } // shaderrendercase
 } // vkt
+
+#endif // _VKTSHADERDISCARDTESTS_HPP

@@ -7,6 +7,8 @@ set(DEQP_VK_SHADERRENDERCASE_SRCS
 	vktShaderRenderCaseTests.cpp
 
 	vktTexture.cpp
+
+	vktShaderDiscardTests.cpp
 )
 
 set(DEQP_VK_SHADERRENDERCASE_LIBS
