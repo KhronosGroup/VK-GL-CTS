@@ -1,3 +1,5 @@
+#ifndef _VKTMEMORYMAPPINGTESTS_HPP
+#define _VKTMEMORYMAPPINGTESTS_HPP
 /*-------------------------------------------------------------------------
  * Vulkan Conformance Tests
  * ------------------------
@@ -29,30 +31,20 @@
  *
  *//*!
  * \file
- * \brief Memory Tests
+ * \brief Simple memory mapping tests.
  *//*--------------------------------------------------------------------*/
 
-#include "vktMemoryTests.hpp"
-
-#include "vktMemoryAllocationTests.hpp"
-#include "vktMemoryMappingTests.hpp"
-
-#include "deUniquePtr.hpp"
+#include "tcuDefs.hpp"
+#include "tcuTestCase.hpp"
 
 namespace vkt
 {
 namespace memory
 {
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
-{
-	de::MovePtr<tcu::TestCaseGroup> memoryTests (new tcu::TestCaseGroup(testCtx, "memory", "Memory Tests"));
-
-	memoryTests->addChild(createAllocationTests	(testCtx));
-	memoryTests->addChild(createMappingTests	(testCtx));
-
-	return memoryTests.release();
-}
+tcu::TestCaseGroup* createMappingTests (tcu::TestContext& testCtx);
 
 } // memory
 } // vkt
+
+#endif // _VKTMEMORYMAPPINGTESTS_HPP

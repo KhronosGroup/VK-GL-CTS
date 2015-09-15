@@ -7,6 +7,8 @@ set(DEQP_VK_MEMORY_SRCS
 	vktMemoryTests.hpp
 	vktMemoryAllocationTests.cpp
 	vktMemoryAllocationTests.hpp
+	vktMemoryMappingTests.cpp
+	vktMemoryMappingTests.hpp
 	)
 
 set(DEQP_VK_MEMORY_LIBS
