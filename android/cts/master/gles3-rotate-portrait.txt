@@ -519,6 +519,7 @@ dEQP-GLES3.functional.pbo.renderbuffer.rgb10_a2ui_clears
 dEQP-GLES3.functional.pbo.renderbuffer.rgba4_triangles
 dEQP-GLES3.functional.pbo.renderbuffer.rgba4_clears
 dEQP-GLES3.functional.pbo.renderbuffer.rgb8_triangles
+dEQP-GLES3.functional.pbo.renderbuffer.rgb8_clears
 dEQP-GLES3.functional.pbo.renderbuffer.rgb565_clears
 dEQP-GLES3.functional.pbo.renderbuffer.r11f_g11f_b10f_triangles
 dEQP-GLES3.functional.pbo.renderbuffer.r11f_g11f_b10f_clears
