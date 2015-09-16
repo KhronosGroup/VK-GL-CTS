@@ -161,3 +161,8 @@ dEQP-GLES3.functional.dither.disabled.gradient_red
 dEQP-GLES3.functional.dither.disabled.gradient_green
 dEQP-GLES3.functional.dither.disabled.gradient_blue
 dEQP-GLES3.functional.dither.disabled.gradient_alpha
+
+# Bug 24068436
+dEQP-GLES3.functional.shaders.texture_functions.texturegrad.samplercubeshadow_vertex
+dEQP-GLES3.functional.shaders.texture_functions.texturegrad.samplercubeshadow_fragment
+dEQP-GLES3.functional.shaders.texture_functions.texturegrad.isamplercube_fragment
