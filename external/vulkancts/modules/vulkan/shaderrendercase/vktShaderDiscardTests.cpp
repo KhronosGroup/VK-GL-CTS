@@ -111,7 +111,7 @@ ShaderDiscardCaseInstance::~ShaderDiscardCaseInstance (void)
 	}
 }
 
-class ShaderDiscardCase : public ShaderRenderCase<ShaderDiscardCaseInstance>
+class ShaderDiscardCase : public ShaderRenderCase
 {
 public:
 						ShaderDiscardCase			(tcu::TestContext& testCtx,

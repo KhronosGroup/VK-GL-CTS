@@ -187,7 +187,6 @@ private:
 
 typedef void (*AttributeSetupFunc) (ShaderRenderCaseInstance& instance, deUint32 numVertices);
 
-template<typename Instance>
 class ShaderRenderCase : public vkt::TestCase
 {
 public:
@@ -197,13 +196,7 @@ public:
 												 bool isVertexCase,
 												 ShaderEvalFunc evalFunc,
 												 UniformSetup* uniformSetup,
-												 AttributeSetupFunc attribFunc)
-								: vkt::TestCase(testCtx, name, description)
-								, m_isVertexCase(isVertexCase)
-								, m_evaluator(new ShaderEvaluator(evalFunc))
-								, m_uniformSetup(uniformSetup ? uniformSetup : new UniformSetup())
-								, m_attribFunc(attribFunc)
-							{}
+												 AttributeSetupFunc attribFunc);
 
 							ShaderRenderCase	(tcu::TestContext& testCtx,
 												 const std::string& name,
@@ -211,35 +204,12 @@ public:
 												 bool isVertexCase,
 												 ShaderEvaluator* evaluator,
 												 UniformSetup* uniformSetup,
-												 AttributeSetupFunc attribFunc)
-								: vkt::TestCase(testCtx, name, description)
-								, m_isVertexCase(isVertexCase)
-								, m_evaluator(evaluator)
-								, m_uniformSetup(uniformSetup ? uniformSetup : new UniformSetup())
-								, m_attribFunc(attribFunc)
-							{}
+												 AttributeSetupFunc attribFunc);
 
 
-	virtual					~ShaderRenderCase	(void)
-							{
-								delete m_evaluator;
-								m_evaluator = DE_NULL;
-								delete m_uniformSetup;
-								m_uniformSetup = DE_NULL;
-							}
-
-	virtual	void			initPrograms		(vk::ProgramCollection<glu::ProgramSources>& programCollection) const
-							{
-								programCollection.add("vert") << glu::VertexSource(m_vertShaderSource);
-								programCollection.add("frag") << glu::FragmentSource(m_fragShaderSource);
-							}
-
-	virtual	TestInstance*	createInstance		(Context& context) const
-							{
-								DE_ASSERT(m_evaluator != DE_NULL);
-								DE_ASSERT(m_uniformSetup != DE_NULL);
-								return new Instance(context, m_isVertexCase, *m_evaluator, *m_uniformSetup, m_attribFunc);
-							}
+	virtual					~ShaderRenderCase	(void);
+	virtual	void			initPrograms		(vk::ProgramCollection<glu::ProgramSources>& programCollection) const;
+	virtual	TestInstance*	createInstance		(Context& context) const;
 
 protected:
 	std::string				m_vertShaderSource;

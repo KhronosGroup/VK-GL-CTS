@@ -326,6 +326,59 @@ void UniformSetup::setup (ShaderRenderCaseInstance& instance, const tcu::Vec4& c
 		m_setupFunc(instance, constCoords);
 }
 
+// ShaderRenderCase.
+
+ShaderRenderCase::ShaderRenderCase (tcu::TestContext& testCtx,
+									const std::string& name,
+									const std::string& description,
+									bool isVertexCase,
+									ShaderEvalFunc evalFunc,
+									UniformSetup* uniformSetup,
+									AttributeSetupFunc attribFunc)
+	: vkt::TestCase(testCtx, name, description)
+	, m_isVertexCase(isVertexCase)
+	, m_evaluator(new ShaderEvaluator(evalFunc))
+	, m_uniformSetup(uniformSetup ? uniformSetup : new UniformSetup())
+	, m_attribFunc(attribFunc)
+{}
+
+ShaderRenderCase::ShaderRenderCase (tcu::TestContext& testCtx,
+									const std::string& name,
+									const std::string& description,
+									bool isVertexCase,
+									ShaderEvaluator* evaluator,
+									UniformSetup* uniformSetup,
+									AttributeSetupFunc attribFunc)
+	: vkt::TestCase(testCtx, name, description)
+	, m_isVertexCase(isVertexCase)
+	, m_evaluator(evaluator)
+	, m_uniformSetup(uniformSetup ? uniformSetup : new UniformSetup())
+	, m_attribFunc(attribFunc)
+{}
+
+
+ShaderRenderCase::~ShaderRenderCase (void)
+{
+	delete m_evaluator;
+	m_evaluator = DE_NULL;
+	delete m_uniformSetup;
+	m_uniformSetup = DE_NULL;
+}
+
+void ShaderRenderCase::initPrograms (vk::ProgramCollection<glu::ProgramSources>& programCollection) const
+{
+	programCollection.add("vert") << glu::VertexSource(m_vertShaderSource);
+	programCollection.add("frag") << glu::FragmentSource(m_fragShaderSource);
+}
+
+TestInstance* ShaderRenderCase::createInstance (Context& context) const
+{
+	DE_ASSERT(m_evaluator != DE_NULL);
+	DE_ASSERT(m_uniformSetup != DE_NULL);
+	return new ShaderRenderCaseInstance(context, m_isVertexCase, *m_evaluator, *m_uniformSetup, m_attribFunc);
+}
+
+
 // ShaderRenderCaseInstance.
 
 ShaderRenderCaseInstance::ShaderRenderCaseInstance (Context& context, bool isVertexCase, ShaderEvaluator& evaluator, UniformSetup& uniformSetup, AttributeSetupFunc attribFunc)
