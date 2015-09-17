@@ -9,6 +9,8 @@ set(DEQP_VK_API_SRCS
 	vktApiSmokeTests.hpp
 	vktApiDeviceInitializationTests.cpp
 	vktApiDeviceInitializationTests.hpp
+	vktApiObjectManagementTests.cpp
+	vktApiObjectManagementTests.hpp
 	)
 
 set(DEQP_VK_API_LIBS
