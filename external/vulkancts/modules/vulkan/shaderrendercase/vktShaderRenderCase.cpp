@@ -535,20 +535,12 @@ void ShaderRenderCaseInstance::useAttribute (deUint32 bindingLocation, BaseAttri
 	m_enabledBaseAttributes.push_back(attribute);
 }
 
-void ShaderRenderCaseInstance::setupShaderData (void)
-{
-	// TODO!!!
-}
-
 void ShaderRenderCaseInstance::setup (void)
 {
-	// TODO!!
 }
 
 void ShaderRenderCaseInstance::setupUniforms (const tcu::Vec4& constCoords)
 {
-	// TODO!!
-	DE_UNREF(constCoords);
 	m_uniformSetup.setup(*this, constCoords);
 }
 
@@ -1520,7 +1512,6 @@ bool ShaderRenderCaseInstance::compareImages (const tcu::Surface& resImage, cons
 {
 	return tcu::fuzzyCompare(m_context.getTestContext().getLog(), "ComparisonResult", "Image comparison result", refImage, resImage, errorThreshold, tcu::COMPARE_LOG_RESULT);
 }
-
 
 } // shaderrendercase
 } // vkt

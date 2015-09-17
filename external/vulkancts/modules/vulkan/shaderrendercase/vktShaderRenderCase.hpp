@@ -201,7 +201,7 @@ public:
 								: vkt::TestCase(testCtx, name, description)
 								, m_isVertexCase(isVertexCase)
 								, m_evaluator(new ShaderEvaluator(evalFunc))
-								, m_uniformSetup(uniformSetup)
+								, m_uniformSetup(uniformSetup ? uniformSetup : new UniformSetup())
 								, m_attribFunc(attribFunc)
 							{}
 
@@ -408,7 +408,6 @@ public:
 																					deUint32 textureId);
 
 protected:
-	virtual void										setupShaderData				(void);
 	virtual void										setup						(void);
 	virtual void										setupUniforms				(const tcu::Vec4& constCoords);
 
