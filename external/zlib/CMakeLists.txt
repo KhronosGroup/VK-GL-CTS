@@ -4,8 +4,8 @@ if (NOT DE_DEFS)
 	message(FATAL_ERROR "Include Defs.cmake")
 endif ()
 
-if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/zlib.h")
-	set(DEFAULT_ZLIB_SRC_PATH ${CMAKE_CURRENT_SOURCE_DIR})
+if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/src/zlib.h")
+	set(DEFAULT_ZLIB_SRC_PATH ${CMAKE_CURRENT_SOURCE_DIR}/src)
 else ()
 	# Assume build inside Android source tree
 	set(DEFAULT_ZLIB_SRC_PATH "../zlib/src")
