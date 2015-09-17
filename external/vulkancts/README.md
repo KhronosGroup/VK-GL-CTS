@@ -25,33 +25,15 @@ Linux:
 Building
 --------
 
-To build dEQP, you need first to download sources for zlib, libpng, and glslang.
+To build dEQP, you need first to download sources for zlib, libpng, glslang,
+and spirv-tools.
 
-To download zlib and libpng, run:
+To download sources, run:
 
 $ python external/fetch_sources.py
 
-Glslang is optional, but enables GLSL to SPIR-V compilation. Check out glslang
-from the official repository to directory next to 'deqp':
-
-$ cd .. # assuming you were in 'deqp' source directory
-$ git clone https://github.com/KhronosGroup/glslang.git glslang
-
-spirv-tools is optional, but enables SPIRV assembly. Check out spirv-tools
-from the google branch of the gitlab repository next to 'deqp':
-
-$ cd .. # assuming you were in 'deqp' source directory
-$ git clone -b google https://gitlab.khronos.org/spirv/spirv-tools.git
-
-I.e the final directory structure should look like this:
-
-src/
-    deqp/
-    glslang/
-    spirv-tools/
-
-After downloading all dependencies, please follow instructions at
-http://source.android.com/devices/graphics/build-tests.html
+You may need to re-run fetch_sources.py to update to the latest glslang and
+spirv-tools revisions occasionally.
 
 NOTE: glslang integration is not yet available on Android due to a toolchain
 bug, so pre-compiled SPIR-V binaries must be used. See instructions below.

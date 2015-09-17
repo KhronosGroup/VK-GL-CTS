@@ -168,6 +168,14 @@ PACKAGES = [
 		"a18233c99e1dc59a256180e6871d9305a42e91b3f98799b3ceb98e87e9ec5e31",
 		"libpng",
 		postExtract = postExtractLibpng),
+	GitRepo(
+		"git@gitlab.khronos.org:spirv/spirv-tools.git",
+		"8a64b76360d2050908ce42e1c7b4d1d6297e82f5",
+		"spirv-tools"),
+	GitRepo(
+		"https://github.com/KhronosGroup/glslang",
+		"b9cd3996c7a67687b0a1fe5066c92e43a820de1e",
+		"glslang"),
 ]
 
 def parseArgs ():

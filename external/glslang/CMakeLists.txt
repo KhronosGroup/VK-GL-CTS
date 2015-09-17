@@ -4,8 +4,11 @@ if (NOT DE_DEFS)
 	message(FATAL_ERROR "Include Defs.cmake")
 endif ()
 
-# Assume build inside Android source tree
-set(DEFAULT_GLSLANG_SRC_PATH "../glslang")
+if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/src/SPIRV/GlslangToSpv.cpp")
+	set(DEFAULT_GLSLANG_SRC_PATH ${CMAKE_CURRENT_SOURCE_DIR}/src)
+else ()
+	set(DEFAULT_GLSLANG_SRC_PATH "../glslang")
+endif ()
 
 set(GLSLANG_SRC_PATH ${DEFAULT_GLSLANG_SRC_PATH} CACHE STRING "Path to glslang source tree")
 
