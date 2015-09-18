@@ -241,7 +241,7 @@ enum BaseUniformType
 	UI_FIVE,
 	UI_SIX,
 	UI_SEVEN,
-	UI_EIGTH,
+	UI_EIGHT,
 	UI_ONEHUNDREDONE,
 
 // IVec2
@@ -280,7 +280,7 @@ enum BaseUniformType
 	UF_FIVE,
 	UF_SIX,
 	UF_SEVEN,
-	UF_EIGTH,
+	UF_EIGHT,
 
 	UF_HALF,
 	UF_THIRD,

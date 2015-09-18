@@ -620,7 +620,7 @@ void ShaderRenderCaseInstance::useUniform (deUint32 bindingLocation, BaseUniform
 		UNIFORM_CASE(UI_FIVE, 	5);
 		UNIFORM_CASE(UI_SIX, 	6);
 		UNIFORM_CASE(UI_SEVEN, 	7);
-		UNIFORM_CASE(UI_EIGTH, 	8);
+		UNIFORM_CASE(UI_EIGHT, 	8);
 		UNIFORM_CASE(UI_ONEHUNDREDONE, 101);
 
 		// IVec2
@@ -659,7 +659,7 @@ void ShaderRenderCaseInstance::useUniform (deUint32 bindingLocation, BaseUniform
 		UNIFORM_CASE(UF_FIVE,		5.0f);
 		UNIFORM_CASE(UF_SIX,		6.0f);
 		UNIFORM_CASE(UF_SEVEN,		7.0f);
-		UNIFORM_CASE(UF_EIGTH,		8.0f);
+		UNIFORM_CASE(UF_EIGHT,		8.0f);
 
 		UNIFORM_CASE(UF_HALF,		1.0f / 2.0f);
 		UNIFORM_CASE(UF_THIRD,		1.0f / 3.0f);
