@@ -44,15 +44,11 @@
 
 #	include "SPIRV/GlslangToSpv.h"
 #	include "SPIRV/disassemble.h"
-#	include "SPIRV/GLSL450Lib.h"
 #	include "SPIRV/doc.h"
 #	include "glslang/Include/InfoSink.h"
 #	include "glslang/Include/ShHandle.h"
 #	include "glslang/MachineIndependent/localintermediate.h"
 #	include "glslang/Public/ShaderLang.h"
-
-// Required by SPIR-V disassembler
-const char* GlslStd450DebugNames[GLSL_STD_450::Count];
 
 #endif
 
@@ -91,7 +87,6 @@ void initGlslang (void*)
 
 	// SPIR-V disassembly
 	spv::Parameterize();
-	GLSL_STD_450::GetDebugNames(GlslStd450DebugNames);
 }
 
 void prepareGlslang (void)
