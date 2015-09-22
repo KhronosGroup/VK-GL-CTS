@@ -84,17 +84,47 @@ Move<VkShaderModule> createShaderModule (const DeviceInterface& deviceInterface,
 	{
 		const struct VkShaderModuleCreateInfo		shaderModuleInfo	=
 		{
-			VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,	//	VkStructureType		sType;
-			DE_NULL,										//	const void*			pNext;
-			(deUintptr)binary.getSize(),					//	deUintptr			codeSize;
-			binary.getBinary(),								//	const void*			pCode;
-			flags,											//	VkShaderModuleCreateFlags	flags;
+			VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+			DE_NULL,
+			(deUintptr)binary.getSize(),
+			binary.getBinary(),
+			flags,
 		};
 
 		return createShaderModule(deviceInterface, device, &shaderModuleInfo);
 	}
 	else
 		TCU_THROW(NotSupportedError, "Unsupported program format");
+}
+
+glu::ShaderType getGluShaderType (VkShaderStage shaderStage)
+{
+	static const glu::ShaderType s_shaderTypes[] =
+	{
+		glu::SHADERTYPE_VERTEX,
+		glu::SHADERTYPE_TESSELLATION_CONTROL,
+		glu::SHADERTYPE_TESSELLATION_EVALUATION,
+		glu::SHADERTYPE_GEOMETRY,
+		glu::SHADERTYPE_FRAGMENT,
+		glu::SHADERTYPE_COMPUTE
+	};
+
+	return de::getSizedArrayElement<VK_SHADER_STAGE_LAST>(s_shaderTypes, shaderStage);
+}
+
+VkShaderStage getVkShaderStage (glu::ShaderType shaderType)
+{
+	static const VkShaderStage s_shaderStages[] =
+	{
+		VK_SHADER_STAGE_VERTEX,
+		VK_SHADER_STAGE_FRAGMENT,
+		VK_SHADER_STAGE_GEOMETRY,
+		VK_SHADER_STAGE_TESS_CONTROL,
+		VK_SHADER_STAGE_TESS_EVALUATION,
+		VK_SHADER_STAGE_COMPUTE
+	};
+
+	return de::getSizedArrayElement<glu::SHADERTYPE_LAST>(s_shaderStages, shaderType);
 }
 
 } // vk
