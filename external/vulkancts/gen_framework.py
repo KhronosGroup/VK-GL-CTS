@@ -323,11 +323,33 @@ def writeHandleType (api, filename):
 
 	writeInlFile(filename, INL_HEADER, gen())
 
+def getEnumValuePrefix (enum):
+	prefix = enum.name[0]
+	for i in range(1, len(enum.name)):
+		if enum.name[i].isupper():
+			prefix += "_"
+		prefix += enum.name[i].upper()
+	return prefix
+
+def areEnumValuesLinear (enum):
+	curIndex = 0
+	for name, value in enum.values:
+		if int(value) != curIndex:
+			return False
+		curIndex += 1
+	return True
+
 def genEnumSrc (enum):
 	yield "enum %s" % enum.name
 	yield "{"
+
 	for line in indentLines(["\t%s\t= %s," % v for v in enum.values]):
 		yield line
+
+	if areEnumValuesLinear(enum):
+		yield ""
+		yield "\t%s_LAST" % getEnumValuePrefix(enum)
+
 	yield "};"
 
 def genBitfieldSrc (bitfield):
