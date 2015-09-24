@@ -48,12 +48,13 @@
 
 #include <iostream>
 
-namespace vkt
-{
-
 using std::vector;
 using std::string;
 using de::UniquePtr;
+using de::MovePtr;
+
+namespace vkt
+{
 
 tcu::TestPackageRoot* createRoot (tcu::TestContext& testCtx)
 {
@@ -207,6 +208,7 @@ namespace opt
 DE_DECLARE_COMMAND_LINE_OPT(DstPath,	std::string);
 DE_DECLARE_COMMAND_LINE_OPT(Mode,		vkt::BuildMode);
 DE_DECLARE_COMMAND_LINE_OPT(Verbose,	bool);
+DE_DECLARE_COMMAND_LINE_OPT(Cases,		std::string);
 
 } // opt
 
@@ -223,12 +225,14 @@ void registerOptions (de::cmdline::Parser& parser)
 
 	parser << Option<opt::DstPath>	("d", "dst-path",	"Destination path",	"out")
 		   << Option<opt::Mode>		("m", "mode",		"Build mode",		s_modes,	"build")
-		   << Option<opt::Verbose>	("v", "verbose",	"Verbose output");
+		   << Option<opt::Verbose>	("v", "verbose",	"Verbose output")
+		   << Option<opt::Cases>	("n", "deqp-case",	"Case path filter (works as in test binaries)");
 }
 
 int main (int argc, const char* argv[])
 {
 	de::cmdline::CommandLine	cmdLine;
+	tcu::CommandLine			deqpCmdLine;
 
 	{
 		de::cmdline::Parser		parser;
@@ -240,9 +244,23 @@ int main (int argc, const char* argv[])
 		}
 	}
 
+	{
+		vector<const char*> deqpArgv;
+
+		deqpArgv.push_back("unused");
+
+		if (cmdLine.hasOption<opt::Cases>())
+		{
+			deqpArgv.push_back("--deqp-case");
+			deqpArgv.push_back(cmdLine.getOption<opt::Cases>().c_str());
+		}
+
+		if (!deqpCmdLine.parse((int)deqpArgv.size(), &deqpArgv[0]))
+			return -1;
+	}
+
 	try
 	{
-		const tcu::CommandLine	deqpCmdLine		("unused");
 		tcu::DirArchive			archive			(".");
 		tcu::TestLog			log				(deqpCmdLine.getLogFileName(), deqpCmdLine.getLogFlags());
 		tcu::Platform			platform;
