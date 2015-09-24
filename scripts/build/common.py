@@ -24,8 +24,7 @@ import os
 import shlex
 import subprocess
 
-SRC_BASE_DIR		= os.path.realpath(os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "..", "..")))
-DEQP_DIR			= os.path.join(SRC_BASE_DIR, "deqp")
+DEQP_DIR = os.path.realpath(os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
 def die (msg):
 	print msg
