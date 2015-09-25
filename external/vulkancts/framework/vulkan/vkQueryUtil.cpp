@@ -75,7 +75,7 @@ std::vector<VkPhysicalDeviceQueueProperties> getPhysicalDeviceQueueProperties (c
 
 VkPhysicalDeviceMemoryProperties getPhysicalDeviceMemoryProperties (const InstanceInterface& vk, VkPhysicalDevice physicalDevice)
 {
-	VkPhysicalDeviceMemoryProperties	properties;
+	VkPhysicalDeviceMemoryProperties	properties = {};
 	VK_CHECK(vk.getPhysicalDeviceMemoryProperties(physicalDevice, &properties));
 	return properties;
 }

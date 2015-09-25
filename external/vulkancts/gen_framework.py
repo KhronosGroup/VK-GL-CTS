@@ -483,6 +483,7 @@ def writeStrUtilImpl (api, filename):
 			for member in type.members:
 				memberName	= member.name
 				valFmt		= None
+				newLine 	= ""
 				if member.type in bitfieldTypeNames:
 					valFmt = "get%sStr(value.%s)" % (member.type[2:], member.name)
 				elif member.type == "const char*" or member.type == "char*":
@@ -492,11 +493,12 @@ def writeStrUtilImpl (api, filename):
 					if baseName == "extName" or baseName == "deviceName":
 						valFmt = "(const char*)value.%s" % baseName
 					else:
+						newLine = "'\\n' << "
 						valFmt = "tcu::formatArray(DE_ARRAY_BEGIN(value.%s), DE_ARRAY_END(value.%s))" % (baseName, baseName)
 					memberName = baseName
 				else:
 					valFmt = "value.%s" % member.name
-				yield ("\ts << \"\\t%s = \" << " % memberName) + valFmt + " << '\\n';"
+				yield ("\ts << \"\\t%s = \" << " % memberName) + newLine + valFmt + " << '\\n';"
 			yield "\ts << '}';"
 			yield "\treturn s;"
 			yield "}"
