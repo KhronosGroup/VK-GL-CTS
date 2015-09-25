@@ -230,7 +230,7 @@ tcu::TestStatus createInstanceWithInvalidApiVersionTest (Context& context)
 		}
 		catch (const tcu::NotSupportedError&)
 		{
-			log << TestLog::Message << "Pass, instance creation with invalid apiVesion is rejected" << TestLog::EndMessage;
+			log << TestLog::Message << "Pass, instance creation with invalid apiVersion is rejected" << TestLog::EndMessage;
 		}
 	}
 
