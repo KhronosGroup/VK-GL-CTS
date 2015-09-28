@@ -236,7 +236,7 @@ NATIVE_LIBS				= [
 		NativeLib(21,		"arm64-v8a",	'android-arm64'),	# ARM64 v8a ABI
 	]
 
-ANDROID_JAVA_API		= "android-13"
+ANDROID_JAVA_API		= "android-22"
 NATIVE_LIB_NAME			= "libdeqp.so"
 
 def selectNDKPath ():

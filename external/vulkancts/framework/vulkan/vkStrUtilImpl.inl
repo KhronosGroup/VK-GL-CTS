@@ -1314,9 +1314,9 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceLimits& value)
 	s << "\tmaxFragmentDualSourceBuffers = " << value.maxFragmentDualSourceBuffers << '\n';
 	s << "\tmaxFragmentCombinedOutputResources = " << value.maxFragmentCombinedOutputResources << '\n';
 	s << "\tmaxComputeSharedMemorySize = " << value.maxComputeSharedMemorySize << '\n';
-	s << "\tmaxComputeWorkGroupCount = " << tcu::formatArray(DE_ARRAY_BEGIN(value.maxComputeWorkGroupCount), DE_ARRAY_END(value.maxComputeWorkGroupCount)) << '\n';
+	s << "\tmaxComputeWorkGroupCount = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.maxComputeWorkGroupCount), DE_ARRAY_END(value.maxComputeWorkGroupCount)) << '\n';
 	s << "\tmaxComputeWorkGroupInvocations = " << value.maxComputeWorkGroupInvocations << '\n';
-	s << "\tmaxComputeWorkGroupSize = " << tcu::formatArray(DE_ARRAY_BEGIN(value.maxComputeWorkGroupSize), DE_ARRAY_END(value.maxComputeWorkGroupSize)) << '\n';
+	s << "\tmaxComputeWorkGroupSize = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.maxComputeWorkGroupSize), DE_ARRAY_END(value.maxComputeWorkGroupSize)) << '\n';
 	s << "\tsubPixelPrecisionBits = " << value.subPixelPrecisionBits << '\n';
 	s << "\tsubTexelPrecisionBits = " << value.subTexelPrecisionBits << '\n';
 	s << "\tmipmapPrecisionBits = " << value.mipmapPrecisionBits << '\n';
@@ -1327,8 +1327,8 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceLimits& value)
 	s << "\tmaxSamplerAnisotropy = " << value.maxSamplerAnisotropy << '\n';
 	s << "\tmaxViewports = " << value.maxViewports << '\n';
 	s << "\tmaxDynamicViewportStates = " << value.maxDynamicViewportStates << '\n';
-	s << "\tmaxViewportDimensions = " << tcu::formatArray(DE_ARRAY_BEGIN(value.maxViewportDimensions), DE_ARRAY_END(value.maxViewportDimensions)) << '\n';
-	s << "\tviewportBoundsRange = " << tcu::formatArray(DE_ARRAY_BEGIN(value.viewportBoundsRange), DE_ARRAY_END(value.viewportBoundsRange)) << '\n';
+	s << "\tmaxViewportDimensions = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.maxViewportDimensions), DE_ARRAY_END(value.maxViewportDimensions)) << '\n';
+	s << "\tviewportBoundsRange = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.viewportBoundsRange), DE_ARRAY_END(value.viewportBoundsRange)) << '\n';
 	s << "\tviewportSubPixelBits = " << value.viewportSubPixelBits << '\n';
 	s << "\tminMemoryMapAlignment = " << value.minMemoryMapAlignment << '\n';
 	s << "\tminTexelBufferOffsetAlignment = " << value.minTexelBufferOffsetAlignment << '\n';
@@ -1357,8 +1357,8 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceLimits& value)
 	s << "\tmaxClipDistances = " << value.maxClipDistances << '\n';
 	s << "\tmaxCullDistances = " << value.maxCullDistances << '\n';
 	s << "\tmaxCombinedClipAndCullDistances = " << value.maxCombinedClipAndCullDistances << '\n';
-	s << "\tpointSizeRange = " << tcu::formatArray(DE_ARRAY_BEGIN(value.pointSizeRange), DE_ARRAY_END(value.pointSizeRange)) << '\n';
-	s << "\tlineWidthRange = " << tcu::formatArray(DE_ARRAY_BEGIN(value.lineWidthRange), DE_ARRAY_END(value.lineWidthRange)) << '\n';
+	s << "\tpointSizeRange = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.pointSizeRange), DE_ARRAY_END(value.pointSizeRange)) << '\n';
+	s << "\tlineWidthRange = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.lineWidthRange), DE_ARRAY_END(value.lineWidthRange)) << '\n';
 	s << "\tpointSizeGranularity = " << value.pointSizeGranularity << '\n';
 	s << "\tlineWidthGranularity = " << value.lineWidthGranularity << '\n';
 	s << '}';
@@ -1374,7 +1374,7 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceProperties& val
 	s << "\tdeviceId = " << value.deviceId << '\n';
 	s << "\tdeviceType = " << value.deviceType << '\n';
 	s << "\tdeviceName = " << (const char*)value.deviceName << '\n';
-	s << "\tpipelineCacheUUID = " << tcu::formatArray(DE_ARRAY_BEGIN(value.pipelineCacheUUID), DE_ARRAY_END(value.pipelineCacheUUID)) << '\n';
+	s << "\tpipelineCacheUUID = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.pipelineCacheUUID), DE_ARRAY_END(value.pipelineCacheUUID)) << '\n';
 	s << '}';
 	return s;
 }
@@ -1411,9 +1411,9 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceMemoryPropertie
 {
 	s << "VkPhysicalDeviceMemoryProperties = {\n";
 	s << "\tmemoryTypeCount = " << value.memoryTypeCount << '\n';
-	s << "\tmemoryTypes = " << tcu::formatArray(DE_ARRAY_BEGIN(value.memoryTypes), DE_ARRAY_END(value.memoryTypes)) << '\n';
+	s << "\tmemoryTypes = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.memoryTypes), DE_ARRAY_END(value.memoryTypes)) << '\n';
 	s << "\tmemoryHeapCount = " << value.memoryHeapCount << '\n';
-	s << "\tmemoryHeaps = " << tcu::formatArray(DE_ARRAY_BEGIN(value.memoryHeaps), DE_ARRAY_END(value.memoryHeaps)) << '\n';
+	s << "\tmemoryHeaps = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.memoryHeaps), DE_ARRAY_END(value.memoryHeaps)) << '\n';
 	s << '}';
 	return s;
 }
@@ -1456,10 +1456,10 @@ std::ostream& operator<< (std::ostream& s, const VkExtensionProperties& value)
 std::ostream& operator<< (std::ostream& s, const VkLayerProperties& value)
 {
 	s << "VkLayerProperties = {\n";
-	s << "\tlayerName = " << tcu::formatArray(DE_ARRAY_BEGIN(value.layerName), DE_ARRAY_END(value.layerName)) << '\n';
+	s << "\tlayerName = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.layerName), DE_ARRAY_END(value.layerName)) << '\n';
 	s << "\tspecVersion = " << value.specVersion << '\n';
 	s << "\timplVersion = " << value.implVersion << '\n';
-	s << "\tdescription = " << tcu::formatArray(DE_ARRAY_BEGIN(value.description), DE_ARRAY_END(value.description)) << '\n';
+	s << "\tdescription = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.description), DE_ARRAY_END(value.description)) << '\n';
 	s << '}';
 	return s;
 }
@@ -2185,7 +2185,7 @@ std::ostream& operator<< (std::ostream& s, const VkDynamicColorBlendStateCreateI
 	s << "VkDynamicColorBlendStateCreateInfo = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tblendConst = " << tcu::formatArray(DE_ARRAY_BEGIN(value.blendConst), DE_ARRAY_END(value.blendConst)) << '\n';
+	s << "\tblendConst = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.blendConst), DE_ARRAY_END(value.blendConst)) << '\n';
 	s << '}';
 	return s;
 }
@@ -2391,9 +2391,9 @@ std::ostream& operator<< (std::ostream& s, const VkBufferImageCopy& value)
 std::ostream& operator<< (std::ostream& s, const VkClearColorValue& value)
 {
 	s << "VkClearColorValue = {\n";
-	s << "\tf32 = " << tcu::formatArray(DE_ARRAY_BEGIN(value.f32), DE_ARRAY_END(value.f32)) << '\n';
-	s << "\ts32 = " << tcu::formatArray(DE_ARRAY_BEGIN(value.s32), DE_ARRAY_END(value.s32)) << '\n';
-	s << "\tu32 = " << tcu::formatArray(DE_ARRAY_BEGIN(value.u32), DE_ARRAY_END(value.u32)) << '\n';
+	s << "\tf32 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.f32), DE_ARRAY_END(value.f32)) << '\n';
+	s << "\ts32 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.s32), DE_ARRAY_END(value.s32)) << '\n';
+	s << "\tu32 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.u32), DE_ARRAY_END(value.u32)) << '\n';
 	s << '}';
 	return s;
 }
