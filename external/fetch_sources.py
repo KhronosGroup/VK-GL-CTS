@@ -147,7 +147,7 @@ class GitRepo (Source):
 
 		pushWorkingDir(fullDstPath)
 		try:
-			execute(["git", "fetch", self.url])
+			execute(["git", "fetch", self.url, "+refs/heads/*:refs/remotes/origin/*"])
 			execute(["git", "checkout", self.revision])
 		finally:
 			popWorkingDir()
@@ -173,8 +173,8 @@ PACKAGES = [
 		"eac78e60d02c1315ae2f56866fb291dd6c606107",
 		"spirv-tools"),
 	GitRepo(
-		"https://github.com/KhronosGroup/glslang",
-		"ee21fc9081de8b54f5d1199325598c71eead1ef6",
+		"git@gitlab.khronos.org:GLSL/glslang.git",
+		"c833e3fa03ed2bcdbc3cca12e748cfef30996a5e",
 		"glslang"),
 ]
 
