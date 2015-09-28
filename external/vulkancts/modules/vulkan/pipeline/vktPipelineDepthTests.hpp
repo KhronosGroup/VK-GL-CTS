@@ -48,4 +48,3 @@ tcu::TestCaseGroup* createDepthTests (tcu::TestContext& testCtx);
 } // vkt
 
 #endif // _VKTPIPELINEDEPTHTESTS_HPP
-

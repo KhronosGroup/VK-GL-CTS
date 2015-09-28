@@ -37,6 +37,7 @@
 
 #include "tcuDefs.hpp"
 #include "tcuVectorUtil.hpp"
+
 #include <vector>
 
 namespace vkt
@@ -61,4 +62,4 @@ std::vector<Vertex4RGBA> createOverlappingQuads (void);
 } // pipeline
 } // vkt
 
-#endif  // _VKTPIPELINEVERTEXUTIL_HPP
+#endif // _VKTPIPELINEVERTEXUTIL_HPP

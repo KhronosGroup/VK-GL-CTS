@@ -1,5 +1,5 @@
-#ifndef _VKSPIPVROGRAM_HPP
-#define _VKSPIPVROGRAM_HPP
+#ifndef _VKSPIRVPROGRAM_HPP
+#define _VKSPIRVPROGRAM_HPP
 /*-------------------------------------------------------------------------
  * Vulkan CTS Framework
  * --------------------
@@ -72,4 +72,4 @@ tcu::TestLog&	operator<<			(tcu::TestLog& log, const SpirVAsmSource& program);
 
 }
 
-#endif // _VKSPIVPROGRAM_HPP
+#endif // _VKSPIRVPROGRAM_HPP

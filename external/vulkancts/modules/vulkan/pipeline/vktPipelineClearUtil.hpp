@@ -1,3 +1,5 @@
+#ifndef _VKTPIPELINECLEARUTIL_HPP
+#define _VKTPIPELINECLEARUTIL_HPP
 /*------------------------------------------------------------------------
  * Vulkan Conformance Tests
  * ------------------------
@@ -32,9 +34,6 @@
  * \file
  * \brief Utilities for clear values.
  *//*--------------------------------------------------------------------*/
-
-#ifndef _VKTPIPELINECLEARUTIL_HPP
-#define _VKTPIPELINECLEARUTIL_HPP
 
 #include "tcuTexture.hpp"
 #include "tcuVectorUtil.hpp"

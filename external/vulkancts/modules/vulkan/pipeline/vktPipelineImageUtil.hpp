@@ -68,4 +68,3 @@ de::MovePtr<tcu::TextureLevel> readColorAttachment (const vk::DeviceInterface&	v
 } // vkt
 
 #endif // _VKTPIPELINEIMAGEUTIL_HPP
-

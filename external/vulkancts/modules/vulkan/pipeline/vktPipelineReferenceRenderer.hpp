@@ -186,4 +186,3 @@ rr::PrimitiveType				mapVkPrimitiveTopology	(vk::VkPrimitiveTopology primitiveTo
 } // vkt
 
 #endif // _VKTPIPELINEREFERENCERENDERER_HPP
-
