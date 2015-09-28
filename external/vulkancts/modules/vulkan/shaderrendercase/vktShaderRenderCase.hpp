@@ -1,6 +1,9 @@
 #ifndef _VKTSHADERRENDERCASE_HPP
 #define _VKTSHADERRENDERCASE_HPP
 /*------------------------------------------------------------------------
+ * Vulkan Conformance Tests
+ * ------------------------
+ *
  * Copyright (c) 2015 The Khronos Group Inc.
  * Copyright (c) 2015 Samsung Electronics Co., Ltd.
  *
@@ -105,10 +108,10 @@ public:
 		const tcu::Texture3D*		tex3D;
 
 		inline ShaderSampler (void)
-			: tex2D	 (DE_NULL)
-			, texCube   (DE_NULL)
+			: tex2D		(DE_NULL)
+			, texCube	(DE_NULL)
 			, tex2DArray(DE_NULL)
-			, tex3D	 (DE_NULL)
+			, tex3D		(DE_NULL)
 		{
 		}
 	};
@@ -135,9 +138,8 @@ public:
 	tcu::Vec4				texture2D				(int unitNdx, const tcu::Vec2& coords);
 
 private:
-	const QuadGrid&		 quadGrid;
+	const QuadGrid&			m_quadGrid;
 };
-
 
 typedef void (*ShaderEvalFunc) (ShaderEvalContext& c);
 
@@ -190,20 +192,20 @@ typedef void (*AttributeSetupFunc) (ShaderRenderCaseInstance& instance, deUint32
 class ShaderRenderCase : public vkt::TestCase
 {
 public:
-							ShaderRenderCase	(tcu::TestContext& testCtx,
-												 const std::string& name,
-												 const std::string& description,
-												 bool isVertexCase,
-												 ShaderEvalFunc evalFunc,
-												 UniformSetup* uniformSetup,
-												 AttributeSetupFunc attribFunc);
+							ShaderRenderCase	(tcu::TestContext&	testCtx,
+												 const std::string&	name,
+												 const std::string&	description,
+												 bool				isVertexCase,
+												 ShaderEvalFunc		evalFunc,
+												 UniformSetup*		uniformSetup,
+												 AttributeSetupFunc	attribFunc);
 
-							ShaderRenderCase	(tcu::TestContext& testCtx,
-												 const std::string& name,
-												 const std::string& description,
-												 bool isVertexCase,
-												 ShaderEvaluator* evaluator,
-												 UniformSetup* uniformSetup,
+							ShaderRenderCase	(tcu::TestContext&	testCtx,
+												 const std::string&	name,
+												 const std::string&	description,
+												 bool				isVertexCase,
+												 ShaderEvaluator*	evaluator,
+												 UniformSetup*		uniformSetup,
 												 AttributeSetupFunc attribFunc);
 
 
@@ -347,35 +349,35 @@ enum BaseAttributeType
 class ShaderRenderCaseInstance : public vkt::TestInstance
 {
 public:
-														ShaderRenderCaseInstance	(Context& context,
-																					bool isVertexCase,
-																					ShaderEvaluator& evaluator,
-																					UniformSetup& uniformSetup,
-																					AttributeSetupFunc attribFunc);
+														ShaderRenderCaseInstance	(Context&			context,
+																					bool				isVertexCase,
+																					ShaderEvaluator&	evaluator,
+																					UniformSetup&		uniformSetup,
+																					AttributeSetupFunc	attribFunc);
 
 	virtual												~ShaderRenderCaseInstance	(void);
 	virtual tcu::TestStatus								iterate						(void);
 
-	void												addAttribute				(deUint32 bindingLocation,
-																					vk::VkFormat format,
-																					deUint32 sizePerElement,
-																					deUint32 count,
-																					const void* data);
-	void												useAttribute				(deUint32 bindingLocation,
-																					BaseAttributeType type);
+	void												addAttribute				(deUint32			bindingLocation,
+																					vk::VkFormat		format,
+																					deUint32			sizePerElement,
+																					deUint32			count,
+																					const void*			data);
+	void												useAttribute				(deUint32			bindingLocation,
+																					BaseAttributeType	type);
 
 	template<typename T>
-	void												addUniform					(deUint32 bindingLocation,
-																					vk::VkDescriptorType descriptorType,
-																					const T data);
-	void												addUniform					(deUint32 bindingLocation,
-																					vk::VkDescriptorType descriptorType,
-																					deUint32 dataSize,
-																					const void* data);
-	void												useUniform					(deUint32 bindingLocation,
-																					BaseUniformType type);
-	void												useSampler2D				(deUint32 bindingLocation,
-																					deUint32 textureId);
+	void												addUniform					(deUint32				bindingLocation,
+																					vk::VkDescriptorType	descriptorType,
+																					const T 				data);
+	void												addUniform					(deUint32				bindingLocation,
+																					vk::VkDescriptorType	descriptorType,
+																					deUint32				dataSize,
+																					const void*				data);
+	void												useUniform					(deUint32				bindingLocation,
+																					BaseUniformType			type);
+	void												useSampler2D				(deUint32				bindingLocation,
+																					deUint32				textureId);
 
 protected:
 	virtual void										setup						(void);
@@ -398,9 +400,9 @@ private:
 	void												render						(tcu::Surface& result, const QuadGrid& quadGrid);
 	void												computeVertexReference		(tcu::Surface& result, const QuadGrid& quadGrid);
 	void												computeFragmentReference	(tcu::Surface& result, const QuadGrid& quadGrid);
-	bool												compareImages				(const tcu::Surface& resImage,
-																					const tcu::Surface& refImage,
-																					float errorThreshold);
+	bool												compareImages				(const tcu::Surface&	resImage,
+																					const tcu::Surface&		refImage,
+																					float					errorThreshold);
 
 	bool												m_isVertexCase;
 	ShaderEvaluator&									m_evaluator;

@@ -1,6 +1,9 @@
 #ifndef _VKTSHADERDISCARDTESTS_HPP
 #define _VKTSHADERDISCARDTESTS_HPP
 /*------------------------------------------------------------------------
+ * Vulkan Conformance Tests
+ * ------------------------
+ *
  * Copyright (c) 2015 The Khronos Group Inc.
  * Copyright (c) 2015 Samsung Electronics Co., Ltd.
  *

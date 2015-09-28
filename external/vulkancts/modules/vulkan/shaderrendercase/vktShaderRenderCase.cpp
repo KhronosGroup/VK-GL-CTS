@@ -1,4 +1,7 @@
 /*------------------------------------------------------------------------
+ * Vulkan Conformance Tests
+ * ------------------------
+ *
  * Copyright (c) 2015 The Khronos Group Inc.
  * Copyright (c) 2015 Samsung Electronics Co., Ltd.
  *
@@ -67,12 +70,12 @@ static const tcu::Vec4	DEFAULT_CLEAR_COLOR	= tcu::Vec4(0.125f, 0.25f, 0.5f, 1.0f
 class QuadGrid
 {
 public:
-										QuadGrid				(int gridSize,
-																 int screenWidth,
-																 int screenHeight,
-																 const tcu::Vec4& constCoords,
-																 const std::vector<tcu::Mat4>& userAttribTransforms,
-																 const std::vector<TextureBinding>& textures);
+										QuadGrid				(int								gridSize,
+																 int								screenWidth,
+																 int								screenHeight,
+																 const tcu::Vec4&					constCoords,
+																 const std::vector<tcu::Mat4>&		userAttribTransforms,
+																 const std::vector<TextureBinding>&	textures);
 										~QuadGrid				(void);
 
 	int									getGridSize				(void) const { return m_gridSize; }
@@ -114,12 +117,12 @@ private:
 	std::vector<deUint16>				m_indices;
 };
 
-QuadGrid::QuadGrid (int gridSize,
-					int width,
-					int height,
-					const tcu::Vec4& constCoords,
-					const std::vector<tcu::Mat4>& userAttribTransforms,
-					const std::vector<TextureBinding>& textures)
+QuadGrid::QuadGrid (int									gridSize,
+					int									width,
+					int									height,
+					const tcu::Vec4&					constCoords,
+					const std::vector<tcu::Mat4>&		userAttribTransforms,
+					const std::vector<TextureBinding>&	textures)
 	: m_gridSize				(gridSize)
 	, m_numVertices				((gridSize + 1) * (gridSize + 1))
 	, m_numTriangles			(gridSize * gridSize * 2)
@@ -137,8 +140,8 @@ QuadGrid::QuadGrid (int gridSize,
 	m_attribOne.resize(m_numVertices);
 
 	// User attributes.
-	for (int i = 0; i < DE_LENGTH_OF_ARRAY(m_userAttribs); i++)
-	m_userAttribs[i].resize(m_numVertices);
+	for (int attrNdx = 0; attrNdx < DE_LENGTH_OF_ARRAY(m_userAttribs); attrNdx++)
+		m_userAttribs[attrNdx].resize(m_numVertices);
 
 	for (int y = 0; y < gridSize+1; y++)
 	for (int x = 0; x < gridSize+1; x++)
@@ -213,17 +216,14 @@ TextureBinding::TextureBinding (const Texture2D* tex2D, const tcu::Sampler& samp
 	m_binding.tex2D = tex2D;
 }
 
-
-
-
 // ShaderEvalContext.
 
-ShaderEvalContext::ShaderEvalContext (const QuadGrid& quadGrid_)
-	: constCoords(quadGrid_.getConstCoords())
-	, isDiscarded(false)
-	, quadGrid(quadGrid_)
+ShaderEvalContext::ShaderEvalContext (const QuadGrid& quadGrid)
+	: constCoords	(quadGrid.getConstCoords())
+	, isDiscarded	(false)
+	, m_quadGrid	(quadGrid)
 {
-	const std::vector<TextureBinding>& bindings = quadGrid.getTextures();
+	const std::vector<TextureBinding>& bindings = m_quadGrid.getTextures();
 	DE_ASSERT((int)bindings.size() <= MAX_TEXTURES);
 
 	// Fill in texture array.
@@ -262,14 +262,14 @@ void ShaderEvalContext::reset (float sx, float sy)
 	isDiscarded	= false;
 
 	// Compute coords
-	coords		= quadGrid.getCoords(sx, sy);
-	unitCoords	= quadGrid.getUnitCoords(sx, sy);
+	coords		= m_quadGrid.getCoords(sx, sy);
+	unitCoords	= m_quadGrid.getUnitCoords(sx, sy);
 
 	// Compute user attributes.
-	int numAttribs = quadGrid.getNumUserAttribs();
+	int numAttribs = m_quadGrid.getNumUserAttribs();
 	DE_ASSERT(numAttribs <= MAX_USER_ATTRIBS);
 	for (int attribNdx = 0; attribNdx < numAttribs; attribNdx++)
-		in[attribNdx] = quadGrid.getUserAttrib(attribNdx, sx, sy);
+		in[attribNdx] = m_quadGrid.getUserAttrib(attribNdx, sx, sy);
 }
 
 tcu::Vec4 ShaderEvalContext::texture2D (int unitNdx, const tcu::Vec2& texCoords)
@@ -279,7 +279,6 @@ tcu::Vec4 ShaderEvalContext::texture2D (int unitNdx, const tcu::Vec2& texCoords)
 	else
 	return tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f);
 }
-
 
 // ShaderEvaluator.
 
@@ -302,7 +301,6 @@ void ShaderEvaluator::evaluate (ShaderEvalContext& ctx)
 	DE_ASSERT(m_evalFunc);
 	m_evalFunc(ctx);
 }
-
 
 // UniformSetup.
 
@@ -328,34 +326,33 @@ void UniformSetup::setup (ShaderRenderCaseInstance& instance, const tcu::Vec4& c
 
 // ShaderRenderCase.
 
-ShaderRenderCase::ShaderRenderCase (tcu::TestContext& testCtx,
-									const std::string& name,
-									const std::string& description,
-									bool isVertexCase,
-									ShaderEvalFunc evalFunc,
-									UniformSetup* uniformSetup,
-									AttributeSetupFunc attribFunc)
-	: vkt::TestCase(testCtx, name, description)
-	, m_isVertexCase(isVertexCase)
-	, m_evaluator(new ShaderEvaluator(evalFunc))
-	, m_uniformSetup(uniformSetup ? uniformSetup : new UniformSetup())
-	, m_attribFunc(attribFunc)
+ShaderRenderCase::ShaderRenderCase (tcu::TestContext&	testCtx,
+									const std::string&	name,
+									const std::string&	description,
+									bool				isVertexCase,
+									ShaderEvalFunc		evalFunc,
+									UniformSetup*		uniformSetup,
+									AttributeSetupFunc	attribFunc)
+	: vkt::TestCase		(testCtx, name, description)
+	, m_isVertexCase	(isVertexCase)
+	, m_evaluator		(new ShaderEvaluator(evalFunc))
+	, m_uniformSetup	(uniformSetup ? uniformSetup : new UniformSetup())
+	, m_attribFunc		(attribFunc)
 {}
 
-ShaderRenderCase::ShaderRenderCase (tcu::TestContext& testCtx,
-									const std::string& name,
-									const std::string& description,
-									bool isVertexCase,
-									ShaderEvaluator* evaluator,
-									UniformSetup* uniformSetup,
-									AttributeSetupFunc attribFunc)
-	: vkt::TestCase(testCtx, name, description)
-	, m_isVertexCase(isVertexCase)
-	, m_evaluator(evaluator)
-	, m_uniformSetup(uniformSetup ? uniformSetup : new UniformSetup())
-	, m_attribFunc(attribFunc)
+ShaderRenderCase::ShaderRenderCase (tcu::TestContext&	testCtx,
+									const std::string&	name,
+									const std::string&	description,
+									bool				isVertexCase,
+									ShaderEvaluator*	evaluator,
+									UniformSetup*		uniformSetup,
+									AttributeSetupFunc	attribFunc)
+	: vkt::TestCase		(testCtx, name, description)
+	, m_isVertexCase	(isVertexCase)
+	, m_evaluator		(evaluator)
+	, m_uniformSetup	(uniformSetup ? uniformSetup : new UniformSetup())
+	, m_attribFunc		(attribFunc)
 {}
-
 
 ShaderRenderCase::~ShaderRenderCase (void)
 {
@@ -378,19 +375,22 @@ TestInstance* ShaderRenderCase::createInstance (Context& context) const
 	return new ShaderRenderCaseInstance(context, m_isVertexCase, *m_evaluator, *m_uniformSetup, m_attribFunc);
 }
 
-
 // ShaderRenderCaseInstance.
 
-ShaderRenderCaseInstance::ShaderRenderCaseInstance (Context& context, bool isVertexCase, ShaderEvaluator& evaluator, UniformSetup& uniformSetup, AttributeSetupFunc attribFunc)
-	: vkt::TestInstance(context)
-	, m_clearColor(DEFAULT_CLEAR_COLOR)
-	, m_memAlloc(m_context.getDeviceInterface(), m_context.getDevice(), getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice()))
-	, m_isVertexCase(isVertexCase)
-	, m_evaluator(evaluator)
-	, m_uniformSetup(uniformSetup)
-	, m_attribFunc(attribFunc)
-	, m_renderSize(100, 100)
-	, m_colorFormat(VK_FORMAT_R8G8B8A8_UNORM)
+ShaderRenderCaseInstance::ShaderRenderCaseInstance (Context&			context,
+													bool				isVertexCase,
+													ShaderEvaluator&	evaluator,
+													UniformSetup&		uniformSetup,
+													AttributeSetupFunc	attribFunc)
+	: vkt::TestInstance	(context)
+	, m_clearColor		(DEFAULT_CLEAR_COLOR)
+	, m_memAlloc		(m_context.getDeviceInterface(), m_context.getDevice(), getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice()))
+	, m_isVertexCase	(isVertexCase)
+	, m_evaluator		(evaluator)
+	, m_uniformSetup	(uniformSetup)
+	, m_attribFunc		(attribFunc)
+	, m_renderSize		(100, 100)
+	, m_colorFormat		(VK_FORMAT_R8G8B8A8_UNORM)
 {
 }
 
@@ -399,25 +399,24 @@ ShaderRenderCaseInstance::~ShaderRenderCaseInstance (void)
 	const VkDevice			vkDevice	= m_context.getDevice();
 	const DeviceInterface&	vk			= m_context.getDeviceInterface();
 
-	for (size_t i = 0; i < m_vertexBuffers.size(); i++)
+	for (size_t bufferNdx = 0; bufferNdx < m_vertexBuffers.size(); bufferNdx++)
 	{
-		VK_CHECK(vk.freeMemory(vkDevice, m_vertexBufferAllocs[i]->getMemory()));
-		VK_CHECK(vk.destroyBuffer(vkDevice, m_vertexBuffers[i]));
+		VK_CHECK(vk.freeMemory(vkDevice, m_vertexBufferAllocs[bufferNdx]->getMemory()));
+		VK_CHECK(vk.destroyBuffer(vkDevice, m_vertexBuffers[bufferNdx]));
 	}
 
-
-	for (size_t i = 0; i < m_uniformInfos.size(); i++)
+	for (size_t uniformNdx = 0; uniformNdx < m_uniformInfos.size(); uniformNdx++)
 	{
-		if (m_uniformInfos[i].type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+		if (m_uniformInfos[uniformNdx].type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
 		{
-			VK_CHECK(vk.destroyBufferView(vkDevice, m_uniformInfos[i].descriptor.bufferView));
-			VK_CHECK(vk.freeMemory(vkDevice, m_uniformInfos[i].alloc->getMemory()));
-			VK_CHECK(vk.destroyBuffer(vkDevice, m_uniformInfos[i].buffer));
+			VK_CHECK(vk.destroyBufferView(vkDevice, m_uniformInfos[uniformNdx].descriptor.bufferView));
+			VK_CHECK(vk.freeMemory(vkDevice, m_uniformInfos[uniformNdx].alloc->getMemory()));
+			VK_CHECK(vk.destroyBuffer(vkDevice, m_uniformInfos[uniformNdx].buffer));
 		}
-		else if (m_uniformInfos[i].type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
+		else if (m_uniformInfos[uniformNdx].type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
 		{
-			VK_CHECK(vk.destroyImageView(vkDevice, m_uniformInfos[i].descriptor.imageView));
-			VK_CHECK(vk.destroySampler(vkDevice, m_uniformInfos[i].descriptor.sampler));
+			VK_CHECK(vk.destroyImageView(vkDevice, m_uniformInfos[uniformNdx].descriptor.imageView));
+			VK_CHECK(vk.destroySampler(vkDevice, m_uniformInfos[uniformNdx].descriptor.sampler));
 		}
 		else
 			DE_ASSERT(false);
@@ -708,7 +707,6 @@ void ShaderRenderCaseInstance::useUniform (deUint32 bindingLocation, BaseUniform
 	#undef UNIFORM_CASE
 }
 
-
 tcu::IVec2 ShaderRenderCaseInstance::getViewportSize (void) const
 {
 	return tcu::IVec2(de::min(m_renderSize.x(), MAX_RENDER_WIDTH),
@@ -823,6 +821,7 @@ void ShaderRenderCaseInstance::setupDefaultInputs (const QuadGrid& quadGrid)
 		{ MAT2,		2, 2 },
 		{ MAT2x3,	2, 3 },
 		{ MAT2x4,	2, 4 },
+		{ MAT3x2,	3, 2 },
 		{ MAT3,		3, 3 },
 		{ MAT3x4,	3, 4 },
 		{ MAT4x2,	4, 2 },

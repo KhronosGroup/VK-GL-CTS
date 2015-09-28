@@ -1,4 +1,7 @@
 /*------------------------------------------------------------------------
+ * Vulkan Conformance Tests
+ * ------------------------
+ *
  * Copyright (c) 2015 The Khronos Group Inc.
  * Copyright (c) 2015 Samsung Electronics Co., Ltd.
  *
@@ -75,11 +78,11 @@ private:
 class ShaderDiscardCaseInstance : public ShaderRenderCaseInstance
 {
 public:
-						ShaderDiscardCaseInstance	(Context& context,
-													bool isVertexCase,
-													ShaderEvaluator& evaulator,
-													UniformSetup& uniformSetup,
-													bool usesTexture);
+						ShaderDiscardCaseInstance	(Context&			context,
+													bool 				isVertexCase,
+													ShaderEvaluator&	evaulator,
+													UniformSetup&		uniformSetup,
+													bool				usesTexture);
 	virtual				~ShaderDiscardCaseInstance	(void);
 
 private:
@@ -87,9 +90,13 @@ private:
 	Texture2D*			m_brickTexture;
 };
 
-ShaderDiscardCaseInstance::ShaderDiscardCaseInstance (Context& context, bool isVertexCase, ShaderEvaluator& evaulator, UniformSetup& uniformSetup, bool usesTexture)
-	: ShaderRenderCaseInstance(context, isVertexCase, evaulator, uniformSetup, DE_NULL)
-	, m_usesTexture(usesTexture)
+ShaderDiscardCaseInstance::ShaderDiscardCaseInstance (Context&			context,
+													 bool				isVertexCase,
+													 ShaderEvaluator&	evaulator,
+													 UniformSetup&		uniformSetup,
+													 bool				usesTexture)
+	: ShaderRenderCaseInstance	(context, isVertexCase, evaulator, uniformSetup, DE_NULL)
+	, m_usesTexture				(usesTexture)
 {
 	if (m_usesTexture)
 	{
@@ -114,12 +121,12 @@ ShaderDiscardCaseInstance::~ShaderDiscardCaseInstance (void)
 class ShaderDiscardCase : public ShaderRenderCase
 {
 public:
-						ShaderDiscardCase			(tcu::TestContext& testCtx,
-													 const char* name,
-													 const char* description,
-													 const char* shaderSource,
-													 ShaderEvalFunc evalFunc,
-													 bool usesTexture);
+						ShaderDiscardCase			(tcu::TestContext&	testCtx,
+													 const char*		name,
+													 const char*		description,
+													 const char*		shaderSource,
+													 ShaderEvalFunc		evalFunc,
+													 bool				usesTexture);
 	virtual TestInstance*	createInstance			(Context& context) const
 							{
 								DE_ASSERT(m_evaluator != DE_NULL);
@@ -131,12 +138,12 @@ private:
 	bool				m_usesTexture;
 };
 
-ShaderDiscardCase::ShaderDiscardCase (tcu::TestContext& testCtx,
-									  const char* name,
-									  const char* description,
-									  const char* shaderSource,
-									  ShaderEvalFunc evalFunc,
-									  bool usesTexture)
+ShaderDiscardCase::ShaderDiscardCase (tcu::TestContext&	testCtx,
+									  const char*		name,
+									  const char*		description,
+									  const char*		shaderSource,
+									  ShaderEvalFunc	evalFunc,
+									  bool				usesTexture)
 	: ShaderRenderCase	(testCtx, name, description, false, evalFunc, new SamplerUniformSetup(usesTexture), DE_NULL)
 	, m_usesTexture		(usesTexture)
 {
