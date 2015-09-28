@@ -39,6 +39,7 @@
 #include "tcuSurface.hpp"
 #include "tcuVector.hpp"
 #include "tcuTestLog.hpp"
+#include "tcuTextureUtil.hpp"
 
 #include "deMath.h"
 #include "deUniquePtr.hpp"
@@ -1440,7 +1441,10 @@ void ShaderRenderCaseInstance::render (tcu::Surface& result, const QuadGrid& qua
 
 		VK_CHECK(vk.invalidateMappedMemoryRanges(vkDevice, 1u, &range));
 
-		deMemcpy(result.getAccess().getDataPtr(), imagePtr, imageSizeBytes);
+		tcu::TextureFormat resultFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8);
+		const tcu::ConstPixelBufferAccess resultAccess(resultFormat, m_renderSize.x(), m_renderSize.y(), 1, imagePtr);
+
+		tcu::copy(result.getAccess(), resultAccess);
 
 		VK_CHECK(vk.unmapMemory(vkDevice, readImageBufferMemory->getMemory()));
 	}
