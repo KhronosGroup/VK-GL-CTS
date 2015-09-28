@@ -3,11 +3,13 @@
 add_subdirectory(api)
 add_subdirectory(pipeline)
 add_subdirectory(binding_model)
+add_subdirectory(spirv_assembly)
 
 include_directories(
 	api
 	pipeline
 	binding_model
+	spirv_assembly
 	)
 
 set(DEQP_VK_COMMON_SRCS
@@ -28,6 +30,7 @@ set(DEQP_VK_COMMON_LIBS
 	deqp-vk-api
 	deqp-vk-pipeline
 	deqp-vk-binding-model
+	deqp-vk-spirv-assembly
 	)
 
 if (DE_OS_IS_WIN32 OR DE_OS_IS_UNIX OR DE_OS_IS_OSX)
