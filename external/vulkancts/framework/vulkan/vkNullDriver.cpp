@@ -90,12 +90,6 @@ private:
 	const tcu::StaticFunctionLibrary	m_functions;
 };
 
-class DescriptorPool
-{
-public:
-	DescriptorPool (VkDevice, VkDescriptorPoolUsage, deUint32, const VkDescriptorPoolCreateInfo*) {}
-};
-
 class DescriptorSet
 {
 public:
@@ -150,7 +144,6 @@ VK_NULL_DEFINE_DEVICE_OBJ(Event);
 VK_NULL_DEFINE_DEVICE_OBJ(QueryPool);
 VK_NULL_DEFINE_DEVICE_OBJ(BufferView);
 VK_NULL_DEFINE_DEVICE_OBJ(ImageView);
-VK_NULL_DEFINE_DEVICE_OBJ(AttachmentView);
 VK_NULL_DEFINE_DEVICE_OBJ(ShaderModule);
 VK_NULL_DEFINE_DEVICE_OBJ(Shader);
 VK_NULL_DEFINE_DEVICE_OBJ(PipelineCache);
@@ -158,12 +151,9 @@ VK_NULL_DEFINE_DEVICE_OBJ(PipelineLayout);
 VK_NULL_DEFINE_DEVICE_OBJ(RenderPass);
 VK_NULL_DEFINE_DEVICE_OBJ(DescriptorSetLayout);
 VK_NULL_DEFINE_DEVICE_OBJ(Sampler);
-VK_NULL_DEFINE_DEVICE_OBJ(DynamicViewportState);
-VK_NULL_DEFINE_DEVICE_OBJ(DynamicRasterState);
-VK_NULL_DEFINE_DEVICE_OBJ(DynamicColorBlendState);
-VK_NULL_DEFINE_DEVICE_OBJ(DynamicDepthStencilState);
 VK_NULL_DEFINE_DEVICE_OBJ(Framebuffer);
 VK_NULL_DEFINE_DEVICE_OBJ(CmdPool);
+VK_NULL_DEFINE_DEVICE_OBJ(DescriptorPool);
 
 extern "C"
 {
@@ -202,42 +192,33 @@ VkResult enumeratePhysicalDevices (VkInstance, deUint32* pPhysicalDeviceCount, V
 	return VK_SUCCESS;
 }
 
-VkResult getPhysicalDeviceQueueCount (VkPhysicalDevice, deUint32* count)
-{
-	if (count)
-		*count = 1u;
-
-	return VK_SUCCESS;
-}
-
 VkResult getPhysicalDeviceProperties (VkPhysicalDevice, VkPhysicalDeviceProperties* props)
 {
-	const VkPhysicalDeviceProperties defaultProps =
-	{
-		VK_API_VERSION,					//	deUint32				apiVersion;
-		1u,								//	deUint32				driverVersion;
-		0u,								//	deUint32				vendorId;
-		0u,								//	deUint32				deviceId;
-		VK_PHYSICAL_DEVICE_TYPE_OTHER,	//	VkPhysicalDeviceType	deviceType;
-		"null",							//	char					deviceName[VK_MAX_PHYSICAL_DEVICE_NAME];
-		{ 0 }							//	deUint8					pipelineCacheUUID[VK_UUID_LENGTH];
-	};
+	deMemset(props, 0, sizeof(VkPhysicalDeviceProperties));
 
-	deMemcpy(props, &defaultProps, sizeof(defaultProps));
+	props->apiVersion		= VK_API_VERSION;
+	props->driverVersion	= 1u;
+	props->deviceType		= VK_PHYSICAL_DEVICE_TYPE_OTHER;
+
+	deMemcpy(props->deviceName, "null", 5);
+
+	// \todo [2015-09-25 pyry] Fill in reasonable limits
 
 	return VK_SUCCESS;
 }
 
-VkResult getPhysicalDeviceQueueProperties (VkPhysicalDevice, deUint32 count, VkPhysicalDeviceQueueProperties* props)
+VkResult getPhysicalDeviceQueueFamilyProperties (VkPhysicalDevice, deUint32* count, VkQueueFamilyProperties* props)
 {
-	if (count >= 1u)
+	if (props && *count >= 1u)
 	{
-		deMemset(props, 0, sizeof(VkPhysicalDeviceQueueProperties));
+		deMemset(props, 0, sizeof(VkQueueFamilyProperties));
 
 		props->queueCount			= 1u;
 		props->queueFlags			= VK_QUEUE_GRAPHICS_BIT|VK_QUEUE_COMPUTE_BIT|VK_QUEUE_DMA_BIT;
 		props->supportsTimestamps	= DE_TRUE;
 	}
+
+	*count = 1u;
 
 	return VK_SUCCESS;
 }
@@ -252,7 +233,7 @@ VkResult getPhysicalDeviceMemoryProperties (VkPhysicalDevice, VkPhysicalDeviceMe
 
 	props->memoryHeapCount				= 1u;
 	props->memoryHeaps[0].size			= 1ull << 31;
-	props->memoryHeaps[0].flags			= VK_MEMORY_HEAP_HOST_LOCAL;
+	props->memoryHeaps[0].flags			= VK_MEMORY_HEAP_HOST_LOCAL_BIT;
 
 	return VK_SUCCESS;
 }
@@ -313,15 +294,13 @@ VkResult allocDescriptorSets (VkDevice device, VkDescriptorPool descriptorPool, 
 	return VK_SUCCESS;
 }
 
-VkResult freeDescriptorSets (VkDevice, VkDescriptorPool, deUint32 count, const VkDescriptorSet* pDescriptorSets)
+void freeDescriptorSets (VkDevice, VkDescriptorPool, deUint32 count, const VkDescriptorSet* pDescriptorSets)
 {
 	for (deUint32 ndx = 0; ndx < count; ++ndx)
 	{
 		// \note: delete cannot fail
 		delete reinterpret_cast<DescriptorSet*>((deUintptr)pDescriptorSets[ndx].getInternal());
 	}
-
-	return VK_SUCCESS;
 }
 
 #include "vkNullDriverImpl.inl"

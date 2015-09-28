@@ -156,8 +156,8 @@ private:
 	de::MovePtr<Allocation>				m_colorImageAlloc;
 	Move<VkImage>						m_depthImage;
 	de::MovePtr<Allocation>				m_depthImageAlloc;
-	Move<VkAttachmentView>				m_colorAttachmentView;
-	Move<VkAttachmentView>				m_depthAttachmentView;
+	Move<VkImageView>					m_colorAttachmentView;
+	Move<VkImageView>					m_depthAttachmentView;
 	Move<VkRenderPass>					m_renderPass;
 	Move<VkFramebuffer>					m_framebuffer;
 
@@ -175,11 +175,6 @@ private:
 
 	Move<VkCmdPool>						m_cmdPool;
 	Move<VkCmdBuffer>					m_cmdBuffer;
-
-	Move<VkDynamicViewportState>		m_viewportState;
-	Move<VkDynamicRasterState>			m_rasterState;
-	Move<VkDynamicColorBlendState>		m_colorBlendState;
-	Move<VkDynamicDepthStencilState>	m_depthStencilState;
 
 	Move<VkFence>						m_fence;
 };
@@ -247,6 +242,7 @@ DepthTestInstance::DepthTestInstance (Context&				context,
 	const VkDevice				vkDevice			= context.getDevice();
 	const deUint32				queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
 	SimpleAllocator				memAlloc			(vk, vkDevice, getPhysicalDeviceMemoryProperties(context.getInstanceInterface(), context.getPhysicalDevice()));
+	const VkChannelMapping		channelMappingRGBA	= { VK_CHANNEL_SWIZZLE_R, VK_CHANNEL_SWIZZLE_G, VK_CHANNEL_SWIZZLE_B, VK_CHANNEL_SWIZZLE_A };
 
 	// Copy depth operators
 	deMemcpy(m_depthCompareOps, depthCompareOps, sizeof(VkCompareOp) * DepthTest::QUAD_COUNT);
@@ -268,7 +264,8 @@ DepthTestInstance::DepthTestInstance (Context&				context,
 			0u,																			// VkImageCreateFlags	flags;
 			VK_SHARING_MODE_EXCLUSIVE,													// VkSharingMode		sharingMode;
 			1u,																			// deUint32				queueFamilyCount;
-			&queueFamilyIndex															// const deUint32*		pQueueFamilyIndices;
+			&queueFamilyIndex,															// const deUint32*		pQueueFamilyIndices;
+			VK_IMAGE_LAYOUT_UNDEFINED,													// VkImageLayout		initialLayout;
 		};
 
 		m_colorImage			= createImage(vk, vkDevice, &colorImageParams);
@@ -295,11 +292,12 @@ DepthTestInstance::DepthTestInstance (Context&				context,
 			1u,												// deUint32				arraySize;
 			1u,												// deUint32				samples;
 			VK_IMAGE_TILING_OPTIMAL,						// VkImageTiling		tiling;
-			VK_IMAGE_USAGE_DEPTH_STENCIL_BIT,				// VkImageUsageFlags	usage;
+			VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,	// VkImageUsageFlags	usage;
 			0u,												// VkImageCreateFlags	flags;
 			VK_SHARING_MODE_EXCLUSIVE,						// VkSharingMode		sharingMode;
 			1u,												// deUint32				queueFamilyCount;
-			&queueFamilyIndex								// const deUint32*		pQueueFamilyIndices;
+			&queueFamilyIndex,								// const deUint32*		pQueueFamilyIndices;
+			VK_IMAGE_LAYOUT_UNDEFINED,						// VkImageLayout		initialLayout;
 		};
 
 		m_depthImage = createImage(vk, vkDevice, &depthImageParams);
@@ -311,66 +309,68 @@ DepthTestInstance::DepthTestInstance (Context&				context,
 
 	// Create color attachment view
 	{
-		const VkAttachmentViewCreateInfo colorAttachmentViewParams =
+		const VkImageViewCreateInfo colorAttachmentViewParams =
 		{
-			VK_STRUCTURE_TYPE_ATTACHMENT_VIEW_CREATE_INFO,		// VkStructureType				sType;
-			DE_NULL,											// constvoid*					pNext;
-			*m_colorImage,										// VkImage						image;
-			m_colorFormat,										// VkFormat						format;
-			0u,													// deUint32						mipLevel;
-			0u,													// deUint32						baseArraySlice;
-			1u,													// deUint32						arraySize;
-			0u													// VkAttachmentViewCreateFlags	flags;
+			VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,		// VkStructureType			sType;
+			DE_NULL,										// const void*				pNext;
+			*m_colorImage,									// VkImage					image;
+			VK_IMAGE_VIEW_TYPE_2D,							// VkImageViewType			viewType;
+			m_colorFormat,									// VkFormat					format;
+			channelMappingRGBA,							 	// VkChannelMapping			channels;
+			{ VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u },  // VkImageSubresourceRange	subresourceRange;
+			0u												// VkImageViewCreateFlags	flags;
 		};
 
-		m_colorAttachmentView = createAttachmentView(vk, vkDevice, &colorAttachmentViewParams);
+		m_colorAttachmentView = createImageView(vk, vkDevice, &colorAttachmentViewParams);
 	}
 
 	// Create depth attachment view
 	{
-		const VkAttachmentViewCreateInfo depthAttachmentViewParams =
+		const VkImageViewCreateInfo depthAttachmentViewParams =
 		{
-			VK_STRUCTURE_TYPE_ATTACHMENT_VIEW_CREATE_INFO,		// VkStructureType				sType;
-			DE_NULL,											// constvoid*					pNext;
-			*m_depthImage,										// VkImage						image;
-			m_depthFormat,										// VkFormat						format;
-			0u,													// deUint32						mipLevel;
-			0u,													// deUint32						baseArraySlice;
-			1u,													// deUint32						arraySize;
-			0u													// VkAttachmentViewCreateFlags	flags;
+			VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,		// VkStructureType			sType;
+			DE_NULL,										// const void*				pNext;
+			*m_depthImage,									// VkImage					image;
+			VK_IMAGE_VIEW_TYPE_2D,							// VkImageViewType			viewType;
+			m_depthFormat,									// VkFormat					format;
+			channelMappingRGBA,							 	// VkChannelMapping			channels;
+			{ VK_IMAGE_ASPECT_DEPTH_BIT, 0u, 1u, 0u, 1u },  // VkImageSubresourceRange	subresourceRange;
+			0u												// VkImageViewCreateFlags	flags;
 		};
 
-		m_depthAttachmentView = createAttachmentView(vk, vkDevice, &depthAttachmentViewParams);
+		m_depthAttachmentView = createImageView(vk, vkDevice, &depthAttachmentViewParams);
 	}
 
 	// Create render pass
 	{
 		const VkAttachmentDescription colorAttachmentDescription =
 		{
-			VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION,			// VkStructureType		sType;
-			DE_NULL,											// const void*			pNext;
-			m_colorFormat,										// VkFormat				format;
-			1u,													// deUint32				samples;
-			VK_ATTACHMENT_LOAD_OP_CLEAR,						// VkAttachmentLoadOp	loadOp;
-			VK_ATTACHMENT_STORE_OP_STORE,						// VkAttachmentStoreOp	storeOp;
-			VK_ATTACHMENT_LOAD_OP_DONT_CARE,					// VkAttachmentLoadOp	stencilLoadOp;
-			VK_ATTACHMENT_STORE_OP_DONT_CARE,					// VkAttachmentStoreOp	stencilStoreOp;
-			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,			// VkImageLayout		initialLayout;
-			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL			// VkImageLayout		finalLayout;
+			VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION,			// VkStructureType				sType;
+			DE_NULL,											// const void*					pNext;
+			m_colorFormat,										// VkFormat						format;
+			1u,													// deUint32						samples;
+			VK_ATTACHMENT_LOAD_OP_CLEAR,						// VkAttachmentLoadOp			loadOp;
+			VK_ATTACHMENT_STORE_OP_STORE,						// VkAttachmentStoreOp			storeOp;
+			VK_ATTACHMENT_LOAD_OP_DONT_CARE,					// VkAttachmentLoadOp			stencilLoadOp;
+			VK_ATTACHMENT_STORE_OP_DONT_CARE,					// VkAttachmentStoreOp			stencilStoreOp;
+			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,			// VkImageLayout				initialLayout;
+			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,			// VkImageLayout				finalLayout;
+			0u,													// VkAttachmentDescriptionFlags	flags;
 		};
 
 		const VkAttachmentDescription depthAttachmentDescription =
 		{
-			VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION,			// VkStructureType		sType;
-			DE_NULL,											// const void*			pNext;
-			m_depthFormat,										// VkFormat				format;
-			1u,													// deUint32				samples;
-			VK_ATTACHMENT_LOAD_OP_CLEAR,						// VkAttachmentLoadOp	loadOp;
-			VK_ATTACHMENT_STORE_OP_DONT_CARE,					// VkAttachmentStoreOp	storeOp;
-			VK_ATTACHMENT_LOAD_OP_DONT_CARE,					// VkAttachmentLoadOp	stencilLoadOp;
-			VK_ATTACHMENT_STORE_OP_DONT_CARE,					// VkAttachmentStoreOp	stencilStoreOp;
-			VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,	// VkImageLayout		initialLayout;
-			VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL	// VkImageLayout		finalLayout;
+			VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION,			// VkStructureType				sType;
+			DE_NULL,											// const void*					pNext;
+			m_depthFormat,										// VkFormat						format;
+			1u,													// deUint32						samples;
+			VK_ATTACHMENT_LOAD_OP_CLEAR,						// VkAttachmentLoadOp			loadOp;
+			VK_ATTACHMENT_STORE_OP_DONT_CARE,					// VkAttachmentStoreOp			storeOp;
+			VK_ATTACHMENT_LOAD_OP_DONT_CARE,					// VkAttachmentLoadOp			stencilLoadOp;
+			VK_ATTACHMENT_STORE_OP_DONT_CARE,					// VkAttachmentStoreOp			stencilStoreOp;
+			VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,	// VkImageLayout				initialLayout;
+			VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,	// VkImageLayout				finalLayout;
+			0u,													// VkAttachmentDescriptionFlags	flags;
 		};
 
 		const VkAttachmentDescription attachments[2] =
@@ -393,18 +393,18 @@ DepthTestInstance::DepthTestInstance (Context&				context,
 
 		const VkSubpassDescription subpassDescription =
 		{
-			VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION,				// VkStructureType				sType;
-			DE_NULL,											// constvoid*					pNext;
-			VK_PIPELINE_BIND_POINT_GRAPHICS,					// VkPipelineBindPoint			pipelineBindPoint;
-			0u,													// VkSubpassDescriptionFlags	flags;
-			0u,													// deUint32						inputCount;
-			DE_NULL,											// constVkAttachmentReference*	inputAttachments;
-			1u,													// deUint32						colorCount;
-			&colorAttachmentReference,							// constVkAttachmentReference*	colorAttachments;
-			DE_NULL,											// constVkAttachmentReference*	resolveAttachments;
-			depthAttachmentReference,							// VkAttachmentReference		depthStencilAttachment;
-			0u,													// deUint32						preserveCount;
-			DE_NULL												// constVkAttachmentReference*	preserveAttachments;
+			VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION,				// VkStructureType					sType;
+			DE_NULL,											// const void*						pNext;
+			VK_PIPELINE_BIND_POINT_GRAPHICS,					// VkPipelineBindPoint				pipelineBindPoint;
+			0u,													// VkSubpassDescriptionFlags		flags;
+			0u,													// deUint32							inputCount;
+			DE_NULL,											// const VkAttachmentReference*		pInputAttachments;
+			1u,													// deUint32							colorCount;
+			&colorAttachmentReference,							// const VkAttachmentReference*		pColorAttachments;
+			DE_NULL,											// const VkAttachmentReference*		pResolveAttachments;
+			depthAttachmentReference,							// VkAttachmentReference			depthStencilAttachment;
+			0u,													// deUint32							preserveCount;
+			DE_NULL												// const VkAttachmentReference*		pPreserveAttachments;
 		};
 
 		const VkRenderPassCreateInfo renderPassParams =
@@ -424,10 +424,10 @@ DepthTestInstance::DepthTestInstance (Context&				context,
 
 	// Create framebuffer
 	{
-		const VkAttachmentBindInfo attachmentBindInfos[2] =
+		const VkImageView attachmentBindInfos[2] =
 		{
-			{ *m_colorAttachmentView, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL },
-			{ *m_depthAttachmentView, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL }
+			*m_colorAttachmentView,
+			*m_depthAttachmentView,
 		};
 
 		const VkFramebufferCreateInfo framebufferParams =
@@ -436,7 +436,7 @@ DepthTestInstance::DepthTestInstance (Context&				context,
 			DE_NULL,											// const void*					pNext;
 			*m_renderPass,										// VkRenderPass					renderPass;
 			2u,													// deUint32						attachmentCount;
-			attachmentBindInfos,								// const VkAttachmentBindInfo*	pAttachments;
+			attachmentBindInfos,								// const VkImageView*			pAttachments;
 			(deUint32)m_renderSize.x(),							// deUint32						width;
 			(deUint32)m_renderSize.y(),							// deUint32						height;
 			1u													// deUint32						layers;
@@ -471,7 +471,8 @@ DepthTestInstance::DepthTestInstance (Context&				context,
 			DE_NULL,										// const void*			pNext;
 			*m_vertexShaderModule,							// VkShaderModule		module;
 			"main",											// const char*			pName;
-			0u												// VkShaderCreateFlags	flags;
+			0u,												// VkShaderCreateFlags	flags;
+			VK_SHADER_STAGE_VERTEX,							// VkShaderStage		stage;
 		};
 
 		const VkShaderCreateInfo fragmentShaderParams =
@@ -480,7 +481,8 @@ DepthTestInstance::DepthTestInstance (Context&				context,
 			DE_NULL,										// const void*			pNext;
 			*m_fragmentShaderModule,						// VkShaderModule		module;
 			"main",											// const char*			pName;
-			0u												// VkShaderCreateFlags	flags;
+			0u,												// VkShaderCreateFlags	flags;
+			VK_SHADER_STAGE_FRAGMENT,						// VkShaderStage		stage;
 		};
 
 		m_vertexShader		= createShader(vk, vkDevice, &vertexShaderParams);
@@ -517,10 +519,10 @@ DepthTestInstance::DepthTestInstance (Context&				context,
 		const VkVertexInputAttributeDescription vertexInputAttributeDescriptions[2] =
 		{
 			{
-				0u,								// deUint32	location;
-				0u,								// deUint32	binding;
-				VK_FORMAT_R32G32B32A32_SFLOAT,	// VkFormat	format;
-				0u								// deUint32	offsetInBytes;
+				0u,									// deUint32	location;
+				0u,									// deUint32	binding;
+				VK_FORMAT_R32G32B32A32_SFLOAT,		// VkFormat	format;
+				0u									// deUint32	offsetInBytes;
 			},
 			{
 				1u,									// deUint32	location;
@@ -548,11 +550,28 @@ DepthTestInstance::DepthTestInstance (Context&				context,
 			false															// VkBool32				primitiveRestartEnable;
 		};
 
+		const VkViewport viewport =
+		{
+			0.0f,						// float	originX;
+			0.0f,						// float	originY;
+			(float)m_renderSize.x(),	// float	width;
+			(float)m_renderSize.y(),	// float	height;
+			0.0f,						// float	minDepth;
+			1.0f						// float	maxDepth;
+		};
+		const VkRect2D scissor =
+		{
+			{ 0, 0 },												// VkOffset2D  offset;
+			{ m_renderSize.x(), m_renderSize.y() }					// VkExtent2D  extent;
+		};
 		const VkPipelineViewportStateCreateInfo viewportStateParams =
 		{
-			VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,			// VkStructureType	sType;
-			DE_NULL,														// const void*		pNext;
-			1u																// deUint32			viewportCount;
+			VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,			// VkStructureType		sType;
+			DE_NULL,														// const void*			pNext;
+			1u,																// deUint32				viewportCount;
+			&viewport,														// const VkViewport*	pViewports;
+			1u,																// deUint32				scissorCount;
+			&scissor														// const VkRect2D*		pScissors;
 		};
 
 		const VkPipelineRasterStateCreateInfo rasterStateParams =
@@ -563,7 +582,12 @@ DepthTestInstance::DepthTestInstance (Context&				context,
 			false,															// VkBool32			rasterizerDiscardEnable;
 			VK_FILL_MODE_SOLID,												// VkFillMode		fillMode;
 			VK_CULL_MODE_NONE,												// VkCullMode		cullMode;
-			VK_FRONT_FACE_CCW												// VkFrontFace		frontFace;
+			VK_FRONT_FACE_CCW,												// VkFrontFace		frontFace;
+			VK_FALSE,														// VkBool32			depthBiasEnable;
+			0.0f,															// float			depthBias;
+			0.0f,															// float			depthBiasClamp;
+			0.0f,															// float			slopeScaledDepthBias;
+			1.0f,															// float			lineWidth;
 		};
 
 		const VkPipelineColorBlendAttachmentState colorBlendAttachmentState =
@@ -583,20 +607,30 @@ DepthTestInstance::DepthTestInstance (Context&				context,
 			VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,	// VkStructureType								sType;
 			DE_NULL,													// const void*									pNext;
 			false,														// VkBool32										alphaToCoverageEnable;
+			false,														// VkBool32										alphaToOneEnable;
 			false,														// VkBool32										logicOpEnable;
 			VK_LOGIC_OP_COPY,											// VkLogicOp									logicOp;
 			1u,															// deUint32										attachmentCount;
-			&colorBlendAttachmentState									// const VkPipelineColorBlendAttachmentState*	pAttachments;
+			&colorBlendAttachmentState,									// const VkPipelineColorBlendAttachmentState*	pAttachments;
+			{ 0.0f, 0.0f, 0.0f, 0.0f },									// float										blendConst[4];
 		};
 
-		const VkPipelineMultisampleStateCreateInfo multisampleStateParams =
+		const VkPipelineMultisampleStateCreateInfo	multisampleStateParams	=
 		{
-			VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,	// VkStructureType	sType;
-			DE_NULL,													// const void*		pNext;
-			1u,															// deUint32			rasterSamples;
-			false,														// VkBool32			sampleShadingEnable;
-			0.0f,														// float			minSampleShading;
-			~((VkSampleMask)0)											// VkSampleMask		sampleMask;
+			VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,	// VkStructureType		sType;
+			DE_NULL,													// const void*			pNext;
+			1u,															// deUint32				rasterSamples;
+			false,														// VkBool32				sampleShadingEnable;
+			0.0f,														// float				minSampleShading;
+			DE_NULL														// const VkSampleMask*	pSampleMask;
+		};
+
+		const VkPipelineDynamicStateCreateInfo	dynamicStateParams		=
+		{
+			VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,		// VkStructureType			sType;
+			DE_NULL,													// const void*				pNext;
+			0u,															// deUint32					dynamicStateCount;
+			DE_NULL														// const VkDynamicState*	pDynamicStates;
 		};
 
 		VkPipelineDepthStencilStateCreateInfo depthStencilStateParams =
@@ -606,22 +640,30 @@ DepthTestInstance::DepthTestInstance (Context&				context,
 			true,														// VkBool32			depthTestEnable;
 			true,														// VkBool32			depthWriteEnable;
 			VK_COMPARE_OP_LESS,											// VkCompareOp		depthCompareOp;
-			false,														// VkBool32			depthBoundsEnable;
+			false,														// VkBool32			depthBoundsTestEnable;
 			false,														// VkBool32			stencilTestEnable;
 			// VkStencilOpState	front;
 			{
 				VK_STENCIL_OP_KEEP,		// VkStencilOp	stencilFailOp;
 				VK_STENCIL_OP_KEEP,		// VkStencilOp	stencilPassOp;
 				VK_STENCIL_OP_KEEP,		// VkStencilOp	stencilDepthFailOp;
-				VK_COMPARE_OP_NEVER		// VkCompareOp	stencilCompareOp;
+				VK_COMPARE_OP_NEVER,	// VkCompareOp	stencilCompareOp;
+				0u,						// deUint32		stencilCompareMask;
+				0u,						// deUint32		stencilWriteMask;
+				0u,						// deUint32		stencilReference;
 			},
 			// VkStencilOpState	back;
 			{
 				VK_STENCIL_OP_KEEP,		// VkStencilOp	stencilFailOp;
 				VK_STENCIL_OP_KEEP,		// VkStencilOp	stencilPassOp;
 				VK_STENCIL_OP_KEEP,		// VkStencilOp	stencilDepthFailOp;
-				VK_COMPARE_OP_NEVER		// VkCompareOp	stencilCompareOp;
-			}
+				VK_COMPARE_OP_NEVER,	// VkCompareOp	stencilCompareOp;
+				0u,						// deUint32		stencilCompareMask;
+				0u,						// deUint32		stencilWriteMask;
+				0u,						// deUint32		stencilReference;
+			},
+			-1.0f,														// float			minDepthBounds;
+			+1.0f,														// float			maxDepthBounds;
 		};
 
 		const VkGraphicsPipelineCreateInfo graphicsPipelineParams =
@@ -638,6 +680,7 @@ DepthTestInstance::DepthTestInstance (Context&				context,
 			&multisampleStateParams,							// const VkPipelineMultisampleStateCreateInfo*		pMultisampleState;
 			&depthStencilStateParams,							// const VkPipelineDepthStencilStateCreateInfo*		pDepthStencilState;
 			&colorBlendStateParams,								// const VkPipelineColorBlendStateCreateInfo*		pColorBlendState;
+			&dynamicStateParams,								// const VkPipelineDynamicStateCreateInfo*			pDynamicState;
 			0u,													// VkPipelineCreateFlags							flags;
 			*m_pipelineLayout,									// VkPipelineLayout									layout;
 			*m_renderPass,										// VkRenderPass										renderPass;
@@ -651,68 +694,6 @@ DepthTestInstance::DepthTestInstance (Context&				context,
 			depthStencilStateParams.depthCompareOp	= depthCompareOps[quadNdx];
 			m_graphicsPipelines[quadNdx]			= createGraphicsPipeline(vk, vkDevice, DE_NULL, &graphicsPipelineParams);
 		}
-	}
-
-	// Create dynamic states
-	{
-		const VkViewport viewport =
-		{
-			0.0f,						// float	originX;
-			0.0f,						// float	originY;
-			(float)m_renderSize.x(),	// float	width;
-			(float)m_renderSize.y(),	// float	height;
-			0.0f,						// float	minDepth;
-			1.0f						// float	maxDepth;
-		};
-
-		const VkRect2D scissor =
-		{
-			{ 0, 0 },												// VkOffset2D  offset;
-			{ m_renderSize.x(), m_renderSize.y() }					// VkExtent2D  extent;
-		};
-
-		const VkDynamicViewportStateCreateInfo viewportStateParams =
-		{
-			VK_STRUCTURE_TYPE_DYNAMIC_VIEWPORT_STATE_CREATE_INFO,	// VkStructureType		sType;
-			DE_NULL,												// const void*			pNext;
-			1,														// deUint32				viewportAndScissorCount;
-			&viewport,												// const VkViewport*	pViewports;
-			&scissor												// const VkRect2D*		pScissors;
-		};
-
-		const VkDynamicRasterStateCreateInfo rasterStateParams =
-		{
-			VK_STRUCTURE_TYPE_DYNAMIC_RASTER_STATE_CREATE_INFO,		// VkStructureType	sType;
-			DE_NULL,												// const void*		pNext;
-			0.0f,													// float			depthBias;
-			0.0f,													// float			depthBiasClamp;
-			0.0f,													// float			slopeScaledDepthBias;
-			1.0f,													// float			lineWidth;
-		};
-
-		const VkDynamicColorBlendStateCreateInfo colorBlendStateParams =
-		{
-			VK_STRUCTURE_TYPE_DYNAMIC_COLOR_BLEND_STATE_CREATE_INFO,	// VkStructureType	sType;
-			DE_NULL,													// const void*		pNext;
-			{ 0.0f, 0.0f, 0.0f, 0.0f }									// float			blendConst[4];
-		};
-
-		const VkDynamicDepthStencilStateCreateInfo depthStencilStateParams =
-		{
-			VK_STRUCTURE_TYPE_DYNAMIC_DEPTH_STENCIL_STATE_CREATE_INFO,	// VkStructureType	sType;
-			DE_NULL,													// const void*		pNext;
-			0.0f,														// float			minDepthBounds;
-			1.0f,														// float			maxDepthBounds;
-			0x0,														// deUint32			stencilReadMask;
-			0x0,														// deUint32			stencilWriteMask;
-			0x0,														// deUint32			stencilFrontRef;
-			0x0															// deUint32			stencilBackRef;
-		};
-
-		m_viewportState		= createDynamicViewportState(vk, vkDevice, &viewportStateParams);
-		m_rasterState		= createDynamicRasterState(vk, vkDevice, &rasterStateParams);
-		m_colorBlendState	= createDynamicColorBlendState(vk, vkDevice, &colorBlendStateParams);
-		m_depthStencilState	= createDynamicDepthStencilState(vk, vkDevice, &depthStencilStateParams);
 	}
 
 	// Create vertex buffer
@@ -775,6 +756,7 @@ DepthTestInstance::DepthTestInstance (Context&				context,
 			DE_NULL,									// const void*				pNext;
 			0u,											// VkCmdBufferOptimizeFlags	flags;
 			DE_NULL,									// VkRenderPass				renderPass;
+			0u,											// deUint32					subpass;
 			DE_NULL										// VkFramebuffer			framebuffer;
 		};
 
@@ -790,20 +772,15 @@ DepthTestInstance::DepthTestInstance (Context&				context,
 			DE_NULL,												// const void*			pNext;
 			*m_renderPass,											// VkRenderPass			renderPass;
 			*m_framebuffer,											// VkFramebuffer		framebuffer;
-			{ { 0, 0 }, { m_renderSize.x(), m_renderSize.y()} },	// VkRect2D				renderArea;
-			2,														// deUint32				attachmentCount;
-			attachmentClearValues									// const VkClearValue*	pAttachmentClearValues;
+			{ { 0, 0 }, { m_renderSize.x(), m_renderSize.y() } },	// VkRect2D				renderArea;
+			2,														// deUint32				clearValueCount;
+			attachmentClearValues									// const VkClearValue*	pClearValues;
 		};
 
 		m_cmdBuffer = createCommandBuffer(vk, vkDevice, &cmdBufferParams);
 
 		VK_CHECK(vk.beginCommandBuffer(*m_cmdBuffer, &cmdBufferBeginInfo));
 		vk.cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfo, VK_RENDER_PASS_CONTENTS_INLINE);
-
-		vk.cmdBindDynamicViewportState(*m_cmdBuffer, *m_viewportState);
-		vk.cmdBindDynamicRasterState(*m_cmdBuffer, *m_rasterState);
-		vk.cmdBindDynamicColorBlendState(*m_cmdBuffer, *m_colorBlendState);
-		vk.cmdBindDynamicDepthStencilState(*m_cmdBuffer, *m_depthStencilState);
 
 		const VkDeviceSize		quadOffset		= (m_vertices.size() / DepthTest::QUAD_COUNT) * sizeof(Vertex4RGBA);
 
@@ -813,7 +790,7 @@ DepthTestInstance::DepthTestInstance (Context&				context,
 
 			vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_graphicsPipelines[quadNdx]);
 			vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &m_vertexBuffer.get(), &vertexBufferOffset);
-			vk.cmdDraw(*m_cmdBuffer, 0, (deUint32)(m_vertices.size() / DepthTest::QUAD_COUNT), 0, 1);
+			vk.cmdDraw(*m_cmdBuffer, (deUint32)(m_vertices.size() / DepthTest::QUAD_COUNT), 1, 0, 0);
 		}
 
 		vk.cmdEndRenderPass(*m_cmdBuffer);
@@ -953,7 +930,7 @@ tcu::TestCaseGroup* createDepthTests (tcu::TestContext& testCtx)
 	const VkFormat depthFormats[] =
 	{
 		VK_FORMAT_D16_UNORM,
-		VK_FORMAT_D24_UNORM,
+		VK_FORMAT_D24_UNORM_X8,
 		VK_FORMAT_D32_SFLOAT,
 		VK_FORMAT_D16_UNORM_S8_UINT,
 		VK_FORMAT_D24_UNORM_S8_UINT,
@@ -1054,12 +1031,12 @@ tcu::TestCaseGroup* createDepthTests (tcu::TestContext& testCtx)
 						VK_FORMAT_D16_UNORM);
 
 		// Sets where at least one of the formats must be supported
-		const VkFormat	depthOnlyFormats[]		= { VK_FORMAT_D24_UNORM, VK_FORMAT_D32_SFLOAT };
+		const VkFormat	depthOnlyFormats[]		= { VK_FORMAT_D24_UNORM_X8, VK_FORMAT_D32_SFLOAT };
 		const VkFormat	depthStencilFormats[]	= { VK_FORMAT_D24_UNORM_S8_UINT, VK_FORMAT_D32_SFLOAT_S8_UINT };
 
 		addFunctionCase(formatFeaturesTests.get(),
 						"support_d24_unorm_or_d32_sfloat",
-						"Tests if any of VK_FORMAT_D24_UNORM or VK_FORMAT_D32_SFLOAT are supported as depth/stencil attachment format",
+						"Tests if any of VK_FORMAT_D24_UNORM_X8 or VK_FORMAT_D32_SFLOAT are supported as depth/stencil attachment format",
 						testSupportsAtLeastOneDepthStencilFormat,
 						std::vector<VkFormat>(depthOnlyFormats, depthOnlyFormats + DE_LENGTH_OF_ARRAY(depthOnlyFormats)));
 

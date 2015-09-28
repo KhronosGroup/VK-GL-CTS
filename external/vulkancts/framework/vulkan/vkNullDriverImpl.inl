@@ -56,11 +56,6 @@ VkResult createImageView (VkDevice device, const VkImageViewCreateInfo* pCreateI
 	VK_NULL_RETURN(*pView = VkImageView((deUint64)(deUintptr)new ImageView(device, pCreateInfo)));
 }
 
-VkResult createAttachmentView (VkDevice device, const VkAttachmentViewCreateInfo* pCreateInfo, VkAttachmentView* pView)
-{
-	VK_NULL_RETURN(*pView = VkAttachmentView((deUint64)(deUintptr)new AttachmentView(device, pCreateInfo)));
-}
-
 VkResult createShaderModule (VkDevice device, const VkShaderModuleCreateInfo* pCreateInfo, VkShaderModule* pShaderModule)
 {
 	VK_NULL_RETURN(*pShaderModule = VkShaderModule((deUint64)(deUintptr)new ShaderModule(device, pCreateInfo)));
@@ -91,29 +86,9 @@ VkResult createDescriptorSetLayout (VkDevice device, const VkDescriptorSetLayout
 	VK_NULL_RETURN(*pSetLayout = VkDescriptorSetLayout((deUint64)(deUintptr)new DescriptorSetLayout(device, pCreateInfo)));
 }
 
-VkResult createDescriptorPool (VkDevice device, VkDescriptorPoolUsage poolUsage, deUint32 maxSets, const VkDescriptorPoolCreateInfo* pCreateInfo, VkDescriptorPool* pDescriptorPool)
+VkResult createDescriptorPool (VkDevice device, const VkDescriptorPoolCreateInfo* pCreateInfo, VkDescriptorPool* pDescriptorPool)
 {
-	VK_NULL_RETURN(*pDescriptorPool = VkDescriptorPool((deUint64)(deUintptr)new DescriptorPool(device, poolUsage, maxSets, pCreateInfo)));
-}
-
-VkResult createDynamicViewportState (VkDevice device, const VkDynamicViewportStateCreateInfo* pCreateInfo, VkDynamicViewportState* pState)
-{
-	VK_NULL_RETURN(*pState = VkDynamicViewportState((deUint64)(deUintptr)new DynamicViewportState(device, pCreateInfo)));
-}
-
-VkResult createDynamicRasterState (VkDevice device, const VkDynamicRasterStateCreateInfo* pCreateInfo, VkDynamicRasterState* pState)
-{
-	VK_NULL_RETURN(*pState = VkDynamicRasterState((deUint64)(deUintptr)new DynamicRasterState(device, pCreateInfo)));
-}
-
-VkResult createDynamicColorBlendState (VkDevice device, const VkDynamicColorBlendStateCreateInfo* pCreateInfo, VkDynamicColorBlendState* pState)
-{
-	VK_NULL_RETURN(*pState = VkDynamicColorBlendState((deUint64)(deUintptr)new DynamicColorBlendState(device, pCreateInfo)));
-}
-
-VkResult createDynamicDepthStencilState (VkDevice device, const VkDynamicDepthStencilStateCreateInfo* pCreateInfo, VkDynamicDepthStencilState* pState)
-{
-	VK_NULL_RETURN(*pState = VkDynamicDepthStencilState((deUint64)(deUintptr)new DynamicDepthStencilState(device, pCreateInfo)));
+	VK_NULL_RETURN(*pDescriptorPool = VkDescriptorPool((deUint64)(deUintptr)new DescriptorPool(device, pCreateInfo)));
 }
 
 VkResult createFramebuffer (VkDevice device, const VkFramebufferCreateInfo* pCreateInfo, VkFramebuffer* pFramebuffer)
@@ -136,170 +111,140 @@ VkResult createCommandBuffer (VkDevice device, const VkCmdBufferCreateInfo* pCre
 	VK_NULL_RETURN(*pCmdBuffer = reinterpret_cast<VkCmdBuffer>(new CmdBuffer(device, pCreateInfo)));
 }
 
-VkResult destroyInstance (VkInstance instance)
+void destroyInstance (VkInstance instance)
 {
-	VK_NULL_RETURN(delete reinterpret_cast<Instance*>(instance));
+	delete reinterpret_cast<Instance*>(instance);
 }
 
-VkResult destroyDevice (VkDevice device)
+void destroyDevice (VkDevice device)
 {
-	VK_NULL_RETURN(delete reinterpret_cast<Device*>(device));
+	delete reinterpret_cast<Device*>(device);
 }
 
-VkResult freeMemory (VkDevice device, VkDeviceMemory mem)
+void freeMemory (VkDevice device, VkDeviceMemory mem)
 {
 	DE_UNREF(device);
-	VK_NULL_RETURN(delete reinterpret_cast<DeviceMemory*>((deUintptr)mem.getInternal()));
+	delete reinterpret_cast<DeviceMemory*>((deUintptr)mem.getInternal());
 }
 
-VkResult destroyFence (VkDevice device, VkFence fence)
+void destroyFence (VkDevice device, VkFence fence)
 {
 	DE_UNREF(device);
-	VK_NULL_RETURN(delete reinterpret_cast<Fence*>((deUintptr)fence.getInternal()));
+	delete reinterpret_cast<Fence*>((deUintptr)fence.getInternal());
 }
 
-VkResult destroySemaphore (VkDevice device, VkSemaphore semaphore)
+void destroySemaphore (VkDevice device, VkSemaphore semaphore)
 {
 	DE_UNREF(device);
-	VK_NULL_RETURN(delete reinterpret_cast<Semaphore*>((deUintptr)semaphore.getInternal()));
+	delete reinterpret_cast<Semaphore*>((deUintptr)semaphore.getInternal());
 }
 
-VkResult destroyEvent (VkDevice device, VkEvent event)
+void destroyEvent (VkDevice device, VkEvent event)
 {
 	DE_UNREF(device);
-	VK_NULL_RETURN(delete reinterpret_cast<Event*>((deUintptr)event.getInternal()));
+	delete reinterpret_cast<Event*>((deUintptr)event.getInternal());
 }
 
-VkResult destroyQueryPool (VkDevice device, VkQueryPool queryPool)
+void destroyQueryPool (VkDevice device, VkQueryPool queryPool)
 {
 	DE_UNREF(device);
-	VK_NULL_RETURN(delete reinterpret_cast<QueryPool*>((deUintptr)queryPool.getInternal()));
+	delete reinterpret_cast<QueryPool*>((deUintptr)queryPool.getInternal());
 }
 
-VkResult destroyBuffer (VkDevice device, VkBuffer buffer)
+void destroyBuffer (VkDevice device, VkBuffer buffer)
 {
 	DE_UNREF(device);
-	VK_NULL_RETURN(delete reinterpret_cast<Buffer*>((deUintptr)buffer.getInternal()));
+	delete reinterpret_cast<Buffer*>((deUintptr)buffer.getInternal());
 }
 
-VkResult destroyBufferView (VkDevice device, VkBufferView bufferView)
+void destroyBufferView (VkDevice device, VkBufferView bufferView)
 {
 	DE_UNREF(device);
-	VK_NULL_RETURN(delete reinterpret_cast<BufferView*>((deUintptr)bufferView.getInternal()));
+	delete reinterpret_cast<BufferView*>((deUintptr)bufferView.getInternal());
 }
 
-VkResult destroyImage (VkDevice device, VkImage image)
+void destroyImage (VkDevice device, VkImage image)
 {
 	DE_UNREF(device);
-	VK_NULL_RETURN(delete reinterpret_cast<Image*>((deUintptr)image.getInternal()));
+	delete reinterpret_cast<Image*>((deUintptr)image.getInternal());
 }
 
-VkResult destroyImageView (VkDevice device, VkImageView imageView)
+void destroyImageView (VkDevice device, VkImageView imageView)
 {
 	DE_UNREF(device);
-	VK_NULL_RETURN(delete reinterpret_cast<ImageView*>((deUintptr)imageView.getInternal()));
+	delete reinterpret_cast<ImageView*>((deUintptr)imageView.getInternal());
 }
 
-VkResult destroyAttachmentView (VkDevice device, VkAttachmentView attachmentView)
+void destroyShaderModule (VkDevice device, VkShaderModule shaderModule)
 {
 	DE_UNREF(device);
-	VK_NULL_RETURN(delete reinterpret_cast<AttachmentView*>((deUintptr)attachmentView.getInternal()));
+	delete reinterpret_cast<ShaderModule*>((deUintptr)shaderModule.getInternal());
 }
 
-VkResult destroyShaderModule (VkDevice device, VkShaderModule shaderModule)
+void destroyShader (VkDevice device, VkShader shader)
 {
 	DE_UNREF(device);
-	VK_NULL_RETURN(delete reinterpret_cast<ShaderModule*>((deUintptr)shaderModule.getInternal()));
+	delete reinterpret_cast<Shader*>((deUintptr)shader.getInternal());
 }
 
-VkResult destroyShader (VkDevice device, VkShader shader)
+void destroyPipelineCache (VkDevice device, VkPipelineCache pipelineCache)
 {
 	DE_UNREF(device);
-	VK_NULL_RETURN(delete reinterpret_cast<Shader*>((deUintptr)shader.getInternal()));
+	delete reinterpret_cast<PipelineCache*>((deUintptr)pipelineCache.getInternal());
 }
 
-VkResult destroyPipelineCache (VkDevice device, VkPipelineCache pipelineCache)
+void destroyPipeline (VkDevice device, VkPipeline pipeline)
 {
 	DE_UNREF(device);
-	VK_NULL_RETURN(delete reinterpret_cast<PipelineCache*>((deUintptr)pipelineCache.getInternal()));
+	delete reinterpret_cast<Pipeline*>((deUintptr)pipeline.getInternal());
 }
 
-VkResult destroyPipeline (VkDevice device, VkPipeline pipeline)
+void destroyPipelineLayout (VkDevice device, VkPipelineLayout pipelineLayout)
 {
 	DE_UNREF(device);
-	VK_NULL_RETURN(delete reinterpret_cast<Pipeline*>((deUintptr)pipeline.getInternal()));
+	delete reinterpret_cast<PipelineLayout*>((deUintptr)pipelineLayout.getInternal());
 }
 
-VkResult destroyPipelineLayout (VkDevice device, VkPipelineLayout pipelineLayout)
+void destroySampler (VkDevice device, VkSampler sampler)
 {
 	DE_UNREF(device);
-	VK_NULL_RETURN(delete reinterpret_cast<PipelineLayout*>((deUintptr)pipelineLayout.getInternal()));
+	delete reinterpret_cast<Sampler*>((deUintptr)sampler.getInternal());
 }
 
-VkResult destroySampler (VkDevice device, VkSampler sampler)
+void destroyDescriptorSetLayout (VkDevice device, VkDescriptorSetLayout descriptorSetLayout)
 {
 	DE_UNREF(device);
-	VK_NULL_RETURN(delete reinterpret_cast<Sampler*>((deUintptr)sampler.getInternal()));
+	delete reinterpret_cast<DescriptorSetLayout*>((deUintptr)descriptorSetLayout.getInternal());
 }
 
-VkResult destroyDescriptorSetLayout (VkDevice device, VkDescriptorSetLayout descriptorSetLayout)
+void destroyDescriptorPool (VkDevice device, VkDescriptorPool descriptorPool)
 {
 	DE_UNREF(device);
-	VK_NULL_RETURN(delete reinterpret_cast<DescriptorSetLayout*>((deUintptr)descriptorSetLayout.getInternal()));
+	delete reinterpret_cast<DescriptorPool*>((deUintptr)descriptorPool.getInternal());
 }
 
-VkResult destroyDescriptorPool (VkDevice device, VkDescriptorPool descriptorPool)
+void destroyFramebuffer (VkDevice device, VkFramebuffer framebuffer)
 {
 	DE_UNREF(device);
-	VK_NULL_RETURN(delete reinterpret_cast<DescriptorPool*>((deUintptr)descriptorPool.getInternal()));
+	delete reinterpret_cast<Framebuffer*>((deUintptr)framebuffer.getInternal());
 }
 
-VkResult destroyDynamicViewportState (VkDevice device, VkDynamicViewportState dynamicViewportState)
+void destroyRenderPass (VkDevice device, VkRenderPass renderPass)
 {
 	DE_UNREF(device);
-	VK_NULL_RETURN(delete reinterpret_cast<DynamicViewportState*>((deUintptr)dynamicViewportState.getInternal()));
+	delete reinterpret_cast<RenderPass*>((deUintptr)renderPass.getInternal());
 }
 
-VkResult destroyDynamicRasterState (VkDevice device, VkDynamicRasterState dynamicRasterState)
+void destroyCommandPool (VkDevice device, VkCmdPool cmdPool)
 {
 	DE_UNREF(device);
-	VK_NULL_RETURN(delete reinterpret_cast<DynamicRasterState*>((deUintptr)dynamicRasterState.getInternal()));
+	delete reinterpret_cast<CmdPool*>((deUintptr)cmdPool.getInternal());
 }
 
-VkResult destroyDynamicColorBlendState (VkDevice device, VkDynamicColorBlendState dynamicColorBlendState)
+void destroyCommandBuffer (VkDevice device, VkCmdBuffer commandBuffer)
 {
 	DE_UNREF(device);
-	VK_NULL_RETURN(delete reinterpret_cast<DynamicColorBlendState*>((deUintptr)dynamicColorBlendState.getInternal()));
-}
-
-VkResult destroyDynamicDepthStencilState (VkDevice device, VkDynamicDepthStencilState dynamicDepthStencilState)
-{
-	DE_UNREF(device);
-	VK_NULL_RETURN(delete reinterpret_cast<DynamicDepthStencilState*>((deUintptr)dynamicDepthStencilState.getInternal()));
-}
-
-VkResult destroyFramebuffer (VkDevice device, VkFramebuffer framebuffer)
-{
-	DE_UNREF(device);
-	VK_NULL_RETURN(delete reinterpret_cast<Framebuffer*>((deUintptr)framebuffer.getInternal()));
-}
-
-VkResult destroyRenderPass (VkDevice device, VkRenderPass renderPass)
-{
-	DE_UNREF(device);
-	VK_NULL_RETURN(delete reinterpret_cast<RenderPass*>((deUintptr)renderPass.getInternal()));
-}
-
-VkResult destroyCommandPool (VkDevice device, VkCmdPool cmdPool)
-{
-	DE_UNREF(device);
-	VK_NULL_RETURN(delete reinterpret_cast<CmdPool*>((deUintptr)cmdPool.getInternal()));
-}
-
-VkResult destroyCommandBuffer (VkDevice device, VkCmdBuffer commandBuffer)
-{
-	DE_UNREF(device);
-	VK_NULL_RETURN(delete reinterpret_cast<CmdBuffer*>(commandBuffer));
+	delete reinterpret_cast<CmdBuffer*>(commandBuffer);
 }
 
 VkResult getPhysicalDeviceFeatures (VkPhysicalDevice physicalDevice, VkPhysicalDeviceFeatures* pFeatures)
@@ -317,25 +262,19 @@ VkResult getPhysicalDeviceFormatProperties (VkPhysicalDevice physicalDevice, VkF
 	return VK_SUCCESS;
 }
 
-VkResult getPhysicalDeviceImageFormatProperties (VkPhysicalDevice physicalDevice, VkFormat format, VkImageType type, VkImageTiling tiling, VkImageUsageFlags usage, VkImageFormatProperties* pImageFormatProperties)
+VkResult getPhysicalDeviceImageFormatProperties (VkPhysicalDevice physicalDevice, VkFormat format, VkImageType type, VkImageTiling tiling, VkImageUsageFlags usage, VkImageCreateFlags flags, VkImageFormatProperties* pImageFormatProperties)
 {
 	DE_UNREF(physicalDevice);
 	DE_UNREF(format);
 	DE_UNREF(type);
 	DE_UNREF(tiling);
 	DE_UNREF(usage);
+	DE_UNREF(flags);
 	DE_UNREF(pImageFormatProperties);
 	return VK_SUCCESS;
 }
 
-VkResult getPhysicalDeviceLimits (VkPhysicalDevice physicalDevice, VkPhysicalDeviceLimits* pLimits)
-{
-	DE_UNREF(physicalDevice);
-	DE_UNREF(pLimits);
-	return VK_SUCCESS;
-}
-
-VkResult getGlobalExtensionProperties (const char* pLayerName, deUint32* pCount, VkExtensionProperties* pProperties)
+VkResult enumerateInstanceExtensionProperties (const char* pLayerName, deUint32* pCount, VkExtensionProperties* pProperties)
 {
 	DE_UNREF(pLayerName);
 	DE_UNREF(pCount);
@@ -343,7 +282,7 @@ VkResult getGlobalExtensionProperties (const char* pLayerName, deUint32* pCount,
 	return VK_SUCCESS;
 }
 
-VkResult getPhysicalDeviceExtensionProperties (VkPhysicalDevice physicalDevice, const char* pLayerName, deUint32* pCount, VkExtensionProperties* pProperties)
+VkResult enumerateDeviceExtensionProperties (VkPhysicalDevice physicalDevice, const char* pLayerName, deUint32* pCount, VkExtensionProperties* pProperties)
 {
 	DE_UNREF(physicalDevice);
 	DE_UNREF(pLayerName);
@@ -352,14 +291,14 @@ VkResult getPhysicalDeviceExtensionProperties (VkPhysicalDevice physicalDevice, 
 	return VK_SUCCESS;
 }
 
-VkResult getGlobalLayerProperties (deUint32* pCount, VkLayerProperties* pProperties)
+VkResult enumerateInstanceLayerProperties (deUint32* pCount, VkLayerProperties* pProperties)
 {
 	DE_UNREF(pCount);
 	DE_UNREF(pProperties);
 	return VK_SUCCESS;
 }
 
-VkResult getPhysicalDeviceLayerProperties (VkPhysicalDevice physicalDevice, deUint32* pCount, VkLayerProperties* pProperties)
+VkResult enumerateDeviceLayerProperties (VkPhysicalDevice physicalDevice, deUint32* pCount, VkLayerProperties* pProperties)
 {
 	DE_UNREF(physicalDevice);
 	DE_UNREF(pCount);
@@ -397,11 +336,10 @@ VkResult deviceWaitIdle (VkDevice device)
 	return VK_SUCCESS;
 }
 
-VkResult unmapMemory (VkDevice device, VkDeviceMemory mem)
+void unmapMemory (VkDevice device, VkDeviceMemory mem)
 {
 	DE_UNREF(device);
 	DE_UNREF(mem);
-	return VK_SUCCESS;
 }
 
 VkResult flushMappedMemoryRanges (VkDevice device, deUint32 memRangeCount, const VkMappedMemoryRange* pMemRanges)
@@ -607,14 +545,13 @@ VkResult resetDescriptorPool (VkDevice device, VkDescriptorPool descriptorPool)
 	return VK_SUCCESS;
 }
 
-VkResult updateDescriptorSets (VkDevice device, deUint32 writeCount, const VkWriteDescriptorSet* pDescriptorWrites, deUint32 copyCount, const VkCopyDescriptorSet* pDescriptorCopies)
+void updateDescriptorSets (VkDevice device, deUint32 writeCount, const VkWriteDescriptorSet* pDescriptorWrites, deUint32 copyCount, const VkCopyDescriptorSet* pDescriptorCopies)
 {
 	DE_UNREF(device);
 	DE_UNREF(writeCount);
 	DE_UNREF(pDescriptorWrites);
 	DE_UNREF(copyCount);
 	DE_UNREF(pDescriptorCopies);
-	return VK_SUCCESS;
 }
 
 VkResult getRenderAreaGranularity (VkDevice device, VkRenderPass renderPass, VkExtent2D* pGranularity)
@@ -660,28 +597,66 @@ void cmdBindPipeline (VkCmdBuffer cmdBuffer, VkPipelineBindPoint pipelineBindPoi
 	DE_UNREF(pipeline);
 }
 
-void cmdBindDynamicViewportState (VkCmdBuffer cmdBuffer, VkDynamicViewportState dynamicViewportState)
+void cmdSetViewport (VkCmdBuffer cmdBuffer, deUint32 viewportCount, const VkViewport* pViewports)
 {
 	DE_UNREF(cmdBuffer);
-	DE_UNREF(dynamicViewportState);
+	DE_UNREF(viewportCount);
+	DE_UNREF(pViewports);
 }
 
-void cmdBindDynamicRasterState (VkCmdBuffer cmdBuffer, VkDynamicRasterState dynamicRasterState)
+void cmdSetScissor (VkCmdBuffer cmdBuffer, deUint32 scissorCount, const VkRect2D* pScissors)
 {
 	DE_UNREF(cmdBuffer);
-	DE_UNREF(dynamicRasterState);
+	DE_UNREF(scissorCount);
+	DE_UNREF(pScissors);
 }
 
-void cmdBindDynamicColorBlendState (VkCmdBuffer cmdBuffer, VkDynamicColorBlendState dynamicColorBlendState)
+void cmdSetLineWidth (VkCmdBuffer cmdBuffer, float lineWidth)
 {
 	DE_UNREF(cmdBuffer);
-	DE_UNREF(dynamicColorBlendState);
+	DE_UNREF(lineWidth);
 }
 
-void cmdBindDynamicDepthStencilState (VkCmdBuffer cmdBuffer, VkDynamicDepthStencilState dynamicDepthStencilState)
+void cmdSetDepthBias (VkCmdBuffer cmdBuffer, float depthBias, float depthBiasClamp, float slopeScaledDepthBias)
 {
 	DE_UNREF(cmdBuffer);
-	DE_UNREF(dynamicDepthStencilState);
+	DE_UNREF(depthBias);
+	DE_UNREF(depthBiasClamp);
+	DE_UNREF(slopeScaledDepthBias);
+}
+
+void cmdSetBlendConstants (VkCmdBuffer cmdBuffer, const float blendConst)
+{
+	DE_UNREF(cmdBuffer);
+	DE_UNREF(blendConst);
+}
+
+void cmdSetDepthBounds (VkCmdBuffer cmdBuffer, float minDepthBounds, float maxDepthBounds)
+{
+	DE_UNREF(cmdBuffer);
+	DE_UNREF(minDepthBounds);
+	DE_UNREF(maxDepthBounds);
+}
+
+void cmdSetStencilCompareMask (VkCmdBuffer cmdBuffer, VkStencilFaceFlags faceMask, deUint32 stencilCompareMask)
+{
+	DE_UNREF(cmdBuffer);
+	DE_UNREF(faceMask);
+	DE_UNREF(stencilCompareMask);
+}
+
+void cmdSetStencilWriteMask (VkCmdBuffer cmdBuffer, VkStencilFaceFlags faceMask, deUint32 stencilWriteMask)
+{
+	DE_UNREF(cmdBuffer);
+	DE_UNREF(faceMask);
+	DE_UNREF(stencilWriteMask);
+}
+
+void cmdSetStencilReference (VkCmdBuffer cmdBuffer, VkStencilFaceFlags faceMask, deUint32 stencilReference)
+{
+	DE_UNREF(cmdBuffer);
+	DE_UNREF(faceMask);
+	DE_UNREF(stencilReference);
 }
 
 void cmdBindDescriptorSets (VkCmdBuffer cmdBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipelineLayout layout, deUint32 firstSet, deUint32 setCount, const VkDescriptorSet* pDescriptorSets, deUint32 dynamicOffsetCount, const deUint32* pDynamicOffsets)
@@ -713,23 +688,23 @@ void cmdBindVertexBuffers (VkCmdBuffer cmdBuffer, deUint32 startBinding, deUint3
 	DE_UNREF(pOffsets);
 }
 
-void cmdDraw (VkCmdBuffer cmdBuffer, deUint32 firstVertex, deUint32 vertexCount, deUint32 firstInstance, deUint32 instanceCount)
+void cmdDraw (VkCmdBuffer cmdBuffer, deUint32 vertexCount, deUint32 instanceCount, deUint32 firstVertex, deUint32 firstInstance)
 {
 	DE_UNREF(cmdBuffer);
-	DE_UNREF(firstVertex);
 	DE_UNREF(vertexCount);
-	DE_UNREF(firstInstance);
 	DE_UNREF(instanceCount);
+	DE_UNREF(firstVertex);
+	DE_UNREF(firstInstance);
 }
 
-void cmdDrawIndexed (VkCmdBuffer cmdBuffer, deUint32 firstIndex, deUint32 indexCount, deInt32 vertexOffset, deUint32 firstInstance, deUint32 instanceCount)
+void cmdDrawIndexed (VkCmdBuffer cmdBuffer, deUint32 indexCount, deUint32 instanceCount, deUint32 firstIndex, deInt32 vertexOffset, deUint32 firstInstance)
 {
 	DE_UNREF(cmdBuffer);
-	DE_UNREF(firstIndex);
 	DE_UNREF(indexCount);
+	DE_UNREF(instanceCount);
+	DE_UNREF(firstIndex);
 	DE_UNREF(vertexOffset);
 	DE_UNREF(firstInstance);
-	DE_UNREF(instanceCount);
 }
 
 void cmdDrawIndirect (VkCmdBuffer cmdBuffer, VkBuffer buffer, VkDeviceSize offset, deUint32 count, deUint32 stride)
@@ -845,13 +820,12 @@ void cmdClearColorImage (VkCmdBuffer cmdBuffer, VkImage image, VkImageLayout ima
 	DE_UNREF(pRanges);
 }
 
-void cmdClearDepthStencilImage (VkCmdBuffer cmdBuffer, VkImage image, VkImageLayout imageLayout, float depth, deUint32 stencil, deUint32 rangeCount, const VkImageSubresourceRange* pRanges)
+void cmdClearDepthStencilImage (VkCmdBuffer cmdBuffer, VkImage image, VkImageLayout imageLayout, const VkClearDepthStencilValue* pDepthStencil, deUint32 rangeCount, const VkImageSubresourceRange* pRanges)
 {
 	DE_UNREF(cmdBuffer);
 	DE_UNREF(image);
 	DE_UNREF(imageLayout);
-	DE_UNREF(depth);
-	DE_UNREF(stencil);
+	DE_UNREF(pDepthStencil);
 	DE_UNREF(rangeCount);
 	DE_UNREF(pRanges);
 }
@@ -866,13 +840,12 @@ void cmdClearColorAttachment (VkCmdBuffer cmdBuffer, deUint32 colorAttachment, V
 	DE_UNREF(pRects);
 }
 
-void cmdClearDepthStencilAttachment (VkCmdBuffer cmdBuffer, VkImageAspectFlags imageAspectMask, VkImageLayout imageLayout, float depth, deUint32 stencil, deUint32 rectCount, const VkRect3D* pRects)
+void cmdClearDepthStencilAttachment (VkCmdBuffer cmdBuffer, VkImageAspectFlags aspectMask, VkImageLayout imageLayout, const VkClearDepthStencilValue* pDepthStencil, deUint32 rectCount, const VkRect3D* pRects)
 {
 	DE_UNREF(cmdBuffer);
-	DE_UNREF(imageAspectMask);
+	DE_UNREF(aspectMask);
 	DE_UNREF(imageLayout);
-	DE_UNREF(depth);
-	DE_UNREF(stencil);
+	DE_UNREF(pDepthStencil);
 	DE_UNREF(rectCount);
 	DE_UNREF(pRects);
 }
@@ -1003,8 +976,10 @@ void cmdExecuteCommands (VkCmdBuffer cmdBuffer, deUint32 cmdBuffersCount, const 
 
 static const tcu::StaticFunctionLibrary::Entry s_platformFunctions[] =
 {
-	VK_NULL_FUNC_ENTRY(vkCreateInstance,		createInstance),
-	VK_NULL_FUNC_ENTRY(vkGetInstanceProcAddr,	getInstanceProcAddr),
+	VK_NULL_FUNC_ENTRY(vkCreateInstance,						createInstance),
+	VK_NULL_FUNC_ENTRY(vkGetInstanceProcAddr,					getInstanceProcAddr),
+	VK_NULL_FUNC_ENTRY(vkEnumerateInstanceExtensionProperties,	enumerateInstanceExtensionProperties),
+	VK_NULL_FUNC_ENTRY(vkEnumerateInstanceLayerProperties,		enumerateInstanceLayerProperties),
 };
 
 static const tcu::StaticFunctionLibrary::Entry s_instanceFunctions[] =
@@ -1014,22 +989,18 @@ static const tcu::StaticFunctionLibrary::Entry s_instanceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceFeatures,					getPhysicalDeviceFeatures),
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceFormatProperties,			getPhysicalDeviceFormatProperties),
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceImageFormatProperties,	getPhysicalDeviceImageFormatProperties),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceLimits,					getPhysicalDeviceLimits),
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceProperties,				getPhysicalDeviceProperties),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceQueueCount,				getPhysicalDeviceQueueCount),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceQueueProperties,			getPhysicalDeviceQueueProperties),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceQueueFamilyProperties,	getPhysicalDeviceQueueFamilyProperties),
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceMemoryProperties,			getPhysicalDeviceMemoryProperties),
 	VK_NULL_FUNC_ENTRY(vkGetDeviceProcAddr,							getDeviceProcAddr),
 	VK_NULL_FUNC_ENTRY(vkCreateDevice,								createDevice),
+	VK_NULL_FUNC_ENTRY(vkEnumerateDeviceExtensionProperties,		enumerateDeviceExtensionProperties),
+	VK_NULL_FUNC_ENTRY(vkEnumerateDeviceLayerProperties,			enumerateDeviceLayerProperties),
 };
 
 static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 {
 	VK_NULL_FUNC_ENTRY(vkDestroyDevice,									destroyDevice),
-	VK_NULL_FUNC_ENTRY(vkGetGlobalExtensionProperties,					getGlobalExtensionProperties),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceExtensionProperties,			getPhysicalDeviceExtensionProperties),
-	VK_NULL_FUNC_ENTRY(vkGetGlobalLayerProperties,						getGlobalLayerProperties),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceLayerProperties,				getPhysicalDeviceLayerProperties),
 	VK_NULL_FUNC_ENTRY(vkGetDeviceQueue,								getDeviceQueue),
 	VK_NULL_FUNC_ENTRY(vkQueueSubmit,									queueSubmit),
 	VK_NULL_FUNC_ENTRY(vkQueueWaitIdle,									queueWaitIdle),
@@ -1076,8 +1047,6 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkGetImageSubresourceLayout,						getImageSubresourceLayout),
 	VK_NULL_FUNC_ENTRY(vkCreateImageView,								createImageView),
 	VK_NULL_FUNC_ENTRY(vkDestroyImageView,								destroyImageView),
-	VK_NULL_FUNC_ENTRY(vkCreateAttachmentView,							createAttachmentView),
-	VK_NULL_FUNC_ENTRY(vkDestroyAttachmentView,							destroyAttachmentView),
 	VK_NULL_FUNC_ENTRY(vkCreateShaderModule,							createShaderModule),
 	VK_NULL_FUNC_ENTRY(vkDestroyShaderModule,							destroyShaderModule),
 	VK_NULL_FUNC_ENTRY(vkCreateShader,									createShader),
@@ -1102,14 +1071,6 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkAllocDescriptorSets,							allocDescriptorSets),
 	VK_NULL_FUNC_ENTRY(vkFreeDescriptorSets,							freeDescriptorSets),
 	VK_NULL_FUNC_ENTRY(vkUpdateDescriptorSets,							updateDescriptorSets),
-	VK_NULL_FUNC_ENTRY(vkCreateDynamicViewportState,					createDynamicViewportState),
-	VK_NULL_FUNC_ENTRY(vkDestroyDynamicViewportState,					destroyDynamicViewportState),
-	VK_NULL_FUNC_ENTRY(vkCreateDynamicRasterState,						createDynamicRasterState),
-	VK_NULL_FUNC_ENTRY(vkDestroyDynamicRasterState,						destroyDynamicRasterState),
-	VK_NULL_FUNC_ENTRY(vkCreateDynamicColorBlendState,					createDynamicColorBlendState),
-	VK_NULL_FUNC_ENTRY(vkDestroyDynamicColorBlendState,					destroyDynamicColorBlendState),
-	VK_NULL_FUNC_ENTRY(vkCreateDynamicDepthStencilState,				createDynamicDepthStencilState),
-	VK_NULL_FUNC_ENTRY(vkDestroyDynamicDepthStencilState,				destroyDynamicDepthStencilState),
 	VK_NULL_FUNC_ENTRY(vkCreateFramebuffer,								createFramebuffer),
 	VK_NULL_FUNC_ENTRY(vkDestroyFramebuffer,							destroyFramebuffer),
 	VK_NULL_FUNC_ENTRY(vkCreateRenderPass,								createRenderPass),
@@ -1124,10 +1085,15 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkEndCommandBuffer,								endCommandBuffer),
 	VK_NULL_FUNC_ENTRY(vkResetCommandBuffer,							resetCommandBuffer),
 	VK_NULL_FUNC_ENTRY(vkCmdBindPipeline,								cmdBindPipeline),
-	VK_NULL_FUNC_ENTRY(vkCmdBindDynamicViewportState,					cmdBindDynamicViewportState),
-	VK_NULL_FUNC_ENTRY(vkCmdBindDynamicRasterState,						cmdBindDynamicRasterState),
-	VK_NULL_FUNC_ENTRY(vkCmdBindDynamicColorBlendState,					cmdBindDynamicColorBlendState),
-	VK_NULL_FUNC_ENTRY(vkCmdBindDynamicDepthStencilState,				cmdBindDynamicDepthStencilState),
+	VK_NULL_FUNC_ENTRY(vkCmdSetViewport,								cmdSetViewport),
+	VK_NULL_FUNC_ENTRY(vkCmdSetScissor,									cmdSetScissor),
+	VK_NULL_FUNC_ENTRY(vkCmdSetLineWidth,								cmdSetLineWidth),
+	VK_NULL_FUNC_ENTRY(vkCmdSetDepthBias,								cmdSetDepthBias),
+	VK_NULL_FUNC_ENTRY(vkCmdSetBlendConstants,							cmdSetBlendConstants),
+	VK_NULL_FUNC_ENTRY(vkCmdSetDepthBounds,								cmdSetDepthBounds),
+	VK_NULL_FUNC_ENTRY(vkCmdSetStencilCompareMask,						cmdSetStencilCompareMask),
+	VK_NULL_FUNC_ENTRY(vkCmdSetStencilWriteMask,						cmdSetStencilWriteMask),
+	VK_NULL_FUNC_ENTRY(vkCmdSetStencilReference,						cmdSetStencilReference),
 	VK_NULL_FUNC_ENTRY(vkCmdBindDescriptorSets,							cmdBindDescriptorSets),
 	VK_NULL_FUNC_ENTRY(vkCmdBindIndexBuffer,							cmdBindIndexBuffer),
 	VK_NULL_FUNC_ENTRY(vkCmdBindVertexBuffers,							cmdBindVertexBuffers),

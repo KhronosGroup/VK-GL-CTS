@@ -57,17 +57,20 @@ std::vector<VkPhysicalDevice> enumeratePhysicalDevices (const InstanceInterface&
 	return devices;
 }
 
-std::vector<VkPhysicalDeviceQueueProperties> getPhysicalDeviceQueueProperties (const InstanceInterface& vk, VkPhysicalDevice physicalDevice)
+std::vector<VkQueueFamilyProperties> getPhysicalDeviceQueueFamilyProperties (const InstanceInterface& vk, VkPhysicalDevice physicalDevice)
 {
-	deUint32										numQueues	= 0;
-	std::vector<VkPhysicalDeviceQueueProperties>	properties;
+	deUint32								numQueues	= 0;
+	std::vector<VkQueueFamilyProperties>	properties;
 
-	VK_CHECK(vk.getPhysicalDeviceQueueCount(physicalDevice, &numQueues));
+	VK_CHECK(vk.getPhysicalDeviceQueueFamilyProperties(physicalDevice, &numQueues, DE_NULL));
 
 	if (numQueues > 0)
 	{
 		properties.resize(numQueues);
-		VK_CHECK(vk.getPhysicalDeviceQueueProperties(physicalDevice, numQueues, &properties[0]));
+		VK_CHECK(vk.getPhysicalDeviceQueueFamilyProperties(physicalDevice, &numQueues, &properties[0]));
+
+		if ((size_t)numQueues != properties.size())
+			TCU_FAIL("Returned queue family count changes between queries");
 	}
 
 	return properties;

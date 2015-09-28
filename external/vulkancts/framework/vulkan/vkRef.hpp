@@ -112,7 +112,7 @@ public:
 								: m_destroyInstance((DestroyInstanceFunc)DE_NULL)
 							{}
 
-	void					operator()	(VkInstance obj) const { DE_TEST_ASSERT(m_destroyInstance(obj) == VK_SUCCESS); }
+	void					operator()	(VkInstance obj) const { m_destroyInstance(obj); }
 
 private:
 	DestroyInstanceFunc		m_destroyInstance;
@@ -129,7 +129,7 @@ public:
 								: m_destroyDevice((DestroyDeviceFunc)DE_NULL)
 							{}
 
-	void					operator()	(VkDevice obj) const { DE_TEST_ASSERT(m_destroyDevice(obj) == VK_SUCCESS); }
+	void					operator()	(VkDevice obj) const { m_destroyDevice(obj); }
 
 private:
 	DestroyDeviceFunc		m_destroyDevice;
@@ -150,7 +150,7 @@ public:
 								, m_pool		(DE_NULL)
 							{}
 
-	void					operator()	(VkDescriptorSet obj) const { DE_TEST_ASSERT(m_deviceIface->freeDescriptorSets(m_device, m_pool, 1, &obj) == VK_SUCCESS); }
+	void					operator()	(VkDescriptorSet obj) const { m_deviceIface->freeDescriptorSets(m_device, m_pool, 1, &obj); }
 
 private:
 	const DeviceInterface*	m_deviceIface;

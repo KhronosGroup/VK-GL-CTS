@@ -41,12 +41,12 @@
 namespace vk
 {
 
-std::vector<VkPhysicalDevice>					enumeratePhysicalDevices			(const InstanceInterface& vk, VkInstance instance);
-std::vector<VkPhysicalDeviceQueueProperties>	getPhysicalDeviceQueueProperties	(const InstanceInterface& vk, VkPhysicalDevice physicalDevice);
-VkPhysicalDeviceMemoryProperties				getPhysicalDeviceMemoryProperties	(const InstanceInterface& vk, VkPhysicalDevice physicalDevice);
+std::vector<VkPhysicalDevice>			enumeratePhysicalDevices				(const InstanceInterface& vk, VkInstance instance);
+std::vector<VkQueueFamilyProperties>	getPhysicalDeviceQueueFamilyProperties	(const InstanceInterface& vk, VkPhysicalDevice physicalDevice);
+VkPhysicalDeviceMemoryProperties		getPhysicalDeviceMemoryProperties		(const InstanceInterface& vk, VkPhysicalDevice physicalDevice);
 
-VkMemoryRequirements							getBufferMemoryRequirements			(const DeviceInterface& vk, VkDevice device, VkBuffer buffer);
-VkMemoryRequirements							getImageMemoryRequirements			(const DeviceInterface& vk, VkDevice device, VkImage image);
+VkMemoryRequirements					getBufferMemoryRequirements				(const DeviceInterface& vk, VkDevice device, VkBuffer buffer);
+VkMemoryRequirements					getImageMemoryRequirements				(const DeviceInterface& vk, VkDevice device, VkImage image);
 
 } // vk
 

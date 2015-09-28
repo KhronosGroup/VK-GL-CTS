@@ -1,82 +1,53 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  */
-template<> const char*	getTypeName<VkInstance>					(void) { return "VkInstance";					}
-template<> const char*	getTypeName<VkPhysicalDevice>			(void) { return "VkPhysicalDevice";				}
-template<> const char*	getTypeName<VkDevice>					(void) { return "VkDevice";						}
-template<> const char*	getTypeName<VkQueue>					(void) { return "VkQueue";						}
-template<> const char*	getTypeName<VkCmdBuffer>				(void) { return "VkCmdBuffer";					}
-template<> const char*	getTypeName<VkFence>					(void) { return "VkFence";						}
-template<> const char*	getTypeName<VkDeviceMemory>				(void) { return "VkDeviceMemory";				}
-template<> const char*	getTypeName<VkBuffer>					(void) { return "VkBuffer";						}
-template<> const char*	getTypeName<VkImage>					(void) { return "VkImage";						}
-template<> const char*	getTypeName<VkSemaphore>				(void) { return "VkSemaphore";					}
-template<> const char*	getTypeName<VkEvent>					(void) { return "VkEvent";						}
-template<> const char*	getTypeName<VkQueryPool>				(void) { return "VkQueryPool";					}
-template<> const char*	getTypeName<VkBufferView>				(void) { return "VkBufferView";					}
-template<> const char*	getTypeName<VkImageView>				(void) { return "VkImageView";					}
-template<> const char*	getTypeName<VkAttachmentView>			(void) { return "VkAttachmentView";				}
-template<> const char*	getTypeName<VkShaderModule>				(void) { return "VkShaderModule";				}
-template<> const char*	getTypeName<VkShader>					(void) { return "VkShader";						}
-template<> const char*	getTypeName<VkPipelineCache>			(void) { return "VkPipelineCache";				}
-template<> const char*	getTypeName<VkPipelineLayout>			(void) { return "VkPipelineLayout";				}
-template<> const char*	getTypeName<VkRenderPass>				(void) { return "VkRenderPass";					}
-template<> const char*	getTypeName<VkPipeline>					(void) { return "VkPipeline";					}
-template<> const char*	getTypeName<VkDescriptorSetLayout>		(void) { return "VkDescriptorSetLayout";		}
-template<> const char*	getTypeName<VkSampler>					(void) { return "VkSampler";					}
-template<> const char*	getTypeName<VkDescriptorPool>			(void) { return "VkDescriptorPool";				}
-template<> const char*	getTypeName<VkDescriptorSet>			(void) { return "VkDescriptorSet";				}
-template<> const char*	getTypeName<VkDynamicViewportState>		(void) { return "VkDynamicViewportState";		}
-template<> const char*	getTypeName<VkDynamicRasterState>		(void) { return "VkDynamicRasterState";			}
-template<> const char*	getTypeName<VkDynamicColorBlendState>	(void) { return "VkDynamicColorBlendState";		}
-template<> const char*	getTypeName<VkDynamicDepthStencilState>	(void) { return "VkDynamicDepthStencilState";	}
-template<> const char*	getTypeName<VkFramebuffer>				(void) { return "VkFramebuffer";				}
-template<> const char*	getTypeName<VkCmdPool>					(void) { return "VkCmdPool";					}
+template<> const char*	getTypeName<VkInstance>				(void) { return "VkInstance";				}
+template<> const char*	getTypeName<VkPhysicalDevice>		(void) { return "VkPhysicalDevice";			}
+template<> const char*	getTypeName<VkDevice>				(void) { return "VkDevice";					}
+template<> const char*	getTypeName<VkQueue>				(void) { return "VkQueue";					}
+template<> const char*	getTypeName<VkCmdBuffer>			(void) { return "VkCmdBuffer";				}
+template<> const char*	getTypeName<VkFence>				(void) { return "VkFence";					}
+template<> const char*	getTypeName<VkDeviceMemory>			(void) { return "VkDeviceMemory";			}
+template<> const char*	getTypeName<VkBuffer>				(void) { return "VkBuffer";					}
+template<> const char*	getTypeName<VkImage>				(void) { return "VkImage";					}
+template<> const char*	getTypeName<VkSemaphore>			(void) { return "VkSemaphore";				}
+template<> const char*	getTypeName<VkEvent>				(void) { return "VkEvent";					}
+template<> const char*	getTypeName<VkQueryPool>			(void) { return "VkQueryPool";				}
+template<> const char*	getTypeName<VkBufferView>			(void) { return "VkBufferView";				}
+template<> const char*	getTypeName<VkImageView>			(void) { return "VkImageView";				}
+template<> const char*	getTypeName<VkShaderModule>			(void) { return "VkShaderModule";			}
+template<> const char*	getTypeName<VkShader>				(void) { return "VkShader";					}
+template<> const char*	getTypeName<VkPipelineCache>		(void) { return "VkPipelineCache";			}
+template<> const char*	getTypeName<VkPipelineLayout>		(void) { return "VkPipelineLayout";			}
+template<> const char*	getTypeName<VkRenderPass>			(void) { return "VkRenderPass";				}
+template<> const char*	getTypeName<VkPipeline>				(void) { return "VkPipeline";				}
+template<> const char*	getTypeName<VkDescriptorSetLayout>	(void) { return "VkDescriptorSetLayout";	}
+template<> const char*	getTypeName<VkSampler>				(void) { return "VkSampler";				}
+template<> const char*	getTypeName<VkDescriptorPool>		(void) { return "VkDescriptorPool";			}
+template<> const char*	getTypeName<VkDescriptorSet>		(void) { return "VkDescriptorSet";			}
+template<> const char*	getTypeName<VkFramebuffer>			(void) { return "VkFramebuffer";			}
+template<> const char*	getTypeName<VkCmdPool>				(void) { return "VkCmdPool";				}
 
 const char* getResultName (VkResult value)
 {
 	switch (value)
 	{
-		case VK_SUCCESS:								return "VK_SUCCESS";
-		case VK_UNSUPPORTED:							return "VK_UNSUPPORTED";
-		case VK_NOT_READY:								return "VK_NOT_READY";
-		case VK_TIMEOUT:								return "VK_TIMEOUT";
-		case VK_EVENT_SET:								return "VK_EVENT_SET";
-		case VK_EVENT_RESET:							return "VK_EVENT_RESET";
-		case VK_INCOMPLETE:								return "VK_INCOMPLETE";
-		case VK_ERROR_UNKNOWN:							return "VK_ERROR_UNKNOWN";
-		case VK_ERROR_UNAVAILABLE:						return "VK_ERROR_UNAVAILABLE";
-		case VK_ERROR_INITIALIZATION_FAILED:			return "VK_ERROR_INITIALIZATION_FAILED";
-		case VK_ERROR_OUT_OF_HOST_MEMORY:				return "VK_ERROR_OUT_OF_HOST_MEMORY";
-		case VK_ERROR_OUT_OF_DEVICE_MEMORY:				return "VK_ERROR_OUT_OF_DEVICE_MEMORY";
-		case VK_ERROR_DEVICE_ALREADY_CREATED:			return "VK_ERROR_DEVICE_ALREADY_CREATED";
-		case VK_ERROR_DEVICE_LOST:						return "VK_ERROR_DEVICE_LOST";
-		case VK_ERROR_INVALID_POINTER:					return "VK_ERROR_INVALID_POINTER";
-		case VK_ERROR_INVALID_VALUE:					return "VK_ERROR_INVALID_VALUE";
-		case VK_ERROR_INVALID_HANDLE:					return "VK_ERROR_INVALID_HANDLE";
-		case VK_ERROR_INVALID_ORDINAL:					return "VK_ERROR_INVALID_ORDINAL";
-		case VK_ERROR_INVALID_MEMORY_SIZE:				return "VK_ERROR_INVALID_MEMORY_SIZE";
-		case VK_ERROR_INVALID_EXTENSION:				return "VK_ERROR_INVALID_EXTENSION";
-		case VK_ERROR_INVALID_FLAGS:					return "VK_ERROR_INVALID_FLAGS";
-		case VK_ERROR_INVALID_ALIGNMENT:				return "VK_ERROR_INVALID_ALIGNMENT";
-		case VK_ERROR_INVALID_FORMAT:					return "VK_ERROR_INVALID_FORMAT";
-		case VK_ERROR_INVALID_IMAGE:					return "VK_ERROR_INVALID_IMAGE";
-		case VK_ERROR_INVALID_DESCRIPTOR_SET_DATA:		return "VK_ERROR_INVALID_DESCRIPTOR_SET_DATA";
-		case VK_ERROR_INVALID_QUEUE_TYPE:				return "VK_ERROR_INVALID_QUEUE_TYPE";
-		case VK_ERROR_UNSUPPORTED_SHADER_IL_VERSION:	return "VK_ERROR_UNSUPPORTED_SHADER_IL_VERSION";
-		case VK_ERROR_BAD_SHADER_CODE:					return "VK_ERROR_BAD_SHADER_CODE";
-		case VK_ERROR_BAD_PIPELINE_DATA:				return "VK_ERROR_BAD_PIPELINE_DATA";
-		case VK_ERROR_NOT_MAPPABLE:						return "VK_ERROR_NOT_MAPPABLE";
-		case VK_ERROR_MEMORY_MAP_FAILED:				return "VK_ERROR_MEMORY_MAP_FAILED";
-		case VK_ERROR_MEMORY_UNMAP_FAILED:				return "VK_ERROR_MEMORY_UNMAP_FAILED";
-		case VK_ERROR_INCOMPATIBLE_DEVICE:				return "VK_ERROR_INCOMPATIBLE_DEVICE";
-		case VK_ERROR_INCOMPATIBLE_DRIVER:				return "VK_ERROR_INCOMPATIBLE_DRIVER";
-		case VK_ERROR_INCOMPLETE_COMMAND_BUFFER:		return "VK_ERROR_INCOMPLETE_COMMAND_BUFFER";
-		case VK_ERROR_BUILDING_COMMAND_BUFFER:			return "VK_ERROR_BUILDING_COMMAND_BUFFER";
-		case VK_ERROR_MEMORY_NOT_BOUND:					return "VK_ERROR_MEMORY_NOT_BOUND";
-		case VK_ERROR_INCOMPATIBLE_QUEUE:				return "VK_ERROR_INCOMPATIBLE_QUEUE";
-		case VK_ERROR_INVALID_LAYER:					return "VK_ERROR_INVALID_LAYER";
-		default:										return DE_NULL;
+		case VK_SUCCESS:						return "VK_SUCCESS";
+		case VK_UNSUPPORTED:					return "VK_UNSUPPORTED";
+		case VK_NOT_READY:						return "VK_NOT_READY";
+		case VK_TIMEOUT:						return "VK_TIMEOUT";
+		case VK_EVENT_SET:						return "VK_EVENT_SET";
+		case VK_EVENT_RESET:					return "VK_EVENT_RESET";
+		case VK_INCOMPLETE:						return "VK_INCOMPLETE";
+		case VK_ERROR_OUT_OF_HOST_MEMORY:		return "VK_ERROR_OUT_OF_HOST_MEMORY";
+		case VK_ERROR_OUT_OF_DEVICE_MEMORY:		return "VK_ERROR_OUT_OF_DEVICE_MEMORY";
+		case VK_ERROR_INITIALIZATION_FAILED:	return "VK_ERROR_INITIALIZATION_FAILED";
+		case VK_ERROR_DEVICE_LOST:				return "VK_ERROR_DEVICE_LOST";
+		case VK_ERROR_MEMORY_MAP_FAILED:		return "VK_ERROR_MEMORY_MAP_FAILED";
+		case VK_ERROR_LAYER_NOT_PRESENT:		return "VK_ERROR_LAYER_NOT_PRESENT";
+		case VK_ERROR_EXTENSION_NOT_PRESENT:	return "VK_ERROR_EXTENSION_NOT_PRESENT";
+		case VK_ERROR_INCOMPATIBLE_DRIVER:		return "VK_ERROR_INCOMPATIBLE_DRIVER";
+		default:								return DE_NULL;
 	}
 }
 
@@ -88,16 +59,11 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO:							return "VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO";
 		case VK_STRUCTURE_TYPE_MEMORY_ALLOC_INFO:							return "VK_STRUCTURE_TYPE_MEMORY_ALLOC_INFO";
 		case VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO:						return "VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO";
-		case VK_STRUCTURE_TYPE_ATTACHMENT_VIEW_CREATE_INFO:					return "VK_STRUCTURE_TYPE_ATTACHMENT_VIEW_CREATE_INFO";
 		case VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO:					return "VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO";
 		case VK_STRUCTURE_TYPE_SHADER_CREATE_INFO:							return "VK_STRUCTURE_TYPE_SHADER_CREATE_INFO";
 		case VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO:				return "VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO";
 		case VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO:							return "VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO";
 		case VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO:			return "VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO";
-		case VK_STRUCTURE_TYPE_DYNAMIC_VIEWPORT_STATE_CREATE_INFO:			return "VK_STRUCTURE_TYPE_DYNAMIC_VIEWPORT_STATE_CREATE_INFO";
-		case VK_STRUCTURE_TYPE_DYNAMIC_RASTER_STATE_CREATE_INFO:			return "VK_STRUCTURE_TYPE_DYNAMIC_RASTER_STATE_CREATE_INFO";
-		case VK_STRUCTURE_TYPE_DYNAMIC_COLOR_BLEND_STATE_CREATE_INFO:		return "VK_STRUCTURE_TYPE_DYNAMIC_COLOR_BLEND_STATE_CREATE_INFO";
-		case VK_STRUCTURE_TYPE_DYNAMIC_DEPTH_STENCIL_STATE_CREATE_INFO:		return "VK_STRUCTURE_TYPE_DYNAMIC_DEPTH_STENCIL_STATE_CREATE_INFO";
 		case VK_STRUCTURE_TYPE_CMD_BUFFER_CREATE_INFO:						return "VK_STRUCTURE_TYPE_CMD_BUFFER_CREATE_INFO";
 		case VK_STRUCTURE_TYPE_EVENT_CREATE_INFO:							return "VK_STRUCTURE_TYPE_EVENT_CREATE_INFO";
 		case VK_STRUCTURE_TYPE_FENCE_CREATE_INFO:							return "VK_STRUCTURE_TYPE_FENCE_CREATE_INFO";
@@ -134,6 +100,8 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_SUBPASS_DEPENDENCY:							return "VK_STRUCTURE_TYPE_SUBPASS_DEPENDENCY";
 		case VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO:						return "VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO";
 		case VK_STRUCTURE_TYPE_CMD_POOL_CREATE_INFO:						return "VK_STRUCTURE_TYPE_CMD_POOL_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO:					return "VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO:			return "VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO";
 		default:															return DE_NULL;
 	}
 }
@@ -245,7 +213,7 @@ const char* getFormatName (VkFormat value)
 		case VK_FORMAT_R11G11B10_UFLOAT:		return "VK_FORMAT_R11G11B10_UFLOAT";
 		case VK_FORMAT_R9G9B9E5_UFLOAT:			return "VK_FORMAT_R9G9B9E5_UFLOAT";
 		case VK_FORMAT_D16_UNORM:				return "VK_FORMAT_D16_UNORM";
-		case VK_FORMAT_D24_UNORM:				return "VK_FORMAT_D24_UNORM";
+		case VK_FORMAT_D24_UNORM_X8:			return "VK_FORMAT_D24_UNORM_X8";
 		case VK_FORMAT_D32_SFLOAT:				return "VK_FORMAT_D32_SFLOAT";
 		case VK_FORMAT_S8_UINT:					return "VK_FORMAT_S8_UINT";
 		case VK_FORMAT_D16_UNORM_S8_UINT:		return "VK_FORMAT_D16_UNORM_S8_UINT";
@@ -399,13 +367,20 @@ const char* getSharingModeName (VkSharingMode value)
 	}
 }
 
-const char* getBufferViewTypeName (VkBufferViewType value)
+const char* getImageLayoutName (VkImageLayout value)
 {
 	switch (value)
 	{
-		case VK_BUFFER_VIEW_TYPE_RAW:		return "VK_BUFFER_VIEW_TYPE_RAW";
-		case VK_BUFFER_VIEW_TYPE_FORMATTED:	return "VK_BUFFER_VIEW_TYPE_FORMATTED";
-		default:							return DE_NULL;
+		case VK_IMAGE_LAYOUT_UNDEFINED:							return "VK_IMAGE_LAYOUT_UNDEFINED";
+		case VK_IMAGE_LAYOUT_GENERAL:							return "VK_IMAGE_LAYOUT_GENERAL";
+		case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:			return "VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL";
+		case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:	return "VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL";
+		case VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL:	return "VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL";
+		case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:			return "VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL";
+		case VK_IMAGE_LAYOUT_TRANSFER_SOURCE_OPTIMAL:			return "VK_IMAGE_LAYOUT_TRANSFER_SOURCE_OPTIMAL";
+		case VK_IMAGE_LAYOUT_TRANSFER_DESTINATION_OPTIMAL:		return "VK_IMAGE_LAYOUT_TRANSFER_DESTINATION_OPTIMAL";
+		case VK_IMAGE_LAYOUT_PREINITIALIZED:					return "VK_IMAGE_LAYOUT_PREINITIALIZED";
+		default:												return DE_NULL;
 	}
 }
 
@@ -610,6 +585,23 @@ const char* getBlendOpName (VkBlendOp value)
 	}
 }
 
+const char* getDynamicStateName (VkDynamicState value)
+{
+	switch (value)
+	{
+		case VK_DYNAMIC_STATE_VIEWPORT:				return "VK_DYNAMIC_STATE_VIEWPORT";
+		case VK_DYNAMIC_STATE_SCISSOR:				return "VK_DYNAMIC_STATE_SCISSOR";
+		case VK_DYNAMIC_STATE_LINE_WIDTH:			return "VK_DYNAMIC_STATE_LINE_WIDTH";
+		case VK_DYNAMIC_STATE_DEPTH_BIAS:			return "VK_DYNAMIC_STATE_DEPTH_BIAS";
+		case VK_DYNAMIC_STATE_BLEND_CONSTANTS:		return "VK_DYNAMIC_STATE_BLEND_CONSTANTS";
+		case VK_DYNAMIC_STATE_DEPTH_BOUNDS:			return "VK_DYNAMIC_STATE_DEPTH_BOUNDS";
+		case VK_DYNAMIC_STATE_STENCIL_COMPARE_MASK:	return "VK_DYNAMIC_STATE_STENCIL_COMPARE_MASK";
+		case VK_DYNAMIC_STATE_STENCIL_WRITE_MASK:	return "VK_DYNAMIC_STATE_STENCIL_WRITE_MASK";
+		case VK_DYNAMIC_STATE_STENCIL_REFERENCE:	return "VK_DYNAMIC_STATE_STENCIL_REFERENCE";
+		default:									return DE_NULL;
+	}
+}
+
 const char* getTexFilterName (VkTexFilter value)
 {
 	switch (value)
@@ -631,16 +623,16 @@ const char* getTexMipmapModeName (VkTexMipmapMode value)
 	}
 }
 
-const char* getTexAddressName (VkTexAddress value)
+const char* getTexAddressModeName (VkTexAddressMode value)
 {
 	switch (value)
 	{
-		case VK_TEX_ADDRESS_WRAP:			return "VK_TEX_ADDRESS_WRAP";
-		case VK_TEX_ADDRESS_MIRROR:			return "VK_TEX_ADDRESS_MIRROR";
-		case VK_TEX_ADDRESS_CLAMP:			return "VK_TEX_ADDRESS_CLAMP";
-		case VK_TEX_ADDRESS_MIRROR_ONCE:	return "VK_TEX_ADDRESS_MIRROR_ONCE";
-		case VK_TEX_ADDRESS_CLAMP_BORDER:	return "VK_TEX_ADDRESS_CLAMP_BORDER";
-		default:							return DE_NULL;
+		case VK_TEX_ADDRESS_MODE_WRAP:			return "VK_TEX_ADDRESS_MODE_WRAP";
+		case VK_TEX_ADDRESS_MODE_MIRROR:		return "VK_TEX_ADDRESS_MODE_MIRROR";
+		case VK_TEX_ADDRESS_MODE_CLAMP:			return "VK_TEX_ADDRESS_MODE_CLAMP";
+		case VK_TEX_ADDRESS_MODE_MIRROR_ONCE:	return "VK_TEX_ADDRESS_MODE_MIRROR_ONCE";
+		case VK_TEX_ADDRESS_MODE_CLAMP_BORDER:	return "VK_TEX_ADDRESS_MODE_CLAMP_BORDER";
+		default:								return DE_NULL;
 	}
 }
 
@@ -694,22 +686,6 @@ const char* getDescriptorSetUsageName (VkDescriptorSetUsage value)
 		case VK_DESCRIPTOR_SET_USAGE_ONE_SHOT:	return "VK_DESCRIPTOR_SET_USAGE_ONE_SHOT";
 		case VK_DESCRIPTOR_SET_USAGE_STATIC:	return "VK_DESCRIPTOR_SET_USAGE_STATIC";
 		default:								return DE_NULL;
-	}
-}
-
-const char* getImageLayoutName (VkImageLayout value)
-{
-	switch (value)
-	{
-		case VK_IMAGE_LAYOUT_UNDEFINED:							return "VK_IMAGE_LAYOUT_UNDEFINED";
-		case VK_IMAGE_LAYOUT_GENERAL:							return "VK_IMAGE_LAYOUT_GENERAL";
-		case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:			return "VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL";
-		case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:	return "VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL";
-		case VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL:	return "VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL";
-		case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:			return "VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL";
-		case VK_IMAGE_LAYOUT_TRANSFER_SOURCE_OPTIMAL:			return "VK_IMAGE_LAYOUT_TRANSFER_SOURCE_OPTIMAL";
-		case VK_IMAGE_LAYOUT_TRANSFER_DESTINATION_OPTIMAL:		return "VK_IMAGE_LAYOUT_TRANSFER_DESTINATION_OPTIMAL";
-		default:												return DE_NULL;
 	}
 }
 
@@ -798,7 +774,8 @@ tcu::Format::Bitfield<32> getFormatFeatureFlagsStr (VkFormatFeatureFlags value)
 		tcu::Format::BitDesc(VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT,			"VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT"),
 		tcu::Format::BitDesc(VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT,		"VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT"),
 		tcu::Format::BitDesc(VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT,	"VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT"),
-		tcu::Format::BitDesc(VK_FORMAT_FEATURE_CONVERSION_BIT,					"VK_FORMAT_FEATURE_CONVERSION_BIT"),
+		tcu::Format::BitDesc(VK_FORMAT_FEATURE_BLIT_SOURCE_BIT,					"VK_FORMAT_FEATURE_BLIT_SOURCE_BIT"),
+		tcu::Format::BitDesc(VK_FORMAT_FEATURE_BLIT_DESTINATION_BIT,			"VK_FORMAT_FEATURE_BLIT_DESTINATION_BIT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -807,15 +784,42 @@ tcu::Format::Bitfield<32> getImageUsageFlagsStr (VkImageUsageFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_IMAGE_USAGE_GENERAL,					"VK_IMAGE_USAGE_GENERAL"),
-		tcu::Format::BitDesc(VK_IMAGE_USAGE_TRANSFER_SOURCE_BIT,		"VK_IMAGE_USAGE_TRANSFER_SOURCE_BIT"),
-		tcu::Format::BitDesc(VK_IMAGE_USAGE_TRANSFER_DESTINATION_BIT,	"VK_IMAGE_USAGE_TRANSFER_DESTINATION_BIT"),
-		tcu::Format::BitDesc(VK_IMAGE_USAGE_SAMPLED_BIT,				"VK_IMAGE_USAGE_SAMPLED_BIT"),
-		tcu::Format::BitDesc(VK_IMAGE_USAGE_STORAGE_BIT,				"VK_IMAGE_USAGE_STORAGE_BIT"),
-		tcu::Format::BitDesc(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,		"VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT"),
-		tcu::Format::BitDesc(VK_IMAGE_USAGE_DEPTH_STENCIL_BIT,			"VK_IMAGE_USAGE_DEPTH_STENCIL_BIT"),
-		tcu::Format::BitDesc(VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT,	"VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT"),
-		tcu::Format::BitDesc(VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,		"VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_TRANSFER_SOURCE_BIT,			"VK_IMAGE_USAGE_TRANSFER_SOURCE_BIT"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_TRANSFER_DESTINATION_BIT,		"VK_IMAGE_USAGE_TRANSFER_DESTINATION_BIT"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_SAMPLED_BIT,					"VK_IMAGE_USAGE_SAMPLED_BIT"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_STORAGE_BIT,					"VK_IMAGE_USAGE_STORAGE_BIT"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,			"VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,	"VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT,		"VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,			"VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getImageCreateFlagsStr (VkImageCreateFlags value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_IMAGE_CREATE_SPARSE_BINDING_BIT,	"VK_IMAGE_CREATE_SPARSE_BINDING_BIT"),
+		tcu::Format::BitDesc(VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT,	"VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT"),
+		tcu::Format::BitDesc(VK_IMAGE_CREATE_SPARSE_ALIASED_BIT,	"VK_IMAGE_CREATE_SPARSE_ALIASED_BIT"),
+		tcu::Format::BitDesc(VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT,	"VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT"),
+		tcu::Format::BitDesc(VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT,	"VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getSampleCountFlagsStr (VkSampleCountFlags value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_SAMPLE_COUNT_1_BIT,		"VK_SAMPLE_COUNT_1_BIT"),
+		tcu::Format::BitDesc(VK_SAMPLE_COUNT_2_BIT,		"VK_SAMPLE_COUNT_2_BIT"),
+		tcu::Format::BitDesc(VK_SAMPLE_COUNT_4_BIT,		"VK_SAMPLE_COUNT_4_BIT"),
+		tcu::Format::BitDesc(VK_SAMPLE_COUNT_8_BIT,		"VK_SAMPLE_COUNT_8_BIT"),
+		tcu::Format::BitDesc(VK_SAMPLE_COUNT_16_BIT,	"VK_SAMPLE_COUNT_16_BIT"),
+		tcu::Format::BitDesc(VK_SAMPLE_COUNT_32_BIT,	"VK_SAMPLE_COUNT_32_BIT"),
+		tcu::Format::BitDesc(VK_SAMPLE_COUNT_64_BIT,	"VK_SAMPLE_COUNT_64_BIT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -851,16 +855,7 @@ tcu::Format::Bitfield<32> getMemoryHeapFlagsStr (VkMemoryHeapFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_MEMORY_HEAP_HOST_LOCAL,	"VK_MEMORY_HEAP_HOST_LOCAL"),
-	};
-	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
-}
-
-tcu::Format::Bitfield<32> getDeviceCreateFlagsStr (VkDeviceCreateFlags value)
-{
-	static const tcu::Format::BitDesc s_desc[] =
-	{
-		tcu::Format::BitDesc(VK_DEVICE_CREATE_VALIDATION_BIT,	"VK_DEVICE_CREATE_VALIDATION_BIT"),
+		tcu::Format::BitDesc(VK_MEMORY_HEAP_HOST_LOCAL_BIT,	"VK_MEMORY_HEAP_HOST_LOCAL_BIT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -930,7 +925,6 @@ tcu::Format::Bitfield<32> getBufferUsageFlagsStr (VkBufferUsageFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_BUFFER_USAGE_GENERAL,					"VK_BUFFER_USAGE_GENERAL"),
 		tcu::Format::BitDesc(VK_BUFFER_USAGE_TRANSFER_SOURCE_BIT,		"VK_BUFFER_USAGE_TRANSFER_SOURCE_BIT"),
 		tcu::Format::BitDesc(VK_BUFFER_USAGE_TRANSFER_DESTINATION_BIT,	"VK_BUFFER_USAGE_TRANSFER_DESTINATION_BIT"),
 		tcu::Format::BitDesc(VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT,	"VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT"),
@@ -948,33 +942,31 @@ tcu::Format::Bitfield<32> getBufferCreateFlagsStr (VkBufferCreateFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_BUFFER_CREATE_SPARSE_BIT,			"VK_BUFFER_CREATE_SPARSE_BIT"),
+		tcu::Format::BitDesc(VK_BUFFER_CREATE_SPARSE_BINDING_BIT,	"VK_BUFFER_CREATE_SPARSE_BINDING_BIT"),
 		tcu::Format::BitDesc(VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT,	"VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT"),
 		tcu::Format::BitDesc(VK_BUFFER_CREATE_SPARSE_ALIASED_BIT,	"VK_BUFFER_CREATE_SPARSE_ALIASED_BIT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
-tcu::Format::Bitfield<32> getImageCreateFlagsStr (VkImageCreateFlags value)
+tcu::Format::Bitfield<32> getImageAspectFlagsStr (VkImageAspectFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_IMAGE_CREATE_SPARSE_BIT,			"VK_IMAGE_CREATE_SPARSE_BIT"),
-		tcu::Format::BitDesc(VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT,	"VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT"),
-		tcu::Format::BitDesc(VK_IMAGE_CREATE_SPARSE_ALIASED_BIT,	"VK_IMAGE_CREATE_SPARSE_ALIASED_BIT"),
-		tcu::Format::BitDesc(VK_IMAGE_CREATE_INVARIANT_DATA_BIT,	"VK_IMAGE_CREATE_INVARIANT_DATA_BIT"),
-		tcu::Format::BitDesc(VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT,	"VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT"),
-		tcu::Format::BitDesc(VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT,	"VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT"),
+		tcu::Format::BitDesc(VK_IMAGE_ASPECT_COLOR_BIT,		"VK_IMAGE_ASPECT_COLOR_BIT"),
+		tcu::Format::BitDesc(VK_IMAGE_ASPECT_DEPTH_BIT,		"VK_IMAGE_ASPECT_DEPTH_BIT"),
+		tcu::Format::BitDesc(VK_IMAGE_ASPECT_STENCIL_BIT,	"VK_IMAGE_ASPECT_STENCIL_BIT"),
+		tcu::Format::BitDesc(VK_IMAGE_ASPECT_METADATA_BIT,	"VK_IMAGE_ASPECT_METADATA_BIT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
-tcu::Format::Bitfield<32> getAttachmentViewCreateFlagsStr (VkAttachmentViewCreateFlags value)
+tcu::Format::Bitfield<32> getImageViewCreateFlagsStr (VkImageViewCreateFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_ATTACHMENT_VIEW_CREATE_READ_ONLY_DEPTH_BIT,		"VK_ATTACHMENT_VIEW_CREATE_READ_ONLY_DEPTH_BIT"),
-		tcu::Format::BitDesc(VK_ATTACHMENT_VIEW_CREATE_READ_ONLY_STENCIL_BIT,	"VK_ATTACHMENT_VIEW_CREATE_READ_ONLY_STENCIL_BIT"),
+		tcu::Format::BitDesc(VK_IMAGE_VIEW_CREATE_READ_ONLY_DEPTH_BIT,		"VK_IMAGE_VIEW_CREATE_READ_ONLY_DEPTH_BIT"),
+		tcu::Format::BitDesc(VK_IMAGE_VIEW_CREATE_READ_ONLY_STENCIL_BIT,	"VK_IMAGE_VIEW_CREATE_READ_ONLY_STENCIL_BIT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -1017,6 +1009,15 @@ tcu::Format::Bitfield<32> getShaderStageFlagsStr (VkShaderStageFlags value)
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+tcu::Format::Bitfield<32> getAttachmentDescriptionFlagsStr (VkAttachmentDescriptionFlags value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT,	"VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
 tcu::Format::Bitfield<32> getSubpassDescriptionFlagsStr (VkSubpassDescriptionFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -1043,7 +1044,6 @@ tcu::Format::Bitfield<32> getPipelineStageFlagsStr (VkPipelineStageFlags value)
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,	"VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,			"VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_TRANSFER_BIT,				"VK_PIPELINE_STAGE_TRANSFER_BIT"),
-		tcu::Format::BitDesc(VK_PIPELINE_STAGE_TRANSITION_BIT,				"VK_PIPELINE_STAGE_TRANSITION_BIT"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_HOST_BIT,					"VK_PIPELINE_STAGE_HOST_BIT"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_ALL_GRAPHICS,				"VK_PIPELINE_STAGE_ALL_GRAPHICS"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_ALL_GPU_COMMANDS,			"VK_PIPELINE_STAGE_ALL_GPU_COMMANDS"),
@@ -1096,7 +1096,7 @@ tcu::Format::Bitfield<32> getCmdPoolResetFlagsStr (VkCmdPoolResetFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_CMD_POOL_RESET_RELEASE_RESOURCES,	"VK_CMD_POOL_RESET_RELEASE_RESOURCES"),
+		tcu::Format::BitDesc(VK_CMD_POOL_RESET_RELEASE_RESOURCES_BIT,	"VK_CMD_POOL_RESET_RELEASE_RESOURCES_BIT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -1118,19 +1118,18 @@ tcu::Format::Bitfield<32> getCmdBufferResetFlagsStr (VkCmdBufferResetFlags value
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_CMD_BUFFER_RESET_RELEASE_RESOURCES,	"VK_CMD_BUFFER_RESET_RELEASE_RESOURCES"),
+		tcu::Format::BitDesc(VK_CMD_BUFFER_RESET_RELEASE_RESOURCES_BIT,	"VK_CMD_BUFFER_RESET_RELEASE_RESOURCES_BIT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
-tcu::Format::Bitfield<32> getImageAspectFlagsStr (VkImageAspectFlags value)
+tcu::Format::Bitfield<32> getStencilFaceFlagsStr (VkStencilFaceFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_IMAGE_ASPECT_COLOR_BIT,		"VK_IMAGE_ASPECT_COLOR_BIT"),
-		tcu::Format::BitDesc(VK_IMAGE_ASPECT_DEPTH_BIT,		"VK_IMAGE_ASPECT_DEPTH_BIT"),
-		tcu::Format::BitDesc(VK_IMAGE_ASPECT_STENCIL_BIT,	"VK_IMAGE_ASPECT_STENCIL_BIT"),
-		tcu::Format::BitDesc(VK_IMAGE_ASPECT_METADATA_BIT,	"VK_IMAGE_ASPECT_METADATA_BIT"),
+		tcu::Format::BitDesc(VK_STENCIL_FACE_NONE,		"VK_STENCIL_FACE_NONE"),
+		tcu::Format::BitDesc(VK_STENCIL_FACE_FRONT_BIT,	"VK_STENCIL_FACE_FRONT_BIT"),
+		tcu::Format::BitDesc(VK_STENCIL_FACE_BACK_BIT,	"VK_STENCIL_FACE_BACK_BIT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -1195,7 +1194,7 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceFeatures& value
 	s << "\tsampleRateShading = " << value.sampleRateShading << '\n';
 	s << "\tdualSourceBlend = " << value.dualSourceBlend << '\n';
 	s << "\tlogicOp = " << value.logicOp << '\n';
-	s << "\tinstancedDrawIndirect = " << value.instancedDrawIndirect << '\n';
+	s << "\tmultiDrawIndirect = " << value.multiDrawIndirect << '\n';
 	s << "\tdepthClip = " << value.depthClip << '\n';
 	s << "\tdepthBiasClamp = " << value.depthBiasClamp << '\n';
 	s << "\tfillModeNonSolid = " << value.fillModeNonSolid << '\n';
@@ -1205,6 +1204,7 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceFeatures& value
 	s << "\ttextureCompressionETC2 = " << value.textureCompressionETC2 << '\n';
 	s << "\ttextureCompressionASTC_LDR = " << value.textureCompressionASTC_LDR << '\n';
 	s << "\ttextureCompressionBC = " << value.textureCompressionBC << '\n';
+	s << "\tocclusionQueryNonConservative = " << value.occlusionQueryNonConservative << '\n';
 	s << "\tpipelineStatisticsQuery = " << value.pipelineStatisticsQuery << '\n';
 	s << "\tvertexSideEffects = " << value.vertexSideEffects << '\n';
 	s << "\ttessellationSideEffects = " << value.tessellationSideEffects << '\n';
@@ -1212,11 +1212,9 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceFeatures& value
 	s << "\tfragmentSideEffects = " << value.fragmentSideEffects << '\n';
 	s << "\tshaderTessellationPointSize = " << value.shaderTessellationPointSize << '\n';
 	s << "\tshaderGeometryPointSize = " << value.shaderGeometryPointSize << '\n';
-	s << "\tshaderTextureGatherExtended = " << value.shaderTextureGatherExtended << '\n';
+	s << "\tshaderImageGatherExtended = " << value.shaderImageGatherExtended << '\n';
 	s << "\tshaderStorageImageExtendedFormats = " << value.shaderStorageImageExtendedFormats << '\n';
 	s << "\tshaderStorageImageMultisample = " << value.shaderStorageImageMultisample << '\n';
-	s << "\tshaderStorageBufferArrayConstantIndexing = " << value.shaderStorageBufferArrayConstantIndexing << '\n';
-	s << "\tshaderStorageImageArrayConstantIndexing = " << value.shaderStorageImageArrayConstantIndexing << '\n';
 	s << "\tshaderUniformBufferArrayDynamicIndexing = " << value.shaderUniformBufferArrayDynamicIndexing << '\n';
 	s << "\tshaderSampledImageArrayDynamicIndexing = " << value.shaderSampledImageArrayDynamicIndexing << '\n';
 	s << "\tshaderStorageBufferArrayDynamicIndexing = " << value.shaderStorageBufferArrayDynamicIndexing << '\n';
@@ -1225,11 +1223,11 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceFeatures& value
 	s << "\tshaderCullDistance = " << value.shaderCullDistance << '\n';
 	s << "\tshaderFloat64 = " << value.shaderFloat64 << '\n';
 	s << "\tshaderInt64 = " << value.shaderInt64 << '\n';
-	s << "\tshaderFloat16 = " << value.shaderFloat16 << '\n';
 	s << "\tshaderInt16 = " << value.shaderInt16 << '\n';
 	s << "\tshaderResourceResidency = " << value.shaderResourceResidency << '\n';
 	s << "\tshaderResourceMinLOD = " << value.shaderResourceMinLOD << '\n';
-	s << "\tsparse = " << value.sparse << '\n';
+	s << "\talphaToOne = " << value.alphaToOne << '\n';
+	s << "\tsparseBinding = " << value.sparseBinding << '\n';
 	s << "\tsparseResidencyBuffer = " << value.sparseResidencyBuffer << '\n';
 	s << "\tsparseResidencyImage2D = " << value.sparseResidencyImage2D << '\n';
 	s << "\tsparseResidencyImage3D = " << value.sparseResidencyImage3D << '\n';
@@ -1237,12 +1235,6 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceFeatures& value
 	s << "\tsparseResidency4Samples = " << value.sparseResidency4Samples << '\n';
 	s << "\tsparseResidency8Samples = " << value.sparseResidency8Samples << '\n';
 	s << "\tsparseResidency16Samples = " << value.sparseResidency16Samples << '\n';
-	s << "\tsparseResidencyStandard2DBlockShape = " << value.sparseResidencyStandard2DBlockShape << '\n';
-	s << "\tsparseResidencyStandard2DMSBlockShape = " << value.sparseResidencyStandard2DMSBlockShape << '\n';
-	s << "\tsparseResidencyStandard3DBlockShape = " << value.sparseResidencyStandard3DBlockShape << '\n';
-	s << "\tsparseResidencyAlignedMipSize = " << value.sparseResidencyAlignedMipSize << '\n';
-	s << "\tsparseResidencyNonResident = " << value.sparseResidencyNonResident << '\n';
-	s << "\tsparseResidencyNonResidentStrict = " << value.sparseResidencyNonResidentStrict << '\n';
 	s << "\tsparseResidencyAliased = " << value.sparseResidencyAliased << '\n';
 	s << '}';
 	return s;
@@ -1253,6 +1245,17 @@ std::ostream& operator<< (std::ostream& s, const VkFormatProperties& value)
 	s << "VkFormatProperties = {\n";
 	s << "\tlinearTilingFeatures = " << getFormatFeatureFlagsStr(value.linearTilingFeatures) << '\n';
 	s << "\toptimalTilingFeatures = " << getFormatFeatureFlagsStr(value.optimalTilingFeatures) << '\n';
+	s << "\tbufferFeatures = " << getFormatFeatureFlagsStr(value.bufferFeatures) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkExtent3D& value)
+{
+	s << "VkExtent3D = {\n";
+	s << "\twidth = " << value.width << '\n';
+	s << "\theight = " << value.height << '\n';
+	s << "\tdepth = " << value.depth << '\n';
 	s << '}';
 	return s;
 }
@@ -1260,8 +1263,11 @@ std::ostream& operator<< (std::ostream& s, const VkFormatProperties& value)
 std::ostream& operator<< (std::ostream& s, const VkImageFormatProperties& value)
 {
 	s << "VkImageFormatProperties = {\n";
+	s << "\tmaxExtent = " << value.maxExtent << '\n';
+	s << "\tmaxMipLevels = " << value.maxMipLevels << '\n';
+	s << "\tmaxArraySize = " << value.maxArraySize << '\n';
+	s << "\tsampleCounts = " << getSampleCountFlagsStr(value.sampleCounts) << '\n';
 	s << "\tmaxResourceSize = " << value.maxResourceSize << '\n';
-	s << "\tmaxSamples = " << value.maxSamples << '\n';
 	s << '}';
 	return s;
 }
@@ -1274,12 +1280,14 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceLimits& value)
 	s << "\tmaxImageDimension3D = " << value.maxImageDimension3D << '\n';
 	s << "\tmaxImageDimensionCube = " << value.maxImageDimensionCube << '\n';
 	s << "\tmaxImageArrayLayers = " << value.maxImageArrayLayers << '\n';
+	s << "\tsampleCounts = " << getSampleCountFlagsStr(value.sampleCounts) << '\n';
 	s << "\tmaxTexelBufferSize = " << value.maxTexelBufferSize << '\n';
 	s << "\tmaxUniformBufferSize = " << value.maxUniformBufferSize << '\n';
 	s << "\tmaxStorageBufferSize = " << value.maxStorageBufferSize << '\n';
 	s << "\tmaxPushConstantsSize = " << value.maxPushConstantsSize << '\n';
 	s << "\tmaxMemoryAllocationCount = " << value.maxMemoryAllocationCount << '\n';
 	s << "\tbufferImageGranularity = " << value.bufferImageGranularity << '\n';
+	s << "\tsparseAddressSpaceSize = " << value.sparseAddressSpaceSize << '\n';
 	s << "\tmaxBoundDescriptorSets = " << value.maxBoundDescriptorSets << '\n';
 	s << "\tmaxDescriptorSets = " << value.maxDescriptorSets << '\n';
 	s << "\tmaxPerStageDescriptorSamplers = " << value.maxPerStageDescriptorSamplers << '\n';
@@ -1289,10 +1297,13 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceLimits& value)
 	s << "\tmaxPerStageDescriptorStorageImages = " << value.maxPerStageDescriptorStorageImages << '\n';
 	s << "\tmaxDescriptorSetSamplers = " << value.maxDescriptorSetSamplers << '\n';
 	s << "\tmaxDescriptorSetUniformBuffers = " << value.maxDescriptorSetUniformBuffers << '\n';
+	s << "\tmaxDescriptorSetUniformBuffersDynamic = " << value.maxDescriptorSetUniformBuffersDynamic << '\n';
 	s << "\tmaxDescriptorSetStorageBuffers = " << value.maxDescriptorSetStorageBuffers << '\n';
+	s << "\tmaxDescriptorSetStorageBuffersDynamic = " << value.maxDescriptorSetStorageBuffersDynamic << '\n';
 	s << "\tmaxDescriptorSetSampledImages = " << value.maxDescriptorSetSampledImages << '\n';
 	s << "\tmaxDescriptorSetStorageImages = " << value.maxDescriptorSetStorageImages << '\n';
 	s << "\tmaxVertexInputAttributes = " << value.maxVertexInputAttributes << '\n';
+	s << "\tmaxVertexInputBindings = " << value.maxVertexInputBindings << '\n';
 	s << "\tmaxVertexInputAttributeOffset = " << value.maxVertexInputAttributeOffset << '\n';
 	s << "\tmaxVertexInputBindingStride = " << value.maxVertexInputBindingStride << '\n';
 	s << "\tmaxVertexOutputComponents = " << value.maxVertexOutputComponents << '\n';
@@ -1326,7 +1337,6 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceLimits& value)
 	s << "\tmaxSamplerLodBias = " << value.maxSamplerLodBias << '\n';
 	s << "\tmaxSamplerAnisotropy = " << value.maxSamplerAnisotropy << '\n';
 	s << "\tmaxViewports = " << value.maxViewports << '\n';
-	s << "\tmaxDynamicViewportStates = " << value.maxDynamicViewportStates << '\n';
 	s << "\tmaxViewportDimensions = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.maxViewportDimensions), DE_ARRAY_END(value.maxViewportDimensions)) << '\n';
 	s << "\tviewportBoundsRange = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.viewportBoundsRange), DE_ARRAY_END(value.viewportBoundsRange)) << '\n';
 	s << "\tviewportSubPixelBits = " << value.viewportSubPixelBits << '\n';
@@ -1365,6 +1375,19 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceLimits& value)
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceSparseProperties& value)
+{
+	s << "VkPhysicalDeviceSparseProperties = {\n";
+	s << "\tresidencyStandard2DBlockShape = " << value.residencyStandard2DBlockShape << '\n';
+	s << "\tresidencyStandard2DMSBlockShape = " << value.residencyStandard2DMSBlockShape << '\n';
+	s << "\tresidencyStandard3DBlockShape = " << value.residencyStandard3DBlockShape << '\n';
+	s << "\tresidencyAlignedMipSize = " << value.residencyAlignedMipSize << '\n';
+	s << "\tresidencyNonResident = " << value.residencyNonResident << '\n';
+	s << "\tresidencyNonResidentStrict = " << value.residencyNonResidentStrict << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceProperties& value)
 {
 	s << "VkPhysicalDeviceProperties = {\n";
@@ -1374,14 +1397,16 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceProperties& val
 	s << "\tdeviceId = " << value.deviceId << '\n';
 	s << "\tdeviceType = " << value.deviceType << '\n';
 	s << "\tdeviceName = " << (const char*)value.deviceName << '\n';
-	s << "\tpipelineCacheUUID = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.pipelineCacheUUID), DE_ARRAY_END(value.pipelineCacheUUID)) << '\n';
+	s << "\tpipelineCacheUUID = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<deUint8>(DE_ARRAY_BEGIN(value.pipelineCacheUUID)), tcu::Format::HexIterator<deUint8>(DE_ARRAY_END(value.pipelineCacheUUID))) << '\n';
+	s << "\tlimits = " << value.limits << '\n';
+	s << "\tsparseProperties = " << value.sparseProperties << '\n';
 	s << '}';
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceQueueProperties& value)
+std::ostream& operator<< (std::ostream& s, const VkQueueFamilyProperties& value)
 {
-	s << "VkPhysicalDeviceQueueProperties = {\n";
+	s << "VkQueueFamilyProperties = {\n";
 	s << "\tqueueFlags = " << getQueueFlagsStr(value.queueFlags) << '\n';
 	s << "\tqueueCount = " << value.queueCount << '\n';
 	s << "\tsupportsTimestamps = " << value.supportsTimestamps << '\n';
@@ -1421,6 +1446,8 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceMemoryPropertie
 std::ostream& operator<< (std::ostream& s, const VkDeviceQueueCreateInfo& value)
 {
 	s << "VkDeviceQueueCreateInfo = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tqueueFamilyIndex = " << value.queueFamilyIndex << '\n';
 	s << "\tqueueCount = " << value.queueCount << '\n';
 	s << '}';
@@ -1439,7 +1466,6 @@ std::ostream& operator<< (std::ostream& s, const VkDeviceCreateInfo& value)
 	s << "\textensionCount = " << value.extensionCount << '\n';
 	s << "\tppEnabledExtensionNames = " << value.ppEnabledExtensionNames << '\n';
 	s << "\tpEnabledFeatures = " << value.pEnabledFeatures << '\n';
-	s << "\tflags = " << getDeviceCreateFlagsStr(value.flags) << '\n';
 	s << '}';
 	return s;
 }
@@ -1456,10 +1482,10 @@ std::ostream& operator<< (std::ostream& s, const VkExtensionProperties& value)
 std::ostream& operator<< (std::ostream& s, const VkLayerProperties& value)
 {
 	s << "VkLayerProperties = {\n";
-	s << "\tlayerName = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.layerName), DE_ARRAY_END(value.layerName)) << '\n';
+	s << "\tlayerName = " << (const char*)value.layerName << '\n';
 	s << "\tspecVersion = " << value.specVersion << '\n';
 	s << "\timplVersion = " << value.implVersion << '\n';
-	s << "\tdescription = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.description), DE_ARRAY_END(value.description)) << '\n';
+	s << "\tdescription = " << (const char*)value.description << '\n';
 	s << '}';
 	return s;
 }
@@ -1493,16 +1519,6 @@ std::ostream& operator<< (std::ostream& s, const VkMemoryRequirements& value)
 	s << "\tsize = " << value.size << '\n';
 	s << "\talignment = " << value.alignment << '\n';
 	s << "\tmemoryTypeBits = " << value.memoryTypeBits << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkExtent3D& value)
-{
-	s << "VkExtent3D = {\n";
-	s << "\twidth = " << value.width << '\n';
-	s << "\theight = " << value.height << '\n';
-	s << "\tdepth = " << value.depth << '\n';
 	s << '}';
 	return s;
 }
@@ -1546,7 +1562,7 @@ std::ostream& operator<< (std::ostream& s, const VkImageSubresource& value)
 	s << "VkImageSubresource = {\n";
 	s << "\taspect = " << value.aspect << '\n';
 	s << "\tmipLevel = " << value.mipLevel << '\n';
-	s << "\tarraySlice = " << value.arraySlice << '\n';
+	s << "\tarrayLayer = " << value.arrayLayer << '\n';
 	s << '}';
 	return s;
 }
@@ -1637,7 +1653,6 @@ std::ostream& operator<< (std::ostream& s, const VkBufferViewCreateInfo& value)
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tbuffer = " << value.buffer << '\n';
-	s << "\tviewType = " << value.viewType << '\n';
 	s << "\tformat = " << value.format << '\n';
 	s << "\toffset = " << value.offset << '\n';
 	s << "\trange = " << value.range << '\n';
@@ -1662,6 +1677,7 @@ std::ostream& operator<< (std::ostream& s, const VkImageCreateInfo& value)
 	s << "\tsharingMode = " << value.sharingMode << '\n';
 	s << "\tqueueFamilyCount = " << value.queueFamilyCount << '\n';
 	s << "\tpQueueFamilyIndices = " << value.pQueueFamilyIndices << '\n';
+	s << "\tinitialLayout = " << value.initialLayout << '\n';
 	s << '}';
 	return s;
 }
@@ -1691,10 +1707,10 @@ std::ostream& operator<< (std::ostream& s, const VkChannelMapping& value)
 std::ostream& operator<< (std::ostream& s, const VkImageSubresourceRange& value)
 {
 	s << "VkImageSubresourceRange = {\n";
-	s << "\taspect = " << value.aspect << '\n';
+	s << "\taspectMask = " << getImageAspectFlagsStr(value.aspectMask) << '\n';
 	s << "\tbaseMipLevel = " << value.baseMipLevel << '\n';
 	s << "\tmipLevels = " << value.mipLevels << '\n';
-	s << "\tbaseArraySlice = " << value.baseArraySlice << '\n';
+	s << "\tbaseArrayLayer = " << value.baseArrayLayer << '\n';
 	s << "\tarraySize = " << value.arraySize << '\n';
 	s << '}';
 	return s;
@@ -1710,21 +1726,7 @@ std::ostream& operator<< (std::ostream& s, const VkImageViewCreateInfo& value)
 	s << "\tformat = " << value.format << '\n';
 	s << "\tchannels = " << value.channels << '\n';
 	s << "\tsubresourceRange = " << value.subresourceRange << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkAttachmentViewCreateInfo& value)
-{
-	s << "VkAttachmentViewCreateInfo = {\n";
-	s << "\tsType = " << value.sType << '\n';
-	s << "\tpNext = " << value.pNext << '\n';
-	s << "\timage = " << value.image << '\n';
-	s << "\tformat = " << value.format << '\n';
-	s << "\tmipLevel = " << value.mipLevel << '\n';
-	s << "\tbaseArraySlice = " << value.baseArraySlice << '\n';
-	s << "\tarraySize = " << value.arraySize << '\n';
-	s << "\tflags = " << getAttachmentViewCreateFlagsStr(value.flags) << '\n';
+	s << "\tflags = " << getImageViewCreateFlagsStr(value.flags) << '\n';
 	s << '}';
 	return s;
 }
@@ -1749,6 +1751,7 @@ std::ostream& operator<< (std::ostream& s, const VkShaderCreateInfo& value)
 	s << "\tmodule = " << value.module << '\n';
 	s << "\tpName = " << getCharPtrStr(value.pName) << '\n';
 	s << "\tflags = " << value.flags << '\n';
+	s << "\tstage = " << value.stage << '\n';
 	s << '}';
 	return s;
 }
@@ -1853,268 +1856,6 @@ std::ostream& operator<< (std::ostream& s, const VkPipelineTessellationStateCrea
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkPipelineViewportStateCreateInfo& value)
-{
-	s << "VkPipelineViewportStateCreateInfo = {\n";
-	s << "\tsType = " << value.sType << '\n';
-	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tviewportCount = " << value.viewportCount << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkPipelineRasterStateCreateInfo& value)
-{
-	s << "VkPipelineRasterStateCreateInfo = {\n";
-	s << "\tsType = " << value.sType << '\n';
-	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tdepthClipEnable = " << value.depthClipEnable << '\n';
-	s << "\trasterizerDiscardEnable = " << value.rasterizerDiscardEnable << '\n';
-	s << "\tfillMode = " << value.fillMode << '\n';
-	s << "\tcullMode = " << value.cullMode << '\n';
-	s << "\tfrontFace = " << value.frontFace << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkPipelineMultisampleStateCreateInfo& value)
-{
-	s << "VkPipelineMultisampleStateCreateInfo = {\n";
-	s << "\tsType = " << value.sType << '\n';
-	s << "\tpNext = " << value.pNext << '\n';
-	s << "\trasterSamples = " << value.rasterSamples << '\n';
-	s << "\tsampleShadingEnable = " << value.sampleShadingEnable << '\n';
-	s << "\tminSampleShading = " << value.minSampleShading << '\n';
-	s << "\tsampleMask = " << value.sampleMask << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkStencilOpState& value)
-{
-	s << "VkStencilOpState = {\n";
-	s << "\tstencilFailOp = " << value.stencilFailOp << '\n';
-	s << "\tstencilPassOp = " << value.stencilPassOp << '\n';
-	s << "\tstencilDepthFailOp = " << value.stencilDepthFailOp << '\n';
-	s << "\tstencilCompareOp = " << value.stencilCompareOp << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkPipelineDepthStencilStateCreateInfo& value)
-{
-	s << "VkPipelineDepthStencilStateCreateInfo = {\n";
-	s << "\tsType = " << value.sType << '\n';
-	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tdepthTestEnable = " << value.depthTestEnable << '\n';
-	s << "\tdepthWriteEnable = " << value.depthWriteEnable << '\n';
-	s << "\tdepthCompareOp = " << value.depthCompareOp << '\n';
-	s << "\tdepthBoundsEnable = " << value.depthBoundsEnable << '\n';
-	s << "\tstencilTestEnable = " << value.stencilTestEnable << '\n';
-	s << "\tfront = " << value.front << '\n';
-	s << "\tback = " << value.back << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkPipelineColorBlendAttachmentState& value)
-{
-	s << "VkPipelineColorBlendAttachmentState = {\n";
-	s << "\tblendEnable = " << value.blendEnable << '\n';
-	s << "\tsrcBlendColor = " << value.srcBlendColor << '\n';
-	s << "\tdestBlendColor = " << value.destBlendColor << '\n';
-	s << "\tblendOpColor = " << value.blendOpColor << '\n';
-	s << "\tsrcBlendAlpha = " << value.srcBlendAlpha << '\n';
-	s << "\tdestBlendAlpha = " << value.destBlendAlpha << '\n';
-	s << "\tblendOpAlpha = " << value.blendOpAlpha << '\n';
-	s << "\tchannelWriteMask = " << getChannelFlagsStr(value.channelWriteMask) << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkPipelineColorBlendStateCreateInfo& value)
-{
-	s << "VkPipelineColorBlendStateCreateInfo = {\n";
-	s << "\tsType = " << value.sType << '\n';
-	s << "\tpNext = " << value.pNext << '\n';
-	s << "\talphaToCoverageEnable = " << value.alphaToCoverageEnable << '\n';
-	s << "\tlogicOpEnable = " << value.logicOpEnable << '\n';
-	s << "\tlogicOp = " << value.logicOp << '\n';
-	s << "\tattachmentCount = " << value.attachmentCount << '\n';
-	s << "\tpAttachments = " << value.pAttachments << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkGraphicsPipelineCreateInfo& value)
-{
-	s << "VkGraphicsPipelineCreateInfo = {\n";
-	s << "\tsType = " << value.sType << '\n';
-	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tstageCount = " << value.stageCount << '\n';
-	s << "\tpStages = " << value.pStages << '\n';
-	s << "\tpVertexInputState = " << value.pVertexInputState << '\n';
-	s << "\tpInputAssemblyState = " << value.pInputAssemblyState << '\n';
-	s << "\tpTessellationState = " << value.pTessellationState << '\n';
-	s << "\tpViewportState = " << value.pViewportState << '\n';
-	s << "\tpRasterState = " << value.pRasterState << '\n';
-	s << "\tpMultisampleState = " << value.pMultisampleState << '\n';
-	s << "\tpDepthStencilState = " << value.pDepthStencilState << '\n';
-	s << "\tpColorBlendState = " << value.pColorBlendState << '\n';
-	s << "\tflags = " << getPipelineCreateFlagsStr(value.flags) << '\n';
-	s << "\tlayout = " << value.layout << '\n';
-	s << "\trenderPass = " << value.renderPass << '\n';
-	s << "\tsubpass = " << value.subpass << '\n';
-	s << "\tbasePipelineHandle = " << value.basePipelineHandle << '\n';
-	s << "\tbasePipelineIndex = " << value.basePipelineIndex << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkComputePipelineCreateInfo& value)
-{
-	s << "VkComputePipelineCreateInfo = {\n";
-	s << "\tsType = " << value.sType << '\n';
-	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tcs = " << value.cs << '\n';
-	s << "\tflags = " << getPipelineCreateFlagsStr(value.flags) << '\n';
-	s << "\tlayout = " << value.layout << '\n';
-	s << "\tbasePipelineHandle = " << value.basePipelineHandle << '\n';
-	s << "\tbasePipelineIndex = " << value.basePipelineIndex << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkPushConstantRange& value)
-{
-	s << "VkPushConstantRange = {\n";
-	s << "\tstageFlags = " << getShaderStageFlagsStr(value.stageFlags) << '\n';
-	s << "\tstart = " << value.start << '\n';
-	s << "\tlength = " << value.length << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkPipelineLayoutCreateInfo& value)
-{
-	s << "VkPipelineLayoutCreateInfo = {\n";
-	s << "\tsType = " << value.sType << '\n';
-	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tdescriptorSetCount = " << value.descriptorSetCount << '\n';
-	s << "\tpSetLayouts = " << value.pSetLayouts << '\n';
-	s << "\tpushConstantRangeCount = " << value.pushConstantRangeCount << '\n';
-	s << "\tpPushConstantRanges = " << value.pPushConstantRanges << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkSamplerCreateInfo& value)
-{
-	s << "VkSamplerCreateInfo = {\n";
-	s << "\tsType = " << value.sType << '\n';
-	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tmagFilter = " << value.magFilter << '\n';
-	s << "\tminFilter = " << value.minFilter << '\n';
-	s << "\tmipMode = " << value.mipMode << '\n';
-	s << "\taddressU = " << value.addressU << '\n';
-	s << "\taddressV = " << value.addressV << '\n';
-	s << "\taddressW = " << value.addressW << '\n';
-	s << "\tmipLodBias = " << value.mipLodBias << '\n';
-	s << "\tmaxAnisotropy = " << value.maxAnisotropy << '\n';
-	s << "\tcompareEnable = " << value.compareEnable << '\n';
-	s << "\tcompareOp = " << value.compareOp << '\n';
-	s << "\tminLod = " << value.minLod << '\n';
-	s << "\tmaxLod = " << value.maxLod << '\n';
-	s << "\tborderColor = " << value.borderColor << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkDescriptorSetLayoutBinding& value)
-{
-	s << "VkDescriptorSetLayoutBinding = {\n";
-	s << "\tdescriptorType = " << value.descriptorType << '\n';
-	s << "\tarraySize = " << value.arraySize << '\n';
-	s << "\tstageFlags = " << getShaderStageFlagsStr(value.stageFlags) << '\n';
-	s << "\tpImmutableSamplers = " << value.pImmutableSamplers << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkDescriptorSetLayoutCreateInfo& value)
-{
-	s << "VkDescriptorSetLayoutCreateInfo = {\n";
-	s << "\tsType = " << value.sType << '\n';
-	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tcount = " << value.count << '\n';
-	s << "\tpBinding = " << value.pBinding << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkDescriptorTypeCount& value)
-{
-	s << "VkDescriptorTypeCount = {\n";
-	s << "\ttype = " << value.type << '\n';
-	s << "\tcount = " << value.count << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkDescriptorPoolCreateInfo& value)
-{
-	s << "VkDescriptorPoolCreateInfo = {\n";
-	s << "\tsType = " << value.sType << '\n';
-	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tcount = " << value.count << '\n';
-	s << "\tpTypeCount = " << value.pTypeCount << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkDescriptorInfo& value)
-{
-	s << "VkDescriptorInfo = {\n";
-	s << "\tbufferView = " << value.bufferView << '\n';
-	s << "\tsampler = " << value.sampler << '\n';
-	s << "\timageView = " << value.imageView << '\n';
-	s << "\tattachmentView = " << value.attachmentView << '\n';
-	s << "\timageLayout = " << value.imageLayout << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkWriteDescriptorSet& value)
-{
-	s << "VkWriteDescriptorSet = {\n";
-	s << "\tsType = " << value.sType << '\n';
-	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tdestSet = " << value.destSet << '\n';
-	s << "\tdestBinding = " << value.destBinding << '\n';
-	s << "\tdestArrayElement = " << value.destArrayElement << '\n';
-	s << "\tcount = " << value.count << '\n';
-	s << "\tdescriptorType = " << value.descriptorType << '\n';
-	s << "\tpDescriptors = " << value.pDescriptors << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkCopyDescriptorSet& value)
-{
-	s << "VkCopyDescriptorSet = {\n";
-	s << "\tsType = " << value.sType << '\n';
-	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tsrcSet = " << value.srcSet << '\n';
-	s << "\tsrcBinding = " << value.srcBinding << '\n';
-	s << "\tsrcArrayElement = " << value.srcArrayElement << '\n';
-	s << "\tdestSet = " << value.destSet << '\n';
-	s << "\tdestBinding = " << value.destBinding << '\n';
-	s << "\tdestArrayElement = " << value.destArrayElement << '\n';
-	s << "\tcount = " << value.count << '\n';
-	s << '}';
-	return s;
-}
-
 std::ostream& operator<< (std::ostream& s, const VkViewport& value)
 {
 	s << "VkViewport = {\n";
@@ -2155,23 +1896,30 @@ std::ostream& operator<< (std::ostream& s, const VkRect2D& value)
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkDynamicViewportStateCreateInfo& value)
+std::ostream& operator<< (std::ostream& s, const VkPipelineViewportStateCreateInfo& value)
 {
-	s << "VkDynamicViewportStateCreateInfo = {\n";
+	s << "VkPipelineViewportStateCreateInfo = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tviewportAndScissorCount = " << value.viewportAndScissorCount << '\n';
+	s << "\tviewportCount = " << value.viewportCount << '\n';
 	s << "\tpViewports = " << value.pViewports << '\n';
+	s << "\tscissorCount = " << value.scissorCount << '\n';
 	s << "\tpScissors = " << value.pScissors << '\n';
 	s << '}';
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkDynamicRasterStateCreateInfo& value)
+std::ostream& operator<< (std::ostream& s, const VkPipelineRasterStateCreateInfo& value)
 {
-	s << "VkDynamicRasterStateCreateInfo = {\n";
+	s << "VkPipelineRasterStateCreateInfo = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tdepthClipEnable = " << value.depthClipEnable << '\n';
+	s << "\trasterizerDiscardEnable = " << value.rasterizerDiscardEnable << '\n';
+	s << "\tfillMode = " << value.fillMode << '\n';
+	s << "\tcullMode = " << value.cullMode << '\n';
+	s << "\tfrontFace = " << value.frontFace << '\n';
+	s << "\tdepthBiasEnable = " << value.depthBiasEnable << '\n';
 	s << "\tdepthBias = " << value.depthBias << '\n';
 	s << "\tdepthBiasClamp = " << value.depthBiasClamp << '\n';
 	s << "\tslopeScaledDepthBias = " << value.slopeScaledDepthBias << '\n';
@@ -2180,36 +1928,272 @@ std::ostream& operator<< (std::ostream& s, const VkDynamicRasterStateCreateInfo&
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkDynamicColorBlendStateCreateInfo& value)
+std::ostream& operator<< (std::ostream& s, const VkPipelineMultisampleStateCreateInfo& value)
 {
-	s << "VkDynamicColorBlendStateCreateInfo = {\n";
+	s << "VkPipelineMultisampleStateCreateInfo = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
+	s << "\trasterSamples = " << value.rasterSamples << '\n';
+	s << "\tsampleShadingEnable = " << value.sampleShadingEnable << '\n';
+	s << "\tminSampleShading = " << value.minSampleShading << '\n';
+	s << "\tpSampleMask = " << value.pSampleMask << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkStencilOpState& value)
+{
+	s << "VkStencilOpState = {\n";
+	s << "\tstencilFailOp = " << value.stencilFailOp << '\n';
+	s << "\tstencilPassOp = " << value.stencilPassOp << '\n';
+	s << "\tstencilDepthFailOp = " << value.stencilDepthFailOp << '\n';
+	s << "\tstencilCompareOp = " << value.stencilCompareOp << '\n';
+	s << "\tstencilCompareMask = " << value.stencilCompareMask << '\n';
+	s << "\tstencilWriteMask = " << value.stencilWriteMask << '\n';
+	s << "\tstencilReference = " << value.stencilReference << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPipelineDepthStencilStateCreateInfo& value)
+{
+	s << "VkPipelineDepthStencilStateCreateInfo = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tdepthTestEnable = " << value.depthTestEnable << '\n';
+	s << "\tdepthWriteEnable = " << value.depthWriteEnable << '\n';
+	s << "\tdepthCompareOp = " << value.depthCompareOp << '\n';
+	s << "\tdepthBoundsTestEnable = " << value.depthBoundsTestEnable << '\n';
+	s << "\tstencilTestEnable = " << value.stencilTestEnable << '\n';
+	s << "\tfront = " << value.front << '\n';
+	s << "\tback = " << value.back << '\n';
+	s << "\tminDepthBounds = " << value.minDepthBounds << '\n';
+	s << "\tmaxDepthBounds = " << value.maxDepthBounds << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPipelineColorBlendAttachmentState& value)
+{
+	s << "VkPipelineColorBlendAttachmentState = {\n";
+	s << "\tblendEnable = " << value.blendEnable << '\n';
+	s << "\tsrcBlendColor = " << value.srcBlendColor << '\n';
+	s << "\tdestBlendColor = " << value.destBlendColor << '\n';
+	s << "\tblendOpColor = " << value.blendOpColor << '\n';
+	s << "\tsrcBlendAlpha = " << value.srcBlendAlpha << '\n';
+	s << "\tdestBlendAlpha = " << value.destBlendAlpha << '\n';
+	s << "\tblendOpAlpha = " << value.blendOpAlpha << '\n';
+	s << "\tchannelWriteMask = " << getChannelFlagsStr(value.channelWriteMask) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPipelineColorBlendStateCreateInfo& value)
+{
+	s << "VkPipelineColorBlendStateCreateInfo = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\talphaToCoverageEnable = " << value.alphaToCoverageEnable << '\n';
+	s << "\talphaToOneEnable = " << value.alphaToOneEnable << '\n';
+	s << "\tlogicOpEnable = " << value.logicOpEnable << '\n';
+	s << "\tlogicOp = " << value.logicOp << '\n';
+	s << "\tattachmentCount = " << value.attachmentCount << '\n';
+	s << "\tpAttachments = " << value.pAttachments << '\n';
 	s << "\tblendConst = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.blendConst), DE_ARRAY_END(value.blendConst)) << '\n';
 	s << '}';
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkDynamicDepthStencilStateCreateInfo& value)
+std::ostream& operator<< (std::ostream& s, const VkPipelineDynamicStateCreateInfo& value)
 {
-	s << "VkDynamicDepthStencilStateCreateInfo = {\n";
+	s << "VkPipelineDynamicStateCreateInfo = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tminDepthBounds = " << value.minDepthBounds << '\n';
-	s << "\tmaxDepthBounds = " << value.maxDepthBounds << '\n';
-	s << "\tstencilReadMask = " << value.stencilReadMask << '\n';
-	s << "\tstencilWriteMask = " << value.stencilWriteMask << '\n';
-	s << "\tstencilFrontRef = " << value.stencilFrontRef << '\n';
-	s << "\tstencilBackRef = " << value.stencilBackRef << '\n';
+	s << "\tdynamicStateCount = " << value.dynamicStateCount << '\n';
+	s << "\tpDynamicStates = " << value.pDynamicStates << '\n';
 	s << '}';
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkAttachmentBindInfo& value)
+std::ostream& operator<< (std::ostream& s, const VkGraphicsPipelineCreateInfo& value)
 {
-	s << "VkAttachmentBindInfo = {\n";
-	s << "\tview = " << value.view << '\n';
+	s << "VkGraphicsPipelineCreateInfo = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tstageCount = " << value.stageCount << '\n';
+	s << "\tpStages = " << value.pStages << '\n';
+	s << "\tpVertexInputState = " << value.pVertexInputState << '\n';
+	s << "\tpInputAssemblyState = " << value.pInputAssemblyState << '\n';
+	s << "\tpTessellationState = " << value.pTessellationState << '\n';
+	s << "\tpViewportState = " << value.pViewportState << '\n';
+	s << "\tpRasterState = " << value.pRasterState << '\n';
+	s << "\tpMultisampleState = " << value.pMultisampleState << '\n';
+	s << "\tpDepthStencilState = " << value.pDepthStencilState << '\n';
+	s << "\tpColorBlendState = " << value.pColorBlendState << '\n';
+	s << "\tpDynamicState = " << value.pDynamicState << '\n';
+	s << "\tflags = " << getPipelineCreateFlagsStr(value.flags) << '\n';
 	s << "\tlayout = " << value.layout << '\n';
+	s << "\trenderPass = " << value.renderPass << '\n';
+	s << "\tsubpass = " << value.subpass << '\n';
+	s << "\tbasePipelineHandle = " << value.basePipelineHandle << '\n';
+	s << "\tbasePipelineIndex = " << value.basePipelineIndex << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkComputePipelineCreateInfo& value)
+{
+	s << "VkComputePipelineCreateInfo = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tstage = " << value.stage << '\n';
+	s << "\tflags = " << getPipelineCreateFlagsStr(value.flags) << '\n';
+	s << "\tlayout = " << value.layout << '\n';
+	s << "\tbasePipelineHandle = " << value.basePipelineHandle << '\n';
+	s << "\tbasePipelineIndex = " << value.basePipelineIndex << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPushConstantRange& value)
+{
+	s << "VkPushConstantRange = {\n";
+	s << "\tstageFlags = " << getShaderStageFlagsStr(value.stageFlags) << '\n';
+	s << "\tstart = " << value.start << '\n';
+	s << "\tlength = " << value.length << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPipelineLayoutCreateInfo& value)
+{
+	s << "VkPipelineLayoutCreateInfo = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tdescriptorSetCount = " << value.descriptorSetCount << '\n';
+	s << "\tpSetLayouts = " << value.pSetLayouts << '\n';
+	s << "\tpushConstantRangeCount = " << value.pushConstantRangeCount << '\n';
+	s << "\tpPushConstantRanges = " << value.pPushConstantRanges << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSamplerCreateInfo& value)
+{
+	s << "VkSamplerCreateInfo = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmagFilter = " << value.magFilter << '\n';
+	s << "\tminFilter = " << value.minFilter << '\n';
+	s << "\tmipMode = " << value.mipMode << '\n';
+	s << "\taddressModeU = " << value.addressModeU << '\n';
+	s << "\taddressModeV = " << value.addressModeV << '\n';
+	s << "\taddressModeW = " << value.addressModeW << '\n';
+	s << "\tmipLodBias = " << value.mipLodBias << '\n';
+	s << "\tmaxAnisotropy = " << value.maxAnisotropy << '\n';
+	s << "\tcompareEnable = " << value.compareEnable << '\n';
+	s << "\tcompareOp = " << value.compareOp << '\n';
+	s << "\tminLod = " << value.minLod << '\n';
+	s << "\tmaxLod = " << value.maxLod << '\n';
+	s << "\tborderColor = " << value.borderColor << '\n';
+	s << "\tunnormalizedCoordinates = " << value.unnormalizedCoordinates << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDescriptorSetLayoutBinding& value)
+{
+	s << "VkDescriptorSetLayoutBinding = {\n";
+	s << "\tdescriptorType = " << value.descriptorType << '\n';
+	s << "\tarraySize = " << value.arraySize << '\n';
+	s << "\tstageFlags = " << getShaderStageFlagsStr(value.stageFlags) << '\n';
+	s << "\tpImmutableSamplers = " << value.pImmutableSamplers << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDescriptorSetLayoutCreateInfo& value)
+{
+	s << "VkDescriptorSetLayoutCreateInfo = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tcount = " << value.count << '\n';
+	s << "\tpBinding = " << value.pBinding << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDescriptorTypeCount& value)
+{
+	s << "VkDescriptorTypeCount = {\n";
+	s << "\ttype = " << value.type << '\n';
+	s << "\tcount = " << value.count << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDescriptorPoolCreateInfo& value)
+{
+	s << "VkDescriptorPoolCreateInfo = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpoolUsage = " << value.poolUsage << '\n';
+	s << "\tmaxSets = " << value.maxSets << '\n';
+	s << "\tcount = " << value.count << '\n';
+	s << "\tpTypeCount = " << value.pTypeCount << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDescriptorBufferInfo& value)
+{
+	s << "VkDescriptorBufferInfo = {\n";
+	s << "\tbuffer = " << value.buffer << '\n';
+	s << "\toffset = " << value.offset << '\n';
+	s << "\trange = " << value.range << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDescriptorInfo& value)
+{
+	s << "VkDescriptorInfo = {\n";
+	s << "\tbufferView = " << value.bufferView << '\n';
+	s << "\tsampler = " << value.sampler << '\n';
+	s << "\timageView = " << value.imageView << '\n';
+	s << "\timageLayout = " << value.imageLayout << '\n';
+	s << "\tbufferInfo = " << value.bufferInfo << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkWriteDescriptorSet& value)
+{
+	s << "VkWriteDescriptorSet = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tdestSet = " << value.destSet << '\n';
+	s << "\tdestBinding = " << value.destBinding << '\n';
+	s << "\tdestArrayElement = " << value.destArrayElement << '\n';
+	s << "\tcount = " << value.count << '\n';
+	s << "\tdescriptorType = " << value.descriptorType << '\n';
+	s << "\tpDescriptors = " << value.pDescriptors << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkCopyDescriptorSet& value)
+{
+	s << "VkCopyDescriptorSet = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsrcSet = " << value.srcSet << '\n';
+	s << "\tsrcBinding = " << value.srcBinding << '\n';
+	s << "\tsrcArrayElement = " << value.srcArrayElement << '\n';
+	s << "\tdestSet = " << value.destSet << '\n';
+	s << "\tdestBinding = " << value.destBinding << '\n';
+	s << "\tdestArrayElement = " << value.destArrayElement << '\n';
+	s << "\tcount = " << value.count << '\n';
 	s << '}';
 	return s;
 }
@@ -2242,6 +2226,7 @@ std::ostream& operator<< (std::ostream& s, const VkAttachmentDescription& value)
 	s << "\tstencilStoreOp = " << value.stencilStoreOp << '\n';
 	s << "\tinitialLayout = " << value.initialLayout << '\n';
 	s << "\tfinalLayout = " << value.finalLayout << '\n';
+	s << "\tflags = " << getAttachmentDescriptionFlagsStr(value.flags) << '\n';
 	s << '}';
 	return s;
 }
@@ -2263,13 +2248,13 @@ std::ostream& operator<< (std::ostream& s, const VkSubpassDescription& value)
 	s << "\tpipelineBindPoint = " << value.pipelineBindPoint << '\n';
 	s << "\tflags = " << getSubpassDescriptionFlagsStr(value.flags) << '\n';
 	s << "\tinputCount = " << value.inputCount << '\n';
-	s << "\tinputAttachments = " << value.inputAttachments << '\n';
+	s << "\tpInputAttachments = " << value.pInputAttachments << '\n';
 	s << "\tcolorCount = " << value.colorCount << '\n';
-	s << "\tcolorAttachments = " << value.colorAttachments << '\n';
-	s << "\tresolveAttachments = " << value.resolveAttachments << '\n';
+	s << "\tpColorAttachments = " << value.pColorAttachments << '\n';
+	s << "\tpResolveAttachments = " << value.pResolveAttachments << '\n';
 	s << "\tdepthStencilAttachment = " << value.depthStencilAttachment << '\n';
 	s << "\tpreserveCount = " << value.preserveCount << '\n';
-	s << "\tpreserveAttachments = " << value.preserveAttachments << '\n';
+	s << "\tpPreserveAttachments = " << value.pPreserveAttachments << '\n';
 	s << '}';
 	return s;
 }
@@ -2335,6 +2320,7 @@ std::ostream& operator<< (std::ostream& s, const VkCmdBufferBeginInfo& value)
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tflags = " << getCmdBufferOptimizeFlagsStr(value.flags) << '\n';
 	s << "\trenderPass = " << value.renderPass << '\n';
+	s << "\tsubpass = " << value.subpass << '\n';
 	s << "\tframebuffer = " << value.framebuffer << '\n';
 	s << '}';
 	return s;
@@ -2346,6 +2332,17 @@ std::ostream& operator<< (std::ostream& s, const VkBufferCopy& value)
 	s << "\tsrcOffset = " << value.srcOffset << '\n';
 	s << "\tdestOffset = " << value.destOffset << '\n';
 	s << "\tcopySize = " << value.copySize << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkImageSubresourceCopy& value)
+{
+	s << "VkImageSubresourceCopy = {\n";
+	s << "\taspect = " << value.aspect << '\n';
+	s << "\tmipLevel = " << value.mipLevel << '\n';
+	s << "\tarrayLayer = " << value.arrayLayer << '\n';
+	s << "\tarraySize = " << value.arraySize << '\n';
 	s << '}';
 	return s;
 }
@@ -2391,9 +2388,18 @@ std::ostream& operator<< (std::ostream& s, const VkBufferImageCopy& value)
 std::ostream& operator<< (std::ostream& s, const VkClearColorValue& value)
 {
 	s << "VkClearColorValue = {\n";
-	s << "\tf32 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.f32), DE_ARRAY_END(value.f32)) << '\n';
-	s << "\ts32 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.s32), DE_ARRAY_END(value.s32)) << '\n';
-	s << "\tu32 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.u32), DE_ARRAY_END(value.u32)) << '\n';
+	s << "\tfloat32 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.float32), DE_ARRAY_END(value.float32)) << '\n';
+	s << "\tint32 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.int32), DE_ARRAY_END(value.int32)) << '\n';
+	s << "\tuint32 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.uint32), DE_ARRAY_END(value.uint32)) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkClearDepthStencilValue& value)
+{
+	s << "VkClearDepthStencilValue = {\n";
+	s << "\tdepth = " << value.depth << '\n';
+	s << "\tstencil = " << value.stencil << '\n';
 	s << '}';
 	return s;
 }
@@ -2419,20 +2425,11 @@ std::ostream& operator<< (std::ostream& s, const VkImageResolve& value)
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkClearDepthStencilValue& value)
-{
-	s << "VkClearDepthStencilValue = {\n";
-	s << "\tdepth = " << value.depth << '\n';
-	s << "\tstencil = " << value.stencil << '\n';
-	s << '}';
-	return s;
-}
-
 std::ostream& operator<< (std::ostream& s, const VkClearValue& value)
 {
 	s << "VkClearValue = {\n";
 	s << "\tcolor = " << value.color << '\n';
-	s << "\tds = " << value.ds << '\n';
+	s << "\tdepthStencil = " << value.depthStencil << '\n';
 	s << '}';
 	return s;
 }
@@ -2445,8 +2442,8 @@ std::ostream& operator<< (std::ostream& s, const VkRenderPassBeginInfo& value)
 	s << "\trenderPass = " << value.renderPass << '\n';
 	s << "\tframebuffer = " << value.framebuffer << '\n';
 	s << "\trenderArea = " << value.renderArea << '\n';
-	s << "\tattachmentCount = " << value.attachmentCount << '\n';
-	s << "\tpAttachmentClearValues = " << value.pAttachmentClearValues << '\n';
+	s << "\tclearValueCount = " << value.clearValueCount << '\n';
+	s << "\tpClearValues = " << value.pClearValues << '\n';
 	s << '}';
 	return s;
 }

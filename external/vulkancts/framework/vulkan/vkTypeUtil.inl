@@ -11,20 +11,12 @@ inline VkAllocCallbacks makeAllocCallbacks (void* pUserData, PFN_vkAllocFunction
 	return res;
 }
 
-inline VkPhysicalDeviceQueueProperties makePhysicalDeviceQueueProperties (VkQueueFlags queueFlags, deUint32 queueCount, VkBool32 supportsTimestamps)
+inline VkExtent3D makeExtent3D (deInt32 width, deInt32 height, deInt32 depth)
 {
-	VkPhysicalDeviceQueueProperties res;
-	res.queueFlags			= queueFlags;
-	res.queueCount			= queueCount;
-	res.supportsTimestamps	= supportsTimestamps;
-	return res;
-}
-
-inline VkDeviceQueueCreateInfo makeDeviceQueueCreateInfo (deUint32 queueFamilyIndex, deUint32 queueCount)
-{
-	VkDeviceQueueCreateInfo res;
-	res.queueFamilyIndex	= queueFamilyIndex;
-	res.queueCount			= queueCount;
+	VkExtent3D res;
+	res.width	= width;
+	res.height	= height;
+	res.depth	= depth;
 	return res;
 }
 
@@ -34,15 +26,6 @@ inline VkMemoryRequirements makeMemoryRequirements (VkDeviceSize size, VkDeviceS
 	res.size			= size;
 	res.alignment		= alignment;
 	res.memoryTypeBits	= memoryTypeBits;
-	return res;
-}
-
-inline VkExtent3D makeExtent3D (deInt32 width, deInt32 height, deInt32 depth)
-{
-	VkExtent3D res;
-	res.width	= width;
-	res.height	= height;
-	res.depth	= depth;
 	return res;
 }
 
@@ -57,12 +40,12 @@ inline VkSparseMemoryBindInfo makeSparseMemoryBindInfo (VkDeviceSize rangeOffset
 	return res;
 }
 
-inline VkImageSubresource makeImageSubresource (VkImageAspect aspect, deUint32 mipLevel, deUint32 arraySlice)
+inline VkImageSubresource makeImageSubresource (VkImageAspect aspect, deUint32 mipLevel, deUint32 arrayLayer)
 {
 	VkImageSubresource res;
 	res.aspect		= aspect;
 	res.mipLevel	= mipLevel;
-	res.arraySlice	= arraySlice;
+	res.arrayLayer	= arrayLayer;
 	return res;
 }
 
@@ -95,13 +78,13 @@ inline VkChannelMapping makeChannelMapping (VkChannelSwizzle r, VkChannelSwizzle
 	return res;
 }
 
-inline VkImageSubresourceRange makeImageSubresourceRange (VkImageAspect aspect, deUint32 baseMipLevel, deUint32 mipLevels, deUint32 baseArraySlice, deUint32 arraySize)
+inline VkImageSubresourceRange makeImageSubresourceRange (VkImageAspectFlags aspectMask, deUint32 baseMipLevel, deUint32 mipLevels, deUint32 baseArrayLayer, deUint32 arraySize)
 {
 	VkImageSubresourceRange res;
-	res.aspect			= aspect;
+	res.aspectMask		= aspectMask;
 	res.baseMipLevel	= baseMipLevel;
 	res.mipLevels		= mipLevels;
-	res.baseArraySlice	= baseArraySlice;
+	res.baseArrayLayer	= baseArrayLayer;
 	res.arraySize		= arraySize;
 	return res;
 }
@@ -144,13 +127,44 @@ inline VkVertexInputAttributeDescription makeVertexInputAttributeDescription (de
 	return res;
 }
 
-inline VkStencilOpState makeStencilOpState (VkStencilOp stencilFailOp, VkStencilOp stencilPassOp, VkStencilOp stencilDepthFailOp, VkCompareOp stencilCompareOp)
+inline VkViewport makeViewport (float originX, float originY, float width, float height, float minDepth, float maxDepth)
+{
+	VkViewport res;
+	res.originX		= originX;
+	res.originY		= originY;
+	res.width		= width;
+	res.height		= height;
+	res.minDepth	= minDepth;
+	res.maxDepth	= maxDepth;
+	return res;
+}
+
+inline VkOffset2D makeOffset2D (deInt32 x, deInt32 y)
+{
+	VkOffset2D res;
+	res.x	= x;
+	res.y	= y;
+	return res;
+}
+
+inline VkExtent2D makeExtent2D (deInt32 width, deInt32 height)
+{
+	VkExtent2D res;
+	res.width	= width;
+	res.height	= height;
+	return res;
+}
+
+inline VkStencilOpState makeStencilOpState (VkStencilOp stencilFailOp, VkStencilOp stencilPassOp, VkStencilOp stencilDepthFailOp, VkCompareOp stencilCompareOp, deUint32 stencilCompareMask, deUint32 stencilWriteMask, deUint32 stencilReference)
 {
 	VkStencilOpState res;
 	res.stencilFailOp		= stencilFailOp;
 	res.stencilPassOp		= stencilPassOp;
 	res.stencilDepthFailOp	= stencilDepthFailOp;
 	res.stencilCompareOp	= stencilCompareOp;
+	res.stencilCompareMask	= stencilCompareMask;
+	res.stencilWriteMask	= stencilWriteMask;
+	res.stencilReference	= stencilReference;
 	return res;
 }
 
@@ -195,50 +209,12 @@ inline VkDescriptorTypeCount makeDescriptorTypeCount (VkDescriptorType type, deU
 	return res;
 }
 
-inline VkDescriptorInfo makeDescriptorInfo (VkBufferView bufferView, VkSampler sampler, VkImageView imageView, VkAttachmentView attachmentView, VkImageLayout imageLayout)
+inline VkDescriptorBufferInfo makeDescriptorBufferInfo (VkBuffer buffer, VkDeviceSize offset, VkDeviceSize range)
 {
-	VkDescriptorInfo res;
-	res.bufferView		= bufferView;
-	res.sampler			= sampler;
-	res.imageView		= imageView;
-	res.attachmentView	= attachmentView;
-	res.imageLayout		= imageLayout;
-	return res;
-}
-
-inline VkViewport makeViewport (float originX, float originY, float width, float height, float minDepth, float maxDepth)
-{
-	VkViewport res;
-	res.originX		= originX;
-	res.originY		= originY;
-	res.width		= width;
-	res.height		= height;
-	res.minDepth	= minDepth;
-	res.maxDepth	= maxDepth;
-	return res;
-}
-
-inline VkOffset2D makeOffset2D (deInt32 x, deInt32 y)
-{
-	VkOffset2D res;
-	res.x	= x;
-	res.y	= y;
-	return res;
-}
-
-inline VkExtent2D makeExtent2D (deInt32 width, deInt32 height)
-{
-	VkExtent2D res;
-	res.width	= width;
-	res.height	= height;
-	return res;
-}
-
-inline VkAttachmentBindInfo makeAttachmentBindInfo (VkAttachmentView view, VkImageLayout layout)
-{
-	VkAttachmentBindInfo res;
-	res.view	= view;
-	res.layout	= layout;
+	VkDescriptorBufferInfo res;
+	res.buffer	= buffer;
+	res.offset	= offset;
+	res.range	= range;
 	return res;
 }
 
@@ -256,6 +232,16 @@ inline VkBufferCopy makeBufferCopy (VkDeviceSize srcOffset, VkDeviceSize destOff
 	res.srcOffset	= srcOffset;
 	res.destOffset	= destOffset;
 	res.copySize	= copySize;
+	return res;
+}
+
+inline VkImageSubresourceCopy makeImageSubresourceCopy (VkImageAspect aspect, deUint32 mipLevel, deUint32 arrayLayer, deUint32 arraySize)
+{
+	VkImageSubresourceCopy res;
+	res.aspect		= aspect;
+	res.mipLevel	= mipLevel;
+	res.arrayLayer	= arrayLayer;
+	res.arraySize	= arraySize;
 	return res;
 }
 

@@ -134,11 +134,11 @@ de::MovePtr<tcu::TextureLevel> readColorAttachment (const vk::DeviceInterface&	v
 		VK_QUEUE_FAMILY_IGNORED,					// deUint32					destQueueFamilyIndex;
 		image,										// VkImage					image;
 		{											// VkImageSubresourceRange	subresourceRange;
-			VK_IMAGE_ASPECT_COLOR,	// VkImageAspect	aspect;
-			0u,						// deUint32			baseMipLevel;
-			1u,						// deUint32			mipLevels;
-			0u,						// deUint32			baseArraySlice;
-			1u						// deUint32			arraySize;
+			VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
+			0u,							// deUint32				baseMipLevel;
+			1u,							// deUint32				mipLevels;
+			0u,							// deUint32				baseArraySlice;
+			1u							// deUint32				arraySize;
 		}
 	};
 
@@ -161,6 +161,7 @@ de::MovePtr<tcu::TextureLevel> readColorAttachment (const vk::DeviceInterface&	v
 		DE_NULL,																				// const void*				pNext;
 		VK_CMD_BUFFER_OPTIMIZE_SMALL_BATCH_BIT | VK_CMD_BUFFER_OPTIMIZE_ONE_TIME_SUBMIT_BIT,	// VkCmdBufferOptimizeFlags	flags;
 		DE_NULL,																				// VkRenderPass				renderPass;
+		0u,																						// deUint32					subpass;
 		DE_NULL																					// VkFramebuffer			framebuffer;
 	};
 
@@ -171,12 +172,12 @@ de::MovePtr<tcu::TextureLevel> readColorAttachment (const vk::DeviceInterface&	v
 
 	const VkBufferImageCopy copyRegion =
 	{
-		0u,											// VkDeviceSize			bufferOffset;
-		(deUint32)renderSize.x(),					// deUint32				bufferRowLength;
-		(deUint32)renderSize.y(),					// deUint32				bufferImageHeight;
-		{ VK_IMAGE_ASPECT_COLOR, 0u, 0u },			// VkImageSubresource	imageSubresource;
-		{ 0, 0, 0 },								// VkOffset3D			imageOffset;
-		{ renderSize.x(), renderSize.y(), 1 }		// VkExtent3D			imageExtent;
+		0u,											// VkDeviceSize				bufferOffset;
+		(deUint32)renderSize.x(),					// deUint32					bufferRowLength;
+		(deUint32)renderSize.y(),					// deUint32					bufferImageHeight;
+		{ VK_IMAGE_ASPECT_COLOR, 0u, 0u, 1u },		// VkImageSubresourceCopy	imageSubresource;
+		{ 0, 0, 0 },								// VkOffset3D				imageOffset;
+		{ renderSize.x(), renderSize.y(), 1 }		// VkExtent3D				imageExtent;
 	};
 
 	VK_CHECK(vk.beginCommandBuffer(*cmdBuffer, &cmdBufferBeginInfo));

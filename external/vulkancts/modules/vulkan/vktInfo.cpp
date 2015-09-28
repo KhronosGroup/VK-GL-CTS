@@ -72,8 +72,8 @@ tcu::TestStatus enumeratePhysicalDevices (Context& context)
 
 tcu::TestStatus queueProperties (Context& context)
 {
-	TestLog&										log					= context.getTestContext().getLog();
-	const vector<VkPhysicalDeviceQueueProperties>	queueProperties		= getPhysicalDeviceQueueProperties(context.getInstanceInterface(), context.getPhysicalDevice());
+	TestLog&								log					= context.getTestContext().getLog();
+	const vector<VkQueueFamilyProperties>	queueProperties		= getPhysicalDeviceQueueFamilyProperties(context.getInstanceInterface(), context.getPhysicalDevice());
 
 	log << TestLog::Message << "device = " << context.getPhysicalDevice() << TestLog::EndMessage;
 

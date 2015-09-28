@@ -121,11 +121,13 @@ Move<VkDescriptorPool> DescriptorPoolBuilder::build (const DeviceInterface& vk, 
 	{
 		VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
 		DE_NULL,
+		poolUsage,
+		maxSets,
 		(deUint32)m_counts.size(),		//!< count
 		typeCountPtr,					//!< pTypeCount
 	};
 
-	return createDescriptorPool(vk, device, poolUsage, maxSets, &createInfo);
+	return createDescriptorPool(vk, device, &createInfo);
 }
 
 // DescriptorSetUpdateBuilder
@@ -185,7 +187,7 @@ void DescriptorSetUpdateBuilder::update (const DeviceInterface& vk, VkDevice dev
 	const VkWriteDescriptorSet* const	writePtr	= (m_writes.empty()) ? (DE_NULL) : (&m_writes[0]);
 	const VkCopyDescriptorSet* const	copyPtr		= (m_copies.empty()) ? (DE_NULL) : (&m_copies[0]);
 
-	VK_CHECK(vk.updateDescriptorSets(device, (deUint32)m_writes.size(), writePtr, (deUint32)m_copies.size(), copyPtr));
+	vk.updateDescriptorSets(device, (deUint32)m_writes.size(), writePtr, (deUint32)m_copies.size(), copyPtr);
 }
 
 } // vk

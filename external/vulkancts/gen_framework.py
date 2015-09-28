@@ -50,7 +50,9 @@ INL_HEADER = """\
 
 PLATFORM_FUNCTIONS	= [
 	"vkCreateInstance",
-	"vkGetInstanceProcAddr"
+	"vkGetInstanceProcAddr",
+	"vkEnumerateInstanceExtensionProperties",
+	"vkEnumerateInstanceLayerProperties",
 ]
 INSTANCE_FUNCTIONS	= [
 	"vkDestroyInstance",
@@ -60,11 +62,12 @@ INSTANCE_FUNCTIONS	= [
 	"vkGetPhysicalDeviceImageFormatProperties",
 	"vkGetPhysicalDeviceLimits",
 	"vkGetPhysicalDeviceProperties",
-	"vkGetPhysicalDeviceQueueCount",
-	"vkGetPhysicalDeviceQueueProperties",
+	"vkGetPhysicalDeviceQueueFamilyProperties",
 	"vkGetPhysicalDeviceMemoryProperties",
+	"vkEnumerateDeviceExtensionProperties",
+	"vkEnumerateDeviceLayerProperties",
 	"vkCreateDevice",
-	"vkGetDeviceProcAddr"
+	"vkGetDeviceProcAddr",
 ]
 
 DEFINITIONS			= [
@@ -77,7 +80,7 @@ DEFINITIONS			= [
 	"VK_MAX_DESCRIPTION",
 	"VK_FALSE",
 	"VK_TRUE",
-	"VK_ATTACHMENT_UNUSED"
+	"VK_ATTACHMENT_UNUSED",
 ]
 
 class Handle:
@@ -505,15 +508,18 @@ def writeStrUtilImpl (api, filename):
 			for member in type.members:
 				memberName	= member.name
 				valFmt		= None
-				newLine 	= ""
+				newLine		= ""
 				if member.type in bitfieldTypeNames:
 					valFmt = "get%sStr(value.%s)" % (member.type[2:], member.name)
 				elif member.type == "const char*" or member.type == "char*":
 					valFmt = "getCharPtrStr(value.%s)" % member.name
 				elif '[' in member.name:
 					baseName = member.name[:member.name.find('[')]
-					if baseName == "extName" or baseName == "deviceName":
+					if baseName in ["extName", "deviceName", "layerName", "description"]:
 						valFmt = "(const char*)value.%s" % baseName
+					elif member.type == 'char' or member.type == 'deUint8':
+						newLine = "'\\n' << "
+						valFmt = "tcu::formatArray(tcu::Format::HexIterator<%s>(DE_ARRAY_BEGIN(value.%s)), tcu::Format::HexIterator<%s>(DE_ARRAY_END(value.%s)))" % (member.type, baseName, member.type, baseName)
 					else:
 						newLine = "'\\n' << "
 						valFmt = "tcu::formatArray(DE_ARRAY_BEGIN(value.%s), DE_ARRAY_END(value.%s))" % (baseName, baseName)
@@ -579,7 +585,7 @@ def writeRefUtilImpl (api, filename):
 				yield "template<>"
 				yield "void Deleter<%s>::operator() (%s obj) const" % (objectType, objectType)
 				yield "{"
-				yield "\tDE_TEST_ASSERT(m_deviceIface->%s(m_device, obj) == VK_SUCCESS);" % (getInterfaceName(function))
+				yield "\tm_deviceIface->%s(m_device, obj);" % (getInterfaceName(function))
 				yield "}"
 				yield ""
 
@@ -608,8 +614,7 @@ def writeNullDriverImpl (api, filename):
 				"vkGetDeviceProcAddr",
 				"vkEnumeratePhysicalDevices",
 				"vkGetPhysicalDeviceProperties",
-				"vkGetPhysicalDeviceQueueCount",
-				"vkGetPhysicalDeviceQueueProperties",
+				"vkGetPhysicalDeviceQueueFamilyProperties",
 				"vkGetPhysicalDeviceMemoryProperties",
 				"vkGetBufferMemoryRequirements",
 				"vkGetImageMemoryRequirements",
@@ -650,9 +655,9 @@ def writeNullDriverImpl (api, filename):
 				yield "\tDE_UNREF(%s);" % arg.name
 
 			if getHandle(function.arguments[-1].type).type == Handle.TYPE_NONDISP:
-				yield "\tVK_NULL_RETURN(delete reinterpret_cast<%s*>((deUintptr)%s.getInternal()));" % (function.arguments[-1].type[2:], function.arguments[-1].name)
+				yield "\tdelete reinterpret_cast<%s*>((deUintptr)%s.getInternal());" % (function.arguments[-1].type[2:], function.arguments[-1].name)
 			else:
-				yield "\tVK_NULL_RETURN(delete reinterpret_cast<%s*>(%s));" % (function.arguments[-1].type[2:], function.arguments[-1].name)
+				yield "\tdelete reinterpret_cast<%s*>(%s);" % (function.arguments[-1].type[2:], function.arguments[-1].name)
 
 			yield "}"
 			yield ""

@@ -2,9 +2,9 @@
  * be lost! Modify the generating script instead.
  */
 
-VkResult InstanceDriver::destroyInstance (VkInstance instance) const
+void InstanceDriver::destroyInstance (VkInstance instance) const
 {
-	return m_vk.destroyInstance(instance);
+	m_vk.destroyInstance(instance);
 }
 
 VkResult InstanceDriver::enumeratePhysicalDevices (VkInstance instance, deUint32* pPhysicalDeviceCount, VkPhysicalDevice* pPhysicalDevices) const
@@ -22,14 +22,9 @@ VkResult InstanceDriver::getPhysicalDeviceFormatProperties (VkPhysicalDevice phy
 	return m_vk.getPhysicalDeviceFormatProperties(physicalDevice, format, pFormatProperties);
 }
 
-VkResult InstanceDriver::getPhysicalDeviceImageFormatProperties (VkPhysicalDevice physicalDevice, VkFormat format, VkImageType type, VkImageTiling tiling, VkImageUsageFlags usage, VkImageFormatProperties* pImageFormatProperties) const
+VkResult InstanceDriver::getPhysicalDeviceImageFormatProperties (VkPhysicalDevice physicalDevice, VkFormat format, VkImageType type, VkImageTiling tiling, VkImageUsageFlags usage, VkImageCreateFlags flags, VkImageFormatProperties* pImageFormatProperties) const
 {
-	return m_vk.getPhysicalDeviceImageFormatProperties(physicalDevice, format, type, tiling, usage, pImageFormatProperties);
-}
-
-VkResult InstanceDriver::getPhysicalDeviceLimits (VkPhysicalDevice physicalDevice, VkPhysicalDeviceLimits* pLimits) const
-{
-	return m_vk.getPhysicalDeviceLimits(physicalDevice, pLimits);
+	return m_vk.getPhysicalDeviceImageFormatProperties(physicalDevice, format, type, tiling, usage, flags, pImageFormatProperties);
 }
 
 VkResult InstanceDriver::getPhysicalDeviceProperties (VkPhysicalDevice physicalDevice, VkPhysicalDeviceProperties* pProperties) const
@@ -37,14 +32,9 @@ VkResult InstanceDriver::getPhysicalDeviceProperties (VkPhysicalDevice physicalD
 	return m_vk.getPhysicalDeviceProperties(physicalDevice, pProperties);
 }
 
-VkResult InstanceDriver::getPhysicalDeviceQueueCount (VkPhysicalDevice physicalDevice, deUint32* pCount) const
+VkResult InstanceDriver::getPhysicalDeviceQueueFamilyProperties (VkPhysicalDevice physicalDevice, deUint32* pCount, VkQueueFamilyProperties* pQueueFamilyProperties) const
 {
-	return m_vk.getPhysicalDeviceQueueCount(physicalDevice, pCount);
-}
-
-VkResult InstanceDriver::getPhysicalDeviceQueueProperties (VkPhysicalDevice physicalDevice, deUint32 count, VkPhysicalDeviceQueueProperties* pQueueProperties) const
-{
-	return m_vk.getPhysicalDeviceQueueProperties(physicalDevice, count, pQueueProperties);
+	return m_vk.getPhysicalDeviceQueueFamilyProperties(physicalDevice, pCount, pQueueFamilyProperties);
 }
 
 VkResult InstanceDriver::getPhysicalDeviceMemoryProperties (VkPhysicalDevice physicalDevice, VkPhysicalDeviceMemoryProperties* pMemoryProperties) const
@@ -60,4 +50,14 @@ PFN_vkVoidFunction InstanceDriver::getDeviceProcAddr (VkDevice device, const cha
 VkResult InstanceDriver::createDevice (VkPhysicalDevice physicalDevice, const VkDeviceCreateInfo* pCreateInfo, VkDevice* pDevice) const
 {
 	return m_vk.createDevice(physicalDevice, pCreateInfo, pDevice);
+}
+
+VkResult InstanceDriver::enumerateDeviceExtensionProperties (VkPhysicalDevice physicalDevice, const char* pLayerName, deUint32* pCount, VkExtensionProperties* pProperties) const
+{
+	return m_vk.enumerateDeviceExtensionProperties(physicalDevice, pLayerName, pCount, pProperties);
+}
+
+VkResult InstanceDriver::enumerateDeviceLayerProperties (VkPhysicalDevice physicalDevice, deUint32* pCount, VkLayerProperties* pProperties) const
+{
+	return m_vk.enumerateDeviceLayerProperties(physicalDevice, pCount, pProperties);
 }

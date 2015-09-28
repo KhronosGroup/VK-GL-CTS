@@ -217,11 +217,11 @@ VkFormat mapTextureFormat (const tcu::TextureFormat& format)
 		case FMT_CASE(RGB, UNSIGNED_INT_999_E5_REV):		return VK_FORMAT_R9G9B9E5_UFLOAT;
 
 		case FMT_CASE(D, UNORM_INT16):						return VK_FORMAT_D16_UNORM;
-		case FMT_CASE(D, UNORM_INT24):						return VK_FORMAT_D24_UNORM;
+		case FMT_CASE(D, UNSIGNED_INT_24_8):				return VK_FORMAT_D24_UNORM_X8;
 		case FMT_CASE(D, FLOAT):							return VK_FORMAT_D32_SFLOAT;
 
 		case FMT_CASE(S, UNSIGNED_INT8):					return VK_FORMAT_S8_UINT;
-		case FMT_CASE(DS, FLOAT_UNSIGNED_INT_24_8_REV):		return VK_FORMAT_D24_UNORM_S8_UINT;
+		case FMT_CASE(DS, UNSIGNED_INT_24_8):				return VK_FORMAT_D24_UNORM_S8_UINT;
 
 		case FMT_CASE(BGRA, UNORM_SHORT_4444):				return VK_FORMAT_B4G4R4A4_UNORM;
 		case FMT_CASE(BGRA, UNORM_SHORT_5551):				return VK_FORMAT_B5G5R5A1_UNORM;
@@ -332,11 +332,11 @@ tcu::TextureFormat mapVkFormat (VkFormat format)
 		case VK_FORMAT_R9G9B9E5_UFLOAT:		return TextureFormat(TextureFormat::RGB,	TextureFormat::UNSIGNED_INT_999_E5_REV);
 
 		case VK_FORMAT_D16_UNORM:			return TextureFormat(TextureFormat::D,		TextureFormat::UNORM_INT16);
-		case VK_FORMAT_D24_UNORM:			return TextureFormat(TextureFormat::D,		TextureFormat::UNORM_INT24);
+		case VK_FORMAT_D24_UNORM_X8:		return TextureFormat(TextureFormat::D,		TextureFormat::UNSIGNED_INT_24_8);
 		case VK_FORMAT_D32_SFLOAT:			return TextureFormat(TextureFormat::D,		TextureFormat::FLOAT);
 
 		case VK_FORMAT_S8_UINT:				return TextureFormat(TextureFormat::S,		TextureFormat::UNSIGNED_INT8);
-		
+
 		// \note There is no standard interleaved memory layout for DS formats; buffer-image copies
 		//		 will always operate on either D or S aspect only. See Khronos bug 12998
 		case VK_FORMAT_D16_UNORM_S8_UINT:	return TextureFormat(TextureFormat::DS,		TextureFormat::UNSIGNED_INT_16_8);

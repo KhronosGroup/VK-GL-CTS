@@ -156,7 +156,7 @@ public:
 	// helpers
 
 	inline DescriptorSetUpdateBuilder&	writeSingle					(VkDescriptorSet			destSet,
-																	 const Location& 			destLocation,
+																	 const Location&			destLocation,
 																	 VkDescriptorType			descriptorType,
 																	 const VkDescriptorInfo*	descriptor)
 	{
@@ -164,7 +164,7 @@ public:
 	}
 
 	inline DescriptorSetUpdateBuilder&	writeArray					(VkDescriptorSet			destSet,
-																	 const Location& 			destLocation,
+																	 const Location&			destLocation,
 																	 VkDescriptorType			descriptorType,
 																	 deUint32					numDescriptors,
 																	 const VkDescriptorInfo*	descriptors)
@@ -173,17 +173,17 @@ public:
 	}
 
 	inline DescriptorSetUpdateBuilder&	copySingle					(VkDescriptorSet	srcSet,
-																	 const Location& 	srcLocation,
+																	 const Location&	srcLocation,
 																	 VkDescriptorSet	destSet,
-																	 const Location& 	destLocation)
+																	 const Location&	destLocation)
 	{
 		return copy(srcSet, srcLocation.m_binding, srcLocation.m_arrayElement, destSet, destLocation.m_binding, destLocation.m_arrayElement, 1u);
 	}
 
 	inline DescriptorSetUpdateBuilder&	copyArray					(VkDescriptorSet	srcSet,
-																	 const Location& 	srcLocation,
+																	 const Location&	srcLocation,
 																	 VkDescriptorSet	destSet,
-																	 const Location& 	destLocation,
+																	 const Location&	destLocation,
 																	 deUint32			count)
 	{
 		return copy(srcSet, srcLocation.m_binding, srcLocation.m_arrayElement, destSet, destLocation.m_binding, destLocation.m_arrayElement, count);

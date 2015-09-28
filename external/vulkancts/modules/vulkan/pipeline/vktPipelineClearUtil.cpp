@@ -103,8 +103,8 @@ VkClearValue defaultClearValue (VkFormat clearFormat)
 	if (isDepthStencilFormat(clearFormat))
 	{
 		const VkClearDepthStencilValue dsValue = defaultClearDepthStencilValue();
-		clearValue.ds.stencil	= dsValue.stencil;
-		clearValue.ds.depth		= dsValue.depth;
+		clearValue.depthStencil.stencil	= dsValue.stencil;
+		clearValue.depthStencil.depth	= dsValue.depth;
 	}
 	else
 	{
@@ -112,26 +112,26 @@ VkClearValue defaultClearValue (VkFormat clearFormat)
 		if (isUintFormat(clearFormat))
 		{
 			const tcu::UVec4 defaultColor	= defaultClearColorUint(tcuClearFormat);
-			clearValue.color.u32[0]			= defaultColor.x();
-			clearValue.color.u32[1]			= defaultColor.y();
-			clearValue.color.u32[2]			= defaultColor.z();
-			clearValue.color.u32[3]			= defaultColor.w();
+			clearValue.color.uint32[0]			= defaultColor.x();
+			clearValue.color.uint32[1]			= defaultColor.y();
+			clearValue.color.uint32[2]			= defaultColor.z();
+			clearValue.color.uint32[3]			= defaultColor.w();
 		}
 		else if (isIntFormat(clearFormat))
 		{
 			const tcu::IVec4 defaultColor	= defaultClearColorInt(tcuClearFormat);
-			clearValue.color.s32[0]			= defaultColor.x();
-			clearValue.color.s32[1]			= defaultColor.y();
-			clearValue.color.s32[2]			= defaultColor.z();
-			clearValue.color.s32[3]			= defaultColor.w();
+			clearValue.color.int32[0]			= defaultColor.x();
+			clearValue.color.int32[1]			= defaultColor.y();
+			clearValue.color.int32[2]			= defaultColor.z();
+			clearValue.color.int32[3]			= defaultColor.w();
 		}
 		else
 		{
 			const tcu::Vec4 defaultColor	= defaultClearColorFloat(tcuClearFormat);
-			clearValue.color.f32[0]			= defaultColor.x();
-			clearValue.color.f32[1]			= defaultColor.y();
-			clearValue.color.f32[2]			= defaultColor.z();
-			clearValue.color.f32[3]			= defaultColor.w();
+			clearValue.color.float32[0]			= defaultColor.x();
+			clearValue.color.float32[1]			= defaultColor.y();
+			clearValue.color.float32[2]			= defaultColor.z();
+			clearValue.color.float32[3]			= defaultColor.w();
 		}
 	}
 

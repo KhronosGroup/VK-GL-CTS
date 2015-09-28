@@ -11,3 +11,13 @@ PFN_vkVoidFunction PlatformDriver::getInstanceProcAddr (VkInstance instance, con
 {
 	return m_vk.getInstanceProcAddr(instance, pName);
 }
+
+VkResult PlatformDriver::enumerateInstanceExtensionProperties (const char* pLayerName, deUint32* pCount, VkExtensionProperties* pProperties) const
+{
+	return m_vk.enumerateInstanceExtensionProperties(pLayerName, pCount, pProperties);
+}
+
+VkResult PlatformDriver::enumerateInstanceLayerProperties (deUint32* pCount, VkLayerProperties* pProperties) const
+{
+	return m_vk.enumerateInstanceLayerProperties(pCount, pProperties);
+}

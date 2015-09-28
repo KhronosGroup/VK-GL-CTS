@@ -2,29 +2,9 @@
  * be lost! Modify the generating script instead.
  */
 
-VkResult DeviceDriver::destroyDevice (VkDevice device) const
+void DeviceDriver::destroyDevice (VkDevice device) const
 {
-	return m_vk.destroyDevice(device);
-}
-
-VkResult DeviceDriver::getGlobalExtensionProperties (const char* pLayerName, deUint32* pCount, VkExtensionProperties* pProperties) const
-{
-	return m_vk.getGlobalExtensionProperties(pLayerName, pCount, pProperties);
-}
-
-VkResult DeviceDriver::getPhysicalDeviceExtensionProperties (VkPhysicalDevice physicalDevice, const char* pLayerName, deUint32* pCount, VkExtensionProperties* pProperties) const
-{
-	return m_vk.getPhysicalDeviceExtensionProperties(physicalDevice, pLayerName, pCount, pProperties);
-}
-
-VkResult DeviceDriver::getGlobalLayerProperties (deUint32* pCount, VkLayerProperties* pProperties) const
-{
-	return m_vk.getGlobalLayerProperties(pCount, pProperties);
-}
-
-VkResult DeviceDriver::getPhysicalDeviceLayerProperties (VkPhysicalDevice physicalDevice, deUint32* pCount, VkLayerProperties* pProperties) const
-{
-	return m_vk.getPhysicalDeviceLayerProperties(physicalDevice, pCount, pProperties);
+	m_vk.destroyDevice(device);
 }
 
 VkResult DeviceDriver::getDeviceQueue (VkDevice device, deUint32 queueFamilyIndex, deUint32 queueIndex, VkQueue* pQueue) const
@@ -52,9 +32,9 @@ VkResult DeviceDriver::allocMemory (VkDevice device, const VkMemoryAllocInfo* pA
 	return m_vk.allocMemory(device, pAllocInfo, pMem);
 }
 
-VkResult DeviceDriver::freeMemory (VkDevice device, VkDeviceMemory mem) const
+void DeviceDriver::freeMemory (VkDevice device, VkDeviceMemory mem) const
 {
-	return m_vk.freeMemory(device, mem);
+	m_vk.freeMemory(device, mem);
 }
 
 VkResult DeviceDriver::mapMemory (VkDevice device, VkDeviceMemory mem, VkDeviceSize offset, VkDeviceSize size, VkMemoryMapFlags flags, void** ppData) const
@@ -62,9 +42,9 @@ VkResult DeviceDriver::mapMemory (VkDevice device, VkDeviceMemory mem, VkDeviceS
 	return m_vk.mapMemory(device, mem, offset, size, flags, ppData);
 }
 
-VkResult DeviceDriver::unmapMemory (VkDevice device, VkDeviceMemory mem) const
+void DeviceDriver::unmapMemory (VkDevice device, VkDeviceMemory mem) const
 {
-	return m_vk.unmapMemory(device, mem);
+	m_vk.unmapMemory(device, mem);
 }
 
 VkResult DeviceDriver::flushMappedMemoryRanges (VkDevice device, deUint32 memRangeCount, const VkMappedMemoryRange* pMemRanges) const
@@ -132,9 +112,9 @@ VkResult DeviceDriver::createFence (VkDevice device, const VkFenceCreateInfo* pC
 	return m_vk.createFence(device, pCreateInfo, pFence);
 }
 
-VkResult DeviceDriver::destroyFence (VkDevice device, VkFence fence) const
+void DeviceDriver::destroyFence (VkDevice device, VkFence fence) const
 {
-	return m_vk.destroyFence(device, fence);
+	m_vk.destroyFence(device, fence);
 }
 
 VkResult DeviceDriver::resetFences (VkDevice device, deUint32 fenceCount, const VkFence* pFences) const
@@ -157,9 +137,9 @@ VkResult DeviceDriver::createSemaphore (VkDevice device, const VkSemaphoreCreate
 	return m_vk.createSemaphore(device, pCreateInfo, pSemaphore);
 }
 
-VkResult DeviceDriver::destroySemaphore (VkDevice device, VkSemaphore semaphore) const
+void DeviceDriver::destroySemaphore (VkDevice device, VkSemaphore semaphore) const
 {
-	return m_vk.destroySemaphore(device, semaphore);
+	m_vk.destroySemaphore(device, semaphore);
 }
 
 VkResult DeviceDriver::queueSignalSemaphore (VkQueue queue, VkSemaphore semaphore) const
@@ -177,9 +157,9 @@ VkResult DeviceDriver::createEvent (VkDevice device, const VkEventCreateInfo* pC
 	return m_vk.createEvent(device, pCreateInfo, pEvent);
 }
 
-VkResult DeviceDriver::destroyEvent (VkDevice device, VkEvent event) const
+void DeviceDriver::destroyEvent (VkDevice device, VkEvent event) const
 {
-	return m_vk.destroyEvent(device, event);
+	m_vk.destroyEvent(device, event);
 }
 
 VkResult DeviceDriver::getEventStatus (VkDevice device, VkEvent event) const
@@ -202,9 +182,9 @@ VkResult DeviceDriver::createQueryPool (VkDevice device, const VkQueryPoolCreate
 	return m_vk.createQueryPool(device, pCreateInfo, pQueryPool);
 }
 
-VkResult DeviceDriver::destroyQueryPool (VkDevice device, VkQueryPool queryPool) const
+void DeviceDriver::destroyQueryPool (VkDevice device, VkQueryPool queryPool) const
 {
-	return m_vk.destroyQueryPool(device, queryPool);
+	m_vk.destroyQueryPool(device, queryPool);
 }
 
 VkResult DeviceDriver::getQueryPoolResults (VkDevice device, VkQueryPool queryPool, deUint32 startQuery, deUint32 queryCount, deUintptr* pDataSize, void* pData, VkQueryResultFlags flags) const
@@ -217,9 +197,9 @@ VkResult DeviceDriver::createBuffer (VkDevice device, const VkBufferCreateInfo* 
 	return m_vk.createBuffer(device, pCreateInfo, pBuffer);
 }
 
-VkResult DeviceDriver::destroyBuffer (VkDevice device, VkBuffer buffer) const
+void DeviceDriver::destroyBuffer (VkDevice device, VkBuffer buffer) const
 {
-	return m_vk.destroyBuffer(device, buffer);
+	m_vk.destroyBuffer(device, buffer);
 }
 
 VkResult DeviceDriver::createBufferView (VkDevice device, const VkBufferViewCreateInfo* pCreateInfo, VkBufferView* pView) const
@@ -227,9 +207,9 @@ VkResult DeviceDriver::createBufferView (VkDevice device, const VkBufferViewCrea
 	return m_vk.createBufferView(device, pCreateInfo, pView);
 }
 
-VkResult DeviceDriver::destroyBufferView (VkDevice device, VkBufferView bufferView) const
+void DeviceDriver::destroyBufferView (VkDevice device, VkBufferView bufferView) const
 {
-	return m_vk.destroyBufferView(device, bufferView);
+	m_vk.destroyBufferView(device, bufferView);
 }
 
 VkResult DeviceDriver::createImage (VkDevice device, const VkImageCreateInfo* pCreateInfo, VkImage* pImage) const
@@ -237,9 +217,9 @@ VkResult DeviceDriver::createImage (VkDevice device, const VkImageCreateInfo* pC
 	return m_vk.createImage(device, pCreateInfo, pImage);
 }
 
-VkResult DeviceDriver::destroyImage (VkDevice device, VkImage image) const
+void DeviceDriver::destroyImage (VkDevice device, VkImage image) const
 {
-	return m_vk.destroyImage(device, image);
+	m_vk.destroyImage(device, image);
 }
 
 VkResult DeviceDriver::getImageSubresourceLayout (VkDevice device, VkImage image, const VkImageSubresource* pSubresource, VkSubresourceLayout* pLayout) const
@@ -252,19 +232,9 @@ VkResult DeviceDriver::createImageView (VkDevice device, const VkImageViewCreate
 	return m_vk.createImageView(device, pCreateInfo, pView);
 }
 
-VkResult DeviceDriver::destroyImageView (VkDevice device, VkImageView imageView) const
+void DeviceDriver::destroyImageView (VkDevice device, VkImageView imageView) const
 {
-	return m_vk.destroyImageView(device, imageView);
-}
-
-VkResult DeviceDriver::createAttachmentView (VkDevice device, const VkAttachmentViewCreateInfo* pCreateInfo, VkAttachmentView* pView) const
-{
-	return m_vk.createAttachmentView(device, pCreateInfo, pView);
-}
-
-VkResult DeviceDriver::destroyAttachmentView (VkDevice device, VkAttachmentView attachmentView) const
-{
-	return m_vk.destroyAttachmentView(device, attachmentView);
+	m_vk.destroyImageView(device, imageView);
 }
 
 VkResult DeviceDriver::createShaderModule (VkDevice device, const VkShaderModuleCreateInfo* pCreateInfo, VkShaderModule* pShaderModule) const
@@ -272,9 +242,9 @@ VkResult DeviceDriver::createShaderModule (VkDevice device, const VkShaderModule
 	return m_vk.createShaderModule(device, pCreateInfo, pShaderModule);
 }
 
-VkResult DeviceDriver::destroyShaderModule (VkDevice device, VkShaderModule shaderModule) const
+void DeviceDriver::destroyShaderModule (VkDevice device, VkShaderModule shaderModule) const
 {
-	return m_vk.destroyShaderModule(device, shaderModule);
+	m_vk.destroyShaderModule(device, shaderModule);
 }
 
 VkResult DeviceDriver::createShader (VkDevice device, const VkShaderCreateInfo* pCreateInfo, VkShader* pShader) const
@@ -282,9 +252,9 @@ VkResult DeviceDriver::createShader (VkDevice device, const VkShaderCreateInfo* 
 	return m_vk.createShader(device, pCreateInfo, pShader);
 }
 
-VkResult DeviceDriver::destroyShader (VkDevice device, VkShader shader) const
+void DeviceDriver::destroyShader (VkDevice device, VkShader shader) const
 {
-	return m_vk.destroyShader(device, shader);
+	m_vk.destroyShader(device, shader);
 }
 
 VkResult DeviceDriver::createPipelineCache (VkDevice device, const VkPipelineCacheCreateInfo* pCreateInfo, VkPipelineCache* pPipelineCache) const
@@ -292,9 +262,9 @@ VkResult DeviceDriver::createPipelineCache (VkDevice device, const VkPipelineCac
 	return m_vk.createPipelineCache(device, pCreateInfo, pPipelineCache);
 }
 
-VkResult DeviceDriver::destroyPipelineCache (VkDevice device, VkPipelineCache pipelineCache) const
+void DeviceDriver::destroyPipelineCache (VkDevice device, VkPipelineCache pipelineCache) const
 {
-	return m_vk.destroyPipelineCache(device, pipelineCache);
+	m_vk.destroyPipelineCache(device, pipelineCache);
 }
 
 deUintptr DeviceDriver::getPipelineCacheSize (VkDevice device, VkPipelineCache pipelineCache) const
@@ -322,9 +292,9 @@ VkResult DeviceDriver::createComputePipelines (VkDevice device, VkPipelineCache 
 	return m_vk.createComputePipelines(device, pipelineCache, count, pCreateInfos, pPipelines);
 }
 
-VkResult DeviceDriver::destroyPipeline (VkDevice device, VkPipeline pipeline) const
+void DeviceDriver::destroyPipeline (VkDevice device, VkPipeline pipeline) const
 {
-	return m_vk.destroyPipeline(device, pipeline);
+	m_vk.destroyPipeline(device, pipeline);
 }
 
 VkResult DeviceDriver::createPipelineLayout (VkDevice device, const VkPipelineLayoutCreateInfo* pCreateInfo, VkPipelineLayout* pPipelineLayout) const
@@ -332,9 +302,9 @@ VkResult DeviceDriver::createPipelineLayout (VkDevice device, const VkPipelineLa
 	return m_vk.createPipelineLayout(device, pCreateInfo, pPipelineLayout);
 }
 
-VkResult DeviceDriver::destroyPipelineLayout (VkDevice device, VkPipelineLayout pipelineLayout) const
+void DeviceDriver::destroyPipelineLayout (VkDevice device, VkPipelineLayout pipelineLayout) const
 {
-	return m_vk.destroyPipelineLayout(device, pipelineLayout);
+	m_vk.destroyPipelineLayout(device, pipelineLayout);
 }
 
 VkResult DeviceDriver::createSampler (VkDevice device, const VkSamplerCreateInfo* pCreateInfo, VkSampler* pSampler) const
@@ -342,9 +312,9 @@ VkResult DeviceDriver::createSampler (VkDevice device, const VkSamplerCreateInfo
 	return m_vk.createSampler(device, pCreateInfo, pSampler);
 }
 
-VkResult DeviceDriver::destroySampler (VkDevice device, VkSampler sampler) const
+void DeviceDriver::destroySampler (VkDevice device, VkSampler sampler) const
 {
-	return m_vk.destroySampler(device, sampler);
+	m_vk.destroySampler(device, sampler);
 }
 
 VkResult DeviceDriver::createDescriptorSetLayout (VkDevice device, const VkDescriptorSetLayoutCreateInfo* pCreateInfo, VkDescriptorSetLayout* pSetLayout) const
@@ -352,19 +322,19 @@ VkResult DeviceDriver::createDescriptorSetLayout (VkDevice device, const VkDescr
 	return m_vk.createDescriptorSetLayout(device, pCreateInfo, pSetLayout);
 }
 
-VkResult DeviceDriver::destroyDescriptorSetLayout (VkDevice device, VkDescriptorSetLayout descriptorSetLayout) const
+void DeviceDriver::destroyDescriptorSetLayout (VkDevice device, VkDescriptorSetLayout descriptorSetLayout) const
 {
-	return m_vk.destroyDescriptorSetLayout(device, descriptorSetLayout);
+	m_vk.destroyDescriptorSetLayout(device, descriptorSetLayout);
 }
 
-VkResult DeviceDriver::createDescriptorPool (VkDevice device, VkDescriptorPoolUsage poolUsage, deUint32 maxSets, const VkDescriptorPoolCreateInfo* pCreateInfo, VkDescriptorPool* pDescriptorPool) const
+VkResult DeviceDriver::createDescriptorPool (VkDevice device, const VkDescriptorPoolCreateInfo* pCreateInfo, VkDescriptorPool* pDescriptorPool) const
 {
-	return m_vk.createDescriptorPool(device, poolUsage, maxSets, pCreateInfo, pDescriptorPool);
+	return m_vk.createDescriptorPool(device, pCreateInfo, pDescriptorPool);
 }
 
-VkResult DeviceDriver::destroyDescriptorPool (VkDevice device, VkDescriptorPool descriptorPool) const
+void DeviceDriver::destroyDescriptorPool (VkDevice device, VkDescriptorPool descriptorPool) const
 {
-	return m_vk.destroyDescriptorPool(device, descriptorPool);
+	m_vk.destroyDescriptorPool(device, descriptorPool);
 }
 
 VkResult DeviceDriver::resetDescriptorPool (VkDevice device, VkDescriptorPool descriptorPool) const
@@ -372,9 +342,9 @@ VkResult DeviceDriver::resetDescriptorPool (VkDevice device, VkDescriptorPool de
 	return m_vk.resetDescriptorPool(device, descriptorPool);
 }
 
-VkResult DeviceDriver::allocDescriptorSets (VkDevice device, VkDescriptorPool descriptorPool, VkDescriptorSetUsage setUsage, deUint32 count, const VkDescriptorSetLayout* pSetLayouts, VkDescriptorSet* pDescriptorSets, deUint32* pCount) const
+VkResult DeviceDriver::allocDescriptorSets (VkDevice device, VkDescriptorPool descriptorPool, VkDescriptorSetUsage setUsage, deUint32 count, const VkDescriptorSetLayout* pSetLayouts, VkDescriptorSet* pDescriptorSets) const
 {
-	return m_vk.allocDescriptorSets(device, descriptorPool, setUsage, count, pSetLayouts, pDescriptorSets, pCount);
+	return m_vk.allocDescriptorSets(device, descriptorPool, setUsage, count, pSetLayouts, pDescriptorSets);
 }
 
 VkResult DeviceDriver::freeDescriptorSets (VkDevice device, VkDescriptorPool descriptorPool, deUint32 count, const VkDescriptorSet* pDescriptorSets) const
@@ -382,49 +352,9 @@ VkResult DeviceDriver::freeDescriptorSets (VkDevice device, VkDescriptorPool des
 	return m_vk.freeDescriptorSets(device, descriptorPool, count, pDescriptorSets);
 }
 
-VkResult DeviceDriver::updateDescriptorSets (VkDevice device, deUint32 writeCount, const VkWriteDescriptorSet* pDescriptorWrites, deUint32 copyCount, const VkCopyDescriptorSet* pDescriptorCopies) const
+void DeviceDriver::updateDescriptorSets (VkDevice device, deUint32 writeCount, const VkWriteDescriptorSet* pDescriptorWrites, deUint32 copyCount, const VkCopyDescriptorSet* pDescriptorCopies) const
 {
-	return m_vk.updateDescriptorSets(device, writeCount, pDescriptorWrites, copyCount, pDescriptorCopies);
-}
-
-VkResult DeviceDriver::createDynamicViewportState (VkDevice device, const VkDynamicViewportStateCreateInfo* pCreateInfo, VkDynamicViewportState* pState) const
-{
-	return m_vk.createDynamicViewportState(device, pCreateInfo, pState);
-}
-
-VkResult DeviceDriver::destroyDynamicViewportState (VkDevice device, VkDynamicViewportState dynamicViewportState) const
-{
-	return m_vk.destroyDynamicViewportState(device, dynamicViewportState);
-}
-
-VkResult DeviceDriver::createDynamicRasterState (VkDevice device, const VkDynamicRasterStateCreateInfo* pCreateInfo, VkDynamicRasterState* pState) const
-{
-	return m_vk.createDynamicRasterState(device, pCreateInfo, pState);
-}
-
-VkResult DeviceDriver::destroyDynamicRasterState (VkDevice device, VkDynamicRasterState dynamicRasterState) const
-{
-	return m_vk.destroyDynamicRasterState(device, dynamicRasterState);
-}
-
-VkResult DeviceDriver::createDynamicColorBlendState (VkDevice device, const VkDynamicColorBlendStateCreateInfo* pCreateInfo, VkDynamicColorBlendState* pState) const
-{
-	return m_vk.createDynamicColorBlendState(device, pCreateInfo, pState);
-}
-
-VkResult DeviceDriver::destroyDynamicColorBlendState (VkDevice device, VkDynamicColorBlendState dynamicColorBlendState) const
-{
-	return m_vk.destroyDynamicColorBlendState(device, dynamicColorBlendState);
-}
-
-VkResult DeviceDriver::createDynamicDepthStencilState (VkDevice device, const VkDynamicDepthStencilStateCreateInfo* pCreateInfo, VkDynamicDepthStencilState* pState) const
-{
-	return m_vk.createDynamicDepthStencilState(device, pCreateInfo, pState);
-}
-
-VkResult DeviceDriver::destroyDynamicDepthStencilState (VkDevice device, VkDynamicDepthStencilState dynamicDepthStencilState) const
-{
-	return m_vk.destroyDynamicDepthStencilState(device, dynamicDepthStencilState);
+	m_vk.updateDescriptorSets(device, writeCount, pDescriptorWrites, copyCount, pDescriptorCopies);
 }
 
 VkResult DeviceDriver::createFramebuffer (VkDevice device, const VkFramebufferCreateInfo* pCreateInfo, VkFramebuffer* pFramebuffer) const
@@ -432,9 +362,9 @@ VkResult DeviceDriver::createFramebuffer (VkDevice device, const VkFramebufferCr
 	return m_vk.createFramebuffer(device, pCreateInfo, pFramebuffer);
 }
 
-VkResult DeviceDriver::destroyFramebuffer (VkDevice device, VkFramebuffer framebuffer) const
+void DeviceDriver::destroyFramebuffer (VkDevice device, VkFramebuffer framebuffer) const
 {
-	return m_vk.destroyFramebuffer(device, framebuffer);
+	m_vk.destroyFramebuffer(device, framebuffer);
 }
 
 VkResult DeviceDriver::createRenderPass (VkDevice device, const VkRenderPassCreateInfo* pCreateInfo, VkRenderPass* pRenderPass) const
@@ -442,9 +372,9 @@ VkResult DeviceDriver::createRenderPass (VkDevice device, const VkRenderPassCrea
 	return m_vk.createRenderPass(device, pCreateInfo, pRenderPass);
 }
 
-VkResult DeviceDriver::destroyRenderPass (VkDevice device, VkRenderPass renderPass) const
+void DeviceDriver::destroyRenderPass (VkDevice device, VkRenderPass renderPass) const
 {
-	return m_vk.destroyRenderPass(device, renderPass);
+	m_vk.destroyRenderPass(device, renderPass);
 }
 
 VkResult DeviceDriver::getRenderAreaGranularity (VkDevice device, VkRenderPass renderPass, VkExtent2D* pGranularity) const
@@ -457,9 +387,9 @@ VkResult DeviceDriver::createCommandPool (VkDevice device, const VkCmdPoolCreate
 	return m_vk.createCommandPool(device, pCreateInfo, pCmdPool);
 }
 
-VkResult DeviceDriver::destroyCommandPool (VkDevice device, VkCmdPool cmdPool) const
+void DeviceDriver::destroyCommandPool (VkDevice device, VkCmdPool cmdPool) const
 {
-	return m_vk.destroyCommandPool(device, cmdPool);
+	m_vk.destroyCommandPool(device, cmdPool);
 }
 
 VkResult DeviceDriver::resetCommandPool (VkDevice device, VkCmdPool cmdPool, VkCmdPoolResetFlags flags) const
@@ -472,9 +402,9 @@ VkResult DeviceDriver::createCommandBuffer (VkDevice device, const VkCmdBufferCr
 	return m_vk.createCommandBuffer(device, pCreateInfo, pCmdBuffer);
 }
 
-VkResult DeviceDriver::destroyCommandBuffer (VkDevice device, VkCmdBuffer commandBuffer) const
+void DeviceDriver::destroyCommandBuffer (VkDevice device, VkCmdBuffer commandBuffer) const
 {
-	return m_vk.destroyCommandBuffer(device, commandBuffer);
+	m_vk.destroyCommandBuffer(device, commandBuffer);
 }
 
 VkResult DeviceDriver::beginCommandBuffer (VkCmdBuffer cmdBuffer, const VkCmdBufferBeginInfo* pBeginInfo) const
@@ -497,24 +427,49 @@ void DeviceDriver::cmdBindPipeline (VkCmdBuffer cmdBuffer, VkPipelineBindPoint p
 	m_vk.cmdBindPipeline(cmdBuffer, pipelineBindPoint, pipeline);
 }
 
-void DeviceDriver::cmdBindDynamicViewportState (VkCmdBuffer cmdBuffer, VkDynamicViewportState dynamicViewportState) const
+void DeviceDriver::cmdSetViewport (VkCmdBuffer cmdBuffer, deUint32 viewportCount, const VkViewport* pViewports) const
 {
-	m_vk.cmdBindDynamicViewportState(cmdBuffer, dynamicViewportState);
+	m_vk.cmdSetViewport(cmdBuffer, viewportCount, pViewports);
 }
 
-void DeviceDriver::cmdBindDynamicRasterState (VkCmdBuffer cmdBuffer, VkDynamicRasterState dynamicRasterState) const
+void DeviceDriver::cmdSetScissor (VkCmdBuffer cmdBuffer, deUint32 scissorCount, const VkRect2D* pScissors) const
 {
-	m_vk.cmdBindDynamicRasterState(cmdBuffer, dynamicRasterState);
+	m_vk.cmdSetScissor(cmdBuffer, scissorCount, pScissors);
 }
 
-void DeviceDriver::cmdBindDynamicColorBlendState (VkCmdBuffer cmdBuffer, VkDynamicColorBlendState dynamicColorBlendState) const
+void DeviceDriver::cmdSetLineWidth (VkCmdBuffer cmdBuffer, float lineWidth) const
 {
-	m_vk.cmdBindDynamicColorBlendState(cmdBuffer, dynamicColorBlendState);
+	m_vk.cmdSetLineWidth(cmdBuffer, lineWidth);
 }
 
-void DeviceDriver::cmdBindDynamicDepthStencilState (VkCmdBuffer cmdBuffer, VkDynamicDepthStencilState dynamicDepthStencilState) const
+void DeviceDriver::cmdSetDepthBias (VkCmdBuffer cmdBuffer, float depthBias, float depthBiasClamp, float slopeScaledDepthBias) const
 {
-	m_vk.cmdBindDynamicDepthStencilState(cmdBuffer, dynamicDepthStencilState);
+	m_vk.cmdSetDepthBias(cmdBuffer, depthBias, depthBiasClamp, slopeScaledDepthBias);
+}
+
+void DeviceDriver::cmdSetBlendConstants (VkCmdBuffer cmdBuffer, const float blendConst) const
+{
+	m_vk.cmdSetBlendConstants(cmdBuffer, blendConst);
+}
+
+void DeviceDriver::cmdSetDepthBounds (VkCmdBuffer cmdBuffer, float minDepthBounds, float maxDepthBounds) const
+{
+	m_vk.cmdSetDepthBounds(cmdBuffer, minDepthBounds, maxDepthBounds);
+}
+
+void DeviceDriver::cmdSetStencilCompareMask (VkCmdBuffer cmdBuffer, VkStencilFaceFlags faceMask, deUint32 stencilCompareMask) const
+{
+	m_vk.cmdSetStencilCompareMask(cmdBuffer, faceMask, stencilCompareMask);
+}
+
+void DeviceDriver::cmdSetStencilWriteMask (VkCmdBuffer cmdBuffer, VkStencilFaceFlags faceMask, deUint32 stencilWriteMask) const
+{
+	m_vk.cmdSetStencilWriteMask(cmdBuffer, faceMask, stencilWriteMask);
+}
+
+void DeviceDriver::cmdSetStencilReference (VkCmdBuffer cmdBuffer, VkStencilFaceFlags faceMask, deUint32 stencilReference) const
+{
+	m_vk.cmdSetStencilReference(cmdBuffer, faceMask, stencilReference);
 }
 
 void DeviceDriver::cmdBindDescriptorSets (VkCmdBuffer cmdBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipelineLayout layout, deUint32 firstSet, deUint32 setCount, const VkDescriptorSet* pDescriptorSets, deUint32 dynamicOffsetCount, const deUint32* pDynamicOffsets) const
@@ -532,14 +487,14 @@ void DeviceDriver::cmdBindVertexBuffers (VkCmdBuffer cmdBuffer, deUint32 startBi
 	m_vk.cmdBindVertexBuffers(cmdBuffer, startBinding, bindingCount, pBuffers, pOffsets);
 }
 
-void DeviceDriver::cmdDraw (VkCmdBuffer cmdBuffer, deUint32 firstVertex, deUint32 vertexCount, deUint32 firstInstance, deUint32 instanceCount) const
+void DeviceDriver::cmdDraw (VkCmdBuffer cmdBuffer, deUint32 vertexCount, deUint32 instanceCount, deUint32 firstVertex, deUint32 firstInstance) const
 {
-	m_vk.cmdDraw(cmdBuffer, firstVertex, vertexCount, firstInstance, instanceCount);
+	m_vk.cmdDraw(cmdBuffer, vertexCount, instanceCount, firstVertex, firstInstance);
 }
 
-void DeviceDriver::cmdDrawIndexed (VkCmdBuffer cmdBuffer, deUint32 firstIndex, deUint32 indexCount, deInt32 vertexOffset, deUint32 firstInstance, deUint32 instanceCount) const
+void DeviceDriver::cmdDrawIndexed (VkCmdBuffer cmdBuffer, deUint32 indexCount, deUint32 instanceCount, deUint32 firstIndex, deInt32 vertexOffset, deUint32 firstInstance) const
 {
-	m_vk.cmdDrawIndexed(cmdBuffer, firstIndex, indexCount, vertexOffset, firstInstance, instanceCount);
+	m_vk.cmdDrawIndexed(cmdBuffer, indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
 }
 
 void DeviceDriver::cmdDrawIndirect (VkCmdBuffer cmdBuffer, VkBuffer buffer, VkDeviceSize offset, deUint32 count, deUint32 stride) const
@@ -602,9 +557,9 @@ void DeviceDriver::cmdClearColorImage (VkCmdBuffer cmdBuffer, VkImage image, VkI
 	m_vk.cmdClearColorImage(cmdBuffer, image, imageLayout, pColor, rangeCount, pRanges);
 }
 
-void DeviceDriver::cmdClearDepthStencilImage (VkCmdBuffer cmdBuffer, VkImage image, VkImageLayout imageLayout, float depth, deUint32 stencil, deUint32 rangeCount, const VkImageSubresourceRange* pRanges) const
+void DeviceDriver::cmdClearDepthStencilImage (VkCmdBuffer cmdBuffer, VkImage image, VkImageLayout imageLayout, const VkClearDepthStencilValue* pDepthStencil, deUint32 rangeCount, const VkImageSubresourceRange* pRanges) const
 {
-	m_vk.cmdClearDepthStencilImage(cmdBuffer, image, imageLayout, depth, stencil, rangeCount, pRanges);
+	m_vk.cmdClearDepthStencilImage(cmdBuffer, image, imageLayout, pDepthStencil, rangeCount, pRanges);
 }
 
 void DeviceDriver::cmdClearColorAttachment (VkCmdBuffer cmdBuffer, deUint32 colorAttachment, VkImageLayout imageLayout, const VkClearColorValue* pColor, deUint32 rectCount, const VkRect3D* pRects) const
@@ -612,9 +567,9 @@ void DeviceDriver::cmdClearColorAttachment (VkCmdBuffer cmdBuffer, deUint32 colo
 	m_vk.cmdClearColorAttachment(cmdBuffer, colorAttachment, imageLayout, pColor, rectCount, pRects);
 }
 
-void DeviceDriver::cmdClearDepthStencilAttachment (VkCmdBuffer cmdBuffer, VkImageAspectFlags imageAspectMask, VkImageLayout imageLayout, float depth, deUint32 stencil, deUint32 rectCount, const VkRect3D* pRects) const
+void DeviceDriver::cmdClearDepthStencilAttachment (VkCmdBuffer cmdBuffer, VkImageAspectFlags aspectMask, VkImageLayout imageLayout, const VkClearDepthStencilValue* pDepthStencil, deUint32 rectCount, const VkRect3D* pRects) const
 {
-	m_vk.cmdClearDepthStencilAttachment(cmdBuffer, imageAspectMask, imageLayout, depth, stencil, rectCount, pRects);
+	m_vk.cmdClearDepthStencilAttachment(cmdBuffer, aspectMask, imageLayout, pDepthStencil, rectCount, pRects);
 }
 
 void DeviceDriver::cmdResolveImage (VkCmdBuffer cmdBuffer, VkImage srcImage, VkImageLayout srcImageLayout, VkImage destImage, VkImageLayout destImageLayout, deUint32 regionCount, const VkImageResolve* pRegions) const

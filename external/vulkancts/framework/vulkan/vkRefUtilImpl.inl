@@ -7,157 +7,127 @@ namespace refdetails
 template<>
 void Deleter<VkDeviceMemory>::operator() (VkDeviceMemory obj) const
 {
-	DE_TEST_ASSERT(m_deviceIface->freeMemory(m_device, obj) == VK_SUCCESS);
+	m_deviceIface->freeMemory(m_device, obj);
 }
 
 template<>
 void Deleter<VkFence>::operator() (VkFence obj) const
 {
-	DE_TEST_ASSERT(m_deviceIface->destroyFence(m_device, obj) == VK_SUCCESS);
+	m_deviceIface->destroyFence(m_device, obj);
 }
 
 template<>
 void Deleter<VkSemaphore>::operator() (VkSemaphore obj) const
 {
-	DE_TEST_ASSERT(m_deviceIface->destroySemaphore(m_device, obj) == VK_SUCCESS);
+	m_deviceIface->destroySemaphore(m_device, obj);
 }
 
 template<>
 void Deleter<VkEvent>::operator() (VkEvent obj) const
 {
-	DE_TEST_ASSERT(m_deviceIface->destroyEvent(m_device, obj) == VK_SUCCESS);
+	m_deviceIface->destroyEvent(m_device, obj);
 }
 
 template<>
 void Deleter<VkQueryPool>::operator() (VkQueryPool obj) const
 {
-	DE_TEST_ASSERT(m_deviceIface->destroyQueryPool(m_device, obj) == VK_SUCCESS);
+	m_deviceIface->destroyQueryPool(m_device, obj);
 }
 
 template<>
 void Deleter<VkBuffer>::operator() (VkBuffer obj) const
 {
-	DE_TEST_ASSERT(m_deviceIface->destroyBuffer(m_device, obj) == VK_SUCCESS);
+	m_deviceIface->destroyBuffer(m_device, obj);
 }
 
 template<>
 void Deleter<VkBufferView>::operator() (VkBufferView obj) const
 {
-	DE_TEST_ASSERT(m_deviceIface->destroyBufferView(m_device, obj) == VK_SUCCESS);
+	m_deviceIface->destroyBufferView(m_device, obj);
 }
 
 template<>
 void Deleter<VkImage>::operator() (VkImage obj) const
 {
-	DE_TEST_ASSERT(m_deviceIface->destroyImage(m_device, obj) == VK_SUCCESS);
+	m_deviceIface->destroyImage(m_device, obj);
 }
 
 template<>
 void Deleter<VkImageView>::operator() (VkImageView obj) const
 {
-	DE_TEST_ASSERT(m_deviceIface->destroyImageView(m_device, obj) == VK_SUCCESS);
-}
-
-template<>
-void Deleter<VkAttachmentView>::operator() (VkAttachmentView obj) const
-{
-	DE_TEST_ASSERT(m_deviceIface->destroyAttachmentView(m_device, obj) == VK_SUCCESS);
+	m_deviceIface->destroyImageView(m_device, obj);
 }
 
 template<>
 void Deleter<VkShaderModule>::operator() (VkShaderModule obj) const
 {
-	DE_TEST_ASSERT(m_deviceIface->destroyShaderModule(m_device, obj) == VK_SUCCESS);
+	m_deviceIface->destroyShaderModule(m_device, obj);
 }
 
 template<>
 void Deleter<VkShader>::operator() (VkShader obj) const
 {
-	DE_TEST_ASSERT(m_deviceIface->destroyShader(m_device, obj) == VK_SUCCESS);
+	m_deviceIface->destroyShader(m_device, obj);
 }
 
 template<>
 void Deleter<VkPipelineCache>::operator() (VkPipelineCache obj) const
 {
-	DE_TEST_ASSERT(m_deviceIface->destroyPipelineCache(m_device, obj) == VK_SUCCESS);
+	m_deviceIface->destroyPipelineCache(m_device, obj);
 }
 
 template<>
 void Deleter<VkPipeline>::operator() (VkPipeline obj) const
 {
-	DE_TEST_ASSERT(m_deviceIface->destroyPipeline(m_device, obj) == VK_SUCCESS);
+	m_deviceIface->destroyPipeline(m_device, obj);
 }
 
 template<>
 void Deleter<VkPipelineLayout>::operator() (VkPipelineLayout obj) const
 {
-	DE_TEST_ASSERT(m_deviceIface->destroyPipelineLayout(m_device, obj) == VK_SUCCESS);
+	m_deviceIface->destroyPipelineLayout(m_device, obj);
 }
 
 template<>
 void Deleter<VkSampler>::operator() (VkSampler obj) const
 {
-	DE_TEST_ASSERT(m_deviceIface->destroySampler(m_device, obj) == VK_SUCCESS);
+	m_deviceIface->destroySampler(m_device, obj);
 }
 
 template<>
 void Deleter<VkDescriptorSetLayout>::operator() (VkDescriptorSetLayout obj) const
 {
-	DE_TEST_ASSERT(m_deviceIface->destroyDescriptorSetLayout(m_device, obj) == VK_SUCCESS);
+	m_deviceIface->destroyDescriptorSetLayout(m_device, obj);
 }
 
 template<>
 void Deleter<VkDescriptorPool>::operator() (VkDescriptorPool obj) const
 {
-	DE_TEST_ASSERT(m_deviceIface->destroyDescriptorPool(m_device, obj) == VK_SUCCESS);
-}
-
-template<>
-void Deleter<VkDynamicViewportState>::operator() (VkDynamicViewportState obj) const
-{
-	DE_TEST_ASSERT(m_deviceIface->destroyDynamicViewportState(m_device, obj) == VK_SUCCESS);
-}
-
-template<>
-void Deleter<VkDynamicRasterState>::operator() (VkDynamicRasterState obj) const
-{
-	DE_TEST_ASSERT(m_deviceIface->destroyDynamicRasterState(m_device, obj) == VK_SUCCESS);
-}
-
-template<>
-void Deleter<VkDynamicColorBlendState>::operator() (VkDynamicColorBlendState obj) const
-{
-	DE_TEST_ASSERT(m_deviceIface->destroyDynamicColorBlendState(m_device, obj) == VK_SUCCESS);
-}
-
-template<>
-void Deleter<VkDynamicDepthStencilState>::operator() (VkDynamicDepthStencilState obj) const
-{
-	DE_TEST_ASSERT(m_deviceIface->destroyDynamicDepthStencilState(m_device, obj) == VK_SUCCESS);
+	m_deviceIface->destroyDescriptorPool(m_device, obj);
 }
 
 template<>
 void Deleter<VkFramebuffer>::operator() (VkFramebuffer obj) const
 {
-	DE_TEST_ASSERT(m_deviceIface->destroyFramebuffer(m_device, obj) == VK_SUCCESS);
+	m_deviceIface->destroyFramebuffer(m_device, obj);
 }
 
 template<>
 void Deleter<VkRenderPass>::operator() (VkRenderPass obj) const
 {
-	DE_TEST_ASSERT(m_deviceIface->destroyRenderPass(m_device, obj) == VK_SUCCESS);
+	m_deviceIface->destroyRenderPass(m_device, obj);
 }
 
 template<>
 void Deleter<VkCmdPool>::operator() (VkCmdPool obj) const
 {
-	DE_TEST_ASSERT(m_deviceIface->destroyCommandPool(m_device, obj) == VK_SUCCESS);
+	m_deviceIface->destroyCommandPool(m_device, obj);
 }
 
 template<>
 void Deleter<VkCmdBuffer>::operator() (VkCmdBuffer obj) const
 {
-	DE_TEST_ASSERT(m_deviceIface->destroyCommandBuffer(m_device, obj) == VK_SUCCESS);
+	m_deviceIface->destroyCommandBuffer(m_device, obj);
 }
 
 } // refdetails
@@ -239,13 +209,6 @@ Move<VkImageView> createImageView (const DeviceInterface& vk, VkDevice device, c
 	return Move<VkImageView>(check<VkImageView>(object), Deleter<VkImageView>(vk, device));
 }
 
-Move<VkAttachmentView> createAttachmentView (const DeviceInterface& vk, VkDevice device, const VkAttachmentViewCreateInfo* pCreateInfo)
-{
-	VkAttachmentView object = 0;
-	VK_CHECK(vk.createAttachmentView(device, pCreateInfo, &object));
-	return Move<VkAttachmentView>(check<VkAttachmentView>(object), Deleter<VkAttachmentView>(vk, device));
-}
-
 Move<VkShaderModule> createShaderModule (const DeviceInterface& vk, VkDevice device, const VkShaderModuleCreateInfo* pCreateInfo)
 {
 	VkShaderModule object = 0;
@@ -288,39 +251,11 @@ Move<VkDescriptorSetLayout> createDescriptorSetLayout (const DeviceInterface& vk
 	return Move<VkDescriptorSetLayout>(check<VkDescriptorSetLayout>(object), Deleter<VkDescriptorSetLayout>(vk, device));
 }
 
-Move<VkDescriptorPool> createDescriptorPool (const DeviceInterface& vk, VkDevice device, VkDescriptorPoolUsage poolUsage, deUint32 maxSets, const VkDescriptorPoolCreateInfo* pCreateInfo)
+Move<VkDescriptorPool> createDescriptorPool (const DeviceInterface& vk, VkDevice device, const VkDescriptorPoolCreateInfo* pCreateInfo)
 {
 	VkDescriptorPool object = 0;
-	VK_CHECK(vk.createDescriptorPool(device, poolUsage, maxSets, pCreateInfo, &object));
+	VK_CHECK(vk.createDescriptorPool(device, pCreateInfo, &object));
 	return Move<VkDescriptorPool>(check<VkDescriptorPool>(object), Deleter<VkDescriptorPool>(vk, device));
-}
-
-Move<VkDynamicViewportState> createDynamicViewportState (const DeviceInterface& vk, VkDevice device, const VkDynamicViewportStateCreateInfo* pCreateInfo)
-{
-	VkDynamicViewportState object = 0;
-	VK_CHECK(vk.createDynamicViewportState(device, pCreateInfo, &object));
-	return Move<VkDynamicViewportState>(check<VkDynamicViewportState>(object), Deleter<VkDynamicViewportState>(vk, device));
-}
-
-Move<VkDynamicRasterState> createDynamicRasterState (const DeviceInterface& vk, VkDevice device, const VkDynamicRasterStateCreateInfo* pCreateInfo)
-{
-	VkDynamicRasterState object = 0;
-	VK_CHECK(vk.createDynamicRasterState(device, pCreateInfo, &object));
-	return Move<VkDynamicRasterState>(check<VkDynamicRasterState>(object), Deleter<VkDynamicRasterState>(vk, device));
-}
-
-Move<VkDynamicColorBlendState> createDynamicColorBlendState (const DeviceInterface& vk, VkDevice device, const VkDynamicColorBlendStateCreateInfo* pCreateInfo)
-{
-	VkDynamicColorBlendState object = 0;
-	VK_CHECK(vk.createDynamicColorBlendState(device, pCreateInfo, &object));
-	return Move<VkDynamicColorBlendState>(check<VkDynamicColorBlendState>(object), Deleter<VkDynamicColorBlendState>(vk, device));
-}
-
-Move<VkDynamicDepthStencilState> createDynamicDepthStencilState (const DeviceInterface& vk, VkDevice device, const VkDynamicDepthStencilStateCreateInfo* pCreateInfo)
-{
-	VkDynamicDepthStencilState object = 0;
-	VK_CHECK(vk.createDynamicDepthStencilState(device, pCreateInfo, &object));
-	return Move<VkDynamicDepthStencilState>(check<VkDynamicDepthStencilState>(object), Deleter<VkDynamicDepthStencilState>(vk, device));
 }
 
 Move<VkFramebuffer> createFramebuffer (const DeviceInterface& vk, VkDevice device, const VkFramebufferCreateInfo* pCreateInfo)

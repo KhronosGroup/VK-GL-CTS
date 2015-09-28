@@ -74,7 +74,7 @@ tcu::TestStatus createInstanceTest (Context& context)
 	const char*					engineNames[]			= { "engineName", DE_NULL, "",  "engine. name", "engine\"(name)", "eng~!@#$%^&*()_+name", "engine\nName", "engine\r\nName" };
 	const deUint32				appVersions[]			= { 0, 1, (deUint32)-1 };
 	const deUint32				engineVersions[]		= { 0, 1, (deUint32)-1 };
-	const PlatformInterface& 	platformInterface		= context.getPlatformInterface();
+	const PlatformInterface&	platformInterface		= context.getPlatformInterface();
 	vector<VkApplicationInfo>	appInfos;
 
 	// test over appName
@@ -241,7 +241,7 @@ tcu::TestStatus createInstanceWithUnsupportedExtensionsTest (Context& context)
 {
 	tcu::TestLog&						log						= context.getTestContext().getLog();
 	const PlatformInterface&			platformInterface		= context.getPlatformInterface();
-	const char* 						enabledExtensions[]		= {"VK_UNSUPPORTED_EXTENSION", "THIS_IS_NOT_AN_EXTENSION"};
+	const char*							enabledExtensions[]		= {"VK_UNSUPPORTED_EXTENSION", "THIS_IS_NOT_AN_EXTENSION"};
 	const VkApplicationInfo				appInfo					=
 	{
 		VK_STRUCTURE_TYPE_APPLICATION_INFO,						// VkStructureType				sType;
@@ -292,6 +292,8 @@ tcu::TestStatus createDeviceTest (Context& context)
 	const deUint32				queueIndex				= 0;
 	VkDeviceQueueCreateInfo		deviceQueueCreateInfo	=
 	{
+		VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+		DE_NULL,
 		queueFamilyIndex,						//queueFamilyIndex;
 		queueCount								//queueCount;
 	};
@@ -306,12 +308,11 @@ tcu::TestStatus createDeviceTest (Context& context)
 		0,										//extensionCount;
 		DE_NULL,								//ppEnabledExtensionNames;
 		DE_NULL,								//pEnabledFeatures;
-		VK_DEVICE_CREATE_VALIDATION_BIT,		//flags;
 	};
 
 	const Unique<VkDevice>			device					(createDevice(instanceDriver, physicalDevice, &deviceCreateInfo));
 	const DeviceDriver				deviceDriver			(instanceDriver, device.get());
-	VkQueue		   					queue;
+	VkQueue							queue;
 
 	VK_CHECK(deviceDriver.getDeviceQueue(device.get(), queueFamilyIndex, queueIndex, &queue));
 	VK_CHECK(deviceDriver.queueWaitIdle(queue));
@@ -333,6 +334,8 @@ tcu::TestStatus createMultipleDevicesTest (Context& context)
 	const deUint32										queueIndex				= 0;
 	const VkDeviceQueueCreateInfo						deviceQueueCreateInfo	=
 	{
+		VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+		DE_NULL,
 		queueFamilyIndex,								//queueFamilyIndex;
 		queueCount										//queueCount;
 	};
@@ -347,16 +350,14 @@ tcu::TestStatus createMultipleDevicesTest (Context& context)
 		0,												//extensionCount;
 		DE_NULL,										//ppEnabledExtensionNames;
 		DE_NULL,										//pEnabledFeatures;
-		VK_DEVICE_CREATE_VALIDATION_BIT,				//flags;
 	};
-	VkResult											result;
 	vector<VkDevice>									devices(numDevices, (VkDevice)DE_NULL);
 
 	try
 	{
 		for (int deviceNdx = 0; deviceNdx < numDevices; deviceNdx++)
 		{
-			result = instanceDriver.createDevice(physicalDevice, &deviceCreateInfo, &devices[deviceNdx]);
+			const VkResult result = instanceDriver.createDevice(physicalDevice, &deviceCreateInfo, &devices[deviceNdx]);
 
 			if (result != VK_SUCCESS)
 			{
@@ -385,7 +386,7 @@ tcu::TestStatus createMultipleDevicesTest (Context& context)
 			if (devices[deviceNdx] != (VkDevice)DE_NULL)
 			{
 				DeviceDriver deviceDriver(instanceDriver, devices[deviceNdx]);
-				result = deviceDriver.destroyDevice(devices[deviceNdx]);
+				deviceDriver.destroyDevice(devices[deviceNdx]);
 			}
 		}
 
@@ -397,10 +398,7 @@ tcu::TestStatus createMultipleDevicesTest (Context& context)
 		if (devices[deviceNdx] != (VkDevice)DE_NULL)
 		{
 			DeviceDriver deviceDriver(instanceDriver, devices[deviceNdx]);
-			result = deviceDriver.destroyDevice(devices[deviceNdx]);
-
-			if (result != VK_SUCCESS)
-				resultCollector.fail("Failed to destroy Device No. " + de::toString(deviceNdx) + ", Error Code: " + de::toString(result));
+			deviceDriver.destroyDevice(devices[deviceNdx]);
 		}
 	}
 
@@ -417,6 +415,8 @@ tcu::TestStatus createDeviceWithUnsupportedExtensionsTest (Context& context)
 	const VkPhysicalDevice			physicalDevice			= chooseDevice(instanceDriver, instance.get(), context.getTestContext().getCommandLine());
 	const VkDeviceQueueCreateInfo	deviceQueueCreateInfo	=
 	{
+		VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+		DE_NULL,
 		0,										//queueFamiliIndex;
 		1,										//queueCount;
 	};
@@ -431,7 +431,6 @@ tcu::TestStatus createDeviceWithUnsupportedExtensionsTest (Context& context)
 		DE_LENGTH_OF_ARRAY(enabledExtensions),	//extensionCount;
 		enabledExtensions,						//ppEnabledExtensionNames;
 		DE_NULL,								//pEnabledFeatures;
-		VK_DEVICE_CREATE_VALIDATION_BIT,		//flags;
 	};
 
 	try
@@ -453,24 +452,26 @@ tcu::TestStatus createDeviceWithUnsupportedExtensionsTest (Context& context)
 
 tcu::TestStatus createDeviceWithVariousQueueCountsTest (Context& context)
 {
-	tcu::TestLog&										log								= context.getTestContext().getLog();
-	const int											queueCountDiff					= 1;
-	const PlatformInterface&							platformInterface				= context.getPlatformInterface();
-	const Unique<VkInstance>							instance						(createDefaultInstance(platformInterface));
-	const InstanceDriver								instanceDriver					(platformInterface, instance.get());
-	const VkPhysicalDevice								physicalDevice					= chooseDevice(instanceDriver, instance.get(), context.getTestContext().getCommandLine());
-	const vector<VkPhysicalDeviceQueueProperties>		physicalDeviceQueueProperties	= getPhysicalDeviceQueueProperties(instanceDriver, physicalDevice);
-	vector<VkDeviceQueueCreateInfo>						deviceQueueCreateInfos;
-	VkResult											result;
+	tcu::TestLog&							log						= context.getTestContext().getLog();
+	const int								queueCountDiff			= 1;
+	const PlatformInterface&				platformInterface		= context.getPlatformInterface();
+	const Unique<VkInstance>				instance				(createDefaultInstance(platformInterface));
+	const InstanceDriver					instanceDriver			(platformInterface, instance.get());
+	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance.get(), context.getTestContext().getCommandLine());
+	const vector<VkQueueFamilyProperties>	queueFamilyProperties	= getPhysicalDeviceQueueFamilyProperties(instanceDriver, physicalDevice);
+	vector<VkDeviceQueueCreateInfo>			deviceQueueCreateInfos;
+	VkResult								result;
 
-	for (deUint32 queueFamilyNdx = 0; queueFamilyNdx < (deUint32)physicalDeviceQueueProperties.size(); queueFamilyNdx++)
+	for (deUint32 queueFamilyNdx = 0; queueFamilyNdx < (deUint32)queueFamilyProperties.size(); queueFamilyNdx++)
 	{
-		const deUint32 maxQueueCount = physicalDeviceQueueProperties[queueFamilyNdx].queueCount;
+		const deUint32 maxQueueCount = queueFamilyProperties[queueFamilyNdx].queueCount;
 
 		for (deUint32 queueCount = 1; queueCount <= maxQueueCount; queueCount += queueCountDiff)
 		{
 			const VkDeviceQueueCreateInfo queueCreateInfo =
 			{
+				VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+				DE_NULL,
 				queueFamilyNdx,
 				queueCount
 			};
@@ -493,12 +494,11 @@ tcu::TestStatus createDeviceWithVariousQueueCountsTest (Context& context)
 			0,										//extensionCount;
 			DE_NULL,								//ppEnabledExtensionNames;
 			DE_NULL,								//pEnabledFeatures;
-			VK_DEVICE_CREATE_VALIDATION_BIT,		//flags;
 		};
 		const Unique<VkDevice>			device				(createDevice(instanceDriver, physicalDevice, &deviceCreateInfo));
 		const DeviceDriver				deviceDriver		(instanceDriver, device.get());
 		const deUint32					queueFamilyIndex	= deviceCreateInfo.pRequestedQueues->queueFamilyIndex;
-		const deUint32					queueCount 			= deviceCreateInfo.pRequestedQueues->queueCount;
+		const deUint32					queueCount			= deviceCreateInfo.pRequestedQueues->queueCount;
 
 		for (deUint32 queueIndex = 0; queueIndex < queueCount; queueIndex++)
 		{

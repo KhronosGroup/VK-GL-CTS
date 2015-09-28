@@ -55,12 +55,9 @@ Move<VkPipeline> createComputePipeline (const DeviceInterface& vk, VkDevice devi
 
 Move<VkDescriptorSet> allocDescriptorSet (const DeviceInterface& vk, VkDevice device, VkDescriptorPool descriptorPool, VkDescriptorSetUsage setUsage, VkDescriptorSetLayout layout)
 {
-	VkDescriptorSet	descriptorSet	= 0u;
-	deUint32		numCreated		= 0;
+	VkDescriptorSet	descriptorSet	= 0;
 
-	VK_CHECK(vk.allocDescriptorSets(device, descriptorPool, setUsage, 1, &layout, &descriptorSet, &numCreated));
-	if (numCreated != 1u)
-		throw tcu::TestError("failed to allocate descriptor sets");
+	VK_CHECK(vk.allocDescriptorSets(device, descriptorPool, setUsage, 1, &layout, &descriptorSet));
 
 	return Move<VkDescriptorSet>(check<VkDescriptorSet>(descriptorSet), Deleter<VkDescriptorSet>(vk, device, descriptorPool));
 }

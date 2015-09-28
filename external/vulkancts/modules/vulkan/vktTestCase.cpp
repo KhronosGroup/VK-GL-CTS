@@ -53,7 +53,7 @@ using namespace vk;
 
 static deUint32 findQueueFamilyIndexWithCaps (const InstanceInterface& vkInstance, VkPhysicalDevice physicalDevice, VkQueueFlags requiredCaps)
 {
-	const vector<VkPhysicalDeviceQueueProperties>	queueProps	= getPhysicalDeviceQueueProperties(vkInstance, physicalDevice);
+	const vector<VkQueueFamilyProperties>	queueProps	= getPhysicalDeviceQueueFamilyProperties(vkInstance, physicalDevice);
 
 	for (size_t queueNdx = 0; queueNdx < queueProps.size(); queueNdx++)
 	{
@@ -63,6 +63,8 @@ static deUint32 findQueueFamilyIndexWithCaps (const InstanceInterface& vkInstanc
 
 	TCU_THROW(NotSupportedError, "No matching queue found");
 }
+
+// \todo [2015-09-28 pyry] Refactor using Move<>
 
 struct DeviceCreateInfoHelper
 {
@@ -80,6 +82,8 @@ struct DeviceCreateInfoHelper
 		//  * Enable all supported by default, and expose that to test cases
 		//  * More limited enabled set could be used for verifying that tests behave correctly
 
+		queueInfo.sType						= VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+		queueInfo.pNext						= DE_NULL;
 		queueInfo.queueFamilyIndex			= queueIndex;
 		queueInfo.queueCount				= 1u;
 
@@ -90,7 +94,6 @@ struct DeviceCreateInfoHelper
 		deviceInfo.extensionCount			= 0u;
 		deviceInfo.ppEnabledExtensionNames	= DE_NULL;
 		deviceInfo.pEnabledFeatures			= &enabledFeatures;
-		deviceInfo.flags					= 0u;
 	}
 };
 
