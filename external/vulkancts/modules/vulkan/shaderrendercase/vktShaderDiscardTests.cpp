@@ -100,7 +100,7 @@ ShaderDiscardCaseInstance::ShaderDiscardCaseInstance (Context&			context,
 {
 	if (m_usesTexture)
 	{
-		m_brickTexture = Texture2D::create(m_context, m_context.getTestContext().getArchive(), "data/brick.png");
+		m_brickTexture = Texture2D::create(m_context, m_context.getTestContext().getArchive(), "vulkan/data/brick.png");
 		m_textures.push_back(TextureBinding(m_brickTexture, tcu::Sampler(tcu::Sampler::CLAMP_TO_EDGE,
 																		tcu::Sampler::CLAMP_TO_EDGE,
 																		tcu::Sampler::CLAMP_TO_EDGE,

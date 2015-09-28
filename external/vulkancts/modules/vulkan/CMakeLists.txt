@@ -59,4 +59,4 @@ endif ()
 
 add_deqp_module(deqp-vk "${DEQP_VK_SRCS}" "${DEQP_VK_LIBS}" vktTestPackageEntry.cpp)
 
-add_data_dir(deqp-vk ../../data/vulkan/data	data)
+add_data_dir(deqp-vk ../../data/vulkan	vulkan)
