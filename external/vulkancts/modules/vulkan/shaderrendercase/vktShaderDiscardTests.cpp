@@ -57,11 +57,11 @@ namespace shaderrendercase
 class SamplerUniformSetup : public UniformSetup
 {
 public:
-						SamplerUniformSetup			(bool useSampler)
+						SamplerUniformSetup			(const bool useSampler)
 							: m_useSampler(useSampler)
 						{}
 
-	virtual void		setup						 (ShaderRenderCaseInstance& instance, const tcu::Vec4& constCoords)
+	virtual void		setup						 (ShaderRenderCaseInstance& instance, const tcu::Vec4& constCoords) const
 						{
 							DE_UNREF(constCoords);
 							instance.useUniform(0u, UI_ONE);
@@ -71,30 +71,30 @@ public:
 						}
 
 private:
-	bool 				m_useSampler;
+	const bool 			m_useSampler;
 };
 
 
 class ShaderDiscardCaseInstance : public ShaderRenderCaseInstance
 {
 public:
-						ShaderDiscardCaseInstance	(Context&			context,
-													bool 				isVertexCase,
-													ShaderEvaluator&	evaulator,
-													UniformSetup&		uniformSetup,
-													bool				usesTexture);
+						ShaderDiscardCaseInstance	(Context&				context,
+													const bool				isVertexCase,
+													const ShaderEvaluator&	evaulator,
+													const UniformSetup&		uniformSetup,
+													const bool				usesTexture);
 	virtual				~ShaderDiscardCaseInstance	(void);
 
 private:
-	bool				m_usesTexture;
-	Texture2D*			m_brickTexture;
+	const bool			m_usesTexture;
+	const Texture2D*	m_brickTexture;
 };
 
-ShaderDiscardCaseInstance::ShaderDiscardCaseInstance (Context&			context,
-													 bool				isVertexCase,
-													 ShaderEvaluator&	evaulator,
-													 UniformSetup&		uniformSetup,
-													 bool				usesTexture)
+ShaderDiscardCaseInstance::ShaderDiscardCaseInstance (Context&					context,
+													 const bool					isVertexCase,
+													 const ShaderEvaluator&		evaulator,
+													 const UniformSetup&		uniformSetup,
+													 const bool					usesTexture)
 	: ShaderRenderCaseInstance	(context, isVertexCase, evaulator, uniformSetup, DE_NULL)
 	, m_usesTexture				(usesTexture)
 {
@@ -121,13 +121,13 @@ ShaderDiscardCaseInstance::~ShaderDiscardCaseInstance (void)
 class ShaderDiscardCase : public ShaderRenderCase
 {
 public:
-						ShaderDiscardCase			(tcu::TestContext&	testCtx,
-													 const char*		name,
-													 const char*		description,
-													 const char*		shaderSource,
-													 ShaderEvalFunc		evalFunc,
-													 bool				usesTexture);
-	virtual TestInstance*	createInstance			(Context& context) const
+							ShaderDiscardCase			(tcu::TestContext&		testCtx,
+														 const char*			name,
+														 const char*			description,
+														 const char*			shaderSource,
+														 const ShaderEvalFunc	evalFunc,
+														 const bool				usesTexture);
+	virtual TestInstance*	createInstance				(Context& context) const
 							{
 								DE_ASSERT(m_evaluator != DE_NULL);
 								DE_ASSERT(m_uniformSetup != DE_NULL);
@@ -135,15 +135,15 @@ public:
 							}
 
 private:
-	bool				m_usesTexture;
+	const bool				m_usesTexture;
 };
 
-ShaderDiscardCase::ShaderDiscardCase (tcu::TestContext&	testCtx,
-									  const char*		name,
-									  const char*		description,
-									  const char*		shaderSource,
-									  ShaderEvalFunc	evalFunc,
-									  bool				usesTexture)
+ShaderDiscardCase::ShaderDiscardCase (tcu::TestContext&		testCtx,
+									  const char*			name,
+									  const char*			description,
+									  const char*			shaderSource,
+									  const ShaderEvalFunc	evalFunc,
+									  const bool			usesTexture)
 	: ShaderRenderCase	(testCtx, name, description, false, evalFunc, new SamplerUniformSetup(usesTexture), DE_NULL)
 	, m_usesTexture		(usesTexture)
 {

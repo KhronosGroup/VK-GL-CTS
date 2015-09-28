@@ -101,13 +101,13 @@ public:
 	tcu::Vec4							getUserAttrib			(int attribNdx, float sx, float sy) const;
 
 private:
-	int									m_gridSize;
-	int									m_numVertices;
-	int									m_numTriangles;
-	tcu::Vec4							m_constCoords;
-	std::vector<tcu::Mat4>				m_userAttribTransforms;
+	const int							m_gridSize;
+	const int							m_numVertices;
+	const int							m_numTriangles;
+	const tcu::Vec4						m_constCoords;
+	const std::vector<tcu::Mat4>		m_userAttribTransforms;
 
-	std::vector<TextureBinding>			m_textures;
+	const std::vector<TextureBinding>	m_textures;
 
 	std::vector<tcu::Vec4>				m_screenPos;
 	std::vector<tcu::Vec4>				m_positions;
@@ -131,7 +131,7 @@ QuadGrid::QuadGrid (int									gridSize,
 	, m_userAttribTransforms	(userAttribTransforms)
 	, m_textures				(textures)
 {
-	tcu::Vec4 viewportScale = tcu::Vec4((float)width, (float)height, 0.0f, 0.0f);
+	const tcu::Vec4 viewportScale	((float)width, (float)height, 0.0f, 0.0f);
 
 	// Compute vertices.
 	m_screenPos.resize(m_numVertices);
@@ -192,8 +192,8 @@ QuadGrid::~QuadGrid (void)
 
 inline tcu::Vec4 QuadGrid::getCoords (float sx, float sy) const
 {
-	float fx = 2.0f * sx - 1.0f;
-	float fy = 2.0f * sy - 1.0f;
+	const float fx = 2.0f * sx - 1.0f;
+	const float fy = 2.0f * sy - 1.0f;
 	return tcu::Vec4(fx, fy, -fx + 0.33f*fy, -0.275f*fx - fy);
 }
 
@@ -267,7 +267,7 @@ void ShaderEvalContext::reset (float sx, float sy)
 	unitCoords	= m_quadGrid.getUnitCoords(sx, sy);
 
 	// Compute user attributes.
-	int numAttribs = m_quadGrid.getNumUserAttribs();
+	const int numAttribs = m_quadGrid.getNumUserAttribs();
 	DE_ASSERT(numAttribs <= MAX_USER_ATTRIBS);
 	for (int attribNdx = 0; attribNdx < numAttribs; attribNdx++)
 		in[attribNdx] = m_quadGrid.getUserAttrib(attribNdx, sx, sy);
@@ -297,7 +297,7 @@ ShaderEvaluator::~ShaderEvaluator (void)
 {
 }
 
-void ShaderEvaluator::evaluate (ShaderEvalContext& ctx)
+void ShaderEvaluator::evaluate (ShaderEvalContext& ctx) const
 {
 	DE_ASSERT(m_evalFunc);
 	m_evalFunc(ctx);
@@ -319,7 +319,7 @@ UniformSetup::~UniformSetup (void)
 {
 }
 
-void UniformSetup::setup (ShaderRenderCaseInstance& instance, const tcu::Vec4& constCoords)
+void UniformSetup::setup (ShaderRenderCaseInstance& instance, const tcu::Vec4& constCoords) const
 {
 	if (m_setupFunc)
 		m_setupFunc(instance, constCoords);
@@ -327,13 +327,13 @@ void UniformSetup::setup (ShaderRenderCaseInstance& instance, const tcu::Vec4& c
 
 // ShaderRenderCase.
 
-ShaderRenderCase::ShaderRenderCase (tcu::TestContext&	testCtx,
-									const std::string&	name,
-									const std::string&	description,
-									bool				isVertexCase,
-									ShaderEvalFunc		evalFunc,
-									UniformSetup*		uniformSetup,
-									AttributeSetupFunc	attribFunc)
+ShaderRenderCase::ShaderRenderCase (tcu::TestContext&			testCtx,
+									const std::string&			name,
+									const std::string&			description,
+									const bool					isVertexCase,
+									const ShaderEvalFunc		evalFunc,
+									const UniformSetup*			uniformSetup,
+									const AttributeSetupFunc	attribFunc)
 	: vkt::TestCase		(testCtx, name, description)
 	, m_isVertexCase	(isVertexCase)
 	, m_evaluator		(new ShaderEvaluator(evalFunc))
@@ -341,13 +341,13 @@ ShaderRenderCase::ShaderRenderCase (tcu::TestContext&	testCtx,
 	, m_attribFunc		(attribFunc)
 {}
 
-ShaderRenderCase::ShaderRenderCase (tcu::TestContext&	testCtx,
-									const std::string&	name,
-									const std::string&	description,
-									bool				isVertexCase,
-									ShaderEvaluator*	evaluator,
-									UniformSetup*		uniformSetup,
-									AttributeSetupFunc	attribFunc)
+ShaderRenderCase::ShaderRenderCase (tcu::TestContext&			testCtx,
+									const std::string&			name,
+									const std::string&			description,
+									const bool					isVertexCase,
+									const ShaderEvaluator*		evaluator,
+									const UniformSetup*			uniformSetup,
+									const AttributeSetupFunc	attribFunc)
 	: vkt::TestCase		(testCtx, name, description)
 	, m_isVertexCase	(isVertexCase)
 	, m_evaluator		(evaluator)
@@ -378,11 +378,11 @@ TestInstance* ShaderRenderCase::createInstance (Context& context) const
 
 // ShaderRenderCaseInstance.
 
-ShaderRenderCaseInstance::ShaderRenderCaseInstance (Context&			context,
-													bool				isVertexCase,
-													ShaderEvaluator&	evaluator,
-													UniformSetup&		uniformSetup,
-													AttributeSetupFunc	attribFunc)
+ShaderRenderCaseInstance::ShaderRenderCaseInstance (Context&					context,
+													const bool					isVertexCase,
+													const ShaderEvaluator&		evaluator,
+													const UniformSetup&			uniformSetup,
+													const AttributeSetupFunc	attribFunc)
 	: vkt::TestInstance	(context)
 	, m_clearColor		(DEFAULT_CLEAR_COLOR)
 	, m_memAlloc		(m_context.getDeviceInterface(), m_context.getDevice(), getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice()))
@@ -429,25 +429,25 @@ tcu::TestStatus ShaderRenderCaseInstance::iterate (void)
 	setup();
 
 	// Create quad grid.
-	tcu::IVec2		viewportSize	= getViewportSize();
-	int				width			= viewportSize.x();
-	int 			height			= viewportSize.y();
+	const tcu::IVec2	viewportSize	= getViewportSize();
+	const int			width			= viewportSize.x();
+	const int	 		height			= viewportSize.y();
 
-	QuadGrid		quadGrid		(m_isVertexCase ? GRID_SIZE : 4, width, height, tcu::Vec4(0.125f, 0.25f, 0.5f, 1.0f), m_userAttribTransforms, m_textures);
+	QuadGrid			quadGrid		(m_isVertexCase ? GRID_SIZE : 4, width, height, tcu::Vec4(0.125f, 0.25f, 0.5f, 1.0f), m_userAttribTransforms, m_textures);
 
 	// Render result.
-	tcu::Surface	resImage		(width, height);
+	tcu::Surface		resImage		(width, height);
 	render(resImage, quadGrid);
 
 	// Compute reference.
-	tcu::Surface	refImage		(width, height);
+	tcu::Surface		refImage		(width, height);
 	if (m_isVertexCase)
 		computeVertexReference(refImage, quadGrid);
 	else
 		computeFragmentReference(refImage, quadGrid);
 
 	// Compare.
-	bool 			compareOk		= compareImages(resImage, refImage, 0.05f);
+	const bool 			compareOk		= compareImages(resImage, refImage, 0.05f);
 
 	if (compareOk)
 		return tcu::TestStatus::pass("Result image matches reference");
@@ -708,7 +708,7 @@ void ShaderRenderCaseInstance::useUniform (deUint32 bindingLocation, BaseUniform
 	#undef UNIFORM_CASE
 }
 
-tcu::IVec2 ShaderRenderCaseInstance::getViewportSize (void) const
+const tcu::IVec2 ShaderRenderCaseInstance::getViewportSize (void) const
 {
 	return tcu::IVec2(de::min(m_renderSize.x(), MAX_RENDER_WIDTH),
 					  de::min(m_renderSize.y(), MAX_RENDER_HEIGHT));
@@ -830,27 +830,27 @@ void ShaderRenderCaseInstance::setupDefaultInputs (const QuadGrid& quadGrid)
 		{ MAT4,		4, 4 }
 	};
 
-	for (size_t i = 0; i < m_enabledBaseAttributes.size(); i++)
+	for (size_t attrNdx = 0; attrNdx < m_enabledBaseAttributes.size(); attrNdx++)
 	{
 		for (int userNdx = 0; userNdx < DE_LENGTH_OF_ARRAY(userAttributes); userNdx++)
 		{
-			if (userAttributes[userNdx].type != m_enabledBaseAttributes[i].type)
+			if (userAttributes[userNdx].type != m_enabledBaseAttributes[attrNdx].type)
 				continue;
 
-			addAttribute(m_enabledBaseAttributes[i].location, VK_FORMAT_R32G32B32A32_SFLOAT, sizeof(tcu::Vec4), quadGrid.getNumVertices(), quadGrid.getUserAttrib(userNdx));
+			addAttribute(m_enabledBaseAttributes[attrNdx].location, VK_FORMAT_R32G32B32A32_SFLOAT, sizeof(tcu::Vec4), quadGrid.getNumVertices(), quadGrid.getUserAttrib(userNdx));
 		}
 
 		for (int matNdx = 0; matNdx < DE_LENGTH_OF_ARRAY(matrices); matNdx++)
 		{
 
-			if (matrices[matNdx].matrixType != m_enabledBaseAttributes[i].type)
+			if (matrices[matNdx].matrixType != m_enabledBaseAttributes[attrNdx].type)
 				continue;
 
-			int numCols = matrices[matNdx].numCols;
+			const int numCols = matrices[matNdx].numCols;
 
 			for (int colNdx = 0; colNdx < numCols; colNdx++)
 			{
-				addAttribute(m_enabledBaseAttributes[i].location + colNdx, VK_FORMAT_R32G32B32A32_SFLOAT, 4 * sizeof(float), quadGrid.getNumVertices(), quadGrid.getUserAttrib(colNdx));
+				addAttribute(m_enabledBaseAttributes[attrNdx].location + colNdx, VK_FORMAT_R32G32B32A32_SFLOAT, 4 * sizeof(float), quadGrid.getNumVertices(), quadGrid.getUserAttrib(colNdx));
 			}
 		}
 	}
@@ -1294,9 +1294,9 @@ void ShaderRenderCaseInstance::render (tcu::Surface& result, const QuadGrid& qua
 		std::vector<VkImageMemoryBarrier> barriers;
 		std::vector<void*> barrierPtrs;
 
-		for(size_t i = 0; i < m_textures.size(); i++)
+		for(size_t textureNdx = 0; textureNdx < m_textures.size(); textureNdx++)
 		{
-			const TextureBinding& textureBinding = m_textures[i];
+			const TextureBinding& textureBinding = m_textures[textureNdx];
 			const Texture2D* texture = textureBinding.get2D();
 			VkImageMemoryBarrier textureBarrier =
 			{
@@ -1319,7 +1319,7 @@ void ShaderRenderCaseInstance::render (tcu::Surface& result, const QuadGrid& qua
 			};
 
 			barriers.push_back(textureBarrier);
-			barrierPtrs.push_back((void*)&barriers[i]);
+			barrierPtrs.push_back((void*)&barriers[textureNdx]);
 		}
 
 		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, false, (deUint32)barrierPtrs.size(), (const void * const*)&barrierPtrs[0]);
@@ -1335,7 +1335,7 @@ void ShaderRenderCaseInstance::render (tcu::Surface& result, const QuadGrid& qua
 
 
 		const deUint32 numberOfVertexAttributes = (deUint32)m_vertexBuffers.size();
-		std::vector<VkDeviceSize> offsets(numberOfVertexAttributes, 0);
+		const std::vector<VkDeviceSize> offsets(numberOfVertexAttributes, 0);
 
 		vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, numberOfVertexAttributes, &m_vertexBuffers[0], &offsets[0]);
 		vk.cmdDrawIndexed(*m_cmdBuffer, 0, quadGrid.getNumTriangles() * 3, 0, 0, 1);
@@ -1383,8 +1383,6 @@ void ShaderRenderCaseInstance::render (tcu::Surface& result, const QuadGrid& qua
 
 
 		// Copy image to buffer
-		Move<VkCmdBuffer> cmdBuffer;
-
 		const VkCmdBufferCreateInfo cmdBufferParams =
 		{
 			VK_STRUCTURE_TYPE_CMD_BUFFER_CREATE_INFO,	// VkStructureType			sType;
@@ -1403,7 +1401,7 @@ void ShaderRenderCaseInstance::render (tcu::Surface& result, const QuadGrid& qua
 			DE_NULL										// VkFramebuffer			framebuffer;
 		};
 
-		cmdBuffer = createCommandBuffer(vk, vkDevice, &cmdBufferParams);
+		const Move<VkCmdBuffer> cmdBuffer = createCommandBuffer(vk, vkDevice, &cmdBufferParams);
 
 		const VkBufferImageCopy copyParams =
 		{
@@ -1441,7 +1439,7 @@ void ShaderRenderCaseInstance::render (tcu::Surface& result, const QuadGrid& qua
 
 		VK_CHECK(vk.invalidateMappedMemoryRanges(vkDevice, 1u, &range));
 
-		tcu::TextureFormat resultFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8);
+		const tcu::TextureFormat resultFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8);
 		const tcu::ConstPixelBufferAccess resultAccess(resultFormat, m_renderSize.x(), m_renderSize.y(), 1, imagePtr);
 
 		tcu::copy(result.getAccess(), resultAccess);
@@ -1453,11 +1451,11 @@ void ShaderRenderCaseInstance::render (tcu::Surface& result, const QuadGrid& qua
 void ShaderRenderCaseInstance::computeVertexReference (tcu::Surface& result, const QuadGrid& quadGrid)
 {
 	// Buffer info.
-	int						width		= result.getWidth();
-	int						height		= result.getHeight();
-	int						gridSize	= quadGrid.getGridSize();
-	int						stride		= gridSize + 1;
-	bool					hasAlpha	= true; // \todo [2015-09-07 elecro] add correct alpha check
+	const int				width		= result.getWidth();
+	const int				height		= result.getHeight();
+	const int				gridSize	= quadGrid.getGridSize();
+	const int				stride		= gridSize + 1;
+	const bool				hasAlpha	= true; // \todo [2015-09-07 elecro] add correct alpha check
 	ShaderEvalContext		evalCtx		(quadGrid);
 
 	// Evaluate color for each vertex.
@@ -1465,9 +1463,9 @@ void ShaderRenderCaseInstance::computeVertexReference (tcu::Surface& result, con
 	for (int y = 0; y < gridSize+1; y++)
 	for (int x = 0; x < gridSize+1; x++)
 	{
-		float		sx			= (float)x / (float)gridSize;
-		float		sy			= (float)y / (float)gridSize;
-		int			vtxNdx		= ((y * (gridSize+1)) + x);
+		const float	sx			= (float)x / (float)gridSize;
+		const float	sy			= (float)y / (float)gridSize;
+		const int	vtxNdx		= ((y * (gridSize+1)) + x);
 
 		evalCtx.reset(sx, sy);
 		m_evaluator.evaluate(evalCtx);
@@ -1484,31 +1482,31 @@ void ShaderRenderCaseInstance::computeVertexReference (tcu::Surface& result, con
 	for (int y = 0; y < gridSize; y++)
 	for (int x = 0; x < gridSize; x++)
 	{
-		float		x0		= (float)x       / (float)gridSize;
-		float		x1		= (float)(x + 1) / (float)gridSize;
-		float		y0		= (float)y       / (float)gridSize;
-		float		y1		= (float)(y + 1) / (float)gridSize;
+		const float		x0		= (float)x       / (float)gridSize;
+		const float		x1		= (float)(x + 1) / (float)gridSize;
+		const float		y0		= (float)y       / (float)gridSize;
+		const float		y1		= (float)(y + 1) / (float)gridSize;
 
-		float		sx0		= x0 * (float)width;
-		float		sx1		= x1 * (float)width;
-		float		sy0		= y0 * (float)height;
-		float		sy1		= y1 * (float)height;
-		float		oosx	= 1.0f / (sx1 - sx0);
-		float		oosy	= 1.0f / (sy1 - sy0);
+		const float		sx0		= x0 * (float)width;
+		const float		sx1		= x1 * (float)width;
+		const float		sy0		= y0 * (float)height;
+		const float		sy1		= y1 * (float)height;
+		const float		oosx	= 1.0f / (sx1 - sx0);
+		const float		oosy	= 1.0f / (sy1 - sy0);
 
-		int			ix0		= deCeilFloatToInt32(sx0 - 0.5f);
-		int			ix1		= deCeilFloatToInt32(sx1 - 0.5f);
-		int			iy0		= deCeilFloatToInt32(sy0 - 0.5f);
-		int			iy1		= deCeilFloatToInt32(sy1 - 0.5f);
+		const int		ix0		= deCeilFloatToInt32(sx0 - 0.5f);
+		const int		ix1		= deCeilFloatToInt32(sx1 - 0.5f);
+		const int		iy0		= deCeilFloatToInt32(sy0 - 0.5f);
+		const int		iy1		= deCeilFloatToInt32(sy1 - 0.5f);
 
-		int			v00		= (y * stride) + x;
-		int			v01		= (y * stride) + x + 1;
-		int			v10		= ((y + 1) * stride) + x;
-		int			v11		= ((y + 1) * stride) + x + 1;
-		tcu::Vec4	c00		= colors[v00];
-		tcu::Vec4	c01		= colors[v01];
-		tcu::Vec4	c10		= colors[v10];
-		tcu::Vec4	c11		= colors[v11];
+		const int		v00		= (y * stride) + x;
+		const int		v01		= (y * stride) + x + 1;
+		const int		v10		= ((y + 1) * stride) + x;
+		const int		v11		= ((y + 1) * stride) + x + 1;
+		const tcu::Vec4	c00		= colors[v00];
+		const tcu::Vec4	c01		= colors[v01];
+		const tcu::Vec4	c10		= colors[v10];
+		const tcu::Vec4	c11		= colors[v11];
 
 		//printf("(%d,%d) -> (%f..%f, %f..%f) (%d..%d, %d..%d)\n", x, y, sx0, sx1, sy0, sy1, ix0, ix1, iy0, iy1);
 
@@ -1518,19 +1516,19 @@ void ShaderRenderCaseInstance::computeVertexReference (tcu::Surface& result, con
 			DE_ASSERT(deInBounds32(ix, 0, width));
 			DE_ASSERT(deInBounds32(iy, 0, height));
 
-			float				sfx		= (float)ix + 0.5f;
-			float				sfy		= (float)iy + 0.5f;
-			float				fx1		= deFloatClamp((sfx - sx0) * oosx, 0.0f, 1.0f);
-			float				fy1		= deFloatClamp((sfy - sy0) * oosy, 0.0f, 1.0f);
+			const float			sfx		= (float)ix + 0.5f;
+			const float			sfy		= (float)iy + 0.5f;
+			const float			fx1		= deFloatClamp((sfx - sx0) * oosx, 0.0f, 1.0f);
+			const float			fy1		= deFloatClamp((sfy - sy0) * oosy, 0.0f, 1.0f);
 
 			// Triangle quad interpolation.
-			bool				tri		= fx1 + fy1 <= 1.0f;
-			float				tx		= tri ? fx1 : (1.0f-fx1);
-			float				ty		= tri ? fy1 : (1.0f-fy1);
+			const bool			tri		= fx1 + fy1 <= 1.0f;
+			const float			tx		= tri ? fx1 : (1.0f-fx1);
+			const float			ty		= tri ? fy1 : (1.0f-fy1);
 			const tcu::Vec4&	t0		= tri ? c00 : c11;
 			const tcu::Vec4&	t1		= tri ? c01 : c10;
 			const tcu::Vec4&	t2		= tri ? c10 : c01;
-			tcu::Vec4			color	= t0 + (t1-t0)*tx + (t2-t0)*ty;
+			const tcu::Vec4		color	= t0 + (t1-t0)*tx + (t2-t0)*ty;
 
 			result.setPixel(ix, iy, tcu::RGBA(color));
 		}
@@ -1540,17 +1538,17 @@ void ShaderRenderCaseInstance::computeVertexReference (tcu::Surface& result, con
 void ShaderRenderCaseInstance::computeFragmentReference (tcu::Surface& result, const QuadGrid& quadGrid)
 {
 	// Buffer info.
-	int					width		= result.getWidth();
-	int					height		= result.getHeight();
-	bool				hasAlpha	= true;  // \todo [2015-09-07 elecro] add correct alpha check
+	const int			width		= result.getWidth();
+	const int			height		= result.getHeight();
+	const bool			hasAlpha	= true;  // \todo [2015-09-07 elecro] add correct alpha check
 	ShaderEvalContext	evalCtx		(quadGrid);
 
 	// Render.
 	for (int y = 0; y < height; y++)
 	for (int x = 0; x < width; x++)
 	{
-		float sx = ((float)x + 0.5f) / (float)width;
-		float sy = ((float)y + 0.5f) / (float)height;
+		const float sx = ((float)x + 0.5f) / (float)width;
+		const float sy = ((float)y + 0.5f) / (float)height;
 
 		evalCtx.reset(sx, sy);
 		m_evaluator.evaluate(evalCtx);

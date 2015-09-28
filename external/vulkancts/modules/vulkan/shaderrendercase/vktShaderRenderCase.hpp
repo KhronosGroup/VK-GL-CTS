@@ -155,17 +155,17 @@ inline void evalCoordsSwizzleWZYX		(ShaderEvalContext& c) { c.color = c.coords.s
 class ShaderEvaluator
 {
 public:
-						ShaderEvaluator			(void);
-						ShaderEvaluator			(ShaderEvalFunc evalFunc);
-	virtual				~ShaderEvaluator		(void);
+							ShaderEvaluator			(void);
+							ShaderEvaluator			(const ShaderEvalFunc evalFunc);
+	virtual					~ShaderEvaluator		(void);
 
-	virtual void		evaluate				(ShaderEvalContext& ctx);
+	virtual void			evaluate				(ShaderEvalContext& ctx) const;
 
 private:
-						ShaderEvaluator			(const ShaderEvaluator&);   // not allowed!
-	ShaderEvaluator&	operator=				(const ShaderEvaluator&);   // not allowed!
+							ShaderEvaluator			(const ShaderEvaluator&);   // not allowed!
+	ShaderEvaluator&		operator=				(const ShaderEvaluator&);   // not allowed!
 
-	ShaderEvalFunc		m_evalFunc;
+	const ShaderEvalFunc	m_evalFunc;
 };
 
 // UniformSetup
@@ -175,16 +175,16 @@ typedef void (*UniformSetupFunc) (ShaderRenderCaseInstance& instance, const tcu:
 class UniformSetup
 {
 public:
-						UniformSetup			(void);
-						UniformSetup			(UniformSetupFunc setup);
-	virtual				~UniformSetup			(void);
-	virtual void		setup					(ShaderRenderCaseInstance& instance, const tcu::Vec4& constCoords);
+							UniformSetup			(void);
+							UniformSetup			(const UniformSetupFunc setup);
+	virtual					~UniformSetup			(void);
+	virtual void			setup					(ShaderRenderCaseInstance& instance, const tcu::Vec4& constCoords) const;
 
 private:
-						UniformSetup			(const UniformSetup&);	// not allowed!
-	UniformSetup&		operator=				(const UniformSetup&);	// not allowed!
+							UniformSetup			(const UniformSetup&);	// not allowed!
+	UniformSetup&			operator=				(const UniformSetup&);	// not allowed!
 
-	UniformSetupFunc	m_setupFunc;
+	const UniformSetupFunc	m_setupFunc;
 };
 
 typedef void (*AttributeSetupFunc) (ShaderRenderCaseInstance& instance, deUint32 numVertices);
@@ -192,35 +192,35 @@ typedef void (*AttributeSetupFunc) (ShaderRenderCaseInstance& instance, deUint32
 class ShaderRenderCase : public vkt::TestCase
 {
 public:
-							ShaderRenderCase	(tcu::TestContext&	testCtx,
-												 const std::string&	name,
-												 const std::string&	description,
-												 bool				isVertexCase,
-												 ShaderEvalFunc		evalFunc,
-												 UniformSetup*		uniformSetup,
-												 AttributeSetupFunc	attribFunc);
+								ShaderRenderCase	(tcu::TestContext&			testCtx,
+													 const std::string&			name,
+													 const std::string&			description,
+													 const bool					isVertexCase,
+													 const ShaderEvalFunc		evalFunc,
+													 const UniformSetup*		uniformSetup,
+													 const AttributeSetupFunc	attribFunc);
 
-							ShaderRenderCase	(tcu::TestContext&	testCtx,
-												 const std::string&	name,
-												 const std::string&	description,
-												 bool				isVertexCase,
-												 ShaderEvaluator*	evaluator,
-												 UniformSetup*		uniformSetup,
-												 AttributeSetupFunc attribFunc);
+								ShaderRenderCase	(tcu::TestContext&			testCtx,
+													 const std::string&			name,
+													 const std::string&			description,
+													 const bool					isVertexCase,
+													 const ShaderEvaluator*		evaluator,
+													 const UniformSetup*		uniformSetup,
+													 const AttributeSetupFunc	attribFunc);
 
 
-	virtual					~ShaderRenderCase	(void);
-	virtual	void			initPrograms		(vk::ProgramCollection<glu::ProgramSources>& programCollection) const;
-	virtual	TestInstance*	createInstance		(Context& context) const;
+	virtual						~ShaderRenderCase	(void);
+	virtual	void				initPrograms		(vk::ProgramCollection<glu::ProgramSources>& programCollection) const;
+	virtual	TestInstance*		createInstance		(Context& context) const;
 
 protected:
-	std::string				m_vertShaderSource;
-	std::string				m_fragShaderSource;
+	std::string					m_vertShaderSource;
+	std::string					m_fragShaderSource;
 
-	bool 					m_isVertexCase;
-	ShaderEvaluator*		m_evaluator;
-	UniformSetup*			m_uniformSetup;
-	AttributeSetupFunc		m_attribFunc;
+	const bool					m_isVertexCase;
+	const ShaderEvaluator*		m_evaluator;
+	const UniformSetup*			m_uniformSetup;
+	const AttributeSetupFunc	m_attribFunc;
 };
 
 
@@ -349,11 +349,11 @@ enum BaseAttributeType
 class ShaderRenderCaseInstance : public vkt::TestInstance
 {
 public:
-														ShaderRenderCaseInstance	(Context&			context,
-																					bool				isVertexCase,
-																					ShaderEvaluator&	evaluator,
-																					UniformSetup&		uniformSetup,
-																					AttributeSetupFunc	attribFunc);
+														ShaderRenderCaseInstance	(Context&					context,
+																					const bool					isVertexCase,
+																					const ShaderEvaluator&		evaluator,
+																					const UniformSetup&			uniformSetup,
+																					const AttributeSetupFunc	attribFunc);
 
 	virtual												~ShaderRenderCaseInstance	(void);
 	virtual tcu::TestStatus								iterate						(void);
@@ -369,7 +369,7 @@ public:
 	template<typename T>
 	void												addUniform					(deUint32				bindingLocation,
 																					vk::VkDescriptorType	descriptorType,
-																					const T 				data);
+																					const T& 				data);
 	void												addUniform					(deUint32				bindingLocation,
 																					vk::VkDescriptorType	descriptorType,
 																					deUint32				dataSize,
@@ -383,10 +383,10 @@ protected:
 	virtual void										setup						(void);
 	virtual void										setupUniforms				(const tcu::Vec4& constCoords);
 
-	tcu::IVec2											getViewportSize				(void) const;
+	const tcu::IVec2									getViewportSize				(void) const;
 
 	std::vector<tcu::Mat4>								m_userAttribTransforms;
-	tcu::Vec4											m_clearColor;
+	const tcu::Vec4										m_clearColor;
 	std::vector<TextureBinding>							m_textures;
 
 	vk::SimpleAllocator									m_memAlloc;
@@ -401,13 +401,13 @@ private:
 	void												computeVertexReference		(tcu::Surface& result, const QuadGrid& quadGrid);
 	void												computeFragmentReference	(tcu::Surface& result, const QuadGrid& quadGrid);
 	bool												compareImages				(const tcu::Surface&	resImage,
-																					const tcu::Surface&		refImage,
-																					float					errorThreshold);
+																					 const tcu::Surface&	refImage,
+																					 float					errorThreshold);
 
-	bool												m_isVertexCase;
-	ShaderEvaluator&									m_evaluator;
-	UniformSetup&	 									m_uniformSetup;
-	AttributeSetupFunc									m_attribFunc;
+	const bool											m_isVertexCase;
+	const ShaderEvaluator&								m_evaluator;
+	const UniformSetup&	 								m_uniformSetup;
+	const AttributeSetupFunc							m_attribFunc;
 
 	struct EnabledBaseAttribute
 	{
@@ -471,7 +471,7 @@ private:
 };
 
 template<typename T>
-void ShaderRenderCaseInstance::addUniform (deUint32 bindingLocation, vk::VkDescriptorType descriptorType, const T data)
+void ShaderRenderCaseInstance::addUniform (deUint32 bindingLocation, vk::VkDescriptorType descriptorType, const T& data)
 {
 	addUniform(bindingLocation, descriptorType, sizeof(T), &data);
 }
