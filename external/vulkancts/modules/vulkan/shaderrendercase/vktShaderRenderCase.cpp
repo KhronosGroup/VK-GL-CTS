@@ -749,16 +749,24 @@ void ShaderRenderCaseInstance::useSampler2D (deUint32 bindingLocation, deUint32 
 
 	const VkImageViewCreateInfo	viewParams			=
 	{
-		.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-		.pNext = NULL,
-		.image = *texture->getVkTexture(),
-		.viewType = VK_IMAGE_VIEW_TYPE_2D,
-		.format = texture->getVkFormat(),
-		.channels = { VK_CHANNEL_SWIZZLE_R,
-						VK_CHANNEL_SWIZZLE_G,
-						VK_CHANNEL_SWIZZLE_B,
-						VK_CHANNEL_SWIZZLE_A },
-		.subresourceRange = { VK_IMAGE_ASPECT_COLOR, 0, 1, 0, 1 },
+		VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,	// VkStructureType			sType;
+		NULL,										// const voide*				pNexŧ;
+		*texture->getVkTexture(),					// VkImage					image;
+		VK_IMAGE_VIEW_TYPE_2D,						// VkImageViewType			viewType;
+		texture->getVkFormat(),						// VkFormat					format;
+		{
+			VK_CHANNEL_SWIZZLE_R,			// VkChannelSwizzle	r;
+			VK_CHANNEL_SWIZZLE_G,			// VkChannelSwizzle	g;
+			VK_CHANNEL_SWIZZLE_B,			// VkChannelSwizzle	b;
+			VK_CHANNEL_SWIZZLE_A			// VkChannelSwizzle	a;
+		},											// VkChannelMapping			channels;
+		{
+			VK_IMAGE_ASPECT_COLOR,			// VkImageAspect	aspect;
+			0,								// deUint32			baseMipLevel;
+			1,								// deUint32			mipLevels;
+			0,								// deUint32			baseArraySlice;
+			1								// deUint32			arraySize;
+		},											// VkImageSubresourceRange	subresourceRange;
 	};
 
 	Move<VkImageView>			imageView			= createImageView(vk, vkDevice, &viewParams);
