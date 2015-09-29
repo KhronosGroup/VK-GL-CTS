@@ -107,6 +107,7 @@ public:
 	{
 		glslang::TIntermediate intermediate(getLanguage(), version, profile);
 		intermediate.setTreeRoot(root);
+		intermediate.finalCheck(getInfoSink());
 		glslang::GlslangToSpv(intermediate, m_dst);
 		return true;
 	}
