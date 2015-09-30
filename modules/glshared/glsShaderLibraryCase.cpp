@@ -276,7 +276,7 @@ static string genFragmentShader (const ShaderCaseSpecification& spec)
 }
 
 // Specialize a shader for the vertex shader test case.
-static string specializeVertexShader (const ShaderCaseSpecification& spec, const std::string& src)
+static string specializeVertexShader (const ShaderCaseSpecification& spec, const std::string& src, const vector<RequiredExtension>& extensions)
 {
 	ostringstream		decl;
 	ostringstream		setup;
@@ -343,13 +343,13 @@ static string specializeVertexShader (const ShaderCaseSpecification& spec, const
 
 	StringTemplate	tmpl	(src);
 	const string	baseSrc	= tmpl.specialize(params);
-	const string	withExt	= injectExtensionRequirements(baseSrc, spec.programs[0].requiredExtensions, SHADERTYPE_VERTEX);
+	const string	withExt	= injectExtensionRequirements(baseSrc, extensions, SHADERTYPE_VERTEX);
 
 	return withExt;
 }
 
 // Specialize a shader for the fragment shader test case.
-static string specializeFragmentShader (const ShaderCaseSpecification& spec, const std::string& src)
+static string specializeFragmentShader (const ShaderCaseSpecification& spec, const std::string& src, const vector<RequiredExtension>& extensions)
 {
 	ostringstream		decl;
 	ostringstream		setup;
@@ -410,7 +410,7 @@ static string specializeFragmentShader (const ShaderCaseSpecification& spec, con
 
 	StringTemplate	tmpl	(src);
 	const string	baseSrc	= tmpl.specialize(params);
-	const string	withExt	= injectExtensionRequirements(baseSrc, spec.programs[0].requiredExtensions, SHADERTYPE_FRAGMENT);
+	const string	withExt	= injectExtensionRequirements(baseSrc, extensions, SHADERTYPE_FRAGMENT);
 
 	return withExt;
 }
@@ -927,15 +927,19 @@ bool ShaderLibraryCase::execute (void)
 	// Specialize shaders
 	if (m_spec.caseType == CASETYPE_VERTEX_ONLY)
 	{
+		const vector<RequiredExtension>	reqExt	= checkAndSpecializeExtensions(m_spec.programs[0].requiredExtensions, m_contextInfo);
+
 		DE_ASSERT(m_spec.programs.size() == 1 && m_spec.programs[0].sources.sources[SHADERTYPE_VERTEX].size() == 1);
-		specializedSources[0] << glu::VertexSource(specializeVertexShader(m_spec, m_spec.programs[0].sources.sources[SHADERTYPE_VERTEX][0]))
+		specializedSources[0] << glu::VertexSource(specializeVertexShader(m_spec, m_spec.programs[0].sources.sources[SHADERTYPE_VERTEX][0], reqExt))
 							  << glu::FragmentSource(genFragmentShader(m_spec));
 	}
 	else if (m_spec.caseType == CASETYPE_FRAGMENT_ONLY)
 	{
+		const vector<RequiredExtension>	reqExt	= checkAndSpecializeExtensions(m_spec.programs[0].requiredExtensions, m_contextInfo);
+
 		DE_ASSERT(m_spec.programs.size() == 1 && m_spec.programs[0].sources.sources[SHADERTYPE_FRAGMENT].size() == 1);
 		specializedSources[0] << glu::VertexSource(genVertexShader(m_spec))
-							  << glu::FragmentSource(specializeFragmentShader(m_spec, m_spec.programs[0].sources.sources[SHADERTYPE_FRAGMENT][0]));
+							  << glu::FragmentSource(specializeFragmentShader(m_spec, m_spec.programs[0].sources.sources[SHADERTYPE_FRAGMENT][0], reqExt));
 	}
 	else
 	{
