@@ -33,6 +33,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vkQueryUtil.hpp"
+#include "deMemory.h"
 
 namespace vk
 {
@@ -75,7 +76,10 @@ std::vector<VkPhysicalDeviceQueueProperties> getPhysicalDeviceQueueProperties (c
 
 VkPhysicalDeviceMemoryProperties getPhysicalDeviceMemoryProperties (const InstanceInterface& vk, VkPhysicalDevice physicalDevice)
 {
-	VkPhysicalDeviceMemoryProperties	properties = {};
+	VkPhysicalDeviceMemoryProperties	properties;
+
+	deMemset(&properties, 0, sizeof(properties));
+
 	VK_CHECK(vk.getPhysicalDeviceMemoryProperties(physicalDevice, &properties));
 	return properties;
 }
