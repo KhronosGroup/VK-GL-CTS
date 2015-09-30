@@ -1666,6 +1666,115 @@ group conditional_inclusion "Conditional Inclusion Tests"
 		""
 	end
 
+	case defined_macro_defined_test
+		version 300 es
+		values { output float out0 = 1.0; }
+		both ""
+			#version 300 es
+			precision mediump float;
+			${DECLARATIONS}
+			void main()
+			{
+	#define AAA defined
+
+	#if AAA AAA
+				out0 = 1.0;
+	#else
+				out0 = 0.0;
+	#endif
+				${OUTPUT}
+			}
+		""
+	end
+
+	case defined_macro_undef
+		version 300 es
+		values { output float out0 = 1.0; }
+		both ""
+			#version 300 es
+			precision mediump float;
+			${DECLARATIONS}
+			void main()
+			{
+	#define BBB 1
+	#define AAA defined(BBB)
+	#undef BBB
+
+	#if !AAA
+				out0 = 1.0;
+	#else
+				out0 = 0.0;
+	#endif
+				${OUTPUT}
+			}
+		""
+	end
+
+	case define_defined
+		version 300 es
+		values { output float out0 = 1.0; }
+		both ""
+			#version 300 es
+			precision mediump float;
+			${DECLARATIONS}
+			void main()
+			{
+	#define CCC 1
+	#define defined BBB
+	#define AAA defined
+
+	#if AAA CCC
+				out0 = 1.0;
+	#else
+				out0 = 0.0;
+	#endif
+				${OUTPUT}
+			}
+		""
+	end
+
+	case define_defined_outside_if
+		version 300 es
+		values { output float out0 = 1.0; }
+		both ""
+			#version 300 es
+			precision mediump float;
+			${DECLARATIONS}
+			void main()
+			{
+	#define CCC - 0.5
+	#define defined 0.5
+	#define AAA defined
+				out0 = 1.0 - (AAA CCC);
+				${OUTPUT}
+			}
+		""
+	end
+
+	case defined_invalid_before_all_macros_replaced
+		version 300 es
+		expect compile_fail
+		values { output float out0 = 1.0; }
+		both ""
+			#version 300 es
+			precision mediump float;
+			${DECLARATIONS}
+			void main()
+			{
+	#define FOO 1
+	#define OPEN defined(
+	#define CLOSE FOO)
+
+	#if OPEN CLOSE
+				out0 = 1.0;
+	#else
+				out0 = 0.0;
+	#endif
+				${OUTPUT}
+			}
+		""
+	end
+
 	case basic_3
 		version 300 es
 		values { output float out0 = 1.0; }
