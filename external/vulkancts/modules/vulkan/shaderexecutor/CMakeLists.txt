@@ -14,6 +14,8 @@ set(DEQP_VK_SHADEREXECUTOR_SRCS
    vktShaderIntegerFunctionTests.hpp
    vktShaderPackingFunctionTests.cpp
    vktShaderPackingFunctionTests.hpp
+   vktShaderBuiltinPrecisionTests.cpp
+   vktShaderBuiltinPrecisionTests.hpp
 )
 
 set(DEQP_VK_SHADEREXECUTOR_LIBS

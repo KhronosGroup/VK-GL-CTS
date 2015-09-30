@@ -1,3 +1,5 @@
+#ifndef _VKTSHADERBUILTINPRECISIONTESTS_HPP
+#define _VKTSHADERBUILTINPRECISIONTESTS_HPP
 /*------------------------------------------------------------------------
  * Vulkan Conformance Tests
  * ------------------------
@@ -30,36 +32,32 @@
  *
  *//*!
  * \file
- * \brief Vulkan shader render test cases
+ * \brief Precision and range tests for builtins and types.
+ *
  *//*--------------------------------------------------------------------*/
 
-#include "vktShaderExecutorTests.hpp"
-
-#include "deUniquePtr.hpp"
-
-#include "vktShaderBuiltinConstantTests.hpp"
-#include "vktShaderBuiltinPrecisionTests.hpp"
-#include "vktShaderCommonFunctionTests.hpp"
-#include "vktShaderIntegerFunctionTests.hpp"
-#include "vktShaderPackingFunctionTests.hpp"
+#include "vktTestCase.hpp"
 
 namespace vkt
 {
 namespace shaderexecutor
 {
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+class BuiltinPrecisionTests : public tcu::TestCaseGroup
 {
-	de::MovePtr<tcu::TestCaseGroup> shaderExecutorTests (new tcu::TestCaseGroup(testCtx, "ShaderExecutor", "shaderExecutor Tests"));
+public:
+									BuiltinPrecisionTests				(tcu::TestContext& testCtx);
+	virtual							~BuiltinPrecisionTests				(void);
 
-	shaderExecutorTests->addChild(new BuiltinPrecisionTests(testCtx));
-	shaderExecutorTests->addChild(new ShaderBuiltinConstantTests(testCtx));
-	shaderExecutorTests->addChild(new ShaderCommonFunctionTests(testCtx));
-	shaderExecutorTests->addChild(new ShaderIntegerFunctionTests(testCtx));
-	shaderExecutorTests->addChild(new ShaderPackingFunctionTests(testCtx));
+	virtual void					init								(void);
 
-	return shaderExecutorTests.release();
-}
+private:
+									BuiltinPrecisionTests				(const BuiltinPrecisionTests&);		// not allowed!
+	BuiltinPrecisionTests&			operator=							(const BuiltinPrecisionTests&);		// not allowed!
+};
+
 
 } // shaderexecutor
 } // vkt
+
+#endif // _VKTSHADERBUILTINPRECISIONTESTS_HPP
