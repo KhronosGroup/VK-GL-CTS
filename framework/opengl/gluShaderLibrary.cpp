@@ -177,7 +177,8 @@ bool isValid (const ShaderCaseSpecification& spec)
 						return false;
 					}
 
-					usedStageMask |= curStageMask;
+					if (isEnabled)
+						usedStageMask |= curStageMask;
 				}
 				else if (!spec.programs[progNdx].sources.sources[shaderStageNdx].empty())
 				{
@@ -1435,6 +1436,7 @@ void ShaderParser::parseShaderCase (vector<tcu::TestNode*>& shaderNodeList)
 		{
 			ProgramSpecification pipelineProgram;
 			parsePipelineProgram(pipelineProgram);
+			pipelineProgram.sources.separable = true;
 			pipelinePrograms.push_back(pipelineProgram);
 		}
 		else
