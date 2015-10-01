@@ -254,13 +254,13 @@ DE_INLINE void* deAlignPtr (void* ptr, deUintptr align)
 	return (void*)((val + align - 1) & ~(align - 1));
 }
 
+extern const deInt8 g_clzLUT[256];
+
 /*--------------------------------------------------------------------*//*!
  * \brief Compute number of leading zeros in an integer.
  * \param a	Input value.
  * \return The number of leading zero bits in the input.
  *//*--------------------------------------------------------------------*/
-extern const deInt8 g_clzLUT[256];
-
 DE_INLINE int deClz32 (deUint32 a)
 {
 #if (DE_COMPILER == DE_COMPILER_MSC)
@@ -282,6 +282,37 @@ DE_INLINE int deClz32 (deUint32 a)
 	if ((a & 0x0000FF00u) != 0)
 		return 16 + (int)g_clzLUT[a >> 8];
 	return 24 + (int)g_clzLUT[a];
+#endif
+}
+
+extern const deInt8 g_ctzLUT[256];
+
+/*--------------------------------------------------------------------*//*!
+ * \brief Compute number of trailing zeros in an integer.
+ * \param a	Input value.
+ * \return The number of trailing zero bits in the input.
+ *//*--------------------------------------------------------------------*/
+DE_INLINE int deCtz32 (deUint32 a)
+{
+#if (DE_COMPILER == DE_COMPILER_MSC)
+	unsigned long i;
+	if (_BitScanForward(&i, (unsigned long)a) == 0)
+		return 32;
+	else
+		return i;
+#elif (DE_COMPILER == DE_COMPILER_GCC) || (DE_COMPILER == DE_COMPILER_CLANG)
+	if (a == 0)
+		return 32;
+	else
+		return __builtin_ctz((unsigned int)a);
+#else
+	if ((a & 0x00FFFFFFu) == 0)
+		return (int)g_ctzLUT[a >> 24] + 24;
+	if ((a & 0x0000FFFFu) == 0)
+		return (int)g_ctzLUT[(a >> 16) & 0xffu] + 16;
+	if ((a & 0x000000FFu) == 0)
+		return (int)g_ctzLUT[(a >> 8) & 0xffu] + 8;
+	return (int)g_ctzLUT[a & 0xffu];
 #endif
 }
 
