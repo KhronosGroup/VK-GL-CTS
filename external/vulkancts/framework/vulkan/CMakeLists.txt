@@ -35,6 +35,8 @@ set(VKUTIL_SRCS
 	vkNullDriver.hpp
 	vkImageUtil.cpp
 	vkImageUtil.hpp
+	vkTypeUtil.cpp
+	vkTypeUtil.hpp
 	)
 
 set(VKUTIL_LIBS

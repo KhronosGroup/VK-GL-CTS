@@ -187,9 +187,6 @@ private:
 
 void			checkResult			(VkResult result, const char* message, const char* file, int line);
 
-// \todo [2015-07-30 jarkko] move to vkStructUtil/TypeUtils
-VkClearValue	clearValueColorF32	(float r, float g, float b, float a);
-
 } // vk
 
 #endif // _VKDEFS_HPP

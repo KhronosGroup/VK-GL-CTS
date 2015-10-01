@@ -104,14 +104,4 @@ void checkResult (VkResult result, const char* msg, const char* file, int line)
 	}
 }
 
-VkClearValue clearValueColorF32 (float r, float g, float b, float a)
-{
-	VkClearValue v;
-	v.color.f32[0] = r;
-	v.color.f32[1] = g;
-	v.color.f32[2] = b;
-	v.color.f32[3] = a;
-	return v;
-}
-
 } // vk

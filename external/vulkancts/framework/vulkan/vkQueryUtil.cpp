@@ -57,7 +57,6 @@ std::vector<VkPhysicalDevice> enumeratePhysicalDevices (const InstanceInterface&
 	return devices;
 }
 
-
 std::vector<VkPhysicalDeviceQueueProperties> getPhysicalDeviceQueueProperties (const InstanceInterface& vk, VkPhysicalDevice physicalDevice)
 {
 	deUint32										numQueues	= 0;

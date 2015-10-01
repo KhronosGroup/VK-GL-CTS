@@ -690,6 +690,55 @@ def writeNullDriverImpl (api, filename):
 
 	writeInlFile(filename, INL_HEADER, genNullDriverImpl())
 
+def writeTypeUtil (api, filename):
+	# Structs filled by API queries are not often used in test code
+	QUERY_RESULT_TYPES = set([
+			"VkPhysicalDeviceFeatures",
+			"VkPhysicalDeviceLimits",
+			"VkFormatProperties",
+			"VkImageFormatProperties",
+			"VkPhysicalDeviceSparseProperties",
+			"VkQueueFamilyProperties",
+			"VkMemoryType",
+			"VkMemoryHeap",
+		])
+	COMPOSITE_TYPES = set([t.name for t in api.compositeTypes])
+
+	def isSimpleStruct (type):
+		def hasArrayMember (type):
+			for member in type.members:
+				if "[" in member.name:
+					return True
+			return False
+
+		def hasCompositeMember (type):
+			for member in type.members:
+				if member.type in COMPOSITE_TYPES:
+					return True
+			return False
+
+		return type.typeClass == CompositeType.CLASS_STRUCT and \
+			   type.members[0].type != "VkStructureType" and \
+			   not type.name in QUERY_RESULT_TYPES and \
+			   not hasArrayMember(type) and \
+			   not hasCompositeMember(type)
+
+	def gen ():
+		for type in api.compositeTypes:
+			if not isSimpleStruct(type):
+				continue
+
+			yield ""
+			yield "inline %s make%s (%s)" % (type.name, type.name[2:], argListToStr(type.members))
+			yield "{"
+			yield "\t%s res;" % type.name
+			for line in indentLines(["\tres.%s\t= %s;" % (m.name, m.name) for m in type.members]):
+				yield line
+			yield "\treturn res;"
+			yield "}"
+
+	writeInlFile(filename, INL_HEADER, gen())
+
 if __name__ == "__main__":
 	src				= readFile(sys.argv[1])
 	api				= parseAPI(src)
@@ -721,3 +770,4 @@ if __name__ == "__main__":
 	writeRefUtilProto			(api, os.path.join(VULKAN_DIR, "vkRefUtil.inl"))
 	writeRefUtilImpl			(api, os.path.join(VULKAN_DIR, "vkRefUtilImpl.inl"))
 	writeNullDriverImpl			(api, os.path.join(VULKAN_DIR, "vkNullDriverImpl.inl"))
+	writeTypeUtil				(api, os.path.join(VULKAN_DIR, "vkTypeUtil.inl"))

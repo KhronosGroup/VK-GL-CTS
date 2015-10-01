@@ -45,6 +45,7 @@
 #include "vkMemUtil.hpp"
 #include "vkDeviceUtil.hpp"
 #include "vkPrograms.hpp"
+#include "vkTypeUtil.hpp"
 
 #include "tcuTestLog.hpp"
 #include "tcuFormatUtil.hpp"
@@ -646,7 +647,7 @@ tcu::TestStatus renderTriangleTest (Context& context)
 	}
 
 	{
-		const VkClearValue			clearValue		= clearValueColorF32(0.125f, 0.25f, 0.75f, 1.0f);
+		const VkClearValue			clearValue		= makeClearValueColorF32(0.125f, 0.25f, 0.75f, 1.0f);
 		const VkRenderPassBeginInfo	passBeginParams	=
 		{
 			VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,			//	VkStructureType		sType;
