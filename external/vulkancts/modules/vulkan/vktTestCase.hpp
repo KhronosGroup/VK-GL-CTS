@@ -120,6 +120,10 @@ public:
 
 protected:
 	Context&					m_context;
+
+private:
+								TestInstance	(const TestInstance&);
+	TestInstance&				operator=		(const TestInstance&);
 };
 
 inline TestCase::TestCase (tcu::TestContext& testCtx, const std::string& name, const std::string& description)
