@@ -36,10 +36,7 @@ import com.drawelements.deqp.R;
 
 public class ExecServerActivity extends Activity {
 
-	private static final String		LOG_TAG			= "dEQP/ExecServer";
-	private static final int		PORT			= 50016;
-
-	private TextView				m_statusText;
+	private TextView	m_statusText;
 
 	@Override
 	protected void onCreate (Bundle savedInstance) {
@@ -52,18 +49,8 @@ public class ExecServerActivity extends Activity {
 	@Override
 	protected void onStart () {
 		super.onStart();
-
-		try {
-			Intent svc = new Intent(this, com.drawelements.deqp.execserver.ExecService.class);
-			startService(svc);
-		}
-		catch (Exception e) {
-			Log.e(LOG_TAG, "Service starter starting problem", e);
-			m_statusText.setText("Failed to start ExecServer!");
-		}
-
-		// \todo [2013-05-07 pyry] Show IP address
-		m_statusText.setText(String.format("Listening on port %d", PORT));
+		// \todo [2015-10-06 pyry] Connect to service, check status, offer option for killing it
+		m_statusText.setText("dEQP ExecServer is running");
 	}
 
 	@Override

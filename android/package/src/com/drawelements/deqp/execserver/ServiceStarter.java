@@ -26,22 +26,29 @@ package com.drawelements.deqp.execserver;
 import android.app.Activity;
 import android.os.Bundle;
 import com.drawelements.deqp.testercore.Log;
+import com.drawelements.deqp.execserver.ExecService;
 import android.content.Intent;
 
-public class ServiceStarter extends Activity
-{
-	private static final String LOG_TAG = "dEQP/ServiceStarter";
+public class ServiceStarter extends Activity {
 
 	@Override
-	public void onCreate(Bundle icicle)
-	{
-		super.onCreate(icicle);
+	public void onCreate(Bundle savedInstance) {
+		super.onCreate(savedInstance);
+	}
+
+	@Override
+	public void onStart() {
+		super.onStart();
+
+		final int port = getIntent().getIntExtra("port", ExecService.DEFAULT_PORT);
+
 		try {
-			Intent svc = new Intent(this, com.drawelements.deqp.execserver.ExecService.class);
+			Intent svc = new Intent(this, ExecService.class);
+			svc.putExtra("port", port);
 			startService(svc);
 		}
 		catch (Exception e) {
-			Log.e(LOG_TAG, "Service starter starting problem", e);
+			Log.e(ExecService.LOG_TAG, "Failed to start ExecService", e);
 		}
 		finish();
 	}

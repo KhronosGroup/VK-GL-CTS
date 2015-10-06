@@ -108,7 +108,7 @@ private:
 class ExecService
 {
 public:
-							ExecService			(JavaVM* vm, jobject context, deSocketFamily family = (deSocketFamily)DEFAULT_SOCKETFAMILY, int port = DEFAULT_PORT);
+							ExecService			(JavaVM* vm, jobject context, int port, deSocketFamily family = (deSocketFamily)DEFAULT_SOCKETFAMILY);
 							~ExecService		(void);
 
 	void					start				(void);

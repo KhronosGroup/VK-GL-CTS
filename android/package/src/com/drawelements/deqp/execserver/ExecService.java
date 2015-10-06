@@ -31,9 +31,17 @@ import android.os.Binder;
 import android.os.IBinder;
 
 import com.drawelements.deqp.execserver.ExecServerActivity;
+import com.drawelements.deqp.testercore.Log;
 import com.drawelements.deqp.R;
 
 public class ExecService extends Service {
+
+	public static final String	LOG_TAG			= "dEQP";
+	public static final int		DEFAULT_PORT	= 50016;
+
+	private int					m_curPort		= -1;
+	private boolean				m_isRunning		= false;
+
 	static {
 		System.loadLibrary("deqp");
 	}
@@ -50,12 +58,24 @@ public class ExecService extends Service {
 	private final IBinder m_binder = new LocalBinder();
 
 	@Override
-	public void onCreate () {
-		onCreateNative();
-	}
-
-	@Override
 	public int onStartCommand (Intent intent, int flags, int startId) {
+		final int port = intent != null ? intent.getIntExtra("port", DEFAULT_PORT) : DEFAULT_PORT;
+
+		if (m_isRunning && (m_curPort != port)) {
+			Log.i(LOG_TAG, String.format("Port changed (old: %d, new: %d), killing old server", m_curPort, port));
+			stopServer();
+			m_isRunning = false;
+		}
+
+		if (!m_isRunning) {
+			startServer(port);
+
+			m_isRunning	= true;
+			m_curPort	= port;
+
+			Log.i(LOG_TAG, String.format("Listening on port %d", m_curPort));
+		}
+
 		// Intent to launch when notification is clicked.
 		Intent launchIntent = new Intent(this, ExecServerActivity.class);
 		launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -76,9 +96,12 @@ public class ExecService extends Service {
 
 	@Override
 	public void onDestroy () {
-		onDestroyNative();
+		if (m_isRunning) {
+			stopServer();
+			m_isRunning = false;
+		}
 	}
 
-	private native void onCreateNative	();
-	private native void onDestroyNative	();
+	private native void startServer	(int port);
+	private native void stopServer	();
 }
