@@ -39,6 +39,7 @@
 #include "tcuSurface.hpp"
 
 #include "deMemory.h"
+#include "deSharedPtr.hpp"
 #include "deUniquePtr.hpp"
 
 #include "vkDefs.hpp"
@@ -466,8 +467,12 @@ private:
 
 	std::vector<vk::VkVertexInputBindingDescription>	m_vertexBindingDescription;
 	std::vector<vk::VkVertexInputAttributeDescription>	m_vertexattributeDescription;
-	std::vector<vk::VkBuffer>							m_vertexBuffers;
-	std::vector<vk::Allocation*>						m_vertexBufferAllocs;
+
+	typedef de::SharedPtr<vk::Unique<vk::VkBuffer> > VkBufferSp;
+	std::vector<VkBufferSp>								m_vertexBuffers;
+
+	typedef de::SharedPtr<de::UniquePtr<vk::Allocation> > AllocationSp;
+	std::vector<AllocationSp>							m_vertexBufferAllocs;
 };
 
 template<typename T>

@@ -400,12 +400,6 @@ ShaderRenderCaseInstance::~ShaderRenderCaseInstance (void)
 	const VkDevice			vkDevice	= m_context.getDevice();
 	const DeviceInterface&	vk			= m_context.getDeviceInterface();
 
-	for (size_t bufferNdx = 0; bufferNdx < m_vertexBuffers.size(); bufferNdx++)
-	{
-		VK_CHECK(vk.freeMemory(vkDevice, m_vertexBufferAllocs[bufferNdx]->getMemory()));
-		VK_CHECK(vk.destroyBuffer(vkDevice, m_vertexBuffers[bufferNdx]));
-	}
-
 	for (size_t uniformNdx = 0; uniformNdx < m_uniformInfos.size(); uniformNdx++)
 	{
 		if (m_uniformInfos[uniformNdx].type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
@@ -574,8 +568,8 @@ void ShaderRenderCaseInstance::addAttribute (deUint32 bindingLocation, vk::VkFor
 	deMemcpy(bufferPtr, dataPtr, inputSize);
 	VK_CHECK(vk.unmapMemory(vkDevice, alloc->getMemory()));
 
-	m_vertexBuffers.push_back(buffer.disown());
-	m_vertexBufferAllocs.push_back(alloc.release());
+	m_vertexBuffers.push_back(VkBufferSp(new vk::Unique<VkBuffer>(buffer)));
+	m_vertexBufferAllocs.push_back(AllocationSp(new de::UniquePtr<vk::Allocation>(alloc)));
 }
 
 void ShaderRenderCaseInstance::useAttribute (deUint32 bindingLocation, BaseAttributeType type)
@@ -1345,7 +1339,13 @@ void ShaderRenderCaseInstance::render (tcu::Surface& result, const QuadGrid& qua
 		const deUint32 numberOfVertexAttributes = (deUint32)m_vertexBuffers.size();
 		const std::vector<VkDeviceSize> offsets(numberOfVertexAttributes, 0);
 
-		vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, numberOfVertexAttributes, &m_vertexBuffers[0], &offsets[0]);
+		std::vector<VkBuffer> buffers(numberOfVertexAttributes);
+		for (size_t i = 0; i < numberOfVertexAttributes; i++)
+		{
+			buffers[i] = m_vertexBuffers[i].get()->get();
+		}
+
+		vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, numberOfVertexAttributes, &buffers[0], &offsets[0]);
 		vk.cmdDrawIndexed(*m_cmdBuffer, 0, quadGrid.getNumTriangles() * 3, 0, 0, 1);
 
 		vk.cmdEndRenderPass(*m_cmdBuffer);
