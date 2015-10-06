@@ -455,23 +455,52 @@ private:
 	vk::DescriptorPoolBuilder							m_descriptorPoolBuilder;
 	vk::DescriptorSetUpdateBuilder 						m_descriptorSetUpdateBuilder;
 
-	struct UniformInfo
+	typedef de::SharedPtr<vk::Unique<vk::VkBuffer> > 		VkBufferSp;
+	typedef de::SharedPtr<vk::Unique<vk::VkBufferView> > 	VkBufferViewSp;
+
+	typedef de::SharedPtr<vk::Unique<vk::VkImageView> >		VkImageViewSp;
+	typedef de::SharedPtr<vk::Unique<vk::VkSampler> > 		VkSamplerSp;
+	typedef de::SharedPtr<de::UniquePtr<vk::Allocation> >	AllocationSp;
+
+	class UniformInfo
 	{
-		vk::VkBuffer				buffer;
-		vk::Allocation*				alloc;
+	public:
+									UniformInfo		(void) {}
+		virtual						~UniformInfo	(void) {}
+
 		vk::VkDescriptorType		type;
 		vk::VkDescriptorInfo		descriptor;
 		deUint32					location;
 	};
-	std::vector<UniformInfo>							m_uniformInfos;
+
+	class BufferUniform : public UniformInfo
+	{
+	public:
+									BufferUniform	(void) {}
+		virtual						~BufferUniform	(void) {}
+
+		VkBufferSp					buffer;
+		VkBufferViewSp				bufferView;
+		AllocationSp				alloc;
+	};
+
+	class SamplerUniform : public UniformInfo
+	{
+	public:
+									SamplerUniform	(void) {}
+		virtual						~SamplerUniform	(void) {}
+
+		VkImageViewSp				imageView;
+		VkSamplerSp					sampler;
+	};
+
+	typedef de::SharedPtr<de::UniquePtr<UniformInfo> >	UniformInfoSp;
+	std::vector<UniformInfoSp>							m_uniformInfos;
 
 	std::vector<vk::VkVertexInputBindingDescription>	m_vertexBindingDescription;
 	std::vector<vk::VkVertexInputAttributeDescription>	m_vertexattributeDescription;
 
-	typedef de::SharedPtr<vk::Unique<vk::VkBuffer> > VkBufferSp;
 	std::vector<VkBufferSp>								m_vertexBuffers;
-
-	typedef de::SharedPtr<de::UniquePtr<vk::Allocation> > AllocationSp;
 	std::vector<AllocationSp>							m_vertexBufferAllocs;
 };
 
