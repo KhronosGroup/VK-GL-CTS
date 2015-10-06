@@ -41,9 +41,13 @@ class Configuration:
 		self.filters		= filters
 
 class Package:
-	def __init__ (self, module, configurations):
+	def __init__ (self, module, configurations, splitFilters = {}):
 		self.module			= module
 		self.configurations	= configurations
+		# Map of name:[include filters]. Each will generate <api>.<name> package
+		# Test cases that didn't match any split filter will be in <api> package,
+		# i.e., the default value keeps everything in one package.
+		self.splitFilters   = splitFilters
 
 class Mustpass:
 	def __init__ (self, version, packages):
@@ -105,8 +109,10 @@ def getCaseListFileName (package, configuration):
 def getDstCaseListPath (mustpass, package, configuration):
 	return os.path.join(CTS_DATA_DIR, mustpass.version, getCaseListFileName(package, configuration))
 
-def getCTSPackageName (package):
-	return "com.drawelements.deqp." + getModuleShorthand(package.module)
+def getCTSPackageName (package, splitName):
+	if splitName == None:
+		return "com.drawelements.deqp." + getModuleShorthand(package.module)
+	return "com.drawelements.deqp." + getModuleShorthand(package.module) + "." + splitName
 
 def getCommandLine (config):
 	return "--deqp-gl-config-name=%s --deqp-screen-rotation=%s --deqp-surface-type=%s --deqp-watchdog=enable" % (config.glconfig, config.rotation, config.surfacetype)
@@ -123,7 +129,7 @@ def getCaseList (mustpass, module):
 	generator	= ANY_GENERATOR
 	buildCfg	= getBuildConfig(DEFAULT_BUILD_DIR, DEFAULT_TARGET, "Debug")
 
-	build(buildCfg, generator, [module.binName])
+	#build(buildCfg, generator, [module.binName])
 	genCaseList(buildCfg, generator, module, "txt")
 
 	return readCaseList(getCaseListPath(buildCfg, module, "txt"))
@@ -256,7 +262,7 @@ def prettifyXML (doc):
 	reparsed	= minidom.parseString(uglyString)
 	return reparsed.toprettyxml(indent='\t', encoding='utf-8')
 
-def genCTSPackageXML (package, root):
+def genCTSPackageXML (package, root, name):
 	def isLeafGroup (testGroup):
 		numGroups	= 0
 		numTests	= 0
@@ -294,7 +300,7 @@ def genCTSPackageXML (package, root):
 
 	pkgElem = ElementTree.Element("TestPackage",
 								  name				= package.module.name,
-								  appPackageName	= getCTSPackageName(package),
+								  appPackageName	= name,
 								  testType			= "deqpTest")
 
 	pkgElem.set("xmlns:deqp", "http://drawelements.com/deqp")
@@ -319,6 +325,20 @@ def genSpecXML (mustpass):
 
 	return mustpassElem
 
+def genCTSPackage (package, cases, matchingByConfig, packageName, xmlFilename):
+	root		= buildTestHierachy(cases)
+	testCaseMap	= buildTestCaseMap(root)
+
+	for config in package.configurations:
+		for case in matchingByConfig[config]:
+			if case in testCaseMap:
+				testCaseMap[case].configurations.append(config)
+
+	packageXml	= genCTSPackageXML(package, root, packageName)
+
+	print "  Writing CTS caselist: " + xmlFilename
+	writeFile(xmlFilename, prettifyXML(packageXml))
+
 def genMustpass (mustpass, moduleCaseLists):
 	print "Generating mustpass '%s'" % mustpass.version
 
@@ -339,19 +359,21 @@ def genMustpass (mustpass, moduleCaseLists):
 			matchingByConfig[config]	= filtered
 			allMatchingSet				= allMatchingSet | set(filtered)
 
-		allMatchingCases	= [c for c in allCasesInPkg if c in allMatchingSet] # To preserve ordering
-		root				= buildTestHierachy(allMatchingCases)
-		testCaseMap			= buildTestCaseMap(root)
+		allMatchingCases		= [c for c in allCasesInPkg if c in allMatchingSet] # To preserve ordering
+		splitFilters			= package.splitFilters
+		for splitName in splitFilters.keys():
+			splitIncludeFilters	= splitFilters[splitName]
+			splitCases			= applyInclude(allMatchingCases, splitIncludeFilters)
+			packageName			= getCTSPackageName(package, splitName)
+			xmlFilename			= os.path.join(CTS_DATA_DIR, mustpass.version, packageName + ".xml")
+			genCTSPackage(package, splitCases, matchingByConfig, packageName, xmlFilename)
 
-		for config in package.configurations:
-			for case in matchingByConfig[config]:
-				testCaseMap[case].configurations.append(config)
-
-		packageXml	= genCTSPackageXML(package, root)
-		xmlFilename	= os.path.join(CTS_DATA_DIR, mustpass.version, getCTSPackageName(package) + ".xml")
-
-		print "  Writing CTS caselist: " + xmlFilename
-		writeFile(xmlFilename, prettifyXML(packageXml))
+		# The cases not matching any of the includes
+		combinedSplitFilters	= reduce(lambda x,y: x+y, splitFilters.values(), [])
+		restOfCases				= applyExclude(allMatchingCases, combinedSplitFilters)
+		packageName				= getCTSPackageName(package, None)
+		xmlFilename				= os.path.join(CTS_DATA_DIR, mustpass.version, packageName + ".xml")
+		genCTSPackage(package, restOfCases, matchingByConfig, packageName, xmlFilename)
 
 	specXML			= genSpecXML(mustpass)
 	specFilename	= os.path.join(CTS_DATA_DIR, mustpass.version, "mustpass.xml")
@@ -535,7 +557,12 @@ MASTER_GLES31_PKG				= Package(module = GLES31_MODULE, configurations = [
 					  rotation		= "unspecified",
 					  surfacetype	= "window",
 					  filters		= MASTER_GLES31_COMMON_FILTERS + [include("gles31-pixelformat.txt")]),
-	])
+	],
+	splitFilters = {"copy_image_compressed":			["dEQP-GLES31.functional.copy_image.compressed.*"],
+					"copy_image_non_compressed":		["dEQP-GLES31.functional.copy_image.non_compressed.*"],
+					"copy_image_mixed":					["dEQP-GLES31.functional.copy_image.mixed.*"],
+					}
+	)
 
 MUSTPASS_LISTS				= [
 		Mustpass(version = "lmp",		packages = [LMP_GLES3_PKG, LMP_GLES31_PKG]),
