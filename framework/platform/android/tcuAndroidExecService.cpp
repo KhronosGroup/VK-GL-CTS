@@ -350,7 +350,7 @@ void ServerThread::stop (void)
 
 // ExecService
 
-ExecService::ExecService (JavaVM* vm, jobject context, deSocketFamily family, int port)
+ExecService::ExecService (JavaVM* vm, jobject context, int port, deSocketFamily family)
 	: m_process		(vm, context)
 	, m_thread		(vm, &m_process, family, port)
 {

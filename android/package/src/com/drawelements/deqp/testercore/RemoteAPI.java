@@ -33,7 +33,7 @@ import java.util.List;
 
 public class RemoteAPI {
 
-	private static final String			LOG_TAG				= "dEQP/RemoteAPI";
+	private static final String			LOG_TAG				= "dEQP";
 
 	private Context						m_context;
 	private String						m_processName;

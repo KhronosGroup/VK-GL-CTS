@@ -67,7 +67,7 @@ static void logException (const std::exception& e)
 
 DE_BEGIN_EXTERN_C
 
-JNIEXPORT void JNICALL Java_com_drawelements_deqp_execserver_ExecService_onCreateNative (JNIEnv* env, jobject obj)
+JNIEXPORT void JNICALL Java_com_drawelements_deqp_execserver_ExecService_startServer (JNIEnv* env, jobject obj, jint port)
 {
 	tcu::Android::ExecService*	service		= DE_NULL;
 	JavaVM*						vm			= DE_NULL;
@@ -79,7 +79,7 @@ JNIEXPORT void JNICALL Java_com_drawelements_deqp_execserver_ExecService_onCreat
 		env->GetJavaVM(&vm);
 		TCU_CHECK_INTERNAL(vm);
 
-		service = new tcu::Android::ExecService(vm, obj);
+		service = new tcu::Android::ExecService(vm, obj, port);
 		service->start();
 
 		setExecService(env, obj, service);
@@ -88,11 +88,11 @@ JNIEXPORT void JNICALL Java_com_drawelements_deqp_execserver_ExecService_onCreat
 	{
 		logException(e);
 		delete service;
-		tcu::die("ExecService.onCreateNative() failed");
+		tcu::die("ExecService.startServer() failed");
 	}
 }
 
-JNIEXPORT void JNICALL Java_com_drawelements_deqp_execserver_ExecService_onDestroyNative (JNIEnv* env, jobject obj)
+JNIEXPORT void JNICALL Java_com_drawelements_deqp_execserver_ExecService_stopServer (JNIEnv* env, jobject obj)
 {
 	try
 	{
@@ -107,7 +107,7 @@ JNIEXPORT void JNICALL Java_com_drawelements_deqp_execserver_ExecService_onDestr
 	catch (const std::exception& e)
 	{
 		logException(e);
-		tcu::die("ExecService.onDestroyNative() failed");
+		tcu::die("ExecService.stopServer() failed");
 	}
 }
 
