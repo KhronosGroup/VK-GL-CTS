@@ -36,12 +36,14 @@
 #include "vktShaderRenderCase.hpp"
 
 #include "tcuImageCompare.hpp"
+#include "tcuImageIO.hpp"
 #include "tcuSurface.hpp"
 #include "tcuVector.hpp"
 #include "tcuTestLog.hpp"
 #include "tcuTextureUtil.hpp"
 
 #include "deMath.h"
+#include "deFilePath.hpp"
 #include "deUniquePtr.hpp"
 
 #include "vkPlatform.hpp"
@@ -210,11 +212,54 @@ inline tcu::Vec4 QuadGrid::getUserAttrib (int attribNdx, float sx, float sy) con
 
 // TextureBinding
 
-TextureBinding::TextureBinding (const Texture2D* tex2D, const tcu::Sampler& sampler)
-	: m_type	(TYPE_2D)
+TextureBinding::TextureBinding (const tcu::Archive&	archive,
+								const char*			filename,
+								const Type			type,
+								const tcu::Sampler&	sampler)
+	: m_type	(type)
 	, m_sampler	(sampler)
 {
-	m_binding.tex2D = tex2D;
+	switch(m_type)
+	{
+		case TYPE_2D: m_binding.tex2D = loadTexture2D(archive, filename); break;
+		default:
+			TCU_FAIL("Unsupported texture type");
+	}
+}
+
+tcu::Texture2D* TextureBinding::loadTexture2D (const tcu::Archive& archive, const char* filename)
+{
+	std::string ext = de::FilePath(filename).getFileExtension();
+
+	if (ext == "png")
+	{
+		// Uncompressed texture.
+		tcu::TextureLevel level;
+		tcu::ImageIO::loadPNG(level, archive, filename);
+
+		TCU_CHECK_INTERNAL(level.getFormat() == tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8) ||
+							level.getFormat() == tcu::TextureFormat(tcu::TextureFormat::RGB, tcu::TextureFormat::UNORM_INT8));
+
+		// \todo [2015-10-08 elecro] for some reason we get better when using RGBA texture even in RGB case, this needs to be investigated
+		tcu::Texture2D* texture = new tcu::Texture2D(tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8), level.getWidth(), level.getHeight());
+
+		try
+		{
+			// Fill level 0.
+			texture->allocLevel(0);
+
+			tcu::copy(texture->getLevel(0), level.getAccess());
+		}
+		catch (const std::exception&)
+		{
+			delete texture;
+			throw;
+		}
+
+		return texture;
+	}
+	else
+		TCU_FAIL("Unsupported file format"); // TODO: maybe support pkm?
 }
 
 // ShaderEvalContext.
@@ -239,7 +284,7 @@ ShaderEvalContext::ShaderEvalContext (const QuadGrid& quadGrid)
 
 		switch (binding.getType())
 		{
-			case TextureBinding::TYPE_2D:		textures[ndx].tex2D			= &binding.get2D()->getRefTexture();		break;
+			case TextureBinding::TYPE_2D:		textures[ndx].tex2D			= binding.get2D();		break;
 			// \todo [2015-09-07 elecro] Add support for the other binding types
 			/*
 			case TextureBinding::TYPE_CUBE_MAP:	textures[ndx].texCube		= &binding.getCube()->getRefTexture();		break;
@@ -690,6 +735,34 @@ const tcu::IVec2 ShaderRenderCaseInstance::getViewportSize (void) const
 					  de::min(m_renderSize.y(), MAX_RENDER_HEIGHT));
 }
 
+Move<VkImage> ShaderRenderCaseInstance::createImage2D (const tcu::Texture2D& texture, const VkFormat format)
+{
+	const VkDevice			vkDevice			= m_context.getDevice();
+	const DeviceInterface&	vk					= m_context.getDeviceInterface();
+	const deUint32			queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
+
+	const VkImageCreateInfo imageCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,						// VkStructureType			sType;
+		DE_NULL,													// const void*				pnext;
+		VK_IMAGE_TYPE_2D,											// VkImageType				imageType;
+		format,														// VkFormat					format;
+		{ texture.getWidth(), texture.getHeight(), 1 },				// VkExtend3D				extent;
+		1u,															// deUint32					mipLevels;
+		1u,															// deUint32					arraySize;
+		1u,															// deUint32					samples;
+		VK_IMAGE_TILING_LINEAR,										// VkImageTiling			tiling;
+		VK_IMAGE_USAGE_SAMPLED_BIT,									// VkImageUsageFlags		usage;
+		0,															// VkImageCreateFlags		flags;
+		VK_SHARING_MODE_EXCLUSIVE,									// VkSharingMode			sharingMode;
+		1,															// deuint32					queueFamilyCount;
+		&queueFamilyIndex											// const deUint32*			pQueueFamilyIndices;
+	};
+
+	Move<VkImage> vkTexture = createImage(vk, vkDevice, &imageCreateInfo);
+	return vkTexture;
+}
+
 void ShaderRenderCaseInstance::useSampler2D (deUint32 bindingLocation, deUint32 textureID)
 {
 	const VkDevice				vkDevice			= m_context.getDevice();
@@ -698,8 +771,50 @@ void ShaderRenderCaseInstance::useSampler2D (deUint32 bindingLocation, deUint32 
 	DE_ASSERT(textureID < m_textures.size());
 
 	const TextureBinding&		textureBinding		= m_textures[textureID];
-	const Texture2D*			texture				= textureBinding.get2D();
+	const tcu::Texture2D*		refTexture			= textureBinding.get2D();
 	const tcu::Sampler&			refSampler			= textureBinding.getSampler();
+	const VkFormat				format				= refTexture->getFormat() == tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8)
+														? VK_FORMAT_R8G8B8A8_UNORM
+														: VK_FORMAT_R8G8B8_UNORM;
+
+	DE_ASSERT(refTexture != DE_NULL);
+	// Create & alloc the image
+	Move<VkImage> vkTexture(createImage2D(*refTexture, format));
+
+	// Allocate and bind color image memory
+	de::MovePtr<Allocation> allocation				= m_memAlloc.allocate(getImageMemoryRequirements(vk, vkDevice, *vkTexture), MemoryRequirement::Any);
+	VK_CHECK(vk.bindImageMemory(vkDevice, *vkTexture, allocation->getMemory(), allocation->getOffset()));
+
+	const VkImageSubresource subres =
+	{
+		VK_IMAGE_ASPECT_COLOR,							// VkImageAspect		aspect;
+		0u,												// deUint32				mipLevel;
+		0u												// deUint32				arraySlice
+	};
+
+	VkSubresourceLayout layout;
+	VK_CHECK(vk.getImageSubresourceLayout(vkDevice, *vkTexture, &subres, &layout));
+
+	void *imagePtr;
+	VK_CHECK(vk.mapMemory(vkDevice, allocation->getMemory(), allocation->getOffset(), layout.size, 0u, &imagePtr));
+
+	tcu::ConstPixelBufferAccess access = refTexture->getLevel(0);
+	tcu::PixelBufferAccess destAccess(refTexture->getFormat(), refTexture->getWidth(), refTexture->getHeight(), 1, imagePtr);
+
+	tcu::copy(destAccess, access);
+
+	const vk::VkMappedMemoryRange range =
+	{
+		VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,			// VkStructureType	sType;
+		DE_NULL,										// const void*		pNext;
+		allocation->getMemory(),						// VkDeviceMemory	mem;
+		0,												// VkDeviceSize		offset;
+		layout.size,									// VkDeviceSize		size;
+	};
+
+	VK_CHECK(vk.flushMappedMemoryRanges(vkDevice, 1u, &range));
+	VK_CHECK(vk.unmapMemory(vkDevice, allocation->getMemory()));
+
 
 	// Create sampler
 	const VkSamplerCreateInfo	samplerParams		=
@@ -727,9 +842,9 @@ void ShaderRenderCaseInstance::useSampler2D (deUint32 bindingLocation, deUint32 
 	{
 		VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,	// VkStructureType			sType;
 		NULL,										// const voide*				pNexŧ;
-		*texture->getVkTexture(),					// VkImage					image;
+		*vkTexture,									// VkImage					image;
 		VK_IMAGE_VIEW_TYPE_2D,						// VkImageViewType			viewType;
-		texture->getVkFormat(),						// VkFormat					format;
+		format,										// VkFormat					format;
 		{
 			VK_CHANNEL_SWIZZLE_R,			// VkChannelSwizzle	r;
 			VK_CHANNEL_SWIZZLE_G,			// VkChannelSwizzle	g;
@@ -760,8 +875,10 @@ void ShaderRenderCaseInstance::useSampler2D (deUint32 bindingLocation, deUint32 
 	uniform->type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 	uniform->descriptor = descriptor;
 	uniform->location = bindingLocation;
+	uniform->image = VkImageSp(new vk::Unique<VkImage>(vkTexture));
 	uniform->imageView = VkImageViewSp(new vk::Unique<VkImageView>(imageView));
 	uniform->sampler = VkSamplerSp(new vk::Unique<VkSampler>(sampler));
+	uniform->alloc = AllocationSp(new de::UniquePtr<vk::Allocation>(allocation));
 
 	m_descriptorSetLayoutBuilder.addSingleSamplerBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, vk::VK_SHADER_STAGE_FRAGMENT_BIT, &uniform->descriptor.sampler);
 	m_descriptorPoolBuilder.addType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
@@ -1279,10 +1396,17 @@ void ShaderRenderCaseInstance::render (tcu::Surface& result, const QuadGrid& qua
 		std::vector<VkImageMemoryBarrier> barriers;
 		std::vector<void*> barrierPtrs;
 
-		for(size_t textureNdx = 0; textureNdx < m_textures.size(); textureNdx++)
+		for(deUint32 i = 0; i < m_uniformInfos.size(); i++)
 		{
-			const TextureBinding& textureBinding = m_textures[textureNdx];
-			const Texture2D* texture = textureBinding.get2D();
+			const UniformInfo* uniformInfo = m_uniformInfos[i].get()->get();
+
+			if (uniformInfo->type != VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
+			{
+				continue;
+			}
+
+			const SamplerUniform* sampler = static_cast<const SamplerUniform*>(uniformInfo);
+
 			VkImageMemoryBarrier textureBarrier =
 			{
 				VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
@@ -1293,7 +1417,7 @@ void ShaderRenderCaseInstance::render (tcu::Surface& result, const QuadGrid& qua
 				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 				queueFamilyIndex,
 				queueFamilyIndex,
-				*texture->getVkTexture(),
+				sampler->image->get(),
 				{
 					VK_IMAGE_ASPECT_COLOR,
 					0,
@@ -1304,7 +1428,7 @@ void ShaderRenderCaseInstance::render (tcu::Surface& result, const QuadGrid& qua
 			};
 
 			barriers.push_back(textureBarrier);
-			barrierPtrs.push_back((void*)&barriers[textureNdx]);
+			barrierPtrs.push_back((void*)&barriers.back());
 		}
 
 		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, false, (deUint32)barrierPtrs.size(), (const void * const*)&barrierPtrs[0]);

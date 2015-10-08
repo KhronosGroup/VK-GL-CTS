@@ -73,18 +73,23 @@ public:
 		TYPE_LAST
 	};
 
-							TextureBinding		(const Texture2D* tex2D, const tcu::Sampler& sampler);
+							TextureBinding		(const tcu::Archive&	archive,
+												 const char*			filename,
+												 const Type				type,
+												 const tcu::Sampler&	sampler);
 
 	Type					getType				(void) const { return m_type; 		}
 	const tcu::Sampler&		getSampler			(void) const { return m_sampler;	}
-	const Texture2D*		get2D				(void) const { DE_ASSERT(getType() == TYPE_2D); return m_binding.tex2D; }
+	const tcu::Texture2D*	get2D				(void) const { DE_ASSERT(getType() == TYPE_2D); return m_binding.tex2D; }
 
 private:
+	static tcu::Texture2D*	loadTexture2D		(const tcu::Archive& archive, const char* filename);
+
 	Type					m_type;
 	tcu::Sampler			m_sampler;
 	union
 	{
-		const Texture2D*	tex2D;
+		const tcu::Texture2D*	tex2D;
 	} m_binding;
 };
 
@@ -395,6 +400,7 @@ protected:
 private:
 
 	void												setupTextures				(void);
+	vk::Move<vk::VkImage>								createImage2D				(const tcu::Texture2D& texture, const vk::VkFormat format);
 	void												setupUniformData			(deUint32 bindingLocation, deUint32 size, const void* dataPtr);
 	void												setupDefaultInputs			(const QuadGrid& quadGrid);
 
@@ -458,6 +464,7 @@ private:
 	typedef de::SharedPtr<vk::Unique<vk::VkBuffer> > 		VkBufferSp;
 	typedef de::SharedPtr<vk::Unique<vk::VkBufferView> > 	VkBufferViewSp;
 
+	typedef de::SharedPtr<vk::Unique<vk::VkImage> > 		VkImageSp;
 	typedef de::SharedPtr<vk::Unique<vk::VkImageView> >		VkImageViewSp;
 	typedef de::SharedPtr<vk::Unique<vk::VkSampler> > 		VkSamplerSp;
 	typedef de::SharedPtr<de::UniquePtr<vk::Allocation> >	AllocationSp;
@@ -490,8 +497,10 @@ private:
 									SamplerUniform	(void) {}
 		virtual						~SamplerUniform	(void) {}
 
+		VkImageSp					image;
 		VkImageViewSp				imageView;
 		VkSamplerSp					sampler;
+		AllocationSp				alloc;
 	};
 
 	typedef de::SharedPtr<de::UniquePtr<UniformInfo> >	UniformInfoSp;

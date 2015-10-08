@@ -78,10 +78,6 @@ public:
 													const UniformSetup&		uniformSetup,
 													const bool				usesTexture);
 	virtual				~ShaderDiscardCaseInstance	(void);
-
-private:
-	const bool			m_usesTexture;
-	const Texture2D*	m_brickTexture;
 };
 
 ShaderDiscardCaseInstance::ShaderDiscardCaseInstance (Context&					context,
@@ -90,26 +86,22 @@ ShaderDiscardCaseInstance::ShaderDiscardCaseInstance (Context&					context,
 													 const UniformSetup&		uniformSetup,
 													 const bool					usesTexture)
 	: ShaderRenderCaseInstance	(context, isVertexCase, evaulator, uniformSetup, DE_NULL)
-	, m_usesTexture				(usesTexture)
 {
-	if (m_usesTexture)
+	if (usesTexture)
 	{
-		m_brickTexture = Texture2D::create(m_context, m_context.getTestContext().getArchive(), "vulkan/data/brick.png");
-		m_textures.push_back(TextureBinding(m_brickTexture, tcu::Sampler(tcu::Sampler::CLAMP_TO_EDGE,
-																		tcu::Sampler::CLAMP_TO_EDGE,
-																		tcu::Sampler::CLAMP_TO_EDGE,
-																		tcu::Sampler::LINEAR,
-																		tcu::Sampler::LINEAR)));
+		m_textures.push_back(TextureBinding(m_context.getTestContext().getArchive(),
+											"vulkan/data/brick.png",
+											TextureBinding::TYPE_2D,
+											tcu::Sampler(tcu::Sampler::CLAMP_TO_EDGE,
+														tcu::Sampler::CLAMP_TO_EDGE,
+														tcu::Sampler::CLAMP_TO_EDGE,
+														tcu::Sampler::LINEAR,
+														tcu::Sampler::LINEAR)));
 	}
 }
 
 ShaderDiscardCaseInstance::~ShaderDiscardCaseInstance (void)
 {
-	if (m_usesTexture)
-	{
-		delete m_brickTexture;
-		m_brickTexture = DE_NULL;
-	}
 }
 
 class ShaderDiscardCase : public ShaderRenderCase

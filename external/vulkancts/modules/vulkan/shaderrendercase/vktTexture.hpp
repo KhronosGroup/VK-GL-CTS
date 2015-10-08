@@ -35,74 +35,17 @@
  * \brief Vulkan Texture utilities
  *//*--------------------------------------------------------------------*/
 
-#include "tcuCompressedTexture.hpp"
 #include "tcuTexture.hpp"
-#include "tcuResource.hpp"
-
-#include "deUniquePtr.hpp"
 
 #include "vkDefs.hpp"
-#include "vkRef.hpp"
-#include "vkMemUtil.hpp"
-
-#include "vktTestCase.hpp"
 
 namespace vkt
 {
 
-class Texture2D
-{
-public:
-									Texture2D				(int numLevels,
-															const tcu::CompressedTexture* levels,
-															const tcu::TexDecompressionParams& decompressionParams = tcu::TexDecompressionParams());
-									Texture2D				(vk::VkFormat format,
-															deUint32 dataType,
-															int width,
-															int height);
-									Texture2D				(vk::VkFormat format,
-															int width,
-															int height);
-									~Texture2D				(void);
-
-	tcu::Texture2D&					getRefTexture			(void) 			{ return m_refTexture; }
-	const tcu::Texture2D&			getRefTexture			(void) const	{ return m_refTexture; }
-	const vk::VkImage*				getVkTexture			(void) const	{ return &m_vkTexture.get(); }
-	vk::VkFormat					getVkFormat				(void) const	{ return (vk::VkFormat)m_format; }
-
-
-	static Texture2D* 				create 					(const Context& context,
-															const tcu::Archive& archive,
-															int numLevels,
-															const char* const* levelFileNames);
-	static Texture2D*				create					(const Context& context,
-															const tcu::Archive& archive,
-															const char* filename)
-															{ return Texture2D::create(context, archive, 1, &filename); }
-
-private:
-									Texture2D				(const Texture2D& other);	// Not allowed!
-	Texture2D&						operator=				(const Texture2D& other);	// Not allowed!
-
-
-	void							upload					(const Context& context);
-
-	void							loadCompressed			(int numLevels,
-															const tcu::CompressedTexture* levels,
-															const tcu::TexDecompressionParams& decompressionParams);
-
-	bool							m_isCompressed;
-	vk::VkFormat					m_format;
-	tcu::Texture2D					m_refTexture;
-	vk::Move<vk::VkImage>			m_vkTexture;
-
-	de::MovePtr<vk::Allocation>		m_allocation;
-};
-
-vk::VkTexFilter getVkTexFilter (const tcu::Sampler::FilterMode& filterMode);
-vk::VkTexMipmapMode getVkTexMipmapMode (const tcu::Sampler::FilterMode& filterMode);
-vk::VkTexAddress getVkWrapMode (const tcu::Sampler::WrapMode& wrapMode);
-vk::VkCompareOp getVkCompareMode (const tcu::Sampler::CompareMode& mode);
+vk::VkTexFilter		getVkTexFilter		(const tcu::Sampler::FilterMode& filterMode);
+vk::VkTexMipmapMode	getVkTexMipmapMode	(const tcu::Sampler::FilterMode& filterMode);
+vk::VkTexAddress	getVkWrapMode		(const tcu::Sampler::WrapMode& wrapMode);
+vk::VkCompareOp		getVkCompareMode	(const tcu::Sampler::CompareMode& mode);
 
 } // vkt
 
