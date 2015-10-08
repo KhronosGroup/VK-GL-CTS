@@ -1,4 +1,7 @@
 /*------------------------------------------------------------------------
+ * Vulkan Conformance Tests
+ * ------------------------
+ *
  * Copyright (c) 2015 The Khronos Group Inc.
  * Copyright (c) 2015 Samsung Electronics Co., Ltd.
  *
@@ -253,7 +256,7 @@ void Texture2D::loadCompressed (int numLevels, const tcu::CompressedTexture* lev
 }
 
 
-vk::VkTexFilter mapTexFilter (const tcu::Sampler::FilterMode& filterMode)
+vk::VkTexFilter getVkTexFilter (const tcu::Sampler::FilterMode& filterMode)
 {
 	// \todo [2015-09-07 elecro] dobule check the mappings
 	switch(filterMode)
@@ -270,7 +273,7 @@ vk::VkTexFilter mapTexFilter (const tcu::Sampler::FilterMode& filterMode)
 	return vk::VK_TEX_FILTER_NEAREST;
 }
 
-vk::VkTexMipmapMode mapTexMipmapMode (const tcu::Sampler::FilterMode& filterMode)
+vk::VkTexMipmapMode getVkTexMipmapMode (const tcu::Sampler::FilterMode& filterMode)
 {
 	// \todo [2015-09-07 elecro] dobule check the mappings
 	switch(filterMode)
@@ -287,7 +290,7 @@ vk::VkTexMipmapMode mapTexMipmapMode (const tcu::Sampler::FilterMode& filterMode
 	return vk::VK_TEX_MIPMAP_MODE_BASE;
 }
 
-vk::VkTexAddress mapWrapMode (const tcu::Sampler::WrapMode& wrapMode)
+vk::VkTexAddress getVkWrapMode (const tcu::Sampler::WrapMode& wrapMode)
 {
 	// \todo [2015-09-07 elecro] dobule check the mappings
 	switch(wrapMode)
@@ -305,7 +308,7 @@ vk::VkTexAddress mapWrapMode (const tcu::Sampler::WrapMode& wrapMode)
 	return vk::VK_TEX_ADDRESS_WRAP;
 }
 
-vk::VkCompareOp mapCompareMode (const tcu::Sampler::CompareMode& mode)
+vk::VkCompareOp getVkCompareMode (const tcu::Sampler::CompareMode& mode)
 {
 	// \todo [2015-09-07 elecro] dobule check the mappings
 	switch(mode)

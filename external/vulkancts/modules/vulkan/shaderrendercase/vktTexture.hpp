@@ -1,6 +1,9 @@
 #ifndef _VKTTEXTURE_HPP
 #define _VKTTEXTURE_HPP
 /*------------------------------------------------------------------------
+ * Vulkan Conformance Tests
+ * ------------------------
+ *
  * Copyright (c) 2015 The Khronos Group Inc.
  * Copyright (c) 2015 Samsung Electronics Co., Ltd.
  *
@@ -96,11 +99,10 @@ private:
 	de::MovePtr<vk::Allocation>		m_allocation;
 };
 
-
-vk::VkTexFilter mapTexFilter (const tcu::Sampler::FilterMode& filterMode);
-vk::VkTexMipmapMode mapTexMipmapMode (const tcu::Sampler::FilterMode& filterMode);
-vk::VkTexAddress mapWrapMode (const tcu::Sampler::WrapMode& wrapMode);
-vk::VkCompareOp mapCompareMode (const tcu::Sampler::CompareMode& mode);
+vk::VkTexFilter getVkTexFilter (const tcu::Sampler::FilterMode& filterMode);
+vk::VkTexMipmapMode getVkTexMipmapMode (const tcu::Sampler::FilterMode& filterMode);
+vk::VkTexAddress getVkWrapMode (const tcu::Sampler::WrapMode& wrapMode);
+vk::VkCompareOp getVkCompareMode (const tcu::Sampler::CompareMode& mode);
 
 } // vkt
 
