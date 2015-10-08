@@ -39,15 +39,9 @@
 
 #include "vktTexture.hpp"
 
-#include <map>
-#include <sstream>
 #include <string>
 
 using tcu::StringTemplate;
-
-using std::map;
-using std::string;
-using std::ostringstream;
 
 namespace vkt
 {
@@ -370,7 +364,7 @@ ShaderDiscardCase* makeDiscardCase (tcu::TestContext& testCtx, DiscardTemplate t
 {
 	StringTemplate shaderTemplate(getTemplate(tmpl));
 
-	map<string, string> params;
+	std::map<std::string, std::string> params;
 
 	switch (mode)
 	{
@@ -384,8 +378,8 @@ ShaderDiscardCase* makeDiscardCase (tcu::TestContext& testCtx, DiscardTemplate t
 			break;
 	}
 
-	string name			= string(getTemplateName(tmpl)) + "_" + getModeName(mode);
-	string description	= string(getModeDesc(mode)) + " in " + getTemplateDesc(tmpl);
+	std::string name		= std::string(getTemplateName(tmpl)) + "_" + getModeName(mode);
+	std::string description	= std::string(getModeDesc(mode)) + " in " + getTemplateDesc(tmpl);
 
 	return new ShaderDiscardCase(testCtx, name.c_str(), description.c_str(), shaderTemplate.specialize(params).c_str(), getEvalFunc(mode), mode == DISCARDMODE_TEXTURE);
 }
