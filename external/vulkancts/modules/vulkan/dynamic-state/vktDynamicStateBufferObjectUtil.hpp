@@ -1,0 +1,84 @@
+#ifndef _VKT_DYNAMIC_STATE_BUFFEROBJECTUTIL_HPP
+#define _VKT_DYNAMIC_STATE_BUFFEROBJECTUTIL_HPP
+/*------------------------------------------------------------------------
+ * Vulkan Conformance Tests
+ * ------------------------
+ *
+ * Copyright (c) 2015 The Khronos Group Inc.
+ * Copyright (c) 2015 Intel Corporation
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and/or associated documentation files (the
+ * "Materials"), to deal in the Materials without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish,
+ * distribute, sublicense, and/or sell copies of the Materials, and to
+ * permit persons to whom the Materials are furnished to do so, subject to
+ * the following conditions:
+ *
+ * The above copyright notice(s) and this permission notice shall be included
+ * in all copies or substantial portions of the Materials.
+ *
+ * The Materials are Confidential Information as defined by the
+ * Khronos Membership Agreement until designated non-confidential by Khronos,
+ * at which point this condition clause shall be removed.
+ *
+ * THE MATERIALS ARE PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+ * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+ * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
+ *
+ *//*!
+ * \file
+ * \brief Buffer Object Util
+ *//*--------------------------------------------------------------------*/
+
+#include "vkDefs.hpp"
+#include "vkMemUtil.hpp"
+#include "vkRefUtil.hpp"
+
+#include "deSharedPtr.hpp"
+
+namespace vkt
+{
+namespace DynamicState
+{
+
+class Buffer
+{
+public:
+
+	static de::SharedPtr<Buffer> Create (const vk::DeviceInterface& vk, vk::VkDevice device, const vk::VkBufferCreateInfo &createInfo);
+
+	static de::SharedPtr<Buffer> CreateAndAlloc (const vk::DeviceInterface&		vk,
+												 vk::VkDevice					device,
+												 const vk::VkBufferCreateInfo&	createInfo,
+												 vk::Allocator&					allocator,
+												 vk::MemoryRequirement			allocationMemoryProperties = vk::MemoryRequirement::Any);
+
+	Buffer (const vk::DeviceInterface &vk, vk::VkDevice device, vk::Move<vk::VkBuffer> object);
+
+	inline vk::VkBuffer object (void) const { return *m_object; }
+
+	void bindMemory (de::MovePtr<vk::Allocation> allocation);
+	inline vk::Allocation getBoundMemory (void) const { return *m_allocation; }
+
+private:
+
+	Buffer				(const Buffer &other);	// Not allowed!
+	Buffer &operator=	(const Buffer &other);	// Not allowed!
+
+
+	de::MovePtr<vk::Allocation>		m_allocation;
+	vk::Unique<vk::VkBuffer>		m_object;
+
+	const	vk::DeviceInterface &	m_vk;
+			vk::VkDevice			m_device;
+};
+
+} //DynamicState
+} //vkt
+
+#endif // _VKT_DYNAMIC_STATE_BUFFEROBJECTUTIL_HPP
