@@ -1594,16 +1594,11 @@ void VKAPI vkCmdCopyQueryPoolResults(
 Buffers
 -------
 
-Buffers will have a lot of coverage from memory management and access tests. Targeted buffer tests need to verify that various corner-cases and more excotic configurations work as expected.
-
-.Spec issues
- * Does +VK_BUFFER_USAGE_GENERAL+ allow buffer to be used in any situation?
- * All combinations of usage flags are valid?
+Buffers will have a lot of coverage from memory management and access tests. Targeted buffer tests need to verify that various corner-cases and more exotic configurations work as expected.
 
 [source,c]
 ----
 typedef enum {
-    VK_BUFFER_USAGE_GENERAL = 0,
     VK_BUFFER_USAGE_TRANSFER_SOURCE_BIT = 0x00000001,
     VK_BUFFER_USAGE_TRANSFER_DESTINATION_BIT = 0x00000002,
     VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT = 0x00000004,
@@ -1640,26 +1635,23 @@ VkResult VKAPI vkCreateBuffer(
     VkBuffer*                                   pBuffer);
 ----
 
- * All (valid and supported) combinations of create and usage flags work
+ * All combinations of create and usage flags work
+ ** There are total 511 combinations of usage flags and 7 combinations of create flags
  * Buffers of various sizes can be created and they report sensible memory requirements
+ ** Test with different sizes:
+ *** 0 Byte
+ *** 1181 Byte
+ *** 15991 Byte
+ *** 16 kByte
+ *** Device limit (maxTexelBufferSize)
  * Sparse buffers: very large (limit TBD) buffers can be created
 
 [source,c]
 ----
-typedef enum {
-    VK_BUFFER_VIEW_TYPE_RAW = 0,
-    VK_BUFFER_VIEW_TYPE_FORMATTED = 1,
-    VK_BUFFER_VIEW_TYPE_BEGIN_RANGE = VK_BUFFER_VIEW_TYPE_RAW,
-    VK_BUFFER_VIEW_TYPE_END_RANGE = VK_BUFFER_VIEW_TYPE_FORMATTED,
-    VK_BUFFER_VIEW_TYPE_NUM = (VK_BUFFER_VIEW_TYPE_FORMATTED - VK_BUFFER_VIEW_TYPE_RAW + 1),
-    VK_BUFFER_VIEW_TYPE_MAX_ENUM = 0x7FFFFFFF
-} VkBufferViewType;
-
 typedef struct {
     VkStructureType                             sType;
     const void*                                 pNext;
     VkBuffer                                    buffer;
-    VkBufferViewType                            viewType;
     VkFormat                                    format;
     VkDeviceSize                                offset;
     VkDeviceSize                                range;
@@ -1672,10 +1664,12 @@ VkResult VKAPI vkCreateBufferView(
 ----
 
  * Buffer views of all (valid) types and formats can be created from all (compatible) buffers
+ ** There are 2 buffer types and 173 different formats.
  * Various view sizes
  ** Complete buffer
  ** Partial buffer
  * View can be created before and after attaching memory to buffer
+ ** 2 tests for each bufferView
  * Changing memory binding makes memory contents visible in already created views
  ** Concurrently changing memory binding and creating views
 
