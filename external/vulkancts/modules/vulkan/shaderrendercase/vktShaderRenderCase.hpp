@@ -216,7 +216,7 @@ public:
 
 
 	virtual						~ShaderRenderCase	(void);
-	virtual	void				initPrograms		(vk::ProgramCollection<glu::ProgramSources>& programCollection) const;
+	virtual	void				initPrograms		(vk::SourceCollections& programCollection) const;
 	virtual	TestInstance*		createInstance		(Context& context) const;
 
 protected:
@@ -428,7 +428,7 @@ private:
 
 	vk::Move<vk::VkImage>								m_colorImage;
 	de::MovePtr<vk::Allocation>							m_colorImageAlloc;
-	vk::Move<vk::VkAttachmentView> 						m_colorAttachmentView;
+	vk::Move<vk::VkImageView>	 						m_colorImageView;
 
 	vk::Move<vk::VkRenderPass>							m_renderPass;
 	vk::Move<vk::VkFramebuffer>							m_framebuffer;
@@ -439,10 +439,6 @@ private:
 	vk::Move<vk::VkShaderModule>						m_fragmentShaderModule;
 	vk::Move<vk::VkShader>								m_vertexShader;
 	vk::Move<vk::VkShader>								m_fragmentShader;
-
-	vk::Move<vk::VkDynamicViewportState>				m_viewportState;
-	vk::Move<vk::VkDynamicRasterState>					m_rasterState;
-	vk::Move<vk::VkDynamicColorBlendState>				m_colorBlendState;
 
 	vk::Move<vk::VkBuffer>								m_indiceBuffer;
 	de::MovePtr<vk::Allocation>							m_indiceBufferAlloc;

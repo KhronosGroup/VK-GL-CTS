@@ -72,22 +72,22 @@ vk::VkTexMipmapMode getVkTexMipmapMode (const tcu::Sampler::FilterMode& filterMo
 	return vk::VK_TEX_MIPMAP_MODE_BASE;
 }
 
-vk::VkTexAddress getVkWrapMode (const tcu::Sampler::WrapMode& wrapMode)
+vk::VkTexAddressMode getVkWrapMode (const tcu::Sampler::WrapMode& wrapMode)
 {
 	// \todo [2015-09-07 elecro] dobule check the mappings
 	switch(wrapMode)
 	{
-		case tcu::Sampler::CLAMP_TO_EDGE:		return vk::VK_TEX_ADDRESS_CLAMP;
-		case tcu::Sampler::CLAMP_TO_BORDER:		return vk::VK_TEX_ADDRESS_CLAMP_BORDER;
-		case tcu::Sampler::REPEAT_GL:			return vk::VK_TEX_ADDRESS_WRAP;
-		case tcu::Sampler::REPEAT_CL:			return vk::VK_TEX_ADDRESS_WRAP;
-		case tcu::Sampler::MIRRORED_REPEAT_GL:	return vk::VK_TEX_ADDRESS_MIRROR;
-		case tcu::Sampler::MIRRORED_REPEAT_CL:	return vk::VK_TEX_ADDRESS_MIRROR;
+		case tcu::Sampler::CLAMP_TO_EDGE:		return vk::VK_TEX_ADDRESS_MODE_CLAMP;
+		case tcu::Sampler::CLAMP_TO_BORDER:		return vk::VK_TEX_ADDRESS_MODE_CLAMP_BORDER;
+		case tcu::Sampler::REPEAT_GL:			return vk::VK_TEX_ADDRESS_MODE_WRAP;
+		case tcu::Sampler::REPEAT_CL:			return vk::VK_TEX_ADDRESS_MODE_WRAP;
+		case tcu::Sampler::MIRRORED_REPEAT_GL:	return vk::VK_TEX_ADDRESS_MODE_MIRROR;
+		case tcu::Sampler::MIRRORED_REPEAT_CL:	return vk::VK_TEX_ADDRESS_MODE_MIRROR;
 		default:
 			DE_ASSERT(false);
 	}
 
-	return vk::VK_TEX_ADDRESS_WRAP;
+	return vk::VK_TEX_ADDRESS_MODE_WRAP;
 }
 
 vk::VkCompareOp getVkCompareMode (const tcu::Sampler::CompareMode& mode)

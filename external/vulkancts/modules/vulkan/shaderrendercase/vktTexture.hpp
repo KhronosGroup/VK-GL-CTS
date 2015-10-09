@@ -42,10 +42,10 @@
 namespace vkt
 {
 
-vk::VkTexFilter		getVkTexFilter		(const tcu::Sampler::FilterMode& filterMode);
-vk::VkTexMipmapMode	getVkTexMipmapMode	(const tcu::Sampler::FilterMode& filterMode);
-vk::VkTexAddress	getVkWrapMode		(const tcu::Sampler::WrapMode& wrapMode);
-vk::VkCompareOp		getVkCompareMode	(const tcu::Sampler::CompareMode& mode);
+vk::VkTexFilter			getVkTexFilter		(const tcu::Sampler::FilterMode& filterMode);
+vk::VkTexMipmapMode		getVkTexMipmapMode	(const tcu::Sampler::FilterMode& filterMode);
+vk::VkTexAddressMode	getVkWrapMode		(const tcu::Sampler::WrapMode& wrapMode);
+vk::VkCompareOp			getVkCompareMode	(const tcu::Sampler::CompareMode& mode);
 
 } // vkt
 
