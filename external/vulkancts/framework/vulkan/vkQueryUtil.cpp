@@ -38,10 +38,12 @@
 namespace vk
 {
 
-std::vector<VkPhysicalDevice> enumeratePhysicalDevices (const InstanceInterface& vk, VkInstance instance)
+using std::vector;
+
+vector<VkPhysicalDevice> enumeratePhysicalDevices (const InstanceInterface& vk, VkInstance instance)
 {
-	deUint32						numDevices	= 0;
-	std::vector<VkPhysicalDevice>	devices;
+	deUint32					numDevices	= 0;
+	vector<VkPhysicalDevice>	devices;
 
 	VK_CHECK(vk.enumeratePhysicalDevices(instance, &numDevices, DE_NULL));
 
@@ -57,10 +59,10 @@ std::vector<VkPhysicalDevice> enumeratePhysicalDevices (const InstanceInterface&
 	return devices;
 }
 
-std::vector<VkQueueFamilyProperties> getPhysicalDeviceQueueFamilyProperties (const InstanceInterface& vk, VkPhysicalDevice physicalDevice)
+vector<VkQueueFamilyProperties> getPhysicalDeviceQueueFamilyProperties (const InstanceInterface& vk, VkPhysicalDevice physicalDevice)
 {
-	deUint32								numQueues	= 0;
-	std::vector<VkQueueFamilyProperties>	properties;
+	deUint32						numQueues	= 0;
+	vector<VkQueueFamilyProperties>	properties;
 
 	VK_CHECK(vk.getPhysicalDeviceQueueFamilyProperties(physicalDevice, &numQueues, DE_NULL));
 
@@ -97,6 +99,74 @@ VkMemoryRequirements getImageMemoryRequirements (const DeviceInterface& vk, VkDe
 	VkMemoryRequirements req;
 	VK_CHECK(vk.getImageMemoryRequirements(device, image, &req));
 	return req;
+}
+
+vector<VkLayerProperties> enumerateInstanceLayerProperties (const PlatformInterface& vkp)
+{
+	vector<VkLayerProperties>	properties;
+	deUint32					numLayers	= 0;
+
+	VK_CHECK(vkp.enumerateInstanceLayerProperties(&numLayers, DE_NULL));
+
+	if (numLayers > 0)
+	{
+		properties.resize(numLayers);
+		VK_CHECK(vkp.enumerateInstanceLayerProperties(&numLayers, &properties[0]));
+		TCU_CHECK((size_t)numLayers == properties.size());
+	}
+
+	return properties;
+}
+
+vector<VkExtensionProperties> enumerateInstanceExtensionProperties (const PlatformInterface& vkp, const char* layerName)
+{
+	vector<VkExtensionProperties>	properties;
+	deUint32						numExtensions	= 0;
+
+	VK_CHECK(vkp.enumerateInstanceExtensionProperties(layerName, &numExtensions, DE_NULL));
+
+	if (numExtensions > 0)
+	{
+		properties.resize(numExtensions);
+		VK_CHECK(vkp.enumerateInstanceExtensionProperties(layerName, &numExtensions, &properties[0]));
+		TCU_CHECK((size_t)numExtensions == properties.size());
+	}
+
+	return properties;
+}
+
+vector<VkLayerProperties> enumerateDeviceLayerProperties (const InstanceInterface& vki, VkPhysicalDevice physicalDevice)
+{
+	vector<VkLayerProperties>	properties;
+	deUint32					numLayers	= 0;
+
+	VK_CHECK(vki.enumerateDeviceLayerProperties(physicalDevice, &numLayers, DE_NULL));
+
+	if (numLayers > 0)
+	{
+		properties.resize(numLayers);
+		VK_CHECK(vki.enumerateDeviceLayerProperties(physicalDevice, &numLayers, &properties[0]));
+		TCU_CHECK((size_t)numLayers == properties.size());
+	}
+
+	return properties;
+}
+
+vector<VkExtensionProperties> enumerateDeviceExtensionProperties (const InstanceInterface& vki, VkPhysicalDevice physicalDevice, const char* layerName)
+{
+	vector<VkExtensionProperties>	properties;
+	deUint32						numExtensions	= 0;
+
+	VK_CHECK(vki.enumerateDeviceExtensionProperties(physicalDevice, layerName, &numExtensions, DE_NULL));
+
+	if (numExtensions > 0)
+	{
+		properties.resize(numExtensions);
+		VK_CHECK(vki.enumerateDeviceExtensionProperties(physicalDevice, layerName, &numExtensions, &properties[0]));
+		TCU_CHECK((size_t)numExtensions == properties.size());
+	}
+
+	return properties;
 }
 
 } // vk

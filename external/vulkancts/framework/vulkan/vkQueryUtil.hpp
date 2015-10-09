@@ -48,6 +48,11 @@ VkPhysicalDeviceMemoryProperties		getPhysicalDeviceMemoryProperties		(const Inst
 VkMemoryRequirements					getBufferMemoryRequirements				(const DeviceInterface& vk, VkDevice device, VkBuffer buffer);
 VkMemoryRequirements					getImageMemoryRequirements				(const DeviceInterface& vk, VkDevice device, VkImage image);
 
+std::vector<VkLayerProperties>			enumerateInstanceLayerProperties		(const PlatformInterface& vkp);
+std::vector<VkExtensionProperties>		enumerateInstanceExtensionProperties	(const PlatformInterface& vkp, const char* layerName);
+std::vector<VkLayerProperties>			enumerateDeviceLayerProperties			(const InstanceInterface& vki, VkPhysicalDevice physicalDevice);
+std::vector<VkExtensionProperties>		enumerateDeviceExtensionProperties		(const InstanceInterface& vki, VkPhysicalDevice physicalDevice, const char* layerName);
+
 } // vk
 
 #endif // _VKQUERYUTIL_HPP
