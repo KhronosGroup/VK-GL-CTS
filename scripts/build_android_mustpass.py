@@ -31,6 +31,27 @@ import xml.etree.cElementTree as ElementTree
 import xml.dom.minidom as minidom
 
 CTS_DATA_DIR	= os.path.join(DEQP_DIR, "android", "cts")
+APK_NAME 		= "com.drawelements.deqp.apk"
+
+COPYRIGHT_DECLARATION = """
+     Copyright (C) 2015 The Android Open Source Project
+
+     Licensed under the Apache License, Version 2.0 (the "License");
+     you may not use this file except in compliance with the License.
+     You may obtain a copy of the License at
+
+          http://www.apache.org/licenses/LICENSE-2.0
+
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an "AS IS" BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.
+     """
+
+GENERATED_FILE_WARNING = """
+     This file has been automatically generated. Edit with caution.
+     """
 
 class Configuration:
 	def __init__ (self, name, glconfig, rotation, surfacetype, filters):
@@ -248,6 +269,8 @@ def exclude (filename):
 	return Filter(Filter.TYPE_EXCLUDE, filename)
 
 def prettifyXML (doc):
+	doc.insert(0, ElementTree.Comment(COPYRIGHT_DECLARATION))
+	doc.insert(1, ElementTree.Comment(GENERATED_FILE_WARNING))
 	uglyString	= ElementTree.tostring(doc, 'utf-8')
 	reparsed	= minidom.parseString(uglyString)
 	return reparsed.toprettyxml(indent='\t', encoding='utf-8')
@@ -315,6 +338,32 @@ def genSpecXML (mustpass):
 
 	return mustpassElem
 
+def addOptionElement (parent, optionName, optionValue):
+	ElementTree.SubElement(parent, "option", name=optionName, value=optionValue)
+
+def genAndroidTestXml (mustpass):
+	INSTALLER_CLASS = "com.android.compatibility.common.tradefed.targetprep.ApkInstaller"
+	RUNNER_CLASS = "com.drawelements.deqp.runner.DeqpTestRunner"
+	configElement = ElementTree.Element("configuration")
+	preparerElement = ElementTree.SubElement(configElement, "target_preparer")
+	preparerElement.set("class", INSTALLER_CLASS)
+	addOptionElement(preparerElement, "cleanup-apks", "true")
+	addOptionElement(preparerElement, "test-file-name", APK_NAME)
+
+	for package in mustpass.packages:
+		for config in package.configurations:
+			testElement = ElementTree.SubElement(configElement, "test")
+			testElement.set("class", RUNNER_CLASS)
+			addOptionElement(testElement, "deqp-package", package.module.name)
+			addOptionElement(testElement, "deqp-caselist-file", getCaseListFileName(package,config))
+			# \todo [2015-10-16 kalle]: Replace with just command line? - requires simplifications in the runner/tests as well.
+			addOptionElement(testElement, "deqp-gl-config-name", config.glconfig)
+			addOptionElement(testElement, "deqp-surface-type", config.surfacetype)
+			addOptionElement(testElement, "deqp-screen-rotation", config.rotation)
+
+	return configElement
+
+
 def genMustpass (mustpass, moduleCaseLists):
 	print "Generating mustpass '%s'" % mustpass.version
 
@@ -343,6 +392,7 @@ def genMustpass (mustpass, moduleCaseLists):
 			for case in matchingByConfig[config]:
 				testCaseMap[case].configurations.append(config)
 
+		# NOTE: CTS v2 does not need package XML files. Remove when transition is complete.
 		packageXml	= genCTSPackageXML(package, root)
 		xmlFilename	= os.path.join(CTS_DATA_DIR, mustpass.version, getCTSPackageName(package) + ".xml")
 
@@ -354,6 +404,14 @@ def genMustpass (mustpass, moduleCaseLists):
 
 	print "  Writing spec: " + specFilename
 	writeFile(specFilename, prettifyXML(specXML))
+
+	# TODO: Which is the best selector mechanism?
+	if (mustpass.version == "mnc"):
+		androidTestXML		= genAndroidTestXml(mustpass)
+		androidTestFilename	= os.path.join(CTS_DATA_DIR, "AndroidTest.xml")
+
+		print "  Writing AndroidTest.xml: " + androidTestFilename
+		writeFile(androidTestFilename, prettifyXML(androidTestXML))
 
 	print "Done!"
 

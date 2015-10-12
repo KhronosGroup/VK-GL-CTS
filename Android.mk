@@ -746,4 +746,8 @@ LOCAL_MULTILIB := both
 
 include $(BUILD_SHARED_LIBRARY)
 
-include $(LOCAL_PATH)/android/package/Android.mk
+
+# Build the test APKs using their own makefiles
+# include $(call all-makefiles-under,$(LOCAL_PATH)/android)
+
+include $(LOCAL_PATH)/android/package/Android.mk $(LOCAL_PATH)/android/cts/Android.mk
