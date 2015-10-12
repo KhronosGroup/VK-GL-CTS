@@ -111,6 +111,50 @@ inline deUint32 readUint24 (const deUint8* src)
 #endif
 }
 
+inline deUint32 readUint24Low8 (const deUint8* src)
+{
+#if (DE_ENDIANNESS == DE_LITTLE_ENDIAN)
+	const deUint32 uint24ByteOffsetBits0To8	= 0; //!< least significant byte in the lowest address
+#else
+	const deUint32 uint24ByteOffsetBits0To8	= 2; //!< least significant byte in the highest address
+#endif
+
+	return src[uint24ByteOffsetBits0To8];
+}
+
+inline void writeUint24Low8 (deUint8* dst, deUint8 val)
+{
+#if (DE_ENDIANNESS == DE_LITTLE_ENDIAN)
+	const deUint32 uint24ByteOffsetBits0To8	= 0; //!< least significant byte in the lowest address
+#else
+	const deUint32 uint24ByteOffsetBits0To8	= 2; //!< least significant byte in the highest address
+#endif
+
+	dst[uint24ByteOffsetBits0To8] = val;
+}
+
+inline deUint32 readUint24High16 (const deUint8* src)
+{
+#if (DE_ENDIANNESS == DE_LITTLE_ENDIAN)
+	return	(((deUint32)src[1]) <<  0u) |
+			(((deUint32)src[2]) <<  8u);
+#else
+	return	(((deUint32)src[0]) <<  8u) |
+			(((deUint32)src[1]) <<  0u);
+#endif
+}
+
+inline void writeUint24High16 (deUint8* dst, deUint16 val)
+{
+#if (DE_ENDIANNESS == DE_LITTLE_ENDIAN)
+	dst[1] = (deUint8)((val & (deUint16)0x00FFu) >> 0u);
+	dst[2] = (deUint8)((val & (deUint16)0xFF00u) >> 8u);
+#else
+	dst[0] = (deUint8)((val & (deUint16)0xFF00u) >> 8u);
+	dst[1] = (deUint8)((val & (deUint16)0x00FFu) >> 0u);
+#endif
+}
+
 inline deUint8 readUint32Low8 (const deUint8* src)
 {
 #if (DE_ENDIANNESS == DE_LITTLE_ENDIAN)
@@ -194,7 +238,7 @@ inline deUint32 convertSatRteUint24 (float f)
 int getChannelSize (TextureFormat::ChannelType type)
 {
 	// make sure this table is updated if format table is updated
-	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 27);
+	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 29);
 
 	switch (type)
 	{
@@ -254,7 +298,7 @@ int getNumUsedChannels (TextureFormat::ChannelOrder order)
 inline float channelToFloat (const deUint8* value, TextureFormat::ChannelType type)
 {
 	// make sure this table is updated if format table is updated
-	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 27);
+	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 29);
 
 	switch (type)
 	{
@@ -283,7 +327,7 @@ inline float channelToFloat (const deUint8* value, TextureFormat::ChannelType ty
 inline int channelToInt (const deUint8* value, TextureFormat::ChannelType type)
 {
 	// make sure this table is updated if format table is updated
-	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 27);
+	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 29);
 
 	switch (type)
 	{
@@ -312,7 +356,7 @@ inline int channelToInt (const deUint8* value, TextureFormat::ChannelType type)
 void floatToChannel (deUint8* dst, float src, TextureFormat::ChannelType type)
 {
 	// make sure this table is updated if format table is updated
-	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 27);
+	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 29);
 
 	switch (type)
 	{
@@ -368,7 +412,7 @@ static inline deUint32 convertSatUint24 (S src)
 void intToChannel (deUint8* dst, int src, TextureFormat::ChannelType type)
 {
 	// make sure this table is updated if format table is updated
-	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 27);
+	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 29);
 
 	switch (type)
 	{
@@ -568,10 +612,20 @@ int TextureFormat::getPixelSize (void) const
 		DE_ASSERT(order == RGBA);
 		return 4;
 	}
+	else if (type == UNSIGNED_INT_16_8)
+	{
+		DE_ASSERT(order == D || order == DS);
+		return 3;
+	}
 	else if (type == UNSIGNED_INT_24_8)
 	{
 		DE_ASSERT(order == D || order == DS);
 		return 4;
+	}
+	else if (type == FLOAT_UNSIGNED_INT_8)
+	{
+		DE_ASSERT(order == DS);
+		return 5;
 	}
 	else if (type == FLOAT_UNSIGNED_INT_24_8_REV)
 	{
@@ -832,22 +886,17 @@ float ConstPixelBufferAccess::getPixDepth (int x, int y, int z) const
 
 	const deUint8* const pixelPtr = (const deUint8*)getPixelPtr(x, y, z);
 
-	DE_ASSERT(m_format.order == TextureFormat::DS || m_format.order == TextureFormat::D);
-
 	switch (m_format.type)
 	{
+		case TextureFormat::UNSIGNED_INT_16_8:
+			DE_ASSERT(m_format.order == TextureFormat::DS);
+			return (float)readUint24High16(pixelPtr) / 65535.0f;
+
 		case TextureFormat::UNSIGNED_INT_24_8:
-			switch (m_format.order)
-			{
-				case TextureFormat::D:
-				case TextureFormat::DS: // \note Fall-through.
-					return (float)readUint32High24(pixelPtr) / 16777215.0f;
+			DE_ASSERT(m_format.order == TextureFormat::DS);
+			return (float)readUint32High24(pixelPtr) / 16777215.0f;
 
-				default:
-					DE_ASSERT(false);
-					return 0.0f;
-			}
-
+		case TextureFormat::FLOAT_UNSIGNED_INT_8:
 		case TextureFormat::FLOAT_UNSIGNED_INT_24_8_REV:
 			DE_ASSERT(m_format.order == TextureFormat::DS);
 			return *((const float*)pixelPtr);
@@ -868,17 +917,17 @@ int ConstPixelBufferAccess::getPixStencil (int x, int y, int z) const
 
 	switch (m_format.type)
 	{
-		case TextureFormat::UNSIGNED_INT_24_8:
-			switch (m_format.order)
-			{
-				case TextureFormat::S:
-				case TextureFormat::DS:
-					return (int)readUint32Low8(pixelPtr);
+		case TextureFormat::UNSIGNED_INT_16_8:
+			DE_ASSERT(m_format.order == TextureFormat::DS);
+			return (int)readUint24Low8(pixelPtr);
 
-				default:
-					DE_ASSERT(false);
-					return 0;
-			}
+		case TextureFormat::UNSIGNED_INT_24_8:
+			DE_ASSERT(m_format.order == TextureFormat::DS);
+			return (int)readUint32Low8(pixelPtr);
+
+		case TextureFormat::FLOAT_UNSIGNED_INT_8:
+			DE_ASSERT(m_format.order == TextureFormat::DS);
+			return (int)pixelPtr[4];
 
 		case TextureFormat::FLOAT_UNSIGNED_INT_24_8_REV:
 			DE_ASSERT(m_format.order == TextureFormat::DS);
@@ -1030,19 +1079,17 @@ void PixelBufferAccess::setPixDepth (float depth, int x, int y, int z) const
 
 	switch (m_format.type)
 	{
-		case TextureFormat::UNSIGNED_INT_24_8:
-			switch (m_format.order)
-			{
-				case TextureFormat::D:
-				case TextureFormat::DS:
-					writeUint32High24(pixelPtr,  convertSatRteUint24(depth * 16777215.0f));
-					break;
-
-				default:
-					DE_ASSERT(false);
-			}
+		case TextureFormat::UNSIGNED_INT_16_8:
+			DE_ASSERT(m_format.order == TextureFormat::DS);
+			writeUint24High16(pixelPtr, convertSatRte<deUint16>(depth * 65535.0f));
 			break;
 
+		case TextureFormat::UNSIGNED_INT_24_8:
+			DE_ASSERT(m_format.order == TextureFormat::DS);
+			writeUint32High24(pixelPtr,  convertSatRteUint24(depth * 16777215.0f));
+			break;
+
+		case TextureFormat::FLOAT_UNSIGNED_INT_8:
 		case TextureFormat::FLOAT_UNSIGNED_INT_24_8_REV:
 			DE_ASSERT(m_format.order == TextureFormat::DS);
 			*((float*)pixelPtr) = depth;
@@ -1065,17 +1112,18 @@ void PixelBufferAccess::setPixStencil (int stencil, int x, int y, int z) const
 
 	switch (m_format.type)
 	{
-		case TextureFormat::UNSIGNED_INT_24_8:
-			switch (m_format.order)
-			{
-				case TextureFormat::S:
-				case TextureFormat::DS:
-					writeUint32Low8(pixelPtr, convertSat<deUint8>((deUint32)stencil));
-					break;
+		case TextureFormat::UNSIGNED_INT_16_8:
+			DE_ASSERT(m_format.order == TextureFormat::DS);
+			writeUint24Low8(pixelPtr, convertSat<deUint8>((deUint32)stencil));
+			break;
 
-				default:
-					DE_ASSERT(false);
-			}
+		case TextureFormat::UNSIGNED_INT_24_8:
+			DE_ASSERT(m_format.order == TextureFormat::DS);
+			writeUint32Low8(pixelPtr, convertSat<deUint8>((deUint32)stencil));
+			break;
+
+		case TextureFormat::FLOAT_UNSIGNED_INT_8:
+			DE_ASSERT(m_format.order == TextureFormat::DS);
 			break;
 
 		case TextureFormat::FLOAT_UNSIGNED_INT_24_8_REV:
@@ -3352,6 +3400,7 @@ std::ostream& operator<< (std::ostream& str, TextureFormat::ChannelType type)
 		"UNSIGNED_INT_1010102_REV",
 		"UNSIGNED_INT_11F_11F_10F_REV",
 		"UNSIGNED_INT_999_E5_REV",
+		"UNSIGNED_INT_16_8",
 		"UNSIGNED_INT_24_8",
 		"SIGNED_INT8",
 		"SIGNED_INT16",
@@ -3362,6 +3411,7 @@ std::ostream& operator<< (std::ostream& str, TextureFormat::ChannelType type)
 		"UNSIGNED_INT32",
 		"HALF_FLOAT",
 		"FLOAT",
+		"FLOAT_UNSIGNED_INT_8",
 		"FLOAT_UNSIGNED_INT_24_8_REV"
 	};
 
