@@ -1177,7 +1177,7 @@ static AccessType toSamplerAccess (const AccessType& baseAccess, Sampler::DepthS
 #else
 		const deUint32 uint24ByteOffsetBits0To8		= 2; //!< least significant byte in the highest address
 		const deUint32 uint24ByteOffsetBits8To24	= 0;
-		const deUint32 uint32ByteOffsetBits0To8		= 3; 
+		const deUint32 uint32ByteOffsetBits0To8		= 3;
 		const deUint32 uint32ByteOffsetBits8To32	= 0;
 #endif
 
