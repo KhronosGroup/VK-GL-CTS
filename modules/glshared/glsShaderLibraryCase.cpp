@@ -845,6 +845,20 @@ static bool isTessellationPresent (const ShaderCaseSpecification& spec)
 			   !spec.programs[0].sources.sources[glu::SHADERTYPE_TESSELLATION_EVALUATION].empty();
 }
 
+static bool isTessellationSupported (const glu::RenderContext& renderCtx, const glu::ContextInfo& ctxInfo)
+{
+	if (renderCtx.getType().getProfile() == PROFILE_ES)
+	{
+		const int	majorVer	= renderCtx.getType().getMajorVersion();
+		const int	minorVer	= renderCtx.getType().getMinorVersion();
+
+		return (majorVer > 3) || (majorVer == 3 && minorVer >= 2) ||
+			   ctxInfo.isExtensionSupported("GL_EXT_tessellation_shader");
+	}
+	else
+		return false;
+}
+
 static bool checkPixels (tcu::TestLog& log, const tcu::ConstPixelBufferAccess& surface)
 {
 	bool	allWhite		= true;
@@ -945,7 +959,8 @@ bool ShaderLibraryCase::execute (void)
 	{
 		DE_ASSERT(m_spec.caseType == CASETYPE_COMPLETE);
 
-		const int	maxPatchVertices	= isTessellationPresent(m_spec) ? m_contextInfo.getInt(GL_MAX_PATCH_VERTICES) : 0;
+		const int	maxPatchVertices	= isTessellationPresent(m_spec) && isTessellationSupported(m_renderCtx, m_contextInfo)
+										? m_contextInfo.getInt(GL_MAX_PATCH_VERTICES) : 0;
 
 		for (size_t progNdx = 0; progNdx < m_spec.programs.size(); progNdx++)
 		{
