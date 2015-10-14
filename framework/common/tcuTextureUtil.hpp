@@ -64,7 +64,21 @@ enum TextureChannelClass
 	TEXTURECHANNELCLASS_LAST
 };
 
-TextureChannelClass getTextureChannelClass (TextureFormat::ChannelType channelType);
+TextureChannelClass		getTextureChannelClass		(TextureFormat::ChannelType channelType);
+
+/*--------------------------------------------------------------------*//*!
+ * \brief Texture access type
+ *//*--------------------------------------------------------------------*/
+enum TextureAccessType
+{
+	TEXTUREACCESSTYPE_FLOAT	= 0,		//!< Read (getPixel) or write as floating-point data
+	TEXTUREACCESSTYPE_SIGNED_INT,		//!< Read (getPixelInt) or write as signed integer data
+	TEXTUREACCESSTYPE_UNSIGNED_INT,		//!< Read (getPixelUint) or write as unsigned integer data
+
+	TEXTUREACCESSTYPE_LAST
+};
+
+bool					isAccessValid				(TextureFormat format, TextureAccessType type);
 
 /*--------------------------------------------------------------------*//*!
  * \brief Standard parameters for texture format testing

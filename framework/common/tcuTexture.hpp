@@ -127,7 +127,7 @@ public:
 	{
 	}
 
-	int getPixelSize (void) const;
+	int getPixelSize (void) const; //!< Deprecated, use tcu::getPixelSize(fmt)
 
 	bool operator== (const TextureFormat& other) const { return !(*this != other); }
 	bool operator!= (const TextureFormat& other) const
@@ -135,6 +135,9 @@ public:
 		return (order != other.order || type != other.type);
 	}
 } DE_WARN_UNUSED_TYPE;
+
+bool	isValid			(TextureFormat format);
+int		getPixelSize	(TextureFormat format);
 
 /*--------------------------------------------------------------------*//*!
  * \brief Texture swizzle

@@ -541,7 +541,168 @@ tcu::Vec4 unpackRGB999E5 (deUint32 color)
 	return tcu::Vec4(r, g, b, 1.0f);
 }
 
+bool isColorOrder (TextureFormat::ChannelOrder order)
+{
+	DE_STATIC_ASSERT(TextureFormat::CHANNELORDER_LAST == 21);
+
+	switch (order)
+	{
+		case TextureFormat::R:
+		case TextureFormat::A:
+		case TextureFormat::I:
+		case TextureFormat::L:
+		case TextureFormat::LA:
+		case TextureFormat::RG:
+		case TextureFormat::RA:
+		case TextureFormat::RGB:
+		case TextureFormat::RGBA:
+		case TextureFormat::ARGB:
+		case TextureFormat::BGR:
+		case TextureFormat::BGRA:
+		case TextureFormat::sR:
+		case TextureFormat::sRG:
+		case TextureFormat::sRGB:
+		case TextureFormat::sRGBA:
+		case TextureFormat::sBGR:
+		case TextureFormat::sBGRA:
+			return true;
+
+		default:
+			return false;
+	}
+}
+
 } // anonymous
+
+bool isValid (TextureFormat format)
+{
+	const bool	isColor	= isColorOrder(format.order);
+
+	switch (format.type)
+	{
+		case TextureFormat::SNORM_INT8:
+		case TextureFormat::SNORM_INT16:
+		case TextureFormat::SNORM_INT32:
+			return isColor;
+
+		case TextureFormat::UNORM_INT8:
+		case TextureFormat::UNORM_INT16:
+		case TextureFormat::UNORM_INT24:
+		case TextureFormat::UNORM_INT32:
+			return isColor || format.order == TextureFormat::D;
+
+		case TextureFormat::UNORM_BYTE_44:
+		case TextureFormat::UNSIGNED_BYTE_44:
+			return format.order == TextureFormat::RG;
+
+		case TextureFormat::UNORM_SHORT_565:
+		case TextureFormat::UNORM_SHORT_555:
+		case TextureFormat::UNSIGNED_SHORT_565:
+			return format.order == TextureFormat::RGB || format.order == TextureFormat::BGR;
+
+		case TextureFormat::UNORM_SHORT_4444:
+		case TextureFormat::UNORM_SHORT_5551:
+		case TextureFormat::UNSIGNED_SHORT_4444:
+		case TextureFormat::UNSIGNED_SHORT_5551:
+			return format.order == TextureFormat::RGBA || format.order == TextureFormat::BGRA;
+
+		case TextureFormat::UNORM_INT_101010:
+			return format.order == TextureFormat::RGB;
+
+		case TextureFormat::SNORM_INT_1010102_REV:
+		case TextureFormat::UNORM_INT_1010102_REV:
+		case TextureFormat::SIGNED_INT_1010102_REV:
+		case TextureFormat::UNSIGNED_INT_1010102_REV:
+			return format.order == TextureFormat::RGBA || format.order == TextureFormat::BGRA;
+
+		case TextureFormat::UNSIGNED_INT_11F_11F_10F_REV:
+		case TextureFormat::UNSIGNED_INT_999_E5_REV:
+			return format.order == TextureFormat::RGB;
+
+		case TextureFormat::UNSIGNED_INT_16_8_8:
+			return format.order == TextureFormat::DS;
+
+		case TextureFormat::UNSIGNED_INT_24_8:
+		case TextureFormat::UNSIGNED_INT_24_8_REV:
+			return format.order == TextureFormat::D || format.order == TextureFormat::DS;
+
+		case TextureFormat::SIGNED_INT8:
+		case TextureFormat::SIGNED_INT16:
+		case TextureFormat::SIGNED_INT32:
+			return isColor;
+
+		case TextureFormat::UNSIGNED_INT8:
+		case TextureFormat::UNSIGNED_INT16:
+		case TextureFormat::UNSIGNED_INT24:
+		case TextureFormat::UNSIGNED_INT32:
+			return isColor || format.order == TextureFormat::S;
+
+		case TextureFormat::HALF_FLOAT:
+		case TextureFormat::FLOAT:
+		case TextureFormat::FLOAT64:
+			return isColor || format.order == TextureFormat::D;
+
+		case TextureFormat::FLOAT_UNSIGNED_INT_24_8_REV:
+			return format.order == TextureFormat::DS;
+
+		default:
+			DE_FATAL("Unknown format");
+			return 0u;
+	}
+
+	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 37);
+}
+
+/** Get pixel size in bytes. */
+int getPixelSize (TextureFormat format)
+{
+	const TextureFormat::ChannelOrder	order	= format.order;
+	const TextureFormat::ChannelType	type	= format.type;
+
+	DE_ASSERT(isValid(format));
+
+	// make sure this table is updated if format table is updated
+	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 37);
+
+	switch (type)
+	{
+		case TextureFormat::UNORM_BYTE_44:
+		case TextureFormat::UNSIGNED_BYTE_44:
+			return 1;
+
+		case TextureFormat::UNORM_SHORT_565:
+		case TextureFormat::UNORM_SHORT_555:
+		case TextureFormat::UNORM_SHORT_4444:
+		case TextureFormat::UNORM_SHORT_5551:
+		case TextureFormat::UNSIGNED_SHORT_565:
+		case TextureFormat::UNSIGNED_SHORT_4444:
+		case TextureFormat::UNSIGNED_SHORT_5551:
+			return 2;
+
+		case TextureFormat::UNORM_INT_101010:
+		case TextureFormat::UNSIGNED_INT_999_E5_REV:
+		case TextureFormat::UNSIGNED_INT_11F_11F_10F_REV:
+		case TextureFormat::SNORM_INT_1010102_REV:
+		case TextureFormat::UNORM_INT_1010102_REV:
+		case TextureFormat::SIGNED_INT_1010102_REV:
+		case TextureFormat::UNSIGNED_INT_1010102_REV:
+		case TextureFormat::UNSIGNED_INT_24_8:
+		case TextureFormat::UNSIGNED_INT_24_8_REV:
+		case TextureFormat::UNSIGNED_INT_16_8_8:
+			return 4;
+
+		case TextureFormat::FLOAT_UNSIGNED_INT_24_8_REV:
+			return 8;
+
+		default:
+			return getNumUsedChannels(order) * getChannelSize(type);
+	}
+}
+
+int TextureFormat::getPixelSize (void) const
+{
+	return ::tcu::getPixelSize(*this);
+}
 
 const TextureSwizzle& getChannelReadSwizzle (TextureFormat::ChannelOrder order)
 {
@@ -660,58 +821,6 @@ IVec3 calculatePackedPitch (const TextureFormat& format, const IVec3& size)
 	return IVec3(pixelSize, rowPitch, slicePitch);
 }
 
-/** Get pixel size in bytes. */
-int TextureFormat::getPixelSize (void) const
-{
-	if (type == CHANNELTYPE_LAST && order == CHANNELORDER_LAST)
-	{
-		// Invalid/empty format.
-		return 0;
-	}
-	else if (type == UNORM_BYTE_44)
-	{
-		DE_ASSERT(order == RG);
-		return 1;
-	}
-	else if (type == UNORM_SHORT_565	||
-			 type == UNORM_SHORT_555	||
-			 type == UNORM_SHORT_4444	||
-			 type == UNORM_SHORT_5551)
-	{
-		DE_ASSERT(order == RGB || order == RGBA || order == BGR || order == BGRA);
-		return 2;
-	}
-	else if (type == UNORM_INT_101010			||
-			 type == UNSIGNED_INT_999_E5_REV	||
-			 type == UNSIGNED_INT_11F_11F_10F_REV)
-	{
-		DE_ASSERT(order == RGB);
-		return 4;
-	}
-	else if (type == UNORM_INT_1010102_REV		||
-			 type == UNSIGNED_INT_1010102_REV	||
-			 type == SNORM_INT_1010102_REV		||
-			 type == SIGNED_INT_1010102_REV)
-	{
-		DE_ASSERT(order == RGBA || order == BGRA);
-		return 4;
-	}
-	else if (type == UNSIGNED_INT_24_8		||
-			 type == UNSIGNED_INT_24_8_REV	||
-			 type == UNSIGNED_INT_16_8_8)
-	{
-		DE_ASSERT(order == D || order == DS);
-		return 4;
-	}
-	else if (type == FLOAT_UNSIGNED_INT_24_8_REV)
-	{
-		DE_ASSERT(order == DS);
-		return 8;
-	}
-	else
-		return getNumUsedChannels(order) * getChannelSize(type);
-}
-
 ConstPixelBufferAccess::ConstPixelBufferAccess (void)
 	: m_size		(0)
 	, m_pitch		(0)
@@ -725,6 +834,7 @@ ConstPixelBufferAccess::ConstPixelBufferAccess (const TextureFormat& format, int
 	, m_pitch		(calculatePackedPitch(m_format, m_size))
 	, m_data		((void*)data)
 {
+	DE_ASSERT(isValid(format));
 }
 
 ConstPixelBufferAccess::ConstPixelBufferAccess (const TextureFormat& format, const IVec3& size, const void* data)
@@ -733,6 +843,7 @@ ConstPixelBufferAccess::ConstPixelBufferAccess (const TextureFormat& format, con
 	, m_pitch		(calculatePackedPitch(m_format, m_size))
 	, m_data		((void*)data)
 {
+	DE_ASSERT(isValid(format));
 }
 
 ConstPixelBufferAccess::ConstPixelBufferAccess (const TextureFormat& format, int width, int height, int depth, int rowPitch, int slicePitch, const void* data)
@@ -741,6 +852,7 @@ ConstPixelBufferAccess::ConstPixelBufferAccess (const TextureFormat& format, int
 	, m_pitch		(format.getPixelSize(), rowPitch, slicePitch)
 	, m_data		((void*)data)
 {
+	DE_ASSERT(isValid(format));
 }
 
 ConstPixelBufferAccess::ConstPixelBufferAccess (const TextureFormat& format, const IVec3& size, const IVec3& pitch, const void* data)
@@ -749,6 +861,7 @@ ConstPixelBufferAccess::ConstPixelBufferAccess (const TextureFormat& format, con
 	, m_pitch		(pitch)
 	, m_data		((void*)data)
 {
+	DE_ASSERT(isValid(format));
 	DE_ASSERT(m_format.getPixelSize() <= m_pitch.x());
 }
 
