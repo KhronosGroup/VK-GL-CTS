@@ -172,10 +172,10 @@ static bool isFixedPointDepthTextureFormat (const tcu::TextureFormat& format)
 		// combined formats have no single channel class, detect format manually
 		switch (format.type)
 		{
-			case tcu::TextureFormat::FLOAT_UNSIGNED_INT_8:			return false;
 			case tcu::TextureFormat::FLOAT_UNSIGNED_INT_24_8_REV:	return false;
-			case tcu::TextureFormat::UNSIGNED_INT_16_8:				return true;
+			case tcu::TextureFormat::UNSIGNED_INT_16_8_8:			return true;
 			case tcu::TextureFormat::UNSIGNED_INT_24_8:				return true;
+			case tcu::TextureFormat::UNSIGNED_INT_24_8_REV:			return true;
 
 			default:
 			{
