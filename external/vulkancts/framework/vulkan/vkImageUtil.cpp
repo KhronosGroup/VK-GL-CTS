@@ -73,12 +73,15 @@ bool isDepthStencilFormat (VkFormat format)
 
 bool isCompressedFormat (VkFormat format)
 {
+	// update this mapping if VkFormat changes
+	DE_STATIC_ASSERT(VK_FORMAT_LAST == 174);
+
 	switch (format)
 	{
-		case VK_FORMAT_BC1_RGBA_SRGB:
-		case VK_FORMAT_BC1_RGBA_UNORM:
-		case VK_FORMAT_BC1_RGB_SRGB:
 		case VK_FORMAT_BC1_RGB_UNORM:
+		case VK_FORMAT_BC1_RGB_SRGB:
+		case VK_FORMAT_BC1_RGBA_UNORM:
+		case VK_FORMAT_BC1_RGBA_SRGB:
 		case VK_FORMAT_BC2_UNORM:
 		case VK_FORMAT_BC2_SRGB:
 		case VK_FORMAT_BC3_UNORM:
@@ -92,8 +95,11 @@ bool isCompressedFormat (VkFormat format)
 		case VK_FORMAT_BC7_UNORM:
 		case VK_FORMAT_BC7_SRGB:
 		case VK_FORMAT_ETC2_R8G8B8_UNORM:
+		case VK_FORMAT_ETC2_R8G8B8_SRGB:
 		case VK_FORMAT_ETC2_R8G8B8A1_UNORM:
+		case VK_FORMAT_ETC2_R8G8B8A1_SRGB:
 		case VK_FORMAT_ETC2_R8G8B8A8_UNORM:
+		case VK_FORMAT_ETC2_R8G8B8A8_SRGB:
 		case VK_FORMAT_EAC_R11_UNORM:
 		case VK_FORMAT_EAC_R11_SNORM:
 		case VK_FORMAT_EAC_R11G11_UNORM:
@@ -127,10 +133,10 @@ bool isCompressedFormat (VkFormat format)
 		case VK_FORMAT_ASTC_12x12_UNORM:
 		case VK_FORMAT_ASTC_12x12_SRGB:
 			return true;
+
 		default:
-			break;
+			return false;
 	}
-	return false;
 }
 
 VkFormat mapTextureFormat (const tcu::TextureFormat& format)
@@ -141,10 +147,26 @@ VkFormat mapTextureFormat (const tcu::TextureFormat& format)
 #define PACK_FMT(ORDER, TYPE) ((int(ORDER) << 16) | int(TYPE))
 #define FMT_CASE(ORDER, TYPE) PACK_FMT(tcu::TextureFormat::ORDER, tcu::TextureFormat::TYPE)
 
+	// update this mapping if VkFormat changes
+	DE_STATIC_ASSERT(VK_FORMAT_LAST == 174);
+
 	switch (PACK_FMT(format.order, format.type))
 	{
+		case FMT_CASE(RG, UNORM_BYTE_44):					return VK_FORMAT_R4G4_UNORM;
 		case FMT_CASE(RGB, UNORM_SHORT_565):				return VK_FORMAT_R5G6B5_UNORM;
+		case FMT_CASE(RGBA, UNORM_SHORT_4444):				return VK_FORMAT_R4G4B4A4_UNORM;
 		case FMT_CASE(RGBA, UNORM_SHORT_5551):				return VK_FORMAT_R5G5B5A1_UNORM;
+
+		case FMT_CASE(RG, UNSIGNED_BYTE_44):				return VK_FORMAT_R4G4_USCALED;
+		case FMT_CASE(RGBA, UNSIGNED_SHORT_4444):			return VK_FORMAT_R4G4B4A4_USCALED;
+		case FMT_CASE(RGB, UNSIGNED_SHORT_565):				return VK_FORMAT_R5G6B5_USCALED;
+		case FMT_CASE(RGBA, UNSIGNED_SHORT_5551):			return VK_FORMAT_R5G5B5A1_USCALED;
+
+		case FMT_CASE(BGR, UNORM_SHORT_565):				return VK_FORMAT_B5G6R5_UNORM;
+		case FMT_CASE(BGRA, UNORM_SHORT_4444):				return VK_FORMAT_B4G4R4A4_UNORM;
+		case FMT_CASE(BGRA, UNORM_SHORT_5551):				return VK_FORMAT_B5G5R5A1_UNORM;
+
+		case FMT_CASE(BGR, UNSIGNED_SHORT_565):				return VK_FORMAT_B5G6R5_USCALED;
 
 		case FMT_CASE(R, UNORM_INT8):						return VK_FORMAT_R8_UNORM;
 		case FMT_CASE(R, SNORM_INT8):						return VK_FORMAT_R8_SNORM;
@@ -170,8 +192,10 @@ VkFormat mapTextureFormat (const tcu::TextureFormat& format)
 		case FMT_CASE(RGBA, SIGNED_INT8):					return VK_FORMAT_R8G8B8A8_SINT;
 		case FMT_CASE(sRGBA, UNORM_INT8):					return VK_FORMAT_R8G8B8A8_SRGB;
 
+		case FMT_CASE(RGBA, SNORM_INT_1010102_REV):			return VK_FORMAT_R10G10B10A2_SNORM;
 		case FMT_CASE(RGBA, UNORM_INT_1010102_REV):			return VK_FORMAT_R10G10B10A2_UNORM;
 		case FMT_CASE(RGBA, UNSIGNED_INT_1010102_REV):		return VK_FORMAT_R10G10B10A2_UINT;
+		case FMT_CASE(RGBA, SIGNED_INT_1010102_REV):		return VK_FORMAT_R10G10B10A2_SINT;
 
 		case FMT_CASE(R, UNORM_INT16):						return VK_FORMAT_R16_UNORM;
 		case FMT_CASE(R, SNORM_INT16):						return VK_FORMAT_R16_SNORM;
@@ -213,18 +237,41 @@ VkFormat mapTextureFormat (const tcu::TextureFormat& format)
 		case FMT_CASE(RGBA, SIGNED_INT32):					return VK_FORMAT_R32G32B32A32_SINT;
 		case FMT_CASE(RGBA, FLOAT):							return VK_FORMAT_R32G32B32A32_SFLOAT;
 
+		case FMT_CASE(R, FLOAT64):							return VK_FORMAT_R64_SFLOAT;
+		case FMT_CASE(RG, FLOAT64):							return VK_FORMAT_R64G64_SFLOAT;
+		case FMT_CASE(RGB, FLOAT64):						return VK_FORMAT_R64G64B64_SFLOAT;
+		case FMT_CASE(RGBA, FLOAT64):						return VK_FORMAT_R64G64B64A64_SFLOAT;
+
 		case FMT_CASE(RGB, UNSIGNED_INT_11F_11F_10F_REV):	return VK_FORMAT_R11G11B10_UFLOAT;
 		case FMT_CASE(RGB, UNSIGNED_INT_999_E5_REV):		return VK_FORMAT_R9G9B9E5_UFLOAT;
 
+		case FMT_CASE(BGR, UNORM_INT8):						return VK_FORMAT_B8G8R8_UNORM;
+		case FMT_CASE(BGR, SNORM_INT8):						return VK_FORMAT_B8G8R8_SNORM;
+		case FMT_CASE(BGR, UNSIGNED_INT8):					return VK_FORMAT_B8G8R8_UINT;
+		case FMT_CASE(BGR, SIGNED_INT8):					return VK_FORMAT_B8G8R8_SINT;
+		case FMT_CASE(sBGR, UNORM_INT8):					return VK_FORMAT_B8G8R8_SRGB;
+
+		case FMT_CASE(BGRA, UNORM_INT8):					return VK_FORMAT_B8G8R8A8_UNORM;
+		case FMT_CASE(BGRA, SNORM_INT8):					return VK_FORMAT_B8G8R8A8_SNORM;
+		case FMT_CASE(BGRA, UNSIGNED_INT8):					return VK_FORMAT_B8G8R8A8_UINT;
+		case FMT_CASE(BGRA, SIGNED_INT8):					return VK_FORMAT_B8G8R8A8_SINT;
+		case FMT_CASE(sBGRA, UNORM_INT8):					return VK_FORMAT_B8G8R8A8_SRGB;
+
+		case FMT_CASE(BGRA, UNORM_INT_1010102_REV):			return VK_FORMAT_B10G10R10A2_UNORM;
+		case FMT_CASE(BGRA, SNORM_INT_1010102_REV):			return VK_FORMAT_B10G10R10A2_SNORM;
+		case FMT_CASE(BGRA, UNSIGNED_INT_1010102_REV):		return VK_FORMAT_B10G10R10A2_UINT;
+		case FMT_CASE(BGRA, SIGNED_INT_1010102_REV):		return VK_FORMAT_B10G10R10A2_SINT;
+
 		case FMT_CASE(D, UNORM_INT16):						return VK_FORMAT_D16_UNORM;
-		case FMT_CASE(D, UNSIGNED_INT_24_8):				return VK_FORMAT_D24_UNORM_X8;
+		case FMT_CASE(D, UNSIGNED_INT_24_8_REV):			return VK_FORMAT_D24_UNORM_X8;
 		case FMT_CASE(D, FLOAT):							return VK_FORMAT_D32_SFLOAT;
 
 		case FMT_CASE(S, UNSIGNED_INT8):					return VK_FORMAT_S8_UINT;
-		case FMT_CASE(DS, UNSIGNED_INT_24_8):				return VK_FORMAT_D24_UNORM_S8_UINT;
 
-		case FMT_CASE(BGRA, UNORM_SHORT_4444):				return VK_FORMAT_B4G4R4A4_UNORM;
-		case FMT_CASE(BGRA, UNORM_SHORT_5551):				return VK_FORMAT_B5G5R5A1_UNORM;
+		case FMT_CASE(DS, UNSIGNED_INT_16_8_8):				return VK_FORMAT_D16_UNORM_S8_UINT;
+		case FMT_CASE(DS, UNSIGNED_INT_24_8_REV):			return VK_FORMAT_D24_UNORM_S8_UINT;
+		case FMT_CASE(DS, FLOAT_UNSIGNED_INT_24_8_REV):		return VK_FORMAT_D32_SFLOAT_S8_UINT;
+
 		default:
 			TCU_THROW(InternalError, "Unknown texture format");
 	}
@@ -237,12 +284,26 @@ tcu::TextureFormat mapVkFormat (VkFormat format)
 {
 	using tcu::TextureFormat;
 
+	// update this mapping if VkFormat changes
+	DE_STATIC_ASSERT(VK_FORMAT_LAST == 174);
+
 	switch (format)
 	{
-		case VK_FORMAT_R4G4_UNORM:			return TextureFormat(TextureFormat::RG,		TextureFormat::UNORM_SHORT_4444);
-		case VK_FORMAT_R4G4B4A4_UNORM:		return TextureFormat(TextureFormat::RGBA,	TextureFormat::UNORM_SHORT_4444);
+		case VK_FORMAT_R4G4_UNORM:			return TextureFormat(TextureFormat::RG,		TextureFormat::UNORM_BYTE_44);
 		case VK_FORMAT_R5G6B5_UNORM:		return TextureFormat(TextureFormat::RGB,	TextureFormat::UNORM_SHORT_565);
+		case VK_FORMAT_R4G4B4A4_UNORM:		return TextureFormat(TextureFormat::RGBA,	TextureFormat::UNORM_SHORT_4444);
 		case VK_FORMAT_R5G5B5A1_UNORM:		return TextureFormat(TextureFormat::RGBA,	TextureFormat::UNORM_SHORT_5551);
+
+		case VK_FORMAT_R4G4_USCALED:		return TextureFormat(TextureFormat::RG,		TextureFormat::UNSIGNED_BYTE_44);
+		case VK_FORMAT_R4G4B4A4_USCALED:	return TextureFormat(TextureFormat::RGBA,	TextureFormat::UNSIGNED_SHORT_4444);
+		case VK_FORMAT_R5G6B5_USCALED:		return TextureFormat(TextureFormat::RGB,	TextureFormat::UNSIGNED_SHORT_565);
+		case VK_FORMAT_R5G5B5A1_USCALED:	return TextureFormat(TextureFormat::RGBA,	TextureFormat::UNSIGNED_SHORT_5551);
+
+		case VK_FORMAT_B5G6R5_UNORM:		return TextureFormat(TextureFormat::BGR,	TextureFormat::UNORM_SHORT_565);
+		case VK_FORMAT_B4G4R4A4_UNORM:		return TextureFormat(TextureFormat::BGRA,	TextureFormat::UNORM_SHORT_4444);
+		case VK_FORMAT_B5G5R5A1_UNORM:		return TextureFormat(TextureFormat::BGRA,	TextureFormat::UNORM_SHORT_5551);
+
+		case VK_FORMAT_B5G6R5_USCALED:		return TextureFormat(TextureFormat::BGR,	TextureFormat::UNSIGNED_SHORT_565);
 
 		case VK_FORMAT_R8_UNORM:			return TextureFormat(TextureFormat::R,		TextureFormat::UNORM_INT8);
 		case VK_FORMAT_R8_SNORM:			return TextureFormat(TextureFormat::R,		TextureFormat::SNORM_INT8);
@@ -277,8 +338,11 @@ tcu::TextureFormat mapVkFormat (VkFormat format)
 		case VK_FORMAT_R8G8B8A8_SRGB:		return TextureFormat(TextureFormat::sRGBA,	TextureFormat::UNORM_INT8);
 
 		case VK_FORMAT_R10G10B10A2_UNORM:	return TextureFormat(TextureFormat::RGBA,	TextureFormat::UNORM_INT_1010102_REV);
+		case VK_FORMAT_R10G10B10A2_SNORM:	return TextureFormat(TextureFormat::RGBA,	TextureFormat::SNORM_INT_1010102_REV);
 		case VK_FORMAT_R10G10B10A2_UINT:	return TextureFormat(TextureFormat::RGBA,	TextureFormat::UNSIGNED_INT_1010102_REV);
+		case VK_FORMAT_R10G10B10A2_SINT:	return TextureFormat(TextureFormat::RGBA,	TextureFormat::SIGNED_INT_1010102_REV);
 		case VK_FORMAT_R10G10B10A2_USCALED:	return TextureFormat(TextureFormat::RGBA,	TextureFormat::UNSIGNED_INT_1010102_REV);
+		case VK_FORMAT_R10G10B10A2_SSCALED:	return TextureFormat(TextureFormat::RGBA,	TextureFormat::SIGNED_INT_1010102_REV);
 
 		case VK_FORMAT_R16_UNORM:			return TextureFormat(TextureFormat::R,		TextureFormat::UNORM_INT16);
 		case VK_FORMAT_R16_SNORM:			return TextureFormat(TextureFormat::R,		TextureFormat::SNORM_INT16);
@@ -328,11 +392,32 @@ tcu::TextureFormat mapVkFormat (VkFormat format)
 		case VK_FORMAT_R32G32B32A32_SINT:	return TextureFormat(TextureFormat::RGBA,	TextureFormat::SIGNED_INT32);
 		case VK_FORMAT_R32G32B32A32_SFLOAT:	return TextureFormat(TextureFormat::RGBA,	TextureFormat::FLOAT);
 
+		case VK_FORMAT_R64_SFLOAT:			return TextureFormat(TextureFormat::R,		TextureFormat::FLOAT64);
+		case VK_FORMAT_R64G64_SFLOAT:		return TextureFormat(TextureFormat::RG,		TextureFormat::FLOAT64);
+		case VK_FORMAT_R64G64B64_SFLOAT:	return TextureFormat(TextureFormat::RGB,	TextureFormat::FLOAT64);
+		case VK_FORMAT_R64G64B64A64_SFLOAT:	return TextureFormat(TextureFormat::RGBA,	TextureFormat::FLOAT64);
+
 		case VK_FORMAT_R11G11B10_UFLOAT:	return TextureFormat(TextureFormat::RGB,	TextureFormat::UNSIGNED_INT_11F_11F_10F_REV);
 		case VK_FORMAT_R9G9B9E5_UFLOAT:		return TextureFormat(TextureFormat::RGB,	TextureFormat::UNSIGNED_INT_999_E5_REV);
 
+		case VK_FORMAT_B8G8R8_UNORM:		return TextureFormat(TextureFormat::BGR,	TextureFormat::UNORM_INT8);
+		case VK_FORMAT_B8G8R8_SNORM:		return TextureFormat(TextureFormat::BGR,	TextureFormat::SNORM_INT8);
+		case VK_FORMAT_B8G8R8_USCALED:		return TextureFormat(TextureFormat::BGR,	TextureFormat::UNSIGNED_INT8);
+		case VK_FORMAT_B8G8R8_SSCALED:		return TextureFormat(TextureFormat::BGR,	TextureFormat::SIGNED_INT8);
+		case VK_FORMAT_B8G8R8_UINT:			return TextureFormat(TextureFormat::BGR,	TextureFormat::UNSIGNED_INT8);
+		case VK_FORMAT_B8G8R8_SINT:			return TextureFormat(TextureFormat::BGR,	TextureFormat::SIGNED_INT8);
+		case VK_FORMAT_B8G8R8_SRGB:			return TextureFormat(TextureFormat::sBGR,	TextureFormat::UNORM_INT8);
+
+		case VK_FORMAT_B8G8R8A8_UNORM:		return TextureFormat(TextureFormat::BGRA,	TextureFormat::UNORM_INT8);
+		case VK_FORMAT_B8G8R8A8_SNORM:		return TextureFormat(TextureFormat::BGRA,	TextureFormat::SNORM_INT8);
+		case VK_FORMAT_B8G8R8A8_USCALED:	return TextureFormat(TextureFormat::BGRA,	TextureFormat::UNSIGNED_INT8);
+		case VK_FORMAT_B8G8R8A8_SSCALED:	return TextureFormat(TextureFormat::BGRA,	TextureFormat::SIGNED_INT8);
+		case VK_FORMAT_B8G8R8A8_UINT:		return TextureFormat(TextureFormat::BGRA,	TextureFormat::UNSIGNED_INT8);
+		case VK_FORMAT_B8G8R8A8_SINT:		return TextureFormat(TextureFormat::BGRA,	TextureFormat::SIGNED_INT8);
+		case VK_FORMAT_B8G8R8A8_SRGB:		return TextureFormat(TextureFormat::sBGRA,	TextureFormat::UNORM_INT8);
+
 		case VK_FORMAT_D16_UNORM:			return TextureFormat(TextureFormat::D,		TextureFormat::UNORM_INT16);
-		case VK_FORMAT_D24_UNORM_X8:		return TextureFormat(TextureFormat::D,		TextureFormat::UNSIGNED_INT_24_8);
+		case VK_FORMAT_D24_UNORM_X8:		return TextureFormat(TextureFormat::D,		TextureFormat::UNSIGNED_INT_24_8_REV);
 		case VK_FORMAT_D32_SFLOAT:			return TextureFormat(TextureFormat::D,		TextureFormat::FLOAT);
 
 		case VK_FORMAT_S8_UINT:				return TextureFormat(TextureFormat::S,		TextureFormat::UNSIGNED_INT8);
@@ -340,20 +425,112 @@ tcu::TextureFormat mapVkFormat (VkFormat format)
 		// \note There is no standard interleaved memory layout for DS formats; buffer-image copies
 		//		 will always operate on either D or S aspect only. See Khronos bug 12998
 		case VK_FORMAT_D16_UNORM_S8_UINT:	return TextureFormat(TextureFormat::DS,		TextureFormat::UNSIGNED_INT_16_8_8);
-		case VK_FORMAT_D24_UNORM_S8_UINT:	return TextureFormat(TextureFormat::DS,		TextureFormat::UNSIGNED_INT_24_8);
+		case VK_FORMAT_D24_UNORM_S8_UINT:	return TextureFormat(TextureFormat::DS,		TextureFormat::UNSIGNED_INT_24_8_REV);
 		case VK_FORMAT_D32_SFLOAT_S8_UINT:	return TextureFormat(TextureFormat::DS,		TextureFormat::FLOAT_UNSIGNED_INT_24_8_REV);
 
-		case VK_FORMAT_B4G4R4A4_UNORM:		return TextureFormat(TextureFormat::BGRA,	TextureFormat::UNORM_SHORT_4444);
-		case VK_FORMAT_B5G5R5A1_UNORM:		return TextureFormat(TextureFormat::BGRA,	TextureFormat::UNORM_SHORT_5551);
+		case VK_FORMAT_B10G10R10A2_UNORM:	return TextureFormat(TextureFormat::BGRA,	TextureFormat::UNORM_INT_1010102_REV);
+		case VK_FORMAT_B10G10R10A2_SNORM:	return TextureFormat(TextureFormat::BGRA,	TextureFormat::SNORM_INT_1010102_REV);
+		case VK_FORMAT_B10G10R10A2_USCALED:	return TextureFormat(TextureFormat::BGRA,	TextureFormat::UNSIGNED_INT_1010102_REV);
+		case VK_FORMAT_B10G10R10A2_SSCALED:	return TextureFormat(TextureFormat::BGRA,	TextureFormat::SIGNED_INT_1010102_REV);
+		case VK_FORMAT_B10G10R10A2_UINT:	return TextureFormat(TextureFormat::BGRA,	TextureFormat::UNSIGNED_INT_1010102_REV);
+		case VK_FORMAT_B10G10R10A2_SINT:	return TextureFormat(TextureFormat::BGRA,	TextureFormat::SIGNED_INT_1010102_REV);
 
+		default:
+			TCU_THROW(InternalError, "Unknown image format");
+	}
+}
+
+static bool isScaledFormat (VkFormat format)
+{
+	// update this mapping if VkFormat changes
+	DE_STATIC_ASSERT(VK_FORMAT_LAST == 174);
+
+	switch (format)
+	{
 		case VK_FORMAT_R4G4_USCALED:
 		case VK_FORMAT_R4G4B4A4_USCALED:
 		case VK_FORMAT_R5G6B5_USCALED:
 		case VK_FORMAT_R5G5B5A1_USCALED:
-			DE_FATAL("Format not implemented");
+		case VK_FORMAT_R8_USCALED:
+		case VK_FORMAT_R8_SSCALED:
+		case VK_FORMAT_R8G8_USCALED:
+		case VK_FORMAT_R8G8_SSCALED:
+		case VK_FORMAT_R8G8B8_USCALED:
+		case VK_FORMAT_R8G8B8_SSCALED:
+		case VK_FORMAT_R8G8B8A8_USCALED:
+		case VK_FORMAT_R8G8B8A8_SSCALED:
+		case VK_FORMAT_R10G10B10A2_USCALED:
+		case VK_FORMAT_R10G10B10A2_SSCALED:
+		case VK_FORMAT_R16_USCALED:
+		case VK_FORMAT_R16_SSCALED:
+		case VK_FORMAT_R16G16_USCALED:
+		case VK_FORMAT_R16G16_SSCALED:
+		case VK_FORMAT_R16G16B16_USCALED:
+		case VK_FORMAT_R16G16B16_SSCALED:
+		case VK_FORMAT_R16G16B16A16_USCALED:
+		case VK_FORMAT_R16G16B16A16_SSCALED:
+		case VK_FORMAT_B5G6R5_USCALED:
+		case VK_FORMAT_B8G8R8_USCALED:
+		case VK_FORMAT_B8G8R8_SSCALED:
+		case VK_FORMAT_B8G8R8A8_USCALED:
+		case VK_FORMAT_B8G8R8A8_SSCALED:
+		case VK_FORMAT_B10G10R10A2_USCALED:
+		case VK_FORMAT_B10G10R10A2_SSCALED:
+			return true;
 
 		default:
-			TCU_THROW(InternalError, "Unknown image format");
+			return false;
+	}
+}
+
+static bool fullTextureFormatRoundTripSupported (VkFormat format)
+{
+	if (isScaledFormat(format))
+	{
+		// *SCALED formats get mapped to correspoding (u)int formats since
+		// accessing them through (float) getPixel/setPixel has same behavior
+		// as in shader access in Vulkan.
+		// Unfortunately full round-trip between tcu::TextureFormat and VkFormat
+		// for most SCALED formats is not supported though.
+
+		const tcu::TextureFormat	tcuFormat	= mapVkFormat(format);
+
+		switch (tcuFormat.type)
+		{
+			case tcu::TextureFormat::UNSIGNED_INT8:
+			case tcu::TextureFormat::UNSIGNED_INT16:
+			case tcu::TextureFormat::UNSIGNED_INT32:
+			case tcu::TextureFormat::SIGNED_INT8:
+			case tcu::TextureFormat::SIGNED_INT16:
+			case tcu::TextureFormat::SIGNED_INT32:
+			case tcu::TextureFormat::UNSIGNED_INT_1010102_REV:
+			case tcu::TextureFormat::SIGNED_INT_1010102_REV:
+				return false;
+
+			default:
+				return true;
+		}
+	}
+	else
+		return (format != VK_FORMAT_UNDEFINED);
+}
+
+void imageUtilSelfTest (void)
+{
+	for (int formatNdx = 0; formatNdx < VK_FORMAT_LAST; formatNdx++)
+	{
+		const VkFormat	format	= (VkFormat)formatNdx;
+
+		if (format != VK_FORMAT_UNDEFINED && !isCompressedFormat(format))
+		{
+			const tcu::TextureFormat	tcuFormat		= mapVkFormat(format);
+			const VkFormat				remappedFormat	= mapTextureFormat(tcuFormat);
+
+			DE_TEST_ASSERT(isValid(tcuFormat));
+
+			if (fullTextureFormatRoundTripSupported(format))
+				DE_TEST_ASSERT(format == remappedFormat);
+		}
 	}
 }
 

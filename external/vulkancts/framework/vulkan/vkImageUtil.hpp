@@ -53,6 +53,8 @@ bool				isCompressedFormat		(VkFormat format);
 tcu::TextureFormat	mapVkFormat				(VkFormat format);
 VkFormat			mapTextureFormat		(const tcu::TextureFormat& format);
 
+void				imageUtilSelfTest		(void);
+
 } // vk
 
 #endif // _VKIMAGEUTIL_HPP
