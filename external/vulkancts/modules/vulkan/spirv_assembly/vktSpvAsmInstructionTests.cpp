@@ -57,10 +57,10 @@ SpvAsmComputeShaderCase* createOpNopTestCase (tcu::TestContext& testCtx)
 	//
 	// #version 430
 	//
-	// layout(set = 0, binding = 0) readonly buffer Input {
+	// layout(std140, set = 0, binding = 0) readonly buffer Input {
 	//   float elements[];
 	// } input_data;
-	// layout(set = 0, binding = 1) writeonly buffer Output {
+	// layout(std140, set = 0, binding = 1) writeonly buffer Output {
 	//   float elements[];
 	// } output_data;
 	//
@@ -78,7 +78,7 @@ SpvAsmComputeShaderCase* createOpNopTestCase (tcu::TestContext& testCtx)
 		"%std450 = OpExtInstImport \"GLSL.std.450\"\n"
 		"OpMemoryModel Logical GLSL450\n"
 
-		"OpEntryPoint GLCompute %main \"main\"\n"
+		"OpEntryPoint GLCompute %main \"main\" %id\n"
 
 		"OpNop\n" // After OpEntryPoint but before any type definitions
 
@@ -94,14 +94,15 @@ SpvAsmComputeShaderCase* createOpNopTestCase (tcu::TestContext& testCtx)
 		"OpName %indata         \"input_data\"\n"
 
 		"OpDecorate %id BuiltIn GlobalInvocationId\n"
-		"OpDecorate %inbuf GLSLShared\n"
 		"OpDecorate %inbuf BufferBlock\n"
 		"OpDecorate %indata DescriptorSet 0\n"
 		"OpDecorate %indata Binding 0\n"
-		"OpDecorate %outbuf GLSLShared\n"
 		"OpDecorate %outbuf BufferBlock\n"
 		"OpDecorate %outdata DescriptorSet 0\n"
 		"OpDecorate %outdata Binding 1\n"
+		"OpDecorate %f32arr ArrayStride 4\n"
+		"OpMemberDecorate %inbuf 0 Offset 0\n"
+		"OpMemberDecorate %outbuf 0 Offset 0\n"
 
 		"%void      = OpTypeVoid\n"
 		"%voidf     = OpTypeFunction %void\n"
