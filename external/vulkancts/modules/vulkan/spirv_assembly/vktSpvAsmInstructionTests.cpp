@@ -149,7 +149,7 @@ SpvAsmComputeShaderCase* createOpNopTestCase (tcu::TestContext& testCtx)
 
 	spec.numWorkGroups = IVec3(numElements, 1, 1);
 
-	return new SpvAsmComputeShaderCase(testCtx, "opnop_test", "Test the OpNop instruction", spec);
+	return new SpvAsmComputeShaderCase(testCtx, "opnop", "Test the OpNop instruction", spec);
 }
 
 } // anonymous
