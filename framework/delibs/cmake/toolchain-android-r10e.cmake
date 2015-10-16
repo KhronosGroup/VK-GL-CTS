@@ -144,10 +144,12 @@ elseif (DE_COMPILER STREQUAL "DE_COMPILER_CLANG")
 
 	if (ANDROID_NDK_HOST_OS STREQUAL "linux-x86" OR
 		ANDROID_NDK_HOST_OS STREQUAL "linux-x86_64" OR
-		ANDROID_NDK_HOST_OS STREQUAL "darwin-x86")
+		ANDROID_NDK_HOST_OS STREQUAL "darwin-x86" OR
+		ANDROID_NDK_HOST_OS STREQUAL "darwin-x86_64")
 		cmake_force_c_compiler("${LLVM_PATH}bin/clang"			Clang)
 		cmake_force_cxx_compiler("${LLVM_PATH}bin/clang++"		Clang)
 		set(CMAKE_AR "${LLVM_PATH}/bin/llvm-ar" CACHE FILEPATH "Archiver")
+		set(CMAKE_RANLIB "${CROSS_COMPILE}ranlib" CACHE FILEPATH "Indexer")
 	elseif (ANDROID_NDK_HOST_OS STREQUAL "windows")
 		cmake_force_c_compiler("${LLVM_PATH}bin/clang.exe"		Clang)
 		cmake_force_cxx_compiler("${LLVM_PATH}bin/clang++.exe"	Clang)
