@@ -202,6 +202,32 @@ TextureChannelClass getTextureChannelClass (TextureFormat::ChannelType channelTy
 	}
 }
 
+bool isAccessValid (TextureFormat format, TextureAccessType type)
+{
+	DE_ASSERT(isValid(format));
+
+	if (format.order == TextureFormat::DS)
+	{
+		// It is never allowed to access combined depth-stencil format with getPixel().
+		// Instead either getPixDepth() or getPixStencil(), or effective depth- or stencil-
+		// access must be used.
+		return false;
+	}
+	else if (format.order == TextureFormat::D)
+		return type == TEXTUREACCESSTYPE_FLOAT;
+	else if (format.order == TextureFormat::S)
+		return type == TEXTUREACCESSTYPE_UNSIGNED_INT;
+	else
+	{
+		// A few packed color formats have access type restrictions
+		if (format.type == TextureFormat::UNSIGNED_INT_11F_11F_10F_REV ||
+			format.type == TextureFormat::UNSIGNED_INT_999_E5_REV)
+			return type == TEXTUREACCESSTYPE_FLOAT;
+		else
+			return true;
+	}
+}
+
 /*--------------------------------------------------------------------*//*!
  * \brief Get access to subregion of pixel buffer
  * \param access	Parent access object
