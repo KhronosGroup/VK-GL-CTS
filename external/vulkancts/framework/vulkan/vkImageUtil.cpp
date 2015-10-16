@@ -339,9 +339,9 @@ tcu::TextureFormat mapVkFormat (VkFormat format)
 
 		// \note There is no standard interleaved memory layout for DS formats; buffer-image copies
 		//		 will always operate on either D or S aspect only. See Khronos bug 12998
-		case VK_FORMAT_D16_UNORM_S8_UINT:	return TextureFormat(TextureFormat::DS,		TextureFormat::UNSIGNED_INT_16_8);
+		case VK_FORMAT_D16_UNORM_S8_UINT:	return TextureFormat(TextureFormat::DS,		TextureFormat::UNSIGNED_INT_16_8_8);
 		case VK_FORMAT_D24_UNORM_S8_UINT:	return TextureFormat(TextureFormat::DS,		TextureFormat::UNSIGNED_INT_24_8);
-		case VK_FORMAT_D32_SFLOAT_S8_UINT:	return TextureFormat(TextureFormat::DS,		TextureFormat::FLOAT_UNSIGNED_INT_8);
+		case VK_FORMAT_D32_SFLOAT_S8_UINT:	return TextureFormat(TextureFormat::DS,		TextureFormat::FLOAT_UNSIGNED_INT_24_8_REV);
 
 		case VK_FORMAT_B4G4R4A4_UNORM:		return TextureFormat(TextureFormat::BGRA,	TextureFormat::UNORM_SHORT_4444);
 		case VK_FORMAT_B5G5R5A1_UNORM:		return TextureFormat(TextureFormat::BGRA,	TextureFormat::UNORM_SHORT_5551);
