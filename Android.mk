@@ -668,7 +668,8 @@ LOCAL_SRC_FILES := \
 	modules/internal/ditTestLogTests.cpp \
 	modules/internal/ditTestPackage.cpp \
 	modules/internal/ditSeedBuilderTests.cpp \
-	modules/internal/ditTestPackageEntry.cpp
+	modules/internal/ditTestPackageEntry.cpp \
+	modules/internal/ditTextureFormatTests.cpp
 
 LOCAL_C_INCLUDES := \
 	frameworks/native/opengl/include \

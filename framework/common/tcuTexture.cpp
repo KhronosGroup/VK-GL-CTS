@@ -38,9 +38,9 @@
 namespace tcu
 {
 
-// \note No denorm support, no sign.
-typedef Float<deUint32, 5, 6, 15, 0>	Float11;
-typedef Float<deUint32, 5, 5, 15, 0>	Float10;
+// \note No sign. Denorms are supported.
+typedef Float<deUint32, 5, 6, 15, FLOAT_SUPPORT_DENORM>	Float11;
+typedef Float<deUint32, 5, 5, 15, FLOAT_SUPPORT_DENORM>	Float10;
 
 namespace
 {
@@ -51,7 +51,7 @@ namespace
 inline Vec4		readRGBA8888Float	(const deUint8* ptr) { return Vec4(ptr[0]/255.0f, ptr[1]/255.0f, ptr[2]/255.0f, ptr[3]/255.0f); }
 inline Vec4		readRGB888Float		(const deUint8* ptr) { return Vec4(ptr[0]/255.0f, ptr[1]/255.0f, ptr[2]/255.0f, 1.0f); }
 inline IVec4	readRGBA8888Int		(const deUint8* ptr) { return IVec4(ptr[0], ptr[1], ptr[2], ptr[3]); }
-inline IVec4	readRGB888Int		(const deUint8* ptr) { return IVec4(ptr[0], ptr[1], ptr[2], 0xff); }
+inline IVec4	readRGB888Int		(const deUint8* ptr) { return IVec4(ptr[0], ptr[1], ptr[2], 1); }
 
 // Optimized setters.
 
