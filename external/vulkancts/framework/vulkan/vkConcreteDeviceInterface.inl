@@ -90,7 +90,7 @@ virtual void		cmdSetViewport									(VkCmdBuffer cmdBuffer, deUint32 viewportCo
 virtual void		cmdSetScissor									(VkCmdBuffer cmdBuffer, deUint32 scissorCount, const VkRect2D* pScissors) const;
 virtual void		cmdSetLineWidth									(VkCmdBuffer cmdBuffer, float lineWidth) const;
 virtual void		cmdSetDepthBias									(VkCmdBuffer cmdBuffer, float depthBias, float depthBiasClamp, float slopeScaledDepthBias) const;
-virtual void		cmdSetBlendConstants							(VkCmdBuffer cmdBuffer, const float blendConst) const;
+virtual void		cmdSetBlendConstants							(VkCmdBuffer cmdBuffer, const float blendConst[4]) const;
 virtual void		cmdSetDepthBounds								(VkCmdBuffer cmdBuffer, float minDepthBounds, float maxDepthBounds) const;
 virtual void		cmdSetStencilCompareMask						(VkCmdBuffer cmdBuffer, VkStencilFaceFlags faceMask, deUint32 stencilCompareMask) const;
 virtual void		cmdSetStencilWriteMask							(VkCmdBuffer cmdBuffer, VkStencilFaceFlags faceMask, deUint32 stencilWriteMask) const;

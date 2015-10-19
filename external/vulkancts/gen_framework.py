@@ -106,9 +106,10 @@ class Bitfield:
 		self.values	= values
 
 class Variable:
-	def __init__ (self, type, name):
-		self.type	= type
-		self.name	= name
+	def __init__ (self, type, name, arraySize = None):
+		self.type		= type
+		self.name		= name
+		self.arraySize	= arraySize
 
 class CompositeType:
 	CLASS_STRUCT	= 0
@@ -188,7 +189,7 @@ def fixupType (type):
 	return type
 
 def fixupFunction (function):
-	fixedArgs		= [Variable(fixupType(a.type), a.name) for a in function.arguments]
+	fixedArgs		= [Variable(fixupType(a.type), a.name, a.arraySize) for a in function.arguments]
 	fixedReturnType	= fixupType(function.returnType)
 
 	return Function(function.name, fixedReturnType, fixedArgs)
@@ -266,12 +267,12 @@ def parseHandles (src):
 	return handles
 
 def parseArgList (src):
-	typeNamePtrn	= r'(' + TYPE_PTRN + ')(\s' + IDENT_PTRN + r')'
+	typeNamePtrn	= r'(' + TYPE_PTRN + ')(\s' + IDENT_PTRN + r')(\[[^\]]+\])?'
 	args			= []
 
 	for rawArg in src.split(','):
 		m = re.search(typeNamePtrn, rawArg)
-		args.append(Variable(m.group(1).strip(), m.group(2).strip()))
+		args.append(Variable(m.group(1).strip(), m.group(2).strip(), m.group(3)))
 
 	return args
 
@@ -410,7 +411,7 @@ def writeCompositeTypes (api, filename):
 	writeInlFile(filename, INL_HEADER, gen())
 
 def argListToStr (args):
-	return ", ".join("%s %s" % (v.type, v.name) for v in args)
+	return ", ".join("%s %s%s" % (v.type, v.name, v.arraySize if v.arraySize != None else "") for v in args)
 
 def writeInterfaceDecl (api, filename, functionTypes, concrete):
 	def genProtos ():

@@ -625,7 +625,7 @@ void cmdSetDepthBias (VkCmdBuffer cmdBuffer, float depthBias, float depthBiasCla
 	DE_UNREF(slopeScaledDepthBias);
 }
 
-void cmdSetBlendConstants (VkCmdBuffer cmdBuffer, const float blendConst)
+void cmdSetBlendConstants (VkCmdBuffer cmdBuffer, const float blendConst[4])
 {
 	DE_UNREF(cmdBuffer);
 	DE_UNREF(blendConst);
