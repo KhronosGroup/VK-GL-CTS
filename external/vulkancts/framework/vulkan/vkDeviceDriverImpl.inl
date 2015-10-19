@@ -447,7 +447,7 @@ void DeviceDriver::cmdSetDepthBias (VkCmdBuffer cmdBuffer, float depthBias, floa
 	m_vk.cmdSetDepthBias(cmdBuffer, depthBias, depthBiasClamp, slopeScaledDepthBias);
 }
 
-void DeviceDriver::cmdSetBlendConstants (VkCmdBuffer cmdBuffer, const float blendConst) const
+void DeviceDriver::cmdSetBlendConstants (VkCmdBuffer cmdBuffer, const float blendConst[4]) const
 {
 	m_vk.cmdSetBlendConstants(cmdBuffer, blendConst);
 }

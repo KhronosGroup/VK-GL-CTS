@@ -106,7 +106,7 @@ typedef VK_APICALL void					(VK_APIENTRY* CmdSetViewportFunc)								(VkCmdBuffe
 typedef VK_APICALL void					(VK_APIENTRY* CmdSetScissorFunc)								(VkCmdBuffer cmdBuffer, deUint32 scissorCount, const VkRect2D* pScissors);
 typedef VK_APICALL void					(VK_APIENTRY* CmdSetLineWidthFunc)								(VkCmdBuffer cmdBuffer, float lineWidth);
 typedef VK_APICALL void					(VK_APIENTRY* CmdSetDepthBiasFunc)								(VkCmdBuffer cmdBuffer, float depthBias, float depthBiasClamp, float slopeScaledDepthBias);
-typedef VK_APICALL void					(VK_APIENTRY* CmdSetBlendConstantsFunc)							(VkCmdBuffer cmdBuffer, const float blendConst);
+typedef VK_APICALL void					(VK_APIENTRY* CmdSetBlendConstantsFunc)							(VkCmdBuffer cmdBuffer, const float blendConst[4]);
 typedef VK_APICALL void					(VK_APIENTRY* CmdSetDepthBoundsFunc)							(VkCmdBuffer cmdBuffer, float minDepthBounds, float maxDepthBounds);
 typedef VK_APICALL void					(VK_APIENTRY* CmdSetStencilCompareMaskFunc)						(VkCmdBuffer cmdBuffer, VkStencilFaceFlags faceMask, deUint32 stencilCompareMask);
 typedef VK_APICALL void					(VK_APIENTRY* CmdSetStencilWriteMaskFunc)						(VkCmdBuffer cmdBuffer, VkStencilFaceFlags faceMask, deUint32 stencilWriteMask);
