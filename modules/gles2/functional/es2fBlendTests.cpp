@@ -251,7 +251,7 @@ BlendCase::IterateResult BlendCase::iterate (void)
 
 	// Render reference.
 
-	const tcu::PixelBufferAccess nullAccess(TextureFormat(), 0, 0, 0, DE_NULL);
+	const tcu::PixelBufferAccess nullAccess = tcu::PixelBufferAccess();
 
 	referenceState.blendMode = rr::BLENDMODE_NONE;
 	m_referenceRenderer->render(gls::FragmentOpUtil::getMultisampleAccess(m_refColorBuffer->getAccess()), nullAccess /* no depth */, nullAccess /* no stencil */, m_firstQuadInt, referenceState);
