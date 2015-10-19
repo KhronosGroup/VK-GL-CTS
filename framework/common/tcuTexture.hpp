@@ -416,8 +416,8 @@ public:
 	void						setStorage			(const TextureFormat& format, int width, int heigth, int depth = 1);
 	void						setSize				(int width, int height, int depth = 1);
 
-	PixelBufferAccess			getAccess			(void)			{ return PixelBufferAccess(m_format, m_size, calculatePackedPitch(m_format, m_size), getPtr());			}
-	ConstPixelBufferAccess		getAccess			(void) const	{ return ConstPixelBufferAccess(m_format, m_size, calculatePackedPitch(m_format, m_size), getPtr());	}
+	PixelBufferAccess			getAccess			(void)			{ return isEmpty() ? PixelBufferAccess() : PixelBufferAccess(m_format, m_size, calculatePackedPitch(m_format, m_size), getPtr());			}
+	ConstPixelBufferAccess		getAccess			(void) const	{ return isEmpty() ? ConstPixelBufferAccess() : ConstPixelBufferAccess(m_format, m_size, calculatePackedPitch(m_format, m_size), getPtr());	}
 
 private:
 	void*						getPtr				(void)			{ return m_data.getPtr(); }

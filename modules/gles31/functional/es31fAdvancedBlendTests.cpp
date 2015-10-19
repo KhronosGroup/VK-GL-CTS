@@ -486,7 +486,7 @@ AdvancedBlendCase::IterateResult AdvancedBlendCase::iterate (void)
 	{
 		rr::FragmentOperationState		referenceState;
 		const tcu::PixelBufferAccess	colorAccess		= gls::FragmentOpUtil::getMultisampleAccess(m_refColorBuffer->getAccess());
-		const tcu::PixelBufferAccess	nullAccess		(TextureFormat(), 0, 0, 0, DE_NULL);
+		const tcu::PixelBufferAccess	nullAccess		= tcu::PixelBufferAccess();
 		IntegerQuad						quad;
 
 		if (!useFbo && m_context.getRenderTarget().getPixelFormat().alphaBits == 0)

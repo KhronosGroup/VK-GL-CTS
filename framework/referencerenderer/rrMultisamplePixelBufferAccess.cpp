@@ -33,7 +33,7 @@ MultisamplePixelBufferAccess::MultisamplePixelBufferAccess (const tcu::PixelBuff
 }
 
 MultisamplePixelBufferAccess::MultisamplePixelBufferAccess (void)
-	: m_access(tcu::PixelBufferAccess(tcu::TextureFormat(), 0, 0, 0, 0, 0, DE_NULL))
+	: m_access(tcu::PixelBufferAccess())
 {
 }
 
@@ -63,7 +63,7 @@ MultisamplePixelBufferAccess MultisamplePixelBufferAccess::fromMultisampleAccess
 }
 
 MultisampleConstPixelBufferAccess::MultisampleConstPixelBufferAccess (void)
-	: m_access(tcu::ConstPixelBufferAccess(tcu::TextureFormat(), 0, 0, 0, 0, 0, DE_NULL))
+	: m_access(tcu::ConstPixelBufferAccess())
 {
 }
 

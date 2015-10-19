@@ -641,7 +641,7 @@ void LayeredImage::setPixel (int x, int y, int z, const ColorT& color) const
 								   : m_type == TEXTURETYPE_CUBE			? m_texCube->getLevelFace(0, glslImageFuncZToCubeFace(z))
 								   : m_type == TEXTURETYPE_3D			? m_tex3D->getLevel(0)
 								   : m_type == TEXTURETYPE_2D_ARRAY		? m_tex2DArray->getLevel(0)
-								   : PixelBufferAccess(TextureFormat(), -1, -1, -1, DE_NULL);
+								   : PixelBufferAccess();
 
 	access.setPixel(color, x, y, m_type == TEXTURETYPE_CUBE ? 0 : z);
 }
@@ -666,7 +666,7 @@ PixelBufferAccess LayeredImage::getAccessInternal (void) const
 		 : m_type == TEXTURETYPE_2D			? m_tex2D->getLevel(0)
 		 : m_type == TEXTURETYPE_3D			? m_tex3D->getLevel(0)
 		 : m_type == TEXTURETYPE_2D_ARRAY	? m_tex2DArray->getLevel(0)
-		 : PixelBufferAccess(TextureFormat(), -1, -1, -1, DE_NULL);
+		 : PixelBufferAccess();
 }
 
 PixelBufferAccess LayeredImage::getSliceAccessInternal (int slice) const
