@@ -65,20 +65,16 @@ namespace Functional
 static const int MAX_VIEWPORT_WIDTH		= 64;
 static const int MAX_VIEWPORT_HEIGHT	= 64;
 
-static TextureLevel sRGBATextureLevelToLinear (const tcu::ConstPixelBufferAccess& sRGBAAccess)
+// \note src and dst can point to same memory as long as there is 1-to-1 correspondence between
+//		 pixels.
+static void sRGBAToLinear (const tcu::PixelBufferAccess& dst, const tcu::ConstPixelBufferAccess& src)
 {
-	DE_ASSERT(sRGBAAccess.getFormat().order == TextureFormat::sRGBA);
-
-	int						width			= sRGBAAccess.getWidth();
-	int						height			= sRGBAAccess.getHeight();
-	TextureLevel			linear			(TextureFormat(TextureFormat::RGBA, sRGBAAccess.getFormat().type), width, height);
-	tcu::PixelBufferAccess	linearAccess	= linear.getAccess();
+	const int	width	= src.getWidth();
+	const int	height	= src.getHeight();
 
 	for (int y = 0; y < height; y++)
 	for (int x = 0; x < width; x++)
-		linearAccess.setPixel(tcu::sRGBToLinear(sRGBAAccess.getPixel(x, y)), x, y);
-
-	return linear;
+		dst.setPixel(tcu::sRGBToLinear(src.getPixel(x, y)), x, y);
 }
 
 struct BlendParams
@@ -263,6 +259,7 @@ BlendCase::IterateResult BlendCase::iterate (void)
 	int								viewportX		= rnd.getInt(0, m_renderWidth - m_viewportWidth);
 	int								viewportY		= rnd.getInt(0, m_renderHeight - m_viewportHeight);
 	TextureLevel					renderedImg		(TextureFormat(m_useSrgbFbo ? TextureFormat::sRGBA : TextureFormat::RGBA, TextureFormat::UNORM_INT8), m_viewportWidth, m_viewportHeight);
+	TextureLevel					referenceImg	(renderedImg.getFormat(), m_viewportWidth, m_viewportHeight);
 	TestLog&						log				(m_testCtx.getLog());
 	const BlendParams&				paramSet		= m_paramSets[m_curParamSetNdx];
 	rr::FragmentOperationState		referenceState;
@@ -311,6 +308,9 @@ BlendCase::IterateResult BlendCase::iterate (void)
 	referenceState.blendMode = rr::BLENDMODE_STANDARD;
 	m_referenceRenderer->render(gls::FragmentOpUtil::getMultisampleAccess(m_refColorBuffer->getAccess()), nullAccess /* no depth */, nullAccess /* no stencil */, m_secondQuadInt, referenceState);
 
+	// Copy to reference (expansion to RGBA happens here if necessary)
+	copy(referenceImg, m_refColorBuffer->getAccess());
+
 	// Read GL image.
 
 	glu::readPixels(m_context.getRenderContext(), viewportX, viewportY, renderedImg.getAccess());
@@ -318,12 +318,17 @@ BlendCase::IterateResult BlendCase::iterate (void)
 	// Compare images.
 	// \note In sRGB cases, convert to linear space for comparison.
 
+	if (m_useSrgbFbo)
+	{
+		sRGBAToLinear(renderedImg, renderedImg);
+		sRGBAToLinear(referenceImg, referenceImg);
+	}
+
 	UVec4 compareThreshold = (m_useSrgbFbo ? tcu::PixelFormat(8, 8, 8, 8) : m_context.getRenderTarget().getPixelFormat()).getColorThreshold().toIVec().asUint()
 							 * UVec4(5) / UVec4(2) + UVec4(m_useSrgbFbo ? 5 : 2); // \note Non-scientific ad hoc formula. Need big threshold when few color bits; blending brings extra inaccuracy.
 
 	bool comparePass = tcu::intThresholdCompare(m_testCtx.getLog(), "CompareResult", "Image Comparison Result",
-												(m_useSrgbFbo ? sRGBATextureLevelToLinear(*m_refColorBuffer) : *m_refColorBuffer).getAccess(),
-												(m_useSrgbFbo ? sRGBATextureLevelToLinear(renderedImg) : renderedImg).getAccess(),
+												referenceImg.getAccess(), renderedImg.getAccess(),
 												compareThreshold, tcu::COMPARE_LOG_RESULT);
 
 	// Fail now if images don't match.
