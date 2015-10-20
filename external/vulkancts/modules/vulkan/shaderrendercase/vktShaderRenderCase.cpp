@@ -37,21 +37,22 @@
 
 #include "tcuImageCompare.hpp"
 #include "tcuImageIO.hpp"
-#include "tcuSurface.hpp"
-#include "tcuVector.hpp"
 #include "tcuTestLog.hpp"
 #include "tcuTextureUtil.hpp"
+#include "tcuSurface.hpp"
+#include "tcuVector.hpp"
 
-#include "deMath.h"
 #include "deFilePath.hpp"
+#include "deMath.h"
 #include "deUniquePtr.hpp"
 
+#include "vkDeviceUtil.hpp"
+#include "vkImageUtil.hpp"
 #include "vkPlatform.hpp"
-#include "vkStrUtil.hpp"
+#include "vkQueryUtil.hpp"
 #include "vkRef.hpp"
 #include "vkRefUtil.hpp"
-#include "vkQueryUtil.hpp"
-#include "vkDeviceUtil.hpp"
+#include "vkStrUtil.hpp"
 
 #include <vector>
 #include <string>
@@ -287,9 +288,9 @@ ShaderEvalContext::ShaderEvalContext (const QuadGrid& quadGrid)
 			case TextureBinding::TYPE_2D:		textures[ndx].tex2D			= binding.get2D();		break;
 			// \todo [2015-09-07 elecro] Add support for the other binding types
 			/*
-			case TextureBinding::TYPE_CUBE_MAP:	textures[ndx].texCube		= &binding.getCube()->getRefTexture();		break;
-			case TextureBinding::TYPE_2D_ARRAY:	textures[ndx].tex2DArray	= &binding.get2DArray()->getRefTexture();	break;
-			case TextureBinding::TYPE_3D:		textures[ndx].tex3D			= &binding.get3D()->getRefTexture();		break;
+			case TextureBinding::TYPE_CUBE_MAP:	textures[ndx].texCube		= binding.getCube();	break;
+			case TextureBinding::TYPE_2D_ARRAY:	textures[ndx].tex2DArray	= binding.get2DArray();	break;
+			case TextureBinding::TYPE_3D:		textures[ndx].tex3D			= binding.get3D();		break;
 			*/
 			default:
 				TCU_THROW(InternalError, "Handling of texture binding type not implemented");
@@ -323,7 +324,7 @@ tcu::Vec4 ShaderEvalContext::texture2D (int unitNdx, const tcu::Vec2& texCoords)
 	if (textures[unitNdx].tex2D)
 		return textures[unitNdx].tex2D->sample(textures[unitNdx].sampler, texCoords.x(), texCoords.y(), 0.0f);
 	else
-	return tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f);
+		return tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f);
 }
 
 // ShaderEvaluator.
@@ -495,10 +496,10 @@ void ShaderRenderCaseInstance::setupUniformData (deUint32 bindingLocation, deUin
 
 	Move<VkBuffer>					buffer				= createBuffer(vk, vkDevice, &uniformBufferParams);
 	de::MovePtr<Allocation> 		alloc				= m_memAlloc.allocate(getBufferMemoryRequirements(vk, vkDevice, *buffer), MemoryRequirement::Any);
-	VK_CHECK(vk.bindBufferMemory(vkDevice, *buffer, alloc->getMemory(), 0));
+	VK_CHECK(vk.bindBufferMemory(vkDevice, *buffer, alloc->getMemory(), alloc->getOffset()));
 
 	void* bufferPtr;
-	VK_CHECK(vk.mapMemory(vkDevice, alloc->getMemory(), 0, size, 0, &bufferPtr));
+	VK_CHECK(vk.mapMemory(vkDevice, alloc->getMemory(), alloc->getOffset(), size, 0, &bufferPtr));
 	deMemcpy(bufferPtr, dataPtr, size);
 	vk.unmapMemory(vkDevice, alloc->getMemory());
 
@@ -550,15 +551,19 @@ void ShaderRenderCaseInstance::addUniform (deUint32 bindingLocation, vk::VkDescr
 	setupUniformData(bindingLocation, dataSize, data);
 }
 
-void ShaderRenderCaseInstance::addAttribute (deUint32 bindingLocation, vk::VkFormat format, deUint32 sizePerElement, deUint32 count, const void* dataPtr)
+void ShaderRenderCaseInstance::addAttribute (deUint32		bindingLocation,
+											 vk::VkFormat	format,
+											 deUint32		sizePerElement,
+											 deUint32		count,
+											 const void* 	dataPtr)
 {
 	// Add binding specification
 	const deUint32 							binding					= (deUint32)m_vertexBindingDescription.size();
 	const VkVertexInputBindingDescription	bindingDescription		=
 	{
-		binding,
-		sizePerElement,
-		VK_VERTEX_INPUT_STEP_RATE_VERTEX
+		binding,							// deUint32 				binding;
+		sizePerElement,						// deUint32					strideInBytes;
+		VK_VERTEX_INPUT_STEP_RATE_VERTEX	// VkVertexInputStepRate	stepRate;
 	};
 
 	m_vertexBindingDescription.push_back(bindingDescription);
@@ -595,10 +600,10 @@ void ShaderRenderCaseInstance::addAttribute (deUint32 bindingLocation, vk::VkFor
 	Move<VkBuffer> 							buffer					= createBuffer(vk, vkDevice, &vertexBufferParams);
 	de::MovePtr<vk::Allocation>				alloc					= m_memAlloc.allocate(getBufferMemoryRequirements(vk, vkDevice, *buffer), MemoryRequirement::Any);
 
-	VK_CHECK(vk.bindBufferMemory(vkDevice, *buffer, alloc->getMemory(), 0));
+	VK_CHECK(vk.bindBufferMemory(vkDevice, *buffer, alloc->getMemory(), alloc->getOffset()));
 
 	void* bufferPtr;
-	VK_CHECK(vk.mapMemory(vkDevice, alloc->getMemory(), 0, inputSize, 0, &bufferPtr));
+	VK_CHECK(vk.mapMemory(vkDevice, alloc->getMemory(), alloc->getOffset(), inputSize, 0, &bufferPtr));
 	deMemcpy(bufferPtr, dataPtr, inputSize);
 	vk.unmapMemory(vkDevice, alloc->getMemory());
 
@@ -610,8 +615,8 @@ void ShaderRenderCaseInstance::useAttribute (deUint32 bindingLocation, BaseAttri
 {
 	const EnabledBaseAttribute attribute =
 	{
-		bindingLocation,
-		type
+		bindingLocation,	// deUint32				location;
+		type				// BaseAttributeType	type;
 	};
 	m_enabledBaseAttributes.push_back(attribute);
 }
@@ -764,7 +769,7 @@ Move<VkImage> ShaderRenderCaseInstance::createImage2D (const tcu::Texture2D& tex
 		VK_SHARING_MODE_EXCLUSIVE,									// VkSharingMode			sharingMode;
 		1,															// deuint32					queueFamilyCount;
 		&queueFamilyIndex,											// const deUint32*			pQueueFamilyIndices;
-		VK_IMAGE_LAYOUT_UNDEFINED,													// VkImageLayout		initialLayout;
+		VK_IMAGE_LAYOUT_UNDEFINED,									// VkImageLayout			initialLayout;
 	};
 
 	Move<VkImage> vkTexture = createImage(vk, vkDevice, &imageCreateInfo);
@@ -773,27 +778,27 @@ Move<VkImage> ShaderRenderCaseInstance::createImage2D (const tcu::Texture2D& tex
 
 void ShaderRenderCaseInstance::useSampler2D (deUint32 bindingLocation, deUint32 textureID)
 {
-	const VkDevice				vkDevice			= m_context.getDevice();
-	const DeviceInterface&		vk					= m_context.getDeviceInterface();
-
 	DE_ASSERT(textureID < m_textures.size());
 
-	const TextureBinding&		textureBinding		= m_textures[textureID];
-	const tcu::Texture2D*		refTexture			= textureBinding.get2D();
-	const tcu::Sampler&			refSampler			= textureBinding.getSampler();
-	const VkFormat				format				= refTexture->getFormat() == tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8)
+	const VkDevice					vkDevice		= m_context.getDevice();
+	const DeviceInterface&			vk				= m_context.getDeviceInterface();
+	const TextureBinding&			textureBinding	= m_textures[textureID];
+	const tcu::Texture2D*			refTexture		= textureBinding.get2D();
+	const tcu::Sampler&				refSampler		= textureBinding.getSampler();
+	const VkFormat					format			= refTexture->getFormat() == tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8)
 														? VK_FORMAT_R8G8B8A8_UNORM
 														: VK_FORMAT_R8G8B8_UNORM;
 
 	DE_ASSERT(refTexture != DE_NULL);
+
 	// Create & alloc the image
 	Move<VkImage> vkTexture(createImage2D(*refTexture, format));
 
 	// Allocate and bind color image memory
-	de::MovePtr<Allocation> allocation				= m_memAlloc.allocate(getImageMemoryRequirements(vk, vkDevice, *vkTexture), MemoryRequirement::Any);
+	de::MovePtr<Allocation>			allocation		= m_memAlloc.allocate(getImageMemoryRequirements(vk, vkDevice, *vkTexture), MemoryRequirement::Any);
 	VK_CHECK(vk.bindImageMemory(vkDevice, *vkTexture, allocation->getMemory(), allocation->getOffset()));
 
-	const VkImageSubresource subres =
+	const VkImageSubresource	subres				=
 	{
 		VK_IMAGE_ASPECT_COLOR,							// VkImageAspect		aspect;
 		0u,												// deUint32				mipLevel;
@@ -811,7 +816,7 @@ void ShaderRenderCaseInstance::useSampler2D (deUint32 bindingLocation, deUint32 
 
 	tcu::copy(destAccess, access);
 
-	const vk::VkMappedMemoryRange range =
+	const vk::VkMappedMemoryRange	range			=
 	{
 		VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,			// VkStructureType	sType;
 		DE_NULL,										// const void*		pNext;
@@ -822,7 +827,6 @@ void ShaderRenderCaseInstance::useSampler2D (deUint32 bindingLocation, deUint32 
 
 	VK_CHECK(vk.flushMappedMemoryRanges(vkDevice, 1u, &range));
 	vk.unmapMemory(vkDevice, allocation->getMemory());
-
 
 	// Create sampler
 	const bool						compareEnabled	= (refSampler.compare != tcu::Sampler::COMPAREMODE_NONE);
@@ -846,9 +850,9 @@ void ShaderRenderCaseInstance::useSampler2D (deUint32 bindingLocation, deUint32 
 		VK_FALSE,										// VkBool32			unnormalizerdCoordinates;
 	};
 
-	Move<VkSampler>				sampler				= createSampler(vk, vkDevice, &samplerParams);
+	Move<VkSampler>					sampler			= createSampler(vk, vkDevice, &samplerParams);
 
-	const VkImageViewCreateInfo	viewParams			=
+	const VkImageViewCreateInfo		viewParams		=
 	{
 		VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,	// VkStructureType			sType;
 		NULL,										// const voide*				pNexŧ;
@@ -868,12 +872,12 @@ void ShaderRenderCaseInstance::useSampler2D (deUint32 bindingLocation, deUint32 
 			0,								// deUint32				baseArraySlice;
 			1								// deUint32				arraySize;
 		},											// VkImageSubresourceRange	subresourceRange;
-		0u													// VkImageViewCreateFlags	flags;
+		0u											// VkImageViewCreateFlags	flags;
 	};
 
-	Move<VkImageView>			imageView			= createImageView(vk, vkDevice, &viewParams);
+	Move<VkImageView>				imageView		= createImageView(vk, vkDevice, &viewParams);
 
-	const vk::VkDescriptorInfo	descriptor			=
+	const vk::VkDescriptorInfo		descriptor		=
 	{
 		0,											// VkBufferView				bufferView;
 		sampler.get(),								// VkSampler				sampler;
@@ -999,8 +1003,8 @@ void ShaderRenderCaseInstance::render (tcu::Surface& result, const QuadGrid& qua
 		m_colorImage = createImage(vk, vkDevice, &colorImageParams);
 
 		// Allocate and bind color image memory
-		m_colorImageAlloc = m_memAlloc.allocate(getImageMemoryRequirements(vk, vkDevice, *m_colorImage), MemoryRequirement::HostVisible);
-		VK_CHECK(vk.bindImageMemory(vkDevice, *m_colorImage, m_colorImageAlloc->getMemory(), 0));
+		m_colorImageAlloc = m_memAlloc.allocate(getImageMemoryRequirements(vk, vkDevice, *m_colorImage), MemoryRequirement::Any);
+		VK_CHECK(vk.bindImageMemory(vkDevice, *m_colorImage, m_colorImageAlloc->getMemory(), m_colorImageAlloc->getOffset()));
 	}
 
 	// Create color attachment view
@@ -1048,11 +1052,6 @@ void ShaderRenderCaseInstance::render (tcu::Surface& result, const QuadGrid& qua
 			0u,													// VkAttachmentDescriptorFlags	flags;
 		};
 
-		const VkAttachmentDescription attachments[1] =
-		{
-			colorAttachmentDescription
-		};
-
 		const VkAttachmentReference colorAttachmentReference =
 		{
 			0u,													// deUint32			attachment;
@@ -1080,7 +1079,7 @@ void ShaderRenderCaseInstance::render (tcu::Surface& result, const QuadGrid& qua
 			VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,			// VkStructureType					sType;
 			DE_NULL,											// const void*						pNext;
 			1u,													// deUint32							attachmentCount;
-			attachments,										// const VkAttachmentDescription*	pAttachments;
+			&colorAttachmentDescription,						// const VkAttachmentDescription*	pAttachments;
 			1u,													// deUint32							subpassCount;
 			&subpassDescription,								// const VkSubpassDescription*		pSubpasses;
 			0u,													// deUint32							dependencyCount;
@@ -1189,12 +1188,11 @@ void ShaderRenderCaseInstance::render (tcu::Surface& result, const QuadGrid& qua
 			}
 		};
 
-		// Add base attributes
-
 		// Add test case specific attributes
 		if (m_attribFunc)
 			m_attribFunc(*this, quadGrid.getNumVertices());
 
+		// Add base attributes
 		setupDefaultInputs(quadGrid);
 
 		const VkPipelineVertexInputStateCreateInfo vertexInputStateParams =
@@ -1338,13 +1336,13 @@ void ShaderRenderCaseInstance::render (tcu::Surface& result, const QuadGrid& qua
 		};
 
 		m_indiceBuffer		= createBuffer(vk, vkDevice, &indiceBufferParams);
-		m_indiceBufferAlloc	= m_memAlloc.allocate(getBufferMemoryRequirements(vk, vkDevice, *m_indiceBuffer), MemoryRequirement::HostVisible);
+		m_indiceBufferAlloc	= m_memAlloc.allocate(getBufferMemoryRequirements(vk, vkDevice, *m_indiceBuffer), MemoryRequirement::Any);
 
-		VK_CHECK(vk.bindBufferMemory(vkDevice, *m_indiceBuffer, m_indiceBufferAlloc->getMemory(), 0));
+		VK_CHECK(vk.bindBufferMemory(vkDevice, *m_indiceBuffer, m_indiceBufferAlloc->getMemory(), m_indiceBufferAlloc->getOffset()));
 
 		// Load vertice indices into buffer
 		void* bufferPtr;
-		VK_CHECK(vk.mapMemory(vkDevice, m_indiceBufferAlloc->getMemory(), 0, indiceBufferSize, 0, &bufferPtr));
+		VK_CHECK(vk.mapMemory(vkDevice, m_indiceBufferAlloc->getMemory(), m_indiceBufferAlloc->getOffset(), indiceBufferSize, 0, &bufferPtr));
 		deMemcpy(bufferPtr, quadGrid.getIndices(), indiceBufferSize);
 		vk.unmapMemory(vkDevice, m_indiceBufferAlloc->getMemory());
 	}
@@ -1423,22 +1421,22 @@ void ShaderRenderCaseInstance::render (tcu::Surface& result, const QuadGrid& qua
 
 			VkImageMemoryBarrier textureBarrier =
 			{
-				VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-				DE_NULL,
-				VK_MEMORY_OUTPUT_HOST_WRITE_BIT | VK_MEMORY_OUTPUT_TRANSFER_BIT,
-				0,
-				VK_IMAGE_LAYOUT_UNDEFINED,
-				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-				queueFamilyIndex,
-				queueFamilyIndex,
-				sampler->image->get(),
+				VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,								// VkStructureType			sType;
+				DE_NULL,															// const void*				pNext;
+				VK_MEMORY_OUTPUT_HOST_WRITE_BIT | VK_MEMORY_OUTPUT_TRANSFER_BIT,	// VkMemoryOutputFlags		outputMask;
+				0,																	// VkMemoryInputFlags		inputMask;
+				VK_IMAGE_LAYOUT_UNDEFINED,											// VkImageLayout			oldLayout;
+				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,							// VkImageLayout			newLayout;
+				queueFamilyIndex,													// deUint32					srcQueueFamilyIndex;
+				queueFamilyIndex,													// deUint32					dstQueueFamilyIndex;
+				sampler->image->get(),												// VkImage					image;
 				{
-					VK_IMAGE_ASPECT_COLOR_BIT,
-					0,
-					1,
-					0,
-					0
-				}
+					VK_IMAGE_ASPECT_COLOR_BIT,								// VkImageAspectFlags	aspectMask;
+					0,														// deUint32				baseMipLevel;
+					1,														// deUint32				mipLevels;
+					0,														// deUint32				baseArrayLayer;
+					0														// deUint32				arraySize;
+				}																	// VkImageSubresourceRange	subresourceRange;
 			};
 
 			barriers.push_back(textureBarrier);
@@ -1452,7 +1450,6 @@ void ShaderRenderCaseInstance::render (tcu::Surface& result, const QuadGrid& qua
 		vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_graphicsPipeline);
 		vk.cmdBindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 0u, 1, &*m_descriptorSet, 0u, DE_NULL);
 		vk.cmdBindIndexBuffer(*m_cmdBuffer, *m_indiceBuffer, 0, VK_INDEX_TYPE_UINT16);
-
 
 		const deUint32 numberOfVertexAttributes = (deUint32)m_vertexBuffers.size();
 		const std::vector<VkDeviceSize> offsets(numberOfVertexAttributes, 0);
@@ -1503,7 +1500,7 @@ void ShaderRenderCaseInstance::render (tcu::Surface& result, const QuadGrid& qua
 			&queueFamilyIndex,							//  const deUint32*		pQueueFamilyIndices;
 		};
 		const Unique<VkBuffer> readImageBuffer(createBuffer(vk, vkDevice, &readImageBufferParams));
-		const de::UniquePtr<Allocation>	readImageBufferMemory(m_memAlloc.allocate(getBufferMemoryRequirements(vk, vkDevice, *readImageBuffer), MemoryRequirement::HostVisible));
+		const de::UniquePtr<Allocation>	readImageBufferMemory(m_memAlloc.allocate(getBufferMemoryRequirements(vk, vkDevice, *readImageBuffer), MemoryRequirement::Any));
 
 		VK_CHECK(vk.bindBufferMemory(vkDevice, *readImageBuffer, readImageBufferMemory->getMemory(), readImageBufferMemory->getOffset()));
 

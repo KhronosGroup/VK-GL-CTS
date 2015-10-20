@@ -32,11 +32,9 @@
 
 #include "vktShaderRenderCaseTests.hpp"
 
-#include "vktShaderRenderCase.hpp"
-#include "vktTexture.hpp"
-
 #include "deUniquePtr.hpp"
 
+#include "vktShaderRenderCase.hpp"
 #include "vktShaderDiscardTests.hpp"
 
 namespace vkt
