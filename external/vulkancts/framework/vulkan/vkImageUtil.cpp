@@ -626,4 +626,77 @@ void imageUtilSelfTest (void)
 	}
 }
 
+VkTexFilter mapFilterMode (tcu::Sampler::FilterMode filterMode)
+{
+	// \todo [2015-09-07 elecro] dobule check the mappings
+	switch(filterMode)
+	{
+		case tcu::Sampler::NEAREST:					return VK_TEX_FILTER_NEAREST;
+		case tcu::Sampler::LINEAR:					return VK_TEX_FILTER_LINEAR;
+		case tcu::Sampler::NEAREST_MIPMAP_NEAREST:	return VK_TEX_FILTER_NEAREST;
+		case tcu::Sampler::LINEAR_MIPMAP_NEAREST:	return VK_TEX_FILTER_NEAREST;
+		case tcu::Sampler::LINEAR_MIPMAP_LINEAR:	return VK_TEX_FILTER_LINEAR;
+		default:
+			DE_ASSERT(false);
+	}
+
+	return VK_TEX_FILTER_NEAREST;
+}
+
+VkTexMipmapMode mapMipmapMode (tcu::Sampler::FilterMode filterMode)
+{
+	// \todo [2015-09-07 elecro] dobule check the mappings
+	switch(filterMode)
+	{
+		case tcu::Sampler::NEAREST:					return VK_TEX_MIPMAP_MODE_BASE;
+		case tcu::Sampler::LINEAR:					return VK_TEX_MIPMAP_MODE_BASE;
+		case tcu::Sampler::NEAREST_MIPMAP_NEAREST:	return VK_TEX_MIPMAP_MODE_NEAREST;
+		case tcu::Sampler::LINEAR_MIPMAP_NEAREST:	return VK_TEX_MIPMAP_MODE_NEAREST;
+		case tcu::Sampler::LINEAR_MIPMAP_LINEAR:	return VK_TEX_MIPMAP_MODE_LINEAR;
+		default:
+			DE_ASSERT(false);
+	}
+
+	return VK_TEX_MIPMAP_MODE_BASE;
+}
+
+VkTexAddressMode mapWrapMode (tcu::Sampler::WrapMode wrapMode)
+{
+	// \todo [2015-09-07 elecro] dobule check the mappings
+	switch(wrapMode)
+	{
+		case tcu::Sampler::CLAMP_TO_EDGE:		return VK_TEX_ADDRESS_MODE_CLAMP;
+		case tcu::Sampler::CLAMP_TO_BORDER:		return VK_TEX_ADDRESS_MODE_CLAMP_BORDER;
+		case tcu::Sampler::REPEAT_GL:			return VK_TEX_ADDRESS_MODE_WRAP;
+		case tcu::Sampler::REPEAT_CL:			return VK_TEX_ADDRESS_MODE_WRAP;
+		case tcu::Sampler::MIRRORED_REPEAT_GL:	return VK_TEX_ADDRESS_MODE_MIRROR;
+		case tcu::Sampler::MIRRORED_REPEAT_CL:	return VK_TEX_ADDRESS_MODE_MIRROR;
+		default:
+			DE_ASSERT(false);
+	}
+
+	return VK_TEX_ADDRESS_MODE_WRAP;
+}
+
+vk::VkCompareOp mapCompareMode (tcu::Sampler::CompareMode mode)
+{
+	// \todo [2015-09-07 elecro] dobule check the mappings
+	switch(mode)
+	{
+		case tcu::Sampler::COMPAREMODE_NONE:				return vk::VK_COMPARE_OP_NEVER;
+		case tcu::Sampler::COMPAREMODE_LESS:				return vk::VK_COMPARE_OP_LESS;
+		case tcu::Sampler::COMPAREMODE_LESS_OR_EQUAL:		return vk::VK_COMPARE_OP_LESS_EQUAL;
+		case tcu::Sampler::COMPAREMODE_GREATER:				return vk::VK_COMPARE_OP_GREATER;
+		case tcu::Sampler::COMPAREMODE_GREATER_OR_EQUAL:	return vk::VK_COMPARE_OP_GREATER_EQUAL;
+		case tcu::Sampler::COMPAREMODE_EQUAL:				return vk::VK_COMPARE_OP_EQUAL;
+		case tcu::Sampler::COMPAREMODE_NOT_EQUAL:			return vk::VK_COMPARE_OP_NOT_EQUAL;
+		case tcu::Sampler::COMPAREMODE_ALWAYS:				return vk::VK_COMPARE_OP_ALWAYS;
+		case tcu::Sampler::COMPAREMODE_NEVER:				return vk::VK_COMPARE_OP_NEVER;
+		default:
+			DE_ASSERT(false);
+	}
+
+	return vk::VK_COMPARE_OP_NEVER;
+}
+
 } // vk

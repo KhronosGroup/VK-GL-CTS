@@ -49,7 +49,6 @@
 #include "vkBuilderUtil.hpp"
 
 #include "vktTestCaseUtil.hpp"
-#include "vktTexture.hpp"
 
 namespace vkt
 {

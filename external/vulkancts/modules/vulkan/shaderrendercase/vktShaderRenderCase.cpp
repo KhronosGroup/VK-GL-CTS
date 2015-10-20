@@ -825,24 +825,25 @@ void ShaderRenderCaseInstance::useSampler2D (deUint32 bindingLocation, deUint32 
 
 
 	// Create sampler
-	const VkSamplerCreateInfo	samplerParams		=
+	const bool						compareEnabled	= (refSampler.compare != tcu::Sampler::COMPAREMODE_NONE);
+	const VkSamplerCreateInfo		samplerParams	=
 	{
-		VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
-		DE_NULL,
-		getVkTexFilter(refSampler.magFilter),
-		getVkTexFilter(refSampler.minFilter),
-		getVkTexMipmapMode(refSampler.minFilter),
-		getVkWrapMode(refSampler.wrapS),
-		getVkWrapMode(refSampler.wrapT),
-		getVkWrapMode(refSampler.wrapR),
-		refSampler.lodThreshold,
-		1,
-		(refSampler.compare != tcu::Sampler::COMPAREMODE_NONE),
-		getVkCompareMode(refSampler.compare),
-		0.0f,
-		0.0f,
-		VK_BORDER_COLOR_INT_OPAQUE_WHITE,
-		VK_FALSE,
+		VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,			// VkStructureType	sType;
+		DE_NULL,										// const void*		pNext;
+		mapFilterMode(refSampler.magFilter),			// VkTexFilter		magFilter;
+		mapFilterMode(refSampler.minFilter),			// VkTexFilter		minFilter;
+		mapMipmapMode(refSampler.minFilter),			// VkTexMipmapMode	mipMode;
+		mapWrapMode(refSampler.wrapS),					// VkTexAddressMode	addressModeU;
+		mapWrapMode(refSampler.wrapT),					// VkTexAddressMode	addressModeV;
+		mapWrapMode(refSampler.wrapR),					// VkTexAddressMode	addressModeW;
+		refSampler.lodThreshold,						// float			mipLodBias;
+		1,												// float			maxAnisotropy;
+		compareEnabled,									// VkBool32			compareEnable;
+		mapCompareMode(refSampler.compare),				// VkCompareOp		compareOp;
+		0.0f,											// float			minLod;
+		0.0f,											// float			maxLod;
+		VK_BORDER_COLOR_INT_OPAQUE_WHITE,				// VkBorderColor	boderColor;
+		VK_FALSE,										// VkBool32			unnormalizerdCoordinates;
 	};
 
 	Move<VkSampler>				sampler				= createSampler(vk, vkDevice, &samplerParams);
