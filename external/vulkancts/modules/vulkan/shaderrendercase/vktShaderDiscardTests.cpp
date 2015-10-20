@@ -37,8 +37,6 @@
 #include "tcuStringTemplate.hpp"
 #include "gluTexture.hpp"
 
-#include "vktTexture.hpp"
-
 #include <string>
 
 using tcu::StringTemplate;
