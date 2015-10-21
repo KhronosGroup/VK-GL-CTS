@@ -69,6 +69,52 @@ static const int		MAX_RENDER_WIDTH	= 128;
 static const int		MAX_RENDER_HEIGHT	= 112;
 static const tcu::Vec4	DEFAULT_CLEAR_COLOR	= tcu::Vec4(0.125f, 0.25f, 0.5f, 1.0f);
 
+static bool isSupportedLinearTilingFormat (const InstanceInterface& instanceInterface, VkPhysicalDevice device, VkFormat format)
+{
+	VkFormatProperties formatProps;
+
+	VK_CHECK(instanceInterface.getPhysicalDeviceFormatProperties(device, format, &formatProps));
+
+	return (formatProps.linearTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT) != 0u;
+}
+
+static bool isSupportedOptimalTilingFormat (const InstanceInterface& instanceInterface, VkPhysicalDevice device, VkFormat format)
+{
+	VkFormatProperties formatProps;
+
+	VK_CHECK(instanceInterface.getPhysicalDeviceFormatProperties(device, format, &formatProps));
+
+	return (formatProps.linearTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT) != 0u;
+}
+
+static VkImageMemoryBarrier createImageMemoryBarrier (const VkImage&		image,
+													  VkMemoryOutputFlags	outputMask,
+													  VkMemoryInputFlags	inputMask,
+													  VkImageLayout			oldLayout,
+													  VkImageLayout			newLayout)
+{
+	VkImageMemoryBarrier imageMemoryBarrier	=
+	{
+		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		// VkStructureType				sType;
+		DE_NULL,									// const void*					pNext;
+		outputMask,									// VkMemoryOutputFlags			outputMask;
+		inputMask,									// VkMemoryInputFlags			inputMask;
+		oldLayout,									// VkImageLayout				oldLayout;
+		newLayout,									// VkImageLayout				newLayout;
+		VK_QUEUE_FAMILY_IGNORED,					// deUint32						srcQueueFamilyIndex;
+		VK_QUEUE_FAMILY_IGNORED,					// deUint32						dstQueueFamilyIndex;
+		image,										// VkImage						image;
+		{
+			VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
+			0,							// deUint32				baseMipLevel;
+			1,							// deUint32				mipLevels;
+			0,							// deUint32				baseArrayLayer;
+			1							// deUint32				arraySize;
+		}											// VkImageSubresourceRange		subresourceRange;
+	};
+	return imageMemoryBarrier;
+}
+
 // QuadGrid.
 
 class QuadGrid
@@ -495,12 +541,13 @@ void ShaderRenderCaseInstance::setupUniformData (deUint32 bindingLocation, deUin
 	};
 
 	Move<VkBuffer>					buffer				= createBuffer(vk, vkDevice, &uniformBufferParams);
-	de::MovePtr<Allocation> 		alloc				= m_memAlloc.allocate(getBufferMemoryRequirements(vk, vkDevice, *buffer), MemoryRequirement::Any);
+	de::MovePtr<Allocation> 		alloc				= m_memAlloc.allocate(getBufferMemoryRequirements(vk, vkDevice, *buffer), MemoryRequirement::HostVisible);
 	VK_CHECK(vk.bindBufferMemory(vkDevice, *buffer, alloc->getMemory(), alloc->getOffset()));
 
 	void* bufferPtr;
 	VK_CHECK(vk.mapMemory(vkDevice, alloc->getMemory(), alloc->getOffset(), size, 0, &bufferPtr));
 	deMemcpy(bufferPtr, dataPtr, size);
+	flushMappedMemoryRange(vk, vkDevice, alloc->getMemory(), alloc->getOffset(), size);
 	vk.unmapMemory(vkDevice, alloc->getMemory());
 
 	const VkBufferViewCreateInfo	viewInfo 	=
@@ -598,13 +645,14 @@ void ShaderRenderCaseInstance::addAttribute (deUint32		bindingLocation,
 	};
 
 	Move<VkBuffer> 							buffer					= createBuffer(vk, vkDevice, &vertexBufferParams);
-	de::MovePtr<vk::Allocation>				alloc					= m_memAlloc.allocate(getBufferMemoryRequirements(vk, vkDevice, *buffer), MemoryRequirement::Any);
+	de::MovePtr<vk::Allocation>				alloc					= m_memAlloc.allocate(getBufferMemoryRequirements(vk, vkDevice, *buffer), MemoryRequirement::HostVisible);
 
 	VK_CHECK(vk.bindBufferMemory(vkDevice, *buffer, alloc->getMemory(), alloc->getOffset()));
 
 	void* bufferPtr;
 	VK_CHECK(vk.mapMemory(vkDevice, alloc->getMemory(), alloc->getOffset(), inputSize, 0, &bufferPtr));
 	deMemcpy(bufferPtr, dataPtr, inputSize);
+	flushMappedMemoryRange(vk, vkDevice, alloc->getMemory(), alloc->getOffset(), inputSize);
 	vk.unmapMemory(vkDevice, alloc->getMemory());
 
 	m_vertexBuffers.push_back(VkBufferSp(new vk::Unique<VkBuffer>(buffer)));
@@ -747,7 +795,10 @@ const tcu::IVec2 ShaderRenderCaseInstance::getViewportSize (void) const
 					  de::min(m_renderSize.y(), MAX_RENDER_HEIGHT));
 }
 
-Move<VkImage> ShaderRenderCaseInstance::createImage2D (const tcu::Texture2D& texture, const VkFormat format)
+Move<VkImage> ShaderRenderCaseInstance::createImage2D (const tcu::Texture2D&	texture,
+													   const VkFormat			format,
+													   const VkImageUsageFlags	usage,
+													   const VkImageTiling		tiling)
 {
 	const VkDevice			vkDevice			= m_context.getDevice();
 	const DeviceInterface&	vk					= m_context.getDeviceInterface();
@@ -763,8 +814,8 @@ Move<VkImage> ShaderRenderCaseInstance::createImage2D (const tcu::Texture2D& tex
 		1u,															// deUint32					mipLevels;
 		1u,															// deUint32					arraySize;
 		1u,															// deUint32					samples;
-		VK_IMAGE_TILING_LINEAR,										// VkImageTiling			tiling;
-		VK_IMAGE_USAGE_SAMPLED_BIT,									// VkImageUsageFlags		usage;
+		tiling,														// VkImageTiling			tiling;
+		usage,														// VkImageUsageFlags		usage;
 		0,															// VkImageCreateFlags		flags;
 		VK_SHARING_MODE_EXCLUSIVE,									// VkSharingMode			sharingMode;
 		1,															// deuint32					queueFamilyCount;
@@ -774,6 +825,155 @@ Move<VkImage> ShaderRenderCaseInstance::createImage2D (const tcu::Texture2D& tex
 
 	Move<VkImage> vkTexture = createImage(vk, vkDevice, &imageCreateInfo);
 	return vkTexture;
+}
+
+de::MovePtr<Allocation> ShaderRenderCaseInstance::uploadImage2D (const tcu::Texture2D&	refTexture,
+																 const VkImage&			vkTexture)
+{
+	const VkDevice				vkDevice			= m_context.getDevice();
+	const DeviceInterface&		vk					= m_context.getDeviceInterface();
+
+	de::MovePtr<Allocation>		allocation		= m_memAlloc.allocate(getImageMemoryRequirements(vk, vkDevice, vkTexture), MemoryRequirement::HostVisible);
+	VK_CHECK(vk.bindImageMemory(vkDevice, vkTexture, allocation->getMemory(), allocation->getOffset()));
+
+	const VkImageSubresource	subres				=
+	{
+		VK_IMAGE_ASPECT_COLOR,							// VkImageAspect		aspect;
+		0u,												// deUint32				mipLevel;
+		0u												// deUint32				arraySlice
+	};
+
+	VkSubresourceLayout layout;
+	VK_CHECK(vk.getImageSubresourceLayout(vkDevice, vkTexture, &subres, &layout));
+
+	void *imagePtr;
+	VK_CHECK(vk.mapMemory(vkDevice, allocation->getMemory(), allocation->getOffset(), layout.size, 0u, &imagePtr));
+
+	tcu::ConstPixelBufferAccess access = refTexture.getLevel(0);
+	tcu::PixelBufferAccess destAccess(refTexture.getFormat(), refTexture.getWidth(), refTexture.getHeight(), 1, imagePtr);
+
+	tcu::copy(destAccess, access);
+
+	flushMappedMemoryRange(vk, vkDevice, allocation->getMemory(), allocation, layout.size);
+	vk.unmapMemory(vkDevice, allocation->getMemory());
+
+	return allocation;
+}
+
+void ShaderRenderCaseInstance::copyTilingImageToOptimal	(const vk::VkImage&	srcImage,
+														 const vk::VkImage&	dstImage,
+														 deInt32 width,
+														 deInt32 height)
+{
+	const VkDevice					vkDevice			= m_context.getDevice();
+	const DeviceInterface&			vk					= m_context.getDeviceInterface();
+	const VkQueue					queue				= m_context.getUniversalQueue();
+	const deUint32					queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
+
+	// Create command pool
+	const VkCmdPoolCreateInfo		cmdPoolParams		=
+	{
+		VK_STRUCTURE_TYPE_CMD_POOL_CREATE_INFO,		// VkStructureType		sType;
+		DE_NULL,									// const void*			pNext;
+		queueFamilyIndex,							// deUint32				queueFamilyIndex;
+		VK_CMD_POOL_CREATE_TRANSIENT_BIT			// VkCmdPoolCreateFlags	flags;
+	};
+
+	Move<VkCmdPool>					cmdPool				= createCommandPool(vk, vkDevice, &cmdPoolParams);
+
+	// Create command buffer
+	const VkCmdBufferCreateInfo 	cmdBufferParams		=
+	{
+		VK_STRUCTURE_TYPE_CMD_BUFFER_CREATE_INFO,	// VkStructureType			sType;
+		DE_NULL,									// const void*				pNext;
+		*cmdPool,									// VkCmdPool				cmdPool;
+		VK_CMD_BUFFER_LEVEL_PRIMARY,				// VkCmdBufferLevel			level;
+		0u											// VkCmdBufferCreateFlags	flags;
+	};
+
+	const VkCmdBufferOptimizeFlags	optimizeFlags		= VK_CMD_BUFFER_OPTIMIZE_SMALL_BATCH_BIT | VK_CMD_BUFFER_OPTIMIZE_ONE_TIME_SUBMIT_BIT;
+	const VkCmdBufferBeginInfo		cmdBufferBeginInfo	=
+	{
+		VK_STRUCTURE_TYPE_CMD_BUFFER_BEGIN_INFO,	// VkStructureType			sType;
+		DE_NULL,									// const void*				pNext;
+		optimizeFlags,								// VkCmdBufferOptimizeFlags	flags;
+		DE_NULL,									// VkRenderPass				renderPass;
+		0u,											// deUint32					subpass;
+		DE_NULL										// VkFramebuffer			framebuffer;
+	};
+
+	Move<VkCmdBuffer>				cmdBuffer			= createCommandBuffer(vk, vkDevice, &cmdBufferParams);
+
+	VK_CHECK(vk.beginCommandBuffer(*cmdBuffer, &cmdBufferBeginInfo));
+
+	// Add image barriers
+	const VkImageMemoryBarrier		layoutBarriers[2]	=
+	{
+		createImageMemoryBarrier(srcImage, 0u, 0u, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_SOURCE_OPTIMAL),
+		createImageMemoryBarrier(dstImage, 0u, VK_MEMORY_INPUT_TRANSFER_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DESTINATION_OPTIMAL)
+	};
+
+	for (deUint32 barrierNdx = 0; barrierNdx < DE_LENGTH_OF_ARRAY(layoutBarriers); barrierNdx++)
+	{
+		const VkImageMemoryBarrier* memoryBarrier = &layoutBarriers[barrierNdx];
+		vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, false, 1, (const void * const*)&memoryBarrier);
+	}
+
+	// Add image copy
+	const VkImageCopy				imageCopy			=
+	{
+		{
+			VK_IMAGE_ASPECT_COLOR,			// VkImageAspect	aspect;
+			0u,								// deUint32			mipLevel;
+			0u,								// deUint32			arrayLayer;
+			1u								// deUint32			arraySize;
+		},											// VkImageSubresourceCopy	srcSubresource;
+		{
+			0,								// int32			x;
+			0,								// int32			y;
+			0								// int32			z;
+		},											// VkOffset3D				srcOffset;
+		{
+			VK_IMAGE_ASPECT_COLOR,			// VkImageAspect	aspect;
+			0u,								// deUint32			mipLevel;
+			0u,								// deUint32			arrayLayer;
+			1u								// deUint32			arraySize;
+		},											// VkImageSubresourceCopy	destSubResource;
+		{
+			0,								// int32			x;
+			0,								// int32			y;
+			0								// int32			z;
+		},											// VkOffset3D				dstOffset;
+		{
+			width,							// int32			width;
+			height,							// int32			height;
+			1,								// int32			depth
+		}	// VkExtent3D					extent;
+	};
+
+	vk.cmdCopyImage(*cmdBuffer, srcImage, VK_IMAGE_LAYOUT_TRANSFER_SOURCE_OPTIMAL, dstImage, VK_IMAGE_LAYOUT_TRANSFER_DESTINATION_OPTIMAL, 1, &imageCopy);
+
+	// Add destination barrier
+	const VkImageMemoryBarrier		dstBarrier			=
+			createImageMemoryBarrier(dstImage, VK_MEMORY_OUTPUT_HOST_WRITE_BIT | VK_MEMORY_OUTPUT_TRANSFER_BIT, 0u, VK_IMAGE_LAYOUT_TRANSFER_DESTINATION_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+	const void* const*				barrier 			= (const void* const*)&dstBarrier;
+	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, false, 1, (const void* const*)&barrier);
+
+	VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
+
+	const VkFenceCreateInfo			fenceParams			=
+	{
+		VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,	// VkStructureType		sType;
+		DE_NULL,								// const void*			pNext;
+		0u										// VkFenceCreateFlags	flags;
+	};
+	Move<VkFence>					fence				= createFence(vk, vkDevice, &fenceParams);
+
+	// Execute copy
+	VK_CHECK(vk.resetFences(vkDevice, 1, &fence.get()));
+	VK_CHECK(vk.queueSubmit(queue, 1, &cmdBuffer.get(), *fence));
+	VK_CHECK(vk.waitForFences(vkDevice, 1, &fence.get(), true, ~(0ull) /* infinity*/));
 }
 
 void ShaderRenderCaseInstance::useSampler2D (deUint32 bindingLocation, deUint32 textureID)
@@ -792,41 +992,30 @@ void ShaderRenderCaseInstance::useSampler2D (deUint32 bindingLocation, deUint32 
 	DE_ASSERT(refTexture != DE_NULL);
 
 	// Create & alloc the image
-	Move<VkImage> vkTexture(createImage2D(*refTexture, format));
+	Move<VkImage>					vkTexture;
+	de::MovePtr<Allocation>     	allocation;
 
-	// Allocate and bind color image memory
-	de::MovePtr<Allocation>			allocation		= m_memAlloc.allocate(getImageMemoryRequirements(vk, vkDevice, *vkTexture), MemoryRequirement::Any);
-	VK_CHECK(vk.bindImageMemory(vkDevice, *vkTexture, allocation->getMemory(), allocation->getOffset()));
-
-	const VkImageSubresource	subres				=
+	if (isSupportedLinearTilingFormat(m_context.getInstanceInterface(), m_context.getPhysicalDevice(), format))
 	{
-		VK_IMAGE_ASPECT_COLOR,							// VkImageAspect		aspect;
-		0u,												// deUint32				mipLevel;
-		0u												// deUint32				arraySlice
-	};
-
-	VkSubresourceLayout layout;
-	VK_CHECK(vk.getImageSubresourceLayout(vkDevice, *vkTexture, &subres, &layout));
-
-	void *imagePtr;
-	VK_CHECK(vk.mapMemory(vkDevice, allocation->getMemory(), allocation->getOffset(), layout.size, 0u, &imagePtr));
-
-	tcu::ConstPixelBufferAccess access = refTexture->getLevel(0);
-	tcu::PixelBufferAccess destAccess(refTexture->getFormat(), refTexture->getWidth(), refTexture->getHeight(), 1, imagePtr);
-
-	tcu::copy(destAccess, access);
-
-	const vk::VkMappedMemoryRange	range			=
+		vkTexture = createImage2D(*refTexture, format, VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_TILING_LINEAR);
+		allocation = uploadImage2D(*refTexture, *vkTexture);
+	}
+	else if (isSupportedOptimalTilingFormat(m_context.getInstanceInterface(), m_context.getPhysicalDevice(), format))
 	{
-		VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,			// VkStructureType	sType;
-		DE_NULL,										// const void*		pNext;
-		allocation->getMemory(),						// VkDeviceMemory	mem;
-		0,												// VkDeviceSize		offset;
-		layout.size,									// VkDeviceSize		size;
-	};
+		Move<VkImage>				stagingTexture	(createImage2D(*refTexture, format, VK_IMAGE_USAGE_TRANSFER_SOURCE_BIT, VK_IMAGE_TILING_LINEAR));
+		de::MovePtr<Allocation>		stagingAlloc	(uploadImage2D(*refTexture, *stagingTexture));
 
-	VK_CHECK(vk.flushMappedMemoryRanges(vkDevice, 1u, &range));
-	vk.unmapMemory(vkDevice, allocation->getMemory());
+		const VkImageUsageFlags		dstUsageFlags	= VK_IMAGE_USAGE_TRANSFER_DESTINATION_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+		vkTexture = createImage2D(*refTexture, format, dstUsageFlags, VK_IMAGE_TILING_OPTIMAL);
+		allocation = m_memAlloc.allocate(getImageMemoryRequirements(vk, vkDevice, *vkTexture), MemoryRequirement::Any);
+		VK_CHECK(vk.bindImageMemory(vkDevice, *vkTexture, allocation->getMemory(), allocation->getOffset()));
+
+		copyTilingImageToOptimal(*stagingTexture, *vkTexture, refTexture->getWidth(), refTexture->getHeight());
+	}
+	else
+	{
+		TCU_THROW(InternalError, "Unable to create 2D image");
+	}
 
 	// Create sampler
 	const bool						compareEnabled	= (refSampler.compare != tcu::Sampler::COMPAREMODE_NONE);
@@ -1336,7 +1525,7 @@ void ShaderRenderCaseInstance::render (tcu::Surface& result, const QuadGrid& qua
 		};
 
 		m_indiceBuffer		= createBuffer(vk, vkDevice, &indiceBufferParams);
-		m_indiceBufferAlloc	= m_memAlloc.allocate(getBufferMemoryRequirements(vk, vkDevice, *m_indiceBuffer), MemoryRequirement::Any);
+		m_indiceBufferAlloc	= m_memAlloc.allocate(getBufferMemoryRequirements(vk, vkDevice, *m_indiceBuffer), MemoryRequirement::HostVisible);
 
 		VK_CHECK(vk.bindBufferMemory(vkDevice, *m_indiceBuffer, m_indiceBufferAlloc->getMemory(), m_indiceBufferAlloc->getOffset()));
 
@@ -1344,6 +1533,7 @@ void ShaderRenderCaseInstance::render (tcu::Surface& result, const QuadGrid& qua
 		void* bufferPtr;
 		VK_CHECK(vk.mapMemory(vkDevice, m_indiceBufferAlloc->getMemory(), m_indiceBufferAlloc->getOffset(), indiceBufferSize, 0, &bufferPtr));
 		deMemcpy(bufferPtr, quadGrid.getIndices(), indiceBufferSize);
+		flushMappedMemoryRange(vk, vkDevice, m_indiceBufferAlloc->getMemory(), m_indiceBufferAlloc->getOffset(), indiceBufferSize);
 		vk.unmapMemory(vkDevice, m_indiceBufferAlloc->getMemory());
 	}
 
@@ -1419,31 +1609,14 @@ void ShaderRenderCaseInstance::render (tcu::Surface& result, const QuadGrid& qua
 
 			const SamplerUniform* sampler = static_cast<const SamplerUniform*>(uniformInfo);
 
-			VkImageMemoryBarrier textureBarrier =
-			{
-				VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,								// VkStructureType			sType;
-				DE_NULL,															// const void*				pNext;
-				VK_MEMORY_OUTPUT_HOST_WRITE_BIT | VK_MEMORY_OUTPUT_TRANSFER_BIT,	// VkMemoryOutputFlags		outputMask;
-				0,																	// VkMemoryInputFlags		inputMask;
-				VK_IMAGE_LAYOUT_UNDEFINED,											// VkImageLayout			oldLayout;
-				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,							// VkImageLayout			newLayout;
-				queueFamilyIndex,													// deUint32					srcQueueFamilyIndex;
-				queueFamilyIndex,													// deUint32					dstQueueFamilyIndex;
-				sampler->image->get(),												// VkImage					image;
-				{
-					VK_IMAGE_ASPECT_COLOR_BIT,								// VkImageAspectFlags	aspectMask;
-					0,														// deUint32				baseMipLevel;
-					1,														// deUint32				mipLevels;
-					0,														// deUint32				baseArrayLayer;
-					0														// deUint32				arraySize;
-				}																	// VkImageSubresourceRange	subresourceRange;
-			};
+			VkMemoryOutputFlags outputMask = VK_MEMORY_OUTPUT_HOST_WRITE_BIT | VK_MEMORY_OUTPUT_TRANSFER_BIT;
+			VkImageMemoryBarrier textureBarrier = createImageMemoryBarrier(sampler->image->get(), outputMask, 0u, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
 			barriers.push_back(textureBarrier);
 			barrierPtrs.push_back((void*)&barriers.back());
 		}
 
-		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, false, (deUint32)barrierPtrs.size(), (const void * const*)&barrierPtrs[0]);
+		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, false, (deUint32)barrierPtrs.size(), (barrierPtrs.size() ? (const void * const*)&barrierPtrs[0] : DE_NULL));
 
 		vk.cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfo, VK_RENDER_PASS_CONTENTS_INLINE);
 
@@ -1500,7 +1673,7 @@ void ShaderRenderCaseInstance::render (tcu::Surface& result, const QuadGrid& qua
 			&queueFamilyIndex,							//  const deUint32*		pQueueFamilyIndices;
 		};
 		const Unique<VkBuffer> readImageBuffer(createBuffer(vk, vkDevice, &readImageBufferParams));
-		const de::UniquePtr<Allocation>	readImageBufferMemory(m_memAlloc.allocate(getBufferMemoryRequirements(vk, vkDevice, *readImageBuffer), MemoryRequirement::Any));
+		const de::UniquePtr<Allocation>	readImageBufferMemory(m_memAlloc.allocate(getBufferMemoryRequirements(vk, vkDevice, *readImageBuffer), MemoryRequirement::HostVisible));
 
 		VK_CHECK(vk.bindBufferMemory(vkDevice, *readImageBuffer, readImageBufferMemory->getMemory(), readImageBufferMemory->getOffset()));
 

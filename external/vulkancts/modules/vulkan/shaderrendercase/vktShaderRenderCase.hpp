@@ -399,7 +399,17 @@ protected:
 private:
 
 	void												setupTextures				(void);
-	vk::Move<vk::VkImage>								createImage2D				(const tcu::Texture2D& texture, const vk::VkFormat format);
+	de::MovePtr<vk::Allocation>							uploadImage2D				(const tcu::Texture2D&	refTexture,
+																					 const vk::VkImage&		vkTexture);
+	vk::Move<vk::VkImage>								createImage2D				(const tcu::Texture2D&			texture,
+																					 const vk::VkFormat				format,
+																					 const vk::VkImageUsageFlags	usage,
+																					 const vk::VkImageTiling		tiling);
+	void												copyTilingImageToOptimal	(const vk::VkImage&	srcImage,
+																					 const vk::VkImage&	dstImage,
+																					 deInt32 			width,
+																					 deInt32 			height);
+
 	void												setupUniformData			(deUint32 bindingLocation, deUint32 size, const void* dataPtr);
 	void												setupDefaultInputs			(const QuadGrid& quadGrid);
 
