@@ -1725,17 +1725,7 @@ void ShaderRenderCaseInstance::render (tcu::Surface& result, const QuadGrid& qua
 
 		void *imagePtr;
 		VK_CHECK(vk.mapMemory(vkDevice, readImageBufferMemory->getMemory(), readImageBufferMemory->getOffset(), imageSizeBytes, 0u, &imagePtr));
-
-		const VkMappedMemoryRange range =
-		{
-			VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,		// VkStructureType		sType;
-			DE_NULL,									// const void*			pNext;
-			readImageBufferMemory->getMemory(),			// VkDeviceMemory		mem;
-			0,											// VkDeviceSize			offset;
-			imageSizeBytes,								// VkDeviceSize			size;
-		};
-
-		VK_CHECK(vk.invalidateMappedMemoryRanges(vkDevice, 1u, &range));
+		invalidateMappedMemoryRange(vk, vkDevice, readImageBufferMemory->getMemory(), readImageBufferMemory->getOffset(), imageSizeBytes);
 
 		const tcu::TextureFormat resultFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8);
 		const tcu::ConstPixelBufferAccess resultAccess(resultFormat, m_renderSize.x(), m_renderSize.y(), 1, imagePtr);
