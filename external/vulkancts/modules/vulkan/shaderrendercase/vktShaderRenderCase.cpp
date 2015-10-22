@@ -1703,8 +1703,8 @@ void ShaderRenderCaseInstance::render (tcu::Surface& result, const QuadGrid& qua
 		const VkBufferImageCopy copyParams =
 		{
 			0u,											// VkDeviceSize			bufferOffset;
-			m_renderSize.x() * 4u,						// deUint32				bufferRowLength;
-			0u,											// deUint32				bufferImageHeight;
+			(deUint32)m_renderSize.x(),					// deUint32				bufferRowLength;
+			(deUint32)m_renderSize.y(),					// deUint32				bufferImageHeight;
 			{
 				VK_IMAGE_ASPECT_COLOR,				// VkImageAspect		aspect;
 				0u,									// deUint32				mipLevel;
