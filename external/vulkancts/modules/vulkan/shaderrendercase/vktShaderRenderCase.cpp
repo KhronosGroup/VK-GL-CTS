@@ -797,7 +797,7 @@ Move<VkImage> ShaderRenderCaseInstance::createImage2D (const tcu::Texture2D&	tex
 	const DeviceInterface&	vk					= m_context.getDeviceInterface();
 	const deUint32			queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
 
-	const VkImageCreateInfo imageCreateInfo =
+	const VkImageCreateInfo	imageCreateInfo		=
 	{
 		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,						// VkStructureType			sType;
 		DE_NULL,													// const void*				pnext;
@@ -816,17 +816,17 @@ Move<VkImage> ShaderRenderCaseInstance::createImage2D (const tcu::Texture2D&	tex
 		VK_IMAGE_LAYOUT_UNDEFINED,									// VkImageLayout			initialLayout;
 	};
 
-	Move<VkImage> vkTexture = createImage(vk, vkDevice, &imageCreateInfo);
+	Move<VkImage>			vkTexture			= createImage(vk, vkDevice, &imageCreateInfo);
 	return vkTexture;
 }
 
 de::MovePtr<Allocation> ShaderRenderCaseInstance::uploadImage2D (const tcu::Texture2D&	refTexture,
 																 const VkImage&			vkTexture)
 {
-	const VkDevice				vkDevice			= m_context.getDevice();
-	const DeviceInterface&		vk					= m_context.getDeviceInterface();
+	const VkDevice				vkDevice	= m_context.getDevice();
+	const DeviceInterface&		vk			= m_context.getDeviceInterface();
 
-	de::MovePtr<Allocation>		allocation		= m_memAlloc.allocate(getImageMemoryRequirements(vk, vkDevice, vkTexture), MemoryRequirement::HostVisible);
+	de::MovePtr<Allocation>		allocation	= m_memAlloc.allocate(getImageMemoryRequirements(vk, vkDevice, vkTexture), MemoryRequirement::HostVisible);
 	VK_CHECK(vk.bindImageMemory(vkDevice, vkTexture, allocation->getMemory(), allocation->getOffset()));
 
 	const VkImageSubresource	subres				=
@@ -839,8 +839,8 @@ de::MovePtr<Allocation> ShaderRenderCaseInstance::uploadImage2D (const tcu::Text
 	VkSubresourceLayout layout;
 	VK_CHECK(vk.getImageSubresourceLayout(vkDevice, vkTexture, &subres, &layout));
 
-	tcu::ConstPixelBufferAccess access = refTexture.getLevel(0);
-	tcu::PixelBufferAccess destAccess(refTexture.getFormat(), refTexture.getWidth(), refTexture.getHeight(), 1, allocation->getHostPtr());
+	tcu::ConstPixelBufferAccess	access 		= refTexture.getLevel(0);
+	tcu::PixelBufferAccess		destAccess	(refTexture.getFormat(), refTexture.getWidth(), refTexture.getHeight(), 1, allocation->getHostPtr());
 
 	tcu::copy(destAccess, access);
 
@@ -1152,14 +1152,14 @@ void ShaderRenderCaseInstance::setupDefaultInputs (const QuadGrid& quadGrid)
 
 void ShaderRenderCaseInstance::render (tcu::Surface& result, const QuadGrid& quadGrid)
 {
-	const VkDevice				vkDevice			= m_context.getDevice();
-	const DeviceInterface&		vk					= m_context.getDeviceInterface();
-	const VkQueue				queue				= m_context.getUniversalQueue();
-	const deUint32				queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
+	const VkDevice										vkDevice					= m_context.getDevice();
+	const DeviceInterface&								vk							= m_context.getDeviceInterface();
+	const VkQueue										queue						= m_context.getUniversalQueue();
+	const deUint32										queueFamilyIndex			= m_context.getUniversalQueueFamilyIndex();
 
 	// Create color image
 	{
-		const VkImageCreateInfo colorImageParams =
+		const VkImageCreateInfo							colorImageParams			=
 		{
 			VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,										// VkStructureType		sType;
 			DE_NULL,																	// const void*			pNext;
@@ -1187,7 +1187,7 @@ void ShaderRenderCaseInstance::render (tcu::Surface& result, const QuadGrid& qua
 
 	// Create color attachment view
 	{
-		const VkImageViewCreateInfo colorImageViewParams =
+		const VkImageViewCreateInfo						colorImageViewParams		=
 		{
 			VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,			// VkStructureType			sType;
 			DE_NULL,											// const void*				pNext;
@@ -1215,7 +1215,7 @@ void ShaderRenderCaseInstance::render (tcu::Surface& result, const QuadGrid& qua
 
 	// Create render pass
 	{
-		const VkAttachmentDescription colorAttachmentDescription =
+		const VkAttachmentDescription					attachmentDescription		=
 		{
 			VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION,			// VkStructureType				sType;
 			DE_NULL,											// const void*					pNext;
@@ -1230,13 +1230,13 @@ void ShaderRenderCaseInstance::render (tcu::Surface& result, const QuadGrid& qua
 			0u,													// VkAttachmentDescriptorFlags	flags;
 		};
 
-		const VkAttachmentReference colorAttachmentReference =
+		const VkAttachmentReference						attachmentReference			=
 		{
 			0u,													// deUint32			attachment;
 			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL			// VkImageLayout	layout;
 		};
 
-		const VkSubpassDescription subpassDescription =
+		const VkSubpassDescription						subpassDescription			=
 		{
 			VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION,				// VkStructureType				sType;
 			DE_NULL,											// constvoid*					pNext;
@@ -1245,19 +1245,19 @@ void ShaderRenderCaseInstance::render (tcu::Surface& result, const QuadGrid& qua
 			0u,													// deUint32						inputCount;
 			DE_NULL,											// constVkAttachmentReference*	pInputAttachments;
 			1u,													// deUint32						colorCount;
-			&colorAttachmentReference,							// constVkAttachmentReference*	pColorAttachments;
+			&attachmentReference,								// constVkAttachmentReference*	pColorAttachments;
 			DE_NULL,											// constVkAttachmentReference*	pResolveAttachments;
 			{ ~0u, VK_IMAGE_LAYOUT_GENERAL },					// VkAttachmentReference		depthStencilAttachment;
 			0u,													// deUint32						preserveCount;
 			DE_NULL												// constVkAttachmentReference*	pPreserveAttachments;
 		};
 
-		const VkRenderPassCreateInfo renderPassParams =
+		const VkRenderPassCreateInfo					renderPassParams			=
 		{
 			VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,			// VkStructureType					sType;
 			DE_NULL,											// const void*						pNext;
 			1u,													// deUint32							attachmentCount;
-			&colorAttachmentDescription,						// const VkAttachmentDescription*	pAttachments;
+			&attachmentDescription,								// const VkAttachmentDescription*	pAttachments;
 			1u,													// deUint32							subpassCount;
 			&subpassDescription,								// const VkSubpassDescription*		pSubpasses;
 			0u,													// deUint32							dependencyCount;
@@ -1269,7 +1269,7 @@ void ShaderRenderCaseInstance::render (tcu::Surface& result, const QuadGrid& qua
 
 	// Create framebuffer
 	{
-		const VkFramebufferCreateInfo framebufferParams =
+		const VkFramebufferCreateInfo					framebufferParams			=
 		{
 			VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,			// VkStructureType				sType;
 			DE_NULL,											// const void*					pNext;
@@ -1304,7 +1304,7 @@ void ShaderRenderCaseInstance::render (tcu::Surface& result, const QuadGrid& qua
 
 	// Create pipeline layout
 	{
-		const VkPipelineLayoutCreateInfo pipelineLayoutParams =
+		const VkPipelineLayoutCreateInfo				pipelineLayoutParams		=
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,		// VkStructureType				sType;
 			DE_NULL,											// const void*					pNext;
@@ -1322,7 +1322,7 @@ void ShaderRenderCaseInstance::render (tcu::Surface& result, const QuadGrid& qua
 		m_vertexShaderModule	= createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("vert"), 0);
 		m_fragmentShaderModule	= createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("frag"), 0);
 
-		const VkShaderCreateInfo vertexShaderParams =
+		const VkShaderCreateInfo						vertexShaderParams			=
 		{
 			VK_STRUCTURE_TYPE_SHADER_CREATE_INFO,			// VkStructureType		sType;
 			DE_NULL,										// const void*			pNext;
@@ -1332,7 +1332,7 @@ void ShaderRenderCaseInstance::render (tcu::Surface& result, const QuadGrid& qua
 			VK_SHADER_STAGE_VERTEX,							// VkShaderStage		stage;
 		};
 
-		const VkShaderCreateInfo fragmentShaderParams =
+		const VkShaderCreateInfo						fragmentShaderParams		=
 		{
 			VK_STRUCTURE_TYPE_SHADER_CREATE_INFO,			// VkStructureType		sType;
 			DE_NULL,										// const void*			pNext;
@@ -1348,7 +1348,7 @@ void ShaderRenderCaseInstance::render (tcu::Surface& result, const QuadGrid& qua
 
 	// Create pipeline
 	{
-		const VkPipelineShaderStageCreateInfo shaderStageParams[2] =
+		const VkPipelineShaderStageCreateInfo			shaderStageParams[2]		=
 		{
 			{
 				VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,		// VkStructureType				sType;
@@ -1373,7 +1373,7 @@ void ShaderRenderCaseInstance::render (tcu::Surface& result, const QuadGrid& qua
 		// Add base attributes
 		setupDefaultInputs(quadGrid);
 
-		const VkPipelineVertexInputStateCreateInfo vertexInputStateParams =
+		const VkPipelineVertexInputStateCreateInfo		vertexInputStateParams		=
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,		// VkStructureType							sType;
 			DE_NULL,														// const void*								pNext;
@@ -1383,7 +1383,7 @@ void ShaderRenderCaseInstance::render (tcu::Surface& result, const QuadGrid& qua
 			&m_vertexattributeDescription[0],								// const VkVertexInputAttributeDescription*	pVertexAttributeDescriptions;
 		};
 
-		const VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateParams =
+		const VkPipelineInputAssemblyStateCreateInfo	inputAssemblyStateParams	=
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,	// VkStructureType		sType;
 			DE_NULL,														// const void*			pNext;
@@ -1391,7 +1391,7 @@ void ShaderRenderCaseInstance::render (tcu::Surface& result, const QuadGrid& qua
 			false															// VkBool32				primitiveRestartEnable;
 		};
 
-		const VkViewport viewport =
+		const VkViewport								viewport					=
 		{
 			0.0f,						// float	originX;
 			0.0f,						// float	originY;
@@ -1401,7 +1401,7 @@ void ShaderRenderCaseInstance::render (tcu::Surface& result, const QuadGrid& qua
 			1.0f						// float	maxDepth;
 		};
 
-		const VkRect2D scissor =
+		const VkRect2D									scissor						=
 		{
 			{
 				0u,					// deUint32	x;
@@ -1413,7 +1413,7 @@ void ShaderRenderCaseInstance::render (tcu::Surface& result, const QuadGrid& qua
 			},							// VkExtent2D	extent;
 		};
 
-		const VkPipelineViewportStateCreateInfo viewportStateParams =
+		const VkPipelineViewportStateCreateInfo			viewportStateParams			=
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,			// VkStructureType		sType;
 			DE_NULL,														// const void*			pNext;
@@ -1423,7 +1423,7 @@ void ShaderRenderCaseInstance::render (tcu::Surface& result, const QuadGrid& qua
 			&scissor,														// const VkRect2D*		pScissors;
 		};
 
-		const VkPipelineRasterStateCreateInfo rasterStateParams =
+		const VkPipelineRasterStateCreateInfo			rasterStateParams			=
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_RASTER_STATE_CREATE_INFO,			// VkStructureType	sType;
 			DE_NULL,														// const void*		pNext;
@@ -1439,7 +1439,7 @@ void ShaderRenderCaseInstance::render (tcu::Surface& result, const QuadGrid& qua
 			1.0f,															// float			lineWidth;
 		};
 
-		const VkPipelineColorBlendAttachmentState colorBlendAttachmentState =
+		const VkPipelineColorBlendAttachmentState		colorBlendAttachmentState	=
 		{
 			false,																		// VkBool32			blendEnable;
 			VK_BLEND_ONE,																// VkBlend			srcBlendColor;
@@ -1451,7 +1451,7 @@ void ShaderRenderCaseInstance::render (tcu::Surface& result, const QuadGrid& qua
 			VK_CHANNEL_R_BIT | VK_CHANNEL_G_BIT | VK_CHANNEL_B_BIT | VK_CHANNEL_A_BIT	// VkChannelFlags	channelWriteMask;
 		};
 
-		const VkPipelineColorBlendStateCreateInfo colorBlendStateParams =
+		const VkPipelineColorBlendStateCreateInfo		colorBlendStateParams		=
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,	// VkStructureType								sType;
 			DE_NULL,													// const void*									pNext;
@@ -1464,7 +1464,7 @@ void ShaderRenderCaseInstance::render (tcu::Surface& result, const QuadGrid& qua
 			{ 0.0f, 0.0f, 0.0f, 0.0f },									// float										blendConst[4];
 		};
 
-		const VkPipelineDynamicStateCreateInfo dynamicStateInfo =
+		const VkPipelineDynamicStateCreateInfo			dynamicStateInfo			=
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,		// VkStructureType				sType;
 			DE_NULL,													// const void*					pNext;
@@ -1472,7 +1472,7 @@ void ShaderRenderCaseInstance::render (tcu::Surface& result, const QuadGrid& qua
 			DE_NULL														// const VkDynamicState*		pDynamicStates;
 		};
 
-		const VkGraphicsPipelineCreateInfo graphicsPipelineParams =
+		const VkGraphicsPipelineCreateInfo				graphicsPipelineParams		=
 		{
 			VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,	// VkStructureType									sType;
 			DE_NULL,											// const void*										pNext;
@@ -1500,8 +1500,8 @@ void ShaderRenderCaseInstance::render (tcu::Surface& result, const QuadGrid& qua
 
 	// Create vertex indices buffer
 	{
-		const VkDeviceSize indiceBufferSize = quadGrid.getNumTriangles() * 3 * sizeof(deUint16);
-		const VkBufferCreateInfo indiceBufferParams =
+		const VkDeviceSize								indiceBufferSize			= quadGrid.getNumTriangles() * 3 * sizeof(deUint16);
+		const VkBufferCreateInfo						indiceBufferParams			=
 		{
 			VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,		// VkStructureType		sType;
 			DE_NULL,									// const void*			pNext;
@@ -1525,7 +1525,7 @@ void ShaderRenderCaseInstance::render (tcu::Surface& result, const QuadGrid& qua
 
 	// Create command pool
 	{
-		const VkCmdPoolCreateInfo cmdPoolParams =
+		const VkCmdPoolCreateInfo						cmdPoolParams				=
 		{
 			VK_STRUCTURE_TYPE_CMD_POOL_CREATE_INFO,		// VkStructureType		sType;
 			DE_NULL,									// const void*			pNext;
@@ -1538,7 +1538,7 @@ void ShaderRenderCaseInstance::render (tcu::Surface& result, const QuadGrid& qua
 
 	// Create command buffer
 	{
-		const VkCmdBufferCreateInfo cmdBufferParams =
+		const VkCmdBufferCreateInfo						cmdBufferParams				=
 		{
 			VK_STRUCTURE_TYPE_CMD_BUFFER_CREATE_INFO,	// VkStructureType			sType;
 			DE_NULL,									// const void*				pNext;
@@ -1547,7 +1547,7 @@ void ShaderRenderCaseInstance::render (tcu::Surface& result, const QuadGrid& qua
 			0u											// VkCmdBufferCreateFlags	flags;
 		};
 
-		const VkCmdBufferBeginInfo cmdBufferBeginInfo =
+		const VkCmdBufferBeginInfo						cmdBufferBeginInfo			=
 		{
 			VK_STRUCTURE_TYPE_CMD_BUFFER_BEGIN_INFO,	// VkStructureType			sType;
 			DE_NULL,									// const void*				pNext;
@@ -1557,7 +1557,7 @@ void ShaderRenderCaseInstance::render (tcu::Surface& result, const QuadGrid& qua
 			DE_NULL										// VkFramebuffer			framebuffer;
 		};
 
-		const VkClearValue clearValues =
+		const VkClearValue								clearValues					=
 		{
 			m_clearColor.x(),
 			m_clearColor.y(),
@@ -1565,7 +1565,7 @@ void ShaderRenderCaseInstance::render (tcu::Surface& result, const QuadGrid& qua
 			m_clearColor.w(),
 		};
 
-		const VkRenderPassBeginInfo renderPassBeginInfo =
+		const VkRenderPassBeginInfo						renderPassBeginInfo			=
 		{
 			VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO	,	// VkStructureType		sType;
 			DE_NULL,										// const void*			pNext;
@@ -1628,7 +1628,7 @@ void ShaderRenderCaseInstance::render (tcu::Surface& result, const QuadGrid& qua
 
 	// Create fence
 	{
-		const VkFenceCreateInfo fenceParams =
+		const VkFenceCreateInfo							fenceParams					=
 		{
 			VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,	// VkStructureType		sType;
 			DE_NULL,								// const void*			pNext;
@@ -1646,8 +1646,8 @@ void ShaderRenderCaseInstance::render (tcu::Surface& result, const QuadGrid& qua
 
 	// Read back the result
 	{
-		const VkDeviceSize imageSizeBytes = (VkDeviceSize)(sizeof(deUint32) * m_renderSize.x() * m_renderSize.y());
-		const VkBufferCreateInfo readImageBufferParams   =
+		const VkDeviceSize								imageSizeBytes				= (VkDeviceSize)(sizeof(deUint32) * m_renderSize.x() * m_renderSize.y());
+		const VkBufferCreateInfo						readImageBufferParams   	=
 		{
 			VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,		//  VkStructureType		sType;
 			DE_NULL,									//  const void*			pNext;
@@ -1658,14 +1658,13 @@ void ShaderRenderCaseInstance::render (tcu::Surface& result, const QuadGrid& qua
 			1u,											//  deUint32			queueFamilyCount;
 			&queueFamilyIndex,							//  const deUint32*		pQueueFamilyIndices;
 		};
-		const Unique<VkBuffer> readImageBuffer(createBuffer(vk, vkDevice, &readImageBufferParams));
-		const de::UniquePtr<Allocation>	readImageBufferMemory(m_memAlloc.allocate(getBufferMemoryRequirements(vk, vkDevice, *readImageBuffer), MemoryRequirement::HostVisible));
+		const Unique<VkBuffer>							readImageBuffer				(createBuffer(vk, vkDevice, &readImageBufferParams));
+		const de::UniquePtr<Allocation>					readImageBufferMemory		(m_memAlloc.allocate(getBufferMemoryRequirements(vk, vkDevice, *readImageBuffer), MemoryRequirement::HostVisible));
 
 		VK_CHECK(vk.bindBufferMemory(vkDevice, *readImageBuffer, readImageBufferMemory->getMemory(), readImageBufferMemory->getOffset()));
 
-
 		// Copy image to buffer
-		const VkCmdBufferCreateInfo cmdBufferParams =
+		const VkCmdBufferCreateInfo						cmdBufferParams				=
 		{
 			VK_STRUCTURE_TYPE_CMD_BUFFER_CREATE_INFO,	// VkStructureType			sType;
 			DE_NULL,									// const void*				pNext;
@@ -1674,7 +1673,7 @@ void ShaderRenderCaseInstance::render (tcu::Surface& result, const QuadGrid& qua
 			0u											// VkCmdBufferCreateFlags	flags;
 		};
 
-		const VkCmdBufferBeginInfo cmdBufferBeginInfo =
+		const VkCmdBufferBeginInfo						cmdBufferBeginInfo			=
 		{
 			VK_STRUCTURE_TYPE_CMD_BUFFER_BEGIN_INFO,	// VkStructureType			sType;
 			DE_NULL,									// const void*				pNext;
@@ -1684,9 +1683,9 @@ void ShaderRenderCaseInstance::render (tcu::Surface& result, const QuadGrid& qua
 			DE_NULL										// VkFramebuffer			framebuffer;
 		};
 
-		const Move<VkCmdBuffer> cmdBuffer = createCommandBuffer(vk, vkDevice, &cmdBufferParams);
+		const Move<VkCmdBuffer>							cmdBuffer					= createCommandBuffer(vk, vkDevice, &cmdBufferParams);
 
-		const VkBufferImageCopy copyParams =
+		const VkBufferImageCopy							copyParams					=
 		{
 			0u,											// VkDeviceSize			bufferOffset;
 			(deUint32)m_renderSize.x(),					// deUint32				bufferRowLength;
@@ -1711,8 +1710,8 @@ void ShaderRenderCaseInstance::render (tcu::Surface& result, const QuadGrid& qua
 
 		invalidateMappedMemoryRange(vk, vkDevice, readImageBufferMemory->getMemory(), readImageBufferMemory->getOffset(), imageSizeBytes);
 
-		const tcu::TextureFormat resultFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8);
-		const tcu::ConstPixelBufferAccess resultAccess(resultFormat, m_renderSize.x(), m_renderSize.y(), 1, readImageBufferMemory->getHostPtr());
+		const tcu::TextureFormat						resultFormat				(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8);
+		const tcu::ConstPixelBufferAccess				resultAccess				(resultFormat, m_renderSize.x(), m_renderSize.y(), 1, readImageBufferMemory->getHostPtr());
 
 		tcu::copy(result.getAccess(), resultAccess);
 	}
