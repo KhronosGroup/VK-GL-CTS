@@ -544,11 +544,8 @@ void ShaderRenderCaseInstance::setupUniformData (deUint32 bindingLocation, deUin
 	de::MovePtr<Allocation> 		alloc				= m_memAlloc.allocate(getBufferMemoryRequirements(vk, vkDevice, *buffer), MemoryRequirement::HostVisible);
 	VK_CHECK(vk.bindBufferMemory(vkDevice, *buffer, alloc->getMemory(), alloc->getOffset()));
 
-	void* bufferPtr;
-	VK_CHECK(vk.mapMemory(vkDevice, alloc->getMemory(), alloc->getOffset(), size, 0, &bufferPtr));
-	deMemcpy(bufferPtr, dataPtr, size);
+	deMemcpy(alloc->getHostPtr(), dataPtr, size);
 	flushMappedMemoryRange(vk, vkDevice, alloc->getMemory(), alloc->getOffset(), size);
-	vk.unmapMemory(vkDevice, alloc->getMemory());
 
 	const VkBufferViewCreateInfo	viewInfo 	=
 	{
@@ -646,14 +643,10 @@ void ShaderRenderCaseInstance::addAttribute (deUint32		bindingLocation,
 
 	Move<VkBuffer> 							buffer					= createBuffer(vk, vkDevice, &vertexBufferParams);
 	de::MovePtr<vk::Allocation>				alloc					= m_memAlloc.allocate(getBufferMemoryRequirements(vk, vkDevice, *buffer), MemoryRequirement::HostVisible);
-
 	VK_CHECK(vk.bindBufferMemory(vkDevice, *buffer, alloc->getMemory(), alloc->getOffset()));
 
-	void* bufferPtr;
-	VK_CHECK(vk.mapMemory(vkDevice, alloc->getMemory(), alloc->getOffset(), inputSize, 0, &bufferPtr));
-	deMemcpy(bufferPtr, dataPtr, inputSize);
+	deMemcpy(alloc->getHostPtr(), dataPtr, inputSize);
 	flushMappedMemoryRange(vk, vkDevice, alloc->getMemory(), alloc->getOffset(), inputSize);
-	vk.unmapMemory(vkDevice, alloc->getMemory());
 
 	m_vertexBuffers.push_back(VkBufferSp(new vk::Unique<VkBuffer>(buffer)));
 	m_vertexBufferAllocs.push_back(AllocationSp(new de::UniquePtr<vk::Allocation>(alloc)));
@@ -846,16 +839,12 @@ de::MovePtr<Allocation> ShaderRenderCaseInstance::uploadImage2D (const tcu::Text
 	VkSubresourceLayout layout;
 	VK_CHECK(vk.getImageSubresourceLayout(vkDevice, vkTexture, &subres, &layout));
 
-	void *imagePtr;
-	VK_CHECK(vk.mapMemory(vkDevice, allocation->getMemory(), allocation->getOffset(), layout.size, 0u, &imagePtr));
-
 	tcu::ConstPixelBufferAccess access = refTexture.getLevel(0);
-	tcu::PixelBufferAccess destAccess(refTexture.getFormat(), refTexture.getWidth(), refTexture.getHeight(), 1, imagePtr);
+	tcu::PixelBufferAccess destAccess(refTexture.getFormat(), refTexture.getWidth(), refTexture.getHeight(), 1, allocation->getHostPtr());
 
 	tcu::copy(destAccess, access);
 
 	flushMappedMemoryRange(vk, vkDevice, allocation->getMemory(), allocation, layout.size);
-	vk.unmapMemory(vkDevice, allocation->getMemory());
 
 	return allocation;
 }
@@ -1530,11 +1519,8 @@ void ShaderRenderCaseInstance::render (tcu::Surface& result, const QuadGrid& qua
 		VK_CHECK(vk.bindBufferMemory(vkDevice, *m_indiceBuffer, m_indiceBufferAlloc->getMemory(), m_indiceBufferAlloc->getOffset()));
 
 		// Load vertice indices into buffer
-		void* bufferPtr;
-		VK_CHECK(vk.mapMemory(vkDevice, m_indiceBufferAlloc->getMemory(), m_indiceBufferAlloc->getOffset(), indiceBufferSize, 0, &bufferPtr));
-		deMemcpy(bufferPtr, quadGrid.getIndices(), indiceBufferSize);
+		deMemcpy(m_indiceBufferAlloc->getHostPtr(), quadGrid.getIndices(), indiceBufferSize);
 		flushMappedMemoryRange(vk, vkDevice, m_indiceBufferAlloc->getMemory(), m_indiceBufferAlloc->getOffset(), indiceBufferSize);
-		vk.unmapMemory(vkDevice, m_indiceBufferAlloc->getMemory());
 	}
 
 	// Create command pool
@@ -1723,16 +1709,12 @@ void ShaderRenderCaseInstance::render (tcu::Surface& result, const QuadGrid& qua
 		VK_CHECK(vk.queueSubmit(queue, 1, &cmdBuffer.get(), *m_fence));
 		VK_CHECK(vk.waitForFences(vkDevice, 1, &m_fence.get(), true, ~(0ull) /* infinity */));
 
-		void *imagePtr;
-		VK_CHECK(vk.mapMemory(vkDevice, readImageBufferMemory->getMemory(), readImageBufferMemory->getOffset(), imageSizeBytes, 0u, &imagePtr));
 		invalidateMappedMemoryRange(vk, vkDevice, readImageBufferMemory->getMemory(), readImageBufferMemory->getOffset(), imageSizeBytes);
 
 		const tcu::TextureFormat resultFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8);
-		const tcu::ConstPixelBufferAccess resultAccess(resultFormat, m_renderSize.x(), m_renderSize.y(), 1, imagePtr);
+		const tcu::ConstPixelBufferAccess resultAccess(resultFormat, m_renderSize.x(), m_renderSize.y(), 1, readImageBufferMemory->getHostPtr());
 
 		tcu::copy(result.getAccess(), resultAccess);
-
-		vk.unmapMemory(vkDevice, readImageBufferMemory->getMemory());
 	}
 }
 
