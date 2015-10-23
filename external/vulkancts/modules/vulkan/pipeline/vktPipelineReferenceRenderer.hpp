@@ -181,6 +181,7 @@ private:
 
 rr::TestFunc					mapVkCompareOp			(vk::VkCompareOp compareFunc);
 rr::PrimitiveType				mapVkPrimitiveTopology	(vk::VkPrimitiveTopology primitiveTopology);
+rr::StencilOp					mapVkStencilOp			(vk::VkStencilOp stencilOp);
 
 } // pipeline
 } // vkt
