@@ -83,6 +83,24 @@ rr::PrimitiveType mapVkPrimitiveTopology (VkPrimitiveTopology primitiveTopology)
 	return rr::PRIMITIVETYPE_LAST;
 }
 
+rr::StencilOp mapVkStencilOp (vk::VkStencilOp stencilOp)
+{
+	switch (stencilOp)
+	{
+		case VK_STENCIL_OP_KEEP:		return rr::STENCILOP_KEEP;
+		case VK_STENCIL_OP_ZERO:		return rr::STENCILOP_ZERO;
+		case VK_STENCIL_OP_REPLACE:		return rr::STENCILOP_REPLACE;
+		case VK_STENCIL_OP_INC_CLAMP:	return rr::STENCILOP_INCR;
+		case VK_STENCIL_OP_DEC_CLAMP:	return rr::STENCILOP_DECR;
+		case VK_STENCIL_OP_INVERT:		return rr::STENCILOP_INVERT;
+		case VK_STENCIL_OP_INC_WRAP:	return rr::STENCILOP_INCR_WRAP;
+		case VK_STENCIL_OP_DEC_WRAP:	return rr::STENCILOP_DECR_WRAP;
+		default:
+			DE_ASSERT(false);
+	}
+	return rr::STENCILOP_LAST;
+}
+
 ReferenceRenderer::ReferenceRenderer(int						surfaceWidth,
 									 int						surfaceHeight,
 									 int						numSamples,
