@@ -67,6 +67,9 @@ bool isUintFormat (VkFormat format)
 
 bool isDepthStencilFormat (VkFormat format)
 {
+	if (isCompressedFormat(format))
+		return false;
+
 	const tcu::TextureFormat tcuFormat = mapVkFormat(format);
 	return tcuFormat.order == tcu::TextureFormat::D || tcuFormat.order == tcu::TextureFormat::S || tcuFormat.order == tcu::TextureFormat::DS;
 }
@@ -438,6 +441,95 @@ tcu::TextureFormat mapVkFormat (VkFormat format)
 		default:
 			TCU_THROW(InternalError, "Unknown image format");
 	}
+}
+
+tcu::CompressedTexFormat mapVkCompressedFormat (VkFormat format)
+{
+	switch (format)
+	{
+		case VK_FORMAT_ETC2_R8G8B8_UNORM:		return tcu::COMPRESSEDTEXFORMAT_ETC2_RGB8;
+		case VK_FORMAT_ETC2_R8G8B8_SRGB:		return tcu::COMPRESSEDTEXFORMAT_ETC2_SRGB8;
+		case VK_FORMAT_ETC2_R8G8B8A1_UNORM:		return tcu::COMPRESSEDTEXFORMAT_ETC2_RGB8_PUNCHTHROUGH_ALPHA1;
+		case VK_FORMAT_ETC2_R8G8B8A1_SRGB:		return tcu::COMPRESSEDTEXFORMAT_ETC2_SRGB8_PUNCHTHROUGH_ALPHA1;
+		case VK_FORMAT_ETC2_R8G8B8A8_UNORM:		return tcu::COMPRESSEDTEXFORMAT_ETC2_EAC_RGBA8;
+		case VK_FORMAT_ETC2_R8G8B8A8_SRGB:		return tcu::COMPRESSEDTEXFORMAT_ETC2_EAC_SRGB8_ALPHA8;
+		case VK_FORMAT_EAC_R11_UNORM:			return tcu::COMPRESSEDTEXFORMAT_EAC_R11;
+		case VK_FORMAT_EAC_R11_SNORM:			return tcu::COMPRESSEDTEXFORMAT_EAC_SIGNED_R11;
+		case VK_FORMAT_EAC_R11G11_UNORM:		return tcu::COMPRESSEDTEXFORMAT_EAC_RG11;
+		case VK_FORMAT_EAC_R11G11_SNORM:		return tcu::COMPRESSEDTEXFORMAT_EAC_SIGNED_RG11;
+		case VK_FORMAT_ASTC_4x4_UNORM:			return tcu::COMPRESSEDTEXFORMAT_ASTC_4x4_RGBA;
+		case VK_FORMAT_ASTC_4x4_SRGB:			return tcu::COMPRESSEDTEXFORMAT_ASTC_4x4_SRGB8_ALPHA8;
+		case VK_FORMAT_ASTC_5x4_UNORM:			return tcu::COMPRESSEDTEXFORMAT_ASTC_5x4_RGBA;
+		case VK_FORMAT_ASTC_5x4_SRGB:			return tcu::COMPRESSEDTEXFORMAT_ASTC_5x5_SRGB8_ALPHA8;
+		case VK_FORMAT_ASTC_5x5_UNORM:			return tcu::COMPRESSEDTEXFORMAT_ASTC_5x5_RGBA;
+		case VK_FORMAT_ASTC_5x5_SRGB:			return tcu::COMPRESSEDTEXFORMAT_ASTC_5x5_SRGB8_ALPHA8;
+		case VK_FORMAT_ASTC_6x5_UNORM:			return tcu::COMPRESSEDTEXFORMAT_ASTC_6x5_RGBA;
+		case VK_FORMAT_ASTC_6x5_SRGB:			return tcu::COMPRESSEDTEXFORMAT_ASTC_6x5_SRGB8_ALPHA8;
+		case VK_FORMAT_ASTC_6x6_UNORM:			return tcu::COMPRESSEDTEXFORMAT_ASTC_6x6_RGBA;
+		case VK_FORMAT_ASTC_6x6_SRGB:			return tcu::COMPRESSEDTEXFORMAT_ASTC_6x6_SRGB8_ALPHA8;
+		case VK_FORMAT_ASTC_8x5_UNORM:			return tcu::COMPRESSEDTEXFORMAT_ASTC_8x5_RGBA;
+		case VK_FORMAT_ASTC_8x5_SRGB:			return tcu::COMPRESSEDTEXFORMAT_ASTC_8x6_SRGB8_ALPHA8;
+		case VK_FORMAT_ASTC_8x6_UNORM:			return tcu::COMPRESSEDTEXFORMAT_ASTC_8x6_RGBA;
+		case VK_FORMAT_ASTC_8x6_SRGB:			return tcu::COMPRESSEDTEXFORMAT_ASTC_8x6_SRGB8_ALPHA8;
+		case VK_FORMAT_ASTC_8x8_UNORM:			return tcu::COMPRESSEDTEXFORMAT_ASTC_8x8_RGBA;
+		case VK_FORMAT_ASTC_8x8_SRGB:			return tcu::COMPRESSEDTEXFORMAT_ASTC_8x8_SRGB8_ALPHA8;
+		case VK_FORMAT_ASTC_10x5_UNORM:			return tcu::COMPRESSEDTEXFORMAT_ASTC_10x5_RGBA;
+		case VK_FORMAT_ASTC_10x5_SRGB:			return tcu::COMPRESSEDTEXFORMAT_ASTC_10x5_SRGB8_ALPHA8;
+		case VK_FORMAT_ASTC_10x6_UNORM:			return tcu::COMPRESSEDTEXFORMAT_ASTC_10x6_RGBA;
+		case VK_FORMAT_ASTC_10x6_SRGB:			return tcu::COMPRESSEDTEXFORMAT_ASTC_10x6_SRGB8_ALPHA8;
+		case VK_FORMAT_ASTC_10x8_UNORM:			return tcu::COMPRESSEDTEXFORMAT_ASTC_10x8_RGBA;
+		case VK_FORMAT_ASTC_10x8_SRGB:			return tcu::COMPRESSEDTEXFORMAT_ASTC_10x8_SRGB8_ALPHA8;
+		case VK_FORMAT_ASTC_10x10_UNORM:		return tcu::COMPRESSEDTEXFORMAT_ASTC_10x10_RGBA;
+		case VK_FORMAT_ASTC_10x10_SRGB:			return tcu::COMPRESSEDTEXFORMAT_ASTC_10x10_SRGB8_ALPHA8;
+		case VK_FORMAT_ASTC_12x10_UNORM:		return tcu::COMPRESSEDTEXFORMAT_ASTC_12x10_RGBA;
+		case VK_FORMAT_ASTC_12x10_SRGB:			return tcu::COMPRESSEDTEXFORMAT_ASTC_12x10_SRGB8_ALPHA8;
+		case VK_FORMAT_ASTC_12x12_UNORM:		return tcu::COMPRESSEDTEXFORMAT_ASTC_12x12_RGBA;
+		case VK_FORMAT_ASTC_12x12_SRGB:			return tcu::COMPRESSEDTEXFORMAT_ASTC_12x12_SRGB8_ALPHA8;
+		default:
+			break;
+	}
+
+	return tcu::COMPRESSEDTEXFORMAT_LAST;
+}
+
+VkChannelMapping getFormatChannelMapping (VkFormat format)
+{
+	using tcu::TextureFormat;
+
+	static const VkChannelMapping	R		= {	VK_CHANNEL_SWIZZLE_R,		VK_CHANNEL_SWIZZLE_ZERO,	VK_CHANNEL_SWIZZLE_ZERO,	VK_CHANNEL_SWIZZLE_ONE	};
+	static const VkChannelMapping	RG		= {	VK_CHANNEL_SWIZZLE_R,		VK_CHANNEL_SWIZZLE_G,		VK_CHANNEL_SWIZZLE_ZERO,	VK_CHANNEL_SWIZZLE_ONE	};
+	static const VkChannelMapping	RGB		= {	VK_CHANNEL_SWIZZLE_R,		VK_CHANNEL_SWIZZLE_G,		VK_CHANNEL_SWIZZLE_B,		VK_CHANNEL_SWIZZLE_ONE	};
+	static const VkChannelMapping	RGBA	= {	VK_CHANNEL_SWIZZLE_R,		VK_CHANNEL_SWIZZLE_G,		VK_CHANNEL_SWIZZLE_B,		VK_CHANNEL_SWIZZLE_A	};
+	static const VkChannelMapping	S		= { VK_CHANNEL_SWIZZLE_ZERO,	VK_CHANNEL_SWIZZLE_ZERO,	VK_CHANNEL_SWIZZLE_ZERO,	VK_CHANNEL_SWIZZLE_A	};
+	static const VkChannelMapping	DS		= {	VK_CHANNEL_SWIZZLE_R,		VK_CHANNEL_SWIZZLE_ZERO,	VK_CHANNEL_SWIZZLE_ZERO,	VK_CHANNEL_SWIZZLE_A	};
+	static const VkChannelMapping	BGRA	= {	VK_CHANNEL_SWIZZLE_B,		VK_CHANNEL_SWIZZLE_G,		VK_CHANNEL_SWIZZLE_R,		VK_CHANNEL_SWIZZLE_A	};
+
+	if (format == VK_FORMAT_UNDEFINED)
+		return RGBA;
+
+	const tcu::TextureFormat tcuFormat = (isCompressedFormat(format)) ? tcu::getUncompressedFormat(mapVkCompressedFormat(format))
+																	  : mapVkFormat(format);
+
+	switch (tcuFormat.order)
+	{
+		case TextureFormat::R:		return R;
+		case TextureFormat::RG:		return RG;
+		case TextureFormat::RGB:	return RGB;
+		case TextureFormat::RGBA:	return RGBA;
+		case TextureFormat::BGRA:	return BGRA;
+		case TextureFormat::sR:		return R;
+		case TextureFormat::sRG:	return RG;
+		case TextureFormat::sRGB:	return RGB;
+		case TextureFormat::sRGBA:	return RGBA;
+		case TextureFormat::D:		return R;
+		case TextureFormat::S:		return S;
+		case TextureFormat::DS:		return DS;
+		default:
+			break;
+	}
+
+	DE_ASSERT(false);
+	return RGBA;
 }
 
 static bool isScaledFormat (VkFormat format)

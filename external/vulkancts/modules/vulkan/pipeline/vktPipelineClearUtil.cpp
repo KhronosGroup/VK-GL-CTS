@@ -44,10 +44,15 @@ namespace pipeline
 
 using namespace vk;
 
-tcu::Vec4 defaultClearColorFloat (const tcu::TextureFormat& format)
+tcu::Vec4 defaultClearColor (const tcu::TextureFormat& format)
 {
-	const tcu::TextureFormatInfo	formatInfo	= tcu::getTextureFormatInfo(format);
-	return (defaultClearColorUnorm() - formatInfo.lookupBias) / formatInfo.lookupScale;
+   if (tcu::getTextureChannelClass(format.type) == tcu::TEXTURECHANNELCLASS_FLOATING_POINT)
+       return defaultClearColorUnorm();
+   else
+   {
+       const tcu::TextureFormatInfo formatInfo = tcu::getTextureFormatInfo(format);
+       return (defaultClearColorUnorm() - formatInfo.lookupBias) / formatInfo.lookupScale;
+   }
 }
 
 tcu::IVec4 defaultClearColorInt (const tcu::TextureFormat& format)
@@ -127,7 +132,7 @@ VkClearValue defaultClearValue (VkFormat clearFormat)
 		}
 		else
 		{
-			const tcu::Vec4 defaultColor	= defaultClearColorFloat(tcuClearFormat);
+			const tcu::Vec4 defaultColor	= defaultClearColor(tcuClearFormat);
 			clearValue.color.float32[0]			= defaultColor.x();
 			clearValue.color.float32[1]			= defaultColor.y();
 			clearValue.color.float32[2]			= defaultColor.z();

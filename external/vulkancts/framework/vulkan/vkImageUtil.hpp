@@ -38,22 +38,26 @@
 
 #include "vkDefs.hpp"
 #include "tcuTexture.hpp"
+#include "tcuCompressedTexture.hpp"
 
 namespace vk
 {
 
-bool				isFloatFormat			(VkFormat format);
-bool				isUnormFormat			(VkFormat format);
-bool				isSnormFormat			(VkFormat format);
-bool				isIntFormat				(VkFormat format);
-bool				isUintFormat			(VkFormat format);
-bool				isDepthStencilFormat	(VkFormat format);
-bool				isCompressedFormat		(VkFormat format);
+bool						isFloatFormat			(VkFormat format);
+bool						isUnormFormat			(VkFormat format);
+bool						isSnormFormat			(VkFormat format);
+bool						isIntFormat				(VkFormat format);
+bool						isUintFormat			(VkFormat format);
+bool						isDepthStencilFormat	(VkFormat format);
+bool						isCompressedFormat		(VkFormat format);
 
-tcu::TextureFormat	mapVkFormat				(VkFormat format);
-VkFormat			mapTextureFormat		(const tcu::TextureFormat& format);
+tcu::TextureFormat			mapVkFormat				(VkFormat format);
+tcu::CompressedTexFormat	mapVkCompressedFormat	(VkFormat format);
+VkChannelMapping			getFormatChannelMapping	(VkFormat format);
 
-void				imageUtilSelfTest		(void);
+VkFormat					mapTextureFormat		(const tcu::TextureFormat& format);
+
+void						imageUtilSelfTest		(void);
 
 } // vk
 
