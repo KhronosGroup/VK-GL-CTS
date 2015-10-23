@@ -4,6 +4,8 @@ include_directories(
 	)
 
 set(DEQP_VK_PIPELINE_SRCS
+	vktPipelineBlendTests.cpp
+	vktPipelineBlendTests.hpp
 	vktPipelineClearUtil.cpp
 	vktPipelineClearUtil.hpp
 	vktPipelineDepthTests.cpp

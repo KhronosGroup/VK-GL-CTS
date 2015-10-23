@@ -44,7 +44,7 @@ namespace vkt
 namespace pipeline
 {
 
-tcu::Vec4						defaultClearColorFloat			(const tcu::TextureFormat& format);
+tcu::Vec4						defaultClearColor				(const tcu::TextureFormat& format);
 tcu::IVec4						defaultClearColorInt			(const tcu::TextureFormat& format);
 tcu::UVec4						defaultClearColorUint			(const tcu::TextureFormat& format);
 tcu::Vec4						defaultClearColorUnorm			(void);

@@ -90,7 +90,6 @@ class ColorFragmentShader : public rr::FragmentShader
 {
 private:
 	const tcu::TextureFormat		m_colorFormat;
-	const tcu::TextureFormatInfo	m_colorFormatInfo;
 	const tcu::TextureFormat		m_depthStencilFormat;
 
 public:
@@ -98,7 +97,6 @@ public:
 						 const tcu::TextureFormat& depthStencilFormat)
 		: rr::FragmentShader	(2, 1)
 		, m_colorFormat			(colorFormat)
-		, m_colorFormatInfo		(tcu::getTextureFormatInfo(colorFormat))
 		, m_depthStencilFormat	(depthStencilFormat)
 	{
 		const tcu::TextureChannelClass channelClass = tcu::getTextureChannelClass(m_colorFormat.type);
@@ -132,12 +130,7 @@ public:
 			for (int fragNdx = 0; fragNdx < 4; fragNdx++)
 			{
 				const tcu::Vec4 vtxColor = rr::readVarying<float>(packet, context, 1, fragNdx);
-
-				rr::writeFragmentOutput(context,
-										packetNdx,
-										fragNdx,
-										0,
-										(vtxColor - m_colorFormatInfo.lookupBias) / m_colorFormatInfo.lookupScale);
+				rr::writeFragmentOutput(context, packetNdx, fragNdx, 0, vtxColor);
 			}
 		}
 	}
@@ -179,6 +172,9 @@ private:
 	const rr::Program*			m_program;
 };
 
+rr::BlendFunc					mapVkBlend				(vk::VkBlend blend);
+rr::BlendEquation				mapVkBlendOp			(vk::VkBlendOp blendOp);
+tcu::BVec4						mapVkChannelFlags		(vk::VkChannelFlags flags);
 rr::TestFunc					mapVkCompareOp			(vk::VkCompareOp compareFunc);
 rr::PrimitiveType				mapVkPrimitiveTopology	(vk::VkPrimitiveTopology primitiveTopology);
 rr::StencilOp					mapVkStencilOp			(vk::VkStencilOp stencilOp);

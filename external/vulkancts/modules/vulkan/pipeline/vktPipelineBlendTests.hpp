@@ -1,3 +1,5 @@
+#ifndef _VKTPIPELINEBLENDTESTS_HPP
+#define _VKTPIPELINEBLENDTESTS_HPP
 /*------------------------------------------------------------------------
  * Vulkan Conformance Tests
  * ------------------------
@@ -30,30 +32,19 @@
  *
  *//*!
  * \file
- * \brief Pipeline Tests
+ * \brief Blend Tests
  *//*--------------------------------------------------------------------*/
 
-#include "vktPipelineTests.hpp"
-#include "vktPipelineStencilTests.hpp"
-#include "vktPipelineBlendTests.hpp"
-#include "vktPipelineDepthTests.hpp"
-#include "deUniquePtr.hpp"
+#include "vktTestCase.hpp"
 
 namespace vkt
 {
 namespace pipeline
 {
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
-{
-	de::MovePtr<tcu::TestCaseGroup> pipelineTests (new tcu::TestCaseGroup(testCtx, "pipeline", "Pipeline Tests"));
-
-	pipelineTests->addChild(createStencilTests(testCtx));
-	pipelineTests->addChild(createBlendTests(testCtx));
-	pipelineTests->addChild(createDepthTests(testCtx));
-
-	return pipelineTests.release();
-}
+tcu::TestCaseGroup* createBlendTests (tcu::TestContext& testCtx);
 
 } // pipeline
 } // vkt
+
+#endif // _VKTPIPELINEBLENDTESTS_HPP

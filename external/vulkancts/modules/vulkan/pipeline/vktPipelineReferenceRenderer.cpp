@@ -45,6 +45,58 @@ namespace pipeline
 
 using namespace vk;
 
+rr::BlendFunc mapVkBlend (VkBlend blend)
+{
+	switch (blend)
+	{
+		case VK_BLEND_ZERO: 					return rr::BLENDFUNC_ZERO;
+		case VK_BLEND_ONE:						return rr::BLENDFUNC_ONE;
+		case VK_BLEND_SRC_COLOR:				return rr::BLENDFUNC_SRC_COLOR;
+		case VK_BLEND_ONE_MINUS_SRC_COLOR:		return rr::BLENDFUNC_ONE_MINUS_SRC_COLOR;
+		case VK_BLEND_DEST_COLOR:				return rr::BLENDFUNC_DST_COLOR;
+		case VK_BLEND_ONE_MINUS_DEST_COLOR:		return rr::BLENDFUNC_ONE_MINUS_DST_COLOR;
+		case VK_BLEND_SRC_ALPHA:				return rr::BLENDFUNC_SRC_ALPHA;
+		case VK_BLEND_ONE_MINUS_SRC_ALPHA:		return rr::BLENDFUNC_ONE_MINUS_SRC_ALPHA;
+		case VK_BLEND_DEST_ALPHA:				return rr::BLENDFUNC_DST_ALPHA;
+		case VK_BLEND_ONE_MINUS_DEST_ALPHA:		return rr::BLENDFUNC_ONE_MINUS_DST_ALPHA;
+		case VK_BLEND_CONSTANT_COLOR:			return rr::BLENDFUNC_CONSTANT_COLOR;
+		case VK_BLEND_ONE_MINUS_CONSTANT_COLOR:	return rr::BLENDFUNC_ONE_MINUS_CONSTANT_COLOR;
+		case VK_BLEND_CONSTANT_ALPHA:			return rr::BLENDFUNC_CONSTANT_ALPHA;
+		case VK_BLEND_ONE_MINUS_CONSTANT_ALPHA:	return rr::BLENDFUNC_ONE_MINUS_CONSTANT_ALPHA;
+		case VK_BLEND_SRC_ALPHA_SATURATE:		return rr::BLENDFUNC_SRC_ALPHA_SATURATE;
+		case VK_BLEND_SRC1_COLOR:				return rr::BLENDFUNC_SRC1_COLOR;
+		case VK_BLEND_ONE_MINUS_SRC1_COLOR:		return rr::BLENDFUNC_ONE_MINUS_SRC1_COLOR;
+		case VK_BLEND_SRC1_ALPHA:				return rr::BLENDFUNC_SRC1_ALPHA;
+		case VK_BLEND_ONE_MINUS_SRC1_ALPHA:		return rr::BLENDFUNC_ONE_MINUS_SRC1_ALPHA;
+		default:
+			DE_ASSERT(false);
+	}
+	return rr::BLENDFUNC_LAST;
+}
+
+rr::BlendEquation mapVkBlendOp (VkBlendOp blendOp)
+{
+	switch (blendOp)
+	{
+		case VK_BLEND_OP_ADD:					return rr::BLENDEQUATION_ADD;
+		case VK_BLEND_OP_SUBTRACT:				return rr::BLENDEQUATION_SUBTRACT;
+		case VK_BLEND_OP_REVERSE_SUBTRACT:		return rr::BLENDEQUATION_REVERSE_SUBTRACT;
+		case VK_BLEND_OP_MIN:					return rr::BLENDEQUATION_MIN;
+		case VK_BLEND_OP_MAX:					return rr::BLENDEQUATION_MAX;
+		default:
+			DE_ASSERT(false);
+	}
+	return rr::BLENDEQUATION_LAST;
+}
+
+tcu::BVec4 mapVkChannelFlags (VkChannelFlags flags)
+{
+	return tcu::BVec4(flags & VK_CHANNEL_R_BIT,
+					  flags & VK_CHANNEL_G_BIT,
+					  flags & VK_CHANNEL_B_BIT,
+					  flags & VK_CHANNEL_A_BIT);
+}
+
 rr::TestFunc mapVkCompareOp (VkCompareOp compareFunc)
 {
 	switch (compareFunc)
@@ -135,8 +187,13 @@ ReferenceRenderer::ReferenceRenderer(int						surfaceWidth,
 	}
 	else
 	{
-		tcu::clear(m_colorBuffer.getAccess(), defaultClearColorFloat(m_colorFormat));
-		tcu::clear(m_resolveColorBuffer.getAccess(), defaultClearColorFloat(m_colorFormat));
+		tcu::Vec4 clearColor = defaultClearColor(m_colorFormat);
+
+		if (isSRGB(m_colorFormat))
+			clearColor = tcu::linearToSRGB(clearColor);
+
+		tcu::clear(m_colorBuffer.getAccess(), clearColor);
+		tcu::clear(m_resolveColorBuffer.getAccess(), clearColor);
 	}
 
 	if (hasDepthStencil)

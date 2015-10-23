@@ -24,6 +24,7 @@
 #include "rrFragmentOperations.hpp"
 #include "tcuVectorUtil.hpp"
 #include "tcuTextureUtil.hpp"
+#include <limits>
 
 using tcu::IVec2;
 using tcu::Vec3;
@@ -303,20 +304,20 @@ void FragmentProcessor::executeStencilDpFailAndPass (int fragNdxOffset, int numS
 
 void FragmentProcessor::executeBlendFactorComputeRGB (const Vec4& blendColor, const BlendState& blendRGBState)
 {
-#define SAMPLE_REGISTER_BLEND_FACTOR(FACTOR_NAME, FACTOR_EXPRESSION)											\
-	for (int regSampleNdx = 0; regSampleNdx < SAMPLE_REGISTER_SIZE; regSampleNdx++)								\
-	{																											\
-		if (m_sampleRegister[regSampleNdx].isAlive)																\
-		{																										\
-			const Vec4& src		= m_sampleRegister[regSampleNdx].clampedBlendSrcColor;							\
-			const Vec4& src1	= m_sampleRegister[regSampleNdx].clampedBlendSrc1Color;							\
-			const Vec4& dst		= m_sampleRegister[regSampleNdx].clampedBlendDstColor;							\
-			DE_UNREF(src);																						\
-			DE_UNREF(src1);																						\
-			DE_UNREF(dst);																						\
-																												\
-			m_sampleRegister[regSampleNdx].FACTOR_NAME = clamp((FACTOR_EXPRESSION), Vec3(0.0f), Vec3(1.0f));	\
-		}																										\
+#define SAMPLE_REGISTER_BLEND_FACTOR(FACTOR_NAME, FACTOR_EXPRESSION)																				\
+	for (int regSampleNdx = 0; regSampleNdx < SAMPLE_REGISTER_SIZE; regSampleNdx++)																	\
+	{																																				\
+		if (m_sampleRegister[regSampleNdx].isAlive)																									\
+		{																																			\
+			const Vec4& src		= m_sampleRegister[regSampleNdx].clampedBlendSrcColor;																\
+			const Vec4& src1	= m_sampleRegister[regSampleNdx].clampedBlendSrc1Color;																\
+			const Vec4& dst		= m_sampleRegister[regSampleNdx].clampedBlendDstColor;																\
+			DE_UNREF(src);																															\
+			DE_UNREF(src1);																															\
+			DE_UNREF(dst);																															\
+																																					\
+			m_sampleRegister[regSampleNdx].FACTOR_NAME = (FACTOR_EXPRESSION);																		\
+		}																																			\
 	}
 
 #define SWITCH_SRC_OR_DST_FACTOR_RGB(FUNC_NAME, FACTOR_NAME)																					\
@@ -354,20 +355,20 @@ void FragmentProcessor::executeBlendFactorComputeRGB (const Vec4& blendColor, co
 
 void FragmentProcessor::executeBlendFactorComputeA (const Vec4& blendColor, const BlendState& blendAState)
 {
-#define SAMPLE_REGISTER_BLEND_FACTOR(FACTOR_NAME, FACTOR_EXPRESSION)								\
-	for (int regSampleNdx = 0; regSampleNdx < SAMPLE_REGISTER_SIZE; regSampleNdx++)					\
-	{																								\
-		if (m_sampleRegister[regSampleNdx].isAlive)													\
-		{																							\
-			const Vec4& src		= m_sampleRegister[regSampleNdx].clampedBlendSrcColor;				\
-			const Vec4& src1	= m_sampleRegister[regSampleNdx].clampedBlendSrc1Color;				\
-			const Vec4& dst		= m_sampleRegister[regSampleNdx].clampedBlendDstColor;				\
-			DE_UNREF(src);																			\
-			DE_UNREF(src1);																			\
-			DE_UNREF(dst);																			\
-																									\
-			m_sampleRegister[regSampleNdx].FACTOR_NAME = clamp((FACTOR_EXPRESSION), 0.0f, 1.0f);	\
-		}																							\
+#define SAMPLE_REGISTER_BLEND_FACTOR(FACTOR_NAME, FACTOR_EXPRESSION)														\
+	for (int regSampleNdx = 0; regSampleNdx < SAMPLE_REGISTER_SIZE; regSampleNdx++)											\
+	{																														\
+		if (m_sampleRegister[regSampleNdx].isAlive)																			\
+		{																													\
+			const Vec4& src		= m_sampleRegister[regSampleNdx].clampedBlendSrcColor;										\
+			const Vec4& src1	= m_sampleRegister[regSampleNdx].clampedBlendSrc1Color;										\
+			const Vec4& dst		= m_sampleRegister[regSampleNdx].clampedBlendDstColor;										\
+			DE_UNREF(src);																									\
+			DE_UNREF(src1);																									\
+			DE_UNREF(dst);																									\
+																															\
+			m_sampleRegister[regSampleNdx].FACTOR_NAME = (FACTOR_EXPRESSION);												\
+		}																													\
 	}
 
 #define SWITCH_SRC_OR_DST_FACTOR_A(FUNC_NAME, FACTOR_NAME)																		\
@@ -843,6 +844,28 @@ void FragmentProcessor::render (const rr::MultisamplePixelBufferAccess&		msColor
 		switch (fragmentDataType)
 		{
 			case rr::GENERICVECTYPE_FLOAT:
+			{
+				// Select min/max clamping values for blending factors and operands
+				Vec4 minClampValue;
+				Vec4 maxClampValue;
+
+				if (colorbufferClass == tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT)
+				{
+					minClampValue = Vec4(0.0f);
+					maxClampValue = Vec4(1.0f);
+				}
+				else if (colorbufferClass == tcu::TEXTURECHANNELCLASS_SIGNED_FIXED_POINT)
+				{
+					minClampValue = Vec4(-1.0f);
+					maxClampValue = Vec4(1.0f);
+				}
+				else
+				{
+					// No clamping
+					minClampValue = Vec4(-std::numeric_limits<float>::infinity());
+					maxClampValue = Vec4(std::numeric_limits<float>::infinity());
+				}
+
 				// Blend calculation - only if using blend.
 				if (state.blendMode == BLENDMODE_STANDARD)
 				{
@@ -855,9 +878,9 @@ void FragmentProcessor::render (const rr::MultisamplePixelBufferAccess&		msColor
 							const Fragment&		frag			= inputFragments[groupFirstFragNdx + regSampleNdx/numSamplesPerFragment];
 							Vec4				dstColor		= colorBuffer.getPixel(fragSampleNdx, frag.pixelCoord.x(), frag.pixelCoord.y());
 
-							m_sampleRegister[regSampleNdx].clampedBlendSrcColor		= clamp(frag.value.get<float>(), Vec4(0.0f), Vec4(1.0f));
-							m_sampleRegister[regSampleNdx].clampedBlendSrc1Color	= clamp(frag.value1.get<float>(), Vec4(0.0f), Vec4(1.0f));
-							m_sampleRegister[regSampleNdx].clampedBlendDstColor		= clamp(sRGBTarget ? tcu::sRGBToLinear(dstColor) : dstColor, Vec4(0.0f), Vec4(1.0f));
+							m_sampleRegister[regSampleNdx].clampedBlendSrcColor		= clamp(frag.value.get<float>(), minClampValue, maxClampValue);
+							m_sampleRegister[regSampleNdx].clampedBlendSrc1Color	= clamp(frag.value1.get<float>(), minClampValue, maxClampValue);
+							m_sampleRegister[regSampleNdx].clampedBlendDstColor		= clamp(sRGBTarget ? tcu::sRGBToLinear(dstColor) : dstColor, minClampValue, maxClampValue);
 						}
 					}
 
@@ -881,8 +904,8 @@ void FragmentProcessor::render (const rr::MultisamplePixelBufferAccess&		msColor
 							const Vec4			srcColor		= frag.value.get<float>();
 							const Vec4			dstColor		= colorBuffer.getPixel(fragSampleNdx, frag.pixelCoord.x(), frag.pixelCoord.y());
 
-							m_sampleRegister[regSampleNdx].clampedBlendSrcColor		= unpremultiply(clamp(srcColor, Vec4(0.0f), Vec4(1.0f)));
-							m_sampleRegister[regSampleNdx].clampedBlendDstColor		= unpremultiply(clamp(sRGBTarget ? tcu::sRGBToLinear(dstColor) : dstColor, Vec4(0.0f), Vec4(1.0f)));
+							m_sampleRegister[regSampleNdx].clampedBlendSrcColor		= unpremultiply(clamp(srcColor, minClampValue, maxClampValue));
+							m_sampleRegister[regSampleNdx].clampedBlendDstColor		= unpremultiply(clamp(sRGBTarget ? tcu::sRGBToLinear(dstColor) : dstColor, minClampValue, maxClampValue));
 						}
 					}
 
@@ -905,6 +928,19 @@ void FragmentProcessor::render (const rr::MultisamplePixelBufferAccess&		msColor
 					}
 				}
 
+				// Clamp result values in sample register
+				if (colorbufferClass != tcu::TEXTURECHANNELCLASS_FLOATING_POINT)
+				{
+					for (int regSampleNdx = 0; regSampleNdx < SAMPLE_REGISTER_SIZE; regSampleNdx++)
+					{
+						if (m_sampleRegister[regSampleNdx].isAlive)
+						{
+							m_sampleRegister[regSampleNdx].blendedRGB	= clamp(m_sampleRegister[regSampleNdx].blendedRGB, minClampValue.swizzle(0, 1, 2), maxClampValue.swizzle(0, 1, 2));
+							m_sampleRegister[regSampleNdx].blendedA		= clamp(m_sampleRegister[regSampleNdx].blendedA, minClampValue.w(), maxClampValue.w());
+						}
+					}
+				}
+
 				// Finally, write the colors to the color buffer.
 
 				if (state.colorMask[0] && state.colorMask[1] && state.colorMask[2] && state.colorMask[3])
@@ -917,7 +953,7 @@ void FragmentProcessor::render (const rr::MultisamplePixelBufferAccess&		msColor
 				else if (state.colorMask[0] || state.colorMask[1] || state.colorMask[2] || state.colorMask[3])
 					executeMaskedColorWrite(groupFirstFragNdx, numSamplesPerFragment, inputFragments, colorMaskFactor, colorMaskNegationFactor, sRGBTarget, colorBuffer);
 				break;
-
+			}
 			case rr::GENERICVECTYPE_INT32:
 				// Write fragments
 				for (int regSampleNdx = 0; regSampleNdx < SAMPLE_REGISTER_SIZE; regSampleNdx++)
