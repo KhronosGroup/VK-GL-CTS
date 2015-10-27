@@ -15816,7 +15816,6 @@
 <Test name="tessellation_output_triangles_point_mode_geometry_output_lines" />
 <Test name="tessellation_output_quads_point_mode_geometry_output_lines" />
 <Test name="tessellation_output_isolines_point_mode_geometry_output_triangles" />
-<Test name="record_variable_selection" />
 </TestCase>
 <TestCase name="point_size">
 <Test name="vertex_set" />
