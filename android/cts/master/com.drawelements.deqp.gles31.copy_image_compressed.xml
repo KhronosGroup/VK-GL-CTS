@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<TestPackage appPackageName="com.drawelements.deqp.gles31.copy_image_compressed" deqp:glesVersion="196609" name="dEQP-GLES31" testType="deqpTest" xmlns:deqp="http://drawelements.com/deqp">
+<TestPackage appPackageName="com.drawelements.deqp.gles31.copy_image_compressed" deqp:glesVersion="196609" name="dEQP-GLES31" runtimeHint="40" testType="deqpTest" xmlns:deqp="http://drawelements.com/deqp">
 	<TestSuite name="dEQP-GLES31">
 		<TestSuite name="functional">
 			<TestSuite name="copy_image">

@@ -41,9 +41,10 @@ class Configuration:
 		self.filters		= filters
 
 class Package:
-	def __init__ (self, module, configurations, splitFilters = {}):
+	def __init__ (self, module, configurations, runtimeHint = None, splitFilters = {}):
 		self.module			= module
-		self.configurations	= configurations
+		self.configurations	        = configurations
+		self.runtimeHint	        = runtimeHint
 		# Map of name:[include filters]. Each will generate <api>.<name> package
 		# Test cases that didn't match any split filter will be in <api> package,
 		# i.e., the default value keeps everything in one package.
@@ -83,6 +84,11 @@ class GLESVersion:
 
 	def encode (self):
 		return (self.major << 16) | (self.minor)
+
+class FilterHint:
+	def __init__(self, packageFilter, hint):
+		self.packageFilter = packageFilter
+		self.hint = hint
 
 def getModuleGLESVersion (module):
 	versions = {
@@ -262,7 +268,7 @@ def prettifyXML (doc):
 	reparsed	= minidom.parseString(uglyString)
 	return reparsed.toprettyxml(indent='\t', encoding='utf-8')
 
-def genCTSPackageXML (package, root, name):
+def genCTSPackageXML (package, root, name, runtimeHint):
 	def isLeafGroup (testGroup):
 		numGroups	= 0
 		numTests	= 0
@@ -303,6 +309,8 @@ def genCTSPackageXML (package, root, name):
 								  appPackageName	= name,
 								  testType			= "deqpTest")
 
+	if runtimeHint:
+		pkgElem.set("runtimeHint", runtimeHint)
 	pkgElem.set("xmlns:deqp", "http://drawelements.com/deqp")
 	pkgElem.set("deqp:glesVersion", str(getModuleGLESVersion(package.module).encode()))
 
@@ -325,7 +333,7 @@ def genSpecXML (mustpass):
 
 	return mustpassElem
 
-def genCTSPackage (package, cases, matchingByConfig, packageName, xmlFilename):
+def genCTSPackage (package, cases, matchingByConfig, packageName, xmlFilename, runtimeHint):
 	root		= buildTestHierachy(cases)
 	testCaseMap	= buildTestCaseMap(root)
 
@@ -334,7 +342,7 @@ def genCTSPackage (package, cases, matchingByConfig, packageName, xmlFilename):
 			if case in testCaseMap:
 				testCaseMap[case].configurations.append(config)
 
-	packageXml	= genCTSPackageXML(package, root, packageName)
+	packageXml	= genCTSPackageXML(package, root, packageName, runtimeHint)
 
 	print "  Writing CTS caselist: " + xmlFilename
 	writeFile(xmlFilename, prettifyXML(packageXml))
@@ -361,19 +369,25 @@ def genMustpass (mustpass, moduleCaseLists):
 
 		allMatchingCases		= [c for c in allCasesInPkg if c in allMatchingSet] # To preserve ordering
 		splitFilters			= package.splitFilters
+                splitNoHints                    = [f.packageFilter for f in splitFilters.values()]
 		for splitName in splitFilters.keys():
-			splitIncludeFilters	= splitFilters[splitName]
+			splitIncludeFilters	     = splitFilters[splitName]
+			runtimeHint = "0"
+			if isinstance(splitIncludeFilters, FilterHint):
+				runtimeHint	        = splitIncludeFilters.hint
+				splitIncludeFilters	= splitIncludeFilters.packageFilter
 			splitCases			= applyInclude(allMatchingCases, splitIncludeFilters)
 			packageName			= getCTSPackageName(package, splitName)
 			xmlFilename			= os.path.join(CTS_DATA_DIR, mustpass.version, packageName + ".xml")
-			genCTSPackage(package, splitCases, matchingByConfig, packageName, xmlFilename)
+                        # if package.runtimeHint is None, do not set any runtime hints
+			genCTSPackage(package, splitCases, matchingByConfig, packageName, xmlFilename, runtimeHint if package.runtimeHint else None)
 
 		# The cases not matching any of the includes
-		combinedSplitFilters	= reduce(lambda x,y: x+y, splitFilters.values(), [])
+		combinedSplitFilters	= reduce(lambda x,y: x+y, splitNoHints, [])
 		restOfCases				= applyExclude(allMatchingCases, combinedSplitFilters)
 		packageName				= getCTSPackageName(package, None)
 		xmlFilename				= os.path.join(CTS_DATA_DIR, mustpass.version, packageName + ".xml")
-		genCTSPackage(package, restOfCases, matchingByConfig, packageName, xmlFilename)
+		genCTSPackage(package, restOfCases, matchingByConfig, packageName, xmlFilename, package.runtimeHint)
 
 	specXML			= genSpecXML(mustpass)
 	specFilename	= os.path.join(CTS_DATA_DIR, mustpass.version, "mustpass.xml")
@@ -438,7 +452,7 @@ MASTER_EGL_PKG					= Package(module = EGL_MODULE, configurations = [
 					  rotation		= "unspecified",
 					  surfacetype	= "window",
 					  filters		= MASTER_EGL_COMMON_FILTERS),
-	])
+	], runtimeHint = "0")
 
 MASTER_GLES2_COMMON_FILTERS		= [
 		include("gles2-master.txt"),
@@ -452,7 +466,7 @@ MASTER_GLES2_PKG				= Package(module = GLES2_MODULE, configurations = [
 					  rotation		= "unspecified",
 					  surfacetype	= "window",
 					  filters		= MASTER_GLES2_COMMON_FILTERS),
-	])
+	], runtimeHint = "28")
 
 MASTER_GLES3_COMMON_FILTERS		= [
 		include("gles3-master.txt"),
@@ -505,7 +519,7 @@ MASTER_GLES3_PKG				= Package(module = GLES3_MODULE, configurations = [
 					  surfacetype	= "window",
 					  filters		= MASTER_GLES3_COMMON_FILTERS + [include("gles3-pixelformat.txt"),
 																	 exclude("gles3-pixelformat-issues.txt")]),
-	])
+	], runtimeHint = "180")
 
 MASTER_GLES31_COMMON_FILTERS	= [
 		include("gles31-master.txt"),
@@ -558,9 +572,10 @@ MASTER_GLES31_PKG				= Package(module = GLES31_MODULE, configurations = [
 					  surfacetype	= "window",
 					  filters		= MASTER_GLES31_COMMON_FILTERS + [include("gles31-pixelformat.txt")]),
 	],
-	splitFilters = {"copy_image_compressed":			["dEQP-GLES31.functional.copy_image.compressed.*"],
-					"copy_image_non_compressed":		["dEQP-GLES31.functional.copy_image.non_compressed.*"],
-					"copy_image_mixed":					["dEQP-GLES31.functional.copy_image.mixed.*"],
+	runtimeHint = "45",
+	splitFilters = {"copy_image_compressed":			FilterHint(["dEQP-GLES31.functional.copy_image.compressed.*"], "40"),
+					"copy_image_non_compressed":		FilterHint(["dEQP-GLES31.functional.copy_image.non_compressed.*"], "290"),
+					"copy_image_mixed":					FilterHint(["dEQP-GLES31.functional.copy_image.mixed.*"], "140"),
 					}
 	)
 
