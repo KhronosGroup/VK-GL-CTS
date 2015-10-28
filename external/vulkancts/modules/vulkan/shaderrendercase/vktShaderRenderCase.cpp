@@ -120,59 +120,59 @@ static VkImageMemoryBarrier createImageMemoryBarrier (const VkImage&		image,
 class QuadGrid
 {
 public:
-										QuadGrid				(int								gridSize,
-																 int								screenWidth,
-																 int								screenHeight,
-																 const tcu::Vec4&					constCoords,
-																 const std::vector<tcu::Mat4>&		userAttribTransforms,
-																 const std::vector<TextureBinding>&	textures);
-										~QuadGrid				(void);
+											QuadGrid				(int									gridSize,
+																	 int									screenWidth,
+																	 int									screenHeight,
+																	 const tcu::Vec4&						constCoords,
+																	 const std::vector<tcu::Mat4>&			userAttribTransforms,
+																	 const std::vector<TextureBindingSp>&	textures);
+											~QuadGrid				(void);
 
-	int									getGridSize				(void) const { return m_gridSize; }
-	int									getNumVertices			(void) const { return m_numVertices; }
-	int									getNumTriangles			(void) const { return m_numTriangles; }
-	const tcu::Vec4&					getConstCoords			(void) const { return m_constCoords; }
-	const std::vector<tcu::Mat4>		getUserAttribTransforms	(void) const { return m_userAttribTransforms; }
-	const std::vector<TextureBinding>&	getTextures				(void) const { return m_textures; }
+	int										getGridSize				(void) const { return m_gridSize; }
+	int										getNumVertices			(void) const { return m_numVertices; }
+	int										getNumTriangles			(void) const { return m_numTriangles; }
+	const tcu::Vec4&						getConstCoords			(void) const { return m_constCoords; }
+	const std::vector<tcu::Mat4>			getUserAttribTransforms	(void) const { return m_userAttribTransforms; }
+	const std::vector<TextureBindingSp>&	getTextures				(void) const { return m_textures; }
 
-	const tcu::Vec4*					getPositions			(void) const { return &m_positions[0]; }
-	const float*						getAttribOne			(void) const { return &m_attribOne[0]; }
-	const tcu::Vec4*					getCoords				(void) const { return &m_coords[0]; }
-	const tcu::Vec4*					getUnitCoords			(void) const { return &m_unitCoords[0]; }
+	const tcu::Vec4*						getPositions			(void) const { return &m_positions[0]; }
+	const float*							getAttribOne			(void) const { return &m_attribOne[0]; }
+	const tcu::Vec4*						getCoords				(void) const { return &m_coords[0]; }
+	const tcu::Vec4*						getUnitCoords			(void) const { return &m_unitCoords[0]; }
 
-	const tcu::Vec4*					getUserAttrib			(int attribNdx) const { return &m_userAttribs[attribNdx][0]; }
-	const deUint16*						getIndices				(void) const { return &m_indices[0]; }
+	const tcu::Vec4*						getUserAttrib			(int attribNdx) const { return &m_userAttribs[attribNdx][0]; }
+	const deUint16*							getIndices				(void) const { return &m_indices[0]; }
 
-	tcu::Vec4							getCoords				(float sx, float sy) const;
-	tcu::Vec4							getUnitCoords			(float sx, float sy) const;
+	tcu::Vec4								getCoords				(float sx, float sy) const;
+	tcu::Vec4								getUnitCoords			(float sx, float sy) const;
 
-	int									getNumUserAttribs		(void) const { return (int)m_userAttribTransforms.size(); }
-	tcu::Vec4							getUserAttrib			(int attribNdx, float sx, float sy) const;
+	int										getNumUserAttribs		(void) const { return (int)m_userAttribTransforms.size(); }
+	tcu::Vec4								getUserAttrib			(int attribNdx, float sx, float sy) const;
 
 private:
-	const int							m_gridSize;
-	const int							m_numVertices;
-	const int							m_numTriangles;
-	const tcu::Vec4						m_constCoords;
-	const std::vector<tcu::Mat4>		m_userAttribTransforms;
+	const int								m_gridSize;
+	const int								m_numVertices;
+	const int								m_numTriangles;
+	const tcu::Vec4							m_constCoords;
+	const std::vector<tcu::Mat4>			m_userAttribTransforms;
 
-	const std::vector<TextureBinding>	m_textures;
+	const std::vector<TextureBindingSp>&	m_textures;
 
-	std::vector<tcu::Vec4>				m_screenPos;
-	std::vector<tcu::Vec4>				m_positions;
-	std::vector<tcu::Vec4>				m_coords;		//!< Near-unit coordinates, roughly [-2.0 .. 2.0].
-	std::vector<tcu::Vec4>				m_unitCoords;	//!< Positive-only coordinates [0.0 .. 1.5].
-	std::vector<float>					m_attribOne;
-	std::vector<tcu::Vec4>				m_userAttribs[ShaderEvalContext::MAX_TEXTURES];
-	std::vector<deUint16>				m_indices;
+	std::vector<tcu::Vec4>					m_screenPos;
+	std::vector<tcu::Vec4>					m_positions;
+	std::vector<tcu::Vec4>					m_coords;		//!< Near-unit coordinates, roughly [-2.0 .. 2.0].
+	std::vector<tcu::Vec4>					m_unitCoords;	//!< Positive-only coordinates [0.0 .. 1.5].
+	std::vector<float>						m_attribOne;
+	std::vector<tcu::Vec4>					m_userAttribs[ShaderEvalContext::MAX_TEXTURES];
+	std::vector<deUint16>					m_indices;
 };
 
-QuadGrid::QuadGrid (int									gridSize,
-					int									width,
-					int									height,
-					const tcu::Vec4&					constCoords,
-					const std::vector<tcu::Mat4>&		userAttribTransforms,
-					const std::vector<TextureBinding>&	textures)
+QuadGrid::QuadGrid (int										gridSize,
+					int										width,
+					int										height,
+					const tcu::Vec4&						constCoords,
+					const std::vector<tcu::Mat4>&			userAttribTransforms,
+					const std::vector<TextureBindingSp>&	textures)
 	: m_gridSize				(gridSize)
 	, m_numVertices				((gridSize + 1) * (gridSize + 1))
 	, m_numTriangles			(gridSize * gridSize * 2)
@@ -268,45 +268,38 @@ TextureBinding::TextureBinding (const tcu::Archive&	archive,
 {
 	switch(m_type)
 	{
-		case TYPE_2D: m_binding.tex2D = loadTexture2D(archive, filename); break;
+		case TYPE_2D: m_binding.tex2D = loadTexture2D(archive, filename).release(); break;
 		default:
 			TCU_FAIL("Unsupported texture type");
 	}
 }
 
-tcu::Texture2D* TextureBinding::loadTexture2D (const tcu::Archive& archive, const char* filename)
+TextureBinding::~TextureBinding (void)
 {
-	std::string ext = de::FilePath(filename).getFileExtension();
-
-	if (ext == "png")
+	switch(m_type)
 	{
-		// Uncompressed texture.
-		tcu::TextureLevel level;
-		tcu::ImageIO::loadPNG(level, archive, filename);
-
-		TCU_CHECK_INTERNAL(level.getFormat() == tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8) ||
-							level.getFormat() == tcu::TextureFormat(tcu::TextureFormat::RGB, tcu::TextureFormat::UNORM_INT8));
-
-		// \todo [2015-10-08 elecro] for some reason we get better when using RGBA texture even in RGB case, this needs to be investigated
-		tcu::Texture2D* texture = new tcu::Texture2D(tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8), level.getWidth(), level.getHeight());
-
-		try
-		{
-			// Fill level 0.
-			texture->allocLevel(0);
-
-			tcu::copy(texture->getLevel(0), level.getAccess());
-		}
-		catch (const std::exception&)
-		{
-			delete texture;
-			throw;
-		}
-
-		return texture;
+		case TYPE_2D: delete m_binding.tex2D; break;
+		default: break;
 	}
-	else
-		TCU_FAIL("Unsupported file format"); // TODO: maybe support pkm?
+}
+
+
+de::MovePtr<tcu::Texture2D> TextureBinding::loadTexture2D (const tcu::Archive& archive, const char* filename)
+{
+	tcu::TextureLevel level;
+	tcu::ImageIO::loadImage(level, archive, filename);
+
+	TCU_CHECK_INTERNAL(level.getFormat() == tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8) ||
+					   level.getFormat() == tcu::TextureFormat(tcu::TextureFormat::RGB, tcu::TextureFormat::UNORM_INT8));
+
+	// \todo [2015-10-08 elecro] for some reason we get better when using RGBA texture even in RGB case, this needs to be investigated
+	de::MovePtr<tcu::Texture2D> texture(new tcu::Texture2D(tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8), level.getWidth(), level.getHeight()));
+
+	// Fill level 0.
+	texture->allocLevel(0);
+	tcu::copy(texture->getLevel(0), level.getAccess());
+
+	return texture;
 }
 
 // ShaderEvalContext.
@@ -316,13 +309,13 @@ ShaderEvalContext::ShaderEvalContext (const QuadGrid& quadGrid)
 	, isDiscarded	(false)
 	, m_quadGrid	(quadGrid)
 {
-	const std::vector<TextureBinding>& bindings = m_quadGrid.getTextures();
+	const std::vector<TextureBindingSp>& bindings = m_quadGrid.getTextures();
 	DE_ASSERT((int)bindings.size() <= MAX_TEXTURES);
 
 	// Fill in texture array.
 	for (int ndx = 0; ndx < (int)bindings.size(); ndx++)
 	{
-		const TextureBinding& binding = bindings[ndx];
+		const TextureBinding& binding = *bindings[ndx];
 
 		if (binding.getType() == TextureBinding::TYPE_NONE)
 			continue;
@@ -331,7 +324,7 @@ ShaderEvalContext::ShaderEvalContext (const QuadGrid& quadGrid)
 
 		switch (binding.getType())
 		{
-			case TextureBinding::TYPE_2D:		textures[ndx].tex2D			= binding.get2D();		break;
+			case TextureBinding::TYPE_2D:		textures[ndx].tex2D			= &binding.get2D();		break;
 			// \todo [2015-09-07 elecro] Add support for the other binding types
 			/*
 			case TextureBinding::TYPE_CUBE_MAP:	textures[ndx].texCube		= binding.getCube();	break;
@@ -971,14 +964,12 @@ void ShaderRenderCaseInstance::useSampler2D (deUint32 bindingLocation, deUint32 
 
 	const VkDevice					vkDevice		= m_context.getDevice();
 	const DeviceInterface&			vk				= m_context.getDeviceInterface();
-	const TextureBinding&			textureBinding	= m_textures[textureID];
-	const tcu::Texture2D*			refTexture		= textureBinding.get2D();
+	const TextureBinding&			textureBinding	= *m_textures[textureID];
+	const tcu::Texture2D&			refTexture		= textureBinding.get2D();
 	const tcu::Sampler&				refSampler		= textureBinding.getSampler();
-	const VkFormat					format			= refTexture->getFormat() == tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8)
+	const VkFormat					format			= refTexture.getFormat() == tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8)
 														? VK_FORMAT_R8G8B8A8_UNORM
 														: VK_FORMAT_R8G8B8_UNORM;
-
-	DE_ASSERT(refTexture != DE_NULL);
 
 	// Create & alloc the image
 	Move<VkImage>					vkTexture;
@@ -986,20 +977,20 @@ void ShaderRenderCaseInstance::useSampler2D (deUint32 bindingLocation, deUint32 
 
 	if (isSupportedLinearTilingFormat(m_context.getInstanceInterface(), m_context.getPhysicalDevice(), format))
 	{
-		vkTexture = createImage2D(*refTexture, format, VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_TILING_LINEAR);
-		allocation = uploadImage2D(*refTexture, *vkTexture);
+		vkTexture = createImage2D(refTexture, format, VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_TILING_LINEAR);
+		allocation = uploadImage2D(refTexture, *vkTexture);
 	}
 	else if (isSupportedOptimalTilingFormat(m_context.getInstanceInterface(), m_context.getPhysicalDevice(), format))
 	{
-		Move<VkImage>				stagingTexture	(createImage2D(*refTexture, format, VK_IMAGE_USAGE_TRANSFER_SOURCE_BIT, VK_IMAGE_TILING_LINEAR));
-		de::MovePtr<Allocation>		stagingAlloc	(uploadImage2D(*refTexture, *stagingTexture));
+		Move<VkImage>				stagingTexture	(createImage2D(refTexture, format, VK_IMAGE_USAGE_TRANSFER_SOURCE_BIT, VK_IMAGE_TILING_LINEAR));
+		de::MovePtr<Allocation>		stagingAlloc	(uploadImage2D(refTexture, *stagingTexture));
 
 		const VkImageUsageFlags		dstUsageFlags	= VK_IMAGE_USAGE_TRANSFER_DESTINATION_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-		vkTexture = createImage2D(*refTexture, format, dstUsageFlags, VK_IMAGE_TILING_OPTIMAL);
+		vkTexture = createImage2D(refTexture, format, dstUsageFlags, VK_IMAGE_TILING_OPTIMAL);
 		allocation = m_memAlloc.allocate(getImageMemoryRequirements(vk, vkDevice, *vkTexture), MemoryRequirement::Any);
 		VK_CHECK(vk.bindImageMemory(vkDevice, *vkTexture, allocation->getMemory(), allocation->getOffset()));
 
-		copyTilingImageToOptimal(*stagingTexture, *vkTexture, refTexture->getWidth(), refTexture->getHeight());
+		copyTilingImageToOptimal(*stagingTexture, *vkTexture, refTexture.getWidth(), refTexture.getHeight());
 	}
 	else
 	{

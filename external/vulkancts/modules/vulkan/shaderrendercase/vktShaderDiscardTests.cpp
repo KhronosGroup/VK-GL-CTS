@@ -87,14 +87,15 @@ ShaderDiscardCaseInstance::ShaderDiscardCaseInstance (Context&					context,
 {
 	if (usesTexture)
 	{
-		m_textures.push_back(TextureBinding(m_context.getTestContext().getArchive(),
-											"vulkan/data/brick.png",
-											TextureBinding::TYPE_2D,
-											tcu::Sampler(tcu::Sampler::CLAMP_TO_EDGE,
-														tcu::Sampler::CLAMP_TO_EDGE,
-														tcu::Sampler::CLAMP_TO_EDGE,
-														tcu::Sampler::LINEAR,
-														tcu::Sampler::LINEAR)));
+		de::SharedPtr<TextureBinding> brickTexture(new TextureBinding(m_context.getTestContext().getArchive(),
+																	  "vulkan/data/brick.png",
+																	  TextureBinding::TYPE_2D,
+																	  tcu::Sampler(tcu::Sampler::CLAMP_TO_EDGE,
+																					tcu::Sampler::CLAMP_TO_EDGE,
+																					tcu::Sampler::CLAMP_TO_EDGE,
+																					tcu::Sampler::LINEAR,
+																					tcu::Sampler::LINEAR)));
+		m_textures.push_back(brickTexture);
 	}
 }
 

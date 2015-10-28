@@ -72,25 +72,31 @@ public:
 		TYPE_LAST
 	};
 
-							TextureBinding		(const tcu::Archive&	archive,
-												 const char*			filename,
-												 const Type				type,
-												 const tcu::Sampler&	sampler);
-
-	Type					getType				(void) const { return m_type; 		}
-	const tcu::Sampler&		getSampler			(void) const { return m_sampler;	}
-	const tcu::Texture2D*	get2D				(void) const { DE_ASSERT(getType() == TYPE_2D); return m_binding.tex2D; }
+										TextureBinding		(const tcu::Archive&	archive,
+															const char*				filename,
+															const Type				type,
+															const tcu::Sampler&		sampler);
+										~TextureBinding		(void);
+	Type								getType				(void) const { return m_type; 		}
+	const tcu::Sampler&					getSampler			(void) const { return m_sampler;	}
+	const tcu::Texture2D&				get2D				(void) const { DE_ASSERT(getType() == TYPE_2D && m_binding.tex2D !=NULL); return *m_binding.tex2D; }
 
 private:
-	static tcu::Texture2D*	loadTexture2D		(const tcu::Archive& archive, const char* filename);
+										TextureBinding		(const TextureBinding&);	// not allowed!
+	TextureBinding&						operator=			(const TextureBinding&);	// not allowed!
 
-	Type					m_type;
-	tcu::Sampler			m_sampler;
+	static de::MovePtr<tcu::Texture2D>	loadTexture2D		(const tcu::Archive& archive, const char* filename);
+
+	Type								m_type;
+	tcu::Sampler						m_sampler;
+
 	union
 	{
 		const tcu::Texture2D*	tex2D;
 	} m_binding;
 };
+
+typedef de::SharedPtr<TextureBinding> TextureBindingSp;
 
 // ShaderEvalContext.
 
@@ -392,7 +398,7 @@ protected:
 
 	std::vector<tcu::Mat4>								m_userAttribTransforms;
 	const tcu::Vec4										m_clearColor;
-	std::vector<TextureBinding>							m_textures;
+	std::vector<TextureBindingSp>						m_textures;
 
 	vk::SimpleAllocator									m_memAlloc;
 
