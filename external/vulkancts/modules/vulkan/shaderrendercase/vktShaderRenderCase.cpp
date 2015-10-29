@@ -442,10 +442,6 @@ ShaderRenderCase::ShaderRenderCase (tcu::TestContext&			testCtx,
 
 ShaderRenderCase::~ShaderRenderCase (void)
 {
-	delete m_evaluator;
-	m_evaluator = DE_NULL;
-	delete m_uniformSetup;
-	m_uniformSetup = DE_NULL;
 }
 
 void ShaderRenderCase::initPrograms (vk::SourceCollections& programCollection) const
@@ -575,7 +571,7 @@ void ShaderRenderCaseInstance::setupUniformData (deUint32 bindingLocation, deUin
 	uniformInfo->location = bindingLocation;
 	uniformInfo->buffer = VkBufferSp(new vk::Unique<VkBuffer>(buffer));
 	uniformInfo->bufferView = VkBufferViewSp(new vk::Unique<VkBufferView>(bufferView));
-	uniformInfo->alloc = AllocationSp(new de::UniquePtr<vk::Allocation>(alloc));
+	uniformInfo->alloc = AllocationSp(alloc.release());
 
 	m_uniformInfos.push_back(UniformInfoSp(new de::UniquePtr<UniformInfo>(uniformInfo)));
 }
@@ -642,7 +638,7 @@ void ShaderRenderCaseInstance::addAttribute (deUint32		bindingLocation,
 	flushMappedMemoryRange(vk, vkDevice, alloc->getMemory(), alloc->getOffset(), inputSize);
 
 	m_vertexBuffers.push_back(VkBufferSp(new vk::Unique<VkBuffer>(buffer)));
-	m_vertexBufferAllocs.push_back(AllocationSp(new de::UniquePtr<vk::Allocation>(alloc)));
+	m_vertexBufferAllocs.push_back(AllocationSp(alloc.release()));
 }
 
 void ShaderRenderCaseInstance::useAttribute (deUint32 bindingLocation, BaseAttributeType type)
@@ -1062,7 +1058,7 @@ void ShaderRenderCaseInstance::useSampler2D (deUint32 bindingLocation, deUint32 
 	uniform->image = VkImageSp(new vk::Unique<VkImage>(vkTexture));
 	uniform->imageView = VkImageViewSp(new vk::Unique<VkImageView>(imageView));
 	uniform->sampler = VkSamplerSp(new vk::Unique<VkSampler>(sampler));
-	uniform->alloc = AllocationSp(new de::UniquePtr<vk::Allocation>(allocation));
+	uniform->alloc = AllocationSp(allocation.release());
 
 	m_descriptorSetLayoutBuilder.addSingleSamplerBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, vk::VK_SHADER_STAGE_FRAGMENT_BIT, &uniform->descriptor.sampler);
 	m_descriptorPoolBuilder.addType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);

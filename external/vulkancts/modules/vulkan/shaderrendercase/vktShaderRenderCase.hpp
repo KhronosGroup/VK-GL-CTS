@@ -203,35 +203,35 @@ typedef void (*AttributeSetupFunc) (ShaderRenderCaseInstance& instance, deUint32
 class ShaderRenderCase : public vkt::TestCase
 {
 public:
-								ShaderRenderCase	(tcu::TestContext&			testCtx,
-													 const std::string&			name,
-													 const std::string&			description,
-													 const bool					isVertexCase,
-													 const ShaderEvalFunc		evalFunc,
-													 const UniformSetup*		uniformSetup,
-													 const AttributeSetupFunc	attribFunc);
+													ShaderRenderCase	(tcu::TestContext&			testCtx,
+																		 const std::string&			name,
+																		 const std::string&			description,
+																		 const bool					isVertexCase,
+																		 const ShaderEvalFunc		evalFunc,
+																		 const UniformSetup*		uniformSetup,
+																		 const AttributeSetupFunc	attribFunc);
 
-								ShaderRenderCase	(tcu::TestContext&			testCtx,
-													 const std::string&			name,
-													 const std::string&			description,
-													 const bool					isVertexCase,
-													 const ShaderEvaluator*		evaluator,
-													 const UniformSetup*		uniformSetup,
-													 const AttributeSetupFunc	attribFunc);
+													ShaderRenderCase	(tcu::TestContext&			testCtx,
+																		 const std::string&			name,
+																		 const std::string&			description,
+																		 const bool					isVertexCase,
+																		 const ShaderEvaluator*		evaluator,
+																		 const UniformSetup*		uniformSetup,
+																		 const AttributeSetupFunc	attribFunc);
 
 
-	virtual						~ShaderRenderCase	(void);
-	virtual	void				initPrograms		(vk::SourceCollections& programCollection) const;
-	virtual	TestInstance*		createInstance		(Context& context) const;
+	virtual											~ShaderRenderCase	(void);
+	virtual	void									initPrograms		(vk::SourceCollections& programCollection) const;
+	virtual	TestInstance*							createInstance		(Context& context) const;
 
 protected:
-	std::string					m_vertShaderSource;
-	std::string					m_fragShaderSource;
+	std::string										m_vertShaderSource;
+	std::string										m_fragShaderSource;
 
-	const bool					m_isVertexCase;
-	const ShaderEvaluator*		m_evaluator;
-	const UniformSetup*			m_uniformSetup;
-	const AttributeSetupFunc	m_attribFunc;
+	const bool										m_isVertexCase;
+	const de::UniquePtr<const ShaderEvaluator>		m_evaluator;
+	const de::UniquePtr<const UniformSetup>			m_uniformSetup;
+	const AttributeSetupFunc						m_attribFunc;
 };
 
 
@@ -478,7 +478,7 @@ private:
 	typedef de::SharedPtr<vk::Unique<vk::VkImage> > 		VkImageSp;
 	typedef de::SharedPtr<vk::Unique<vk::VkImageView> >		VkImageViewSp;
 	typedef de::SharedPtr<vk::Unique<vk::VkSampler> > 		VkSamplerSp;
-	typedef de::SharedPtr<de::UniquePtr<vk::Allocation> >	AllocationSp;
+	typedef de::SharedPtr<vk::Allocation>					AllocationSp;
 
 	class UniformInfo
 	{
