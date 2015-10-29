@@ -578,7 +578,7 @@ void ShaderRenderCaseInstance::setupUniformData (deUint32 bindingLocation, deUin
 
 void ShaderRenderCaseInstance::addUniform (deUint32 bindingLocation, vk::VkDescriptorType descriptorType, deUint32 dataSize, const void* data)
 {
-	m_descriptorSetLayoutBuilder.addSingleBinding(descriptorType, vk::VK_SHADER_STAGE_VERTEX_BIT | vk::VK_SHADER_STAGE_FRAGMENT_BIT);
+	m_descriptorSetLayoutBuilder.addSingleBinding(descriptorType, vk::VK_SHADER_STAGE_ALL);
 	m_descriptorPoolBuilder.addType(descriptorType);
 
 	setupUniformData(bindingLocation, dataSize, data);
@@ -1060,7 +1060,7 @@ void ShaderRenderCaseInstance::useSampler2D (deUint32 bindingLocation, deUint32 
 	uniform->sampler = VkSamplerSp(new vk::Unique<VkSampler>(sampler));
 	uniform->alloc = AllocationSp(allocation.release());
 
-	m_descriptorSetLayoutBuilder.addSingleSamplerBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, vk::VK_SHADER_STAGE_FRAGMENT_BIT, &uniform->descriptor.sampler);
+	m_descriptorSetLayoutBuilder.addSingleSamplerBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, vk::VK_SHADER_STAGE_ALL, &uniform->descriptor.sampler);
 	m_descriptorPoolBuilder.addType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 
 	m_uniformInfos.push_back(UniformInfoSp(new de::UniquePtr<UniformInfo>(uniform)));
