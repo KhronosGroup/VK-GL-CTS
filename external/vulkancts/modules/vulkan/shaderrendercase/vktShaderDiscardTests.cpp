@@ -45,17 +45,18 @@ namespace vkt
 {
 namespace shaderrendercase
 {
+namespace
+{
 
 class SamplerUniformSetup : public UniformSetup
 {
 public:
-						SamplerUniformSetup			(const bool useSampler)
+						SamplerUniformSetup			(bool useSampler)
 							: m_useSampler(useSampler)
 						{}
 
-	virtual void		setup						 (ShaderRenderCaseInstance& instance, const tcu::Vec4& constCoords) const
+	virtual void		setup						 (ShaderRenderCaseInstance& instance, const tcu::Vec4&) const
 						{
-							DE_UNREF(constCoords);
 							instance.useUniform(0u, UI_ONE);
 							instance.useUniform(1u, UI_TWO);
 							if (m_useSampler)
@@ -71,19 +72,19 @@ class ShaderDiscardCaseInstance : public ShaderRenderCaseInstance
 {
 public:
 						ShaderDiscardCaseInstance	(Context&				context,
-													const bool				isVertexCase,
-													const ShaderEvaluator&	evaulator,
+													bool					isVertexCase,
+													const ShaderEvaluator&	evaluator,
 													const UniformSetup&		uniformSetup,
-													const bool				usesTexture);
+													bool					usesTexture);
 	virtual				~ShaderDiscardCaseInstance	(void);
 };
 
 ShaderDiscardCaseInstance::ShaderDiscardCaseInstance (Context&					context,
-													 const bool					isVertexCase,
-													 const ShaderEvaluator&		evaulator,
+													 bool						isVertexCase,
+													 const ShaderEvaluator&		evaluator,
 													 const UniformSetup&		uniformSetup,
-													 const bool					usesTexture)
-	: ShaderRenderCaseInstance	(context, isVertexCase, evaulator, uniformSetup, DE_NULL)
+													 bool						usesTexture)
+	: ShaderRenderCaseInstance	(context, isVertexCase, evaluator, uniformSetup, DE_NULL)
 {
 	if (usesTexture)
 	{
@@ -111,7 +112,7 @@ public:
 														 const char*			description,
 														 const char*			shaderSource,
 														 const ShaderEvalFunc	evalFunc,
-														 const bool				usesTexture);
+														 bool					usesTexture);
 	virtual TestInstance*	createInstance				(Context& context) const
 							{
 								DE_ASSERT(m_evaluator != DE_NULL);
@@ -128,7 +129,7 @@ ShaderDiscardCase::ShaderDiscardCase (tcu::TestContext&		testCtx,
 									  const char*			description,
 									  const char*			shaderSource,
 									  const ShaderEvalFunc	evalFunc,
-									  const bool			usesTexture)
+									  bool					usesTexture)
 	: ShaderRenderCase	(testCtx, name, description, false, evalFunc, new SamplerUniformSetup(usesTexture), DE_NULL)
 	, m_usesTexture		(usesTexture)
 {
@@ -149,15 +150,6 @@ ShaderDiscardCase::ShaderDiscardCase (tcu::TestContext&		testCtx,
 		"}\n";
 }
 
-
-ShaderDiscardTests::ShaderDiscardTests (tcu::TestContext& testCtx)
-	: TestCaseGroup(testCtx, "discard", "Discard statement tests")
-{
-}
-
-ShaderDiscardTests::~ShaderDiscardTests (void)
-{
-}
 
 enum DiscardMode
 {
@@ -210,7 +202,7 @@ static ShaderEvalFunc getEvalFunc (DiscardMode mode)
 
 static const char* getTemplate (DiscardTemplate variant)
 {
-	#define HEADER \
+	#define GLSL_SHADER_TEMPLATE_HEADER \
 				"#version 140\n"	\
 				"#extension GL_ARB_separate_shader_objects : enable\n"	\
 				"#extension GL_ARB_shading_language_420pack : enable\n"	 \
@@ -223,7 +215,7 @@ static const char* getTemplate (DiscardTemplate variant)
 	switch (variant)
 	{
 		case DISCARDTEMPLATE_MAIN_BASIC:
-			return HEADER
+			return GLSL_SHADER_TEMPLATE_HEADER
 				   "void main (void)\n"
 				   "{\n"
 				   "    o_color = v_color;\n"
@@ -231,7 +223,7 @@ static const char* getTemplate (DiscardTemplate variant)
 				   "}\n";
 
 		case DISCARDTEMPLATE_FUNCTION_BASIC:
-			return HEADER
+			return GLSL_SHADER_TEMPLATE_HEADER
 				   "void myfunc (void)\n"
 				   "{\n"
 				   "    ${DISCARD};\n"
@@ -243,7 +235,7 @@ static const char* getTemplate (DiscardTemplate variant)
 				   "}\n";
 
 		case DISCARDTEMPLATE_MAIN_STATIC_LOOP:
-			return HEADER
+			return GLSL_SHADER_TEMPLATE_HEADER
 				   "void main (void)\n"
 				   "{\n"
 				   "    o_color = v_color;\n"
@@ -255,7 +247,7 @@ static const char* getTemplate (DiscardTemplate variant)
 				   "}\n";
 
 		case DISCARDTEMPLATE_MAIN_DYNAMIC_LOOP:
-			return HEADER
+			return GLSL_SHADER_TEMPLATE_HEADER
 				   "layout(set = 0, binding = 1) uniform block1 { mediump int  ui_two; };\n\n"
 				   "void main (void)\n"
 				   "{\n"
@@ -268,7 +260,7 @@ static const char* getTemplate (DiscardTemplate variant)
 				   "}\n";
 
 		case DISCARDTEMPLATE_FUNCTION_STATIC_LOOP:
-			return HEADER
+			return GLSL_SHADER_TEMPLATE_HEADER
 				   "void myfunc (void)\n"
 				   "{\n"
 				   "    for (int i = 0; i < 2; i++)\n"
@@ -288,7 +280,7 @@ static const char* getTemplate (DiscardTemplate variant)
 			return DE_NULL;
 	}
 
-	#undef HEADER
+	#undef GLSL_SHADER_TEMPLATE_HEADER
 }
 
 static const char* getTemplateName (DiscardTemplate variant)
@@ -373,6 +365,16 @@ ShaderDiscardCase* makeDiscardCase (tcu::TestContext& testCtx, DiscardTemplate t
 	std::string description	= std::string(getModeDesc(mode)) + " in " + getTemplateDesc(tmpl);
 
 	return new ShaderDiscardCase(testCtx, name.c_str(), description.c_str(), shaderTemplate.specialize(params).c_str(), getEvalFunc(mode), mode == DISCARDMODE_TEXTURE);
+
+} // anonymous
+
+ShaderDiscardTests::ShaderDiscardTests (tcu::TestContext& testCtx)
+	: TestCaseGroup(testCtx, "discard", "Discard statement tests")
+{
+}
+
+ShaderDiscardTests::~ShaderDiscardTests (void)
+{
 }
 
 void ShaderDiscardTests::init (void)
