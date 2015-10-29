@@ -470,7 +470,7 @@ ShaderRenderCaseInstance::ShaderRenderCaseInstance (Context&					context,
 													const AttributeSetupFunc	attribFunc)
 	: vkt::TestInstance	(context)
 	, m_clearColor		(DEFAULT_CLEAR_COLOR)
-	, m_memAlloc		(m_context.getDeviceInterface(), m_context.getDevice(), getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice()))
+	, m_memAlloc		(context.getDefaultAllocator())
 	, m_isVertexCase	(isVertexCase)
 	, m_evaluator		(evaluator)
 	, m_uniformSetup	(uniformSetup)

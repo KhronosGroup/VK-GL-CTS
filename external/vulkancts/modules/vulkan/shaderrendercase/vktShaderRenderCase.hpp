@@ -400,7 +400,7 @@ protected:
 	const tcu::Vec4										m_clearColor;
 	std::vector<TextureBindingSp>						m_textures;
 
-	vk::SimpleAllocator									m_memAlloc;
+	vk::Allocator&										m_memAlloc;
 
 private:
 
