@@ -47,7 +47,9 @@ AssetResource::AssetResource (AAssetManager* assetMgr, const char* name)
 	, m_asset	(DE_NULL)
 {
 	m_asset = AAssetManager_open(assetMgr, name, AASSET_MODE_RANDOM);
-	TCU_CHECK(m_asset);
+
+	if (!m_asset)
+		throw ResourceError("Failed to open asset resource", name, __FILE__, __LINE__);
 }
 
 AssetResource::~AssetResource (void)
