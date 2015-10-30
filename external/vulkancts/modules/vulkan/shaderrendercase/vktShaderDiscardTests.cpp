@@ -343,7 +343,7 @@ static const char* getModeDesc (DiscardMode mode)
 	}
 }
 
-ShaderDiscardCase* makeDiscardCase (tcu::TestContext& testCtx, DiscardTemplate tmpl, DiscardMode mode)
+de::MovePtr<ShaderDiscardCase> makeDiscardCase (tcu::TestContext& testCtx, DiscardTemplate tmpl, DiscardMode mode)
 {
 	StringTemplate shaderTemplate(getTemplate(tmpl));
 
@@ -364,7 +364,8 @@ ShaderDiscardCase* makeDiscardCase (tcu::TestContext& testCtx, DiscardTemplate t
 	std::string name		= std::string(getTemplateName(tmpl)) + "_" + getModeName(mode);
 	std::string description	= std::string(getModeDesc(mode)) + " in " + getTemplateDesc(tmpl);
 
-	return new ShaderDiscardCase(testCtx, name.c_str(), description.c_str(), shaderTemplate.specialize(params).c_str(), getEvalFunc(mode), mode == DISCARDMODE_TEXTURE);
+	return de::MovePtr<ShaderDiscardCase>(new ShaderDiscardCase(testCtx, name.c_str(), description.c_str(), shaderTemplate.specialize(params).c_str(), getEvalFunc(mode), mode == DISCARDMODE_TEXTURE));
+}
 
 } // anonymous
 
@@ -381,7 +382,7 @@ void ShaderDiscardTests::init (void)
 {
 	for (int tmpl = 0; tmpl < DISCARDTEMPLATE_LAST; tmpl++)
 		for (int mode = 0; mode < DISCARDMODE_LAST; mode++)
-			addChild(makeDiscardCase(m_testCtx, (DiscardTemplate)tmpl, (DiscardMode)mode));
+			addChild(makeDiscardCase(m_testCtx, (DiscardTemplate)tmpl, (DiscardMode)mode).release());
 }
 
 } // shaderrendercase
