@@ -64,6 +64,9 @@ namespace shaderrendercase
 
 using namespace vk;
 
+namespace
+{
+
 static const int		s_gridSize			= 2;
 static const int		s_maxRenderWidth	= 128;
 static const int		s_maxRenderHeight	= 128;
@@ -114,6 +117,8 @@ static VkImageMemoryBarrier createImageMemoryBarrier (const VkImage&		image,
 	};
 	return imageMemoryBarrier;
 }
+
+} // anonymous
 
 // QuadGrid.
 
@@ -270,7 +275,7 @@ TextureBinding::TextureBinding (const tcu::Archive&	archive,
 	{
 		case TYPE_2D: m_binding.tex2D = loadTexture2D(archive, filename).release(); break;
 		default:
-			TCU_FAIL("Unsupported texture type");
+			DE_FATAL("Unsupported texture type");
 	}
 }
 
