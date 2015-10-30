@@ -64,10 +64,10 @@ namespace shaderrendercase
 
 using namespace vk;
 
-static const int		GRID_SIZE			= 2;
-static const int		MAX_RENDER_WIDTH	= 128;
-static const int		MAX_RENDER_HEIGHT	= 112;
-static const tcu::Vec4	DEFAULT_CLEAR_COLOR	= tcu::Vec4(0.125f, 0.25f, 0.5f, 1.0f);
+static const int		s_gridSize			= 2;
+static const int		s_maxRenderWidth	= 128;
+static const int		s_maxRenderHeight	= 128;
+static const tcu::Vec4	s_defaultClearColor	= tcu::Vec4(0.125f, 0.25f, 0.5f, 1.0f);
 
 static bool isSupportedLinearTilingFormat (const InstanceInterface& instanceInterface, VkPhysicalDevice device, VkFormat format)
 {
@@ -465,7 +465,7 @@ ShaderRenderCaseInstance::ShaderRenderCaseInstance (Context&					context,
 													const UniformSetup&			uniformSetup,
 													const AttributeSetupFunc	attribFunc)
 	: vkt::TestInstance	(context)
-	, m_clearColor		(DEFAULT_CLEAR_COLOR)
+	, m_clearColor		(s_defaultClearColor)
 	, m_memAlloc		(context.getDefaultAllocator())
 	, m_isVertexCase	(isVertexCase)
 	, m_evaluator		(evaluator)
@@ -489,7 +489,7 @@ tcu::TestStatus ShaderRenderCaseInstance::iterate (void)
 	const int			width			= viewportSize.x();
 	const int	 		height			= viewportSize.y();
 
-	QuadGrid			quadGrid		(m_isVertexCase ? GRID_SIZE : 4, width, height, tcu::Vec4(0.125f, 0.25f, 0.5f, 1.0f), m_userAttribTransforms, m_textures);
+	QuadGrid			quadGrid		(m_isVertexCase ? s_gridSize : 4, width, height, tcu::Vec4(0.125f, 0.25f, 0.5f, 1.0f), m_userAttribTransforms, m_textures);
 
 	// Render result.
 	tcu::Surface		resImage		(width, height);
@@ -773,8 +773,8 @@ void ShaderRenderCaseInstance::useUniform (deUint32 bindingLocation, BaseUniform
 
 const tcu::IVec2 ShaderRenderCaseInstance::getViewportSize (void) const
 {
-	return tcu::IVec2(de::min(m_renderSize.x(), MAX_RENDER_WIDTH),
-					  de::min(m_renderSize.y(), MAX_RENDER_HEIGHT));
+	return tcu::IVec2(de::min(m_renderSize.x(), s_maxRenderWidth),
+					  de::min(m_renderSize.y(), s_maxRenderHeight));
 }
 
 Move<VkImage> ShaderRenderCaseInstance::createImage2D (const tcu::Texture2D&	texture,
