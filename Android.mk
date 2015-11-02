@@ -80,6 +80,7 @@ LOCAL_SRC_FILES := \
 	framework/delibs/debase/deMemory.c \
 	framework/delibs/debase/deRandom.c \
 	framework/delibs/debase/deString.c \
+	framework/delibs/debase/deSha1.c \
 	framework/delibs/decpp/deArrayBuffer.cpp \
 	framework/delibs/decpp/deArrayUtil.cpp \
 	framework/delibs/decpp/deBlockBuffer.cpp \

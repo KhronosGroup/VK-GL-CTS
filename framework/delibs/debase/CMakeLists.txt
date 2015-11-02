@@ -21,6 +21,8 @@ set(DEBASE_SRCS
 	deRandom.h
 	deString.c
 	deString.h
+	deSha1.c
+	deSha1.h
 	)
 
 add_library(debase STATIC ${DEBASE_SRCS})
