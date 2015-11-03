@@ -57,6 +57,8 @@ set(DECPP_SRCS
 	deUniquePtr.hpp
 	deSpinBarrier.cpp
 	deSpinBarrier.hpp
+	deSha1.cpp
+	deSha1.hpp
 	)
 
 set(DECPP_LIBS
