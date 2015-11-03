@@ -164,10 +164,11 @@ deInt64 deFile_getSize (const deFile* file)
 	if (curPos < 0)
 		return -1;
 
-	if (lseek(file->fd, -1, SEEK_END) < 0)
+	size = lseek(file->fd, 0, SEEK_END);
+
+	if (size < 0)
 		return -1;
 
-	size = lseek(file->fd, 0, SEEK_CUR);
 	lseek(file->fd, (off_t)curPos, SEEK_SET);
 
 	return size;
