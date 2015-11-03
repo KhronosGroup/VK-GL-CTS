@@ -93,6 +93,7 @@ static const char* const s_ShaderPreamble =
 	"OpExecutionMode %main LocalSize 1 1 1\n";
 
 static const char* const s_CommonTypes =
+	"%bool      = OpTypeBool\n"
 	"%void      = OpTypeVoid\n"
 	"%voidf     = OpTypeFunction %void\n"
 	"%u32       = OpTypeInt 32 0\n"
@@ -311,6 +312,312 @@ tcu::TestCaseGroup* createOpNoLineGroup (tcu::TestContext& testCtx)
 	return group.release();
 }
 
+// Assembly code used for testing OpUnreachable is based on GLSL source code:
+//
+// #version 430
+//
+// layout(std140, set = 0, binding = 0) readonly buffer Input {
+//   float elements[];
+// } input_data;
+// layout(std140, set = 0, binding = 1) writeonly buffer Output {
+//   float elements[];
+// } output_data;
+//
+// void not_called_func() {
+//   // place OpUnreachable here
+// }
+//
+// uint modulo4(uint val) {
+//   switch (val % uint(4)) {
+//     case 0:  return 3;
+//     case 1:  return 2;
+//     case 2:  return 1;
+//     case 3:  return 0;
+//     default: return 100; // place OpUnreachable here
+//   }
+// }
+//
+// uint const5() {
+//   return 5;
+//   // place OpUnreachable here
+// }
+//
+// void main() {
+//   uint x = gl_GlobalInvocationID.x;
+//   if (const5() > modulo4(1000)) {
+//     output_data.elements[x] = -input_data.elements[x];
+//   } else {
+//     // place OpUnreachable here
+//     output_data.elements[x] = input_data.elements[x];
+//   }
+// }
+
+tcu::TestCaseGroup* createOpUnreachableGroup (tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opunreachable", "Test the OpUnreachable instruction"));
+	ComputeShaderSpec				spec;
+	de::Random						rnd				(deStringHash(group->getName()));
+	const int						numElements		= 100;
+	vector<float>					positiveFloats	(numElements, 0);
+	vector<float>					negativeFloats	(numElements, 0);
+
+	fillRandomScalars(rnd, 1.f, 100.f, &positiveFloats[0], numElements);
+	for (size_t numNdx = 0; numNdx < numElements; ++numNdx)
+		negativeFloats[numNdx] = -positiveFloats[numNdx];
+
+	spec.assembly =
+		string(s_ShaderPreamble) +
+
+		"OpSource GLSL 430\n"
+		"OpName %func_main            \"main\"\n"
+		"OpName %func_not_called_func \"not_called_func(\"\n"
+		"OpName %func_modulo4         \"modulo4(u1;\"\n"
+		"OpName %func_const5          \"const5(\"\n"
+		"OpName %id                   \"gl_GlobalInvocationID\"\n"
+
+		"OpDecorate %id BuiltIn GlobalInvocationId\n"
+
+		+ string(s_InputOutputBufferTraits) + string(s_CommonTypes) +
+
+		"%u32ptr    = OpTypePointer Function %u32\n"
+		"%uintfuint = OpTypeFunction %u32 %u32ptr\n"
+		"%unitf     = OpTypeFunction %u32\n"
+
+		"%id        = OpVariable %uvec3ptr Input\n"
+		"%zero      = OpConstant %u32 0\n"
+		"%one       = OpConstant %u32 1\n"
+		"%two       = OpConstant %u32 2\n"
+		"%three     = OpConstant %u32 3\n"
+		"%four      = OpConstant %u32 4\n"
+		"%five      = OpConstant %u32 5\n"
+		"%hundred   = OpConstant %u32 100\n"
+		"%thousand  = OpConstant %u32 1000\n"
+
+		+ string(s_InputOutputBuffer) +
+
+		// Main()
+		"%func_main   = OpFunction %void None %voidf\n"
+		"%main_entry  = OpLabel\n"
+		"%idval       = OpLoad %uvec3 %id\n"
+		"%x           = OpCompositeExtract %u32 %idval 0\n"
+		"%inloc       = OpAccessChain %f32ptr %indata %zero %x\n"
+		"%inval       = OpLoad %f32 %inloc\n"
+		"%outloc      = OpAccessChain %f32ptr %outdata %zero %x\n"
+		"%ret_const5  = OpFunctionCall %u32 %func_const5\n"
+		"%ret_modulo4 = OpFunctionCall %u32 %func_modulo4 %thousand\n"
+		"%cmp_gt      = OpUGreaterThan %bool %ret_const5 %ret_modulo4\n"
+		"               OpSelectionMerge %if_end None\n"
+		"               OpBranchConditional %cmp_gt %if_true %if_false\n"
+		"%if_true     = OpLabel\n"
+		"%negate      = OpFNegate %f32 %inval\n"
+		"               OpStore %outloc %negate\n"
+		"               OpBranch %if_end\n"
+		"%if_false    = OpLabel\n"
+		"               OpUnreachable\n" // Unreachable else branch for if statement
+		"%if_end      = OpLabel\n"
+		"               OpReturn\n"
+		"               OpFunctionEnd\n"
+
+		// not_called_function()
+		"%func_not_called_func  = OpFunction %void None %voidf\n"
+		"%not_called_func_entry = OpLabel\n"
+		"                         OpUnreachable\n" // Unreachable entry block in not called static function
+		"                         OpFunctionEnd\n"
+
+		// modulo4()
+		"%func_modulo4  = OpFunction %u32 None %uintfuint\n"
+		"%valptr        = OpFunctionParameter %u32ptr\n"
+		"%modulo4_entry = OpLabel\n"
+		"%val           = OpLoad %u32 %valptr\n"
+		"%modulo        = OpUMod %u32 %val %four\n"
+		"                 OpSelectionMerge %switch_merge None\n"
+		"                 OpSwitch %modulo %default 0 %case0 1 %case1 2 %case2 3 %case3\n"
+		"%case0         = OpLabel\n"
+		"                 OpReturnValue %three\n"
+		"%case1         = OpLabel\n"
+		"                 OpReturnValue %two\n"
+		"%case2         = OpLabel\n"
+		"                 OpReturnValue %one\n"
+		"%case3         = OpLabel\n"
+		"                 OpReturnValue %zero\n"
+		"%default       = OpLabel\n"
+		"                 OpUnreachable\n" // Unreachable default case for switch statement
+		"%switch_merge  = OpLabel\n"
+		"                 OpUnreachable\n" // Unreachable merge block for switch statement
+		"                 OpFunctionEnd\n"
+
+		// const5()
+		"%func_const5  = OpFunction %u32 None %unitf\n"
+		"%const5_entry = OpLabel\n"
+		"                OpReturnValue %five\n"
+		"%unreachable  = OpLabel\n"
+		"                OpUnreachable\n" // Unreachable block in function
+		"                OpFunctionEnd\n";
+	spec.inputs.push_back(BufferSp(new Float32Buffer(positiveFloats)));
+	spec.outputs.push_back(BufferSp(new Float32Buffer(negativeFloats)));
+	spec.numWorkGroups = IVec3(numElements, 1, 1);
+
+	group->addChild(new SpvAsmComputeShaderCase(testCtx, "all", "OpUnreachable appearing at different places", spec));
+
+	return group.release();
+}
+
+// Assembly code used for testing block order is based on GLSL source code:
+//
+// #version 430
+//
+// layout(std140, set = 0, binding = 0) readonly buffer Input {
+//   float elements[];
+// } input_data;
+// layout(std140, set = 0, binding = 1) writeonly buffer Output {
+//   float elements[];
+// } output_data;
+//
+// void main() {
+//   uint x = gl_GlobalInvocationID.x;
+//   output_data.elements[x] = input_data.elements[x];
+//   if (x > uint(50)) {
+//     switch (x % uint(3)) {
+//       case 0: output_data.elements[x] += 1.5f; break;
+//       case 1: output_data.elements[x] += 42.f; break;
+//       case 2: output_data.elements[x] -= 27.f; break;
+//       default: break;
+//     }
+//   } else {
+//     output_data.elements[x] = -input_data.elements[x];
+//   }
+// }
+tcu::TestCaseGroup* createBlockOrderGroup (tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "block_order", "Test block orders"));
+	ComputeShaderSpec				spec;
+	de::Random						rnd				(deStringHash(group->getName()));
+	const int						numElements		= 100;
+	vector<float>					inputFloats		(numElements, 0);
+	vector<float>					outputFloats	(numElements, 0);
+
+	fillRandomScalars(rnd, -100.f, 100.f, &inputFloats[0], numElements);
+	for (size_t numNdx = 0; numNdx <= 50; ++numNdx)
+		outputFloats[numNdx] = -inputFloats[numNdx];
+	for (size_t numNdx = 51; numNdx < numElements; ++numNdx)
+	{
+		switch (numNdx % 3)
+		{
+			case 0:		outputFloats[numNdx] = inputFloats[numNdx] + 1.5f; break;
+			case 1:		outputFloats[numNdx] = inputFloats[numNdx] + 42.f; break;
+			case 2:		outputFloats[numNdx] = inputFloats[numNdx] - 27.f; break;
+			default:	break;
+		}
+	}
+
+	spec.assembly =
+		string(s_ShaderPreamble) +
+
+		"OpSource GLSL 430\n"
+		"OpName %main \"main\"\n"
+		"OpName %id \"gl_GlobalInvocationID\"\n"
+
+		"OpDecorate %id BuiltIn GlobalInvocationId\n"
+
+		+ string(s_InputOutputBufferTraits) + string(s_CommonTypes) +
+
+		"%u32ptr       = OpTypePointer Function %u32\n"
+		"%u32ptr_input = OpTypePointer Input %u32\n"
+
+		+ string(s_InputOutputBuffer) +
+
+		"%id        = OpVariable %uvec3ptr Input\n"
+		"%zero      = OpConstant %i32 0\n"
+		"%const3    = OpConstant %u32 3\n"
+		"%const50   = OpConstant %u32 50\n"
+		"%constf1p5 = OpConstant %f32 1.5\n"
+		"%constf27  = OpConstant %f32 27.0\n"
+		"%constf42  = OpConstant %f32 42.0\n"
+
+		"%main = OpFunction %void None %voidf\n"
+
+		// entry block.
+		"%entry    = OpLabel\n"
+
+		// Create a temporary variable to hold the value of gl_GlobalInvocationID.x.
+		"%xvar     = OpVariable %u32ptr Function\n"
+		"%xptr     = OpAccessChain %u32ptr_input %id %zero\n"
+		"%x        = OpLoad %u32 %xptr\n"
+		"            OpStore %xvar %x\n"
+
+		"%cmp      = OpUGreaterThan %bool %x %const50\n"
+		"            OpSelectionMerge %if_merge None\n"
+		"            OpBranchConditional %cmp %if_true %if_false\n"
+
+		// Merge block for switch-statement: placed at the beginning.
+		"%switch_merge = OpLabel\n"
+		"                OpBranch %if_merge\n"
+
+		// Case 1 for switch-statement.
+		"%case1    = OpLabel\n"
+		"%x_1      = OpLoad %u32 %xvar\n"
+		"%inloc_1  = OpAccessChain %f32ptr %indata %zero %x_1\n"
+		"%inval_1  = OpLoad %f32 %inloc_1\n"
+		"%addf42   = OpFAdd %f32 %inval_1 %constf42\n"
+		"%outloc_1 = OpAccessChain %f32ptr %outdata %zero %x_1\n"
+		"            OpStore %outloc_1 %addf42\n"
+		"            OpBranch %switch_merge\n"
+
+		// False branch for if-statement: placed in the middle of switch cases and before true branch.
+		"%if_false = OpLabel\n"
+		"%x_f      = OpLoad %u32 %xvar\n"
+		"%inloc_f  = OpAccessChain %f32ptr %indata %zero %x_f\n"
+		"%inval_f  = OpLoad %f32 %inloc_f\n"
+		"%negate   = OpFNegate %f32 %inval_f\n"
+		"%outloc_f = OpAccessChain %f32ptr %outdata %zero %x_f\n"
+		"            OpStore %outloc_f %negate\n"
+		"            OpBranch %if_merge\n"
+
+		// Merge block for if-statement: placed in the middle of true and false branch.
+		"%if_merge = OpLabel\n"
+		"            OpReturn\n"
+
+		// True branch for if-statement: placed in the middle of swtich cases and after the false branch.
+		"%if_true  = OpLabel\n"
+		"%xval_t   = OpLoad %u32 %xvar\n"
+		"%mod      = OpUMod %u32 %xval_t %const3\n"
+		"            OpSelectionMerge %switch_merge None\n"
+		"            OpSwitch %mod %default 0 %case0 1 %case1 2 %case2\n"
+
+		// Case 2 for switch-statement.
+		"%case2    = OpLabel\n"
+		"%x_2      = OpLoad %u32 %xvar\n"
+		"%inloc_2  = OpAccessChain %f32ptr %indata %zero %x_2\n"
+		"%inval_2  = OpLoad %f32 %inloc_2\n"
+		"%subf27   = OpFSub %f32 %inval_2 %constf27\n"
+		"%outloc_2 = OpAccessChain %f32ptr %outdata %zero %x_2\n"
+		"            OpStore %outloc_2 %subf27\n"
+		"            OpBranch %switch_merge\n"
+
+		// Default case for switch-statement: placed in the middle of normal cases.
+		"%default = OpLabel\n"
+		"           OpBranch %switch_merge\n"
+
+		// Case 0 for switch-statement: out of order.
+		"%case0    = OpLabel\n"
+		"%x_0      = OpLoad %u32 %xvar\n"
+		"%inloc_0  = OpAccessChain %f32ptr %indata %zero %x_0\n"
+		"%inval_0  = OpLoad %f32 %inloc_0\n"
+		"%addf1p5  = OpFAdd %f32 %inval_0 %constf1p5\n"
+		"%outloc_0 = OpAccessChain %f32ptr %outdata %zero %x_0\n"
+		"            OpStore %outloc_0 %addf1p5\n"
+		"            OpBranch %switch_merge\n"
+
+		"            OpFunctionEnd\n";
+	spec.inputs.push_back(BufferSp(new Float32Buffer(inputFloats)));
+	spec.outputs.push_back(BufferSp(new Float32Buffer(outputFloats)));
+	spec.numWorkGroups = IVec3(numElements, 1, 1);
+
+	group->addChild(new SpvAsmComputeShaderCase(testCtx, "all", "various out-of-order blocks", spec));
+
+	return group.release();
+}
+
 struct CaseParameter
 {
 	const char*		name;
@@ -457,8 +764,7 @@ tcu::TestCaseGroup* createOpConstantNullGroup (tcu::TestContext& testCtx)
 	cases.push_back(CaseParameter("uint32",			"%type = OpTypeInt 32 0"));
 	cases.push_back(CaseParameter("float32",		"%type = OpTypeFloat 32"));
 	cases.push_back(CaseParameter("vec4float32",	"%type = OpTypeVector %f32 4"));
-	cases.push_back(CaseParameter("vec3bool",		"%bool = OpTypeBool\n"
-													"%type = OpTypeVector %bool 3"));
+	cases.push_back(CaseParameter("vec3bool",		"%type = OpTypeVector %bool 3"));
 	cases.push_back(CaseParameter("vec2uint32",		"%type = OpTypeVector %u32 2"));
 	cases.push_back(CaseParameter("matrix",			"%type = OpTypeMatrix %uvec3 3"));
 	cases.push_back(CaseParameter("array",			"%100 = OpConstant %u32 100\n"
@@ -659,6 +965,286 @@ tcu::TestCaseGroup* createOpConstantUsageGroup (tcu::TestContext& testCtx)
 	return group.release();
 }
 
+// Assembly code used for testing loop control is based on GLSL source code:
+// #version 430
+//
+// layout(std140, set = 0, binding = 0) readonly buffer Input {
+//   float elements[];
+// } input_data;
+// layout(std140, set = 0, binding = 1) writeonly buffer Output {
+//   float elements[];
+// } output_data;
+//
+// void main() {
+//   uint x = gl_GlobalInvocationID.x;
+//   output_data.elements[x] = input_data.elements[x];
+//   for (uint i = 0; i < 4; ++i)
+//     output_data.elements[x] += 1.f;
+// }
+tcu::TestCaseGroup* createLoopControlGroup (tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "loop_control", "Tests loop control cases"));
+	vector<CaseParameter>			cases;
+	de::Random						rnd				(deStringHash(group->getName()));
+	const int						numElements		= 100;
+	vector<float>					inputFloats		(numElements, 0);
+	vector<float>					outputFloats	(numElements, 0);
+	const StringTemplate			shaderTemplate	(
+		string(s_ShaderPreamble) +
+
+		"OpSource GLSL 430\n"
+		"OpName %main \"main\"\n"
+		"OpName %id \"gl_GlobalInvocationID\"\n"
+
+		"OpDecorate %id BuiltIn GlobalInvocationId\n"
+
+		+ string(s_InputOutputBufferTraits) + string(s_CommonTypes) + string(s_InputOutputBuffer) +
+
+		"%u32ptr      = OpTypePointer Function %u32\n"
+
+		"%id          = OpVariable %uvec3ptr Input\n"
+		"%zero        = OpConstant %i32 0\n"
+		"%one         = OpConstant %i32 1\n"
+		"%constf1     = OpConstant %f32 1.0\n"
+		"%four        = OpConstant %u32 4\n"
+
+		"%main        = OpFunction %void None %voidf\n"
+		"%entry       = OpLabel\n"
+		"%i           = OpVariable %u32ptr Function\n"
+		"               OpStore %i %zero\n"
+
+		"%idval       = OpLoad %uvec3 %id\n"
+		"%x           = OpCompositeExtract %u32 %idval 0\n"
+		"%inloc       = OpAccessChain %f32ptr %indata %zero %x\n"
+		"%inval       = OpLoad %f32 %inloc\n"
+		"%outloc      = OpAccessChain %f32ptr %outdata %zero %x\n"
+		"               OpStore %outloc %inval\n"
+		"               OpBranch %loop_entry\n"
+
+		"%loop_entry  = OpLabel\n"
+		"%i_val       = OpLoad %u32 %i\n"
+		"%cmp_lt      = OpULessThan %bool %i_val %four\n"
+		"               OpLoopMerge %loop_merge %loop_entry ${CONTROL}\n"
+		"               OpBranchConditional %cmp_lt %loop_body %loop_merge\n"
+		"%loop_body   = OpLabel\n"
+		"%outval      = OpLoad %f32 %outloc\n"
+		"%addf1       = OpFAdd %f32 %outval %constf1\n"
+		"               OpStore %outloc %addf1\n"
+		"%new_i       = OpIAdd %u32 %i_val %one\n"
+		"               OpStore %i %new_i\n"
+		"               OpBranch %loop_entry\n"
+		"%loop_merge  = OpLabel\n"
+		"               OpReturn\n"
+		"               OpFunctionEnd\n");
+
+	cases.push_back(CaseParameter("none",				"None"));
+	cases.push_back(CaseParameter("unroll",				"Unroll"));
+	cases.push_back(CaseParameter("dont_unroll",		"DontUnroll"));
+	cases.push_back(CaseParameter("unroll_dont_unroll",	"Unroll|DontUnroll"));
+
+	fillRandomScalars(rnd, -100.f, 100.f, &inputFloats[0], numElements);
+	for (size_t numNdx = 0; numNdx < numElements; ++numNdx)
+		outputFloats[numNdx] = inputFloats[numNdx] + 4.f;
+
+	for (size_t caseNdx = 0; caseNdx < cases.size(); ++caseNdx)
+	{
+		map<string, string>		specializations;
+		ComputeShaderSpec		spec;
+
+		specializations["CONTROL"] = cases[caseNdx].param;
+		spec.assembly = shaderTemplate.specialize(specializations);
+		spec.inputs.push_back(BufferSp(new Float32Buffer(inputFloats)));
+		spec.outputs.push_back(BufferSp(new Float32Buffer(outputFloats)));
+		spec.numWorkGroups = IVec3(numElements, 1, 1);
+
+		group->addChild(new SpvAsmComputeShaderCase(testCtx, cases[caseNdx].name, cases[caseNdx].name, spec));
+	}
+
+	return group.release();
+}
+
+// Assembly code used for testing selection control is based on GLSL source code:
+// #version 430
+//
+// layout(std140, set = 0, binding = 0) readonly buffer Input {
+//   float elements[];
+// } input_data;
+// layout(std140, set = 0, binding = 1) writeonly buffer Output {
+//   float elements[];
+// } output_data;
+//
+// void main() {
+//   uint x = gl_GlobalInvocationID.x;
+//   float val = input_data.elements[x];
+//   if (val > 10.f)
+//     output_data.elements[x] = val + 1.f;
+//   else
+//     output_data.elements[x] = val - 1.f;
+// }
+tcu::TestCaseGroup* createSelectionControlGroup (tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "selection_control", "Tests selection control cases"));
+	vector<CaseParameter>			cases;
+	de::Random						rnd				(deStringHash(group->getName()));
+	const int						numElements		= 100;
+	vector<float>					inputFloats		(numElements, 0);
+	vector<float>					outputFloats	(numElements, 0);
+	const StringTemplate			shaderTemplate	(
+		string(s_ShaderPreamble) +
+
+		"OpSource GLSL 430\n"
+		"OpName %main \"main\"\n"
+		"OpName %id \"gl_GlobalInvocationID\"\n"
+
+		"OpDecorate %id BuiltIn GlobalInvocationId\n"
+
+		+ string(s_InputOutputBufferTraits) + string(s_CommonTypes) + string(s_InputOutputBuffer) +
+
+		"%id       = OpVariable %uvec3ptr Input\n"
+		"%zero     = OpConstant %i32 0\n"
+		"%constf1  = OpConstant %f32 1.0\n"
+		"%constf10 = OpConstant %f32 10.0\n"
+
+		"%main     = OpFunction %void None %voidf\n"
+		"%entry    = OpLabel\n"
+		"%idval    = OpLoad %uvec3 %id\n"
+		"%x        = OpCompositeExtract %u32 %idval 0\n"
+		"%inloc    = OpAccessChain %f32ptr %indata %zero %x\n"
+		"%inval    = OpLoad %f32 %inloc\n"
+		"%outloc   = OpAccessChain %f32ptr %outdata %zero %x\n"
+		"%cmp_gt   = OpFOrdGreaterThan %bool %inval %constf10\n"
+
+		"            OpSelectionMerge %if_end ${CONTROL}\n"
+		"            OpBranchConditional %cmp_gt %if_true %if_false\n"
+		"%if_true  = OpLabel\n"
+		"%addf1    = OpFAdd %f32 %inval %constf1\n"
+		"            OpStore %outloc %addf1\n"
+		"            OpBranch %if_end\n"
+		"%if_false = OpLabel\n"
+		"%subf1    = OpFSub %f32 %inval %constf1\n"
+		"            OpStore %outloc %subf1\n"
+		"            OpBranch %if_end\n"
+		"%if_end   = OpLabel\n"
+		"            OpReturn\n"
+		"            OpFunctionEnd\n");
+
+	cases.push_back(CaseParameter("none",					"None"));
+	cases.push_back(CaseParameter("flatten",				"Flatten"));
+	cases.push_back(CaseParameter("dont_flatten",			"DontFlatten"));
+	cases.push_back(CaseParameter("flatten_dont_flatten",	"DontFlatten|Flatten"));
+
+	fillRandomScalars(rnd, -100.f, 100.f, &inputFloats[0], numElements);
+	for (size_t numNdx = 0; numNdx < numElements; ++numNdx)
+		outputFloats[numNdx] = inputFloats[numNdx] + (inputFloats[numNdx] > 10.f ? 1.f : -1.f);
+
+	for (size_t caseNdx = 0; caseNdx < cases.size(); ++caseNdx)
+	{
+		map<string, string>		specializations;
+		ComputeShaderSpec		spec;
+
+		specializations["CONTROL"] = cases[caseNdx].param;
+		spec.assembly = shaderTemplate.specialize(specializations);
+		spec.inputs.push_back(BufferSp(new Float32Buffer(inputFloats)));
+		spec.outputs.push_back(BufferSp(new Float32Buffer(outputFloats)));
+		spec.numWorkGroups = IVec3(numElements, 1, 1);
+
+		group->addChild(new SpvAsmComputeShaderCase(testCtx, cases[caseNdx].name, cases[caseNdx].name, spec));
+	}
+
+	return group.release();
+}
+
+// Assembly code used for testing function control is based on GLSL source code:
+//
+// #version 430
+//
+// layout(std140, set = 0, binding = 0) readonly buffer Input {
+//   float elements[];
+// } input_data;
+// layout(std140, set = 0, binding = 1) writeonly buffer Output {
+//   float elements[];
+// } output_data;
+//
+// float const10() { return 10.f; }
+//
+// void main() {
+//   uint x = gl_GlobalInvocationID.x;
+//   output_data.elements[x] = input_data.elements[x] + const10();
+// }
+tcu::TestCaseGroup* createFunctionControlGroup (tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "function_control", "Tests function control cases"));
+	vector<CaseParameter>			cases;
+	de::Random						rnd				(deStringHash(group->getName()));
+	const int						numElements		= 100;
+	vector<float>					inputFloats		(numElements, 0);
+	vector<float>					outputFloats	(numElements, 0);
+	const StringTemplate			shaderTemplate	(
+		string(s_ShaderPreamble) +
+
+		"OpSource GLSL 430\n"
+		"OpName %main \"main\"\n"
+		"OpName %func_const10 \"const10(\"\n"
+		"OpName %id \"gl_GlobalInvocationID\"\n"
+
+		"OpDecorate %id BuiltIn GlobalInvocationId\n"
+
+		+ string(s_InputOutputBufferTraits) + string(s_CommonTypes) + string(s_InputOutputBuffer) +
+
+		"%f32f = OpTypeFunction %f32\n"
+		"%id = OpVariable %uvec3ptr Input\n"
+		"%zero = OpConstant %i32 0\n"
+		"%constf10 = OpConstant %f32 10.0\n"
+
+		"%main         = OpFunction %void None %voidf\n"
+		"%entry        = OpLabel\n"
+		"%idval        = OpLoad %uvec3 %id\n"
+		"%x            = OpCompositeExtract %u32 %idval 0\n"
+		"%inloc        = OpAccessChain %f32ptr %indata %zero %x\n"
+		"%inval        = OpLoad %f32 %inloc\n"
+		"%ret_10       = OpFunctionCall %f32 %func_const10\n"
+		"%fadd         = OpFAdd %f32 %inval %ret_10\n"
+		"%outloc       = OpAccessChain %f32ptr %outdata %zero %x\n"
+		"                OpStore %outloc %fadd\n"
+		"                OpReturn\n"
+		"                OpFunctionEnd\n"
+
+		"%func_const10 = OpFunction %f32 ${CONTROL} %f32f\n"
+		"%label        = OpLabel\n"
+		"                OpReturnValue %constf10\n"
+		"                OpFunctionEnd\n");
+
+	cases.push_back(CaseParameter("none",						"None"));
+	cases.push_back(CaseParameter("inline",						"Inline"));
+	cases.push_back(CaseParameter("dont_inline",				"DontInline"));
+	cases.push_back(CaseParameter("pure",						"Pure"));
+	cases.push_back(CaseParameter("const",						"Const"));
+	cases.push_back(CaseParameter("inline_pure",				"Inline|Pure"));
+	cases.push_back(CaseParameter("const_dont_inline",			"Const|DontInline"));
+	cases.push_back(CaseParameter("inline_dont_inline",			"Inline|DontInline"));
+	cases.push_back(CaseParameter("pure_inline_dont_inline",	"Pure|Inline|DontInline"));
+
+	fillRandomScalars(rnd, -100.f, 100.f, &inputFloats[0], numElements);
+	for (size_t numNdx = 0; numNdx < numElements; ++numNdx)
+		outputFloats[numNdx] = inputFloats[numNdx] + 10.f;
+
+	for (size_t caseNdx = 0; caseNdx < cases.size(); ++caseNdx)
+	{
+		map<string, string>		specializations;
+		ComputeShaderSpec		spec;
+
+		specializations["CONTROL"] = cases[caseNdx].param;
+		spec.assembly = shaderTemplate.specialize(specializations);
+		spec.inputs.push_back(BufferSp(new Float32Buffer(inputFloats)));
+		spec.outputs.push_back(BufferSp(new Float32Buffer(outputFloats)));
+		spec.numWorkGroups = IVec3(numElements, 1, 1);
+
+		group->addChild(new SpvAsmComputeShaderCase(testCtx, cases[caseNdx].name, cases[caseNdx].name, spec));
+	}
+
+	return group.release();
+}
+
 // Checks that we can get undefined values for various types, without exercising a computation with it.
 tcu::TestCaseGroup* createOpUndefGroup (tcu::TestContext& testCtx)
 {
@@ -752,7 +1338,12 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	instructionTests->addChild(createOpConstantCompositeGroup(testCtx));
 	instructionTests->addChild(createOpConstantUsageGroup(testCtx));
 	instructionTests->addChild(createOpSourceGroup(testCtx));
+	instructionTests->addChild(createLoopControlGroup(testCtx));
+	instructionTests->addChild(createFunctionControlGroup(testCtx));
+	instructionTests->addChild(createSelectionControlGroup(testCtx));
+	instructionTests->addChild(createBlockOrderGroup(testCtx));
 	instructionTests->addChild(createOpUndefGroup(testCtx));
+	instructionTests->addChild(createOpUnreachableGroup(testCtx));
 
 	return instructionTests.release();
 }
