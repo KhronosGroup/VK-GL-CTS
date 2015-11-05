@@ -83,7 +83,7 @@ static de::Mutex					s_glslangLock;
 void initGlslang (void*)
 {
 	// Main compiler
-	ShInitialize();
+	glslang::InitializeProcess();
 
 	// SPIR-V disassembly
 	spv::Parameterize();
@@ -93,28 +93,6 @@ void prepareGlslang (void)
 {
 	deInitSingleton(&s_glslangInitState, initGlslang, DE_NULL);
 }
-
-class SpvGenerator : public TCompiler
-{
-public:
-	SpvGenerator (EShLanguage language, std::vector<deUint32>& dst, TInfoSink& infoSink)
-		: TCompiler	(language, infoSink)
-		, m_dst		(dst)
-	{
-	}
-
-	bool compile (TIntermNode* root, int version = 0, EProfile profile = ENoProfile)
-	{
-		glslang::TIntermediate intermediate(getLanguage(), version, profile);
-		intermediate.setTreeRoot(root);
-		intermediate.finalCheck(getInfoSink());
-		glslang::GlslangToSpv(intermediate, m_dst);
-		return true;
-	}
-
-private:
-	std::vector<deUint32>&	m_dst;
-};
 
 // \todo [2015-06-19 pyry] Specialize these per GLSL version
 
@@ -241,34 +219,51 @@ void glslToSpirV (const glu::ProgramSources& program, std::vector<deUint8>* dst,
 	{
 		if (!program.sources[shaderType].empty())
 		{
-			de::ScopedLock		compileLock			(s_glslangLock);
-			const std::string&	srcText				= program.sources[shaderType][0];
-			const char*			srcPtrs[]			= { srcText.c_str() };
-			int					srcLengths[]		= { (int)srcText.size() };
-			vector<deUint32>	spvBlob;
-			TInfoSink			infoSink;
-			SpvGenerator		compiler			(getGlslangStage(glu::ShaderType(shaderType)), spvBlob, infoSink);
-			const deUint64		compileStartTime	= deGetMicroseconds();
-			const int			compileOk			= ShCompile(static_cast<ShHandle>(&compiler), srcPtrs, DE_LENGTH_OF_ARRAY(srcPtrs), srcLengths, EShOptNone, &builtinRes, 0);
+			const de::ScopedLock	compileLock			(s_glslangLock);
+			const std::string&		srcText				= program.sources[shaderType][0];
+			const char*				srcPtrs[]			= { srcText.c_str() };
+			const int				srcLengths[]		= { (int)srcText.size() };
+			vector<deUint32>		spvBlob;
+			const EShLanguage		shaderStage			= getGlslangStage(glu::ShaderType(shaderType));
+			glslang::TShader		shader				(shaderStage);
+			glslang::TProgram		program;
+
+			shader.setStrings(srcPtrs, DE_LENGTH_OF_ARRAY(srcPtrs));
+			program.addShader(&shader);
 
 			{
+				const deUint64	compileStartTime	= deGetMicroseconds();
+				const int		compileRes			= shader.parse(&builtinRes, 110, false, EShMsgSpvRules);
 				glu::ShaderInfo	shaderBuildInfo;
 
 				shaderBuildInfo.type			= (glu::ShaderType)shaderType;
 				shaderBuildInfo.source			= srcText;
-				shaderBuildInfo.infoLog			= infoSink.info.c_str(); // \todo [2015-07-13 pyry] Include debug log?
+				shaderBuildInfo.infoLog			= shader.getInfoLog(); // \todo [2015-07-13 pyry] Include debug log?
 				shaderBuildInfo.compileTimeUs	= deGetMicroseconds()-compileStartTime;
-				shaderBuildInfo.compileOk		= (compileOk != 0);
+				shaderBuildInfo.compileOk		= (compileRes != 0);
 
 				buildInfo->shaders.push_back(shaderBuildInfo);
+
+				if (compileRes == 0)
+					TCU_FAIL("Failed to compile shader");
 			}
 
-			buildInfo->program.infoLog		= "(No linking performed)";
-			buildInfo->program.linkOk		= (compileOk != 0);
-			buildInfo->program.linkTimeUs	= 0;
+			{
+				const deUint64	linkStartTime	= deGetMicroseconds();
+				const int		linkRes			= program.link(EShMsgDefault);
 
-			if (compileOk == 0)
-				TCU_FAIL("Failed to compile shader");
+				buildInfo->program.infoLog		= program.getInfoLog(); // \todo [2015-11-05 scygan] Include debug log?
+				buildInfo->program.linkOk		= (linkRes != 0);
+				buildInfo->program.linkTimeUs	= deGetMicroseconds()-linkStartTime;
+
+				if (linkRes == 0)
+					TCU_FAIL("Failed to link shader");
+			}
+
+			{
+				const glslang::TIntermediate* const	intermediate	= program.getIntermediate(shaderStage);
+				glslang::GlslangToSpv(*intermediate, spvBlob);
+			}
 
 			dst->resize(spvBlob.size() * sizeof(deUint32));
 #if (DE_ENDIANNESS == DE_LITTLE_ENDIAN)
