@@ -92,13 +92,13 @@ public:
 	bool		operator==				(const RGBA& v) const { return (m_value == v.m_value); }
 	bool		operator!=				(const RGBA& v) const { return (m_value != v.m_value); }
 
-	// Color constants
-	const static RGBA	red;
-	const static RGBA	green;
-	const static RGBA	blue;
-	const static RGBA	gray;
-	const static RGBA	white;
-	const static RGBA	black;
+	// Color constants.  Designed as methods to avoid static-initialization-order fiasco.
+	static inline const RGBA red	(void) { return RGBA(0xFF, 0x0,  0x0,  0xFF); }
+	static inline const RGBA green	(void) { return RGBA(0x0,  0xFF, 0x0,  0xFF); }
+	static inline const RGBA blue	(void) { return RGBA(0x0,  0x0,  0xFF, 0xFF); }
+	static inline const RGBA gray	(void) { return RGBA(0x80, 0x80, 0x80, 0xFF); }
+	static inline const RGBA white	(void) { return RGBA(0xFF, 0xFF, 0xFF, 0xFF); }
+	static inline const RGBA black	(void) { return RGBA(0x0,  0x0,  0x0,  0xFF); }
 
 private:
 	deUint32	m_value;

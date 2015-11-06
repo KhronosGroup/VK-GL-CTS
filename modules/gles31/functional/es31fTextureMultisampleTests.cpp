@@ -934,7 +934,7 @@ bool SampleMaskCase::verifyTexture (int sample)
 	tcu::Surface	errorMask	(m_canvasSize, m_canvasSize);
 	bool			error		= false;
 
-	tcu::clear(errorMask.getAccess(), tcu::RGBA::green.toVec());
+	tcu::clear(errorMask.getAccess(), tcu::RGBA::green().toVec());
 
 	// Draw sample:
 	//	Sample sampleNdx is set to red channel
@@ -954,13 +954,13 @@ bool SampleMaskCase::verifyTexture (int sample)
 		if (color.getGreen() != 0)
 		{
 			error = true;
-			errorMask.setPixel(x, y, tcu::RGBA::red);
+			errorMask.setPixel(x, y, tcu::RGBA::red());
 		}
 		// enabled sample was not written to
 		else if (color.getRed() != 255 && !allowMissingCoverage)
 		{
 			error = true;
-			errorMask.setPixel(x, y, tcu::RGBA::red);
+			errorMask.setPixel(x, y, tcu::RGBA::red());
 		}
 	}
 

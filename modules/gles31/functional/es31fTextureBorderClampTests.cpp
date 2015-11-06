@@ -1117,7 +1117,7 @@ bool TextureBorderClampTest::verifyTextureGatherResult (const tcu::ConstPixelBuf
 	tcu::Surface								errorMask			(renderedFrame.getWidth(), renderedFrame.getHeight());
 	int											numFailedPixels		= 0;
 
-	tcu::clear(errorMask.getAccess(), tcu::RGBA::green.toVec());
+	tcu::clear(errorMask.getAccess(), tcu::RGBA::green().toVec());
 
 	for (int py = 0; py < reference.getHeight(); ++py)
 	for (int px = 0; px < reference.getWidth(); ++px)
@@ -1137,7 +1137,7 @@ bool TextureBorderClampTest::verifyTextureGatherResult (const tcu::ConstPixelBuf
 		{
 			if (!tcu::isGatherOffsetsResultValid(effectiveView, samplerParams.sampler, lookupPrecision, texCoord, 0, glu::getDefaultGatherOffsets(), resultValue))
 			{
-				errorMask.setPixel(px, py, tcu::RGBA::red);
+				errorMask.setPixel(px, py, tcu::RGBA::red());
 				++numFailedPixels;
 			}
 		}
@@ -1182,7 +1182,7 @@ bool TextureBorderClampTest::verifyTextureGatherCmpResult (const tcu::ConstPixel
 	int											numFailedPixels		= 0;
 	bool										lowQuality			= false;
 
-	tcu::clear(errorMask.getAccess(), tcu::RGBA::green.toVec());
+	tcu::clear(errorMask.getAccess(), tcu::RGBA::green().toVec());
 
 	for (int py = 0; py < reference.getHeight(); ++py)
 	for (int px = 0; px < reference.getWidth(); ++px)
@@ -1204,7 +1204,7 @@ bool TextureBorderClampTest::verifyTextureGatherCmpResult (const tcu::ConstPixel
 				// fall back to low quality verification
 				if (!tcu::isGatherOffsetsCompareResultValid(effectiveView, samplerParams.sampler, lowQualityTexComparePrecision, texCoord, glu::getDefaultGatherOffsets(), refZ, resultValue))
 				{
-					errorMask.setPixel(px, py, tcu::RGBA::red);
+					errorMask.setPixel(px, py, tcu::RGBA::red());
 					++numFailedPixels;
 				}
 			}

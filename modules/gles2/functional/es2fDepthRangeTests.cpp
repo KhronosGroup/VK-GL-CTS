@@ -238,7 +238,7 @@ DepthRangeCompareCase::IterateResult DepthRangeCompareCase::iterate (void)
 			float	d		= depthRangeTransform(triQuadInterpolate(xf, yf, m_depthCoord), m_zNear, m_zFar);
 			bool	dpass	= compare(m_compareFunc, d, constDepth*0.5f + 0.5f);
 
-			referenceFrame.setPixel(x, y, dpass ? tcu::RGBA::green : tcu::RGBA::blue);
+			referenceFrame.setPixel(x, y, dpass ? tcu::RGBA::green() : tcu::RGBA::blue());
 		}
 
 		// Fill right half - comparison to interpolated depth
@@ -250,7 +250,7 @@ DepthRangeCompareCase::IterateResult DepthRangeCompareCase::iterate (void)
 			float	d		= depthRangeTransform(triQuadInterpolate(xf, yf, m_depthCoord), m_zNear, m_zFar);
 			bool	dpass	= compare(m_compareFunc, d, rd);
 
-			referenceFrame.setPixel(x, y, dpass ? tcu::RGBA::green : tcu::RGBA::blue);
+			referenceFrame.setPixel(x, y, dpass ? tcu::RGBA::green() : tcu::RGBA::blue());
 		}
 	}
 

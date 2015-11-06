@@ -187,10 +187,10 @@ bool RenderCase::checkResultImage (const tcu::Surface& result)
 		const tcu::RGBA col = result.getPixel(x, y);
 
 		if (col.getGreen() == 255)
-			errorMask.setPixel(x, y, tcu::RGBA::green);
+			errorMask.setPixel(x, y, tcu::RGBA::green());
 		else
 		{
-			errorMask.setPixel(x, y, tcu::RGBA::red);
+			errorMask.setPixel(x, y, tcu::RGBA::red());
 			error = true;
 		}
 	}
@@ -324,11 +324,11 @@ bool RenderCase::drawTestPattern (bool useTexture)
 			colorDiff.y() > formatThreshold.getGreen() + colorThreshold ||
 			colorDiff.z() > formatThreshold.getBlue()  + colorThreshold)
 		{
-			errorMask.setPixel(x, y, tcu::RGBA::red);
+			errorMask.setPixel(x, y, tcu::RGBA::red());
 			error = true;
 		}
 		else
-			errorMask.setPixel(x, y, tcu::RGBA::green);
+			errorMask.setPixel(x, y, tcu::RGBA::green());
 	}
 
 	// report error
@@ -1390,8 +1390,8 @@ void OutputCase::testFBO (void)
 	// Check results
 	{
 		tcu::Surface		errorMask		(TEST_CANVAS_SIZE, TEST_CANVAS_SIZE);
-		const tcu::RGBA		badPixelColor	= tcu::RGBA::red;
-		const tcu::RGBA		okPixelColor	= tcu::RGBA::green;
+		const tcu::RGBA		badPixelColor	= tcu::RGBA::red();
+		const tcu::RGBA		okPixelColor	= tcu::RGBA::green();
 		int					badPixels		= 0;
 
 		m_testCtx.getLog() << tcu::TestLog::Message << "Checking passes have identical red and blue channels and the green channel is correct in the constant pass." << tcu::TestLog::EndMessage;
@@ -1612,8 +1612,8 @@ void BlendingCase::testFBO (void)
 	// Check results
 	{
 		tcu::Surface		errorMask		(TEST_CANVAS_SIZE, TEST_CANVAS_SIZE);
-		const tcu::RGBA		badPixelColor	= tcu::RGBA::red;
-		const tcu::RGBA		okPixelColor	= tcu::RGBA::green;
+		const tcu::RGBA		badPixelColor	= tcu::RGBA::red();
+		const tcu::RGBA		okPixelColor	= tcu::RGBA::green();
 		int					badPixels		= 0;
 
 		m_testCtx.getLog() << tcu::TestLog::Message << "Checking patterns are identical." << tcu::TestLog::EndMessage;

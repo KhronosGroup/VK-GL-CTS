@@ -1124,7 +1124,7 @@ bool verifySinglesampleLineGroupRasterization (const tcu::Surface& surface, cons
 		for (int x = 0; x < referenceLineMap.getWidth(); ++x)
 		{
 			const bool reference	= referenceLineMap.getAccess().getPixelInt(x, y).x() != 0;
-			const bool result		= compareColors(surface.getPixel(x, y), tcu::RGBA::white, args.redBits, args.greenBits, args.blueBits);
+			const bool result		= compareColors(surface.getPixel(x, y), tcu::RGBA::white(), args.redBits, args.greenBits, args.blueBits);
 
 			if (reference)
 				++referenceFragments;
@@ -1149,14 +1149,14 @@ bool verifySinglesampleLineGroupRasterization (const tcu::Surface& surface, cons
 				for (int dy = -1; dy < 2 && !foundFragment; ++dy)
 				for (int dx = -1; dx < 2 && !foundFragment; ++dx)
 				{
-					if (compareColors(surface.getPixel(x+dx, y+dy), tcu::RGBA::white, args.redBits, args.greenBits, args.blueBits))
+					if (compareColors(surface.getPixel(x+dx, y+dy), tcu::RGBA::white(), args.redBits, args.greenBits, args.blueBits))
 						foundFragment = true;
 				}
 
 				if (!foundFragment)
 				{
 					missingFragments = true;
-					errorMask.setPixel(x, y, tcu::RGBA::red);
+					errorMask.setPixel(x, y, tcu::RGBA::red());
 				}
 			}
 		}
@@ -1201,7 +1201,7 @@ bool verifySinglesampleLineGroupRasterization (const tcu::Surface& surface, cons
 				for (int y = 0; y < surface.getHeight(); ++y)
 				for (int x = 0; x < surface.getWidth(); ++x)
 					if (referenceLineMap.getAccess().getPixelInt(x, y).x())
-						reference.setPixel(x, y, tcu::RGBA::white);
+						reference.setPixel(x, y, tcu::RGBA::white());
 
 				log << tcu::TestLog::Message << "Invalid fragment count in result image." << tcu::TestLog::EndMessage;
 				log << tcu::TestLog::ImageSet("Verification result", "Result of rendering")
@@ -1237,7 +1237,7 @@ bool verifySinglesampleLineGroupRasterization (const tcu::Surface& surface, cons
 
 			for (int x = 1; x < referenceLineMap.getWidth() - 1; ++x)
 			{
-				const bool	result	= compareColors(surface.getPixel(x, y), tcu::RGBA::white, args.redBits, args.greenBits, args.blueBits);
+				const bool	result	= compareColors(surface.getPixel(x, y), tcu::RGBA::white(), args.redBits, args.greenBits, args.blueBits);
 				int			lineID	= 0;
 
 				// Which line does this fragment belong to?
@@ -1318,7 +1318,7 @@ bool verifySinglesampleLineGroupRasterization (const tcu::Surface& surface, cons
 
 			for (int y = 1; y < referenceLineMap.getHeight() - 1; ++y)
 			{
-				const bool	result	= compareColors(surface.getPixel(x, y), tcu::RGBA::white, args.redBits, args.greenBits, args.blueBits);
+				const bool	result	= compareColors(surface.getPixel(x, y), tcu::RGBA::white(), args.redBits, args.greenBits, args.blueBits);
 				int			lineID	= 0;
 
 				// Which line does this fragment belong to?
@@ -1541,7 +1541,7 @@ bool verifyLineGroupPixelIndependentInterpolation (const tcu::Surface&				surfac
 		}
 
 		// background color is possible?
-		if (lineSurroundingCoverage == 0 && compareColors(color, tcu::RGBA::black, args.redBits, args.greenBits, args.blueBits))
+		if (lineSurroundingCoverage == 0 && compareColors(color, tcu::RGBA::black(), args.redBits, args.greenBits, args.blueBits))
 			continue;
 
 		// Check those lines
@@ -1865,7 +1865,7 @@ bool verifySinglesampleWideLineGroupInterpolation (const tcu::Surface& surface, 
 		}
 
 		// background color is possible?
-		if (lineSurroundingCoverage == 0 && compareColors(color, tcu::RGBA::black, args.redBits, args.greenBits, args.blueBits))
+		if (lineSurroundingCoverage == 0 && compareColors(color, tcu::RGBA::black(), args.redBits, args.greenBits, args.blueBits))
 			continue;
 
 		// Check those lines

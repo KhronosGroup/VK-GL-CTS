@@ -3404,7 +3404,7 @@ bool LayeredRenderCase::verifyImageSingleColoredRow (const tcu::Surface& layer, 
 	if (logging)
 		m_testCtx.getLog() << tcu::TestLog::Message << "Expecting all pixels with distance less or equal to (about) " << barLength << " pixels from left border to be of color " << barColor.swizzle(0,1,2) << "." << tcu::TestLog::EndMessage;
 
-	tcu::clear(errorMask.getAccess(), tcu::RGBA::green.toIVec());
+	tcu::clear(errorMask.getAccess(), tcu::RGBA::green().toIVec());
 
 	for (int y = 0; y < layer.getHeight(); ++y)
 	for (int x = 0; x < layer.getWidth(); ++x)
@@ -3427,7 +3427,7 @@ bool LayeredRenderCase::verifyImageSingleColoredRow (const tcu::Surface& layer, 
 		allPixelsOk &= isOk;
 
 		if (!isOk)
-			errorMask.setPixel(x, y, tcu::RGBA::red);
+			errorMask.setPixel(x, y, tcu::RGBA::red());
 	}
 
 	if (allPixelsOk)

@@ -245,7 +245,7 @@ FragDepthCompareCase::IterateResult FragDepthCompareCase::iterate (void)
 			float	d		= m_evalFunc(Vec2(xf, yf));
 			bool	dpass	= compare(m_compareFunc, d, constDepth*0.5f + 0.5f);
 
-			referenceFrame.setPixel(x, y, dpass ? tcu::RGBA::green : tcu::RGBA::blue);
+			referenceFrame.setPixel(x, y, dpass ? tcu::RGBA::green() : tcu::RGBA::blue());
 		}
 
 		// Fill right half - comparison to interpolated depth
@@ -257,7 +257,7 @@ FragDepthCompareCase::IterateResult FragDepthCompareCase::iterate (void)
 			float	d		= m_evalFunc(Vec2(xf, yf));
 			bool	dpass	= compare(m_compareFunc, d, rd);
 
-			referenceFrame.setPixel(x, y, dpass ? tcu::RGBA::green : tcu::RGBA::blue);
+			referenceFrame.setPixel(x, y, dpass ? tcu::RGBA::green() : tcu::RGBA::blue());
 		}
 	}
 

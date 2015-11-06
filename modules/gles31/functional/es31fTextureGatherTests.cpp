@@ -587,7 +587,7 @@ static bool verifyGatherOffsets (TestLog&						log,
 	tcu::Surface				errorMask		(width, height);
 	bool						success			= true;
 
-	tcu::clear(errorMask.getAccess(), tcu::RGBA::green.toVec());
+	tcu::clear(errorMask.getAccess(), tcu::RGBA::green().toVec());
 
 	for (int py = 0; py < height; py++)
 	for (int px = 0; px < width; px++)
@@ -608,7 +608,7 @@ static bool verifyGatherOffsets (TestLog&						log,
 		{
 			if (!isGatherOffsetsResultValid(texture, sampler, lookupPrec, texCoord, componentNdx, offsets, resultPix))
 			{
-				errorMask.setPixel(px, py, tcu::RGBA::red);
+				errorMask.setPixel(px, py, tcu::RGBA::red());
 				success = false;
 			}
 		}
@@ -665,7 +665,7 @@ static bool verifyGatherOffsetsCompare (TestLog&							log,
 	tcu::Surface				errorMask		(width, height);
 	bool						success			= true;
 
-	tcu::clear(errorMask.getAccess(), tcu::RGBA::green.toVec());
+	tcu::clear(errorMask.getAccess(), tcu::RGBA::green().toVec());
 
 	for (int py = 0; py < height; py++)
 	for (int px = 0; px < width; px++)
@@ -685,7 +685,7 @@ static bool verifyGatherOffsetsCompare (TestLog&							log,
 		{
 			if (!isGatherOffsetsCompareResultValid(texture, sampler, compPrec, texCoord, offsets, refZ, resultPix))
 			{
-				errorMask.setPixel(px, py, tcu::RGBA::red);
+				errorMask.setPixel(px, py, tcu::RGBA::red());
 				success = false;
 			}
 		}
@@ -714,7 +714,7 @@ static bool verifySingleColored (TestLog& log, const ConstPixelBufferAccess& res
 	tcu::Surface				errorMask		(width, height);
 	bool						success			= true;
 
-	tcu::clear(errorMask.getAccess(), tcu::RGBA::green.toVec());
+	tcu::clear(errorMask.getAccess(), tcu::RGBA::green().toVec());
 	tcu::clear(idealAccess, refColor);
 
 	for (int py = 0; py < height; py++)
@@ -722,7 +722,7 @@ static bool verifySingleColored (TestLog& log, const ConstPixelBufferAccess& res
 	{
 		if (result.getPixel(px, py) != refColor)
 		{
-			errorMask.setPixel(px, py, tcu::RGBA::red);
+			errorMask.setPixel(px, py, tcu::RGBA::red());
 			success = false;
 		}
 	}

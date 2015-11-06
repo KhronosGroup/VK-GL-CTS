@@ -221,7 +221,7 @@ static bool verifyImageWithVerifier (const tcu::Surface& resultImage, tcu::TestL
 		if (!verifier.verify(color, tcu::IVec2(x,y)))
 		{
 			error = true;
-			errorMask.setPixel(x, y, tcu::RGBA::red);
+			errorMask.setPixel(x, y, tcu::RGBA::red());
 		}
 	}
 
@@ -756,7 +756,7 @@ bool SamplePosDistributionCase::verifySampleBuffers (const std::vector<tcu::Surf
 
 					samplePosNotUnique = true;
 					uniquenessOk = false;
-					errorMask.setPixel(x, y, tcu::RGBA::red);
+					errorMask.setPixel(x, y, tcu::RGBA::red());
 				}
 			}
 		}
@@ -828,7 +828,7 @@ bool SamplePosDistributionCase::verifySampleBuffers (const std::vector<tcu::Surf
 					}
 
 					distibutionError = true;
-					errorMask.setPixel(x, y, tcu::RGBA::red);
+					errorMask.setPixel(x, y, tcu::RGBA::red());
 				}
 			}
 
@@ -1553,7 +1553,7 @@ bool SampleMaskUniqueCase::verifySampleBuffers (const std::vector<tcu::Surface>&
 
 					maskNdxNotUnique = true;
 					uniquenessOk = false;
-					errorMask.setPixel(x, y, tcu::RGBA::red);
+					errorMask.setPixel(x, y, tcu::RGBA::red());
 				}
 			}
 		}
