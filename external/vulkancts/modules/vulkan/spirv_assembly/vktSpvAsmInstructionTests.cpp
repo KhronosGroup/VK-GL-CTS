@@ -68,7 +68,10 @@ static void fillRandomScalars (de::Random& rnd, T minValue, T maxValue, void* ds
 		typedPtr[offset + ndx] = randomScalar<T>(rnd, minValue, maxValue);
 }
 
-// Assembly code used for testing OpNop, OpConstant{Null|Composite}, Op[No]Line, OpSource[Continued], OpUndef is based on GLSL source code:
+// \todo [2015-11-19 antiagainst] New rules for Vulkan pipeline interface requires that
+// all BuiltIn variables have to all be members in a block (struct with Block decoration).
+
+// Assembly code used for testing OpNop, OpConstant{Null|Composite}, Op[No]Line, OpSource[Continued], OpSourceExtension, OpUndef is based on GLSL source code:
 //
 // #version 430
 //
@@ -462,6 +465,251 @@ tcu::TestCaseGroup* createOpUnreachableGroup (tcu::TestContext& testCtx)
 	return group.release();
 }
 
+// Assembly code used for testing decoration group is based on GLSL source code:
+//
+// #version 430
+//
+// layout(std140, set = 0, binding = 0) readonly buffer Input0 {
+//   float elements[];
+// } input_data0;
+// layout(std140, set = 0, binding = 1) readonly buffer Input1 {
+//   float elements[];
+// } input_data1;
+// layout(std140, set = 0, binding = 2) readonly buffer Input2 {
+//   float elements[];
+// } input_data2;
+// layout(std140, set = 0, binding = 3) readonly buffer Input3 {
+//   float elements[];
+// } input_data3;
+// layout(std140, set = 0, binding = 4) readonly buffer Input4 {
+//   float elements[];
+// } input_data4;
+// layout(std140, set = 0, binding = 5) writeonly buffer Output {
+//   float elements[];
+// } output_data;
+//
+// void main() {
+//   uint x = gl_GlobalInvocationID.x;
+//   output_data.elements[x] = input_data0.elements[x] + input_data1.elements[x] + input_data2.elements[x] + input_data3.elements[x] + input_data4.elements[x];
+// }
+tcu::TestCaseGroup* createDecorationGroupGroup (tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "decoration_group", "Test the OpDecorationGroup & OpGroupDecorate instruction"));
+	ComputeShaderSpec				spec;
+	de::Random						rnd				(deStringHash(group->getName()));
+	const int						numElements		= 100;
+	vector<float>					inputFloats0	(numElements, 0);
+	vector<float>					inputFloats1	(numElements, 0);
+	vector<float>					inputFloats2	(numElements, 0);
+	vector<float>					inputFloats3	(numElements, 0);
+	vector<float>					inputFloats4	(numElements, 0);
+	vector<float>					outputFloats	(numElements, 0);
+
+	fillRandomScalars(rnd, -300.f, 300.f, &inputFloats0[0], numElements);
+	fillRandomScalars(rnd, -300.f, 300.f, &inputFloats1[0], numElements);
+	fillRandomScalars(rnd, -300.f, 300.f, &inputFloats2[0], numElements);
+	fillRandomScalars(rnd, -300.f, 300.f, &inputFloats3[0], numElements);
+	fillRandomScalars(rnd, -300.f, 300.f, &inputFloats4[0], numElements);
+	for (size_t numNdx = 0; numNdx < numElements; ++numNdx)
+		outputFloats[numNdx] = inputFloats0[numNdx] + inputFloats1[numNdx] + inputFloats2[numNdx] + inputFloats3[numNdx] + inputFloats4[numNdx];
+
+	spec.assembly =
+		string(s_ShaderPreamble) +
+
+		"OpSource GLSL 430\n"
+		"OpName %main \"main\"\n"
+		"OpName %id \"gl_GlobalInvocationID\"\n"
+
+		// Not using group decoration on variable.
+		"OpDecorate %id BuiltIn GlobalInvocationId\n"
+		// Not using group decoration on type.
+		"OpDecorate %f32arr ArrayStride 4\n"
+
+		"OpDecorate %groups BufferBlock\n"
+		"OpDecorate %groupm Offset 0\n"
+		"%groups = OpDecorationGroup\n"
+		"%groupm = OpDecorationGroup\n"
+
+		// Group decoration on multiple structs.
+		"OpGroupDecorate %groups %outbuf %inbuf0 %inbuf1 %inbuf2 %inbuf3 %inbuf4\n"
+		// Group decoration on multiple struct members.
+		"OpGroupMemberDecorate %groupm %outbuf 0 %inbuf0 0 %inbuf1 0 %inbuf2 0 %inbuf3 0 %inbuf4 0\n"
+
+		"OpDecorate %group1 DescriptorSet 0\n"
+		"OpDecorate %group3 DescriptorSet 0\n"
+		"OpDecorate %group3 NonWritable\n"
+		"OpDecorate %group3 Restrict\n"
+		"%group0 = OpDecorationGroup\n"
+		"%group1 = OpDecorationGroup\n"
+		"%group3 = OpDecorationGroup\n"
+
+		// Applying the same decoration group multiple times.
+		"OpGroupDecorate %group1 %outdata\n"
+		"OpGroupDecorate %group1 %outdata\n"
+		"OpGroupDecorate %group1 %outdata\n"
+		"OpDecorate %outdata DescriptorSet 0\n"
+		"OpDecorate %outdata Binding 5\n"
+		// Applying decoration group containing nothing.
+		"OpGroupDecorate %group0 %indata0\n"
+		"OpDecorate %indata0 DescriptorSet 0\n"
+		"OpDecorate %indata0 Binding 0\n"
+		// Applying decoration group containing one decoration.
+		"OpGroupDecorate %group1 %indata1\n"
+		"OpDecorate %indata1 Binding 1\n"
+		// Applying decoration group containing multiple decorations.
+		"OpGroupDecorate %group3 %indata2 %indata3\n"
+		"OpDecorate %indata2 Binding 2\n"
+		"OpDecorate %indata3 Binding 3\n"
+		// Applying multiple decoration groups (with overlapping).
+		"OpGroupDecorate %group0 %indata4\n"
+		"OpGroupDecorate %group1 %indata4\n"
+		"OpGroupDecorate %group3 %indata4\n"
+		"OpDecorate %indata4 Binding 4\n"
+
+		+ string(s_CommonTypes) +
+
+		"%id   = OpVariable %uvec3ptr Input\n"
+		"%zero = OpConstant %i32 0\n"
+
+		"%outbuf    = OpTypeStruct %f32arr\n"
+		"%outbufptr = OpTypePointer Uniform %outbuf\n"
+		"%outdata   = OpVariable %outbufptr Uniform\n"
+		"%inbuf0    = OpTypeStruct %f32arr\n"
+		"%inbuf0ptr = OpTypePointer Uniform %inbuf0\n"
+		"%indata0   = OpVariable %inbuf0ptr Uniform\n"
+		"%inbuf1    = OpTypeStruct %f32arr\n"
+		"%inbuf1ptr = OpTypePointer Uniform %inbuf1\n"
+		"%indata1   = OpVariable %inbuf1ptr Uniform\n"
+		"%inbuf2    = OpTypeStruct %f32arr\n"
+		"%inbuf2ptr = OpTypePointer Uniform %inbuf2\n"
+		"%indata2   = OpVariable %inbuf2ptr Uniform\n"
+		"%inbuf3    = OpTypeStruct %f32arr\n"
+		"%inbuf3ptr = OpTypePointer Uniform %inbuf3\n"
+		"%indata3   = OpVariable %inbuf3ptr Uniform\n"
+		"%inbuf4    = OpTypeStruct %f32arr\n"
+		"%inbufptr  = OpTypePointer Uniform %inbuf4\n"
+		"%indata4   = OpVariable %inbufptr Uniform\n"
+
+		"%main   = OpFunction %void None %voidf\n"
+		"%label  = OpLabel\n"
+		"%idval  = OpLoad %uvec3 %id\n"
+		"%x      = OpCompositeExtract %u32 %idval 0\n"
+		"%inloc0 = OpAccessChain %f32ptr %indata0 %zero %x\n"
+		"%inloc1 = OpAccessChain %f32ptr %indata1 %zero %x\n"
+		"%inloc2 = OpAccessChain %f32ptr %indata2 %zero %x\n"
+		"%inloc3 = OpAccessChain %f32ptr %indata3 %zero %x\n"
+		"%inloc4 = OpAccessChain %f32ptr %indata4 %zero %x\n"
+		"%outloc = OpAccessChain %f32ptr %outdata %zero %x\n"
+		"%inval0 = OpLoad %f32 %inloc0\n"
+		"%inval1 = OpLoad %f32 %inloc1\n"
+		"%inval2 = OpLoad %f32 %inloc2\n"
+		"%inval3 = OpLoad %f32 %inloc3\n"
+		"%inval4 = OpLoad %f32 %inloc4\n"
+		"%add0   = OpFAdd %f32 %inval0 %inval1\n"
+		"%add1   = OpFAdd %f32 %add0 %inval2\n"
+		"%add2   = OpFAdd %f32 %add1 %inval3\n"
+		"%add    = OpFAdd %f32 %add2 %inval4\n"
+		"          OpStore %outloc %add\n"
+		"          OpReturn\n"
+		"          OpFunctionEnd\n";
+	spec.inputs.push_back(BufferSp(new Float32Buffer(inputFloats0)));
+	spec.inputs.push_back(BufferSp(new Float32Buffer(inputFloats1)));
+	spec.inputs.push_back(BufferSp(new Float32Buffer(inputFloats2)));
+	spec.inputs.push_back(BufferSp(new Float32Buffer(inputFloats3)));
+	spec.inputs.push_back(BufferSp(new Float32Buffer(inputFloats4)));
+	spec.outputs.push_back(BufferSp(new Float32Buffer(outputFloats)));
+	spec.numWorkGroups = IVec3(numElements, 1, 1);
+
+	group->addChild(new SpvAsmComputeShaderCase(testCtx, "all", "decoration group cases", spec));
+
+	return group.release();
+}
+
+tcu::TestCaseGroup* createOpPhiGroup (tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opphi", "Test the OpPhi instruction"));
+	ComputeShaderSpec				spec;
+	de::Random						rnd				(deStringHash(group->getName()));
+	const int						numElements		= 100;
+	vector<float>					inputFloats		(numElements, 0);
+	vector<float>					outputFloats	(numElements, 0);
+
+	fillRandomScalars(rnd, -300.f, 300.f, &inputFloats[0], numElements);
+	for (size_t numNdx = 0; numNdx < numElements; ++numNdx)
+	{
+		switch (numNdx % 3)
+		{
+			case 0:		outputFloats[numNdx] = inputFloats[numNdx] + 5.5f;	break;
+			case 1:		outputFloats[numNdx] = inputFloats[numNdx] + 20.5f;	break;
+			case 2:		outputFloats[numNdx] = inputFloats[numNdx] + 1.75f;	break;
+			default:	break;
+		}
+	}
+
+	spec.assembly =
+		string(s_ShaderPreamble) +
+
+		"OpSource GLSL 430\n"
+		"OpName %main \"main\"\n"
+		"OpName %id \"gl_GlobalInvocationID\"\n"
+
+		"OpDecorate %id BuiltIn GlobalInvocationId\n"
+
+		+ string(s_InputOutputBufferTraits) + string(s_CommonTypes) + string(s_InputOutputBuffer) +
+
+		"%id = OpVariable %uvec3ptr Input\n"
+		"%zero       = OpConstant %i32 0\n"
+		"%three      = OpConstant %u32 3\n"
+		"%constf5p5  = OpConstant %f32 5.5\n"
+		"%constf20p5 = OpConstant %f32 20.5\n"
+		"%constf1p75 = OpConstant %f32 1.75\n"
+		"%constf8p5  = OpConstant %f32 8.5\n"
+		"%constf6p5  = OpConstant %f32 6.5\n"
+
+		"%main     = OpFunction %void None %voidf\n"
+		"%entry    = OpLabel\n"
+		"%idval    = OpLoad %uvec3 %id\n"
+		"%x        = OpCompositeExtract %u32 %idval 0\n"
+		"%selector = OpUMod %u32 %x %three\n"
+		"            OpSelectionMerge %default None\n"
+		"            OpSwitch %selector %default 0 %case0 1 %case1 2 %case2\n"
+
+		// Case 1 before OpPhi.
+		"%case1    = OpLabel\n"
+		"            OpBranch %phi\n"
+
+		"%default  = OpLabel\n"
+		"            OpUnreachable\n"
+
+		"%phi      = OpLabel\n"
+		"%operand  = OpPhi %f32 %constf1p75 %case2   %constf20p5 %case1   %constf5p5 %case0" // not in the order of blocks
+        "                       %constf8p5  %phi     %constf6p5  %default\n" // from the same block & from an unreachable block
+		"%inloc    = OpAccessChain %f32ptr %indata %zero %x\n"
+		"%inval    = OpLoad %f32 %inloc\n"
+		"%add      = OpFAdd %f32 %inval %operand\n"
+		"%outloc   = OpAccessChain %f32ptr %outdata %zero %x\n"
+		"            OpStore %outloc %add\n"
+		"            OpReturn\n"
+
+		// Case 0 after OpPhi.
+		"%case0    = OpLabel\n"
+		"            OpBranch %phi\n"
+
+
+		// Case 2 after OpPhi.
+		"%case2    = OpLabel\n"
+		"            OpBranch %phi\n"
+
+		"            OpFunctionEnd\n";
+	spec.inputs.push_back(BufferSp(new Float32Buffer(inputFloats)));
+	spec.outputs.push_back(BufferSp(new Float32Buffer(outputFloats)));
+	spec.numWorkGroups = IVec3(numElements, 1, 1);
+
+	group->addChild(new SpvAsmComputeShaderCase(testCtx, "all", "OpPhi corner cases", spec));
+
+	return group.release();
+}
+
 // Assembly code used for testing block order is based on GLSL source code:
 //
 // #version 430
@@ -713,6 +961,68 @@ tcu::TestCaseGroup* createOpSourceGroup (tcu::TestContext& testCtx)
 		spec.assembly = shaderTemplate.specialize(specializations);
 		spec.inputs.push_back(BufferSp(new Float32Buffer(positiveFloats)));
 		spec.outputs.push_back(BufferSp(new Float32Buffer(negativeFloats)));
+		spec.numWorkGroups = IVec3(numElements, 1, 1);
+
+		group->addChild(new SpvAsmComputeShaderCase(testCtx, cases[caseNdx].name, cases[caseNdx].name, spec));
+	}
+
+	return group.release();
+}
+
+tcu::TestCaseGroup* createOpSourceExtensionGroup (tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opsourceextension", "Tests the OpSource instruction"));
+	vector<CaseParameter>			cases;
+	de::Random						rnd				(deStringHash(group->getName()));
+	const int						numElements		= 100;
+	vector<float>					inputFloats		(numElements, 0);
+	vector<float>					outputFloats	(numElements, 0);
+	const StringTemplate			shaderTemplate	(
+		string(s_ShaderPreamble) +
+
+		"OpSourceExtension \"${EXTENSION}\"\n"
+
+		"OpName %main           \"main\"\n"
+		"OpName %id             \"gl_GlobalInvocationID\"\n"
+
+		"OpDecorate %id BuiltIn GlobalInvocationId\n"
+
+		+ string(s_InputOutputBufferTraits) + string(s_CommonTypes) + string(s_InputOutputBuffer) +
+
+		"%id        = OpVariable %uvec3ptr Input\n"
+		"%zero      = OpConstant %i32 0\n"
+
+		"%main      = OpFunction %void None %voidf\n"
+		"%label     = OpLabel\n"
+		"%idval     = OpLoad %uvec3 %id\n"
+		"%x         = OpCompositeExtract %u32 %idval 0\n"
+		"%inloc     = OpAccessChain %f32ptr %indata %zero %x\n"
+		"%inval     = OpLoad %f32 %inloc\n"
+		"%neg       = OpFNegate %f32 %inval\n"
+		"%outloc    = OpAccessChain %f32ptr %outdata %zero %x\n"
+		"             OpStore %outloc %neg\n"
+		"             OpReturn\n"
+		"             OpFunctionEnd\n");
+
+	cases.push_back(CaseParameter("empty_extension",	""));
+	cases.push_back(CaseParameter("real_extension",		"GL_ARB_texture_rectangle"));
+	cases.push_back(CaseParameter("fake_extension",		"GL_ARB_im_the_ultimate_extension"));
+	cases.push_back(CaseParameter("utf8_extension",		"GL_ARB_\xE2\x98\x82\xE2\x98\x85"));
+	cases.push_back(CaseParameter("long_extension",		string(65533, 'e'))); // word count: 65535
+
+	fillRandomScalars(rnd, -200.f, 200.f, &inputFloats[0], numElements);
+	for (size_t numNdx = 0; numNdx < numElements; ++numNdx)
+		outputFloats[numNdx] = -inputFloats[numNdx];
+
+	for (size_t caseNdx = 0; caseNdx < cases.size(); ++caseNdx)
+	{
+		map<string, string>		specializations;
+		ComputeShaderSpec		spec;
+
+		specializations["EXTENSION"] = cases[caseNdx].param;
+		spec.assembly = shaderTemplate.specialize(specializations);
+		spec.inputs.push_back(BufferSp(new Float32Buffer(inputFloats)));
+		spec.outputs.push_back(BufferSp(new Float32Buffer(outputFloats)));
 		spec.numWorkGroups = IVec3(numElements, 1, 1);
 
 		group->addChild(new SpvAsmComputeShaderCase(testCtx, cases[caseNdx].name, cases[caseNdx].name, spec));
@@ -1338,6 +1648,9 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	instructionTests->addChild(createOpConstantCompositeGroup(testCtx));
 	instructionTests->addChild(createOpConstantUsageGroup(testCtx));
 	instructionTests->addChild(createOpSourceGroup(testCtx));
+	instructionTests->addChild(createOpSourceExtensionGroup(testCtx));
+	instructionTests->addChild(createDecorationGroupGroup(testCtx));
+	instructionTests->addChild(createOpPhiGroup(testCtx));
 	instructionTests->addChild(createLoopControlGroup(testCtx));
 	instructionTests->addChild(createFunctionControlGroup(testCtx));
 	instructionTests->addChild(createSelectionControlGroup(testCtx));
