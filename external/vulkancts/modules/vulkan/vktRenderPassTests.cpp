@@ -1867,8 +1867,8 @@ void pushImageInitializationCommands (const DeviceInterface&								vk,
 			};
 			const VkImageSubresourceRange range =
 			{
-				hasDepthComponent(format.order) ? VK_IMAGE_ASPECT_DEPTH : 0
-					| hasStencilComponent(format.order) ? VK_IMAGE_ASPECT_STENCIL : 0,
+				(VkImageAspectFlags)(hasDepthComponent(format.order) ? VK_IMAGE_ASPECT_DEPTH : 0
+									 | hasStencilComponent(format.order) ? VK_IMAGE_ASPECT_STENCIL : 0),
 				0,
 				1,
 				0,
@@ -2632,19 +2632,19 @@ public:
 	void	setColorStatus		(Status status)
 	{
 		DE_ASSERT(getColorStatus() == STATUS_UNDEFINED);
-		m_status |= ((deUint8)status) << COLOR_OFFSET;
+		m_status |= (deUint8)(status << COLOR_OFFSET);
 	}
 
 	void	setDepthStatus		(Status status)
 	{
 		DE_ASSERT(getDepthStatus() == STATUS_UNDEFINED);
-		m_status |= ((deUint8)status) << DEPTH_OFFSET;
+		m_status |= (deUint8)(status << DEPTH_OFFSET);
 	}
 
 	void	setStencilStatus	(Status status)
 	{
 		DE_ASSERT(getStencilStatus() == STATUS_UNDEFINED);
-		m_status |= ((deUint8)status) << STENCIL_OFFSET;
+		m_status |= (deUint8)(status << STENCIL_OFFSET);
 	}
 
 private:
@@ -4166,7 +4166,7 @@ de::MovePtr<tcu::TestCaseGroup> createAttachmentAllocationTestGroup (tcu::TestCo
 													 VK_MEMORY_OUTPUT_COLOR_ATTACHMENT_BIT,
 													 VK_MEMORY_INPUT_COLOR_ATTACHMENT_BIT,
 
-													 byRegion ? VK_TRUE : VK_FALSE));
+													 byRegion ? (VkBool32)VK_TRUE : (VkBool32)VK_FALSE));
 				}
 
 				const RenderPass					renderPass		(attachments, subpasses, deps);

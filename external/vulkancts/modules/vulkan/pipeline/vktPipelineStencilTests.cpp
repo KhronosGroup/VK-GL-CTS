@@ -72,7 +72,7 @@ bool isSupportedDepthStencilFormat (const InstanceInterface& instanceInterface, 
 
 	VK_CHECK(instanceInterface.getPhysicalDeviceFormatProperties(device, format, &formatProps));
 
-	return formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT;
+	return (formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) != 0;
 }
 
 class StencilOpStateUniqueRandomIterator : public UniqueRandomIterator<VkStencilOpState>

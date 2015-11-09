@@ -91,10 +91,10 @@ rr::BlendEquation mapVkBlendOp (VkBlendOp blendOp)
 
 tcu::BVec4 mapVkChannelFlags (VkChannelFlags flags)
 {
-	return tcu::BVec4(flags & VK_CHANNEL_R_BIT,
-					  flags & VK_CHANNEL_G_BIT,
-					  flags & VK_CHANNEL_B_BIT,
-					  flags & VK_CHANNEL_A_BIT);
+	return tcu::BVec4((flags & VK_CHANNEL_R_BIT) != 0,
+					  (flags & VK_CHANNEL_G_BIT) != 0,
+					  (flags & VK_CHANNEL_B_BIT) != 0,
+					  (flags & VK_CHANNEL_A_BIT) != 0);
 }
 
 rr::TestFunc mapVkCompareOp (VkCompareOp compareFunc)
