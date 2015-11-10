@@ -179,4 +179,14 @@ vector<VkExtensionProperties> enumerateDeviceExtensionProperties (const Instance
 	return properties;
 }
 
+bool isShaderStageSupported (const VkPhysicalDeviceFeatures& deviceFeatures, VkShaderStage stage)
+{
+	if (stage == VK_SHADER_STAGE_TESS_CONTROL || stage == VK_SHADER_STAGE_TESS_EVALUATION)
+		return deviceFeatures.tessellationShader == VK_TRUE;
+	else if (stage == VK_SHADER_STAGE_GEOMETRY)
+		return deviceFeatures.geometryShader == VK_TRUE;
+	else
+		return true;
+}
+
 } // vk

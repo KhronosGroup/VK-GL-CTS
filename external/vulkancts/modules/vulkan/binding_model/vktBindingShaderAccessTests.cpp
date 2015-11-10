@@ -802,22 +802,24 @@ tcu::TestStatus SingleTargetRenderInstance::iterate (void)
 class RenderInstanceShaders
 {
 public:
-														RenderInstanceShaders		(const vk::DeviceInterface&		vki,
-																					 vk::VkDevice					device,
-																					 const vk::BinaryCollection&	programCollection);
+														RenderInstanceShaders		(const vk::DeviceInterface&				vki,
+																					 vk::VkDevice							device,
+																					 const vk::VkPhysicalDeviceFeatures&	deviceFeatures,
+																					 const vk::BinaryCollection&			programCollection);
 
 	inline bool											hasTessellationStage		(void) const { return *m_tessCtrlShader != 0 || *m_tessEvalShader != 0;	}
 	inline deUint32										getNumStages				(void) const { return (deUint32)m_stageInfos.size();					}
 	inline const vk::VkPipelineShaderStageCreateInfo*	getStages					(void) const { return &m_stageInfos[0];									}
 
 private:
-	void												addStage					(const vk::DeviceInterface&		vki,
-																					 vk::VkDevice					device,
-																					 const vk::BinaryCollection&	programCollection,
-																					 const char*					name,
-																					 vk::VkShaderStage				stage,
-																					 vk::Move<vk::VkShaderModule>*	outModule,
-																					 vk::Move<vk::VkShader>*		outShader);
+	void												addStage					(const vk::DeviceInterface&				vki,
+																					 vk::VkDevice							device,
+																					 const vk::VkPhysicalDeviceFeatures&	deviceFeatures,
+																					 const vk::BinaryCollection&			programCollection,
+																					 const char*							name,
+																					 vk::VkShaderStage						stage,
+																					 vk::Move<vk::VkShaderModule>*			outModule,
+																					 vk::Move<vk::VkShader>*				outShader);
 
 	vk::VkPipelineShaderStageCreateInfo					getShaderStageCreateInfo	(vk::VkShaderStage stage, vk::VkShader shader) const;
 
@@ -834,44 +836,51 @@ private:
 	std::vector<vk::VkPipelineShaderStageCreateInfo>	m_stageInfos;
 };
 
-RenderInstanceShaders::RenderInstanceShaders (const vk::DeviceInterface&	vki,
-											  vk::VkDevice					device,
-											  const vk::BinaryCollection&	programCollection)
+RenderInstanceShaders::RenderInstanceShaders (const vk::DeviceInterface&			vki,
+											  vk::VkDevice							device,
+											  const vk::VkPhysicalDeviceFeatures&	deviceFeatures,
+											  const vk::BinaryCollection&			programCollection)
 {
-	addStage(vki, device, programCollection, "vertex",		vk::VK_SHADER_STAGE_VERTEX,				&m_vertexShaderModule,		&m_vertexShader);
-	addStage(vki, device, programCollection, "tess_ctrl",	vk::VK_SHADER_STAGE_TESS_CONTROL,		&m_tessCtrlShaderModule,	&m_tessCtrlShader);
-	addStage(vki, device, programCollection, "tess_eval",	vk::VK_SHADER_STAGE_TESS_EVALUATION,	&m_tessEvalShaderModule,	&m_tessEvalShader);
-	addStage(vki, device, programCollection, "geometry",	vk::VK_SHADER_STAGE_GEOMETRY,			&m_geometryShaderModule,	&m_geometryShader);
-	addStage(vki, device, programCollection, "fragment",	vk::VK_SHADER_STAGE_FRAGMENT,			&m_fragmentShaderModule,	&m_fragmentShader);
+	addStage(vki, device, deviceFeatures, programCollection, "vertex",		vk::VK_SHADER_STAGE_VERTEX,				&m_vertexShaderModule,		&m_vertexShader);
+	addStage(vki, device, deviceFeatures, programCollection, "tess_ctrl",	vk::VK_SHADER_STAGE_TESS_CONTROL,		&m_tessCtrlShaderModule,	&m_tessCtrlShader);
+	addStage(vki, device, deviceFeatures, programCollection, "tess_eval",	vk::VK_SHADER_STAGE_TESS_EVALUATION,	&m_tessEvalShaderModule,	&m_tessEvalShader);
+	addStage(vki, device, deviceFeatures, programCollection, "geometry",	vk::VK_SHADER_STAGE_GEOMETRY,			&m_geometryShaderModule,	&m_geometryShader);
+	addStage(vki, device, deviceFeatures, programCollection, "fragment",	vk::VK_SHADER_STAGE_FRAGMENT,			&m_fragmentShaderModule,	&m_fragmentShader);
 
 	DE_ASSERT(!m_stageInfos.empty());
 }
 
-void RenderInstanceShaders::addStage (const vk::DeviceInterface&		vki,
-									  vk::VkDevice						device,
-									  const vk::BinaryCollection&		programCollection,
-									  const char*						name,
-									  vk::VkShaderStage					stage,
-									  vk::Move<vk::VkShaderModule>*		outModule,
-									  vk::Move<vk::VkShader>*			outShader)
+void RenderInstanceShaders::addStage (const vk::DeviceInterface&			vki,
+									  vk::VkDevice							device,
+									  const vk::VkPhysicalDeviceFeatures&	deviceFeatures,
+									  const vk::BinaryCollection&			programCollection,
+									  const char*							name,
+									  vk::VkShaderStage						stage,
+									  vk::Move<vk::VkShaderModule>*			outModule,
+									  vk::Move<vk::VkShader>*				outShader)
 {
 	if (programCollection.contains(name))
 	{
-		vk::Move<vk::VkShaderModule>	module		= createShaderModule(vki, device, programCollection.get(name), (vk::VkShaderModuleCreateFlags)0);
-		const vk::VkShaderCreateInfo	createInfo	=
+		if (vk::isShaderStageSupported(deviceFeatures, stage))
 		{
-			vk::VK_STRUCTURE_TYPE_SHADER_CREATE_INFO,
-			DE_NULL,
-			*module,		// module
-			"main",			// pName
-			0u,				// flags
-			stage
-		};
-		vk::Move<vk::VkShader>			shader		= vk::createShader(vki, device, &createInfo);
+			vk::Move<vk::VkShaderModule>	module		= createShaderModule(vki, device, programCollection.get(name), (vk::VkShaderModuleCreateFlags)0);
+			const vk::VkShaderCreateInfo	createInfo	=
+			{
+				vk::VK_STRUCTURE_TYPE_SHADER_CREATE_INFO,
+				DE_NULL,
+				*module,		// module
+				"main",			// pName
+				0u,				// flags
+				stage
+			};
+			vk::Move<vk::VkShader>			shader		= vk::createShader(vki, device, &createInfo);
 
-		m_stageInfos.push_back(getShaderStageCreateInfo(stage, *shader));
-		*outModule = module;
-		*outShader = shader;
+			m_stageInfos.push_back(getShaderStageCreateInfo(stage, *shader));
+			*outModule = module;
+			*outShader = shader;
+		}
+		else
+			TCU_THROW(NotSupportedError, (de::toString(stage) + " is not supported").c_str());
 	}
 }
 
@@ -916,7 +925,7 @@ SingleCmdRenderInstance::SingleCmdRenderInstance (Context&			context,
 
 vk::Move<vk::VkPipeline> SingleCmdRenderInstance::createPipeline (vk::VkPipelineLayout pipelineLayout)
 {
-	const RenderInstanceShaders							shaderStages		(m_vki, m_device, m_context.getBinaryCollection());
+	const RenderInstanceShaders							shaderStages		(m_vki, m_device, m_context.getDeviceFeatures(), m_context.getBinaryCollection());
 	const vk::VkPrimitiveTopology						topology			= shaderStages.hasTessellationStage() ? vk::VK_PRIMITIVE_TOPOLOGY_PATCH : vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 	const vk::VkPipelineVertexInputStateCreateInfo		vertexInputState	=
 	{
