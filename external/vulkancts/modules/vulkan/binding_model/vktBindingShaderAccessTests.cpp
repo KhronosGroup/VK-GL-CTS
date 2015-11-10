@@ -5027,7 +5027,7 @@ std::string ImageDescriptorCase::genResourceDeclarations (vk::VkShaderStage stag
 			switch (m_descriptorType)
 			{
 				case vk::VK_DESCRIPTOR_TYPE_SAMPLER:
-					return "layout(set = 0, binding = " + de::toString(numUsedBindings) + ") uniform highp texture" + dimensionBase + " u_separateTexture;\n"
+					return "layout(set = 0, binding = " + de::toString(numUsedBindings) + ") uniform highp texture" + dimension + " u_separateTexture;\n"
 						   "layout(set = 0, binding = " + de::toString(numUsedBindings+1) + ") uniform highp sampler u_separateSampler;\n";
 				case vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
 					return "layout(set = 0, binding = " + de::toString(numUsedBindings) + ") uniform highp sampler" + dimension + " u_combinedTextureSampler;\n";
@@ -5045,7 +5045,7 @@ std::string ImageDescriptorCase::genResourceDeclarations (vk::VkShaderStage stag
 			switch (m_descriptorType)
 			{
 				case vk::VK_DESCRIPTOR_TYPE_SAMPLER:
-					return "layout(set = 0, binding = " + de::toString(numUsedBindings) + ") uniform highp texture" + dimensionBase + " u_separateTexture;\n"
+					return "layout(set = 0, binding = " + de::toString(numUsedBindings) + ") uniform highp texture" + dimension + " u_separateTexture;\n"
 						   "layout(set = 0, binding = " + de::toString(numUsedBindings+1) + ") uniform highp sampler u_separateSamplerA;\n"
 						   "layout(set = 0, binding = " + de::toString(numUsedBindings+2) + ") uniform highp sampler u_separateSamplerB;\n";
 				case vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
@@ -5066,8 +5066,8 @@ std::string ImageDescriptorCase::genResourceDeclarations (vk::VkShaderStage stag
 			switch (m_descriptorType)
 			{
 				case vk::VK_DESCRIPTOR_TYPE_SAMPLER:
-					return "layout(set = 0, binding = " + de::toString(numUsedBindings) + ") uniform highp texture" + dimensionBase + " u_separateTexture;\n"
-						   "layout(set = 0, binding = " + de::toString(numUsedBindings+1) + ") uniform highp sampler u_separateSamplers[2];\n";
+					return "layout(set = 0, binding = " + de::toString(numUsedBindings) + ") uniform highp texture" + dimension + " u_separateTexture;\n"
+						   "layout(set = 0, binding = " + de::toString(numUsedBindings+1) + ") uniform highp sampler u_separateSampler[2];\n";
 				case vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
 					return "layout(set = 0, binding = " + de::toString(numUsedBindings) + ") uniform highp sampler" + dimension + " u_combinedTextureSampler[2];\n";
 				case vk::VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
@@ -5143,10 +5143,13 @@ std::string ImageDescriptorCase::genResourceAccessSource (vk::VkShaderStage stag
 {
 	DE_UNREF(stage);
 
-	const char* const	dimensionArray	= (m_viewType == vk::VK_IMAGE_VIEW_TYPE_1D || m_viewType == vk::VK_IMAGE_VIEW_TYPE_1D_ARRAY)		? ("1DArray")
-										: (m_viewType == vk::VK_IMAGE_VIEW_TYPE_2D || m_viewType == vk::VK_IMAGE_VIEW_TYPE_2D_ARRAY)		? ("2DArray")
-										: (m_viewType == vk::VK_IMAGE_VIEW_TYPE_3D)															? ("3D")
-										: (m_viewType == vk::VK_IMAGE_VIEW_TYPE_CUBE || m_viewType == vk::VK_IMAGE_VIEW_TYPE_CUBE_ARRAY)	? ("CubeArray")
+	const char* const	dimension		= (m_viewType == vk::VK_IMAGE_VIEW_TYPE_1D)			? ("1D")
+										: (m_viewType == vk::VK_IMAGE_VIEW_TYPE_1D_ARRAY)	? ("1DArray")
+										: (m_viewType == vk::VK_IMAGE_VIEW_TYPE_2D)			? ("2D")
+										: (m_viewType == vk::VK_IMAGE_VIEW_TYPE_2D_ARRAY)	? ("2DArray")
+										: (m_viewType == vk::VK_IMAGE_VIEW_TYPE_3D)			? ("3D")
+										: (m_viewType == vk::VK_IMAGE_VIEW_TYPE_CUBE)		? ("Cube")
+										: (m_viewType == vk::VK_IMAGE_VIEW_TYPE_CUBE_ARRAY)	? ("CubeArray")
 										: (DE_NULL);
 	const char* const	accessPostfixA	= (m_shaderInterface == SHADER_INPUT_SINGLE_DESCRIPTOR)		? ("")
 										: (m_shaderInterface == SHADER_INPUT_MULTIPLE_DESCRIPTORS)	? ("A")
@@ -5174,13 +5177,13 @@ std::string ImageDescriptorCase::genResourceAccessSource (vk::VkShaderStage stag
 			if (m_descriptorType == vk::VK_DESCRIPTOR_TYPE_SAMPLER)
 			{
 				buf << "	if (quadrant_id == 0)\n"
-					<< "		result_color = textureLod(sampler" << dimensionArray << "(u_separateTexture, u_separateSampler" << accessPostfixA << "), " << coodStr[0] << ", 0.0);\n"
+					<< "		result_color = textureLod(sampler" << dimension << "(u_separateTexture, u_separateSampler" << accessPostfixA << "), " << coodStr[0] << ", 0.0);\n"
 					<< "	else if (quadrant_id == 1)\n"
-					<< "		result_color = textureLod(sampler" << dimensionArray << "(u_separateTexture, u_separateSampler" << accessPostfixB << "), " << coodStr[1] << ", 0.0);\n"
+					<< "		result_color = textureLod(sampler" << dimension << "(u_separateTexture, u_separateSampler" << accessPostfixB << "), " << coodStr[1] << ", 0.0);\n"
 					<< "	else if (quadrant_id == 2)\n"
-					<< "		result_color = textureLod(sampler" << dimensionArray << "(u_separateTexture, u_separateSampler" << accessPostfixA << "), " << coodStr[2] << ", 0.0);\n"
+					<< "		result_color = textureLod(sampler" << dimension << "(u_separateTexture, u_separateSampler" << accessPostfixA << "), " << coodStr[2] << ", 0.0);\n"
 					<< "	else\n"
-					<< "		result_color = textureLod(sampler" << dimensionArray << "(u_separateTexture, u_separateSampler" << accessPostfixB << "), " << coodStr[3] << ", 0.0);\n";
+					<< "		result_color = textureLod(sampler" << dimension << "(u_separateTexture, u_separateSampler" << accessPostfixB << "), " << coodStr[3] << ", 0.0);\n";
 			}
 			else
 			{
