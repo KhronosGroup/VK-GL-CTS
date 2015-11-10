@@ -400,7 +400,7 @@ void DepthStencilClearCase::renderReference (tcu::Surface& dst, const vector<Cle
 	const tcu::RenderTarget&	renderTarget	= renderCtx.getRenderTarget();
 
 	// Clear surface to red.
-	tcu::clear(dst.getAccess(), tcu::RGBA::red.toVec());
+	tcu::clear(dst.getAccess(), tcu::RGBA::red().toVec());
 
 	if (m_testDepth)
 	{

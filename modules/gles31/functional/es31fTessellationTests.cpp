@@ -1074,7 +1074,7 @@ static void drawTessCoordVisualization (tcu::Surface& dst, TessPrimitiveType pri
 	tcu::clear(dst.getAccess(), tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f));
 
 	for (int i = 0; i < (int)coords.size(); i++)
-		drawTessCoordPoint(dst, primitiveType, coords[i], tcu::RGBA::white, 2);
+		drawTessCoordPoint(dst, primitiveType, coords[i], tcu::RGBA::white(), 2);
 }
 
 static int binarySearchFirstVec3WithXAtLeast (const vector<Vec3>& sorted, float x)
@@ -1171,9 +1171,9 @@ static bool compareTessCoords (TestLog& log, TessPrimitiveType primitiveType, co
 	drawTessCoordVisualization(resVisual, primitiveType, resCoords);
 
 	// Check that all points in reference also exist in result.
-	success = oneWayComparePointSets(log, refVisual, primitiveType, refCoords, resCoords, "reference", "result", tcu::RGBA::blue) && success;
+	success = oneWayComparePointSets(log, refVisual, primitiveType, refCoords, resCoords, "reference", "result", tcu::RGBA::blue()) && success;
 	// Check that all points in result also exist in reference.
-	success = oneWayComparePointSets(log, resVisual, primitiveType, resCoords, refCoords, "result", "reference", tcu::RGBA::red) && success;
+	success = oneWayComparePointSets(log, resVisual, primitiveType, resCoords, refCoords, "result", "reference", tcu::RGBA::red()) && success;
 
 	if (!success)
 	{
@@ -2797,8 +2797,8 @@ WindingCase::IterateResult WindingCase::iterate (void)
 				for (int y = 0; y < rendered.getHeight();	y++)
 				for (int x = 0; x < rendered.getWidth();	x++)
 				{
-					numWhitePixels	+= rendered.getPixel(x, y) == tcu::RGBA::white	? 1 : 0;
-					numRedPixels	+= rendered.getPixel(x, y) == tcu::RGBA::red	? 1 : 0;
+					numWhitePixels	+= rendered.getPixel(x, y) == tcu::RGBA::white()	? 1 : 0;
+					numRedPixels	+= rendered.getPixel(x, y) == tcu::RGBA::red()	? 1 : 0;
 				}
 
 				DE_ASSERT(numWhitePixels + numRedPixels <= totalNumPixels);
@@ -3277,7 +3277,7 @@ PerPatchDataCase::IterateResult PerPatchDataCase::iterate (void)
 			for (int y = 0; y < rendered.getHeight();	y++)
 			for (int x = 0; x < rendered.getWidth();	x++)
 			{
-				if (rendered.getPixel(x, y) != tcu::RGBA::white)
+				if (rendered.getPixel(x, y) != tcu::RGBA::white())
 				{
 					log << TestLog::Message << "Failure: expected all white pixels" << TestLog::EndMessage;
 					m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Image verification failed");
@@ -5415,12 +5415,12 @@ PrimitiveDiscardCase::IterateResult PrimitiveDiscardCase::iterate (void)
 
 							if (isMSAA)
 							{
-								if (pixels.getPixel(x, y) != tcu::RGBA::black)
+								if (pixels.getPixel(x, y) != tcu::RGBA::black())
 									pixelOk = true;
 							}
 							else
 							{
-								if (pixels.getPixel(x, y) == tcu::RGBA::white)
+								if (pixels.getPixel(x, y) == tcu::RGBA::white())
 									pixelOk = true;
 							}
 						}
@@ -5444,7 +5444,7 @@ PrimitiveDiscardCase::IterateResult PrimitiveDiscardCase::iterate (void)
 						{
 							if (y > lastWhitePixelRow || (y > secondToLastWhitePixelRow && x > lastWhitePixelColumnOnSecondToLastWhitePixelRow))
 							{
-								if (pixels.getPixel(x, y) != tcu::RGBA::black)
+								if (pixels.getPixel(x, y) != tcu::RGBA::black())
 								{
 									log << TestLog::Message << "Failure: expected all pixels to be black in the area "
 															<< (lastWhitePixelColumnOnSecondToLastWhitePixelRow < pixels.getWidth()-1

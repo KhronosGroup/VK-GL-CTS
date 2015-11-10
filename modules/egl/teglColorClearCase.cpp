@@ -192,7 +192,7 @@ void SingleThreadColorClearCase::executeForContexts (EGLDisplay display, EGLSurf
 	{
 		EGLint		api			= contexts[0].first;
 		EGLContext	context		= contexts[0].second;
-		ClearOp		clear		(0, 0, width, height, RGBA::black);
+		ClearOp		clear		(0, 0, width, height, RGBA::black());
 
 		egl.makeCurrent(display, surface, surface, context);
 		EGLU_CHECK_MSG(egl, "eglMakeCurrent");
@@ -376,7 +376,7 @@ void MultiThreadColorClearCase::executeForContexts (EGLDisplay display, EGLSurfa
 			{
 				// First clear is always full-screen black.
 				if (threadNdx == 0 && packetNdx == 0 && clearNdx == 0)
-					packet.clears[clearNdx] = ClearOp(0, 0, width, height, RGBA::black);
+					packet.clears[clearNdx] = ClearOp(0, 0, width, height, RGBA::black());
 				else
 					packet.clears[clearNdx] = computeRandomClear(rnd, width, height);
 			}

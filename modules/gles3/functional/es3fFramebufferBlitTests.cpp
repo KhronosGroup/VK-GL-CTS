@@ -221,7 +221,7 @@ bool BlitNearestFilterConsistencyCase::compare (const tcu::Surface& reference, c
 
 		if (!isValidColor)
 		{
-			errorMask.setPixel(destinationArea.x() + dx, destinationArea.y() + dy, tcu::RGBA::red);
+			errorMask.setPixel(destinationArea.x() + dx, destinationArea.y() + dy, tcu::RGBA::red());
 			error = true;
 		}
 	}
@@ -276,7 +276,7 @@ bool BlitNearestFilterConsistencyCase::compare (const tcu::Surface& reference, c
 
 		if (resultSign != correctSign)
 		{
-			errorMask.setPixel(destinationArea.x() + dx, destinationArea.y() + dy, tcu::RGBA::red);
+			errorMask.setPixel(destinationArea.x() + dx, destinationArea.y() + dy, tcu::RGBA::red());
 			error = true;
 		}
 	}

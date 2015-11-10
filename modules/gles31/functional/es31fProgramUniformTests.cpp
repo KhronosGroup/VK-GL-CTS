@@ -1632,7 +1632,7 @@ bool UniformCase::renderTest (const vector<BasicUniform>& basicUniforms, const S
 	{
 		for (int x = 0; x < renderedImg.getWidth(); x++)
 		{
-			if (renderedImg.getPixel(x, y) != tcu::RGBA::green)
+			if (renderedImg.getPixel(x, y) != tcu::RGBA::green())
 				numFailedPixels += 1;
 		}
 	}

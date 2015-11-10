@@ -1933,7 +1933,7 @@ bool UniformBlockCase::render (deUint32 program) const
 		{
 			for (int x = 0; x < pixels.getWidth(); x++)
 			{
-				if (pixels.getPixel(x, y) != tcu::RGBA::white)
+				if (pixels.getPixel(x, y) != tcu::RGBA::white())
 					numFailedPixels += 1;
 			}
 		}

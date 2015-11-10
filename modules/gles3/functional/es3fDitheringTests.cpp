@@ -291,7 +291,7 @@ bool DitheringCase::drawAndCheckGradient (const bool isVerticallyIncreasing, con
 
 				if (!checkColor(inputClr, renderedImg.getPixel(x, y), colorChoicesOk))
 				{
-					errorMask.setPixel(x, y, tcu::RGBA::red);
+					errorMask.setPixel(x, y, tcu::RGBA::red());
 
 					if (colorChoicesOk)
 					{
@@ -300,7 +300,7 @@ bool DitheringCase::drawAndCheckGradient (const bool isVerticallyIncreasing, con
 					}
 				}
 				else
-					errorMask.setPixel(x, y, tcu::RGBA::green);
+					errorMask.setPixel(x, y, tcu::RGBA::green());
 			}
 		}
 
@@ -394,7 +394,7 @@ bool DitheringCase::drawAndCheckUnicoloredQuad (const Vec4& quadColor) const
 			{
 				if (!checkColor(quadColor, renderedImg.getPixel(x, y), colorChoicesOk))
 				{
-					errorMask.setPixel(x, y, tcu::RGBA::red);
+					errorMask.setPixel(x, y, tcu::RGBA::red());
 
 					if (colorChoicesOk)
 					{
@@ -403,7 +403,7 @@ bool DitheringCase::drawAndCheckUnicoloredQuad (const Vec4& quadColor) const
 					}
 				}
 				else
-					errorMask.setPixel(x, y, tcu::RGBA::green);
+					errorMask.setPixel(x, y, tcu::RGBA::green());
 			}
 		}
 

@@ -1719,7 +1719,7 @@ bool UniformCase::renderTest (const vector<BasicUniform>& basicUniforms, const S
 	{
 		for (int x = 0; x < renderedImg.getWidth(); x++)
 		{
-			if (renderedImg.getPixel(x, y) != tcu::RGBA::white)
+			if (renderedImg.getPixel(x, y) != tcu::RGBA::white())
 				numFailedPixels += 1;
 		}
 	}

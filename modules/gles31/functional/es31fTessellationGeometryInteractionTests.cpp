@@ -2509,7 +2509,7 @@ bool GridRenderCase::verifyResultLayer (int layerNdx, const tcu::Surface& image)
 		// Color must be a linear combination of green and yellow
 		if (color.getGreen() < 255 - threshold || color.getBlue() > threshold)
 		{
-			errorMask.setPixel(x, y, tcu::RGBA::red);
+			errorMask.setPixel(x, y, tcu::RGBA::red());
 			foundError = true;
 		}
 	}

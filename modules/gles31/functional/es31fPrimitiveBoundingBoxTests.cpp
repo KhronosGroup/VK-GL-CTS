@@ -1341,7 +1341,7 @@ void GridRenderCase::verifyRenderResult (const IterationConfig& config)
 
 		if (error)
 		{
-			errorMask.setPixel(x, y, tcu::RGBA::red);
+			errorMask.setPixel(x, y, tcu::RGBA::red());
 			anyError = true;
 		}
 	}
@@ -3401,7 +3401,7 @@ bool BlitFboCase::verifyImage (const BlitArgs& args)
 		if (error)
 		{
 			anyError = true;
-			errorMask.setPixel(x, y, tcu::RGBA::red);
+			errorMask.setPixel(x, y, tcu::RGBA::red());
 		}
 	}
 
@@ -3898,7 +3898,7 @@ bool DepthDrawCase::verifyImage (const tcu::Surface& viewport) const
 
 		if (error)
 		{
-			errorMask.setPixel(x, y, tcu::RGBA::red);
+			errorMask.setPixel(x, y, tcu::RGBA::red());
 			anyError = true;
 		}
 	}
@@ -4256,14 +4256,14 @@ bool ClearCase::verifyImagesEqual (const tcu::PixelBufferAccess& withoutBBox, co
 	tcu::Surface	errorMask	(withoutBBox.getWidth(), withoutBBox.getHeight());
 	bool			anyError	= false;
 
-	tcu::clear(errorMask.getAccess(), tcu::RGBA::green.toIVec());
+	tcu::clear(errorMask.getAccess(), tcu::RGBA::green().toIVec());
 
 	for (int y = 0; y < withoutBBox.getHeight(); ++y)
 	for (int x = 0; x < withoutBBox.getWidth(); ++x)
 	{
 		if (withoutBBox.getPixelInt(x, y) != withBBox.getPixelInt(x, y))
 		{
-			errorMask.setPixel(x, y, tcu::RGBA::red);
+			errorMask.setPixel(x, y, tcu::RGBA::red());
 			anyError = true;
 		}
 	}
@@ -4289,7 +4289,7 @@ bool ClearCase::verifyImageResultValid (const tcu::PixelBufferAccess& result)
 	tcu::Surface	errorMask	(result.getWidth(), result.getHeight());
 	bool			anyError	= false;
 
-	tcu::clear(errorMask.getAccess(), tcu::RGBA::green.toIVec());
+	tcu::clear(errorMask.getAccess(), tcu::RGBA::green().toIVec());
 
 	for (int y = 0; y < result.getHeight(); ++y)
 	for (int x = 0; x < result.getWidth(); ++x)
@@ -4299,7 +4299,7 @@ bool ClearCase::verifyImageResultValid (const tcu::PixelBufferAccess& result)
 		// allow green, yellow and any shade between
 		if (pixel[1] != 255 || pixel[2] != 0)
 		{
-			errorMask.setPixel(x, y, tcu::RGBA::red);
+			errorMask.setPixel(x, y, tcu::RGBA::red());
 			anyError = true;
 		}
 	}
@@ -4626,7 +4626,7 @@ bool ViewportCallOrderCase::verifyImage (const tcu::PixelBufferAccess& result)
 	tcu::Surface		errorMask		(result.getWidth(), result.getHeight());
 	bool				anyError		= false;
 
-	tcu::clear(errorMask.getAccess(), tcu::RGBA::green.toIVec());
+	tcu::clear(errorMask.getAccess(), tcu::RGBA::green().toIVec());
 
 	for (int y = 0; y < result.getHeight(); ++y)
 	for (int x = 0; x < result.getWidth(); ++x)
@@ -4641,7 +4641,7 @@ bool ViewportCallOrderCase::verifyImage (const tcu::PixelBufferAccess& result)
 		if ((insideMeshArea && (pixel[1] != 255 || pixel[2] != 0)) ||
 			(outsideMeshArea && (pixel[0] != 0 || pixel[1] != 0 || pixel[2] != 0)))
 		{
-			errorMask.setPixel(x, y, tcu::RGBA::red);
+			errorMask.setPixel(x, y, tcu::RGBA::red());
 			anyError = true;
 		}
 	}

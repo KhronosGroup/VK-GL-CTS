@@ -204,7 +204,7 @@ public:
 			glu::readPixels(renderCtx, 0, 0, result.getAccess());
 			GLU_EXPECT_NO_ERROR(gl.getError(), "Reading pixels failed");
 
-			isOk = compareSingleColor(m_testCtx.getLog(), result, tcu::RGBA::green, threshold);
+			isOk = compareSingleColor(m_testCtx.getLog(), result, tcu::RGBA::green(), threshold);
 
 			m_testCtx.setTestResult(isOk ? QP_TEST_RESULT_PASS	: QP_TEST_RESULT_FAIL,
 									isOk ? "Pass"				: "Image comparison failed");
@@ -296,8 +296,8 @@ public:
 			gl.drawBuffers(DE_LENGTH_OF_ARRAY(drawBuffers), &drawBuffers[0]);
 		}
 
-		gl.clearBufferfv(GL_COLOR, 0, tcu::RGBA::red.toVec().getPtr());
-		gl.clearBufferfv(GL_COLOR, 1, tcu::RGBA::red.toVec().getPtr());
+		gl.clearBufferfv(GL_COLOR, 0, tcu::RGBA::red().toVec().getPtr());
+		gl.clearBufferfv(GL_COLOR, 1, tcu::RGBA::red().toVec().getPtr());
 
 		gl.viewport		(0, 0, width, height);
 		gl.useProgram	(program.getProgram());
@@ -327,7 +327,7 @@ public:
 				glu::readPixels(renderCtx, 0, 0, result.getAccess());
 				GLU_EXPECT_NO_ERROR(gl.getError(), "Reading pixels failed");
 
-				if (!compareSingleColor(m_testCtx.getLog(), result, ndx == 0 ? tcu::RGBA::green : tcu::RGBA::red, threshold))
+				if (!compareSingleColor(m_testCtx.getLog(), result, ndx == 0 ? tcu::RGBA::green() : tcu::RGBA::red(), threshold))
 					allOk = false;
 			}
 

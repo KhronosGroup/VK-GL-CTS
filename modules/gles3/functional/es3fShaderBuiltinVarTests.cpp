@@ -670,10 +670,10 @@ public:
 		for (int y = 0; y < refImg.getHeight(); y++)
 		{
 			for (int x = 0; x < refImg.getWidth()/2; x++)
-				refImg.setPixel(x, y, tcu::RGBA::green);
+				refImg.setPixel(x, y, tcu::RGBA::green());
 
 			for (int x = refImg.getWidth()/2; x < refImg.getWidth(); x++)
-				refImg.setPixel(x, y, tcu::RGBA::blue);
+				refImg.setPixel(x, y, tcu::RGBA::blue());
 		}
 
 		// Compare

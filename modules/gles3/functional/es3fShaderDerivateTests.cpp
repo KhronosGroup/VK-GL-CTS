@@ -401,7 +401,7 @@ static bool verifyConstantDerivate (tcu::TestLog&						log,
 											<< ", at x = " << x << ", y = " << y
 						<< TestLog::EndMessage;
 				numFailedPixels += 1;
-				errorMask.setPixel(tcu::RGBA::red.toVec(), x, y);
+				errorMask.setPixel(tcu::RGBA::red().toVec(), x, y);
 			}
 		}
 	}
@@ -823,7 +823,7 @@ TriangleDerivateCase::IterateResult TriangleDerivateCase::iterate (void)
 	// Verify
 	{
 		tcu::Surface errorMask(result.getWidth(), result.getHeight());
-		tcu::clear(errorMask.getAccess(), tcu::RGBA::green.toVec());
+		tcu::clear(errorMask.getAccess(), tcu::RGBA::green().toVec());
 
 		const bool isOk = verify(result.getAccess(), errorMask.getAccess());
 

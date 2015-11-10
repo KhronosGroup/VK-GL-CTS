@@ -1566,7 +1566,7 @@ static bool compareBlockImages (const Surface&		reference,
 
 			maxDiffDst = tcu::max(maxDiffDst, diff);
 
-			errorMaskDst.setPixel(x, y, isOk ? tcu::RGBA::green : tcu::RGBA::red);
+			errorMaskDst.setPixel(x, y, isOk ? tcu::RGBA::green() : tcu::RGBA::red());
 
 			if (!isOk && firstFailedBlockCoordDst.x() == -1)
 				firstFailedBlockCoordDst = blockCoord;

@@ -204,7 +204,7 @@ public:
 			glu::readPixels(renderCtx, 0, 0, result.getAccess());
 			GLU_EXPECT_NO_ERROR(gl.getError(), "Reading pixels failed");
 
-			isOk = compareSingleColor(m_testCtx.getLog(), result, tcu::RGBA::green, threshold);
+			isOk = compareSingleColor(m_testCtx.getLog(), result, tcu::RGBA::green(), threshold);
 
 			m_testCtx.setTestResult(isOk ? QP_TEST_RESULT_PASS	: QP_TEST_RESULT_FAIL,
 									isOk ? "Pass"				: "Image comparison failed");
