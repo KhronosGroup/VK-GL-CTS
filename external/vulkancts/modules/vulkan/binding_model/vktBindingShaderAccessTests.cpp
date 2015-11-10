@@ -1282,8 +1282,8 @@ BufferRenderInstance::BufferRenderInstance	(Context&				context,
 	, m_viewOffsetB					((m_setViewOffset) ? ((deUint32)STATIC_OFFSET_VALUE_B) : (0u))
 	, m_dynamicOffsetA				((dynamicOffsetNonZero) ? ((deUint32)DYNAMIC_OFFSET_VALUE_A) : (0u))
 	, m_dynamicOffsetB				((dynamicOffsetNonZero) ? ((deUint32)DYNAMIC_OFFSET_VALUE_B) : (0u))
-	, m_effectiveOffsetA			((isDynamicDescriptorType(m_descriptorType)) ? (m_dynamicOffsetA) : (m_viewOffsetA))
-	, m_effectiveOffsetB			((isDynamicDescriptorType(m_descriptorType)) ? (m_dynamicOffsetB) : (m_viewOffsetB))
+	, m_effectiveOffsetA			((isDynamicDescriptorType(m_descriptorType)) ? (m_viewOffsetA + m_dynamicOffsetA) : (m_viewOffsetA))
+	, m_effectiveOffsetB			((isDynamicDescriptorType(m_descriptorType)) ? (m_viewOffsetB + m_dynamicOffsetB) : (m_viewOffsetB))
 	, m_bufferSizeA					(BUFFER_SIZE_A)
 	, m_bufferSizeB					(BUFFER_SIZE_B)
 	, m_bufferMemoryA				(DE_NULL)
@@ -1362,7 +1362,7 @@ vk::Move<vk::VkDescriptorPool> BufferRenderInstance::createDescriptorPool (const
 {
 	return vk::DescriptorPoolBuilder()
 		.addType(descriptorType, getInterfaceNumResources(shaderInterface))
-		.build(vki, device, vk::VK_DESCRIPTOR_POOL_USAGE_ONE_SHOT, 1);
+		.build(vki, device, vk::VK_DESCRIPTOR_POOL_USAGE_DYNAMIC, 1);
 }
 
 vk::Move<vk::VkDescriptorSetLayout> BufferRenderInstance::createDescriptorSetLayout (const vk::DeviceInterface&	vki,
@@ -2014,7 +2014,7 @@ vk::Move<vk::VkDescriptorPool> BufferComputeInstance::createDescriptorPool (void
 	return vk::DescriptorPoolBuilder()
 		.addType(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
 		.addType(m_descriptorType, getInterfaceNumResources(m_shaderInterface))
-		.build(m_vki, m_device, vk::VK_DESCRIPTOR_POOL_USAGE_ONE_SHOT, 1);
+		.build(m_vki, m_device, vk::VK_DESCRIPTOR_POOL_USAGE_DYNAMIC, 1);
 }
 
 vk::Move<vk::VkDescriptorSet> BufferComputeInstance::createDescriptorSet (vk::VkDescriptorPool pool, vk::VkDescriptorSetLayout layout, vk::VkBuffer viewA, deUint32 offsetA, vk::VkBuffer viewB, deUint32 offsetB, vk::VkBuffer resBuf) const
@@ -3431,7 +3431,7 @@ vk::Move<vk::VkDescriptorPool> ImageFetchRenderInstance::createDescriptorPool (c
 {
 	return vk::DescriptorPoolBuilder()
 		.addType(descriptorType, getInterfaceNumResources(shaderInterface))
-		.build(vki, device, vk::VK_DESCRIPTOR_POOL_USAGE_ONE_SHOT, 1);
+		.build(vki, device, vk::VK_DESCRIPTOR_POOL_USAGE_DYNAMIC, 1);
 }
 
 vk::Move<vk::VkDescriptorSet> ImageFetchRenderInstance::createDescriptorSet (const vk::DeviceInterface&		vki,
@@ -3649,7 +3649,7 @@ vk::Move<vk::VkDescriptorPool> ImageFetchComputeInstance::createDescriptorPool (
 	return vk::DescriptorPoolBuilder()
 		.addType(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
 		.addType(m_descriptorType, getInterfaceNumResources(m_shaderInterface))
-		.build(m_vki, m_device, vk::VK_DESCRIPTOR_POOL_USAGE_ONE_SHOT, 1);
+		.build(m_vki, m_device, vk::VK_DESCRIPTOR_POOL_USAGE_DYNAMIC, 1);
 }
 
 vk::Move<vk::VkDescriptorSet> ImageFetchComputeInstance::createDescriptorSet (vk::VkDescriptorPool pool, vk::VkDescriptorSetLayout layout) const
@@ -4346,7 +4346,7 @@ vk::Move<vk::VkDescriptorPool> ImageSampleRenderInstance::createDescriptorPool (
 	else
 		DE_FATAL("Impossible");
 
-	return builder.build(vki, device, vk::VK_DESCRIPTOR_POOL_USAGE_ONE_SHOT, 1);
+	return builder.build(vki, device, vk::VK_DESCRIPTOR_POOL_USAGE_DYNAMIC, 1);
 }
 
 vk::Move<vk::VkDescriptorSet> ImageSampleRenderInstance::createDescriptorSet (const vk::DeviceInterface&		vki,
@@ -4682,7 +4682,7 @@ vk::Move<vk::VkDescriptorPool> ImageSampleComputeInstance::createDescriptorPool 
 	if (m_descriptorType == vk::VK_DESCRIPTOR_TYPE_SAMPLER)
 		builder.addType(vk::VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE);
 
-	return builder.build(m_vki, m_device, vk::VK_DESCRIPTOR_POOL_USAGE_ONE_SHOT, 1);
+	return builder.build(m_vki, m_device, vk::VK_DESCRIPTOR_POOL_USAGE_DYNAMIC, 1);
 }
 
 vk::Move<vk::VkDescriptorSet> ImageSampleComputeInstance::createDescriptorSet (vk::VkDescriptorPool pool, vk::VkDescriptorSetLayout layout) const
@@ -5200,7 +5200,6 @@ std::string ImageDescriptorCase::genResourceAccessSource (vk::VkShaderStage stag
 			return buf.str();
 		}
 
-		case vk::VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
 		case vk::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
 		{
 			const std::string	coodStr[4]	=
@@ -5212,28 +5211,14 @@ std::string ImageDescriptorCase::genResourceAccessSource (vk::VkShaderStage stag
 			};
 			std::ostringstream	buf;
 
-			if (m_descriptorType == vk::VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE)
-			{
-				buf << "	if (quadrant_id == 0)\n"
-					<< "		result_color = textureFetch(u_separateTexture" << accessPostfixA << ", " << coodStr[0] << ", 0);\n"
-					<< "	else if (quadrant_id == 1)\n"
-					<< "		result_color = textureFetch(u_separateTexture" << accessPostfixB << ", " << coodStr[1] << ", 0);\n"
-					<< "	else if (quadrant_id == 2)\n"
-					<< "		result_color = textureFetch(u_separateTexture" << accessPostfixA << ", " << coodStr[2] << ", 0);\n"
-					<< "	else\n"
-					<< "		result_color = textureFetch(u_separateTexture" << accessPostfixB << ", " << coodStr[3] << ", 0);\n";
-			}
-			else
-			{
-				buf << "	if (quadrant_id == 0)\n"
-					<< "		result_color = imageLoad(u_image" << accessPostfixA << ", " << coodStr[0] << ");\n"
-					<< "	else if (quadrant_id == 1)\n"
-					<< "		result_color = imageLoad(u_image" << accessPostfixB << ", " << coodStr[1] << ");\n"
-					<< "	else if (quadrant_id == 2)\n"
-					<< "		result_color = imageLoad(u_image" << accessPostfixA << ", " << coodStr[2] << ");\n"
-					<< "	else\n"
-					<< "		result_color = imageLoad(u_image" << accessPostfixB << ", " << coodStr[3] << ");\n";
-			}
+			buf << "	if (quadrant_id == 0)\n"
+				<< "		result_color = imageLoad(u_image" << accessPostfixA << ", " << coodStr[0] << ");\n"
+				<< "	else if (quadrant_id == 1)\n"
+				<< "		result_color = imageLoad(u_image" << accessPostfixB << ", " << coodStr[1] << ");\n"
+				<< "	else if (quadrant_id == 2)\n"
+				<< "		result_color = imageLoad(u_image" << accessPostfixA << ", " << coodStr[2] << ");\n"
+				<< "	else\n"
+				<< "		result_color = imageLoad(u_image" << accessPostfixB << ", " << coodStr[3] << ");\n";
 
 			return buf.str();
 		}
@@ -5640,7 +5625,7 @@ vk::Move<vk::VkDescriptorPool> TexelBufferRenderInstance::createDescriptorPool (
 {
 	return vk::DescriptorPoolBuilder()
 		.addType(descriptorType, getInterfaceNumResources(shaderInterface))
-		.build(vki, device, vk::VK_DESCRIPTOR_POOL_USAGE_ONE_SHOT, 1);
+		.build(vki, device, vk::VK_DESCRIPTOR_POOL_USAGE_DYNAMIC, 1);
 }
 
 vk::Move<vk::VkDescriptorSet> TexelBufferRenderInstance::createDescriptorSet (const vk::DeviceInterface&	vki,
@@ -5846,7 +5831,7 @@ vk::Move<vk::VkDescriptorPool> TexelBufferComputeInstance::createDescriptorPool 
 	return vk::DescriptorPoolBuilder()
 		.addType(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
 		.addType(m_descriptorType, getInterfaceNumResources(m_shaderInterface))
-		.build(m_vki, m_device, vk::VK_DESCRIPTOR_POOL_USAGE_ONE_SHOT, 1);
+		.build(m_vki, m_device, vk::VK_DESCRIPTOR_POOL_USAGE_DYNAMIC, 1);
 }
 
 vk::Move<vk::VkDescriptorSet> TexelBufferComputeInstance::createDescriptorSet (vk::VkDescriptorPool pool, vk::VkDescriptorSetLayout layout) const
@@ -6243,15 +6228,13 @@ void createShaderAccessBufferTests (tcu::TestCaseGroup*		group,
 		deUint32	flags;
 	} s_bufferTypes[] =
 	{
-		{ "offset_view_zero",						"View offset is zero",										false,	0u																							},
-		{ "offset_view_nonzero",					"View offset is non-zero",									false,	BufferDescriptorCase::FLAG_VIEW_OFFSET														},
+		{ "offset_view_zero",						"View offset is zero",									false,	0u																							},
+		{ "offset_view_nonzero",					"View offset is non-zero",								false,	BufferDescriptorCase::FLAG_VIEW_OFFSET														},
 
-		{ "offset_view_zero_dynamic_zero",			"View offset is zero, dynamic offset is zero",				true,	BufferDescriptorCase::FLAG_DYNAMIC_OFFSET_ZERO												},
-		{ "offset_view_zero_dynamic_nonzero",		"View offset is zero, dynamic offset is non-zero",			true,	BufferDescriptorCase::FLAG_DYNAMIC_OFFSET_NONZERO											},
-		{ "offset_view_zero_dynamic_not_set",		"View offset is zero, dynamic offset is not supplied",		true,	0u																							},
-		// \note no case for offset_view_nonzero_dynamic_zero since it doesn't produce any additional coverage
-		{ "offset_view_nonzero_dynamic_nonzero",	"View offset is non-zero, dynamic offset is non-zero",		true,	BufferDescriptorCase::FLAG_VIEW_OFFSET | BufferDescriptorCase::FLAG_DYNAMIC_OFFSET_NONZERO	},
-		{ "offset_view_nonzero_dynamic_not_set",	"View offset is non-zero, dynamic offset is not supplied",	true,	BufferDescriptorCase::FLAG_VIEW_OFFSET														},
+		{ "offset_view_zero_dynamic_zero",			"View offset is zero, dynamic offset is zero",			true,	BufferDescriptorCase::FLAG_DYNAMIC_OFFSET_ZERO												},
+		{ "offset_view_zero_dynamic_nonzero",		"View offset is zero, dynamic offset is non-zero",		true,	BufferDescriptorCase::FLAG_DYNAMIC_OFFSET_NONZERO											},
+		{ "offset_view_nonzero_dynamic_zero",		"View offset is non-zero, dynamic offset is zero",		true,	BufferDescriptorCase::FLAG_VIEW_OFFSET | BufferDescriptorCase::FLAG_DYNAMIC_OFFSET_ZERO		},
+		{ "offset_view_nonzero_dynamic_nonzero",	"View offset is non-zero, dynamic offset is non-zero",	true,	BufferDescriptorCase::FLAG_VIEW_OFFSET | BufferDescriptorCase::FLAG_DYNAMIC_OFFSET_NONZERO	},
 	};
 
 	const bool isDynamicCase = isDynamicDescriptorType(descriptorType);
@@ -6297,7 +6280,8 @@ tcu::TestCaseGroup* createShaderAccessTests (tcu::TestContext& testCtx)
 		{ vk::VK_DESCRIPTOR_TYPE_SAMPLER,					"sampler_immutable",				"VK_DESCRIPTOR_TYPE_SAMPLER with immutable sampler",				RESOURCE_FLAG_IMMUTABLE_SAMPLER	},
 		{ vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,	"combined_image_sampler_mutable",	"VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER with mutable sampler",	0u								},
 		{ vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,	"combined_image_sampler_immutable",	"VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER with immutable sampler",	RESOURCE_FLAG_IMMUTABLE_SAMPLER	},
-		{ vk::VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,				"sampled_image",					"VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE",									0u								},
+		// \note No way to access SAMPLED_IMAGE without a sampler
+//		{ vk::VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,				"sampled_image",					"VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE",									0u								},
 		{ vk::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,				"storage_image",					"VK_DESCRIPTOR_TYPE_STORAGE_IMAGE",									0u								},
 		{ vk::VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,		"uniform_texel_buffer",				"VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER",							0u								},
 		{ vk::VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER,		"storage_texel_buffer",				"VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER",							0u								},
@@ -6417,7 +6401,6 @@ tcu::TestCaseGroup* createShaderAccessTests (tcu::TestContext& testCtx)
 						{
 							case vk::VK_DESCRIPTOR_TYPE_SAMPLER:
 							case vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
-							case vk::VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
 							case vk::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
 								createTestsFunc = createShaderAccessImageTests;
 								break;
