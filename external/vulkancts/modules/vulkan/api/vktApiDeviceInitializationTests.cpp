@@ -222,15 +222,24 @@ tcu::TestStatus createInstanceWithInvalidApiVersionTest (Context& context)
 			<< ", api version used to create instance: " << invalidApiVersions[apiVersionNdx]
 			<< TestLog::EndMessage;
 
-		try
 		{
-			const Unique<VkInstance> instance(createInstance(platformInterface, &instanceCreateInfo));
+			VkInstance		instance	= (VkInstance)0;
+			const VkResult	result		= platformInterface.createInstance(&instanceCreateInfo, &instance);
+			const bool		gotInstance	= !!instance;
 
-			resultCollector.fail("Fail, instance creation with invalid apiVersion is not rejected");
-		}
-		catch (const tcu::NotSupportedError&)
-		{
-			log << TestLog::Message << "Pass, instance creation with invalid apiVersion is rejected" << TestLog::EndMessage;
+			if (instance)
+			{
+				const InstanceDriver	instanceIface	(platformInterface, instance);
+				instanceIface.destroyInstance(instance);
+			}
+
+			if (result == VK_UNSUPPORTED || result == VK_ERROR_INCOMPATIBLE_DRIVER)
+			{
+				TCU_CHECK(!gotInstance);
+				log << TestLog::Message << "Pass, instance creation with invalid apiVersion is rejected" << TestLog::EndMessage;
+			}
+			else
+				resultCollector.fail("Fail, instance creation with invalid apiVersion is not rejected");
 		}
 	}
 
@@ -264,20 +273,29 @@ tcu::TestStatus createInstanceWithUnsupportedExtensionsTest (Context& context)
 		enabledExtensions,										// const char*const*			ppEnabledExtensionNames;
 	};
 
-	try
+	log << TestLog::Message << "Enabled extensions are: " << TestLog::EndMessage;
+
+	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(enabledExtensions); ndx++)
+		log << TestLog::Message << enabledExtensions[ndx] <<  TestLog::EndMessage;
+
 	{
-		Unique<VkInstance> instance(createInstance(platformInterface, &instanceCreateInfo));
+		VkInstance		instance	= (VkInstance)0;
+		const VkResult	result		= platformInterface.createInstance(&instanceCreateInfo, &instance);
+		const bool		gotInstance	= !!instance;
 
-		log << TestLog::Message << "Enabled extensions are: " << TestLog::EndMessage;
+		if (instance)
+		{
+			const InstanceDriver	instanceIface	(platformInterface, instance);
+			instanceIface.destroyInstance(instance);
+		}
 
-		for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(enabledExtensions); ndx++)
-			log << TestLog::Message << enabledExtensions[ndx] <<  TestLog::EndMessage;
-
-		return tcu::TestStatus::fail("Fail, creating instance with unsupported extensions succeeded.");
-	}
-	catch (const tcu::NotSupportedError&)
-	{
-		return tcu::TestStatus::pass("Pass, creating instance with unsupported extension was rejected.");
+		if (result == VK_UNSUPPORTED || result == VK_ERROR_EXTENSION_NOT_PRESENT)
+		{
+			TCU_CHECK(!gotInstance);
+			return tcu::TestStatus::pass("Pass, creating instance with unsupported extension was rejected.");
+		}
+		else
+			return tcu::TestStatus::fail("Fail, creating instance with unsupported extensions succeeded.");
 	}
 }
 
@@ -433,20 +451,29 @@ tcu::TestStatus createDeviceWithUnsupportedExtensionsTest (Context& context)
 		DE_NULL,								//pEnabledFeatures;
 	};
 
-	try
+	log << TestLog::Message << "Enabled extensions are: " << TestLog::EndMessage;
+
+	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(enabledExtensions); ndx++)
+		log << TestLog::Message << enabledExtensions[ndx] <<  TestLog::EndMessage;
+
 	{
-		Unique<VkDevice> device(createDevice(instanceDriver, physicalDevice, &deviceCreateInfo));
+		VkDevice		device		= (VkDevice)0;
+		const VkResult	result		= instanceDriver.createDevice(physicalDevice, &deviceCreateInfo, &device);
+		const bool		gotDevice	= !!device;
 
-		log << TestLog::Message << "Enabled extensions are: " << TestLog::EndMessage;
+		if (device)
+		{
+			const DeviceDriver	deviceIface	(instanceDriver, device);
+			deviceIface.destroyDevice(device);
+		}
 
-		for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(enabledExtensions); ndx++)
-			log << TestLog::Message << enabledExtensions[ndx] <<  TestLog::EndMessage;
-
-		return tcu::TestStatus::fail("Fail, create device with unsupported extension but succeed.");
-	}
-	catch (const tcu::NotSupportedError&)
-	{
-		return tcu::TestStatus::pass("Pass, create device with unsupported extension is rejected.");
+		if (result == VK_UNSUPPORTED || result == VK_ERROR_EXTENSION_NOT_PRESENT)
+		{
+			TCU_CHECK(!gotDevice);
+			return tcu::TestStatus::pass("Pass, create device with unsupported extension is rejected.");
+		}
+		else
+			return tcu::TestStatus::fail("Fail, create device with unsupported extension but succeed.");
 	}
 }
 
