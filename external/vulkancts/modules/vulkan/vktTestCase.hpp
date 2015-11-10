@@ -74,6 +74,7 @@ public:
 	vk::VkInstance								getInstance						(void) const;
 	const vk::InstanceInterface&				getInstanceInterface			(void) const;
 	vk::VkPhysicalDevice						getPhysicalDevice				(void) const;
+	const vk::VkPhysicalDeviceFeatures&			getDeviceFeatures				(void) const;
 	vk::VkDevice								getDevice						(void) const;
 	const vk::DeviceInterface&					getDeviceInterface				(void) const;
 	deUint32									getUniversalQueueFamilyIndex	(void) const;

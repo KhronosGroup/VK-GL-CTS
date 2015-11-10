@@ -64,37 +64,28 @@ static deUint32 findQueueFamilyIndexWithCaps (const InstanceInterface& vkInstanc
 	TCU_THROW(NotSupportedError, "No matching queue found");
 }
 
-// \todo [2015-09-28 pyry] Refactor using Move<>
-
-struct DeviceCreateInfoHelper
+Move<VkDevice> createDefaultDevice (const InstanceInterface& vki, VkPhysicalDevice physicalDevice, deUint32 queueIndex, const VkPhysicalDeviceFeatures& enabledFeatures)
 {
-	VkPhysicalDeviceFeatures	enabledFeatures;
 	VkDeviceQueueCreateInfo		queueInfo;
 	VkDeviceCreateInfo			deviceInfo;
 
-	DeviceCreateInfoHelper (deUint32 queueIndex)
-	{
-		deMemset(&enabledFeatures,	0, sizeof(enabledFeatures));
-		deMemset(&queueInfo,		0, sizeof(queueInfo));
-		deMemset(&deviceInfo,		0, sizeof(deviceInfo));
+	deMemset(&queueInfo,	0, sizeof(queueInfo));
+	deMemset(&deviceInfo,	0, sizeof(deviceInfo));
 
-		// \todo [2015-07-09 pyry] What's the policy for enabling features?
-		//  * Enable all supported by default, and expose that to test cases
-		//  * More limited enabled set could be used for verifying that tests behave correctly
+	queueInfo.sType						= VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+	queueInfo.pNext						= DE_NULL;
+	queueInfo.queueFamilyIndex			= queueIndex;
+	queueInfo.queueCount				= 1u;
 
-		queueInfo.sType						= VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-		queueInfo.pNext						= DE_NULL;
-		queueInfo.queueFamilyIndex			= queueIndex;
-		queueInfo.queueCount				= 1u;
+	deviceInfo.sType					= VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+	deviceInfo.pNext					= DE_NULL;
+	deviceInfo.queueRecordCount			= 1u;
+	deviceInfo.pRequestedQueues			= &queueInfo;
+	deviceInfo.extensionCount			= 0u;
+	deviceInfo.ppEnabledExtensionNames	= DE_NULL;
+	deviceInfo.pEnabledFeatures			= &enabledFeatures;
 
-		deviceInfo.sType					= VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-		deviceInfo.pNext					= DE_NULL;
-		deviceInfo.queueRecordCount			= 1u;
-		deviceInfo.pRequestedQueues			= &queueInfo;
-		deviceInfo.extensionCount			= 0u;
-		deviceInfo.ppEnabledExtensionNames	= DE_NULL;
-		deviceInfo.pEnabledFeatures			= &enabledFeatures;
-	}
+	return createDevice(vki, physicalDevice, &deviceInfo);
 };
 
 class DefaultDevice
@@ -107,7 +98,7 @@ public:
 	const InstanceInterface&		getInstanceInterface			(void) const	{ return m_instanceInterface;			}
 
 	VkPhysicalDevice				getPhysicalDevice				(void) const	{ return m_physicalDevice;				}
-
+	const VkPhysicalDeviceFeatures&	getDeviceFeatures				(void) const	{ return m_deviceFeatures;				}
 	VkDevice						getDevice						(void) const	{ return *m_device;						}
 	const DeviceInterface&			getDeviceInterface				(void) const	{ return m_deviceInterface;				}
 
@@ -121,7 +112,7 @@ private:
 	const VkPhysicalDevice			m_physicalDevice;
 
 	const deUint32					m_universalQueueFamilyIndex;
-	const DeviceCreateInfoHelper	m_deviceCreateInfo;
+	const VkPhysicalDeviceFeatures	m_deviceFeatures;
 
 	const Unique<VkDevice>			m_device;
 	const DeviceDriver				m_deviceInterface;
@@ -132,8 +123,8 @@ DefaultDevice::DefaultDevice (const PlatformInterface& vkPlatform, const tcu::Co
 	, m_instanceInterface			(vkPlatform, *m_instance)
 	, m_physicalDevice				(chooseDevice(m_instanceInterface, *m_instance, cmdLine))
 	, m_universalQueueFamilyIndex	(findQueueFamilyIndexWithCaps(m_instanceInterface, m_physicalDevice, VK_QUEUE_GRAPHICS_BIT|VK_QUEUE_COMPUTE_BIT))
-	, m_deviceCreateInfo			(m_universalQueueFamilyIndex)
-	, m_device						(createDevice(m_instanceInterface, m_physicalDevice, &m_deviceCreateInfo.deviceInfo))
+	, m_deviceFeatures				(getPhysicalDeviceFeatures(m_instanceInterface, m_physicalDevice)) // \note All supported features are enabled
+	, m_device						(createDefaultDevice(m_instanceInterface, m_physicalDevice, m_universalQueueFamilyIndex, m_deviceFeatures))
 	, m_deviceInterface				(m_instanceInterface, *m_device)
 {
 }
@@ -176,14 +167,15 @@ Context::~Context (void)
 {
 }
 
-vk::VkInstance					Context::getInstance					(void) const { return m_device->getInstance();					}
-const vk::InstanceInterface&	Context::getInstanceInterface			(void) const { return m_device->getInstanceInterface();			}
-vk::VkPhysicalDevice			Context::getPhysicalDevice				(void) const { return m_device->getPhysicalDevice();			}
-vk::VkDevice					Context::getDevice						(void) const { return m_device->getDevice();					}
-const vk::DeviceInterface&		Context::getDeviceInterface				(void) const { return m_device->getDeviceInterface();			}
-deUint32						Context::getUniversalQueueFamilyIndex	(void) const { return m_device->getUniversalQueueFamilyIndex();	}
-vk::VkQueue						Context::getUniversalQueue				(void) const { return m_device->getUniversalQueue();			}
-vk::Allocator&					Context::getDefaultAllocator			(void) const { return *m_allocator;							}
+vk::VkInstance						Context::getInstance					(void) const { return m_device->getInstance();					}
+const vk::InstanceInterface&		Context::getInstanceInterface			(void) const { return m_device->getInstanceInterface();			}
+vk::VkPhysicalDevice				Context::getPhysicalDevice				(void) const { return m_device->getPhysicalDevice();			}
+const vk::VkPhysicalDeviceFeatures&	Context::getDeviceFeatures				(void) const { return m_device->getDeviceFeatures();			}
+vk::VkDevice						Context::getDevice						(void) const { return m_device->getDevice();					}
+const vk::DeviceInterface&			Context::getDeviceInterface				(void) const { return m_device->getDeviceInterface();			}
+deUint32							Context::getUniversalQueueFamilyIndex	(void) const { return m_device->getUniversalQueueFamilyIndex();	}
+vk::VkQueue							Context::getUniversalQueue				(void) const { return m_device->getUniversalQueue();			}
+vk::Allocator&						Context::getDefaultAllocator			(void) const { return *m_allocator;								}
 
 // TestCase
 
