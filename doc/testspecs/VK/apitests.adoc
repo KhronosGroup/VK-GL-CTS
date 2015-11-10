@@ -94,7 +94,7 @@ tcu::TestStatus createSamplerTest (Context& context)
 tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 {
     de::MovePtr<tcu::TestCaseGroup> apiTests    (new tcu::TestCaseGroup(testCtx, "api", "API Tests"));
-    
+
     addFunctionCase(apiTests.get(), "create_sampler",   "", createSamplerTest);
 
     return apiTests.release();
@@ -2406,7 +2406,60 @@ VkResult VKAPI vkResetCommandBuffer(
     VkCmdBufferResetFlags                       flags);
 ----
 
-Command pools
+[cols="1,4,8,8", options="header"]
+|===
+|No. | Tested area | Test Description | Relevant specification text
+|1  | Secondary buffers execution | Check if secondary command buffers are executed | Secondary command buffers may be called from primary command buffers, and are not directly submitted to queues.
+|2  | Order of execution | Check if commands that should be executed in-order are indeed done so. | Some command buffer commands are described as executing in-order with respect to other commands. This means that the effect of that one command must happen in the same order, relative to these other commands, as the order they were added to the command buffer.
+|3  | Synchronization | The commands may end in different order then they are being executed. Using semaphores for synchronization should prevent this | Unless otherwise specified, and without explicit synchronization, the various commands submitted to a queue via command buffers may execute in arbitrary order relative to each other, and/or concurrently. Also, the memory side-effects of those commands may not be directly visible to other commands without memory barriers. This is true within a command buffer, and across command buffers submitted to a given queue. See topic about synchronization primitives suitable to guarantee execution order and side-effect visibility between commands on a given queue.
+|4  | Independent state between buffers | Execute secondary command buffer, change state of primary, execute secondary again, and check if its state was changed | When secondary command buffer(s) are recorded to execute on a primary command buffer, the secondary command buffer inherits no state from the primary command buffer, and all state of the primary command buffer is undefined after an execute secondary command buffer command is recorded.
+|5  | Renderpass state independence | State inside a renderpass should not be changed by executing secondary command buffers | If the primary command buffer is inside a renderpass, then the renderpass and subpass state is not disturbed by executing secondary command buffers
+|===
+
+Command Buffer lifetime
+~~~~~~~~~~~~~~~~~~~~~~~
+
+[cols="1,4,8,8", options="header"]
+|===
+|No. | Tested area | Test Description | Relevant specification text
+|1  | Resetting command buffers - explicitly | Reset a command buffer using vkResetCommandBuffer | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT controls whether command buffers allocated from the pool can be individually reset. If this flag is set, individual command buffers allocated from the pool can be reset either explicitly, by calling vkResetCommandBuffer, or implicitly, by calling vkBeginCommandBuffer on a recorded command buffer. If this flag is not set, then the command buffers may only be reset in bulk by calling vkResetCommandPool.
+|2  | Resetting command buffers - implicitly | Reset a command buffer by calling vkBeginCommandBuffer on a buffer that has already been recorded |
+|3  | Resetting command buffers - bulk | Reset two command buffers that have already been recorded by calling vkResetCommandPool on the pool the command buffers were created from |
+|===
+
+Command Buffer recording
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+[cols="1,4,8,8", options="header"]
+|===
+|No. | Tested area | Test Description | Relevant specification text
+|1  | Recording to buffers  | Check if all functions that should be recorded, are recorded |
+|2  | Render pass ignoring  | if VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT flag is not set, the values of renderPass, framebuffer, and subpass members of the VkCommandBufferBeginInfo should be ignored | If flags has VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT set, the entire secondary command buffer is considered inside a render pass. In this case, the renderPass, framebuffer, and subpass members of the VkCommandBufferBeginInfo structure must be set as described below. Otherwise the renderPass, framebuffer, and subpass members of the VkCommandBufferBeginInfo structure are ignored, and the secondary command buffer may not contain commands that are only allowed inside a render pass.
+|3  | Simultaneous use – primary buffers | Set flag VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT and submit two times simultanously | If flags does not have VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT set, the command buffer must not be pending execution more than once at any given time. A primary command buffer is considered to be pending execution from the time it is submitted via vkQueueSubmit until that submission completes.
+|4  | Simultaneous use – secondary buffers | Set VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT on secondary buffer, and use the secondary buffer twice in primary buffer | If VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT is not set on a secondary command buffer, that command buffer cannot be used more than once in a given primary command buffer.
+|5  | Patch in place | Do not set VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT and check if buffer can be patched in-place | On some implementations, not using the VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT bit enables command buffers to be patched in-place if needed, rather than creating a copy of the command buffer.
+|6  | Improper recording | call vkBeginCommandBuffer on buffer currently recording – vkEndCommandBuffer should return error | It is invalid to begin a command buffer while it is being recorded
+|7  |  | call vkEndCommandBuffer on buffer that is not recording – vkEndCommandBuffer should return error | It is invalid to end a command buffer if it is not being recorded.
+|8  |  | call vkResetCommandBuffer on buffer currently recording – vkEndCommandBuffer should return error | It is invalid to reset a command buffer while it is being recorded.
+|9  |  | vkBeginCommandBuffer on buffer already recorded, that has no VK_COMMAND_POOL_RESET_COMMAND_BUFFER_BIT flag set – vkEndCommandBuffer should return error | It is invalid to begin a command buffer that has already been recorded if the command buffer was allocated from a command pool that did not have the VK_COMMAND_POOL_RESET_COMMAND_BUFFER_BIT flag set until vkResetCommandPool is called on the pool
+|10 |  | Make any of improper recording tests, reset the buffer and check if after the reset it starts recording correctly | If there was an error during recording, the application will by notified by an unsuccessful return code returned by vkEndCommandBuffer. If the application wishes to further use the command buffer, the command buffer must be reset.
+|===
+
+Command Buffer submission
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+[cols="1,4,8,8", options="header"]
+|===
+|No. | Tested area | Test Description | Relevant specification text
+|1   | Submission correctness | Call vkQueueSubmit with submitCount equal to the actual count of submits | pSubmits must be an array of submitCount valid VkSubmitInfo structures. If submitCount is 0 though, pSubmits is ignored
+|2   | | ... submitCount == 0 |
+|3   | queue and fence origin | Call vkQueueSubmit with queue and fence that were created from the same VkDevice | queue and fence must have been created, allocated or retrieved from the same VkDevice
+|4   | | Call vkQueueSubmit with queue and fence that were allocated from the same VkDevice |
+|5   | | Call vkQueueSubmit with queue and fence that were retrieved from the same VkDevice |
+|6   | Fence validity | Call vkQueueSubmit with VK_NULL_HANDLE passed as fence. | If fence is not VK_NULL_HANDLE, fence must be a valid VkFence handle
+|===
+
+Command Pools
 ~~~~~~~~~~~~~
 
 TODO
@@ -2442,8 +2495,14 @@ VkResult VKAPI vkResetCommandPool(
     VkCmdPoolResetFlags                         flags);
 ----
 
-2-level command buffers
-~~~~~~~~~~~~~~~~~~~~~~~
+[cols="1,4,8,8", options="header"]
+|===
+|No. | Tested area | Test Description | Relevant specification text
+|1  | Create, Reset and Destroy a Command Pool | Simple usage test. Create command pool, reset it, and destroy it. Check if result is success. |
+|===
+
+Secondary Command Buffers
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
 TODO
 
@@ -2454,6 +2513,78 @@ void VKAPI vkCmdExecuteCommands(
     uint32_t                                    cmdBuffersCount,
     const VkCmdBuffer*                          pCmdBuffers);
 ----
+
+[cols="1,4,8,8", options="header"]
+|===
+|No. | Tested area | Test Description | Relevant specification text
+|1  | Buffers' origin | Call vkCmdExecuteCommands with commandBuffer and pCommandBuffers that created from the same VkDevice | commandBuffer and pCommandBuffers must have been created, allocated or retrieved from the same VkDevice
+|2  | | ... allocated from the same VkDevice |
+|3  | | ... retrieved from the same VkDevice |
+|4  | Simultaneous use | Call vkCmdExecuteCommands with pCommandBuffers such that its element is already pending execution in commandBuffer and was created with the VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT flag | Any given element of pCommandBuffers must not be already pending execution in commandBuffer, or appear twice in pCommandBuffers, unless it was created with the VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT flag
+|5  | | Call vkCmdExecuteCommands with pCommandBuffers such that its element appears twice in pCommandBuffers and was created with the VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT flag |
+|6  | Call from within a VkRenderPass | Call vkCmdExecuteCommands within a VkRenderPass with all elements of pCommandBuffers recorded with the VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT | If vkCmdExecuteCommands is being called within a VkRenderPass, any given element of pCommandBuffers must have been recorded with the VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT
+|===
+
+Render Pass
+~~~~~~~~~~~
+
+[cols="1,4,8,8", options="header"]
+|===
+|No. | Tested area | Test Description | Relevant specification text
+|1  | Attachment count in pCreateInfo | Call vkCreateRenderPass with pCreateInfo such that attachmentCount is equal to the number of attachments | pAttachments must be an array of attachmentCount valid VkSubpassDependency structures. If attachmentCount is 0 though, pAttachments is ignored
+|2  | | ... attachmentCount = 0 |
+|3  | Dependency count in pCreateInfo | Call vkCreateRenderPass with pCreateInfo such that dependencyCount is equal to the number of dependencies | pDependencies must be an array of dependencyCount valid VkSubpassDependency structures. If dependencyCount is 0 though, pDependencies is ignored
+|4  | | ... dependencyCount = 0 |
+|5  | Subpass dependency | Call vkCreateRenderPass with pCreateInfo pointing at a VkRenderPassCreateInfo structure with any two subpasses operating on attachments with overlapping ranges of the same VkDeviceMemory object and at least one of the writing to that area of VkDeviceMemory  with a subpass dependency included directly | If any two subpasses operate on attachments with overlapping ranges of the same VkDeviceMemory object, and at least one subpass writes to that area of VkDeviceMemory, a subpass dependency must be included (either directly or via some intermediate subpasses) between them
+|6  | | ... with a subpass dependency included via intermediate subpasses |
+|7  | Attachments in subpasses | Call vkCreateRenderPass with pCreateInfo such that there is a subpass in pSubpasses where the attachment member of an element of pInputAttachments in an element of pSubpasses is bound to a range of a VkDeviceMemory object that overlaps with a different attachment in a subpass and the VkAttachmentReference structure describing said element includes VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS bit in flags | If the attachment member of any element of pInputAttachments, pColorAttachments, pResolveAttachments, pDepthStencilAttachment, or pPreserveAttachments in any given element of pSubpasses is bound to a range of a VkDeviceMemory object that overlaps with any other attachment in any subpass (including the same subpass), the VkAttachmentReference structures describing them must include VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT in flags
+|8  | | ... the attachment member of an element of pColorAttachments ... |
+|9  | | ... the attachment member of an element of pResolveAttachments ... |
+|10 | | ... the attachment member of an element of pDepthStencilAttachment ... |
+|11 | | ... the attachment member of an element of pPreserveAttachments ... |
+|12 | | ... the attachment member of an element of pInputAttachments in any given element of pSubpasses is not VK_ATTACHMENT_UNUSED and is less than the value of attachmentCount | If the attachment member of any element of pInputAttachments, pColorAttachments, pResolveAttachments, pDepthStencilAttachment, or pPreserveAttachments in any given element of pSubpasses is not VK_ATTACHMENT_UNUSED, it must be less than the value of attachmentCount
+|13 | | ... the attachment member of an element of pColorAttachments ... |
+|14 | | ... the attachment member of an element of pResolveAttachments ... |
+|15 | | ... the attachment member of an element of pDepthStencilAttachment ... |
+|16 | | ... the attachment member of an element of pPreserveAttachments ... |
+|17 | Subpass description | Call vkCreateRenderPass with pCreateInfo such that there is a subpass in pSubpasses where inputAttachmentCount is equal to the actual count of input attachments | pInputAttachments must be an array of inputAttachmentCount valid VkAttachmentReference structures. If inputAttachmentCount is 0 though, pInputAttachments is ignored
+|18 | | ... inputAttachmentCount == 0 |
+|19 | | Call vkCreateRenderPass with pCreateInfo such that there is a subpass in pSubpasses where colorAttachmentCount is equal to the actual count of color attachments | pColorAttachments must be an array of colorAttachmentCount valid VkAttachmentReference structures. If colorAttachmentCount is 0 though, pColorAttachments is ignored
+|20 | | ... colorAttachmentCount == 0 |
+|21 | | Call vkCreateRenderPass with pCreateInfo such that there is a subpass in pSubpasses where pResolveAttachments is not NULL and colorAttachmentCount is equal to the actual count of resolve attachments | If pResolveAttachments is not NULL, pResolveAttachments must be an array of colorAttachmentCount valid VkAttachmentReference structures. If colorAttachmentCount is 0 though, pResolveAttachments is ignored
+|22 | | ... pResolveAttachments is not NULL and colorAttachmentCount == 0 |
+|23 | | ... pResolveAttachments is NULL |
+|24 | | Call vkCreateRenderPass with pCreateInfo such that there is a subpass in pSubpasses where pDepthStencilAttachment points at a valid VkAttachmentReference structure | If pDepthStencilAttachment is not NULL, pDepthStencilAttachment must be a pointer to a valid VkAttachmentReference structure
+|25 | | ... pDepthStencilAttachment is NULL |
+|26 | | Call vkCreateRenderPass with pCreateInfo such that there is a subpass in pSubpasses where preserveAttachmentCount is equal to the actual count of preserveAttachments | pPreserveAttachments must be an array of preserveAttachmentCount valid VkAttachmentReference structures. If preserveAttachmentCount is 0 though, pPreserveAttachments is ignored
+|27 | | ... preserveAttachmentCount == 0 |
+|28 | | | he value of colorCount must be less than or equal to VkPhysicalDeviceLimits::maxColorAttachments
+|29 | | Call vkCreateRenderPass with pCreateInfo such that there is a subpass in pSubpasses where no depth nor stencil attachment is used and pDepthStencil == NULL | If no depth/stencil attachment is used in the subpass, pDepthStencil must be NULL, or the attachment member of a given element of pDepthStencil must be VK_ATTACHMENT_UNUSED
+|30 | | ... and pDepthStencil == VK_ATTACHMENT_UNUSED |
+|31 | | ... Call vkCreateRenderPass with pCreateInfo such that there is a subpass in pSubpasses where pResolveAttachments is not NULL and for each resolve attachment that does not have the value VK_ATTACHMENT_UNUSED, the corresponding color attachment does not have the value VK_ATTACHMENT_UNUSED either | If pResolveAttachments is not NULL, for each resolve attachment that does not have the value VK_ATTACHMENT_UNUSED, the corresponding color attachment must not have the value VK_ATTACHMENT_UNUSED
+|32 | | Call vkCreateRenderPass with pCreateInfo such that there is a subpass in pSubpasses where pResolveAttachments is not NULL and the sample count of each element of pColorAttachments is different than VK_SAMPLE_COUNT_1_BIT | If pResolveAttachments is not NULL, the sample count of each element of pColorAttachments must be anything other than VK_SAMPLE_COUNT_1_BIT
+|33 | | Call vkCreateRenderPass with pCreateInfo such that there is a subpass in pSubpasses where two attachments referenced by pColorAttachments and pDepthStencilAttachment are not VK_ATTACHMENT_UNUSED and have the same sample count | All attachments referenced by pColorAttachments and pDepthStencilAttachment that are not VK_ATTACHMENT_UNUSED, must have the same sample count
+|34 | | Call vkCreateRenderPass with pCreateInfo such that there is a subpass in pSubpasses where an input attachment is VK_ATTACHMENT_UNUSED and no pipelines bound during the subpass reference this input attachments | If any input attachments are VK_ATTACHMENT_UNUSED, then any pipelines bound during the subpass must not reference those input attachments
+|===
+
+Framebuffers
+~~~~~~~~~~~~~
+
+[cols="1,4,8,8", options="header"]
+|===
+|No. | Tested area | Test Description | Relevant specification text
+|1  | Attachment count in pCreateInfo | Call vkCreateFramebuffer with pCreateInfo such that attachmentCount is equal to the number of attachments | pAttachments must be an array of attachmentCount valid VkImageView handles. If attachmentCount is 0 though, pAttachments is ignored
+|2  | | ... where attachmentCount == 0 |
+|3  | Render Pass and Attachments origin | Call vkCreateFramebuffer with pCreateInfo such that renderPass and pAttachments were created using the same VkDevice | renderPass and pAttachments must have been created, allocated or retrieved from the same VkDevice
+|4  | | ... renderPass and pAttachments were allocated using the same VkDevice |
+|5  | | ... renderPass and pAttachments were retrieved from the same VkDevice |
+|6  | Dimensions | Call vkCreateFramebuffer with pCreateInfo such that width == 0 | The value of width must be less or equal to than VkPhysicalDeviceLimits::maxFramebufferWidth
+|7  | | ... width == VkPhysicalDeviceLimits::maxFramebufferWidth |
+|8  | | ... 0 < width < VkPhysicalDeviceLimits::maxFramebufferWidth |
+|9  | | ... height == 0 | The value of height must be less or equal to than VkPhysicalDeviceLimits::maxFramebufferHeight
+|10 | | ... height == VkPhysicalDeviceLimits::maxFramebufferHeight |
+|11 | | ... 0 < height < VkPhysicalDeviceLimits::maxFramebufferHeight |
+|===
 
 Draw commands
 -------------

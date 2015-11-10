@@ -1,8 +1,13 @@
+
+#ifndef _VKTAPICOMMANDBUFFERSTESTS_HPP
+#define _VKTAPICOMMANDBUFFERSTESTS_HPP
+
 /*-------------------------------------------------------------------------
  * Vulkan Conformance Tests
  * ------------------------
  *
- * Copyright (c) 2015 Google Inc.
+ * Copyright (c) 2015 The Khronos Group Inc.
+ * Copyright (c) 2015 Samsung Electronics Co., Ltd.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and/or associated documentation files (the
@@ -27,57 +32,20 @@
  * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
  * MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
  *
- *//*!
- * \file
- * \brief API Tests
  *//*--------------------------------------------------------------------*/
 
-#include "vktApiTests.hpp"
-
-#include "deUniquePtr.hpp"
-
-#include "vktApiSmokeTests.hpp"
-#include "vktApiDeviceInitializationTests.hpp"
-#include "vktApiObjectManagementTests.hpp"
-#include "vktApiBufferTests.hpp"
-#include "vktApiBufferViewCreateTests.hpp"
-#include "vktApiBufferViewAccessTests.hpp"
-#include "vktApiFeatureInfo.hpp"
-#include "vktApiCommandBuffersTests.hpp"
+#include "tcuDefs.hpp"
+#include "tcuTestCase.hpp"
 
 namespace vkt
 {
 namespace api
 {
 
-namespace
-{
-
-tcu::TestCaseGroup* createBufferViewTests (tcu::TestContext& testCtx)
-{
-	de::MovePtr<tcu::TestCaseGroup>	bufferViewTests	(new tcu::TestCaseGroup(testCtx, "buffer_view", "BufferView tests"));
-
-	bufferViewTests->addChild(createBufferViewCreateTests	(testCtx));
-	bufferViewTests->addChild(createBufferViewAccessTests	(testCtx));
-
-	return bufferViewTests.release();
-}
-
-} // anonymous
-
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
-{
-	de::MovePtr<tcu::TestCaseGroup>	apiTests	(new tcu::TestCaseGroup(testCtx, "api", "API Tests"));
-
-	apiTests->addChild(createSmokeTests					(testCtx));
-	apiTests->addChild(api::createFeatureInfoTests		(testCtx));
-	apiTests->addChild(createDeviceInitializationTests	(testCtx));
-	apiTests->addChild(createObjectManagementTests		(testCtx));
-	apiTests->addChild(createBufferTests				(testCtx));
-	apiTests->addChild(createBufferViewTests			(testCtx));
-	apiTests->addChild(createCommandBuffersTests		(testCtx));
-	return apiTests.release();
-}
+tcu::TestCaseGroup*		createCommandBuffersTests		(tcu::TestContext& testCtx);
 
 } // api
 } // vkt
+
+
+#endif /* VKTAPICOMMANDBUFFERSTESTS_HPP_ */
