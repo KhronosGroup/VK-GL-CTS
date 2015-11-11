@@ -107,6 +107,7 @@ LOCAL_SRC_FILES := \
 	framework/delibs/decpp/deThreadLocal.cpp \
 	framework/delibs/decpp/deThreadSafeRingBuffer.cpp \
 	framework/delibs/decpp/deUniquePtr.cpp \
+	framework/delibs/decpp/deSha1.cpp \
 	framework/delibs/deimage/deImage.c \
 	framework/delibs/deimage/deTarga.c \
 	framework/delibs/depool/deMemPool.c \
