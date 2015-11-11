@@ -41,7 +41,7 @@ public:
 	static Sha1	parse		(const std::string& str);
 	static Sha1	compute		(size_t size, const void* data);
 
-	bool		operator==	(const Sha1& other) const { return deSha1_equal(&m_hash, &other.m_hash); }
+	bool		operator==	(const Sha1& other) const { return deSha1_equal(&m_hash, &other.m_hash) == DE_TRUE; }
 	bool		operator!=	(const Sha1& other) const { return !(*this == other); }
 
 private:
