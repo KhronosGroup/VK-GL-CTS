@@ -78,6 +78,16 @@ vector<VkQueueFamilyProperties> getPhysicalDeviceQueueFamilyProperties (const In
 	return properties;
 }
 
+VkPhysicalDeviceFeatures getPhysicalDeviceFeatures (const InstanceInterface& vk, VkPhysicalDevice physicalDevice)
+{
+	VkPhysicalDeviceFeatures	features;
+
+	deMemset(&features, 0, sizeof(features));
+
+	VK_CHECK(vk.getPhysicalDeviceFeatures(physicalDevice, &features));
+	return features;
+}
+
 VkPhysicalDeviceMemoryProperties getPhysicalDeviceMemoryProperties (const InstanceInterface& vk, VkPhysicalDevice physicalDevice)
 {
 	VkPhysicalDeviceMemoryProperties	properties;
