@@ -1,5 +1,5 @@
-#ifndef _VKTSHADERDISCARDTESTS_HPP
-#define _VKTSHADERDISCARDTESTS_HPP
+#ifndef _VKTSHADERRENDERDISCARDTESTS_HPP
+#define _VKTSHADERREMDERDISCARDTESTS_HPP
 /*------------------------------------------------------------------------
  * Vulkan Conformance Tests
  * ------------------------
@@ -35,11 +35,11 @@
  * \brief Shader discard statement tests.
  *//*--------------------------------------------------------------------*/
 
-#include "vktShaderRenderCase.hpp"
+#include "vktShaderRender.hpp"
 
 namespace vkt
 {
-namespace shaderrendercase
+namespace sr
 {
 
 class ShaderDiscardTests : public tcu::TestCaseGroup
@@ -55,7 +55,7 @@ private:
 	ShaderDiscardTests&		operator=				(const ShaderDiscardTests&);		// not allowed!
 };
 
-} // shaderrendercase
+} // sr
 } // vkt
 
-#endif // _VKTSHADERDISCARDTESTS_HPP
+#endif // _VKTSHADERRENDERDISCARDTESTS_HPP

@@ -1,5 +1,5 @@
-#ifndef _VKTSHADERRENDERCASE_HPP
-#define _VKTSHADERRENDERCASE_HPP
+#ifndef _VKTSHADERRENDER_HPP
+#define _VKTSHADERRENDER_HPP
 /*------------------------------------------------------------------------
  * Vulkan Conformance Tests
  * ------------------------
@@ -52,7 +52,7 @@
 
 namespace vkt
 {
-namespace shaderrendercase
+namespace sr
 {
 
 class QuadGrid;
@@ -530,7 +530,7 @@ void ShaderRenderCaseInstance::addUniform (deUint32 bindingLocation, vk::VkDescr
 	addUniform(bindingLocation, descriptorType, sizeof(T), &data);
 }
 
-} // shaderrendercase
+} // sr
 } // vkt
 
-#endif // _VKTSHADERRENDERCASE_HPP
+#endif // _VKTSHADERRENDER_HPP

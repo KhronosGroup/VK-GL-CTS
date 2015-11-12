@@ -33,7 +33,7 @@
  * \brief Vulkan ShaderRenderCase
  *//*--------------------------------------------------------------------*/
 
-#include "vktShaderRenderCase.hpp"
+#include "vktShaderRender.hpp"
 
 #include "tcuImageCompare.hpp"
 #include "tcuImageIO.hpp"
@@ -59,7 +59,7 @@
 
 namespace vkt
 {
-namespace shaderrendercase
+namespace sr
 {
 
 using namespace vk;
@@ -1828,5 +1828,5 @@ bool ShaderRenderCaseInstance::compareImages (const tcu::Surface& resImage, cons
 	return tcu::fuzzyCompare(m_context.getTestContext().getLog(), "ComparisonResult", "Image comparison result", refImage, resImage, errorThreshold, tcu::COMPARE_LOG_RESULT);
 }
 
-} // shaderrendercase
+} // sr
 } // vkt

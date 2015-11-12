@@ -1,3 +1,4 @@
+#ifndef _VKTSHADERRENDERTESTS_HPP
 /*------------------------------------------------------------------------
  * Copyright (c) 2015 The Khronos Group Inc.
  * Copyright (c) 2015 Samsung Electronics Co., Ltd.
@@ -30,26 +31,17 @@
  * \brief Vulkan shader render test cases
  *//*--------------------------------------------------------------------*/
 
-#include "vktShaderRenderCaseTests.hpp"
-
-#include "deUniquePtr.hpp"
-
-#include "vktShaderRenderCase.hpp"
-#include "vktShaderDiscardTests.hpp"
+#include "tcuDefs.hpp"
+#include "tcuTestCase.hpp"
 
 namespace vkt
 {
-namespace shaderrendercase
+namespace sr
 {
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
-{
-	de::MovePtr<tcu::TestCaseGroup> shaderRenderCaseTests (new tcu::TestCaseGroup(testCtx, "shaderRenderCase", "ShaderRenderCase Tests"));
+tcu::TestCaseGroup*		createTests			(tcu::TestContext& testCtx);
 
-	shaderRenderCaseTests->addChild(new ShaderDiscardTests(testCtx));
-
-	return shaderRenderCaseTests.release();
-}
-
-} // shaderrendercase
+} // sr
 } // vkt
+
+#endif // _VKTSHADERRENDERTESTS_HPP

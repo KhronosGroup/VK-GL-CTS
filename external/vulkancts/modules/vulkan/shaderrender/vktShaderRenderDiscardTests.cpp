@@ -33,7 +33,7 @@
  * \brief Shader discard statement tests.
  *//*--------------------------------------------------------------------*/
 
-#include "vktShaderDiscardTests.hpp"
+#include "vktShaderRenderDiscardTests.hpp"
 #include "tcuStringTemplate.hpp"
 #include "gluTexture.hpp"
 
@@ -43,7 +43,7 @@ using tcu::StringTemplate;
 
 namespace vkt
 {
-namespace shaderrendercase
+namespace sr
 {
 namespace
 {
@@ -385,5 +385,5 @@ void ShaderDiscardTests::init (void)
 			addChild(makeDiscardCase(m_testCtx, (DiscardTemplate)tmpl, (DiscardMode)mode).release());
 }
 
-} // shaderrendercase
+} // sr
 } // vkt

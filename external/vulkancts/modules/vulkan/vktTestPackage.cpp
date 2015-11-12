@@ -53,7 +53,7 @@
 #include "vktSpvAsmTests.hpp"
 #include "vktShaderLibrary.hpp"
 #include "vktRenderPassTests.hpp"
-#include "vktShaderRenderCaseTests.hpp"
+#include "vktShaderRenderTests.hpp"
 
 #include <vector>
 #include <sstream>
@@ -286,7 +286,7 @@ void TestPackage::init (void)
 	addChild(SpirVAssembly::createTests	(m_testCtx));
 	addChild(new GlslGroup				(m_testCtx));
 	addChild(createRenderPassTests		(m_testCtx));
-	addChild(shaderrendercase::createTests	(m_testCtx));
+	addChild(sr::createTests			(m_testCtx));
 }
 
 } // vkt
