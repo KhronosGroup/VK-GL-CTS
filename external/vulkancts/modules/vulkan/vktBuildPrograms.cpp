@@ -197,6 +197,9 @@ BuildStats buildPrograms (tcu::TestContext& testCtx, const std::string& dstPath,
 		iterator.next();
 	}
 
+	if (mode == BUILDMODE_BUILD)
+		writer->writeIndex();
+
 	return stats;
 }
 

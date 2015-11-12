@@ -72,9 +72,12 @@ vk::ProgramBinary* compileProgram (const vk::SpirVAsmSource& source, vk::SpirVPr
 }
 
 template <typename InfoType, typename IteratorType>
-vk::ProgramBinary* buildProgram (const std::string& casePath, IteratorType iter, vkt::Context* context, vk::BinaryCollection* progCollection)
+vk::ProgramBinary* buildProgram (const std::string&					casePath,
+								 IteratorType						iter,
+								 const vk::BinaryRegistryReader&	prebuiltBinRegistry,
+								 tcu::TestLog&						log,
+								 vk::BinaryCollection*				progCollection)
 {
-	tcu::TestLog&					log			= context->getTestContext().getLog();
 	const vk::ProgramIdentifier		progId		(casePath, iter.getName());
 	const tcu::ScopedLogSection		progSection	(log, iter.getName(), "Program: " + iter.getName());
 	de::MovePtr<vk::ProgramBinary>	binProg;
@@ -88,11 +91,9 @@ vk::ProgramBinary* buildProgram (const std::string& casePath, IteratorType iter,
 	catch (const tcu::NotSupportedError& err)
 	{
 		// Try to load from cache
-		const vk::BinaryRegistryReader	registry	(context->getTestContext().getArchive(), "vulkan/prebuilt");
-
 		log << err << tcu::TestLog::Message << "Building from source not supported, loading stored binary instead" << tcu::TestLog::EndMessage;
 
-		binProg = de::MovePtr<vk::ProgramBinary>(registry.loadProgram(progId));
+		binProg = de::MovePtr<vk::ProgramBinary>(prebuiltBinRegistry.loadProgram(progId));
 
 		log << iter.getProgram();
 	}
@@ -105,11 +106,13 @@ vk::ProgramBinary* buildProgram (const std::string& casePath, IteratorType iter,
 
 	TCU_CHECK_INTERNAL(binProg);
 
-	vk::ProgramBinary* returnBinary = binProg.get();
+	{
+		vk::ProgramBinary* const	returnBinary	= binProg.get();
 
-	progCollection->add(progId.programName, binProg);
+		progCollection->add(progId.programName, binProg);
 
-	return returnBinary;
+		return returnBinary;
+	}
 }
 
 } // anonymous(compilation)
@@ -137,6 +140,8 @@ public:
 
 private:
 	vk::BinaryCollection					m_progCollection;
+	vk::BinaryRegistryReader				m_prebuiltBinRegistry;
+
 	de::UniquePtr<vk::Library>				m_library;
 	Context									m_context;
 
@@ -149,9 +154,10 @@ static MovePtr<vk::Library> createLibrary (tcu::TestContext& testCtx)
 }
 
 TestCaseExecutor::TestCaseExecutor (tcu::TestContext& testCtx)
-	: m_library		(createLibrary(testCtx))
-	, m_context		(testCtx, m_library->getPlatformInterface(), m_progCollection)
-	, m_instance	(DE_NULL)
+	: m_prebuiltBinRegistry	(testCtx.getArchive(), "vulkan/prebuilt")
+	, m_library				(createLibrary(testCtx))
+	, m_context				(testCtx, m_library->getPlatformInterface(), m_progCollection)
+	, m_instance			(DE_NULL)
 {
 }
 
@@ -176,7 +182,7 @@ void TestCaseExecutor::init (tcu::TestCase* testCase, const std::string& casePat
 
 	for (vk::GlslSourceCollection::Iterator progIter = sourceProgs.glslSources.begin(); progIter != sourceProgs.glslSources.end(); ++progIter)
 	{
-		vk::ProgramBinary* binProg = buildProgram<glu::ShaderProgramInfo, vk::GlslSourceCollection::Iterator>(casePath, progIter, &m_context, &m_progCollection);
+		vk::ProgramBinary* binProg = buildProgram<glu::ShaderProgramInfo, vk::GlslSourceCollection::Iterator>(casePath, progIter, m_prebuiltBinRegistry, log, &m_progCollection);
 
 		try
 		{
@@ -194,7 +200,7 @@ void TestCaseExecutor::init (tcu::TestCase* testCase, const std::string& casePat
 
 	for (vk::SpirVAsmCollection::Iterator asmIterator = sourceProgs.spirvAsmSources.begin(); asmIterator != sourceProgs.spirvAsmSources.end(); ++asmIterator)
 	{
-		buildProgram<vk::SpirVProgramInfo, vk::SpirVAsmCollection::Iterator>(casePath, asmIterator, &m_context, &m_progCollection);
+		buildProgram<vk::SpirVProgramInfo, vk::SpirVAsmCollection::Iterator>(casePath, asmIterator, m_prebuiltBinRegistry, log, &m_progCollection);
 	}
 
 	DE_ASSERT(!m_instance);
