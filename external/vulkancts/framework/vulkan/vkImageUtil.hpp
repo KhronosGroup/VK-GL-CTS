@@ -54,6 +54,10 @@ bool						isCompressedFormat		(VkFormat format);
 tcu::TextureFormat			mapVkFormat				(VkFormat format);
 tcu::CompressedTexFormat	mapVkCompressedFormat	(VkFormat format);
 VkChannelMapping			getFormatChannelMapping	(VkFormat format);
+VkTexFilter					mapFilterMode			(tcu::Sampler::FilterMode filterMode);
+VkTexMipmapMode				mapMipmapMode			(tcu::Sampler::FilterMode filterMode);
+VkTexAddressMode			mapWrapMode				(tcu::Sampler::WrapMode wrapMode);
+VkCompareOp					mapCompareMode			(tcu::Sampler::CompareMode mode);
 
 VkFormat					mapTextureFormat		(const tcu::TextureFormat& format);
 

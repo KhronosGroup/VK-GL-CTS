@@ -626,4 +626,74 @@ void imageUtilSelfTest (void)
 	}
 }
 
+VkTexFilter mapFilterMode (tcu::Sampler::FilterMode filterMode)
+{
+	DE_STATIC_ASSERT(tcu::Sampler::FILTERMODE_LAST == 6);
+
+	switch(filterMode)
+	{
+		case tcu::Sampler::NEAREST:					return VK_TEX_FILTER_NEAREST;
+		case tcu::Sampler::LINEAR:					return VK_TEX_FILTER_LINEAR;
+		case tcu::Sampler::NEAREST_MIPMAP_NEAREST:	return VK_TEX_FILTER_NEAREST;
+		case tcu::Sampler::NEAREST_MIPMAP_LINEAR:	return VK_TEX_FILTER_NEAREST;
+		case tcu::Sampler::LINEAR_MIPMAP_NEAREST:	return VK_TEX_FILTER_LINEAR;
+		case tcu::Sampler::LINEAR_MIPMAP_LINEAR:	return VK_TEX_FILTER_LINEAR;
+		default:
+			DE_FATAL("Illegal filter mode");
+			return (VkTexFilter)0;
+
+	}
+}
+
+VkTexMipmapMode mapMipmapMode (tcu::Sampler::FilterMode filterMode)
+{
+	DE_STATIC_ASSERT(tcu::Sampler::FILTERMODE_LAST == 6);
+
+	switch(filterMode)
+	{
+		case tcu::Sampler::NEAREST:					return VK_TEX_MIPMAP_MODE_BASE;
+		case tcu::Sampler::LINEAR:					return VK_TEX_MIPMAP_MODE_BASE;
+		case tcu::Sampler::NEAREST_MIPMAP_NEAREST:	return VK_TEX_MIPMAP_MODE_NEAREST;
+		case tcu::Sampler::NEAREST_MIPMAP_LINEAR:	return VK_TEX_MIPMAP_MODE_LINEAR;
+		case tcu::Sampler::LINEAR_MIPMAP_NEAREST:	return VK_TEX_MIPMAP_MODE_NEAREST;
+		case tcu::Sampler::LINEAR_MIPMAP_LINEAR:	return VK_TEX_MIPMAP_MODE_LINEAR;
+		default:
+			DE_FATAL("Illegal filter mode");
+			return (VkTexMipmapMode)0;
+	}
+}
+
+VkTexAddressMode mapWrapMode (tcu::Sampler::WrapMode wrapMode)
+{
+	switch(wrapMode)
+	{
+		case tcu::Sampler::CLAMP_TO_EDGE:		return VK_TEX_ADDRESS_MODE_CLAMP;
+		case tcu::Sampler::CLAMP_TO_BORDER:		return VK_TEX_ADDRESS_MODE_CLAMP_BORDER;
+		case tcu::Sampler::REPEAT_GL:			return VK_TEX_ADDRESS_MODE_WRAP;
+		case tcu::Sampler::MIRRORED_REPEAT_GL:	return VK_TEX_ADDRESS_MODE_MIRROR;
+		default:
+			DE_FATAL("Wrap mode can't be mapped to Vulkan");
+			return (vk::VkTexAddressMode)0;
+	}
+}
+
+vk::VkCompareOp mapCompareMode (tcu::Sampler::CompareMode mode)
+{
+	switch(mode)
+	{
+		case tcu::Sampler::COMPAREMODE_NONE:				return vk::VK_COMPARE_OP_NEVER;
+		case tcu::Sampler::COMPAREMODE_LESS:				return vk::VK_COMPARE_OP_LESS;
+		case tcu::Sampler::COMPAREMODE_LESS_OR_EQUAL:		return vk::VK_COMPARE_OP_LESS_EQUAL;
+		case tcu::Sampler::COMPAREMODE_GREATER:				return vk::VK_COMPARE_OP_GREATER;
+		case tcu::Sampler::COMPAREMODE_GREATER_OR_EQUAL:	return vk::VK_COMPARE_OP_GREATER_EQUAL;
+		case tcu::Sampler::COMPAREMODE_EQUAL:				return vk::VK_COMPARE_OP_EQUAL;
+		case tcu::Sampler::COMPAREMODE_NOT_EQUAL:			return vk::VK_COMPARE_OP_NOT_EQUAL;
+		case tcu::Sampler::COMPAREMODE_ALWAYS:				return vk::VK_COMPARE_OP_ALWAYS;
+		case tcu::Sampler::COMPAREMODE_NEVER:				return vk::VK_COMPARE_OP_NEVER;
+		default:
+			DE_FATAL("Illegal compare mode");
+			return (vk::VkCompareOp)0;
+	}
+}
+
 } // vk

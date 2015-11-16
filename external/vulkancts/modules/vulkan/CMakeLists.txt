@@ -4,12 +4,14 @@ add_subdirectory(api)
 add_subdirectory(pipeline)
 add_subdirectory(binding_model)
 add_subdirectory(spirv_assembly)
+add_subdirectory(shaderrender)
 
 include_directories(
 	api
 	pipeline
 	binding_model
 	spirv_assembly
+	shaderrender
 	)
 
 set(DEQP_VK_COMMON_SRCS
@@ -35,6 +37,7 @@ set(DEQP_VK_COMMON_LIBS
 	deqp-vk-pipeline
 	deqp-vk-binding-model
 	deqp-vk-spirv-assembly
+	deqp-vk-shaderrender
 	)
 
 if (DE_OS_IS_WIN32 OR DE_OS_IS_UNIX OR DE_OS_IS_OSX)
