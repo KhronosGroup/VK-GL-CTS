@@ -129,7 +129,7 @@ def getCaseList (mustpass, module):
 	generator	= ANY_GENERATOR
 	buildCfg	= getBuildConfig(DEFAULT_BUILD_DIR, DEFAULT_TARGET, "Debug")
 
-	#build(buildCfg, generator, [module.binName])
+	build(buildCfg, generator, [module.binName])
 	genCaseList(buildCfg, generator, module, "txt")
 
 	return readCaseList(getCaseListPath(buildCfg, module, "txt"))
