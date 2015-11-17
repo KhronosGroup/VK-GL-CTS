@@ -541,25 +541,13 @@ void ShaderRenderCaseInstance::setupUniformData (deUint32 bindingLocation, deUin
 	deMemcpy(alloc->getHostPtr(), dataPtr, size);
 	flushMappedMemoryRange(vk, vkDevice, alloc->getMemory(), alloc->getOffset(), size);
 
-	const VkBufferViewCreateInfo	viewInfo 	=
-	{
-		VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO, 	// VkStructureType	sType;
-		DE_NULL,									// void* 			pNext;
-		*buffer,									// VkBuffer			buffer;
-		VK_FORMAT_R32_SFLOAT,						// VkFormat	format;
-		0u,											// VkDeviceSize	offset;
-		size,										// VkDeviceSize	range;
-	};
-
-	Move<VkBufferView>				bufferView			= createBufferView(vk, vkDevice, &viewInfo);
-
 	// \todo [2015-10-09 elecro] remove the '_hack_padding' variable if the driver support small uniforms,
 	// that is for example one float big uniforms.
 	const deUint32 _hack_padding = size < 4 * sizeof(float) ? (deUint32)(3u * sizeof(float)) : 0u;
 
 	const VkDescriptorInfo 			descriptor			=
 	{
-		bufferView.get(),							// VkBufferView				bufferView;
+		DE_NULL,									// VkBufferView				bufferView;
 		0,											// VkSampler				sampler;
 		0,											// VkImageView				imageView;
 		VK_IMAGE_LAYOUT_UNDEFINED,					// VkImageLayout			imageLayout;
@@ -575,7 +563,6 @@ void ShaderRenderCaseInstance::setupUniformData (deUint32 bindingLocation, deUin
 	uniformInfo->descriptor = descriptor;
 	uniformInfo->location = bindingLocation;
 	uniformInfo->buffer = VkBufferSp(new vk::Unique<VkBuffer>(buffer));
-	uniformInfo->bufferView = VkBufferViewSp(new vk::Unique<VkBufferView>(bufferView));
 	uniformInfo->alloc = AllocationSp(alloc.release());
 
 	m_uniformInfos.push_back(UniformInfoSp(new de::UniquePtr<UniformInfo>(uniformInfo)));
