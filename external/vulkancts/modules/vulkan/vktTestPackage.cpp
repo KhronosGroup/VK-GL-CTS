@@ -63,6 +63,7 @@
 #include "vktShaderRenderStructTests.hpp"
 #include "vktShaderRenderSwitchTests.hpp"
 #include "vktShaderExecutorTests.hpp"
+#include "vktUniformBlockTests.hpp"
 
 #include <vector>
 #include <sstream>
@@ -311,6 +312,7 @@ void TestPackage::init (void)
 	addChild(createGlslTests			(m_testCtx));
 	addChild(createRenderPassTests		(m_testCtx));
 	addChild(memory::createTests		(m_testCtx));
+	addChild(ubo::createTests			(m_testCtx));
 }
 
 } // vkt
