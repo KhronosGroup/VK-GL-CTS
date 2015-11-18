@@ -929,7 +929,7 @@ tcu::TestStatus ImageSamplingInstance::verifyImage (void)
 															  tcu::UVec4(4, 4, 4, 4),
 															  tcu::IVec3(1, 1, 0),
 															  true,
-															  tcu::COMPARE_LOG_EVERYTHING);
+															  tcu::COMPARE_LOG_RESULT);
 	}
 
 	if (compareOk)
