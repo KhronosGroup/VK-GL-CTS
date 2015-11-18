@@ -452,8 +452,6 @@ private:
 
 	vk::Move<vk::VkShaderModule>						m_vertexShaderModule;
 	vk::Move<vk::VkShaderModule>						m_fragmentShaderModule;
-	vk::Move<vk::VkShader>								m_vertexShader;
-	vk::Move<vk::VkShader>								m_fragmentShader;
 
 	vk::Move<vk::VkBuffer>								m_indiceBuffer;
 	de::MovePtr<vk::Allocation>							m_indiceBufferAlloc;
@@ -463,8 +461,8 @@ private:
 	vk::Move<vk::VkDescriptorPool>						m_descriptorPool;
 	vk::Move<vk::VkDescriptorSet>						m_descriptorSet;
 
-	vk::Move<vk::VkCmdPool>								m_cmdPool;
-	vk::Move<vk::VkCmdBuffer>							m_cmdBuffer;
+	vk::Move<vk::VkCommandPool>							m_cmdPool;
+	vk::Move<vk::VkCommandBuffer>						m_cmdBuffer;
 
 	vk::Move<vk::VkFence>								m_fence;
 
@@ -486,7 +484,6 @@ private:
 		virtual						~UniformInfo	(void) {}
 
 		vk::VkDescriptorType		type;
-		vk::VkDescriptorInfo		descriptor;
 		deUint32					location;
 	};
 
@@ -498,6 +495,7 @@ private:
 
 		VkBufferSp					buffer;
 		AllocationSp				alloc;
+		vk::VkDescriptorBufferInfo	descriptor;
 	};
 
 	class SamplerUniform : public UniformInfo
@@ -510,6 +508,7 @@ private:
 		VkImageViewSp				imageView;
 		VkSamplerSp					sampler;
 		AllocationSp				alloc;
+		vk::VkDescriptorImageInfo	descriptor;
 	};
 
 	typedef de::SharedPtr<de::UniquePtr<UniformInfo> >	UniformInfoSp;

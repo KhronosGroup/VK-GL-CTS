@@ -48,7 +48,7 @@ public:
 												DescriptorSetLayoutBuilder	(void);
 
 	DescriptorSetLayoutBuilder&					addBinding					(VkDescriptorType	descriptorType,
-																			 deUint32			arraySize,
+																			 deUint32			descriptorCount,
 																			 VkShaderStageFlags	stageFlags,
 																			 const VkSampler*	pImmutableSamplers);
 
@@ -62,10 +62,10 @@ public:
 		return addBinding(descriptorType, 1u, stageFlags, (VkSampler*)DE_NULL);
 	}
 	inline DescriptorSetLayoutBuilder&			addArrayBinding				(VkDescriptorType	descriptorType,
-																			 deUint32			arraySize,
+																			 deUint32			descriptorCount,
 																			 VkShaderStageFlags	stageFlags)
 	{
-		return addBinding(descriptorType, arraySize, stageFlags, (VkSampler*)DE_NULL);
+		return addBinding(descriptorType, descriptorCount, stageFlags, (VkSampler*)DE_NULL);
 	}
 	inline DescriptorSetLayoutBuilder&			addSingleSamplerBinding		(VkDescriptorType	descriptorType,
 																			 VkShaderStageFlags	stageFlags,
@@ -76,11 +76,11 @@ public:
 		return addBinding(descriptorType, 1u, stageFlags, immutableSampler);
 	}
 	inline DescriptorSetLayoutBuilder&			addArraySamplerBinding		(VkDescriptorType	descriptorType,
-																			 deUint32			arraySize,
+																			 deUint32			descriptorCount,
 																			 VkShaderStageFlags	stageFlags,
 																			 const VkSampler*	pImmutableSamplers)
 	{
-		return addBinding(descriptorType, arraySize, stageFlags, pImmutableSamplers);
+		return addBinding(descriptorType, descriptorCount, stageFlags, pImmutableSamplers);
 	}
 
 private:
@@ -96,13 +96,13 @@ public:
 										DescriptorPoolBuilder	(void);
 
 	DescriptorPoolBuilder&				addType					(VkDescriptorType type, deUint32 numDescriptors = 1u);
-	Move<VkDescriptorPool>				build					(const DeviceInterface& vk, VkDevice device, VkDescriptorPoolUsage poolUsage, deUint32 maxSets) const;
+	Move<VkDescriptorPool>				build					(const DeviceInterface& vk, VkDevice device, VkDescriptorPoolCreateFlags flags, deUint32 maxSets) const;
 
 private:
 										DescriptorPoolBuilder	(const DescriptorPoolBuilder&); // delete
 	DescriptorPoolBuilder&				operator=				(const DescriptorPoolBuilder&); // delete
 
-	std::vector<VkDescriptorTypeCount>	m_counts;
+	std::vector<VkDescriptorPoolSize>	m_counts;
 };
 
 class DescriptorSetUpdateBuilder
@@ -136,12 +136,14 @@ public:
 
 										DescriptorSetUpdateBuilder	(void);
 
-	DescriptorSetUpdateBuilder&			write						(VkDescriptorSet			destSet,
-																	 deUint32					destBinding,
-																	 deUint32					destArrayElement,
-																	 deUint32					count,
-																	 VkDescriptorType			descriptorType,
-																	 const VkDescriptorInfo*	pDescriptors);
+	DescriptorSetUpdateBuilder&			write						(VkDescriptorSet				destSet,
+																	 deUint32						destBinding,
+																	 deUint32						destArrayElement,
+																	 deUint32						count,
+																	 VkDescriptorType				descriptorType,
+																	 const VkDescriptorImageInfo*	pImageInfo,
+																	 const VkDescriptorBufferInfo*	pBufferInfo,
+																	 const VkBufferView*			pTexelBufferView);
 
 	DescriptorSetUpdateBuilder&			copy						(VkDescriptorSet	srcSet,
 																	 deUint32			srcBinding,
@@ -155,21 +157,55 @@ public:
 
 	// helpers
 
-	inline DescriptorSetUpdateBuilder&	writeSingle					(VkDescriptorSet			destSet,
-																	 const Location&			destLocation,
-																	 VkDescriptorType			descriptorType,
-																	 const VkDescriptorInfo*	descriptor)
+	inline DescriptorSetUpdateBuilder&	writeSingle					(VkDescriptorSet				destSet,
+																	 const Location&				destLocation,
+																	 VkDescriptorType				descriptorType,
+																	 const VkDescriptorImageInfo*	pImageInfo)
 	{
-		return write(destSet, destLocation.m_binding, destLocation.m_arrayElement, 1u, descriptorType, descriptor);
+		return write(destSet, destLocation.m_binding, destLocation.m_arrayElement, 1u, descriptorType, pImageInfo, DE_NULL, DE_NULL);
 	}
 
-	inline DescriptorSetUpdateBuilder&	writeArray					(VkDescriptorSet			destSet,
-																	 const Location&			destLocation,
-																	 VkDescriptorType			descriptorType,
-																	 deUint32					numDescriptors,
-																	 const VkDescriptorInfo*	descriptors)
+	inline DescriptorSetUpdateBuilder&	writeSingle					(VkDescriptorSet				destSet,
+																	 const Location&				destLocation,
+																	 VkDescriptorType				descriptorType,
+																	 const VkDescriptorBufferInfo*	pBufferInfo)
 	{
-		return write(destSet, destLocation.m_binding, destLocation.m_arrayElement, numDescriptors, descriptorType, descriptors);
+		return write(destSet, destLocation.m_binding, destLocation.m_arrayElement, 1u, descriptorType, DE_NULL, pBufferInfo, DE_NULL);
+	}
+
+	inline DescriptorSetUpdateBuilder&	writeSingle					(VkDescriptorSet				destSet,
+																	 const Location&				destLocation,
+																	 VkDescriptorType				descriptorType,
+																	 const VkBufferView*			pTexelBufferView)
+	{
+		return write(destSet, destLocation.m_binding, destLocation.m_arrayElement, 1u, descriptorType, DE_NULL, DE_NULL, pTexelBufferView);
+	}
+
+	inline DescriptorSetUpdateBuilder&	writeArray					(VkDescriptorSet				destSet,
+																	 const Location&				destLocation,
+																	 VkDescriptorType				descriptorType,
+																	 deUint32						numDescriptors,
+																	 const VkDescriptorImageInfo*	pImageInfo)
+	{
+		return write(destSet, destLocation.m_binding, destLocation.m_arrayElement, numDescriptors, descriptorType, pImageInfo, DE_NULL, DE_NULL);
+	}
+
+	inline DescriptorSetUpdateBuilder&	writeArray					(VkDescriptorSet				destSet,
+																	 const Location&				destLocation,
+																	 VkDescriptorType				descriptorType,
+																	 deUint32						numDescriptors,
+																	 const VkDescriptorBufferInfo*	pBufferInfo)
+	{
+		return write(destSet, destLocation.m_binding, destLocation.m_arrayElement, numDescriptors, descriptorType, DE_NULL, pBufferInfo, DE_NULL);
+	}
+
+	inline DescriptorSetUpdateBuilder&	writeArray					(VkDescriptorSet				destSet,
+																	 const Location&				destLocation,
+																	 VkDescriptorType				descriptorType,
+																	 deUint32						numDescriptors,
+																	 const VkBufferView*			pTexelBufferView)
+	{
+		return write(destSet, destLocation.m_binding, destLocation.m_arrayElement, numDescriptors, descriptorType, DE_NULL, DE_NULL, pTexelBufferView);
 	}
 
 	inline DescriptorSetUpdateBuilder&	copySingle					(VkDescriptorSet	srcSet,
@@ -192,6 +228,10 @@ public:
 private:
 										DescriptorSetUpdateBuilder	(const DescriptorSetUpdateBuilder&); // delete
 	DescriptorSetUpdateBuilder&			operator=					(const DescriptorSetUpdateBuilder&); // delete
+
+	std::vector<VkDescriptorImageInfo>	m_imageInfos;
+	std::vector<VkDescriptorBufferInfo>	m_bufferInfos;
+	std::vector<VkBufferView>			m_texelBufferViews;
 
 	std::vector<VkWriteDescriptorSet>	m_writes;
 	std::vector<VkCopyDescriptorSet>	m_copies;

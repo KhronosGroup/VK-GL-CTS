@@ -42,24 +42,31 @@ namespace vk
 Move<VkPipeline> createGraphicsPipeline (const DeviceInterface& vk, VkDevice device, VkPipelineCache pipelineCache, const VkGraphicsPipelineCreateInfo* pCreateInfo)
 {
 	VkPipeline object = 0;
-	VK_CHECK(vk.createGraphicsPipelines(device, pipelineCache, 1u, pCreateInfo, &object));
+	VK_CHECK(vk.createGraphicsPipelines(device, pipelineCache, 1u, pCreateInfo, DE_NULL, &object));
 	return Move<VkPipeline>(check<VkPipeline>(object), Deleter<VkPipeline>(vk, device));
 }
 
 Move<VkPipeline> createComputePipeline (const DeviceInterface& vk, VkDevice device, VkPipelineCache pipelineCache, const VkComputePipelineCreateInfo* pCreateInfo)
 {
 	VkPipeline object = 0;
-	VK_CHECK(vk.createComputePipelines(device, pipelineCache, 1u, pCreateInfo, &object));
+	VK_CHECK(vk.createComputePipelines(device, pipelineCache, 1u, pCreateInfo, DE_NULL, &object));
 	return Move<VkPipeline>(check<VkPipeline>(object), Deleter<VkPipeline>(vk, device));
 }
 
-Move<VkDescriptorSet> allocDescriptorSet (const DeviceInterface& vk, VkDevice device, VkDescriptorPool descriptorPool, VkDescriptorSetUsage setUsage, VkDescriptorSetLayout layout)
+Move<VkCommandBuffer> allocateCommandBuffer (const DeviceInterface& vk, VkDevice device, const VkCommandBufferAllocateInfo* pAllocateInfo)
 {
-	VkDescriptorSet	descriptorSet	= 0;
+	VkCommandBuffer object = 0;
+	DE_ASSERT(pAllocateInfo->bufferCount == 1u);
+	VK_CHECK(vk.allocateCommandBuffers(device, pAllocateInfo, &object));
+	return Move<VkCommandBuffer>(check<VkCommandBuffer>(object), Deleter<VkCommandBuffer>(vk, device, pAllocateInfo->commandPool));
+}
 
-	VK_CHECK(vk.allocDescriptorSets(device, descriptorPool, setUsage, 1, &layout, &descriptorSet));
-
-	return Move<VkDescriptorSet>(check<VkDescriptorSet>(descriptorSet), Deleter<VkDescriptorSet>(vk, device, descriptorPool));
+Move<VkDescriptorSet> allocateDescriptorSet (const DeviceInterface& vk, VkDevice device, const VkDescriptorSetAllocateInfo* pAllocateInfo)
+{
+	VkDescriptorSet object = 0;
+	DE_ASSERT(pAllocateInfo->setLayoutCount == 1u);
+	VK_CHECK(vk.allocateDescriptorSets(device, pAllocateInfo, &object));
+	return Move<VkDescriptorSet>(check<VkDescriptorSet>(object), Deleter<VkDescriptorSet>(vk, device, pAllocateInfo->descriptorPool));
 }
 
 } // vk

@@ -40,6 +40,7 @@
 #include "vkMemUtil.hpp"
 #include "vkRefUtil.hpp"
 #include "vkQueryUtil.hpp"
+#include "vkTypeUtil.hpp"
 
 namespace
 {
@@ -64,9 +65,9 @@ Move<VkBuffer> createBufferAndBindMemory (const DeviceInterface& vkdi, const VkD
 	{
 		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,	// sType
 		DE_NULL,								// pNext
+		0u,										// flags
 		numBytes,								// size
 		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,		// usage
-		0u,										// flags
 		VK_SHARING_MODE_EXCLUSIVE,				// sharingMode
 		0u,										// queueFamilyCount
 		DE_NULL,								// pQueueFamilyIndices
@@ -98,20 +99,6 @@ void clearMemory (const DeviceInterface& vkdi, const VkDevice& device, Allocatio
 	flushMappedMemoryRange(vkdi, device, destAlloc->getMemory(), destAlloc->getOffset(), numBytes);
 }
 
-VkDescriptorInfo createDescriptorInfo (VkBuffer buffer, VkDeviceSize offset, VkDeviceSize range)
-{
-	const VkDescriptorInfo info =
-	{
-		0,							// bufferView
-		0,							// sampler
-		0,							// imageView
-		(VkImageLayout)0,			// imageLayout
-		{ buffer, offset, range },	// bufferInfo
-	};
-
-	return info;
-}
-
 /*--------------------------------------------------------------------*//*!
  * \brief Create a descriptor set layout with numBindings descriptors
  *
@@ -137,6 +124,7 @@ Move<VkPipelineLayout> createPipelineLayout (const DeviceInterface& vkdi, const 
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,	// sType
 		DE_NULL,										// pNext
+		(VkPipelineLayoutCreateFlags)0,
 		1u,												// descriptorSetCount
 		&descriptorSetLayout,							// pSetLayouts
 		0u,												// pushConstantRangeCount
@@ -155,7 +143,7 @@ inline Move<VkDescriptorPool> createDescriptorPool (const DeviceInterface& vkdi,
 {
 	return DescriptorPoolBuilder()
 		.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, numDescriptors)
-		.build(vkdi, device, VK_DESCRIPTOR_POOL_USAGE_ONE_SHOT, /* maxSets = */ 1);
+		.build(vkdi, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, /* maxSets = */ 1);
 }
 
 /*--------------------------------------------------------------------*//*!
@@ -165,10 +153,19 @@ inline Move<VkDescriptorPool> createDescriptorPool (const DeviceInterface& vkdi,
  * All the descriptors represent buffer views, and they are sequentially
  * binded to binding point starting from 0.
  *//*--------------------------------------------------------------------*/
-Move<VkDescriptorSet> createDescriptorSet (const DeviceInterface& vkdi, const VkDevice& device, VkDescriptorPool pool, VkDescriptorSetLayout layout, size_t numViews, const vector<VkDescriptorInfo>& descriptorInfos)
+Move<VkDescriptorSet> createDescriptorSet (const DeviceInterface& vkdi, const VkDevice& device, VkDescriptorPool pool, VkDescriptorSetLayout layout, size_t numViews, const vector<VkDescriptorBufferInfo>& descriptorInfos)
 {
-	Move<VkDescriptorSet>		descriptorSet	= allocDescriptorSet(vkdi, device, pool, VK_DESCRIPTOR_SET_USAGE_ONE_SHOT, layout);
-	DescriptorSetUpdateBuilder	builder;
+	const VkDescriptorSetAllocateInfo	allocInfo	=
+	{
+		VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+		DE_NULL,
+		pool,
+		1u,
+		&layout
+	};
+
+	Move<VkDescriptorSet>				descriptorSet	= allocateDescriptorSet(vkdi, device, &allocInfo);
+	DescriptorSetUpdateBuilder			builder;
 
 	for (deUint32 descriptorNdx = 0; descriptorNdx < numViews; ++descriptorNdx)
 		builder.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(descriptorNdx), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &descriptorInfos[descriptorNdx]);
@@ -178,44 +175,26 @@ Move<VkDescriptorSet> createDescriptorSet (const DeviceInterface& vkdi, const Vk
 }
 
 /*--------------------------------------------------------------------*//*!
- * \brief Create a shader from the given shader module
- *
- * The entry point of the shader is assumed to be "main".
- *//*--------------------------------------------------------------------*/
-Move<VkShader> createShader (const DeviceInterface& vkdi, const VkDevice& device, VkShaderModule module)
-{
-	const VkShaderCreateInfo shaderCreateInfo =
-	{
-		VK_STRUCTURE_TYPE_SHADER_CREATE_INFO,	// sType
-		DE_NULL,								// pNext
-		module,									// module
-		"main",									// pName
-		0u,										// flags
-		VK_SHADER_STAGE_COMPUTE,				// stage
-	};
-
-	return createShader(vkdi, device, &shaderCreateInfo);
-}
-
-/*--------------------------------------------------------------------*//*!
  * \brief Create a compute pipeline based on the given shader
  *//*--------------------------------------------------------------------*/
-Move<VkPipeline> createComputePipeline (const DeviceInterface& vkdi, const VkDevice& device, VkPipelineLayout pipelineLayout, VkShader shader)
+Move<VkPipeline> createComputePipeline (const DeviceInterface& vkdi, const VkDevice& device, VkPipelineLayout pipelineLayout, VkShaderModule shader)
 {
 	const VkPipelineShaderStageCreateInfo	pipelineShaderStageCreateInfo	=
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// sType
 		DE_NULL,												// pNext
-		VK_SHADER_STAGE_COMPUTE,								// stage
+		(VkPipelineShaderStageCreateFlags)0,
+		VK_SHADER_STAGE_COMPUTE_BIT,							// stage
 		shader,													// shader
+		"main",
 		DE_NULL,												// pSpecializationInfo
 	};
 	const VkComputePipelineCreateInfo		pipelineCreateInfo				=
 	{
 		VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,			// sType
 		DE_NULL,												// pNext
+		(VkPipelineCreateFlags)0,
 		pipelineShaderStageCreateInfo,							// cs
-		0u,														// flags
 		pipelineLayout,											// layout
 		(VkPipeline)0,											// basePipelineHandle
 		0u,														// basePipelineIndex
@@ -230,14 +209,14 @@ Move<VkPipeline> createComputePipeline (const DeviceInterface& vkdi, const VkDev
  * The created command pool is designated for use on the queue type
  * represented by the given queueFamilyIndex.
  *//*--------------------------------------------------------------------*/
-Move<VkCmdPool> createCommandPool (const DeviceInterface& vkdi, VkDevice device, deUint32 queueFamilyIndex)
+Move<VkCommandPool> createCommandPool (const DeviceInterface& vkdi, VkDevice device, deUint32 queueFamilyIndex)
 {
-	const VkCmdPoolCreateInfo cmdPoolCreateInfo =
+	const VkCommandPoolCreateInfo cmdPoolCreateInfo =
 	{
-		VK_STRUCTURE_TYPE_CMD_POOL_CREATE_INFO,	// sType
-		DE_NULL,								// pNext
-		queueFamilyIndex,						// queueFamilyIndex
-		0u										// flags
+		VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,	// sType
+		DE_NULL,									// pNext
+		0u,											// flags
+		queueFamilyIndex,							// queueFamilyIndex
 	};
 
 	return createCommandPool(vkdi, device, &cmdPoolCreateInfo);
@@ -299,84 +278,86 @@ SpvAsmComputeShaderInstance::SpvAsmComputeShaderInstance (Context& ctx, const Co
 
 tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 {
-	const DeviceInterface&			vkdi				= m_context.getDeviceInterface();
-	const VkDevice&					device				= m_context.getDevice();
-	Allocator&						allocator			= m_context.getDefaultAllocator();
+	const DeviceInterface&				vkdi				= m_context.getDeviceInterface();
+	const VkDevice&						device				= m_context.getDevice();
+	Allocator&							allocator			= m_context.getDefaultAllocator();
 
-	vector<AllocationSp>			inputAllocs;
-	vector<AllocationSp>			outputAllocs;
-	vector<BufferHandleSp>			inputBuffers;
-	vector<BufferHandleSp>			outputBuffers;
-	vector<VkDescriptorInfo>		descriptorInfos;
+	vector<AllocationSp>				inputAllocs;
+	vector<AllocationSp>				outputAllocs;
+	vector<BufferHandleSp>				inputBuffers;
+	vector<BufferHandleSp>				outputBuffers;
+	vector<VkDescriptorBufferInfo>		descriptorInfos;
 
 	DE_ASSERT(!m_shaderSpec.outputs.empty());
-	const size_t					numBuffers			= m_shaderSpec.inputs.size() + m_shaderSpec.outputs.size();
+	const size_t						numBuffers			= m_shaderSpec.inputs.size() + m_shaderSpec.outputs.size();
 
 	// Create buffer object, allocate storage, and create view for all input/output buffers.
 
 	for (size_t inputNdx = 0; inputNdx < m_shaderSpec.inputs.size(); ++inputNdx)
 	{
-		AllocationMp				alloc;
-		const BufferSp&				input				= m_shaderSpec.inputs[inputNdx];
-		const size_t				numBytes			= input->getNumBytes();
-		BufferHandleUp*				buffer				= new BufferHandleUp(createBufferAndBindMemory(vkdi, device, allocator, numBytes, &alloc));
+		AllocationMp		alloc;
+		const BufferSp&		input		= m_shaderSpec.inputs[inputNdx];
+		const size_t		numBytes	= input->getNumBytes();
+		BufferHandleUp*		buffer		= new BufferHandleUp(createBufferAndBindMemory(vkdi, device, allocator, numBytes, &alloc));
 
 		setMemory(vkdi, device, &*alloc, numBytes, input->data());
-		descriptorInfos.push_back(createDescriptorInfo(**buffer, 0u, numBytes));
+		descriptorInfos.push_back(vk::makeDescriptorBufferInfo(**buffer, 0u, numBytes));
 		inputBuffers.push_back(BufferHandleSp(buffer));
 		inputAllocs.push_back(de::SharedPtr<Allocation>(alloc.release()));
 	}
 
 	for (size_t outputNdx = 0; outputNdx < m_shaderSpec.outputs.size(); ++outputNdx)
 	{
-		AllocationMp				alloc;
-		const BufferSp&				output				= m_shaderSpec.outputs[outputNdx];
-		const size_t				numBytes			= output->getNumBytes();
-		BufferHandleUp*				buffer				= new BufferHandleUp(createBufferAndBindMemory(vkdi, device, allocator, numBytes, &alloc));
+		AllocationMp		alloc;
+		const BufferSp&		output		= m_shaderSpec.outputs[outputNdx];
+		const size_t		numBytes	= output->getNumBytes();
+		BufferHandleUp*		buffer		= new BufferHandleUp(createBufferAndBindMemory(vkdi, device, allocator, numBytes, &alloc));
 
 		clearMemory(vkdi, device, &*alloc, numBytes);
-		descriptorInfos.push_back(createDescriptorInfo(**buffer, 0u, numBytes));
+		descriptorInfos.push_back(vk::makeDescriptorBufferInfo(**buffer, 0u, numBytes));
 		outputBuffers.push_back(BufferHandleSp(buffer));
 		outputAllocs.push_back(de::SharedPtr<Allocation>(alloc.release()));
 	}
 
 	// Create layouts and descriptor set.
 
-	Unique<VkDescriptorSetLayout>	descriptorSetLayout	(createDescriptorSetLayout(vkdi, device, numBuffers));
-	Unique<VkPipelineLayout>		pipelineLayout		(createPipelineLayout(vkdi, device, *descriptorSetLayout));
-	Unique<VkDescriptorPool>		descriptorPool		(createDescriptorPool(vkdi, device, (deUint32)numBuffers));
-	Unique<VkDescriptorSet>			descriptorSet		(createDescriptorSet(vkdi, device, *descriptorPool, *descriptorSetLayout, numBuffers, descriptorInfos));
+	Unique<VkDescriptorSetLayout>		descriptorSetLayout	(createDescriptorSetLayout(vkdi, device, numBuffers));
+	Unique<VkPipelineLayout>			pipelineLayout		(createPipelineLayout(vkdi, device, *descriptorSetLayout));
+	Unique<VkDescriptorPool>			descriptorPool		(createDescriptorPool(vkdi, device, (deUint32)numBuffers));
+	Unique<VkDescriptorSet>				descriptorSet		(createDescriptorSet(vkdi, device, *descriptorPool, *descriptorSetLayout, numBuffers, descriptorInfos));
 
 	// Create compute shader and pipeline.
 
-	const ProgramBinary&			binary				= m_context.getBinaryCollection().get("compute");
-	Unique<VkShaderModule>			module				(createShaderModule(vkdi, device, binary, (VkShaderModuleCreateFlags)0u));
-	Unique<VkShader>				shader				(createShader(vkdi, device, *module));
+	const ProgramBinary&				binary				= m_context.getBinaryCollection().get("compute");
+	Unique<VkShaderModule>				module				(createShaderModule(vkdi, device, binary, (VkShaderModuleCreateFlags)0u));
 
-	Unique<VkPipeline>				computePipeline		(createComputePipeline(vkdi, device, *pipelineLayout, *shader));
+	Unique<VkPipeline>					computePipeline		(createComputePipeline(vkdi, device, *pipelineLayout, *module));
 
 	// Create command buffer and record commands
 
-	const Unique<VkCmdPool>			cmdPool				(createCommandPool(vkdi, device, m_context.getUniversalQueueFamilyIndex()));
-	const VkCmdBufferCreateInfo		cmdBufferCreateInfo	=
+	const Unique<VkCommandPool>			cmdPool				(createCommandPool(vkdi, device, m_context.getUniversalQueueFamilyIndex()));
+	const VkCommandBufferAllocateInfo	cmdBufferCreateInfo	=
 	{
-		VK_STRUCTURE_TYPE_CMD_BUFFER_CREATE_INFO,	// sType
-		NULL,										// pNext
-		*cmdPool,									// cmdPool
-		VK_CMD_BUFFER_LEVEL_PRIMARY,				// level
-		0u											// flags
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,	// sType
+		NULL,											// pNext
+		*cmdPool,										// cmdPool
+		VK_COMMAND_BUFFER_LEVEL_PRIMARY,				// level
+		1u												// count
 	};
 
-	Unique<VkCmdBuffer>				cmdBuffer			(createCommandBuffer(vkdi, device, &cmdBufferCreateInfo));
+	Unique<VkCommandBuffer>				cmdBuffer			(allocateCommandBuffer(vkdi, device, &cmdBufferCreateInfo));
 
-	const VkCmdBufferBeginInfo		cmdBufferBeginInfo	=
+	const VkCommandBufferBeginInfo		cmdBufferBeginInfo	=
 	{
-		VK_STRUCTURE_TYPE_CMD_BUFFER_BEGIN_INFO,	// sType
-		DE_NULL,									// pNext
-		VK_CMD_BUFFER_OPTIMIZE_ONE_TIME_SUBMIT_BIT,	// flags
-		(VkRenderPass)0u,							// renderPass
-		0u,											// subpass
-		(VkFramebuffer)0u,							// framebuffer
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// sType
+		DE_NULL,										// pNext
+		VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+		(VkRenderPass)0u,								// renderPass
+		0u,												// subpass
+		(VkFramebuffer)0u,								// framebuffer
+		VK_FALSE,										// occlusionQueryEnable
+		(VkQueryControlFlags)0,
+		(VkQueryPipelineStatisticFlags)0,
 	};
 
 	const tcu::IVec3&				numWorkGroups		= m_shaderSpec.numWorkGroups;
@@ -397,8 +378,19 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
     };
 	const Unique<VkFence>			cmdCompleteFence	(createFence(vkdi, device, &fenceCreateInfo));
 	const deUint64					infiniteTimeout		= ~(deUint64)0u;
+	const VkSubmitInfo				submitInfo			=
+	{
+		VK_STRUCTURE_TYPE_SUBMIT_INFO,
+		DE_NULL,
+		0u,
+		(const VkSemaphore*)DE_NULL,
+		1u,
+		&cmdBuffer.get(),
+		0u,
+		(const VkSemaphore*)DE_NULL,
+	};
 
-	VK_CHECK(vkdi.queueSubmit(m_context.getUniversalQueue(), 1, &cmdBuffer.get(), *cmdCompleteFence));
+	VK_CHECK(vkdi.queueSubmit(m_context.getUniversalQueue(), 1, &submitInfo, *cmdCompleteFence));
 	VK_CHECK(vkdi.waitForFences(device, 1, &cmdCompleteFence.get(), 0u, infiniteTimeout)); // \note: timeout is failure
 
 	// Check output.

@@ -86,9 +86,9 @@ Move<VkShaderModule> createShaderModule (const DeviceInterface& deviceInterface,
 		{
 			VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
 			DE_NULL,
-			(deUintptr)binary.getSize(),
-			binary.getBinary(),
 			flags,
+			(deUintptr)binary.getSize(),
+			(const deUint32*)binary.getBinary(),
 		};
 
 		return createShaderModule(deviceInterface, device, &shaderModuleInfo);
@@ -97,31 +97,32 @@ Move<VkShaderModule> createShaderModule (const DeviceInterface& deviceInterface,
 		TCU_THROW(NotSupportedError, "Unsupported program format");
 }
 
-glu::ShaderType getGluShaderType (VkShaderStage shaderStage)
+glu::ShaderType getGluShaderType (VkShaderStageFlagBits shaderStage)
 {
-	static const glu::ShaderType s_shaderTypes[] =
+	switch (shaderStage)
 	{
-		glu::SHADERTYPE_VERTEX,
-		glu::SHADERTYPE_TESSELLATION_CONTROL,
-		glu::SHADERTYPE_TESSELLATION_EVALUATION,
-		glu::SHADERTYPE_GEOMETRY,
-		glu::SHADERTYPE_FRAGMENT,
-		glu::SHADERTYPE_COMPUTE
-	};
-
-	return de::getSizedArrayElement<VK_SHADER_STAGE_LAST>(s_shaderTypes, shaderStage);
+		case VK_SHADER_STAGE_VERTEX_BIT:					return glu::SHADERTYPE_VERTEX;
+		case VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT:		return glu::SHADERTYPE_TESSELLATION_CONTROL;
+		case VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT:	return glu::SHADERTYPE_TESSELLATION_EVALUATION;
+		case VK_SHADER_STAGE_GEOMETRY_BIT:					return glu::SHADERTYPE_GEOMETRY;
+		case VK_SHADER_STAGE_FRAGMENT_BIT:					return glu::SHADERTYPE_FRAGMENT;
+		case VK_SHADER_STAGE_COMPUTE_BIT:					return glu::SHADERTYPE_COMPUTE;
+		default:
+			DE_FATAL("Unknown shader stage");
+			return glu::SHADERTYPE_LAST;
+	}
 }
 
-VkShaderStage getVkShaderStage (glu::ShaderType shaderType)
+VkShaderStageFlagBits getVkShaderStage (glu::ShaderType shaderType)
 {
-	static const VkShaderStage s_shaderStages[] =
+	static const VkShaderStageFlagBits s_shaderStages[] =
 	{
-		VK_SHADER_STAGE_VERTEX,
-		VK_SHADER_STAGE_FRAGMENT,
-		VK_SHADER_STAGE_GEOMETRY,
-		VK_SHADER_STAGE_TESS_CONTROL,
-		VK_SHADER_STAGE_TESS_EVALUATION,
-		VK_SHADER_STAGE_COMPUTE
+		VK_SHADER_STAGE_VERTEX_BIT,
+		VK_SHADER_STAGE_FRAGMENT_BIT,
+		VK_SHADER_STAGE_GEOMETRY_BIT,
+		VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,
+		VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,
+		VK_SHADER_STAGE_COMPUTE_BIT
 	};
 
 	return de::getSizedArrayElement<glu::SHADERTYPE_LAST>(s_shaderStages, shaderType);

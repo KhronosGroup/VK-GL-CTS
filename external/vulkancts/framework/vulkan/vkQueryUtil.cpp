@@ -64,12 +64,12 @@ vector<VkQueueFamilyProperties> getPhysicalDeviceQueueFamilyProperties (const In
 	deUint32						numQueues	= 0;
 	vector<VkQueueFamilyProperties>	properties;
 
-	VK_CHECK(vk.getPhysicalDeviceQueueFamilyProperties(physicalDevice, &numQueues, DE_NULL));
+	vk.getPhysicalDeviceQueueFamilyProperties(physicalDevice, &numQueues, DE_NULL);
 
 	if (numQueues > 0)
 	{
 		properties.resize(numQueues);
-		VK_CHECK(vk.getPhysicalDeviceQueueFamilyProperties(physicalDevice, &numQueues, &properties[0]));
+		vk.getPhysicalDeviceQueueFamilyProperties(physicalDevice, &numQueues, &properties[0]);
 
 		if ((size_t)numQueues != properties.size())
 			TCU_FAIL("Returned queue family count changes between queries");
@@ -84,7 +84,7 @@ VkPhysicalDeviceFeatures getPhysicalDeviceFeatures (const InstanceInterface& vk,
 
 	deMemset(&features, 0, sizeof(features));
 
-	VK_CHECK(vk.getPhysicalDeviceFeatures(physicalDevice, &features));
+	vk.getPhysicalDeviceFeatures(physicalDevice, &features);
 	return features;
 }
 
@@ -94,20 +94,20 @@ VkPhysicalDeviceMemoryProperties getPhysicalDeviceMemoryProperties (const Instan
 
 	deMemset(&properties, 0, sizeof(properties));
 
-	VK_CHECK(vk.getPhysicalDeviceMemoryProperties(physicalDevice, &properties));
+	vk.getPhysicalDeviceMemoryProperties(physicalDevice, &properties);
 	return properties;
 }
 
 VkMemoryRequirements getBufferMemoryRequirements (const DeviceInterface& vk, VkDevice device, VkBuffer buffer)
 {
 	VkMemoryRequirements req;
-	VK_CHECK(vk.getBufferMemoryRequirements(device, buffer, &req));
+	vk.getBufferMemoryRequirements(device, buffer, &req);
 	return req;
 }
 VkMemoryRequirements getImageMemoryRequirements (const DeviceInterface& vk, VkDevice device, VkImage image)
 {
 	VkMemoryRequirements req;
-	VK_CHECK(vk.getImageMemoryRequirements(device, image, &req));
+	vk.getImageMemoryRequirements(device, image, &req);
 	return req;
 }
 
@@ -179,11 +179,11 @@ vector<VkExtensionProperties> enumerateDeviceExtensionProperties (const Instance
 	return properties;
 }
 
-bool isShaderStageSupported (const VkPhysicalDeviceFeatures& deviceFeatures, VkShaderStage stage)
+bool isShaderStageSupported (const VkPhysicalDeviceFeatures& deviceFeatures, VkShaderStageFlagBits stage)
 {
-	if (stage == VK_SHADER_STAGE_TESS_CONTROL || stage == VK_SHADER_STAGE_TESS_EVALUATION)
+	if (stage == VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT || stage == VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT)
 		return deviceFeatures.tessellationShader == VK_TRUE;
-	else if (stage == VK_SHADER_STAGE_GEOMETRY)
+	else if (stage == VK_SHADER_STAGE_GEOMETRY_BIT)
 		return deviceFeatures.geometryShader == VK_TRUE;
 	else
 		return true;

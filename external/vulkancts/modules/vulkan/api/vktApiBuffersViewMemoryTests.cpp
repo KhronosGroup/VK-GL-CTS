@@ -105,8 +105,6 @@ private:
 
 	Move<VkShaderModule>				m_vertexShaderModule;
 	Move<VkShaderModule>				m_fragmentShaderModule;
-	Move<VkShader>						m_vertexShader;
-	Move<VkShader>						m_fragmentShader;
 
 	Move<VkBuffer>						m_vertexBuffer;
 	std::vector<tcu::Vec4>				m_vertices;
@@ -115,8 +113,8 @@ private:
 	Move<VkPipelineLayout>				m_pipelineLayout;
 	Move<VkPipeline>					m_graphicsPipelines;
 
-	Move<VkCmdPool>						m_cmdPool;
-	Move<VkCmdBuffer>					m_cmdBuffer;
+	Move<VkCommandPool>					m_cmdPool;
+	Move<VkCommandBuffer>				m_cmdBuffer;
 
 	Move<VkBuffer>						m_resultBuffer;
 	de::MovePtr<Allocation>				m_resultBufferAlloc;
@@ -163,7 +161,7 @@ BufferViewTestInstance::BufferViewTestInstance (Context& context, BufferViewCase
 	const VkDevice				vkDevice			= context.getDevice();
 	const deUint32				queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
 	SimpleAllocator				memAlloc			(vk, vkDevice, getPhysicalDeviceMemoryProperties(context.getInstanceInterface(), context.getPhysicalDevice()));
-	const VkChannelMapping		channelMappingRGBA	= { VK_CHANNEL_SWIZZLE_R, VK_CHANNEL_SWIZZLE_G, VK_CHANNEL_SWIZZLE_B, VK_CHANNEL_SWIZZLE_A };
+	const VkComponentMapping	channelMappingRGBA	= { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
 
 	// Create color image
 	{
@@ -171,15 +169,15 @@ BufferViewTestInstance::BufferViewTestInstance (Context& context, BufferViewCase
 		{
 			VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,										// VkStructureType		sType;
 			DE_NULL,																	// const void*			pNext;
+			0u,																			// VkImageCreateFlags	flags;
 			VK_IMAGE_TYPE_2D,															// VkImageType			imageType;
 			m_colorFormat,																// VkFormat				format;
 			{ m_renderSize.x(), m_renderSize.y(), 1u },									// VkExtent3D			extent;
 			1u,																			// deUint32				mipLevels;
 			1u,																			// deUint32				arraySize;
-			1u,																			// deUint32				samples;
+			VK_SAMPLE_COUNT_1_BIT,														// deUint32				samples;
 			VK_IMAGE_TILING_OPTIMAL,													// VkImageTiling		tiling;
-			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SOURCE_BIT,	// VkImageUsageFlags	usage;
-			0u,																			// VkImageCreateFlags	flags;
+			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,		// VkImageUsageFlags	usage;
 			VK_SHARING_MODE_EXCLUSIVE,													// VkSharingMode		sharingMode;
 			1u,																			// deUint32				queueFamilyCount;
 			&queueFamilyIndex,															// const deUint32*		pQueueFamilyIndices;
@@ -199,9 +197,9 @@ BufferViewTestInstance::BufferViewTestInstance (Context& context, BufferViewCase
 		{
 			VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,		// VkStructureType		sType;
 			DE_NULL,									// const void*			pNext;
-			m_pixelDataSize,							// VkDeviceSize			size;
-			VK_BUFFER_USAGE_TRANSFER_DESTINATION_BIT,   // VkBufferUsageFlags	usage;
 			0u,											// VkBufferCreateFlags	flags;
+			m_pixelDataSize,							// VkDeviceSize			size;
+			VK_BUFFER_USAGE_TRANSFER_DST_BIT,		   // VkBufferUsageFlags	usage;
 			VK_SHARING_MODE_EXCLUSIVE,					// VkSharingMode		sharingMode;
 			0u,											// deUint32				queueFamilyCount;
 			DE_NULL,									// const deUint32*		pQueueFamilyIndices;
@@ -219,12 +217,12 @@ BufferViewTestInstance::BufferViewTestInstance (Context& context, BufferViewCase
 		{
 			VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,			// VkStructureType			sType;
 			DE_NULL,											// const void*				pNext;
+			0u,													// VkImageViewCreateFlags	flags;
 			*m_colorImage,										// VkImage					image;
 			VK_IMAGE_VIEW_TYPE_2D,								// VkImageViewType			viewType;
 			m_colorFormat,										// VkFormat					format;
 			channelMappingRGBA,									// VkChannelMapping			channels;
 			{ VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u },		// VkImageSubresourceRange	subresourceRange;
-			0u													// VkImageViewCreateFlags	flags;
 		};
 
 		m_colorAttachmentView = createImageView(vk, vkDevice, &colorAttachmentViewParams);
@@ -234,17 +232,15 @@ BufferViewTestInstance::BufferViewTestInstance (Context& context, BufferViewCase
 	{
 		const VkAttachmentDescription colorAttachmentDescription =
 		{
-			VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION,			// VkStructureType				sType;
-			DE_NULL,											// const void*					pNext;
+			0u,													// VkAttachmentDescriptionFlags	flags;
 			m_colorFormat,										// VkFormat						format;
-			1u,													// deUint32						samples;
+			VK_SAMPLE_COUNT_1_BIT,								// deUint32						samples;
 			VK_ATTACHMENT_LOAD_OP_CLEAR,						// VkAttachmentLoadOp			loadOp;
 			VK_ATTACHMENT_STORE_OP_STORE,						// VkAttachmentStoreOp			storeOp;
 			VK_ATTACHMENT_LOAD_OP_DONT_CARE,					// VkAttachmentLoadOp			stencilLoadOp;
 			VK_ATTACHMENT_STORE_OP_DONT_CARE,					// VkAttachmentStoreOp			stencilStoreOp;
 			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,			// VkImageLayout				initialLayout;
 			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,			// VkImageLayout				finalLayout;
-			0u,													// VkAttachmentDescriptionFlags	flags;
 		};
 
 		const VkAttachmentReference colorAttachmentReference =
@@ -255,16 +251,14 @@ BufferViewTestInstance::BufferViewTestInstance (Context& context, BufferViewCase
 
 		const VkSubpassDescription subpassDescription =
 		{
-			VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION,				// VkStructureType					sType;
-			DE_NULL,											// const void*						pNext;
-			VK_PIPELINE_BIND_POINT_GRAPHICS,					// VkPipelineBindPoint				pipelineBindPoint;
 			0u,													// VkSubpassDescriptionFlags		flags;
+			VK_PIPELINE_BIND_POINT_GRAPHICS,					// VkPipelineBindPoint				pipelineBindPoint;
 			0u,													// deUint32							inputCount;
 			DE_NULL,											// const VkAttachmentReference*		pInputAttachments;
 			1u,													// deUint32							colorCount;
 			&colorAttachmentReference,							// const VkAttachmentReference*		pColorAttachments;
 			DE_NULL,											// const VkAttachmentReference*		pResolveAttachments;
-			{ ~0u, VK_IMAGE_LAYOUT_GENERAL },					// VkAttachmentReference			depthStencilAttachment;
+			DE_NULL,											// VkAttachmentReference			depthStencilAttachment;
 			0u,													// deUint32							preserveCount;
 			DE_NULL												// const VkAttachmentReference*		pPreserveAttachments;
 		};
@@ -273,6 +267,7 @@ BufferViewTestInstance::BufferViewTestInstance (Context& context, BufferViewCase
 		{
 			VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,			// VkStructureType					sType;
 			DE_NULL,											// const void*						pNext;
+			(VkRenderPassCreateFlags)0,
 			1u,													// deUint32							attachmentCount;
 			&colorAttachmentDescription,						// const VkAttachmentDescription*	pAttachments;
 			1u,													// deUint32							subpassCount;
@@ -295,6 +290,7 @@ BufferViewTestInstance::BufferViewTestInstance (Context& context, BufferViewCase
 		{
 			VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,			// VkStructureType				sType;
 			DE_NULL,											// const void*					pNext;
+			(VkFramebufferCreateFlags)0,
 			*m_renderPass,										// VkRenderPass					renderPass;
 			1u,													// deUint32						attachmentCount;
 			attachmentBindInfos,								// const VkImageView*			pAttachments;
@@ -311,6 +307,7 @@ BufferViewTestInstance::BufferViewTestInstance (Context& context, BufferViewCase
 		const VkDescriptorSetLayoutBinding layoutBindings[1] =
 		{
 			{
+				0u,											// deUint32				binding;
 				VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,			// VkDescriptorType		descriptorType;
 				1u,											// deUint32				arraySize;
 				VK_SHADER_STAGE_ALL,						// VkShaderStageFlags	stageFlags;
@@ -322,6 +319,7 @@ BufferViewTestInstance::BufferViewTestInstance (Context& context, BufferViewCase
 		{
 			VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,	// VkStructureType						sType;
 			DE_NULL,												// cost void*							pNexŧ;
+			(VkDescriptorSetLayoutCreateFlags)0,
 			DE_LENGTH_OF_ARRAY(layoutBindings),						// deUint32								count;
 			layoutBindings											// const VkDescriptorSetLayoutBinding	pBinding;
 		};
@@ -337,9 +335,9 @@ BufferViewTestInstance::BufferViewTestInstance (Context& context, BufferViewCase
 		{
 			VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,		// VkStructureType		sType;
 			DE_NULL,									// const void*			pNext;
+			0u,											// VkBufferCreateFlags	flags; <-- TODO: 0u?
 			uniformSize,								// VkDeviceSize			size;
 			VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT,	// VkBufferUsageFlags	usage;
-			0u,											// VkBufferCreateFlags	flags; <-- TODO: 0u?
 			VK_SHARING_MODE_EXCLUSIVE,					// VkSharingMode		sharingMode;
 			1u,											// deUint32				queueFamilyIndexCount;
 			&queueFamilyIndex							// const deUint32*		pQueueFamilyIndices;
@@ -355,6 +353,7 @@ BufferViewTestInstance::BufferViewTestInstance (Context& context, BufferViewCase
 		{
 			VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO,							// VkStructureType	sType;
 			DE_NULL,															// void*			pNext;
+			(VkBufferViewCreateFlags)0,
 			*m_uniformBuffer,													// VkBuffer			buffer;
 			m_colorFormat,														// VkFormat			format;
 			m_testCase.elementOffset * sizeof(tcu::IVec4) + m_testCase.offset,	// VkDeviceSize		offset;
@@ -363,7 +362,7 @@ BufferViewTestInstance::BufferViewTestInstance (Context& context, BufferViewCase
 
 		m_uniformBufferView = createBufferView(vk, vkDevice, &viewInfo);
 
-		const VkDescriptorTypeCount descriptorTypes[1] =
+		const VkDescriptorPoolSize descriptorTypes[1] =
 		{
 			{
 				VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,				// VkDescriptorType		type;
@@ -375,25 +374,23 @@ BufferViewTestInstance::BufferViewTestInstance (Context& context, BufferViewCase
 		{
 			VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,		// VkStructureType					sType;
 			DE_NULL,											// void*							pNext;
-			VK_DESCRIPTOR_POOL_USAGE_ONE_SHOT,					// VkDescriptorPoolUsage			poolUsage;
+			VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,	// VkDescriptorPoolCreateFlags		flags;
 			1u,													// uint32_t							maxSets;
 			DE_LENGTH_OF_ARRAY(descriptorTypes),				// deUint32							count;
 			descriptorTypes										// const VkDescriptorTypeCount*		pTypeCount
 		};
 
 		m_descriptorPool = createDescriptorPool(vk, vkDevice, &descriptorPoolParams);
-		m_descriptorSet = allocDescriptorSet(vk, vkDevice, *m_descriptorPool, VK_DESCRIPTOR_SET_USAGE_STATIC, *m_descriptorSetLayout);
 
-		const VkDescriptorInfo descriptorInfos[] =
+		const VkDescriptorSetAllocateInfo descriptorSetParams =
 		{
-			{
-				*m_uniformBufferView,						// VkBufferView				bufferView;
-				0,											// VkSampler				sampler;
-				0,											// VkImageView				imageView;
-				(VkImageLayout)0,							// VkImageLayout			imageLayout;
-				{ DE_NULL, 0u, 0u }							// VkDescriptorBufferInfo	bufferInfo;
-			}
+			VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+			DE_NULL,
+			*m_descriptorPool,
+			1u,
+			&m_descriptorSetLayout.get(),
 		};
+		m_descriptorSet = allocateDescriptorSet(vk, vkDevice, &descriptorSetParams);
 
 		const VkWriteDescriptorSet writeDescritporSets[] =
 		{
@@ -405,11 +402,13 @@ BufferViewTestInstance::BufferViewTestInstance (Context& context, BufferViewCase
 				0,											// deUint32					destArrayElement;
 				1u,											// deUint32					count;
 				VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,	// VkDescriptorType			descriptorType;
-				descriptorInfos,							// const VkDescriptorInfo*	pDescriptors;
+				(const VkDescriptorImageInfo*)DE_NULL,
+				(const VkDescriptorBufferInfo*)DE_NULL,
+				&m_uniformBufferView.get(),
 			}
 		};
 
-		vk.updateDescriptorSets(vkDevice, 1, writeDescritporSets, 0u, DE_NULL);
+		vk.updateDescriptorSets(vkDevice, DE_LENGTH_OF_ARRAY(writeDescritporSets), writeDescritporSets, 0u, DE_NULL);
 	}
 
 	// Create pipeline layout
@@ -418,6 +417,7 @@ BufferViewTestInstance::BufferViewTestInstance (Context& context, BufferViewCase
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,		// VkStructureType				sType;
 			DE_NULL,											// const void*					pNext;
+			(VkPipelineLayoutCreateFlags)0,
 			1u,													// deUint32						descriptorSetCount;
 			&*m_descriptorSetLayout,							// const VkDescriptorSetLayout*	pSetLayouts;
 			0u,													// deUint32						pushConstantRangeCount;
@@ -431,29 +431,6 @@ BufferViewTestInstance::BufferViewTestInstance (Context& context, BufferViewCase
 	{
 		m_vertexShaderModule	= createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("vert"), 0);
 		m_fragmentShaderModule	= createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("frag"), 0);
-
-		const VkShaderCreateInfo vertexShaderParams =
-		{
-			VK_STRUCTURE_TYPE_SHADER_CREATE_INFO,			// VkStructureType		sType;
-			DE_NULL,										// const void*			pNext;
-			*m_vertexShaderModule,							// VkShaderModule		module;
-			"main",											// const char*			pName;
-			0u,												// VkShaderCreateFlags	flags;
-			VK_SHADER_STAGE_VERTEX,							// VkShaderStage		stage;
-		};
-
-		const VkShaderCreateInfo fragmentShaderParams =
-		{
-			VK_STRUCTURE_TYPE_SHADER_CREATE_INFO,			// VkStructureType		sType;
-			DE_NULL,										// const void*			pNext;
-			*m_fragmentShaderModule,						// VkShaderModule		module;
-			"main",											// const char*			pName;
-			0u,												// VkShaderCreateFlags	flags;
-			VK_SHADER_STAGE_FRAGMENT,						// VkShaderStage		stage;
-		};
-
-		m_vertexShader		= createShader(vk, vkDevice, &vertexShaderParams);
-		m_fragmentShader	= createShader(vk, vkDevice, &fragmentShaderParams);
 	}
 
 	// Create pipeline
@@ -464,24 +441,28 @@ BufferViewTestInstance::BufferViewTestInstance (Context& context, BufferViewCase
 			{
 				VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,		// VkStructureType				sType;
 				DE_NULL,													// const void*					pNext;
-				VK_SHADER_STAGE_VERTEX,										// VkShaderStage				stage;
-				*m_vertexShader,											// VkShader						shader;
+				(VkPipelineShaderStageCreateFlags)0,
+				VK_SHADER_STAGE_VERTEX_BIT,									// VkShaderStage				stage;
+				*m_vertexShaderModule,										// VkShader						shader;
+				"main",
 				DE_NULL														// const VkSpecializationInfo*	pSpecializationInfo;
 			},
 			{
 				VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,		// VkStructureType				sType;
 				DE_NULL,													// const void*					pNext;
-				VK_SHADER_STAGE_FRAGMENT,									// VkShaderStage				stage;
-				*m_fragmentShader,											// VkShader						shader;
+				(VkPipelineShaderStageCreateFlags)0,
+				VK_SHADER_STAGE_FRAGMENT_BIT,								// VkShaderStage				stage;
+				*m_fragmentShaderModule,									// VkShader						shader;
+				"main",
 				DE_NULL														// const VkSpecializationInfo*	pSpecializationInfo;
 			}
 		};
 
 		const VkVertexInputBindingDescription vertexInputBindingDescription =
 		{
-			0u,										// deUint32					binding;
-			sizeof(tcu::Vec4),						// deUint32					strideInBytes;
-			VK_VERTEX_INPUT_STEP_RATE_VERTEX		// VkVertexInputStepRate	stepRate;
+			0u,								// deUint32					binding;
+			sizeof(tcu::Vec4),				// deUint32					strideInBytes;
+			VK_VERTEX_INPUT_RATE_VERTEX		// VkVertexInputStepRate	stepRate;
 		};
 
 		const VkVertexInputAttributeDescription vertexInputAttributeDescriptions[1] =
@@ -498,6 +479,7 @@ BufferViewTestInstance::BufferViewTestInstance (Context& context, BufferViewCase
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,		// VkStructureType							sType;
 			DE_NULL,														// const void*								pNext;
+			(VkPipelineVertexInputStateCreateFlags)0,
 			1u,																// deUint32									bindingCount;
 			&vertexInputBindingDescription,									// const VkVertexInputBindingDescription*	pVertexBindingDescriptions;
 			1u,																// deUint32									attributeCount;
@@ -508,6 +490,7 @@ BufferViewTestInstance::BufferViewTestInstance (Context& context, BufferViewCase
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,	// VkStructureType		sType;
 			DE_NULL,														// const void*			pNext;
+			(VkPipelineInputAssemblyStateCreateFlags)0,
 			VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,							// VkPrimitiveTopology	topology;
 			false															// VkBool32				primitiveRestartEnable;
 		};
@@ -530,21 +513,23 @@ BufferViewTestInstance::BufferViewTestInstance (Context& context, BufferViewCase
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,			// VkStructureType		sType;
 			DE_NULL,														// const void*			pNext;
+			(VkPipelineViewportStateCreateFlags)0,
 			1u,																// deUint32				viewportCount;
 			&viewport,														// const VkViewport*	pViewports;
 			1u,																// deUint32				scissorCount;
 			&scissor														// const VkRect2D*		pScissors;
 		};
 
-		const VkPipelineRasterStateCreateInfo rasterStateParams =
+		const VkPipelineRasterizationStateCreateInfo rasterStateParams =
 		{
-			VK_STRUCTURE_TYPE_PIPELINE_RASTER_STATE_CREATE_INFO,			// VkStructureType	sType;
+			VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,		// VkStructureType	sType;
 			DE_NULL,														// const void*		pNext;
+			(VkPipelineRasterizationStateCreateFlags)0,
 			false,															// VkBool32			depthClipEnable;
 			false,															// VkBool32			rasterizerDiscardEnable;
-			VK_FILL_MODE_SOLID,												// VkFillMode		fillMode;
+			VK_POLYGON_MODE_FILL,											// VkFillMode		fillMode;
 			VK_CULL_MODE_NONE,												// VkCullMode		cullMode;
-			VK_FRONT_FACE_CCW,												// VkFrontFace		frontFace;
+			VK_FRONT_FACE_COUNTER_CLOCKWISE,								// VkFrontFace		frontFace;
 			VK_FALSE,														// VkBool32			depthBiasEnable;
 			0.0f,															// float			depthBias;
 			0.0f,															// float			depthBiasClamp;
@@ -554,22 +539,24 @@ BufferViewTestInstance::BufferViewTestInstance (Context& context, BufferViewCase
 
 		const VkPipelineColorBlendAttachmentState colorBlendAttachmentState =
 		{
-			false,																		// VkBool32			blendEnable;
-			VK_BLEND_ONE,																// VkBlend			srcBlendColor;
-			VK_BLEND_ZERO,																// VkBlend			destBlendColor;
-			VK_BLEND_OP_ADD,															// VkBlendOp		blendOpColor;
-			VK_BLEND_ONE,																// VkBlend			srcBlendAlpha;
-			VK_BLEND_ZERO,																// VkBlend			destBlendAlpha;
-			VK_BLEND_OP_ADD,															// VkBlendOp		blendOpAlpha;
-			VK_CHANNEL_R_BIT | VK_CHANNEL_G_BIT | VK_CHANNEL_B_BIT | VK_CHANNEL_A_BIT	// VkChannelFlags	channelWriteMask;
+			false,														// VkBool32			blendEnable;
+			VK_BLEND_FACTOR_ONE,										// VkBlend			srcBlendColor;
+			VK_BLEND_FACTOR_ZERO,										// VkBlend			destBlendColor;
+			VK_BLEND_OP_ADD,											// VkBlendOp		blendOpColor;
+			VK_BLEND_FACTOR_ONE,										// VkBlend			srcBlendAlpha;
+			VK_BLEND_FACTOR_ZERO,										// VkBlend			destBlendAlpha;
+			VK_BLEND_OP_ADD,											// VkBlendOp		blendOpAlpha;
+			(VK_COLOR_COMPONENT_R_BIT |
+			 VK_COLOR_COMPONENT_G_BIT |
+			 VK_COLOR_COMPONENT_B_BIT |
+			 VK_COLOR_COMPONENT_A_BIT)									// VkChannelFlags	channelWriteMask;
 		};
 
 		const VkPipelineColorBlendStateCreateInfo colorBlendStateParams =
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,	// VkStructureType								sType;
 			DE_NULL,													// const void*									pNext;
-			false,														// VkBool32										alphaToCoverageEnable;
-			false,														// VkBool32										alphaToOneEnable;
+			(VkPipelineColorBlendStateCreateFlags)0,
 			false,														// VkBool32										logicOpEnable;
 			VK_LOGIC_OP_COPY,											// VkLogicOp									logicOp;
 			1u,															// deUint32										attachmentCount;
@@ -581,6 +568,7 @@ BufferViewTestInstance::BufferViewTestInstance (Context& context, BufferViewCase
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,		// VkStructureType			sType;
 			DE_NULL,													// const void*				pNext;
+			(VkPipelineDynamicStateCreateFlags)0,
 			0u,															// deUint32					dynamicStateCount;
 			DE_NULL														// const VkDynamicState*	pDynamicStates;
 		};
@@ -589,6 +577,7 @@ BufferViewTestInstance::BufferViewTestInstance (Context& context, BufferViewCase
 		{
 			VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,	// VkStructureType									sType;
 			DE_NULL,											// const void*										pNext;
+			0u,													// VkPipelineCreateFlags							flags;
 			2u,													// deUint32											stageCount;
 			shaderStageParams,									// const VkPipelineShaderStageCreateInfo*			pStages;
 			&vertexInputStateParams,							// const VkPipelineVertexInputStateCreateInfo*		pVertexInputState;
@@ -600,7 +589,6 @@ BufferViewTestInstance::BufferViewTestInstance (Context& context, BufferViewCase
 			DE_NULL,											// const VkPipelineDepthStencilStateCreateInfo*		pDepthStencilState;
 			&colorBlendStateParams,								// const VkPipelineColorBlendStateCreateInfo*		pColorBlendState;
 			&dynamicStateParams,								// const VkPipelineDynamicStateCreateInfo*			pDynamicState;
-			0u,													// VkPipelineCreateFlags							flags;
 			*m_pipelineLayout,									// VkPipelineLayout									layout;
 			*m_renderPass,										// VkRenderPass										renderPass;
 			0u,													// deUint32											subpass;
@@ -619,9 +607,9 @@ BufferViewTestInstance::BufferViewTestInstance (Context& context, BufferViewCase
 		{
 			VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,		// VkStructureType		sType;
 			DE_NULL,									// const void*			pNext;
+			0u,											// VkBufferCreateFlags	flags;
 			vertexDataSize,								// VkDeviceSize			size;
 			VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,			// VkBufferUsageFlags	usage;
-			0u,											// VkBufferCreateFlags	flags;
 			VK_SHARING_MODE_EXCLUSIVE,					// VkSharingMode		sharingMode;
 			1u,											// deUint32				queueFamilyCount;
 			&queueFamilyIndex							// const deUint32*		pQueueFamilyIndices;
@@ -639,12 +627,12 @@ BufferViewTestInstance::BufferViewTestInstance (Context& context, BufferViewCase
 
 	// Create command pool
 	{
-		const VkCmdPoolCreateInfo cmdPoolParams =
+		const VkCommandPoolCreateInfo cmdPoolParams =
 		{
-			VK_STRUCTURE_TYPE_CMD_POOL_CREATE_INFO,		// VkStructureType		sType;
-			DE_NULL,									// const void*			pNext;
-			queueFamilyIndex,							// deUint32				queueFamilyIndex;
-			VK_CMD_POOL_CREATE_TRANSIENT_BIT			// VkCmdPoolCreateFlags	flags;
+			VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,		// VkStructureType		sType;
+			DE_NULL,										// const void*			pNext;
+			VK_COMMAND_POOL_CREATE_TRANSIENT_BIT,			// VkCmdPoolCreateFlags	flags;
+			queueFamilyIndex,								// deUint32				queueFamilyIndex;
 		};
 
 		m_cmdPool = createCommandPool(vk, vkDevice, &cmdPoolParams);
@@ -652,23 +640,26 @@ BufferViewTestInstance::BufferViewTestInstance (Context& context, BufferViewCase
 
 	// Create command buffer
 	{
-		const VkCmdBufferCreateInfo cmdBufferParams =
+		const VkCommandBufferAllocateInfo cmdBufferParams =
 		{
-			VK_STRUCTURE_TYPE_CMD_BUFFER_CREATE_INFO,	// VkStructureType			sType;
-			DE_NULL,									// const void*				pNext;
-			*m_cmdPool,									// VkCmdPool				cmdPool;
-			VK_CMD_BUFFER_LEVEL_PRIMARY,				// VkCmdBufferLevel			level;
-			0u											// VkCmdBufferCreateFlags	flags;
+			VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,	// VkStructureType			sType;
+			DE_NULL,										// const void*				pNext;
+			*m_cmdPool,										// VkCmdPool				cmdPool;
+			VK_COMMAND_BUFFER_LEVEL_PRIMARY,				// VkCmdBufferLevel			level;
+			1u												// deUint32					count;
 		};
 
-		const VkCmdBufferBeginInfo cmdBufferBeginInfo =
+		const VkCommandBufferBeginInfo cmdBufferBeginInfo =
 		{
-			VK_STRUCTURE_TYPE_CMD_BUFFER_BEGIN_INFO,	// VkStructureType			sType;
-			DE_NULL,									// const void*				pNext;
-			0u,											// VkCmdBufferOptimizeFlags	flags;
-			DE_NULL,									// VkRenderPass				renderPass;
-			0u,											// deUint32					subpass;
-			DE_NULL										// VkFramebuffer			framebuffer;
+			VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType			sType;
+			DE_NULL,										// const void*				pNext;
+			0u,												// VkCmdBufferOptimizeFlags	flags;
+			DE_NULL,										// VkRenderPass				renderPass;
+			0u,												// deUint32					subpass;
+			DE_NULL,											// VkFramebuffer			framebuffer;
+			VK_FALSE,
+			(VkQueryControlFlags)0,
+			(VkQueryPipelineStatisticFlags)0,
 		};
 
 		const VkClearValue clearValue = makeClearValueColorF32(0.0, 0.0, 0.0, 0.0);
@@ -689,10 +680,10 @@ BufferViewTestInstance::BufferViewTestInstance (Context& context, BufferViewCase
 			attachmentClearValues									// const VkClearValue*	pClearValues;
 		};
 
-		m_cmdBuffer = createCommandBuffer(vk, vkDevice, &cmdBufferParams);
+		m_cmdBuffer = allocateCommandBuffer(vk, vkDevice, &cmdBufferParams);
 
 		VK_CHECK(vk.beginCommandBuffer(*m_cmdBuffer, &cmdBufferBeginInfo));
-		vk.cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfo, VK_RENDER_PASS_CONTENTS_INLINE);
+		vk.cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
 		const VkDeviceSize	vertexBufferOffset[1] = { 0 };
 
@@ -705,10 +696,10 @@ BufferViewTestInstance::BufferViewTestInstance (Context& context, BufferViewCase
 		{
 			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		// VkStructureType			sType;
 			DE_NULL,									// const void*				pNext;
-			VK_MEMORY_OUTPUT_COLOR_ATTACHMENT_BIT,		// VkMemoryOutputFlags		outputMask;
-			VK_MEMORY_INPUT_TRANSFER_BIT,				// VkMemoryInputFlags		inputMask;
+			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,		// VkMemoryOutputFlags		outputMask;
+			VK_ACCESS_TRANSFER_READ_BIT,				// VkMemoryInputFlags		inputMask;
 			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,	// VkImageLayout			oldLayout;
-			VK_IMAGE_LAYOUT_TRANSFER_SOURCE_OPTIMAL,	// VkImageLayout			newLayout;
+			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,		// VkImageLayout			newLayout;
 			VK_QUEUE_FAMILY_IGNORED,					// deUint32					srcQueueFamilyIndex;
 			VK_QUEUE_FAMILY_IGNORED,					// deUint32					destQueueFamilyIndex;
 			*m_colorImage,								// VkImage					image;
@@ -725,8 +716,8 @@ BufferViewTestInstance::BufferViewTestInstance (Context& context, BufferViewCase
 		{
 			VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,	// VkStructureType		sType;
 			DE_NULL,									// const void*			pNext;
-			VK_MEMORY_OUTPUT_TRANSFER_BIT,				// VkMemoryOutputFlags	outputMask;
-			VK_MEMORY_INPUT_HOST_READ_BIT,				// VkMemoryInputFlags	inputMask;
+			VK_ACCESS_TRANSFER_WRITE_BIT,				// VkMemoryOutputFlags	outputMask;
+			VK_ACCESS_HOST_READ_BIT,					// VkMemoryInputFlags	inputMask;
 			VK_QUEUE_FAMILY_IGNORED,					// deUint32				srcQueueFamilyIndex;
 			VK_QUEUE_FAMILY_IGNORED,					// deUint32				destQueueFamilyIndex;
 			*m_resultBuffer,							// VkBuffer				buffer;
@@ -739,7 +730,7 @@ BufferViewTestInstance::BufferViewTestInstance (Context& context, BufferViewCase
 			0u,											// VkDeviceSize				bufferOffset;
 			(deUint32)m_renderSize.x(),					// deUint32					bufferRowLength;
 			(deUint32)m_renderSize.y(),					// deUint32					bufferImageHeight;
-			{ VK_IMAGE_ASPECT_COLOR, 0u, 0u, 1u },		// VkImageSubresourceCopy	imageSubresource;
+			{ VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u },	// VkImageSubresourceCopy	imageSubresource;
 			{ 0, 0, 0 },								// VkOffset3D				imageOffset;
 			{ m_renderSize.x(), m_renderSize.y(), 1 }	// VkExtent3D				imageExtent;
 		};
@@ -748,7 +739,7 @@ BufferViewTestInstance::BufferViewTestInstance (Context& context, BufferViewCase
 		const void* const	bufferBarrierPtr	= &bufferBarrier;
 
 		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_FALSE, 1, &imageBarrierPtr);
-		vk.cmdCopyImageToBuffer(*m_cmdBuffer, *m_colorImage, VK_IMAGE_LAYOUT_TRANSFER_SOURCE_OPTIMAL, *m_resultBuffer, 1, &copyRegion);
+		vk.cmdCopyImageToBuffer(*m_cmdBuffer, *m_colorImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *m_resultBuffer, 1, &copyRegion);
 		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_FALSE, 1, &bufferBarrierPtr);
 
 		vk.cmdEndRenderPass(*m_cmdBuffer);
@@ -800,9 +791,20 @@ tcu::TestStatus BufferViewTestInstance::iterate (void)
 	const DeviceInterface&		vk			= m_context.getDeviceInterface();
 	const VkDevice				vkDevice	= m_context.getDevice();
 	const VkQueue				queue		= m_context.getUniversalQueue();
+	const VkSubmitInfo			submitInfo	=
+	{
+		VK_STRUCTURE_TYPE_SUBMIT_INFO,
+		DE_NULL,
+		0u,
+		(const VkSemaphore*)DE_NULL,
+		1u,
+		&m_cmdBuffer.get(),
+		0u,
+		(const VkSemaphore*)DE_NULL,
+	};
 
 	VK_CHECK(vk.resetFences(vkDevice, 1, &m_fence.get()));
-	VK_CHECK(vk.queueSubmit(queue, 1, &m_cmdBuffer.get(), *m_fence));
+	VK_CHECK(vk.queueSubmit(queue, 1, &submitInfo, *m_fence));
 	VK_CHECK(vk.waitForFences(vkDevice, 1, &m_fence.get(), true, ~(0ull) /* infinity */));
 
 	tcu::TestStatus				testStatus	= checkResult();
@@ -820,7 +822,7 @@ tcu::TestStatus BufferViewTestInstance::iterate (void)
 	deMemcpy(m_uniformBufferAlloc->getHostPtr(), uniformData.data(), uniformSize);
 
 	VK_CHECK(vk.resetFences(vkDevice, 1, &m_fence.get()));
-	VK_CHECK(vk.queueSubmit(queue, 1, &m_cmdBuffer.get(), *m_fence));
+	VK_CHECK(vk.queueSubmit(queue, 1, &submitInfo, *m_fence));
 	VK_CHECK(vk.waitForFences(vkDevice, 1, &m_fence.get(), true, ~(0ull) /* infinity */));
 
 	return checkResult(factor);

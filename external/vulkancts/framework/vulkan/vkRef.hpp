@@ -112,7 +112,7 @@ public:
 								: m_destroyInstance((DestroyInstanceFunc)DE_NULL)
 							{}
 
-	void					operator()	(VkInstance obj) const { m_destroyInstance(obj); }
+	void					operator()	(VkInstance obj) const { m_destroyInstance(obj, DE_NULL); }
 
 private:
 	DestroyInstanceFunc		m_destroyInstance;
@@ -129,7 +129,7 @@ public:
 								: m_destroyDevice((DestroyDeviceFunc)DE_NULL)
 							{}
 
-	void					operator()	(VkDevice obj) const { m_destroyDevice(obj); }
+	void					operator()	(VkDevice obj) const { m_destroyDevice(obj, DE_NULL); }
 
 private:
 	DestroyDeviceFunc		m_destroyDevice;
@@ -156,6 +156,29 @@ private:
 	const DeviceInterface*	m_deviceIface;
 	VkDevice				m_device;
 	VkDescriptorPool		m_pool;
+};
+
+template<>
+class Deleter<VkCommandBuffer>
+{
+public:
+							Deleter		(const DeviceInterface& deviceIface, VkDevice device, VkCommandPool pool)
+								: m_deviceIface	(&deviceIface)
+								, m_device		(device)
+								, m_pool		(pool)
+							{}
+							Deleter		(void)
+								: m_deviceIface	(DE_NULL)
+								, m_device		(DE_NULL)
+								, m_pool		(DE_NULL)
+							{}
+
+	void					operator()	(VkCommandBuffer obj) const { m_deviceIface->freeCommandBuffers(m_device, m_pool, 1, &obj); }
+
+private:
+	const DeviceInterface*	m_deviceIface;
+	VkDevice				m_device;
+	VkCommandPool			m_pool;
 };
 
 template<typename T>

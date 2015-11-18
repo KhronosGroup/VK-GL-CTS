@@ -112,19 +112,18 @@ private:
 		{
 			VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
 			DE_NULL,
+			m_testCase.flags,
 			size,
 			m_testCase.usage,
-			m_testCase.flags,
 			m_testCase.sharingMode,
 			1u,										//	deUint32			queueFamilyCount;
 			&queueFamilyIndex,
 		};
 
-		if (vk.createBuffer(vkDevice, &bufferParams, &testBuffer) != VK_SUCCESS)
+		if (vk.createBuffer(vkDevice, &bufferParams, (const VkAllocationCallbacks*)DE_NULL, &testBuffer) != VK_SUCCESS)
 			return tcu::TestStatus::fail("Buffer creation failed! (requested memory size: " + de::toString(size) + ")");
 
-		if (vk.getBufferMemoryRequirements(vkDevice, testBuffer, &memReqs) != VK_SUCCESS)
-			return tcu::TestStatus::fail("Getting buffer's memory requirements failed! (requested memory size: " + de::toString(size) + ")");
+		vk.getBufferMemoryRequirements(vkDevice, testBuffer, &memReqs);
 
 		if (size > memReqs.size)
 		{
@@ -136,30 +135,30 @@ private:
 
 	// Allocate and bind memory
 	{
-		VkMemoryAllocInfo memAlloc =
+		const VkMemoryAllocateInfo memAlloc =
 		{
-			VK_STRUCTURE_TYPE_MEMORY_ALLOC_INFO,
+			VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
 			NULL,
 			memReqs.size,
 			0										//	deUint32		memoryTypeIndex
 		};
 
-		if (vk.allocMemory(vkDevice, &memAlloc, &memory) != VK_SUCCESS)
+		if (vk.allocateMemory(vkDevice, &memAlloc, (const VkAllocationCallbacks*)DE_NULL, &memory) != VK_SUCCESS)
 			return tcu::TestStatus::fail("Alloc memory failed! (requested memory size: " + de::toString(size) + ")");
 
 		if (vk.bindBufferMemory(vkDevice, testBuffer, memory, 0) != VK_SUCCESS)
 			return tcu::TestStatus::fail("Bind buffer memory failed! (requested memory size: " + de::toString(size) + ")");
 	}
 
-	vk.freeMemory(vkDevice, memory);
-	vk.destroyBuffer(vkDevice, testBuffer);
+	vk.freeMemory(vkDevice, memory, (const VkAllocationCallbacks*)DE_NULL);
+	vk.destroyBuffer(vkDevice, testBuffer, (const VkAllocationCallbacks*)DE_NULL);
 
 	return tcu::TestStatus::pass("Buffer test");
 }
 
 tcu::TestStatus BufferTestInstance::iterate (void)
 {
-	static const VkDeviceSize testSizes[] =
+	const VkDeviceSize testSizes[] =
 	{
 		0,
 		1181,
@@ -180,10 +179,9 @@ tcu::TestStatus BufferTestInstance::iterate (void)
 		const InstanceInterface&	vkInstance			= m_context.getInstanceInterface();
 		VkPhysicalDeviceProperties	props;
 
-		if (vkInstance.getPhysicalDeviceProperties(vkPhysicalDevice, &props) != VK_SUCCESS)
-			return tcu::TestStatus::fail("Get physical device limits query failed!");
+		vkInstance.getPhysicalDeviceProperties(vkPhysicalDevice, &props);
 
-		testStatus = bufferCreateAndAllocTest(props.limits.maxTexelBufferSize);
+		testStatus = bufferCreateAndAllocTest(props.limits.maxTexelBufferElements);
 	}
 
 	return testStatus;
@@ -195,8 +193,8 @@ tcu::TestStatus BufferTestInstance::iterate (void)
 {
 	const VkBufferUsageFlags bufferUsageModes[] =
 	{
-		VK_BUFFER_USAGE_TRANSFER_SOURCE_BIT,
-		VK_BUFFER_USAGE_TRANSFER_DESTINATION_BIT,
+		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+		VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 		VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT,
 		VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT,
 		VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,

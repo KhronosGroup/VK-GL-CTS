@@ -93,7 +93,7 @@ private:
 class DescriptorSet
 {
 public:
-	DescriptorSet (VkDevice, VkDescriptorPool, VkDescriptorSetUsage, VkDescriptorSetLayout) {}
+	DescriptorSet (VkDevice, VkDescriptorPool, VkDescriptorSetLayout) {}
 };
 
 class Pipeline
@@ -106,7 +106,7 @@ public:
 class DeviceMemory
 {
 public:
-						DeviceMemory	(VkDevice, const VkMemoryAllocInfo* pAllocInfo)
+						DeviceMemory	(VkDevice, const VkMemoryAllocateInfo* pAllocInfo)
 							: m_memory(deMalloc((size_t)pAllocInfo->allocationSize))
 						{
 							if (!m_memory)
@@ -136,7 +136,13 @@ private:
 	const VkDeviceSize	m_size;
 };
 
-VK_NULL_DEFINE_DEVICE_OBJ(CmdBuffer);
+class CommandBuffer
+{
+public:
+						CommandBuffer(VkDevice, VkCommandPool, VkCommandBufferLevel)
+						{}
+};
+
 VK_NULL_DEFINE_DEVICE_OBJ(Fence);
 VK_NULL_DEFINE_DEVICE_OBJ(Image);
 VK_NULL_DEFINE_DEVICE_OBJ(Semaphore);
@@ -145,14 +151,13 @@ VK_NULL_DEFINE_DEVICE_OBJ(QueryPool);
 VK_NULL_DEFINE_DEVICE_OBJ(BufferView);
 VK_NULL_DEFINE_DEVICE_OBJ(ImageView);
 VK_NULL_DEFINE_DEVICE_OBJ(ShaderModule);
-VK_NULL_DEFINE_DEVICE_OBJ(Shader);
 VK_NULL_DEFINE_DEVICE_OBJ(PipelineCache);
 VK_NULL_DEFINE_DEVICE_OBJ(PipelineLayout);
 VK_NULL_DEFINE_DEVICE_OBJ(RenderPass);
 VK_NULL_DEFINE_DEVICE_OBJ(DescriptorSetLayout);
 VK_NULL_DEFINE_DEVICE_OBJ(Sampler);
 VK_NULL_DEFINE_DEVICE_OBJ(Framebuffer);
-VK_NULL_DEFINE_DEVICE_OBJ(CmdPool);
+VK_NULL_DEFINE_DEVICE_OBJ(CommandPool);
 VK_NULL_DEFINE_DEVICE_OBJ(DescriptorPool);
 
 extern "C"
@@ -168,14 +173,14 @@ PFN_vkVoidFunction getDeviceProcAddr (VkDevice device, const char* pName)
 	return reinterpret_cast<Device*>(device)->getProcAddr(pName);
 }
 
-VkResult createGraphicsPipelines (VkDevice device, VkPipelineCache, deUint32 count, const VkGraphicsPipelineCreateInfo* pCreateInfos, VkPipeline* pPipelines)
+VkResult createGraphicsPipelines (VkDevice device, VkPipelineCache, deUint32 count, const VkGraphicsPipelineCreateInfo* pCreateInfos, const VkAllocationCallbacks*, VkPipeline* pPipelines)
 {
 	for (deUint32 ndx = 0; ndx < count; ndx++)
 		pPipelines[ndx] = VkPipeline((deUint64)(deUintptr)new Pipeline(device, pCreateInfos+ndx));
 	return VK_SUCCESS;
 }
 
-VkResult createComputePipelines (VkDevice device, VkPipelineCache, deUint32 count, const VkComputePipelineCreateInfo* pCreateInfos, VkPipeline* pPipelines)
+VkResult createComputePipelines (VkDevice device, VkPipelineCache, deUint32 count, const VkComputePipelineCreateInfo* pCreateInfos, const VkAllocationCallbacks*, VkPipeline* pPipelines)
 {
 	for (deUint32 ndx = 0; ndx < count; ndx++)
 		pPipelines[ndx] = VkPipeline((deUint64)(deUintptr)new Pipeline(device, pCreateInfos+ndx));
@@ -214,8 +219,8 @@ VkResult getPhysicalDeviceQueueFamilyProperties (VkPhysicalDevice, deUint32* cou
 		deMemset(props, 0, sizeof(VkQueueFamilyProperties));
 
 		props->queueCount			= 1u;
-		props->queueFlags			= VK_QUEUE_GRAPHICS_BIT|VK_QUEUE_COMPUTE_BIT|VK_QUEUE_DMA_BIT;
-		props->supportsTimestamps	= DE_TRUE;
+		props->queueFlags			= VK_QUEUE_GRAPHICS_BIT|VK_QUEUE_COMPUTE_BIT;
+		props->timestampValidBits	= 64;
 	}
 
 	*count = 1u;
@@ -233,7 +238,7 @@ VkResult getPhysicalDeviceMemoryProperties (VkPhysicalDevice, VkPhysicalDeviceMe
 
 	props->memoryHeapCount				= 1u;
 	props->memoryHeaps[0].size			= 1ull << 31;
-	props->memoryHeaps[0].flags			= VK_MEMORY_HEAP_HOST_LOCAL_BIT;
+	props->memoryHeaps[0].flags			= 0u;
 
 	return VK_SUCCESS;
 }
@@ -250,8 +255,8 @@ VkResult getPhysicalDeviceFormatProperties (VkPhysicalDevice, VkFormat, VkFormat
 											| VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT
 											| VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT
 											| VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
-											| VK_FORMAT_FEATURE_BLIT_SOURCE_BIT
-											| VK_FORMAT_FEATURE_BLIT_DESTINATION_BIT;
+											| VK_FORMAT_FEATURE_BLIT_SRC_BIT
+											| VK_FORMAT_FEATURE_BLIT_DST_BIT;
 
 	pFormatProperties->linearTilingFeatures		= allFeatures;
 	pFormatProperties->optimalTilingFeatures	= allFeatures;
@@ -292,13 +297,13 @@ VkResult mapMemory (VkDevice, VkDeviceMemory memHandle, VkDeviceSize offset, VkD
 	return VK_SUCCESS;
 }
 
-VkResult allocDescriptorSets (VkDevice device, VkDescriptorPool descriptorPool, VkDescriptorSetUsage setUsage, deUint32 count, const VkDescriptorSetLayout* pSetLayouts, VkDescriptorSet* pDescriptorSets)
+VkResult allocateDescriptorSets (VkDevice device, const VkDescriptorSetAllocateInfo* pAllocateInfo, VkDescriptorSet* pDescriptorSets)
 {
-	for (deUint32 ndx = 0; ndx < count; ++ndx)
+	for (deUint32 ndx = 0; ndx < pAllocateInfo->setLayoutCount; ++ndx)
 	{
 		try
 		{
-			pDescriptorSets[ndx] = VkDescriptorSet((deUint64)(deUintptr)new DescriptorSet(device, descriptorPool, setUsage, pSetLayouts[ndx]));
+			pDescriptorSets[ndx] = VkDescriptorSet((deUint64)(deUintptr)new DescriptorSet(device, pAllocateInfo->descriptorPool, pAllocateInfo->pSetLayouts[ndx]));
 		}
 		catch (const std::bad_alloc&)
 		{
@@ -326,6 +331,28 @@ void freeDescriptorSets (VkDevice, VkDescriptorPool, deUint32 count, const VkDes
 		// \note: delete cannot fail
 		delete reinterpret_cast<DescriptorSet*>((deUintptr)pDescriptorSets[ndx].getInternal());
 	}
+}
+
+VkResult allocateCommandBuffers (VkDevice device, const VkCommandBufferAllocateInfo* pAllocateInfo, VkCommandBuffer* pCommandBuffers)
+{
+	if (pAllocateInfo && pCommandBuffers)
+	{
+		for (deUint32 ndx = 0; ndx < pAllocateInfo->bufferCount; ++ndx)
+		{
+			pCommandBuffers[ndx] = reinterpret_cast<VkCommandBuffer>(new CommandBuffer(device, pAllocateInfo->commandPool, pAllocateInfo->level));
+		}
+	}
+
+	return VK_SUCCESS;
+}
+
+void freeCommandBuffers (VkDevice device, VkCommandPool commandPool, deUint32 commandBufferCount, const VkCommandBuffer* pCommandBuffers)
+{
+	DE_UNREF(device);
+	DE_UNREF(commandPool);
+
+	for (deUint32 ndx = 0; ndx < commandBufferCount; ++ndx)
+		delete reinterpret_cast<CommandBuffer*>(pCommandBuffers[ndx]);
 }
 
 #include "vkNullDriverImpl.inl"

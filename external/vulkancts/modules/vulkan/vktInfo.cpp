@@ -157,7 +157,7 @@ tcu::TestStatus deviceFeatures (Context& context)
 
 	deMemset(&features, 0, sizeof(features));
 
-	VK_CHECK(context.getInstanceInterface().getPhysicalDeviceFeatures(context.getPhysicalDevice(), &features));
+	context.getInstanceInterface().getPhysicalDeviceFeatures(context.getPhysicalDevice(), &features);
 
 	log << TestLog::Message << "device = " << context.getPhysicalDevice() << TestLog::EndMessage
 		<< TestLog::Message << features << TestLog::EndMessage;
@@ -172,7 +172,7 @@ tcu::TestStatus deviceProperties (Context& context)
 
 	deMemset(&props, 0, sizeof(props));
 
-	VK_CHECK(context.getInstanceInterface().getPhysicalDeviceProperties(context.getPhysicalDevice(), &props));
+	context.getInstanceInterface().getPhysicalDeviceProperties(context.getPhysicalDevice(), &props);
 
 	log << TestLog::Message << "device = " << context.getPhysicalDevice() << TestLog::EndMessage
 		<< TestLog::Message << props << TestLog::EndMessage;

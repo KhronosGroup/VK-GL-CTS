@@ -185,8 +185,8 @@ ProgramBinary*			buildProgram		(const glu::ProgramSources& program, ProgramForma
 ProgramBinary*			assembleProgram		(const vk::SpirVAsmSource& program, SpirVProgramInfo* buildInfo);
 Move<VkShaderModule>	createShaderModule	(const DeviceInterface& deviceInterface, VkDevice device, const ProgramBinary& binary, VkShaderModuleCreateFlags flags);
 
-glu::ShaderType			getGluShaderType	(VkShaderStage shaderStage);
-VkShaderStage			getVkShaderStage	(glu::ShaderType shaderType);
+glu::ShaderType			getGluShaderType	(VkShaderStageFlagBits shaderStage);
+VkShaderStageFlagBits	getVkShaderStage	(glu::ShaderType shaderType);
 
 } // vk
 

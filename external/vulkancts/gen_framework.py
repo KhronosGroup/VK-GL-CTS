@@ -72,14 +72,12 @@ INSTANCE_FUNCTIONS	= [
 
 DEFINITIONS			= [
 	"VK_API_VERSION",
-	"VK_MAX_PHYSICAL_DEVICE_NAME",
-	"VK_MAX_EXTENSION_NAME",
-	"VK_UUID_LENGTH",
+	"VK_MAX_PHYSICAL_DEVICE_NAME_SIZE",
+	"VK_MAX_EXTENSION_NAME_SIZE",
+	"VK_UUID_SIZE",
 	"VK_MAX_MEMORY_TYPES",
 	"VK_MAX_MEMORY_HEAPS",
-	"VK_MAX_DESCRIPTION",
-	"VK_FALSE",
-	"VK_TRUE",
+	"VK_MAX_DESCRIPTION_SIZE",
 	"VK_ATTACHMENT_UNUSED",
 ]
 
@@ -92,8 +90,8 @@ class Handle:
 		self.name	= name
 
 	def getHandleType (self):
-		name = re.sub(r'([A-Z])', r'_\1', self.name)
-		return "HANDLE_TYPE_" + name[4:].upper()
+		name = re.sub(r'([a-z])([A-Z])', r'\1_\2', self.name)
+		return "HANDLE_TYPE_" + name[3:].upper()
 
 class Enum:
 	def __init__ (self, name, values):
@@ -203,12 +201,24 @@ def getFunctionTypeName (function):
 	return function.name[2:] + "Func"
 
 def getBitEnumNameForBitfield (bitfieldName):
+	if bitfieldName[-3:] == "KHR":
+		postfix = "KHR"
+		bitfieldName = bitfieldName[:-3]
+	else:
+		postfix = ""
+
 	assert bitfieldName[-1] == "s"
-	return bitfieldName[:-1] + "Bits"
+	return bitfieldName[:-1] + "Bits" + postfix
 
 def getBitfieldNameForBitEnum (bitEnumName):
+	if bitEnumName[-3:] == "KHR":
+		postfix = "KHR"
+		bitEnumName = bitEnumName[:-3]
+	else:
+		postfix = ""
+
 	assert bitEnumName[-4:] == "Bits"
-	return bitEnumName[:-4] + "s"
+	return bitEnumName[:-4] + "s" + postfix
 
 def parsePreprocDefinedValue (src, name):
 	definition = re.search(r'#\s*define\s+' + name + r'\s+([^\n]+)\n', src)
@@ -229,11 +239,11 @@ def parseEnum (name, src):
 
 # \note Parses raw enums, some are mapped to bitfields later
 def parseEnums (src):
-	matches	= re.findall(r'typedef enum\s*{([^}]*)}\s*(' + IDENT_PTRN + r')\s*;', src)
+	matches	= re.findall(r'typedef enum(\s*' + IDENT_PTRN + r')?\s*{([^}]*)}\s*(' + IDENT_PTRN + r')\s*;', src)
 	enums	= []
 
-	for contents, name in matches:
-		enums.append(parseEnum(name, contents))
+	for enumname, contents, typename in matches:
+		enums.append(parseEnum(typename, contents))
 
 	return enums
 
@@ -247,18 +257,18 @@ def parseCompositeType (type, name, src):
 
 def parseCompositeTypes (src):
 	typeMap	= { 'struct': CompositeType.CLASS_STRUCT, 'union': CompositeType.CLASS_UNION }
-	matches	= re.findall(r'typedef (struct|union)\s*{([^}]*)}\s*(' + IDENT_PTRN + r')\s*;', src)
+	matches	= re.findall(r'typedef (struct|union)(\s*' + IDENT_PTRN + r')?\s*{([^}]*)}\s*(' + IDENT_PTRN + r')\s*;', src)
 	types	= []
 
-	for type, contents, name in matches:
-		types.append(parseCompositeType(typeMap[type], name, contents))
+	for type, structname, contents, typename in matches:
+		types.append(parseCompositeType(typeMap[type], typename, contents))
 
 	return types
 
 def parseHandles (src):
-	matches	= re.findall(r'VK_DEFINE(_NONDISP|)_HANDLE\((' + IDENT_PTRN + r')\)[ \t]*[\n\r]', src)
+	matches	= re.findall(r'VK_DEFINE(_NON_DISPATCHABLE|)_HANDLE\((' + IDENT_PTRN + r')\)[ \t]*[\n\r]', src)
 	handles	= []
-	typeMap	= {'': Handle.TYPE_DISP, '_NONDISP': Handle.TYPE_NONDISP}
+	typeMap	= {'': Handle.TYPE_DISP, '_NON_DISPATCHABLE': Handle.TYPE_NONDISP}
 
 	for type, name in matches:
 		handle = Handle(typeMap[type], name)
@@ -277,11 +287,14 @@ def parseArgList (src):
 	return args
 
 def parseFunctions (src):
-	ptrn		= r'(' + TYPE_PTRN + ')VKAPI\s+(' + IDENT_PTRN + r')\s*\(([^)]*)\)\s*;'
+	ptrn		= r'VKAPI_ATTR\s+(' + TYPE_PTRN + ')VKAPI_CALL\s+(' + IDENT_PTRN + r')\s*\(([^)]*)\)\s*;'
 	matches		= re.findall(ptrn, src)
 	functions	= []
 
 	for returnType, name, argList in matches:
+		if name[-3:] == "KHR":
+			continue # \todo [2015-11-16 pyry] Figure out how to handle platform-specific extension functions
+
 		functions.append(Function(name.strip(), returnType.strip(), parseArgList(argList)))
 
 	return [fixupFunction(f) for f in functions]
@@ -305,6 +318,11 @@ def parseAPI (src):
 			bitfields.append(Bitfield(getBitfieldNameForBitEnum(enum.name), enum.values))
 		else:
 			enums.append(enum)
+
+	for bitfieldName in bitfieldNames:
+		if not bitfieldName in [bitfield.name for bitfield in bitfields]:
+			# Add empty bitfield
+			bitfields.append(Bitfield(bitfieldName, []))
 
 	return API(
 		definitions		= definitions,
@@ -335,10 +353,16 @@ def getEnumValuePrefix (enum):
 		prefix += enum.name[i].upper()
 	return prefix
 
+def parseInt (value):
+	if value[:2] == "0x":
+		return int(value, 16)
+	else:
+		return int(value, 10)
+
 def areEnumValuesLinear (enum):
 	curIndex = 0
 	for name, value in enum.values:
-		if int(value) != curIndex:
+		if parseInt(value) != curIndex:
 			return False
 		curIndex += 1
 	return True
@@ -357,11 +381,13 @@ def genEnumSrc (enum):
 	yield "};"
 
 def genBitfieldSrc (bitfield):
-	yield "enum %s" % getBitEnumNameForBitfield(bitfield.name)
-	yield "{"
-	for line in indentLines(["\t%s\t= %s," % v for v in bitfield.values]):
-		yield line
-	yield "};"
+	if len(bitfield.values) > 0:
+		yield "enum %s" % getBitEnumNameForBitfield(bitfield.name)
+		yield "{"
+		for line in indentLines(["\t%s\t= %s," % v for v in bitfield.values]):
+			yield line
+		yield "};"
+
 	yield "typedef deUint32 %s;" % bitfield.name
 
 def genCompositeTypeSrc (type):
@@ -377,7 +403,7 @@ def genHandlesSrc (handles):
 			if handle.type == Handle.TYPE_DISP:
 				yield "VK_DEFINE_HANDLE\t(%s,\t%s);" % (handle.name, handle.getHandleType())
 			elif handle.type == Handle.TYPE_NONDISP:
-				yield "VK_DEFINE_NONDISP_HANDLE\t(%s,\t%s);" % (handle.name, handle.getHandleType())
+				yield "VK_DEFINE_NON_DISPATCHABLE_HANDLE\t(%s,\t%s);" % (handle.name, handle.getHandleType())
 
 	for line in indentLines(genLines(handles)):
 		yield line
@@ -425,7 +451,7 @@ def writeInterfaceDecl (api, filename, functionTypes, concrete):
 def writeFunctionPtrTypes (api, filename):
 	def genTypes ():
 		for function in api.functions:
-			yield "typedef VK_APICALL %s\t(VK_APIENTRY* %s)\t(%s);" % (function.returnType, getFunctionTypeName(function), argListToStr(function.arguments))
+			yield "typedef VKAPI_ATTR %s\t(VKAPI_CALL* %s)\t(%s);" % (function.returnType, getFunctionTypeName(function), argListToStr(function.arguments))
 
 	writeInlFile(filename, INL_HEADER, indentLines(genTypes()))
 
@@ -491,12 +517,17 @@ def writeStrUtilImpl (api, filename):
 			yield ""
 			yield "tcu::Format::Bitfield<32> get%sStr (%s value)" % (bitfield.name[2:], bitfield.name)
 			yield "{"
-			yield "\tstatic const tcu::Format::BitDesc s_desc[] ="
-			yield "\t{"
-			for line in indentLines(["\t\ttcu::Format::BitDesc(%s,\t\"%s\")," % (n, n) for n, v in bitfield.values]):
-				yield line
-			yield "\t};"
-			yield "\treturn tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));"
+
+			if len(bitfield.values) > 0:
+				yield "\tstatic const tcu::Format::BitDesc s_desc[] ="
+				yield "\t{"
+				for line in indentLines(["\t\ttcu::Format::BitDesc(%s,\t\"%s\")," % (n, n) for n, v in bitfield.values]):
+					yield line
+				yield "\t};"
+				yield "\treturn tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));"
+			else:
+				yield "\treturn tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);"
+
 			yield "}"
 
 		bitfieldTypeNames = set([bitfield.name for bitfield in api.bitfields])
@@ -546,7 +577,7 @@ class ConstructorFunction:
 def getConstructorFunctions (api):
 	funcs = []
 	for function in api.functions:
-		if (function.name[:8] == "vkCreate" or function.name == "vkAllocMemory") and not "count" in [a.name for a in function.arguments]:
+		if (function.name[:8] == "vkCreate" or function.name == "vkAllocateMemory") and not "count" in [a.name for a in function.arguments]:
 			# \todo [pyry] Rather hacky
 			iface = None
 			if function.getType() == Function.TYPE_PLATFORM:
@@ -555,8 +586,11 @@ def getConstructorFunctions (api):
 				iface = Variable("const InstanceInterface&", "vk")
 			else:
 				iface = Variable("const DeviceInterface&", "vk")
+
+			assert function.arguments[-2].type == "const VkAllocationCallbacks*"
+
 			objectType	= function.arguments[-1].type.replace("*", "").strip()
-			arguments	= function.arguments[:-1]
+			arguments	= function.arguments[:-2]
 			funcs.append(ConstructorFunction(function.getType(), getInterfaceName(function), objectType, iface, arguments))
 	return funcs
 
@@ -582,11 +616,11 @@ def writeRefUtilImpl (api, filename):
 			if function.getType() == Function.TYPE_DEVICE \
 			   and (function.name[:9] == "vkDestroy" or function.name == "vkFreeMemory") \
 			   and not function.name == "vkDestroyDevice":
-				objectType = function.arguments[-1].type
+				objectType = function.arguments[-2].type
 				yield "template<>"
 				yield "void Deleter<%s>::operator() (%s obj) const" % (objectType, objectType)
 				yield "{"
-				yield "\tm_deviceIface->%s(m_device, obj);" % (getInterfaceName(function))
+				yield "\tm_deviceIface->%s(m_device, obj, DE_NULL);" % (getInterfaceName(function))
 				yield "}"
 				yield ""
 
@@ -599,7 +633,7 @@ def writeRefUtilImpl (api, filename):
 			yield "Move<%s> %s (%s)" % (function.objectType, function.name, argListToStr([function.iface] + function.arguments))
 			yield "{"
 			yield "\t%s object = 0;" % function.objectType
-			yield "\tVK_CHECK(vk.%s(%s));" % (function.name, ", ".join([a.name for a in function.arguments] + ["&object"]))
+			yield "\tVK_CHECK(vk.%s(%s));" % (function.name, ", ".join([a.name for a in function.arguments] + ["DE_NULL", "&object"]))
 			yield "\treturn Move<%s>(check<%s>(object), Deleter<%s>(vk, %s));" % (function.objectType, function.objectType, function.objectType, dtorObj)
 			yield "}"
 			yield ""
@@ -621,11 +655,13 @@ def writeNullDriverImpl (api, filename):
 				"vkGetBufferMemoryRequirements",
 				"vkGetImageMemoryRequirements",
 				"vkMapMemory",
-				"vkAllocDescriptorSets",
+				"vkAllocateDescriptorSets",
 				"vkFreeDescriptorSets",
+				"vkAllocateCommandBuffers",
+				"vkFreeCommandBuffers"
 			]
 		specialFuncs		= [f for f in api.functions if f.name in specialFuncNames]
-		createFuncs			= [f for f in api.functions if (f.name[:8] == "vkCreate" or f.name == "vkAllocMemory") and not f in specialFuncs]
+		createFuncs			= [f for f in api.functions if (f.name[:8] == "vkCreate" or f.name == "vkAllocateMemory") and not f in specialFuncs]
 		destroyFuncs		= [f for f in api.functions if (f.name[:9] == "vkDestroy" or f.name == "vkFreeMemory") and not f in specialFuncs]
 		dummyFuncs			= [f for f in api.functions if f not in specialFuncs + createFuncs + destroyFuncs]
 
@@ -637,10 +673,11 @@ def writeNullDriverImpl (api, filename):
 
 		for function in createFuncs:
 			objectType	= function.arguments[-1].type.replace("*", "").strip()
-			argsStr		= ", ".join([a.name for a in function.arguments[:-1]])
+			argsStr		= ", ".join([a.name for a in function.arguments[:-2]])
 
 			yield "%s %s (%s)" % (function.returnType, getInterfaceName(function), argListToStr(function.arguments))
 			yield "{"
+			yield "\tDE_UNREF(%s);" % function.arguments[-2].name
 
 			if getHandle(objectType).type == Handle.TYPE_NONDISP:
 				yield "\tVK_NULL_RETURN(*%s = %s((deUint64)(deUintptr)new %s(%s)));" % (function.arguments[-1].name, objectType, objectType[2:], argsStr)
@@ -651,15 +688,18 @@ def writeNullDriverImpl (api, filename):
 			yield ""
 
 		for function in destroyFuncs:
+			objectArg	= function.arguments[-2]
+
 			yield "%s %s (%s)" % (function.returnType, getInterfaceName(function), argListToStr(function.arguments))
 			yield "{"
-			for arg in function.arguments[:-1]:
+			for arg in function.arguments[:-2]:
 				yield "\tDE_UNREF(%s);" % arg.name
+			yield "\tDE_UNREF(%s);" % function.arguments[-1].name
 
-			if getHandle(function.arguments[-1].type).type == Handle.TYPE_NONDISP:
-				yield "\tdelete reinterpret_cast<%s*>((deUintptr)%s.getInternal());" % (function.arguments[-1].type[2:], function.arguments[-1].name)
+			if getHandle(objectArg.type).type == Handle.TYPE_NONDISP:
+				yield "\tdelete reinterpret_cast<%s*>((deUintptr)%s.getInternal());" % (objectArg.type[2:], objectArg.name)
 			else:
-				yield "\tdelete reinterpret_cast<%s*>(%s);" % (function.arguments[-1].type[2:], function.arguments[-1].name)
+				yield "\tdelete reinterpret_cast<%s*>(%s);" % (objectArg.type[2:], objectArg.name)
 
 			yield "}"
 			yield ""

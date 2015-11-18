@@ -73,14 +73,14 @@ namespace
 Move<VkDeviceMemory> allocMemory (const DeviceInterface& vk, VkDevice device, VkDeviceSize pAllocInfo_allocationSize, deUint32 pAllocInfo_memoryTypeIndex)
 {
 	VkDeviceMemory object = 0;
-	const VkMemoryAllocInfo pAllocInfo =
+	const VkMemoryAllocateInfo pAllocInfo =
 	{
-		VK_STRUCTURE_TYPE_MEMORY_ALLOC_INFO,
+		VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
 		DE_NULL,
 		pAllocInfo_allocationSize,
 		pAllocInfo_memoryTypeIndex,
 	};
-	VK_CHECK(vk.allocMemory(device, &pAllocInfo, &object));
+	VK_CHECK(vk.allocateMemory(device, &pAllocInfo, (const VkAllocationCallbacks*)DE_NULL, &object));
 	return Move<VkDeviceMemory>(check<VkDeviceMemory>(object), Deleter<VkDeviceMemory>(vk, device));
 }
 
@@ -324,8 +324,8 @@ private:
 };
 
 MemoryMapping::MemoryMapping (const MemoryRange&	range,
-							  void*				ptr,
-							  deUint16*			refPtr)
+							  void*					ptr,
+							  deUint16*				refPtr)
 	: m_range	(range)
 	, m_ptr		(ptr)
 	, m_refPtr	(refPtr)
