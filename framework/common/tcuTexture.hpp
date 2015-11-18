@@ -181,6 +181,7 @@ public:
 		REPEAT_CL,			//! Repeat with OpenCL semantics
 		MIRRORED_REPEAT_GL,	//! Mirrored repeat with OpenGL semantics
 		MIRRORED_REPEAT_CL, //! Mirrored repeat with OpenCL semantics
+		MIRRORED_ONCE,		//! Mirrored once in negative directions
 
 		WRAPMODE_LAST
 	};

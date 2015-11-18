@@ -270,6 +270,38 @@ void ReferenceRenderer::draw (const rr::RenderState&			renderState,
 	m_renderer.draw(drawQuadCommand);
 }
 
+void ReferenceRenderer::draw (const rr::RenderState&			renderState,
+							  const rr::PrimitiveType			primitive,
+							  const std::vector<Vertex4Tex4>&	vertexBuffer)
+{
+	const rr::PrimitiveList primitives(primitive, (int)vertexBuffer.size(), 0);
+
+	std::vector<tcu::Vec4> positions;
+	std::vector<tcu::Vec4> texCoords;
+
+	for (size_t vertexNdx = 0; vertexNdx < vertexBuffer.size(); vertexNdx++)
+	{
+		const Vertex4Tex4& v = vertexBuffer[vertexNdx];
+		positions.push_back(v.position);
+		texCoords.push_back(v.texCoord);
+	}
+
+	rr::VertexAttrib vertexAttribs[2];
+
+	// Position attribute
+	vertexAttribs[0].type		= rr::VERTEXATTRIBTYPE_FLOAT;
+	vertexAttribs[0].size		= 4;
+	vertexAttribs[0].pointer	= positions.data();
+	// UV attribute
+	vertexAttribs[1].type		= rr::VERTEXATTRIBTYPE_FLOAT;
+	vertexAttribs[1].size		= 4;
+	vertexAttribs[1].pointer	= texCoords.data();
+
+	rr::DrawCommand drawQuadCommand(renderState, *m_renderTarget, *m_program, 2, vertexAttribs, primitives);
+
+	m_renderer.draw(drawQuadCommand);
+}
+
 tcu::PixelBufferAccess ReferenceRenderer::getAccess (void)
 {
 	rr::MultisampleConstPixelBufferAccess multiSampleAccess = rr::MultisampleConstPixelBufferAccess::fromMultisampleAccess(m_colorBuffer.getAccess());

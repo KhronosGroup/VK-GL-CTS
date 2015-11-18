@@ -53,12 +53,19 @@ bool						isCompressedFormat		(VkFormat format);
 
 tcu::TextureFormat			mapVkFormat				(VkFormat format);
 tcu::CompressedTexFormat	mapVkCompressedFormat	(VkFormat format);
+tcu::Sampler				mapVkSampler			(const vk::VkSamplerCreateInfo& samplerCreateInfo);
+tcu::Sampler::CompareMode	mapVkSamplerCompareOp	(vk::VkCompareOp compareOp);
+tcu::Sampler::WrapMode		mapVkAddressMode		(vk::VkTexAddressMode addressMode);
+tcu::Sampler::FilterMode	mapVkMinTexFilter		(vk::VkTexFilter filter, vk::VkTexMipmapMode mipMode);
+tcu::Sampler::FilterMode	mapVkMagTexFilter		(vk::VkTexFilter filter);
+int							mapVkChannelSwizzle		(const vk::VkChannelSwizzle& channelSwizzle);
+tcu::UVec4					mapVkChannelMapping		(const vk::VkChannelMapping& mapping);
+
 VkChannelMapping			getFormatChannelMapping	(VkFormat format);
 VkTexFilter					mapFilterMode			(tcu::Sampler::FilterMode filterMode);
 VkTexMipmapMode				mapMipmapMode			(tcu::Sampler::FilterMode filterMode);
 VkTexAddressMode			mapWrapMode				(tcu::Sampler::WrapMode wrapMode);
 VkCompareOp					mapCompareMode			(tcu::Sampler::CompareMode mode);
-
 VkFormat					mapTextureFormat		(const tcu::TextureFormat& format);
 
 void						imageUtilSelfTest		(void);
