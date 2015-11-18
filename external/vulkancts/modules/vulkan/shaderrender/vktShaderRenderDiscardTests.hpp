@@ -1,5 +1,5 @@
 #ifndef _VKTSHADERRENDERDISCARDTESTS_HPP
-#define _VKTSHADERREMDERDISCARDTESTS_HPP
+#define _VKTSHADERRENDERDISCARDTESTS_HPP
 /*------------------------------------------------------------------------
  * Vulkan Conformance Tests
  * ------------------------

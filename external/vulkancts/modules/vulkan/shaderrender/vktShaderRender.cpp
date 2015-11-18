@@ -53,6 +53,7 @@
 #include "vkRef.hpp"
 #include "vkRefUtil.hpp"
 #include "vkStrUtil.hpp"
+#include "vkTypeUtil.hpp"
 
 #include <vector>
 #include <string>
@@ -1536,23 +1537,20 @@ void ShaderRenderCaseInstance::render (tcu::Surface& result, const QuadGrid& qua
 			DE_NULL										// VkFramebuffer			framebuffer;
 		};
 
-		const VkClearValue								clearValues					=
-		{
-			m_clearColor.x(),
-			m_clearColor.y(),
-			m_clearColor.z(),
-			m_clearColor.w(),
-		};
+		const VkClearValue								clearValues					= makeClearValueColorF32(m_clearColor.x(),
+																											 m_clearColor.y(),
+																											 m_clearColor.z(),
+																											 m_clearColor.w());
 
 		const VkRenderPassBeginInfo						renderPassBeginInfo			=
 		{
-			VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO	,	// VkStructureType		sType;
-			DE_NULL,										// const void*			pNext;
-			*m_renderPass,									// VkRenderPass			renderPass;
-			*m_framebuffer,									// VkFramebuffer		framebuffer;
-			{ 0, 0, m_renderSize.x(), m_renderSize.y() },	// VkRect2D				renderArea;
-			1,												// deUint32				clearValueCount;
-			&clearValues,									// const VkClearValue*	pClearValues;
+			VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,				// VkStructureType		sType;
+			DE_NULL,												// const void*			pNext;
+			*m_renderPass,											// VkRenderPass			renderPass;
+			*m_framebuffer,											// VkFramebuffer		framebuffer;
+			{ { 0, 0 },  {m_renderSize.x(), m_renderSize.y() } },	// VkRect2D				renderArea;
+			1,														// deUint32				clearValueCount;
+			&clearValues,											// const VkClearValue*	pClearValues;
 		};
 
 		m_cmdBuffer = createCommandBuffer(vk, vkDevice, &cmdBufferParams);

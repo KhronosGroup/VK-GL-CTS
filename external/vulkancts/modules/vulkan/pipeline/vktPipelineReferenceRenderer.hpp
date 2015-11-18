@@ -51,23 +51,7 @@ namespace vkt
 namespace pipeline
 {
 
-static tcu::Vec4 swizzle (const tcu::Vec4& color, const tcu::UVec4& swizzle)
-{
-	const float channelValues[] =
-	{
-		0.0f,
-		1.0f,
-		color.x(),
-		color.y(),
-		color.z(),
-		color.w()
-	};
-
-	return tcu::Vec4(channelValues[swizzle.x()],
-					 channelValues[swizzle.y()],
-					 channelValues[swizzle.z()],
-					 channelValues[swizzle.w()]);
-}
+tcu::Vec4	swizzle		(const tcu::Vec4& color, const tcu::UVec4& swizzle);
 
 class ColorVertexShader : public rr::VertexShader
 {
