@@ -1,9 +1,11 @@
+#ifndef _VKTSHADERRENDERDISCARDTESTS_HPP
+#define _VKTSHADERRENDERDISCARDTESTS_HPP
 /*------------------------------------------------------------------------
  * Vulkan Conformance Tests
  * ------------------------
  *
  * Copyright (c) 2015 The Khronos Group Inc.
- * Copyright (c) 2015 Imagination Technologies Ltd.
+ * Copyright (c) 2015 Samsung Electronics Co., Ltd.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and/or associated documentation files (the
@@ -30,36 +32,30 @@
  *
  *//*!
  * \file
- * \brief Pipeline Tests
+ * \brief Shader discard statement tests.
  *//*--------------------------------------------------------------------*/
 
-#include "vktPipelineTests.hpp"
-#include "vktPipelineStencilTests.hpp"
-#include "vktPipelineBlendTests.hpp"
-#include "vktPipelineDepthTests.hpp"
-#include "vktPipelineImageTests.hpp"
-#include "vktPipelineSamplerTests.hpp"
-#include "vktPipelineImageViewTests.hpp"
-#include "deUniquePtr.hpp"
+#include "vktShaderRender.hpp"
 
 namespace vkt
 {
-namespace pipeline
+namespace sr
 {
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+class ShaderDiscardTests : public tcu::TestCaseGroup
 {
-	de::MovePtr<tcu::TestCaseGroup> pipelineTests (new tcu::TestCaseGroup(testCtx, "pipeline", "Pipeline Tests"));
+public:
+							ShaderDiscardTests		(tcu::TestContext& textCtx);
+	virtual					~ShaderDiscardTests		(void);
 
-	pipelineTests->addChild(createStencilTests(testCtx));
-	pipelineTests->addChild(createBlendTests(testCtx));
-	pipelineTests->addChild(createDepthTests(testCtx));
-	pipelineTests->addChild(createImageTests(testCtx));
-	pipelineTests->addChild(createSamplerTests(testCtx));
-	pipelineTests->addChild(createImageViewTests(testCtx));
+	virtual void			init					(void);
 
-	return pipelineTests.release();
-}
+private:
+							ShaderDiscardTests		(const ShaderDiscardTests&);		// not allowed!
+	ShaderDiscardTests&		operator=				(const ShaderDiscardTests&);		// not allowed!
+};
 
-} // pipeline
+} // sr
 } // vkt
+
+#endif // _VKTSHADERRENDERDISCARDTESTS_HPP

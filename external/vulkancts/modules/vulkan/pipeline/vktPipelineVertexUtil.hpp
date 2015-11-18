@@ -35,6 +35,7 @@
  * \brief Utilities for vertex buffers.
  *//*--------------------------------------------------------------------*/
 
+#include "vkDefs.hpp"
 #include "tcuDefs.hpp"
 #include "tcuVectorUtil.hpp"
 
@@ -51,13 +52,26 @@ struct Vertex4RGBA
 	tcu::Vec4 color;
 };
 
+struct Vertex4Tex4
+{
+	tcu::Vec4 position;
+	tcu::Vec4 texCoord;
+};
+
 /*! \brief Creates a pattern of 4 overlapping quads.
  *
  *  The quads are alined along the plane Z = 0, with X,Y taking values between -1 and 1.
  *  Each quad covers one of the quadrants of the scene and partially extends to the other 3 quadrants.
  *  The triangles of each quad have different winding orders (CW/CCW).
  */
-std::vector<Vertex4RGBA> createOverlappingQuads (void);
+std::vector<Vertex4RGBA>	createOverlappingQuads		(void);
+
+std::vector<Vertex4Tex4>	createFullscreenQuad		(void);
+std::vector<Vertex4Tex4>	createQuadMosaic			(int rows, int columns);
+std::vector<Vertex4Tex4>	createQuadMosaicCube		(void);
+std::vector<Vertex4Tex4>	createQuadMosaicCubeArray	(int faceArrayIndices[6]);
+
+std::vector<Vertex4Tex4>	createTestQuadMosaic		(vk::VkImageViewType viewType);
 
 } // pipeline
 } // vkt

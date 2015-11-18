@@ -43,8 +43,17 @@ deUint64 deGetMicroseconds (void)
 	QueryPerformanceFrequency(&freq);
 	DE_ASSERT(freq.LowPart != 0 || freq.HighPart != 0);
 	/* \todo [2010-03-26 kalle] consider adding a 32bit-friendly implementation */
-	DE_ASSERT(freq.QuadPart >= 1000000);
-	return count.QuadPart / (freq.QuadPart / 1000000);
+
+	if (count.QuadPart < MAXLONGLONG / 1000000)
+	{
+		DE_ASSERT(freq.QuadPart != 0);
+		return count.QuadPart * 1000000 / freq.QuadPart;
+	}
+	else
+	{
+		DE_ASSERT(freq.QuadPart >= 1000000);
+		return count.QuadPart / (freq.QuadPart / 1000000);
+	}
 
 #elif (DE_OS == DE_OS_UNIX) || (DE_OS == DE_OS_ANDROID)
 	struct timespec currTime;

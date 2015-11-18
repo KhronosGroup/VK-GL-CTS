@@ -10,10 +10,18 @@ set(DEQP_VK_PIPELINE_SRCS
 	vktPipelineClearUtil.hpp
 	vktPipelineDepthTests.cpp
 	vktPipelineDepthTests.hpp
+	vktPipelineImageSamplingInstance.cpp
+	vktPipelineImageSamplingInstance.hpp
+	vktPipelineImageTests.cpp
+	vktPipelineImageTests.hpp
 	vktPipelineImageUtil.cpp
 	vktPipelineImageUtil.hpp
+	vktPipelineImageViewTests.cpp
+	vktPipelineImageViewTests.hpp
 	vktPipelineReferenceRenderer.cpp
 	vktPipelineReferenceRenderer.hpp
+	vktPipelineSamplerTests.cpp
+	vktPipelineSamplerTests.hpp
 	vktPipelineStencilTests.cpp
 	vktPipelineStencilTests.hpp
 	vktPipelineTests.cpp

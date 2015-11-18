@@ -626,4 +626,230 @@ void imageUtilSelfTest (void)
 	}
 }
 
+VkTexFilter mapFilterMode (tcu::Sampler::FilterMode filterMode)
+{
+	DE_STATIC_ASSERT(tcu::Sampler::FILTERMODE_LAST == 6);
+
+	switch(filterMode)
+	{
+		case tcu::Sampler::NEAREST:					return VK_TEX_FILTER_NEAREST;
+		case tcu::Sampler::LINEAR:					return VK_TEX_FILTER_LINEAR;
+		case tcu::Sampler::NEAREST_MIPMAP_NEAREST:	return VK_TEX_FILTER_NEAREST;
+		case tcu::Sampler::NEAREST_MIPMAP_LINEAR:	return VK_TEX_FILTER_NEAREST;
+		case tcu::Sampler::LINEAR_MIPMAP_NEAREST:	return VK_TEX_FILTER_LINEAR;
+		case tcu::Sampler::LINEAR_MIPMAP_LINEAR:	return VK_TEX_FILTER_LINEAR;
+		default:
+			DE_FATAL("Illegal filter mode");
+			return (VkTexFilter)0;
+
+	}
+}
+
+VkTexMipmapMode mapMipmapMode (tcu::Sampler::FilterMode filterMode)
+{
+	DE_STATIC_ASSERT(tcu::Sampler::FILTERMODE_LAST == 6);
+
+	switch(filterMode)
+	{
+		case tcu::Sampler::NEAREST:					return VK_TEX_MIPMAP_MODE_BASE;
+		case tcu::Sampler::LINEAR:					return VK_TEX_MIPMAP_MODE_BASE;
+		case tcu::Sampler::NEAREST_MIPMAP_NEAREST:	return VK_TEX_MIPMAP_MODE_NEAREST;
+		case tcu::Sampler::NEAREST_MIPMAP_LINEAR:	return VK_TEX_MIPMAP_MODE_LINEAR;
+		case tcu::Sampler::LINEAR_MIPMAP_NEAREST:	return VK_TEX_MIPMAP_MODE_NEAREST;
+		case tcu::Sampler::LINEAR_MIPMAP_LINEAR:	return VK_TEX_MIPMAP_MODE_LINEAR;
+		default:
+			DE_FATAL("Illegal filter mode");
+			return (VkTexMipmapMode)0;
+	}
+}
+
+VkTexAddressMode mapWrapMode (tcu::Sampler::WrapMode wrapMode)
+{
+	switch(wrapMode)
+	{
+		case tcu::Sampler::CLAMP_TO_EDGE:		return VK_TEX_ADDRESS_MODE_CLAMP;
+		case tcu::Sampler::CLAMP_TO_BORDER:		return VK_TEX_ADDRESS_MODE_CLAMP_BORDER;
+		case tcu::Sampler::REPEAT_GL:			return VK_TEX_ADDRESS_MODE_WRAP;
+		case tcu::Sampler::MIRRORED_REPEAT_GL:	return VK_TEX_ADDRESS_MODE_MIRROR;
+		default:
+			DE_FATAL("Wrap mode can't be mapped to Vulkan");
+			return (vk::VkTexAddressMode)0;
+	}
+}
+
+vk::VkCompareOp mapCompareMode (tcu::Sampler::CompareMode mode)
+{
+	switch(mode)
+	{
+		case tcu::Sampler::COMPAREMODE_NONE:				return vk::VK_COMPARE_OP_NEVER;
+		case tcu::Sampler::COMPAREMODE_LESS:				return vk::VK_COMPARE_OP_LESS;
+		case tcu::Sampler::COMPAREMODE_LESS_OR_EQUAL:		return vk::VK_COMPARE_OP_LESS_EQUAL;
+		case tcu::Sampler::COMPAREMODE_GREATER:				return vk::VK_COMPARE_OP_GREATER;
+		case tcu::Sampler::COMPAREMODE_GREATER_OR_EQUAL:	return vk::VK_COMPARE_OP_GREATER_EQUAL;
+		case tcu::Sampler::COMPAREMODE_EQUAL:				return vk::VK_COMPARE_OP_EQUAL;
+		case tcu::Sampler::COMPAREMODE_NOT_EQUAL:			return vk::VK_COMPARE_OP_NOT_EQUAL;
+		case tcu::Sampler::COMPAREMODE_ALWAYS:				return vk::VK_COMPARE_OP_ALWAYS;
+		case tcu::Sampler::COMPAREMODE_NEVER:				return vk::VK_COMPARE_OP_NEVER;
+		default:
+			DE_FATAL("Illegal compare mode");
+			return (vk::VkCompareOp)0;
+	}
+}
+
+tcu::Sampler mapVkSampler (const VkSamplerCreateInfo& samplerCreateInfo)
+{
+	tcu::Vec4 borderColor;
+
+	switch (samplerCreateInfo.borderColor)
+	{
+		case VK_BORDER_COLOR_INT_OPAQUE_BLACK:
+		case VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK:
+			borderColor = tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f);
+			break;
+
+		case VK_BORDER_COLOR_INT_OPAQUE_WHITE:
+		case VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE:
+			borderColor = tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f);
+			break;
+
+		case VK_BORDER_COLOR_INT_TRANSPARENT_BLACK:
+		case VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK:
+			borderColor = tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f);
+			break;
+
+		default:
+			DE_ASSERT(false);
+			break;
+	}
+
+	tcu::Sampler sampler(mapVkAddressMode(samplerCreateInfo.addressModeU),
+						 mapVkAddressMode(samplerCreateInfo.addressModeV),
+						 mapVkAddressMode(samplerCreateInfo.addressModeW),
+						 mapVkMinTexFilter(samplerCreateInfo.minFilter, samplerCreateInfo.mipMode),
+						 mapVkMagTexFilter(samplerCreateInfo.magFilter),
+						 0.0f,
+						 !samplerCreateInfo.unnormalizedCoordinates,
+						 samplerCreateInfo.compareEnable ? mapVkSamplerCompareOp(samplerCreateInfo.compareOp)
+														 : tcu::Sampler::COMPAREMODE_NONE,
+						 0,
+						 borderColor,
+						 true);
+	return sampler;
+}
+
+tcu::Sampler::CompareMode mapVkSamplerCompareOp (VkCompareOp compareOp)
+{
+	switch (compareOp)
+	{
+		case VK_COMPARE_OP_NEVER:			return tcu::Sampler::COMPAREMODE_NEVER;
+		case VK_COMPARE_OP_LESS:			return tcu::Sampler::COMPAREMODE_LESS;
+		case VK_COMPARE_OP_EQUAL:			return tcu::Sampler::COMPAREMODE_EQUAL;
+		case VK_COMPARE_OP_LESS_EQUAL:		return tcu::Sampler::COMPAREMODE_LESS_OR_EQUAL;
+		case VK_COMPARE_OP_GREATER:			return tcu::Sampler::COMPAREMODE_GREATER;
+		case VK_COMPARE_OP_NOT_EQUAL:		return tcu::Sampler::COMPAREMODE_NOT_EQUAL;
+		case VK_COMPARE_OP_GREATER_EQUAL:	return tcu::Sampler::COMPAREMODE_GREATER_OR_EQUAL;
+		case VK_COMPARE_OP_ALWAYS:			return tcu::Sampler::COMPAREMODE_ALWAYS;
+		default:
+			break;
+	}
+
+	DE_ASSERT(false);
+	return tcu::Sampler::COMPAREMODE_LAST;
+}
+
+tcu::Sampler::WrapMode mapVkAddressMode (VkTexAddressMode addressMode)
+{
+	switch (addressMode)
+	{
+		case VK_TEX_ADDRESS_MODE_CLAMP:			return tcu::Sampler::CLAMP_TO_EDGE;
+		case VK_TEX_ADDRESS_MODE_CLAMP_BORDER:	return tcu::Sampler::CLAMP_TO_BORDER;
+		case VK_TEX_ADDRESS_MODE_MIRROR:		return tcu::Sampler::MIRRORED_REPEAT_GL;
+		case VK_TEX_ADDRESS_MODE_MIRROR_ONCE:	return tcu::Sampler::MIRRORED_ONCE;
+		case VK_TEX_ADDRESS_MODE_WRAP:			return tcu::Sampler::REPEAT_GL;
+		default:
+			break;
+	}
+
+	DE_ASSERT(false);
+	return tcu::Sampler::WRAPMODE_LAST;
+}
+
+tcu::Sampler::FilterMode mapVkMinTexFilter (VkTexFilter filter, VkTexMipmapMode mipMode)
+{
+	switch (filter)
+	{
+		case VK_TEX_FILTER_LINEAR:
+			switch (mipMode)
+			{
+				case VK_TEX_MIPMAP_MODE_BASE:		return tcu::Sampler::LINEAR_MIPMAP_NEAREST;
+				case VK_TEX_MIPMAP_MODE_LINEAR:		return tcu::Sampler::LINEAR_MIPMAP_LINEAR;
+				case VK_TEX_MIPMAP_MODE_NEAREST:	return tcu::Sampler::LINEAR_MIPMAP_NEAREST;
+				default:
+					break;
+			}
+			break;
+
+		case VK_TEX_FILTER_NEAREST:
+			switch (mipMode)
+			{
+				case VK_TEX_MIPMAP_MODE_BASE:		return tcu::Sampler::NEAREST_MIPMAP_NEAREST;
+				case VK_TEX_MIPMAP_MODE_LINEAR:		return tcu::Sampler::NEAREST_MIPMAP_LINEAR;
+				case VK_TEX_MIPMAP_MODE_NEAREST:	return tcu::Sampler::NEAREST_MIPMAP_NEAREST;
+				default:
+					break;
+			}
+			break;
+
+		default:
+			break;
+	}
+
+	DE_ASSERT(false);
+	return tcu::Sampler::FILTERMODE_LAST;
+}
+
+tcu::Sampler::FilterMode mapVkMagTexFilter (VkTexFilter filter)
+{
+	switch (filter)
+	{
+		case VK_TEX_FILTER_LINEAR:		return tcu::Sampler::LINEAR;
+		case VK_TEX_FILTER_NEAREST:		return tcu::Sampler::NEAREST;
+		default:
+			break;
+	}
+
+	DE_ASSERT(false);
+	return tcu::Sampler::FILTERMODE_LAST;
+}
+
+int mapVkChannelSwizzle (const vk::VkChannelSwizzle& channelSwizzle)
+{
+	switch (channelSwizzle)
+	{
+		case vk::VK_CHANNEL_SWIZZLE_ZERO:	return 0;
+		case vk::VK_CHANNEL_SWIZZLE_ONE:	return 1;
+		case vk::VK_CHANNEL_SWIZZLE_R:		return 2;
+		case vk::VK_CHANNEL_SWIZZLE_G:		return 3;
+		case vk::VK_CHANNEL_SWIZZLE_B:		return 4;
+		case vk::VK_CHANNEL_SWIZZLE_A:		return 5;
+		default:
+			break;
+	}
+
+	DE_ASSERT(false);
+	return 0;
+}
+
+tcu::UVec4 mapVkChannelMapping (const vk::VkChannelMapping& mapping)
+{
+	tcu::UVec4 swizzle;
+
+	swizzle.x() = mapVkChannelSwizzle(mapping.r);
+	swizzle.y() = mapVkChannelSwizzle(mapping.g);
+	swizzle.z() = mapVkChannelSwizzle(mapping.b);
+	swizzle.w() = mapVkChannelSwizzle(mapping.a);
+
+	return swizzle;
+}
+
 } // vk

@@ -1,9 +1,7 @@
+#ifndef _VKTSHADERRENDERTESTS_HPP
 /*------------------------------------------------------------------------
- * Vulkan Conformance Tests
- * ------------------------
- *
  * Copyright (c) 2015 The Khronos Group Inc.
- * Copyright (c) 2015 Imagination Technologies Ltd.
+ * Copyright (c) 2015 Samsung Electronics Co., Ltd.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and/or associated documentation files (the
@@ -30,36 +28,20 @@
  *
  *//*!
  * \file
- * \brief Pipeline Tests
+ * \brief Vulkan shader render test cases
  *//*--------------------------------------------------------------------*/
 
-#include "vktPipelineTests.hpp"
-#include "vktPipelineStencilTests.hpp"
-#include "vktPipelineBlendTests.hpp"
-#include "vktPipelineDepthTests.hpp"
-#include "vktPipelineImageTests.hpp"
-#include "vktPipelineSamplerTests.hpp"
-#include "vktPipelineImageViewTests.hpp"
-#include "deUniquePtr.hpp"
+#include "tcuDefs.hpp"
+#include "tcuTestCase.hpp"
 
 namespace vkt
 {
-namespace pipeline
+namespace sr
 {
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
-{
-	de::MovePtr<tcu::TestCaseGroup> pipelineTests (new tcu::TestCaseGroup(testCtx, "pipeline", "Pipeline Tests"));
+tcu::TestCaseGroup*		createTests			(tcu::TestContext& testCtx);
 
-	pipelineTests->addChild(createStencilTests(testCtx));
-	pipelineTests->addChild(createBlendTests(testCtx));
-	pipelineTests->addChild(createDepthTests(testCtx));
-	pipelineTests->addChild(createImageTests(testCtx));
-	pipelineTests->addChild(createSamplerTests(testCtx));
-	pipelineTests->addChild(createImageViewTests(testCtx));
-
-	return pipelineTests.release();
-}
-
-} // pipeline
+} // sr
 } // vkt
+
+#endif // _VKTSHADERRENDERTESTS_HPP
