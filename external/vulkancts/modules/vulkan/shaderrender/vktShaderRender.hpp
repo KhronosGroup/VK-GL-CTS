@@ -473,7 +473,6 @@ private:
 	vk::DescriptorSetUpdateBuilder 						m_descriptorSetUpdateBuilder;
 
 	typedef de::SharedPtr<vk::Unique<vk::VkBuffer> > 		VkBufferSp;
-	typedef de::SharedPtr<vk::Unique<vk::VkBufferView> > 	VkBufferViewSp;
 
 	typedef de::SharedPtr<vk::Unique<vk::VkImage> > 		VkImageSp;
 	typedef de::SharedPtr<vk::Unique<vk::VkImageView> >		VkImageViewSp;
@@ -498,7 +497,6 @@ private:
 		virtual						~BufferUniform	(void) {}
 
 		VkBufferSp					buffer;
-		VkBufferViewSp				bufferView;
 		AllocationSp				alloc;
 	};
 
