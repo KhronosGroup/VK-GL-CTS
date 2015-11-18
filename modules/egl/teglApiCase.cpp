@@ -127,7 +127,7 @@ void ApiCase::expectNoContext (EGLContext got)
 
 void ApiCase::expectNoSurface (EGLSurface got)
 {
-	if (got != EGL_NO_CONTEXT)
+	if (got != EGL_NO_SURFACE)
 	{
 		m_testCtx.getLog() << TestLog::Message << "// ERROR expected: EGL_NO_SURFACE" << TestLog::EndMessage;
 		if (m_testCtx.getTestResult() == QP_TEST_RESULT_PASS)
@@ -138,7 +138,7 @@ void ApiCase::expectNoSurface (EGLSurface got)
 
 void ApiCase::expectNoDisplay (EGLDisplay got)
 {
-	if (got != EGL_NO_CONTEXT)
+	if (got != EGL_NO_DISPLAY)
 	{
 		m_testCtx.getLog() << TestLog::Message << "// ERROR expected: EGL_NO_DISPLAY" << TestLog::EndMessage;
 		if (m_testCtx.getTestResult() == QP_TEST_RESULT_PASS)
@@ -148,7 +148,7 @@ void ApiCase::expectNoDisplay (EGLDisplay got)
 
 void ApiCase::expectNull (const void* got)
 {
-	if (got != EGL_NO_CONTEXT)
+	if (got != DE_NULL)
 	{
 		m_testCtx.getLog() << TestLog::Message << "// ERROR expected: NULL" << TestLog::EndMessage;
 		if (m_testCtx.getTestResult() == QP_TEST_RESULT_PASS)
