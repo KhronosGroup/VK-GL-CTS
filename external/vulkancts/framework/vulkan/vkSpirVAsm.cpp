@@ -55,21 +55,17 @@ using std::vector;
 
 namespace
 {
+// Once spirv-tools upgrades past 972788bf239daff45ed0d2bb878e608c4106939c, we
+// won't need this singleton, as spvContextCreate() is thread-safe.
 static volatile deSingletonState	s_spirvInitState	= DE_SINGLETON_STATE_NOT_INITIALIZED;
-static			spv_opcode_table	s_spirvOpcodeTable;
-static			spv_operand_table	s_spirvOperandTable;
-static			spv_ext_inst_table	s_spirvExtInstTable;
-
 void initSpirVTools (void*)
 {
-	if (spvOpcodeTableGet(&s_spirvOpcodeTable) != SPV_SUCCESS)
-		TCU_THROW(InternalError, "Cannot get opcode table for assembly");
-
-	if (spvOperandTableGet(&s_spirvOperandTable) != SPV_SUCCESS)
-		TCU_THROW(InternalError, "Cannot get operand table for assembly");
-
-	if (spvExtInstTableGet(&s_spirvExtInstTable) != SPV_SUCCESS)
-		TCU_THROW(InternalError, "Cannot get external instruction table for assembly");
+	spv_binary		binary		= DE_NULL;
+	spv_diagnostic	diagnostic	= DE_NULL;
+	// This dummy compilation initializes opcode tables for all the subsequent
+	// ones.  It should be the first spv call in the current process, and it
+	// isn't thread-safe.
+	spvTextToBinary("", 0, &binary, &diagnostic);
 }
 
 void prepareSpirvTools (void)
@@ -87,7 +83,7 @@ void assembleSpirV (const SpirVAsmSource* program, std::vector<deUint8>* dst, Sp
 	spv_binary			binary				= DE_NULL;
 	spv_diagnostic		diagnostic			= DE_NULL;
 	const deUint64		compileStartTime	= deGetMicroseconds();
-	const spv_result_t	compileOk			= spvTextToBinary(spvSource.c_str(), spvSource.size(), s_spirvOpcodeTable, s_spirvOperandTable, s_spirvExtInstTable, &binary, &diagnostic);
+	const spv_result_t	compileOk			= spvTextToBinary(spvSource.c_str(), spvSource.size(), &binary, &diagnostic);
 
 	{
 		buildInfo->source			= program;
