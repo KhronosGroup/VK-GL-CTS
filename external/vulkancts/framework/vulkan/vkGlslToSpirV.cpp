@@ -144,7 +144,7 @@ void getDefaultBuiltInResources (TBuiltInResource* builtin)
 	builtin->maxComputeWorkGroupCountY					= 65535;
 	builtin->maxComputeWorkGroupCountZ					= 65535;
 	builtin->maxComputeWorkGroupSizeX					= 1024;
-	builtin->maxComputeWorkGroupSizeX					= 1024;
+	builtin->maxComputeWorkGroupSizeY					= 1024;
 	builtin->maxComputeWorkGroupSizeZ					= 64;
 	builtin->maxComputeUniformComponents				= 1024;
 	builtin->maxComputeTextureImageUnits				= 16;
