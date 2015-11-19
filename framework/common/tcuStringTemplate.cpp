@@ -72,14 +72,16 @@ string StringTemplate::specialize (const map<string, string>& params) const
 			// Parse parameter contents.
 			string	paramStr		= m_template.substr(paramNdx+2, paramEndNdx-2-paramNdx);
 			bool	paramSingleLine	= false;
+			bool	paramOptional	= false;
 			string	paramName;
 			size_t colonNdx = paramStr.find(":");
 			if (colonNdx != string::npos)
 			{
 				paramName = paramStr.substr(0, colonNdx);
 				string flagsStr = paramStr.substr(colonNdx+1);
-				TCU_CHECK(flagsStr == "single-line");
-				paramSingleLine = true;
+				if (flagsStr == "single-line") { paramSingleLine = true; }
+				else if (flagsStr == "opt") { paramOptional = true; }
+				else { throw tcu::InternalError("Unrecognized flag", paramStr.c_str(), __FILE__, __LINE__); }
 			}
 			else
 				paramName = paramStr;
@@ -98,7 +100,7 @@ string StringTemplate::specialize (const map<string, string>& params) const
 				else
 					res << val;
 			}
-			else
+			else if (!paramOptional)
 				throw tcu::InternalError((string("Value for parameter '") + paramName + "' not found in map").c_str(), "", __FILE__, __LINE__);
 
 			// Skip over template.
