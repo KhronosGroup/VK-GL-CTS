@@ -78,7 +78,11 @@ private:
 	std::vector<E>		m_elements;
 };
 
-typedef Buffer<float>	Float32Buffer;
+DE_STATIC_ASSERT(sizeof(tcu::Vec4) == 4 * sizeof(float));
+
+typedef Buffer<float>		Float32Buffer;
+typedef Buffer<deInt32>		Int32Buffer;
+typedef Buffer<tcu::Vec4>	Vec4Buffer;
 
 
 /*--------------------------------------------------------------------*//*!
@@ -90,9 +94,11 @@ typedef Buffer<float>	Float32Buffer;
 struct ComputeShaderSpec
 {
 	std::string				assembly;
+	std::string				entryPoint;
 	std::vector<BufferSp>	inputs;
 	std::vector<BufferSp>	outputs;
 	tcu::IVec3				numWorkGroups;
+	std::vector<deUint32>	specConstants;
 };
 
 } // SpirVAssembly

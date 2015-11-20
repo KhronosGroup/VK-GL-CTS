@@ -91,11 +91,11 @@ void setMemory (const DeviceInterface& vkdi, const VkDevice& device, Allocation*
 	flushMappedMemoryRange(vkdi, device, destAlloc->getMemory(), destAlloc->getOffset(), numBytes);
 }
 
-void clearMemory (const DeviceInterface& vkdi, const VkDevice& device, Allocation* destAlloc, size_t numBytes)
+void fillMemoryWithValue (const DeviceInterface& vkdi, const VkDevice& device, Allocation* destAlloc, size_t numBytes, deUint8 value)
 {
 	void* const hostPtr = destAlloc->getHostPtr();
 
-	deMemset((deUint8*)hostPtr, 0, numBytes);
+	deMemset((deUint8*)hostPtr, value, numBytes);
 	flushMappedMemoryRange(vkdi, device, destAlloc->getMemory(), destAlloc->getOffset(), numBytes);
 }
 
@@ -177,17 +177,38 @@ Move<VkDescriptorSet> createDescriptorSet (const DeviceInterface& vkdi, const Vk
 /*--------------------------------------------------------------------*//*!
  * \brief Create a compute pipeline based on the given shader
  *//*--------------------------------------------------------------------*/
-Move<VkPipeline> createComputePipeline (const DeviceInterface& vkdi, const VkDevice& device, VkPipelineLayout pipelineLayout, VkShaderModule shader)
+Move<VkPipeline> createComputePipeline (const DeviceInterface& vkdi, const VkDevice& device, VkPipelineLayout pipelineLayout, VkShaderModule shader, const char* entryPoint, const vector<deUint32>& specConstants)
 {
+	const deUint32							numSpecConstants				= (deUint32)specConstants.size();
+	vector<VkSpecializationMapEntry>		entries;
+	VkSpecializationInfo					specInfo;
+
+	if (numSpecConstants != 0)
+	{
+		entries.reserve(numSpecConstants);
+
+		for (deUint32 ndx = 0; ndx < numSpecConstants; ++ndx)
+		{
+			entries[ndx].constantID	= ndx;
+			entries[ndx].offset		= ndx * (deUint32)sizeof(deUint32);
+			entries[ndx].size		= sizeof(deUint32);
+		}
+
+		specInfo.mapEntryCount		= numSpecConstants;
+		specInfo.pMapEntries		= &entries[0];
+		specInfo.dataSize			= numSpecConstants * sizeof(deUint32);
+		specInfo.pData				= specConstants.data();
+	}
+
 	const VkPipelineShaderStageCreateInfo	pipelineShaderStageCreateInfo	=
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// sType
 		DE_NULL,												// pNext
-		(VkPipelineShaderStageCreateFlags)0,
+		(VkPipelineShaderStageCreateFlags)0,					// flags
 		VK_SHADER_STAGE_COMPUTE_BIT,							// stage
-		shader,													// shader
-		"main",
-		DE_NULL,												// pSpecializationInfo
+		shader,													// module
+		entryPoint,												// pName
+		(numSpecConstants == 0) ? DE_NULL : &specInfo,			// pSpecializationInfo
 	};
 	const VkComputePipelineCreateInfo		pipelineCreateInfo				=
 	{
@@ -313,7 +334,7 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 		const size_t		numBytes	= output->getNumBytes();
 		BufferHandleUp*		buffer		= new BufferHandleUp(createBufferAndBindMemory(vkdi, device, allocator, numBytes, &alloc));
 
-		clearMemory(vkdi, device, &*alloc, numBytes);
+		fillMemoryWithValue(vkdi, device, &*alloc, numBytes, 0xff);
 		descriptorInfos.push_back(vk::makeDescriptorBufferInfo(**buffer, 0u, numBytes));
 		outputBuffers.push_back(BufferHandleSp(buffer));
 		outputAllocs.push_back(de::SharedPtr<Allocation>(alloc.release()));
@@ -331,7 +352,7 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 	const ProgramBinary&				binary				= m_context.getBinaryCollection().get("compute");
 	Unique<VkShaderModule>				module				(createShaderModule(vkdi, device, binary, (VkShaderModuleCreateFlags)0u));
 
-	Unique<VkPipeline>					computePipeline		(createComputePipeline(vkdi, device, *pipelineLayout, *module));
+	Unique<VkPipeline>					computePipeline		(createComputePipeline(vkdi, device, *pipelineLayout, *module, m_shaderSpec.entryPoint.c_str(), m_shaderSpec.specConstants));
 
 	// Create command buffer and record commands
 
