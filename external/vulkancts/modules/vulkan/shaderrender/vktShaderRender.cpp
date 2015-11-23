@@ -627,7 +627,7 @@ void ShaderRenderCaseInstance::addAttribute (deUint32		bindingLocation,
 	de::MovePtr<vk::Allocation>				alloc					= m_memAlloc.allocate(getBufferMemoryRequirements(vk, vkDevice, *buffer), MemoryRequirement::HostVisible);
 	VK_CHECK(vk.bindBufferMemory(vkDevice, *buffer, alloc->getMemory(), alloc->getOffset()));
 
-	deMemcpy(alloc->getHostPtr(), dataPtr, inputSize);
+	deMemcpy(alloc->getHostPtr(), dataPtr, (size_t)inputSize);
 	flushMappedMemoryRange(vk, vkDevice, alloc->getMemory(), alloc->getOffset(), inputSize);
 
 	m_vertexBuffers.push_back(VkBufferSp(new vk::Unique<VkBuffer>(buffer)));
@@ -1124,7 +1124,7 @@ void ShaderRenderCaseInstance::setupDefaultInputs (const QuadGrid& quadGrid)
 
 			for (int colNdx = 0; colNdx < numCols; colNdx++)
 			{
-				addAttribute(m_enabledBaseAttributes[attrNdx].location + colNdx, VK_FORMAT_R32G32B32A32_SFLOAT, 4 * sizeof(float), quadGrid.getNumVertices(), quadGrid.getUserAttrib(colNdx));
+				addAttribute(m_enabledBaseAttributes[attrNdx].location + colNdx, VK_FORMAT_R32G32B32A32_SFLOAT, (deUint32)(4 * sizeof(float)), quadGrid.getNumVertices(), quadGrid.getUserAttrib(colNdx));
 			}
 		}
 	}
@@ -1499,7 +1499,7 @@ void ShaderRenderCaseInstance::render (tcu::Surface& result, const QuadGrid& qua
 		VK_CHECK(vk.bindBufferMemory(vkDevice, *m_indiceBuffer, m_indiceBufferAlloc->getMemory(), m_indiceBufferAlloc->getOffset()));
 
 		// Load vertice indices into buffer
-		deMemcpy(m_indiceBufferAlloc->getHostPtr(), quadGrid.getIndices(), indiceBufferSize);
+		deMemcpy(m_indiceBufferAlloc->getHostPtr(), quadGrid.getIndices(), (size_t)indiceBufferSize);
 		flushMappedMemoryRange(vk, vkDevice, m_indiceBufferAlloc->getMemory(), m_indiceBufferAlloc->getOffset(), indiceBufferSize);
 	}
 
