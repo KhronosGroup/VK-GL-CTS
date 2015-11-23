@@ -1706,19 +1706,12 @@ struct InstanceContext
 	map<string, string> testCodeFragments;
 
 	InstanceContext (const RGBA (&inputs)[4], const RGBA (&outputs)[4], const map<string, string>& testCodeFragments_)
-		: testCodeFragments(testCodeFragments_)
-	{
-		memcpy(inputColors, inputs, sizeof(inputs));
-		memcpy(outputColors, outputs, sizeof(outputs));
-	}
+		: inputColors(inputs), outputColors(outputs), testCodeFragments(testCodeFragments_)
+	{}
 
 	InstanceContext (const InstanceContext& other)
-			: moduleMap(other.moduleMap)
-			, testCodeFragments(other.testCodeFragments)
-	{
-		memcpy(inputColors, other.inputColors, sizeof(inputColors));
-		memcpy(outputColors, other.outputColors, sizeof(outputColors));
-	}
+			: moduleMap(other.moduleMap), inputColors(other.inputColors), outputColors(other.outputColors), testCodeFragments(other.testCodeFragments)
+	{}
 };
 
 // A description of a shader to be used for a single stage of the graphics pipeline.
@@ -1747,6 +1740,7 @@ void getDefaultColors(RGBA colors[4]) {
 	colors[2] = RGBA::blue();
 	colors[3] = RGBA::green();
 }
+
 // Turns a statically sized array of ShaderElements into an instance-context
 // by setting up the mapping of modules to their contained shaders and stages.
 // The inputs and expected outputs are given by inputColors and outputColors
@@ -1796,7 +1790,7 @@ void createShaders (const DeviceInterface& vk, const VkDevice vkDevice, Instance
 	}
 }
 
-#define TYPES																\
+#define SPIRV_ASSEMBLY_TYPES																\
 	"%void = OpTypeVoid\n"													\
 	"%bool = OpTypeBool\n"													\
 																			\
@@ -1818,7 +1812,7 @@ void createShaders (const DeviceInterface& vk, const VkDevice vkDevice, Instance
 	"%op_f32 = OpTypePointer Output %f32\n"									\
 	"%op_v4f32 = OpTypePointer Output %v4f32\n"
 
-#define CONSTANTS															\
+#define SPIRV_ASSEMBLY_CONSTANTS															\
 	"%c_f32_1 = OpConstant %f32 1\n"										\
 	"%c_i32_0 = OpConstant %i32 0\n"										\
 	"%c_i32_1 = OpConstant %i32 1\n"										\
@@ -1830,7 +1824,7 @@ void createShaders (const DeviceInterface& vk, const VkDevice vkDevice, Instance
 	"%c_u32_32 = OpConstant %u32 32\n"										\
 	"%c_u32_4 = OpConstant %u32 4\n"
 
-#define ARRAYS																\
+#define SPIRV_ASSEMBLY_ARRAYS																\
 	"%a1f32 = OpTypeArray %f32 %c_u32_1\n"									\
 	"%a2f32 = OpTypeArray %f32 %c_u32_2\n"									\
 	"%a3v4f32 = OpTypeArray %v4f32 %c_u32_3\n"								\
@@ -1843,10 +1837,10 @@ void createShaders (const DeviceInterface& vk, const VkDevice vkDevice, Instance
 	"%op_a4f32 = OpTypePointer Output %a4f32\n"								\
 	"%op_f32 = OpTypePointer Output %f32\n"
 
-// Boilerplate vertex-shader assembly.  Specialize with "testfun" mapping to an
-// OpFunction definition for %test_code that takes and returns a %v4f32.
-// Prefixes local IDs with "BP_" to avoid collisions with the rest of assembly
-// code.
+// Creates vertex-shader assembly by specializing a boilerplate StringTemplate
+// on fragments, which must (at least) map "testfun" to an OpFunction definition
+// for %test_code that takes and returns a %v4f32.  Boilerplate IDs are prefixed
+// with "BP_" to avoid collisions with fragments.
 //
 // It corresponds roughly to this GLSL:
 //
@@ -1854,53 +1848,58 @@ void createShaders (const DeviceInterface& vk, const VkDevice vkDevice, Instance
 // layout(location = 1) in vec4 color;
 // layout(location = 1) out highp vec4 vtxColor;
 // void main (void) { gl_Position = position; vtxColor = test_func(color); }
-tcu::StringTemplate vertexShaderBoilerplate(
-	"OpCapability Shader\n"
-	"OpMemoryModel Logical GLSL450\n"
-	"OpEntryPoint Vertex %4 \"main\" %BP_Position %BP_vtxColor %BP_color %BP_vtxPosition %BP_vertex_id %BP_instance_id\n"
-	"${debug:opt}\n"
-	"OpName %main \"main\"\n"
-	"OpName %BP_vtxPosition \"vtxPosition\"\n"
-	"OpName %BP_Position \"position\"\n"
-	"OpName %BP_vtxColor \"vtxColor\"\n"
-	"OpName %BP_color \"color\"\n"
-	"OpName %vertex_id \"gl_VertexID\"\n"
-	"OpName %instance_id \"gl_InstanceID\"\n"
-	"OpName %test_code \"testfun(vf4;\"\n"
-	"OpDecorate %BP_vtxPosition Smooth\n"
-	"OpDecorate %BP_vtxPosition Location 2\n"
-	"OpDecorate %BP_Position Location 0\n"
-	"OpDecorate %BP_vtxColor Smooth\n"
-	"OpDecorate %BP_vtxColor Location 1\n"
-	"OpDecorate %BP_color Location 1\n"
-	"OpDecorate %BP_vertex_id BuiltIn VertexId\n"
-	"OpDecorate %BP_instance_id BuiltIn InstanceId\n"
-	TYPES
-	CONSTANTS
-	ARRAYS
-	"%BP_vtxPosition = OpVariable %op_v4f32 Output\n"
-	"%BP_Position = OpVariable %ip_v4f32 Input\n"
-	"%BP_vtxColor = OpVariable %op_v4f32 Output\n"
-	"%BP_color = OpVariable %ip_v4f32 Input\n"
-	"%BP_vertex_id = OpVariable %ip_i32 Input\n"
-	"%BP_instance_id = OpVariable %ip_i32 Input\n"
-	"%main = OpFunction %void None %fun\n"
-	"%BP_label = OpLabel\n"
-	"%BP_tmp_position = OpLoad %v4f32 %BP_Position\n"
-	"OpStore %BP_vtxPosition %BP_tmp_position\n"
-	"%BP_tmp_color = OpLoad %v4f32 %BP_color\n"
-	"%BP_clr_transformed = OpFunctionCall %v4f32 %test_code %BP_tmp_color\n"
-	"OpStore %BP_vtxColor %BP_clr_transformed\n"
-	"OpReturn\n"
-	"OpFunctionEnd\n"
-	"${testfun}\n");
+string makeVertexShaderAssembly(const map<string, string>& fragments)
+{
+	static const char vertexShaderBoilerplate[] =
+		"OpCapability Shader\n"
+		"OpMemoryModel Logical GLSL450\n"
+		"OpEntryPoint Vertex %4 \"main\" %BP_Position %BP_vtxColor %BP_color "
+		"%BP_vtxPosition %BP_vertex_id %BP_instance_id\n"
+		"${debug:opt}\n"
+		"OpName %main \"main\"\n"
+		"OpName %BP_vtxPosition \"vtxPosition\"\n"
+		"OpName %BP_Position \"position\"\n"
+		"OpName %BP_vtxColor \"vtxColor\"\n"
+		"OpName %BP_color \"color\"\n"
+		"OpName %vertex_id \"gl_VertexID\"\n"
+		"OpName %instance_id \"gl_InstanceID\"\n"
+		"OpName %test_code \"testfun(vf4;\"\n"
+		"OpDecorate %BP_vtxPosition Smooth\n"
+		"OpDecorate %BP_vtxPosition Location 2\n"
+		"OpDecorate %BP_Position Location 0\n"
+		"OpDecorate %BP_vtxColor Smooth\n"
+		"OpDecorate %BP_vtxColor Location 1\n"
+		"OpDecorate %BP_color Location 1\n"
+		"OpDecorate %BP_vertex_id BuiltIn VertexId\n"
+		"OpDecorate %BP_instance_id BuiltIn InstanceId\n"
+		SPIRV_ASSEMBLY_TYPES
+		SPIRV_ASSEMBLY_CONSTANTS
+		SPIRV_ASSEMBLY_ARRAYS
+		"%BP_vtxPosition = OpVariable %op_v4f32 Output\n"
+		"%BP_Position = OpVariable %ip_v4f32 Input\n"
+		"%BP_vtxColor = OpVariable %op_v4f32 Output\n"
+		"%BP_color = OpVariable %ip_v4f32 Input\n"
+		"%BP_vertex_id = OpVariable %ip_i32 Input\n"
+		"%BP_instance_id = OpVariable %ip_i32 Input\n"
+		"%main = OpFunction %void None %fun\n"
+		"%BP_label = OpLabel\n"
+		"%BP_tmp_position = OpLoad %v4f32 %BP_Position\n"
+		"OpStore %BP_vtxPosition %BP_tmp_position\n"
+		"%BP_tmp_color = OpLoad %v4f32 %BP_color\n"
+		"%BP_clr_transformed = OpFunctionCall %v4f32 %test_code %BP_tmp_color\n"
+		"OpStore %BP_vtxColor %BP_clr_transformed\n"
+		"OpReturn\n"
+		"OpFunctionEnd\n"
+		"${testfun}\n";
+	return tcu::StringTemplate(vertexShaderBoilerplate).specialize(fragments);
+}
 
-// Boilerplate tess-control shader assembly.  Specialize by mapping "testfun" to
-// an OpFunction definition for %test_code that takes and returns a %v4f32.
-// Prefixes local IDs with "BP_" to avoid collisions with the rest of assembly
-// code.
+// Creates tess-control-shader assembly by specializing a boilerplate
+// StringTemplate on fragments, which must (at least) map "testfun" to an
+// OpFunction definition for %test_code that takes and returns a %v4f32.
+// Boilerplate IDs are prefixed with "BP_" to avoid collisions with fragments.
 //
-// It roughly corresponds to the following glsl.
+// It roughly corresponds to the following GLSL.
 //
 // #version 450
 // layout(vertices = 3) out;
@@ -1919,85 +1918,89 @@ tcu::StringTemplate vertexShaderBoilerplate(
 //     gl_TessLevelInner[0] = 1.0;
 //   }
 // }
-tcu::StringTemplate tessControlShaderBoilerplate(
-	"OpCapability Tessellation\n"
-	"OpMemoryModel Logical GLSL450\n"
-	"OpEntryPoint TessellationControl %BP_main \"main\" %BP_out_color %BP_gl_InvocationID %BP_in_color %BP_out_position %BP_in_position %BP_gl_TessLevelOuter %BP_gl_TessLevelInner\n"
-	"OpExecutionMode %BP_main OutputVertices 3\n"
-	"${debug:opt}\n"
-	"OpName %BP_main \"main\"\n"
-	"OpName %BP_out_color \"out_color\"\n"
-	"OpName %BP_gl_InvocationID \"gl_InvocationID\"\n"
-	"OpName %BP_in_color \"in_color\"\n"
-	"OpName %BP_out_position \"out_position\"\n"
-	"OpName %BP_in_position \"in_position\"\n"
-	"OpName %BP_gl_TessLevelOuter \"gl_TessLevelOuter\"\n"
-	"OpName %BP_gl_TessLevelInner \"gl_TessLevelInner\"\n"
-	"OpName %test_code \"testfun(vf4;\"\n"
-	"OpDecorate %BP_out_color Location 1\n"
-	"OpDecorate %BP_gl_InvocationID BuiltIn InvocationId\n"
-	"OpDecorate %BP_in_color Location 1\n"
-	"OpDecorate %BP_out_position Location 2\n"
-	"OpDecorate %BP_in_position Location 2\n"
-	"OpDecorate %BP_gl_TessLevelOuter Patch\n"
-	"OpDecorate %BP_gl_TessLevelOuter BuiltIn TessLevelOuter\n"
-	"OpDecorate %BP_gl_TessLevelInner Patch\n"
-	"OpDecorate %BP_gl_TessLevelInner BuiltIn TessLevelInner\n"
-TYPES
-CONSTANTS
-ARRAYS
-	"%BP_out_color = OpVariable %op_a3v4f32 Output\n"
-	"%BP_gl_InvocationID = OpVariable %ip_i32 Input\n"
-	"%BP_in_color = OpVariable %ip_a32v4f32 Input\n"
-	"%BP_out_position = OpVariable %op_a3v4f32 Output\n"
-	"%BP_in_position = OpVariable %ip_a32v4f32 Input\n"
-	"%BP_gl_TessLevelOuter = OpVariable %op_a4f32 Output\n"
-	"%BP_gl_TessLevelInner = OpVariable %op_a2f32 Output\n"
+string makeTessControlShaderAssembly(const map<string, string>& fragments)
+{
+	static const char tessControlShaderBoilerplate[] =
+		"OpCapability Tessellation\n"
+		"OpMemoryModel Logical GLSL450\n"
+		"OpEntryPoint TessellationControl %BP_main \"main\" %BP_out_color %BP_gl_InvocationID %BP_in_color %BP_out_position %BP_in_position %BP_gl_TessLevelOuter %BP_gl_TessLevelInner\n"
+		"OpExecutionMode %BP_main OutputVertices 3\n"
+		"${debug:opt}\n"
+		"OpName %BP_main \"main\"\n"
+		"OpName %BP_out_color \"out_color\"\n"
+		"OpName %BP_gl_InvocationID \"gl_InvocationID\"\n"
+		"OpName %BP_in_color \"in_color\"\n"
+		"OpName %BP_out_position \"out_position\"\n"
+		"OpName %BP_in_position \"in_position\"\n"
+		"OpName %BP_gl_TessLevelOuter \"gl_TessLevelOuter\"\n"
+		"OpName %BP_gl_TessLevelInner \"gl_TessLevelInner\"\n"
+		"OpName %test_code \"testfun(vf4;\"\n"
+		"OpDecorate %BP_out_color Location 1\n"
+		"OpDecorate %BP_gl_InvocationID BuiltIn InvocationId\n"
+		"OpDecorate %BP_in_color Location 1\n"
+		"OpDecorate %BP_out_position Location 2\n"
+		"OpDecorate %BP_in_position Location 2\n"
+		"OpDecorate %BP_gl_TessLevelOuter Patch\n"
+		"OpDecorate %BP_gl_TessLevelOuter BuiltIn TessLevelOuter\n"
+		"OpDecorate %BP_gl_TessLevelInner Patch\n"
+		"OpDecorate %BP_gl_TessLevelInner BuiltIn TessLevelInner\n"
+		SPIRV_ASSEMBLY_TYPES
+		SPIRV_ASSEMBLY_CONSTANTS
+		SPIRV_ASSEMBLY_ARRAYS
+		"%BP_out_color = OpVariable %op_a3v4f32 Output\n"
+		"%BP_gl_InvocationID = OpVariable %ip_i32 Input\n"
+		"%BP_in_color = OpVariable %ip_a32v4f32 Input\n"
+		"%BP_out_position = OpVariable %op_a3v4f32 Output\n"
+		"%BP_in_position = OpVariable %ip_a32v4f32 Input\n"
+		"%BP_gl_TessLevelOuter = OpVariable %op_a4f32 Output\n"
+		"%BP_gl_TessLevelInner = OpVariable %op_a2f32 Output\n"
 
-	"%BP_main = OpFunction %void None %fun\n"
-	"%BP_label = OpLabel\n"
+		"%BP_main = OpFunction %void None %fun\n"
+		"%BP_label = OpLabel\n"
 
-	"%BP_invocation_id = OpLoad %i32 %BP_gl_InvocationID\n"
+		"%BP_invocation_id = OpLoad %i32 %BP_gl_InvocationID\n"
 
-	"%BP_in_color_ptr = OpAccessChain %ip_v4f32 %BP_in_color %BP_invocation_id\n"
-	"%BP_in_position_ptr = OpAccessChain %ip_v4f32 %BP_in_position %BP_invocation_id\n"
+		"%BP_in_color_ptr = OpAccessChain %ip_v4f32 %BP_in_color %BP_invocation_id\n"
+		"%BP_in_position_ptr = OpAccessChain %ip_v4f32 %BP_in_position %BP_invocation_id\n"
 
-	"%BP_in_color_val = OpLoad %v4f32 %BP_in_color_ptr\n"
-	"%BP_in_position_val = OpLoad %v4f32 %BP_in_position_ptr\n"
+		"%BP_in_color_val = OpLoad %v4f32 %BP_in_color_ptr\n"
+		"%BP_in_position_val = OpLoad %v4f32 %BP_in_position_ptr\n"
 
-	"%BP_clr_transformed = OpFunctionCall %v4f32 %test_code %BP_in_color_val\n"
+		"%BP_clr_transformed = OpFunctionCall %v4f32 %test_code %BP_in_color_val\n"
 
-	"%BP_out_color_ptr = OpAccessChain %op_v4f32 %BP_out_color %BP_invocation_id\n"
-	"%BP_out_position_ptr = OpAccessChain %op_v4f32 %BP_out_position %BP_invocation_id\n"
+		"%BP_out_color_ptr = OpAccessChain %op_v4f32 %BP_out_color %BP_invocation_id\n"
+		"%BP_out_position_ptr = OpAccessChain %op_v4f32 %BP_out_position %BP_invocation_id\n"
 
-	"OpStore %BP_out_color_ptr %BP_clr_transformed\n"
-	"OpStore %BP_out_position_ptr %BP_in_position_val\n"
+		"OpStore %BP_out_color_ptr %BP_clr_transformed\n"
+		"OpStore %BP_out_position_ptr %BP_in_position_val\n"
 
-	"%BP_is_first_invocation = OpIEqual %bool %BP_invocation_id %c_i32_0\n"
-	"OpSelectionMerge %BP_merge_label None\n"
-	"OpBranchConditional %BP_is_first_invocation %BP_first_invocation %BP_merge_label\n"
+		"%BP_is_first_invocation = OpIEqual %bool %BP_invocation_id %c_i32_0\n"
+		"OpSelectionMerge %BP_merge_label None\n"
+		"OpBranchConditional %BP_is_first_invocation %BP_first_invocation %BP_merge_label\n"
 
-	"%BP_first_invocation = OpLabel\n"
-	"%BP_tess_outer_0 = OpAccessChain %op_f32 %BP_gl_TessLevelOuter %c_i32_0\n"
-	"%BP_tess_outer_1 = OpAccessChain %op_f32 %BP_gl_TessLevelOuter %c_i32_1\n"
-	"%BP_tess_outer_2 = OpAccessChain %op_f32 %BP_gl_TessLevelOuter %c_i32_2\n"
-	"%BP_tess_inner = OpAccessChain %op_f32 %BP_gl_TessLevelInner %c_i32_0\n"
+		"%BP_first_invocation = OpLabel\n"
+		"%BP_tess_outer_0 = OpAccessChain %op_f32 %BP_gl_TessLevelOuter %c_i32_0\n"
+		"%BP_tess_outer_1 = OpAccessChain %op_f32 %BP_gl_TessLevelOuter %c_i32_1\n"
+		"%BP_tess_outer_2 = OpAccessChain %op_f32 %BP_gl_TessLevelOuter %c_i32_2\n"
+		"%BP_tess_inner = OpAccessChain %op_f32 %BP_gl_TessLevelInner %c_i32_0\n"
 
-	"OpStore %BP_tess_outer_0 %c_f32_1\n"
-	"OpStore %BP_tess_outer_1 %c_f32_1\n"
-	"OpStore %BP_tess_outer_2 %c_f32_1\n"
-	"OpStore %BP_tess_inner %c_f32_1\n"
+		"OpStore %BP_tess_outer_0 %c_f32_1\n"
+		"OpStore %BP_tess_outer_1 %c_f32_1\n"
+		"OpStore %BP_tess_outer_2 %c_f32_1\n"
+		"OpStore %BP_tess_inner %c_f32_1\n"
 
-	"OpBranch %BP_merge_label\n"
-	"%BP_merge_label = OpLabel\n"
-	"OpReturn\n"
-	"OpFunctionEnd\n"
-	"${testfun}\n");
+		"OpBranch %BP_merge_label\n"
+		"%BP_merge_label = OpLabel\n"
+		"OpReturn\n"
+		"OpFunctionEnd\n"
+		"${testfun}\n";
+	return tcu::StringTemplate(tessControlShaderBoilerplate).specialize(fragments);
+}
 
-// Boilerplate tess-eval shader assembly.  Specialize by mapping "testfun" to an
+// Creates tess-evaluation-shader assembly by specializing a boilerplate
+// StringTemplate on fragments, which must (at least) map "testfun" to an
 // OpFunction definition for %test_code that takes and returns a %v4f32.
-// Prefixes local IDs with "BP_" to avoid collisions with the rest of assembly
-// code.
+// Boilerplate IDs are prefixed with "BP_" to avoid collisions with fragments.
 //
 // It roughly corresponds to the following glsl.
 //
@@ -2012,104 +2015,106 @@ ARRAYS
 //   vec4(gl_TessCoord.x) * val[0] + vec4(gl_TessCoord.y) * val[1] +
 //          vec4(gl_TessCoord.z) * val[2]
 //
-//
 // void main() {
 //   gl_Position = vec4(gl_TessCoord.x) * in_position[0] +
 //                  vec4(gl_TessCoord.y) * in_position[1] +
 //                  vec4(gl_TessCoord.z) * in_position[2];
 //   out_color = testfun(interpolate(in_color));
 // }
+string makeTessEvalShaderAssembly(const map<string, string>& fragments)
+{
+	static const char tessEvalBoilerplate[] =
+		"OpCapability Tessellation\n"
+		"OpMemoryModel Logical GLSL450\n"
+		"OpEntryPoint TessellationEvaluation %BP_main \"main\" %BP_stream %BP_gl_tessCoord %BP_in_position %BP_out_color %BP_in_color \n"
+		"OpExecutionMode %BP_main InputTriangles\n"
+		"${debug:opt}\n"
+		"OpName %BP_main \"main\"\n"
+		"OpName %BP_per_vertex_out \"gl_PerVertex\"\n"
+		"OpMemberName %BP_per_vertex_out 0 \"gl_Position\"\n"
+		"OpMemberName %BP_per_vertex_out 1 \"gl_PointSize\"\n"
+		"OpMemberName %BP_per_vertex_out 2 \"gl_ClipDistance\"\n"
+		"OpMemberName %BP_per_vertex_out 3 \"gl_CullDistance\"\n"
+		"OpName %BP_stream \"\"\n"
+		"OpName %BP_gl_tessCoord \"gl_TessCoord\"\n"
+		"OpName %BP_in_position \"in_position\"\n"
+		"OpName %BP_out_color \"out_color\"\n"
+		"OpName %BP_in_color \"in_color\"\n"
+		"OpName %test_code \"testfun(vf4;\"\n"
+		"OpMemberDecorate %BP_per_vertex_out 0 BuiltIn Position\n"
+		"OpMemberDecorate %BP_per_vertex_out 1 BuiltIn PointSize\n"
+		"OpMemberDecorate %BP_per_vertex_out 2 BuiltIn ClipDistance\n"
+		"OpMemberDecorate %BP_per_vertex_out 3 BuiltIn CullDistance\n"
+		"OpDecorate %BP_per_vertex_out Block\n"
+		"OpDecorate %BP_gl_tessCoord BuiltIn TessCoord\n"
+		"OpDecorate %BP_in_position Location 2\n"
+		"OpDecorate %BP_out_color Location 1\n"
+		"OpDecorate %BP_in_color Location 1\n"
+		SPIRV_ASSEMBLY_TYPES
+		SPIRV_ASSEMBLY_CONSTANTS
+		SPIRV_ASSEMBLY_ARRAYS
+		"%BP_per_vertex_out = OpTypeStruct %v4f32 %f32 %a1f32 %a1f32\n"
+		"%BP_op_per_vertex_out = OpTypePointer Output %BP_per_vertex_out\n"
+		"%BP_stream = OpVariable %BP_op_per_vertex_out Output\n"
+		"%BP_gl_tessCoord = OpVariable %ip_v3f32 Input\n"
+		"%BP_in_position = OpVariable %ip_a32v4f32 Input\n"
+		"%BP_out_color = OpVariable %op_v4f32 Output\n"
+		"%BP_in_color = OpVariable %ip_a32v4f32 Input\n"
+		"%BP_main = OpFunction %void None %fun\n"
+		"%BP_label = OpLabel\n"
+		"%BP_tc_0_ptr = OpAccessChain %ip_f32 %BP_gl_tessCoord %c_u32_0\n"
+		"%BP_tc_1_ptr = OpAccessChain %ip_f32 %BP_gl_tessCoord %c_u32_1\n"
+		"%BP_tc_2_ptr = OpAccessChain %ip_f32 %BP_gl_tessCoord %c_u32_2\n"
 
-tcu::StringTemplate tessEvalBoilerplate(
-	"OpCapability Tessellation\n"
-	"OpMemoryModel Logical GLSL450\n"
-	"OpEntryPoint TessellationEvaluation %BP_main \"main\" %BP_stream %BP_gl_tessCoord %BP_in_position %BP_out_color %BP_in_color \n"
-	"OpExecutionMode %BP_main InputTriangles\n"
-	"${debug:opt}\n"
-	"OpName %BP_main \"main\"\n"
-	"OpName %BP_per_vertex_out \"gl_PerVertex\"\n"
-	"OpMemberName %BP_per_vertex_out 0 \"gl_Position\"\n"
-	"OpMemberName %BP_per_vertex_out 1 \"gl_PointSize\"\n"
-	"OpMemberName %BP_per_vertex_out 2 \"gl_ClipDistance\"\n"
-	"OpMemberName %BP_per_vertex_out 3 \"gl_CullDistance\"\n"
-	"OpName %BP_stream \"\"\n"
-	"OpName %BP_gl_tessCoord \"gl_TessCoord\"\n"
-	"OpName %BP_in_position \"in_position\"\n"
-	"OpName %BP_out_color \"out_color\"\n"
-	"OpName %BP_in_color \"in_color\"\n"
-	"OpName %test_code \"testfun(vf4;\"\n"
-	"OpMemberDecorate %BP_per_vertex_out 0 BuiltIn Position\n"
-	"OpMemberDecorate %BP_per_vertex_out 1 BuiltIn PointSize\n"
-	"OpMemberDecorate %BP_per_vertex_out 2 BuiltIn ClipDistance\n"
-	"OpMemberDecorate %BP_per_vertex_out 3 BuiltIn CullDistance\n"
-	"OpDecorate %BP_per_vertex_out Block\n"
-	"OpDecorate %BP_gl_tessCoord BuiltIn TessCoord\n"
-	"OpDecorate %BP_in_position Location 2\n"
-	"OpDecorate %BP_out_color Location 1\n"
-	"OpDecorate %BP_in_color Location 1\n"
-	TYPES
-	CONSTANTS
-	ARRAYS
-	"%BP_per_vertex_out = OpTypeStruct %v4f32 %f32 %a1f32 %a1f32\n"
-	"%BP_op_per_vertex_out = OpTypePointer Output %BP_per_vertex_out\n"
-	"%BP_stream = OpVariable %BP_op_per_vertex_out Output\n"
-	"%BP_gl_tessCoord = OpVariable %ip_v3f32 Input\n"
-	"%BP_in_position = OpVariable %ip_a32v4f32 Input\n"
-	"%BP_out_color = OpVariable %op_v4f32 Output\n"
-	"%BP_in_color = OpVariable %ip_a32v4f32 Input\n"
-	"%BP_main = OpFunction %void None %fun\n"
-	"%BP_label = OpLabel\n"
-	"%BP_tc_0_ptr = OpAccessChain %ip_f32 %BP_gl_tessCoord %c_u32_0\n"
-	"%BP_tc_1_ptr = OpAccessChain %ip_f32 %BP_gl_tessCoord %c_u32_1\n"
-	"%BP_tc_2_ptr = OpAccessChain %ip_f32 %BP_gl_tessCoord %c_u32_2\n"
+		"%BP_tc_0 = OpLoad %f32 %BP_tc_0_ptr\n"
+		"%BP_tc_1 = OpLoad %f32 %BP_tc_1_ptr\n"
+		"%BP_tc_2 = OpLoad %f32 %BP_tc_2_ptr\n"
 
-	"%BP_tc_0 = OpLoad %f32 %BP_tc_0_ptr\n"
-	"%BP_tc_1 = OpLoad %f32 %BP_tc_1_ptr\n"
-	"%BP_tc_2 = OpLoad %f32 %BP_tc_2_ptr\n"
+		"%BP_in_pos_0_ptr = OpAccessChain %ip_v4f32 %BP_in_position %c_i32_0\n"
+		"%BP_in_pos_1_ptr = OpAccessChain %ip_v4f32 %BP_in_position %c_i32_1\n"
+		"%BP_in_pos_2_ptr = OpAccessChain %ip_v4f32 %BP_in_position %c_i32_2\n"
 
-	"%BP_in_pos_0_ptr = OpAccessChain %ip_v4f32 %BP_in_position %c_i32_0\n"
-	"%BP_in_pos_1_ptr = OpAccessChain %ip_v4f32 %BP_in_position %c_i32_1\n"
-	"%BP_in_pos_2_ptr = OpAccessChain %ip_v4f32 %BP_in_position %c_i32_2\n"
+		"%BP_in_pos_0 = OpLoad %v4f32 %BP_in_pos_0_ptr\n"
+		"%BP_in_pos_1 = OpLoad %v4f32 %BP_in_pos_1_ptr\n"
+		"%BP_in_pos_2 = OpLoad %v4f32 %BP_in_pos_2_ptr\n"
 
-	"%BP_in_pos_0 = OpLoad %v4f32 %BP_in_pos_0_ptr\n"
-	"%BP_in_pos_1 = OpLoad %v4f32 %BP_in_pos_1_ptr\n"
-	"%BP_in_pos_2 = OpLoad %v4f32 %BP_in_pos_2_ptr\n"
+		"%BP_in_pos_0_weighted = OpVectorTimesScalar %v4f32 %BP_tc_0 %BP_in_pos_0\n"
+		"%BP_in_pos_1_weighted = OpVectorTimesScalar %v4f32 %BP_tc_1 %BP_in_pos_1\n"
+		"%BP_in_pos_2_weighted = OpVectorTimesScalar %v4f32 %BP_tc_2 %BP_in_pos_2\n"
 
-	"%BP_in_pos_0_weighted = OpVectorTimesScalar %v4f32 %BP_tc_0 %BP_in_pos_0\n"
-	"%BP_in_pos_1_weighted = OpVectorTimesScalar %v4f32 %BP_tc_1 %BP_in_pos_1\n"
-	"%BP_in_pos_2_weighted = OpVectorTimesScalar %v4f32 %BP_tc_2 %BP_in_pos_2\n"
+		"%BP_out_pos_ptr = OpAccessChain %op_v4f32 %BP_stream %c_i32_0\n"
 
-	"%BP_out_pos_ptr = OpAccessChain %op_v4f32 %BP_stream %c_i32_0\n"
+		"%BP_in_pos_0_plus_pos_1 = OpFAdd %v4f32 %BP_in_pos_0_weighted %BP_in_pos_1_weighted\n"
+		"%BP_computed_out = OpFAdd %v4f32 %BP_in_pos_0_plus_pos_1 %BP_in_pos_2_weighted\n"
+		"OpStore %BP_out_pos_ptr %BP_computed_out\n"
 
-	"%BP_in_pos_0_plus_pos_1 = OpFAdd %v4f32 %BP_in_pos_0_weighted %BP_in_pos_1_weighted\n"
-	"%BP_computed_out = OpFAdd %v4f32 %BP_in_pos_0_plus_pos_1 %BP_in_pos_2_weighted\n"
-	"OpStore %BP_out_pos_ptr %BP_computed_out\n"
+		"%BP_in_clr_0_ptr = OpAccessChain %ip_v4f32 %BP_in_color %c_i32_0\n"
+		"%BP_in_clr_1_ptr = OpAccessChain %ip_v4f32 %BP_in_color %c_i32_1\n"
+		"%BP_in_clr_2_ptr = OpAccessChain %ip_v4f32 %BP_in_color %c_i32_2\n"
 
-	"%BP_in_clr_0_ptr = OpAccessChain %ip_v4f32 %BP_in_color %c_i32_0\n"
-	"%BP_in_clr_1_ptr = OpAccessChain %ip_v4f32 %BP_in_color %c_i32_1\n"
-	"%BP_in_clr_2_ptr = OpAccessChain %ip_v4f32 %BP_in_color %c_i32_2\n"
+		"%BP_in_clr_0 = OpLoad %v4f32 %BP_in_clr_0_ptr\n"
+		"%BP_in_clr_1 = OpLoad %v4f32 %BP_in_clr_1_ptr\n"
+		"%BP_in_clr_2 = OpLoad %v4f32 %BP_in_clr_2_ptr\n"
 
-	"%BP_in_clr_0 = OpLoad %v4f32 %BP_in_clr_0_ptr\n"
-	"%BP_in_clr_1 = OpLoad %v4f32 %BP_in_clr_1_ptr\n"
-	"%BP_in_clr_2 = OpLoad %v4f32 %BP_in_clr_2_ptr\n"
+		"%BP_in_clr_0_weighted = OpVectorTimesScalar %v4f32 %BP_tc_0 %BP_in_clr_0\n"
+		"%BP_in_clr_1_weighted = OpVectorTimesScalar %v4f32 %BP_tc_1 %BP_in_clr_1\n"
+		"%BP_in_clr_2_weighted = OpVectorTimesScalar %v4f32 %BP_tc_2 %BP_in_clr_2\n"
 
-	"%BP_in_clr_0_weighted = OpVectorTimesScalar %v4f32 %BP_tc_0 %BP_in_clr_0\n"
-	"%BP_in_clr_1_weighted = OpVectorTimesScalar %v4f32 %BP_tc_1 %BP_in_clr_1\n"
-	"%BP_in_clr_2_weighted = OpVectorTimesScalar %v4f32 %BP_tc_2 %BP_in_clr_2\n"
+		"%BP_in_clr_0_plus_col_1 = OpFAdd %v4f32 %BP_in_clr_0_weighted %BP_in_clr_1_weighted\n"
+		"%BP_computed_clr = OpFAdd %v4f32 %BP_in_clr_0_plus_col_1 %BP_in_clr_2_weighted\n"
+		"%BP_clr_transformed = OpFunctionCall %v4f32 %test_code %BP_computed_clr\n"
 
-	"%BP_in_clr_0_plus_col_1 = OpFAdd %v4f32 %BP_in_clr_0_weighted %BP_in_clr_1_weighted\n"
-	"%BP_computed_clr = OpFAdd %v4f32 %BP_in_clr_0_plus_col_1 %BP_in_clr_2_weighted\n"
-	"%BP_clr_transformed = OpFunctionCall %v4f32 %test_code %BP_computed_clr\n"
+		"OpStore %BP_out_color %BP_clr_transformed\n"
+		"OpReturn\n"
+		"OpFunctionEnd\n"
+		"${testfun}\n";
+	return tcu::StringTemplate(tessEvalBoilerplate).specialize(fragments);
+}
 
-	"OpStore %BP_out_color %BP_clr_transformed\n"
-	"OpReturn\n"
-	"OpFunctionEnd\n"
-	"${testfun}\n");
-
-// Boilerplate geometry-shader assembly.  Specialize by mapping "testfun" to an
-// OpFunction definition for %test_code that takes and returns a %v4f32.
-// Prefixes local IDs with "BP_" to avoid collisions with the rest of assembly
-// code.
+// Creates geometry-shader assembly by specializing a boilerplate StringTemplate
+// on fragments, which must (at least) map "testfun" to an OpFunction definition
+// for %test_code that takes and returns a %v4f32.  Boilerplate IDs are prefixed
+// with "BP_" to avoid collisions with fragments.
 //
 // Derived from this GLSL:
 //
@@ -2132,105 +2137,109 @@ tcu::StringTemplate tessEvalBoilerplate(
 // 	 EmitVertex();
 // 	 EndPrimitive();
 // }
-tcu::StringTemplate geometryShaderBoilerplate(
-	"OpCapability Geometry\n"
-	"OpMemoryModel Logical GLSL450\n"
-	"OpEntryPoint Geometry %BP_main \"main\" %BP_stream %BP_gl_in %BP_out_color %BP_in_color\n"
-	"OpExecutionMode %BP_main InputTriangles\n"
-	"OpExecutionMode %BP_main Invocations 0\n"
-	"OpExecutionMode %BP_main OutputTriangleStrip\n"
-	"OpExecutionMode %BP_main OutputVertices 3\n"
-	"${debug:opt}\n"
-	"OpName %BP_main \"main\"\n"
-	"OpName %BP_per_vertex_out \"gl_PerVertex\"\n"
-	"OpMemberName %BP_per_vertex_out 0 \"gl_Position\"\n"
-	"OpMemberName %BP_per_vertex_out 1 \"gl_PointSize\"\n"
-	"OpMemberName %BP_per_vertex_out 2 \"gl_ClipDistance\"\n"
-	"OpMemberName %BP_per_vertex_out 3 \"gl_CullDistance\"\n"
-	"OpName %BP_stream \"\"\n"
-	"OpName %BP_per_vertex_in \"gl_PerVertex\"\n"
-	"OpMemberName %BP_per_vertex_in 0 \"gl_Position\"\n"
-	"OpMemberName %BP_per_vertex_in 1 \"gl_PointSize\"\n"
-	"OpMemberName %BP_per_vertex_in 2 \"gl_ClipDistance\"\n"
-	"OpMemberName %BP_per_vertex_in 3 \"gl_CullDistance\"\n"
-	"OpName %BP_gl_in \"gl_in\"\n"
-	"OpName %BP_out_color \"out_color\"\n"
-	"OpName %BP_in_color \"in_color\"\n"
-	"OpName %test_code \"testfun(vf4;\"\n"
-	"OpMemberDecorate %BP_per_vertex_out 0 BuiltIn Position\n"
-	"OpMemberDecorate %BP_per_vertex_out 1 BuiltIn PointSize\n"
-	"OpMemberDecorate %BP_per_vertex_out 2 BuiltIn ClipDistance\n"
-	"OpMemberDecorate %BP_per_vertex_out 3 BuiltIn CullDistance\n"
-	"OpDecorate %BP_per_vertex_out Block\n"
-	"OpDecorate %BP_per_vertex_out Stream 0\n"
-	"OpDecorate %BP_stream Stream 0\n"
-	"OpMemberDecorate %BP_per_vertex_in 0 BuiltIn Position\n"
-	"OpMemberDecorate %BP_per_vertex_in 1 BuiltIn PointSize\n"
-	"OpMemberDecorate %BP_per_vertex_in 2 BuiltIn ClipDistance\n"
-	"OpMemberDecorate %BP_per_vertex_in 3 BuiltIn CullDistance\n"
-	"OpDecorate %BP_per_vertex_in Block\n"
-	"OpDecorate %BP_out_color Location 1\n"
-	"OpDecorate %BP_out_color Stream 0\n"
-	"OpDecorate %BP_in_color Location 1\n"
-TYPES
-CONSTANTS
-ARRAYS
-	"%BP_per_vertex_out = OpTypeStruct %v4f32 %f32 %a1f32 %a1f32\n"
-	"%BP_per_vertex_in = OpTypeStruct %v4f32 %f32 %a1f32 %a1f32\n"
-	"%BP_a3_per_vertex_in = OpTypeArray %BP_per_vertex_in %c_u32_3\n"
-	"%BP_op_per_vertex_out = OpTypePointer Output %BP_per_vertex_out\n"
-	"%BP_ip_a3_per_vertex_in = OpTypePointer Input %BP_a3_per_vertex_in\n"
+string makeGeometryShaderAssembly(const map<string, string>& fragments)
+{
+	static const char geometryShaderBoilerplate[] =
+		"OpCapability Geometry\n"
+		"OpMemoryModel Logical GLSL450\n"
+		"OpEntryPoint Geometry %BP_main \"main\" %BP_stream %BP_gl_in %BP_out_color %BP_in_color\n"
+		"OpExecutionMode %BP_main InputTriangles\n"
+		"OpExecutionMode %BP_main Invocations 0\n"
+		"OpExecutionMode %BP_main OutputTriangleStrip\n"
+		"OpExecutionMode %BP_main OutputVertices 3\n"
+		"${debug:opt}\n"
+		"OpName %BP_main \"main\"\n"
+		"OpName %BP_per_vertex_out \"gl_PerVertex\"\n"
+		"OpMemberName %BP_per_vertex_out 0 \"gl_Position\"\n"
+		"OpMemberName %BP_per_vertex_out 1 \"gl_PointSize\"\n"
+		"OpMemberName %BP_per_vertex_out 2 \"gl_ClipDistance\"\n"
+		"OpMemberName %BP_per_vertex_out 3 \"gl_CullDistance\"\n"
+		"OpName %BP_stream \"\"\n"
+		"OpName %BP_per_vertex_in \"gl_PerVertex\"\n"
+		"OpMemberName %BP_per_vertex_in 0 \"gl_Position\"\n"
+		"OpMemberName %BP_per_vertex_in 1 \"gl_PointSize\"\n"
+		"OpMemberName %BP_per_vertex_in 2 \"gl_ClipDistance\"\n"
+		"OpMemberName %BP_per_vertex_in 3 \"gl_CullDistance\"\n"
+		"OpName %BP_gl_in \"gl_in\"\n"
+		"OpName %BP_out_color \"out_color\"\n"
+		"OpName %BP_in_color \"in_color\"\n"
+		"OpName %test_code \"testfun(vf4;\"\n"
+		"OpMemberDecorate %BP_per_vertex_out 0 BuiltIn Position\n"
+		"OpMemberDecorate %BP_per_vertex_out 1 BuiltIn PointSize\n"
+		"OpMemberDecorate %BP_per_vertex_out 2 BuiltIn ClipDistance\n"
+		"OpMemberDecorate %BP_per_vertex_out 3 BuiltIn CullDistance\n"
+		"OpDecorate %BP_per_vertex_out Block\n"
+		"OpDecorate %BP_per_vertex_out Stream 0\n"
+		"OpDecorate %BP_stream Stream 0\n"
+		"OpMemberDecorate %BP_per_vertex_in 0 BuiltIn Position\n"
+		"OpMemberDecorate %BP_per_vertex_in 1 BuiltIn PointSize\n"
+		"OpMemberDecorate %BP_per_vertex_in 2 BuiltIn ClipDistance\n"
+		"OpMemberDecorate %BP_per_vertex_in 3 BuiltIn CullDistance\n"
+		"OpDecorate %BP_per_vertex_in Block\n"
+		"OpDecorate %BP_out_color Location 1\n"
+		"OpDecorate %BP_out_color Stream 0\n"
+		"OpDecorate %BP_in_color Location 1\n"
+		SPIRV_ASSEMBLY_TYPES
+		SPIRV_ASSEMBLY_CONSTANTS
+		SPIRV_ASSEMBLY_ARRAYS
+		"%BP_per_vertex_out = OpTypeStruct %v4f32 %f32 %a1f32 %a1f32\n"
+		"%BP_per_vertex_in = OpTypeStruct %v4f32 %f32 %a1f32 %a1f32\n"
+		"%BP_a3_per_vertex_in = OpTypeArray %BP_per_vertex_in %c_u32_3\n"
+		"%BP_op_per_vertex_out = OpTypePointer Output %BP_per_vertex_out\n"
+		"%BP_ip_a3_per_vertex_in = OpTypePointer Input %BP_a3_per_vertex_in\n"
 
-	"%BP_stream = OpVariable %BP_op_per_vertex_out Output\n"
-	"%BP_gl_in = OpVariable %BP_ip_a3_per_vertex_in Input\n"
-	"%BP_out_color = OpVariable %op_v4f32 Output\n"
-	"%BP_in_color = OpVariable %ip_a3v4f32 Input\n"
+		"%BP_stream = OpVariable %BP_op_per_vertex_out Output\n"
+		"%BP_gl_in = OpVariable %BP_ip_a3_per_vertex_in Input\n"
+		"%BP_out_color = OpVariable %op_v4f32 Output\n"
+		"%BP_in_color = OpVariable %ip_a3v4f32 Input\n"
 
-	"%BP_main = OpFunction %void None %fun\n"
-	"%BP_label = OpLabel\n"
-	"%BP_gl_in_0_gl_position = OpAccessChain %ip_v4f32 %BP_gl_in %c_i32_0 %c_i32_0\n"
-	"%BP_gl_in_1_gl_position = OpAccessChain %ip_v4f32 %BP_gl_in %c_i32_1 %c_i32_0\n"
-	"%BP_gl_in_2_gl_position = OpAccessChain %ip_v4f32 %BP_gl_in %c_i32_2 %c_i32_0\n"
+		"%BP_main = OpFunction %void None %fun\n"
+		"%BP_label = OpLabel\n"
+		"%BP_gl_in_0_gl_position = OpAccessChain %ip_v4f32 %BP_gl_in %c_i32_0 %c_i32_0\n"
+		"%BP_gl_in_1_gl_position = OpAccessChain %ip_v4f32 %BP_gl_in %c_i32_1 %c_i32_0\n"
+		"%BP_gl_in_2_gl_position = OpAccessChain %ip_v4f32 %BP_gl_in %c_i32_2 %c_i32_0\n"
 
-	"%BP_in_position_0 = OpLoad %v4f32 %BP_gl_in_0_gl_position\n"
-	"%BP_in_position_1 = OpLoad %v4f32 %BP_gl_in_1_gl_position\n"
-	"%BP_in_position_2 = OpLoad %v4f32 %BP_gl_in_2_gl_position \n"
+		"%BP_in_position_0 = OpLoad %v4f32 %BP_gl_in_0_gl_position\n"
+		"%BP_in_position_1 = OpLoad %v4f32 %BP_gl_in_1_gl_position\n"
+		"%BP_in_position_2 = OpLoad %v4f32 %BP_gl_in_2_gl_position \n"
 
-	"%BP_in_color_0_ptr = OpAccessChain %ip_v4f32 %BP_in_color %c_i32_0\n"
-	"%BP_in_color_1_ptr = OpAccessChain %ip_v4f32 %BP_in_color %c_i32_1\n"
-	"%BP_in_color_2_ptr = OpAccessChain %ip_v4f32 %BP_in_color %c_i32_2\n"
+		"%BP_in_color_0_ptr = OpAccessChain %ip_v4f32 %BP_in_color %c_i32_0\n"
+		"%BP_in_color_1_ptr = OpAccessChain %ip_v4f32 %BP_in_color %c_i32_1\n"
+		"%BP_in_color_2_ptr = OpAccessChain %ip_v4f32 %BP_in_color %c_i32_2\n"
 
-	"%BP_in_color_0 = OpLoad %v4f32 %BP_in_color_0_ptr\n"
-	"%BP_in_color_1 = OpLoad %v4f32 %BP_in_color_1_ptr\n"
-	"%BP_in_color_2 = OpLoad %v4f32 %BP_in_color_2_ptr\n"
+		"%BP_in_color_0 = OpLoad %v4f32 %BP_in_color_0_ptr\n"
+		"%BP_in_color_1 = OpLoad %v4f32 %BP_in_color_1_ptr\n"
+		"%BP_in_color_2 = OpLoad %v4f32 %BP_in_color_2_ptr\n"
 
-	"%BP_transformed_in_color_0 = OpFunctionCall %v4f32 %test_code %BP_in_color_0\n"
-	"%BP_transformed_in_color_1 = OpFunctionCall %v4f32 %test_code %BP_in_color_1\n"
-	"%BP_transformed_in_color_2 = OpFunctionCall %v4f32 %test_code %BP_in_color_2\n"
+		"%BP_transformed_in_color_0 = OpFunctionCall %v4f32 %test_code %BP_in_color_0\n"
+		"%BP_transformed_in_color_1 = OpFunctionCall %v4f32 %test_code %BP_in_color_1\n"
+		"%BP_transformed_in_color_2 = OpFunctionCall %v4f32 %test_code %BP_in_color_2\n"
 
-	"%BP_out_gl_position = OpAccessChain %op_v4f32 %BP_stream %c_i32_0\n"
+		"%BP_out_gl_position = OpAccessChain %op_v4f32 %BP_stream %c_i32_0\n"
 
-	"OpStore %BP_out_gl_position %BP_in_position_0\n"
-	"OpStore %BP_out_color %BP_transformed_in_color_0\n"
-	"OpEmitVertex\n"
+		"OpStore %BP_out_gl_position %BP_in_position_0\n"
+		"OpStore %BP_out_color %BP_transformed_in_color_0\n"
+		"OpEmitVertex\n"
 
-	"OpStore %BP_out_gl_position %BP_in_position_1\n"
-	"OpStore %BP_out_color %BP_transformed_in_color_1\n"
-	"OpEmitVertex\n"
+		"OpStore %BP_out_gl_position %BP_in_position_1\n"
+		"OpStore %BP_out_color %BP_transformed_in_color_1\n"
+		"OpEmitVertex\n"
 
-	"OpStore %BP_out_gl_position %BP_in_position_2\n"
-	"OpStore %BP_out_color %BP_transformed_in_color_2\n"
-	"OpEmitVertex\n"
+		"OpStore %BP_out_gl_position %BP_in_position_2\n"
+		"OpStore %BP_out_color %BP_transformed_in_color_2\n"
+		"OpEmitVertex\n"
 
-	"OpEndPrimitive\n"
-	"OpReturn\n"
-	"OpFunctionEnd\n"
-	"${testfun}\n");
+		"OpEndPrimitive\n"
+		"OpReturn\n"
+		"OpFunctionEnd\n"
+		"${testfun}\n";
+	return tcu::StringTemplate(geometryShaderBoilerplate).specialize(fragments);
+}
 
-// Boilerplate fragment-shader assembly.  Specialize by mapping "testfun" to an
-// OpFunction definition for %test_code that takes and returns a %v4f32.
-// Prefixes local IDs with "BP_" to avoid collisions with the rest of assembly
-// code.
+// Creates fragment-shader assembly by specializing a boilerplate StringTemplate
+// on fragments, which must (at least) map "testfun" to an OpFunction definition
+// for %test_code that takes and returns a %v4f32.  Boilerplate IDs are prefixed
+// with "BP_" to avoid collisions with fragments.
 //
 // Derived from this GLSL:
 //
@@ -2241,35 +2250,40 @@ ARRAYS
 //
 // with modifications including passing vtxColor by value and ripping out
 // testfun() definition.
-tcu::StringTemplate fragmentShaderBoilerplate(
-	"OpCapability Shader\n"
-	"OpMemoryModel Logical GLSL450\n"
-	"OpEntryPoint Fragment %BP_main \"main\" %BP_vtxColor %BP_fragColor\n"
-	"OpExecutionMode %BP_main OriginUpperLeft\n"
-	"${debug:opt}\n"
-	"OpName %BP_main \"main\"\n"
-	"OpName %BP_fragColor \"fragColor\"\n"
-	"OpName %BP_vtxColor \"vtxColor\"\n"
-	"OpName %test_code \"testfun(vf4;\"\n"
-	"OpDecorate %BP_fragColor Location 0\n"
-	"OpDecorate %BP_vtxColor Smooth\n"
-	"OpDecorate %BP_vtxColor Location 1\n"
-	TYPES
-	CONSTANTS
-	ARRAYS
-	"%BP_fragColor = OpVariable %op_v4f32 Output\n"
-	"%BP_vtxColor = OpVariable %ip_v4f32 Input\n"
-	"%BP_main = OpFunction %void None %fun\n"
-	"%BP_label_main = OpLabel\n"
-	"%BP_tmp1 = OpLoad %v4f32 %BP_vtxColor\n"
-	"%BP_tmp2 = OpFunctionCall %v4f32 %test_code %BP_tmp1\n"
-	"OpStore %BP_fragColor %BP_tmp2\n"
-	"OpReturn\n"
-	"OpFunctionEnd\n"
-	"${testfun}\n");
+string makeFragmentShaderAssembly(const map<string, string>& fragments)
+{
+	static const char fragmentShaderBoilerplate[] =
+		"OpCapability Shader\n"
+		"OpMemoryModel Logical GLSL450\n"
+		"OpEntryPoint Fragment %BP_main \"main\" %BP_vtxColor %BP_fragColor\n"
+		"OpExecutionMode %BP_main OriginUpperLeft\n"
+		"${debug:opt}\n"
+		"OpName %BP_main \"main\"\n"
+		"OpName %BP_fragColor \"fragColor\"\n"
+		"OpName %BP_vtxColor \"vtxColor\"\n"
+		"OpName %test_code \"testfun(vf4;\"\n"
+		"OpDecorate %BP_fragColor Location 0\n"
+		"OpDecorate %BP_vtxColor Smooth\n"
+		"OpDecorate %BP_vtxColor Location 1\n"
+		SPIRV_ASSEMBLY_TYPES
+		SPIRV_ASSEMBLY_CONSTANTS
+		SPIRV_ASSEMBLY_ARRAYS
+		"%BP_fragColor = OpVariable %op_v4f32 Output\n"
+		"%BP_vtxColor = OpVariable %ip_v4f32 Input\n"
+		"%BP_main = OpFunction %void None %fun\n"
+		"%BP_label_main = OpLabel\n"
+		"%BP_tmp1 = OpLoad %v4f32 %BP_vtxColor\n"
+		"%BP_tmp2 = OpFunctionCall %v4f32 %test_code %BP_tmp1\n"
+		"OpStore %BP_fragColor %BP_tmp2\n"
+		"OpReturn\n"
+		"OpFunctionEnd\n"
+		"${testfun}\n";
+	return tcu::StringTemplate(fragmentShaderBoilerplate).specialize(fragments);
+}
 
 // Creates fragments that specialize into a simple pass-through shader (of any kind).
-map<string, string> passthruFragments() {
+map<string, string> passthruFragments(void)
+{
 	map<string, string> fragments;
 	fragments["testfun"] =
 		// A %test_code function that returns its argument unchanged.
@@ -2285,11 +2299,11 @@ map<string, string> passthruFragments() {
 // Vertex shader gets custom code from context, the rest are pass-through.
 void addShaderCodeCustomVertex(vk::SourceCollections& dst, InstanceContext context) {
 	map<string, string> passthru = passthruFragments();
-	dst.spirvAsmSources.add("vert") << vertexShaderBoilerplate.specialize(context.testCodeFragments);
-	dst.spirvAsmSources.add("tessc") << tessControlShaderBoilerplate.specialize(passthru);
-	dst.spirvAsmSources.add("tesse") << tessEvalBoilerplate.specialize(passthru);
-	dst.spirvAsmSources.add("geom") << geometryShaderBoilerplate.specialize(passthru);
-	dst.spirvAsmSources.add("frag") << fragmentShaderBoilerplate.specialize(passthru);
+	dst.spirvAsmSources.add("vert") << makeVertexShaderAssembly(context.testCodeFragments);
+	dst.spirvAsmSources.add("tessc") << makeTessControlShaderAssembly(passthru);
+	dst.spirvAsmSources.add("tesse") << makeTessEvalShaderAssembly(passthru);
+	dst.spirvAsmSources.add("geom") << makeGeometryShaderAssembly(passthru);
+	dst.spirvAsmSources.add("frag") << makeFragmentShaderAssembly(passthru);
 }
 
 // Adds shader assembly text to dst.spirvAsmSources for all shader kinds.
@@ -2297,11 +2311,11 @@ void addShaderCodeCustomVertex(vk::SourceCollections& dst, InstanceContext conte
 // pass-through.
 void addShaderCodeCustomTessControl(vk::SourceCollections& dst, InstanceContext context) {
 	map<string, string> passthru = passthruFragments();
-	dst.spirvAsmSources.add("vert") << vertexShaderBoilerplate.specialize(passthru);
-	dst.spirvAsmSources.add("tessc") << tessControlShaderBoilerplate.specialize(context.testCodeFragments);
-	dst.spirvAsmSources.add("tesse") << tessEvalBoilerplate.specialize(passthru);
-	dst.spirvAsmSources.add("geom") << geometryShaderBoilerplate.specialize(passthru);
-	dst.spirvAsmSources.add("frag") << fragmentShaderBoilerplate.specialize(passthru);
+	dst.spirvAsmSources.add("vert") << makeVertexShaderAssembly(passthru);
+	dst.spirvAsmSources.add("tessc") << makeTessControlShaderAssembly(context.testCodeFragments);
+	dst.spirvAsmSources.add("tesse") << makeTessEvalShaderAssembly(passthru);
+	dst.spirvAsmSources.add("geom") << makeGeometryShaderAssembly(passthru);
+	dst.spirvAsmSources.add("frag") << makeFragmentShaderAssembly(passthru);
 }
 
 // Adds shader assembly text to dst.spirvAsmSources for all shader kinds.
@@ -2309,33 +2323,33 @@ void addShaderCodeCustomTessControl(vk::SourceCollections& dst, InstanceContext 
 // pass-through.
 void addShaderCodeCustomTessEval(vk::SourceCollections& dst, InstanceContext context) {
 	map<string, string> passthru = passthruFragments();
-	dst.spirvAsmSources.add("vert") << vertexShaderBoilerplate.specialize(passthru);
-	dst.spirvAsmSources.add("tessc") << tessControlShaderBoilerplate.specialize(passthru);
-	dst.spirvAsmSources.add("tesse") << tessEvalBoilerplate.specialize(context.testCodeFragments);
-	dst.spirvAsmSources.add("geom") << geometryShaderBoilerplate.specialize(passthru);
-	dst.spirvAsmSources.add("frag") << fragmentShaderBoilerplate.specialize(passthru);
+	dst.spirvAsmSources.add("vert") << makeVertexShaderAssembly(passthru);
+	dst.spirvAsmSources.add("tessc") << makeTessControlShaderAssembly(passthru);
+	dst.spirvAsmSources.add("tesse") << makeTessEvalShaderAssembly(context.testCodeFragments);
+	dst.spirvAsmSources.add("geom") << makeGeometryShaderAssembly(passthru);
+	dst.spirvAsmSources.add("frag") << makeFragmentShaderAssembly(passthru);
 }
 
 // Adds shader assembly text to dst.spirvAsmSources for all shader kinds.
 // Geometry shader gets custom code from context, the rest are pass-through.
 void addShaderCodeCustomGeometry(vk::SourceCollections& dst, InstanceContext context) {
 	map<string, string> passthru = passthruFragments();
-	dst.spirvAsmSources.add("vert") << vertexShaderBoilerplate.specialize(passthru);
-	dst.spirvAsmSources.add("tessc") << tessControlShaderBoilerplate.specialize(passthru);
-	dst.spirvAsmSources.add("tesse") << tessEvalBoilerplate.specialize(passthru);
-	dst.spirvAsmSources.add("geom") << geometryShaderBoilerplate.specialize(context.testCodeFragments);
-	dst.spirvAsmSources.add("frag") << fragmentShaderBoilerplate.specialize(passthru);
+	dst.spirvAsmSources.add("vert") << makeVertexShaderAssembly(passthru);
+	dst.spirvAsmSources.add("tessc") << makeTessControlShaderAssembly(passthru);
+	dst.spirvAsmSources.add("tesse") << makeTessEvalShaderAssembly(passthru);
+	dst.spirvAsmSources.add("geom") << makeGeometryShaderAssembly(context.testCodeFragments);
+	dst.spirvAsmSources.add("frag") << makeFragmentShaderAssembly(passthru);
 }
 
 // Adds shader assembly text to dst.spirvAsmSources for all shader kinds.
 // Fragment shader gets custom code from context, the rest are pass-through.
 void addShaderCodeCustomFragment(vk::SourceCollections& dst, InstanceContext context) {
 	map<string, string> passthru = passthruFragments();
-	dst.spirvAsmSources.add("vert") << vertexShaderBoilerplate.specialize(passthru);
-	dst.spirvAsmSources.add("tessc") << tessControlShaderBoilerplate.specialize(passthru);
-	dst.spirvAsmSources.add("tesse") << tessEvalBoilerplate.specialize(passthru);
-	dst.spirvAsmSources.add("geom") << geometryShaderBoilerplate.specialize(passthru);
-	dst.spirvAsmSources.add("frag") << fragmentShaderBoilerplate.specialize(context.testCodeFragments);
+	dst.spirvAsmSources.add("vert") << makeVertexShaderAssembly(passthru);
+	dst.spirvAsmSources.add("tessc") << makeTessControlShaderAssembly(passthru);
+	dst.spirvAsmSources.add("tesse") << makeTessEvalShaderAssembly(passthru);
+	dst.spirvAsmSources.add("geom") << makeGeometryShaderAssembly(passthru);
+	dst.spirvAsmSources.add("frag") << makeFragmentShaderAssembly(context.testCodeFragments);
 }
 
 // Sets up and runs a Vulkan pipeline, then spot-checks the resulting image.
@@ -2919,9 +2933,9 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		VK_CHECK(vk.waitForFences(vkDevice, 1u, &fence.get(), DE_TRUE, ~0ull));
 	}
 
-	void* imagePtr	= readImageBufferMemory->getHostPtr();
-	tcu::ConstPixelBufferAccess pixelBuffer(tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8),
-											renderSize.x(), renderSize.y(), 1, imagePtr);
+	const void* imagePtr	= readImageBufferMemory->getHostPtr();
+	const tcu::ConstPixelBufferAccess pixelBuffer(tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8),
+												  renderSize.x(), renderSize.y(), 1, imagePtr);
 	// Log image
 	{
 		const VkMappedMemoryRange	range		=
