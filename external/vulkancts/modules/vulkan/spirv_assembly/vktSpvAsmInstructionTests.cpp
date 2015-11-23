@@ -1699,18 +1699,23 @@ typedef map<string, vector<EntryToStage> >		ModuleMap;
 struct InstanceContext
 {
 	// Map of modules to what entry_points we care to use from those modules.
-	ModuleMap	moduleMap;
-	RGBA		inputColors[4];
-	RGBA		outputColors[4];
+	ModuleMap				moduleMap;
+	RGBA					inputColors[4];
+	RGBA					outputColors[4];
 	// Concrete SPIR-V code to test via boilerplate specialization.
-	map<string, string> testCodeFragments;
+	map<string, string>		testCodeFragments;
 
 	InstanceContext (const RGBA (&inputs)[4], const RGBA (&outputs)[4], const map<string, string>& testCodeFragments_)
-		: inputColors(inputs), outputColors(outputs), testCodeFragments(testCodeFragments_)
+		: inputColors			(inputs)
+		, outputColors			(outputs)
+		, testCodeFragments		(testCodeFragments_)
 	{}
 
 	InstanceContext (const InstanceContext& other)
-			: moduleMap(other.moduleMap), inputColors(other.inputColors), outputColors(other.outputColors), testCodeFragments(other.testCodeFragments)
+		: moduleMap			(other.moduleMap)
+		, inputColors		(other.inputColors)
+		, outputColors		(other.outputColors)
+		, testCodeFragments	(other.testCodeFragments)
 	{}
 };
 
@@ -1790,7 +1795,7 @@ void createShaders (const DeviceInterface& vk, const VkDevice vkDevice, Instance
 	}
 }
 
-#define SPIRV_ASSEMBLY_TYPES																\
+#define SPIRV_ASSEMBLY_TYPES												\
 	"%void = OpTypeVoid\n"													\
 	"%bool = OpTypeBool\n"													\
 																			\
@@ -1812,7 +1817,7 @@ void createShaders (const DeviceInterface& vk, const VkDevice vkDevice, Instance
 	"%op_f32 = OpTypePointer Output %f32\n"									\
 	"%op_v4f32 = OpTypePointer Output %v4f32\n"
 
-#define SPIRV_ASSEMBLY_CONSTANTS															\
+#define SPIRV_ASSEMBLY_CONSTANTS											\
 	"%c_f32_1 = OpConstant %f32 1\n"										\
 	"%c_i32_0 = OpConstant %i32 0\n"										\
 	"%c_i32_1 = OpConstant %i32 1\n"										\
@@ -1824,7 +1829,7 @@ void createShaders (const DeviceInterface& vk, const VkDevice vkDevice, Instance
 	"%c_u32_32 = OpConstant %u32 32\n"										\
 	"%c_u32_4 = OpConstant %u32 4\n"
 
-#define SPIRV_ASSEMBLY_ARRAYS																\
+#define SPIRV_ASSEMBLY_ARRAYS												\
 	"%a1f32 = OpTypeArray %f32 %c_u32_1\n"									\
 	"%a2f32 = OpTypeArray %f32 %c_u32_2\n"									\
 	"%a3v4f32 = OpTypeArray %v4f32 %c_u32_3\n"								\
@@ -1834,8 +1839,7 @@ void createShaders (const DeviceInterface& vk, const VkDevice vkDevice, Instance
 	"%ip_a32v4f32 = OpTypePointer Input %a32v4f32\n"						\
 	"%op_a2f32 = OpTypePointer Output %a2f32\n"								\
 	"%op_a3v4f32 = OpTypePointer Output %a3v4f32\n"							\
-	"%op_a4f32 = OpTypePointer Output %a4f32\n"								\
-	"%op_f32 = OpTypePointer Output %f32\n"
+	"%op_a4f32 = OpTypePointer Output %a4f32\n"
 
 // Creates vertex-shader assembly by specializing a boilerplate StringTemplate
 // on fragments, which must (at least) map "testfun" to an OpFunction definition
@@ -1843,13 +1847,15 @@ void createShaders (const DeviceInterface& vk, const VkDevice vkDevice, Instance
 // with "BP_" to avoid collisions with fragments.
 //
 // It corresponds roughly to this GLSL:
-//
+//;
 // layout(location = 0) in vec4 position;
 // layout(location = 1) in vec4 color;
 // layout(location = 1) out highp vec4 vtxColor;
 // void main (void) { gl_Position = position; vtxColor = test_func(color); }
 string makeVertexShaderAssembly(const map<string, string>& fragments)
 {
+// \todo [2015-11-23 awoloszyn] Remove OpName once these have stabalized
+// \todo [2015-11-23 awoloszyn] Remove Smooth decoration when we move to SPIR-V 1.0
 	static const char vertexShaderBoilerplate[] =
 		"OpCapability Shader\n"
 		"OpMemoryModel Logical GLSL450\n"
@@ -2953,24 +2959,20 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 
 	const RGBA threshold(1, 1, 1, 1);
 	const RGBA upperLeft(pixelBuffer.getPixel(1, 1));
-	if (!tcu::compareThreshold(upperLeft, instance.outputColors[0], threshold)) {
+	if (!tcu::compareThreshold(upperLeft, instance.outputColors[0], threshold))
 		return TestStatus::fail("Upper left corner mismatch");
-	}
 
 	const RGBA upperRight(pixelBuffer.getPixel(pixelBuffer.getWidth() - 1, 1));
-	if (!tcu::compareThreshold(upperRight, instance.outputColors[1], threshold)) {
+	if (!tcu::compareThreshold(upperRight, instance.outputColors[1], threshold))
 		return TestStatus::fail("Upper right corner mismatch");
-	}
 
 	const RGBA lowerLeft(pixelBuffer.getPixel(1, pixelBuffer.getHeight() - 1));
-	if (!tcu::compareThreshold(lowerLeft, instance.outputColors[2], threshold)) {
+	if (!tcu::compareThreshold(lowerLeft, instance.outputColors[2], threshold))
 		return TestStatus::fail("Lower left corner mismatch");
-	}
 
 	const RGBA lowerRight(pixelBuffer.getPixel(pixelBuffer.getWidth() - 1, pixelBuffer.getHeight() - 1));
-	if (!tcu::compareThreshold(lowerRight, instance.outputColors[3], threshold)) {
+	if (!tcu::compareThreshold(lowerRight, instance.outputColors[3], threshold))
 		return TestStatus::fail("Lower right corner mismatch");
-	}
 
 	return TestStatus::pass("Rendered output matches input");
 }
