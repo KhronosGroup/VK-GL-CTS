@@ -58,7 +58,6 @@
 #include "tcuStringTemplate.hpp"
 
 #include <cmath>
-
 #include "vktSpvAsmComputeShaderCase.hpp"
 #include "vktSpvAsmComputeShaderTestUtil.hpp"
 #include "vktTestCaseUtil.hpp"
@@ -1307,7 +1306,6 @@ tcu::TestCaseGroup* createOpPhiGroup (tcu::TestContext& testCtx)
 			case 2:		outputFloats1[ndx] = inputFloats[ndx] + 1.75f;	break;
 			default:	break;
 		}
-
 		outputFloats2[ndx] = inputFloats[ndx] + 6.5f * 3;
 		outputFloats3[ndx] = 8.5f - inputFloats[ndx];
 	}
@@ -1359,6 +1357,7 @@ tcu::TestCaseGroup* createOpPhiGroup (tcu::TestContext& testCtx)
 		// Case 0 after OpPhi.
 		"%case0    = OpLabel\n"
 		"            OpBranch %phi\n"
+
 
 		// Case 2 after OpPhi.
 		"%case2    = OpLabel\n"
@@ -1636,7 +1635,6 @@ tcu::TestCaseGroup* createMultipleShaderGroup (tcu::TestContext& testCtx)
 	vector<float>					inputFloats		(numElements, 0);
 	vector<float>					outputFloats1	(numElements, 0);
 	vector<float>					outputFloats2	(numElements, 0);
-
 	fillRandomScalars(rnd, -500.f, 500.f, &inputFloats[0], numElements);
 
 	for (size_t ndx = 0; ndx < numElements; ++ndx)
@@ -1743,6 +1741,23 @@ tcu::TestCaseGroup* createMultipleShaderGroup (tcu::TestContext& testCtx)
 	return group.release();
 }
 
+inline std::string makeLongUTF8String (size_t num4ByteChars)
+{
+	// An example of a longest valid UTF-8 character.  Be explicit about the
+	// character type because Microsoft compilers can otherwise interpret the
+	// character string as being over wide (16-bit) characters. Ideally, we
+	// would just use a C++11 UTF-8 string literal, but we want to support older
+	// Microsoft compilers.
+	const std::basic_string<char> earthAfrica("\xF0\x9F\x8C\x8D");
+	std::string longString;
+	longString.reserve(num4ByteChars * 4);
+	for (size_t count = 0; count < num4ByteChars; count++)
+	{
+		longString += earthAfrica;
+	}
+	return longString;
+}
+
 tcu::TestCaseGroup* createOpSourceGroup (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opsource", "Tests the OpSource & OpSourceContinued instruction"));
@@ -1793,7 +1808,7 @@ tcu::TestCaseGroup* createOpSourceGroup (tcu::TestContext& testCtx)
 	cases.push_back(CaseParameter("empty_source_code",						"%fname = OpString \"filename\"\n"
 																			"OpSource GLSL 430 %fname \"\""));
 	cases.push_back(CaseParameter("long_source_code",						"%fname = OpString \"filename\"\n"
-																			"OpSource GLSL 430 %fname \"" + string(65530, 'x') + "\"")); // word count: 65535
+																			"OpSource GLSL 430 %fname \"" + makeLongUTF8String(65530) + "ccc\"")); // word count: 65535
 	cases.push_back(CaseParameter("utf8_source_code",						"%fname = OpString \"filename\"\n"
 																			"OpSource GLSL 430 %fname \"\xE2\x98\x82\xE2\x98\x85\"")); // umbrella & black star symbol
 	cases.push_back(CaseParameter("normal_sourcecontinued",					"%fname = OpString \"filename\"\n"
@@ -1804,7 +1819,7 @@ tcu::TestCaseGroup* createOpSourceGroup (tcu::TestContext& testCtx)
 																			"OpSourceContinued \"\""));
 	cases.push_back(CaseParameter("long_sourcecontinued",					"%fname = OpString \"filename\"\n"
 																			"OpSource GLSL 430 %fname \"#version 430\nvoid main() {}\"\n"
-																			"OpSourceContinued \"" + string(65533, 'x') + "\"")); // word count: 65535
+																			"OpSourceContinued \"" + makeLongUTF8String(65533) + "ccc\"")); // word count: 65535
 	cases.push_back(CaseParameter("utf8_sourcecontinued",					"%fname = OpString \"filename\"\n"
 																			"OpSource GLSL 430 %fname \"#version 430\nvoid main() {}\"\n"
 																			"OpSourceContinued \"\xE2\x98\x8E\xE2\x9A\x91\"")); // white telephone & black flag symbol
@@ -1879,7 +1894,7 @@ tcu::TestCaseGroup* createOpSourceExtensionGroup (tcu::TestContext& testCtx)
 	cases.push_back(CaseParameter("real_extension",		"GL_ARB_texture_rectangle"));
 	cases.push_back(CaseParameter("fake_extension",		"GL_ARB_im_the_ultimate_extension"));
 	cases.push_back(CaseParameter("utf8_extension",		"GL_ARB_\xE2\x98\x82\xE2\x98\x85"));
-	cases.push_back(CaseParameter("long_extension",		string(65533, 'e'))); // word count: 65535
+	cases.push_back(CaseParameter("long_extension",		makeLongUTF8String(65533) + "ccc")); // word count: 65535
 
 	fillRandomScalars(rnd, -200.f, 200.f, &inputFloats[0], numElements);
 
@@ -2332,7 +2347,6 @@ tcu::TestCaseGroup* createOpQuantizeToF16Group (tcu::TestContext& testCtx)
 
 	return group.release();
 }
-
 // Checks that constant null/composite values can be used in computation.
 tcu::TestCaseGroup* createOpConstantUsageGroup (tcu::TestContext& testCtx)
 {
@@ -2853,8 +2867,8 @@ tcu::TestCaseGroup* createOpUndefGroup (tcu::TestContext& testCtx)
 
 		specializations["TYPE"] = cases[caseNdx].param;
 		spec.assembly = shaderTemplate.specialize(specializations);
-	spec.inputs.push_back(BufferSp(new Float32Buffer(positiveFloats)));
-	spec.outputs.push_back(BufferSp(new Float32Buffer(negativeFloats)));
+		spec.inputs.push_back(BufferSp(new Float32Buffer(positiveFloats)));
+		spec.outputs.push_back(BufferSp(new Float32Buffer(negativeFloats)));
 		spec.numWorkGroups = IVec3(numElements, 1, 1);
 		spec.entryPoint = "main";
 
@@ -2879,8 +2893,10 @@ struct InstanceContext
 	// Concrete SPIR-V code to test via boilerplate specialization.
 	map<string, string>		testCodeFragments;
 
+	bool					hasTessellation;
 	InstanceContext (const RGBA (&inputs)[4], const RGBA (&outputs)[4], const map<string, string>& testCodeFragments_)
 		: testCodeFragments		(testCodeFragments_)
+		, hasTessellation(false)
 	{
 		inputColors[0]		= inputs[0];
 		inputColors[1]		= inputs[1];
@@ -2896,6 +2912,7 @@ struct InstanceContext
 	InstanceContext (const InstanceContext& other)
 		: moduleMap			(other.moduleMap)
 		, testCodeFragments	(other.testCodeFragments)
+		, hasTessellation(other.hasTessellation)
 	{
 		inputColors[0]		= other.inputColors[0];
 		inputColors[1]		= other.inputColors[1];
@@ -2913,15 +2930,15 @@ struct InstanceContext
 struct ShaderElement
 {
 	// The module that contains this shader entrypoint.
-	const char*				moduleName;
+	string					moduleName;
 
 	// The name of the entrypoint.
-	const char*				entryName;
+	string					entryName;
 
 	// Which shader stage this entry point represents.
 	VkShaderStageFlagBits	stage;
 
-	ShaderElement (const char* moduleName_, const char* entryPoint_, VkShaderStageFlagBits shaderStage_)
+	ShaderElement (const string& moduleName_, const string& entryPoint_, VkShaderStageFlagBits shaderStage_)
 		: moduleName(moduleName_)
 		, entryName(entryPoint_)
 		, stage(shaderStage_)
@@ -2933,8 +2950,24 @@ void getDefaultColors (RGBA (&colors)[4])
 {
 	colors[0] = RGBA::white();
 	colors[1] = RGBA::red();
-	colors[2] = RGBA::blue();
-	colors[3] = RGBA::green();
+	colors[2] = RGBA::green();
+	colors[3] = RGBA::blue();
+}
+
+void getHalfColorsFullAlpha (RGBA (&colors)[4])
+{
+	colors[0] = RGBA(127, 127, 127, 255);
+	colors[1] = RGBA(127, 0,   0,	255);
+	colors[2] = RGBA(0,	  127, 0,	255);
+	colors[3] = RGBA(0,	  0,   127, 255);
+}
+
+void getInvertedDefaultColors (RGBA (&colors)[4])
+{
+	colors[0] = RGBA(0,		0,		0,		255);
+	colors[1] = RGBA(0,		255,	255,	255);
+	colors[2] = RGBA(255,	0,		255,	255);
+	colors[3] = RGBA(255,	255,	0,		255);
 }
 
 // Turns a statically sized array of ShaderElements into an instance-context
@@ -2947,6 +2980,11 @@ InstanceContext createInstanceContext (const ShaderElement (&elements)[N], const
 	for (size_t i = 0; i < N; ++i)
 	{
 		ctx.moduleMap[elements[i].moduleName].push_back(std::make_pair(elements[i].entryName, elements[i].stage));
+		if (elements[i].stage == VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT ||
+			elements[i].stage == VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT)
+		{
+			ctx.hasTessellation = true;
+		}
 	}
 	return ctx;
 }
@@ -2988,50 +3026,61 @@ void createPipelineShaderStages (const DeviceInterface& vk, const VkDevice vkDev
 	}
 }
 
-#define SPIRV_ASSEMBLY_TYPES												\
-	"%void = OpTypeVoid\n"													\
-	"%bool = OpTypeBool\n"													\
-																			\
-	"%i32 = OpTypeInt 32 1\n"												\
-	"%u32 = OpTypeInt 32 0\n"												\
-																			\
-	"%f32 = OpTypeFloat 32\n"												\
-	"%v3f32 = OpTypeVector %f32 3\n"										\
-	"%v4f32 = OpTypeVector %f32 4\n"										\
-																			\
-	"%v4f32_function = OpTypeFunction %v4f32 %v4f32\n"						\
-	"%fun = OpTypeFunction %void\n"											\
-																			\
-	"%ip_f32 = OpTypePointer Input %f32\n"									\
-	"%ip_i32 = OpTypePointer Input %i32\n"									\
-	"%ip_v3f32 = OpTypePointer Input %v3f32\n"								\
-	"%ip_v4f32 = OpTypePointer Input %v4f32\n"								\
-																			\
-	"%op_f32 = OpTypePointer Output %f32\n"									\
-	"%op_v4f32 = OpTypePointer Output %v4f32\n"
+#define SPIRV_ASSEMBLY_TYPES																	\
+	"%void = OpTypeVoid\n"																		\
+	"%bool = OpTypeBool\n"																		\
+																								\
+	"%i32 = OpTypeInt 32 1\n"																	\
+	"%u32 = OpTypeInt 32 0\n"																	\
+																								\
+	"%f32 = OpTypeFloat 32\n"																	\
+	"%v3f32 = OpTypeVector %f32 3\n"															\
+	"%v4f32 = OpTypeVector %f32 4\n"															\
+																								\
+	"%v4f32_function = OpTypeFunction %v4f32 %v4f32\n"											\
+	"%fun = OpTypeFunction %void\n"																\
+																								\
+	"%ip_f32 = OpTypePointer Input %f32\n"														\
+	"%ip_i32 = OpTypePointer Input %i32\n"														\
+	"%ip_v3f32 = OpTypePointer Input %v3f32\n"													\
+	"%ip_v4f32 = OpTypePointer Input %v4f32\n"													\
+																								\
+	"%op_f32 = OpTypePointer Output %f32\n"														\
+	"%op_v4f32 = OpTypePointer Output %v4f32\n"													\
+																								\
+	"%fp_f32   = OpTypePointer Function %f32\n"													\
+	"%fp_i32   = OpTypePointer Function %i32\n"													\
+	"%fp_v4f32 = OpTypePointer Function %v4f32\n"
 
-#define SPIRV_ASSEMBLY_CONSTANTS											\
-	"%c_f32_1 = OpConstant %f32 1\n"										\
-	"%c_i32_0 = OpConstant %i32 0\n"										\
-	"%c_i32_1 = OpConstant %i32 1\n"										\
-	"%c_i32_2 = OpConstant %i32 2\n"										\
-	"%c_u32_0 = OpConstant %u32 0\n"										\
-	"%c_u32_1 = OpConstant %u32 1\n"										\
-	"%c_u32_2 = OpConstant %u32 2\n"										\
-	"%c_u32_3 = OpConstant %u32 3\n"										\
-	"%c_u32_32 = OpConstant %u32 32\n"										\
-	"%c_u32_4 = OpConstant %u32 4\n"
 
-#define SPIRV_ASSEMBLY_ARRAYS												\
-	"%a1f32 = OpTypeArray %f32 %c_u32_1\n"									\
-	"%a2f32 = OpTypeArray %f32 %c_u32_2\n"									\
-	"%a3v4f32 = OpTypeArray %v4f32 %c_u32_3\n"								\
-	"%a4f32 = OpTypeArray %f32 %c_u32_4\n"									\
-	"%a32v4f32 = OpTypeArray %v4f32 %c_u32_32\n"							\
-	"%ip_a3v4f32 = OpTypePointer Input %a3v4f32\n"							\
-	"%ip_a32v4f32 = OpTypePointer Input %a32v4f32\n"						\
-	"%op_a2f32 = OpTypePointer Output %a2f32\n"								\
-	"%op_a3v4f32 = OpTypePointer Output %a3v4f32\n"							\
+#define SPIRV_ASSEMBLY_CONSTANTS																\
+	"%c_f32_1 = OpConstant %f32 1.0\n"															\
+	"%c_f32_0 = OpConstant %f32 0.0\n"															\
+	"%c_f32_0_5 = OpConstant %f32 0.5\n"												\
+	"%c_i32_0 = OpConstant %i32 0\n"															\
+	"%c_i32_1 = OpConstant %i32 1\n"															\
+	"%c_i32_2 = OpConstant %i32 2\n"															\
+	"%c_i32_3 = OpConstant %i32 3\n"															\
+	"%c_i32_4 = OpConstant %i32 4\n"															\
+	"%c_u32_0 = OpConstant %u32 0\n"															\
+	"%c_u32_1 = OpConstant %u32 1\n"															\
+	"%c_u32_2 = OpConstant %u32 2\n"															\
+	"%c_u32_3 = OpConstant %u32 3\n"															\
+	"%c_u32_32 = OpConstant %u32 32\n"															\
+	"%c_u32_4 = OpConstant %u32 4\n"															\
+	"%c_v4f32_1_1_1_1 = OpConstantComposite %v4f32 %c_f32_1 %c_f32_1 %c_f32_1 %c_f32_1\n"		\
+	"%c_v4f32_0_5_0_5_0_5_0_5 = OpConstantComposite %v4f32 %c_f32_0_5 %c_f32_0_5 %c_f32_0_5 %c_f32_0_5\n"
+
+#define SPIRV_ASSEMBLY_ARRAYS																	\
+	"%a1f32 = OpTypeArray %f32 %c_u32_1\n"														\
+	"%a2f32 = OpTypeArray %f32 %c_u32_2\n"														\
+	"%a3v4f32 = OpTypeArray %v4f32 %c_u32_3\n"													\
+	"%a4f32 = OpTypeArray %f32 %c_u32_4\n"														\
+	"%a32v4f32 = OpTypeArray %v4f32 %c_u32_32\n"												\
+	"%ip_a3v4f32 = OpTypePointer Input %a3v4f32\n"												\
+	"%ip_a32v4f32 = OpTypePointer Input %a32v4f32\n"											\
+	"%op_a2f32 = OpTypePointer Output %a2f32\n"													\
+	"%op_a3v4f32 = OpTypePointer Output %a3v4f32\n"												\
 	"%op_a4f32 = OpTypePointer Output %a4f32\n"
 
 // Creates vertex-shader assembly by specializing a boilerplate StringTemplate
@@ -3051,7 +3100,7 @@ string makeVertexShaderAssembly(const map<string, string>& fragments)
 	static const char vertexShaderBoilerplate[] =
 		"OpCapability Shader\n"
 		"OpMemoryModel Logical GLSL450\n"
-		"OpEntryPoint Vertex %4 \"main\" %BP_Position %BP_vtxColor %BP_color "
+		"OpEntryPoint Vertex %main \"main\" %BP_Position %BP_vtxColor %BP_color "
 		"%BP_vtxPosition %BP_vertex_id %BP_instance_id\n"
 		"${debug:opt}\n"
 		"OpName %main \"main\"\n"
@@ -3077,6 +3126,7 @@ string makeVertexShaderAssembly(const map<string, string>& fragments)
 		"%BP_color = OpVariable %ip_v4f32 Input\n"
 		"%BP_vertex_id = OpVariable %ip_i32 Input\n"
 		"%BP_instance_id = OpVariable %ip_i32 Input\n"
+		"${pre_main:opt}\n"
 		"%main = OpFunction %void None %fun\n"
 		"%BP_label = OpLabel\n"
 		"%BP_tmp_position = OpLoad %v4f32 %BP_Position\n"
@@ -3150,6 +3200,7 @@ string makeTessControlShaderAssembly (const map<string, string>& fragments)
 		"%BP_in_position = OpVariable %ip_a32v4f32 Input\n"
 		"%BP_gl_TessLevelOuter = OpVariable %op_a4f32 Output\n"
 		"%BP_gl_TessLevelInner = OpVariable %op_a2f32 Output\n"
+		"${pre_main:opt}\n"
 
 		"%BP_main = OpFunction %void None %fun\n"
 		"%BP_label = OpLabel\n"
@@ -3256,6 +3307,7 @@ string makeTessEvalShaderAssembly(const map<string, string>& fragments)
 		"%BP_in_position = OpVariable %ip_a32v4f32 Input\n"
 		"%BP_out_color = OpVariable %op_v4f32 Output\n"
 		"%BP_in_color = OpVariable %ip_a32v4f32 Input\n"
+		"${pre_main:opt}\n"
 		"%BP_main = OpFunction %void None %fun\n"
 		"%BP_label = OpLabel\n"
 		"%BP_tc_0_ptr = OpAccessChain %ip_f32 %BP_gl_tessCoord %c_u32_0\n"
@@ -3374,6 +3426,7 @@ string makeGeometryShaderAssembly(const map<string, string>& fragments)
 		"%BP_out_color = OpVariable %op_v4f32 Output\n"
 		"%BP_in_color = OpVariable %ip_a3v4f32 Input\n"
 		"%BP_out_gl_position = OpVariable %op_v4f32 Output\n"
+		"${pre_main:opt}\n"
 
 		"%BP_main = OpFunction %void None %fun\n"
 		"%BP_label = OpLabel\n"
@@ -3449,6 +3502,7 @@ string makeFragmentShaderAssembly(const map<string, string>& fragments)
 		SPIRV_ASSEMBLY_ARRAYS
 		"%BP_fragColor = OpVariable %op_v4f32 Output\n"
 		"%BP_vtxColor = OpVariable %ip_v4f32 Input\n"
+		"${pre_main:opt}\n"
 		"%BP_main = OpFunction %void None %fun\n"
 		"%BP_label_main = OpLabel\n"
 		"%BP_tmp1 = OpLoad %v4f32 %BP_vtxColor\n"
@@ -3476,7 +3530,8 @@ map<string, string> passthruFragments(void)
 
 // Adds shader assembly text to dst.spirvAsmSources for all shader kinds.
 // Vertex shader gets custom code from context, the rest are pass-through.
-void addShaderCodeCustomVertex(vk::SourceCollections& dst, InstanceContext context) {
+void addShaderCodeCustomVertex(vk::SourceCollections& dst, InstanceContext context)
+{
 	map<string, string> passthru = passthruFragments();
 	dst.spirvAsmSources.add("vert") << makeVertexShaderAssembly(context.testCodeFragments);
 	dst.spirvAsmSources.add("tessc") << makeTessControlShaderAssembly(passthru);
@@ -3488,7 +3543,8 @@ void addShaderCodeCustomVertex(vk::SourceCollections& dst, InstanceContext conte
 // Adds shader assembly text to dst.spirvAsmSources for all shader kinds.
 // Tessellation control shader gets custom code from context, the rest are
 // pass-through.
-void addShaderCodeCustomTessControl(vk::SourceCollections& dst, InstanceContext context) {
+void addShaderCodeCustomTessControl(vk::SourceCollections& dst, InstanceContext context)
+{
 	map<string, string> passthru = passthruFragments();
 	dst.spirvAsmSources.add("vert") << makeVertexShaderAssembly(passthru);
 	dst.spirvAsmSources.add("tessc") << makeTessControlShaderAssembly(context.testCodeFragments);
@@ -3500,7 +3556,8 @@ void addShaderCodeCustomTessControl(vk::SourceCollections& dst, InstanceContext 
 // Adds shader assembly text to dst.spirvAsmSources for all shader kinds.
 // Tessellation evaluation shader gets custom code from context, the rest are
 // pass-through.
-void addShaderCodeCustomTessEval(vk::SourceCollections& dst, InstanceContext context) {
+void addShaderCodeCustomTessEval(vk::SourceCollections& dst, InstanceContext context)
+{
 	map<string, string> passthru = passthruFragments();
 	dst.spirvAsmSources.add("vert") << makeVertexShaderAssembly(passthru);
 	dst.spirvAsmSources.add("tessc") << makeTessControlShaderAssembly(passthru);
@@ -3511,7 +3568,8 @@ void addShaderCodeCustomTessEval(vk::SourceCollections& dst, InstanceContext con
 
 // Adds shader assembly text to dst.spirvAsmSources for all shader kinds.
 // Geometry shader gets custom code from context, the rest are pass-through.
-void addShaderCodeCustomGeometry(vk::SourceCollections& dst, InstanceContext context) {
+void addShaderCodeCustomGeometry(vk::SourceCollections& dst, InstanceContext context)
+{
 	map<string, string> passthru = passthruFragments();
 	dst.spirvAsmSources.add("vert") << makeVertexShaderAssembly(passthru);
 	dst.spirvAsmSources.add("tessc") << makeTessControlShaderAssembly(passthru);
@@ -3522,7 +3580,8 @@ void addShaderCodeCustomGeometry(vk::SourceCollections& dst, InstanceContext con
 
 // Adds shader assembly text to dst.spirvAsmSources for all shader kinds.
 // Fragment shader gets custom code from context, the rest are pass-through.
-void addShaderCodeCustomFragment(vk::SourceCollections& dst, InstanceContext context) {
+void addShaderCodeCustomFragment(vk::SourceCollections& dst, InstanceContext context)
+{
 	map<string, string> passthru = passthruFragments();
 	dst.spirvAsmSources.add("vert") << makeVertexShaderAssembly(passthru);
 	dst.spirvAsmSources.add("tessc") << makeTessControlShaderAssembly(passthru);
@@ -3531,6 +3590,677 @@ void addShaderCodeCustomFragment(vk::SourceCollections& dst, InstanceContext con
 	dst.spirvAsmSources.add("frag") << makeFragmentShaderAssembly(context.testCodeFragments);
 }
 
+void createCombinedModule(vk::SourceCollections& dst, InstanceContext)
+{
+	// \todo [2015-12-07 awoloszyn] Make tessellation / geometry conditional
+	// \todo [2015-12-07 awoloszyn] Remove OpName and OpMemeberName at some point
+	dst.spirvAsmSources.add("module") <<
+		"OpCapability Shader\n"
+		"OpCapability Geometry\n"
+		"OpCapability Tessellation\n"
+		"OpMemoryModel Logical GLSL450\n"
+
+		"OpEntryPoint Vertex %vert_main \"main\" %vert_Position %vert_vtxColor %vert_color %vert_vtxPosition %vert_vertex_id %vert_instance_id\n"
+		"OpEntryPoint Geometry %geom_main \"main\" %out_gl_position %gl_in %out_color %in_color\n"
+		"OpEntryPoint TessellationControl %tessc_main \"main\" %tessc_out_color %tessc_gl_InvocationID %tessc_in_color %tessc_out_position %tessc_in_position %tessc_gl_TessLevelOuter %tessc_gl_TessLevelInner\n"
+		"OpEntryPoint TessellationEvaluation %tesse_main \"main\" %tesse_stream %tesse_gl_tessCoord %tesse_in_position %tesse_out_color %tesse_in_color \n"
+		"OpEntryPoint Fragment %frag_main \"main\" %frag_vtxColor %frag_fragColor\n"
+
+		"OpExecutionMode %geom_main Triangles\n"
+		"OpExecutionMode %geom_main Invocations 0\n"
+		"OpExecutionMode %geom_main OutputTriangleStrip\n"
+		"OpExecutionMode %geom_main OutputVertices 3\n"
+
+		"OpExecutionMode %tessc_main OutputVertices 3\n"
+
+		"OpExecutionMode %tesse_main Triangles\n"
+
+		"OpExecutionMode %frag_main OriginUpperLeft\n"
+
+		"; Vertex decorations\n"
+		"OpName %vert_main \"main\"\n"
+		"OpName %vert_vtxPosition \"vtxPosition\"\n"
+		"OpName %vert_Position \"position\"\n"
+		"OpName %vert_vtxColor \"vtxColor\"\n"
+		"OpName %vert_color \"color\"\n"
+		"OpName %vert_vertex_id \"gl_VertexID\"\n"
+		"OpName %vert_instance_id \"gl_InstanceID\"\n"
+		"OpDecorate %vert_vtxPosition Location 2\n"
+		"OpDecorate %vert_Position Location 0\n"
+		"OpDecorate %vert_vtxColor Location 1\n"
+		"OpDecorate %vert_color Location 1\n"
+		"OpDecorate %vert_vertex_id BuiltIn VertexId\n"
+		"OpDecorate %vert_instance_id BuiltIn InstanceId\n"
+
+		"; Geometry decorations\n"
+		"OpName %geom_main \"main\"\n"
+		"OpName %per_vertex_in \"gl_PerVertex\"\n"
+		"OpMemberName %per_vertex_in 0 \"gl_Position\"\n"
+		"OpMemberName %per_vertex_in 1 \"gl_PointSize\"\n"
+		"OpMemberName %per_vertex_in 2 \"gl_ClipDistance\"\n"
+		"OpMemberName %per_vertex_in 3 \"gl_CullDistance\"\n"
+		"OpName %gl_in \"gl_in\"\n"
+		"OpName %out_color \"out_color\"\n"
+		"OpName %in_color \"in_color\"\n"
+		"OpDecorate %out_gl_position BuiltIn Position\n"
+		"OpMemberDecorate %per_vertex_in 0 BuiltIn Position\n"
+		"OpMemberDecorate %per_vertex_in 1 BuiltIn PointSize\n"
+		"OpMemberDecorate %per_vertex_in 2 BuiltIn ClipDistance\n"
+		"OpMemberDecorate %per_vertex_in 3 BuiltIn CullDistance\n"
+		"OpDecorate %per_vertex_in Block\n"
+		"OpDecorate %out_color Location 1\n"
+		"OpDecorate %out_color Stream 0\n"
+		"OpDecorate %in_color Location 1\n"
+
+		"; Tessellation Control decorations\n"
+		"OpName %tessc_main \"main\"\n"
+		"OpName %tessc_out_color \"out_color\"\n"
+		"OpName %tessc_gl_InvocationID \"gl_InvocationID\"\n"
+		"OpName %tessc_in_color \"in_color\"\n"
+		"OpName %tessc_out_position \"out_position\"\n"
+		"OpName %tessc_in_position \"in_position\"\n"
+		"OpName %tessc_gl_TessLevelOuter \"gl_TessLevelOuter\"\n"
+		"OpName %tessc_gl_TessLevelInner \"gl_TessLevelInner\"\n"
+		"OpDecorate %tessc_out_color Location 1\n"
+		"OpDecorate %tessc_gl_InvocationID BuiltIn InvocationId\n"
+		"OpDecorate %tessc_in_color Location 1\n"
+		"OpDecorate %tessc_out_position Location 2\n"
+		"OpDecorate %tessc_in_position Location 2\n"
+		"OpDecorate %tessc_gl_TessLevelOuter Patch\n"
+		"OpDecorate %tessc_gl_TessLevelOuter BuiltIn TessLevelOuter\n"
+		"OpDecorate %tessc_gl_TessLevelInner Patch\n"
+		"OpDecorate %tessc_gl_TessLevelInner BuiltIn TessLevelInner\n"
+
+		"; Tessellation Evaluation decorations\n"
+		"OpName %tesse_main \"main\"\n"
+		"OpName %tesse_per_vertex_out \"gl_PerVertex\"\n"
+		"OpMemberName %tesse_per_vertex_out 0 \"gl_Position\"\n"
+		"OpMemberName %tesse_per_vertex_out 1 \"gl_PointSize\"\n"
+		"OpMemberName %tesse_per_vertex_out 2 \"gl_ClipDistance\"\n"
+		"OpMemberName %tesse_per_vertex_out 3 \"gl_CullDistance\"\n"
+		"OpName %tesse_stream \"\"\n"
+		"OpName %tesse_gl_tessCoord \"gl_TessCoord\"\n"
+		"OpName %tesse_in_position \"in_position\"\n"
+		"OpName %tesse_out_color \"out_color\"\n"
+		"OpName %tesse_in_color \"in_color\"\n"
+		"OpMemberDecorate %tesse_per_vertex_out 0 BuiltIn Position\n"
+		"OpMemberDecorate %tesse_per_vertex_out 1 BuiltIn PointSize\n"
+		"OpMemberDecorate %tesse_per_vertex_out 2 BuiltIn ClipDistance\n"
+		"OpMemberDecorate %tesse_per_vertex_out 3 BuiltIn CullDistance\n"
+		"OpDecorate %tesse_per_vertex_out Block\n"
+		"OpDecorate %tesse_gl_tessCoord BuiltIn TessCoord\n"
+		"OpDecorate %tesse_in_position Location 2\n"
+		"OpDecorate %tesse_out_color Location 1\n"
+		"OpDecorate %tesse_in_color Location 1\n"
+
+		"; Fragment decorations\n"
+		"OpName %frag_main \"main\"\n"
+		"OpName %frag_fragColor \"fragColor\"\n"
+		"OpName %frag_vtxColor \"vtxColor\"\n"
+		"OpDecorate %frag_fragColor Location 0\n"
+		"OpDecorate %frag_vtxColor Location 1\n"
+
+		SPIRV_ASSEMBLY_TYPES
+		SPIRV_ASSEMBLY_CONSTANTS
+		SPIRV_ASSEMBLY_ARRAYS
+
+		"; Vertex Variables\n"
+		"%vert_vtxPosition = OpVariable %op_v4f32 Output\n"
+		"%vert_Position = OpVariable %ip_v4f32 Input\n"
+		"%vert_vtxColor = OpVariable %op_v4f32 Output\n"
+		"%vert_color = OpVariable %ip_v4f32 Input\n"
+		"%vert_vertex_id = OpVariable %ip_i32 Input\n"
+		"%vert_instance_id = OpVariable %ip_i32 Input\n"
+
+		"; Geometry Variables\n"
+		"%geom_per_vertex_in = OpTypeStruct %v4f32 %f32 %a1f32 %a1f32\n"
+		"%geom_a3_per_vertex_in = OpTypeArray %geom_per_vertex_in %c_u32_3\n"
+		"%geom_ip_a3_per_vertex_in = OpTypePointer Input %a3_per_vertex_in\n"
+		"%geom_gl_in = OpVariable %geom_ip_a3_per_vertex_in Input\n"
+		"%geom_out_color = OpVariable %op_v4f32 Output\n"
+		"%geom_in_color = OpVariable %ip_a3v4f32 Input\n"
+		"%geom_out_gl_position = OpVariable %op_v4f32 Output\n"
+
+		"; Tessellation Control Variables\n"
+		"%tessc_out_color = OpVariable %op_a3v4f32 Output\n"
+		"%tessc_gl_InvocationID = OpVariable %ip_i32 Input\n"
+		"%tessc_in_color = OpVariable %ip_a32v4f32 Input\n"
+		"%tessc_out_position = OpVariable %op_a3v4f32 Output\n"
+		"%tessc_in_position = OpVariable %ip_a32v4f32 Input\n"
+		"%tessc_gl_TessLevelOuter = OpVariable %op_a4f32 Output\n"
+		"%tessc_gl_TessLevelInner = OpVariable %op_a2f32 Output\n"
+
+		"; Tessellation Evaluation Decorations\n"
+		"%tesse_per_vertex_out = OpTypeStruct %v4f32 %f32 %a1f32 %a1f32\n"
+		"%tesse_op_per_vertex_out = OpTypePointer Output %tesse_per_vertex_out\n"
+		"%tesse_stream = OpVariable %tesse_op_per_vertex_out Output\n"
+		"%tesse_gl_tessCoord = OpVariable %ip_v3f32 Input\n"
+		"%tesse_in_position = OpVariable %ip_a32v4f32 Input\n"
+		"%tesse_out_color = OpVariable %op_v4f32 Output\n"
+		"%tesse_in_color = OpVariable %ip_a32v4f32 Input\n"
+
+		"; Fragment Variables\n"
+		"%frag_fragColor = OpVariable %op_v4f32 Output\n"
+		"%frag_vtxColor = OpVariable %ip_v4f32 Input\n"
+
+		"; Vertex Entry\n"
+		"%vert_main = OpFunction %void None %fun\n"
+		"%vert_label = OpLabel\n"
+		"%vert_tmp_position = OpLoad %v4f32 %vert_Position\n"
+		"OpStore %vert_vtxPosition %vert_tmp_position\n"
+		"%vert_tmp_color = OpLoad %v4f32 %vert_color\n"
+		"OpStore %vert_vtxColor %vert_tmp_color\n"
+		"OpReturn\n"
+		"OpFunctionEnd\n"
+
+		"; Geometry Entry\n"
+		"%geom_main = OpFunction %void None %fun\n"
+		"%geom_label = OpLabel\n"
+		"%geom_gl_in_0_gl_position = OpAccessChain %ip_v4f32 %geom_gl_in %c_i32_0 %c_i32_0\n"
+		"%geom_gl_in_1_gl_position = OpAccessChain %ip_v4f32 %geom_gl_in %c_i32_1 %c_i32_0\n"
+		"%geom_gl_in_2_gl_position = OpAccessChain %ip_v4f32 %geom_gl_in %c_i32_2 %c_i32_0\n"
+		"%geom_in_position_0 = OpLoad %v4f32 %geom_gl_in_0_gl_position\n"
+		"%geom_in_position_1 = OpLoad %v4f32 %geom_gl_in_1_gl_position\n"
+		"%geom_in_position_2 = OpLoad %v4f32 %geom_gl_in_2_gl_position \n"
+		"%geom_in_color_0_ptr = OpAccessChain %ip_v4f32 %geom_in_color %c_i32_0\n"
+		"%geom_in_color_1_ptr = OpAccessChain %ip_v4f32 %geom_in_color %c_i32_1\n"
+		"%geom_in_color_2_ptr = OpAccessChain %ip_v4f32 %geom_in_color %c_i32_2\n"
+		"%geom_in_color_0 = OpLoad %v4f32 %geom_in_color_0_ptr\n"
+		"%geom_in_color_1 = OpLoad %v4f32 %geom_in_color_1_ptr\n"
+		"%geom_in_color_2 = OpLoad %v4f32 %geom_in_color_2_ptr\n"
+		"OpStore %geom_out_gl_position %geom_in_position_0\n"
+		"OpStore %geom_out_color %geom_in_color_0\n"
+		"OpEmitVertex\n"
+		"OpStore %geom_out_gl_position %geom_in_position_1\n"
+		"OpStore %geom_out_color %geom_in_color_1\n"
+		"OpEmitVertex\n"
+		"OpStore %geom_out_gl_position %geom_in_position_2\n"
+		"OpStore %geom_out_color %geom_in_color_2\n"
+		"OpEmitVertex\n"
+		"OpEndPrimitive\n"
+		"OpReturn\n"
+		"OpFunctionEnd\n"
+
+		"; Tessellation Control Entry\n"
+		"%tessc_main = OpFunction %void None %fun\n"
+		"%tessc_label = OpLabel\n"
+		"%tessc_invocation_id = OpLoad %i32 %tessc_gl_InvocationID\n"
+		"%tessc_in_color_ptr = OpAccessChain %ip_v4f32 %tessc_in_color %tessc_invocation_id\n"
+		"%tessc_in_position_ptr = OpAccessChain %ip_v4f32 %tessc_in_position %tessc_invocation_id\n"
+		"%tessc_in_color_val = OpLoad %v4f32 %tessc_in_color_ptr\n"
+		"%tessc_in_position_val = OpLoad %v4f32 %tessc_in_position_ptr\n"
+		"%tessc_out_color_ptr = OpAccessChain %op_v4f32 %tessc_out_color %tessc_invocation_id\n"
+		"%tessc_out_position_ptr = OpAccessChain %op_v4f32 %tessc_out_position %tessc_invocation_id\n"
+		"OpStore %tessc_out_color_ptr %tessc_in_color_val\n"
+		"OpStore %tessc_out_position_ptr %tessc_in_position_val\n"
+		"%tessc_is_first_invocation = OpIEqual %bool %tessc_invocation_id %c_i32_0\n"
+		"OpSelectionMerge %tessc_merge_label None\n"
+		"OpBranchConditional %tessc_is_first_invocation %tessc_first_invocation %tessc_merge_label\n"
+		"%tessc_first_invocation = OpLabel\n"
+		"%tessc_tess_outer_0 = OpAccessChain %op_f32 %tessc_gl_TessLevelOuter %c_i32_0\n"
+		"%tessc_tess_outer_1 = OpAccessChain %op_f32 %tessc_gl_TessLevelOuter %c_i32_1\n"
+		"%tessc_tess_outer_2 = OpAccessChain %op_f32 %tessc_gl_TessLevelOuter %c_i32_2\n"
+		"%tessc_tess_inner = OpAccessChain %op_f32 %tessc_gl_TessLevelInner %c_i32_0\n"
+		"OpStore %tessc_tess_outer_0 %c_f32_1\n"
+		"OpStore %tessc_tess_outer_1 %c_f32_1\n"
+		"OpStore %tessc_tess_outer_2 %c_f32_1\n"
+		"OpStore %tessc_tess_inner %c_f32_1\n"
+		"OpBranch %tessc_merge_label\n"
+		"%tessc_merge_label = OpLabel\n"
+		"OpReturn\n"
+		"OpFunctionEnd\n"
+
+		"; Tessellation Evaluation Entry\n"
+		"%tesse_main = OpFunction %void None %fun\n"
+		"%tesse_label = OpLabel\n"
+		"%tesse_tc_0_ptr = OpAccessChain %ip_f32 %tesse_gl_tessCoord %c_u32_0\n"
+		"%tesse_tc_1_ptr = OpAccessChain %ip_f32 %tesse_gl_tessCoord %c_u32_1\n"
+		"%tesse_tc_2_ptr = OpAccessChain %ip_f32 %tesse_gl_tessCoord %c_u32_2\n"
+		"%tesse_tc_0 = OpLoad %f32 %tesse_tc_0_ptr\n"
+		"%tesse_tc_1 = OpLoad %f32 %tesse_tc_1_ptr\n"
+		"%tesse_tc_2 = OpLoad %f32 %tesse_tc_2_ptr\n"
+		"%tesse_in_pos_0_ptr = OpAccessChain %ip_v4f32 %tesse_in_position %c_i32_0\n"
+		"%tesse_in_pos_1_ptr = OpAccessChain %ip_v4f32 %tesse_in_position %c_i32_1\n"
+		"%tesse_in_pos_2_ptr = OpAccessChain %ip_v4f32 %tesse_in_position %c_i32_2\n"
+		"%tesse_in_pos_0 = OpLoad %v4f32 %tesse_in_pos_0_ptr\n"
+		"%tesse_in_pos_1 = OpLoad %v4f32 %tesse_in_pos_1_ptr\n"
+		"%tesse_in_pos_2 = OpLoad %v4f32 %tesse_in_pos_2_ptr\n"
+		"%tesse_in_pos_0_weighted = OpVectorTimesScalar %v4f32 %BP_tc_0 %tesse_in_pos_0\n"
+		"%tesse_in_pos_1_weighted = OpVectorTimesScalar %v4f32 %BP_tc_1 %tesse_in_pos_1\n"
+		"%tesse_in_pos_2_weighted = OpVectorTimesScalar %v4f32 %BP_tc_2 %tesse_in_pos_2\n"
+		"%tesse_out_pos_ptr = OpAccessChain %op_v4f32 %tesse_stream %c_i32_0\n"
+		"%tesse_in_pos_0_plus_pos_1 = OpFAdd %v4f32 %tesse_in_pos_0_weighted %tesse_in_pos_1_weighted\n"
+		"%tesse_computed_out = OpFAdd %v4f32 %tesse_in_pos_0_plus_pos_1 %tesse_in_pos_2_weighted\n"
+		"OpStore %tesse_out_pos_ptr %tesse_computed_out\n"
+		"%tesse_in_clr_0_ptr = OpAccessChain %ip_v4f32 %tesse_in_color %c_i32_0\n"
+		"%tesse_in_clr_1_ptr = OpAccessChain %ip_v4f32 %tesse_in_color %c_i32_1\n"
+		"%tesse_in_clr_2_ptr = OpAccessChain %ip_v4f32 %tesse_in_color %c_i32_2\n"
+		"%tesse_in_clr_0 = OpLoad %v4f32 %tesse_in_clr_0_ptr\n"
+		"%tesse_in_clr_1 = OpLoad %v4f32 %tesse_in_clr_1_ptr\n"
+		"%tesse_in_clr_2 = OpLoad %v4f32 %tesse_in_clr_2_ptr\n"
+		"%tesse_in_clr_0_weighted = OpVectorTimesScalar %v4f32 %tesse_tc_0 %tesse_in_clr_0\n"
+		"%tesse_in_clr_1_weighted = OpVectorTimesScalar %v4f32 %tesse_tc_1 %tesse_in_clr_1\n"
+		"%tesse_in_clr_2_weighted = OpVectorTimesScalar %v4f32 %tesse_tc_2 %tesse_in_clr_2\n"
+		"%tesse_in_clr_0_plus_col_1 = OpFAdd %v4f32 %tesse_in_clr_0_weighted %tesse_in_clr_1_weighted\n"
+		"%tesse_computed_clr = OpFAdd %v4f32 %tesse_in_clr_0_plus_col_1 %tesse_in_clr_2_weighted\n"
+		"OpStore %tesse_out_color %tesse_computed_clr\n"
+		"OpReturn\n"
+		"OpFunctionEnd\n"
+
+		"; Fragment Entry\n"
+		"%frag_main = OpFunction %void None %fun\n"
+		"%frag_label_main = OpLabel\n"
+		"%frag_tmp1 = OpLoad %v4f32 %frag_vtxColor\n"
+		"OpStore %frag_fragColor %frag_tmp1\n"
+		"OpReturn\n"
+		"OpFunctionEnd\n";
+}
+
+// This has two shaders of each stage. The first
+// is a passthrough, the second inverts the color.
+void createMultipleEntries(vk::SourceCollections& dst, InstanceContext)
+{
+	dst.spirvAsmSources.add("vert") <<
+	// This module contains 2 vertex shaders. One that is a passthrough
+	// and a second that inverts the color of the output (1.0 - color).
+		"OpCapability Shader\n"
+		"OpMemoryModel Logical GLSL450\n"
+		"OpEntryPoint Vertex %main \"vert1\" %Position %vtxColor %color %vtxPosition %vertex_id %instance_id\n"
+		"OpEntryPoint Vertex %main2 \"vert2\" %Position %vtxColor %color %vtxPosition %vertex_id %instance_id\n"
+
+		"OpName %main \"frag1\"\n"
+		"OpName %main2 \"frag2\"\n"
+		"OpName %vtxPosition \"vtxPosition\"\n"
+		"OpName %Position \"position\"\n"
+		"OpName %vtxColor \"vtxColor\"\n"
+		"OpName %color \"color\"\n"
+		"OpName %vertex_id \"gl_VertexID\"\n"
+		"OpName %instance_id \"gl_InstanceID\"\n"
+		"OpName %test_code \"testfun(vf4;\"\n"
+
+		"OpDecorate %vtxPosition Location 2\n"
+		"OpDecorate %Position Location 0\n"
+		"OpDecorate %vtxColor Location 1\n"
+		"OpDecorate %color Location 1\n"
+		"OpDecorate %vertex_id BuiltIn VertexId\n"
+		"OpDecorate %instance_id BuiltIn InstanceId\n"
+		SPIRV_ASSEMBLY_TYPES
+		SPIRV_ASSEMBLY_CONSTANTS
+		SPIRV_ASSEMBLY_ARRAYS
+		"%cval = OpConstantComposite %v4f32 %c_f32_1 %c_f32_1 %c_f32_1 %c_f32_0\n"
+		"%vtxPosition = OpVariable %op_v4f32 Output\n"
+		"%Position = OpVariable %ip_v4f32 Input\n"
+		"%vtxColor = OpVariable %op_v4f32 Output\n"
+		"%color = OpVariable %ip_v4f32 Input\n"
+		"%vertex_id = OpVariable %ip_i32 Input\n"
+		"%instance_id = OpVariable %ip_i32 Input\n"
+
+		"%main = OpFunction %void None %fun\n"
+		"%label = OpLabel\n"
+		"%tmp_position = OpLoad %v4f32 %Position\n"
+		"OpStore %vtxPosition %tmp_position\n"
+		"%tmp_color = OpLoad %v4f32 %color\n"
+		"OpStore %vtxColor %tmp_color\n"
+		"OpReturn\n"
+		"OpFunctionEnd\n"
+
+		"%main2 = OpFunction %void None %fun\n"
+		"%label2 = OpLabel\n"
+		"%tmp_position2 = OpLoad %v4f32 %Position\n"
+		"OpStore %vtxPosition %tmp_position2\n"
+		"%tmp_color2 = OpLoad %v4f32 %color\n"
+		"%tmp_color3 = OpFSub %v4f32 %cval %tmp_color2\n"
+		"OpStore %vtxColor %tmp_color3\n"
+		"OpReturn\n"
+		"OpFunctionEnd\n";
+
+	dst.spirvAsmSources.add("frag") <<
+		// This is a single module that contains 2 fragment shaders.
+		// One that passes color through and the other that inverts the output
+		// color (1.0 - color).
+		"OpCapability Shader\n"
+		"OpMemoryModel Logical GLSL450\n"
+		"OpEntryPoint Fragment %main \"frag1\" %vtxColor %fragColor\n"
+		"OpEntryPoint Fragment %main2 \"frag2\" %vtxColor %fragColor\n"
+		"OpExecutionMode %main OriginUpperLeft\n"
+		"OpExecutionMode %main2 OriginUpperLeft\n"
+
+		"OpName %main \"frag1\"\n"
+		"OpName %main2 \"frag2\"\n"
+		"OpName %fragColor \"fragColor\"\n"
+		"OpName %vtxColor \"vtxColor\"\n"
+		"OpDecorate %fragColor Location 0\n"
+		"OpDecorate %vtxColor Location 1\n"
+		SPIRV_ASSEMBLY_TYPES
+		SPIRV_ASSEMBLY_CONSTANTS
+		SPIRV_ASSEMBLY_ARRAYS
+		"%cval = OpConstantComposite %v4f32 %c_f32_1 %c_f32_1 %c_f32_1 %c_f32_0\n"
+		"%fragColor = OpVariable %op_v4f32 Output\n"
+		"%vtxColor = OpVariable %ip_v4f32 Input\n"
+
+		"%main = OpFunction %void None %fun\n"
+		"%label_main = OpLabel\n"
+		"%tmp1 = OpLoad %v4f32 %vtxColor\n"
+		"OpStore %fragColor %tmp1\n"
+		"OpReturn\n"
+		"OpFunctionEnd\n"
+
+		"%main2 = OpFunction %void None %fun\n"
+		"%label_main2 = OpLabel\n"
+		"%tmp2 = OpLoad %v4f32 %vtxColor\n"
+		"%tmp3 = OpFSub %v4f32 %cval %tmp2\n"
+		"OpStore %fragColor %tmp3\n"
+		"OpReturn\n"
+		"OpFunctionEnd\n";
+
+	dst.spirvAsmSources.add("geom") <<
+		"OpCapability Geometry\n"
+		"OpMemoryModel Logical GLSL450\n"
+		"OpEntryPoint Geometry %geom1_main \"geom1\" %out_gl_position %gl_in %out_color %in_color\n"
+		"OpEntryPoint Geometry %geom2_main \"geom2\" %out_gl_position %gl_in %out_color %in_color\n"
+		"OpExecutionMode %geom1_main Triangles\n"
+		"OpExecutionMode %geom2_main Triangles\n"
+		"OpExecutionMode %geom1_main Invocations 0\n"
+		"OpExecutionMode %geom2_main Invocations 0\n"
+		"OpExecutionMode %geom1_main OutputTriangleStrip\n"
+		"OpExecutionMode %geom2_main OutputTriangleStrip\n"
+		"OpExecutionMode %geom1_main OutputVertices 3\n"
+		"OpExecutionMode %geom2_main OutputVertices 3\n"
+		"OpName %geom1_main \"geom1\"\n"
+		"OpName %geom2_main \"geom2\"\n"
+		"OpName %per_vertex_in \"gl_PerVertex\"\n"
+		"OpMemberName %per_vertex_in 0 \"gl_Position\"\n"
+		"OpMemberName %per_vertex_in 1 \"gl_PointSize\"\n"
+		"OpMemberName %per_vertex_in 2 \"gl_ClipDistance\"\n"
+		"OpMemberName %per_vertex_in 3 \"gl_CullDistance\"\n"
+		"OpName %gl_in \"gl_in\"\n"
+		"OpName %out_color \"out_color\"\n"
+		"OpName %in_color \"in_color\"\n"
+		"OpDecorate %out_gl_position BuiltIn Position\n"
+		"OpMemberDecorate %per_vertex_in 0 BuiltIn Position\n"
+		"OpMemberDecorate %per_vertex_in 1 BuiltIn PointSize\n"
+		"OpMemberDecorate %per_vertex_in 2 BuiltIn ClipDistance\n"
+		"OpMemberDecorate %per_vertex_in 3 BuiltIn CullDistance\n"
+		"OpDecorate %per_vertex_in Block\n"
+		"OpDecorate %out_color Location 1\n"
+		"OpDecorate %out_color Stream 0\n"
+		"OpDecorate %in_color Location 1\n"
+		SPIRV_ASSEMBLY_TYPES
+		SPIRV_ASSEMBLY_CONSTANTS
+		SPIRV_ASSEMBLY_ARRAYS
+		"%cval = OpConstantComposite %v4f32 %c_f32_1 %c_f32_1 %c_f32_1 %c_f32_0\n"
+		"%per_vertex_in = OpTypeStruct %v4f32 %f32 %a1f32 %a1f32\n"
+		"%a3_per_vertex_in = OpTypeArray %per_vertex_in %c_u32_3\n"
+		"%ip_a3_per_vertex_in = OpTypePointer Input %a3_per_vertex_in\n"
+		"%gl_in = OpVariable %ip_a3_per_vertex_in Input\n"
+		"%out_color = OpVariable %op_v4f32 Output\n"
+		"%in_color = OpVariable %ip_a3v4f32 Input\n"
+		"%out_gl_position = OpVariable %op_v4f32 Output\n"
+
+		"%geom1_main = OpFunction %void None %fun\n"
+		"%geom1_label = OpLabel\n"
+		"%geom1_gl_in_0_gl_position = OpAccessChain %ip_v4f32 %gl_in %c_i32_0 %c_i32_0\n"
+		"%geom1_gl_in_1_gl_position = OpAccessChain %ip_v4f32 %gl_in %c_i32_1 %c_i32_0\n"
+		"%geom1_gl_in_2_gl_position = OpAccessChain %ip_v4f32 %gl_in %c_i32_2 %c_i32_0\n"
+		"%geom1_in_position_0 = OpLoad %v4f32 %geom1_gl_in_0_gl_position\n"
+		"%geom1_in_position_1 = OpLoad %v4f32 %geom1_gl_in_1_gl_position\n"
+		"%geom1_in_position_2 = OpLoad %v4f32 %geom1_gl_in_2_gl_position \n"
+		"%geom1_in_color_0_ptr = OpAccessChain %ip_v4f32 %in_color %c_i32_0\n"
+		"%geom1_in_color_1_ptr = OpAccessChain %ip_v4f32 %in_color %c_i32_1\n"
+		"%geom1_in_color_2_ptr = OpAccessChain %ip_v4f32 %in_color %c_i32_2\n"
+		"%geom1_in_color_0 = OpLoad %v4f32 %geom1_in_color_0_ptr\n"
+		"%geom1_in_color_1 = OpLoad %v4f32 %geom1_in_color_1_ptr\n"
+		"%geom1_in_color_2 = OpLoad %v4f32 %geom1_in_color_2_ptr\n"
+		"OpStore %out_gl_position %geom1_in_position_0\n"
+		"OpStore %out_color %geom1_in_color_0\n"
+		"OpEmitVertex\n"
+		"OpStore %out_gl_position %geom1_in_position_1\n"
+		"OpStore %out_color %geom1_in_color_1\n"
+		"OpEmitVertex\n"
+		"OpStore %out_gl_position %geom1_in_position_2\n"
+		"OpStore %out_color %geom1_in_color_2\n"
+		"OpEmitVertex\n"
+		"OpEndPrimitive\n"
+		"OpReturn\n"
+		"OpFunctionEnd\n"
+
+		"%geom2_main = OpFunction %void None %fun\n"
+		"%geom2_label = OpLabel\n"
+		"%geom2_gl_in_0_gl_position = OpAccessChain %ip_v4f32 %gl_in %c_i32_0 %c_i32_0\n"
+		"%geom2_gl_in_1_gl_position = OpAccessChain %ip_v4f32 %gl_in %c_i32_1 %c_i32_0\n"
+		"%geom2_gl_in_2_gl_position = OpAccessChain %ip_v4f32 %gl_in %c_i32_2 %c_i32_0\n"
+		"%geom2_in_position_0 = OpLoad %v4f32 %geom2_gl_in_0_gl_position\n"
+		"%geom2_in_position_1 = OpLoad %v4f32 %geom2_gl_in_1_gl_position\n"
+		"%geom2_in_position_2 = OpLoad %v4f32 %geom2_gl_in_2_gl_position \n"
+		"%geom2_in_color_0_ptr = OpAccessChain %ip_v4f32 %in_color %c_i32_0\n"
+		"%geom2_in_color_1_ptr = OpAccessChain %ip_v4f32 %in_color %c_i32_1\n"
+		"%geom2_in_color_2_ptr = OpAccessChain %ip_v4f32 %in_color %c_i32_2\n"
+		"%geom2_in_color_0 = OpLoad %v4f32 %geom2_in_color_0_ptr\n"
+		"%geom2_in_color_1 = OpLoad %v4f32 %geom2_in_color_1_ptr\n"
+		"%geom2_in_color_2 = OpLoad %v4f32 %geom2_in_color_2_ptr\n"
+		"%geom2_transformed_in_color_0 = OpFSub %v4f32 %cval %geom2_in_color_0\n"
+		"%geom2_transformed_in_color_1 = OpFSub %v4f32 %cval %geom2_in_color_1\n"
+		"%geom2_transformed_in_color_2 = OpFSub %v4f32 %cval %geom2_in_color_2\n"
+		"OpStore %out_gl_position %geom2_in_position_0\n"
+		"OpStore %out_color %geom2_transformed_in_color_0\n"
+		"OpEmitVertex\n"
+		"OpStore %out_gl_position %geom2_in_position_1\n"
+		"OpStore %out_color %geom2_transformed_in_color_1\n"
+		"OpEmitVertex\n"
+		"OpStore %out_gl_position %geom2_in_position_2\n"
+		"OpStore %out_color %geom2_transformed_in_color_2\n"
+		"OpEmitVertex\n"
+		"OpEndPrimitive\n"
+		"OpReturn\n"
+		"OpFunctionEnd\n";
+
+	dst.spirvAsmSources.add("tessc") <<
+		"OpCapability Tessellation\n"
+		"OpMemoryModel Logical GLSL450\n"
+		"OpEntryPoint TessellationControl %tessc1_main \"tessc1\" %out_color %gl_InvocationID %in_color %out_position %in_position %gl_TessLevelOuter %gl_TessLevelInner\n"
+		"OpEntryPoint TessellationControl %tessc2_main \"tessc2\" %out_color %gl_InvocationID %in_color %out_position %in_position %gl_TessLevelOuter %gl_TessLevelInner\n"
+		"OpExecutionMode %tessc1_main OutputVertices 3\n"
+		"OpExecutionMode %tessc2_main OutputVertices 3\n"
+		"OpName %tessc1_main \"tessc1\"\n"
+		"OpName %tessc2_main \"tessc2\"\n"
+		"OpName %out_color \"out_color\"\n"
+		"OpName %gl_InvocationID \"gl_InvocationID\"\n"
+		"OpName %in_color \"in_color\"\n"
+		"OpName %out_position \"out_position\"\n"
+		"OpName %in_position \"in_position\"\n"
+		"OpName %gl_TessLevelOuter \"gl_TessLevelOuter\"\n"
+		"OpName %gl_TessLevelInner \"gl_TessLevelInner\"\n"
+		"OpDecorate %out_color Location 1\n"
+		"OpDecorate %gl_InvocationID BuiltIn InvocationId\n"
+		"OpDecorate %in_color Location 1\n"
+		"OpDecorate %out_position Location 2\n"
+		"OpDecorate %in_position Location 2\n"
+		"OpDecorate %gl_TessLevelOuter Patch\n"
+		"OpDecorate %gl_TessLevelOuter BuiltIn TessLevelOuter\n"
+		"OpDecorate %gl_TessLevelInner Patch\n"
+		"OpDecorate %gl_TessLevelInner BuiltIn TessLevelInner\n"
+		SPIRV_ASSEMBLY_TYPES
+		SPIRV_ASSEMBLY_CONSTANTS
+		SPIRV_ASSEMBLY_ARRAYS
+		"%cval = OpConstantComposite %v4f32 %c_f32_1 %c_f32_1 %c_f32_1 %c_f32_0\n"
+		"%out_color = OpVariable %op_a3v4f32 Output\n"
+		"%gl_InvocationID = OpVariable %ip_i32 Input\n"
+		"%in_color = OpVariable %ip_a32v4f32 Input\n"
+		"%out_position = OpVariable %op_a3v4f32 Output\n"
+		"%in_position = OpVariable %ip_a32v4f32 Input\n"
+		"%gl_TessLevelOuter = OpVariable %op_a4f32 Output\n"
+		"%gl_TessLevelInner = OpVariable %op_a2f32 Output\n"
+
+		"%tessc1_main = OpFunction %void None %fun\n"
+		"%tessc1_label = OpLabel\n"
+		"%tessc1_invocation_id = OpLoad %i32 %gl_InvocationID\n"
+		"%tessc1_in_color_ptr = OpAccessChain %ip_v4f32 %in_color %tessc1_invocation_id\n"
+		"%tessc1_in_position_ptr = OpAccessChain %ip_v4f32 %in_position %tessc1_invocation_id\n"
+		"%tessc1_in_color_val = OpLoad %v4f32 %tessc1_in_color_ptr\n"
+		"%tessc1_in_position_val = OpLoad %v4f32 %tessc1_in_position_ptr\n"
+		"%tessc1_out_color_ptr = OpAccessChain %op_v4f32 %out_color %tessc1_invocation_id\n"
+		"%tessc1_out_position_ptr = OpAccessChain %op_v4f32 %out_position %tessc1_invocation_id\n"
+		"OpStore %tessc1_out_color_ptr %tessc1_in_color_val\n"
+		"OpStore %tessc1_out_position_ptr %tessc1_in_position_val\n"
+		"%tessc1_is_first_invocation = OpIEqual %bool %tessc1_invocation_id %c_i32_0\n"
+		"OpSelectionMerge %tessc1_merge_label None\n"
+		"OpBranchConditional %tessc1_is_first_invocation %tessc1_first_invocation %tessc1_merge_label\n"
+		"%tessc1_first_invocation = OpLabel\n"
+		"%tessc1_tess_outer_0 = OpAccessChain %op_f32 %gl_TessLevelOuter %c_i32_0\n"
+		"%tessc1_tess_outer_1 = OpAccessChain %op_f32 %gl_TessLevelOuter %c_i32_1\n"
+		"%tessc1_tess_outer_2 = OpAccessChain %op_f32 %gl_TessLevelOuter %c_i32_2\n"
+		"%tessc1_tess_inner = OpAccessChain %op_f32 %tessc1_gl_TessLevelInner %c_i32_0\n"
+		"OpStore %tessc1_tess_outer_0 %c_f32_1\n"
+		"OpStore %tessc1_tess_outer_1 %c_f32_1\n"
+		"OpStore %tessc1_tess_outer_2 %c_f32_1\n"
+		"OpStore %tessc1_tess_inner %c_f32_1\n"
+		"OpBranch %tessc1_merge_label\n"
+		"%tessc1_merge_label = OpLabel\n"
+		"OpReturn\n"
+		"OpFunctionEnd\n"
+
+		"%tessc2_main = OpFunction %void None %fun\n"
+		"%tessc2_label = OpLabel\n"
+		"%tessc2_invocation_id = OpLoad %i32 %gl_InvocationID\n"
+		"%tessc2_in_color_ptr = OpAccessChain %ip_v4f32 %in_color %tessc2_invocation_id\n"
+		"%tessc2_in_position_ptr = OpAccessChain %ip_v4f32 %in_position %tessc2_invocation_id\n"
+		"%tessc2_in_color_val = OpLoad %v4f32 %tessc2_in_color_ptr\n"
+		"%tessc2_in_position_val = OpLoad %v4f32 %tessc2_in_position_ptr\n"
+		"%tessc2_out_color_ptr = OpAccessChain %op_v4f32 %out_color %tessc2_invocation_id\n"
+		"%tessc2_out_position_ptr = OpAccessChain %op_v4f32 %out_position %tessc2_invocation_id\n"
+		"%tessc2_transformed_color = OpFSub %v4f32 %cval %tessc2_in_color_val\n"
+		"OpStore %tessc2_out_color_ptr %tessc2_transformed_color\n"
+		"OpStore %tessc2_out_position_ptr %tessc2_in_position_val\n"
+		"%tessc2_is_first_invocation = OpIEqual %bool %tessc2_invocation_id %c_i32_0\n"
+		"OpSelectionMerge %tessc2_merge_label None\n"
+		"OpBranchConditional %tessc2_is_first_invocation %tessc2_first_invocation %tessc2_merge_label\n"
+		"%tessc2_first_invocation = OpLabel\n"
+		"%tessc2_tess_outer_0 = OpAccessChain %op_f32 %gl_TessLevelOuter %c_i32_0\n"
+		"%tessc2_tess_outer_1 = OpAccessChain %op_f32 %gl_TessLevelOuter %c_i32_1\n"
+		"%tessc2_tess_outer_2 = OpAccessChain %op_f32 %gl_TessLevelOuter %c_i32_2\n"
+		"%tessc2_tess_inner = OpAccessChain %op_f32 %tessc2_gl_TessLevelInner %c_i32_0\n"
+		"OpStore %tessc2_tess_outer_0 %c_f32_1\n"
+		"OpStore %tessc2_tess_outer_1 %c_f32_1\n"
+		"OpStore %tessc2_tess_outer_2 %c_f32_1\n"
+		"OpStore %tessc2_tess_inner %c_f32_1\n"
+		"OpBranch %tessc2_merge_label\n"
+		"%tessc2_merge_label = OpLabel\n"
+		"OpReturn\n"
+		"OpFunctionEnd\n";
+
+	dst.spirvAsmSources.add("tesse") <<
+		"OpCapability Tessellation\n"
+		"OpMemoryModel Logical GLSL450\n"
+		"OpEntryPoint TessellationEvaluation %tesse1_main \"tesse1\" %stream %gl_tessCoord %in_position %out_color %in_color \n"
+		"OpEntryPoint TessellationEvaluation %tesse2_main \"tesse2\" %stream %gl_tessCoord %in_position %out_color %in_color \n"
+		"OpExecutionMode %tesse1_main Triangles\n"
+		"OpExecutionMode %tesse2_main Triangles\n"
+		"OpName %tesse1_main \"tesse1\"\n"
+		"OpName %tesse2_main \"tesse2\"\n"
+		"OpName %per_vertex_out \"gl_PerVertex\"\n"
+		"OpMemberName %per_vertex_out 0 \"gl_Position\"\n"
+		"OpMemberName %per_vertex_out 1 \"gl_PointSize\"\n"
+		"OpMemberName %per_vertex_out 2 \"gl_ClipDistance\"\n"
+		"OpMemberName %per_vertex_out 3 \"gl_CullDistance\"\n"
+		"OpName %stream \"\"\n"
+		"OpName %gl_tessCoord \"gl_TessCoord\"\n"
+		"OpName %in_position \"in_position\"\n"
+		"OpName %out_color \"out_color\"\n"
+		"OpName %in_color \"in_color\"\n"
+		"OpMemberDecorate %per_vertex_out 0 BuiltIn Position\n"
+		"OpMemberDecorate %per_vertex_out 1 BuiltIn PointSize\n"
+		"OpMemberDecorate %per_vertex_out 2 BuiltIn ClipDistance\n"
+		"OpMemberDecorate %per_vertex_out 3 BuiltIn CullDistance\n"
+		"OpDecorate %per_vertex_out Block\n"
+		"OpDecorate %gl_tessCoord BuiltIn TessCoord\n"
+		"OpDecorate %in_position Location 2\n"
+		"OpDecorate %out_color Location 1\n"
+		"OpDecorate %in_color Location 1\n"
+		SPIRV_ASSEMBLY_TYPES
+		SPIRV_ASSEMBLY_CONSTANTS
+		SPIRV_ASSEMBLY_ARRAYS
+		"%cval = OpConstantComposite %v4f32 %c_f32_1 %c_f32_1 %c_f32_1 %c_f32_0\n"
+		"%per_vertex_out = OpTypeStruct %v4f32 %f32 %a1f32 %a1f32\n"
+		"%op_per_vertex_out = OpTypePointer Output %per_vertex_out\n"
+		"%stream = OpVariable %op_per_vertex_out Output\n"
+		"%gl_tessCoord = OpVariable %ip_v3f32 Input\n"
+		"%in_position = OpVariable %ip_a32v4f32 Input\n"
+		"%out_color = OpVariable %op_v4f32 Output\n"
+		"%in_color = OpVariable %ip_a32v4f32 Input\n"
+
+		"%tesse1_main = OpFunction %void None %fun\n"
+		"%tesse1_label = OpLabel\n"
+		"%tesse1_tc_0_ptr = OpAccessChain %ip_f32 %gl_tessCoord %c_u32_0\n"
+		"%tesse1_tc_1_ptr = OpAccessChain %ip_f32 %gl_tessCoord %c_u32_1\n"
+		"%tesse1_tc_2_ptr = OpAccessChain %ip_f32 %gl_tessCoord %c_u32_2\n"
+		"%tesse1_tc_0 = OpLoad %f32 %tesse1_tc_0_ptr\n"
+		"%tesse1_tc_1 = OpLoad %f32 %tesse1_tc_1_ptr\n"
+		"%tesse1_tc_2 = OpLoad %f32 %tesse1_tc_2_ptr\n"
+		"%tesse1_in_pos_0_ptr = OpAccessChain %ip_v4f32 %in_position %c_i32_0\n"
+		"%tesse1_in_pos_1_ptr = OpAccessChain %ip_v4f32 %in_position %c_i32_1\n"
+		"%tesse1_in_pos_2_ptr = OpAccessChain %ip_v4f32 %in_position %c_i32_2\n"
+		"%tesse1_in_pos_0 = OpLoad %v4f32 %tesse1_in_pos_0_ptr\n"
+		"%tesse1_in_pos_1 = OpLoad %v4f32 %tesse1_in_pos_1_ptr\n"
+		"%tesse1_in_pos_2 = OpLoad %v4f32 %tesse1_in_pos_2_ptr\n"
+		"%tesse1_in_pos_0_weighted = OpVectorTimesScalar %v4f32 %tesse1_tc_0 %tesse1_in_pos_0\n"
+		"%tesse1_in_pos_1_weighted = OpVectorTimesScalar %v4f32 %tesse1_tc_1 %tesse1_in_pos_1\n"
+		"%tesse1_in_pos_2_weighted = OpVectorTimesScalar %v4f32 %tesse1_tc_2 %tesse1_in_pos_2\n"
+		"%tesse1_out_pos_ptr = OpAccessChain %op_v4f32 %stream %c_i32_0\n"
+		"%tesse1_in_pos_0_plus_pos_1 = OpFAdd %v4f32 %tesse1_in_pos_0_weighted %tesse1_in_pos_1_weighted\n"
+		"%tesse1_computed_out = OpFAdd %v4f32 %tesse1_in_pos_0_plus_pos_1 %tesse1_in_pos_2_weighted\n"
+		"OpStore %tesse1_out_pos_ptr %tesse1_computed_out\n"
+		"%tesse1_in_clr_0_ptr = OpAccessChain %ip_v4f32 %in_color %c_i32_0\n"
+		"%tesse1_in_clr_1_ptr = OpAccessChain %ip_v4f32 %in_color %c_i32_1\n"
+		"%tesse1_in_clr_2_ptr = OpAccessChain %ip_v4f32 %in_color %c_i32_2\n"
+		"%tesse1_in_clr_0 = OpLoad %v4f32 %tesse1_in_clr_0_ptr\n"
+		"%tesse1_in_clr_1 = OpLoad %v4f32 %tesse1_in_clr_1_ptr\n"
+		"%tesse1_in_clr_2 = OpLoad %v4f32 %tesse1_in_clr_2_ptr\n"
+		"%tesse1_in_clr_0_weighted = OpVectorTimesScalar %v4f32 %tesse1_tc_0 %in_clr_0\n"
+		"%tesse1_in_clr_1_weighted = OpVectorTimesScalar %v4f32 %tesse1_tc_1 %in_clr_1\n"
+		"%tesse1_in_clr_2_weighted = OpVectorTimesScalar %v4f32 %tesse1_tc_2 %in_clr_2\n"
+		"%tesse1_in_clr_0_plus_col_1 = OpFAdd %v4f32 %tesse1_in_clr_0_weighted %tesse1_in_clr_1_weighted\n"
+		"%tesse1_computed_clr = OpFAdd %v4f32 %tesse1_in_clr_0_plus_col_1 %tesse1_in_clr_2_weighted\n"
+		"OpStore %out_color %tesse1_computed_clr\n"
+		"OpReturn\n"
+		"OpFunctionEnd\n"
+
+		"%tesse2_main = OpFunction %void None %fun\n"
+		"%tesse2_label = OpLabel\n"
+		"%tesse2_tc_0_ptr = OpAccessChain %ip_f32 %gl_tessCoord %c_u32_0\n"
+		"%tesse2_tc_1_ptr = OpAccessChain %ip_f32 %gl_tessCoord %c_u32_1\n"
+		"%tesse2_tc_2_ptr = OpAccessChain %ip_f32 %gl_tessCoord %c_u32_2\n"
+		"%tesse2_tc_0 = OpLoad %f32 %tesse2_tc_0_ptr\n"
+		"%tesse2_tc_1 = OpLoad %f32 %tesse2_tc_1_ptr\n"
+		"%tesse2_tc_2 = OpLoad %f32 %tesse2_tc_2_ptr\n"
+		"%tesse2_in_pos_0_ptr = OpAccessChain %ip_v4f32 %in_position %c_i32_0\n"
+		"%tesse2_in_pos_1_ptr = OpAccessChain %ip_v4f32 %in_position %c_i32_1\n"
+		"%tesse2_in_pos_2_ptr = OpAccessChain %ip_v4f32 %in_position %c_i32_2\n"
+		"%tesse2_in_pos_0 = OpLoad %v4f32 %tesse2_in_pos_0_ptr\n"
+		"%tesse2_in_pos_1 = OpLoad %v4f32 %tesse2_in_pos_1_ptr\n"
+		"%tesse2_in_pos_2 = OpLoad %v4f32 %tesse2_in_pos_2_ptr\n"
+		"%tesse2_in_pos_0_weighted = OpVectorTimesScalar %v4f32 %tesse2_tc_0 %tesse2_in_pos_0\n"
+		"%tesse2_in_pos_1_weighted = OpVectorTimesScalar %v4f32 %tesse2_tc_1 %tesse2_in_pos_1\n"
+		"%tesse2_in_pos_2_weighted = OpVectorTimesScalar %v4f32 %tesse2_tc_2 %tesse2_in_pos_2\n"
+		"%tesse2_out_pos_ptr = OpAccessChain %op_v4f32 %stream %c_i32_0\n"
+		"%tesse2_in_pos_0_plus_pos_1 = OpFAdd %v4f32 %tesse2_in_pos_0_weighted %tesse2_in_pos_1_weighted\n"
+		"%tesse2_computed_out = OpFAdd %v4f32 %tesse2_in_pos_0_plus_pos_1 %tesse2_in_pos_2_weighted\n"
+		"OpStore %tesse2_out_pos_ptr %tesse2_computed_out\n"
+		"%tesse2_in_clr_0_ptr = OpAccessChain %ip_v4f32 %in_color %c_i32_0\n"
+		"%tesse2_in_clr_1_ptr = OpAccessChain %ip_v4f32 %in_color %c_i32_1\n"
+		"%tesse2_in_clr_2_ptr = OpAccessChain %ip_v4f32 %in_color %c_i32_2\n"
+		"%tesse2_in_clr_0 = OpLoad %v4f32 %tesse2_in_clr_0_ptr\n"
+		"%tesse2_in_clr_1 = OpLoad %v4f32 %tesse2_in_clr_1_ptr\n"
+		"%tesse2_in_clr_2 = OpLoad %v4f32 %tesse2_in_clr_2_ptr\n"
+		"%tesse2_in_clr_0_weighted = OpVectorTimesScalar %v4f32 %tesse2_tc_0 %in_clr_0\n"
+		"%tesse2_in_clr_1_weighted = OpVectorTimesScalar %v4f32 %tesse2_tc_1 %in_clr_1\n"
+		"%tesse2_in_clr_2_weighted = OpVectorTimesScalar %v4f32 %tesse2_tc_2 %in_clr_2\n"
+		"%tesse2_in_clr_0_plus_col_1 = OpFAdd %v4f32 %tesse2_in_clr_0_weighted %tesse2_in_clr_1_weighted\n"
+		"%tesse2_computed_clr = OpFAdd %v4f32 %tesse2_in_clr_0_plus_col_1 %tesse2_in_clr_2_weighted\n"
+		"%tesse2_clr_transformed = OpFSub %v4f32 %cval %tesse2_computed_clr\n"
+		"OpStore %out_color %tesse2_clr_transformed\n"
+		"OpReturn\n"
+		"OpFunctionEnd\n";
+}
 // Sets up and runs a Vulkan pipeline, then spot-checks the resulting image.
 // Feeds the pipeline a set of colored triangles, which then must occur in the
 // rendered image.  The surface is cleared before executing the pipeline, so
@@ -3806,12 +4536,14 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		0.0f,														//	float			slopeScaledDepthBias;
 		1.0f,														//	float			lineWidth;
 	};
+
+	const VkPrimitiveTopology topology = instance.hasTessellation? VK_PRIMITIVE_TOPOLOGY_PATCH_LIST: VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 	const VkPipelineInputAssemblyStateCreateInfo	inputAssemblyParams	=
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,	//	VkStructureType		sType;
 		DE_NULL,														//	const void*			pNext;
 		(VkPipelineInputAssemblyStateCreateFlags)0,
-		VK_PRIMITIVE_TOPOLOGY_PATCH_LIST,								//	VkPrimitiveTopology	topology;
+		topology,														//	VkPrimitiveTopology	topology;
 		DE_FALSE,														//	deUint32			primitiveRestartEnable;
 	};
 	const VkVertexInputBindingDescription		vertexBinding0 =
@@ -3888,6 +4620,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		3u
 	};
 
+	const VkPipelineTessellationStateCreateInfo* tessellationInfo	=	instance.hasTessellation? &tessellationState: DE_NULL;
 	const VkGraphicsPipelineCreateInfo		pipelineParams			=
 	{
 		VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,		//	VkStructureType									sType;
@@ -3897,7 +4630,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		&shaderStageParams[0],									//	const VkPipelineShaderStageCreateInfo*			pStages;
 		&vertexInputStateParams,								//	const VkPipelineVertexInputStateCreateInfo*		pVertexInputState;
 		&inputAssemblyParams,									//	const VkPipelineInputAssemblyStateCreateInfo*	pInputAssemblyState;
-		&tessellationState,										//	const VkPipelineTessellationStateCreateInfo*	pTessellationState;
+		tessellationInfo,										//	const VkPipelineTessellationStateCreateInfo*	pTessellationState;
 		&viewportParams,										//	const VkPipelineViewportStateCreateInfo*		pViewportState;
 		&rasterParams,											//	const VkPipelineRasterStateCreateInfo*			pRasterState;
 		&multisampleParams,										//	const VkPipelineMultisampleStateCreateInfo*		pMultisampleState;
@@ -4190,39 +4923,1171 @@ void createTestsForAllStages(const std::string& name,
 }
 } // anonymous
 
+tcu::TestCaseGroup* createOpSourceTests (tcu::TestContext& testCtx)
+{
+	struct NameCodePair { string name, code; };
+	RGBA							defaultColors[4];
+	de::MovePtr<tcu::TestCaseGroup> opSourceTests			(new tcu::TestCaseGroup(testCtx, "opsource", "OpSource instruction"));
+	const std::string				opsourceGLSLWithFile	= "%opsrcfile = OpString \"foo.vert\"\nOpSource GLSL 450 %opsrcfile ";
+	map<string, string>				fragments				= passthruFragments();
+	const NameCodePair				tests[]					=
+	{
+		{"unknown", "OpSource Unknown 321"},
+		{"essl", "OpSource ESSL 310"},
+		{"glsl", "OpSource GLSL 450"},
+		{"opencl_cpp", "OpSource OpenCL_CPP 120"},
+		{"opencl_c", "OpSource OpenCL_C 120"},
+		{"multiple", "OpSource GLSL 450\nOpSource GLSL 450"},
+		{"file", opsourceGLSLWithFile},
+		{"source", opsourceGLSLWithFile + "\"void main(){}\""},
+		// Longest possible source string: SPIR-V limits instructions to 65535
+		// words, of which the first 4 are opsourceGLSLWithFile; the rest will
+		// contain 65530 UTF8 characters (one word each) plus one last word
+		// containing 3 ASCII characters and \0.
+		{"longsource", opsourceGLSLWithFile + '"' + makeLongUTF8String(65530) + "ccc" + '"'}
+	};
+
+	getDefaultColors(defaultColors);
+	for (size_t testNdx = 0; testNdx < sizeof(tests) / sizeof(NameCodePair); ++testNdx)
+	{
+		fragments["debug"] = tests[testNdx].code;
+		createTestsForAllStages(tests[testNdx].name, defaultColors, defaultColors, fragments, opSourceTests.get());
+	}
+
+	return opSourceTests.release();
+}
+
+tcu::TestCaseGroup* createOpSourceContinuedTests (tcu::TestContext& testCtx)
+{
+	struct NameCodePair { string name, code; };
+
+	RGBA								defaultColors[4];
+	de::MovePtr<tcu::TestCaseGroup>		opSourceTests		(new tcu::TestCaseGroup(testCtx, "opsourcecontinued", "OpSourceContinued instruction"));
+	map<string, string>					fragments			= passthruFragments();
+	const std::string					opsource			= "%opsrcfile = OpString \"foo.vert\"\nOpSource GLSL 450 %opsrcfile \"void main(){}\"\n";
+	const NameCodePair					tests[]				=
+	{
+		{"empty", opsource + "OpSourceContinued \"\""},
+		{"short", opsource + "OpSourceContinued \"abcde\""},
+		{"multiple", opsource + "OpSourceContinued \"abcde\"\nOpSourceContinued \"fghij\""},
+		// Longest possible source string: SPIR-V limits instructions to 65535
+		// words, of which the first one is OpSourceContinued/length; the rest
+		// will contain 65533 UTF8 characters (one word each) plus one last word
+		// containing 3 ASCII characters and \0.
+		{"long", opsource + "OpSourceContinued \"" + makeLongUTF8String(65533) + "ccc\""}
+	};
+
+	getDefaultColors(defaultColors);
+	for (size_t testNdx = 0; testNdx < sizeof(tests) / sizeof(NameCodePair); ++testNdx)
+	{
+		fragments["debug"] = tests[testNdx].code;
+		createTestsForAllStages(tests[testNdx].name, defaultColors, defaultColors, fragments, opSourceTests.get());
+	}
+
+	return opSourceTests.release();
+}
+
+tcu::TestCaseGroup* createOpNoLineTests(tcu::TestContext& testCtx)
+{
+	RGBA								 defaultColors[4];
+	de::MovePtr<tcu::TestCaseGroup>		 opLineTests		 (new tcu::TestCaseGroup(testCtx, "opNoLine", "OpNoLine instruction"));
+	map<string, string>					 fragments;
+
+	getDefaultColors(defaultColors);
+	fragments["debug"]			=
+		"%name = OpString \"name\"\n";
+
+	fragments["pre_main"]	=
+		"OpNoLine\n"
+		"OpNoLine\n"
+		"OpLine %name 1 1\n"
+		"OpNoLine\n"
+		"OpLine %name 1 1\n"
+		"OpLine %name 1 1\n"
+		"%second_function = OpFunction %v4f32 None %v4f32_function\n"
+		"OpNoLine\n"
+		"OpLine %name 1 1\n"
+		"OpNoLine\n"
+		"OpLine %name 1 1\n"
+		"OpLine %name 1 1\n"
+	  	"%second_param1 = OpFunctionParameter %v4f32\n"
+		"OpNoLine\n"
+		"OpNoLine\n"
+	  	"%label_secondfunction = OpLabel\n"
+		"OpNoLine\n"
+	  	"OpReturnValue %second_param1\n"
+	  	"OpFunctionEnd\n"
+		"OpNoLine\n"
+		"OpNoLine\n";
+
+	fragments["testfun"]		=
+		// A %test_code function that returns its argument unchanged.
+		"OpNoLine\n"
+		"OpNoLine\n"
+		"OpLine %name 1 1\n"
+		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"OpNoLine\n"
+		"%param1 = OpFunctionParameter %v4f32\n"
+		"OpNoLine\n"
+		"OpNoLine\n"
+		"%label_testfun = OpLabel\n"
+		"OpNoLine\n"
+		"%val1 = OpFunctionCall %v4f32 %second_function %param1\n"
+		"OpReturnValue %val1\n"
+		"OpFunctionEnd\n"
+		"OpLine %name 1 1\n"
+		"OpNoLine\n";
+
+	createTestsForAllStages("opNoLine", defaultColors, defaultColors, fragments, opLineTests.get());
+
+	return opLineTests.release();
+}
+
+tcu::TestCaseGroup* createOpLineTests(tcu::TestContext& testCtx)
+{
+	RGBA													defaultColors[4];
+	de::MovePtr<tcu::TestCaseGroup>							opLineTests			(new tcu::TestCaseGroup(testCtx, "opLine", "OpLine instruction"));
+	map<string, string>										fragments;
+	std::vector<std::pair<std::string, std::string> >		problemStrings;
+
+	problemStrings.push_back(std::make_pair<std::string, std::string>("empty_name", ""));
+	problemStrings.push_back(std::make_pair<std::string, std::string>("short_name", "short_name"));
+	problemStrings.push_back(std::make_pair<std::string, std::string>("long_name", makeLongUTF8String(65530) + "ccc"));
+	getDefaultColors(defaultColors);
+
+	fragments["debug"]			=
+		"%other_name = OpString \"other_name\"\n";
+
+	fragments["pre_main"]	=
+		"OpLine %file_name 32 0\n"
+		"OpLine %file_name 32 32\n"
+		"OpLine %file_name 32 40\n"
+		"OpLine %other_name 32 40\n"
+		"OpLine %other_name 0 100\n"
+		"OpLine %other_name 0 4294967295\n"
+		"OpLine %other_name 4294967295 0\n"
+		"OpLine %other_name 32 40\n"
+		"OpLine %file_name 0 0\n"
+		"%second_function = OpFunction %v4f32 None %v4f32_function\n"
+		"OpLine %file_name 1 0\n"
+	  	"%second_param1 = OpFunctionParameter %v4f32\n"
+		"OpLine %file_name 1 3\n"
+		"OpLine %file_name 1 2\n"
+	  	"%label_secondfunction = OpLabel\n"
+		"OpLine %file_name 0 2\n"
+	  	"OpReturnValue %second_param1\n"
+	  	"OpFunctionEnd\n"
+		"OpLine %file_name 0 2\n"
+		"OpLine %file_name 0 2\n";
+
+	fragments["testfun"]		=
+		// A %test_code function that returns its argument unchanged.
+		"OpLine %file_name 1 0\n"
+		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"OpLine %file_name 16 330\n"
+		"%param1 = OpFunctionParameter %v4f32\n"
+		"OpLine %file_name 14 442\n"
+		"%label_testfun = OpLabel\n"
+		"OpLine %file_name 11 1024\n"
+		"%val1 = OpFunctionCall %v4f32 %second_function %param1\n"
+		"OpLine %file_name 2 97\n"
+		"OpReturnValue %val1\n"
+		"OpFunctionEnd\n"
+		"OpLine %file_name 5 32\n";
+
+	for (size_t i = 0; i < problemStrings.size(); ++i)
+	{
+		map<string, string> testFragments = fragments;
+		testFragments["debug"] += "%file_name = OpString \"" + problemStrings[i].second + "\"\n";
+		createTestsForAllStages(string("opLine") + "-" + problemStrings[i].first, defaultColors, defaultColors, testFragments, opLineTests.get());
+	}
+
+	return opLineTests.release();
+}
+
+tcu::TestCaseGroup* createOpConstantNullTests(tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup> opConstantNullTests		(new tcu::TestCaseGroup(testCtx, "opConstantNull", "OpConstantNull instruction"));
+	RGBA							colors[4];
+
+	const char						functionStart[] =
+		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%param1 = OpFunctionParameter %v4f32\n"
+		"%lbl    = OpLabel\n";
+
+	const char						functionEnd[]	=
+		"OpReturnValue %transformed_param\n"
+		"OpFunctionEnd\n";
+
+	struct NameConstantsCode
+	{
+		string name;
+		string constants;
+		string code;
+	};
+
+	NameConstantsCode tests[] =
+	{
+		{
+			"vec4",
+			"%cnull = OpConstantNull %v4f32\n",
+			"%transformed_param = OpFAdd %v4f32 %param1 %cnull\n"
+		},
+		{
+			"float",
+			"%cnull = OpConstantNull %f32\n",
+			"%vp = OpVariable %fp_v4f32 Function\n"
+			"%v  = OpLoad %v4f32 %vp\n"
+			"%v0 = OpVectorInsertDynamic %v4f32 %v %cnull %c_i32_0\n"
+			"%v1 = OpVectorInsertDynamic %v4f32 %v0 %cnull %c_i32_1\n"
+			"%v2 = OpVectorInsertDynamic %v4f32 %v1 %cnull %c_i32_2\n"
+			"%v3 = OpVectorInsertDynamic %v4f32 %v2 %cnull %c_i32_3\n"
+			"%transformed_param = OpFAdd %v4f32 %param1 %v3\n"
+		},
+		{
+			"bool",
+			"%cnull             = OpConstantNull %bool\n",
+			"%v                 = OpVariable %fp_v4f32 Function\n"
+			"                     OpStore %v %param1\n"
+			"                     OpSelectionMerge %false_label None\n"
+			"                     OpBranchConditional %cnull %true_label %false_label\n"
+			"%true_label        = OpLabel\n"
+			"                     OpStore %v %c_v4f32_0_5_0_5_0_5_0_5\n"
+			"                     OpBranch %false_label\n"
+			"%false_label       = OpLabel\n"
+			"%transformed_param = OpLoad %v4f32 %v\n"
+		},
+		{
+			"i32",
+			"%cnull             = OpConstantNull %i32\n",
+			"%v                 = OpVariable %fp_v4f32 Function %c_v4f32_0_5_0_5_0_5_0_5\n"
+			"%b                 = OpIEqual %bool %cnull %c_i32_0\n"
+			"                     OpSelectionMerge %false_label None\n"
+			"                     OpBranchConditional %b %true_label %false_label\n"
+			"%true_label        = OpLabel\n"
+			"                     OpStore %v %param1\n"
+			"                     OpBranch %false_label\n"
+			"%false_label       = OpLabel\n"
+			"%transformed_param = OpLoad %v4f32 %v\n"
+		},
+		{
+			"struct",
+			"%stype             = OpTypeStruct %f32 %v4f32\n"
+			"%fp_stype          = OpTypePointer Function %stype\n"
+			"%cnull             = OpConstantNull %stype\n",
+			"%v                 = OpVariable %fp_stype Function %cnull\n"
+			"%f                 = OpAccessChain %fp_v4f32 %v %c_i32_1\n"
+			"%f_val             = OpLoad %v4f32 %f\n"
+			"%transformed_param = OpFAdd %v4f32 %param1 %f_val\n"
+		},
+		{
+			"array",
+			"%a4_v4f32          = OpTypeArray %v4f32 %c_u32_4\n"
+			"%fp_a4_v4f32       = OpTypePointer Function %a4_v4f32\n"
+			"%cnull             = OpConstantNull %a4_v4f32\n",
+			"%v                 = OpVariable %fp_a4_v4f32 Function %cnull\n"
+			"%f                 = OpAccessChain %fp_v4f32 %v %c_u32_0\n"
+			"%f1                = OpAccessChain %fp_v4f32 %v %c_u32_1\n"
+			"%f2                = OpAccessChain %fp_v4f32 %v %c_u32_2\n"
+			"%f3                = OpAccessChain %fp_v4f32 %v %c_u32_3\n"
+			"%f_val             = OpLoad %v4f32 %f\n"
+			"%f1_val            = OpLoad %v4f32 %f1\n"
+			"%f2_val            = OpLoad %v4f32 %f2\n"
+			"%f3_val            = OpLoad %v4f32 %f3\n"
+			"%t0                = OpFAdd %v4f32 %param1 %f_val\n"
+			"%t1                = OpFAdd %v4f32 %t0 %f1_val\n"
+			"%t2                = OpFAdd %v4f32 %t1 %f2_val\n"
+			"%transformed_param = OpFAdd %v4f32 %t2 %f3_val\n"
+		},
+		{
+			"matrix",
+			"%mat4x4_f32        = OpTypeMatrix %v4f32 4\n"
+			"%cnull             = OpConstantNull %mat4x4_f32\n",
+			// Our null matrix * any vector should result in a zero vector.
+			"%v                 = OpVectorTimesMatrix %v4f32 %param1 %cnull\n"
+			"%transformed_param = OpFAdd %v4f32 %param1 %v\n"
+		}
+	};
+
+	getHalfColorsFullAlpha(colors);
+
+	for (size_t testNdx = 0; testNdx < sizeof(tests) / sizeof(NameConstantsCode); ++testNdx)
+	{
+		map<string, string> fragments;
+		fragments["pre_main"] = tests[testNdx].constants;
+		fragments["testfun"] = string(functionStart) + tests[testNdx].code + functionEnd;
+		createTestsForAllStages(tests[testNdx].name, colors, colors, fragments, opConstantNullTests.get());
+	}
+	return opConstantNullTests.release();
+}
+tcu::TestCaseGroup* createOpConstantCompositeTests(tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup> opConstantCompositeTests		(new tcu::TestCaseGroup(testCtx, "opConstantComposite", "OpConstantComposite instruction"));
+	RGBA							inputColors[4];
+	RGBA							outputColors[4];
+
+	const char						functionStart[]	 =
+		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%param1 = OpFunctionParameter %v4f32\n"
+		"%lbl    = OpLabel\n";
+
+	const char						functionEnd[]		=
+		"OpReturnValue %transformed_param\n"
+		"OpFunctionEnd\n";
+
+	struct NameConstantsCode
+	{
+		string name;
+		string constants;
+		string code;
+	};
+
+	NameConstantsCode tests[] =
+	{
+		{
+			"vec4",
+
+			"%cval              = OpConstantComposite %v4f32 %c_f32_0_5 %c_f32_0_5 %c_f32_0_5 %c_f32_0\n",
+			"%transformed_param = OpFAdd %v4f32 %param1 %cval\n"
+		},
+		{
+			"struct",
+
+			"%stype             = OpTypeStruct %v4f32 %f32\n"
+			"%fp_stype          = OpTypePointer Function %stype\n"
+			"%f32_n_1           = OpConstant %f32 -1.0\n"
+			"%f32_1_5           = OpConstant %f32 !0x3fc00000\n" // +1.5
+			"%cvec              = OpConstantComposite %v4f32 %f32_1_5 %f32_1_5 %f32_1_5 %c_f32_1\n"
+			"%cval              = OpConstantComposite %stype %cvec %f32_n_1\n",
+
+			"%v                 = OpVariable %fp_stype Function %cval\n"
+			"%vec_ptr           = OpAccessChain %fp_v4f32 %v %c_u32_0\n"
+			"%f32_ptr           = OpAccessChain %fp_v4f32 %v %c_u32_1\n"
+			"%vec_val           = OpLoad %v4f32 %vec_ptr\n"
+			"%f32_val           = OpLoad %v4f32 %f32_ptr\n"
+			"%tmp1              = OpVectorTimesScalar %v4f32 %c_v4f32_1_1_1_1 %f32_val\n" // vec4(-1)
+			"%tmp2              = OpFAdd %v4f32 %tmp1 %param1\n" // param1 + vec4(-1)
+			"%transformed_param = OpFAdd %v4f32 %tmp2 %vec_val\n" // param1 + vec4(-1) + vec4(1.5, 1.5, 1.5, 1.0)
+		},
+		{
+			// [1|0|0|0.5] [x] = x + 0.5
+			// [0|1|0|0.5] [y] = y + 0.5
+			// [0|0|1|0.5] [z] = z + 0.5
+			// [0|0|0|1  ] [1] = 1
+			"matrix",
+
+			"%mat4x4_f32          = OpTypeMatrix %v4f32 4\n"
+		    "%v4f32_1_0_0_0       = OpConstantComposite %v4f32 %c_f32_1 %c_f32_0 %c_f32_0 %c_f32_0\n"
+		    "%v4f32_0_1_0_0       = OpConstantComposite %v4f32 %c_f32_0 %c_f32_1 %c_f32_0 %c_f32_0\n"
+		    "%v4f32_0_0_1_0       = OpConstantComposite %v4f32 %c_f32_0 %c_f32_0 %c_f32_1 %c_f32_0\n"
+		    "%v4f32_0_5_0_5_0_5_1 = OpConstantComposite %v4f32 %c_f32_0_5 %c_f32_0_5 %c_f32_0_5 %c_f32_1\n"
+			"%cval                = OpConstantComposite %mat4x4_f32 %v4f32_1_0_0_0 %v4f32_0_1_0_0 %v4f32_0_0_1_0 %v4f32_0_5_0_5_0_5_1\n",
+
+			"%transformed_param   = OpMatrixTimesVector %v4f32 %cval %param1\n"
+		},
+		{
+			"array",
+
+			"%c_v4f32_1_1_1_0     = OpConstantComposite %v4f32 %c_f32_1 %c_f32_1 %c_f32_1 %c_f32_0\n"
+			"%fp_a4f32            = OpTypePointer Function %a4f32\n"
+			"%f32_n_1             = OpConstant %f32 -1.0\n"
+			"%f32_1_5             = OpConstant %f32 !0x3fc00000\n" // +1.5
+			"%carr                = OpConstantComposite %a4f32 %c_f32_0 %f32_n_1 %f32_1_5 %c_f32_0\n",
+
+			"%v                   = OpVariable %fp_a4f32 Function %carr\n"
+			"%f                   = OpAccessChain %fp_f32 %v %c_u32_0\n"
+			"%f1                  = OpAccessChain %fp_f32 %v %c_u32_1\n"
+			"%f2                  = OpAccessChain %fp_f32 %v %c_u32_2\n"
+			"%f3                  = OpAccessChain %fp_f32 %v %c_u32_3\n"
+			"%f_val               = OpLoad %f32 %f\n"
+			"%f1_val              = OpLoad %f32 %f1\n"
+			"%f2_val              = OpLoad %f32 %f2\n"
+			"%f3_val              = OpLoad %f32 %f3\n"
+			"%ftot1               = OpFAdd %f32 %f_val %f1_val\n"
+			"%ftot2               = OpFAdd %f32 %ftot1 %f2_val\n"
+			"%ftot3               = OpFAdd %f32 %ftot2 %f3_val\n"  // 0 - 1 + 1.5 + 0
+			"%add_vec             = OpVectorTimesScalar %v4f32 %c_v4f32_1_1_1_0 %ftot3\n"
+			"%transformed_param   = OpFAdd %v4f32 %param1 %add_vec\n"
+		},
+		{
+			//
+			// [
+			//   {
+			//      0.0,
+			//      [ 1.0, 1.0, 1.0, 1.0]
+			//   },
+			//   {
+			//      1.0,
+			//      [ 0.0, 0.5, 0.0, 0.0]
+			//   }, //     ^^^
+			//   {
+			//      0.0,
+			//      [ 1.0, 1.0, 1.0, 1.0]
+			//   }
+			// ]
+			"array_of_struct_of_array",
+
+			"%c_v4f32_1_1_1_0     = OpConstantComposite %v4f32 %c_f32_1 %c_f32_1 %c_f32_1 %c_f32_0\n"
+			"%fp_a4f32            = OpTypePointer Function %a4f32\n"
+			"%stype               = OpTypeStruct %f32 %a4f32\n"
+			"%a3stype             = OpTypeArray %stype %c_u32_3\n"
+			"%fp_a3stype          = OpTypePointer Function %a3stype\n"
+			"%ca4f32_0            = OpConstantComposite %a4f32 %c_f32_0 %c_f32_0_5 %c_f32_0 %c_f32_0\n"
+			"%ca4f32_1            = OpConstantComposite %a4f32 %c_f32_1 %c_f32_1 %c_f32_1 %c_f32_1\n"
+			"%cstype1             = OpConstantComposite %stype %c_f32_0 %ca4f32_1\n"
+			"%cstype2             = OpConstantComposite %stype %c_f32_1 %ca4f32_0\n"
+			"%carr                = OpConstantComposite %a3stype %cstype1 %cstype2 %cstype1",
+
+			"%v                   = OpVariable %fp_a3stype Function %carr\n"
+			"%f                   = OpAccessChain %fp_f32 %v %c_u32_1 %c_u32_1 %c_u32_1\n"
+			"%add_vec             = OpVectorTimesScalar %v4f32 %c_v4f32_1_1_1_0 %f\n"
+			"%transformed_param   = OpFAdd %v4f32 %param1 %add_vec\n"
+		}
+	};
+
+	getHalfColorsFullAlpha(inputColors);
+	outputColors[0] = RGBA(255, 255, 255, 255);
+	outputColors[1] = RGBA(255, 127, 127, 255);
+	outputColors[2] = RGBA(127, 255, 127, 255);
+	outputColors[3] = RGBA(127, 127, 255, 255);
+
+	for (size_t testNdx = 0; testNdx < sizeof(tests) / sizeof(NameConstantsCode); ++testNdx)
+	{
+		map<string, string> fragments;
+		fragments["pre_main"] = tests[testNdx].constants;
+		fragments["testfun"] = string(functionStart) + tests[testNdx].code + functionEnd;
+		createTestsForAllStages(tests[testNdx].name, inputColors, outputColors, fragments, opConstantCompositeTests.get());
+	}
+	return opConstantCompositeTests.release();
+}
+
+tcu::TestCaseGroup* createSelectionBlockOrderTests(tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup> group				(new tcu::TestCaseGroup(testCtx, "selection_block_order", "Out-of-order blocks for selection"));
+	RGBA							inputColors[4];
+	RGBA							outputColors[4];
+	map<string, string>				fragments;
+
+	// vec4 test_code(vec4 param) {
+	//   vec4 result = param;
+	//   for (int i = 0; i < 4; ++i) {
+	//     if (i == 0) result[i] = 0.;
+	//     else        result[i] = 1. - result[i];
+	//   }
+	//   return result;
+	// }
+	const char						function[]			=
+		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%param1    = OpFunctionParameter %v4f32\n"
+		"%lbl       = OpLabel\n"
+		"%iptr      = OpVariable %fp_i32 Function\n"
+		"             OpStore %iptr %c_i32_0\n"
+		"%result    = OpVariable %fp_v4f32 Function\n"
+		"             OpStore %result %param1\n"
+		"             OpBranch %loop\n"
+
+		// Loop entry block.
+		"%loop      = OpLabel\n"
+		"%ival      = OpLoad %i32 %iptr\n"
+		"%lt_4      = OpSLessThan %bool %ival %c_i32_4\n"
+		"             OpLoopMerge %exit %loop None\n"
+		"             OpBranchConditional %lt_4 %if_entry %exit\n"
+
+		// Merge block for loop.
+		"%exit      = OpLabel\n"
+		"%ret       = OpLoad %v4f32 %result\n"
+		"             OpReturnValue %ret\n"
+
+		// If-statement entry block.
+		"%if_entry  = OpLabel\n"
+		"%loc       = OpAccessChain %fp_f32 %result %ival\n"
+		"%eq_0      = OpIEqual %bool %ival %c_i32_0\n"
+		"             OpSelectionMerge %if_exit None\n"
+		"             OpBranchConditional %eq_0 %if_true %if_false\n"
+
+		// False branch for if-statement.
+		"%if_false  = OpLabel\n"
+		"%val       = OpLoad %f32 %loc\n"
+		"%sub       = OpFSub %f32 %c_f32_1 %val\n"
+		"             OpStore %loc %sub\n"
+		"             OpBranch %if_exit\n"
+
+		// Merge block for if-statement.
+		"%if_exit   = OpLabel\n"
+		"%ival_next = OpIAdd %i32 %ival %c_i32_1\n"
+		"             OpStore %iptr %ival_next\n"
+		"             OpBranch %loop\n"
+
+		// True branch for if-statement.
+		"%if_true   = OpLabel\n"
+		"             OpStore %loc %c_f32_0\n"
+		"             OpBranch %if_exit\n"
+
+		"             OpFunctionEnd\n";
+
+	fragments["testfun"]	= function;
+
+	inputColors[0]			= RGBA(127, 127, 127, 0);
+	inputColors[1]			= RGBA(127, 0,   0,   0);
+	inputColors[2]			= RGBA(0,   127, 0,   0);
+	inputColors[3]			= RGBA(0,   0,   127, 0);
+
+	outputColors[0]			= RGBA(0, 128, 128, 255);
+	outputColors[1]			= RGBA(0, 255, 255, 255);
+	outputColors[2]			= RGBA(0, 128, 255, 255);
+	outputColors[3]			= RGBA(0, 255, 128, 255);
+
+	createTestsForAllStages("out_of_order", inputColors, outputColors, fragments, group.get());
+
+	return group.release();
+}
+
+tcu::TestCaseGroup* createSwitchBlockOrderTests(tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup> group				(new tcu::TestCaseGroup(testCtx, "switch_block_order", "Out-of-order blocks for switch"));
+	RGBA							inputColors[4];
+	RGBA							outputColors[4];
+	map<string, string>				fragments;
+
+	const char						typesAndConstants[]	=
+		"%c_f32_p2  = OpConstant %f32 0.2\n"
+		"%c_f32_p4  = OpConstant %f32 0.4\n"
+		"%c_f32_p6  = OpConstant %f32 0.6\n"
+		"%c_f32_p8  = OpConstant %f32 0.8\n";
+
+	// vec4 test_code(vec4 param) {
+	//   vec4 result = param;
+	//   for (int i = 0; i < 4; ++i) {
+	//     switch (i) {
+	//       case 0: result[i] += .2; break;
+	//       case 1: result[i] += .6; break;
+	//       case 2: result[i] += .4; break;
+	//       case 3: result[i] += .8; break;
+	//       default: break; // unreachable
+	//     }
+	//   }
+	//   return result;
+	// }
+	const char						function[]			=
+		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%param1    = OpFunctionParameter %v4f32\n"
+		"%lbl       = OpLabel\n"
+		"%iptr      = OpVariable %fp_i32 Function\n"
+		"             OpStore %iptr %c_i32_0\n"
+		"%result    = OpVariable %fp_v4f32 Function\n"
+		"             OpStore %result %param1\n"
+		"             OpBranch %loop\n"
+
+		// Loop entry block.
+		"%loop      = OpLabel\n"
+		"%ival      = OpLoad %i32 %iptr\n"
+		"%lt_4      = OpSLessThan %bool %ival %c_i32_4\n"
+		"             OpLoopMerge %exit %loop None\n"
+		"             OpBranchConditional %lt_4 %switch_entry %exit\n"
+
+		// Merge block for loop.
+		"%exit      = OpLabel\n"
+		"%ret       = OpLoad %v4f32 %result\n"
+		"             OpReturnValue %ret\n"
+
+		// Switch-statement entry block.
+		"%switch_entry   = OpLabel\n"
+		"%loc            = OpAccessChain %fp_f32 %result %ival\n"
+		"%val            = OpLoad %f32 %loc\n"
+		"                  OpSelectionMerge %switch_exit None\n"
+		"                  OpSwitch %ival %switch_default 0 %case0 1 %case1 2 %case2 3 %case3\n"
+
+		"%case2          = OpLabel\n"
+		"%addp4          = OpFAdd %f32 %val %c_f32_p4\n"
+		"                  OpStore %loc %addp4\n"
+		"                  OpBranch %switch_exit\n"
+
+		"%switch_default = OpLabel\n"
+		"                  OpUnreachable\n"
+
+		"%case3          = OpLabel\n"
+		"%addp8          = OpFAdd %f32 %val %c_f32_p8\n"
+		"                  OpStore %loc %addp8\n"
+		"                  OpBranch %switch_exit\n"
+
+		"%case0          = OpLabel\n"
+		"%addp2          = OpFAdd %f32 %val %c_f32_p2\n"
+		"                  OpStore %loc %addp2\n"
+		"                  OpBranch %switch_exit\n"
+
+		// Merge block for switch-statement.
+		"%switch_exit    = OpLabel\n"
+		"%ival_next      = OpIAdd %i32 %ival %c_i32_1\n"
+		"                  OpStore %iptr %ival_next\n"
+		"                  OpBranch %loop\n"
+
+		"%case1          = OpLabel\n"
+		"%addp6          = OpFAdd %f32 %val %c_f32_p6\n"
+		"                  OpStore %loc %addp6\n"
+		"                  OpBranch %switch_exit\n"
+
+		"                  OpFunctionEnd\n";
+
+	fragments["pre_main"]	= typesAndConstants;
+	fragments["testfun"]	= function;
+
+	inputColors[0]			= RGBA(127, 27,  127, 51);
+	inputColors[1]			= RGBA(127, 0,   0,   51);
+	inputColors[2]			= RGBA(0,   27,  0,   51);
+	inputColors[3]			= RGBA(0,   0,   127, 51);
+
+	outputColors[0]			= RGBA(178, 180, 229, 255);
+	outputColors[1]			= RGBA(178, 153, 102, 255);
+	outputColors[2]			= RGBA(51,  180, 102, 255);
+	outputColors[3]			= RGBA(51,  153, 229, 255);
+
+	createTestsForAllStages("out_of_order", inputColors, outputColors, fragments, group.get());
+
+	return group.release();
+}
+
+tcu::TestCaseGroup* createOpPhiTests(tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup> group				(new tcu::TestCaseGroup(testCtx, "opphi", "Test the OpPhi instruction"));
+	RGBA							inputColors[4];
+	RGBA							outputColors1[4];
+	RGBA							outputColors2[4];
+	RGBA							outputColors3[4];
+	map<string, string>				fragments1;
+	map<string, string>				fragments2;
+	map<string, string>				fragments3;
+
+	const char	typesAndConstants1[]	=
+		"%c_f32_p2  = OpConstant %f32 0.2\n"
+		"%c_f32_p4  = OpConstant %f32 0.4\n"
+		"%c_f32_p6  = OpConstant %f32 0.6\n"
+		"%c_f32_p8  = OpConstant %f32 0.8\n";
+
+	// vec4 test_code(vec4 param) {
+	//   vec4 result = param;
+	//   for (int i = 0; i < 4; ++i) {
+	//     float operand;
+	//     switch (i) {
+	//       case 0: operand = .2; break;
+	//       case 1: operand = .6; break;
+	//       case 2: operand = .4; break;
+	//       case 3: operand = .0; break;
+	//       default: break; // unreachable
+	//     }
+	//     result[i] += operand;
+	//   }
+	//   return result;
+	// }
+	const char	function1[]				=
+		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%param1    = OpFunctionParameter %v4f32\n"
+		"%lbl       = OpLabel\n"
+		"%iptr      = OpVariable %fp_i32 Function\n"
+		"             OpStore %iptr %c_i32_0\n"
+		"%result    = OpVariable %fp_v4f32 Function\n"
+		"             OpStore %result %param1\n"
+		"             OpBranch %loop\n"
+
+		"%loop      = OpLabel\n"
+		"%ival      = OpLoad %i32 %iptr\n"
+		"%lt_4      = OpSLessThan %bool %ival %c_i32_4\n"
+		"             OpLoopMerge %exit %loop None\n"
+		"             OpBranchConditional %lt_4 %entry %exit\n"
+
+		"%entry     = OpLabel\n"
+		"%loc       = OpAccessChain %fp_f32 %result %ival\n"
+		"%val       = OpLoad %f32 %loc\n"
+		"             OpSelectionMerge %phi None\n"
+		"             OpSwitch %ival %default 0 %case0 1 %case1 2 %case2 3 %case3\n"
+
+		"%case0     = OpLabel\n"
+		"             OpBranch %phi\n"
+		"%case1     = OpLabel\n"
+		"             OpBranch %phi\n"
+		"%case2     = OpLabel\n"
+		"             OpBranch %phi\n"
+		"%case3     = OpLabel\n"
+		"             OpBranch %phi\n"
+
+		"%default   = OpLabel\n"
+		"             OpUnreachable\n"
+
+		"%phi       = OpLabel\n"
+		"%operand   = OpPhi %f32 %c_f32_p4 %case2 %c_f32_p6 %case1 %c_f32_p2 %case0 %c_f32_0 %case3\n" // not in the order of blocks
+		"%add       = OpFAdd %f32 %val %operand\n"
+		"             OpStore %loc %add\n"
+		"%ival_next = OpIAdd %i32 %ival %c_i32_1\n"
+		"             OpStore %iptr %ival_next\n"
+		"             OpBranch %loop\n"
+
+		"%exit      = OpLabel\n"
+		"%ret       = OpLoad %v4f32 %result\n"
+		"             OpReturnValue %ret\n"
+
+		"             OpFunctionEnd\n";
+
+	fragments1["pre_main"]	= typesAndConstants1;
+	fragments1["testfun"]	= function1;
+
+	getHalfColorsFullAlpha(inputColors);
+
+	outputColors1[0]		= RGBA(178, 180, 229, 255);
+	outputColors1[1]		= RGBA(178, 153, 102, 255);
+	outputColors1[2]		= RGBA(51,  180, 102, 255);
+	outputColors1[3]		= RGBA(51,  153, 229, 255);
+
+	createTestsForAllStages("out_of_order", inputColors, outputColors1, fragments1, group.get());
+
+	const char	typesAndConstants2[]	=
+		"%c_f32_p2  = OpConstant %f32 0.2\n";
+
+	// Add .4 to the second element of the given parameter.
+	const char	function2[]				=
+		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%param     = OpFunctionParameter %v4f32\n"
+		"%entry     = OpLabel\n"
+		"%result    = OpVariable %fp_v4f32 Function\n"
+		"             OpStore %result %param\n"
+		"%loc       = OpAccessChain %fp_f32 %result %c_i32_1\n"
+		"%val       = OpLoad %f32 %loc\n"
+		"             OpBranch %phi\n"
+
+		"%phi        = OpLabel\n"
+		"%step       = OpPhi %i32 %c_i32_0  %entry %step_next  %phi\n"
+		"%accum      = OpPhi %f32 %val      %entry %accum_next %phi\n"
+		"%step_next  = OpIAdd %i32 %step  %c_i32_1\n"
+		"%accum_next = OpFAdd %f32 %accum %c_f32_p2\n"
+		"%still_loop = OpSLessThan %bool %step %c_i32_2\n"
+		"              OpLoopMerge %exit %phi None\n"
+		"              OpBranchConditional %still_loop %phi %exit\n"
+
+		"%exit       = OpLabel\n"
+		"              OpStore %loc %accum\n"
+		"%ret        = OpLoad %v4f32 %result\n"
+		"              OpReturnValue %ret\n"
+
+		"              OpFunctionEnd\n";
+
+	fragments2["pre_main"]	= typesAndConstants2;
+	fragments2["testfun"]	= function2;
+
+	outputColors2[0]			= RGBA(127, 229, 127, 255);
+	outputColors2[1]			= RGBA(127, 102, 0,   255);
+	outputColors2[2]			= RGBA(0,   229, 0,   255);
+	outputColors2[3]			= RGBA(0,   102, 127, 255);
+
+	createTestsForAllStages("induction", inputColors, outputColors2, fragments2, group.get());
+
+	const char	typesAndConstants3[]	=
+		"%true      = OpConstantTrue %bool\n"
+		"%false     = OpConstantFalse %bool\n"
+		"%c_f32_p2  = OpConstant %f32 0.2\n";
+
+	// Swap the second and the third element of the given parameter.
+	const char	function3[]				=
+		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%param     = OpFunctionParameter %v4f32\n"
+		"%entry     = OpLabel\n"
+		"%result    = OpVariable %fp_v4f32 Function\n"
+		"             OpStore %result %param\n"
+		"%a_loc     = OpAccessChain %fp_f32 %result %c_i32_1\n"
+		"%a_init    = OpLoad %f32 %a_loc\n"
+		"%b_loc     = OpAccessChain %fp_f32 %result %c_i32_2\n"
+		"%b_init    = OpLoad %f32 %b_loc\n"
+		"             OpBranch %phi\n"
+
+		"%phi        = OpLabel\n"
+		"%still_loop = OpPhi %bool %true   %entry %false  %phi\n"
+		"%a_next     = OpPhi %f32  %a_init %entry %b_next %phi\n"
+		"%b_next     = OpPhi %f32  %b_init %entry %a_next %phi\n"
+		"              OpLoopMerge %exit %phi None\n"
+		"              OpBranchConditional %still_loop %phi %exit\n"
+
+		"%exit       = OpLabel\n"
+		"              OpStore %a_loc %a_next\n"
+		"              OpStore %b_loc %b_next\n"
+		"%ret        = OpLoad %v4f32 %result\n"
+		"              OpReturnValue %ret\n"
+
+		"              OpFunctionEnd\n";
+
+	fragments3["pre_main"]	= typesAndConstants3;
+	fragments3["testfun"]	= function3;
+
+	outputColors3[0]			= RGBA(127, 127, 127, 255);
+	outputColors3[1]			= RGBA(127, 0,   0,   255);
+	outputColors3[2]			= RGBA(0,   0,   127, 255);
+	outputColors3[3]			= RGBA(0,   127, 0,   255);
+
+	createTestsForAllStages("swap", inputColors, outputColors3, fragments3, group.get());
+
+	return group.release();
+}
+
+tcu::TestCaseGroup* createMemoryAccessTests(tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup> memoryAccessTests (new tcu::TestCaseGroup(testCtx, "opMemoryAccess", "Memory Semantics"));
+	RGBA							colors[4];
+
+	const char						constantsAndTypes[]	 =
+		"%c_a2f32_1         = OpConstantComposite %a2f32 %c_f32_1 %c_f32_1\n"
+		"%fp_a2f32          = OpTypePointer Function %a2f32\n"
+		"%stype             = OpTypeStruct  %v4f32 %a2f32 %f32\n"
+		"%fp_stype          = OpTypePointer Function %stype\n";
+
+	const char						function[]	 =
+		"%test_code         = OpFunction %v4f32 None %v4f32_function\n"
+		"%param1            = OpFunctionParameter %v4f32\n"
+		"%lbl               = OpLabel\n"
+		"%v1                = OpVariable %fp_v4f32 Function\n"
+		"                     OpStore %v1 %c_v4f32_1_1_1_1\n"
+		"%v2                = OpVariable %fp_a2f32 Function\n"
+		"                     OpStore %v2 %c_a2f32_1\n"
+		"%v3                = OpVariable %fp_f32 Function\n"
+		"                     OpStore %v3 %c_f32_1\n"
+
+		"%v                 = OpVariable %fp_stype Function\n"
+
+		"%vv                = OpVariable %fp_stype Function\n"
+		"%vvv               = OpVariable %fp_f32 Function\n"
+
+		"%p_v4f32          = OpAccessChain %fp_v4_f32 %v %c_u32_0\n"
+		"%p_a2f32          = OpAccessChain %fp_a2f32 %v %c_u32_1\n"
+		"%p_f32            = OpAccessChain %fp_f32 %v %c_u32_2\n"
+		"%v1_v             = OpLoad %v4f32 %v1 ${access_type}\n"
+		"%v2_v             = OpLoad %a2f32 %v2 ${access_type}\n"
+		"%v3_v             = OpLoad %f32 %v3 ${access_type}\n"
+
+		"                    OpStore %p_v4f32 %v1_v ${access_type}\n"
+		"                    OpStore %p_a2f32 %v2_v ${access_type}\n"
+		"                    OpStore %p_f32 %v3_v ${access_type}\n"
+
+		"                    OpCopyMemory %vv %v ${access_type}\n"
+		"                    OpCopyMemory %vvv %p_f32 ${access_type}\n"
+
+		"%p_f32_2          = OpAccessChain %fp_f32 %vv %c_u32_2\n"
+		"%v_f32_2          = OpLoad %f32 %p_f32_2\n"
+		"%v_f32_3          = OpLoad %f32 %vvv\n"
+
+		"%ret1             = OpVectorTimesScalar %v4f32 %param1 %v_f32_2\n"
+		"%ret2             = OpVectorTimesScalar %v4f32 %ret1 %v_f32_3\n"
+		"                    OpReturnValue %ret2\n"
+		"                    OpFunctionEnd\n";
+
+	struct NameMemoryAccess
+	{
+		string name;
+		string accessType;
+	};
+
+	NameMemoryAccess tests[] =
+	{
+		{ "none", "" },
+		{ "volatile", "Volatile" },
+		{ "aligned",  "Aligned 1" },
+		{ "volatile-aligned",  "Volatile|Aligned 1" },
+		{ "nontemporal-aligned",  "Nontemporal|Aligned 1" },
+		{ "volatile-nontemporal",  "Volatile|Nontemporal" },
+		{ "volatile-nontermporal-aligned",  "Volatile|NonTermporal|Aligned" },
+	};
+
+	getHalfColorsFullAlpha(colors);
+
+	for (size_t testNdx = 0; testNdx < sizeof(tests) / sizeof(NameMemoryAccess); ++testNdx)
+	{
+		map<string, string> fragments;
+		map<string, string> memoryAccess;
+		memoryAccess["access_type"] = tests[testNdx].accessType;
+
+		fragments["pre_main"] = constantsAndTypes;
+		fragments["testfun"] = tcu::StringTemplate(function).specialize(memoryAccess);
+		createTestsForAllStages(tests[testNdx].name, colors, colors, fragments, memoryAccessTests.get());
+	}
+	return memoryAccessTests.release();
+}
+
+tcu::TestCaseGroup* createOpUndefTests(tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup>		opUndefTests		 (new tcu::TestCaseGroup(testCtx, "opundef", "Test OpUndef"));
+	RGBA								defaultColors[4];
+	map<string, string>					fragments;
+
+	getDefaultColors(defaultColors);
+	// First, simple cases that don't do anything with the OpUndef result.
+	fragments["testfun"] =
+		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%param1 = OpFunctionParameter %v4f32\n"
+		"%label_testfun = OpLabel\n"
+		"%undef = OpUndef %type\n"
+		"OpReturnValue %param1\n"
+		"OpFunctionEnd\n"
+		;
+	struct NameCodePair { string name, code; };
+	const NameCodePair tests[] =
+	{
+		{"bool", "%type = OpTypeBool"},
+		{"vec2uint32", "%type = OpTypeVector %u32 2"},
+		{"image", "%type = OpTypeImage %f32 2D 0 0 0 0 Unknown"},
+		{"sampler", "%type = OpTypeSampler"},
+		{"sampledimage", "%img = OpTypeImage %f32 2D 0 0 0 0 Unknown\n" "%type = OpTypeSampledImage %img"},
+		{"function", "%type = OpTypeFunction %void %i32 %f32"},
+		{"pointer", "%type = OpTypePointer Function %i32"},
+		{"runtimearray", "%type = OpTypeRuntimeArray %f32"},
+		{"array", "%c_u32_100 = OpConstant %u32 100\n" "%type = OpTypeArray %i32 %c_u32_100"},
+		{"struct", "%type = OpTypeStruct %f32 %i32 %u32"}};
+	for (size_t testNdx = 0; testNdx < sizeof(tests) / sizeof(NameCodePair); ++testNdx)
+	{
+		fragments["pre_main"] = tests[testNdx].code;
+		createTestsForAllStages(tests[testNdx].name, defaultColors, defaultColors, fragments, opUndefTests.get());
+	}
+	fragments.clear();
+
+	fragments["testfun"] =
+		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%param1 = OpFunctionParameter %v4f32\n"
+		"%label_testfun = OpLabel\n"
+		"%undef = OpUndef %f32\n"
+		"%zero = OpFMul %f32 %undef %c_f32_0\n"
+		"%a = OpVectorExtractDynamic %f32 %param1 %c_i32_0\n"
+		"%b = OpFAdd %f32 %a %zero\n"
+		"%ret = OpVectorInsertDynamic %v4f32 %param1 %b %c_i32_0\n"
+		"OpReturnValue %ret\n"
+		"OpFunctionEnd\n"
+		;
+	createTestsForAllStages("float32", defaultColors, defaultColors, fragments, opUndefTests.get());
+
+	fragments["testfun"] =
+		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%param1 = OpFunctionParameter %v4f32\n"
+		"%label_testfun = OpLabel\n"
+		"%undef = OpUndef %i32\n"
+		"%zero = OpIMul %i32 %undef %c_i32_0\n"
+		"%a = OpVectorExtractDynamic %f32 %param1 %zero\n"
+		"%ret = OpVectorInsertDynamic %v4f32 %param1 %a %c_i32_0\n"
+		"OpReturnValue %ret\n"
+		"OpFunctionEnd\n"
+		;
+	createTestsForAllStages("sint32", defaultColors, defaultColors, fragments, opUndefTests.get());
+
+	fragments["testfun"] =
+		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%param1 = OpFunctionParameter %v4f32\n"
+		"%label_testfun = OpLabel\n"
+		"%undef = OpUndef %u32\n"
+		"%zero = OpIMul %u32 %undef %c_i32_0\n"
+		"%a = OpVectorExtractDynamic %f32 %param1 %zero\n"
+		"%ret = OpVectorInsertDynamic %v4f32 %param1 %a %c_i32_0\n"
+		"OpReturnValue %ret\n"
+		"OpFunctionEnd\n"
+		;
+	createTestsForAllStages("uint32", defaultColors, defaultColors, fragments, opUndefTests.get());
+
+	fragments["testfun"] =
+		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%param1 = OpFunctionParameter %v4f32\n"
+		"%label_testfun = OpLabel\n"
+		"%undef = OpUndef %v4f32\n"
+		"%vzero = OpVectorTimesScalar %v4f32 %undef %c_f32_0\n"
+		"%zero_0 = OpVectorExtractDynamic %f32 %vzero %c_i32_0\n"
+		"%zero_1 = OpVectorExtractDynamic %f32 %vzero %c_i32_1\n"
+		"%zero_2 = OpVectorExtractDynamic %f32 %vzero %c_i32_2\n"
+		"%zero_3 = OpVectorExtractDynamic %f32 %vzero %c_i32_3\n"
+		"%param1_0 = OpVectorExtractDynamic %f32 %param1 %c_i32_0\n"
+		"%param1_1 = OpVectorExtractDynamic %f32 %param1 %c_i32_1\n"
+		"%param1_2 = OpVectorExtractDynamic %f32 %param1 %c_i32_2\n"
+		"%param1_3 = OpVectorExtractDynamic %f32 %param1 %c_i32_3\n"
+		"%sum_0 = OpFAdd %f32 %param1_0 %zero_0\n"
+		"%sum_1 = OpFAdd %f32 %param1_1 %zero_1\n"
+		"%sum_2 = OpFAdd %f32 %param1_2 %zero_2\n"
+		"%sum_3 = OpFAdd %f32 %param1_3 %zero_3\n"
+		"%ret3 = OpVectorInsertDynamic %v4f32 %param1 %sum_3 %c_i32_3\n"
+		"%ret2 = OpVectorInsertDynamic %v4f32 %ret3 %sum_2 %c_i32_2\n"
+		"%ret1 = OpVectorInsertDynamic %v4f32 %ret2 %sum_1 %c_i32_1\n"
+		"%ret = OpVectorInsertDynamic %v4f32 %ret1 %sum_0 %c_i32_0\n"
+		"OpReturnValue %ret\n"
+		"OpFunctionEnd\n"
+		;
+	createTestsForAllStages("vec4float32", defaultColors, defaultColors, fragments, opUndefTests.get());
+
+	fragments["pre_main"] =
+		"%v2f32 = OpTypeVector %f32 2\n"
+		"%m2x2f32 = OpTypeMatrix %v2f32 2\n";
+	fragments["testfun"] =
+		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%param1 = OpFunctionParameter %v4f32\n"
+		"%label_testfun = OpLabel\n"
+		"%undef = OpUndef %m2x2f32\n"
+		"%mzero = OpMatrixTimesScalar %m2x2f32 %undef %c_f32_0\n"
+		"%zero_0 = OpCompositeExtract %f32 %mzero 0 0\n"
+		"%zero_1 = OpCompositeExtract %f32 %mzero 0 1\n"
+		"%zero_2 = OpCompositeExtract %f32 %mzero 1 0\n"
+		"%zero_3 = OpCompositeExtract %f32 %mzero 1 1\n"
+		"%param1_0 = OpVectorExtractDynamic %f32 %param1 %c_i32_0\n"
+		"%param1_1 = OpVectorExtractDynamic %f32 %param1 %c_i32_1\n"
+		"%param1_2 = OpVectorExtractDynamic %f32 %param1 %c_i32_2\n"
+		"%param1_3 = OpVectorExtractDynamic %f32 %param1 %c_i32_3\n"
+		"%sum_0 = OpFAdd %f32 %param1_0 %zero_0\n"
+		"%sum_1 = OpFAdd %f32 %param1_1 %zero_1\n"
+		"%sum_2 = OpFAdd %f32 %param1_2 %zero_2\n"
+		"%sum_3 = OpFAdd %f32 %param1_3 %zero_3\n"
+		"%ret3 = OpVectorInsertDynamic %v4f32 %param1 %sum_3 %c_i32_3\n"
+		"%ret2 = OpVectorInsertDynamic %v4f32 %ret3 %sum_2 %c_i32_2\n"
+		"%ret1 = OpVectorInsertDynamic %v4f32 %ret2 %sum_1 %c_i32_1\n"
+		"%ret = OpVectorInsertDynamic %v4f32 %ret1 %sum_0 %c_i32_0\n"
+		"OpReturnValue %ret\n"
+		"OpFunctionEnd\n"
+		;
+	createTestsForAllStages("matrix", defaultColors, defaultColors, fragments, opUndefTests.get());
+
+	return opUndefTests.release();
+}
+
+struct ShaderPermutation
+{
+	deUint8 vertexPermutation;
+	deUint8 geometryPermutation;
+	deUint8 tesscPermutation;
+	deUint8 tessePermutation;
+	deUint8 fragmentPermutation;
+};
+
+ShaderPermutation getShaderPermutation(deUint8 inputValue)
+{
+	ShaderPermutation	permutation =
+	{
+		static_cast<deUint8>(inputValue & 0x10? 1u: 0u),
+		static_cast<deUint8>(inputValue & 0x08? 1u: 0u),
+		static_cast<deUint8>(inputValue & 0x04? 1u: 0u),
+		static_cast<deUint8>(inputValue & 0x02? 1u: 0u),
+		static_cast<deUint8>(inputValue & 0x01? 1u: 0u)
+	};
+	return permutation;
+}
+
+tcu::TestCaseGroup* createModuleTests(tcu::TestContext& testCtx)
+{
+	RGBA								defaultColors[4];
+	RGBA								invertedColors[4];
+	de::MovePtr<tcu::TestCaseGroup>		moduleTests			(new tcu::TestCaseGroup(testCtx, "module", "Multiple entry points into shaders"));
+
+	const ShaderElement					combinedPipeline[]	=
+	{
+		ShaderElement("module", "main", VK_SHADER_STAGE_VERTEX_BIT),
+		ShaderElement("module", "main", VK_SHADER_STAGE_GEOMETRY_BIT),
+		ShaderElement("module", "main", VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT),
+		ShaderElement("module", "main", VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT),
+		ShaderElement("module", "main", VK_SHADER_STAGE_FRAGMENT_BIT)
+	};
+
+	getDefaultColors(defaultColors);
+	getInvertedDefaultColors(invertedColors);
+	addFunctionCaseWithPrograms<InstanceContext>(moduleTests.get(), "same-module", "", createCombinedModule, runAndVerifyDefaultPipeline, createInstanceContext(combinedPipeline, map<string, string>()));
+
+	const char* numbers[] =
+	{
+		"1", "2"
+	};
+
+	for (deInt8 idx = 0; idx < 32; ++idx)
+	{
+		ShaderPermutation			permutation		= getShaderPermutation(idx);
+		string						name			= string("vert") + numbers[permutation.vertexPermutation] + "-geom" + numbers[permutation.geometryPermutation] + "-tessc" + numbers[permutation.tesscPermutation] + "-tesse" + numbers[permutation.tessePermutation] + "-frag" + numbers[permutation.fragmentPermutation];
+		const ShaderElement			pipeline[]		=
+		{
+			ShaderElement("vert",	string("vert") +	numbers[permutation.vertexPermutation],		VK_SHADER_STAGE_VERTEX_BIT),
+			ShaderElement("geom",	string("geom") +	numbers[permutation.geometryPermutation],	VK_SHADER_STAGE_GEOMETRY_BIT),
+			ShaderElement("tessc",	string("tessc") +	numbers[permutation.tesscPermutation],		VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT),
+			ShaderElement("tesse",	string("tesse") +	numbers[permutation.tessePermutation],		VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT),
+			ShaderElement("frag",	string("frag") +	numbers[permutation.fragmentPermutation],	VK_SHADER_STAGE_FRAGMENT_BIT)
+		};
+
+		// If there are an even number of swaps, then it should be no-op.
+		// If there are an odd number, the color should be flipped.
+		if ((permutation.vertexPermutation + permutation.geometryPermutation + permutation.tesscPermutation + permutation.tessePermutation + permutation.fragmentPermutation) % 2 == 0)
+		{
+			addFunctionCaseWithPrograms<InstanceContext>(moduleTests.get(), name, "", createMultipleEntries, runAndVerifyDefaultPipeline, createInstanceContext(pipeline, defaultColors, defaultColors, map<string, string>()));
+		}
+		else
+		{
+			addFunctionCaseWithPrograms<InstanceContext>(moduleTests.get(), name, "", createMultipleEntries, runAndVerifyDefaultPipeline, createInstanceContext(pipeline, defaultColors, invertedColors, map<string, string>()));
+		}
+	}
+	return moduleTests.release();
+}
 tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> instructionTests (new tcu::TestCaseGroup(testCtx, "instruction", "Instructions with special opcodes/operands"));
+	de::MovePtr<tcu::TestCaseGroup> instructionTests	(new tcu::TestCaseGroup(testCtx, "instruction", "Instructions with special opcodes/operands"));
+	de::MovePtr<tcu::TestCaseGroup> computeTests		(new tcu::TestCaseGroup(testCtx, "compute", "Compute Instructions with special opcodes/operands"));
+	de::MovePtr<tcu::TestCaseGroup> graphicsTests		(new tcu::TestCaseGroup(testCtx, "graphics", "Graphics Instructions with special opcodes/operands"));
 
-	instructionTests->addChild(createOpNopGroup(testCtx));
-	instructionTests->addChild(createOpLineGroup(testCtx));
-	instructionTests->addChild(createOpNoLineGroup(testCtx));
-	instructionTests->addChild(createOpConstantNullGroup(testCtx));
-	instructionTests->addChild(createOpConstantCompositeGroup(testCtx));
-	instructionTests->addChild(createOpConstantUsageGroup(testCtx));
-	instructionTests->addChild(createSpecConstantGroup(testCtx));
-	instructionTests->addChild(createOpSourceGroup(testCtx));
-	instructionTests->addChild(createOpSourceExtensionGroup(testCtx));
-	instructionTests->addChild(createDecorationGroupGroup(testCtx));
-	instructionTests->addChild(createOpPhiGroup(testCtx));
-	instructionTests->addChild(createLoopControlGroup(testCtx));
-	instructionTests->addChild(createFunctionControlGroup(testCtx));
-	instructionTests->addChild(createSelectionControlGroup(testCtx));
-	instructionTests->addChild(createBlockOrderGroup(testCtx));
-	instructionTests->addChild(createMultipleShaderGroup(testCtx));
-	instructionTests->addChild(createMemoryAccessGroup(testCtx));
-	instructionTests->addChild(createOpCopyMemoryGroup(testCtx));
-	instructionTests->addChild(createOpCopyObjectGroup(testCtx));
-	instructionTests->addChild(createNoContractionGroup(testCtx));
-	instructionTests->addChild(createOpUndefGroup(testCtx));
-	instructionTests->addChild(createOpUnreachableGroup(testCtx));
-	instructionTests->addChild(createOpQuantizeToF16Group(testCtx));
+	computeTests->addChild(createOpNopGroup(testCtx));
+	computeTests->addChild(createOpLineGroup(testCtx));
+	computeTests->addChild(createOpNoLineGroup(testCtx));
+	computeTests->addChild(createOpConstantNullGroup(testCtx));
+	computeTests->addChild(createOpConstantCompositeGroup(testCtx));
+	computeTests->addChild(createOpConstantUsageGroup(testCtx));
+	computeTests->addChild(createSpecConstantGroup(testCtx));
+	computeTests->addChild(createOpSourceGroup(testCtx));
+	computeTests->addChild(createOpSourceExtensionGroup(testCtx));
+	computeTests->addChild(createDecorationGroupGroup(testCtx));
+	computeTests->addChild(createOpPhiGroup(testCtx));
+	computeTests->addChild(createLoopControlGroup(testCtx));
+	computeTests->addChild(createFunctionControlGroup(testCtx));
+	computeTests->addChild(createSelectionControlGroup(testCtx));
+	computeTests->addChild(createBlockOrderGroup(testCtx));
+	computeTests->addChild(createMultipleShaderGroup(testCtx));
+	computeTests->addChild(createMemoryAccessGroup(testCtx));
+	computeTests->addChild(createOpCopyMemoryGroup(testCtx));
+	computeTests->addChild(createOpCopyObjectGroup(testCtx));
+	computeTests->addChild(createNoContractionGroup(testCtx));
+	computeTests->addChild(createOpUndefGroup(testCtx));
+	computeTests->addChild(createOpUnreachableGroup(testCtx));
+	computeTests ->addChild(createOpQuantizeToF16Group(testCtx));
 
-    RGBA defaultColors[4];
+	RGBA defaultColors[4];
 	getDefaultColors(defaultColors);
-	de::MovePtr<tcu::TestCaseGroup>	group	(new tcu::TestCaseGroup(testCtx, "graphics-assembly", "Test the graphics pipeline"));
-	createTestsForAllStages("passthru", defaultColors, defaultColors, passthruFragments(), group.get());
-	instructionTests->addChild(group.release());
+	de::MovePtr<tcu::TestCaseGroup> opnopTests (new tcu::TestCaseGroup(testCtx, "opnop", "Test OpNop"));
+	map<string, string> opNopFragments;
+	opNopFragments["testfun"] =
+		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%param1 = OpFunctionParameter %v4f32\n"
+		"%label_testfun = OpLabel\n"
+		"OpNop\n"
+		"OpNop\n"
+		"OpNop\n"
+		"OpNop\n"
+		"OpNop\n"
+		"OpNop\n"
+		"OpNop\n"
+		"OpNop\n"
+		"%a = OpVectorExtractDynamic %f32 %param1 %c_i32_0\n"
+		"%b = OpFAdd %f32 %a %a\n"
+		"OpNop\n"
+		"%c = OpFSub %f32 %b %a\n"
+		"%ret = OpVectorInsertDynamic %v4f32 %param1 %c %c_i32_0\n"
+		"OpNop\n"
+		"OpNop\n"
+		"OpReturnValue %ret\n"
+		"OpFunctionEnd\n"
+		;
+	createTestsForAllStages("opnop", defaultColors, defaultColors, opNopFragments, opnopTests.get());
+
+	graphicsTests->addChild(opnopTests.release());
+	graphicsTests->addChild(createOpSourceTests(testCtx));
+	graphicsTests->addChild(createOpSourceContinuedTests(testCtx));
+	graphicsTests->addChild(createOpLineTests(testCtx));
+	graphicsTests->addChild(createOpNoLineTests(testCtx));
+	graphicsTests->addChild(createOpConstantNullTests(testCtx));
+	graphicsTests->addChild(createOpConstantCompositeTests(testCtx));
+	graphicsTests->addChild(createMemoryAccessTests(testCtx));
+	graphicsTests->addChild(createOpUndefTests(testCtx));
+	graphicsTests->addChild(createSelectionBlockOrderTests(testCtx));
+	graphicsTests->addChild(createModuleTests(testCtx));
+	graphicsTests->addChild(createSwitchBlockOrderTests(testCtx));
+	graphicsTests->addChild(createOpPhiTests(testCtx));
+
+	instructionTests->addChild(computeTests.release());
+	instructionTests->addChild(graphicsTests.release());
 	return instructionTests.release();
 }
 
