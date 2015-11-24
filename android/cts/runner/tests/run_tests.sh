@@ -45,7 +45,7 @@ JARS="
     cts-tradefed_v2\
     ddmlib-prebuilt\
     hosttestlib\
-    CtsDeqp\
+    CtsDeqpTestCases\
     CtsDeqpRunnerTests\
     tradefed-prebuilt"
 JAR_PATH=

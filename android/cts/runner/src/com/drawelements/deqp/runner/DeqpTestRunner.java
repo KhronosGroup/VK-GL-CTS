@@ -139,7 +139,7 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest, IRemoteTest,
      */
     @Override
     public void setBuild(IBuildInfo buildInfo) {
-        setBuildHelper(new CompatibilityBuildHelper((IFolderBuildInfo)buildInfo));
+        setBuildHelper(new CompatibilityBuildHelper(buildInfo));
     }
 
     /**
