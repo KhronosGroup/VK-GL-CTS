@@ -254,14 +254,6 @@ VkResult getPhysicalDeviceFeatures (VkPhysicalDevice physicalDevice, VkPhysicalD
 	return VK_SUCCESS;
 }
 
-VkResult getPhysicalDeviceFormatProperties (VkPhysicalDevice physicalDevice, VkFormat format, VkFormatProperties* pFormatProperties)
-{
-	DE_UNREF(physicalDevice);
-	DE_UNREF(format);
-	DE_UNREF(pFormatProperties);
-	return VK_SUCCESS;
-}
-
 VkResult getPhysicalDeviceImageFormatProperties (VkPhysicalDevice physicalDevice, VkFormat format, VkImageType type, VkImageTiling tiling, VkImageUsageFlags usage, VkImageCreateFlags flags, VkImageFormatProperties* pImageFormatProperties)
 {
 	DE_UNREF(physicalDevice);

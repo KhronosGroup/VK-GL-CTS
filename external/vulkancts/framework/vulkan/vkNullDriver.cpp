@@ -238,6 +238,28 @@ VkResult getPhysicalDeviceMemoryProperties (VkPhysicalDevice, VkPhysicalDeviceMe
 	return VK_SUCCESS;
 }
 
+VkResult getPhysicalDeviceFormatProperties (VkPhysicalDevice, VkFormat, VkFormatProperties* pFormatProperties)
+{
+	const VkFormatFeatureFlags	allFeatures	= VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT
+											| VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT
+											| VK_FORMAT_FEATURE_STORAGE_IMAGE_ATOMIC_BIT
+											| VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT
+											| VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT
+											| VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_ATOMIC_BIT
+											| VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT
+											| VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT
+											| VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT
+											| VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
+											| VK_FORMAT_FEATURE_BLIT_SOURCE_BIT
+											| VK_FORMAT_FEATURE_BLIT_DESTINATION_BIT;
+
+	pFormatProperties->linearTilingFeatures		= allFeatures;
+	pFormatProperties->optimalTilingFeatures	= allFeatures;
+	pFormatProperties->bufferFeatures			= allFeatures;
+
+	return VK_SUCCESS;
+}
+
 VkResult getBufferMemoryRequirements (VkDevice, VkBuffer bufferHandle, VkMemoryRequirements* requirements)
 {
 	const Buffer*	buffer	= reinterpret_cast<Buffer*>(bufferHandle.getInternal());
@@ -270,7 +292,7 @@ VkResult mapMemory (VkDevice, VkDeviceMemory memHandle, VkDeviceSize offset, VkD
 	return VK_SUCCESS;
 }
 
-VkResult allocDescriptorSets (VkDevice device, VkDescriptorPool descriptorPool, VkDescriptorSetUsage setUsage, deUint32 count, const VkDescriptorSetLayout* pSetLayouts, VkDescriptorSet* pDescriptorSets, deUint32* pCount)
+VkResult allocDescriptorSets (VkDevice device, VkDescriptorPool descriptorPool, VkDescriptorSetUsage setUsage, deUint32 count, const VkDescriptorSetLayout* pSetLayouts, VkDescriptorSet* pDescriptorSets)
 {
 	for (deUint32 ndx = 0; ndx < count; ++ndx)
 	{
@@ -280,17 +302,20 @@ VkResult allocDescriptorSets (VkDevice device, VkDescriptorPool descriptorPool, 
 		}
 		catch (const std::bad_alloc&)
 		{
-			*pCount = ndx;
+			for (deUint32 freeNdx = 0; freeNdx < ndx; freeNdx++)
+				delete reinterpret_cast<DescriptorSet*>((deUintptr)pDescriptorSets[freeNdx].getInternal());
+
 			return VK_ERROR_OUT_OF_HOST_MEMORY;
 		}
 		catch (VkResult res)
 		{
-			*pCount = ndx;
+			for (deUint32 freeNdx = 0; freeNdx < ndx; freeNdx++)
+				delete reinterpret_cast<DescriptorSet*>((deUintptr)pDescriptorSets[freeNdx].getInternal());
+
 			return res;
 		}
 	}
 
-	*pCount = count;
 	return VK_SUCCESS;
 }
 
