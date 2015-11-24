@@ -1,3 +1,10 @@
 # Bug 22665757
 dEQP-GLES2.functional.fbo.completeness.renderable.renderbuffer.color0.rgb16f
 dEQP-GLES2.functional.fbo.completeness.renderable.texture.color0.rgb16f
+
+# Bug 23219552
+dEQP-GLES2.functional.dither.disabled.gradient_white
+dEQP-GLES2.functional.dither.disabled.gradient_red
+dEQP-GLES2.functional.dither.disabled.gradient_green
+dEQP-GLES2.functional.dither.disabled.gradient_blue
+dEQP-GLES2.functional.dither.disabled.gradient_alpha
