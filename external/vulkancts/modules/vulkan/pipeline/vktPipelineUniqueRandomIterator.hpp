@@ -63,30 +63,12 @@ private:
 	size_t					m_currentIndex;
 };
 
-class RandomFunction
-{
-private:
-	de::Random m_random;
-
-public:
-	RandomFunction(int seed)
-		: m_random(seed)
-	{}
-
-	virtual ~RandomFunction() {}
-
-	deUint32 operator()(deUint32 max)
-	{
-		return m_random.getUint32() % max;
-	}
-};
-
 template <typename T>
 UniqueRandomIterator<T>::UniqueRandomIterator (deUint32 numItems, deUint32 numValues, int seed)
 {
-	DE_ASSERT(numItems <= numValues);
+	de::Random rnd(seed);
 
-	RandomFunction randomFunc(seed);
+	DE_ASSERT(numItems <= numValues);
 
 	if (numItems == numValues)
 	{
@@ -102,14 +84,14 @@ UniqueRandomIterator<T>::UniqueRandomIterator (deUint32 numItems, deUint32 numVa
 
 		// Populate set with "numItems" unique values between 0 and numValues - 1
 		while (uniqueIndices.size() < numItems)
-			uniqueIndices.insert(randomFunc(numValues));
+			uniqueIndices.insert(rnd.getUint32() % numValues);
 
 		// Copy set into index sequence
 		m_indices = std::vector<deUint32>(uniqueIndices.begin(), uniqueIndices.end());
 	}
 
 	// Scramble the indices
-	std::random_shuffle(m_indices.begin(), m_indices.end(), randomFunc);
+	rnd.shuffle(m_indices.begin(), m_indices.end());
 
 	reset();
 }
