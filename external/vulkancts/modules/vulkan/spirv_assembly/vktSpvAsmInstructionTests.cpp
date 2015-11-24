@@ -139,8 +139,9 @@ tcu::TestCaseGroup* createOpNopGroup (tcu::TestContext& testCtx)
 	vector<float>					negativeFloats	(numElements, 0);
 
 	fillRandomScalars(rnd, 1.f, 100.f, &positiveFloats[0], numElements);
-	for (size_t numNdx = 0; numNdx < numElements; ++numNdx)
-		negativeFloats[numNdx] = -positiveFloats[numNdx];
+
+	for (size_t ndx = 0; ndx < numElements; ++ndx)
+		negativeFloats[ndx] = -positiveFloats[ndx];
 
 	spec.assembly =
 		"OpNop\n" // As the first instruction
@@ -197,8 +198,9 @@ tcu::TestCaseGroup* createOpLineGroup (tcu::TestContext& testCtx)
 	vector<float>					negativeFloats	(numElements, 0);
 
 	fillRandomScalars(rnd, 1.f, 100.f, &positiveFloats[0], numElements);
-	for (size_t numNdx = 0; numNdx < numElements; ++numNdx)
-		negativeFloats[numNdx] = -positiveFloats[numNdx];
+
+	for (size_t ndx = 0; ndx < numElements; ++ndx)
+		negativeFloats[ndx] = -positiveFloats[ndx];
 
 	spec.assembly =
 		string(s_ShaderPreamble) +
@@ -260,8 +262,9 @@ tcu::TestCaseGroup* createOpNoLineGroup (tcu::TestContext& testCtx)
 	vector<float>					negativeFloats	(numElements, 0);
 
 	fillRandomScalars(rnd, 1.f, 100.f, &positiveFloats[0], numElements);
-	for (size_t numNdx = 0; numNdx < numElements; ++numNdx)
-		negativeFloats[numNdx] = -positiveFloats[numNdx];
+
+	for (size_t ndx = 0; ndx < numElements; ++ndx)
+		negativeFloats[ndx] = -positiveFloats[ndx];
 
 	spec.assembly =
 		string(s_ShaderPreamble) +
@@ -365,8 +368,9 @@ tcu::TestCaseGroup* createOpUnreachableGroup (tcu::TestContext& testCtx)
 	vector<float>					negativeFloats	(numElements, 0);
 
 	fillRandomScalars(rnd, 1.f, 100.f, &positiveFloats[0], numElements);
-	for (size_t numNdx = 0; numNdx < numElements; ++numNdx)
-		negativeFloats[numNdx] = -positiveFloats[numNdx];
+
+	for (size_t ndx = 0; ndx < numElements; ++ndx)
+		negativeFloats[ndx] = -positiveFloats[ndx];
 
 	spec.assembly =
 		string(s_ShaderPreamble) +
@@ -510,8 +514,9 @@ tcu::TestCaseGroup* createDecorationGroupGroup (tcu::TestContext& testCtx)
 	fillRandomScalars(rnd, -300.f, 300.f, &inputFloats2[0], numElements);
 	fillRandomScalars(rnd, -300.f, 300.f, &inputFloats3[0], numElements);
 	fillRandomScalars(rnd, -300.f, 300.f, &inputFloats4[0], numElements);
-	for (size_t numNdx = 0; numNdx < numElements; ++numNdx)
-		outputFloats[numNdx] = inputFloats0[numNdx] + inputFloats1[numNdx] + inputFloats2[numNdx] + inputFloats3[numNdx] + inputFloats4[numNdx];
+
+	for (size_t ndx = 0; ndx < numElements; ++ndx)
+		outputFloats[ndx] = inputFloats0[ndx] + inputFloats1[ndx] + inputFloats2[ndx] + inputFloats3[ndx] + inputFloats4[ndx];
 
 	spec.assembly =
 		string(s_ShaderPreamble) +
@@ -635,13 +640,14 @@ tcu::TestCaseGroup* createOpPhiGroup (tcu::TestContext& testCtx)
 	vector<float>					outputFloats	(numElements, 0);
 
 	fillRandomScalars(rnd, -300.f, 300.f, &inputFloats[0], numElements);
-	for (size_t numNdx = 0; numNdx < numElements; ++numNdx)
+
+	for (size_t ndx = 0; ndx < numElements; ++ndx)
 	{
-		switch (numNdx % 3)
+		switch (ndx % 3)
 		{
-			case 0:		outputFloats[numNdx] = inputFloats[numNdx] + 5.5f;	break;
-			case 1:		outputFloats[numNdx] = inputFloats[numNdx] + 20.5f;	break;
-			case 2:		outputFloats[numNdx] = inputFloats[numNdx] + 1.75f;	break;
+			case 0:		outputFloats[ndx] = inputFloats[ndx] + 5.5f;	break;
+			case 1:		outputFloats[ndx] = inputFloats[ndx] + 20.5f;	break;
+			case 2:		outputFloats[ndx] = inputFloats[ndx] + 1.75f;	break;
 			default:	break;
 		}
 	}
@@ -745,15 +751,17 @@ tcu::TestCaseGroup* createBlockOrderGroup (tcu::TestContext& testCtx)
 	vector<float>					outputFloats	(numElements, 0);
 
 	fillRandomScalars(rnd, -100.f, 100.f, &inputFloats[0], numElements);
-	for (size_t numNdx = 0; numNdx <= 50; ++numNdx)
-		outputFloats[numNdx] = -inputFloats[numNdx];
-	for (size_t numNdx = 51; numNdx < numElements; ++numNdx)
+
+	for (size_t ndx = 0; ndx <= 50; ++ndx)
+		outputFloats[ndx] = -inputFloats[ndx];
+
+	for (size_t ndx = 51; ndx < numElements; ++ndx)
 	{
-		switch (numNdx % 3)
+		switch (ndx % 3)
 		{
-			case 0:		outputFloats[numNdx] = inputFloats[numNdx] + 1.5f; break;
-			case 1:		outputFloats[numNdx] = inputFloats[numNdx] + 42.f; break;
-			case 2:		outputFloats[numNdx] = inputFloats[numNdx] - 27.f; break;
+			case 0:		outputFloats[ndx] = inputFloats[ndx] + 1.5f; break;
+			case 1:		outputFloats[ndx] = inputFloats[ndx] + 42.f; break;
+			case 2:		outputFloats[ndx] = inputFloats[ndx] - 27.f; break;
 			default:	break;
 		}
 	}
@@ -949,8 +957,9 @@ tcu::TestCaseGroup* createOpSourceGroup (tcu::TestContext& testCtx)
 																			"OpSourceContinued \"#version 430\nvoid main() {}\""));
 
 	fillRandomScalars(rnd, 1.f, 100.f, &positiveFloats[0], numElements);
-	for (size_t numNdx = 0; numNdx < numElements; ++numNdx)
-		negativeFloats[numNdx] = -positiveFloats[numNdx];
+
+	for (size_t ndx = 0; ndx < numElements; ++ndx)
+		negativeFloats[ndx] = -positiveFloats[ndx];
 
 	for (size_t caseNdx = 0; caseNdx < cases.size(); ++caseNdx)
 	{
@@ -1011,8 +1020,9 @@ tcu::TestCaseGroup* createOpSourceExtensionGroup (tcu::TestContext& testCtx)
 	cases.push_back(CaseParameter("long_extension",		string(65533, 'e'))); // word count: 65535
 
 	fillRandomScalars(rnd, -200.f, 200.f, &inputFloats[0], numElements);
-	for (size_t numNdx = 0; numNdx < numElements; ++numNdx)
-		outputFloats[numNdx] = -inputFloats[numNdx];
+
+	for (size_t ndx = 0; ndx < numElements; ++ndx)
+		outputFloats[ndx] = -inputFloats[ndx];
 
 	for (size_t caseNdx = 0; caseNdx < cases.size(); ++caseNdx)
 	{
@@ -1084,8 +1094,9 @@ tcu::TestCaseGroup* createOpConstantNullGroup (tcu::TestContext& testCtx)
 	cases.push_back(CaseParameter("pointer",		"%type = OpTypePointer Function %i32"));
 
 	fillRandomScalars(rnd, 1.f, 100.f, &positiveFloats[0], numElements);
-	for (size_t numNdx = 0; numNdx < numElements; ++numNdx)
-		negativeFloats[numNdx] = -positiveFloats[numNdx];
+
+	for (size_t ndx = 0; ndx < numElements; ++ndx)
+		negativeFloats[ndx] = -positiveFloats[ndx];
 
 	for (size_t caseNdx = 0; caseNdx < cases.size(); ++caseNdx)
 	{
@@ -1165,8 +1176,9 @@ tcu::TestCaseGroup* createOpConstantCompositeGroup (tcu::TestContext& testCtx)
 													"%const = OpConstantComposite %st1val %st2val"));
 
 	fillRandomScalars(rnd, 1.f, 100.f, &positiveFloats[0], numElements);
-	for (size_t numNdx = 0; numNdx < numElements; ++numNdx)
-		negativeFloats[numNdx] = -positiveFloats[numNdx];
+
+	for (size_t ndx = 0; ndx < numElements; ++ndx)
+		negativeFloats[ndx] = -positiveFloats[ndx];
 
 	for (size_t caseNdx = 0; caseNdx < cases.size(); ++caseNdx)
 	{
@@ -1196,8 +1208,9 @@ tcu::TestCaseGroup* createOpConstantUsageGroup (tcu::TestContext& testCtx)
 	vector<float>					negativeFloats	(numElements, 0);
 
 	fillRandomScalars(rnd, 1.f, 100.f, &positiveFloats[0], numElements);
-	for (size_t numNdx = 0; numNdx < numElements; ++numNdx)
-		negativeFloats[numNdx] = -positiveFloats[numNdx];
+
+	for (size_t ndx = 0; ndx < numElements; ++ndx)
+		negativeFloats[ndx] = -positiveFloats[ndx];
 
 	spec.assembly =
 		"OpCapability Shader\n"
@@ -1353,8 +1366,9 @@ tcu::TestCaseGroup* createLoopControlGroup (tcu::TestContext& testCtx)
 	cases.push_back(CaseParameter("unroll_dont_unroll",	"Unroll|DontUnroll"));
 
 	fillRandomScalars(rnd, -100.f, 100.f, &inputFloats[0], numElements);
-	for (size_t numNdx = 0; numNdx < numElements; ++numNdx)
-		outputFloats[numNdx] = inputFloats[numNdx] + 4.f;
+
+	for (size_t ndx = 0; ndx < numElements; ++ndx)
+		outputFloats[ndx] = inputFloats[ndx] + 4.f;
 
 	for (size_t caseNdx = 0; caseNdx < cases.size(); ++caseNdx)
 	{
@@ -1444,8 +1458,9 @@ tcu::TestCaseGroup* createSelectionControlGroup (tcu::TestContext& testCtx)
 	cases.push_back(CaseParameter("flatten_dont_flatten",	"DontFlatten|Flatten"));
 
 	fillRandomScalars(rnd, -100.f, 100.f, &inputFloats[0], numElements);
-	for (size_t numNdx = 0; numNdx < numElements; ++numNdx)
-		outputFloats[numNdx] = inputFloats[numNdx] + (inputFloats[numNdx] > 10.f ? 1.f : -1.f);
+
+	for (size_t ndx = 0; ndx < numElements; ++ndx)
+		outputFloats[ndx] = inputFloats[ndx] + (inputFloats[ndx] > 10.f ? 1.f : -1.f);
 
 	for (size_t caseNdx = 0; caseNdx < cases.size(); ++caseNdx)
 	{
@@ -1535,8 +1550,9 @@ tcu::TestCaseGroup* createFunctionControlGroup (tcu::TestContext& testCtx)
 	cases.push_back(CaseParameter("pure_inline_dont_inline",	"Pure|Inline|DontInline"));
 
 	fillRandomScalars(rnd, -100.f, 100.f, &inputFloats[0], numElements);
-	for (size_t numNdx = 0; numNdx < numElements; ++numNdx)
-		outputFloats[numNdx] = inputFloats[numNdx] + 10.f;
+
+	for (size_t ndx = 0; ndx < numElements; ++ndx)
+		outputFloats[ndx] = inputFloats[ndx] + 10.f;
 
 	for (size_t caseNdx = 0; caseNdx < cases.size(); ++caseNdx)
 	{
@@ -1615,8 +1631,9 @@ tcu::TestCaseGroup* createOpUndefGroup (tcu::TestContext& testCtx)
 	cases.push_back(CaseParameter("function",		"%type = OpTypeFunction %void %i32 %f32"));
 
 	fillRandomScalars(rnd, 1.f, 100.f, &positiveFloats[0], numElements);
-	for (size_t numNdx = 0; numNdx < numElements; ++numNdx)
-		negativeFloats[numNdx] = -positiveFloats[numNdx];
+
+	for (size_t ndx = 0; ndx < numElements; ++ndx)
+		negativeFloats[ndx] = -positiveFloats[ndx];
 
 	for (size_t caseNdx = 0; caseNdx < cases.size(); ++caseNdx)
 	{
