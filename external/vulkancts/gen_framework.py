@@ -617,6 +617,7 @@ def writeNullDriverImpl (api, filename):
 				"vkGetPhysicalDeviceProperties",
 				"vkGetPhysicalDeviceQueueFamilyProperties",
 				"vkGetPhysicalDeviceMemoryProperties",
+				"vkGetPhysicalDeviceFormatProperties",
 				"vkGetBufferMemoryRequirements",
 				"vkGetImageMemoryRequirements",
 				"vkMapMemory",
