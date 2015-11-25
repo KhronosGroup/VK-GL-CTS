@@ -503,6 +503,7 @@ VkChannelMapping getFormatChannelMapping (VkFormat format)
 	static const VkChannelMapping	S		= { VK_CHANNEL_SWIZZLE_ZERO,	VK_CHANNEL_SWIZZLE_ZERO,	VK_CHANNEL_SWIZZLE_ZERO,	VK_CHANNEL_SWIZZLE_A	};
 	static const VkChannelMapping	DS		= {	VK_CHANNEL_SWIZZLE_R,		VK_CHANNEL_SWIZZLE_ZERO,	VK_CHANNEL_SWIZZLE_ZERO,	VK_CHANNEL_SWIZZLE_A	};
 	static const VkChannelMapping	BGRA	= {	VK_CHANNEL_SWIZZLE_B,		VK_CHANNEL_SWIZZLE_G,		VK_CHANNEL_SWIZZLE_R,		VK_CHANNEL_SWIZZLE_A	};
+	static const VkChannelMapping	BGR		= {	VK_CHANNEL_SWIZZLE_B,		VK_CHANNEL_SWIZZLE_G,		VK_CHANNEL_SWIZZLE_R,		VK_CHANNEL_SWIZZLE_ONE	};
 
 	if (format == VK_FORMAT_UNDEFINED)
 		return RGBA;
@@ -517,6 +518,7 @@ VkChannelMapping getFormatChannelMapping (VkFormat format)
 		case TextureFormat::RGB:	return RGB;
 		case TextureFormat::RGBA:	return RGBA;
 		case TextureFormat::BGRA:	return BGRA;
+		case TextureFormat::BGR:	return BGR;
 		case TextureFormat::sR:		return R;
 		case TextureFormat::sRG:	return RG;
 		case TextureFormat::sRGB:	return RGB;
