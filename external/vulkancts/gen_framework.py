@@ -657,6 +657,7 @@ def writeNullDriverImpl (api, filename):
 				"vkMapMemory",
 				"vkAllocateDescriptorSets",
 				"vkFreeDescriptorSets",
+				"vkResetDescriptorPool",
 				"vkAllocateCommandBuffers",
 				"vkFreeCommandBuffers"
 			]

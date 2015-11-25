@@ -506,14 +506,6 @@ VkResult mergePipelineCaches (VkDevice device, VkPipelineCache dstCache, deUint3
 	return VK_SUCCESS;
 }
 
-VkResult resetDescriptorPool (VkDevice device, VkDescriptorPool descriptorPool, VkDescriptorPoolResetFlags flags)
-{
-	DE_UNREF(device);
-	DE_UNREF(descriptorPool);
-	DE_UNREF(flags);
-	return VK_SUCCESS;
-}
-
 void updateDescriptorSets (VkDevice device, deUint32 descriptorWriteCount, const VkWriteDescriptorSet* pDescriptorWrites, deUint32 descriptorCopyCount, const VkCopyDescriptorSet* pDescriptorCopies)
 {
 	DE_UNREF(device);
