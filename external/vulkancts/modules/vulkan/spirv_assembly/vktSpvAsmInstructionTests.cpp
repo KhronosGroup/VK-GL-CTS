@@ -52,7 +52,6 @@
 #include "vkStrUtil.hpp"
 #include "vkTypeUtil.hpp"
 
-#include "deClock.h"
 #include "deRandom.hpp"
 #include "deStringUtil.hpp"
 #include "deUniquePtr.hpp"
@@ -1739,7 +1738,7 @@ struct ShaderElement
 	}
 };
 
-void getDefaultColors(RGBA colors[4]) {
+void getDefaultColors(RGBA (&colors)[4]) {
 	colors[0] = RGBA::white();
 	colors[1] = RGBA::red();
 	colors[2] = RGBA::blue();
@@ -1752,7 +1751,7 @@ void getDefaultColors(RGBA colors[4]) {
 template<size_t N>
 InstanceContext createInstanceContext (const ShaderElement (&elements)[N], const RGBA (&inputColors)[4], const RGBA (&outputColors)[4], const map<string, string>& testCodeFragments)
 {
-	InstanceContext ctx(inputColors, outputColors, testCodeFragments);
+	InstanceContext ctx (inputColors, outputColors, testCodeFragments);
 	for (size_t i = 0; i < N; ++i)
 	{
 		ctx.moduleMap[elements[i].moduleName].push_back(std::make_pair(elements[i].entryName, elements[i].stage));
