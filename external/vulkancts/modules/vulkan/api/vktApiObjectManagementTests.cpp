@@ -1402,7 +1402,7 @@ struct GraphicsPipeline
 		};
 		const VkPipelineInputAssemblyStateCreateInfo	inputAssemblyState	=
 		{
-			VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
+			VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
 			DE_NULL,
 			VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
 			VK_FALSE								// primitiveRestartEnable
