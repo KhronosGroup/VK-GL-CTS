@@ -1705,17 +1705,33 @@ struct InstanceContext
 	map<string, string>		testCodeFragments;
 
 	InstanceContext (const RGBA (&inputs)[4], const RGBA (&outputs)[4], const map<string, string>& testCodeFragments_)
-		: inputColors			(inputs)
-		, outputColors			(outputs)
-		, testCodeFragments		(testCodeFragments_)
-	{}
+		: testCodeFragments		(testCodeFragments_)
+	{
+		inputColors[0]		= inputs[0];
+		inputColors[1]		= inputs[1];
+		inputColors[2]		= inputs[2];
+		inputColors[3]		= inputs[3];
+
+		outputColors[0]		= outputs[0];
+		outputColors[1]		= outputs[1];
+		outputColors[2]		= outputs[2];
+		outputColors[3]		= outputs[3];
+	}
 
 	InstanceContext (const InstanceContext& other)
 		: moduleMap			(other.moduleMap)
-		, inputColors		(other.inputColors)
-		, outputColors		(other.outputColors)
 		, testCodeFragments	(other.testCodeFragments)
-	{}
+	{
+		inputColors[0]		= other.inputColors[0];
+		inputColors[1]		= other.inputColors[1];
+		inputColors[2]		= other.inputColors[2];
+		inputColors[3]		= other.inputColors[3];
+
+		outputColors[0]		= other.outputColors[0];
+		outputColors[1]		= other.outputColors[1];
+		outputColors[2]		= other.outputColors[2];
+		outputColors[3]		= other.outputColors[3];
+	}
 };
 
 // A description of a shader to be used for a single stage of the graphics pipeline.
