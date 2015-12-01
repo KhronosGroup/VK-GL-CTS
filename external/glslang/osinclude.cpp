@@ -23,31 +23,37 @@
 
 #include "osinclude.h"
 
+#include "deThread.h"
+#include "deThreadLocal.h"
+
 namespace glslang
 {
+
+DE_STATIC_ASSERT(sizeof(deThreadLocal)	== sizeof(OS_TLSIndex));
+DE_STATIC_ASSERT(sizeof(deThread)		== sizeof(void*));
 
 // Thread-local
 
 OS_TLSIndex OS_AllocTLSIndex (void)
 {
-	return deThreadLocal_create();
+	return (OS_TLSIndex)deThreadLocal_create();
 }
 
 bool OS_SetTLSValue (OS_TLSIndex nIndex, void* lpvValue)
 {
-	deThreadLocal_set(nIndex, lpvValue);
+	deThreadLocal_set((deThreadLocal)nIndex, lpvValue);
 	return true;
 }
 
 bool OS_FreeTLSIndex (OS_TLSIndex nIndex)
 {
-	deThreadLocal_destroy(nIndex);
+	deThreadLocal_destroy((deThreadLocal)nIndex);
 	return true;
 }
 
 void* OS_GetTLSValue (OS_TLSIndex nIndex)
 {
-	return deThreadLocal_get(nIndex);
+	return deThreadLocal_get((deThreadLocal)nIndex);
 }
 
 // Global lock - not used
@@ -68,9 +74,14 @@ void ReleaseGlobalLock (void)
 
 DE_STATIC_ASSERT(sizeof(void*) >= sizeof(deThread));
 
+static void EnterGenericThread (void* entry)
+{
+	((TThreadEntrypoint)entry)(DE_NULL);
+}
+
 void* OS_CreateThread (TThreadEntrypoint entry)
 {
-	return (void*)(deUintptr)deThread_create(entry, DE_NULL, DE_NULL);
+	return (void*)(deUintptr)deThread_create(EnterGenericThread, (void*)entry, DE_NULL);
 }
 
 void OS_WaitForAllThreads (void* threads, int numThreads)
