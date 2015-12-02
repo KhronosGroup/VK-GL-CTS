@@ -34,12 +34,36 @@
 
 #include "vktSpvAsmInstructionTests.hpp"
 
+#include "tcuCommandLine.hpp"
+#include "tcuFormatUtil.hpp"
+#include "tcuRGBA.hpp"
+#include "tcuStringTemplate.hpp"
+#include "tcuTestLog.hpp"
+#include "tcuVectorUtil.hpp"
+
+#include "vkDefs.hpp"
+#include "vkDeviceUtil.hpp"
+#include "vkMemUtil.hpp"
+#include "vkPlatform.hpp"
+#include "vkPrograms.hpp"
+#include "vkQueryUtil.hpp"
+#include "vkRef.hpp"
+#include "vkRefUtil.hpp"
+#include "vkStrUtil.hpp"
+#include "vkTypeUtil.hpp"
+
 #include "deRandom.hpp"
+#include "deStringUtil.hpp"
 #include "deUniquePtr.hpp"
 #include "tcuStringTemplate.hpp"
 
 #include "vktSpvAsmComputeShaderCase.hpp"
 #include "vktSpvAsmComputeShaderTestUtil.hpp"
+#include "vktTestCaseUtil.hpp"
+
+#include <map>
+#include <string>
+#include <sstream>
 
 namespace vkt
 {
@@ -49,11 +73,23 @@ namespace SpirVAssembly
 namespace
 {
 
+using namespace vk;
 using std::map;
 using std::string;
 using std::vector;
 using tcu::IVec3;
+using tcu::IVec4;
+using tcu::RGBA;
+using tcu::TestLog;
+using tcu::TestStatus;
+using tcu::Vec4;
+using de::UniquePtr;
 using tcu::StringTemplate;
+
+typedef Unique<VkShaderModule>			ModuleHandleUp;
+typedef de::SharedPtr<ModuleHandleUp>	ModuleHandleSp;
+typedef Unique<VkShader>				VkShaderUp;
+typedef de::SharedPtr<VkShaderUp>		VkShaderSp;
 
 template<typename T>	T			randomScalar	(de::Random& rnd, T minValue, T maxValue);
 template<> inline		float		randomScalar	(de::Random& rnd, float minValue, float maxValue)		{ return rnd.getFloat(minValue, maxValue);	}
@@ -90,9 +126,9 @@ static void fillRandomScalars (de::Random& rnd, T minValue, T maxValue, void* ds
 // }
 
 static const char* const s_ShaderPreamble =
-	"OpCapability Shader\n"
-	"OpMemoryModel Logical GLSL450\n"
-	"OpEntryPoint GLCompute %main \"main\" %id\n"
+		"OpCapability Shader\n"
+		"OpMemoryModel Logical GLSL450\n"
+		"OpEntryPoint GLCompute %main \"main\" %id\n"
 	"OpExecutionMode %main LocalSize 1 1 1\n";
 
 static const char* const s_CommonTypes =
@@ -119,14 +155,14 @@ static const char* const s_InputOutputBuffer =
 // Declares buffer type and layout for uniform variables indata and outdata. Both of them are SSBO bounded to descriptor set 0.
 // indata is at binding point 0, while outdata is at 1.
 static const char* const s_InputOutputBufferTraits =
-	"OpDecorate %inbuf BufferBlock\n"
-	"OpDecorate %indata DescriptorSet 0\n"
-	"OpDecorate %indata Binding 0\n"
-	"OpDecorate %outbuf BufferBlock\n"
-	"OpDecorate %outdata DescriptorSet 0\n"
-	"OpDecorate %outdata Binding 1\n"
-	"OpDecorate %f32arr ArrayStride 4\n"
-	"OpMemberDecorate %inbuf 0 Offset 0\n"
+		"OpDecorate %inbuf BufferBlock\n"
+		"OpDecorate %indata DescriptorSet 0\n"
+		"OpDecorate %indata Binding 0\n"
+		"OpDecorate %outbuf BufferBlock\n"
+		"OpDecorate %outdata DescriptorSet 0\n"
+		"OpDecorate %outdata Binding 1\n"
+		"OpDecorate %f32arr ArrayStride 4\n"
+		"OpMemberDecorate %inbuf 0 Offset 0\n"
 	"OpMemberDecorate %outbuf 0 Offset 0\n";
 
 tcu::TestCaseGroup* createOpNopGroup (tcu::TestContext& testCtx)
@@ -1642,16 +1678,1350 @@ tcu::TestCaseGroup* createOpUndefGroup (tcu::TestContext& testCtx)
 
 		specializations["TYPE"] = cases[caseNdx].param;
 		spec.assembly = shaderTemplate.specialize(specializations);
-		spec.inputs.push_back(BufferSp(new Float32Buffer(positiveFloats)));
-		spec.outputs.push_back(BufferSp(new Float32Buffer(negativeFloats)));
+	spec.inputs.push_back(BufferSp(new Float32Buffer(positiveFloats)));
+	spec.outputs.push_back(BufferSp(new Float32Buffer(negativeFloats)));
 		spec.numWorkGroups = IVec3(numElements, 1, 1);
 
 		group->addChild(new SpvAsmComputeShaderCase(testCtx, cases[caseNdx].name, cases[caseNdx].name, spec));
 	}
 
-	return group.release();
+		return group.release();
 }
 
+
+typedef std::pair<std::string, VkShaderStage>	EntryToStage;
+typedef map<string, vector<EntryToStage> >		ModuleMap;
+
+// Context for a specific test instantiation. For example, an instantiation
+// may test colors yellow/magenta/cyan/mauve in a tesselation shader
+// with an entry point named 'main_to_the_main'
+struct InstanceContext
+{
+	// Map of modules to what entry_points we care to use from those modules.
+	ModuleMap				moduleMap;
+	RGBA					inputColors[4];
+	RGBA					outputColors[4];
+	// Concrete SPIR-V code to test via boilerplate specialization.
+	map<string, string>		testCodeFragments;
+
+	InstanceContext (const RGBA (&inputs)[4], const RGBA (&outputs)[4], const map<string, string>& testCodeFragments_)
+		: testCodeFragments		(testCodeFragments_)
+	{
+		inputColors[0]		= inputs[0];
+		inputColors[1]		= inputs[1];
+		inputColors[2]		= inputs[2];
+		inputColors[3]		= inputs[3];
+
+		outputColors[0]		= outputs[0];
+		outputColors[1]		= outputs[1];
+		outputColors[2]		= outputs[2];
+		outputColors[3]		= outputs[3];
+	}
+
+	InstanceContext (const InstanceContext& other)
+		: moduleMap			(other.moduleMap)
+		, testCodeFragments	(other.testCodeFragments)
+	{
+		inputColors[0]		= other.inputColors[0];
+		inputColors[1]		= other.inputColors[1];
+		inputColors[2]		= other.inputColors[2];
+		inputColors[3]		= other.inputColors[3];
+
+		outputColors[0]		= other.outputColors[0];
+		outputColors[1]		= other.outputColors[1];
+		outputColors[2]		= other.outputColors[2];
+		outputColors[3]		= other.outputColors[3];
+	}
+};
+
+// A description of a shader to be used for a single stage of the graphics pipeline.
+struct ShaderElement
+{
+	// The module that contains this shader entrypoint.
+	const char*		moduleName;
+
+	// The name of the entrypoint.
+	const char*		entryName;
+
+	// Which shader stage this entry point represents.
+	VkShaderStage	stage;
+
+	ShaderElement (const char* moduleName_, const char* entryPoint_, VkShaderStage shaderStage_)
+		: moduleName(moduleName_)
+		, entryName(entryPoint_)
+		, stage(shaderStage_)
+	{
+	}
+};
+
+void getDefaultColors(RGBA (&colors)[4]) {
+	colors[0] = RGBA::white();
+	colors[1] = RGBA::red();
+	colors[2] = RGBA::blue();
+	colors[3] = RGBA::green();
+}
+
+// Turns a statically sized array of ShaderElements into an instance-context
+// by setting up the mapping of modules to their contained shaders and stages.
+// The inputs and expected outputs are given by inputColors and outputColors
+template<size_t N>
+InstanceContext createInstanceContext (const ShaderElement (&elements)[N], const RGBA (&inputColors)[4], const RGBA (&outputColors)[4], const map<string, string>& testCodeFragments)
+{
+	InstanceContext ctx (inputColors, outputColors, testCodeFragments);
+	for (size_t i = 0; i < N; ++i)
+	{
+		ctx.moduleMap[elements[i].moduleName].push_back(std::make_pair(elements[i].entryName, elements[i].stage));
+	}
+	return ctx;
+}
+
+// The same as createInstanceContext above, but with default colors.
+template<size_t N>
+InstanceContext createInstanceContext (const ShaderElement (&elements)[N], const map<string, string>& testCodeFragments)
+{
+	RGBA defaultColors[4];
+	getDefaultColors(defaultColors);
+	return createInstanceContext(elements, defaultColors, defaultColors, testCodeFragments);
+}
+
+// For the current InstanceContext, constructs the required modules and shaders.
+// Fills in the modules vector with all of the used modules, and stage_shaders with
+// all stages and shaders that are to be used.
+void createShaders (const DeviceInterface& vk, const VkDevice vkDevice, InstanceContext& instance, Context& context, vector<ModuleHandleSp>& modules, map<VkShaderStage, VkShaderSp>& stage_shaders)
+{
+	for (ModuleMap::const_iterator moduleNdx = instance.moduleMap.begin(); moduleNdx != instance.moduleMap.end(); ++moduleNdx)
+	{
+		const ModuleHandleSp mod(new Unique<VkShaderModule>(createShaderModule(vk, vkDevice, context.getBinaryCollection().get(moduleNdx->first), 0)));
+		modules.push_back(ModuleHandleSp(mod));
+		for (vector<EntryToStage>::const_iterator shaderNdx = moduleNdx->second.begin(); shaderNdx != moduleNdx->second.end(); ++shaderNdx)
+		{
+			const EntryToStage&			stage			= *shaderNdx;
+			const VkShaderCreateInfo	shaderParam		=
+			{
+				VK_STRUCTURE_TYPE_SHADER_CREATE_INFO,			//	VkStructureType		sType;
+				DE_NULL,										//	const void*			pNext;
+				**modules.back(),								//	VkShaderModule		module;
+				stage.first.c_str(),							//	const char*			pName;
+				0u,												//	VkShaderCreateFlags	flags;
+				stage.second,									//	VkShaderStage		stage;
+			};
+			stage_shaders[stage.second] = VkShaderSp(new Unique<VkShader>(createShader(vk, vkDevice, &shaderParam)));
+		}
+	}
+}
+
+#define SPIRV_ASSEMBLY_TYPES												\
+	"%void = OpTypeVoid\n"													\
+	"%bool = OpTypeBool\n"													\
+																			\
+	"%i32 = OpTypeInt 32 1\n"												\
+	"%u32 = OpTypeInt 32 0\n"												\
+																			\
+	"%f32 = OpTypeFloat 32\n"												\
+	"%v3f32 = OpTypeVector %f32 3\n"										\
+	"%v4f32 = OpTypeVector %f32 4\n"										\
+																			\
+	"%v4f32_function = OpTypeFunction %v4f32 %v4f32\n"						\
+	"%fun = OpTypeFunction %void\n"											\
+																			\
+	"%ip_f32 = OpTypePointer Input %f32\n"									\
+	"%ip_i32 = OpTypePointer Input %i32\n"									\
+	"%ip_v3f32 = OpTypePointer Input %v3f32\n"								\
+	"%ip_v4f32 = OpTypePointer Input %v4f32\n"								\
+																			\
+	"%op_f32 = OpTypePointer Output %f32\n"									\
+	"%op_v4f32 = OpTypePointer Output %v4f32\n"
+
+#define SPIRV_ASSEMBLY_CONSTANTS											\
+	"%c_f32_1 = OpConstant %f32 1\n"										\
+	"%c_i32_0 = OpConstant %i32 0\n"										\
+	"%c_i32_1 = OpConstant %i32 1\n"										\
+	"%c_i32_2 = OpConstant %i32 2\n"										\
+	"%c_u32_0 = OpConstant %u32 0\n"										\
+	"%c_u32_1 = OpConstant %u32 1\n"										\
+	"%c_u32_2 = OpConstant %u32 2\n"										\
+	"%c_u32_3 = OpConstant %u32 3\n"										\
+	"%c_u32_32 = OpConstant %u32 32\n"										\
+	"%c_u32_4 = OpConstant %u32 4\n"
+
+#define SPIRV_ASSEMBLY_ARRAYS												\
+	"%a1f32 = OpTypeArray %f32 %c_u32_1\n"									\
+	"%a2f32 = OpTypeArray %f32 %c_u32_2\n"									\
+	"%a3v4f32 = OpTypeArray %v4f32 %c_u32_3\n"								\
+	"%a4f32 = OpTypeArray %f32 %c_u32_4\n"									\
+	"%a32v4f32 = OpTypeArray %v4f32 %c_u32_32\n"							\
+	"%ip_a3v4f32 = OpTypePointer Input %a3v4f32\n"							\
+	"%ip_a32v4f32 = OpTypePointer Input %a32v4f32\n"						\
+	"%op_a2f32 = OpTypePointer Output %a2f32\n"								\
+	"%op_a3v4f32 = OpTypePointer Output %a3v4f32\n"							\
+	"%op_a4f32 = OpTypePointer Output %a4f32\n"
+
+// Creates vertex-shader assembly by specializing a boilerplate StringTemplate
+// on fragments, which must (at least) map "testfun" to an OpFunction definition
+// for %test_code that takes and returns a %v4f32.  Boilerplate IDs are prefixed
+// with "BP_" to avoid collisions with fragments.
+//
+// It corresponds roughly to this GLSL:
+//;
+// layout(location = 0) in vec4 position;
+// layout(location = 1) in vec4 color;
+// layout(location = 1) out highp vec4 vtxColor;
+// void main (void) { gl_Position = position; vtxColor = test_func(color); }
+string makeVertexShaderAssembly(const map<string, string>& fragments)
+{
+// \todo [2015-11-23 awoloszyn] Remove OpName once these have stabalized
+// \todo [2015-11-23 awoloszyn] Remove Smooth decoration when we move to SPIR-V 1.0
+	static const char vertexShaderBoilerplate[] =
+		"OpCapability Shader\n"
+		"OpMemoryModel Logical GLSL450\n"
+		"OpEntryPoint Vertex %4 \"main\" %BP_Position %BP_vtxColor %BP_color "
+		"%BP_vtxPosition %BP_vertex_id %BP_instance_id\n"
+		"${debug:opt}\n"
+		"OpName %main \"main\"\n"
+		"OpName %BP_vtxPosition \"vtxPosition\"\n"
+		"OpName %BP_Position \"position\"\n"
+		"OpName %BP_vtxColor \"vtxColor\"\n"
+		"OpName %BP_color \"color\"\n"
+		"OpName %vertex_id \"gl_VertexID\"\n"
+		"OpName %instance_id \"gl_InstanceID\"\n"
+		"OpName %test_code \"testfun(vf4;\"\n"
+		"OpDecorate %BP_vtxPosition Smooth\n"
+		"OpDecorate %BP_vtxPosition Location 2\n"
+		"OpDecorate %BP_Position Location 0\n"
+		"OpDecorate %BP_vtxColor Smooth\n"
+		"OpDecorate %BP_vtxColor Location 1\n"
+		"OpDecorate %BP_color Location 1\n"
+		"OpDecorate %BP_vertex_id BuiltIn VertexId\n"
+		"OpDecorate %BP_instance_id BuiltIn InstanceId\n"
+		SPIRV_ASSEMBLY_TYPES
+		SPIRV_ASSEMBLY_CONSTANTS
+		SPIRV_ASSEMBLY_ARRAYS
+		"%BP_vtxPosition = OpVariable %op_v4f32 Output\n"
+		"%BP_Position = OpVariable %ip_v4f32 Input\n"
+		"%BP_vtxColor = OpVariable %op_v4f32 Output\n"
+		"%BP_color = OpVariable %ip_v4f32 Input\n"
+		"%BP_vertex_id = OpVariable %ip_i32 Input\n"
+		"%BP_instance_id = OpVariable %ip_i32 Input\n"
+		"%main = OpFunction %void None %fun\n"
+		"%BP_label = OpLabel\n"
+		"%BP_tmp_position = OpLoad %v4f32 %BP_Position\n"
+		"OpStore %BP_vtxPosition %BP_tmp_position\n"
+		"%BP_tmp_color = OpLoad %v4f32 %BP_color\n"
+		"%BP_clr_transformed = OpFunctionCall %v4f32 %test_code %BP_tmp_color\n"
+		"OpStore %BP_vtxColor %BP_clr_transformed\n"
+		"OpReturn\n"
+		"OpFunctionEnd\n"
+		"${testfun}\n";
+	return tcu::StringTemplate(vertexShaderBoilerplate).specialize(fragments);
+}
+
+// Creates tess-control-shader assembly by specializing a boilerplate
+// StringTemplate on fragments, which must (at least) map "testfun" to an
+// OpFunction definition for %test_code that takes and returns a %v4f32.
+// Boilerplate IDs are prefixed with "BP_" to avoid collisions with fragments.
+//
+// It roughly corresponds to the following GLSL.
+//
+// #version 450
+// layout(vertices = 3) out;
+// layout(location = 1) in vec4 in_color[];
+// layout(location = 2) in vec4 in_position[];
+// layout(location = 1) out vec4 out_color[];
+// layout(location = 2) out vec4 out_position[];
+//
+// void main() {
+//   out_color[gl_InvocationID] = testfun(in_color[gl_InvocationID]);
+//   out_position[gl_InvocationID] = in_position[gl_InvocationID];
+//   if (gl_InvocationID == 0) {
+//     gl_TessLevelOuter[0] = 1.0;
+//     gl_TessLevelOuter[1] = 1.0;
+//     gl_TessLevelOuter[2] = 1.0;
+//     gl_TessLevelInner[0] = 1.0;
+//   }
+// }
+string makeTessControlShaderAssembly(const map<string, string>& fragments)
+{
+	static const char tessControlShaderBoilerplate[] =
+		"OpCapability Tessellation\n"
+		"OpMemoryModel Logical GLSL450\n"
+		"OpEntryPoint TessellationControl %BP_main \"main\" %BP_out_color %BP_gl_InvocationID %BP_in_color %BP_out_position %BP_in_position %BP_gl_TessLevelOuter %BP_gl_TessLevelInner\n"
+		"OpExecutionMode %BP_main OutputVertices 3\n"
+		"${debug:opt}\n"
+		"OpName %BP_main \"main\"\n"
+		"OpName %BP_out_color \"out_color\"\n"
+		"OpName %BP_gl_InvocationID \"gl_InvocationID\"\n"
+		"OpName %BP_in_color \"in_color\"\n"
+		"OpName %BP_out_position \"out_position\"\n"
+		"OpName %BP_in_position \"in_position\"\n"
+		"OpName %BP_gl_TessLevelOuter \"gl_TessLevelOuter\"\n"
+		"OpName %BP_gl_TessLevelInner \"gl_TessLevelInner\"\n"
+		"OpName %test_code \"testfun(vf4;\"\n"
+		"OpDecorate %BP_out_color Location 1\n"
+		"OpDecorate %BP_gl_InvocationID BuiltIn InvocationId\n"
+		"OpDecorate %BP_in_color Location 1\n"
+		"OpDecorate %BP_out_position Location 2\n"
+		"OpDecorate %BP_in_position Location 2\n"
+		"OpDecorate %BP_gl_TessLevelOuter Patch\n"
+		"OpDecorate %BP_gl_TessLevelOuter BuiltIn TessLevelOuter\n"
+		"OpDecorate %BP_gl_TessLevelInner Patch\n"
+		"OpDecorate %BP_gl_TessLevelInner BuiltIn TessLevelInner\n"
+		SPIRV_ASSEMBLY_TYPES
+		SPIRV_ASSEMBLY_CONSTANTS
+		SPIRV_ASSEMBLY_ARRAYS
+		"%BP_out_color = OpVariable %op_a3v4f32 Output\n"
+		"%BP_gl_InvocationID = OpVariable %ip_i32 Input\n"
+		"%BP_in_color = OpVariable %ip_a32v4f32 Input\n"
+		"%BP_out_position = OpVariable %op_a3v4f32 Output\n"
+		"%BP_in_position = OpVariable %ip_a32v4f32 Input\n"
+		"%BP_gl_TessLevelOuter = OpVariable %op_a4f32 Output\n"
+		"%BP_gl_TessLevelInner = OpVariable %op_a2f32 Output\n"
+
+		"%BP_main = OpFunction %void None %fun\n"
+		"%BP_label = OpLabel\n"
+
+		"%BP_invocation_id = OpLoad %i32 %BP_gl_InvocationID\n"
+
+		"%BP_in_color_ptr = OpAccessChain %ip_v4f32 %BP_in_color %BP_invocation_id\n"
+		"%BP_in_position_ptr = OpAccessChain %ip_v4f32 %BP_in_position %BP_invocation_id\n"
+
+		"%BP_in_color_val = OpLoad %v4f32 %BP_in_color_ptr\n"
+		"%BP_in_position_val = OpLoad %v4f32 %BP_in_position_ptr\n"
+
+		"%BP_clr_transformed = OpFunctionCall %v4f32 %test_code %BP_in_color_val\n"
+
+		"%BP_out_color_ptr = OpAccessChain %op_v4f32 %BP_out_color %BP_invocation_id\n"
+		"%BP_out_position_ptr = OpAccessChain %op_v4f32 %BP_out_position %BP_invocation_id\n"
+
+		"OpStore %BP_out_color_ptr %BP_clr_transformed\n"
+		"OpStore %BP_out_position_ptr %BP_in_position_val\n"
+
+		"%BP_is_first_invocation = OpIEqual %bool %BP_invocation_id %c_i32_0\n"
+		"OpSelectionMerge %BP_merge_label None\n"
+		"OpBranchConditional %BP_is_first_invocation %BP_first_invocation %BP_merge_label\n"
+
+		"%BP_first_invocation = OpLabel\n"
+		"%BP_tess_outer_0 = OpAccessChain %op_f32 %BP_gl_TessLevelOuter %c_i32_0\n"
+		"%BP_tess_outer_1 = OpAccessChain %op_f32 %BP_gl_TessLevelOuter %c_i32_1\n"
+		"%BP_tess_outer_2 = OpAccessChain %op_f32 %BP_gl_TessLevelOuter %c_i32_2\n"
+		"%BP_tess_inner = OpAccessChain %op_f32 %BP_gl_TessLevelInner %c_i32_0\n"
+
+		"OpStore %BP_tess_outer_0 %c_f32_1\n"
+		"OpStore %BP_tess_outer_1 %c_f32_1\n"
+		"OpStore %BP_tess_outer_2 %c_f32_1\n"
+		"OpStore %BP_tess_inner %c_f32_1\n"
+
+		"OpBranch %BP_merge_label\n"
+		"%BP_merge_label = OpLabel\n"
+		"OpReturn\n"
+		"OpFunctionEnd\n"
+		"${testfun}\n";
+	return tcu::StringTemplate(tessControlShaderBoilerplate).specialize(fragments);
+}
+
+// Creates tess-evaluation-shader assembly by specializing a boilerplate
+// StringTemplate on fragments, which must (at least) map "testfun" to an
+// OpFunction definition for %test_code that takes and returns a %v4f32.
+// Boilerplate IDs are prefixed with "BP_" to avoid collisions with fragments.
+//
+// It roughly corresponds to the following glsl.
+//
+// #version 450
+//
+// layout(triangles, equal_spacing, ccw) in;
+// layout(location = 1) in vec4 in_color[];
+// layout(location = 2) in vec4 in_position[];
+// layout(location = 1) out vec4 out_color;
+//
+// #define interpolate(val)
+//   vec4(gl_TessCoord.x) * val[0] + vec4(gl_TessCoord.y) * val[1] +
+//          vec4(gl_TessCoord.z) * val[2]
+//
+// void main() {
+//   gl_Position = vec4(gl_TessCoord.x) * in_position[0] +
+//                  vec4(gl_TessCoord.y) * in_position[1] +
+//                  vec4(gl_TessCoord.z) * in_position[2];
+//   out_color = testfun(interpolate(in_color));
+// }
+string makeTessEvalShaderAssembly(const map<string, string>& fragments)
+{
+	static const char tessEvalBoilerplate[] =
+		"OpCapability Tessellation\n"
+		"OpMemoryModel Logical GLSL450\n"
+		"OpEntryPoint TessellationEvaluation %BP_main \"main\" %BP_stream %BP_gl_tessCoord %BP_in_position %BP_out_color %BP_in_color \n"
+		"OpExecutionMode %BP_main InputTriangles\n"
+		"${debug:opt}\n"
+		"OpName %BP_main \"main\"\n"
+		"OpName %BP_per_vertex_out \"gl_PerVertex\"\n"
+		"OpMemberName %BP_per_vertex_out 0 \"gl_Position\"\n"
+		"OpMemberName %BP_per_vertex_out 1 \"gl_PointSize\"\n"
+		"OpMemberName %BP_per_vertex_out 2 \"gl_ClipDistance\"\n"
+		"OpMemberName %BP_per_vertex_out 3 \"gl_CullDistance\"\n"
+		"OpName %BP_stream \"\"\n"
+		"OpName %BP_gl_tessCoord \"gl_TessCoord\"\n"
+		"OpName %BP_in_position \"in_position\"\n"
+		"OpName %BP_out_color \"out_color\"\n"
+		"OpName %BP_in_color \"in_color\"\n"
+		"OpName %test_code \"testfun(vf4;\"\n"
+		"OpMemberDecorate %BP_per_vertex_out 0 BuiltIn Position\n"
+		"OpMemberDecorate %BP_per_vertex_out 1 BuiltIn PointSize\n"
+		"OpMemberDecorate %BP_per_vertex_out 2 BuiltIn ClipDistance\n"
+		"OpMemberDecorate %BP_per_vertex_out 3 BuiltIn CullDistance\n"
+		"OpDecorate %BP_per_vertex_out Block\n"
+		"OpDecorate %BP_gl_tessCoord BuiltIn TessCoord\n"
+		"OpDecorate %BP_in_position Location 2\n"
+		"OpDecorate %BP_out_color Location 1\n"
+		"OpDecorate %BP_in_color Location 1\n"
+		SPIRV_ASSEMBLY_TYPES
+		SPIRV_ASSEMBLY_CONSTANTS
+		SPIRV_ASSEMBLY_ARRAYS
+		"%BP_per_vertex_out = OpTypeStruct %v4f32 %f32 %a1f32 %a1f32\n"
+		"%BP_op_per_vertex_out = OpTypePointer Output %BP_per_vertex_out\n"
+		"%BP_stream = OpVariable %BP_op_per_vertex_out Output\n"
+		"%BP_gl_tessCoord = OpVariable %ip_v3f32 Input\n"
+		"%BP_in_position = OpVariable %ip_a32v4f32 Input\n"
+		"%BP_out_color = OpVariable %op_v4f32 Output\n"
+		"%BP_in_color = OpVariable %ip_a32v4f32 Input\n"
+		"%BP_main = OpFunction %void None %fun\n"
+		"%BP_label = OpLabel\n"
+		"%BP_tc_0_ptr = OpAccessChain %ip_f32 %BP_gl_tessCoord %c_u32_0\n"
+		"%BP_tc_1_ptr = OpAccessChain %ip_f32 %BP_gl_tessCoord %c_u32_1\n"
+		"%BP_tc_2_ptr = OpAccessChain %ip_f32 %BP_gl_tessCoord %c_u32_2\n"
+
+		"%BP_tc_0 = OpLoad %f32 %BP_tc_0_ptr\n"
+		"%BP_tc_1 = OpLoad %f32 %BP_tc_1_ptr\n"
+		"%BP_tc_2 = OpLoad %f32 %BP_tc_2_ptr\n"
+
+		"%BP_in_pos_0_ptr = OpAccessChain %ip_v4f32 %BP_in_position %c_i32_0\n"
+		"%BP_in_pos_1_ptr = OpAccessChain %ip_v4f32 %BP_in_position %c_i32_1\n"
+		"%BP_in_pos_2_ptr = OpAccessChain %ip_v4f32 %BP_in_position %c_i32_2\n"
+
+		"%BP_in_pos_0 = OpLoad %v4f32 %BP_in_pos_0_ptr\n"
+		"%BP_in_pos_1 = OpLoad %v4f32 %BP_in_pos_1_ptr\n"
+		"%BP_in_pos_2 = OpLoad %v4f32 %BP_in_pos_2_ptr\n"
+
+		"%BP_in_pos_0_weighted = OpVectorTimesScalar %v4f32 %BP_tc_0 %BP_in_pos_0\n"
+		"%BP_in_pos_1_weighted = OpVectorTimesScalar %v4f32 %BP_tc_1 %BP_in_pos_1\n"
+		"%BP_in_pos_2_weighted = OpVectorTimesScalar %v4f32 %BP_tc_2 %BP_in_pos_2\n"
+
+		"%BP_out_pos_ptr = OpAccessChain %op_v4f32 %BP_stream %c_i32_0\n"
+
+		"%BP_in_pos_0_plus_pos_1 = OpFAdd %v4f32 %BP_in_pos_0_weighted %BP_in_pos_1_weighted\n"
+		"%BP_computed_out = OpFAdd %v4f32 %BP_in_pos_0_plus_pos_1 %BP_in_pos_2_weighted\n"
+		"OpStore %BP_out_pos_ptr %BP_computed_out\n"
+
+		"%BP_in_clr_0_ptr = OpAccessChain %ip_v4f32 %BP_in_color %c_i32_0\n"
+		"%BP_in_clr_1_ptr = OpAccessChain %ip_v4f32 %BP_in_color %c_i32_1\n"
+		"%BP_in_clr_2_ptr = OpAccessChain %ip_v4f32 %BP_in_color %c_i32_2\n"
+
+		"%BP_in_clr_0 = OpLoad %v4f32 %BP_in_clr_0_ptr\n"
+		"%BP_in_clr_1 = OpLoad %v4f32 %BP_in_clr_1_ptr\n"
+		"%BP_in_clr_2 = OpLoad %v4f32 %BP_in_clr_2_ptr\n"
+
+		"%BP_in_clr_0_weighted = OpVectorTimesScalar %v4f32 %BP_tc_0 %BP_in_clr_0\n"
+		"%BP_in_clr_1_weighted = OpVectorTimesScalar %v4f32 %BP_tc_1 %BP_in_clr_1\n"
+		"%BP_in_clr_2_weighted = OpVectorTimesScalar %v4f32 %BP_tc_2 %BP_in_clr_2\n"
+
+		"%BP_in_clr_0_plus_col_1 = OpFAdd %v4f32 %BP_in_clr_0_weighted %BP_in_clr_1_weighted\n"
+		"%BP_computed_clr = OpFAdd %v4f32 %BP_in_clr_0_plus_col_1 %BP_in_clr_2_weighted\n"
+		"%BP_clr_transformed = OpFunctionCall %v4f32 %test_code %BP_computed_clr\n"
+
+		"OpStore %BP_out_color %BP_clr_transformed\n"
+		"OpReturn\n"
+		"OpFunctionEnd\n"
+		"${testfun}\n";
+	return tcu::StringTemplate(tessEvalBoilerplate).specialize(fragments);
+}
+
+// Creates geometry-shader assembly by specializing a boilerplate StringTemplate
+// on fragments, which must (at least) map "testfun" to an OpFunction definition
+// for %test_code that takes and returns a %v4f32.  Boilerplate IDs are prefixed
+// with "BP_" to avoid collisions with fragments.
+//
+// Derived from this GLSL:
+//
+// #version 450
+// layout(triangles) in;
+// layout(triangle_strip, max_vertices = 3) out;
+//
+// layout(location = 1) in vec4 in_color[];
+// layout(location = 1) out vec4 out_color;
+//
+// void main() {
+// 	 gl_Position = gl_in[0].gl_Position;
+// 	 out_color = test_fun(in_color[0]);
+// 	 EmitVertex();
+// 	 gl_Position = gl_in[1].gl_Position;
+// 	 out_color = test_fun(in_color[1]);
+// 	 EmitVertex();
+// 	 gl_Position = gl_in[2].gl_Position;
+// 	 out_color = test_fun(in_color[2]);
+// 	 EmitVertex();
+// 	 EndPrimitive();
+// }
+string makeGeometryShaderAssembly(const map<string, string>& fragments)
+{
+	static const char geometryShaderBoilerplate[] =
+		"OpCapability Geometry\n"
+		"OpMemoryModel Logical GLSL450\n"
+		"OpEntryPoint Geometry %BP_main \"main\" %BP_stream %BP_gl_in %BP_out_color %BP_in_color\n"
+		"OpExecutionMode %BP_main InputTriangles\n"
+		"OpExecutionMode %BP_main Invocations 0\n"
+		"OpExecutionMode %BP_main OutputTriangleStrip\n"
+		"OpExecutionMode %BP_main OutputVertices 3\n"
+		"${debug:opt}\n"
+		"OpName %BP_main \"main\"\n"
+		"OpName %BP_per_vertex_out \"gl_PerVertex\"\n"
+		"OpMemberName %BP_per_vertex_out 0 \"gl_Position\"\n"
+		"OpMemberName %BP_per_vertex_out 1 \"gl_PointSize\"\n"
+		"OpMemberName %BP_per_vertex_out 2 \"gl_ClipDistance\"\n"
+		"OpMemberName %BP_per_vertex_out 3 \"gl_CullDistance\"\n"
+		"OpName %BP_stream \"\"\n"
+		"OpName %BP_per_vertex_in \"gl_PerVertex\"\n"
+		"OpMemberName %BP_per_vertex_in 0 \"gl_Position\"\n"
+		"OpMemberName %BP_per_vertex_in 1 \"gl_PointSize\"\n"
+		"OpMemberName %BP_per_vertex_in 2 \"gl_ClipDistance\"\n"
+		"OpMemberName %BP_per_vertex_in 3 \"gl_CullDistance\"\n"
+		"OpName %BP_gl_in \"gl_in\"\n"
+		"OpName %BP_out_color \"out_color\"\n"
+		"OpName %BP_in_color \"in_color\"\n"
+		"OpName %test_code \"testfun(vf4;\"\n"
+		"OpMemberDecorate %BP_per_vertex_out 0 BuiltIn Position\n"
+		"OpMemberDecorate %BP_per_vertex_out 1 BuiltIn PointSize\n"
+		"OpMemberDecorate %BP_per_vertex_out 2 BuiltIn ClipDistance\n"
+		"OpMemberDecorate %BP_per_vertex_out 3 BuiltIn CullDistance\n"
+		"OpDecorate %BP_per_vertex_out Block\n"
+		"OpDecorate %BP_per_vertex_out Stream 0\n"
+		"OpDecorate %BP_stream Stream 0\n"
+		"OpMemberDecorate %BP_per_vertex_in 0 BuiltIn Position\n"
+		"OpMemberDecorate %BP_per_vertex_in 1 BuiltIn PointSize\n"
+		"OpMemberDecorate %BP_per_vertex_in 2 BuiltIn ClipDistance\n"
+		"OpMemberDecorate %BP_per_vertex_in 3 BuiltIn CullDistance\n"
+		"OpDecorate %BP_per_vertex_in Block\n"
+		"OpDecorate %BP_out_color Location 1\n"
+		"OpDecorate %BP_out_color Stream 0\n"
+		"OpDecorate %BP_in_color Location 1\n"
+		SPIRV_ASSEMBLY_TYPES
+		SPIRV_ASSEMBLY_CONSTANTS
+		SPIRV_ASSEMBLY_ARRAYS
+		"%BP_per_vertex_out = OpTypeStruct %v4f32 %f32 %a1f32 %a1f32\n"
+		"%BP_per_vertex_in = OpTypeStruct %v4f32 %f32 %a1f32 %a1f32\n"
+		"%BP_a3_per_vertex_in = OpTypeArray %BP_per_vertex_in %c_u32_3\n"
+		"%BP_op_per_vertex_out = OpTypePointer Output %BP_per_vertex_out\n"
+		"%BP_ip_a3_per_vertex_in = OpTypePointer Input %BP_a3_per_vertex_in\n"
+
+		"%BP_stream = OpVariable %BP_op_per_vertex_out Output\n"
+		"%BP_gl_in = OpVariable %BP_ip_a3_per_vertex_in Input\n"
+		"%BP_out_color = OpVariable %op_v4f32 Output\n"
+		"%BP_in_color = OpVariable %ip_a3v4f32 Input\n"
+
+		"%BP_main = OpFunction %void None %fun\n"
+		"%BP_label = OpLabel\n"
+		"%BP_gl_in_0_gl_position = OpAccessChain %ip_v4f32 %BP_gl_in %c_i32_0 %c_i32_0\n"
+		"%BP_gl_in_1_gl_position = OpAccessChain %ip_v4f32 %BP_gl_in %c_i32_1 %c_i32_0\n"
+		"%BP_gl_in_2_gl_position = OpAccessChain %ip_v4f32 %BP_gl_in %c_i32_2 %c_i32_0\n"
+
+		"%BP_in_position_0 = OpLoad %v4f32 %BP_gl_in_0_gl_position\n"
+		"%BP_in_position_1 = OpLoad %v4f32 %BP_gl_in_1_gl_position\n"
+		"%BP_in_position_2 = OpLoad %v4f32 %BP_gl_in_2_gl_position \n"
+
+		"%BP_in_color_0_ptr = OpAccessChain %ip_v4f32 %BP_in_color %c_i32_0\n"
+		"%BP_in_color_1_ptr = OpAccessChain %ip_v4f32 %BP_in_color %c_i32_1\n"
+		"%BP_in_color_2_ptr = OpAccessChain %ip_v4f32 %BP_in_color %c_i32_2\n"
+
+		"%BP_in_color_0 = OpLoad %v4f32 %BP_in_color_0_ptr\n"
+		"%BP_in_color_1 = OpLoad %v4f32 %BP_in_color_1_ptr\n"
+		"%BP_in_color_2 = OpLoad %v4f32 %BP_in_color_2_ptr\n"
+
+		"%BP_transformed_in_color_0 = OpFunctionCall %v4f32 %test_code %BP_in_color_0\n"
+		"%BP_transformed_in_color_1 = OpFunctionCall %v4f32 %test_code %BP_in_color_1\n"
+		"%BP_transformed_in_color_2 = OpFunctionCall %v4f32 %test_code %BP_in_color_2\n"
+
+		"%BP_out_gl_position = OpAccessChain %op_v4f32 %BP_stream %c_i32_0\n"
+
+		"OpStore %BP_out_gl_position %BP_in_position_0\n"
+		"OpStore %BP_out_color %BP_transformed_in_color_0\n"
+		"OpEmitVertex\n"
+
+		"OpStore %BP_out_gl_position %BP_in_position_1\n"
+		"OpStore %BP_out_color %BP_transformed_in_color_1\n"
+		"OpEmitVertex\n"
+
+		"OpStore %BP_out_gl_position %BP_in_position_2\n"
+		"OpStore %BP_out_color %BP_transformed_in_color_2\n"
+		"OpEmitVertex\n"
+
+		"OpEndPrimitive\n"
+		"OpReturn\n"
+		"OpFunctionEnd\n"
+		"${testfun}\n";
+	return tcu::StringTemplate(geometryShaderBoilerplate).specialize(fragments);
+}
+
+// Creates fragment-shader assembly by specializing a boilerplate StringTemplate
+// on fragments, which must (at least) map "testfun" to an OpFunction definition
+// for %test_code that takes and returns a %v4f32.  Boilerplate IDs are prefixed
+// with "BP_" to avoid collisions with fragments.
+//
+// Derived from this GLSL:
+//
+// layout(location = 0) in highp vec4 vtxColor;
+// layout(location = 1) out highp vec4 fragColor;
+// highp vec4 testfun(highp vec4 x) { return x; }
+// void main(void) { fragColor = testfun(vtxColor); }
+//
+// with modifications including passing vtxColor by value and ripping out
+// testfun() definition.
+string makeFragmentShaderAssembly(const map<string, string>& fragments)
+{
+	static const char fragmentShaderBoilerplate[] =
+		"OpCapability Shader\n"
+		"OpMemoryModel Logical GLSL450\n"
+		"OpEntryPoint Fragment %BP_main \"main\" %BP_vtxColor %BP_fragColor\n"
+		"OpExecutionMode %BP_main OriginUpperLeft\n"
+		"${debug:opt}\n"
+		"OpName %BP_main \"main\"\n"
+		"OpName %BP_fragColor \"fragColor\"\n"
+		"OpName %BP_vtxColor \"vtxColor\"\n"
+		"OpName %test_code \"testfun(vf4;\"\n"
+		"OpDecorate %BP_fragColor Location 0\n"
+		"OpDecorate %BP_vtxColor Smooth\n"
+		"OpDecorate %BP_vtxColor Location 1\n"
+		SPIRV_ASSEMBLY_TYPES
+		SPIRV_ASSEMBLY_CONSTANTS
+		SPIRV_ASSEMBLY_ARRAYS
+		"%BP_fragColor = OpVariable %op_v4f32 Output\n"
+		"%BP_vtxColor = OpVariable %ip_v4f32 Input\n"
+		"%BP_main = OpFunction %void None %fun\n"
+		"%BP_label_main = OpLabel\n"
+		"%BP_tmp1 = OpLoad %v4f32 %BP_vtxColor\n"
+		"%BP_tmp2 = OpFunctionCall %v4f32 %test_code %BP_tmp1\n"
+		"OpStore %BP_fragColor %BP_tmp2\n"
+		"OpReturn\n"
+		"OpFunctionEnd\n"
+		"${testfun}\n";
+	return tcu::StringTemplate(fragmentShaderBoilerplate).specialize(fragments);
+}
+
+// Creates fragments that specialize into a simple pass-through shader (of any kind).
+map<string, string> passthruFragments(void)
+{
+	map<string, string> fragments;
+	fragments["testfun"] =
+		// A %test_code function that returns its argument unchanged.
+		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%param1 = OpFunctionParameter %v4f32\n"
+		"%label_testfun = OpLabel\n"
+		"OpReturnValue %param1\n"
+		"OpFunctionEnd\n";
+	return fragments;
+}
+
+// Adds shader assembly text to dst.spirvAsmSources for all shader kinds.
+// Vertex shader gets custom code from context, the rest are pass-through.
+void addShaderCodeCustomVertex(vk::SourceCollections& dst, InstanceContext context) {
+	map<string, string> passthru = passthruFragments();
+	dst.spirvAsmSources.add("vert") << makeVertexShaderAssembly(context.testCodeFragments);
+	dst.spirvAsmSources.add("tessc") << makeTessControlShaderAssembly(passthru);
+	dst.spirvAsmSources.add("tesse") << makeTessEvalShaderAssembly(passthru);
+	dst.spirvAsmSources.add("geom") << makeGeometryShaderAssembly(passthru);
+	dst.spirvAsmSources.add("frag") << makeFragmentShaderAssembly(passthru);
+}
+
+// Adds shader assembly text to dst.spirvAsmSources for all shader kinds.
+// Tessellation control shader gets custom code from context, the rest are
+// pass-through.
+void addShaderCodeCustomTessControl(vk::SourceCollections& dst, InstanceContext context) {
+	map<string, string> passthru = passthruFragments();
+	dst.spirvAsmSources.add("vert") << makeVertexShaderAssembly(passthru);
+	dst.spirvAsmSources.add("tessc") << makeTessControlShaderAssembly(context.testCodeFragments);
+	dst.spirvAsmSources.add("tesse") << makeTessEvalShaderAssembly(passthru);
+	dst.spirvAsmSources.add("geom") << makeGeometryShaderAssembly(passthru);
+	dst.spirvAsmSources.add("frag") << makeFragmentShaderAssembly(passthru);
+}
+
+// Adds shader assembly text to dst.spirvAsmSources for all shader kinds.
+// Tessellation evaluation shader gets custom code from context, the rest are
+// pass-through.
+void addShaderCodeCustomTessEval(vk::SourceCollections& dst, InstanceContext context) {
+	map<string, string> passthru = passthruFragments();
+	dst.spirvAsmSources.add("vert") << makeVertexShaderAssembly(passthru);
+	dst.spirvAsmSources.add("tessc") << makeTessControlShaderAssembly(passthru);
+	dst.spirvAsmSources.add("tesse") << makeTessEvalShaderAssembly(context.testCodeFragments);
+	dst.spirvAsmSources.add("geom") << makeGeometryShaderAssembly(passthru);
+	dst.spirvAsmSources.add("frag") << makeFragmentShaderAssembly(passthru);
+}
+
+// Adds shader assembly text to dst.spirvAsmSources for all shader kinds.
+// Geometry shader gets custom code from context, the rest are pass-through.
+void addShaderCodeCustomGeometry(vk::SourceCollections& dst, InstanceContext context) {
+	map<string, string> passthru = passthruFragments();
+	dst.spirvAsmSources.add("vert") << makeVertexShaderAssembly(passthru);
+	dst.spirvAsmSources.add("tessc") << makeTessControlShaderAssembly(passthru);
+	dst.spirvAsmSources.add("tesse") << makeTessEvalShaderAssembly(passthru);
+	dst.spirvAsmSources.add("geom") << makeGeometryShaderAssembly(context.testCodeFragments);
+	dst.spirvAsmSources.add("frag") << makeFragmentShaderAssembly(passthru);
+}
+
+// Adds shader assembly text to dst.spirvAsmSources for all shader kinds.
+// Fragment shader gets custom code from context, the rest are pass-through.
+void addShaderCodeCustomFragment(vk::SourceCollections& dst, InstanceContext context) {
+	map<string, string> passthru = passthruFragments();
+	dst.spirvAsmSources.add("vert") << makeVertexShaderAssembly(passthru);
+	dst.spirvAsmSources.add("tessc") << makeTessControlShaderAssembly(passthru);
+	dst.spirvAsmSources.add("tesse") << makeTessEvalShaderAssembly(passthru);
+	dst.spirvAsmSources.add("geom") << makeGeometryShaderAssembly(passthru);
+	dst.spirvAsmSources.add("frag") << makeFragmentShaderAssembly(context.testCodeFragments);
+}
+
+// Sets up and runs a Vulkan pipeline, then spot-checks the resulting image.
+// Feeds the pipeline a set of colored triangles, which then must occur in the
+// rendered image.  The surface is cleared before executing the pipeline, so
+// whatever the shaders draw can be directly spot-checked.
+TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instance)
+{
+	const VkDevice							vkDevice				= context.getDevice();
+	const DeviceInterface&					vk						= context.getDeviceInterface();
+	const VkQueue							queue					= context.getUniversalQueue();
+	const deUint32							queueFamilyIndex		= context.getUniversalQueueFamilyIndex();
+	const tcu::IVec2						renderSize				(256, 256);
+	vector<ModuleHandleSp>					modules;
+	map<VkShaderStage, VkShaderSp>			shaders;
+	const int								testSpecificSeed		= 31354125;
+	const int								seed					= context.getTestContext().getCommandLine().getBaseSeed() ^ testSpecificSeed;
+	de::Random(seed).shuffle(instance.inputColors, instance.inputColors+4);
+	de::Random(seed).shuffle(instance.outputColors, instance.outputColors+4);
+	const Vec4								vertexData[]			=
+	{
+		// Upper left corner:
+		Vec4(-1.0f, -1.0f, 0.0f, 1.0f), instance.inputColors[0].toVec(),
+		Vec4(-0.5f, -1.0f, 0.0f, 1.0f), instance.inputColors[0].toVec(),
+		Vec4(-1.0f, -0.5f, 0.0f, 1.0f), instance.inputColors[0].toVec(),
+
+		// Upper right corner:
+		Vec4(+0.5f, -1.0f, 0.0f, 1.0f), instance.inputColors[1].toVec(),
+		Vec4(+1.0f, -1.0f, 0.0f, 1.0f), instance.inputColors[1].toVec(),
+		Vec4(+1.0f, -0.5f, 0.0f, 1.0f), instance.inputColors[1].toVec(),
+
+		// Lower left corner:
+		Vec4(-1.0f, +0.5f, 0.0f, 1.0f), instance.inputColors[2].toVec(),
+		Vec4(-0.5f, +1.0f, 0.0f, 1.0f), instance.inputColors[2].toVec(),
+		Vec4(-1.0f, +1.0f, 0.0f, 1.0f), instance.inputColors[2].toVec(),
+
+		// Lower right corner:
+		Vec4(+1.0f, +0.5f, 0.0f, 1.0f), instance.inputColors[3].toVec(),
+		Vec4(+1.0f, +1.0f, 0.0f, 1.0f), instance.inputColors[3].toVec(),
+		Vec4(+0.5f, +1.0f, 0.0f, 1.0f), instance.inputColors[3].toVec()
+	};
+	const size_t							singleVertexDataSize	= 2 * sizeof(Vec4);
+	const size_t							vertexCount				= sizeof(vertexData) / singleVertexDataSize;
+
+	const VkBufferCreateInfo				vertexBufferParams		=
+	{
+		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,	//	VkStructureType		sType;
+		DE_NULL,								//	const void*			pNext;
+		(VkDeviceSize)sizeof(vertexData),		//	VkDeviceSize		size;
+		VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,		//	VkBufferUsageFlags	usage;
+		0u,										//	VkBufferCreateFlags	flags;
+		VK_SHARING_MODE_EXCLUSIVE,				//	VkSharingMode		sharingMode;
+		1u,										//	deUint32			queueFamilyCount;
+		&queueFamilyIndex,						//	const deUint32*		pQueueFamilyIndices;
+	};
+	const Unique<VkBuffer>					vertexBuffer			(createBuffer(vk, vkDevice, &vertexBufferParams));
+	const UniquePtr<Allocation>				vertexBufferMemory		(context.getDefaultAllocator().allocate(getBufferMemoryRequirements(vk, vkDevice, *vertexBuffer), MemoryRequirement::HostVisible));
+
+	VK_CHECK(vk.bindBufferMemory(vkDevice, *vertexBuffer, vertexBufferMemory->getMemory(), vertexBufferMemory->getOffset()));
+
+	const VkDeviceSize						imageSizeBytes			= (VkDeviceSize)(sizeof(deUint32)*renderSize.x()*renderSize.y());
+	const VkBufferCreateInfo				readImageBufferParams	=
+	{
+		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,		//	VkStructureType		sType;
+		DE_NULL,									//	const void*			pNext;
+		imageSizeBytes,								//	VkDeviceSize		size;
+		VK_BUFFER_USAGE_TRANSFER_DESTINATION_BIT,	//	VkBufferUsageFlags	usage;
+		0u,											//	VkBufferCreateFlags	flags;
+		VK_SHARING_MODE_EXCLUSIVE,					//	VkSharingMode		sharingMode;
+		1u,											//	deUint32			queueFamilyCount;
+		&queueFamilyIndex,							//	const deUint32*		pQueueFamilyIndices;
+	};
+	const Unique<VkBuffer>					readImageBuffer			(createBuffer(vk, vkDevice, &readImageBufferParams));
+	const UniquePtr<Allocation>				readImageBufferMemory	(context.getDefaultAllocator().allocate(getBufferMemoryRequirements(vk, vkDevice, *readImageBuffer), MemoryRequirement::HostVisible));
+
+	VK_CHECK(vk.bindBufferMemory(vkDevice, *readImageBuffer, readImageBufferMemory->getMemory(), readImageBufferMemory->getOffset()));
+
+	const VkImageCreateInfo					imageParams				=
+	{
+		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,									//	VkStructureType		sType;
+		DE_NULL,																//	const void*			pNext;
+		VK_IMAGE_TYPE_2D,														//	VkImageType			imageType;
+		VK_FORMAT_R8G8B8A8_UNORM,												//	VkFormat			format;
+		{ renderSize.x(), renderSize.y(), 1 },									//	VkExtent3D			extent;
+		1u,																		//	deUint32			mipLevels;
+		1u,																		//	deUint32			arraySize;
+		1u,																		//	deUint32			samples;
+		VK_IMAGE_TILING_OPTIMAL,												//	VkImageTiling		tiling;
+		VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT|VK_IMAGE_USAGE_TRANSFER_SOURCE_BIT,	//	VkImageUsageFlags	usage;
+		0u,																		//	VkImageCreateFlags	flags;
+		VK_SHARING_MODE_EXCLUSIVE,												//	VkSharingMode		sharingMode;
+		1u,																		//	deUint32			queueFamilyCount;
+		&queueFamilyIndex,														//	const deUint32*		pQueueFamilyIndices;
+		VK_IMAGE_LAYOUT_UNDEFINED,												//	VkImageLayout		initialLayout;
+	};
+
+	const Unique<VkImage>					image					(createImage(vk, vkDevice, &imageParams));
+	const UniquePtr<Allocation>				imageMemory				(context.getDefaultAllocator().allocate(getImageMemoryRequirements(vk, vkDevice, *image), MemoryRequirement::Any));
+
+	VK_CHECK(vk.bindImageMemory(vkDevice, *image, imageMemory->getMemory(), imageMemory->getOffset()));
+
+	const VkAttachmentDescription			colorAttDesc			=
+	{
+		VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION,		//	VkStructureType					sType;
+		DE_NULL,										//	const void*						pNext;
+		VK_FORMAT_R8G8B8A8_UNORM,						//	VkFormat						format;
+		1u,												//	deUint32						samples;
+		VK_ATTACHMENT_LOAD_OP_CLEAR,					//	VkAttachmentLoadOp				loadOp;
+		VK_ATTACHMENT_STORE_OP_STORE,					//	VkAttachmentStoreOp				storeOp;
+		VK_ATTACHMENT_LOAD_OP_DONT_CARE,				//	VkAttachmentLoadOp				stencilLoadOp;
+		VK_ATTACHMENT_STORE_OP_DONT_CARE,				//	VkAttachmentStoreOp				stencilStoreOp;
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,		//	VkImageLayout					initialLayout;
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,		//	VkImageLayout					finalLayout;
+		0u,												//	VkAttachmentDescriptionFlags	flags;
+	};
+	const VkAttachmentReference				colorAttRef				=
+	{
+		0u,												//	deUint32		attachment;
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,		//	VkImageLayout	layout;
+	};
+	const VkSubpassDescription				subpassDesc				=
+	{
+		VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION,			//	VkStructureType					sType;
+		DE_NULL,										//	const void*						pNext;
+		VK_PIPELINE_BIND_POINT_GRAPHICS,				//	VkPipelineBindPoint				pipelineBindPoint;
+		0u,												//	VkSubpassDescriptionFlags		flags;
+		0u,												//	deUint32						inputCount;
+		DE_NULL,										//	const VkAttachmentReference*	pInputAttachments;
+		1u,												//	deUint32						colorCount;
+		&colorAttRef,									//	const VkAttachmentReference*	pColorAttachments;
+		DE_NULL,										//	const VkAttachmentReference*	pResolveAttachments;
+		{ VK_NO_ATTACHMENT, VK_IMAGE_LAYOUT_GENERAL },	//	VkAttachmentReference			depthStencilAttachment;
+		0u,												//	deUint32						preserveCount;
+		DE_NULL,										//	const VkAttachmentReference*	pPreserveAttachments;
+
+	};
+	const VkRenderPassCreateInfo			renderPassParams		=
+	{
+		VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,		//	VkStructureType					sType;
+		DE_NULL,										//	const void*						pNext;
+		1u,												//	deUint32						attachmentCount;
+		&colorAttDesc,									//	const VkAttachmentDescription*	pAttachments;
+		1u,												//	deUint32						subpassCount;
+		&subpassDesc,									//	const VkSubpassDescription*		pSubpasses;
+		0u,												//	deUint32						dependencyCount;
+		DE_NULL,										//	const VkSubpassDependency*		pDependencies;
+	};
+	const Unique<VkRenderPass>				renderPass				(createRenderPass(vk, vkDevice, &renderPassParams));
+
+	const VkImageViewCreateInfo				colorAttViewParams		=
+	{
+		VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,		//	VkStructureType				sType;
+		DE_NULL,										//	const void*					pNext;
+		*image,											//	VkImage						image;
+		VK_IMAGE_VIEW_TYPE_2D,							//	VkImageViewType				viewType;
+		VK_FORMAT_R8G8B8A8_UNORM,						//	VkFormat					format;
+		{
+			VK_CHANNEL_SWIZZLE_R,
+			VK_CHANNEL_SWIZZLE_G,
+			VK_CHANNEL_SWIZZLE_B,
+			VK_CHANNEL_SWIZZLE_A
+		},												//	VkChannelMapping			channels;
+		{
+			VK_IMAGE_ASPECT_COLOR_BIT,						//	VkImageAspectFlags	aspectMask;
+			0u,												//	deUint32			baseMipLevel;
+			1u,												//	deUint32			mipLevels;
+			0u,												//	deUint32			baseArrayLayer;
+			1u,												//	deUint32			arraySize;
+		},												//	VkImageSubresourceRange		subresourceRange;
+		0u,												//	VkImageViewCreateFlags		flags;
+	};
+	const Unique<VkImageView>				colorAttView			(createImageView(vk, vkDevice, &colorAttViewParams));
+
+	createShaders(vk, vkDevice, instance, context, modules, shaders);
+
+	// Pipeline layout
+	const VkPipelineLayoutCreateInfo		pipelineLayoutParams	=
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,			//	VkStructureType					sType;
+		DE_NULL,												//	const void*						pNext;
+		0u,														//	deUint32						descriptorSetCount;
+		DE_NULL,												//	const VkDescriptorSetLayout*	pSetLayouts;
+		0u,														//	deUint32						pushConstantRangeCount;
+		DE_NULL,												//	const VkPushConstantRange*		pPushConstantRanges;
+	};
+	const Unique<VkPipelineLayout>			pipelineLayout			(createPipelineLayout(vk, vkDevice, &pipelineLayoutParams));
+
+	// Pipeline
+	const VkSpecializationInfo				emptyShaderSpecParams	=
+	{
+		0u,														//	deUint32						mapEntryCount;
+		DE_NULL,												//	const VkSpecializationMapEntry*	pMap;
+		0,														//	const deUintptr					dataSize;
+		DE_NULL,												//	const void*						pData;
+	};
+	vector<VkPipelineShaderStageCreateInfo> shaderStageParams;
+	for(map<VkShaderStage, VkShaderSp>::const_iterator stage = shaders.begin(); stage != shaders.end(); ++stage) {
+		VkPipelineShaderStageCreateInfo info = {
+			VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	//	VkStructureType				sType;
+			DE_NULL,												//	const void*					pNext;
+			stage->first,											//	VkShaderStage				stage;
+			**stage->second,										//	VkShader					shader;
+			&emptyShaderSpecParams,									//	const VkSpecializationInfo*	pSpecializationInfo;
+		};
+		shaderStageParams.push_back(info);
+	}
+	const VkPipelineDepthStencilStateCreateInfo	depthStencilParams		=
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,	//	VkStructureType		sType;
+		DE_NULL,													//	const void*			pNext;
+		DE_FALSE,													//	deUint32			depthTestEnable;
+		DE_FALSE,													//	deUint32			depthWriteEnable;
+		VK_COMPARE_OP_ALWAYS,										//	VkCompareOp			depthCompareOp;
+		DE_FALSE,													//	deUint32			depthBoundsTestEnable;
+		DE_FALSE,													//	deUint32			stencilTestEnable;
+		{
+			VK_STENCIL_OP_KEEP,											//	VkStencilOp	stencilFailOp;
+			VK_STENCIL_OP_KEEP,											//	VkStencilOp	stencilPassOp;
+			VK_STENCIL_OP_KEEP,											//	VkStencilOp	stencilDepthFailOp;
+			VK_COMPARE_OP_ALWAYS,										//	VkCompareOp	stencilCompareOp;
+			0u,															//	deUint32	stencilCompareMask;
+			0u,															//	deUint32	stencilWriteMask;
+			0u,															//	deUint32	stencilReference;
+		},															//	VkStencilOpState	front;
+		{
+			VK_STENCIL_OP_KEEP,											//	VkStencilOp	stencilFailOp;
+			VK_STENCIL_OP_KEEP,											//	VkStencilOp	stencilPassOp;
+			VK_STENCIL_OP_KEEP,											//	VkStencilOp	stencilDepthFailOp;
+			VK_COMPARE_OP_ALWAYS,										//	VkCompareOp	stencilCompareOp;
+			0u,															//	deUint32	stencilCompareMask;
+			0u,															//	deUint32	stencilWriteMask;
+			0u,															//	deUint32	stencilReference;
+		},															//	VkStencilOpState	back;
+		-1.0f,														//	float				minDepthBounds;
+		+1.0f,														//	float				maxDepthBounds;
+	};
+	const VkViewport						viewport0				=
+	{
+		0.0f,														//	float	originX;
+		0.0f,														//	float	originY;
+		(float)renderSize.x(),										//	float	width;
+		(float)renderSize.y(),										//	float	height;
+		0.0f,														//	float	minDepth;
+		1.0f,														//	float	maxDepth;
+	};
+	const VkRect2D							scissor0				=
+	{
+		{
+			0u,															//	deInt32	x;
+			0u,															//	deInt32	y;
+		},															//	VkOffset2D	offset;
+		{
+			renderSize.x(),												//	deInt32	width;
+			renderSize.y(),												//	deInt32	height;
+		},															//	VkExtent2D	extent;
+	};
+	const VkPipelineViewportStateCreateInfo		viewportParams			=
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,		//	VkStructureType		sType;
+		DE_NULL,													//	const void*			pNext;
+		1u,															//	deUint32			viewportCount;
+		&viewport0,
+		1u,
+		&scissor0
+	};
+	const VkSampleMask							sampleMask				= ~0u;
+	const VkPipelineMultisampleStateCreateInfo	multisampleParams		=
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,	//	VkStructureType	sType;
+		DE_NULL,													//	const void*		pNext;
+		1u,															//	deUint32		rasterSamples;
+		DE_FALSE,													//	deUint32		sampleShadingEnable;
+		0.0f,														//	float			minSampleShading;
+		&sampleMask,												//	VkSampleMask	sampleMask;
+	};
+	const VkPipelineRasterStateCreateInfo		rasterParams			=
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_RASTER_STATE_CREATE_INFO,	//	VkStructureType	sType;
+		DE_NULL,												//	const void*		pNext;
+		DE_TRUE,												//	deUint32		depthClipEnable;
+		DE_FALSE,												//	deUint32		rasterizerDiscardEnable;
+		VK_FILL_MODE_SOLID,										//	VkFillMode		fillMode;
+		VK_CULL_MODE_NONE,										//	VkCullMode		cullMode;
+		VK_FRONT_FACE_CCW,										//	VkFrontFace		frontFace;
+		VK_FALSE,												//	VkBool32		depthBiasEnable;
+		0.0f,													//	float			depthBias;
+		0.0f,													//	float			depthBiasClamp;
+		0.0f,													//	float			slopeScaledDepthBias;
+		1.0f,													//	float			lineWidth;
+	};
+	const VkPipelineInputAssemblyStateCreateInfo	inputAssemblyParams	=
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,	//	VkStructureType		sType;
+		DE_NULL,														//	const void*			pNext;
+		VK_PRIMITIVE_TOPOLOGY_PATCH,									//	VkPrimitiveTopology	topology;
+		DE_FALSE,														//	deUint32			primitiveRestartEnable;
+	};
+	const VkVertexInputBindingDescription		vertexBinding0 =
+	{
+		0u,									// deUint32					binding;
+		deUint32(singleVertexDataSize),		// deUint32					strideInBytes;
+		VK_VERTEX_INPUT_STEP_RATE_VERTEX	// VkVertexInputStepRate	stepRate;
+	};
+	const VkVertexInputAttributeDescription		vertexAttrib0[2] =
+	{
+		{
+			0u,									// deUint32	location;
+			0u,									// deUint32	binding;
+			VK_FORMAT_R32G32B32A32_SFLOAT,		// VkFormat	format;
+			0u									// deUint32	offsetInBytes;
+		},
+		{
+			1u,									// deUint32	location;
+			0u,									// deUint32	binding;
+			VK_FORMAT_R32G32B32A32_SFLOAT,		// VkFormat	format;
+			sizeof(Vec4),						// deUint32	offsetInBytes;
+		}
+	};
+
+	const VkPipelineVertexInputStateCreateInfo	vertexInputStateParams	=
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,	//	VkStructureType								sType;
+		DE_NULL,													//	const void*									pNext;
+		1u,															//	deUint32									bindingCount;
+		&vertexBinding0,											//	const VkVertexInputBindingDescription*		pVertexBindingDescriptions;
+		2u,															//	deUint32									attributeCount;
+		vertexAttrib0,												//	const VkVertexInputAttributeDescription*	pVertexAttributeDescriptions;
+	};
+	const VkPipelineColorBlendAttachmentState	attBlendParams			=
+	{
+		DE_FALSE,																//	deUint32		blendEnable;
+		VK_BLEND_ONE,															//	VkBlend			srcBlendColor;
+		VK_BLEND_ZERO,															//	VkBlend			destBlendColor;
+		VK_BLEND_OP_ADD,														//	VkBlendOp		blendOpColor;
+		VK_BLEND_ONE,															//	VkBlend			srcBlendAlpha;
+		VK_BLEND_ZERO,															//	VkBlend			destBlendAlpha;
+		VK_BLEND_OP_ADD,														//	VkBlendOp		blendOpAlpha;
+		VK_CHANNEL_R_BIT|VK_CHANNEL_G_BIT|VK_CHANNEL_B_BIT|VK_CHANNEL_A_BIT,	//	VkChannelFlags	channelWriteMask;
+	};
+	const VkPipelineColorBlendStateCreateInfo	blendParams				=
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,	//	VkStructureType								sType;
+		DE_NULL,													//	const void*									pNext;
+		DE_FALSE,													//	VkBool32									alphaToCoverageEnable;
+		DE_FALSE,													//	VkBool32									alphaToOneEnable;
+		DE_FALSE,													//	VkBool32									logicOpEnable;
+		VK_LOGIC_OP_COPY,											//	VkLogicOp									logicOp;
+		1u,															//	deUint32									attachmentCount;
+		&attBlendParams,											//	const VkPipelineColorBlendAttachmentState*	pAttachments;
+		{ 0.0f, 0.0f, 0.0f, 0.0f },									//	float										blendConst[4];
+	};
+	const VkPipelineDynamicStateCreateInfo	dynamicStateInfo		=
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,	//	VkStructureType			sType;
+		DE_NULL,												//	const void*				pNext;
+		0u,														//	deUint32				dynamicStateCount;
+		DE_NULL													//	const VkDynamicState*	pDynamicStates;
+	};
+
+	const VkPipelineTessellationStateCreateInfo	tessellationState	=
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO,
+		DE_NULL,
+		3u
+	};
+
+	const VkGraphicsPipelineCreateInfo		pipelineParams			=
+	{
+		VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,		//	VkStructureType									sType;
+		DE_NULL,												//	const void*										pNext;
+		(deUint32)shaderStageParams.size(),						//	deUint32										stageCount;
+		&shaderStageParams[0],									//	const VkPipelineShaderStageCreateInfo*			pStages;
+		&vertexInputStateParams,								//	const VkPipelineVertexInputStateCreateInfo*		pVertexInputState;
+		&inputAssemblyParams,									//	const VkPipelineInputAssemblyStateCreateInfo*	pInputAssemblyState;
+		&tessellationState,										//	const VkPipelineTessellationStateCreateInfo*	pTessellationState;
+		&viewportParams,										//	const VkPipelineViewportStateCreateInfo*		pViewportState;
+		&rasterParams,											//	const VkPipelineRasterStateCreateInfo*			pRasterState;
+		&multisampleParams,										//	const VkPipelineMultisampleStateCreateInfo*		pMultisampleState;
+		&depthStencilParams,									//	const VkPipelineDepthStencilStateCreateInfo*	pDepthStencilState;
+		&blendParams,											//	const VkPipelineColorBlendStateCreateInfo*		pColorBlendState;
+		&dynamicStateInfo,										//	const VkPipelineDynamicStateCreateInfo*			pDynamicState;
+		0u,														//	VkPipelineCreateFlags							flags;
+		*pipelineLayout,										//	VkPipelineLayout								layout;
+		*renderPass,											//	VkRenderPass									renderPass;
+		0u,														//	deUint32										subpass;
+		DE_NULL,												//	VkPipeline										basePipelineHandle;
+		0u,														//	deInt32											basePipelineIndex;
+	};
+
+	const Unique<VkPipeline>				pipeline				(createGraphicsPipeline(vk, vkDevice, DE_NULL, &pipelineParams));
+
+	// Framebuffer
+	const VkFramebufferCreateInfo			framebufferParams		=
+	{
+		VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,				//	VkStructureType		sType;
+		DE_NULL,												//	const void*			pNext;
+		*renderPass,											//	VkRenderPass		renderPass;
+		1u,														//	deUint32			attachmentCount;
+		&*colorAttView,											//	const VkImageView*	pAttachments;
+		(deUint32)renderSize.x(),								//	deUint32			width;
+		(deUint32)renderSize.y(),								//	deUint32			height;
+		1u,														//	deUint32			layers;
+	};
+	const Unique<VkFramebuffer>				framebuffer				(createFramebuffer(vk, vkDevice, &framebufferParams));
+
+	const VkCmdPoolCreateInfo				cmdPoolParams			=
+	{
+		VK_STRUCTURE_TYPE_CMD_POOL_CREATE_INFO,						//	VkStructureType			sType;
+		DE_NULL,													//	const void*				pNext;
+		queueFamilyIndex,											//	deUint32				queueFamilyIndex;
+		VK_CMD_POOL_CREATE_RESET_COMMAND_BUFFER_BIT					//	VkCmdPoolCreateFlags	flags;
+	};
+	const Unique<VkCmdPool>					cmdPool					(createCommandPool(vk, vkDevice, &cmdPoolParams));
+
+	// Command buffer
+	const VkCmdBufferCreateInfo				cmdBufParams			=
+	{
+		VK_STRUCTURE_TYPE_CMD_BUFFER_CREATE_INFO,				//	VkStructureType			sType;
+		DE_NULL,												//	const void*				pNext;
+		*cmdPool,												//	VkCmdPool				pool;
+		VK_CMD_BUFFER_LEVEL_PRIMARY,							//	VkCmdBufferLevel		level;
+		0u,														//	VkCmdBufferCreateFlags	flags;
+	};
+	const Unique<VkCmdBuffer>				cmdBuf					(createCommandBuffer(vk, vkDevice, &cmdBufParams));
+
+	const VkCmdBufferBeginInfo				cmdBufBeginParams		=
+	{
+		VK_STRUCTURE_TYPE_CMD_BUFFER_BEGIN_INFO,				//	VkStructureType				sType;
+		DE_NULL,												//	const void*					pNext;
+		0u,														//	VkCmdBufferOptimizeFlags	flags;
+		DE_NULL,												//	VkRenderPass				renderPass;
+		0u,														//	deUint32					subpass;
+		DE_NULL,												//	VkFramebuffer				framebuffer;
+	};
+
+	// Record commands
+	VK_CHECK(vk.beginCommandBuffer(*cmdBuf, &cmdBufBeginParams));
+
+	{
+		const VkMemoryBarrier		vertFlushBarrier	=
+		{
+			VK_STRUCTURE_TYPE_MEMORY_BARRIER,			//	VkStructureType		sType;
+			DE_NULL,									//	const void*			pNext;
+			VK_MEMORY_OUTPUT_HOST_WRITE_BIT,			//	VkMemoryOutputFlags	outputMask;
+			VK_MEMORY_INPUT_VERTEX_ATTRIBUTE_FETCH_BIT,	//	VkMemoryInputFlags	inputMask;
+		};
+		const VkImageMemoryBarrier	colorAttBarrier		=
+		{
+			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		//	VkStructureType			sType;
+			DE_NULL,									//	const void*				pNext;
+			0u,											//	VkMemoryOutputFlags		outputMask;
+			VK_MEMORY_INPUT_COLOR_ATTACHMENT_BIT,		//	VkMemoryInputFlags		inputMask;
+			VK_IMAGE_LAYOUT_UNDEFINED,					//	VkImageLayout			oldLayout;
+			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,	//	VkImageLayout			newLayout;
+			queueFamilyIndex,							//	deUint32				srcQueueFamilyIndex;
+			queueFamilyIndex,							//	deUint32				destQueueFamilyIndex;
+			*image,										//	VkImage					image;
+			{
+				VK_IMAGE_ASPECT_COLOR_BIT,					//	VkImageAspect	aspect;
+				0u,											//	deUint32		baseMipLevel;
+				1u,											//	deUint32		mipLevels;
+				0u,											//	deUint32		baseArraySlice;
+				1u,											//	deUint32		arraySize;
+			}											//	VkImageSubresourceRange	subresourceRange;
+		};
+		const void*				barriers[]				= { &vertFlushBarrier, &colorAttBarrier };
+		vk.cmdPipelineBarrier(*cmdBuf, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_ALL_GPU_COMMANDS, DE_FALSE, (deUint32)DE_LENGTH_OF_ARRAY(barriers), barriers);
+	}
+
+	{
+		const VkClearValue			clearValue		= makeClearValueColorF32(0.125f, 0.25f, 0.75f, 1.0f);
+		const VkRenderPassBeginInfo	passBeginParams	=
+		{
+			VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,			//	VkStructureType		sType;
+			DE_NULL,											//	const void*			pNext;
+			*renderPass,										//	VkRenderPass		renderPass;
+			*framebuffer,										//	VkFramebuffer		framebuffer;
+			{ { 0, 0 }, { renderSize.x(), renderSize.y() } },	//	VkRect2D			renderArea;
+			1u,													//	deUint32			clearValueCount;
+			&clearValue,										//	const VkClearValue*	pClearValues;
+		};
+		vk.cmdBeginRenderPass(*cmdBuf, &passBeginParams, VK_RENDER_PASS_CONTENTS_INLINE);
+	}
+
+	vk.cmdBindPipeline(*cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
+	{
+		const VkDeviceSize bindingOffset = 0;
+		vk.cmdBindVertexBuffers(*cmdBuf, 0u, 1u, &vertexBuffer.get(), &bindingOffset);
+	}
+	vk.cmdDraw(*cmdBuf, deUint32(vertexCount), 1u /*run pipeline once*/, 0u /*first vertex*/, 0u /*first instanceIndex*/);
+	vk.cmdEndRenderPass(*cmdBuf);
+
+	{
+		const VkImageMemoryBarrier	renderFinishBarrier	=
+		{
+			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		//	VkStructureType			sType;
+			DE_NULL,									//	const void*				pNext;
+			VK_MEMORY_OUTPUT_COLOR_ATTACHMENT_BIT,		//	VkMemoryOutputFlags		outputMask;
+			VK_MEMORY_INPUT_TRANSFER_BIT,				//	VkMemoryInputFlags		inputMask;
+			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,	//	VkImageLayout			oldLayout;
+			VK_IMAGE_LAYOUT_TRANSFER_SOURCE_OPTIMAL,	//	VkImageLayout			newLayout;
+			queueFamilyIndex,							//	deUint32				srcQueueFamilyIndex;
+			queueFamilyIndex,							//	deUint32				destQueueFamilyIndex;
+			*image,										//	VkImage					image;
+			{
+				VK_IMAGE_ASPECT_COLOR_BIT,					//	VkImageAspectFlags	aspectMask;
+				0u,											//	deUint32			baseMipLevel;
+				1u,											//	deUint32			mipLevels;
+				0u,											//	deUint32			baseArraySlice;
+				1u,											//	deUint32			arraySize;
+			}											//	VkImageSubresourceRange	subresourceRange;
+		};
+		const void*				barriers[]				= { &renderFinishBarrier };
+		vk.cmdPipelineBarrier(*cmdBuf, VK_PIPELINE_STAGE_ALL_GRAPHICS, VK_PIPELINE_STAGE_TRANSFER_BIT, DE_FALSE, (deUint32)DE_LENGTH_OF_ARRAY(barriers), barriers);
+	}
+
+	{
+		const VkBufferImageCopy	copyParams	=
+		{
+			(VkDeviceSize)0u,						//	VkDeviceSize			bufferOffset;
+			(deUint32)renderSize.x(),				//	deUint32				bufferRowLength;
+			(deUint32)renderSize.y(),				//	deUint32				bufferImageHeight;
+			{
+				VK_IMAGE_ASPECT_COLOR,					//	VkImageAspect		aspect;
+				0u,										//	deUint32			mipLevel;
+				0u,										//	deUint32			arrayLayer;
+				1u,										//	deUint32			arraySize;
+			},										//	VkImageSubresourceCopy	imageSubresource;
+			{ 0u, 0u, 0u },							//	VkOffset3D				imageOffset;
+			{ renderSize.x(), renderSize.y(), 1u }	//	VkExtent3D				imageExtent;
+		};
+		vk.cmdCopyImageToBuffer(*cmdBuf, *image, VK_IMAGE_LAYOUT_TRANSFER_SOURCE_OPTIMAL, *readImageBuffer, 1u, &copyParams);
+	}
+
+	{
+		const VkBufferMemoryBarrier	copyFinishBarrier	=
+		{
+			VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,	//	VkStructureType		sType;
+			DE_NULL,									//	const void*			pNext;
+			VK_MEMORY_OUTPUT_TRANSFER_BIT,				//	VkMemoryOutputFlags	outputMask;
+			VK_MEMORY_INPUT_HOST_READ_BIT,				//	VkMemoryInputFlags	inputMask;
+			queueFamilyIndex,							//	deUint32			srcQueueFamilyIndex;
+			queueFamilyIndex,							//	deUint32			destQueueFamilyIndex;
+			*readImageBuffer,							//	VkBuffer			buffer;
+			0u,											//	VkDeviceSize		offset;
+			imageSizeBytes								//	VkDeviceSize		size;
+		};
+		const void*				barriers[]				= { &copyFinishBarrier };
+		vk.cmdPipelineBarrier(*cmdBuf, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, DE_FALSE, (deUint32)DE_LENGTH_OF_ARRAY(barriers), barriers);
+	}
+
+	VK_CHECK(vk.endCommandBuffer(*cmdBuf));
+
+	// Upload vertex data
+	{
+		const VkMappedMemoryRange	range			=
+		{
+			VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,	//	VkStructureType	sType;
+			DE_NULL,								//	const void*		pNext;
+			vertexBufferMemory->getMemory(),		//	VkDeviceMemory	mem;
+			0,										//	VkDeviceSize	offset;
+			(VkDeviceSize)sizeof(vertexData),		//	VkDeviceSize	size;
+		};
+		void*						vertexBufPtr	= vertexBufferMemory->getHostPtr();
+
+		deMemcpy(vertexBufPtr, &vertexData[0], sizeof(vertexData));
+		VK_CHECK(vk.flushMappedMemoryRanges(vkDevice, 1u, &range));
+	}
+
+	// Submit & wait for completion
+	{
+		const VkFenceCreateInfo	fenceParams	=
+		{
+			VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,	//	VkStructureType		sType;
+			DE_NULL,								//	const void*			pNext;
+			0u,										//	VkFenceCreateFlags	flags;
+		};
+		const Unique<VkFence>	fence		(createFence(vk, vkDevice, &fenceParams));
+
+		VK_CHECK(vk.queueSubmit(queue, 1u, &cmdBuf.get(), *fence));
+		VK_CHECK(vk.waitForFences(vkDevice, 1u, &fence.get(), DE_TRUE, ~0ull));
+	}
+
+	const void* imagePtr	= readImageBufferMemory->getHostPtr();
+	const tcu::ConstPixelBufferAccess pixelBuffer(tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8),
+												  renderSize.x(), renderSize.y(), 1, imagePtr);
+	// Log image
+	{
+		const VkMappedMemoryRange	range		=
+		{
+			VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,	//	VkStructureType	sType;
+			DE_NULL,								//	const void*		pNext;
+			readImageBufferMemory->getMemory(),		//	VkDeviceMemory	mem;
+			0,										//	VkDeviceSize	offset;
+			imageSizeBytes,							//	VkDeviceSize	size;
+		};
+
+		VK_CHECK(vk.invalidateMappedMemoryRanges(vkDevice, 1u, &range));
+		context.getTestContext().getLog() << TestLog::Image("Result", "Result", pixelBuffer);
+	}
+
+	const RGBA threshold(1, 1, 1, 1);
+	const RGBA upperLeft(pixelBuffer.getPixel(1, 1));
+	if (!tcu::compareThreshold(upperLeft, instance.outputColors[0], threshold))
+		return TestStatus::fail("Upper left corner mismatch");
+
+	const RGBA upperRight(pixelBuffer.getPixel(pixelBuffer.getWidth() - 1, 1));
+	if (!tcu::compareThreshold(upperRight, instance.outputColors[1], threshold))
+		return TestStatus::fail("Upper right corner mismatch");
+
+	const RGBA lowerLeft(pixelBuffer.getPixel(1, pixelBuffer.getHeight() - 1));
+	if (!tcu::compareThreshold(lowerLeft, instance.outputColors[2], threshold))
+		return TestStatus::fail("Lower left corner mismatch");
+
+	const RGBA lowerRight(pixelBuffer.getPixel(pixelBuffer.getWidth() - 1, pixelBuffer.getHeight() - 1));
+	if (!tcu::compareThreshold(lowerRight, instance.outputColors[3], threshold))
+		return TestStatus::fail("Lower right corner mismatch");
+
+	return TestStatus::pass("Rendered output matches input");
+}
+
+void createTestsForAllStages(const std::string& name,
+							 const RGBA (&inputColors)[4],
+							 const RGBA (&outputColors)[4],
+							 const map<string, string>& testCodeFragments,
+							 tcu::TestCaseGroup* tests)
+{
+	const ShaderElement		pipelineStages[]				=
+	{
+		ShaderElement("vert", "main", VK_SHADER_STAGE_VERTEX),
+		ShaderElement("tessc", "main", VK_SHADER_STAGE_TESS_CONTROL),
+		ShaderElement("tesse", "main", VK_SHADER_STAGE_TESS_EVALUATION),
+		ShaderElement("geom", "main", VK_SHADER_STAGE_GEOMETRY),
+		ShaderElement("frag", "main", VK_SHADER_STAGE_FRAGMENT),
+	};
+
+	addFunctionCaseWithPrograms<InstanceContext>(tests, name + "-vert", "", addShaderCodeCustomVertex, runAndVerifyDefaultPipeline,
+												 createInstanceContext(pipelineStages, inputColors, outputColors, testCodeFragments));
+
+	addFunctionCaseWithPrograms<InstanceContext>(tests, name + "-tessc", "", addShaderCodeCustomTessControl, runAndVerifyDefaultPipeline,
+												 createInstanceContext(pipelineStages, inputColors, outputColors, testCodeFragments));
+
+	addFunctionCaseWithPrograms<InstanceContext>(tests, name + "-tesse", "", addShaderCodeCustomTessEval, runAndVerifyDefaultPipeline,
+												 createInstanceContext(pipelineStages, inputColors, outputColors, testCodeFragments));
+
+	addFunctionCaseWithPrograms<InstanceContext>(tests, name + "-geom", "", addShaderCodeCustomGeometry, runAndVerifyDefaultPipeline,
+												 createInstanceContext(pipelineStages, inputColors, outputColors, testCodeFragments));
+
+	addFunctionCaseWithPrograms<InstanceContext>(tests, name + "-frag", "", addShaderCodeCustomFragment, runAndVerifyDefaultPipeline,
+												 createInstanceContext(pipelineStages, inputColors, outputColors, testCodeFragments));
+}
 } // anonymous
 
 tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
@@ -1674,7 +3044,12 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	instructionTests->addChild(createBlockOrderGroup(testCtx));
 	instructionTests->addChild(createOpUndefGroup(testCtx));
 	instructionTests->addChild(createOpUnreachableGroup(testCtx));
-
+    
+    RGBA defaultColors[4];
+	getDefaultColors(defaultColors);
+	de::MovePtr<tcu::TestCaseGroup>	group	(new tcu::TestCaseGroup(testCtx, "graphics-assembly", "Test the graphics pipeline"));
+	createTestsForAllStages("passthru", defaultColors, defaultColors, passthruFragments(), group.get());
+	instructionTests->addChild(group.release());
 	return instructionTests.release();
 }
 

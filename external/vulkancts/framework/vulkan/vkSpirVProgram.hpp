@@ -34,6 +34,7 @@
  * \brief SPIR-V program and binary info.
  *//*--------------------------------------------------------------------*/
 
+#include <string>
 #include <sstream>
 
 #include "vkDefs.hpp"
@@ -44,7 +45,8 @@ namespace vk
 
 struct SpirVAsmSource
 {
-	SpirVAsmSource& operator<<(const char* val)
+	template<typename T>
+	SpirVAsmSource& operator<<(const T& val)
 	{
 		program << val;
 		return *this;
