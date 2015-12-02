@@ -224,7 +224,6 @@ public:
 	virtual const tcu::ConstPixelBufferAccess	getLevel				(int level, int layer) const;
 	virtual int									getArraySize			(void) const;
 	virtual const tcu::TextureCube&				getTexture				(void) const;
-	virtual void								write					(deUint8* destPtr) const;
 };
 
 class TestTextureCubeArray: public TestTexture
@@ -242,7 +241,6 @@ public:
 	virtual const tcu::ConstPixelBufferAccess	getLevel				(int level, int layer) const;
 	virtual int									getArraySize			(void) const;
 	virtual const tcu::TextureCubeArray&		getTexture				(void) const;
-	virtual void								write					(deUint8* destPtr) const;
 };
 
 } // pipeline

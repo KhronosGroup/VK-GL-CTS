@@ -57,8 +57,8 @@ public:
 																		 vk::VkImageViewType				imageViewType,
 																		 vk::VkFormat						imageFormat,
 																		 const tcu::IVec3&					imageSize,
-																		 int								arraySize,
-																		 const vk::VkChannelMapping&		channelMapping,
+																		 int								layerCount,
+																		 const vk::VkComponentMapping&		componentMapping,
 																		 const vk::VkImageSubresourceRange&	subresourceRange,
 																		 const vk::VkSamplerCreateInfo&		samplerParams,
 																		 float								samplerLod,
@@ -74,9 +74,9 @@ protected:
 private:
 	const vk::VkImageViewType					m_imageViewType;
 	const tcu::IVec3							m_imageSize;
-	const int									m_arraySize;
+	const int									m_layerCount;
 
-	const vk::VkChannelMapping					m_channelMapping;
+	const vk::VkComponentMapping				m_componentMapping;
 	const vk::VkImageSubresourceRange			m_subresourceRange;
 	const vk::VkSamplerCreateInfo				m_samplerParams;
 	const float									m_samplerLod;
@@ -102,8 +102,6 @@ private:
 
 	vk::Move<vk::VkShaderModule>				m_vertexShaderModule;
 	vk::Move<vk::VkShaderModule>				m_fragmentShaderModule;
-	vk::Move<vk::VkShader>						m_vertexShader;
-	vk::Move<vk::VkShader>						m_fragmentShader;
 
 	vk::Move<vk::VkBuffer>						m_vertexBuffer;
 	std::vector<Vertex4Tex4>					m_vertices;
@@ -112,8 +110,8 @@ private:
 	vk::Move<vk::VkPipelineLayout>				m_pipelineLayout;
 	vk::Move<vk::VkPipeline>					m_graphicsPipeline;
 
-	vk::Move<vk::VkCmdPool>						m_cmdPool;
-	vk::Move<vk::VkCmdBuffer>					m_cmdBuffer;
+	vk::Move<vk::VkCommandPool>					m_cmdPool;
+	vk::Move<vk::VkCommandBuffer>				m_cmdBuffer;
 
 	vk::Move<vk::VkFence>						m_fence;
 };

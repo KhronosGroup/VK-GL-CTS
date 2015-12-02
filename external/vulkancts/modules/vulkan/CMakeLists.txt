@@ -1,7 +1,7 @@
 # dEQP-VK
 
 add_subdirectory(api)
-#add_subdirectory(pipeline)
+add_subdirectory(pipeline)
 add_subdirectory(binding_model)
 add_subdirectory(spirv_assembly)
 add_subdirectory(shaderrender)
@@ -36,7 +36,7 @@ set(DEQP_VK_COMMON_LIBS
 	vkutil
 	glutil
 	deqp-vk-api
-#	deqp-vk-pipeline
+	deqp-vk-pipeline
 	deqp-vk-binding-model
 	deqp-vk-spirv-assembly
 	deqp-vk-shaderrender

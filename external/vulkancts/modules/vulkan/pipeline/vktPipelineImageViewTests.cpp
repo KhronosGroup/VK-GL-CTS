@@ -69,7 +69,7 @@ public:
 													 VkImageViewType				imageViewType,
 													 VkFormat						imageFormat,
 													 float							samplerLod,
-													 const VkChannelMapping&		channelMapping,
+													 const VkComponentMapping&		componentMapping,
 													 const VkImageSubresourceRange&	subresourceRange);
 	virtual					~ImageViewTest			(void) {}
 
@@ -84,7 +84,7 @@ private:
 	VkImageViewType			m_imageViewType;
 	VkFormat				m_imageFormat;
 	float					m_samplerLod;
-	VkChannelMapping		m_channelMapping;
+	VkComponentMapping		m_componentMapping;
 	VkImageSubresourceRange	m_subresourceRange;
 };
 
@@ -94,14 +94,14 @@ ImageViewTest::ImageViewTest (tcu::TestContext&					testContext,
 							  VkImageViewType					imageViewType,
 							  VkFormat							imageFormat,
 							  float								samplerLod,
-							  const VkChannelMapping&			channelMapping,
+							  const VkComponentMapping&			componentMapping,
 							  const VkImageSubresourceRange&	subresourceRange)
 
 	: vkt::TestCase			(testContext, name, description)
 	, m_imageViewType		(imageViewType)
 	, m_imageFormat			(imageFormat)
 	, m_samplerLod			(samplerLod)
-	, m_channelMapping		(channelMapping)
+	, m_componentMapping	(componentMapping)
 	, m_subresourceRange	(subresourceRange)
 {
 }
@@ -179,25 +179,26 @@ TestInstance* ImageViewTest::createInstance (Context& context) const
 
 	const VkSamplerCreateInfo		samplerParams	=
 	{
-		VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,									// VkStructureType		sType;
-		DE_NULL,																// const void*			pNext;
-		VK_TEX_FILTER_NEAREST,													// VkTexFilter			magFilter;
-		VK_TEX_FILTER_NEAREST,													// VkTexFilter			minFilter;
-		VK_TEX_MIPMAP_MODE_NEAREST,												// VkTexMipmapMode		mipMode;
-		VK_TEX_ADDRESS_MODE_CLAMP,												// VkTexAddressMode		addressModeU;
-		VK_TEX_ADDRESS_MODE_CLAMP,												// VkTexAddressMode		addressModeV;
-		VK_TEX_ADDRESS_MODE_CLAMP,												// VkTexAddressMode		addressModeW;
-		0.0f,																	// float				mipLodBias;
-		1.0f,																	// float				maxAnisotropy;
-		false,																	// VkBool32				compareEnable;
-		VK_COMPARE_OP_NEVER,													// VkCompareOp			compareOp;
-		0.0f,																	// float				minLod;
-		(float)(m_subresourceRange.mipLevels - 1),								// float				maxLod;
-		getFormatBorderColor(BORDER_COLOR_TRANSPARENT_BLACK, m_imageFormat),	// VkBorderColor		borderColor;
-		false																	// VkBool32				unnormalizedCoordinates;
+		VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,									// VkStructureType			sType;
+		DE_NULL,																// const void*				pNext;
+		0u,																		// VkSamplerCreateFlags		flags;
+		VK_FILTER_NEAREST,														// VkFilter					magFilter;
+		VK_FILTER_NEAREST,														// VkFilter					minFilter;
+		VK_SAMPLER_MIPMAP_MODE_NEAREST,											// VkSamplerMipmapMode		mipmapMode;
+		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,									// VkSamplerAddressMode		addressModeU;
+		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,									// VkSamplerAddressMode		addressModeV;
+		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,									// VkSamplerAddressMode		addressModeW;
+		0.0f,																	// float					mipLodBias;
+		1.0f,																	// float					maxAnisotropy;
+		false,																	// VkBool32					compareEnable;
+		VK_COMPARE_OP_NEVER,													// VkCompareOp				compareOp;
+		0.0f,																	// float					minLod;
+		(float)(m_subresourceRange.levelCount - 1),								// float					maxLod;
+		getFormatBorderColor(BORDER_COLOR_TRANSPARENT_BLACK, m_imageFormat),	// VkBorderColor			borderColor;
+		false																	// VkBool32					unnormalizedCoordinates;
 	};
 
-	return new ImageSamplingInstance(context, renderSize, m_imageViewType, m_imageFormat, imageSize, arraySize, m_channelMapping, m_subresourceRange, samplerParams, m_samplerLod, vertices);
+	return new ImageSamplingInstance(context, renderSize, m_imageViewType, m_imageFormat, imageSize, arraySize, m_componentMapping, m_subresourceRange, samplerParams, m_samplerLod, vertices);
 }
 
 std::string ImageViewTest::getGlslSamplerType (const tcu::TextureFormat& format, VkImageViewType type)
@@ -319,7 +320,7 @@ static de::MovePtr<tcu::TestCaseGroup> createSubresourceRangeTests(tcu::TestCont
 	const deUint32				numLevels				= ImageViewTest::getNumLevels(viewType);
 	const deUint32				arraySize				= ImageViewTest::getArraySize(viewType);
 	const VkImageAspectFlags	imageAspectFlags		= VK_IMAGE_ASPECT_COLOR_BIT;
-	const VkChannelMapping		channelMapping			= getFormatChannelMapping(imageFormat);
+	const VkComponentMapping	componentMapping		= getFormatComponentMapping(imageFormat);
 
 	de::MovePtr<tcu::TestCaseGroup> rangeTests (new tcu::TestCaseGroup(testCtx, "subresource_range", ""));
 
@@ -331,7 +332,7 @@ static de::MovePtr<tcu::TestCaseGroup> createSubresourceRangeTests(tcu::TestCont
 			const TestCaseConfig	config	= TEST_CASES[configNdx];									\
 			desc << "Samples level " << config.samplerLod << " with :\n" << config.subresourceRange;	\
 			rangeTests->addChild(new ImageViewTest(testCtx, config.name, desc.str().c_str(), viewType,	\
-												   imageFormat, config.samplerLod, channelMapping,		\
+												   imageFormat, config.samplerLod, componentMapping,		\
 												   config.subresourceRange));							\
 		}																								\
 	} while (0)
@@ -447,21 +448,21 @@ static de::MovePtr<tcu::TestCaseGroup> createSubresourceRangeTests(tcu::TestCont
 	return rangeTests;
 }
 
-static std::vector<VkChannelMapping> getChannelMappingPermutations (const VkChannelMapping& channelMapping)
+static std::vector<VkComponentMapping> getComponentMappingPermutations (const VkComponentMapping& componentMapping)
 {
-	std::vector<VkChannelMapping> mappings;
+	std::vector<VkComponentMapping> mappings;
 
-	const VkChannelSwizzle channelSwizzles[4] = { channelMapping.r, channelMapping.g, channelMapping.b, channelMapping.a };
+	const VkComponentSwizzle channelSwizzles[4] = { componentMapping.r, componentMapping.g, componentMapping.b, componentMapping.a };
 
 	// Rearranges the channels by shifting their positions.
 	for (int firstChannelNdx = 0; firstChannelNdx < 4; firstChannelNdx++)
 	{
-		VkChannelSwizzle currentChannel[4];
+		VkComponentSwizzle currentChannel[4];
 
 		for (int channelNdx = 0; channelNdx < 4; channelNdx++)
 			currentChannel[channelNdx] = channelSwizzles[(firstChannelNdx + channelNdx) % 4];
 
-		const VkChannelMapping mappingPermutation  =
+		const VkComponentMapping mappingPermutation  =
 		{
 			currentChannel[0],
 			currentChannel[1],
@@ -475,28 +476,28 @@ static std::vector<VkChannelMapping> getChannelMappingPermutations (const VkChan
 	return mappings;
 }
 
-static std::string getChannelSwizzleCaseName (VkChannelSwizzle channelSwizzle)
+static std::string getComponentSwizzleCaseName (VkComponentSwizzle componentSwizzle)
 {
-	const std::string fullName = getChannelSwizzleName(channelSwizzle);
+	const std::string fullName = getComponentSwizzleName(componentSwizzle);
 
-	DE_ASSERT(de::beginsWith(fullName, "VK_CHANNEL_SWIZZLE_"));
+	DE_ASSERT(de::beginsWith(fullName, "VK_COMPONENT_SWIZZLE_"));
 
-	return de::toLower(fullName.substr(19));
+	return de::toLower(fullName.substr(21));
 }
 
-static std::string getChannelMappingCaseName (const VkChannelMapping& channelMapping)
+static std::string getComponentMappingCaseName (const VkComponentMapping& componentMapping)
 {
 	std::ostringstream name;
 
-	name << getChannelSwizzleCaseName(channelMapping.r) << "_"
-		 << getChannelSwizzleCaseName(channelMapping.g) << "_"
-		 << getChannelSwizzleCaseName(channelMapping.b) << "_"
-		 << getChannelSwizzleCaseName(channelMapping.a);
+	name << getComponentSwizzleCaseName(componentMapping.r) << "_"
+		 << getComponentSwizzleCaseName(componentMapping.g) << "_"
+		 << getComponentSwizzleCaseName(componentMapping.b) << "_"
+		 << getComponentSwizzleCaseName(componentMapping.a);
 
 	return name.str();
 }
 
-static de::MovePtr<tcu::TestCaseGroup> createChannelSwizzleTests (tcu::TestContext& testCtx, VkImageViewType viewType, VkFormat imageFormat)
+static de::MovePtr<tcu::TestCaseGroup> createComponentSwizzleTests (tcu::TestContext& testCtx, VkImageViewType viewType, VkFormat imageFormat)
 {
 	deUint32 arraySize = 0;
 
@@ -531,18 +532,18 @@ static de::MovePtr<tcu::TestCaseGroup> createChannelSwizzleTests (tcu::TestConte
 		arraySize,											// deUint32				arraySize;
 	};
 
-	const std::vector<VkChannelMapping>	channelMappings	= getChannelMappingPermutations(getFormatChannelMapping(imageFormat));
-	de::MovePtr<tcu::TestCaseGroup>		swizzleTests	(new tcu::TestCaseGroup(testCtx, "channel_swizzle", ""));
+	const std::vector<VkComponentMapping>	componentMappings	= getComponentMappingPermutations(getFormatComponentMapping(imageFormat));
+	de::MovePtr<tcu::TestCaseGroup>			swizzleTests		(new tcu::TestCaseGroup(testCtx, "component_swizzle", ""));
 
-	for (size_t mappingNdx = 0; mappingNdx < channelMappings.size(); mappingNdx++)
+	for (size_t mappingNdx = 0; mappingNdx < componentMappings.size(); mappingNdx++)
 	{
 		swizzleTests->addChild(new ImageViewTest(testCtx,
-												 getChannelMappingCaseName(channelMappings[mappingNdx]).c_str(),
+												 getComponentMappingCaseName(componentMappings[mappingNdx]).c_str(),
 												 "",
 												 viewType,
 												 imageFormat,
 												 0.0f,
-												 channelMappings[mappingNdx],
+												 componentMappings[mappingNdx],
 												 subresourceRange));
 	}
 
@@ -571,10 +572,10 @@ tcu::TestCaseGroup* createImageViewTests (tcu::TestContext& testCtx)
 
 	const VkFormat formats[] =
 	{
-		VK_FORMAT_R4G4_UNORM,
-		VK_FORMAT_R4G4B4A4_UNORM,
-		VK_FORMAT_R5G6B5_UNORM,
-		VK_FORMAT_R5G5B5A1_UNORM,
+		VK_FORMAT_R4G4_UNORM_PACK8,
+		VK_FORMAT_R4G4B4A4_UNORM_PACK16,
+		VK_FORMAT_R5G6B5_UNORM_PACK16,
+		VK_FORMAT_R5G5B5A1_UNORM_PACK16,
 		VK_FORMAT_R8_UNORM,
 		VK_FORMAT_R8_SNORM,
 		VK_FORMAT_R8_USCALED,
@@ -603,9 +604,9 @@ tcu::TestCaseGroup* createImageViewTests (tcu::TestContext& testCtx)
 		VK_FORMAT_R8G8B8A8_UINT,
 		VK_FORMAT_R8G8B8A8_SINT,
 		VK_FORMAT_R8G8B8A8_SRGB,
-		VK_FORMAT_R10G10B10A2_UNORM,
-		VK_FORMAT_R10G10B10A2_UINT,
-		VK_FORMAT_R10G10B10A2_USCALED,
+		VK_FORMAT_A2R10G10B10_UNORM_PACK32,
+		VK_FORMAT_A2R10G10B10_UINT_PACK32,
+		VK_FORMAT_A2B10G10R10_USCALED_PACK32,
 		VK_FORMAT_R16_UNORM,
 		VK_FORMAT_R16_SNORM,
 		VK_FORMAT_R16_USCALED,
@@ -646,50 +647,50 @@ tcu::TestCaseGroup* createImageViewTests (tcu::TestContext& testCtx)
 		VK_FORMAT_R32G32B32A32_UINT,
 		VK_FORMAT_R32G32B32A32_SINT,
 		VK_FORMAT_R32G32B32A32_SFLOAT,
-		VK_FORMAT_R11G11B10_UFLOAT,
-		VK_FORMAT_R9G9B9E5_UFLOAT,
-		VK_FORMAT_B4G4R4A4_UNORM,
-		VK_FORMAT_B5G5R5A1_UNORM,
+		VK_FORMAT_B10G11R11_UFLOAT_PACK32,
+		VK_FORMAT_E5B9G9R9_UFLOAT_PACK32,
+		VK_FORMAT_B4G4R4A4_UNORM_PACK16,
+		VK_FORMAT_B5G5R5A1_UNORM_PACK16,
 
 		// Compressed formats
-		VK_FORMAT_ETC2_R8G8B8_UNORM,
-		VK_FORMAT_ETC2_R8G8B8_SRGB,
-		VK_FORMAT_ETC2_R8G8B8A1_UNORM,
-		VK_FORMAT_ETC2_R8G8B8A1_SRGB,
-		VK_FORMAT_ETC2_R8G8B8A8_UNORM,
-		VK_FORMAT_ETC2_R8G8B8A8_SRGB,
-		VK_FORMAT_EAC_R11_UNORM,
-		VK_FORMAT_EAC_R11_SNORM,
-		VK_FORMAT_EAC_R11G11_UNORM,
-		VK_FORMAT_EAC_R11G11_SNORM,
-		VK_FORMAT_ASTC_4x4_UNORM,
-		VK_FORMAT_ASTC_4x4_SRGB,
-		VK_FORMAT_ASTC_5x4_UNORM,
-		VK_FORMAT_ASTC_5x4_SRGB,
-		VK_FORMAT_ASTC_5x5_UNORM,
-		VK_FORMAT_ASTC_5x5_SRGB,
-		VK_FORMAT_ASTC_6x5_UNORM,
-		VK_FORMAT_ASTC_6x5_SRGB,
-		VK_FORMAT_ASTC_6x6_UNORM,
-		VK_FORMAT_ASTC_6x6_SRGB,
-		VK_FORMAT_ASTC_8x5_UNORM,
-		VK_FORMAT_ASTC_8x5_SRGB,
-		VK_FORMAT_ASTC_8x6_UNORM,
-		VK_FORMAT_ASTC_8x6_SRGB,
-		VK_FORMAT_ASTC_8x8_UNORM,
-		VK_FORMAT_ASTC_8x8_SRGB,
-		VK_FORMAT_ASTC_10x5_UNORM,
-		VK_FORMAT_ASTC_10x5_SRGB,
-		VK_FORMAT_ASTC_10x6_UNORM,
-		VK_FORMAT_ASTC_10x6_SRGB,
-		VK_FORMAT_ASTC_10x8_UNORM,
-		VK_FORMAT_ASTC_10x8_SRGB,
-		VK_FORMAT_ASTC_10x10_UNORM,
-		VK_FORMAT_ASTC_10x10_SRGB,
-		VK_FORMAT_ASTC_12x10_UNORM,
-		VK_FORMAT_ASTC_12x10_SRGB,
-		VK_FORMAT_ASTC_12x12_UNORM,
-		VK_FORMAT_ASTC_12x12_SRGB,
+		VK_FORMAT_ETC2_R8G8B8_UNORM_BLOCK,
+		VK_FORMAT_ETC2_R8G8B8_SRGB_BLOCK,
+		VK_FORMAT_ETC2_R8G8B8A1_UNORM_BLOCK,
+		VK_FORMAT_ETC2_R8G8B8A1_SRGB_BLOCK,
+		VK_FORMAT_ETC2_R8G8B8A8_UNORM_BLOCK,
+		VK_FORMAT_ETC2_R8G8B8A8_SRGB_BLOCK,
+		VK_FORMAT_EAC_R11_UNORM_BLOCK,
+		VK_FORMAT_EAC_R11_SNORM_BLOCK,
+		VK_FORMAT_EAC_R11G11_UNORM_BLOCK,
+		VK_FORMAT_EAC_R11G11_SNORM_BLOCK,
+		VK_FORMAT_ASTC_4x4_UNORM_BLOCK,
+		VK_FORMAT_ASTC_4x4_SRGB_BLOCK,
+		VK_FORMAT_ASTC_5x4_UNORM_BLOCK,
+		VK_FORMAT_ASTC_5x4_SRGB_BLOCK,
+		VK_FORMAT_ASTC_5x5_UNORM_BLOCK,
+		VK_FORMAT_ASTC_5x5_SRGB_BLOCK,
+		VK_FORMAT_ASTC_6x5_UNORM_BLOCK,
+		VK_FORMAT_ASTC_6x5_SRGB_BLOCK,
+		VK_FORMAT_ASTC_6x6_UNORM_BLOCK,
+		VK_FORMAT_ASTC_6x6_SRGB_BLOCK,
+		VK_FORMAT_ASTC_8x5_UNORM_BLOCK,
+		VK_FORMAT_ASTC_8x5_SRGB_BLOCK,
+		VK_FORMAT_ASTC_8x6_UNORM_BLOCK,
+		VK_FORMAT_ASTC_8x6_SRGB_BLOCK,
+		VK_FORMAT_ASTC_8x8_UNORM_BLOCK,
+		VK_FORMAT_ASTC_8x8_SRGB_BLOCK,
+		VK_FORMAT_ASTC_10x5_UNORM_BLOCK,
+		VK_FORMAT_ASTC_10x5_SRGB_BLOCK,
+		VK_FORMAT_ASTC_10x6_UNORM_BLOCK,
+		VK_FORMAT_ASTC_10x6_SRGB_BLOCK,
+		VK_FORMAT_ASTC_10x8_UNORM_BLOCK,
+		VK_FORMAT_ASTC_10x8_SRGB_BLOCK,
+		VK_FORMAT_ASTC_10x10_UNORM_BLOCK,
+		VK_FORMAT_ASTC_10x10_SRGB_BLOCK,
+		VK_FORMAT_ASTC_12x10_UNORM_BLOCK,
+		VK_FORMAT_ASTC_12x10_SRGB_BLOCK,
+		VK_FORMAT_ASTC_12x12_UNORM_BLOCK,
+		VK_FORMAT_ASTC_12x12_SRGB_BLOCK,
 	};
 
 	de::MovePtr<tcu::TestCaseGroup> imageTests			(new tcu::TestCaseGroup(testCtx, "image_view", "Image tests"));
@@ -715,9 +716,9 @@ tcu::TestCaseGroup* createImageViewTests (tcu::TestContext& testCtx)
 																				(std::string("Samples a texture of format ") + getFormatName(format)).c_str()));
 
 			de::MovePtr<tcu::TestCaseGroup>	subresourceRangeTests	= createSubresourceRangeTests(testCtx, viewType, format);
-			de::MovePtr<tcu::TestCaseGroup>	channelSwizzleTests		= createChannelSwizzleTests(testCtx, viewType, format);
+			de::MovePtr<tcu::TestCaseGroup>	componentSwizzleTests	= createComponentSwizzleTests(testCtx, viewType, format);
 
-			formatGroup->addChild(channelSwizzleTests.release());
+			formatGroup->addChild(componentSwizzleTests.release());
 			formatGroup->addChild(subresourceRangeTests.release());
 			formatTests->addChild(formatGroup.release());
 		}

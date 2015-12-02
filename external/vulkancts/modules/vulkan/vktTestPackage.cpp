@@ -48,7 +48,7 @@
 
 #include "vktInfo.hpp"
 #include "vktApiTests.hpp"
-// #include "vktPipelineTests.hpp"
+#include "vktPipelineTests.hpp"
 #include "vktBindingModelTests.hpp"
 #include "vktSpvAsmTests.hpp"
 #include "vktShaderLibrary.hpp"
@@ -288,7 +288,7 @@ void TestPackage::init (void)
 {
 	addChild(createInfoTests			(m_testCtx));
 	addChild(api::createTests			(m_testCtx));
-//	addChild(pipeline::createTests		(m_testCtx));
+	addChild(pipeline::createTests		(m_testCtx));
 	addChild(BindingModel::createTests	(m_testCtx));
 	addChild(SpirVAssembly::createTests	(m_testCtx));
 	addChild(new GlslGroup				(m_testCtx));

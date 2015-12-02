@@ -72,7 +72,7 @@ bool isSupportedBlendFormat (const InstanceInterface& instanceInterface, VkPhysi
 {
 	VkFormatProperties formatProps;
 
-	VK_CHECK(instanceInterface.getPhysicalDeviceFormatProperties(device, format, &formatProps));
+	instanceInterface.getPhysicalDeviceFormatProperties(device, format, &formatProps);
 
 	return (formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT) &&
 		   (formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT);
@@ -86,7 +86,7 @@ public:
 	VkPipelineColorBlendAttachmentState		getIndexedValue	(deUint32 index);
 
 private:
-	const static VkBlend					m_blendFactors[];
+	const static VkBlendFactor				m_blendFactors[];
 	const static VkBlendOp					m_blendOps[];
 
 	// Pre-calculated constants
@@ -108,7 +108,7 @@ public:
 		QUAD_COUNT = 4
 	};
 
-	const static VkChannelFlags			s_channelWriteMasks[QUAD_COUNT];
+	const static VkColorComponentFlags	s_colorWriteMasks[QUAD_COUNT];
 	const static tcu::Vec4				s_blendConst;
 
 										BlendTest				(tcu::TestContext&							testContext,
@@ -151,8 +151,6 @@ private:
 
 	Move<VkShaderModule>				m_vertexShaderModule;
 	Move<VkShaderModule>				m_fragmentShaderModule;
-	Move<VkShader>						m_vertexShader;
-	Move<VkShader>						m_fragmentShader;
 
 	Move<VkBuffer>						m_vertexBuffer;
 	std::vector<Vertex4RGBA>			m_vertices;
@@ -161,8 +159,8 @@ private:
 	Move<VkPipelineLayout>				m_pipelineLayout;
 	Move<VkPipeline>					m_graphicsPipelines[BlendTest::QUAD_COUNT];
 
-	Move<VkCmdPool>						m_cmdPool;
-	Move<VkCmdBuffer>					m_cmdBuffer;
+	Move<VkCommandPool>					m_cmdPool;
+	Move<VkCommandBuffer>				m_cmdBuffer;
 
 	Move<VkFence>						m_fence;
 };
@@ -170,23 +168,23 @@ private:
 
 // BlendStateUniqueRandomIterator
 
-const VkBlend BlendStateUniqueRandomIterator::m_blendFactors[] =
+const VkBlendFactor BlendStateUniqueRandomIterator::m_blendFactors[] =
 {
-	VK_BLEND_ZERO,
-	VK_BLEND_ONE,
-	VK_BLEND_SRC_COLOR,
-	VK_BLEND_ONE_MINUS_SRC_COLOR,
-	VK_BLEND_DEST_COLOR,
-	VK_BLEND_ONE_MINUS_DEST_COLOR,
-	VK_BLEND_SRC_ALPHA,
-	VK_BLEND_ONE_MINUS_SRC_ALPHA,
-	VK_BLEND_DEST_ALPHA,
-	VK_BLEND_ONE_MINUS_DEST_ALPHA,
-	VK_BLEND_CONSTANT_COLOR,
-	VK_BLEND_ONE_MINUS_CONSTANT_COLOR,
-	VK_BLEND_CONSTANT_ALPHA,
-	VK_BLEND_ONE_MINUS_CONSTANT_ALPHA,
-	VK_BLEND_SRC_ALPHA_SATURATE
+	VK_BLEND_FACTOR_ZERO,
+	VK_BLEND_FACTOR_ONE,
+	VK_BLEND_FACTOR_SRC_COLOR,
+	VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR,
+	VK_BLEND_FACTOR_DST_COLOR,
+	VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR,
+	VK_BLEND_FACTOR_SRC_ALPHA,
+	VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
+	VK_BLEND_FACTOR_DST_ALPHA,
+	VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA,
+	VK_BLEND_FACTOR_CONSTANT_COLOR,
+	VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_COLOR,
+	VK_BLEND_FACTOR_CONSTANT_ALPHA,
+	VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_ALPHA,
+	VK_BLEND_FACTOR_SRC_ALPHA_SATURATE
 };
 
 const VkBlendOp BlendStateUniqueRandomIterator::m_blendOps[] =
@@ -232,14 +230,15 @@ VkPipelineColorBlendAttachmentState BlendStateUniqueRandomIterator::getIndexedVa
 
 	const VkPipelineColorBlendAttachmentState blendAttachmentState =
 	{
-		true,																			// VkBool32			blendEnable;
-		m_blendFactors[srcBlendColorIndex],												// VkBlend			srcBlendColor;
-		m_blendFactors[destBlendColorIndex],											// VkBlend			destBlendColor;
-		m_blendOps[blendOpColorIndex],													// VkBlendOp		blendOpColor;
-		m_blendFactors[srcBlendAlphaIndex],												// VkBlend			srcBlendAlpha;
-		m_blendFactors[destBlendAlphaIndex],											// VkBlend			destBlendAlpha;
-		m_blendOps[blendOpAlphaIndex],													// VkBlendOp		blendOpAlpha;
-		VK_CHANNEL_R_BIT | VK_CHANNEL_G_BIT | VK_CHANNEL_B_BIT | VK_CHANNEL_A_BIT		// VkChannelFlags	channelWriteMask;
+		true,														// VkBool32					blendEnable;
+		m_blendFactors[srcBlendColorIndex],							// VkBlendFactor			srcColorBlendFactor;
+		m_blendFactors[destBlendColorIndex],						// VkBlendFactor			dstColorBlendFactor;
+		m_blendOps[blendOpColorIndex],								// VkBlendOp				colorBlendOp;
+		m_blendFactors[srcBlendAlphaIndex],							// VkBlendFactor			srcAlphaBlendFactor;
+		m_blendFactors[destBlendAlphaIndex],						// VkBlendFactor			dstAlphaBlendFactor;
+		m_blendOps[blendOpAlphaIndex],								// VkBlendOp				alphaBlendOp;
+		VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |		// VkColorComponentFlags	colorWriteMask;
+			VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT
 	};
 
 	return blendAttachmentState;
@@ -248,12 +247,12 @@ VkPipelineColorBlendAttachmentState BlendStateUniqueRandomIterator::getIndexedVa
 
 // BlendTest
 
-const VkChannelFlags	BlendTest::s_channelWriteMasks[BlendTest::QUAD_COUNT] = { VK_CHANNEL_R_BIT | VK_CHANNEL_G_BIT,	// Pair of channels: R & G
-																				  VK_CHANNEL_G_BIT | VK_CHANNEL_B_BIT,	// Pair of channels: G & B
-																				  VK_CHANNEL_B_BIT | VK_CHANNEL_A_BIT,	// Pair of channels: B & A
-																				  VK_CHANNEL_R_BIT | VK_CHANNEL_G_BIT | VK_CHANNEL_B_BIT | VK_CHANNEL_A_BIT };	// All channels
+const VkColorComponentFlags BlendTest::s_colorWriteMasks[BlendTest::QUAD_COUNT] = { VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT,	// Pair of channels: R & G
+																					VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT,	// Pair of channels: G & B
+																					VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,	// Pair of channels: B & A
+																					VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT };	// All channels
 
-const tcu::Vec4			BlendTest::s_blendConst = tcu::Vec4(0.1f, 0.2f, 0.3f, 0.4f);
+const tcu::Vec4 BlendTest::s_blendConst = tcu::Vec4(0.1f, 0.2f, 0.3f, 0.4f);
 
 BlendTest::BlendTest (tcu::TestContext&								testContext,
 					  const std::string&							name,
@@ -326,21 +325,21 @@ BlendTestInstance::BlendTestInstance (Context&									context,
 
 		const VkImageCreateInfo	colorImageParams =
 		{
-			VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,										// VkStructureType		sType;
-			DE_NULL,																	// const void*			pNext;
-			VK_IMAGE_TYPE_2D,															// VkImageType			imageType;
-			m_colorFormat,																// VkFormat				format;
-			{ m_renderSize.x(), m_renderSize.y(), 1u },									// VkExtent3D			extent;
-			1u,																			// deUint32				mipLevels;
-			1u,																			// deUint32				arraySize;
-			1u,																			// deUint32				samples;
-			VK_IMAGE_TILING_OPTIMAL,													// VkImageTiling		tiling;
-			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SOURCE_BIT,	// VkImageUsageFlags	usage;
-			0u,																			// VkImageCreateFlags	flags;
-			VK_SHARING_MODE_EXCLUSIVE,													// VkSharingMode		sharingMode;
-			1u,																			// deUint32				queueFamilyCount;
-			&queueFamilyIndex,															// const deUint32*		pQueueFamilyIndices;
-			VK_IMAGE_LAYOUT_UNDEFINED													// VkImageLayout		initialLayout;
+			VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,										// VkStructureType			sType;
+			DE_NULL,																	// const void*				pNext;
+			0u,																			// VkImageCreateFlags		flags;
+			VK_IMAGE_TYPE_2D,															// VkImageType				imageType;
+			m_colorFormat,																// VkFormat					format;
+			{ m_renderSize.x(), m_renderSize.y(), 1u },									// VkExtent3D				extent;
+			1u,																			// deUint32					mipLevels;
+			1u,																			// deUint32					arrayLayers;
+			VK_SAMPLE_COUNT_1_BIT,														// VkSampleCountFlagBits	samples;
+			VK_IMAGE_TILING_OPTIMAL,													// VkImageTiling			tiling;
+			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,		// VkImageUsageFlags		usage;
+			VK_SHARING_MODE_EXCLUSIVE,													// VkSharingMode			sharingMode;
+			1u,																			// deUint32					queueFamilyIndexCount;
+			&queueFamilyIndex,															// const deUint32*			pQueueFamilyIndices;
+			VK_IMAGE_LAYOUT_UNDEFINED													// VkImageLayout			initialLayout;
 		};
 
 		m_colorImageCreateInfo	= colorImageParams;
@@ -355,14 +354,14 @@ BlendTestInstance::BlendTestInstance (Context&									context,
 	{
 		const VkImageViewCreateInfo colorAttachmentViewParams =
 		{
-			VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,			// VkStructureType				sType;
-			DE_NULL,											// const void*					pNext;
-			*m_colorImage,										// VkImage						image;
-			VK_IMAGE_VIEW_TYPE_2D,								// VkImageViewType				viewType;
-			m_colorFormat,										// VkFormat						format;
-			getFormatChannelMapping(m_colorFormat),				// VkChannelMapping				channels;
-			{ VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u },		// VkImageSubresourceRange		subresourceRange;
-			0u													// VkImageViewCreateFlags		flags;
+			VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,			// VkStructureType			sType;
+			DE_NULL,											// const void*				pNext;
+			0u,													// VkImageViewCreateFlags	flags;
+			*m_colorImage,										// VkImage					image;
+			VK_IMAGE_VIEW_TYPE_2D,								// VkImageViewType			viewType;
+			m_colorFormat,										// VkFormat					format;
+			getFormatComponentMapping(m_colorFormat),			// VkComponentMapping		components;
+			{ VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u }		// VkImageSubresourceRange	subresourceRange;
 		};
 
 		m_colorAttachmentView = createImageView(vk, vkDevice, &colorAttachmentViewParams);
@@ -372,17 +371,15 @@ BlendTestInstance::BlendTestInstance (Context&									context,
 	{
 		const VkAttachmentDescription colorAttachmentDescription =
 		{
-			VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION,			// VkStructureType				sType;
-			DE_NULL,											// const void*					pNext;
-			m_colorFormat,										// VkFormat						format;
-			1u,													// deUint32						samples;
-			VK_ATTACHMENT_LOAD_OP_CLEAR,						// VkAttachmentLoadOp			loadOp;
-			VK_ATTACHMENT_STORE_OP_STORE,						// VkAttachmentStoreOp			storeOp;
-			VK_ATTACHMENT_LOAD_OP_DONT_CARE,					// VkAttachmentLoadOp			stencilLoadOp;
-			VK_ATTACHMENT_STORE_OP_DONT_CARE,					// VkAttachmentStoreOp			stencilStoreOp;
-			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,			// VkImageLayout				initialLayout;
-			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,			// VkImageLayout				finalLayout;
-			0u,													// VkAttachmentDescriptionFlags	flags;
+			0u,													// VkAttachmentDescriptionFlags		flags;
+			m_colorFormat,										// VkFormat							format;
+			VK_SAMPLE_COUNT_1_BIT,								// VkSampleCountFlagBits			samples;
+			VK_ATTACHMENT_LOAD_OP_CLEAR,						// VkAttachmentLoadOp				loadOp;
+			VK_ATTACHMENT_STORE_OP_STORE,						// VkAttachmentStoreOp				storeOp;
+			VK_ATTACHMENT_LOAD_OP_DONT_CARE,					// VkAttachmentLoadOp				stencilLoadOp;
+			VK_ATTACHMENT_STORE_OP_DONT_CARE,					// VkAttachmentStoreOp				stencilStoreOp;
+			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,			// VkImageLayout					initialLayout;
+			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,			// VkImageLayout					finalLayout;
 		};
 
 		const VkAttachmentReference colorAttachmentReference =
@@ -391,32 +388,25 @@ BlendTestInstance::BlendTestInstance (Context&									context,
 			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL			// VkImageLayout	layout;
 		};
 
-		const VkAttachmentReference depthStencilAttachmentReference =
-		{
-			VK_ATTACHMENT_UNUSED,								// deUint32			attachment;
-			VK_IMAGE_LAYOUT_UNDEFINED							// VkImageLayout	layout;
-		};
-
 		const VkSubpassDescription subpassDescription =
 		{
-			VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION,				// VkStructureType				sType;
-			DE_NULL,											// const void*					pNext;
+			0u,													// VkSubpassDescriptionFlag		flags;
 			VK_PIPELINE_BIND_POINT_GRAPHICS,					// VkPipelineBindPoint			pipelineBindPoint;
-			0u,													// VkSubpassDescriptionFlags	flags;
-			0u,													// deUint32						inputCount;
-			DE_NULL,											// constVkAttachmentReference*	inputAttachments;
-			1u,													// deUint32						colorCount;
-			&colorAttachmentReference,							// constVkAttachmentReference*	pColorAttachments;
-			DE_NULL,											// constVkAttachmentReference*	pResolveAttachments;
-			depthStencilAttachmentReference,					// VkAttachmentReference		depthStencilAttachment;
-			0u,													// deUint32						preserveCount;
-			DE_NULL												// constVkAttachmentReference*	pPreserveAttachments;
+			0u,													// deUint32						inputAttachmentCount;
+			DE_NULL,											// const VkAttachmentReference*	pInputAttachments;
+			1u,													// deUint32						colorAttachmentCount;
+			&colorAttachmentReference,							// const VkAttachmentReference*	pColorAttachments;
+			DE_NULL,											// const VkAttachmentReference*	pResolveAttachments;
+			DE_NULL,											// const VkAttachmentReference*	pDepthStencilAttachment;
+			0u,													// deUint32						preserveAttachmentCount;
+			DE_NULL												// const VkAttachmentReference*	pPreserveAttachments;
 		};
 
 		const VkRenderPassCreateInfo renderPassParams =
 		{
 			VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,			// VkStructureType					sType;
 			DE_NULL,											// const void*						pNext;
+			0u,													// VkRenderPassCreateFlags			flags;
 			1u,													// deUint32							attachmentCount;
 			&colorAttachmentDescription,						// const VkAttachmentDescription*	pAttachments;
 			1u,													// deUint32							subpassCount;
@@ -432,80 +422,60 @@ BlendTestInstance::BlendTestInstance (Context&									context,
 	{
 		const VkFramebufferCreateInfo framebufferParams =
 		{
-			VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,			// VkStructureType		sType;
-			DE_NULL,											// const void*			pNext;
-			*m_renderPass,										// VkRenderPass			renderPass;
-			1u,													// deUint32				attachmentCount;
-			&m_colorAttachmentView.get(),						// const VkImageView*	pAttachments;
-			(deUint32)m_renderSize.x(),							// deUint32				width;
-			(deUint32)m_renderSize.y(),							// deUint32				height;
-			1u													// deUint32				layers;
+			VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,			// VkStructureType			sType;
+			DE_NULL,											// const void*				pNext;
+			0u,													// VkFramebufferCreateFlags	flags;
+			*m_renderPass,										// VkRenderPass				renderPass;
+			1u,													// deUint32					attachmentCount;
+			&m_colorAttachmentView.get(),						// const VkImageView*		pAttachments;
+			(deUint32)m_renderSize.x(),							// deUint32					width;
+			(deUint32)m_renderSize.y(),							// deUint32					height;
+			1u													// deUint32					layers;
 		};
 
 		m_framebuffer = createFramebuffer(vk, vkDevice, &framebufferParams);
-	}
-
-	// Create shaders
-	{
-		m_vertexShaderModule	= createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("color_vert"), 0);
-		m_fragmentShaderModule	= createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("color_frag"), 0);
-
-		const VkShaderCreateInfo vertexShaderParams =
-		{
-			VK_STRUCTURE_TYPE_SHADER_CREATE_INFO,			// VkStructureType		sType;
-			DE_NULL,										// const void*			pNext;
-			*m_vertexShaderModule,							// VkShaderModule		module;
-			"main",											// const char*			pName;
-			0u,												// VkShaderCreateFlags	flags;
-			VK_SHADER_STAGE_VERTEX							// VkShaderStage		stage;
-		};
-
-		const VkShaderCreateInfo fragmentShaderParams =
-		{
-			VK_STRUCTURE_TYPE_SHADER_CREATE_INFO,			// VkStructureType		sType;
-			DE_NULL,										// const void*			pNext;
-			*m_fragmentShaderModule,						// VkShaderModule		module;
-			"main",											// const char*			pName;
-			0u,												// VkShaderCreateFlags	flags;
-			VK_SHADER_STAGE_FRAGMENT						// VkShaderStage		stage;
-		};
-
-		m_vertexShader		= createShader(vk, vkDevice, &vertexShaderParams);
-		m_fragmentShader	= createShader(vk, vkDevice, &fragmentShaderParams);
 	}
 
 	// Create pipeline layout
 	{
 		const VkPipelineLayoutCreateInfo pipelineLayoutParams =
 		{
-			VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,		// VkStructureType				sType;
-			DE_NULL,											// const void*					pNext;
-			0u,													// deUint32						descriptorSetCount;
-			DE_NULL,											// const VkDescriptorSetLayout*	pSetLayouts;
-			0u,													// deUint32						pushConstantRangeCount;
-			DE_NULL												// const VkPushConstantRange*	pPushConstantRanges;
+			VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,		// VkStructureType					sType;
+			DE_NULL,											// const void*						pNext;
+			0u,													// VkPipelineLayoutCreateFlags		flags;
+			0u,													// deUint32							setLayoutCount;
+			DE_NULL,											// const VkDescriptorSetLayout*		pSetLayouts;
+			0u,													// deUint32							pushConstantRangeCount;
+			DE_NULL												// const VkPushConstantRange*		pPushConstantRanges;
 		};
 
 		m_pipelineLayout = createPipelineLayout(vk, vkDevice, &pipelineLayoutParams);
 	}
 
+	m_vertexShaderModule	= createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("color_vert"), 0);
+	m_fragmentShaderModule	= createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("color_frag"), 0);
+
 	// Create pipeline
 	{
-		const VkPipelineShaderStageCreateInfo shaderStageParams[2] =
+		const VkPipelineShaderStageCreateInfo shaderStages[2] =
 		{
 			{
-				VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,		// VkStructureType				sType;
-				DE_NULL,													// const void*					pNext;
-				VK_SHADER_STAGE_VERTEX,										// VkShaderStage				stage;
-				*m_vertexShader,											// VkShader						shader;
-				DE_NULL														// const VkSpecializationInfo*	pSpecializationInfo;
+				VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType					sType;
+				DE_NULL,												// const void*						pNext;
+				0u,														// VkPipelineShaderStageCreateFlags	flags;
+				VK_SHADER_STAGE_VERTEX_BIT,								// VkShaderStageFlagBits			stage;
+				*m_vertexShaderModule,									// VkShaderModule					module;
+				"main",													// const char*						pName;
+				DE_NULL													// const VkSpecializationInfo*		pSpecializationInfo;
 			},
 			{
-				VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,		// VkStructureType				sType;
-				DE_NULL,													// const void*					pNext;
-				VK_SHADER_STAGE_FRAGMENT,									// VkShaderStage				stage;
-				*m_fragmentShader,											// VkShader						shader;
-				DE_NULL														// const VkSpecializationInfo*	pSpecializationInfo;
+				VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType					sType;
+				DE_NULL,												// const void*						pNext;
+				0u,														// VkPipelineShaderStageCreateFlags	flags;
+				VK_SHADER_STAGE_FRAGMENT_BIT,							// VkShaderStageFlagBits			stage;
+				*m_fragmentShaderModule,								// VkShaderModule					module;
+				"main",													// const char*						pName;
+				DE_NULL													// const VkSpecializationInfo*		pSpecializationInfo;
 			}
 		};
 
@@ -513,7 +483,7 @@ BlendTestInstance::BlendTestInstance (Context&									context,
 		{
 			0u,									// deUint32					binding;
 			sizeof(Vertex4RGBA),				// deUint32					strideInBytes;
-			VK_VERTEX_INPUT_STEP_RATE_VERTEX	// VkVertexInputStepRate	stepRate;
+			VK_VERTEX_INPUT_RATE_VERTEX			// VkVertexInputStepRate	inputRate;
 		};
 
 		const VkVertexInputAttributeDescription vertexInputAttributeDescriptions[2] =
@@ -522,13 +492,13 @@ BlendTestInstance::BlendTestInstance (Context&									context,
 				0u,								// deUint32	location;
 				0u,								// deUint32	binding;
 				VK_FORMAT_R32G32B32A32_SFLOAT,	// VkFormat	format;
-				0u								// deUint32	offsetInBytes;
+				0u								// deUint32	offset;
 			},
 			{
 				1u,								// deUint32	location;
 				0u,								// deUint32	binding;
 				VK_FORMAT_R32G32B32A32_SFLOAT,	// VkFormat	format;
-				(deUint32)(sizeof(float) * 4),	// deUint32	offsetInBytes;
+				(deUint32)(sizeof(float) * 4),	// deUint32	offset;
 			}
 		};
 
@@ -536,24 +506,26 @@ BlendTestInstance::BlendTestInstance (Context&									context,
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,		// VkStructureType							sType;
 			DE_NULL,														// const void*								pNext;
-			1u,																// deUint32									bindingCount;
+			0u,																// VkPipelineVertexInputStateCreateFlags	flags;
+			1u,																// deUint32									vertexBindingDescriptionCount;
 			&vertexInputBindingDescription,									// const VkVertexInputBindingDescription*	pVertexBindingDescriptions;
-			2u,																// deUint32									attributeCount;
+			2u,																// deUint32									vertexAttributeDescriptionCount;
 			vertexInputAttributeDescriptions								// const VkVertexInputAttributeDescription*	pVertexAttributeDescriptions;
 		};
 
 		const VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateParams =
 		{
-			VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,	// VkStructureType		sType;
-			DE_NULL,														// const void*			pNext;
-			VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,							// VkPrimitiveTopology	topology;
-			false															// VkBool32				primitiveRestartEnable;
+			VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,	// VkStructureType							sType;
+			DE_NULL,														// const void*								pNext;
+			0u,																// VkPipelineInputAssemblyStateCreateFlags	flags;
+			VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,							// VkPrimitiveTopology						topology;
+			false															// VkBool32									primitiveRestartEnable;
 		};
 
 		const VkViewport viewport =
 		{
-			0.0f,						// float	originX;
-			0.0f,						// float	originY;
+			0.0f,						// float	x;
+			0.0f,						// float	y;
 			(float)m_renderSize.x(),	// float	width;
 			(float)m_renderSize.y(),	// float	height;
 			0.0f,						// float	minDepth;
@@ -564,68 +536,74 @@ BlendTestInstance::BlendTestInstance (Context&									context,
 
 		const VkPipelineViewportStateCreateInfo viewportStateParams =
 		{
-			VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,			// VkStructureType		sType;
-			DE_NULL,														// const void*			pNext;
-			1u,																// deUint32				viewportCount;
-			&viewport,														// const VkViewport*	pViewports;
-			1u,																// deUint32				scissorCount;
-			&scissor														// const VkRect2D*		pScissors;
+			VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,			// VkStructureType						sType;
+			DE_NULL,														// const void*							pNext;
+			0u,																// VkPipelineViewportStateCreateFlags	flags;
+			1u,																// deUint32								viewportCount;
+			&viewport,														// const VkViewport*					pViewports;
+			1u,																// deUint32								scissorCount;
+			&scissor														// const VkRect2D*						pScissors;
 		};
 
-		const VkPipelineRasterStateCreateInfo rasterStateParams =
+		const VkPipelineRasterizationStateCreateInfo rasterStateParams =
 		{
-			VK_STRUCTURE_TYPE_PIPELINE_RASTER_STATE_CREATE_INFO,			// VkStructureType	sType;
-			DE_NULL,														// const void*		pNext;
-			false,															// VkBool32			depthClipEnable;
-			false,															// VkBool32			rasterizerDiscardEnable;
-			VK_FILL_MODE_SOLID,												// VkFillMode		fillMode;
-			VK_CULL_MODE_NONE,												// VkCullMode		cullMode;
-			VK_FRONT_FACE_CCW,												// VkFrontFace		frontFace;
-			false,															// VkBool32			depthBiasEnable;
-			0.0f,															// float			depthBias;
-			0.0f,															// float			depthBiasClamp;
-			0.0f,															// float			slopeScaledDepthBias;
-			1.0f															// float			lineWidth;
+			VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,		// VkStructureType							sType;
+			DE_NULL,														// const void*								pNext;
+			0u,																// VkPipelineRasterizationStateCreateFlags	flags;
+			false,															// VkBool32									depthClampEnable;
+			false,															// VkBool32									rasterizerDiscardEnable;
+			VK_POLYGON_MODE_FILL,											// VkPolygonMode							polygonMode;
+			VK_CULL_MODE_NONE,												// VkCullModeFlags							cullMode;
+			VK_FRONT_FACE_COUNTER_CLOCKWISE,								// VkFrontFace								frontFace;
+			false,															// VkBool32									depthBiasEnable;
+			0.0f,															// float									depthBiasConstantFactor;
+			0.0f,															// float									depthBiasClamp;
+			0.0f,															// float									depthBiasSlopeFactor;
+			1.0f															// float									lineWidth;
 		};
 
 		const VkPipelineMultisampleStateCreateInfo multisampleStateParams =
 		{
-			VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,	// VkStructureType		sType;
-			DE_NULL,													// const void*			pNext;
-			1u,															// deUint32				rasterSamples;
-			false,														// VkBool32				sampleShadingEnable;
-			0.0f,														// float				minSampleShading;
-			DE_NULL														// const VkSampleMask*	sampleMask;
+			VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,	// VkStructureType							sType;
+			DE_NULL,													// const void*								pNext;
+			0u,															// VkPipelineMultisampleStateCreateFlags	flags;
+			VK_SAMPLE_COUNT_1_BIT,										// VkSampleCountFlagBits					rasterizationSamples;
+			false,														// VkBool32									sampleShadingEnable;
+			0.0f,														// float									minSampleShading;
+			DE_NULL,													// const VkSampleMask*						pSampleMask;
+			false,														// VkBool32									alphaToCoverageEnable;
+			false														// VkBool32									alphaToOneEnable;
 		};
 
 		const VkPipelineDepthStencilStateCreateInfo depthStencilStateParams =
 		{
-			VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,	// VkStructureType	sType;
-			DE_NULL,													// const void*		pNext;
-			false,														// VkBool32			depthTestEnable;
-			false,														// VkBool32			depthWriteEnable;
-			VK_COMPARE_OP_LESS,											// VkCompareOp		depthCompareOp;
-			false,														// VkBool32			depthBoundsTestEnable;
-			false,														// VkBool32			stencilTestEnable;
+			VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,	// VkStructureType							sType;
+			DE_NULL,													// const void*								pNext;
+			0u,															// VkPipelineDepthStencilStateCreateFlags	flags;
+			false,														// VkBool32									depthTestEnable;
+			false,														// VkBool32									depthWriteEnable;
+			VK_COMPARE_OP_LESS,											// VkCompareOp								depthCompareOp;
+			false,														// VkBool32									depthBoundsTestEnable;
+			false,														// VkBool32									stencilTestEnable;
 			// VkStencilOpState	front;
 			{
-				VK_STENCIL_OP_KEEP,		// VkStencilOp	stencilFailOp;
-				VK_STENCIL_OP_KEEP,		// VkStencilOp	stencilPassOp;
-				VK_STENCIL_OP_KEEP,		// VkStencilOp	stencilDepthFailOp;
-				VK_COMPARE_OP_NEVER,	// VkCompareOp	stencilCompareOp;
-				0u,						// deUint32		stencilCompareMask;
-				0u,						// deUint32		stencilWriteMask;
-				0u						// deUint32		stencilReference;
+				VK_STENCIL_OP_KEEP,		// VkStencilOp	failOp;
+				VK_STENCIL_OP_KEEP,		// VkStencilOp	passOp;
+				VK_STENCIL_OP_KEEP,		// VkStencilOp	depthFailOp;
+				VK_COMPARE_OP_NEVER,	// VkCompareOp	compareOp;
+				0u,						// deUint32		compareMask;
+				0u,						// deUint32		writeMask;
+				0u						// deUint32		reference;
 			},
 			// VkStencilOpState	back;
 			{
-				VK_STENCIL_OP_KEEP,		// VkStencilOp	stencilFailOp;
-				VK_STENCIL_OP_KEEP,		// VkStencilOp	stencilPassOp;
-				VK_STENCIL_OP_KEEP,		// VkStencilOp	stencilDepthFailOp;
-				VK_COMPARE_OP_NEVER,	// VkCompareOp	stencilCompareOp;
-				0u,						// deUint32		stencilCompareMask;
-				0u,						// deUint32		stencilWriteMask;
-				0u						// deUint32		stencilReference;
+				VK_STENCIL_OP_KEEP,		// VkStencilOp	failOp;
+				VK_STENCIL_OP_KEEP,		// VkStencilOp	passOp;
+				VK_STENCIL_OP_KEEP,		// VkStencilOp	depthFailOp;
+				VK_COMPARE_OP_NEVER,	// VkCompareOp	compareOp;
+				0u,						// deUint32		compareMask;
+				0u,						// deUint32		writeMask;
+				0u						// deUint32		reference;
 			},
 			-1.0f,														// float			minDepthBounds;
 			+1.0f														// float			maxDepthBounds;
@@ -636,13 +614,12 @@ BlendTestInstance::BlendTestInstance (Context&									context,
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,	// VkStructureType								sType;
 			DE_NULL,													// const void*									pNext;
-			false,														// VkBool32										alphaToCoverageEnable;
-			false,														// VkBool32										alphaToOneEnable;
+			0u,															// VkPipelineColorBlendStateCreateFlags			flags;
 			false,														// VkBool32										logicOpEnable;
 			VK_LOGIC_OP_COPY,											// VkLogicOp									logicOp;
-			1u,															// deUint32										attachmentCount;
+			0u,															// deUint32										attachmentCount;
 			DE_NULL,													// const VkPipelineColorBlendAttachmentState*	pAttachments;
-			{															// float										blendConst[4];
+			{															// float										blendConstants[4];
 				BlendTest::s_blendConst.x(),
 				BlendTest::s_blendConst.y(),
 				BlendTest::s_blendConst.z(),
@@ -652,28 +629,29 @@ BlendTestInstance::BlendTestInstance (Context&									context,
 
 		const VkPipelineDynamicStateCreateInfo dynamicStateParams =
 		{
-			VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,		// VkStructureType			sType;
-			DE_NULL,													// const void*				pNext;
-			0u,															// deUint32					dynamicStateCount;
-			DE_NULL														// const VkDynamicState*	pDynamicStates;
+			VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,		// VkStructureType						sType;
+			DE_NULL,													// const void*							pNext;
+			0u,															// VkPipelineDynamicStateCreateFlags	flags;
+			0u,															// deUint32								dynamicStateCount;
+			DE_NULL														// const VkDynamicState*				pDynamicStates;
 		};
 
 		const VkGraphicsPipelineCreateInfo graphicsPipelineParams =
 		{
 			VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,	// VkStructureType									sType;
 			DE_NULL,											// const void*										pNext;
+			0u,													// VkPipelineCreateFlags							flags;
 			2u,													// deUint32											stageCount;
-			shaderStageParams,									// const VkPipelineShaderStageCreateInfo*			pStages;
+			shaderStages,										// const VkPipelineShaderStageCreateInfo*			pStages;
 			&vertexInputStateParams,							// const VkPipelineVertexInputStateCreateInfo*		pVertexInputState;
 			&inputAssemblyStateParams,							// const VkPipelineInputAssemblyStateCreateInfo*	pInputAssemblyState;
 			DE_NULL,											// const VkPipelineTessellationStateCreateInfo*		pTessellationState;
 			&viewportStateParams,								// const VkPipelineViewportStateCreateInfo*			pViewportState;
-			&rasterStateParams,									// const VkPipelineRasterStateCreateInfo*			pRasterState;
+			&rasterStateParams,									// const VkPipelineRasterizationStateCreateInfo*	pRasterizationState;
 			&multisampleStateParams,							// const VkPipelineMultisampleStateCreateInfo*		pMultisampleState;
 			&depthStencilStateParams,							// const VkPipelineDepthStencilStateCreateInfo*		pDepthStencilState;
 			&colorBlendStateParams,								// const VkPipelineColorBlendStateCreateInfo*		pColorBlendState;
 			&dynamicStateParams,								// const VkPipelineDynamicStateCreateInfo*			pDynamicState;
-			0u,													// VkPipelineCreateFlags							flags;
 			*m_pipelineLayout,									// VkPipelineLayout									layout;
 			*m_renderPass,										// VkRenderPass										renderPass;
 			0u,													// deUint32											subpass;
@@ -683,8 +661,9 @@ BlendTestInstance::BlendTestInstance (Context&									context,
 
 		for (int quadNdx = 0; quadNdx < BlendTest::QUAD_COUNT; quadNdx++)
 		{
-			colorBlendStateParams.pAttachments	= &m_blendStates[quadNdx];
-			m_graphicsPipelines[quadNdx]		= createGraphicsPipeline(vk, vkDevice, DE_NULL, &graphicsPipelineParams);
+			colorBlendStateParams.attachmentCount	= 1u;
+			colorBlendStateParams.pAttachments		= &m_blendStates[quadNdx];
+			m_graphicsPipelines[quadNdx]			= createGraphicsPipeline(vk, vkDevice, DE_NULL, &graphicsPipelineParams);
 		}
 	}
 
@@ -694,11 +673,11 @@ BlendTestInstance::BlendTestInstance (Context&									context,
 		{
 			VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,		// VkStructureType		sType;
 			DE_NULL,									// const void*			pNext;
+			0u,											// VkBufferCreateFlags	flags;
 			1024u,										// VkDeviceSize			size;
 			VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,			// VkBufferUsageFlags	usage;
-			0u,											// VkBufferCreateFlags	flags;
 			VK_SHARING_MODE_EXCLUSIVE,					// VkSharingMode		sharingMode;
-			1u,											// deUint32				queueFamilyCount;
+			1u,											// deUint32				queueFamilyIndexCount;
 			&queueFamilyIndex							// const deUint32*		pQueueFamilyIndices;
 		};
 
@@ -723,7 +702,7 @@ BlendTestInstance::BlendTestInstance (Context&									context,
 		{
 			VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,	// VkStructureType	sType;
 			DE_NULL,								// const void*		pNext;
-			m_vertexBufferAlloc->getMemory(),		// VkDeviceMemory	mem;
+			m_vertexBufferAlloc->getMemory(),		// VkDeviceMemory	memory;
 			m_vertexBufferAlloc->getOffset(),		// VkDeviceSize		offset;
 			vertexBufferParams.size					// VkDeviceSize		size;
 		};
@@ -733,12 +712,12 @@ BlendTestInstance::BlendTestInstance (Context&									context,
 
 	// Create command pool
 	{
-		const VkCmdPoolCreateInfo cmdPoolParams =
+		const VkCommandPoolCreateInfo cmdPoolParams =
 		{
-			VK_STRUCTURE_TYPE_CMD_POOL_CREATE_INFO,		// VkStructureType		sType;
-			DE_NULL,									// const void*			pNext;
-			queueFamilyIndex,							// deUint32				queueFamilyIndex;
-			VK_CMD_POOL_CREATE_TRANSIENT_BIT			// VkCmdPoolCreateFlags	flags;
+			VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,		// VkStructureType			sType;
+			DE_NULL,										// const void*				pNext;
+			VK_COMMAND_POOL_CREATE_TRANSIENT_BIT,			// VkCommandPoolCreateFlags	flags;
+			queueFamilyIndex								// deUint32					queueFamilyIndex;
 		};
 
 		m_cmdPool = createCommandPool(vk, vkDevice, &cmdPoolParams);
@@ -746,23 +725,26 @@ BlendTestInstance::BlendTestInstance (Context&									context,
 
 	// Create command buffer
 	{
-		const VkCmdBufferCreateInfo cmdBufferParams =
+		const VkCommandBufferAllocateInfo cmdBufferAllocateInfo =
 		{
-			VK_STRUCTURE_TYPE_CMD_BUFFER_CREATE_INFO,	// VkStructureType			sType;
-			DE_NULL,									// const void*				pNext;
-			*m_cmdPool,									// VkCmdPool				cmdPool;
-			VK_CMD_BUFFER_LEVEL_PRIMARY,				// VkCmdBufferLevel			level;
-			0u											// VkCmdBufferCreateFlags	flags;
+			VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,	// VkStructureType			sType;
+			DE_NULL,										// const void*				pNext;
+			*m_cmdPool,										// VkCommandPool			commandPool;
+			VK_COMMAND_BUFFER_LEVEL_PRIMARY,				// VkCommandBufferLevel		level;
+			1u,												// deUint32				bufferCount;
 		};
 
-		const VkCmdBufferBeginInfo cmdBufferBeginInfo =
+		const VkCommandBufferBeginInfo cmdBufferBeginInfo =
 		{
-			VK_STRUCTURE_TYPE_CMD_BUFFER_BEGIN_INFO,	// VkStructureType			sType;
-			DE_NULL,									// const void*				pNext;
-			0u,											// VkCmdBufferOptimizeFlags	flags;
-			0u,											// deUint32					subpass;
-			DE_NULL,									// VkRenderPass				renderPass;
-			DE_NULL										// VkFramebuffer			framebuffer;
+			VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType					sType;
+			DE_NULL,										// const void*						pNext;
+			0u,												// VkCommandBufferUsageFlags		flags;
+			0u,												// VkRenderPass						renderPass;
+			DE_NULL,										// deUint32							subpass;
+			DE_NULL,										// VkFramebuffer					framebuffer;
+			false,											// VkBool32							occlusionQueryEnable;
+			0u,												// VkQueryControlFlags				queryFlags;
+			0u												// VkQueryPipelineStatisticFlags	pipelineStatistics;
 		};
 
 		const VkClearValue attachmentClearValue = defaultClearValue(m_colorFormat);
@@ -778,10 +760,10 @@ BlendTestInstance::BlendTestInstance (Context&									context,
 			&attachmentClearValue									// const VkClearValue*	pClearValues;
 		};
 
-		m_cmdBuffer = createCommandBuffer(vk, vkDevice, &cmdBufferParams);
+		m_cmdBuffer = allocateCommandBuffer(vk, vkDevice, &cmdBufferAllocateInfo);
 
 		VK_CHECK(vk.beginCommandBuffer(*m_cmdBuffer, &cmdBufferBeginInfo));
-		vk.cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfo, VK_RENDER_PASS_CONTENTS_INLINE);
+		vk.cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
 		const VkDeviceSize quadOffset = (m_vertices.size() / BlendTest::QUAD_COUNT) * sizeof(Vertex4RGBA);
 
@@ -820,9 +802,20 @@ tcu::TestStatus BlendTestInstance::iterate (void)
 	const DeviceInterface&		vk			= m_context.getDeviceInterface();
 	const VkDevice				vkDevice	= m_context.getDevice();
 	const VkQueue				queue		= m_context.getUniversalQueue();
+	const VkSubmitInfo			submitInfo	=
+	{
+		VK_STRUCTURE_TYPE_SUBMIT_INFO,	// VkStructureType			sType;
+		DE_NULL,						// const void*				pNext;
+		0u,								// deUint32					waitSemaphoreCount;
+		DE_NULL,						// const VkSemaphore*		pWaitSemaphores;
+		1u,								// deUint32					commandBufferCount;
+		&m_cmdBuffer.get(),				// const VkCommandBuffer*	pCommandBuffers;
+		0u,								// deUint32					signalSemaphoreCount;
+		DE_NULL							// const VkSemaphore*		pSignalSemaphores;
+	};
 
 	VK_CHECK(vk.resetFences(vkDevice, 1, &m_fence.get()));
-	VK_CHECK(vk.queueSubmit(queue, 1, &m_cmdBuffer.get(), *m_fence));
+	VK_CHECK(vk.queueSubmit(queue, 1, &submitInfo, *m_fence));
 	VK_CHECK(vk.waitForFences(vkDevice, 1, &m_fence.get(), true, ~(0ull) /* infinity */));
 
 	return verifyImage();
@@ -937,14 +930,14 @@ tcu::TestStatus BlendTestInstance::verifyImage (void)
 			// Set blend state
 			rr::RenderState renderState					(refRenderer.getViewportState());
 			renderState.fragOps.blendMode				= rr::BLENDMODE_STANDARD;
-			renderState.fragOps.blendRGBState.srcFunc	= mapVkBlend(blendState.srcBlendColor);
-			renderState.fragOps.blendRGBState.dstFunc	= mapVkBlend(blendState.destBlendColor);
-			renderState.fragOps.blendRGBState.equation	= mapVkBlendOp(blendState.blendOpColor);
-			renderState.fragOps.blendAState.srcFunc		= mapVkBlend(blendState.srcBlendAlpha);
-			renderState.fragOps.blendAState.dstFunc		= mapVkBlend(blendState.destBlendAlpha);
-			renderState.fragOps.blendAState.equation	= mapVkBlendOp(blendState.blendOpAlpha);
+			renderState.fragOps.blendRGBState.srcFunc	= mapVkBlendFactor(blendState.srcColorBlendFactor);
+			renderState.fragOps.blendRGBState.dstFunc	= mapVkBlendFactor(blendState.dstColorBlendFactor);
+			renderState.fragOps.blendRGBState.equation	= mapVkBlendOp(blendState.colorBlendOp);
+			renderState.fragOps.blendAState.srcFunc		= mapVkBlendFactor(blendState.srcAlphaBlendFactor);
+			renderState.fragOps.blendAState.dstFunc		= mapVkBlendFactor(blendState.dstAlphaBlendFactor);
+			renderState.fragOps.blendAState.equation	= mapVkBlendOp(blendState.alphaBlendOp);
 			renderState.fragOps.blendColor				= BlendTest::s_blendConst;
-			renderState.fragOps.colorMask				= mapVkChannelFlags(BlendTest::s_channelWriteMasks[quadNdx]);
+			renderState.fragOps.colorMask				= mapVkColorComponentFlags(BlendTest::s_colorWriteMasks[quadNdx]);
 
 			refRenderer.draw(renderState,
 							 rr::PRIMITIVETYPE_TRIANGLES,
@@ -1013,8 +1006,8 @@ std::string getBlendStateName (const VkPipelineColorBlendAttachmentState& blendS
 
 	std::ostringstream shortName;
 
-	shortName << "color_" << shortBlendFactorNames[blendState.srcBlendColor] << "_" << shortBlendFactorNames[blendState.destBlendColor] << "_" << blendOpNames[blendState.blendOpColor];
-	shortName << "_alpha_" << shortBlendFactorNames[blendState.srcBlendAlpha] << "_" << shortBlendFactorNames[blendState.destBlendAlpha] << "_" << blendOpNames[blendState.blendOpAlpha];
+	shortName << "color_" << shortBlendFactorNames[blendState.srcColorBlendFactor] << "_" << shortBlendFactorNames[blendState.dstColorBlendFactor] << "_" << blendOpNames[blendState.colorBlendOp];
+	shortName << "_alpha_" << shortBlendFactorNames[blendState.srcAlphaBlendFactor] << "_" << shortBlendFactorNames[blendState.dstAlphaBlendFactor] << "_" << blendOpNames[blendState.alphaBlendOp];
 
 	return shortName.str();
 }
@@ -1062,10 +1055,10 @@ tcu::TestCaseGroup* createBlendTests (tcu::TestContext& testCtx)
 	// Formats that are dEQP-compatible, non-integer and uncompressed
 	const VkFormat blendFormats[] =
 	{
-		VK_FORMAT_R4G4_UNORM,
-		VK_FORMAT_R4G4B4A4_UNORM,
-		VK_FORMAT_R5G6B5_UNORM,
-		VK_FORMAT_R5G5B5A1_UNORM,
+		VK_FORMAT_R4G4_UNORM_PACK8,
+		VK_FORMAT_R4G4B4A4_UNORM_PACK16,
+		VK_FORMAT_R5G6B5_UNORM_PACK16,
+		VK_FORMAT_R5G5B5A1_UNORM_PACK16,
 		VK_FORMAT_R8_UNORM,
 		VK_FORMAT_R8_SNORM,
 		VK_FORMAT_R8_SRGB,
@@ -1078,7 +1071,7 @@ tcu::TestCaseGroup* createBlendTests (tcu::TestContext& testCtx)
 		VK_FORMAT_R8G8B8A8_UNORM,
 		VK_FORMAT_R8G8B8A8_SNORM,
 		VK_FORMAT_R8G8B8A8_SRGB,
-		VK_FORMAT_R10G10B10A2_UNORM,
+		VK_FORMAT_A2R10G10B10_UNORM_PACK32,
 		VK_FORMAT_R16_UNORM,
 		VK_FORMAT_R16_SNORM,
 		VK_FORMAT_R16_SFLOAT,
@@ -1095,10 +1088,10 @@ tcu::TestCaseGroup* createBlendTests (tcu::TestContext& testCtx)
 		VK_FORMAT_R32G32_SFLOAT,
 		VK_FORMAT_R32G32B32_SFLOAT,
 		VK_FORMAT_R32G32B32A32_SFLOAT,
-		VK_FORMAT_R11G11B10_UFLOAT,
-		VK_FORMAT_R9G9B9E5_UFLOAT,
-		VK_FORMAT_B4G4R4A4_UNORM,
-		VK_FORMAT_B5G5R5A1_UNORM,
+		VK_FORMAT_B10G11R11_UFLOAT_PACK32,
+		VK_FORMAT_E5B9G9R9_UFLOAT_PACK32,
+		VK_FORMAT_B4G4R4A4_UNORM_PACK16,
+		VK_FORMAT_B5G5R5A1_UNORM_PACK16,
 	};
 
 	de::MovePtr<tcu::TestCaseGroup>		blendTests		(new tcu::TestCaseGroup(testCtx, "blend", "Blend tests"));
@@ -1126,8 +1119,8 @@ tcu::TestCaseGroup* createBlendTests (tcu::TestContext& testCtx)
 
 			for (int quadNdx = 0; quadNdx < BlendTest::QUAD_COUNT; quadNdx++)
 			{
-				quadBlendConfigs[quadNdx] = blendStateItr.next();
-				quadBlendConfigs[quadNdx].channelWriteMask = BlendTest::s_channelWriteMasks[quadNdx];
+				quadBlendConfigs[quadNdx]					= blendStateItr.next();
+				quadBlendConfigs[quadNdx].colorWriteMask	= BlendTest::s_colorWriteMasks[quadNdx];
 			}
 
 			blendStateTests->addChild(new BlendTest(testCtx,
