@@ -34,11 +34,11 @@
  * \brief SPIR-V program and binary info.
  *//*--------------------------------------------------------------------*/
 
-#include <string>
-#include <sstream>
-
 #include "vkDefs.hpp"
 #include "tcuTestLog.hpp"
+
+#include <string>
+#include <sstream>
 
 namespace vk
 {
