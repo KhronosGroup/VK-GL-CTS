@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision 30159.
+ * Generated from Khronos GL API description (gl.xml) revision 32093.
  */
 
 GLW_APICALL void GLW_APIENTRY glActiveShaderProgram (GLuint pipeline, GLuint program)
@@ -224,7 +224,7 @@ GLW_APICALL void GLW_APIENTRY glBindVertexBuffers (GLuint first, GLsizei count, 
 
 }
 
-GLW_APICALL void GLW_APIENTRY glBlendBarrierKHR (void)
+GLW_APICALL void GLW_APIENTRY glBlendBarrier (void)
 {
 
 }
@@ -3039,7 +3039,7 @@ GLW_APICALL void GLW_APIENTRY glPopGroupMarkerEXT (void)
 
 }
 
-GLW_APICALL void GLW_APIENTRY glPrimitiveBoundingBoxEXT (GLfloat minX, GLfloat minY, GLfloat minZ, GLfloat minW, GLfloat maxX, GLfloat maxY, GLfloat maxZ, GLfloat maxW)
+GLW_APICALL void GLW_APIENTRY glPrimitiveBoundingBox (GLfloat minX, GLfloat minY, GLfloat minZ, GLfloat minW, GLfloat maxX, GLfloat maxY, GLfloat maxZ, GLfloat maxW)
 {
 	DE_UNREF(minX);
 	DE_UNREF(minY);

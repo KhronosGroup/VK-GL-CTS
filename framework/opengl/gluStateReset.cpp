@@ -577,7 +577,7 @@ void resetStateES (const RenderContext& renderCtx)
 	// Primitive bounding box state.
 	if (ctxInfo->isExtensionSupported("GL_EXT_primitive_bounding_box"))
 	{
-		gl.primitiveBoundingBoxEXT(-1.0f, -1.0f, -1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f);
+		gl.primitiveBoundingBox(-1.0f, -1.0f, -1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "Primitive bounding box state reset failed");
 	}
 

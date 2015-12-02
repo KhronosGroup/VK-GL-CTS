@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision 30159.
+ * Generated from Khronos GL API description (gl.xml) revision 32093.
  */
 #define			glActiveShaderProgram							glwActiveShaderProgram
 #define			glActiveTexture									glwActiveTexture
@@ -32,7 +32,7 @@
 #define			glBindVertexArray								glwBindVertexArray
 #define			glBindVertexBuffer								glwBindVertexBuffer
 #define			glBindVertexBuffers								glwBindVertexBuffers
-#define			glBlendBarrierKHR								glwBlendBarrierKHR
+#define			glBlendBarrier									glwBlendBarrier
 #define			glBlendColor									glwBlendColor
 #define			glBlendEquation									glwBlendEquation
 #define			glBlendEquationSeparate							glwBlendEquationSeparate
@@ -383,7 +383,7 @@
 #define			glPolygonOffset									glwPolygonOffset
 #define			glPopDebugGroup									glwPopDebugGroup
 #define			glPopGroupMarkerEXT								glwPopGroupMarkerEXT
-#define			glPrimitiveBoundingBoxEXT						glwPrimitiveBoundingBoxEXT
+#define			glPrimitiveBoundingBox							glwPrimitiveBoundingBox
 #define			glPrimitiveRestartIndex							glwPrimitiveRestartIndex
 #define			glProgramBinary									glwProgramBinary
 #define			glProgramParameteri								glwProgramParameteri
@@ -692,7 +692,7 @@ void			glwBindTransformFeedback						(GLenum target, GLuint id);
 void			glwBindVertexArray								(GLuint array);
 void			glwBindVertexBuffer								(GLuint bindingindex, GLuint buffer, GLintptr offset, GLsizei stride);
 void			glwBindVertexBuffers							(GLuint first, GLsizei count, const GLuint *buffers, const GLintptr *offsets, const GLsizei *strides);
-void			glwBlendBarrierKHR								();
+void			glwBlendBarrier									();
 void			glwBlendColor									(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha);
 void			glwBlendEquation								(GLenum mode);
 void			glwBlendEquationSeparate						(GLenum modeRGB, GLenum modeAlpha);
@@ -1043,7 +1043,7 @@ void			glwPolygonMode									(GLenum face, GLenum mode);
 void			glwPolygonOffset								(GLfloat factor, GLfloat units);
 void			glwPopDebugGroup								();
 void			glwPopGroupMarkerEXT							();
-void			glwPrimitiveBoundingBoxEXT						(GLfloat minX, GLfloat minY, GLfloat minZ, GLfloat minW, GLfloat maxX, GLfloat maxY, GLfloat maxZ, GLfloat maxW);
+void			glwPrimitiveBoundingBox							(GLfloat minX, GLfloat minY, GLfloat minZ, GLfloat minW, GLfloat maxX, GLfloat maxY, GLfloat maxZ, GLfloat maxW);
 void			glwPrimitiveRestartIndex						(GLuint index);
 void			glwProgramBinary								(GLuint program, GLenum binaryFormat, const void *binary, GLsizei length);
 void			glwProgramParameteri							(GLuint program, GLenum pname, GLint value);

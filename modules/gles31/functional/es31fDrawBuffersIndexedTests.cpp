@@ -999,12 +999,12 @@ void renderQuad (TestLog&						log,
 	gl.drawBuffers((glw::GLsizei)bufs.size(), &(bufs[0]));
 
 	if (requiresBlendBarriers)
-		gl.blendBarrierKHR();
+		gl.blendBarrier();
 
 	renderGLQuad(renderContext, program);
 
 	if (requiresBlendBarriers)
-		gl.blendBarrierKHR();
+		gl.blendBarrier();
 
 	gl.drawBuffers(0, 0);
 	gl.bindFramebuffer(GL_FRAMEBUFFER, 0);

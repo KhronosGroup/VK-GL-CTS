@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision 30159.
+ * Generated from Khronos GL API description (gl.xml) revision 32093.
  */
 typedef GLW_APICALL void			(GLW_APIENTRY* glActiveShaderProgramFunc)							(GLuint pipeline, GLuint program);
 typedef GLW_APICALL void			(GLW_APIENTRY* glActiveTextureFunc)									(GLenum texture);
@@ -32,7 +32,7 @@ typedef GLW_APICALL void			(GLW_APIENTRY* glBindTransformFeedbackFunc)							(GL
 typedef GLW_APICALL void			(GLW_APIENTRY* glBindVertexArrayFunc)								(GLuint array);
 typedef GLW_APICALL void			(GLW_APIENTRY* glBindVertexBufferFunc)								(GLuint bindingindex, GLuint buffer, GLintptr offset, GLsizei stride);
 typedef GLW_APICALL void			(GLW_APIENTRY* glBindVertexBuffersFunc)								(GLuint first, GLsizei count, const GLuint *buffers, const GLintptr *offsets, const GLsizei *strides);
-typedef GLW_APICALL void			(GLW_APIENTRY* glBlendBarrierKHRFunc)								(void);
+typedef GLW_APICALL void			(GLW_APIENTRY* glBlendBarrierFunc)									(void);
 typedef GLW_APICALL void			(GLW_APIENTRY* glBlendColorFunc)									(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha);
 typedef GLW_APICALL void			(GLW_APIENTRY* glBlendEquationFunc)									(GLenum mode);
 typedef GLW_APICALL void			(GLW_APIENTRY* glBlendEquationSeparateFunc)							(GLenum modeRGB, GLenum modeAlpha);
@@ -383,7 +383,7 @@ typedef GLW_APICALL void			(GLW_APIENTRY* glPolygonModeFunc)									(GLenum fac
 typedef GLW_APICALL void			(GLW_APIENTRY* glPolygonOffsetFunc)									(GLfloat factor, GLfloat units);
 typedef GLW_APICALL void			(GLW_APIENTRY* glPopDebugGroupFunc)									(void);
 typedef GLW_APICALL void			(GLW_APIENTRY* glPopGroupMarkerEXTFunc)								(void);
-typedef GLW_APICALL void			(GLW_APIENTRY* glPrimitiveBoundingBoxEXTFunc)						(GLfloat minX, GLfloat minY, GLfloat minZ, GLfloat minW, GLfloat maxX, GLfloat maxY, GLfloat maxZ, GLfloat maxW);
+typedef GLW_APICALL void			(GLW_APIENTRY* glPrimitiveBoundingBoxFunc)							(GLfloat minX, GLfloat minY, GLfloat minZ, GLfloat minW, GLfloat maxX, GLfloat maxY, GLfloat maxZ, GLfloat maxW);
 typedef GLW_APICALL void			(GLW_APIENTRY* glPrimitiveRestartIndexFunc)							(GLuint index);
 typedef GLW_APICALL void			(GLW_APIENTRY* glProgramBinaryFunc)									(GLuint program, GLenum binaryFormat, const void *binary, GLsizei length);
 typedef GLW_APICALL void			(GLW_APIENTRY* glProgramParameteriFunc)								(GLuint program, GLenum pname, GLint value);

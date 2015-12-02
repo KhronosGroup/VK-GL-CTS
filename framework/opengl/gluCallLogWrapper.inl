@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision 30159.
+ * Generated from Khronos GL API description (gl.xml) revision 32093.
  */
 
 void CallLogWrapper::glActiveShaderProgram (glw::GLuint pipeline, glw::GLuint program)
@@ -207,11 +207,11 @@ void CallLogWrapper::glBindVertexBuffers (glw::GLuint first, glw::GLsizei count,
 	m_gl.bindVertexBuffers(first, count, buffers, offsets, strides);
 }
 
-void CallLogWrapper::glBlendBarrierKHR (void)
+void CallLogWrapper::glBlendBarrier (void)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glBlendBarrierKHR(" << ");" << TestLog::EndMessage;
-	m_gl.blendBarrierKHR();
+		m_log << TestLog::Message << "glBlendBarrier(" << ");" << TestLog::EndMessage;
+	m_gl.blendBarrier();
 }
 
 void CallLogWrapper::glBlendColor (glw::GLfloat red, glw::GLfloat green, glw::GLfloat blue, glw::GLfloat alpha)
@@ -2890,11 +2890,11 @@ void CallLogWrapper::glPopGroupMarkerEXT (void)
 	m_gl.popGroupMarkerEXT();
 }
 
-void CallLogWrapper::glPrimitiveBoundingBoxEXT (glw::GLfloat minX, glw::GLfloat minY, glw::GLfloat minZ, glw::GLfloat minW, glw::GLfloat maxX, glw::GLfloat maxY, glw::GLfloat maxZ, glw::GLfloat maxW)
+void CallLogWrapper::glPrimitiveBoundingBox (glw::GLfloat minX, glw::GLfloat minY, glw::GLfloat minZ, glw::GLfloat minW, glw::GLfloat maxX, glw::GLfloat maxY, glw::GLfloat maxZ, glw::GLfloat maxW)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glPrimitiveBoundingBoxEXT(" << minX << ", " << minY << ", " << minZ << ", " << minW << ", " << maxX << ", " << maxY << ", " << maxZ << ", " << maxW << ");" << TestLog::EndMessage;
-	m_gl.primitiveBoundingBoxEXT(minX, minY, minZ, minW, maxX, maxY, maxZ, maxW);
+		m_log << TestLog::Message << "glPrimitiveBoundingBox(" << minX << ", " << minY << ", " << minZ << ", " << minW << ", " << maxX << ", " << maxY << ", " << maxZ << ", " << maxW << ");" << TestLog::EndMessage;
+	m_gl.primitiveBoundingBox(minX, minY, minZ, minW, maxX, maxY, maxZ, maxW);
 }
 
 void CallLogWrapper::glPrimitiveRestartIndex (glw::GLuint index)

@@ -249,7 +249,7 @@ void AdvancedBlendCase::init (void)
 	if (m_coherentBlending && !m_context.getContextInfo().isExtensionSupported("GL_KHR_blend_equation_advanced_coherent"))
 		throw tcu::NotSupportedError("GL_KHR_blend_equation_advanced_coherent is not supported", DE_NULL, __FILE__, __LINE__);
 
-	TCU_CHECK(gl.blendBarrierKHR);
+	TCU_CHECK(gl.blendBarrier);
 
 	DE_ASSERT(!m_program);
 	DE_ASSERT(!m_referenceRenderer);
@@ -463,7 +463,7 @@ AdvancedBlendCase::IterateResult AdvancedBlendCase::iterate (void)
 		gl.enable(GL_BLEND);
 
 		if (!m_coherentBlending)
-			gl.blendBarrierKHR();
+			gl.blendBarrier();
 
 		if (m_coherentBlending)
 		{
@@ -474,7 +474,7 @@ AdvancedBlendCase::IterateResult AdvancedBlendCase::iterate (void)
 			for (int quadNdx = 1; quadNdx < numQuads; quadNdx++)
 			{
 				gl.drawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const void*)(deUintptr)(quadNdx*6*sizeof(deUint16)));
-				gl.blendBarrierKHR();
+				gl.blendBarrier();
 			}
 		}
 
