@@ -6,6 +6,7 @@ add_subdirectory(binding_model)
 add_subdirectory(spirv_assembly)
 add_subdirectory(shaderrender)
 add_subdirectory(memory)
+add_subdirectory(query-pool)
 
 include_directories(
 	api
@@ -14,6 +15,7 @@ include_directories(
 	spirv_assembly
 	shaderrender
 	memory
+	query-pool
 	)
 
 set(DEQP_VK_COMMON_SRCS
@@ -41,6 +43,7 @@ set(DEQP_VK_COMMON_LIBS
 	deqp-vk-spirv-assembly
 	deqp-vk-shaderrender
 	deqp-vk-memory
+	deqp-vk-query-pool
 	)
 
 if (DE_OS_IS_WIN32 OR DE_OS_IS_UNIX OR DE_OS_IS_OSX)
