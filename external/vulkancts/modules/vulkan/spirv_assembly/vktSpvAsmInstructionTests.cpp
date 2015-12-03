@@ -131,9 +131,9 @@ struct CaseParameter
 // }
 
 static const char* const s_ShaderPreamble =
-		"OpCapability Shader\n"
-		"OpMemoryModel Logical GLSL450\n"
-		"OpEntryPoint GLCompute %main \"main\" %id\n"
+	"OpCapability Shader\n"
+	"OpMemoryModel Logical GLSL450\n"
+	"OpEntryPoint GLCompute %main \"main\" %id\n"
 	"OpExecutionMode %main LocalSize 1 1 1\n";
 
 static const char* const s_CommonTypes =
@@ -160,14 +160,14 @@ static const char* const s_InputOutputBuffer =
 // Declares buffer type and layout for uniform variables indata and outdata. Both of them are SSBO bounded to descriptor set 0.
 // indata is at binding point 0, while outdata is at 1.
 static const char* const s_InputOutputBufferTraits =
-		"OpDecorate %inbuf BufferBlock\n"
-		"OpDecorate %indata DescriptorSet 0\n"
-		"OpDecorate %indata Binding 0\n"
-		"OpDecorate %outbuf BufferBlock\n"
-		"OpDecorate %outdata DescriptorSet 0\n"
-		"OpDecorate %outdata Binding 1\n"
-		"OpDecorate %f32arr ArrayStride 4\n"
-		"OpMemberDecorate %inbuf 0 Offset 0\n"
+	"OpDecorate %inbuf BufferBlock\n"
+	"OpDecorate %indata DescriptorSet 0\n"
+	"OpDecorate %indata Binding 0\n"
+	"OpDecorate %outbuf BufferBlock\n"
+	"OpDecorate %outdata DescriptorSet 0\n"
+	"OpDecorate %outdata Binding 1\n"
+	"OpDecorate %f32arr ArrayStride 4\n"
+	"OpMemberDecorate %inbuf 0 Offset 0\n"
 	"OpMemberDecorate %outbuf 0 Offset 0\n";
 
 tcu::TestCaseGroup* createOpNopGroup (tcu::TestContext& testCtx)
@@ -1280,14 +1280,20 @@ tcu::TestCaseGroup* createSpecConstantGroup (tcu::TestContext& testCtx)
 	group->addChild(new SpvAsmComputeShaderCase(testCtx, "vector_related", "VectorShuffle, CompositeExtract, & CompositeInsert", spec));
 
 	return group.release();
-} tcu::TestCaseGroup* createOpPhiGroup (tcu::TestContext& testCtx)
+}
+
+tcu::TestCaseGroup* createOpPhiGroup (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opphi", "Test the OpPhi instruction"));
-	ComputeShaderSpec				spec;
+	ComputeShaderSpec				spec1;
+	ComputeShaderSpec				spec2;
+	ComputeShaderSpec				spec3;
 	de::Random						rnd				(deStringHash(group->getName()));
 	const int						numElements		= 100;
 	vector<float>					inputFloats		(numElements, 0);
-	vector<float>					outputFloats	(numElements, 0);
+	vector<float>					outputFloats1	(numElements, 0);
+	vector<float>					outputFloats2	(numElements, 0);
+	vector<float>					outputFloats3	(numElements, 0);
 
 	fillRandomScalars(rnd, -300.f, 300.f, &inputFloats[0], numElements);
 
@@ -1295,14 +1301,17 @@ tcu::TestCaseGroup* createSpecConstantGroup (tcu::TestContext& testCtx)
 	{
 		switch (ndx % 3)
 		{
-			case 0:		outputFloats[ndx] = inputFloats[ndx] + 5.5f;	break;
-			case 1:		outputFloats[ndx] = inputFloats[ndx] + 20.5f;	break;
-			case 2:		outputFloats[ndx] = inputFloats[ndx] + 1.75f;	break;
+			case 0:		outputFloats1[ndx] = inputFloats[ndx] + 5.5f;	break;
+			case 1:		outputFloats1[ndx] = inputFloats[ndx] + 20.5f;	break;
+			case 2:		outputFloats1[ndx] = inputFloats[ndx] + 1.75f;	break;
 			default:	break;
 		}
+
+		outputFloats2[ndx] = inputFloats[ndx] + 6.5f * 3;
+		outputFloats3[ndx] = 8.5f - inputFloats[ndx];
 	}
 
-	spec.assembly =
+	spec1.assembly =
 		string(s_ShaderPreamble) +
 
 		"OpSource GLSL 430\n"
@@ -1350,18 +1359,109 @@ tcu::TestCaseGroup* createSpecConstantGroup (tcu::TestContext& testCtx)
 		"%case0    = OpLabel\n"
 		"            OpBranch %phi\n"
 
-
 		// Case 2 after OpPhi.
 		"%case2    = OpLabel\n"
 		"            OpBranch %phi\n"
 
 		"            OpFunctionEnd\n";
-	spec.inputs.push_back(BufferSp(new Float32Buffer(inputFloats)));
-	spec.outputs.push_back(BufferSp(new Float32Buffer(outputFloats)));
-	spec.numWorkGroups = IVec3(numElements, 1, 1);
-	spec.entryPoint = "main";
+	spec1.inputs.push_back(BufferSp(new Float32Buffer(inputFloats)));
+	spec1.outputs.push_back(BufferSp(new Float32Buffer(outputFloats1)));
+	spec1.numWorkGroups = IVec3(numElements, 1, 1);
+	spec1.entryPoint = "main";
 
-	group->addChild(new SpvAsmComputeShaderCase(testCtx, "all", "OpPhi corner cases", spec));
+	group->addChild(new SpvAsmComputeShaderCase(testCtx, "block", "out-of-order and unreachable blocks for OpPhi", spec1));
+
+	spec2.assembly =
+		string(s_ShaderPreamble) +
+
+		"OpName %main \"main\"\n"
+		"OpName %id \"gl_GlobalInvocationID\"\n"
+
+		"OpDecorate %id BuiltIn GlobalInvocationId\n"
+
+		+ string(s_InputOutputBufferTraits) + string(s_CommonTypes) + string(s_InputOutputBuffer) +
+
+		"%id         = OpVariable %uvec3ptr Input\n"
+		"%zero       = OpConstant %i32 0\n"
+		"%one        = OpConstant %i32 1\n"
+		"%three      = OpConstant %i32 3\n"
+		"%constf6p5  = OpConstant %f32 6.5\n"
+
+		"%main       = OpFunction %void None %voidf\n"
+		"%entry      = OpLabel\n"
+		"%idval      = OpLoad %uvec3 %id\n"
+		"%x          = OpCompositeExtract %u32 %idval 0\n"
+		"%inloc      = OpAccessChain %f32ptr %indata %zero %x\n"
+		"%outloc     = OpAccessChain %f32ptr %outdata %zero %x\n"
+		"%inval      = OpLoad %f32 %inloc\n"
+		"              OpBranch %phi\n"
+
+		"%phi        = OpLabel\n"
+		"%step       = OpPhi %i32 %zero  %entry %step_next  %phi\n"
+		"%accum      = OpPhi %f32 %inval %entry %accum_next %phi\n"
+		"%step_next  = OpIAdd %i32 %step %one\n"
+		"%accum_next = OpFAdd %f32 %accum %constf6p5\n"
+		"%still_loop = OpSLessThan %bool %step %three\n"
+		"              OpLoopMerge %exit %phi None\n"
+		"              OpBranchConditional %still_loop %phi %exit\n"
+
+		"%exit       = OpLabel\n"
+		"              OpStore %outloc %accum\n"
+		"              OpReturn\n"
+		"              OpFunctionEnd\n";
+	spec2.inputs.push_back(BufferSp(new Float32Buffer(inputFloats)));
+	spec2.outputs.push_back(BufferSp(new Float32Buffer(outputFloats2)));
+	spec2.numWorkGroups = IVec3(numElements, 1, 1);
+	spec2.entryPoint = "main";
+
+	group->addChild(new SpvAsmComputeShaderCase(testCtx, "induction", "The usual way induction variables are handled in LLVM IR", spec2));
+
+	spec3.assembly =
+		string(s_ShaderPreamble) +
+
+		"OpName %main \"main\"\n"
+		"OpName %id \"gl_GlobalInvocationID\"\n"
+
+		"OpDecorate %id BuiltIn GlobalInvocationId\n"
+
+		+ string(s_InputOutputBufferTraits) + string(s_CommonTypes) + string(s_InputOutputBuffer) +
+
+		"%f32ptr_f   = OpTypePointer Function %f32\n"
+		"%id         = OpVariable %uvec3ptr Input\n"
+		"%true       = OpConstantTrue %bool\n"
+		"%false      = OpConstantFalse %bool\n"
+		"%zero       = OpConstant %i32 0\n"
+		"%constf8p5  = OpConstant %f32 8.5\n"
+
+		"%main       = OpFunction %void None %voidf\n"
+		"%entry      = OpLabel\n"
+		"%b          = OpVariable %f32ptr_f Function %constf8p5\n"
+		"%idval      = OpLoad %uvec3 %id\n"
+		"%x          = OpCompositeExtract %u32 %idval 0\n"
+		"%inloc      = OpAccessChain %f32ptr %indata %zero %x\n"
+		"%outloc     = OpAccessChain %f32ptr %outdata %zero %x\n"
+		"%a_init     = OpLoad %f32 %inloc\n"
+		"%b_init     = OpLoad %f32 %b\n"
+		"              OpBranch %phi\n"
+
+		"%phi        = OpLabel\n"
+		"%still_loop = OpPhi %bool %true   %entry %false  %phi\n"
+		"%a_next     = OpPhi %f32  %a_init %entry %b_next %phi\n"
+		"%b_next     = OpPhi %f32  %b_init %entry %a_next %phi\n"
+		"              OpLoopMerge %exit %phi None\n"
+		"              OpBranchConditional %still_loop %phi %exit\n"
+
+		"%exit       = OpLabel\n"
+		"%sub        = OpFSub %f32 %a_next %b_next\n"
+		"              OpStore %outloc %sub\n"
+		"              OpReturn\n"
+		"              OpFunctionEnd\n";
+	spec3.inputs.push_back(BufferSp(new Float32Buffer(inputFloats)));
+	spec3.outputs.push_back(BufferSp(new Float32Buffer(outputFloats3)));
+	spec3.numWorkGroups = IVec3(numElements, 1, 1);
+	spec3.entryPoint = "main";
+
+	group->addChild(new SpvAsmComputeShaderCase(testCtx, "swap", "Swap the values of two variables using OpPhi", spec3));
 
 	return group.release();
 }
