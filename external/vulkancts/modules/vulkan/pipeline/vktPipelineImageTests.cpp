@@ -145,7 +145,7 @@ void ImageTest::initPrograms (SourceCollections& sourceCollections) const
 				<< "layout(location = 0) out highp vec4 fragColor;\n"
 				<< "void main (void)\n"
 				<< "{\n"
-				<< "	fragColor = (texture(texSampler, vtxTexCoords." << texCoordSwizzle << std::fixed << ") * vec4" << formatInfo.lookupScale << ") + vec4" << formatInfo.lookupBias << ";\n"
+				<< "	fragColor = (texture(texSampler, vtxTexCoords." << texCoordSwizzle << std::scientific << ") * vec4" << formatInfo.lookupScale << ") + vec4" << formatInfo.lookupBias << ";\n"
 				<< "}\n";
 
 	sourceCollections.glslSources.add("tex_vert") << glu::VertexSource(vertexSrc.str());
