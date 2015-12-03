@@ -1529,6 +1529,10 @@ static inline int wrap (Sampler::WrapMode mode, int c, int size)
 		case tcu::Sampler::REPEAT_CL:
 			return imod(c, size);
 
+		case tcu::Sampler::MIRRORED_ONCE:
+			c = deClamp32(c, -size, size);
+			// Fall-through
+
 		case tcu::Sampler::MIRRORED_REPEAT_GL:
 			return (size - 1) - mirror(imod(c, 2*size) - size);
 
@@ -1549,7 +1553,8 @@ static inline float unnormalize (Sampler::WrapMode mode, float c, int size)
 		case tcu::Sampler::CLAMP_TO_EDGE:
 		case tcu::Sampler::CLAMP_TO_BORDER:
 		case tcu::Sampler::REPEAT_GL:
-		case tcu::Sampler::MIRRORED_REPEAT_GL: // Fall-through (ordinary case).
+		case tcu::Sampler::MIRRORED_REPEAT_GL:
+		case tcu::Sampler::MIRRORED_ONCE:		// Fall-through (ordinary case).
 			return (float)size*c;
 
 		case tcu::Sampler::REPEAT_CL:
