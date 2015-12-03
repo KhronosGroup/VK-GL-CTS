@@ -1056,8 +1056,20 @@ Move<VkImage> createAttachmentImage (const DeviceInterface&	vk,
 									 VkImageUsageFlags		usageFlags,
 									 VkImageLayout			layout)
 {
-	const VkExtent3D size_ = { (deInt32)size.x(), (deInt32)size.y(), 1 };
-	return createImage(vk, device, VK_IMAGE_TYPE_2D, format, size_, 1u /* mipLevels */, 1u /* arraySize */, samples, VK_IMAGE_TILING_OPTIMAL, usageFlags, 0u, VK_SHARING_MODE_EXCLUSIVE, 1, &queueIndex, layout);
+	const VkExtent3D size_					= { (deInt32)size.x(), (deInt32)size.y(), 1 };
+	VkImageUsageFlags targetUsageFlags		= 0;
+	const tcu::TextureFormat textureFormat	= mapVkFormat(format);
+	
+	if (tcu::hasDepthComponent(textureFormat.order) || tcu::hasStencilComponent(textureFormat.order))
+	{
+		targetUsageFlags |= vk::VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+	}
+	else	
+	{
+		targetUsageFlags |= vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+	}
+
+	return createImage(vk, device, VK_IMAGE_TYPE_2D, format, size_, 1u /* mipLevels */, 1u /* arraySize */, samples, VK_IMAGE_TILING_OPTIMAL, usageFlags | targetUsageFlags, 0u, VK_SHARING_MODE_EXCLUSIVE, 1, &queueIndex, layout);
 }
 
 de::MovePtr<Allocation> createImageMemory (const DeviceInterface&	vk,
@@ -3784,7 +3796,7 @@ de::MovePtr<tcu::TestCaseGroup> createAttachmentTestCaseGroup (tcu::TestContext&
 	const VkAttachmentStoreOp storeOps[] =
 	{
 		VK_ATTACHMENT_STORE_OP_STORE,
- 		VK_ATTACHMENT_STORE_OP_DONT_CARE
+		VK_ATTACHMENT_STORE_OP_DONT_CARE
 	};
 
 	const VkImageLayout initialAndFinalLayouts[] =

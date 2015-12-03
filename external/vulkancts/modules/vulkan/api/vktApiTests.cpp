@@ -39,6 +39,9 @@
 #include "vktApiSmokeTests.hpp"
 #include "vktApiDeviceInitializationTests.hpp"
 #include "vktApiObjectManagementTests.hpp"
+#include "vktApiBuffersTests.hpp"
+#include "vktApiBuffersViewCreationTests.hpp"
+#include "vktApiBuffersViewMemoryTests.hpp"
 
 namespace vkt
 {
@@ -52,6 +55,9 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 	apiTests->addChild(createSmokeTests					(testCtx));
 	apiTests->addChild(createDeviceInitializationTests	(testCtx));
 	apiTests->addChild(createObjectManagementTests		(testCtx));
+	apiTests->addChild(createBufferTests				(testCtx));
+	apiTests->addChild(createBufferViewCreationTests	(testCtx));
+	apiTests->addChild(createBufferViewMemoryTests		(testCtx));
 
 	return apiTests.release();
 }
