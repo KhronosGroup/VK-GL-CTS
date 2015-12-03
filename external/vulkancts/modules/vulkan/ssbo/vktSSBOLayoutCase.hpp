@@ -35,23 +35,14 @@
  * \brief SSBO layout tests.
  *//*--------------------------------------------------------------------*/
 
+#include "vktTestCase.hpp"
 #include "tcuDefs.hpp"
-#include "tcuTestCase.hpp"
 #include "gluShaderUtil.hpp"
 #include "gluVarType.hpp"
 
-namespace glu
+namespace vkt
 {
-class RenderContext;
-}
-
-namespace deqp
-{
-namespace gles31
-{
-
-// Buffer block details.
-namespace bb
+namespace ssbo
 {
 
 enum BufferVarFlags
@@ -151,9 +142,7 @@ private:
 
 class BufferLayout;
 
-} // bb
-
-class SSBOLayoutCase : public tcu::TestCase
+class SSBOLayoutCase : public vkt::TestCase
 {
 public:
 	enum BufferMode
@@ -164,12 +153,16 @@ public:
 		BUFFERMODE_LAST
 	};
 
-								SSBOLayoutCase				(tcu::TestContext& testCtx, glu::RenderContext& renderCtx, const char* name, const char* description, glu::GLSLVersion glslVersion, BufferMode bufferMode);
-								~SSBOLayoutCase				(void);
+								SSBOLayoutCase				(tcu::TestContext& testCtx, const char* name, const char* description, BufferMode bufferMode);
+	virtual						~SSBOLayoutCase				(void);
 
-	IterateResult				iterate						(void);
+	virtual void				initPrograms				(vk::SourceCollections& programCollection) const;
+	virtual TestInstance*		createInstance				(Context& context) const;
 
 protected:
+    void                        init                        (void);
+
+/*
 	bool						compareStdBlocks			(const bb::BufferLayout& refLayout, const bb::BufferLayout& cmpLayout) const;
 	bool						compareSharedBlocks			(const bb::BufferLayout& refLayout, const bb::BufferLayout& cmpLayout) const;
 	bool						compareTypes				(const bb::BufferLayout& refLayout, const bb::BufferLayout& cmpLayout) const;
@@ -178,18 +171,19 @@ protected:
 	bool						checkIndexQueries			(deUint32 program, const bb::BufferLayout& layout) const;
 
 	bool						execute						(deUint32 program);
+*/
 
-	glu::RenderContext&			m_renderCtx;
-	glu::GLSLVersion			m_glslVersion;
 	BufferMode					m_bufferMode;
-	bb::ShaderInterface			m_interface;
+	ShaderInterface				m_interface;
 
 private:
 								SSBOLayoutCase				(const SSBOLayoutCase&);
 	SSBOLayoutCase&				operator=					(const SSBOLayoutCase&);
+
+	std::string					m_computeShaderSrc;
 };
 
-} // gles31
-} // deqp
+} // ssbo
+} // vkt
 
 #endif // _VKTSSBOLAYOUTCASE_HPP

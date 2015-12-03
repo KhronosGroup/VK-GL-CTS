@@ -34,13 +34,15 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktSSBOLayoutCase.hpp"
-#include "gluRenderContext.hpp"
+#include "vkPrograms.hpp"
 #include "gluShaderProgram.hpp"
 #include "gluPixelTransfer.hpp"
 #include "gluContextInfo.hpp"
 #include "gluRenderContext.hpp"
 #include "gluProgramInterfaceQuery.hpp"
 #include "gluObjectWrapper.hpp"
+#include "gluShaderUtil.hpp"
+#include "gluVarType.hpp"
 #include "gluVarTypeUtil.hpp"
 #include "glwFunctions.hpp"
 #include "glwEnums.hpp"
@@ -61,17 +63,14 @@ using std::string;
 using std::vector;
 using std::map;
 
-namespace deqp
+namespace vkt
 {
-namespace gles31
+namespace ssbo
 {
 
 using glu::VarType;
 using glu::StructType;
 using glu::StructMember;
-
-namespace bb
-{
 
 struct LayoutFlagsFmt
 {
@@ -1294,13 +1293,12 @@ void generateWriteSrc (std::ostream& src, const ShaderInterface& interface, cons
 	}
 }
 
-string generateComputeShader (glu::GLSLVersion glslVersion, const ShaderInterface& interface, const BufferLayout& layout, const vector<BlockDataPtr>& comparePtrs, const vector<BlockDataPtr>& writePtrs)
+string generateComputeShader (const ShaderInterface& interface, const BufferLayout& layout, const vector<BlockDataPtr>& comparePtrs, const vector<BlockDataPtr>& writePtrs)
 {
 	std::ostringstream src;
 
-	DE_ASSERT(glslVersion == glu::GLSL_VERSION_310_ES || glslVersion == glu::GLSL_VERSION_430);
 
-	src << glu::getGLSLVersionDeclaration(glslVersion) << "\n";
+	src << "#version 310 es\n";
 	src << "layout(local_size_x = 1) in;\n";
 	src << "\n";
 
@@ -2039,6 +2037,7 @@ void unmapBuffers (const glw::Functions& gl, const vector<Buffer>& buffers)
 
 } // anonymous (utilities)
 
+/*
 class BufferManager
 {
 public:
@@ -2077,25 +2076,77 @@ deUint32 BufferManager::allocBuffer (void)
 
 	return buf;
 }
+*/
 
-} // bb
+// SSBOLayoutCaseInstance
 
-using namespace bb;
+class SSBOLayoutCaseInstance : public TestInstance
+{
+public:
+								SSBOLayoutCaseInstance	(Context& context);
+	virtual						~SSBOLayoutCaseInstance	(void);
+	virtual tcu::TestStatus		iterate						(void);
+};
+
+SSBOLayoutCaseInstance::SSBOLayoutCaseInstance (Context& context)
+	: TestInstance (context)
+{
+}
+
+SSBOLayoutCaseInstance::~SSBOLayoutCaseInstance (void)
+{
+}
+
+tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
+{
+	return tcu::TestStatus::pass("OK");
+}
+
 
 // SSBOLayoutCase.
 
-SSBOLayoutCase::SSBOLayoutCase (tcu::TestContext& testCtx, glu::RenderContext& renderCtx, const char* name, const char* description, glu::GLSLVersion glslVersion, BufferMode bufferMode)
+SSBOLayoutCase::SSBOLayoutCase (tcu::TestContext& testCtx, const char* name, const char* description, BufferMode bufferMode)
 	: TestCase		(testCtx, name, description)
-	, m_renderCtx	(renderCtx)
-	, m_glslVersion	(glslVersion)
 	, m_bufferMode	(bufferMode)
 {
-	DE_ASSERT(glslVersion == glu::GLSL_VERSION_310_ES || glslVersion == glu::GLSL_VERSION_430);
 }
 
 SSBOLayoutCase::~SSBOLayoutCase (void)
 {
 }
+
+void SSBOLayoutCase::initPrograms (vk::SourceCollections& programCollection) const
+{
+	DE_ASSERT(!m_computeShaderSrc.empty());
+
+	programCollection.glslSources.add("compute") << glu::ComputeSource(m_computeShaderSrc);
+}
+
+TestInstance* SSBOLayoutCase::createInstance (Context& context) const
+{
+	return new SSBOLayoutCaseInstance(context);
+}
+
+void SSBOLayoutCase::init (void)
+{
+	BufferLayout				refLayout;		// std140 / std430 layout.
+	RefDataStorage				initialData;	// Initial data stored in buffer.
+	RefDataStorage				writeData;		// Data written by compute shader.
+
+	vector<Buffer>				buffers;		// Buffers allocated for storage
+	vector<BlockLocation>		blockLocations;	// Block locations in storage (index, offset)
+
+	computeReferenceLayout	(refLayout, m_interface);
+	initRefDataStorage		(m_interface, refLayout, initialData);
+	initRefDataStorage		(m_interface, refLayout, writeData);
+	generateValues			(refLayout, initialData.pointers, deStringHash(getName()) ^ 0xad2f7214);
+	generateValues			(refLayout, writeData.pointers, deStringHash(getName()) ^ 0x25ca4e7);
+	copyNonWrittenData		(m_interface, refLayout, initialData.pointers, writeData.pointers);
+
+	m_computeShaderSrc = generateComputeShader(m_interface, refLayout, initialData.pointers, writeData.pointers);
+}
+
+#if 0
 
 SSBOLayoutCase::IterateResult SSBOLayoutCase::iterate (void)
 {
@@ -2670,6 +2721,7 @@ bool SSBOLayoutCase::execute (deUint32 program)
 
 	return isOk;
 }
+#endif
 
-} // gles31
-} // deqp
+} // ssbo
+} // vkt

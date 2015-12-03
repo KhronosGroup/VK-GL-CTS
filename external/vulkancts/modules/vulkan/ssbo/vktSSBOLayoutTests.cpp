@@ -34,7 +34,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktSSBOLayoutTests.hpp"
-//#include "vktSSBOLayoutCase.hpp"
+#include "vktSSBOLayoutCase.hpp"
 
 #include "deUniquePtr.hpp"
 
@@ -43,9 +43,35 @@ namespace vkt
 namespace ssbo
 {
 
+using glu::VarType;
+using glu::StructType;
+
+class DEMOCase : public SSBOLayoutCase
+{
+public:
+    DEMOCase (tcu::TestContext& testCtx, const char* name, const char* description, const VarType& type, deUint32 layoutFlags, int numInstances)
+        : SSBOLayoutCase(testCtx, name, description, BUFFERMODE_PER_BLOCK)
+    {
+        BufferBlock& block = m_interface.allocBlock("Block");
+        block.addMember(BufferVar("var", type, ACCESS_READ|ACCESS_WRITE));
+        block.setFlags(layoutFlags);
+
+        if (numInstances > 0)
+        {
+            block.setArraySize(numInstances);
+            block.setInstanceName("block");
+        }
+
+		init();
+    }
+};
+
+
 tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> ssboTestGroup (new tcu::TestCaseGroup(testCtx, "ssbo", "Shader Storage Buffer Object Tests"));
+
+	ssboTestGroup->addChild(new DEMOCase(testCtx, "demo", "demo", VarType(glu::TYPE_FLOAT, glu::PRECISION_LAST), LAYOUT_STD140, 0));
 
 	return ssboTestGroup.release();
 }

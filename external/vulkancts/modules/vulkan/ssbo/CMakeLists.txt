@@ -9,7 +9,7 @@ set(DEQP_VK_SSBO_SRCS
 	vktSSBOLayoutTests.cpp
 )
 
-set(DEQP_VK_UBO_LIBS
+set(DEQP_VK_SSBO_LIBS
 	tcutil
 	vkutil
 )
