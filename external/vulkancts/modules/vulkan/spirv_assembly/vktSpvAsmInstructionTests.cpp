@@ -2163,19 +2163,13 @@ string makeGeometryShaderAssembly(const map<string, string>& fragments)
 	static const char geometryShaderBoilerplate[] =
 		"OpCapability Geometry\n"
 		"OpMemoryModel Logical GLSL450\n"
-		"OpEntryPoint Geometry %BP_main \"main\" %BP_stream %BP_gl_in %BP_out_color %BP_in_color\n"
+		"OpEntryPoint Geometry %BP_main \"main\" %BP_out_gl_position %BP_gl_in %BP_out_color %BP_in_color\n"
 		"OpExecutionMode %BP_main InputTriangles\n"
 		"OpExecutionMode %BP_main Invocations 0\n"
 		"OpExecutionMode %BP_main OutputTriangleStrip\n"
 		"OpExecutionMode %BP_main OutputVertices 3\n"
 		"${debug:opt}\n"
 		"OpName %BP_main \"main\"\n"
-		"OpName %BP_per_vertex_out \"gl_PerVertex\"\n"
-		"OpMemberName %BP_per_vertex_out 0 \"gl_Position\"\n"
-		"OpMemberName %BP_per_vertex_out 1 \"gl_PointSize\"\n"
-		"OpMemberName %BP_per_vertex_out 2 \"gl_ClipDistance\"\n"
-		"OpMemberName %BP_per_vertex_out 3 \"gl_CullDistance\"\n"
-		"OpName %BP_stream \"\"\n"
 		"OpName %BP_per_vertex_in \"gl_PerVertex\"\n"
 		"OpMemberName %BP_per_vertex_in 0 \"gl_Position\"\n"
 		"OpMemberName %BP_per_vertex_in 1 \"gl_PointSize\"\n"
@@ -2185,13 +2179,7 @@ string makeGeometryShaderAssembly(const map<string, string>& fragments)
 		"OpName %BP_out_color \"out_color\"\n"
 		"OpName %BP_in_color \"in_color\"\n"
 		"OpName %test_code \"testfun(vf4;\"\n"
-		"OpMemberDecorate %BP_per_vertex_out 0 BuiltIn Position\n"
-		"OpMemberDecorate %BP_per_vertex_out 1 BuiltIn PointSize\n"
-		"OpMemberDecorate %BP_per_vertex_out 2 BuiltIn ClipDistance\n"
-		"OpMemberDecorate %BP_per_vertex_out 3 BuiltIn CullDistance\n"
-		"OpDecorate %BP_per_vertex_out Block\n"
-		"OpDecorate %BP_per_vertex_out Stream 0\n"
-		"OpDecorate %BP_stream Stream 0\n"
+		"OpDecorate %BP_out_gl_position BuiltIn Position\n"
 		"OpMemberDecorate %BP_per_vertex_in 0 BuiltIn Position\n"
 		"OpMemberDecorate %BP_per_vertex_in 1 BuiltIn PointSize\n"
 		"OpMemberDecorate %BP_per_vertex_in 2 BuiltIn ClipDistance\n"
@@ -2203,16 +2191,14 @@ string makeGeometryShaderAssembly(const map<string, string>& fragments)
 		SPIRV_ASSEMBLY_TYPES
 		SPIRV_ASSEMBLY_CONSTANTS
 		SPIRV_ASSEMBLY_ARRAYS
-		"%BP_per_vertex_out = OpTypeStruct %v4f32 %f32 %a1f32 %a1f32\n"
 		"%BP_per_vertex_in = OpTypeStruct %v4f32 %f32 %a1f32 %a1f32\n"
 		"%BP_a3_per_vertex_in = OpTypeArray %BP_per_vertex_in %c_u32_3\n"
-		"%BP_op_per_vertex_out = OpTypePointer Output %BP_per_vertex_out\n"
 		"%BP_ip_a3_per_vertex_in = OpTypePointer Input %BP_a3_per_vertex_in\n"
 
-		"%BP_stream = OpVariable %BP_op_per_vertex_out Output\n"
 		"%BP_gl_in = OpVariable %BP_ip_a3_per_vertex_in Input\n"
 		"%BP_out_color = OpVariable %op_v4f32 Output\n"
 		"%BP_in_color = OpVariable %ip_a3v4f32 Input\n"
+		"%BP_out_gl_position = OpVariable %op_v4f32 Output\n"
 
 		"%BP_main = OpFunction %void None %fun\n"
 		"%BP_label = OpLabel\n"
@@ -2235,9 +2221,6 @@ string makeGeometryShaderAssembly(const map<string, string>& fragments)
 		"%BP_transformed_in_color_0 = OpFunctionCall %v4f32 %test_code %BP_in_color_0\n"
 		"%BP_transformed_in_color_1 = OpFunctionCall %v4f32 %test_code %BP_in_color_1\n"
 		"%BP_transformed_in_color_2 = OpFunctionCall %v4f32 %test_code %BP_in_color_2\n"
-
-		"%BP_out_gl_position = OpAccessChain %op_v4f32 %BP_stream %c_i32_0\n"
-
 		"OpStore %BP_out_gl_position %BP_in_position_0\n"
 		"OpStore %BP_out_color %BP_transformed_in_color_0\n"
 		"OpEmitVertex\n"
@@ -3044,7 +3027,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	instructionTests->addChild(createBlockOrderGroup(testCtx));
 	instructionTests->addChild(createOpUndefGroup(testCtx));
 	instructionTests->addChild(createOpUnreachableGroup(testCtx));
-    
+
     RGBA defaultColors[4];
 	getDefaultColors(defaultColors);
 	de::MovePtr<tcu::TestCaseGroup>	group	(new tcu::TestCaseGroup(testCtx, "graphics-assembly", "Test the graphics pipeline"));
