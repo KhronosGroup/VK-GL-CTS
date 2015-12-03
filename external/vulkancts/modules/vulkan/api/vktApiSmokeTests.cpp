@@ -123,11 +123,11 @@ tcu::TestStatus createShaderModuleTest (Context& context)
 void createTriangleAsmProgs (SourceCollections& dst)
 {
 	dst.spirvAsmSources.add("vert") <<
-		"		 OpSource ESSL 300\n"
 		"		 OpCapability Shader\n"
 		"%1 =	 OpExtInstImport \"GLSL.std.450\"\n"
 		"		 OpMemoryModel Logical GLSL450\n"
 		"		 OpEntryPoint Vertex %4 \"main\" %10 %12 %16 %17\n"
+		"		 OpSource ESSL 300\n"
 		"		 OpName %4 \"main\"\n"
 		"		 OpName %10 \"gl_Position\"\n"
 		"		 OpName %12 \"a_position\"\n"
@@ -158,12 +158,12 @@ void createTriangleAsmProgs (SourceCollections& dst)
 		"		 OpReturn\n"
 		"		 OpFunctionEnd\n";
 	dst.spirvAsmSources.add("frag") <<
-		"		OpSource ESSL 300\n"
 		"		OpCapability Shader\n"
 		"%1 =	OpExtInstImport \"GLSL.std.450\"\n"
 		"		OpMemoryModel Logical GLSL450\n"
 		"		OpEntryPoint Fragment %4 \"main\" %10\n"
 		"		OpExecutionMode %4 OriginLowerLeft\n"
+		"		OpSource ESSL 300\n"
 		"		OpName %4 \"main\"\n"
 		"		OpName %10 \"o_color\"\n"
 		"		OpDecorate %10 RelaxedPrecision\n"
