@@ -260,7 +260,7 @@ inline deUint32 convertSatRteUint24 (float f)
 int getChannelSize (TextureFormat::ChannelType type)
 {
 	// make sure this table is updated if format table is updated
-	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 37);
+	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 38);
 
 	switch (type)
 	{
@@ -324,7 +324,7 @@ int getNumUsedChannels (TextureFormat::ChannelOrder order)
 inline float channelToFloat (const deUint8* value, TextureFormat::ChannelType type)
 {
 	// make sure this table is updated if format table is updated
-	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 37);
+	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 38);
 
 	switch (type)
 	{
@@ -354,7 +354,7 @@ inline float channelToFloat (const deUint8* value, TextureFormat::ChannelType ty
 inline int channelToInt (const deUint8* value, TextureFormat::ChannelType type)
 {
 	// make sure this table is updated if format table is updated
-	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 37);
+	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 38);
 
 	switch (type)
 	{
@@ -384,7 +384,7 @@ inline int channelToInt (const deUint8* value, TextureFormat::ChannelType type)
 void floatToChannel (deUint8* dst, float src, TextureFormat::ChannelType type)
 {
 	// make sure this table is updated if format table is updated
-	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 37);
+	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 38);
 
 	switch (type)
 	{
@@ -441,7 +441,7 @@ static inline deUint32 convertSatUint24 (S src)
 void intToChannel (deUint8* dst, int src, TextureFormat::ChannelType type)
 {
 	// make sure this table is updated if format table is updated
-	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 37);
+	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 38);
 
 	switch (type)
 	{
@@ -606,6 +606,9 @@ bool isValid (TextureFormat format)
 		case TextureFormat::UNSIGNED_SHORT_5551:
 			return format.order == TextureFormat::RGBA || format.order == TextureFormat::BGRA;
 
+		case TextureFormat::UNORM_SHORT_1555:
+			return format.order == TextureFormat::ARGB;
+
 		case TextureFormat::UNORM_INT_101010:
 			return format.order == TextureFormat::RGB;
 
@@ -650,7 +653,7 @@ bool isValid (TextureFormat format)
 			return 0u;
 	}
 
-	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 37);
+	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 38);
 }
 
 /** Get pixel size in bytes. */
@@ -662,7 +665,7 @@ int getPixelSize (TextureFormat format)
 	DE_ASSERT(isValid(format));
 
 	// make sure this table is updated if format table is updated
-	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 37);
+	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 38);
 
 	switch (type)
 	{
@@ -674,6 +677,7 @@ int getPixelSize (TextureFormat format)
 		case TextureFormat::UNORM_SHORT_555:
 		case TextureFormat::UNORM_SHORT_4444:
 		case TextureFormat::UNORM_SHORT_5551:
+		case TextureFormat::UNORM_SHORT_1555:
 		case TextureFormat::UNSIGNED_SHORT_565:
 		case TextureFormat::UNSIGNED_SHORT_4444:
 		case TextureFormat::UNSIGNED_SHORT_5551:
@@ -947,19 +951,23 @@ Vec4 ConstPixelBufferAccess::getPixel (int x, int y, int z) const
 	{
 		case TextureFormat::UNORM_BYTE_44:				return			  Vec4(UN8 (4,   4), UN8 ( 0,  4), 0.0f, 1.0f);
 		case TextureFormat::UNSIGNED_BYTE_44:			return			 UVec4(UI8 (4,   4), UI8 ( 0,  4), 0u, 1u).cast<float>();
-		case TextureFormat::UNORM_SHORT_565:			return swizzleRB( Vec4(UN16(11,  5), UN16( 5,  6), UN16( 0,  5), 1.0f), TextureFormat::RGB, m_format.order);
-		case TextureFormat::UNSIGNED_SHORT_565:			return swizzleRB(UVec4(UI16(11,  5), UI16( 5,  6), UI16( 0,  5), 1u), TextureFormat::RGB, m_format.order).cast<float>();
-		case TextureFormat::UNORM_SHORT_555:			return swizzleRB( Vec4(UN16(10,  5), UN16( 5,  5), UN16( 0,  5), 1.0f), TextureFormat::RGB, m_format.order);
-		case TextureFormat::UNORM_SHORT_4444:			return swizzleRB( Vec4(UN16(12,  4), UN16( 8,  4), UN16( 4,  4), UN16( 0, 4)), TextureFormat::RGBA, m_format.order);
-		case TextureFormat::UNSIGNED_SHORT_4444:		return swizzleRB(UVec4(UI16(12,  4), UI16( 8,  4), UI16( 4,  4), UI16( 0, 4)), TextureFormat::RGBA, m_format.order).cast<float>();
-		case TextureFormat::UNORM_SHORT_5551:			return swizzleRB( Vec4(UN16(11,  5), UN16( 6,  5), UN16( 1,  5), UN16( 0, 1)), TextureFormat::RGBA, m_format.order);
-		case TextureFormat::UNSIGNED_SHORT_5551:		return swizzleRB(UVec4(UI16(11,  5), UI16( 6,  5), UI16( 1,  5), UI16( 0, 1)), TextureFormat::RGBA, m_format.order).cast<float>();
+		case TextureFormat::UNORM_SHORT_565:			return swizzleRB( Vec4(UN16(11,  5), UN16( 5,  6), UN16( 0,  5), 1.0f), m_format.order, TextureFormat::RGB);
+		case TextureFormat::UNSIGNED_SHORT_565:			return swizzleRB(UVec4(UI16(11,  5), UI16( 5,  6), UI16( 0,  5), 1u), m_format.order, TextureFormat::RGB).cast<float>();
+		case TextureFormat::UNORM_SHORT_555:			return swizzleRB( Vec4(UN16(10,  5), UN16( 5,  5), UN16( 0,  5), 1.0f), m_format.order, TextureFormat::RGB);
+		case TextureFormat::UNORM_SHORT_4444:			return swizzleRB( Vec4(UN16(12,  4), UN16( 8,  4), UN16( 4,  4), UN16( 0, 4)), m_format.order, TextureFormat::RGBA);
+		case TextureFormat::UNSIGNED_SHORT_4444:		return swizzleRB(UVec4(UI16(12,  4), UI16( 8,  4), UI16( 4,  4), UI16( 0, 4)), m_format.order, TextureFormat::RGBA).cast<float>();
+		case TextureFormat::UNORM_SHORT_5551:			return swizzleRB( Vec4(UN16(11,  5), UN16( 6,  5), UN16( 1,  5), UN16( 0, 1)), m_format.order, TextureFormat::RGBA);
+		case TextureFormat::UNSIGNED_SHORT_5551:		return swizzleRB(UVec4(UI16(11,  5), UI16( 6,  5), UI16( 1,  5), UI16( 0, 1)), m_format.order, TextureFormat::RGBA).cast<float>();
 		case TextureFormat::UNORM_INT_101010:			return			  Vec4(UN32(22, 10), UN32(12, 10), UN32( 2, 10), 1.0f);
-		case TextureFormat::UNORM_INT_1010102_REV:		return swizzleRB( Vec4(UN32( 0, 10), UN32(10, 10), UN32(20, 10), UN32(30, 2)), TextureFormat::RGBA, m_format.order);
-		case TextureFormat::SNORM_INT_1010102_REV:		return swizzleRB( Vec4(SN32( 0, 10), SN32(10, 10), SN32(20, 10), SN32(30, 2)), TextureFormat::RGBA, m_format.order);
-		case TextureFormat::UNSIGNED_INT_1010102_REV:	return swizzleRB( UVec4(UI32(0, 10), UI32(10, 10), UI32(20, 10), UI32(30, 2)), TextureFormat::RGBA, m_format.order).cast<float>();
-		case TextureFormat::SIGNED_INT_1010102_REV:		return swizzleRB( UVec4(SI32(0, 10), SI32(10, 10), SI32(20, 10), SI32(30, 2)), TextureFormat::RGBA, m_format.order).cast<float>();
+		case TextureFormat::UNORM_INT_1010102_REV:		return swizzleRB( Vec4(UN32( 0, 10), UN32(10, 10), UN32(20, 10), UN32(30, 2)), m_format.order, TextureFormat::RGBA);
+		case TextureFormat::SNORM_INT_1010102_REV:		return swizzleRB( Vec4(SN32( 0, 10), SN32(10, 10), SN32(20, 10), SN32(30, 2)), m_format.order, TextureFormat::RGBA);
+		case TextureFormat::UNSIGNED_INT_1010102_REV:	return swizzleRB( UVec4(UI32(0, 10), UI32(10, 10), UI32(20, 10), UI32(30, 2)), m_format.order, TextureFormat::RGBA).cast<float>();
+		case TextureFormat::SIGNED_INT_1010102_REV:		return swizzleRB( UVec4(SI32(0, 10), SI32(10, 10), SI32(20, 10), SI32(30, 2)), m_format.order, TextureFormat::RGBA).cast<float>();
 		case TextureFormat::UNSIGNED_INT_999_E5_REV:	return unpackRGB999E5(*((const deUint32*)pixelPtr));
+
+		case TextureFormat::UNORM_SHORT_1555:
+			DE_ASSERT(m_format.order == TextureFormat::ARGB);
+			return Vec4(UN16(15, 1), UN16(10, 5), UN16(5, 5), UN16(0, 5)).swizzle(1,2,3,0); // ARGB -> RGBA
 
 		case TextureFormat::UNSIGNED_INT_11F_11F_10F_REV:
 			return Vec4(Float11(UI32(0, 11)).asFloat(), Float11(UI32(11, 11)).asFloat(), Float10(UI32(22, 10)).asFloat(), 1.0f);
@@ -1039,17 +1047,21 @@ IVec4 ConstPixelBufferAccess::getPixelInt (int x, int y, int z) const
 		case TextureFormat::UNSIGNED_BYTE_44:			// Fall-through
 		case TextureFormat::UNORM_BYTE_44:				return			 UVec4(U8 ( 4,  4), U8 ( 0,  4), 0u, 1u).cast<int>();
 		case TextureFormat::UNSIGNED_SHORT_565:			// Fall-through
-		case TextureFormat::UNORM_SHORT_565:			return swizzleRB(UVec4(U16(11,  5), U16( 5,  6), U16( 0,  5), 1).cast<int>(), TextureFormat::RGB, m_format.order);
-		case TextureFormat::UNORM_SHORT_555:			return swizzleRB(UVec4(U16(10,  5), U16( 5,  5), U16( 0,  5), 1).cast<int>(), TextureFormat::RGB, m_format.order);
+		case TextureFormat::UNORM_SHORT_565:			return swizzleRB(UVec4(U16(11,  5), U16( 5,  6), U16( 0,  5), 1).cast<int>(), m_format.order, TextureFormat::RGB);
+		case TextureFormat::UNORM_SHORT_555:			return swizzleRB(UVec4(U16(10,  5), U16( 5,  5), U16( 0,  5), 1).cast<int>(), m_format.order, TextureFormat::RGB);
 		case TextureFormat::UNSIGNED_SHORT_4444:		// Fall-through
-		case TextureFormat::UNORM_SHORT_4444:			return swizzleRB(UVec4(U16(12,  4), U16( 8,  4), U16( 4,  4), U16( 0, 4)).cast<int>(), TextureFormat::RGBA, m_format.order);
+		case TextureFormat::UNORM_SHORT_4444:			return swizzleRB(UVec4(U16(12,  4), U16( 8,  4), U16( 4,  4), U16( 0, 4)).cast<int>(), m_format.order, TextureFormat::RGBA);
 		case TextureFormat::UNSIGNED_SHORT_5551:		// Fall-through
-		case TextureFormat::UNORM_SHORT_5551:			return swizzleRB(UVec4(U16(11,  5), U16( 6,  5), U16( 1,  5), U16( 0, 1)).cast<int>(), TextureFormat::RGBA, m_format.order);
+		case TextureFormat::UNORM_SHORT_5551:			return swizzleRB(UVec4(U16(11,  5), U16( 6,  5), U16( 1,  5), U16( 0, 1)).cast<int>(), m_format.order, TextureFormat::RGBA);
 		case TextureFormat::UNORM_INT_101010:			return			 UVec4(U32(22, 10), U32(12, 10), U32( 2, 10), 1).cast<int>();
 		case TextureFormat::UNORM_INT_1010102_REV:		// Fall-through
-		case TextureFormat::UNSIGNED_INT_1010102_REV:	return swizzleRB(UVec4(U32( 0, 10), U32(10, 10), U32(20, 10), U32(30, 2)), TextureFormat::RGBA, m_format.order).cast<int>();
+		case TextureFormat::UNSIGNED_INT_1010102_REV:	return swizzleRB(UVec4(U32( 0, 10), U32(10, 10), U32(20, 10), U32(30, 2)), m_format.order, TextureFormat::RGBA).cast<int>();
 		case TextureFormat::SNORM_INT_1010102_REV:		// Fall-through
-		case TextureFormat::SIGNED_INT_1010102_REV:		return swizzleRB(IVec4(S32( 0, 10), S32(10, 10), S32(20, 10), S32(30, 2)), TextureFormat::RGBA, m_format.order);
+		case TextureFormat::SIGNED_INT_1010102_REV:		return swizzleRB(IVec4(S32( 0, 10), S32(10, 10), S32(20, 10), S32(30, 2)), m_format.order, TextureFormat::RGBA);
+
+		case TextureFormat::UNORM_SHORT_1555:
+			DE_ASSERT(m_format.order == TextureFormat::ARGB);
+			return UVec4(U16(15, 1), U16(10, 5), U16(5, 5), U16(0, 5)).cast<int>().swizzle(1,2,3,0); // ARGB -> RGBA
 
 		default:
 			break; // To generic path.
@@ -1210,77 +1222,84 @@ void PixelBufferAccess::setPixel (const Vec4& color, int x, int y, int z) const
 
 		case TextureFormat::UNORM_SHORT_565:
 		{
-			const Vec4 swizzled = swizzleRB(color, m_format.order, TextureFormat::RGB);
+			const Vec4 swizzled = swizzleRB(color, TextureFormat::RGB, m_format.order);
 			*((deUint16*)pixelPtr) = (deUint16)(PN(swizzled[0], 11, 5) | PN(swizzled[1], 5, 6) | PN(swizzled[2], 0, 5));
 			break;
 		}
 
 		case TextureFormat::UNSIGNED_SHORT_565:
 		{
-			const UVec4 swizzled = swizzleRB(color.cast<deUint32>(), m_format.order, TextureFormat::RGB);
+			const UVec4 swizzled = swizzleRB(color.cast<deUint32>(), TextureFormat::RGB, m_format.order);
 			*((deUint16*)pixelPtr) = (deUint16)(PU(swizzled[0], 11, 5) | PU(swizzled[1], 5, 6) | PU(swizzled[2], 0, 5));
 			break;
 		}
 
 		case TextureFormat::UNORM_SHORT_555:
 		{
-			const Vec4 swizzled = swizzleRB(color, m_format.order, TextureFormat::RGB);
+			const Vec4 swizzled = swizzleRB(color, TextureFormat::RGB, m_format.order);
 			*((deUint16*)pixelPtr) = (deUint16)(PN(swizzled[0], 10, 5) | PN(swizzled[1], 5, 5) | PN(swizzled[2], 0, 5));
 			break;
 		}
 
 		case TextureFormat::UNORM_SHORT_4444:
 		{
-			const Vec4 swizzled = swizzleRB(color, m_format.order, TextureFormat::RGBA);
+			const Vec4 swizzled = swizzleRB(color, TextureFormat::RGBA, m_format.order);
 			*((deUint16*)pixelPtr) = (deUint16)(PN(swizzled[0], 12, 4) | PN(swizzled[1], 8, 4) | PN(swizzled[2], 4, 4) | PN(swizzled[3], 0, 4));
 			break;
 		}
 
 		case TextureFormat::UNSIGNED_SHORT_4444:
 		{
-			const UVec4 swizzled = swizzleRB(color.cast<deUint32>(), m_format.order, TextureFormat::RGBA);
+			const UVec4 swizzled = swizzleRB(color.cast<deUint32>(), TextureFormat::RGBA, m_format.order);
 			*((deUint16*)pixelPtr) = (deUint16)(PU(swizzled[0], 12, 4) | PU(swizzled[1], 8, 4) | PU(swizzled[2], 4, 4) | PU(swizzled[3], 0, 4));
 			break;
 		}
 
 		case TextureFormat::UNORM_SHORT_5551:
 		{
-			const Vec4 swizzled = swizzleRB(color, m_format.order, TextureFormat::RGBA);
+			const Vec4 swizzled = swizzleRB(color, TextureFormat::RGBA, m_format.order);
 			*((deUint16*)pixelPtr) = (deUint16)(PN(swizzled[0], 11, 5) | PN(swizzled[1], 6, 5) | PN(swizzled[2], 1, 5) | PN(swizzled[3], 0, 1));
+			break;
+		}
+
+		case TextureFormat::UNORM_SHORT_1555:
+		{
+			const Vec4 swizzled = color.swizzle(3,0,1,2); // RGBA -> ARGB
+			*((deUint16*)pixelPtr) = (deUint16)(PN(swizzled[0], 15, 1) | PN(swizzled[1], 10, 5) | PN(swizzled[2], 5, 5) | PN(swizzled[3], 0, 5));
 			break;
 		}
 
 		case TextureFormat::UNSIGNED_SHORT_5551:
 		{
-			const UVec4 swizzled = swizzleRB(color.cast<deUint32>(), m_format.order, TextureFormat::RGBA);
+			const UVec4 swizzled = swizzleRB(color.cast<deUint32>(), TextureFormat::RGBA, m_format.order);
 			*((deUint16*)pixelPtr) = (deUint16)(PU(swizzled[0], 11, 5) | PU(swizzled[1], 6, 5) | PU(swizzled[2], 1, 5) | PU(swizzled[3], 0, 1));
 			break;
 		}
 
 		case TextureFormat::UNORM_INT_1010102_REV:
 		{
-			const Vec4 u = swizzleRB(color, m_format.order, TextureFormat::RGBA);
+			const Vec4 u = swizzleRB(color, TextureFormat::RGBA, m_format.order);
 			*((deUint32*)pixelPtr) = PN(u[0], 0, 10) | PN(u[1], 10, 10) | PN(u[2], 20, 10) | PN(u[3], 30, 2);
 			break;
 		}
 
 		case TextureFormat::SNORM_INT_1010102_REV:
 		{
-			const Vec4 u = swizzleRB(color, m_format.order, TextureFormat::RGBA);
+			const Vec4 u = swizzleRB(color, TextureFormat::RGBA, m_format.order);
 			*((deUint32*)pixelPtr) = PS(u[0], 0, 10) | PS(u[1], 10, 10) | PS(u[2], 20, 10) | PS(u[3], 30, 2);
 			break;
 		}
 
 		case TextureFormat::UNSIGNED_INT_1010102_REV:
 		{
-			const UVec4 u = swizzleRB(color.cast<deUint32>(), m_format.order, TextureFormat::RGBA);
+			const UVec4 u = swizzleRB(color.cast<deUint32>(), TextureFormat::RGBA, m_format.order);
 			*((deUint32*)pixelPtr) = PU(u[0], 0, 10) | PU(u[1], 10, 10) | PU(u[2], 20, 10) | PU(u[3], 30, 2);
 			break;
 		}
 
 		case TextureFormat::SIGNED_INT_1010102_REV:
 		{
-			const IVec4 u = swizzleRB(color.cast<deInt32>(), m_format.order, TextureFormat::RGBA);
+			const IVec4 u = swizzleRB(color.cast<deInt32>(), TextureFormat::RGBA, m_format.order);
 			*((deUint32*)pixelPtr) = PI(u[0], 0, 10) | PI(u[1], 10, 10) | PI(u[2], 20, 10) | PI(u[3], 30, 2);
 			break;
 		}
@@ -1352,14 +1371,14 @@ void PixelBufferAccess::setPixel (const IVec4& color, int x, int y, int z) const
 		case TextureFormat::UNORM_SHORT_565:
 		case TextureFormat::UNSIGNED_SHORT_565:
 		{
-			const IVec4 swizzled = swizzleRB(color, m_format.order, TextureFormat::RGB);
+			const IVec4 swizzled = swizzleRB(color, TextureFormat::RGB, m_format.order);
 			*((deUint16*)pixelPtr) = (deUint16)(PU(swizzled[0], 11, 5) | PU(swizzled[1], 5, 6) | PU(swizzled[2], 0, 5));
 			break;
 		}
 
 		case TextureFormat::UNORM_SHORT_555:
 		{
-			const IVec4 swizzled = swizzleRB(color, m_format.order, TextureFormat::RGB);
+			const IVec4 swizzled = swizzleRB(color, TextureFormat::RGB, m_format.order);
 			*((deUint16*)pixelPtr) = (deUint16)(PU(swizzled[0], 10, 5) | PU(swizzled[1], 5, 5) | PU(swizzled[2], 0, 5));
 			break;
 		}
@@ -1367,7 +1386,7 @@ void PixelBufferAccess::setPixel (const IVec4& color, int x, int y, int z) const
 		case TextureFormat::UNORM_SHORT_4444:
 		case TextureFormat::UNSIGNED_SHORT_4444:
 		{
-			const IVec4 swizzled = swizzleRB(color, m_format.order, TextureFormat::RGBA);
+			const IVec4 swizzled = swizzleRB(color, TextureFormat::RGBA, m_format.order);
 			*((deUint16*)pixelPtr) = (deUint16)(PU(swizzled[0], 12, 4) | PU(swizzled[1], 8, 4) | PU(swizzled[2], 4, 4) | PU(swizzled[3], 0, 4));
 			break;
 		}
@@ -1375,15 +1394,22 @@ void PixelBufferAccess::setPixel (const IVec4& color, int x, int y, int z) const
 		case TextureFormat::UNORM_SHORT_5551:
 		case TextureFormat::UNSIGNED_SHORT_5551:
 		{
-			const IVec4 swizzled = swizzleRB(color, m_format.order, TextureFormat::RGBA);
+			const IVec4 swizzled = swizzleRB(color, TextureFormat::RGBA, m_format.order);
 			*((deUint16*)pixelPtr) = (deUint16)(PU(swizzled[0], 11, 5) | PU(swizzled[1], 6, 5) | PU(swizzled[2], 1, 5) | PU(swizzled[3], 0, 1));
+			break;
+		}
+
+		case TextureFormat::UNORM_SHORT_1555:
+		{
+			const IVec4 swizzled = color.swizzle(3,0,1,2); // RGBA -> ARGB
+			*((deUint16*)pixelPtr) = (deUint16)(PU(swizzled[0], 15, 1) | PU(swizzled[1], 10, 5) | PU(swizzled[2], 5, 5) | PU(swizzled[3], 0, 5));
 			break;
 		}
 
 		case TextureFormat::UNORM_INT_1010102_REV:
 		case TextureFormat::UNSIGNED_INT_1010102_REV:
 		{
-			const IVec4 swizzled = swizzleRB(color, m_format.order, TextureFormat::RGBA);
+			const IVec4 swizzled = swizzleRB(color, TextureFormat::RGBA, m_format.order);
 			*((deUint32*)pixelPtr) = PU(swizzled[0],  0, 10) | PU(swizzled[1], 10, 10) | PU(swizzled[2], 20, 10) | PU(swizzled[3], 30, 2);
 			break;
 		}
@@ -1391,7 +1417,7 @@ void PixelBufferAccess::setPixel (const IVec4& color, int x, int y, int z) const
 		case TextureFormat::SNORM_INT_1010102_REV:
 		case TextureFormat::SIGNED_INT_1010102_REV:
 		{
-			const IVec4 swizzled = swizzleRB(color, m_format.order, TextureFormat::RGBA);
+			const IVec4 swizzled = swizzleRB(color, TextureFormat::RGBA, m_format.order);
 			*((deUint32*)pixelPtr) = PI(swizzled[0],  0, 10) | PI(swizzled[1], 10, 10) | PI(swizzled[2], 20, 10) | PI(swizzled[3], 30, 2);
 			break;
 		}
@@ -3752,6 +3778,7 @@ std::ostream& operator<< (std::ostream& str, TextureFormat::ChannelType type)
 		"UNORM_SHORT_555",
 		"UNORM_SHORT_4444",
 		"UNORM_SHORT_5551",
+		"UNORM_SHORT_1555",
 		"UNORM_INT_101010",
 		"SNORM_INT_1010102_REV",
 		"UNORM_INT_1010102_REV",

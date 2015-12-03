@@ -115,7 +115,7 @@ bool isSRGB (TextureFormat format)
 bool isCombinedDepthStencilType (TextureFormat::ChannelType type)
 {
 	// make sure to update this if type table is updated
-	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 37);
+	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 38);
 
 	return	type == TextureFormat::UNSIGNED_INT_16_8_8			||
 			type == TextureFormat::UNSIGNED_INT_24_8			||
@@ -157,7 +157,7 @@ bool hasDepthComponent (TextureFormat::ChannelOrder order)
 TextureChannelClass getTextureChannelClass (TextureFormat::ChannelType channelType)
 {
 	// make sure this table is updated if format table is updated
-	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 37);
+	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 38);
 
 	switch (channelType)
 	{
@@ -173,6 +173,7 @@ TextureChannelClass getTextureChannelClass (TextureFormat::ChannelType channelTy
 		case TextureFormat::UNORM_SHORT_555:				return TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT;
 		case TextureFormat::UNORM_SHORT_4444:				return TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT;
 		case TextureFormat::UNORM_SHORT_5551:				return TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT;
+		case TextureFormat::UNORM_SHORT_1555:				return TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT;
 		case TextureFormat::UNSIGNED_BYTE_44:				return TEXTURECHANNELCLASS_UNSIGNED_INTEGER;
 		case TextureFormat::UNSIGNED_SHORT_565:				return TEXTURECHANNELCLASS_UNSIGNED_INTEGER;
 		case TextureFormat::UNSIGNED_SHORT_4444:			return TEXTURECHANNELCLASS_UNSIGNED_INTEGER;
@@ -196,9 +197,11 @@ TextureChannelClass getTextureChannelClass (TextureFormat::ChannelType channelTy
 		case TextureFormat::UNSIGNED_INT32:					return TEXTURECHANNELCLASS_UNSIGNED_INTEGER;
 		case TextureFormat::HALF_FLOAT:						return TEXTURECHANNELCLASS_FLOATING_POINT;
 		case TextureFormat::FLOAT:							return TEXTURECHANNELCLASS_FLOATING_POINT;
-		case TextureFormat::FLOAT64:							return TEXTURECHANNELCLASS_FLOATING_POINT;
+		case TextureFormat::FLOAT64:						return TEXTURECHANNELCLASS_FLOATING_POINT;
 		case TextureFormat::FLOAT_UNSIGNED_INT_24_8_REV:	return TEXTURECHANNELCLASS_LAST;					//!< packed float32-pad24-uint8
-		default:											return TEXTURECHANNELCLASS_LAST;
+		default:
+			DE_FATAL("Unknown channel type");
+			return TEXTURECHANNELCLASS_LAST;
 	}
 }
 
@@ -339,7 +342,7 @@ ConstPixelBufferAccess flipYAccess (const ConstPixelBufferAccess& access)
 static Vec2 getFloatChannelValueRange (TextureFormat::ChannelType channelType)
 {
 	// make sure this table is updated if format table is updated
-	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 37);
+	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 38);
 
 	float cMin = 0.0f;
 	float cMax = 0.0f;
@@ -362,6 +365,7 @@ static Vec2 getFloatChannelValueRange (TextureFormat::ChannelType channelType)
 		case TextureFormat::UNORM_SHORT_555:
 		case TextureFormat::UNORM_SHORT_4444:
 		case TextureFormat::UNORM_SHORT_5551:
+		case TextureFormat::UNORM_SHORT_1555:
 		case TextureFormat::UNORM_INT_101010:
 		case TextureFormat::UNORM_INT_1010102_REV:			cMin = 0.0f;			cMax = 1.0f;			break;
 
@@ -378,6 +382,8 @@ static Vec2 getFloatChannelValueRange (TextureFormat::ChannelType channelType)
 		case TextureFormat::FLOAT64:						cMin = -1e5f;			cMax = 1e5f;			break;
 		case TextureFormat::UNSIGNED_INT_11F_11F_10F_REV:	cMin = 0.0f;			cMax = 1e4f;			break;
 		case TextureFormat::UNSIGNED_INT_999_E5_REV:		cMin = 0.0f;			cMax = 1e5f;			break;
+		case TextureFormat::UNSIGNED_BYTE_44:				cMin = 0.0f;			cMax = 15.f;			break;
+		case TextureFormat::UNSIGNED_SHORT_4444:			cMin = 0.0f;			cMax = 15.f;			break;
 
 		default:
 			DE_ASSERT(false);
@@ -397,11 +403,16 @@ static Vec2 getFloatChannelValueRange (TextureFormat::ChannelType channelType)
 TextureFormatInfo getTextureFormatInfo (const TextureFormat& format)
 {
 	// Special cases.
-	if (format == TextureFormat(TextureFormat::RGBA, TextureFormat::UNSIGNED_INT_1010102_REV))
-		return TextureFormatInfo(Vec4(	    0.0f,		    0.0f,		    0.0f,		 0.0f),
-								 Vec4(	 1023.0f,		 1023.0f,		 1023.0f,		 3.0f),
+	if (format.type == TextureFormat::UNSIGNED_INT_1010102_REV)
+		return TextureFormatInfo(Vec4(	     0.0f,		    0.0f,		    0.0f,		 0.0f),
+								 Vec4(	  1023.0f,		 1023.0f,		 1023.0f,		 3.0f),
 								 Vec4(1.0f/1023.f,	1.0f/1023.0f,	1.0f/1023.0f,	1.0f/3.0f),
-								 Vec4(	    0.0f,		    0.0f,		    0.0f,		 0.0f));
+								 Vec4(	     0.0f,		    0.0f,		    0.0f,		 0.0f));
+	if (format.type == TextureFormat::SIGNED_INT_1010102_REV)
+		return TextureFormatInfo(Vec4(	  -512.0f,		 -512.0f,		 -512.0f,		-2.0f),
+								 Vec4(	   511.0f,		  511.0f,		  511.0f,		 1.0f),
+								 Vec4(1.0f/1023.f,	1.0f/1023.0f,	1.0f/1023.0f,	1.0f/3.0f),
+								 Vec4(	     0.5f,		    0.5f,		    0.5f,		 0.5f));
 	else if (format.order == TextureFormat::D || format.order == TextureFormat::DS)
 		return TextureFormatInfo(Vec4(0.0f,	0.0f,	0.0f,	0.0f),
 								 Vec4(1.0f,	1.0f,	1.0f,	0.0f),
@@ -412,6 +423,16 @@ TextureFormatInfo getTextureFormatInfo (const TextureFormat& format)
 								 Vec4(1.0f, 1.0f, 1.0f, 1.5f),
 								 Vec4(1.0f, 1.0f, 1.0f, 1.0f),
 								 Vec4(0.0f, 0.0f, 0.0f, 0.0f));
+	else if (format.type == TextureFormat::UNSIGNED_SHORT_5551)
+		return TextureFormatInfo(Vec4(	   0.0f,		  0.0f,		  0.0f,	0.0f),
+								 Vec4(	  31.0f,		 31.0f,		 31.0f,	1.0f),
+								 Vec4(1.0f/31.f,	1.0f/31.0f,	1.0f/31.0f,	1.0f),
+								 Vec4(	   0.0f,		  0.0f,		  0.0f,	0.0f));
+	else if (format.type == TextureFormat::UNSIGNED_SHORT_565)
+		return TextureFormatInfo(Vec4(	   0.0f,		  0.0f,		  0.0f,	0.0f),
+								 Vec4(	  31.0f,		 63.0f,		 31.0f,	0.0f),
+								 Vec4(1.0f/31.f,	1.0f/63.0f,	1.0f/31.0f,	1.0f),
+								 Vec4(	   0.0f,		  0.0f,		  0.0f,	0.0f));
 
 	const Vec2						cRange		= getFloatChannelValueRange(format.type);
 	const TextureSwizzle::Channel*	map			= getChannelReadSwizzle(format.order).components;
@@ -483,7 +504,7 @@ UVec4 getFormatMaxUintValue (const TextureFormat& format)
 static IVec4 getChannelBitDepth (TextureFormat::ChannelType channelType)
 {
 	// make sure this table is updated if format table is updated
-	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 37);
+	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 38);
 
 	switch (channelType)
 	{
@@ -499,6 +520,7 @@ static IVec4 getChannelBitDepth (TextureFormat::ChannelType channelType)
 		case TextureFormat::UNORM_SHORT_4444:				return IVec4(4);
 		case TextureFormat::UNORM_SHORT_555:				return IVec4(5,5,5,0);
 		case TextureFormat::UNORM_SHORT_5551:				return IVec4(5,5,5,1);
+		case TextureFormat::UNORM_SHORT_1555:				return IVec4(1,5,5,5);
 		case TextureFormat::UNSIGNED_BYTE_44:				return IVec4(4,4,0,0);
 		case TextureFormat::UNSIGNED_SHORT_565:				return IVec4(5,6,5,0);
 		case TextureFormat::UNSIGNED_SHORT_4444:			return IVec4(4);
@@ -549,7 +571,7 @@ IVec4 getTextureFormatBitDepth (const TextureFormat& format)
 static IVec4 getChannelMantissaBitDepth (TextureFormat::ChannelType channelType)
 {
 	// make sure this table is updated if format table is updated
-	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 37);
+	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 38);
 
 	switch (channelType)
 	{
@@ -565,6 +587,7 @@ static IVec4 getChannelMantissaBitDepth (TextureFormat::ChannelType channelType)
 		case TextureFormat::UNORM_SHORT_4444:
 		case TextureFormat::UNORM_SHORT_555:
 		case TextureFormat::UNORM_SHORT_5551:
+		case TextureFormat::UNORM_SHORT_1555:
 		case TextureFormat::UNSIGNED_BYTE_44:
 		case TextureFormat::UNSIGNED_SHORT_565:
 		case TextureFormat::UNSIGNED_SHORT_4444:
@@ -1223,7 +1246,7 @@ template <typename AccessType>
 static AccessType toSamplerAccess (const AccessType& baseAccess, Sampler::DepthStencilMode mode)
 {
 	// make sure to update this if type table is updated
-	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 37);
+	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 38);
 
 	if (!isCombinedDepthStencilType(baseAccess.getFormat().type))
 		return baseAccess;
@@ -1492,6 +1515,8 @@ static const TextureSwizzle& getBorderColorReadSwizzle (TextureFormat::ChannelOr
 		case TextureFormat::sRG:		swizzle = &RG;		break;
 		case TextureFormat::sRGB:		swizzle = &RGB;		break;
 		case TextureFormat::sRGBA:		swizzle = &RGBA;	break;
+		case TextureFormat::sBGR:		swizzle = &RGB;		break;
+		case TextureFormat::sBGRA:		swizzle = &RGBA;	break;
 		case TextureFormat::D:			swizzle = &D;		break;
 		case TextureFormat::S:			swizzle = &S;		break;
 
