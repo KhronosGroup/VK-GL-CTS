@@ -67,19 +67,30 @@ string StringTemplate::specialize (const map<string, string>& params) const
 			// Find end-of-param.
 			size_t paramEndNdx = m_template.find("}", paramNdx);
 			if (paramEndNdx == string::npos)
-				throw tcu::InternalError("No '}' found in template parameter", "", __FILE__, __LINE__);
+				TCU_THROW(InternalError, "No '}' found in template parameter");
 
 			// Parse parameter contents.
 			string	paramStr		= m_template.substr(paramNdx+2, paramEndNdx-2-paramNdx);
 			bool	paramSingleLine	= false;
+			bool	paramOptional	= false;
 			string	paramName;
 			size_t colonNdx = paramStr.find(":");
 			if (colonNdx != string::npos)
 			{
 				paramName = paramStr.substr(0, colonNdx);
 				string flagsStr = paramStr.substr(colonNdx+1);
-				TCU_CHECK(flagsStr == "single-line");
-				paramSingleLine = true;
+				if (flagsStr == "single-line")
+				{
+					paramSingleLine = true;
+				}
+				else if (flagsStr == "opt")
+				{
+					paramOptional = true;
+				}
+				else
+				{
+					TCU_THROW(InternalError, (string("Unrecognized flag") + paramStr).c_str());
+				}
 			}
 			else
 				paramName = paramStr;
@@ -98,8 +109,8 @@ string StringTemplate::specialize (const map<string, string>& params) const
 				else
 					res << val;
 			}
-			else
-				throw tcu::InternalError((string("Value for parameter '") + paramName + "' not found in map").c_str(), "", __FILE__, __LINE__);
+			else if (!paramOptional)
+				TCU_THROW(InternalError, (string("Value for parameter '") + paramName + "' not found in map").c_str());
 
 			// Skip over template.
 			curNdx = paramEndNdx + 1;
