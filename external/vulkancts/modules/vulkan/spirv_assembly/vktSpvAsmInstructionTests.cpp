@@ -104,9 +104,6 @@ static void fillRandomScalars (de::Random& rnd, T minValue, T maxValue, void* ds
 		typedPtr[offset + ndx] = randomScalar<T>(rnd, minValue, maxValue);
 }
 
-// \todo [2015-11-19 antiagainst] New rules for Vulkan pipeline interface requires that
-// all BuiltIn variables have to all be members in a block (struct with Block decoration).
-
 // Assembly code used for testing OpNop, OpConstant{Null|Composite}, Op[No]Line, OpSource[Continued], OpSourceExtension, OpUndef is based on GLSL source code:
 //
 // #version 430
