@@ -11,3 +11,16 @@ dEQP-GLES2.functional.dither.disabled.gradient_alpha
 
 #Bug 25720457
 dEQP-GLES2.functional.texture.units.2_units.only_cube.9
+
+# Bug 25719831
+dEQP-GLES2.functional.texture.wrap.clamp_clamp_nearest_pot_etc1
+dEQP-GLES2.functional.texture.wrap.clamp_clamp_nearest_pot_rgba4444
+dEQP-GLES2.functional.texture.wrap.clamp_mirror_nearest_pot_etc1
+dEQP-GLES2.functional.texture.wrap.clamp_repeat_nearest_pot_etc1
+dEQP-GLES2.functional.texture.wrap.mirror_clamp_nearest_pot_etc1
+dEQP-GLES2.functional.texture.wrap.mirror_mirror_nearest_pot_etc1
+dEQP-GLES2.functional.texture.wrap.mirror_repeat_nearest_pot_etc1
+dEQP-GLES2.functional.texture.wrap.repeat_clamp_nearest_pot_etc1
+dEQP-GLES2.functional.texture.wrap.repeat_mirror_nearest_pot_etc1
+dEQP-GLES2.functional.texture.wrap.repeat_mirror_nearest_pot_rgba4444
+dEQP-GLES2.functional.texture.wrap.repeat_repeat_nearest_pot_etc1
