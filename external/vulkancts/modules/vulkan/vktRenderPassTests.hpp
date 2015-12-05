@@ -1,5 +1,5 @@
-#ifndef _VKTMULTIPASSTESTS_HPP
-#define _VKTMULTIPASSTESTS_HPP
+#ifndef _VKTRENDERPASSTESTS_HPP
+#define _VKTRENDERPASSTESTS_HPP
 /*-------------------------------------------------------------------------
  * Vulkan Conformance Tests
  * ------------------------
@@ -44,4 +44,4 @@ tcu::TestCaseGroup*	createRenderPassTests	(tcu::TestContext& testCtx);
 
 } // vkt
 
-#endif // _VKTMULTIPASSTESTS_HPP
+#endif // _VKTRENDERPASSTESTS_HPP

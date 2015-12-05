@@ -430,7 +430,7 @@ StencilTestInstance::StencilTestInstance (Context&					context,
 	{
 		const VkAttachmentDescription colorAttachmentDescription =
 		{
-			0u,													// VkAttachmentDescriptionFlags	flags;          
+			0u,													// VkAttachmentDescriptionFlags	flags;
 			m_colorFormat,										// VkFormat						format;
 			VK_SAMPLE_COUNT_1_BIT,								// VkSampleCountFlagBits		samples;
 			VK_ATTACHMENT_LOAD_OP_CLEAR,						// VkAttachmentLoadOp			loadOp;
@@ -813,11 +813,11 @@ StencilTestInstance::StencilTestInstance (Context&					context,
 	{
 		const VkCommandBufferAllocateInfo cmdBufferAllocateInfo =
 		{
-			VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,	// VkStructureType		sType;    
-			DE_NULL,										// const void*			pNext;    
-			*m_cmdPool,										// VkCommandPool		commandPool; 
-			VK_COMMAND_BUFFER_LEVEL_PRIMARY,				// VkCommandBufferLevel	level;       
-			1u												// deUint32				bufferCount; 
+			VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,	// VkStructureType		sType;
+			DE_NULL,										// const void*			pNext;
+			*m_cmdPool,										// VkCommandPool		commandPool;
+			VK_COMMAND_BUFFER_LEVEL_PRIMARY,				// VkCommandBufferLevel	level;
+			1u												// deUint32				bufferCount;
 		};
 
 		const VkCommandBufferBeginInfo cmdBufferBeginInfo =

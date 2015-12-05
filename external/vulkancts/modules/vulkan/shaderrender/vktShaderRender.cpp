@@ -208,10 +208,10 @@ QuadGrid::QuadGrid (int										gridSize,
 		float		fy			= 2.0f * sy - 1.0f;
 		int			vtxNdx		= ((y * (gridSize+1)) + x);
 
-		m_positions[vtxNdx] 	= tcu::Vec4(fx, fy, 0.0f, 1.0f);
-		m_coords[vtxNdx] 		= getCoords(sx, sy);
+		m_positions[vtxNdx]		= tcu::Vec4(fx, fy, 0.0f, 1.0f);
+		m_coords[vtxNdx]		= getCoords(sx, sy);
 		m_unitCoords[vtxNdx]	= getUnitCoords(sx, sy);
-		m_attribOne[vtxNdx] 	= 1.0f;
+		m_attribOne[vtxNdx]		= 1.0f;
 
 		m_screenPos[vtxNdx]		= tcu::Vec4(sx, sy, 0.0f, 1.0f) * viewportScale;
 
@@ -224,13 +224,13 @@ QuadGrid::QuadGrid (int										gridSize,
 	for (int y = 0; y < gridSize; y++)
 	for (int x = 0; x < gridSize; x++)
 	{
-		int stride 				= gridSize + 1;
-		int v00 				= (y * stride) + x;
-		int v01 				= (y * stride) + x + 1;
-		int v10 				= ((y+1) * stride) + x;
-		int v11 				= ((y+1) * stride) + x + 1;
+		int stride				= gridSize + 1;
+		int v00					= (y * stride) + x;
+		int v01					= (y * stride) + x + 1;
+		int v10					= ((y+1) * stride) + x;
+		int v11					= ((y+1) * stride) + x + 1;
 
-		int baseNdx 			= ((y * gridSize) + x) * 6;
+		int baseNdx				= ((y * gridSize) + x) * 6;
 		m_indices[baseNdx + 0]	= (deUint16)v10;
 		m_indices[baseNdx + 1]	= (deUint16)v00;
 		m_indices[baseNdx + 2]	= (deUint16)v01;
@@ -493,7 +493,7 @@ tcu::TestStatus ShaderRenderCaseInstance::iterate (void)
 	// Create quad grid.
 	const tcu::IVec2	viewportSize	= getViewportSize();
 	const int			width			= viewportSize.x();
-	const int	 		height			= viewportSize.y();
+	const int			height			= viewportSize.y();
 
 	QuadGrid			quadGrid		(m_isVertexCase ? s_gridSize : 4, width, height, tcu::Vec4(0.125f, 0.25f, 0.5f, 1.0f), m_userAttribTransforms, m_textures);
 
@@ -509,7 +509,7 @@ tcu::TestStatus ShaderRenderCaseInstance::iterate (void)
 		computeFragmentReference(refImage, quadGrid);
 
 	// Compare.
-	const bool 			compareOk		= compareImages(resImage, refImage, 0.05f);
+	const bool			compareOk		= compareImages(resImage, refImage, 0.05f);
 
 	if (compareOk)
 		return tcu::TestStatus::pass("Result image matches reference");
@@ -523,7 +523,7 @@ void ShaderRenderCaseInstance::setupUniformData (deUint32 bindingLocation, deUin
 	const DeviceInterface&			vk					= m_context.getDeviceInterface();
 	const deUint32					queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
 
-	const VkBufferCreateInfo 		uniformBufferParams	=
+	const VkBufferCreateInfo		uniformBufferParams	=
 	{
 		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,		// VkStructureType		sType;
 		DE_NULL,									// const void*			pNext;
@@ -536,7 +536,7 @@ void ShaderRenderCaseInstance::setupUniformData (deUint32 bindingLocation, deUin
 	};
 
 	Move<VkBuffer>					buffer				= createBuffer(vk, vkDevice, &uniformBufferParams);
-	de::MovePtr<Allocation> 		alloc				= m_memAlloc.allocate(getBufferMemoryRequirements(vk, vkDevice, *buffer), MemoryRequirement::HostVisible);
+	de::MovePtr<Allocation>			alloc				= m_memAlloc.allocate(getBufferMemoryRequirements(vk, vkDevice, *buffer), MemoryRequirement::HostVisible);
 	VK_CHECK(vk.bindBufferMemory(vkDevice, *buffer, alloc->getMemory(), alloc->getOffset()));
 
 	deMemcpy(alloc->getHostPtr(), dataPtr, size);
@@ -568,13 +568,13 @@ void ShaderRenderCaseInstance::addAttribute (deUint32		bindingLocation,
 											 vk::VkFormat	format,
 											 deUint32		sizePerElement,
 											 deUint32		count,
-											 const void* 	dataPtr)
+											 const void*	dataPtr)
 {
 	// Add binding specification
-	const deUint32 							binding					= (deUint32)m_vertexBindingDescription.size();
+	const deUint32							binding					= (deUint32)m_vertexBindingDescription.size();
 	const VkVertexInputBindingDescription	bindingDescription		=
 	{
-		binding,							// deUint32 			binding;
+		binding,							// deUint32				binding;
 		sizePerElement,						// deUint32				stride;
 		VK_VERTEX_INPUT_RATE_VERTEX			// VkVertexInputRate	stepRate;
 	};
@@ -597,7 +597,7 @@ void ShaderRenderCaseInstance::addAttribute (deUint32		bindingLocation,
 	const DeviceInterface&					vk						= m_context.getDeviceInterface();
 	const deUint32							queueFamilyIndex		= m_context.getUniversalQueueFamilyIndex();
 
-	const VkDeviceSize 						inputSize				= sizePerElement * count;
+	const VkDeviceSize						inputSize				= sizePerElement * count;
 	const VkBufferCreateInfo				vertexBufferParams		=
 	{
 		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,		// VkStructureType		sType;
@@ -610,7 +610,7 @@ void ShaderRenderCaseInstance::addAttribute (deUint32		bindingLocation,
 		&queueFamilyIndex							// const deUint32*		pQueueFamilyIndices;
 	};
 
-	Move<VkBuffer> 							buffer					= createBuffer(vk, vkDevice, &vertexBufferParams);
+	Move<VkBuffer>							buffer					= createBuffer(vk, vkDevice, &vertexBufferParams);
 	de::MovePtr<vk::Allocation>				alloc					= m_memAlloc.allocate(getBufferMemoryRequirements(vk, vkDevice, *buffer), MemoryRequirement::HostVisible);
 	VK_CHECK(vk.bindBufferMemory(vkDevice, *buffer, alloc->getMemory(), alloc->getOffset()));
 
@@ -655,19 +655,19 @@ void ShaderRenderCaseInstance::useUniform (deUint32 bindingLocation, BaseUniform
 		UNIFORM_CASE(UB4_TRUE,	tcu::Vec4(1));
 
 		// Integer
-		UNIFORM_CASE(UI_ZERO, 	0);
-		UNIFORM_CASE(UI_ONE, 	1);
-		UNIFORM_CASE(UI_TWO, 	2);
-		UNIFORM_CASE(UI_THREE, 	3);
-		UNIFORM_CASE(UI_FOUR, 	4);
-		UNIFORM_CASE(UI_FIVE, 	5);
-		UNIFORM_CASE(UI_SIX, 	6);
-		UNIFORM_CASE(UI_SEVEN, 	7);
-		UNIFORM_CASE(UI_EIGHT, 	8);
+		UNIFORM_CASE(UI_ZERO,	0);
+		UNIFORM_CASE(UI_ONE,	1);
+		UNIFORM_CASE(UI_TWO,	2);
+		UNIFORM_CASE(UI_THREE,	3);
+		UNIFORM_CASE(UI_FOUR,	4);
+		UNIFORM_CASE(UI_FIVE,	5);
+		UNIFORM_CASE(UI_SIX,	6);
+		UNIFORM_CASE(UI_SEVEN,	7);
+		UNIFORM_CASE(UI_EIGHT,	8);
 		UNIFORM_CASE(UI_ONEHUNDREDONE, 101);
 
 		// IVec2
-		UNIFORM_CASE(UI2_MINUS_ONE, tcu::IVec2(-1));
+		UNIFORM_CASE(UI2_MINUS_ONE,	tcu::IVec2(-1));
 		UNIFORM_CASE(UI2_ZERO,		tcu::IVec2(0));
 		UNIFORM_CASE(UI2_ONE,		tcu::IVec2(1));
 		UNIFORM_CASE(UI2_TWO,		tcu::IVec2(2));
@@ -808,7 +808,7 @@ de::MovePtr<Allocation> ShaderRenderCaseInstance::uploadImage2D (const tcu::Text
 	VkSubresourceLayout layout;
 	vk.getImageSubresourceLayout(vkDevice, vkTexture, &subres, &layout);
 
-	tcu::ConstPixelBufferAccess	access 		= refTexture.getLevel(0);
+	tcu::ConstPixelBufferAccess	access		= refTexture.getLevel(0);
 	tcu::PixelBufferAccess		destAccess	(refTexture.getFormat(), refTexture.getWidth(), refTexture.getHeight(), 1, allocation->getHostPtr());
 
 	tcu::copy(destAccess, access);
@@ -840,7 +840,7 @@ void ShaderRenderCaseInstance::copyTilingImageToOptimal	(const vk::VkImage&	srcI
 	Move<VkCommandPool>					cmdPool				= createCommandPool(vk, vkDevice, &cmdPoolParams);
 
 	// Create command buffer
-	const VkCommandBufferAllocateInfo 	cmdBufferParams		=
+	const VkCommandBufferAllocateInfo	cmdBufferParams		=
 	{
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,	// VkStructureType			sType;
 		DE_NULL,										// const void*				pNext;
@@ -918,7 +918,7 @@ void ShaderRenderCaseInstance::copyTilingImageToOptimal	(const vk::VkImage&	srcI
 	const VkImageMemoryBarrier		dstBarrier			=
 			createImageMemoryBarrier(dstImage, VK_ACCESS_HOST_WRITE_BIT | VK_ACCESS_TRANSFER_WRITE_BIT, 0u, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-	const void* const*				barrier 			= (const void* const*)&dstBarrier;
+	const void* const*				barrier				= (const void* const*)&dstBarrier;
 	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, false, 1, (const void* const*)&barrier);
 
 	VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
@@ -964,7 +964,7 @@ void ShaderRenderCaseInstance::useSampler2D (deUint32 bindingLocation, deUint32 
 
 	// Create & alloc the image
 	Move<VkImage>					vkTexture;
-	de::MovePtr<Allocation>     	allocation;
+	de::MovePtr<Allocation>			allocation;
 
 	if (isSupportedLinearTilingFormat(m_context.getInstanceInterface(), m_context.getPhysicalDevice(), format))
 	{
@@ -1653,7 +1653,7 @@ void ShaderRenderCaseInstance::render (tcu::Surface& result, const QuadGrid& qua
 	// Read back the result
 	{
 		const VkDeviceSize								imageSizeBytes				= (VkDeviceSize)(sizeof(deUint32) * m_renderSize.x() * m_renderSize.y());
-		const VkBufferCreateInfo						readImageBufferParams   	=
+		const VkBufferCreateInfo						readImageBufferParams		=
 		{
 			VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,		//  VkStructureType		sType;
 			DE_NULL,									//  const void*			pNext;

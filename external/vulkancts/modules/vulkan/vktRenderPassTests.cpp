@@ -1095,12 +1095,12 @@ Move<VkImage> createAttachmentImage (const DeviceInterface&	vk,
 	const VkExtent3D size_					= { (deInt32)size.x(), (deInt32)size.y(), 1 };
 	VkImageUsageFlags targetUsageFlags		= 0;
 	const tcu::TextureFormat textureFormat	= mapVkFormat(format);
-	
+
 	if (tcu::hasDepthComponent(textureFormat.order) || tcu::hasStencilComponent(textureFormat.order))
 	{
 		targetUsageFlags |= vk::VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 	}
-	else	
+	else
 	{
 		targetUsageFlags |= vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 	}
@@ -2140,11 +2140,11 @@ void pushReadImagesToBuffers (const DeviceInterface&								vk,
 			0, // bufferImageHeight
 			{							// imageSubresource
 				getPrimaryImageAspect(mapVkFormat(attachmentInfo[attachmentNdx].getFormat()).order),	// aspect
-				0, 						// mipLevel
+				0,						// mipLevel
 				0,						// arraySlice
 				1						// arraySize
 			},
-			{ 0, 0, 0 }, 				// imageOffset
+			{ 0, 0, 0 },				// imageOffset
 			{ (deInt32)targetSize.x(), (deInt32)targetSize.y(), 1 }		// imageExtent
 		};
 
@@ -2163,7 +2163,7 @@ void pushReadImagesToBuffers (const DeviceInterface&								vk,
 					0,								// arraySlice
 					1						// arraySize
 				},
-				{ 0, 0, 0 }, 				// imageOffset
+				{ 0, 0, 0 },				// imageOffset
 				{ (deInt32)targetSize.x(), (deInt32)targetSize.y(), 1 }		// imageExtent
 			};
 
@@ -2369,7 +2369,7 @@ void renderReferenceImages (vector<tcu::TextureLevel>&			referenceAttachments,
 			}
 		}
 
-		// Apply load op to depth/stencil attachment if it was used for the first time 
+		// Apply load op to depth/stencil attachment if it was used for the first time
 		if (subpass.getDepthStencilAttachment().getAttachment() != VK_ATTACHMENT_UNUSED && !attachmentUsed[subpass.getDepthStencilAttachment().getAttachment()])
 		{
 			const deUint32 attachmentIndex = subpass.getDepthStencilAttachment().getAttachment();

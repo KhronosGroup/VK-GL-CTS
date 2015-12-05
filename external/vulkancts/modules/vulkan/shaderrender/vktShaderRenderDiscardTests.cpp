@@ -64,7 +64,7 @@ public:
 						}
 
 private:
-	const bool 			m_useSampler;
+	const bool			m_useSampler;
 };
 
 

@@ -1,4 +1,5 @@
 #ifndef _VKTSHADERRENDERTESTS_HPP
+#define _VKTSHADERRENDERTESTS_HPP
 /*------------------------------------------------------------------------
  * Copyright (c) 2015 The Khronos Group Inc.
  * Copyright (c) 2015 Samsung Electronics Co., Ltd.

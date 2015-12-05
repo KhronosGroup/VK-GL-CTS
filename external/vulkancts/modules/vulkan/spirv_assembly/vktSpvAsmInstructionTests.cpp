@@ -2147,16 +2147,16 @@ string makeTessEvalShaderAssembly(const map<string, string>& fragments)
 // layout(location = 1) out vec4 out_color;
 //
 // void main() {
-// 	 gl_Position = gl_in[0].gl_Position;
-// 	 out_color = test_fun(in_color[0]);
-// 	 EmitVertex();
-// 	 gl_Position = gl_in[1].gl_Position;
-// 	 out_color = test_fun(in_color[1]);
-// 	 EmitVertex();
-// 	 gl_Position = gl_in[2].gl_Position;
-// 	 out_color = test_fun(in_color[2]);
-// 	 EmitVertex();
-// 	 EndPrimitive();
+//   gl_Position = gl_in[0].gl_Position;
+//   out_color = test_fun(in_color[0]);
+//   EmitVertex();
+//   gl_Position = gl_in[1].gl_Position;
+//   out_color = test_fun(in_color[1]);
+//   EmitVertex();
+//   gl_Position = gl_in[2].gl_Position;
+//   out_color = test_fun(in_color[2]);
+//   EmitVertex();
+//   EndPrimitive();
 // }
 string makeGeometryShaderAssembly(const map<string, string>& fragments)
 {
@@ -3052,7 +3052,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	instructionTests->addChild(createBlockOrderGroup(testCtx));
 	instructionTests->addChild(createOpUndefGroup(testCtx));
 	instructionTests->addChild(createOpUnreachableGroup(testCtx));
-    
+
     RGBA defaultColors[4];
 	getDefaultColors(defaultColors);
 	de::MovePtr<tcu::TestCaseGroup>	group	(new tcu::TestCaseGroup(testCtx, "graphics-assembly", "Test the graphics pipeline"));

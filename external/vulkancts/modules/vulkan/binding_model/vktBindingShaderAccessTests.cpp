@@ -1046,7 +1046,7 @@ void SingleCmdRenderInstance::renderToTarget (void)
 			&mainCmd.get(),
 			0u,
 			(const vk::VkSemaphore*)0,
-		};	
+		};
 		VK_CHECK(m_vki.queueSubmit(m_queue, 1, &submitInfo, *fence));
 	}
 	VK_CHECK(m_vki.waitForFences(m_device, 1, &fence.get(), 0u, infiniteTimeout)); // \note: timeout is failure
