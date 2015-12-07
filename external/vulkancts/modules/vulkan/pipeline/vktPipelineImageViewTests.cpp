@@ -163,7 +163,7 @@ void ImageViewTest::initPrograms (SourceCollections& sourceCollections) const
 	else
 		fragmentSrc << "texture(texSampler, vtxTexCoords." << texCoordSwizzle << ")" << std::fixed;
 
-	fragmentSrc << " * vec4" << formatInfo.lookupScale << " + vec4" << formatInfo.lookupBias << ";\n"
+	fragmentSrc << " * vec4" << std::scientific << formatInfo.lookupScale << " + vec4" << formatInfo.lookupBias << ";\n"
 				<< "}\n";
 
 	sourceCollections.glslSources.add("tex_vert") << glu::VertexSource(vertexSrc.str());
