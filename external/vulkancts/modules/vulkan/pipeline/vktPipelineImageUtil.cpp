@@ -59,6 +59,16 @@ static int getNextMultiple(deUint32 value)
 	return value + M - (value % M);
 }
 
+static int getNextMultiple (deUint32 M, deUint32 value)
+{
+	if (value % M == 0)
+	{
+		return value;
+	}
+	return value + M - (value % M);
+}
+
+
 bool isSupportedSamplableFormat (const InstanceInterface& instanceInterface, VkPhysicalDevice device, VkFormat format)
 {
 	if (isCompressedFormat(format))
@@ -579,15 +589,15 @@ std::vector<VkBufferImageCopy> TestTexture::getBufferCopyRegions (void) const
 			for (int layerNdx = 0; layerNdx < getArraySize(); layerNdx++)
 			{
 				const tcu::CompressedTexture& level = getCompressedLevel(levelNdx, layerNdx);
-
-				layerDataOffset = getNextMultiple<4>(layerDataOffset);
+				tcu::IVec3 blockPixelSize 			= getBlockPixelSize(level.getFormat());
+				layerDataOffset 					= getNextMultiple<4>(layerDataOffset);
 
 				const VkBufferImageCopy layerRegion =
 				{
-					layerDataOffset,						// VkDeviceSize				bufferOffset;
-					(deUint32)level.getWidth(),				// deUint32					bufferRowLength;
-					(deUint32)level.getHeight(),			// deUint32					bufferImageHeight;
-					{										// VkImageSubresourceLayers	imageSubresource;
+					layerDataOffset,													// VkDeviceSize				bufferOffset;
+					(deUint32)getNextMultiple(blockPixelSize.x(), level.getWidth()),	// deUint32					bufferRowLength;
+					(deUint32)getNextMultiple(blockPixelSize.y(), level.getHeight()),	// deUint32					bufferImageHeight;
+					{																	// VkImageSubresourceLayers	imageSubresource;
 						VK_IMAGE_ASPECT_COLOR_BIT,
 						(deUint32)levelNdx,
 						(deUint32)layerNdx,
