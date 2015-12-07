@@ -53,8 +53,8 @@
 #include "vktSpvAsmTests.hpp"
 #include "vktShaderLibrary.hpp"
 #include "vktRenderPassTests.hpp"
-#include "vktShaderRenderTests.hpp"
 #include "vktMemoryTests.hpp"
+#include "vktShaderRenderDiscardTests.hpp"
 
 #include <vector>
 #include <sstream>
@@ -231,42 +231,41 @@ tcu::TestNode::IterateResult TestCaseExecutor::iterate (tcu::TestCase*)
 		return tcu::TestNode::CONTINUE;
 }
 
-// ShaderLibrary-based GLSL tests
+// GLSL shader tests
 
-class GlslGroup : public tcu::TestCaseGroup
+tcu::TestCaseGroup* createGlslTests (tcu::TestContext& testCtx)
 {
-public:
-	GlslGroup (tcu::TestContext& testCtx)
-		: tcu::TestCaseGroup(testCtx, "glsl", "GLSL shader execution tests")
-	{
-	}
+	de::MovePtr<tcu::TestCaseGroup>	glslTests	(new tcu::TestCaseGroup(testCtx, "glsl", "GLSL shader execution tests"));
 
-	void init (void)
+	// ShaderLibrary-based tests
+	static const struct
 	{
-		static const struct
-		{
-			const char*		name;
-			const char*		description;
-		} s_es310Tests[] =
-		{
-			{ "arrays",						"Arrays"					},
-			{ "conditionals",				"Conditional statements"	},
-			{ "constant_expressions",		"Constant expressions"		},
-			{ "constants",					"Constants"					},
-			{ "conversions",				"Type conversions"			},
-			{ "functions",					"Functions"					},
-			{ "linkage",					"Linking"					},
-			{ "scoping",					"Scoping"					},
-			{ "swizzles",					"Swizzles"					},
-		};
+		const char*		name;
+		const char*		description;
+	} s_es310Tests[] =
+	{
+		{ "arrays",						"Arrays"					},
+		{ "conditionals",				"Conditional statements"	},
+		{ "constant_expressions",		"Constant expressions"		},
+		{ "constants",					"Constants"					},
+		{ "conversions",				"Type conversions"			},
+		{ "functions",					"Functions"					},
+		{ "linkage",					"Linking"					},
+		{ "scoping",					"Scoping"					},
+		{ "swizzles",					"Swizzles"					},
+	};
 
-		for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(s_es310Tests); ndx++)
-			addChild(createShaderLibraryGroup(m_testCtx,
-											  s_es310Tests[ndx].name,
-											  s_es310Tests[ndx].description,
-											  std::string("vulkan/glsl/es310/") + s_es310Tests[ndx].name + ".test").release());
-	}
-};
+	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(s_es310Tests); ndx++)
+		glslTests->addChild(createShaderLibraryGroup(testCtx,
+													 s_es310Tests[ndx].name,
+													 s_es310Tests[ndx].description,
+													 std::string("vulkan/glsl/es310/") + s_es310Tests[ndx].name + ".test").release());
+
+	// ShaderRenderCase-based tests
+	glslTests->addChild(sr::createDiscardTests(testCtx));
+
+	return glslTests.release();
+}
 
 // TestPackage
 
@@ -291,9 +290,8 @@ void TestPackage::init (void)
 	addChild(pipeline::createTests		(m_testCtx));
 	addChild(BindingModel::createTests	(m_testCtx));
 	addChild(SpirVAssembly::createTests	(m_testCtx));
-	addChild(new GlslGroup				(m_testCtx));
+	addChild(createGlslTests			(m_testCtx));
 	addChild(createRenderPassTests		(m_testCtx));
-	addChild(sr::createTests			(m_testCtx));
 	addChild(memory::createTests		(m_testCtx));
 }
 

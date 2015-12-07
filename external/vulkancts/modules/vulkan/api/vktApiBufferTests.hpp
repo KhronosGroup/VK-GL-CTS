@@ -1,4 +1,9 @@
+#ifndef _VKTAPIBUFFERTESTS_HPP
+#define _VKTAPIBUFFERTESTS_HPP
 /*------------------------------------------------------------------------
+ * Vulkan Conformance Tests
+ * ------------------------
+ *
  * Copyright (c) 2015 The Khronos Group Inc.
  * Copyright (c) 2015 Samsung Electronics Co., Ltd.
  *
@@ -27,29 +32,21 @@
  *
  *//*!
  * \file
- * \brief Vulkan shader render test cases
+ * \brief Vulkan Buffers Tests
  *//*--------------------------------------------------------------------*/
 
-#include "vktShaderRenderTests.hpp"
-
-#include "deUniquePtr.hpp"
-
-#include "vktShaderRender.hpp"
-#include "vktShaderRenderDiscardTests.hpp"
+#include "tcuDefs.hpp"
+#include "tcuTestCase.hpp"
 
 namespace vkt
 {
-namespace sr
+
+namespace api
 {
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
-{
-	de::MovePtr<tcu::TestCaseGroup> shaderRenderCaseTests (new tcu::TestCaseGroup(testCtx, "shaderRenderCase", "ShaderRenderCase Tests"));
+tcu::TestCaseGroup*		createBufferTests		(tcu::TestContext& testCtx);
 
-	shaderRenderCaseTests->addChild(new ShaderDiscardTests(testCtx));
-
-	return shaderRenderCaseTests.release();
-}
-
-} // sr
+} // api
 } // vkt
+
+#endif // _VKTAPIBUFFERTESTS_HPP

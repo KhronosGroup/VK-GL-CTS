@@ -1,8 +1,7 @@
-#ifndef _VKTAPIBUFFERSTESTS_HPP
-#define _VKTAPIBUFFERSTESTS_HPP
-
+#ifndef _VKTAPIBUFFERVIEWCREATETESTS_HPP
+#define _VKTAPIBUFFERVIEWCREATETESTS_HPP
 /*------------------------------------------------------------------------
- * Vulkan Conformance Tests
+ *  Vulkan Conformance Tests
  * ------------------------
  *
  * Copyright (c) 2015 The Khronos Group Inc.
@@ -33,7 +32,7 @@
  *
  *//*!
  * \file
- * \brief Vulkan Buffers Tests
+ * \brief Vulkan Buffer View Creation Tests
  *//*--------------------------------------------------------------------*/
 
 #include "tcuDefs.hpp"
@@ -45,9 +44,9 @@ namespace vkt
 namespace api
 {
 
-tcu::TestCaseGroup*		createBufferTests		(tcu::TestContext& testCtx);
+tcu::TestCaseGroup*		createBufferViewCreateTests	(tcu::TestContext& testCtx);
 
 } // api
 } // vkt
 
-#endif // _VKTAPIBUFFERSTESTS_HPP
+#endif // _VKTAPIBUFFERVIEWCREATETESTS_HPP

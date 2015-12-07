@@ -39,14 +39,29 @@
 #include "vktApiSmokeTests.hpp"
 #include "vktApiDeviceInitializationTests.hpp"
 #include "vktApiObjectManagementTests.hpp"
-#include "vktApiBuffersTests.hpp"
-#include "vktApiBuffersViewCreationTests.hpp"
-#include "vktApiBuffersViewMemoryTests.hpp"
+#include "vktApiBufferTests.hpp"
+#include "vktApiBufferViewCreateTests.hpp"
+#include "vktApiBufferViewAccessTests.hpp"
 
 namespace vkt
 {
 namespace api
 {
+
+namespace
+{
+
+tcu::TestCaseGroup* createBufferViewTests (tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup>	bufferViewTests	(new tcu::TestCaseGroup(testCtx, "buffer_view", "BufferView tests"));
+
+	bufferViewTests->addChild(createBufferViewCreateTests	(testCtx));
+	bufferViewTests->addChild(createBufferViewAccessTests	(testCtx));
+
+	return bufferViewTests.release();
+}
+
+} // anonymous
 
 tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 {
@@ -56,8 +71,7 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 	apiTests->addChild(createDeviceInitializationTests	(testCtx));
 	apiTests->addChild(createObjectManagementTests		(testCtx));
 	apiTests->addChild(createBufferTests				(testCtx));
-	apiTests->addChild(createBufferViewCreationTests	(testCtx));
-	apiTests->addChild(createBufferViewMemoryTests		(testCtx));
+	apiTests->addChild(createBufferViewTests			(testCtx));
 
 	return apiTests.release();
 }

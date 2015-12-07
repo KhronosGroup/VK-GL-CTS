@@ -35,25 +35,15 @@
  * \brief Shader discard statement tests.
  *//*--------------------------------------------------------------------*/
 
-#include "vktShaderRender.hpp"
+#include "tcuDefs.hpp"
+#include "tcuTestCase.hpp"
 
 namespace vkt
 {
 namespace sr
 {
 
-class ShaderDiscardTests : public tcu::TestCaseGroup
-{
-public:
-							ShaderDiscardTests		(tcu::TestContext& textCtx);
-	virtual					~ShaderDiscardTests		(void);
-
-	virtual void			init					(void);
-
-private:
-							ShaderDiscardTests		(const ShaderDiscardTests&);		// not allowed!
-	ShaderDiscardTests&		operator=				(const ShaderDiscardTests&);		// not allowed!
-};
+tcu::TestCaseGroup*	createDiscardTests	(tcu::TestContext& testCtx);
 
 } // sr
 } // vkt

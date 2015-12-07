@@ -33,7 +33,7 @@
  * \brief Vulkan Buffer View Creation Tests
  *//*--------------------------------------------------------------------*/
 
-#include "vktApiBuffersViewCreationTests.hpp"
+#include "vktApiBufferViewCreateTests.hpp"
 
 #include "deStringUtil.hpp"
 #include "gluVarType.hpp"
@@ -206,9 +206,9 @@ tcu::TestStatus BufferViewTestInstance::iterate (void)
 
 } // anonymous
 
- tcu::TestCaseGroup* createBufferViewCreationTests (tcu::TestContext&	testCtx)
+ tcu::TestCaseGroup* createBufferViewCreateTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup>	bufferViewTests	(new tcu::TestCaseGroup(testCtx, "buffersView", "BufferView Tests"));
+	de::MovePtr<tcu::TestCaseGroup>	bufferViewTests	(new tcu::TestCaseGroup(testCtx, "create", "BufferView Construction Tests"));
 
 	const VkDeviceSize range = 96;
 	for (deUint32 format = VK_FORMAT_UNDEFINED + 1; format < VK_FORMAT_LAST; format++)

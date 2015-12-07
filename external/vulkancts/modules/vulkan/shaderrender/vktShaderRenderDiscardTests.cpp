@@ -34,6 +34,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktShaderRenderDiscardTests.hpp"
+#include "vktShaderRender.hpp"
 #include "tcuStringTemplate.hpp"
 #include "gluTexture.hpp"
 
@@ -367,7 +368,18 @@ de::MovePtr<ShaderDiscardCase> makeDiscardCase (tcu::TestContext& testCtx, Disca
 	return de::MovePtr<ShaderDiscardCase>(new ShaderDiscardCase(testCtx, name.c_str(), description.c_str(), shaderTemplate.specialize(params).c_str(), getEvalFunc(mode), mode == DISCARDMODE_TEXTURE));
 }
 
-} // anonymous
+class ShaderDiscardTests : public tcu::TestCaseGroup
+{
+public:
+							ShaderDiscardTests		(tcu::TestContext& textCtx);
+	virtual					~ShaderDiscardTests		(void);
+
+	virtual void			init					(void);
+
+private:
+							ShaderDiscardTests		(const ShaderDiscardTests&);		// not allowed!
+	ShaderDiscardTests&		operator=				(const ShaderDiscardTests&);		// not allowed!
+};
 
 ShaderDiscardTests::ShaderDiscardTests (tcu::TestContext& testCtx)
 	: TestCaseGroup(testCtx, "discard", "Discard statement tests")
@@ -383,6 +395,13 @@ void ShaderDiscardTests::init (void)
 	for (int tmpl = 0; tmpl < DISCARDTEMPLATE_LAST; tmpl++)
 		for (int mode = 0; mode < DISCARDMODE_LAST; mode++)
 			addChild(makeDiscardCase(m_testCtx, (DiscardTemplate)tmpl, (DiscardMode)mode).release());
+}
+
+} // anonymous
+
+tcu::TestCaseGroup* createDiscardTests (tcu::TestContext& testCtx)
+{
+	return new ShaderDiscardTests(testCtx);
 }
 
 } // sr

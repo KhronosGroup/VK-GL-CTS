@@ -33,7 +33,7 @@
  * \brief Vulkan Buffers Tests
  *//*--------------------------------------------------------------------*/
 
-#include "vktApiBuffersTests.hpp"
+#include "vktApiBufferTests.hpp"
 
 #include "deStringUtil.hpp"
 #include "gluVarType.hpp"
@@ -189,7 +189,7 @@ tcu::TestStatus BufferTestInstance::iterate (void)
 
 } // anonymous
 
- tcu::TestCaseGroup* createBufferTests (tcu::TestContext&	testCtx)
+ tcu::TestCaseGroup* createBufferTests (tcu::TestContext& testCtx)
 {
 	const VkBufferUsageFlags bufferUsageModes[] =
 	{
@@ -211,7 +211,7 @@ tcu::TestStatus BufferTestInstance::iterate (void)
 		VK_BUFFER_CREATE_SPARSE_ALIASED_BIT
 	};
 
-	de::MovePtr<tcu::TestCaseGroup>	buffersTests	(new tcu::TestCaseGroup(testCtx, "buffers", "Buffers Tests"));
+	de::MovePtr<tcu::TestCaseGroup>	buffersTests	(new tcu::TestCaseGroup(testCtx, "buffer", "Buffer Tests"));
 
 	deUint32	numberOfBufferUsageFlags			= DE_LENGTH_OF_ARRAY(bufferUsageModes);
 	deUint32	numberOfBufferCreateFlags			= DE_LENGTH_OF_ARRAY(bufferCreateFlags);

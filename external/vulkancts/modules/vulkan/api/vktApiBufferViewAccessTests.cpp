@@ -33,7 +33,7 @@
  * \brief Vulkan Buffer View Memory Tests
  *//*--------------------------------------------------------------------*/
 
-#include "vktApiBuffersViewMemoryTests.hpp"
+#include "vktApiBufferViewAccessTests.hpp"
 
 #include "deStringUtil.hpp"
 #include "deUniquePtr.hpp"
@@ -875,9 +875,9 @@ void BufferViewTestCase::initPrograms (SourceCollections& programCollection) con
 
 } // anonymous
 
-tcu::TestCaseGroup* createBufferViewMemoryTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createBufferViewAccessTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup>	bufferViewTests	(new tcu::TestCaseGroup(testCtx, "buffersViewMemory", "BufferView Memory Tests"));
+	de::MovePtr<tcu::TestCaseGroup>	bufferViewTests	(new tcu::TestCaseGroup(testCtx, "access", "BufferView Access Tests"));
 
 	{
 		BufferViewCaseParams info =
