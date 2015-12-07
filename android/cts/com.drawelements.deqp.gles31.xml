@@ -4472,9 +4472,6 @@
 <Test name="lines_4_samples_dfdx" />
 <Test name="lines_4_samples_dfdy" />
 <Test name="lines_4_samples_fwidth" />
-<Test name="wide_lines_4_samples_dfdx" />
-<Test name="wide_lines_4_samples_dfdy" />
-<Test name="wide_lines_4_samples_fwidth" />
 <Test name="points_4_samples_dfdx" />
 <Test name="points_4_samples_dfdy" />
 <Test name="points_4_samples_fwidth" />
@@ -4487,9 +4484,6 @@
 <Test name="lines_8_samples_dfdx" />
 <Test name="lines_8_samples_dfdy" />
 <Test name="lines_8_samples_fwidth" />
-<Test name="wide_lines_8_samples_dfdx" />
-<Test name="wide_lines_8_samples_dfdy" />
-<Test name="wide_lines_8_samples_fwidth" />
 <Test name="points_8_samples_dfdx" />
 <Test name="points_8_samples_dfdy" />
 <Test name="points_8_samples_fwidth" />
@@ -4502,9 +4496,6 @@
 <Test name="lines_max_samples_dfdx" />
 <Test name="lines_max_samples_dfdy" />
 <Test name="lines_max_samples_fwidth" />
-<Test name="wide_lines_max_samples_dfdx" />
-<Test name="wide_lines_max_samples_dfdy" />
-<Test name="wide_lines_max_samples_fwidth" />
 <Test name="points_max_samples_dfdx" />
 <Test name="points_max_samples_dfdy" />
 <Test name="points_max_samples_fwidth" />
