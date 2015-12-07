@@ -964,10 +964,10 @@ vector<vk::VkVertexInputAttributeDescription> getVertexAttributeDescriptions (co
 		const ValueBufferLayout::Entry&	layoutEntry	= layout.entries[inputNdx];
 		const DataType					basicType	= input.type.getBasicType();
 		const int						numVecs		= isDataTypeMatrix(basicType)
-													? getDataTypeMatrixNumRows(basicType)
+													? getDataTypeMatrixNumColumns(basicType)
 													: 1;
 		const int						vecSize		= isDataTypeMatrix(basicType)
-													? getDataTypeMatrixNumColumns(basicType)
+													? getDataTypeMatrixNumRows(basicType)
 													: getDataTypeScalarSize(basicType);
 		const vk::VkFormat				vecFmt		= getFloatVecFormat(vecSize);
 
