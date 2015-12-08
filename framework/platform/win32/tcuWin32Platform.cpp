@@ -37,7 +37,7 @@ class VulkanLibrary : public vk::Library
 {
 public:
 	VulkanLibrary (void)
-		: m_library	("vulkan.dll")
+		: m_library	("vulkan-0.dll")
 		, m_driver	(m_library)
 	{
 	}
