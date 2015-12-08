@@ -27845,9 +27845,6 @@
 							<Test name="8">
 								<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 							</Test>
-							<Test name="9">
-								<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
-							</Test>
 						</TestCase>
 						<TestCase name="mixed">
 							<Test name="3">
