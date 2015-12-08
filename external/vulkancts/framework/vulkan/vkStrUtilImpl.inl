@@ -1681,7 +1681,7 @@ std::ostream& operator<< (std::ostream& s, const VkDeviceCreateInfo& value)
 std::ostream& operator<< (std::ostream& s, const VkExtensionProperties& value)
 {
 	s << "VkExtensionProperties = {\n";
-	s << "\textensionName = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<char>(DE_ARRAY_BEGIN(value.extensionName)), tcu::Format::HexIterator<char>(DE_ARRAY_END(value.extensionName))) << '\n';
+	s << "\textensionName = " << (const char*)value.extensionName << '\n';
 	s << "\tspecVersion = " << value.specVersion << '\n';
 	s << '}';
 	return s;

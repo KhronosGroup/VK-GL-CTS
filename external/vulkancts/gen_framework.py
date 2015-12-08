@@ -547,7 +547,7 @@ def writeStrUtilImpl (api, filename):
 					valFmt = "getCharPtrStr(value.%s)" % member.name
 				elif '[' in member.name:
 					baseName = member.name[:member.name.find('[')]
-					if baseName in ["extName", "deviceName", "layerName", "description"]:
+					if baseName in ["extensionName", "deviceName", "layerName", "description"]:
 						valFmt = "(const char*)value.%s" % baseName
 					elif member.type == 'char' or member.type == 'deUint8':
 						newLine = "'\\n' << "
