@@ -64,7 +64,7 @@ if(DEQP_HAVE_SPIRV_TOOLS)
 	include_directories(${spirv-tools_SOURCE_DIR}/external/include)
 
 	add_definitions(-DDEQP_HAVE_SPIRV_TOOLS=1)
-	set(VKUTIL_LIBS ${VKUTIL_LIBS} SPIRV-TOOLS)
+	set(VKUTIL_LIBS ${VKUTIL_LIBS} SPIRV-Tools)
 endif()
 
 add_library(vkutil STATIC ${VKUTIL_SRCS})

@@ -175,11 +175,7 @@ tcu::TestCaseGroup* createOpNopGroup (tcu::TestContext& testCtx)
 		negativeFloats[ndx] = -positiveFloats[ndx];
 
 	spec.assembly =
-		"OpNop\n" // As the first instruction
-
-		+ string(s_ShaderPreamble) +
-
-		"OpNop\n" // After OpEntryPoint but before any type definitions
+		string(s_ShaderPreamble) +
 
 		"OpSource GLSL 430\n"
 		"OpName %main           \"main\"\n"
@@ -187,9 +183,7 @@ tcu::TestCaseGroup* createOpNopGroup (tcu::TestContext& testCtx)
 
 		"OpDecorate %id BuiltIn GlobalInvocationId\n"
 
-		+ string(s_InputOutputBufferTraits) + string(s_CommonTypes) +
-
-		"OpNop\n" // In the middle of type definitions
+		+ string(s_InputOutputBufferTraits) + string(s_CommonTypes)
 
 		+ string(s_InputOutputBuffer) +
 
@@ -953,7 +947,7 @@ tcu::TestCaseGroup* createOpSourceGroup (tcu::TestContext& testCtx)
 		"             OpFunctionEnd\n");
 
 	cases.push_back(CaseParameter("unknown_source",							"OpSource Unknown 0"));
-	cases.push_back(CaseParameter("wrong_source",							"OpSource OpenCL 210"));
+	cases.push_back(CaseParameter("wrong_source",							"OpSource OpenCL_C 210"));
 	cases.push_back(CaseParameter("normal_filename",						"%fname = OpString \"filename\"\n"
 																			"OpSource GLSL 430 %fname"));
 	cases.push_back(CaseParameter("empty_filename",							"%fname = OpString \"\"\n"
@@ -1867,7 +1861,6 @@ void createPipelineShaderStages (const DeviceInterface& vk, const VkDevice vkDev
 string makeVertexShaderAssembly(const map<string, string>& fragments)
 {
 // \todo [2015-11-23 awoloszyn] Remove OpName once these have stabalized
-// \todo [2015-11-23 awoloszyn] Remove Smooth decoration when we move to SPIR-V 1.0
 	static const char vertexShaderBoilerplate[] =
 		"OpCapability Shader\n"
 		"OpMemoryModel Logical GLSL450\n"
@@ -1882,10 +1875,8 @@ string makeVertexShaderAssembly(const map<string, string>& fragments)
 		"OpName %vertex_id \"gl_VertexID\"\n"
 		"OpName %instance_id \"gl_InstanceID\"\n"
 		"OpName %test_code \"testfun(vf4;\"\n"
-		"OpDecorate %BP_vtxPosition Smooth\n"
 		"OpDecorate %BP_vtxPosition Location 2\n"
 		"OpDecorate %BP_Position Location 0\n"
-		"OpDecorate %BP_vtxColor Smooth\n"
 		"OpDecorate %BP_vtxColor Location 1\n"
 		"OpDecorate %BP_color Location 1\n"
 		"OpDecorate %BP_vertex_id BuiltIn VertexId\n"
@@ -2045,7 +2036,7 @@ string makeTessEvalShaderAssembly(const map<string, string>& fragments)
 		"OpCapability Tessellation\n"
 		"OpMemoryModel Logical GLSL450\n"
 		"OpEntryPoint TessellationEvaluation %BP_main \"main\" %BP_stream %BP_gl_tessCoord %BP_in_position %BP_out_color %BP_in_color \n"
-		"OpExecutionMode %BP_main InputTriangles\n"
+		"OpExecutionMode %BP_main Triangles\n"
 		"${debug:opt}\n"
 		"OpName %BP_main \"main\"\n"
 		"OpName %BP_per_vertex_out \"gl_PerVertex\"\n"
@@ -2161,7 +2152,7 @@ string makeGeometryShaderAssembly(const map<string, string>& fragments)
 		"OpCapability Geometry\n"
 		"OpMemoryModel Logical GLSL450\n"
 		"OpEntryPoint Geometry %BP_main \"main\" %BP_out_gl_position %BP_gl_in %BP_out_color %BP_in_color\n"
-		"OpExecutionMode %BP_main InputTriangles\n"
+		"OpExecutionMode %BP_main Triangles\n"
 		"OpExecutionMode %BP_main Invocations 0\n"
 		"OpExecutionMode %BP_main OutputTriangleStrip\n"
 		"OpExecutionMode %BP_main OutputVertices 3\n"
@@ -2218,6 +2209,7 @@ string makeGeometryShaderAssembly(const map<string, string>& fragments)
 		"%BP_transformed_in_color_0 = OpFunctionCall %v4f32 %test_code %BP_in_color_0\n"
 		"%BP_transformed_in_color_1 = OpFunctionCall %v4f32 %test_code %BP_in_color_1\n"
 		"%BP_transformed_in_color_2 = OpFunctionCall %v4f32 %test_code %BP_in_color_2\n"
+
 		"OpStore %BP_out_gl_position %BP_in_position_0\n"
 		"OpStore %BP_out_color %BP_transformed_in_color_0\n"
 		"OpEmitVertex\n"
@@ -2244,8 +2236,8 @@ string makeGeometryShaderAssembly(const map<string, string>& fragments)
 //
 // Derived from this GLSL:
 //
-// layout(location = 0) in highp vec4 vtxColor;
-// layout(location = 1) out highp vec4 fragColor;
+// layout(location = 1) in highp vec4 vtxColor;
+// layout(location = 0) out highp vec4 fragColor;
 // highp vec4 testfun(highp vec4 x) { return x; }
 // void main(void) { fragColor = testfun(vtxColor); }
 //
@@ -2264,7 +2256,6 @@ string makeFragmentShaderAssembly(const map<string, string>& fragments)
 		"OpName %BP_vtxColor \"vtxColor\"\n"
 		"OpName %test_code \"testfun(vf4;\"\n"
 		"OpDecorate %BP_fragColor Location 0\n"
-		"OpDecorate %BP_vtxColor Smooth\n"
 		"OpDecorate %BP_vtxColor Location 1\n"
 		SPIRV_ASSEMBLY_TYPES
 		SPIRV_ASSEMBLY_CONSTANTS
