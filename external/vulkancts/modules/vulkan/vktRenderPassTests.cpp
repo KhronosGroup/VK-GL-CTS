@@ -4221,7 +4221,7 @@ de::MovePtr<tcu::TestCaseGroup> createAttachmentAllocationTestGroup (tcu::TestCo
 
 				vector<SubpassDependency>				deps;
 
-				for (size_t subpassNdx = 0; subpassNdx < subpasses.size(); subpassNdx++)
+				for (size_t subpassNdx = 0; subpassNdx < subpasses.size() - 1; subpassNdx++)
 				{
 					const bool byRegion				= rng.getBool();
 					deps.push_back(SubpassDependency((deUint32)subpassNdx, (deUint32)subpassNdx + 1,
