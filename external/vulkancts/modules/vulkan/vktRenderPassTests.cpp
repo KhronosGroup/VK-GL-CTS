@@ -1772,7 +1772,7 @@ public:
 		{
 			m_commandBuffer = allocateCommandBuffer(vk, device, commandBufferPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
 
-			beginCommandBuffer(vk, *m_commandBuffer, (VkCommandBufferUsageFlags)0, renderPass, subpassIndex, framebuffer, VK_FALSE, (VkQueryControlFlags)0, (VkQueryPipelineStatisticFlags)0);
+			beginCommandBuffer(vk, *m_commandBuffer, vk::VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT, renderPass, subpassIndex, framebuffer, VK_FALSE, (VkQueryControlFlags)0, (VkQueryPipelineStatisticFlags)0);
 			pushRenderCommands(vk, *m_commandBuffer);
 			endCommandBuffer(vk, *m_commandBuffer);
 		}
