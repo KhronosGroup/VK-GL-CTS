@@ -3859,10 +3859,18 @@ de::MovePtr<tcu::TestCaseGroup> createAttachmentTestCaseGroup (tcu::TestContext&
 		VK_ATTACHMENT_STORE_OP_DONT_CARE
 	};
 
-	const VkImageLayout initialAndFinalLayouts[] =
+	const VkImageLayout initialAndFinalColorLayouts[] =
 	{
 		VK_IMAGE_LAYOUT_GENERAL,
 		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+		VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
+	};
+
+	const VkImageLayout initialAndFinalDepthStencilLayouts[] =
+	{
+		VK_IMAGE_LAYOUT_GENERAL,
 		VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
 		VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,
 		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
@@ -3945,8 +3953,8 @@ de::MovePtr<tcu::TestCaseGroup> createAttachmentTestCaseGroup (tcu::TestContext&
 				const VkAttachmentLoadOp	loadOp			= rng.choose<VkAttachmentLoadOp>(DE_ARRAY_BEGIN(loadOps), DE_ARRAY_END(loadOps));
 				const VkAttachmentStoreOp	storeOp			= rng.choose<VkAttachmentStoreOp>(DE_ARRAY_BEGIN(storeOps), DE_ARRAY_END(storeOps));
 
-				const VkImageLayout			initialLayout	= rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(initialAndFinalLayouts), DE_ARRAY_END(initialAndFinalLayouts));
-				const VkImageLayout			finalizeLayout	= rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(initialAndFinalLayouts), DE_ARRAY_END(initialAndFinalLayouts));
+				const VkImageLayout			initialLayout	= rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(initialAndFinalColorLayouts), DE_ARRAY_END(initialAndFinalColorLayouts));
+				const VkImageLayout			finalizeLayout	= rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(initialAndFinalColorLayouts), DE_ARRAY_END(initialAndFinalColorLayouts));
 				const VkImageLayout			subpassLayout	= rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(subpassLayouts), DE_ARRAY_END(subpassLayouts));
 
 				const VkAttachmentLoadOp	stencilLoadOp	= rng.choose<VkAttachmentLoadOp>(DE_ARRAY_BEGIN(loadOps), DE_ARRAY_END(loadOps));
@@ -3963,8 +3971,8 @@ de::MovePtr<tcu::TestCaseGroup> createAttachmentTestCaseGroup (tcu::TestContext&
 				const VkAttachmentLoadOp	loadOp				= rng.choose<VkAttachmentLoadOp>(DE_ARRAY_BEGIN(loadOps), DE_ARRAY_END(loadOps));
 				const VkAttachmentStoreOp	storeOp				= rng.choose<VkAttachmentStoreOp>(DE_ARRAY_BEGIN(storeOps), DE_ARRAY_END(storeOps));
 
-				const VkImageLayout			initialLayout		= rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(initialAndFinalLayouts), DE_ARRAY_END(initialAndFinalLayouts));
-				const VkImageLayout			finalizeLayout		= rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(initialAndFinalLayouts), DE_ARRAY_END(initialAndFinalLayouts));
+				const VkImageLayout			initialLayout		= rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(initialAndFinalDepthStencilLayouts), DE_ARRAY_END(initialAndFinalDepthStencilLayouts));
+				const VkImageLayout			finalizeLayout		= rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(initialAndFinalDepthStencilLayouts), DE_ARRAY_END(initialAndFinalDepthStencilLayouts));
 
 				const VkAttachmentLoadOp	stencilLoadOp		= rng.choose<VkAttachmentLoadOp>(DE_ARRAY_BEGIN(loadOps), DE_ARRAY_END(loadOps));
 				const VkAttachmentStoreOp	stencilStoreOp		= rng.choose<VkAttachmentStoreOp>(DE_ARRAY_BEGIN(storeOps), DE_ARRAY_END(storeOps));
