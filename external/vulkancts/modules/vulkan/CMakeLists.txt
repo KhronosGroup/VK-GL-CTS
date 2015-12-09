@@ -12,6 +12,7 @@ add_subdirectory(dynamic_state)
 add_subdirectory(ssbo)
 add_subdirectory(query_pool)
 add_subdirectory(draw)
+add_subdirectory(compute)
 
 include_directories(
 	api
@@ -26,6 +27,7 @@ include_directories(
 	ssbo
 	query_pool
 	draw
+	compute
 	)
 
 set(DEQP_VK_COMMON_SRCS
@@ -57,6 +59,7 @@ set(DEQP_VK_COMMON_LIBS
 	deqp-vk-ssbo
 	deqp-vk-query-pool
 	deqp-vk-draw
+	deqp-vk-compute
 	)
 
 if (DE_OS_IS_WIN32 OR DE_OS_IS_UNIX OR DE_OS_IS_OSX)

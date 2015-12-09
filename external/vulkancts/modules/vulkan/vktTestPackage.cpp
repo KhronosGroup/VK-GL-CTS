@@ -67,6 +67,7 @@
 #include "vktSSBOLayoutTests.hpp"
 #include "vktQueryPoolTests.hpp"
 #include "vktDrawTests.hpp"
+#include "vktComputeTests.hpp"
 
 #include <vector>
 #include <sstream>
@@ -319,6 +320,7 @@ void TestPackage::init (void)
 	addChild(ssbo::createTests			(m_testCtx));
 	addChild(QueryPool::createTests		(m_testCtx));
 	addChild(Draw::createTests			(m_testCtx));
+	addChild(compute::createTests		(m_testCtx));
 }
 
 } // vkt
