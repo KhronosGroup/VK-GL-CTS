@@ -6,7 +6,7 @@ add_subdirectory(binding_model)
 add_subdirectory(spirv_assembly)
 add_subdirectory(shaderrender)
 add_subdirectory(memory)
-add_subdirectory(query-pool)
+add_subdirectory(query_pool)
 
 include_directories(
 	api
@@ -15,7 +15,7 @@ include_directories(
 	spirv_assembly
 	shaderrender
 	memory
-	query-pool
+	query_pool
 	)
 
 set(DEQP_VK_COMMON_SRCS

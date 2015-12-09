@@ -52,18 +52,18 @@ class ImageSubresourceRange : public vk::VkImageSubresourceRange
 public:
 	ImageSubresourceRange (	vk::VkImageAspectFlags	aspectMask,
 							deUint32				baseMipLevel	= 0,
-							deUint32				mipLevels		= 1,
+							deUint32				levelCount		= 1,
 							deUint32				baseArrayLayer	= 0,
-							deUint32				arraySize		= 1);
+							deUint32				layerCount		= 1);
 };
 
-class ChannelMapping : public vk::VkChannelMapping
+class ComponentMapping : public vk::VkComponentMapping
 {
 public:
-	ChannelMapping (	vk::VkChannelSwizzle r = vk::VK_CHANNEL_SWIZZLE_R,
-						vk::VkChannelSwizzle g = vk::VK_CHANNEL_SWIZZLE_G,
-						vk::VkChannelSwizzle b = vk::VK_CHANNEL_SWIZZLE_B,
-						vk::VkChannelSwizzle a = vk::VK_CHANNEL_SWIZZLE_A);
+	ComponentMapping (	vk::VkComponentSwizzle r = vk::VK_COMPONENT_SWIZZLE_R,
+						vk::VkComponentSwizzle g = vk::VK_COMPONENT_SWIZZLE_G,
+						vk::VkComponentSwizzle b = vk::VK_COMPONENT_SWIZZLE_B,
+						vk::VkComponentSwizzle a = vk::VK_COMPONENT_SWIZZLE_A);
 };
 
 class ImageViewCreateInfo : public vk::VkImageViewCreateInfo
@@ -73,13 +73,13 @@ public:
 								vk::VkImageViewType				viewType,
 								vk::VkFormat					format,
 						const	vk::VkImageSubresourceRange&	subresourceRange,
-						const	vk::VkChannelMapping&			channels			= ChannelMapping(),
+						const	vk::VkComponentMapping&			components			= ComponentMapping(),
 								vk::VkImageViewCreateFlags		flags				= 0);
 
 	ImageViewCreateInfo (		vk::VkImage						image,
 								vk::VkImageViewType				viewType,
 								vk::VkFormat					format,
-						const	vk::VkChannelMapping&			channels			= ChannelMapping(),
+						const	vk::VkComponentMapping&			components			= ComponentMapping(),
 								vk::VkImageViewCreateFlags		flags				= 0);
 };
 
@@ -97,10 +97,10 @@ class BufferCreateInfo : public vk::VkBufferCreateInfo
 public:
 	BufferCreateInfo (		vk::VkDeviceSize			size,
 							vk::VkBufferCreateFlags		usage,
-							vk::VkSharingMode			sharingMode			= vk::VK_SHARING_MODE_EXCLUSIVE,
-							deUint32					queueFamilyCount	= 0,
-					 const	deUint32*					pQueueFamilyIndices = DE_NULL, 
-							vk::VkBufferCreateFlags		flags				= 0);
+							vk::VkSharingMode			sharingMode				= vk::VK_SHARING_MODE_EXCLUSIVE,
+							deUint32					queueFamilyIndexCount	= 0,
+							const	deUint32*			pQueueFamilyIndices		= DE_NULL, 
+							vk::VkBufferCreateFlags		flags					= 0);
 
 	BufferCreateInfo			(const BufferCreateInfo &other);	
 	BufferCreateInfo &operator=	(const BufferCreateInfo &other);
@@ -113,19 +113,19 @@ private:
 class ImageCreateInfo : public vk::VkImageCreateInfo
 {
 public:
-	ImageCreateInfo (		vk::VkImageType			imageType,
-							vk::VkFormat			format,
-							vk::VkExtent3D			extent,
-							deUint32				mipLevels,
-							deUint32				arraySize,
-							deUint32				samples,
-							vk::VkImageTiling		tiling,
-							vk::VkImageUsageFlags	usage,
-							vk::VkSharingMode		sharingMode			= vk::VK_SHARING_MODE_EXCLUSIVE,
-							deUint32				queueFamilyCount	= 0,
-					const	deUint32*				pQueueFamilyIndices = DE_NULL,
-							vk::VkImageCreateFlags	flags				= 0, 
-							vk::VkImageLayout		initialLayout		= vk::VK_IMAGE_LAYOUT_UNDEFINED);
+	ImageCreateInfo (		vk::VkImageType				imageType,
+							vk::VkFormat				format,
+							vk::VkExtent3D				extent,
+							deUint32					mipLevels,
+							deUint32					arrayLayers,
+							vk::VkSampleCountFlagBits	samples,
+							vk::VkImageTiling			tiling,
+							vk::VkImageUsageFlags		usage,
+							vk::VkSharingMode			sharingMode				= vk::VK_SHARING_MODE_EXCLUSIVE,
+							deUint32					queueFamilyIndexCount	= 0,
+					const	deUint32*					pQueueFamilyIndices		= DE_NULL,
+							vk::VkImageCreateFlags		flags					= 0, 
+							vk::VkImageLayout			initialLayout			= vk::VK_IMAGE_LAYOUT_UNDEFINED);
 
 private:
 	ImageCreateInfo				(const ImageCreateInfo &other);
@@ -148,11 +148,11 @@ class AttachmentDescription : public vk::VkAttachmentDescription
 {
 public:
 	AttachmentDescription (	vk::VkFormat				format,
-							deUint32					samples,
-							vk::VkAttachmentLoadOp	loadOp,
-							vk::VkAttachmentStoreOp	storeOp,
-							vk::VkAttachmentLoadOp	stencilLoadOp,
-							vk::VkAttachmentStoreOp	stencilStoreOp,
+							vk::VkSampleCountFlagBits	samples,
+							vk::VkAttachmentLoadOp		loadOp,
+							vk::VkAttachmentStoreOp		storeOp,
+							vk::VkAttachmentLoadOp		stencilLoadOp,
+							vk::VkAttachmentStoreOp		stencilStoreOp,
 							vk::VkImageLayout			initialLayout,
 							vk::VkImageLayout			finalLayout);
 
@@ -171,36 +171,38 @@ class SubpassDescription : public vk::VkSubpassDescription
 public:
 	SubpassDescription (		vk::VkPipelineBindPoint			pipelineBindPoint,
 								vk::VkSubpassDescriptionFlags	flags,
-								deUint32						inputCount,
+								deUint32						inputAttachmentCount,
 						const	vk::VkAttachmentReference*		inputAttachments,
-								deUint32						colorCount,
-					   const	vk::VkAttachmentReference*		colorAttachments,
-					   const	vk::VkAttachmentReference*		resolveAttachments,
+								deUint32						colorAttachmentCount,
+						const	vk::VkAttachmentReference*		colorAttachments,
+						const	vk::VkAttachmentReference*		resolveAttachments,
 								vk::VkAttachmentReference		depthStencilAttachment,
-								deUint32						preserveCount,
-					   const	vk::VkAttachmentReference*		preserveAttachments);
+								deUint32						preserveAttachmentCount,
+						const	vk::VkAttachmentReference*		preserveAttachments);
 
-	SubpassDescription				(const vk::VkSubpassDescription &other);
-	SubpassDescription				(const SubpassDescription &other);
-	SubpassDescription &operator=	(const SubpassDescription &other);
+	SubpassDescription				(const vk::VkSubpassDescription& other);
+	SubpassDescription				(const SubpassDescription& other);
+	SubpassDescription& operator=	(const SubpassDescription& other);
 
 private:
-	std::vector<vk::VkAttachmentReference> m_InputAttachments;
-	std::vector<vk::VkAttachmentReference> m_ColorAttachments;
-	std::vector<vk::VkAttachmentReference> m_ResolveAttachments;
-	std::vector<vk::VkAttachmentReference> m_PreserveAttachments;
+	std::vector<vk::VkAttachmentReference>	 m_inputAttachments;
+	std::vector<vk::VkAttachmentReference>	 m_colorAttachments;
+	std::vector<vk::VkAttachmentReference>	 m_resolveAttachments;
+	std::vector<vk::VkAttachmentReference>	 m_preserveAttachments;
+
+	vk::VkAttachmentReference				m_depthStencilAttachment;
 };
 
 class SubpassDependency : public vk::VkSubpassDependency
 {
 public:
 	SubpassDependency (	deUint32					srcSubpass,
-						deUint32					destSubpass,
+						deUint32					dstSubpass,
 						vk::VkPipelineStageFlags	srcStageMask,
-						vk::VkPipelineStageFlags	destStageMask,
-						vk::VkMemoryOutputFlags		outputMask,
-						vk::VkMemoryInputFlags		inputMask,
-						vk::VkBool32				byRegion);
+						vk::VkPipelineStageFlags	dstStageMask,
+						vk::VkAccessFlags			srcAccessMask,
+						vk::VkAccessFlags			dstAccessMask,
+						vk::VkDependencyFlags		dependencyFlags);
 
 	SubpassDependency (const vk::VkSubpassDependency& other);
 };
@@ -224,13 +226,13 @@ public:
 	void addDependency	(vk::VkSubpassDependency dependency);
 
 private:
-	std::vector<AttachmentDescription>	 m_attachments;
-	std::vector<SubpassDescription>		 m_subpasses;
-	std::vector<SubpassDependency>		 m_dependiences;
+	std::vector<AttachmentDescription>			m_attachments;
+	std::vector<SubpassDescription>				m_subpasses;
+	std::vector<SubpassDependency>				m_dependiences;
 
-	std::vector<vk::VkAttachmentDescription> m_attachmentsStructs;
-	std::vector<vk::VkSubpassDescription>	 m_subpassesStructs;
-	std::vector<vk::VkSubpassDependency>	 m_dependiencesStructs;
+	std::vector<vk::VkAttachmentDescription>	m_attachmentsStructs;
+	std::vector<vk::VkSubpassDescription>		m_subpassesStructs;
+	std::vector<vk::VkSubpassDependency>		m_dependiencesStructs;
 
 	RenderPassCreateInfo			(const RenderPassCreateInfo &other); //Not allowed!
 	RenderPassCreateInfo &operator= (const RenderPassCreateInfo &other); //Not allowed!
@@ -251,58 +253,55 @@ private:
 	RenderPassBeginInfo &operator=	(const RenderPassBeginInfo &other); //Not allowed!
 };
 
-class CmdPoolCreateInfo : public vk::VkCmdPoolCreateInfo
+class CmdPoolCreateInfo : public vk::VkCommandPoolCreateInfo
 {
 public:
 	CmdPoolCreateInfo (deUint32 queueFamilyIndex,
-		vk::VkCmdPoolCreateFlags flags = vk::VK_CMD_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
+		vk::VkCommandPoolCreateFlags flags = vk::VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
 };
 
-class CmdBufferCreateInfo : public vk::VkCmdBufferCreateInfo
+class CmdBufferBeginInfo : public vk::VkCommandBufferBeginInfo
 {
 public:
-	CmdBufferCreateInfo (vk::VkCmdPool pool, vk::VkCmdBufferLevel level, vk::VkCmdBufferCreateFlags flags);
-};
-
-class CmdBufferBeginInfo : public vk::VkCmdBufferBeginInfo
-{
-public:
-	CmdBufferBeginInfo (vk::VkCmdBufferOptimizeFlags	flags	= 0);
-	CmdBufferBeginInfo (vk::VkRenderPass				renderPass,
-						deUint32						subpass,
-						vk::VkFramebuffer				framebuffer,
-						vk::VkCmdBufferOptimizeFlags	flags	= 0);
+	CmdBufferBeginInfo (vk::VkCommandBufferUsageFlags		flags	= 0);
+	CmdBufferBeginInfo (vk::VkRenderPass					renderPass,
+						deUint32							subpass,
+						vk::VkFramebuffer					framebuffer,
+						vk::VkCommandBufferUsageFlags		flags					= 0, 
+						bool								occlusionQueryEnable	= false,
+						vk::VkQueryControlFlags				queryFlags				= 0u,
+						vk::VkQueryPipelineStatisticFlags	pipelineStatistics		= 0u);
 };
 
 
-class DescriptorTypeCount : public vk::VkDescriptorTypeCount
+class DescriptorPoolSize : public vk::VkDescriptorPoolSize
 {
 public:
-	DescriptorTypeCount (vk::VkDescriptorType _type, deUint32 _count)
+	DescriptorPoolSize (vk::VkDescriptorType _type, deUint32 _descriptorCount)
 	{
-		type = _type;
-		count = _count;
+		type			= _type;
+		descriptorCount = _descriptorCount;
 	}
 };
 
 class DescriptorPoolCreateInfo : public vk::VkDescriptorPoolCreateInfo
 {
 public:
-	DescriptorPoolCreateInfo (	const	std::vector<vk::VkDescriptorTypeCount>&	typeCounts,
-										vk::VkDescriptorPoolUsage poolUsage, 
+	DescriptorPoolCreateInfo (	const	std::vector<vk::VkDescriptorPoolSize>&	poolSizeCounts,
+										vk::VkDescriptorPoolCreateFlags flags, 
 										deUint32 maxSets);
 
 	DescriptorPoolCreateInfo& addDescriptors (vk::VkDescriptorType type, deUint32 count);
 
 private:
-	std::vector<vk::VkDescriptorTypeCount> m_typeCounts;
+	std::vector<vk::VkDescriptorPoolSize> m_poolSizeCounts;
 };
 
 
 class DescriptorSetLayoutCreateInfo : public vk::VkDescriptorSetLayoutCreateInfo
 {
 public:
-	DescriptorSetLayoutCreateInfo (deUint32 count, const vk::VkDescriptorSetLayoutBinding* pBinding);
+	DescriptorSetLayoutCreateInfo (deUint32 bindingCount, const vk::VkDescriptorSetLayoutBinding* pBindings);
 };
 
 
@@ -329,9 +328,9 @@ public:
 	class VertexInputState : public vk::VkPipelineVertexInputStateCreateInfo
 	{
 	public:
-		VertexInputState (			deUint32								bindingCount					= 0,
+		VertexInputState (			deUint32								vertexBindingDescriptionCount	= 0,
 							const	vk::VkVertexInputBindingDescription*	pVertexBindingDescriptions		= NULL,
-									deUint32								attributeCount					= 0,
+									deUint32								vertexAttributeDescriptionCount	= 0,
 							const	vk::VkVertexInputAttributeDescription*	pVertexAttributeDescriptions	= NULL);
 	};
 
@@ -355,34 +354,36 @@ public:
 						std::vector<vk::VkRect2D>	scissors		= std::vector<vk::VkRect2D>(0));
 
 		ViewportState				(const ViewportState &other);
-		ViewportState &operator= 	(const ViewportState &other);
+		ViewportState &operator=		(const ViewportState &other);
 
 		std::vector<vk::VkViewport> m_viewports;
 		std::vector<vk::VkRect2D>	m_scissors;
 	};
 
-	class RasterizerState : public vk::VkPipelineRasterStateCreateInfo
+	class RasterizerState : public vk::VkPipelineRasterizationStateCreateInfo
 	{
 	public:
-		RasterizerState (	vk::VkBool32	depthClipEnable			= false,
-							vk::VkBool32	rasterizerDiscardEnable = false,
-							vk::VkFillMode	fillMode				= vk::VK_FILL_MODE_SOLID,
-							vk::VkCullMode	cullMode				= vk::VK_CULL_MODE_NONE,
-							vk::VkFrontFace frontFace				= vk::VK_FRONT_FACE_CW,
-							vk::VkBool32	depthBiasEnable			= true,
-							float			depthBias				= 0.0f,
-							float			depthBiasClamp			= 0.0f,
-							float			slopeScaledDepthBias	= 0.0f,
-							float			lineWidth				= 1.0f);
+		RasterizerState (	vk::VkBool32		depthClampEnable		= false,
+							vk::VkBool32		rasterizerDiscardEnable = false,
+							vk::VkPolygonMode	polygonMode				= vk::VK_POLYGON_MODE_FILL,
+							vk::VkCullModeFlags	cullMode				= vk::VK_CULL_MODE_NONE,
+							vk::VkFrontFace		frontFace				= vk::VK_FRONT_FACE_CLOCKWISE,
+							vk::VkBool32		depthBiasEnable			= true,
+							float				depthBiasConstantFactor	= 0.0f,
+							float				depthBiasClamp			= 0.0f,
+							float				depthBiasSlopeFactor	= 0.0f,
+							float				lineWidth				= 1.0f);
 	};
 
 	class MultiSampleState : public vk::VkPipelineMultisampleStateCreateInfo
 	{
 	public:
-		MultiSampleState (			deUint32		rasterSamples				= 1,
-									vk::VkBool32	sampleShadingEnable			= false,
-									float			minSampleShading			= 0.0f,
-							const	std::vector<vk::VkSampleMask>& sampleMask	= std::vector<vk::VkSampleMask>(1, 0xffffffff));
+		MultiSampleState (			vk::VkSampleCountFlagBits		rasterizationSamples		= vk::VK_SAMPLE_COUNT_1_BIT,
+									vk::VkBool32					sampleShadingEnable			= false,
+									float							minSampleShading			= 0.0f,
+							const	std::vector<vk::VkSampleMask>&	sampleMask					= std::vector<vk::VkSampleMask>(1, 0xffffffff), 
+							bool									alphaToCoverageEnable		= false,
+							bool									alphaToOneEnable			= false);
 
 		MultiSampleState			(const MultiSampleState &other);
 		MultiSampleState &operator= (const MultiSampleState &other);
@@ -397,31 +398,27 @@ public:
 		class Attachment : public vk::VkPipelineColorBlendAttachmentState
 		{
 		public:
-			Attachment (vk::VkBool32	blendEnable			= false,
-						vk::VkBlend		srcBlendColor		= vk::VK_BLEND_SRC_COLOR,
-						vk::VkBlend		destBlendColor		= vk::VK_BLEND_DEST_COLOR,
-						vk::VkBlendOp	blendOpColor		= vk::VK_BLEND_OP_ADD,
-						vk::VkBlend		srcBlendAlpha		= vk::VK_BLEND_SRC_COLOR,
-						vk::VkBlend		destBlendAlpha		= vk::VK_BLEND_DEST_COLOR,
-						vk::VkBlendOp	blendOpAlpha		= vk::VK_BLEND_OP_ADD,
-						deUint8			channelWriteMask	= 0xff);
+			Attachment (vk::VkBool32		blendEnable			= false,
+						vk::VkBlendFactor	srcColorBlendFactor	= vk::VK_BLEND_FACTOR_SRC_COLOR,
+						vk::VkBlendFactor	dstColorBlendFactor	= vk::VK_BLEND_FACTOR_DST_COLOR,
+						vk::VkBlendOp		colorBlendOp		= vk::VK_BLEND_OP_ADD,
+						vk::VkBlendFactor	srcAlphaBlendFactor	= vk::VK_BLEND_FACTOR_SRC_COLOR,
+						vk::VkBlendFactor	dstAlphaBlendFactor	= vk::VK_BLEND_FACTOR_DST_COLOR,
+						vk::VkBlendOp		alphaBlendOp		= vk::VK_BLEND_OP_ADD,
+						deUint8				colorWriteMask	= 0xff);
 		};
 
 		ColorBlendState (	const	std::vector<vk::VkPipelineColorBlendAttachmentState>&	attachments,
 									vk::VkBool32											alphaToCoverageEnable	= false,
-									vk::VkBool32											logicOpEnable			= false,
-									vk::VkLogicOp											logicOp					= vk::VK_LOGIC_OP_COPY,
-									vk::VkBool32											alphaToOneEnable		= false);
+									vk::VkLogicOp											logicOp					= vk::VK_LOGIC_OP_COPY);
 
 		ColorBlendState (			deUint32												attachmentCount,
 							const	vk::VkPipelineColorBlendAttachmentState*				attachments,
-									vk::VkBool32											alphaToCoverageEnable	= false,
 									vk::VkBool32											logicOpEnable			= false,
-									vk::VkLogicOp											logicOp					= vk::VK_LOGIC_OP_COPY,
-									vk::VkBool32											alphaToOneEnable		= false);
+									vk::VkLogicOp											logicOp					= vk::VK_LOGIC_OP_COPY);
 
 		ColorBlendState (const vk::VkPipelineColorBlendStateCreateInfo &createInfo);
-		ColorBlendState (const ColorBlendState &createInfo, std::vector<float> blendConst = std::vector<float>(4));
+		ColorBlendState (const ColorBlendState &createInfo, std::vector<float> blendConstants = std::vector<float>(4));
 
 	private:
 		std::vector<vk::VkPipelineColorBlendAttachmentState> m_attachments;
@@ -433,13 +430,13 @@ public:
 		class StencilOpState : public vk::VkStencilOpState
 		{
 		public:
-			StencilOpState (vk::VkStencilOp stencilFailOp		= vk::VK_STENCIL_OP_REPLACE,
-							vk::VkStencilOp stencilPassOp		= vk::VK_STENCIL_OP_REPLACE,
-							vk::VkStencilOp stencilDepthFailOp	= vk::VK_STENCIL_OP_REPLACE,
-							vk::VkCompareOp stencilCompareOp	= vk::VK_COMPARE_OP_ALWAYS,
-							deUint32		stencilCompareMask	= 0xffffffffu,
-							deUint32		stencilWriteMask	= 0xffffffffu,
-							deUint32		stencilReference	= 0);
+			StencilOpState (vk::VkStencilOp failOp		= vk::VK_STENCIL_OP_REPLACE,
+							vk::VkStencilOp passOp		= vk::VK_STENCIL_OP_REPLACE,
+							vk::VkStencilOp depthFailOp	= vk::VK_STENCIL_OP_REPLACE,
+							vk::VkCompareOp compareOp	= vk::VK_COMPARE_OP_ALWAYS,
+							deUint32		compareMask	= 0xffffffffu,
+							deUint32		writeMask	= 0xffffffffu,
+							deUint32		reference	= 0);
 		};
 
 		DepthStencilState (	vk::VkBool32	depthTestEnable			= false,
@@ -456,7 +453,7 @@ public:
 	class PipelineShaderStage : public vk::VkPipelineShaderStageCreateInfo
 	{
 	public:
-		PipelineShaderStage (vk::VkShader shader, vk::VkShaderStage stage);
+		PipelineShaderStage (vk::VkShaderModule shaderModule, const char* _pName, vk::VkShaderStageFlagBits stage);
 	};
 
 	class DynamicState : public vk::VkPipelineDynamicStateCreateInfo
@@ -472,36 +469,36 @@ public:
 
 	PipelineCreateInfo(vk::VkPipelineLayout layout, vk::VkRenderPass renderPass, int subpass, vk::VkPipelineCreateFlags flags);
 
-	PipelineCreateInfo &addShader (const vk::VkPipelineShaderStageCreateInfo&		shader);
+	PipelineCreateInfo& addShader (const vk::VkPipelineShaderStageCreateInfo&		shader);
 
-	PipelineCreateInfo &addState (const vk::VkPipelineVertexInputStateCreateInfo&	state);
-	PipelineCreateInfo &addState (const vk::VkPipelineInputAssemblyStateCreateInfo&	state);
-	PipelineCreateInfo &addState (const vk::VkPipelineColorBlendStateCreateInfo&	state);
-	PipelineCreateInfo &addState (const vk::VkPipelineViewportStateCreateInfo&		state);
-	PipelineCreateInfo &addState (const vk::VkPipelineDepthStencilStateCreateInfo&	state);
-	PipelineCreateInfo &addState (const vk::VkPipelineTessellationStateCreateInfo&	state);
-	PipelineCreateInfo &addState (const vk::VkPipelineRasterStateCreateInfo&		state);
-	PipelineCreateInfo &addState (const vk::VkPipelineMultisampleStateCreateInfo&	state);
-	PipelineCreateInfo &addState (const vk::VkPipelineDynamicStateCreateInfo&		state);
+	PipelineCreateInfo& addState (const vk::VkPipelineVertexInputStateCreateInfo&	state);
+	PipelineCreateInfo& addState (const vk::VkPipelineInputAssemblyStateCreateInfo&	state);
+	PipelineCreateInfo& addState (const vk::VkPipelineColorBlendStateCreateInfo&	state);
+	PipelineCreateInfo& addState (const vk::VkPipelineViewportStateCreateInfo&		state);
+	PipelineCreateInfo& addState (const vk::VkPipelineDepthStencilStateCreateInfo&	state);
+	PipelineCreateInfo& addState (const vk::VkPipelineTessellationStateCreateInfo&	state);
+	PipelineCreateInfo& addState (const vk::VkPipelineRasterizationStateCreateInfo&		state);
+	PipelineCreateInfo& addState (const vk::VkPipelineMultisampleStateCreateInfo&	state);
+	PipelineCreateInfo& addState (const vk::VkPipelineDynamicStateCreateInfo&				state);
 
 private:
-	std::vector<vk::VkPipelineShaderStageCreateInfo>			m_shaders;
+	std::vector<vk::VkPipelineShaderStageCreateInfo>		m_shaders;
 
-	de::SharedPtr<vk::VkPipelineVertexInputStateCreateInfo>		m_vertexInputState;
-	de::SharedPtr<vk::VkPipelineInputAssemblyStateCreateInfo>	m_iputAssemblyState;
-	std::vector<vk::VkPipelineColorBlendAttachmentState>		m_colorBlendStateAttachments;
-	de::SharedPtr<vk::VkPipelineColorBlendStateCreateInfo>		m_colorBlendState;
-	de::SharedPtr<vk::VkPipelineViewportStateCreateInfo>		m_viewportState;
-	de::SharedPtr<vk::VkPipelineDepthStencilStateCreateInfo>	m_dynamicDepthStencilState;
-	de::SharedPtr<vk::VkPipelineTessellationStateCreateInfo>	m_tessState;
-	de::SharedPtr<vk::VkPipelineRasterStateCreateInfo>			m_rasterState;
-	de::SharedPtr<vk::VkPipelineMultisampleStateCreateInfo>		m_multisampleState;
-	de::SharedPtr<vk::VkPipelineDynamicStateCreateInfo>			m_dynamicState;
+	vk::VkPipelineVertexInputStateCreateInfo				m_vertexInputState;
+	vk::VkPipelineInputAssemblyStateCreateInfo				m_inputAssemblyState;
+	std::vector<vk::VkPipelineColorBlendAttachmentState>	m_colorBlendStateAttachments;
+	vk::VkPipelineColorBlendStateCreateInfo					m_colorBlendState;
+	vk::VkPipelineViewportStateCreateInfo					m_viewportState;
+	vk::VkPipelineDepthStencilStateCreateInfo				m_dynamicDepthStencilState;
+	vk::VkPipelineTessellationStateCreateInfo				m_tessState;
+	vk::VkPipelineRasterizationStateCreateInfo				m_rasterState;
+	vk::VkPipelineMultisampleStateCreateInfo				m_multisampleState;
+	vk::VkPipelineDynamicStateCreateInfo					m_dynamicState;
 
 	std::vector<vk::VkDynamicState> m_dynamicStates;
 
-	std::vector<vk::VkViewport> m_viewports;
-	std::vector<vk::VkRect2D>	m_scissors;
+	std::vector<vk::VkViewport>		m_viewports;
+	std::vector<vk::VkRect2D>		m_scissors;
 
 	std::vector<vk::VkSampleMask>	m_multisampleStateSampleMask;
 };
@@ -509,20 +506,20 @@ private:
 class SamplerCreateInfo : public vk::VkSamplerCreateInfo
 {
 public:
-	SamplerCreateInfo (	vk::VkTexFilter			magFilter				= vk::VK_TEX_FILTER_NEAREST,
-						vk::VkTexFilter			minFilter				= vk::VK_TEX_FILTER_NEAREST,
-						vk::VkTexMipmapMode		mipMode					= vk::VK_TEX_MIPMAP_MODE_NEAREST,
-						vk::VkTexAddressMode	addressU				= vk::VK_TEX_ADDRESS_MODE_MIRROR,
-						vk::VkTexAddressMode	addressV				= vk::VK_TEX_ADDRESS_MODE_MIRROR,
-						vk::VkTexAddressMode	addressW				= vk::VK_TEX_ADDRESS_MODE_MIRROR,
-						float					mipLodBias				= 0.0f,
-						float					maxAnisotropy			= 1.0f,
-						vk::VkBool32			compareEnable			= false,
-						vk::VkCompareOp			compareOp				= vk::VK_COMPARE_OP_ALWAYS,
-						float					minLod					= 0.0f,
-						float					maxLod					= 16.0f,
-						vk::VkBorderColor		borderColor				= vk::VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE, 
-						vk::VkBool32			unnormalizedCoordinates	= false);
+	SamplerCreateInfo (	vk::VkFilter				magFilter				= vk::VK_FILTER_NEAREST,
+						vk::VkFilter				minFilter				= vk::VK_FILTER_NEAREST,
+						vk::VkSamplerMipmapMode		mipmapMode				= vk::VK_SAMPLER_MIPMAP_MODE_NEAREST,
+						vk::VkSamplerAddressMode	addressU				= vk::VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT,
+						vk::VkSamplerAddressMode	addressV				= vk::VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT,
+						vk::VkSamplerAddressMode	addressW				= vk::VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT,
+						float						mipLodBias				= 0.0f,
+						float						maxAnisotropy			= 1.0f,
+						vk::VkBool32				compareEnable			= false,
+						vk::VkCompareOp				compareOp				= vk::VK_COMPARE_OP_ALWAYS,
+						float						minLod					= 0.0f,
+						float						maxLod					= 16.0f,
+						vk::VkBorderColor			borderColor				= vk::VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE, 
+						vk::VkBool32				unnormalizedCoordinates	= false);
 };
 
 } // DynamicState

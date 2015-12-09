@@ -1,5 +1,3 @@
-#ifndef _VKT_DYNAMIC_STATE_BUFFEROBJECTUTIL_HPP
-#define _VKT_DYNAMIC_STATE_BUFFEROBJECTUTIL_HPP
 /*------------------------------------------------------------------------
  * Vulkan Conformance Tests
  * ------------------------
@@ -32,53 +30,29 @@
  *
  *//*!
  * \file
- * \brief Buffer Object Util
+ * \brief Vulkan Query Pool Tests
  *//*--------------------------------------------------------------------*/
 
-#include "vkDefs.hpp"
-#include "vkMemUtil.hpp"
-#include "vkRefUtil.hpp"
+#include "vktQueryPoolTests.hpp"
+#include "vktQueryPoolTests.hpp"
 
-#include "deSharedPtr.hpp"
+#include "deUniquePtr.hpp"
+
+#include "vktQueryPoolOcclusionTests.hpp"
 
 namespace vkt
 {
 namespace QueryPool
 {
 
-class Buffer
+tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 {
-public:
+	de::MovePtr<tcu::TestCaseGroup> queryPoolTests (new tcu::TestCaseGroup(testCtx, "query_pool", "query pool tests"));
 
-	static de::SharedPtr<Buffer> Create (const vk::DeviceInterface& vk, vk::VkDevice device, const vk::VkBufferCreateInfo &createInfo);
+	queryPoolTests->addChild(new QueryPoolOcclusionTests(testCtx));
 
-	static de::SharedPtr<Buffer> CreateAndAlloc (const vk::DeviceInterface&		vk,
-												 vk::VkDevice					device,
-												 const vk::VkBufferCreateInfo&	createInfo,
-												 vk::Allocator&					allocator,
-												 vk::MemoryRequirement			allocationMemoryProperties = vk::MemoryRequirement::Any);
+	return queryPoolTests.release();
+}
 
-	Buffer (const vk::DeviceInterface &vk, vk::VkDevice device, vk::Move<vk::VkBuffer> object);
-
-	inline vk::VkBuffer object (void) const { return *m_object; }
-
-	void bindMemory (de::MovePtr<vk::Allocation> allocation);
-	inline vk::Allocation getBoundMemory (void) const { return *m_allocation; }
-
-private:
-
-	Buffer				(const Buffer &other);	// Not allowed!
-	Buffer &operator=	(const Buffer &other);	// Not allowed!
-
-
-	de::MovePtr<vk::Allocation>		m_allocation;
-	vk::Unique<vk::VkBuffer>		m_object;
-
-	const	vk::DeviceInterface &	m_vk;
-			vk::VkDevice			m_device;
-};
-
-} //DynamicState
-} //vkt
-
-#endif // _VKT_DYNAMIC_STATE_BUFFEROBJECTUTIL_HPP
+} // QueryPool
+} // vkt

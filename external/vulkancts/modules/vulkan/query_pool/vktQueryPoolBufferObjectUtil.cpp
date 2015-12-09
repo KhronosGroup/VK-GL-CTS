@@ -35,9 +35,7 @@
 
 #include "vktQueryPoolBufferObjectUtil.hpp"
 
-
 #include "vkQueryUtil.hpp"
-
 
 namespace vkt
 {
@@ -54,31 +52,27 @@ Buffer::Buffer (const vk::DeviceInterface &vk, vk::VkDevice device, vk::Move<vk:
 
 void Buffer::bindMemory (de::MovePtr<vk::Allocation> allocation)
 {
-	if (allocation)
-	{
-		VK_CHECK(m_vk.bindBufferMemory(m_device, *m_object, allocation->getMemory(), allocation->getOffset()));
-	}
-	else
-	{
-		VK_CHECK(m_vk.bindBufferMemory(m_device, *m_object, DE_NULL, 0));
-	}
+	DE_ASSERT(allocation);
+	VK_CHECK(m_vk.bindBufferMemory(m_device, *m_object, allocation->getMemory(), allocation->getOffset()));
+
+	DE_ASSERT(!m_allocation);
 	m_allocation = allocation;
 }
 
-de::SharedPtr<Buffer> Buffer::CreateAndAlloc (const vk::DeviceInterface &vk,
-											 vk::VkDevice device,
-											 const vk::VkBufferCreateInfo &createInfo,
-											 vk::Allocator &allocator,
-											 vk::MemoryRequirement memoryRequirement)
+de::SharedPtr<Buffer> Buffer::createAndAlloc (const vk::DeviceInterface &vk,
+											  vk::VkDevice device,
+											  const vk::VkBufferCreateInfo &createInfo,
+											  vk::Allocator &allocator,
+											  vk::MemoryRequirement memoryRequirement)
 {
-	de::SharedPtr<Buffer> ret = Create(vk, device, createInfo);
+	de::SharedPtr<Buffer> ret = create(vk, device, createInfo);
 
 	vk::VkMemoryRequirements bufferRequirements = vk::getBufferMemoryRequirements(vk, device, ret->object());
 	ret->bindMemory(allocator.allocate(bufferRequirements, memoryRequirement));
 	return ret;
 }
 
-de::SharedPtr<Buffer> Buffer::Create (const vk::DeviceInterface &vk,
+de::SharedPtr<Buffer> Buffer::create (const vk::DeviceInterface &vk,
 									  vk::VkDevice device,
 									  const vk::VkBufferCreateInfo &createInfo)
 {

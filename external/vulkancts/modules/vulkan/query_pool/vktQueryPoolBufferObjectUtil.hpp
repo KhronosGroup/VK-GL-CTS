@@ -1,3 +1,5 @@
+#ifndef _VKT_DYNAMIC_STATE_BUFFEROBJECTUTIL_HPP
+#define _VKT_DYNAMIC_STATE_BUFFEROBJECTUTIL_HPP
 /*------------------------------------------------------------------------
  * Vulkan Conformance Tests
  * ------------------------
@@ -30,29 +32,55 @@
  *
  *//*!
  * \file
- * \brief Vulkan Query Pool Tests
+ * \brief Buffer Object Util
  *//*--------------------------------------------------------------------*/
 
-#include "vktQueryPoolTests.hpp"
-#include "vktQueryPoolTests.hpp"
+#include "vkDefs.hpp"
+#include "vkMemUtil.hpp"
+#include "vkRefUtil.hpp"
 
-#include "deUniquePtr.hpp"
-
-#include "vktQueryPoolOcclusionTests.hpp"
+#include "deSharedPtr.hpp"
 
 namespace vkt
 {
 namespace QueryPool
 {
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+class Buffer
 {
-	de::MovePtr<tcu::TestCaseGroup> queryPoolTests (new tcu::TestCaseGroup(testCtx, "query_pool", "query pool tests"));
+public:
 
-	queryPoolTests->addChild(new QueryPoolOcclusionTests(testCtx));
+	static de::SharedPtr<Buffer> create			(const vk::DeviceInterface& vk, vk::VkDevice device, const vk::VkBufferCreateInfo &createInfo);
 
-	return queryPoolTests.release();
-}
+	static de::SharedPtr<Buffer> createAndAlloc (const vk::DeviceInterface&		vk,
+												 vk::VkDevice					device,
+												 const vk::VkBufferCreateInfo&	createInfo,
+												 vk::Allocator&					allocator,
+												 vk::MemoryRequirement			allocationMemoryProperties = vk::MemoryRequirement::Any);
 
-} // shaderexecutor
-} // vkt
+								Buffer			(const vk::DeviceInterface &vk, vk::VkDevice device, vk::Move<vk::VkBuffer> object);
+
+
+	void						bindMemory		(de::MovePtr<vk::Allocation> allocation);
+
+
+	vk::VkBuffer				object			(void) const								{ return *m_object;		}
+	vk::Allocation				getBoundMemory	(void) const								{ return *m_allocation;	}
+
+private:
+
+	Buffer										(const Buffer& other);	// Not allowed!
+	Buffer						&operator=		(const Buffer& other);	// Not allowed!
+
+
+	de::MovePtr<vk::Allocation>		m_allocation;
+	vk::Unique<vk::VkBuffer>		m_object;
+
+	const	vk::DeviceInterface &	m_vk;
+			vk::VkDevice			m_device;
+};
+
+} //DynamicState
+} //vkt
+
+#endif // _VKT_DYNAMIC_STATE_BUFFEROBJECTUTIL_HPP
