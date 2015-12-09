@@ -1425,7 +1425,7 @@ struct GraphicsPipeline
 			VK_TRUE,								// depthTestEnable
 			VK_TRUE,								// depthWriteEnable
 			VK_COMPARE_OP_LESS,						// depthCompareOp
-			VK_TRUE,								// depthBoundsTestEnable
+			VK_FALSE,								// depthBoundsTestEnable
 			VK_FALSE,								// stencilTestEnable
 			{ VK_STENCIL_OP_KEEP, VK_STENCIL_OP_KEEP, VK_STENCIL_OP_KEEP, VK_COMPARE_OP_ALWAYS, 0u, 0u, 0u },
 			{ VK_STENCIL_OP_KEEP, VK_STENCIL_OP_KEEP, VK_STENCIL_OP_KEEP, VK_COMPARE_OP_ALWAYS, 0u, 0u, 0u },
