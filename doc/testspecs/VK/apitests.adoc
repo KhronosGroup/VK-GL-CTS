@@ -2610,11 +2610,6 @@ Buffer copy tests need to validate that copies and updates happen as expected fo
 
 NOTE: GPU cache control tests need to verify copy source and destination visibility as well.
 
-.Spec issues
- * Overlapping copies?
- ** Simple overlap (same buffer)
- ** Backed by same memory object
-
 [source,c]
 ----
 typedef struct {
@@ -2648,27 +2643,34 @@ void VKAPI vkCmdFillBuffer(
 Image copies
 ~~~~~~~~~~~~
 
-.Spec issues
- * What kind of copies are allowed? Blits?
- * Copy is simply reinterpretation of data?
- * Does blit unpack & pack data like in GL?
- ** sRGB conversions
+Image copy and blitting tests need to validate that copies and updates happen as expected for both simple and more complex cases:
+
+* Image copies should cover
+** Whole and partial copies
+** Source and destination are backed by the same Image
+** Compressed and uncompressed copies
+** Multiple copy regions in one command
+** Copies between different but compatible formats
+* Blitting should cover
+** Whole and partial copies
+** With and without scaling
+** Copies between different but compatible formats (format conversions)
 
 [source,c]
 ----
 typedef struct {
-    VkImageSubresource                          srcSubresource;
+    VkImageSubresourceLayers                    srcSubresource;
     VkOffset3D                                  srcOffset;
-    VkImageSubresource                          destSubresource;
+    VkImageSubresourceLayers                    destSubresource;
     VkOffset3D                                  destOffset;
     VkExtent3D                                  extent;
 } VkImageCopy;
 
 typedef struct {
-    VkImageSubresource                          srcSubresource;
+    VkImageSubresourceLayers                    srcSubresource;
     VkOffset3D                                  srcOffset;
     VkExtent3D                                  srcExtent;
-    VkImageSubresource                          destSubresource;
+    VkImageSubresourceLayers                    destSubresource;
     VkOffset3D                                  destOffset;
     VkExtent3D                                  destExtent;
 } VkImageBlit;
@@ -2696,13 +2698,20 @@ void VKAPI vkCmdBlitImage(
 Copies between buffers and images
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+The copies between buffers and images are used for checking the rendering result across the vulkancts so it
+is well tested. This tests should cover corner cases.
+
+* Various sizes
+** Whole and partial copies
+* Multiple copies in one command
+
 [source,c]
 ----
 typedef struct {
     VkDeviceSize                                bufferOffset;
     uint32_t                                    bufferRowLength;
     uint32_t                                    bufferImageHeight;
-    VkImageSubresource                          imageSubresource;
+    VkImageSubresourceLayers                    imageSubresource;
     VkOffset3D                                  imageOffset;
     VkExtent3D                                  imageExtent;
 } VkBufferImageCopy;
@@ -2726,6 +2735,11 @@ void VKAPI vkCmdCopyImageToBuffer(
 
 Clearing images
 ~~~~~~~~~~~~~~~
+
+Clearing tests need to validate that clearing happen as expected for both simple and more complex cases:
+
+* Clear the attachments.
+** Whole and partial clear.
 
 [source,c]
 ----
@@ -2783,12 +2797,14 @@ void VKAPI vkCmdClearDepthStencilAttachment(
 Multisample resolve
 ~~~~~~~~~~~~~~~~~~~
 
+Multisample tests need to validate that clearing happen as expected for both simple and more complex cases.
+
 [source,c]
 ----
 typedef struct {
-    VkImageSubresource                          srcSubresource;
+    VkImageSubresourceLayers                    srcSubresource;
     VkOffset3D                                  srcOffset;
-    VkImageSubresource                          destSubresource;
+    VkImageSubresourceLayers                    destSubresource;
     VkOffset3D                                  destOffset;
     VkExtent3D                                  extent;
 } VkImageResolve;
