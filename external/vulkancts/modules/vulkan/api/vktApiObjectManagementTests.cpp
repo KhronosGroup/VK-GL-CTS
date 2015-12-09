@@ -388,6 +388,8 @@ struct Device
 
 	static Move<VkDevice> create (const Environment&, const Resources& res, const Parameters&)
 	{
+		const float	queuePriority	= 1.0;
+
 		const VkDeviceQueueCreateInfo	queues[]	=
 		{
 			{
@@ -396,7 +398,7 @@ struct Device
 				(VkDeviceQueueCreateFlags)0,
 				res.queueFamilyIndex,
 				1u,									// queueCount
-				DE_NULL,							// pQueuePriorities
+				&queuePriority,						// pQueuePriorities
 			}
 		};
 		const VkDeviceCreateInfo	deviceInfo	=
