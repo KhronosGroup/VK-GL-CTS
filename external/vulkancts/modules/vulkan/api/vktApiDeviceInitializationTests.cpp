@@ -308,6 +308,7 @@ tcu::TestStatus createDeviceTest (Context& context)
 	const deUint32					queueFamilyIndex		= 0;
 	const deUint32					queueCount				= 1;
 	const deUint32					queueIndex				= 0;
+	const float						queuePriority			= 1.0f;
 	const VkDeviceQueueCreateInfo	deviceQueueCreateInfo	=
 	{
 		VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
@@ -315,7 +316,7 @@ tcu::TestStatus createDeviceTest (Context& context)
 		(VkDeviceQueueCreateFlags)0u,
 		queueFamilyIndex,						//queueFamilyIndex;
 		queueCount,								//queueCount;
-		DE_NULL,								//pQueuePriorities;
+		&queuePriority,							//pQueuePriorities;
 	};
 	const VkDeviceCreateInfo		deviceCreateInfo	=
 	{
@@ -353,6 +354,7 @@ tcu::TestStatus createMultipleDevicesTest (Context& context)
 	const deUint32										queueFamilyIndex		= 0;
 	const deUint32										queueCount				= 1;
 	const deUint32										queueIndex				= 0;
+	const float											queuePriority			= 1.0f;
 	const VkDeviceQueueCreateInfo						deviceQueueCreateInfo	=
 	{
 		VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
@@ -360,7 +362,7 @@ tcu::TestStatus createMultipleDevicesTest (Context& context)
 		(VkDeviceQueueCreateFlags)0u,					//flags;
 		queueFamilyIndex,								//queueFamilyIndex;
 		queueCount,										//queueCount;
-		DE_NULL,										//pQueuePriorities;
+		&queuePriority,									//pQueuePriorities;
 	};
 	const VkDeviceCreateInfo							deviceCreateInfo		=
 	{
@@ -437,6 +439,7 @@ tcu::TestStatus createDeviceWithUnsupportedExtensionsTest (Context& context)
 	const InstanceDriver			instanceDriver			(platformInterface, instance.get());
 	const char*						enabledExtensions[]		= {"VK_UNSUPPORTED_EXTENSION", "THIS_IS_NOT_AN_EXTENSION", "VK_DONT_SUPPORT_ME"};
 	const VkPhysicalDevice			physicalDevice			= chooseDevice(instanceDriver, instance.get(), context.getTestContext().getCommandLine());
+	const float						queuePriority			= 1.0f;
 	const VkDeviceQueueCreateInfo	deviceQueueCreateInfo	=
 	{
 		VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
@@ -444,7 +447,7 @@ tcu::TestStatus createDeviceWithUnsupportedExtensionsTest (Context& context)
 		(VkDeviceQueueCreateFlags)0u,
 		0,										//queueFamiliIndex;
 		1,										//queueCount;
-		DE_NULL,								//pQueuePriorities;
+		&queuePriority,							//pQueuePriorities;
 	};
 	const VkDeviceCreateInfo		deviceCreateInfo		=
 	{

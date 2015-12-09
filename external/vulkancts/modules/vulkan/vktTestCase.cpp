@@ -68,6 +68,7 @@ Move<VkDevice> createDefaultDevice (const InstanceInterface& vki, VkPhysicalDevi
 {
 	VkDeviceQueueCreateInfo		queueInfo;
 	VkDeviceCreateInfo			deviceInfo;
+	const float					queuePriority	= 1.0f;
 
 	deMemset(&queueInfo,	0, sizeof(queueInfo));
 	deMemset(&deviceInfo,	0, sizeof(deviceInfo));
@@ -77,7 +78,7 @@ Move<VkDevice> createDefaultDevice (const InstanceInterface& vki, VkPhysicalDevi
 	queueInfo.flags							= (VkDeviceQueueCreateFlags)0u;
 	queueInfo.queueFamilyIndex				= queueIndex;
 	queueInfo.queueCount					= 1u;
-	queueInfo.pQueuePriorities				= DE_NULL;
+	queueInfo.pQueuePriorities				= &queuePriority;
 
 	deviceInfo.sType						= VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 	deviceInfo.pNext						= DE_NULL;
