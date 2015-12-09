@@ -156,15 +156,15 @@ tcu::TestStatus AllocateFreeTestInstance::iterate (void)
 				{
 					for (size_t ndx = 0; ndx < m_config.memoryAllocationCount; ndx++)
 					{
-						const VkMemoryAllocInfo alloc =
+						const VkMemoryAllocateInfo alloc =
 						{
-							VK_STRUCTURE_TYPE_MEMORY_ALLOC_INFO,	// sType
+							VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,	// sType
 							DE_NULL,								// pNext
 							allocationSize,							// allocationSize
 							m_memoryTypeIndex						// memoryTypeIndex;
 						};
 
-						VK_CHECK(vkd.allocMemory(device, &alloc, &memoryObjects[ndx]));
+						VK_CHECK(vkd.allocateMemory(device, &alloc, (const VkAllocationCallbacks*)DE_NULL, &memoryObjects[ndx]));
 
 						TCU_CHECK(!!memoryObjects[ndx]);
 					}
@@ -175,7 +175,7 @@ tcu::TestStatus AllocateFreeTestInstance::iterate (void)
 						{
 							const VkDeviceMemory mem = memoryObjects[memoryObjects.size() - 1 - ndx];
 
-							vkd.freeMemory(device, mem);
+							vkd.freeMemory(device, mem, (const VkAllocationCallbacks*)DE_NULL);
 							memoryObjects[memoryObjects.size() - 1 - ndx] = (VkDeviceMemory)0;
 						}
 					}
@@ -185,7 +185,7 @@ tcu::TestStatus AllocateFreeTestInstance::iterate (void)
 						{
 							const VkDeviceMemory mem = memoryObjects[ndx];
 
-							vkd.freeMemory(device, mem);
+							vkd.freeMemory(device, mem, (const VkAllocationCallbacks*)DE_NULL);
 							memoryObjects[ndx] = (VkDeviceMemory)0;
 						}
 					}
@@ -194,18 +194,18 @@ tcu::TestStatus AllocateFreeTestInstance::iterate (void)
 				{
 					for (size_t ndx = 0; ndx < m_config.memoryAllocationCount; ndx++)
 					{
-						const VkMemoryAllocInfo alloc =
+						const VkMemoryAllocateInfo alloc =
 						{
-							VK_STRUCTURE_TYPE_MEMORY_ALLOC_INFO,	// sType
+							VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,	// sType
 							DE_NULL,								// pNext
 							allocationSize,							// allocationSize
 							m_memoryTypeIndex						// memoryTypeIndex;
 						};
 
-						VK_CHECK(vkd.allocMemory(device, &alloc, &memoryObjects[ndx]));
+						VK_CHECK(vkd.allocateMemory(device, &alloc, (const VkAllocationCallbacks*)DE_NULL, &memoryObjects[ndx]));
 						TCU_CHECK(!!memoryObjects[ndx]);
 
-						vkd.freeMemory(device, memoryObjects[ndx]);
+						vkd.freeMemory(device, memoryObjects[ndx], (const VkAllocationCallbacks*)DE_NULL);
 						memoryObjects[ndx] = (VkDeviceMemory)0;
 					}
 				}
@@ -218,7 +218,7 @@ tcu::TestStatus AllocateFreeTestInstance::iterate (void)
 
 					if (!!mem)
 					{
-						vkd.freeMemory(device, mem);
+						vkd.freeMemory(device, mem, (const VkAllocationCallbacks*)DE_NULL);
 						memoryObjects[ndx] = (VkDeviceMemory)0;
 					}
 				}
@@ -333,7 +333,7 @@ RandomAllocFreeTestInstance::~RandomAllocFreeTestInstance (void)
 		for (size_t objectNdx = 0; objectNdx < heap.objects.size(); objectNdx++)
 		{
 			if (!!heap.objects[objectNdx].memory)
-				vkd.freeMemory(device, heap.objects[objectNdx].memory);
+				vkd.freeMemory(device, heap.objects[objectNdx].memory, (const VkAllocationCallbacks*)DE_NULL);
 		}
 	}
 }
@@ -386,15 +386,15 @@ tcu::TestStatus RandomAllocFreeTestInstance::iterate (void)
 
 		heap.objects.push_back(object);
 
-		const VkMemoryAllocInfo alloc =
+		const VkMemoryAllocateInfo alloc =
 		{
-			VK_STRUCTURE_TYPE_MEMORY_ALLOC_INFO,	// sType
+			VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,	// sType
 			DE_NULL,								// pNext
 			object.size,							// allocationSize
 			memoryType.index						// memoryTypeIndex;
 		};
 
-		VK_CHECK(vkd.allocMemory(device, &alloc, &heap.objects.back().memory));
+		VK_CHECK(vkd.allocateMemory(device, &alloc, (const VkAllocationCallbacks*)DE_NULL, &heap.objects.back().memory));
 		TCU_CHECK(!!heap.objects.back().memory);
 
 		// If heap was empty add to the non empty heaps.
@@ -423,7 +423,7 @@ tcu::TestStatus RandomAllocFreeTestInstance::iterate (void)
 		const size_t		memoryObjectNdx	= m_rng.getUint32() % heap.objects.size();
 		MemoryObject&		memoryObject	= heap.objects[memoryObjectNdx];
 
-		vkd.freeMemory(device, memoryObject.memory);
+		vkd.freeMemory(device, memoryObject.memory, (const VkAllocationCallbacks*)DE_NULL);
 		memoryObject.memory = (VkDeviceMemory)0;
 
 		if (heap.memoryUsage >= heap.maxMemoryUsage && heap.memoryUsage - memoryObject.size < heap.maxMemoryUsage)
@@ -529,7 +529,7 @@ tcu::TestCaseGroup* createAllocationTests (tcu::TestContext& testCtx)
 						if (allocationSize < 4096)
 							continue;
 
-						config.memoryAllocationCount	= 50 * MiB / allocationSize;
+						config.memoryAllocationCount	= (deUint32)(50 * MiB / allocationSize);
 
 						if (config.memoryAllocationCount == 0
 							|| config.memoryAllocationCount == 1

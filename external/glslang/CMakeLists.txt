@@ -31,13 +31,13 @@ if (BISON_FOUND AND EXISTS ${GLSLANG_ABS_PATH}/glslang/GenericCodeGen/CodeGen.cp
 	message(STATUS "glslang found; building with DEQP_SUPPORT_GLSLANG")
 
 	include_directories(
-		.
 		${GLSLANG_ABS_PATH}
 		${GLSLANG_ABS_PATH}/glslang
 		${GLSLANG_ABS_PATH}/glslang/Include
 		${GLSLANG_ABS_PATH}/glslang/Public
 		${GLSLANG_ABS_PATH}/glslang/MachineIndependent
 		${GLSLANG_ABS_PATH}/glslang/GenericCodeGen
+		${GLSLANG_ABS_PATH}/glslang/OSDependent
 		${GLSLANG_ABS_PATH}/OGLCompilersDLL
 		${GLSLANG_ABS_PATH}/SPIRV
 		${CMAKE_CURRENT_BINARY_DIR}
@@ -81,7 +81,6 @@ if (BISON_FOUND AND EXISTS ${GLSLANG_ABS_PATH}/glslang/GenericCodeGen/CodeGen.cp
 		${CMAKE_CURRENT_BINARY_DIR}/glslang_tab.cpp
 		${CMAKE_CURRENT_BINARY_DIR}/glslang_tab.cpp.h
 
-		osinclude.h
 		osinclude.cpp
 		)
 

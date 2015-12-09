@@ -1,257 +1,275 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  */
-VkResult createInstance (const VkInstanceCreateInfo* pCreateInfo, VkInstance* pInstance)
+VkResult createInstance (const VkInstanceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkInstance* pInstance)
 {
+	DE_UNREF(pAllocator);
 	VK_NULL_RETURN(*pInstance = reinterpret_cast<VkInstance>(new Instance(pCreateInfo)));
 }
 
-VkResult createDevice (VkPhysicalDevice physicalDevice, const VkDeviceCreateInfo* pCreateInfo, VkDevice* pDevice)
+VkResult createDevice (VkPhysicalDevice physicalDevice, const VkDeviceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDevice* pDevice)
 {
+	DE_UNREF(pAllocator);
 	VK_NULL_RETURN(*pDevice = reinterpret_cast<VkDevice>(new Device(physicalDevice, pCreateInfo)));
 }
 
-VkResult allocMemory (VkDevice device, const VkMemoryAllocInfo* pAllocInfo, VkDeviceMemory* pMem)
+VkResult allocateMemory (VkDevice device, const VkMemoryAllocateInfo* pAllocateInfo, const VkAllocationCallbacks* pAllocator, VkDeviceMemory* pMemory)
 {
-	VK_NULL_RETURN(*pMem = VkDeviceMemory((deUint64)(deUintptr)new DeviceMemory(device, pAllocInfo)));
+	DE_UNREF(pAllocator);
+	VK_NULL_RETURN(*pMemory = VkDeviceMemory((deUint64)(deUintptr)new DeviceMemory(device, pAllocateInfo)));
 }
 
-VkResult createFence (VkDevice device, const VkFenceCreateInfo* pCreateInfo, VkFence* pFence)
+VkResult createFence (VkDevice device, const VkFenceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkFence* pFence)
 {
+	DE_UNREF(pAllocator);
 	VK_NULL_RETURN(*pFence = VkFence((deUint64)(deUintptr)new Fence(device, pCreateInfo)));
 }
 
-VkResult createSemaphore (VkDevice device, const VkSemaphoreCreateInfo* pCreateInfo, VkSemaphore* pSemaphore)
+VkResult createSemaphore (VkDevice device, const VkSemaphoreCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSemaphore* pSemaphore)
 {
+	DE_UNREF(pAllocator);
 	VK_NULL_RETURN(*pSemaphore = VkSemaphore((deUint64)(deUintptr)new Semaphore(device, pCreateInfo)));
 }
 
-VkResult createEvent (VkDevice device, const VkEventCreateInfo* pCreateInfo, VkEvent* pEvent)
+VkResult createEvent (VkDevice device, const VkEventCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkEvent* pEvent)
 {
+	DE_UNREF(pAllocator);
 	VK_NULL_RETURN(*pEvent = VkEvent((deUint64)(deUintptr)new Event(device, pCreateInfo)));
 }
 
-VkResult createQueryPool (VkDevice device, const VkQueryPoolCreateInfo* pCreateInfo, VkQueryPool* pQueryPool)
+VkResult createQueryPool (VkDevice device, const VkQueryPoolCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkQueryPool* pQueryPool)
 {
+	DE_UNREF(pAllocator);
 	VK_NULL_RETURN(*pQueryPool = VkQueryPool((deUint64)(deUintptr)new QueryPool(device, pCreateInfo)));
 }
 
-VkResult createBuffer (VkDevice device, const VkBufferCreateInfo* pCreateInfo, VkBuffer* pBuffer)
+VkResult createBuffer (VkDevice device, const VkBufferCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkBuffer* pBuffer)
 {
+	DE_UNREF(pAllocator);
 	VK_NULL_RETURN(*pBuffer = VkBuffer((deUint64)(deUintptr)new Buffer(device, pCreateInfo)));
 }
 
-VkResult createBufferView (VkDevice device, const VkBufferViewCreateInfo* pCreateInfo, VkBufferView* pView)
+VkResult createBufferView (VkDevice device, const VkBufferViewCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkBufferView* pView)
 {
+	DE_UNREF(pAllocator);
 	VK_NULL_RETURN(*pView = VkBufferView((deUint64)(deUintptr)new BufferView(device, pCreateInfo)));
 }
 
-VkResult createImage (VkDevice device, const VkImageCreateInfo* pCreateInfo, VkImage* pImage)
+VkResult createImage (VkDevice device, const VkImageCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkImage* pImage)
 {
+	DE_UNREF(pAllocator);
 	VK_NULL_RETURN(*pImage = VkImage((deUint64)(deUintptr)new Image(device, pCreateInfo)));
 }
 
-VkResult createImageView (VkDevice device, const VkImageViewCreateInfo* pCreateInfo, VkImageView* pView)
+VkResult createImageView (VkDevice device, const VkImageViewCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkImageView* pView)
 {
+	DE_UNREF(pAllocator);
 	VK_NULL_RETURN(*pView = VkImageView((deUint64)(deUintptr)new ImageView(device, pCreateInfo)));
 }
 
-VkResult createShaderModule (VkDevice device, const VkShaderModuleCreateInfo* pCreateInfo, VkShaderModule* pShaderModule)
+VkResult createShaderModule (VkDevice device, const VkShaderModuleCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkShaderModule* pShaderModule)
 {
+	DE_UNREF(pAllocator);
 	VK_NULL_RETURN(*pShaderModule = VkShaderModule((deUint64)(deUintptr)new ShaderModule(device, pCreateInfo)));
 }
 
-VkResult createShader (VkDevice device, const VkShaderCreateInfo* pCreateInfo, VkShader* pShader)
+VkResult createPipelineCache (VkDevice device, const VkPipelineCacheCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkPipelineCache* pPipelineCache)
 {
-	VK_NULL_RETURN(*pShader = VkShader((deUint64)(deUintptr)new Shader(device, pCreateInfo)));
-}
-
-VkResult createPipelineCache (VkDevice device, const VkPipelineCacheCreateInfo* pCreateInfo, VkPipelineCache* pPipelineCache)
-{
+	DE_UNREF(pAllocator);
 	VK_NULL_RETURN(*pPipelineCache = VkPipelineCache((deUint64)(deUintptr)new PipelineCache(device, pCreateInfo)));
 }
 
-VkResult createPipelineLayout (VkDevice device, const VkPipelineLayoutCreateInfo* pCreateInfo, VkPipelineLayout* pPipelineLayout)
+VkResult createPipelineLayout (VkDevice device, const VkPipelineLayoutCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkPipelineLayout* pPipelineLayout)
 {
+	DE_UNREF(pAllocator);
 	VK_NULL_RETURN(*pPipelineLayout = VkPipelineLayout((deUint64)(deUintptr)new PipelineLayout(device, pCreateInfo)));
 }
 
-VkResult createSampler (VkDevice device, const VkSamplerCreateInfo* pCreateInfo, VkSampler* pSampler)
+VkResult createSampler (VkDevice device, const VkSamplerCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSampler* pSampler)
 {
+	DE_UNREF(pAllocator);
 	VK_NULL_RETURN(*pSampler = VkSampler((deUint64)(deUintptr)new Sampler(device, pCreateInfo)));
 }
 
-VkResult createDescriptorSetLayout (VkDevice device, const VkDescriptorSetLayoutCreateInfo* pCreateInfo, VkDescriptorSetLayout* pSetLayout)
+VkResult createDescriptorSetLayout (VkDevice device, const VkDescriptorSetLayoutCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDescriptorSetLayout* pSetLayout)
 {
+	DE_UNREF(pAllocator);
 	VK_NULL_RETURN(*pSetLayout = VkDescriptorSetLayout((deUint64)(deUintptr)new DescriptorSetLayout(device, pCreateInfo)));
 }
 
-VkResult createDescriptorPool (VkDevice device, const VkDescriptorPoolCreateInfo* pCreateInfo, VkDescriptorPool* pDescriptorPool)
+VkResult createDescriptorPool (VkDevice device, const VkDescriptorPoolCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDescriptorPool* pDescriptorPool)
 {
+	DE_UNREF(pAllocator);
 	VK_NULL_RETURN(*pDescriptorPool = VkDescriptorPool((deUint64)(deUintptr)new DescriptorPool(device, pCreateInfo)));
 }
 
-VkResult createFramebuffer (VkDevice device, const VkFramebufferCreateInfo* pCreateInfo, VkFramebuffer* pFramebuffer)
+VkResult createFramebuffer (VkDevice device, const VkFramebufferCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkFramebuffer* pFramebuffer)
 {
+	DE_UNREF(pAllocator);
 	VK_NULL_RETURN(*pFramebuffer = VkFramebuffer((deUint64)(deUintptr)new Framebuffer(device, pCreateInfo)));
 }
 
-VkResult createRenderPass (VkDevice device, const VkRenderPassCreateInfo* pCreateInfo, VkRenderPass* pRenderPass)
+VkResult createRenderPass (VkDevice device, const VkRenderPassCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkRenderPass* pRenderPass)
 {
+	DE_UNREF(pAllocator);
 	VK_NULL_RETURN(*pRenderPass = VkRenderPass((deUint64)(deUintptr)new RenderPass(device, pCreateInfo)));
 }
 
-VkResult createCommandPool (VkDevice device, const VkCmdPoolCreateInfo* pCreateInfo, VkCmdPool* pCmdPool)
+VkResult createCommandPool (VkDevice device, const VkCommandPoolCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkCommandPool* pCommandPool)
 {
-	VK_NULL_RETURN(*pCmdPool = VkCmdPool((deUint64)(deUintptr)new CmdPool(device, pCreateInfo)));
+	DE_UNREF(pAllocator);
+	VK_NULL_RETURN(*pCommandPool = VkCommandPool((deUint64)(deUintptr)new CommandPool(device, pCreateInfo)));
 }
 
-VkResult createCommandBuffer (VkDevice device, const VkCmdBufferCreateInfo* pCreateInfo, VkCmdBuffer* pCmdBuffer)
+void destroyInstance (VkInstance instance, const VkAllocationCallbacks* pAllocator)
 {
-	VK_NULL_RETURN(*pCmdBuffer = reinterpret_cast<VkCmdBuffer>(new CmdBuffer(device, pCreateInfo)));
-}
-
-void destroyInstance (VkInstance instance)
-{
+	DE_UNREF(pAllocator);
 	delete reinterpret_cast<Instance*>(instance);
 }
 
-void destroyDevice (VkDevice device)
+void destroyDevice (VkDevice device, const VkAllocationCallbacks* pAllocator)
 {
+	DE_UNREF(pAllocator);
 	delete reinterpret_cast<Device*>(device);
 }
 
-void freeMemory (VkDevice device, VkDeviceMemory mem)
+void freeMemory (VkDevice device, VkDeviceMemory memory, const VkAllocationCallbacks* pAllocator)
 {
 	DE_UNREF(device);
-	delete reinterpret_cast<DeviceMemory*>((deUintptr)mem.getInternal());
+	DE_UNREF(pAllocator);
+	delete reinterpret_cast<DeviceMemory*>((deUintptr)memory.getInternal());
 }
 
-void destroyFence (VkDevice device, VkFence fence)
+void destroyFence (VkDevice device, VkFence fence, const VkAllocationCallbacks* pAllocator)
 {
 	DE_UNREF(device);
+	DE_UNREF(pAllocator);
 	delete reinterpret_cast<Fence*>((deUintptr)fence.getInternal());
 }
 
-void destroySemaphore (VkDevice device, VkSemaphore semaphore)
+void destroySemaphore (VkDevice device, VkSemaphore semaphore, const VkAllocationCallbacks* pAllocator)
 {
 	DE_UNREF(device);
+	DE_UNREF(pAllocator);
 	delete reinterpret_cast<Semaphore*>((deUintptr)semaphore.getInternal());
 }
 
-void destroyEvent (VkDevice device, VkEvent event)
+void destroyEvent (VkDevice device, VkEvent event, const VkAllocationCallbacks* pAllocator)
 {
 	DE_UNREF(device);
+	DE_UNREF(pAllocator);
 	delete reinterpret_cast<Event*>((deUintptr)event.getInternal());
 }
 
-void destroyQueryPool (VkDevice device, VkQueryPool queryPool)
+void destroyQueryPool (VkDevice device, VkQueryPool queryPool, const VkAllocationCallbacks* pAllocator)
 {
 	DE_UNREF(device);
+	DE_UNREF(pAllocator);
 	delete reinterpret_cast<QueryPool*>((deUintptr)queryPool.getInternal());
 }
 
-void destroyBuffer (VkDevice device, VkBuffer buffer)
+void destroyBuffer (VkDevice device, VkBuffer buffer, const VkAllocationCallbacks* pAllocator)
 {
 	DE_UNREF(device);
+	DE_UNREF(pAllocator);
 	delete reinterpret_cast<Buffer*>((deUintptr)buffer.getInternal());
 }
 
-void destroyBufferView (VkDevice device, VkBufferView bufferView)
+void destroyBufferView (VkDevice device, VkBufferView bufferView, const VkAllocationCallbacks* pAllocator)
 {
 	DE_UNREF(device);
+	DE_UNREF(pAllocator);
 	delete reinterpret_cast<BufferView*>((deUintptr)bufferView.getInternal());
 }
 
-void destroyImage (VkDevice device, VkImage image)
+void destroyImage (VkDevice device, VkImage image, const VkAllocationCallbacks* pAllocator)
 {
 	DE_UNREF(device);
+	DE_UNREF(pAllocator);
 	delete reinterpret_cast<Image*>((deUintptr)image.getInternal());
 }
 
-void destroyImageView (VkDevice device, VkImageView imageView)
+void destroyImageView (VkDevice device, VkImageView imageView, const VkAllocationCallbacks* pAllocator)
 {
 	DE_UNREF(device);
+	DE_UNREF(pAllocator);
 	delete reinterpret_cast<ImageView*>((deUintptr)imageView.getInternal());
 }
 
-void destroyShaderModule (VkDevice device, VkShaderModule shaderModule)
+void destroyShaderModule (VkDevice device, VkShaderModule shaderModule, const VkAllocationCallbacks* pAllocator)
 {
 	DE_UNREF(device);
+	DE_UNREF(pAllocator);
 	delete reinterpret_cast<ShaderModule*>((deUintptr)shaderModule.getInternal());
 }
 
-void destroyShader (VkDevice device, VkShader shader)
+void destroyPipelineCache (VkDevice device, VkPipelineCache pipelineCache, const VkAllocationCallbacks* pAllocator)
 {
 	DE_UNREF(device);
-	delete reinterpret_cast<Shader*>((deUintptr)shader.getInternal());
-}
-
-void destroyPipelineCache (VkDevice device, VkPipelineCache pipelineCache)
-{
-	DE_UNREF(device);
+	DE_UNREF(pAllocator);
 	delete reinterpret_cast<PipelineCache*>((deUintptr)pipelineCache.getInternal());
 }
 
-void destroyPipeline (VkDevice device, VkPipeline pipeline)
+void destroyPipeline (VkDevice device, VkPipeline pipeline, const VkAllocationCallbacks* pAllocator)
 {
 	DE_UNREF(device);
+	DE_UNREF(pAllocator);
 	delete reinterpret_cast<Pipeline*>((deUintptr)pipeline.getInternal());
 }
 
-void destroyPipelineLayout (VkDevice device, VkPipelineLayout pipelineLayout)
+void destroyPipelineLayout (VkDevice device, VkPipelineLayout pipelineLayout, const VkAllocationCallbacks* pAllocator)
 {
 	DE_UNREF(device);
+	DE_UNREF(pAllocator);
 	delete reinterpret_cast<PipelineLayout*>((deUintptr)pipelineLayout.getInternal());
 }
 
-void destroySampler (VkDevice device, VkSampler sampler)
+void destroySampler (VkDevice device, VkSampler sampler, const VkAllocationCallbacks* pAllocator)
 {
 	DE_UNREF(device);
+	DE_UNREF(pAllocator);
 	delete reinterpret_cast<Sampler*>((deUintptr)sampler.getInternal());
 }
 
-void destroyDescriptorSetLayout (VkDevice device, VkDescriptorSetLayout descriptorSetLayout)
+void destroyDescriptorSetLayout (VkDevice device, VkDescriptorSetLayout descriptorSetLayout, const VkAllocationCallbacks* pAllocator)
 {
 	DE_UNREF(device);
+	DE_UNREF(pAllocator);
 	delete reinterpret_cast<DescriptorSetLayout*>((deUintptr)descriptorSetLayout.getInternal());
 }
 
-void destroyDescriptorPool (VkDevice device, VkDescriptorPool descriptorPool)
+void destroyDescriptorPool (VkDevice device, VkDescriptorPool descriptorPool, const VkAllocationCallbacks* pAllocator)
 {
 	DE_UNREF(device);
+	DE_UNREF(pAllocator);
 	delete reinterpret_cast<DescriptorPool*>((deUintptr)descriptorPool.getInternal());
 }
 
-void destroyFramebuffer (VkDevice device, VkFramebuffer framebuffer)
+void destroyFramebuffer (VkDevice device, VkFramebuffer framebuffer, const VkAllocationCallbacks* pAllocator)
 {
 	DE_UNREF(device);
+	DE_UNREF(pAllocator);
 	delete reinterpret_cast<Framebuffer*>((deUintptr)framebuffer.getInternal());
 }
 
-void destroyRenderPass (VkDevice device, VkRenderPass renderPass)
+void destroyRenderPass (VkDevice device, VkRenderPass renderPass, const VkAllocationCallbacks* pAllocator)
 {
 	DE_UNREF(device);
+	DE_UNREF(pAllocator);
 	delete reinterpret_cast<RenderPass*>((deUintptr)renderPass.getInternal());
 }
 
-void destroyCommandPool (VkDevice device, VkCmdPool cmdPool)
+void destroyCommandPool (VkDevice device, VkCommandPool commandPool, const VkAllocationCallbacks* pAllocator)
 {
 	DE_UNREF(device);
-	delete reinterpret_cast<CmdPool*>((deUintptr)cmdPool.getInternal());
+	DE_UNREF(pAllocator);
+	delete reinterpret_cast<CommandPool*>((deUintptr)commandPool.getInternal());
 }
 
-void destroyCommandBuffer (VkDevice device, VkCmdBuffer commandBuffer)
-{
-	DE_UNREF(device);
-	delete reinterpret_cast<CmdBuffer*>(commandBuffer);
-}
-
-VkResult getPhysicalDeviceFeatures (VkPhysicalDevice physicalDevice, VkPhysicalDeviceFeatures* pFeatures)
+void getPhysicalDeviceFeatures (VkPhysicalDevice physicalDevice, VkPhysicalDeviceFeatures* pFeatures)
 {
 	DE_UNREF(physicalDevice);
 	DE_UNREF(pFeatures);
-	return VK_SUCCESS;
 }
 
 VkResult getPhysicalDeviceImageFormatProperties (VkPhysicalDevice physicalDevice, VkFormat format, VkImageType type, VkImageTiling tiling, VkImageUsageFlags usage, VkImageCreateFlags flags, VkImageFormatProperties* pImageFormatProperties)
@@ -266,52 +284,51 @@ VkResult getPhysicalDeviceImageFormatProperties (VkPhysicalDevice physicalDevice
 	return VK_SUCCESS;
 }
 
-VkResult enumerateInstanceExtensionProperties (const char* pLayerName, deUint32* pCount, VkExtensionProperties* pProperties)
+VkResult enumerateInstanceExtensionProperties (const char* pLayerName, deUint32* pPropertyCount, VkExtensionProperties* pProperties)
 {
 	DE_UNREF(pLayerName);
-	DE_UNREF(pCount);
+	DE_UNREF(pPropertyCount);
 	DE_UNREF(pProperties);
 	return VK_SUCCESS;
 }
 
-VkResult enumerateDeviceExtensionProperties (VkPhysicalDevice physicalDevice, const char* pLayerName, deUint32* pCount, VkExtensionProperties* pProperties)
+VkResult enumerateDeviceExtensionProperties (VkPhysicalDevice physicalDevice, const char* pLayerName, deUint32* pPropertyCount, VkExtensionProperties* pProperties)
 {
 	DE_UNREF(physicalDevice);
 	DE_UNREF(pLayerName);
-	DE_UNREF(pCount);
+	DE_UNREF(pPropertyCount);
 	DE_UNREF(pProperties);
 	return VK_SUCCESS;
 }
 
-VkResult enumerateInstanceLayerProperties (deUint32* pCount, VkLayerProperties* pProperties)
+VkResult enumerateInstanceLayerProperties (deUint32* pPropertyCount, VkLayerProperties* pProperties)
 {
-	DE_UNREF(pCount);
+	DE_UNREF(pPropertyCount);
 	DE_UNREF(pProperties);
 	return VK_SUCCESS;
 }
 
-VkResult enumerateDeviceLayerProperties (VkPhysicalDevice physicalDevice, deUint32* pCount, VkLayerProperties* pProperties)
+VkResult enumerateDeviceLayerProperties (VkPhysicalDevice physicalDevice, deUint32* pPropertyCount, VkLayerProperties* pProperties)
 {
 	DE_UNREF(physicalDevice);
-	DE_UNREF(pCount);
+	DE_UNREF(pPropertyCount);
 	DE_UNREF(pProperties);
 	return VK_SUCCESS;
 }
 
-VkResult getDeviceQueue (VkDevice device, deUint32 queueFamilyIndex, deUint32 queueIndex, VkQueue* pQueue)
+void getDeviceQueue (VkDevice device, deUint32 queueFamilyIndex, deUint32 queueIndex, VkQueue* pQueue)
 {
 	DE_UNREF(device);
 	DE_UNREF(queueFamilyIndex);
 	DE_UNREF(queueIndex);
 	DE_UNREF(pQueue);
-	return VK_SUCCESS;
 }
 
-VkResult queueSubmit (VkQueue queue, deUint32 cmdBufferCount, const VkCmdBuffer* pCmdBuffers, VkFence fence)
+VkResult queueSubmit (VkQueue queue, deUint32 submitCount, const VkSubmitInfo* pSubmits, VkFence fence)
 {
 	DE_UNREF(queue);
-	DE_UNREF(cmdBufferCount);
-	DE_UNREF(pCmdBuffers);
+	DE_UNREF(submitCount);
+	DE_UNREF(pSubmits);
 	DE_UNREF(fence);
 	return VK_SUCCESS;
 }
@@ -328,64 +345,62 @@ VkResult deviceWaitIdle (VkDevice device)
 	return VK_SUCCESS;
 }
 
-void unmapMemory (VkDevice device, VkDeviceMemory mem)
+void unmapMemory (VkDevice device, VkDeviceMemory memory)
 {
 	DE_UNREF(device);
-	DE_UNREF(mem);
+	DE_UNREF(memory);
 }
 
-VkResult flushMappedMemoryRanges (VkDevice device, deUint32 memRangeCount, const VkMappedMemoryRange* pMemRanges)
+VkResult flushMappedMemoryRanges (VkDevice device, deUint32 memoryRangeCount, const VkMappedMemoryRange* pMemoryRanges)
 {
 	DE_UNREF(device);
-	DE_UNREF(memRangeCount);
-	DE_UNREF(pMemRanges);
+	DE_UNREF(memoryRangeCount);
+	DE_UNREF(pMemoryRanges);
 	return VK_SUCCESS;
 }
 
-VkResult invalidateMappedMemoryRanges (VkDevice device, deUint32 memRangeCount, const VkMappedMemoryRange* pMemRanges)
+VkResult invalidateMappedMemoryRanges (VkDevice device, deUint32 memoryRangeCount, const VkMappedMemoryRange* pMemoryRanges)
 {
 	DE_UNREF(device);
-	DE_UNREF(memRangeCount);
-	DE_UNREF(pMemRanges);
+	DE_UNREF(memoryRangeCount);
+	DE_UNREF(pMemoryRanges);
 	return VK_SUCCESS;
 }
 
-VkResult getDeviceMemoryCommitment (VkDevice device, VkDeviceMemory memory, VkDeviceSize* pCommittedMemoryInBytes)
+void getDeviceMemoryCommitment (VkDevice device, VkDeviceMemory memory, VkDeviceSize* pCommittedMemoryInBytes)
 {
 	DE_UNREF(device);
 	DE_UNREF(memory);
 	DE_UNREF(pCommittedMemoryInBytes);
-	return VK_SUCCESS;
 }
 
-VkResult bindBufferMemory (VkDevice device, VkBuffer buffer, VkDeviceMemory mem, VkDeviceSize memOffset)
+VkResult bindBufferMemory (VkDevice device, VkBuffer buffer, VkDeviceMemory memory, VkDeviceSize memoryOffset)
 {
 	DE_UNREF(device);
 	DE_UNREF(buffer);
-	DE_UNREF(mem);
-	DE_UNREF(memOffset);
+	DE_UNREF(memory);
+	DE_UNREF(memoryOffset);
 	return VK_SUCCESS;
 }
 
-VkResult bindImageMemory (VkDevice device, VkImage image, VkDeviceMemory mem, VkDeviceSize memOffset)
+VkResult bindImageMemory (VkDevice device, VkImage image, VkDeviceMemory memory, VkDeviceSize memoryOffset)
 {
 	DE_UNREF(device);
 	DE_UNREF(image);
-	DE_UNREF(mem);
-	DE_UNREF(memOffset);
+	DE_UNREF(memory);
+	DE_UNREF(memoryOffset);
 	return VK_SUCCESS;
 }
 
-VkResult getImageSparseMemoryRequirements (VkDevice device, VkImage image, deUint32* pNumRequirements, VkSparseImageMemoryRequirements* pSparseMemoryRequirements)
+void getImageSparseMemoryRequirements (VkDevice device, VkImage image, deUint32* pSparseMemoryRequirementCount, VkSparseImageMemoryRequirements* pSparseMemoryRequirements)
 {
 	DE_UNREF(device);
 	DE_UNREF(image);
-	DE_UNREF(pNumRequirements);
+	DE_UNREF(pSparseMemoryRequirementCount);
 	DE_UNREF(pSparseMemoryRequirements);
-	return VK_SUCCESS;
 }
 
-VkResult getPhysicalDeviceSparseImageFormatProperties (VkPhysicalDevice physicalDevice, VkFormat format, VkImageType type, deUint32 samples, VkImageUsageFlags usage, VkImageTiling tiling, deUint32* pNumProperties, VkSparseImageFormatProperties* pProperties)
+void getPhysicalDeviceSparseImageFormatProperties (VkPhysicalDevice physicalDevice, VkFormat format, VkImageType type, VkSampleCountFlagBits samples, VkImageUsageFlags usage, VkImageTiling tiling, deUint32* pPropertyCount, VkSparseImageFormatProperties* pProperties)
 {
 	DE_UNREF(physicalDevice);
 	DE_UNREF(format);
@@ -393,35 +408,16 @@ VkResult getPhysicalDeviceSparseImageFormatProperties (VkPhysicalDevice physical
 	DE_UNREF(samples);
 	DE_UNREF(usage);
 	DE_UNREF(tiling);
-	DE_UNREF(pNumProperties);
+	DE_UNREF(pPropertyCount);
 	DE_UNREF(pProperties);
-	return VK_SUCCESS;
 }
 
-VkResult queueBindSparseBufferMemory (VkQueue queue, VkBuffer buffer, deUint32 numBindings, const VkSparseMemoryBindInfo* pBindInfo)
+VkResult queueBindSparse (VkQueue queue, deUint32 bindInfoCount, const VkBindSparseInfo* pBindInfo, VkFence fence)
 {
 	DE_UNREF(queue);
-	DE_UNREF(buffer);
-	DE_UNREF(numBindings);
+	DE_UNREF(bindInfoCount);
 	DE_UNREF(pBindInfo);
-	return VK_SUCCESS;
-}
-
-VkResult queueBindSparseImageOpaqueMemory (VkQueue queue, VkImage image, deUint32 numBindings, const VkSparseMemoryBindInfo* pBindInfo)
-{
-	DE_UNREF(queue);
-	DE_UNREF(image);
-	DE_UNREF(numBindings);
-	DE_UNREF(pBindInfo);
-	return VK_SUCCESS;
-}
-
-VkResult queueBindSparseImageMemory (VkQueue queue, VkImage image, deUint32 numBindings, const VkSparseImageMemoryBindInfo* pBindInfo)
-{
-	DE_UNREF(queue);
-	DE_UNREF(image);
-	DE_UNREF(numBindings);
-	DE_UNREF(pBindInfo);
+	DE_UNREF(fence);
 	return VK_SUCCESS;
 }
 
@@ -450,20 +446,6 @@ VkResult waitForFences (VkDevice device, deUint32 fenceCount, const VkFence* pFe
 	return VK_SUCCESS;
 }
 
-VkResult queueSignalSemaphore (VkQueue queue, VkSemaphore semaphore)
-{
-	DE_UNREF(queue);
-	DE_UNREF(semaphore);
-	return VK_SUCCESS;
-}
-
-VkResult queueWaitSemaphore (VkQueue queue, VkSemaphore semaphore)
-{
-	DE_UNREF(queue);
-	DE_UNREF(semaphore);
-	return VK_SUCCESS;
-}
-
 VkResult getEventStatus (VkDevice device, VkEvent event)
 {
 	DE_UNREF(device);
@@ -485,213 +467,199 @@ VkResult resetEvent (VkDevice device, VkEvent event)
 	return VK_SUCCESS;
 }
 
-VkResult getQueryPoolResults (VkDevice device, VkQueryPool queryPool, deUint32 startQuery, deUint32 queryCount, deUintptr* pDataSize, void* pData, VkQueryResultFlags flags)
+VkResult getQueryPoolResults (VkDevice device, VkQueryPool queryPool, deUint32 startQuery, deUint32 queryCount, deUintptr dataSize, void* pData, VkDeviceSize stride, VkQueryResultFlags flags)
 {
 	DE_UNREF(device);
 	DE_UNREF(queryPool);
 	DE_UNREF(startQuery);
 	DE_UNREF(queryCount);
-	DE_UNREF(pDataSize);
+	DE_UNREF(dataSize);
 	DE_UNREF(pData);
+	DE_UNREF(stride);
 	DE_UNREF(flags);
 	return VK_SUCCESS;
 }
 
-VkResult getImageSubresourceLayout (VkDevice device, VkImage image, const VkImageSubresource* pSubresource, VkSubresourceLayout* pLayout)
+void getImageSubresourceLayout (VkDevice device, VkImage image, const VkImageSubresource* pSubresource, VkSubresourceLayout* pLayout)
 {
 	DE_UNREF(device);
 	DE_UNREF(image);
 	DE_UNREF(pSubresource);
 	DE_UNREF(pLayout);
-	return VK_SUCCESS;
 }
 
-deUintptr getPipelineCacheSize (VkDevice device, VkPipelineCache pipelineCache)
+VkResult getPipelineCacheData (VkDevice device, VkPipelineCache pipelineCache, deUintptr* pDataSize, void* pData)
 {
 	DE_UNREF(device);
 	DE_UNREF(pipelineCache);
-	return VK_SUCCESS;
-}
-
-VkResult getPipelineCacheData (VkDevice device, VkPipelineCache pipelineCache, void* pData)
-{
-	DE_UNREF(device);
-	DE_UNREF(pipelineCache);
+	DE_UNREF(pDataSize);
 	DE_UNREF(pData);
 	return VK_SUCCESS;
 }
 
-VkResult mergePipelineCaches (VkDevice device, VkPipelineCache destCache, deUint32 srcCacheCount, const VkPipelineCache* pSrcCaches)
+VkResult mergePipelineCaches (VkDevice device, VkPipelineCache dstCache, deUint32 srcCacheCount, const VkPipelineCache* pSrcCaches)
 {
 	DE_UNREF(device);
-	DE_UNREF(destCache);
+	DE_UNREF(dstCache);
 	DE_UNREF(srcCacheCount);
 	DE_UNREF(pSrcCaches);
 	return VK_SUCCESS;
 }
 
-VkResult resetDescriptorPool (VkDevice device, VkDescriptorPool descriptorPool)
+void updateDescriptorSets (VkDevice device, deUint32 descriptorWriteCount, const VkWriteDescriptorSet* pDescriptorWrites, deUint32 descriptorCopyCount, const VkCopyDescriptorSet* pDescriptorCopies)
 {
 	DE_UNREF(device);
-	DE_UNREF(descriptorPool);
-	return VK_SUCCESS;
-}
-
-void updateDescriptorSets (VkDevice device, deUint32 writeCount, const VkWriteDescriptorSet* pDescriptorWrites, deUint32 copyCount, const VkCopyDescriptorSet* pDescriptorCopies)
-{
-	DE_UNREF(device);
-	DE_UNREF(writeCount);
+	DE_UNREF(descriptorWriteCount);
 	DE_UNREF(pDescriptorWrites);
-	DE_UNREF(copyCount);
+	DE_UNREF(descriptorCopyCount);
 	DE_UNREF(pDescriptorCopies);
 }
 
-VkResult getRenderAreaGranularity (VkDevice device, VkRenderPass renderPass, VkExtent2D* pGranularity)
+void getRenderAreaGranularity (VkDevice device, VkRenderPass renderPass, VkExtent2D* pGranularity)
 {
 	DE_UNREF(device);
 	DE_UNREF(renderPass);
 	DE_UNREF(pGranularity);
-	return VK_SUCCESS;
 }
 
-VkResult resetCommandPool (VkDevice device, VkCmdPool cmdPool, VkCmdPoolResetFlags flags)
+VkResult resetCommandPool (VkDevice device, VkCommandPool commandPool, VkCommandPoolResetFlags flags)
 {
 	DE_UNREF(device);
-	DE_UNREF(cmdPool);
+	DE_UNREF(commandPool);
 	DE_UNREF(flags);
 	return VK_SUCCESS;
 }
 
-VkResult beginCommandBuffer (VkCmdBuffer cmdBuffer, const VkCmdBufferBeginInfo* pBeginInfo)
+VkResult beginCommandBuffer (VkCommandBuffer commandBuffer, const VkCommandBufferBeginInfo* pBeginInfo)
 {
-	DE_UNREF(cmdBuffer);
+	DE_UNREF(commandBuffer);
 	DE_UNREF(pBeginInfo);
 	return VK_SUCCESS;
 }
 
-VkResult endCommandBuffer (VkCmdBuffer cmdBuffer)
+VkResult endCommandBuffer (VkCommandBuffer commandBuffer)
 {
-	DE_UNREF(cmdBuffer);
+	DE_UNREF(commandBuffer);
 	return VK_SUCCESS;
 }
 
-VkResult resetCommandBuffer (VkCmdBuffer cmdBuffer, VkCmdBufferResetFlags flags)
+VkResult resetCommandBuffer (VkCommandBuffer commandBuffer, VkCommandBufferResetFlags flags)
 {
-	DE_UNREF(cmdBuffer);
+	DE_UNREF(commandBuffer);
 	DE_UNREF(flags);
 	return VK_SUCCESS;
 }
 
-void cmdBindPipeline (VkCmdBuffer cmdBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipeline pipeline)
+void cmdBindPipeline (VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipeline pipeline)
 {
-	DE_UNREF(cmdBuffer);
+	DE_UNREF(commandBuffer);
 	DE_UNREF(pipelineBindPoint);
 	DE_UNREF(pipeline);
 }
 
-void cmdSetViewport (VkCmdBuffer cmdBuffer, deUint32 viewportCount, const VkViewport* pViewports)
+void cmdSetViewport (VkCommandBuffer commandBuffer, deUint32 viewportCount, const VkViewport* pViewports)
 {
-	DE_UNREF(cmdBuffer);
+	DE_UNREF(commandBuffer);
 	DE_UNREF(viewportCount);
 	DE_UNREF(pViewports);
 }
 
-void cmdSetScissor (VkCmdBuffer cmdBuffer, deUint32 scissorCount, const VkRect2D* pScissors)
+void cmdSetScissor (VkCommandBuffer commandBuffer, deUint32 scissorCount, const VkRect2D* pScissors)
 {
-	DE_UNREF(cmdBuffer);
+	DE_UNREF(commandBuffer);
 	DE_UNREF(scissorCount);
 	DE_UNREF(pScissors);
 }
 
-void cmdSetLineWidth (VkCmdBuffer cmdBuffer, float lineWidth)
+void cmdSetLineWidth (VkCommandBuffer commandBuffer, float lineWidth)
 {
-	DE_UNREF(cmdBuffer);
+	DE_UNREF(commandBuffer);
 	DE_UNREF(lineWidth);
 }
 
-void cmdSetDepthBias (VkCmdBuffer cmdBuffer, float depthBias, float depthBiasClamp, float slopeScaledDepthBias)
+void cmdSetDepthBias (VkCommandBuffer commandBuffer, float depthBiasConstantFactor, float depthBiasClamp, float depthBiasSlopeFactor)
 {
-	DE_UNREF(cmdBuffer);
-	DE_UNREF(depthBias);
+	DE_UNREF(commandBuffer);
+	DE_UNREF(depthBiasConstantFactor);
 	DE_UNREF(depthBiasClamp);
-	DE_UNREF(slopeScaledDepthBias);
+	DE_UNREF(depthBiasSlopeFactor);
 }
 
-void cmdSetBlendConstants (VkCmdBuffer cmdBuffer, const float blendConst[4])
+void cmdSetBlendConstants (VkCommandBuffer commandBuffer, const float blendConstants[4])
 {
-	DE_UNREF(cmdBuffer);
-	DE_UNREF(blendConst);
+	DE_UNREF(commandBuffer);
+	DE_UNREF(blendConstants);
 }
 
-void cmdSetDepthBounds (VkCmdBuffer cmdBuffer, float minDepthBounds, float maxDepthBounds)
+void cmdSetDepthBounds (VkCommandBuffer commandBuffer, float minDepthBounds, float maxDepthBounds)
 {
-	DE_UNREF(cmdBuffer);
+	DE_UNREF(commandBuffer);
 	DE_UNREF(minDepthBounds);
 	DE_UNREF(maxDepthBounds);
 }
 
-void cmdSetStencilCompareMask (VkCmdBuffer cmdBuffer, VkStencilFaceFlags faceMask, deUint32 stencilCompareMask)
+void cmdSetStencilCompareMask (VkCommandBuffer commandBuffer, VkStencilFaceFlags faceMask, deUint32 compareMask)
 {
-	DE_UNREF(cmdBuffer);
+	DE_UNREF(commandBuffer);
 	DE_UNREF(faceMask);
-	DE_UNREF(stencilCompareMask);
+	DE_UNREF(compareMask);
 }
 
-void cmdSetStencilWriteMask (VkCmdBuffer cmdBuffer, VkStencilFaceFlags faceMask, deUint32 stencilWriteMask)
+void cmdSetStencilWriteMask (VkCommandBuffer commandBuffer, VkStencilFaceFlags faceMask, deUint32 writeMask)
 {
-	DE_UNREF(cmdBuffer);
+	DE_UNREF(commandBuffer);
 	DE_UNREF(faceMask);
-	DE_UNREF(stencilWriteMask);
+	DE_UNREF(writeMask);
 }
 
-void cmdSetStencilReference (VkCmdBuffer cmdBuffer, VkStencilFaceFlags faceMask, deUint32 stencilReference)
+void cmdSetStencilReference (VkCommandBuffer commandBuffer, VkStencilFaceFlags faceMask, deUint32 reference)
 {
-	DE_UNREF(cmdBuffer);
+	DE_UNREF(commandBuffer);
 	DE_UNREF(faceMask);
-	DE_UNREF(stencilReference);
+	DE_UNREF(reference);
 }
 
-void cmdBindDescriptorSets (VkCmdBuffer cmdBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipelineLayout layout, deUint32 firstSet, deUint32 setCount, const VkDescriptorSet* pDescriptorSets, deUint32 dynamicOffsetCount, const deUint32* pDynamicOffsets)
+void cmdBindDescriptorSets (VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipelineLayout layout, deUint32 firstSet, deUint32 descriptorSetCount, const VkDescriptorSet* pDescriptorSets, deUint32 dynamicOffsetCount, const deUint32* pDynamicOffsets)
 {
-	DE_UNREF(cmdBuffer);
+	DE_UNREF(commandBuffer);
 	DE_UNREF(pipelineBindPoint);
 	DE_UNREF(layout);
 	DE_UNREF(firstSet);
-	DE_UNREF(setCount);
+	DE_UNREF(descriptorSetCount);
 	DE_UNREF(pDescriptorSets);
 	DE_UNREF(dynamicOffsetCount);
 	DE_UNREF(pDynamicOffsets);
 }
 
-void cmdBindIndexBuffer (VkCmdBuffer cmdBuffer, VkBuffer buffer, VkDeviceSize offset, VkIndexType indexType)
+void cmdBindIndexBuffer (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkIndexType indexType)
 {
-	DE_UNREF(cmdBuffer);
+	DE_UNREF(commandBuffer);
 	DE_UNREF(buffer);
 	DE_UNREF(offset);
 	DE_UNREF(indexType);
 }
 
-void cmdBindVertexBuffers (VkCmdBuffer cmdBuffer, deUint32 startBinding, deUint32 bindingCount, const VkBuffer* pBuffers, const VkDeviceSize* pOffsets)
+void cmdBindVertexBuffers (VkCommandBuffer commandBuffer, deUint32 startBinding, deUint32 bindingCount, const VkBuffer* pBuffers, const VkDeviceSize* pOffsets)
 {
-	DE_UNREF(cmdBuffer);
+	DE_UNREF(commandBuffer);
 	DE_UNREF(startBinding);
 	DE_UNREF(bindingCount);
 	DE_UNREF(pBuffers);
 	DE_UNREF(pOffsets);
 }
 
-void cmdDraw (VkCmdBuffer cmdBuffer, deUint32 vertexCount, deUint32 instanceCount, deUint32 firstVertex, deUint32 firstInstance)
+void cmdDraw (VkCommandBuffer commandBuffer, deUint32 vertexCount, deUint32 instanceCount, deUint32 firstVertex, deUint32 firstInstance)
 {
-	DE_UNREF(cmdBuffer);
+	DE_UNREF(commandBuffer);
 	DE_UNREF(vertexCount);
 	DE_UNREF(instanceCount);
 	DE_UNREF(firstVertex);
 	DE_UNREF(firstInstance);
 }
 
-void cmdDrawIndexed (VkCmdBuffer cmdBuffer, deUint32 indexCount, deUint32 instanceCount, deUint32 firstIndex, deInt32 vertexOffset, deUint32 firstInstance)
+void cmdDrawIndexed (VkCommandBuffer commandBuffer, deUint32 indexCount, deUint32 instanceCount, deUint32 firstIndex, deInt32 vertexOffset, deUint32 firstInstance)
 {
-	DE_UNREF(cmdBuffer);
+	DE_UNREF(commandBuffer);
 	DE_UNREF(indexCount);
 	DE_UNREF(instanceCount);
 	DE_UNREF(firstIndex);
@@ -699,112 +667,112 @@ void cmdDrawIndexed (VkCmdBuffer cmdBuffer, deUint32 indexCount, deUint32 instan
 	DE_UNREF(firstInstance);
 }
 
-void cmdDrawIndirect (VkCmdBuffer cmdBuffer, VkBuffer buffer, VkDeviceSize offset, deUint32 count, deUint32 stride)
+void cmdDrawIndirect (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, deUint32 drawCount, deUint32 stride)
 {
-	DE_UNREF(cmdBuffer);
+	DE_UNREF(commandBuffer);
 	DE_UNREF(buffer);
 	DE_UNREF(offset);
-	DE_UNREF(count);
+	DE_UNREF(drawCount);
 	DE_UNREF(stride);
 }
 
-void cmdDrawIndexedIndirect (VkCmdBuffer cmdBuffer, VkBuffer buffer, VkDeviceSize offset, deUint32 count, deUint32 stride)
+void cmdDrawIndexedIndirect (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, deUint32 drawCount, deUint32 stride)
 {
-	DE_UNREF(cmdBuffer);
+	DE_UNREF(commandBuffer);
 	DE_UNREF(buffer);
 	DE_UNREF(offset);
-	DE_UNREF(count);
+	DE_UNREF(drawCount);
 	DE_UNREF(stride);
 }
 
-void cmdDispatch (VkCmdBuffer cmdBuffer, deUint32 x, deUint32 y, deUint32 z)
+void cmdDispatch (VkCommandBuffer commandBuffer, deUint32 x, deUint32 y, deUint32 z)
 {
-	DE_UNREF(cmdBuffer);
+	DE_UNREF(commandBuffer);
 	DE_UNREF(x);
 	DE_UNREF(y);
 	DE_UNREF(z);
 }
 
-void cmdDispatchIndirect (VkCmdBuffer cmdBuffer, VkBuffer buffer, VkDeviceSize offset)
+void cmdDispatchIndirect (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset)
 {
-	DE_UNREF(cmdBuffer);
+	DE_UNREF(commandBuffer);
 	DE_UNREF(buffer);
 	DE_UNREF(offset);
 }
 
-void cmdCopyBuffer (VkCmdBuffer cmdBuffer, VkBuffer srcBuffer, VkBuffer destBuffer, deUint32 regionCount, const VkBufferCopy* pRegions)
+void cmdCopyBuffer (VkCommandBuffer commandBuffer, VkBuffer srcBuffer, VkBuffer dstBuffer, deUint32 regionCount, const VkBufferCopy* pRegions)
 {
-	DE_UNREF(cmdBuffer);
+	DE_UNREF(commandBuffer);
 	DE_UNREF(srcBuffer);
-	DE_UNREF(destBuffer);
+	DE_UNREF(dstBuffer);
 	DE_UNREF(regionCount);
 	DE_UNREF(pRegions);
 }
 
-void cmdCopyImage (VkCmdBuffer cmdBuffer, VkImage srcImage, VkImageLayout srcImageLayout, VkImage destImage, VkImageLayout destImageLayout, deUint32 regionCount, const VkImageCopy* pRegions)
+void cmdCopyImage (VkCommandBuffer commandBuffer, VkImage srcImage, VkImageLayout srcImageLayout, VkImage dstImage, VkImageLayout dstImageLayout, deUint32 regionCount, const VkImageCopy* pRegions)
 {
-	DE_UNREF(cmdBuffer);
+	DE_UNREF(commandBuffer);
 	DE_UNREF(srcImage);
 	DE_UNREF(srcImageLayout);
-	DE_UNREF(destImage);
-	DE_UNREF(destImageLayout);
+	DE_UNREF(dstImage);
+	DE_UNREF(dstImageLayout);
 	DE_UNREF(regionCount);
 	DE_UNREF(pRegions);
 }
 
-void cmdBlitImage (VkCmdBuffer cmdBuffer, VkImage srcImage, VkImageLayout srcImageLayout, VkImage destImage, VkImageLayout destImageLayout, deUint32 regionCount, const VkImageBlit* pRegions, VkTexFilter filter)
+void cmdBlitImage (VkCommandBuffer commandBuffer, VkImage srcImage, VkImageLayout srcImageLayout, VkImage dstImage, VkImageLayout dstImageLayout, deUint32 regionCount, const VkImageBlit* pRegions, VkFilter filter)
 {
-	DE_UNREF(cmdBuffer);
+	DE_UNREF(commandBuffer);
 	DE_UNREF(srcImage);
 	DE_UNREF(srcImageLayout);
-	DE_UNREF(destImage);
-	DE_UNREF(destImageLayout);
+	DE_UNREF(dstImage);
+	DE_UNREF(dstImageLayout);
 	DE_UNREF(regionCount);
 	DE_UNREF(pRegions);
 	DE_UNREF(filter);
 }
 
-void cmdCopyBufferToImage (VkCmdBuffer cmdBuffer, VkBuffer srcBuffer, VkImage destImage, VkImageLayout destImageLayout, deUint32 regionCount, const VkBufferImageCopy* pRegions)
+void cmdCopyBufferToImage (VkCommandBuffer commandBuffer, VkBuffer srcBuffer, VkImage dstImage, VkImageLayout dstImageLayout, deUint32 regionCount, const VkBufferImageCopy* pRegions)
 {
-	DE_UNREF(cmdBuffer);
+	DE_UNREF(commandBuffer);
 	DE_UNREF(srcBuffer);
-	DE_UNREF(destImage);
-	DE_UNREF(destImageLayout);
+	DE_UNREF(dstImage);
+	DE_UNREF(dstImageLayout);
 	DE_UNREF(regionCount);
 	DE_UNREF(pRegions);
 }
 
-void cmdCopyImageToBuffer (VkCmdBuffer cmdBuffer, VkImage srcImage, VkImageLayout srcImageLayout, VkBuffer destBuffer, deUint32 regionCount, const VkBufferImageCopy* pRegions)
+void cmdCopyImageToBuffer (VkCommandBuffer commandBuffer, VkImage srcImage, VkImageLayout srcImageLayout, VkBuffer dstBuffer, deUint32 regionCount, const VkBufferImageCopy* pRegions)
 {
-	DE_UNREF(cmdBuffer);
+	DE_UNREF(commandBuffer);
 	DE_UNREF(srcImage);
 	DE_UNREF(srcImageLayout);
-	DE_UNREF(destBuffer);
+	DE_UNREF(dstBuffer);
 	DE_UNREF(regionCount);
 	DE_UNREF(pRegions);
 }
 
-void cmdUpdateBuffer (VkCmdBuffer cmdBuffer, VkBuffer destBuffer, VkDeviceSize destOffset, VkDeviceSize dataSize, const deUint32* pData)
+void cmdUpdateBuffer (VkCommandBuffer commandBuffer, VkBuffer dstBuffer, VkDeviceSize dstOffset, VkDeviceSize dataSize, const deUint32* pData)
 {
-	DE_UNREF(cmdBuffer);
-	DE_UNREF(destBuffer);
-	DE_UNREF(destOffset);
+	DE_UNREF(commandBuffer);
+	DE_UNREF(dstBuffer);
+	DE_UNREF(dstOffset);
 	DE_UNREF(dataSize);
 	DE_UNREF(pData);
 }
 
-void cmdFillBuffer (VkCmdBuffer cmdBuffer, VkBuffer destBuffer, VkDeviceSize destOffset, VkDeviceSize fillSize, deUint32 data)
+void cmdFillBuffer (VkCommandBuffer commandBuffer, VkBuffer dstBuffer, VkDeviceSize dstOffset, VkDeviceSize size, deUint32 data)
 {
-	DE_UNREF(cmdBuffer);
-	DE_UNREF(destBuffer);
-	DE_UNREF(destOffset);
-	DE_UNREF(fillSize);
+	DE_UNREF(commandBuffer);
+	DE_UNREF(dstBuffer);
+	DE_UNREF(dstOffset);
+	DE_UNREF(size);
 	DE_UNREF(data);
 }
 
-void cmdClearColorImage (VkCmdBuffer cmdBuffer, VkImage image, VkImageLayout imageLayout, const VkClearColorValue* pColor, deUint32 rangeCount, const VkImageSubresourceRange* pRanges)
+void cmdClearColorImage (VkCommandBuffer commandBuffer, VkImage image, VkImageLayout imageLayout, const VkClearColorValue* pColor, deUint32 rangeCount, const VkImageSubresourceRange* pRanges)
 {
-	DE_UNREF(cmdBuffer);
+	DE_UNREF(commandBuffer);
 	DE_UNREF(image);
 	DE_UNREF(imageLayout);
 	DE_UNREF(pColor);
@@ -812,9 +780,9 @@ void cmdClearColorImage (VkCmdBuffer cmdBuffer, VkImage image, VkImageLayout ima
 	DE_UNREF(pRanges);
 }
 
-void cmdClearDepthStencilImage (VkCmdBuffer cmdBuffer, VkImage image, VkImageLayout imageLayout, const VkClearDepthStencilValue* pDepthStencil, deUint32 rangeCount, const VkImageSubresourceRange* pRanges)
+void cmdClearDepthStencilImage (VkCommandBuffer commandBuffer, VkImage image, VkImageLayout imageLayout, const VkClearDepthStencilValue* pDepthStencil, deUint32 rangeCount, const VkImageSubresourceRange* pRanges)
 {
-	DE_UNREF(cmdBuffer);
+	DE_UNREF(commandBuffer);
 	DE_UNREF(image);
 	DE_UNREF(imageLayout);
 	DE_UNREF(pDepthStencil);
@@ -822,148 +790,137 @@ void cmdClearDepthStencilImage (VkCmdBuffer cmdBuffer, VkImage image, VkImageLay
 	DE_UNREF(pRanges);
 }
 
-void cmdClearColorAttachment (VkCmdBuffer cmdBuffer, deUint32 colorAttachment, VkImageLayout imageLayout, const VkClearColorValue* pColor, deUint32 rectCount, const VkRect3D* pRects)
+void cmdClearAttachments (VkCommandBuffer commandBuffer, deUint32 attachmentCount, const VkClearAttachment* pAttachments, deUint32 rectCount, const VkClearRect* pRects)
 {
-	DE_UNREF(cmdBuffer);
-	DE_UNREF(colorAttachment);
-	DE_UNREF(imageLayout);
-	DE_UNREF(pColor);
+	DE_UNREF(commandBuffer);
+	DE_UNREF(attachmentCount);
+	DE_UNREF(pAttachments);
 	DE_UNREF(rectCount);
 	DE_UNREF(pRects);
 }
 
-void cmdClearDepthStencilAttachment (VkCmdBuffer cmdBuffer, VkImageAspectFlags aspectMask, VkImageLayout imageLayout, const VkClearDepthStencilValue* pDepthStencil, deUint32 rectCount, const VkRect3D* pRects)
+void cmdResolveImage (VkCommandBuffer commandBuffer, VkImage srcImage, VkImageLayout srcImageLayout, VkImage dstImage, VkImageLayout dstImageLayout, deUint32 regionCount, const VkImageResolve* pRegions)
 {
-	DE_UNREF(cmdBuffer);
-	DE_UNREF(aspectMask);
-	DE_UNREF(imageLayout);
-	DE_UNREF(pDepthStencil);
-	DE_UNREF(rectCount);
-	DE_UNREF(pRects);
-}
-
-void cmdResolveImage (VkCmdBuffer cmdBuffer, VkImage srcImage, VkImageLayout srcImageLayout, VkImage destImage, VkImageLayout destImageLayout, deUint32 regionCount, const VkImageResolve* pRegions)
-{
-	DE_UNREF(cmdBuffer);
+	DE_UNREF(commandBuffer);
 	DE_UNREF(srcImage);
 	DE_UNREF(srcImageLayout);
-	DE_UNREF(destImage);
-	DE_UNREF(destImageLayout);
+	DE_UNREF(dstImage);
+	DE_UNREF(dstImageLayout);
 	DE_UNREF(regionCount);
 	DE_UNREF(pRegions);
 }
 
-void cmdSetEvent (VkCmdBuffer cmdBuffer, VkEvent event, VkPipelineStageFlags stageMask)
+void cmdSetEvent (VkCommandBuffer commandBuffer, VkEvent event, VkPipelineStageFlags stageMask)
 {
-	DE_UNREF(cmdBuffer);
+	DE_UNREF(commandBuffer);
 	DE_UNREF(event);
 	DE_UNREF(stageMask);
 }
 
-void cmdResetEvent (VkCmdBuffer cmdBuffer, VkEvent event, VkPipelineStageFlags stageMask)
+void cmdResetEvent (VkCommandBuffer commandBuffer, VkEvent event, VkPipelineStageFlags stageMask)
 {
-	DE_UNREF(cmdBuffer);
+	DE_UNREF(commandBuffer);
 	DE_UNREF(event);
 	DE_UNREF(stageMask);
 }
 
-void cmdWaitEvents (VkCmdBuffer cmdBuffer, deUint32 eventCount, const VkEvent* pEvents, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags destStageMask, deUint32 memBarrierCount, const void* const* ppMemBarriers)
+void cmdWaitEvents (VkCommandBuffer commandBuffer, deUint32 eventCount, const VkEvent* pEvents, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, deUint32 memoryBarrierCount, const void* const* ppMemoryBarriers)
 {
-	DE_UNREF(cmdBuffer);
+	DE_UNREF(commandBuffer);
 	DE_UNREF(eventCount);
 	DE_UNREF(pEvents);
 	DE_UNREF(srcStageMask);
-	DE_UNREF(destStageMask);
-	DE_UNREF(memBarrierCount);
-	DE_UNREF(ppMemBarriers);
+	DE_UNREF(dstStageMask);
+	DE_UNREF(memoryBarrierCount);
+	DE_UNREF(ppMemoryBarriers);
 }
 
-void cmdPipelineBarrier (VkCmdBuffer cmdBuffer, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags destStageMask, VkBool32 byRegion, deUint32 memBarrierCount, const void* const* ppMemBarriers)
+void cmdPipelineBarrier (VkCommandBuffer commandBuffer, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkDependencyFlags dependencyFlags, deUint32 memoryBarrierCount, const void* const* ppMemoryBarriers)
 {
-	DE_UNREF(cmdBuffer);
+	DE_UNREF(commandBuffer);
 	DE_UNREF(srcStageMask);
-	DE_UNREF(destStageMask);
-	DE_UNREF(byRegion);
-	DE_UNREF(memBarrierCount);
-	DE_UNREF(ppMemBarriers);
+	DE_UNREF(dstStageMask);
+	DE_UNREF(dependencyFlags);
+	DE_UNREF(memoryBarrierCount);
+	DE_UNREF(ppMemoryBarriers);
 }
 
-void cmdBeginQuery (VkCmdBuffer cmdBuffer, VkQueryPool queryPool, deUint32 slot, VkQueryControlFlags flags)
+void cmdBeginQuery (VkCommandBuffer commandBuffer, VkQueryPool queryPool, deUint32 entry, VkQueryControlFlags flags)
 {
-	DE_UNREF(cmdBuffer);
+	DE_UNREF(commandBuffer);
 	DE_UNREF(queryPool);
-	DE_UNREF(slot);
+	DE_UNREF(entry);
 	DE_UNREF(flags);
 }
 
-void cmdEndQuery (VkCmdBuffer cmdBuffer, VkQueryPool queryPool, deUint32 slot)
+void cmdEndQuery (VkCommandBuffer commandBuffer, VkQueryPool queryPool, deUint32 entry)
 {
-	DE_UNREF(cmdBuffer);
+	DE_UNREF(commandBuffer);
 	DE_UNREF(queryPool);
-	DE_UNREF(slot);
+	DE_UNREF(entry);
 }
 
-void cmdResetQueryPool (VkCmdBuffer cmdBuffer, VkQueryPool queryPool, deUint32 startQuery, deUint32 queryCount)
+void cmdResetQueryPool (VkCommandBuffer commandBuffer, VkQueryPool queryPool, deUint32 startQuery, deUint32 queryCount)
 {
-	DE_UNREF(cmdBuffer);
+	DE_UNREF(commandBuffer);
 	DE_UNREF(queryPool);
 	DE_UNREF(startQuery);
 	DE_UNREF(queryCount);
 }
 
-void cmdWriteTimestamp (VkCmdBuffer cmdBuffer, VkTimestampType timestampType, VkBuffer destBuffer, VkDeviceSize destOffset)
+void cmdWriteTimestamp (VkCommandBuffer commandBuffer, VkPipelineStageFlagBits pipelineStage, VkQueryPool queryPool, deUint32 entry)
 {
-	DE_UNREF(cmdBuffer);
-	DE_UNREF(timestampType);
-	DE_UNREF(destBuffer);
-	DE_UNREF(destOffset);
+	DE_UNREF(commandBuffer);
+	DE_UNREF(pipelineStage);
+	DE_UNREF(queryPool);
+	DE_UNREF(entry);
 }
 
-void cmdCopyQueryPoolResults (VkCmdBuffer cmdBuffer, VkQueryPool queryPool, deUint32 startQuery, deUint32 queryCount, VkBuffer destBuffer, VkDeviceSize destOffset, VkDeviceSize destStride, VkQueryResultFlags flags)
+void cmdCopyQueryPoolResults (VkCommandBuffer commandBuffer, VkQueryPool queryPool, deUint32 startQuery, deUint32 queryCount, VkBuffer dstBuffer, VkDeviceSize dstOffset, VkDeviceSize stride, VkQueryResultFlags flags)
 {
-	DE_UNREF(cmdBuffer);
+	DE_UNREF(commandBuffer);
 	DE_UNREF(queryPool);
 	DE_UNREF(startQuery);
 	DE_UNREF(queryCount);
-	DE_UNREF(destBuffer);
-	DE_UNREF(destOffset);
-	DE_UNREF(destStride);
+	DE_UNREF(dstBuffer);
+	DE_UNREF(dstOffset);
+	DE_UNREF(stride);
 	DE_UNREF(flags);
 }
 
-void cmdPushConstants (VkCmdBuffer cmdBuffer, VkPipelineLayout layout, VkShaderStageFlags stageFlags, deUint32 start, deUint32 length, const void* values)
+void cmdPushConstants (VkCommandBuffer commandBuffer, VkPipelineLayout layout, VkShaderStageFlags stageFlags, deUint32 offset, deUint32 size, const void* pValues)
 {
-	DE_UNREF(cmdBuffer);
+	DE_UNREF(commandBuffer);
 	DE_UNREF(layout);
 	DE_UNREF(stageFlags);
-	DE_UNREF(start);
-	DE_UNREF(length);
-	DE_UNREF(values);
+	DE_UNREF(offset);
+	DE_UNREF(size);
+	DE_UNREF(pValues);
 }
 
-void cmdBeginRenderPass (VkCmdBuffer cmdBuffer, const VkRenderPassBeginInfo* pRenderPassBegin, VkRenderPassContents contents)
+void cmdBeginRenderPass (VkCommandBuffer commandBuffer, const VkRenderPassBeginInfo* pRenderPassBegin, VkSubpassContents contents)
 {
-	DE_UNREF(cmdBuffer);
+	DE_UNREF(commandBuffer);
 	DE_UNREF(pRenderPassBegin);
 	DE_UNREF(contents);
 }
 
-void cmdNextSubpass (VkCmdBuffer cmdBuffer, VkRenderPassContents contents)
+void cmdNextSubpass (VkCommandBuffer commandBuffer, VkSubpassContents contents)
 {
-	DE_UNREF(cmdBuffer);
+	DE_UNREF(commandBuffer);
 	DE_UNREF(contents);
 }
 
-void cmdEndRenderPass (VkCmdBuffer cmdBuffer)
+void cmdEndRenderPass (VkCommandBuffer commandBuffer)
 {
-	DE_UNREF(cmdBuffer);
+	DE_UNREF(commandBuffer);
 }
 
-void cmdExecuteCommands (VkCmdBuffer cmdBuffer, deUint32 cmdBuffersCount, const VkCmdBuffer* pCmdBuffers)
+void cmdExecuteCommands (VkCommandBuffer commandBuffer, deUint32 commandBuffersCount, const VkCommandBuffer* pCommandBuffers)
 {
-	DE_UNREF(cmdBuffer);
-	DE_UNREF(cmdBuffersCount);
-	DE_UNREF(pCmdBuffers);
+	DE_UNREF(commandBuffer);
+	DE_UNREF(commandBuffersCount);
+	DE_UNREF(pCommandBuffers);
 }
 
 static const tcu::StaticFunctionLibrary::Entry s_platformFunctions[] =
@@ -997,7 +954,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkQueueSubmit,									queueSubmit),
 	VK_NULL_FUNC_ENTRY(vkQueueWaitIdle,									queueWaitIdle),
 	VK_NULL_FUNC_ENTRY(vkDeviceWaitIdle,								deviceWaitIdle),
-	VK_NULL_FUNC_ENTRY(vkAllocMemory,									allocMemory),
+	VK_NULL_FUNC_ENTRY(vkAllocateMemory,								allocateMemory),
 	VK_NULL_FUNC_ENTRY(vkFreeMemory,									freeMemory),
 	VK_NULL_FUNC_ENTRY(vkMapMemory,										mapMemory),
 	VK_NULL_FUNC_ENTRY(vkUnmapMemory,									unmapMemory),
@@ -1010,9 +967,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkGetImageMemoryRequirements,					getImageMemoryRequirements),
 	VK_NULL_FUNC_ENTRY(vkGetImageSparseMemoryRequirements,				getImageSparseMemoryRequirements),
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSparseImageFormatProperties,	getPhysicalDeviceSparseImageFormatProperties),
-	VK_NULL_FUNC_ENTRY(vkQueueBindSparseBufferMemory,					queueBindSparseBufferMemory),
-	VK_NULL_FUNC_ENTRY(vkQueueBindSparseImageOpaqueMemory,				queueBindSparseImageOpaqueMemory),
-	VK_NULL_FUNC_ENTRY(vkQueueBindSparseImageMemory,					queueBindSparseImageMemory),
+	VK_NULL_FUNC_ENTRY(vkQueueBindSparse,								queueBindSparse),
 	VK_NULL_FUNC_ENTRY(vkCreateFence,									createFence),
 	VK_NULL_FUNC_ENTRY(vkDestroyFence,									destroyFence),
 	VK_NULL_FUNC_ENTRY(vkResetFences,									resetFences),
@@ -1020,8 +975,6 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkWaitForFences,									waitForFences),
 	VK_NULL_FUNC_ENTRY(vkCreateSemaphore,								createSemaphore),
 	VK_NULL_FUNC_ENTRY(vkDestroySemaphore,								destroySemaphore),
-	VK_NULL_FUNC_ENTRY(vkQueueSignalSemaphore,							queueSignalSemaphore),
-	VK_NULL_FUNC_ENTRY(vkQueueWaitSemaphore,							queueWaitSemaphore),
 	VK_NULL_FUNC_ENTRY(vkCreateEvent,									createEvent),
 	VK_NULL_FUNC_ENTRY(vkDestroyEvent,									destroyEvent),
 	VK_NULL_FUNC_ENTRY(vkGetEventStatus,								getEventStatus),
@@ -1041,11 +994,8 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkDestroyImageView,								destroyImageView),
 	VK_NULL_FUNC_ENTRY(vkCreateShaderModule,							createShaderModule),
 	VK_NULL_FUNC_ENTRY(vkDestroyShaderModule,							destroyShaderModule),
-	VK_NULL_FUNC_ENTRY(vkCreateShader,									createShader),
-	VK_NULL_FUNC_ENTRY(vkDestroyShader,									destroyShader),
 	VK_NULL_FUNC_ENTRY(vkCreatePipelineCache,							createPipelineCache),
 	VK_NULL_FUNC_ENTRY(vkDestroyPipelineCache,							destroyPipelineCache),
-	VK_NULL_FUNC_ENTRY(vkGetPipelineCacheSize,							getPipelineCacheSize),
 	VK_NULL_FUNC_ENTRY(vkGetPipelineCacheData,							getPipelineCacheData),
 	VK_NULL_FUNC_ENTRY(vkMergePipelineCaches,							mergePipelineCaches),
 	VK_NULL_FUNC_ENTRY(vkCreateGraphicsPipelines,						createGraphicsPipelines),
@@ -1060,7 +1010,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkCreateDescriptorPool,							createDescriptorPool),
 	VK_NULL_FUNC_ENTRY(vkDestroyDescriptorPool,							destroyDescriptorPool),
 	VK_NULL_FUNC_ENTRY(vkResetDescriptorPool,							resetDescriptorPool),
-	VK_NULL_FUNC_ENTRY(vkAllocDescriptorSets,							allocDescriptorSets),
+	VK_NULL_FUNC_ENTRY(vkAllocateDescriptorSets,						allocateDescriptorSets),
 	VK_NULL_FUNC_ENTRY(vkFreeDescriptorSets,							freeDescriptorSets),
 	VK_NULL_FUNC_ENTRY(vkUpdateDescriptorSets,							updateDescriptorSets),
 	VK_NULL_FUNC_ENTRY(vkCreateFramebuffer,								createFramebuffer),
@@ -1071,8 +1021,8 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkCreateCommandPool,								createCommandPool),
 	VK_NULL_FUNC_ENTRY(vkDestroyCommandPool,							destroyCommandPool),
 	VK_NULL_FUNC_ENTRY(vkResetCommandPool,								resetCommandPool),
-	VK_NULL_FUNC_ENTRY(vkCreateCommandBuffer,							createCommandBuffer),
-	VK_NULL_FUNC_ENTRY(vkDestroyCommandBuffer,							destroyCommandBuffer),
+	VK_NULL_FUNC_ENTRY(vkAllocateCommandBuffers,						allocateCommandBuffers),
+	VK_NULL_FUNC_ENTRY(vkFreeCommandBuffers,							freeCommandBuffers),
 	VK_NULL_FUNC_ENTRY(vkBeginCommandBuffer,							beginCommandBuffer),
 	VK_NULL_FUNC_ENTRY(vkEndCommandBuffer,								endCommandBuffer),
 	VK_NULL_FUNC_ENTRY(vkResetCommandBuffer,							resetCommandBuffer),
@@ -1104,8 +1054,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkCmdFillBuffer,									cmdFillBuffer),
 	VK_NULL_FUNC_ENTRY(vkCmdClearColorImage,							cmdClearColorImage),
 	VK_NULL_FUNC_ENTRY(vkCmdClearDepthStencilImage,						cmdClearDepthStencilImage),
-	VK_NULL_FUNC_ENTRY(vkCmdClearColorAttachment,						cmdClearColorAttachment),
-	VK_NULL_FUNC_ENTRY(vkCmdClearDepthStencilAttachment,				cmdClearDepthStencilAttachment),
+	VK_NULL_FUNC_ENTRY(vkCmdClearAttachments,							cmdClearAttachments),
 	VK_NULL_FUNC_ENTRY(vkCmdResolveImage,								cmdResolveImage),
 	VK_NULL_FUNC_ENTRY(vkCmdSetEvent,									cmdSetEvent),
 	VK_NULL_FUNC_ENTRY(vkCmdResetEvent,									cmdResetEvent),

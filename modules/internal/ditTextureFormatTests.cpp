@@ -426,6 +426,26 @@ static const deUint32 s_unsignedShort5551FloatRef[] =
 	0x41d80000, 0x40e00000, 0x41c80000, 0x00000000,
 };
 
+static const deUint8 s_unormShort1555In[] =
+{
+	0xf8, 0xc5, 0x1f, 0x6c,
+	0xf0, 0x2f, 0xf2, 0x95,
+};
+static const deUint32 s_unormShort1555FloatRef[] =
+{
+	0x3f800000, 0x3f0c6319, 0x3ef7bdef, 0x3f46318c,
+	0x00000000, 0x3f5ef7be, 0x00000000, 0x3f800000,
+	0x00000000, 0x3eb5ad6b, 0x3f800000, 0x3f042108,
+	0x3f800000, 0x3e25294a, 0x3ef7bdef, 0x3f14a529,
+};
+static const deUint32 s_unormShort1555IntRef[] =
+{
+	0x00000001, 0x00000011, 0x0000000f, 0x00000018,
+	0x00000000, 0x0000001b, 0x00000000, 0x0000001f,
+	0x00000000, 0x0000000b, 0x0000001f, 0x00000010,
+	0x00000001, 0x00000005, 0x0000000f, 0x00000012,
+};
+
 static const deUint8 s_unormInt101010In[] =
 {
 	0x81, 0xb3, 0x67, 0x51,
@@ -1032,6 +1052,7 @@ static const struct
 	{ s_unormShort555In,			DE_LENGTH_OF_ARRAY(s_unormShort555In),				s_unormShort555FloatRef,			s_unormShort555IntRef,			s_unormShort555IntRef,			},
 	{ s_unormShort4444In,			DE_LENGTH_OF_ARRAY(s_unormShort4444In),				s_unormShort4444FloatRef,			s_unormShort4444IntRef,			s_unormShort4444IntRef,			},
 	{ s_unormShort5551In,			DE_LENGTH_OF_ARRAY(s_unormShort5551In),				s_unormShort5551FloatRef,			s_unormShort5551IntRef,			s_unormShort5551IntRef,			},
+	{ s_unormShort1555In,			DE_LENGTH_OF_ARRAY(s_unormShort1555In),				s_unormShort1555FloatRef,			s_unormShort1555IntRef,			s_unormShort1555IntRef,			},
 	{ s_unormInt101010In,			DE_LENGTH_OF_ARRAY(s_unormInt101010In),				s_unormInt101010FloatRef,			s_unormInt101010IntRef,			s_unormInt101010IntRef			},
 
 	// \note Same input data & int reference used for {U,S}NORM_INT_1010102_REV
@@ -1353,6 +1374,19 @@ protected:
 		}
 	}
 
+	void verifyInfoQueries (void)
+	{
+		const tcu::TextureChannelClass	chnClass	= tcu::getTextureChannelClass(m_format.type);
+		const tcu::TextureFormatInfo	fmtInfo		= tcu::getTextureFormatInfo(m_format);
+
+		if (tcu::isCombinedDepthStencilType(m_format.type))
+			TCU_CHECK(chnClass == tcu::TEXTURECHANNELCLASS_LAST);
+		else
+			TCU_CHECK(de::inBounds(chnClass, (tcu::TextureChannelClass)0, tcu::TEXTURECHANNELCLASS_LAST));
+
+		DE_UNREF(fmtInfo);
+	}
+
 	const TextureFormat		m_format;
 };
 
@@ -1374,6 +1408,8 @@ public:
 		const PixelBufferAccess			tmpAccess		(inputAccess.getFormat(), inputAccess.getWidth(), 1, 1, &tmpMem[0]);
 
 		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+
+		verifyInfoQueries();
 
 		verifyRead(inputAccess);
 
@@ -1407,6 +1443,8 @@ public:
 		const PixelBufferAccess			tmpDepthAccess		= getEffectiveDepthStencilAccess(tmpAccess, tcu::Sampler::MODE_DEPTH);
 
 		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+
+		verifyInfoQueries();
 
 		verifyRead(inputDepthAccess);
 
@@ -1443,6 +1481,8 @@ public:
 		const PixelBufferAccess			tmpStencilAccess	= getEffectiveDepthStencilAccess(tmpAccess, tcu::Sampler::MODE_STENCIL);
 
 		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+
+		verifyInfoQueries();
 
 		verifyRead(inputStencilAccess);
 
@@ -1481,6 +1521,8 @@ public:
 		const PixelBufferAccess			tmpStencilAccess	= getEffectiveDepthStencilAccess(tmpAccess, tcu::Sampler::MODE_STENCIL);
 
 		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+
+		verifyInfoQueries();
 
 		verifyRead(inputDepthAccess);
 		verifyRead(inputStencilAccess);

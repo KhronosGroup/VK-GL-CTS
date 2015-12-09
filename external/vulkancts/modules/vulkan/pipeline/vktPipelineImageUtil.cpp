@@ -59,6 +59,16 @@ static int getNextMultiple(deUint32 value)
 	return value + M - (value % M);
 }
 
+static int getNextMultiple (deUint32 M, deUint32 value)
+{
+	if (value % M == 0)
+	{
+		return value;
+	}
+	return value + M - (value % M);
+}
+
+
 bool isSupportedSamplableFormat (const InstanceInterface& instanceInterface, VkPhysicalDevice device, VkFormat format)
 {
 	if (isCompressedFormat(format))
@@ -66,7 +76,7 @@ bool isSupportedSamplableFormat (const InstanceInterface& instanceInterface, VkP
 		VkPhysicalDeviceFeatures		physicalFeatures;
 		const tcu::CompressedTexFormat	compressedFormat	= mapVkCompressedFormat(format);
 
-		VK_CHECK(instanceInterface.getPhysicalDeviceFeatures(device, &physicalFeatures));
+		instanceInterface.getPhysicalDeviceFeatures(device, &physicalFeatures);
 
 		if (tcu::isAstcFormat(compressedFormat))
 		{
@@ -85,12 +95,7 @@ bool isSupportedSamplableFormat (const InstanceInterface& instanceInterface, VkP
 	}
 
 	VkFormatProperties	formatProps;
-	const VkResult		formatQueryResult = instanceInterface.getPhysicalDeviceFormatProperties(device, format, &formatProps);
-
-	if (formatQueryResult == VK_UNSUPPORTED)
-		return false;
-	else
-		VK_CHECK(formatQueryResult);
+	instanceInterface.getPhysicalDeviceFormatProperties(device, format, &formatProps);
 
 	return (formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT) != 0u;
 }
@@ -135,8 +140,8 @@ de::MovePtr<tcu::TextureLevel> readColorAttachment (const vk::DeviceInterface&	v
 {
 	Move<VkBuffer>					buffer;
 	de::MovePtr<Allocation>			bufferAlloc;
-	Move<VkCmdPool>					cmdPool;
-	Move<VkCmdBuffer>				cmdBuffer;
+	Move<VkCommandPool>				cmdPool;
+	Move<VkCommandBuffer>			cmdBuffer;
 	Move<VkFence>					fence;
 	const tcu::TextureFormat		tcuFormat		= mapVkFormat(format);
 	const VkDeviceSize				pixelDataSize	= renderSize.x() * renderSize.y() * tcuFormat.getPixelSize();
@@ -148,12 +153,12 @@ de::MovePtr<tcu::TextureLevel> readColorAttachment (const vk::DeviceInterface&	v
 		{
 			VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,		// VkStructureType		sType;
 			DE_NULL,									// const void*			pNext;
-			pixelDataSize,								// VkDeviceSize			size;
-			VK_BUFFER_USAGE_TRANSFER_DESTINATION_BIT,   // VkBufferUsageFlags	usage;
 			0u,											// VkBufferCreateFlags	flags;
+			pixelDataSize,								// VkDeviceSize			size;
+			VK_BUFFER_USAGE_TRANSFER_DST_BIT,			// VkBufferUsageFlags	usage;
 			VK_SHARING_MODE_EXCLUSIVE,					// VkSharingMode		sharingMode;
-			0u,											// deUint32				queueFamilyCount;
-			DE_NULL,									// const deUint32*		pQueueFamilyIndices;
+			0u,											// deUint32				queueFamilyIndexCount;
+			DE_NULL										// const deUint32*		pQueueFamilyIndices;
 		};
 
 		buffer		= createBuffer(vk, device, &bufferParams);
@@ -163,26 +168,26 @@ de::MovePtr<tcu::TextureLevel> readColorAttachment (const vk::DeviceInterface&	v
 
 	// Create command pool and buffer
 	{
-		const VkCmdPoolCreateInfo cmdPoolParams =
+		const VkCommandPoolCreateInfo cmdPoolParams =
 		{
-			VK_STRUCTURE_TYPE_CMD_POOL_CREATE_INFO,		// VkStructureType		sType;
-			DE_NULL,									// const void*			pNext;
-			queueFamilyIndex,							// deUint32				queueFamilyIndex;
-			VK_CMD_POOL_CREATE_TRANSIENT_BIT			// VkCmdPoolCreateFlags	flags;
+			VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,		// VkStructureType		sType;
+			DE_NULL,										// const void*			pNext;
+			VK_COMMAND_POOL_CREATE_TRANSIENT_BIT,			// VkCmdPoolCreateFlags	flags;
+			queueFamilyIndex,								// deUint32				queueFamilyIndex;
 		};
 
 		cmdPool = createCommandPool(vk, device, &cmdPoolParams);
 
-		const VkCmdBufferCreateInfo cmdBufferParams =
+		const VkCommandBufferAllocateInfo cmdBufferAllocateInfo =
 		{
-			VK_STRUCTURE_TYPE_CMD_BUFFER_CREATE_INFO,	// VkStructureType			sType;
-			DE_NULL,									// const void*				pNext;
-			*cmdPool,									// VkCmdPool				cmdPool;
-			VK_CMD_BUFFER_LEVEL_PRIMARY,				// VkCmdBufferLevel			level;
-			0u,											// VkCmdBufferCreateFlags	flags;
+			VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,	// VkStructureType			sType;
+			DE_NULL,										// const void*				pNext;
+			*cmdPool,										// VkCommandPool			commandPool;
+			VK_COMMAND_BUFFER_LEVEL_PRIMARY,				// VkCommandBufferLevel		level;
+			1u												// deUint32					bufferCount;
 		};
 
-		cmdBuffer = createCommandBuffer(vk, device, &cmdBufferParams);
+		cmdBuffer = allocateCommandBuffer(vk, device, &cmdBufferAllocateInfo);
 	}
 
 	// Create fence
@@ -203,12 +208,12 @@ de::MovePtr<tcu::TextureLevel> readColorAttachment (const vk::DeviceInterface&	v
 	{
 		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		// VkStructureType			sType;
 		DE_NULL,									// const void*				pNext;
-		VK_MEMORY_OUTPUT_COLOR_ATTACHMENT_BIT,		// VkMemoryOutputFlags		outputMask;
-		VK_MEMORY_INPUT_TRANSFER_BIT,				// VkMemoryInputFlags		inputMask;
+		VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,		// VkAccessFlags			srcAccessMask;
+		VK_ACCESS_TRANSFER_READ_BIT,				// VkAccessFlags			dstAccessMask;
 		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,	// VkImageLayout			oldLayout;
-		VK_IMAGE_LAYOUT_TRANSFER_SOURCE_OPTIMAL,	// VkImageLayout			newLayout;
+		VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,		// VkImageLayout			newLayout;
 		VK_QUEUE_FAMILY_IGNORED,					// deUint32					srcQueueFamilyIndex;
-		VK_QUEUE_FAMILY_IGNORED,					// deUint32					destQueueFamilyIndex;
+		VK_QUEUE_FAMILY_IGNORED,					// deUint32					dstQueueFamilyIndex;
 		image,										// VkImage					image;
 		{											// VkImageSubresourceRange	subresourceRange;
 			VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
@@ -221,25 +226,28 @@ de::MovePtr<tcu::TextureLevel> readColorAttachment (const vk::DeviceInterface&	v
 
 	const VkBufferMemoryBarrier bufferBarrier =
 	{
-		VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,	// VkStructureType		sType;
-		DE_NULL,									// const void*			pNext;
-		VK_MEMORY_OUTPUT_TRANSFER_BIT,				// VkMemoryOutputFlags	outputMask;
-		VK_MEMORY_INPUT_HOST_READ_BIT,				// VkMemoryInputFlags	inputMask;
-		VK_QUEUE_FAMILY_IGNORED,					// deUint32				srcQueueFamilyIndex;
-		VK_QUEUE_FAMILY_IGNORED,					// deUint32				destQueueFamilyIndex;
-		*buffer,									// VkBuffer				buffer;
-		0u,											// VkDeviceSize			offset;
-		pixelDataSize								// VkDeviceSize			size;
+		VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,	// VkStructureType	sType;
+		DE_NULL,									// const void*		pNext;
+		VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags	srcAccessMask;
+		VK_ACCESS_HOST_READ_BIT,					// VkAccessFlags	dstAccessMask;
+		VK_QUEUE_FAMILY_IGNORED,					// deUint32			srcQueueFamilyIndex;
+		VK_QUEUE_FAMILY_IGNORED,					// deUint32			dstQueueFamilyIndex;
+		*buffer,									// VkBuffer			buffer;
+		0u,											// VkDeviceSize		offset;
+		pixelDataSize								// VkDeviceSize		size;
 	};
 
-	const VkCmdBufferBeginInfo cmdBufferBeginInfo =
+	const VkCommandBufferBeginInfo cmdBufferBeginInfo =
 	{
-		VK_STRUCTURE_TYPE_CMD_BUFFER_BEGIN_INFO,												// VkStructureType			sType;
-		DE_NULL,																				// const void*				pNext;
-		VK_CMD_BUFFER_OPTIMIZE_SMALL_BATCH_BIT | VK_CMD_BUFFER_OPTIMIZE_ONE_TIME_SUBMIT_BIT,	// VkCmdBufferOptimizeFlags	flags;
-		DE_NULL,																				// VkRenderPass				renderPass;
-		0u,																						// deUint32					subpass;
-		DE_NULL																					// VkFramebuffer			framebuffer;
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,			// VkStructureType					sType;
+		DE_NULL,												// const void*						pNext;
+		VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,			// VkCommandBufferUsageFlags		flags;
+		DE_NULL,												// VkRenderPass						renderPass;
+		0u,														// deUint32							subpass;
+		DE_NULL,												// VkFramebuffer					framebuffer;
+		false,													// VkBool32							occlusionQueryEnable;
+		0u,														// VkQueryControlFlags				queryFlags;
+		0u														// VkQueryPipelineStatisticFlags	pipelineStatistics;
 	};
 
 	const void* const	imageBarrierPtr		= &imageBarrier;
@@ -252,18 +260,30 @@ de::MovePtr<tcu::TextureLevel> readColorAttachment (const vk::DeviceInterface&	v
 		0u,											// VkDeviceSize				bufferOffset;
 		(deUint32)renderSize.x(),					// deUint32					bufferRowLength;
 		(deUint32)renderSize.y(),					// deUint32					bufferImageHeight;
-		{ VK_IMAGE_ASPECT_COLOR, 0u, 0u, 1u },		// VkImageSubresourceCopy	imageSubresource;
+		{ VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u },	// VkImageSubresourceLayers	imageSubresource;
 		{ 0, 0, 0 },								// VkOffset3D				imageOffset;
 		{ renderSize.x(), renderSize.y(), 1 }		// VkExtent3D				imageExtent;
 	};
 
 	VK_CHECK(vk.beginCommandBuffer(*cmdBuffer, &cmdBufferBeginInfo));
 	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_FALSE, 1, &imageBarrierPtr);
-	vk.cmdCopyImageToBuffer(*cmdBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_SOURCE_OPTIMAL, *buffer, 1, &copyRegion);
+	vk.cmdCopyImageToBuffer(*cmdBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *buffer, 1, &copyRegion);
 	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_FALSE, 1, &bufferBarrierPtr);
 	VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
 
-	VK_CHECK(vk.queueSubmit(queue, 1, &cmdBuffer.get(), *fence));
+	const VkSubmitInfo submitInfo =
+	{
+		VK_STRUCTURE_TYPE_SUBMIT_INFO,	// VkStructureType			sType;
+		DE_NULL,						// const void*				pNext;
+		0u,								// deUint32					waitSemaphoreCount;
+		DE_NULL,						// const VkSemaphore*		pWaitSemaphores;
+		1u,								// deUint32					commandBufferCount;
+		&cmdBuffer.get(),				// const VkCommandBuffer*	pCommandBuffers;
+		0u,								// deUint32					signalSemaphoreCount;
+		DE_NULL							// const VkSemaphore*		pSignalSemaphores;
+	};
+
+	VK_CHECK(vk.queueSubmit(queue, 1, &submitInfo, *fence));
 	VK_CHECK(vk.waitForFences(device, 1, &fence.get(), 0, ~(0ull) /* infinity */));
 
 	// Read buffer data
@@ -284,8 +304,8 @@ void uploadTestTexture (const DeviceInterface&			vk,
 	deUint32						bufferSize;
 	Move<VkBuffer>					buffer;
 	de::MovePtr<Allocation>			bufferAlloc;
-	Move<VkCmdPool>					cmdPool;
-	Move<VkCmdBuffer>				cmdBuffer;
+	Move<VkCommandPool>				cmdPool;
+	Move<VkCommandBuffer>			cmdBuffer;
 	Move<VkFence>					fence;
 	std::vector<deUint32>			levelDataSizes;
 
@@ -298,11 +318,11 @@ void uploadTestTexture (const DeviceInterface&			vk,
 		{
 			VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,		// VkStructureType		sType;
 			DE_NULL,									// const void*			pNext;
-			bufferSize,									// VkDeviceSize			size;
-			VK_BUFFER_USAGE_TRANSFER_SOURCE_BIT,		// VkBufferUsageFlags	usage;
 			0u,											// VkBufferCreateFlags	flags;
+			bufferSize,									// VkDeviceSize			size;
+			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,			// VkBufferUsageFlags	usage;
 			VK_SHARING_MODE_EXCLUSIVE,					// VkSharingMode		sharingMode;
-			0u,											// deUint32				queueFamilyCount;
+			0u,											// deUint32				queueFamilyIndexCount;
 			DE_NULL,									// const deUint32*		pQueueFamilyIndices;
 		};
 
@@ -313,26 +333,26 @@ void uploadTestTexture (const DeviceInterface&			vk,
 
 	// Create command pool and buffer
 	{
-		const VkCmdPoolCreateInfo cmdPoolParams =
+		const VkCommandPoolCreateInfo cmdPoolParams =
 		{
-			VK_STRUCTURE_TYPE_CMD_POOL_CREATE_INFO,		// VkStructureType		sType;
-			DE_NULL,									// const void*			pNext;
-			queueFamilyIndex,							// deUint32				queueFamilyIndex;
-			VK_CMD_POOL_CREATE_TRANSIENT_BIT			// VkCmdPoolCreateFlags	flags;
+			VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,		// VkStructureType			sType;
+			DE_NULL,										// const void*				pNext;
+			VK_COMMAND_POOL_CREATE_TRANSIENT_BIT,			// VkCommandPoolCreateFlags	flags;
+			queueFamilyIndex,								// deUint32					queueFamilyIndex;
 		};
 
 		cmdPool = createCommandPool(vk, device, &cmdPoolParams);
 
-		const VkCmdBufferCreateInfo cmdBufferParams =
+		const VkCommandBufferAllocateInfo cmdBufferAllocateInfo =
 		{
-			VK_STRUCTURE_TYPE_CMD_BUFFER_CREATE_INFO,	// VkStructureType			sType;
-			DE_NULL,									// const void*				pNext;
-			*cmdPool,									// VkCmdPool				cmdPool;
-			VK_CMD_BUFFER_LEVEL_PRIMARY,				// VkCmdBufferLevel			level;
-			0u,											// VkCmdBufferCreateFlags	flags;
+			VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,	// VkStructureType			sType;
+			DE_NULL,										// const void*				pNext;
+			*cmdPool,										// VkCommandPool			commandPool;
+			VK_COMMAND_BUFFER_LEVEL_PRIMARY,				// VkCommandBufferLevel		level;
+			1u,												// deUint32					bufferCount;
 		};
 
-		cmdBuffer = createCommandBuffer(vk, device, &cmdBufferParams);
+		cmdBuffer = allocateCommandBuffer(vk, device, &cmdBufferAllocateInfo);
 	}
 
 	// Create fence
@@ -350,27 +370,27 @@ void uploadTestTexture (const DeviceInterface&			vk,
 	// Barriers for copying buffer to image
 	const VkBufferMemoryBarrier preBufferBarrier =
 	{
-		VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,	// VkStructureType		sType;
-		DE_NULL,									// const void*			pNext;
-		VK_MEMORY_OUTPUT_HOST_WRITE_BIT,			// VkMemoryOutputFlags	outputMask;
-		VK_MEMORY_INPUT_TRANSFER_BIT,				// VkMemoryInputFlags	inputMask;
-		VK_QUEUE_FAMILY_IGNORED,					// deUint32				srcQueueFamilyIndex;
-		VK_QUEUE_FAMILY_IGNORED,					// deUint32				destQueueFamilyIndex;
-		*buffer,									// VkBuffer				buffer;
-		0u,											// VkDeviceSize			offset;
-		bufferSize									// VkDeviceSize			size;
+		VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,	// VkStructureType	sType;
+		DE_NULL,									// const void*		pNext;
+		VK_ACCESS_HOST_WRITE_BIT,					// VkAccessFlags	srcAccessMask;
+		VK_ACCESS_TRANSFER_READ_BIT,				// VkAccessFlags	dstAccessMask;
+		VK_QUEUE_FAMILY_IGNORED,					// deUint32			srcQueueFamilyIndex;
+		VK_QUEUE_FAMILY_IGNORED,					// deUint32			dstQueueFamilyIndex;
+		*buffer,									// VkBuffer			buffer;
+		0u,											// VkDeviceSize		offset;
+		bufferSize									// VkDeviceSize		size;
 	};
 
 	const VkImageMemoryBarrier preImageBarrier =
 	{
 		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,			// VkStructureType			sType;
 		DE_NULL,										// const void*				pNext;
-		0u,												// VkMemoryOutputFlags		outputMask;
-		0u,												// VkMemoryInputFlags		inputMask;
+		0u,												// VkAccessFlags			srcAccessMask;
+		0u,												// VkAccessFlags			dstAccessMask;
 		VK_IMAGE_LAYOUT_UNDEFINED,						// VkImageLayout			oldLayout;
-		VK_IMAGE_LAYOUT_TRANSFER_DESTINATION_OPTIMAL,	// VkImageLayout			newLayout;
+		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,			// VkImageLayout			newLayout;
 		VK_QUEUE_FAMILY_IGNORED,						// deUint32					srcQueueFamilyIndex;
-		VK_QUEUE_FAMILY_IGNORED,						// deUint32					destQueueFamilyIndex;
+		VK_QUEUE_FAMILY_IGNORED,						// deUint32					dstQueueFamilyIndex;
 		destImage,										// VkImage					image;
 		{												// VkImageSubresourceRange	subresourceRange;
 			VK_IMAGE_ASPECT_COLOR_BIT,				// VkImageAspect	aspect;
@@ -385,12 +405,12 @@ void uploadTestTexture (const DeviceInterface&			vk,
 	{
 		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,			// VkStructureType			sType;
 		DE_NULL,										// const void*				pNext;
-		VK_MEMORY_OUTPUT_TRANSFER_BIT,					// VkMemoryOutputFlags		outputMask;
-		VK_MEMORY_INPUT_SHADER_READ_BIT,				// VkMemoryInputFlags		inputMask;
-		VK_IMAGE_LAYOUT_TRANSFER_DESTINATION_OPTIMAL,	// VkImageLayout			oldLayout;
+		VK_ACCESS_TRANSFER_WRITE_BIT,					// VkAccessFlags			srcAccessMask;
+		VK_ACCESS_SHADER_READ_BIT,						// VkAccessFlags			dstAccessMask;
+		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,			// VkImageLayout			oldLayout;
 		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,		// VkImageLayout			newLayout;
 		VK_QUEUE_FAMILY_IGNORED,						// deUint32					srcQueueFamilyIndex;
-		VK_QUEUE_FAMILY_IGNORED,						// deUint32					destQueueFamilyIndex;
+		VK_QUEUE_FAMILY_IGNORED,						// deUint32					dstQueueFamilyIndex;
 		destImage,										// VkImage					image;
 		{												// VkImageSubresourceRange	subresourceRange;
 			VK_IMAGE_ASPECT_COLOR_BIT,				// VkImageAspect	aspect;
@@ -401,14 +421,17 @@ void uploadTestTexture (const DeviceInterface&			vk,
 		}
 	};
 
-	const VkCmdBufferBeginInfo cmdBufferBeginInfo =
+	const VkCommandBufferBeginInfo cmdBufferBeginInfo =
 	{
-		VK_STRUCTURE_TYPE_CMD_BUFFER_BEGIN_INFO,												// VkStructureType			sType;
-		DE_NULL,																				// const void*				pNext;
-		VK_CMD_BUFFER_OPTIMIZE_SMALL_BATCH_BIT | VK_CMD_BUFFER_OPTIMIZE_ONE_TIME_SUBMIT_BIT,	// VkCmdBufferOptimizeFlags	flags;
-		DE_NULL,																				// VkRenderPass				renderPass;
-		0u,																						// deUint32					subpass;
-		DE_NULL																					// VkFramebuffer			framebuffer;
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType					sType;
+		DE_NULL,										// const void*						pNext;
+		VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,	// VkCommandBufferUsageFlags		flags;
+		DE_NULL,										// VkRenderPass						renderPass;
+		0u,												// deUint32							subpass;
+		DE_NULL,										// VkFramebuffer					framebuffer;
+		false,											// VkBool32							occlusionQueryEnable;
+		0u,												// VkQueryControlFlags				queryFlags;
+		0u												// VkQueryPipelineStatisticFlags	pipelineStatistics;
 	};
 
 	const void* preCopyBarriers[2] =
@@ -427,12 +450,24 @@ void uploadTestTexture (const DeviceInterface&			vk,
 	// Copy buffer to image
 	VK_CHECK(vk.beginCommandBuffer(*cmdBuffer, &cmdBufferBeginInfo));
 	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_FALSE, 2, preCopyBarriers);
-	vk.cmdCopyBufferToImage(*cmdBuffer, *buffer, destImage, VK_IMAGE_LAYOUT_TRANSFER_DESTINATION_OPTIMAL, (deUint32)copyRegions.size(), copyRegions.data());
+	vk.cmdCopyBufferToImage(*cmdBuffer, *buffer, destImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, (deUint32)copyRegions.size(), copyRegions.data());
 	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_FALSE, 1, &postCopyBarrier);
 
 	VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
 
-	VK_CHECK(vk.queueSubmit(queue, 1, &cmdBuffer.get(), *fence));
+	const VkSubmitInfo submitInfo =
+	{
+		VK_STRUCTURE_TYPE_SUBMIT_INFO,	// VkStructureType			sType;
+		DE_NULL,						// const void*				pNext;
+		0u,								// deUint32					waitSemaphoreCount;
+		DE_NULL,						// const VkSemaphore*		pWaitSemaphores;
+		1u,								// deUint32					commandBufferCount;
+		&cmdBuffer.get(),				// const VkCommandBuffer*	pCommandBuffers;
+		0u,								// deUint32					signalSemaphoreCount;
+		DE_NULL							// const VkSemaphore*		pSignalSemaphores;
+	};
+
+	VK_CHECK(vk.queueSubmit(queue, 1, &submitInfo, *fence));
 	VK_CHECK(vk.waitForFences(device, 1, &fence.get(), true, ~(0ull) /* infinity */));
 }
 
@@ -554,16 +589,16 @@ std::vector<VkBufferImageCopy> TestTexture::getBufferCopyRegions (void) const
 			for (int layerNdx = 0; layerNdx < getArraySize(); layerNdx++)
 			{
 				const tcu::CompressedTexture& level = getCompressedLevel(levelNdx, layerNdx);
-
-				layerDataOffset = getNextMultiple<4>(layerDataOffset);
+				tcu::IVec3 blockPixelSize 			= getBlockPixelSize(level.getFormat());
+				layerDataOffset 					= getNextMultiple<4>(layerDataOffset);
 
 				const VkBufferImageCopy layerRegion =
 				{
-					layerDataOffset,						// VkDeviceSize				bufferOffset;
-					(deUint32)level.getWidth(),				// deUint32					bufferRowLength;
-					(deUint32)level.getHeight(),			// deUint32					bufferImageHeight;
-					{										// VkImageSubresourceCopy	imageSubresource;
-						VK_IMAGE_ASPECT_COLOR,
+					layerDataOffset,													// VkDeviceSize				bufferOffset;
+					(deUint32)getNextMultiple(blockPixelSize.x(), level.getWidth()),	// deUint32					bufferRowLength;
+					(deUint32)getNextMultiple(blockPixelSize.y(), level.getHeight()),	// deUint32					bufferImageHeight;
+					{																	// VkImageSubresourceLayers	imageSubresource;
+						VK_IMAGE_ASPECT_COLOR_BIT,
 						(deUint32)levelNdx,
 						(deUint32)layerNdx,
 						1u
@@ -596,8 +631,8 @@ std::vector<VkBufferImageCopy> TestTexture::getBufferCopyRegions (void) const
 					layerDataOffset,						// VkDeviceSize				bufferOffset;
 					(deUint32)level.getWidth(),				// deUint32					bufferRowLength;
 					(deUint32)level.getHeight(),			// deUint32					bufferImageHeight;
-					{										// VkImageSubresourceCopy	imageSubresource;
-						VK_IMAGE_ASPECT_COLOR,
+					{										// VkImageSubresourceLayers	imageSubresource;
+						VK_IMAGE_ASPECT_COLOR_BIT,
 						(deUint32)levelNdx,
 						(deUint32)layerNdx,
 						1u
@@ -952,6 +987,16 @@ const tcu::Texture3D& TestTexture3D::getTexture (void) const
 
 // TestTextureCube
 
+const static tcu::CubeFace tcuFaceMapping[tcu::CUBEFACE_LAST] =
+{
+	tcu::CUBEFACE_POSITIVE_X,
+	tcu::CUBEFACE_NEGATIVE_X,
+	tcu::CUBEFACE_POSITIVE_Y,
+	tcu::CUBEFACE_NEGATIVE_Y,
+	tcu::CUBEFACE_POSITIVE_Z,
+	tcu::CUBEFACE_NEGATIVE_Z
+};
+
 TestTextureCube::TestTextureCube (const tcu::TextureFormat& format, int size)
 	: TestTexture	(format, size, size, 1)
 	, m_texture		(format, size)
@@ -960,8 +1005,8 @@ TestTextureCube::TestTextureCube (const tcu::TextureFormat& format, int size)
 	{
 		for (int faceNdx = 0; faceNdx < tcu::CUBEFACE_LAST; faceNdx++)
 		{
-			m_texture.allocLevel((tcu::CubeFace)faceNdx, levelNdx);
-			TestTexture::fillWithGradient(m_texture.getLevelFace(levelNdx, (tcu::CubeFace)faceNdx));
+			m_texture.allocLevel(tcuFaceMapping[faceNdx], levelNdx);
+			TestTexture::fillWithGradient(m_texture.getLevelFace(levelNdx, tcuFaceMapping[faceNdx]));
 		}
 	}
 }
@@ -976,8 +1021,8 @@ TestTextureCube::TestTextureCube (const tcu::CompressedTexFormat& format, int si
 	{
 		for (int faceNdx = 0; faceNdx < tcu::CUBEFACE_LAST; faceNdx++)
 		{
-			m_texture.allocLevel((tcu::CubeFace)faceNdx, levelNdx);
-			levels[levelNdx * tcu::CUBEFACE_LAST + faceNdx] = m_texture.getLevelFace(levelNdx, (tcu::CubeFace)faceNdx);
+			m_texture.allocLevel(tcuFaceMapping[faceNdx], levelNdx);
+			levels[levelNdx * tcu::CUBEFACE_LAST + faceNdx] = m_texture.getLevelFace(levelNdx, tcuFaceMapping[faceNdx]);
 		}
 	}
 
@@ -1008,52 +1053,6 @@ int TestTextureCube::getArraySize (void) const
 	return (int)tcu::CUBEFACE_LAST;
 }
 
-void TestTextureCube::write (deUint8* destPtr) const
-{
-	const static tcu::CubeFace faceOrder[tcu::CUBEFACE_LAST] =
-	{
-		tcu::CUBEFACE_POSITIVE_X,
-		tcu::CUBEFACE_NEGATIVE_X,
-		tcu::CUBEFACE_POSITIVE_Y,
-		tcu::CUBEFACE_NEGATIVE_Y,
-		tcu::CUBEFACE_POSITIVE_Z,
-		tcu::CUBEFACE_NEGATIVE_Z,
-	};
-
-	deUint32 faceDataOffset = 0;
-
-	if (isCompressed())
-	{
-		for (int levelNdx = 0; levelNdx < getNumLevels(); levelNdx++)
-		{
-			for (int faceNdx = 0; faceNdx < tcu::CUBEFACE_LAST; faceNdx++)
-			{
-				const tcu::CompressedTexture&		compressedTex	= getCompressedLevel(levelNdx, faceOrder[faceNdx]);
-
-				faceDataOffset = getNextMultiple<4>(faceDataOffset);
-				deMemcpy(destPtr + faceDataOffset, compressedTex.getData(), compressedTex.getDataSize());
-				faceDataOffset += compressedTex.getDataSize();
-			}
-		}
-	}
-	else
-	{
-		for (int levelNdx = 0; levelNdx < getNumLevels(); levelNdx++)
-		{
-			for (int faceNdx = 0; faceNdx < tcu::CUBEFACE_LAST; faceNdx++)
-			{
-				faceDataOffset = getNextMultiple<4>(faceDataOffset);
-
-				const tcu::ConstPixelBufferAccess	srcAccess		= getLevel(levelNdx, faceOrder[faceNdx]);
-				const tcu::PixelBufferAccess		destAccess		(srcAccess.getFormat(), srcAccess.getSize(), srcAccess.getPitch(), destPtr + faceDataOffset);
-
-				tcu::copy(destAccess, srcAccess);
-				faceDataOffset += srcAccess.getWidth() * srcAccess.getHeight() * srcAccess.getDepth() * srcAccess.getFormat().getPixelSize();
-			}
-		}
-	}
-}
-
 const tcu::TextureCube& TestTextureCube::getTexture (void) const
 {
 	return m_texture;
@@ -1082,7 +1081,7 @@ TestTextureCubeArray::TestTextureCubeArray (const tcu::CompressedTexFormat& form
 		for (int layerNdx = 0; layerNdx < m_texture.getDepth(); layerNdx++)
 			layers.push_back(getLevel(levelNdx, layerNdx));
 
-	TestTexture::populateLevels(layers);
+	TestTexture::populateCompressedLevels(format, layers);
 }
 
 TestTextureCubeArray::~TestTextureCubeArray (void)
@@ -1120,54 +1119,6 @@ int TestTextureCubeArray::getArraySize (void) const
 const tcu::TextureCubeArray& TestTextureCubeArray::getTexture (void) const
 {
 	return m_texture;
-}
-
-void TestTextureCubeArray::write (deUint8* destPtr) const
-{
-	const static tcu::CubeFace faceOrder[tcu::CUBEFACE_LAST] =
-	{
-		tcu::CUBEFACE_POSITIVE_X,
-		tcu::CUBEFACE_NEGATIVE_X,
-		tcu::CUBEFACE_POSITIVE_Y,
-		tcu::CUBEFACE_NEGATIVE_Y,
-		tcu::CUBEFACE_POSITIVE_Z,
-		tcu::CUBEFACE_NEGATIVE_Z,
-	};
-
-	deUint32 faceDataOffset = 0;
-
-	if (isCompressed())
-	{
-		for (int levelNdx = 0; levelNdx < getNumLevels(); levelNdx++)
-		{
-			for (int faceNdx = 0; faceNdx < getArraySize(); faceNdx++)
-			{
-				const int						cubeIndex		= faceNdx / tcu::CUBEFACE_LAST;
-				const tcu::CompressedTexture&	compressedTex	= getCompressedLevel(levelNdx, cubeIndex * tcu::CUBEFACE_LAST + faceOrder[faceNdx % tcu::CUBEFACE_LAST]);
-
-				faceDataOffset = getNextMultiple<4>(faceDataOffset);
-				deMemcpy(destPtr + faceDataOffset, compressedTex.getData(), compressedTex.getDataSize());
-				faceDataOffset += compressedTex.getDataSize();
-			}
-		}
-	}
-	else
-	{
-		for (int levelNdx = 0; levelNdx < getNumLevels(); levelNdx++)
-		{
-			for (int faceNdx = 0; faceNdx < getArraySize(); faceNdx++)
-			{
-				faceDataOffset = getNextMultiple<4>(faceDataOffset);
-
-				const int							cubeIndex		= faceNdx / tcu::CUBEFACE_LAST;
-				const tcu::ConstPixelBufferAccess	srcAccess		= getLevel(levelNdx, cubeIndex * tcu::CUBEFACE_LAST + faceOrder[faceNdx % tcu::CUBEFACE_LAST]);
-				const tcu::PixelBufferAccess		destAccess		(srcAccess.getFormat(), srcAccess.getSize(), srcAccess.getPitch(), destPtr + faceDataOffset);
-
-				tcu::copy(destAccess, srcAccess);
-				faceDataOffset += srcAccess.getWidth() * srcAccess.getHeight() * srcAccess.getDepth() * srcAccess.getFormat().getPixelSize();
-			}
-		}
-	}
 }
 
 } // pipeline

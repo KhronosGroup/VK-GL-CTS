@@ -11,6 +11,12 @@ set(DEQP_VK_API_SRCS
 	vktApiDeviceInitializationTests.hpp
 	vktApiObjectManagementTests.cpp
 	vktApiObjectManagementTests.hpp
+	vktApiBufferTests.cpp
+	vktApiBufferTests.hpp
+	vktApiBufferViewCreateTests.cpp
+	vktApiBufferViewCreateTests.hpp
+	vktApiBufferViewAccessTests.cpp
+	vktApiBufferViewAccessTests.hpp
 	)
 
 set(DEQP_VK_API_LIBS

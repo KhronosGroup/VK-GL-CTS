@@ -51,24 +51,24 @@ Move<VkInstance> createDefaultInstance (const PlatformInterface& vkPlatform)
 {
 	const struct VkApplicationInfo		appInfo			=
 	{
-		VK_STRUCTURE_TYPE_APPLICATION_INFO,		//	VkStructureType	sType;
-		DE_NULL,								//	const void*		pNext;
-		"deqp",									//	const char*		pAppName;
-		qpGetReleaseId(),						//	deUint32		appVersion;
-		"deqp",									//	const char*		pEngineName;
-		qpGetReleaseId(),						//	deUint32		engineVersion;
-		VK_API_VERSION							//	deUint32		apiVersion;
+		VK_STRUCTURE_TYPE_APPLICATION_INFO,
+		DE_NULL,
+		"deqp",									// pAppName
+		qpGetReleaseId(),						// appVersion
+		"deqp",									// pEngineName
+		qpGetReleaseId(),						// engineVersion
+		VK_API_VERSION							// apiVersion
 	};
 	const struct VkInstanceCreateInfo	instanceInfo	=
 	{
-		VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,	//	VkStructureType				sType;
-		DE_NULL,								//	const void*					pNext;
-		&appInfo,								//	const VkApplicationInfo*	pAppInfo;
-		DE_NULL,								//	const VkAllocCallbacks*		pAllocCb;
-		0u,										//	deUint32					layerCount;
-		DE_NULL,								//	const char*const*			ppEnabledLayerNames;
-		0u,										//	deUint32					extensionCount;
-		DE_NULL									//	const char*const*			ppEnabledExtensionNames;
+		VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
+		DE_NULL,
+		(VkInstanceCreateFlags)0,
+		&appInfo,
+		0u,										// enabledLayerNameCount
+		DE_NULL,								// ppEnabledLayerNames
+		0u,										// enabledExtensionNameCount;
+		DE_NULL									// ppEnabledExtensionNames
 	};
 
 	return createInstance(vkPlatform, &instanceInfo);

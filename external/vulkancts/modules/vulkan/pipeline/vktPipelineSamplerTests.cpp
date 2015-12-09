@@ -99,12 +99,12 @@ public:
 															 const char*		description,
 															 VkImageViewType	imageViewType,
 															 VkFormat			imageFormat,
-															 VkTexFilter		magFilter);
+															 VkFilter			magFilter);
 	virtual							~SamplerMagFilterTest	(void) {}
 	virtual VkSamplerCreateInfo		getSamplerCreateInfo	(void) const;
 
 private:
-	VkTexFilter						m_magFilter;
+	VkFilter						m_magFilter;
 };
 
 class SamplerMinFilterTest : public SamplerTest
@@ -115,32 +115,32 @@ public:
 															 const char*		description,
 															 VkImageViewType	imageViewType,
 															 VkFormat			imageFormat,
-															 VkTexFilter		minFilter);
+															 VkFilter			minFilter);
 	virtual							~SamplerMinFilterTest	(void) {}
 	virtual VkSamplerCreateInfo		getSamplerCreateInfo	(void) const;
 
 private:
-	VkTexFilter						m_minFilter;
+	VkFilter						m_minFilter;
 };
 
 class SamplerLodTest : public SamplerTest
 {
 public:
-									SamplerLodTest			(tcu::TestContext&	testContext,
-															 const char*		name,
-															 const char*		description,
-															 VkImageViewType	imageViewType,
-															 VkFormat			imageFormat,
-															 VkTexMipmapMode	mipMode,
-															 float				minLod,
-															 float				maxLod,
-															 float				mipLodBias,
-															 float				samplerLod);
+									SamplerLodTest			(tcu::TestContext&		testContext,
+															 const char*			name,
+															 const char*			description,
+															 VkImageViewType		imageViewType,
+															 VkFormat				imageFormat,
+															 VkSamplerMipmapMode	mipmapMode,
+															 float					minLod,
+															 float					maxLod,
+															 float					mipLodBias,
+															 float					samplerLod);
 	virtual							~SamplerLodTest			(void) {}
 	virtual VkSamplerCreateInfo		getSamplerCreateInfo	(void) const;
 
 private:
-	VkTexMipmapMode					m_mipMode;
+	VkSamplerMipmapMode				m_mipmapMode;
 	float							m_minLod;
 	float							m_maxLod;
 	float							m_mipLodBias;
@@ -149,24 +149,24 @@ private:
 class SamplerAddressModesTest : public SamplerTest
 {
 public:
-										SamplerAddressModesTest		(tcu::TestContext&	testContext,
-																	 const char*		name,
-																	 const char*		description,
-																	 VkImageViewType	imageViewType,
-																	 VkFormat			imageFormat,
-																	 VkTexAddressMode	addressU,
-																	 VkTexAddressMode	addressV,
-																	 VkTexAddressMode	addressW,
-																	 VkBorderColor		borderColor);
+										SamplerAddressModesTest		(tcu::TestContext&		testContext,
+																	 const char*			name,
+																	 const char*			description,
+																	 VkImageViewType		imageViewType,
+																	 VkFormat				imageFormat,
+																	 VkSamplerAddressMode	addressU,
+																	 VkSamplerAddressMode	addressV,
+																	 VkSamplerAddressMode	addressW,
+																	 VkBorderColor			borderColor);
 	virtual								~SamplerAddressModesTest	(void) {}
 	virtual tcu::IVec2					getRenderSize (VkImageViewType viewType) const;
 	virtual std::vector<Vertex4Tex4>	createVertices				(void) const;
 	virtual VkSamplerCreateInfo			getSamplerCreateInfo		(void) const;
 
 private:
-	VkTexAddressMode					m_addressU;
-	VkTexAddressMode					m_addressV;
-	VkTexAddressMode					m_addressW;
+	VkSamplerAddressMode				m_addressU;
+	VkSamplerAddressMode				m_addressV;
+	VkSamplerAddressMode				m_addressW;
 	VkBorderColor						m_borderColor;
 };
 
@@ -245,7 +245,7 @@ void SamplerTest::initPrograms (SourceCollections& sourceCollections) const
 	else
 		fragmentSrc << "texture(texSampler, vtxTexCoords." << texCoordSwizzle << ")" << std::fixed;
 
-	fragmentSrc << " * vec4" << formatInfo.lookupScale << " + vec4" << formatInfo.lookupBias << ";\n"
+	fragmentSrc << " * vec4" << std::scientific << formatInfo.lookupScale << " + vec4" << formatInfo.lookupBias << ";\n"
 				<< "}\n";
 
 	sourceCollections.glslSources.add("tex_vert") << glu::VertexSource(vertexSrc.str());
@@ -257,7 +257,7 @@ TestInstance* SamplerTest::createInstance (Context& context) const
 	const tcu::IVec2				renderSize			= getRenderSize(m_imageViewType);
 	const std::vector<Vertex4Tex4>	vertices			= createVertices();
 	const VkSamplerCreateInfo		samplerParams		= getSamplerCreateInfo();
-	const VkChannelMapping			channelMapping		= getFormatChannelMapping(m_imageFormat);
+	const VkComponentMapping		componentMapping	= getFormatComponentMapping(m_imageFormat);
 	const VkImageSubresourceRange	subresourceRange	=
 	{
 		VK_IMAGE_ASPECT_COLOR_BIT,								// VkImageAspectFlags	aspectMask;
@@ -272,7 +272,7 @@ TestInstance* SamplerTest::createInstance (Context& context) const
 	return new ImageSamplingInstance(context, renderSize, m_imageViewType, m_imageFormat,
 									 getImageSize(m_imageViewType, m_imageSize),
 									 getArraySize(m_imageViewType),
-									 channelMapping, subresourceRange,
+									 componentMapping, subresourceRange,
 									 samplerParams, m_samplerLod,vertices);
 }
 
@@ -297,22 +297,23 @@ VkSamplerCreateInfo SamplerTest::getSamplerCreateInfo (void) const
 {
 	const VkSamplerCreateInfo defaultSamplerParams =
 	{
-		VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,									// VkStructureType		sType;
-		DE_NULL,																// const void*			pNext;
-		VK_TEX_FILTER_NEAREST,													// VkTexFilter			magFilter;
-		VK_TEX_FILTER_NEAREST,													// VkTexFilter			minFilter;
-		VK_TEX_MIPMAP_MODE_BASE,												// VkTexMipmapMode		mipMode;
-		VK_TEX_ADDRESS_MODE_CLAMP,												// VkTexAddressMode		addressModeU;
-		VK_TEX_ADDRESS_MODE_CLAMP,												// VkTexAddressMode		addressModeV;
-		VK_TEX_ADDRESS_MODE_CLAMP,												// VkTexAddressMode		addressModeW;
-		0.0f,																	// float				mipLodBias;
-		1.0f,																	// float				maxAnisotropy;
-		false,																	// VkBool32				compareEnable;
-		VK_COMPARE_OP_NEVER,													// VkCompareOp			compareOp;
-		0.0f,																	// float				minLod;
-		(float)deLog2Floor32(m_imageSize) + 1,									// float				maxLod;
-		getFormatBorderColor(BORDER_COLOR_TRANSPARENT_BLACK, m_imageFormat),	// VkBorderColor		borderColor;
-		false																	// VkBool32				unnormalizedCoordinates;
+		VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,									// VkStructureType			sType;
+		DE_NULL,																// const void*				pNext;
+		0u,																		// VkSamplerCreateFlags		flags;
+		VK_FILTER_NEAREST,														// VkFilter					magFilter;
+		VK_FILTER_NEAREST,														// VkFilter					minFilter;
+		VK_SAMPLER_MIPMAP_MODE_BASE,											// VkSamplerMipmapMode		mipmapMode;
+		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,									// VkSamplerAddressMode		addressModeU;
+		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,									// VkSamplerAddressMode		addressModeV;
+		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,									// VkSamplerAddressMode		addressModeW;
+		0.0f,																	// float					mipLodBias;
+		1.0f,																	// float					maxAnisotropy;
+		false,																	// VkBool32					compareEnable;
+		VK_COMPARE_OP_NEVER,													// VkCompareOp				compareOp;
+		0.0f,																	// float					minLod;
+		(float)deLog2Floor32(m_imageSize) + 1,									// float					maxLod;
+		getFormatBorderColor(BORDER_COLOR_TRANSPARENT_BLACK, m_imageFormat),	// VkBorderColor			borderColor;
+		false																	// VkBool32					unnormalizedCoordinates;
 	};
 
 	return defaultSamplerParams;
@@ -410,7 +411,7 @@ SamplerMagFilterTest::SamplerMagFilterTest (tcu::TestContext&	testContext,
 											const char*			description,
 											VkImageViewType		imageViewType,
 											VkFormat			imageFormat,
-											VkTexFilter			magFilter)
+											VkFilter			magFilter)
 	: SamplerTest	(testContext, name, description, imageViewType, imageFormat, 8, 0.0f)
 	, m_magFilter	(magFilter)
 {
@@ -432,7 +433,7 @@ SamplerMinFilterTest::SamplerMinFilterTest (tcu::TestContext&	testContext,
 											const char*			description,
 											VkImageViewType		imageViewType,
 											VkFormat			imageFormat,
-											VkTexFilter			minFilter)
+											VkFilter			minFilter)
 	: SamplerTest	(testContext, name, description, imageViewType, imageFormat, 32, 0.0f)
 	, m_minFilter	(minFilter)
 {
@@ -454,13 +455,13 @@ SamplerLodTest::SamplerLodTest (tcu::TestContext&	testContext,
 								const char*			description,
 								VkImageViewType		imageViewType,
 								VkFormat			imageFormat,
-								VkTexMipmapMode		mipMode,
+								VkSamplerMipmapMode	mipmapMode,
 								float				minLod,
 								float				maxLod,
 								float				mipLodBias,
 								float				samplerLod)
 	: SamplerTest	(testContext, name, description, imageViewType, imageFormat, 32, samplerLod)
-	, m_mipMode		(mipMode)
+	, m_mipmapMode	(mipmapMode)
 	, m_minLod		(minLod)
 	, m_maxLod		(maxLod)
 	, m_mipLodBias	(mipLodBias)
@@ -471,7 +472,7 @@ VkSamplerCreateInfo SamplerLodTest::getSamplerCreateInfo (void) const
 {
 	VkSamplerCreateInfo samplerParams = SamplerTest::getSamplerCreateInfo();
 
-	samplerParams.mipMode		= m_mipMode;
+	samplerParams.mipmapMode	= m_mipmapMode;
 	samplerParams.minLod		= m_minLod;
 	samplerParams.maxLod		= m_maxLod;
 	samplerParams.mipLodBias	= m_mipLodBias;
@@ -482,15 +483,15 @@ VkSamplerCreateInfo SamplerLodTest::getSamplerCreateInfo (void) const
 
 // SamplerAddressModesTest
 
-SamplerAddressModesTest::SamplerAddressModesTest (tcu::TestContext&	testContext,
-												  const char*		name,
-												  const char*		description,
-												  VkImageViewType	imageViewType,
-												  VkFormat			imageFormat,
-												  VkTexAddressMode	addressU,
-												  VkTexAddressMode	addressV,
-												  VkTexAddressMode	addressW,
-												  VkBorderColor		borderColor)
+SamplerAddressModesTest::SamplerAddressModesTest (tcu::TestContext&		testContext,
+												  const char*			name,
+												  const char*			description,
+												  VkImageViewType		imageViewType,
+												  VkFormat				imageFormat,
+												  VkSamplerAddressMode	addressU,
+												  VkSamplerAddressMode	addressV,
+												  VkSamplerAddressMode	addressW,
+												  VkBorderColor			borderColor)
 	: SamplerTest	(testContext, name, description, imageViewType, imageFormat, 8, 0.0f)
 	, m_addressU	(addressU)
 	, m_addressV	(addressV)
@@ -567,8 +568,8 @@ MovePtr<tcu::TestCaseGroup> createSamplerMagFilterTests (tcu::TestContext& testC
 {
 	MovePtr<tcu::TestCaseGroup> samplerMagFilterTests (new tcu::TestCaseGroup(testCtx, "mag_filter", "Tests for magnification filter"));
 
-	samplerMagFilterTests->addChild(new SamplerMagFilterTest(testCtx, "linear", "Magnifies image using VK_TEX_FILTER_LINEAR", imageViewType, imageFormat, VK_TEX_FILTER_LINEAR));
-	samplerMagFilterTests->addChild(new SamplerMagFilterTest(testCtx, "nearest", "Magnifies image using VK_TEX_FILTER_NEAREST", imageViewType, imageFormat, VK_TEX_FILTER_NEAREST));
+	samplerMagFilterTests->addChild(new SamplerMagFilterTest(testCtx, "linear", "Magnifies image using VK_TEX_FILTER_LINEAR", imageViewType, imageFormat, VK_FILTER_LINEAR));
+	samplerMagFilterTests->addChild(new SamplerMagFilterTest(testCtx, "nearest", "Magnifies image using VK_TEX_FILTER_NEAREST", imageViewType, imageFormat, VK_FILTER_NEAREST));
 
 	return samplerMagFilterTests;
 }
@@ -577,13 +578,13 @@ MovePtr<tcu::TestCaseGroup> createSamplerMinFilterTests (tcu::TestContext& testC
 {
 	MovePtr<tcu::TestCaseGroup> samplerMinFilterTests (new tcu::TestCaseGroup(testCtx, "min_filter", "Tests for minification filter"));
 
-	samplerMinFilterTests->addChild(new SamplerMinFilterTest(testCtx, "linear", "Minifies image using VK_TEX_FILTER_LINEAR", imageViewType, imageFormat, VK_TEX_FILTER_LINEAR));
-	samplerMinFilterTests->addChild(new SamplerMinFilterTest(testCtx, "nearest", "Minifies image using VK_TEX_FILTER_NEAREST", imageViewType, imageFormat, VK_TEX_FILTER_NEAREST));
+	samplerMinFilterTests->addChild(new SamplerMinFilterTest(testCtx, "linear", "Minifies image using VK_TEX_FILTER_LINEAR", imageViewType, imageFormat, VK_FILTER_LINEAR));
+	samplerMinFilterTests->addChild(new SamplerMinFilterTest(testCtx, "nearest", "Minifies image using VK_TEX_FILTER_NEAREST", imageViewType, imageFormat, VK_FILTER_NEAREST));
 
 	return samplerMinFilterTests;
 }
 
-MovePtr<tcu::TestCaseGroup> createSamplerLodTests (tcu::TestContext& testCtx, VkImageViewType imageViewType, VkFormat imageFormat, VkTexMipmapMode mipmapMode)
+MovePtr<tcu::TestCaseGroup> createSamplerLodTests (tcu::TestContext& testCtx, VkImageViewType imageViewType, VkFormat imageFormat, VkSamplerMipmapMode mipmapMode)
 {
 	struct TestCaseConfig
 	{
@@ -624,18 +625,18 @@ MovePtr<tcu::TestCaseGroup> createSamplerMipmapTests (tcu::TestContext& testCtx,
 
 	// Mipmap mode: nearest
 	MovePtr<tcu::TestCaseGroup> mipmapNearestTests (new tcu::TestCaseGroup(testCtx, "nearest", "Uses VK_TEX_MIPMAP_MODE_NEAREST"));
-	mipmapNearestTests->addChild(createSamplerLodTests(testCtx, imageViewType, imageFormat, VK_TEX_MIPMAP_MODE_NEAREST).release());
+	mipmapNearestTests->addChild(createSamplerLodTests(testCtx, imageViewType, imageFormat, VK_SAMPLER_MIPMAP_MODE_NEAREST).release());
 	samplerMipmapTests->addChild(mipmapNearestTests.release());
 
 	// Mipmap mode: linear
 	MovePtr<tcu::TestCaseGroup> mipmapLinearTests (new tcu::TestCaseGroup(testCtx, "linear", "Uses VK_TEX_MIPMAP_MODE_LINEAR"));
-	mipmapLinearTests->addChild(createSamplerLodTests(testCtx, imageViewType, imageFormat, VK_TEX_MIPMAP_MODE_LINEAR).release());
+	mipmapLinearTests->addChild(createSamplerLodTests(testCtx, imageViewType, imageFormat, VK_SAMPLER_MIPMAP_MODE_LINEAR).release());
 	samplerMipmapTests->addChild(mipmapLinearTests.release());
 
 	return samplerMipmapTests;
 }
 
-std::string getAddressModesCaseName (VkTexAddressMode u, VkTexAddressMode v, VkTexAddressMode w, BorderColor border)
+std::string getAddressModesCaseName (VkSamplerAddressMode u, VkSamplerAddressMode v, VkSamplerAddressMode w, BorderColor border)
 {
 	static const char* borderColorNames[BORDER_COLOR_COUNT] =
 	{
@@ -648,31 +649,31 @@ std::string getAddressModesCaseName (VkTexAddressMode u, VkTexAddressMode v, VkT
 
 	if (u == v && v == w)
 	{
-		const std::string fullName = getTexAddressModeName(u);
-		DE_ASSERT(de::beginsWith(fullName, "VK_TEX_ADDRESS_"));
+		const std::string fullName = getSamplerAddressModeName(u);
+		DE_ASSERT(de::beginsWith(fullName, "VK_SAMPLER_ADDRESS_"));
 
 		caseName << "all_";
-		caseName << de::toLower(fullName.substr(15));
+		caseName << de::toLower(fullName.substr(19));
 
-		if (u == VK_TEX_ADDRESS_MODE_CLAMP_BORDER)
+		if (u == VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER)
 		{
 			caseName << "_" << borderColorNames[border];
 		}
 	}
 	else
 	{
-		const std::string fullNameU = getTexAddressModeName(u);
-		const std::string fullNameV = getTexAddressModeName(v);
-		const std::string fullNameW = getTexAddressModeName(w);
+		const std::string fullNameU = getSamplerAddressModeName(u);
+		const std::string fullNameV = getSamplerAddressModeName(v);
+		const std::string fullNameW = getSamplerAddressModeName(w);
 
-		DE_ASSERT(de::beginsWith(fullNameU, "VK_TEX_ADDRESS_"));
-		DE_ASSERT(de::beginsWith(fullNameV, "VK_TEX_ADDRESS_"));
-		DE_ASSERT(de::beginsWith(fullNameW, "VK_TEX_ADDRESS_"));
+		DE_ASSERT(de::beginsWith(fullNameU, "VK_SAMPLER_ADDRESS_"));
+		DE_ASSERT(de::beginsWith(fullNameV, "VK_SAMPLER_ADDRESS_"));
+		DE_ASSERT(de::beginsWith(fullNameW, "VK_SAMPLER_ADDRESS_"));
 
 		caseName << "uvw"
-				 << "_" << de::toLower(fullNameU.substr(15))
-				 << "_" << de::toLower(fullNameV.substr(15))
-				 << "_" << de::toLower(fullNameW.substr(15));
+				 << "_" << de::toLower(fullNameU.substr(19))
+				 << "_" << de::toLower(fullNameV.substr(19))
+				 << "_" << de::toLower(fullNameW.substr(19));
 	}
 
 	return caseName.str();
@@ -682,48 +683,48 @@ MovePtr<tcu::TestCaseGroup> createSamplerAddressModesTests (tcu::TestContext& te
 {
 	struct TestCaseConfig
 	{
-		VkTexAddressMode	u;
-		VkTexAddressMode	v;
-		VkTexAddressMode	w;
-		BorderColor			border;
+		VkSamplerAddressMode	u;
+		VkSamplerAddressMode	v;
+		VkSamplerAddressMode	w;
+		BorderColor				border;
 	};
 
 	const TestCaseConfig testCaseConfigs[] =
 	{
 		// All address modes equal
-		{ VK_TEX_ADDRESS_MODE_CLAMP,		VK_TEX_ADDRESS_MODE_CLAMP,			VK_TEX_ADDRESS_MODE_CLAMP,			BORDER_COLOR_TRANSPARENT_BLACK },
-		{ VK_TEX_ADDRESS_MODE_WRAP,			VK_TEX_ADDRESS_MODE_WRAP,			VK_TEX_ADDRESS_MODE_WRAP,			BORDER_COLOR_TRANSPARENT_BLACK },
-		{ VK_TEX_ADDRESS_MODE_MIRROR,		VK_TEX_ADDRESS_MODE_MIRROR,			VK_TEX_ADDRESS_MODE_MIRROR,			BORDER_COLOR_TRANSPARENT_BLACK },
-		{ VK_TEX_ADDRESS_MODE_MIRROR_ONCE,	VK_TEX_ADDRESS_MODE_MIRROR_ONCE,	VK_TEX_ADDRESS_MODE_MIRROR_ONCE,	BORDER_COLOR_TRANSPARENT_BLACK },
+		{ VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,			VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,			BORDER_COLOR_TRANSPARENT_BLACK },
+		{ VK_SAMPLER_ADDRESS_MODE_REPEAT,				VK_SAMPLER_ADDRESS_MODE_REPEAT,					VK_SAMPLER_ADDRESS_MODE_REPEAT,					BORDER_COLOR_TRANSPARENT_BLACK },
+		{ VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT,		VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT,		VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT,		BORDER_COLOR_TRANSPARENT_BLACK },
+		{ VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE,	VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE,	VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE,	BORDER_COLOR_TRANSPARENT_BLACK },
 
 		// All address modes equal using border color
-		{ VK_TEX_ADDRESS_MODE_CLAMP_BORDER,	VK_TEX_ADDRESS_MODE_CLAMP_BORDER,	VK_TEX_ADDRESS_MODE_CLAMP_BORDER,	BORDER_COLOR_TRANSPARENT_BLACK },
-		{ VK_TEX_ADDRESS_MODE_CLAMP_BORDER,	VK_TEX_ADDRESS_MODE_CLAMP_BORDER,	VK_TEX_ADDRESS_MODE_CLAMP_BORDER,	BORDER_COLOR_OPAQUE_BLACK },
-		{ VK_TEX_ADDRESS_MODE_CLAMP_BORDER,	VK_TEX_ADDRESS_MODE_CLAMP_BORDER,	VK_TEX_ADDRESS_MODE_CLAMP_BORDER,	BORDER_COLOR_OPAQUE_WHITE },
+		{ VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,		BORDER_COLOR_TRANSPARENT_BLACK },
+		{ VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,		BORDER_COLOR_OPAQUE_BLACK },
+		{ VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,		BORDER_COLOR_OPAQUE_WHITE },
 
 		// Pairwise combinations of address modes not covered by previous tests
-		{ VK_TEX_ADDRESS_MODE_CLAMP_BORDER,	VK_TEX_ADDRESS_MODE_MIRROR_ONCE,	VK_TEX_ADDRESS_MODE_WRAP,			BORDER_COLOR_OPAQUE_WHITE},
-		{ VK_TEX_ADDRESS_MODE_CLAMP_BORDER,	VK_TEX_ADDRESS_MODE_MIRROR,			VK_TEX_ADDRESS_MODE_MIRROR_ONCE,	BORDER_COLOR_OPAQUE_WHITE },
-		{ VK_TEX_ADDRESS_MODE_CLAMP_BORDER,	VK_TEX_ADDRESS_MODE_WRAP,			VK_TEX_ADDRESS_MODE_MIRROR,			BORDER_COLOR_OPAQUE_WHITE },
-		{ VK_TEX_ADDRESS_MODE_CLAMP_BORDER,	VK_TEX_ADDRESS_MODE_CLAMP,			VK_TEX_ADDRESS_MODE_CLAMP,			BORDER_COLOR_OPAQUE_WHITE },
-		{ VK_TEX_ADDRESS_MODE_MIRROR_ONCE,	VK_TEX_ADDRESS_MODE_CLAMP_BORDER,	VK_TEX_ADDRESS_MODE_MIRROR,			BORDER_COLOR_OPAQUE_WHITE },
-		{ VK_TEX_ADDRESS_MODE_MIRROR_ONCE,	VK_TEX_ADDRESS_MODE_MIRROR_ONCE,	VK_TEX_ADDRESS_MODE_CLAMP_BORDER,	BORDER_COLOR_OPAQUE_WHITE },
-		{ VK_TEX_ADDRESS_MODE_MIRROR_ONCE,	VK_TEX_ADDRESS_MODE_MIRROR,			VK_TEX_ADDRESS_MODE_WRAP,			BORDER_COLOR_OPAQUE_WHITE },
-		{ VK_TEX_ADDRESS_MODE_MIRROR_ONCE,	VK_TEX_ADDRESS_MODE_CLAMP,			VK_TEX_ADDRESS_MODE_MIRROR_ONCE,	BORDER_COLOR_OPAQUE_WHITE },
-		{ VK_TEX_ADDRESS_MODE_MIRROR_ONCE,	VK_TEX_ADDRESS_MODE_WRAP,			VK_TEX_ADDRESS_MODE_CLAMP,			BORDER_COLOR_OPAQUE_WHITE },
-		{ VK_TEX_ADDRESS_MODE_MIRROR,		VK_TEX_ADDRESS_MODE_CLAMP_BORDER,	VK_TEX_ADDRESS_MODE_MIRROR_ONCE,	BORDER_COLOR_OPAQUE_WHITE },
-		{ VK_TEX_ADDRESS_MODE_WRAP,			VK_TEX_ADDRESS_MODE_MIRROR_ONCE,	VK_TEX_ADDRESS_MODE_MIRROR_ONCE,	BORDER_COLOR_OPAQUE_WHITE },
-		{ VK_TEX_ADDRESS_MODE_MIRROR,		VK_TEX_ADDRESS_MODE_WRAP,			VK_TEX_ADDRESS_MODE_CLAMP_BORDER,	BORDER_COLOR_OPAQUE_WHITE },
-		{ VK_TEX_ADDRESS_MODE_MIRROR,		VK_TEX_ADDRESS_MODE_CLAMP,			VK_TEX_ADDRESS_MODE_WRAP,			BORDER_COLOR_OPAQUE_WHITE },
-		{ VK_TEX_ADDRESS_MODE_WRAP,			VK_TEX_ADDRESS_MODE_CLAMP_BORDER,	VK_TEX_ADDRESS_MODE_CLAMP,			BORDER_COLOR_OPAQUE_WHITE },
-		{ VK_TEX_ADDRESS_MODE_WRAP,			VK_TEX_ADDRESS_MODE_MIRROR,			VK_TEX_ADDRESS_MODE_CLAMP_BORDER,	BORDER_COLOR_OPAQUE_WHITE },
-		{ VK_TEX_ADDRESS_MODE_WRAP,			VK_TEX_ADDRESS_MODE_CLAMP,			VK_TEX_ADDRESS_MODE_MIRROR,			BORDER_COLOR_OPAQUE_WHITE },
-		{ VK_TEX_ADDRESS_MODE_MIRROR,		VK_TEX_ADDRESS_MODE_MIRROR_ONCE,	VK_TEX_ADDRESS_MODE_CLAMP,			BORDER_COLOR_OPAQUE_WHITE },
-		{ VK_TEX_ADDRESS_MODE_CLAMP,		VK_TEX_ADDRESS_MODE_CLAMP,			VK_TEX_ADDRESS_MODE_CLAMP_BORDER,	BORDER_COLOR_OPAQUE_WHITE },
-		{ VK_TEX_ADDRESS_MODE_CLAMP,		VK_TEX_ADDRESS_MODE_CLAMP_BORDER,	VK_TEX_ADDRESS_MODE_WRAP,			BORDER_COLOR_OPAQUE_WHITE },
-		{ VK_TEX_ADDRESS_MODE_CLAMP,		VK_TEX_ADDRESS_MODE_WRAP,			VK_TEX_ADDRESS_MODE_MIRROR_ONCE,	BORDER_COLOR_OPAQUE_WHITE },
-		{ VK_TEX_ADDRESS_MODE_CLAMP,		VK_TEX_ADDRESS_MODE_MIRROR,			VK_TEX_ADDRESS_MODE_CLAMP,			BORDER_COLOR_OPAQUE_WHITE },
-		{ VK_TEX_ADDRESS_MODE_CLAMP,		VK_TEX_ADDRESS_MODE_MIRROR_ONCE,	VK_TEX_ADDRESS_MODE_MIRROR,			BORDER_COLOR_OPAQUE_WHITE },
+		{ VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,		VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE,	VK_SAMPLER_ADDRESS_MODE_REPEAT,					BORDER_COLOR_OPAQUE_WHITE},
+		{ VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,		VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT,		VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE,	BORDER_COLOR_OPAQUE_WHITE },
+		{ VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,		VK_SAMPLER_ADDRESS_MODE_REPEAT,					VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT,		BORDER_COLOR_OPAQUE_WHITE },
+		{ VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,			VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,			BORDER_COLOR_OPAQUE_WHITE },
+		{ VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE,	VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,		VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT,		BORDER_COLOR_OPAQUE_WHITE },
+		{ VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE,	VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE,	VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,		BORDER_COLOR_OPAQUE_WHITE },
+		{ VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE,	VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT,		VK_SAMPLER_ADDRESS_MODE_REPEAT,					BORDER_COLOR_OPAQUE_WHITE },
+		{ VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE,	VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,			VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE,	BORDER_COLOR_OPAQUE_WHITE },
+		{ VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE,	VK_SAMPLER_ADDRESS_MODE_REPEAT,					VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,			BORDER_COLOR_OPAQUE_WHITE },
+		{ VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT,		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,		VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE,	BORDER_COLOR_OPAQUE_WHITE },
+		{ VK_SAMPLER_ADDRESS_MODE_REPEAT,				VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE,	VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE,	BORDER_COLOR_OPAQUE_WHITE },
+		{ VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT,		VK_SAMPLER_ADDRESS_MODE_REPEAT,					VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,		BORDER_COLOR_OPAQUE_WHITE },
+		{ VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT,		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,			VK_SAMPLER_ADDRESS_MODE_REPEAT,					BORDER_COLOR_OPAQUE_WHITE },
+		{ VK_SAMPLER_ADDRESS_MODE_REPEAT,				VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,			BORDER_COLOR_OPAQUE_WHITE },
+		{ VK_SAMPLER_ADDRESS_MODE_REPEAT,				VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT,		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,		BORDER_COLOR_OPAQUE_WHITE },
+		{ VK_SAMPLER_ADDRESS_MODE_REPEAT,				VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,			VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT,		BORDER_COLOR_OPAQUE_WHITE },
+		{ VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT,		VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE,	VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,			BORDER_COLOR_OPAQUE_WHITE },
+		{ VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,			VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,		BORDER_COLOR_OPAQUE_WHITE },
+		{ VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,		VK_SAMPLER_ADDRESS_MODE_REPEAT,					BORDER_COLOR_OPAQUE_WHITE },
+		{ VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,		VK_SAMPLER_ADDRESS_MODE_REPEAT,					VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE,	BORDER_COLOR_OPAQUE_WHITE },
+		{ VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,		VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT,		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,			BORDER_COLOR_OPAQUE_WHITE },
+		{ VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,		VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE,	VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT,		BORDER_COLOR_OPAQUE_WHITE },
 	};
 
 	MovePtr<tcu::TestCaseGroup> samplerAddressModesTests (new tcu::TestCaseGroup(testCtx, "address_modes", "Tests for address modes"));
@@ -767,16 +768,16 @@ tcu::TestCaseGroup* createSamplerTests (tcu::TestContext& testCtx)
 	const VkFormat formats[] =
 	{
 		// Packed formats
-		VK_FORMAT_R4G4_UNORM,
-		VK_FORMAT_R4G4B4A4_UNORM,
-		VK_FORMAT_R5G6B5_UNORM,
-		VK_FORMAT_R5G5B5A1_UNORM,
-		VK_FORMAT_R10G10B10A2_UNORM,
-		VK_FORMAT_R10G10B10A2_UINT,
-		VK_FORMAT_R11G11B10_UFLOAT,
-		VK_FORMAT_R9G9B9E5_UFLOAT,
-		VK_FORMAT_B4G4R4A4_UNORM,
-		VK_FORMAT_B5G5R5A1_UNORM,
+		VK_FORMAT_R4G4_UNORM_PACK8,
+		VK_FORMAT_R4G4B4A4_UNORM_PACK16,
+		VK_FORMAT_R5G6B5_UNORM_PACK16,
+		VK_FORMAT_R5G5B5A1_UNORM_PACK16,
+		VK_FORMAT_A2B10G10R10_UNORM_PACK32,
+		VK_FORMAT_A2R10G10B10_UINT_PACK32,
+		VK_FORMAT_B10G11R11_UFLOAT_PACK32,
+		VK_FORMAT_E5B9G9R9_UFLOAT_PACK32,
+		VK_FORMAT_B4G4R4A4_UNORM_PACK16,
+		VK_FORMAT_B5G5R5A1_UNORM_PACK16,
 
 		// Pairwise combinations of 8-bit channel formats, UNORM/SNORM/SINT/UINT/SRGB type x 1-to-4 channels x RGBA/BGRA order
 		VK_FORMAT_R8_SRGB,
@@ -816,29 +817,29 @@ tcu::TestCaseGroup* createSamplerTests (tcu::TestContext& testCtx)
 
 		// Scaled formats
 		VK_FORMAT_R8G8B8A8_SSCALED,
-		VK_FORMAT_R10G10B10A2_USCALED,
+		VK_FORMAT_A2R10G10B10_USCALED_PACK32,
 
 		// Compressed formats
-		VK_FORMAT_ETC2_R8G8B8_UNORM,
-		VK_FORMAT_ETC2_R8G8B8_SRGB,
-		VK_FORMAT_ETC2_R8G8B8A1_UNORM,
-		VK_FORMAT_ETC2_R8G8B8A1_SRGB,
-		VK_FORMAT_ETC2_R8G8B8A8_UNORM,
-		VK_FORMAT_ETC2_R8G8B8A8_SRGB,
-		VK_FORMAT_EAC_R11_UNORM,
-		VK_FORMAT_EAC_R11_SNORM,
-		VK_FORMAT_EAC_R11G11_UNORM,
-		VK_FORMAT_EAC_R11G11_SNORM,
-		VK_FORMAT_ASTC_4x4_UNORM,
-		VK_FORMAT_ASTC_5x4_SRGB,
-		VK_FORMAT_ASTC_6x5_UNORM,
-		VK_FORMAT_ASTC_6x6_SRGB,
-		VK_FORMAT_ASTC_8x6_UNORM,
-		VK_FORMAT_ASTC_8x8_SRGB,
-		VK_FORMAT_ASTC_10x6_UNORM,
-		VK_FORMAT_ASTC_10x8_SRGB,
-		VK_FORMAT_ASTC_12x10_UNORM,
-		VK_FORMAT_ASTC_12x12_SRGB,
+		VK_FORMAT_ETC2_R8G8B8_UNORM_BLOCK,
+		VK_FORMAT_ETC2_R8G8B8_SRGB_BLOCK,
+		VK_FORMAT_ETC2_R8G8B8A1_UNORM_BLOCK,
+		VK_FORMAT_ETC2_R8G8B8A1_SRGB_BLOCK,
+		VK_FORMAT_ETC2_R8G8B8A8_UNORM_BLOCK,
+		VK_FORMAT_ETC2_R8G8B8A8_SRGB_BLOCK,
+		VK_FORMAT_EAC_R11_UNORM_BLOCK,
+		VK_FORMAT_EAC_R11_SNORM_BLOCK,
+		VK_FORMAT_EAC_R11G11_UNORM_BLOCK,
+		VK_FORMAT_EAC_R11G11_SNORM_BLOCK,
+		VK_FORMAT_ASTC_4x4_UNORM_BLOCK,
+		VK_FORMAT_ASTC_5x4_SRGB_BLOCK,
+		VK_FORMAT_ASTC_6x5_UNORM_BLOCK,
+		VK_FORMAT_ASTC_6x6_SRGB_BLOCK,
+		VK_FORMAT_ASTC_8x6_UNORM_BLOCK,
+		VK_FORMAT_ASTC_8x8_SRGB_BLOCK,
+		VK_FORMAT_ASTC_10x6_UNORM_BLOCK,
+		VK_FORMAT_ASTC_10x8_SRGB_BLOCK,
+		VK_FORMAT_ASTC_12x10_UNORM_BLOCK,
+		VK_FORMAT_ASTC_12x12_SRGB_BLOCK,
 	};
 
 	de::MovePtr<tcu::TestCaseGroup> samplerTests		(new tcu::TestCaseGroup(testCtx, "sampler", "Sampler tests"));

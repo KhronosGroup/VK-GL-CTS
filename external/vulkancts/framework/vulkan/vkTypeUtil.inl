@@ -2,12 +2,15 @@
  * be lost! Modify the generating script instead.
  */
 
-inline VkAllocCallbacks makeAllocCallbacks (void* pUserData, PFN_vkAllocFunction pfnAlloc, PFN_vkFreeFunction pfnFree)
+inline VkAllocationCallbacks makeAllocationCallbacks (void* pUserData, PFN_vkAllocationFunction pfnAllocation, PFN_vkReallocationFunction pfnReallocation, PFN_vkFreeFunction pfnFree, PFN_vkInternalAllocationNotification pfnInternalAllocation, PFN_vkInternalFreeNotification pfnInternalFree)
 {
-	VkAllocCallbacks res;
-	res.pUserData	= pUserData;
-	res.pfnAlloc	= pfnAlloc;
-	res.pfnFree		= pfnFree;
+	VkAllocationCallbacks res;
+	res.pUserData				= pUserData;
+	res.pfnAllocation			= pfnAllocation;
+	res.pfnReallocation			= pfnReallocation;
+	res.pfnFree					= pfnFree;
+	res.pfnInternalAllocation	= pfnInternalAllocation;
+	res.pfnInternalFree			= pfnInternalFree;
 	return res;
 }
 
@@ -29,21 +32,39 @@ inline VkMemoryRequirements makeMemoryRequirements (VkDeviceSize size, VkDeviceS
 	return res;
 }
 
-inline VkSparseMemoryBindInfo makeSparseMemoryBindInfo (VkDeviceSize rangeOffset, VkDeviceSize rangeSize, VkDeviceSize memOffset, VkDeviceMemory mem, VkSparseMemoryBindFlags flags)
+inline VkSparseMemoryBind makeSparseMemoryBind (VkDeviceSize resourceOffset, VkDeviceSize size, VkDeviceMemory memory, VkDeviceSize memoryOffset, VkSparseMemoryBindFlags flags)
 {
-	VkSparseMemoryBindInfo res;
-	res.rangeOffset	= rangeOffset;
-	res.rangeSize	= rangeSize;
-	res.memOffset	= memOffset;
-	res.mem			= mem;
-	res.flags		= flags;
+	VkSparseMemoryBind res;
+	res.resourceOffset	= resourceOffset;
+	res.size			= size;
+	res.memory			= memory;
+	res.memoryOffset	= memoryOffset;
+	res.flags			= flags;
 	return res;
 }
 
-inline VkImageSubresource makeImageSubresource (VkImageAspect aspect, deUint32 mipLevel, deUint32 arrayLayer)
+inline VkSparseBufferMemoryBindInfo makeSparseBufferMemoryBindInfo (VkBuffer buffer, deUint32 bindCount, const VkSparseMemoryBind* pBinds)
+{
+	VkSparseBufferMemoryBindInfo res;
+	res.buffer		= buffer;
+	res.bindCount	= bindCount;
+	res.pBinds		= pBinds;
+	return res;
+}
+
+inline VkSparseImageOpaqueMemoryBindInfo makeSparseImageOpaqueMemoryBindInfo (VkImage image, deUint32 bindCount, const VkSparseMemoryBind* pBinds)
+{
+	VkSparseImageOpaqueMemoryBindInfo res;
+	res.image		= image;
+	res.bindCount	= bindCount;
+	res.pBinds		= pBinds;
+	return res;
+}
+
+inline VkImageSubresource makeImageSubresource (VkImageAspectFlags aspectMask, deUint32 mipLevel, deUint32 arrayLayer)
 {
 	VkImageSubresource res;
-	res.aspect		= aspect;
+	res.aspectMask	= aspectMask;
 	res.mipLevel	= mipLevel;
 	res.arrayLayer	= arrayLayer;
 	return res;
@@ -58,6 +79,15 @@ inline VkOffset3D makeOffset3D (deInt32 x, deInt32 y, deInt32 z)
 	return res;
 }
 
+inline VkSparseImageMemoryBindInfo makeSparseImageMemoryBindInfo (VkImage image, deUint32 bindCount, const VkSparseImageMemoryBind* pBinds)
+{
+	VkSparseImageMemoryBindInfo res;
+	res.image		= image;
+	res.bindCount	= bindCount;
+	res.pBinds		= pBinds;
+	return res;
+}
+
 inline VkSubresourceLayout makeSubresourceLayout (VkDeviceSize offset, VkDeviceSize size, VkDeviceSize rowPitch, VkDeviceSize depthPitch)
 {
 	VkSubresourceLayout res;
@@ -68,9 +98,9 @@ inline VkSubresourceLayout makeSubresourceLayout (VkDeviceSize offset, VkDeviceS
 	return res;
 }
 
-inline VkChannelMapping makeChannelMapping (VkChannelSwizzle r, VkChannelSwizzle g, VkChannelSwizzle b, VkChannelSwizzle a)
+inline VkComponentMapping makeComponentMapping (VkComponentSwizzle r, VkComponentSwizzle g, VkComponentSwizzle b, VkComponentSwizzle a)
 {
-	VkChannelMapping res;
+	VkComponentMapping res;
 	res.r	= r;
 	res.g	= g;
 	res.b	= b;
@@ -78,60 +108,60 @@ inline VkChannelMapping makeChannelMapping (VkChannelSwizzle r, VkChannelSwizzle
 	return res;
 }
 
-inline VkImageSubresourceRange makeImageSubresourceRange (VkImageAspectFlags aspectMask, deUint32 baseMipLevel, deUint32 mipLevels, deUint32 baseArrayLayer, deUint32 arraySize)
+inline VkImageSubresourceRange makeImageSubresourceRange (VkImageAspectFlags aspectMask, deUint32 baseMipLevel, deUint32 levelCount, deUint32 baseArrayLayer, deUint32 layerCount)
 {
 	VkImageSubresourceRange res;
 	res.aspectMask		= aspectMask;
 	res.baseMipLevel	= baseMipLevel;
-	res.mipLevels		= mipLevels;
+	res.levelCount		= levelCount;
 	res.baseArrayLayer	= baseArrayLayer;
-	res.arraySize		= arraySize;
+	res.layerCount		= layerCount;
 	return res;
 }
 
-inline VkSpecializationMapEntry makeSpecializationMapEntry (deUint32 constantId, deUintptr size, deUint32 offset)
+inline VkSpecializationMapEntry makeSpecializationMapEntry (deUint32 constantID, deUint32 offset, deUintptr size)
 {
 	VkSpecializationMapEntry res;
-	res.constantId	= constantId;
-	res.size		= size;
+	res.constantID	= constantID;
 	res.offset		= offset;
+	res.size		= size;
 	return res;
 }
 
-inline VkSpecializationInfo makeSpecializationInfo (deUint32 mapEntryCount, const VkSpecializationMapEntry* pMap, deUintptr dataSize, const void* pData)
+inline VkSpecializationInfo makeSpecializationInfo (deUint32 mapEntryCount, const VkSpecializationMapEntry* pMapEntries, deUintptr dataSize, const void* pData)
 {
 	VkSpecializationInfo res;
 	res.mapEntryCount	= mapEntryCount;
-	res.pMap			= pMap;
+	res.pMapEntries		= pMapEntries;
 	res.dataSize		= dataSize;
 	res.pData			= pData;
 	return res;
 }
 
-inline VkVertexInputBindingDescription makeVertexInputBindingDescription (deUint32 binding, deUint32 strideInBytes, VkVertexInputStepRate stepRate)
+inline VkVertexInputBindingDescription makeVertexInputBindingDescription (deUint32 binding, deUint32 stride, VkVertexInputRate inputRate)
 {
 	VkVertexInputBindingDescription res;
-	res.binding			= binding;
-	res.strideInBytes	= strideInBytes;
-	res.stepRate		= stepRate;
+	res.binding		= binding;
+	res.stride		= stride;
+	res.inputRate	= inputRate;
 	return res;
 }
 
-inline VkVertexInputAttributeDescription makeVertexInputAttributeDescription (deUint32 location, deUint32 binding, VkFormat format, deUint32 offsetInBytes)
+inline VkVertexInputAttributeDescription makeVertexInputAttributeDescription (deUint32 location, deUint32 binding, VkFormat format, deUint32 offset)
 {
 	VkVertexInputAttributeDescription res;
-	res.location		= location;
-	res.binding			= binding;
-	res.format			= format;
-	res.offsetInBytes	= offsetInBytes;
+	res.location	= location;
+	res.binding		= binding;
+	res.format		= format;
+	res.offset		= offset;
 	return res;
 }
 
-inline VkViewport makeViewport (float originX, float originY, float width, float height, float minDepth, float maxDepth)
+inline VkViewport makeViewport (float x, float y, float width, float height, float minDepth, float maxDepth)
 {
 	VkViewport res;
-	res.originX		= originX;
-	res.originY		= originY;
+	res.x			= x;
+	res.y			= y;
 	res.width		= width;
 	res.height		= height;
 	res.minDepth	= minDepth;
@@ -155,57 +185,67 @@ inline VkExtent2D makeExtent2D (deInt32 width, deInt32 height)
 	return res;
 }
 
-inline VkStencilOpState makeStencilOpState (VkStencilOp stencilFailOp, VkStencilOp stencilPassOp, VkStencilOp stencilDepthFailOp, VkCompareOp stencilCompareOp, deUint32 stencilCompareMask, deUint32 stencilWriteMask, deUint32 stencilReference)
+inline VkStencilOpState makeStencilOpState (VkStencilOp failOp, VkStencilOp passOp, VkStencilOp depthFailOp, VkCompareOp compareOp, deUint32 compareMask, deUint32 writeMask, deUint32 reference)
 {
 	VkStencilOpState res;
-	res.stencilFailOp		= stencilFailOp;
-	res.stencilPassOp		= stencilPassOp;
-	res.stencilDepthFailOp	= stencilDepthFailOp;
-	res.stencilCompareOp	= stencilCompareOp;
-	res.stencilCompareMask	= stencilCompareMask;
-	res.stencilWriteMask	= stencilWriteMask;
-	res.stencilReference	= stencilReference;
+	res.failOp		= failOp;
+	res.passOp		= passOp;
+	res.depthFailOp	= depthFailOp;
+	res.compareOp	= compareOp;
+	res.compareMask	= compareMask;
+	res.writeMask	= writeMask;
+	res.reference	= reference;
 	return res;
 }
 
-inline VkPipelineColorBlendAttachmentState makePipelineColorBlendAttachmentState (VkBool32 blendEnable, VkBlend srcBlendColor, VkBlend destBlendColor, VkBlendOp blendOpColor, VkBlend srcBlendAlpha, VkBlend destBlendAlpha, VkBlendOp blendOpAlpha, VkChannelFlags channelWriteMask)
+inline VkPipelineColorBlendAttachmentState makePipelineColorBlendAttachmentState (VkBool32 blendEnable, VkBlendFactor srcColorBlendFactor, VkBlendFactor dstColorBlendFactor, VkBlendOp colorBlendOp, VkBlendFactor srcAlphaBlendFactor, VkBlendFactor dstAlphaBlendFactor, VkBlendOp alphaBlendOp, VkColorComponentFlags colorWriteMask)
 {
 	VkPipelineColorBlendAttachmentState res;
 	res.blendEnable			= blendEnable;
-	res.srcBlendColor		= srcBlendColor;
-	res.destBlendColor		= destBlendColor;
-	res.blendOpColor		= blendOpColor;
-	res.srcBlendAlpha		= srcBlendAlpha;
-	res.destBlendAlpha		= destBlendAlpha;
-	res.blendOpAlpha		= blendOpAlpha;
-	res.channelWriteMask	= channelWriteMask;
+	res.srcColorBlendFactor	= srcColorBlendFactor;
+	res.dstColorBlendFactor	= dstColorBlendFactor;
+	res.colorBlendOp		= colorBlendOp;
+	res.srcAlphaBlendFactor	= srcAlphaBlendFactor;
+	res.dstAlphaBlendFactor	= dstAlphaBlendFactor;
+	res.alphaBlendOp		= alphaBlendOp;
+	res.colorWriteMask		= colorWriteMask;
 	return res;
 }
 
-inline VkPushConstantRange makePushConstantRange (VkShaderStageFlags stageFlags, deUint32 start, deUint32 length)
+inline VkPushConstantRange makePushConstantRange (VkShaderStageFlags stageFlags, deUint32 offset, deUint32 size)
 {
 	VkPushConstantRange res;
 	res.stageFlags	= stageFlags;
-	res.start		= start;
-	res.length		= length;
+	res.offset		= offset;
+	res.size		= size;
 	return res;
 }
 
-inline VkDescriptorSetLayoutBinding makeDescriptorSetLayoutBinding (VkDescriptorType descriptorType, deUint32 arraySize, VkShaderStageFlags stageFlags, const VkSampler* pImmutableSamplers)
+inline VkDescriptorSetLayoutBinding makeDescriptorSetLayoutBinding (deUint32 binding, VkDescriptorType descriptorType, deUint32 descriptorCount, VkShaderStageFlags stageFlags, const VkSampler* pImmutableSamplers)
 {
 	VkDescriptorSetLayoutBinding res;
+	res.binding				= binding;
 	res.descriptorType		= descriptorType;
-	res.arraySize			= arraySize;
+	res.descriptorCount		= descriptorCount;
 	res.stageFlags			= stageFlags;
 	res.pImmutableSamplers	= pImmutableSamplers;
 	return res;
 }
 
-inline VkDescriptorTypeCount makeDescriptorTypeCount (VkDescriptorType type, deUint32 count)
+inline VkDescriptorPoolSize makeDescriptorPoolSize (VkDescriptorType type, deUint32 descriptorCount)
 {
-	VkDescriptorTypeCount res;
-	res.type	= type;
-	res.count	= count;
+	VkDescriptorPoolSize res;
+	res.type			= type;
+	res.descriptorCount	= descriptorCount;
+	return res;
+}
+
+inline VkDescriptorImageInfo makeDescriptorImageInfo (VkSampler sampler, VkImageView imageView, VkImageLayout imageLayout)
+{
+	VkDescriptorImageInfo res;
+	res.sampler		= sampler;
+	res.imageView	= imageView;
+	res.imageLayout	= imageLayout;
 	return res;
 }
 
@@ -218,6 +258,21 @@ inline VkDescriptorBufferInfo makeDescriptorBufferInfo (VkBuffer buffer, VkDevic
 	return res;
 }
 
+inline VkAttachmentDescription makeAttachmentDescription (VkAttachmentDescriptionFlags flags, VkFormat format, VkSampleCountFlagBits samples, VkAttachmentLoadOp loadOp, VkAttachmentStoreOp storeOp, VkAttachmentLoadOp stencilLoadOp, VkAttachmentStoreOp stencilStoreOp, VkImageLayout initialLayout, VkImageLayout finalLayout)
+{
+	VkAttachmentDescription res;
+	res.flags			= flags;
+	res.format			= format;
+	res.samples			= samples;
+	res.loadOp			= loadOp;
+	res.storeOp			= storeOp;
+	res.stencilLoadOp	= stencilLoadOp;
+	res.stencilStoreOp	= stencilStoreOp;
+	res.initialLayout	= initialLayout;
+	res.finalLayout		= finalLayout;
+	return res;
+}
+
 inline VkAttachmentReference makeAttachmentReference (deUint32 attachment, VkImageLayout layout)
 {
 	VkAttachmentReference res;
@@ -226,22 +281,51 @@ inline VkAttachmentReference makeAttachmentReference (deUint32 attachment, VkIma
 	return res;
 }
 
-inline VkBufferCopy makeBufferCopy (VkDeviceSize srcOffset, VkDeviceSize destOffset, VkDeviceSize copySize)
+inline VkSubpassDescription makeSubpassDescription (VkSubpassDescriptionFlags flags, VkPipelineBindPoint pipelineBindPoint, deUint32 inputAttachmentCount, const VkAttachmentReference* pInputAttachments, deUint32 colorAttachmentCount, const VkAttachmentReference* pColorAttachments, const VkAttachmentReference* pResolveAttachments, const VkAttachmentReference* pDepthStencilAttachment, deUint32 preserveAttachmentCount, const VkAttachmentReference* pPreserveAttachments)
 {
-	VkBufferCopy res;
-	res.srcOffset	= srcOffset;
-	res.destOffset	= destOffset;
-	res.copySize	= copySize;
+	VkSubpassDescription res;
+	res.flags					= flags;
+	res.pipelineBindPoint		= pipelineBindPoint;
+	res.inputAttachmentCount	= inputAttachmentCount;
+	res.pInputAttachments		= pInputAttachments;
+	res.colorAttachmentCount	= colorAttachmentCount;
+	res.pColorAttachments		= pColorAttachments;
+	res.pResolveAttachments		= pResolveAttachments;
+	res.pDepthStencilAttachment	= pDepthStencilAttachment;
+	res.preserveAttachmentCount	= preserveAttachmentCount;
+	res.pPreserveAttachments	= pPreserveAttachments;
 	return res;
 }
 
-inline VkImageSubresourceCopy makeImageSubresourceCopy (VkImageAspect aspect, deUint32 mipLevel, deUint32 arrayLayer, deUint32 arraySize)
+inline VkSubpassDependency makeSubpassDependency (deUint32 srcSubpass, deUint32 dstSubpass, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask, VkDependencyFlags dependencyFlags)
 {
-	VkImageSubresourceCopy res;
-	res.aspect		= aspect;
-	res.mipLevel	= mipLevel;
-	res.arrayLayer	= arrayLayer;
-	res.arraySize	= arraySize;
+	VkSubpassDependency res;
+	res.srcSubpass		= srcSubpass;
+	res.dstSubpass		= dstSubpass;
+	res.srcStageMask	= srcStageMask;
+	res.dstStageMask	= dstStageMask;
+	res.srcAccessMask	= srcAccessMask;
+	res.dstAccessMask	= dstAccessMask;
+	res.dependencyFlags	= dependencyFlags;
+	return res;
+}
+
+inline VkBufferCopy makeBufferCopy (VkDeviceSize srcOffset, VkDeviceSize dstOffset, VkDeviceSize size)
+{
+	VkBufferCopy res;
+	res.srcOffset	= srcOffset;
+	res.dstOffset	= dstOffset;
+	res.size		= size;
+	return res;
+}
+
+inline VkImageSubresourceLayers makeImageSubresourceLayers (VkImageAspectFlags aspectMask, deUint32 mipLevel, deUint32 baseArrayLayer, deUint32 layerCount)
+{
+	VkImageSubresourceLayers res;
+	res.aspectMask		= aspectMask;
+	res.mipLevel		= mipLevel;
+	res.baseArrayLayer	= baseArrayLayer;
+	res.layerCount		= layerCount;
 	return res;
 }
 
@@ -253,18 +337,18 @@ inline VkClearDepthStencilValue makeClearDepthStencilValue (float depth, deUint3
 	return res;
 }
 
-inline VkDispatchIndirectCmd makeDispatchIndirectCmd (deUint32 x, deUint32 y, deUint32 z)
+inline VkDispatchIndirectCommand makeDispatchIndirectCommand (deUint32 x, deUint32 y, deUint32 z)
 {
-	VkDispatchIndirectCmd res;
+	VkDispatchIndirectCommand res;
 	res.x	= x;
 	res.y	= y;
 	res.z	= z;
 	return res;
 }
 
-inline VkDrawIndexedIndirectCmd makeDrawIndexedIndirectCmd (deUint32 indexCount, deUint32 instanceCount, deUint32 firstIndex, deInt32 vertexOffset, deUint32 firstInstance)
+inline VkDrawIndexedIndirectCommand makeDrawIndexedIndirectCommand (deUint32 indexCount, deUint32 instanceCount, deUint32 firstIndex, deInt32 vertexOffset, deUint32 firstInstance)
 {
-	VkDrawIndexedIndirectCmd res;
+	VkDrawIndexedIndirectCommand res;
 	res.indexCount		= indexCount;
 	res.instanceCount	= instanceCount;
 	res.firstIndex		= firstIndex;
@@ -273,12 +357,28 @@ inline VkDrawIndexedIndirectCmd makeDrawIndexedIndirectCmd (deUint32 indexCount,
 	return res;
 }
 
-inline VkDrawIndirectCmd makeDrawIndirectCmd (deUint32 vertexCount, deUint32 instanceCount, deUint32 firstVertex, deUint32 firstInstance)
+inline VkDrawIndirectCommand makeDrawIndirectCommand (deUint32 vertexCount, deUint32 instanceCount, deUint32 firstVertex, deUint32 firstInstance)
 {
-	VkDrawIndirectCmd res;
+	VkDrawIndirectCommand res;
 	res.vertexCount		= vertexCount;
 	res.instanceCount	= instanceCount;
 	res.firstVertex		= firstVertex;
 	res.firstInstance	= firstInstance;
+	return res;
+}
+
+inline VkSurfaceFormatKHR makeSurfaceFormatKHR (VkFormat format, VkColorSpaceKHR colorSpace)
+{
+	VkSurfaceFormatKHR res;
+	res.format		= format;
+	res.colorSpace	= colorSpace;
+	return res;
+}
+
+inline VkDisplayPlanePropertiesKHR makeDisplayPlanePropertiesKHR (VkDisplayKHR currentDisplay, deUint32 currentStackIndex)
+{
+	VkDisplayPlanePropertiesKHR res;
+	res.currentDisplay		= currentDisplay;
+	res.currentStackIndex	= currentStackIndex;
 	return res;
 }

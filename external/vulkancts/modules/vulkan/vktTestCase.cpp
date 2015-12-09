@@ -72,18 +72,22 @@ Move<VkDevice> createDefaultDevice (const InstanceInterface& vki, VkPhysicalDevi
 	deMemset(&queueInfo,	0, sizeof(queueInfo));
 	deMemset(&deviceInfo,	0, sizeof(deviceInfo));
 
-	queueInfo.sType						= VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-	queueInfo.pNext						= DE_NULL;
-	queueInfo.queueFamilyIndex			= queueIndex;
-	queueInfo.queueCount				= 1u;
+	queueInfo.sType							= VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+	queueInfo.pNext							= DE_NULL;
+	queueInfo.flags							= (VkDeviceQueueCreateFlags)0u;
+	queueInfo.queueFamilyIndex				= queueIndex;
+	queueInfo.queueCount					= 1u;
+	queueInfo.pQueuePriorities				= DE_NULL;
 
-	deviceInfo.sType					= VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-	deviceInfo.pNext					= DE_NULL;
-	deviceInfo.queueRecordCount			= 1u;
-	deviceInfo.pRequestedQueues			= &queueInfo;
-	deviceInfo.extensionCount			= 0u;
-	deviceInfo.ppEnabledExtensionNames	= DE_NULL;
-	deviceInfo.pEnabledFeatures			= &enabledFeatures;
+	deviceInfo.sType						= VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+	deviceInfo.pNext						= DE_NULL;
+	deviceInfo.queueCreateInfoCount			= 1u;
+	deviceInfo.pQueueCreateInfos			= &queueInfo;
+	deviceInfo.enabledExtensionNameCount	= 0u;
+	deviceInfo.ppEnabledExtensionNames		= DE_NULL;
+	deviceInfo.enabledLayerNameCount		= 0u;
+	deviceInfo.ppEnabledLayerNames			= DE_NULL;
+	deviceInfo.pEnabledFeatures				= &enabledFeatures;
 
 	return createDevice(vki, physicalDevice, &deviceInfo);
 };
@@ -136,7 +140,7 @@ DefaultDevice::~DefaultDevice (void)
 VkQueue DefaultDevice::getUniversalQueue (void) const
 {
 	VkQueue	queue	= 0;
-	VK_CHECK(m_deviceInterface.getDeviceQueue(*m_device, m_universalQueueFamilyIndex, 0, &queue));
+	m_deviceInterface.getDeviceQueue(*m_device, m_universalQueueFamilyIndex, 0, &queue);
 	return queue;
 }
 

@@ -306,8 +306,8 @@ struct Instance
 		{
 			VK_STRUCTURE_TYPE_APPLICATION_INFO,
 			DE_NULL,
-			DE_NULL,							// pAppName
-			0u,									// appVersion
+			DE_NULL,							// pApplicationName
+			0u,									// applicationVersion
 			DE_NULL,							// pEngineName
 			0u,									// engineVersion
 			VK_API_VERSION
@@ -316,11 +316,11 @@ struct Instance
 		{
 			VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
 			DE_NULL,
+			(VkInstanceCreateFlags)0,
 			&appInfo,
-			DE_NULL,							// pAllocCb
-			0u,									// layerCount
+			0u,									// enabledLayerNameCount
 			DE_NULL,							// ppEnabledLayerNames
-			0u,									// extensionCount
+			0u,									// enabledExtensionNameCount
 			DE_NULL,							// ppEnabledExtensionNames
 		};
 
@@ -393,19 +393,22 @@ struct Device
 			{
 				VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
 				DE_NULL,
+				(VkDeviceQueueCreateFlags)0,
 				res.queueFamilyIndex,
 				1u,									// queueCount
+				DE_NULL,							// pQueuePriorities
 			}
 		};
 		const VkDeviceCreateInfo	deviceInfo	=
 		{
 			VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
 			DE_NULL,
+			(VkDeviceCreateFlags)0,
 			DE_LENGTH_OF_ARRAY(queues),
 			queues,
-			0u,										// layerCount
+			0u,										// enabledLayerNameCount
 			DE_NULL,								// ppEnabledLayerNames
-			0u,										// extensionCount
+			0u,										// enabledExtensionNameCount
 			DE_NULL,								// ppEnabledExtensionNames
 			DE_NULL,								// pEnabledFeatures
 		};
@@ -440,15 +443,15 @@ struct DeviceMemory
 
 	static Move<VkDeviceMemory> create (const Environment& env, const Resources&, const Parameters& params)
 	{
-		const VkMemoryAllocInfo	allocInfo	=
+		const VkMemoryAllocateInfo	allocInfo	=
 		{
-			VK_STRUCTURE_TYPE_MEMORY_ALLOC_INFO,
+			VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
 			DE_NULL,
 			params.size,
 			params.memoryTypeIndex
 		};
 
-		return allocMemory(env.vkd, env.device, &allocInfo);
+		return allocateMemory(env.vkd, env.device, &allocInfo);
 	}
 };
 
@@ -496,9 +499,9 @@ struct Buffer
 		{
 			VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
 			DE_NULL,
+			(VkBufferCreateFlags)0,
 			params.size,
 			params.usage,
-			0u,										// flags
 			VK_SHARING_MODE_EXCLUSIVE,
 			1u,
 			&env.queueFamilyIndex
@@ -551,6 +554,7 @@ struct BufferView
 		{
 			VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO,
 			DE_NULL,
+			(VkBufferViewCreateFlags)0,
 			*res.buffer.object,
 			params.format,
 			params.offset,
@@ -569,25 +573,25 @@ struct Image
 
 	struct Parameters
 	{
-		VkImageType			imageType;
-		VkFormat			format;
-		VkExtent3D			extent;
-		deUint32			mipLevels;
-		deUint32			arraySize;
-		deUint32			samples;
-		VkImageTiling		tiling;
-		VkImageUsageFlags	usage;
-		VkImageLayout		initialLayout;
+		VkImageType				imageType;
+		VkFormat				format;
+		VkExtent3D				extent;
+		deUint32				mipLevels;
+		deUint32				arraySize;
+		VkSampleCountFlagBits	samples;
+		VkImageTiling			tiling;
+		VkImageUsageFlags		usage;
+		VkImageLayout			initialLayout;
 
-		Parameters (VkImageType			imageType_,
-					VkFormat			format_,
-					VkExtent3D			extent_,
-					deUint32			mipLevels_,
-					deUint32			arraySize_,
-					deUint32			samples_,
-					VkImageTiling		tiling_,
-					VkImageUsageFlags	usage_,
-					VkImageLayout		initialLayout_)
+		Parameters (VkImageType				imageType_,
+					VkFormat				format_,
+					VkExtent3D				extent_,
+					deUint32				mipLevels_,
+					deUint32				arraySize_,
+					VkSampleCountFlagBits	samples_,
+					VkImageTiling			tiling_,
+					VkImageUsageFlags		usage_,
+					VkImageLayout			initialLayout_)
 			: imageType		(imageType_)
 			, format		(format_)
 			, extent		(extent_)
@@ -611,6 +615,7 @@ struct Image
 		{
 			VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
 			DE_NULL,
+			(VkImageCreateFlags)0,
 			params.imageType,
 			params.format,
 			params.extent,
@@ -619,9 +624,8 @@ struct Image
 			params.samples,
 			params.tiling,
 			params.usage,
-			0u,								// flags
 			VK_SHARING_MODE_EXCLUSIVE,		// sharingMode
-			1u,								// queueFamilyCount
+			1u,								// queueFamilyIndexCount
 			&env.queueFamilyIndex,			// pQueueFamilyIndices
 			params.initialLayout
 		};
@@ -641,18 +645,18 @@ struct ImageView
 		Image::Parameters		image;
 		VkImageViewType			viewType;
 		VkFormat				format;
-		VkChannelMapping		channels;
+		VkComponentMapping		components;
 		VkImageSubresourceRange	subresourceRange;
 
 		Parameters (const Image::Parameters&	image_,
 					VkImageViewType				viewType_,
 					VkFormat					format_,
-					VkChannelMapping			channels_,
+					VkComponentMapping			components_,
 					VkImageSubresourceRange		subresourceRange_)
 			: image				(image_)
 			, viewType			(viewType_)
 			, format			(format_)
-			, channels			(channels_)
+			, components		(components_)
 			, subresourceRange	(subresourceRange_)
 		{}
 	};
@@ -676,12 +680,12 @@ struct ImageView
 		{
 			VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
 			DE_NULL,
+			(VkImageViewCreateFlags)0,
 			*res.image.object,
 			params.viewType,
 			params.format,
-			params.channels,
+			params.components,
 			params.subresourceRange,
-			0u,							// flags
 		};
 
 		return createImageView(env.vkd, env.device, &imageViewInfo);
@@ -796,14 +800,14 @@ struct QueryPool
 	struct Parameters
 	{
 		VkQueryType						queryType;
-		deUint32						slots;
+		deUint32						entryCount;
 		VkQueryPipelineStatisticFlags	pipelineStatistics;
 
 		Parameters (VkQueryType						queryType_,
-					deUint32						slots_,
+					deUint32						entryCount_,
 					VkQueryPipelineStatisticFlags	pipelineStatistics_)
 			: queryType				(queryType_)
-			, slots					(slots_)
+			, entryCount			(entryCount_)
 			, pipelineStatistics	(pipelineStatistics_)
 		{}
 	};
@@ -819,8 +823,9 @@ struct QueryPool
 		{
 			VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO,
 			DE_NULL,
+			(VkQueryPoolCreateFlags)0,
 			params.queryType,
-			params.slots,
+			params.entryCount,
 			params.pipelineStatistics
 		};
 
@@ -836,10 +841,13 @@ struct ShaderModule
 
 	struct Parameters
 	{
-		string		binaryName;
+		VkShaderStageFlagBits	shaderStage;
+		string					binaryName;
 
-		Parameters (const std::string& binaryName_)
-			: binaryName(binaryName_)
+		Parameters (VkShaderStageFlagBits	shaderStage_,
+					const std::string&		binaryName_)
+			: shaderStage	(shaderStage_)
+			, binaryName	(binaryName_)
 		{}
 	};
 
@@ -852,13 +860,43 @@ struct ShaderModule
 		{}
 	};
 
+	static const char* getSource (VkShaderStageFlagBits stage)
+	{
+		switch (stage)
+		{
+			case VK_SHADER_STAGE_VERTEX_BIT:
+				return "#version 310 es\n"
+					   "layout(location = 0) in highp vec4 a_position;\n"
+					   "void main () { gl_Position = a_position; }\n";
+
+			case VK_SHADER_STAGE_FRAGMENT_BIT:
+				return "#version 310 es\n"
+					   "layout(location = 0) out mediump vec4 o_color;\n"
+					   "void main () { o_color = vec4(1.0, 0.5, 0.25, 1.0); }";
+
+			case VK_SHADER_STAGE_COMPUTE_BIT:
+				return "#version 310 es\n"
+					   "layout(binding = 0) buffer Input { highp uint dataIn[]; };\n"
+					   "layout(binding = 1) buffer Output { highp uint dataOut[]; };\n"
+					   "void main (void)\n"
+					   "{\n"
+					   "	dataOut[gl_GlobalInvocationID.x] = ~dataIn[gl_GlobalInvocationID.x];\n"
+					   "}\n";
+
+			default:
+				DE_FATAL("Not implemented");
+				return DE_NULL;
+		}
+	}
+
 	static void initPrograms (SourceCollections& dst, Parameters params)
 	{
+		const char* const	source	= getSource(params.shaderStage);
+
+		DE_ASSERT(source);
+
 		dst.glslSources.add(params.binaryName)
-			<< glu::VertexSource(
-				"#version 310 es\n"
-				"layout(location = 0) in highp vec4 a_position;\n"
-				"void main () { gl_Position = a_position; }\n");
+			<< glu::ShaderSource(getGluShaderType(params.shaderStage), source);
 	}
 
 	static Move<VkShaderModule> create (const Environment& env, const Resources& res, const Parameters&)
@@ -867,95 +905,12 @@ struct ShaderModule
 		{
 			VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
 			DE_NULL,
+			(VkShaderModuleCreateFlags)0,
 			res.binary.getSize(),
-			res.binary.getBinary(),
-			0u,												// flags
+			(const deUint32*)res.binary.getBinary(),
 		};
 
 		return createShaderModule(env.vkd, env.device, &shaderModuleInfo);
-	}
-};
-
-struct Shader
-{
-	typedef VkShader Type;
-
-	enum { MAX_CONCURRENT = DEFAULT_MAX_CONCURRENT_OBJECTS };
-
-	struct Parameters
-	{
-		ShaderModule::Parameters	shaderModule;
-		VkShaderStage				stage;
-
-		Parameters (const ShaderModule::Parameters&	shaderModule_,
-					VkShaderStage					stage_)
-			: shaderModule	(shaderModule_)
-			, stage			(stage_)
-		{}
-	};
-
-	struct Resources
-	{
-		Dependency<ShaderModule>	shaderModule;
-
-		Resources (const Environment& env, const Parameters& params)
-			: shaderModule(env, params.shaderModule)
-		{}
-	};
-
-	static void initPrograms (SourceCollections& dst, Parameters params)
-	{
-		static const char*	s_sources[] =
-		{
-			// VK_SHADER_STAGE_VERTEX
-			"#version 310 es\n"
-			"layout(location = 0) in highp vec4 a_position;\n"
-			"void main () { gl_Position = a_position; }\n",
-
-			// VK_SHADER_STAGE_TESS_CONTROL
-			DE_NULL,
-
-			// VK_SHADER_STAGE_TESS_EVALUATION
-			DE_NULL,
-
-			// VK_SHADER_STAGE_GEOMETRY
-			DE_NULL,
-
-			// VK_SHADER_STAGE_FRAGMENT
-			"#version 310 es\n"
-			"layout(location = 0) out mediump vec4 o_color;\n"
-			"void main () { o_color = vec4(1.0, 0.5, 0.25, 1.0); }",
-
-			// VK_SHADER_STAGE_COMPUTE
-			"#version 310 es\n"
-			"layout(binding = 0) buffer Input { highp uint dataIn[]; };\n"
-			"layout(binding = 1) buffer Output { highp uint dataOut[]; };\n"
-			"void main (void)\n"
-			"{\n"
-			"	dataOut[gl_GlobalInvocationID.x] = ~dataIn[gl_GlobalInvocationID.x];\n"
-			"}\n"
-		};
-		const char* const	source	= de::getSizedArrayElement<VK_SHADER_STAGE_COMPUTE+1>(s_sources, params.stage);
-
-		DE_ASSERT(source);
-
-		dst.glslSources.add(params.shaderModule.binaryName)
-			<< glu::ShaderSource(getGluShaderType(params.stage), source);
-	}
-
-	static Move<VkShader> create (const Environment& env, const Resources& res, const Parameters& params)
-	{
-		const VkShaderCreateInfo	shaderInfo	=
-		{
-			VK_STRUCTURE_TYPE_SHADER_CREATE_INFO,
-			DE_NULL,
-			*res.shaderModule.object,
-			"main",										// pName
-			0u,											// flags
-			params.stage
-		};
-
-		return createShader(env.vkd, env.device, &shaderInfo);
 	}
 };
 
@@ -967,11 +922,7 @@ struct PipelineCache
 
 	struct Parameters
 	{
-		deUintptr	maxSize;
-
-		Parameters (deUintptr	maxSize_)
-			: maxSize	(maxSize_)
-		{}
+		Parameters (void) {}
 	};
 
 	struct Resources
@@ -979,15 +930,15 @@ struct PipelineCache
 		Resources (const Environment&, const Parameters&) {}
 	};
 
-	static Move<VkPipelineCache> create (const Environment& env, const Resources&, const Parameters& params)
+	static Move<VkPipelineCache> create (const Environment& env, const Resources&, const Parameters&)
 	{
 		const VkPipelineCacheCreateInfo	pipelineCacheInfo	=
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,
 			DE_NULL,
-			0u,					// initialSize
-			DE_NULL,			// initialData
-			params.maxSize
+			(VkPipelineCacheCreateFlags)0u,
+			0u,								// initialDataSize
+			DE_NULL,						// pInitialData
 		};
 
 		return createPipelineCache(env.vkd, env.device, &pipelineCacheInfo);
@@ -1002,29 +953,29 @@ struct Sampler
 
 	struct Parameters
 	{
-		VkTexFilter			magFilter;
-		VkTexFilter			minFilter;
-		VkTexMipmapMode		mipMode;
-		VkTexAddressMode	addressU;
-		VkTexAddressMode	addressV;
-		VkTexAddressMode	addressW;
-		float				mipLodBias;
-		float				maxAnisotropy;
-		VkBool32			compareEnable;
-		VkCompareOp			compareOp;
-		float				minLod;
-		float				maxLod;
-		VkBorderColor		borderColor;
-		VkBool32			unnormalizedCoordinates;
+		VkFilter				magFilter;
+		VkFilter				minFilter;
+		VkSamplerMipmapMode		mipmapMode;
+		VkSamplerAddressMode	addressModeU;
+		VkSamplerAddressMode	addressModeV;
+		VkSamplerAddressMode	addressModeW;
+		float					mipLodBias;
+		float					maxAnisotropy;
+		VkBool32				compareEnable;
+		VkCompareOp				compareOp;
+		float					minLod;
+		float					maxLod;
+		VkBorderColor			borderColor;
+		VkBool32				unnormalizedCoordinates;
 
 		// \todo [2015-09-17 pyry] Other configurations
 		Parameters (void)
-			: magFilter					(VK_TEX_FILTER_NEAREST)
-			, minFilter					(VK_TEX_FILTER_NEAREST)
-			, mipMode					(VK_TEX_MIPMAP_MODE_BASE)
-			, addressU					(VK_TEX_ADDRESS_MODE_CLAMP)
-			, addressV					(VK_TEX_ADDRESS_MODE_CLAMP)
-			, addressW					(VK_TEX_ADDRESS_MODE_CLAMP)
+			: magFilter					(VK_FILTER_NEAREST)
+			, minFilter					(VK_FILTER_NEAREST)
+			, mipmapMode				(VK_SAMPLER_MIPMAP_MODE_BASE)
+			, addressModeU				(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE)
+			, addressModeV				(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE)
+			, addressModeW				(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE)
 			, mipLodBias				(0.0f)
 			, maxAnisotropy				(0.0f)
 			, compareEnable				(VK_FALSE)
@@ -1047,12 +998,13 @@ struct Sampler
 		{
 			VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
 			DE_NULL,
+			(VkSamplerCreateFlags)0,
 			params.magFilter,
 			params.minFilter,
-			params.mipMode,
-			params.addressU,
-			params.addressV,
-			params.addressW,
+			params.mipmapMode,
+			params.addressModeU,
+			params.addressModeV,
+			params.addressModeW,
 			params.mipLodBias,
 			params.maxAnisotropy,
 			params.compareEnable,
@@ -1077,17 +1029,20 @@ struct DescriptorSetLayout
 	{
 		struct Binding
 		{
-			VkDescriptorType	type;
-			deUint32			arraySize;
+			deUint32			binding;
+			VkDescriptorType	descriptorType;
+			deUint32			descriptorCount;
 			VkShaderStageFlags	stageFlags;
 			bool				useImmutableSampler;
 
-			Binding (VkDescriptorType	type_,
-					 deUint32			arraySize_,
+			Binding (deUint32			binding_,
+					 VkDescriptorType	descriptorType_,
+					 deUint32			descriptorCount_,
 					 VkShaderStageFlags	stageFlags_,
 					 bool				useImmutableSampler_)
-				: type					(type_)
-				, arraySize				(arraySize_)
+				: binding				(binding_)
+				, descriptorType		(descriptorType_)
+				, descriptorCount		(descriptorCount_)
 				, stageFlags			(stageFlags_)
 				, useImmutableSampler	(useImmutableSampler_)
 			{}
@@ -1106,13 +1061,14 @@ struct DescriptorSetLayout
 			return Parameters(vector<Binding>());
 		}
 
-		static Parameters single (VkDescriptorType		type,
-								  deUint32				arraySize,
+		static Parameters single (deUint32				binding,
+								  VkDescriptorType		descriptorType,
+								  deUint32				descriptorCount,
 								  VkShaderStageFlags	stageFlags,
 								  bool					useImmutableSampler = false)
 		{
 			vector<Binding> bindings;
-			bindings.push_back(Binding(type, arraySize, stageFlags, useImmutableSampler));
+			bindings.push_back(Binding(binding, descriptorType, descriptorCount, stageFlags, useImmutableSampler));
 			return Parameters(bindings);
 		}
 	};
@@ -1132,8 +1088,8 @@ struct DescriptorSetLayout
 				{
 					immutableSampler = de::newMovePtr<Dependency<Sampler> >(env, Sampler::Parameters());
 
-					if (cur->useImmutableSampler && immutableSamplersPtr.size() < (size_t)cur->arraySize)
-						immutableSamplersPtr.resize(cur->arraySize, *immutableSampler->object);
+					if (cur->useImmutableSampler && immutableSamplersPtr.size() < (size_t)cur->descriptorCount)
+						immutableSamplersPtr.resize(cur->descriptorCount, *immutableSampler->object);
 				}
 			}
 
@@ -1141,8 +1097,9 @@ struct DescriptorSetLayout
 			{
 				const VkDescriptorSetLayoutBinding	binding	=
 				{
-					cur->type,
-					cur->arraySize,
+					cur->binding,
+					cur->descriptorType,
+					cur->descriptorCount,
 					cur->stageFlags,
 					(cur->useImmutableSampler ? &immutableSamplersPtr[0] : DE_NULL)
 				};
@@ -1158,6 +1115,7 @@ struct DescriptorSetLayout
 		{
 			VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
 			DE_NULL,
+			(VkDescriptorSetLayoutCreateFlags)0,
 			(deUint32)res.bindings.size(),
 			(res.bindings.empty() ? DE_NULL : &res.bindings[0])
 		};
@@ -1218,6 +1176,7 @@ struct PipelineLayout
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
 			DE_NULL,
+			(VkPipelineLayoutCreateFlags)0,
 			(deUint32)res.pSetLayouts.size(),
 			(res.pSetLayouts.empty() ? DE_NULL : &res.pSetLayouts[0]),
 			(deUint32)params.pushConstantRanges.size(),
@@ -1250,30 +1209,26 @@ struct RenderPass
 		const VkAttachmentDescription	attachments[]		=
 		{
 			{
-				VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION,
-				DE_NULL,
+				(VkAttachmentDescriptionFlags)0,
 				VK_FORMAT_R8G8B8A8_UNORM,
-				1u,
+				VK_SAMPLE_COUNT_1_BIT,
 				VK_ATTACHMENT_LOAD_OP_CLEAR,
 				VK_ATTACHMENT_STORE_OP_STORE,
 				VK_ATTACHMENT_LOAD_OP_DONT_CARE,
 				VK_ATTACHMENT_STORE_OP_DONT_CARE,
 				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-				0u											// flags
 			},
 			{
-				VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION,
-				DE_NULL,
+				(VkAttachmentDescriptionFlags)0,
 				VK_FORMAT_D16_UNORM,
-				1u,
+				VK_SAMPLE_COUNT_1_BIT,
 				VK_ATTACHMENT_LOAD_OP_CLEAR,
 				VK_ATTACHMENT_STORE_OP_DONT_CARE,
 				VK_ATTACHMENT_LOAD_OP_DONT_CARE,
 				VK_ATTACHMENT_STORE_OP_DONT_CARE,
 				VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
 				VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-				0u											// flags
 			}
 		};
 		const VkAttachmentReference		colorAttachments[]	=
@@ -1283,23 +1238,23 @@ struct RenderPass
 				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 			}
 		};
+		const VkAttachmentReference		dsAttachment		=
+		{
+			1u,											// attachment
+			VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
+		};
 		const VkSubpassDescription		subpasses[]			=
 		{
 			{
-				VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION,
-				DE_NULL,
+				(VkSubpassDescriptionFlags)0,
 				VK_PIPELINE_BIND_POINT_GRAPHICS,
-				0u,											// flags
-				0u,											// inputCount
+				0u,											// inputAttachmentCount
 				DE_NULL,									// pInputAttachments
 				DE_LENGTH_OF_ARRAY(colorAttachments),
 				colorAttachments,
 				DE_NULL,									// pResolveAttachments
-				{
-					1u,											// attachment
-					VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
-				},
-				0u,											// preserveCount
+				&dsAttachment,
+				0u,											// preserveAttachmentCount
 				DE_NULL,									// pPreserveAttachments
 			}
 		};
@@ -1307,6 +1262,7 @@ struct RenderPass
 		{
 			VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
 			DE_NULL,
+			(VkRenderPassCreateFlags)0,
 			DE_LENGTH_OF_ARRAY(attachments),
 			attachments,
 			DE_LENGTH_OF_ARRAY(subpasses),
@@ -1333,26 +1289,26 @@ struct GraphicsPipeline
 
 	struct Resources
 	{
-		Dependency<Shader>			vertexShader;
-		Dependency<Shader>			fragmentShader;
+		Dependency<ShaderModule>	vertexShader;
+		Dependency<ShaderModule>	fragmentShader;
 		Dependency<PipelineLayout>	layout;
 		Dependency<RenderPass>		renderPass;
 		Dependency<PipelineCache>	pipelineCache;
 
 		Resources (const Environment& env, const Parameters&)
-			: vertexShader		(env, Shader::Parameters(ShaderModule::Parameters("vert"), VK_SHADER_STAGE_VERTEX))
-			, fragmentShader	(env, Shader::Parameters(ShaderModule::Parameters("frag"), VK_SHADER_STAGE_FRAGMENT))
+			: vertexShader		(env, ShaderModule::Parameters(VK_SHADER_STAGE_VERTEX_BIT, "vert"))
+			, fragmentShader	(env, ShaderModule::Parameters(VK_SHADER_STAGE_FRAGMENT_BIT, "frag"))
 			, layout			(env, PipelineLayout::Parameters::singleDescriptorSet(
-										DescriptorSetLayout::Parameters::single(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1u, VK_SHADER_STAGE_FRAGMENT_BIT, true)))
+										DescriptorSetLayout::Parameters::single(0u, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1u, VK_SHADER_STAGE_FRAGMENT_BIT, true)))
 			, renderPass		(env, RenderPass::Parameters())
-			, pipelineCache		(env, PipelineCache::Parameters(1024u*1024u))
+			, pipelineCache		(env, PipelineCache::Parameters())
 		{}
 	};
 
 	static void initPrograms (SourceCollections& dst, Parameters)
 	{
-		Shader::initPrograms(dst, Shader::Parameters(ShaderModule::Parameters("vert"), VK_SHADER_STAGE_VERTEX));
-		Shader::initPrograms(dst, Shader::Parameters(ShaderModule::Parameters("frag"), VK_SHADER_STAGE_FRAGMENT));
+		ShaderModule::initPrograms(dst, ShaderModule::Parameters(VK_SHADER_STAGE_VERTEX_BIT, "vert"));
+		ShaderModule::initPrograms(dst, ShaderModule::Parameters(VK_SHADER_STAGE_FRAGMENT_BIT, "frag"));
 	}
 
 	static Move<VkPipeline> create (const Environment& env, const Resources& res, const Parameters&)
@@ -1362,24 +1318,28 @@ struct GraphicsPipeline
 			{
 				VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
 				DE_NULL,
-				VK_SHADER_STAGE_VERTEX,
+				(VkPipelineShaderStageCreateFlags)0,
+				VK_SHADER_STAGE_VERTEX_BIT,
 				*res.vertexShader.object,
-				DE_NULL
+				"main",
+				DE_NULL,							// pSpecializationInfo
 			},
 			{
 				VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
 				DE_NULL,
-				VK_SHADER_STAGE_FRAGMENT,
+				(VkPipelineShaderStageCreateFlags)0,
+				VK_SHADER_STAGE_FRAGMENT_BIT,
 				*res.fragmentShader.object,
-				DE_NULL
+				"main",
+				DE_NULL,							// pSpecializationInfo
 			}
 		};
 		const VkVertexInputBindingDescription			vertexBindings[]	=
 		{
 			{
 				0u,									// binding
-				16u,								// strideInBytes
-				VK_VERTEX_INPUT_STEP_RATE_VERTEX
+				16u,								// stride
+				VK_VERTEX_INPUT_RATE_VERTEX
 			}
 		};
 		const VkVertexInputAttributeDescription			vertexAttribs[]		=
@@ -1388,13 +1348,14 @@ struct GraphicsPipeline
 				0u,									// location
 				0u,									// binding
 				VK_FORMAT_R32G32B32A32_SFLOAT,
-				0u,									// offsetInBytes
+				0u,									// offset
 			}
 		};
 		const VkPipelineVertexInputStateCreateInfo		vertexInputState	=
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
 			DE_NULL,
+			(VkPipelineVertexInputStateCreateFlags)0,
 			DE_LENGTH_OF_ARRAY(vertexBindings),
 			vertexBindings,
 			DE_LENGTH_OF_ARRAY(vertexAttribs),
@@ -1404,6 +1365,7 @@ struct GraphicsPipeline
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
 			DE_NULL,
+			(VkPipelineInputAssemblyStateCreateFlags)0,
 			VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
 			VK_FALSE								// primitiveRestartEnable
 		};
@@ -1419,39 +1381,45 @@ struct GraphicsPipeline
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
 			DE_NULL,
+			(VkPipelineViewportStateCreateFlags)0,
 			DE_LENGTH_OF_ARRAY(viewports),
 			viewports,
 			DE_LENGTH_OF_ARRAY(scissors),
 			scissors,
 		};
-		const VkPipelineRasterStateCreateInfo			rasterState			=
+		const VkPipelineRasterizationStateCreateInfo	rasterState			=
 		{
-			VK_STRUCTURE_TYPE_PIPELINE_RASTER_STATE_CREATE_INFO,
+			VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
 			DE_NULL,
-			VK_TRUE,								// depthClipEnable
+			(VkPipelineRasterizationStateCreateFlags)0,
+			VK_TRUE,								// depthClampEnable
 			VK_FALSE,								// rasterizerDiscardEnable
-			VK_FILL_MODE_SOLID,
-			VK_CULL_MODE_BACK,
-			VK_FRONT_FACE_CCW,
+			VK_POLYGON_MODE_FILL,
+			VK_CULL_MODE_BACK_BIT,
+			VK_FRONT_FACE_COUNTER_CLOCKWISE,
 			VK_FALSE,								// depthBiasEnable
-			0.0f,									// depthBias
+			0.0f,									// depthBiasConstantFactor
 			0.0f,									// depthBiasClamp
-			0.0f,									// slopeScaledDepthBias
+			0.0f,									// depthBiasSlopeFactor
 			1.0f,									// lineWidth
 		};
 		const VkPipelineMultisampleStateCreateInfo		multisampleState	=
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
 			DE_NULL,
-			1u,										// rasterSamples
+			(VkPipelineMultisampleStateCreateFlags)0,
+			VK_SAMPLE_COUNT_1_BIT,
 			VK_FALSE,								// sampleShadingEnable
 			1.0f,									// minSampleShading
 			DE_NULL,								// pSampleMask
+			VK_FALSE,								// alphaToCoverageEnable
+			VK_FALSE,								// alphaToOneEnable
 		};
 		const VkPipelineDepthStencilStateCreateInfo		depthStencilState	=
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
 			DE_NULL,
+			(VkPipelineDepthStencilStateCreateFlags)0,
 			VK_TRUE,								// depthTestEnable
 			VK_TRUE,								// depthWriteEnable
 			VK_COMPARE_OP_LESS,						// depthCompareOp
@@ -1466,31 +1434,31 @@ struct GraphicsPipeline
 		{
 			{
 				VK_FALSE,							// blendEnable
-				VK_BLEND_ONE,
-				VK_BLEND_ZERO,
+				VK_BLEND_FACTOR_ONE,
+				VK_BLEND_FACTOR_ZERO,
 				VK_BLEND_OP_ADD,
-				VK_BLEND_ONE,
-				VK_BLEND_ZERO,
+				VK_BLEND_FACTOR_ONE,
+				VK_BLEND_FACTOR_ZERO,
 				VK_BLEND_OP_ADD,
-				VK_CHANNEL_R_BIT|VK_CHANNEL_G_BIT|VK_CHANNEL_B_BIT|VK_CHANNEL_A_BIT
+				VK_COLOR_COMPONENT_R_BIT|VK_COLOR_COMPONENT_G_BIT|VK_COLOR_COMPONENT_B_BIT|VK_COLOR_COMPONENT_A_BIT
 			}
 		};
 		const VkPipelineColorBlendStateCreateInfo		colorBlendState		=
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
 			DE_NULL,
-			VK_FALSE,								// alphaToCoverageEnable
-			VK_FALSE,								// alphaToOneEnable
+			(VkPipelineColorBlendStateCreateFlags)0,
 			VK_FALSE,								// logicOpEnable
 			VK_LOGIC_OP_COPY,
 			DE_LENGTH_OF_ARRAY(colorBlendAttState),
 			colorBlendAttState,
-			{ 0.0f, 0.0f, 0.0f, 0.0f }				// blendConst
+			{ 0.0f, 0.0f, 0.0f, 0.0f }				// blendConstants
 		};
 		const VkPipelineDynamicStateCreateInfo			dynamicState		=
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
 			DE_NULL,
+			(VkPipelineDynamicStateCreateFlags)0,
 			0u,										// dynamicStateCount
 			DE_NULL,								// pDynamicStates
 		};
@@ -1498,6 +1466,7 @@ struct GraphicsPipeline
 		{
 			VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
 			DE_NULL,
+			(VkPipelineCreateFlags)0,
 			DE_LENGTH_OF_ARRAY(stages),
 			stages,
 			&vertexInputState,
@@ -1509,7 +1478,6 @@ struct GraphicsPipeline
 			&depthStencilState,
 			&colorBlendState,
 			&dynamicState,
-			0u,										// flags
 			*res.layout.object,
 			*res.renderPass.object,
 			0u,										// subpass
@@ -1535,7 +1503,7 @@ struct ComputePipeline
 
 	struct Resources
 	{
-		Dependency<Shader>			shader;
+		Dependency<ShaderModule>	shaderModule;
 		Dependency<PipelineLayout>	layout;
 		Dependency<PipelineCache>	pipelineCache;
 
@@ -1545,22 +1513,22 @@ struct ComputePipeline
 
 			vector<Binding> bindings;
 
-			bindings.push_back(Binding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1u, VK_SHADER_STAGE_COMPUTE, false));
-			bindings.push_back(Binding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1u, VK_SHADER_STAGE_COMPUTE, false));
+			bindings.push_back(Binding(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1u, VK_SHADER_STAGE_COMPUTE_BIT, false));
+			bindings.push_back(Binding(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1u, VK_SHADER_STAGE_COMPUTE_BIT, false));
 
 			return DescriptorSetLayout::Parameters(bindings);
 		}
 
 		Resources (const Environment& env, const Parameters&)
-			: shader			(env, Shader::Parameters(ShaderModule::Parameters("comp"), VK_SHADER_STAGE_COMPUTE))
+			: shaderModule		(env, ShaderModule::Parameters(VK_SHADER_STAGE_COMPUTE_BIT, "comp"))
 			, layout			(env, PipelineLayout::Parameters::singleDescriptorSet(getDescriptorSetLayout()))
-			, pipelineCache		(env, PipelineCache::Parameters(1024u*1024u))
+			, pipelineCache		(env, PipelineCache::Parameters())
 		{}
 	};
 
 	static void initPrograms (SourceCollections& dst, Parameters)
 	{
-		Shader::initPrograms(dst, Shader::Parameters(ShaderModule::Parameters("comp"), VK_SHADER_STAGE_COMPUTE));
+		ShaderModule::initPrograms(dst, ShaderModule::Parameters(VK_SHADER_STAGE_COMPUTE_BIT, "comp"));
 	}
 
 	static Move<VkPipeline> create (const Environment& env, const Resources& res, const Parameters&)
@@ -1569,14 +1537,16 @@ struct ComputePipeline
 		{
 			VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
 			DE_NULL,
+			(VkPipelineCreateFlags)0,
 			{
 				VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
 				DE_NULL,
-				VK_SHADER_STAGE_COMPUTE,
-				*res.shader.object,
+				(VkPipelineShaderStageCreateFlags)0,
+				VK_SHADER_STAGE_COMPUTE_BIT,
+				*res.shaderModule.object,
+				"main",
 				DE_NULL					// pSpecializationInfo
 			},
-			0u,							// flags
 			*res.layout.object,
 			(VkPipeline)0,				// basePipelineHandle
 			0u,							// basePipelineIndex
@@ -1594,26 +1564,26 @@ struct DescriptorPool
 
 	struct Parameters
 	{
-		VkDescriptorPoolUsage			usage;
+		VkDescriptorPoolCreateFlags		flags;
 		deUint32						maxSets;
-		vector<VkDescriptorTypeCount>	typeCount;
+		vector<VkDescriptorPoolSize>	poolSizes;
 
-		Parameters (VkDescriptorPoolUsage					usage_,
+		Parameters (VkDescriptorPoolCreateFlags				flags_,
 					deUint32								maxSets_,
-					const vector<VkDescriptorTypeCount>&	typeCount_)
-			: usage		(usage_)
+					const vector<VkDescriptorPoolSize>&		poolSizes_)
+			: flags		(flags_)
 			, maxSets	(maxSets_)
-			, typeCount	(typeCount_)
+			, poolSizes	(poolSizes_)
 		{}
 
-		static Parameters singleType (VkDescriptorPoolUsage	usage,
-									  deUint32				maxSets,
-									  VkDescriptorType		type,
-									  deUint32				count)
+		static Parameters singleType (VkDescriptorPoolCreateFlags	flags,
+									  deUint32						maxSets,
+									  VkDescriptorType				type,
+									  deUint32						count)
 		{
-			vector<VkDescriptorTypeCount> typeCount;
-			typeCount.push_back(makeDescriptorTypeCount(type, count));
-			return Parameters(usage, maxSets, typeCount);
+			vector<VkDescriptorPoolSize> poolSizes;
+			poolSizes.push_back(makeDescriptorPoolSize(type, count));
+			return Parameters(flags, maxSets, poolSizes);
 		}
 	};
 
@@ -1628,10 +1598,10 @@ struct DescriptorPool
 		{
 			VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
 			DE_NULL,
-			params.usage,
+			params.flags,
 			params.maxSets,
-			(deUint32)params.typeCount.size(),
-			(params.typeCount.empty() ? DE_NULL : &params.typeCount[0])
+			(deUint32)params.poolSizes.size(),
+			(params.poolSizes.empty() ? DE_NULL : &params.poolSizes[0])
 		};
 
 		return createDescriptorPool(env.vkd, env.device, &descriptorPoolInfo);
@@ -1646,16 +1616,10 @@ struct DescriptorSet
 
 	struct Parameters
 	{
-		VkDescriptorPoolUsage			poolUsage;
-		VkDescriptorSetUsage			setUsage;
 		DescriptorSetLayout::Parameters	descriptorSetLayout;
 
-		Parameters (VkDescriptorPoolUsage					poolUsage_,
-					VkDescriptorSetUsage					setUsage_,
-					const DescriptorSetLayout::Parameters&	descriptorSetLayout_)
-			: poolUsage				(poolUsage_)
-			, setUsage				(setUsage_)
-			, descriptorSetLayout	(descriptorSetLayout_)
+		Parameters (const DescriptorSetLayout::Parameters& descriptorSetLayout_)
+			: descriptorSetLayout(descriptorSetLayout_)
 		{}
 	};
 
@@ -1664,12 +1628,10 @@ struct DescriptorSet
 		Dependency<DescriptorPool>		descriptorPool;
 		Dependency<DescriptorSetLayout>	descriptorSetLayout;
 
-		static vector<VkDescriptorTypeCount> computeTypeCounts (const DescriptorSetLayout::Parameters& layout)
+		static vector<VkDescriptorPoolSize> computePoolSizes (const DescriptorSetLayout::Parameters& layout)
 		{
-			// \todo [2015-09-17 pyry] Add _RANGE etc. to enums
-			const deUint32					numDescTypes	= (deUint32)VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT+1u;
-			deUint32						countByType[numDescTypes];
-			vector<VkDescriptorTypeCount>	typeCounts;
+			deUint32						countByType[VK_DESCRIPTOR_TYPE_LAST];
+			vector<VkDescriptorPoolSize>	typeCounts;
 
 			std::fill(DE_ARRAY_BEGIN(countByType), DE_ARRAY_END(countByType), 0u);
 
@@ -1677,29 +1639,38 @@ struct DescriptorSet
 				 cur != layout.bindings.end();
 				 ++cur)
 			{
-				DE_ASSERT((deUint32)cur->type < numDescTypes);
-				countByType[cur->type] += cur->arraySize;
+				DE_ASSERT((deUint32)cur->descriptorType < VK_DESCRIPTOR_TYPE_LAST);
+				countByType[cur->descriptorType] += cur->descriptorCount;
 			}
 
-			for (deUint32 type = 0; type < numDescTypes; ++type)
+			for (deUint32 type = 0; type < VK_DESCRIPTOR_TYPE_LAST; ++type)
 			{
 				if (countByType[type] > 0)
-					typeCounts.push_back(makeDescriptorTypeCount((VkDescriptorType)type, countByType[type]));
+					typeCounts.push_back(makeDescriptorPoolSize((VkDescriptorType)type, countByType[type]));
 			}
 
 			return typeCounts;
 		}
 
 		Resources (const Environment& env, const Parameters& params)
-			: descriptorPool		(env, DescriptorPool::Parameters(params.poolUsage, env.maxResourceConsumers, computeTypeCounts(params.descriptorSetLayout)))
+			: descriptorPool		(env, DescriptorPool::Parameters(VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, env.maxResourceConsumers, computePoolSizes(params.descriptorSetLayout)))
 			, descriptorSetLayout	(env, params.descriptorSetLayout)
 		{
 		}
 	};
 
-	static Move<VkDescriptorSet> create (const Environment& env, const Resources& res, const Parameters& params)
+	static Move<VkDescriptorSet> create (const Environment& env, const Resources& res, const Parameters&)
 	{
-		return allocDescriptorSet(env.vkd, env.device, *res.descriptorPool.object, params.setUsage, *res.descriptorSetLayout.object);
+		const VkDescriptorSetAllocateInfo	allocateInfo	=
+		{
+			VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+			DE_NULL,
+			*res.descriptorPool.object,
+			1u,
+			&res.descriptorSetLayout.object.get(),
+		};
+
+		return allocateDescriptorSet(env.vkd, env.device, &allocateInfo);
 	}
 };
 
@@ -1724,21 +1695,23 @@ struct Framebuffer
 		Resources (const Environment& env, const Parameters&)
 			: colorAttachment			(env, ImageView::Parameters(Image::Parameters(VK_IMAGE_TYPE_2D, VK_FORMAT_R8G8B8A8_UNORM,
 																					  makeExtent3D(256, 256, 1),
-																					  1u, 1u, 1u,
+																					  1u, 1u,
+																					  VK_SAMPLE_COUNT_1_BIT,
 																					  VK_IMAGE_TILING_OPTIMAL,
 																					  VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
 																					  VK_IMAGE_LAYOUT_UNDEFINED),
 																		 VK_IMAGE_VIEW_TYPE_2D, VK_FORMAT_R8G8B8A8_UNORM,
-																		 makeChannelMappingRGBA(),
+																		 makeComponentMappingRGBA(),
 																		 makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u)))
 			, depthStencilAttachment	(env, ImageView::Parameters(Image::Parameters(VK_IMAGE_TYPE_2D, VK_FORMAT_D16_UNORM,
 																					  makeExtent3D(256, 256, 1),
-																					  1u, 1u, 1u,
+																					  1u, 1u,
+																					  VK_SAMPLE_COUNT_1_BIT,
 																					  VK_IMAGE_TILING_OPTIMAL,
 																					  VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
 																					  VK_IMAGE_LAYOUT_UNDEFINED),
 																		 VK_IMAGE_VIEW_TYPE_2D, VK_FORMAT_D16_UNORM,
-																		 makeChannelMappingRGBA(),
+																		 makeComponentMappingRGBA(),
 																		 makeImageSubresourceRange(VK_IMAGE_ASPECT_DEPTH_BIT, 0u, 1u, 0u, 1u)))
 			, renderPass				(env, RenderPass::Parameters())
 		{}
@@ -1755,6 +1728,7 @@ struct Framebuffer
 		{
 			VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
 			DE_NULL,
+			(VkFramebufferCreateFlags)0,
 			*res.renderPass.object,
 			(deUint32)DE_LENGTH_OF_ARRAY(attachments),
 			attachments,
@@ -1767,17 +1741,17 @@ struct Framebuffer
 	}
 };
 
-struct CmdPool
+struct CommandPool
 {
-	typedef VkCmdPool Type;
+	typedef VkCommandPool Type;
 
 	enum { MAX_CONCURRENT = DEFAULT_MAX_CONCURRENT_OBJECTS };
 
 	struct Parameters
 	{
-		VkCmdPoolCreateFlags	flags;
+		VkCommandPoolCreateFlags	flags;
 
-		Parameters (VkCmdPoolCreateFlags flags_)
+		Parameters (VkCommandPoolCreateFlags flags_)
 			: flags(flags_)
 		{}
 	};
@@ -1787,62 +1761,59 @@ struct CmdPool
 		Resources (const Environment&, const Parameters&) {}
 	};
 
-	static Move<VkCmdPool> create (const Environment& env, const Resources&, const Parameters& params)
+	static Move<VkCommandPool> create (const Environment& env, const Resources&, const Parameters& params)
 	{
-		const VkCmdPoolCreateInfo	cmdPoolInfo	=
+		const VkCommandPoolCreateInfo	cmdPoolInfo	=
 		{
-			VK_STRUCTURE_TYPE_CMD_POOL_CREATE_INFO,
+			VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
 			DE_NULL,
+			params.flags,
 			env.queueFamilyIndex,
-			params.flags
 		};
 
 		return createCommandPool(env.vkd, env.device, &cmdPoolInfo);
 	}
 };
 
-struct CmdBuffer
+struct CommandBuffer
 {
-	typedef VkCmdBuffer Type;
+	typedef VkCommandBuffer Type;
 
 	enum { MAX_CONCURRENT = DEFAULT_MAX_CONCURRENT_OBJECTS };
 
 	struct Parameters
 	{
-		CmdPool::Parameters		cmdPool;
-		VkCmdBufferLevel		level;
-		VkCmdBufferCreateFlags	flags;
+		CommandPool::Parameters		commandPool;
+		VkCommandBufferLevel		level;
 
-		Parameters (const CmdPool::Parameters&	cmdPool_,
-					VkCmdBufferLevel			level_,
-					VkCmdBufferCreateFlags		flags_)
-			: cmdPool	(cmdPool_)
-			, level		(level_)
-			, flags		(flags_)
+		Parameters (const CommandPool::Parameters&	commandPool_,
+					VkCommandBufferLevel			level_)
+			: commandPool	(commandPool_)
+			, level			(level_)
 		{}
 	};
 
 	struct Resources
 	{
-		Dependency<CmdPool>	cmdPool;
+		Dependency<CommandPool>	commandPool;
 
 		Resources (const Environment& env, const Parameters& params)
-			: cmdPool(env, params.cmdPool)
+			: commandPool(env, params.commandPool)
 		{}
 	};
 
-	static Move<VkCmdBuffer> create (const Environment& env, const Resources& res, const Parameters& params)
+	static Move<VkCommandBuffer> create (const Environment& env, const Resources& res, const Parameters& params)
 	{
-		const VkCmdBufferCreateInfo	cmdBufferInfo	=
+		const VkCommandBufferAllocateInfo	cmdBufferInfo	=
 		{
-			VK_STRUCTURE_TYPE_CMD_BUFFER_CREATE_INFO,
+			VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
 			DE_NULL,
-			*res.cmdPool.object,
+			*res.commandPool.object,
 			params.level,
-			params.flags
+			1,							// bufferCount
 		};
 
-		return createCommandBuffer(env.vkd, env.device, &cmdBufferInfo);
+		return allocateCommandBuffer(env.vkd, env.device, &cmdBufferInfo);
 	}
 };
 
@@ -2061,7 +2032,6 @@ struct CaseDescriptions
 	CaseDescription<Fence>					fence;
 	CaseDescription<QueryPool>				queryPool;
 	CaseDescription<ShaderModule>			shaderModule;
-	CaseDescription<Shader>					shader;
 	CaseDescription<PipelineCache>			pipelineCache;
 	CaseDescription<PipelineLayout>			pipelineLayout;
 	CaseDescription<RenderPass>				renderPass;
@@ -2072,8 +2042,8 @@ struct CaseDescriptions
 	CaseDescription<DescriptorPool>			descriptorPool;
 	CaseDescription<DescriptorSet>			descriptorSet;
 	CaseDescription<Framebuffer>			framebuffer;
-	CaseDescription<CmdPool>				cmdPool;
-	CaseDescription<CmdBuffer>				cmdBuffer;
+	CaseDescription<CommandPool>			commandPool;
+	CaseDescription<CommandBuffer>			commandBuffer;
 };
 
 template<typename Object>
@@ -2107,7 +2077,6 @@ tcu::TestCaseGroup* createGroup (tcu::TestContext& testCtx, const char* name, co
 	addCases			(group, cases.queryPool);
 	addCases			(group, cases.sampler);
 	addCasesWithProgs	(group, cases.shaderModule);
-	addCasesWithProgs	(group, cases.shader);
 	addCases			(group, cases.pipelineCache);
 	addCases			(group, cases.pipelineLayout);
 	addCases			(group, cases.renderPass);
@@ -2117,8 +2086,8 @@ tcu::TestCaseGroup* createGroup (tcu::TestContext& testCtx, const char* name, co
 	addCases			(group, cases.descriptorPool);
 	addCases			(group, cases.descriptorSet);
 	addCases			(group, cases.framebuffer);
-	addCases			(group, cases.cmdPool);
-	addCases			(group, cases.cmdBuffer);
+	addCases			(group, cases.commandPool);
+	addCases			(group, cases.commandBuffer);
 
 	return group.release();
 }
@@ -2129,18 +2098,18 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 {
 	MovePtr<tcu::TestCaseGroup>	objectMgmtTests	(new tcu::TestCaseGroup(testCtx, "object_management", "Object management tests"));
 
-	const Image::Parameters		img1D			(VK_IMAGE_TYPE_1D, VK_FORMAT_R8G8B8A8_UNORM, makeExtent3D(256,   1, 1), 1u,  4u, 1u, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_LAYOUT_UNDEFINED);
-	const Image::Parameters		img2D			(VK_IMAGE_TYPE_2D, VK_FORMAT_R8G8B8A8_UNORM, makeExtent3D( 64,  64, 1), 1u, 12u, 1u, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT|VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_IMAGE_LAYOUT_UNDEFINED);
-	const Image::Parameters		img3D			(VK_IMAGE_TYPE_3D, VK_FORMAT_R8G8B8A8_UNORM, makeExtent3D( 64,  64, 4), 1u,  1u, 1u, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_LAYOUT_UNDEFINED);
-	const ImageView::Parameters	imgView1D		(img1D, VK_IMAGE_VIEW_TYPE_1D,			img1D.format, makeChannelMappingRGBA(), makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u));
-	const ImageView::Parameters	imgView1DArr	(img1D, VK_IMAGE_VIEW_TYPE_1D_ARRAY,	img1D.format, makeChannelMappingRGBA(), makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 4u));
-	const ImageView::Parameters	imgView2D		(img2D, VK_IMAGE_VIEW_TYPE_2D,			img2D.format, makeChannelMappingRGBA(), makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u));
-	const ImageView::Parameters	imgView2DArr	(img2D, VK_IMAGE_VIEW_TYPE_2D_ARRAY,	img2D.format, makeChannelMappingRGBA(), makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 8u));
-	const ImageView::Parameters	imgViewCube		(img2D, VK_IMAGE_VIEW_TYPE_CUBE,		img2D.format, makeChannelMappingRGBA(), makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 6u));
-	const ImageView::Parameters	imgViewCubeArr	(img2D, VK_IMAGE_VIEW_TYPE_CUBE_ARRAY,	img2D.format, makeChannelMappingRGBA(), makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 12u));
-	const ImageView::Parameters	imgView3D		(img3D, VK_IMAGE_VIEW_TYPE_3D,			img3D.format, makeChannelMappingRGBA(), makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u));
+	const Image::Parameters		img1D			(VK_IMAGE_TYPE_1D, VK_FORMAT_R8G8B8A8_UNORM, makeExtent3D(256,   1, 1), 1u,  4u, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_LAYOUT_UNDEFINED);
+	const Image::Parameters		img2D			(VK_IMAGE_TYPE_2D, VK_FORMAT_R8G8B8A8_UNORM, makeExtent3D( 64,  64, 1), 1u, 12u, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT|VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_IMAGE_LAYOUT_UNDEFINED);
+	const Image::Parameters		img3D			(VK_IMAGE_TYPE_3D, VK_FORMAT_R8G8B8A8_UNORM, makeExtent3D( 64,  64, 4), 1u,  1u, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_LAYOUT_UNDEFINED);
+	const ImageView::Parameters	imgView1D		(img1D, VK_IMAGE_VIEW_TYPE_1D,			img1D.format, makeComponentMappingRGBA(), makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u));
+	const ImageView::Parameters	imgView1DArr	(img1D, VK_IMAGE_VIEW_TYPE_1D_ARRAY,	img1D.format, makeComponentMappingRGBA(), makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 4u));
+	const ImageView::Parameters	imgView2D		(img2D, VK_IMAGE_VIEW_TYPE_2D,			img2D.format, makeComponentMappingRGBA(), makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u));
+	const ImageView::Parameters	imgView2DArr	(img2D, VK_IMAGE_VIEW_TYPE_2D_ARRAY,	img2D.format, makeComponentMappingRGBA(), makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 8u));
+	const ImageView::Parameters	imgViewCube		(img2D, VK_IMAGE_VIEW_TYPE_CUBE,		img2D.format, makeComponentMappingRGBA(), makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 6u));
+	const ImageView::Parameters	imgViewCubeArr	(img2D, VK_IMAGE_VIEW_TYPE_CUBE_ARRAY,	img2D.format, makeComponentMappingRGBA(), makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 12u));
+	const ImageView::Parameters	imgView3D		(img3D, VK_IMAGE_VIEW_TYPE_3D,			img3D.format, makeComponentMappingRGBA(), makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u));
 
-	const DescriptorSetLayout::Parameters	singleUboDescLayout	= DescriptorSetLayout::Parameters::single(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1u, VK_SHADER_STAGE_VERTEX);
+	const DescriptorSetLayout::Parameters	singleUboDescLayout	= DescriptorSetLayout::Parameters::single(0u, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1u, VK_SHADER_STAGE_VERTEX_BIT);
 
 	static NamedParameters<Instance>				s_instanceCases[]			=
 	{
@@ -2202,17 +2171,11 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 	};
 	static const NamedParameters<ShaderModule>			s_shaderModuleCases[]			=
 	{
-		{ "shader_module",				ShaderModule::Parameters("test")	}
-	};
-	static const NamedParameters<Shader>				s_shaderCases[]					=
-	{
-		{ "shader_vertex",				Shader::Parameters(ShaderModule::Parameters("vert"), VK_SHADER_STAGE_VERTEX)	},
-		{ "shader_fragment",			Shader::Parameters(ShaderModule::Parameters("frag"), VK_SHADER_STAGE_FRAGMENT)	},
-		{ "shader_compute",				Shader::Parameters(ShaderModule::Parameters("comp"), VK_SHADER_STAGE_COMPUTE)	},
+		{ "shader_module",				ShaderModule::Parameters(VK_SHADER_STAGE_COMPUTE_BIT, "test")	}
 	};
 	static const NamedParameters<PipelineCache>			s_pipelineCacheCases[]			=
 	{
-		{ "pipeline_cache",				PipelineCache::Parameters(8u*1024u*1024u)	}
+		{ "pipeline_cache",				PipelineCache::Parameters()		}
 	};
 	static const NamedParameters<PipelineLayout>		s_pipelineLayoutCases[]			=
 	{
@@ -2242,27 +2205,26 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 	};
 	static const NamedParameters<DescriptorPool>		s_descriptorPoolCases[]			=
 	{
-		{ "descriptor_pool_one_shot",	DescriptorPool::Parameters::singleType(VK_DESCRIPTOR_POOL_USAGE_ONE_SHOT,	4u, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 3u)	},
-		{ "descriptor_pool_dynamic",	DescriptorPool::Parameters::singleType(VK_DESCRIPTOR_POOL_USAGE_DYNAMIC,	4u, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 3u)	}
+		{ "descriptor_pool",						DescriptorPool::Parameters::singleType((VkDescriptorPoolCreateFlags)0,						4u, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 3u)	},
+		{ "descriptor_pool_free_descriptor_set",	DescriptorPool::Parameters::singleType(VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,	4u, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 3u)	}
 	};
 	static const NamedParameters<DescriptorSet>			s_descriptorSetCases[]			=
 	{
-		{ "descriptor_set_one_shot",	DescriptorSet::Parameters(VK_DESCRIPTOR_POOL_USAGE_ONE_SHOT, VK_DESCRIPTOR_SET_USAGE_ONE_SHOT, singleUboDescLayout)	},
-		{ "descriptor_set_static",		DescriptorSet::Parameters(VK_DESCRIPTOR_POOL_USAGE_ONE_SHOT, VK_DESCRIPTOR_SET_USAGE_STATIC, singleUboDescLayout)	}
+		{ "descriptor_set",				DescriptorSet::Parameters(singleUboDescLayout)	}
 	};
 	static const NamedParameters<Framebuffer>			s_framebufferCases[]			=
 	{
 		{ "framebuffer",				Framebuffer::Parameters()	}
 	};
-	static const NamedParameters<CmdPool>				s_cmdPoolCases[]				=
+	static const NamedParameters<CommandPool>			s_commandPoolCases[]			=
 	{
-		{ "cmd_pool",					CmdPool::Parameters(0u)									},
-		{ "cmd_pool_transient",			CmdPool::Parameters(VK_CMD_POOL_CREATE_TRANSIENT_BIT)	}
+		{ "command_pool",				CommandPool::Parameters((VkCommandPoolCreateFlags)0)			},
+		{ "command_pool_transient",		CommandPool::Parameters(VK_COMMAND_POOL_CREATE_TRANSIENT_BIT)	}
 	};
-	static const NamedParameters<CmdBuffer>				s_cmdBufferCases[]				=
+	static const NamedParameters<CommandBuffer>			s_commandBufferCases[]			=
 	{
-		{ "cmd_buffer_primary",			CmdBuffer::Parameters(CmdPool::Parameters(0u), VK_CMD_BUFFER_LEVEL_PRIMARY, 0u)		},
-		{ "cmd_buffer_secondary",		CmdBuffer::Parameters(CmdPool::Parameters(0u), VK_CMD_BUFFER_LEVEL_SECONDARY, 0u)	}
+		{ "command_buffer_primary",		CommandBuffer::Parameters(CommandPool::Parameters((VkCommandPoolCreateFlags)0u), VK_COMMAND_BUFFER_LEVEL_PRIMARY)	},
+		{ "command_buffer_secondary",	CommandBuffer::Parameters(CommandPool::Parameters((VkCommandPoolCreateFlags)0u), VK_COMMAND_BUFFER_LEVEL_SECONDARY)	}
 	};
 
 	static const CaseDescriptions	s_createSingleGroup	=
@@ -2279,7 +2241,6 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 		CASE_DESC(createSingleTest	<Fence>,					s_fenceCases),
 		CASE_DESC(createSingleTest	<QueryPool>,				s_queryPoolCases),
 		CASE_DESC(createSingleTest	<ShaderModule>,				s_shaderModuleCases),
-		CASE_DESC(createSingleTest	<Shader>,					s_shaderCases),
 		CASE_DESC(createSingleTest	<PipelineCache>,			s_pipelineCacheCases),
 		CASE_DESC(createSingleTest	<PipelineLayout>,			s_pipelineLayoutCases),
 		CASE_DESC(createSingleTest	<RenderPass>,				s_renderPassCases),
@@ -2290,8 +2251,8 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 		CASE_DESC(createSingleTest	<DescriptorPool>,			s_descriptorPoolCases),
 		CASE_DESC(createSingleTest	<DescriptorSet>,			s_descriptorSetCases),
 		CASE_DESC(createSingleTest	<Framebuffer>,				s_framebufferCases),
-		CASE_DESC(createSingleTest	<CmdPool>,					s_cmdPoolCases),
-		CASE_DESC(createSingleTest	<CmdBuffer>,				s_cmdBufferCases),
+		CASE_DESC(createSingleTest	<CommandPool>,				s_commandPoolCases),
+		CASE_DESC(createSingleTest	<CommandBuffer>,			s_commandBufferCases),
 	};
 	objectMgmtTests->addChild(createGroup(testCtx, "single", "Create single object", s_createSingleGroup));
 
@@ -2309,7 +2270,6 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 		CASE_DESC(createMultipleUniqueResourcesTest	<Fence>,					s_fenceCases),
 		CASE_DESC(createMultipleUniqueResourcesTest	<QueryPool>,				s_queryPoolCases),
 		CASE_DESC(createMultipleUniqueResourcesTest	<ShaderModule>,				s_shaderModuleCases),
-		CASE_DESC(createMultipleUniqueResourcesTest	<Shader>,					s_shaderCases),
 		CASE_DESC(createMultipleUniqueResourcesTest	<PipelineCache>,			s_pipelineCacheCases),
 		CASE_DESC(createMultipleUniqueResourcesTest	<PipelineLayout>,			s_pipelineLayoutCases),
 		CASE_DESC(createMultipleUniqueResourcesTest	<RenderPass>,				s_renderPassCases),
@@ -2320,8 +2280,8 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 		CASE_DESC(createMultipleUniqueResourcesTest	<DescriptorPool>,			s_descriptorPoolCases),
 		CASE_DESC(createMultipleUniqueResourcesTest	<DescriptorSet>,			s_descriptorSetCases),
 		CASE_DESC(createMultipleUniqueResourcesTest	<Framebuffer>,				s_framebufferCases),
-		CASE_DESC(createMultipleUniqueResourcesTest	<CmdPool>,					s_cmdPoolCases),
-		CASE_DESC(createMultipleUniqueResourcesTest	<CmdBuffer>,				s_cmdBufferCases),
+		CASE_DESC(createMultipleUniqueResourcesTest	<CommandPool>,				s_commandPoolCases),
+		CASE_DESC(createMultipleUniqueResourcesTest	<CommandBuffer>,			s_commandBufferCases),
 	};
 	objectMgmtTests->addChild(createGroup(testCtx, "multiple_unique_resources", "Multiple objects with per-object unique resources", s_createMultipleUniqueResourcesGroup));
 
@@ -2339,7 +2299,6 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 		CASE_DESC(createMultipleSharedResourcesTest	<Fence>,					s_fenceCases),
 		CASE_DESC(createMultipleSharedResourcesTest	<QueryPool>,				s_queryPoolCases),
 		CASE_DESC(createMultipleSharedResourcesTest	<ShaderModule>,				s_shaderModuleCases),
-		CASE_DESC(createMultipleSharedResourcesTest	<Shader>,					s_shaderCases),
 		CASE_DESC(createMultipleSharedResourcesTest	<PipelineCache>,			s_pipelineCacheCases),
 		CASE_DESC(createMultipleSharedResourcesTest	<PipelineLayout>,			s_pipelineLayoutCases),
 		CASE_DESC(createMultipleSharedResourcesTest	<RenderPass>,				s_renderPassCases),
@@ -2350,8 +2309,8 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 		CASE_DESC(createMultipleSharedResourcesTest	<DescriptorPool>,			s_descriptorPoolCases),
 		CASE_DESC(createMultipleSharedResourcesTest	<DescriptorSet>,			s_descriptorSetCases),
 		CASE_DESC(createMultipleSharedResourcesTest	<Framebuffer>,				s_framebufferCases),
-		CASE_DESC(createMultipleSharedResourcesTest	<CmdPool>,					s_cmdPoolCases),
-		CASE_DESC(createMultipleSharedResourcesTest	<CmdBuffer>,				s_cmdBufferCases),
+		CASE_DESC(createMultipleSharedResourcesTest	<CommandPool>,				s_commandPoolCases),
+		CASE_DESC(createMultipleSharedResourcesTest	<CommandBuffer>,			s_commandBufferCases),
 	};
 	objectMgmtTests->addChild(createGroup(testCtx, "multiple_shared_resources", "Multiple objects with shared resources", s_createMultipleSharedResourcesGroup));
 
@@ -2369,7 +2328,6 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 		CASE_DESC(createMaxConcurrentTest	<Fence>,					s_fenceCases),
 		CASE_DESC(createMaxConcurrentTest	<QueryPool>,				s_queryPoolCases),
 		CASE_DESC(createMaxConcurrentTest	<ShaderModule>,				s_shaderModuleCases),
-		CASE_DESC(createMaxConcurrentTest	<Shader>,					s_shaderCases),
 		CASE_DESC(createMaxConcurrentTest	<PipelineCache>,			s_pipelineCacheCases),
 		CASE_DESC(createMaxConcurrentTest	<PipelineLayout>,			s_pipelineLayoutCases),
 		CASE_DESC(createMaxConcurrentTest	<RenderPass>,				s_renderPassCases),
@@ -2380,8 +2338,8 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 		CASE_DESC(createMaxConcurrentTest	<DescriptorPool>,			s_descriptorPoolCases),
 		CASE_DESC(createMaxConcurrentTest	<DescriptorSet>,			s_descriptorSetCases),
 		CASE_DESC(createMaxConcurrentTest	<Framebuffer>,				s_framebufferCases),
-		CASE_DESC(createMaxConcurrentTest	<CmdPool>,					s_cmdPoolCases),
-		CASE_DESC(createMaxConcurrentTest	<CmdBuffer>,				s_cmdBufferCases),
+		CASE_DESC(createMaxConcurrentTest	<CommandPool>,				s_commandPoolCases),
+		CASE_DESC(createMaxConcurrentTest	<CommandBuffer>,			s_commandBufferCases),
 	};
 	objectMgmtTests->addChild(createGroup(testCtx, "max_concurrent", "Maximum number of concurrently live objects", s_createMaxConcurrentGroup));
 
@@ -2399,7 +2357,6 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<Fence>,					s_fenceCases),
 		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<QueryPool>,				s_queryPoolCases),
 		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<ShaderModule>,				s_shaderModuleCases),
-		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<Shader>,					s_shaderCases),
 		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<PipelineCache>,			s_pipelineCacheCases),
 		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<PipelineLayout>,			s_pipelineLayoutCases),
 		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<RenderPass>,				s_renderPassCases),
@@ -2410,8 +2367,8 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<DescriptorPool>,			s_descriptorPoolCases),
 		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<DescriptorSet>,			s_descriptorSetCases),
 		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<Framebuffer>,				s_framebufferCases),
-		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<CmdPool>,					s_cmdPoolCases),
-		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<CmdBuffer>,				s_cmdBufferCases),
+		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<CommandPool>,				s_commandPoolCases),
+		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<CommandBuffer>,			s_commandBufferCases),
 	};
 	objectMgmtTests->addChild(createGroup(testCtx, "multithreaded_per_thread_device", "Multithreaded object construction with per-thread device ", s_multithreadedCreatePerThreadDeviceGroup));
 
@@ -2429,7 +2386,6 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<Fence>,					s_fenceCases),
 		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<QueryPool>,				s_queryPoolCases),
 		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<ShaderModule>,				s_shaderModuleCases),
-		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<Shader>,					s_shaderCases),
 		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<PipelineCache>,			s_pipelineCacheCases),
 		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<PipelineLayout>,			s_pipelineLayoutCases),
 		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<RenderPass>,				s_renderPassCases),
@@ -2440,8 +2396,8 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<DescriptorPool>,			s_descriptorPoolCases),
 		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<DescriptorSet>,			s_descriptorSetCases),
 		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<Framebuffer>,				s_framebufferCases),
-		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<CmdPool>,					s_cmdPoolCases),
-		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<CmdBuffer>,				s_cmdBufferCases),
+		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<CommandPool>,				s_commandPoolCases),
+		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<CommandBuffer>,			s_commandBufferCases),
 	};
 	objectMgmtTests->addChild(createGroup(testCtx, "multithreaded_per_thread_resources", "Multithreaded object construction with per-thread resources", s_multithreadedCreatePerThreadResourcesGroup));
 
@@ -2459,7 +2415,6 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 		CASE_DESC(multithreadedCreateSharedResourcesTest	<Fence>,					s_fenceCases),
 		CASE_DESC(multithreadedCreateSharedResourcesTest	<QueryPool>,				s_queryPoolCases),
 		CASE_DESC(multithreadedCreateSharedResourcesTest	<ShaderModule>,				s_shaderModuleCases),
-		CASE_DESC(multithreadedCreateSharedResourcesTest	<Shader>,					s_shaderCases),
 		CASE_DESC(multithreadedCreateSharedResourcesTest	<PipelineCache>,			s_pipelineCacheCases),
 		CASE_DESC(multithreadedCreateSharedResourcesTest	<PipelineLayout>,			s_pipelineLayoutCases),
 		CASE_DESC(multithreadedCreateSharedResourcesTest	<RenderPass>,				s_renderPassCases),
@@ -2470,8 +2425,8 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 		CASE_DESC(multithreadedCreateSharedResourcesTest	<DescriptorPool>,			s_descriptorPoolCases),
 		EMPTY_CASE_DESC(DescriptorSet),		// \note Needs per-thread DescriptorPool
 		CASE_DESC(multithreadedCreateSharedResourcesTest	<Framebuffer>,				s_framebufferCases),
-		CASE_DESC(multithreadedCreateSharedResourcesTest	<CmdPool>,					s_cmdPoolCases),
-		EMPTY_CASE_DESC(CmdBuffer),			// \note Needs per-thread CmdPool
+		CASE_DESC(multithreadedCreateSharedResourcesTest	<CommandPool>,				s_commandPoolCases),
+		EMPTY_CASE_DESC(CommandBuffer),			// \note Needs per-thread CommandPool
 	};
 	objectMgmtTests->addChild(createGroup(testCtx, "multithreaded_shared_resources", "Multithreaded object construction with shared resources", s_multithreadedCreateSharedResourcesGroup));
 

@@ -97,8 +97,6 @@ void checkResult (VkResult result, const char* msg, const char* file, int line)
 
 		if (isOutOfMemoryError(result))
 			throw OutOfMemoryError(result, msgStr.str().c_str(), DE_NULL, file, line);
-		else if (result == VK_UNSUPPORTED)
-			throw tcu::NotSupportedError(msgStr.str().c_str(), DE_NULL, file, line);
 		else
 			throw Error(result, msgStr.str().c_str(), DE_NULL, file, line);
 	}

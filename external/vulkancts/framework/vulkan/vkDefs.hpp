@@ -41,19 +41,19 @@
 #	if !defined(__NDK_FPABI__)
 #		define __NDK_FPABI__
 #	endif
-#	define VK_APICALL __NDK_FPABI__
+#	define VKAPI_ATTR __NDK_FPABI__
 #else
-#	define VK_APICALL
+#	define VKAPI_ATTR
 #endif
 
-#if (DE_OS == DE_OS_WIN32) && (_MSC_VER >= 800) || defined(_STDCALL_SUPPORTED)
-#	define VK_APIENTRY __stdcall
+#if (DE_OS == DE_OS_WIN32) && ((_MSC_VER >= 800) || defined(_STDCALL_SUPPORTED))
+#	define VKAPI_CALL __stdcall
 #else
-#	define VK_APIENTRY
+#	define VKAPI_CALL
 #endif
 
-#define VK_DEFINE_HANDLE(NAME, TYPE)			typedef struct NAME##_s* NAME
-#define VK_DEFINE_NONDISP_HANDLE(NAME, TYPE)	typedef Handle<TYPE> NAME
+#define VK_DEFINE_HANDLE(NAME, TYPE)					typedef struct NAME##_s* NAME
+#define VK_DEFINE_NON_DISPATCHABLE_HANDLE(NAME, TYPE)	typedef Handle<TYPE> NAME
 
 #define VK_MAKE_VERSION(MAJOR, MINOR, PATCH)	((MAJOR << 22) | (MINOR << 12) | PATCH)
 #define VK_BIT(NUM)								(1<<NUM)
@@ -70,13 +70,7 @@ namespace vk
 typedef deUint64	VkDeviceSize;
 typedef deUint32	VkSampleMask;
 typedef deUint32	VkBool32;
-
-typedef deUint32	VkShaderCreateFlags;		// Reserved
-typedef deUint32	VkEventCreateFlags;			// Reserved
-typedef deUint32	VkCmdBufferCreateFlags;		// Reserved
-typedef deUint32	VkSemaphoreCreateFlags;		// Reserved
-typedef deUint32	VkShaderModuleCreateFlags;	// Reserved
-typedef deUint32	VkMemoryMapFlags;			// \todo [2015-05-08 pyry] Reserved? Not documented
+typedef deUint32	VkFlags;
 
 // enum HandleType { HANDLE_TYPE_INSTANCE, ... };
 #include "vkHandleType.inl"
@@ -108,10 +102,19 @@ private:
 enum { VK_QUEUE_FAMILY_IGNORED		= 0xffffffff	};
 enum { VK_NO_ATTACHMENT				= 0xffffffff	};
 
-typedef VK_APICALL void		(VK_APIENTRY* PFN_vkVoidFunction)	(void);
+enum
+{
+	VK_FALSE	= 0,
+	VK_TRUE		= 1
+};
 
-typedef VK_APICALL void*	(VK_APIENTRY* PFN_vkAllocFunction)	(void* pUserData, deUintptr size, deUintptr alignment, VkSystemAllocType allocType);
-typedef VK_APICALL void		(VK_APIENTRY* PFN_vkFreeFunction)	(void* pUserData, void* pMem);
+typedef VKAPI_ATTR void		(VKAPI_CALL* PFN_vkVoidFunction)					(void);
+
+typedef VKAPI_ATTR void*	(VKAPI_CALL* PFN_vkAllocationFunction)				(void* pUserData, size_t size, size_t alignment, VkSystemAllocationScope allocationScope);
+typedef VKAPI_ATTR void*	(VKAPI_CALL* PFN_vkReallocationFunction)			(void* pUserData, void* pOriginal, size_t size, size_t alignment, VkSystemAllocationScope allocationScope);
+typedef VKAPI_ATTR void		(VKAPI_CALL* PFN_vkFreeFunction)					(void* pUserData, void* pMem);
+typedef VKAPI_ATTR void		(VKAPI_CALL* PFN_vkInternalAllocationNotification)	(void* pUserData, size_t size, VkInternalAllocationType allocationType, VkSystemAllocationScope allocationScope);
+typedef VKAPI_ATTR void		(VKAPI_CALL* PFN_vkInternalFreeNotification)		(void* pUserData, size_t size, VkInternalAllocationType allocationType, VkSystemAllocationScope allocationScope);
 
 #include "vkStructTypes.inl"
 

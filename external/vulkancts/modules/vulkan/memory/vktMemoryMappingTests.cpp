@@ -51,7 +51,6 @@
 #include "deStringUtil.hpp"
 #include "deUniquePtr.hpp"
 
-#include <set>
 #include <string>
 #include <vector>
 
@@ -62,7 +61,6 @@ using de::SharedPtr;
 
 using std::string;
 using std::vector;
-using std::set;
 
 using namespace vk;
 
@@ -75,14 +73,14 @@ namespace
 Move<VkDeviceMemory> allocMemory (const DeviceInterface& vk, VkDevice device, VkDeviceSize pAllocInfo_allocationSize, deUint32 pAllocInfo_memoryTypeIndex)
 {
 	VkDeviceMemory object = 0;
-	const VkMemoryAllocInfo pAllocInfo =
+	const VkMemoryAllocateInfo pAllocInfo =
 	{
-		VK_STRUCTURE_TYPE_MEMORY_ALLOC_INFO,
+		VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
 		DE_NULL,
 		pAllocInfo_allocationSize,
 		pAllocInfo_memoryTypeIndex,
 	};
-	VK_CHECK(vk.allocMemory(device, &pAllocInfo, &object));
+	VK_CHECK(vk.allocateMemory(device, &pAllocInfo, (const VkAllocationCallbacks*)DE_NULL, &object));
 	return Move<VkDeviceMemory>(check<VkDeviceMemory>(object), Deleter<VkDeviceMemory>(vk, device));
 }
 
@@ -326,8 +324,8 @@ private:
 };
 
 MemoryMapping::MemoryMapping (const MemoryRange&	range,
-							  void*				ptr,
-							  deUint16*			refPtr)
+							  void*					ptr,
+							  deUint16*				refPtr)
 	: m_range	(range)
 	, m_ptr		(ptr)
 	, m_refPtr	(refPtr)
@@ -389,7 +387,7 @@ void randomRanges (de::Random& rng, vector<VkMappedMemoryRange>& ranges, size_t 
 
 	for (size_t rangeNdx = 0; rangeNdx < count; rangeNdx++)
 	{
-		const VkDeviceSize	size	= (VkDeviceSize)(rng.getUint64() % (deUint64)maxSize);
+		const VkDeviceSize	size	= (maxSize > 1 ? (VkDeviceSize)(1 + (rng.getUint64() % (deUint64)(maxSize - 1))) : 1);
 		const VkDeviceSize	offset	= (VkDeviceSize)(rng.getUint64() % (deUint64)(maxSize - size + 1));
 
 		const VkMappedMemoryRange range =
@@ -458,7 +456,7 @@ MemoryObject::~MemoryObject (void)
 
 MemoryMapping* MemoryObject::mapRandom (const DeviceInterface& vkd, VkDevice device, de::Random& rng)
 {
-	const VkDeviceSize	size	= (VkDeviceSize)(rng.getUint64() % (deUint64)m_size);
+	const VkDeviceSize	size	= (m_size > 1 ? (VkDeviceSize)(1 + (rng.getUint64() % (deUint64)(m_size - 1))) : 1);
 	const VkDeviceSize	offset	= (VkDeviceSize)(rng.getUint64() % (deUint64)(m_size - size + 1));
 	void*				ptr;
 
@@ -505,6 +503,20 @@ enum
 	MAX_MEMORY_USAGE_DIV = 8
 };
 
+template<typename T>
+void removeFirstEqual (vector<T>& vec, const T& val)
+{
+	for (size_t ndx = 0; ndx < vec.size(); ndx++)
+	{
+		if (vec[ndx] == val)
+		{
+			vec[ndx] = vec.back();
+			vec.pop_back();
+			return;
+		}
+	}
+}
+
 class MemoryHeap
 {
 public:
@@ -518,7 +530,7 @@ public:
 
 	~MemoryHeap (void)
 	{
-		for (set<MemoryObject*>::iterator iter = m_objects.begin(); iter != m_objects.end(); ++iter)
+		for (vector<MemoryObject*>::iterator iter = m_objects.begin(); iter != m_objects.end(); ++iter)
 			delete *iter;
 	}
 
@@ -527,12 +539,12 @@ public:
 
 	MemoryObject*						allocateRandom	(const DeviceInterface& vkd, VkDevice device, de::Random& rng)
 	{
-		const VkDeviceSize		size	= rng.getUint64() % ((m_heap.size / MAX_MEMORY_USAGE_DIV) - m_usage);
+		const VkDeviceSize		size	= 1 + (rng.getUint64() % ((m_heap.size / MAX_MEMORY_USAGE_DIV) - m_usage - 1));
 		const deUint32			type	= rng.choose<deUint32>(m_memoryTypes.begin(), m_memoryTypes.end());
 		MemoryObject* const		object	= new MemoryObject(vkd, device, size, type);
 
 		m_usage += size;
-		m_objects.insert(object);
+		m_objects.push_back(object);
 
 		return object;
 	}
@@ -544,8 +556,7 @@ public:
 
 	void								free			(MemoryObject* object)
 	{
-		DE_ASSERT(m_objects.find(object) != m_objects.end());
-		m_objects.erase(object);
+		removeFirstEqual(m_objects, object);
 		m_usage -= object->getSize();
 		delete object;
 	}
@@ -555,7 +566,7 @@ private:
 	vector<deUint32>		m_memoryTypes;
 
 	VkDeviceSize			m_usage;
-	set<MemoryObject*>		m_objects;
+	vector<MemoryObject*>	m_objects;
 };
 
 class RandomMemoryMappingInstance : public TestInstance
@@ -589,7 +600,7 @@ public:
 					const de::SharedPtr<MemoryHeap>	heap	(new MemoryHeap(heapInfo, memoryTypes[heapIndex]));
 
 					if (!heap->full())
-						m_nonFullHeaps.insert(heap);
+						m_nonFullHeaps.push_back(heap);
 				}
 			}
 		}
@@ -662,11 +673,11 @@ public:
 				MemoryObject* const	object	= m_rng.choose<MemoryObject*>(m_mappedMemoryObjects.begin(), m_mappedMemoryObjects.end());
 
 				// Remove mapping
-				m_memoryMappings.erase(object->getMapping());
+				removeFirstEqual(m_memoryMappings, object->getMapping());
 
 				object->unmap();
-				m_mappedMemoryObjects.erase(object);
-				m_nonMappedMemoryObjects.insert(object);
+				removeFirstEqual(m_mappedMemoryObjects, object);
+				m_nonMappedMemoryObjects.push_back(object);
 			}
 			else if (!m_nonMappedMemoryObjects.empty() && m_rng.getFloat() < mapProbability)
 			{
@@ -674,9 +685,9 @@ public:
 				MemoryObject* const		object	= m_rng.choose<MemoryObject*>(m_nonMappedMemoryObjects.begin(), m_nonMappedMemoryObjects.end());
 				MemoryMapping*			mapping	= object->mapRandom(vkd, device, m_rng);
 
-				m_memoryMappings.insert(mapping);
-				m_mappedMemoryObjects.insert(object);
-				m_nonMappedMemoryObjects.erase(object);
+				m_memoryMappings.push_back(mapping);
+				m_mappedMemoryObjects.push_back(object);
+				removeFirstEqual(m_nonMappedMemoryObjects, object);
 			}
 			else
 			{
@@ -686,15 +697,15 @@ public:
 					de::SharedPtr<MemoryHeap> const heap = m_rng.choose<de::SharedPtr<MemoryHeap> >(m_nonFullHeaps.begin(), m_nonFullHeaps.end());
 
 					if (heap->empty())
-						m_nonEmptyHeaps.insert(heap);
+						m_nonEmptyHeaps.push_back(heap);
 
 					{
 						MemoryObject* const	object = heap->allocateRandom(vkd, device, m_rng);
 
 						if (heap->full())
-							m_nonFullHeaps.erase(heap);
+							removeFirstEqual(m_nonFullHeaps, heap);
 
-						m_nonMappedMemoryObjects.insert(object);
+						m_nonMappedMemoryObjects.push_back(object);
 					}
 				}
 				else
@@ -705,18 +716,18 @@ public:
 
 					// Remove mapping
 					if (object->getMapping())
-						m_memoryMappings.erase(object->getMapping());
+						removeFirstEqual(m_memoryMappings, object->getMapping());
 
-					m_mappedMemoryObjects.erase(object);
-					m_nonMappedMemoryObjects.erase(object);
+					removeFirstEqual(m_mappedMemoryObjects, object);
+					removeFirstEqual(m_nonMappedMemoryObjects, object);
 
 					if (heap->full())
-						m_nonFullHeaps.insert(heap);
+						m_nonFullHeaps.push_back(heap);
 
 					heap->free(object);
 
 					if (heap->empty())
-						m_nonEmptyHeaps.erase(heap);
+						removeFirstEqual(m_nonEmptyHeaps, heap);
 				}
 			}
 
@@ -728,15 +739,15 @@ public:
 	}
 
 private:
-	de::Random						m_rng;
-	size_t							m_opNdx;
+	de::Random							m_rng;
+	size_t								m_opNdx;
 
-	set<de::SharedPtr<MemoryHeap> >	m_nonEmptyHeaps;
-	set<de::SharedPtr<MemoryHeap> >	m_nonFullHeaps;
+	vector<de::SharedPtr<MemoryHeap> >	m_nonEmptyHeaps;
+	vector<de::SharedPtr<MemoryHeap> >	m_nonFullHeaps;
 
-	set<MemoryObject*>				m_mappedMemoryObjects;
-	set<MemoryObject*>				m_nonMappedMemoryObjects;
-	set<MemoryMapping*>				m_memoryMappings;
+	vector<MemoryObject*>				m_mappedMemoryObjects;
+	vector<MemoryObject*>				m_nonMappedMemoryObjects;
+	vector<MemoryMapping*>				m_memoryMappings;
 };
 
 enum Op

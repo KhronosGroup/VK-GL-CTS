@@ -88,13 +88,13 @@ de::MovePtr<tcu::TextureLevel>	readColorAttachment			 (const vk::DeviceInterface
  * The VkImage must be non-multisampled and able to be used as a
  * destination operand for transfer operations.
  *//*--------------------------------------------------------------------*/
-void							uploadTestTexture  			 (const vk::DeviceInterface&	vk,
-															  vk::VkDevice					device,
-															  vk::VkQueue					queue,
-															  deUint32						queueFamilyIndex,
-															  vk::Allocator&				allocator,
-															  const TestTexture&			testTexture,
-															  vk::VkImage					destImage);
+void							uploadTestTexture			(const vk::DeviceInterface&		vk,
+															 vk::VkDevice					device,
+															 vk::VkQueue					queue,
+															 deUint32						queueFamilyIndex,
+															 vk::Allocator&					allocator,
+															 const TestTexture&				testTexture,
+															 vk::VkImage					destImage);
 
 class TestTexture
 {
@@ -118,11 +118,13 @@ public:
 
 	virtual std::vector<vk::VkBufferImageCopy>	getBufferCopyRegions		(void) const;
 	virtual void								write						(deUint8* destPtr) const;
+
 protected:
 	void										populateLevels				(const std::vector<tcu::PixelBufferAccess>& levels);
-	void 										populateCompressedLevels	(const tcu::CompressedTexFormat& format, const std::vector<tcu::PixelBufferAccess>& decompressedLevels);
+	void										populateCompressedLevels	(const tcu::CompressedTexFormat& format, const std::vector<tcu::PixelBufferAccess>& decompressedLevels);
 
 	static void									fillWithGradient			(const tcu::PixelBufferAccess& levelAccess);
+
 protected:
 	std::vector<tcu::CompressedTexture*>		m_compressedLevels;
 };
@@ -224,7 +226,6 @@ public:
 	virtual const tcu::ConstPixelBufferAccess	getLevel				(int level, int layer) const;
 	virtual int									getArraySize			(void) const;
 	virtual const tcu::TextureCube&				getTexture				(void) const;
-	virtual void								write					(deUint8* destPtr) const;
 };
 
 class TestTextureCubeArray: public TestTexture
@@ -242,7 +243,6 @@ public:
 	virtual const tcu::ConstPixelBufferAccess	getLevel				(int level, int layer) const;
 	virtual int									getArraySize			(void) const;
 	virtual const tcu::TextureCubeArray&		getTexture				(void) const;
-	virtual void								write					(deUint8* destPtr) const;
 };
 
 } // pipeline

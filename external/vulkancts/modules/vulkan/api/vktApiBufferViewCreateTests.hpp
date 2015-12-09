@@ -1,7 +1,7 @@
-#ifndef _VKTSHADERRENDERDISCARDTESTS_HPP
-#define _VKTSHADERRENDERDISCARDTESTS_HPP
+#ifndef _VKTAPIBUFFERVIEWCREATETESTS_HPP
+#define _VKTAPIBUFFERVIEWCREATETESTS_HPP
 /*------------------------------------------------------------------------
- * Vulkan Conformance Tests
+ *  Vulkan Conformance Tests
  * ------------------------
  *
  * Copyright (c) 2015 The Khronos Group Inc.
@@ -32,7 +32,7 @@
  *
  *//*!
  * \file
- * \brief Shader discard statement tests.
+ * \brief Vulkan Buffer View Creation Tests
  *//*--------------------------------------------------------------------*/
 
 #include "tcuDefs.hpp"
@@ -40,12 +40,13 @@
 
 namespace vkt
 {
-namespace sr
+
+namespace api
 {
 
-tcu::TestCaseGroup*	createDiscardTests	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup*		createBufferViewCreateTests	(tcu::TestContext& testCtx);
 
-} // sr
+} // api
 } // vkt
 
-#endif // _VKTSHADERRENDERDISCARDTESTS_HPP
+#endif // _VKTAPIBUFFERVIEWCREATETESTS_HPP

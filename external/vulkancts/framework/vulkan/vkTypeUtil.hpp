@@ -35,6 +35,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vkDefs.hpp"
+#include "tcuVector.hpp"
 
 namespace vk
 {
@@ -51,9 +52,37 @@ inline VkClearValue makeClearValueColorF32 (float r, float g, float b, float a)
 	return v;
 }
 
-inline VkChannelMapping makeChannelMappingRGBA (void)
+inline VkClearValue makeClearValueColor (const tcu::Vec4& color)
 {
-	return makeChannelMapping(VK_CHANNEL_SWIZZLE_R, VK_CHANNEL_SWIZZLE_G, VK_CHANNEL_SWIZZLE_B, VK_CHANNEL_SWIZZLE_A);
+	VkClearValue v;
+	v.color.float32[0] = color[0];
+	v.color.float32[1] = color[1];
+	v.color.float32[2] = color[2];
+	v.color.float32[3] = color[3];
+	return v;
+}
+
+inline VkClearValue makeClearValueDepthStencil (float depth, deUint32 stencil)
+{
+	VkClearValue v;
+	v.depthStencil.depth	= depth;
+	v.depthStencil.stencil	= stencil;
+	return v;
+}
+
+inline VkClearValue makeClearValue (VkClearColorValue color)
+{
+	VkClearValue v;
+	v.color = color;
+	return v;
+}
+
+inline VkComponentMapping makeComponentMappingRGBA (void)
+{
+	return makeComponentMapping(VK_COMPONENT_SWIZZLE_R,
+								VK_COMPONENT_SWIZZLE_G,
+								VK_COMPONENT_SWIZZLE_B,
+								VK_COMPONENT_SWIZZLE_A);
 }
 
 } // vk

@@ -145,7 +145,7 @@ void ImageTest::initPrograms (SourceCollections& sourceCollections) const
 				<< "layout(location = 0) out highp vec4 fragColor;\n"
 				<< "void main (void)\n"
 				<< "{\n"
-				<< "	fragColor = (texture(texSampler, vtxTexCoords." << texCoordSwizzle << std::fixed << ") * vec4" << formatInfo.lookupScale << ") + vec4" << formatInfo.lookupBias << ";\n"
+				<< "	fragColor = (texture(texSampler, vtxTexCoords." << texCoordSwizzle << std::scientific << ") * vec4" << formatInfo.lookupScale << ") + vec4" << formatInfo.lookupBias << ";\n"
 				<< "}\n";
 
 	sourceCollections.glslSources.add("tex_vert") << glu::VertexSource(vertexSrc.str());
@@ -167,7 +167,7 @@ TestInstance* ImageTest::createInstance (Context& context) const
 	}
 
 	const std::vector<Vertex4Tex4>	vertices			= createTestQuadMosaic(m_imageViewType);
-	const VkChannelMapping			channelMapping		= getFormatChannelMapping(m_imageFormat);
+	const VkComponentMapping		componentMapping	= getFormatComponentMapping(m_imageFormat);
 	const VkImageSubresourceRange	subresourceRange	=
 	{
 		VK_IMAGE_ASPECT_COLOR_BIT,
@@ -179,25 +179,26 @@ TestInstance* ImageTest::createInstance (Context& context) const
 
 	const VkSamplerCreateInfo samplerParams =
 	{
-		VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,									// VkStructureType	sType;
-		DE_NULL,																// const void*		pNext;
-		VK_TEX_FILTER_NEAREST,													// VkTexFilter		magFilter;
-		VK_TEX_FILTER_NEAREST,													// VkTexFilter		minFilter;
-		VK_TEX_MIPMAP_MODE_NEAREST,												// VkTexMipmapMode	mipMode;
-		VK_TEX_ADDRESS_MODE_CLAMP,												// VkTexAddress		addressU;
-		VK_TEX_ADDRESS_MODE_CLAMP,												// VkTexAddress		addressV;
-		VK_TEX_ADDRESS_MODE_CLAMP,												// VkTexAddress		addressW;
-		0.0f,																	// float			mipLodBias;
-		1.0f,																	// float			maxAnisotropy;
-		false,																	// VkBool32			compareEnable;
-		VK_COMPARE_OP_NEVER,													// VkCompareOp		compareOp;
-		0.0f,																	// float			minLod;
-		(float)(subresourceRange.mipLevels - 1),								// float			maxLod;
-		getFormatBorderColor(BORDER_COLOR_TRANSPARENT_BLACK, m_imageFormat),	// VkBorderColor	borderColor;
-		false																	// VkBool32			unnormalizedCoordinates;
+		VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,									// VkStructureType			sType;
+		DE_NULL,																// const void*				pNext;
+		0u,																		// VkSamplerCreateFlags		flags;
+		VK_FILTER_NEAREST,														// VkFilter					magFilter;
+		VK_FILTER_NEAREST,														// VkFilter					minFilter;
+		VK_SAMPLER_MIPMAP_MODE_NEAREST,											// VkSamplerMipmapMode		mipmapMode;
+		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,									// VkSamplerAddressMode		addressModeU;
+		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,									// VkSamplerAddressMode		addressModeV;
+		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,									// VkSamplerAddressMode		addressModeW;
+		0.0f,																	// float					mipLodBias;
+		1.0f,																	// float					maxAnisotropy;
+		false,																	// VkBool32					compareEnable;
+		VK_COMPARE_OP_NEVER,													// VkCompareOp				compareOp;
+		0.0f,																	// float					minLod;
+		(float)(subresourceRange.levelCount - 1),								// float					maxLod;
+		getFormatBorderColor(BORDER_COLOR_TRANSPARENT_BLACK, m_imageFormat),	// VkBorderColor			borderColor;
+		false																	// VkBool32					unnormalizedCoordinates;
 	};
 
-	return new ImageSamplingInstance(context, renderSize, m_imageViewType, m_imageFormat, m_imageSize, m_arraySize, channelMapping, subresourceRange, samplerParams, 0.0f, vertices);
+	return new ImageSamplingInstance(context, renderSize, m_imageViewType, m_imageFormat, m_imageSize, m_arraySize, componentMapping, subresourceRange, samplerParams, 0.0f, vertices);
 }
 
 std::string ImageTest::getGlslSamplerType (const tcu::TextureFormat& format, VkImageViewType type)
@@ -421,10 +422,10 @@ tcu::TestCaseGroup* createImageTests (tcu::TestContext& testCtx)
 	// All supported dEQP formats that are not intended for depth or stencil.
 	const VkFormat formats[] =
 	{
-		VK_FORMAT_R4G4_UNORM,
-		VK_FORMAT_R4G4B4A4_UNORM,
-		VK_FORMAT_R5G6B5_UNORM,
-		VK_FORMAT_R5G5B5A1_UNORM,
+		VK_FORMAT_R4G4_UNORM_PACK8,
+		VK_FORMAT_R4G4B4A4_UNORM_PACK16,
+		VK_FORMAT_R5G6B5_UNORM_PACK16,
+		VK_FORMAT_R5G5B5A1_UNORM_PACK16,
 		VK_FORMAT_R8_UNORM,
 		VK_FORMAT_R8_SNORM,
 		VK_FORMAT_R8_USCALED,
@@ -453,9 +454,9 @@ tcu::TestCaseGroup* createImageTests (tcu::TestContext& testCtx)
 		VK_FORMAT_R8G8B8A8_UINT,
 		VK_FORMAT_R8G8B8A8_SINT,
 		VK_FORMAT_R8G8B8A8_SRGB,
-		VK_FORMAT_R10G10B10A2_UNORM,
-		VK_FORMAT_R10G10B10A2_UINT,
-		VK_FORMAT_R10G10B10A2_USCALED,
+		VK_FORMAT_A2R10G10B10_UNORM_PACK32,
+		VK_FORMAT_A2R10G10B10_UINT_PACK32,
+		VK_FORMAT_A2R10G10B10_USCALED_PACK32,
 		VK_FORMAT_R16_UNORM,
 		VK_FORMAT_R16_SNORM,
 		VK_FORMAT_R16_USCALED,
@@ -496,50 +497,50 @@ tcu::TestCaseGroup* createImageTests (tcu::TestContext& testCtx)
 		VK_FORMAT_R32G32B32A32_UINT,
 		VK_FORMAT_R32G32B32A32_SINT,
 		VK_FORMAT_R32G32B32A32_SFLOAT,
-		VK_FORMAT_R11G11B10_UFLOAT,
-		VK_FORMAT_R9G9B9E5_UFLOAT,
-		VK_FORMAT_B4G4R4A4_UNORM,
-		VK_FORMAT_B5G5R5A1_UNORM,
+		VK_FORMAT_B10G11R11_UFLOAT_PACK32,
+		VK_FORMAT_E5B9G9R9_UFLOAT_PACK32,
+		VK_FORMAT_B4G4R4A4_UNORM_PACK16,
+		VK_FORMAT_B5G5R5A1_UNORM_PACK16,
 
 		// Compressed formats
-		VK_FORMAT_ETC2_R8G8B8_UNORM,
-		VK_FORMAT_ETC2_R8G8B8_SRGB,
-		VK_FORMAT_ETC2_R8G8B8A1_UNORM,
-		VK_FORMAT_ETC2_R8G8B8A1_SRGB,
-		VK_FORMAT_ETC2_R8G8B8A8_UNORM,
-		VK_FORMAT_ETC2_R8G8B8A8_SRGB,
-		VK_FORMAT_EAC_R11_UNORM,
-		VK_FORMAT_EAC_R11_SNORM,
-		VK_FORMAT_EAC_R11G11_UNORM,
-		VK_FORMAT_EAC_R11G11_SNORM,
-		VK_FORMAT_ASTC_4x4_UNORM,
-		VK_FORMAT_ASTC_4x4_SRGB,
-		VK_FORMAT_ASTC_5x4_UNORM,
-		VK_FORMAT_ASTC_5x4_SRGB,
-		VK_FORMAT_ASTC_5x5_UNORM,
-		VK_FORMAT_ASTC_5x5_SRGB,
-		VK_FORMAT_ASTC_6x5_UNORM,
-		VK_FORMAT_ASTC_6x5_SRGB,
-		VK_FORMAT_ASTC_6x6_UNORM,
-		VK_FORMAT_ASTC_6x6_SRGB,
-		VK_FORMAT_ASTC_8x5_UNORM,
-		VK_FORMAT_ASTC_8x5_SRGB,
-		VK_FORMAT_ASTC_8x6_UNORM,
-		VK_FORMAT_ASTC_8x6_SRGB,
-		VK_FORMAT_ASTC_8x8_UNORM,
-		VK_FORMAT_ASTC_8x8_SRGB,
-		VK_FORMAT_ASTC_10x5_UNORM,
-		VK_FORMAT_ASTC_10x5_SRGB,
-		VK_FORMAT_ASTC_10x6_UNORM,
-		VK_FORMAT_ASTC_10x6_SRGB,
-		VK_FORMAT_ASTC_10x8_UNORM,
-		VK_FORMAT_ASTC_10x8_SRGB,
-		VK_FORMAT_ASTC_10x10_UNORM,
-		VK_FORMAT_ASTC_10x10_SRGB,
-		VK_FORMAT_ASTC_12x10_UNORM,
-		VK_FORMAT_ASTC_12x10_SRGB,
-		VK_FORMAT_ASTC_12x12_UNORM,
-		VK_FORMAT_ASTC_12x12_SRGB,
+		VK_FORMAT_ETC2_R8G8B8_UNORM_BLOCK,
+		VK_FORMAT_ETC2_R8G8B8_SRGB_BLOCK,
+		VK_FORMAT_ETC2_R8G8B8A1_UNORM_BLOCK,
+		VK_FORMAT_ETC2_R8G8B8A1_SRGB_BLOCK,
+		VK_FORMAT_ETC2_R8G8B8A8_UNORM_BLOCK,
+		VK_FORMAT_ETC2_R8G8B8A8_SRGB_BLOCK,
+		VK_FORMAT_EAC_R11_UNORM_BLOCK,
+		VK_FORMAT_EAC_R11_SNORM_BLOCK,
+		VK_FORMAT_EAC_R11G11_UNORM_BLOCK,
+		VK_FORMAT_EAC_R11G11_SNORM_BLOCK,
+		VK_FORMAT_ASTC_4x4_UNORM_BLOCK,
+		VK_FORMAT_ASTC_4x4_SRGB_BLOCK,
+		VK_FORMAT_ASTC_5x4_UNORM_BLOCK,
+		VK_FORMAT_ASTC_5x4_SRGB_BLOCK,
+		VK_FORMAT_ASTC_5x5_UNORM_BLOCK,
+		VK_FORMAT_ASTC_5x5_SRGB_BLOCK,
+		VK_FORMAT_ASTC_6x5_UNORM_BLOCK,
+		VK_FORMAT_ASTC_6x5_SRGB_BLOCK,
+		VK_FORMAT_ASTC_6x6_UNORM_BLOCK,
+		VK_FORMAT_ASTC_6x6_SRGB_BLOCK,
+		VK_FORMAT_ASTC_8x5_UNORM_BLOCK,
+		VK_FORMAT_ASTC_8x5_SRGB_BLOCK,
+		VK_FORMAT_ASTC_8x6_UNORM_BLOCK,
+		VK_FORMAT_ASTC_8x6_SRGB_BLOCK,
+		VK_FORMAT_ASTC_8x8_UNORM_BLOCK,
+		VK_FORMAT_ASTC_8x8_SRGB_BLOCK,
+		VK_FORMAT_ASTC_10x5_UNORM_BLOCK,
+		VK_FORMAT_ASTC_10x5_SRGB_BLOCK,
+		VK_FORMAT_ASTC_10x6_UNORM_BLOCK,
+		VK_FORMAT_ASTC_10x6_SRGB_BLOCK,
+		VK_FORMAT_ASTC_10x8_UNORM_BLOCK,
+		VK_FORMAT_ASTC_10x8_SRGB_BLOCK,
+		VK_FORMAT_ASTC_10x10_UNORM_BLOCK,
+		VK_FORMAT_ASTC_10x10_SRGB_BLOCK,
+		VK_FORMAT_ASTC_12x10_UNORM_BLOCK,
+		VK_FORMAT_ASTC_12x10_SRGB_BLOCK,
+		VK_FORMAT_ASTC_12x12_UNORM_BLOCK,
+		VK_FORMAT_ASTC_12x12_SRGB_BLOCK,
 	};
 
 	de::MovePtr<tcu::TestCaseGroup> imageTests			(new tcu::TestCaseGroup(testCtx, "image", "Image tests"));

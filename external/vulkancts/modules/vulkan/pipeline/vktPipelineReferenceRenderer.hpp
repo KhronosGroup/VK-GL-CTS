@@ -335,12 +335,12 @@ private:
 	const rr::Program*			m_program;
 };
 
-rr::TestFunc					mapVkCompareOp			(vk::VkCompareOp compareFunc);
-rr::PrimitiveType				mapVkPrimitiveTopology	(vk::VkPrimitiveTopology primitiveTopology);
-rr::BlendFunc					mapVkBlend				(vk::VkBlend blend);
-rr::BlendEquation				mapVkBlendOp			(vk::VkBlendOp blendOp);
-tcu::BVec4						mapVkChannelFlags		(vk::VkChannelFlags flags);
-rr::StencilOp					mapVkStencilOp			(vk::VkStencilOp stencilOp);
+rr::TestFunc					mapVkCompareOp				(vk::VkCompareOp compareFunc);
+rr::PrimitiveType				mapVkPrimitiveTopology		(vk::VkPrimitiveTopology primitiveTopology);
+rr::BlendFunc					mapVkBlendFactor			(vk::VkBlendFactor blendFactor);
+rr::BlendEquation				mapVkBlendOp				(vk::VkBlendOp blendOp);
+tcu::BVec4						mapVkColorComponentFlags	(vk::VkColorComponentFlags flags);
+rr::StencilOp					mapVkStencilOp				(vk::VkStencilOp stencilOp);
 
 } // pipeline
 } // vkt
