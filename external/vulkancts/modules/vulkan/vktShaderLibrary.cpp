@@ -895,7 +895,7 @@ vk::VkShaderStageFlags getVkStageFlags (deUint32 stages)
 	for (int shaderType = 0; shaderType < glu::SHADERTYPE_LAST; shaderType++)
 	{
 		if ((stages & (1u << shaderType)) != 0)
-			vkStages |= 1u << vk::getVkShaderStage((glu::ShaderType)shaderType);
+			vkStages |= vk::getVkShaderStage((glu::ShaderType)shaderType);
 	}
 
 	return vkStages;

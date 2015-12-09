@@ -979,11 +979,12 @@ void SingleCmdRenderInstance::renderToTarget (void)
 	{
 		vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
 		DE_NULL,
-		vk::VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,	// flags
-		(vk::VkRenderPass)*m_renderPass,					// renderPass
-		0u,													// subpass
-		(vk::VkFramebuffer)*m_framebuffer,					// framebuffer
-		vk::VK_FALSE,										// occlusionQueryEnable
+		vk::VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT |
+		vk::VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT,	// flags
+		(vk::VkRenderPass)*m_renderPass,						// renderPass
+		0u,														// subpass
+		(vk::VkFramebuffer)*m_framebuffer,						// framebuffer
+		vk::VK_FALSE,											// occlusionQueryEnable
 		(vk::VkQueryControlFlags)0,
 		(vk::VkQueryPipelineStatisticFlags)0,
 	};
