@@ -140,7 +140,83 @@ private:
 	std::vector<BufferBlock*>		m_bufferBlocks;
 };
 
-class BufferLayout;
+struct BufferVarLayoutEntry
+{
+	BufferVarLayoutEntry (void)
+		: type					(glu::TYPE_LAST)
+		, blockNdx				(-1)
+		, offset				(-1)
+		, arraySize				(-1)
+		, arrayStride			(-1)
+		, matrixStride			(-1)
+		, topLevelArraySize		(-1)
+		, topLevelArrayStride	(-1)
+		, isRowMajor			(false)
+	{
+	}
+
+	std::string			name;
+	glu::DataType		type;
+	int					blockNdx;
+	int					offset;
+	int					arraySize;
+	int					arrayStride;
+	int					matrixStride;
+	int					topLevelArraySize;
+	int					topLevelArrayStride;
+	bool				isRowMajor;
+};
+
+struct BlockLayoutEntry
+{
+	BlockLayoutEntry (void)
+		: size(0)
+	{
+	}
+
+	std::string			name;
+	int					size;
+	std::vector<int>	activeVarIndices;
+};
+
+class BufferLayout
+{
+public:
+	std::vector<BlockLayoutEntry>		blocks;
+	std::vector<BufferVarLayoutEntry>	bufferVars;
+
+	int									getVariableIndex		(const std::string& name) const;
+	int									getBlockIndex			(const std::string& name) const;
+};
+
+// BlockDataPtr
+
+struct BlockDataPtr
+{
+	void*		ptr;
+	int			size;						//!< Redundant, for debugging purposes.
+	int			lastUnsizedArraySize;
+
+	BlockDataPtr (void* ptr_, int size_, int lastUnsizedArraySize_)
+		: ptr					(ptr_)
+		, size					(size_)
+		, lastUnsizedArraySize	(lastUnsizedArraySize_)
+	{
+	}
+
+	BlockDataPtr (void)
+		: ptr					(DE_NULL)
+		, size					(0)
+		, lastUnsizedArraySize	(0)
+	{
+	}
+};
+
+struct RefDataStorage
+{
+	std::vector<deUint8>			data;
+	std::vector<BlockDataPtr>	pointers;
+};
 
 class SSBOLayoutCase : public vkt::TestCase
 {
@@ -180,6 +256,9 @@ private:
 								SSBOLayoutCase				(const SSBOLayoutCase&);
 	SSBOLayoutCase&				operator=					(const SSBOLayoutCase&);
 
+	BufferLayout				m_refLayout;
+	RefDataStorage				m_initialData;	// Initial data stored in buffer.
+	RefDataStorage				m_writeData;		// Data written by compute shader.
 	std::string					m_computeShaderSrc;
 };
 

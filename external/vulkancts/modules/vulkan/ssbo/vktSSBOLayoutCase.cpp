@@ -54,6 +54,7 @@
 #include "deMemory.h"
 #include "deString.h"
 #include "deMath.h"
+#include "deSharedPtr.hpp"
 
 #include <algorithm>
 #include <map>
@@ -143,18 +144,6 @@ void BufferBlock::setArraySize (int arraySize)
 	m_arraySize = arraySize;
 }
 
-struct BlockLayoutEntry
-{
-	BlockLayoutEntry (void)
-		: size(0)
-	{
-	}
-
-	std::string			name;
-	int					size;
-	std::vector<int>	activeVarIndices;
-};
-
 std::ostream& operator<< (std::ostream& stream, const BlockLayoutEntry& entry)
 {
 	stream << entry.name << " { name = " << entry.name
@@ -171,33 +160,6 @@ std::ostream& operator<< (std::ostream& stream, const BlockLayoutEntry& entry)
 	stream << "] }";
 	return stream;
 }
-
-struct BufferVarLayoutEntry
-{
-	BufferVarLayoutEntry (void)
-		: type					(glu::TYPE_LAST)
-		, blockNdx				(-1)
-		, offset				(-1)
-		, arraySize				(-1)
-		, arrayStride			(-1)
-		, matrixStride			(-1)
-		, topLevelArraySize		(-1)
-		, topLevelArrayStride	(-1)
-		, isRowMajor			(false)
-	{
-	}
-
-	std::string			name;
-	glu::DataType		type;
-	int					blockNdx;
-	int					offset;
-	int					arraySize;
-	int					arrayStride;
-	int					matrixStride;
-	int					topLevelArraySize;
-	int					topLevelArrayStride;
-	bool				isRowMajor;
-};
 
 static bool isUnsizedArray (const BufferVarLayoutEntry& entry)
 {
@@ -219,16 +181,6 @@ std::ostream& operator<< (std::ostream& stream, const BufferVarLayoutEntry& entr
 		   << " }";
 	return stream;
 }
-
-class BufferLayout
-{
-public:
-	std::vector<BlockLayoutEntry>		blocks;
-	std::vector<BufferVarLayoutEntry>	bufferVars;
-
-	int									getVariableIndex		(const string& name) const;
-	int									getBlockIndex			(const string& name) const;
-};
 
 // \todo [2012-01-24 pyry] Speed up lookups using hash.
 
@@ -308,29 +260,6 @@ BufferBlock& ShaderInterface::allocBlock (const char* name)
 	return *m_bufferBlocks.back();
 }
 
-// BlockDataPtr
-
-struct BlockDataPtr
-{
-	void*		ptr;
-	int			size;						//!< Redundant, for debugging purposes.
-	int			lastUnsizedArraySize;
-
-	BlockDataPtr (void* ptr_, int size_, int lastUnsizedArraySize_)
-		: ptr					(ptr_)
-		, size					(size_)
-		, lastUnsizedArraySize	(lastUnsizedArraySize_)
-	{
-	}
-
-	BlockDataPtr (void)
-		: ptr					(DE_NULL)
-		, size					(0)
-		, lastUnsizedArraySize	(0)
-	{
-	}
-};
-
 namespace // Utilities
 {
 /*
@@ -380,13 +309,13 @@ int getDataTypeByteAlignment (glu::DataType type)
 			return 0;
 	}
 }
-/*
+
 static inline int deRoundUp32 (int a, int b)
 {
 	int d = a/b;
 	return d*b == a ? a : (d+1)*b;
 }
-*/
+
 int computeStd140BaseAlignment (const VarType& type, deUint32 layoutFlags)
 {
 	const int vec4Alignment = (int)sizeof(deUint32)*4;
@@ -1550,7 +1479,7 @@ void copyBufferVarData (const BufferVarLayoutEntry& dstEntry, const BlockDataPtr
 	}
 }
 
-/*
+
 void copyData (const BufferLayout& dstLayout, const vector<BlockDataPtr>& dstBlockPointers, const BufferLayout& srcLayout, const vector<BlockDataPtr>& srcBlockPointers)
 {
 	// \note Src layout is used as reference in case of activeVarIndices happens to be incorrect in dstLayout blocks.
@@ -1579,7 +1508,6 @@ void copyData (const BufferLayout& dstLayout, const vector<BlockDataPtr>& dstBlo
 		}
 	}
 }
-*/
 
 void copyNonWrittenData (
 	const BufferLayout&			layout,
@@ -1920,12 +1848,6 @@ BlockDataPtr getBlockDataPtr (const BufferLayout& layout, const BlockLayoutEntry
 		return BlockDataPtr(ptr, bufferSize, 0);
 }
 
-struct RefDataStorage
-{
-	vector<deUint8>			data;
-	vector<BlockDataPtr>	pointers;
-};
-
 struct Buffer
 {
 	deUint32				buffer;
@@ -1979,7 +1901,7 @@ void initRefDataStorage (const ShaderInterface& interface, const BufferLayout& l
 	}
 }
 
-/*
+
 vector<BlockDataPtr> blockLocationsToPtrs (const BufferLayout& layout, const vector<BlockLocation>& blockLocations, const vector<void*>& bufPtrs)
 {
 	vector<BlockDataPtr> blockPtrs(blockLocations.size());
@@ -1997,6 +1919,7 @@ vector<BlockDataPtr> blockLocationsToPtrs (const BufferLayout& layout, const vec
 	return blockPtrs;
 }
 
+/*
 vector<void*> mapBuffers (const glw::Functions& gl, const vector<Buffer>& buffers, deUint32 access)
 {
 	vector<void*> mapPtrs(buffers.size(), DE_NULL);
@@ -2129,13 +2052,42 @@ vk::Move<vk::VkBuffer> createBuffer (Context& context, vk::VkDeviceSize bufferSi
 class SSBOLayoutCaseInstance : public TestInstance
 {
 public:
-								SSBOLayoutCaseInstance	(Context& context);
+								SSBOLayoutCaseInstance	(Context&					context,
+														SSBOLayoutCase::BufferMode	bufferMode,
+														const ShaderInterface&		interface,
+														const BufferLayout&			refLayout,
+														const RefDataStorage&		initialData,
+														const RefDataStorage&		writeData);
 	virtual						~SSBOLayoutCaseInstance	(void);
 	virtual tcu::TestStatus		iterate						(void);
+
+private:
+	SSBOLayoutCase::BufferMode	m_bufferMode;
+	const ShaderInterface&		m_interface;
+	const BufferLayout&			m_refLayout;
+	const RefDataStorage&		m_initialData;	// Initial data stored in buffer.
+	const RefDataStorage&		m_writeData;		// Data written by compute shader.
+
+
+	typedef de::SharedPtr<vk::Unique<vk::VkBuffer> >	VkBufferSp;
+	typedef de::SharedPtr<vk::Allocation>				AllocationSp;
+
+	std::vector<VkBufferSp>		m_uniformBuffers;
+	std::vector<AllocationSp>	m_uniformAllocs;
 };
 
-SSBOLayoutCaseInstance::SSBOLayoutCaseInstance (Context& context)
-	: TestInstance (context)
+SSBOLayoutCaseInstance::SSBOLayoutCaseInstance (Context&					context,
+												SSBOLayoutCase::BufferMode	bufferMode,
+												const ShaderInterface&		interface,
+												const BufferLayout&			refLayout,
+												const RefDataStorage&		initialData,
+												const RefDataStorage&		writeData)
+	: TestInstance	(context)
+	, m_bufferMode	(bufferMode)
+	, m_interface	(interface)
+	, m_refLayout	(refLayout)
+	, m_initialData	(initialData)
+	, m_writeData	(writeData)
 {
 }
 
@@ -2143,6 +2095,57 @@ SSBOLayoutCaseInstance::~SSBOLayoutCaseInstance (void)
 {
 }
 
+/*
+SSBOLayoutCaseInstance:: (void)
+{
+	const int			numBlocks		= (int)glLayout.blocks.size();
+	const vector<int>	bufferSizes		= computeBufferSizes(m_interface, glLayout);
+
+	DE_ASSERT(bufferSizes.size() == glLayout.blocks.size());
+
+	blockLocations.resize(numBlocks);
+
+	if (m_bufferMode == BUFFERMODE_PER_BLOCK)
+	{
+		buffers.resize(numBlocks);
+
+		for (int blockNdx = 0; blockNdx < numBlocks; blockNdx++)
+		{
+			const int bufferSize = bufferSizes[blockNdx];
+
+			buffers[blockNdx].size = bufferSize;
+			blockLocations[blockNdx] = BlockLocation(blockNdx, 0, bufferSize);
+		}
+	}
+	else
+	{
+		DE_ASSERT(m_bufferMode == BUFFERMODE_SINGLE);
+
+		int		bindingAlignment	= 0;
+		int		totalSize			= 0;
+
+		gl.getIntegerv(GL_SHADER_STORAGE_BUFFER_OFFSET_ALIGNMENT, &bindingAlignment);
+
+		{
+			int curOffset = 0;
+			DE_ASSERT(bufferSizes.size() == glLayout.blocks.size());
+			for (int blockNdx = 0; blockNdx < numBlocks; blockNdx++)
+			{
+				const int bufferSize = bufferSizes[blockNdx];
+				if (bindingAlignment > 0)
+					curOffset = deRoundUp32(curOffset, bindingAlignment);
+
+				blockLocations[blockNdx] = BlockLocation(0, curOffset, bufferSize);
+				curOffset += bufferSize;
+			}
+			totalSize = curOffset;
+		}
+
+		buffers.resize(1);
+		buffers[0].size = totalSize;
+	}
+}
+*/
 tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 {
 	const vk::DeviceInterface&	vk					= m_context.getDeviceInterface();
@@ -2151,9 +2154,9 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 	const deUint32				queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
 
 	// Create descriptor set
-	const deUint32 bufferSize = 1024;
-	vk::Move<vk::VkBuffer> buffer (createBuffer(m_context, bufferSize, vk:: VK_BUFFER_USAGE_STORAGE_BUFFER_BIT));
-	de::UniquePtr<vk::Allocation> bufferAlloc (allocateAndBindMemory(m_context, *buffer, vk::MemoryRequirement::HostVisible));
+	const deUint32 acBufferSize = 1024;
+	vk::Move<vk::VkBuffer> acBuffer (createBuffer(m_context, acBufferSize, vk:: VK_BUFFER_USAGE_STORAGE_BUFFER_BIT));
+	de::UniquePtr<vk::Allocation> acBufferAlloc (allocateAndBindMemory(m_context, *acBuffer, vk::MemoryRequirement::HostVisible));
 
 	vk::DescriptorSetLayoutBuilder setLayoutBuilder;
 	vk::DescriptorPoolBuilder poolBuilder;
@@ -2161,14 +2164,20 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 	setLayoutBuilder
 		.addSingleBinding(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, vk::VK_SHADER_STAGE_COMPUTE_BIT);
 
-	poolBuilder
-		.addType(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+	const int numBlocks	= (int)m_refLayout.blocks.size();
+	for (int blockNdx = 0; blockNdx < numBlocks; blockNdx++)
+	{
+		setLayoutBuilder
+			.addSingleBinding(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, vk::VK_SHADER_STAGE_COMPUTE_BIT);
+	}
 
+	poolBuilder
+		.addType(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, (deUint32)(1 + numBlocks));
 
 	const vk::Unique<vk::VkDescriptorSetLayout> descriptorSetLayout(setLayoutBuilder.build(vk, device));
 	const vk::Unique<vk::VkDescriptorPool> descriptorPool(poolBuilder.build(vk, device, vk::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
 
-	const vk::VkDescriptorSetAllocateInfo   allocInfo   =
+	const vk::VkDescriptorSetAllocateInfo allocInfo =
 	{
 		vk::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
 		DE_NULL,
@@ -2178,12 +2187,103 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 	};
 
 	const vk::Unique<vk::VkDescriptorSet> descriptorSet(allocateDescriptorSet(vk, device, &allocInfo));
-	const vk::VkDescriptorBufferInfo descriptorInfo = makeDescriptorBufferInfo(*buffer, 0ull, bufferSize);
+	const vk::VkDescriptorBufferInfo descriptorInfo = makeDescriptorBufferInfo(*acBuffer, 0ull, acBufferSize);
 
 	vk::DescriptorSetUpdateBuilder setUpdateBuilder;
 
 	setUpdateBuilder
-		.writeSingle(*descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(0u), vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &descriptorInfo)
+		.writeSingle(*descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(0u), vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &descriptorInfo);
+
+	// Upload base buffers
+	{
+		const std::vector<int>			bufferSizes		= computeBufferSizes(m_interface, m_refLayout);
+		std::vector<void*>				mapPtrs;
+		std::vector<BlockLocation> 		blockLocations	(numBlocks);
+
+		DE_ASSERT(bufferSizes.size() == m_refLayout.blocks.size());
+
+		if (m_bufferMode == SSBOLayoutCase::BUFFERMODE_PER_BLOCK)
+		{
+			mapPtrs.resize(numBlocks);
+			for (int blockNdx = 0; blockNdx < numBlocks; blockNdx++)
+			{
+				const deUint32 bufferSize = bufferSizes[blockNdx];
+				blockLocations[blockNdx] = BlockLocation(blockNdx, 0, bufferSize);
+
+				vk::Move<vk::VkBuffer> 			buffer	= createBuffer(m_context, bufferSize, vk::VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+				de::MovePtr<vk::Allocation>		alloc	= allocateAndBindMemory(m_context, *buffer, vk::MemoryRequirement::HostVisible);
+
+				mapPtrs[blockNdx] = alloc->getHostPtr();
+
+				// \todo [2015-10-09 elecro] remove the '_hack_padding' variable if the driver support small uniforms,
+				// that is for example one float big uniforms.
+				const deUint32 hack_padding = bufferSize < 4 * sizeof(float) ? (deUint32)(3u * sizeof(float)) : 0u;
+				const vk::VkDescriptorBufferInfo descriptor = makeDescriptorBufferInfo(*buffer, 0ull, bufferSize + hack_padding);
+
+				m_uniformBuffers.push_back(VkBufferSp(new vk::Unique<vk::VkBuffer>(buffer)));
+				m_uniformAllocs.push_back(AllocationSp(alloc.release()));
+
+				setUpdateBuilder.writeSingle(*descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(blockNdx + 1),
+											vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &descriptor);
+			}
+		}
+		else
+		{
+			DE_ASSERT(m_bufferMode == SSBOLayoutCase::BUFFERMODE_SINGLE);
+
+			//gl.getIntegerv(GL_SHADER_STORAGE_BUFFER_OFFSET_ALIGNMENT, &bindingAlignment);
+			const int bindingAlignment = 1;			// minStorageBufferOffsetAlignment
+			int curOffset = 0;
+			for (int blockNdx = 0; blockNdx < numBlocks; blockNdx++)
+			{
+				const int bufferSize = bufferSizes[blockNdx];
+
+				if (bindingAlignment > 0)
+					curOffset = deRoundUp32(curOffset, bindingAlignment);
+
+				blockLocations[blockNdx] = BlockLocation(0, curOffset, bufferSize);
+				curOffset += bufferSize;
+			}
+			const int totalBufferSize = curOffset;
+
+			vk::Move<vk::VkBuffer> 			buffer	= createBuffer(m_context, totalBufferSize, vk::VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+			de::MovePtr<vk::Allocation>		alloc	= allocateAndBindMemory(m_context, *buffer, vk::MemoryRequirement::HostVisible);
+
+			mapPtrs.push_back(alloc->getHostPtr());
+
+			for (int blockNdx = 0; blockNdx < numBlocks; blockNdx++)
+			{
+				const deUint32 bufferSize = bufferSizes[blockNdx];
+				const deUint32 offset = blockLocations[blockNdx].offset;
+				// \todo [2015-10-09 elecro] remove the '_hack_padding' variable if the driver support small uniforms,
+				// that is for example one float big uniforms.
+				const deUint32 hack_padding = bufferSize < 4 * sizeof(float) ? (deUint32)(3u * sizeof(float)) : 0u;
+				const vk::VkDescriptorBufferInfo descriptor = makeDescriptorBufferInfo(*buffer, offset, bufferSize + hack_padding);
+
+				setUpdateBuilder.writeSingle(*descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(blockNdx + 1),
+										vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &descriptor);
+			}
+
+			m_uniformBuffers.push_back(VkBufferSp(new vk::Unique<vk::VkBuffer>(buffer)));
+			m_uniformAllocs.push_back(AllocationSp(alloc.release()));
+		}
+
+		{
+			const vector<BlockDataPtr>  mappedBlockPtrs = blockLocationsToPtrs(m_refLayout, blockLocations, mapPtrs);
+
+			copyData(m_refLayout, mappedBlockPtrs, m_refLayout, m_initialData.pointers);
+
+			DE_ASSERT(m_uniformAllocs.size() == bufferSizes.size());
+			for (size_t allocNdx = 0; allocNdx < m_uniformAllocs.size(); allocNdx++)
+			{
+				const int size = bufferSizes[allocNdx];
+				vk::Allocation* alloc = m_uniformAllocs[allocNdx].get();
+				flushMappedMemoryRange(vk, device, alloc->getMemory(), alloc->getOffset(), size);
+			}
+		}
+	}
+
+	setUpdateBuilder
 		.update(vk, device);
 
 	const deUint32 descriptorSetCount = 1; // (descriptorSetLayout != DE_NULL ? 1u : 0);
@@ -2314,26 +2414,23 @@ void SSBOLayoutCase::initPrograms (vk::SourceCollections& programCollection) con
 
 TestInstance* SSBOLayoutCase::createInstance (Context& context) const
 {
-	return new SSBOLayoutCaseInstance(context);
+	return new SSBOLayoutCaseInstance(context, m_bufferMode, m_interface, m_refLayout, m_initialData, m_writeData);
 }
 
 void SSBOLayoutCase::init (void)
 {
-	BufferLayout				refLayout;		// std140 / std430 layout.
-	RefDataStorage				initialData;	// Initial data stored in buffer.
-	RefDataStorage				writeData;		// Data written by compute shader.
+	//BufferLayout				refLayout;		// std140 / std430 layout.
+	//RefDataStorage				initialData;	// Initial data stored in buffer.
+	//RefDataStorage				writeData;		// Data written by compute shader.
 
-	vector<Buffer>				buffers;		// Buffers allocated for storage
-	vector<BlockLocation>		blockLocations;	// Block locations in storage (index, offset)
+	computeReferenceLayout	(m_refLayout, m_interface);
+	initRefDataStorage		(m_interface, m_refLayout, m_initialData);
+	initRefDataStorage		(m_interface, m_refLayout, m_writeData);
+	generateValues			(m_refLayout, m_initialData.pointers, deStringHash(getName()) ^ 0xad2f7214);
+	generateValues			(m_refLayout, m_writeData.pointers, deStringHash(getName()) ^ 0x25ca4e7);
+	copyNonWrittenData		(m_interface, m_refLayout, m_initialData.pointers, m_writeData.pointers);
 
-	computeReferenceLayout	(refLayout, m_interface);
-	initRefDataStorage		(m_interface, refLayout, initialData);
-	initRefDataStorage		(m_interface, refLayout, writeData);
-	generateValues			(refLayout, initialData.pointers, deStringHash(getName()) ^ 0xad2f7214);
-	generateValues			(refLayout, writeData.pointers, deStringHash(getName()) ^ 0x25ca4e7);
-	copyNonWrittenData		(m_interface, refLayout, initialData.pointers, writeData.pointers);
-
-	m_computeShaderSrc = generateComputeShader(m_interface, refLayout, initialData.pointers, writeData.pointers);
+	m_computeShaderSrc = generateComputeShader(m_interface, m_refLayout, m_initialData.pointers, m_writeData.pointers);
 }
 
 #if 0
