@@ -85,54 +85,63 @@ template<typename T>
 class Deleter
 {
 public:
-							Deleter		(const DeviceInterface& deviceIface, VkDevice device)
-								: m_deviceIface	(&deviceIface)
-								, m_device		(device)
-							{}
-							Deleter		(void)
-								: m_deviceIface	(DE_NULL)
-								, m_device		(DE_NULL)
-							{}
+									Deleter		(const DeviceInterface& deviceIface, VkDevice device, const VkAllocationCallbacks* allocator)
+										: m_deviceIface	(&deviceIface)
+										, m_device		(device)
+										, m_allocator	(allocator)
+									{}
+									Deleter		(void)
+										: m_deviceIface	(DE_NULL)
+										, m_device		(DE_NULL)
+										, m_allocator	(DE_NULL)
+									{}
 
-	void					operator()	(T obj) const;
+	void							operator()	(T obj) const;
 
 private:
-	const DeviceInterface*	m_deviceIface;
-	VkDevice				m_device;
+	const DeviceInterface*			m_deviceIface;
+	VkDevice						m_device;
+	const VkAllocationCallbacks*	m_allocator;
 };
 
 template<>
 class Deleter<VkInstance>
 {
 public:
-							Deleter		(const PlatformInterface& platformIface, VkInstance instance)
-								: m_destroyInstance((DestroyInstanceFunc)platformIface.getInstanceProcAddr(instance, "vkDestroyInstance"))
-							{}
-							Deleter		(void)
-								: m_destroyInstance((DestroyInstanceFunc)DE_NULL)
-							{}
+									Deleter		(const PlatformInterface& platformIface, VkInstance instance, const VkAllocationCallbacks* allocator)
+										: m_destroyInstance	((DestroyInstanceFunc)platformIface.getInstanceProcAddr(instance, "vkDestroyInstance"))
+										, m_allocator		(allocator)
+									{}
+									Deleter		(void)
+										: m_destroyInstance	((DestroyInstanceFunc)DE_NULL)
+										, m_allocator		(DE_NULL)
+									{}
 
-	void					operator()	(VkInstance obj) const { m_destroyInstance(obj, DE_NULL); }
+	void							operator()	(VkInstance obj) const { m_destroyInstance(obj, m_allocator); }
 
 private:
-	DestroyInstanceFunc		m_destroyInstance;
+	DestroyInstanceFunc				m_destroyInstance;
+	const VkAllocationCallbacks*	m_allocator;
 };
 
 template<>
 class Deleter<VkDevice>
 {
 public:
-							Deleter		(const InstanceInterface& instanceIface, VkDevice device)
-								: m_destroyDevice((DestroyDeviceFunc)instanceIface.getDeviceProcAddr(device, "vkDestroyDevice"))
-							{}
-							Deleter		(void)
-								: m_destroyDevice((DestroyDeviceFunc)DE_NULL)
-							{}
+									Deleter		(const InstanceInterface& instanceIface, VkDevice device, const VkAllocationCallbacks* allocator)
+										: m_destroyDevice	((DestroyDeviceFunc)instanceIface.getDeviceProcAddr(device, "vkDestroyDevice"))
+										, m_allocator		(allocator)
+									{}
+									Deleter		(void)
+										: m_destroyDevice	((DestroyDeviceFunc)DE_NULL)
+										, m_allocator		(DE_NULL)
+									{}
 
-	void					operator()	(VkDevice obj) const { m_destroyDevice(obj, DE_NULL); }
+	void							operator()	(VkDevice obj) const { m_destroyDevice(obj, m_allocator); }
 
 private:
-	DestroyDeviceFunc		m_destroyDevice;
+	DestroyDeviceFunc				m_destroyDevice;
+	const VkAllocationCallbacks*	m_allocator;
 };
 
 template<>

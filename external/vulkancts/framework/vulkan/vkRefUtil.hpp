@@ -42,8 +42,16 @@ namespace vk
 
 #include "vkRefUtil.inl"
 
-Move<VkPipeline>		createGraphicsPipeline	(const DeviceInterface& vk, VkDevice device, VkPipelineCache pipelineCache, const VkGraphicsPipelineCreateInfo* pCreateInfo);
-Move<VkPipeline>		createComputePipeline	(const DeviceInterface& vk, VkDevice device, VkPipelineCache pipelineCache, const VkComputePipelineCreateInfo* pCreateInfo);
+Move<VkPipeline>		createGraphicsPipeline	(const DeviceInterface&					vk,
+												 VkDevice								device,
+												 VkPipelineCache						pipelineCache,
+												 const VkGraphicsPipelineCreateInfo*	pCreateInfo,
+												 const VkAllocationCallbacks*			pAllocator = DE_NULL);
+Move<VkPipeline>		createComputePipeline	(const DeviceInterface&					vk,
+												 VkDevice								device,
+												 VkPipelineCache						pipelineCache,
+												 const VkComputePipelineCreateInfo*		pCreateInfo,
+												 const VkAllocationCallbacks*			pAllocator = DE_NULL);
 Move<VkCommandBuffer>	allocateCommandBuffer	(const DeviceInterface& vk, VkDevice device, const VkCommandBufferAllocateInfo* pAllocateInfo);
 Move<VkDescriptorSet>	allocateDescriptorSet	(const DeviceInterface& vk, VkDevice device, const VkDescriptorSetAllocateInfo* pAllocateInfo);
 

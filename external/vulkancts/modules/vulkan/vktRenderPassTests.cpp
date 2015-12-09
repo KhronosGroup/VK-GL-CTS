@@ -99,7 +99,6 @@ enum
 // Utility functions using flattened structs
 Move<VkFence> createFence (const DeviceInterface& vk, VkDevice device, VkFenceCreateFlags flags)
 {
-	VkFence object = 0;
 	const VkFenceCreateInfo pCreateInfo =
 	{
 		VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
@@ -107,8 +106,7 @@ Move<VkFence> createFence (const DeviceInterface& vk, VkDevice device, VkFenceCr
 
 		flags
 	};
-	VK_CHECK(vk.createFence(device, &pCreateInfo, DE_NULL, &object));
-	return Move<VkFence>(check<VkFence>(object), Deleter<VkFence>(vk, device));
+	return createFence(vk, device, &pCreateInfo);
 }
 
 Move<VkFramebuffer> createFramebuffer (const DeviceInterface&	vk,
@@ -121,7 +119,6 @@ Move<VkFramebuffer> createFramebuffer (const DeviceInterface&	vk,
 									   deUint32					pCreateInfo_height,
 									   deUint32					pCreateInfo_layers)
 {
-	VkFramebuffer object = 0;
 	const VkFramebufferCreateInfo pCreateInfo =
 	{
 		VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
@@ -134,8 +131,7 @@ Move<VkFramebuffer> createFramebuffer (const DeviceInterface&	vk,
 		pCreateInfo_height,
 		pCreateInfo_layers,
 	};
-	VK_CHECK(vk.createFramebuffer(device, &pCreateInfo, DE_NULL, &object));
-	return Move<VkFramebuffer>(check<VkFramebuffer>(object), Deleter<VkFramebuffer>(vk, device));
+	return createFramebuffer(vk, device, &pCreateInfo);
 }
 
 Move<VkImage> createImage (const DeviceInterface&	vk,
@@ -154,7 +150,6 @@ Move<VkImage> createImage (const DeviceInterface&	vk,
 						   const deUint32*			pCreateInfo_pQueueFamilyIndices,
 						   VkImageLayout			pCreateInfo_initialLayout)
 {
-	VkImage object = 0;
 	const VkImageCreateInfo pCreateInfo =
 	{
 		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
@@ -173,8 +168,7 @@ Move<VkImage> createImage (const DeviceInterface&	vk,
 		pCreateInfo_pQueueFamilyIndices,
 		pCreateInfo_initialLayout
 	};
-	VK_CHECK(vk.createImage(device, &pCreateInfo, DE_NULL, &object));
-	return Move<VkImage>(check<VkImage>(object), Deleter<VkImage>(vk, device));
+	return createImage(vk, device, &pCreateInfo);
 }
 
 void bindBufferMemory (const DeviceInterface& vk, VkDevice device, VkBuffer buffer, VkDeviceMemory mem, VkDeviceSize memOffset)
@@ -196,7 +190,6 @@ Move<VkImageView> createImageView (const DeviceInterface&	vk,
 									VkComponentMapping		pCreateInfo_components,
 									VkImageSubresourceRange	pCreateInfo_subresourceRange)
 {
-	VkImageView object = 0;
 	const VkImageViewCreateInfo pCreateInfo =
 	{
 		VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
@@ -208,8 +201,7 @@ Move<VkImageView> createImageView (const DeviceInterface&	vk,
 		pCreateInfo_components,
 		pCreateInfo_subresourceRange,
 	};
-	VK_CHECK(vk.createImageView(device, &pCreateInfo, DE_NULL, &object));
-	return Move<VkImageView>(check<VkImageView>(object), Deleter<VkImageView>(vk, device));
+	return createImageView(vk, device, &pCreateInfo);
 }
 
 Move<VkBuffer> createBuffer (const DeviceInterface&	vk,
@@ -221,7 +213,6 @@ Move<VkBuffer> createBuffer (const DeviceInterface&	vk,
 							 deUint32				pCreateInfo_queueFamilyCount,
 							 const deUint32*		pCreateInfo_pQueueFamilyIndices)
 {
-	VkBuffer object = 0;
 	const VkBufferCreateInfo pCreateInfo =
 	{
 		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
@@ -233,8 +224,7 @@ Move<VkBuffer> createBuffer (const DeviceInterface&	vk,
 		pCreateInfo_queueFamilyCount,
 		pCreateInfo_pQueueFamilyIndices,
 	};
-	VK_CHECK(vk.createBuffer(device, &pCreateInfo, DE_NULL, &object));
-	return Move<VkBuffer>(check<VkBuffer>(object), Deleter<VkBuffer>(vk, device));
+	return createBuffer(vk, device, &pCreateInfo);
 }
 
 Move<VkCommandPool> createCommandPool (const DeviceInterface&	vk,
@@ -242,7 +232,6 @@ Move<VkCommandPool> createCommandPool (const DeviceInterface&	vk,
 									   VkCommandPoolCreateFlags	pCreateInfo_flags,
 									   deUint32					pCreateInfo_queueFamilyIndex)
 {
-	VkCommandPool object = 0;
 	const VkCommandPoolCreateInfo pCreateInfo =
 	{
 		VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
@@ -250,8 +239,7 @@ Move<VkCommandPool> createCommandPool (const DeviceInterface&	vk,
 		pCreateInfo_flags,
 		pCreateInfo_queueFamilyIndex,
 	};
-	VK_CHECK(vk.createCommandPool(device, &pCreateInfo, DE_NULL, &object));
-	return Move<VkCommandPool>(check<VkCommandPool>(object), Deleter<VkCommandPool>(vk, device));
+	return createCommandPool(vk, device, &pCreateInfo);
 }
 
 void cmdBeginRenderPass (const DeviceInterface&	vk,
@@ -281,8 +269,7 @@ Move<VkCommandBuffer> allocateCommandBuffer (const DeviceInterface&	vk,
 											 VkCommandPool			pCreateInfo_commandPool,
 											 VkCommandBufferLevel	pCreateInfo_level)
 {
-	VkCommandBuffer object = 0;
-	const VkCommandBufferAllocateInfo pCreateInfo =
+	const VkCommandBufferAllocateInfo pAllocateInfo =
 	{
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
 		DE_NULL,
@@ -290,8 +277,7 @@ Move<VkCommandBuffer> allocateCommandBuffer (const DeviceInterface&	vk,
 		pCreateInfo_level,
 		1u,												// bufferCount
 	};
-	VK_CHECK(vk.allocateCommandBuffers(device, &pCreateInfo, &object));
-	return Move<VkCommandBuffer>(check<VkCommandBuffer>(object), Deleter<VkCommandBuffer>(vk, device, pCreateInfo_commandPool));
+	return allocateCommandBuffer(vk, device, &pAllocateInfo);
 }
 
 void beginCommandBuffer (const DeviceInterface&			vk,

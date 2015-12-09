@@ -39,18 +39,26 @@ namespace vk
 
 #include "vkRefUtilImpl.inl"
 
-Move<VkPipeline> createGraphicsPipeline (const DeviceInterface& vk, VkDevice device, VkPipelineCache pipelineCache, const VkGraphicsPipelineCreateInfo* pCreateInfo)
+Move<VkPipeline> createGraphicsPipeline (const DeviceInterface&					vk,
+										 VkDevice								device,
+										 VkPipelineCache						pipelineCache,
+										 const VkGraphicsPipelineCreateInfo*	pCreateInfo,
+										 const VkAllocationCallbacks*			pAllocator)
 {
 	VkPipeline object = 0;
-	VK_CHECK(vk.createGraphicsPipelines(device, pipelineCache, 1u, pCreateInfo, DE_NULL, &object));
-	return Move<VkPipeline>(check<VkPipeline>(object), Deleter<VkPipeline>(vk, device));
+	VK_CHECK(vk.createGraphicsPipelines(device, pipelineCache, 1u, pCreateInfo, pAllocator, &object));
+	return Move<VkPipeline>(check<VkPipeline>(object), Deleter<VkPipeline>(vk, device, pAllocator));
 }
 
-Move<VkPipeline> createComputePipeline (const DeviceInterface& vk, VkDevice device, VkPipelineCache pipelineCache, const VkComputePipelineCreateInfo* pCreateInfo)
+Move<VkPipeline> createComputePipeline (const DeviceInterface&				vk,
+										VkDevice							device,
+										VkPipelineCache						pipelineCache,
+										const VkComputePipelineCreateInfo*	pCreateInfo,
+										const VkAllocationCallbacks*		pAllocator)
 {
 	VkPipeline object = 0;
-	VK_CHECK(vk.createComputePipelines(device, pipelineCache, 1u, pCreateInfo, DE_NULL, &object));
-	return Move<VkPipeline>(check<VkPipeline>(object), Deleter<VkPipeline>(vk, device));
+	VK_CHECK(vk.createComputePipelines(device, pipelineCache, 1u, pCreateInfo, pAllocator, &object));
+	return Move<VkPipeline>(check<VkPipeline>(object), Deleter<VkPipeline>(vk, device, pAllocator));
 }
 
 Move<VkCommandBuffer> allocateCommandBuffer (const DeviceInterface& vk, VkDevice device, const VkCommandBufferAllocateInfo* pAllocateInfo)
