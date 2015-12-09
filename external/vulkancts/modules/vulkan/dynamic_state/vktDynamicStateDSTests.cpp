@@ -72,19 +72,6 @@ inline tcu::Vec4 vec4Blue (void)
 	return tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f);
 }
 
-vk::Move<vk::VkShader> createShader(const vk::DeviceInterface &vk, const vk::VkDevice device, 
-									const vk::VkShaderModule module, const char* name, const vk::VkShaderStage stage)
-{
-	vk::VkShaderCreateInfo createInfo;
-	createInfo.sType	= vk::VK_STRUCTURE_TYPE_SHADER_CREATE_INFO;
-	createInfo.pNext	= DE_NULL;
-	createInfo.module	= module;
-	createInfo.pName	= name;
-	createInfo.flags	= 0;
-	createInfo.stage	= stage;
-	return vk::createShader(vk, device, &createInfo);
-}
-
 namespace
 {
 
@@ -133,15 +120,15 @@ protected:
 
 	de::SharedPtr<Image>							m_colorTargetImage;
 	vk::Move<vk::VkImageView>						m_colorTargetView;
-
+		
 	de::SharedPtr<Image>							m_depthStencilImage;
 	vk::Move<vk::VkImageView>						m_attachmentView;
 
 	PipelineCreateInfo::VertexInputState			m_vertexInputState;
 	de::SharedPtr<Buffer>							m_vertexBuffer;
 
-	vk::Move<vk::VkCmdPool>							m_cmdPool;
-	vk::Move<vk::VkCmdBuffer>						m_cmdBuffer;
+	vk::Move<vk::VkCommandPool>						m_cmdPool;
+	vk::Move<vk::VkCommandBuffer>					m_cmdBuffer;
 
 	vk::Move<vk::VkFramebuffer>						m_framebuffer;
 	vk::Move<vk::VkRenderPass>						m_renderPass;
@@ -151,8 +138,8 @@ protected:
 
 	std::vector<Vec4RGBA>							m_data;
 
-	PipelineCreateInfo::DepthStencilState		m_depthStencilState_1;
-	PipelineCreateInfo::DepthStencilState		m_depthStencilState_2;
+	PipelineCreateInfo::DepthStencilState			m_depthStencilState_1;
+	PipelineCreateInfo::DepthStencilState			m_depthStencilState_2;
 
 	void initialize (void)
 	{
@@ -162,27 +149,21 @@ protected:
 		const PipelineLayoutCreateInfo pipelineLayoutCreateInfo;
 		m_pipelineLayout = vk::createPipelineLayout(m_vk, device, &pipelineLayoutCreateInfo);
 
-		const vk::Unique<vk::VkShader> vs(createShader(m_vk, device,
-			*createShaderModule(m_vk, device, m_context.getBinaryCollection().get(m_vertexShaderName), 0),
-			"main", vk::VK_SHADER_STAGE_VERTEX));
-
-		const vk::Unique<vk::VkShader> fs(createShader(m_vk, device,
-			*createShaderModule(m_vk, device, m_context.getBinaryCollection().get(m_fragmentShaderName), 0),
-			"main", vk::VK_SHADER_STAGE_FRAGMENT));
-
+		const vk::Unique<vk::VkShaderModule> vs(createShaderModule(m_vk, device, m_context.getBinaryCollection().get(m_vertexShaderName), 0));
+		const vk::Unique<vk::VkShaderModule> fs(createShaderModule(m_vk, device, m_context.getBinaryCollection().get(m_fragmentShaderName), 0));
 
 		const vk::VkExtent3D imageExtent = { WIDTH, HEIGHT, 1 };
-		const ImageCreateInfo targetImageCreateInfo(vk::VK_IMAGE_TYPE_2D, m_colorAttachmentFormat, imageExtent, 1, 1, 1, 
-			vk::VK_IMAGE_TILING_OPTIMAL, vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | vk::VK_IMAGE_USAGE_TRANSFER_SOURCE_BIT);
+		const ImageCreateInfo targetImageCreateInfo(vk::VK_IMAGE_TYPE_2D, m_colorAttachmentFormat, imageExtent, 1, 1, vk::VK_SAMPLE_COUNT_1_BIT, 
+			vk::VK_IMAGE_TILING_OPTIMAL, vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
 
-		m_colorTargetImage = Image::CreateAndAlloc(m_vk, device, targetImageCreateInfo, m_context.getDefaultAllocator());
+		m_colorTargetImage = Image::createAndAlloc(m_vk, device, targetImageCreateInfo, m_context.getDefaultAllocator());
 
 		const ImageCreateInfo depthStencilImageCreateInfo(
 			vk::VK_IMAGE_TYPE_2D, m_depthStencilAttachmentFormat, imageExtent,
-			1, 1, 1, vk::VK_IMAGE_TILING_OPTIMAL,
+			1, 1, vk::VK_SAMPLE_COUNT_1_BIT, vk::VK_IMAGE_TILING_OPTIMAL,
 			vk::VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
 
-		m_depthStencilImage = Image::CreateAndAlloc(m_vk, device, depthStencilImageCreateInfo, m_context.getDefaultAllocator());
+		m_depthStencilImage = Image::createAndAlloc(m_vk, device, depthStencilImageCreateInfo, m_context.getDefaultAllocator());
 
 		const ImageViewCreateInfo colorTargetViewInfo(m_colorTargetImage->object(), vk::VK_IMAGE_VIEW_TYPE_2D, m_colorAttachmentFormat);
 		m_colorTargetView = vk::createImageView(m_vk, device, &colorTargetViewInfo);
@@ -193,7 +174,7 @@ protected:
 		RenderPassCreateInfo renderPassCreateInfo;
 		renderPassCreateInfo.addAttachment(AttachmentDescription(
 			m_colorAttachmentFormat,
-			1,
+			vk::VK_SAMPLE_COUNT_1_BIT,
 			vk::VK_ATTACHMENT_LOAD_OP_LOAD,
 			vk::VK_ATTACHMENT_STORE_OP_STORE,
 			vk::VK_ATTACHMENT_LOAD_OP_DONT_CARE,
@@ -203,7 +184,7 @@ protected:
 
 		renderPassCreateInfo.addAttachment(AttachmentDescription(
 			m_depthStencilAttachmentFormat,
-			1,
+			vk::VK_SAMPLE_COUNT_1_BIT,
 			vk::VK_ATTACHMENT_LOAD_OP_LOAD,
 			vk::VK_ATTACHMENT_STORE_OP_STORE,
 			vk::VK_ATTACHMENT_LOAD_OP_DONT_CARE,
@@ -225,7 +206,7 @@ protected:
 
 		renderPassCreateInfo.addSubpass(SubpassDescription(
 			vk::VK_PIPELINE_BIND_POINT_GRAPHICS,
-			vk::VK_SUBPASS_DESCRIPTION_NO_OVERDRAW_BIT,
+			0,
 			0,
 			DE_NULL,
 			1,
@@ -241,7 +222,7 @@ protected:
 		{
 			0,
 			sizeof(tcu::Vec4) * 2,
-			vk::VK_VERTEX_INPUT_STEP_RATE_VERTEX,
+			vk::VK_VERTEX_INPUT_RATE_VERTEX,
 		};
 
 		const vk::VkVertexInputAttributeDescription vertexInputAttributeDescriptions[2] =
@@ -269,8 +250,8 @@ protected:
 		const PipelineCreateInfo::ColorBlendState::Attachment vkCbAttachmentState;
 
 		PipelineCreateInfo pipelineCreateInfo_1(*m_pipelineLayout, *m_renderPass, 0, 0);
-		pipelineCreateInfo_1.addShader(PipelineCreateInfo::PipelineShaderStage(*vs, vk::VK_SHADER_STAGE_VERTEX));
-		pipelineCreateInfo_1.addShader(PipelineCreateInfo::PipelineShaderStage(*fs, vk::VK_SHADER_STAGE_FRAGMENT));
+		pipelineCreateInfo_1.addShader(PipelineCreateInfo::PipelineShaderStage(*vs, "main", vk::VK_SHADER_STAGE_VERTEX_BIT));
+		pipelineCreateInfo_1.addShader(PipelineCreateInfo::PipelineShaderStage(*fs, "main", vk::VK_SHADER_STAGE_FRAGMENT_BIT));
 		pipelineCreateInfo_1.addState(PipelineCreateInfo::VertexInputState(m_vertexInputState));
 		pipelineCreateInfo_1.addState(PipelineCreateInfo::InputAssemblerState(m_topology));
 		pipelineCreateInfo_1.addState(PipelineCreateInfo::ColorBlendState(1, &vkCbAttachmentState));
@@ -281,8 +262,8 @@ protected:
 		pipelineCreateInfo_1.addState(PipelineCreateInfo::DynamicState());
 
 		PipelineCreateInfo pipelineCreateInfo_2(*m_pipelineLayout, *m_renderPass, 0, 0);
-		pipelineCreateInfo_2.addShader(PipelineCreateInfo::PipelineShaderStage(*vs, vk::VK_SHADER_STAGE_VERTEX));
-		pipelineCreateInfo_2.addShader(PipelineCreateInfo::PipelineShaderStage(*fs, vk::VK_SHADER_STAGE_FRAGMENT));
+		pipelineCreateInfo_2.addShader(PipelineCreateInfo::PipelineShaderStage(*vs, "main", vk::VK_SHADER_STAGE_VERTEX_BIT));
+		pipelineCreateInfo_2.addShader(PipelineCreateInfo::PipelineShaderStage(*fs, "main", vk::VK_SHADER_STAGE_FRAGMENT_BIT));
 		pipelineCreateInfo_2.addState(PipelineCreateInfo::VertexInputState(m_vertexInputState));
 		pipelineCreateInfo_2.addState(PipelineCreateInfo::InputAssemblerState(m_topology));
 		pipelineCreateInfo_2.addState(PipelineCreateInfo::ColorBlendState(1, &vkCbAttachmentState));
@@ -304,7 +285,7 @@ protected:
 		m_framebuffer = vk::createFramebuffer(m_vk, device, &framebufferCreateInfo);
 
 		const vk::VkDeviceSize dataSize = m_data.size() * sizeof(Vec4RGBA);
-		m_vertexBuffer = Buffer::CreateAndAlloc(m_vk, device, BufferCreateInfo(dataSize,
+		m_vertexBuffer = Buffer::createAndAlloc(m_vk, device, BufferCreateInfo(dataSize,
 			vk::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT),
 			m_context.getDefaultAllocator(), vk::MemoryRequirement::HostVisible);
 
@@ -319,8 +300,15 @@ protected:
 		const CmdPoolCreateInfo cmdPoolCreateInfo(m_context.getUniversalQueueFamilyIndex());
 		m_cmdPool = vk::createCommandPool(m_vk, device, &cmdPoolCreateInfo);
 
-		const CmdBufferCreateInfo cmdBufCreateInfo(*m_cmdPool, vk::VK_CMD_BUFFER_LEVEL_PRIMARY, 0);
-		m_cmdBuffer = vk::createCommandBuffer(m_vk, device, &cmdBufCreateInfo);
+		const vk::VkCommandBufferAllocateInfo cmdBufferAllocateInfo =
+		{
+			vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,	// VkStructureType			sType;
+			DE_NULL,											// const void*				pNext;
+			*m_cmdPool,											// VkCommandPool			commandPool;
+			vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY,				// VkCommandBufferLevel		level;
+			1u,													// deUint32					bufferCount;
+		};
+		m_cmdBuffer = vk::allocateCommandBuffer(m_vk, device, &cmdBufferAllocateInfo);
 	}
 
 	virtual tcu::TestStatus iterate (void)
@@ -340,7 +328,7 @@ protected:
 		m_vk.beginCommandBuffer(*m_cmdBuffer, &beginInfo);
 
 		initialTransitionColor2DImage(m_vk, *m_cmdBuffer, m_colorTargetImage->object(), vk::VK_IMAGE_LAYOUT_GENERAL);
-		initialTransitionDepthStencil2DImage(m_vk, *m_cmdBuffer, m_depthStencilImage->object(), vk::VK_IMAGE_LAYOUT_TRANSFER_DESTINATION_OPTIMAL);
+		initialTransitionDepthStencil2DImage(m_vk, *m_cmdBuffer, m_depthStencilImage->object(), vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
 		const ImageSubresourceRange subresourceRangeImage(vk::VK_IMAGE_ASPECT_COLOR_BIT);
 		m_vk.cmdClearColorImage(*m_cmdBuffer, m_colorTargetImage->object(),
@@ -350,19 +338,19 @@ protected:
 
 		const ImageSubresourceRange subresourceRangeDepthStencil[2] = { vk::VK_IMAGE_ASPECT_DEPTH_BIT, vk::VK_IMAGE_ASPECT_STENCIL_BIT };
 		m_vk.cmdClearDepthStencilImage(*m_cmdBuffer, m_depthStencilImage->object(),
-			vk::VK_IMAGE_LAYOUT_TRANSFER_DESTINATION_OPTIMAL, &depthStencilClearValue, 2, subresourceRangeDepthStencil);
+			vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &depthStencilClearValue, 2, subresourceRangeDepthStencil);
 
 		const vk::VkRect2D renderArea = { { 0, 0 }, { WIDTH, HEIGHT } };
 		const RenderPassBeginInfo renderPassBegin(*m_renderPass, *m_framebuffer, renderArea);
 
-		m_vk.cmdBeginRenderPass(*m_cmdBuffer, &renderPassBegin, vk::VK_RENDER_PASS_CONTENTS_INLINE);
+		m_vk.cmdBeginRenderPass(*m_cmdBuffer, &renderPassBegin, vk::VK_SUBPASS_CONTENTS_INLINE);
 	}
 
 	void setDynamicViewportState (const deUint32 width, const deUint32 height)
 	{
 		vk::VkViewport viewport;
-		viewport.originX = 0;
-		viewport.originY = 0;
+		viewport.x = 0;
+		viewport.y = 0;
 		viewport.width = static_cast<float>(width);
 		viewport.height = static_cast<float>(height);
 		viewport.minDepth = 0.0f;
@@ -384,20 +372,20 @@ protected:
 		m_vk.cmdSetScissor(*m_cmdBuffer, viewportCount, pScissors);
 	}
 
-	void setDynamicRasterState(const float lineWidth = 1.0f,
-							   const float depthBias = 0.0f,
+	void setDynamicRasterizationState(const float lineWidth = 1.0f,
+							   const float depthBiasConstantFactor = 0.0f,
 							   const float depthBiasClamp = 0.0f,
-							   const float slopeScaledDepthBias = 0.0f)
+							   const float depthBiasSlopeFactor = 0.0f)
 	{
 		m_vk.cmdSetLineWidth(*m_cmdBuffer, lineWidth);
-		m_vk.cmdSetDepthBias(*m_cmdBuffer, depthBias, depthBiasClamp, slopeScaledDepthBias);
+		m_vk.cmdSetDepthBias(*m_cmdBuffer, depthBiasConstantFactor, depthBiasClamp, depthBiasSlopeFactor);
 	}
 
 	void setDynamicBlendState(const float const1 = 0.0f, const float const2 = 0.0f,
 							  const float const3 = 0.0f, const float const4 = 0.0f)
 	{
-		float blendConstants[4] = { const1, const2, const3, const4 };
-		m_vk.cmdSetBlendConstants(*m_cmdBuffer, blendConstants);
+		float blendConstantsants[4] = { const1, const2, const3, const4 };
+		m_vk.cmdSetBlendConstants(*m_cmdBuffer, blendConstantsants);
 	}
 
 	void setDynamicDepthStencilState(const float minDepthBounds = -1.0f, 
@@ -465,7 +453,7 @@ public:
 
 		// set states here
 		setDynamicViewportState(WIDTH, HEIGHT);
-		setDynamicRasterState();
+		setDynamicRasterizationState();
 		setDynamicBlendState();
 		setDynamicDepthStencilState(0.5f, 0.75f);
 
@@ -483,8 +471,18 @@ public:
 		m_vk.cmdEndRenderPass(*m_cmdBuffer);
 		m_vk.endCommandBuffer(*m_cmdBuffer);
 
-		const vk::VkCmdBuffer cmdBuffer = *m_cmdBuffer;
-		VK_CHECK(m_vk.queueSubmit(queue, 1, &cmdBuffer, DE_NULL));
+		vk::VkSubmitInfo submitInfo =
+		{
+			vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,	// VkStructureType			sType;
+			DE_NULL,							// const void*				pNext;
+			0, 									// deUint32					waitSemaphoreCount;
+			DE_NULL, 							// const VkSemaphore*		pWaitSemaphores;
+			1, 									// deUint32					commandBufferCount;
+			&m_cmdBuffer.get(),					// const VkCommandBuffer*	pCommandBuffers;
+			0, 									// deUint32					signalSemaphoreCount;
+			DE_NULL								// const VkSemaphore*		pSignalSemaphores;
+		};
+		m_vk.queueSubmit(queue, 1, &submitInfo, DE_NULL);
 
 		// validation
 		{
@@ -515,7 +513,7 @@ public:
 
 			const vk::VkOffset3D zeroOffset = { 0, 0, 0 };
 			const tcu::ConstPixelBufferAccess renderedFrame = m_colorTargetImage->readSurface(queue, m_context.getDefaultAllocator(),
-				vk::VK_IMAGE_LAYOUT_GENERAL, zeroOffset, WIDTH, HEIGHT, vk::VK_IMAGE_ASPECT_COLOR);
+				vk::VK_IMAGE_LAYOUT_GENERAL, zeroOffset, WIDTH, HEIGHT, vk::VK_IMAGE_ASPECT_COLOR_BIT);
 
 			qpTestResult res = QP_TEST_RESULT_PASS;
 
@@ -608,7 +606,7 @@ public:
 
 		// set states here
 		setDynamicViewportState(WIDTH, HEIGHT);
-		setDynamicRasterState();
+		setDynamicRasterizationState();
 		setDynamicBlendState();
 
 		const vk::VkDeviceSize vertexBufferOffset = 0;
@@ -626,8 +624,18 @@ public:
 		m_vk.cmdEndRenderPass(*m_cmdBuffer);
 		m_vk.endCommandBuffer(*m_cmdBuffer);
 
-		const vk::VkCmdBuffer cmdBuffer = *m_cmdBuffer;
-		VK_CHECK(m_vk.queueSubmit(queue, 1, &cmdBuffer, DE_NULL));
+		vk::VkSubmitInfo submitInfo =
+		{
+			vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,	// VkStructureType			sType;
+			DE_NULL,							// const void*				pNext;
+			0, 									// deUint32					waitSemaphoreCount;
+			DE_NULL, 							// const VkSemaphore*		pWaitSemaphores;
+			1, 									// deUint32					commandBufferCount;
+			&m_cmdBuffer.get(),					// const VkCommandBuffer*	pCommandBuffers;
+			0, 									// deUint32					signalSemaphoreCount;
+			DE_NULL								// const VkSemaphore*		pSignalSemaphores;
+		};
+		m_vk.queueSubmit(queue, 1, &submitInfo, DE_NULL);
 
 		// validation
 		{
@@ -654,7 +662,7 @@ public:
 
 			const vk::VkOffset3D zeroOffset = { 0, 0, 0 };
 			const tcu::ConstPixelBufferAccess renderedFrame = m_colorTargetImage->readSurface(queue, m_context.getDefaultAllocator(),
-				vk::VK_IMAGE_LAYOUT_GENERAL, zeroOffset, WIDTH, HEIGHT, vk::VK_IMAGE_ASPECT_COLOR);
+				vk::VK_IMAGE_LAYOUT_GENERAL, zeroOffset, WIDTH, HEIGHT, vk::VK_IMAGE_ASPECT_COLOR_BIT);
 
 			qpTestResult res = QP_TEST_RESULT_PASS;
 
@@ -769,7 +777,7 @@ public:
 
 		// set states here
 		setDynamicViewportState(WIDTH, HEIGHT);
-		setDynamicRasterState();
+		setDynamicRasterizationState();
 		setDynamicBlendState();
 
 		const vk::VkDeviceSize vertexBufferOffset = 0;
@@ -787,8 +795,18 @@ public:
 		m_vk.cmdEndRenderPass(*m_cmdBuffer);
 		m_vk.endCommandBuffer(*m_cmdBuffer);
 
-		const vk::VkCmdBuffer cmdBuffer = *m_cmdBuffer;
-		VK_CHECK(m_vk.queueSubmit(queue, 1, &cmdBuffer, DE_NULL));
+		vk::VkSubmitInfo submitInfo =
+		{
+			vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,	// VkStructureType			sType;
+			DE_NULL,							// const void*				pNext;
+			0, 									// deUint32					waitSemaphoreCount;
+			DE_NULL, 							// const VkSemaphore*		pWaitSemaphores;
+			1, 									// deUint32					commandBufferCount;
+			&m_cmdBuffer.get(),					// const VkCommandBuffer*	pCommandBuffers;
+			0, 									// deUint32					signalSemaphoreCount;
+			DE_NULL								// const VkSemaphore*		pSignalSemaphores;
+		};
+		m_vk.queueSubmit(queue, 1, &submitInfo, DE_NULL);
 
 		// validation
 		{
@@ -817,7 +835,7 @@ public:
 
 			const vk::VkOffset3D zeroOffset = { 0, 0, 0 };
 			const tcu::ConstPixelBufferAccess renderedFrame = m_colorTargetImage->readSurface(queue, m_context.getDefaultAllocator(),
-				vk::VK_IMAGE_LAYOUT_GENERAL, zeroOffset, WIDTH, HEIGHT, vk::VK_IMAGE_ASPECT_COLOR);
+				vk::VK_IMAGE_LAYOUT_GENERAL, zeroOffset, WIDTH, HEIGHT, vk::VK_IMAGE_ASPECT_COLOR_BIT);
 
 			qpTestResult res = QP_TEST_RESULT_PASS;
 

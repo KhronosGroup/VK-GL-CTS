@@ -45,9 +45,9 @@
 #include "vkRefUtil.hpp"
 #include "vkImageUtil.hpp"
 
+#include "vktDynamicStateCreateInfoUtil.hpp"
 #include "vktDynamicStateImageObjectUtil.hpp"
 #include "vktDynamicStateBufferObjectUtil.hpp"
-#include "vktDynamicStateCreateInfoUtil.hpp"
 #include "vkPrograms.hpp"
 
 namespace vkt
@@ -79,9 +79,6 @@ struct Vec4RGBA
 	tcu::Vec4 position;
 	tcu::Vec4 color;
 };
-
-vk::Move<vk::VkShader> createShader(const vk::DeviceInterface &vk, const vk::VkDevice device, 
-									const vk::VkShaderModule module, const char* name, vk::VkShaderStage stage);
 	
 class DynamicStateBaseClass : public TestInstance
 {
@@ -119,8 +116,8 @@ protected:
 	PipelineCreateInfo::VertexInputState			m_vertexInputState;
 	de::SharedPtr<Buffer>							m_vertexBuffer;
 
-	vk::Move<vk::VkCmdPool>							m_cmdPool;
-	vk::Move<vk::VkCmdBuffer>						m_cmdBuffer;
+	vk::Move<vk::VkCommandPool>						m_cmdPool;
+	vk::Move<vk::VkCommandBuffer>					m_cmdBuffer;
 
 	vk::Move<vk::VkFramebuffer>						m_framebuffer;
 	vk::Move<vk::VkRenderPass>						m_renderPass;
@@ -140,10 +137,10 @@ protected:
 		m_pipelineLayout = vk::createPipelineLayout(m_vk, device, &pipelineLayoutCreateInfo);
 
 		const vk::VkExtent3D targetImageExtent = { WIDTH, HEIGHT, 1 };
-		const ImageCreateInfo targetImageCreateInfo(vk::VK_IMAGE_TYPE_2D, m_colorAttachmentFormat, targetImageExtent, 1, 1, 1, 
-			vk::VK_IMAGE_TILING_OPTIMAL, vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | vk::VK_IMAGE_USAGE_TRANSFER_SOURCE_BIT);
+		const ImageCreateInfo targetImageCreateInfo(vk::VK_IMAGE_TYPE_2D, m_colorAttachmentFormat, targetImageExtent, 1, 1, vk::VK_SAMPLE_COUNT_1_BIT, 
+			vk::VK_IMAGE_TILING_OPTIMAL, vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
 
-		m_colorTargetImage = Image::CreateAndAlloc(m_vk, device, targetImageCreateInfo, m_context.getDefaultAllocator());
+		m_colorTargetImage = Image::createAndAlloc(m_vk, device, targetImageCreateInfo, m_context.getDefaultAllocator());
 
 		const ImageViewCreateInfo colorTargetViewInfo(m_colorTargetImage->object(), vk::VK_IMAGE_VIEW_TYPE_2D, m_colorAttachmentFormat);
 		m_colorTargetView = vk::createImageView(m_vk, device, &colorTargetViewInfo);
@@ -151,7 +148,7 @@ protected:
 		RenderPassCreateInfo renderPassCreateInfo;
 		renderPassCreateInfo.addAttachment(AttachmentDescription(
 			m_colorAttachmentFormat,
-			1,
+			vk::VK_SAMPLE_COUNT_1_BIT,
 			vk::VK_ATTACHMENT_LOAD_OP_LOAD,
 			vk::VK_ATTACHMENT_STORE_OP_STORE,
 			vk::VK_ATTACHMENT_LOAD_OP_DONT_CARE,
@@ -194,7 +191,7 @@ protected:
 		{
 			0,
 			sizeof(tcu::Vec4) * 2,
-			vk::VK_VERTEX_INPUT_STEP_RATE_VERTEX,
+			vk::VK_VERTEX_INPUT_RATE_VERTEX,
 		};
 
 		const vk::VkVertexInputAttributeDescription vertexInputAttributeDescriptions[2] =
@@ -220,7 +217,7 @@ protected:
 			vertexInputAttributeDescriptions);
 
 		const vk::VkDeviceSize dataSize = m_data.size() * sizeof(Vec4RGBA);
-		m_vertexBuffer = Buffer::CreateAndAlloc(m_vk, device, BufferCreateInfo(dataSize,
+		m_vertexBuffer = Buffer::createAndAlloc(m_vk, device, BufferCreateInfo(dataSize,
 			vk::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT), m_context.getDefaultAllocator(), vk::MemoryRequirement::HostVisible);
 
 		unsigned char *ptr = reinterpret_cast<unsigned char *>(m_vertexBuffer->getBoundMemory().getHostPtr());
@@ -234,27 +231,29 @@ protected:
 		const CmdPoolCreateInfo cmdPoolCreateInfo(queueFamilyIndex);
 		m_cmdPool = vk::createCommandPool(m_vk, device, &cmdPoolCreateInfo);
 
-		const CmdBufferCreateInfo cmdBufCreateInfo(*m_cmdPool, vk::VK_CMD_BUFFER_LEVEL_PRIMARY, 0);
-		m_cmdBuffer = vk::createCommandBuffer(m_vk, device, &cmdBufCreateInfo);
+		const vk::VkCommandBufferAllocateInfo cmdBufferAllocateInfo =
+		{
+			vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,	// VkStructureType			sType;
+			DE_NULL,											// const void*				pNext;
+			*m_cmdPool,											// VkCommandPool			commandPool;
+			vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY,				// VkCommandBufferLevel		level;
+			1u,													// deUint32					bufferCount;
+		};
+		m_cmdBuffer = vk::allocateCommandBuffer(m_vk, device, &cmdBufferAllocateInfo);
 
 		initPipeline(device);
 	}
 
 	virtual void initPipeline (const vk::VkDevice device)
 	{
-		const vk::Unique<vk::VkShader> vs(createShader(m_vk, device,
-			*createShaderModule(m_vk, device, m_context.getBinaryCollection().get(m_vertexShaderName), 0),
-			"main", vk::VK_SHADER_STAGE_VERTEX));
-
-		const vk::Unique<vk::VkShader> fs(createShader(m_vk, device,
-			*createShaderModule(m_vk, device, m_context.getBinaryCollection().get(m_fragmentShaderName), 0),
-			"main", vk::VK_SHADER_STAGE_FRAGMENT));
+		const vk::Unique<vk::VkShaderModule> vs(createShaderModule(m_vk, device, m_context.getBinaryCollection().get(m_vertexShaderName), 0));
+		const vk::Unique<vk::VkShaderModule> fs(createShaderModule(m_vk, device, m_context.getBinaryCollection().get(m_fragmentShaderName), 0));
 
 		const PipelineCreateInfo::ColorBlendState::Attachment vkCbAttachmentState;
 
 		PipelineCreateInfo pipelineCreateInfo(*m_pipelineLayout, *m_renderPass, 0, 0);
-		pipelineCreateInfo.addShader(PipelineCreateInfo::PipelineShaderStage(*vs, vk::VK_SHADER_STAGE_VERTEX));
-		pipelineCreateInfo.addShader(PipelineCreateInfo::PipelineShaderStage(*fs, vk::VK_SHADER_STAGE_FRAGMENT));
+		pipelineCreateInfo.addShader(PipelineCreateInfo::PipelineShaderStage(*vs, "main", vk::VK_SHADER_STAGE_VERTEX_BIT));
+		pipelineCreateInfo.addShader(PipelineCreateInfo::PipelineShaderStage(*fs, "main", vk::VK_SHADER_STAGE_FRAGMENT_BIT));
 		pipelineCreateInfo.addState(PipelineCreateInfo::VertexInputState(m_vertexInputState));
 		pipelineCreateInfo.addState(PipelineCreateInfo::InputAssemblerState(m_topology));
 		pipelineCreateInfo.addState(PipelineCreateInfo::ColorBlendState(1, &vkCbAttachmentState));
@@ -292,14 +291,14 @@ protected:
 		const vk::VkRect2D renderArea = { { 0, 0 }, { WIDTH, HEIGHT } };
 		const RenderPassBeginInfo renderPassBegin(*m_renderPass, *m_framebuffer, renderArea);
 
-		m_vk.cmdBeginRenderPass(*m_cmdBuffer, &renderPassBegin, vk::VK_RENDER_PASS_CONTENTS_INLINE);
+		m_vk.cmdBeginRenderPass(*m_cmdBuffer, &renderPassBegin, vk::VK_SUBPASS_CONTENTS_INLINE);
 	}
 
 	void setDynamicViewportState (const deUint32 width, const deUint32 height)
 	{
 		vk::VkViewport viewport;
-		viewport.originX = 0;
-		viewport.originY = 0;
+		viewport.x = 0;
+		viewport.y = 0;
 		viewport.width = static_cast<float>(width);
 		viewport.height = static_cast<float>(height);
 		viewport.minDepth = 0.0f;
@@ -321,20 +320,20 @@ protected:
 		m_vk.cmdSetScissor(*m_cmdBuffer, viewportCount, pScissors);
 	}
 
-	void setDynamicRasterState (const float lineWidth = 1.0f, 
-								const float depthBias = 0.0f, 
+	void setDynamicRasterizationState (const float lineWidth = 1.0f, 
+								const float depthBiasConstantFactor = 0.0f, 
 								const float depthBiasClamp = 0.0f, 
-								const float slopeScaledDepthBias = 0.0f)
+								const float depthBiasSlopeFactor = 0.0f)
 	{
 		m_vk.cmdSetLineWidth(*m_cmdBuffer, lineWidth);
-		m_vk.cmdSetDepthBias(*m_cmdBuffer, depthBias, depthBiasClamp, slopeScaledDepthBias);
+		m_vk.cmdSetDepthBias(*m_cmdBuffer, depthBiasConstantFactor, depthBiasClamp, depthBiasSlopeFactor);
 	}
 
 	void setDynamicBlendState (const float const1 = 0.0f, const float const2 = 0.0f, 
 							   const float const3 = 0.0f, const float const4 = 0.0f)
 	{
-		float blendConstants[4] = { const1, const2, const3, const4 };
-		m_vk.cmdSetBlendConstants(*m_cmdBuffer, blendConstants);
+		float blendConstantsants[4] = { const1, const2, const3, const4 };
+		m_vk.cmdSetBlendConstants(*m_cmdBuffer, blendConstantsants);
 	}
 
 	void setDynamicDepthStencilState (const float minDepthBounds = -1.0f, 

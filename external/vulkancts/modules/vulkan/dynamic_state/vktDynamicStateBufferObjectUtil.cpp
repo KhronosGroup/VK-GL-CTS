@@ -1,5 +1,3 @@
-#ifndef _VKT_DYNAMIC_STATE_BUFFEROBJECTUTIL_HPP
-#define _VKT_DYNAMIC_STATE_BUFFEROBJECTUTIL_HPP
 /*------------------------------------------------------------------------
  * Vulkan Conformance Tests
  * ------------------------
@@ -35,50 +33,53 @@
  * \brief Buffer Object Util
  *//*--------------------------------------------------------------------*/
 
-#include "vkDefs.hpp"
-#include "vkMemUtil.hpp"
-#include "vkRefUtil.hpp"
+#include "vktDynamicStateBufferObjectUtil.hpp"
 
-#include "deSharedPtr.hpp"
+
+#include "vkQueryUtil.hpp"
+
 
 namespace vkt
 {
 namespace DynamicState
 {
 
-class Buffer
+Buffer::Buffer (const vk::DeviceInterface &vk, vk::VkDevice device, vk::Move<vk::VkBuffer> object)
+	: m_object		(object)
+	, m_allocation  (DE_NULL)
+	, m_vk			(vk)
+	, m_device		(device)
 {
-public:
+}
 
-	static de::SharedPtr<Buffer> Create (const vk::DeviceInterface& vk, vk::VkDevice device, const vk::VkBufferCreateInfo &createInfo);
+void Buffer::bindMemory (de::MovePtr<vk::Allocation> allocation)
+{
+	DE_ASSERT(allocation);
+	VK_CHECK(m_vk.bindBufferMemory(m_device, *m_object, allocation->getMemory(), allocation->getOffset()));
 
-	static de::SharedPtr<Buffer> CreateAndAlloc (const vk::DeviceInterface&		vk,
-												 vk::VkDevice					device,
-												 const vk::VkBufferCreateInfo&	createInfo,
-												 vk::Allocator&					allocator,
-												 vk::MemoryRequirement			allocationMemoryProperties = vk::MemoryRequirement::Any);
+	DE_ASSERT(!m_allocation);
+	m_allocation = allocation;
+}
 
-	Buffer (const vk::DeviceInterface &vk, vk::VkDevice device, vk::Move<vk::VkBuffer> object);
+de::SharedPtr<Buffer> Buffer::createAndAlloc (const vk::DeviceInterface &vk,
+	vk::VkDevice device,
+	const vk::VkBufferCreateInfo &createInfo,
+	vk::Allocator &allocator,
+	vk::MemoryRequirement memoryRequirement)
+{
+	de::SharedPtr<Buffer> ret = create(vk, device, createInfo);
 
-	inline vk::VkBuffer object (void) const { return *m_object; }
+	vk::VkMemoryRequirements bufferRequirements = vk::getBufferMemoryRequirements(vk, device, ret->object());
+	ret->bindMemory(allocator.allocate(bufferRequirements, memoryRequirement));
+	return ret;
+}
 
-	void bindMemory (de::MovePtr<vk::Allocation> allocation);
-	inline vk::Allocation getBoundMemory (void) const { return *m_allocation; }
-
-private:
-
-	Buffer				(const Buffer &other);	// Not allowed!
-	Buffer &operator=	(const Buffer &other);	// Not allowed!
-
-
-	de::MovePtr<vk::Allocation>		m_allocation;
-	vk::Unique<vk::VkBuffer>		m_object;
-
-	const	vk::DeviceInterface &	m_vk;
-			vk::VkDevice			m_device;
-};
+de::SharedPtr<Buffer> Buffer::create (const vk::DeviceInterface &vk,
+									  vk::VkDevice device,
+									  const vk::VkBufferCreateInfo &createInfo)
+{
+	return de::SharedPtr<Buffer>(new Buffer(vk, device, vk::createBuffer(vk, device, &createInfo)));
+}
 
 } //DynamicState
 } //vkt
-
-#endif // _VKT_DYNAMIC_STATE_BUFFEROBJECTUTIL_HPP

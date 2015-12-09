@@ -97,8 +97,18 @@ public:
 		m_vk.cmdEndRenderPass(*m_cmdBuffer);
 		m_vk.endCommandBuffer(*m_cmdBuffer);
 
-		const vk::VkCmdBuffer cmdBuffer = *m_cmdBuffer;
-		VK_CHECK(m_vk.queueSubmit(queue, 1, &cmdBuffer, DE_NULL));
+		vk::VkSubmitInfo submitInfo =
+		{
+			vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,	// VkStructureType			sType;
+			DE_NULL,							// const void*				pNext;
+			0, 									// deUint32					waitSemaphoreCount;
+			DE_NULL, 							// const VkSemaphore*		pWaitSemaphores;
+			1, 									// deUint32					commandBufferCount;
+			&m_cmdBuffer.get(),					// const VkCommandBuffer*	pCommandBuffers;
+			0, 									// deUint32					signalSemaphoreCount;
+			DE_NULL								// const VkSemaphore*		pSignalSemaphores;
+		};
+		m_vk.queueSubmit(queue, 1, &submitInfo, DE_NULL);
 
 		// validation
 		{
@@ -108,7 +118,7 @@ public:
 
 			const vk::VkOffset3D zeroOffset = { 0, 0, 0 };
 			const tcu::ConstPixelBufferAccess renderedFrame = m_colorTargetImage->readSurface(queue, m_context.getDefaultAllocator(),
-				vk::VK_IMAGE_LAYOUT_GENERAL, zeroOffset, WIDTH, HEIGHT, vk::VK_IMAGE_ASPECT_COLOR);
+				vk::VK_IMAGE_LAYOUT_GENERAL, zeroOffset, WIDTH, HEIGHT, vk::VK_IMAGE_ASPECT_COLOR_BIT);
 
 			qpTestResult res = QP_TEST_RESULT_PASS;
 
@@ -139,7 +149,7 @@ public:
 		const vk::VkRect2D scissor = { { 0, 0 }, { WIDTH, HEIGHT } };
 
 		setDynamicViewportState(1, &viewport, &scissor);
-		setDynamicRasterState();
+		setDynamicRasterizationState();
 		setDynamicBlendState();
 		setDynamicDepthStencilState();
 	}
@@ -186,7 +196,7 @@ public:
 		const vk::VkRect2D scissor = { { 0, 0 }, { WIDTH / 2, HEIGHT / 2 } };
 
 		setDynamicViewportState(1, &viewport, &scissor);
-		setDynamicRasterState();
+		setDynamicRasterizationState();
 		setDynamicBlendState();
 		setDynamicDepthStencilState();
 	}
@@ -232,10 +242,10 @@ public:
 	{
 		for (int i = 0; i < 4; i++)
 		{
-			m_data.push_back(Vec4RGBA(tcu::Vec4(-1.0f, 1.0f, (float)i, 1.0f), vec4Green()));
-			m_data.push_back(Vec4RGBA(tcu::Vec4(1.0f, 1.0f, (float)i, 1.0f), vec4Green()));
-			m_data.push_back(Vec4RGBA(tcu::Vec4(-1.0f, -1.0f, (float)i, 1.0f), vec4Green()));
-			m_data.push_back(Vec4RGBA(tcu::Vec4(1.0f, -1.0f, (float)i, 1.0f), vec4Green()));
+			m_data.push_back(Vec4RGBA(tcu::Vec4(-1.0f, 1.0f, (float)i / 3.0f, 1.0f), vec4Green()));
+			m_data.push_back(Vec4RGBA(tcu::Vec4(1.0f, 1.0f, (float)i / 3.0f, 1.0f), vec4Green()));
+			m_data.push_back(Vec4RGBA(tcu::Vec4(-1.0f, -1.0f, (float)i / 3.0f, 1.0f), vec4Green()));
+			m_data.push_back(Vec4RGBA(tcu::Vec4(1.0f, -1.0f, (float)i / 3.0f, 1.0f), vec4Green()));
 		}
 
 		DynamicStateBaseClass::initialize();
@@ -243,24 +253,16 @@ public:
 
 	virtual void initPipeline (const vk::VkDevice device)
 	{
-		const vk::Unique<vk::VkShader> vs(createShader(m_vk, device,
-			*createShaderModule(m_vk, device, m_context.getBinaryCollection().get(m_vertexShaderName), 0),
-			"main", vk::VK_SHADER_STAGE_VERTEX));
-
-		const vk::Unique<vk::VkShader> gs(createShader(m_vk, device,
-			*createShaderModule(m_vk, device, m_context.getBinaryCollection().get(m_geometryShaderName), 0),
-			"main", vk::VK_SHADER_STAGE_GEOMETRY));
-
-		const vk::Unique<vk::VkShader> fs(createShader(m_vk, device,
-			*createShaderModule(m_vk, device, m_context.getBinaryCollection().get(m_fragmentShaderName), 0),
-			"main", vk::VK_SHADER_STAGE_FRAGMENT));
+		const vk::Unique<vk::VkShaderModule> vs(createShaderModule(m_vk, device, m_context.getBinaryCollection().get(m_vertexShaderName), 0));
+		const vk::Unique<vk::VkShaderModule> gs(createShaderModule(m_vk, device, m_context.getBinaryCollection().get(m_geometryShaderName), 0));
+		const vk::Unique<vk::VkShaderModule> fs(createShaderModule(m_vk, device, m_context.getBinaryCollection().get(m_fragmentShaderName), 0));
 
 		const PipelineCreateInfo::ColorBlendState::Attachment vkCbAttachmentState;
 
 		PipelineCreateInfo pipelineCreateInfo(*m_pipelineLayout, *m_renderPass, 0, 0);
-		pipelineCreateInfo.addShader(PipelineCreateInfo::PipelineShaderStage(*vs, vk::VK_SHADER_STAGE_VERTEX));
-		pipelineCreateInfo.addShader(PipelineCreateInfo::PipelineShaderStage(*gs, vk::VK_SHADER_STAGE_GEOMETRY));
-		pipelineCreateInfo.addShader(PipelineCreateInfo::PipelineShaderStage(*fs, vk::VK_SHADER_STAGE_FRAGMENT));
+		pipelineCreateInfo.addShader(PipelineCreateInfo::PipelineShaderStage(*vs, "main", vk::VK_SHADER_STAGE_VERTEX_BIT));
+		pipelineCreateInfo.addShader(PipelineCreateInfo::PipelineShaderStage(*gs, "main", vk::VK_SHADER_STAGE_GEOMETRY_BIT));
+		pipelineCreateInfo.addShader(PipelineCreateInfo::PipelineShaderStage(*fs, "main", vk::VK_SHADER_STAGE_FRAGMENT_BIT));
 		pipelineCreateInfo.addState(PipelineCreateInfo::VertexInputState(m_vertexInputState));
 		pipelineCreateInfo.addState(PipelineCreateInfo::InputAssemblerState(m_topology));
 		pipelineCreateInfo.addState(PipelineCreateInfo::ColorBlendState(1, &vkCbAttachmentState));
@@ -303,7 +305,7 @@ public:
 		};
 
 		setDynamicViewportState(4, viewports, scissors);
-		setDynamicRasterState();
+		setDynamicRasterizationState();
 		setDynamicBlendState();
 		setDynamicDepthStencilState();
 
@@ -318,8 +320,18 @@ public:
 		m_vk.cmdEndRenderPass(*m_cmdBuffer);
 		m_vk.endCommandBuffer(*m_cmdBuffer);
 
-		const vk::VkCmdBuffer cmdBuffer = *m_cmdBuffer;
-		VK_CHECK(m_vk.queueSubmit(queue, 1, &cmdBuffer, DE_NULL));
+		vk::VkSubmitInfo submitInfo =
+		{
+			vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,	// VkStructureType			sType;
+			DE_NULL,							// const void*				pNext;
+			0, 									// deUint32					waitSemaphoreCount;
+			DE_NULL, 							// const VkSemaphore*		pWaitSemaphores;
+			1, 									// deUint32					commandBufferCount;
+			&m_cmdBuffer.get(),					// const VkCommandBuffer*	pCommandBuffers;
+			0, 									// deUint32					signalSemaphoreCount;
+			DE_NULL								// const VkSemaphore*		pSignalSemaphores;
+		};
+		m_vk.queueSubmit(queue, 1, &submitInfo, DE_NULL);
 
 		// validation
 		{
@@ -348,7 +360,7 @@ public:
 
 			const vk::VkOffset3D zeroOffset = { 0, 0, 0 };
 			const tcu::ConstPixelBufferAccess renderedFrame = m_colorTargetImage->readSurface(queue, m_context.getDefaultAllocator(),
-				vk::VK_IMAGE_LAYOUT_GENERAL, zeroOffset, WIDTH, HEIGHT, vk::VK_IMAGE_ASPECT_COLOR);
+				vk::VK_IMAGE_LAYOUT_GENERAL, zeroOffset, WIDTH, HEIGHT, vk::VK_IMAGE_ASPECT_COLOR_BIT);
 					
 			qpTestResult res = QP_TEST_RESULT_PASS;
 

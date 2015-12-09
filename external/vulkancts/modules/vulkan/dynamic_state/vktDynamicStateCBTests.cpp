@@ -66,23 +66,18 @@ public:
 
 	virtual void initPipeline (const vk::VkDevice device)
 	{
-		const vk::Unique<vk::VkShader> vs(createShader(m_vk, device,
-			*createShaderModule(m_vk, device, m_context.getBinaryCollection().get(m_vertexShaderName), 0),
-			"main", vk::VK_SHADER_STAGE_VERTEX));
-
-		const vk::Unique<vk::VkShader> fs(createShader(m_vk, device,
-			*createShaderModule(m_vk, device, m_context.getBinaryCollection().get(m_fragmentShaderName), 0),
-			"main", vk::VK_SHADER_STAGE_FRAGMENT));
-
+		const vk::Unique<vk::VkShaderModule> vs (createShaderModule(m_vk, device, m_context.getBinaryCollection().get(m_vertexShaderName), 0));
+		const vk::Unique<vk::VkShaderModule> fs (createShaderModule(m_vk, device, m_context.getBinaryCollection().get(m_fragmentShaderName), 0));
+		
 		const vk::VkPipelineColorBlendAttachmentState VkPipelineColorBlendAttachmentState =
 			PipelineCreateInfo::ColorBlendState::Attachment(
 			vk::VK_TRUE,
-			vk::VK_BLEND_SRC_ALPHA, vk::VK_BLEND_CONSTANT_COLOR, vk::VK_BLEND_OP_ADD,
-			vk::VK_BLEND_SRC_ALPHA, vk::VK_BLEND_CONSTANT_ALPHA, vk::VK_BLEND_OP_ADD);
+			vk::VK_BLEND_FACTOR_SRC_ALPHA, vk::VK_BLEND_FACTOR_CONSTANT_COLOR, vk::VK_BLEND_OP_ADD,
+			vk::VK_BLEND_FACTOR_SRC_ALPHA, vk::VK_BLEND_FACTOR_CONSTANT_ALPHA, vk::VK_BLEND_OP_ADD);
 
 		PipelineCreateInfo pipelineCreateInfo(*m_pipelineLayout, *m_renderPass, 0, 0);
-		pipelineCreateInfo.addShader(PipelineCreateInfo::PipelineShaderStage(*vs, vk::VK_SHADER_STAGE_VERTEX));
-		pipelineCreateInfo.addShader(PipelineCreateInfo::PipelineShaderStage(*fs, vk::VK_SHADER_STAGE_FRAGMENT));
+		pipelineCreateInfo.addShader(PipelineCreateInfo::PipelineShaderStage(*vs, "main", vk::VK_SHADER_STAGE_VERTEX_BIT));
+		pipelineCreateInfo.addShader(PipelineCreateInfo::PipelineShaderStage(*fs, "main", vk::VK_SHADER_STAGE_FRAGMENT_BIT));
 		pipelineCreateInfo.addState(PipelineCreateInfo::VertexInputState(m_vertexInputState));
 		pipelineCreateInfo.addState(PipelineCreateInfo::InputAssemblerState(m_topology));
 		pipelineCreateInfo.addState(PipelineCreateInfo::ColorBlendState(1, &VkPipelineColorBlendAttachmentState));
@@ -105,7 +100,7 @@ public:
 
 		// bind states here
 		setDynamicViewportState(WIDTH, HEIGHT);
-		setDynamicRasterState();
+		setDynamicRasterizationState();
 		setDynamicDepthStencilState();
 		setDynamicBlendState(0.33f, 0.1f, 0.66f, 0.5f);
 
@@ -120,8 +115,18 @@ public:
 		m_vk.cmdEndRenderPass(*m_cmdBuffer);
 		m_vk.endCommandBuffer(*m_cmdBuffer);
 
-		const vk::VkCmdBuffer cmdBuffer = *m_cmdBuffer;
-		VK_CHECK(m_vk.queueSubmit(queue, 1, &cmdBuffer, DE_NULL));
+		vk::VkSubmitInfo submitInfo =
+		{
+			vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,	// VkStructureType			sType;
+			DE_NULL,							// const void*				pNext;
+			0, 									// deUint32					waitSemaphoreCount;
+			DE_NULL, 							// const VkSemaphore*		pWaitSemaphores;
+			1, 									// deUint32					commandBufferCount;
+			&m_cmdBuffer.get(),					// const VkCommandBuffer*	pCommandBuffers;
+			0, 									// deUint32					signalSemaphoreCount;
+			DE_NULL								// const VkSemaphore*		pSignalSemaphores;
+		};
+		m_vk.queueSubmit(queue, 1, &submitInfo, DE_NULL);
 		VK_CHECK(m_vk.queueWaitIdle(queue));
 
 		//validation
@@ -149,7 +154,7 @@ public:
 
 			const vk::VkOffset3D zeroOffset = { 0, 0, 0 };
 			const tcu::ConstPixelBufferAccess renderedFrame = m_colorTargetImage->readSurface(queue, m_context.getDefaultAllocator(),
-				vk::VK_IMAGE_LAYOUT_GENERAL, zeroOffset, WIDTH, HEIGHT, vk::VK_IMAGE_ASPECT_COLOR);
+				vk::VK_IMAGE_LAYOUT_GENERAL, zeroOffset, WIDTH, HEIGHT, vk::VK_IMAGE_ASPECT_COLOR_BIT);
 
 			qpTestResult res = QP_TEST_RESULT_PASS;
 

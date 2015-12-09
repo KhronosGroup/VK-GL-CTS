@@ -38,6 +38,9 @@
 #include "vktTestCaseUtil.hpp"
 #include "vktDynamicStateTestCaseUtil.hpp"
 #include "vktDynamicStateBaseClass.hpp"
+#include "vktDynamicStateCreateInfoUtil.hpp"
+#include "vktDynamicStateImageObjectUtil.hpp"
+#include "vktDynamicStateBufferObjectUtil.hpp"
 
 #include "tcuTestLog.hpp"
 #include "tcuResource.hpp"
@@ -45,8 +48,6 @@
 #include "tcuTextureUtil.hpp"
 
 #include "vkDefs.hpp"
-#include "vktDynamicStateCreateInfoUtil.hpp"
-#include "vktDynamicStateImageObjectUtil.hpp"
 
 namespace vkt
 {
@@ -83,7 +84,7 @@ public:
 		vk::VkRect2D scissor_1 = { { 0, 0 }, { WIDTH / 2, HEIGHT / 2 } };
 		vk::VkRect2D scissor_2 = { { WIDTH / 2, HEIGHT / 2 }, { WIDTH / 2, HEIGHT / 2 } };
 
-		setDynamicRasterState();
+		setDynamicRasterizationState();
 		setDynamicBlendState();
 		setDynamicDepthStencilState();
 
@@ -104,8 +105,18 @@ public:
 		m_vk.cmdEndRenderPass(*m_cmdBuffer);
 		m_vk.endCommandBuffer(*m_cmdBuffer);
 
-		const vk::VkCmdBuffer cmdBuffer = *m_cmdBuffer;
-		VK_CHECK(m_vk.queueSubmit(queue, 1, &cmdBuffer, DE_NULL));
+		vk::VkSubmitInfo submitInfo =
+		{
+			vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,	// VkStructureType			sType;
+			DE_NULL,							// const void*				pNext;
+			0, 									// deUint32					waitSemaphoreCount;
+			DE_NULL, 							// const VkSemaphore*		pWaitSemaphores;
+			1, 									// deUint32					commandBufferCount;
+			&m_cmdBuffer.get(),					// const VkCommandBuffer*	pCommandBuffers;
+			0, 									// deUint32					signalSemaphoreCount;
+			DE_NULL								// const VkSemaphore*		pSignalSemaphores;
+		};
+		m_vk.queueSubmit(queue, 1, &submitInfo, DE_NULL);
 
 		//validation
 		VK_CHECK(m_vk.queueWaitIdle(queue));
@@ -134,7 +145,7 @@ public:
 
 		const vk::VkOffset3D zeroOffset = { 0, 0, 0 };
 		const tcu::ConstPixelBufferAccess renderedFrame = m_colorTargetImage->readSurface(queue, m_context.getDefaultAllocator(),
-			vk::VK_IMAGE_LAYOUT_GENERAL, zeroOffset, WIDTH, HEIGHT, vk::VK_IMAGE_ASPECT_COLOR);
+			vk::VK_IMAGE_LAYOUT_GENERAL, zeroOffset, WIDTH, HEIGHT, vk::VK_IMAGE_ASPECT_COLOR_BIT);
 
 		qpTestResult res = QP_TEST_RESULT_PASS;
 
@@ -176,7 +187,7 @@ public:
 		vk::VkRect2D scissor_1 = { { 0, 0 }, { WIDTH / 2, HEIGHT / 2 } };
 		vk::VkRect2D scissor_2 = { { WIDTH / 2, HEIGHT / 2 }, { WIDTH / 2, HEIGHT / 2 } };
 
-		setDynamicRasterState();
+		setDynamicRasterizationState();
 		setDynamicBlendState();
 		setDynamicDepthStencilState();
 		setDynamicViewportState(1, &viewport, &scissor_1);
@@ -189,7 +200,7 @@ public:
 
 		// rebind in different order
 		setDynamicBlendState();
-		setDynamicRasterState();
+		setDynamicRasterizationState();
 		setDynamicDepthStencilState();
 
 		// bind first state
@@ -202,8 +213,18 @@ public:
 		m_vk.cmdEndRenderPass(*m_cmdBuffer);
 		m_vk.endCommandBuffer(*m_cmdBuffer);
 
-		const vk::VkCmdBuffer cmdBuffer = *m_cmdBuffer;
-		VK_CHECK(m_vk.queueSubmit(queue, 1, &cmdBuffer, DE_NULL));
+		vk::VkSubmitInfo submitInfo =
+		{
+			vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,	// VkStructureType			sType;
+			DE_NULL,							// const void*				pNext;
+			0, 									// deUint32					waitSemaphoreCount;
+			DE_NULL, 							// const VkSemaphore*		pWaitSemaphores;
+			1, 									// deUint32					commandBufferCount;
+			&m_cmdBuffer.get(),					// const VkCommandBuffer*	pCommandBuffers;
+			0, 									// deUint32					signalSemaphoreCount;
+			DE_NULL								// const VkSemaphore*		pSignalSemaphores;
+		};
+		m_vk.queueSubmit(queue, 1, &submitInfo, DE_NULL);
 
 		//validation
 		VK_CHECK(m_vk.queueWaitIdle(queue));
@@ -232,7 +253,7 @@ public:
 
 		const vk::VkOffset3D zeroOffset = { 0, 0, 0 };
 		const tcu::ConstPixelBufferAccess renderedFrame = m_colorTargetImage->readSurface(queue, m_context.getDefaultAllocator(),
-			vk::VK_IMAGE_LAYOUT_GENERAL, zeroOffset, WIDTH, HEIGHT, vk::VK_IMAGE_ASPECT_COLOR);
+			vk::VK_IMAGE_LAYOUT_GENERAL, zeroOffset, WIDTH, HEIGHT, vk::VK_IMAGE_ASPECT_COLOR_BIT);
 
 		qpTestResult res = QP_TEST_RESULT_PASS;
 
@@ -272,19 +293,14 @@ public:
 	virtual void initPipeline (const vk::VkDevice device)
 	{
 		// shaders
-		const vk::Unique<vk::VkShader> vs(createShader(m_vk, device,
-			*createShaderModule(m_vk, device, m_context.getBinaryCollection().get(m_vertexShaderName), 0),
-			"main", vk::VK_SHADER_STAGE_VERTEX));
-
-		const vk::Unique<vk::VkShader> fs(createShader(m_vk, device,
-			*createShaderModule(m_vk, device, m_context.getBinaryCollection().get(m_fragmentShaderName), 0),
-			"main", vk::VK_SHADER_STAGE_FRAGMENT));
-
+		const vk::Unique<vk::VkShaderModule> vs (createShaderModule(m_vk, device, m_context.getBinaryCollection().get(m_vertexShaderName), 0));
+		const vk::Unique<vk::VkShaderModule> fs (createShaderModule(m_vk, device, m_context.getBinaryCollection().get(m_fragmentShaderName), 0));
+			
 		const PipelineCreateInfo::ColorBlendState::Attachment vkCbAttachmentState;
 
 		PipelineCreateInfo pipelineCreateInfo_1(*m_pipelineLayout, *m_renderPass, 0, 0);
-		pipelineCreateInfo_1.addShader(PipelineCreateInfo::PipelineShaderStage(*vs, vk::VK_SHADER_STAGE_VERTEX));
-		pipelineCreateInfo_1.addShader(PipelineCreateInfo::PipelineShaderStage(*fs, vk::VK_SHADER_STAGE_FRAGMENT));
+		pipelineCreateInfo_1.addShader(PipelineCreateInfo::PipelineShaderStage(*vs, "main", vk::VK_SHADER_STAGE_VERTEX_BIT));
+		pipelineCreateInfo_1.addShader(PipelineCreateInfo::PipelineShaderStage(*fs, "main", vk::VK_SHADER_STAGE_FRAGMENT_BIT));
 		pipelineCreateInfo_1.addState(PipelineCreateInfo::VertexInputState(m_vertexInputState));
 		pipelineCreateInfo_1.addState(PipelineCreateInfo::InputAssemblerState(vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP));
 		pipelineCreateInfo_1.addState(PipelineCreateInfo::ColorBlendState(1, &vkCbAttachmentState));
@@ -295,8 +311,8 @@ public:
 		pipelineCreateInfo_1.addState(PipelineCreateInfo::DynamicState());
 
 		PipelineCreateInfo pipelineCreateInfo_2(*m_pipelineLayout, *m_renderPass, 0, 0);
-		pipelineCreateInfo_2.addShader(PipelineCreateInfo::PipelineShaderStage(*vs, vk::VK_SHADER_STAGE_VERTEX));
-		pipelineCreateInfo_2.addShader(PipelineCreateInfo::PipelineShaderStage(*fs, vk::VK_SHADER_STAGE_FRAGMENT));
+		pipelineCreateInfo_2.addShader(PipelineCreateInfo::PipelineShaderStage(*vs, "main", vk::VK_SHADER_STAGE_VERTEX_BIT));
+		pipelineCreateInfo_2.addShader(PipelineCreateInfo::PipelineShaderStage(*fs, "main", vk::VK_SHADER_STAGE_FRAGMENT_BIT));
 		pipelineCreateInfo_2.addState(PipelineCreateInfo::VertexInputState(m_vertexInputState));
 		pipelineCreateInfo_2.addState(PipelineCreateInfo::InputAssemblerState(vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST));
 		pipelineCreateInfo_2.addState(PipelineCreateInfo::ColorBlendState(1, &vkCbAttachmentState));
@@ -322,7 +338,7 @@ public:
 		const vk::VkRect2D scissor_1 = { { 0, 0 }, { WIDTH / 2, HEIGHT / 2 } };
 		const vk::VkRect2D scissor_2 = { { WIDTH / 2, HEIGHT / 2 }, { WIDTH / 2, HEIGHT / 2 } };
 
-		setDynamicRasterState();
+		setDynamicRasterizationState();
 		setDynamicBlendState();
 		setDynamicDepthStencilState();
 
@@ -347,8 +363,18 @@ public:
 		m_vk.cmdEndRenderPass(*m_cmdBuffer);
 		m_vk.endCommandBuffer(*m_cmdBuffer);
 
-		const vk::VkCmdBuffer cmdBuffer = *m_cmdBuffer;
-		VK_CHECK(m_vk.queueSubmit(queue, 1, &cmdBuffer, DE_NULL));
+		vk::VkSubmitInfo submitInfo =
+		{
+			vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,	// VkStructureType			sType;
+			DE_NULL,							// const void*				pNext;
+			0, 									// deUint32					waitSemaphoreCount;
+			DE_NULL, 							// const VkSemaphore*		pWaitSemaphores;
+			1, 									// deUint32					commandBufferCount;
+			&m_cmdBuffer.get(),					// const VkCommandBuffer*	pCommandBuffers;
+			0, 									// deUint32					signalSemaphoreCount;
+			DE_NULL								// const VkSemaphore*		pSignalSemaphores;
+		};
+		m_vk.queueSubmit(queue, 1, &submitInfo, DE_NULL);
 
 		//validation
 		VK_CHECK(m_vk.queueWaitIdle(queue));
@@ -378,7 +404,7 @@ public:
 
 		const vk::VkOffset3D zeroOffset = { 0, 0, 0 };
 		const tcu::ConstPixelBufferAccess renderedFrame = m_colorTargetImage->readSurface(queue, m_context.getDefaultAllocator(),
-			vk::VK_IMAGE_LAYOUT_GENERAL, zeroOffset, WIDTH, HEIGHT, vk::VK_IMAGE_ASPECT_COLOR);
+			vk::VK_IMAGE_LAYOUT_GENERAL, zeroOffset, WIDTH, HEIGHT, vk::VK_IMAGE_ASPECT_COLOR_BIT);
 
 		qpTestResult res = QP_TEST_RESULT_PASS;
 
