@@ -337,17 +337,15 @@ static de::MovePtr<tcu::TestCaseGroup> createSubresourceRangeTests(tcu::TestCont
 		}																								\
 	} while (0)
 
-	const TestCaseConfig mipLevelRangeCases[] =
-	{
-		//	name					samplerLod	subresourceRange (aspectMask, baseMipLevel, mipLevels, baseArrayLayer, arraySize)
-		{ "lod_base_mip_level",		0.0f,		{ imageAspectFlags, 2u, numLevels - 2u, 0u, arraySize } },
-		{ "lod_mip_levels",			4.0f,		{ imageAspectFlags, 0u, 3u, 0u, arraySize } },
-	};
-
-	ADD_SUBRESOURCE_RANGE_TESTS(mipLevelRangeCases);
-
 	if (viewType == VK_IMAGE_VIEW_TYPE_1D_ARRAY || viewType == VK_IMAGE_VIEW_TYPE_2D_ARRAY)
 	{
+		const TestCaseConfig mipLevelRangeCases[] =
+		{
+			//	name					samplerLod	subresourceRange (aspectMask, baseMipLevel, mipLevels, baseArrayLayer, arraySize)
+			{ "lod_base_mip_level",		0.0f,		{ imageAspectFlags, 2u, numLevels - 2u, 0u, arraySize } },
+			{ "lod_mip_levels",			4.0f,		{ imageAspectFlags, 0u, 3u, 0u, arraySize } },
+		};
+
 		const TestCaseConfig arrayRangeCases[] =
 		{
 			//	name					samplerLod		subresourceRange (aspectMask, baseMipLevel, mipLevels, baseArrayLayer, arraySize)
@@ -369,11 +367,19 @@ static de::MovePtr<tcu::TestCaseGroup> createSubresourceRangeTests(tcu::TestCont
 			{ "lod_mip_levels_array_base_and_size",			4.0f,			{ imageAspectFlags, 0u, 3u, 2u, 3u } },
 		};
 
+		ADD_SUBRESOURCE_RANGE_TESTS(mipLevelRangeCases);
 		ADD_SUBRESOURCE_RANGE_TESTS(arrayRangeCases);
 		ADD_SUBRESOURCE_RANGE_TESTS(mipLevelAndArrayRangeCases);
 	}
 	else if (viewType == VK_IMAGE_VIEW_TYPE_CUBE_ARRAY)
 	{
+		const TestCaseConfig mipLevelRangeCases[] =
+		{
+			//	name					samplerLod	subresourceRange (aspectMask, baseMipLevel, mipLevels, baseArrayLayer, arraySize)
+			{ "lod_base_mip_level",		0.0f,		{ imageAspectFlags, 2u, numLevels - 2u, 0u, arraySize } },
+			{ "lod_mip_levels",			4.0f,		{ imageAspectFlags, 0u, 3u, 0u, arraySize } },
+		};
+
 		const TestCaseConfig arrayRangeCases[] =
 		{
 			//	name					samplerLod		subresourceRange (aspectMask, baseMipLevel, mipLevels, baseArrayLayer, arraySize)
@@ -395,11 +401,19 @@ static de::MovePtr<tcu::TestCaseGroup> createSubresourceRangeTests(tcu::TestCont
 			{ "lod_mip_levels_array_base_and_size",			4.0f,			{ imageAspectFlags, 0u, 3u, 12u, 6u } },
 		};
 
+		ADD_SUBRESOURCE_RANGE_TESTS(mipLevelRangeCases);
 		ADD_SUBRESOURCE_RANGE_TESTS(arrayRangeCases);
 		ADD_SUBRESOURCE_RANGE_TESTS(mipLevelAndArrayRangeCases);
 	}
 	else if (viewType == VK_IMAGE_VIEW_TYPE_1D || viewType == VK_IMAGE_VIEW_TYPE_2D)
 	{
+		const TestCaseConfig mipLevelRangeCases[] =
+		{
+			//	name					samplerLod	subresourceRange (aspectMask, baseMipLevel, mipLevels, baseArrayLayer, arraySize)
+			{ "lod_base_mip_level",		0.0f,		{ imageAspectFlags, 2u, numLevels - 2u, 0u, 1u } },
+			{ "lod_mip_levels",			4.0f,		{ imageAspectFlags, 0u, 3u, 0u, 1u } },
+		};
+
 		const TestCaseConfig arrayRangeCases[] =
 		{
 			//	name					samplerLod		subresourceRange (aspectMask, baseMipLevel, mipLevels, baseArrayLayer, arraySize)
@@ -417,11 +431,19 @@ static de::MovePtr<tcu::TestCaseGroup> createSubresourceRangeTests(tcu::TestCont
 			{ "lod_mip_levels_array_layer_last",		4.0f,		{ imageAspectFlags, 0u, 3u, arraySize - 1u, 1u } },
 		};
 
+		ADD_SUBRESOURCE_RANGE_TESTS(mipLevelRangeCases);
 		ADD_SUBRESOURCE_RANGE_TESTS(arrayRangeCases);
 		ADD_SUBRESOURCE_RANGE_TESTS(mipLevelAndArrayRangeCases);
 	}
 	else if (viewType == VK_IMAGE_VIEW_TYPE_CUBE)
 	{
+		const TestCaseConfig mipLevelRangeCases[] =
+		{
+			//	name					samplerLod	subresourceRange (aspectMask, baseMipLevel, mipLevels, baseArrayLayer, arraySize)
+			{ "lod_base_mip_level",		0.0f,		{ imageAspectFlags, 2u, numLevels - 2u, 0u, 6u } },
+			{ "lod_mip_levels",			4.0f,		{ imageAspectFlags, 0u, 3u, 0u, 6u } },
+		};
+
 		const TestCaseConfig arrayRangeCases[] =
 		{
 			//	name					samplerLod		subresourceRange (aspectMask, baseMipLevel, mipLevels, baseArrayLayer, arraySize)
@@ -439,8 +461,19 @@ static de::MovePtr<tcu::TestCaseGroup> createSubresourceRangeTests(tcu::TestCont
 			{ "lod_mip_levels_array_layer_last",		4.0f,		{ imageAspectFlags, 0u, 3u, arraySize - 6u, 6u } },
 		};
 
+		ADD_SUBRESOURCE_RANGE_TESTS(mipLevelRangeCases);
 		ADD_SUBRESOURCE_RANGE_TESTS(arrayRangeCases);
 		ADD_SUBRESOURCE_RANGE_TESTS(mipLevelAndArrayRangeCases);
+	}
+	else if (viewType == VK_IMAGE_VIEW_TYPE_3D)
+	{
+		const TestCaseConfig mipLevelRangeCases[] =
+		{
+			//	name					samplerLod	subresourceRange (aspectMask, baseMipLevel, mipLevels, baseArrayLayer, arraySize)
+			{ "lod_base_mip_level",		0.0f,		{ imageAspectFlags, 2u, numLevels - 2u, 0u, arraySize } },
+			{ "lod_mip_levels",			4.0f,		{ imageAspectFlags, 0u, 3u, 0u, arraySize } },
+		};
+		ADD_SUBRESOURCE_RANGE_TESTS(mipLevelRangeCases);
 	}
 
 #undef ADD_SUBRESOURCE_RANGE_TESTS
