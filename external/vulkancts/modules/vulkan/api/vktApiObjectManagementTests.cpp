@@ -573,6 +573,7 @@ struct Image
 
 	struct Parameters
 	{
+		VkImageCreateFlags		flags;
 		VkImageType				imageType;
 		VkFormat				format;
 		VkExtent3D				extent;
@@ -583,7 +584,8 @@ struct Image
 		VkImageUsageFlags		usage;
 		VkImageLayout			initialLayout;
 
-		Parameters (VkImageType				imageType_,
+		Parameters (VkImageCreateFlags		flags_,
+					VkImageType				imageType_,
 					VkFormat				format_,
 					VkExtent3D				extent_,
 					deUint32				mipLevels_,
@@ -592,7 +594,8 @@ struct Image
 					VkImageTiling			tiling_,
 					VkImageUsageFlags		usage_,
 					VkImageLayout			initialLayout_)
-			: imageType		(imageType_)
+			: flags			(flags_)
+			, imageType		(imageType_)
 			, format		(format_)
 			, extent		(extent_)
 			, mipLevels		(mipLevels_)
@@ -615,7 +618,7 @@ struct Image
 		{
 			VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
 			DE_NULL,
-			(VkImageCreateFlags)0,
+			params.flags,
 			params.imageType,
 			params.format,
 			params.extent,
@@ -1693,7 +1696,7 @@ struct Framebuffer
 		Dependency<RenderPass>	renderPass;
 
 		Resources (const Environment& env, const Parameters&)
-			: colorAttachment			(env, ImageView::Parameters(Image::Parameters(VK_IMAGE_TYPE_2D, VK_FORMAT_R8G8B8A8_UNORM,
+			: colorAttachment			(env, ImageView::Parameters(Image::Parameters(0u, VK_IMAGE_TYPE_2D, VK_FORMAT_R8G8B8A8_UNORM,
 																					  makeExtent3D(256, 256, 1),
 																					  1u, 1u,
 																					  VK_SAMPLE_COUNT_1_BIT,
@@ -1703,7 +1706,7 @@ struct Framebuffer
 																		 VK_IMAGE_VIEW_TYPE_2D, VK_FORMAT_R8G8B8A8_UNORM,
 																		 makeComponentMappingRGBA(),
 																		 makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u)))
-			, depthStencilAttachment	(env, ImageView::Parameters(Image::Parameters(VK_IMAGE_TYPE_2D, VK_FORMAT_D16_UNORM,
+			, depthStencilAttachment	(env, ImageView::Parameters(Image::Parameters(0u, VK_IMAGE_TYPE_2D, VK_FORMAT_D16_UNORM,
 																					  makeExtent3D(256, 256, 1),
 																					  1u, 1u,
 																					  VK_SAMPLE_COUNT_1_BIT,
@@ -2098,15 +2101,16 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 {
 	MovePtr<tcu::TestCaseGroup>	objectMgmtTests	(new tcu::TestCaseGroup(testCtx, "object_management", "Object management tests"));
 
-	const Image::Parameters		img1D			(VK_IMAGE_TYPE_1D, VK_FORMAT_R8G8B8A8_UNORM, makeExtent3D(256,   1, 1), 1u,  4u, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_LAYOUT_UNDEFINED);
-	const Image::Parameters		img2D			(VK_IMAGE_TYPE_2D, VK_FORMAT_R8G8B8A8_UNORM, makeExtent3D( 64,  64, 1), 1u, 12u, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT|VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_IMAGE_LAYOUT_UNDEFINED);
-	const Image::Parameters		img3D			(VK_IMAGE_TYPE_3D, VK_FORMAT_R8G8B8A8_UNORM, makeExtent3D( 64,  64, 4), 1u,  1u, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_LAYOUT_UNDEFINED);
+	const Image::Parameters		img1D			(0u, VK_IMAGE_TYPE_1D, VK_FORMAT_R8G8B8A8_UNORM, makeExtent3D(256,   1, 1), 1u,  4u, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_LAYOUT_UNDEFINED);
+	const Image::Parameters		img2D			(0u, VK_IMAGE_TYPE_2D, VK_FORMAT_R8G8B8A8_UNORM, makeExtent3D( 64,  64, 1), 1u, 12u, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT|VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_IMAGE_LAYOUT_UNDEFINED);
+	const Image::Parameters		imgCube			(VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT, VK_IMAGE_TYPE_2D, VK_FORMAT_R8G8B8A8_UNORM, makeExtent3D( 64,  64, 1), 1u, 12u, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT|VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_IMAGE_LAYOUT_UNDEFINED);
+	const Image::Parameters		img3D			(0u, VK_IMAGE_TYPE_3D, VK_FORMAT_R8G8B8A8_UNORM, makeExtent3D( 64,  64, 4), 1u,  1u, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_LAYOUT_UNDEFINED);
 	const ImageView::Parameters	imgView1D		(img1D, VK_IMAGE_VIEW_TYPE_1D,			img1D.format, makeComponentMappingRGBA(), makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u));
 	const ImageView::Parameters	imgView1DArr	(img1D, VK_IMAGE_VIEW_TYPE_1D_ARRAY,	img1D.format, makeComponentMappingRGBA(), makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 4u));
 	const ImageView::Parameters	imgView2D		(img2D, VK_IMAGE_VIEW_TYPE_2D,			img2D.format, makeComponentMappingRGBA(), makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u));
 	const ImageView::Parameters	imgView2DArr	(img2D, VK_IMAGE_VIEW_TYPE_2D_ARRAY,	img2D.format, makeComponentMappingRGBA(), makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 8u));
-	const ImageView::Parameters	imgViewCube		(img2D, VK_IMAGE_VIEW_TYPE_CUBE,		img2D.format, makeComponentMappingRGBA(), makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 6u));
-	const ImageView::Parameters	imgViewCubeArr	(img2D, VK_IMAGE_VIEW_TYPE_CUBE_ARRAY,	img2D.format, makeComponentMappingRGBA(), makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 12u));
+	const ImageView::Parameters	imgViewCube		(imgCube, VK_IMAGE_VIEW_TYPE_CUBE,		img2D.format, makeComponentMappingRGBA(), makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 6u));
+	const ImageView::Parameters	imgViewCubeArr	(imgCube, VK_IMAGE_VIEW_TYPE_CUBE_ARRAY,	img2D.format, makeComponentMappingRGBA(), makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 12u));
 	const ImageView::Parameters	imgView3D		(img3D, VK_IMAGE_VIEW_TYPE_3D,			img3D.format, makeComponentMappingRGBA(), makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u));
 
 	const DescriptorSetLayout::Parameters	singleUboDescLayout	= DescriptorSetLayout::Parameters::single(0u, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1u, VK_SHADER_STAGE_VERTEX_BIT);
