@@ -23,7 +23,7 @@ if (EXISTS ${SPIRV_TOOLS_ABS_PATH}/source/opcode.cpp)
 	set(CMAKE_CXX_FLAGS ${DE_3RD_PARTY_CXX_FLAGS})
 
 	set(DEQP_HAVE_SPIRV_TOOLS		ON					PARENT_SCOPE)
-	set(SPIRV_SKIP_EXECUTABLES		ON)
+	set(SPIRV_SKIP_EXECUTABLES		ON CACHE BOOL "" FORCE)
 	add_subdirectory(${SPIRV_TOOLS_ABS_PATH} spirv-tools)
 else ()
 	message(STATUS "spirv-tools not found; SPIR-V assembly not available")
