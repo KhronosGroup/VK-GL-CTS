@@ -77,7 +77,7 @@ public:
 															const Type				type,
 															const tcu::Sampler&		sampler);
 										~TextureBinding		(void);
-	Type								getType				(void) const { return m_type; 		}
+	Type								getType				(void) const { return m_type;		}
 	const tcu::Sampler&					getSampler			(void) const { return m_sampler;	}
 	const tcu::Texture2D&				get2D				(void) const { DE_ASSERT(getType() == TYPE_2D && m_binding.tex2D !=NULL); return *m_binding.tex2D; }
 
@@ -380,7 +380,7 @@ public:
 	template<typename T>
 	void												addUniform					(deUint32				bindingLocation,
 																					vk::VkDescriptorType	descriptorType,
-																					const T& 				data);
+																					const T&				data);
 	void												addUniform					(deUint32				bindingLocation,
 																					vk::VkDescriptorType	descriptorType,
 																					deUint32				dataSize,
@@ -405,16 +405,16 @@ protected:
 private:
 
 	void												setupTextures				(void);
-	de::MovePtr<vk::Allocation>							uploadImage2D				(const tcu::Texture2D&	refTexture,
-																					 const vk::VkImage&		vkTexture);
+	de::MovePtr<vk::Allocation>							uploadImage2D				(const tcu::Texture2D&			refTexture,
+																					 const vk::VkImage&				vkTexture);
 	vk::Move<vk::VkImage>								createImage2D				(const tcu::Texture2D&			texture,
 																					 const vk::VkFormat				format,
 																					 const vk::VkImageUsageFlags	usage,
 																					 const vk::VkImageTiling		tiling);
-	void												copyTilingImageToOptimal	(const vk::VkImage&	srcImage,
-																					 const vk::VkImage&	dstImage,
-																					 deInt32 			width,
-																					 deInt32 			height);
+	void												copyTilingImageToOptimal	(const vk::VkImage&				srcImage,
+																					 const vk::VkImage&				dstImage,
+																					 deInt32						width,
+																					 deInt32						height);
 
 	void												setupUniformData			(deUint32 bindingLocation, deUint32 size, const void* dataPtr);
 	void												setupDefaultInputs			(const QuadGrid& quadGrid);
@@ -428,7 +428,7 @@ private:
 
 	const bool											m_isVertexCase;
 	const ShaderEvaluator&								m_evaluator;
-	const UniformSetup&	 								m_uniformSetup;
+	const UniformSetup&									m_uniformSetup;
 	const AttributeSetupFunc							m_attribFunc;
 
 	struct EnabledBaseAttribute
@@ -443,7 +443,7 @@ private:
 
 	vk::Move<vk::VkImage>								m_colorImage;
 	de::MovePtr<vk::Allocation>							m_colorImageAlloc;
-	vk::Move<vk::VkImageView>	 						m_colorImageView;
+	vk::Move<vk::VkImageView>							m_colorImageView;
 
 	vk::Move<vk::VkRenderPass>							m_renderPass;
 	vk::Move<vk::VkFramebuffer>							m_framebuffer;
@@ -452,8 +452,6 @@ private:
 
 	vk::Move<vk::VkShaderModule>						m_vertexShaderModule;
 	vk::Move<vk::VkShaderModule>						m_fragmentShaderModule;
-	vk::Move<vk::VkShader>								m_vertexShader;
-	vk::Move<vk::VkShader>								m_fragmentShader;
 
 	vk::Move<vk::VkBuffer>								m_indiceBuffer;
 	de::MovePtr<vk::Allocation>							m_indiceBufferAlloc;
@@ -463,20 +461,20 @@ private:
 	vk::Move<vk::VkDescriptorPool>						m_descriptorPool;
 	vk::Move<vk::VkDescriptorSet>						m_descriptorSet;
 
-	vk::Move<vk::VkCmdPool>								m_cmdPool;
-	vk::Move<vk::VkCmdBuffer>							m_cmdBuffer;
+	vk::Move<vk::VkCommandPool>							m_cmdPool;
+	vk::Move<vk::VkCommandBuffer>						m_cmdBuffer;
 
 	vk::Move<vk::VkFence>								m_fence;
 
 	vk::DescriptorSetLayoutBuilder						m_descriptorSetLayoutBuilder;
 	vk::DescriptorPoolBuilder							m_descriptorPoolBuilder;
-	vk::DescriptorSetUpdateBuilder 						m_descriptorSetUpdateBuilder;
+	vk::DescriptorSetUpdateBuilder						m_descriptorSetUpdateBuilder;
 
-	typedef de::SharedPtr<vk::Unique<vk::VkBuffer> > 		VkBufferSp;
+	typedef de::SharedPtr<vk::Unique<vk::VkBuffer> >		VkBufferSp;
 
-	typedef de::SharedPtr<vk::Unique<vk::VkImage> > 		VkImageSp;
+	typedef de::SharedPtr<vk::Unique<vk::VkImage> >			VkImageSp;
 	typedef de::SharedPtr<vk::Unique<vk::VkImageView> >		VkImageViewSp;
-	typedef de::SharedPtr<vk::Unique<vk::VkSampler> > 		VkSamplerSp;
+	typedef de::SharedPtr<vk::Unique<vk::VkSampler> >		VkSamplerSp;
 	typedef de::SharedPtr<vk::Allocation>					AllocationSp;
 
 	class UniformInfo
@@ -486,7 +484,6 @@ private:
 		virtual						~UniformInfo	(void) {}
 
 		vk::VkDescriptorType		type;
-		vk::VkDescriptorInfo		descriptor;
 		deUint32					location;
 	};
 
@@ -498,6 +495,7 @@ private:
 
 		VkBufferSp					buffer;
 		AllocationSp				alloc;
+		vk::VkDescriptorBufferInfo	descriptor;
 	};
 
 	class SamplerUniform : public UniformInfo
@@ -510,6 +508,7 @@ private:
 		VkImageViewSp				imageView;
 		VkSamplerSp					sampler;
 		AllocationSp				alloc;
+		vk::VkDescriptorImageInfo	descriptor;
 	};
 
 	typedef de::SharedPtr<de::UniquePtr<UniformInfo> >	UniformInfoSp;

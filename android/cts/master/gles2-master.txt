@@ -12975,11 +12975,6 @@ dEQP-GLES2.functional.depth_range.compare.one_to_one
 dEQP-GLES2.functional.depth_range.compare.clamp_near
 dEQP-GLES2.functional.depth_range.compare.clamp_far
 dEQP-GLES2.functional.depth_range.compare.clamp_both
-dEQP-GLES2.functional.dither.disabled.gradient_white
-dEQP-GLES2.functional.dither.disabled.gradient_red
-dEQP-GLES2.functional.dither.disabled.gradient_green
-dEQP-GLES2.functional.dither.disabled.gradient_blue
-dEQP-GLES2.functional.dither.disabled.gradient_alpha
 dEQP-GLES2.functional.dither.disabled.unicolored_quad_white
 dEQP-GLES2.functional.dither.disabled.unicolored_quad_red
 dEQP-GLES2.functional.dither.disabled.unicolored_quad_green

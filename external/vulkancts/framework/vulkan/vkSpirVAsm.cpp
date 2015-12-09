@@ -53,37 +53,16 @@ using std::vector;
 
 #if defined(DEQP_HAVE_SPIRV_TOOLS)
 
-namespace
-{
-// Once spirv-tools upgrades past 972788bf239daff45ed0d2bb878e608c4106939c, we
-// won't need this singleton, as spvContextCreate() is thread-safe.
-static volatile deSingletonState	s_spirvInitState	= DE_SINGLETON_STATE_NOT_INITIALIZED;
-void initSpirVTools (void*)
-{
-	spv_binary		binary		= DE_NULL;
-	spv_diagnostic	diagnostic	= DE_NULL;
-	// This dummy compilation initializes opcode tables for all the subsequent
-	// ones.  It should be the first spv call in the current process, and it
-	// isn't thread-safe.
-	spvTextToBinary("", 0, &binary, &diagnostic);
-}
-
-void prepareSpirvTools (void)
-{
-	deInitSingleton(&s_spirvInitState, initSpirVTools, DE_NULL);
-}
-
-} // anonymous
 
 void assembleSpirV (const SpirVAsmSource* program, std::vector<deUint8>* dst, SpirVProgramInfo* buildInfo)
 {
-	prepareSpirvTools();
+	spv_context context = spvContextCreate();
 
 	const std::string&	spvSource			= program->program.str();
 	spv_binary			binary				= DE_NULL;
 	spv_diagnostic		diagnostic			= DE_NULL;
 	const deUint64		compileStartTime	= deGetMicroseconds();
-	const spv_result_t	compileOk			= spvTextToBinary(spvSource.c_str(), spvSource.size(), &binary, &diagnostic);
+	const spv_result_t	compileOk			= spvTextToBinary(context, spvSource.c_str(), spvSource.size(), &binary, &diagnostic);
 
 	{
 		buildInfo->source			= program;
@@ -103,6 +82,7 @@ void assembleSpirV (const SpirVAsmSource* program, std::vector<deUint8>* dst, Sp
 #endif
 	spvBinaryDestroy(binary);
 	spvDiagnosticDestroy(diagnostic);
+	spvContextDestroy(context);
 	return;
 }
 

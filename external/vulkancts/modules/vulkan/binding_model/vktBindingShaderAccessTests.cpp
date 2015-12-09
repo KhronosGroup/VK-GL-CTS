@@ -44,6 +44,8 @@
 #include "vkMemUtil.hpp"
 #include "vkBuilderUtil.hpp"
 #include "vkQueryUtil.hpp"
+#include "vkImageUtil.hpp"
+#include "vkTypeUtil.hpp"
 
 #include "tcuVector.hpp"
 #include "tcuVectorUtil.hpp"
@@ -96,15 +98,6 @@ bool isDynamicDescriptorType (vk::VkDescriptorType type)
 	return type == vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC || type == vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;
 }
 
-vk::VkFormat mapToVkTextureFormat (const tcu::TextureFormat& format)
-{
-	if (format == tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8))
-		return vk::VK_FORMAT_R8G8B8A8_UNORM;
-
-	DE_FATAL("Not implemented");
-	return vk::VK_FORMAT_UNDEFINED;
-}
-
 vk::VkImageType viewTypeToImageType (vk::VkImageViewType type)
 {
 	switch (type)
@@ -120,87 +113,6 @@ vk::VkImageType viewTypeToImageType (vk::VkImageViewType type)
 		default:
 			DE_FATAL("Impossible");
 			return (vk::VkImageType)0;
-	}
-}
-
-vk::VkTexFilter mapMagFilterToVkTexFilter (tcu::Sampler::FilterMode mode)
-{
-	switch (mode)
-	{
-		case tcu::Sampler::NEAREST:	return vk::VK_TEX_FILTER_NEAREST;
-		case tcu::Sampler::LINEAR:	return vk::VK_TEX_FILTER_LINEAR;
-
-		default:
-			DE_FATAL("Illegal filter mode");
-			return (vk::VkTexFilter)0;
-	}
-}
-
-vk::VkTexFilter mapMinFilterToVkTexFilter (tcu::Sampler::FilterMode mode)
-{
-	switch (mode)
-	{
-		case tcu::Sampler::NEAREST:					return vk::VK_TEX_FILTER_NEAREST;
-		case tcu::Sampler::LINEAR:					return vk::VK_TEX_FILTER_LINEAR;
-		case tcu::Sampler::NEAREST_MIPMAP_NEAREST:	return vk::VK_TEX_FILTER_NEAREST;
-		case tcu::Sampler::LINEAR_MIPMAP_NEAREST:	return vk::VK_TEX_FILTER_LINEAR;
-		case tcu::Sampler::NEAREST_MIPMAP_LINEAR:	return vk::VK_TEX_FILTER_NEAREST;
-		case tcu::Sampler::LINEAR_MIPMAP_LINEAR:	return vk::VK_TEX_FILTER_LINEAR;
-
-		default:
-			DE_FATAL("Illegal filter mode");
-			return (vk::VkTexFilter)0;
-	}
-}
-
-vk::VkTexMipmapMode mapMinFilterToVkTexMipmapMode (tcu::Sampler::FilterMode mode)
-{
-	switch (mode)
-	{
-		case tcu::Sampler::NEAREST:					return vk::VK_TEX_MIPMAP_MODE_BASE;
-		case tcu::Sampler::LINEAR:					return vk::VK_TEX_MIPMAP_MODE_BASE;
-		case tcu::Sampler::NEAREST_MIPMAP_NEAREST:	return vk::VK_TEX_MIPMAP_MODE_NEAREST;
-		case tcu::Sampler::LINEAR_MIPMAP_NEAREST:	return vk::VK_TEX_MIPMAP_MODE_NEAREST;
-		case tcu::Sampler::NEAREST_MIPMAP_LINEAR:	return vk::VK_TEX_MIPMAP_MODE_LINEAR;
-		case tcu::Sampler::LINEAR_MIPMAP_LINEAR:	return vk::VK_TEX_MIPMAP_MODE_LINEAR;
-
-		default:
-			DE_FATAL("Illegal filter mode");
-			return (vk::VkTexMipmapMode)0;
-	}
-}
-
-vk::VkTexAddressMode mapToVkTexAddressMode (tcu::Sampler::WrapMode mode)
-{
-	switch (mode)
-	{
-		case tcu::Sampler::CLAMP_TO_EDGE:		return vk::VK_TEX_ADDRESS_MODE_CLAMP;
-		case tcu::Sampler::CLAMP_TO_BORDER:		return vk::VK_TEX_ADDRESS_MODE_CLAMP_BORDER;
-		case tcu::Sampler::REPEAT_GL:			return vk::VK_TEX_ADDRESS_MODE_WRAP;
-		case tcu::Sampler::MIRRORED_REPEAT_GL:	return vk::VK_TEX_ADDRESS_MODE_MIRROR;
-
-		default:
-			DE_FATAL("Illegal wrap mode");
-			return (vk::VkTexAddressMode)0;
-	}
-}
-
-vk::VkCompareOp mapToVkCompareOp (tcu::Sampler::CompareMode mode)
-{
-	switch (mode)
-	{
-		case tcu::Sampler::COMPAREMODE_LESS:				return vk::VK_COMPARE_OP_LESS;
-		case tcu::Sampler::COMPAREMODE_LESS_OR_EQUAL:		return vk::VK_COMPARE_OP_LESS_EQUAL;
-		case tcu::Sampler::COMPAREMODE_GREATER:				return vk::VK_COMPARE_OP_GREATER;
-		case tcu::Sampler::COMPAREMODE_GREATER_OR_EQUAL:	return vk::VK_COMPARE_OP_GREATER_EQUAL;
-		case tcu::Sampler::COMPAREMODE_EQUAL:				return vk::VK_COMPARE_OP_EQUAL;
-		case tcu::Sampler::COMPAREMODE_NOT_EQUAL:			return vk::VK_COMPARE_OP_NOT_EQUAL;
-		case tcu::Sampler::COMPAREMODE_ALWAYS:				return vk::VK_COMPARE_OP_ALWAYS;
-		case tcu::Sampler::COMPAREMODE_NEVER:				return vk::VK_COMPARE_OP_NEVER;
-
-		default:
-			DE_FATAL("Illegal compare mode");
-			return (vk::VkCompareOp)0;
 	}
 }
 
@@ -252,7 +164,7 @@ void writeTextureLevelPyramidData (void* dst, deUint32 dstLen, const tcu::Textur
 				(deUint32)sliceSize.x(),									// bufferRowLength
 				(deUint32)sliceSize.y(),									// bufferImageHeight
 				{
-					vk::VK_IMAGE_ASPECT_COLOR,			// aspect
+					vk::VK_IMAGE_ASPECT_COLOR_BIT,		// aspectMask
 					(deUint32)level,					// mipLevel
 					(deUint32)sliceNdx,					// arrayLayer
 					1u,									// arraySize
@@ -299,82 +211,15 @@ de::MovePtr<vk::Allocation> allocateAndBindObjectMemory (const vk::DeviceInterfa
 	return allocation;
 }
 
-vk::VkDescriptorInfo createDescriptorInfo (vk::VkBuffer buffer, vk::VkDeviceSize offset, vk::VkDeviceSize range)
+vk::VkDescriptorImageInfo makeDescriptorImageInfo (vk::VkSampler sampler)
 {
-	const vk::VkDescriptorInfo resultInfo =
-	{
-		0,							// bufferView
-		0,							// sampler
-		0,							// imageView
-		(vk::VkImageLayout)0,		// imageLayout
-		{ buffer, offset, range }	// bufferInfo
-	};
-	return resultInfo;
+	return vk::makeDescriptorImageInfo(sampler, (vk::VkImageView)0, (vk::VkImageLayout)0);
 }
 
-vk::VkDescriptorInfo createDescriptorInfo (vk::VkBufferView bufferView)
+vk::VkDescriptorImageInfo makeDescriptorImageInfo (vk::VkImageView imageView, vk::VkImageLayout layout)
 {
-	const vk::VkDescriptorInfo resultInfo =
-	{
-		bufferView,					// bufferView
-		0,							// sampler
-		0,							// imageView
-		(vk::VkImageLayout)0,		// imageLayout
-		{ (vk::VkBuffer)0, 0, 0 }	// bufferInfo
-	};
-	return resultInfo;
+	return vk::makeDescriptorImageInfo((vk::VkSampler)0, imageView, layout);
 }
-
-vk::VkDescriptorInfo createDescriptorInfo (vk::VkSampler sampler)
-{
-	const vk::VkDescriptorInfo resultInfo =
-	{
-		0,							// bufferView
-		sampler,					// sampler
-		0,							// imageView
-		(vk::VkImageLayout)0,		// imageLayout
-		{ (vk::VkBuffer)0, 0, 0 }	// bufferInfo
-	};
-	return resultInfo;
-}
-
-vk::VkDescriptorInfo createDescriptorInfo (vk::VkImageView imageView, vk::VkImageLayout layout)
-{
-	const vk::VkDescriptorInfo resultInfo =
-	{
-		0,							// bufferView
-		0,							// sampler
-		imageView,					// imageView
-		layout,						// imageLayout
-		{ (vk::VkBuffer)0, 0, 0 }	// bufferInfo
-	};
-	return resultInfo;
-}
-
-vk::VkDescriptorInfo createDescriptorInfo (vk::VkSampler sampler, vk::VkImageView imageView, vk::VkImageLayout layout)
-{
-	const vk::VkDescriptorInfo resultInfo =
-	{
-		0,							// bufferView
-		sampler,					// sampler
-		imageView,					// imageView
-		layout,						// imageLayout
-		{ (vk::VkBuffer)0, 0, 0 }	// bufferInfo
-	};
-	return resultInfo;
-}
-
-vk::VkClearValue createClearValueColor (const tcu::Vec4& color)
-{
-	vk::VkClearValue retVal;
-
-	retVal.color.float32[0] = color.x();
-	retVal.color.float32[1] = color.y();
-	retVal.color.float32[2] = color.z();
-	retVal.color.float32[3] = color.w();
-
-	return retVal;
-};
 
 void drawQuadrantReferenceResult (const tcu::PixelBufferAccess& dst, const tcu::Vec4& c1, const tcu::Vec4& c2, const tcu::Vec4& c3, const tcu::Vec4& c4)
 {
@@ -413,7 +258,7 @@ private:
 																		 vk::VkImageView			colorAttachmentView,
 																		 const tcu::UVec2&			size);
 
-	static vk::Move<vk::VkCmdPool>			createCommandPool			(const vk::DeviceInterface&	vki,
+	static vk::Move<vk::VkCommandPool>		createCommandPool			(const vk::DeviceInterface&	vki,
 																		 vk::VkDevice				device,
 																		 deUint32					queueFamilyIndex);
 
@@ -438,7 +283,7 @@ protected:
 	const vk::Unique<vk::VkImageView>		m_colorAttachmentView;
 	const vk::Unique<vk::VkRenderPass>		m_renderPass;
 	const vk::Unique<vk::VkFramebuffer>		m_framebuffer;
-	const vk::Unique<vk::VkCmdPool>			m_cmdPool;
+	const vk::Unique<vk::VkCommandPool>		m_cmdPool;
 
 	bool									m_firstIteration;
 };
@@ -474,15 +319,15 @@ vk::Move<vk::VkImage> SingleTargetRenderInstance::createColorAttachment (const v
 	{
 		vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
 		DE_NULL,
+		(vk::VkImageCreateFlags)0,
 		vk::VK_IMAGE_TYPE_2D,							// imageType
-		mapToVkTextureFormat(format),					// format
+		vk::mapTextureFormat(format),					// format
 		{ (deInt32)size.x(), (deInt32)size.y(), 1 },	// extent
 		1,												// mipLevels
 		1,												// arraySize
-		1,												// samples
+		vk::VK_SAMPLE_COUNT_1_BIT,						// samples
 		vk::VK_IMAGE_TILING_OPTIMAL,					// tiling
-		vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | vk::VK_IMAGE_USAGE_TRANSFER_SOURCE_BIT,	// usage
-		0,												// flags
+		vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT,	// usage
 		vk::VK_SHARING_MODE_EXCLUSIVE,					// sharingMode
 		0u,												// queueFamilyCount
 		DE_NULL,										// pQueueFamilyIndices
@@ -505,10 +350,11 @@ vk::Move<vk::VkImageView> SingleTargetRenderInstance::createColorAttachmentView 
 	{
 		vk::VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
 		DE_NULL,
+		(vk::VkImageViewCreateFlags)0,
 		image,							// image
 		vk::VK_IMAGE_VIEW_TYPE_2D,		// viewType
-		mapToVkTextureFormat(format),	// format
-		{ vk::VK_CHANNEL_SWIZZLE_R, vk::VK_CHANNEL_SWIZZLE_G, vk::VK_CHANNEL_SWIZZLE_B, vk::VK_CHANNEL_SWIZZLE_A },
+		vk::mapTextureFormat(format),	// format
+		vk::makeComponentMappingRGBA(),
 		{
 			vk::VK_IMAGE_ASPECT_COLOR_BIT,	// aspectMask
 			0u,								// baseMipLevel
@@ -516,7 +362,6 @@ vk::Move<vk::VkImageView> SingleTargetRenderInstance::createColorAttachmentView 
 			0u,								// baseArrayLayer
 			1u,								// arraySize
 		},
-		0u,								// flags
 	};
 
 	return vk::createImageView(vki, device, &createInfo);
@@ -528,17 +373,15 @@ vk::Move<vk::VkRenderPass> SingleTargetRenderInstance::createRenderPass (const v
 {
 	const vk::VkAttachmentDescription	attachmentDescription	=
 	{
-		vk::VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION,
-		DE_NULL,
-		mapToVkTextureFormat(format),					// format
-		1u,												// samples
+		(vk::VkAttachmentDescriptionFlags)0,
+		vk::mapTextureFormat(format),					// format
+		vk::VK_SAMPLE_COUNT_1_BIT,						// samples
 		vk::VK_ATTACHMENT_LOAD_OP_CLEAR,				// loadOp
 		vk::VK_ATTACHMENT_STORE_OP_STORE,				// storeOp
 		vk::VK_ATTACHMENT_LOAD_OP_DONT_CARE,			// stencilLoadOp
 		vk::VK_ATTACHMENT_STORE_OP_DONT_CARE,			// stencilStoreOp
 		vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,	// initialLayout
 		vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,	// finalLayout
-		0u,												// flags
 	};
 	const vk::VkAttachmentReference		colorAttachment			=
 	{
@@ -552,23 +395,22 @@ vk::Move<vk::VkRenderPass> SingleTargetRenderInstance::createRenderPass (const v
 	};
 	const vk::VkSubpassDescription		subpass					=
 	{
-		vk::VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION,
-		DE_NULL,
+		(vk::VkSubpassDescriptionFlags)0,
 		vk::VK_PIPELINE_BIND_POINT_GRAPHICS,			// pipelineBindPoint
-		0u,												// flags
-		0u,												// inputCount
-		DE_NULL,										// inputAttachments
-		1u,												// colorCount
+		0u,												// inputAttachmentCount
+		DE_NULL,										// pInputAttachments
+		1u,												// colorAttachmentCount
 		&colorAttachment,								// pColorAttachments
 		DE_NULL,										// pResolveAttachments
-		depthStencilAttachment,							// depthStencilAttachment
-		0u,												// preserveCount
+		&depthStencilAttachment,						// pDepthStencilAttachment
+		0u,												// preserveAttachmentCount
 		DE_NULL											// pPreserveAttachments
 	};
 	const vk::VkRenderPassCreateInfo	renderPassCreateInfo	=
 	{
 		vk::VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
 		DE_NULL,
+		(vk::VkRenderPassCreateFlags)0,
 		1u,												// attachmentCount
 		&attachmentDescription,							// pAttachments
 		1u,												// subpassCount
@@ -590,6 +432,7 @@ vk::Move<vk::VkFramebuffer> SingleTargetRenderInstance::createFramebuffer (const
 	{
 		vk::VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
 		DE_NULL,
+		(vk::VkFramebufferCreateFlags)0,
 		renderpass,				// renderPass
 		1u,						// attachmentCount
 		&colorAttachmentView,	// pAttachments
@@ -601,36 +444,36 @@ vk::Move<vk::VkFramebuffer> SingleTargetRenderInstance::createFramebuffer (const
 	return vk::createFramebuffer(vki, device, &framebufferCreateInfo);
 }
 
-vk::Move<vk::VkCmdPool> SingleTargetRenderInstance::createCommandPool (const vk::DeviceInterface&	vki,
-																	   vk::VkDevice					device,
-																	   deUint32						queueFamilyIndex)
+vk::Move<vk::VkCommandPool> SingleTargetRenderInstance::createCommandPool (const vk::DeviceInterface&	vki,
+																		   vk::VkDevice					device,
+																		   deUint32						queueFamilyIndex)
 {
-	const vk::VkCmdPoolCreateInfo createInfo =
+	const vk::VkCommandPoolCreateInfo createInfo =
 	{
-		vk::VK_STRUCTURE_TYPE_CMD_POOL_CREATE_INFO,
+		vk::VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
 		DE_NULL,
-		queueFamilyIndex,						// queueFamilyIndex
-		vk::VK_CMD_POOL_CREATE_TRANSIENT_BIT,	// flags
+		vk::VK_COMMAND_POOL_CREATE_TRANSIENT_BIT,	// flags
+		queueFamilyIndex,							// queueFamilyIndex
 	};
 	return vk::createCommandPool(vki, device, &createInfo);
 }
 
 void SingleTargetRenderInstance::readRenderTarget (tcu::TextureLevel& dst)
 {
-	const deUint64						pixelDataSize				= (deUint64)(m_targetSize.x() * m_targetSize.y() * m_targetFormat.getPixelSize());
-	const vk::VkBufferCreateInfo		bufferCreateInfo			=
+	const deUint64							pixelDataSize				= (deUint64)(m_targetSize.x() * m_targetSize.y() * m_targetFormat.getPixelSize());
+	const vk::VkBufferCreateInfo			bufferCreateInfo			=
 	{
 		vk::VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
 		DE_NULL,
-		pixelDataSize,									// size
-		vk::VK_BUFFER_USAGE_TRANSFER_DESTINATION_BIT,	// usage
 		0u,												// flags
+		pixelDataSize,									// size
+		vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT,			// usage
 		vk::VK_SHARING_MODE_EXCLUSIVE,					// sharingMode
 		0u,												// queueFamilyCount
 		DE_NULL,										// pQueueFamilyIndices
 	};
-	const vk::Unique<vk::VkBuffer>		buffer						(vk::createBuffer(m_vki, m_device, &bufferCreateInfo));
-	const vk::VkImageSubresourceRange	fullSubrange				=
+	const vk::Unique<vk::VkBuffer>			buffer						(vk::createBuffer(m_vki, m_device, &bufferCreateInfo));
+	const vk::VkImageSubresourceRange		fullSubrange				=
 	{
 		vk::VK_IMAGE_ASPECT_COLOR_BIT,					// aspectMask
 		0u,												// baseMipLevel
@@ -638,62 +481,65 @@ void SingleTargetRenderInstance::readRenderTarget (tcu::TextureLevel& dst)
 		0u,												// baseArraySlice
 		1u,												// arraySize
 	};
-	const vk::VkImageMemoryBarrier		imageBarrier				=
+	const vk::VkImageMemoryBarrier			imageBarrier				=
 	{
 		vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
 		DE_NULL,
-		vk::VK_MEMORY_OUTPUT_COLOR_ATTACHMENT_BIT,		// outputMask
-		vk::VK_MEMORY_INPUT_TRANSFER_BIT,				// inputMask
+		vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,		// srcAccessMask
+		vk::VK_ACCESS_TRANSFER_READ_BIT,				// dstAccessMask
 		vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,	// oldLayout
-		vk::VK_IMAGE_LAYOUT_TRANSFER_SOURCE_OPTIMAL,	// newLayout
+		vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,		// newLayout
 		vk::VK_QUEUE_FAMILY_IGNORED,					// srcQueueFamilyIndex
 		vk::VK_QUEUE_FAMILY_IGNORED,					// destQueueFamilyIndex
 		*m_colorAttachmentImage,						// image
 		fullSubrange,									// subresourceRange
 	};
-	const vk::VkBufferMemoryBarrier		memoryBarrier				=
+	const vk::VkBufferMemoryBarrier			memoryBarrier				=
 	{
 		vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
 		DE_NULL,
-		vk::VK_MEMORY_OUTPUT_TRANSFER_BIT,				// outputMask
-		vk::VK_MEMORY_INPUT_HOST_READ_BIT,				// inputMask
+		vk::VK_ACCESS_TRANSFER_WRITE_BIT,				// srcAccessMask
+		vk::VK_ACCESS_HOST_READ_BIT,					// dstAccessMask
 		vk::VK_QUEUE_FAMILY_IGNORED,					// srcQueueFamilyIndex
 		vk::VK_QUEUE_FAMILY_IGNORED,					// destQueueFamilyIndex
 		*buffer,										// buffer
 		0u,												// offset
 		(vk::VkDeviceSize)pixelDataSize					// size
 	};
-	const vk::VkCmdBufferCreateInfo		cmdBufCreateInfo			=
+	const vk::VkCommandBufferAllocateInfo	cmdBufAllocInfo				=
 	{
-		vk::VK_STRUCTURE_TYPE_CMD_BUFFER_CREATE_INFO,
+		vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
 		DE_NULL,
-		*m_cmdPool,							// cmdPool
-		vk::VK_CMD_BUFFER_LEVEL_PRIMARY,	// level
-		0u,									// flags
+		*m_cmdPool,								// cmdPool
+		vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY,	// level
+		1u,										// bufferCount
 	};
-	const vk::VkFenceCreateInfo			fenceCreateInfo				=
+	const vk::VkFenceCreateInfo				fenceCreateInfo				=
 	{
 		vk::VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
 		DE_NULL,
 		0u,												// flags
 	};
-	const vk::VkCmdBufferBeginInfo		cmdBufBeginInfo				=
+	const vk::VkCommandBufferBeginInfo		cmdBufBeginInfo				=
 	{
-		vk::VK_STRUCTURE_TYPE_CMD_BUFFER_BEGIN_INFO,
+		vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
 		DE_NULL,
-		vk::VK_CMD_BUFFER_OPTIMIZE_SMALL_BATCH_BIT | vk::VK_CMD_BUFFER_OPTIMIZE_ONE_TIME_SUBMIT_BIT,	// flags
-		(vk::VkRenderPass)0u,																			// renderPass
-		0u,																								// subpass
-		(vk::VkFramebuffer)0u,																			// framebuffer
+		vk::VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,	// flags
+		(vk::VkRenderPass)0u,								// renderPass
+		0u,													// subpass
+		(vk::VkFramebuffer)0u,								// framebuffer
+		vk::VK_FALSE,										// occlusionQueryEnable
+		(vk::VkQueryControlFlags)0,
+		(vk::VkQueryPipelineStatisticFlags)0,
 	};
-	const vk::VkImageSubresourceCopy	firstSlice					=
+	const vk::VkImageSubresourceLayers		firstSlice					=
 	{
-		vk::VK_IMAGE_ASPECT_COLOR,						// aspect
+		vk::VK_IMAGE_ASPECT_COLOR_BIT,					// aspect
 		0,												// mipLevel
 		0,												// arrayLayer
 		1,												// arraySize
 	};
-	const vk::VkBufferImageCopy			copyRegion					=
+	const vk::VkBufferImageCopy				copyRegion					=
 	{
 		0u,												// bufferOffset
 		m_targetSize.x(),								// bufferRowLength
@@ -703,23 +549,37 @@ void SingleTargetRenderInstance::readRenderTarget (tcu::TextureLevel& dst)
 		{ (deInt32)m_targetSize.x(), (deInt32)m_targetSize.y(), 1 }		// imageExtent
 	};
 
-	const de::MovePtr<vk::Allocation>	bufferMemory				= allocateAndBindObjectMemory(m_vki, m_device, m_allocator, *buffer, vk::MemoryRequirement::HostVisible);
+	const de::MovePtr<vk::Allocation>		bufferMemory				= allocateAndBindObjectMemory(m_vki, m_device, m_allocator, *buffer, vk::MemoryRequirement::HostVisible);
 
-	const vk::Unique<vk::VkCmdBuffer>	cmd							(vk::createCommandBuffer(m_vki, m_device, &cmdBufCreateInfo));
-	const vk::Unique<vk::VkFence>		cmdCompleteFence			(vk::createFence(m_vki, m_device, &fenceCreateInfo));
-	const void* const					imageBarrierPtr				= &imageBarrier;
-	const void* const					bufferBarrierPtr			= &memoryBarrier;
-	const deUint64						infiniteTimeout				= ~(deUint64)0u;
+	const vk::Unique<vk::VkCommandBuffer>	cmd							(vk::allocateCommandBuffer(m_vki, m_device, &cmdBufAllocInfo));
+	const vk::Unique<vk::VkFence>			cmdCompleteFence			(vk::createFence(m_vki, m_device, &fenceCreateInfo));
+	const void* const						imageBarrierPtr				= &imageBarrier;
+	const void* const						bufferBarrierPtr			= &memoryBarrier;
+	const deUint64							infiniteTimeout				= ~(deUint64)0u;
 
 	// copy content to buffer
 	VK_CHECK(m_vki.beginCommandBuffer(*cmd, &cmdBufBeginInfo));
 	m_vki.cmdPipelineBarrier(*cmd, vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_FALSE, 1, &imageBarrierPtr);
-	m_vki.cmdCopyImageToBuffer(*cmd, *m_colorAttachmentImage, vk::VK_IMAGE_LAYOUT_TRANSFER_SOURCE_OPTIMAL, *buffer, 1, &copyRegion);
+	m_vki.cmdCopyImageToBuffer(*cmd, *m_colorAttachmentImage, vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *buffer, 1, &copyRegion);
 	m_vki.cmdPipelineBarrier(*cmd, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, vk::VK_FALSE, 1, &bufferBarrierPtr);
 	VK_CHECK(m_vki.endCommandBuffer(*cmd));
 
 	// wait for transfer to complete
-	VK_CHECK(m_vki.queueSubmit(m_queue, 1, &cmd.get(), *cmdCompleteFence));
+	{
+		const vk::VkSubmitInfo	submitInfo	=
+		{
+			vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,
+			DE_NULL,
+			0u,
+			(const vk::VkSemaphore*)0,
+			1u,
+			&cmd.get(),
+			0u,
+			(const vk::VkSemaphore*)0,
+		};
+
+		VK_CHECK(m_vki.queueSubmit(m_queue, 1, &submitInfo, *cmdCompleteFence));
+	}
 	VK_CHECK(m_vki.waitForFences(m_device, 1, &cmdCompleteFence.get(), 0u, infiniteTimeout)); // \note: timeout is failure
 
 	dst.setStorage(m_targetFormat, m_targetSize.x(), m_targetSize.y());
@@ -743,7 +603,7 @@ tcu::TestStatus SingleTargetRenderInstance::iterate (void)
 	// render
 	{
 		// transition to VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
-		const vk::VkImageSubresourceRange	fullSubrange				=
+		const vk::VkImageSubresourceRange		fullSubrange				=
 		{
 			vk::VK_IMAGE_ASPECT_COLOR_BIT,					// aspectMask
 			0u,												// baseMipLevel
@@ -751,12 +611,12 @@ tcu::TestStatus SingleTargetRenderInstance::iterate (void)
 			0u,												// baseArraySlice
 			1u,												// arraySize
 		};
-		const vk::VkImageMemoryBarrier		imageBarrier				=
+		const vk::VkImageMemoryBarrier			imageBarrier				=
 		{
 			vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
 			DE_NULL,
-			0u,												// outputMask
-			vk::VK_MEMORY_INPUT_COLOR_ATTACHMENT_BIT,		// inputMask
+			0u,												// srcAccessMask
+			vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,		// dstAccessMask
 			vk::VK_IMAGE_LAYOUT_UNDEFINED,					// oldLayout
 			vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,	// newLayout
 			vk::VK_QUEUE_FAMILY_IGNORED,					// srcQueueFamilyIndex
@@ -764,31 +624,49 @@ tcu::TestStatus SingleTargetRenderInstance::iterate (void)
 			*m_colorAttachmentImage,						// image
 			fullSubrange,									// subresourceRange
 		};
-		const vk::VkCmdBufferCreateInfo		cmdBufCreateInfo			=
+		const vk::VkCommandBufferAllocateInfo	cmdBufAllocInfo				=
 		{
-			vk::VK_STRUCTURE_TYPE_CMD_BUFFER_CREATE_INFO,
+			vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
 			DE_NULL,
 			*m_cmdPool,										// cmdPool
-			vk::VK_CMD_BUFFER_LEVEL_PRIMARY,				// level
-			0u,												// flags
+			vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY,			// level
+			1u,												// count
 		};
-		const vk::VkCmdBufferBeginInfo		cmdBufBeginInfo				=
+		const vk::VkCommandBufferBeginInfo		cmdBufBeginInfo				=
 		{
-			vk::VK_STRUCTURE_TYPE_CMD_BUFFER_BEGIN_INFO,
+			vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
 			DE_NULL,
-			vk::VK_CMD_BUFFER_OPTIMIZE_SMALL_BATCH_BIT | vk::VK_CMD_BUFFER_OPTIMIZE_ONE_TIME_SUBMIT_BIT,	// flags
-			(vk::VkRenderPass)0u,																			// renderPass
-			0u,																								// subpass
-			(vk::VkFramebuffer)0u,																			// framebuffer
+			vk::VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,	// flags
+			(vk::VkRenderPass)0u,								// renderPass
+			0u,													// subpass
+			(vk::VkFramebuffer)0u,								// framebuffer
+			vk::VK_FALSE,										// occlusionQueryEnable
+			(vk::VkQueryControlFlags)0,
+			(vk::VkQueryPipelineStatisticFlags)0,
 		};
 
-		const vk::Unique<vk::VkCmdBuffer>	cmd					(vk::createCommandBuffer(m_vki, m_device, &cmdBufCreateInfo));
-		const void* const					imageBarrierPtr		= &imageBarrier;
+		const vk::Unique<vk::VkCommandBuffer>	cmd					(vk::allocateCommandBuffer(m_vki, m_device, &cmdBufAllocInfo));
+		const void* const						imageBarrierPtr		= &imageBarrier;
 
 		VK_CHECK(m_vki.beginCommandBuffer(*cmd, &cmdBufBeginInfo));
 		m_vki.cmdPipelineBarrier(*cmd, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, vk::VK_FALSE, 1, &imageBarrierPtr);
 		VK_CHECK(m_vki.endCommandBuffer(*cmd));
-		VK_CHECK(m_vki.queueSubmit(m_queue, 1, &cmd.get(), 0));
+
+		{
+			const vk::VkSubmitInfo	submitInfo	=
+			{
+				vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,
+				DE_NULL,
+				0u,
+				(const vk::VkSemaphore*)0,
+				1u,
+				&cmd.get(),
+				0u,
+				(const vk::VkSemaphore*)0,
+			};
+
+			VK_CHECK(m_vki.queueSubmit(m_queue, 1, &submitInfo, (vk::VkFence)0));
+		}
 
 		// and then render to
 		renderToTarget();
@@ -807,9 +685,9 @@ public:
 																					 const vk::VkPhysicalDeviceFeatures&	deviceFeatures,
 																					 const vk::BinaryCollection&			programCollection);
 
-	inline bool											hasTessellationStage		(void) const { return *m_tessCtrlShader != 0 || *m_tessEvalShader != 0;	}
-	inline deUint32										getNumStages				(void) const { return (deUint32)m_stageInfos.size();					}
-	inline const vk::VkPipelineShaderStageCreateInfo*	getStages					(void) const { return &m_stageInfos[0];									}
+	inline bool											hasTessellationStage		(void) const { return *m_tessCtrlShaderModule != 0 || *m_tessEvalShaderModule != 0;	}
+	inline deUint32										getNumStages				(void) const { return (deUint32)m_stageInfos.size();								}
+	inline const vk::VkPipelineShaderStageCreateInfo*	getStages					(void) const { return &m_stageInfos[0];												}
 
 private:
 	void												addStage					(const vk::DeviceInterface&				vki,
@@ -817,22 +695,16 @@ private:
 																					 const vk::VkPhysicalDeviceFeatures&	deviceFeatures,
 																					 const vk::BinaryCollection&			programCollection,
 																					 const char*							name,
-																					 vk::VkShaderStage						stage,
-																					 vk::Move<vk::VkShaderModule>*			outModule,
-																					 vk::Move<vk::VkShader>*				outShader);
+																					 vk::VkShaderStageFlagBits				stage,
+																					 vk::Move<vk::VkShaderModule>*			outModule);
 
-	vk::VkPipelineShaderStageCreateInfo					getShaderStageCreateInfo	(vk::VkShaderStage stage, vk::VkShader shader) const;
+	vk::VkPipelineShaderStageCreateInfo					getShaderStageCreateInfo	(vk::VkShaderStageFlagBits stage, vk::VkShaderModule shader) const;
 
 	vk::Move<vk::VkShaderModule>						m_vertexShaderModule;
-	vk::Move<vk::VkShader>								m_vertexShader;
 	vk::Move<vk::VkShaderModule>						m_tessCtrlShaderModule;
-	vk::Move<vk::VkShader>								m_tessCtrlShader;
 	vk::Move<vk::VkShaderModule>						m_tessEvalShaderModule;
-	vk::Move<vk::VkShader>								m_tessEvalShader;
 	vk::Move<vk::VkShaderModule>						m_geometryShaderModule;
-	vk::Move<vk::VkShader>								m_geometryShader;
 	vk::Move<vk::VkShaderModule>						m_fragmentShaderModule;
-	vk::Move<vk::VkShader>								m_fragmentShader;
 	std::vector<vk::VkPipelineShaderStageCreateInfo>	m_stageInfos;
 };
 
@@ -841,11 +713,11 @@ RenderInstanceShaders::RenderInstanceShaders (const vk::DeviceInterface&			vki,
 											  const vk::VkPhysicalDeviceFeatures&	deviceFeatures,
 											  const vk::BinaryCollection&			programCollection)
 {
-	addStage(vki, device, deviceFeatures, programCollection, "vertex",		vk::VK_SHADER_STAGE_VERTEX,				&m_vertexShaderModule,		&m_vertexShader);
-	addStage(vki, device, deviceFeatures, programCollection, "tess_ctrl",	vk::VK_SHADER_STAGE_TESS_CONTROL,		&m_tessCtrlShaderModule,	&m_tessCtrlShader);
-	addStage(vki, device, deviceFeatures, programCollection, "tess_eval",	vk::VK_SHADER_STAGE_TESS_EVALUATION,	&m_tessEvalShaderModule,	&m_tessEvalShader);
-	addStage(vki, device, deviceFeatures, programCollection, "geometry",	vk::VK_SHADER_STAGE_GEOMETRY,			&m_geometryShaderModule,	&m_geometryShader);
-	addStage(vki, device, deviceFeatures, programCollection, "fragment",	vk::VK_SHADER_STAGE_FRAGMENT,			&m_fragmentShaderModule,	&m_fragmentShader);
+	addStage(vki, device, deviceFeatures, programCollection, "vertex",		vk::VK_SHADER_STAGE_VERTEX_BIT,						&m_vertexShaderModule);
+	addStage(vki, device, deviceFeatures, programCollection, "tess_ctrl",	vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,		&m_tessCtrlShaderModule);
+	addStage(vki, device, deviceFeatures, programCollection, "tess_eval",	vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,	&m_tessEvalShaderModule);
+	addStage(vki, device, deviceFeatures, programCollection, "geometry",	vk::VK_SHADER_STAGE_GEOMETRY_BIT,					&m_geometryShaderModule);
+	addStage(vki, device, deviceFeatures, programCollection, "fragment",	vk::VK_SHADER_STAGE_FRAGMENT_BIT,					&m_fragmentShaderModule);
 
 	DE_ASSERT(!m_stageInfos.empty());
 }
@@ -855,43 +727,33 @@ void RenderInstanceShaders::addStage (const vk::DeviceInterface&			vki,
 									  const vk::VkPhysicalDeviceFeatures&	deviceFeatures,
 									  const vk::BinaryCollection&			programCollection,
 									  const char*							name,
-									  vk::VkShaderStage						stage,
-									  vk::Move<vk::VkShaderModule>*			outModule,
-									  vk::Move<vk::VkShader>*				outShader)
+									  vk::VkShaderStageFlagBits				stage,
+									  vk::Move<vk::VkShaderModule>*			outModule)
 {
 	if (programCollection.contains(name))
 	{
 		if (vk::isShaderStageSupported(deviceFeatures, stage))
 		{
-			vk::Move<vk::VkShaderModule>	module		= createShaderModule(vki, device, programCollection.get(name), (vk::VkShaderModuleCreateFlags)0);
-			const vk::VkShaderCreateInfo	createInfo	=
-			{
-				vk::VK_STRUCTURE_TYPE_SHADER_CREATE_INFO,
-				DE_NULL,
-				*module,		// module
-				"main",			// pName
-				0u,				// flags
-				stage
-			};
-			vk::Move<vk::VkShader>			shader		= vk::createShader(vki, device, &createInfo);
+			vk::Move<vk::VkShaderModule>	module	= createShaderModule(vki, device, programCollection.get(name), (vk::VkShaderModuleCreateFlags)0);
 
-			m_stageInfos.push_back(getShaderStageCreateInfo(stage, *shader));
+			m_stageInfos.push_back(getShaderStageCreateInfo(stage, *module));
 			*outModule = module;
-			*outShader = shader;
 		}
 		else
 			TCU_THROW(NotSupportedError, (de::toString(stage) + " is not supported").c_str());
 	}
 }
 
-vk::VkPipelineShaderStageCreateInfo RenderInstanceShaders::getShaderStageCreateInfo (vk::VkShaderStage stage, vk::VkShader shader) const
+vk::VkPipelineShaderStageCreateInfo RenderInstanceShaders::getShaderStageCreateInfo (vk::VkShaderStageFlagBits stage, vk::VkShaderModule shader) const
 {
 	const vk::VkPipelineShaderStageCreateInfo	stageCreateInfo	=
 	{
 		vk::VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
 		DE_NULL,
+		(vk::VkPipelineShaderStageCreateFlags)0,
 		stage,			// stage
 		shader,			// shader
+		"main",
 		DE_NULL,		// pSpecializationInfo
 	};
 	return stageCreateInfo;
@@ -908,7 +770,7 @@ private:
 	vk::Move<vk::VkPipeline>		createPipeline				(vk::VkPipelineLayout pipelineLayout);
 
 	virtual vk::VkPipelineLayout	getPipelineLayout			(void) const = 0;
-	virtual void					writeDrawCmdBuffer			(vk::VkCmdBuffer cmd) const = 0;
+	virtual void					writeDrawCmdBuffer			(vk::VkCommandBuffer cmd) const = 0;
 
 	void							renderToTarget				(void);
 
@@ -926,11 +788,12 @@ SingleCmdRenderInstance::SingleCmdRenderInstance (Context&			context,
 vk::Move<vk::VkPipeline> SingleCmdRenderInstance::createPipeline (vk::VkPipelineLayout pipelineLayout)
 {
 	const RenderInstanceShaders							shaderStages		(m_vki, m_device, m_context.getDeviceFeatures(), m_context.getBinaryCollection());
-	const vk::VkPrimitiveTopology						topology			= shaderStages.hasTessellationStage() ? vk::VK_PRIMITIVE_TOPOLOGY_PATCH : vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+	const vk::VkPrimitiveTopology						topology			= shaderStages.hasTessellationStage() ? vk::VK_PRIMITIVE_TOPOLOGY_PATCH_LIST : vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 	const vk::VkPipelineVertexInputStateCreateInfo		vertexInputState	=
 	{
 		vk::VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
 		DE_NULL,
+		(vk::VkPipelineVertexInputStateCreateFlags)0,
 		0u,											// bindingCount
 		DE_NULL,									// pVertexBindingDescriptions
 		0u,											// attributeCount
@@ -940,6 +803,7 @@ vk::Move<vk::VkPipeline> SingleCmdRenderInstance::createPipeline (vk::VkPipeline
 	{
 		vk::VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
 		DE_NULL,
+		(vk::VkPipelineInputAssemblyStateCreateFlags)0,
 		topology,									// topology
 		vk::VK_FALSE,								// primitiveRestartEnable
 	};
@@ -947,6 +811,7 @@ vk::Move<vk::VkPipeline> SingleCmdRenderInstance::createPipeline (vk::VkPipeline
 	{
 		vk::VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO,
 		DE_NULL,
+		(vk::VkPipelineTesselationStateCreateFlags)0,
 		3u,											// patchControlPoints
 	};
 	const vk::VkViewport								viewport			=
@@ -967,20 +832,22 @@ vk::Move<vk::VkPipeline> SingleCmdRenderInstance::createPipeline (vk::VkPipeline
 	{
 		vk::VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
 		DE_NULL,
+		(vk::VkPipelineViewportStateCreateFlags)0,
 		1u,											// viewportCount
 		&viewport,
 		1u,
 		&renderArea,
 	};
-	const vk::VkPipelineRasterStateCreateInfo			rsState				=
+	const vk::VkPipelineRasterizationStateCreateInfo	rsState				=
 	{
-		vk::VK_STRUCTURE_TYPE_PIPELINE_RASTER_STATE_CREATE_INFO,
+		vk::VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
 		DE_NULL,
+		(vk::VkPipelineRasterizationStateCreateFlags)0,
 		vk::VK_TRUE,								// depthClipEnable
 		vk::VK_FALSE,								// rasterizerDiscardEnable
-		vk::VK_FILL_MODE_SOLID,						// fillMode
+		vk::VK_POLYGON_MODE_FILL,					// fillMode
 		vk::VK_CULL_MODE_NONE,						// cullMode
-		vk::VK_FRONT_FACE_CCW,						// frontFace
+		vk::VK_FRONT_FACE_COUNTER_CLOCKWISE,		// frontFace
 		vk::VK_FALSE,								// depthBiasEnable
 		0.0f,										// depthBias
 		0.0f,										// depthBiasClamp
@@ -992,15 +859,19 @@ vk::Move<vk::VkPipeline> SingleCmdRenderInstance::createPipeline (vk::VkPipeline
 	{
 		vk::VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
 		DE_NULL,
-		1u,											// rasterSamples
+		(vk::VkPipelineMultisampleStateCreateFlags)0,
+		vk::VK_SAMPLE_COUNT_1_BIT,					// rasterSamples
 		vk::VK_FALSE,								// sampleShadingEnable
 		0.0f,										// minSampleShading
-		&sampleMask									// sampleMask
+		&sampleMask,								// sampleMask
+		vk::VK_FALSE,								// alphaToCoverageEnable
+		vk::VK_FALSE,								// alphaToOneEnable
 	};
 	const vk::VkPipelineDepthStencilStateCreateInfo		dsState				=
 	{
 		vk::VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
 		DE_NULL,
+		(vk::VkPipelineDepthStencilStateCreateFlags)0,
 		vk::VK_FALSE,								// depthTestEnable
 		vk::VK_FALSE,								// depthWriteEnable
 		vk::VK_COMPARE_OP_ALWAYS,					// depthCompareOp
@@ -1014,20 +885,22 @@ vk::Move<vk::VkPipeline> SingleCmdRenderInstance::createPipeline (vk::VkPipeline
 	const vk::VkPipelineColorBlendAttachmentState		cbAttachment		=
 	{
 		vk::VK_FALSE,								// blendEnable
-		vk::VK_BLEND_ZERO,							// srcBlendColor
-		vk::VK_BLEND_ZERO,							// destBlendColor
+		vk::VK_BLEND_FACTOR_ZERO,					// srcBlendColor
+		vk::VK_BLEND_FACTOR_ZERO,					// destBlendColor
 		vk::VK_BLEND_OP_ADD,						// blendOpColor
-		vk::VK_BLEND_ZERO,							// srcBlendAlpha
-		vk::VK_BLEND_ZERO,							// destBlendAlpha
+		vk::VK_BLEND_FACTOR_ZERO,					// srcBlendAlpha
+		vk::VK_BLEND_FACTOR_ZERO,					// destBlendAlpha
 		vk::VK_BLEND_OP_ADD,						// blendOpAlpha
-		vk::VK_CHANNEL_R_BIT | vk::VK_CHANNEL_G_BIT | vk::VK_CHANNEL_B_BIT | vk::VK_CHANNEL_A_BIT,	// channelWriteMask
+		(vk::VK_COLOR_COMPONENT_R_BIT |
+		 vk::VK_COLOR_COMPONENT_G_BIT |
+		 vk::VK_COLOR_COMPONENT_B_BIT |
+		 vk::VK_COLOR_COMPONENT_A_BIT),				// channelWriteMask
 	};
 	const vk::VkPipelineColorBlendStateCreateInfo		cbState				=
 	{
 		vk::VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
 		DE_NULL,
-		vk::VK_FALSE,								// alphaToCoverageEnable
-		vk::VK_FALSE,								// alphaToOneEnable
+		(vk::VkPipelineColorBlendStateCreateFlags)0,
 		vk::VK_FALSE,								// logicOpEnable
 		vk::VK_LOGIC_OP_CLEAR,						// logicOp
 		1u,											// attachmentCount
@@ -1038,6 +911,7 @@ vk::Move<vk::VkPipeline> SingleCmdRenderInstance::createPipeline (vk::VkPipeline
 	{
 		vk::VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
 		DE_NULL,
+		(vk::VkPipelineDynamicStateCreateFlags)0,
 		0u,											// dynamicStateCount
 		DE_NULL,									// pDynamicStates
 	};
@@ -1045,6 +919,7 @@ vk::Move<vk::VkPipeline> SingleCmdRenderInstance::createPipeline (vk::VkPipeline
 	{
 		vk::VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
 		DE_NULL,
+		(vk::VkPipelineCreateFlags)0,
 		shaderStages.getNumStages(),									// stageCount
 		shaderStages.getStages(),										// pStages
 		&vertexInputState,												// pVertexInputState
@@ -1056,7 +931,6 @@ vk::Move<vk::VkPipeline> SingleCmdRenderInstance::createPipeline (vk::VkPipeline
 		&dsState,														// pDepthStencilState
 		&cbState,														// pColorBlendState
 		&dynState,														// pDynamicState
-		0u,																// flags
 		pipelineLayout,													// layout
 		*m_renderPass,													// renderPass
 		0u,																// subpass
@@ -1068,44 +942,50 @@ vk::Move<vk::VkPipeline> SingleCmdRenderInstance::createPipeline (vk::VkPipeline
 
 void SingleCmdRenderInstance::renderToTarget (void)
 {
-	const vk::VkRect2D									renderArea					=
+	const vk::VkRect2D									renderArea						=
 	{
 		{ 0, 0 },													// offset
 		{ (deInt32)m_targetSize.x(), (deInt32)m_targetSize.y() },	// extent
 	};
-	const vk::VkCmdBufferCreateInfo						mainCmdBufCreateInfo			=
+	const vk::VkCommandBufferAllocateInfo				mainCmdBufCreateInfo			=
 	{
-		vk::VK_STRUCTURE_TYPE_CMD_BUFFER_CREATE_INFO,
+		vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
 		DE_NULL,
-		*m_cmdPool,							// cmdPool
-		vk::VK_CMD_BUFFER_LEVEL_PRIMARY,	// level
-		0u,									// flags
+		*m_cmdPool,								// cmdPool
+		vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY,	// level
+		1u,										// count
 	};
-	const vk::VkCmdBufferBeginInfo						mainCmdBufBeginInfo				=
+	const vk::VkCommandBufferBeginInfo					mainCmdBufBeginInfo				=
 	{
-		vk::VK_STRUCTURE_TYPE_CMD_BUFFER_BEGIN_INFO,
+		vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
 		DE_NULL,
-		vk::VK_CMD_BUFFER_OPTIMIZE_SMALL_BATCH_BIT | vk::VK_CMD_BUFFER_OPTIMIZE_ONE_TIME_SUBMIT_BIT,	// flags
-		(vk::VkRenderPass)0u,																			// renderPass
-		0u,																								// subpass
-		(vk::VkFramebuffer)0u,																			// framebuffer
+		vk::VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,	// flags
+		(vk::VkRenderPass)0u,								// renderPass
+		0u,													// subpass
+		(vk::VkFramebuffer)0u,								// framebuffer
+		vk::VK_FALSE,										// occlusionQueryEnable
+		(vk::VkQueryControlFlags)0,
+		(vk::VkQueryPipelineStatisticFlags)0,
 	};
-	const vk::VkCmdBufferCreateInfo						passCmdBufCreateInfo			=
+	const vk::VkCommandBufferAllocateInfo				passCmdBufCreateInfo			=
 	{
-		vk::VK_STRUCTURE_TYPE_CMD_BUFFER_CREATE_INFO,
+		vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
 		DE_NULL,
-		*m_cmdPool,							// cmdPool
-		vk::VK_CMD_BUFFER_LEVEL_SECONDARY,	// level
-		0u,									// flags
+		*m_cmdPool,								// cmdPool
+		vk::VK_COMMAND_BUFFER_LEVEL_SECONDARY,	// level
+		1u,										// count
 	};
-	const vk::VkCmdBufferBeginInfo						passCmdBufBeginInfo				=
+	const vk::VkCommandBufferBeginInfo					passCmdBufBeginInfo				=
 	{
-		vk::VK_STRUCTURE_TYPE_CMD_BUFFER_BEGIN_INFO,
+		vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
 		DE_NULL,
-		vk::VK_CMD_BUFFER_OPTIMIZE_SMALL_BATCH_BIT | vk::VK_CMD_BUFFER_OPTIMIZE_ONE_TIME_SUBMIT_BIT,	// flags
-		(vk::VkRenderPass)*m_renderPass,																// renderPass
-		0u,																								// subpass
-		(vk::VkFramebuffer)*m_framebuffer,																// framebuffer
+		vk::VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,	// flags
+		(vk::VkRenderPass)*m_renderPass,					// renderPass
+		0u,													// subpass
+		(vk::VkFramebuffer)*m_framebuffer,					// framebuffer
+		vk::VK_FALSE,										// occlusionQueryEnable
+		(vk::VkQueryControlFlags)0,
+		(vk::VkQueryPipelineStatisticFlags)0,
 	};
 	const vk::VkFenceCreateInfo							fenceCreateInfo				=
 	{
@@ -1113,7 +993,7 @@ void SingleCmdRenderInstance::renderToTarget (void)
 		DE_NULL,
 		0u,			// flags
 	};
-	const vk::VkClearValue								clearValue					= createClearValueColor(tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f));
+	const vk::VkClearValue								clearValue					= vk::makeClearValueColorF32(0.0f, 0.0f, 0.0f, 0.0f);
 	const vk::VkRenderPassBeginInfo						renderPassBeginInfo			=
 	{
 		vk::VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
@@ -1127,11 +1007,11 @@ void SingleCmdRenderInstance::renderToTarget (void)
 
 	const vk::VkPipelineLayout							pipelineLayout				(getPipelineLayout());
 	const vk::Unique<vk::VkPipeline>					pipeline					(createPipeline(pipelineLayout));
-	const vk::Unique<vk::VkCmdBuffer>					mainCmd						(vk::createCommandBuffer(m_vki, m_device, &mainCmdBufCreateInfo));
-	const vk::Unique<vk::VkCmdBuffer>					passCmd						((m_isPrimaryCmdBuf) ? (vk::Move<vk::VkCmdBuffer>()) : (vk::createCommandBuffer(m_vki, m_device, &passCmdBufCreateInfo)));
+	const vk::Unique<vk::VkCommandBuffer>				mainCmd						(vk::allocateCommandBuffer(m_vki, m_device, &mainCmdBufCreateInfo));
+	const vk::Unique<vk::VkCommandBuffer>				passCmd						((m_isPrimaryCmdBuf) ? (vk::Move<vk::VkCommandBuffer>()) : (vk::allocateCommandBuffer(m_vki, m_device, &passCmdBufCreateInfo)));
 	const vk::Unique<vk::VkFence>						fence						(vk::createFence(m_vki, m_device, &fenceCreateInfo));
 	const deUint64										infiniteTimeout				= ~(deUint64)0u;
-	const vk::VkRenderPassContents						passContents				= (m_isPrimaryCmdBuf) ? (vk::VK_RENDER_PASS_CONTENTS_INLINE) : (vk::VK_RENDER_PASS_CONTENTS_SECONDARY_CMD_BUFFERS);
+	const vk::VkSubpassContents							passContents				= (m_isPrimaryCmdBuf) ? (vk::VK_SUBPASS_CONTENTS_INLINE) : (vk::VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 
 	VK_CHECK(m_vki.beginCommandBuffer(*mainCmd, &mainCmdBufBeginInfo));
 	m_vki.cmdBeginRenderPass(*mainCmd, &renderPassBeginInfo, passContents);
@@ -1155,7 +1035,20 @@ void SingleCmdRenderInstance::renderToTarget (void)
 	VK_CHECK(m_vki.endCommandBuffer(*mainCmd));
 
 	// submit and wait for them to finish before exiting scope. (Killing in-flight objects is a no-no).
-	VK_CHECK(m_vki.queueSubmit(m_queue, 1, &mainCmd.get(), *fence));
+	{
+		const vk::VkSubmitInfo	submitInfo	=
+		{
+			vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,
+			DE_NULL,
+			0u,
+			(const vk::VkSemaphore*)0,
+			1u,
+			&mainCmd.get(),
+			0u,
+			(const vk::VkSemaphore*)0,
+		};
+		VK_CHECK(m_vki.queueSubmit(m_queue, 1, &submitInfo, *fence));
+	}
 	VK_CHECK(m_vki.waitForFences(m_device, 1, &fence.get(), 0u, infiniteTimeout)); // \note: timeout is failure
 }
 
@@ -1230,7 +1123,7 @@ public:
 
 	void											logTestPlan					(void) const;
 	vk::VkPipelineLayout							getPipelineLayout			(void) const;
-	void											writeDrawCmdBuffer			(vk::VkCmdBuffer cmd) const;
+	void											writeDrawCmdBuffer			(vk::VkCommandBuffer cmd) const;
 	tcu::TestStatus									verifyResultImage			(const tcu::ConstPixelBufferAccess& result) const;
 
 	enum
@@ -1338,9 +1231,9 @@ vk::Move<vk::VkBuffer> BufferRenderInstance::createSourceBuffer (const vk::Devic
 	{
 		vk::VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
 		DE_NULL,
+		0u,								// flags
 		bufferSize,						// size
 		usageFlags,						// usage
-		0u,								// flags
 		vk::VK_SHARING_MODE_EXCLUSIVE,	// sharingMode
 		0u,								// queueFamilyCount
 		DE_NULL,						// pQueueFamilyIndices
@@ -1371,7 +1264,7 @@ vk::Move<vk::VkDescriptorPool> BufferRenderInstance::createDescriptorPool (const
 {
 	return vk::DescriptorPoolBuilder()
 		.addType(descriptorType, getInterfaceNumResources(shaderInterface))
-		.build(vki, device, vk::VK_DESCRIPTOR_POOL_USAGE_DYNAMIC, 1);
+		.build(vki, device, vk::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1);
 }
 
 vk::Move<vk::VkDescriptorSetLayout> BufferRenderInstance::createDescriptorSetLayout (const vk::DeviceInterface&	vki,
@@ -1415,13 +1308,21 @@ vk::Move<vk::VkDescriptorSet> BufferRenderInstance::createDescriptorSet (const v
 																		 vk::VkBuffer				bufferB,
 																		 deUint32					offsetB)
 {
-	const vk::VkDescriptorInfo		bufferInfos[2]	=
+	const vk::VkDescriptorBufferInfo		bufferInfos[2]	=
 	{
-		createDescriptorInfo(bufferA, (vk::VkDeviceSize)offsetA, (vk::VkDeviceSize)BUFFER_DATA_SIZE),
-		createDescriptorInfo(bufferB, (vk::VkDeviceSize)offsetB, (vk::VkDeviceSize)BUFFER_DATA_SIZE),
+		vk::makeDescriptorBufferInfo(bufferA, (vk::VkDeviceSize)offsetA, (vk::VkDeviceSize)BUFFER_DATA_SIZE),
+		vk::makeDescriptorBufferInfo(bufferB, (vk::VkDeviceSize)offsetB, (vk::VkDeviceSize)BUFFER_DATA_SIZE),
+	};
+	const vk::VkDescriptorSetAllocateInfo	allocInfo		=
+	{
+		vk::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+		DE_NULL,
+		descriptorPool,
+		1u,
+		&descriptorSetLayout
 	};
 
-	vk::Move<vk::VkDescriptorSet>	descriptorSet	= allocDescriptorSet(vki, device, descriptorPool, vk::VK_DESCRIPTOR_SET_USAGE_ONE_SHOT, descriptorSetLayout);
+	vk::Move<vk::VkDescriptorSet>	descriptorSet	= allocateDescriptorSet(vki, device, &allocInfo);
 	vk::DescriptorSetUpdateBuilder	builder;
 
 	switch (shaderInterface)
@@ -1455,6 +1356,7 @@ vk::Move<vk::VkPipelineLayout> BufferRenderInstance::createPipelineLayout (const
 	{
 		vk::VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
 		DE_NULL,
+		(vk::VkPipelineLayoutCreateFlags)0,
 		1,						// descriptorSetCount
 		&descriptorSetLayout,	// pSetLayouts
 		0u,						// pushConstantRangeCount
@@ -1497,11 +1399,11 @@ void BufferRenderInstance::logTestPlan (void) const
 	else
 	{
 		msg << "Descriptors are accessed in {"
-			<< (((m_stageFlags & vk::VK_SHADER_STAGE_VERTEX_BIT) != 0)			? (" vertex")			: (""))
-			<< (((m_stageFlags & vk::VK_SHADER_STAGE_TESS_CONTROL_BIT) != 0)	? (" tess_control")		: (""))
-			<< (((m_stageFlags & vk::VK_SHADER_STAGE_TESS_EVALUATION_BIT) != 0)	? (" tess_evaluation")	: (""))
-			<< (((m_stageFlags & vk::VK_SHADER_STAGE_GEOMETRY_BIT) != 0)		? (" geometry")			: (""))
-			<< (((m_stageFlags & vk::VK_SHADER_STAGE_FRAGMENT_BIT) != 0)		? (" fragment")			: (""))
+			<< (((m_stageFlags & vk::VK_SHADER_STAGE_VERTEX_BIT) != 0)					? (" vertex")			: (""))
+			<< (((m_stageFlags & vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT) != 0)	? (" tess_control")		: (""))
+			<< (((m_stageFlags & vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT) != 0)	? (" tess_evaluation")	: (""))
+			<< (((m_stageFlags & vk::VK_SHADER_STAGE_GEOMETRY_BIT) != 0)				? (" geometry")			: (""))
+			<< (((m_stageFlags & vk::VK_SHADER_STAGE_FRAGMENT_BIT) != 0)				? (" fragment")			: (""))
 			<< " } stages.\n";
 	}
 
@@ -1516,7 +1418,7 @@ vk::VkPipelineLayout BufferRenderInstance::getPipelineLayout (void) const
 	return *m_pipelineLayout;
 }
 
-void BufferRenderInstance::writeDrawCmdBuffer (vk::VkCmdBuffer cmd) const
+void BufferRenderInstance::writeDrawCmdBuffer (vk::VkCommandBuffer cmd) const
 {
 	const bool							isUniformBuffer		= isUniformDescriptorType(m_descriptorType);
 
@@ -1530,12 +1432,12 @@ void BufferRenderInstance::writeDrawCmdBuffer (vk::VkCmdBuffer cmd) const
 	const deUint32* const				dynamicOffsetPtr	= (!m_setDynamicOffset) ? (DE_NULL) : (dynamicOffsets);
 
 	// make host writes device-visible
-	const vk::VkMemoryInputFlags		inputBit			= (isUniformBuffer) ? (vk::VK_MEMORY_INPUT_UNIFORM_READ_BIT) : (vk::VK_MEMORY_INPUT_SHADER_READ_BIT);
+	const vk::VkAccessFlags				inputBit			= (isUniformBuffer) ? (vk::VK_ACCESS_UNIFORM_READ_BIT) : (vk::VK_ACCESS_SHADER_READ_BIT);
 	const vk::VkBufferMemoryBarrier		memoryBarrierA		=
 	{
 		vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
 		DE_NULL,
-		vk::VK_MEMORY_OUTPUT_HOST_WRITE_BIT,		// outputMask
+		vk::VK_ACCESS_HOST_WRITE_BIT,				// outputMask
 		inputBit,									// inputMask
 		vk::VK_QUEUE_FAMILY_IGNORED,				// srcQueueFamilyIndex
 		vk::VK_QUEUE_FAMILY_IGNORED,				// destQueueFamilyIndex
@@ -1547,7 +1449,7 @@ void BufferRenderInstance::writeDrawCmdBuffer (vk::VkCmdBuffer cmd) const
 	{
 		vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
 		DE_NULL,
-		vk::VK_MEMORY_OUTPUT_HOST_WRITE_BIT,		// outputMask
+		vk::VK_ACCESS_HOST_WRITE_BIT,				// outputMask
 		inputBit,									// inputMask
 		vk::VK_QUEUE_FAMILY_IGNORED,				// srcQueueFamilyIndex
 		vk::VK_QUEUE_FAMILY_IGNORED,				// destQueueFamilyIndex
@@ -1563,7 +1465,7 @@ void BufferRenderInstance::writeDrawCmdBuffer (vk::VkCmdBuffer cmd) const
 	const deUint32						numMemoryBarriers	= getInterfaceNumResources(m_shaderInterface);
 
 	m_vki.cmdBindDescriptorSets(cmd, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, getPipelineLayout(), 0, 1, &m_descriptorSet.get(), numOffsets, dynamicOffsetPtr);
-	m_vki.cmdPipelineBarrier(cmd, 0u, vk::VK_PIPELINE_STAGE_ALL_GRAPHICS, vk::VK_FALSE, numMemoryBarriers, memoryBarriers);
+	m_vki.cmdPipelineBarrier(cmd, 0u, vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, vk::VK_FALSE, numMemoryBarriers, memoryBarriers);
 	m_vki.cmdDraw(cmd, 6 * 4, 1, 0, 0); // render four quads (two separate triangles)
 }
 
@@ -1640,9 +1542,9 @@ vk::Move<vk::VkBuffer> ComputeInstanceResultBuffer::createResultBuffer (const vk
 	{
 		vk::VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
 		DE_NULL,
+		0u,											// flags
 		(vk::VkDeviceSize)DATA_SIZE,				// size
 		vk::VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,		// usage
-		0u,											// flags
 		vk::VK_SHARING_MODE_EXCLUSIVE,				// sharingMode
 		0u,											// queueFamilyCount
 		DE_NULL,									// pQueueFamilyIndices
@@ -1667,8 +1569,8 @@ vk::VkBufferMemoryBarrier ComputeInstanceResultBuffer::createResultBufferBarrier
 	{
 		vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
 		DE_NULL,
-		vk::VK_MEMORY_OUTPUT_SHADER_WRITE_BIT,		// outputMask
-		vk::VK_MEMORY_INPUT_HOST_READ_BIT,			// inputMask
+		vk::VK_ACCESS_SHADER_WRITE_BIT,				// outputMask
+		vk::VK_ACCESS_HOST_READ_BIT,				// inputMask
 		vk::VK_QUEUE_FAMILY_IGNORED,				// srcQueueFamilyIndex
 		vk::VK_QUEUE_FAMILY_IGNORED,				// destQueueFamilyIndex
 		buffer,										// buffer
@@ -1724,6 +1626,7 @@ vk::Move<vk::VkPipelineLayout> ComputePipeline::createPipelineLayout (const vk::
 	{
 		vk::VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
 		DE_NULL,
+		(vk::VkPipelineLayoutCreateFlags)0,
 		numDescriptorSets,		// descriptorSetCount
 		descriptorSetLayouts,	// pSetLayouts
 		0u,						// pushConstantRangeCount
@@ -1738,30 +1641,22 @@ vk::Move<vk::VkPipeline> ComputePipeline::createPipeline (const vk::DeviceInterf
 														  vk::VkPipelineLayout			layout)
 {
 	const vk::Unique<vk::VkShaderModule>		computeModule		(vk::createShaderModule(vki, device, programCollection.get("compute"), (vk::VkShaderModuleCreateFlags)0u));
-	const vk::VkShaderCreateInfo				shaderCreateInfo	=
-	{
-		vk::VK_STRUCTURE_TYPE_SHADER_CREATE_INFO,
-		DE_NULL,
-		*computeModule,		// module
-		"main",				// pName
-		0u,					// flags
-		vk::VK_SHADER_STAGE_COMPUTE
-	};
-	const vk::Unique<vk::VkShader>				computeShader		(vk::createShader(vki, device, &shaderCreateInfo));
 	const vk::VkPipelineShaderStageCreateInfo	cs					=
 	{
 		vk::VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
 		DE_NULL,
-		vk::VK_SHADER_STAGE_COMPUTE,	// stage
-		*computeShader,					// shader
-		DE_NULL,						// pSpecializationInfo
+		(vk::VkPipelineShaderStageCreateFlags)0,
+		vk::VK_SHADER_STAGE_COMPUTE_BIT,	// stage
+		*computeModule,						// shader
+		"main",
+		DE_NULL,							// pSpecializationInfo
 	};
 	const vk::VkComputePipelineCreateInfo		createInfo			=
 	{
 		vk::VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
 		DE_NULL,
-		cs,								// cs
 		0u,								// flags
+		cs,								// cs
 		layout,							// layout
 		(vk::VkPipeline)0,				// basePipelineHandle
 		0u,								// basePipelineIndex
@@ -1835,14 +1730,14 @@ ComputeCommand::ComputeCommand (const vk::DeviceInterface&	vki,
 
 void ComputeCommand::submitAndWait (deUint32 queueFamilyIndex, vk::VkQueue queue) const
 {
-	const vk::VkCmdPoolCreateInfo					cmdPoolCreateInfo	=
+	const vk::VkCommandPoolCreateInfo				cmdPoolCreateInfo	=
 	{
-		vk::VK_STRUCTURE_TYPE_CMD_POOL_CREATE_INFO,
+		vk::VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
 		DE_NULL,
-		queueFamilyIndex,						// queueFamilyIndex
-		vk::VK_CMD_POOL_CREATE_TRANSIENT_BIT,	// flags
+		queueFamilyIndex,									// queueFamilyIndex
+		vk::VK_COMMAND_POOL_CREATE_TRANSIENT_BIT,			// flags
 	};
-	const vk::Unique<vk::VkCmdPool>					cmdPool				(vk::createCommandPool(m_vki, m_device, &cmdPoolCreateInfo));
+	const vk::Unique<vk::VkCommandPool>				cmdPool				(vk::createCommandPool(m_vki, m_device, &cmdPoolCreateInfo));
 
 	const vk::VkFenceCreateInfo						fenceCreateInfo		=
 	{
@@ -1851,26 +1746,29 @@ void ComputeCommand::submitAndWait (deUint32 queueFamilyIndex, vk::VkQueue queue
 		0u,			// flags
 	};
 
-	const vk::VkCmdBufferCreateInfo					cmdBufCreateInfo	=
+	const vk::VkCommandBufferAllocateInfo			cmdBufCreateInfo	=
 	{
-		vk::VK_STRUCTURE_TYPE_CMD_BUFFER_CREATE_INFO,
+		vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
 		DE_NULL,
-		*cmdPool,							// cmdPool
-		vk::VK_CMD_BUFFER_LEVEL_PRIMARY,	// level
-		0u,									// flags
+		*cmdPool,											// cmdPool
+		vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY,				// level
+		1u,													// count
 	};
-	const vk::VkCmdBufferBeginInfo					cmdBufBeginInfo		=
+	const vk::VkCommandBufferBeginInfo				cmdBufBeginInfo		=
 	{
-		vk::VK_STRUCTURE_TYPE_CMD_BUFFER_BEGIN_INFO,
+		vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
 		DE_NULL,
-		vk::VK_CMD_BUFFER_OPTIMIZE_SMALL_BATCH_BIT | vk::VK_CMD_BUFFER_OPTIMIZE_ONE_TIME_SUBMIT_BIT,	// flags
-		(vk::VkRenderPass)0u,																			// renderPass
-		0u,																								// subpass
-		(vk::VkFramebuffer)0u,																			// framebuffer
+		vk::VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,	// flags
+		(vk::VkRenderPass)0u,								// renderPass
+		0u,													// subpass
+		(vk::VkFramebuffer)0u,								// framebuffer
+		vk::VK_FALSE,										// occlusionQueryEnable
+		(vk::VkQueryControlFlags)0,
+		(vk::VkQueryPipelineStatisticFlags)0,
 	};
 
 	const vk::Unique<vk::VkFence>					cmdCompleteFence	(vk::createFence(m_vki, m_device, &fenceCreateInfo));
-	const vk::Unique<vk::VkCmdBuffer>				cmd					(vk::createCommandBuffer(m_vki, m_device, &cmdBufCreateInfo));
+	const vk::Unique<vk::VkCommandBuffer>			cmd					(vk::allocateCommandBuffer(m_vki, m_device, &cmdBufCreateInfo));
 	const deUint64									infiniteTimeout		= ~(deUint64)0u;
 
 	VK_CHECK(m_vki.beginCommandBuffer(*cmd, &cmdBufBeginInfo));
@@ -1886,7 +1784,20 @@ void ComputeCommand::submitAndWait (deUint32 queueFamilyIndex, vk::VkQueue queue
 	VK_CHECK(m_vki.endCommandBuffer(*cmd));
 
 	// run
-	VK_CHECK(m_vki.queueSubmit(queue, 1, &cmd.get(), *cmdCompleteFence));
+	{
+		const vk::VkSubmitInfo	submitInfo	=
+		{
+			vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,
+			DE_NULL,
+			0u,
+			(const vk::VkSemaphore*)0,
+			1u,
+			&cmd.get(),
+			0u,
+			(const vk::VkSemaphore*)0,
+		};
+		VK_CHECK(m_vki.queueSubmit(queue, 1, &submitInfo, *cmdCompleteFence));
+	}
 	VK_CHECK(m_vki.waitForFences(m_device, 1, &cmdCompleteFence.get(), 0u, infiniteTimeout)); // \note: timeout is failure
 }
 
@@ -1967,9 +1878,9 @@ vk::Move<vk::VkBuffer> BufferComputeInstance::createColorDataBuffer (deUint32 of
 	{
 		vk::VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
 		DE_NULL,
+		0u,								// flags
 		(vk::VkDeviceSize)bufferSize,	// size
 		usageFlags,						// usage
-		0u,								// flags
 		vk::VK_SHARING_MODE_EXCLUSIVE,	// sharingMode
 		0u,								// queueFamilyCount
 		DE_NULL,						// pQueueFamilyIndices
@@ -2023,19 +1934,27 @@ vk::Move<vk::VkDescriptorPool> BufferComputeInstance::createDescriptorPool (void
 	return vk::DescriptorPoolBuilder()
 		.addType(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
 		.addType(m_descriptorType, getInterfaceNumResources(m_shaderInterface))
-		.build(m_vki, m_device, vk::VK_DESCRIPTOR_POOL_USAGE_DYNAMIC, 1);
+		.build(m_vki, m_device, vk::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1);
 }
 
 vk::Move<vk::VkDescriptorSet> BufferComputeInstance::createDescriptorSet (vk::VkDescriptorPool pool, vk::VkDescriptorSetLayout layout, vk::VkBuffer viewA, deUint32 offsetA, vk::VkBuffer viewB, deUint32 offsetB, vk::VkBuffer resBuf) const
 {
-	const vk::VkDescriptorInfo		resultInfo		= createDescriptorInfo(resBuf, 0u, (vk::VkDeviceSize)ComputeInstanceResultBuffer::DATA_SIZE);
-	const vk::VkDescriptorInfo		bufferInfos[2]	=
+	const vk::VkDescriptorBufferInfo		resultInfo		= vk::makeDescriptorBufferInfo(resBuf, 0u, (vk::VkDeviceSize)ComputeInstanceResultBuffer::DATA_SIZE);
+	const vk::VkDescriptorBufferInfo		bufferInfos[2]	=
 	{
-		createDescriptorInfo(viewA, (vk::VkDeviceSize)offsetA, (vk::VkDeviceSize)sizeof(tcu::Vec4[2])),
-		createDescriptorInfo(viewB, (vk::VkDeviceSize)offsetB, (vk::VkDeviceSize)sizeof(tcu::Vec4[2])),
+		vk::makeDescriptorBufferInfo(viewA, (vk::VkDeviceSize)offsetA, (vk::VkDeviceSize)sizeof(tcu::Vec4[2])),
+		vk::makeDescriptorBufferInfo(viewB, (vk::VkDeviceSize)offsetB, (vk::VkDeviceSize)sizeof(tcu::Vec4[2])),
+	};
+	const vk::VkDescriptorSetAllocateInfo	allocInfo		=
+	{
+		vk::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+		DE_NULL,
+		pool,
+		1u,
+		&layout
 	};
 
-	vk::Move<vk::VkDescriptorSet>	descriptorSet	= allocDescriptorSet(m_vki, m_device, pool, vk::VK_DESCRIPTOR_SET_USAGE_ONE_SHOT, layout);
+	vk::Move<vk::VkDescriptorSet>	descriptorSet	= allocateDescriptorSet(m_vki, m_device, &allocInfo);
 	vk::DescriptorSetUpdateBuilder	builder;
 
 	// result
@@ -2146,12 +2065,12 @@ tcu::TestStatus BufferComputeInstance::testResourceAccess (void)
 	const vk::Unique<vk::VkDescriptorSet>			descriptorSet		(createDescriptorSet(*descriptorPool, *descriptorSetLayout, *bufferA, viewOffsetA, *bufferB, viewOffsetB, m_result.getBuffer()));
 	const ComputePipeline							pipeline			(m_vki, m_device, m_context.getBinaryCollection(), 1, &descriptorSetLayout.get());
 
-	const vk::VkMemoryInputFlags					inputBit			= (isUniformBuffer) ? (vk::VK_MEMORY_INPUT_UNIFORM_READ_BIT) : (vk::VK_MEMORY_INPUT_SHADER_READ_BIT);
+	const vk::VkAccessFlags							inputBit			= (isUniformBuffer) ? (vk::VK_ACCESS_UNIFORM_READ_BIT) : (vk::VK_ACCESS_SHADER_READ_BIT);
 	const vk::VkBufferMemoryBarrier					bufferBarrierA		=
 	{
 		vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
 		DE_NULL,
-		vk::VK_MEMORY_OUTPUT_HOST_WRITE_BIT,		// outputMask
+		vk::VK_ACCESS_HOST_WRITE_BIT,				// outputMask
 		inputBit,									// inputMask
 		vk::VK_QUEUE_FAMILY_IGNORED,				// srcQueueFamilyIndex
 		vk::VK_QUEUE_FAMILY_IGNORED,				// destQueueFamilyIndex
@@ -2163,7 +2082,7 @@ tcu::TestStatus BufferComputeInstance::testResourceAccess (void)
 	{
 		vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
 		DE_NULL,
-		vk::VK_MEMORY_OUTPUT_HOST_WRITE_BIT,		// outputMask
+		vk::VK_ACCESS_HOST_WRITE_BIT,				// outputMask
 		inputBit,									// inputMask
 		vk::VK_QUEUE_FAMILY_IGNORED,				// srcQueueFamilyIndex
 		vk::VK_QUEUE_FAMILY_IGNORED,				// destQueueFamilyIndex
@@ -2260,9 +2179,9 @@ public:
 																 vk::VkShaderStageFlags	exitingStages,
 																 vk::VkShaderStageFlags	activeStages);
 private:
-	virtual std::string				genExtensionDeclarations	(vk::VkShaderStage stage) const = 0;
-	virtual std::string				genResourceDeclarations		(vk::VkShaderStage stage, int numUsedBindings) const = 0;
-	virtual std::string				genResourceAccessSource		(vk::VkShaderStage stage) const = 0;
+	virtual std::string				genExtensionDeclarations	(vk::VkShaderStageFlagBits stage) const = 0;
+	virtual std::string				genResourceDeclarations		(vk::VkShaderStageFlagBits stage, int numUsedBindings) const = 0;
+	virtual std::string				genResourceAccessSource		(vk::VkShaderStageFlagBits stage) const = 0;
 	virtual std::string				genNoAccessSource			(void) const = 0;
 
 	std::string						genVertexSource				(void) const;
@@ -2296,9 +2215,9 @@ QuadrantRendederCase::QuadrantRendederCase (tcu::TestContext&		testCtx,
 
 std::string QuadrantRendederCase::genVertexSource (void) const
 {
-	const char* const	nextStageName	= ((m_exitingStages & vk::VK_SHADER_STAGE_TESS_CONTROL_BIT) != 0u)	? ("tsc")
-										: ((m_exitingStages & vk::VK_SHADER_STAGE_GEOMETRY_BIT) != 0u)		? ("geo")
-										: ((m_exitingStages & vk::VK_SHADER_STAGE_FRAGMENT_BIT) != 0u)		? ("frag")
+	const char* const	nextStageName	= ((m_exitingStages & vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT) != 0u)	? ("tsc")
+										: ((m_exitingStages & vk::VK_SHADER_STAGE_GEOMETRY_BIT) != 0u)				? ("geo")
+										: ((m_exitingStages & vk::VK_SHADER_STAGE_FRAGMENT_BIT) != 0u)				? ("frag")
 										: (DE_NULL);
 	const char* const	versionDecl		= glu::getGLSLVersionDeclaration(m_glslVersion);
 	std::ostringstream	buf;
@@ -2307,8 +2226,8 @@ std::string QuadrantRendederCase::genVertexSource (void) const
 	{
 		// active vertex shader
 		buf << versionDecl << "\n"
-			<< genExtensionDeclarations(vk::VK_SHADER_STAGE_VERTEX)
-			<< genResourceDeclarations(vk::VK_SHADER_STAGE_VERTEX, 0)
+			<< genExtensionDeclarations(vk::VK_SHADER_STAGE_VERTEX_BIT)
+			<< genResourceDeclarations(vk::VK_SHADER_STAGE_VERTEX_BIT, 0)
 			<< "layout(location = 0) out highp vec4 " << nextStageName << "_color;\n"
 			<< "layout(location = 1) flat out highp int " << nextStageName << "_quadrant_id;\n"
 			<< "void main (void)\n"
@@ -2320,7 +2239,7 @@ std::string QuadrantRendederCase::genVertexSource (void) const
 			<< "	" << nextStageName << "_quadrant_id = quadrant_id;\n"
 			<< "\n"
 			<< "	highp vec4 result_color;\n"
-			<< genResourceAccessSource(vk::VK_SHADER_STAGE_VERTEX)
+			<< genResourceAccessSource(vk::VK_SHADER_STAGE_VERTEX_BIT)
 			<< "	" << nextStageName << "_color = result_color;\n"
 			<< "}\n";
 	}
@@ -2328,7 +2247,7 @@ std::string QuadrantRendederCase::genVertexSource (void) const
 	{
 		// do nothing
 		buf << versionDecl << "\n"
-			<< genExtensionDeclarations(vk::VK_SHADER_STAGE_VERTEX)
+			<< genExtensionDeclarations(vk::VK_SHADER_STAGE_VERTEX_BIT)
 			<< "layout(location = 1) flat out highp int " << nextStageName << "_quadrant_id;\n"
 			<< "void main (void)\n"
 			<< "{\n"
@@ -2350,24 +2269,24 @@ std::string QuadrantRendederCase::genTessCtrlSource (void) const
 	const char* const	tessExtDecl		= extRequired ? "#extension GL_EXT_tessellation_shader : require\n" : "";
 	std::ostringstream	buf;
 
-	if ((m_activeStages & vk::VK_SHADER_STAGE_TESS_CONTROL_BIT) != 0u)
+	if ((m_activeStages & vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT) != 0u)
 	{
 		// contributing not implemented
-		DE_ASSERT(m_activeStages == vk::VK_SHADER_STAGE_TESS_CONTROL_BIT);
+		DE_ASSERT(m_activeStages == vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT);
 
 		// active tc shader
 		buf << versionDecl << "\n"
 			<< tessExtDecl
-			<< genExtensionDeclarations(vk::VK_SHADER_STAGE_TESS_CONTROL)
+			<< genExtensionDeclarations(vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT)
 			<< "layout(vertices=3) out;\n"
-			<< genResourceDeclarations(vk::VK_SHADER_STAGE_TESS_CONTROL, 0)
+			<< genResourceDeclarations(vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, 0)
 			<< "layout(location = 1) flat in highp int tsc_quadrant_id[];\n"
 			<< "layout(location = 0) out highp vec4 tes_color[];\n"
 			<< "void main (void)\n"
 			<< "{\n"
 			<< "	highp vec4 result_color;\n"
 			<< "	highp int quadrant_id = tsc_quadrant_id[gl_InvocationID];\n"
-			<< genResourceAccessSource(vk::VK_SHADER_STAGE_TESS_CONTROL)
+			<< genResourceAccessSource(vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT)
 			<< "\n"
 			<< "	tes_color[gl_InvocationID] = result_color;\n"
 			<< "\n"
@@ -2388,7 +2307,7 @@ std::string QuadrantRendederCase::genTessCtrlSource (void) const
 			<< "	gl_TessLevelOuter[3] = 2.8;\n"
 			<< "}\n";
 	}
-	else if ((m_activeStages & vk::VK_SHADER_STAGE_TESS_EVALUATION_BIT) != 0u)
+	else if ((m_activeStages & vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT) != 0u)
 	{
 		// active te shader, tc passthru
 		buf << versionDecl << "\n"
@@ -2433,33 +2352,33 @@ std::string QuadrantRendederCase::genTessEvalSource (void) const
 	const char* const	tessExtDecl		= extRequired ? "#extension GL_EXT_tessellation_shader : require\n" : "";
 	std::ostringstream	buf;
 
-	if ((m_activeStages & vk::VK_SHADER_STAGE_TESS_EVALUATION_BIT) != 0u)
+	if ((m_activeStages & vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT) != 0u)
 	{
 		// contributing not implemented
-		DE_ASSERT(m_activeStages == vk::VK_SHADER_STAGE_TESS_EVALUATION_BIT);
+		DE_ASSERT(m_activeStages == vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT);
 
 		// active te shader
 		buf << versionDecl << "\n"
 			<< tessExtDecl
-			<< genExtensionDeclarations(vk::VK_SHADER_STAGE_TESS_EVALUATION)
+			<< genExtensionDeclarations(vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT)
 			<< "layout(triangles) in;\n"
-			<< genResourceDeclarations(vk::VK_SHADER_STAGE_TESS_EVALUATION, 0)
+			<< genResourceDeclarations(vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, 0)
 			<< "layout(location = 1) flat in highp int tes_quadrant_id[];\n"
 			<< "layout(location = 0) out highp vec4 frag_color;\n"
 			<< "void main (void)\n"
 			<< "{\n"
 			<< "	highp vec4 result_color;\n"
 			<< "	highp int quadrant_id = tes_quadrant_id[0];\n"
-			<< genResourceAccessSource(vk::VK_SHADER_STAGE_TESS_EVALUATION)
+			<< genResourceAccessSource(vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT)
 			<< "\n"
 			<< "	frag_color = result_color;\n"
 			<< "	gl_Position = gl_TessCoord.x * gl_in[0].gl_Position + gl_TessCoord.y * gl_in[1].gl_Position + gl_TessCoord.z * gl_in[2].gl_Position;\n"
 			<< "}\n";
 	}
-	else if ((m_activeStages & vk::VK_SHADER_STAGE_TESS_CONTROL_BIT) != 0u)
+	else if ((m_activeStages & vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT) != 0u)
 	{
 		// contributing not implemented
-		DE_ASSERT(m_activeStages == vk::VK_SHADER_STAGE_TESS_CONTROL_BIT);
+		DE_ASSERT(m_activeStages == vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT);
 
 		// active tc shader, te is passthru
 		buf << versionDecl << "\n"
@@ -2497,10 +2416,10 @@ std::string QuadrantRendederCase::genGeometrySource (void) const
 		// active geometry shader
 		buf << versionDecl << "\n"
 			<< geomExtDecl
-			<< genExtensionDeclarations(vk::VK_SHADER_STAGE_GEOMETRY)
+			<< genExtensionDeclarations(vk::VK_SHADER_STAGE_GEOMETRY_BIT)
 			<< "layout(triangles) in;\n"
 			<< "layout(triangle_strip, max_vertices=4) out;\n"
-			<< genResourceDeclarations(vk::VK_SHADER_STAGE_GEOMETRY, 0)
+			<< genResourceDeclarations(vk::VK_SHADER_STAGE_GEOMETRY_BIT, 0)
 			<< "layout(location = 1) flat in highp int geo_quadrant_id[];\n"
 			<< "layout(location = 0) out highp vec4 frag_color;\n"
 			<< "void main (void)\n"
@@ -2509,25 +2428,25 @@ std::string QuadrantRendederCase::genGeometrySource (void) const
 			<< "	highp vec4 result_color;\n"
 			<< "\n"
 			<< "	quadrant_id = geo_quadrant_id[0];\n"
-			<< genResourceAccessSource(vk::VK_SHADER_STAGE_GEOMETRY)
+			<< genResourceAccessSource(vk::VK_SHADER_STAGE_GEOMETRY_BIT)
 			<< "	frag_color = result_color;\n"
 			<< "	gl_Position = gl_in[0].gl_Position;\n"
 			<< "	EmitVertex();\n"
 			<< "\n"
 			<< "	quadrant_id = geo_quadrant_id[1];\n"
-			<< genResourceAccessSource(vk::VK_SHADER_STAGE_GEOMETRY)
+			<< genResourceAccessSource(vk::VK_SHADER_STAGE_GEOMETRY_BIT)
 			<< "	frag_color = result_color;\n"
 			<< "	gl_Position = gl_in[1].gl_Position;\n"
 			<< "	EmitVertex();\n"
 			<< "\n"
 			<< "	quadrant_id = geo_quadrant_id[2];\n"
-			<< genResourceAccessSource(vk::VK_SHADER_STAGE_GEOMETRY)
+			<< genResourceAccessSource(vk::VK_SHADER_STAGE_GEOMETRY_BIT)
 			<< "	frag_color = result_color;\n"
 			<< "	gl_Position = gl_in[0].gl_Position * 0.5 + gl_in[2].gl_Position * 0.5;\n"
 			<< "	EmitVertex();\n"
 			<< "\n"
 			<< "	quadrant_id = geo_quadrant_id[0];\n"
-			<< genResourceAccessSource(vk::VK_SHADER_STAGE_GEOMETRY)
+			<< genResourceAccessSource(vk::VK_SHADER_STAGE_GEOMETRY_BIT)
 			<< "	frag_color = result_color;\n"
 			<< "	gl_Position = gl_in[2].gl_Position;\n"
 			<< "	EmitVertex();\n"
@@ -2550,8 +2469,8 @@ std::string QuadrantRendederCase::genFragmentSource (void) const
 	if ((m_activeStages & vk::VK_SHADER_STAGE_FRAGMENT_BIT) != 0u)
 	{
 		buf << versionDecl << "\n"
-			<< genExtensionDeclarations(vk::VK_SHADER_STAGE_GEOMETRY)
-			<< genResourceDeclarations(vk::VK_SHADER_STAGE_FRAGMENT, 0);
+			<< genExtensionDeclarations(vk::VK_SHADER_STAGE_GEOMETRY_BIT)
+			<< genResourceDeclarations(vk::VK_SHADER_STAGE_FRAGMENT_BIT, 0);
 
 		if (m_activeStages != vk::VK_SHADER_STAGE_FRAGMENT_BIT)
 		{
@@ -2565,7 +2484,7 @@ std::string QuadrantRendederCase::genFragmentSource (void) const
 			<< "{\n"
 			<< "	highp int quadrant_id = frag_quadrant_id;\n"
 			<< "	highp vec4 result_color;\n"
-			<< genResourceAccessSource(vk::VK_SHADER_STAGE_FRAGMENT);
+			<< genResourceAccessSource(vk::VK_SHADER_STAGE_FRAGMENT_BIT);
 
 		if (m_activeStages != vk::VK_SHADER_STAGE_FRAGMENT_BIT)
 		{
@@ -2615,9 +2534,9 @@ std::string QuadrantRendederCase::genComputeSource (void) const
 	std::ostringstream	buf;
 
 	buf	<< versionDecl << "\n"
-		<< genExtensionDeclarations(vk::VK_SHADER_STAGE_COMPUTE)
+		<< genExtensionDeclarations(vk::VK_SHADER_STAGE_COMPUTE_BIT)
 		<< "layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
-		<< genResourceDeclarations(vk::VK_SHADER_STAGE_COMPUTE, 1)
+		<< genResourceDeclarations(vk::VK_SHADER_STAGE_COMPUTE_BIT, 1)
 		<< "layout(set = 0, binding = 0, std140) writeonly buffer OutBuf\n"
 		<< "{\n"
 		<< "	highp vec4 read_colors[4];\n"
@@ -2626,7 +2545,7 @@ std::string QuadrantRendederCase::genComputeSource (void) const
 		<< "{\n"
 		<< "	highp int quadrant_id = int(gl_WorkGroupID.x);\n"
 		<< "	highp vec4 result_color;\n"
-		<< genResourceAccessSource(vk::VK_SHADER_STAGE_COMPUTE)
+		<< genResourceAccessSource(vk::VK_SHADER_STAGE_COMPUTE_BIT)
 		<< "	b_out.read_colors[gl_WorkGroupID.x] = result_color;\n"
 		<< "}\n";
 
@@ -2638,10 +2557,10 @@ void QuadrantRendederCase::initPrograms (vk::SourceCollections& programCollectio
 	if ((m_exitingStages & vk::VK_SHADER_STAGE_VERTEX_BIT) != 0u)
 		programCollection.glslSources.add("vertex") << glu::VertexSource(genVertexSource());
 
-	if ((m_exitingStages & vk::VK_SHADER_STAGE_TESS_CONTROL_BIT) != 0u)
+	if ((m_exitingStages & vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT) != 0u)
 		programCollection.glslSources.add("tess_ctrl") << glu::TessellationControlSource(genTessCtrlSource());
 
-	if ((m_exitingStages & vk::VK_SHADER_STAGE_TESS_EVALUATION_BIT) != 0u)
+	if ((m_exitingStages & vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT) != 0u)
 		programCollection.glslSources.add("tess_eval") << glu::TessellationEvaluationSource(genTessEvalSource());
 
 	if ((m_exitingStages & vk::VK_SHADER_STAGE_GEOMETRY_BIT) != 0u)
@@ -2677,9 +2596,9 @@ public:
 																 deUint32				flags);
 
 private:
-	std::string						genExtensionDeclarations	(vk::VkShaderStage stage) const;
-	std::string						genResourceDeclarations		(vk::VkShaderStage stage, int numUsedBindings) const;
-	std::string						genResourceAccessSource		(vk::VkShaderStage stage) const;
+	std::string						genExtensionDeclarations	(vk::VkShaderStageFlagBits stage) const;
+	std::string						genResourceDeclarations		(vk::VkShaderStageFlagBits stage, int numUsedBindings) const;
+	std::string						genResourceAccessSource		(vk::VkShaderStageFlagBits stage) const;
 	std::string						genNoAccessSource			(void) const;
 
 	vkt::TestInstance*				createInstance				(vkt::Context& context) const;
@@ -2711,13 +2630,13 @@ BufferDescriptorCase::BufferDescriptorCase (tcu::TestContext&		testCtx,
 {
 }
 
-std::string BufferDescriptorCase::genExtensionDeclarations (vk::VkShaderStage stage) const
+std::string BufferDescriptorCase::genExtensionDeclarations (vk::VkShaderStageFlagBits stage) const
 {
 	DE_UNREF(stage);
 	return "";
 }
 
-std::string BufferDescriptorCase::genResourceDeclarations (vk::VkShaderStage stage, int numUsedBindings) const
+std::string BufferDescriptorCase::genResourceDeclarations (vk::VkShaderStageFlagBits stage, int numUsedBindings) const
 {
 	DE_UNREF(stage);
 
@@ -2763,7 +2682,7 @@ std::string BufferDescriptorCase::genResourceDeclarations (vk::VkShaderStage sta
 	return buf.str();
 }
 
-std::string BufferDescriptorCase::genResourceAccessSource (vk::VkShaderStage stage) const
+std::string BufferDescriptorCase::genResourceAccessSource (vk::VkShaderStageFlagBits stage) const
 {
 	DE_UNREF(stage);
 
@@ -2955,15 +2874,15 @@ vk::Move<vk::VkImage> ImageInstanceImages::createImage (const vk::DeviceInterfac
 	{
 		vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
 		DE_NULL,
+		isCube ? (vk::VkImageCreateFlags)vk::VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : (vk::VkImageCreateFlags)0,
 		viewTypeToImageType(viewType),											// imageType
-		mapToVkTextureFormat(baseLevel.getFormat()),							// format
+		vk::mapTextureFormat(baseLevel.getFormat()),							// format
 		extent,																	// extent
 		(deUint32)sourceImage.getNumLevels(),									// mipLevels
 		arraySize,																// arraySize
-		1,																		// samples
+		vk::VK_SAMPLE_COUNT_1_BIT,												// samples
 		vk::VK_IMAGE_TILING_OPTIMAL,											// tiling
-		readUsage | vk::VK_IMAGE_USAGE_TRANSFER_DESTINATION_BIT,				// usage
-		isCube ? ((deUint32)vk::VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT) : (0u),	// flags
+		readUsage | vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT,						// usage
 		vk::VK_SHARING_MODE_EXCLUSIVE,											// sharingMode
 		0u,																		// queueFamilyCount
 		DE_NULL,																// pQueueFamilyIndices
@@ -3008,17 +2927,17 @@ vk::Move<vk::VkImageView> ImageInstanceImages::createImageView (const vk::Device
 	{
 		vk::VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
 		DE_NULL,
+		(vk::VkImageViewCreateFlags)0,
 		image,											// image
 		viewType,										// viewType
-		mapToVkTextureFormat(baseLevel.getFormat()),	// format
+		vk::mapTextureFormat(baseLevel.getFormat()),	// format
 		{
-			vk::VK_CHANNEL_SWIZZLE_R,
-			vk::VK_CHANNEL_SWIZZLE_G,
-			vk::VK_CHANNEL_SWIZZLE_B,
-			vk::VK_CHANNEL_SWIZZLE_A
+			vk::VK_COMPONENT_SWIZZLE_R,
+			vk::VK_COMPONENT_SWIZZLE_G,
+			vk::VK_COMPONENT_SWIZZLE_B,
+			vk::VK_COMPONENT_SWIZZLE_A
 		},												// channels
 		resourceRange,									// subresourceRange
-		0u,												// flags
 	};
 	return vk::createImageView(vki, device, &createInfo);
 }
@@ -3080,9 +2999,9 @@ void ImageInstanceImages::uploadImage (const vk::DeviceInterface&		vki,
 	{
 		vk::VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
 		DE_NULL,
-		dataBufferSize,										// size
-		vk::VK_BUFFER_USAGE_TRANSFER_SOURCE_BIT,			// usage
 		0u,													// flags
+		dataBufferSize,										// size
+		vk::VK_BUFFER_USAGE_TRANSFER_SRC_BIT,				// usage
 		vk::VK_SHARING_MODE_EXCLUSIVE,						// sharingMode
 		0u,													// queueFamilyCount
 		DE_NULL,											// pQueueFamilyIndices
@@ -3099,8 +3018,8 @@ void ImageInstanceImages::uploadImage (const vk::DeviceInterface&		vki,
 	{
 		vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
 		DE_NULL,
-		vk::VK_MEMORY_OUTPUT_HOST_WRITE_BIT,				// outputMask
-		vk::VK_MEMORY_INPUT_TRANSFER_BIT,					// inputMask
+		vk::VK_ACCESS_HOST_WRITE_BIT,					// outputMask
+		vk::VK_ACCESS_TRANSFER_READ_BIT,					// inputMask
 		vk::VK_QUEUE_FAMILY_IGNORED,						// srcQueueFamilyIndex
 		vk::VK_QUEUE_FAMILY_IGNORED,						// destQueueFamilyIndex
 		*dataBuffer,										// buffer
@@ -3122,7 +3041,7 @@ void ImageInstanceImages::uploadImage (const vk::DeviceInterface&		vki,
 		0u,													// outputMask
 		0u,													// inputMask
 		vk::VK_IMAGE_LAYOUT_UNDEFINED,						// oldLayout
-		vk::VK_IMAGE_LAYOUT_TRANSFER_DESTINATION_OPTIMAL,	// newLayout
+		vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,			// newLayout
 		vk::VK_QUEUE_FAMILY_IGNORED,						// srcQueueFamilyIndex
 		vk::VK_QUEUE_FAMILY_IGNORED,						// destQueueFamilyIndex
 		image,												// image
@@ -3132,47 +3051,50 @@ void ImageInstanceImages::uploadImage (const vk::DeviceInterface&		vki,
 	{
 		vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
 		DE_NULL,
-		vk::VK_MEMORY_OUTPUT_TRANSFER_BIT,					// outputMask
-		vk::VK_MEMORY_INPUT_SHADER_READ_BIT,				// inputMask
-		vk::VK_IMAGE_LAYOUT_TRANSFER_DESTINATION_OPTIMAL,	// oldLayout
+		vk::VK_ACCESS_TRANSFER_WRITE_BIT,					// outputMask
+		vk::VK_ACCESS_SHADER_READ_BIT,						// inputMask
+		vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,			// oldLayout
 		vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,		// newLayout
 		vk::VK_QUEUE_FAMILY_IGNORED,						// srcQueueFamilyIndex
 		vk::VK_QUEUE_FAMILY_IGNORED,						// destQueueFamilyIndex
 		image,												// image
 		fullSubrange										// subresourceRange
 	};
-	const vk::VkCmdPoolCreateInfo		cmdPoolCreateInfo			=
+	const vk::VkCommandPoolCreateInfo		cmdPoolCreateInfo			=
 	{
-		vk::VK_STRUCTURE_TYPE_CMD_POOL_CREATE_INFO,
+		vk::VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
 		DE_NULL,
+		vk::VK_COMMAND_POOL_CREATE_TRANSIENT_BIT,			// flags
 		queueFamilyIndex,									// queueFamilyIndex
-		vk::VK_CMD_POOL_CREATE_TRANSIENT_BIT,				// flags
 	};
-	const vk::Unique<vk::VkCmdPool>		cmdPool						(vk::createCommandPool(vki, device, &cmdPoolCreateInfo));
-	const vk::VkCmdBufferCreateInfo		cmdBufCreateInfo			=
+	const vk::Unique<vk::VkCommandPool>		cmdPool						(vk::createCommandPool(vki, device, &cmdPoolCreateInfo));
+	const vk::VkCommandBufferAllocateInfo	cmdBufCreateInfo			=
 	{
-		vk::VK_STRUCTURE_TYPE_CMD_BUFFER_CREATE_INFO,
+		vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
 		DE_NULL,
 		*cmdPool,											// cmdPool
-		vk::VK_CMD_BUFFER_LEVEL_PRIMARY,					// level
-		0u,													// flags
+		vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY,				// level
+		1u,													// count
 	};
-	const vk::VkCmdBufferBeginInfo		cmdBufBeginInfo				=
+	const vk::VkCommandBufferBeginInfo		cmdBufBeginInfo				=
 	{
-		vk::VK_STRUCTURE_TYPE_CMD_BUFFER_BEGIN_INFO,
+		vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
 		DE_NULL,
-		vk::VK_CMD_BUFFER_OPTIMIZE_SMALL_BATCH_BIT | vk::VK_CMD_BUFFER_OPTIMIZE_ONE_TIME_SUBMIT_BIT,	// flags
-		(vk::VkRenderPass)0u,																			// renderPass
-		0u,																								// subpass
-		(vk::VkFramebuffer)0u,																			// framebuffer
+		vk::VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,	// flags
+		(vk::VkRenderPass)0u,								// renderPass
+		0u,													// subpass
+		(vk::VkFramebuffer)0u,								// framebuffer
+		vk::VK_FALSE,										// occlusionQueryEnable
+		(vk::VkQueryControlFlags)0,
+		(vk::VkQueryPipelineStatisticFlags)0,
 	};
 
-	const vk::Unique<vk::VkCmdBuffer>	cmd							(vk::createCommandBuffer(vki, device, &cmdBufCreateInfo));
-	const void* const					preBarriers[2]				= { &preMemoryBarrier, &preImageBarrier };
-	const void* const					postBarriers[1]				= { &postImageBarrier };
-	const vk::Unique<vk::VkFence>		cmdCompleteFence			(vk::createFence(vki, device, &fenceCreateInfo));
-	const deUint64						infiniteTimeout				= ~(deUint64)0u;
-	std::vector<vk::VkBufferImageCopy>	copySlices;
+	const vk::Unique<vk::VkCommandBuffer>	cmd							(vk::allocateCommandBuffer(vki, device, &cmdBufCreateInfo));
+	const void* const						preBarriers[2]				= { &preMemoryBarrier, &preImageBarrier };
+	const void* const						postBarriers[1]				= { &postImageBarrier };
+	const vk::Unique<vk::VkFence>			cmdCompleteFence			(vk::createFence(vki, device, &fenceCreateInfo));
+	const deUint64							infiniteTimeout				= ~(deUint64)0u;
+	std::vector<vk::VkBufferImageCopy>		copySlices;
 
 	// copy data to buffer
 	writeTextureLevelPyramidData(dataBufferMemory->getHostPtr(), dataBufferSize, data, m_viewType , &copySlices);
@@ -3181,12 +3103,25 @@ void ImageInstanceImages::uploadImage (const vk::DeviceInterface&		vki,
 	// record command buffer
 	VK_CHECK(vki.beginCommandBuffer(*cmd, &cmdBufBeginInfo));
 	vki.cmdPipelineBarrier(*cmd, 0u, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_FALSE, DE_LENGTH_OF_ARRAY(preBarriers), preBarriers);
-	vki.cmdCopyBufferToImage(*cmd, *dataBuffer, image, vk::VK_IMAGE_LAYOUT_TRANSFER_DESTINATION_OPTIMAL, (deUint32)copySlices.size(), &copySlices[0]);
+	vki.cmdCopyBufferToImage(*cmd, *dataBuffer, image, vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, (deUint32)copySlices.size(), &copySlices[0]);
 	vki.cmdPipelineBarrier(*cmd, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, vk::VK_FALSE, DE_LENGTH_OF_ARRAY(postBarriers), postBarriers);
 	VK_CHECK(vki.endCommandBuffer(*cmd));
 
 	// submit and wait for command buffer to complete before killing it
-	VK_CHECK(vki.queueSubmit(queue, 1, &cmd.get(), *cmdCompleteFence));
+	{
+		const vk::VkSubmitInfo	submitInfo	=
+		{
+			vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,
+			DE_NULL,
+			0u,
+			(const vk::VkSemaphore*)0,
+			1u,
+			&cmd.get(),
+			0u,
+			(const vk::VkSemaphore*)0,
+		};
+		VK_CHECK(vki.queueSubmit(queue, 1, &submitInfo, *cmdCompleteFence));
+	}
 	VK_CHECK(vki.waitForFences(device, 1, &cmdCompleteFence.get(), 0u, infiniteTimeout)); // \note: timeout is failure
 }
 
@@ -3342,7 +3277,7 @@ private:
 
 	void											logTestPlan					(void) const;
 	vk::VkPipelineLayout							getPipelineLayout			(void) const;
-	void											writeDrawCmdBuffer			(vk::VkCmdBuffer cmd) const;
+	void											writeDrawCmdBuffer			(vk::VkCommandBuffer cmd) const;
 	tcu::TestStatus									verifyResultImage			(const tcu::ConstPixelBufferAccess& result) const;
 
 	enum
@@ -3425,6 +3360,7 @@ vk::Move<vk::VkPipelineLayout> ImageFetchRenderInstance::createPipelineLayout (c
 	{
 		vk::VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
 		DE_NULL,
+		(vk::VkPipelineLayoutCreateFlags)0,
 		1,						// descriptorSetCount
 		&descriptorSetLayout,	// pSetLayouts
 		0u,						// pushConstantRangeCount
@@ -3440,7 +3376,7 @@ vk::Move<vk::VkDescriptorPool> ImageFetchRenderInstance::createDescriptorPool (c
 {
 	return vk::DescriptorPoolBuilder()
 		.addType(descriptorType, getInterfaceNumResources(shaderInterface))
-		.build(vki, device, vk::VK_DESCRIPTOR_POOL_USAGE_DYNAMIC, 1);
+		.build(vki, device, vk::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1);
 }
 
 vk::Move<vk::VkDescriptorSet> ImageFetchRenderInstance::createDescriptorSet (const vk::DeviceInterface&		vki,
@@ -3452,14 +3388,22 @@ vk::Move<vk::VkDescriptorSet> ImageFetchRenderInstance::createDescriptorSet (con
 																			 vk::VkImageView				viewA,
 																			 vk::VkImageView				viewB)
 {
-	const vk::VkDescriptorInfo		imageInfos[2]	=
+	const vk::VkDescriptorImageInfo			imageInfos[2]	=
 	{
-		createDescriptorInfo(viewA, vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL),
-		createDescriptorInfo(viewB, vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL),
+		makeDescriptorImageInfo(viewA, vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL),
+		makeDescriptorImageInfo(viewB, vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL),
+	};
+	const vk::VkDescriptorSetAllocateInfo	allocInfo		=
+	{
+		vk::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+		DE_NULL,
+		pool,
+		1u,
+		&layout
 	};
 
-	vk::Move<vk::VkDescriptorSet>	descriptorSet	= allocDescriptorSet(vki, device, pool, vk::VK_DESCRIPTOR_SET_USAGE_ONE_SHOT, layout);
-	vk::DescriptorSetUpdateBuilder	builder;
+	vk::Move<vk::VkDescriptorSet>			descriptorSet	= allocateDescriptorSet(vki, device, &allocInfo);
+	vk::DescriptorSetUpdateBuilder			builder;
 
 	switch (shaderInterface)
 	{
@@ -3524,11 +3468,11 @@ void ImageFetchRenderInstance::logTestPlan (void) const
 		}
 
 		msg << "Descriptors are accessed in {"
-			<< (((m_stageFlags & vk::VK_SHADER_STAGE_VERTEX_BIT) != 0)			? (" vertex")			: (""))
-			<< (((m_stageFlags & vk::VK_SHADER_STAGE_TESS_CONTROL_BIT) != 0)	? (" tess_control")		: (""))
-			<< (((m_stageFlags & vk::VK_SHADER_STAGE_TESS_EVALUATION_BIT) != 0)	? (" tess_evaluation")	: (""))
-			<< (((m_stageFlags & vk::VK_SHADER_STAGE_GEOMETRY_BIT) != 0)		? (" geometry")			: (""))
-			<< (((m_stageFlags & vk::VK_SHADER_STAGE_FRAGMENT_BIT) != 0)		? (" fragment")			: (""))
+			<< (((m_stageFlags & vk::VK_SHADER_STAGE_VERTEX_BIT) != 0)					? (" vertex")			: (""))
+			<< (((m_stageFlags & vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT) != 0)	? (" tess_control")		: (""))
+			<< (((m_stageFlags & vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT) != 0)	? (" tess_evaluation")	: (""))
+			<< (((m_stageFlags & vk::VK_SHADER_STAGE_GEOMETRY_BIT) != 0)				? (" geometry")			: (""))
+			<< (((m_stageFlags & vk::VK_SHADER_STAGE_FRAGMENT_BIT) != 0)				? (" fragment")			: (""))
 			<< " } stages.";
 	}
 
@@ -3543,7 +3487,7 @@ vk::VkPipelineLayout ImageFetchRenderInstance::getPipelineLayout (void) const
 	return *m_pipelineLayout;
 }
 
-void ImageFetchRenderInstance::writeDrawCmdBuffer (vk::VkCmdBuffer cmd) const
+void ImageFetchRenderInstance::writeDrawCmdBuffer (vk::VkCommandBuffer cmd) const
 {
 	m_vki.cmdBindDescriptorSets(cmd, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, getPipelineLayout(), 0, 1, &m_descriptorSet.get(), 0, DE_NULL);
 	m_vki.cmdDraw(cmd, 6 * 4, 1, 0, 0); // render four quads (two separate triangles)
@@ -3658,20 +3602,28 @@ vk::Move<vk::VkDescriptorPool> ImageFetchComputeInstance::createDescriptorPool (
 	return vk::DescriptorPoolBuilder()
 		.addType(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
 		.addType(m_descriptorType, getInterfaceNumResources(m_shaderInterface))
-		.build(m_vki, m_device, vk::VK_DESCRIPTOR_POOL_USAGE_DYNAMIC, 1);
+		.build(m_vki, m_device, vk::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1);
 }
 
 vk::Move<vk::VkDescriptorSet> ImageFetchComputeInstance::createDescriptorSet (vk::VkDescriptorPool pool, vk::VkDescriptorSetLayout layout) const
 {
-	const vk::VkDescriptorInfo		resultInfo		= createDescriptorInfo(m_result.getBuffer(), 0u, (vk::VkDeviceSize)ComputeInstanceResultBuffer::DATA_SIZE);
-	const vk::VkDescriptorInfo		imageInfos[2]	=
+	const vk::VkDescriptorBufferInfo		resultInfo		= vk::makeDescriptorBufferInfo(m_result.getBuffer(), 0u, (vk::VkDeviceSize)ComputeInstanceResultBuffer::DATA_SIZE);
+	const vk::VkDescriptorImageInfo			imageInfos[2]	=
 	{
-		createDescriptorInfo(m_images.getImageViewA(), vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL),
-		createDescriptorInfo(m_images.getImageViewB(), vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL),
+		makeDescriptorImageInfo(m_images.getImageViewA(), vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL),
+		makeDescriptorImageInfo(m_images.getImageViewB(), vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL),
+	};
+	const vk::VkDescriptorSetAllocateInfo	allocInfo		=
+	{
+		vk::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+		DE_NULL,
+		pool,
+		1u,
+		&layout
 	};
 
-	vk::Move<vk::VkDescriptorSet>	descriptorSet	= allocDescriptorSet(m_vki, m_device, pool, vk::VK_DESCRIPTOR_SET_USAGE_ONE_SHOT, layout);
-	vk::DescriptorSetUpdateBuilder	builder;
+	vk::Move<vk::VkDescriptorSet>			descriptorSet	= allocateDescriptorSet(m_vki, m_device, &allocInfo);
+	vk::DescriptorSetUpdateBuilder			builder;
 
 	// result
 	builder.writeSingle(*descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(0u), vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &resultInfo);
@@ -4072,7 +4024,7 @@ tcu::Sampler ImageSampleInstanceImages::createRefSampler (bool isFirst)
 vk::Move<vk::VkSampler> ImageSampleInstanceImages::createSampler (const vk::DeviceInterface& vki, vk::VkDevice device, const tcu::Sampler& sampler, const tcu::TextureFormat& format)
 {
 	const bool						compareEnabled	= (sampler.compare != tcu::Sampler::COMPAREMODE_NONE);
-	const vk::VkCompareOp			compareOp		= (compareEnabled) ? (mapToVkCompareOp(sampler.compare)) : (vk::VK_COMPARE_OP_ALWAYS);
+	const vk::VkCompareOp			compareOp		= (compareEnabled) ? (vk::mapCompareMode(sampler.compare)) : (vk::VK_COMPARE_OP_ALWAYS);
 	const tcu::TextureChannelClass	channelClass	= tcu::getTextureChannelClass(format.type);
 	const bool						isIntTexture	= channelClass == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER || channelClass == tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER;
 	const vk::VkBorderColor			borderColor		= (isIntTexture) ? (vk::VK_BORDER_COLOR_INT_OPAQUE_WHITE) : (vk::VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE);
@@ -4080,20 +4032,21 @@ vk::Move<vk::VkSampler> ImageSampleInstanceImages::createSampler (const vk::Devi
 	{
 		vk::VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
 		DE_NULL,
-		mapMagFilterToVkTexFilter(sampler.magFilter),									// magFilter
-		mapMinFilterToVkTexFilter(sampler.minFilter),									// minFilter
-		mapMinFilterToVkTexMipmapMode(sampler.minFilter),								// mipMode
-		mapToVkTexAddressMode(sampler.wrapS),											// addressU
-		mapToVkTexAddressMode(sampler.wrapT),											// addressV
-		mapToVkTexAddressMode(sampler.wrapR),											// addressW
-		0.0f,																			// mipLodBias
-		1,																				// maxAnisotropy
-		(compareEnabled) ? (vk::VkBool32)(vk::VK_TRUE) : (vk::VkBool32)(vk::VK_FALSE),	// compareEnable
-		compareOp,																		// compareOp
-		0.0f,																			// minLod
-		0.0f,																			// maxLod
-		borderColor,																	// borderColor
-		vk::VK_FALSE,																	// unnormalizedCoords
+		(vk::VkSamplerCreateFlags)0,
+		vk::mapFilterMode(sampler.magFilter),			// magFilter
+		vk::mapFilterMode(sampler.minFilter),			// minFilter
+		vk::mapMipmapMode(sampler.minFilter),			// mipMode
+		vk::mapWrapMode(sampler.wrapS),					// addressU
+		vk::mapWrapMode(sampler.wrapT),					// addressV
+		vk::mapWrapMode(sampler.wrapR),					// addressW
+		0.0f,											// mipLodBias
+		1,												// maxAnisotropy
+		(compareEnabled ? vk::VK_TRUE : vk::VK_FALSE),	// compareEnable
+		compareOp,										// compareOp
+		0.0f,											// minLod
+		0.0f,											// maxLod
+		borderColor,									// borderColor
+		vk::VK_FALSE,									// unnormalizedCoords
 	};
 	return vk::createSampler(vki, device, &createInfo);
 }
@@ -4226,7 +4179,7 @@ private:
 
 	void											logTestPlan						(void) const;
 	vk::VkPipelineLayout							getPipelineLayout				(void) const;
-	void											writeDrawCmdBuffer				(vk::VkCmdBuffer cmd) const;
+	void											writeDrawCmdBuffer				(vk::VkCommandBuffer cmd) const;
 	tcu::TestStatus									verifyResultImage				(const tcu::ConstPixelBufferAccess& result) const;
 
 	enum
@@ -4322,6 +4275,7 @@ vk::Move<vk::VkPipelineLayout> ImageSampleRenderInstance::createPipelineLayout (
 	{
 		vk::VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
 		DE_NULL,
+		(vk::VkPipelineLayoutCreateFlags)0,
 		1,						// descriptorSetCount
 		&descriptorSetLayout,	// pSetLayouts
 		0u,						// pushConstantRangeCount
@@ -4355,7 +4309,7 @@ vk::Move<vk::VkDescriptorPool> ImageSampleRenderInstance::createDescriptorPool (
 	else
 		DE_FATAL("Impossible");
 
-	return builder.build(vki, device, vk::VK_DESCRIPTOR_POOL_USAGE_DYNAMIC, 1);
+	return builder.build(vki, device, vk::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1);
 }
 
 vk::Move<vk::VkDescriptorSet> ImageSampleRenderInstance::createDescriptorSet (const vk::DeviceInterface&		vki,
@@ -4367,7 +4321,16 @@ vk::Move<vk::VkDescriptorSet> ImageSampleRenderInstance::createDescriptorSet (co
 																			  bool								isImmutable,
 																			  const ImageSampleInstanceImages&	images)
 {
-	vk::Move<vk::VkDescriptorSet> descriptorSet = allocDescriptorSet(vki, device, pool, vk::VK_DESCRIPTOR_SET_USAGE_ONE_SHOT, layout);
+	const vk::VkDescriptorSetAllocateInfo	allocInfo		=
+	{
+		vk::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+		DE_NULL,
+		pool,
+		1u,
+		&layout
+	};
+
+	vk::Move<vk::VkDescriptorSet>			descriptorSet	= allocateDescriptorSet(vki, device, &allocInfo);
 
 	if (descriptorType == vk::VK_DESCRIPTOR_TYPE_SAMPLER)
 		writeSamplerDescriptorSet(vki, device,  shaderInterface, isImmutable, images, *descriptorSet);
@@ -4386,14 +4349,14 @@ void ImageSampleRenderInstance::writeSamplerDescriptorSet (const vk::DeviceInter
 														   const ImageSampleInstanceImages&	images,
 														   vk::VkDescriptorSet				descriptorSet)
 {
-	const vk::VkDescriptorInfo		imageInfo			= createDescriptorInfo(images.getImageViewA(), vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-	const vk::VkDescriptorInfo		samplersInfos[2]	=
+	const vk::VkDescriptorImageInfo		imageInfo			= makeDescriptorImageInfo(images.getImageViewA(), vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+	const vk::VkDescriptorImageInfo		samplersInfos[2]	=
 	{
-		createDescriptorInfo(images.getSamplerA()),
-		createDescriptorInfo(images.getSamplerB()),
+		makeDescriptorImageInfo(images.getSamplerA()),
+		makeDescriptorImageInfo(images.getSamplerB()),
 	};
 
-	vk::DescriptorSetUpdateBuilder	builder;
+	vk::DescriptorSetUpdateBuilder		builder;
 
 	// stand alone texture
 	builder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(0u), vk::VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, &imageInfo);
@@ -4431,18 +4394,18 @@ void ImageSampleRenderInstance::writeImageSamplerDescriptorSet (const vk::Device
 																const ImageSampleInstanceImages&	images,
 																vk::VkDescriptorSet					descriptorSet)
 {
-	const vk::VkSampler				samplers[2]			=
+	const vk::VkSampler					samplers[2]			=
 	{
 		(isImmutable) ? (0) : (images.getSamplerA()),
 		(isImmutable) ? (0) : (images.getSamplerB()),
 	};
-	const vk::VkDescriptorInfo		imageSamplers[2]	=
+	const vk::VkDescriptorImageInfo		imageSamplers[2]	=
 	{
-		createDescriptorInfo(samplers[0], images.getImageViewA(), vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL),
-		createDescriptorInfo(samplers[1], images.getImageViewB(), vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL),
+		vk::makeDescriptorImageInfo(samplers[0], images.getImageViewA(), vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL),
+		vk::makeDescriptorImageInfo(samplers[1], images.getImageViewB(), vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL),
 	};
 
-	vk::DescriptorSetUpdateBuilder	builder;
+	vk::DescriptorSetUpdateBuilder		builder;
 
 	// combined image samplers
 	switch (shaderInterface)
@@ -4533,11 +4496,11 @@ void ImageSampleRenderInstance::logTestPlan (void) const
 		}
 
 		msg << "Descriptors are accessed in {"
-			<< (((m_stageFlags & vk::VK_SHADER_STAGE_VERTEX_BIT) != 0)			? (" vertex")			: (""))
-			<< (((m_stageFlags & vk::VK_SHADER_STAGE_TESS_CONTROL_BIT) != 0)	? (" tess_control")		: (""))
-			<< (((m_stageFlags & vk::VK_SHADER_STAGE_TESS_EVALUATION_BIT) != 0)	? (" tess_evaluation")	: (""))
-			<< (((m_stageFlags & vk::VK_SHADER_STAGE_GEOMETRY_BIT) != 0)		? (" geometry")			: (""))
-			<< (((m_stageFlags & vk::VK_SHADER_STAGE_FRAGMENT_BIT) != 0)		? (" fragment")			: (""))
+			<< (((m_stageFlags & vk::VK_SHADER_STAGE_VERTEX_BIT) != 0)					? (" vertex")			: (""))
+			<< (((m_stageFlags & vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT) != 0)	? (" tess_control")		: (""))
+			<< (((m_stageFlags & vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT) != 0)	? (" tess_evaluation")	: (""))
+			<< (((m_stageFlags & vk::VK_SHADER_STAGE_GEOMETRY_BIT) != 0)				? (" geometry")			: (""))
+			<< (((m_stageFlags & vk::VK_SHADER_STAGE_FRAGMENT_BIT) != 0)				? (" fragment")			: (""))
 			<< " } stages.";
 	}
 
@@ -4552,7 +4515,7 @@ vk::VkPipelineLayout ImageSampleRenderInstance::getPipelineLayout (void) const
 	return *m_pipelineLayout;
 }
 
-void ImageSampleRenderInstance::writeDrawCmdBuffer (vk::VkCmdBuffer cmd) const
+void ImageSampleRenderInstance::writeDrawCmdBuffer (vk::VkCommandBuffer cmd) const
 {
 	m_vki.cmdBindDescriptorSets(cmd, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, getPipelineLayout(), 0u, 1u, &m_descriptorSet.get(), 0u, DE_NULL);
 	m_vki.cmdDraw(cmd, 6u * 4u, 1u, 0u, 0u); // render four quads (two separate triangles)
@@ -4691,12 +4654,21 @@ vk::Move<vk::VkDescriptorPool> ImageSampleComputeInstance::createDescriptorPool 
 	if (m_descriptorType == vk::VK_DESCRIPTOR_TYPE_SAMPLER)
 		builder.addType(vk::VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE);
 
-	return builder.build(m_vki, m_device, vk::VK_DESCRIPTOR_POOL_USAGE_DYNAMIC, 1);
+	return builder.build(m_vki, m_device, vk::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1);
 }
 
 vk::Move<vk::VkDescriptorSet> ImageSampleComputeInstance::createDescriptorSet (vk::VkDescriptorPool pool, vk::VkDescriptorSetLayout layout) const
 {
-	vk::Move<vk::VkDescriptorSet> descriptorSet = allocDescriptorSet(m_vki, m_device, pool, vk::VK_DESCRIPTOR_SET_USAGE_ONE_SHOT, layout);
+	const vk::VkDescriptorSetAllocateInfo	allocInfo		=
+	{
+		vk::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+		DE_NULL,
+		pool,
+		1u,
+		&layout
+	};
+
+	vk::Move<vk::VkDescriptorSet>			descriptorSet	= allocateDescriptorSet(m_vki, m_device, &allocInfo);
 
 	if (m_descriptorType == vk::VK_DESCRIPTOR_TYPE_SAMPLER)
 		writeSamplerDescriptorSet(*descriptorSet);
@@ -4710,15 +4682,15 @@ vk::Move<vk::VkDescriptorSet> ImageSampleComputeInstance::createDescriptorSet (v
 
 void ImageSampleComputeInstance::writeSamplerDescriptorSet (vk::VkDescriptorSet descriptorSet) const
 {
-	const vk::VkDescriptorInfo		resultInfo			= createDescriptorInfo(m_result.getBuffer(), 0u, (vk::VkDeviceSize)ComputeInstanceResultBuffer::DATA_SIZE);
-	const vk::VkDescriptorInfo		imageInfo			= createDescriptorInfo(m_images.getImageViewA(), vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-	const vk::VkDescriptorInfo		samplersInfos[2]	=
+	const vk::VkDescriptorBufferInfo	resultInfo			= vk::makeDescriptorBufferInfo(m_result.getBuffer(), 0u, (vk::VkDeviceSize)ComputeInstanceResultBuffer::DATA_SIZE);
+	const vk::VkDescriptorImageInfo		imageInfo			= makeDescriptorImageInfo(m_images.getImageViewA(), vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+	const vk::VkDescriptorImageInfo		samplersInfos[2]	=
 	{
-		createDescriptorInfo(m_images.getSamplerA()),
-		createDescriptorInfo(m_images.getSamplerB()),
+		makeDescriptorImageInfo(m_images.getSamplerA()),
+		makeDescriptorImageInfo(m_images.getSamplerB()),
 	};
 
-	vk::DescriptorSetUpdateBuilder	builder;
+	vk::DescriptorSetUpdateBuilder		builder;
 
 	// result
 	builder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(0u), vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &resultInfo);
@@ -4754,19 +4726,19 @@ void ImageSampleComputeInstance::writeSamplerDescriptorSet (vk::VkDescriptorSet 
 
 void ImageSampleComputeInstance::writeImageSamplerDescriptorSet (vk::VkDescriptorSet descriptorSet) const
 {
-	const vk::VkDescriptorInfo		resultInfo			= createDescriptorInfo(m_result.getBuffer(), 0u, (vk::VkDeviceSize)ComputeInstanceResultBuffer::DATA_SIZE);
-	const vk::VkSampler				samplers[2]			=
+	const vk::VkDescriptorBufferInfo	resultInfo			= vk::makeDescriptorBufferInfo(m_result.getBuffer(), 0u, (vk::VkDeviceSize)ComputeInstanceResultBuffer::DATA_SIZE);
+	const vk::VkSampler					samplers[2]			=
 	{
 		(m_isImmutableSampler) ? (0) : (m_images.getSamplerA()),
 		(m_isImmutableSampler) ? (0) : (m_images.getSamplerB()),
 	};
-	const vk::VkDescriptorInfo		imageSamplers[2]	=
+	const vk::VkDescriptorImageInfo		imageSamplers[2]	=
 	{
-		createDescriptorInfo(samplers[0], m_images.getImageViewA(), vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL),
-		createDescriptorInfo(samplers[1], m_images.getImageViewB(), vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL),
+		makeDescriptorImageInfo(samplers[0], m_images.getImageViewA(), vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL),
+		makeDescriptorImageInfo(samplers[1], m_images.getImageViewB(), vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL),
 	};
 
-	vk::DescriptorSetUpdateBuilder	builder;
+	vk::DescriptorSetUpdateBuilder		builder;
 
 	// result
 	builder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(0u), vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &resultInfo);
@@ -4959,11 +4931,11 @@ public:
 															 deUint32				flags);
 
 private:
-	std::string					genExtensionDeclarations	(vk::VkShaderStage stage) const;
-	std::string					genResourceDeclarations		(vk::VkShaderStage stage, int numUsedBindings) const;
+	std::string					genExtensionDeclarations	(vk::VkShaderStageFlagBits stage) const;
+	std::string					genResourceDeclarations		(vk::VkShaderStageFlagBits stage, int numUsedBindings) const;
 	std::string					genFetchCoordStr			(int fetchPosNdx) const;
 	std::string					genSampleCoordStr			(int samplePosNdx) const;
-	std::string					genResourceAccessSource		(vk::VkShaderStage stage) const;
+	std::string					genResourceAccessSource		(vk::VkShaderStageFlagBits stage) const;
 	std::string					genNoAccessSource			(void) const;
 
 	vkt::TestInstance*			createInstance				(vkt::Context& context) const;
@@ -5002,7 +4974,7 @@ ImageDescriptorCase::ImageDescriptorCase (tcu::TestContext&			testCtx,
 {
 }
 
-std::string ImageDescriptorCase::genExtensionDeclarations (vk::VkShaderStage stage) const
+std::string ImageDescriptorCase::genExtensionDeclarations (vk::VkShaderStageFlagBits stage) const
 {
 	DE_UNREF(stage);
 
@@ -5012,7 +4984,7 @@ std::string ImageDescriptorCase::genExtensionDeclarations (vk::VkShaderStage sta
 		return "";
 }
 
-std::string ImageDescriptorCase::genResourceDeclarations (vk::VkShaderStage stage, int numUsedBindings) const
+std::string ImageDescriptorCase::genResourceDeclarations (vk::VkShaderStageFlagBits stage, int numUsedBindings) const
 {
 	DE_UNREF(stage);
 
@@ -5148,7 +5120,7 @@ std::string ImageDescriptorCase::genSampleCoordStr (int samplePosNdx) const
 	}
 }
 
-std::string ImageDescriptorCase::genResourceAccessSource (vk::VkShaderStage stage) const
+std::string ImageDescriptorCase::genResourceAccessSource (vk::VkShaderStageFlagBits stage) const
 {
 	DE_UNREF(stage);
 
@@ -5406,9 +5378,9 @@ vk::Move<vk::VkBuffer> TexelBufferInstanceBuffers::createBuffer (const vk::Devic
 	{
 		vk::VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
 		DE_NULL,
+		0u,									// flags
 		(vk::VkDeviceSize)BUFFER_SIZE,		// size
 		usage,								// usage
-		0u,									// flags
 		vk::VK_SHARING_MODE_EXCLUSIVE,		// sharingMode
 		0u,									// queueFamilyCount
 		DE_NULL,							// pQueueFamilyIndices
@@ -5430,8 +5402,9 @@ vk::Move<vk::VkBufferView> TexelBufferInstanceBuffers::createBufferView (const v
 	{
 		vk::VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO,
 		DE_NULL,
+		(vk::VkBufferViewCreateFlags)0,
 		buffer,									// buffer
-		mapToVkTextureFormat(textureFormat),	// format
+		vk::mapTextureFormat(textureFormat),	// format
 		(vk::VkDeviceSize)offset,				// offset
 		(vk::VkDeviceSize)VIEW_DATA_SIZE		// range
 	};
@@ -5440,12 +5413,12 @@ vk::Move<vk::VkBufferView> TexelBufferInstanceBuffers::createBufferView (const v
 
 vk::VkBufferMemoryBarrier TexelBufferInstanceBuffers::createBarrier (vk::VkDescriptorType descriptorType, vk::VkBuffer buffer)
 {
-	const vk::VkMemoryInputFlags	inputBit	= (isUniformDescriptorType(descriptorType)) ? (vk::VK_MEMORY_INPUT_UNIFORM_READ_BIT) : (vk::VK_MEMORY_INPUT_SHADER_READ_BIT);
+	const vk::VkAccessFlags			inputBit	= (isUniformDescriptorType(descriptorType)) ? (vk::VK_ACCESS_UNIFORM_READ_BIT) : (vk::VK_ACCESS_SHADER_READ_BIT);
 	const vk::VkBufferMemoryBarrier	barrier		=
 	{
 		vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
 		DE_NULL,
-		vk::VK_MEMORY_OUTPUT_HOST_WRITE_BIT,	// outputMask
+		vk::VK_ACCESS_HOST_WRITE_BIT,			// outputMask
 		inputBit,								// inputMask
 		vk::VK_QUEUE_FAMILY_IGNORED,			// srcQueueFamilyIndex
 		vk::VK_QUEUE_FAMILY_IGNORED,			// destQueueFamilyIndex
@@ -5542,7 +5515,7 @@ private:
 
 	void											logTestPlan					(void) const;
 	vk::VkPipelineLayout							getPipelineLayout			(void) const;
-	void											writeDrawCmdBuffer			(vk::VkCmdBuffer cmd) const;
+	void											writeDrawCmdBuffer			(vk::VkCommandBuffer cmd) const;
 	tcu::TestStatus									verifyResultImage			(const tcu::ConstPixelBufferAccess& result) const;
 
 	enum
@@ -5619,6 +5592,7 @@ vk::Move<vk::VkPipelineLayout> TexelBufferRenderInstance::createPipelineLayout (
 	{
 		vk::VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
 		DE_NULL,
+		(vk::VkPipelineLayoutCreateFlags)0,
 		1,						// descriptorSetCount
 		&descriptorSetLayout,	// pSetLayouts
 		0u,						// pushConstantRangeCount
@@ -5634,7 +5608,7 @@ vk::Move<vk::VkDescriptorPool> TexelBufferRenderInstance::createDescriptorPool (
 {
 	return vk::DescriptorPoolBuilder()
 		.addType(descriptorType, getInterfaceNumResources(shaderInterface))
-		.build(vki, device, vk::VK_DESCRIPTOR_POOL_USAGE_DYNAMIC, 1);
+		.build(vki, device, vk::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1);
 }
 
 vk::Move<vk::VkDescriptorSet> TexelBufferRenderInstance::createDescriptorSet (const vk::DeviceInterface&	vki,
@@ -5646,14 +5620,22 @@ vk::Move<vk::VkDescriptorSet> TexelBufferRenderInstance::createDescriptorSet (co
 																			  vk::VkBufferView				viewA,
 																			  vk::VkBufferView				viewB)
 {
-	const vk::VkDescriptorInfo		texelBufferInfos[2]	=
+	const vk::VkBufferView					texelBufferInfos[2]	=
 	{
-		createDescriptorInfo(viewA),
-		createDescriptorInfo(viewB),
+		viewA,
+		viewB,
+	};
+	const vk::VkDescriptorSetAllocateInfo	allocInfo			=
+	{
+		vk::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+		DE_NULL,
+		pool,
+		1u,
+		&layout
 	};
 
-	vk::Move<vk::VkDescriptorSet>	descriptorSet		= allocDescriptorSet(vki, device, pool, vk::VK_DESCRIPTOR_SET_USAGE_ONE_SHOT, layout);
-	vk::DescriptorSetUpdateBuilder	builder;
+	vk::Move<vk::VkDescriptorSet>			descriptorSet		= allocateDescriptorSet(vki, device, &allocInfo);
+	vk::DescriptorSetUpdateBuilder			builder;
 
 	switch (shaderInterface)
 	{
@@ -5690,7 +5672,7 @@ void TexelBufferRenderInstance::logTestPlan (void) const
 			    (const char*)DE_NULL)
 		<< " descriptor(s) of type " << vk::getDescriptorTypeName(m_descriptorType) << "\n"
 		<< "Buffer view is created with a " << ((m_nonzeroViewOffset) ? ("non-zero") : ("zero")) << " offset.\n"
-		<< "Buffer format is " << vk::getFormatName(mapToVkTextureFormat(m_texelBuffers.getTextureFormat())) << ".\n";
+		<< "Buffer format is " << vk::getFormatName(vk::mapTextureFormat(m_texelBuffers.getTextureFormat())) << ".\n";
 
 	if (m_stageFlags == 0u)
 	{
@@ -5714,11 +5696,11 @@ void TexelBufferRenderInstance::logTestPlan (void) const
 		}
 
 		msg << "Descriptors are accessed in {"
-			<< (((m_stageFlags & vk::VK_SHADER_STAGE_VERTEX_BIT) != 0)			? (" vertex")			: (""))
-			<< (((m_stageFlags & vk::VK_SHADER_STAGE_TESS_CONTROL_BIT) != 0)	? (" tess_control")		: (""))
-			<< (((m_stageFlags & vk::VK_SHADER_STAGE_TESS_EVALUATION_BIT) != 0)	? (" tess_evaluation")	: (""))
-			<< (((m_stageFlags & vk::VK_SHADER_STAGE_GEOMETRY_BIT) != 0)		? (" geometry")			: (""))
-			<< (((m_stageFlags & vk::VK_SHADER_STAGE_FRAGMENT_BIT) != 0)		? (" fragment")			: (""))
+			<< (((m_stageFlags & vk::VK_SHADER_STAGE_VERTEX_BIT) != 0)					? (" vertex")			: (""))
+			<< (((m_stageFlags & vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT) != 0)	? (" tess_control")		: (""))
+			<< (((m_stageFlags & vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT) != 0)	? (" tess_evaluation")	: (""))
+			<< (((m_stageFlags & vk::VK_SHADER_STAGE_GEOMETRY_BIT) != 0)				? (" geometry")			: (""))
+			<< (((m_stageFlags & vk::VK_SHADER_STAGE_FRAGMENT_BIT) != 0)				? (" fragment")			: (""))
 			<< " } stages.";
 	}
 
@@ -5733,7 +5715,7 @@ vk::VkPipelineLayout TexelBufferRenderInstance::getPipelineLayout (void) const
 	return *m_pipelineLayout;
 }
 
-void TexelBufferRenderInstance::writeDrawCmdBuffer (vk::VkCmdBuffer cmd) const
+void TexelBufferRenderInstance::writeDrawCmdBuffer (vk::VkCommandBuffer cmd) const
 {
 	m_vki.cmdBindDescriptorSets(cmd, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, getPipelineLayout(), 0, 1, &m_descriptorSet.get(), 0, DE_NULL);
 	m_vki.cmdDraw(cmd, 6 * 4, 1, 0, 0); // render four quads (two separate triangles)
@@ -5840,20 +5822,28 @@ vk::Move<vk::VkDescriptorPool> TexelBufferComputeInstance::createDescriptorPool 
 	return vk::DescriptorPoolBuilder()
 		.addType(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
 		.addType(m_descriptorType, getInterfaceNumResources(m_shaderInterface))
-		.build(m_vki, m_device, vk::VK_DESCRIPTOR_POOL_USAGE_DYNAMIC, 1);
+		.build(m_vki, m_device, vk::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1);
 }
 
 vk::Move<vk::VkDescriptorSet> TexelBufferComputeInstance::createDescriptorSet (vk::VkDescriptorPool pool, vk::VkDescriptorSetLayout layout) const
 {
-	const vk::VkDescriptorInfo		resultInfo			= createDescriptorInfo(m_result.getBuffer(), 0u, (vk::VkDeviceSize)ComputeInstanceResultBuffer::DATA_SIZE);
-	const vk::VkDescriptorInfo		texelBufferInfos[2]	=
+	const vk::VkDescriptorBufferInfo		resultInfo			= vk::makeDescriptorBufferInfo(m_result.getBuffer(), 0u, (vk::VkDeviceSize)ComputeInstanceResultBuffer::DATA_SIZE);
+	const vk::VkBufferView					texelBufferInfos[2]	=
 	{
-		createDescriptorInfo(m_texelBuffers.getBufferViewA()),
-		createDescriptorInfo(m_texelBuffers.getBufferViewB()),
+		m_texelBuffers.getBufferViewA(),
+		m_texelBuffers.getBufferViewB(),
+	};
+	const vk::VkDescriptorSetAllocateInfo	allocInfo			=
+	{
+		vk::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+		DE_NULL,
+		pool,
+		1u,
+		&layout
 	};
 
-	vk::Move<vk::VkDescriptorSet>	descriptorSet		= allocDescriptorSet(m_vki, m_device, pool, vk::VK_DESCRIPTOR_SET_USAGE_ONE_SHOT, layout);
-	vk::DescriptorSetUpdateBuilder	builder;
+	vk::Move<vk::VkDescriptorSet>			descriptorSet		= allocateDescriptorSet(m_vki, m_device, &allocInfo);
+	vk::DescriptorSetUpdateBuilder			builder;
 
 	// result
 	builder.writeSingle(*descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(0u), vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &resultInfo);
@@ -5900,7 +5890,7 @@ void TexelBufferComputeInstance::logTestPlan (void) const
 			    (const char*)DE_NULL)
 		<< " descriptor(s) of type " << vk::getDescriptorTypeName(m_descriptorType) << "\n"
 		<< "Buffer view is created with a " << ((m_nonzeroViewOffset) ? ("non-zero") : ("zero")) << " offset.\n"
-		<< "Buffer format is " << vk::getFormatName(mapToVkTextureFormat(m_texelBuffers.getTextureFormat())) << ".\n";
+		<< "Buffer format is " << vk::getFormatName(vk::mapTextureFormat(m_texelBuffers.getTextureFormat())) << ".\n";
 
 	for (int resultNdx = 0; resultNdx < 4; ++resultNdx)
 	{
@@ -6011,9 +6001,9 @@ public:
 															 deUint32				flags);
 
 private:
-	std::string					genExtensionDeclarations	(vk::VkShaderStage stage) const;
-	std::string					genResourceDeclarations		(vk::VkShaderStage stage, int numUsedBindings) const;
-	std::string					genResourceAccessSource		(vk::VkShaderStage stage) const;
+	std::string					genExtensionDeclarations	(vk::VkShaderStageFlagBits stage) const;
+	std::string					genResourceDeclarations		(vk::VkShaderStageFlagBits stage, int numUsedBindings) const;
+	std::string					genResourceAccessSource		(vk::VkShaderStageFlagBits stage) const;
 	std::string					genNoAccessSource			(void) const;
 
 	vkt::TestInstance*			createInstance				(vkt::Context& context) const;
@@ -6041,13 +6031,13 @@ TexelBufferDescriptorCase::TexelBufferDescriptorCase (tcu::TestContext&			testCt
 {
 }
 
-std::string TexelBufferDescriptorCase::genExtensionDeclarations (vk::VkShaderStage stage) const
+std::string TexelBufferDescriptorCase::genExtensionDeclarations (vk::VkShaderStageFlagBits stage) const
 {
 	DE_UNREF(stage);
 	return "#extension GL_EXT_texture_buffer : require\n";
 }
 
-std::string TexelBufferDescriptorCase::genResourceDeclarations (vk::VkShaderStage stage, int numUsedBindings) const
+std::string TexelBufferDescriptorCase::genResourceDeclarations (vk::VkShaderStageFlagBits stage, int numUsedBindings) const
 {
 	DE_UNREF(stage);
 
@@ -6073,7 +6063,7 @@ std::string TexelBufferDescriptorCase::genResourceDeclarations (vk::VkShaderStag
 	}
 }
 
-std::string TexelBufferDescriptorCase::genResourceAccessSource (vk::VkShaderStage stage) const
+std::string TexelBufferDescriptorCase::genResourceAccessSource (vk::VkShaderStageFlagBits stage) const
 {
 	DE_UNREF(stage);
 
@@ -6325,15 +6315,15 @@ tcu::TestCaseGroup* createShaderAccessTests (tcu::TestContext& testCtx)
 		{
 			"tess_ctrl",
 			"Tessellation control stage",
-			vk::VK_SHADER_STAGE_VERTEX_BIT | vk::VK_SHADER_STAGE_TESS_CONTROL_BIT | vk::VK_SHADER_STAGE_TESS_EVALUATION_BIT | vk::VK_SHADER_STAGE_FRAGMENT_BIT,
-			vk::VK_SHADER_STAGE_TESS_CONTROL_BIT,
+			vk::VK_SHADER_STAGE_VERTEX_BIT | vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT | vk::VK_SHADER_STAGE_FRAGMENT_BIT,
+			vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,
 			true,
 		},
 		{
 			"tess_eval",
 			"Tessellation evaluation stage",
-			vk::VK_SHADER_STAGE_VERTEX_BIT | vk::VK_SHADER_STAGE_TESS_CONTROL_BIT | vk::VK_SHADER_STAGE_TESS_EVALUATION_BIT | vk::VK_SHADER_STAGE_FRAGMENT_BIT,
-			vk::VK_SHADER_STAGE_TESS_EVALUATION_BIT,
+			vk::VK_SHADER_STAGE_VERTEX_BIT | vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT | vk::VK_SHADER_STAGE_FRAGMENT_BIT,
+			vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,
 			true,
 		},
 		{

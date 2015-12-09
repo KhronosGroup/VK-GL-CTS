@@ -139,7 +139,7 @@ bool MemoryRequirement::matchesHeap (VkMemoryPropertyFlags heapFlags) const
 		return false;
 
 	// coherent
-	if ((m_flags & FLAG_COHERENT) && (heapFlags & VK_MEMORY_PROPERTY_HOST_NON_COHERENT_BIT))
+	if ((m_flags & FLAG_COHERENT) && !(heapFlags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
 		return false;
 
 	// lazy
@@ -185,11 +185,11 @@ SimpleAllocator::SimpleAllocator (const DeviceInterface& vk, VkDevice device, co
 {
 }
 
-MovePtr<Allocation> SimpleAllocator::allocate (const VkMemoryAllocInfo& allocInfo, VkDeviceSize alignment)
+MovePtr<Allocation> SimpleAllocator::allocate (const VkMemoryAllocateInfo& allocInfo, VkDeviceSize alignment)
 {
 	DE_UNREF(alignment);
 
-	Move<VkDeviceMemory>	mem		= allocMemory(m_vk, m_device, &allocInfo);
+	Move<VkDeviceMemory>	mem		= allocateMemory(m_vk, m_device, &allocInfo);
 	MovePtr<HostPtr>		hostPtr;
 
 	if (isHostVisibleMemory(m_memProps, allocInfo.memoryTypeIndex))
@@ -200,17 +200,17 @@ MovePtr<Allocation> SimpleAllocator::allocate (const VkMemoryAllocInfo& allocInf
 
 MovePtr<Allocation> SimpleAllocator::allocate (const VkMemoryRequirements& memReqs, MemoryRequirement requirement)
 {
-	const deUint32			memoryTypeNdx	= selectMatchingMemoryType(m_memProps, memReqs.memoryTypeBits, requirement);
-	const VkMemoryAllocInfo	allocInfo		=
+	const deUint32				memoryTypeNdx	= selectMatchingMemoryType(m_memProps, memReqs.memoryTypeBits, requirement);
+	const VkMemoryAllocateInfo	allocInfo		=
 	{
-		VK_STRUCTURE_TYPE_MEMORY_ALLOC_INFO,	//	VkStructureType			sType;
+		VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,	//	VkStructureType			sType;
 		DE_NULL,								//	const void*				pNext;
 		memReqs.size,							//	VkDeviceSize			allocationSize;
 		memoryTypeNdx,							//	deUint32				memoryTypeIndex;
 	};
 
-	Move<VkDeviceMemory>	mem				= allocMemory(m_vk, m_device, &allocInfo);
-	MovePtr<HostPtr>		hostPtr;
+	Move<VkDeviceMemory>		mem				= allocateMemory(m_vk, m_device, &allocInfo);
+	MovePtr<HostPtr>			hostPtr;
 
 	if (requirement & MemoryRequirement::HostVisible)
 	{

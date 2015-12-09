@@ -68,7 +68,7 @@ bool isSupportedDepthStencilFormat (const InstanceInterface& instanceInterface, 
 {
 	VkFormatProperties formatProps;
 
-	VK_CHECK(instanceInterface.getPhysicalDeviceFormatProperties(device, format, &formatProps));
+	instanceInterface.getPhysicalDeviceFormatProperties(device, format, &formatProps);
 
 	return (formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) != 0u;
 }
@@ -163,8 +163,6 @@ private:
 
 	Move<VkShaderModule>				m_vertexShaderModule;
 	Move<VkShaderModule>				m_fragmentShaderModule;
-	Move<VkShader>						m_vertexShader;
-	Move<VkShader>						m_fragmentShader;
 
 	Move<VkBuffer>						m_vertexBuffer;
 	std::vector<Vertex4RGBA>			m_vertices;
@@ -173,8 +171,8 @@ private:
 	Move<VkPipelineLayout>				m_pipelineLayout;
 	Move<VkPipeline>					m_graphicsPipelines[DepthTest::QUAD_COUNT];
 
-	Move<VkCmdPool>						m_cmdPool;
-	Move<VkCmdBuffer>					m_cmdBuffer;
+	Move<VkCommandPool>					m_cmdPool;
+	Move<VkCommandBuffer>				m_cmdBuffer;
 
 	Move<VkFence>						m_fence;
 };
@@ -238,11 +236,11 @@ DepthTestInstance::DepthTestInstance (Context&				context,
 	, m_colorFormat		(VK_FORMAT_R8G8B8A8_UNORM)
 	, m_depthFormat		(depthFormat)
 {
-	const DeviceInterface&		vk					= context.getDeviceInterface();
-	const VkDevice				vkDevice			= context.getDevice();
-	const deUint32				queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
-	SimpleAllocator				memAlloc			(vk, vkDevice, getPhysicalDeviceMemoryProperties(context.getInstanceInterface(), context.getPhysicalDevice()));
-	const VkChannelMapping		channelMappingRGBA	= { VK_CHANNEL_SWIZZLE_R, VK_CHANNEL_SWIZZLE_G, VK_CHANNEL_SWIZZLE_B, VK_CHANNEL_SWIZZLE_A };
+	const DeviceInterface&		vk						= context.getDeviceInterface();
+	const VkDevice				vkDevice				= context.getDevice();
+	const deUint32				queueFamilyIndex		= context.getUniversalQueueFamilyIndex();
+	SimpleAllocator				memAlloc				(vk, vkDevice, getPhysicalDeviceMemoryProperties(context.getInstanceInterface(), context.getPhysicalDevice()));
+	const VkComponentMapping	componentMappingRGBA	= { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
 
 	// Copy depth operators
 	deMemcpy(m_depthCompareOps, depthCompareOps, sizeof(VkCompareOp) * DepthTest::QUAD_COUNT);
@@ -251,21 +249,21 @@ DepthTestInstance::DepthTestInstance (Context&				context,
 	{
 		const VkImageCreateInfo colorImageParams =
 		{
-			VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,										// VkStructureType		sType;
-			DE_NULL,																	// const void*			pNext;
-			VK_IMAGE_TYPE_2D,															// VkImageType			imageType;
-			m_colorFormat,																// VkFormat				format;
-			{ m_renderSize.x(), m_renderSize.y(), 1u },									// VkExtent3D			extent;
-			1u,																			// deUint32				mipLevels;
-			1u,																			// deUint32				arraySize;
-			1u,																			// deUint32				samples;
-			VK_IMAGE_TILING_OPTIMAL,													// VkImageTiling		tiling;
-			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SOURCE_BIT,	// VkImageUsageFlags	usage;
-			0u,																			// VkImageCreateFlags	flags;
-			VK_SHARING_MODE_EXCLUSIVE,													// VkSharingMode		sharingMode;
-			1u,																			// deUint32				queueFamilyCount;
-			&queueFamilyIndex,															// const deUint32*		pQueueFamilyIndices;
-			VK_IMAGE_LAYOUT_UNDEFINED,													// VkImageLayout		initialLayout;
+			VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,										// VkStructureType			sType;
+			DE_NULL,																	// const void*				pNext;
+			0u,																			// VkImageCreateFlags		flags;
+			VK_IMAGE_TYPE_2D,															// VkImageType				imageType;
+			m_colorFormat,																// VkFormat					format;
+			{ m_renderSize.x(), m_renderSize.y(), 1u },									// VkExtent3D				extent;
+			1u,																			// deUint32					mipLevels;
+			1u,																			// deUint32					arrayLayers;
+			VK_SAMPLE_COUNT_1_BIT,														// VkSampleCountFlagBits	samples;
+			VK_IMAGE_TILING_OPTIMAL,													// VkImageTiling			tiling;
+			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,		// VkImageUsageFlags		usage;
+			VK_SHARING_MODE_EXCLUSIVE,													// VkSharingMode			sharingMode;
+			1u,																			// deUint32					queueFamilyIndexCount;
+			&queueFamilyIndex,															// const deUint32*			pQueueFamilyIndices;
+			VK_IMAGE_LAYOUT_UNDEFINED,													// VkImageLayout			initialLayout;
 		};
 
 		m_colorImage			= createImage(vk, vkDevice, &colorImageParams);
@@ -283,21 +281,21 @@ DepthTestInstance::DepthTestInstance (Context&				context,
 
 		const VkImageCreateInfo depthImageParams =
 		{
-			VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,			// VkStructureType		sType;
-			DE_NULL,										// const void*			pNext;
-			VK_IMAGE_TYPE_2D,								// VkImageType			imageType;
-			m_depthFormat,									// VkFormat				format;
-			{ m_renderSize.x(), m_renderSize.y(), 1u },		// VkExtent3D			extent;
-			1u,												// deUint32				mipLevels;
-			1u,												// deUint32				arraySize;
-			1u,												// deUint32				samples;
-			VK_IMAGE_TILING_OPTIMAL,						// VkImageTiling		tiling;
-			VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,	// VkImageUsageFlags	usage;
-			0u,												// VkImageCreateFlags	flags;
-			VK_SHARING_MODE_EXCLUSIVE,						// VkSharingMode		sharingMode;
-			1u,												// deUint32				queueFamilyCount;
-			&queueFamilyIndex,								// const deUint32*		pQueueFamilyIndices;
-			VK_IMAGE_LAYOUT_UNDEFINED,						// VkImageLayout		initialLayout;
+			VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,			// VkStructureType			sType;
+			DE_NULL,										// const void*				pNext;
+			0u,												// VkImageCreateFlags		flags;
+			VK_IMAGE_TYPE_2D,								// VkImageType				imageType;
+			m_depthFormat,									// VkFormat					format;
+			{ m_renderSize.x(), m_renderSize.y(), 1u },		// VkExtent3D				extent;
+			1u,												// deUint32					mipLevels;
+			1u,												// deUint32					arrayLayers;
+			VK_SAMPLE_COUNT_1_BIT,							// VkSampleCountFlagBits	samples;
+			VK_IMAGE_TILING_OPTIMAL,						// VkImageTiling			tiling;
+			VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,	// VkImageUsageFlags		usage;
+			VK_SHARING_MODE_EXCLUSIVE,						// VkSharingMode			sharingMode;
+			1u,												// deUint32					queueFamilyIndexCount;
+			&queueFamilyIndex,								// const deUint32*			pQueueFamilyIndices;
+			VK_IMAGE_LAYOUT_UNDEFINED,						// VkImageLayout			initialLayout;
 		};
 
 		m_depthImage = createImage(vk, vkDevice, &depthImageParams);
@@ -313,12 +311,12 @@ DepthTestInstance::DepthTestInstance (Context&				context,
 		{
 			VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,		// VkStructureType			sType;
 			DE_NULL,										// const void*				pNext;
+			0u,												// VkImageViewCreateFlags	flags;
 			*m_colorImage,									// VkImage					image;
 			VK_IMAGE_VIEW_TYPE_2D,							// VkImageViewType			viewType;
 			m_colorFormat,									// VkFormat					format;
-			channelMappingRGBA,							 	// VkChannelMapping			channels;
-			{ VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u },  // VkImageSubresourceRange	subresourceRange;
-			0u												// VkImageViewCreateFlags	flags;
+			componentMappingRGBA,							// VkComponentMapping		components;
+			{ VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u }	// VkImageSubresourceRange	subresourceRange;
 		};
 
 		m_colorAttachmentView = createImageView(vk, vkDevice, &colorAttachmentViewParams);
@@ -330,12 +328,12 @@ DepthTestInstance::DepthTestInstance (Context&				context,
 		{
 			VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,		// VkStructureType			sType;
 			DE_NULL,										// const void*				pNext;
+			0u,												// VkImageViewCreateFlags	flags;
 			*m_depthImage,									// VkImage					image;
 			VK_IMAGE_VIEW_TYPE_2D,							// VkImageViewType			viewType;
 			m_depthFormat,									// VkFormat					format;
-			channelMappingRGBA,							 	// VkChannelMapping			channels;
-			{ VK_IMAGE_ASPECT_DEPTH_BIT, 0u, 1u, 0u, 1u },  // VkImageSubresourceRange	subresourceRange;
-			0u												// VkImageViewCreateFlags	flags;
+			componentMappingRGBA,							// VkComponentMapping		components;
+			{ VK_IMAGE_ASPECT_DEPTH_BIT, 0u, 1u, 0u, 1u }	// VkImageSubresourceRange	subresourceRange;
 		};
 
 		m_depthAttachmentView = createImageView(vk, vkDevice, &depthAttachmentViewParams);
@@ -345,32 +343,28 @@ DepthTestInstance::DepthTestInstance (Context&				context,
 	{
 		const VkAttachmentDescription colorAttachmentDescription =
 		{
-			VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION,			// VkStructureType				sType;
-			DE_NULL,											// const void*					pNext;
-			m_colorFormat,										// VkFormat						format;
-			1u,													// deUint32						samples;
-			VK_ATTACHMENT_LOAD_OP_CLEAR,						// VkAttachmentLoadOp			loadOp;
-			VK_ATTACHMENT_STORE_OP_STORE,						// VkAttachmentStoreOp			storeOp;
-			VK_ATTACHMENT_LOAD_OP_DONT_CARE,					// VkAttachmentLoadOp			stencilLoadOp;
-			VK_ATTACHMENT_STORE_OP_DONT_CARE,					// VkAttachmentStoreOp			stencilStoreOp;
-			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,			// VkImageLayout				initialLayout;
-			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,			// VkImageLayout				finalLayout;
-			0u,													// VkAttachmentDescriptionFlags	flags;
+			0u,													// VkAttachmentDescriptionFlags		flags;
+			m_colorFormat,										// VkFormat							format;
+			VK_SAMPLE_COUNT_1_BIT,								// VkSampleCountFlagBits			samples;
+			VK_ATTACHMENT_LOAD_OP_CLEAR,						// VkAttachmentLoadOp				loadOp;
+			VK_ATTACHMENT_STORE_OP_STORE,						// VkAttachmentStoreOp				storeOp;
+			VK_ATTACHMENT_LOAD_OP_DONT_CARE,					// VkAttachmentLoadOp				stencilLoadOp;
+			VK_ATTACHMENT_STORE_OP_DONT_CARE,					// VkAttachmentStoreOp				stencilStoreOp;
+			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,			// VkImageLayout					initialLayout;
+			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL			// VkImageLayout					finalLayout;
 		};
 
 		const VkAttachmentDescription depthAttachmentDescription =
 		{
-			VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION,			// VkStructureType				sType;
-			DE_NULL,											// const void*					pNext;
-			m_depthFormat,										// VkFormat						format;
-			1u,													// deUint32						samples;
-			VK_ATTACHMENT_LOAD_OP_CLEAR,						// VkAttachmentLoadOp			loadOp;
-			VK_ATTACHMENT_STORE_OP_DONT_CARE,					// VkAttachmentStoreOp			storeOp;
-			VK_ATTACHMENT_LOAD_OP_DONT_CARE,					// VkAttachmentLoadOp			stencilLoadOp;
-			VK_ATTACHMENT_STORE_OP_DONT_CARE,					// VkAttachmentStoreOp			stencilStoreOp;
-			VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,	// VkImageLayout				initialLayout;
-			VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,	// VkImageLayout				finalLayout;
-			0u,													// VkAttachmentDescriptionFlags	flags;
+			0u,													// VkAttachmentDescriptionFlags		flags;
+			m_depthFormat,										// VkFormat							format;
+			VK_SAMPLE_COUNT_1_BIT,								// VkSampleCountFlagBits			samples;
+			VK_ATTACHMENT_LOAD_OP_CLEAR,						// VkAttachmentLoadOp				loadOp;
+			VK_ATTACHMENT_STORE_OP_DONT_CARE,					// VkAttachmentStoreOp				storeOp;
+			VK_ATTACHMENT_LOAD_OP_DONT_CARE,					// VkAttachmentLoadOp				stencilLoadOp;
+			VK_ATTACHMENT_STORE_OP_DONT_CARE,					// VkAttachmentStoreOp				stencilStoreOp;
+			VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,	// VkImageLayout					initialLayout;
+			VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,	// VkImageLayout					finalLayout;
 		};
 
 		const VkAttachmentDescription attachments[2] =
@@ -393,17 +387,15 @@ DepthTestInstance::DepthTestInstance (Context&				context,
 
 		const VkSubpassDescription subpassDescription =
 		{
-			VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION,				// VkStructureType					sType;
-			DE_NULL,											// const void*						pNext;
-			VK_PIPELINE_BIND_POINT_GRAPHICS,					// VkPipelineBindPoint				pipelineBindPoint;
 			0u,													// VkSubpassDescriptionFlags		flags;
-			0u,													// deUint32							inputCount;
+			VK_PIPELINE_BIND_POINT_GRAPHICS,					// VkPipelineBindPoint				pipelineBindPoint;
+			0u,													// deUint32							inputAttachmentCount;
 			DE_NULL,											// const VkAttachmentReference*		pInputAttachments;
-			1u,													// deUint32							colorCount;
+			1u,													// deUint32							colorAttachmentCount;
 			&colorAttachmentReference,							// const VkAttachmentReference*		pColorAttachments;
 			DE_NULL,											// const VkAttachmentReference*		pResolveAttachments;
-			depthAttachmentReference,							// VkAttachmentReference			depthStencilAttachment;
-			0u,													// deUint32							preserveCount;
+			&depthAttachmentReference,							// const VkAttachmentReference*		pDepthStencilAttachment;
+			0u,													// deUint32							preserveAttachmentCount;
 			DE_NULL												// const VkAttachmentReference*		pPreserveAttachments;
 		};
 
@@ -411,6 +403,7 @@ DepthTestInstance::DepthTestInstance (Context&				context,
 		{
 			VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,			// VkStructureType					sType;
 			DE_NULL,											// const void*						pNext;
+			0u,													// VkRenderPassCreateFlags			flags;
 			2u,													// deUint32							attachmentCount;
 			attachments,										// const VkAttachmentDescription*	pAttachments;
 			1u,													// deUint32							subpassCount;
@@ -434,6 +427,7 @@ DepthTestInstance::DepthTestInstance (Context&				context,
 		{
 			VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,			// VkStructureType				sType;
 			DE_NULL,											// const void*					pNext;
+			0u,													// VkFramebufferCreateFlags		flags;
 			*m_renderPass,										// VkRenderPass					renderPass;
 			2u,													// deUint32						attachmentCount;
 			attachmentBindInfos,								// const VkImageView*			pAttachments;
@@ -449,63 +443,43 @@ DepthTestInstance::DepthTestInstance (Context&				context,
 	{
 		const VkPipelineLayoutCreateInfo pipelineLayoutParams =
 		{
-			VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,		// VkStructureType				sType;
-			DE_NULL,											// const void*					pNext;
-			0u,													// deUint32						descriptorSetCount;
-			DE_NULL,											// const VkDescriptorSetLayout*	pSetLayouts;
-			0u,													// deUint32						pushConstantRangeCount;
-			DE_NULL												// const VkPushConstantRange*	pPushConstantRanges;
+			VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,		// VkStructureType					sType;
+			DE_NULL,											// const void*						pNext;
+			0u,													// VkPipelineLayoutCreateFlags		flags;
+			0u,													// deUint32							setLayoutCount;
+			DE_NULL,											// const VkDescriptorSetLayout*		pSetLayouts;
+			0u,													// deUint32							pushConstantRangeCount;
+			DE_NULL												// const VkPushConstantRange*		pPushConstantRanges;
 		};
 
 		m_pipelineLayout = createPipelineLayout(vk, vkDevice, &pipelineLayoutParams);
 	}
 
-	// Create shaders
-	{
-		m_vertexShaderModule	= createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("color_vert"), 0);
-		m_fragmentShaderModule	= createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("color_frag"), 0);
-
-		const VkShaderCreateInfo vertexShaderParams =
-		{
-			VK_STRUCTURE_TYPE_SHADER_CREATE_INFO,			// VkStructureType		sType;
-			DE_NULL,										// const void*			pNext;
-			*m_vertexShaderModule,							// VkShaderModule		module;
-			"main",											// const char*			pName;
-			0u,												// VkShaderCreateFlags	flags;
-			VK_SHADER_STAGE_VERTEX,							// VkShaderStage		stage;
-		};
-
-		const VkShaderCreateInfo fragmentShaderParams =
-		{
-			VK_STRUCTURE_TYPE_SHADER_CREATE_INFO,			// VkStructureType		sType;
-			DE_NULL,										// const void*			pNext;
-			*m_fragmentShaderModule,						// VkShaderModule		module;
-			"main",											// const char*			pName;
-			0u,												// VkShaderCreateFlags	flags;
-			VK_SHADER_STAGE_FRAGMENT,						// VkShaderStage		stage;
-		};
-
-		m_vertexShader		= createShader(vk, vkDevice, &vertexShaderParams);
-		m_fragmentShader	= createShader(vk, vkDevice, &fragmentShaderParams);
-	}
+	// Shader modules
+	m_vertexShaderModule	= createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("color_vert"), 0);
+	m_fragmentShaderModule	= createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("color_frag"), 0);
 
 	// Create pipeline
 	{
-		const VkPipelineShaderStageCreateInfo shaderStageParams[2] =
+		const VkPipelineShaderStageCreateInfo shaderStages[2] =
 		{
 			{
-				VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,		// VkStructureType				sType;
-				DE_NULL,													// const void*					pNext;
-				VK_SHADER_STAGE_VERTEX,										// VkShaderStage				stage;
-				*m_vertexShader,											// VkShader						shader;
-				DE_NULL														// const VkSpecializationInfo*	pSpecializationInfo;
+				VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType						sType;
+				DE_NULL,												// const void*							pNext;
+				0u,														// VkPipelineShaderStageCreateFlags		flags;
+				VK_SHADER_STAGE_VERTEX_BIT,								// VkShaderStageFlagBits				stage;
+				*m_vertexShaderModule,									// VkShaderModule						module;
+				"main",													// const char*							pName;
+				DE_NULL													// const VkSpecializationInfo*			pSpecializationInfo;
 			},
 			{
-				VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,		// VkStructureType				sType;
-				DE_NULL,													// const void*					pNext;
-				VK_SHADER_STAGE_FRAGMENT,									// VkShaderStage				stage;
-				*m_fragmentShader,											// VkShader						shader;
-				DE_NULL														// const VkSpecializationInfo*	pSpecializationInfo;
+				VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType						sType;
+				DE_NULL,												// const void*							pNext;
+				0u,														// VkPipelineShaderStageCreateFlags		flags;
+				VK_SHADER_STAGE_FRAGMENT_BIT,							// VkShaderStageFlagBits				stage;
+				*m_fragmentShaderModule,								// VkShaderModule						module;
+				"main",													// const char*							pName;
+				DE_NULL													// const VkSpecializationInfo*			pSpecializationInfo;
 			}
 		};
 
@@ -513,7 +487,7 @@ DepthTestInstance::DepthTestInstance (Context&				context,
 		{
 			0u,									// deUint32					binding;
 			sizeof(Vertex4RGBA),				// deUint32					strideInBytes;
-			VK_VERTEX_INPUT_STEP_RATE_VERTEX	// VkVertexInputStepRate	stepRate;
+			VK_VERTEX_INPUT_RATE_VERTEX			// VkVertexInputStepRate	inputRate;
 		};
 
 		const VkVertexInputAttributeDescription vertexInputAttributeDescriptions[2] =
@@ -522,13 +496,13 @@ DepthTestInstance::DepthTestInstance (Context&				context,
 				0u,									// deUint32	location;
 				0u,									// deUint32	binding;
 				VK_FORMAT_R32G32B32A32_SFLOAT,		// VkFormat	format;
-				0u									// deUint32	offsetInBytes;
+				0u									// deUint32	offset;
 			},
 			{
 				1u,									// deUint32	location;
 				0u,									// deUint32	binding;
 				VK_FORMAT_R32G32B32A32_SFLOAT,		// VkFormat	format;
-				DE_OFFSET_OF(Vertex4RGBA, color),	// deUint32	offsetInBytes;
+				DE_OFFSET_OF(Vertex4RGBA, color),	// deUint32	offset;
 			}
 		};
 
@@ -536,24 +510,26 @@ DepthTestInstance::DepthTestInstance (Context&				context,
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,		// VkStructureType							sType;
 			DE_NULL,														// const void*								pNext;
-			1u,																// deUint32									bindingCount;
+			0u,																// VkPipelineVertexInputStateCreateFlags	flags;
+			1u,																// deUint32									vertexBindingDescriptionCount;
 			&vertexInputBindingDescription,									// const VkVertexInputBindingDescription*	pVertexBindingDescriptions;
-			2u,																// deUint32									attributeCount;
+			2u,																// deUint32									vertexAttributeDescriptionCount;
 			vertexInputAttributeDescriptions								// const VkVertexInputAttributeDescription*	pVertexAttributeDescriptions;
 		};
 
 		const VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateParams =
 		{
-			VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,	// VkStructureType		sType;
-			DE_NULL,														// const void*			pNext;
-			VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,							// VkPrimitiveTopology	topology;
-			false															// VkBool32				primitiveRestartEnable;
+			VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,	// VkStructureType							sType;
+			DE_NULL,														// const void*								pNext;
+			0u,																// VkPipelineInputAssemblyStateCreateFlags	flags;
+			VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,							// VkPrimitiveTopology						topology;
+			false															// VkBool32									primitiveRestartEnable;
 		};
 
 		const VkViewport viewport =
 		{
-			0.0f,						// float	originX;
-			0.0f,						// float	originY;
+			0.0f,						// float	x;
+			0.0f,						// float	y;
 			(float)m_renderSize.x(),	// float	width;
 			(float)m_renderSize.y(),	// float	height;
 			0.0f,						// float	minDepth;
@@ -566,101 +542,108 @@ DepthTestInstance::DepthTestInstance (Context&				context,
 		};
 		const VkPipelineViewportStateCreateInfo viewportStateParams =
 		{
-			VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,			// VkStructureType		sType;
-			DE_NULL,														// const void*			pNext;
-			1u,																// deUint32				viewportCount;
-			&viewport,														// const VkViewport*	pViewports;
-			1u,																// deUint32				scissorCount;
-			&scissor														// const VkRect2D*		pScissors;
+			VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,			// VkStructureType						sType;
+			DE_NULL,														// const void*							pNext;
+			0u,																// VkPipelineViewportStateCreateFlags	flags;
+			1u,																// deUint32								viewportCount;
+			&viewport,														// const VkViewport*					pViewports;
+			1u,																// deUint32								scissorCount;
+			&scissor														// const VkRect2D*						pScissors;
 		};
 
-		const VkPipelineRasterStateCreateInfo rasterStateParams =
+		const VkPipelineRasterizationStateCreateInfo rasterStateParams =
 		{
-			VK_STRUCTURE_TYPE_PIPELINE_RASTER_STATE_CREATE_INFO,			// VkStructureType	sType;
-			DE_NULL,														// const void*		pNext;
-			false,															// VkBool32			depthClipEnable;
-			false,															// VkBool32			rasterizerDiscardEnable;
-			VK_FILL_MODE_SOLID,												// VkFillMode		fillMode;
-			VK_CULL_MODE_NONE,												// VkCullMode		cullMode;
-			VK_FRONT_FACE_CCW,												// VkFrontFace		frontFace;
-			VK_FALSE,														// VkBool32			depthBiasEnable;
-			0.0f,															// float			depthBias;
-			0.0f,															// float			depthBiasClamp;
-			0.0f,															// float			slopeScaledDepthBias;
-			1.0f,															// float			lineWidth;
+			VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,		// VkStructureType							sType;
+			DE_NULL,														// const void*								pNext;
+			0u,																// VkPipelineRasterizationStateCreateFlags	flags;
+			false,															// VkBool32									depthClampEnable;
+			false,															// VkBool32									rasterizerDiscardEnable;
+			VK_POLYGON_MODE_FILL,											// VkPolygonMode							polygonMode;
+			VK_CULL_MODE_NONE,												// VkCullModeFlags							cullMode;
+			VK_FRONT_FACE_COUNTER_CLOCKWISE,								// VkFrontFace								frontFace;
+			VK_FALSE,														// VkBool32									depthBiasEnable;
+			0.0f,															// float									depthBiasConstantFactor;
+			0.0f,															// float									depthBiasClamp;
+			0.0f,															// float									depthBiasSlopeFactor;
+			1.0f,															// float									lineWidth;
 		};
 
 		const VkPipelineColorBlendAttachmentState colorBlendAttachmentState =
 		{
-			false,																		// VkBool32			blendEnable;
-			VK_BLEND_ONE,																// VkBlend			srcBlendColor;
-			VK_BLEND_ZERO,																// VkBlend			destBlendColor;
-			VK_BLEND_OP_ADD,															// VkBlendOp		blendOpColor;
-			VK_BLEND_ONE,																// VkBlend			srcBlendAlpha;
-			VK_BLEND_ZERO,																// VkBlend			destBlendAlpha;
-			VK_BLEND_OP_ADD,															// VkBlendOp		blendOpAlpha;
-			VK_CHANNEL_R_BIT | VK_CHANNEL_G_BIT | VK_CHANNEL_B_BIT | VK_CHANNEL_A_BIT	// VkChannelFlags	channelWriteMask;
+			false,																		// VkBool32					blendEnable;
+			VK_BLEND_FACTOR_ONE,														// VkBlendFactor			srcColorBlendFactor;
+			VK_BLEND_FACTOR_ZERO,														// VkBlendFactor			dstColorBlendFactor;
+			VK_BLEND_OP_ADD,															// VkBlendOp				colorBlendOp;
+			VK_BLEND_FACTOR_ONE,														// VkBlendFactor			srcAlphaBlendFactor;
+			VK_BLEND_FACTOR_ZERO,														// VkBlendFactor			dstAlphaBlendFactor;
+			VK_BLEND_OP_ADD,															// VkBlendOp				alphaBlendOp;
+			VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |						// VkColorComponentFlags	colorWriteMask;
+				VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT
 		};
 
 		const VkPipelineColorBlendStateCreateInfo colorBlendStateParams =
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,	// VkStructureType								sType;
 			DE_NULL,													// const void*									pNext;
-			false,														// VkBool32										alphaToCoverageEnable;
-			false,														// VkBool32										alphaToOneEnable;
+			0,															// VkPipelineColorBlendStateCreateFlags			flags;
 			false,														// VkBool32										logicOpEnable;
 			VK_LOGIC_OP_COPY,											// VkLogicOp									logicOp;
 			1u,															// deUint32										attachmentCount;
 			&colorBlendAttachmentState,									// const VkPipelineColorBlendAttachmentState*	pAttachments;
-			{ 0.0f, 0.0f, 0.0f, 0.0f },									// float										blendConst[4];
+			{ 0.0f, 0.0f, 0.0f, 0.0f },									// float										blendConstants[4];
 		};
 
 		const VkPipelineMultisampleStateCreateInfo	multisampleStateParams	=
 		{
-			VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,	// VkStructureType		sType;
-			DE_NULL,													// const void*			pNext;
-			1u,															// deUint32				rasterSamples;
-			false,														// VkBool32				sampleShadingEnable;
-			0.0f,														// float				minSampleShading;
-			DE_NULL														// const VkSampleMask*	pSampleMask;
+			VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,	// VkStructureType							sType;
+			DE_NULL,													// const void*								pNext;
+			0u,															// VkPipelineMultisampleStateCreateFlags	flags;
+			VK_SAMPLE_COUNT_1_BIT,										// VkSampleCountFlagBits					rasterizationSamples;
+			false,														// VkBool32									sampleShadingEnable;
+			0.0f,														// float									minSampleShading;
+			DE_NULL,													// const VkSampleMask*						pSampleMask;
+			false,														// VkBool32									alphaToCoverageEnable;
+			false														// VkBool32									alphaToOneEnable;
 		};
 
-		const VkPipelineDynamicStateCreateInfo	dynamicStateParams		=
+		const VkPipelineDynamicStateCreateInfo dynamicStateParams		=
 		{
-			VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,		// VkStructureType			sType;
-			DE_NULL,													// const void*				pNext;
-			0u,															// deUint32					dynamicStateCount;
-			DE_NULL														// const VkDynamicState*	pDynamicStates;
+			VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,		// VkStructureType						sType;
+			DE_NULL,													// const void*							pNext;
+			0u,															// VkPipelineDynamicStateCreateFlags	flags;
+			0u,															// deUint32								dynamicStateCount;
+			DE_NULL														// const VkDynamicState*				pDynamicStates;
 		};
 
 		VkPipelineDepthStencilStateCreateInfo depthStencilStateParams =
 		{
-			VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,	// VkStructureType	sType;
-			DE_NULL,													// const void*		pNext;
-			true,														// VkBool32			depthTestEnable;
-			true,														// VkBool32			depthWriteEnable;
-			VK_COMPARE_OP_LESS,											// VkCompareOp		depthCompareOp;
-			false,														// VkBool32			depthBoundsTestEnable;
-			false,														// VkBool32			stencilTestEnable;
+			VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,	// VkStructureType							sType;
+			DE_NULL,													// const void*								pNext;
+			0u,															// VkPipelineDepthStencilStateCreateFlags	flags;
+			true,														// VkBool32									depthTestEnable;
+			true,														// VkBool32									depthWriteEnable;
+			VK_COMPARE_OP_LESS,											// VkCompareOp								depthCompareOp;
+			false,														// VkBool32									depthBoundsTestEnable;
+			false,														// VkBool32									stencilTestEnable;
 			// VkStencilOpState	front;
 			{
-				VK_STENCIL_OP_KEEP,		// VkStencilOp	stencilFailOp;
-				VK_STENCIL_OP_KEEP,		// VkStencilOp	stencilPassOp;
-				VK_STENCIL_OP_KEEP,		// VkStencilOp	stencilDepthFailOp;
-				VK_COMPARE_OP_NEVER,	// VkCompareOp	stencilCompareOp;
-				0u,						// deUint32		stencilCompareMask;
-				0u,						// deUint32		stencilWriteMask;
-				0u,						// deUint32		stencilReference;
+				VK_STENCIL_OP_KEEP,		// VkStencilOp	failOp;
+				VK_STENCIL_OP_KEEP,		// VkStencilOp	passOp;
+				VK_STENCIL_OP_KEEP,		// VkStencilOp	depthFailOp;
+				VK_COMPARE_OP_NEVER,	// VkCompareOp	compareOp;
+				0u,						// deUint32		compareMask;
+				0u,						// deUint32		writeMask;
+				0u,						// deUint32		reference;
 			},
 			// VkStencilOpState	back;
 			{
-				VK_STENCIL_OP_KEEP,		// VkStencilOp	stencilFailOp;
-				VK_STENCIL_OP_KEEP,		// VkStencilOp	stencilPassOp;
-				VK_STENCIL_OP_KEEP,		// VkStencilOp	stencilDepthFailOp;
-				VK_COMPARE_OP_NEVER,	// VkCompareOp	stencilCompareOp;
-				0u,						// deUint32		stencilCompareMask;
-				0u,						// deUint32		stencilWriteMask;
-				0u,						// deUint32		stencilReference;
+				VK_STENCIL_OP_KEEP,		// VkStencilOp	failOp;
+				VK_STENCIL_OP_KEEP,		// VkStencilOp	passOp;
+				VK_STENCIL_OP_KEEP,		// VkStencilOp	depthFailOp;
+				VK_COMPARE_OP_NEVER,	// VkCompareOp	compareOp;
+				0u,						// deUint32		compareMask;
+				0u,						// deUint32		writeMask;
+				0u,						// deUint32		reference;
 			},
 			-1.0f,														// float			minDepthBounds;
 			+1.0f,														// float			maxDepthBounds;
@@ -670,23 +653,23 @@ DepthTestInstance::DepthTestInstance (Context&				context,
 		{
 			VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,	// VkStructureType									sType;
 			DE_NULL,											// const void*										pNext;
+			0u,													// VkPipelineCreateFlags							flags;
 			2u,													// deUint32											stageCount;
-			shaderStageParams,									// const VkPipelineShaderStageCreateInfo*			pStages;
+			shaderStages,										// const VkPipelineShaderStageCreateInfo*			pStages;
 			&vertexInputStateParams,							// const VkPipelineVertexInputStateCreateInfo*		pVertexInputState;
 			&inputAssemblyStateParams,							// const VkPipelineInputAssemblyStateCreateInfo*	pInputAssemblyState;
 			DE_NULL,											// const VkPipelineTessellationStateCreateInfo*		pTessellationState;
 			&viewportStateParams,								// const VkPipelineViewportStateCreateInfo*			pViewportState;
-			&rasterStateParams,									// const VkPipelineRasterStateCreateInfo*			pRasterState;
+			&rasterStateParams,									// const VkPipelineRasterizationStateCreateInfo*	pRasterizationState;
 			&multisampleStateParams,							// const VkPipelineMultisampleStateCreateInfo*		pMultisampleState;
 			&depthStencilStateParams,							// const VkPipelineDepthStencilStateCreateInfo*		pDepthStencilState;
 			&colorBlendStateParams,								// const VkPipelineColorBlendStateCreateInfo*		pColorBlendState;
 			&dynamicStateParams,								// const VkPipelineDynamicStateCreateInfo*			pDynamicState;
-			0u,													// VkPipelineCreateFlags							flags;
 			*m_pipelineLayout,									// VkPipelineLayout									layout;
 			*m_renderPass,										// VkRenderPass										renderPass;
 			0u,													// deUint32											subpass;
 			0u,													// VkPipeline										basePipelineHandle;
-			0u													// deInt32											basePipelineIndex;
+			0u,													// deInt32											basePipelineIndex;
 		};
 
 		for (int quadNdx = 0; quadNdx < DepthTest::QUAD_COUNT; quadNdx++)
@@ -702,11 +685,11 @@ DepthTestInstance::DepthTestInstance (Context&				context,
 		{
 			VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,		// VkStructureType		sType;
 			DE_NULL,									// const void*			pNext;
+			0u,											// VkBufferCreateFlags	flags;
 			1024u,										// VkDeviceSize			size;
 			VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,			// VkBufferUsageFlags	usage;
-			0u,											// VkBufferCreateFlags	flags;
 			VK_SHARING_MODE_EXCLUSIVE,					// VkSharingMode		sharingMode;
-			1u,											// deUint32				queueFamilyCount;
+			1u,											// deUint32				queueFamilyIndexCount;
 			&queueFamilyIndex							// const deUint32*		pQueueFamilyIndices;
 		};
 
@@ -728,12 +711,12 @@ DepthTestInstance::DepthTestInstance (Context&				context,
 
 	// Create command pool
 	{
-		const VkCmdPoolCreateInfo cmdPoolParams =
+		const VkCommandPoolCreateInfo cmdPoolParams =
 		{
-			VK_STRUCTURE_TYPE_CMD_POOL_CREATE_INFO,		// VkStructureType		sType;
+			VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,	// VkStructureType		sType;
 			DE_NULL,									// const void*			pNext;
-			queueFamilyIndex,							// deUint32				queueFamilyIndex;
-			VK_CMD_POOL_CREATE_TRANSIENT_BIT			// VkCmdPoolCreateFlags	flags;
+			VK_COMMAND_POOL_CREATE_TRANSIENT_BIT,		// VkCmdPoolCreateFlags	flags;
+			queueFamilyIndex							// deUint32				queueFamilyIndex;
 		};
 
 		m_cmdPool = createCommandPool(vk, vkDevice, &cmdPoolParams);
@@ -741,23 +724,26 @@ DepthTestInstance::DepthTestInstance (Context&				context,
 
 	// Create command buffer
 	{
-		const VkCmdBufferCreateInfo cmdBufferParams =
+		const VkCommandBufferAllocateInfo cmdBufferAllocateInfo =
 		{
-			VK_STRUCTURE_TYPE_CMD_BUFFER_CREATE_INFO,	// VkStructureType			sType;
-			DE_NULL,									// const void*				pNext;
-			*m_cmdPool,									// VkCmdPool				cmdPool;
-			VK_CMD_BUFFER_LEVEL_PRIMARY,				// VkCmdBufferLevel			level;
-			0u											// VkCmdBufferCreateFlags	flags;
+			VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,	// VkStructureType			sType;
+			DE_NULL,										// const void*				pNext;
+			*m_cmdPool,										// VkCommandPool			commandPool;
+			VK_COMMAND_BUFFER_LEVEL_PRIMARY,				// VkCommandBufferLevel		level;
+			1u												// deUint32					bufferCount;
 		};
 
-		const VkCmdBufferBeginInfo cmdBufferBeginInfo =
+		const VkCommandBufferBeginInfo cmdBufferBeginInfo =
 		{
-			VK_STRUCTURE_TYPE_CMD_BUFFER_BEGIN_INFO,	// VkStructureType			sType;
-			DE_NULL,									// const void*				pNext;
-			0u,											// VkCmdBufferOptimizeFlags	flags;
-			DE_NULL,									// VkRenderPass				renderPass;
-			0u,											// deUint32					subpass;
-			DE_NULL										// VkFramebuffer			framebuffer;
+			VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType					sType;
+			DE_NULL,										// const void*						pNext;
+			0u,												// VkCommandBufferUsageFlags		flags;
+			DE_NULL,										// VkRenderPass						renderPass;
+			0u,												// deUint32							subpass;
+			DE_NULL,										// VkFramebuffer					framebuffer;
+			false,											// VkBool32							occlusionQueryEnable;
+			0u,												// VkQueryControlFlags				queryFlags;
+			0u												// VkQueryPipelineStatisticFlags	pipelineStatistics;
 		};
 
 		const VkClearValue attachmentClearValues[2] =
@@ -777,10 +763,10 @@ DepthTestInstance::DepthTestInstance (Context&				context,
 			attachmentClearValues									// const VkClearValue*	pClearValues;
 		};
 
-		m_cmdBuffer = createCommandBuffer(vk, vkDevice, &cmdBufferParams);
+		m_cmdBuffer = allocateCommandBuffer(vk, vkDevice, &cmdBufferAllocateInfo);
 
 		VK_CHECK(vk.beginCommandBuffer(*m_cmdBuffer, &cmdBufferBeginInfo));
-		vk.cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfo, VK_RENDER_PASS_CONTENTS_INLINE);
+		vk.cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
 		const VkDeviceSize		quadOffset		= (m_vertices.size() / DepthTest::QUAD_COUNT) * sizeof(Vertex4RGBA);
 
@@ -819,9 +805,20 @@ tcu::TestStatus DepthTestInstance::iterate (void)
 	const DeviceInterface&		vk			= m_context.getDeviceInterface();
 	const VkDevice				vkDevice	= m_context.getDevice();
 	const VkQueue				queue		= m_context.getUniversalQueue();
+	const VkSubmitInfo			submitInfo	=
+	{
+		VK_STRUCTURE_TYPE_SUBMIT_INFO,	// VkStructureType			sType;
+		DE_NULL,						// const void*				pNext;
+		0u,								// deUint32					waitSemaphoreCount;
+		DE_NULL,						// const VkSemaphore*		pWaitSemaphores;
+		1u,								// deUint32					commandBufferCount;
+		&m_cmdBuffer.get(),				// const VkCommandBuffer*	pCommandBuffers;
+		0u,								// deUint32					signalSemaphoreCount;
+		DE_NULL							// const VkSemaphore*		pSignalSemaphores;
+	};
 
 	VK_CHECK(vk.resetFences(vkDevice, 1, &m_fence.get()));
-	VK_CHECK(vk.queueSubmit(queue, 1, &m_cmdBuffer.get(), *m_fence));
+	VK_CHECK(vk.queueSubmit(queue, 1, &submitInfo, *m_fence));
 	VK_CHECK(vk.waitForFences(vkDevice, 1, &m_fence.get(), true, ~(0ull) /* infinity*/));
 
 	return verifyImage();
@@ -930,7 +927,7 @@ tcu::TestCaseGroup* createDepthTests (tcu::TestContext& testCtx)
 	const VkFormat depthFormats[] =
 	{
 		VK_FORMAT_D16_UNORM,
-		VK_FORMAT_D24_UNORM_X8,
+		VK_FORMAT_X8_D24_UNORM_PACK32,
 		VK_FORMAT_D32_SFLOAT,
 		VK_FORMAT_D16_UNORM_S8_UINT,
 		VK_FORMAT_D24_UNORM_S8_UINT,
@@ -941,80 +938,80 @@ tcu::TestCaseGroup* createDepthTests (tcu::TestContext& testCtx)
 	// All entries cover pair-wise combinations of compare operators.
 	const VkCompareOp depthOps[][DepthTest::QUAD_COUNT] =
 	{
-		{ VK_COMPARE_OP_NOT_EQUAL,		VK_COMPARE_OP_NOT_EQUAL,		VK_COMPARE_OP_NOT_EQUAL,		VK_COMPARE_OP_NOT_EQUAL },
-		{ VK_COMPARE_OP_NOT_EQUAL,		VK_COMPARE_OP_EQUAL,			VK_COMPARE_OP_EQUAL,			VK_COMPARE_OP_GREATER },
-		{ VK_COMPARE_OP_NOT_EQUAL,		VK_COMPARE_OP_GREATER,			VK_COMPARE_OP_GREATER,			VK_COMPARE_OP_LESS_EQUAL },
-		{ VK_COMPARE_OP_NOT_EQUAL,		VK_COMPARE_OP_GREATER_EQUAL,	VK_COMPARE_OP_GREATER_EQUAL,	VK_COMPARE_OP_GREATER_EQUAL },
-		{ VK_COMPARE_OP_NOT_EQUAL,		VK_COMPARE_OP_LESS_EQUAL,		VK_COMPARE_OP_LESS_EQUAL,		VK_COMPARE_OP_ALWAYS },
-		{ VK_COMPARE_OP_NOT_EQUAL,		VK_COMPARE_OP_LESS,				VK_COMPARE_OP_LESS,				VK_COMPARE_OP_LESS },
-		{ VK_COMPARE_OP_NOT_EQUAL,		VK_COMPARE_OP_NEVER,			VK_COMPARE_OP_NEVER,			VK_COMPARE_OP_NEVER },
-		{ VK_COMPARE_OP_EQUAL,			VK_COMPARE_OP_NOT_EQUAL,		VK_COMPARE_OP_EQUAL,			VK_COMPARE_OP_EQUAL },
-		{ VK_COMPARE_OP_EQUAL,			VK_COMPARE_OP_EQUAL,			VK_COMPARE_OP_NOT_EQUAL,		VK_COMPARE_OP_LESS },
-		{ VK_COMPARE_OP_EQUAL,			VK_COMPARE_OP_GREATER,			VK_COMPARE_OP_GREATER_EQUAL,	VK_COMPARE_OP_NOT_EQUAL },
-		{ VK_COMPARE_OP_EQUAL,			VK_COMPARE_OP_GREATER_EQUAL,	VK_COMPARE_OP_GREATER,			VK_COMPARE_OP_GREATER },
-		{ VK_COMPARE_OP_EQUAL,			VK_COMPARE_OP_LESS_EQUAL,		VK_COMPARE_OP_LESS,				VK_COMPARE_OP_LESS_EQUAL },
-		{ VK_COMPARE_OP_NOT_EQUAL,		VK_COMPARE_OP_ALWAYS,			VK_COMPARE_OP_ALWAYS,			VK_COMPARE_OP_EQUAL },
-		{ VK_COMPARE_OP_EQUAL,			VK_COMPARE_OP_LESS,				VK_COMPARE_OP_NEVER,			VK_COMPARE_OP_ALWAYS },
-		{ VK_COMPARE_OP_EQUAL,			VK_COMPARE_OP_NEVER,			VK_COMPARE_OP_LESS_EQUAL,		VK_COMPARE_OP_GREATER_EQUAL },
-		{ VK_COMPARE_OP_GREATER,		VK_COMPARE_OP_NOT_EQUAL,		VK_COMPARE_OP_GREATER,			VK_COMPARE_OP_LESS },
-		{ VK_COMPARE_OP_GREATER,		VK_COMPARE_OP_EQUAL,			VK_COMPARE_OP_GREATER_EQUAL,	VK_COMPARE_OP_ALWAYS },
-		{ VK_COMPARE_OP_GREATER,		VK_COMPARE_OP_GREATER,			VK_COMPARE_OP_NOT_EQUAL,		VK_COMPARE_OP_GREATER },
-		{ VK_COMPARE_OP_GREATER,		VK_COMPARE_OP_GREATER_EQUAL,	VK_COMPARE_OP_LESS_EQUAL,		VK_COMPARE_OP_NOT_EQUAL },
-		{ VK_COMPARE_OP_GREATER,		VK_COMPARE_OP_LESS_EQUAL,		VK_COMPARE_OP_NEVER,			VK_COMPARE_OP_GREATER_EQUAL },
-		{ VK_COMPARE_OP_GREATER,		VK_COMPARE_OP_LESS,				VK_COMPARE_OP_EQUAL,			VK_COMPARE_OP_NEVER },
-		{ VK_COMPARE_OP_GREATER_EQUAL,	VK_COMPARE_OP_NOT_EQUAL,		VK_COMPARE_OP_GREATER_EQUAL,	VK_COMPARE_OP_GREATER },
-		{ VK_COMPARE_OP_GREATER,		VK_COMPARE_OP_NEVER,			VK_COMPARE_OP_ALWAYS,			VK_COMPARE_OP_LESS_EQUAL },
-		{ VK_COMPARE_OP_GREATER_EQUAL,	VK_COMPARE_OP_EQUAL,			VK_COMPARE_OP_GREATER,			VK_COMPARE_OP_NOT_EQUAL },
-		{ VK_COMPARE_OP_GREATER_EQUAL,	VK_COMPARE_OP_GREATER,			VK_COMPARE_OP_EQUAL,			VK_COMPARE_OP_GREATER_EQUAL },
-		{ VK_COMPARE_OP_GREATER_EQUAL,	VK_COMPARE_OP_GREATER_EQUAL,	VK_COMPARE_OP_NOT_EQUAL,		VK_COMPARE_OP_LESS_EQUAL },
-		{ VK_COMPARE_OP_GREATER_EQUAL,	VK_COMPARE_OP_LESS_EQUAL,		VK_COMPARE_OP_ALWAYS,			VK_COMPARE_OP_LESS },
-		{ VK_COMPARE_OP_GREATER_EQUAL,	VK_COMPARE_OP_LESS,				VK_COMPARE_OP_LESS_EQUAL,		VK_COMPARE_OP_EQUAL },
-		{ VK_COMPARE_OP_GREATER_EQUAL,	VK_COMPARE_OP_ALWAYS,			VK_COMPARE_OP_LESS,				VK_COMPARE_OP_NEVER },
-		{ VK_COMPARE_OP_LESS_EQUAL,		VK_COMPARE_OP_NOT_EQUAL,		VK_COMPARE_OP_LESS_EQUAL,		VK_COMPARE_OP_LESS_EQUAL },
-		{ VK_COMPARE_OP_LESS_EQUAL,		VK_COMPARE_OP_EQUAL,			VK_COMPARE_OP_LESS,				VK_COMPARE_OP_EQUAL },
-		{ VK_COMPARE_OP_LESS_EQUAL,		VK_COMPARE_OP_GREATER,			VK_COMPARE_OP_NEVER,			VK_COMPARE_OP_LESS },
-		{ VK_COMPARE_OP_LESS_EQUAL,		VK_COMPARE_OP_GREATER_EQUAL,	VK_COMPARE_OP_EQUAL,			VK_COMPARE_OP_ALWAYS },
-		{ VK_COMPARE_OP_LESS_EQUAL,		VK_COMPARE_OP_LESS,				VK_COMPARE_OP_NOT_EQUAL,		VK_COMPARE_OP_GREATER_EQUAL },
-		{ VK_COMPARE_OP_LESS_EQUAL,		VK_COMPARE_OP_LESS_EQUAL,		VK_COMPARE_OP_GREATER_EQUAL,	VK_COMPARE_OP_NEVER },
-		{ VK_COMPARE_OP_LESS,			VK_COMPARE_OP_NOT_EQUAL,		VK_COMPARE_OP_LESS,				VK_COMPARE_OP_GREATER_EQUAL },
-		{ VK_COMPARE_OP_LESS,			VK_COMPARE_OP_EQUAL,			VK_COMPARE_OP_NEVER,			VK_COMPARE_OP_LESS_EQUAL },
-		{ VK_COMPARE_OP_LESS,			VK_COMPARE_OP_GREATER,			VK_COMPARE_OP_LESS_EQUAL,		VK_COMPARE_OP_NEVER },
-		{ VK_COMPARE_OP_LESS,			VK_COMPARE_OP_LESS_EQUAL,		VK_COMPARE_OP_GREATER,			VK_COMPARE_OP_EQUAL },
-		{ VK_COMPARE_OP_LESS,			VK_COMPARE_OP_LESS,				VK_COMPARE_OP_ALWAYS,			VK_COMPARE_OP_NOT_EQUAL },
-		{ VK_COMPARE_OP_LESS,			VK_COMPARE_OP_NEVER,			VK_COMPARE_OP_NOT_EQUAL,		VK_COMPARE_OP_ALWAYS },
-		{ VK_COMPARE_OP_NEVER,			VK_COMPARE_OP_NOT_EQUAL,		VK_COMPARE_OP_ALWAYS,			VK_COMPARE_OP_ALWAYS },
-		{ VK_COMPARE_OP_LESS,			VK_COMPARE_OP_ALWAYS,			VK_COMPARE_OP_GREATER_EQUAL,	VK_COMPARE_OP_LESS },
-		{ VK_COMPARE_OP_NEVER,			VK_COMPARE_OP_GREATER_EQUAL,	VK_COMPARE_OP_NEVER,			VK_COMPARE_OP_EQUAL },
-		{ VK_COMPARE_OP_NEVER,			VK_COMPARE_OP_NEVER,			VK_COMPARE_OP_LESS,				VK_COMPARE_OP_GREATER },
-		{ VK_COMPARE_OP_NEVER,			VK_COMPARE_OP_LESS_EQUAL,		VK_COMPARE_OP_EQUAL,			VK_COMPARE_OP_NOT_EQUAL },
-		{ VK_COMPARE_OP_NEVER,			VK_COMPARE_OP_LESS,				VK_COMPARE_OP_GREATER_EQUAL,	VK_COMPARE_OP_LESS_EQUAL },
-		{ VK_COMPARE_OP_NEVER,			VK_COMPARE_OP_ALWAYS,			VK_COMPARE_OP_GREATER,			VK_COMPARE_OP_GREATER_EQUAL },
-		{ VK_COMPARE_OP_ALWAYS,			VK_COMPARE_OP_EQUAL,			VK_COMPARE_OP_ALWAYS,			VK_COMPARE_OP_NEVER },
-		{ VK_COMPARE_OP_ALWAYS,			VK_COMPARE_OP_NEVER,			VK_COMPARE_OP_EQUAL,			VK_COMPARE_OP_LESS },
-		{ VK_COMPARE_OP_ALWAYS,			VK_COMPARE_OP_GREATER,			VK_COMPARE_OP_LESS,				VK_COMPARE_OP_ALWAYS },
-		{ VK_COMPARE_OP_ALWAYS,			VK_COMPARE_OP_ALWAYS,			VK_COMPARE_OP_NEVER,			VK_COMPARE_OP_GREATER },
-		{ VK_COMPARE_OP_ALWAYS,			VK_COMPARE_OP_LESS_EQUAL,		VK_COMPARE_OP_NOT_EQUAL,		VK_COMPARE_OP_EQUAL },
-		{ VK_COMPARE_OP_LESS_EQUAL,		VK_COMPARE_OP_NEVER,			VK_COMPARE_OP_GREATER,			VK_COMPARE_OP_NOT_EQUAL },
-		{ VK_COMPARE_OP_NEVER,			VK_COMPARE_OP_EQUAL,			VK_COMPARE_OP_LESS_EQUAL,		VK_COMPARE_OP_LESS },
-		{ VK_COMPARE_OP_EQUAL,			VK_COMPARE_OP_GREATER_EQUAL,	VK_COMPARE_OP_ALWAYS,			VK_COMPARE_OP_NEVER },
-		{ VK_COMPARE_OP_GREATER,		VK_COMPARE_OP_ALWAYS,			VK_COMPARE_OP_LESS,				VK_COMPARE_OP_NOT_EQUAL },
-		{ VK_COMPARE_OP_GREATER,		VK_COMPARE_OP_NEVER,			VK_COMPARE_OP_GREATER_EQUAL,	VK_COMPARE_OP_EQUAL },
-		{ VK_COMPARE_OP_EQUAL,			VK_COMPARE_OP_ALWAYS,			VK_COMPARE_OP_EQUAL,			VK_COMPARE_OP_LESS_EQUAL },
-		{ VK_COMPARE_OP_LESS_EQUAL,		VK_COMPARE_OP_GREATER,			VK_COMPARE_OP_ALWAYS,			VK_COMPARE_OP_GREATER },
-		{ VK_COMPARE_OP_NEVER,			VK_COMPARE_OP_NOT_EQUAL,		VK_COMPARE_OP_NOT_EQUAL,		VK_COMPARE_OP_NEVER },
-		{ VK_COMPARE_OP_ALWAYS,			VK_COMPARE_OP_LESS,				VK_COMPARE_OP_GREATER,			VK_COMPARE_OP_GREATER },
-		{ VK_COMPARE_OP_ALWAYS,			VK_COMPARE_OP_NOT_EQUAL,		VK_COMPARE_OP_NEVER,			VK_COMPARE_OP_NOT_EQUAL },
-		{ VK_COMPARE_OP_GREATER_EQUAL,	VK_COMPARE_OP_ALWAYS,			VK_COMPARE_OP_NOT_EQUAL,		VK_COMPARE_OP_ALWAYS },
-		{ VK_COMPARE_OP_LESS_EQUAL,		VK_COMPARE_OP_ALWAYS,			VK_COMPARE_OP_LESS_EQUAL,		VK_COMPARE_OP_GREATER },
-		{ VK_COMPARE_OP_LESS,			VK_COMPARE_OP_GREATER_EQUAL,	VK_COMPARE_OP_LESS,				VK_COMPARE_OP_GREATER },
-		{ VK_COMPARE_OP_ALWAYS,			VK_COMPARE_OP_EQUAL,			VK_COMPARE_OP_LESS_EQUAL,		VK_COMPARE_OP_GREATER_EQUAL },
-		{ VK_COMPARE_OP_ALWAYS,			VK_COMPARE_OP_GREATER_EQUAL,	VK_COMPARE_OP_GREATER_EQUAL,	VK_COMPARE_OP_LESS_EQUAL },
-		{ VK_COMPARE_OP_GREATER_EQUAL,	VK_COMPARE_OP_GREATER_EQUAL,	VK_COMPARE_OP_NEVER,			VK_COMPARE_OP_LESS },
-		{ VK_COMPARE_OP_GREATER_EQUAL,	VK_COMPARE_OP_NEVER,			VK_COMPARE_OP_GREATER,			VK_COMPARE_OP_NEVER },
-		{ VK_COMPARE_OP_LESS,			VK_COMPARE_OP_GREATER,			VK_COMPARE_OP_EQUAL,			VK_COMPARE_OP_EQUAL },
-		{ VK_COMPARE_OP_NEVER,			VK_COMPARE_OP_GREATER,			VK_COMPARE_OP_ALWAYS,			VK_COMPARE_OP_GREATER_EQUAL },
-		{ VK_COMPARE_OP_NOT_EQUAL,		VK_COMPARE_OP_NOT_EQUAL,		VK_COMPARE_OP_GREATER,			VK_COMPARE_OP_ALWAYS },
-		{ VK_COMPARE_OP_NOT_EQUAL,		VK_COMPARE_OP_LESS_EQUAL,		VK_COMPARE_OP_NOT_EQUAL,		VK_COMPARE_OP_GREATER }
+		{ VK_COMPARE_OP_NOT_EQUAL,			VK_COMPARE_OP_NOT_EQUAL,		VK_COMPARE_OP_NOT_EQUAL,		VK_COMPARE_OP_NOT_EQUAL },
+		{ VK_COMPARE_OP_NOT_EQUAL,			VK_COMPARE_OP_EQUAL,			VK_COMPARE_OP_EQUAL,			VK_COMPARE_OP_GREATER },
+		{ VK_COMPARE_OP_NOT_EQUAL,			VK_COMPARE_OP_GREATER,			VK_COMPARE_OP_GREATER,			VK_COMPARE_OP_LESS_OR_EQUAL },
+		{ VK_COMPARE_OP_NOT_EQUAL,			VK_COMPARE_OP_GREATER_OR_EQUAL,	VK_COMPARE_OP_GREATER_OR_EQUAL,	VK_COMPARE_OP_GREATER_OR_EQUAL },
+		{ VK_COMPARE_OP_NOT_EQUAL,			VK_COMPARE_OP_LESS_OR_EQUAL,	VK_COMPARE_OP_LESS_OR_EQUAL,	VK_COMPARE_OP_ALWAYS },
+		{ VK_COMPARE_OP_NOT_EQUAL,			VK_COMPARE_OP_LESS,				VK_COMPARE_OP_LESS,				VK_COMPARE_OP_LESS },
+		{ VK_COMPARE_OP_NOT_EQUAL,			VK_COMPARE_OP_NEVER,			VK_COMPARE_OP_NEVER,			VK_COMPARE_OP_NEVER },
+		{ VK_COMPARE_OP_EQUAL,				VK_COMPARE_OP_NOT_EQUAL,		VK_COMPARE_OP_EQUAL,			VK_COMPARE_OP_EQUAL },
+		{ VK_COMPARE_OP_EQUAL,				VK_COMPARE_OP_EQUAL,			VK_COMPARE_OP_NOT_EQUAL,		VK_COMPARE_OP_LESS },
+		{ VK_COMPARE_OP_EQUAL,				VK_COMPARE_OP_GREATER,			VK_COMPARE_OP_GREATER_OR_EQUAL,	VK_COMPARE_OP_NOT_EQUAL },
+		{ VK_COMPARE_OP_EQUAL,				VK_COMPARE_OP_GREATER_OR_EQUAL,	VK_COMPARE_OP_GREATER,			VK_COMPARE_OP_GREATER },
+		{ VK_COMPARE_OP_EQUAL,				VK_COMPARE_OP_LESS_OR_EQUAL,	VK_COMPARE_OP_LESS,				VK_COMPARE_OP_LESS_OR_EQUAL },
+		{ VK_COMPARE_OP_NOT_EQUAL,			VK_COMPARE_OP_ALWAYS,			VK_COMPARE_OP_ALWAYS,			VK_COMPARE_OP_EQUAL },
+		{ VK_COMPARE_OP_EQUAL,				VK_COMPARE_OP_LESS,				VK_COMPARE_OP_NEVER,			VK_COMPARE_OP_ALWAYS },
+		{ VK_COMPARE_OP_EQUAL,				VK_COMPARE_OP_NEVER,			VK_COMPARE_OP_LESS_OR_EQUAL,	VK_COMPARE_OP_GREATER_OR_EQUAL },
+		{ VK_COMPARE_OP_GREATER,			VK_COMPARE_OP_NOT_EQUAL,		VK_COMPARE_OP_GREATER,			VK_COMPARE_OP_LESS },
+		{ VK_COMPARE_OP_GREATER,			VK_COMPARE_OP_EQUAL,			VK_COMPARE_OP_GREATER_OR_EQUAL,	VK_COMPARE_OP_ALWAYS },
+		{ VK_COMPARE_OP_GREATER,			VK_COMPARE_OP_GREATER,			VK_COMPARE_OP_NOT_EQUAL,		VK_COMPARE_OP_GREATER },
+		{ VK_COMPARE_OP_GREATER,			VK_COMPARE_OP_GREATER_OR_EQUAL,	VK_COMPARE_OP_LESS_OR_EQUAL,	VK_COMPARE_OP_NOT_EQUAL },
+		{ VK_COMPARE_OP_GREATER,			VK_COMPARE_OP_LESS_OR_EQUAL,	VK_COMPARE_OP_NEVER,			VK_COMPARE_OP_GREATER_OR_EQUAL },
+		{ VK_COMPARE_OP_GREATER,			VK_COMPARE_OP_LESS,				VK_COMPARE_OP_EQUAL,			VK_COMPARE_OP_NEVER },
+		{ VK_COMPARE_OP_GREATER_OR_EQUAL,	VK_COMPARE_OP_NOT_EQUAL,		VK_COMPARE_OP_GREATER_OR_EQUAL,	VK_COMPARE_OP_GREATER },
+		{ VK_COMPARE_OP_GREATER,			VK_COMPARE_OP_NEVER,			VK_COMPARE_OP_ALWAYS,			VK_COMPARE_OP_LESS_OR_EQUAL },
+		{ VK_COMPARE_OP_GREATER_OR_EQUAL,	VK_COMPARE_OP_EQUAL,			VK_COMPARE_OP_GREATER,			VK_COMPARE_OP_NOT_EQUAL },
+		{ VK_COMPARE_OP_GREATER_OR_EQUAL,	VK_COMPARE_OP_GREATER,			VK_COMPARE_OP_EQUAL,			VK_COMPARE_OP_GREATER_OR_EQUAL },
+		{ VK_COMPARE_OP_GREATER_OR_EQUAL,	VK_COMPARE_OP_GREATER_OR_EQUAL,	VK_COMPARE_OP_NOT_EQUAL,		VK_COMPARE_OP_LESS_OR_EQUAL },
+		{ VK_COMPARE_OP_GREATER_OR_EQUAL,	VK_COMPARE_OP_LESS_OR_EQUAL,	VK_COMPARE_OP_ALWAYS,			VK_COMPARE_OP_LESS },
+		{ VK_COMPARE_OP_GREATER_OR_EQUAL,	VK_COMPARE_OP_LESS,				VK_COMPARE_OP_LESS_OR_EQUAL,	VK_COMPARE_OP_EQUAL },
+		{ VK_COMPARE_OP_GREATER_OR_EQUAL,	VK_COMPARE_OP_ALWAYS,			VK_COMPARE_OP_LESS,				VK_COMPARE_OP_NEVER },
+		{ VK_COMPARE_OP_LESS_OR_EQUAL,		VK_COMPARE_OP_NOT_EQUAL,		VK_COMPARE_OP_LESS_OR_EQUAL,	VK_COMPARE_OP_LESS_OR_EQUAL },
+		{ VK_COMPARE_OP_LESS_OR_EQUAL,		VK_COMPARE_OP_EQUAL,			VK_COMPARE_OP_LESS,				VK_COMPARE_OP_EQUAL },
+		{ VK_COMPARE_OP_LESS_OR_EQUAL,		VK_COMPARE_OP_GREATER,			VK_COMPARE_OP_NEVER,			VK_COMPARE_OP_LESS },
+		{ VK_COMPARE_OP_LESS_OR_EQUAL,		VK_COMPARE_OP_GREATER_OR_EQUAL,	VK_COMPARE_OP_EQUAL,			VK_COMPARE_OP_ALWAYS },
+		{ VK_COMPARE_OP_LESS_OR_EQUAL,		VK_COMPARE_OP_LESS,				VK_COMPARE_OP_NOT_EQUAL,		VK_COMPARE_OP_GREATER_OR_EQUAL },
+		{ VK_COMPARE_OP_LESS_OR_EQUAL,		VK_COMPARE_OP_LESS_OR_EQUAL,	VK_COMPARE_OP_GREATER_OR_EQUAL,	VK_COMPARE_OP_NEVER },
+		{ VK_COMPARE_OP_LESS,				VK_COMPARE_OP_NOT_EQUAL,		VK_COMPARE_OP_LESS,				VK_COMPARE_OP_GREATER_OR_EQUAL },
+		{ VK_COMPARE_OP_LESS,				VK_COMPARE_OP_EQUAL,			VK_COMPARE_OP_NEVER,			VK_COMPARE_OP_LESS_OR_EQUAL },
+		{ VK_COMPARE_OP_LESS,				VK_COMPARE_OP_GREATER,			VK_COMPARE_OP_LESS_OR_EQUAL,	VK_COMPARE_OP_NEVER },
+		{ VK_COMPARE_OP_LESS,				VK_COMPARE_OP_LESS_OR_EQUAL,	VK_COMPARE_OP_GREATER,			VK_COMPARE_OP_EQUAL },
+		{ VK_COMPARE_OP_LESS,				VK_COMPARE_OP_LESS,				VK_COMPARE_OP_ALWAYS,			VK_COMPARE_OP_NOT_EQUAL },
+		{ VK_COMPARE_OP_LESS,				VK_COMPARE_OP_NEVER,			VK_COMPARE_OP_NOT_EQUAL,		VK_COMPARE_OP_ALWAYS },
+		{ VK_COMPARE_OP_NEVER,				VK_COMPARE_OP_NOT_EQUAL,		VK_COMPARE_OP_ALWAYS,			VK_COMPARE_OP_ALWAYS },
+		{ VK_COMPARE_OP_LESS,				VK_COMPARE_OP_ALWAYS,			VK_COMPARE_OP_GREATER_OR_EQUAL,	VK_COMPARE_OP_LESS },
+		{ VK_COMPARE_OP_NEVER,				VK_COMPARE_OP_GREATER_OR_EQUAL,	VK_COMPARE_OP_NEVER,			VK_COMPARE_OP_EQUAL },
+		{ VK_COMPARE_OP_NEVER,				VK_COMPARE_OP_NEVER,			VK_COMPARE_OP_LESS,				VK_COMPARE_OP_GREATER },
+		{ VK_COMPARE_OP_NEVER,				VK_COMPARE_OP_LESS_OR_EQUAL,	VK_COMPARE_OP_EQUAL,			VK_COMPARE_OP_NOT_EQUAL },
+		{ VK_COMPARE_OP_NEVER,				VK_COMPARE_OP_LESS,				VK_COMPARE_OP_GREATER_OR_EQUAL,	VK_COMPARE_OP_LESS_OR_EQUAL },
+		{ VK_COMPARE_OP_NEVER,				VK_COMPARE_OP_ALWAYS,			VK_COMPARE_OP_GREATER,			VK_COMPARE_OP_GREATER_OR_EQUAL },
+		{ VK_COMPARE_OP_ALWAYS,				VK_COMPARE_OP_EQUAL,			VK_COMPARE_OP_ALWAYS,			VK_COMPARE_OP_NEVER },
+		{ VK_COMPARE_OP_ALWAYS,				VK_COMPARE_OP_NEVER,			VK_COMPARE_OP_EQUAL,			VK_COMPARE_OP_LESS },
+		{ VK_COMPARE_OP_ALWAYS,				VK_COMPARE_OP_GREATER,			VK_COMPARE_OP_LESS,				VK_COMPARE_OP_ALWAYS },
+		{ VK_COMPARE_OP_ALWAYS,				VK_COMPARE_OP_ALWAYS,			VK_COMPARE_OP_NEVER,			VK_COMPARE_OP_GREATER },
+		{ VK_COMPARE_OP_ALWAYS,				VK_COMPARE_OP_LESS_OR_EQUAL,	VK_COMPARE_OP_NOT_EQUAL,		VK_COMPARE_OP_EQUAL },
+		{ VK_COMPARE_OP_LESS_OR_EQUAL,		VK_COMPARE_OP_NEVER,			VK_COMPARE_OP_GREATER,			VK_COMPARE_OP_NOT_EQUAL },
+		{ VK_COMPARE_OP_NEVER,				VK_COMPARE_OP_EQUAL,			VK_COMPARE_OP_LESS_OR_EQUAL,	VK_COMPARE_OP_LESS },
+		{ VK_COMPARE_OP_EQUAL,				VK_COMPARE_OP_GREATER_OR_EQUAL,	VK_COMPARE_OP_ALWAYS,			VK_COMPARE_OP_NEVER },
+		{ VK_COMPARE_OP_GREATER,			VK_COMPARE_OP_ALWAYS,			VK_COMPARE_OP_LESS,				VK_COMPARE_OP_NOT_EQUAL },
+		{ VK_COMPARE_OP_GREATER,			VK_COMPARE_OP_NEVER,			VK_COMPARE_OP_GREATER_OR_EQUAL,	VK_COMPARE_OP_EQUAL },
+		{ VK_COMPARE_OP_EQUAL,				VK_COMPARE_OP_ALWAYS,			VK_COMPARE_OP_EQUAL,			VK_COMPARE_OP_LESS_OR_EQUAL },
+		{ VK_COMPARE_OP_LESS_OR_EQUAL,		VK_COMPARE_OP_GREATER,			VK_COMPARE_OP_ALWAYS,			VK_COMPARE_OP_GREATER },
+		{ VK_COMPARE_OP_NEVER,				VK_COMPARE_OP_NOT_EQUAL,		VK_COMPARE_OP_NOT_EQUAL,		VK_COMPARE_OP_NEVER },
+		{ VK_COMPARE_OP_ALWAYS,				VK_COMPARE_OP_LESS,				VK_COMPARE_OP_GREATER,			VK_COMPARE_OP_GREATER },
+		{ VK_COMPARE_OP_ALWAYS,				VK_COMPARE_OP_NOT_EQUAL,		VK_COMPARE_OP_NEVER,			VK_COMPARE_OP_NOT_EQUAL },
+		{ VK_COMPARE_OP_GREATER_OR_EQUAL,	VK_COMPARE_OP_ALWAYS,			VK_COMPARE_OP_NOT_EQUAL,		VK_COMPARE_OP_ALWAYS },
+		{ VK_COMPARE_OP_LESS_OR_EQUAL,		VK_COMPARE_OP_ALWAYS,			VK_COMPARE_OP_LESS_OR_EQUAL,	VK_COMPARE_OP_GREATER },
+		{ VK_COMPARE_OP_LESS,				VK_COMPARE_OP_GREATER_OR_EQUAL,	VK_COMPARE_OP_LESS,				VK_COMPARE_OP_GREATER },
+		{ VK_COMPARE_OP_ALWAYS,				VK_COMPARE_OP_EQUAL,			VK_COMPARE_OP_LESS_OR_EQUAL,	VK_COMPARE_OP_GREATER_OR_EQUAL },
+		{ VK_COMPARE_OP_ALWAYS,				VK_COMPARE_OP_GREATER_OR_EQUAL,	VK_COMPARE_OP_GREATER_OR_EQUAL,	VK_COMPARE_OP_LESS_OR_EQUAL },
+		{ VK_COMPARE_OP_GREATER_OR_EQUAL,	VK_COMPARE_OP_GREATER_OR_EQUAL,	VK_COMPARE_OP_NEVER,			VK_COMPARE_OP_LESS },
+		{ VK_COMPARE_OP_GREATER_OR_EQUAL,	VK_COMPARE_OP_NEVER,			VK_COMPARE_OP_GREATER,			VK_COMPARE_OP_NEVER },
+		{ VK_COMPARE_OP_LESS,				VK_COMPARE_OP_GREATER,			VK_COMPARE_OP_EQUAL,			VK_COMPARE_OP_EQUAL },
+		{ VK_COMPARE_OP_NEVER,				VK_COMPARE_OP_GREATER,			VK_COMPARE_OP_ALWAYS,			VK_COMPARE_OP_GREATER_OR_EQUAL },
+		{ VK_COMPARE_OP_NOT_EQUAL,			VK_COMPARE_OP_NOT_EQUAL,		VK_COMPARE_OP_GREATER,			VK_COMPARE_OP_ALWAYS },
+		{ VK_COMPARE_OP_NOT_EQUAL,			VK_COMPARE_OP_LESS_OR_EQUAL,	VK_COMPARE_OP_NOT_EQUAL,		VK_COMPARE_OP_GREATER }
 	};
 
 	de::MovePtr<tcu::TestCaseGroup> depthTests (new tcu::TestCaseGroup(testCtx, "depth", "Depth tests"));
@@ -1031,7 +1028,7 @@ tcu::TestCaseGroup* createDepthTests (tcu::TestContext& testCtx)
 						VK_FORMAT_D16_UNORM);
 
 		// Sets where at least one of the formats must be supported
-		const VkFormat	depthOnlyFormats[]		= { VK_FORMAT_D24_UNORM_X8, VK_FORMAT_D32_SFLOAT };
+		const VkFormat	depthOnlyFormats[]		= { VK_FORMAT_X8_D24_UNORM_PACK32, VK_FORMAT_D32_SFLOAT };
 		const VkFormat	depthStencilFormats[]	= { VK_FORMAT_D24_UNORM_S8_UINT, VK_FORMAT_D32_SFLOAT_S8_UINT };
 
 		addFunctionCase(formatFeaturesTests.get(),

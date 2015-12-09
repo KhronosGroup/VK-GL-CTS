@@ -1,5 +1,9 @@
-#ifndef _VKTSHADERRENDERTESTS_HPP
+#ifndef _VKTAPIBUFFERTESTS_HPP
+#define _VKTAPIBUFFERTESTS_HPP
 /*------------------------------------------------------------------------
+ * Vulkan Conformance Tests
+ * ------------------------
+ *
  * Copyright (c) 2015 The Khronos Group Inc.
  * Copyright (c) 2015 Samsung Electronics Co., Ltd.
  *
@@ -28,7 +32,7 @@
  *
  *//*!
  * \file
- * \brief Vulkan shader render test cases
+ * \brief Vulkan Buffers Tests
  *//*--------------------------------------------------------------------*/
 
 #include "tcuDefs.hpp"
@@ -36,12 +40,13 @@
 
 namespace vkt
 {
-namespace sr
+
+namespace api
 {
 
-tcu::TestCaseGroup*		createTests			(tcu::TestContext& testCtx);
+tcu::TestCaseGroup*		createBufferTests		(tcu::TestContext& testCtx);
 
-} // sr
+} // api
 } // vkt
 
-#endif // _VKTSHADERRENDERTESTS_HPP
+#endif // _VKTAPIBUFFERTESTS_HPP

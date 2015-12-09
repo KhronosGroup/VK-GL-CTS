@@ -125,7 +125,7 @@ public:
 									Allocator	(void) {}
 	virtual							~Allocator	(void) {}
 
-	virtual de::MovePtr<Allocation>	allocate	(const VkMemoryAllocInfo& allocInfo, VkDeviceSize alignment) = 0;
+	virtual de::MovePtr<Allocation>	allocate	(const VkMemoryAllocateInfo& allocInfo, VkDeviceSize alignment) = 0;
 	virtual de::MovePtr<Allocation>	allocate	(const VkMemoryRequirements& memRequirements, MemoryRequirement requirement) = 0;
 };
 
@@ -135,7 +135,7 @@ class SimpleAllocator : public Allocator
 public:
 											SimpleAllocator	(const DeviceInterface& vk, VkDevice device, const VkPhysicalDeviceMemoryProperties& deviceMemProps);
 
-	de::MovePtr<Allocation>					allocate		(const VkMemoryAllocInfo& allocInfo, VkDeviceSize alignment);
+	de::MovePtr<Allocation>					allocate		(const VkMemoryAllocateInfo& allocInfo, VkDeviceSize alignment);
 	de::MovePtr<Allocation>					allocate		(const VkMemoryRequirements& memRequirements, MemoryRequirement requirement);
 
 private:

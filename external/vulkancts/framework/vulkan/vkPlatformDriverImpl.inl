@@ -2,9 +2,9 @@
  * be lost! Modify the generating script instead.
  */
 
-VkResult PlatformDriver::createInstance (const VkInstanceCreateInfo* pCreateInfo, VkInstance* pInstance) const
+VkResult PlatformDriver::createInstance (const VkInstanceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkInstance* pInstance) const
 {
-	return m_vk.createInstance(pCreateInfo, pInstance);
+	return m_vk.createInstance(pCreateInfo, pAllocator, pInstance);
 }
 
 PFN_vkVoidFunction PlatformDriver::getInstanceProcAddr (VkInstance instance, const char* pName) const
@@ -12,12 +12,12 @@ PFN_vkVoidFunction PlatformDriver::getInstanceProcAddr (VkInstance instance, con
 	return m_vk.getInstanceProcAddr(instance, pName);
 }
 
-VkResult PlatformDriver::enumerateInstanceExtensionProperties (const char* pLayerName, deUint32* pCount, VkExtensionProperties* pProperties) const
+VkResult PlatformDriver::enumerateInstanceExtensionProperties (const char* pLayerName, deUint32* pPropertyCount, VkExtensionProperties* pProperties) const
 {
-	return m_vk.enumerateInstanceExtensionProperties(pLayerName, pCount, pProperties);
+	return m_vk.enumerateInstanceExtensionProperties(pLayerName, pPropertyCount, pProperties);
 }
 
-VkResult PlatformDriver::enumerateInstanceLayerProperties (deUint32* pCount, VkLayerProperties* pProperties) const
+VkResult PlatformDriver::enumerateInstanceLayerProperties (deUint32* pPropertyCount, VkLayerProperties* pProperties) const
 {
-	return m_vk.enumerateInstanceLayerProperties(pCount, pProperties);
+	return m_vk.enumerateInstanceLayerProperties(pPropertyCount, pProperties);
 }

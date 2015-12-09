@@ -43,32 +43,33 @@
 namespace vk
 {
 
-bool						isFloatFormat			(VkFormat format);
-bool						isUnormFormat			(VkFormat format);
-bool						isSnormFormat			(VkFormat format);
-bool						isIntFormat				(VkFormat format);
-bool						isUintFormat			(VkFormat format);
-bool						isDepthStencilFormat	(VkFormat format);
-bool						isCompressedFormat		(VkFormat format);
+bool						isFloatFormat				(VkFormat format);
+bool						isUnormFormat				(VkFormat format);
+bool						isSnormFormat				(VkFormat format);
+bool						isIntFormat					(VkFormat format);
+bool						isUintFormat				(VkFormat format);
+bool						isDepthStencilFormat		(VkFormat format);
+bool						isCompressedFormat			(VkFormat format);
 
-tcu::TextureFormat			mapVkFormat				(VkFormat format);
-tcu::CompressedTexFormat	mapVkCompressedFormat	(VkFormat format);
-tcu::Sampler				mapVkSampler			(const vk::VkSamplerCreateInfo& samplerCreateInfo);
-tcu::Sampler::CompareMode	mapVkSamplerCompareOp	(vk::VkCompareOp compareOp);
-tcu::Sampler::WrapMode		mapVkAddressMode		(vk::VkTexAddressMode addressMode);
-tcu::Sampler::FilterMode	mapVkMinTexFilter		(vk::VkTexFilter filter, vk::VkTexMipmapMode mipMode);
-tcu::Sampler::FilterMode	mapVkMagTexFilter		(vk::VkTexFilter filter);
-int							mapVkChannelSwizzle		(const vk::VkChannelSwizzle& channelSwizzle);
-tcu::UVec4					mapVkChannelMapping		(const vk::VkChannelMapping& mapping);
+tcu::TextureFormat			mapVkFormat					(VkFormat format);
+tcu::CompressedTexFormat	mapVkCompressedFormat		(VkFormat format);
 
-VkChannelMapping			getFormatChannelMapping	(VkFormat format);
-VkTexFilter					mapFilterMode			(tcu::Sampler::FilterMode filterMode);
-VkTexMipmapMode				mapMipmapMode			(tcu::Sampler::FilterMode filterMode);
-VkTexAddressMode			mapWrapMode				(tcu::Sampler::WrapMode wrapMode);
-VkCompareOp					mapCompareMode			(tcu::Sampler::CompareMode mode);
-VkFormat					mapTextureFormat		(const tcu::TextureFormat& format);
+tcu::Sampler				mapVkSampler				(const VkSamplerCreateInfo& samplerCreateInfo);
+tcu::Sampler::CompareMode	mapVkSamplerCompareOp		(VkCompareOp compareOp);
+tcu::Sampler::WrapMode		mapVkSamplerAddressMode		(VkSamplerAddressMode addressMode);
+tcu::Sampler::FilterMode	mapVkMinTexFilter			(VkFilter filter, VkSamplerMipmapMode mipMode);
+tcu::Sampler::FilterMode	mapVkMagTexFilter			(VkFilter filter);
+int							mapVkComponentSwizzle		(const VkComponentSwizzle& channelSwizzle);
+tcu::UVec4					mapVkComponentMapping		(const vk::VkComponentMapping& mapping);
 
-void						imageUtilSelfTest		(void);
+VkComponentMapping			getFormatComponentMapping	(VkFormat format);
+VkFilter					mapFilterMode				(tcu::Sampler::FilterMode filterMode);
+VkSamplerMipmapMode			mapMipmapMode				(tcu::Sampler::FilterMode filterMode);
+VkSamplerAddressMode		mapWrapMode					(tcu::Sampler::WrapMode wrapMode);
+VkCompareOp					mapCompareMode				(tcu::Sampler::CompareMode mode);
+VkFormat					mapTextureFormat			(const tcu::TextureFormat& format);
+
+void						imageUtilSelfTest			(void);
 
 } // vk
 

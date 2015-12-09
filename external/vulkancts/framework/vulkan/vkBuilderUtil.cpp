@@ -46,16 +46,17 @@ DescriptorSetLayoutBuilder::DescriptorSetLayoutBuilder (void)
 }
 
 DescriptorSetLayoutBuilder& DescriptorSetLayoutBuilder::addBinding (VkDescriptorType	descriptorType,
-																	deUint32			arraySize,
+																	deUint32			descriptorCount,
 																	VkShaderStageFlags	stageFlags,
 																	const VkSampler*	pImmutableSamplers)
 {
 	const VkDescriptorSetLayoutBinding binding =
 	{
-		descriptorType,			//!< descriptorType
-		arraySize,				//!< arraySize
-		stageFlags,				//!< stageFlags
-		pImmutableSamplers,		//!< pImmutableSamplers
+		(deUint32)m_bindings.size(),	// binding
+		descriptorType,					// descriptorType
+		descriptorCount,				// descriptorCount
+		stageFlags,						// stageFlags
+		pImmutableSamplers,				// pImmutableSamplers
 	};
 	m_bindings.push_back(binding);
 	return *this;
@@ -68,8 +69,9 @@ Move<VkDescriptorSetLayout> DescriptorSetLayoutBuilder::build (const DeviceInter
 	{
 		VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
 		DE_NULL,
-		(deUint32)m_bindings.size(),		//!< count
-		bindingPtr,							//!< pBinding
+		(VkDescriptorSetLayoutCreateFlags)0,	// flags
+		(deUint32)m_bindings.size(),			// bindingCount
+		bindingPtr,								// pBinding
 	};
 
 	return createDescriptorSetLayout(vk, device, &createInfo);
@@ -95,17 +97,17 @@ DescriptorPoolBuilder& DescriptorPoolBuilder::addType (VkDescriptorType type, de
 			if (m_counts[ndx].type == type)
 			{
 				// augment existing requirement
-				m_counts[ndx].count += numDescriptors;
+				m_counts[ndx].descriptorCount += numDescriptors;
 				return *this;
 			}
 		}
 
 		{
 			// new requirement
-			const VkDescriptorTypeCount typeCount =
+			const VkDescriptorPoolSize typeCount =
 			{
-				type,			//!< type
-				numDescriptors,	//!< count
+				type,			// type
+				numDescriptors,	// numDescriptors
 			};
 
 			m_counts.push_back(typeCount);
@@ -114,17 +116,17 @@ DescriptorPoolBuilder& DescriptorPoolBuilder::addType (VkDescriptorType type, de
 	}
 }
 
-Move<VkDescriptorPool> DescriptorPoolBuilder::build (const DeviceInterface& vk, VkDevice device, VkDescriptorPoolUsage poolUsage, deUint32 maxSets) const
+Move<VkDescriptorPool> DescriptorPoolBuilder::build (const DeviceInterface& vk, VkDevice device, VkDescriptorPoolCreateFlags flags, deUint32 maxSets) const
 {
-	const VkDescriptorTypeCount* const	typeCountPtr	= (m_counts.empty()) ? (DE_NULL) : (&m_counts[0]);
+	const VkDescriptorPoolSize* const	typeCountPtr	= (m_counts.empty()) ? (DE_NULL) : (&m_counts[0]);
 	const VkDescriptorPoolCreateInfo	createInfo		=
 	{
 		VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
 		DE_NULL,
-		poolUsage,
+		flags,
 		maxSets,
-		(deUint32)m_counts.size(),		//!< count
-		typeCountPtr,					//!< pTypeCount
+		(deUint32)m_counts.size(),		// poolSizeCount
+		typeCountPtr,					// pPoolSizes
 	};
 
 	return createDescriptorPool(vk, device, &createInfo);
@@ -136,12 +138,14 @@ DescriptorSetUpdateBuilder::DescriptorSetUpdateBuilder (void)
 {
 }
 
-DescriptorSetUpdateBuilder& DescriptorSetUpdateBuilder::write (VkDescriptorSet			destSet,
-															   deUint32					destBinding,
-															   deUint32					destArrayElement,
-															   deUint32					count,
-															   VkDescriptorType			descriptorType,
-															   const VkDescriptorInfo*	pDescriptors)
+DescriptorSetUpdateBuilder& DescriptorSetUpdateBuilder::write (VkDescriptorSet					destSet,
+															   deUint32							destBinding,
+															   deUint32							destArrayElement,
+															   deUint32							count,
+															   VkDescriptorType					descriptorType,
+															   const VkDescriptorImageInfo*		pImageInfo,
+															   const VkDescriptorBufferInfo*	pBufferInfo,
+															   const VkBufferView*				pTexelBufferView)
 {
 	const VkWriteDescriptorSet writeParams =
 	{
@@ -152,7 +156,9 @@ DescriptorSetUpdateBuilder& DescriptorSetUpdateBuilder::write (VkDescriptorSet		
 		destArrayElement,	//!< destArrayElement
 		count,				//!< count
 		descriptorType,		//!< descriptorType
-		pDescriptors,		//!< pDescriptors
+		pImageInfo,
+		pBufferInfo,
+		pTexelBufferView
 	};
 	m_writes.push_back(writeParams);
 	return *this;

@@ -1,5 +1,5 @@
-#ifndef _VKTSPVASMESTS_HPP
-#define _VKTSPVASMESTS_HPP
+#ifndef _VKTSPVASMTESTS_HPP
+#define _VKTSPVASMTESTS_HPP
 /*-------------------------------------------------------------------------
  * Vulkan Conformance Tests
  * ------------------------
@@ -47,4 +47,4 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx);
 } // SpirVAssembly
 } // vkt
 
-#endif // _VKTSPVASMESTS_HPP
+#endif // _VKTSPVASMTESTS_HPP
