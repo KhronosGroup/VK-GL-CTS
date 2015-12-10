@@ -519,7 +519,7 @@ DE_INLINE deInt32 deInt32ModF (deInt32 n, deInt32 d)
 
 DE_INLINE deBool deInt64InInt32Range (deInt64 x)
 {
-	return ((x >= (-1ll<<31)) && (x <= ((1ll<<31)-1)));
+	return ((x >= (((deInt64)((deInt32)(-0x7FFFFFFF - 1))))) && (x <= ((1ll<<31)-1)));
 }
 
 

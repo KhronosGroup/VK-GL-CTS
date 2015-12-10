@@ -198,6 +198,20 @@ void deInt32_selfTest (void)
 	DE_TEST_ASSERT(deReverseBytes32(0xfecddeef) == 0xefdecdfe);
 	DE_TEST_ASSERT(deReverseBytes16(0x1122) == 0x2211);
 	DE_TEST_ASSERT(deReverseBytes16(0xdeef) == 0xefde);
+
+	DE_TEST_ASSERT(deInt64InInt32Range((deInt64)0x7FFFFFF));
+	DE_TEST_ASSERT(deInt64InInt32Range(0));
+	DE_TEST_ASSERT(deInt64InInt32Range(1));
+	DE_TEST_ASSERT(deInt64InInt32Range(-1));
+	DE_TEST_ASSERT(deInt64InInt32Range(-((deInt64)0x7FFFFFF)));
+	DE_TEST_ASSERT(deInt64InInt32Range(-((deInt64)0x8000 << 16)));
+	DE_TEST_ASSERT(deInt64InInt32Range((deInt64)deIntMinValue32(32)));
+
+	DE_TEST_ASSERT(!deInt64InInt32Range((((deInt64)0x7FFFFFF) << 32) | (deInt64)0xFFFFFFFF));
+	DE_TEST_ASSERT(!deInt64InInt32Range((deInt64)0x7FFFFFFF + 1));
+	DE_TEST_ASSERT(!deInt64InInt32Range(-((deInt64)0x7FFFFFFF + 2)));
+	DE_TEST_ASSERT(!deInt64InInt32Range(-((((deInt64)0x7FFFFFF) << 32) | (deInt64)0xFFFFFFFF)));
+	DE_TEST_ASSERT(!deInt64InInt32Range((deInt64)deIntMinValue32(32) - 1));
 }
 
 DE_END_EXTERN_C
