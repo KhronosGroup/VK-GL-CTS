@@ -9077,7 +9077,6 @@ dEQP-GLES2.functional.texture.units.2_units.only_cube.5
 dEQP-GLES2.functional.texture.units.2_units.only_cube.6
 dEQP-GLES2.functional.texture.units.2_units.only_cube.7
 dEQP-GLES2.functional.texture.units.2_units.only_cube.8
-dEQP-GLES2.functional.texture.units.2_units.only_cube.9
 dEQP-GLES2.functional.texture.units.2_units.mixed.3
 dEQP-GLES2.functional.texture.units.2_units.mixed.4
 dEQP-GLES2.functional.texture.units.2_units.mixed.6
