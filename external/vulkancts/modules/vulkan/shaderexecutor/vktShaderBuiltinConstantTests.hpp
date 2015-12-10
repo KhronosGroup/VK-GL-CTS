@@ -1,3 +1,5 @@
+#ifndef _VKTSHADERBUILTINCONSTANTTESTS_HPP
+#define _VKTSHADERBUILTINCONSTANTTESTS_HPP
 /*------------------------------------------------------------------------
  * Vulkan Conformance Tests
  * ------------------------
@@ -30,34 +32,30 @@
  *
  *//*!
  * \file
- * \brief Vulkan shader render test cases
+ * \brief Shader built-in constant tests.
  *//*--------------------------------------------------------------------*/
 
-#include "vktShaderExecutorTests.hpp"
-
-#include "deUniquePtr.hpp"
-
-#include "vktShaderBuiltinConstantTests.hpp"
-#include "vktShaderCommonFunctionTests.hpp"
-#include "vktShaderIntegerFunctionTests.hpp"
-#include "vktShaderPackingFunctionTests.hpp"
+#include "tcuTestCase.hpp"
 
 namespace vkt
 {
 namespace shaderexecutor
 {
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+class ShaderBuiltinConstantTests : public tcu::TestCaseGroup
 {
-	de::MovePtr<tcu::TestCaseGroup> shaderExecutorTests (new tcu::TestCaseGroup(testCtx, "ShaderExecutor", "shaderExecutor Tests"));
+public:
+								ShaderBuiltinConstantTests	(tcu::TestContext& testCtx);
+	virtual						~ShaderBuiltinConstantTests	(void);
 
-	shaderExecutorTests->addChild(new ShaderBuiltinConstantTests(testCtx));
-	shaderExecutorTests->addChild(new ShaderCommonFunctionTests(testCtx));
-	shaderExecutorTests->addChild(new ShaderIntegerFunctionTests(testCtx));
-	shaderExecutorTests->addChild(new ShaderPackingFunctionTests(testCtx));
+	virtual void				init						(void);
 
-	return shaderExecutorTests.release();
-}
+private:
+								ShaderBuiltinConstantTests	(const ShaderBuiltinConstantTests&);
+	ShaderBuiltinConstantTests&	operator=					(const ShaderBuiltinConstantTests&);
+};
 
 } // shaderexecutor
 } // vkt
+
+#endif // _VKTSHADERBUILTINCONSTANTTESTS_HPP
