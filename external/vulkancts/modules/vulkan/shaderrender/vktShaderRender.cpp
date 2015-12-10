@@ -846,7 +846,7 @@ void ShaderRenderCaseInstance::copyTilingImageToOptimal	(const vk::VkImage&	srcI
 		DE_NULL,										// const void*				pNext;
 		*cmdPool,										// VkCommandPool			commandPool;
 		VK_COMMAND_BUFFER_LEVEL_PRIMARY,				// VkCommandBufferLevel		level;
-		0u												// deUint32					bufferCount;
+		1u												// deUint32					bufferCount;
 	};
 
 	const VkCommandBufferUsageFlags		usageFlags			= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
