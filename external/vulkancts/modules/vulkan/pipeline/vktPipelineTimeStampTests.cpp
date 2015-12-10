@@ -162,6 +162,18 @@ std::string getTransferMethodStr(const TransferMethod method,
     return desc.str();
 }
 
+VkDescriptorBufferInfo createDescriptorBufferInfo (VkBuffer buffer, VkDeviceSize offset, VkDeviceSize range)
+{
+    const VkDescriptorBufferInfo info =
+    {
+        buffer,                     // VkBuffer        buffer;
+        offset,                     // VkDeviceSize    offset;
+        range,                      // VkDeviceSize    range;
+    };
+
+    return info;
+}
+
 // helper classes
 class TimestampTestParam
 {
@@ -580,7 +592,6 @@ Move<VkPipeline> SimpleGraphicsPipelineBuilder::buildPipeline(tcu::IVec2 renderS
     };
 
     return createGraphicsPipeline(vk, vkDevice, DE_NULL, &graphicsPipelineParams);
-
 }
 
 void SimpleGraphicsPipelineBuilder::enableTessellationStage(uint32_t patchControlPoints)
@@ -619,8 +630,8 @@ public:
     virtual void initPrograms (SourceCollections& programCollection) const;
     virtual TestInstance* createInstance (Context& context) const;
 protected:
-  stageFlagVector  m_stages;
-  bool             m_inRenderPass;  
+    stageFlagVector  m_stages;
+    bool             m_inRenderPass;  
 };
 
 class TimestampTestInstance : public vkt::TestInstance
@@ -697,7 +708,6 @@ TimestampTestInstance::TimestampTestInstance(Context&              context,
     }
 
     // Create command buffer
-    
     {
         const VkCommandBufferAllocateInfo cmdAllocateParams =
         {
@@ -708,9 +718,7 @@ TimestampTestInstance::TimestampTestInstance(Context&              context,
             1u,                                             // deUint32                bufferCount;
         };
 
-
         m_cmdBuffer = allocateCommandBuffer(vk, vkDevice, &cmdAllocateParams);
-
     }
 
     // Create fence
@@ -766,7 +774,6 @@ void TimestampTestInstance::configCommandBuffer(void)
     }
 
     VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
-    
 }
 
 tcu::TestStatus TimestampTestInstance::iterate(void)
@@ -821,7 +828,6 @@ tcu::TestStatus TimestampTestInstance::iterate(void)
     }
     
     return verifyTimestamp();
-
 }
 
 tcu::TestStatus TimestampTestInstance::verifyTimestamp(void)
@@ -845,7 +851,6 @@ endOfCompare:
       return tcu::TestStatus::pass("Timestamp increases steadily.");
   else
       return tcu::TestStatus::fail("Latter stage timestamp is smaller than the former stage timestamp.");
-
 }
 
 Move<VkBuffer> TimestampTestInstance::createBufferAndBindMemory(VkDeviceSize size, VkBufferUsageFlags usage, de::MovePtr<Allocation>* pAlloc)
@@ -918,7 +923,6 @@ Move< VkImage > TimestampTestInstance::createImage2DAndBindMemory(VkFormat forma
     }
     
     return image;
-    
 }
 
 class BasicGraphicsTest : public TimestampTest
@@ -957,10 +961,7 @@ protected:
     virtual void buildVertexBuffer(void);
     virtual void buildRenderPass(VkFormat colorFormat, VkFormat depthFormat);
     virtual void buildFrameBuffer(tcu::IVec2 renderSize, VkFormat colorFormat, VkFormat depthFormat);
-//    virtual void buildShaderStages(const shaderSpec* specs,uint32_t count);
-//    virtual void buildGraphicsPipeline(void);
 protected:
-  
     const tcu::IVec2                    m_renderSize;
     const VkFormat                      m_colorFormat;
     const VkFormat                      m_depthFormat;
@@ -979,7 +980,6 @@ protected:
 
     SimpleGraphicsPipelineBuilder       m_pipelineBuilder;    
     Move<VkPipeline>                    m_graphicsPipelines;
-  
 };
 
 void BasicGraphicsTest::initPrograms (SourceCollections& programCollection) const
@@ -1196,266 +1196,6 @@ void BasicGraphicsTestInstance::buildFrameBuffer(tcu::IVec2 renderSize, VkFormat
     
 }
 
-/*
-void BasicGraphicsTestInstance::buildShaderStages(const shaderSpec* specs, uint32_t count)
-{
-    const DeviceInterface&      vk                  = m_context.getDeviceInterface();
-    const VkDevice              vkDevice            = m_context.getDevice();
-
-    DE_ASSERT(count <= VK_MAX_SHADER_STAGES);
-    
-    for(unsigned int i=0;i<count;i++)
-    {
-        const VkShaderModuleCreateInfo moduleCreateInfo =
-        {
-            VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,                // VkStructureType             sType;
-            DE_NULL,                                                    // const void*                 pNext;
-            0u,                                                         // VkShaderModuleCreateFlags   flags;
-            ,                                                           // deUintptr                   codeSize;
-            m_context.getBinaryCollection().get(specs[i].source_name),  // const deUint32*             pCode;
-        };
-
-      Move<VkShaderModule> shaderModule = createShaderModule(vk, vkDevice, , 0);
-      const VkShaderCreateInfo shaderParams =
-      {
-          VK_STRUCTURE_TYPE_SHADER_CREATE_INFO,           // VkStructureType      sType;
-          DE_NULL,                                        // const void*          pNext;
-          *shaderModule,                                  // VkShaderModule       module;
-          specs[i].entry_name,                            // const char*          pName;
-          0u,                                             // VkShaderCreateFlags  flags;
-          specs[i].stage,                                 // VkShaderStage        stage;
-      };
-      m_shaders[specs[i].stage] = createShader(vk, vkDevice, &shaderParams);
-
-      m_shaderStageInfo[i].sType               = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-      m_shaderStageInfo[i].pNext               = DE_NULL;
-      m_shaderStageInfo[i].stage               = specs[i].stage;
-      m_shaderStageInfo[i].shader              = *m_shaders[specs[i].stage];
-      m_shaderStageInfo[i].pSpecializationInfo = DE_NULL;
-    }
-    
-    m_shaderStageCount = count;
-}
-
-void BasicGraphicsTestInstance::buildGraphicsPipeline(void)
-{
-    const DeviceInterface&      vk                  = m_context.getDeviceInterface();
-    const VkDevice              vkDevice            = m_context.getDevice();
-
-    // Create pipeline layout
-    {
-        const VkPipelineLayoutCreateInfo pipelineLayoutParams =
-        {
-            VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,      // VkStructureType                  sType;
-            DE_NULL,                                            // const void*                      pNext;
-            0u,                                                 // VkPipelineLayoutCreateFlags      flags;
-            0u,                                                 // deUint32                         setLayoutCount;
-            DE_NULL,                                            // const VkDescriptorSetLayout*     pSetLayouts;
-            0u,                                                 // deUint32                         pushConstantRangeCount;
-            DE_NULL                                             // const VkPushConstantRange*       pPushConstantRanges;
-        };
-
-        m_pipelineLayout = createPipelineLayout(vk, vkDevice, &pipelineLayoutParams);
-    }
-    
-    // Create pipeline
-    {
-        const VkVertexInputBindingDescription vertexInputBindingDescription =
-        {
-            0u,                                 // deUint32                 binding;
-            sizeof(Vertex4RGBA),                // deUint32                 strideInBytes;
-            VK_VERTEX_INPUT_RATE_VERTEX,        // VkVertexInputRate        inputRate;
-        };
-
-        const VkVertexInputAttributeDescription vertexInputAttributeDescriptions[2] =
-        {
-            {
-                0u,                                 // deUint32 location;
-                0u,                                 // deUint32 binding;
-                VK_FORMAT_R32G32B32A32_SFLOAT,      // VkFormat format;
-                0u                                  // deUint32 offsetInBytes;
-            },
-            {
-                1u,                                 // deUint32 location;
-                0u,                                 // deUint32 binding;
-                VK_FORMAT_R32G32B32A32_SFLOAT,      // VkFormat format;
-                DE_OFFSET_OF(Vertex4RGBA, color),   // deUint32 offsetInBytes;
-            }
-        };
-
-        const VkPipelineVertexInputStateCreateInfo vertexInputStateParams =
-        {
-            VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,      // VkStructureType                          sType;
-            DE_NULL,                                                        // const void*                              pNext;
-            0u,                                                             // VkPipelineVertexInputStateCreateFlags    flags;
-            1u,                                                             // deUint32                                 vertexBindingDescriptionCount;
-            &vertexInputBindingDescription,                                 // const VkVertexInputBindingDescription*   pVertexBindingDescriptions;
-            2u,                                                             // deUint32                                 vertexAttributeDescriptionCount;
-            vertexInputAttributeDescriptions                                // const VkVertexInputAttributeDescription* pVertexAttributeDescriptions;
-        };
-
-        const VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateParams =
-        {
-            VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,    // VkStructureType                          sType;
-            DE_NULL,                                                        // const void*                              pNext;
-            0u,                                                             // VkPipelineInputAssemblyStateCreateFlags  flags;
-            VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,                            // VkPrimitiveTopology                      topology;
-            false                                                           // VkBool32                                 primitiveRestartEnable;
-        };
-
-        const VkViewport viewport =
-        {
-            0.0f,                       // float    originX;
-            0.0f,                       // float    originY;
-            (float)m_renderSize.x(),    // float    width;
-            (float)m_renderSize.y(),    // float    height;
-            0.0f,                       // float    minDepth;
-            1.0f                        // float    maxDepth;
-        };
-        const VkRect2D scissor =
-        {
-            { 0u, 0u },                                                     // VkOffset2D  offset;
-            { m_renderSize.x(), m_renderSize.y() }                          // VkExtent2D  extent;
-        };
-        const VkPipelineViewportStateCreateInfo viewportStateParams =
-        {
-            VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,          // VkStructureType                      sType;
-            DE_NULL,                                                        // const void*                          pNext;
-            0u,                                                             // VkPipelineViewportStateCreateFlags   flags;
-            1u,                                                             // deUint32                             viewportCount;
-            &viewport,                                                      // const VkViewport*                    pViewports;
-            1u,                                                             // deUint32                             scissorCount;
-            &scissor                                                        // const VkRect2D*                      pScissors;
-        };
-
-        const VkPipelineRasterizationStateCreateInfo rasterStateParams =
-        {
-            VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,     // VkStructureType                          sType;
-            DE_NULL,                                                        // const void*                              pNext;
-            0u,                                                             // VkPipelineRasterizationStateCreateFlags  flags;
-            false,                                                          // VkBool32                                 depthClampEnable;
-            false,                                                          // VkBool32                                 rasterizerDiscardEnable;
-            VK_POLYGON_MODE_FILL,                                           // VkPolygonMode                            polygonMode;
-            VK_CULL_MODE_NONE,                                              // VkCullModeFlags                          cullMode;
-            VK_FRONT_FACE_COUNTER_CLOCKWISE,                                // VkFrontFace                              frontFace;
-            VK_FALSE,                                                       // VkBool32                                 depthBiasEnable;
-            0.0f,                                                           // float                                    depthBiasConstantFactor;
-            0.0f,                                                           // float                                    depthBiasClamp;
-            0.0f,                                                           // float                                    depthBiasSlopeFactor;
-            1.0f,                                                           // float                                    lineWidth;
-        };
-
-        const VkPipelineColorBlendAttachmentState colorBlendAttachmentState =
-        {
-            false,                                                                      // VkBool32                 blendEnable;
-            VK_BLEND_FACTOR_ONE,                                                        // VkBlendFactor            srcColorBlendFactor;
-            VK_BLEND_FACTOR_ZERO,                                                       // VkBlendFactor            dstColorBlendFactor;
-            VK_BLEND_OP_ADD,                                                            // VkBlendOp                colorBlendOp;
-            VK_BLEND_FACTOR_ONE,                                                        // VkBlendFactor            srcAlphaBlendFactor;
-            VK_BLEND_FACTOR_ZERO,                                                       // VkBlendFactor            dstAlphaBlendFactor;
-            VK_BLEND_OP_ADD,                                                            // VkBlendOp                alphaBlendOp;
-            VK_COLOR_COMPONENT_R_BIT |
-            VK_COLOR_COMPONENT_G_BIT |
-            VK_COLOR_COMPONENT_B_BIT |
-            VK_COLOR_COMPONENT_A_BIT                                                    // VkColorComponentFlags    colorWriteMask;
-        };
-
-        const VkPipelineColorBlendStateCreateInfo colorBlendStateParams =
-        {
-            VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,   // VkStructureType                              sType;
-            DE_NULL,                                                    // const void*                                  pNext;
-            0u,                                                         // VkPipelineColorBlendStateCreateFlags         flags;
-            VK_FALSE,                                                   // VkBool32                                     logicOpEnable;
-            VK_LOGIC_OP_COPY,                                           // VkLogicOp                                    logicOp;
-            1u,                                                         // deUint32                                     attachmentCount;
-            &colorBlendAttachmentState,                                 // const VkPipelineColorBlendAttachmentState*   pAttachments;
-            { 0.0f, 0.0f, 0.0f, 0.0f },                                 // float                                        blendConst[4];
-        };
-
-        const VkPipelineMultisampleStateCreateInfo  multisampleStateParams  =
-        {
-            VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,   // VkStructureType                          sType;
-            DE_NULL,                                                    // const void*                              pNext;
-            0u,                                                         // VkPipelineMultisampleStateCreateFlags    flags;
-            VK_SAMPLE_COUNT_1_BIT,                                      // VkSampleCountFlagBits                    rasterizationSamples;
-            false,                                                      // VkBool32                                 sampleShadingEnable;
-            0.0f,                                                       // float                                    minSampleShading;
-            DE_NULL,                                                    // const VkSampleMask*                      pSampleMask;
-            VK_FALSE,                                                   // VkBool32                                 alphaToCoverageEnable;
-            VK_FALSE,                                                   // VkBool32                                 alphaToOneEnable;
-        };
-
-        const VkPipelineDynamicStateCreateInfo  dynamicStateParams      =
-        {
-            VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,       // VkStructureType          sType;
-            DE_NULL,                                                    // const void*              pNext;
-            0u,                                                         // deUint32                 dynamicStateCount;
-            DE_NULL                                                     // const VkDynamicState*    pDynamicStates;
-        };
-
-        VkPipelineDepthStencilStateCreateInfo depthStencilStateParams =
-        {
-            VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO, // VkStructureType                          sType;
-            DE_NULL,                                                    // const void*                              pNext;
-            0u,                                                         // VkPipelineDepthStencilStateCreateFlags   flags;
-            true,                                                       // VkBool32                                 depthTestEnable;
-            true,                                                       // VkBool32                                 depthWriteEnable;
-            VK_COMPARE_OP_LESS_OR_EQUAL,                                // VkCompareOp                              depthCompareOp;
-            false,                                                      // VkBool32                                 depthBoundsTestEnable;
-            false,                                                      // VkBool32                                 stencilTestEnable;
-            // VkStencilOpState front;
-            {
-                VK_STENCIL_OP_KEEP,     // VkStencilOp  failOp;
-                VK_STENCIL_OP_KEEP,     // VkStencilOp  passOp;
-                VK_STENCIL_OP_KEEP,     // VkStencilOp  depthFailOp;
-                VK_COMPARE_OP_NEVER,    // VkCompareOp  compareOp;
-                0u,                     // deUint32     compareMask;
-                0u,                     // deUint32     writeMask;
-                0u,                     // deUint32     reference;
-            },
-            // VkStencilOpState back;
-            {
-                VK_STENCIL_OP_KEEP,     // VkStencilOp  failOp;
-                VK_STENCIL_OP_KEEP,     // VkStencilOp  passOp;
-                VK_STENCIL_OP_KEEP,     // VkStencilOp  depthFailOp;
-                VK_COMPARE_OP_NEVER,    // VkCompareOp  compareOp;
-                0u,                     // deUint32     compareMask;
-                0u,                     // deUint32     writeMask;
-                0u,                     // deUint32     reference;
-            },
-            -1.0f,                                                      // float                                    minDepthBounds;
-            +1.0f,                                                      // float                                    maxDepthBounds;
-        };
-
-        const VkGraphicsPipelineCreateInfo graphicsPipelineParams =
-        {
-            VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,    // VkStructureType                                  sType;
-            DE_NULL,                                            // const void*                                      pNext;
-            0u,                                                 // VkPipelineCreateFlags                            flags;
-            m_shaderStageCount,                                 // deUint32                                         stageCount;
-            m_shaderStageInfo,                                  // const VkPipelineShaderStageCreateInfo*           pStages;
-            &vertexInputStateParams,                            // const VkPipelineVertexInputStateCreateInfo*      pVertexInputState;
-            &inputAssemblyStateParams,                          // const VkPipelineInputAssemblyStateCreateInfo*    pInputAssemblyState;
-            DE_NULL,                                            // const VkPipelineTessellationStateCreateInfo*     pTessellationState;
-            &viewportStateParams,                               // const VkPipelineViewportStateCreateInfo*         pViewportState;
-            &rasterStateParams,                                 // const VkPipelineRasterizationStateCreateInfo*    pRasterizationState;
-            &multisampleStateParams,                            // const VkPipelineMultisampleStateCreateInfo*      pMultisampleState;
-            &depthStencilStateParams,                           // const VkPipelineDepthStencilStateCreateInfo*     pDepthStencilState;
-            &colorBlendStateParams,                             // const VkPipelineColorBlendStateCreateInfo*       pColorBlendState;
-            &dynamicStateParams,                                // const VkPipelineDynamicStateCreateInfo*          pDynamicState;
-            *m_pipelineLayout,                                  // VkPipelineLayout                                 layout;
-            *m_renderPass,                                      // VkRenderPass                                     renderPass;
-            0u,                                                 // deUint32                                         subpass;
-            0u,                                                 // VkPipeline                                       basePipelineHandle;
-            0u                                                  // deInt32                                          basePipelineIndex;
-        };
-
-        m_graphicsPipelines         = createGraphicsPipeline(vk, vkDevice, DE_NULL, &graphicsPipelineParams);
-    }
-  
-}
-*/
-
 BasicGraphicsTestInstance::BasicGraphicsTestInstance(Context&              context,
                                                      const stageFlagVector stages,
                                                      const bool            inRenderPass)
@@ -1551,7 +1291,6 @@ void BasicGraphicsTestInstance::configCommandBuffer(void)
     }
     
     VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
-  
 }
 
 class AdvGraphicsTest : public BasicGraphicsTest
@@ -1566,8 +1305,6 @@ public:
     virtual ~AdvGraphicsTest(void) { }
     virtual void initPrograms(SourceCollections& programCollection) const;
     virtual TestInstance* createInstance(Context& context) const;
-protected:
-  
 };
 
 class AdvGraphicsTestInstance : public BasicGraphicsTestInstance
@@ -1834,9 +1571,8 @@ public:
     virtual ~BasicComputeTest(void) { }
     virtual void initPrograms(SourceCollections& programCollection) const;
     virtual TestInstance* createInstance(Context& context) const;
-protected:
-  
 };
+
 class BasicComputeTestInstance : public TimestampTestInstance
 {
 public:
@@ -1858,42 +1594,30 @@ protected:
 
 void BasicComputeTest::initPrograms(SourceCollections& programCollection) const
 {
-  vkt::pipeline::TimestampTest::initPrograms(programCollection);
+    vkt::pipeline::TimestampTest::initPrograms(programCollection);
 
-  programCollection.glslSources.add("basic_compute") << glu::ComputeSource(
-      "#version 310 es\n"
-      "layout(local_size_x = 128) in;\n"
-      "layout(std430) buffer;\n"
-      "layout(binding = 0) readonly buffer Input0\n"
-      "{\n"
-      "  vec4 elements[];\n"
-      "} input_data0;\n"
-      "layout(binding = 1) writeonly buffer Output\n"
-      "{\n"
-      "  vec4 elements[];\n"
-      "} output_data;\n"
-      "void main()\n"
-      "{\n"
-      "  uint ident = gl_GlobalInvocationID.x;\n"
-      "  output_data.elements[ident] = input_data0.elements[ident] * input_data0.elements[ident];\n"
-      "}");
+    programCollection.glslSources.add("basic_compute") << glu::ComputeSource(
+        "#version 310 es\n"
+        "layout(local_size_x = 128) in;\n"
+        "layout(std430) buffer;\n"
+        "layout(binding = 0) readonly buffer Input0\n"
+        "{\n"
+        "  vec4 elements[];\n"
+        "} input_data0;\n"
+        "layout(binding = 1) writeonly buffer Output\n"
+        "{\n"
+        "  vec4 elements[];\n"
+        "} output_data;\n"
+        "void main()\n"
+        "{\n"
+        "  uint ident = gl_GlobalInvocationID.x;\n"
+        "  output_data.elements[ident] = input_data0.elements[ident] * input_data0.elements[ident];\n"
+        "}");
 }
 
 TestInstance* BasicComputeTest::createInstance(Context& context) const
 {
     return new BasicComputeTestInstance(context,m_stages,m_inRenderPass);
-}
-
-VkDescriptorBufferInfo createDescriptorBufferInfo (VkBuffer buffer, VkDeviceSize offset, VkDeviceSize range)
-{
-    const VkDescriptorBufferInfo info =
-    {
-        buffer,                     // VkBuffer        buffer;
-        offset,                     // VkDeviceSize    offset;
-        range,                      // VkDeviceSize    range;
-    };
-
-    return info;
 }
 
 BasicComputeTestInstance::BasicComputeTestInstance(Context&              context,
@@ -2376,7 +2100,7 @@ tcu::TestCaseGroup* createTimeStampTests (tcu::TestContext& testCtx)
         };
         for (size_t stageNdx = 0; stageNdx < DE_LENGTH_OF_ARRAY(basicGraphicsStages0); stageNdx++)
         {
-            TimestampTestParam param(basicGraphicsStages0[stageNdx],2u,true);
+            TimestampTestParam param(basicGraphicsStages0[stageNdx], 2u, true);
             basicGraphicsTests->addChild(newTestCase<BasicGraphicsTest>(testCtx, &param));
             param.m_inRenderPass = false;
             basicGraphicsTests->addChild(newTestCase<BasicGraphicsTest>(testCtx, &param));
@@ -2389,14 +2113,13 @@ tcu::TestCaseGroup* createTimeStampTests (tcu::TestContext& testCtx)
 	    };
         for (size_t stageNdx = 0; stageNdx < DE_LENGTH_OF_ARRAY(basicGraphicsStages1); stageNdx++)
         {
-            TimestampTestParam param(basicGraphicsStages1[stageNdx],3u,true);
+            TimestampTestParam param(basicGraphicsStages1[stageNdx], 3u, true);
             basicGraphicsTests->addChild(newTestCase<BasicGraphicsTest>(testCtx, &param));
             param.m_inRenderPass = false;
             basicGraphicsTests->addChild(newTestCase<BasicGraphicsTest>(testCtx, &param));
         }
 
-		
-		timestampTests->addChild(basicGraphicsTests.release());
+        timestampTests->addChild(basicGraphicsTests.release());
 	}
 
 	// Advanced Graphics Tests
@@ -2410,7 +2133,6 @@ tcu::TestCaseGroup* createTimeStampTests (tcu::TestContext& testCtx)
             {VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT},
             {VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT},
         };
-
         for (size_t stageNdx = 0; stageNdx < DE_LENGTH_OF_ARRAY(advGraphicsStages); stageNdx++)
         {
             TimestampTestParam param(advGraphicsStages[stageNdx], 2u, true);
@@ -2431,13 +2153,12 @@ tcu::TestCaseGroup* createTimeStampTests (tcu::TestContext& testCtx)
             {VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT},
             {VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT},
         };
-
-
         for (size_t stageNdx = 0; stageNdx < DE_LENGTH_OF_ARRAY(basicComputeStages); stageNdx++)
         {
             TimestampTestParam param(basicComputeStages[stageNdx], 2u, false);
             basicComputeTests->addChild(newTestCase<BasicComputeTest>(testCtx, &param));
         }
+        
         timestampTests->addChild(basicComputeTests.release());
     }
 
@@ -2450,8 +2171,6 @@ tcu::TestCaseGroup* createTimeStampTests (tcu::TestContext& testCtx)
             {VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT},
             {VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_HOST_BIT},
         };
-
-
         for (size_t stageNdx = 0; stageNdx < DE_LENGTH_OF_ARRAY(transferStages); stageNdx++)
         {
             for (uint32_t method = 0; method < TRANSFER_METHOD_LAST; method++)
@@ -2460,6 +2179,7 @@ tcu::TestCaseGroup* createTimeStampTests (tcu::TestContext& testCtx)
                 transferTests->addChild(newTestCase<TransferTest>(testCtx, &param));
             }
         }
+        
         timestampTests->addChild(transferTests.release());
     }
     
@@ -2468,12 +2188,12 @@ tcu::TestCaseGroup* createTimeStampTests (tcu::TestContext& testCtx)
         de::MovePtr<tcu::TestCaseGroup> miscTests (new tcu::TestCaseGroup(testCtx, "misc_tests", "Misc tests that can not be categorized to other group."));
 
         const VkPipelineStageFlagBits miscStages[] = {VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT};
-        
         TimestampTestParam param(miscStages, 1u, false);
         miscTests->addChild(new TimestampTest(testCtx,
                                               "timestamp_only",
                                               "Only write timestamp command in the commmand buffer",
                                               &param));
+        
         timestampTests->addChild(miscTests.release());
     }
     
