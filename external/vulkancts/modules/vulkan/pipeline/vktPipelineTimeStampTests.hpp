@@ -1,9 +1,11 @@
+#ifndef _VKTPIPELINETIMESTAMPTESTS_HPP
+#define _VKTPIPELINETIMESTAMPTESTS_HPP
 /*------------------------------------------------------------------------
  * Vulkan Conformance Tests
  * ------------------------
  *
  * Copyright (c) 2015 The Khronos Group Inc.
- * Copyright (c) 2015 Imagination Technologies Ltd.
+ * Copyright (c) 2015 ARM Ltd.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and/or associated documentation files (the
@@ -30,38 +32,19 @@
  *
  *//*!
  * \file
- * \brief Pipeline Tests
+ * \brief Timestamp Tests
  *//*--------------------------------------------------------------------*/
 
-#include "vktPipelineTests.hpp"
-#include "vktPipelineStencilTests.hpp"
-#include "vktPipelineBlendTests.hpp"
-#include "vktPipelineDepthTests.hpp"
-#include "vktPipelineImageTests.hpp"
-#include "vktPipelineSamplerTests.hpp"
-#include "vktPipelineImageViewTests.hpp"
-#include "vktPipelineTimeStampTests.hpp"
-#include "deUniquePtr.hpp"
+#include "vktTestCase.hpp"
 
 namespace vkt
 {
 namespace pipeline
 {
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
-{
-	de::MovePtr<tcu::TestCaseGroup> pipelineTests (new tcu::TestCaseGroup(testCtx, "pipeline", "Pipeline Tests"));
-
-	pipelineTests->addChild(createStencilTests(testCtx));
-	pipelineTests->addChild(createBlendTests(testCtx));
-	pipelineTests->addChild(createDepthTests(testCtx));
-	pipelineTests->addChild(createImageTests(testCtx));
-	pipelineTests->addChild(createSamplerTests(testCtx));
-	pipelineTests->addChild(createImageViewTests(testCtx));
-	pipelineTests->addChild(createTimeStampTests(testCtx));
-
-	return pipelineTests.release();
-}
+tcu::TestCaseGroup* createTimeStampTests (tcu::TestContext& testCtx);
 
 } // pipeline
 } // vkt
+
+#endif // _VKTPIPELINETIMESTAMPTESTS_HPP
