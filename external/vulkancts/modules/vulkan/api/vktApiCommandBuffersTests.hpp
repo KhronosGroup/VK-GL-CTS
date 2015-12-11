@@ -1,4 +1,3 @@
-
 #ifndef _VKTAPICOMMANDBUFFERSTESTS_HPP
 #define _VKTAPICOMMANDBUFFERSTESTS_HPP
 
@@ -42,10 +41,9 @@ namespace vkt
 namespace api
 {
 
-tcu::TestCaseGroup*		createCommandBuffersTests		(tcu::TestContext& testCtx);
+tcu::TestCaseGroup* createCommandBuffersTests (tcu::TestContext& testCtx);
 
 } // api
 } // vkt
-
 
 #endif /* VKTAPICOMMANDBUFFERSTESTS_HPP_ */

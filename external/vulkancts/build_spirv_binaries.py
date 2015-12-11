@@ -77,7 +77,7 @@ def execBuildPrograms (buildCfg, generator, module, mode, dstPath):
 
 	try:
 		binPath = generator.getBinaryPath(buildCfg.getBuildType(), os.path.join(".", "vk-build-programs"))
-		subprocess.call([binPath, "--mode", mode, "--dst-path", dstPath])
+		execute([binPath, "--mode", mode, "--dst-path", dstPath])
 	finally:
 		popWorkingDir()
 

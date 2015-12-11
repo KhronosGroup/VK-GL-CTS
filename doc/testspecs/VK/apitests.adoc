@@ -2410,10 +2410,14 @@ VkResult VKAPI vkResetCommandBuffer(
 |===
 |No. | Tested area | Test Description | Relevant specification text
 |1  | Secondary buffers execution | Check if secondary command buffers are executed | Secondary command buffers may be called from primary command buffers, and are not directly submitted to queues.
-|2  | Order of execution | Check if commands that should be executed in-order are indeed done so. | Some command buffer commands are described as executing in-order with respect to other commands. This means that the effect of that one command must happen in the same order, relative to these other commands, as the order they were added to the command buffer.
-|3  | Synchronization | The commands may end in different order then they are being executed. Using semaphores for synchronization should prevent this | Unless otherwise specified, and without explicit synchronization, the various commands submitted to a queue via command buffers may execute in arbitrary order relative to each other, and/or concurrently. Also, the memory side-effects of those commands may not be directly visible to other commands without memory barriers. This is true within a command buffer, and across command buffers submitted to a given queue. See topic about synchronization primitives suitable to guarantee execution order and side-effect visibility between commands on a given queue.
-|4  | Independent state between buffers | Execute secondary command buffer, change state of primary, execute secondary again, and check if its state was changed | When secondary command buffer(s) are recorded to execute on a primary command buffer, the secondary command buffer inherits no state from the primary command buffer, and all state of the primary command buffer is undefined after an execute secondary command buffer command is recorded.
-|5  | Renderpass state independence | State inside a renderpass should not be changed by executing secondary command buffers | If the primary command buffer is inside a renderpass, then the renderpass and subpass state is not disturbed by executing secondary command buffers
+|2  | Order of execution | Check if vkCmdBindPipeline commands are executed in-order  |
+|3  | Order of execution | Check if vkCmdBindDescriptorSets commands are executed in-order  |
+|4  | Order of execution | Check if vkCmdBindIndexBuffer commands are executed in-order |
+|5  | Order of execution | Check if vkCmdBindVertexBuffers commands are executed in-order |
+|6  | Order of execution | Check if vkCmdResetQueryPool, vkCmdBeginQuery, vkCmdEndQuery, vkCmdCopyQueryPoolResults commands are executed in-order relative to each other |
+|7  | Synchronization | The commands may end in different order then they are being executed. Using semaphores for synchronization should prevent this | Unless otherwise specified, and without explicit synchronization, the various commands submitted to a queue via command buffers may execute in arbitrary order relative to each other, and/or concurrently. Also, the memory side-effects of those commands may not be directly visible to other commands without memory barriers. This is true within a command buffer, and across command buffers submitted to a given queue. See topic about synchronization primitives suitable to guarantee execution order and side-effect visibility between commands on a given queue.
+|8  | Independent state between buffers | Execute secondary command buffer, change state of primary, execute secondary again, and check if its state was changed | When secondary command buffer(s) are recorded to execute on a primary command buffer, the secondary command buffer inherits no state from the primary command buffer, and all state of the primary command buffer is undefined after an execute secondary command buffer command is recorded.
+|9  | Renderpass state independence | State inside a renderpass should not be changed by executing secondary command buffers | If the primary command buffer is inside a renderpass, then the renderpass and subpass state is not disturbed by executing secondary command buffers
 |===
 
 Command Buffer lifetime
@@ -2433,7 +2437,7 @@ Command Buffer recording
 [cols="1,4,8,8", options="header"]
 |===
 |No. | Tested area | Test Description | Relevant specification text
-|1  | Recording to buffers  | Check if all functions that should be recorded, are recorded |
+|1  | Recording to buffers  | Check if all command that can be recorded, are accepted without problem. |
 |2  | Render pass ignoring  | if VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT flag is not set, the values of renderPass, framebuffer, and subpass members of the VkCommandBufferBeginInfo should be ignored | If flags has VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT set, the entire secondary command buffer is considered inside a render pass. In this case, the renderPass, framebuffer, and subpass members of the VkCommandBufferBeginInfo structure must be set as described below. Otherwise the renderPass, framebuffer, and subpass members of the VkCommandBufferBeginInfo structure are ignored, and the secondary command buffer may not contain commands that are only allowed inside a render pass.
 |3  | Simultaneous use – primary buffers | Set flag VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT and submit two times simultanously | If flags does not have VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT set, the command buffer must not be pending execution more than once at any given time. A primary command buffer is considered to be pending execution from the time it is submitted via vkQueueSubmit until that submission completes.
 |4  | Simultaneous use – secondary buffers | Set VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT on secondary buffer, and use the secondary buffer twice in primary buffer | If VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT is not set on a secondary command buffer, that command buffer cannot be used more than once in a given primary command buffer.
@@ -2453,10 +2457,7 @@ Command Buffer submission
 |No. | Tested area | Test Description | Relevant specification text
 |1   | Submission correctness | Call vkQueueSubmit with submitCount equal to the actual count of submits | pSubmits must be an array of submitCount valid VkSubmitInfo structures. If submitCount is 0 though, pSubmits is ignored
 |2   | | ... submitCount == 0 |
-|3   | queue and fence origin | Call vkQueueSubmit with queue and fence that were created from the same VkDevice | queue and fence must have been created, allocated or retrieved from the same VkDevice
-|4   | | Call vkQueueSubmit with queue and fence that were allocated from the same VkDevice |
-|5   | | Call vkQueueSubmit with queue and fence that were retrieved from the same VkDevice |
-|6   | Fence validity | Call vkQueueSubmit with VK_NULL_HANDLE passed as fence. | If fence is not VK_NULL_HANDLE, fence must be a valid VkFence handle
+|3   | Submission without a fence | Call vkQueueSubmit with VK_NULL_HANDLE passed as fence. | If fence is not VK_NULL_HANDLE, fence must be a valid VkFence handle
 |===
 
 Command Pools
@@ -2498,7 +2499,9 @@ VkResult VKAPI vkResetCommandPool(
 [cols="1,4,8,8", options="header"]
 |===
 |No. | Tested area | Test Description | Relevant specification text
-|1  | Create, Reset and Destroy a Command Pool | Simple usage test. Create command pool, reset it, and destroy it. Check if result is success. |
+|1  | Create | Performed in virtually every other test. |
+|2  | Reset | Tested in bulk command buffer reset. (Is it enough?) |
+|3  | Destroy | (Impossible to test. The only way to check if it was destroyed is to attempt to use it. If the destruction was successful, it will result in a segmentation fault leading to the test crashing.) |
 |===
 
 Secondary Command Buffers
@@ -2517,12 +2520,9 @@ void VKAPI vkCmdExecuteCommands(
 [cols="1,4,8,8", options="header"]
 |===
 |No. | Tested area | Test Description | Relevant specification text
-|1  | Buffers' origin | Call vkCmdExecuteCommands with commandBuffer and pCommandBuffers that created from the same VkDevice | commandBuffer and pCommandBuffers must have been created, allocated or retrieved from the same VkDevice
-|2  | | ... allocated from the same VkDevice |
-|3  | | ... retrieved from the same VkDevice |
-|4  | Simultaneous use | Call vkCmdExecuteCommands with pCommandBuffers such that its element is already pending execution in commandBuffer and was created with the VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT flag | Any given element of pCommandBuffers must not be already pending execution in commandBuffer, or appear twice in pCommandBuffers, unless it was created with the VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT flag
-|5  | | Call vkCmdExecuteCommands with pCommandBuffers such that its element appears twice in pCommandBuffers and was created with the VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT flag |
-|6  | Call from within a VkRenderPass | Call vkCmdExecuteCommands within a VkRenderPass with all elements of pCommandBuffers recorded with the VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT | If vkCmdExecuteCommands is being called within a VkRenderPass, any given element of pCommandBuffers must have been recorded with the VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT
+|1  | Simultaneous use | Call vkCmdExecuteCommands with pCommandBuffers such that its element is already pending execution in commandBuffer and was created with the VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT flag | Any given element of pCommandBuffers must not be already pending execution in commandBuffer, or appear twice in pCommandBuffers, unless it was created with the VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT flag
+|2  | | Call vkCmdExecuteCommands with pCommandBuffers such that its element appears twice in pCommandBuffers and was created with the VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT flag |
+|3  | Call from within a VkRenderPass | Call vkCmdExecuteCommands within a VkRenderPass with all elements of pCommandBuffers recorded with the VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT | If vkCmdExecuteCommands is being called within a VkRenderPass, any given element of pCommandBuffers must have been recorded with the VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT
 |===
 
 Render Pass
@@ -2575,15 +2575,12 @@ Framebuffers
 |No. | Tested area | Test Description | Relevant specification text
 |1  | Attachment count in pCreateInfo | Call vkCreateFramebuffer with pCreateInfo such that attachmentCount is equal to the number of attachments | pAttachments must be an array of attachmentCount valid VkImageView handles. If attachmentCount is 0 though, pAttachments is ignored
 |2  | | ... where attachmentCount == 0 |
-|3  | Render Pass and Attachments origin | Call vkCreateFramebuffer with pCreateInfo such that renderPass and pAttachments were created using the same VkDevice | renderPass and pAttachments must have been created, allocated or retrieved from the same VkDevice
-|4  | | ... renderPass and pAttachments were allocated using the same VkDevice |
-|5  | | ... renderPass and pAttachments were retrieved from the same VkDevice |
-|6  | Dimensions | Call vkCreateFramebuffer with pCreateInfo such that width == 0 | The value of width must be less or equal to than VkPhysicalDeviceLimits::maxFramebufferWidth
-|7  | | ... width == VkPhysicalDeviceLimits::maxFramebufferWidth |
-|8  | | ... 0 < width < VkPhysicalDeviceLimits::maxFramebufferWidth |
-|9  | | ... height == 0 | The value of height must be less or equal to than VkPhysicalDeviceLimits::maxFramebufferHeight
-|10 | | ... height == VkPhysicalDeviceLimits::maxFramebufferHeight |
-|11 | | ... 0 < height < VkPhysicalDeviceLimits::maxFramebufferHeight |
+|3  | Dimensions | Call vkCreateFramebuffer with pCreateInfo such that width == 0 | The value of width must be less or equal to than VkPhysicalDeviceLimits::maxFramebufferWidth
+|4  | | ... width == VkPhysicalDeviceLimits::maxFramebufferWidth |
+|5  | | ... 0 < width < VkPhysicalDeviceLimits::maxFramebufferWidth |
+|6  | | ... height == 0 | The value of height must be less or equal to than VkPhysicalDeviceLimits::maxFramebufferHeight
+|7  | | ... height == VkPhysicalDeviceLimits::maxFramebufferHeight |
+|8  | | ... 0 < height < VkPhysicalDeviceLimits::maxFramebufferHeight |
 |===
 
 Draw commands

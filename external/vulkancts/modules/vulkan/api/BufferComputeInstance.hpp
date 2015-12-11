@@ -1,6 +1,5 @@
-#ifndef BUFFERCOMPUTEINSTANCE_HPP
-#define BUFFERCOMPUTEINSTANCE_HPP
-
+#ifndef _BUFFERCOMPUTEINSTANCE_HPP
+#define _BUFFERCOMPUTEINSTANCE_HPP
 
 /*-------------------------------------------------------------------------
  * Vulkan Conformance Tests
@@ -8,6 +7,7 @@
  *
  * Copyright (c) 2015 The Khronos Group Inc.
  * Copyright (c) 2015 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2015 Google Inc.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and/or associated documentation files (the
@@ -34,42 +34,23 @@
  *
  *//*--------------------------------------------------------------------*/
 
-
-
+#include "tcuVectorType.hpp"
+#include "vkRef.hpp"
+#include "vkMemUtil.hpp"
 #include "vktTestCase.hpp"
 
-#include "vkDefs.hpp"
-#include "vkRef.hpp"
-#include "vkRefUtil.hpp"
-#include "vkPlatform.hpp"
-#include "vkPrograms.hpp"
-#include "vkMemUtil.hpp"
-#include "vkBuilderUtil.hpp"
-#include "vkQueryUtil.hpp"
+vk::Move <vk::VkBuffer> 				createColorDataBuffer (deUint32 offset, deUint32 bufferSize, const tcu::Vec4 &value1,
+											   const tcu::Vec4 &value2, de::MovePtr <vk::Allocation> *outAllocation,
+											   vkt::Context &context);
 
-#include "tcuVector.hpp"
-#include "tcuVectorUtil.hpp"
-#include "tcuTexture.hpp"
-#include "tcuTextureUtil.hpp"
-#include "tcuResultCollector.hpp"
-#include "tcuTestLog.hpp"
-#include "tcuRGBA.hpp"
-#include "tcuSurface.hpp"
-#include "tcuImageCompare.hpp"
+vk::Move <vk::VkBufferView> 			createBufferView (vk::VkBuffer buffer, deUint32 offset);
 
-#include "deUniquePtr.hpp"
-#include "deSharedPtr.hpp"
-#include "deStringUtil.hpp"
-#include "deArrayUtil.hpp"
+vk::Move <vk::VkDescriptorSetLayout> 	createDescriptorSetLayout (vkt::Context &context);
 
-#include "tcuDefs.hpp"
-#include "tcuTestCase.hpp"
-#include "ComputeInstanceResultBuffer.hpp"
+vk::Move <vk::VkDescriptorPool> 		createDescriptorPool (vkt::Context &context);
 
-vk::Move<vk::VkBuffer>					createColorDataBuffer		(deUint32 offset, deUint32 bufferSize, const tcu::Vec4& value1, const tcu::Vec4& value2, de::MovePtr<vk::Allocation>* outAllocation, vkt::Context& context);
-vk::Move<vk::VkBufferView>				createBufferView			(vk::VkBuffer buffer, deUint32 offset) ;
-vk::Move<vk::VkDescriptorSetLayout>		createDescriptorSetLayout	(vkt::Context& context) ;
-vk::Move<vk::VkDescriptorPool>			createDescriptorPool		(vkt::Context& context) ;
-vk::Move<vk::VkDescriptorSet>			createDescriptorSet			(vk::VkDescriptorPool pool, vk::VkDescriptorSetLayout layout, vk::VkBuffer viewA, deUint32 offsetA, vk::VkBuffer viewB, deUint32 offsetB, vk::VkBuffer resBuf, vkt::Context& context) ;
+vk::Move <vk::VkDescriptorSet> 			createDescriptorSet (vk::VkDescriptorPool pool, vk::VkDescriptorSetLayout layout,
+													vk::VkBuffer viewA, deUint32 offsetA, vk::VkBuffer viewB,
+													deUint32 offsetB, vk::VkBuffer resBuf, vkt::Context &context);
 
-#endif //VULKANCTS_BUFFERCOMPUTEINSTANCE_HPP
+#endif //_BUFFERCOMPUTEINSTANCE_HPP

@@ -21,8 +21,8 @@ if (DEQP_SUPPORT_EGL)
 endif ()
 
 # Platform libs
-# 
-# 
+find_library(LOG_LIBRARY NAMES log PATHS /usr/lib)
+set(DEQP_PLATFORM_LIBRARIES ${DEQP_PLATFORM_LIBRARIES} ${LOG_LIBRARY})
 
 if (DE_ANDROID_API GREATER 8)
 	# libandroid for NativeActivity APIs
