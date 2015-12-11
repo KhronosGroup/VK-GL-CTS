@@ -5,6 +5,8 @@ if (NOT DE_DEFS)
 endif ()
 
 set(DECPP_SRCS
+	deAppendList.cpp
+	deAppendList.hpp
 	deArrayBuffer.cpp
 	deArrayBuffer.hpp
 	deArrayUtil.cpp
