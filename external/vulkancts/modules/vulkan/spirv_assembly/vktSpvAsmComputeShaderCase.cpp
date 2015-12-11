@@ -48,10 +48,11 @@ namespace
 using namespace vk;
 using std::vector;
 
-typedef de::MovePtr<Allocation>			AllocationMp;
-typedef de::SharedPtr<Allocation>		AllocationSp;
-typedef Unique<VkBuffer>				BufferHandleUp;
-typedef de::SharedPtr<BufferHandleUp>	BufferHandleSp;
+typedef vkt::SpirVAssembly::AllocationMp			AllocationMp;
+typedef vkt::SpirVAssembly::AllocationSp			AllocationSp;
+
+typedef Unique<VkBuffer>							BufferHandleUp;
+typedef de::SharedPtr<BufferHandleUp>				BufferHandleSp;
 
 /*--------------------------------------------------------------------*//*!
  * \brief Create storage buffer, allocate and bind memory for the buffer
@@ -415,12 +416,19 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 	VK_CHECK(vkdi.waitForFences(device, 1, &cmdCompleteFence.get(), 0u, infiniteTimeout)); // \note: timeout is failure
 
 	// Check output.
-
-	for (size_t outputNdx = 0; outputNdx < m_shaderSpec.outputs.size(); ++outputNdx)
+	if (m_shaderSpec.verifyIO)
 	{
-		const BufferSp& expectedOutput = m_shaderSpec.outputs[outputNdx];
-		if (deMemCmp(expectedOutput->data(), outputAllocs[outputNdx]->getHostPtr(), expectedOutput->getNumBytes()))
+		if (!(*m_shaderSpec.verifyIO)(m_shaderSpec.inputs, outputAllocs, m_shaderSpec.outputs))
 			return tcu::TestStatus::fail("Output doesn't match with expected");
+	}
+	else
+	{
+		for (size_t outputNdx = 0; outputNdx < m_shaderSpec.outputs.size(); ++outputNdx)
+		{
+			const BufferSp& expectedOutput = m_shaderSpec.outputs[outputNdx];
+			if (deMemCmp(expectedOutput->data(), outputAllocs[outputNdx]->getHostPtr(), expectedOutput->getNumBytes()))
+				return tcu::TestStatus::fail("Output doesn't match with expected");
+		}
 	}
 
 	return tcu::TestStatus::pass("Ouput match with expected");

@@ -63,6 +63,8 @@
 #include "vktSpvAsmComputeShaderTestUtil.hpp"
 #include "vktTestCaseUtil.hpp"
 
+#include <cmath>
+#include <limits>
 #include <map>
 #include <string>
 #include <sstream>
@@ -2061,6 +2063,278 @@ tcu::TestCaseGroup* createOpConstantCompositeGroup (tcu::TestContext& testCtx)
 	return group.release();
 }
 
+// Creates a floating point number with the given exponent, and significand
+// bits set. It can only create normalized numbers. Only the least significant
+// 24 bits of the significand will be examined. The final bit of the
+// significand will also be ignored. This allows alignment to be written
+// similarly to C99 hex-floats.
+// For example if you wanted to write 0x1.7f34p-12 you would call
+// constructNormalizedFloat(-12, 0x7f3400)
+float constructNormalizedFloat (deInt32 exponent, deUint32 significand)
+{
+	float f = 1.0f;
+
+	for (deInt32 idx = 0; idx < 23; ++idx)
+	{
+		f += ((significand & 0x800000) == 0) ? 0.f : std::ldexp(1.0f, -idx);
+		significand <<= 1;
+	}
+
+	return std::ldexp(f, exponent);
+}
+
+// Compare instruction for the OpQuantizeF16 compute exact case.
+// Returns true if the output is what is expected from the test case.
+bool compareOpQuantizeF16ComputeExactCase (const std::vector<BufferSp>&, const vector<AllocationSp>& outputAllocs, const std::vector<BufferSp>& expectedOutputs)
+{
+	if (outputAllocs.size() != 1)
+		return false;
+
+	// We really just need this for size because we cannot compare Nans.
+	const BufferSp&	expectedOutput	= expectedOutputs[0];
+	const float*	outputAsFloat	= static_cast<const float*>(outputAllocs[0]->getHostPtr());;
+
+	if (expectedOutput->getNumBytes() != 4*sizeof(float)) {
+		return false;
+	}
+
+	if (*outputAsFloat != constructNormalizedFloat(8, 0x304000) &&
+		*outputAsFloat != constructNormalizedFloat(8, 0x300000)) {
+		return false;
+	}
+
+	if (*outputAsFloat != -constructNormalizedFloat(-7, 0x600000) &&
+		*outputAsFloat != -constructNormalizedFloat(-7, 0x604000)) {
+		return false;
+	}
+
+	if (*outputAsFloat != constructNormalizedFloat(2, 0x01C000) &&
+		*outputAsFloat != constructNormalizedFloat(2, 0x020000)) {
+		return false;
+	}
+
+	if (*outputAsFloat != constructNormalizedFloat(1, 0xFFC000) &&
+		*outputAsFloat != constructNormalizedFloat(2, 0x000000)) {
+		return false;
+	}
+
+	return true;
+}
+
+// Checks that every output from a test-case is a float NaN.
+bool compareNan (const std::vector<BufferSp>&, const vector<AllocationSp>& outputAllocs, const std::vector<BufferSp>& expectedOutputs)
+{
+	if (outputAllocs.size() != 1)
+		return false;
+
+	// We really just need this for size because we cannot compare Nans.
+	const BufferSp& expectedOutput		= expectedOutputs[0];
+	const float* output_as_float		= static_cast<const float*>(outputAllocs[0]->getHostPtr());;
+
+	for (size_t idx = 0; idx < expectedOutput->getNumBytes() / sizeof(float); ++idx)
+	{
+		if (!isnan(output_as_float[idx]))
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
+// Checks that a compute shader can generate a constant composite value of various types, without exercising a computation on it.
+tcu::TestCaseGroup* createOpQuantizeToF16Group (tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opquantize", "Tests the OpQuantizeToF16 instruction"));
+	de::Random						rnd				(deStringHash(group->getName()));
+
+	const std::string shader (
+		string(s_ShaderPreamble) +
+
+		"OpSource GLSL 430\n"
+		"OpName %main           \"main\"\n"
+		"OpName %id             \"gl_GlobalInvocationID\"\n"
+
+		"OpDecorate %id BuiltIn GlobalInvocationId\n"
+
+		+ string(s_InputOutputBufferTraits) + string(s_CommonTypes) + string(s_InputOutputBuffer) +
+
+		"%id        = OpVariable %uvec3ptr Input\n"
+		"%zero      = OpConstant %i32 0\n"
+
+		"%main      = OpFunction %void None %voidf\n"
+		"%label     = OpLabel\n"
+		"%idval     = OpLoad %uvec3 %id\n"
+		"%x         = OpCompositeExtract %u32 %idval 0\n"
+		"%inloc     = OpAccessChain %f32ptr %indata %zero %x\n"
+		"%inval     = OpLoad %f32 %inloc\n"
+		"%quant     = OpQuantizeToF16 %f32 %inval\n"
+		"%outloc    = OpAccessChain %f32ptr %outdata %zero %x\n"
+		"             OpStore %outloc %quant\n"
+		"             OpReturn\n"
+		"             OpFunctionEnd\n");
+
+	{
+		ComputeShaderSpec	spec;
+		const deUint32		numElements		= 100;
+		vector<float>		infinities;
+		vector<float>		results;
+
+		infinities.reserve(numElements);
+		results.reserve(numElements);
+
+		for (size_t idx = 0; idx < numElements; ++idx)
+		{
+			switch(idx % 4)
+			{
+				case 0:
+					infinities.push_back(std::numeric_limits<float>::infinity());
+					results.push_back(std::numeric_limits<float>::infinity());
+					break;
+				case 1:
+					infinities.push_back(-std::numeric_limits<float>::infinity());
+					results.push_back(-std::numeric_limits<float>::infinity());
+					break;
+				case 2:
+					infinities.push_back(std::ldexp(1.0f, 16));
+					results.push_back(std::numeric_limits<float>::infinity());
+					break;
+				case 3:
+					infinities.push_back(std::ldexp(-1.0f, 32));
+					results.push_back(-std::numeric_limits<float>::infinity());
+					break;
+			}
+		}
+
+		spec.inputs.push_back(BufferSp(new Float32Buffer(infinities)));
+		spec.outputs.push_back(BufferSp(new Float32Buffer(results)));
+		spec.numWorkGroups = IVec3(numElements, 1, 1);
+		spec.entryPoint = "main";
+
+		group->addChild(new SpvAsmComputeShaderCase(
+			testCtx, "infinities", "Check that infinities propagated and created", spec));
+	}
+
+	{
+		ComputeShaderSpec	spec;
+		vector<float>		nans;
+		const deUint32		numElements		= 100;
+
+		nans.reserve(numElements);
+
+		for (size_t idx = 0; idx < numElements; ++idx)
+		{
+			if (idx % 2 == 0)
+			{
+				nans.push_back(std::numeric_limits<float>::quiet_NaN());
+			}
+			else
+			{
+				nans.push_back(-std::numeric_limits<float>::quiet_NaN());
+			}
+		}
+
+		spec.inputs.push_back(BufferSp(new Float32Buffer(nans)));
+		spec.outputs.push_back(BufferSp(new Float32Buffer(nans)));
+		spec.numWorkGroups = IVec3(numElements, 1, 1);
+		spec.entryPoint = "main";
+		spec.verifyIO = &compareNan;
+
+		group->addChild(new SpvAsmComputeShaderCase(
+			testCtx, "propagated_nans", "Check that nans are propagated", spec));
+	}
+
+	{
+		ComputeShaderSpec	spec;
+		vector<float>		small;
+		vector<float>		zeros;
+		const deUint32		numElements		= 100;
+
+		small.reserve(numElements);
+		zeros.reserve(numElements);
+
+		for (size_t idx = 0; idx < numElements; ++idx)
+		{
+			switch(idx % 6)
+			{
+				case 0:
+					small.push_back(0.f);
+					zeros.push_back(0.f);
+					break;
+				case 1:
+					small.push_back(-0.f);
+					zeros.push_back(-0.f);
+					break;
+				case 2:
+					small.push_back(std::ldexp(1.0f, -16));
+					zeros.push_back(0.f);
+					break;
+				case 3:
+					small.push_back(std::ldexp(-1.0f, -32));
+					zeros.push_back(-0.f);
+					break;
+				case 4:
+					small.push_back(std::ldexp(1.0f, -127));
+					zeros.push_back(0.f);
+					break;
+				case 5:
+					small.push_back(-std::ldexp(1.0f, -128));
+					zeros.push_back(-0.f);
+					break;
+			}
+		}
+
+		spec.inputs.push_back(BufferSp(new Float32Buffer(small)));
+		spec.outputs.push_back(BufferSp(new Float32Buffer(zeros)));
+		spec.numWorkGroups = IVec3(numElements, 1, 1);
+		spec.entryPoint = "main";
+
+		group->addChild(new SpvAsmComputeShaderCase(
+			testCtx, "flush_to_zero", "Check that values are zeroed correctly", spec));
+	}
+
+	{
+		ComputeShaderSpec	spec;
+		vector<float>		exact;
+		const deUint32		numElements		= 200;
+
+		exact.reserve(numElements);
+
+		for (size_t idx = 0; idx < numElements; ++idx)
+			exact.push_back(static_cast<float>(idx - 100));
+
+		spec.inputs.push_back(BufferSp(new Float32Buffer(exact)));
+		spec.outputs.push_back(BufferSp(new Float32Buffer(exact)));
+		spec.numWorkGroups = IVec3(numElements, 1, 1);
+		spec.entryPoint = "main";
+
+		group->addChild(new SpvAsmComputeShaderCase(
+			testCtx, "exact", "Check that values exactly preserved where appropriate", spec));
+	}
+
+	{
+		ComputeShaderSpec	spec;
+		vector<float>		inputs;
+		const deUint32		numElements		= 4;
+
+		inputs.push_back(constructNormalizedFloat(8,	0x300300));
+		inputs.push_back(-constructNormalizedFloat(-7,	0x600800));
+		inputs.push_back(constructNormalizedFloat(2,	0x01E000));
+		inputs.push_back(constructNormalizedFloat(1,	0xFFE000));
+
+		spec.verifyIO = &compareOpQuantizeF16ComputeExactCase;
+		spec.inputs.push_back(BufferSp(new Float32Buffer(inputs)));
+		spec.outputs.push_back(BufferSp(new Float32Buffer(inputs)));
+		spec.numWorkGroups = IVec3(numElements, 1, 1);
+		spec.entryPoint = "main";
+
+		group->addChild(new SpvAsmComputeShaderCase(
+			testCtx, "rounded", "Check that are rounded when needed", spec));
+	}
+
+	return group.release();
+}
+
 // Checks that constant null/composite values can be used in computation.
 tcu::TestCaseGroup* createOpConstantUsageGroup (tcu::TestContext& testCtx)
 {
@@ -3944,6 +4218,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	instructionTests->addChild(createNoContractionGroup(testCtx));
 	instructionTests->addChild(createOpUndefGroup(testCtx));
 	instructionTests->addChild(createOpUnreachableGroup(testCtx));
+	instructionTests->addChild(createOpQuantizeToF16Group(testCtx));
 
     RGBA defaultColors[4];
 	getDefaultColors(defaultColors);
