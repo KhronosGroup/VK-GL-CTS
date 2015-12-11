@@ -6179,6 +6179,77 @@ tcu::TestCaseGroup* createOpPhiTests(tcu::TestContext& testCtx)
 
 	return group.release();
 }
+
+tcu::TestCaseGroup* createNoContractionTests(tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup> group			(new tcu::TestCaseGroup(testCtx, "nocontraction", "Test the NoContraction decoration"));
+	RGBA							inputColors[4];
+	RGBA							outputColors[4];
+
+	// With NoContraction, (1 + 2^-23) * (1 - 2^-23) - 1 should be conducted as a multiplication and an addition separately.
+	// For the multiplication, the result is 1 - 2^-46, which is out of the precision range for 32-bit float. (32-bit float
+	// only have 23-bit fraction.) So it will be rounded to 1. Then the final result is 0. On the contrary, the result will
+	// be 2^-46, which is a normalized number perfectly representable as 32-bit float.
+	const char						constantsAndTypes[]	 =
+		"%c_vec4_0       = OpConstantComposite %v4f32 %c_f32_0 %c_f32_0 %c_f32_0 %c_f32_1\n"
+		"%c_vec4_1       = OpConstantComposite %v4f32 %c_f32_1 %c_f32_1 %c_f32_1 %c_f32_1\n"
+		"%c_f32_1pl2_23  = OpConstant %f32 0x1.000002p+0\n" // 1 + 2^-23
+		"%c_f32_1mi2_23  = OpConstant %f32 0x1.fffffcp-1\n" // 1 - 2^-23
+		"%c_f32_n1       = OpConstant %f32 -1\n";
+
+	const char						function[]	 =
+		"%test_code      = OpFunction %v4f32 None %v4f32_function\n"
+		"%param          = OpFunctionParameter %v4f32\n"
+		"%label          = OpLabel\n"
+		"%var1           = OpVariable %fp_f32 Function %c_f32_1pl2_23\n"
+		"%var2           = OpVariable %fp_f32 Function\n"
+		"%red            = OpCompositeExtract %f32 %param 0\n"
+		"%plus_red       = OpFAdd %f32 %c_f32_1mi2_23 %red\n"
+		"                  OpStore %var2 %plus_red\n"
+		"%val1           = OpLoad %f32 %var1\n"
+		"%val2           = OpLoad %f32 %var2\n"
+		"%mul            = OpFMul %f32 %val1 %val2\n"
+		"%add            = OpFAdd %f32 %mul %c_f32_n1\n"
+		"%is0            = OpFOrdEqual %bool %add %c_f32_0\n"
+		"%ret            = OpSelect %v4f32 %is0 %c_vec4_0 %c_vec4_1\n"
+		"                  OpReturnValue %ret\n"
+		"                  OpFunctionEnd\n";
+
+	struct CaseNameDecoration
+	{
+		string name;
+		string decoration;
+	};
+
+
+	CaseNameDecoration tests[] = {
+		{"multiplication",	"OpDecorate %mul NoContraction"},
+		{"addition",		"OpDecorate %add NoContraction"},
+		{"both",			"OpDecorate %mul NoContraction\nOpDecorate %add NoContraction"},
+	};
+
+	getHalfColorsFullAlpha(inputColors);
+
+	for (deUint8 idx = 0; idx < 4; ++idx)
+	{
+		inputColors[idx].setRed(0);
+		outputColors[idx] = RGBA(0, 0, 0, 255);
+	}
+
+	for (size_t testNdx = 0; testNdx < sizeof(tests) / sizeof(CaseNameDecoration); ++testNdx)
+	{
+		map<string, string> fragments;
+
+		fragments["decoration"] = tests[testNdx].decoration;
+		fragments["pre_main"] = constantsAndTypes;
+		fragments["testfun"] = function;
+
+		createTestsForAllStages(tests[testNdx].name, inputColors, outputColors, fragments, group.get());
+	}
+
+	return group.release();
+}
+
 tcu::TestCaseGroup* createMemoryAccessTests(tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> memoryAccessTests (new tcu::TestCaseGroup(testCtx, "opMemoryAccess", "Memory Semantics"));
@@ -7112,6 +7183,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	graphicsTests->addChild(createModuleTests(testCtx));
 	graphicsTests->addChild(createSwitchBlockOrderTests(testCtx));
 	graphicsTests->addChild(createOpPhiTests(testCtx));
+	graphicsTests->addChild(createNoContractionTests(testCtx));
 	graphicsTests->addChild(createOpQuantizeTests(testCtx));
 	graphicsTests->addChild(createLoopTests(testCtx));
 	graphicsTests->addChild(createSpecConstantTests(testCtx));
