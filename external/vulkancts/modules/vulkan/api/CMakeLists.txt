@@ -17,6 +17,8 @@ set(DEQP_VK_API_SRCS
 	vktApiBufferViewCreateTests.hpp
 	vktApiBufferViewAccessTests.cpp
 	vktApiBufferViewAccessTests.hpp
+	vktApiFeatureInfo.cpp
+	vktApiFeatureInfo.hpp
 	)
 
 set(DEQP_VK_API_LIBS

@@ -35,6 +35,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vkDefs.hpp"
+#include "deMemory.h"
 
 #include <vector>
 
@@ -55,6 +56,25 @@ std::vector<VkLayerProperties>			enumerateDeviceLayerProperties			(const Instanc
 std::vector<VkExtensionProperties>		enumerateDeviceExtensionProperties		(const InstanceInterface& vki, VkPhysicalDevice physicalDevice, const char* layerName);
 
 bool									isShaderStageSupported					(const VkPhysicalDeviceFeatures& deviceFeatures, VkShaderStageFlagBits stage);
+
+template <typename Context, typename Interface, typename Type>
+bool validateInitComplete(Context context, void (Interface::*Function)(Context, Type*)const, const Interface& interface)
+{
+	Type vec[2];
+	deMemset(&vec[0], 0x00, sizeof(Type));
+	deMemset(&vec[1], 0xFF, sizeof(Type));
+
+	(interface.*Function)(context, &vec[0]);
+	(interface.*Function)(context, &vec[1]);
+
+	for (size_t ndx = 0; ndx < sizeof(Type); ndx++)
+	{
+		if (reinterpret_cast<deUint8*>(&vec[0])[ndx] != reinterpret_cast<deUint8*>(&vec[1])[ndx])
+			return false;
+	}
+
+	return true;
+}
 
 } // vk
 

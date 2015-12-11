@@ -42,6 +42,7 @@
 #include "vktApiBufferTests.hpp"
 #include "vktApiBufferViewCreateTests.hpp"
 #include "vktApiBufferViewAccessTests.hpp"
+#include "vktApiFeatureInfo.hpp"
 
 namespace vkt
 {
@@ -68,6 +69,7 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 	de::MovePtr<tcu::TestCaseGroup>	apiTests	(new tcu::TestCaseGroup(testCtx, "api", "API Tests"));
 
 	apiTests->addChild(createSmokeTests					(testCtx));
+	apiTests->addChild(api::createFeatureInfoTests		(testCtx));
 	apiTests->addChild(createDeviceInitializationTests	(testCtx));
 	apiTests->addChild(createObjectManagementTests		(testCtx));
 	apiTests->addChild(createBufferTests				(testCtx));

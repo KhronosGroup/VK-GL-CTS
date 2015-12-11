@@ -25,8 +25,6 @@ set(DEQP_VK_COMMON_SRCS
 	vktTestCaseUtil.hpp
 	vktTestPackage.cpp
 	vktTestPackage.hpp
-	vktInfo.cpp
-	vktInfo.hpp
 	vktShaderLibrary.cpp
 	vktShaderLibrary.hpp
 	vktRenderPassTests.cpp

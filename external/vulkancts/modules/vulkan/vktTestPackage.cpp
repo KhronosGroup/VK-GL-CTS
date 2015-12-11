@@ -46,7 +46,6 @@
 
 #include "deUniquePtr.hpp"
 
-#include "vktInfo.hpp"
 #include "vktApiTests.hpp"
 #include "vktPipelineTests.hpp"
 #include "vktBindingModelTests.hpp"
@@ -303,7 +302,6 @@ tcu::TestCaseExecutor* TestPackage::createExecutor (void) const
 
 void TestPackage::init (void)
 {
-	addChild(createInfoTests			(m_testCtx));
 	addChild(api::createTests			(m_testCtx));
 	addChild(pipeline::createTests		(m_testCtx));
 	addChild(BindingModel::createTests	(m_testCtx));

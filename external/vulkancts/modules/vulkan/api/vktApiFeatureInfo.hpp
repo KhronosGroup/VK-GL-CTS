@@ -1,5 +1,5 @@
-#ifndef _VKTINFO_HPP
-#define _VKTINFO_HPP
+#ifndef _VKTAPIFEATUREINFO_HPP
+#define _VKTAPIFEATUREINFO_HPP
 /*-------------------------------------------------------------------------
  * Vulkan Conformance Tests
  * ------------------------
@@ -31,7 +31,7 @@
  *
  *//*!
  * \file
- * \brief Platform information tests
+ * \brief API Feature Query tests
  *//*--------------------------------------------------------------------*/
 
 #include "tcuDefs.hpp"
@@ -39,9 +39,12 @@
 
 namespace vkt
 {
+namespace api
+{
 
-tcu::TestCaseGroup*		createInfoTests		(tcu::TestContext& testCtx);
+tcu::TestCaseGroup*		createFeatureInfoTests		(tcu::TestContext& testCtx);
 
+} // api
 } // vkt
 
-#endif // _VKTINFO_HPP
+#endif // _VKTAPIFEATUREINFO_HPP
