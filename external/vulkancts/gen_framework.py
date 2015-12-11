@@ -590,16 +590,16 @@ def getConstructorFunctions (api):
 			assert function.arguments[-2].type == "const VkAllocationCallbacks*"
 
 			objectType	= function.arguments[-1].type.replace("*", "").strip()
-			arguments	= function.arguments[:-2]
+			arguments	= function.arguments[:-1]
 			funcs.append(ConstructorFunction(function.getType(), getInterfaceName(function), objectType, iface, arguments))
 	return funcs
 
 def writeRefUtilProto (api, filename):
-	functions = getConstructorFunctions(api)
+	functions	= getConstructorFunctions(api)
 
 	def makeRefUtilProto ():
 		unindented = []
-		for line in indentLines(["Move<%s>\t%s\t(%s);" % (function.objectType, function.name, argListToStr([function.iface] + function.arguments)) for function in functions]):
+		for line in indentLines(["Move<%s>\t%s\t(%s = DE_NULL);" % (function.objectType, function.name, argListToStr([function.iface] + function.arguments)) for function in functions]):
 			yield line
 
 	writeInlFile(filename, INL_HEADER, makeRefUtilProto())
@@ -620,7 +620,7 @@ def writeRefUtilImpl (api, filename):
 				yield "template<>"
 				yield "void Deleter<%s>::operator() (%s obj) const" % (objectType, objectType)
 				yield "{"
-				yield "\tm_deviceIface->%s(m_device, obj, DE_NULL);" % (getInterfaceName(function))
+				yield "\tm_deviceIface->%s(m_device, obj, m_allocator);" % (getInterfaceName(function))
 				yield "}"
 				yield ""
 
@@ -633,8 +633,8 @@ def writeRefUtilImpl (api, filename):
 			yield "Move<%s> %s (%s)" % (function.objectType, function.name, argListToStr([function.iface] + function.arguments))
 			yield "{"
 			yield "\t%s object = 0;" % function.objectType
-			yield "\tVK_CHECK(vk.%s(%s));" % (function.name, ", ".join([a.name for a in function.arguments] + ["DE_NULL", "&object"]))
-			yield "\treturn Move<%s>(check<%s>(object), Deleter<%s>(vk, %s));" % (function.objectType, function.objectType, function.objectType, dtorObj)
+			yield "\tVK_CHECK(vk.%s(%s));" % (function.name, ", ".join([a.name for a in function.arguments] + ["&object"]))
+			yield "\treturn Move<%s>(check<%s>(object), Deleter<%s>(%s));" % (function.objectType, function.objectType, function.objectType, ", ".join(["vk", dtorObj, function.arguments[-1].name]))
 			yield "}"
 			yield ""
 

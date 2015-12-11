@@ -81,7 +81,7 @@ Move<VkDeviceMemory> allocMemory (const DeviceInterface& vk, VkDevice device, Vk
 		pAllocInfo_memoryTypeIndex,
 	};
 	VK_CHECK(vk.allocateMemory(device, &pAllocInfo, (const VkAllocationCallbacks*)DE_NULL, &object));
-	return Move<VkDeviceMemory>(check<VkDeviceMemory>(object), Deleter<VkDeviceMemory>(vk, device));
+	return Move<VkDeviceMemory>(check<VkDeviceMemory>(object), Deleter<VkDeviceMemory>(vk, device, (const VkAllocationCallbacks*)DE_NULL));
 }
 
 struct MemoryRange
