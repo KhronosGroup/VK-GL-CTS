@@ -1189,16 +1189,16 @@ tcu::TestCaseGroup* createOpConstantCompositeGroup (tcu::TestContext& testCtx)
 													"%point5 = OpConstant %f32 0.5\n"
 													"%vec = OpConstantComposite %uvec3 %one %one %zero\n"
 													"%mat = OpConstantComposite %m2vec3 %vec %vec\n"
-													"%const = OpConstantComposite %one %point5 %vec %mat"));
+													"%const = OpConstantComposite %struct %one %point5 %vec %mat"));
 	cases.push_back(CaseParameter("nested_struct",	"%st1 = OpTypeStruct %u32 %f32\n"
 													"%st2 = OpTypeStruct %i32 %i32\n"
 													"%struct = OpTypeStruct %st1 %st2\n"
 													"%point5 = OpConstant %f32 0.5\n"
 													"%one = OpConstant %u32 1\n"
 													"%ten = OpConstant %i32 10\n"
-													"%st1val = OpConstantComposite %one %point5\n"
-													"%st2val = OpConstantComposite %ten %ten\n"
-													"%const = OpConstantComposite %st1val %st2val"));
+													"%st1val = OpConstantComposite %st1 %one %point5\n"
+													"%st2val = OpConstantComposite %st2 %ten %ten\n"
+													"%const = OpConstantComposite %struct %st1val %st2val"));
 
 	fillRandomScalars(rnd, 1.f, 100.f, &positiveFloats[0], numElements);
 
