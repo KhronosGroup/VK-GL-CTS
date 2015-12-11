@@ -2046,8 +2046,8 @@ tcu::TestStatus BufferComputeInstance::testResourceAccess (void)
 	const tcu::Vec4									colorB1				= tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f);
 	const tcu::Vec4									colorB2				= tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f);
 
-	const deUint32									dataOffsetA			= (isDynamicCase) ? (bindTimeOffsets[0]) : (m_setViewOffset) ? ((deUint32)STATIC_OFFSET_VALUE_A) : (0u);
-	const deUint32									dataOffsetB			= (isDynamicCase) ? (bindTimeOffsets[1]) : (m_setViewOffset) ? ((deUint32)STATIC_OFFSET_VALUE_B) : (0u);
+	const deUint32									dataOffsetA			= ((isDynamicCase) ? (bindTimeOffsets[0]) : 0) + ((m_setViewOffset) ? ((deUint32)STATIC_OFFSET_VALUE_A) : (0u));
+	const deUint32									dataOffsetB			= ((isDynamicCase) ? (bindTimeOffsets[1]) : 0) + ((m_setViewOffset) ? ((deUint32)STATIC_OFFSET_VALUE_B) : (0u));
 	const deUint32									viewOffsetA			= (m_setViewOffset) ? ((deUint32)STATIC_OFFSET_VALUE_A) : (0u);
 	const deUint32									viewOffsetB			= (m_setViewOffset) ? ((deUint32)STATIC_OFFSET_VALUE_B) : (0u);
 	const deUint32									bufferSizeA			= dataOffsetA + ADDRESSABLE_SIZE;
@@ -3234,7 +3234,15 @@ tcu::Vec4 ImageFetchInstanceImages::fetchImageValue (int fetchPosNdx) const
 	const tcu::TextureLevelPyramid&	fetchSrcA	= m_sourceImageA;
 	const tcu::TextureLevelPyramid&	fetchSrcB	= (m_shaderInterface == SHADER_INPUT_SINGLE_DESCRIPTOR) ? (m_sourceImageA) : (m_sourceImageB);
 	const tcu::TextureLevelPyramid&	fetchSrc	= ((fetchPosNdx % 2) == 0) ? (fetchSrcA) : (fetchSrcB); // sampling order is ABAB
-	const tcu::IVec3				fetchPos	= getFetchPos(m_viewType, m_baseMipLevel, m_baseArraySlice, fetchPosNdx);
+	tcu::IVec3						fetchPos	= getFetchPos(m_viewType, m_baseMipLevel, m_baseArraySlice, fetchPosNdx);
+
+	// add base array layer into the appropriate coordinate, based on the view type
+	if (m_viewType == vk::VK_IMAGE_VIEW_TYPE_CUBE || m_viewType == vk::VK_IMAGE_VIEW_TYPE_CUBE_ARRAY)
+		fetchPos.z() += 6 * m_baseArraySlice;
+	else if (m_viewType == vk::VK_IMAGE_VIEW_TYPE_1D || m_viewType == vk::VK_IMAGE_VIEW_TYPE_1D_ARRAY)
+		fetchPos.y() += m_baseArraySlice;
+	else
+		fetchPos.z() += m_baseArraySlice;
 
 	return fetchSrc.getLevel(m_baseMipLevel).getPixel(fetchPos.x(), fetchPos.y(), fetchPos.z());
 }
