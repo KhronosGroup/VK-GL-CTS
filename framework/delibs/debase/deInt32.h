@@ -206,6 +206,18 @@ DE_INLINE deBool deIsPowerOfTwo32 (int a)
 }
 
 /*--------------------------------------------------------------------*//*!
+ * \brief Check if a value is a power-of-two.
+ * \param a Input value.
+ * \return True if input is a power-of-two value, false otherwise.
+ *
+ * \note Also returns true for zero.
+ *//*--------------------------------------------------------------------*/
+DE_INLINE deBool deIsPowerOfTwo64 (deUint64 a)
+{
+	return ((a & (a - 1ull)) == 0);
+}
+
+/*--------------------------------------------------------------------*//*!
  * \brief Check if an integer is aligned to given power-of-two size.
  * \param a		Input value.
  * \param align	Alignment to check for.
