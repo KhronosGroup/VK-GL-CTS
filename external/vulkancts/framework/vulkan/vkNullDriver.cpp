@@ -49,6 +49,101 @@ namespace
 
 using std::vector;
 
+// Memory management
+
+template<typename T>
+void* allocateSystemMem (const VkAllocationCallbacks* pAllocator, VkSystemAllocationScope scope)
+{
+	void* ptr = pAllocator->pfnAllocation(pAllocator->pUserData, sizeof(T), sizeof(void*), scope);
+	if (!ptr)
+		throw std::bad_alloc();
+	return ptr;
+}
+
+void freeSystemMem (const VkAllocationCallbacks* pAllocator, void* mem)
+{
+	pAllocator->pfnFree(pAllocator->pUserData, mem);
+}
+
+template<typename Object, typename Handle, typename Parent, typename CreateInfo>
+Handle allocateHandle (Parent parent, const CreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator)
+{
+	Object* obj = DE_NULL;
+
+	if (pAllocator)
+	{
+		void* mem = allocateSystemMem<Object>(pAllocator, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
+		try
+		{
+			obj = new (mem) Object(parent, pCreateInfo);
+			DE_ASSERT(obj == mem);
+		}
+		catch (...)
+		{
+			pAllocator->pfnFree(pAllocator->pUserData, mem);
+			throw;
+		}
+	}
+	else
+		obj = new Object(parent, pCreateInfo);
+
+	return reinterpret_cast<Handle>(obj);
+}
+
+template<typename Object, typename Handle, typename CreateInfo>
+Handle allocateHandle (const CreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator)
+{
+	Object* obj = DE_NULL;
+
+	if (pAllocator)
+	{
+		void* mem = allocateSystemMem<Object>(pAllocator, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
+		try
+		{
+			obj = new (mem) Object(pCreateInfo);
+			DE_ASSERT(obj == mem);
+		}
+		catch (...)
+		{
+			pAllocator->pfnFree(pAllocator->pUserData, mem);
+			throw;
+		}
+	}
+	else
+		obj = new Object(pCreateInfo);
+
+	return reinterpret_cast<Handle>(obj);
+}
+
+template<typename Object, typename Handle>
+void freeHandle (Handle handle, const VkAllocationCallbacks* pAllocator)
+{
+	Object* obj = reinterpret_cast<Object*>(handle);
+
+	if (pAllocator)
+	{
+		obj->~Object();
+		freeSystemMem(pAllocator, reinterpret_cast<void*>(obj));
+	}
+	else
+		delete obj;
+}
+
+template<typename Object, typename Handle, typename CreateInfo>
+Handle allocateNonDispHandle (VkDevice device, const CreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator)
+{
+	Object* const	obj		= allocateHandle<Object, Object*>(device, pCreateInfo, pAllocator);
+	return Handle((deUint64)(deUintptr)obj);
+}
+
+template<typename Object, typename Handle>
+void freeNonDispHandle (Handle handle, const VkAllocationCallbacks* pAllocator)
+{
+	freeHandle<Object>(reinterpret_cast<Object*>((deUintptr)handle.getInternal()), pAllocator);
+}
+
+// Object definitions
+
 #define VK_NULL_RETURN(STMT)					\
 	do {										\
 		try {									\
@@ -271,6 +366,8 @@ void DescriptorPool::reset (void)
 	m_managedSets.clear();
 }
 
+// API implementation
+
 extern "C"
 {
 
@@ -284,18 +381,56 @@ VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL getDeviceProcAddr (VkDevice device, con
 	return reinterpret_cast<Device*>(device)->getProcAddr(pName);
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL createGraphicsPipelines (VkDevice device, VkPipelineCache, deUint32 count, const VkGraphicsPipelineCreateInfo* pCreateInfos, const VkAllocationCallbacks*, VkPipeline* pPipelines)
+VKAPI_ATTR VkResult VKAPI_CALL createGraphicsPipelines (VkDevice device, VkPipelineCache, deUint32 count, const VkGraphicsPipelineCreateInfo* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines)
 {
-	for (deUint32 ndx = 0; ndx < count; ndx++)
-		pPipelines[ndx] = VkPipeline((deUint64)(deUintptr)new Pipeline(device, pCreateInfos+ndx));
-	return VK_SUCCESS;
+	deUint32 allocNdx;
+	try
+	{
+		for (allocNdx = 0; allocNdx < count; allocNdx++)
+			pPipelines[allocNdx] = allocateNonDispHandle<Pipeline, VkPipeline>(device, pCreateInfos+allocNdx, pAllocator);
+
+		return VK_SUCCESS;
+	}
+	catch (const std::bad_alloc&)
+	{
+		for (deUint32 freeNdx = 0; freeNdx < allocNdx; freeNdx++)
+			freeNonDispHandle<Pipeline, VkPipeline>(pPipelines[freeNdx], pAllocator);
+
+		return VK_ERROR_OUT_OF_HOST_MEMORY;
+	}
+	catch (VkResult err)
+	{
+		for (deUint32 freeNdx = 0; freeNdx < allocNdx; freeNdx++)
+			freeNonDispHandle<Pipeline, VkPipeline>(pPipelines[freeNdx], pAllocator);
+
+		return err;
+	}
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL createComputePipelines (VkDevice device, VkPipelineCache, deUint32 count, const VkComputePipelineCreateInfo* pCreateInfos, const VkAllocationCallbacks*, VkPipeline* pPipelines)
+VKAPI_ATTR VkResult VKAPI_CALL createComputePipelines (VkDevice device, VkPipelineCache, deUint32 count, const VkComputePipelineCreateInfo* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines)
 {
-	for (deUint32 ndx = 0; ndx < count; ndx++)
-		pPipelines[ndx] = VkPipeline((deUint64)(deUintptr)new Pipeline(device, pCreateInfos+ndx));
-	return VK_SUCCESS;
+	deUint32 allocNdx;
+	try
+	{
+		for (allocNdx = 0; allocNdx < count; allocNdx++)
+			pPipelines[allocNdx] = allocateNonDispHandle<Pipeline, VkPipeline>(device, pCreateInfos+allocNdx, pAllocator);
+
+		return VK_SUCCESS;
+	}
+	catch (const std::bad_alloc&)
+	{
+		for (deUint32 freeNdx = 0; freeNdx < allocNdx; freeNdx++)
+			freeNonDispHandle<Pipeline, VkPipeline>(pPipelines[freeNdx], pAllocator);
+
+		return VK_ERROR_OUT_OF_HOST_MEMORY;
+	}
+	catch (VkResult err)
+	{
+		for (deUint32 freeNdx = 0; freeNdx < allocNdx; freeNdx++)
+			freeNonDispHandle<Pipeline, VkPipeline>(pPipelines[freeNdx], pAllocator);
+
+		return err;
+	}
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL enumeratePhysicalDevices (VkInstance, deUint32* pPhysicalDeviceCount, VkPhysicalDevice* pDevices)

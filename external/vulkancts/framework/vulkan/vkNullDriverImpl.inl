@@ -4,266 +4,245 @@
 VKAPI_ATTR VkResult VKAPI_CALL createInstance (const VkInstanceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkInstance* pInstance)
 {
 	DE_UNREF(pAllocator);
-	VK_NULL_RETURN(*pInstance = reinterpret_cast<VkInstance>(new Instance(pCreateInfo)));
+	VK_NULL_RETURN((*pInstance = allocateHandle<Instance, VkInstance>(pCreateInfo, pAllocator)));
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL createDevice (VkPhysicalDevice physicalDevice, const VkDeviceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDevice* pDevice)
 {
 	DE_UNREF(pAllocator);
-	VK_NULL_RETURN(*pDevice = reinterpret_cast<VkDevice>(new Device(physicalDevice, pCreateInfo)));
+	VK_NULL_RETURN((*pDevice = allocateHandle<Device, VkDevice>(physicalDevice, pCreateInfo, pAllocator)));
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL allocateMemory (VkDevice device, const VkMemoryAllocateInfo* pAllocateInfo, const VkAllocationCallbacks* pAllocator, VkDeviceMemory* pMemory)
 {
 	DE_UNREF(pAllocator);
-	VK_NULL_RETURN(*pMemory = VkDeviceMemory((deUint64)(deUintptr)new DeviceMemory(device, pAllocateInfo)));
+	VK_NULL_RETURN((*pMemory = allocateNonDispHandle<DeviceMemory, VkDeviceMemory>(device, pAllocateInfo, pAllocator)));
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL createFence (VkDevice device, const VkFenceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkFence* pFence)
 {
 	DE_UNREF(pAllocator);
-	VK_NULL_RETURN(*pFence = VkFence((deUint64)(deUintptr)new Fence(device, pCreateInfo)));
+	VK_NULL_RETURN((*pFence = allocateNonDispHandle<Fence, VkFence>(device, pCreateInfo, pAllocator)));
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL createSemaphore (VkDevice device, const VkSemaphoreCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSemaphore* pSemaphore)
 {
 	DE_UNREF(pAllocator);
-	VK_NULL_RETURN(*pSemaphore = VkSemaphore((deUint64)(deUintptr)new Semaphore(device, pCreateInfo)));
+	VK_NULL_RETURN((*pSemaphore = allocateNonDispHandle<Semaphore, VkSemaphore>(device, pCreateInfo, pAllocator)));
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL createEvent (VkDevice device, const VkEventCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkEvent* pEvent)
 {
 	DE_UNREF(pAllocator);
-	VK_NULL_RETURN(*pEvent = VkEvent((deUint64)(deUintptr)new Event(device, pCreateInfo)));
+	VK_NULL_RETURN((*pEvent = allocateNonDispHandle<Event, VkEvent>(device, pCreateInfo, pAllocator)));
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL createQueryPool (VkDevice device, const VkQueryPoolCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkQueryPool* pQueryPool)
 {
 	DE_UNREF(pAllocator);
-	VK_NULL_RETURN(*pQueryPool = VkQueryPool((deUint64)(deUintptr)new QueryPool(device, pCreateInfo)));
+	VK_NULL_RETURN((*pQueryPool = allocateNonDispHandle<QueryPool, VkQueryPool>(device, pCreateInfo, pAllocator)));
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL createBuffer (VkDevice device, const VkBufferCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkBuffer* pBuffer)
 {
 	DE_UNREF(pAllocator);
-	VK_NULL_RETURN(*pBuffer = VkBuffer((deUint64)(deUintptr)new Buffer(device, pCreateInfo)));
+	VK_NULL_RETURN((*pBuffer = allocateNonDispHandle<Buffer, VkBuffer>(device, pCreateInfo, pAllocator)));
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL createBufferView (VkDevice device, const VkBufferViewCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkBufferView* pView)
 {
 	DE_UNREF(pAllocator);
-	VK_NULL_RETURN(*pView = VkBufferView((deUint64)(deUintptr)new BufferView(device, pCreateInfo)));
+	VK_NULL_RETURN((*pView = allocateNonDispHandle<BufferView, VkBufferView>(device, pCreateInfo, pAllocator)));
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL createImage (VkDevice device, const VkImageCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkImage* pImage)
 {
 	DE_UNREF(pAllocator);
-	VK_NULL_RETURN(*pImage = VkImage((deUint64)(deUintptr)new Image(device, pCreateInfo)));
+	VK_NULL_RETURN((*pImage = allocateNonDispHandle<Image, VkImage>(device, pCreateInfo, pAllocator)));
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL createImageView (VkDevice device, const VkImageViewCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkImageView* pView)
 {
 	DE_UNREF(pAllocator);
-	VK_NULL_RETURN(*pView = VkImageView((deUint64)(deUintptr)new ImageView(device, pCreateInfo)));
+	VK_NULL_RETURN((*pView = allocateNonDispHandle<ImageView, VkImageView>(device, pCreateInfo, pAllocator)));
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL createShaderModule (VkDevice device, const VkShaderModuleCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkShaderModule* pShaderModule)
 {
 	DE_UNREF(pAllocator);
-	VK_NULL_RETURN(*pShaderModule = VkShaderModule((deUint64)(deUintptr)new ShaderModule(device, pCreateInfo)));
+	VK_NULL_RETURN((*pShaderModule = allocateNonDispHandle<ShaderModule, VkShaderModule>(device, pCreateInfo, pAllocator)));
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL createPipelineCache (VkDevice device, const VkPipelineCacheCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkPipelineCache* pPipelineCache)
 {
 	DE_UNREF(pAllocator);
-	VK_NULL_RETURN(*pPipelineCache = VkPipelineCache((deUint64)(deUintptr)new PipelineCache(device, pCreateInfo)));
+	VK_NULL_RETURN((*pPipelineCache = allocateNonDispHandle<PipelineCache, VkPipelineCache>(device, pCreateInfo, pAllocator)));
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL createPipelineLayout (VkDevice device, const VkPipelineLayoutCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkPipelineLayout* pPipelineLayout)
 {
 	DE_UNREF(pAllocator);
-	VK_NULL_RETURN(*pPipelineLayout = VkPipelineLayout((deUint64)(deUintptr)new PipelineLayout(device, pCreateInfo)));
+	VK_NULL_RETURN((*pPipelineLayout = allocateNonDispHandle<PipelineLayout, VkPipelineLayout>(device, pCreateInfo, pAllocator)));
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL createSampler (VkDevice device, const VkSamplerCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSampler* pSampler)
 {
 	DE_UNREF(pAllocator);
-	VK_NULL_RETURN(*pSampler = VkSampler((deUint64)(deUintptr)new Sampler(device, pCreateInfo)));
+	VK_NULL_RETURN((*pSampler = allocateNonDispHandle<Sampler, VkSampler>(device, pCreateInfo, pAllocator)));
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL createDescriptorSetLayout (VkDevice device, const VkDescriptorSetLayoutCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDescriptorSetLayout* pSetLayout)
 {
 	DE_UNREF(pAllocator);
-	VK_NULL_RETURN(*pSetLayout = VkDescriptorSetLayout((deUint64)(deUintptr)new DescriptorSetLayout(device, pCreateInfo)));
+	VK_NULL_RETURN((*pSetLayout = allocateNonDispHandle<DescriptorSetLayout, VkDescriptorSetLayout>(device, pCreateInfo, pAllocator)));
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL createDescriptorPool (VkDevice device, const VkDescriptorPoolCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDescriptorPool* pDescriptorPool)
 {
 	DE_UNREF(pAllocator);
-	VK_NULL_RETURN(*pDescriptorPool = VkDescriptorPool((deUint64)(deUintptr)new DescriptorPool(device, pCreateInfo)));
+	VK_NULL_RETURN((*pDescriptorPool = allocateNonDispHandle<DescriptorPool, VkDescriptorPool>(device, pCreateInfo, pAllocator)));
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL createFramebuffer (VkDevice device, const VkFramebufferCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkFramebuffer* pFramebuffer)
 {
 	DE_UNREF(pAllocator);
-	VK_NULL_RETURN(*pFramebuffer = VkFramebuffer((deUint64)(deUintptr)new Framebuffer(device, pCreateInfo)));
+	VK_NULL_RETURN((*pFramebuffer = allocateNonDispHandle<Framebuffer, VkFramebuffer>(device, pCreateInfo, pAllocator)));
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL createRenderPass (VkDevice device, const VkRenderPassCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkRenderPass* pRenderPass)
 {
 	DE_UNREF(pAllocator);
-	VK_NULL_RETURN(*pRenderPass = VkRenderPass((deUint64)(deUintptr)new RenderPass(device, pCreateInfo)));
+	VK_NULL_RETURN((*pRenderPass = allocateNonDispHandle<RenderPass, VkRenderPass>(device, pCreateInfo, pAllocator)));
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL createCommandPool (VkDevice device, const VkCommandPoolCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkCommandPool* pCommandPool)
 {
 	DE_UNREF(pAllocator);
-	VK_NULL_RETURN(*pCommandPool = VkCommandPool((deUint64)(deUintptr)new CommandPool(device, pCreateInfo)));
+	VK_NULL_RETURN((*pCommandPool = allocateNonDispHandle<CommandPool, VkCommandPool>(device, pCreateInfo, pAllocator)));
 }
 
 VKAPI_ATTR void VKAPI_CALL destroyInstance (VkInstance instance, const VkAllocationCallbacks* pAllocator)
 {
-	DE_UNREF(pAllocator);
-	delete reinterpret_cast<Instance*>(instance);
+	freeHandle<Instance, VkInstance>(instance, pAllocator);
 }
 
 VKAPI_ATTR void VKAPI_CALL destroyDevice (VkDevice device, const VkAllocationCallbacks* pAllocator)
 {
-	DE_UNREF(pAllocator);
-	delete reinterpret_cast<Device*>(device);
+	freeHandle<Device, VkDevice>(device, pAllocator);
 }
 
 VKAPI_ATTR void VKAPI_CALL freeMemory (VkDevice device, VkDeviceMemory memory, const VkAllocationCallbacks* pAllocator)
 {
 	DE_UNREF(device);
-	DE_UNREF(pAllocator);
-	delete reinterpret_cast<DeviceMemory*>((deUintptr)memory.getInternal());
+	freeNonDispHandle<DeviceMemory, VkDeviceMemory>(memory, pAllocator);
 }
 
 VKAPI_ATTR void VKAPI_CALL destroyFence (VkDevice device, VkFence fence, const VkAllocationCallbacks* pAllocator)
 {
 	DE_UNREF(device);
-	DE_UNREF(pAllocator);
-	delete reinterpret_cast<Fence*>((deUintptr)fence.getInternal());
+	freeNonDispHandle<Fence, VkFence>(fence, pAllocator);
 }
 
 VKAPI_ATTR void VKAPI_CALL destroySemaphore (VkDevice device, VkSemaphore semaphore, const VkAllocationCallbacks* pAllocator)
 {
 	DE_UNREF(device);
-	DE_UNREF(pAllocator);
-	delete reinterpret_cast<Semaphore*>((deUintptr)semaphore.getInternal());
+	freeNonDispHandle<Semaphore, VkSemaphore>(semaphore, pAllocator);
 }
 
 VKAPI_ATTR void VKAPI_CALL destroyEvent (VkDevice device, VkEvent event, const VkAllocationCallbacks* pAllocator)
 {
 	DE_UNREF(device);
-	DE_UNREF(pAllocator);
-	delete reinterpret_cast<Event*>((deUintptr)event.getInternal());
+	freeNonDispHandle<Event, VkEvent>(event, pAllocator);
 }
 
 VKAPI_ATTR void VKAPI_CALL destroyQueryPool (VkDevice device, VkQueryPool queryPool, const VkAllocationCallbacks* pAllocator)
 {
 	DE_UNREF(device);
-	DE_UNREF(pAllocator);
-	delete reinterpret_cast<QueryPool*>((deUintptr)queryPool.getInternal());
+	freeNonDispHandle<QueryPool, VkQueryPool>(queryPool, pAllocator);
 }
 
 VKAPI_ATTR void VKAPI_CALL destroyBuffer (VkDevice device, VkBuffer buffer, const VkAllocationCallbacks* pAllocator)
 {
 	DE_UNREF(device);
-	DE_UNREF(pAllocator);
-	delete reinterpret_cast<Buffer*>((deUintptr)buffer.getInternal());
+	freeNonDispHandle<Buffer, VkBuffer>(buffer, pAllocator);
 }
 
 VKAPI_ATTR void VKAPI_CALL destroyBufferView (VkDevice device, VkBufferView bufferView, const VkAllocationCallbacks* pAllocator)
 {
 	DE_UNREF(device);
-	DE_UNREF(pAllocator);
-	delete reinterpret_cast<BufferView*>((deUintptr)bufferView.getInternal());
+	freeNonDispHandle<BufferView, VkBufferView>(bufferView, pAllocator);
 }
 
 VKAPI_ATTR void VKAPI_CALL destroyImage (VkDevice device, VkImage image, const VkAllocationCallbacks* pAllocator)
 {
 	DE_UNREF(device);
-	DE_UNREF(pAllocator);
-	delete reinterpret_cast<Image*>((deUintptr)image.getInternal());
+	freeNonDispHandle<Image, VkImage>(image, pAllocator);
 }
 
 VKAPI_ATTR void VKAPI_CALL destroyImageView (VkDevice device, VkImageView imageView, const VkAllocationCallbacks* pAllocator)
 {
 	DE_UNREF(device);
-	DE_UNREF(pAllocator);
-	delete reinterpret_cast<ImageView*>((deUintptr)imageView.getInternal());
+	freeNonDispHandle<ImageView, VkImageView>(imageView, pAllocator);
 }
 
 VKAPI_ATTR void VKAPI_CALL destroyShaderModule (VkDevice device, VkShaderModule shaderModule, const VkAllocationCallbacks* pAllocator)
 {
 	DE_UNREF(device);
-	DE_UNREF(pAllocator);
-	delete reinterpret_cast<ShaderModule*>((deUintptr)shaderModule.getInternal());
+	freeNonDispHandle<ShaderModule, VkShaderModule>(shaderModule, pAllocator);
 }
 
 VKAPI_ATTR void VKAPI_CALL destroyPipelineCache (VkDevice device, VkPipelineCache pipelineCache, const VkAllocationCallbacks* pAllocator)
 {
 	DE_UNREF(device);
-	DE_UNREF(pAllocator);
-	delete reinterpret_cast<PipelineCache*>((deUintptr)pipelineCache.getInternal());
+	freeNonDispHandle<PipelineCache, VkPipelineCache>(pipelineCache, pAllocator);
 }
 
 VKAPI_ATTR void VKAPI_CALL destroyPipeline (VkDevice device, VkPipeline pipeline, const VkAllocationCallbacks* pAllocator)
 {
 	DE_UNREF(device);
-	DE_UNREF(pAllocator);
-	delete reinterpret_cast<Pipeline*>((deUintptr)pipeline.getInternal());
+	freeNonDispHandle<Pipeline, VkPipeline>(pipeline, pAllocator);
 }
 
 VKAPI_ATTR void VKAPI_CALL destroyPipelineLayout (VkDevice device, VkPipelineLayout pipelineLayout, const VkAllocationCallbacks* pAllocator)
 {
 	DE_UNREF(device);
-	DE_UNREF(pAllocator);
-	delete reinterpret_cast<PipelineLayout*>((deUintptr)pipelineLayout.getInternal());
+	freeNonDispHandle<PipelineLayout, VkPipelineLayout>(pipelineLayout, pAllocator);
 }
 
 VKAPI_ATTR void VKAPI_CALL destroySampler (VkDevice device, VkSampler sampler, const VkAllocationCallbacks* pAllocator)
 {
 	DE_UNREF(device);
-	DE_UNREF(pAllocator);
-	delete reinterpret_cast<Sampler*>((deUintptr)sampler.getInternal());
+	freeNonDispHandle<Sampler, VkSampler>(sampler, pAllocator);
 }
 
 VKAPI_ATTR void VKAPI_CALL destroyDescriptorSetLayout (VkDevice device, VkDescriptorSetLayout descriptorSetLayout, const VkAllocationCallbacks* pAllocator)
 {
 	DE_UNREF(device);
-	DE_UNREF(pAllocator);
-	delete reinterpret_cast<DescriptorSetLayout*>((deUintptr)descriptorSetLayout.getInternal());
+	freeNonDispHandle<DescriptorSetLayout, VkDescriptorSetLayout>(descriptorSetLayout, pAllocator);
 }
 
 VKAPI_ATTR void VKAPI_CALL destroyDescriptorPool (VkDevice device, VkDescriptorPool descriptorPool, const VkAllocationCallbacks* pAllocator)
 {
 	DE_UNREF(device);
-	DE_UNREF(pAllocator);
-	delete reinterpret_cast<DescriptorPool*>((deUintptr)descriptorPool.getInternal());
+	freeNonDispHandle<DescriptorPool, VkDescriptorPool>(descriptorPool, pAllocator);
 }
 
 VKAPI_ATTR void VKAPI_CALL destroyFramebuffer (VkDevice device, VkFramebuffer framebuffer, const VkAllocationCallbacks* pAllocator)
 {
 	DE_UNREF(device);
-	DE_UNREF(pAllocator);
-	delete reinterpret_cast<Framebuffer*>((deUintptr)framebuffer.getInternal());
+	freeNonDispHandle<Framebuffer, VkFramebuffer>(framebuffer, pAllocator);
 }
 
 VKAPI_ATTR void VKAPI_CALL destroyRenderPass (VkDevice device, VkRenderPass renderPass, const VkAllocationCallbacks* pAllocator)
 {
 	DE_UNREF(device);
-	DE_UNREF(pAllocator);
-	delete reinterpret_cast<RenderPass*>((deUintptr)renderPass.getInternal());
+	freeNonDispHandle<RenderPass, VkRenderPass>(renderPass, pAllocator);
 }
 
 VKAPI_ATTR void VKAPI_CALL destroyCommandPool (VkDevice device, VkCommandPool commandPool, const VkAllocationCallbacks* pAllocator)
 {
 	DE_UNREF(device);
-	DE_UNREF(pAllocator);
-	delete reinterpret_cast<CommandPool*>((deUintptr)commandPool.getInternal());
+	freeNonDispHandle<CommandPool, VkCommandPool>(commandPool, pAllocator);
 }
 
 VKAPI_ATTR void VKAPI_CALL getPhysicalDeviceFeatures (VkPhysicalDevice physicalDevice, VkPhysicalDeviceFeatures* pFeatures)
