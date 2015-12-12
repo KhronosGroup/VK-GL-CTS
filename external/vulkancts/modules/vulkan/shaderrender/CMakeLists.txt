@@ -7,6 +7,20 @@ set(DEQP_VK_SHADERRENDER_SRCS
 	vktShaderRender.hpp
 	vktShaderRenderDiscardTests.cpp
 	vktShaderRenderDiscardTests.hpp
+	vktShaderRenderIndexingTests.cpp
+	vktShaderRenderIndexingTests.hpp
+	vktShaderRenderLoopTests.cpp
+	vktShaderRenderLoopTests.hpp
+	vktShaderRenderMatrixTests.cpp
+	vktShaderRenderMatrixTests.hpp
+	vktShaderRenderOperatorTests.cpp
+	vktShaderRenderOperatorTests.hpp
+	vktShaderRenderReturnTests.cpp
+	vktShaderRenderReturnTests.hpp
+	vktShaderRenderStructTests.cpp
+	vktShaderRenderStructTests.hpp
+	vktShaderRenderSwitchTests.cpp
+	vktShaderRenderSwitchTests.hpp
 	)
 
 set(DEQP_VK_SHADERRENDER_LIBS

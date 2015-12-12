@@ -55,6 +55,21 @@ namespace vkt
 namespace sr
 {
 
+class LineStream
+{
+public:
+						LineStream		(int indent = 0)	{ m_indent = indent; }
+						~LineStream		(void)				{}
+
+	const char*			str				(void) const		{ m_string = m_stream.str(); return m_string.c_str(); }
+	LineStream&			operator<<		(const char* line)	{ for (int i = 0; i < m_indent; i++) { m_stream << "\t"; } m_stream << line << "\n"; return *this; }
+
+private:
+	int					m_indent;
+	std::ostringstream	m_stream;
+	mutable std::string	m_string;
+};
+
 class QuadGrid;
 class ShaderRenderCaseInstance;
 
