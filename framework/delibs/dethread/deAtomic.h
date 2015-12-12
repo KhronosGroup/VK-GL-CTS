@@ -32,39 +32,59 @@
 DE_BEGIN_EXTERN_C
 
 /*--------------------------------------------------------------------*//*!
- * \brief Atomic increment and fetch.
+ * \brief Atomic increment and fetch 32-bit signed integer.
  * \param dstAddr	Destination address.
  * \return Incremented value.
  *//*--------------------------------------------------------------------*/
-DE_INLINE deInt32 deAtomicIncrement32 (deInt32 volatile* dstAddr)
+DE_INLINE deInt32 deAtomicIncrementInt32 (volatile deInt32* dstAddr)
 {
 #if (DE_COMPILER == DE_COMPILER_MSC)
 	return _InterlockedIncrement((long volatile*)dstAddr);
 #elif (DE_COMPILER == DE_COMPILER_GCC) || (DE_COMPILER == DE_COMPILER_CLANG)
 	return __sync_add_and_fetch(dstAddr, 1);
 #else
-#	error "Implement deAtomicIncrement32()"
+#	error "Implement deAtomicIncrementInt32()"
 #endif
 }
 
 /*--------------------------------------------------------------------*//*!
- * \brief Atomic decrement and fetch.
+ * \brief Atomic increment and fetch 32-bit unsigned integer.
+ * \param dstAddr	Destination address.
+ * \return Incremented value.
+ *//*--------------------------------------------------------------------*/
+DE_INLINE deUint32 deAtomicIncrementUint32 (volatile deUint32* dstAddr)
+{
+	return deAtomicIncrementInt32((deInt32 volatile*)dstAddr);
+}
+
+/*--------------------------------------------------------------------*//*!
+ * \brief Atomic decrement and fetch 32-bit signed integer.
  * \param dstAddr	Destination address.
  * \return Decremented value.
  *//*--------------------------------------------------------------------*/
-DE_INLINE deInt32 deAtomicDecrement32 (deInt32 volatile* dstAddr)
+DE_INLINE deInt32 deAtomicDecrementInt32 (volatile deInt32* dstAddr)
 {
 #if (DE_COMPILER == DE_COMPILER_MSC)
-	return _InterlockedDecrement((long volatile*)dstAddr);
+	return _InterlockedDecrement((volatile long*)dstAddr);
 #elif (DE_COMPILER == DE_COMPILER_GCC) || (DE_COMPILER == DE_COMPILER_CLANG)
 	return __sync_sub_and_fetch(dstAddr, 1);
 #else
-#	error "Implement deAtomicDecrement32()"
+#	error "Implement deAtomicDecrementInt32()"
 #endif
 }
 
 /*--------------------------------------------------------------------*//*!
- * \brief Atomic compare and exchange (CAS).
+ * \brief Atomic decrement and fetch 32-bit unsigned integer.
+ * \param dstAddr	Destination address.
+ * \return Decremented value.
+ *//*--------------------------------------------------------------------*/
+DE_INLINE deUint32 deAtomicDecrementUint32 (volatile deUint32* dstAddr)
+{
+	return deAtomicDecrementInt32((volatile deInt32*)dstAddr);
+}
+
+/*--------------------------------------------------------------------*//*!
+ * \brief Atomic compare and exchange (CAS) 32-bit value.
  * \param dstAddr	Destination address.
  * \param compare	Old value.
  * \param exchange	New value.
@@ -77,14 +97,157 @@ DE_INLINE deInt32 deAtomicDecrement32 (deInt32 volatile* dstAddr)
  * If CAS succeeds, compare value is returned. Otherwise value stored in
  * dstAddr is returned.
  *//*--------------------------------------------------------------------*/
-DE_INLINE deUint32 deAtomicCompareExchange32 (deUint32 volatile* dstAddr, deUint32 compare, deUint32 exchange)
+DE_INLINE deUint32 deAtomicCompareExchangeUint32 (volatile deUint32* dstAddr, deUint32 compare, deUint32 exchange)
 {
 #if (DE_COMPILER == DE_COMPILER_MSC)
-	return _InterlockedCompareExchange((long volatile*)dstAddr, exchange, compare);
+	return _InterlockedCompareExchange((volatile long*)dstAddr, exchange, compare);
 #elif (DE_COMPILER == DE_COMPILER_GCC) || (DE_COMPILER == DE_COMPILER_CLANG)
 	return __sync_val_compare_and_swap(dstAddr, compare, exchange);
 #else
 #	error "Implement deAtomicCompareExchange32()"
+#endif
+}
+
+/* Deprecated names */
+#define deAtomicIncrement32			deAtomicIncrementInt32
+#define deAtomicDecrement32			deAtomicDecrementInt32
+#define deAtomicCompareExchange32	deAtomicCompareExchangeUint32
+
+#if (DE_PTR_SIZE == 8)
+
+/*--------------------------------------------------------------------*//*!
+ * \brief Atomic increment and fetch 64-bit signed integer.
+ * \param dstAddr	Destination address.
+ * \return Incremented value.
+ *//*--------------------------------------------------------------------*/
+DE_INLINE deInt64 deAtomicIncrementInt64 (volatile deInt64* dstAddr)
+{
+#if (DE_COMPILER == DE_COMPILER_MSC)
+	return _InterlockedIncrement64((volatile long long*)dstAddr);
+#elif (DE_COMPILER == DE_COMPILER_GCC) || (DE_COMPILER == DE_COMPILER_CLANG)
+	return __sync_add_and_fetch(dstAddr, 1);
+#else
+#	error "Implement deAtomicIncrementInt64()"
+#endif
+}
+
+/*--------------------------------------------------------------------*//*!
+ * \brief Atomic increment and fetch 64-bit unsigned integer.
+ * \param dstAddr	Destination address.
+ * \return Incremented value.
+ *//*--------------------------------------------------------------------*/
+DE_INLINE deUint64 deAtomicIncrementUint64 (volatile deUint64* dstAddr)
+{
+	return deAtomicIncrementInt64((volatile deInt64*)dstAddr);
+}
+
+/*--------------------------------------------------------------------*//*!
+ * \brief Atomic decrement and fetch.
+ * \param dstAddr	Destination address.
+ * \return Decremented value.
+ *//*--------------------------------------------------------------------*/
+DE_INLINE deInt64 deAtomicDecrementInt64 (volatile deInt64* dstAddr)
+{
+#if (DE_COMPILER == DE_COMPILER_MSC)
+	return _InterlockedDecrement64((volatile long long*)dstAddr);
+#elif (DE_COMPILER == DE_COMPILER_GCC) || (DE_COMPILER == DE_COMPILER_CLANG)
+	return __sync_sub_and_fetch(dstAddr, 1);
+#else
+#	error "Implement deAtomicDecrementInt64()"
+#endif
+}
+
+/*--------------------------------------------------------------------*//*!
+ * \brief Atomic increment and fetch 64-bit unsigned integer.
+ * \param dstAddr	Destination address.
+ * \return Incremented value.
+ *//*--------------------------------------------------------------------*/
+DE_INLINE deUint64 deAtomicDecrementUint64 (volatile deUint64* dstAddr)
+{
+	return deAtomicDecrementInt64((volatile deInt64*)dstAddr);
+}
+
+/*--------------------------------------------------------------------*//*!
+ * \brief Atomic compare and exchange (CAS) 64-bit value.
+ * \param dstAddr	Destination address.
+ * \param compare	Old value.
+ * \param exchange	New value.
+ * \return			compare value if CAS passes, *dstAddr value otherwise
+ *
+ * Performs standard Compare-And-Swap with 64b data. Dst value is compared
+ * to compare value and if that comparison passes, value is replaced with
+ * exchange value.
+ *
+ * If CAS succeeds, compare value is returned. Otherwise value stored in
+ * dstAddr is returned.
+ *//*--------------------------------------------------------------------*/
+DE_INLINE deUint64 deAtomicCompareExchangeUint64 (volatile deUint64* dstAddr, deUint64 compare, deUint64 exchange)
+{
+#if (DE_COMPILER == DE_COMPILER_MSC)
+	return _InterlockedCompareExchange64((volatile long long*)dstAddr, exchange, compare);
+#elif (DE_COMPILER == DE_COMPILER_GCC) || (DE_COMPILER == DE_COMPILER_CLANG)
+	return __sync_val_compare_and_swap(dstAddr, compare, exchange);
+#else
+#	error "Implement deAtomicCompareExchangeUint64()"
+#endif
+}
+
+#endif /* (DE_PTR_SIZE == 8) */
+
+/*--------------------------------------------------------------------*//*!
+ * \brief Atomic increment and fetch size_t.
+ * \param dstAddr	Destination address.
+ * \return Incremented value.
+ *//*--------------------------------------------------------------------*/
+DE_INLINE size_t deAtomicIncrementUSize (volatile size_t* size)
+{
+#if (DE_PTR_SIZE == 8)
+	return deAtomicIncrementUint64(size);
+#elif (DE_PTR_SIZE == 4)
+	return deAtomicIncrementUint32(size);
+#else
+#	error "Invalid DE_PTR_SIZE value"
+#endif
+}
+
+/*--------------------------------------------------------------------*//*!
+ * \brief Atomic increment and fetch size_t.
+ * \param dstAddr	Destination address.
+ * \return Incremented value.
+ *//*--------------------------------------------------------------------*/
+DE_INLINE size_t deAtomicDecrementUSize (volatile size_t* size)
+{
+#if (DE_PTR_SIZE == 8)
+	return deAtomicDecrementUint64(size);
+#elif (DE_PTR_SIZE == 4)
+	return deAtomicDecrementUint32(size);
+#else
+#	error "Invalid DE_PTR_SIZE value"
+#endif
+}
+
+/*--------------------------------------------------------------------*//*!
+ * \brief Atomic compare and exchange (CAS) pointer.
+ * \param dstAddr	Destination address.
+ * \param compare	Old value.
+ * \param exchange	New value.
+ * \return			compare value if CAS passes, *dstAddr value otherwise
+ *
+ * Performs standard Compare-And-Swap with pointer value. Dst value is compared
+ * to compare value and if that comparison passes, value is replaced with
+ * exchange value.
+ *
+ * If CAS succeeds, compare value is returned. Otherwise value stored in
+ * dstAddr is returned.
+ *//*--------------------------------------------------------------------*/
+DE_INLINE void* deAtomicCompareExchangePtr (void* volatile* dstAddr, void* compare, void* exchange)
+{
+#if (DE_PTR_SIZE == 8)
+	return (void*)deAtomicCompareExchangeUint64((volatile deUintptr*)dstAddr, (deUintptr)compare, (deUintptr)exchange);
+#elif (DE_PTR_SIZE == 4)
+	return (void*)deAtomicCompareExchangeUint32((volatile deUintptr*)dstAddr, (deUintptr)compare, (deUintptr)exchange);
+#else
+#	error "Invalid DE_PTR_SIZE value"
 #endif
 }
 
