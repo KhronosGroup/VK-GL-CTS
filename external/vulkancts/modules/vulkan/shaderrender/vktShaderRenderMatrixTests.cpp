@@ -1508,8 +1508,8 @@ ShaderMatrixInstance::~ShaderMatrixInstance (void)
 
 void ShaderMatrixInstance::addMatrixUniform(deUint32 bindingLocation, DataType dataType, const float *dataPtr)
 {
-	Mat4 result;
-	const deUint32 matrixSize = sizeof(float) * 4 *4 ;
+	Mat4			result;
+	const size_t	matrixSize = sizeof(float) * 4 * 4;
 
 	switch(dataType)
 	{

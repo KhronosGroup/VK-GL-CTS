@@ -566,7 +566,7 @@ tcu::TestCaseGroup* createAllocationTests (tcu::TestContext& testCtx)
 				{
 					const int allocationCount = allocationCounts[allocationCountNdx];
 
-					if (allocationCount != -1 && allocationCount * allocationPercent > 0.25f)
+					if ((allocationCount != -1) && ((float)allocationCount * allocationPercent > 0.25f))
 						continue;
 
 					TestConfig config;

@@ -517,7 +517,7 @@ tcu::TestStatus ShaderRenderCaseInstance::iterate (void)
 		return tcu::TestStatus::fail("Image mismatch");
 }
 
-void ShaderRenderCaseInstance::setupUniformData (deUint32 bindingLocation, deUint32 size, const void* dataPtr)
+void ShaderRenderCaseInstance::setupUniformData (deUint32 bindingLocation, size_t size, const void* dataPtr)
 {
 	const VkDevice					vkDevice			= m_context.getDevice();
 	const DeviceInterface&			vk					= m_context.getDeviceInterface();
@@ -544,7 +544,7 @@ void ShaderRenderCaseInstance::setupUniformData (deUint32 bindingLocation, deUin
 
 	// \todo [2015-10-09 elecro] remove the 'hackPadding' variable if the driver support small uniforms,
 	// that is for example one float big uniforms.
-	const deUint32 hackPadding = size < 4 * sizeof(float) ? (deUint32)(3u * sizeof(float)) : 0u;
+	const size_t hackPadding = size < 4 * sizeof(float) ? 3 * sizeof(float) : 0;
 
 	de::MovePtr<BufferUniform> uniformInfo(new BufferUniform());
 	uniformInfo->type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -556,7 +556,7 @@ void ShaderRenderCaseInstance::setupUniformData (deUint32 bindingLocation, deUin
 	m_uniformInfos.push_back(UniformInfoSp(new de::UniquePtr<UniformInfo>(uniformInfo)));
 }
 
-void ShaderRenderCaseInstance::addUniform (deUint32 bindingLocation, vk::VkDescriptorType descriptorType, deUint32 dataSize, const void* data)
+void ShaderRenderCaseInstance::addUniform (deUint32 bindingLocation, vk::VkDescriptorType descriptorType, size_t dataSize, const void* data)
 {
 	m_descriptorSetLayoutBuilder.addSingleBinding(descriptorType, vk::VK_SHADER_STAGE_ALL);
 	m_descriptorPoolBuilder.addType(descriptorType);

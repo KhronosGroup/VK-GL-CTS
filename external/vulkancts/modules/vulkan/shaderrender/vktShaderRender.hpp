@@ -398,7 +398,7 @@ public:
 																					const T&				data);
 	void												addUniform					(deUint32				bindingLocation,
 																					vk::VkDescriptorType	descriptorType,
-																					deUint32				dataSize,
+																					size_t					dataSize,
 																					const void*				data);
 	void												useUniform					(deUint32				bindingLocation,
 																					BaseUniformType			type);
@@ -431,7 +431,7 @@ private:
 																					 deInt32						width,
 																					 deInt32						height);
 
-	void												setupUniformData			(deUint32 bindingLocation, deUint32 size, const void* dataPtr);
+	void												setupUniformData			(deUint32 bindingLocation, size_t size, const void* dataPtr);
 	void												setupDefaultInputs			(const QuadGrid& quadGrid);
 
 	void												render						(tcu::Surface& result, const QuadGrid& quadGrid);
