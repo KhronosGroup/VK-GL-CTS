@@ -66,7 +66,6 @@ struct BufferViewCaseParams
 	deUint32	bufferSize;
 	deUint32	bufferViewSize;
 	deUint32	elementOffset;
-	deUint32	offset;
 };
 
 class BufferViewTestInstance : public vkt::TestInstance
@@ -122,10 +121,10 @@ private:
 	Move<VkFence>						m_fence;
 };
 
-static void generateBuffer (std::vector<tcu::IVec4>& uniformData, deUint32 bufferSize, deInt8 factor = 1)
+static void generateBuffer (std::vector<deUint32>& uniformData, deUint32 bufferSize, deInt8 factor = 1)
 {
 	for (deUint32 i = 0; i < bufferSize; ++i)
-		uniformData.push_back(tcu::IVec4(factor * i, factor * (i + 1), factor * (i + 2), factor * (i + 3)));
+		uniformData.push_back(factor * i);
 }
 
 void BufferViewTestInstance::createQuad (void)
@@ -308,7 +307,7 @@ BufferViewTestInstance::BufferViewTestInstance (Context& context, BufferViewCase
 		{
 			{
 				0u,											// deUint32				binding;
-				VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,			// VkDescriptorType		descriptorType;
+				VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,	// VkDescriptorType		descriptorType;
 				1u,											// deUint32				arraySize;
 				VK_SHADER_STAGE_ALL,						// VkShaderStageFlags	stageFlags;
 				DE_NULL										// const VkSampler*		pImmutableSamplers;
@@ -327,10 +326,10 @@ BufferViewTestInstance::BufferViewTestInstance (Context& context, BufferViewCase
 		m_descriptorSetLayout = createDescriptorSetLayout(vk, vkDevice, &descriptorLayoutParams);
 
 		// Generate buffer
-		std::vector<tcu::IVec4> uniformData;
+		std::vector<deUint32> uniformData;
 		generateBuffer(uniformData, testCase.bufferSize);
 
-		const VkDeviceSize uniformSize = testCase.bufferSize * sizeof(tcu::Vec4);
+		const VkDeviceSize uniformSize = testCase.bufferSize * sizeof(deUint32);
 		const VkBufferCreateInfo uniformBufferParams =
 		{
 			VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,		// VkStructureType		sType;
@@ -356,8 +355,8 @@ BufferViewTestInstance::BufferViewTestInstance (Context& context, BufferViewCase
 			(VkBufferViewCreateFlags)0,
 			*m_uniformBuffer,													// VkBuffer			buffer;
 			m_colorFormat,														// VkFormat			format;
-			m_testCase.elementOffset * sizeof(tcu::IVec4) + m_testCase.offset,	// VkDeviceSize		offset;
-			m_testCase.bufferViewSize * sizeof(tcu::IVec4)						// VkDeviceSize		range;
+			m_testCase.elementOffset * sizeof(deUint32),						// VkDeviceSize		offset;
+			m_testCase.bufferViewSize * sizeof(deUint32)						// VkDeviceSize		range;
 		};
 
 		m_uniformBufferView = createBufferView(vk, vkDevice, &viewInfo);
@@ -365,7 +364,7 @@ BufferViewTestInstance::BufferViewTestInstance (Context& context, BufferViewCase
 		const VkDescriptorPoolSize descriptorTypes[1] =
 		{
 			{
-				VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,				// VkDescriptorType		type;
+				VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,		// VkDescriptorType		type;
 				1												// deUint32				count;
 			}
 		};
@@ -773,7 +772,7 @@ tcu::TestStatus BufferViewTestInstance::checkResult (deInt8 factor)
 	for (deInt32 i = 0; i < (deInt32) m_renderSize.x(); ++i)
 	{
 		tcu::IVec4 pixel	= pixelBuffer.getPixelInt(i, i);
-		deInt32 expected	= factor * (m_testCase.elementOffset + i + (m_testCase.offset / 4) % 4);
+		deInt32 expected	= factor * (m_testCase.elementOffset + i);
 		deInt32 actual		= pixel[0];
 		if (expected != actual)
 		{
@@ -814,8 +813,8 @@ tcu::TestStatus BufferViewTestInstance::iterate (void)
 	}
 
 	// Generate and bind another buffer
-	std::vector<tcu::IVec4>		uniformData;
-	const VkDeviceSize			uniformSize	= m_testCase.bufferSize * sizeof(tcu::Vec4);
+	std::vector<deUint32>		uniformData;
+	const VkDeviceSize			uniformSize = m_testCase.bufferSize * sizeof(deUint32);
 	const deInt8				factor		= 2;
 
 	generateBuffer(uniformData, m_testCase.bufferSize, factor);
@@ -863,13 +862,12 @@ void BufferViewTestCase::initPrograms (SourceCollections& programCollection) con
 
 	programCollection.glslSources.add("frag") << glu::FragmentSource(
 		"#version 310 es\n"
-		"layout (set=0, binding=0) uniform u_buffer {\n"
-		"	highp uint item[" + de::toString(m_bufferViewTestInfo.bufferViewSize) + "];\n"
-		"};\n"
+		"#extension GL_EXT_texture_buffer : enable\n"
+		"layout (set=0, binding=0) uniform highp usamplerBuffer u_buffer;\n"
 		"layout (location = 0) out highp uint o_color;\n"
 		"void main()\n"
 		"{\n"
-		"	o_color = item[int(gl_FragCoord.x)];\n"
+		"	o_color = texelFetch(u_buffer, int(gl_FragCoord.x)).x;\n"
 		"}\n");
 }
 
@@ -885,10 +883,9 @@ tcu::TestCaseGroup* createBufferViewAccessTests (tcu::TestContext& testCtx)
 			512,	// deUint32	bufferSize
 			512,	// deUint32	bufferViewSize
 			0,		// deUint32	elementOffset
-			0,		// deUint32 offset
 		};
 		std::ostringstream description;
-		description << "bufferSize: " << info.bufferSize << " bufferViewSize: " << " bufferView element offset: " << info.elementOffset	<< " offset: " << info.offset;
+		description << "bufferSize: " << info.bufferSize << " bufferViewSize: " << info.bufferViewSize << " bufferView element offset: " << info.elementOffset;
 		bufferViewTests->addChild(new BufferViewTestCase(testCtx, "buffer_view_memory_test_complete", description.str(), info));
 	}
 
@@ -898,10 +895,9 @@ tcu::TestCaseGroup* createBufferViewAccessTests (tcu::TestContext& testCtx)
 			4096,	// deUint32	bufferSize
 			512,	// deUint32	bufferViewSize
 			0,		// deUint32	elementOffset
-			0,		// deUint32 offset
 		};
 		std::ostringstream description;
-		description << "bufferSize: " << info.bufferSize << " bufferViewSize: " << " bufferView element offset: " << info.elementOffset	<< " offset: " << info.offset;
+		description << "bufferSize: " << info.bufferSize << " bufferViewSize: " << info.bufferViewSize << " bufferView element offset: " << info.elementOffset;
 		bufferViewTests->addChild(new BufferViewTestCase(testCtx, "buffer_view_memory_test_partial_offset0", description.str(), info));
 	}
 
@@ -911,24 +907,10 @@ tcu::TestCaseGroup* createBufferViewAccessTests (tcu::TestContext& testCtx)
 			4096,	// deUint32	bufferSize
 			512,	// deUint32	bufferViewSize
 			128,	// deUint32	elementOffset
-			0,		// deUint32 offset
 		};
 		std::ostringstream description;
-		description << "bufferSize: " << info.bufferSize << " bufferViewSize: " << " bufferView element offset: " << info.elementOffset	<< " offset: " << info.offset;
+		description << "bufferSize: " << info.bufferSize << " bufferViewSize: " << info.bufferViewSize << " bufferView element offset: " << info.elementOffset;
 		bufferViewTests->addChild(new BufferViewTestCase(testCtx, "buffer_view_memory_test_partial_offset1", description.str(), info));
-	}
-
-	{
-		BufferViewCaseParams info =
-		{
-			4096,	// deUint32	bufferSize
-			512,	// deUint32	bufferViewSize
-			128,	// deUint32	elementOffset
-			4,		// deUint32 offset
-		};
-		std::ostringstream description;
-		description << "bufferSize: " << info.bufferSize << " bufferViewSize: " << " bufferView element offset: " << info.elementOffset	<< " offset: " << info.offset;
-		bufferViewTests->addChild(new BufferViewTestCase(testCtx, "buffer_view_memory_test_partial_offset2", description.str(), info));
 	}
 
 	return bufferViewTests.release();
