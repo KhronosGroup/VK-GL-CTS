@@ -731,30 +731,6 @@ vk::VkCompareOp mapCompareMode (tcu::Sampler::CompareMode mode)
 
 tcu::Sampler mapVkSampler (const VkSamplerCreateInfo& samplerCreateInfo)
 {
-	tcu::Vec4 borderColor;
-
-	switch (samplerCreateInfo.borderColor)
-	{
-		case VK_BORDER_COLOR_INT_OPAQUE_BLACK:
-		case VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK:
-			borderColor = tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f);
-			break;
-
-		case VK_BORDER_COLOR_INT_OPAQUE_WHITE:
-		case VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE:
-			borderColor = tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f);
-			break;
-
-		case VK_BORDER_COLOR_INT_TRANSPARENT_BLACK:
-		case VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK:
-			borderColor = tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f);
-			break;
-
-		default:
-			DE_ASSERT(false);
-			break;
-	}
-
 	tcu::Sampler sampler(mapVkSamplerAddressMode(samplerCreateInfo.addressModeU),
 						 mapVkSamplerAddressMode(samplerCreateInfo.addressModeV),
 						 mapVkSamplerAddressMode(samplerCreateInfo.addressModeW),
@@ -765,8 +741,35 @@ tcu::Sampler mapVkSampler (const VkSamplerCreateInfo& samplerCreateInfo)
 						 samplerCreateInfo.compareEnable ? mapVkSamplerCompareOp(samplerCreateInfo.compareOp)
 														 : tcu::Sampler::COMPAREMODE_NONE,
 						 0,
-						 borderColor,
+						 tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f),
 						 true);
+
+	switch (samplerCreateInfo.borderColor)
+	{
+	case VK_BORDER_COLOR_INT_OPAQUE_BLACK:
+		sampler.borderColor = tcu::UVec4(0,0,0,1);
+		break;
+	case VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK:
+		sampler.borderColor = tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f);
+		break;
+	case VK_BORDER_COLOR_INT_OPAQUE_WHITE:
+		sampler.borderColor = tcu::UVec4(1, 1, 1, 1);
+		break;
+	case VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE:
+		sampler.borderColor = tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f);
+		break;
+	case VK_BORDER_COLOR_INT_TRANSPARENT_BLACK:
+		sampler.borderColor = tcu::UVec4(0,0,0,0);
+		break;
+	case VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK:
+		sampler.borderColor = tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f);
+		break;
+
+	default:
+		DE_ASSERT(false);
+		break;
+	}
+
 	return sampler;
 }
 
