@@ -62,6 +62,7 @@
 #include "vktShaderRenderReturnTests.hpp"
 #include "vktShaderRenderStructTests.hpp"
 #include "vktShaderRenderSwitchTests.hpp"
+#include "vktShaderExecutorTests.hpp"
 
 #include <vector>
 #include <sstream>
@@ -277,6 +278,9 @@ tcu::TestCaseGroup* createGlslTests (tcu::TestContext& testCtx)
 	glslTests->addChild(sr::createReturnTests	(testCtx));
 	glslTests->addChild(sr::createStructTests	(testCtx));
 	glslTests->addChild(sr::createSwitchTests	(testCtx));
+
+	// ShaderExecutor-based tests
+	glslTests->addChild(shaderexecutor::createTests(testCtx));
 
 	return glslTests.release();
 }
