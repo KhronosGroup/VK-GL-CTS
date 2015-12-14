@@ -3240,7 +3240,8 @@ void createPipelineShaderStages (const DeviceInterface& vk, const VkDevice vkDev
 #define SPIRV_ASSEMBLY_CONSTANTS																\
 	"%c_f32_1 = OpConstant %f32 1.0\n"															\
 	"%c_f32_0 = OpConstant %f32 0.0\n"															\
-	"%c_f32_0_5 = OpConstant %f32 0.5\n"												\
+	"%c_f32_0_5 = OpConstant %f32 0.5\n"														\
+	"%c_f32_n1  = OpConstant %f32 -1.\n"														\
 	"%c_i32_0 = OpConstant %i32 0\n"															\
 	"%c_i32_1 = OpConstant %i32 1\n"															\
 	"%c_i32_2 = OpConstant %i32 2\n"															\
@@ -5794,6 +5795,119 @@ tcu::TestCaseGroup* createSwitchBlockOrderTests(tcu::TestContext& testCtx)
 	return group.release();
 }
 
+tcu::TestCaseGroup* createDecorationGroupTests(tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup> group				(new tcu::TestCaseGroup(testCtx, "decoration_group", "Decoration group tests"));
+	RGBA							inputColors[4];
+	RGBA							outputColors[4];
+	map<string, string>				fragments;
+
+	const char						decorations[]		=
+		"OpDecorate %array_group         ArrayStride 4\n"
+		"OpDecorate %struct_member_group Offset 0\n"
+		"%array_group         = OpDecorationGroup\n"
+		"%struct_member_group = OpDecorationGroup\n"
+
+		"OpDecorate %group1 RelaxedPrecision\n"
+		"OpDecorate %group3 RelaxedPrecision\n"
+		"OpDecorate %group3 Invariant\n"
+		"OpDecorate %group3 Restrict\n"
+		"%group0 = OpDecorationGroup\n"
+		"%group1 = OpDecorationGroup\n"
+		"%group3 = OpDecorationGroup\n";
+
+	const char						typesAndConstants[]	=
+		"%a3f32     = OpTypeArray %f32 %c_u32_3\n"
+		"%struct1   = OpTypeStruct %a3f32\n"
+		"%struct2   = OpTypeStruct %a3f32\n"
+		"%fp_struct1 = OpTypePointer Function %struct1\n"
+		"%fp_struct2 = OpTypePointer Function %struct2\n"
+		"%c_f32_2    = OpConstant %f32 2.\n"
+		"%c_f32_n2   = OpConstant %f32 -2.\n"
+
+		"%c_a3f32_1 = OpConstantComposite %a3f32 %c_f32_1 %c_f32_2 %c_f32_1\n"
+		"%c_a3f32_2 = OpConstantComposite %a3f32 %c_f32_n1 %c_f32_n2 %c_f32_n1\n"
+		"%c_struct1 = OpConstantComposite %struct1 %c_a3f32_1\n"
+		"%c_struct2 = OpConstantComposite %struct2 %c_a3f32_2\n";
+
+	const char						function[]			=
+		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%param     = OpFunctionParameter %v4f32\n"
+		"%entry     = OpLabel\n"
+		"%result    = OpVariable %fp_v4f32 Function\n"
+		"             OpStore %result %param\n"
+		"%v_struct1 = OpVariable %fp_struct1 Function\n"
+		"             OpStore %v_struct1 %c_struct1\n"
+		"%v_struct2 = OpVariable %fp_struct2 Function\n"
+		"             OpStore %v_struct2 %c_struct2\n"
+		"%ptr1      = OpAccessChain %fp_f32 %v_struct1 %c_i32_0 %c_i32_1\n"
+		"%val1      = OpLoad %f32 %ptr1\n"
+		"%ptr2      = OpAccessChain %fp_f32 %v_struct2 %c_i32_0 %c_i32_2\n"
+		"%val2      = OpLoad %f32 %ptr2\n"
+		"%addvalues = OpFAdd %f32 %val1 %val2\n"
+		"%ptr       = OpAccessChain %fp_f32 %result %c_i32_1\n"
+		"%val       = OpLoad %f32 %ptr\n"
+		"%addresult = OpFAdd %f32 %addvalues %val\n"
+		"             OpStore %ptr %addresult\n"
+		"%ret       = OpLoad %v4f32 %result\n"
+		"             OpReturnValue %ret\n"
+		"             OpFunctionEnd\n";
+
+	struct CaseNameDecoration
+	{
+		string name;
+		string decoration;
+	};
+
+	CaseNameDecoration tests[] =
+	{
+		{
+			"same_decoration_group_on_multiple_types",
+			"OpGroupMemberDecorate %struct_member_group %struct1 0 %struct2 0\n"
+		},
+		{
+			"empty_decoration_group",
+			"OpGroupDecorate %group0      %a3f32\n"
+			"OpGroupDecorate %group0      %result\n"
+		},
+		{
+			"one_element_decoration_group",
+			"OpGroupDecorate %array_group %a3f32\n"
+		},
+		{
+			"multiple_elements_decoration_group",
+			"OpGroupDecorate %group3      %v_struct1\n"
+		},
+		{
+			"multiple_decoration_groups_on_same_variable",
+			"OpGroupDecorate %group0      %v_struct2\n"
+			"OpGroupDecorate %group1      %v_struct2\n"
+			"OpGroupDecorate %group3      %v_struct2\n"
+		},
+		{
+			"same_decoration_group_multiple_times",
+			"OpGroupDecorate %group1      %addvalues\n"
+			"OpGroupDecorate %group1      %addvalues\n"
+			"OpGroupDecorate %group1      %addvalues\n"
+		},
+
+	};
+
+	getHalfColorsFullAlpha(inputColors);
+	getHalfColorsFullAlpha(outputColors);
+
+	for (size_t idx = 0; idx < (sizeof(tests) / sizeof(tests[0])); ++idx)
+	{
+		fragments["decoration"]	= decorations + tests[idx].decoration;
+		fragments["pre_main"]	= typesAndConstants;
+		fragments["testfun"]	= function;
+
+		createTestsForAllStages(tests[idx].name, inputColors, outputColors, fragments, group.get());
+	}
+
+	return group.release();
+}
+
 struct SpecConstantTwoIntGraphicsCase
 {
 	const char*		caseName;
@@ -6195,7 +6309,7 @@ tcu::TestCaseGroup* createNoContractionTests(tcu::TestContext& testCtx)
 		"%c_vec4_1       = OpConstantComposite %v4f32 %c_f32_1 %c_f32_1 %c_f32_1 %c_f32_1\n"
 		"%c_f32_1pl2_23  = OpConstant %f32 0x1.000002p+0\n" // 1 + 2^-23
 		"%c_f32_1mi2_23  = OpConstant %f32 0x1.fffffcp-1\n" // 1 - 2^-23
-		"%c_f32_n1       = OpConstant %f32 -1\n";
+		;
 
 	const char						function[]	 =
 		"%test_code      = OpFunction %v4f32 None %v4f32_function\n"
@@ -7189,6 +7303,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	graphicsTests->addChild(createSpecConstantTests(testCtx));
 	graphicsTests->addChild(createSpecConstantOpQuantizeToF16Group(testCtx));
 	graphicsTests->addChild(createBarrierTests(testCtx));
+	graphicsTests->addChild(createDecorationGroupTests(testCtx));
 
 	instructionTests->addChild(computeTests.release());
 	instructionTests->addChild(graphicsTests.release());
