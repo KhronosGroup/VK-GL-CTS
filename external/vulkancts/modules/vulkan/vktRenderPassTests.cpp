@@ -3278,7 +3278,8 @@ bool logAndVerifyImages (TestLog&											log,
 				VK_CHECK(vk.invalidateMappedMemoryRanges(device, 2u, ranges));
 
 				{
-					const ConstPixelBufferAccess	depthAccess		(format, targetSize.x(), targetSize.y(), 1, depthPtr);
+					const ConstPixelBufferAccess	depthAccess		(depthFormat, tcu::IVec3(targetSize.x(), targetSize.y(), 1),
+																				  tcu::IVec3(format.getPixelSize(), format.getPixelSize() * targetSize.x(), 0), depthPtr);
 					const ConstPixelBufferAccess	stencilAccess	(stencilFormat, targetSize.x(), targetSize.y(), 1, stencilPtr);
 					tcu::TextureLevel				errorImage		(tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8), targetSize.x(), targetSize.y());
 
