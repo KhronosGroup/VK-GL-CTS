@@ -105,7 +105,8 @@ tcu::TestStatus BufferViewTestInstance::iterate (void)
 	const VkDeviceSize			size					= 16 * 1024;
 	VkBuffer					testBuffer;
 	VkMemoryRequirements		memReqs;
-	const VkBufferCreateInfo	bufferParams			=
+	VkFormatProperties			properties;
+	const VkBufferCreateInfo	bufferParams =
 	{
 		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,		//	VkStructureType			sType;
 		DE_NULL,									//	const void*				pNext;
@@ -116,6 +117,10 @@ tcu::TestStatus BufferViewTestInstance::iterate (void)
 		1u,											//	deUint32				queueFamilyCount;
 		&queueFamilyIndex,							//	const deUint32*			pQueueFamilyIndices;
 	};
+
+	m_context.getInstanceInterface().getPhysicalDeviceFormatProperties(m_context.getPhysicalDevice(), m_testCase.format, &properties);
+	if (!(properties.bufferFeatures & m_testCase.usage))
+		TCU_THROW(NotSupportedError, "Format not supported");
 
 	if (vk.createBuffer(vkDevice, &bufferParams, (const VkAllocationCallbacks*)DE_NULL, &testBuffer) != VK_SUCCESS)
 		return tcu::TestStatus::fail("Buffer creation failed!");
