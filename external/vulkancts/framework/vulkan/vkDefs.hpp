@@ -104,8 +104,9 @@ enum { VK_NO_ATTACHMENT				= 0xffffffff	};
 
 enum
 {
-	VK_FALSE	= 0,
-	VK_TRUE		= 1
+	VK_FALSE		= 0,
+	VK_TRUE			= 1,
+	VK_WHOLE_SIZE	= (~0ULL),
 };
 
 typedef VKAPI_ATTR void		(VKAPI_CALL* PFN_vkVoidFunction)					(void);
