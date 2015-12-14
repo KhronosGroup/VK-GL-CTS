@@ -676,7 +676,7 @@ def writeNullDriverImpl (api, filename):
 			objectType	= function.arguments[-1].type.replace("*", "").strip()
 			argsStr		= ", ".join([a.name for a in function.arguments[:-2]])
 
-			yield "%s %s (%s)" % (function.returnType, getInterfaceName(function), argListToStr(function.arguments))
+			yield "VKAPI_ATTR %s VKAPI_CALL %s (%s)" % (function.returnType, getInterfaceName(function), argListToStr(function.arguments))
 			yield "{"
 			yield "\tDE_UNREF(%s);" % function.arguments[-2].name
 
@@ -691,7 +691,7 @@ def writeNullDriverImpl (api, filename):
 		for function in destroyFuncs:
 			objectArg	= function.arguments[-2]
 
-			yield "%s %s (%s)" % (function.returnType, getInterfaceName(function), argListToStr(function.arguments))
+			yield "VKAPI_ATTR %s VKAPI_CALL %s (%s)" % (function.returnType, getInterfaceName(function), argListToStr(function.arguments))
 			yield "{"
 			for arg in function.arguments[:-2]:
 				yield "\tDE_UNREF(%s);" % arg.name
@@ -706,7 +706,7 @@ def writeNullDriverImpl (api, filename):
 			yield ""
 
 		for function in dummyFuncs:
-			yield "%s %s (%s)" % (function.returnType, getInterfaceName(function), argListToStr(function.arguments))
+			yield "VKAPI_ATTR %s VKAPI_CALL %s (%s)" % (function.returnType, getInterfaceName(function), argListToStr(function.arguments))
 			yield "{"
 			for arg in function.arguments:
 				yield "\tDE_UNREF(%s);" % arg.name

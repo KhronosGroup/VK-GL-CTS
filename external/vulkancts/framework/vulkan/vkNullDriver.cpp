@@ -274,31 +274,31 @@ void DescriptorPool::reset (void)
 extern "C"
 {
 
-PFN_vkVoidFunction getInstanceProcAddr (VkInstance instance, const char* pName)
+VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL getInstanceProcAddr (VkInstance instance, const char* pName)
 {
 	return reinterpret_cast<Instance*>(instance)->getProcAddr(pName);
 }
 
-PFN_vkVoidFunction getDeviceProcAddr (VkDevice device, const char* pName)
+VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL getDeviceProcAddr (VkDevice device, const char* pName)
 {
 	return reinterpret_cast<Device*>(device)->getProcAddr(pName);
 }
 
-VkResult createGraphicsPipelines (VkDevice device, VkPipelineCache, deUint32 count, const VkGraphicsPipelineCreateInfo* pCreateInfos, const VkAllocationCallbacks*, VkPipeline* pPipelines)
+VKAPI_ATTR VkResult VKAPI_CALL createGraphicsPipelines (VkDevice device, VkPipelineCache, deUint32 count, const VkGraphicsPipelineCreateInfo* pCreateInfos, const VkAllocationCallbacks*, VkPipeline* pPipelines)
 {
 	for (deUint32 ndx = 0; ndx < count; ndx++)
 		pPipelines[ndx] = VkPipeline((deUint64)(deUintptr)new Pipeline(device, pCreateInfos+ndx));
 	return VK_SUCCESS;
 }
 
-VkResult createComputePipelines (VkDevice device, VkPipelineCache, deUint32 count, const VkComputePipelineCreateInfo* pCreateInfos, const VkAllocationCallbacks*, VkPipeline* pPipelines)
+VKAPI_ATTR VkResult VKAPI_CALL createComputePipelines (VkDevice device, VkPipelineCache, deUint32 count, const VkComputePipelineCreateInfo* pCreateInfos, const VkAllocationCallbacks*, VkPipeline* pPipelines)
 {
 	for (deUint32 ndx = 0; ndx < count; ndx++)
 		pPipelines[ndx] = VkPipeline((deUint64)(deUintptr)new Pipeline(device, pCreateInfos+ndx));
 	return VK_SUCCESS;
 }
 
-VkResult enumeratePhysicalDevices (VkInstance, deUint32* pPhysicalDeviceCount, VkPhysicalDevice* pDevices)
+VKAPI_ATTR VkResult VKAPI_CALL enumeratePhysicalDevices (VkInstance, deUint32* pPhysicalDeviceCount, VkPhysicalDevice* pDevices)
 {
 	if (pDevices && *pPhysicalDeviceCount >= 1u)
 		*pDevices = reinterpret_cast<VkPhysicalDevice>((void*)(deUintptr)1u);
@@ -308,7 +308,7 @@ VkResult enumeratePhysicalDevices (VkInstance, deUint32* pPhysicalDeviceCount, V
 	return VK_SUCCESS;
 }
 
-void getPhysicalDeviceProperties (VkPhysicalDevice, VkPhysicalDeviceProperties* props)
+VKAPI_ATTR void VKAPI_CALL getPhysicalDeviceProperties (VkPhysicalDevice, VkPhysicalDeviceProperties* props)
 {
 	deMemset(props, 0, sizeof(VkPhysicalDeviceProperties));
 
@@ -322,7 +322,7 @@ void getPhysicalDeviceProperties (VkPhysicalDevice, VkPhysicalDeviceProperties* 
 	props->limits.maxTexelBufferElements	= 8096;
 }
 
-void getPhysicalDeviceQueueFamilyProperties (VkPhysicalDevice, deUint32* count, VkQueueFamilyProperties* props)
+VKAPI_ATTR void VKAPI_CALL getPhysicalDeviceQueueFamilyProperties (VkPhysicalDevice, deUint32* count, VkQueueFamilyProperties* props)
 {
 	if (props && *count >= 1u)
 	{
@@ -336,7 +336,7 @@ void getPhysicalDeviceQueueFamilyProperties (VkPhysicalDevice, deUint32* count, 
 	*count = 1u;
 }
 
-void getPhysicalDeviceMemoryProperties (VkPhysicalDevice, VkPhysicalDeviceMemoryProperties* props)
+VKAPI_ATTR void VKAPI_CALL getPhysicalDeviceMemoryProperties (VkPhysicalDevice, VkPhysicalDeviceMemoryProperties* props)
 {
 	deMemset(props, 0, sizeof(VkPhysicalDeviceMemoryProperties));
 
@@ -349,7 +349,7 @@ void getPhysicalDeviceMemoryProperties (VkPhysicalDevice, VkPhysicalDeviceMemory
 	props->memoryHeaps[0].flags			= 0u;
 }
 
-void getPhysicalDeviceFormatProperties (VkPhysicalDevice, VkFormat, VkFormatProperties* pFormatProperties)
+VKAPI_ATTR void VKAPI_CALL getPhysicalDeviceFormatProperties (VkPhysicalDevice, VkFormat, VkFormatProperties* pFormatProperties)
 {
 	const VkFormatFeatureFlags	allFeatures	= VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT
 											| VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT
@@ -369,7 +369,7 @@ void getPhysicalDeviceFormatProperties (VkPhysicalDevice, VkFormat, VkFormatProp
 	pFormatProperties->bufferFeatures			= allFeatures;
 }
 
-void getBufferMemoryRequirements (VkDevice, VkBuffer bufferHandle, VkMemoryRequirements* requirements)
+VKAPI_ATTR void VKAPI_CALL getBufferMemoryRequirements (VkDevice, VkBuffer bufferHandle, VkMemoryRequirements* requirements)
 {
 	const Buffer*	buffer	= reinterpret_cast<const Buffer*>(bufferHandle.getInternal());
 
@@ -378,7 +378,7 @@ void getBufferMemoryRequirements (VkDevice, VkBuffer bufferHandle, VkMemoryRequi
 	requirements->alignment			= (VkDeviceSize)1u;
 }
 
-VkDeviceSize getPackedImageDataSize (VkFormat format, VkExtent3D extent, VkSampleCountFlagBits samples)
+VKAPI_ATTR VkDeviceSize VKAPI_CALL getPackedImageDataSize (VkFormat format, VkExtent3D extent, VkSampleCountFlagBits samples)
 {
 	return (VkDeviceSize)getPixelSize(mapVkFormat(format))
 			* (VkDeviceSize)extent.width
@@ -387,7 +387,7 @@ VkDeviceSize getPackedImageDataSize (VkFormat format, VkExtent3D extent, VkSampl
 			* (VkDeviceSize)samples;
 }
 
-void getImageMemoryRequirements (VkDevice, VkImage imageHandle, VkMemoryRequirements* requirements)
+VKAPI_ATTR void VKAPI_CALL getImageMemoryRequirements (VkDevice, VkImage imageHandle, VkMemoryRequirements* requirements)
 {
 	const Image*	image	= reinterpret_cast<const Image*>(imageHandle.getInternal());
 
@@ -396,7 +396,7 @@ void getImageMemoryRequirements (VkDevice, VkImage imageHandle, VkMemoryRequirem
 	requirements->size				= getPackedImageDataSize(image->getFormat(), image->getExtent(), image->getSamples());
 }
 
-VkResult mapMemory (VkDevice, VkDeviceMemory memHandle, VkDeviceSize offset, VkDeviceSize size, VkMemoryMapFlags flags, void** ppData)
+VKAPI_ATTR VkResult VKAPI_CALL mapMemory (VkDevice, VkDeviceMemory memHandle, VkDeviceSize offset, VkDeviceSize size, VkMemoryMapFlags flags, void** ppData)
 {
 	const DeviceMemory*	memory	= reinterpret_cast<DeviceMemory*>(memHandle.getInternal());
 
@@ -408,7 +408,7 @@ VkResult mapMemory (VkDevice, VkDeviceMemory memHandle, VkDeviceSize offset, VkD
 	return VK_SUCCESS;
 }
 
-VkResult allocateDescriptorSets (VkDevice, const VkDescriptorSetAllocateInfo* pAllocateInfo, VkDescriptorSet* pDescriptorSets)
+VKAPI_ATTR VkResult VKAPI_CALL allocateDescriptorSets (VkDevice, const VkDescriptorSetAllocateInfo* pAllocateInfo, VkDescriptorSet* pDescriptorSets)
 {
 	DescriptorPool* const	poolImpl	= reinterpret_cast<DescriptorPool*>((deUintptr)pAllocateInfo->descriptorPool.getInternal());
 
@@ -437,7 +437,7 @@ VkResult allocateDescriptorSets (VkDevice, const VkDescriptorSetAllocateInfo* pA
 	return VK_SUCCESS;
 }
 
-void freeDescriptorSets (VkDevice, VkDescriptorPool descriptorPool, deUint32 count, const VkDescriptorSet* pDescriptorSets)
+VKAPI_ATTR void VKAPI_CALL freeDescriptorSets (VkDevice, VkDescriptorPool descriptorPool, deUint32 count, const VkDescriptorSet* pDescriptorSets)
 {
 	DescriptorPool* const	poolImpl	= reinterpret_cast<DescriptorPool*>((deUintptr)descriptorPool.getInternal());
 
@@ -445,7 +445,7 @@ void freeDescriptorSets (VkDevice, VkDescriptorPool descriptorPool, deUint32 cou
 		poolImpl->free(pDescriptorSets[ndx]);
 }
 
-VkResult resetDescriptorPool (VkDevice, VkDescriptorPool descriptorPool, VkDescriptorPoolResetFlags)
+VKAPI_ATTR VkResult VKAPI_CALL resetDescriptorPool (VkDevice, VkDescriptorPool descriptorPool, VkDescriptorPoolResetFlags)
 {
 	DescriptorPool* const	poolImpl	= reinterpret_cast<DescriptorPool*>((deUintptr)descriptorPool.getInternal());
 
@@ -454,7 +454,7 @@ VkResult resetDescriptorPool (VkDevice, VkDescriptorPool descriptorPool, VkDescr
 	return VK_SUCCESS;
 }
 
-VkResult allocateCommandBuffers (VkDevice device, const VkCommandBufferAllocateInfo* pAllocateInfo, VkCommandBuffer* pCommandBuffers)
+VKAPI_ATTR VkResult VKAPI_CALL allocateCommandBuffers (VkDevice device, const VkCommandBufferAllocateInfo* pAllocateInfo, VkCommandBuffer* pCommandBuffers)
 {
 	if (pAllocateInfo && pCommandBuffers)
 	{
@@ -467,7 +467,7 @@ VkResult allocateCommandBuffers (VkDevice device, const VkCommandBufferAllocateI
 	return VK_SUCCESS;
 }
 
-void freeCommandBuffers (VkDevice device, VkCommandPool commandPool, deUint32 commandBufferCount, const VkCommandBuffer* pCommandBuffers)
+VKAPI_ATTR void VKAPI_CALL freeCommandBuffers (VkDevice device, VkCommandPool commandPool, deUint32 commandBufferCount, const VkCommandBuffer* pCommandBuffers)
 {
 	DE_UNREF(device);
 	DE_UNREF(commandPool);
