@@ -780,7 +780,7 @@ ImageSamplingInstance::ImageSamplingInstance (Context&							context,
 		VK_CHECK(vk.bindBufferMemory(vkDevice, *m_vertexBuffer, m_vertexBufferAlloc->getMemory(), m_vertexBufferAlloc->getOffset()));
 
 		// Load vertices into vertex buffer
-		deMemcpy(m_vertexBufferAlloc->getHostPtr(), &m_vertices[0], vertexBufferSize);
+		deMemcpy(m_vertexBufferAlloc->getHostPtr(), &m_vertices[0], (size_t)vertexBufferSize);
 		flushMappedMemoryRange(vk, vkDevice, m_vertexBufferAlloc->getMemory(), m_vertexBufferAlloc->getOffset(), vertexBufferParams.size);
 	}
 

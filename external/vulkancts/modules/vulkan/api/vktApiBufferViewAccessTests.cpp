@@ -347,7 +347,7 @@ BufferViewTestInstance::BufferViewTestInstance (Context& context, BufferViewCase
 		m_uniformBufferAlloc	= memAlloc.allocate(getBufferMemoryRequirements(vk, vkDevice, *m_uniformBuffer), MemoryRequirement::HostVisible);
 
 		VK_CHECK(vk.bindBufferMemory(vkDevice, *m_uniformBuffer, m_uniformBufferAlloc->getMemory(), 0));
-		deMemcpy(m_uniformBufferAlloc->getHostPtr(), uniformData.data(), uniformSize);
+		deMemcpy(m_uniformBufferAlloc->getHostPtr(), uniformData.data(), (size_t)uniformSize);
 
 		const VkBufferViewCreateInfo viewInfo =
 		{
@@ -621,7 +621,7 @@ BufferViewTestInstance::BufferViewTestInstance (Context& context, BufferViewCase
 		VK_CHECK(vk.bindBufferMemory(vkDevice, *m_vertexBuffer, m_vertexBufferAlloc->getMemory(), m_vertexBufferAlloc->getOffset()));
 
 		// Load vertices into vertex buffer
-		deMemcpy(m_vertexBufferAlloc->getHostPtr(), m_vertices.data(), vertexDataSize);
+		deMemcpy(m_vertexBufferAlloc->getHostPtr(), m_vertices.data(), (size_t)vertexDataSize);
 		flushMappedMemoryRange(vk, vkDevice, m_vertexBufferAlloc->getMemory(), m_vertexBufferAlloc->getOffset(), vertexDataSize);
 	}
 
@@ -819,7 +819,7 @@ tcu::TestStatus BufferViewTestInstance::iterate (void)
 	const deInt8				factor		= 2;
 
 	generateBuffer(uniformData, m_testCase.bufferSize, factor);
-	deMemcpy(m_uniformBufferAlloc->getHostPtr(), uniformData.data(), uniformSize);
+	deMemcpy(m_uniformBufferAlloc->getHostPtr(), uniformData.data(), (size_t)uniformSize);
 
 	VK_CHECK(vk.resetFences(vkDevice, 1, &m_fence.get()));
 	VK_CHECK(vk.queueSubmit(queue, 1, &submitInfo, *m_fence));
