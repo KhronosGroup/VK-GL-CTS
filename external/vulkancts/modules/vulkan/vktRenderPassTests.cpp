@@ -1925,8 +1925,8 @@ void pushImageInitializationCommands (const DeviceInterface&								vk,
 			};
 			const VkImageSubresourceRange range =
 			{
-				(VkImageAspectFlags)(hasDepthComponent(format.order) ? VK_IMAGE_ASPECT_DEPTH_BIT : 0
-									 | hasStencilComponent(format.order) ? VK_IMAGE_ASPECT_STENCIL_BIT : 0),
+				(VkImageAspectFlags)((hasDepthComponent(format.order) ? VK_IMAGE_ASPECT_DEPTH_BIT : 0)
+									 | (hasStencilComponent(format.order) ? VK_IMAGE_ASPECT_STENCIL_BIT : 0)),
 				0,
 				1,
 				0,
@@ -2790,6 +2790,12 @@ void checkColorRenderQuad (const ConstPixelBufferAccess&	result,
 														 de::clamp(textureInfo.valueMin[3], clampMin, clampMax));
 	const BVec4						channelMask			= tcu::getTextureFormatChannelMask(format);
 
+	IVec4						formatBitDepths = tcu::getTextureFormatBitDepth(format);
+	Vec4						threshold = Vec4(1.0f) / Vec4((float)(1 << formatBitDepths.x()),
+																(float)(1 << formatBitDepths.y()),
+																(float)(1 << formatBitDepths.z()),
+																(float)(1 << formatBitDepths.w()));
+
 	switch (channelClass)
 	{
 		case tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT:
@@ -2811,9 +2817,9 @@ void checkColorRenderQuad (const ConstPixelBufferAccess&	result,
 					const Vec4	resColor	(result.getPixel(x, y));
 
 					const Vec4	minRefColor	= srgb ? tcu::linearToSRGB(valueMax * minUvs + valueMin * (Vec4(1.0f) - minUvs))
-													 : valueMax * minUvs + valueMin * (Vec4(1.0f) - minUvs);
+													 : valueMax * minUvs + valueMin * (Vec4(1.0f) - minUvs) - threshold;
 					const Vec4	maxRefColor	= srgb ? tcu::linearToSRGB(valueMax * maxUvs + valueMin * (Vec4(1.0f) - maxUvs))
-													 : valueMax * maxUvs + valueMin * (Vec4(1.0f) - maxUvs);
+													 : valueMax * maxUvs + valueMin * (Vec4(1.0f) - maxUvs) + threshold;
 
 					DE_ASSERT(minRefColor[0] <= maxRefColor[0]);
 					DE_ASSERT(minRefColor[1] <= maxRefColor[1]);
