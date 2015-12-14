@@ -6,6 +6,8 @@ set(DEQP_VK_SHADEREXECUTOR_SRCS
    vktShaderExecutorTests.cpp
    vktShaderExecutorTests.hpp
 
+   vktShaderBuiltinConstantTests.cpp
+   vktShaderBuiltinConstantTests.hpp
    vktShaderCommonFunctionTests.cpp
    vktShaderCommonFunctionTests.hpp
    vktShaderIntegerFunctionTests.cpp
