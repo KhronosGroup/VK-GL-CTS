@@ -702,7 +702,7 @@ tcu::TestCaseGroup* createOpPhiGroup (tcu::TestContext& testCtx)
 		"%idval    = OpLoad %uvec3 %id\n"
 		"%x        = OpCompositeExtract %u32 %idval 0\n"
 		"%selector = OpUMod %u32 %x %three\n"
-		"            OpSelectionMerge %default None\n"
+		"            OpSelectionMerge %phi None\n"
 		"            OpSwitch %selector %default 0 %case0 1 %case1 2 %case2\n"
 
 		// Case 1 before OpPhi.
@@ -713,8 +713,7 @@ tcu::TestCaseGroup* createOpPhiGroup (tcu::TestContext& testCtx)
 		"            OpUnreachable\n"
 
 		"%phi      = OpLabel\n"
-		"%operand  = OpPhi %f32 %constf1p75 %case2   %constf20p5 %case1   %constf5p5 %case0" // not in the order of blocks
-        "                       %constf8p5  %phi     %constf6p5  %default\n" // from the same block & from an unreachable block
+		"%operand  = OpPhi %f32   %constf1p75 %case2   %constf20p5 %case1   %constf5p5 %case0\n" // not in the order of blocks
 		"%inloc    = OpAccessChain %f32ptr %indata %zero %x\n"
 		"%inval    = OpLoad %f32 %inloc\n"
 		"%add      = OpFAdd %f32 %inval %operand\n"
