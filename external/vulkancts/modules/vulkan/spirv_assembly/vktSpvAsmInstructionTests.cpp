@@ -702,7 +702,7 @@ tcu::TestCaseGroup* createOpPhiGroup (tcu::TestContext& testCtx)
 		"%idval    = OpLoad %uvec3 %id\n"
 		"%x        = OpCompositeExtract %u32 %idval 0\n"
 		"%selector = OpUMod %u32 %x %three\n"
-		"            OpSelectionMerge %default None\n"
+		"            OpSelectionMerge %phi None\n"
 		"            OpSwitch %selector %default 0 %case0 1 %case1 2 %case2\n"
 
 		// Case 1 before OpPhi.
@@ -713,8 +713,7 @@ tcu::TestCaseGroup* createOpPhiGroup (tcu::TestContext& testCtx)
 		"            OpUnreachable\n"
 
 		"%phi      = OpLabel\n"
-		"%operand  = OpPhi %f32 %constf1p75 %case2   %constf20p5 %case1   %constf5p5 %case0" // not in the order of blocks
-        "                       %constf8p5  %phi     %constf6p5  %default\n" // from the same block & from an unreachable block
+		"%operand  = OpPhi %f32   %constf1p75 %case2   %constf20p5 %case1   %constf5p5 %case0\n" // not in the order of blocks
 		"%inloc    = OpAccessChain %f32ptr %indata %zero %x\n"
 		"%inval    = OpLoad %f32 %inloc\n"
 		"%add      = OpFAdd %f32 %inval %operand\n"
@@ -1189,16 +1188,16 @@ tcu::TestCaseGroup* createOpConstantCompositeGroup (tcu::TestContext& testCtx)
 													"%point5 = OpConstant %f32 0.5\n"
 													"%vec = OpConstantComposite %uvec3 %one %one %zero\n"
 													"%mat = OpConstantComposite %m2vec3 %vec %vec\n"
-													"%const = OpConstantComposite %one %point5 %vec %mat"));
+													"%const = OpConstantComposite %struct %one %point5 %vec %mat"));
 	cases.push_back(CaseParameter("nested_struct",	"%st1 = OpTypeStruct %u32 %f32\n"
 													"%st2 = OpTypeStruct %i32 %i32\n"
 													"%struct = OpTypeStruct %st1 %st2\n"
 													"%point5 = OpConstant %f32 0.5\n"
 													"%one = OpConstant %u32 1\n"
 													"%ten = OpConstant %i32 10\n"
-													"%st1val = OpConstantComposite %one %point5\n"
-													"%st2val = OpConstantComposite %ten %ten\n"
-													"%const = OpConstantComposite %st1val %st2val"));
+													"%st1val = OpConstantComposite %st1 %one %point5\n"
+													"%st2val = OpConstantComposite %st2 %ten %ten\n"
+													"%const = OpConstantComposite %struct %st1val %st2val"));
 
 	fillRandomScalars(rnd, 1.f, 100.f, &positiveFloats[0], numElements);
 
