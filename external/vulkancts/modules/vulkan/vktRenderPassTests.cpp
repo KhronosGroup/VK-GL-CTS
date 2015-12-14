@@ -1649,7 +1649,7 @@ Move<VkPipeline> createSubpassPipeline (const DeviceInterface&		vk,
 			VK_COMPARE_OP_ALWAYS,									// stencilCompareOp
 			~0u,													// stencilCompareMask
 			~0u,													// stencilWriteMask
-			~0u														// stencilReference
+			STENCIL_VALUE											// stencilReference
 		},															// front
 		{
 			VK_STENCIL_OP_REPLACE,									// stencilFailOp
@@ -1658,7 +1658,7 @@ Move<VkPipeline> createSubpassPipeline (const DeviceInterface&		vk,
 			VK_COMPARE_OP_ALWAYS,									// stencilCompareOp
 			~0u,													// stencilCompareMask
 			~0u,													// stencilWriteMask
-			~0u														// stencilReference
+			STENCIL_VALUE											// stencilReference
 		},															// back
 
 		-1.0f,														// minDepthBounds;
@@ -3250,7 +3250,7 @@ bool logAndVerifyImages (TestLog&											log,
 
 				const tcu::TextureFormat	stencilFormat		= tcu::getEffectiveDepthStencilTextureFormat(format, tcu::Sampler::MODE_STENCIL);
 				const VkDeviceSize			stencilBufferSize	= targetSize.x() * targetSize.y() * stencilFormat.getPixelSize();
-				void* const					stencilPtr			= attachmentResources[attachmentNdx]->getResultMemory().getHostPtr();
+				void* const					stencilPtr			= attachmentResources[attachmentNdx]->getSecondaryResultMemory().getHostPtr();
 
 				const VkMappedMemoryRange	ranges[] =
 				{
@@ -3272,7 +3272,7 @@ bool logAndVerifyImages (TestLog&											log,
 				VK_CHECK(vk.invalidateMappedMemoryRanges(device, 2u, ranges));
 
 				{
-					const ConstPixelBufferAccess	depthAccess		(depthFormat, targetSize.x(), targetSize.y(), 1, depthPtr);
+					const ConstPixelBufferAccess	depthAccess		(format, targetSize.x(), targetSize.y(), 1, depthPtr);
 					const ConstPixelBufferAccess	stencilAccess	(stencilFormat, targetSize.x(), targetSize.y(), 1, stencilPtr);
 					tcu::TextureLevel				errorImage		(tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8), targetSize.x(), targetSize.y());
 
