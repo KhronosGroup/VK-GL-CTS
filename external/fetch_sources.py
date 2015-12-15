@@ -134,10 +134,11 @@ class SourcePackage (Source):
 			self.postExtract(dstPath)
 
 class GitRepo (Source):
-	def __init__(self, url, revision, baseDir, extractDir = "src"):
+	def __init__(self, url, revision, baseDir, extractDir = "src", postCheckout = None):
 		Source.__init__(self, baseDir, extractDir)
-		self.url		= url
-		self.revision	= revision
+		self.url			= url
+		self.revision		= revision
+		self.postCheckout	= postCheckout
 
 	def update (self):
 		fullDstPath = os.path.join(EXTERNAL_DIR, self.baseDir, self.extractDir)
@@ -149,12 +150,21 @@ class GitRepo (Source):
 		try:
 			execute(["git", "fetch", self.url, "+refs/heads/*:refs/remotes/origin/*"])
 			execute(["git", "checkout", self.revision])
+
+			if self.postCheckout:
+				self.postCheckout(fullDstPath)
 		finally:
 			popWorkingDir()
 
 def postExtractLibpng (path):
 	shutil.copy(os.path.join(path, "scripts", "pnglibconf.h.prebuilt"),
 				os.path.join(path, "pnglibconf.h"))
+
+def postCheckoutGlslang (path):
+	srcPath	= os.path.join(path, "SPIRV", "SpvBuilder.cpp");
+	origSrc	= readFile(srcPath)
+	patched	= origSrc.replace("exit(1)", "throw std::runtime_error(fun)")
+	writeFile(srcPath, patched)
 
 PACKAGES = [
 	SourcePackage(
@@ -174,8 +184,9 @@ PACKAGES = [
 		"spirv-tools"),
 	GitRepo(
 		"git@gitlab.khronos.org:GLSL/glslang.git",
-		"9e1d1465801ace8edd95c951a3d4a9ada75306ed",
-		"glslang"),
+		"41daec718f4868d956ca7d339a15aebe65879442",
+		"glslang",
+		postCheckout = postCheckoutGlslang),
 ]
 
 def parseArgs ():
