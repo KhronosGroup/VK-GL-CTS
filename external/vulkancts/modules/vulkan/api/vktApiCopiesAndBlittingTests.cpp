@@ -92,7 +92,7 @@ protected:
 			void						generateBuffer						(BufferType type, int width, int height, int depth = 1);
 	virtual void						generateExpectedResult				(void);
 
-	virtual deBool						checkTestResult						(std::vector<deUint32> expected, std::vector<deUint32> actual);
+	virtual deBool						checkTestResult						(tcu::ConstPixelBufferAccess result);
 	virtual void						copyRegionToTextureLevel			(tcu::ConstPixelBufferAccess src, tcu::PixelBufferAccess dst, CopyRegion region) = 0;
 };
 
@@ -175,15 +175,25 @@ void CopiesAndBlittingTestInstance::generateBuffer(BufferType type, int width, i
 				buffer->getAccess().setPixel(tcu::UVec4(x, y, z, 1), x, y, z);
 }
 
-deBool CopiesAndBlittingTestInstance::checkTestResult(std::vector<deUint32> expected, std::vector<deUint32> actual)
+deBool CopiesAndBlittingTestInstance::checkTestResult(tcu::ConstPixelBufferAccess result)
 {
-	if (expected.size() != actual.size())
+	tcu::ConstPixelBufferAccess expected = m_expectedTextureLevel->getAccess();
+
+	if (expected.getWidth() != result.getWidth() || expected.getHeight() != result.getHeight() || expected.getDepth() != result.getDepth())
 		return DE_FALSE;
 
-	for (deUint32 i = 0; i < expected.size(); i++) {
-		if (expected[i] != actual[i])
-			return DE_FALSE;
+	for (int x = 0; x < result.getWidth(); x++)
+	{
+		for (int y = 0; y < result.getHeight(); y++)
+		{
+			for (int z = 0; z < result.getDepth(); z++)
+			{
+				if (result.getPixel(x, y, z) != expected.getPixel(x, y, z))
+						return DE_FALSE;
+			}
+		}
 	}
+
 	return DE_TRUE;
 }
 
@@ -218,13 +228,12 @@ public:
 	virtual TestInstance*	createInstance				(Context&					context) const = 0;
 };
 
-struct ImageToImageCaseParams {
+struct ImageToImageCaseParams
+{
 	const VkExtent3D	srcExtent;
 	const VkFormat		srcColorFormat;
 	const VkExtent3D	dstExtent;
 	const VkFormat		dstColorFormat;
-
-
 };
 
 //
@@ -578,9 +587,12 @@ void CopyImageToBuffer::copyRegionToTextureLevel(tcu::ConstPixelBufferAccess src
 	VkOffset3D srcOffset = region.bufferToImageCopy.imageOffset;
 
 	void* bufferData = dst.getDataPtr();
-	for (int x = 0; x < extent.width; x++) {
-		for (int y = 0; y < extent.height; y++) {
-			for (int z = 0; z < extent.depth; z++) {
+	for (int x = 0; x < extent.width; x++)
+	{
+		for (int y = 0; y < extent.height; y++)
+		{
+			for (int z = 0; z < extent.depth; z++)
+			{
 				vk::VkDeviceSize pixelIndex = region.bufferToImageCopy.bufferOffset + (((z * imageHeight) + y) * rowLengt + x) * texelSize;
 				void* pixelPtr = (deUint8*) bufferData + pixelIndex;
 				deMemcpy(pixelPtr, src.getPixelPtr(srcOffset.x + x, srcOffset.y + y, srcOffset.z + z), texelSize);
