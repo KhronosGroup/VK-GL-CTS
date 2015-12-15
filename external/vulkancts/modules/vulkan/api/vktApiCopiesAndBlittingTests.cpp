@@ -46,6 +46,7 @@
 #include "vkTypeUtil.hpp"
 #include "tcuTextureUtil.hpp"
 #include "tcuVectorType.hpp"
+#include "tcuTexture.hpp"
 
 namespace vkt
 {
@@ -65,6 +66,11 @@ public:
 	virtual								~CopiesAndBlittingTestInstance		(void);
 	virtual tcu::TestStatus				iterate								(void);
 protected:
+	enum BufferType{
+		Source,
+		Destination
+	};
+
 	Move<VkCommandPool>					m_cmdPool;
 	Move<VkCommandBuffer>				m_cmdBuffer;
 	Move<VkFence>						m_fence;
@@ -73,6 +79,7 @@ protected:
 										{};
 	virtual void						generateExpectedResult				(void)
 										{};
+			void						generateBuffer						(BufferType type, int width, int height, int depth = 1);
 	virtual deBool						checkTestResult						(std::vector<deUint32> expected, std::vector<deUint32> actual);
 
 	const VkCommandBufferBeginInfo		m_cmdBufferBeginInfo =
@@ -87,6 +94,10 @@ protected:
 		0u,														// VkQueryControlFlags				queryFlags;
 		0u														// VkQueryPipelineStatisticFlags	pipelineStatistics;
 	};
+
+private:
+	de::MovePtr<tcu::TextureLevel>		m_sourceTextureLevel;
+	de::MovePtr<tcu::TextureLevel>		m_destinationTextureLevel;
 };
 
 CopiesAndBlittingTestInstance::~CopiesAndBlittingTestInstance	(void)
@@ -138,6 +149,19 @@ CopiesAndBlittingTestInstance::CopiesAndBlittingTestInstance	(Context& context)
 
 		m_fence = createFence(vk, vkDevice, &fenceParams);
 	}
+}
+
+void CopiesAndBlittingTestInstance::generateBuffer(BufferType type, int width, int height, int depth)
+{
+	tcu::TextureLevel* buffer = (type == Source) ? m_sourceTextureLevel.get() : m_destinationTextureLevel.get();
+	// TODO: Should we use another TextureFormat?
+	buffer = new tcu::TextureLevel(tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNSIGNED_INT32), width, height, depth);
+
+	// TODO: Should we generate random data?
+	for (int x = 0; x < width; x++)
+		for (int y = 0; y < height; y++)
+			for (int z = 0; z < depth; z++)
+				buffer->getAccess().setPixel(tcu::UVec4(x, y, z, 1), x, y, z);
 }
 
 deBool CopiesAndBlittingTestInstance::checkTestResult(std::vector<deUint32> expected, std::vector<deUint32> actual)
