@@ -2344,6 +2344,225 @@ tcu::TestCaseGroup* createOpQuantizeToF16Group (tcu::TestContext& testCtx)
 
 	return group.release();
 }
+
+// Performs a bitwise copy of source to the destination type Dest.
+template <typename Dest, typename Src>
+Dest bitwiseCast(Src source)
+{
+  Dest dest;
+  DE_STATIC_ASSERT(sizeof(source) == sizeof(dest));
+  deMemcpy(&dest, &source, sizeof(dest));
+  return dest;
+}
+
+tcu::TestCaseGroup* createSpecConstantOpQuantizeToF16Group (tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opspecconstantop_opquantize", "Tests the OpQuantizeToF16 opcode for the OpSpecConstantOp instruction"));
+	de::Random						rnd				(deStringHash(group->getName()));
+
+	const std::string shader (
+		string(s_ShaderPreamble) +
+
+		"OpName %main           \"main\"\n"
+		"OpName %id             \"gl_GlobalInvocationID\"\n"
+
+		"OpDecorate %id BuiltIn GlobalInvocationId\n"
+
+		"OpDecorate %sc_0  SpecId 0\n"
+		"OpDecorate %sc_1  SpecId 1\n"
+		"OpDecorate %sc_2  SpecId 2\n"
+		"OpDecorate %sc_3  SpecId 3\n"
+		"OpDecorate %sc_4  SpecId 4\n"
+		"OpDecorate %sc_5  SpecId 5\n"
+
+		+ string(s_InputOutputBufferTraits) + string(s_CommonTypes) + string(s_InputOutputBuffer) +
+
+		"%id        = OpVariable %uvec3ptr Input\n"
+		"%zero      = OpConstant %i32 0\n"
+		"%c_u32_6   = OpConstant %u32 6\n"
+
+		"%sc_0      = OpSpecConstant %f32 0.\n"
+		"%sc_1      = OpSpecConstant %f32 0.\n"
+		"%sc_2      = OpSpecConstant %f32 0.\n"
+		"%sc_3      = OpSpecConstant %f32 0.\n"
+		"%sc_4      = OpSpecConstant %f32 0.\n"
+		"%sc_5      = OpSpecConstant %f32 0.\n"
+
+		"%sc_0_quant = OpSpecConstantOp %f32 QuantizeToF16 %sc_0\n"
+		"%sc_1_quant = OpSpecConstantOp %f32 QuantizeToF16 %sc_1\n"
+		"%sc_2_quant = OpSpecConstantOp %f32 QuantizeToF16 %sc_2\n"
+		"%sc_3_quant = OpSpecConstantOp %f32 QuantizeToF16 %sc_3\n"
+		"%sc_4_quant = OpSpecConstantOp %f32 QuantizeToF16 %sc_4\n"
+		"%sc_5_quant = OpSpecConstantOp %f32 QuantizeToF16 %sc_5\n"
+
+		"%main      = OpFunction %void None %voidf\n"
+		"%label     = OpLabel\n"
+		"%idval     = OpLoad %uvec3 %id\n"
+		"%x         = OpCompositeExtract %u32 %idval 0\n"
+		"%outloc    = OpAccessChain %f32ptr %outdata %zero %x\n"
+		"%selector  = OpUMod %u32 %x %c_u32_6\n"
+		"            OpSelectionMerge %exit None\n"
+		"            OpSwitch %selector %exit 0 %case0 1 %case1 2 %case2 3 %case3 4 %case4 5 %case5\n"
+
+		"%case0     = OpLabel\n"
+		"             OpStore %outloc %sc_0_quant\n"
+		"             OpBranch %exit\n"
+
+		"%case1     = OpLabel\n"
+		"             OpStore %outloc %sc_1_quant\n"
+		"             OpBranch %exit\n"
+
+		"%case2     = OpLabel\n"
+		"             OpStore %outloc %sc_2_quant\n"
+		"             OpBranch %exit\n"
+
+		"%case3     = OpLabel\n"
+		"             OpStore %outloc %sc_3_quant\n"
+		"             OpBranch %exit\n"
+
+		"%case4     = OpLabel\n"
+		"             OpStore %outloc %sc_4_quant\n"
+		"             OpBranch %exit\n"
+
+		"%case5     = OpLabel\n"
+		"             OpStore %outloc %sc_5_quant\n"
+		"             OpBranch %exit\n"
+
+		"%exit      = OpLabel\n"
+		"             OpReturn\n"
+
+		"             OpFunctionEnd\n");
+
+	{
+		ComputeShaderSpec	spec;
+		const deUint8		numCases	= 4;
+		vector<float>		inputs		(numCases, 0.f);
+		vector<float>		outputs;
+
+		spec.numWorkGroups = IVec3(numCases, 1, 1);
+		spec.entryPoint = "main";
+
+		spec.specConstants.push_back(bitwiseCast<deUint32>(std::numeric_limits<float>::infinity()));
+		spec.specConstants.push_back(bitwiseCast<deUint32>(-std::numeric_limits<float>::infinity()));
+		spec.specConstants.push_back(bitwiseCast<deUint32>(std::ldexp(1.0f, 16)));
+		spec.specConstants.push_back(bitwiseCast<deUint32>(std::ldexp(-1.0f, 32)));
+
+		outputs.push_back(std::numeric_limits<float>::infinity());
+		outputs.push_back(-std::numeric_limits<float>::infinity());
+		outputs.push_back(std::numeric_limits<float>::infinity());
+		outputs.push_back(-std::numeric_limits<float>::infinity());
+
+		spec.inputs.push_back(BufferSp(new Float32Buffer(inputs)));
+		spec.outputs.push_back(BufferSp(new Float32Buffer(outputs)));
+
+		group->addChild(new SpvAsmComputeShaderCase(
+			testCtx, "infinities", "Check that infinities propagated and created", spec));
+	}
+
+	{
+		ComputeShaderSpec	spec;
+		const deUint8		numCases	= 2;
+		vector<float>		inputs		(numCases, 0.f);
+		vector<float>		outputs;
+
+		spec.numWorkGroups	= IVec3(numCases, 1, 1);
+		spec.entryPoint		= "main";
+		spec.verifyIO		= &compareNan;
+
+		outputs.push_back(std::numeric_limits<float>::quiet_NaN());
+		outputs.push_back(-std::numeric_limits<float>::quiet_NaN());
+
+		for (deUint8 idx = 0; idx < numCases; ++idx)
+			spec.specConstants.push_back(bitwiseCast<deUint32>(outputs[idx]));
+
+		spec.inputs.push_back(BufferSp(new Float32Buffer(inputs)));
+		spec.outputs.push_back(BufferSp(new Float32Buffer(outputs)));
+
+		group->addChild(new SpvAsmComputeShaderCase(
+			testCtx, "propagated_nans", "Check that nans are propagated", spec));
+	}
+
+	{
+		ComputeShaderSpec	spec;
+		const deUint8		numCases	= 6;
+		vector<float>		inputs		(numCases, 0.f);
+		vector<float>		outputs;
+
+		spec.numWorkGroups	= IVec3(numCases, 1, 1);
+		spec.entryPoint		= "main";
+
+		spec.specConstants.push_back(bitwiseCast<deUint32>(0.f));
+		spec.specConstants.push_back(bitwiseCast<deUint32>(-0.f));
+		spec.specConstants.push_back(bitwiseCast<deUint32>(std::ldexp(1.0f, -16)));
+		spec.specConstants.push_back(bitwiseCast<deUint32>(std::ldexp(-1.0f, -32)));
+		spec.specConstants.push_back(bitwiseCast<deUint32>(std::ldexp(1.0f, -127)));
+		spec.specConstants.push_back(bitwiseCast<deUint32>(-std::ldexp(1.0f, -128)));
+
+		outputs.push_back(0.f);
+		outputs.push_back(-0.f);
+		outputs.push_back(0.f);
+		outputs.push_back(-0.f);
+		outputs.push_back(0.f);
+		outputs.push_back(-0.f);
+
+		spec.inputs.push_back(BufferSp(new Float32Buffer(inputs)));
+		spec.outputs.push_back(BufferSp(new Float32Buffer(outputs)));
+
+		group->addChild(new SpvAsmComputeShaderCase(
+			testCtx, "flush_to_zero", "Check that values are zeroed correctly", spec));
+	}
+
+	{
+		ComputeShaderSpec	spec;
+		const deUint8		numCases	= 6;
+		vector<float>		inputs		(numCases, 0.f);
+		vector<float>		outputs;
+
+		spec.numWorkGroups	= IVec3(numCases, 1, 1);
+		spec.entryPoint		= "main";
+
+		for (deUint8 idx = 0; idx < 6; ++idx)
+		{
+			const float f = static_cast<float>(idx * 10 - 30) / 4.f;
+			spec.specConstants.push_back(bitwiseCast<deUint32>(f));
+			outputs.push_back(f);
+		}
+
+		spec.inputs.push_back(BufferSp(new Float32Buffer(inputs)));
+		spec.outputs.push_back(BufferSp(new Float32Buffer(outputs)));
+
+		group->addChild(new SpvAsmComputeShaderCase(
+			testCtx, "exact", "Check that values exactly preserved where appropriate", spec));
+	}
+
+	{
+		ComputeShaderSpec	spec;
+		const deUint8		numCases	= 4;
+		vector<float>		inputs		(numCases, 0.f);
+		vector<float>		outputs;
+
+		spec.numWorkGroups	= IVec3(numCases, 1, 1);
+		spec.entryPoint		= "main";
+		spec.verifyIO		= &compareOpQuantizeF16ComputeExactCase;
+
+		outputs.push_back(constructNormalizedFloat(8, 0x300300));
+		outputs.push_back(-constructNormalizedFloat(-7, 0x600800));
+		outputs.push_back(constructNormalizedFloat(2, 0x01E000));
+		outputs.push_back(constructNormalizedFloat(1, 0xFFE000));
+
+		for (deUint8 idx = 0; idx < numCases; ++idx)
+			spec.specConstants.push_back(bitwiseCast<deUint32>(outputs[idx]));
+
+		spec.inputs.push_back(BufferSp(new Float32Buffer(inputs)));
+		spec.outputs.push_back(BufferSp(new Float32Buffer(outputs)));
+
+		group->addChild(new SpvAsmComputeShaderCase(
+			testCtx, "rounded", "Check that are rounded when needed", spec));
+	}
+
+	return group.release();
+}
+
 // Checks that constant null/composite values can be used in computation.
 tcu::TestCaseGroup* createOpConstantUsageGroup (tcu::TestContext& testCtx)
 {
@@ -6692,6 +6911,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	graphicsTests->addChild(createOpQuantizeTests(testCtx));
 	graphicsTests->addChild(createLoopTests(testCtx));
 	graphicsTests->addChild(createSpecConstantTests(testCtx));
+	graphicsTests->addChild(createSpecConstantOpQuantizeToF16Group(testCtx));
 
 
 	instructionTests->addChild(computeTests.release());
