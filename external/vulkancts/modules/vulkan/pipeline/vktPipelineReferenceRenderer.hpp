@@ -306,6 +306,8 @@ public:
 
 	virtual						~ReferenceRenderer		(void);
 
+	void						colorClear				(const tcu::Vec4& color);
+
 	void						draw					(const rr::RenderState&				renderState,
 														 const rr::PrimitiveType			primitive,
 														 const std::vector<Vertex4RGBA>&	vertexBuffer);

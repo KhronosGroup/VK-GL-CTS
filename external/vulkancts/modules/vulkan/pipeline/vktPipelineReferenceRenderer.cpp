@@ -256,6 +256,12 @@ ReferenceRenderer::~ReferenceRenderer (void)
 	delete m_renderTarget;
 }
 
+void ReferenceRenderer::colorClear(const tcu::Vec4& color)
+{
+	tcu::clear(m_colorBuffer.getAccess(), color);
+	tcu::clear(m_resolveColorBuffer.getAccess(), color);
+}
+
 void ReferenceRenderer::draw (const rr::RenderState&			renderState,
 							  const rr::PrimitiveType			primitive,
 							  const std::vector<Vertex4RGBA>&	vertexBuffer)
