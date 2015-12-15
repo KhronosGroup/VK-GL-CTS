@@ -59,6 +59,14 @@ using namespace vk;
 namespace
 {
 
+union CopyRegion
+{
+	VkBufferCopy		bufferCopy;
+	VkImageCopy			imageCopy;
+	VkBufferImageCopy	bufferToImageCopy;
+	VkImageBlit			imageBlit;
+};
+
 class CopiesAndBlittingTestInstance : public vkt::TestInstance
 {
 public:
@@ -74,30 +82,18 @@ protected:
 	Move<VkCommandPool>					m_cmdPool;
 	Move<VkCommandBuffer>				m_cmdBuffer;
 	Move<VkFence>						m_fence;
-
-	virtual void						generateTestBuffer					(void)
-										{};
-	virtual void						generateExpectedResult				(void)
-										{};
-			void						generateBuffer						(BufferType type, int width, int height, int depth = 1);
-	virtual deBool						checkTestResult						(std::vector<deUint32> expected, std::vector<deUint32> actual);
-
-	const VkCommandBufferBeginInfo		m_cmdBufferBeginInfo =
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,			// VkStructureType					sType;
-		DE_NULL,												// const void*						pNext;
-		VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,			// VkCommandBufferUsageFlags		flags;
-		DE_NULL,												// VkRenderPass						renderPass;
-		0u,														// deUint32							subpass;
-		DE_NULL,												// VkFramebuffer					framebuffer;
-		false,													// VkBool32							occlusionQueryEnable;
-		0u,														// VkQueryControlFlags				queryFlags;
-		0u														// VkQueryPipelineStatisticFlags	pipelineStatistics;
-	};
-
-private:
 	de::MovePtr<tcu::TextureLevel>		m_sourceTextureLevel;
 	de::MovePtr<tcu::TextureLevel>		m_destinationTextureLevel;
+	de::MovePtr<tcu::TextureLevel>		m_expectedTextureLevel;
+	std::vector<CopyRegion>				m_regions;
+
+	VkCommandBufferBeginInfo			m_cmdBufferBeginInfo;
+
+			void						generateBuffer						(BufferType type, int width, int height, int depth = 1);
+	virtual void						generateExpectedResult				(void);
+
+	virtual deBool						checkTestResult						(std::vector<deUint32> expected, std::vector<deUint32> actual);
+	virtual void						copyRegionToTextureLevel			(tcu::ConstPixelBufferAccess src, tcu::PixelBufferAccess dst, CopyRegion region) = 0;
 };
 
 CopiesAndBlittingTestInstance::~CopiesAndBlittingTestInstance	(void)
@@ -110,6 +106,21 @@ CopiesAndBlittingTestInstance::CopiesAndBlittingTestInstance	(Context& context)
 	const DeviceInterface&		vk					= context.getDeviceInterface();
 	const VkDevice				vkDevice			= context.getDevice();
 	const deUint32				queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
+
+	VkCommandBufferBeginInfo		cmdBufferBeginInfo =
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,			// VkStructureType					sType;
+		DE_NULL,												// const void*						pNext;
+		VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,			// VkCommandBufferUsageFlags		flags;
+		DE_NULL,												// VkRenderPass						renderPass;
+		0u,														// deUint32							subpass;
+		DE_NULL,												// VkFramebuffer					framebuffer;
+		false,													// VkBool32							occlusionQueryEnable;
+		0u,														// VkQueryControlFlags				queryFlags;
+		0u														// VkQueryPipelineStatisticFlags	pipelineStatistics;
+	};
+
+	m_cmdBufferBeginInfo = cmdBufferBeginInfo;
 
 	// Create command pool
 	{
@@ -176,6 +187,16 @@ deBool CopiesAndBlittingTestInstance::checkTestResult(std::vector<deUint32> expe
 	return DE_TRUE;
 }
 
+void CopiesAndBlittingTestInstance::generateExpectedResult()
+{
+	tcu::ConstPixelBufferAccess src = m_sourceTextureLevel->getAccess();
+	tcu::ConstPixelBufferAccess dst = m_destinationTextureLevel->getAccess();
+
+	m_expectedTextureLevel = de::MovePtr<tcu::TextureLevel>(new tcu::TextureLevel(dst.getFormat(), dst.getWidth(), dst.getHeight(), dst.getDepth()));
+	for (deUint32 i = 0; i < m_regions.size(); i++)
+		copyRegionToTextureLevel(src, m_expectedTextureLevel->getAccess(), m_regions[i]);
+}
+
 tcu::TestStatus CopiesAndBlittingTestInstance::iterate (void)
 {
 	return tcu::TestStatus::pass("CopiesAndBlitting test");
@@ -194,10 +215,7 @@ public:
 	virtual	void			initPrograms				(SourceCollections&			programCollection) const
 							{}
 
-	virtual TestInstance*	createInstance				(Context&					context) const
-							{
-								return new CopiesAndBlittingTestInstance(context);
-							}
+	virtual TestInstance*	createInstance				(Context&					context) const = 0;
 };
 
 struct ImageToImageCaseParams {
@@ -205,6 +223,8 @@ struct ImageToImageCaseParams {
 	const VkFormat		srcColorFormat;
 	const VkExtent3D	dstExtent;
 	const VkFormat		dstColorFormat;
+
+
 };
 
 //
@@ -220,6 +240,8 @@ private:
 	Move<VkImage>						m_destination;
 	de::MovePtr<Allocation>				m_destinationImageAlloc;
 	ImageToImageCaseParams				m_testParams;
+
+	virtual void						copyRegionToTextureLevel			(tcu::ConstPixelBufferAccess src, tcu::PixelBufferAccess dst, CopyRegion region);
 };
 
 ImageToImageCopies::ImageToImageCopies (Context &context, ImageToImageCaseParams params)
@@ -270,7 +292,7 @@ ImageToImageCopies::ImageToImageCopies (Context &context, ImageToImageCaseParams
 		VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode		sharingMode;
 		1u,										// deUint32				queueFamilyCount;
 		&queueFamilyIndex,						// const deUint32*		pQueueFamilyIndices;
-		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,	// VkImageLayout		initialLayout;
+		VK_IMAGE_LAYOUT_UNDEFINED,	// VkImageLayout		initialLayout;
 	};
 
 	m_destination = createImage(vk, vkDevice, &destinationImageParams);
@@ -280,7 +302,7 @@ ImageToImageCopies::ImageToImageCopies (Context &context, ImageToImageCaseParams
 
 tcu::TestStatus ImageToImageCopies::iterate()
 {
-	generateTestBuffer();
+	//generateBuffer();
 	generateExpectedResult();
 
 	const DeviceInterface&		vk			= m_context.getDeviceInterface();
@@ -289,7 +311,7 @@ tcu::TestStatus ImageToImageCopies::iterate()
 
 	const VkImageSubresourceLayers sourceLayer {
 		VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
-		0u,							// uint32_t				mipLevel;
+		1u,							// uint32_t				mipLevel;
 		0u,							// uint32_t				baseArrayLayer;
 		1u,							// uint32_t				layerCount;
 	};
@@ -328,6 +350,18 @@ tcu::TestStatus ImageToImageCopies::iterate()
 	return tcu::TestStatus::fail("Unimplemented!");
 }
 
+void ImageToImageCopies::copyRegionToTextureLevel(tcu::ConstPixelBufferAccess src, tcu::PixelBufferAccess dst, CopyRegion region)
+{
+	VkOffset3D srcOffset	= region.imageCopy.srcOffset;
+	VkOffset3D dstOffset	= region.imageCopy.dstOffset;
+	VkExtent3D extent		= region.imageCopy.extent;
+
+	for (int x = 0; x < extent.width; x++)
+		for (int y = 0; y < extent.height; y++)
+			for (int z = 0; z < extent.depth; z++)
+				dst.setPixel(src.getPixel(srcOffset.x + x, srcOffset.y + y, srcOffset.z + z), dstOffset.x + x, dstOffset.y + y, dstOffset.z + z);
+}
+
 class ImageToImageTestCase : public vkt::TestCase
 {
 public:
@@ -360,9 +394,9 @@ struct ImageInfo {
 class CopyImageToBuffer : public CopiesAndBlittingTestInstance
 {
 public:
-										CopyImageToBuffer	(Context&	context,
-														 ImageInfo	srcInfo);
-	virtual tcu::TestStatus				iterate			(void);
+										CopyImageToBuffer			(Context&	context,
+																		ImageInfo	srcInfo);
+	virtual tcu::TestStatus				iterate						(void);
 private:
 	ImageInfo							m_srcInfo;
 	VkDeviceSize						m_pixelDataSize;
@@ -371,6 +405,8 @@ private:
 	de::MovePtr<Allocation>				m_sourceImageAlloc;
 	Move<VkBuffer>						m_destination;
 	de::MovePtr<Allocation>				m_destinationBufferAlloc;
+
+	virtual void						copyRegionToTextureLevel	(tcu::ConstPixelBufferAccess src, tcu::PixelBufferAccess dst, CopyRegion region);
 };
 
 CopyImageToBuffer::CopyImageToBuffer (Context &context, ImageInfo srcInfo)
@@ -432,7 +468,7 @@ CopyImageToBuffer::CopyImageToBuffer (Context &context, ImageInfo srcInfo)
 tcu::TestStatus CopyImageToBuffer::iterate()
 {
 	VkImage					image;
-	generateTestBuffer();
+	//generateBuffer();
 	generateExpectedResult();
 
 	const DeviceInterface&		vk			= m_context.getDeviceInterface();
@@ -525,6 +561,32 @@ tcu::TestStatus CopyImageToBuffer::iterate()
 	// checkTestResult();
 
 	return tcu::TestStatus::fail("Unimplemented!");
+}
+
+void CopyImageToBuffer::copyRegionToTextureLevel(tcu::ConstPixelBufferAccess src, tcu::PixelBufferAccess dst, CopyRegion region)
+{
+	deUint32 rowLengt = region.bufferToImageCopy.bufferRowLength;
+	if (!rowLengt)
+		rowLengt = region.bufferToImageCopy.imageExtent.width;
+
+	deUint32 imageHeight = region.bufferToImageCopy.bufferImageHeight;
+	if (!imageHeight)
+		imageHeight = region.bufferToImageCopy.imageExtent.height;
+
+	deUint32 texelSize = src.getFormat().getPixelSize();
+	VkExtent3D extent = region.bufferToImageCopy.imageExtent;
+	VkOffset3D srcOffset = region.bufferToImageCopy.imageOffset;
+
+	void* bufferData = dst.getDataPtr();
+	for (int x = 0; x < extent.width; x++) {
+		for (int y = 0; y < extent.height; y++) {
+			for (int z = 0; z < extent.depth; z++) {
+				vk::VkDeviceSize pixelIndex = region.bufferToImageCopy.bufferOffset + (((z * imageHeight) + y) * rowLengt + x) * texelSize;
+				void* pixelPtr = (deUint8*) bufferData + pixelIndex;
+				deMemcpy(pixelPtr, src.getPixelPtr(srcOffset.x + x, srcOffset.y + y, srcOffset.z + z), texelSize);
+			}
+		}
+	}
 }
 
 } // anonymous
