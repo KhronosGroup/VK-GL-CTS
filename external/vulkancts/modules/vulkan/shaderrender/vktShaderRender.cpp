@@ -542,13 +542,9 @@ void ShaderRenderCaseInstance::setupUniformData (deUint32 bindingLocation, size_
 	deMemcpy(alloc->getHostPtr(), dataPtr, size);
 	flushMappedMemoryRange(vk, vkDevice, alloc->getMemory(), alloc->getOffset(), size);
 
-	// \todo [2015-10-09 elecro] remove the 'hackPadding' variable if the driver support small uniforms,
-	// that is for example one float big uniforms.
-	const size_t hackPadding = size < 4 * sizeof(float) ? 3 * sizeof(float) : 0;
-
 	de::MovePtr<BufferUniform> uniformInfo(new BufferUniform());
 	uniformInfo->type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	uniformInfo->descriptor = makeDescriptorBufferInfo(*buffer, 0u, size + hackPadding);
+	uniformInfo->descriptor = makeDescriptorBufferInfo(*buffer, 0u, size);
 	uniformInfo->location = bindingLocation;
 	uniformInfo->buffer = VkBufferSp(new vk::Unique<VkBuffer>(buffer));
 	uniformInfo->alloc = AllocationSp(alloc.release());
