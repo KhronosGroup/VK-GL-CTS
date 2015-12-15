@@ -218,7 +218,6 @@ tcu::TestCaseGroup* createOpNopGroup (tcu::TestContext& testCtx)
 	spec.inputs.push_back(BufferSp(new Float32Buffer(positiveFloats)));
 	spec.outputs.push_back(BufferSp(new Float32Buffer(negativeFloats)));
 	spec.numWorkGroups = IVec3(numElements, 1, 1);
-	spec.entryPoint = "main";
 
 	group->addChild(new SpvAsmComputeShaderCase(testCtx, "all", "OpNop appearing at different places", spec));
 
@@ -283,7 +282,6 @@ tcu::TestCaseGroup* createOpLineGroup (tcu::TestContext& testCtx)
 	spec.inputs.push_back(BufferSp(new Float32Buffer(positiveFloats)));
 	spec.outputs.push_back(BufferSp(new Float32Buffer(negativeFloats)));
 	spec.numWorkGroups = IVec3(numElements, 1, 1);
-	spec.entryPoint = "main";
 
 	group->addChild(new SpvAsmComputeShaderCase(testCtx, "all", "OpLine appearing at different places", spec));
 
@@ -350,7 +348,6 @@ tcu::TestCaseGroup* createOpNoLineGroup (tcu::TestContext& testCtx)
 	spec.inputs.push_back(BufferSp(new Float32Buffer(positiveFloats)));
 	spec.outputs.push_back(BufferSp(new Float32Buffer(negativeFloats)));
 	spec.numWorkGroups = IVec3(numElements, 1, 1);
-	spec.entryPoint = "main";
 
 	group->addChild(new SpvAsmComputeShaderCase(testCtx, "all", "OpNoLine appearing at different places", spec));
 
@@ -446,7 +443,6 @@ tcu::TestCaseGroup* createNoContractionGroup (tcu::TestContext& testCtx)
 		spec.inputs.push_back(BufferSp(new Float32Buffer(inputFloats2)));
 		spec.outputs.push_back(BufferSp(new Float32Buffer(outputFloats)));
 		spec.numWorkGroups = IVec3(numElements, 1, 1);
-		spec.entryPoint = "main";
 
 		group->addChild(new SpvAsmComputeShaderCase(testCtx, cases[caseNdx].name, cases[caseNdx].name, spec));
 	}
@@ -516,7 +512,6 @@ tcu::TestCaseGroup* createOpCopyMemoryGroup (tcu::TestContext& testCtx)
 	spec1.inputs.push_back(BufferSp(new Vec4Buffer(inputFloats1)));
 	spec1.outputs.push_back(BufferSp(new Vec4Buffer(outputFloats1)));
 	spec1.numWorkGroups = IVec3(numElements, 1, 1);
-	spec1.entryPoint = "main";
 
 	group->addChild(new SpvAsmComputeShaderCase(testCtx, "vector", "OpCopyMemory elements of vector type", spec1));
 
@@ -567,7 +562,6 @@ tcu::TestCaseGroup* createOpCopyMemoryGroup (tcu::TestContext& testCtx)
 	spec2.inputs.push_back(BufferSp(new Float32Buffer(inputFloats2)));
 	spec2.outputs.push_back(BufferSp(new Float32Buffer(outputFloats2)));
 	spec2.numWorkGroups = IVec3(1, 1, 1);
-	spec2.entryPoint = "main";
 
 	group->addChild(new SpvAsmComputeShaderCase(testCtx, "array", "OpCopyMemory elements of array type", spec2));
 
@@ -614,7 +608,6 @@ tcu::TestCaseGroup* createOpCopyMemoryGroup (tcu::TestContext& testCtx)
 	spec3.inputs.push_back(BufferSp(new Float32Buffer(inputFloats3)));
 	spec3.outputs.push_back(BufferSp(new Float32Buffer(outputFloats3)));
 	spec3.numWorkGroups = IVec3(1, 1, 1);
-	spec3.entryPoint = "main";
 
 	group->addChild(new SpvAsmComputeShaderCase(testCtx, "struct", "OpCopyMemory elements of struct type", spec3));
 
@@ -659,7 +652,6 @@ tcu::TestCaseGroup* createOpCopyMemoryGroup (tcu::TestContext& testCtx)
 	spec4.inputs.push_back(BufferSp(new Float32Buffer(inputFloats4)));
 	spec4.outputs.push_back(BufferSp(new Float32Buffer(outputFloats4)));
 	spec4.numWorkGroups = IVec3(numElements, 1, 1);
-	spec4.entryPoint = "main";
 
 	group->addChild(new SpvAsmComputeShaderCase(testCtx, "float", "OpCopyMemory elements of float type", spec4));
 
@@ -735,7 +727,6 @@ tcu::TestCaseGroup* createOpCopyObjectGroup (tcu::TestContext& testCtx)
 	spec.inputs.push_back(BufferSp(new Float32Buffer(inputFloats)));
 	spec.outputs.push_back(BufferSp(new Float32Buffer(outputFloats)));
 	spec.numWorkGroups = IVec3(numElements, 1, 1);
-	spec.entryPoint = "main";
 
 	group->addChild(new SpvAsmComputeShaderCase(testCtx, "spotcheck", "OpCopyObject on different types", spec));
 
@@ -886,7 +877,6 @@ tcu::TestCaseGroup* createOpUnreachableGroup (tcu::TestContext& testCtx)
 	spec.inputs.push_back(BufferSp(new Float32Buffer(positiveFloats)));
 	spec.outputs.push_back(BufferSp(new Float32Buffer(negativeFloats)));
 	spec.numWorkGroups = IVec3(numElements, 1, 1);
-	spec.entryPoint = "main";
 
 	group->addChild(new SpvAsmComputeShaderCase(testCtx, "all", "OpUnreachable appearing at different places", spec));
 
@@ -1048,7 +1038,6 @@ tcu::TestCaseGroup* createDecorationGroupGroup (tcu::TestContext& testCtx)
 	spec.inputs.push_back(BufferSp(new Float32Buffer(inputFloats4)));
 	spec.outputs.push_back(BufferSp(new Float32Buffer(outputFloats)));
 	spec.numWorkGroups = IVec3(numElements, 1, 1);
-	spec.entryPoint = "main";
 
 	group->addChild(new SpvAsmComputeShaderCase(testCtx, "all", "decoration group cases", spec));
 
@@ -1204,7 +1193,6 @@ tcu::TestCaseGroup* createSpecConstantGroup (tcu::TestContext& testCtx)
 		spec.inputs.push_back(BufferSp(new Int32Buffer(inputInts)));
 		spec.outputs.push_back(BufferSp(new Int32Buffer(cases[caseNdx].expectedOutput)));
 		spec.numWorkGroups = IVec3(numElements, 1, 1);
-		spec.entryPoint = "main";
 		spec.specConstants.push_back(cases[caseNdx].scActualValue0);
 		spec.specConstants.push_back(cases[caseNdx].scActualValue1);
 
@@ -1270,7 +1258,6 @@ tcu::TestCaseGroup* createSpecConstantGroup (tcu::TestContext& testCtx)
 	spec.inputs.push_back(BufferSp(new Int32Buffer(inputInts)));
 	spec.outputs.push_back(BufferSp(new Int32Buffer(outputInts3)));
 	spec.numWorkGroups = IVec3(numElements, 1, 1);
-	spec.entryPoint = "main";
 	spec.specConstants.push_back(123);
 	spec.specConstants.push_back(56);
 	spec.specConstants.push_back(-77);
@@ -1364,7 +1351,6 @@ tcu::TestCaseGroup* createOpPhiGroup (tcu::TestContext& testCtx)
 	spec1.inputs.push_back(BufferSp(new Float32Buffer(inputFloats)));
 	spec1.outputs.push_back(BufferSp(new Float32Buffer(outputFloats1)));
 	spec1.numWorkGroups = IVec3(numElements, 1, 1);
-	spec1.entryPoint = "main";
 
 	group->addChild(new SpvAsmComputeShaderCase(testCtx, "block", "out-of-order and unreachable blocks for OpPhi", spec1));
 
@@ -1409,7 +1395,6 @@ tcu::TestCaseGroup* createOpPhiGroup (tcu::TestContext& testCtx)
 	spec2.inputs.push_back(BufferSp(new Float32Buffer(inputFloats)));
 	spec2.outputs.push_back(BufferSp(new Float32Buffer(outputFloats2)));
 	spec2.numWorkGroups = IVec3(numElements, 1, 1);
-	spec2.entryPoint = "main";
 
 	group->addChild(new SpvAsmComputeShaderCase(testCtx, "induction", "The usual way induction variables are handled in LLVM IR", spec2));
 
@@ -1456,7 +1441,6 @@ tcu::TestCaseGroup* createOpPhiGroup (tcu::TestContext& testCtx)
 	spec3.inputs.push_back(BufferSp(new Float32Buffer(inputFloats)));
 	spec3.outputs.push_back(BufferSp(new Float32Buffer(outputFloats3)));
 	spec3.numWorkGroups = IVec3(numElements, 1, 1);
-	spec3.entryPoint = "main";
 
 	group->addChild(new SpvAsmComputeShaderCase(testCtx, "swap", "Swap the values of two variables using OpPhi", spec3));
 
@@ -1615,7 +1599,6 @@ tcu::TestCaseGroup* createBlockOrderGroup (tcu::TestContext& testCtx)
 	spec.inputs.push_back(BufferSp(new Float32Buffer(inputFloats)));
 	spec.outputs.push_back(BufferSp(new Float32Buffer(outputFloats)));
 	spec.numWorkGroups = IVec3(numElements, 1, 1);
-	spec.entryPoint = "main";
 
 	group->addChild(new SpvAsmComputeShaderCase(testCtx, "all", "various out-of-order blocks", spec));
 
@@ -1844,7 +1827,6 @@ tcu::TestCaseGroup* createOpSourceGroup (tcu::TestContext& testCtx)
 		spec.inputs.push_back(BufferSp(new Float32Buffer(positiveFloats)));
 		spec.outputs.push_back(BufferSp(new Float32Buffer(negativeFloats)));
 		spec.numWorkGroups = IVec3(numElements, 1, 1);
-		spec.entryPoint = "main";
 
 		group->addChild(new SpvAsmComputeShaderCase(testCtx, cases[caseNdx].name, cases[caseNdx].name, spec));
 	}
@@ -1908,7 +1890,6 @@ tcu::TestCaseGroup* createOpSourceExtensionGroup (tcu::TestContext& testCtx)
 		spec.inputs.push_back(BufferSp(new Float32Buffer(inputFloats)));
 		spec.outputs.push_back(BufferSp(new Float32Buffer(outputFloats)));
 		spec.numWorkGroups = IVec3(numElements, 1, 1);
-		spec.entryPoint = "main";
 
 		group->addChild(new SpvAsmComputeShaderCase(testCtx, cases[caseNdx].name, cases[caseNdx].name, spec));
 	}
@@ -1983,7 +1964,6 @@ tcu::TestCaseGroup* createOpConstantNullGroup (tcu::TestContext& testCtx)
 		spec.inputs.push_back(BufferSp(new Float32Buffer(positiveFloats)));
 		spec.outputs.push_back(BufferSp(new Float32Buffer(negativeFloats)));
 		spec.numWorkGroups = IVec3(numElements, 1, 1);
-		spec.entryPoint = "main";
 
 		group->addChild(new SpvAsmComputeShaderCase(testCtx, cases[caseNdx].name, cases[caseNdx].name, spec));
 	}
@@ -2066,7 +2046,6 @@ tcu::TestCaseGroup* createOpConstantCompositeGroup (tcu::TestContext& testCtx)
 		spec.inputs.push_back(BufferSp(new Float32Buffer(positiveFloats)));
 		spec.outputs.push_back(BufferSp(new Float32Buffer(negativeFloats)));
 		spec.numWorkGroups = IVec3(numElements, 1, 1);
-		spec.entryPoint = "main";
 
 		group->addChild(new SpvAsmComputeShaderCase(testCtx, cases[caseNdx].name, cases[caseNdx].name, spec));
 	}
@@ -2219,7 +2198,6 @@ tcu::TestCaseGroup* createOpQuantizeToF16Group (tcu::TestContext& testCtx)
 		spec.inputs.push_back(BufferSp(new Float32Buffer(infinities)));
 		spec.outputs.push_back(BufferSp(new Float32Buffer(results)));
 		spec.numWorkGroups = IVec3(numElements, 1, 1);
-		spec.entryPoint = "main";
 
 		group->addChild(new SpvAsmComputeShaderCase(
 			testCtx, "infinities", "Check that infinities propagated and created", spec));
@@ -2247,7 +2225,6 @@ tcu::TestCaseGroup* createOpQuantizeToF16Group (tcu::TestContext& testCtx)
 		spec.inputs.push_back(BufferSp(new Float32Buffer(nans)));
 		spec.outputs.push_back(BufferSp(new Float32Buffer(nans)));
 		spec.numWorkGroups = IVec3(numElements, 1, 1);
-		spec.entryPoint = "main";
 		spec.verifyIO = &compareNan;
 
 		group->addChild(new SpvAsmComputeShaderCase(
@@ -2297,7 +2274,6 @@ tcu::TestCaseGroup* createOpQuantizeToF16Group (tcu::TestContext& testCtx)
 		spec.inputs.push_back(BufferSp(new Float32Buffer(small)));
 		spec.outputs.push_back(BufferSp(new Float32Buffer(zeros)));
 		spec.numWorkGroups = IVec3(numElements, 1, 1);
-		spec.entryPoint = "main";
 
 		group->addChild(new SpvAsmComputeShaderCase(
 			testCtx, "flush_to_zero", "Check that values are zeroed correctly", spec));
@@ -2316,7 +2292,6 @@ tcu::TestCaseGroup* createOpQuantizeToF16Group (tcu::TestContext& testCtx)
 		spec.inputs.push_back(BufferSp(new Float32Buffer(exact)));
 		spec.outputs.push_back(BufferSp(new Float32Buffer(exact)));
 		spec.numWorkGroups = IVec3(numElements, 1, 1);
-		spec.entryPoint = "main";
 
 		group->addChild(new SpvAsmComputeShaderCase(
 			testCtx, "exact", "Check that values exactly preserved where appropriate", spec));
@@ -2336,7 +2311,6 @@ tcu::TestCaseGroup* createOpQuantizeToF16Group (tcu::TestContext& testCtx)
 		spec.inputs.push_back(BufferSp(new Float32Buffer(inputs)));
 		spec.outputs.push_back(BufferSp(new Float32Buffer(inputs)));
 		spec.numWorkGroups = IVec3(numElements, 1, 1);
-		spec.entryPoint = "main";
 
 		group->addChild(new SpvAsmComputeShaderCase(
 			testCtx, "rounded", "Check that are rounded when needed", spec));
@@ -2440,7 +2414,6 @@ tcu::TestCaseGroup* createSpecConstantOpQuantizeToF16Group (tcu::TestContext& te
 		vector<float>		outputs;
 
 		spec.numWorkGroups = IVec3(numCases, 1, 1);
-		spec.entryPoint = "main";
 
 		spec.specConstants.push_back(bitwiseCast<deUint32>(std::numeric_limits<float>::infinity()));
 		spec.specConstants.push_back(bitwiseCast<deUint32>(-std::numeric_limits<float>::infinity()));
@@ -2466,7 +2439,6 @@ tcu::TestCaseGroup* createSpecConstantOpQuantizeToF16Group (tcu::TestContext& te
 		vector<float>		outputs;
 
 		spec.numWorkGroups	= IVec3(numCases, 1, 1);
-		spec.entryPoint		= "main";
 		spec.verifyIO		= &compareNan;
 
 		outputs.push_back(std::numeric_limits<float>::quiet_NaN());
@@ -2489,7 +2461,6 @@ tcu::TestCaseGroup* createSpecConstantOpQuantizeToF16Group (tcu::TestContext& te
 		vector<float>		outputs;
 
 		spec.numWorkGroups	= IVec3(numCases, 1, 1);
-		spec.entryPoint		= "main";
 
 		spec.specConstants.push_back(bitwiseCast<deUint32>(0.f));
 		spec.specConstants.push_back(bitwiseCast<deUint32>(-0.f));
@@ -2519,7 +2490,6 @@ tcu::TestCaseGroup* createSpecConstantOpQuantizeToF16Group (tcu::TestContext& te
 		vector<float>		outputs;
 
 		spec.numWorkGroups	= IVec3(numCases, 1, 1);
-		spec.entryPoint		= "main";
 
 		for (deUint8 idx = 0; idx < 6; ++idx)
 		{
@@ -2542,7 +2512,6 @@ tcu::TestCaseGroup* createSpecConstantOpQuantizeToF16Group (tcu::TestContext& te
 		vector<float>		outputs;
 
 		spec.numWorkGroups	= IVec3(numCases, 1, 1);
-		spec.entryPoint		= "main";
 		spec.verifyIO		= &compareOpQuantizeF16ComputeExactCase;
 
 		outputs.push_back(constructNormalizedFloat(8, 0x300300));
@@ -2648,7 +2617,6 @@ tcu::TestCaseGroup* createOpConstantUsageGroup (tcu::TestContext& testCtx)
 	spec.inputs.push_back(BufferSp(new Float32Buffer(positiveFloats)));
 	spec.outputs.push_back(BufferSp(new Float32Buffer(negativeFloats)));
 	spec.numWorkGroups = IVec3(numElements, 1, 1);
-	spec.entryPoint = "main";
 
 	group->addChild(new SpvAsmComputeShaderCase(testCtx, "spotcheck", "Check that values constructed via OpConstantNull & OpConstantComposite can be used", spec));
 
@@ -2747,7 +2715,6 @@ tcu::TestCaseGroup* createLoopControlGroup (tcu::TestContext& testCtx)
 		spec.inputs.push_back(BufferSp(new Float32Buffer(inputFloats)));
 		spec.outputs.push_back(BufferSp(new Float32Buffer(outputFloats)));
 		spec.numWorkGroups = IVec3(numElements, 1, 1);
-		spec.entryPoint = "main";
 
 		group->addChild(new SpvAsmComputeShaderCase(testCtx, cases[caseNdx].name, cases[caseNdx].name, spec));
 	}
@@ -2840,7 +2807,6 @@ tcu::TestCaseGroup* createSelectionControlGroup (tcu::TestContext& testCtx)
 		spec.inputs.push_back(BufferSp(new Float32Buffer(inputFloats)));
 		spec.outputs.push_back(BufferSp(new Float32Buffer(outputFloats)));
 		spec.numWorkGroups = IVec3(numElements, 1, 1);
-		spec.entryPoint = "main";
 
 		group->addChild(new SpvAsmComputeShaderCase(testCtx, cases[caseNdx].name, cases[caseNdx].name, spec));
 	}
@@ -2933,7 +2899,6 @@ tcu::TestCaseGroup* createFunctionControlGroup (tcu::TestContext& testCtx)
 		spec.inputs.push_back(BufferSp(new Float32Buffer(inputFloats)));
 		spec.outputs.push_back(BufferSp(new Float32Buffer(outputFloats)));
 		spec.numWorkGroups = IVec3(numElements, 1, 1);
-		spec.entryPoint = "main";
 
 		group->addChild(new SpvAsmComputeShaderCase(testCtx, cases[caseNdx].name, cases[caseNdx].name, spec));
 	}
@@ -3004,7 +2969,6 @@ tcu::TestCaseGroup* createMemoryAccessGroup (tcu::TestContext& testCtx)
 		spec.inputs.push_back(BufferSp(new Float32Buffer(inputFloats)));
 		spec.outputs.push_back(BufferSp(new Float32Buffer(outputFloats)));
 		spec.numWorkGroups = IVec3(numElements, 1, 1);
-		spec.entryPoint = "main";
 
 		group->addChild(new SpvAsmComputeShaderCase(testCtx, cases[caseNdx].name, cases[caseNdx].name, spec));
 	}
@@ -3086,7 +3050,6 @@ tcu::TestCaseGroup* createOpUndefGroup (tcu::TestContext& testCtx)
 		spec.inputs.push_back(BufferSp(new Float32Buffer(positiveFloats)));
 		spec.outputs.push_back(BufferSp(new Float32Buffer(negativeFloats)));
 		spec.numWorkGroups = IVec3(numElements, 1, 1);
-		spec.entryPoint = "main";
 
 		group->addChild(new SpvAsmComputeShaderCase(testCtx, cases[caseNdx].name, cases[caseNdx].name, spec));
 	}
