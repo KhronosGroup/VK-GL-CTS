@@ -6399,14 +6399,15 @@ tcu::TestCaseGroup* createOpUndefTests(tcu::TestContext& testCtx)
 
 void createOpQuantizeSingleOptionTests(tcu::TestCaseGroup* testCtx)
 {
-	const RGBA inputColors[4] =  {
+	const RGBA		inputColors[4]		=
+	{
 		RGBA(0,		0,		0,		255),
 		RGBA(0,		0,		255,	255),
 		RGBA(0,		255,	0,		255),
 		RGBA(0,		255,	255,	255)
 	};
 
-	const RGBA expectedColors[4] =
+	const RGBA		expectedColors[4]	=
 	{
 		RGBA(255,	 0,		 0,		 255),
 		RGBA(255,	 0,		 0,		 255),
@@ -6418,44 +6419,54 @@ void createOpQuantizeSingleOptionTests(tcu::TestCaseGroup* testCtx)
 	{
 		const char* name;
 		const char* constant;
+		float       valueAsFloat;
 		const char* condition;
 		// condition must evaluate to true after %test_constant = OpQuantizeToF16(%constant)
-	} tests[] = {
+	}				tests[]				=
+	{
 		{
 			"negative",
 			"-0x1.3p1\n",
+			-constructNormalizedFloat(1, 0x300000),
 			"%cond = OpFOrdEqual %bool %c %test_constant\n"
 		}, // -19
 		{
 			"positive",
 			"0x1.0p7\n",
+			constructNormalizedFloat(7, 0x000000),
 			"%cond = OpFOrdEqual %bool %c %test_constant\n"
 		},  // +128
-		// SPIR-V requires that OpQuantizeToF16 flushes 
+		// SPIR-V requires that OpQuantizeToF16 flushes
 		// any numbers that would end up denormalized in F16 to zero.
 		{
 			"denorm",
 			"0x0.0006p-126\n",
+			std::ldexp(1.5f, -140),
 			"%cond = OpFOrdEqual %bool %c %c_f32_0\n"
 		},  // denorm
 		{
 			"negative_denorm",
 			"-0x0.0006p-126\n",
+			-std::ldexp(1.5f, -140),
 			"%cond = OpFOrdEqual %bool %c %c_f32_0\n"
 		}, // -denorm
 		{
 			"too_small",
 			"0x1.0p-16\n",
+			std::ldexp(1.0f, -16),
 			"%cond = OpFOrdEqual %bool %c %c_f32_0\n"
 		},      // too small negative
 		{
 			"negative_too_small",
 			"-0x1.0p-32\n",
+			-std::ldexp(1.0f, -32),
 			"%cond = OpFOrdEqual %bool %c %c_f32_0\n"
 		},     // too small positive
 		{
 			"negative_inf",
 			"-0x1.0p128\n",
+			-std::ldexp(1.0f, 128),
+			"%cond = OpFOrdEqual %bool %c %c_f32_0\n"
 
 			"%gz = OpFOrdLessThan %bool %c %c_f32_0\n"
 			"%inf = OpIsInf %bool %c\n"
@@ -6464,6 +6475,7 @@ void createOpQuantizeSingleOptionTests(tcu::TestCaseGroup* testCtx)
 		{
 			"inf",
 			"0x1.0p128\n",
+			std::ldexp(1.0f, 128),
 
 			"%gz = OpFOrdGreaterThan %bool %c %c_f32_0\n"
 			"%inf = OpIsInf %bool %c\n"
@@ -6472,6 +6484,7 @@ void createOpQuantizeSingleOptionTests(tcu::TestCaseGroup* testCtx)
 		{
 			"round_to_negative_inf",
 			"-0x1.0p32\n",
+			-std::ldexp(1.0f, 32),
 
 			"%gz = OpFOrdLessThan %bool %c %c_f32_0\n"
 			"%inf = OpIsInf %bool %c\n"
@@ -6480,6 +6493,7 @@ void createOpQuantizeSingleOptionTests(tcu::TestCaseGroup* testCtx)
 		{
 			"round_to_inf",
 			"0x1.0p16\n",
+			std::ldexp(1.0f, 16),
 
 			"%gz = OpFOrdGreaterThan %bool %c %c_f32_0\n"
 			"%inf = OpIsInf %bool %c\n"
@@ -6488,6 +6502,7 @@ void createOpQuantizeSingleOptionTests(tcu::TestCaseGroup* testCtx)
 		{
 			"nan",
 			"0x1.1p128\n",
+			std::numeric_limits<float>::quiet_NaN(),
 
 			"%nan = OpIsNan %bool %c\n"
 			"%as_int = OpBitcast %i32 %c\n"
@@ -6497,6 +6512,7 @@ void createOpQuantizeSingleOptionTests(tcu::TestCaseGroup* testCtx)
 		{
 			"negative_nan",
 			"-0x1.0001p128\n",
+			std::numeric_limits<float>::quiet_NaN(),
 
 			"%nan = OpIsNan %bool %c\n"
 			"%as_int = OpBitcast %i32 %c\n"
@@ -6504,9 +6520,10 @@ void createOpQuantizeSingleOptionTests(tcu::TestCaseGroup* testCtx)
 			"%cond = OpLogicalAnd %bool %nan %negative\n"
 		} // -nan
 	};
-	StringTemplate constants(
-		"%test_constant = OpConstant %f32 ${constant}\n");
-	StringTemplate function(
+	const char*		constants			=
+		"%test_constant = OpConstant %f32\n";
+
+	StringTemplate	function			(
 		"%test_code     = OpFunction %v4f32 None %v4f32_function\n"
 		"%param1        = OpFunctionParameter %v4f32\n"
 		"%label_testfun = OpLabel\n"
@@ -6516,17 +6533,47 @@ void createOpQuantizeSingleOptionTests(tcu::TestCaseGroup* testCtx)
 		"${condition}\n"
 		"%retval        = OpSelect %v4f32 %cond %c_v4f32_1_0_0_1 %param1"
 		"                 OpReturnValue %retval\n"
-		"");
+	);
 
-	for(size_t i = 0; i < (sizeof(tests)/sizeof(tests[0])); ++i) {
-		map<string, string>								code_specialization;
-		map<string, string>								constant_specialization;
+	const char*		specDecorations		= "OpDecorate %test_constant SpecId 0\n";
+	const char*		specConstants		= "%test_constant = OpSpecConstant %f32 0.\n";
+
+    StringTemplate	specConstantFunction(
+		"%test_code     = OpFunction %v4f32 None %v4f32_function\n"
+		"%param1        = OpFunctionParameter %v4f32\n"
+		"%label_testfun = OpLabel\n"
+		"%c             = OpSpecConstantOp %f32 QuantizeToF16 %test_constant\n"
+		"${condition}\n"
+		"%retval        = OpSelect %v4f32 %cond %c_v4f32_1_0_0_1 %param1"
+		"                 OpReturnValue %retval\n"
+	);
+
+	for (size_t idx = 0; idx < (sizeof(tests)/sizeof(tests[0])); ++idx)
+	{
+		map<string, string>								codeSpecialization;
 		map<string, string>								fragments;
-		code_specialization["condition"]				= tests[i].condition;
-		constant_specialization["constant"]				= tests[i].constant;
-		fragments["testfun"]							= function.specialize(code_specialization);
-		fragments["pre_main"]							= constants.specialize(constant_specialization);
-		createTestsForAllStages(tests[i].name, inputColors, expectedColors, fragments, testCtx);
+		codeSpecialization["condition"]					= tests[idx].condition;
+		fragments["testfun"]							= function.specialize(codeSpecialization);
+		fragments["pre_main"]							= string(constants) + tests[idx].constant + "\n";
+		createTestsForAllStages(tests[idx].name, inputColors, expectedColors, fragments, testCtx);
+	}
+
+	for (size_t idx = 0; idx < (sizeof(tests)/sizeof(tests[0])); ++idx)
+	{
+		map<string, string>								codeSpecialization;
+		map<string, string>								fragments;
+		vector<deInt32>									passConstants;
+		deInt32											specConstant;
+
+		codeSpecialization["condition"]					= tests[idx].condition;
+		fragments["testfun"]							= specConstantFunction.specialize(codeSpecialization);
+		fragments["decoration"]							= specDecorations;
+		fragments["pre_main"]							= specConstants;
+
+		memcpy(&specConstant, &tests[idx].valueAsFloat, sizeof(float));
+		passConstants.push_back(specConstant);
+
+		createTestsForAllStages(string("spec_const_") + tests[idx].name, inputColors, expectedColors, fragments, passConstants, testCtx);
 	}
 }
 
@@ -6551,30 +6598,35 @@ void createOpQuantizeTwoPossibilityTests(tcu::TestCaseGroup* testCtx)
 	{
 		const char* name;
 		const char* input;
-		const char* possible_output1;
-		const char* possible_output2;
+		float		inputAsFloat;
+		const char* possibleOutput1;
+		const char* possibleOutput2;
 	} tests[] = {
 		{
 			"positive_round_up_or_round_down",
 			"0x1.3003p8",
+			constructNormalizedFloat(8, 0x300300),
 			"0x1.304p8",
 			"0x1.3p8"
 		},
 		{
 			"negative_round_up_or_round_down",
 			"-0x1.6008p-7",
+			-constructNormalizedFloat(8, 0x600800),
 			"-0x1.6p-7",
 			"-0x1.604p-7"
 		},
 		{
 			"carry_bit",
 			"0x1.01ep2",
+			constructNormalizedFloat(8, 0x01e000),
 			"0x1.01cp2",
 			"0x1.02p2"
 		},
 		{
 			"carry_to_exponent",
 			"0x1.feep1",
+			constructNormalizedFloat(8, 0xfee000),
 			"0x1.ffcp1",
 			"0x1.0p2"
 		},
@@ -6584,6 +6636,15 @@ void createOpQuantizeTwoPossibilityTests(tcu::TestCaseGroup* testCtx)
 		"%possible_solution1 = OpConstant %f32 ${output1}\n"
 		"%possible_solution2 = OpConstant %f32 ${output2}\n"
 		);
+
+	StringTemplate specConstants (
+		"%input_const = OpSpecConstant %f32 0.\n"
+		"%possible_solution1 = OpConstant %f32 ${output1}\n"
+		"%possible_solution2 = OpConstant %f32 ${output2}\n"
+	);
+
+	const char* specDecorations = "OpDecorate %input_const  SpecId 0\n";
+
 	const char* function  =
 		"%test_code     = OpFunction %v4f32 None %v4f32_function\n"
 		"%param1        = OpFunctionParameter %v4f32\n"
@@ -6599,15 +6660,34 @@ void createOpQuantizeTwoPossibilityTests(tcu::TestCaseGroup* testCtx)
 		"%retval        = OpSelect %v4f32 %cond %c_v4f32_1_0_0_1 %param1"
 		"                 OpReturnValue %retval\n";
 
-	for(size_t i = 0; i < (sizeof(tests)/sizeof(tests[0])); ++i) {
+	for(size_t idx = 0; idx < (sizeof(tests)/sizeof(tests[0])); ++idx) {
 		map<string, string>									fragments;
-		map<string, string>									constant_specialization;
-		constant_specialization["input"]					= tests[i].input;
-		constant_specialization["output1"]					= tests[i].possible_output1;
-		constant_specialization["output2"]					= tests[i].possible_output2;
+		map<string, string>									constantSpecialization;
+
+		constantSpecialization["input"]						= tests[idx].input;
+		constantSpecialization["output1"]					= tests[idx].possibleOutput1;
+		constantSpecialization["output2"]					= tests[idx].possibleOutput2;
 		fragments["testfun"]								= function;
-		fragments["pre_main"]								= constants.specialize(constant_specialization);
-		createTestsForAllStages(tests[i].name, inputColors, expectedColors, fragments, testCtx);
+		fragments["pre_main"]								= constants.specialize(constantSpecialization);
+		createTestsForAllStages(tests[idx].name, inputColors, expectedColors, fragments, testCtx);
+	}
+
+	for(size_t idx = 0; idx < (sizeof(tests)/sizeof(tests[0])); ++idx) {
+		map<string, string>									fragments;
+		map<string, string>									constantSpecialization;
+		vector<deInt32>										passConstants;
+		deInt32												specConstant;
+
+		constantSpecialization["output1"]					= tests[idx].possibleOutput1;
+		constantSpecialization["output2"]					= tests[idx].possibleOutput2;
+		fragments["testfun"]								= function;
+		fragments["decoration"]								= specDecorations;
+		fragments["pre_main"]								= specConstants.specialize(constantSpecialization);
+
+		memcpy(&specConstant, &tests[idx].inputAsFloat, sizeof(float));
+		passConstants.push_back(specConstant);
+
+		createTestsForAllStages(string("spec_const_") + tests[idx].name, inputColors, expectedColors, fragments, passConstants, testCtx);
 	}
 }
 
