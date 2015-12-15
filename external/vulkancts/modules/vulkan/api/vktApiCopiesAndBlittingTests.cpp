@@ -37,12 +37,14 @@
 
 #include "deStringUtil.hpp"
 #include "deUniquePtr.hpp"
+#include "vkImageUtil.hpp"
 #include "vkMemUtil.hpp"
 #include "vktTestCase.hpp"
 #include "vktTestCaseUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkRefUtil.hpp"
 #include "vkTypeUtil.hpp"
+#include "tcuTextureUtil.hpp"
 #include "tcuVectorType.hpp"
 
 namespace vkt
@@ -67,9 +69,9 @@ protected:
 	Move<VkCommandBuffer>				m_cmdBuffer;
 	Move<VkFence>						m_fence;
 
-	virtual void						generateTestBuffer					()
+	virtual void						generateTestBuffer					(void)
 										{};
-	virtual void						generateExpectedResult				()
+	virtual void						generateExpectedResult				(void)
 										{};
 	virtual deBool						checkTestResult						(std::vector<deUint32> expected, std::vector<deUint32> actual);
 
@@ -325,17 +327,187 @@ private:
 	ImageToImageCaseParams		m_testParams;
 };
 
+// Copy image to buffer.
+struct ImageInfo {
+	const VkFormat	colorFormat;
+	const VkExtent3D	extent;
+};
+
+class CopyImageToBuffer : public CopiesAndBlittingTestInstance
+{
+public:
+										CopyImageToBuffer	(Context&	context,
+														 ImageInfo	srcInfo);
+	virtual tcu::TestStatus				iterate			(void);
+private:
+	ImageInfo							m_srcInfo;
+	VkDeviceSize						m_pixelDataSize;
+
+	Move<VkImage>						m_source;
+	de::MovePtr<Allocation>				m_sourceImageAlloc;
+	Move<VkBuffer>						m_destination;
+	de::MovePtr<Allocation>				m_destinationBufferAlloc;
+};
+
+CopyImageToBuffer::CopyImageToBuffer (Context &context, ImageInfo srcInfo)
+	: CopiesAndBlittingTestInstance(context)
+	, m_srcInfo(srcInfo)
+	, m_pixelDataSize(m_srcInfo.extent.width * m_srcInfo.extent.height * mapVkFormat(m_srcInfo.colorFormat).getPixelSize())
+{
+	const DeviceInterface&		vk					= context.getDeviceInterface();
+	const VkDevice				vkDevice			= context.getDevice();
+	const deUint32				queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
+	SimpleAllocator				memAlloc			(vk, vkDevice, getPhysicalDeviceMemoryProperties(context.getInstanceInterface(), context.getPhysicalDevice()));
+
+	// Create source image
+	{
+		const VkImageCreateInfo		sourceImageParams		=
+		{
+			VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,	// VkStructureType		sType;
+			DE_NULL,								// const void*			pNext;
+			0u,										// VkImageCreateFlags	flags;
+			VK_IMAGE_TYPE_2D,						// VkImageType			imageType;
+			m_srcInfo.colorFormat,					// VkFormat				format;
+			m_srcInfo.extent,						// VkExtent3D			extent;
+			1u,										// deUint32				mipLevels;
+			1u,										// deUint32				arraySize;
+			VK_SAMPLE_COUNT_1_BIT,					// deUint32				samples;
+			VK_IMAGE_TILING_OPTIMAL,				// VkImageTiling		tiling;
+			VK_IMAGE_USAGE_TRANSFER_SRC_BIT,		// VkImageUsageFlags	usage;
+			VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode		sharingMode;
+			1u,										// deUint32				queueFamilyCount;
+			&queueFamilyIndex,						// const deUint32*		pQueueFamilyIndices;
+			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,	// VkImageLayout		initialLayout;
+		};
+
+		m_source			= createImage(vk, vkDevice, &sourceImageParams);
+		m_sourceImageAlloc	= memAlloc.allocate(getImageMemoryRequirements(vk, vkDevice, *m_source), MemoryRequirement::Any);
+		VK_CHECK(vk.bindImageMemory(vkDevice, *m_source, m_sourceImageAlloc->getMemory(), m_sourceImageAlloc->getOffset()));
+	}
+
+	// Create destination buffer
+	{
+		const VkBufferCreateInfo	destinationBufferParams	=
+		{
+			VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,		// VkStructureType		sType;
+			DE_NULL,									// const void*			pNext;
+			0u,											// VkBufferCreateFlags	flags;
+			m_pixelDataSize,								// VkDeviceSize			size;
+			VK_BUFFER_USAGE_TRANSFER_DST_BIT,			// VkBufferUsageFlags	usage;
+			VK_SHARING_MODE_EXCLUSIVE,					// VkSharingMode		sharingMode;
+			0u,											// deUint32				queueFamilyIndexCount;
+			DE_NULL										// const deUint32*		pQueueFamilyIndices;
+		};
+
+		m_destination				= createBuffer(vk, vkDevice, &destinationBufferParams);
+		m_destinationBufferAlloc	= memAlloc.allocate(getBufferMemoryRequirements(vk, vkDevice, *m_destination), MemoryRequirement::HostVisible);
+		VK_CHECK(vk.bindBufferMemory(vkDevice, *m_destination, m_destinationBufferAlloc->getMemory(), m_destinationBufferAlloc->getOffset()));
+	}
+}
+
+tcu::TestStatus CopyImageToBuffer::iterate()
+{
+	VkImage					image;
+	generateTestBuffer();
+	generateExpectedResult();
+
+	const DeviceInterface&		vk			= m_context.getDeviceInterface();
+	const VkDevice				vkDevice	= m_context.getDevice();
+	const VkQueue				queue		= m_context.getUniversalQueue();
+
+	// Barriers for copying image to buffer
+	const VkImageMemoryBarrier imageBarrier =
+	{
+		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		// VkStructureType			sType;
+		DE_NULL,									// const void*				pNext;
+		VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,		// VkAccessFlags			srcAccessMask;
+		VK_ACCESS_TRANSFER_READ_BIT,				// VkAccessFlags			dstAccessMask;
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,	// VkImageLayout			oldLayout;
+		VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,		// VkImageLayout			newLayout;
+		VK_QUEUE_FAMILY_IGNORED,					// deUint32					srcQueueFamilyIndex;
+		VK_QUEUE_FAMILY_IGNORED,					// deUint32					dstQueueFamilyIndex;
+		image,										// VkImage					image;
+		{											// VkImageSubresourceRange	subresourceRange;
+			VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
+			0u,							// deUint32				baseMipLevel;
+			1u,							// deUint32				mipLevels;
+			0u,							// deUint32				baseArraySlice;
+			1u							// deUint32				arraySize;
+		}
+	};
+
+	const VkBufferMemoryBarrier bufferBarrier =
+	{
+		VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,	// VkStructureType	sType;
+		DE_NULL,									// const void*		pNext;
+		VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags	srcAccessMask;
+		VK_ACCESS_HOST_READ_BIT,					// VkAccessFlags	dstAccessMask;
+		VK_QUEUE_FAMILY_IGNORED,					// deUint32			srcQueueFamilyIndex;
+		VK_QUEUE_FAMILY_IGNORED,					// deUint32			dstQueueFamilyIndex;
+		*m_destination,								// VkBuffer			buffer;
+		0u,											// VkDeviceSize		offset;
+		m_pixelDataSize								// VkDeviceSize		size;
+	};
+
+	const void* const	imageBarrierPtr		= &imageBarrier;
+	const void* const	bufferBarrierPtr	= &bufferBarrier;
+
+	// Copy image to buffer
+	const VkImageSubresourceLayers	sourceLayer		=
+	{
+		VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
+		0u,							// uint32_t				mipLevel;
+		0u,							// uint32_t				baseArrayLayer;
+		1u,							// uint32_t				layerCount;
+	};
+
+	const VkBufferImageCopy			bufferImageCopy	=
+	{
+		0u,						// VkDeviceSize				bufferOffset;
+		0u,						// uint32_t					bufferRowLength;
+		0u,						// uint32_t					bufferImageHeight;
+		sourceLayer,			// VkImageSubresourceLayers	imageSubresource;
+		{0, 0, 0},				// VkOffset3D				imageOffset;
+		{16, 16, 1}				// VkExtent3D				imageExtent;
+	};
+
+	VK_CHECK(vk.beginCommandBuffer(*m_cmdBuffer, &m_cmdBufferBeginInfo));
+	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_FALSE, 1, &imageBarrierPtr);
+	vk.cmdCopyImageToBuffer(*m_cmdBuffer, m_source.get(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_destination.get(), 1u, &bufferImageCopy);
+	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_FALSE, 1, &bufferBarrierPtr);
+	VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
+
+	const VkSubmitInfo				submitInfo		=
+	{
+		VK_STRUCTURE_TYPE_SUBMIT_INFO,	// VkStructureType			sType;
+		DE_NULL,						// const void*				pNext;
+		0u,								// deUint32					waitSemaphoreCount;
+		DE_NULL,						// const VkSemaphore*		pWaitSemaphores;
+		1u,								// deUint32					commandBufferCount;
+		&m_cmdBuffer.get(),				// const VkCommandBuffer*	pCommandBuffers;
+		0u,								// deUint32					signalSemaphoreCount;
+		DE_NULL							// const VkSemaphore*		pSignalSemaphores;
+	};
+
+	VK_CHECK(vk.resetFences(vkDevice, 1, &m_fence.get()));
+	VK_CHECK(vk.queueSubmit(queue, 1, &submitInfo, *m_fence));
+	VK_CHECK(vk.waitForFences(vkDevice, 1, &m_fence.get(), true, ~(0ull) /* infinity */));
+
+	// Read buffer data
+	de::MovePtr<tcu::TextureLevel>	resultLevel		(new tcu::TextureLevel(mapVkFormat(m_srcInfo.colorFormat), m_srcInfo.extent.width, m_srcInfo.extent.height));
+	invalidateMappedMemoryRange(vk, vkDevice, m_destinationBufferAlloc->getMemory(), m_destinationBufferAlloc->getOffset(), m_pixelDataSize);
+	tcu::copy(*resultLevel, tcu::ConstPixelBufferAccess(resultLevel->getFormat(), resultLevel->getSize(), m_destinationBufferAlloc->getHostPtr()));
+
+	// checkTestResult();
+
+	return tcu::TestStatus::fail("Unimplemented!");
+}
+
 } // anonymous
 
 tcu::TestCaseGroup* createCopiesAndBlittingTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup>	copiesAndBlittingTests	(new tcu::TestCaseGroup(testCtx, "access", "Copies And Blitting Tests"));
-
-	{
-		std::ostringstream description;
-		description << " Copies And Blitting ";
-		copiesAndBlittingTests->addChild(new CopiesAndBlittingTestCase(testCtx, "copies_and_blitting_tests_complete", description.str()));
-	}
 
 	{
 		std::ostringstream description;
