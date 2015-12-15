@@ -1186,8 +1186,8 @@ public:
 
 			if (tcu::hasDepthComponent(format.order) && tcu::hasStencilComponent(format.order))
 			{
-				const tcu::TextureFormat	depthFormat		= tcu::getEffectiveDepthStencilTextureFormat(format, tcu::Sampler::MODE_DEPTH);
-				const tcu::TextureFormat	stencilFormat	= tcu::getEffectiveDepthStencilTextureFormat(format, tcu::Sampler::MODE_STENCIL);
+				const tcu::TextureFormat	depthFormat		= getDepthCopyFormat(attachmentInfo.getFormat());
+				const tcu::TextureFormat	stencilFormat	= getStencilCopyFormat(attachmentInfo.getFormat());
 
 				m_bufferSize			= size.x() * size.y() * depthFormat.getPixelSize();
 				m_secondaryBufferSize	= size.x() * size.y() * stencilFormat.getPixelSize();
@@ -3250,11 +3250,11 @@ bool logAndVerifyImages (TestLog&											log,
 
 			if (tcu::hasDepthComponent(format.order) && tcu::hasStencilComponent(format.order))
 			{
-				const tcu::TextureFormat	depthFormat		= tcu::getEffectiveDepthStencilTextureFormat(format, tcu::Sampler::MODE_DEPTH);
+				const tcu::TextureFormat	depthFormat		= getDepthCopyFormat(attachment.getFormat());
 				const VkDeviceSize			depthBufferSize	= targetSize.x() * targetSize.y() * depthFormat.getPixelSize();
 				void* const					depthPtr		= attachmentResources[attachmentNdx]->getResultMemory().getHostPtr();
 
-				const tcu::TextureFormat	stencilFormat		= tcu::getEffectiveDepthStencilTextureFormat(format, tcu::Sampler::MODE_STENCIL);
+				const tcu::TextureFormat	stencilFormat		= getStencilCopyFormat(attachment.getFormat());
 				const VkDeviceSize			stencilBufferSize	= targetSize.x() * targetSize.y() * stencilFormat.getPixelSize();
 				void* const					stencilPtr			= attachmentResources[attachmentNdx]->getSecondaryResultMemory().getHostPtr();
 
@@ -3278,8 +3278,7 @@ bool logAndVerifyImages (TestLog&											log,
 				VK_CHECK(vk.invalidateMappedMemoryRanges(device, 2u, ranges));
 
 				{
-					const ConstPixelBufferAccess	depthAccess		(depthFormat, tcu::IVec3(targetSize.x(), targetSize.y(), 1),
-																				  tcu::IVec3(format.getPixelSize(), format.getPixelSize() * targetSize.x(), 0), depthPtr);
+					const ConstPixelBufferAccess	depthAccess		(depthFormat, targetSize.x(), targetSize.y(), 1, depthPtr);
 					const ConstPixelBufferAccess	stencilAccess	(stencilFormat, targetSize.x(), targetSize.y(), 1, stencilPtr);
 					tcu::TextureLevel				errorImage		(tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8), targetSize.x(), targetSize.y());
 

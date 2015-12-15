@@ -53,6 +53,8 @@ bool						isCompressedFormat			(VkFormat format);
 
 tcu::TextureFormat			mapVkFormat					(VkFormat format);
 tcu::CompressedTexFormat	mapVkCompressedFormat		(VkFormat format);
+tcu::TextureFormat			getDepthCopyFormat			(VkFormat combinedFormat);
+tcu::TextureFormat			getStencilCopyFormat		(VkFormat combinedFormat);
 
 tcu::Sampler				mapVkSampler				(const VkSamplerCreateInfo& samplerCreateInfo);
 tcu::Sampler::CompareMode	mapVkSamplerCompareOp		(VkCompareOp compareOp);
