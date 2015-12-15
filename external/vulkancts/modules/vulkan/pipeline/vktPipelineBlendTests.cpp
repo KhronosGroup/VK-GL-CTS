@@ -866,7 +866,7 @@ tcu::Vec4 BlendTestInstance::getFormatThreshold (const tcu::TextureFormat& forma
 
 		case TextureFormat::UNORM_INT_1010102_REV:
 		case TextureFormat::SNORM_INT_1010102_REV:
-			threshold = Vec4(getNormChannelThreshold(format, 10), getNormChannelThreshold(format, 10), getNormChannelThreshold(format, 10), 0.1f);
+			threshold = Vec4(getNormChannelThreshold(format, 10), getNormChannelThreshold(format, 10), getNormChannelThreshold(format, 10), 0.34f);
 			break;
 
 		case TextureFormat::UNORM_INT8:
@@ -893,7 +893,7 @@ tcu::Vec4 BlendTestInstance::getFormatThreshold (const tcu::TextureFormat& forma
 			break;
 
 		case TextureFormat::UNSIGNED_INT_11F_11F_10F_REV:
-			threshold = Vec4(0.02f, 0.02f, 0.02f, 1.0f);
+			threshold = Vec4(0.02f, 0.02f, 0.0625f, 1.0f);
 			break;
 
 		case TextureFormat::UNSIGNED_INT_999_E5_REV:

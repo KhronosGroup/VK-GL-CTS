@@ -169,7 +169,25 @@ void copySubresourceRange<tcu::Texture1DArray> (tcu::Texture1DArray& dest, const
 	}
 }
 
-static MovePtr<Program> createRefProgram (const tcu::TextureFormat&			renderTargetFormat,
+template<>
+void copySubresourceRange<tcu::Texture3D>(tcu::Texture3D& dest, const tcu::Texture3D& src, const VkImageSubresourceRange& subresourceRange)
+{
+	DE_ASSERT(subresourceRange.levelCount <= (deUint32)dest.getNumLevels());
+	DE_ASSERT(subresourceRange.baseMipLevel + subresourceRange.levelCount <= (deUint32)src.getNumLevels());
+
+	for (int levelNdx = 0; levelNdx < dest.getNumLevels(); levelNdx++)
+	{
+		const tcu::ConstPixelBufferAccess	srcLevel(src.getLevel(subresourceRange.baseMipLevel + levelNdx));
+		const tcu::ConstPixelBufferAccess	srcLevelLayers(srcLevel.getFormat(), srcLevel.getWidth(), srcLevel.getHeight(), srcLevel.getDepth(), (deUint8*)srcLevel.getDataPtr());
+
+		if (dest.isLevelEmpty(levelNdx))
+			dest.allocLevel(levelNdx);
+
+		tcu::copy(dest.getLevel(levelNdx), srcLevelLayers);
+	}
+}
+
+static MovePtr<Program> createRefProgram(const tcu::TextureFormat&			renderTargetFormat,
 										  const tcu::Sampler&				sampler,
 										  float								samplerLod,
 										  const tcu::UVec4&					componentMapping,
@@ -278,7 +296,21 @@ static MovePtr<Program> createRefProgram (const tcu::TextureFormat&			renderTarg
 		case VK_IMAGE_TYPE_3D:
 			{
 				const tcu::Texture3D& texture = dynamic_cast<const TestTexture3D&>(testTexture).getTexture();
-				program = MovePtr<Program>(new SamplerProgram<tcu::Texture3D>(renderTargetFormat, texture, sampler, samplerLod, componentMapping));
+
+				if (subresource.baseMipLevel > 0)
+				{
+					// Not all texture levels are needed. Create new sub-texture.
+					const tcu::ConstPixelBufferAccess	baseLevel = texture.getLevel(subresource.baseMipLevel);
+					tcu::Texture3D						textureView(texture.getFormat(), baseLevel.getWidth(), baseLevel.getHeight(), baseLevel.getDepth());
+
+					copySubresourceRange(textureView, texture, subresource);
+
+					program = MovePtr<Program>(new SamplerProgram<tcu::Texture3D>(renderTargetFormat, textureView, sampler, samplerLod, componentMapping));
+				}
+				else
+				{
+					program = MovePtr<Program>(new SamplerProgram<tcu::Texture3D>(renderTargetFormat, texture, sampler, samplerLod, componentMapping));
+				}
 			}
 			break;
 
