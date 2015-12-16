@@ -34,10 +34,15 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktDynamicStateVPTests.hpp"
-#include "vktDynamicStateBaseClass.hpp"
 
+#include "vktDynamicStateBaseClass.hpp"
 #include "vktDynamicStateTestCaseUtil.hpp"
+
+#include "vkImageUtil.hpp"
+
 #include "tcuTextureUtil.hpp"
+#include "tcuImageCompare.hpp"
+#include "tcuRGBA.hpp"
 
 namespace vkt
 {
@@ -49,37 +54,38 @@ namespace
 class ViewportStateBaseCase : public DynamicStateBaseClass
 {
 public:
-	ViewportStateBaseCase (Context &context, const char* vertexShaderName, const char* fragmentShaderName)
-		: DynamicStateBaseClass (context, vertexShaderName, fragmentShaderName)
+	ViewportStateBaseCase (Context& context, const char* vertexShaderName, const char* fragmentShaderName)
+		: DynamicStateBaseClass	(context, vertexShaderName, fragmentShaderName)
 	{}
 
 	void initialize(void)
 	{
 		m_topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
 
-		m_data.push_back(Vec4RGBA(tcu::Vec4(-0.5f, 0.5f, 1.0f, 1.0f), vec4Green()));
-		m_data.push_back(Vec4RGBA(tcu::Vec4(0.5f, 0.5f, 1.0f, 1.0f), vec4Green()));
-		m_data.push_back(Vec4RGBA(tcu::Vec4(-0.5f, -0.5f, 1.0f, 1.0f), vec4Green()));
-		m_data.push_back(Vec4RGBA(tcu::Vec4(0.5f, -0.5f, 1.0f, 1.0f), vec4Green()));
+		m_data.push_back(PositionColorVertex(tcu::Vec4(-0.5f, 0.5f, 1.0f, 1.0f), tcu::RGBA::green().toVec()));
+		m_data.push_back(PositionColorVertex(tcu::Vec4(0.5f, 0.5f, 1.0f, 1.0f), tcu::RGBA::green().toVec()));
+		m_data.push_back(PositionColorVertex(tcu::Vec4(-0.5f, -0.5f, 1.0f, 1.0f), tcu::RGBA::green().toVec()));
+		m_data.push_back(PositionColorVertex(tcu::Vec4(0.5f, -0.5f, 1.0f, 1.0f), tcu::RGBA::green().toVec()));
 
 		DynamicStateBaseClass::initialize();
 	}
 
 	virtual tcu::Texture2D buildReferenceFrame (void)
 	{
-		TCU_FAIL("Implement buildReferenceFrame() method and return valid surface!");
+		DE_ASSERT(false);
+		return tcu::Texture2D(tcu::TextureFormat(), 0, 0);
 	}
 
 	virtual void setDynamicStates (void)
 	{
-		TCU_FAIL("Implement setDynamicStates() method!");
+		DE_ASSERT(false);
 	}
 
 	virtual tcu::TestStatus iterate (void)
 	{
-		tcu::TestLog &log = m_context.getTestContext().getLog();
-		const vk::VkDevice device = m_context.getDevice();
-		const vk::VkQueue queue = m_context.getUniversalQueue();
+		tcu::TestLog &log			= m_context.getTestContext().getLog();
+		const vk::VkDevice device	= m_context.getDevice();
+		const vk::VkQueue queue		= m_context.getUniversalQueue();
 
 		beginRenderPass();
 
@@ -120,16 +126,14 @@ public:
 			const tcu::ConstPixelBufferAccess renderedFrame = m_colorTargetImage->readSurface(queue, m_context.getDefaultAllocator(),
 				vk::VK_IMAGE_LAYOUT_GENERAL, zeroOffset, WIDTH, HEIGHT, vk::VK_IMAGE_ASPECT_COLOR_BIT);
 
-			qpTestResult res = QP_TEST_RESULT_PASS;
-
 			if (!tcu::fuzzyCompare(log, "Result", "Image comparison result",
 				referenceFrame.getLevel(0), renderedFrame, 0.05f,
 				tcu::COMPARE_LOG_RESULT))
 			{
-				res = QP_TEST_RESULT_FAIL;
+				return tcu::TestStatus(QP_TEST_RESULT_FAIL, "Image verification failed");
 			}
 
-			return tcu::TestStatus(res, qpGetTestResultName(res));
+			return tcu::TestStatus(QP_TEST_RESULT_PASS, "Image verification passed");
 		}
 	}
 };
@@ -137,7 +141,7 @@ public:
 class ViewportParamTestInstane : public ViewportStateBaseCase
 {
 public:
-	ViewportParamTestInstane (Context &context, ShaderMap shaders)
+	ViewportParamTestInstane (Context& context, ShaderMap shaders)
 		: ViewportStateBaseCase (context, shaders[glu::SHADERTYPE_VERTEX], shaders[glu::SHADERTYPE_FRAGMENT])
 	{
 		ViewportStateBaseCase::initialize();
@@ -145,8 +149,8 @@ public:
 
 	virtual void setDynamicStates(void)
 	{
-		const vk::VkViewport viewport = { 0.0f, 0.0f, (float)WIDTH * 2, (float)HEIGHT * 2, 0.0f, 0.0f };
-		const vk::VkRect2D scissor = { { 0, 0 }, { WIDTH, HEIGHT } };
+		const vk::VkViewport viewport	= { 0.0f, 0.0f, (float)WIDTH * 2, (float)HEIGHT * 2, 0.0f, 0.0f };
+		const vk::VkRect2D scissor		= { { 0, 0 }, { WIDTH, HEIGHT } };
 
 		setDynamicViewportState(1, &viewport, &scissor);
 		setDynamicRasterizationState();
@@ -159,8 +163,8 @@ public:
 		tcu::Texture2D referenceFrame(vk::mapVkFormat(m_colorAttachmentFormat), (int)(0.5 + WIDTH), (int)(0.5 + HEIGHT));
 		referenceFrame.allocLevel(0);
 
-		const deInt32 frameWidth = referenceFrame.getWidth();
-		const deInt32 frameHeight = referenceFrame.getHeight();
+		const deInt32 frameWidth	= referenceFrame.getWidth();
+		const deInt32 frameHeight	= referenceFrame.getHeight();
 
 		tcu::clear(referenceFrame.getLevel(0), tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f));
 
@@ -184,7 +188,7 @@ public:
 class ScissorParamTestInstance : public ViewportStateBaseCase
 {
 public:
-	ScissorParamTestInstance (Context &context, ShaderMap shaders)
+	ScissorParamTestInstance (Context& context, ShaderMap shaders)
 		: ViewportStateBaseCase (context, shaders[glu::SHADERTYPE_VERTEX], shaders[glu::SHADERTYPE_FRAGMENT])
 	{
 		ViewportStateBaseCase::initialize();
@@ -192,8 +196,8 @@ public:
 
 	virtual void setDynamicStates (void)
 	{
-		const vk::VkViewport viewport = { 0.0f, 0.0f, (float)WIDTH, (float)HEIGHT, 0.0f, 0.0f };
-		const vk::VkRect2D scissor = { { 0, 0 }, { WIDTH / 2, HEIGHT / 2 } };
+		const vk::VkViewport viewport	= { 0.0f, 0.0f, (float)WIDTH, (float)HEIGHT, 0.0f, 0.0f };
+		const vk::VkRect2D scissor		= { { 0, 0 }, { WIDTH / 2, HEIGHT / 2 } };
 
 		setDynamicViewportState(1, &viewport, &scissor);
 		setDynamicRasterizationState();
@@ -206,8 +210,8 @@ public:
 		tcu::Texture2D referenceFrame(vk::mapVkFormat(m_colorAttachmentFormat), (int)(0.5 + WIDTH), (int)(0.5 + HEIGHT));
 		referenceFrame.allocLevel(0);
 
-		const deInt32 frameWidth = referenceFrame.getWidth();
-		const deInt32 frameHeight = referenceFrame.getHeight();
+		const deInt32 frameWidth	= referenceFrame.getWidth();
+		const deInt32 frameHeight	= referenceFrame.getHeight();
 
 		tcu::clear(referenceFrame.getLevel(0), tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f));
 
@@ -228,7 +232,6 @@ public:
 	}
 };
 
-
 class ViewportArrayTestInstance : public DynamicStateBaseClass
 {
 protected:
@@ -236,16 +239,16 @@ protected:
 
 public:
 
-	ViewportArrayTestInstance (Context &context, ShaderMap shaders)
+	ViewportArrayTestInstance (Context& context, ShaderMap shaders)
 		: DynamicStateBaseClass	(context, shaders[glu::SHADERTYPE_VERTEX], shaders[glu::SHADERTYPE_FRAGMENT])
 		, m_geometryShaderName	(shaders[glu::SHADERTYPE_GEOMETRY])
 	{
 		for (int i = 0; i < 4; i++)
 		{
-			m_data.push_back(Vec4RGBA(tcu::Vec4(-1.0f, 1.0f, (float)i / 3.0f, 1.0f), vec4Green()));
-			m_data.push_back(Vec4RGBA(tcu::Vec4(1.0f, 1.0f, (float)i / 3.0f, 1.0f), vec4Green()));
-			m_data.push_back(Vec4RGBA(tcu::Vec4(-1.0f, -1.0f, (float)i / 3.0f, 1.0f), vec4Green()));
-			m_data.push_back(Vec4RGBA(tcu::Vec4(1.0f, -1.0f, (float)i / 3.0f, 1.0f), vec4Green()));
+			m_data.push_back(PositionColorVertex(tcu::Vec4(-1.0f, 1.0f, (float)i / 3.0f, 1.0f), tcu::RGBA::green().toVec()));
+			m_data.push_back(PositionColorVertex(tcu::Vec4(1.0f, 1.0f, (float)i / 3.0f, 1.0f), tcu::RGBA::green().toVec()));
+			m_data.push_back(PositionColorVertex(tcu::Vec4(-1.0f, -1.0f, (float)i / 3.0f, 1.0f), tcu::RGBA::green().toVec()));
+			m_data.push_back(PositionColorVertex(tcu::Vec4(1.0f, -1.0f, (float)i / 3.0f, 1.0f), tcu::RGBA::green().toVec()));
 		}
 
 		DynamicStateBaseClass::initialize();
@@ -283,9 +286,9 @@ public:
 		beginRenderPass();
 
 		// set states here
-		const float halfWidth = (float)WIDTH / 2;
-		const float halfHeight = (float)HEIGHT / 2;
-		const deInt32 quarterWidth = WIDTH / 4;
+		const float halfWidth		= (float)WIDTH / 2;
+		const float halfHeight		= (float)HEIGHT / 2;
+		const deInt32 quarterWidth	= WIDTH / 4;
 		const deInt32 quarterHeight = HEIGHT / 4;
 
 		const vk::VkViewport viewports[4] =
@@ -362,29 +365,29 @@ public:
 			const tcu::ConstPixelBufferAccess renderedFrame = m_colorTargetImage->readSurface(queue, m_context.getDefaultAllocator(),
 				vk::VK_IMAGE_LAYOUT_GENERAL, zeroOffset, WIDTH, HEIGHT, vk::VK_IMAGE_ASPECT_COLOR_BIT);
 					
-			qpTestResult res = QP_TEST_RESULT_PASS;
-
 			if (!tcu::fuzzyCompare(log, "Result", "Image comparison result",
 				referenceFrame.getLevel(0), renderedFrame, 0.05f,
 				tcu::COMPARE_LOG_RESULT))
 			{
-				res = QP_TEST_RESULT_FAIL;
+				return tcu::TestStatus(QP_TEST_RESULT_FAIL, "Image verification failed");
 			}
 
-			return tcu::TestStatus(res, qpGetTestResultName(res));
+			return tcu::TestStatus(QP_TEST_RESULT_PASS, "Image verification passed");
 		}
 	}
 };
 
 } //anonymous
 
-DynamicStateVPTests::DynamicStateVPTests (tcu::TestContext &testCtx)
+DynamicStateVPTests::DynamicStateVPTests (tcu::TestContext& testCtx)
 	: TestCaseGroup (testCtx, "vp_state", "Tests for viewport state")
 {
 	/* Left blank on purpose */
 }
 
-DynamicStateVPTests::~DynamicStateVPTests () {}
+DynamicStateVPTests::~DynamicStateVPTests ()
+{
+}
 
 void DynamicStateVPTests::init (void)
 {
@@ -399,5 +402,5 @@ void DynamicStateVPTests::init (void)
 	addChild(new InstanceFactory<ViewportArrayTestInstance>(m_testCtx, "viewport_array", "Multiple viewports and scissors", shaderPaths));
 }
 
-} //DynamicState
-} //vkt
+} // DynamicState
+} // vkt

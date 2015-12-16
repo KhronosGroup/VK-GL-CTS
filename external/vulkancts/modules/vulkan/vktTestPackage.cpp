@@ -57,7 +57,6 @@
 #include "vktShaderRenderDiscardTests.hpp"
 #include "vktDynamicStateTests.hpp"
 
-
 #include <vector>
 #include <sstream>
 

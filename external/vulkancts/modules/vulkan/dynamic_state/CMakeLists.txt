@@ -3,6 +3,7 @@ include_directories(..)
 set(DEQP_VK_DYNAMIC_STATE_SRCS
 	vktDynamicStateTestCaseUtil.hpp
 	vktDynamicStateBaseClass.hpp
+	vktDynamicStateBaseClass.cpp
 	vktDynamicStateCBTests.cpp
 	vktDynamicStateCBTests.hpp
 	vktDynamicStateDSTests.cpp

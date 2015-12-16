@@ -45,17 +45,16 @@ namespace DynamicState
 class DynamicStateVPTests : public tcu::TestCaseGroup
 {
 public:
-					DynamicStateVPTests			(tcu::TestContext &testCtx);
-					~DynamicStateVPTests		(void);
-	void			init						(void);
+							DynamicStateVPTests			(tcu::TestContext& testCtx);
+							~DynamicStateVPTests		(void);
+	void					init						(void);
 
 private:
-					DynamicStateVPTests			(const DynamicStateVPTests &other);
-					DynamicStateVPTests			&operator=(const DynamicStateVPTests &other);
+	DynamicStateVPTests									(const DynamicStateVPTests& other);
+	DynamicStateVPTests&	operator=					(const DynamicStateVPTests& other);
 };
 
-} //DynamicState
-} //vkt
-
+} // DynamicState
+} // vkt
 
 #endif // _VKTDYNAMICSTATEVPTESTS_HPP

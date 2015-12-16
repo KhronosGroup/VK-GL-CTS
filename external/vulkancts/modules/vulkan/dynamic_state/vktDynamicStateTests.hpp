@@ -45,7 +45,7 @@ namespace DynamicState
 
 tcu::TestCaseGroup*		createTests			(tcu::TestContext& testCtx);
 
-} //DynamicState
-} //vkt
+} // DynamicState
+} // vkt
 
 #endif // _VKTDYNAMICSTATETESTS_HPP

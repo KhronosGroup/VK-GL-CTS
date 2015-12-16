@@ -42,10 +42,13 @@
 #include "vktDynamicStateImageObjectUtil.hpp"
 #include "vktDynamicStateBufferObjectUtil.hpp"
 
+#include "vkImageUtil.hpp"
+
 #include "tcuTestLog.hpp"
 #include "tcuResource.hpp"
 #include "tcuImageCompare.hpp"
 #include "tcuTextureUtil.hpp"
+#include "tcuRGBA.hpp"
 
 #include "vkDefs.hpp"
 
@@ -64,25 +67,25 @@ public:
 	{
 		m_topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
 
-		m_data.push_back(Vec4RGBA(tcu::Vec4(-1.0f, 1.0f, 1.0f, 1.0f), vec4Green()));
-		m_data.push_back(Vec4RGBA(tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f), vec4Green()));
-		m_data.push_back(Vec4RGBA(tcu::Vec4(-1.0f, -1.0f, 1.0f, 1.0f), vec4Green()));
-		m_data.push_back(Vec4RGBA(tcu::Vec4(1.0f, -1.0f, 1.0f, 1.0f), vec4Green()));
+		m_data.push_back(PositionColorVertex(tcu::Vec4(-1.0f, 1.0f, 1.0f, 1.0f), tcu::RGBA::green().toVec()));
+		m_data.push_back(PositionColorVertex(tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f), tcu::RGBA::green().toVec()));
+		m_data.push_back(PositionColorVertex(tcu::Vec4(-1.0f, -1.0f, 1.0f, 1.0f), tcu::RGBA::green().toVec()));
+		m_data.push_back(PositionColorVertex(tcu::Vec4(1.0f, -1.0f, 1.0f, 1.0f), tcu::RGBA::green().toVec()));
 
 		DynamicStateBaseClass::initialize();
 	}
 
 	virtual tcu::TestStatus iterate (void)
 	{
-		tcu::TestLog &log = m_context.getTestContext().getLog();
+		tcu::TestLog& log		= m_context.getTestContext().getLog();
 		const vk::VkQueue queue = m_context.getUniversalQueue();
 
 		beginRenderPass();
 
 		// bind states here
 		vk::VkViewport viewport = { 0, 0, (float)WIDTH, (float)HEIGHT, 0.0f, 0.0f };
-		vk::VkRect2D scissor_1 = { { 0, 0 }, { WIDTH / 2, HEIGHT / 2 } };
-		vk::VkRect2D scissor_2 = { { WIDTH / 2, HEIGHT / 2 }, { WIDTH / 2, HEIGHT / 2 } };
+		vk::VkRect2D scissor_1	= { { 0, 0 }, { WIDTH / 2, HEIGHT / 2 } };
+		vk::VkRect2D scissor_2	= { { WIDTH / 2, HEIGHT / 2 }, { WIDTH / 2, HEIGHT / 2 } };
 
 		setDynamicRasterizationState();
 		setDynamicBlendState();
@@ -90,8 +93,8 @@ public:
 
 		m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
 
-		const vk::VkDeviceSize vertexBufferOffset = 0;
-		const vk::VkBuffer vertexBuffer = m_vertexBuffer->object();
+		const vk::VkDeviceSize vertexBufferOffset	= 0;
+		const vk::VkBuffer vertexBuffer				= m_vertexBuffer->object();
 		m_vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
 
 		// bind first state
@@ -124,8 +127,8 @@ public:
 		tcu::Texture2D referenceFrame(vk::mapVkFormat(m_colorAttachmentFormat), (int)(0.5 + WIDTH), (int)(0.5 + HEIGHT));
 		referenceFrame.allocLevel(0);
 
-		const deInt32 frameWidth = referenceFrame.getWidth();
-		const deInt32 frameHeight = referenceFrame.getHeight();
+		const deInt32 frameWidth	= referenceFrame.getWidth();
+		const deInt32 frameHeight	= referenceFrame.getHeight();
 
 		tcu::clear(referenceFrame.getLevel(0), tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f));
 
@@ -143,49 +146,50 @@ public:
 			}
 		}
 
-		const vk::VkOffset3D zeroOffset = { 0, 0, 0 };
+		const vk::VkOffset3D zeroOffset					= { 0, 0, 0 };
 		const tcu::ConstPixelBufferAccess renderedFrame = m_colorTargetImage->readSurface(queue, m_context.getDefaultAllocator(),
-			vk::VK_IMAGE_LAYOUT_GENERAL, zeroOffset, WIDTH, HEIGHT, vk::VK_IMAGE_ASPECT_COLOR_BIT);
-
-		qpTestResult res = QP_TEST_RESULT_PASS;
+																						  vk::VK_IMAGE_LAYOUT_GENERAL, zeroOffset, WIDTH, HEIGHT,
+																						  vk::VK_IMAGE_ASPECT_COLOR_BIT);
 
 		if (!tcu::fuzzyCompare(log, "Result", "Image comparison result",
 			referenceFrame.getLevel(0), renderedFrame, 0.05f,
-			tcu::COMPARE_LOG_RESULT)) {
-			res = QP_TEST_RESULT_FAIL;
+			tcu::COMPARE_LOG_RESULT))
+		{
+
+			return tcu::TestStatus(QP_TEST_RESULT_FAIL, "Image verification failed");
 		}
 
-		return tcu::TestStatus(res, qpGetTestResultName(res));
+		return tcu::TestStatus(QP_TEST_RESULT_PASS, "Image verification passed");
 	}
 };
 
 class BindOrderTestInstance : public DynamicStateBaseClass
 {
 public:
-	BindOrderTestInstance (Context &context, ShaderMap shaders)
+	BindOrderTestInstance (Context& context, ShaderMap shaders)
 		: DynamicStateBaseClass (context, shaders[glu::SHADERTYPE_VERTEX], shaders[glu::SHADERTYPE_FRAGMENT])
 	{
 		m_topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
 
-		m_data.push_back(Vec4RGBA(tcu::Vec4(-1.0f, 1.0f, 1.0f, 1.0f), vec4Green()));
-		m_data.push_back(Vec4RGBA(tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f), vec4Green()));
-		m_data.push_back(Vec4RGBA(tcu::Vec4(-1.0f, -1.0f, 1.0f, 1.0f), vec4Green()));
-		m_data.push_back(Vec4RGBA(tcu::Vec4(1.0f, -1.0f, 1.0f, 1.0f), vec4Green()));
+		m_data.push_back(PositionColorVertex(tcu::Vec4(-1.0f, 1.0f, 1.0f, 1.0f), tcu::RGBA::green().toVec()));
+		m_data.push_back(PositionColorVertex(tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f), tcu::RGBA::green().toVec()));
+		m_data.push_back(PositionColorVertex(tcu::Vec4(-1.0f, -1.0f, 1.0f, 1.0f), tcu::RGBA::green().toVec()));
+		m_data.push_back(PositionColorVertex(tcu::Vec4(1.0f, -1.0f, 1.0f, 1.0f), tcu::RGBA::green().toVec()));
 
 		DynamicStateBaseClass::initialize();
 	}
 
 	virtual tcu::TestStatus iterate (void)
 	{
-		tcu::TestLog &log = m_context.getTestContext().getLog();
+		tcu::TestLog &log		= m_context.getTestContext().getLog();
 		const vk::VkQueue queue = m_context.getUniversalQueue();
 
 		beginRenderPass();
 
 		// bind states here
 		vk::VkViewport viewport = { 0.0f, 0.0f, (float)WIDTH, (float)HEIGHT, 0.0f, 0.0f };
-		vk::VkRect2D scissor_1 = { { 0, 0 }, { WIDTH / 2, HEIGHT / 2 } };
-		vk::VkRect2D scissor_2 = { { WIDTH / 2, HEIGHT / 2 }, { WIDTH / 2, HEIGHT / 2 } };
+		vk::VkRect2D scissor_1	= { { 0, 0 }, { WIDTH / 2, HEIGHT / 2 } };
+		vk::VkRect2D scissor_2	= { { WIDTH / 2, HEIGHT / 2 }, { WIDTH / 2, HEIGHT / 2 } };
 
 		setDynamicRasterizationState();
 		setDynamicBlendState();
@@ -255,15 +259,14 @@ public:
 		const tcu::ConstPixelBufferAccess renderedFrame = m_colorTargetImage->readSurface(queue, m_context.getDefaultAllocator(),
 			vk::VK_IMAGE_LAYOUT_GENERAL, zeroOffset, WIDTH, HEIGHT, vk::VK_IMAGE_ASPECT_COLOR_BIT);
 
-		qpTestResult res = QP_TEST_RESULT_PASS;
-
 		if (!tcu::fuzzyCompare(log, "Result", "Image comparison result",
 			referenceFrame.getLevel(0), renderedFrame, 0.05f,
-			tcu::COMPARE_LOG_RESULT)) {
-			res = QP_TEST_RESULT_FAIL;
+			tcu::COMPARE_LOG_RESULT))
+		{
+			return tcu::TestStatus(QP_TEST_RESULT_FAIL, "Image verification failed");
 		}
 
-		return tcu::TestStatus(res, qpGetTestResultName(res));
+		return tcu::TestStatus(QP_TEST_RESULT_PASS, "Image verification passed");
 	}
 };
 
@@ -273,20 +276,20 @@ protected:
 	vk::Move<vk::VkPipeline> m_pipelineAdditional;
 
 public:
-	StatePersistenceTestInstance (Context &context, ShaderMap shaders)
+	StatePersistenceTestInstance (Context& context, ShaderMap shaders)
 		: DynamicStateBaseClass (context, shaders[glu::SHADERTYPE_VERTEX], shaders[glu::SHADERTYPE_FRAGMENT])
 	{
-		m_data.push_back(Vec4RGBA(tcu::Vec4(-1.0f, 1.0f, 1.0f, 1.0f), vec4Green()));
-		m_data.push_back(Vec4RGBA(tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f), vec4Green()));
-		m_data.push_back(Vec4RGBA(tcu::Vec4(-1.0f, -1.0f, 1.0f, 1.0f), vec4Green()));
-		m_data.push_back(Vec4RGBA(tcu::Vec4(1.0f, -1.0f, 1.0f, 1.0f), vec4Green()));
+		m_data.push_back(PositionColorVertex(tcu::Vec4(-1.0f, 1.0f, 1.0f, 1.0f), tcu::RGBA::green().toVec()));
+		m_data.push_back(PositionColorVertex(tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f), tcu::RGBA::green().toVec()));
+		m_data.push_back(PositionColorVertex(tcu::Vec4(-1.0f, -1.0f, 1.0f, 1.0f), tcu::RGBA::green().toVec()));
+		m_data.push_back(PositionColorVertex(tcu::Vec4(1.0f, -1.0f, 1.0f, 1.0f), tcu::RGBA::green().toVec()));
 
-		m_data.push_back(Vec4RGBA(tcu::Vec4(-1.0f, 1.0f, 1.0f, 1.0f), vec4Blue()));
-		m_data.push_back(Vec4RGBA(tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f), vec4Blue()));
-		m_data.push_back(Vec4RGBA(tcu::Vec4(-1.0f, -1.0f, 1.0f, 1.0f), vec4Blue()));
-		m_data.push_back(Vec4RGBA(tcu::Vec4(-1.0f, -1.0f, 1.0f, 1.0f), vec4Blue()));
-		m_data.push_back(Vec4RGBA(tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f), vec4Blue()));
-		m_data.push_back(Vec4RGBA(tcu::Vec4(1.0f, -1.0f, 1.0f, 1.0f), vec4Blue()));
+		m_data.push_back(PositionColorVertex(tcu::Vec4(-1.0f, 1.0f, 1.0f, 1.0f), tcu::RGBA::blue().toVec()));
+		m_data.push_back(PositionColorVertex(tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f), tcu::RGBA::blue().toVec()));
+		m_data.push_back(PositionColorVertex(tcu::Vec4(-1.0f, -1.0f, 1.0f, 1.0f), tcu::RGBA::blue().toVec()));
+		m_data.push_back(PositionColorVertex(tcu::Vec4(-1.0f, -1.0f, 1.0f, 1.0f), tcu::RGBA::blue().toVec()));
+		m_data.push_back(PositionColorVertex(tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f), tcu::RGBA::blue().toVec()));
+		m_data.push_back(PositionColorVertex(tcu::Vec4(1.0f, -1.0f, 1.0f, 1.0f), tcu::RGBA::blue().toVec()));
 
 		DynamicStateBaseClass::initialize();
 	}
@@ -328,15 +331,15 @@ public:
 
 	virtual tcu::TestStatus iterate(void)
 	{
-		tcu::TestLog &log = m_context.getTestContext().getLog();
-		const vk::VkQueue queue = m_context.getUniversalQueue();
+		tcu::TestLog &log				= m_context.getTestContext().getLog();
+		const vk::VkQueue queue			= m_context.getUniversalQueue();
 
 		beginRenderPass();
 
 		// bind states here
-		const vk::VkViewport viewport = { 0.0f, 0.0f, (float)WIDTH, (float)HEIGHT, 0.0f, 0.0f };
-		const vk::VkRect2D scissor_1 = { { 0, 0 }, { WIDTH / 2, HEIGHT / 2 } };
-		const vk::VkRect2D scissor_2 = { { WIDTH / 2, HEIGHT / 2 }, { WIDTH / 2, HEIGHT / 2 } };
+		const vk::VkViewport viewport	= { 0.0f, 0.0f, (float)WIDTH, (float)HEIGHT, 0.0f, 0.0f };
+		const vk::VkRect2D scissor_1	= { { 0, 0 }, { WIDTH / 2, HEIGHT / 2 } };
+		const vk::VkRect2D scissor_2	= { { WIDTH / 2, HEIGHT / 2 }, { WIDTH / 2, HEIGHT / 2 } };
 
 		setDynamicRasterizationState();
 		setDynamicBlendState();
@@ -382,8 +385,8 @@ public:
 		tcu::Texture2D referenceFrame(vk::mapVkFormat(m_colorAttachmentFormat), (int)(0.5 + WIDTH), (int)(0.5 + HEIGHT));
 		referenceFrame.allocLevel(0);
 
-		const deInt32 frameWidth = referenceFrame.getWidth();
-		const deInt32 frameHeight = referenceFrame.getHeight();
+		const deInt32 frameWidth	= referenceFrame.getWidth();
+		const deInt32 frameHeight	= referenceFrame.getHeight();
 
 		tcu::clear(referenceFrame.getLevel(0), tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f));
 
@@ -406,21 +409,20 @@ public:
 		const tcu::ConstPixelBufferAccess renderedFrame = m_colorTargetImage->readSurface(queue, m_context.getDefaultAllocator(),
 			vk::VK_IMAGE_LAYOUT_GENERAL, zeroOffset, WIDTH, HEIGHT, vk::VK_IMAGE_ASPECT_COLOR_BIT);
 
-		qpTestResult res = QP_TEST_RESULT_PASS;
-
 		if (!tcu::fuzzyCompare(log, "Result", "Image comparison result",
 			referenceFrame.getLevel(0), renderedFrame, 0.05f,
-			tcu::COMPARE_LOG_RESULT)) {
-			res = QP_TEST_RESULT_FAIL;
+			tcu::COMPARE_LOG_RESULT))
+		{
+			return tcu::TestStatus(QP_TEST_RESULT_FAIL, "Image verification failed");
 		}
 
-		return tcu::TestStatus(res, qpGetTestResultName(res));
+		return tcu::TestStatus(QP_TEST_RESULT_PASS, "Image verification passed");
 	}
 };
 
 } //anonymous
 
-DynamicStateGeneralTests::DynamicStateGeneralTests (tcu::TestContext &testCtx)
+DynamicStateGeneralTests::DynamicStateGeneralTests (tcu::TestContext& testCtx)
 	: TestCaseGroup (testCtx, "general_state", "General tests for dynamic states")
 {
 	/* Left blank on purpose */
@@ -439,5 +441,5 @@ void DynamicStateGeneralTests::init (void)
 	addChild(new InstanceFactory<StatePersistenceTestInstance>(m_testCtx, "state_persistence", "Check if bound states are persistent across pipelines", shaderPaths));
 }
 
-} //DynamicState
-} //vkt
+} // DynamicState
+} // vkt

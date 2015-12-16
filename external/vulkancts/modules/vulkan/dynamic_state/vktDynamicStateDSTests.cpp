@@ -43,6 +43,7 @@
 #include "tcuImageCompare.hpp"
 #include "tcuCommandLine.hpp"
 #include "tcuTextureUtil.hpp"
+#include "tcuRGBA.hpp"
 
 #include "vkRefUtil.hpp"
 #include "vkImageUtil.hpp"
@@ -57,38 +58,13 @@ namespace vkt
 namespace DynamicState
 {
 
-inline tcu::Vec4 vec4Red (void)
-{
-	return tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f);
-}
-
-inline tcu::Vec4 vec4Green (void)
-{
-	return tcu::Vec4(0.0f, 1.0f, 0.0f, 1.0f);
-}
-
-inline tcu::Vec4 vec4Blue (void)
-{
-	return tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f);
-}
-
 namespace
 {
-
-struct Vec4RGBA
-{
-	Vec4RGBA(tcu::Vec4 p, tcu::Vec4 c)
-	: position(p)
-	, color(c)
-	{}
-	tcu::Vec4 position;
-	tcu::Vec4 color;
-};
 
 class DepthStencilBaseCase : public TestInstance
 {
 public:
-	DepthStencilBaseCase (Context &context, const char* vertexShaderName, const char* fragmentShaderName)
+	DepthStencilBaseCase (Context& context, const char* vertexShaderName, const char* fragmentShaderName)
 		: TestInstance						(context)
 		, m_colorAttachmentFormat			(vk::VK_FORMAT_R8G8B8A8_UNORM)
 		, m_depthStencilAttachmentFormat	(vk::VK_FORMAT_D24_UNORM_S8_UINT)
@@ -136,7 +112,7 @@ protected:
 	const std::string								m_vertexShaderName;
 	const std::string								m_fragmentShaderName;
 
-	std::vector<Vec4RGBA>							m_data;
+	std::vector<PositionColorVertex>				m_data;
 
 	PipelineCreateInfo::DepthStencilState			m_depthStencilState_1;
 	PipelineCreateInfo::DepthStencilState			m_depthStencilState_2;
@@ -154,14 +130,13 @@ protected:
 
 		const vk::VkExtent3D imageExtent = { WIDTH, HEIGHT, 1 };
 		const ImageCreateInfo targetImageCreateInfo(vk::VK_IMAGE_TYPE_2D, m_colorAttachmentFormat, imageExtent, 1, 1, vk::VK_SAMPLE_COUNT_1_BIT, 
-			vk::VK_IMAGE_TILING_OPTIMAL, vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+													vk::VK_IMAGE_TILING_OPTIMAL, vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
 
 		m_colorTargetImage = Image::createAndAlloc(m_vk, device, targetImageCreateInfo, m_context.getDefaultAllocator());
 
-		const ImageCreateInfo depthStencilImageCreateInfo(
-			vk::VK_IMAGE_TYPE_2D, m_depthStencilAttachmentFormat, imageExtent,
-			1, 1, vk::VK_SAMPLE_COUNT_1_BIT, vk::VK_IMAGE_TILING_OPTIMAL,
-			vk::VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
+		const ImageCreateInfo depthStencilImageCreateInfo(vk::VK_IMAGE_TYPE_2D, m_depthStencilAttachmentFormat, imageExtent,
+														  1, 1, vk::VK_SAMPLE_COUNT_1_BIT, vk::VK_IMAGE_TILING_OPTIMAL,
+														  vk::VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
 
 		m_depthStencilImage = Image::createAndAlloc(m_vk, device, depthStencilImageCreateInfo, m_context.getDefaultAllocator());
 
@@ -172,25 +147,23 @@ protected:
 		m_attachmentView = vk::createImageView(m_vk, device, &attachmentViewInfo);
 
 		RenderPassCreateInfo renderPassCreateInfo;
-		renderPassCreateInfo.addAttachment(AttachmentDescription(
-			m_colorAttachmentFormat,
-			vk::VK_SAMPLE_COUNT_1_BIT,
-			vk::VK_ATTACHMENT_LOAD_OP_LOAD,
-			vk::VK_ATTACHMENT_STORE_OP_STORE,
-			vk::VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-			vk::VK_ATTACHMENT_STORE_OP_STORE,
-			vk::VK_IMAGE_LAYOUT_GENERAL,
-			vk::VK_IMAGE_LAYOUT_GENERAL));
+		renderPassCreateInfo.addAttachment(AttachmentDescription(m_colorAttachmentFormat,
+																 vk::VK_SAMPLE_COUNT_1_BIT,
+																 vk::VK_ATTACHMENT_LOAD_OP_LOAD,
+																 vk::VK_ATTACHMENT_STORE_OP_STORE,
+																 vk::VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+																 vk::VK_ATTACHMENT_STORE_OP_STORE,
+																 vk::VK_IMAGE_LAYOUT_GENERAL,
+																 vk::VK_IMAGE_LAYOUT_GENERAL));
 
-		renderPassCreateInfo.addAttachment(AttachmentDescription(
-			m_depthStencilAttachmentFormat,
-			vk::VK_SAMPLE_COUNT_1_BIT,
-			vk::VK_ATTACHMENT_LOAD_OP_LOAD,
-			vk::VK_ATTACHMENT_STORE_OP_STORE,
-			vk::VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-			vk::VK_ATTACHMENT_STORE_OP_STORE,
-			vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-			vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL));
+		renderPassCreateInfo.addAttachment(AttachmentDescription(m_depthStencilAttachmentFormat,
+																 vk::VK_SAMPLE_COUNT_1_BIT,
+																 vk::VK_ATTACHMENT_LOAD_OP_LOAD,
+																 vk::VK_ATTACHMENT_STORE_OP_STORE,
+																 vk::VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+																 vk::VK_ATTACHMENT_STORE_OP_STORE,
+																 vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+																 vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL));
 
 		const vk::VkAttachmentReference colorAttachmentReference =
 		{
@@ -284,12 +257,11 @@ protected:
 
 		m_framebuffer = vk::createFramebuffer(m_vk, device, &framebufferCreateInfo);
 
-		const vk::VkDeviceSize dataSize = m_data.size() * sizeof(Vec4RGBA);
-		m_vertexBuffer = Buffer::createAndAlloc(m_vk, device, BufferCreateInfo(dataSize,
-			vk::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT),
-			m_context.getDefaultAllocator(), vk::MemoryRequirement::HostVisible);
+		const vk::VkDeviceSize dataSize = m_data.size() * sizeof(PositionColorVertex);
+		m_vertexBuffer = Buffer::createAndAlloc(m_vk, device, BufferCreateInfo(dataSize, vk::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT),
+												m_context.getDefaultAllocator(), vk::MemoryRequirement::HostVisible);
 
-		unsigned char *ptr = reinterpret_cast<unsigned char *>(m_vertexBuffer->getBoundMemory().getHostPtr());
+		deUint8* ptr = reinterpret_cast<unsigned char *>(m_vertexBuffer->getBoundMemory().getHostPtr());
 		deMemcpy(ptr, &m_data[0], dataSize);
 
 		vk::flushMappedMemoryRange(m_vk, device,
@@ -313,7 +285,8 @@ protected:
 
 	virtual tcu::TestStatus iterate (void)
 	{
-		TCU_FAIL("Implement iterate() method!");
+		DE_ASSERT(false);
+		return tcu::TestStatus::fail("Implement iterate() method!");
 	}
 
 	void beginRenderPass (void)
@@ -413,20 +386,20 @@ public:
 	DepthBoundsParamTestInstance (Context &context, ShaderMap shaders)
 		: DepthStencilBaseCase (context, shaders[glu::SHADERTYPE_VERTEX], shaders[glu::SHADERTYPE_FRAGMENT])
 	{
-		m_data.push_back(Vec4RGBA(tcu::Vec4(-1.0f, 1.0f, 0.375f, 1.0f), vec4Green()));
-		m_data.push_back(Vec4RGBA(tcu::Vec4(0.0f, 1.0f, 0.375f, 1.0f), vec4Green()));
-		m_data.push_back(Vec4RGBA(tcu::Vec4(-1.0f, -1.0f, 0.375f, 1.0f), vec4Green()));
-		m_data.push_back(Vec4RGBA(tcu::Vec4(0.0f, -1.0f, 0.375f, 1.0f), vec4Green()));
+		m_data.push_back(PositionColorVertex(tcu::Vec4(-1.0f, 1.0f, 0.375f, 1.0f), tcu::RGBA::green().toVec()));
+		m_data.push_back(PositionColorVertex(tcu::Vec4(0.0f, 1.0f, 0.375f, 1.0f), tcu::RGBA::green().toVec()));
+		m_data.push_back(PositionColorVertex(tcu::Vec4(-1.0f, -1.0f, 0.375f, 1.0f), tcu::RGBA::green().toVec()));
+		m_data.push_back(PositionColorVertex(tcu::Vec4(0.0f, -1.0f, 0.375f, 1.0f), tcu::RGBA::green().toVec()));
 
-		m_data.push_back(Vec4RGBA(tcu::Vec4(0.0f, 1.0f, 0.625f, 1.0f), vec4Green()));
-		m_data.push_back(Vec4RGBA(tcu::Vec4(1.0f, 1.0f, 0.625f, 1.0f), vec4Green()));
-		m_data.push_back(Vec4RGBA(tcu::Vec4(0.0f, -1.0f, 0.625f, 1.0f), vec4Green()));
-		m_data.push_back(Vec4RGBA(tcu::Vec4(1.0f, -1.0f, 0.625f, 1.0f), vec4Green()));
+		m_data.push_back(PositionColorVertex(tcu::Vec4(0.0f, 1.0f, 0.625f, 1.0f), tcu::RGBA::green().toVec()));
+		m_data.push_back(PositionColorVertex(tcu::Vec4(1.0f, 1.0f, 0.625f, 1.0f), tcu::RGBA::green().toVec()));
+		m_data.push_back(PositionColorVertex(tcu::Vec4(0.0f, -1.0f, 0.625f, 1.0f), tcu::RGBA::green().toVec()));
+		m_data.push_back(PositionColorVertex(tcu::Vec4(1.0f, -1.0f, 0.625f, 1.0f), tcu::RGBA::green().toVec()));
 
-		m_data.push_back(Vec4RGBA(tcu::Vec4(-1.0f, 1.0f, 1.0f, 1.0f), vec4Blue()));
-		m_data.push_back(Vec4RGBA(tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f), vec4Blue()));
-		m_data.push_back(Vec4RGBA(tcu::Vec4(-1.0f, -1.0f, 1.0f, 1.0f), vec4Blue()));
-		m_data.push_back(Vec4RGBA(tcu::Vec4(1.0f, -1.0f, 1.0f, 1.0f), vec4Blue()));
+		m_data.push_back(PositionColorVertex(tcu::Vec4(-1.0f, 1.0f, 1.0f, 1.0f), tcu::RGBA::blue().toVec()));
+		m_data.push_back(PositionColorVertex(tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f), tcu::RGBA::blue().toVec()));
+		m_data.push_back(PositionColorVertex(tcu::Vec4(-1.0f, -1.0f, 1.0f, 1.0f), tcu::RGBA::blue().toVec()));
+		m_data.push_back(PositionColorVertex(tcu::Vec4(1.0f, -1.0f, 1.0f, 1.0f), tcu::RGBA::blue().toVec()));
 
 		m_depthStencilState_1 = PipelineCreateInfo::DepthStencilState(
 			vk::VK_TRUE, vk::VK_TRUE, vk::VK_COMPARE_OP_ALWAYS, vk::VK_FALSE);
@@ -515,16 +488,14 @@ public:
 			const tcu::ConstPixelBufferAccess renderedFrame = m_colorTargetImage->readSurface(queue, m_context.getDefaultAllocator(),
 				vk::VK_IMAGE_LAYOUT_GENERAL, zeroOffset, WIDTH, HEIGHT, vk::VK_IMAGE_ASPECT_COLOR_BIT);
 
-			qpTestResult res = QP_TEST_RESULT_PASS;
-
 			if (!tcu::fuzzyCompare(log, "Result", "Image comparison result",
 				referenceFrame.getLevel(0), renderedFrame, 0.05f,
 				tcu::COMPARE_LOG_RESULT))
 			{
-				res = QP_TEST_RESULT_FAIL;
+				return tcu::TestStatus(QP_TEST_RESULT_FAIL, "Image verification failed");
 			}
 
-			return tcu::TestStatus(res, qpGetTestResultName(res));
+			return tcu::TestStatus(QP_TEST_RESULT_PASS, "Image verification passed");
 		}
 	}
 };
@@ -538,7 +509,7 @@ protected:
 	tcu::Vec4 m_expectedColor;
 
 public:
-	StencilParamsBasicTestInstance (Context &context, const char* vertexShaderName, const char* fragmentShaderName,
+	StencilParamsBasicTestInstance (Context& context, const char* vertexShaderName, const char* fragmentShaderName,
 									const deUint32 writeMask, const deUint32 readMask, 
 									const deUint32 expectedValue, const tcu::Vec4 expectedColor)
 		: DepthStencilBaseCase  (context, vertexShaderName, fragmentShaderName)
@@ -549,15 +520,15 @@ public:
 		m_expectedValue = expectedValue;
 		m_expectedColor = expectedColor;
 
-		m_data.push_back(Vec4RGBA(tcu::Vec4(-1.0f, 1.0f, 1.0f, 1.0f), vec4Green()));
-		m_data.push_back(Vec4RGBA(tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f), vec4Green()));
-		m_data.push_back(Vec4RGBA(tcu::Vec4(-1.0f, -1.0f, 1.0f, 1.0f), vec4Green()));
-		m_data.push_back(Vec4RGBA(tcu::Vec4(1.0f, -1.0f, 1.0f, 1.0f), vec4Green()));
+		m_data.push_back(PositionColorVertex(tcu::Vec4(-1.0f, 1.0f, 1.0f, 1.0f), tcu::RGBA::green().toVec()));
+		m_data.push_back(PositionColorVertex(tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f), tcu::RGBA::green().toVec()));
+		m_data.push_back(PositionColorVertex(tcu::Vec4(-1.0f, -1.0f, 1.0f, 1.0f), tcu::RGBA::green().toVec()));
+		m_data.push_back(PositionColorVertex(tcu::Vec4(1.0f, -1.0f, 1.0f, 1.0f), tcu::RGBA::green().toVec()));
 
-		m_data.push_back(Vec4RGBA(tcu::Vec4(-1.0f, 1.0f, 1.0f, 1.0f), vec4Blue()));
-		m_data.push_back(Vec4RGBA(tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f), vec4Blue()));
-		m_data.push_back(Vec4RGBA(tcu::Vec4(-1.0f, -1.0f, 1.0f, 1.0f), vec4Blue()));
-		m_data.push_back(Vec4RGBA(tcu::Vec4(1.0f, -1.0f, 1.0f, 1.0f), vec4Blue()));
+		m_data.push_back(PositionColorVertex(tcu::Vec4(-1.0f, 1.0f, 1.0f, 1.0f), tcu::RGBA::blue().toVec()));
+		m_data.push_back(PositionColorVertex(tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f), tcu::RGBA::blue().toVec()));
+		m_data.push_back(PositionColorVertex(tcu::Vec4(-1.0f, -1.0f, 1.0f, 1.0f), tcu::RGBA::blue().toVec()));
+		m_data.push_back(PositionColorVertex(tcu::Vec4(1.0f, -1.0f, 1.0f, 1.0f), tcu::RGBA::blue().toVec()));
 
 		const PipelineCreateInfo::DepthStencilState::StencilOpState frontState_1 =
 			PipelineCreateInfo::DepthStencilState::StencilOpState(
@@ -664,16 +635,14 @@ public:
 			const tcu::ConstPixelBufferAccess renderedFrame = m_colorTargetImage->readSurface(queue, m_context.getDefaultAllocator(),
 				vk::VK_IMAGE_LAYOUT_GENERAL, zeroOffset, WIDTH, HEIGHT, vk::VK_IMAGE_ASPECT_COLOR_BIT);
 
-			qpTestResult res = QP_TEST_RESULT_PASS;
-
 			if (!tcu::fuzzyCompare(log, "Result", "Image comparison result",
 				referenceFrame.getLevel(0), renderedFrame, 0.05f,
 				tcu::COMPARE_LOG_RESULT))
 			{
-				res = QP_TEST_RESULT_FAIL;
+				return tcu::TestStatus(QP_TEST_RESULT_FAIL, "Image verification failed");
 			}
 
-			return tcu::TestStatus(res, qpGetTestResultName(res));
+			return tcu::TestStatus(QP_TEST_RESULT_PASS, "Image verification passed");
 		}
 	}
 };
@@ -702,7 +671,7 @@ protected:
 	tcu::Vec4 m_expectedColor;
 
 public:
-	StencilParamsBasicTestCase (tcu::TestContext &context, const char *name, const char *description,
+	StencilParamsBasicTestCase (tcu::TestContext& context, const char *name, const char *description,
 								const deUint32 writeMask, const deUint32 readMask, 
 								const deUint32 expectedValue, const tcu::Vec4 expectedColor)
 		: TestCase				(context, name, description)
@@ -717,18 +686,18 @@ public:
 class StencilParamsAdvancedTestInstance : public DepthStencilBaseCase
 {
 public:
-	StencilParamsAdvancedTestInstance (Context &context, ShaderMap shaders)
+	StencilParamsAdvancedTestInstance (Context& context, ShaderMap shaders)
 		: DepthStencilBaseCase (context, shaders[glu::SHADERTYPE_VERTEX], shaders[glu::SHADERTYPE_FRAGMENT])
 	{
-		m_data.push_back(Vec4RGBA(tcu::Vec4(-0.5f, 0.5f, 1.0f, 1.0f), vec4Green()));
-		m_data.push_back(Vec4RGBA(tcu::Vec4(0.5f, 0.5f, 1.0f, 1.0f), vec4Green()));
-		m_data.push_back(Vec4RGBA(tcu::Vec4(-0.5f, -0.5f, 1.0f, 1.0f), vec4Green()));
-		m_data.push_back(Vec4RGBA(tcu::Vec4(0.5f, -0.5f, 1.0f, 1.0f), vec4Green()));
+		m_data.push_back(PositionColorVertex(tcu::Vec4(-0.5f, 0.5f, 1.0f, 1.0f), tcu::RGBA::green().toVec()));
+		m_data.push_back(PositionColorVertex(tcu::Vec4(0.5f, 0.5f, 1.0f, 1.0f), tcu::RGBA::green().toVec()));
+		m_data.push_back(PositionColorVertex(tcu::Vec4(-0.5f, -0.5f, 1.0f, 1.0f), tcu::RGBA::green().toVec()));
+		m_data.push_back(PositionColorVertex(tcu::Vec4(0.5f, -0.5f, 1.0f, 1.0f), tcu::RGBA::green().toVec()));
 
-		m_data.push_back(Vec4RGBA(tcu::Vec4(-1.0f, 1.0f, 1.0f, 1.0f), vec4Blue()));
-		m_data.push_back(Vec4RGBA(tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f), vec4Blue()));
-		m_data.push_back(Vec4RGBA(tcu::Vec4(-1.0f, -1.0f, 1.0f, 1.0f), vec4Blue()));
-		m_data.push_back(Vec4RGBA(tcu::Vec4(1.0f, -1.0f, 1.0f, 1.0f), vec4Blue()));
+		m_data.push_back(PositionColorVertex(tcu::Vec4(-1.0f, 1.0f, 1.0f, 1.0f), tcu::RGBA::blue().toVec()));
+		m_data.push_back(PositionColorVertex(tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f), tcu::RGBA::blue().toVec()));
+		m_data.push_back(PositionColorVertex(tcu::Vec4(-1.0f, -1.0f, 1.0f, 1.0f), tcu::RGBA::blue().toVec()));
+		m_data.push_back(PositionColorVertex(tcu::Vec4(1.0f, -1.0f, 1.0f, 1.0f), tcu::RGBA::blue().toVec()));
 
 		const PipelineCreateInfo::DepthStencilState::StencilOpState frontState_1 =
 			PipelineCreateInfo::DepthStencilState::StencilOpState(
@@ -837,29 +806,29 @@ public:
 			const tcu::ConstPixelBufferAccess renderedFrame = m_colorTargetImage->readSurface(queue, m_context.getDefaultAllocator(),
 				vk::VK_IMAGE_LAYOUT_GENERAL, zeroOffset, WIDTH, HEIGHT, vk::VK_IMAGE_ASPECT_COLOR_BIT);
 
-			qpTestResult res = QP_TEST_RESULT_PASS;
-
 			if (!tcu::fuzzyCompare(log, "Result", "Image comparison result",
 				referenceFrame.getLevel(0), renderedFrame, 0.05f,
 				tcu::COMPARE_LOG_RESULT))
 			{
-				res = QP_TEST_RESULT_FAIL;
+				return tcu::TestStatus(QP_TEST_RESULT_FAIL, "Image verification failed");
 			}
 
-			return tcu::TestStatus(res, qpGetTestResultName(res));
+			return tcu::TestStatus(QP_TEST_RESULT_PASS, "Image verification passed");
 		}
 	}
 };
 
 } //anonymous
 
-DynamicStateDSTests::DynamicStateDSTests (tcu::TestContext &testCtx)
+DynamicStateDSTests::DynamicStateDSTests (tcu::TestContext& testCtx)
 	: TestCaseGroup (testCtx, "ds_state", "Tests for depth stencil state")
 {
 	/* Left blank on purpose */
 }
 
-DynamicStateDSTests::~DynamicStateDSTests () {}
+DynamicStateDSTests::~DynamicStateDSTests ()
+{
+}
 
 void DynamicStateDSTests::init (void)
 {
@@ -873,5 +842,5 @@ void DynamicStateDSTests::init (void)
 	addChild(new InstanceFactory<StencilParamsAdvancedTestInstance>(m_testCtx, "stencil_params_advanced", "Perform advanced stencil test", shaderPaths));
 }
 
-} //DynamicState
-} //vkt
+} // DynamicState
+} // vkt

@@ -35,16 +35,14 @@
 
 #include "vktDynamicStateBufferObjectUtil.hpp"
 
-
 #include "vkQueryUtil.hpp"
-
 
 namespace vkt
 {
 namespace DynamicState
 {
 
-Buffer::Buffer (const vk::DeviceInterface &vk, vk::VkDevice device, vk::Move<vk::VkBuffer> object)
+Buffer::Buffer (const vk::DeviceInterface& vk, vk::VkDevice device, vk::Move<vk::VkBuffer> object)
 	: m_object		(object)
 	, m_allocation  (DE_NULL)
 	, m_vk			(vk)
@@ -61,11 +59,11 @@ void Buffer::bindMemory (de::MovePtr<vk::Allocation> allocation)
 	m_allocation = allocation;
 }
 
-de::SharedPtr<Buffer> Buffer::createAndAlloc (const vk::DeviceInterface &vk,
-	vk::VkDevice device,
-	const vk::VkBufferCreateInfo &createInfo,
-	vk::Allocator &allocator,
-	vk::MemoryRequirement memoryRequirement)
+de::SharedPtr<Buffer> Buffer::createAndAlloc (const vk::DeviceInterface& vk,
+											  vk::VkDevice device,
+											  const vk::VkBufferCreateInfo &createInfo,
+											  vk::Allocator &allocator,
+											  vk::MemoryRequirement memoryRequirement)
 {
 	de::SharedPtr<Buffer> ret = create(vk, device, createInfo);
 
@@ -74,12 +72,12 @@ de::SharedPtr<Buffer> Buffer::createAndAlloc (const vk::DeviceInterface &vk,
 	return ret;
 }
 
-de::SharedPtr<Buffer> Buffer::create (const vk::DeviceInterface &vk,
+de::SharedPtr<Buffer> Buffer::create (const vk::DeviceInterface& vk,
 									  vk::VkDevice device,
-									  const vk::VkBufferCreateInfo &createInfo)
+									  const vk::VkBufferCreateInfo& createInfo)
 {
 	return de::SharedPtr<Buffer>(new Buffer(vk, device, vk::createBuffer(vk, device, &createInfo)));
 }
 
-} //DynamicState
-} //vkt
+} // DynamicState
+} // vkt

@@ -35,7 +35,6 @@
  * \brief Dynamic State Tests Test Case Utilities
  *//*--------------------------------------------------------------------*/
 
-
 #include "tcuDefs.hpp"
 #include "tcuResource.hpp"
 
@@ -50,6 +49,16 @@ namespace vkt
 {
 namespace DynamicState
 {
+
+struct PositionColorVertex
+{
+	PositionColorVertex(tcu::Vec4 position_, tcu::Vec4 color_)
+		: position(position_)
+		, color(color_)
+	{}
+	tcu::Vec4 position;
+	tcu::Vec4 color;
+};
 
 class ShaderSourceProvider 
 {
@@ -97,8 +106,7 @@ private:
 	const ShaderMap m_shaderPaths;
 };
 
-
-} //DynamicState
-} //vkt
+} // DynamicState
+} // vkt
 
 #endif

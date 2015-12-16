@@ -50,7 +50,7 @@ namespace DynamicState
 
 tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "dynamic-state", "Dynamic State Tests"));
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "dynamic_state", "Dynamic State Tests"));
 
 	group->addChild(new DynamicStateVPTests(testCtx));
 	group->addChild(new DynamicStateRSTests(testCtx));

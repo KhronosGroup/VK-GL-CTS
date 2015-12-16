@@ -55,11 +55,14 @@ void MemoryOp::pack (int				pixelSize,
 					 int				width,
 					 int				height,
 					 int				depth,
-					 vk::VkDeviceSize	rowPitch,
-					 vk::VkDeviceSize	depthPitch,
+					 vk::VkDeviceSize	rowPitchOrZero,
+					 vk::VkDeviceSize	depthPitchOrZero,
 					 const void *		srcBuffer,
 					 void *				destBuffer)
 {
+	vk::VkDeviceSize rowPitch	= rowPitchOrZero;
+	vk::VkDeviceSize depthPitch	= depthPitchOrZero;
+
 	if (rowPitch == 0) 
 		rowPitch = width * pixelSize;
 
@@ -104,11 +107,14 @@ void MemoryOp::unpack (int					pixelSize,
 					   int					width,
 					   int					height,
 					   int					depth,
-					   vk::VkDeviceSize		rowPitch,
-					   vk::VkDeviceSize		depthPitch,
+					   vk::VkDeviceSize		rowPitchOrZero,
+					   vk::VkDeviceSize		depthPitchOrZero,
 					   const void *			srcBuffer,
 					   void *				destBuffer)
 {
+	vk::VkDeviceSize rowPitch	= rowPitchOrZero;
+	vk::VkDeviceSize depthPitch = depthPitchOrZero;
+
 	if (rowPitch == 0)
 		rowPitch = width * pixelSize;
 
@@ -148,10 +154,10 @@ void MemoryOp::unpack (int					pixelSize,
 	}
 }
 
-Image::Image (const vk::DeviceInterface &vk,
+Image::Image (const vk::DeviceInterface& vk,
 			  vk::VkDevice				device,
 			  vk::VkFormat				format,
-			  const vk::VkExtent3D 		&extend,
+			  const vk::VkExtent3D&		extend,
 			  deUint32					levelCount,
 			  deUint32					layerCount,
 			  vk::Move<vk::VkImage>		object)
@@ -252,8 +258,7 @@ void Image::read (vk::VkQueue					queue,
 				  vk::VkImageType				type,
 				  void *						data)
 {
-	if (layout != vk::VK_IMAGE_LAYOUT_GENERAL && layout != vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL) 
-		TCU_FAIL("Image::uploadFromSurface usage error: this function is not going to change Image layout!");
+	DE_ASSERT(layout == vk::VK_IMAGE_LAYOUT_GENERAL || layout == vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
 	de::SharedPtr<Image> stagingResource = copyToLinearImage(queue, allocator, layout, offset, width,
 															 height, depth, mipLevel, arrayElement, aspect, type);
@@ -273,8 +278,7 @@ void Image::readUsingBuffer (vk::VkQueue				queue,
 							 vk::VkImageAspectFlagBits	aspect,
 							 void *						data)
 {
-	if (layout != vk::VK_IMAGE_LAYOUT_GENERAL && layout != vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL) 
-		TCU_FAIL("Image::uploadFromSurface usage error: this function is not going to change Image layout!");
+	DE_ASSERT(layout == vk::VK_IMAGE_LAYOUT_GENERAL || layout == vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);;
 
 	de::SharedPtr<Buffer> stagingResource;
 
@@ -307,7 +311,7 @@ void Image::readUsingBuffer (vk::VkQueue				queue,
 	stagingResource = Buffer::createAndAlloc(m_vk, m_device, stagingBufferResourceCreateInfo, allocator, vk::MemoryRequirement::HostVisible);
 
 	{
-		#pragma message("Get queue family index")
+		//todo [scygan] get proper queueFamilyIndex
 		CmdPoolCreateInfo copyCmdPoolCreateInfo(0);
 		vk::Unique<vk::VkCommandPool> copyCmdPool(vk::createCommandPool(m_vk, m_device, &copyCmdPoolCreateInfo));
 		
@@ -433,14 +437,13 @@ de::SharedPtr<Image> Image::copyToLinearImage (vk::VkQueue					queue,
 	de::SharedPtr<Image> stagingResource;
 	{
 		vk::VkExtent3D stagingExtent = {width, height, depth};
-		ImageCreateInfo stagingResourceCreateInfo(
-			type, m_format, stagingExtent, 1, 1, vk::VK_SAMPLE_COUNT_1_BIT,
-			vk::VK_IMAGE_TILING_LINEAR, vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+		ImageCreateInfo stagingResourceCreateInfo(type, m_format, stagingExtent, 1, 1, vk::VK_SAMPLE_COUNT_1_BIT,
+												  vk::VK_IMAGE_TILING_LINEAR, vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT);
 
 		stagingResource = Image::createAndAlloc(m_vk, m_device, stagingResourceCreateInfo, allocator,
-			vk::MemoryRequirement::HostVisible);
+												vk::MemoryRequirement::HostVisible);
 
-		#pragma message("Get queue family index")
+		//todo [scygan] get proper queueFamilyIndex
 		CmdPoolCreateInfo copyCmdPoolCreateInfo(0);
 		vk::Unique<vk::VkCommandPool> copyCmdPool(vk::createCommandPool(m_vk, m_device, &copyCmdPoolCreateInfo));
 
@@ -575,13 +578,7 @@ void Image::upload (vk::VkQueue					queue,
 					vk::VkImageType				type,
 					const void *				data)
 {
-
-	if (layout != vk::VK_IMAGE_LAYOUT_UNDEFINED
-		&& layout != vk::VK_IMAGE_LAYOUT_GENERAL
-		&& layout != vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) 
-	{
-		TCU_FAIL("Image::uploadFromRaw usage error: this function is not going to change Image layout!");
-	}
+	DE_ASSERT(layout == vk::VK_IMAGE_LAYOUT_GENERAL || layout == vk::VK_IMAGE_LAYOUT_UNDEFINED || layout == vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
 	de::SharedPtr<Image> stagingResource;
 	vk::VkExtent3D extent = {width, height, depth};
@@ -596,7 +593,7 @@ void Image::upload (vk::VkQueue					queue,
 	stagingResource->uploadLinear(zeroOffset, width, height, depth, 0, 0, aspect, data);
 
 	{
-		#pragma message("Get queue family index")
+		//todo [scygan] get proper queueFamilyIndex
 		CmdPoolCreateInfo copyCmdPoolCreateInfo(0);
 		vk::Unique<vk::VkCommandPool> copyCmdPool(vk::createCommandPool(m_vk, m_device, &copyCmdPoolCreateInfo));
 
@@ -682,12 +679,7 @@ void Image::uploadUsingBuffer (vk::VkQueue					queue,
 							   vk::VkImageAspectFlagBits	aspect,
 							   const void *					data)
 {
-	if (layout != vk::VK_IMAGE_LAYOUT_UNDEFINED
-		&& layout != vk::VK_IMAGE_LAYOUT_GENERAL
-		&& layout != vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) 
-	{
-		TCU_FAIL("Image::uploadFromRaw usage error: this function is not going to change Image layout!");
-	}
+	DE_ASSERT(layout == vk::VK_IMAGE_LAYOUT_GENERAL || layout == vk::VK_IMAGE_LAYOUT_UNDEFINED || layout == vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
 	de::SharedPtr<Buffer> stagingResource;
 	bool isCombinedType = isCombinedDepthStencilType(vk::mapVkFormat(m_format).type);
@@ -718,7 +710,7 @@ void Image::uploadUsingBuffer (vk::VkQueue					queue,
 	deMemcpy(destPtr, data, bufferSize);
 	vk::flushMappedMemoryRange(m_vk, m_device, stagingResource->getBoundMemory().getMemory(), stagingResource->getBoundMemory().getOffset(), bufferSize);
 	{
-		#pragma message("Get queue family index")
+		//todo [scygan] get proper queueFamilyIndex
 		CmdPoolCreateInfo copyCmdPoolCreateInfo(0);
 		vk::Unique<vk::VkCommandPool> copyCmdPool(vk::createCommandPool(m_vk, m_device, &copyCmdPoolCreateInfo));
 
@@ -790,7 +782,6 @@ void Image::uploadUsingBuffer (vk::VkQueue					queue,
 	}
 }
 
-
 void Image::uploadLinear (vk::VkOffset3D			offset,
 						  int						width,
 						  int						height,
@@ -821,11 +812,8 @@ vk::VkDeviceSize Image::getPixelOffset (vk::VkOffset3D		offset,
 										unsigned int		level,
 										unsigned int		layer)
 {
-	if (level >= m_levelCount) 
-		TCU_FAIL("mip level too large");
-
-	if (layer >= m_layerCount)
-		TCU_FAIL("array element too large");
+	DE_ASSERT(level < m_levelCount);
+	DE_ASSERT(layer < m_layerCount);
 
 	vk::VkDeviceSize mipLevelSizes[32];
 	vk::VkDeviceSize mipLevelRectSizes[32];
@@ -913,7 +901,6 @@ void transition2DImage (const vk::DeviceInterface&	vk,
 	vk.cmdPipelineBarrier(cmdBuffer, vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, false, DE_LENGTH_OF_ARRAY(barriers), barriers);
 }
 
-
 void initialTransitionColor2DImage (const vk::DeviceInterface &vk, vk::VkCommandBuffer cmdBuffer, vk::VkImage image, vk::VkImageLayout layout)
 {
 	transition2DImage(vk, cmdBuffer, image, vk::VK_IMAGE_ASPECT_COLOR_BIT, vk::VK_IMAGE_LAYOUT_UNDEFINED, layout);
@@ -934,5 +921,5 @@ void initialTransitionDepthStencil2DImage (const vk::DeviceInterface &vk, vk::Vk
 	transition2DImage(vk, cmdBuffer, image, vk::VK_IMAGE_ASPECT_DEPTH_BIT | vk::VK_IMAGE_ASPECT_STENCIL_BIT, vk::VK_IMAGE_LAYOUT_UNDEFINED, layout);
 }
 
-} //DynamicState
-} //vkt
+} // DynamicState
+} // vkt

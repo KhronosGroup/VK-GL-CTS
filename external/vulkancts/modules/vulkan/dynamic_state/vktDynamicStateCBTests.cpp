@@ -34,12 +34,15 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktDynamicStateCBTests.hpp"
+
 #include "vktDynamicStateBaseClass.hpp"
-
-#include "vktTestCaseUtil.hpp"
-#include "tcuTextureUtil.hpp"
-
 #include "vktDynamicStateTestCaseUtil.hpp"
+
+#include "vkImageUtil.hpp"
+
+#include "tcuImageCompare.hpp"
+#include "tcuTextureUtil.hpp"
+#include "tcuRGBA.hpp"
 
 namespace vkt
 {
@@ -51,15 +54,15 @@ namespace
 class BlendConstantsTestInstance : public DynamicStateBaseClass
 {
 public:
-	BlendConstantsTestInstance (Context &context, ShaderMap shaders)
-		: DynamicStateBaseClass (context, shaders[glu::SHADERTYPE_VERTEX], shaders[glu::SHADERTYPE_FRAGMENT])
+	BlendConstantsTestInstance (Context& context, ShaderMap shaders)
+		: DynamicStateBaseClass	(context, shaders[glu::SHADERTYPE_VERTEX], shaders[glu::SHADERTYPE_FRAGMENT])
 	{
 		m_topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
 
-		m_data.push_back(Vec4RGBA(tcu::Vec4(-1.0f, 1.0f, 1.0f, 1.0f), vec4Green()));
-		m_data.push_back(Vec4RGBA(tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f), vec4Green()));
-		m_data.push_back(Vec4RGBA(tcu::Vec4(-1.0f, -1.0f, 1.0f, 1.0f), vec4Green()));
-		m_data.push_back(Vec4RGBA(tcu::Vec4(1.0f, -1.0f, 1.0f, 1.0f), vec4Green()));
+		m_data.push_back(PositionColorVertex(tcu::Vec4(-1.0f, 1.0f, 1.0f, 1.0f), tcu::RGBA::green().toVec()));
+		m_data.push_back(PositionColorVertex(tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f), tcu::RGBA::green().toVec()));
+		m_data.push_back(PositionColorVertex(tcu::Vec4(-1.0f, -1.0f, 1.0f, 1.0f), tcu::RGBA::green().toVec()));
+		m_data.push_back(PositionColorVertex(tcu::Vec4(1.0f, -1.0f, 1.0f, 1.0f), tcu::RGBA::green().toVec()));
 
 		DynamicStateBaseClass::initialize();
 	}
@@ -70,10 +73,9 @@ public:
 		const vk::Unique<vk::VkShaderModule> fs (createShaderModule(m_vk, device, m_context.getBinaryCollection().get(m_fragmentShaderName), 0));
 		
 		const vk::VkPipelineColorBlendAttachmentState VkPipelineColorBlendAttachmentState =
-			PipelineCreateInfo::ColorBlendState::Attachment(
-			vk::VK_TRUE,
-			vk::VK_BLEND_FACTOR_SRC_ALPHA, vk::VK_BLEND_FACTOR_CONSTANT_COLOR, vk::VK_BLEND_OP_ADD,
-			vk::VK_BLEND_FACTOR_SRC_ALPHA, vk::VK_BLEND_FACTOR_CONSTANT_ALPHA, vk::VK_BLEND_OP_ADD);
+			PipelineCreateInfo::ColorBlendState::Attachment(vk::VK_TRUE,
+															vk::VK_BLEND_FACTOR_SRC_ALPHA, vk::VK_BLEND_FACTOR_CONSTANT_COLOR, vk::VK_BLEND_OP_ADD,
+															vk::VK_BLEND_FACTOR_SRC_ALPHA, vk::VK_BLEND_FACTOR_CONSTANT_ALPHA, vk::VK_BLEND_OP_ADD);
 
 		PipelineCreateInfo pipelineCreateInfo(*m_pipelineLayout, *m_renderPass, 0, 0);
 		pipelineCreateInfo.addShader(PipelineCreateInfo::PipelineShaderStage(*vs, "main", vk::VK_SHADER_STAGE_VERTEX_BIT));
@@ -154,25 +156,23 @@ public:
 
 			const vk::VkOffset3D zeroOffset = { 0, 0, 0 };
 			const tcu::ConstPixelBufferAccess renderedFrame = m_colorTargetImage->readSurface(queue, m_context.getDefaultAllocator(),
-				vk::VK_IMAGE_LAYOUT_GENERAL, zeroOffset, WIDTH, HEIGHT, vk::VK_IMAGE_ASPECT_COLOR_BIT);
-
-			qpTestResult res = QP_TEST_RESULT_PASS;
+																							  vk::VK_IMAGE_LAYOUT_GENERAL, zeroOffset, WIDTH, HEIGHT, vk::VK_IMAGE_ASPECT_COLOR_BIT);
 
 			if (!tcu::fuzzyCompare(log, "Result", "Image comparison result",
 				referenceFrame.getLevel(0), renderedFrame, 0.05f,
 				tcu::COMPARE_LOG_RESULT))
 			{
-				res = QP_TEST_RESULT_FAIL;
+				return tcu::TestStatus(QP_TEST_RESULT_FAIL, "Image verification failed");
 			}
 
-			return tcu::TestStatus(res, qpGetTestResultName(res));
+			return tcu::TestStatus(QP_TEST_RESULT_PASS, "Image verification passed");
 		}
 	}
 };
 
 } //anonymous
 
-DynamicStateCBTests::DynamicStateCBTests (tcu::TestContext &testCtx)
+DynamicStateCBTests::DynamicStateCBTests (tcu::TestContext& testCtx)
 	: TestCaseGroup (testCtx, "cb_state", "Tests for color blend state")
 {
 	/* Left blank on purpose */
@@ -188,5 +188,5 @@ void DynamicStateCBTests::init (void)
 	addChild(new InstanceFactory<BlendConstantsTestInstance>(m_testCtx, "blend_constants", "Check if blend constants are working properly", shaderPaths));
 }
 
-} //DynamicState
-} //vkt
+} // DynamicState
+} // vkt
