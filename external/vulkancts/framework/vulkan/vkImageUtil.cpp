@@ -889,46 +889,49 @@ tcu::UVec4 mapVkComponentMapping (const vk::VkComponentMapping& mapping)
 	return swizzle;
 }
 
-// Get a format the matches the layout in buffer memory used for a
-// buffer<->image copy on a depth/stencil format.
-tcu::TextureFormat getDepthCopyFormat(VkFormat combinedFormat)
+//! Get a format the matches the layout in buffer memory used for a
+//! buffer<->image copy on a depth/stencil format.
+tcu::TextureFormat getDepthCopyFormat (VkFormat combinedFormat)
 {
-	switch (combinedFormat) {
-	case VK_FORMAT_D16_UNORM:
-	case VK_FORMAT_X8_D24_UNORM_PACK32:
-	case VK_FORMAT_D32_SFLOAT:
-		return mapVkFormat(combinedFormat);
+	switch (combinedFormat)
+	{
+		case VK_FORMAT_D16_UNORM:
+		case VK_FORMAT_X8_D24_UNORM_PACK32:
+		case VK_FORMAT_D32_SFLOAT:
+			return mapVkFormat(combinedFormat);
 
-	case VK_FORMAT_D16_UNORM_S8_UINT:
-		return mapVkFormat(VK_FORMAT_D16_UNORM);
-	case VK_FORMAT_D24_UNORM_S8_UINT:
-		return mapVkFormat(VK_FORMAT_X8_D24_UNORM_PACK32);
-	case VK_FORMAT_D32_SFLOAT_S8_UINT:
-		return mapVkFormat(VK_FORMAT_D32_SFLOAT);
+		case VK_FORMAT_D16_UNORM_S8_UINT:
+			return mapVkFormat(VK_FORMAT_D16_UNORM);
+		case VK_FORMAT_D24_UNORM_S8_UINT:
+			return mapVkFormat(VK_FORMAT_X8_D24_UNORM_PACK32);
+		case VK_FORMAT_D32_SFLOAT_S8_UINT:
+			return mapVkFormat(VK_FORMAT_D32_SFLOAT);
 
-	case VK_FORMAT_S8_UINT:
-	default:
-		DE_FATAL("Unexpected depth/stencil format");
-		return tcu::TextureFormat();
+		case VK_FORMAT_S8_UINT:
+		default:
+			DE_FATAL("Unexpected depth/stencil format");
+			return tcu::TextureFormat();
 	}
 }
 
-// Get a format the matches the layout in buffer memory used for a
-// buffer<->image copy on a depth/stencil format.
-tcu::TextureFormat getStencilCopyFormat(VkFormat combinedFormat)
+//! Get a format the matches the layout in buffer memory used for a
+//! buffer<->image copy on a depth/stencil format.
+tcu::TextureFormat getStencilCopyFormat (VkFormat combinedFormat)
 {
-	switch (combinedFormat) {
-	case VK_FORMAT_D16_UNORM_S8_UINT:
-	case VK_FORMAT_D24_UNORM_S8_UINT:
-	case VK_FORMAT_D32_SFLOAT_S8_UINT:
-	case VK_FORMAT_S8_UINT:
-		return mapVkFormat(VK_FORMAT_S8_UINT);
-	case VK_FORMAT_D16_UNORM:
-	case VK_FORMAT_X8_D24_UNORM_PACK32:
-	case VK_FORMAT_D32_SFLOAT:
-	default:
-		DE_FATAL("Unexpected depth/stencil format");
-		return tcu::TextureFormat();
+	switch (combinedFormat)
+	{
+		case VK_FORMAT_D16_UNORM_S8_UINT:
+		case VK_FORMAT_D24_UNORM_S8_UINT:
+		case VK_FORMAT_D32_SFLOAT_S8_UINT:
+		case VK_FORMAT_S8_UINT:
+			return mapVkFormat(VK_FORMAT_S8_UINT);
+
+		case VK_FORMAT_D16_UNORM:
+		case VK_FORMAT_X8_D24_UNORM_PACK32:
+		case VK_FORMAT_D32_SFLOAT:
+		default:
+			DE_FATAL("Unexpected depth/stencil format");
+			return tcu::TextureFormat();
 	}
 }
 
