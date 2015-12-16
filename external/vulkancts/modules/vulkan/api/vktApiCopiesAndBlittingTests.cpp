@@ -1190,7 +1190,7 @@ void CopyImageToBuffer::copyRegionToTextureLevel(tcu::ConstPixelBufferAccess src
 
 tcu::TestCaseGroup* createCopiesAndBlittingTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup>	copiesAndBlittingTests	(new tcu::TestCaseGroup(testCtx, "access", "Copies And Blitting Tests"));
+	de::MovePtr<tcu::TestCaseGroup>	copiesAndBlittingTests	(new tcu::TestCaseGroup(testCtx, "copiesAndBlitting", "Copies And Blitting Tests"));
 
 	const VkExtent3D				defaultExtent			= {256, 256, 1};
 	const VkImageSubresourceLayers	defaultSourceLayer		=
