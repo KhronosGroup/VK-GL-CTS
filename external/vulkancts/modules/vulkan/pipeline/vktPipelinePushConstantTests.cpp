@@ -309,7 +309,7 @@ void PushConstantGraphicsTest::initPrograms (SourceCollections& sourceCollection
 			tessControlSrc << "#version 450\n"
 						   << "layout (vertices = 3) out;\n"
 						   << "layout(push_constant) uniform TessLevel {\n"
-						   << "    int level;\n"
+						   << "    layout(offset = 24) int level;\n"
 						   << "} tessLevel;\n"
 						   << "in highp vec4 color[];\n"
 						   << "out highp vec4 vtxColor[];\n"
@@ -331,7 +331,7 @@ void PushConstantGraphicsTest::initPrograms (SourceCollections& sourceCollection
 			tessEvaluationSrc << "#version 450\n"
 							  << "layout (triangles) in;\n"
 							  << "layout(push_constant) uniform Material {\n"
-							  << "    vec4 color;\n"
+							  << "    layout(offset = 28) vec4 color;\n"
 							  << "} matInst;\n"
 							  << "in highp vec4 color[];\n"
 							  << "out highp vec4 vtxColor;\n"
@@ -350,7 +350,7 @@ void PushConstantGraphicsTest::initPrograms (SourceCollections& sourceCollection
 						<< "layout(triangles) in;\n"
 						<< "layout(triangle_strip, max_vertices=3) out;\n"
 						<< "layout(push_constant) uniform Material {\n"
-						<< "    int kind;\n"
+						<< "    layout(offset = 20) int kind;\n"
 						<< "} matInst;\n"
 						<< "in highp vec4 color[];\n"
 						<< "out highp vec4 vtxColor;\n"
@@ -374,10 +374,20 @@ void PushConstantGraphicsTest::initPrograms (SourceCollections& sourceCollection
 			fragmentSrc << "#version 450\n"
 						<< "layout(location = 0) in highp vec4 vtxColor;\n"
 						<< "layout(location = 0) out highp vec4 fragColor;\n"
-						<< "layout(push_constant) uniform Material {\n"
-						<< "    int kind;\n"
-						<< "} matInst;\n"
-						<< "void main (void)\n"
+						<< "layout(push_constant) uniform Material {\n";
+						
+			if (m_pushConstantRange[rangeNdx].range.shaderStage & VK_SHADER_STAGE_VERTEX_BIT)
+			{
+				fragmentSrc << "    layout(offset = 0) int kind;\n"
+							<< "} matInst;\n";
+			}
+			else
+			{
+				fragmentSrc << "    layout(offset = 16) int kind;\n"
+							<< "} matInst;\n";
+			}
+						
+			fragmentSrc << "void main (void)\n"
 						<< "{\n"
 						<< "    switch (matInst.kind) {\n"
 						<< "    case 0: fragColor = vec4(0, 1.0, 0, 1.0); break;\n"
@@ -995,13 +1005,13 @@ PushConstantGraphicsTestInstance::PushConstantGraphicsTestInstance (Context&				
 		const void* 	value	= DE_NULL;
 		for (size_t rangeNdx = 0; rangeNdx < m_rangeCount; rangeNdx++)
 		{
-			value = (m_pushConstantRange[rangeNdx].range.size == 4u) ? (void*)(&kind) : (void*)(&color);
+			value = (m_pushConstantRange[rangeNdx].range.size == 4u) ? (void*)(&kind) : (void*)(&color[0]);
 				
 			vk.cmdPushConstants(*m_cmdBuffer, *m_pipelineLayout, m_pushConstantRange[rangeNdx].range.shaderStage, m_pushConstantRange[rangeNdx].range.offset, m_pushConstantRange[rangeNdx].range.size, value);
 			
 			if (m_pushConstantRange[rangeNdx].update.size < m_pushConstantRange[rangeNdx].range.size)
 			{
-				value = (void*)(&allOnes);
+				value = (void*)(&allOnes[0]);
 				vk.cmdPushConstants(*m_cmdBuffer, *m_pipelineLayout, m_pushConstantRange[rangeNdx].range.shaderStage, m_pushConstantRange[rangeNdx].update.offset, m_pushConstantRange[rangeNdx].update.size, value);
 			}
 		}
