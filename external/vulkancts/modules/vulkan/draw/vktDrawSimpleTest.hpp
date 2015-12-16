@@ -1,5 +1,5 @@
-#ifndef _VKT_SIMPLE_DRAWTESTS_HPP
-#define _VKT_SIMPLE_DRAWTESTS_HPP
+#ifndef _VKTDRAWSIMPLETEST_HPP
+#define _VKTDRAWSIMPLETEST_HPP
 /*------------------------------------------------------------------------
 * Vulkan Conformance Tests
 * ------------------------
@@ -44,16 +44,16 @@ namespace Draw
 class SimpleDrawTests : public tcu::TestCaseGroup
 {
 public:
-					SimpleDrawTests			(tcu::TestContext &testCtx);
-					~SimpleDrawTests		(void);
-	void			init					(void);
+						SimpleDrawTests			(tcu::TestContext &testCtx);
+						~SimpleDrawTests		(void);
+	void				init					(void);
 
 private:
-					SimpleDrawTests			(const SimpleDrawTests &other);
-					SimpleDrawTests&		operator=(const SimpleDrawTests &other);
+	SimpleDrawTests								(const SimpleDrawTests &other);
+	SimpleDrawTests&	operator=				(const SimpleDrawTests &other);
 
 };
-} //Draw
-} //vkt
+} // Draw
+} // vkt
 
-#endif // #define _VKT_SIMPLE_DRAWTESTS_HPP
+#endif // _VKTDRAWSIMPLETEST_HPP

@@ -1,5 +1,5 @@
-#ifndef _VKTDRAWINDEXEDTESTS_HPP
-#define _VKTDRAWINDEXEDTESTS_HPP
+#ifndef _VKTDRAWINDEXEDTEST_HPP
+#define _VKTDRAWINDEXEDTEST_HPP
 /*------------------------------------------------------------------------
 * Vulkan Conformance Tests
 * ------------------------
@@ -44,16 +44,16 @@ namespace Draw
 class DrawIndexedTests : public tcu::TestCaseGroup
 {
 public:
-					DrawIndexedTests		(tcu::TestContext &testCtx);
-					~DrawIndexedTests		(void);
-	void			init					(void);
+							DrawIndexedTests		(tcu::TestContext &testCtx);
+							~DrawIndexedTests		(void);
+	void					init					(void);
 
 private:
-					DrawIndexedTests		(const DrawIndexedTests &other);
-					DrawIndexedTests&		operator=(const DrawIndexedTests &other);
+	DrawIndexedTests								(const DrawIndexedTests &other);
+	DrawIndexedTests&		operator=				(const DrawIndexedTests &other);
 
 };
-} //Draw
-} //vkt
+} // Draw
+} // vkt
 
-#endif // #define _VKTDRAWINDEXEDTESTS_HPP
+#endif // _VKTDRAWINDEXEDTEST_HPP

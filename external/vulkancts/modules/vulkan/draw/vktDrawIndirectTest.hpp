@@ -1,5 +1,5 @@
-#ifndef _VKTDRAWINDIRECTDRAWTESTS_HPP
-#define _VKTDRAWINDIRECTDRAWTESTS_HPP
+#ifndef _VKTDRAWINDIRECTTEST_HPP
+#define _VKTDRAWINDIRECTTEST_HPP
 /*------------------------------------------------------------------------
 * Vulkan Conformance Tests
 * ------------------------
@@ -44,16 +44,16 @@ namespace Draw
 class IndirectDrawTests : public tcu::TestCaseGroup
 {
 public:
-					IndirectDrawTests		(tcu::TestContext &testCtx);
-					~IndirectDrawTests		(void);
-	void			init					(void);
+						IndirectDrawTests		(tcu::TestContext &testCtx);
+						~IndirectDrawTests		(void);
+	void				init					(void);
 
 private:
-					IndirectDrawTests		(const IndirectDrawTests &other);
-					IndirectDrawTests&		operator=(const IndirectDrawTests &other);
+	IndirectDrawTests							(const IndirectDrawTests &other);
+	IndirectDrawTests&	operator=				(const IndirectDrawTests &other);
 
 };
-} //Draw
-} //vkt
+} // Draw
+} // vkt
 
-#endif // #define _VKTDRAWINDIRECTDRAWTESTS_HPP
+#endif // _VKTDRAWINDIRECTTEST_HPP

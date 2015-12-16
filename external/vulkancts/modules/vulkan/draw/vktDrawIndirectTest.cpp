@@ -44,6 +44,7 @@
 #include "tcuResource.hpp"
 #include "tcuImageCompare.hpp"
 #include "tcuTextureUtil.hpp"
+#include "tcuRGBA.hpp"
 
 #include "vkDefs.hpp"
 
@@ -55,18 +56,22 @@ namespace
 {
 struct JunkData
 {
-	deUint16 x16 = 16;
-	deUint32 x32 = 32;
-	std::string str = "junk_data";
+	JunkData()
+		: varA	(0xcd)
+		, varB	(0xcd)
+	{
+	}
+	const deUint16	varA;
+	const deUint32	varB;
 };
 
 class IndirectDraw : public DrawTestsBaseClass
 {
 public:
 								IndirectDraw	(Context &context, ShaderMap shaders, vk::VkPrimitiveTopology topology);
-	virtual		tcu::TestStatus iterate			(void);
+	virtual	tcu::TestStatus		iterate			(void);
 private:
-	de::SharedPtr<Buffer>					m_IndirectBuffer;
+	de::SharedPtr<Buffer>					m_indirectBuffer;
 	std::vector<vk::VkDrawIndirectCommand>	m_indirectDrawCmd;
 	vk::VkDeviceSize						m_offsetInBuffer;
 	deUint32								m_strideInBuffer;
@@ -80,7 +85,7 @@ public:
 								IndirectDrawInstanced	(Context &context, ShaderMap shaders, vk::VkPrimitiveTopology topology);
 	virtual tcu::TestStatus		iterate					(void);
 private:
-	de::SharedPtr<Buffer>					m_IndirectBuffer;
+	de::SharedPtr<Buffer>					m_indirectBuffer;
 	std::vector<vk::VkDrawIndirectCommand>	m_indirectDrawCmd;
 	vk::VkDeviceSize						m_offsetInBuffer;
 	deUint32								m_strideInBuffer;
@@ -90,61 +95,53 @@ private:
 
 IndirectDraw::IndirectDraw (Context &context, ShaderMap shaders, vk::VkPrimitiveTopology topology)
 		: DrawTestsBaseClass(context, shaders[glu::SHADERTYPE_VERTEX], shaders[glu::SHADERTYPE_FRAGMENT])
+{
+	m_topology = topology;
+
+	switch (m_topology)
 	{
-		m_topology = topology;
-
-		switch (m_topology)
-		{
-			case vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST:
-				break;
-			case vk::VK_PRIMITIVE_TOPOLOGY_LINE_LIST:
-				break;
-			case vk::VK_PRIMITIVE_TOPOLOGY_LINE_STRIP:
-				break;
-			case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST:
-				m_data.push_back(Vec4RGBA(tcu::Vec4(	 1.0f,	-1.0f,	1.0f,	1.0f), vec4Blue()));
-				m_data.push_back(Vec4RGBA(tcu::Vec4(	-1.0f,	 1.0f,	1.0f,	1.0f), vec4Blue()));
-				m_data.push_back(Vec4RGBA(tcu::Vec4(	-0.3f,	-0.3f,	1.0f,	1.0f), vec4Blue()));
-				m_data.push_back(Vec4RGBA(tcu::Vec4(	-0.3f,	 0.3f,	1.0f,	1.0f), vec4Blue()));
-				m_data.push_back(Vec4RGBA(tcu::Vec4(	 0.3f,	-0.3f,	1.0f,	1.0f), vec4Blue()));
-				m_data.push_back(Vec4RGBA(tcu::Vec4(	 0.3f,	-0.3f,	1.0f,	1.0f), vec4Blue()));
-				m_data.push_back(Vec4RGBA(tcu::Vec4(	 0.3f,	 0.3f,	1.0f,	1.0f), vec4Blue()));
-				m_data.push_back(Vec4RGBA(tcu::Vec4(	-0.3f,	 0.3f,	1.0f,	1.0f), vec4Blue()));
-				m_data.push_back(Vec4RGBA(tcu::Vec4(	-1.0f,	 1.0f,	1.0f,	1.0f), vec4Blue()));
-				break;
-			case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP:
-				m_data.push_back(Vec4RGBA(tcu::Vec4( 1.0f,	-1.0f,	 1.0f,	 1.0f),	 vec4Blue()));
-				m_data.push_back(Vec4RGBA(tcu::Vec4(-1.0f,	 1.0f,	 1.0f,	 1.0f),	 vec4Blue()));
-				m_data.push_back(Vec4RGBA(tcu::Vec4(-0.3f,	 0.0f,	 1.0f,	 1.0f),	 vec4Blue()));
-				m_data.push_back(Vec4RGBA(tcu::Vec4( 0.3f,	 0.0f,	 1.0f,	 1.0f),	 vec4Blue()));
-				m_data.push_back(Vec4RGBA(tcu::Vec4(-0.3f,	-0.3f,	 1.0f,	 1.0f),	 vec4Blue()));
-				m_data.push_back(Vec4RGBA(tcu::Vec4( 0.3f,	-0.3f,	 1.0f,	 1.0f),	 vec4Blue()));
-				m_data.push_back(Vec4RGBA(tcu::Vec4(-0.3f,	 0.3f,	 1.0f,	 1.0f),	 vec4Blue()));
-				m_data.push_back(Vec4RGBA(tcu::Vec4( 0.3f,	 0.3f,	 1.0f,	 1.0f),	 vec4Blue()));
-				m_data.push_back(Vec4RGBA(tcu::Vec4(-0.3f,	 0.0f,	 1.0f,	 1.0f),	 vec4Blue()));
-				m_data.push_back(Vec4RGBA(tcu::Vec4( 0.3f,	 0.0f,	 1.0f,	 1.0f),	 vec4Blue()));
-				m_data.push_back(Vec4RGBA(tcu::Vec4(-1.0f,	 1.0f,	 1.0f,	 1.0f),	 vec4Blue()));
-				break;
-			case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN:
-				break;
-			case vk::VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY:
-				break;
-			case vk::VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY:
-				break;
-			case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY:
-				break;
-			case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY:
-				break;
-			case vk::VK_PRIMITIVE_TOPOLOGY_PATCH_LIST:
-				break;
-			case vk::VK_PRIMITIVE_TOPOLOGY_LAST:
-				break;
-			default:
-				break;
-		}
-
-		DrawTestsBaseClass::initialize();
+		case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST:
+			m_data.push_back(PositionColorVertex(tcu::Vec4(	 1.0f,	-1.0f,	1.0f,	1.0f), tcu::RGBA::blue().toVec()));
+			m_data.push_back(PositionColorVertex(tcu::Vec4(	-1.0f,	 1.0f,	1.0f,	1.0f), tcu::RGBA::blue().toVec()));
+			m_data.push_back(PositionColorVertex(tcu::Vec4(	-0.3f,	-0.3f,	1.0f,	1.0f), tcu::RGBA::blue().toVec()));
+			m_data.push_back(PositionColorVertex(tcu::Vec4(	-0.3f,	 0.3f,	1.0f,	1.0f), tcu::RGBA::blue().toVec()));
+			m_data.push_back(PositionColorVertex(tcu::Vec4(	 0.3f,	-0.3f,	1.0f,	1.0f), tcu::RGBA::blue().toVec()));
+			m_data.push_back(PositionColorVertex(tcu::Vec4(	 0.3f,	-0.3f,	1.0f,	1.0f), tcu::RGBA::blue().toVec()));
+			m_data.push_back(PositionColorVertex(tcu::Vec4(	 0.3f,	 0.3f,	1.0f,	1.0f), tcu::RGBA::blue().toVec()));
+			m_data.push_back(PositionColorVertex(tcu::Vec4(	-0.3f,	 0.3f,	1.0f,	1.0f), tcu::RGBA::blue().toVec()));
+			m_data.push_back(PositionColorVertex(tcu::Vec4(	-1.0f,	 1.0f,	1.0f,	1.0f), tcu::RGBA::blue().toVec()));
+			break;
+		case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP:
+			m_data.push_back(PositionColorVertex(tcu::Vec4( 1.0f,	-1.0f,	 1.0f,	 1.0f),	 tcu::RGBA::blue().toVec()));
+			m_data.push_back(PositionColorVertex(tcu::Vec4(-1.0f,	 1.0f,	 1.0f,	 1.0f),	 tcu::RGBA::blue().toVec()));
+			m_data.push_back(PositionColorVertex(tcu::Vec4(-0.3f,	 0.0f,	 1.0f,	 1.0f),	 tcu::RGBA::blue().toVec()));
+			m_data.push_back(PositionColorVertex(tcu::Vec4( 0.3f,	 0.0f,	 1.0f,	 1.0f),	 tcu::RGBA::blue().toVec()));
+			m_data.push_back(PositionColorVertex(tcu::Vec4(-0.3f,	-0.3f,	 1.0f,	 1.0f),	 tcu::RGBA::blue().toVec()));
+			m_data.push_back(PositionColorVertex(tcu::Vec4( 0.3f,	-0.3f,	 1.0f,	 1.0f),	 tcu::RGBA::blue().toVec()));
+			m_data.push_back(PositionColorVertex(tcu::Vec4(-0.3f,	 0.3f,	 1.0f,	 1.0f),	 tcu::RGBA::blue().toVec()));
+			m_data.push_back(PositionColorVertex(tcu::Vec4( 0.3f,	 0.3f,	 1.0f,	 1.0f),	 tcu::RGBA::blue().toVec()));
+			m_data.push_back(PositionColorVertex(tcu::Vec4(-0.3f,	 0.0f,	 1.0f,	 1.0f),	 tcu::RGBA::blue().toVec()));
+			m_data.push_back(PositionColorVertex(tcu::Vec4( 0.3f,	 0.0f,	 1.0f,	 1.0f),	 tcu::RGBA::blue().toVec()));
+			m_data.push_back(PositionColorVertex(tcu::Vec4(-1.0f,	 1.0f,	 1.0f,	 1.0f),	 tcu::RGBA::blue().toVec()));
+			break;
+		case vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST:
+		case vk::VK_PRIMITIVE_TOPOLOGY_LINE_LIST:
+		case vk::VK_PRIMITIVE_TOPOLOGY_LINE_STRIP:
+		case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN:
+		case vk::VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY:
+		case vk::VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY:
+		case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY:
+		case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY:
+		case vk::VK_PRIMITIVE_TOPOLOGY_PATCH_LIST:
+		case vk::VK_PRIMITIVE_TOPOLOGY_LAST:
+			DE_FATAL("Topology not implemented");
+			break;
+		default:
+			DE_FATAL("Unknown topology");
+			break;
 	}
+	initialize();
+}
 
 tcu::TestStatus IndirectDraw::iterate (void)
 {
@@ -153,85 +150,91 @@ tcu::TestStatus IndirectDraw::iterate (void)
 
 	switch (m_topology)
 	{
-		case vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST:
-			break;
-		case vk::VK_PRIMITIVE_TOPOLOGY_LINE_LIST:
-			break;
-		case vk::VK_PRIMITIVE_TOPOLOGY_LINE_STRIP:
-			break;
 		case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST:
-			m_indirectDrawCmd.push_back(
+		{
+			vk::VkDrawIndirectCommand drawCommands[] =
 			{
-				3,		//vertexCount
-				1,		//instanceCount
-				2,		//firstVertex
-				0		//firstInstance
-			});
-
-			// and this is junk data for stride
-			m_indirectDrawCmd.push_back({ -4, -2, -11, -9 });
-
-			m_indirectDrawCmd.push_back(
-			{
-				3,		//vertexCount
-				1,		//instanceCount
-				5,		//firstVertex
-				0		//firstInstance
-			});
+				{
+					3,		//vertexCount
+					1,		//instanceCount
+					2,		//firstVertex
+					0		//firstInstance
+				},
+				{ -4, -2, -11, -9 }, // junk (stride)
+				{
+					3,		//vertexCount
+					1,		//instanceCount
+					5,		//firstVertex
+					0		//firstInstance
+				}
+			};
+			m_indirectDrawCmd.push_back(drawCommands[0]);
+			m_indirectDrawCmd.push_back(drawCommands[1]);
+			m_indirectDrawCmd.push_back(drawCommands[2]);
 			break;
+		}
 		case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP:
-			m_indirectDrawCmd.push_back(
+		{
+			vk::VkDrawIndirectCommand drawCommands[] =
 			{
-				4,		//vertexCount
-				1,		//instanceCount
-				2,		//firstVertex
-				0		//firstInstance
-			});
-
-			// and this is junk data for stride
-			m_indirectDrawCmd.push_back({ -4, -2, -11, -9 });
-
-			m_indirectDrawCmd.push_back(
-			{
-				4,		//vertexCount
-				1,		//instanceCount
-				6,		//firstVertex
-				0		//firstInstance
-			});
+				{
+					4,		//vertexCount
+					1,		//instanceCount
+					2,		//firstVertex
+					0		//firstInstance
+				},
+				{ -4, -2, -11, -9 }, // junk (stride)
+				{
+					4,		//vertexCount
+					1,		//instanceCount
+					6,		//firstVertex
+					0		//firstInstance
+				}
+			};
+			m_indirectDrawCmd.push_back(drawCommands[0]);
+			m_indirectDrawCmd.push_back(drawCommands[1]);
+			m_indirectDrawCmd.push_back(drawCommands[2]);
 			break;
+		}
+		case vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST:
+		case vk::VK_PRIMITIVE_TOPOLOGY_LINE_LIST:
+		case vk::VK_PRIMITIVE_TOPOLOGY_LINE_STRIP:
 		case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN:
-			break;
 		case vk::VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY:
-			break;
 		case vk::VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY:
-			break;
 		case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY:
-			break;
 		case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY:
-			break;
 		case vk::VK_PRIMITIVE_TOPOLOGY_PATCH_LIST:
-			break;
 		case vk::VK_PRIMITIVE_TOPOLOGY_LAST:
+			DE_FATAL("Topology not implemented");
 			break;
 		default:
+			DE_FATAL("Unknown topology");
 			break;
 	}
 
 	m_strideInBuffer	= 2 * sizeof(m_indirectDrawCmd[0]);
 	m_drawCount			= 2;
 	m_offsetInBuffer	= sizeof(m_junkData);
-	
+
 	beginRenderPass();
 
 	const vk::VkDeviceSize vertexBufferOffset	= 0;
 	const vk::VkBuffer vertexBuffer				= m_vertexBuffer->object();
+
 	m_vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
 
 	const vk::VkDeviceSize dataSize = m_indirectDrawCmd.size()*sizeof(m_indirectDrawCmd[0]);
-	m_IndirectBuffer = Buffer::createAndAlloc(m_vk, m_context.getDevice(), BufferCreateInfo(dataSize,
-		vk::VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT), m_context.getDefaultAllocator(), vk::MemoryRequirement::HostVisible);
 
-	unsigned char *ptr = reinterpret_cast<unsigned char *>(m_IndirectBuffer->getBoundMemory().getHostPtr());
+	m_indirectBuffer = Buffer::createAndAlloc(	m_vk,
+												m_context.getDevice(),
+												BufferCreateInfo(dataSize,
+																 vk::VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT),
+												m_context.getDefaultAllocator(),
+												vk::MemoryRequirement::HostVisible);
+
+	deUint8* ptr = reinterpret_cast<deUint8*>(m_indirectBuffer->getBoundMemory().getHostPtr());
+
 	deMemcpy(ptr, &m_junkData, m_offsetInBuffer);
 	deMemcpy((ptr+m_offsetInBuffer), &m_indirectDrawCmd[0], dataSize);
 
@@ -242,9 +245,7 @@ tcu::TestStatus IndirectDraw::iterate (void)
 							   dataSize);
 
 	m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
-	
-	m_vk.cmdDrawIndirect(*m_cmdBuffer, m_IndirectBuffer->object(), m_offsetInBuffer, m_drawCount, m_strideInBuffer);
-
+	m_vk.cmdDrawIndirect(*m_cmdBuffer, m_indirectBuffer->object(), m_offsetInBuffer, m_drawCount, m_strideInBuffer);
 	m_vk.cmdEndRenderPass(*m_cmdBuffer);
 	m_vk.endCommandBuffer(*m_cmdBuffer);
 
@@ -252,15 +253,15 @@ tcu::TestStatus IndirectDraw::iterate (void)
 	{
 		vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,	// VkStructureType			sType;
 		DE_NULL,							// const void*				pNext;
-		0, 									// deUint32					waitSemaphoreCount;
-		DE_NULL, 							// const VkSemaphore*		pWaitSemaphores;
-		1, 									// deUint32					commandBufferCount;
+		0,										// deUint32					waitSemaphoreCount;
+		DE_NULL,								// const VkSemaphore*		pWaitSemaphores;
+		1,										// deUint32					commandBufferCount;
 		&m_cmdBuffer.get(),					// const VkCommandBuffer*	pCommandBuffers;
-		0, 									// deUint32					signalSemaphoreCount;
+		0,										// deUint32					signalSemaphoreCount;
 		DE_NULL								// const VkSemaphore*		pSignalSemaphores;
 	};
 	VK_CHECK(m_vk.queueSubmit(queue, 1, &submitInfo, DE_NULL));
-	
+
 	VK_CHECK(m_vk.queueWaitIdle(queue));
 
 	// Validation
@@ -272,6 +273,8 @@ tcu::TestStatus IndirectDraw::iterate (void)
 
 	tcu::clear(referenceFrame.getLevel(0), tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f));
 
+	ReferenceImageCoordinates refCoords;
+
 	for (int y = 0; y < frameHeight; y++)
 	{
 		const float yCoord = (float)(y / (0.5*frameHeight)) - 1.0f;
@@ -280,7 +283,10 @@ tcu::TestStatus IndirectDraw::iterate (void)
 		{
 			const float xCoord = (float)(x / (0.5*frameWidth)) - 1.0f;
 
-			if ((yCoord >= -0.3f && yCoord <= 0.3f && xCoord >= -0.3f && xCoord <= 0.3f))					
+			if ((yCoord >= refCoords.bottom	&&
+				 yCoord <= refCoords.top	&&
+				 xCoord >= refCoords.left	&&
+				 xCoord <= refCoords.right))
 				referenceFrame.getLevel(0).setPixel(tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f), x, y);
 		}
 	}
@@ -302,7 +308,7 @@ tcu::TestStatus IndirectDraw::iterate (void)
 }
 
 IndirectDrawInstanced::IndirectDrawInstanced (Context &context, ShaderMap shaders, vk::VkPrimitiveTopology topology)
-		: IndirectDraw	(context, shaders, topology)
+	: IndirectDraw	(context, shaders, topology)
 {
 }
 
@@ -313,69 +319,66 @@ tcu::TestStatus IndirectDrawInstanced::iterate (void)
 
 	switch (m_topology)
 	{
-		case vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST:
-			break;
-		case vk::VK_PRIMITIVE_TOPOLOGY_LINE_LIST:
-			break;
-		case vk::VK_PRIMITIVE_TOPOLOGY_LINE_STRIP:
-			break;
 		case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST:
-			m_indirectDrawCmd.push_back(
+		{
+			vk::VkDrawIndirectCommand drawCmd[] =
 			{
-				3,		//vertexCount
-				4,		//instanceCount
-				2,		//firstVertex
-				2		//firstInstance
-			});
-
-			// and this is junk data for stride
-			m_indirectDrawCmd.push_back({ -4, -2, -11, -9 });
-
-			m_indirectDrawCmd.push_back(
-			{
-				3,		//vertexCount
-				4,		//instanceCount
-				5,		//firstVertex
-				2		//firstInstance
-			});
-
+				{
+					3,		//vertexCount
+					4,		//instanceCount
+					2,		//firstVertex
+					2		//firstInstance
+				},
+				{ -4, -2, -11, -9 }, // junk (stride)
+				{
+					3,		//vertexCount
+					4,		//instanceCount
+					5,		//firstVertex
+					2		//firstInstance
+				}
+			};
+			m_indirectDrawCmd.push_back(drawCmd[0]);
+			m_indirectDrawCmd.push_back(drawCmd[1]);
+			m_indirectDrawCmd.push_back(drawCmd[2]);
 			break;
+		}
 		case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP:
-			m_indirectDrawCmd.push_back(
+		{
+			vk::VkDrawIndirectCommand drawCmd[] =
 			{
-				4,		//vertexCount
-				4,		//instanceCount
-				2,		//firstVertex
-				2		//firstInstance
-			});
-
-			// and this is junk data for stride
-			m_indirectDrawCmd.push_back({ -4, -2, -11, -9 });
-
-			m_indirectDrawCmd.push_back(
-			{
-				4,		//vertexCount
-				4,		//instanceCount
-				6,		//firstVertex
-				2		//firstInstance
-			});
-
+				{
+					4,		//vertexCount
+					4,		//instanceCount
+					2,		//firstVertex
+					2		//firstInstance
+				},
+				{ -4, -2, -11, -9 },
+				{
+					4,		//vertexCount
+					4,		//instanceCount
+					6,		//firstVertex
+					2		//firstInstance
+				}
+			};
+			m_indirectDrawCmd.push_back(drawCmd[0]);
+			m_indirectDrawCmd.push_back(drawCmd[1]);
+			m_indirectDrawCmd.push_back(drawCmd[2]);
 			break;
+		}
+		case vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST:
+		case vk::VK_PRIMITIVE_TOPOLOGY_LINE_LIST:
+		case vk::VK_PRIMITIVE_TOPOLOGY_LINE_STRIP:
 		case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN:
-			break;
 		case vk::VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY:
-			break;
 		case vk::VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY:
-			break;
 		case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY:
-			break;
 		case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY:
-			break;
 		case vk::VK_PRIMITIVE_TOPOLOGY_PATCH_LIST:
-			break;
 		case vk::VK_PRIMITIVE_TOPOLOGY_LAST:
+			DE_FATAL("Topology not implemented");
 			break;
 		default:
+			DE_FATAL("Unknown topology");
 			break;
 	}
 
@@ -387,13 +390,20 @@ tcu::TestStatus IndirectDrawInstanced::iterate (void)
 
 	const vk::VkDeviceSize vertexBufferOffset = 0;
 	const vk::VkBuffer vertexBuffer = m_vertexBuffer->object();
+
 	m_vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
 
 	const vk::VkDeviceSize dataSize = m_indirectDrawCmd.size()*sizeof(m_indirectDrawCmd[0]);
-	m_IndirectBuffer = Buffer::createAndAlloc(m_vk, m_context.getDevice(), BufferCreateInfo(dataSize,
-		vk::VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT), m_context.getDefaultAllocator(), vk::MemoryRequirement::HostVisible);
 
-	unsigned char *ptr = reinterpret_cast<unsigned char *>(m_IndirectBuffer->getBoundMemory().getHostPtr());
+	m_indirectBuffer = Buffer::createAndAlloc(	m_vk,
+												m_context.getDevice(),
+												BufferCreateInfo(dataSize,
+																 vk::VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT),
+												m_context.getDefaultAllocator(),
+												vk::MemoryRequirement::HostVisible);
+
+	deUint8* ptr = reinterpret_cast<deUint8*>(m_indirectBuffer->getBoundMemory().getHostPtr());
+
 	deMemcpy(ptr, &m_junkData, m_offsetInBuffer);
 	deMemcpy((ptr + m_offsetInBuffer), &m_indirectDrawCmd[0], dataSize);
 
@@ -404,9 +414,7 @@ tcu::TestStatus IndirectDrawInstanced::iterate (void)
 							   dataSize);
 
 	m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
-	
-	m_vk.cmdDrawIndirect(*m_cmdBuffer, m_IndirectBuffer->object(), m_offsetInBuffer, m_drawCount, m_strideInBuffer);
-
+	m_vk.cmdDrawIndirect(*m_cmdBuffer, m_indirectBuffer->object(), m_offsetInBuffer, m_drawCount, m_strideInBuffer);
 	m_vk.cmdEndRenderPass(*m_cmdBuffer);
 	m_vk.endCommandBuffer(*m_cmdBuffer);
 
@@ -414,27 +422,30 @@ tcu::TestStatus IndirectDrawInstanced::iterate (void)
 	{
 		vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,	// VkStructureType			sType;
 		DE_NULL,							// const void*				pNext;
-		0, 									// deUint32					waitSemaphoreCount;
-		DE_NULL, 							// const VkSemaphore*		pWaitSemaphores;
-		1, 									// deUint32					commandBufferCount;
+		0,										// deUint32					waitSemaphoreCount;
+		DE_NULL,								// const VkSemaphore*		pWaitSemaphores;
+		1,										// deUint32					commandBufferCount;
 		&m_cmdBuffer.get(),					// const VkCommandBuffer*	pCommandBuffers;
-		0, 									// deUint32					signalSemaphoreCount;
+		0,										// deUint32					signalSemaphoreCount;
 		DE_NULL								// const VkSemaphore*		pSignalSemaphores;
 	};
 	VK_CHECK(m_vk.queueSubmit(queue, 1, &submitInfo, DE_NULL));
-	
+
 	VK_CHECK(m_vk.queueWaitIdle(queue));
 
 	// Validation
 	VK_CHECK(m_vk.queueWaitIdle(queue));
 
 	tcu::Texture2D referenceFrame(vk::mapVkFormat(m_colorAttachmentFormat), (int)(0.5 + WIDTH), (int)(0.5 + HEIGHT));
+
 	referenceFrame.allocLevel(0);
 
 	const deInt32 frameWidth	= referenceFrame.getWidth();
 	const deInt32 frameHeight	= referenceFrame.getHeight();
 
 	tcu::clear(referenceFrame.getLevel(0), tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f));
+
+	ReferenceImageInstancedCoordinates refInstancedCoords;
 
 	for (int y = 0; y < frameHeight; y++)
 	{
@@ -444,7 +455,10 @@ tcu::TestStatus IndirectDrawInstanced::iterate (void)
 		{
 			const float xCoord = (float)(x / (0.5*frameWidth)) - 1.0f;
 
-			if ((yCoord >= -0.6f && yCoord <= 0.3f && xCoord >= -0.3f && xCoord <= 0.6f))
+			if ((yCoord >= refInstancedCoords.bottom	&&
+				 yCoord <= refInstancedCoords.top		&&
+				 xCoord >= refInstancedCoords.left		&&
+				 xCoord <= refInstancedCoords.right))
 				referenceFrame.getLevel(0).setPixel(tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f), x, y);
 		}
 	}
@@ -481,11 +495,13 @@ void IndirectDrawTests::init (void)
 	ShaderMap shaderPaths;
 	shaderPaths[glu::SHADERTYPE_VERTEX]		= "vulkan/draw/VertexFetch.vert";
 	shaderPaths[glu::SHADERTYPE_FRAGMENT]	 = "vulkan/draw/VertexFetch.frag";
+
 	addChild(new InstanceFactory<IndirectDraw>(m_testCtx, "indirect_draw_triangle_list", "Draws triangle list", shaderPaths, vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST));
 	addChild(new InstanceFactory<IndirectDraw>(m_testCtx, "indirect_draw_triangle_strip", "Draws triangle strip", shaderPaths, vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP));
 
 	shaderPaths[glu::SHADERTYPE_VERTEX]		= "vulkan/draw/VertexFetchWithInstance.vert";
 	shaderPaths[glu::SHADERTYPE_FRAGMENT]	= "vulkan/draw/VertexFetch.frag";
+
 	addChild(new InstanceFactory<IndirectDrawInstanced>(m_testCtx, "indirect_draw_instanced_triangle_list", "Draws an instanced triangle list", shaderPaths, vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST));
 	addChild(new InstanceFactory<IndirectDrawInstanced>(m_testCtx, "indirect_draw_instanced_triangle_strip", "Draws an instanced triangle strip", shaderPaths, vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP));
 }

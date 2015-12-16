@@ -1,5 +1,5 @@
-#ifndef _VK_DRAWTESTS_HPP
-#define _VK_DRAWTESTS_HPP
+#ifndef _VKTDRAWTESTS_HPP
+#define _VKTDRAWTESTS_HPP
 /*------------------------------------------------------------------------
 * Vulkan Conformance Tests
 * ------------------------
@@ -40,11 +40,11 @@
 
 namespace vkt
 {
-	namespace Draw
+namespace Draw
 {
 	tcu::TestCaseGroup*		createTests (tcu::TestContext& testCtx);
 
-} //Draw
-} //vkt
+} // Draw
+} // vkt
 
-#endif // _VK_DRAWTESTS_HPP
+#endif // _VKTDRAWTESTS_HPP

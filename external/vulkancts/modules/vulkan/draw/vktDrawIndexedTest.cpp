@@ -44,6 +44,7 @@
 #include "tcuResource.hpp"
 #include "tcuImageCompare.hpp"
 #include "tcuTextureUtil.hpp"
+#include "tcuRGBA.hpp"
 
 #include "vkDefs.hpp"
 
@@ -72,15 +73,15 @@ DrawIndexed::DrawIndexed (Context &context, ShaderMap shaders, vk::VkPrimitiveTo
 {
 	m_topology = topology;
 
-	/*0*/ m_data.push_back(Vec4RGBA(tcu::Vec4(	-0.3f,	 0.3f,	1.0f,	1.0f), vec4Blue()));
-	/*1*/ m_data.push_back(Vec4RGBA(tcu::Vec4(	-1.0f,	 1.0f,	1.0f,	1.0f), vec4Blue()));
-	/*2*/ m_data.push_back(Vec4RGBA(tcu::Vec4(	-0.3f,	-0.3f,	1.0f,	1.0f), vec4Blue()));
-	/*3*/ m_data.push_back(Vec4RGBA(tcu::Vec4(	 1.0f,	-1.0f,	1.0f,	1.0f), vec4Blue()));
-	/*4*/ m_data.push_back(Vec4RGBA(tcu::Vec4(	-0.3f,	-0.3f,	1.0f,	1.0f), vec4Blue()));
-	/*5*/ m_data.push_back(Vec4RGBA(tcu::Vec4(	 0.3f,	 0.3f,	1.0f,	1.0f), vec4Blue()));
-	/*6*/ m_data.push_back(Vec4RGBA(tcu::Vec4(	 0.3f,	-0.3f,	1.0f,	1.0f), vec4Blue()));
-	/*7*/ m_data.push_back(Vec4RGBA(tcu::Vec4(	 0.3f,	 0.3f,	1.0f,	1.0f), vec4Blue()));
-	/*8*/ m_data.push_back(Vec4RGBA(tcu::Vec4(	-1.0f,	 1.0f,	1.0f,	1.0f), vec4Blue()));
+	/*0*/ m_data.push_back(PositionColorVertex(tcu::Vec4(	-0.3f,	 0.3f,	1.0f,	1.0f), tcu::RGBA::blue().toVec()));
+	/*1*/ m_data.push_back(PositionColorVertex(tcu::Vec4(	-1.0f,	 1.0f,	1.0f,	1.0f), tcu::RGBA::blue().toVec()));
+	/*2*/ m_data.push_back(PositionColorVertex(tcu::Vec4(	-0.3f,	-0.3f,	1.0f,	1.0f), tcu::RGBA::blue().toVec()));
+	/*3*/ m_data.push_back(PositionColorVertex(tcu::Vec4(	 1.0f,	-1.0f,	1.0f,	1.0f), tcu::RGBA::blue().toVec()));
+	/*4*/ m_data.push_back(PositionColorVertex(tcu::Vec4(	-0.3f,	-0.3f,	1.0f,	1.0f), tcu::RGBA::blue().toVec()));
+	/*5*/ m_data.push_back(PositionColorVertex(tcu::Vec4(	 0.3f,	 0.3f,	1.0f,	1.0f), tcu::RGBA::blue().toVec()));
+	/*6*/ m_data.push_back(PositionColorVertex(tcu::Vec4(	 0.3f,	-0.3f,	1.0f,	1.0f), tcu::RGBA::blue().toVec()));
+	/*7*/ m_data.push_back(PositionColorVertex(tcu::Vec4(	 0.3f,	 0.3f,	1.0f,	1.0f), tcu::RGBA::blue().toVec()));
+	/*8*/ m_data.push_back(PositionColorVertex(tcu::Vec4(	-1.0f,	 1.0f,	1.0f,	1.0f), tcu::RGBA::blue().toVec()));
 
 	switch (m_topology)
 	{
@@ -105,11 +106,23 @@ DrawIndexed::DrawIndexed (Context &context, ShaderMap shaders, vk::VkPrimitiveTo
 			m_indexes.push_back(7);
 			break;
 
+		case vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST:
+		case vk::VK_PRIMITIVE_TOPOLOGY_LINE_LIST:
+		case vk::VK_PRIMITIVE_TOPOLOGY_LINE_STRIP:
+		case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN:
+		case vk::VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY:
+		case vk::VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY:
+		case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY:
+		case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY:
+		case vk::VK_PRIMITIVE_TOPOLOGY_PATCH_LIST:
+		case vk::VK_PRIMITIVE_TOPOLOGY_LAST:
+			DE_FATAL("Topology not implemented");
+			break;
 		default:
-		;
+			DE_FATAL("Unknown topology");
+			break;
 	}
-
-	DrawTestsBaseClass::initialize();
+	initialize();
 };
 
 tcu::TestStatus DrawIndexed::iterate (void)
@@ -120,10 +133,14 @@ tcu::TestStatus DrawIndexed::iterate (void)
 	beginRenderPass();
 
 	const vk::VkDeviceSize dataSize = m_indexes.size() * sizeof(deUint32);
-	m_indexBuffer = Buffer::createAndAlloc(m_vk, m_context.getDevice(), BufferCreateInfo(dataSize,
-		vk::VK_BUFFER_USAGE_INDEX_BUFFER_BIT), m_context.getDefaultAllocator(), vk::MemoryRequirement::HostVisible);
+	m_indexBuffer = Buffer::createAndAlloc(	m_vk, m_context.getDevice(),
+											BufferCreateInfo(dataSize,
+															 vk::VK_BUFFER_USAGE_INDEX_BUFFER_BIT),
+											m_context.getDefaultAllocator(),
+											vk::MemoryRequirement::HostVisible);
 
-	unsigned char *ptr = reinterpret_cast<unsigned char *>(m_indexBuffer->getBoundMemory().getHostPtr());
+	deUint8* ptr = reinterpret_cast<deUint8*>(m_indexBuffer->getBoundMemory().getHostPtr());
+
 	deMemcpy(ptr, &m_indexes[0], dataSize);
 
 	vk::flushMappedMemoryRange(m_vk, m_context.getDevice(),
@@ -134,6 +151,7 @@ tcu::TestStatus DrawIndexed::iterate (void)
 	const vk::VkDeviceSize vertexBufferOffset = 0;
 	const vk::VkBuffer vertexBuffer = m_vertexBuffer->object();
 	const vk::VkBuffer indexBuffer = m_indexBuffer->object();
+
 	m_vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
 	m_vk.cmdBindIndexBuffer(*m_cmdBuffer, indexBuffer, 0, vk::VK_INDEX_TYPE_UINT32);
 
@@ -150,11 +168,11 @@ tcu::TestStatus DrawIndexed::iterate (void)
 	{
 		vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,	// VkStructureType			sType;
 		DE_NULL,							// const void*				pNext;
-		0, 									// deUint32					waitSemaphoreCount;
-		DE_NULL, 							// const VkSemaphore*		pWaitSemaphores;
-		1, 									// deUint32					commandBufferCount;
+		0,										// deUint32					waitSemaphoreCount;
+		DE_NULL,								// const VkSemaphore*		pWaitSemaphores;
+		1,										// deUint32					commandBufferCount;
 		&m_cmdBuffer.get(),					// const VkCommandBuffer*	pCommandBuffers;
-		0, 									// deUint32					signalSemaphoreCount;
+		0,										// deUint32					signalSemaphoreCount;
 		DE_NULL								// const VkSemaphore*		pSignalSemaphores;
 	};
 
@@ -171,6 +189,8 @@ tcu::TestStatus DrawIndexed::iterate (void)
 
 	tcu::clear(referenceFrame.getLevel(0), tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f));
 
+	ReferenceImageCoordinates refCoords;
+
 	for (int y = 0; y < frameHeight; y++)
 	{
 		const float yCoord = (float)(y / (0.5*frameHeight)) - 1.0f;
@@ -179,7 +199,10 @@ tcu::TestStatus DrawIndexed::iterate (void)
 		{
 			const float xCoord = (float)(x / (0.5*frameWidth)) - 1.0f;
 
-			if ((yCoord >= -0.3f && yCoord <= 0.3f && xCoord >= -0.3f && xCoord <= 0.3f))
+			if ((yCoord >= refCoords.bottom &&
+				 yCoord <= refCoords.top	&&
+				 xCoord >= refCoords.left	&&
+				 xCoord <= refCoords.right))
 				referenceFrame.getLevel(0).setPixel(tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f), x, y);
 		}
 	}
@@ -212,12 +235,15 @@ tcu::TestStatus DrawInstancedIndexed::iterate (void)
 	beginRenderPass();
 
 	const vk::VkDeviceSize dataSize = m_indexes.size() * sizeof(deUint32);
-	m_indexBuffer = Buffer::createAndAlloc(m_vk, m_context.getDevice(), BufferCreateInfo(dataSize, vk::VK_BUFFER_USAGE_INDEX_BUFFER_BIT),
-		                                   m_context.getDefaultAllocator(), vk::MemoryRequirement::HostVisible);
+	m_indexBuffer = Buffer::createAndAlloc(	m_vk, m_context.getDevice(),
+											BufferCreateInfo(dataSize,
+															 vk::VK_BUFFER_USAGE_INDEX_BUFFER_BIT),
+											m_context.getDefaultAllocator(),
+											vk::MemoryRequirement::HostVisible);
 
-	unsigned char *ptr = reinterpret_cast<unsigned char *>(m_indexBuffer->getBoundMemory().getHostPtr());
+	deUint8* ptr = reinterpret_cast<deUint8*>(m_indexBuffer->getBoundMemory().getHostPtr());
+
 	deMemcpy(ptr, &m_indexes[0], dataSize);
-
 	vk::flushMappedMemoryRange(m_vk, m_context.getDevice(),
 							   m_vertexBuffer->getBoundMemory().getMemory(),
 							   m_vertexBuffer->getBoundMemory().getOffset(),
@@ -226,40 +252,33 @@ tcu::TestStatus DrawInstancedIndexed::iterate (void)
 	const vk::VkDeviceSize vertexBufferOffset = 0;
 	const vk::VkBuffer vertexBuffer = m_vertexBuffer->object();
 	const vk::VkBuffer indexBuffer = m_indexBuffer->object();
+
 	m_vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
 	m_vk.cmdBindIndexBuffer(*m_cmdBuffer, indexBuffer, 0, vk::VK_INDEX_TYPE_UINT32);
-
 	m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
 
 	switch (m_topology)
 	{
-		case vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST:
-			break;
-		case vk::VK_PRIMITIVE_TOPOLOGY_LINE_LIST:
-			break;
-		case vk::VK_PRIMITIVE_TOPOLOGY_LINE_STRIP:
-			break;
 		case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST:
 			m_vk.cmdDrawIndexed(*m_cmdBuffer, 6, 4, 2, 0, 2);
 			break;
 		case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP:
 			m_vk.cmdDrawIndexed(*m_cmdBuffer, 4, 4, 2, 0, 2);
 			break;
+		case vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST:
+		case vk::VK_PRIMITIVE_TOPOLOGY_LINE_LIST:
+		case vk::VK_PRIMITIVE_TOPOLOGY_LINE_STRIP:
 		case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN:
-			break;
 		case vk::VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY:
-			break;
 		case vk::VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY:
-			break;
 		case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY:
-			break;
 		case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY:
-			break;
 		case vk::VK_PRIMITIVE_TOPOLOGY_PATCH_LIST:
-			break;
 		case vk::VK_PRIMITIVE_TOPOLOGY_LAST:
+			DE_FATAL("Topology not implemented");
 			break;
 		default:
+			DE_FATAL("Unknown topology");
 			break;
 	}
 
@@ -270,11 +289,11 @@ tcu::TestStatus DrawInstancedIndexed::iterate (void)
 	{
 		vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,	// VkStructureType			sType;
 		DE_NULL,							// const void*				pNext;
-		0, 									// deUint32					waitSemaphoreCount;
-		DE_NULL, 							// const VkSemaphore*		pWaitSemaphores;
-		1, 									// deUint32					commandBufferCount;
+		0,										// deUint32					waitSemaphoreCount;
+		DE_NULL,								// const VkSemaphore*		pWaitSemaphores;
+		1,										// deUint32					commandBufferCount;
 		&m_cmdBuffer.get(),					// const VkCommandBuffer*	pCommandBuffers;
-		0, 									// deUint32					signalSemaphoreCount;
+		0,										// deUint32					signalSemaphoreCount;
 		DE_NULL								// const VkSemaphore*		pSignalSemaphores;
 	};
 	VK_CHECK(m_vk.queueSubmit(queue, 1, &submitInfo, DE_NULL));
@@ -292,6 +311,8 @@ tcu::TestStatus DrawInstancedIndexed::iterate (void)
 
 	tcu::clear(referenceFrame.getLevel(0), tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f));
 
+	ReferenceImageInstancedCoordinates refInstancedCoords;
+
 	for (int y = 0; y < frameHeight; y++)
 	{
 		const float yCoord = (float)(y / (0.5*frameHeight)) - 1.0f;
@@ -300,7 +321,10 @@ tcu::TestStatus DrawInstancedIndexed::iterate (void)
 		{
 			const float xCoord = (float)(x / (0.5*frameWidth)) - 1.0f;
 
-			if ((yCoord >= -0.6f && yCoord <= 0.3f && xCoord >= -0.3f && xCoord <= 0.6f))
+			if ((yCoord >= refInstancedCoords.bottom	&&
+				 yCoord <= refInstancedCoords.top		&&
+				 xCoord >= refInstancedCoords.left		&&
+				 xCoord <= refInstancedCoords.right))
 				referenceFrame.getLevel(0).setPixel(tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f), x, y);
 		}
 	}
@@ -336,11 +360,13 @@ void DrawIndexedTests::init (void)
 	ShaderMap shaderPaths;
 	shaderPaths[glu::SHADERTYPE_VERTEX] = "vulkan/draw/VertexFetch.vert";
 	shaderPaths[glu::SHADERTYPE_FRAGMENT] = "vulkan/draw/VertexFetch.frag";
+
 	addChild(new InstanceFactory<DrawIndexed>(m_testCtx, "draw_indexed_triangle_list", "Draws indexed triangle list", shaderPaths, vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST));
 	addChild(new InstanceFactory<DrawIndexed>(m_testCtx, "draw_indexed_triangle_strip", "Draws indexed triangle strip", shaderPaths, vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP));
 
 	shaderPaths[glu::SHADERTYPE_VERTEX] = "vulkan/draw/VertexFetchWithInstance.vert";
 	shaderPaths[glu::SHADERTYPE_FRAGMENT] = "vulkan/draw/VertexFetch.frag";
+
 	addChild(new InstanceFactory<DrawIndexed>(m_testCtx, "draw_instanced_indexed_triangle_list", "Draws indexed triangle list", shaderPaths, vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST));
 	addChild(new InstanceFactory<DrawIndexed>(m_testCtx, "draw_instanced_indexed_triangle_strip", "Draws indexed triangle strip", shaderPaths, vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP));
 }

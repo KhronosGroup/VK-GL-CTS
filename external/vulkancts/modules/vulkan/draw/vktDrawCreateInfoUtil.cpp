@@ -141,14 +141,13 @@ BufferViewCreateInfo::BufferViewCreateInfo (vk::VkBuffer	_buffer,
 	range	= _range;
 }
 
-
 BufferCreateInfo::BufferCreateInfo (vk::VkDeviceSize		_size,
 									vk::VkBufferUsageFlags	_usage,
 									vk::VkSharingMode		_sharingMode,
 									deUint32				_queueFamilyIndexCount,
 									const deUint32*			_pQueueFamilyIndices,
 									vk::VkBufferCreateFlags _flags)
-{   
+{
 	sType = vk::VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
 	pNext = DE_NULL;
 	size					= _size;
@@ -166,7 +165,7 @@ BufferCreateInfo::BufferCreateInfo (vk::VkDeviceSize		_size,
 	else
 	{
 		pQueueFamilyIndices = _pQueueFamilyIndices;
-	}   
+	}
 }
 
 BufferCreateInfo::BufferCreateInfo (const BufferCreateInfo &other)
@@ -228,7 +227,7 @@ ImageCreateInfo::ImageCreateInfo (vk::VkImageType			_imageType,
 								  vk::VkImageUsageFlags		_usage,
 								  vk::VkSharingMode			_sharingMode,
 								  deUint32					_queueFamilyIndexCount,
-								  const	deUint32*			_pQueueFamilyIndices,
+								  const deUint32*			_pQueueFamilyIndices,
 								  vk::VkImageCreateFlags	_flags,
 								  vk::VkImageLayout			_initialLayout)
 {
@@ -263,7 +262,7 @@ ImageCreateInfo::ImageCreateInfo (vk::VkImageType			_imageType,
 }
 
 FramebufferCreateInfo::FramebufferCreateInfo (vk::VkRenderPass						_renderPass,
-											  const	std::vector<vk::VkImageView>&	atachments, 
+											  const std::vector<vk::VkImageView>&	atachments,
 											  deUint32								_width,
 											  deUint32								_height,
 											  deUint32								_layers)
@@ -298,7 +297,7 @@ RenderPassCreateInfo::RenderPassCreateInfo (const std::vector<vk::VkAttachmentDe
 {
 	sType = vk::VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
 	pNext = DE_NULL;
-	flags = 0; 
+	flags = 0;
 
 	attachmentCount = static_cast<deUint32>(m_attachments.size());
 	pAttachments	= &m_attachmentsStructs[0];
@@ -393,7 +392,7 @@ RenderPassCreateInfo::addDependency (vk::VkSubpassDependency dependency)
 RenderPassBeginInfo::RenderPassBeginInfo (vk::VkRenderPass						_renderPass,
 										  vk::VkFramebuffer						_framebuffer,
 										  vk::VkRect2D							_renderArea,
-										  const	std::vector<vk::VkClearValue>&	_clearValues)
+										  const std::vector<vk::VkClearValue>&	_clearValues)
 {
 
 	m_clearValues	= _clearValues;
@@ -436,7 +435,7 @@ AttachmentDescription::AttachmentDescription (vk::VkFormat				_format,
 	finalLayout		= _finalLayout;
 }
 
-AttachmentDescription::AttachmentDescription (const vk::VkAttachmentDescription &rhs)
+AttachmentDescription::AttachmentDescription (const vk::VkAttachmentDescription& rhs)
 {
 	flags			= rhs.flags;
 	format			= rhs.format;
@@ -603,7 +602,7 @@ SubpassDependency::SubpassDependency (deUint32					_srcSubpass,
 	dependencyFlags	= _dependencyFlags;
 }
 
-SubpassDependency::SubpassDependency (const vk::VkSubpassDependency &rhs)
+SubpassDependency::SubpassDependency (const vk::VkSubpassDependency& rhs)
 {
 	srcSubpass		= rhs.srcSubpass;
 	dstSubpass		= rhs.dstSubpass;
@@ -680,7 +679,6 @@ DescriptorSetLayoutCreateInfo::DescriptorSetLayoutCreateInfo (deUint32 _bindingC
 	pBinding	 = _pBindings;
 }
 
-
 PipelineLayoutCreateInfo::PipelineLayoutCreateInfo (deUint32							_descriptorSetCount,
 													const vk::VkDescriptorSetLayout*	_pSetLayouts,
 													deUint32							_pushConstantRangeCount,
@@ -737,7 +735,6 @@ PipelineLayoutCreateInfo::PipelineLayoutCreateInfo (const std::vector<vk::VkDesc
 	}
 }
 
-
 PipelineCreateInfo::PipelineShaderStage::PipelineShaderStage (vk::VkShaderModule _module, const char* _pName, vk::VkShaderStageFlagBits _stage)
 {
 	sType = vk::VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -789,7 +786,7 @@ PipelineCreateInfo::ViewportState::ViewportState (deUint32						_viewportCount,
 	flags			= 0u;
 	viewportCount	= _viewportCount;
 	scissorCount	= _viewportCount;
-	
+
 	if (!_viewports.size())
 	{
 		m_viewports.resize(viewportCount);
@@ -814,7 +811,7 @@ PipelineCreateInfo::ViewportState::ViewportState (deUint32						_viewportCount,
 	pScissors	= &m_scissors[0];
 }
 
-PipelineCreateInfo::ViewportState::ViewportState (const ViewportState &other)
+PipelineCreateInfo::ViewportState::ViewportState (const ViewportState& other)
 {
 	sType			= other.sType;
 	pNext			= other.pNext;
@@ -828,7 +825,7 @@ PipelineCreateInfo::ViewportState::ViewportState (const ViewportState &other)
 	pScissors	= &m_scissors[0];
 }
 
-PipelineCreateInfo::ViewportState & PipelineCreateInfo::ViewportState::operator= (const ViewportState &other)
+PipelineCreateInfo::ViewportState& PipelineCreateInfo::ViewportState::operator= (const ViewportState& other)
 {
 	sType			= other.sType;
 	pNext			= other.pNext;
@@ -874,7 +871,7 @@ PipelineCreateInfo::MultiSampleState::MultiSampleState (vk::VkSampleCountFlagBit
 														vk::VkBool32							_sampleShadingEnable,
 														float									_minSampleShading,
 														const std::vector<vk::VkSampleMask>&	_sampleMask,
-														bool									_alphaToCoverageEnable, 
+														bool									_alphaToCoverageEnable,
 														bool									_alphaToOneEnable)
 	: m_sampleMask(_sampleMask)
 {
@@ -889,21 +886,21 @@ PipelineCreateInfo::MultiSampleState::MultiSampleState (vk::VkSampleCountFlagBit
 	alphaToOneEnable		= _alphaToOneEnable;
 }
 
-PipelineCreateInfo::MultiSampleState::MultiSampleState (const MultiSampleState &other)
+PipelineCreateInfo::MultiSampleState::MultiSampleState (const MultiSampleState& other)
 {
 	sType					= other.sType;
 	pNext					= other.pNext;
 	rasterizationSamples	= other.rasterizationSamples;
 	sampleShadingEnable		= other.sampleShadingEnable;
 	minSampleShading		= other.minSampleShading;
-	
+
 	const size_t sampleMaskArrayLen = (sizeof(vk::VkSampleMask) * 8 + other.rasterizationSamples) / (sizeof(vk::VkSampleMask) * 8);
 
 	m_sampleMask	= std::vector<vk::VkSampleMask>(other.pSampleMask, other.pSampleMask + sampleMaskArrayLen);
 	pSampleMask		= &m_sampleMask[0];
 }
 
-PipelineCreateInfo::MultiSampleState& PipelineCreateInfo::MultiSampleState::operator= (const MultiSampleState & other)
+PipelineCreateInfo::MultiSampleState& PipelineCreateInfo::MultiSampleState::operator= (const MultiSampleState& other)
 {
 	sType = other.sType;
 	pNext = other.pNext;
@@ -925,7 +922,7 @@ PipelineCreateInfo::ColorBlendState::ColorBlendState (const std::vector<vk::VkPi
 	: m_attachments(_attachments)
 {
 	sType = vk::VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-	pNext = DE_NULL; 
+	pNext = DE_NULL;
 	flags					= 0u;
 	logicOpEnable			= _logicOpEnable;
 	logicOp					= _logicOp;
@@ -934,20 +931,20 @@ PipelineCreateInfo::ColorBlendState::ColorBlendState (const std::vector<vk::VkPi
 }
 
 PipelineCreateInfo::ColorBlendState::ColorBlendState (deUint32											_attachmentCount,
-													  const	vk::VkPipelineColorBlendAttachmentState*	_attachments,
+													  const vk::VkPipelineColorBlendAttachmentState*	_attachments,
 													  vk::VkBool32										_logicOpEnable,
 													  vk::VkLogicOp										_logicOp)
 	: m_attachments(_attachments, _attachments + _attachmentCount)
 {
 	sType = vk::VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-	pNext	= DE_NULL; 
+	pNext	= DE_NULL;
 	logicOpEnable			= _logicOpEnable;
 	logicOp					= _logicOp;
 	attachmentCount			= static_cast<deUint32>(m_attachments.size());
 	pAttachments			= &m_attachments[0];
 }
 
-PipelineCreateInfo::ColorBlendState::ColorBlendState (const vk::VkPipelineColorBlendStateCreateInfo &createInfo)
+PipelineCreateInfo::ColorBlendState::ColorBlendState (const vk::VkPipelineColorBlendStateCreateInfo& createInfo)
 	: m_attachments (createInfo.pAttachments, createInfo.pAttachments + createInfo.attachmentCount)
 {
 	sType = createInfo.sType;
@@ -958,7 +955,7 @@ PipelineCreateInfo::ColorBlendState::ColorBlendState (const vk::VkPipelineColorB
 	pAttachments			= &m_attachments[0];
 }
 
-PipelineCreateInfo::ColorBlendState::ColorBlendState (const ColorBlendState &createInfo, std::vector<float> _blendConstants)
+PipelineCreateInfo::ColorBlendState::ColorBlendState (const ColorBlendState& createInfo, std::vector<float> _blendConstants)
 	: m_attachments (createInfo.pAttachments, createInfo.pAttachments + createInfo.attachmentCount)
 {
 	sType = createInfo.sType;
@@ -1062,7 +1059,7 @@ PipelineCreateInfo::DynamicState::DynamicState (const DynamicState &other)
 	pDynamicStates = &m_dynamicStates[0];
 }
 
-PipelineCreateInfo::DynamicState & PipelineCreateInfo::DynamicState::operator= (const DynamicState &other)
+PipelineCreateInfo::DynamicState& PipelineCreateInfo::DynamicState::operator= (const DynamicState& other)
 {
 	sType = other.sType;
 	pNext = other.pNext;
@@ -1094,7 +1091,7 @@ PipelineCreateInfo::PipelineCreateInfo (vk::VkPipelineLayout		_layout,
 	pDynamicState		= DE_NULL;
 }
 
-PipelineCreateInfo& PipelineCreateInfo::addShader (const vk::VkPipelineShaderStageCreateInfo &shader)
+PipelineCreateInfo& PipelineCreateInfo::addShader (const vk::VkPipelineShaderStageCreateInfo& shader)
 {
 	m_shaders.push_back(shader);
 
@@ -1187,19 +1184,19 @@ PipelineCreateInfo& PipelineCreateInfo::addState (const vk::VkPipelineDynamicSta
 }
 
 SamplerCreateInfo::SamplerCreateInfo (vk::VkFilter				_magFilter,
-									 vk::VkFilter				_minFilter,
-									 vk::VkSamplerMipmapMode	_mipmapMode,
-									 vk::VkSamplerAddressMode	_addressModeU,
-									 vk::VkSamplerAddressMode	_addressModeV,
-									 vk::VkSamplerAddressMode	_addressModeW,
-									 float						_mipLodBias,
-									 float						_maxAnisotropy,
-									 vk::VkBool32				_compareEnable,
-									 vk::VkCompareOp			_compareOp,
-									 float						_minLod,
-									 float						_maxLod,
-									 vk::VkBorderColor			_borderColor,
-									 vk::VkBool32				_unnormalizedCoordinates)
+									  vk::VkFilter				_minFilter,
+									  vk::VkSamplerMipmapMode	_mipmapMode,
+									  vk::VkSamplerAddressMode	_addressModeU,
+									  vk::VkSamplerAddressMode	_addressModeV,
+									  vk::VkSamplerAddressMode	_addressModeW,
+									  float						_mipLodBias,
+									  float						_maxAnisotropy,
+									  vk::VkBool32				_compareEnable,
+									  vk::VkCompareOp			_compareOp,
+									  float						_minLod,
+									  float						_maxLod,
+									  vk::VkBorderColor			_borderColor,
+									  vk::VkBool32				_unnormalizedCoordinates)
 {
 	sType					= vk::VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
 	pNext					= DE_NULL;
@@ -1219,6 +1216,5 @@ SamplerCreateInfo::SamplerCreateInfo (vk::VkFilter				_magFilter,
 	borderColor				= _borderColor;
 	unnormalizedCoordinates = _unnormalizedCoordinates;
 }
-
 } // Draw
 } // vkt

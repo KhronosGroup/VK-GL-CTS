@@ -1,5 +1,5 @@
-#ifndef _VKTDRAWTESTS_TESTCASEUTIL_HPP
-#define _VKTDRAWTESTS_TESTCASEUTIL_HPP
+#ifndef _VKTDRAWTESTCASEUTIL_HPP
+#define _VKTDRAWTESTCASEUTIL_HPP
 /*------------------------------------------------------------------------
  * Vulkan Conformance Tests
  * ------------------------
@@ -51,9 +51,9 @@ namespace vkt
 namespace Draw
 {
 
-class ShaderSourceProvider 
+class ShaderSourceProvider
 {
-public: 
+public:
 	static std::string getSource (tcu::Archive& archive, const char* path)
 	{
 		tcu::Resource *resource = archive.getResource(path);
@@ -80,9 +80,9 @@ public:
 	{
 	}
 
-	TestInstance* createInstance (Context& context) const 
-	{ 
-		return new Instance(context, m_shaderPaths, m_topology); 
+	TestInstance* createInstance (Context& context) const
+	{
+		return new Instance(context, m_shaderPaths, m_topology);
 	}
 
 	virtual void initPrograms (vk::SourceCollections& programCollection) const
@@ -99,7 +99,7 @@ private:
 	const vk::VkPrimitiveTopology m_topology;
 };
 
-} //Draw
-} //vkt
+} // Draw
+} // vkt
 
-#endif	//_VKTDRAWTESTS_TESTCASEUTIL_HPP
+#endif // _VKTDRAWTESTCASEUTIL_HPP

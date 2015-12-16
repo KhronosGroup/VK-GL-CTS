@@ -33,7 +33,6 @@
 * \brief Command draw Tests - Base Class
 *//*--------------------------------------------------------------------*/
 
-
 #include "vktDrawBaseClass.hpp"
 
 namespace vkt
@@ -41,7 +40,7 @@ namespace vkt
 namespace Draw
 {
 
-DrawTestsBaseClass::DrawTestsBaseClass (Context &context, const char* vertexShaderName, const char* fragmentShaderName)
+DrawTestsBaseClass::DrawTestsBaseClass (Context& context, const char* vertexShaderName, const char* fragmentShaderName)
 	: TestInstance				(context)
 	, m_colorAttachmentFormat	(vk::VK_FORMAT_R8G8B8A8_UNORM)
 	, m_topology				(vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
@@ -50,8 +49,6 @@ DrawTestsBaseClass::DrawTestsBaseClass (Context &context, const char* vertexShad
 	, m_vk						(context.getDeviceInterface())
 {
 }
-
-
 
 void DrawTestsBaseClass::initialize (void)
 {
@@ -80,7 +77,7 @@ void DrawTestsBaseClass::initialize (void)
 															 vk::VK_ATTACHMENT_STORE_OP_STORE,
 															 vk::VK_IMAGE_LAYOUT_GENERAL,
 															 vk::VK_IMAGE_LAYOUT_GENERAL));
-		
+
 
 	const vk::VkAttachmentReference colorAttachmentReference =
 	{
@@ -136,14 +133,14 @@ void DrawTestsBaseClass::initialize (void)
 															  2,
 															  vertexInputAttributeDescriptions);
 
-	const vk::VkDeviceSize dataSize = m_data.size() * sizeof(Vec4RGBA);
+	const vk::VkDeviceSize dataSize = m_data.size() * sizeof(PositionColorVertex);
 	m_vertexBuffer = Buffer::createAndAlloc(m_vk, device, BufferCreateInfo(dataSize,
 		vk::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT), m_context.getDefaultAllocator(), vk::MemoryRequirement::HostVisible);
 
-	unsigned char *ptr = reinterpret_cast<unsigned char *>(m_vertexBuffer->getBoundMemory().getHostPtr());
+	deUint8* ptr = reinterpret_cast<deUint8*>(m_vertexBuffer->getBoundMemory().getHostPtr());
 	deMemcpy(ptr, &m_data[0], dataSize);
 
-	vk::flushMappedMemoryRange(m_vk, 
+	vk::flushMappedMemoryRange(m_vk,
 							   device,
 							   m_vertexBuffer->getBoundMemory().getMemory(),
 							   m_vertexBuffer->getBoundMemory().getOffset(),
@@ -196,7 +193,7 @@ void DrawTestsBaseClass::initPipeline (const vk::VkDevice device)
 	pipelineCreateInfo.addState(PipelineCreateInfo::DepthStencilState());
 	pipelineCreateInfo.addState(PipelineCreateInfo::RasterizerState());
 	pipelineCreateInfo.addState(PipelineCreateInfo::MultiSampleState());
-			
+
 	m_pipeline = vk::createGraphicsPipeline(m_vk, device, DE_NULL, &pipelineCreateInfo);
 }
 
@@ -204,11 +201,11 @@ void DrawTestsBaseClass::beginRenderPass (void)
 {
 	const vk::VkClearColorValue clearColor = { { 0.0f, 0.0f, 0.0f, 1.0f } };
 	const CmdBufferBeginInfo beginInfo;
-	
+
 	m_vk.beginCommandBuffer(*m_cmdBuffer, &beginInfo);
 
 	initialTransitionColor2DImage(m_vk, *m_cmdBuffer, m_colorTargetImage->object(), vk::VK_IMAGE_LAYOUT_GENERAL);
-	
+
 	const ImageSubresourceRange subresourceRange(vk::VK_IMAGE_ASPECT_COLOR_BIT);
 	m_vk.cmdClearColorImage(*m_cmdBuffer, m_colorTargetImage->object(),
 		vk::VK_IMAGE_LAYOUT_GENERAL, &clearColor, 1, &subresourceRange);
@@ -217,8 +214,7 @@ void DrawTestsBaseClass::beginRenderPass (void)
 	const RenderPassBeginInfo renderPassBegin(*m_renderPass, *m_framebuffer, renderArea);
 
 	m_vk.cmdBeginRenderPass(*m_cmdBuffer, &renderPassBegin, vk::VK_SUBPASS_CONTENTS_INLINE);
-
 }
 
-}	//Draw
-}	//vkt
+}	// Draw
+}	// vkt

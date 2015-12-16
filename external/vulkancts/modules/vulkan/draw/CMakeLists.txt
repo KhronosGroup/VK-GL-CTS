@@ -10,7 +10,7 @@ set(DEQP_VK_DRAW_SRCS
 	vktDrawSimpleTest.hpp
 	vktDrawSimpleTest.cpp
 	vktDrawBaseClass.hpp
-	vktDrawBaseClass.cpp	
+	vktDrawBaseClass.cpp
 	vktDrawCreateInfoUtil.hpp
 	vktDrawCreateInfoUtil.cpp
 	vktDrawImageObjectUtil.hpp
@@ -18,7 +18,6 @@ set(DEQP_VK_DRAW_SRCS
 	vktDrawBufferObjectUtil.hpp
 	vktDrawBufferObjectUtil.cpp
 	vktDrawTestCaseUtil.hpp
-
 )
 
 set(DEQP_VK_DRAW_LIBS

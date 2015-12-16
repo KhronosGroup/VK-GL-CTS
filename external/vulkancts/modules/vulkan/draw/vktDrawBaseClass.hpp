@@ -35,6 +35,7 @@
 * \brief Command draw Tests - Base Class
 *//*--------------------------------------------------------------------*/
 
+#include "vkDefs.hpp"
 #include "vktTestCase.hpp"
 
 #include "tcuTestLog.hpp"
@@ -58,35 +59,52 @@ namespace vkt
 namespace Draw
 {
 
-inline tcu::Vec4 vec4Red(void)
+struct PositionColorVertex
 {
-	return tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f);
-}
-
-inline tcu::Vec4 vec4Green(void)
-{
-	return tcu::Vec4(0.0f, 1.0f, 0.0f, 1.0f);
-}
-
-inline tcu::Vec4 vec4Blue(void)
-{
-	return tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f);
-}
-
-struct Vec4RGBA
-{
-	Vec4RGBA(tcu::Vec4 p, tcu::Vec4 c)
-	: position	(p)
-	, color		(c)
+	PositionColorVertex(tcu::Vec4 position_, tcu::Vec4 color_)
+		: position(position_)
+		, color(color_)
 	{}
 	tcu::Vec4 position;
 	tcu::Vec4 color;
 };
 
+struct ReferenceImageCoordinates
+{
+	ReferenceImageCoordinates (void)
+		: left		(-0.3)
+		, right		(0.3)
+		, top		(0.3)
+		, bottom	(-0.3)
+	{
+	}
+
+	double left;
+	double right;
+	double top;
+	double bottom;
+};
+
+struct ReferenceImageInstancedCoordinates
+{
+	ReferenceImageInstancedCoordinates (void)
+		: left		(-0.3)
+		, right		(0.6)
+		, top		(0.3)
+		, bottom	(-0.6)
+	{
+	}
+
+	double left;
+	double right;
+	double top;
+	double bottom;
+};
+
 class DrawTestsBaseClass : public TestInstance
 {
 public:
-								DrawTestsBaseClass	(Context &context, const char* vertexShaderName, const char* fragmentShaderName);
+								DrawTestsBaseClass	(Context& context, const char* vertexShaderName, const char* fragmentShaderName);
 
 protected:
 	void						initialize			(void);
@@ -108,7 +126,7 @@ protected:
 
 	vk::Move<vk::VkPipeline>						m_pipeline;
 	vk::Move<vk::VkPipelineLayout>					m_pipelineLayout;
-	
+
 	de::SharedPtr<Image>							m_colorTargetImage;
 	vk::Move<vk::VkImageView>						m_colorTargetView;
 
@@ -124,12 +142,12 @@ protected:
 	const std::string								m_vertexShaderName;
 	const std::string								m_fragmentShaderName;
 
-	std::vector<Vec4RGBA>							m_data;
+	std::vector<PositionColorVertex>				m_data;
 	std::vector<deUint32>							m_indexes;
 	de::SharedPtr<Buffer>							m_indexBuffer;
 };
 
-}	//Draw
-}	//vkt
+}	// Draw
+}	// vkt
 
-#endif	//_VKTDRAWBASECLASS_HPP
+#endif // _VKTDRAWBASECLASS_HPP

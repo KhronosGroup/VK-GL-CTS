@@ -33,7 +33,7 @@
 * \brief Simple Draw Tests
 *//*--------------------------------------------------------------------*/
 
-#include "vktDrawsimpleTest.hpp"
+#include "vktDrawSimpleTest.hpp"
 
 #include "vktTestCaseUtil.hpp"
 #include "vktDrawTestCaseUtil.hpp"
@@ -44,6 +44,7 @@
 #include "tcuResource.hpp"
 #include "tcuImageCompare.hpp"
 #include "tcuTextureUtil.hpp"
+#include "tcuRGBA.hpp"
 
 #include "vkDefs.hpp"
 
@@ -52,19 +53,19 @@ namespace vkt
 namespace Draw
 {
 namespace
-{	
+{
 class SimpleDraw : public DrawTestsBaseClass
 {
 public:
-							SimpleDraw	(Context &context, ShaderMap shaders, vk::VkPrimitiveTopology topology);	
-	virtual tcu::TestStatus iterate		(void);
+							SimpleDraw				(Context &context, ShaderMap shaders, vk::VkPrimitiveTopology topology);
+	virtual tcu::TestStatus iterate					(void);
 };
 
 class SimpleDrawInstanced : public SimpleDraw
 {
 public:
-						SimpleDrawInstanced				(Context &context, ShaderMap shaders, vk::VkPrimitiveTopology topology);
-	tcu::TestStatus		SimpleDrawInstanced::iterate	(void);
+							SimpleDrawInstanced		(Context &context, ShaderMap shaders, vk::VkPrimitiveTopology topology);
+	tcu::TestStatus			iterate					(void);
 };
 
 SimpleDraw::SimpleDraw (Context &context, ShaderMap shaders, vk::VkPrimitiveTopology topology)
@@ -74,51 +75,44 @@ SimpleDraw::SimpleDraw (Context &context, ShaderMap shaders, vk::VkPrimitiveTopo
 
 	switch (m_topology)
 	{
-		case vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST:
-			break;
-		case vk::VK_PRIMITIVE_TOPOLOGY_LINE_LIST:
-			break;
-		case vk::VK_PRIMITIVE_TOPOLOGY_LINE_STRIP:
-			break;
 		case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST:
-			m_data.push_back(Vec4RGBA(tcu::Vec4(	 1.0f,	-1.0f,	1.0f,	1.0f), vec4Blue()));
-			m_data.push_back(Vec4RGBA(tcu::Vec4(	-1.0f,	 1.0f,	1.0f,	1.0f), vec4Blue()));
-			m_data.push_back(Vec4RGBA(tcu::Vec4(	-0.3f,	-0.3f,	1.0f,	1.0f), vec4Blue()));
-			m_data.push_back(Vec4RGBA(tcu::Vec4(	-0.3f,	 0.3f,	1.0f,	1.0f), vec4Blue()));
-			m_data.push_back(Vec4RGBA(tcu::Vec4(	 0.3f,	-0.3f,	1.0f,	1.0f), vec4Blue()));
-			m_data.push_back(Vec4RGBA(tcu::Vec4(	 0.3f,	-0.3f,	1.0f,	1.0f), vec4Blue()));
-			m_data.push_back(Vec4RGBA(tcu::Vec4(	 0.3f,	 0.3f,	1.0f,	1.0f), vec4Blue()));
-			m_data.push_back(Vec4RGBA(tcu::Vec4(	-0.3f,	 0.3f,	1.0f,	1.0f), vec4Blue()));
-			m_data.push_back(Vec4RGBA(tcu::Vec4(	-1.0f,	 1.0f,	1.0f,	1.0f), vec4Blue()));
+			m_data.push_back(PositionColorVertex(tcu::Vec4(	 1.0f,	-1.0f,	1.0f,	1.0f), tcu::RGBA::blue().toVec()));
+			m_data.push_back(PositionColorVertex(tcu::Vec4(	-1.0f,	 1.0f,	1.0f,	1.0f), tcu::RGBA::blue().toVec()));
+			m_data.push_back(PositionColorVertex(tcu::Vec4(	-0.3f,	-0.3f,	1.0f,	1.0f), tcu::RGBA::blue().toVec()));
+			m_data.push_back(PositionColorVertex(tcu::Vec4(	-0.3f,	 0.3f,	1.0f,	1.0f), tcu::RGBA::blue().toVec()));
+			m_data.push_back(PositionColorVertex(tcu::Vec4(	 0.3f,	-0.3f,	1.0f,	1.0f), tcu::RGBA::blue().toVec()));
+			m_data.push_back(PositionColorVertex(tcu::Vec4(	 0.3f,	-0.3f,	1.0f,	1.0f), tcu::RGBA::blue().toVec()));
+			m_data.push_back(PositionColorVertex(tcu::Vec4(	 0.3f,	 0.3f,	1.0f,	1.0f), tcu::RGBA::blue().toVec()));
+			m_data.push_back(PositionColorVertex(tcu::Vec4(	-0.3f,	 0.3f,	1.0f,	1.0f), tcu::RGBA::blue().toVec()));
+			m_data.push_back(PositionColorVertex(tcu::Vec4(	-1.0f,	 1.0f,	1.0f,	1.0f), tcu::RGBA::blue().toVec()));
 			break;
 		case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP:
-			m_data.push_back(Vec4RGBA(tcu::Vec4(	 1.0f,	-1.0f,	1.0f,	1.0f), vec4Blue()));
-			m_data.push_back(Vec4RGBA(tcu::Vec4(	-1.0f,	 1.0f,	1.0f,	1.0f), vec4Blue()));
-			m_data.push_back(Vec4RGBA(tcu::Vec4(	-0.3f,	-0.3f,	1.0f,	1.0f), vec4Blue()));
-			m_data.push_back(Vec4RGBA(tcu::Vec4(	-0.3f,	 0.3f,	1.0f,	1.0f), vec4Blue()));
-			m_data.push_back(Vec4RGBA(tcu::Vec4(	 0.3f,	-0.3f,	1.0f,	1.0f), vec4Blue()));
-			m_data.push_back(Vec4RGBA(tcu::Vec4(	 0.3f,	 0.3f,	1.0f,	1.0f), vec4Blue()));
-			m_data.push_back(Vec4RGBA(tcu::Vec4(	-0.3f,	 0.3f,	1.0f,	1.0f), vec4Blue()));
-			m_data.push_back(Vec4RGBA(tcu::Vec4(	-1.0f,	 1.0f,	1.0f,	1.0f), vec4Blue()));
+			m_data.push_back(PositionColorVertex(tcu::Vec4(	 1.0f,	-1.0f,	1.0f,	1.0f), tcu::RGBA::blue().toVec()));
+			m_data.push_back(PositionColorVertex(tcu::Vec4(	-1.0f,	 1.0f,	1.0f,	1.0f), tcu::RGBA::blue().toVec()));
+			m_data.push_back(PositionColorVertex(tcu::Vec4(	-0.3f,	-0.3f,	1.0f,	1.0f), tcu::RGBA::blue().toVec()));
+			m_data.push_back(PositionColorVertex(tcu::Vec4(	-0.3f,	 0.3f,	1.0f,	1.0f), tcu::RGBA::blue().toVec()));
+			m_data.push_back(PositionColorVertex(tcu::Vec4(	 0.3f,	-0.3f,	1.0f,	1.0f), tcu::RGBA::blue().toVec()));
+			m_data.push_back(PositionColorVertex(tcu::Vec4(	 0.3f,	 0.3f,	1.0f,	1.0f), tcu::RGBA::blue().toVec()));
+			m_data.push_back(PositionColorVertex(tcu::Vec4(	-0.3f,	 0.3f,	1.0f,	1.0f), tcu::RGBA::blue().toVec()));
+			m_data.push_back(PositionColorVertex(tcu::Vec4(	-1.0f,	 1.0f,	1.0f,	1.0f), tcu::RGBA::blue().toVec()));
 			break;
+		case vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST:
+		case vk::VK_PRIMITIVE_TOPOLOGY_LINE_LIST:
+		case vk::VK_PRIMITIVE_TOPOLOGY_LINE_STRIP:
 		case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN:
-			break;
 		case vk::VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY:
-			break;
 		case vk::VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY:
-			break;
 		case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY:
-			break;
 		case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY:
-			break;
 		case vk::VK_PRIMITIVE_TOPOLOGY_PATCH_LIST:
-			break;
 		case vk::VK_PRIMITIVE_TOPOLOGY_LAST:
+			DE_FATAL("Topology not implemented");
 			break;
 		default:
+			DE_FATAL("Unknown topology");
 			break;
 	}
-	DrawTestsBaseClass::initialize();
+	initialize();
 }
 
 tcu::TestStatus SimpleDraw::iterate (void)
@@ -130,39 +124,32 @@ tcu::TestStatus SimpleDraw::iterate (void)
 
 	const vk::VkDeviceSize vertexBufferOffset	= 0;
 	const vk::VkBuffer vertexBuffer				= m_vertexBuffer->object();
-	m_vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
 
+	m_vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
 	m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
 
 	switch (m_topology)
 	{
-		case vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST:
-			break;
-		case vk::VK_PRIMITIVE_TOPOLOGY_LINE_LIST:
-			break;
-		case vk::VK_PRIMITIVE_TOPOLOGY_LINE_STRIP:
-			break;
 		case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST:
 			m_vk.cmdDraw(*m_cmdBuffer, 6, 1, 2, 0);
 			break;
 		case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP:
 			m_vk.cmdDraw(*m_cmdBuffer, 4, 1, 2, 0);
 			break;
+		case vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST:
+		case vk::VK_PRIMITIVE_TOPOLOGY_LINE_LIST:
+		case vk::VK_PRIMITIVE_TOPOLOGY_LINE_STRIP:
 		case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN:
-			break;
 		case vk::VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY:
-			break;
 		case vk::VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY:
-			break;
 		case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY:
-			break;
 		case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY:
-			break;
 		case vk::VK_PRIMITIVE_TOPOLOGY_PATCH_LIST:
-			break;
 		case vk::VK_PRIMITIVE_TOPOLOGY_LAST:
+			DE_FATAL("Topology not implemented");
 			break;
 		default:
+			DE_FATAL("Unknown topology");
 			break;
 	}
 
@@ -173,11 +160,11 @@ tcu::TestStatus SimpleDraw::iterate (void)
 	{
 		vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,	// VkStructureType			sType;
 		DE_NULL,							// const void*				pNext;
-		0, 									// deUint32					waitSemaphoreCount;
-		DE_NULL, 							// const VkSemaphore*		pWaitSemaphores;
-		1, 									// deUint32					commandBufferCount;
+		0,										// deUint32					waitSemaphoreCount;
+		DE_NULL,								// const VkSemaphore*		pWaitSemaphores;
+		1,										// deUint32					commandBufferCount;
 		&m_cmdBuffer.get(),					// const VkCommandBuffer*	pCommandBuffers;
-		0, 									// deUint32					signalSemaphoreCount;
+		0,										// deUint32					signalSemaphoreCount;
 		DE_NULL								// const VkSemaphore*		pSignalSemaphores;
 	};
 	VK_CHECK(m_vk.queueSubmit(queue, 1, &submitInfo, DE_NULL));
@@ -186,12 +173,15 @@ tcu::TestStatus SimpleDraw::iterate (void)
 
 	// Validation
 	tcu::Texture2D referenceFrame(vk::mapVkFormat(m_colorAttachmentFormat), (int)(0.5 + WIDTH), (int)(0.5 + HEIGHT));
+
 	referenceFrame.allocLevel(0);
 
 	const deInt32 frameWidth	= referenceFrame.getWidth();
 	const deInt32 frameHeight	= referenceFrame.getHeight();
 
 	tcu::clear(referenceFrame.getLevel(0), tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f));
+
+	ReferenceImageCoordinates refCoords;
 
 	for (int y = 0; y < frameHeight; y++)
 	{
@@ -201,7 +191,10 @@ tcu::TestStatus SimpleDraw::iterate (void)
 		{
 			const float xCoord = (float)(x / (0.5*frameWidth)) - 1.0f;
 
-			if ((yCoord >= -0.3f && yCoord <= 0.3f && xCoord >= -0.3f && xCoord <= 0.3f))
+			if ((yCoord >= refCoords.bottom	&&
+				 yCoord <= refCoords.top	&&
+				 xCoord >= refCoords.left	&&
+				 xCoord <= refCoords.right))
 				referenceFrame.getLevel(0).setPixel(tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f), x, y);
 		}
 	}
@@ -228,45 +221,40 @@ SimpleDrawInstanced::SimpleDrawInstanced (Context &context, ShaderMap shaders, v
 tcu::TestStatus SimpleDrawInstanced::iterate (void)
 {
 	tcu::TestLog &log		= m_context.getTestContext().getLog();
+
 	const vk::VkQueue queue = m_context.getUniversalQueue();
 
 	beginRenderPass();
 
 	const vk::VkDeviceSize vertexBufferOffset = 0;
 	const vk::VkBuffer vertexBuffer = m_vertexBuffer->object();
+
 	m_vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
 
 	m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
 
 	switch (m_topology)
 	{
-		case vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST:
-			break;
-		case vk::VK_PRIMITIVE_TOPOLOGY_LINE_LIST:
-			break;
-		case vk::VK_PRIMITIVE_TOPOLOGY_LINE_STRIP:
-			break;
 		case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST:
 			m_vk.cmdDraw(*m_cmdBuffer, 6, 4, 2, 2);
 			break;
 		case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP:
 			m_vk.cmdDraw(*m_cmdBuffer, 4, 4, 2, 2);
 			break;
+		case vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST:
+		case vk::VK_PRIMITIVE_TOPOLOGY_LINE_LIST:
+		case vk::VK_PRIMITIVE_TOPOLOGY_LINE_STRIP:
 		case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN:
-			break;
 		case vk::VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY:
-			break;
 		case vk::VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY:
-			break;
 		case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY:
-			break;
 		case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY:
-			break;
 		case vk::VK_PRIMITIVE_TOPOLOGY_PATCH_LIST:
-			break;
 		case vk::VK_PRIMITIVE_TOPOLOGY_LAST:
+			DE_FATAL("Topology not implemented");
 			break;
 		default:
+			DE_FATAL("Unknown topology");
 			break;
 	}
 
@@ -277,11 +265,11 @@ tcu::TestStatus SimpleDrawInstanced::iterate (void)
 	{
 		vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,	// VkStructureType			sType;
 		DE_NULL,							// const void*				pNext;
-		0, 									// deUint32					waitSemaphoreCount;
-		DE_NULL, 							// const VkSemaphore*		pWaitSemaphores;
-		1, 									// deUint32					commandBufferCount;
+		0,										// deUint32					waitSemaphoreCount;
+		DE_NULL,								// const VkSemaphore*		pWaitSemaphores;
+		1,										// deUint32					commandBufferCount;
 		&m_cmdBuffer.get(),					// const VkCommandBuffer*	pCommandBuffers;
-		0, 									// deUint32					signalSemaphoreCount;
+		0,										// deUint32					signalSemaphoreCount;
 		DE_NULL								// const VkSemaphore*		pSignalSemaphores;
 	};
 	VK_CHECK(m_vk.queueSubmit(queue, 1, &submitInfo, DE_NULL));
@@ -292,12 +280,15 @@ tcu::TestStatus SimpleDrawInstanced::iterate (void)
 	VK_CHECK(m_vk.queueWaitIdle(queue));
 
 	tcu::Texture2D referenceFrame(vk::mapVkFormat(m_colorAttachmentFormat), (int)(0.5 + WIDTH), (int)(0.5 + HEIGHT));
+
 	referenceFrame.allocLevel(0);
 
 	const deInt32 frameWidth	= referenceFrame.getWidth();
 	const deInt32 frameHeight	= referenceFrame.getHeight();
 
 	tcu::clear(referenceFrame.getLevel(0), tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f));
+
+	ReferenceImageInstancedCoordinates refInstancedCoords;
 
 	for (int y = 0; y < frameHeight; y++)
 	{
@@ -307,7 +298,10 @@ tcu::TestStatus SimpleDrawInstanced::iterate (void)
 		{
 			const float xCoord = (float)(x / (0.5*frameWidth)) - 1.0f;
 
-			if ((yCoord >= -0.6f && yCoord <= 0.3f && xCoord >= -0.3f && xCoord <= 0.6f))
+			if ((yCoord >= refInstancedCoords.bottom	&&
+				 yCoord <= refInstancedCoords.top		&&
+				 xCoord >= refInstancedCoords.left		&&
+				 xCoord <= refInstancedCoords.right))
 				referenceFrame.getLevel(0).setPixel(tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f), x, y);
 		}
 	}
@@ -343,11 +337,13 @@ void SimpleDrawTests::init (void)
 	ShaderMap shaderPaths;
 	shaderPaths[glu::SHADERTYPE_VERTEX]		= "vulkan/draw/VertexFetch.vert";
 	shaderPaths[glu::SHADERTYPE_FRAGMENT]	= "vulkan/draw/VertexFetch.frag";
+
 	addChild(new InstanceFactory<SimpleDraw>(m_testCtx, "simple_draw_triangle_list", "Draws triangle list", shaderPaths, vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST));
 	addChild(new InstanceFactory<SimpleDraw>(m_testCtx, "simple_draw_triangle_strip", "Draws triangle strip", shaderPaths, vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP));
 
 	shaderPaths[glu::SHADERTYPE_VERTEX]		= "vulkan/draw/VertexFetchWithInstance.vert";
 	shaderPaths[glu::SHADERTYPE_FRAGMENT]	= "vulkan/draw/VertexFetch.frag";
+
 	addChild(new InstanceFactory<SimpleDrawInstanced>(m_testCtx, "simple_draw_instanced_triangle_list", "Draws an instanced triangle list", shaderPaths, vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST));
 	addChild(new InstanceFactory<SimpleDrawInstanced>(m_testCtx, "simple_draw_instanced_triangle_strip", "Draws an instanced triangle strip", shaderPaths, vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP));
 }
