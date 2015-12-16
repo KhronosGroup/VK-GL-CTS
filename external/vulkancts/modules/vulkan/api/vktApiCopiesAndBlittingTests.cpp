@@ -846,6 +846,7 @@ CopyBufferToBuffer::CopyBufferToBuffer (Context& context, TestParams params)
 		VK_CHECK(vk.bindBufferMemory(vkDevice, *m_source, m_sourceBufferAlloc->getMemory(), m_sourceBufferAlloc->getOffset()));
 	}
 
+	m_sourceTextureLevel = de::MovePtr<tcu::TextureLevel>(new tcu::TextureLevel(mapVkFormat(VK_FORMAT_R32_UINT), (int)m_params.src.buffer.size, 1));
 	generateBuffer(m_sourceTextureLevel->getAccess(), m_params.src.buffer.size, 1, 1, Red);
 	uploadBuffer(m_sourceTextureLevel->getAccess(), *m_sourceBufferAlloc);
 
@@ -868,8 +869,11 @@ CopyBufferToBuffer::CopyBufferToBuffer (Context& context, TestParams params)
 		VK_CHECK(vk.bindBufferMemory(vkDevice, *m_destination, m_destinationBufferAlloc->getMemory(), m_destinationBufferAlloc->getOffset()));
 	}
 
+	m_destinationTextureLevel = de::MovePtr<tcu::TextureLevel>(new tcu::TextureLevel(mapVkFormat(VK_FORMAT_R32_UINT), (int)m_params.dst.buffer.size, 1));
 	generateBuffer(m_destinationTextureLevel->getAccess(), m_params.dst.buffer.size, 1, 1, White);
 	uploadBuffer(m_destinationTextureLevel->getAccess(), *m_destinationBufferAlloc);
+	m_expectedTextureLevel = de::MovePtr<tcu::TextureLevel>(new tcu::TextureLevel(mapVkFormat(VK_FORMAT_R32_UINT), (int)m_params.dst.buffer.size, 1));
+	generateExpectedResult();
 }
 
 tcu::TestStatus CopyBufferToBuffer::iterate()
@@ -907,17 +911,14 @@ tcu::TestStatus CopyBufferToBuffer::iterate()
 	const void* const srcBufferBarrierPtr = &srcBufferBarrier;
 	const void* const dstBufferBarrierPtr = &dstBufferBarrier;
 
-	const VkBufferCopy			copyRegion 			=
-	{
-		0u,											// VkDeviceSize		srcOffset;
-		0u,											// VkDeviceSize		dstOffset;
-		m_params.src.buffer.size,					// VkDeviceSize		copySize;
-	};
+	VkBufferCopy* bufferCopies = ((VkBufferCopy*)deMalloc(m_params.regions.size() * sizeof(VkBufferCopy)));
+		for (deUint32 i = 0; i < m_params.regions.size(); i++)
+			bufferCopies[i] = m_params.regions[i].bufferCopy;
 
 	VK_CHECK(vk.beginCommandBuffer(*m_cmdBuffer, &m_cmdBufferBeginInfo));
 	// TODO check this part
 	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_FALSE, 1, &srcBufferBarrierPtr);
-	vk.cmdCopyBuffer(*m_cmdBuffer, m_source.get(), m_destination.get(), 1u, &copyRegion);
+	vk.cmdCopyBuffer(*m_cmdBuffer, m_source.get(), m_destination.get(), m_params.regions.size(), bufferCopies);
 	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_FALSE, 1, &dstBufferBarrierPtr);
 	// part end
 	VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
@@ -938,7 +939,13 @@ tcu::TestStatus CopyBufferToBuffer::iterate()
 	VK_CHECK(vk.queueSubmit(queue, 1, &submitInfo, *m_fence));
 	VK_CHECK(vk.waitForFences(vkDevice, 1, &m_fence.get(), true, ~(0ull) /* infinity */));
 
-	return tcu::TestStatus::fail("Work in progress");
+	// Read buffer data
+	de::MovePtr<tcu::TextureLevel>	resultLevel		(new tcu::TextureLevel(mapVkFormat(VK_FORMAT_R32_UINT), (int)m_params.dst.buffer.size, 1));
+	invalidateMappedMemoryRange(vk, vkDevice, m_destinationBufferAlloc->getMemory(), m_destinationBufferAlloc->getOffset(), m_params.dst.buffer.size);
+	tcu::copy(*resultLevel, tcu::ConstPixelBufferAccess(resultLevel->getFormat(), resultLevel->getSize(), m_destinationBufferAlloc->getHostPtr()));
+	deFree(bufferCopies);
+
+	return checkTestResult(resultLevel->getAccess());
 }
 
 void CopyBufferToBuffer::copyRegionToTextureLevel (tcu::ConstPixelBufferAccess src, tcu::PixelBufferAccess dst, CopyRegion region)
@@ -1051,7 +1058,7 @@ tcu::TestStatus CopyImageToBuffer::iterate()
 																				m_params.src.image.extent.depth));
 	m_destinationTextureLevel = de::MovePtr<tcu::TextureLevel>(new tcu::TextureLevel(mapVkFormat(VK_FORMAT_R32_UINT), (int)m_params.dst.buffer.size, 1));
 
-	generateBuffer(m_sourceTextureLevel->getAccess(), m_params.src.image.extent.width, m_params.src.image.extent.height, m_params.src.image.extent.depth);
+	generateBuffer(m_sourceTextureLevel->getAccess(), m_params.src.image.extent.width, m_params.src.image.extent.height, m_params.src.image.extent.depth, Red);
 	generateBuffer(m_destinationTextureLevel->getAccess(), m_params.dst.buffer.size, 1, 1);
 	generateExpectedResult();
 
@@ -1265,11 +1272,22 @@ tcu::TestCaseGroup* createCopiesAndBlittingTests (tcu::TestContext& testCtx)
 	}
 
 	{
-		TestParams params;
-		params.src.buffer.size = 19901109;
-		params.dst.buffer.size = 19901109;
 		std::ostringstream	description;
 		description << "Copy from buffer to buffer";
+
+		TestParams params;
+		params.src.buffer.size = 256;
+		params.dst.buffer.size = 256;
+		const VkBufferCopy bufferCopy = {
+			0u,		// VkDeviceSize	srcOffset;
+			0u, 	// VkDeviceSize	dstOffset;
+			256u,	// VkDeviceSize	size;
+		};
+		CopyRegion copyRegion;
+		copyRegion.bufferCopy = bufferCopy;
+
+		params.regions.push_back(copyRegion);
+
 		copiesAndBlittingTests->addChild(new BufferToBufferTestCase(testCtx, "bufferToBuffer", description.str(), params));
 	}
 
