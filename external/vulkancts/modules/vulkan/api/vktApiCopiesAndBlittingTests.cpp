@@ -88,8 +88,8 @@ protected:
 
 			void						generateBuffer						(tcu::PixelBufferAccess buffer, int width, int height, int depth = 1);
 	virtual void						generateExpectedResult				(void);
-			void						uploadBuffer						(tcu::ConstPixelBufferAccess src, VkBuffer& buffer);
-			void						uploadImage							(tcu::ConstPixelBufferAccess src, VkImage& image);
+			void						uploadBuffer						(tcu::ConstPixelBufferAccess src, const VkBuffer& buffer);
+			void						uploadImage							(tcu::ConstPixelBufferAccess src, const VkImage &image);
 	virtual tcu::TestStatus				checkTestResult						(tcu::ConstPixelBufferAccess result);
 	virtual void						copyRegionToTextureLevel			(tcu::ConstPixelBufferAccess src, tcu::PixelBufferAccess dst, CopyRegion region) = 0;
 
@@ -177,11 +177,11 @@ void CopiesAndBlittingTestInstance::generateBuffer(tcu::PixelBufferAccess buffer
 				buffer.setPixel(tcu::UVec4(x, y, z, 1), x, y, z);
 }
 
-void CopiesAndBlittingTestInstance::uploadBuffer(tcu::ConstPixelBufferAccess, VkBuffer&)
+void CopiesAndBlittingTestInstance::uploadBuffer(tcu::ConstPixelBufferAccess, const VkBuffer &)
 {
 }
 
-void CopiesAndBlittingTestInstance::uploadImage(tcu::ConstPixelBufferAccess src, VkImage &image)
+void CopiesAndBlittingTestInstance::uploadImage(tcu::ConstPixelBufferAccess src, const VkImage &image)
 {
 	const DeviceInterface&		vk					= m_context.getDeviceInterface();
 	const VkDevice				vkDevice			= m_context.getDevice();
@@ -774,11 +774,12 @@ CopyImageToBuffer::CopyImageToBuffer (Context &context, ImageInfo srcInfo)
 			1u,										// deUint32				arraySize;
 			VK_SAMPLE_COUNT_1_BIT,					// deUint32				samples;
 			VK_IMAGE_TILING_OPTIMAL,				// VkImageTiling		tiling;
-			VK_IMAGE_USAGE_TRANSFER_SRC_BIT,		// VkImageUsageFlags	usage;
+			VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+				VK_IMAGE_USAGE_TRANSFER_DST_BIT,		// VkImageUsageFlags	usage;
 			VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode		sharingMode;
 			1u,										// deUint32				queueFamilyCount;
 			&queueFamilyIndex,						// const deUint32*		pQueueFamilyIndices;
-			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,	// VkImageLayout		initialLayout;
+			VK_IMAGE_LAYOUT_UNDEFINED,				// VkImageLayout		initialLayout;
 		};
 
 		m_source			= createImage(vk, vkDevice, &sourceImageParams);
@@ -808,12 +809,11 @@ CopyImageToBuffer::CopyImageToBuffer (Context &context, ImageInfo srcInfo)
 
 tcu::TestStatus CopyImageToBuffer::iterate()
 {
-//	generateTestBuffer();
-//	generateExpectedResult();
+//	TODO: generate Test Buffers;
 
-	VkImage					image;
-	uploadImage(m_sourceTextureLevel->getAccess(), image);
-	//uploadBuffer(m_destinationTextureLevel->getAccess(), m_destinationBufferAlloc.get());
+	uploadImage(m_sourceTextureLevel->getAccess(), *m_source);
+//	TODO: uploadBuffer(m_destinationTextureLevel->getAccess(), m_destinationBufferAlloc.get());
+//	TODO: generateExpectedResult();
 
 	const DeviceInterface&		vk			= m_context.getDeviceInterface();
 	const VkDevice				vkDevice	= m_context.getDevice();
@@ -830,7 +830,7 @@ tcu::TestStatus CopyImageToBuffer::iterate()
 		VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,		// VkImageLayout			newLayout;
 		VK_QUEUE_FAMILY_IGNORED,					// deUint32					srcQueueFamilyIndex;
 		VK_QUEUE_FAMILY_IGNORED,					// deUint32					dstQueueFamilyIndex;
-		image,										// VkImage					image;
+		*m_source,									// VkImage					image;
 		{											// VkImageSubresourceRange	subresourceRange;
 			VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
 			0u,							// deUint32				baseMipLevel;
