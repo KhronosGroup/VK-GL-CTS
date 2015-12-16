@@ -453,8 +453,7 @@ public:
 							{}
 
 	virtual					~CopiesAndBlittingTestCase	(void) {}
-	virtual	void			initPrograms				(SourceCollections&			programCollection) const
-							{}
+	virtual	void			initPrograms				(SourceCollections&			programCollection) const;
 
 	virtual TestInstance*	createInstance				(Context&					context) const = 0;
 };
@@ -742,7 +741,7 @@ tcu::TestStatus ImageToImageCopies::iterate()
 
 	VK_CHECK(vk.beginCommandBuffer(*m_cmdBuffer, &m_cmdBufferBeginInfo));
 	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_FALSE, 1, &srcImageBarrierPtr);
-	vk.cmdCopyImage(*m_cmdBuffer, m_source.get(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_destination.get(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, m_params.regions.size(), imageCopies);
+	vk.cmdCopyImage(*m_cmdBuffer, m_source.get(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_destination.get(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, (deUint32)m_params.regions.size(), imageCopies);
 	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_FALSE, 1, &dstImageBarrierPtr);
 	VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
 
@@ -792,8 +791,6 @@ public:
 							{}
 
 	virtual					~ImageToImageTestCase		(void) {}
-	virtual	void			initPrograms				(SourceCollections&				programCollection) const
-							{}
 
 	virtual TestInstance*	createInstance				(Context&						context) const
 							{
@@ -844,7 +841,7 @@ CopyBufferToBuffer::CopyBufferToBuffer (Context& context, TestParams params)
 	}
 
 	m_sourceTextureLevel = de::MovePtr<tcu::TextureLevel>(new tcu::TextureLevel(mapVkFormat(VK_FORMAT_R32_UINT), (int)m_params.src.buffer.size, 1));
-	generateBuffer(m_sourceTextureLevel->getAccess(), m_params.src.buffer.size, 1, 1, Red);
+	generateBuffer(m_sourceTextureLevel->getAccess(), (int)m_params.src.buffer.size, 1, 1, Red);
 	uploadBuffer(m_sourceTextureLevel->getAccess(), *m_sourceBufferAlloc);
 
 		// Create desctination buffer
@@ -867,7 +864,7 @@ CopyBufferToBuffer::CopyBufferToBuffer (Context& context, TestParams params)
 	}
 
 	m_destinationTextureLevel = de::MovePtr<tcu::TextureLevel>(new tcu::TextureLevel(mapVkFormat(VK_FORMAT_R32_UINT), (int)m_params.dst.buffer.size, 1));
-	generateBuffer(m_destinationTextureLevel->getAccess(), m_params.dst.buffer.size, 1, 1, White);
+	generateBuffer(m_destinationTextureLevel->getAccess(), (int)m_params.dst.buffer.size, 1, 1, White);
 	uploadBuffer(m_destinationTextureLevel->getAccess(), *m_destinationBufferAlloc);
 	m_expectedTextureLevel = de::MovePtr<tcu::TextureLevel>(new tcu::TextureLevel(mapVkFormat(VK_FORMAT_R32_UINT), (int)m_params.dst.buffer.size, 1));
 	generateExpectedResult();
@@ -915,7 +912,7 @@ tcu::TestStatus CopyBufferToBuffer::iterate()
 	VK_CHECK(vk.beginCommandBuffer(*m_cmdBuffer, &m_cmdBufferBeginInfo));
 	// TODO check this part
 	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_FALSE, 1, &srcBufferBarrierPtr);
-	vk.cmdCopyBuffer(*m_cmdBuffer, m_source.get(), m_destination.get(), m_params.regions.size(), bufferCopies);
+	vk.cmdCopyBuffer(*m_cmdBuffer, m_source.get(), m_destination.get(), (deUint32)m_params.regions.size(), bufferCopies);
 	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_FALSE, 1, &dstBufferBarrierPtr);
 	// part end
 	VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
@@ -963,8 +960,6 @@ public:
 								, m_params			(params)
 							{}
 	virtual					~BufferToBufferTestCase	(void) {}
-	virtual void			initPrograms			(SourceCollections& programCollection) const
-							{}
 
 	virtual TestInstance*	createInstance			(Context& context) const
 							{
@@ -1056,7 +1051,7 @@ tcu::TestStatus CopyImageToBuffer::iterate()
 	m_destinationTextureLevel = de::MovePtr<tcu::TextureLevel>(new tcu::TextureLevel(mapVkFormat(VK_FORMAT_R32_UINT), (int)m_params.dst.buffer.size, 1));
 
 	generateBuffer(m_sourceTextureLevel->getAccess(), m_params.src.image.extent.width, m_params.src.image.extent.height, m_params.src.image.extent.depth, Red);
-	generateBuffer(m_destinationTextureLevel->getAccess(), m_params.dst.buffer.size, 1, 1);
+	generateBuffer(m_destinationTextureLevel->getAccess(), (int)m_params.dst.buffer.size, 1, 1);
 	generateExpectedResult();
 
 	uploadImage(m_sourceTextureLevel->getAccess(), *m_source);
@@ -1109,7 +1104,7 @@ tcu::TestStatus CopyImageToBuffer::iterate()
 			bufferImageCopies[i] = m_params.regions[i].bufferImageCopy;
 	VK_CHECK(vk.beginCommandBuffer(*m_cmdBuffer, &m_cmdBufferBeginInfo));
 	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_FALSE, 1, &imageBarrierPtr);
-	vk.cmdCopyImageToBuffer(*m_cmdBuffer, m_source.get(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_destination.get(), m_params.regions.size(), bufferImageCopies);
+	vk.cmdCopyImageToBuffer(*m_cmdBuffer, m_source.get(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_destination.get(), (deUint32)m_params.regions.size(), bufferImageCopies);
 	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_FALSE, 1, &bufferBarrierPtr);
 	VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
 
@@ -1150,8 +1145,6 @@ public:
 							{}
 
 	virtual					~CopyImageToBufferTestCase	(void) {}
-	virtual	void			initPrograms				(SourceCollections&		programCollection) const
-							{}
 
 	virtual TestInstance*	createInstance				(Context&				context) const
 							{
@@ -1269,7 +1262,7 @@ CopyBufferToImage::CopyBufferToImage (Context &context, TestParams testParams)
 																				m_params.dst.image.extent.depth));
 
 	generateBuffer(m_sourceTextureLevel->getAccess(), m_params.src.image.extent.width, m_params.src.image.extent.height, m_params.src.image.extent.depth);
-	generateBuffer(m_destinationTextureLevel->getAccess(), m_params.dst.buffer.size, 1, 1);
+	generateBuffer(m_destinationTextureLevel->getAccess(), (int)m_params.dst.buffer.size, 1, 1);
 	generateExpectedResult();
 
 	uploadBuffer(m_sourceTextureLevel->getAccess(), *m_sourceBufferAlloc);
@@ -1326,7 +1319,7 @@ tcu::TestStatus CopyBufferToImage::iterate()
 		bufferImageCopies[i] = m_params.regions[i].bufferImageCopy;
 	VK_CHECK(vk.beginCommandBuffer(*m_cmdBuffer, &m_cmdBufferBeginInfo));
 	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_FALSE, 1, &bufferBarrierPtr);
-	vk.cmdCopyBufferToImage(*m_cmdBuffer, m_source.get(), m_destination.get(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, m_params.regions.size(), bufferImageCopies);
+	vk.cmdCopyBufferToImage(*m_cmdBuffer, m_source.get(), m_destination.get(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, (deUint32)m_params.regions.size(), bufferImageCopies);
 	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_FALSE, 1, &imageBarrierPtr);
 	VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
 
@@ -1365,8 +1358,6 @@ public:
 							{}
 
 	virtual					~CopyBufferToImageTestCase	(void) {}
-	virtual	void			initPrograms				(SourceCollections&		programCollection) const
-							{}
 
 	virtual TestInstance*	createInstance				(Context&				context) const
 							{
