@@ -1244,6 +1244,42 @@ tcu::TestCaseGroup* createCopiesAndBlittingTests (tcu::TestContext& testCtx)
 		copiesAndBlittingTests->addChild(new ImageToImageTestCase(testCtx, "imageToImageWhole", description.str(), params));
 	}
 
+	{
+		std::ostringstream description;
+		description << "Copy from image to image";
+
+		TestParams	params;
+		params.src.image.format	= VK_FORMAT_R8G8B8A8_UINT;
+		params.src.image.extent	= defaultExtent;
+		params.dst.image.format	= VK_FORMAT_R32_UINT;
+		params.dst.image.extent	= defaultExtent;
+
+		{
+			const VkImageSubresourceLayers sourceLayer =
+			{
+				VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
+				0u,							// uint32_t				mipLevel;
+				0u,							// uint32_t				baseArrayLayer;
+				1u							// uint32_t				layerCount;
+			};
+			const VkImageCopy testCopy =
+			{
+				sourceLayer,	// VkImageSubresourceLayers	srcSubresource;
+				{0, 0, 0},		// VkOffset3D				srcOffset;
+				sourceLayer,	// VkImageSubresourceLayers	dstSubresource;
+				{0, 0, 0},		// VkOffset3D				dstOffset;
+				{256, 256, 1},	// VkExtent3D				extent;
+			};
+
+			CopyRegion imageCopy;
+			imageCopy.imageCopy = testCopy;
+
+			params.regions.push_back(imageCopy);
+		}
+
+		copiesAndBlittingTests->addChild(new ImageToImageTestCase(testCtx, "imageToImageWhole2", description.str(), params));
+	}
+
 	// Copy image to Buffer testcases.
 	{
 		std::ostringstream	description;
