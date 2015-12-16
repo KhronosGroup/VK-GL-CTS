@@ -605,7 +605,6 @@ class ImageToImageCopies : public CopiesAndBlittingTestInstance
 public:
 										ImageToImageCopies		(Context&	context,
 																 TestParams params);
-	//virtual								~ImageToImageCopies		(void);
 	virtual tcu::TestStatus				iterate					(void);
 private:
 	Move<VkImage>						m_source;
