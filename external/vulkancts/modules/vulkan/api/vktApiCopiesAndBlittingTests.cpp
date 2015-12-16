@@ -88,8 +88,9 @@ protected:
 
 			void						generateBuffer						(tcu::PixelBufferAccess buffer, int width, int height, int depth = 1);
 	virtual void						generateExpectedResult				(void);
-			void						uploadBuffer						(tcu::ConstPixelBufferAccess src, const VkBuffer& buffer);
-			void						uploadImage							(tcu::ConstPixelBufferAccess src, const VkImage &image);
+			deUint32					calculateSize						(tcu::ConstPixelBufferAccess src) const;
+			void						uploadBuffer						(tcu::ConstPixelBufferAccess src, const Allocation &bufferAlloc, const deUint32 bufferSize);
+			void						uploadImage							(tcu::ConstPixelBufferAccess src, const VkImage &image, const deUint32 bufferSize);
 	virtual tcu::TestStatus				checkTestResult						(tcu::ConstPixelBufferAccess result);
 	virtual void						copyRegionToTextureLevel			(tcu::ConstPixelBufferAccess src, tcu::PixelBufferAccess dst, CopyRegion region) = 0;
 
@@ -177,18 +178,28 @@ void CopiesAndBlittingTestInstance::generateBuffer(tcu::PixelBufferAccess buffer
 				buffer.setPixel(tcu::UVec4(x, y, z, 1), x, y, z);
 }
 
-void CopiesAndBlittingTestInstance::uploadBuffer(tcu::ConstPixelBufferAccess, const VkBuffer &)
+deUint32 CopiesAndBlittingTestInstance::calculateSize(tcu::ConstPixelBufferAccess src) const
 {
+	return src.getWidth() * src.getHeight() * src.getDepth() * tcu::getPixelSize(src.getFormat());
 }
 
-void CopiesAndBlittingTestInstance::uploadImage(tcu::ConstPixelBufferAccess src, const VkImage &image)
+void CopiesAndBlittingTestInstance::uploadBuffer(tcu::ConstPixelBufferAccess src, const Allocation &bufferAlloc, const deUint32 bufferSize)
+{
+	const DeviceInterface&		vk			= m_context.getDeviceInterface();
+	const VkDevice				vkDevice	= m_context.getDevice();
+
+	// Write buffer data
+	deMemcpy(bufferAlloc.getHostPtr(), src.getDataPtr(), bufferSize);
+	flushMappedMemoryRange(vk, vkDevice, bufferAlloc.getMemory(), bufferAlloc.getOffset(), bufferSize);
+}
+
+void CopiesAndBlittingTestInstance::uploadImage(tcu::ConstPixelBufferAccess src, const VkImage &image, const deUint32 bufferSize)
 {
 	const DeviceInterface&		vk					= m_context.getDeviceInterface();
 	const VkDevice				vkDevice			= m_context.getDevice();
 	const VkQueue				queue				= m_context.getUniversalQueue();
 	SimpleAllocator				memAlloc			(vk, vkDevice, getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice()));
 
-	deUint32					bufferSize			= src.getWidth() * src.getHeight() * src.getDepth() * tcu::getPixelSize(src.getFormat());
 	Move<VkBuffer>				buffer;
 	de::MovePtr<Allocation>		bufferAlloc;
 	Move<VkCommandBuffer>		cmdBuffer;
@@ -810,14 +821,15 @@ CopyImageToBuffer::CopyImageToBuffer (Context &context, ImageInfo srcInfo)
 tcu::TestStatus CopyImageToBuffer::iterate()
 {
 //	TODO: generate Test Buffers;
-
-	uploadImage(m_sourceTextureLevel->getAccess(), *m_source);
+	uploadImage(m_sourceTextureLevel->getAccess(), *m_source, calculateSize(m_sourceTextureLevel->getAccess()));
 //	TODO: uploadBuffer(m_destinationTextureLevel->getAccess(), m_destinationBufferAlloc.get());
 //	TODO: generateExpectedResult();
 
 	const DeviceInterface&		vk			= m_context.getDeviceInterface();
 	const VkDevice				vkDevice	= m_context.getDevice();
 	const VkQueue				queue		= m_context.getUniversalQueue();
+
+	uploadBuffer(m_destinationTextureLevel->getAccess(), *m_destinationBufferAlloc, calculateSize(m_destinationTextureLevel->getAccess()));
 
 	// Barriers for copying image to buffer
 	const VkImageMemoryBarrier imageBarrier =
