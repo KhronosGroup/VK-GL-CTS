@@ -160,7 +160,7 @@ tcu::TestStatus BufferTestInstance::iterate (void)
 {
 	const VkDeviceSize testSizes[] =
 	{
-		0,
+		1,
 		1181,
 		15991,
 		16384
