@@ -4373,13 +4373,11 @@ public:
 																		 const  CaseContext				caseCtx,
 																		 ShaderExecutor&				executor,
 																		 const  Variables<In, Out>		variables,
-																		 const  Inputs<In>				inputs,
 																		 const  StatementP				stmt)
 										: TestInstance	(context)
 										, m_caseCtx 	(caseCtx)
 										, m_executor 	(executor)
 										, m_variables	(variables)
-										, m_inputs		(inputs)
 										, m_stmt		(stmt)
 									{
 									}
@@ -4389,7 +4387,6 @@ protected:
 	CaseContext						m_caseCtx;
 	ShaderExecutor&					m_executor;
 	Variables<In, Out>				m_variables;
-	Inputs<In>						m_inputs;
 	StatementP						m_stmt;
 };
 
@@ -4403,10 +4400,11 @@ tcu::TestStatus BuiltinPrecisionCaseTestInstance<In, Out>::iterate (void)
 	typedef typename 	Out::Out0	Out0;
 	typedef typename 	Out::Out1	Out1;
 
+	Inputs<In>			inputs		= generateInputs(instance<DefaultSamplings<In> >(), m_caseCtx.floatFormat, m_caseCtx.precision, m_caseCtx.numRandoms, 0xdeadbeefu + m_caseCtx.testContext.getCommandLine().getBaseSeed());
 	const FloatFormat&	fmt			= m_caseCtx.floatFormat;
 	const int			inCount		= numInputs<In>();
 	const int			outCount	= numOutputs<Out>();
-	const size_t		numValues	= (inCount > 0) ? m_inputs.in0.size() : 1;
+	const size_t		numValues	= (inCount > 0) ? inputs.in0.size() : 1;
 	Outputs<Out>		outputs		(numValues);
 	const FloatFormat	highpFmt	= m_caseCtx.highpFormat;
 	const int			maxMsgs		= 100;
@@ -4417,12 +4415,21 @@ tcu::TestStatus BuiltinPrecisionCaseTestInstance<In, Out>::iterate (void)
 
 	const void* 		inputArr[]	=
 	{
-		&m_inputs.in0.front(), &m_inputs.in1.front(), &m_inputs.in2.front(), &m_inputs.in3.front(),
+		&inputs.in0.front(), &inputs.in1.front(), &inputs.in2.front(), &inputs.in3.front(),
 	};
 	void*				outputArr[]	=
 	{
 		&outputs.out0.front(), &outputs.out1.front(),
 	};
+
+	switch (inCount)
+	{
+		case 4: DE_ASSERT(inputs.in3.size() == numValues);
+		case 3: DE_ASSERT(inputs.in2.size() == numValues);
+		case 2: DE_ASSERT(inputs.in1.size() == numValues);
+		case 1: DE_ASSERT(inputs.in0.size() == numValues);
+		default: break;
+	}
 
 	m_executor.execute(m_context, int(numValues), inputArr, outputArr);
 
@@ -4451,10 +4458,10 @@ tcu::TestStatus BuiltinPrecisionCaseTestInstance<In, Out>::iterate (void)
 		typename Traits<Out0>::IVal	reference0;
 		typename Traits<Out1>::IVal	reference1;
 
-		env.lookup(*m_variables.in0) = convert<In0>(fmt, round(fmt, m_inputs.in0[valueNdx]));
-		env.lookup(*m_variables.in1) = convert<In1>(fmt, round(fmt, m_inputs.in1[valueNdx]));
-		env.lookup(*m_variables.in2) = convert<In2>(fmt, round(fmt, m_inputs.in2[valueNdx]));
-		env.lookup(*m_variables.in3) = convert<In3>(fmt, round(fmt, m_inputs.in3[valueNdx]));
+		env.lookup(*m_variables.in0) = convert<In0>(fmt, round(fmt, inputs.in0[valueNdx]));
+		env.lookup(*m_variables.in1) = convert<In1>(fmt, round(fmt, inputs.in1[valueNdx]));
+		env.lookup(*m_variables.in2) = convert<In2>(fmt, round(fmt, inputs.in2[valueNdx]));
+		env.lookup(*m_variables.in3) = convert<In3>(fmt, round(fmt, inputs.in3[valueNdx]));
 
 		{
 			EvalContext	ctx (fmt, m_caseCtx.precision, env);
@@ -4488,25 +4495,25 @@ tcu::TestStatus BuiltinPrecisionCaseTestInstance<In, Out>::iterate (void)
 			if (inCount > 0)
 			{
 				builder << "\t" << m_variables.in0->getName() << " = "
-						<< valueToString(highpFmt, m_inputs.in0[valueNdx]) << "\n";
+						<< valueToString(highpFmt, inputs.in0[valueNdx]) << "\n";
 			}
 
 			if (inCount > 1)
 			{
 				builder << "\t" << m_variables.in1->getName() << " = "
-						<< valueToString(highpFmt, m_inputs.in1[valueNdx]) << "\n";
+						<< valueToString(highpFmt, inputs.in1[valueNdx]) << "\n";
 			}
 
 			if (inCount > 2)
 			{
 				builder << "\t" << m_variables.in2->getName() << " = "
-						<< valueToString(highpFmt, m_inputs.in2[valueNdx]) << "\n";
+						<< valueToString(highpFmt, inputs.in2[valueNdx]) << "\n";
 			}
 
 			if (inCount > 3)
 			{
 				builder << "\t" << m_variables.in3->getName() << " = "
-						<< valueToString(highpFmt, m_inputs.in3[valueNdx]) << "\n";
+						<< valueToString(highpFmt, inputs.in3[valueNdx]) << "\n";
 			}
 
 			if (outCount > 0)
@@ -4561,7 +4568,6 @@ protected:
 						PrecisionCase	(const CaseContext& context, const string& name, const string& extension = "")
 							: TestCase		(context.testContext, name.c_str(), name.c_str())
 							, m_ctx			(context)
-							, m_rnd			(0xdeadbeefu + context.testContext.getCommandLine().getBaseSeed())
 							, m_extension	(extension)
 							, m_executor	(DE_NULL)
 							{
@@ -4576,7 +4582,7 @@ protected:
 	TestLog&			log				(void) const 			{ return m_testCtx.getLog(); }
 
 	template <typename In, typename Out>
-	void				testStatement	(const Variables<In, Out>& variables, const Inputs<In>& inputs, const Statement& stmt);
+	void				testStatement	(const Variables<In, Out>& variables, const Statement& stmt);
 
 	template<typename T>
 	Symbol				makeSymbol		(const Variable<T>& variable)
@@ -4585,29 +4591,17 @@ protected:
 	}
 
 	CaseContext							m_ctx;
-	Random								m_rnd;
 	const string						m_extension;
 	ShaderSpec 							m_spec;
 	de::MovePtr<ShaderExecutor>			m_executor;
 };
 
 template <typename In, typename Out>
-void PrecisionCase::testStatement (const Variables<In, Out>& variables, const Inputs<In>& inputs, const Statement& stmt)
+void PrecisionCase::testStatement (const Variables<In, Out>& variables, const Statement& stmt)
 {
 	const int		inCount		= numInputs<In>();
 	const int 		outCount	= numOutputs<Out>();
-	const size_t	numValues	= (inCount > 0) ? inputs.in0.size() : 1;
-	Outputs<Out>	outputs		(numValues);
 	Environment		env; 		// Hoisted out of the inner loop for optimization.
-
-	switch (inCount)
-	{
-		case 4: DE_ASSERT(inputs.in3.size() == numValues);
-		case 3: DE_ASSERT(inputs.in2.size() == numValues);
-		case 2: DE_ASSERT(inputs.in1.size() == numValues);
-		case 1: DE_ASSERT(inputs.in0.size() == numValues);
-		default: break;
-	}
 
 	// Print out the statement and its definitions
 	log() << TestLog::Message << "Statement: " << stmt << TestLog::EndMessage;
@@ -4763,8 +4757,9 @@ Inputs<In> generateInputs (const Samplings<In>&	samplings,
 						   const FloatFormat&	floatFormat,
 						   Precision			intPrecision,
 						   size_t				numSamples,
-						   Random&				rnd)
+						   deUint32				seed)
 {
+	Random										rnd(seed);
 	Inputs<In>									ret;
 	Inputs<In>									fixedInputs;
 	set<InTuple<In>, InputLess<InTuple<In> > >	seenInputs;
@@ -4851,27 +4846,20 @@ public:
 
 	virtual	TestInstance*					createInstance	(Context& context) const
 	{
-		return new BuiltinPrecisionCaseTestInstance<In, Out>(context, m_ctx, *m_executor, m_variables, m_inputs, m_stmt);
+		return new BuiltinPrecisionCaseTestInstance<In, Out>(context, m_ctx, *m_executor, m_variables, m_stmt);
 	}
 
 protected:
 	void									buildTest		(void);
-	virtual const Samplings<In>&			getSamplings	(void)
-	{
-		return instance<DefaultSamplings<In> >();
-	}
 
 private:
 	const CaseFunc&							m_func;
 	Variables<In, Out>						m_variables;
-	Inputs<In>								m_inputs;
 };
 
 template <typename Sig>
 void FuncCase<Sig>::buildTest (void)
 {
-	m_inputs 			= generateInputs(getSamplings(), m_ctx.floatFormat, m_ctx.precision, m_ctx.numRandoms, m_rnd);
-
 	m_variables.out0	= variable<Ret>("out0");
 	m_variables.out1	= variable<Void>("out1");
 	m_variables.in0		= variable<Arg0>("in0");
@@ -4883,7 +4871,7 @@ void FuncCase<Sig>::buildTest (void)
 		ExprP<Ret> expr	= applyVar(m_func, m_variables.in0, m_variables.in1, m_variables.in2, m_variables.in3);
 		m_stmt			= variableAssignment(m_variables.out0, expr);
 
-		this->testStatement(m_variables, m_inputs, *m_stmt);
+		this->testStatement(m_variables, *m_stmt);
 	}
 }
 
@@ -4908,24 +4896,20 @@ public:
 											}
 	virtual TestInstance*				createInstance	(Context& context) const
 	{
-		return new BuiltinPrecisionCaseTestInstance<In, Out>(context, m_ctx, *m_executor, m_variables, m_inputs, m_stmt);
+		return new BuiltinPrecisionCaseTestInstance<In, Out>(context, m_ctx, *m_executor, m_variables, m_stmt);
 	}
 
 protected:
 	void								buildTest		(void);
 
-	virtual const Samplings<In>&		getSamplings	(void)	{ return instance<DefaultSamplings<In> >();	}
-
 private:
 	const CaseFunc&						m_func;
 	Variables<In, Out>					m_variables;
-	Inputs<In> 							m_inputs;
 };
 
 template <typename Sig>
 void InOutFuncCase<Sig>::buildTest (void)
 {
-	m_inputs			= generateInputs(getSamplings(), m_ctx.floatFormat, m_ctx.precision, m_ctx.numRandoms, m_rnd);
 
 	m_variables.out0	= variable<Ret>("out0");
 	m_variables.out1	= variable<Arg1>("out1");
@@ -4938,7 +4922,7 @@ void InOutFuncCase<Sig>::buildTest (void)
 		ExprP<Ret> expr	= applyVar(m_func, m_variables.in0, m_variables.out1, m_variables.in1, m_variables.in2);
 		m_stmt			= variableAssignment(m_variables.out0, expr);
 
-		this->testStatement(m_variables, m_inputs, *m_stmt);
+		this->testStatement(m_variables, *m_stmt);
 	}
 }
 
