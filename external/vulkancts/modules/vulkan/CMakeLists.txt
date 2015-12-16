@@ -43,7 +43,7 @@ set(DEQP_VK_COMMON_LIBS
 	deqp-vk-spirv-assembly
 	deqp-vk-shaderrender
 	deqp-vk-memory
-	deqp-vk-dynamic_state
+	deqp-vk-dynamic-state
 	)
 
 if (DE_OS_IS_WIN32 OR DE_OS_IS_UNIX OR DE_OS_IS_OSX)
