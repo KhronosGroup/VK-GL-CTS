@@ -22,6 +22,8 @@ set(DEQP_VK_PIPELINE_SRCS
 	vktPipelineImageViewTests.hpp
 	vktPipelineMultisampleTests.cpp
 	vktPipelineMultisampleTests.hpp
+	vktPipelineInputAssemblyTests.cpp
+	vktPipelineInputAssemblyTests.hpp
 	vktPipelineReferenceRenderer.cpp
 	vktPipelineReferenceRenderer.hpp
 	vktPipelineSamplerTests.cpp
@@ -30,6 +32,7 @@ set(DEQP_VK_PIPELINE_SRCS
 	vktPipelineStencilTests.hpp
 	vktPipelineTests.cpp
 	vktPipelineTests.hpp
+	vktPipelineUniqueRandomIterator.hpp
 	vktPipelineVertexUtil.cpp
 	vktPipelineVertexUtil.hpp
 	)
