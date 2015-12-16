@@ -495,7 +495,7 @@ deUint32 getGlobalMaxQueueCount(const vector<VkQueueFamilyProperties>& queueFami
 
 	for (deUint32 queueFamilyNdx = 0; queueFamilyNdx < (deUint32)queueFamilyProperties.size(); queueFamilyNdx++)
 	{
-		maxQueueCount = max(maxQueueCount, queueFamilyProperties[queueFamilyNdx].queueCount);
+		maxQueueCount = de::max(maxQueueCount, queueFamilyProperties[queueFamilyNdx].queueCount);
 	}
 
 	return maxQueueCount;
