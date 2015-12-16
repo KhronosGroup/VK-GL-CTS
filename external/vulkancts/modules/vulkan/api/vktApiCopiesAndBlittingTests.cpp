@@ -855,6 +855,164 @@ public:
 							}
 private:
 	TestParams				m_params;
+	VkDeviceSize			m_size;
+};
+
+class CopyBufferToBuffer : public CopiesAndBlittingTestInstance
+{
+public:
+								CopyBufferToBuffer			(Context& context, TestParams params);
+	virtual tcu::TestStatus		iterate						(void);
+private:
+	virtual void				copyRegionToTextureLevel	(tcu::ConstPixelBufferAccess, tcu::PixelBufferAccess, CopyRegion)
+								{}
+	Move<VkBuffer>				m_source;
+	de::MovePtr<Allocation>		m_sourceBufferAlloc;
+	Move<VkBuffer>				m_destination;
+	de::MovePtr<Allocation>		m_destinationBufferAlloc;
+};
+
+CopyBufferToBuffer::CopyBufferToBuffer (Context& context, TestParams params)
+	: CopiesAndBlittingTestInstance	(context, params)
+{
+	const DeviceInterface&		vk					= context.getDeviceInterface();
+	const VkDevice				vkDevice			= context.getDevice();
+	SimpleAllocator				memAlloc			(vk, vkDevice, getPhysicalDeviceMemoryProperties(context.getInstanceInterface(), context.getPhysicalDevice()));
+
+	// Create source buffer
+	{
+		const VkBufferCreateInfo	sourceBufferParams	=
+		{
+			VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,		// VkStructureType		sType;
+			DE_NULL,									// const void*			pNext;
+			0u,											// VkBufferCreateFlags	flags;
+			m_params.src.buffer.size,					// VkDeviceSize			size;
+			VK_BUFFER_USAGE_TRANSFER_DST_BIT,			// VkBufferUsageFlags	usage;
+			VK_SHARING_MODE_EXCLUSIVE,					// VkSharingMode		sharingMode;
+			0u,											// deUint32				queueFamilyIndexCount;
+			DE_NULL										// const deUint32*		pQueueFamilyIndices;
+		};
+
+		m_source				= createBuffer(vk, vkDevice, &sourceBufferParams);
+		m_sourceBufferAlloc		= memAlloc.allocate(getBufferMemoryRequirements(vk, vkDevice, *m_source), MemoryRequirement::HostVisible);
+		VK_CHECK(vk.bindBufferMemory(vkDevice, *m_source, m_sourceBufferAlloc->getMemory(), m_sourceBufferAlloc->getOffset()));
+	}
+
+	generateBuffer(m_sourceTextureLevel->getAccess(), m_params.src.buffer.size, 1, 1, Red);
+	uploadBuffer(m_sourceTextureLevel->getAccess(), *m_sourceBufferAlloc);
+
+		// Create desctination buffer
+	{
+		const VkBufferCreateInfo	destinationBufferParams	=
+		{
+			VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,		// VkStructureType		sType;
+			DE_NULL,									// const void*			pNext;
+			0u,											// VkBufferCreateFlags	flags;
+			m_params.dst.buffer.size,					// VkDeviceSize			size;
+			VK_BUFFER_USAGE_TRANSFER_DST_BIT,			// VkBufferUsageFlags	usage;
+			VK_SHARING_MODE_EXCLUSIVE,					// VkSharingMode		sharingMode;
+			0u,											// deUint32				queueFamilyIndexCount;
+			DE_NULL										// const deUint32*		pQueueFamilyIndices;
+		};
+
+		m_destination				= createBuffer(vk, vkDevice, &destinationBufferParams);
+		m_destinationBufferAlloc	= memAlloc.allocate(getBufferMemoryRequirements(vk, vkDevice, *m_destination), MemoryRequirement::HostVisible);
+		VK_CHECK(vk.bindBufferMemory(vkDevice, *m_destination, m_destinationBufferAlloc->getMemory(), m_destinationBufferAlloc->getOffset()));
+	}
+
+	generateBuffer(m_destinationTextureLevel->getAccess(), m_params.dst.buffer.size, 1, 1, White);
+	uploadBuffer(m_destinationTextureLevel->getAccess(), *m_destinationBufferAlloc);
+}
+
+tcu::TestStatus CopyBufferToBuffer::iterate()
+{
+	const DeviceInterface&		vk			= m_context.getDeviceInterface();
+	const VkDevice				vkDevice	= m_context.getDevice();
+	const VkQueue				queue		= m_context.getUniversalQueue();
+
+	const VkBufferMemoryBarrier srcBufferBarrier =
+	{
+		VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,	// VkStructureType	sType;
+		DE_NULL,									// const void*		pNext;
+		VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags	srcAccessMask;
+		VK_ACCESS_HOST_READ_BIT,					// VkAccessFlags	dstAccessMask;
+		VK_QUEUE_FAMILY_IGNORED,					// deUint32			srcQueueFamilyIndex;
+		VK_QUEUE_FAMILY_IGNORED,					// deUint32			dstQueueFamilyIndex;
+		*m_source,									// VkBuffer			buffer;
+		0u,											// VkDeviceSize		offset;
+		m_params.src.buffer.size					// VkDeviceSize		size;
+	};
+
+	const VkBufferMemoryBarrier dstBufferBarrier	=
+	{
+		VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,	// VkStructureType	sType;
+		DE_NULL,									// const void*		pNext;
+		VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags	srcAccessMask;
+		VK_ACCESS_HOST_READ_BIT,					// VkAccessFlags	dstAccessMask;
+		VK_QUEUE_FAMILY_IGNORED,					// deUint32			srcQueueFamilyIndex;
+		VK_QUEUE_FAMILY_IGNORED,					// deUint32			dstQueueFamilyIndex;
+		*m_destination,								// VkBuffer			buffer;
+		0u,											// VkDeviceSize		offset;
+		m_params.dst.buffer.size					// VkDeviceSize		size;
+	};
+
+	const void* const srcBufferBarrierPtr = &srcBufferBarrier;
+	const void* const dstBufferBarrierPtr = &dstBufferBarrier;
+
+	const VkBufferCopy			copyRegion 			=
+	{
+		0u,											// VkDeviceSize		srcOffset;
+		0u,											// VkDeviceSize		dstOffset;
+		m_params.src.buffer.size,					// VkDeviceSize		copySize;
+	};
+
+	VK_CHECK(vk.beginCommandBuffer(*m_cmdBuffer, &m_cmdBufferBeginInfo));
+	// TODO check this part
+	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_FALSE, 1, &srcBufferBarrierPtr);
+	vk.cmdCopyBuffer(*m_cmdBuffer, m_source.get(), m_destination.get(), 1u, &copyRegion);
+	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_FALSE, 1, &dstBufferBarrierPtr);
+	// part end
+	VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
+
+	const VkSubmitInfo submitInfo =
+	{
+		VK_STRUCTURE_TYPE_SUBMIT_INFO,	// VkStructureType			sType;
+		DE_NULL,						// const void*				pNext;
+		0u,								// deUint32					waitSemaphoreCount;
+		DE_NULL,						// const VkSemaphore*		pWaitSemaphores;
+		1u,								// deUint32					commandBufferCount;
+		&m_cmdBuffer.get(),				// const VkCommandBuffer*	pCommandBuffers;
+		0u,								// deUint32					signalSemaphoreCount;
+		DE_NULL							// const VkSemaphore*		pSignalSemaphores;
+	};
+
+	VK_CHECK(vk.resetFences(vkDevice, 1, &m_fence.get()));
+	VK_CHECK(vk.queueSubmit(queue, 1, &submitInfo, *m_fence));
+	VK_CHECK(vk.waitForFences(vkDevice, 1, &m_fence.get(), true, ~(0ull) /* infinity */));
+
+	return tcu::TestStatus::fail("Work in progress");
+}
+
+class BufferToBufferTestCase : public vkt::TestCase
+{
+public:
+							BufferToBufferTestCase	(tcu::TestContext&	testCtx,
+													const std::string&	name,
+													const std::string&	description,
+													const TestParams	params)
+								: vkt::TestCase		(testCtx, name, description)
+								, m_params			(params)
+							{}
+	virtual					~BufferToBufferTestCase	(void) {}
+	virtual void			initPrograms			(SourceCollections& programCollection) const
+							{}
+
+	virtual TestInstance*	createInstance			(Context& context) const
+							{
+								return new CopyBufferToBuffer(context, m_params);
+							}
+private:
+	TestParams				m_params;
 };
 
 // Copy from image to buffer.
@@ -1112,6 +1270,15 @@ tcu::TestCaseGroup* createCopiesAndBlittingTests (tcu::TestContext& testCtx)
 		params.dst.buffer.size	= 19850123;
 
 		copiesAndBlittingTests->addChild(new CopyImageToBufferTestCase(testCtx, "imageToBuffer", description.str(), params));
+	}
+
+	{
+		TestParams params;
+		params.src.buffer.size = 19901109;
+		params.dst.buffer.size = 19901109;
+		std::ostringstream	description;
+		description << "Copy from buffer to buffer";
+		copiesAndBlittingTests->addChild(new BufferToBufferTestCase(testCtx, "bufferToBuffer", description.str(), params));
 	}
 
 	return copiesAndBlittingTests.release();
