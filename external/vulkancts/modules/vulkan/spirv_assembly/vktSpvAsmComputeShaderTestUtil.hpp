@@ -37,6 +37,7 @@
 #include "deDefs.h"
 #include "deSharedPtr.hpp"
 #include "tcuVector.hpp"
+#include "vkMemUtil.hpp"
 
 #include <string>
 #include <vector>
@@ -45,6 +46,9 @@ namespace vkt
 {
 namespace SpirVAssembly
 {
+
+typedef de::MovePtr<vk::Allocation>			AllocationMp;
+typedef de::SharedPtr<vk::Allocation>		AllocationSp;
 
 /*--------------------------------------------------------------------*//*!
  * \brief Abstract class for an input/output storage buffer object
@@ -78,7 +82,11 @@ private:
 	std::vector<E>		m_elements;
 };
 
-typedef Buffer<float>	Float32Buffer;
+DE_STATIC_ASSERT(sizeof(tcu::Vec4) == 4 * sizeof(float));
+
+typedef Buffer<float>		Float32Buffer;
+typedef Buffer<deInt32>		Int32Buffer;
+typedef Buffer<tcu::Vec4>	Vec4Buffer;
 
 
 /*--------------------------------------------------------------------*//*!
@@ -90,9 +98,21 @@ typedef Buffer<float>	Float32Buffer;
 struct ComputeShaderSpec
 {
 	std::string				assembly;
+	std::string				entryPoint;
 	std::vector<BufferSp>	inputs;
 	std::vector<BufferSp>	outputs;
 	tcu::IVec3				numWorkGroups;
+	std::vector<deUint32>	specConstants;
+	// If null, a default verification will be performed by comparing the memory pointed to by outputAllocations
+	// and the contents of expectedOutputs. Otherwise the function pointed to by verifyIO will be called.
+	// If true is returned, then the test case is assumed to have passed, if false is returned, then the test
+	// case is assumed to have failed.
+	bool					(*verifyIO)(const std::vector<BufferSp>& inputs, const std::vector<AllocationSp>& outputAllocations, const std::vector<BufferSp>& expectedOutputs);
+
+							ComputeShaderSpec()
+								: verifyIO(DE_NULL)
+							{}
+
 };
 
 } // SpirVAssembly
