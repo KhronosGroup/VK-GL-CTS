@@ -14,6 +14,8 @@ set(DEQP_VK_PIPELINE_SRCS
 	vktPipelineImageSamplingInstance.hpp
 	vktPipelineImageTests.cpp
 	vktPipelineImageTests.hpp
+	vktPipelinePushConstantTests.cpp
+	vktPipelinePushConstantTests.hpp
 	vktPipelineImageUtil.cpp
 	vktPipelineImageUtil.hpp
 	vktPipelineImageViewTests.cpp

@@ -2723,8 +2723,6 @@ void VKAPI vkCmdResolveImage(
 Push constants
 --------------
 
-TODO
-
 [source,c]
 ----
 void VKAPI vkCmdPushConstants(
@@ -2735,6 +2733,12 @@ void VKAPI vkCmdPushConstants(
     uint32_t                                    length,
     const void*                                 values);
 ----
+
+ * Range size, including verify various size of a single range from minimum to maximum
+ * Range count, including verify all the valid shader stages
+ * Data update, including verify a sub-range update, multiple times of updates
+ 
+ ? Invalid usages specified in spec NOT tested
 
 GPU timestamps
 --------------
