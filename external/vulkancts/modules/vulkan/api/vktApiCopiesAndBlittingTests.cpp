@@ -76,11 +76,6 @@ public:
 	virtual								~CopiesAndBlittingTestInstance		(void);
 	virtual tcu::TestStatus				iterate								(void);
 protected:
-	enum BufferType{
-		Source,
-		Destination
-	};
-
 	Move<VkCommandPool>					m_cmdPool;
 	Move<VkCommandBuffer>				m_cmdBuffer;
 	Move<VkFence>						m_fence;
@@ -91,9 +86,9 @@ protected:
 
 	VkCommandBufferBeginInfo			m_cmdBufferBeginInfo;
 
-			void						generateBuffer						(BufferType type, int width, int height, int depth = 1);
+			void						generateBuffer						(tcu::PixelBufferAccess buffer, int width, int height, int depth = 1);
 	virtual void						generateExpectedResult				(void);
-
+			void						uploadBuffer						(tcu::ConstPixelBufferAccess src, VkBuffer& buffer);
 			void						uploadImage							(tcu::ConstPixelBufferAccess src, VkImage& image);
 	virtual tcu::TestStatus				checkTestResult						(tcu::ConstPixelBufferAccess result);
 	virtual void						copyRegionToTextureLevel			(tcu::ConstPixelBufferAccess src, tcu::PixelBufferAccess dst, CopyRegion region) = 0;
@@ -173,17 +168,17 @@ CopiesAndBlittingTestInstance::CopiesAndBlittingTestInstance	(Context& context)
 	}
 }
 
-void CopiesAndBlittingTestInstance::generateBuffer(BufferType type, int width, int height, int depth)
+void CopiesAndBlittingTestInstance::generateBuffer(tcu::PixelBufferAccess buffer, int width, int height, int depth)
 {
-	tcu::TextureLevel* buffer = (type == Source) ? m_sourceTextureLevel.get() : m_destinationTextureLevel.get();
-	// TODO: Should we use another TextureFormat?
-	buffer = new tcu::TextureLevel(tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNSIGNED_INT32), width, height, depth);
-
 	// TODO: Should we generate random data?
 	for (int x = 0; x < width; x++)
 		for (int y = 0; y < height; y++)
 			for (int z = 0; z < depth; z++)
-				buffer->getAccess().setPixel(tcu::UVec4(x, y, z, 1), x, y, z);
+				buffer.setPixel(tcu::UVec4(x, y, z, 1), x, y, z);
+}
+
+void CopiesAndBlittingTestInstance::uploadBuffer(tcu::ConstPixelBufferAccess, VkBuffer&)
+{
 }
 
 void CopiesAndBlittingTestInstance::uploadImage(tcu::ConstPixelBufferAccess src, VkImage &image)
@@ -640,12 +635,12 @@ tcu::TestStatus ImageToImageCopies::iterate()
 																				m_testParams.srcExtent.width,
 																				m_testParams.srcExtent.height,
 																				m_testParams.srcExtent.depth));
-	generateBuffer(Source, m_testParams.srcExtent.width, m_testParams.srcExtent.height, m_testParams.srcExtent.depth);
+	generateBuffer(m_sourceTextureLevel->getAccess(), m_testParams.srcExtent.width, m_testParams.srcExtent.height, m_testParams.srcExtent.depth);
 	m_destinationTextureLevel = de::MovePtr<tcu::TextureLevel>(new tcu::TextureLevel(mapVkFormat(m_testParams.dstColorFormat),
 																					 (int)m_testParams.dstExtent.width,
 																					 (int)m_testParams.dstExtent.height,
 																					 (int)m_testParams.dstExtent.depth));
-	generateBuffer(Destination, m_testParams.dstExtent.width, m_testParams.dstExtent.height, m_testParams.dstExtent.depth);
+	generateBuffer(m_destinationTextureLevel->getAccess(), m_testParams.dstExtent.width, m_testParams.dstExtent.height, m_testParams.dstExtent.depth);
 	generateExpectedResult();
 
 	const DeviceInterface&		vk					= m_context.getDeviceInterface();
