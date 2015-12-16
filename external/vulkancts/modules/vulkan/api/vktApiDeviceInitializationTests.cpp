@@ -489,6 +489,18 @@ tcu::TestStatus createDeviceWithUnsupportedExtensionsTest (Context& context)
 	}
 }
 
+deUint32 getGlobalMaxQueueCount(const vector<VkQueueFamilyProperties>& queueFamilyProperties)
+{
+	deUint32 maxQueueCount = 0;
+
+	for (deUint32 queueFamilyNdx = 0; queueFamilyNdx < (deUint32)queueFamilyProperties.size(); queueFamilyNdx++)
+	{
+		maxQueueCount = max(maxQueueCount, queueFamilyProperties[queueFamilyNdx].queueCount);
+	}
+
+	return maxQueueCount;
+}
+
 tcu::TestStatus createDeviceWithVariousQueueCountsTest (Context& context)
 {
 	tcu::TestLog&							log						= context.getTestContext().getLog();
@@ -498,6 +510,7 @@ tcu::TestStatus createDeviceWithVariousQueueCountsTest (Context& context)
 	const InstanceDriver					instanceDriver			(platformInterface, instance.get());
 	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance.get(), context.getTestContext().getCommandLine());
 	const vector<VkQueueFamilyProperties>	queueFamilyProperties	= getPhysicalDeviceQueueFamilyProperties(instanceDriver, physicalDevice);
+	const vector<float>						queuePriorities			(getGlobalMaxQueueCount(queueFamilyProperties), 1.0f);
 	vector<VkDeviceQueueCreateInfo>			deviceQueueCreateInfos;
 
 	for (deUint32 queueFamilyNdx = 0; queueFamilyNdx < (deUint32)queueFamilyProperties.size(); queueFamilyNdx++)
@@ -513,7 +526,7 @@ tcu::TestStatus createDeviceWithVariousQueueCountsTest (Context& context)
 				(VkDeviceQueueCreateFlags)0u,
 				queueFamilyNdx,
 				queueCount,
-				DE_NULL
+				queuePriorities.data()
 			};
 
 			deviceQueueCreateInfos.push_back(queueCreateInfo);
