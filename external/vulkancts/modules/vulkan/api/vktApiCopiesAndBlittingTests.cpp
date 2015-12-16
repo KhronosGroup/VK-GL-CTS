@@ -813,8 +813,7 @@ public:
 								CopyBufferToBuffer			(Context& context, TestParams params);
 	virtual tcu::TestStatus		iterate						(void);
 private:
-	virtual void				copyRegionToTextureLevel	(tcu::ConstPixelBufferAccess, tcu::PixelBufferAccess, CopyRegion)
-								{}
+	virtual void				copyRegionToTextureLevel	(tcu::ConstPixelBufferAccess, tcu::PixelBufferAccess, CopyRegion);
 	Move<VkBuffer>				m_source;
 	de::MovePtr<Allocation>		m_sourceBufferAlloc;
 	Move<VkBuffer>				m_destination;
@@ -940,6 +939,13 @@ tcu::TestStatus CopyBufferToBuffer::iterate()
 	VK_CHECK(vk.waitForFences(vkDevice, 1, &m_fence.get(), true, ~(0ull) /* infinity */));
 
 	return tcu::TestStatus::fail("Work in progress");
+}
+
+void CopyBufferToBuffer::copyRegionToTextureLevel (tcu::ConstPixelBufferAccess src, tcu::PixelBufferAccess dst, CopyRegion region)
+{
+	deMemcpy((deUint8*) dst.getDataPtr() + region.bufferCopy.dstOffset,
+				(deUint8*) src.getDataPtr() + region.bufferCopy.srcOffset,
+				region.bufferCopy.size);
 }
 
 class BufferToBufferTestCase : public vkt::TestCase
