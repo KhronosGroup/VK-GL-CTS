@@ -670,52 +670,6 @@ ImageToImageCopies::ImageToImageCopies (Context &context, TestParams params)
 	m_destination = createImage(vk, vkDevice, &destinationImageParams);
 	m_destinationImageAlloc = memAlloc.allocate(getImageMemoryRequirements(vk, vkDevice, *m_destination), MemoryRequirement::Any);
 	VK_CHECK(vk.bindImageMemory(vkDevice, *m_destination, m_destinationImageAlloc->getMemory(), m_destinationImageAlloc->getOffset()));
-
-	{
-		const VkImageSubresourceLayers sourceLayer =
-		{
-			VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
-			0u,							// uint32_t				mipLevel;
-			0u,							// uint32_t				baseArrayLayer;
-			1u							// uint32_t				layerCount;
-		};
-		const VkImageCopy testCopy =
-		{
-			sourceLayer,	// VkImageSubresourceLayers	srcSubresource;
-			{16, 16, 0},		// VkOffset3D				srcOffset;
-			sourceLayer,	// VkImageSubresourceLayers	dstSubresource;
-			{0, 0, 0},		// VkOffset3D				dstOffset;
-			{16, 16, 1},	// VkExtent3D				extent;
-		};
-
-		CopyRegion imageCopy;
-		imageCopy.imageCopy = testCopy;
-
-		m_params.regions.push_back(imageCopy);
-	}
-
-	{
-		const VkImageSubresourceLayers sourceLayer =
-		{
-			VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
-			0u,							// uint32_t				mipLevel;
-			0u,							// uint32_t				baseArrayLayer;
-			1u							// uint32_t				layerCount;
-		};
-		const VkImageCopy testCopy =
-		{
-			sourceLayer,	// VkImageSubresourceLayers	srcSubresource;
-			{16, 16, 0},	// VkOffset3D				srcOffset;
-			sourceLayer,	// VkImageSubresourceLayers	dstSubresource;
-			{88, 3, 0},		// VkOffset3D				dstOffset;
-			{16, 88, 1},	// VkExtent3D				extent;
-		};
-
-		CopyRegion imageCopy;
-		imageCopy.imageCopy = testCopy;
-
-		m_params.regions.push_back(imageCopy);
-	}
 }
 
 tcu::TestStatus ImageToImageCopies::iterate()
@@ -1248,8 +1202,31 @@ tcu::TestCaseGroup* createCopiesAndBlittingTests (tcu::TestContext& testCtx)
 		TestParams	params;
 		params.src.image.format	= VK_FORMAT_R8G8B8A8_UINT;
 		params.src.image.extent	= defaultExtent;
-		params.dst.image.format	= VK_FORMAT_R8G8B8A8_UINT;
+		params.dst.image.format	= VK_FORMAT_R32_UINT;
 		params.dst.image.extent	= defaultExtent;
+
+		{
+			const VkImageSubresourceLayers sourceLayer =
+			{
+				VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
+				0u,							// uint32_t				mipLevel;
+				0u,							// uint32_t				baseArrayLayer;
+				1u							// uint32_t				layerCount;
+			};
+			const VkImageCopy testCopy =
+			{
+				sourceLayer,	// VkImageSubresourceLayers	srcSubresource;
+				{16, 16, 0},		// VkOffset3D				srcOffset;
+				sourceLayer,	// VkImageSubresourceLayers	dstSubresource;
+				{0, 0, 0},		// VkOffset3D				dstOffset;
+				{16, 16, 1},	// VkExtent3D				extent;
+			};
+
+			CopyRegion imageCopy;
+			imageCopy.imageCopy = testCopy;
+
+			params.regions.push_back(imageCopy);
+		}
 
 		copiesAndBlittingTests->addChild(new ImageToImageTestCase(testCtx, "imageToImageWhole", description.str(), params));
 	}
