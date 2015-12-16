@@ -71,6 +71,14 @@ template<typename T> struct ArrayDeleter
 	inline void operator() (T* ptr) const { delete[] ptr; }
 };
 
+//! Get required memory alignment for type
+template<typename T>
+size_t alignOf (void)
+{
+	struct PaddingCheck { deUint8 b; T t; };
+	return (size_t)DE_OFFSET_OF(PaddingCheck, t);
+}
+
 } // de
 
 /*--------------------------------------------------------------------*//*!
