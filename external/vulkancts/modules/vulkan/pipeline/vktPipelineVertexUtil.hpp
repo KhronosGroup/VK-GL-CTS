@@ -58,6 +58,20 @@ struct Vertex4Tex4
 	tcu::Vec4 texCoord;
 };
 
+deUint32					getVertexFormatSize				(vk::VkFormat format);
+deUint32					getVertexFormatComponentCount	(vk::VkFormat format);
+deUint32					getVertexFormatComponentSize	(vk::VkFormat format);
+bool						isVertexFormatComponentOrderBGR	(vk::VkFormat format);
+bool						isVertexFormatSint				(vk::VkFormat format);
+bool						isVertexFormatUint				(vk::VkFormat format);
+bool						isVertexFormatSfloat			(vk::VkFormat format);
+bool						isVertexFormatUfloat			(vk::VkFormat format);
+bool						isVertexFormatUnorm				(vk::VkFormat format);
+bool						isVertexFormatSnorm				(vk::VkFormat format);
+bool						isVertexFormatSRGB				(vk::VkFormat format);
+bool						isVertexFormatSscaled			(vk::VkFormat format);
+bool						isVertexFormatUscaled			(vk::VkFormat format);
+
 /*! \brief Creates a pattern of 4 overlapping quads.
  *
  *  The quads are alined along the plane Z = 0, with X,Y taking values between -1 and 1.
