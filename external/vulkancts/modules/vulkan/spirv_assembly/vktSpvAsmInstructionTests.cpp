@@ -362,7 +362,6 @@ tcu::TestCaseGroup* createNoContractionGroup (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "nocontraction", "Test the NoContraction decoration"));
 	vector<CaseParameter>			cases;
-	de::Random						rnd				(deStringHash(group->getName()));
 	const int						numElements		= 100;
 	vector<float>					inputFloats1	(numElements, 0);
 	vector<float>					inputFloats2	(numElements, 0);
@@ -2146,7 +2145,6 @@ bool compareNan (const std::vector<BufferSp>&, const vector<AllocationSp>& outpu
 tcu::TestCaseGroup* createOpQuantizeToF16Group (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opquantize", "Tests the OpQuantizeToF16 instruction"));
-	de::Random						rnd				(deStringHash(group->getName()));
 
 	const std::string shader (
 		string(s_ShaderPreamble) +

@@ -659,7 +659,7 @@ void FragmentOutExecutor::addAttribute (const Context& ctx, Allocator& memAlloc,
 	de::MovePtr<Allocation> alloc = memAlloc.allocate(getBufferMemoryRequirements(vk, vkDevice, *buffer), MemoryRequirement::HostVisible);
 	VK_CHECK(vk.bindBufferMemory(vkDevice, *buffer, alloc->getMemory(), alloc->getOffset()));
 
-	deMemcpy(alloc->getHostPtr(), dataPtr, inputSize);
+	deMemcpy(alloc->getHostPtr(), dataPtr, (size_t)inputSize);
 	flushMappedMemoryRange(vk, vkDevice, alloc->getMemory(), alloc->getOffset(), inputSize);
 
 	m_vertexBuffers.push_back(de::SharedPtr<Unique<VkBuffer> >(new Unique<VkBuffer>(buffer)));
