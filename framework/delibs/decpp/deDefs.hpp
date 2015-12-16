@@ -32,22 +32,22 @@
 namespace de
 {
 
-//!< Compute absolute value of x.
+//! Compute absolute value of x.
 template<typename T> inline T		abs			(T x)			{ return x < T(0) ? -x : x; }
 
-//!< Get minimum of x and y.
+//! Get minimum of x and y.
 template<typename T> inline T		min			(T x, T y)		{ return x <= y ? x : y; }
 
-//!< Get maximum of x and y.
+//! Get maximum of x and y.
 template<typename T> inline T		max			(T x, T y)		{ return x >= y ? x : y; }
 
-//!< Clamp x in range a <= x <= b.
+//! Clamp x in range a <= x <= b.
 template<typename T> inline T		clamp		(T x, T a, T b)	{ DE_ASSERT(a <= b); return x < a ? a : (x > b ? b : x); }
 
-//!< Test if x is in bounds a <= x < b.
+//! Test if x is in bounds a <= x < b.
 template<typename T> inline bool	inBounds	(T x, T a, T b)	{ return a <= x && x < b; }
 
-//!< Test if x is in range a <= x <= b.
+//! Test if x is in range a <= x <= b.
 template<typename T> inline bool	inRange		(T x, T a, T b)	{ return a <= x && x <= b; }
 
 //! Helper for DE_CHECK() macros.
