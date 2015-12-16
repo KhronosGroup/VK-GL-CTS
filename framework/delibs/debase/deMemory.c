@@ -29,6 +29,19 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define DE_ALIGNED_MALLOC_POSIX		0
+#define DE_ALIGNED_MALLOC_WIN32		1
+#define DE_ALIGNED_MALLOC_GENERIC	2
+
+#if (DE_OS == DE_OS_UNIX) || ((DE_OS == DE_OS_ANDROID) && (DE_ANDROID_API >= 21))
+#	define DE_ALIGNED_MALLOC DE_ALIGNED_MALLOC_POSIX
+#elif (DE_OS == DE_OS_WIN32)
+#	define DE_ALIGNED_MALLOC DE_ALIGNED_MALLOC_WIN32
+#	include <malloc.h>
+#else
+#	define DE_ALIGNED_MALLOC DE_ALIGNED_MALLOC_GENERIC
+#endif
+
 #if defined(DE_VALGRIND_BUILD)
 #	include <valgrind/valgrind.h>
 #	if defined(HAVE_VALGRIND_MEMCHECK_H)
@@ -81,12 +94,33 @@ void* deCalloc (size_t numBytes)
 	return ptr;
 }
 
-void* deAlignedMalloc (size_t numBytes, deUint32 alignBytes)
+void* deAlignedMalloc (size_t numBytes, size_t alignBytes)
 {
-	size_t		ptrSize		= sizeof(void*);
-	deUintptr	origPtr		= (deUintptr)deMalloc(numBytes + ptrSize + (size_t)alignBytes);
+#if (DE_ALIGNED_MALLOC == DE_ALIGNED_MALLOC_POSIX)
+	void* ptr = DE_NULL;
 
-	DE_ASSERT(deInRange32(alignBytes, 0, 256) && deIsPowerOfTwo32(alignBytes));
+	if (posix_memalign(&ptr, alignBytes, numBytes) == 0)
+	{
+		DE_ASSERT(ptr);
+		return ptr;
+	}
+	else
+	{
+		DE_ASSERT(!ptr);
+		return DE_NULL;
+	}
+
+#elif (DE_ALIGNED_MALLOC == DE_ALIGNED_MALLOC_WIN32)
+	return _aligned_malloc(numBytes, alignBytes);
+
+#elif (DE_ALIGNED_MALLOC == DE_ALIGNED_MALLOC_GENERIC)
+	/* Generic implementation */
+	size_t		ptrSize		= sizeof(void*);
+	deUintptr	origPtr		= (deUintptr)deMalloc(numBytes + ptrSize + alignBytes);
+
+	DE_ASSERT((size_t)(deUint32)alignBytes == alignBytes	&&
+			  deInRange32((deUint32)alignBytes, 0, 256)		&&
+			  deIsPowerOfTwo32((deUint32)alignBytes));
 
 	if (origPtr)
 	{
@@ -97,6 +131,9 @@ void* deAlignedMalloc (size_t numBytes, deUint32 alignBytes)
 	}
 	else
 		return DE_NULL;
+#else
+#	error "Invalid DE_ALIGNED_MALLOC"
+#endif
 }
 
 /*--------------------------------------------------------------------*//*!
@@ -121,6 +158,13 @@ void deFree (void* ptr)
 
 void deAlignedFree (void* ptr)
 {
+#if (DE_ALIGNED_MALLOC == DE_ALIGNED_MALLOC_POSIX)
+	free(ptr);
+
+#elif (DE_ALIGNED_MALLOC == DE_ALIGNED_MALLOC_WIN32)
+	_aligned_free(ptr);
+
+#elif (DE_ALIGNED_MALLOC == DE_ALIGNED_MALLOC_GENERIC)
 	if (ptr)
 	{
 		size_t		ptrSize		= sizeof(void*);
@@ -129,6 +173,9 @@ void deAlignedFree (void* ptr)
 		DE_ASSERT(ptrPtr - origPtr < 256);
 		deFree((void*)origPtr);
 	}
+#else
+#	error "Invalid DE_ALIGNED_MALLOC"
+#endif
 }
 
 char* deStrdup (const char* str)
