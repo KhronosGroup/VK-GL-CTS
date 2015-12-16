@@ -6692,7 +6692,6 @@ tcu::TestCaseGroup* createModuleTests(tcu::TestContext& testCtx)
 	return moduleTests.release();
 }
 
-
 tcu::TestCaseGroup* createLoopTests(tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "loop", "Looping control flow"));
@@ -6792,8 +6791,170 @@ tcu::TestCaseGroup* createLoopTests(tcu::TestContext& testCtx)
 	// \todo [2015-12-14 dekimir] More cases:
 	// - continue
 	// - early exit
-	// - non-uniform control flow
-	// - uniform control flow despite using invocation ID
+
+	return testGroup.release();
+}
+
+// Adds a new test to group using custom fragments for the tessellation-control
+// stage and passthrough fragments for all other stages.  Uses default colors
+// for input and expected output.
+void addTessCtrlTest(tcu::TestCaseGroup* group, const char* name, const map<string, string>& fragments)
+{
+	RGBA defaultColors[4];
+	getDefaultColors(defaultColors);
+	const ShaderElement pipelineStages[] =
+	{
+		ShaderElement("vert", "main", VK_SHADER_STAGE_VERTEX_BIT),
+		ShaderElement("tessc", "main", VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT),
+		ShaderElement("tesse", "main", VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT),
+		ShaderElement("geom", "main", VK_SHADER_STAGE_GEOMETRY_BIT),
+		ShaderElement("frag", "main", VK_SHADER_STAGE_FRAGMENT_BIT),
+	};
+
+	addFunctionCaseWithPrograms<InstanceContext>(group, name, "", addShaderCodeCustomTessControl,
+												 runAndVerifyDefaultPipeline, createInstanceContext(
+													 pipelineStages, defaultColors, defaultColors, fragments, StageToSpecConstantMap()));
+}
+
+// A collection of tests putting OpControlBarrier in places GLSL forbids but SPIR-V allows.
+tcu::TestCaseGroup* createBarrierTests(tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "barrier", "OpControlBarrier"));
+	map<string, string> fragments;
+
+	// A barrier inside a function body.
+	fragments["pre_main"] =
+		"%Workgroup = OpConstant %i32 2\n"
+		"%SequentiallyConsistent = OpConstant %i32 0x10\n";
+	fragments["testfun"] =
+		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%param1 = OpFunctionParameter %v4f32\n"
+		"%label_testfun = OpLabel\n"
+		"OpControlBarrier %Workgroup %Workgroup %SequentiallyConsistent\n"
+		"OpReturnValue %param1\n"
+		"OpFunctionEnd\n";
+	addTessCtrlTest(testGroup.get(), "in-function", fragments);
+
+	// Common setup code for the following tests.
+	fragments["pre_main"] =
+		"%Workgroup = OpConstant %i32 2\n"
+		"%SequentiallyConsistent = OpConstant %i32 0x10\n"
+		"%c_f32_5 = OpConstant %f32 5.\n";
+	const string setupPercentZero =	 // Begins %test_code function with code that sets %zero to 0u but cannot be optimized away.
+		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%param1 = OpFunctionParameter %v4f32\n"
+		"%entry = OpLabel\n"
+		";param1 components are between 0 and 1, so dot product is 4 or less\n"
+		"%dot = OpDot %f32 %param1 %param1\n"
+		"%div = OpFDiv %f32 %dot %c_f32_5\n"
+		"%zero = OpConvertFToU %u32 %div\n";
+
+	// Barriers inside OpSwitch branches.
+	fragments["testfun"] =
+		setupPercentZero +
+		"OpSelectionMerge %switch_exit None\n"
+		"OpSwitch %zero %switch_default 0 %case0 1 %case1 ;should always go to %case0\n"
+
+		"%case1 = OpLabel\n"
+		";This barrier should never be executed, but its presence makes test failure more likely when there's a bug.\n"
+		"OpControlBarrier %Workgroup %Workgroup %SequentiallyConsistent\n"
+		"%wrong_branch_alert1 = OpVectorInsertDynamic %v4f32 %param1 %c_f32_0_5 %c_i32_0\n"
+		"OpBranch %switch_exit\n"
+
+		"%switch_default = OpLabel\n"
+		"%wrong_branch_alert2 = OpVectorInsertDynamic %v4f32 %param1 %c_f32_0_5 %c_i32_0\n"
+		";This barrier should never be executed, but its presence makes test failure more likely when there's a bug.\n"
+		"OpControlBarrier %Workgroup %Workgroup %SequentiallyConsistent\n"
+		"OpBranch %switch_exit\n"
+
+		"%case0 = OpLabel\n"
+		"OpControlBarrier %Workgroup %Workgroup %SequentiallyConsistent\n"
+		"OpBranch %switch_exit\n"
+
+		"%switch_exit = OpLabel\n"
+		"%ret = OpPhi %v4f32 %param1 %case0 %wrong_branch_alert1 %case1 %wrong_branch_alert2 %switch_default\n"
+		"OpReturnValue %ret\n"
+		"OpFunctionEnd\n";
+	addTessCtrlTest(testGroup.get(), "in-switch", fragments);
+
+	// Barriers inside if-then-else.
+	fragments["testfun"] =
+		setupPercentZero +
+		"%eq0 = OpIEqual %bool %zero %c_u32_0\n"
+		"OpSelectionMerge %exit DontFlatten\n"
+		"OpBranchConditional %eq0 %then %else\n"
+
+		"%else = OpLabel\n"
+		";This barrier should never be executed, but its presence makes test failure more likely when there's a bug.\n"
+		"OpControlBarrier %Workgroup %Workgroup %SequentiallyConsistent\n"
+		"%wrong_branch_alert = OpVectorInsertDynamic %v4f32 %param1 %c_f32_0_5 %c_i32_0\n"
+		"OpBranch %exit\n"
+
+		"%then = OpLabel\n"
+		"OpControlBarrier %Workgroup %Workgroup %SequentiallyConsistent\n"
+		"OpBranch %exit\n"
+
+		"%exit = OpLabel\n"
+		"%ret = OpPhi %v4f32 %param1 %then %wrong_branch_alert %else\n"
+		"OpReturnValue %ret\n"
+		"OpFunctionEnd\n";
+	addTessCtrlTest(testGroup.get(), "in-if", fragments);
+
+	// A barrier after control-flow reconvergence, tempting the compiler to attempt something like this:
+	// http://lists.llvm.org/pipermail/llvm-dev/2009-October/026317.html.
+	fragments["testfun"] =
+		setupPercentZero +
+		"%thread_id = OpLoad %i32 %gl_InvocationID\n"
+		"%thread0 = OpIEqual %bool %thread_id %c_i32_0\n"
+		"OpSelectionMerge %exit DontFlatten\n"
+		"OpBranchConditional %thread0 %then %else\n"
+
+		"%else = OpLabel\n"
+		"%val0 = OpVectorExtractDynamic %f32 %param1 %c_i32_0\n"
+		"OpBranch %exit\n"
+
+		"%then = OpLabel\n"
+		"%val1 = OpVectorExtractDynamic %f32 %param1 %zero\n"
+		"OpBranch %exit\n"
+
+		"%exit = OpLabel\n"
+		"%val = OpPhi %f32 %val0 %else %val1 %then\n"
+		"OpControlBarrier %Workgroup %Workgroup %SequentiallyConsistent\n"
+		"%ret = OpVectorInsertDynamic %v4f32 %param1 %val %zero\n"
+		"OpReturnValue %ret\n"
+		"OpFunctionEnd\n";
+	addTessCtrlTest(testGroup.get(), "after-divergent-if", fragments);
+
+	// A barrier inside a loop.
+	fragments["pre_main"] =
+		"%Workgroup = OpConstant %i32 2\n"
+		"%SequentiallyConsistent = OpConstant %i32 0x10\n"
+		"%c_f32_10 = OpConstant %f32 10.\n";
+	fragments["testfun"] =
+		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%param1 = OpFunctionParameter %v4f32\n"
+		"%entry = OpLabel\n"
+		"%val0 = OpVectorExtractDynamic %f32 %param1 %c_i32_0\n"
+		"OpBranch %loop\n"
+
+		";adds 1, 2, 3, and 4 to %val0\n"
+		"%loop = OpLabel\n"
+		"%count = OpPhi %i32 %c_i32_4 %entry %count__ %latch\n"
+		"%val1 = OpPhi %f32 %val0 %entry %val %loop\n"
+		"OpControlBarrier %Workgroup %Workgroup %SequentiallyConsistent\n"
+		"%fcount = OpConvertSToF %f32 %count\n"
+		"%val = OpFAdd %f32 %val1 %fcount\n"
+		"%count__ = OpISub %i32 %count %c_i32_1\n"
+		"%again = OpSGreaterThan %bool %count__ %c_i32_0\n"
+		"OpLoopMerge %exit %loop None\n"
+		"OpBranchConditional %again %loop %exit\n"
+
+		"%exit = OpLabel\n"
+		"%same = OpFSub %f32 %val %c_f32_10\n"
+		"%ret = OpVectorInsertDynamic %v4f32 %param1 %same %c_i32_0\n"
+		"OpReturnValue %ret\n"
+		"OpFunctionEnd\n";
+	addTessCtrlTest(testGroup.get(), "in-loop", fragments);
 
 	return testGroup.release();
 }
@@ -6875,7 +7036,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	graphicsTests->addChild(createLoopTests(testCtx));
 	graphicsTests->addChild(createSpecConstantTests(testCtx));
 	graphicsTests->addChild(createSpecConstantOpQuantizeToF16Group(testCtx));
-
+	graphicsTests->addChild(createBarrierTests(testCtx));
 
 	instructionTests->addChild(computeTests.release());
 	instructionTests->addChild(graphicsTests.release());
