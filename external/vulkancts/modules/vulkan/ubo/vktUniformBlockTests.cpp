@@ -73,9 +73,7 @@ static void createBlockBasicTypeCases (tcu::TestCaseGroup* group, tcu::TestConte
 {
 	group->addChild(new BlockBasicTypeCase(testCtx, name + "_vertex",	"", type, layoutFlags|DECLARE_VERTEX,					numInstances));
 	group->addChild(new BlockBasicTypeCase(testCtx, name + "_fragment",	"", type, layoutFlags|DECLARE_FRAGMENT,					numInstances));
-
-	if (!(layoutFlags & LAYOUT_PACKED))
-		group->addChild(new BlockBasicTypeCase(testCtx, name + "_both",	"", type, layoutFlags|DECLARE_VERTEX|DECLARE_FRAGMENT,	numInstances));
+	group->addChild(new BlockBasicTypeCase(testCtx, name + "_both",	"",		type, layoutFlags|DECLARE_VERTEX|DECLARE_FRAGMENT,	numInstances));
 }
 
 class BlockSingleStructCase : public UniformBlockCase
@@ -383,8 +381,6 @@ void UniformBlockTests::init (void)
 		deUint32			flags;
 	} layoutFlags[] =
 	{
-		{ "shared",		LAYOUT_SHARED	},
-		{ "packed",		LAYOUT_PACKED	},
 		{ "std140",		LAYOUT_STD140	}
 	};
 
@@ -497,9 +493,7 @@ void UniformBlockTests::init (void)
 
 					modeGroup->addChild(new Block2LevelStructArrayCase(m_testCtx, (baseName + "_vertex"),	"", baseFlags|DECLARE_VERTEX,					bufferModes[modeNdx].mode, isArray ? 3 : 0));
 					modeGroup->addChild(new Block2LevelStructArrayCase(m_testCtx, (baseName + "_fragment"),	"", baseFlags|DECLARE_FRAGMENT,					bufferModes[modeNdx].mode, isArray ? 3 : 0));
-
-					if (!(baseFlags & LAYOUT_PACKED))
-						modeGroup->addChild(new Block2LevelStructArrayCase(m_testCtx, (baseName + "_both"),	"", baseFlags|DECLARE_VERTEX|DECLARE_FRAGMENT,	bufferModes[modeNdx].mode, isArray ? 3 : 0));
+					modeGroup->addChild(new Block2LevelStructArrayCase(m_testCtx, (baseName + "_both"),	"",		baseFlags|DECLARE_VERTEX|DECLARE_FRAGMENT,	bufferModes[modeNdx].mode, isArray ? 3 : 0));
 				}
 			}
 		}
@@ -598,9 +592,7 @@ void UniformBlockTests::init (void)
 
 					modeGroup->addChild(new BlockSingleStructCase(m_testCtx, baseName + "_vertex",		"", baseFlags|DECLARE_VERTEX,					bufferModes[modeNdx].mode, isArray ? 3 : 0));
 					modeGroup->addChild(new BlockSingleStructCase(m_testCtx, baseName + "_fragment",	"", baseFlags|DECLARE_FRAGMENT,					bufferModes[modeNdx].mode, isArray ? 3 : 0));
-
-					if (!(baseFlags & LAYOUT_PACKED))
-						modeGroup->addChild(new BlockSingleStructCase(m_testCtx, baseName + "_both",	"", baseFlags|DECLARE_VERTEX|DECLARE_FRAGMENT,	bufferModes[modeNdx].mode, isArray ? 3 : 0));
+					modeGroup->addChild(new BlockSingleStructCase(m_testCtx, baseName + "_both",	"",		baseFlags|DECLARE_VERTEX|DECLARE_FRAGMENT,	bufferModes[modeNdx].mode, isArray ? 3 : 0));
 				}
 			}
 		}
@@ -631,9 +623,7 @@ void UniformBlockTests::init (void)
 
 					modeGroup->addChild(new BlockSingleStructArrayCase(m_testCtx, baseName + "_vertex",		"", baseFlags|DECLARE_VERTEX,					bufferModes[modeNdx].mode, isArray ? 3 : 0));
 					modeGroup->addChild(new BlockSingleStructArrayCase(m_testCtx, baseName + "_fragment",	"", baseFlags|DECLARE_FRAGMENT,					bufferModes[modeNdx].mode, isArray ? 3 : 0));
-
-					if (!(baseFlags & LAYOUT_PACKED))
-						modeGroup->addChild(new BlockSingleStructArrayCase(m_testCtx, baseName + "_both",	"", baseFlags|DECLARE_VERTEX|DECLARE_FRAGMENT,	bufferModes[modeNdx].mode, isArray ? 3 : 0));
+					modeGroup->addChild(new BlockSingleStructArrayCase(m_testCtx, baseName + "_both",	"",		baseFlags|DECLARE_VERTEX|DECLARE_FRAGMENT,	bufferModes[modeNdx].mode, isArray ? 3 : 0));
 				}
 			}
 		}
@@ -664,9 +654,7 @@ void UniformBlockTests::init (void)
 
 					modeGroup->addChild(new BlockSingleNestedStructCase(m_testCtx, baseName + "_vertex",	"", baseFlags|DECLARE_VERTEX,					bufferModes[modeNdx].mode, isArray ? 3 : 0));
 					modeGroup->addChild(new BlockSingleNestedStructCase(m_testCtx, baseName + "_fragment",	"", baseFlags|DECLARE_FRAGMENT,					bufferModes[modeNdx].mode, isArray ? 3 : 0));
-
-					if (!(baseFlags & LAYOUT_PACKED))
-						modeGroup->addChild(new BlockSingleNestedStructCase(m_testCtx, baseName + "_both",	"", baseFlags|DECLARE_VERTEX|DECLARE_FRAGMENT,	bufferModes[modeNdx].mode, isArray ? 3 : 0));
+					modeGroup->addChild(new BlockSingleNestedStructCase(m_testCtx, baseName + "_both",	"",		baseFlags|DECLARE_VERTEX|DECLARE_FRAGMENT,	bufferModes[modeNdx].mode, isArray ? 3 : 0));
 				}
 			}
 		}
@@ -697,9 +685,7 @@ void UniformBlockTests::init (void)
 
 					modeGroup->addChild(new BlockSingleNestedStructArrayCase(m_testCtx, baseName + "_vertex",	"", baseFlags|DECLARE_VERTEX,					bufferModes[modeNdx].mode, isArray ? 3 : 0));
 					modeGroup->addChild(new BlockSingleNestedStructArrayCase(m_testCtx, baseName + "_fragment",	"", baseFlags|DECLARE_FRAGMENT,					bufferModes[modeNdx].mode, isArray ? 3 : 0));
-
-					if (!(baseFlags & LAYOUT_PACKED))
-						modeGroup->addChild(new BlockSingleNestedStructArrayCase(m_testCtx, baseName + "_both",	"", baseFlags|DECLARE_VERTEX|DECLARE_FRAGMENT,	bufferModes[modeNdx].mode, isArray ? 3 : 0));
+					modeGroup->addChild(new BlockSingleNestedStructArrayCase(m_testCtx, baseName + "_both",	"",		baseFlags|DECLARE_VERTEX|DECLARE_FRAGMENT,	bufferModes[modeNdx].mode, isArray ? 3 : 0));
 				}
 			}
 		}
@@ -758,10 +744,7 @@ void UniformBlockTests::init (void)
 
 					modeGroup->addChild(new BlockMultiBasicTypesCase(m_testCtx, baseName + "_vertex",	"", baseFlags|DECLARE_VERTEX,					baseFlags|DECLARE_VERTEX,					bufferModes[modeNdx].mode, isArray ? 3 : 0));
 					modeGroup->addChild(new BlockMultiBasicTypesCase(m_testCtx, baseName + "_fragment",	"", baseFlags|DECLARE_FRAGMENT,					baseFlags|DECLARE_FRAGMENT,					bufferModes[modeNdx].mode, isArray ? 3 : 0));
-
-					if (!(baseFlags & LAYOUT_PACKED))
-						modeGroup->addChild(new BlockMultiBasicTypesCase(m_testCtx, baseName + "_both",	"", baseFlags|DECLARE_VERTEX|DECLARE_FRAGMENT,	baseFlags|DECLARE_VERTEX|DECLARE_FRAGMENT,	bufferModes[modeNdx].mode, isArray ? 3 : 0));
-
+					modeGroup->addChild(new BlockMultiBasicTypesCase(m_testCtx, baseName + "_both",	"", baseFlags|DECLARE_VERTEX|DECLARE_FRAGMENT,		baseFlags|DECLARE_VERTEX|DECLARE_FRAGMENT,	bufferModes[modeNdx].mode, isArray ? 3 : 0));
 					modeGroup->addChild(new BlockMultiBasicTypesCase(m_testCtx, baseName + "_mixed",	"", baseFlags|DECLARE_VERTEX,					baseFlags|DECLARE_FRAGMENT,					bufferModes[modeNdx].mode, isArray ? 3 : 0));
 				}
 			}
@@ -790,10 +773,7 @@ void UniformBlockTests::init (void)
 
 					modeGroup->addChild(new BlockMultiNestedStructCase(m_testCtx, baseName + "_vertex",		"", baseFlags|DECLARE_VERTEX,					baseFlags|DECLARE_VERTEX,					bufferModes[modeNdx].mode, isArray ? 3 : 0));
 					modeGroup->addChild(new BlockMultiNestedStructCase(m_testCtx, baseName + "_fragment",	"", baseFlags|DECLARE_FRAGMENT,					baseFlags|DECLARE_FRAGMENT,					bufferModes[modeNdx].mode, isArray ? 3 : 0));
-
-					if (!(baseFlags & LAYOUT_PACKED))
-						modeGroup->addChild(new BlockMultiNestedStructCase(m_testCtx, baseName + "_both",	"", baseFlags|DECLARE_VERTEX|DECLARE_FRAGMENT,	baseFlags|DECLARE_VERTEX|DECLARE_FRAGMENT,	bufferModes[modeNdx].mode, isArray ? 3 : 0));
-
+					modeGroup->addChild(new BlockMultiNestedStructCase(m_testCtx, baseName + "_both",	"",		baseFlags|DECLARE_VERTEX|DECLARE_FRAGMENT,	baseFlags|DECLARE_VERTEX|DECLARE_FRAGMENT,	bufferModes[modeNdx].mode, isArray ? 3 : 0));
 					modeGroup->addChild(new BlockMultiNestedStructCase(m_testCtx, baseName + "_mixed",		"", baseFlags|DECLARE_VERTEX,					baseFlags|DECLARE_FRAGMENT,					bufferModes[modeNdx].mode, isArray ? 3 : 0));
 				}
 			}
@@ -803,7 +783,7 @@ void UniformBlockTests::init (void)
 	// ubo.random
 	{
 		const deUint32	allShaders		= FEATURE_VERTEX_BLOCKS|FEATURE_FRAGMENT_BLOCKS|FEATURE_SHARED_BLOCKS;
-		const deUint32	allLayouts		= FEATURE_PACKED_LAYOUT|FEATURE_SHARED_LAYOUT|FEATURE_STD140_LAYOUT;
+		const deUint32	allLayouts		= FEATURE_STD140_LAYOUT;
 		const deUint32	allBasicTypes	= FEATURE_VECTORS|FEATURE_MATRICES;
 		const deUint32	unused			= FEATURE_UNUSED_MEMBERS|FEATURE_UNUSED_UNIFORMS;
 		const deUint32	matFlags		= FEATURE_MATRIX_LAYOUT;

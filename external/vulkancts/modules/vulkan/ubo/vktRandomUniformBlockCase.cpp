@@ -120,10 +120,6 @@ void RandomUniformBlockCase::generateBlock (de::Random& rnd, deUint32 layoutFlag
 	std::vector<deUint32> layoutFlagCandidates;
 	layoutFlagCandidates.push_back(0);
 
-	if (m_features & FEATURE_PACKED_LAYOUT)
-		layoutFlagCandidates.push_back(LAYOUT_SHARED);
-	if ((m_features & FEATURE_SHARED_LAYOUT) && ((layoutFlags & DECLARE_BOTH) != DECLARE_BOTH))
-		layoutFlagCandidates.push_back(LAYOUT_PACKED); // \note packed layout can only be used in a single shader stage.
 	if (m_features & FEATURE_STD140_LAYOUT)
 		layoutFlagCandidates.push_back(LAYOUT_STD140);
 

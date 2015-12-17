@@ -282,8 +282,6 @@ std::ostream& operator<< (std::ostream& str, const LayoutFlagsFmt& fmt)
 		const char*	token;
 	} bitDesc[] =
 	{
-		{ LAYOUT_SHARED,		"shared"		},
-		{ LAYOUT_PACKED,		"packed"		},
 		{ LAYOUT_STD140,		"std140"		},
 		{ LAYOUT_ROW_MAJOR,		"row_major"		},
 		{ LAYOUT_COLUMN_MAJOR,	"column_major"	}
@@ -399,7 +397,7 @@ int computeStd140BaseAlignment (const VarType& type)
 
 inline deUint32 mergeLayoutFlags (deUint32 prevFlags, deUint32 newFlags)
 {
-	const deUint32	packingMask		= LAYOUT_PACKED|LAYOUT_SHARED|LAYOUT_STD140;
+	const deUint32	packingMask		= LAYOUT_STD140;
 	const deUint32	matrixMask		= LAYOUT_ROW_MAJOR|LAYOUT_COLUMN_MAJOR;
 
 	deUint32 mergedFlags = 0;
