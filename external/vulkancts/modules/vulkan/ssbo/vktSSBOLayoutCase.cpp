@@ -34,21 +34,12 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktSSBOLayoutCase.hpp"
-#include "vkPrograms.hpp"
 #include "gluShaderProgram.hpp"
-#include "gluPixelTransfer.hpp"
 #include "gluContextInfo.hpp"
-#include "gluRenderContext.hpp"
-#include "gluProgramInterfaceQuery.hpp"
-#include "gluObjectWrapper.hpp"
 #include "gluShaderUtil.hpp"
 #include "gluVarType.hpp"
 #include "gluVarTypeUtil.hpp"
-#include "glwFunctions.hpp"
-#include "glwEnums.hpp"
 #include "tcuTestLog.hpp"
-#include "tcuSurface.hpp"
-#include "tcuRenderTarget.hpp"
 #include "deRandom.hpp"
 #include "deStringUtil.hpp"
 #include "deMemory.h"
@@ -59,24 +50,23 @@
 #include <algorithm>
 #include <map>
 
+#include "vkBuilderUtil.hpp"
 #include "vkMemUtil.hpp"
+#include "vkPrograms.hpp"
 #include "vkQueryUtil.hpp"
-#include "vkTypeUtil.hpp"
 #include "vkRef.hpp"
 #include "vkRefUtil.hpp"
-#include "vkBuilderUtil.hpp"
-
-
-using tcu::TestLog;
-using std::string;
-using std::vector;
-using std::map;
+#include "vkTypeUtil.hpp"
 
 namespace vkt
 {
 namespace ssbo
 {
 
+using tcu::TestLog;
+using std::string;
+using std::vector;
+using std::map;
 using glu::VarType;
 using glu::StructType;
 using glu::StructMember;
@@ -95,10 +85,10 @@ std::ostream& operator<< (std::ostream& str, const LayoutFlagsFmt& fmt)
 		const char*	token;
 	} bitDesc[] =
 	{
-		{ LAYOUT_SHARED,		"shared"		},
-		{ LAYOUT_PACKED,		"packed"		},
+		//{ LAYOUT_SHARED,		"shared"		},
+		//{ LAYOUT_PACKED,		"packed"		},
 		{ LAYOUT_STD140,		"std140"		},
-		{ LAYOUT_STD430,		"std430"		},
+		//{ LAYOUT_STD430,		"std430"		},
 		{ LAYOUT_ROW_MAJOR,		"row_major"		},
 		{ LAYOUT_COLUMN_MAJOR,	"column_major"	}
 	};
@@ -262,17 +252,6 @@ BufferBlock& ShaderInterface::allocBlock (const char* name)
 
 namespace // Utilities
 {
-/*
-int findBlockIndex (const BufferLayout& layout, const string& name)
-{
-	for (int ndx = 0; ndx < (int)layout.blocks.size(); ndx++)
-	{
-		if (layout.blocks[ndx].name == name)
-			return ndx;
-	}
-	return -1;
-}
-*/
 // Layout computation.
 
 int getDataTypeByteSize (glu::DataType type)
@@ -356,47 +335,9 @@ int computeStd140BaseAlignment (const VarType& type, deUint32 layoutFlags)
 	}
 }
 
-int computeStd430BaseAlignment (const VarType& type, deUint32 layoutFlags)
-{
-	// Otherwise identical to std140 except that alignment of structures and arrays
-	// are not rounded up to alignment of vec4.
-
-	if (type.isBasicType())
-	{
-		glu::DataType basicType = type.getBasicType();
-
-		if (glu::isDataTypeMatrix(basicType))
-		{
-			const bool	isRowMajor	= !!(layoutFlags & LAYOUT_ROW_MAJOR);
-			const int	vecSize		= isRowMajor ? glu::getDataTypeMatrixNumColumns(basicType)
-												 : glu::getDataTypeMatrixNumRows(basicType);
-			const int	vecAlign	= getDataTypeByteAlignment(glu::getDataTypeFloatVec(vecSize));
-
-			return vecAlign;
-		}
-		else
-			return getDataTypeByteAlignment(basicType);
-	}
-	else if (type.isArrayType())
-	{
-		return computeStd430BaseAlignment(type.getElementType(), layoutFlags);
-	}
-	else
-	{
-		DE_ASSERT(type.isStructType());
-
-		int maxBaseAlignment = 0;
-
-		for (StructType::ConstIterator memberIter = type.getStructPtr()->begin(); memberIter != type.getStructPtr()->end(); memberIter++)
-			maxBaseAlignment = de::max(maxBaseAlignment, computeStd430BaseAlignment(memberIter->getType(), layoutFlags));
-
-		return maxBaseAlignment;
-	}
-}
-
 inline deUint32 mergeLayoutFlags (deUint32 prevFlags, deUint32 newFlags)
 {
-	const deUint32	packingMask		= LAYOUT_PACKED|LAYOUT_SHARED|LAYOUT_STD140|LAYOUT_STD430;
+	const deUint32	packingMask		= LAYOUT_STD140;
 	const deUint32	matrixMask		= LAYOUT_ROW_MAJOR|LAYOUT_COLUMN_MAJOR;
 
 	deUint32 mergedFlags = 0;
@@ -416,11 +357,7 @@ int computeReferenceLayout (
 	const VarType&		type,
 	deUint32			layoutFlags)
 {
-	// Reference layout uses std430 rules by default. std140 rules are
-	// choosen only for blocks that have std140 layout.
-	const bool	isStd140			= (layoutFlags & LAYOUT_STD140) != 0;
-	const int	baseAlignment		= isStd140 ? computeStd140BaseAlignment(type, layoutFlags)
-											   : computeStd430BaseAlignment(type, layoutFlags);
+	const int	baseAlignment		= computeStd140BaseAlignment(type, layoutFlags);
 	int			curOffset			= deAlign32(baseOffset, baseAlignment);
 	const int	topLevelArraySize	= 1; // Default values
 	const int	topLevelArrayStride	= 0;
@@ -544,10 +481,8 @@ int computeReferenceLayout (BufferLayout& layout, int curBlockNdx, const std::st
 		// Top-level arrays need special care.
 		const int		topLevelArraySize	= varType.getArraySize() == VarType::UNSIZED_ARRAY ? 0 : varType.getArraySize();
 		const string	prefix				= blockPrefix + bufVar.getName() + "[0]";
-		const bool		isStd140			= (blockLayoutFlags & LAYOUT_STD140) != 0;
 		const int		vec4Align			= (int)sizeof(deUint32)*4;
-		const int		baseAlignment		= isStd140 ? computeStd140BaseAlignment(varType, combinedFlags)
-													   : computeStd430BaseAlignment(varType, combinedFlags);
+		const int		baseAlignment		= computeStd140BaseAlignment(varType, combinedFlags);
 		int				curOffset			= deAlign32(baseOffset, baseAlignment);
 		const VarType&	elemType			= varType.getElementType();
 
@@ -556,7 +491,7 @@ int computeReferenceLayout (BufferLayout& layout, int curBlockNdx, const std::st
 			// Array of scalars or vectors.
 			const glu::DataType		elemBasicType	= elemType.getBasicType();
 			const int				elemBaseAlign	= getDataTypeByteAlignment(elemBasicType);
-			const int				stride			= isStd140 ? deAlign32(elemBaseAlign, vec4Align) : elemBaseAlign;
+			const int				stride			= deAlign32(elemBaseAlign, vec4Align);
 			BufferVarLayoutEntry	entry;
 
 			entry.name					= prefix;
@@ -584,7 +519,7 @@ int computeReferenceLayout (BufferLayout& layout, int curBlockNdx, const std::st
 																 : glu::getDataTypeMatrixNumColumns(elemBasicType);
 			const glu::DataType		vecType			= glu::getDataTypeFloatVec(vecSize);
 			const int				vecBaseAlign	= getDataTypeByteAlignment(vecType);
-			const int				stride			= isStd140 ? deAlign32(vecBaseAlign, vec4Align) : vecBaseAlign;
+			const int				stride			= deAlign32(vecBaseAlign, vec4Align);
 			BufferVarLayoutEntry	entry;
 
 			entry.name					= prefix;
@@ -1239,7 +1174,7 @@ string generateComputeShader (const ShaderInterface& interface, const BufferLayo
 	src << "\n";
 
 	// Atomic counter for counting passed invocations.
-	src << "layout(std140, binding = 0) buffer AcBlock { uint ac_numPassed; };\n\n";
+	src << "layout(std140, binding = 0) buffer AcBlock { highp uint ac_numPassed; };\n\n";
 
 	std::vector<const StructType*> namedStructs;
 	interface.getNamedStructs(namedStructs);
@@ -1281,139 +1216,6 @@ string generateComputeShader (const ShaderInterface& interface, const BufferLayo
 
 	return src.str();
 }
-
-/*
-void getGLBufferLayout (const glw::Functions& gl, BufferLayout& layout, deUint32 program)
-{
-	int		numActiveBufferVars	= 0;
-	int		numActiveBlocks		= 0;
-
-	gl.getProgramInterfaceiv(program, GL_BUFFER_VARIABLE,		GL_ACTIVE_RESOURCES,	&numActiveBufferVars);
-	gl.getProgramInterfaceiv(program, GL_SHADER_STORAGE_BLOCK,	GL_ACTIVE_RESOURCES,	&numActiveBlocks);
-
-	GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to get number of buffer variables and buffer blocks");
-
-	// Block entries.
-	layout.blocks.resize(numActiveBlocks);
-	for (int blockNdx = 0; blockNdx < numActiveBlocks; blockNdx++)
-	{
-		BlockLayoutEntry&	entry				= layout.blocks[blockNdx];
-		const deUint32		queryParams[]		= { GL_BUFFER_DATA_SIZE, GL_NUM_ACTIVE_VARIABLES, GL_NAME_LENGTH };
-		int					returnValues[]		= { 0, 0, 0 };
-
-		DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(queryParams) == DE_LENGTH_OF_ARRAY(returnValues));
-
-		{
-			int returnLength = 0;
-			gl.getProgramResourceiv(program, GL_SHADER_STORAGE_BLOCK, (deUint32)blockNdx, DE_LENGTH_OF_ARRAY(queryParams), &queryParams[0], DE_LENGTH_OF_ARRAY(returnValues), &returnLength, &returnValues[0]);
-			GLU_EXPECT_NO_ERROR(gl.getError(), "glGetProgramResourceiv(GL_SHADER_STORAGE_BLOCK) failed");
-
-			if (returnLength != DE_LENGTH_OF_ARRAY(returnValues))
-				throw tcu::TestError("glGetProgramResourceiv(GL_SHADER_STORAGE_BLOCK) returned wrong number of values");
-		}
-
-		entry.size = returnValues[0];
-
-		// Query active variables
-		if (returnValues[1] > 0)
-		{
-			const int		numBlockVars	= returnValues[1];
-			const deUint32	queryArg		= GL_ACTIVE_VARIABLES;
-			int				retLength		= 0;
-
-			entry.activeVarIndices.resize(numBlockVars);
-			gl.getProgramResourceiv(program, GL_SHADER_STORAGE_BLOCK, (deUint32)blockNdx, 1, &queryArg, numBlockVars, &retLength, &entry.activeVarIndices[0]);
-			GLU_EXPECT_NO_ERROR(gl.getError(), "glGetProgramResourceiv(GL_SHADER_STORAGE_BLOCK, GL_ACTIVE_VARIABLES) failed");
-
-			if (retLength != numBlockVars)
-				throw tcu::TestError("glGetProgramResourceiv(GL_SHADER_STORAGE_BLOCK, GL_ACTIVE_VARIABLES) returned wrong number of values");
-		}
-
-		// Query name
-		if (returnValues[2] > 0)
-		{
-			const int		nameLen		= returnValues[2];
-			int				retLen		= 0;
-			vector<char>	name		(nameLen);
-
-			gl.getProgramResourceName(program, GL_SHADER_STORAGE_BLOCK, (deUint32)blockNdx, (glw::GLsizei)name.size(), &retLen, &name[0]);
-			GLU_EXPECT_NO_ERROR(gl.getError(), "glGetProgramResourceName(GL_SHADER_STORAGE_BLOCK) failed");
-
-			if (retLen+1 != nameLen)
-				throw tcu::TestError("glGetProgramResourceName(GL_SHADER_STORAGE_BLOCK) returned invalid name. Number of characters written is inconsistent with NAME_LENGTH property.");
-			if (name[nameLen-1] != 0)
-				throw tcu::TestError("glGetProgramResourceName(GL_SHADER_STORAGE_BLOCK) returned invalid name. Expected null terminator at index " + de::toString(nameLen-1));
-
-			entry.name = &name[0];
-		}
-		else
-			throw tcu::TestError("glGetProgramResourceiv() returned invalid GL_NAME_LENGTH");
-	}
-
-	layout.bufferVars.resize(numActiveBufferVars);
-	for (int bufVarNdx = 0; bufVarNdx < numActiveBufferVars; bufVarNdx++)
-	{
-		BufferVarLayoutEntry&	entry				= layout.bufferVars[bufVarNdx];
-		const deUint32			queryParams[] =
-		{
-			GL_BLOCK_INDEX,					// 0
-			GL_TYPE,						// 1
-			GL_OFFSET,						// 2
-			GL_ARRAY_SIZE,					// 3
-			GL_ARRAY_STRIDE,				// 4
-			GL_MATRIX_STRIDE,				// 5
-			GL_TOP_LEVEL_ARRAY_SIZE,		// 6
-			GL_TOP_LEVEL_ARRAY_STRIDE,		// 7
-			GL_IS_ROW_MAJOR,				// 8
-			GL_NAME_LENGTH					// 9
-		};
-		int returnValues[DE_LENGTH_OF_ARRAY(queryParams)];
-
-		DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(queryParams) == DE_LENGTH_OF_ARRAY(returnValues));
-
-		{
-			int returnLength = 0;
-			gl.getProgramResourceiv(program, GL_BUFFER_VARIABLE, (deUint32)bufVarNdx, DE_LENGTH_OF_ARRAY(queryParams), &queryParams[0], DE_LENGTH_OF_ARRAY(returnValues), &returnLength, &returnValues[0]);
-			GLU_EXPECT_NO_ERROR(gl.getError(), "glGetProgramResourceiv(GL_BUFFER_VARIABLE) failed");
-
-			if (returnLength != DE_LENGTH_OF_ARRAY(returnValues))
-				throw tcu::TestError("glGetProgramResourceiv(GL_BUFFER_VARIABLE) returned wrong number of values");
-		}
-
-		// Map values
-		entry.blockNdx				= returnValues[0];
-		entry.type					= glu::getDataTypeFromGLType(returnValues[1]);
-		entry.offset				= returnValues[2];
-		entry.arraySize				= returnValues[3];
-		entry.arrayStride			= returnValues[4];
-		entry.matrixStride			= returnValues[5];
-		entry.topLevelArraySize		= returnValues[6];
-		entry.topLevelArrayStride	= returnValues[7];
-		entry.isRowMajor			= returnValues[8] != 0;
-
-		// Query name
-		DE_ASSERT(queryParams[9] == GL_NAME_LENGTH);
-		if (returnValues[9] > 0)
-		{
-			const int		nameLen		= returnValues[9];
-			int				retLen		= 0;
-			vector<char>	name		(nameLen);
-
-			gl.getProgramResourceName(program, GL_BUFFER_VARIABLE, (deUint32)bufVarNdx, (glw::GLsizei)name.size(), &retLen, &name[0]);
-			GLU_EXPECT_NO_ERROR(gl.getError(), "glGetProgramResourceName(GL_BUFFER_VARIABLE) failed");
-
-			if (retLen+1 != nameLen)
-				throw tcu::TestError("glGetProgramResourceName(GL_BUFFER_VARIABLE) returned invalid name. Number of characters written is inconsistent with NAME_LENGTH property.");
-			if (name[nameLen-1] != 0)
-				throw tcu::TestError("glGetProgramResourceName(GL_BUFFER_VARIABLE) returned invalid name. Expected null terminator at index " + de::toString(nameLen-1));
-
-			entry.name = &name[0];
-		}
-		else
-			throw tcu::TestError("glGetProgramResourceiv() returned invalid GL_NAME_LENGTH");
-	}
-}
-*/
 
 void copyBufferVarData (const BufferVarLayoutEntry& dstEntry, const BlockDataPtr& dstBlockPtr, const BufferVarLayoutEntry& srcEntry, const BlockDataPtr& srcBlockPtr)
 {
@@ -1478,7 +1280,6 @@ void copyBufferVarData (const BufferVarLayoutEntry& dstEntry, const BlockDataPtr
 		}
 	}
 }
-
 
 void copyData (const BufferLayout& dstLayout, const vector<BlockDataPtr>& dstBlockPointers, const BufferLayout& srcLayout, const vector<BlockDataPtr>& srcBlockPointers)
 {
@@ -1578,7 +1379,7 @@ void copyNonWrittenData (const ShaderInterface& interface, const BufferLayout& l
 		}
 	}
 }
-/*
+
 bool compareComponents (glu::DataType scalarType, const void* ref, const void* res, int numComps)
 {
 	if (scalarType == glu::TYPE_FLOAT)
@@ -1761,7 +1562,7 @@ bool compareData (tcu::TestLog& log, const BufferLayout& refLayout, const vector
 
 	return allOk;
 }
-*/
+
 string getBlockAPIName (const BufferBlock& block, int instanceNdx)
 {
 	DE_ASSERT(block.isArray() || instanceNdx == 0);
@@ -1919,99 +1720,7 @@ vector<BlockDataPtr> blockLocationsToPtrs (const BufferLayout& layout, const vec
 	return blockPtrs;
 }
 
-/*
-vector<void*> mapBuffers (const glw::Functions& gl, const vector<Buffer>& buffers, deUint32 access)
-{
-	vector<void*> mapPtrs(buffers.size(), DE_NULL);
-
-	try
-	{
-		for (int ndx = 0; ndx < (int)buffers.size(); ndx++)
-		{
-			if (buffers[ndx].size > 0)
-			{
-				gl.bindBuffer(GL_SHADER_STORAGE_BUFFER, buffers[ndx].buffer);
-				mapPtrs[ndx] = gl.mapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, buffers[ndx].size, access);
-				GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to map buffer");
-				TCU_CHECK(mapPtrs[ndx]);
-			}
-			else
-				mapPtrs[ndx] = DE_NULL;
-		}
-
-		return mapPtrs;
-	}
-	catch (...)
-	{
-		for (int ndx = 0; ndx < (int)buffers.size(); ndx++)
-		{
-			if (mapPtrs[ndx])
-			{
-				gl.bindBuffer(GL_SHADER_STORAGE_BUFFER, buffers[ndx].buffer);
-				gl.unmapBuffer(GL_SHADER_STORAGE_BUFFER);
-			}
-		}
-
-		throw;
-	}
-}
-
-void unmapBuffers (const glw::Functions& gl, const vector<Buffer>& buffers)
-{
-	for (int ndx = 0; ndx < (int)buffers.size(); ndx++)
-	{
-		if (buffers[ndx].size > 0)
-		{
-			gl.bindBuffer(GL_SHADER_STORAGE_BUFFER, buffers[ndx].buffer);
-			gl.unmapBuffer(GL_SHADER_STORAGE_BUFFER);
-		}
-	}
-
-	GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to unmap buffer");
-}
-*/
 } // anonymous (utilities)
-
-/*
-class BufferManager
-{
-public:
-								BufferManager	(const glu::RenderContext& renderCtx);
-								~BufferManager	(void);
-
-	deUint32					allocBuffer		(void);
-
-private:
-								BufferManager	(const BufferManager& other);
-	BufferManager&				operator=		(const BufferManager& other);
-
-	const glu::RenderContext&	m_renderCtx;
-	std::vector<deUint32>		m_buffers;
-};
-
-BufferManager::BufferManager (const glu::RenderContext& renderCtx)
-	: m_renderCtx(renderCtx)
-{
-}
-
-BufferManager::~BufferManager (void)
-{
-	if (!m_buffers.empty())
-		m_renderCtx.getFunctions().deleteBuffers((glw::GLsizei)m_buffers.size(), &m_buffers[0]);
-}
-
-deUint32 BufferManager::allocBuffer (void)
-{
-	deUint32 buf = 0;
-
-	m_buffers.reserve(m_buffers.size()+1);
-	m_renderCtx.getFunctions().genBuffers(1, &buf);
-	GLU_EXPECT_NO_ERROR(m_renderCtx.getFunctions().getError(), "Failed to allocate buffer");
-	m_buffers.push_back(buf);
-
-	return buf;
-}
-*/
 
 de::MovePtr<vk::Allocation> allocateAndBindMemory (Context& context, vk::VkBuffer buffer, vk::MemoryRequirement memReqs)
 {
@@ -2023,7 +1732,6 @@ de::MovePtr<vk::Allocation> allocateAndBindMemory (Context& context, vk::VkBuffe
 
 	return memory;
 }
-
 
 vk::Move<vk::VkBuffer> createBuffer (Context& context, vk::VkDeviceSize bufferSize, vk::VkBufferUsageFlags usageFlags)
 {
@@ -2045,7 +1753,6 @@ vk::Move<vk::VkBuffer> createBuffer (Context& context, vk::VkDeviceSize bufferSi
 
 	return vk::createBuffer(vk, vkDevice, &bufferInfo);
 }
-
 
 // SSBOLayoutCaseInstance
 
@@ -2095,59 +1802,9 @@ SSBOLayoutCaseInstance::~SSBOLayoutCaseInstance (void)
 {
 }
 
-/*
-SSBOLayoutCaseInstance:: (void)
-{
-	const int			numBlocks		= (int)glLayout.blocks.size();
-	const vector<int>	bufferSizes		= computeBufferSizes(m_interface, glLayout);
-
-	DE_ASSERT(bufferSizes.size() == glLayout.blocks.size());
-
-	blockLocations.resize(numBlocks);
-
-	if (m_bufferMode == BUFFERMODE_PER_BLOCK)
-	{
-		buffers.resize(numBlocks);
-
-		for (int blockNdx = 0; blockNdx < numBlocks; blockNdx++)
-		{
-			const int bufferSize = bufferSizes[blockNdx];
-
-			buffers[blockNdx].size = bufferSize;
-			blockLocations[blockNdx] = BlockLocation(blockNdx, 0, bufferSize);
-		}
-	}
-	else
-	{
-		DE_ASSERT(m_bufferMode == BUFFERMODE_SINGLE);
-
-		int		bindingAlignment	= 0;
-		int		totalSize			= 0;
-
-		gl.getIntegerv(GL_SHADER_STORAGE_BUFFER_OFFSET_ALIGNMENT, &bindingAlignment);
-
-		{
-			int curOffset = 0;
-			DE_ASSERT(bufferSizes.size() == glLayout.blocks.size());
-			for (int blockNdx = 0; blockNdx < numBlocks; blockNdx++)
-			{
-				const int bufferSize = bufferSizes[blockNdx];
-				if (bindingAlignment > 0)
-					curOffset = deRoundUp32(curOffset, bindingAlignment);
-
-				blockLocations[blockNdx] = BlockLocation(0, curOffset, bufferSize);
-				curOffset += bufferSize;
-			}
-			totalSize = curOffset;
-		}
-
-		buffers.resize(1);
-		buffers[0].size = totalSize;
-	}
-}
-*/
 tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 {
+	// todo: add compute stage availability check
 	const vk::DeviceInterface&	vk					= m_context.getDeviceInterface();
 	const vk::VkDevice			device				= m_context.getDevice();
 	const vk::VkQueue			queue				= m_context.getUniversalQueue();
@@ -2194,6 +1851,8 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 	setUpdateBuilder
 		.writeSingle(*descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(0u), vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &descriptorInfo);
 
+	vector<BlockDataPtr>  mappedBlockPtrs;
+
 	// Upload base buffers
 	{
 		const std::vector<int>			bufferSizes		= computeBufferSizes(m_interface, m_refLayout);
@@ -2210,15 +1869,11 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 				const deUint32 bufferSize = bufferSizes[blockNdx];
 				blockLocations[blockNdx] = BlockLocation(blockNdx, 0, bufferSize);
 
-				vk::Move<vk::VkBuffer> 			buffer	= createBuffer(m_context, bufferSize, vk::VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
-				de::MovePtr<vk::Allocation>		alloc	= allocateAndBindMemory(m_context, *buffer, vk::MemoryRequirement::HostVisible);
+				vk::Move<vk::VkBuffer> 				buffer		= createBuffer(m_context, bufferSize, vk::VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+				de::MovePtr<vk::Allocation>			alloc		= allocateAndBindMemory(m_context, *buffer, vk::MemoryRequirement::HostVisible);
+				const vk::VkDescriptorBufferInfo	descriptor	= makeDescriptorBufferInfo(*buffer, 0ull, bufferSize + 4*sizeof(float));
 
 				mapPtrs[blockNdx] = alloc->getHostPtr();
-
-				// \todo [2015-10-09 elecro] remove the '_hack_padding' variable if the driver support small uniforms,
-				// that is for example one float big uniforms.
-				const deUint32 hack_padding = bufferSize < 4 * sizeof(float) ? (deUint32)(3u * sizeof(float)) : 0u;
-				const vk::VkDescriptorBufferInfo descriptor = makeDescriptorBufferInfo(*buffer, 0ull, bufferSize + hack_padding);
 
 				m_uniformBuffers.push_back(VkBufferSp(new vk::Unique<vk::VkBuffer>(buffer)));
 				m_uniformAllocs.push_back(AllocationSp(alloc.release()));
@@ -2231,9 +1886,10 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 		{
 			DE_ASSERT(m_bufferMode == SSBOLayoutCase::BUFFERMODE_SINGLE);
 
-			//gl.getIntegerv(GL_SHADER_STORAGE_BUFFER_OFFSET_ALIGNMENT, &bindingAlignment);
-			const int bindingAlignment = 1;			// minStorageBufferOffsetAlignment
-			int curOffset = 0;
+			vk::VkPhysicalDeviceProperties properties;
+			m_context.getInstanceInterface().getPhysicalDeviceProperties(m_context.getPhysicalDevice(), &properties);
+			const int	bindingAlignment	= (int)properties.limits.minStorageBufferOffsetAlignment;
+			int			curOffset			= 0;
 			for (int blockNdx = 0; blockNdx < numBlocks; blockNdx++)
 			{
 				const int bufferSize = bufferSizes[blockNdx];
@@ -2244,21 +1900,18 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 				blockLocations[blockNdx] = BlockLocation(0, curOffset, bufferSize);
 				curOffset += bufferSize;
 			}
-			const int totalBufferSize = curOffset;
 
-			vk::Move<vk::VkBuffer> 			buffer	= createBuffer(m_context, totalBufferSize, vk::VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
-			de::MovePtr<vk::Allocation>		alloc	= allocateAndBindMemory(m_context, *buffer, vk::MemoryRequirement::HostVisible);
+			const int						totalBufferSize = curOffset;
+			vk::Move<vk::VkBuffer> 			buffer			= createBuffer(m_context, totalBufferSize, vk::VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+			de::MovePtr<vk::Allocation>		alloc			= allocateAndBindMemory(m_context, *buffer, vk::MemoryRequirement::HostVisible);
 
 			mapPtrs.push_back(alloc->getHostPtr());
 
 			for (int blockNdx = 0; blockNdx < numBlocks; blockNdx++)
 			{
-				const deUint32 bufferSize = bufferSizes[blockNdx];
-				const deUint32 offset = blockLocations[blockNdx].offset;
-				// \todo [2015-10-09 elecro] remove the '_hack_padding' variable if the driver support small uniforms,
-				// that is for example one float big uniforms.
-				const deUint32 hack_padding = bufferSize < 4 * sizeof(float) ? (deUint32)(3u * sizeof(float)) : 0u;
-				const vk::VkDescriptorBufferInfo descriptor = makeDescriptorBufferInfo(*buffer, offset, bufferSize + hack_padding);
+				const deUint32						bufferSize	= bufferSizes[blockNdx];
+				const deUint32						offset		= blockLocations[blockNdx].offset;
+				const vk::VkDescriptorBufferInfo	descriptor	= makeDescriptorBufferInfo(*buffer, offset, bufferSize + 4*sizeof(float));
 
 				setUpdateBuilder.writeSingle(*descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(blockNdx + 1),
 										vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &descriptor);
@@ -2269,8 +1922,7 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 		}
 
 		{
-			const vector<BlockDataPtr>  mappedBlockPtrs = blockLocationsToPtrs(m_refLayout, blockLocations, mapPtrs);
-
+			mappedBlockPtrs = blockLocationsToPtrs(m_refLayout, blockLocations, mapPtrs);
 			copyData(m_refLayout, mappedBlockPtrs, m_refLayout, m_initialData.pointers);
 
 			DE_ASSERT(m_uniformAllocs.size() == bufferSizes.size());
@@ -2283,16 +1935,14 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 		}
 	}
 
-	setUpdateBuilder
-		.update(vk, device);
+	setUpdateBuilder.update(vk, device);
 
-	const deUint32 descriptorSetCount = 1; // (descriptorSetLayout != DE_NULL ? 1u : 0);
 	const vk::VkPipelineLayoutCreateInfo pipelineLayoutParams =
 	{
 		vk::VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,	// VkStructureType				sType;
 		DE_NULL,											// const void*					pNext;
 		(vk::VkPipelineLayoutCreateFlags)0,
-		descriptorSetCount,									// deUint32						descriptorSetCount;
+		1u,													// deUint32						descriptorSetCount;
 		&*descriptorSetLayout,								// const VkDescriptorSetLayout*	pSetLayouts;
 		0u,													// deUint32						pushConstantRangeCount;
 		DE_NULL,											// const VkPushConstantRange*	pPushConstantRanges;
@@ -2300,7 +1950,6 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 	vk::Move<vk::VkPipelineLayout> pipelineLayout(createPipelineLayout(vk, device, &pipelineLayoutParams));
 
 	vk::Move<vk::VkShaderModule> shaderModule (createShaderModule(vk, device, m_context.getBinaryCollection().get("compute"), 0));
-
 	const vk::VkPipelineShaderStageCreateInfo pipelineShaderStageParams =
 	{
 		vk::VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,// VkStructureType				sType;
@@ -2344,12 +1993,12 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 
 	const vk::VkCommandBufferBeginInfo cmdBufBeginParams =
 	{
-		vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,		//	VkStructureType				sType;
-		DE_NULL,										//	const void*					pNext;
-		0u,												//	VkCmdBufferOptimizeFlags	flags;
-		DE_NULL,										//	VkRenderPass				renderPass;
-		0u,												//	deUint32					subpass;
-		DE_NULL,										//	VkFramebuffer				framebuffer;
+		vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	//	VkStructureType				sType;
+		DE_NULL,											//	const void*					pNext;
+		0u,													//	VkCmdBufferOptimizeFlags	flags;
+		DE_NULL,											//	VkRenderPass				renderPass;
+		0u,													//	deUint32					subpass;
+		DE_NULL,											//	VkFramebuffer				framebuffer;
 		vk::VK_FALSE,
 		(vk::VkQueryControlFlags)0,
 		(vk::VkQueryPipelineStatisticFlags)0,
@@ -2383,15 +2032,36 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 		(const vk::VkSemaphore*)DE_NULL,
 	};
 
-
 	VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo, *fence));
 	VK_CHECK(vk.waitForFences(device, 1u, &fence.get(), DE_TRUE, ~0ull));
 
+	// Read back ac_numPassed data
+	bool counterOk;
+	{
+		const int refCount = 1;
+		int resCount = 0;
+
+		resCount = *(const int*)((const deUint8*)acBufferAlloc->getHostPtr());
+
+		counterOk = (refCount == resCount);
+		if (!counterOk)
+		{
+			m_context.getTestContext().getLog() << TestLog::Message << "Error: ac_numPassed = " << resCount << ", expected " << refCount << TestLog::EndMessage;
+		}
+	}
+
 	// Validate result
+	const bool compareOk = compareData(m_context.getTestContext().getLog(), m_refLayout, m_writeData.pointers, m_refLayout, mappedBlockPtrs);
 
-	return tcu::TestStatus::pass("OK");
+	if (compareOk && counterOk)
+		return tcu::TestStatus::pass("Result comparison and counter values are OK");
+	else if (!compareOk && counterOk)
+		return tcu::TestStatus::fail("Result comparison failed");
+	else if (compareOk && !counterOk)
+		return tcu::TestStatus::fail("Counter value incorrect");
+	else
+		return tcu::TestStatus::fail("Result comparison and counter values are incorrect");
 }
-
 
 // SSBOLayoutCase.
 
@@ -2419,10 +2089,6 @@ TestInstance* SSBOLayoutCase::createInstance (Context& context) const
 
 void SSBOLayoutCase::init (void)
 {
-	//BufferLayout				refLayout;		// std140 / std430 layout.
-	//RefDataStorage				initialData;	// Initial data stored in buffer.
-	//RefDataStorage				writeData;		// Data written by compute shader.
-
 	computeReferenceLayout	(m_refLayout, m_interface);
 	initRefDataStorage		(m_interface, m_refLayout, m_initialData);
 	initRefDataStorage		(m_interface, m_refLayout, m_writeData);
@@ -2432,583 +2098,6 @@ void SSBOLayoutCase::init (void)
 
 	m_computeShaderSrc = generateComputeShader(m_interface, m_refLayout, m_initialData.pointers, m_writeData.pointers);
 }
-
-#if 0
-
-SSBOLayoutCase::IterateResult SSBOLayoutCase::iterate (void)
-{
-	TestLog&					log				= m_testCtx.getLog();
-	const glw::Functions&		gl				= m_renderCtx.getFunctions();
-
-	BufferLayout				refLayout;		// std140 / std430 layout.
-	BufferLayout				glLayout;		// Layout reported by GL.
-	RefDataStorage				initialData;	// Initial data stored in buffer.
-	RefDataStorage				writeData;		// Data written by compute shader.
-
-	BufferManager				bufferManager	(m_renderCtx);
-	vector<Buffer>				buffers;		// Buffers allocated for storage
-	vector<BlockLocation>		blockLocations;	// Block locations in storage (index, offset)
-
-	// Initialize result to pass.
-	m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
-
-	computeReferenceLayout	(refLayout, m_interface);
-	initRefDataStorage		(m_interface, refLayout, initialData);
-	initRefDataStorage		(m_interface, refLayout, writeData);
-	generateValues			(refLayout, initialData.pointers, deStringHash(getName()) ^ 0xad2f7214);
-	generateValues			(refLayout, writeData.pointers, deStringHash(getName()) ^ 0x25ca4e7);
-	copyNonWrittenData		(m_interface, refLayout, initialData.pointers, writeData.pointers);
-
-	const glu::ShaderProgram program(m_renderCtx, glu::ProgramSources() << glu::ComputeSource(generateComputeShader(m_glslVersion, m_interface, refLayout, initialData.pointers, writeData.pointers)));
-	log << program;
-
-	if (!program.isOk())
-	{
-		// Compile failed.
-		m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Compile failed");
-		return STOP;
-	}
-
-	// Query layout from GL.
-	getGLBufferLayout(gl, glLayout, program.getProgram());
-
-	// Print layout to log.
-	{
-		tcu::ScopedLogSection section(log, "ActiveBufferBlocks", "Active Buffer Blocks");
-		for (int blockNdx = 0; blockNdx < (int)glLayout.blocks.size(); blockNdx++)
-			log << TestLog::Message << blockNdx << ": " << glLayout.blocks[blockNdx] << TestLog::EndMessage;
-	}
-
-	{
-		tcu::ScopedLogSection section(log, "ActiveBufferVars", "Active Buffer Variables");
-		for (int varNdx = 0; varNdx < (int)glLayout.bufferVars.size(); varNdx++)
-			log << TestLog::Message << varNdx << ": " << glLayout.bufferVars[varNdx] << TestLog::EndMessage;
-	}
-
-	// Verify layouts.
-	{
-		if (!checkLayoutIndices(glLayout) || !checkLayoutBounds(glLayout) || !compareTypes(refLayout, glLayout))
-		{
-			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Invalid layout");
-			return STOP; // It is not safe to use the given layout.
-		}
-
-		if (!compareStdBlocks(refLayout, glLayout))
-			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Invalid std140 or std430 layout");
-
-		if (!compareSharedBlocks(refLayout, glLayout))
-			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Invalid shared layout");
-
-		if (!checkIndexQueries(program.getProgram(), glLayout))
-			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Inconsintent block index query results");
-	}
-
-	// Allocate GL buffers & compute placement.
-	{
-		const int			numBlocks		= (int)glLayout.blocks.size();
-		const vector<int>	bufferSizes		= computeBufferSizes(m_interface, glLayout);
-
-		DE_ASSERT(bufferSizes.size() == glLayout.blocks.size());
-
-		blockLocations.resize(numBlocks);
-
-		if (m_bufferMode == BUFFERMODE_PER_BLOCK)
-		{
-			buffers.resize(numBlocks);
-
-			for (int blockNdx = 0; blockNdx < numBlocks; blockNdx++)
-			{
-				const int bufferSize = bufferSizes[blockNdx];
-
-				buffers[blockNdx].size = bufferSize;
-				blockLocations[blockNdx] = BlockLocation(blockNdx, 0, bufferSize);
-			}
-		}
-		else
-		{
-			DE_ASSERT(m_bufferMode == BUFFERMODE_SINGLE);
-
-			int		bindingAlignment	= 0;
-			int		totalSize			= 0;
-
-			gl.getIntegerv(GL_SHADER_STORAGE_BUFFER_OFFSET_ALIGNMENT, &bindingAlignment);
-
-			{
-				int curOffset = 0;
-				DE_ASSERT(bufferSizes.size() == glLayout.blocks.size());
-				for (int blockNdx = 0; blockNdx < numBlocks; blockNdx++)
-				{
-					const int bufferSize = bufferSizes[blockNdx];
-
-					if (bindingAlignment > 0)
-						curOffset = deRoundUp32(curOffset, bindingAlignment);
-
-					blockLocations[blockNdx] = BlockLocation(0, curOffset, bufferSize);
-					curOffset += bufferSize;
-				}
-				totalSize = curOffset;
-			}
-
-			buffers.resize(1);
-			buffers[0].size = totalSize;
-		}
-
-		for (int bufNdx = 0; bufNdx < (int)buffers.size(); bufNdx++)
-		{
-			const int		bufferSize	= buffers[bufNdx].size;
-			const deUint32	buffer		= bufferManager.allocBuffer();
-
-			gl.bindBuffer(GL_SHADER_STORAGE_BUFFER, buffer);
-			gl.bufferData(GL_SHADER_STORAGE_BUFFER, bufferSize, DE_NULL, GL_STATIC_DRAW);
-			GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to allocate buffer");
-
-			buffers[bufNdx].buffer = buffer;
-		}
-	}
-
-	{
-		const vector<void*>			mapPtrs			= mapBuffers(gl, buffers, GL_MAP_WRITE_BIT);
-		const vector<BlockDataPtr>	mappedBlockPtrs	= blockLocationsToPtrs(glLayout, blockLocations, mapPtrs);
-
-		copyData(glLayout, mappedBlockPtrs, refLayout, initialData.pointers);
-
-		unmapBuffers(gl, buffers);
-	}
-
-	{
-		int bindingPoint = 0;
-
-		for (int blockDeclNdx = 0; blockDeclNdx < m_interface.getNumBlocks(); blockDeclNdx++)
-		{
-			const BufferBlock&	block		= m_interface.getBlock(blockDeclNdx);
-			const int			numInst		= block.isArray() ? block.getArraySize() : 1;
-
-			for (int instNdx = 0; instNdx < numInst; instNdx++)
-			{
-				const string	instName	= getBlockAPIName(block, instNdx);
-				const int		layoutNdx	= findBlockIndex(glLayout, instName);
-
-				if (layoutNdx >= 0)
-				{
-					const BlockLocation& blockLoc = blockLocations[layoutNdx];
-
-					if (blockLoc.size > 0)
-						gl.bindBufferRange(GL_SHADER_STORAGE_BUFFER, bindingPoint, buffers[blockLoc.index].buffer, blockLoc.offset, blockLoc.size);
-				}
-
-				bindingPoint += 1;
-			}
-		}
-	}
-
-	GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to bind buffers");
-
-	{
-		const bool execOk = execute(program.getProgram());
-
-		if (execOk)
-		{
-			const vector<void*>			mapPtrs			= mapBuffers(gl, buffers, GL_MAP_READ_BIT);
-			const vector<BlockDataPtr>	mappedBlockPtrs	= blockLocationsToPtrs(glLayout, blockLocations, mapPtrs);
-
-			const bool					compareOk		= compareData(m_testCtx.getLog(), refLayout, writeData.pointers, glLayout, mappedBlockPtrs);
-
-			unmapBuffers(gl, buffers);
-
-			if (!compareOk)
-				m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Result comparison failed");
-		}
-		else
-			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Shader execution failed");
-	}
-
-	return STOP;
-}
-
-bool SSBOLayoutCase::compareStdBlocks (const BufferLayout& refLayout, const BufferLayout& cmpLayout) const
-{
-	TestLog&	log			= m_testCtx.getLog();
-	bool		isOk		= true;
-	int			numBlocks	= m_interface.getNumBlocks();
-
-	for (int blockNdx = 0; blockNdx < numBlocks; blockNdx++)
-	{
-		const BufferBlock&		block			= m_interface.getBlock(blockNdx);
-		bool					isArray			= block.isArray();
-		std::string				instanceName	= string(block.getBlockName()) + (isArray ? "[0]" : "");
-		int						refBlockNdx		= refLayout.getBlockIndex(instanceName.c_str());
-		int						cmpBlockNdx		= cmpLayout.getBlockIndex(instanceName.c_str());
-
-		if ((block.getFlags() & (LAYOUT_STD140|LAYOUT_STD430)) == 0)
-			continue; // Not std* layout.
-
-		DE_ASSERT(refBlockNdx >= 0);
-
-		if (cmpBlockNdx < 0)
-		{
-			// Not found.
-			log << TestLog::Message << "Error: Buffer block '" << instanceName << "' not found" << TestLog::EndMessage;
-			isOk = false;
-			continue;
-		}
-
-		const BlockLayoutEntry&		refBlockLayout	= refLayout.blocks[refBlockNdx];
-		const BlockLayoutEntry&		cmpBlockLayout	= cmpLayout.blocks[cmpBlockNdx];
-
-		// \todo [2012-01-24 pyry] Verify that activeVarIndices is correct.
-		// \todo [2012-01-24 pyry] Verify all instances.
-		if (refBlockLayout.activeVarIndices.size() != cmpBlockLayout.activeVarIndices.size())
-		{
-			log << TestLog::Message << "Error: Number of active variables differ in block '" << instanceName
-				<< "' (expected " << refBlockLayout.activeVarIndices.size()
-				<< ", got " << cmpBlockLayout.activeVarIndices.size()
-				<< ")" << TestLog::EndMessage;
-			isOk = false;
-		}
-
-		for (vector<int>::const_iterator ndxIter = refBlockLayout.activeVarIndices.begin(); ndxIter != refBlockLayout.activeVarIndices.end(); ndxIter++)
-		{
-			const BufferVarLayoutEntry&	refEntry	= refLayout.bufferVars[*ndxIter];
-			int							cmpEntryNdx	= cmpLayout.getVariableIndex(refEntry.name.c_str());
-
-			if (cmpEntryNdx < 0)
-			{
-				log << TestLog::Message << "Error: Buffer variable '" << refEntry.name << "' not found" << TestLog::EndMessage;
-				isOk = false;
-				continue;
-			}
-
-			const BufferVarLayoutEntry&	cmpEntry	= cmpLayout.bufferVars[cmpEntryNdx];
-
-			if (refEntry.type					!= cmpEntry.type				||
-				refEntry.arraySize				!= cmpEntry.arraySize			||
-				refEntry.offset					!= cmpEntry.offset				||
-				refEntry.arrayStride			!= cmpEntry.arrayStride			||
-				refEntry.matrixStride			!= cmpEntry.matrixStride		||
-				refEntry.topLevelArraySize		!= cmpEntry.topLevelArraySize	||
-				refEntry.topLevelArrayStride	!= cmpEntry.topLevelArrayStride	||
-				refEntry.isRowMajor				!= cmpEntry.isRowMajor)
-			{
-				log << TestLog::Message << "Error: Layout mismatch in '" << refEntry.name << "':\n"
-					<< "  expected: " << refEntry << "\n"
-					<< "  got: " << cmpEntry
-					<< TestLog::EndMessage;
-				isOk = false;
-			}
-		}
-	}
-
-	return isOk;
-}
-
-bool SSBOLayoutCase::compareSharedBlocks (const BufferLayout& refLayout, const BufferLayout& cmpLayout) const
-{
-	TestLog&	log			= m_testCtx.getLog();
-	bool		isOk		= true;
-	int			numBlocks	= m_interface.getNumBlocks();
-
-	for (int blockNdx = 0; blockNdx < numBlocks; blockNdx++)
-	{
-		const BufferBlock&		block			= m_interface.getBlock(blockNdx);
-		bool					isArray			= block.isArray();
-		std::string				instanceName	= string(block.getBlockName()) + (isArray ? "[0]" : "");
-		int						refBlockNdx		= refLayout.getBlockIndex(instanceName.c_str());
-		int						cmpBlockNdx		= cmpLayout.getBlockIndex(instanceName.c_str());
-
-		if ((block.getFlags() & LAYOUT_SHARED) == 0)
-			continue; // Not shared layout.
-
-		DE_ASSERT(refBlockNdx >= 0);
-
-		if (cmpBlockNdx < 0)
-		{
-			// Not found, should it?
-			log << TestLog::Message << "Error: Buffer block '" << instanceName << "' not found" << TestLog::EndMessage;
-			isOk = false;
-			continue;
-		}
-
-		const BlockLayoutEntry&		refBlockLayout	= refLayout.blocks[refBlockNdx];
-		const BlockLayoutEntry&		cmpBlockLayout	= cmpLayout.blocks[cmpBlockNdx];
-
-		if (refBlockLayout.activeVarIndices.size() != cmpBlockLayout.activeVarIndices.size())
-		{
-			log << TestLog::Message << "Error: Number of active variables differ in block '" << instanceName
-				<< "' (expected " << refBlockLayout.activeVarIndices.size()
-				<< ", got " << cmpBlockLayout.activeVarIndices.size()
-				<< ")" << TestLog::EndMessage;
-			isOk = false;
-		}
-
-		for (vector<int>::const_iterator ndxIter = refBlockLayout.activeVarIndices.begin(); ndxIter != refBlockLayout.activeVarIndices.end(); ndxIter++)
-		{
-			const BufferVarLayoutEntry&	refEntry	= refLayout.bufferVars[*ndxIter];
-			int							cmpEntryNdx	= cmpLayout.getVariableIndex(refEntry.name.c_str());
-
-			if (cmpEntryNdx < 0)
-			{
-				log << TestLog::Message << "Error: Buffer variable '" << refEntry.name << "' not found" << TestLog::EndMessage;
-				isOk = false;
-				continue;
-			}
-
-			const BufferVarLayoutEntry&	cmpEntry	= cmpLayout.bufferVars[cmpEntryNdx];
-
-			if (refEntry.type				!= cmpEntry.type				||
-				refEntry.arraySize			!= cmpEntry.arraySize			||
-				refEntry.topLevelArraySize	!= cmpEntry.topLevelArraySize	||
-				refEntry.isRowMajor	!= cmpEntry.isRowMajor)
-			{
-				log << TestLog::Message << "Error: Type / array size mismatch in '" << refEntry.name << "':\n"
-					<< "  expected: " << refEntry << "\n"
-					<< "  got: " << cmpEntry
-					<< TestLog::EndMessage;
-				isOk = false;
-			}
-		}
-	}
-
-	return isOk;
-}
-
-bool SSBOLayoutCase::compareTypes (const BufferLayout& refLayout, const BufferLayout& cmpLayout) const
-{
-	TestLog&	log			= m_testCtx.getLog();
-	bool		isOk		= true;
-	int			numBlocks	= m_interface.getNumBlocks();
-
-	for (int blockNdx = 0; blockNdx < numBlocks; blockNdx++)
-	{
-		const BufferBlock&		block			= m_interface.getBlock(blockNdx);
-		bool					isArray			= block.isArray();
-		int						numInstances	= isArray ? block.getArraySize() : 1;
-
-		for (int instanceNdx = 0; instanceNdx < numInstances; instanceNdx++)
-		{
-			std::ostringstream instanceName;
-
-			instanceName << block.getBlockName();
-			if (isArray)
-				instanceName << "[" << instanceNdx << "]";
-
-			int cmpBlockNdx = cmpLayout.getBlockIndex(instanceName.str().c_str());
-
-			if (cmpBlockNdx < 0)
-				continue;
-
-			const BlockLayoutEntry& cmpBlockLayout = cmpLayout.blocks[cmpBlockNdx];
-
-			for (vector<int>::const_iterator ndxIter = cmpBlockLayout.activeVarIndices.begin(); ndxIter != cmpBlockLayout.activeVarIndices.end(); ndxIter++)
-			{
-				const BufferVarLayoutEntry&	cmpEntry	= cmpLayout.bufferVars[*ndxIter];
-				int							refEntryNdx	= refLayout.getVariableIndex(cmpEntry.name.c_str());
-
-				if (refEntryNdx < 0)
-				{
-					log << TestLog::Message << "Error: Buffer variable '" << cmpEntry.name << "' not found in reference layout" << TestLog::EndMessage;
-					isOk = false;
-					continue;
-				}
-
-				const BufferVarLayoutEntry&	refEntry	= refLayout.bufferVars[refEntryNdx];
-
-				if (refEntry.type != cmpEntry.type)
-				{
-					log << TestLog::Message << "Error: Buffer variable type mismatch in '" << refEntry.name << "':\n"
-						<< "  expected: " << glu::getDataTypeName(refEntry.type) << "\n"
-						<< "  got: " << glu::getDataTypeName(cmpEntry.type)
-						<< TestLog::EndMessage;
-					isOk = false;
-				}
-
-				if (refEntry.arraySize < cmpEntry.arraySize)
-				{
-					log << TestLog::Message << "Error: Invalid array size in '" << refEntry.name << "': expected <= " << refEntry.arraySize << TestLog::EndMessage;
-					isOk = false;
-				}
-
-				if (refEntry.topLevelArraySize < cmpEntry.topLevelArraySize)
-				{
-					log << TestLog::Message << "Error: Invalid top-level array size in '" << refEntry.name << "': expected <= " << refEntry.topLevelArraySize << TestLog::EndMessage;
-					isOk = false;
-				}
-			}
-		}
-	}
-
-	return isOk;
-}
-
-bool SSBOLayoutCase::checkLayoutIndices (const BufferLayout& layout) const
-{
-	TestLog&	log			= m_testCtx.getLog();
-	int			numVars		= (int)layout.bufferVars.size();
-	int			numBlocks	= (int)layout.blocks.size();
-	bool		isOk		= true;
-
-	// Check variable block indices.
-	for (int varNdx = 0; varNdx < numVars; varNdx++)
-	{
-		const BufferVarLayoutEntry& bufVar = layout.bufferVars[varNdx];
-
-		if (bufVar.blockNdx < 0 || !deInBounds32(bufVar.blockNdx, 0, numBlocks))
-		{
-			log << TestLog::Message << "Error: Invalid block index in buffer variable '" << bufVar.name << "'" << TestLog::EndMessage;
-			isOk = false;
-		}
-	}
-
-	// Check active variables.
-	for (int blockNdx = 0; blockNdx < numBlocks; blockNdx++)
-	{
-		const BlockLayoutEntry& block = layout.blocks[blockNdx];
-
-		for (vector<int>::const_iterator varNdxIter = block.activeVarIndices.begin(); varNdxIter != block.activeVarIndices.end(); varNdxIter++)
-		{
-			if (!deInBounds32(*varNdxIter, 0, numVars))
-			{
-				log << TestLog::Message << "Error: Invalid active variable index " << *varNdxIter << " in block '" << block.name << "'" << TestLog::EndMessage;
-				isOk = false;
-			}
-		}
-	}
-
-	return isOk;
-}
-
-bool SSBOLayoutCase::checkLayoutBounds (const BufferLayout& layout) const
-{
-	TestLog&	log			= m_testCtx.getLog();
-	const int	numVars		= (int)layout.bufferVars.size();
-	bool		isOk		= true;
-
-	for (int varNdx = 0; varNdx < numVars; varNdx++)
-	{
-		const BufferVarLayoutEntry& var = layout.bufferVars[varNdx];
-
-		if (var.blockNdx < 0 || isUnsizedArray(var))
-			continue;
-
-		const BlockLayoutEntry&		block			= layout.blocks[var.blockNdx];
-		const bool					isMatrix		= glu::isDataTypeMatrix(var.type);
-		const int					numVecs			= isMatrix ? (var.isRowMajor ? glu::getDataTypeMatrixNumRows(var.type) : glu::getDataTypeMatrixNumColumns(var.type)) : 1;
-		const int					numComps		= isMatrix ? (var.isRowMajor ? glu::getDataTypeMatrixNumColumns(var.type) : glu::getDataTypeMatrixNumRows(var.type)) : glu::getDataTypeScalarSize(var.type);
-		const int					numElements		= var.arraySize;
-		const int					topLevelSize	= var.topLevelArraySize;
-		const int					arrayStride		= var.arrayStride;
-		const int					topLevelStride	= var.topLevelArrayStride;
-		const int					compSize		= sizeof(deUint32);
-		const int					vecSize			= numComps*compSize;
-
-		int							minOffset		= 0;
-		int							maxOffset		= 0;
-
-		// For negative strides.
-		minOffset	= de::min(minOffset, (numVecs-1)*var.matrixStride);
-		minOffset	= de::min(minOffset, (numElements-1)*arrayStride);
-		minOffset	= de::min(minOffset, (topLevelSize-1)*topLevelStride + (numElements-1)*arrayStride + (numVecs-1)*var.matrixStride);
-
-		maxOffset	= de::max(maxOffset, vecSize);
-		maxOffset	= de::max(maxOffset, (numVecs-1)*var.matrixStride + vecSize);
-		maxOffset	= de::max(maxOffset, (numElements-1)*arrayStride + vecSize);
-		maxOffset	= de::max(maxOffset, (topLevelSize-1)*topLevelStride + (numElements-1)*arrayStride + vecSize);
-		maxOffset	= de::max(maxOffset, (topLevelSize-1)*topLevelStride + (numElements-1)*arrayStride + (numVecs-1)*var.matrixStride + vecSize);
-
-		if (var.offset+minOffset < 0 || var.offset+maxOffset > block.size)
-		{
-			log << TestLog::Message << "Error: Variable '" << var.name << "' out of block bounds" << TestLog::EndMessage;
-			isOk = false;
-		}
-	}
-
-	return isOk;
-}
-
-bool SSBOLayoutCase::checkIndexQueries (deUint32 program, const BufferLayout& layout) const
-{
-	tcu::TestLog&				log			= m_testCtx.getLog();
-	const glw::Functions&		gl			= m_renderCtx.getFunctions();
-	bool						allOk		= true;
-
-	// \note Spec mandates that buffer blocks are assigned consecutive locations from 0.
-	//		 BlockLayoutEntries are stored in that order in UniformLayout.
-	for (int blockNdx = 0; blockNdx < (int)layout.blocks.size(); blockNdx++)
-	{
-		const BlockLayoutEntry&		block		= layout.blocks[blockNdx];
-		const int					queriedNdx	= gl.getProgramResourceIndex(program, GL_SHADER_STORAGE_BLOCK, block.name.c_str());
-
-		if (queriedNdx != blockNdx)
-		{
-			log << TestLog::Message << "ERROR: glGetProgramResourceIndex(" << block.name << ") returned " << queriedNdx << ", expected " << blockNdx << "!" << TestLog::EndMessage;
-			allOk = false;
-		}
-
-		GLU_EXPECT_NO_ERROR(gl.getError(), "glGetUniformBlockIndex()");
-	}
-
-	return allOk;
-}
-
-bool SSBOLayoutCase::execute (deUint32 program)
-{
-	const glw::Functions&				gl				= m_renderCtx.getFunctions();
-	const deUint32						numPassedLoc	= gl.getProgramResourceIndex(program, GL_UNIFORM, "ac_numPassed");
-	const glu::InterfaceVariableInfo	acVarInfo		= numPassedLoc != GL_INVALID_INDEX ? glu::getProgramInterfaceVariableInfo(gl, program, GL_UNIFORM, numPassedLoc)
-																						   : glu::InterfaceVariableInfo();
-	const glu::InterfaceBlockInfo		acBufferInfo	= acVarInfo.atomicCounterBufferIndex != GL_INVALID_INDEX ? glu::getProgramInterfaceBlockInfo(gl, program, GL_ATOMIC_COUNTER_BUFFER, acVarInfo.atomicCounterBufferIndex)
-																												 : glu::InterfaceBlockInfo();
-	const glu::Buffer					acBuffer		(m_renderCtx);
-	bool								isOk			= true;
-
-	if (numPassedLoc == GL_INVALID_INDEX)
-		throw tcu::TestError("No location for ac_numPassed found");
-
-	if (acBufferInfo.index == GL_INVALID_INDEX)
-		throw tcu::TestError("ac_numPassed buffer index is GL_INVALID_INDEX");
-
-	if (acBufferInfo.dataSize == 0)
-		throw tcu::TestError("ac_numPassed buffer size = 0");
-
-	// Initialize atomic counter buffer.
-	{
-		vector<deUint8> emptyData(acBufferInfo.dataSize, 0);
-
-		gl.bindBuffer(GL_ATOMIC_COUNTER_BUFFER, *acBuffer);
-		gl.bufferData(GL_ATOMIC_COUNTER_BUFFER, (glw::GLsizeiptr)emptyData.size(), &emptyData[0], GL_STATIC_READ);
-		gl.bindBufferBase(GL_ATOMIC_COUNTER_BUFFER, acBufferInfo.index, *acBuffer);
-		GLU_EXPECT_NO_ERROR(gl.getError(), "Setting up buffer for ac_numPassed failed");
-	}
-
-	gl.useProgram(program);
-	gl.dispatchCompute(1, 1, 1);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "glDispatchCompute() failed");
-
-	// Read back ac_numPassed data.
-	{
-		const void*	mapPtr		= gl.mapBufferRange(GL_ATOMIC_COUNTER_BUFFER, 0, acBufferInfo.dataSize, GL_MAP_READ_BIT);
-		const int	refCount	= 1;
-		int			resCount	= 0;
-
-		GLU_EXPECT_NO_ERROR(gl.getError(), "glMapBufferRange(GL_ATOMIC_COUNTER_BUFFER) failed");
-		TCU_CHECK(mapPtr);
-
-		resCount = *(const int*)((const deUint8*)mapPtr + acVarInfo.offset);
-
-		gl.unmapBuffer(GL_ATOMIC_COUNTER_BUFFER);
-		GLU_EXPECT_NO_ERROR(gl.getError(), "glUnmapBuffer(GL_ATOMIC_COUNTER_BUFFER) failed");
-
-		if (refCount != resCount)
-		{
-			m_testCtx.getLog() << TestLog::Message << "ERROR: ac_numPassed = " << resCount << ", expected " << refCount << TestLog::EndMessage;
-			isOk = false;
-		}
-	}
-
-	GLU_EXPECT_NO_ERROR(gl.getError(), "Shader execution failed");
-
-	return isOk;
-}
-#endif
 
 } // ssbo
 } // vkt

@@ -47,23 +47,20 @@ namespace ssbo
 
 enum BufferVarFlags
 {
-	LAYOUT_SHARED		= (1<<0),
-	LAYOUT_PACKED		= (1<<1),
-	LAYOUT_STD140		= (1<<2),
-	LAYOUT_STD430		= (1<<3),
-	LAYOUT_ROW_MAJOR	= (1<<4),
-	LAYOUT_COLUMN_MAJOR	= (1<<5),	//!< \note Lack of both flags means column-major matrix.
-	LAYOUT_MASK			= LAYOUT_SHARED|LAYOUT_PACKED|LAYOUT_STD140|LAYOUT_STD430|LAYOUT_ROW_MAJOR|LAYOUT_COLUMN_MAJOR,
+	LAYOUT_STD140		= (1<<0),
+	LAYOUT_ROW_MAJOR	= (1<<1),
+	LAYOUT_COLUMN_MAJOR	= (1<<2),	//!< \note Lack of both flags means column-major matrix.
+	LAYOUT_MASK			= /*LAYOUT_SHARED|LAYOUT_PACKED|LAYOUT_STD430|*/LAYOUT_STD140|LAYOUT_ROW_MAJOR|LAYOUT_COLUMN_MAJOR,
 
 	// \todo [2013-10-14 pyry] Investigate adding these.
-/*	QUALIFIER_COHERENT	= (1<<6),
-	QUALIFIER_VOLATILE	= (1<<7),
-	QUALIFIER_RESTRICT	= (1<<8),
-	QUALIFIER_READONLY	= (1<<9),
-	QUALIFIER_WRITEONLY	= (1<<10),*/
+/*	QUALIFIER_COHERENT	= (1<<3),
+	QUALIFIER_VOLATILE	= (1<<4),
+	QUALIFIER_RESTRICT	= (1<<5),
+	QUALIFIER_READONLY	= (1<<6),
+	QUALIFIER_WRITEONLY	= (1<<7),*/
 
-	ACCESS_READ			= (1<<11),	//!< Buffer variable is read in the shader.
-	ACCESS_WRITE		= (1<<12),	//!< Buffer variable is written in the shader.
+	ACCESS_READ			= (1<<8),	//!< Buffer variable is read in the shader.
+	ACCESS_WRITE		= (1<<9),	//!< Buffer variable is written in the shader.
 };
 
 class BufferVar
@@ -237,17 +234,6 @@ public:
 
 protected:
     void                        init                        (void);
-
-/*
-	bool						compareStdBlocks			(const bb::BufferLayout& refLayout, const bb::BufferLayout& cmpLayout) const;
-	bool						compareSharedBlocks			(const bb::BufferLayout& refLayout, const bb::BufferLayout& cmpLayout) const;
-	bool						compareTypes				(const bb::BufferLayout& refLayout, const bb::BufferLayout& cmpLayout) const;
-	bool						checkLayoutIndices			(const bb::BufferLayout& layout) const;
-	bool						checkLayoutBounds			(const bb::BufferLayout& layout) const;
-	bool						checkIndexQueries			(deUint32 program, const bb::BufferLayout& layout) const;
-
-	bool						execute						(deUint32 program);
-*/
 
 	BufferMode					m_bufferMode;
 	ShaderInterface				m_interface;
