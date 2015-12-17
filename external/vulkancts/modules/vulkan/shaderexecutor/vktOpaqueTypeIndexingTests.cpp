@@ -211,7 +211,7 @@ static void declareUniformIndexVars (std::ostream& str, const char* varPrefix, i
 static void uploadUniformIndices (UniformSetup* uniformSetup, int numIndices, const int* indices, deUint32& bindingLocation)
 {
 	for (int varNdx = 0; varNdx < numIndices; varNdx++)
-		uniformSetup->addData(new UniformData<int>(bindingLocation++, indices[varNdx]));
+		uniformSetup->addData(new UniformData<int>(bindingLocation++, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, indices[varNdx]));
 }
 
 static TextureType getTextureType (glu::DataType samplerType)
@@ -369,7 +369,7 @@ static vk::VkImageType getVkImageType (TextureType texType)
 		case TEXTURE_TYPE_1D:			return vk::VK_IMAGE_TYPE_1D;
 		case TEXTURE_TYPE_2D:
 		case TEXTURE_TYPE_2D_ARRAY:		return vk::VK_IMAGE_TYPE_2D;
-		case TEXTURE_TYPE_CUBE:			return vk::VK_IMAGE_TYPE_3D;
+		case TEXTURE_TYPE_CUBE:			return vk::VK_IMAGE_TYPE_2D;
 		case TEXTURE_TYPE_3D:			return vk::VK_IMAGE_TYPE_3D;
 		default:
 			DE_FATAL("Impossible");
@@ -384,7 +384,7 @@ static vk::VkImageViewType getVkImageViewType (TextureType texType)
 		case TEXTURE_TYPE_1D:			return vk::VK_IMAGE_VIEW_TYPE_1D;
 		case TEXTURE_TYPE_2D:			return vk::VK_IMAGE_VIEW_TYPE_2D;
 		case TEXTURE_TYPE_2D_ARRAY:		return vk::VK_IMAGE_VIEW_TYPE_2D_ARRAY;
-		case TEXTURE_TYPE_CUBE:			return vk::VK_IMAGE_VIEW_TYPE_3D; // \todo vk::VK_IMAGE_VIEW_TYPE_CUBE ?
+		case TEXTURE_TYPE_CUBE:			return vk::VK_IMAGE_VIEW_TYPE_CUBE;
 		case TEXTURE_TYPE_3D:			return vk::VK_IMAGE_VIEW_TYPE_3D;
 		default:
 			DE_FATAL("Impossible");
@@ -817,9 +817,10 @@ tcu::TestStatus BlockArrayIndexingCaseInstance::iterate (void)
 		std::vector<void*>		inputs;
 		std::vector<void*>		outputs;
 		deUint32				bindingLocation		= getFirstFreeBindingLocation(m_shaderType, m_shaderSpec);
+		VkDescriptorType		descriptorType		= m_blockType == BLOCKTYPE_UNIFORM ? VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER : VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 
 		for (size_t i = 0 ; i < m_inValues.size(); i++)
-			m_uniformSetup->addData(new UniformData<deUint32>(bindingLocation++, m_inValues[i]));
+			m_uniformSetup->addData(new UniformData<deUint32>(bindingLocation++, descriptorType, m_inValues[i]));
 
 		if (m_indexExprType == INDEX_EXPR_TYPE_DYNAMIC_UNIFORM)
 		{
@@ -1049,7 +1050,7 @@ tcu::TestStatus AtomicCounterIndexingCaseInstance::iterate (void)
 	{
 		DE_ASSERT(numCounters <= 4);
 		// Add the atomic counters' base value, all zero.
-		m_uniformSetup->addData(new UniformData<tcu::Mat4>(bindingLocation++, tcu::Mat4(0.0)));
+		m_uniformSetup->addData(new UniformData<tcu::Mat4>(bindingLocation++, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, tcu::Mat4(0.0)));
 
 		if (m_indexExprType == INDEX_EXPR_TYPE_DYNAMIC_UNIFORM)
 		{
