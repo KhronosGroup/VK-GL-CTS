@@ -2332,7 +2332,6 @@ Dest bitwiseCast(Src source)
 tcu::TestCaseGroup* createSpecConstantOpQuantizeToF16Group (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opspecconstantop_opquantize", "Tests the OpQuantizeToF16 opcode for the OpSpecConstantOp instruction"));
-	de::Random						rnd				(deStringHash(group->getName()));
 
 	const std::string shader (
 		string(s_ShaderPreamble) +

@@ -1776,7 +1776,7 @@ vk::Move<VkPipeline> UniformBlockCaseInstance::createPipeline (vk::VkShaderModul
 	const VkVertexInputBindingDescription			vertexBinding			=
 	{
 		0,									// deUint32					binding;
-		sizeof(float) * 4,					// deUint32					strideInBytes;
+		(deUint32)sizeof(float) * 4,		// deUint32					strideInBytes;
 		VK_VERTEX_INPUT_RATE_VERTEX			// VkVertexInputStepRate	inputRate;
 	};
 
