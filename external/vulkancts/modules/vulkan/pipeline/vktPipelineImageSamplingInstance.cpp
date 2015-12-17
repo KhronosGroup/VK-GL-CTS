@@ -936,10 +936,7 @@ tcu::TestStatus ImageSamplingInstance::verifyImage (void)
 	MovePtr<ReferenceRenderer>		refRenderer;
 
 	// Set up LOD of reference sampler
-	if (m_samplerParams.mipmapMode == VK_SAMPLER_MIPMAP_MODE_BASE)
-		samplerLod = 0.0f;
-	else
-		samplerLod = de::max(m_samplerParams.minLod, de::min(m_samplerParams.maxLod, m_samplerParams.mipLodBias + m_samplerLod));
+	samplerLod = de::max(m_samplerParams.minLod, de::min(m_samplerParams.maxLod, m_samplerParams.mipLodBias + m_samplerLod));
 
 	// Create reference program that uses image subresource range
 	program = createRefProgram(colorFormat, sampler, samplerLod, componentMapping, *m_texture, m_imageViewType, m_layerCount, m_subresourceRange);

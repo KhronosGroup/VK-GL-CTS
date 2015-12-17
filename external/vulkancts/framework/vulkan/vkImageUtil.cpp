@@ -817,7 +817,7 @@ tcu::Sampler::FilterMode mapVkMinTexFilter (VkFilter filter, VkSamplerMipmapMode
 		case VK_FILTER_LINEAR:
 			switch (mipMode)
 			{
-				case VK_SAMPLER_MIPMAP_MODE_BASE:		return tcu::Sampler::LINEAR_MIPMAP_NEAREST;
+				case VK_SAMPLER_MIPMAP_MODE_BASE:		return tcu::Sampler::LINEAR;
 				case VK_SAMPLER_MIPMAP_MODE_LINEAR:		return tcu::Sampler::LINEAR_MIPMAP_LINEAR;
 				case VK_SAMPLER_MIPMAP_MODE_NEAREST:	return tcu::Sampler::LINEAR_MIPMAP_NEAREST;
 				default:
@@ -828,7 +828,7 @@ tcu::Sampler::FilterMode mapVkMinTexFilter (VkFilter filter, VkSamplerMipmapMode
 		case VK_FILTER_NEAREST:
 			switch (mipMode)
 			{
-				case VK_SAMPLER_MIPMAP_MODE_BASE:		return tcu::Sampler::NEAREST_MIPMAP_NEAREST;
+				case VK_SAMPLER_MIPMAP_MODE_BASE:		return tcu::Sampler::NEAREST;
 				case VK_SAMPLER_MIPMAP_MODE_LINEAR:		return tcu::Sampler::NEAREST_MIPMAP_LINEAR;
 				case VK_SAMPLER_MIPMAP_MODE_NEAREST:	return tcu::Sampler::NEAREST_MIPMAP_NEAREST;
 				default:
