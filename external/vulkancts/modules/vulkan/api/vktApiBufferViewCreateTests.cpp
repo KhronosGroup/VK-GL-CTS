@@ -65,10 +65,7 @@ class BufferViewTestInstance : public TestInstance
 {
 public:
 								BufferViewTestInstance		(Context&					ctx,
-															 BufferViewCaseParameters	createInfo)
-									: TestInstance			(ctx)
-									, m_testCase			(createInfo)
-								{}
+															 BufferViewCaseParameters	createInfo);
 	virtual tcu::TestStatus		iterate						(void);
 
 private:
@@ -96,6 +93,15 @@ private:
 	BufferViewCaseParameters	m_testCase;
 };
 
+BufferViewTestInstance::BufferViewTestInstance (Context&					ctx,
+												BufferViewCaseParameters	createInfo)
+	: TestInstance	(ctx)
+	, m_testCase	(createInfo)
+{
+	if (m_context.getDeviceFeatures().sparseBinding == 0 && m_testCase.beforeAllocateMemory == false)
+		throw tcu::NotSupportedError("The test is not supported - it needs missing 'sparseBinding' feature of Vulkan");
+}
+
 tcu::TestStatus BufferViewTestInstance::iterate (void)
 {
 	// Create buffer
@@ -108,14 +114,14 @@ tcu::TestStatus BufferViewTestInstance::iterate (void)
 	VkFormatProperties			properties;
 	const VkBufferCreateInfo	bufferParams =
 	{
-		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,		//	VkStructureType			sType;
-		DE_NULL,									//	const void*				pNext;
-		VK_BUFFER_CREATE_SPARSE_BINDING_BIT,		//	VkBufferCreateFlags		flags;
-		size,										//	VkDeviceSize			size;
-		m_testCase.usage,							//	VkBufferUsageFlags		usage;
-		VK_SHARING_MODE_EXCLUSIVE,					//	VkSharingMode			sharingMode;
-		1u,											//	deUint32				queueFamilyCount;
-		&queueFamilyIndex,							//	const deUint32*			pQueueFamilyIndices;
+		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,													//	VkStructureType			sType;
+		DE_NULL,																				//	const void*				pNext;
+		m_testCase.beforeAllocateMemory == true ? 0 : VK_BUFFER_CREATE_SPARSE_BINDING_BIT,		//	VkBufferCreateFlags		flags;
+		size,																					//	VkDeviceSize			size;
+		m_testCase.usage,																		//	VkBufferUsageFlags		usage;
+		VK_SHARING_MODE_EXCLUSIVE,																//	VkSharingMode			sharingMode;
+		1u,																						//	deUint32				queueFamilyCount;
+		&queueFamilyIndex,																		//	const deUint32*			pQueueFamilyIndices;
 	};
 
 	m_context.getInstanceInterface().getPhysicalDeviceFormatProperties(m_context.getPhysicalDevice(), m_testCase.format, &properties);
