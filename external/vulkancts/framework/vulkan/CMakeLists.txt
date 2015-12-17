@@ -37,6 +37,8 @@ set(VKUTIL_SRCS
 	vkImageUtil.hpp
 	vkTypeUtil.cpp
 	vkTypeUtil.hpp
+	vkAllocationCallbackUtil.cpp
+	vkAllocationCallbackUtil.hpp
 	)
 
 set(VKUTIL_LIBS
