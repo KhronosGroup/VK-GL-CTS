@@ -7224,6 +7224,57 @@ tcu::TestCaseGroup* createBarrierTests(tcu::TestContext& testCtx)
 	return testGroup.release();
 }
 
+// Test for the OpFRem instruction.
+tcu::TestCaseGroup* createFRemTests(tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup>		testGroup(new tcu::TestCaseGroup(testCtx, "frem", "OpFRem"));
+	map<string, string>					fragments;
+	RGBA								inputColors[4];
+	RGBA								outputColors[4];
+
+	// A barrier inside a function body.
+	fragments["pre_main"]				 =
+		"%c_f32_3 = OpConstant %f32 3.0\n"
+		"%c_f32_n3 = OpConstant %f32 -3.0\n"
+		"%c_f32_8 = OpConstant %f32 8.0\n"
+		"%c_f32_n4 = OpConstant %f32 4.0\n"
+		"%c_f32_p75 = OpConstant %f32 0.75\n"
+		"%c_v4f32_p75_p75_p75_p75 = OpConstantComposite %v4f32 %c_f32_p75 %c_f32_p75 %c_f32_p75 %c_f32_p75 \n"
+		"%c_v4f32_4_4_4_4 = OpConstantComposite %v4f32 %c_f32_4 %c_f32_4 %c_f32_4 %c_f32_4\n"
+		"%c_v4f32_3_n3_3_n3 = OpConstantComposite %v4f32 %c_f32_3 %c_f32_n3 %c_f32_3 %c_f32_n3\n";
+
+	// The test does the following.
+	// vec4 result = (param1 * 8.0) - 4.0;
+	// return (frem(result.x,3) + 0.75, frem(result.y, -3) + 0.75, 0, 1)
+	fragments["testfun"]				 =
+		// A %test_code function that returns its argument unchanged.
+		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%param1 = OpFunctionParameter %v4f32\n"
+		"%label_testfun = OpLabel\n"
+		"%v_times_8 = OpVectorTimesScalar %v4f32 %param1 %c_f32_8\n"
+		"%minus_4 = OpFSub %v4f32 %v_times_8 %c_v4f32_4_4_4_4\n"
+		"%frem = OpFRem %v4f32 %minus_4 %c_v4f32_3_n3_3_n3\n"
+		"%added = OpFAdd %v4f32 %frem %c_v4f32_p75_p75_p75_p75\n"
+		"%xyz_1 = OpVectorInsertDynamic %v4f32 %added %c_f32_1 %c_i32_3\n"
+		"%xy_0_1 = OpVectorInsertDynamic %v4f32 %xyz_1 %c_f32_0 %c_i32_2\n"
+		"OpReturnValue %xy_0_1\n"
+		"OpFunctionEnd\n";
+
+
+	inputColors[0]		= RGBA(16,	16,		0, 255);
+	inputColors[1]		= RGBA(232, 232,	0, 255);
+	inputColors[2]		= RGBA(232, 16,		0, 255);
+	inputColors[3]		= RGBA(16,	232,	0, 255);
+
+	outputColors[0]		= RGBA(64,	64,		0, 255);
+	outputColors[1]		= RGBA(255, 255,	0, 255);
+	outputColors[2]		= RGBA(255, 64,		0, 255);
+	outputColors[3]		= RGBA(64,	255,	0, 255);
+
+	createTestsForAllStages("frem", inputColors, outputColors, fragments, testGroup.get());
+	return testGroup.release();
+}
+
 tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> instructionTests	(new tcu::TestCaseGroup(testCtx, "instruction", "Instructions with special opcodes/operands"));
@@ -7304,6 +7355,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	graphicsTests->addChild(createSpecConstantOpQuantizeToF16Group(testCtx));
 	graphicsTests->addChild(createBarrierTests(testCtx));
 	graphicsTests->addChild(createDecorationGroupTests(testCtx));
+	graphicsTests->addChild(createFRemTests(testCtx));
 
 	instructionTests->addChild(computeTests.release());
 	instructionTests->addChild(graphicsTests.release());
