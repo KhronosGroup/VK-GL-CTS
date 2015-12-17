@@ -8,6 +8,7 @@ set(DEQP_VK_PIPELINE_SRCS
 	vktPipelineBlendTests.hpp
 	vktPipelineClearUtil.cpp
 	vktPipelineClearUtil.hpp
+	vktPipelineCombinationsIterator.hpp
 	vktPipelineDepthTests.cpp
 	vktPipelineDepthTests.hpp
 	vktPipelineImageSamplingInstance.cpp
@@ -33,6 +34,8 @@ set(DEQP_VK_PIPELINE_SRCS
 	vktPipelineTests.cpp
 	vktPipelineTests.hpp
 	vktPipelineUniqueRandomIterator.hpp
+	vktPipelineVertexInputTests.cpp
+	vktPipelineVertexInputTests.hpp
 	vktPipelineVertexUtil.cpp
 	vktPipelineVertexUtil.hpp
 	)

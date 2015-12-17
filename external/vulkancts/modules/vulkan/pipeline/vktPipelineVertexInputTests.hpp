@@ -1,3 +1,5 @@
+#ifndef _VKTPIPELINEVERTEXINPUTTESTS_HPP
+#define _VKTPIPELINEVERTEXINPUTTESTS_HPP
 /*------------------------------------------------------------------------
  * Vulkan Conformance Tests
  * ------------------------
@@ -30,44 +32,19 @@
  *
  *//*!
  * \file
- * \brief Pipeline Tests
+ * \brief Vertex Input Tests
  *//*--------------------------------------------------------------------*/
 
-#include "vktPipelineTests.hpp"
-#include "vktPipelineStencilTests.hpp"
-#include "vktPipelineBlendTests.hpp"
-#include "vktPipelineDepthTests.hpp"
-#include "vktPipelineImageTests.hpp"
-#include "vktPipelineInputAssemblyTests.hpp"
-#include "vktPipelineSamplerTests.hpp"
-#include "vktPipelineImageViewTests.hpp"
-#include "vktPipelinePushConstantTests.hpp"
-#include "vktPipelineMultisampleTests.hpp"
-#include "vktPipelineVertexInputTests.hpp"
-#include "deUniquePtr.hpp"
+#include "vktTestCase.hpp"
 
 namespace vkt
 {
 namespace pipeline
 {
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
-{
-	de::MovePtr<tcu::TestCaseGroup> pipelineTests (new tcu::TestCaseGroup(testCtx, "pipeline", "Pipeline Tests"));
-
-	pipelineTests->addChild(createStencilTests		(testCtx));
-	pipelineTests->addChild(createBlendTests		(testCtx));
-	pipelineTests->addChild(createDepthTests		(testCtx));
-	pipelineTests->addChild(createImageTests		(testCtx));
-	pipelineTests->addChild(createSamplerTests		(testCtx));
-	pipelineTests->addChild(createImageViewTests	(testCtx));
-	pipelineTests->addChild(createPushConstantTests	(testCtx));
-	pipelineTests->addChild(createMultisampleTests	(testCtx));
-	pipelineTests->addChild(createVertexInputTests	(testCtx));
-	pipelineTests->addChild(createInputAssemblyTests(testCtx));
-
-	return pipelineTests.release();
-}
+tcu::TestCaseGroup* createVertexInputTests (tcu::TestContext& testCtx);
 
 } // pipeline
 } // vkt
+
+#endif // _VKTPIPELINEVERTEXINPUTTESTS_HPP
