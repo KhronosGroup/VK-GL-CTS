@@ -290,7 +290,14 @@ tcu::IVec2 SamplerTest::getRenderSize (VkImageViewType viewType) const
 
 std::vector<Vertex4Tex4> SamplerTest::createVertices (void) const
 {
-	return createTestQuadMosaic(m_imageViewType);
+	std::vector<Vertex4Tex4> vertices = createTestQuadMosaic(m_imageViewType);
+	// Adjust texture coordinate to avoid doing NEAREST filtering exactly on texel boundaries.
+	// TODO: Would be nice to base this on number of texels and subtexel precision. But this
+	// seems to work.
+	for (unsigned int i = 0; i < vertices.size(); ++i) {
+		vertices[i].texCoord += tcu::Vec4(0.001f, 0.001f, 0.001f, 0.0f);
+	}
+	return vertices;
 }
 
 VkSamplerCreateInfo SamplerTest::getSamplerCreateInfo (void) const
@@ -443,6 +450,8 @@ VkSamplerCreateInfo SamplerMinFilterTest::getSamplerCreateInfo (void) const
 {
 	VkSamplerCreateInfo samplerParams = SamplerTest::getSamplerCreateInfo();
 	samplerParams.minFilter = m_minFilter;
+	// set minLod to epsilon, to force use of the minFilter
+	samplerParams.minLod = 0.01f;
 
 	return samplerParams;
 }
@@ -568,7 +577,8 @@ MovePtr<tcu::TestCaseGroup> createSamplerMagFilterTests (tcu::TestContext& testC
 {
 	MovePtr<tcu::TestCaseGroup> samplerMagFilterTests (new tcu::TestCaseGroup(testCtx, "mag_filter", "Tests for magnification filter"));
 
-	samplerMagFilterTests->addChild(new SamplerMagFilterTest(testCtx, "linear", "Magnifies image using VK_TEX_FILTER_LINEAR", imageViewType, imageFormat, VK_FILTER_LINEAR));
+	if (isCompressedFormat(imageFormat) || (!isIntFormat(imageFormat) && !isUintFormat(imageFormat)))
+		samplerMagFilterTests->addChild(new SamplerMagFilterTest(testCtx, "linear", "Magnifies image using VK_TEX_FILTER_LINEAR", imageViewType, imageFormat, VK_FILTER_LINEAR));
 	samplerMagFilterTests->addChild(new SamplerMagFilterTest(testCtx, "nearest", "Magnifies image using VK_TEX_FILTER_NEAREST", imageViewType, imageFormat, VK_FILTER_NEAREST));
 
 	return samplerMagFilterTests;
@@ -578,7 +588,8 @@ MovePtr<tcu::TestCaseGroup> createSamplerMinFilterTests (tcu::TestContext& testC
 {
 	MovePtr<tcu::TestCaseGroup> samplerMinFilterTests (new tcu::TestCaseGroup(testCtx, "min_filter", "Tests for minification filter"));
 
-	samplerMinFilterTests->addChild(new SamplerMinFilterTest(testCtx, "linear", "Minifies image using VK_TEX_FILTER_LINEAR", imageViewType, imageFormat, VK_FILTER_LINEAR));
+	if (isCompressedFormat(imageFormat) || (!isIntFormat(imageFormat) && !isUintFormat(imageFormat)))
+		samplerMinFilterTests->addChild(new SamplerMinFilterTest(testCtx, "linear", "Minifies image using VK_TEX_FILTER_LINEAR", imageViewType, imageFormat, VK_FILTER_LINEAR));
 	samplerMinFilterTests->addChild(new SamplerMinFilterTest(testCtx, "nearest", "Minifies image using VK_TEX_FILTER_NEAREST", imageViewType, imageFormat, VK_FILTER_NEAREST));
 
 	return samplerMinFilterTests;
@@ -629,9 +640,12 @@ MovePtr<tcu::TestCaseGroup> createSamplerMipmapTests (tcu::TestContext& testCtx,
 	samplerMipmapTests->addChild(mipmapNearestTests.release());
 
 	// Mipmap mode: linear
-	MovePtr<tcu::TestCaseGroup> mipmapLinearTests (new tcu::TestCaseGroup(testCtx, "linear", "Uses VK_TEX_MIPMAP_MODE_LINEAR"));
-	mipmapLinearTests->addChild(createSamplerLodTests(testCtx, imageViewType, imageFormat, VK_SAMPLER_MIPMAP_MODE_LINEAR).release());
-	samplerMipmapTests->addChild(mipmapLinearTests.release());
+	if (isCompressedFormat(imageFormat) || (!isIntFormat(imageFormat) && !isUintFormat(imageFormat)))
+	{
+		MovePtr<tcu::TestCaseGroup> mipmapLinearTests(new tcu::TestCaseGroup(testCtx, "linear", "Uses VK_TEX_MIPMAP_MODE_LINEAR"));
+		mipmapLinearTests->addChild(createSamplerLodTests(testCtx, imageViewType, imageFormat, VK_SAMPLER_MIPMAP_MODE_LINEAR).release());
+		samplerMipmapTests->addChild(mipmapLinearTests.release());
+	}
 
 	return samplerMipmapTests;
 }

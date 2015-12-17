@@ -817,7 +817,7 @@ tcu::Sampler::FilterMode mapVkMinTexFilter (VkFilter filter, VkSamplerMipmapMode
 		case VK_FILTER_LINEAR:
 			switch (mipMode)
 			{
-				case VK_SAMPLER_MIPMAP_MODE_BASE:		return tcu::Sampler::LINEAR_MIPMAP_NEAREST;
+				case VK_SAMPLER_MIPMAP_MODE_BASE:		return tcu::Sampler::LINEAR;
 				case VK_SAMPLER_MIPMAP_MODE_LINEAR:		return tcu::Sampler::LINEAR_MIPMAP_LINEAR;
 				case VK_SAMPLER_MIPMAP_MODE_NEAREST:	return tcu::Sampler::LINEAR_MIPMAP_NEAREST;
 				default:
@@ -828,7 +828,7 @@ tcu::Sampler::FilterMode mapVkMinTexFilter (VkFilter filter, VkSamplerMipmapMode
 		case VK_FILTER_NEAREST:
 			switch (mipMode)
 			{
-				case VK_SAMPLER_MIPMAP_MODE_BASE:		return tcu::Sampler::NEAREST_MIPMAP_NEAREST;
+				case VK_SAMPLER_MIPMAP_MODE_BASE:		return tcu::Sampler::NEAREST;
 				case VK_SAMPLER_MIPMAP_MODE_LINEAR:		return tcu::Sampler::NEAREST_MIPMAP_LINEAR;
 				case VK_SAMPLER_MIPMAP_MODE_NEAREST:	return tcu::Sampler::NEAREST_MIPMAP_NEAREST;
 				default:
@@ -887,6 +887,52 @@ tcu::UVec4 mapVkComponentMapping (const vk::VkComponentMapping& mapping)
 	swizzle.w() = mapVkComponentSwizzle(mapping.a);
 
 	return swizzle;
+}
+
+//! Get a format the matches the layout in buffer memory used for a
+//! buffer<->image copy on a depth/stencil format.
+tcu::TextureFormat getDepthCopyFormat (VkFormat combinedFormat)
+{
+	switch (combinedFormat)
+	{
+		case VK_FORMAT_D16_UNORM:
+		case VK_FORMAT_X8_D24_UNORM_PACK32:
+		case VK_FORMAT_D32_SFLOAT:
+			return mapVkFormat(combinedFormat);
+
+		case VK_FORMAT_D16_UNORM_S8_UINT:
+			return mapVkFormat(VK_FORMAT_D16_UNORM);
+		case VK_FORMAT_D24_UNORM_S8_UINT:
+			return mapVkFormat(VK_FORMAT_X8_D24_UNORM_PACK32);
+		case VK_FORMAT_D32_SFLOAT_S8_UINT:
+			return mapVkFormat(VK_FORMAT_D32_SFLOAT);
+
+		case VK_FORMAT_S8_UINT:
+		default:
+			DE_FATAL("Unexpected depth/stencil format");
+			return tcu::TextureFormat();
+	}
+}
+
+//! Get a format the matches the layout in buffer memory used for a
+//! buffer<->image copy on a depth/stencil format.
+tcu::TextureFormat getStencilCopyFormat (VkFormat combinedFormat)
+{
+	switch (combinedFormat)
+	{
+		case VK_FORMAT_D16_UNORM_S8_UINT:
+		case VK_FORMAT_D24_UNORM_S8_UINT:
+		case VK_FORMAT_D32_SFLOAT_S8_UINT:
+		case VK_FORMAT_S8_UINT:
+			return mapVkFormat(VK_FORMAT_S8_UINT);
+
+		case VK_FORMAT_D16_UNORM:
+		case VK_FORMAT_X8_D24_UNORM_PACK32:
+		case VK_FORMAT_D32_SFLOAT:
+		default:
+			DE_FATAL("Unexpected depth/stencil format");
+			return tcu::TextureFormat();
+	}
 }
 
 } // vk
