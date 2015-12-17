@@ -1,6 +1,5 @@
-#ifndef _COMPUTEINSTANCERESULTBUFFER_HPP
-#define _COMPUTEINSTANCERESULTBUFFER_HPP
-
+#ifndef _VKTAPIBUFFERCOMPUTEINSTANCE_HPP
+#define _VKTAPIBUFFERCOMPUTEINSTANCE_HPP
 /*-------------------------------------------------------------------------
  * Vulkan Conformance Tests
  * ------------------------
@@ -34,46 +33,37 @@
  *
  *//*--------------------------------------------------------------------*/
 
+#include "tcuDefs.hpp"
+#include "tcuVectorType.hpp"
 #include "vkRef.hpp"
 #include "vkMemUtil.hpp"
-#include "vkQueryUtil.hpp"
-#include "tcuTestLog.hpp"
-#include "deUniquePtr.hpp"
+#include "vktTestCase.hpp"
 
-class ComputeInstanceResultBuffer {
-public:
-	enum {
-		DATA_SIZE = sizeof(tcu::Vec4[4])
-	};
+namespace vkt
+{
+namespace api
+{
 
-											ComputeInstanceResultBuffer(const vk::DeviceInterface &vki,
-													vk::VkDevice device,
-													vk::Allocator &allocator);
+vk::Move<vk::VkBuffer>					createColorDataBuffer (	deUint32 offset,
+																deUint32 bufferSize,
+																const tcu::Vec4& color1,
+																const tcu::Vec4& color2,
+																de::MovePtr<vk::Allocation>* outAllocation,
+																vkt::Context& context);
 
-	void 									readResultContentsTo(tcu::Vec4 (*results)[4]) const;
+vk::Move<vk::VkDescriptorSetLayout>		createDescriptorSetLayout (vkt::Context& context);
 
-	inline 									vk::VkBuffer getBuffer(void) const { return *m_buffer; }
+vk::Move<vk::VkDescriptorPool>			createDescriptorPool (vkt::Context& context);
 
-	inline const void 						*getResultReadBarrier(void) const { return &m_bufferBarrier; }
+vk::Move<vk::VkDescriptorSet>			createDescriptorSet (vk::VkDescriptorPool pool,
+															  vk::VkDescriptorSetLayout layout,
+															  vk::VkBuffer viewA, deUint32 offsetA,
+															  vk::VkBuffer viewB,
+															  deUint32 offsetB,
+															  vk::VkBuffer resBuf,
+															  vkt::Context& context);
 
-private:
-	static vk::Move <vk::VkBuffer> 			createResultBuffer(const vk::DeviceInterface &vki,
-													  vk::VkDevice device,
-													  vk::Allocator &allocator,
-													  de::MovePtr <vk::Allocation> *outAllocation);
+} // api
+} // vkt
 
-	static vk::VkBufferMemoryBarrier 		createResultBufferBarrier(vk::VkBuffer buffer);
-
-	const vk::DeviceInterface &				m_vki;
-	const vk::VkDevice 						m_device;
-
-	de::MovePtr <vk::Allocation> 			m_bufferMem;
-	const vk::Unique <vk::VkBuffer> 		m_buffer;
-	const vk::VkBufferMemoryBarrier 		m_bufferBarrier;
-};
-
-de::MovePtr <vk::Allocation> 				allocateAndBindObjectMemory(const vk::DeviceInterface &vki, vk::VkDevice device,
-														 vk::Allocator &allocator, vk::VkBuffer buffer,
-														 vk::MemoryRequirement requirement);
-
-#endif //_COMPUTEINSTANCERESULTBUFFER_HPP
+#endif //_VKTAPIBUFFERCOMPUTEINSTANCE_HPP

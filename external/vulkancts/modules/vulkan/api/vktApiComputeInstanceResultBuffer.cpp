@@ -31,54 +31,58 @@
  *
  *//*--------------------------------------------------------------------*/
 
-#include "ComputeInstanceResultBuffer.hpp"
+#include "vktApiComputeInstanceResultBuffer.hpp"
+#include "vktApiBufferComputeInstance.hpp"
 #include "vkRefUtil.hpp"
+
+namespace vkt
+{
+namespace api
+{
 
 using namespace vk;
 
-ComputeInstanceResultBuffer::ComputeInstanceResultBuffer(const DeviceInterface &vki,
-														 VkDevice device,
-														 Allocator &allocator)
-		: m_vki(vki), m_device(device), m_bufferMem(DE_NULL),
-		  m_buffer(createResultBuffer(m_vki, m_device, allocator, &m_bufferMem)),
-		  m_bufferBarrier(createResultBufferBarrier(*m_buffer)) {
+ComputeInstanceResultBuffer::ComputeInstanceResultBuffer (const DeviceInterface &vki,
+																	  VkDevice device,
+																	  Allocator &allocator)
+		: m_vki(vki),
+		m_device(device),
+		m_bufferMem(DE_NULL),
+		m_buffer(createResultBuffer(m_vki, m_device, allocator, &m_bufferMem)),
+		m_bufferBarrier(createResultBufferBarrier(*m_buffer))
+{
 }
 
-void ComputeInstanceResultBuffer::readResultContentsTo(tcu::Vec4 (*results)[4]) const {
+void ComputeInstanceResultBuffer::readResultContentsTo(tcu::Vec4 (*results)[4]) const
+{
 	invalidateMappedMemoryRange(m_vki, m_device, m_bufferMem->getMemory(), m_bufferMem->getOffset(), sizeof(*results));
 	deMemcpy(*results, m_bufferMem->getHostPtr(), sizeof(*results));
 }
 
-de::MovePtr <Allocation> allocateAndBindObjectMemory(const DeviceInterface &vki, VkDevice device, Allocator &allocator,
-													 VkBuffer buffer, MemoryRequirement requirement) {
-	const VkMemoryRequirements requirements = getBufferMemoryRequirements(vki, device, buffer);
-	de::MovePtr <Allocation> allocation = allocator.allocate(requirements, requirement);
-
-	VK_CHECK(vki.bindBufferMemory(device, buffer, allocation->getMemory(), allocation->getOffset()));
-	return allocation;
-}
-
-Move <VkBuffer> ComputeInstanceResultBuffer::createResultBuffer(const DeviceInterface &vki,
-																VkDevice device,
-																Allocator &allocator,
-																de::MovePtr <Allocation> *outAllocation) {
+Move<VkBuffer> ComputeInstanceResultBuffer::createResultBuffer(const DeviceInterface &vki,
+																	 VkDevice device,
+																	 Allocator &allocator,
+																	 de::MovePtr<Allocation> *outAllocation)
+{
 	const VkBufferCreateInfo createInfo =
 	{
 		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
 		DE_NULL,
-		(VkDeviceSize) DATA_SIZE,				// size
-		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,		// usage
-		0u,									 	// flags
-		VK_SHARING_MODE_EXCLUSIVE,			  	// sharingMode
-		0u,									 	// queueFamilyCount
-		DE_NULL,						   		// pQueueFamilyIndices
+		(VkDeviceSize) DATA_SIZE,									// size
+		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,							// usage
+		0u,									 						// flags
+		VK_SHARING_MODE_EXCLUSIVE,									// sharingMode
+		0u,									 						// queueFamilyCount
+		DE_NULL,													// pQueueFamilyIndices
 	};
 
-	Move <VkBuffer> buffer(createBuffer(vki, device, &createInfo));
-	de::MovePtr <Allocation> allocation(
-			allocateAndBindObjectMemory(vki, device, allocator, *buffer, MemoryRequirement::HostVisible));
-	const float clearValue = -1.0f;
-	void *mapPtr = allocation->getHostPtr();
+	Move<VkBuffer> buffer(createBuffer(vki, device, &createInfo));
+
+	const VkMemoryRequirements				requirements			= getBufferMemoryRequirements(vki, device, *buffer);
+	de::MovePtr<Allocation> 				allocation				= allocator.allocate(requirements, MemoryRequirement::HostVisible);
+
+	const float 							clearValue				= -1.0f;
+	void 									*mapPtr					= allocation->getHostPtr();
 
 	for (size_t offset = 0; offset < DATA_SIZE; offset += sizeof(float))
 		deMemcpy(((deUint8 *) mapPtr) + offset, &clearValue, sizeof(float));
@@ -89,19 +93,23 @@ Move <VkBuffer> ComputeInstanceResultBuffer::createResultBuffer(const DeviceInte
 	return buffer;
 }
 
-VkBufferMemoryBarrier ComputeInstanceResultBuffer::createResultBufferBarrier(VkBuffer buffer) {
+VkBufferMemoryBarrier ComputeInstanceResultBuffer::createResultBufferBarrier(VkBuffer buffer)
+{
 	const VkBufferMemoryBarrier bufferBarrier =
 	{
 		VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
 		DE_NULL,
-		VK_ACCESS_SHADER_WRITE_BIT,	  			// outputMask
-		VK_ACCESS_SHADER_READ_BIT,	   			// inputMask
-		VK_QUEUE_FAMILY_IGNORED,				// srcQueueFamilyIndex
-		VK_QUEUE_FAMILY_IGNORED,				// destQueueFamilyIndex
-		buffer,						   			// buffer
-		(VkDeviceSize) 0u,					  	// offset
-		DATA_SIZE,								// size
+		VK_ACCESS_SHADER_WRITE_BIT,									// outputMask
+		VK_ACCESS_SHADER_READ_BIT,									// inputMask
+		VK_QUEUE_FAMILY_IGNORED,									// srcQueueFamilyIndex
+		VK_QUEUE_FAMILY_IGNORED,									// destQueueFamilyIndex
+		buffer,						 								// buffer
+		(VkDeviceSize) 0u,											// offset
+		DATA_SIZE,													// size
 	};
 
 	return bufferBarrier;
 }
+
+} // api
+} // vkt

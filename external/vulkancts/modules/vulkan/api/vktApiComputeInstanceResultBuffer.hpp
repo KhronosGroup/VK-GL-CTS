@@ -1,6 +1,5 @@
-#ifndef _BUFFERCOMPUTEINSTANCE_HPP
-#define _BUFFERCOMPUTEINSTANCE_HPP
-
+#ifndef _VKTAPICOMPUTEINSTANCERESULTBUFFER_HPP
+#define _VKTAPICOMPUTEINSTANCERESULTBUFFER_HPP
 /*-------------------------------------------------------------------------
  * Vulkan Conformance Tests
  * ------------------------
@@ -34,23 +33,54 @@
  *
  *//*--------------------------------------------------------------------*/
 
-#include "tcuVectorType.hpp"
+#include "tcuDefs.hpp"
+#include "tcuTestLog.hpp"
+#include "deUniquePtr.hpp"
 #include "vkRef.hpp"
 #include "vkMemUtil.hpp"
-#include "vktTestCase.hpp"
+#include "vkQueryUtil.hpp"
 
-vk::Move <vk::VkBuffer> 				createColorDataBuffer (deUint32 offset, deUint32 bufferSize, const tcu::Vec4 &value1,
-											   const tcu::Vec4 &value2, de::MovePtr <vk::Allocation> *outAllocation,
-											   vkt::Context &context);
+namespace vkt
+{
 
-vk::Move <vk::VkBufferView> 			createBufferView (vk::VkBuffer buffer, deUint32 offset);
+namespace api
+{
 
-vk::Move <vk::VkDescriptorSetLayout> 	createDescriptorSetLayout (vkt::Context &context);
+class ComputeInstanceResultBuffer
+{
+public:
+	enum
+	{
+		DATA_SIZE = sizeof(tcu::Vec4[4])
+	};
 
-vk::Move <vk::VkDescriptorPool> 		createDescriptorPool (vkt::Context &context);
+											ComputeInstanceResultBuffer (const vk::DeviceInterface &vki,
+																				vk::VkDevice device,
+																				vk::Allocator &allocator);
 
-vk::Move <vk::VkDescriptorSet> 			createDescriptorSet (vk::VkDescriptorPool pool, vk::VkDescriptorSetLayout layout,
-													vk::VkBuffer viewA, deUint32 offsetA, vk::VkBuffer viewB,
-													deUint32 offsetB, vk::VkBuffer resBuf, vkt::Context &context);
+	void									readResultContentsTo(tcu::Vec4 (* results)[4]) const;
 
-#endif //_BUFFERCOMPUTEINSTANCE_HPP
+	inline vk::VkBuffer 					getBuffer(void) const { return *m_buffer; }
+
+	inline const void *						getResultReadBarrier(void) const { return &m_bufferBarrier; }
+
+private:
+	static vk::Move<vk::VkBuffer>			createResultBuffer(const vk::DeviceInterface &vki,
+														vk::VkDevice device,
+														vk::Allocator &allocator,
+														de::MovePtr<vk::Allocation>* outAllocation);
+
+	static vk::VkBufferMemoryBarrier		createResultBufferBarrier(vk::VkBuffer buffer);
+
+	const vk::DeviceInterface &				m_vki;
+	const vk::VkDevice						m_device;
+
+	de::MovePtr<vk::Allocation>				m_bufferMem;
+	const vk::Unique<vk::VkBuffer>			m_buffer;
+	const vk::VkBufferMemoryBarrier			m_bufferBarrier;
+};
+
+} // api
+} // vkt
+
+#endif //_VKTAPICOMPUTEINSTANCERESULTBUFFER_HPP

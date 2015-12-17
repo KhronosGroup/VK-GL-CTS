@@ -1,6 +1,5 @@
 #ifndef _VKTAPICOMMANDBUFFERSTESTS_HPP
 #define _VKTAPICOMMANDBUFFERSTESTS_HPP
-
 /*-------------------------------------------------------------------------
  * Vulkan Conformance Tests
  * ------------------------
@@ -46,4 +45,4 @@ tcu::TestCaseGroup* createCommandBuffersTests (tcu::TestContext& testCtx);
 } // api
 } // vkt
 
-#endif /* VKTAPICOMMANDBUFFERSTESTS_HPP_ */
+#endif /* _VKTAPICOMMANDBUFFERSTESTS_HPP */
