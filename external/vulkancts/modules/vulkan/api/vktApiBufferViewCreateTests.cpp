@@ -54,11 +54,12 @@ namespace
 
 struct BufferViewCaseParameters
 {
-	VkFormat			format;
-	VkDeviceSize		offset;
-	VkDeviceSize		range;
-	VkBufferUsageFlags	usage;
-	bool				beforeAllocateMemory;
+	VkFormat				format;
+	VkDeviceSize			offset;
+	VkDeviceSize			range;
+	VkBufferUsageFlags		usage;
+	VkFormatFeatureFlags	features;
+	bool					beforeAllocateMemory;
 };
 
 class BufferViewTestInstance : public TestInstance
@@ -119,7 +120,7 @@ tcu::TestStatus BufferViewTestInstance::iterate (void)
 	};
 
 	m_context.getInstanceInterface().getPhysicalDeviceFormatProperties(m_context.getPhysicalDevice(), m_testCase.format, &properties);
-	if (!(properties.bufferFeatures & m_testCase.usage))
+	if (!(properties.bufferFeatures & m_testCase.features))
 		TCU_THROW(NotSupportedError, "Format not supported");
 
 	if (vk.createBuffer(vkDevice, &bufferParams, (const VkAllocationCallbacks*)DE_NULL, &testBuffer) != VK_SUCCESS)
@@ -229,6 +230,7 @@ tcu::TestStatus BufferViewTestInstance::iterate (void)
 				0,											// VkDeviceSize			offset;
 				range,										// VkDeviceSize			range;
 				VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT,	// VkBufferUsageFlags	usage;
+				VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT, // VkFormatFeatureFlags flags;
 				false										// beforeAlloceMemory	bool;
 			};
 			bufferViewTests->addChild(new BufferViewTestCase(testCtx, testName.str() + "_before_uniform", testDescription.str(), testParams));
@@ -240,6 +242,7 @@ tcu::TestStatus BufferViewTestInstance::iterate (void)
 				0,											// VkDeviceSize			offset;
 				range,										// VkDeviceSize			range;
 				VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT,	// VkBufferUsageFlags	usage;
+				VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT, // VkFormatFeatureFlags flags;
 				true										// beforeAlloceMemory	bool;
 			};
 			bufferViewTests->addChild(new BufferViewTestCase(testCtx, testName.str() + "_after_uniform", testDescription.str(), testParams));
@@ -251,6 +254,7 @@ tcu::TestStatus BufferViewTestInstance::iterate (void)
 				0,											// VkDeviceSize			offset;
 				range,										// VkDeviceSize			range;
 				VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT,	// VkBufferUsageFlags	usage;
+				VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT, // VkFormatFeatureFlags flags;
 				false										// beforeAlloceMemory	bool;
 			};
 			bufferViewTests->addChild(new BufferViewTestCase(testCtx, testName.str() + "_before_storage", testDescription.str(), testParams));
@@ -262,6 +266,7 @@ tcu::TestStatus BufferViewTestInstance::iterate (void)
 				0,											// VkDeviceSize			offset;
 				range,										// VkDeviceSize			range;
 				VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT,	// VkBufferUsageFlags	usage;
+				VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT, // VkFormatFeatureFlags flags;
 				true										// beforeAlloceMemory	bool;
 			};
 			bufferViewTests->addChild(new BufferViewTestCase(testCtx, testName.str() + "_after_storage", testDescription.str(), testParams));
