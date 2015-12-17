@@ -4373,11 +4373,13 @@ public:
 																		 const  CaseContext				caseCtx,
 																		 ShaderExecutor&				executor,
 																		 const  Variables<In, Out>		variables,
+																		 const  Samplings<In>&			samplings,
 																		 const  StatementP				stmt)
 										: TestInstance	(context)
 										, m_caseCtx 	(caseCtx)
 										, m_executor 	(executor)
 										, m_variables	(variables)
+										, m_samplings	(samplings)
 										, m_stmt		(stmt)
 									{
 									}
@@ -4387,6 +4389,7 @@ protected:
 	CaseContext						m_caseCtx;
 	ShaderExecutor&					m_executor;
 	Variables<In, Out>				m_variables;
+	const Samplings<In>&			m_samplings;
 	StatementP						m_stmt;
 };
 
@@ -4400,7 +4403,7 @@ tcu::TestStatus BuiltinPrecisionCaseTestInstance<In, Out>::iterate (void)
 	typedef typename 	Out::Out0	Out0;
 	typedef typename 	Out::Out1	Out1;
 
-	Inputs<In>			inputs		= generateInputs(instance<DefaultSamplings<In> >(), m_caseCtx.floatFormat, m_caseCtx.precision, m_caseCtx.numRandoms, 0xdeadbeefu + m_caseCtx.testContext.getCommandLine().getBaseSeed());
+	Inputs<In>			inputs		= generateInputs(m_samplings, m_caseCtx.floatFormat, m_caseCtx.precision, m_caseCtx.numRandoms, 0xdeadbeefu + m_caseCtx.testContext.getCommandLine().getBaseSeed());
 	const FloatFormat&	fmt			= m_caseCtx.floatFormat;
 	const int			inCount		= numInputs<In>();
 	const int			outCount	= numOutputs<Out>();
@@ -4846,11 +4849,15 @@ public:
 
 	virtual	TestInstance*					createInstance	(Context& context) const
 	{
-		return new BuiltinPrecisionCaseTestInstance<In, Out>(context, m_ctx, *m_executor, m_variables, m_stmt);
+		return new BuiltinPrecisionCaseTestInstance<In, Out>(context, m_ctx, *m_executor, m_variables, getSamplings(), m_stmt);
 	}
 
 protected:
 	void									buildTest		(void);
+	virtual const Samplings<In>&			getSamplings	(void) const
+	{
+		return instance<DefaultSamplings<In> >();
+	}
 
 private:
 	const CaseFunc&							m_func;
@@ -4896,11 +4903,15 @@ public:
 											}
 	virtual TestInstance*				createInstance	(Context& context) const
 	{
-		return new BuiltinPrecisionCaseTestInstance<In, Out>(context, m_ctx, *m_executor, m_variables, m_stmt);
+		return new BuiltinPrecisionCaseTestInstance<In, Out>(context, m_ctx, *m_executor, m_variables, getSamplings(), m_stmt);
 	}
 
 protected:
 	void								buildTest		(void);
+	virtual const Samplings<In>&		getSamplings	(void) const
+	{
+		return instance<DefaultSamplings<In> >();
+	}
 
 private:
 	const CaseFunc&						m_func;
