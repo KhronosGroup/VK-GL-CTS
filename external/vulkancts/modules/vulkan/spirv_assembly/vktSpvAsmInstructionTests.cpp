@@ -218,7 +218,6 @@ tcu::TestCaseGroup* createOpNopGroup (tcu::TestContext& testCtx)
 	spec.inputs.push_back(BufferSp(new Float32Buffer(positiveFloats)));
 	spec.outputs.push_back(BufferSp(new Float32Buffer(negativeFloats)));
 	spec.numWorkGroups = IVec3(numElements, 1, 1);
-	spec.entryPoint = "main";
 
 	group->addChild(new SpvAsmComputeShaderCase(testCtx, "all", "OpNop appearing at different places", spec));
 
@@ -283,7 +282,6 @@ tcu::TestCaseGroup* createOpLineGroup (tcu::TestContext& testCtx)
 	spec.inputs.push_back(BufferSp(new Float32Buffer(positiveFloats)));
 	spec.outputs.push_back(BufferSp(new Float32Buffer(negativeFloats)));
 	spec.numWorkGroups = IVec3(numElements, 1, 1);
-	spec.entryPoint = "main";
 
 	group->addChild(new SpvAsmComputeShaderCase(testCtx, "all", "OpLine appearing at different places", spec));
 
@@ -350,7 +348,6 @@ tcu::TestCaseGroup* createOpNoLineGroup (tcu::TestContext& testCtx)
 	spec.inputs.push_back(BufferSp(new Float32Buffer(positiveFloats)));
 	spec.outputs.push_back(BufferSp(new Float32Buffer(negativeFloats)));
 	spec.numWorkGroups = IVec3(numElements, 1, 1);
-	spec.entryPoint = "main";
 
 	group->addChild(new SpvAsmComputeShaderCase(testCtx, "all", "OpNoLine appearing at different places", spec));
 
@@ -446,7 +443,6 @@ tcu::TestCaseGroup* createNoContractionGroup (tcu::TestContext& testCtx)
 		spec.inputs.push_back(BufferSp(new Float32Buffer(inputFloats2)));
 		spec.outputs.push_back(BufferSp(new Float32Buffer(outputFloats)));
 		spec.numWorkGroups = IVec3(numElements, 1, 1);
-		spec.entryPoint = "main";
 
 		group->addChild(new SpvAsmComputeShaderCase(testCtx, cases[caseNdx].name, cases[caseNdx].name, spec));
 	}
@@ -516,7 +512,6 @@ tcu::TestCaseGroup* createOpCopyMemoryGroup (tcu::TestContext& testCtx)
 	spec1.inputs.push_back(BufferSp(new Vec4Buffer(inputFloats1)));
 	spec1.outputs.push_back(BufferSp(new Vec4Buffer(outputFloats1)));
 	spec1.numWorkGroups = IVec3(numElements, 1, 1);
-	spec1.entryPoint = "main";
 
 	group->addChild(new SpvAsmComputeShaderCase(testCtx, "vector", "OpCopyMemory elements of vector type", spec1));
 
@@ -567,7 +562,6 @@ tcu::TestCaseGroup* createOpCopyMemoryGroup (tcu::TestContext& testCtx)
 	spec2.inputs.push_back(BufferSp(new Float32Buffer(inputFloats2)));
 	spec2.outputs.push_back(BufferSp(new Float32Buffer(outputFloats2)));
 	spec2.numWorkGroups = IVec3(1, 1, 1);
-	spec2.entryPoint = "main";
 
 	group->addChild(new SpvAsmComputeShaderCase(testCtx, "array", "OpCopyMemory elements of array type", spec2));
 
@@ -614,7 +608,6 @@ tcu::TestCaseGroup* createOpCopyMemoryGroup (tcu::TestContext& testCtx)
 	spec3.inputs.push_back(BufferSp(new Float32Buffer(inputFloats3)));
 	spec3.outputs.push_back(BufferSp(new Float32Buffer(outputFloats3)));
 	spec3.numWorkGroups = IVec3(1, 1, 1);
-	spec3.entryPoint = "main";
 
 	group->addChild(new SpvAsmComputeShaderCase(testCtx, "struct", "OpCopyMemory elements of struct type", spec3));
 
@@ -659,7 +652,6 @@ tcu::TestCaseGroup* createOpCopyMemoryGroup (tcu::TestContext& testCtx)
 	spec4.inputs.push_back(BufferSp(new Float32Buffer(inputFloats4)));
 	spec4.outputs.push_back(BufferSp(new Float32Buffer(outputFloats4)));
 	spec4.numWorkGroups = IVec3(numElements, 1, 1);
-	spec4.entryPoint = "main";
 
 	group->addChild(new SpvAsmComputeShaderCase(testCtx, "float", "OpCopyMemory elements of float type", spec4));
 
@@ -735,13 +727,11 @@ tcu::TestCaseGroup* createOpCopyObjectGroup (tcu::TestContext& testCtx)
 	spec.inputs.push_back(BufferSp(new Float32Buffer(inputFloats)));
 	spec.outputs.push_back(BufferSp(new Float32Buffer(outputFloats)));
 	spec.numWorkGroups = IVec3(numElements, 1, 1);
-	spec.entryPoint = "main";
 
 	group->addChild(new SpvAsmComputeShaderCase(testCtx, "spotcheck", "OpCopyObject on different types", spec));
 
 	return group.release();
 }
-
 // Assembly code used for testing OpUnreachable is based on GLSL source code:
 //
 // #version 430
@@ -887,7 +877,6 @@ tcu::TestCaseGroup* createOpUnreachableGroup (tcu::TestContext& testCtx)
 	spec.inputs.push_back(BufferSp(new Float32Buffer(positiveFloats)));
 	spec.outputs.push_back(BufferSp(new Float32Buffer(negativeFloats)));
 	spec.numWorkGroups = IVec3(numElements, 1, 1);
-	spec.entryPoint = "main";
 
 	group->addChild(new SpvAsmComputeShaderCase(testCtx, "all", "OpUnreachable appearing at different places", spec));
 
@@ -1049,7 +1038,6 @@ tcu::TestCaseGroup* createDecorationGroupGroup (tcu::TestContext& testCtx)
 	spec.inputs.push_back(BufferSp(new Float32Buffer(inputFloats4)));
 	spec.outputs.push_back(BufferSp(new Float32Buffer(outputFloats)));
 	spec.numWorkGroups = IVec3(numElements, 1, 1);
-	spec.entryPoint = "main";
 
 	group->addChild(new SpvAsmComputeShaderCase(testCtx, "all", "decoration group cases", spec));
 
@@ -1189,7 +1177,6 @@ tcu::TestCaseGroup* createSpecConstantGroup (tcu::TestContext& testCtx)
 	cases.push_back(SpecConstantTwoIntCase("logicalnot",			"False %bool",	"False %bool",	"%bool",	"LogicalNot           %sc_0",				1,		0,		selectFalseUsingSc,	outputInts2));
 	cases.push_back(SpecConstantTwoIntCase("select",				"False %bool",	" %i32 0",		"%i32",		"Select               %sc_0 %sc_1 %zero",	1,		42,		addScToInput,		outputInts1));
 	// OpSConvert, OpFConvert: these two instructions involve ints/floats of different bitwidths.
-	// \todo[2015-12-1 antiagainst] OpQuantizeToF16
 
 	for (size_t caseNdx = 0; caseNdx < cases.size(); ++caseNdx)
 	{
@@ -1206,7 +1193,6 @@ tcu::TestCaseGroup* createSpecConstantGroup (tcu::TestContext& testCtx)
 		spec.inputs.push_back(BufferSp(new Int32Buffer(inputInts)));
 		spec.outputs.push_back(BufferSp(new Int32Buffer(cases[caseNdx].expectedOutput)));
 		spec.numWorkGroups = IVec3(numElements, 1, 1);
-		spec.entryPoint = "main";
 		spec.specConstants.push_back(cases[caseNdx].scActualValue0);
 		spec.specConstants.push_back(cases[caseNdx].scActualValue1);
 
@@ -1272,7 +1258,6 @@ tcu::TestCaseGroup* createSpecConstantGroup (tcu::TestContext& testCtx)
 	spec.inputs.push_back(BufferSp(new Int32Buffer(inputInts)));
 	spec.outputs.push_back(BufferSp(new Int32Buffer(outputInts3)));
 	spec.numWorkGroups = IVec3(numElements, 1, 1);
-	spec.entryPoint = "main";
 	spec.specConstants.push_back(123);
 	spec.specConstants.push_back(56);
 	spec.specConstants.push_back(-77);
@@ -1281,7 +1266,6 @@ tcu::TestCaseGroup* createSpecConstantGroup (tcu::TestContext& testCtx)
 
 	return group.release();
 }
-
 tcu::TestCaseGroup* createOpPhiGroup (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opphi", "Test the OpPhi instruction"));
@@ -1367,7 +1351,6 @@ tcu::TestCaseGroup* createOpPhiGroup (tcu::TestContext& testCtx)
 	spec1.inputs.push_back(BufferSp(new Float32Buffer(inputFloats)));
 	spec1.outputs.push_back(BufferSp(new Float32Buffer(outputFloats1)));
 	spec1.numWorkGroups = IVec3(numElements, 1, 1);
-	spec1.entryPoint = "main";
 
 	group->addChild(new SpvAsmComputeShaderCase(testCtx, "block", "out-of-order and unreachable blocks for OpPhi", spec1));
 
@@ -1412,7 +1395,6 @@ tcu::TestCaseGroup* createOpPhiGroup (tcu::TestContext& testCtx)
 	spec2.inputs.push_back(BufferSp(new Float32Buffer(inputFloats)));
 	spec2.outputs.push_back(BufferSp(new Float32Buffer(outputFloats2)));
 	spec2.numWorkGroups = IVec3(numElements, 1, 1);
-	spec2.entryPoint = "main";
 
 	group->addChild(new SpvAsmComputeShaderCase(testCtx, "induction", "The usual way induction variables are handled in LLVM IR", spec2));
 
@@ -1459,7 +1441,6 @@ tcu::TestCaseGroup* createOpPhiGroup (tcu::TestContext& testCtx)
 	spec3.inputs.push_back(BufferSp(new Float32Buffer(inputFloats)));
 	spec3.outputs.push_back(BufferSp(new Float32Buffer(outputFloats3)));
 	spec3.numWorkGroups = IVec3(numElements, 1, 1);
-	spec3.entryPoint = "main";
 
 	group->addChild(new SpvAsmComputeShaderCase(testCtx, "swap", "Swap the values of two variables using OpPhi", spec3));
 
@@ -1618,7 +1599,6 @@ tcu::TestCaseGroup* createBlockOrderGroup (tcu::TestContext& testCtx)
 	spec.inputs.push_back(BufferSp(new Float32Buffer(inputFloats)));
 	spec.outputs.push_back(BufferSp(new Float32Buffer(outputFloats)));
 	spec.numWorkGroups = IVec3(numElements, 1, 1);
-	spec.entryPoint = "main";
 
 	group->addChild(new SpvAsmComputeShaderCase(testCtx, "all", "various out-of-order blocks", spec));
 
@@ -1847,7 +1827,6 @@ tcu::TestCaseGroup* createOpSourceGroup (tcu::TestContext& testCtx)
 		spec.inputs.push_back(BufferSp(new Float32Buffer(positiveFloats)));
 		spec.outputs.push_back(BufferSp(new Float32Buffer(negativeFloats)));
 		spec.numWorkGroups = IVec3(numElements, 1, 1);
-		spec.entryPoint = "main";
 
 		group->addChild(new SpvAsmComputeShaderCase(testCtx, cases[caseNdx].name, cases[caseNdx].name, spec));
 	}
@@ -1911,7 +1890,6 @@ tcu::TestCaseGroup* createOpSourceExtensionGroup (tcu::TestContext& testCtx)
 		spec.inputs.push_back(BufferSp(new Float32Buffer(inputFloats)));
 		spec.outputs.push_back(BufferSp(new Float32Buffer(outputFloats)));
 		spec.numWorkGroups = IVec3(numElements, 1, 1);
-		spec.entryPoint = "main";
 
 		group->addChild(new SpvAsmComputeShaderCase(testCtx, cases[caseNdx].name, cases[caseNdx].name, spec));
 	}
@@ -1986,7 +1964,6 @@ tcu::TestCaseGroup* createOpConstantNullGroup (tcu::TestContext& testCtx)
 		spec.inputs.push_back(BufferSp(new Float32Buffer(positiveFloats)));
 		spec.outputs.push_back(BufferSp(new Float32Buffer(negativeFloats)));
 		spec.numWorkGroups = IVec3(numElements, 1, 1);
-		spec.entryPoint = "main";
 
 		group->addChild(new SpvAsmComputeShaderCase(testCtx, cases[caseNdx].name, cases[caseNdx].name, spec));
 	}
@@ -2069,7 +2046,6 @@ tcu::TestCaseGroup* createOpConstantCompositeGroup (tcu::TestContext& testCtx)
 		spec.inputs.push_back(BufferSp(new Float32Buffer(positiveFloats)));
 		spec.outputs.push_back(BufferSp(new Float32Buffer(negativeFloats)));
 		spec.numWorkGroups = IVec3(numElements, 1, 1);
-		spec.entryPoint = "main";
 
 		group->addChild(new SpvAsmComputeShaderCase(testCtx, cases[caseNdx].name, cases[caseNdx].name, spec));
 	}
@@ -2222,7 +2198,6 @@ tcu::TestCaseGroup* createOpQuantizeToF16Group (tcu::TestContext& testCtx)
 		spec.inputs.push_back(BufferSp(new Float32Buffer(infinities)));
 		spec.outputs.push_back(BufferSp(new Float32Buffer(results)));
 		spec.numWorkGroups = IVec3(numElements, 1, 1);
-		spec.entryPoint = "main";
 
 		group->addChild(new SpvAsmComputeShaderCase(
 			testCtx, "infinities", "Check that infinities propagated and created", spec));
@@ -2250,7 +2225,6 @@ tcu::TestCaseGroup* createOpQuantizeToF16Group (tcu::TestContext& testCtx)
 		spec.inputs.push_back(BufferSp(new Float32Buffer(nans)));
 		spec.outputs.push_back(BufferSp(new Float32Buffer(nans)));
 		spec.numWorkGroups = IVec3(numElements, 1, 1);
-		spec.entryPoint = "main";
 		spec.verifyIO = &compareNan;
 
 		group->addChild(new SpvAsmComputeShaderCase(
@@ -2300,7 +2274,6 @@ tcu::TestCaseGroup* createOpQuantizeToF16Group (tcu::TestContext& testCtx)
 		spec.inputs.push_back(BufferSp(new Float32Buffer(small)));
 		spec.outputs.push_back(BufferSp(new Float32Buffer(zeros)));
 		spec.numWorkGroups = IVec3(numElements, 1, 1);
-		spec.entryPoint = "main";
 
 		group->addChild(new SpvAsmComputeShaderCase(
 			testCtx, "flush_to_zero", "Check that values are zeroed correctly", spec));
@@ -2319,7 +2292,6 @@ tcu::TestCaseGroup* createOpQuantizeToF16Group (tcu::TestContext& testCtx)
 		spec.inputs.push_back(BufferSp(new Float32Buffer(exact)));
 		spec.outputs.push_back(BufferSp(new Float32Buffer(exact)));
 		spec.numWorkGroups = IVec3(numElements, 1, 1);
-		spec.entryPoint = "main";
 
 		group->addChild(new SpvAsmComputeShaderCase(
 			testCtx, "exact", "Check that values exactly preserved where appropriate", spec));
@@ -2339,7 +2311,6 @@ tcu::TestCaseGroup* createOpQuantizeToF16Group (tcu::TestContext& testCtx)
 		spec.inputs.push_back(BufferSp(new Float32Buffer(inputs)));
 		spec.outputs.push_back(BufferSp(new Float32Buffer(inputs)));
 		spec.numWorkGroups = IVec3(numElements, 1, 1);
-		spec.entryPoint = "main";
 
 		group->addChild(new SpvAsmComputeShaderCase(
 			testCtx, "rounded", "Check that are rounded when needed", spec));
@@ -2347,6 +2318,220 @@ tcu::TestCaseGroup* createOpQuantizeToF16Group (tcu::TestContext& testCtx)
 
 	return group.release();
 }
+
+// Performs a bitwise copy of source to the destination type Dest.
+template <typename Dest, typename Src>
+Dest bitwiseCast(Src source)
+{
+  Dest dest;
+  DE_STATIC_ASSERT(sizeof(source) == sizeof(dest));
+  deMemcpy(&dest, &source, sizeof(dest));
+  return dest;
+}
+
+tcu::TestCaseGroup* createSpecConstantOpQuantizeToF16Group (tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opspecconstantop_opquantize", "Tests the OpQuantizeToF16 opcode for the OpSpecConstantOp instruction"));
+	de::Random						rnd				(deStringHash(group->getName()));
+
+	const std::string shader (
+		string(s_ShaderPreamble) +
+
+		"OpName %main           \"main\"\n"
+		"OpName %id             \"gl_GlobalInvocationID\"\n"
+
+		"OpDecorate %id BuiltIn GlobalInvocationId\n"
+
+		"OpDecorate %sc_0  SpecId 0\n"
+		"OpDecorate %sc_1  SpecId 1\n"
+		"OpDecorate %sc_2  SpecId 2\n"
+		"OpDecorate %sc_3  SpecId 3\n"
+		"OpDecorate %sc_4  SpecId 4\n"
+		"OpDecorate %sc_5  SpecId 5\n"
+
+		+ string(s_InputOutputBufferTraits) + string(s_CommonTypes) + string(s_InputOutputBuffer) +
+
+		"%id        = OpVariable %uvec3ptr Input\n"
+		"%zero      = OpConstant %i32 0\n"
+		"%c_u32_6   = OpConstant %u32 6\n"
+
+		"%sc_0      = OpSpecConstant %f32 0.\n"
+		"%sc_1      = OpSpecConstant %f32 0.\n"
+		"%sc_2      = OpSpecConstant %f32 0.\n"
+		"%sc_3      = OpSpecConstant %f32 0.\n"
+		"%sc_4      = OpSpecConstant %f32 0.\n"
+		"%sc_5      = OpSpecConstant %f32 0.\n"
+
+		"%sc_0_quant = OpSpecConstantOp %f32 QuantizeToF16 %sc_0\n"
+		"%sc_1_quant = OpSpecConstantOp %f32 QuantizeToF16 %sc_1\n"
+		"%sc_2_quant = OpSpecConstantOp %f32 QuantizeToF16 %sc_2\n"
+		"%sc_3_quant = OpSpecConstantOp %f32 QuantizeToF16 %sc_3\n"
+		"%sc_4_quant = OpSpecConstantOp %f32 QuantizeToF16 %sc_4\n"
+		"%sc_5_quant = OpSpecConstantOp %f32 QuantizeToF16 %sc_5\n"
+
+		"%main      = OpFunction %void None %voidf\n"
+		"%label     = OpLabel\n"
+		"%idval     = OpLoad %uvec3 %id\n"
+		"%x         = OpCompositeExtract %u32 %idval 0\n"
+		"%outloc    = OpAccessChain %f32ptr %outdata %zero %x\n"
+		"%selector  = OpUMod %u32 %x %c_u32_6\n"
+		"            OpSelectionMerge %exit None\n"
+		"            OpSwitch %selector %exit 0 %case0 1 %case1 2 %case2 3 %case3 4 %case4 5 %case5\n"
+
+		"%case0     = OpLabel\n"
+		"             OpStore %outloc %sc_0_quant\n"
+		"             OpBranch %exit\n"
+
+		"%case1     = OpLabel\n"
+		"             OpStore %outloc %sc_1_quant\n"
+		"             OpBranch %exit\n"
+
+		"%case2     = OpLabel\n"
+		"             OpStore %outloc %sc_2_quant\n"
+		"             OpBranch %exit\n"
+
+		"%case3     = OpLabel\n"
+		"             OpStore %outloc %sc_3_quant\n"
+		"             OpBranch %exit\n"
+
+		"%case4     = OpLabel\n"
+		"             OpStore %outloc %sc_4_quant\n"
+		"             OpBranch %exit\n"
+
+		"%case5     = OpLabel\n"
+		"             OpStore %outloc %sc_5_quant\n"
+		"             OpBranch %exit\n"
+
+		"%exit      = OpLabel\n"
+		"             OpReturn\n"
+
+		"             OpFunctionEnd\n");
+
+	{
+		ComputeShaderSpec	spec;
+		const deUint8		numCases	= 4;
+		vector<float>		inputs		(numCases, 0.f);
+		vector<float>		outputs;
+
+		spec.numWorkGroups = IVec3(numCases, 1, 1);
+
+		spec.specConstants.push_back(bitwiseCast<deUint32>(std::numeric_limits<float>::infinity()));
+		spec.specConstants.push_back(bitwiseCast<deUint32>(-std::numeric_limits<float>::infinity()));
+		spec.specConstants.push_back(bitwiseCast<deUint32>(std::ldexp(1.0f, 16)));
+		spec.specConstants.push_back(bitwiseCast<deUint32>(std::ldexp(-1.0f, 32)));
+
+		outputs.push_back(std::numeric_limits<float>::infinity());
+		outputs.push_back(-std::numeric_limits<float>::infinity());
+		outputs.push_back(std::numeric_limits<float>::infinity());
+		outputs.push_back(-std::numeric_limits<float>::infinity());
+
+		spec.inputs.push_back(BufferSp(new Float32Buffer(inputs)));
+		spec.outputs.push_back(BufferSp(new Float32Buffer(outputs)));
+
+		group->addChild(new SpvAsmComputeShaderCase(
+			testCtx, "infinities", "Check that infinities propagated and created", spec));
+	}
+
+	{
+		ComputeShaderSpec	spec;
+		const deUint8		numCases	= 2;
+		vector<float>		inputs		(numCases, 0.f);
+		vector<float>		outputs;
+
+		spec.numWorkGroups	= IVec3(numCases, 1, 1);
+		spec.verifyIO		= &compareNan;
+
+		outputs.push_back(std::numeric_limits<float>::quiet_NaN());
+		outputs.push_back(-std::numeric_limits<float>::quiet_NaN());
+
+		for (deUint8 idx = 0; idx < numCases; ++idx)
+			spec.specConstants.push_back(bitwiseCast<deUint32>(outputs[idx]));
+
+		spec.inputs.push_back(BufferSp(new Float32Buffer(inputs)));
+		spec.outputs.push_back(BufferSp(new Float32Buffer(outputs)));
+
+		group->addChild(new SpvAsmComputeShaderCase(
+			testCtx, "propagated_nans", "Check that nans are propagated", spec));
+	}
+
+	{
+		ComputeShaderSpec	spec;
+		const deUint8		numCases	= 6;
+		vector<float>		inputs		(numCases, 0.f);
+		vector<float>		outputs;
+
+		spec.numWorkGroups	= IVec3(numCases, 1, 1);
+
+		spec.specConstants.push_back(bitwiseCast<deUint32>(0.f));
+		spec.specConstants.push_back(bitwiseCast<deUint32>(-0.f));
+		spec.specConstants.push_back(bitwiseCast<deUint32>(std::ldexp(1.0f, -16)));
+		spec.specConstants.push_back(bitwiseCast<deUint32>(std::ldexp(-1.0f, -32)));
+		spec.specConstants.push_back(bitwiseCast<deUint32>(std::ldexp(1.0f, -127)));
+		spec.specConstants.push_back(bitwiseCast<deUint32>(-std::ldexp(1.0f, -128)));
+
+		outputs.push_back(0.f);
+		outputs.push_back(-0.f);
+		outputs.push_back(0.f);
+		outputs.push_back(-0.f);
+		outputs.push_back(0.f);
+		outputs.push_back(-0.f);
+
+		spec.inputs.push_back(BufferSp(new Float32Buffer(inputs)));
+		spec.outputs.push_back(BufferSp(new Float32Buffer(outputs)));
+
+		group->addChild(new SpvAsmComputeShaderCase(
+			testCtx, "flush_to_zero", "Check that values are zeroed correctly", spec));
+	}
+
+	{
+		ComputeShaderSpec	spec;
+		const deUint8		numCases	= 6;
+		vector<float>		inputs		(numCases, 0.f);
+		vector<float>		outputs;
+
+		spec.numWorkGroups	= IVec3(numCases, 1, 1);
+
+		for (deUint8 idx = 0; idx < 6; ++idx)
+		{
+			const float f = static_cast<float>(idx * 10 - 30) / 4.f;
+			spec.specConstants.push_back(bitwiseCast<deUint32>(f));
+			outputs.push_back(f);
+		}
+
+		spec.inputs.push_back(BufferSp(new Float32Buffer(inputs)));
+		spec.outputs.push_back(BufferSp(new Float32Buffer(outputs)));
+
+		group->addChild(new SpvAsmComputeShaderCase(
+			testCtx, "exact", "Check that values exactly preserved where appropriate", spec));
+	}
+
+	{
+		ComputeShaderSpec	spec;
+		const deUint8		numCases	= 4;
+		vector<float>		inputs		(numCases, 0.f);
+		vector<float>		outputs;
+
+		spec.numWorkGroups	= IVec3(numCases, 1, 1);
+		spec.verifyIO		= &compareOpQuantizeF16ComputeExactCase;
+
+		outputs.push_back(constructNormalizedFloat(8, 0x300300));
+		outputs.push_back(-constructNormalizedFloat(-7, 0x600800));
+		outputs.push_back(constructNormalizedFloat(2, 0x01E000));
+		outputs.push_back(constructNormalizedFloat(1, 0xFFE000));
+
+		for (deUint8 idx = 0; idx < numCases; ++idx)
+			spec.specConstants.push_back(bitwiseCast<deUint32>(outputs[idx]));
+
+		spec.inputs.push_back(BufferSp(new Float32Buffer(inputs)));
+		spec.outputs.push_back(BufferSp(new Float32Buffer(outputs)));
+
+		group->addChild(new SpvAsmComputeShaderCase(
+			testCtx, "rounded", "Check that are rounded when needed", spec));
+	}
+
+	return group.release();
+}
+
 // Checks that constant null/composite values can be used in computation.
 tcu::TestCaseGroup* createOpConstantUsageGroup (tcu::TestContext& testCtx)
 {
@@ -2432,7 +2617,6 @@ tcu::TestCaseGroup* createOpConstantUsageGroup (tcu::TestContext& testCtx)
 	spec.inputs.push_back(BufferSp(new Float32Buffer(positiveFloats)));
 	spec.outputs.push_back(BufferSp(new Float32Buffer(negativeFloats)));
 	spec.numWorkGroups = IVec3(numElements, 1, 1);
-	spec.entryPoint = "main";
 
 	group->addChild(new SpvAsmComputeShaderCase(testCtx, "spotcheck", "Check that values constructed via OpConstantNull & OpConstantComposite can be used", spec));
 
@@ -2531,7 +2715,6 @@ tcu::TestCaseGroup* createLoopControlGroup (tcu::TestContext& testCtx)
 		spec.inputs.push_back(BufferSp(new Float32Buffer(inputFloats)));
 		spec.outputs.push_back(BufferSp(new Float32Buffer(outputFloats)));
 		spec.numWorkGroups = IVec3(numElements, 1, 1);
-		spec.entryPoint = "main";
 
 		group->addChild(new SpvAsmComputeShaderCase(testCtx, cases[caseNdx].name, cases[caseNdx].name, spec));
 	}
@@ -2624,7 +2807,6 @@ tcu::TestCaseGroup* createSelectionControlGroup (tcu::TestContext& testCtx)
 		spec.inputs.push_back(BufferSp(new Float32Buffer(inputFloats)));
 		spec.outputs.push_back(BufferSp(new Float32Buffer(outputFloats)));
 		spec.numWorkGroups = IVec3(numElements, 1, 1);
-		spec.entryPoint = "main";
 
 		group->addChild(new SpvAsmComputeShaderCase(testCtx, cases[caseNdx].name, cases[caseNdx].name, spec));
 	}
@@ -2717,7 +2899,6 @@ tcu::TestCaseGroup* createFunctionControlGroup (tcu::TestContext& testCtx)
 		spec.inputs.push_back(BufferSp(new Float32Buffer(inputFloats)));
 		spec.outputs.push_back(BufferSp(new Float32Buffer(outputFloats)));
 		spec.numWorkGroups = IVec3(numElements, 1, 1);
-		spec.entryPoint = "main";
 
 		group->addChild(new SpvAsmComputeShaderCase(testCtx, cases[caseNdx].name, cases[caseNdx].name, spec));
 	}
@@ -2788,7 +2969,6 @@ tcu::TestCaseGroup* createMemoryAccessGroup (tcu::TestContext& testCtx)
 		spec.inputs.push_back(BufferSp(new Float32Buffer(inputFloats)));
 		spec.outputs.push_back(BufferSp(new Float32Buffer(outputFloats)));
 		spec.numWorkGroups = IVec3(numElements, 1, 1);
-		spec.entryPoint = "main";
 
 		group->addChild(new SpvAsmComputeShaderCase(testCtx, cases[caseNdx].name, cases[caseNdx].name, spec));
 	}
@@ -2870,16 +3050,15 @@ tcu::TestCaseGroup* createOpUndefGroup (tcu::TestContext& testCtx)
 		spec.inputs.push_back(BufferSp(new Float32Buffer(positiveFloats)));
 		spec.outputs.push_back(BufferSp(new Float32Buffer(negativeFloats)));
 		spec.numWorkGroups = IVec3(numElements, 1, 1);
-		spec.entryPoint = "main";
 
 		group->addChild(new SpvAsmComputeShaderCase(testCtx, cases[caseNdx].name, cases[caseNdx].name, spec));
 	}
 
 		return group.release();
 }
-
 typedef std::pair<std::string, VkShaderStageFlagBits>	EntryToStage;
 typedef map<string, vector<EntryToStage> >				ModuleMap;
+typedef map<VkShaderStageFlagBits, vector<deInt32> >	StageToSpecConstantMap;
 
 // Context for a specific test instantiation. For example, an instantiation
 // may test colors yellow/magenta/cyan/mauve in a tesselation shader
@@ -2892,11 +3071,13 @@ struct InstanceContext
 	RGBA					outputColors[4];
 	// Concrete SPIR-V code to test via boilerplate specialization.
 	map<string, string>		testCodeFragments;
+	StageToSpecConstantMap	specConstants;
 
 	bool					hasTessellation;
-	InstanceContext (const RGBA (&inputs)[4], const RGBA (&outputs)[4], const map<string, string>& testCodeFragments_)
-		: testCodeFragments		(testCodeFragments_)
-		, hasTessellation(false)
+	InstanceContext (const RGBA (&inputs)[4], const RGBA (&outputs)[4], const map<string, string>& testCodeFragments_, const StageToSpecConstantMap& specConstants_)
+		: testCodeFragments	(testCodeFragments_)
+		, specConstants		(specConstants_)
+		, hasTessellation	(false)
 	{
 		inputColors[0]		= inputs[0];
 		inputColors[1]		= inputs[1];
@@ -2912,7 +3093,8 @@ struct InstanceContext
 	InstanceContext (const InstanceContext& other)
 		: moduleMap			(other.moduleMap)
 		, testCodeFragments	(other.testCodeFragments)
-		, hasTessellation(other.hasTessellation)
+		, specConstants		(other.specConstants)
+		, hasTessellation	(other.hasTessellation)
 	{
 		inputColors[0]		= other.inputColors[0];
 		inputColors[1]		= other.inputColors[1];
@@ -2974,9 +3156,9 @@ void getInvertedDefaultColors (RGBA (&colors)[4])
 // by setting up the mapping of modules to their contained shaders and stages.
 // The inputs and expected outputs are given by inputColors and outputColors
 template<size_t N>
-InstanceContext createInstanceContext (const ShaderElement (&elements)[N], const RGBA (&inputColors)[4], const RGBA (&outputColors)[4], const map<string, string>& testCodeFragments)
+InstanceContext createInstanceContext (const ShaderElement (&elements)[N], const RGBA (&inputColors)[4], const RGBA (&outputColors)[4], const map<string, string>& testCodeFragments, const StageToSpecConstantMap& specConstants)
 {
-	InstanceContext ctx (inputColors, outputColors, testCodeFragments);
+	InstanceContext ctx (inputColors, outputColors, testCodeFragments, specConstants);
 	for (size_t i = 0; i < N; ++i)
 	{
 		ctx.moduleMap[elements[i].moduleName].push_back(std::make_pair(elements[i].entryName, elements[i].stage));
@@ -2987,6 +3169,12 @@ InstanceContext createInstanceContext (const ShaderElement (&elements)[N], const
 		}
 	}
 	return ctx;
+}
+
+template<size_t N>
+inline InstanceContext createInstanceContext (const ShaderElement (&elements)[N], const RGBA (&inputColors)[4], const RGBA (&outputColors)[4], const map<string, string>& testCodeFragments)
+{
+	return createInstanceContext(elements, inputColors, outputColors, testCodeFragments, StageToSpecConstantMap());
 }
 
 // The same as createInstanceContext above, but with default colors.
@@ -3004,9 +3192,7 @@ void createPipelineShaderStages (const DeviceInterface& vk, const VkDevice vkDev
 	for (ModuleMap::const_iterator moduleNdx = instance.moduleMap.begin(); moduleNdx != instance.moduleMap.end(); ++moduleNdx)
 	{
 		const ModuleHandleSp mod(new Unique<VkShaderModule>(createShaderModule(vk, vkDevice, context.getBinaryCollection().get(moduleNdx->first), 0)));
-
 		modules.push_back(ModuleHandleSp(mod));
-
 		for (vector<EntryToStage>::const_iterator shaderNdx = moduleNdx->second.begin(); shaderNdx != moduleNdx->second.end(); ++shaderNdx)
 		{
 			const EntryToStage&						stage			= *shaderNdx;
@@ -3020,7 +3206,6 @@ void createPipelineShaderStages (const DeviceInterface& vk, const VkDevice vkDev
 				stage.first.c_str(),									//	const char*				pName;
 				(const VkSpecializationInfo*)DE_NULL,
 			};
-
 			createInfos.push_back(shaderParam);
 		}
 	}
@@ -3052,11 +3237,11 @@ void createPipelineShaderStages (const DeviceInterface& vk, const VkDevice vkDev
 	"%fp_i32   = OpTypePointer Function %i32\n"													\
 	"%fp_v4f32 = OpTypePointer Function %v4f32\n"
 
-
 #define SPIRV_ASSEMBLY_CONSTANTS																\
 	"%c_f32_1 = OpConstant %f32 1.0\n"															\
 	"%c_f32_0 = OpConstant %f32 0.0\n"															\
-	"%c_f32_0_5 = OpConstant %f32 0.5\n"												\
+	"%c_f32_0_5 = OpConstant %f32 0.5\n"														\
+	"%c_f32_n1  = OpConstant %f32 -1.\n"														\
 	"%c_i32_0 = OpConstant %i32 0\n"															\
 	"%c_i32_1 = OpConstant %i32 1\n"															\
 	"%c_i32_2 = OpConstant %i32 2\n"															\
@@ -3068,7 +3253,9 @@ void createPipelineShaderStages (const DeviceInterface& vk, const VkDevice vkDev
 	"%c_u32_3 = OpConstant %u32 3\n"															\
 	"%c_u32_32 = OpConstant %u32 32\n"															\
 	"%c_u32_4 = OpConstant %u32 4\n"															\
+	"%c_u32_31_bits = OpConstant %u32 0x7FFFFFFF\n"												\
 	"%c_v4f32_1_1_1_1 = OpConstantComposite %v4f32 %c_f32_1 %c_f32_1 %c_f32_1 %c_f32_1\n"		\
+	"%c_v4f32_1_0_0_1 = OpConstantComposite %v4f32 %c_f32_1 %c_f32_0 %c_f32_0 %c_f32_1\n"		\
 	"%c_v4f32_0_5_0_5_0_5_0_5 = OpConstantComposite %v4f32 %c_f32_0_5 %c_f32_0_5 %c_f32_0_5 %c_f32_0_5\n"
 
 #define SPIRV_ASSEMBLY_ARRAYS																	\
@@ -3108,8 +3295,8 @@ string makeVertexShaderAssembly(const map<string, string>& fragments)
 		"OpName %BP_Position \"position\"\n"
 		"OpName %BP_vtxColor \"vtxColor\"\n"
 		"OpName %BP_color \"color\"\n"
-		"OpName %vertex_id \"gl_VertexID\"\n"
-		"OpName %instance_id \"gl_InstanceID\"\n"
+		"OpName %BP_vertex_id \"gl_VertexID\"\n"
+		"OpName %BP_instance_id \"gl_InstanceID\"\n"
 		"OpName %test_code \"testfun(vf4;\"\n"
 		"OpDecorate %BP_vtxPosition Location 2\n"
 		"OpDecorate %BP_Position Location 0\n"
@@ -3117,6 +3304,7 @@ string makeVertexShaderAssembly(const map<string, string>& fragments)
 		"OpDecorate %BP_color Location 1\n"
 		"OpDecorate %BP_vertex_id BuiltIn VertexId\n"
 		"OpDecorate %BP_instance_id BuiltIn InstanceId\n"
+		"${decoration:opt}\n"
 		SPIRV_ASSEMBLY_TYPES
 		SPIRV_ASSEMBLY_CONSTANTS
 		SPIRV_ASSEMBLY_ARRAYS
@@ -3190,6 +3378,7 @@ string makeTessControlShaderAssembly (const map<string, string>& fragments)
 		"OpDecorate %BP_gl_TessLevelOuter BuiltIn TessLevelOuter\n"
 		"OpDecorate %BP_gl_TessLevelInner Patch\n"
 		"OpDecorate %BP_gl_TessLevelInner BuiltIn TessLevelInner\n"
+		"${decoration:opt}\n"
 		SPIRV_ASSEMBLY_TYPES
 		SPIRV_ASSEMBLY_CONSTANTS
 		SPIRV_ASSEMBLY_ARRAYS
@@ -3297,6 +3486,7 @@ string makeTessEvalShaderAssembly(const map<string, string>& fragments)
 		"OpDecorate %BP_in_position Location 2\n"
 		"OpDecorate %BP_out_color Location 1\n"
 		"OpDecorate %BP_in_color Location 1\n"
+		"${decoration:opt}\n"
 		SPIRV_ASSEMBLY_TYPES
 		SPIRV_ASSEMBLY_CONSTANTS
 		SPIRV_ASSEMBLY_ARRAYS
@@ -3308,6 +3498,7 @@ string makeTessEvalShaderAssembly(const map<string, string>& fragments)
 		"%BP_out_color = OpVariable %op_v4f32 Output\n"
 		"%BP_in_color = OpVariable %ip_a32v4f32 Input\n"
 		"${pre_main:opt}\n"
+
 		"%BP_main = OpFunction %void None %fun\n"
 		"%BP_label = OpLabel\n"
 		"%BP_tc_0_ptr = OpAccessChain %ip_f32 %BP_gl_tessCoord %c_u32_0\n"
@@ -3415,6 +3606,7 @@ string makeGeometryShaderAssembly(const map<string, string>& fragments)
 		"OpDecorate %BP_out_color Location 1\n"
 		"OpDecorate %BP_out_color Stream 0\n"
 		"OpDecorate %BP_in_color Location 1\n"
+		"${decoration:opt}\n"
 		SPIRV_ASSEMBLY_TYPES
 		SPIRV_ASSEMBLY_CONSTANTS
 		SPIRV_ASSEMBLY_ARRAYS
@@ -3449,6 +3641,7 @@ string makeGeometryShaderAssembly(const map<string, string>& fragments)
 		"%BP_transformed_in_color_0 = OpFunctionCall %v4f32 %test_code %BP_in_color_0\n"
 		"%BP_transformed_in_color_1 = OpFunctionCall %v4f32 %test_code %BP_in_color_1\n"
 		"%BP_transformed_in_color_2 = OpFunctionCall %v4f32 %test_code %BP_in_color_2\n"
+
 
 		"OpStore %BP_out_gl_position %BP_in_position_0\n"
 		"OpStore %BP_out_color %BP_transformed_in_color_0\n"
@@ -3497,6 +3690,7 @@ string makeFragmentShaderAssembly(const map<string, string>& fragments)
 		"OpName %test_code \"testfun(vf4;\"\n"
 		"OpDecorate %BP_fragColor Location 0\n"
 		"OpDecorate %BP_vtxColor Location 1\n"
+		"${decoration:opt}\n"
 		SPIRV_ASSEMBLY_TYPES
 		SPIRV_ASSEMBLY_CONSTANTS
 		SPIRV_ASSEMBLY_ARRAYS
@@ -4261,6 +4455,7 @@ void createMultipleEntries(vk::SourceCollections& dst, InstanceContext)
 		"OpReturn\n"
 		"OpFunctionEnd\n";
 }
+
 // Sets up and runs a Vulkan pipeline, then spot-checks the resulting image.
 // Feeds the pipeline a set of colored triangles, which then must occur in the
 // rendered image.  The surface is cleared before executing the pipeline, so
@@ -4389,6 +4584,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		DE_NULL,										//	const VkAttachmentReference*	pDepthStencilAttachment;
 		0u,												//	deUint32						preserveCount;
 		DE_NULL,										//	const VkAttachmentReference*	pPreserveAttachments;
+
 	};
 	const VkRenderPassCreateInfo			renderPassParams		=
 	{
@@ -4428,6 +4624,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 	};
 	const Unique<VkImageView>				colorAttView			(createImageView(vk, vkDevice, &colorAttViewParams));
 
+
 	// Pipeline layout
 	const VkPipelineLayoutCreateInfo		pipelineLayoutParams	=
 	{
@@ -4442,10 +4639,48 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 	const Unique<VkPipelineLayout>			pipelineLayout			(createPipelineLayout(vk, vkDevice, &pipelineLayoutParams));
 
 	// Pipeline
-	vector<VkPipelineShaderStageCreateInfo> shaderStageParams;
-
+	vector<VkPipelineShaderStageCreateInfo>		shaderStageParams;
+	// We need these vectors to make sure that information about specialization constants for each stage can outlive createGraphicsPipeline().
+	vector<vector<VkSpecializationMapEntry> >	specConstantEntries;
+	vector<VkSpecializationInfo>				specializationInfos;
 	createPipelineShaderStages(vk, vkDevice, instance, context, modules, shaderStageParams);
 
+	// And we don't want the reallocation of these vectors to invalidate pointers pointing to their contents.
+	specConstantEntries.reserve(shaderStageParams.size());
+	specializationInfos.reserve(shaderStageParams.size());
+
+	// Patch the specialization info field in PipelineShaderStageCreateInfos.
+	for (vector<VkPipelineShaderStageCreateInfo>::iterator stageInfo = shaderStageParams.begin(); stageInfo != shaderStageParams.end(); ++stageInfo)
+	{
+		const StageToSpecConstantMap::const_iterator stageIt = instance.specConstants.find(stageInfo->stage);
+
+		if (stageIt != instance.specConstants.end())
+		{
+			const size_t						numSpecConstants	= stageIt->second.size();
+			vector<VkSpecializationMapEntry>	entries;
+			VkSpecializationInfo				specInfo;
+
+			entries.reserve(numSpecConstants);
+
+			// Only support 32-bit integers as spec constants now. And their constant IDs are numbered sequentially starting from 0.
+			for (size_t ndx = 0; ndx < numSpecConstants; ++ndx)
+			{
+				entries[ndx].constantID	= (deUint32)ndx;
+				entries[ndx].offset		= deUint32(ndx * sizeof(deInt32));
+				entries[ndx].size		= sizeof(deInt32);
+			}
+
+			specConstantEntries.push_back(entries);
+
+			specInfo.mapEntryCount	= (deUint32)numSpecConstants;
+			specInfo.pMapEntries	= specConstantEntries.back().data();
+			specInfo.dataSize		= numSpecConstants * sizeof(deInt32);
+			specInfo.pData			= stageIt->second.data();
+			specializationInfos.push_back(specInfo);
+
+			stageInfo->pSpecializationInfo = &specializationInfos.back();
+		}
+	}
 	const VkPipelineDepthStencilStateCreateInfo	depthStencilParams		=
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,	//	VkStructureType		sType;
@@ -4536,7 +4771,6 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		0.0f,														//	float			slopeScaledDepthBias;
 		1.0f,														//	float			lineWidth;
 	};
-
 	const VkPrimitiveTopology topology = instance.hasTessellation? VK_PRIMITIVE_TOPOLOGY_PATCH_LIST: VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 	const VkPipelineInputAssemblyStateCreateInfo	inputAssemblyParams	=
 	{
@@ -4891,11 +5125,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 	return TestStatus::pass("Rendered output matches input");
 }
 
-void createTestsForAllStages(const std::string& name,
-							 const RGBA (&inputColors)[4],
-							 const RGBA (&outputColors)[4],
-							 const map<string, string>& testCodeFragments,
-							 tcu::TestCaseGroup* tests)
+void createTestsForAllStages (const std::string& name, const RGBA (&inputColors)[4], const RGBA (&outputColors)[4], const map<string, string>& testCodeFragments, const vector<deInt32>& specConstants, tcu::TestCaseGroup* tests)
 {
 	const ShaderElement		pipelineStages[]				=
 	{
@@ -4906,21 +5136,39 @@ void createTestsForAllStages(const std::string& name,
 		ShaderElement("frag", "main", VK_SHADER_STAGE_FRAGMENT_BIT),
 	};
 
+	StageToSpecConstantMap	specConstantMap;
+
+	specConstantMap[VK_SHADER_STAGE_VERTEX_BIT] = specConstants;
 	addFunctionCaseWithPrograms<InstanceContext>(tests, name + "-vert", "", addShaderCodeCustomVertex, runAndVerifyDefaultPipeline,
-												 createInstanceContext(pipelineStages, inputColors, outputColors, testCodeFragments));
+												 createInstanceContext(pipelineStages, inputColors, outputColors, testCodeFragments, specConstantMap));
 
+	specConstantMap.clear();
+	specConstantMap[VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT] = specConstants;
 	addFunctionCaseWithPrograms<InstanceContext>(tests, name + "-tessc", "", addShaderCodeCustomTessControl, runAndVerifyDefaultPipeline,
-												 createInstanceContext(pipelineStages, inputColors, outputColors, testCodeFragments));
+												 createInstanceContext(pipelineStages, inputColors, outputColors, testCodeFragments, specConstantMap));
 
+	specConstantMap.clear();
+	specConstantMap[VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT] = specConstants;
 	addFunctionCaseWithPrograms<InstanceContext>(tests, name + "-tesse", "", addShaderCodeCustomTessEval, runAndVerifyDefaultPipeline,
-												 createInstanceContext(pipelineStages, inputColors, outputColors, testCodeFragments));
+												 createInstanceContext(pipelineStages, inputColors, outputColors, testCodeFragments, specConstantMap));
 
+	specConstantMap.clear();
+	specConstantMap[VK_SHADER_STAGE_GEOMETRY_BIT] = specConstants;
 	addFunctionCaseWithPrograms<InstanceContext>(tests, name + "-geom", "", addShaderCodeCustomGeometry, runAndVerifyDefaultPipeline,
-												 createInstanceContext(pipelineStages, inputColors, outputColors, testCodeFragments));
+												 createInstanceContext(pipelineStages, inputColors, outputColors, testCodeFragments, specConstantMap));
 
+	specConstantMap.clear();
+	specConstantMap[VK_SHADER_STAGE_FRAGMENT_BIT] = specConstants;
 	addFunctionCaseWithPrograms<InstanceContext>(tests, name + "-frag", "", addShaderCodeCustomFragment, runAndVerifyDefaultPipeline,
-												 createInstanceContext(pipelineStages, inputColors, outputColors, testCodeFragments));
+												 createInstanceContext(pipelineStages, inputColors, outputColors, testCodeFragments, specConstantMap));
 }
+
+inline void createTestsForAllStages (const std::string& name, const RGBA (&inputColors)[4], const RGBA (&outputColors)[4], const map<string, string>& testCodeFragments, tcu::TestCaseGroup* tests)
+{
+	vector<deInt32> noSpecConstants;
+	createTestsForAllStages(name, inputColors, outputColors, testCodeFragments, noSpecConstants, tests);
+}
+
 } // anonymous
 
 tcu::TestCaseGroup* createOpSourceTests (tcu::TestContext& testCtx)
@@ -4960,7 +5208,6 @@ tcu::TestCaseGroup* createOpSourceTests (tcu::TestContext& testCtx)
 tcu::TestCaseGroup* createOpSourceContinuedTests (tcu::TestContext& testCtx)
 {
 	struct NameCodePair { string name, code; };
-
 	RGBA								defaultColors[4];
 	de::MovePtr<tcu::TestCaseGroup>		opSourceTests		(new tcu::TestCaseGroup(testCtx, "opsourcecontinued", "OpSourceContinued instruction"));
 	map<string, string>					fragments			= passthruFragments();
@@ -4992,7 +5239,6 @@ tcu::TestCaseGroup* createOpNoLineTests(tcu::TestContext& testCtx)
 	RGBA								 defaultColors[4];
 	de::MovePtr<tcu::TestCaseGroup>		 opLineTests		 (new tcu::TestCaseGroup(testCtx, "opNoLine", "OpNoLine instruction"));
 	map<string, string>					 fragments;
-
 	getDefaultColors(defaultColors);
 	fragments["debug"]			=
 		"%name = OpString \"name\"\n";
@@ -5042,6 +5288,7 @@ tcu::TestCaseGroup* createOpNoLineTests(tcu::TestContext& testCtx)
 
 	return opLineTests.release();
 }
+
 
 tcu::TestCaseGroup* createOpLineTests(tcu::TestContext& testCtx)
 {
@@ -5109,6 +5356,7 @@ tcu::TestCaseGroup* createOpConstantNullTests(tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> opConstantNullTests		(new tcu::TestCaseGroup(testCtx, "opConstantNull", "OpConstantNull instruction"));
 	RGBA							colors[4];
+
 
 	const char						functionStart[] =
 		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
@@ -5225,6 +5473,7 @@ tcu::TestCaseGroup* createOpConstantCompositeTests(tcu::TestContext& testCtx)
 	de::MovePtr<tcu::TestCaseGroup> opConstantCompositeTests		(new tcu::TestCaseGroup(testCtx, "opConstantComposite", "OpConstantComposite instruction"));
 	RGBA							inputColors[4];
 	RGBA							outputColors[4];
+
 
 	const char						functionStart[]	 =
 		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
@@ -5546,6 +5795,327 @@ tcu::TestCaseGroup* createSwitchBlockOrderTests(tcu::TestContext& testCtx)
 	return group.release();
 }
 
+tcu::TestCaseGroup* createDecorationGroupTests(tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup> group				(new tcu::TestCaseGroup(testCtx, "decoration_group", "Decoration group tests"));
+	RGBA							inputColors[4];
+	RGBA							outputColors[4];
+	map<string, string>				fragments;
+
+	const char						decorations[]		=
+		"OpDecorate %array_group         ArrayStride 4\n"
+		"OpDecorate %struct_member_group Offset 0\n"
+		"%array_group         = OpDecorationGroup\n"
+		"%struct_member_group = OpDecorationGroup\n"
+
+		"OpDecorate %group1 RelaxedPrecision\n"
+		"OpDecorate %group3 RelaxedPrecision\n"
+		"OpDecorate %group3 Invariant\n"
+		"OpDecorate %group3 Restrict\n"
+		"%group0 = OpDecorationGroup\n"
+		"%group1 = OpDecorationGroup\n"
+		"%group3 = OpDecorationGroup\n";
+
+	const char						typesAndConstants[]	=
+		"%a3f32     = OpTypeArray %f32 %c_u32_3\n"
+		"%struct1   = OpTypeStruct %a3f32\n"
+		"%struct2   = OpTypeStruct %a3f32\n"
+		"%fp_struct1 = OpTypePointer Function %struct1\n"
+		"%fp_struct2 = OpTypePointer Function %struct2\n"
+		"%c_f32_2    = OpConstant %f32 2.\n"
+		"%c_f32_n2   = OpConstant %f32 -2.\n"
+
+		"%c_a3f32_1 = OpConstantComposite %a3f32 %c_f32_1 %c_f32_2 %c_f32_1\n"
+		"%c_a3f32_2 = OpConstantComposite %a3f32 %c_f32_n1 %c_f32_n2 %c_f32_n1\n"
+		"%c_struct1 = OpConstantComposite %struct1 %c_a3f32_1\n"
+		"%c_struct2 = OpConstantComposite %struct2 %c_a3f32_2\n";
+
+	const char						function[]			=
+		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%param     = OpFunctionParameter %v4f32\n"
+		"%entry     = OpLabel\n"
+		"%result    = OpVariable %fp_v4f32 Function\n"
+		"             OpStore %result %param\n"
+		"%v_struct1 = OpVariable %fp_struct1 Function\n"
+		"             OpStore %v_struct1 %c_struct1\n"
+		"%v_struct2 = OpVariable %fp_struct2 Function\n"
+		"             OpStore %v_struct2 %c_struct2\n"
+		"%ptr1      = OpAccessChain %fp_f32 %v_struct1 %c_i32_0 %c_i32_1\n"
+		"%val1      = OpLoad %f32 %ptr1\n"
+		"%ptr2      = OpAccessChain %fp_f32 %v_struct2 %c_i32_0 %c_i32_2\n"
+		"%val2      = OpLoad %f32 %ptr2\n"
+		"%addvalues = OpFAdd %f32 %val1 %val2\n"
+		"%ptr       = OpAccessChain %fp_f32 %result %c_i32_1\n"
+		"%val       = OpLoad %f32 %ptr\n"
+		"%addresult = OpFAdd %f32 %addvalues %val\n"
+		"             OpStore %ptr %addresult\n"
+		"%ret       = OpLoad %v4f32 %result\n"
+		"             OpReturnValue %ret\n"
+		"             OpFunctionEnd\n";
+
+	struct CaseNameDecoration
+	{
+		string name;
+		string decoration;
+	};
+
+	CaseNameDecoration tests[] =
+	{
+		{
+			"same_decoration_group_on_multiple_types",
+			"OpGroupMemberDecorate %struct_member_group %struct1 0 %struct2 0\n"
+		},
+		{
+			"empty_decoration_group",
+			"OpGroupDecorate %group0      %a3f32\n"
+			"OpGroupDecorate %group0      %result\n"
+		},
+		{
+			"one_element_decoration_group",
+			"OpGroupDecorate %array_group %a3f32\n"
+		},
+		{
+			"multiple_elements_decoration_group",
+			"OpGroupDecorate %group3      %v_struct1\n"
+		},
+		{
+			"multiple_decoration_groups_on_same_variable",
+			"OpGroupDecorate %group0      %v_struct2\n"
+			"OpGroupDecorate %group1      %v_struct2\n"
+			"OpGroupDecorate %group3      %v_struct2\n"
+		},
+		{
+			"same_decoration_group_multiple_times",
+			"OpGroupDecorate %group1      %addvalues\n"
+			"OpGroupDecorate %group1      %addvalues\n"
+			"OpGroupDecorate %group1      %addvalues\n"
+		},
+
+	};
+
+	getHalfColorsFullAlpha(inputColors);
+	getHalfColorsFullAlpha(outputColors);
+
+	for (size_t idx = 0; idx < (sizeof(tests) / sizeof(tests[0])); ++idx)
+	{
+		fragments["decoration"]	= decorations + tests[idx].decoration;
+		fragments["pre_main"]	= typesAndConstants;
+		fragments["testfun"]	= function;
+
+		createTestsForAllStages(tests[idx].name, inputColors, outputColors, fragments, group.get());
+	}
+
+	return group.release();
+}
+
+struct SpecConstantTwoIntGraphicsCase
+{
+	const char*		caseName;
+	const char*		scDefinition0;
+	const char*		scDefinition1;
+	const char*		scResultType;
+	const char*		scOperation;
+	deInt32			scActualValue0;
+	deInt32			scActualValue1;
+	const char*		resultOperation;
+	RGBA			expectedColors[4];
+
+					SpecConstantTwoIntGraphicsCase (const char* name,
+											const char* definition0,
+											const char* definition1,
+											const char* resultType,
+											const char* operation,
+											deInt32		value0,
+											deInt32		value1,
+											const char* resultOp,
+											const RGBA	(&output)[4])
+						: caseName			(name)
+						, scDefinition0		(definition0)
+						, scDefinition1		(definition1)
+						, scResultType		(resultType)
+						, scOperation		(operation)
+						, scActualValue0	(value0)
+						, scActualValue1	(value1)
+						, resultOperation	(resultOp)
+	{
+		expectedColors[0] = output[0];
+		expectedColors[1] = output[1];
+		expectedColors[2] = output[2];
+		expectedColors[3] = output[3];
+	}
+};
+
+tcu::TestCaseGroup* createSpecConstantTests (tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup> group				(new tcu::TestCaseGroup(testCtx, "opspecconstantop", "Test the OpSpecConstantOp instruction"));
+	vector<SpecConstantTwoIntGraphicsCase>	cases;
+	RGBA							inputColors[4];
+	RGBA							outputColors0[4];
+	RGBA							outputColors1[4];
+	RGBA							outputColors2[4];
+
+	const char	decorations1[]			=
+		"OpDecorate %sc_0  SpecId 0\n"
+		"OpDecorate %sc_1  SpecId 1\n";
+
+	const char	typesAndConstants1[]	=
+		"%sc_0      = OpSpecConstant${SC_DEF0}\n"
+		"%sc_1      = OpSpecConstant${SC_DEF1}\n"
+		"%sc_op     = OpSpecConstantOp ${SC_RESULT_TYPE} ${SC_OP}\n";
+
+	const char	function1[]				=
+		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%param     = OpFunctionParameter %v4f32\n"
+		"%label     = OpLabel\n"
+		"%result    = OpVariable %fp_v4f32 Function\n"
+		"             OpStore %result %param\n"
+		"%gen       = ${GEN_RESULT}\n"
+		"%index     = OpIAdd %i32 %gen %c_i32_1\n"
+		"%loc       = OpAccessChain %fp_f32 %result %index\n"
+		"%val       = OpLoad %f32 %loc\n"
+		"%add       = OpFAdd %f32 %val %c_f32_0_5\n"
+		"             OpStore %loc %add\n"
+		"%ret       = OpLoad %v4f32 %result\n"
+		"             OpReturnValue %ret\n"
+		"             OpFunctionEnd\n";
+
+	inputColors[0] = RGBA(127, 127, 127, 255);
+	inputColors[1] = RGBA(127, 0,   0,   255);
+	inputColors[2] = RGBA(0,   127, 0,   255);
+	inputColors[3] = RGBA(0,   0,   127, 255);
+
+	// Derived from inputColors[x] by adding 128 to inputColors[x][0].
+	outputColors0[0] = RGBA(255, 127, 127, 255);
+	outputColors0[1] = RGBA(255, 0,   0,   255);
+	outputColors0[2] = RGBA(128, 127, 0,   255);
+	outputColors0[3] = RGBA(128, 0,   127, 255);
+
+	// Derived from inputColors[x] by adding 128 to inputColors[x][1].
+	outputColors1[0] = RGBA(127, 255, 127, 255);
+	outputColors1[1] = RGBA(127, 128, 0,   255);
+	outputColors1[2] = RGBA(0,   255, 0,   255);
+	outputColors1[3] = RGBA(0,   128, 127, 255);
+
+	// Derived from inputColors[x] by adding 128 to inputColors[x][2].
+	outputColors2[0] = RGBA(127, 127, 255, 255);
+	outputColors2[1] = RGBA(127, 0,   128, 255);
+	outputColors2[2] = RGBA(0,   127, 128, 255);
+	outputColors2[3] = RGBA(0,   0,   255, 255);
+
+	const char addZeroToSc[]		= "OpIAdd %i32 %c_i32_0 %sc_op";
+	const char selectTrueUsingSc[]	= "OpSelect %i32 %sc_op %c_i32_1 %c_i32_0";
+	const char selectFalseUsingSc[]	= "OpSelect %i32 %sc_op %c_i32_0 %c_i32_1";
+
+	cases.push_back(SpecConstantTwoIntGraphicsCase("iadd",					" %i32 0",		" %i32 0",		"%i32",		"IAdd                 %sc_0 %sc_1",				19,		-20,	addZeroToSc,		outputColors0));
+	cases.push_back(SpecConstantTwoIntGraphicsCase("isub",					" %i32 0",		" %i32 0",		"%i32",		"ISub                 %sc_0 %sc_1",				19,		20,		addZeroToSc,		outputColors0));
+	cases.push_back(SpecConstantTwoIntGraphicsCase("imul",					" %i32 0",		" %i32 0",		"%i32",		"IMul                 %sc_0 %sc_1",				-1,		-1,		addZeroToSc,		outputColors2));
+	cases.push_back(SpecConstantTwoIntGraphicsCase("sdiv",					" %i32 0",		" %i32 0",		"%i32",		"SDiv                 %sc_0 %sc_1",				-126,	126,	addZeroToSc,		outputColors0));
+	cases.push_back(SpecConstantTwoIntGraphicsCase("udiv",					" %i32 0",		" %i32 0",		"%i32",		"UDiv                 %sc_0 %sc_1",				126,	126,	addZeroToSc,		outputColors2));
+	cases.push_back(SpecConstantTwoIntGraphicsCase("srem",					" %i32 0",		" %i32 0",		"%i32",		"SRem                 %sc_0 %sc_1",				-3,		2,		addZeroToSc,		outputColors0));
+	cases.push_back(SpecConstantTwoIntGraphicsCase("smod",					" %i32 0",		" %i32 0",		"%i32",		"SMod                 %sc_0 %sc_1",				-3,		2,		addZeroToSc,		outputColors2));
+	cases.push_back(SpecConstantTwoIntGraphicsCase("umod",					" %i32 0",		" %i32 0",		"%i32",		"UMod                 %sc_0 %sc_1",				1001,	500,	addZeroToSc,		outputColors2));
+	cases.push_back(SpecConstantTwoIntGraphicsCase("bitwiseand",			" %i32 0",		" %i32 0",		"%i32",		"BitwiseAnd           %sc_0 %sc_1",				0x33,	0x0d,	addZeroToSc,		outputColors2));
+	cases.push_back(SpecConstantTwoIntGraphicsCase("bitwiseor",				" %i32 0",		" %i32 0",		"%i32",		"BitwiseOr            %sc_0 %sc_1",				0,		1,		addZeroToSc,		outputColors2));
+	cases.push_back(SpecConstantTwoIntGraphicsCase("bitwisexor",			" %i32 0",		" %i32 0",		"%i32",		"BitwiseAnd           %sc_0 %sc_1",				0x2e,	0x2f,	addZeroToSc,		outputColors2));
+	cases.push_back(SpecConstantTwoIntGraphicsCase("shiftrightlogical",		" %i32 0",		" %i32 0",		"%i32",		"ShiftRightLogical    %sc_0 %sc_1",				2,		1,		addZeroToSc,		outputColors2));
+	cases.push_back(SpecConstantTwoIntGraphicsCase("shiftrightarithmetic",	" %i32 0",		" %i32 0",		"%i32",		"ShiftRightArithmetic %sc_0 %sc_1",				-4,		2,		addZeroToSc,		outputColors0));
+	cases.push_back(SpecConstantTwoIntGraphicsCase("shiftleftlogical",		" %i32 0",		" %i32 0",		"%i32",		"ShiftLeftLogical     %sc_0 %sc_1",				1,		0,		addZeroToSc,		outputColors2));
+	cases.push_back(SpecConstantTwoIntGraphicsCase("slessthan",				" %i32 0",		" %i32 0",		"%bool",	"SLessThan            %sc_0 %sc_1",				-20,	-10,	selectTrueUsingSc,	outputColors2));
+	cases.push_back(SpecConstantTwoIntGraphicsCase("ulessthan",				" %i32 0",		" %i32 0",		"%bool",	"ULessThan            %sc_0 %sc_1",				10,		20,		selectTrueUsingSc,	outputColors2));
+	cases.push_back(SpecConstantTwoIntGraphicsCase("sgreaterthan",			" %i32 0",		" %i32 0",		"%bool",	"SGreaterThan         %sc_0 %sc_1",				-1000,	50,		selectFalseUsingSc,	outputColors2));
+	cases.push_back(SpecConstantTwoIntGraphicsCase("ugreaterthan",			" %i32 0",		" %i32 0",		"%bool",	"UGreaterThan         %sc_0 %sc_1",				10,		5,		selectTrueUsingSc,	outputColors2));
+	cases.push_back(SpecConstantTwoIntGraphicsCase("slessthanequal",		" %i32 0",		" %i32 0",		"%bool",	"SLessThanEqual       %sc_0 %sc_1",				-10,	-10,	selectTrueUsingSc,	outputColors2));
+	cases.push_back(SpecConstantTwoIntGraphicsCase("ulessthanequal",		" %i32 0",		" %i32 0",		"%bool",	"ULessThanEqual       %sc_0 %sc_1",				50,		100,	selectTrueUsingSc,	outputColors2));
+	cases.push_back(SpecConstantTwoIntGraphicsCase("sgreaterthanequal",		" %i32 0",		" %i32 0",		"%bool",	"SGreaterThanEqual    %sc_0 %sc_1",				-1000,	50,		selectFalseUsingSc,	outputColors2));
+	cases.push_back(SpecConstantTwoIntGraphicsCase("ugreaterthanequal",		" %i32 0",		" %i32 0",		"%bool",	"UGreaterThanEqual    %sc_0 %sc_1",				10,		10,		selectTrueUsingSc,	outputColors2));
+	cases.push_back(SpecConstantTwoIntGraphicsCase("iequal",				" %i32 0",		" %i32 0",		"%bool",	"IEqual               %sc_0 %sc_1",				42,		24,		selectFalseUsingSc,	outputColors2));
+	cases.push_back(SpecConstantTwoIntGraphicsCase("logicaland",			"True %bool",	"True %bool",	"%bool",	"LogicalAnd           %sc_0 %sc_1",				0,		1,		selectFalseUsingSc,	outputColors2));
+	cases.push_back(SpecConstantTwoIntGraphicsCase("logicalor",				"False %bool",	"False %bool",	"%bool",	"LogicalOr            %sc_0 %sc_1",				1,		0,		selectTrueUsingSc,	outputColors2));
+	cases.push_back(SpecConstantTwoIntGraphicsCase("logicalequal",			"True %bool",	"True %bool",	"%bool",	"LogicalEqual         %sc_0 %sc_1",				0,		1,		selectFalseUsingSc,	outputColors2));
+	cases.push_back(SpecConstantTwoIntGraphicsCase("logicalnotequal",		"False %bool",	"False %bool",	"%bool",	"LogicalNotEqual      %sc_0 %sc_1",				1,		0,		selectTrueUsingSc,	outputColors2));
+	cases.push_back(SpecConstantTwoIntGraphicsCase("snegate",				" %i32 0",		" %i32 0",		"%i32",		"SNegate              %sc_0",					-1,		0,		addZeroToSc,		outputColors2));
+	cases.push_back(SpecConstantTwoIntGraphicsCase("not",					" %i32 0",		" %i32 0",		"%i32",		"Not                  %sc_0",					-2,		0,		addZeroToSc,		outputColors2));
+	cases.push_back(SpecConstantTwoIntGraphicsCase("logicalnot",			"False %bool",	"False %bool",	"%bool",	"LogicalNot           %sc_0",					1,		0,		selectFalseUsingSc,	outputColors2));
+	cases.push_back(SpecConstantTwoIntGraphicsCase("select",				"False %bool",	" %i32 0",		"%i32",		"Select               %sc_0 %sc_1 %c_i32_0",	1,		1,		addZeroToSc,		outputColors2));
+	// OpSConvert, OpFConvert: these two instructions involve ints/floats of different bitwidths.
+	// \todo[2015-12-1 antiagainst] OpQuantizeToF16
+
+	for (size_t caseNdx = 0; caseNdx < cases.size(); ++caseNdx)
+	{
+		map<string, string>	specializations;
+		map<string, string>	fragments;
+		vector<deInt32>		specConstants;
+
+		specializations["SC_DEF0"]			= cases[caseNdx].scDefinition0;
+		specializations["SC_DEF1"]			= cases[caseNdx].scDefinition1;
+		specializations["SC_RESULT_TYPE"]	= cases[caseNdx].scResultType;
+		specializations["SC_OP"]			= cases[caseNdx].scOperation;
+		specializations["GEN_RESULT"]		= cases[caseNdx].resultOperation;
+
+		fragments["decoration"]				= tcu::StringTemplate(decorations1).specialize(specializations);
+		fragments["pre_main"]				= tcu::StringTemplate(typesAndConstants1).specialize(specializations);
+		fragments["testfun"]				= tcu::StringTemplate(function1).specialize(specializations);
+
+		specConstants.push_back(cases[caseNdx].scActualValue0);
+		specConstants.push_back(cases[caseNdx].scActualValue1);
+
+		createTestsForAllStages(cases[caseNdx].caseName, inputColors, cases[caseNdx].expectedColors, fragments, specConstants, group.get());
+	}
+
+	const char	decorations2[]			=
+		"OpDecorate %sc_0  SpecId 0\n"
+		"OpDecorate %sc_1  SpecId 1\n"
+		"OpDecorate %sc_2  SpecId 2\n";
+
+	const char	typesAndConstants2[]	=
+		"%v3i32     = OpTypeVector %i32 3\n"
+
+		"%sc_0      = OpSpecConstant %i32 0\n"
+		"%sc_1      = OpSpecConstant %i32 0\n"
+		"%sc_2      = OpSpecConstant %i32 0\n"
+
+		"%vec3_0      = OpConstantComposite %v3i32 %c_i32_0 %c_i32_0 %c_i32_0\n"
+		"%sc_vec3_0   = OpSpecConstantOp %v3i32 CompositeInsert  %sc_0        %vec3_0    0\n"     // (sc_0, 0, 0)
+		"%sc_vec3_1   = OpSpecConstantOp %v3i32 CompositeInsert  %sc_1        %vec3_0    1\n"     // (0, sc_1, 0)
+		"%sc_vec3_2   = OpSpecConstantOp %v3i32 CompositeInsert  %sc_2        %vec3_0    2\n"     // (0, 0, sc_2)
+		"%sc_vec3_01  = OpSpecConstantOp %v3i32 VectorShuffle    %sc_vec3_0   %sc_vec3_1 1 0 4\n" // (0,    sc_0, sc_1)
+		"%sc_vec3_012 = OpSpecConstantOp %v3i32 VectorShuffle    %sc_vec3_01  %sc_vec3_2 5 1 2\n" // (sc_2, sc_0, sc_1)
+		"%sc_ext_0    = OpSpecConstantOp %i32   CompositeExtract %sc_vec3_012            0\n"     // sc_2
+		"%sc_ext_1    = OpSpecConstantOp %i32   CompositeExtract %sc_vec3_012            1\n"     // sc_0
+		"%sc_ext_2    = OpSpecConstantOp %i32   CompositeExtract %sc_vec3_012            2\n"     // sc_1
+		"%sc_sub      = OpSpecConstantOp %i32   ISub             %sc_ext_0    %sc_ext_1\n"        // (sc_2 - sc_0)
+		"%sc_final    = OpSpecConstantOp %i32   IMul             %sc_sub      %sc_ext_2\n";       // (sc_2 - sc_0) * sc_1
+
+	const char	function2[]				=
+		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%param     = OpFunctionParameter %v4f32\n"
+		"%label     = OpLabel\n"
+		"%result    = OpVariable %fp_v4f32 Function\n"
+		"             OpStore %result %param\n"
+		"%loc       = OpAccessChain %fp_f32 %result %sc_final\n"
+		"%val       = OpLoad %f32 %loc\n"
+		"%add       = OpFAdd %f32 %val %c_f32_0_5\n"
+		"             OpStore %loc %add\n"
+		"%ret       = OpLoad %v4f32 %result\n"
+		"             OpReturnValue %ret\n"
+		"             OpFunctionEnd\n";
+
+	map<string, string>	fragments;
+	vector<deInt32>		specConstants;
+
+	fragments["decoration"]	= decorations2;
+	fragments["pre_main"]	= typesAndConstants2;
+	fragments["testfun"]	= function2;
+
+	specConstants.push_back(56789);
+	specConstants.push_back(-2);
+	specConstants.push_back(56788);
+
+	createTestsForAllStages("vector_related", inputColors, outputColors2, fragments, specConstants, group.get());
+
+	return group.release();
+}
+
 tcu::TestCaseGroup* createOpPhiTests(tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> group				(new tcu::TestCaseGroup(testCtx, "opphi", "Test the OpPhi instruction"));
@@ -5724,6 +6294,76 @@ tcu::TestCaseGroup* createOpPhiTests(tcu::TestContext& testCtx)
 	return group.release();
 }
 
+tcu::TestCaseGroup* createNoContractionTests(tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup> group			(new tcu::TestCaseGroup(testCtx, "nocontraction", "Test the NoContraction decoration"));
+	RGBA							inputColors[4];
+	RGBA							outputColors[4];
+
+	// With NoContraction, (1 + 2^-23) * (1 - 2^-23) - 1 should be conducted as a multiplication and an addition separately.
+	// For the multiplication, the result is 1 - 2^-46, which is out of the precision range for 32-bit float. (32-bit float
+	// only have 23-bit fraction.) So it will be rounded to 1. Then the final result is 0. On the contrary, the result will
+	// be 2^-46, which is a normalized number perfectly representable as 32-bit float.
+	const char						constantsAndTypes[]	 =
+		"%c_vec4_0       = OpConstantComposite %v4f32 %c_f32_0 %c_f32_0 %c_f32_0 %c_f32_1\n"
+		"%c_vec4_1       = OpConstantComposite %v4f32 %c_f32_1 %c_f32_1 %c_f32_1 %c_f32_1\n"
+		"%c_f32_1pl2_23  = OpConstant %f32 0x1.000002p+0\n" // 1 + 2^-23
+		"%c_f32_1mi2_23  = OpConstant %f32 0x1.fffffcp-1\n" // 1 - 2^-23
+		;
+
+	const char						function[]	 =
+		"%test_code      = OpFunction %v4f32 None %v4f32_function\n"
+		"%param          = OpFunctionParameter %v4f32\n"
+		"%label          = OpLabel\n"
+		"%var1           = OpVariable %fp_f32 Function %c_f32_1pl2_23\n"
+		"%var2           = OpVariable %fp_f32 Function\n"
+		"%red            = OpCompositeExtract %f32 %param 0\n"
+		"%plus_red       = OpFAdd %f32 %c_f32_1mi2_23 %red\n"
+		"                  OpStore %var2 %plus_red\n"
+		"%val1           = OpLoad %f32 %var1\n"
+		"%val2           = OpLoad %f32 %var2\n"
+		"%mul            = OpFMul %f32 %val1 %val2\n"
+		"%add            = OpFAdd %f32 %mul %c_f32_n1\n"
+		"%is0            = OpFOrdEqual %bool %add %c_f32_0\n"
+		"%ret            = OpSelect %v4f32 %is0 %c_vec4_0 %c_vec4_1\n"
+		"                  OpReturnValue %ret\n"
+		"                  OpFunctionEnd\n";
+
+	struct CaseNameDecoration
+	{
+		string name;
+		string decoration;
+	};
+
+
+	CaseNameDecoration tests[] = {
+		{"multiplication",	"OpDecorate %mul NoContraction"},
+		{"addition",		"OpDecorate %add NoContraction"},
+		{"both",			"OpDecorate %mul NoContraction\nOpDecorate %add NoContraction"},
+	};
+
+	getHalfColorsFullAlpha(inputColors);
+
+	for (deUint8 idx = 0; idx < 4; ++idx)
+	{
+		inputColors[idx].setRed(0);
+		outputColors[idx] = RGBA(0, 0, 0, 255);
+	}
+
+	for (size_t testNdx = 0; testNdx < sizeof(tests) / sizeof(CaseNameDecoration); ++testNdx)
+	{
+		map<string, string> fragments;
+
+		fragments["decoration"] = tests[testNdx].decoration;
+		fragments["pre_main"] = constantsAndTypes;
+		fragments["testfun"] = function;
+
+		createTestsForAllStages(tests[testNdx].name, inputColors, outputColors, fragments, group.get());
+	}
+
+	return group.release();
+}
+
 tcu::TestCaseGroup* createMemoryAccessTests(tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> memoryAccessTests (new tcu::TestCaseGroup(testCtx, "opMemoryAccess", "Memory Semantics"));
@@ -5780,6 +6420,7 @@ tcu::TestCaseGroup* createMemoryAccessTests(tcu::TestContext& testCtx)
 		string accessType;
 	};
 
+
 	NameMemoryAccess tests[] =
 	{
 		{ "none", "" },
@@ -5805,14 +6446,13 @@ tcu::TestCaseGroup* createMemoryAccessTests(tcu::TestContext& testCtx)
 	}
 	return memoryAccessTests.release();
 }
-
 tcu::TestCaseGroup* createOpUndefTests(tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup>		opUndefTests		 (new tcu::TestCaseGroup(testCtx, "opundef", "Test OpUndef"));
 	RGBA								defaultColors[4];
 	map<string, string>					fragments;
-
 	getDefaultColors(defaultColors);
+
 	// First, simple cases that don't do anything with the OpUndef result.
 	fragments["testfun"] =
 		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
@@ -5942,6 +6582,309 @@ tcu::TestCaseGroup* createOpUndefTests(tcu::TestContext& testCtx)
 	return opUndefTests.release();
 }
 
+void createOpQuantizeSingleOptionTests(tcu::TestCaseGroup* testCtx)
+{
+	const RGBA		inputColors[4]		=
+	{
+		RGBA(0,		0,		0,		255),
+		RGBA(0,		0,		255,	255),
+		RGBA(0,		255,	0,		255),
+		RGBA(0,		255,	255,	255)
+	};
+
+	const RGBA		expectedColors[4]	=
+	{
+		RGBA(255,	 0,		 0,		 255),
+		RGBA(255,	 0,		 0,		 255),
+		RGBA(255,	 0,		 0,		 255),
+		RGBA(255,	 0,		 0,		 255)
+	};
+
+	const struct SingleFP16Possibility
+	{
+		const char* name;
+		const char* constant;
+		float       valueAsFloat;
+		const char* condition;
+		// condition must evaluate to true after %test_constant = OpQuantizeToF16(%constant)
+	}				tests[]				=
+	{
+		{
+			"negative",
+			"-0x1.3p1\n",
+			-constructNormalizedFloat(1, 0x300000),
+			"%cond = OpFOrdEqual %bool %c %test_constant\n"
+		}, // -19
+		{
+			"positive",
+			"0x1.0p7\n",
+			constructNormalizedFloat(7, 0x000000),
+			"%cond = OpFOrdEqual %bool %c %test_constant\n"
+		},  // +128
+		// SPIR-V requires that OpQuantizeToF16 flushes
+		// any numbers that would end up denormalized in F16 to zero.
+		{
+			"denorm",
+			"0x0.0006p-126\n",
+			std::ldexp(1.5f, -140),
+			"%cond = OpFOrdEqual %bool %c %c_f32_0\n"
+		},  // denorm
+		{
+			"negative_denorm",
+			"-0x0.0006p-126\n",
+			-std::ldexp(1.5f, -140),
+			"%cond = OpFOrdEqual %bool %c %c_f32_0\n"
+		}, // -denorm
+		{
+			"too_small",
+			"0x1.0p-16\n",
+			std::ldexp(1.0f, -16),
+			"%cond = OpFOrdEqual %bool %c %c_f32_0\n"
+		},      // too small negative
+		{
+			"negative_too_small",
+			"-0x1.0p-32\n",
+			-std::ldexp(1.0f, -32),
+			"%cond = OpFOrdEqual %bool %c %c_f32_0\n"
+		},     // too small positive
+		{
+			"negative_inf",
+			"-0x1.0p128\n",
+			-std::ldexp(1.0f, 128),
+			"%cond = OpFOrdEqual %bool %c %c_f32_0\n"
+
+			"%gz = OpFOrdLessThan %bool %c %c_f32_0\n"
+			"%inf = OpIsInf %bool %c\n"
+			"%cond = OpLogicalAnd %bool %gz %inf\n"
+		},     // -inf to -inf
+		{
+			"inf",
+			"0x1.0p128\n",
+			std::ldexp(1.0f, 128),
+
+			"%gz = OpFOrdGreaterThan %bool %c %c_f32_0\n"
+			"%inf = OpIsInf %bool %c\n"
+			"%cond = OpLogicalAnd %bool %gz %inf\n"
+		},     // +inf to +inf
+		{
+			"round_to_negative_inf",
+			"-0x1.0p32\n",
+			-std::ldexp(1.0f, 32),
+
+			"%gz = OpFOrdLessThan %bool %c %c_f32_0\n"
+			"%inf = OpIsInf %bool %c\n"
+			"%comp = OpLogicalAnd %bool %gz %inf\n"
+		},     // round to -inf
+		{
+			"round_to_inf",
+			"0x1.0p16\n",
+			std::ldexp(1.0f, 16),
+
+			"%gz = OpFOrdGreaterThan %bool %c %c_f32_0\n"
+			"%inf = OpIsInf %bool %c\n"
+			"%cond = OpLogicalAnd %bool %gz %inf\n"
+		},     // round to +inf
+		{
+			"nan",
+			"0x1.1p128\n",
+			std::numeric_limits<float>::quiet_NaN(),
+
+			"%nan = OpIsNan %bool %c\n"
+			"%as_int = OpBitcast %i32 %c\n"
+			"%positive = OpSGreaterThan %bool %as_int %c_i32_0\n"
+			"%cond = OpLogicalAnd %bool %nan %positive\n"
+		}, // nan
+		{
+			"negative_nan",
+			"-0x1.0001p128\n",
+			std::numeric_limits<float>::quiet_NaN(),
+
+			"%nan = OpIsNan %bool %c\n"
+			"%as_int = OpBitcast %i32 %c\n"
+			"%negative = OpSLessThan %bool %as_int %c_i32_0\n"
+			"%cond = OpLogicalAnd %bool %nan %negative\n"
+		} // -nan
+	};
+	const char*		constants			=
+		"%test_constant = OpConstant %f32\n";
+
+	StringTemplate	function			(
+		"%test_code     = OpFunction %v4f32 None %v4f32_function\n"
+		"%param1        = OpFunctionParameter %v4f32\n"
+		"%label_testfun = OpLabel\n"
+		"%a             = OpVectorExtractDynamic %f32 %param1 %c_i32_0\n"
+		"%b             = OpFAdd %f32 %test_constant %a\n"
+		"%c             = OpQuantizeToF16 %f32 %b\n"
+		"${condition}\n"
+		"%retval        = OpSelect %v4f32 %cond %c_v4f32_1_0_0_1 %param1"
+		"                 OpReturnValue %retval\n"
+	);
+
+	const char*		specDecorations		= "OpDecorate %test_constant SpecId 0\n";
+	const char*		specConstants		=
+			"%test_constant = OpSpecConstant %f32 0.\n"
+			"%c             = OpSpecConstantOp %f32 QuantizeToF16 %test_constant\n";
+
+    StringTemplate	specConstantFunction(
+		"%test_code     = OpFunction %v4f32 None %v4f32_function\n"
+		"%param1        = OpFunctionParameter %v4f32\n"
+		"%label_testfun = OpLabel\n"
+		"${condition}\n"
+		"%retval        = OpSelect %v4f32 %cond %c_v4f32_1_0_0_1 %param1"
+		"                 OpReturnValue %retval\n"
+	);
+
+	for (size_t idx = 0; idx < (sizeof(tests)/sizeof(tests[0])); ++idx)
+	{
+		map<string, string>								codeSpecialization;
+		map<string, string>								fragments;
+		codeSpecialization["condition"]					= tests[idx].condition;
+		fragments["testfun"]							= function.specialize(codeSpecialization);
+		fragments["pre_main"]							= string(constants) + tests[idx].constant + "\n";
+		createTestsForAllStages(tests[idx].name, inputColors, expectedColors, fragments, testCtx);
+	}
+
+	for (size_t idx = 0; idx < (sizeof(tests)/sizeof(tests[0])); ++idx)
+	{
+		map<string, string>								codeSpecialization;
+		map<string, string>								fragments;
+		vector<deInt32>									passConstants;
+		deInt32											specConstant;
+
+		codeSpecialization["condition"]					= tests[idx].condition;
+		fragments["testfun"]							= specConstantFunction.specialize(codeSpecialization);
+		fragments["decoration"]							= specDecorations;
+		fragments["pre_main"]							= specConstants;
+
+		memcpy(&specConstant, &tests[idx].valueAsFloat, sizeof(float));
+		passConstants.push_back(specConstant);
+
+		createTestsForAllStages(string("spec_const_") + tests[idx].name, inputColors, expectedColors, fragments, passConstants, testCtx);
+	}
+}
+
+void createOpQuantizeTwoPossibilityTests(tcu::TestCaseGroup* testCtx)
+{
+	RGBA inputColors[4] =  {
+		RGBA(0,		0,		0,		255),
+		RGBA(0,		0,		255,	255),
+		RGBA(0,		255,	0,		255),
+		RGBA(0,		255,	255,	255)
+	};
+
+	RGBA expectedColors[4] =
+	{
+		RGBA(255,	 0,		 0,		 255),
+		RGBA(255,	 0,		 0,		 255),
+		RGBA(255,	 0,		 0,		 255),
+		RGBA(255,	 0,		 0,		 255)
+	};
+
+	struct DualFP16Possibility
+	{
+		const char* name;
+		const char* input;
+		float		inputAsFloat;
+		const char* possibleOutput1;
+		const char* possibleOutput2;
+	} tests[] = {
+		{
+			"positive_round_up_or_round_down",
+			"0x1.3003p8",
+			constructNormalizedFloat(8, 0x300300),
+			"0x1.304p8",
+			"0x1.3p8"
+		},
+		{
+			"negative_round_up_or_round_down",
+			"-0x1.6008p-7",
+			-constructNormalizedFloat(8, 0x600800),
+			"-0x1.6p-7",
+			"-0x1.604p-7"
+		},
+		{
+			"carry_bit",
+			"0x1.01ep2",
+			constructNormalizedFloat(8, 0x01e000),
+			"0x1.01cp2",
+			"0x1.02p2"
+		},
+		{
+			"carry_to_exponent",
+			"0x1.feep1",
+			constructNormalizedFloat(8, 0xfee000),
+			"0x1.ffcp1",
+			"0x1.0p2"
+		},
+	};
+	StringTemplate constants (
+		"%input_const = OpConstant %f32 ${input}\n"
+		"%possible_solution1 = OpConstant %f32 ${output1}\n"
+		"%possible_solution2 = OpConstant %f32 ${output2}\n"
+		);
+
+	StringTemplate specConstants (
+		"%input_const = OpSpecConstant %f32 0.\n"
+		"%possible_solution1 = OpConstant %f32 ${output1}\n"
+		"%possible_solution2 = OpConstant %f32 ${output2}\n"
+	);
+
+	const char* specDecorations = "OpDecorate %input_const  SpecId 0\n";
+
+	const char* function  =
+		"%test_code     = OpFunction %v4f32 None %v4f32_function\n"
+		"%param1        = OpFunctionParameter %v4f32\n"
+		"%label_testfun = OpLabel\n"
+		"%a             = OpVectorExtractDynamic %f32 %param1 %c_i32_0\n"
+		// For the purposes of this test we assume that 0.f will always get
+		// faithfully passed through the pipeline stages.
+		"%b             = OpFAdd %f32 %test_constant %a\n"
+		"%c             = OpQuantizeToF16 %f32 %b\n"
+		"%eq_1          = OpFOrdEqual %bool %c %possible_solution1\n"
+		"%eq_2          = OpFOrdEqual %bool %c %possible_solution2\n"
+		"%cond          = OpLogicalOr %bool %eq_1 %eq_2\n"
+		"%retval        = OpSelect %v4f32 %cond %c_v4f32_1_0_0_1 %param1"
+		"                 OpReturnValue %retval\n";
+
+	for(size_t idx = 0; idx < (sizeof(tests)/sizeof(tests[0])); ++idx) {
+		map<string, string>									fragments;
+		map<string, string>									constantSpecialization;
+
+		constantSpecialization["input"]						= tests[idx].input;
+		constantSpecialization["output1"]					= tests[idx].possibleOutput1;
+		constantSpecialization["output2"]					= tests[idx].possibleOutput2;
+		fragments["testfun"]								= function;
+		fragments["pre_main"]								= constants.specialize(constantSpecialization);
+		createTestsForAllStages(tests[idx].name, inputColors, expectedColors, fragments, testCtx);
+	}
+
+	for(size_t idx = 0; idx < (sizeof(tests)/sizeof(tests[0])); ++idx) {
+		map<string, string>									fragments;
+		map<string, string>									constantSpecialization;
+		vector<deInt32>										passConstants;
+		deInt32												specConstant;
+
+		constantSpecialization["output1"]					= tests[idx].possibleOutput1;
+		constantSpecialization["output2"]					= tests[idx].possibleOutput2;
+		fragments["testfun"]								= function;
+		fragments["decoration"]								= specDecorations;
+		fragments["pre_main"]								= specConstants.specialize(constantSpecialization);
+
+		memcpy(&specConstant, &tests[idx].inputAsFloat, sizeof(float));
+		passConstants.push_back(specConstant);
+
+		createTestsForAllStages(string("spec_const_") + tests[idx].name, inputColors, expectedColors, fragments, passConstants, testCtx);
+	}
+}
+
+tcu::TestCaseGroup* createOpQuantizeTests(tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup> opQuantizeTests (new tcu::TestCaseGroup(testCtx, "opquantize", "Test OpQuantizeToF16"));
+	createOpQuantizeSingleOptionTests(opQuantizeTests.get());
+	createOpQuantizeTwoPossibilityTests(opQuantizeTests.get());
+	return opQuantizeTests.release();
+}
+
 struct ShaderPermutation
 {
 	deUint8 vertexPermutation;
@@ -6014,6 +6957,274 @@ tcu::TestCaseGroup* createModuleTests(tcu::TestContext& testCtx)
 	}
 	return moduleTests.release();
 }
+
+tcu::TestCaseGroup* createLoopTests(tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "loop", "Looping control flow"));
+	RGBA defaultColors[4];
+	getDefaultColors(defaultColors);
+	map<string, string> fragments;
+
+	// A loop with a single block. The Continue Target is the loop block
+	// itself. In SPIR-V terms, the "loop construct" contains no blocks at all
+	// -- the "continue construct" forms the entire loop.
+	fragments["testfun"] =
+		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%param1 = OpFunctionParameter %v4f32\n"
+
+		"%entry = OpLabel\n"
+		"%val0 = OpVectorExtractDynamic %f32 %param1 %c_i32_0\n"
+		"OpBranch %loop\n"
+
+		";adds and subtracts 1.0 to %val in alternate iterations\n"
+		"%loop = OpLabel\n"
+		"%count = OpPhi %i32 %c_i32_4 %entry %count__ %loop\n"
+		"%delta = OpPhi %f32 %c_f32_1 %entry %minus_delta %loop\n"
+		"%val1 = OpPhi %f32 %val0 %entry %val %loop\n"
+		"%val = OpFAdd %f32 %val1 %delta\n"
+		"%minus_delta = OpFSub %f32 %c_f32_0 %delta\n"
+		"%count__ = OpISub %i32 %count %c_i32_1\n"
+		"%again = OpSGreaterThan %bool %count__ %c_i32_0\n"
+		"OpLoopMerge %exit %loop None\n"
+		"OpBranchConditional %again %loop %exit\n"
+
+		"%exit = OpLabel\n"
+		"%result = OpVectorInsertDynamic %v4f32 %param1 %val %c_i32_0\n"
+		"OpReturnValue %result\n"
+
+		"OpFunctionEnd\n"
+		;
+	createTestsForAllStages("single-block", defaultColors, defaultColors, fragments, testGroup.get());
+
+	fragments["pre_main"] = "%c_f32_neg1 = OpConstant %f32 -1.0\n";
+
+	// Body comprised of multiple basic blocks.
+	const StringTemplate multiBlock(
+		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%param1 = OpFunctionParameter %v4f32\n"
+
+		"%entry = OpLabel\n"
+		"%val0 = OpVectorExtractDynamic %f32 %param1 %c_i32_0\n"
+		"OpBranch %loop\n"
+
+		";adds and subtracts 1.0 to %val in alternate iterations\n"
+		"%loop = OpLabel\n"
+		"%count = OpPhi %i32 %c_i32_4 %entry %count__ %gather\n"
+		"%delta = OpPhi %f32 %c_f32_1 %entry %delta_next %gather\n"
+		"%val1 = OpPhi %f32 %val0 %entry %val %gather\n"
+		// There are several possibilities for the Continue Target below.  Each
+		// will be specialized into a separate test case.
+		"OpLoopMerge %exit ${continue_target} None\n"
+		"OpBranch %if\n"
+
+		"%if = OpLabel\n"
+		";delta_next = (delta > 0) ? -1 : 1;\n"
+		"%gt0 = OpFOrdGreaterThan %bool %delta %c_f32_0\n"
+		"OpSelectionMerge %gather DontFlatten\n"
+		"OpBranchConditional %gt0 %even %odd ;tells us if %count is even or odd\n"
+
+		"%odd = OpLabel\n"
+		"OpBranch %gather\n"
+
+		"%even = OpLabel\n"
+		"OpBranch %gather\n"
+
+		"%gather = OpLabel\n"
+		"%delta_next = OpPhi %f32 %c_f32_neg1 %even %c_f32_1 %odd\n"
+		"%val = OpFAdd %f32 %val1 %delta\n"
+		"%count__ = OpISub %i32 %count %c_i32_1\n"
+		"%again = OpSGreaterThan %bool %count__ %c_i32_0\n"
+		"OpBranchConditional %again %loop %exit\n"
+
+		"%exit = OpLabel\n"
+		"%result = OpVectorInsertDynamic %v4f32 %param1 %val %c_i32_0\n"
+		"OpReturnValue %result\n"
+
+		"OpFunctionEnd\n");
+
+	map<string, string> continue_target;
+
+	// The Continue Target is the loop block itself.
+	continue_target["continue_target"] = "%loop";
+	fragments["testfun"] = multiBlock.specialize(continue_target);
+	createTestsForAllStages("multi-block-continue-construct", defaultColors, defaultColors, fragments, testGroup.get());
+
+	// The Continue Target is at the end of the loop.
+	continue_target["continue_target"] = "%gather";
+	fragments["testfun"] = multiBlock.specialize(continue_target);
+	createTestsForAllStages("multi-block-loop-construct", defaultColors, defaultColors, fragments, testGroup.get());
+
+	// \todo [2015-12-14 dekimir] More cases:
+	// - continue
+	// - early exit
+
+	return testGroup.release();
+}
+
+// Adds a new test to group using custom fragments for the tessellation-control
+// stage and passthrough fragments for all other stages.  Uses default colors
+// for input and expected output.
+void addTessCtrlTest(tcu::TestCaseGroup* group, const char* name, const map<string, string>& fragments)
+{
+	RGBA defaultColors[4];
+	getDefaultColors(defaultColors);
+	const ShaderElement pipelineStages[] =
+	{
+		ShaderElement("vert", "main", VK_SHADER_STAGE_VERTEX_BIT),
+		ShaderElement("tessc", "main", VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT),
+		ShaderElement("tesse", "main", VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT),
+		ShaderElement("geom", "main", VK_SHADER_STAGE_GEOMETRY_BIT),
+		ShaderElement("frag", "main", VK_SHADER_STAGE_FRAGMENT_BIT),
+	};
+
+	addFunctionCaseWithPrograms<InstanceContext>(group, name, "", addShaderCodeCustomTessControl,
+												 runAndVerifyDefaultPipeline, createInstanceContext(
+													 pipelineStages, defaultColors, defaultColors, fragments, StageToSpecConstantMap()));
+}
+
+// A collection of tests putting OpControlBarrier in places GLSL forbids but SPIR-V allows.
+tcu::TestCaseGroup* createBarrierTests(tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "barrier", "OpControlBarrier"));
+	map<string, string> fragments;
+
+	// A barrier inside a function body.
+	fragments["pre_main"] =
+		"%Workgroup = OpConstant %i32 2\n"
+		"%SequentiallyConsistent = OpConstant %i32 0x10\n";
+	fragments["testfun"] =
+		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%param1 = OpFunctionParameter %v4f32\n"
+		"%label_testfun = OpLabel\n"
+		"OpControlBarrier %Workgroup %Workgroup %SequentiallyConsistent\n"
+		"OpReturnValue %param1\n"
+		"OpFunctionEnd\n";
+	addTessCtrlTest(testGroup.get(), "in-function", fragments);
+
+	// Common setup code for the following tests.
+	fragments["pre_main"] =
+		"%Workgroup = OpConstant %i32 2\n"
+		"%SequentiallyConsistent = OpConstant %i32 0x10\n"
+		"%c_f32_5 = OpConstant %f32 5.\n";
+	const string setupPercentZero =	 // Begins %test_code function with code that sets %zero to 0u but cannot be optimized away.
+		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%param1 = OpFunctionParameter %v4f32\n"
+		"%entry = OpLabel\n"
+		";param1 components are between 0 and 1, so dot product is 4 or less\n"
+		"%dot = OpDot %f32 %param1 %param1\n"
+		"%div = OpFDiv %f32 %dot %c_f32_5\n"
+		"%zero = OpConvertFToU %u32 %div\n";
+
+	// Barriers inside OpSwitch branches.
+	fragments["testfun"] =
+		setupPercentZero +
+		"OpSelectionMerge %switch_exit None\n"
+		"OpSwitch %zero %switch_default 0 %case0 1 %case1 ;should always go to %case0\n"
+
+		"%case1 = OpLabel\n"
+		";This barrier should never be executed, but its presence makes test failure more likely when there's a bug.\n"
+		"OpControlBarrier %Workgroup %Workgroup %SequentiallyConsistent\n"
+		"%wrong_branch_alert1 = OpVectorInsertDynamic %v4f32 %param1 %c_f32_0_5 %c_i32_0\n"
+		"OpBranch %switch_exit\n"
+
+		"%switch_default = OpLabel\n"
+		"%wrong_branch_alert2 = OpVectorInsertDynamic %v4f32 %param1 %c_f32_0_5 %c_i32_0\n"
+		";This barrier should never be executed, but its presence makes test failure more likely when there's a bug.\n"
+		"OpControlBarrier %Workgroup %Workgroup %SequentiallyConsistent\n"
+		"OpBranch %switch_exit\n"
+
+		"%case0 = OpLabel\n"
+		"OpControlBarrier %Workgroup %Workgroup %SequentiallyConsistent\n"
+		"OpBranch %switch_exit\n"
+
+		"%switch_exit = OpLabel\n"
+		"%ret = OpPhi %v4f32 %param1 %case0 %wrong_branch_alert1 %case1 %wrong_branch_alert2 %switch_default\n"
+		"OpReturnValue %ret\n"
+		"OpFunctionEnd\n";
+	addTessCtrlTest(testGroup.get(), "in-switch", fragments);
+
+	// Barriers inside if-then-else.
+	fragments["testfun"] =
+		setupPercentZero +
+		"%eq0 = OpIEqual %bool %zero %c_u32_0\n"
+		"OpSelectionMerge %exit DontFlatten\n"
+		"OpBranchConditional %eq0 %then %else\n"
+
+		"%else = OpLabel\n"
+		";This barrier should never be executed, but its presence makes test failure more likely when there's a bug.\n"
+		"OpControlBarrier %Workgroup %Workgroup %SequentiallyConsistent\n"
+		"%wrong_branch_alert = OpVectorInsertDynamic %v4f32 %param1 %c_f32_0_5 %c_i32_0\n"
+		"OpBranch %exit\n"
+
+		"%then = OpLabel\n"
+		"OpControlBarrier %Workgroup %Workgroup %SequentiallyConsistent\n"
+		"OpBranch %exit\n"
+
+		"%exit = OpLabel\n"
+		"%ret = OpPhi %v4f32 %param1 %then %wrong_branch_alert %else\n"
+		"OpReturnValue %ret\n"
+		"OpFunctionEnd\n";
+	addTessCtrlTest(testGroup.get(), "in-if", fragments);
+
+	// A barrier after control-flow reconvergence, tempting the compiler to attempt something like this:
+	// http://lists.llvm.org/pipermail/llvm-dev/2009-October/026317.html.
+	fragments["testfun"] =
+		setupPercentZero +
+		"%thread_id = OpLoad %i32 %gl_InvocationID\n"
+		"%thread0 = OpIEqual %bool %thread_id %c_i32_0\n"
+		"OpSelectionMerge %exit DontFlatten\n"
+		"OpBranchConditional %thread0 %then %else\n"
+
+		"%else = OpLabel\n"
+		"%val0 = OpVectorExtractDynamic %f32 %param1 %c_i32_0\n"
+		"OpBranch %exit\n"
+
+		"%then = OpLabel\n"
+		"%val1 = OpVectorExtractDynamic %f32 %param1 %zero\n"
+		"OpBranch %exit\n"
+
+		"%exit = OpLabel\n"
+		"%val = OpPhi %f32 %val0 %else %val1 %then\n"
+		"OpControlBarrier %Workgroup %Workgroup %SequentiallyConsistent\n"
+		"%ret = OpVectorInsertDynamic %v4f32 %param1 %val %zero\n"
+		"OpReturnValue %ret\n"
+		"OpFunctionEnd\n";
+	addTessCtrlTest(testGroup.get(), "after-divergent-if", fragments);
+
+	// A barrier inside a loop.
+	fragments["pre_main"] =
+		"%Workgroup = OpConstant %i32 2\n"
+		"%SequentiallyConsistent = OpConstant %i32 0x10\n"
+		"%c_f32_10 = OpConstant %f32 10.\n";
+	fragments["testfun"] =
+		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%param1 = OpFunctionParameter %v4f32\n"
+		"%entry = OpLabel\n"
+		"%val0 = OpVectorExtractDynamic %f32 %param1 %c_i32_0\n"
+		"OpBranch %loop\n"
+
+		";adds 1, 2, 3, and 4 to %val0\n"
+		"%loop = OpLabel\n"
+		"%count = OpPhi %i32 %c_i32_4 %entry %count__ %latch\n"
+		"%val1 = OpPhi %f32 %val0 %entry %val %loop\n"
+		"OpControlBarrier %Workgroup %Workgroup %SequentiallyConsistent\n"
+		"%fcount = OpConvertSToF %f32 %count\n"
+		"%val = OpFAdd %f32 %val1 %fcount\n"
+		"%count__ = OpISub %i32 %count %c_i32_1\n"
+		"%again = OpSGreaterThan %bool %count__ %c_i32_0\n"
+		"OpLoopMerge %exit %loop None\n"
+		"OpBranchConditional %again %loop %exit\n"
+
+		"%exit = OpLabel\n"
+		"%same = OpFSub %f32 %val %c_f32_10\n"
+		"%ret = OpVectorInsertDynamic %v4f32 %param1 %same %c_i32_0\n"
+		"OpReturnValue %ret\n"
+		"OpFunctionEnd\n";
+	addTessCtrlTest(testGroup.get(), "in-loop", fragments);
+
+	return testGroup.release();
+}
+
 tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> instructionTests	(new tcu::TestCaseGroup(testCtx, "instruction", "Instructions with special opcodes/operands"));
@@ -6046,6 +7257,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 
 	RGBA defaultColors[4];
 	getDefaultColors(defaultColors);
+
 	de::MovePtr<tcu::TestCaseGroup> opnopTests (new tcu::TestCaseGroup(testCtx, "opnop", "Test OpNop"));
 	map<string, string> opNopFragments;
 	opNopFragments["testfun"] =
@@ -6072,6 +7284,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 		;
 	createTestsForAllStages("opnop", defaultColors, defaultColors, opNopFragments, opnopTests.get());
 
+
 	graphicsTests->addChild(opnopTests.release());
 	graphicsTests->addChild(createOpSourceTests(testCtx));
 	graphicsTests->addChild(createOpSourceContinuedTests(testCtx));
@@ -6085,9 +7298,17 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	graphicsTests->addChild(createModuleTests(testCtx));
 	graphicsTests->addChild(createSwitchBlockOrderTests(testCtx));
 	graphicsTests->addChild(createOpPhiTests(testCtx));
+	graphicsTests->addChild(createNoContractionTests(testCtx));
+	graphicsTests->addChild(createOpQuantizeTests(testCtx));
+	graphicsTests->addChild(createLoopTests(testCtx));
+	graphicsTests->addChild(createSpecConstantTests(testCtx));
+	graphicsTests->addChild(createSpecConstantOpQuantizeToF16Group(testCtx));
+	graphicsTests->addChild(createBarrierTests(testCtx));
+	graphicsTests->addChild(createDecorationGroupTests(testCtx));
 
 	instructionTests->addChild(computeTests.release());
 	instructionTests->addChild(graphicsTests.release());
+
 	return instructionTests.release();
 }
 

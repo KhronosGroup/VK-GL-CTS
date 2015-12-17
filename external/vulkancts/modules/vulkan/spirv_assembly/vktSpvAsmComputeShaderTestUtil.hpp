@@ -110,7 +110,8 @@ struct ComputeShaderSpec
 	bool					(*verifyIO)(const std::vector<BufferSp>& inputs, const std::vector<AllocationSp>& outputAllocations, const std::vector<BufferSp>& expectedOutputs);
 
 							ComputeShaderSpec()
-								: verifyIO(DE_NULL)
+								: entryPoint	("main")
+								, verifyIO		(DE_NULL)
 							{}
 
 };
