@@ -1697,6 +1697,7 @@ dEQP-GLES2.functional.shaders.functions.datatypes.struct_struct_vertex
 dEQP-GLES2.functional.shaders.functions.datatypes.struct_struct_fragment
 dEQP-GLES2.functional.shaders.functions.datatypes.struct_nested_struct_vertex
 dEQP-GLES2.functional.shaders.functions.datatypes.struct_nested_struct_fragment
+dEQP-GLES2.functional.shaders.functions.datatypes.struct_constructor_highp_in_fragment
 dEQP-GLES2.functional.shaders.functions.qualifiers.in_float_vertex
 dEQP-GLES2.functional.shaders.functions.qualifiers.in_float_fragment
 dEQP-GLES2.functional.shaders.functions.qualifiers.out_float_vertex
