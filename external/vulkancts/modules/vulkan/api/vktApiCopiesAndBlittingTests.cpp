@@ -1282,7 +1282,7 @@ CopyBufferToImage::CopyBufferToImage (Context &context, TestParams testParams)
 
 tcu::TestStatus CopyBufferToImage::iterate()
 {
-	m_sourceTextureLevel = de::MovePtr<tcu::TextureLevel>(new tcu::TextureLevel(mapVkFormat(VK_FORMAT_R32_UINT), (int)m_params.src.buffer.size, 1));
+	m_sourceTextureLevel = de::MovePtr<tcu::TextureLevel>(new tcu::TextureLevel(m_textureFormat, (int)m_params.src.buffer.size, 1));
 	generateBuffer(m_sourceTextureLevel->getAccess(), m_params.src.image.extent.width, m_params.src.image.extent.height, m_params.src.image.extent.depth);
 	m_destinationTextureLevel = de::MovePtr<tcu::TextureLevel>(new tcu::TextureLevel(mapVkFormat(m_params.dst.image.format),
 																				m_params.dst.image.extent.width,
@@ -1456,10 +1456,10 @@ tcu::TestCaseGroup* createCopiesAndBlittingTests (tcu::TestContext& testCtx)
 			const VkImageCopy testCopy =
 			{
 				sourceLayer,	// VkImageSubresourceLayers	srcSubresource;
-				{16, 16, 0},		// VkOffset3D				srcOffset;
+				{0, 0, 0},		// VkOffset3D				srcOffset;
 				sourceLayer,	// VkImageSubresourceLayers	dstSubresource;
 				{0, 0, 0},		// VkOffset3D				dstOffset;
-				{16, 16, 1},	// VkExtent3D				extent;
+				{256, 256, 1},	// VkExtent3D				extent;
 			};
 
 			CopyRegion imageCopy;
@@ -1468,7 +1468,7 @@ tcu::TestCaseGroup* createCopiesAndBlittingTests (tcu::TestContext& testCtx)
 			params.regions.push_back(imageCopy);
 		}
 
-		copiesAndBlittingTests->addChild(new CopyImageToImageTestCase(testCtx, "imageToImageWhole", description.str(), params));
+		copiesAndBlittingTests->addChild(new CopyImageToImageTestCase(testCtx, "imageToImage_whole", description.str(), params));
 	}
 
 	{
@@ -1504,7 +1504,152 @@ tcu::TestCaseGroup* createCopiesAndBlittingTests (tcu::TestContext& testCtx)
 			params.regions.push_back(imageCopy);
 		}
 
-//		copiesAndBlittingTests->addChild(new CopyImageToImageTestCase(testCtx, "imageToImageWhole2", description.str(), params));
+		copiesAndBlittingTests->addChild(new CopyImageToImageTestCase(testCtx, "imageToImage_whole_different_format_uncompressed", description.str(), params));
+	}
+
+	{
+		std::ostringstream description;
+		description << "Copy from image to image";
+
+		TestParams	params;
+		params.src.image.format	= VK_FORMAT_BC1_RGBA_UNORM_BLOCK;
+		params.src.image.extent	= defaultExtent;
+		params.dst.image.format	= VK_FORMAT_BC1_RGBA_UNORM_BLOCK;
+		params.dst.image.extent	= defaultExtent;
+
+		{
+			const VkImageSubresourceLayers sourceLayer =
+			{
+				VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
+				0u,							// uint32_t				mipLevel;
+				0u,							// uint32_t				baseArrayLayer;
+				1u							// uint32_t				layerCount;
+			};
+			const VkImageCopy testCopy =
+			{
+				sourceLayer,	// VkImageSubresourceLayers	srcSubresource;
+				{0, 0, 0},		// VkOffset3D				srcOffset;
+				sourceLayer,	// VkImageSubresourceLayers	dstSubresource;
+				{0, 0, 0},		// VkOffset3D				dstOffset;
+				{256, 256, 1},	// VkExtent3D				extent;
+			};
+
+			CopyRegion imageCopy;
+			imageCopy.imageCopy = testCopy;
+
+			params.regions.push_back(imageCopy);
+		}
+
+		copiesAndBlittingTests->addChild(new CopyImageToImageTestCase(testCtx, "imageToImage_whole_compressed", description.str(), params));
+	}
+
+	{
+		std::ostringstream description;
+		description << "Copy from image to image";
+
+		TestParams	params;
+		params.src.image.format	= VK_FORMAT_R8G8B8A8_UINT;
+		params.src.image.extent	= defaultExtent;
+		params.dst.image.format	= VK_FORMAT_ETC2_R8G8B8A8_UNORM_BLOCK;
+		params.dst.image.extent	= defaultExtent;
+
+		{
+			const VkImageSubresourceLayers sourceLayer =
+			{
+				VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
+				0u,							// uint32_t				mipLevel;
+				0u,							// uint32_t				baseArrayLayer;
+				1u							// uint32_t				layerCount;
+			};
+			const VkImageCopy testCopy =
+			{
+				sourceLayer,	// VkImageSubresourceLayers	srcSubresource;
+				{0, 0, 0},		// VkOffset3D				srcOffset;
+				sourceLayer,	// VkImageSubresourceLayers	dstSubresource;
+				{0, 0, 0},		// VkOffset3D				dstOffset;
+				{256, 256, 1},	// VkExtent3D				extent;
+			};
+
+			CopyRegion imageCopy;
+			imageCopy.imageCopy = testCopy;
+
+			params.regions.push_back(imageCopy);
+		}
+
+		copiesAndBlittingTests->addChild(new CopyImageToImageTestCase(testCtx, "imageToImage_whole_compressed_uncompressed", description.str(), params));
+	}
+
+	{
+		std::ostringstream description;
+		description << "Copy from image to image";
+
+		TestParams	params;
+		params.src.image.format	= VK_FORMAT_R8G8B8A8_UINT;
+		params.src.image.extent	= defaultExtent;
+		params.dst.image.format	= VK_FORMAT_R8G8B8A8_UINT;
+		params.dst.image.extent	= defaultExtent;
+
+		{
+			const VkImageSubresourceLayers sourceLayer =
+			{
+				VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
+				0u,							// uint32_t				mipLevel;
+				0u,							// uint32_t				baseArrayLayer;
+				1u							// uint32_t				layerCount;
+			};
+			const VkImageCopy testCopy =
+			{
+				sourceLayer,	// VkImageSubresourceLayers	srcSubresource;
+				{0, 0, 0},		// VkOffset3D				srcOffset;
+				sourceLayer,	// VkImageSubresourceLayers	dstSubresource;
+				{64, 98, 0},		// VkOffset3D				dstOffset;
+				{16, 16, 1},	// VkExtent3D				extent;
+			};
+
+			CopyRegion imageCopy;
+			imageCopy.imageCopy = testCopy;
+
+			params.regions.push_back(imageCopy);
+		}
+
+		copiesAndBlittingTests->addChild(new CopyImageToImageTestCase(testCtx, "imageToImage_partial", description.str(), params));
+	}
+
+	{
+		std::ostringstream description;
+		description << "Copy from image to image";
+
+		TestParams	params;
+		params.src.image.format	= VK_FORMAT_R8G8B8A8_UINT;
+		params.src.image.extent	= defaultExtent;
+		params.dst.image.format	= VK_FORMAT_R8G8B8A8_UINT;
+		params.dst.image.extent	= defaultExtent;
+
+		for (deInt32 i = 0; i < 16; i++)
+		{
+			const VkImageSubresourceLayers sourceLayer =
+			{
+				VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
+				0u,							// uint32_t				mipLevel;
+				0u,							// uint32_t				baseArrayLayer;
+				1u							// uint32_t				layerCount;
+			};
+			const VkImageCopy testCopy =
+			{
+				sourceLayer,	// VkImageSubresourceLayers	srcSubresource;
+				{0, 0, 0},		// VkOffset3D				srcOffset;
+				sourceLayer,	// VkImageSubresourceLayers	dstSubresource;
+				{i*16, 240-i*16, 0},		// VkOffset3D				dstOffset;
+				{16, 16, 1},	// VkExtent3D				extent;
+			};
+
+			CopyRegion imageCopy;
+			imageCopy.imageCopy = testCopy;
+
+			params.regions.push_back(imageCopy);
+		}
+
+		copiesAndBlittingTests->addChild(new CopyImageToImageTestCase(testCtx, "imageToImage_partial_multiple", description.str(), params));
 	}
 
 	// Copy image to buffer testcases.
