@@ -1422,7 +1422,7 @@ void ShaderRenderCaseInstance::render (tcu::Surface& result, const QuadGrid& qua
 			false,															// VkBool32			rasterizerDiscardEnable;
 			VK_POLYGON_MODE_FILL,											// VkFillMode		fillMode;
 			VK_CULL_MODE_NONE,												// VkCullMode		cullMode;
-			VK_FRONT_FACE_COUNTER_CLOCKWISE,									// VkFrontFace		frontFace;
+			VK_FRONT_FACE_COUNTER_CLOCKWISE,								// VkFrontFace		frontFace;
 			false,															// VkBool32			depthBiasEnable;
 			0.0f,															// float			depthBias;
 			0.0f,															// float			depthBiasClamp;
@@ -1430,6 +1430,19 @@ void ShaderRenderCaseInstance::render (tcu::Surface& result, const QuadGrid& qua
 			1.0f,															// float			lineWidth;
 		};
 
+		const VkPipelineMultisampleStateCreateInfo 		multisampleStateParams =
+		{
+			VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,		// VkStructureType							sType;
+			DE_NULL,														// const void*								pNext;
+			0u,																// VkPipelineMultisampleStateCreateFlags	flags;
+			VK_SAMPLE_COUNT_1_BIT,											// VkSampleCountFlagBits					rasterizationSamples;
+			VK_FALSE,														// VkBool32									sampleShadingEnable;
+			0.0f,															// float									minSampleShading;
+			DE_NULL,														// const VkSampleMask*						pSampleMask;
+			VK_FALSE,														// VkBool32									alphaToCoverageEnable;
+			VK_FALSE														// VkBool32									alphaToOneEnable;
+		};
+		
 		const VkPipelineColorBlendAttachmentState		colorBlendAttachmentState	=
 		{
 			false,															// VkBool32			blendEnable;
@@ -1478,7 +1491,7 @@ void ShaderRenderCaseInstance::render (tcu::Surface& result, const QuadGrid& qua
 			DE_NULL,											// const VkPipelineTessellationStateCreateInfo*		pTessellationState;
 			&viewportStateParams,								// const VkPipelineViewportStateCreateInfo*			pViewportState;
 			&rasterStateParams,									// const VkPipelineRasterStateCreateInfo*			pRasterState;
-			DE_NULL,											// const VkPipelineMultisampleStateCreateInfo*		pMultisampleState;
+			&multisampleStateParams,							// const VkPipelineMultisampleStateCreateInfo*		pMultisampleState;
 			DE_NULL,											// const VkPipelineDepthStencilStateCreateInfo*		pDepthStencilState;
 			&colorBlendStateParams,								// const VkPipelineColorBlendStateCreateInfo*		pColorBlendState;
 			&dynamicStateInfo,									// const VkPipelineDynamicStateCreateInfo*			pDynamicState;

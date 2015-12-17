@@ -1064,6 +1064,19 @@ void FragmentOutExecutor::execute (const Context& ctx, int numValues, const void
 			1.0f															// float										lineWidth;
 		};
 
+		const VkPipelineMultisampleStateCreateInfo multisampleStateParams =
+		{
+			VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,		// VkStructureType							sType;
+			DE_NULL,														// const void*								pNext;
+			0u,																// VkPipelineMultisampleStateCreateFlags	flags;
+			VK_SAMPLE_COUNT_1_BIT,											// VkSampleCountFlagBits					rasterizationSamples;
+			VK_FALSE,														// VkBool32									sampleShadingEnable;
+			0.0f,															// float									minSampleShading;
+			DE_NULL,														// const VkSampleMask*						pSampleMask;
+			VK_FALSE,														// VkBool32									alphaToCoverageEnable;
+			VK_FALSE														// VkBool32									alphaToOneEnable;
+		};
+		
 		const VkPipelineColorBlendStateCreateInfo colorBlendStateParams =
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,		// VkStructureType								sType;
@@ -1097,7 +1110,7 @@ void FragmentOutExecutor::execute (const Context& ctx, int numValues, const void
 			DE_NULL,											// const VkPipelineTessellationStateCreateInfo*		pTessellationState;
 			&viewportStateParams,								// const VkPipelineViewportStateCreateInfo*			pViewportState;
 			&rasterStateParams,									// const VkPipelineRasterStateCreateInfo*			pRasterState;
-			DE_NULL,											// const VkPipelineMultisampleStateCreateInfo*		pMultisampleState;
+			&multisampleStateParams,							// const VkPipelineMultisampleStateCreateInfo*		pMultisampleState;
 			DE_NULL,											// const VkPipelineDepthStencilStateCreateInfo*		pDepthStencilState;
 			&colorBlendStateParams,								// const VkPipelineColorBlendStateCreateInfo*		pColorBlendState;
 			&dynamicStateInfo,									// const VkPipelineDynamicStateCreateInfo*			pDynamicState;
@@ -2563,6 +2576,19 @@ void TessellationExecutor::renderTess (const Context& ctx, deUint32 vertexCount)
 			1.0f															// float									lineWidth;
 		};
 
+		const VkPipelineMultisampleStateCreateInfo multisampleStateParams =
+		{
+			VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,		// VkStructureType							sType;
+			DE_NULL,														// const void*								pNext;
+			0u,																// VkPipelineMultisampleStateCreateFlags	flags;
+			VK_SAMPLE_COUNT_1_BIT,											// VkSampleCountFlagBits					rasterizationSamples;
+			VK_FALSE,														// VkBool32									sampleShadingEnable;
+			0.0f,															// float									minSampleShading;
+			DE_NULL,														// const VkSampleMask*						pSampleMask;
+			VK_FALSE,														// VkBool32									alphaToCoverageEnable;
+			VK_FALSE														// VkBool32									alphaToOneEnable;
+		};
+
 		const VkPipelineColorBlendAttachmentState colorBlendAttachmentState =
 		{
 			VK_FALSE,						// VkBool32					blendEnable;
@@ -2611,7 +2637,7 @@ void TessellationExecutor::renderTess (const Context& ctx, deUint32 vertexCount)
 			&tessellationStateParams,							// const VkPipelineTessellationStateCreateInfo*		pTessellationState;
 			&viewportStateParams,								// const VkPipelineViewportStateCreateInfo*			pViewportState;
 			&rasterStateParams,									// const VkPipelineRasterStateCreateInfo*			pRasterState;
-			DE_NULL,											// const VkPipelineMultisampleStateCreateInfo*		pMultisampleState;
+			&multisampleStateParams,							// const VkPipelineMultisampleStateCreateInfo*		pMultisampleState;
 			DE_NULL,											// const VkPipelineDepthStencilStateCreateInfo*		pDepthStencilState;
 			&colorBlendStateParams,								// const VkPipelineColorBlendStateCreateInfo*		pColorBlendState;
 			&dynamicStateInfo,									// const VkPipelineDynamicStateCreateInfo*			pDynamicState;
