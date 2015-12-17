@@ -599,10 +599,10 @@ de::MovePtr<tcu::TextureLevel> CopiesAndBlittingTestInstance::readImage	(const v
 
 // Copy from image to image.
 
-class ImageToImageCopies : public CopiesAndBlittingTestInstance
+class CopyImageToImage : public CopiesAndBlittingTestInstance
 {
 public:
-										ImageToImageCopies		(Context&	context,
+										CopyImageToImage		(Context&	context,
 																 TestParams params);
 	virtual tcu::TestStatus				iterate					(void);
 private:
@@ -614,7 +614,7 @@ private:
 	virtual void						copyRegionToTextureLevel			(tcu::ConstPixelBufferAccess src, tcu::PixelBufferAccess dst, CopyRegion region);
 };
 
-ImageToImageCopies::ImageToImageCopies (Context &context, TestParams params)
+CopyImageToImage::CopyImageToImage (Context &context, TestParams params)
 	: CopiesAndBlittingTestInstance(context, params)
 {
 	const DeviceInterface&		vk					= context.getDeviceInterface();
@@ -669,7 +669,7 @@ ImageToImageCopies::ImageToImageCopies (Context &context, TestParams params)
 	VK_CHECK(vk.bindImageMemory(vkDevice, *m_destination, m_destinationImageAlloc->getMemory(), m_destinationImageAlloc->getOffset()));
 }
 
-tcu::TestStatus ImageToImageCopies::iterate()
+tcu::TestStatus CopyImageToImage::iterate()
 {
 	m_sourceTextureLevel = de::MovePtr<tcu::TextureLevel>(new tcu::TextureLevel(mapVkFormat(m_params.src.image.format),
 																				m_params.src.image.extent.width,
@@ -767,7 +767,7 @@ tcu::TestStatus ImageToImageCopies::iterate()
 	return checkTestResult(resultTextureLevel->getAccess());
 }
 
-void ImageToImageCopies::copyRegionToTextureLevel(tcu::ConstPixelBufferAccess src, tcu::PixelBufferAccess dst, CopyRegion region)
+void CopyImageToImage::copyRegionToTextureLevel(tcu::ConstPixelBufferAccess src, tcu::PixelBufferAccess dst, CopyRegion region)
 {
 	VkOffset3D srcOffset	= region.imageCopy.srcOffset;
 	VkOffset3D dstOffset	= region.imageCopy.dstOffset;
@@ -779,10 +779,10 @@ void ImageToImageCopies::copyRegionToTextureLevel(tcu::ConstPixelBufferAccess sr
 				dst.setPixel(src.getPixel(srcOffset.x + x, srcOffset.y + y, srcOffset.z + z), dstOffset.x + x, dstOffset.y + y, dstOffset.z + z);
 }
 
-class ImageToImageTestCase : public vkt::TestCase
+class CopyImageToImageTestCase : public vkt::TestCase
 {
 public:
-							ImageToImageTestCase		(tcu::TestContext&				testCtx,
+							CopyImageToImageTestCase		(tcu::TestContext&				testCtx,
 														 const std::string&				name,
 														 const std::string&				description,
 														 const TestParams				params)
@@ -790,11 +790,11 @@ public:
 								, m_params				(params)
 							{}
 
-	virtual					~ImageToImageTestCase		(void) {}
+	virtual					~CopyImageToImageTestCase		(void) {}
 
 	virtual TestInstance*	createInstance				(Context&						context) const
 							{
-								return new ImageToImageCopies(context, m_params);
+								return new CopyImageToImage(context, m_params);
 							}
 private:
 	TestParams				m_params;
@@ -1418,7 +1418,7 @@ tcu::TestCaseGroup* createCopiesAndBlittingTests (tcu::TestContext& testCtx)
 		TestParams	params;
 		params.src.image.format	= VK_FORMAT_R8G8B8A8_UINT;
 		params.src.image.extent	= defaultExtent;
-		params.dst.image.format	= VK_FORMAT_R32_UINT;
+		params.dst.image.format	= VK_FORMAT_R8G8B8A8_UINT;
 		params.dst.image.extent	= defaultExtent;
 
 		{
@@ -1444,7 +1444,7 @@ tcu::TestCaseGroup* createCopiesAndBlittingTests (tcu::TestContext& testCtx)
 			params.regions.push_back(imageCopy);
 		}
 
-		copiesAndBlittingTests->addChild(new ImageToImageTestCase(testCtx, "imageToImageWhole", description.str(), params));
+		copiesAndBlittingTests->addChild(new CopyImageToImageTestCase(testCtx, "imageToImageWhole", description.str(), params));
 	}
 
 	{
@@ -1480,7 +1480,7 @@ tcu::TestCaseGroup* createCopiesAndBlittingTests (tcu::TestContext& testCtx)
 			params.regions.push_back(imageCopy);
 		}
 
-		copiesAndBlittingTests->addChild(new ImageToImageTestCase(testCtx, "imageToImageWhole2", description.str(), params));
+		copiesAndBlittingTests->addChild(new CopyImageToImageTestCase(testCtx, "imageToImageWhole2", description.str(), params));
 	}
 
 	// Copy image to buffer testcases.
@@ -1554,7 +1554,27 @@ tcu::TestCaseGroup* createCopiesAndBlittingTests (tcu::TestContext& testCtx)
 
 		params.regions.push_back(copyRegion);
 
-		copiesAndBlittingTests->addChild(new BufferToBufferTestCase(testCtx, "bufferToBuffer", description.str(), params));
+		copiesAndBlittingTests->addChild(new BufferToBufferTestCase(testCtx, "bufferToBuffer_whole", description.str(), params));
+	}
+
+	{
+		std::ostringstream	description;
+		description << "Copy from buffer to buffer";
+
+		TestParams params;
+		params.src.buffer.size = 256;
+		params.dst.buffer.size = 256;
+		const VkBufferCopy bufferCopy = {
+			0u,		// VkDeviceSize	srcOffset;
+			64u, 	// VkDeviceSize	dstOffset;
+			128u,	// VkDeviceSize	size;
+		};
+		CopyRegion copyRegion;
+		copyRegion.bufferCopy = bufferCopy;
+
+		params.regions.push_back(copyRegion);
+
+		copiesAndBlittingTests->addChild(new BufferToBufferTestCase(testCtx, "bufferToBuffer_partial", description.str(), params));
 	}
 
 	return copiesAndBlittingTests.release();
