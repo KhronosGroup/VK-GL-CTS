@@ -108,7 +108,7 @@ T CombinationsIterator<T>::next (void)
 	{
 		for (int combinationItemNdx = (int)m_combinationSize - 1; combinationItemNdx >= 0; combinationItemNdx--)
 		{
-			if ((m_combination[combinationItemNdx] + 1 < m_numItems) && ((combinationItemNdx == m_combinationSize - 1) || (m_combination[combinationItemNdx + 1] > m_combination[combinationItemNdx] + 1)))
+			if ((m_combination[combinationItemNdx] + 1 < m_numItems) && ((combinationItemNdx == (int)m_combinationSize - 1) || (m_combination[combinationItemNdx + 1] > m_combination[combinationItemNdx] + 1)))
 			{
 				m_combination[combinationItemNdx]++;
 

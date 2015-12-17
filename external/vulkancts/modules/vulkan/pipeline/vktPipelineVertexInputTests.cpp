@@ -1431,36 +1431,6 @@ struct CompatibleFormats
 	std::vector<VkFormat>		compatibleVkFormats;
 };
 
-de::MovePtr<tcu::TestCaseGroup> createAttributeCombinationsTests (tcu::TestContext& testCtx, CompatibleFormats compatibleFormats[VertexInputTest::GLSL_TYPE_COUNT], VertexInputTest::BindingMapping bindingMapping, int numAttributes)
-{
-	de::Random						randomFunc				(102030);
-	de::MovePtr<tcu::TestCaseGroup> attributeTests			(new tcu::TestCaseGroup(testCtx, "attributes", ""));
-	GlslTypeCombinationsIterator	glslTypeCombinationsItr	(VertexInputTest::GLSL_TYPE_DOUBLE, numAttributes); // Exclude double values
-
-	while (glslTypeCombinationsItr.hasNext())
-	{
-		const std::vector<VertexInputTest::GlslType>	glslTypes		= glslTypeCombinationsItr.next();
-		std::vector<VertexInputTest::AttributeInfo>		attributeInfos	(glslTypes.size());
-
-		for (size_t attributeNdx = 0; attributeNdx < attributeInfos.size(); attributeNdx++)
-		{
-			DE_ASSERT(!compatibleFormats[glslTypes[attributeNdx]].compatibleVkFormats.empty());
-
-			// Select a random compatible format
-			const std::vector<VkFormat>& formats = compatibleFormats[glslTypes[attributeNdx]].compatibleVkFormats;
-			const VkFormat format = formats[randomFunc.getUint32() % formats.size()];
-
-			attributeInfos[attributeNdx].glslType	= glslTypes[attributeNdx];
-			attributeInfos[attributeNdx].inputRate	= (attributeNdx % 2 == 0) ? VK_VERTEX_INPUT_RATE_VERTEX : VK_VERTEX_INPUT_RATE_INSTANCE;
-			attributeInfos[attributeNdx].vkType		= format;
-		}
-
-		attributeTests->addChild(new VertexInputTest(testCtx, getAttributeInfosCaseName(attributeInfos), getAttributeInfosDescription(attributeInfos), attributeInfos, bindingMapping));
-	}
-
-	return attributeTests;
-}
-
 de::MovePtr<tcu::TestCaseGroup> createSingleAttributeTests (tcu::TestContext& testCtx)
 {
 	const VkFormat vertexFormats[] =
