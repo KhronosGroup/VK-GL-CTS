@@ -1708,14 +1708,14 @@ tcu::TestCaseGroup* createCopiesAndBlittingTests (tcu::TestContext& testCtx)
 
 	{
 		std::ostringstream	description;
-		description << "Copy from buffer to buffer";
+		description << "Copy from buffer to buffer: whole buffer.";
 
 		TestParams params;
 		params.src.buffer.size = 256;
 		params.dst.buffer.size = 256;
 		const VkBufferCopy bufferCopy = {
 			0u,		// VkDeviceSize	srcOffset;
-			0u, 	// VkDeviceSize	dstOffset;
+			0u,		// VkDeviceSize	dstOffset;
 			256u,	// VkDeviceSize	size;
 		};
 		CopyRegion copyRegion;
@@ -1728,22 +1728,47 @@ tcu::TestCaseGroup* createCopiesAndBlittingTests (tcu::TestContext& testCtx)
 
 	{
 		std::ostringstream	description;
-		description << "Copy from buffer to buffer";
+		description << "Copy from buffer to buffer: small area.";
 
 		TestParams params;
-		params.src.buffer.size = 256;
-		params.dst.buffer.size = 256;
+		params.src.buffer.size = 16;
+		params.dst.buffer.size = 16;
 		const VkBufferCopy bufferCopy = {
-			0u,		// VkDeviceSize	srcOffset;
-			64u, 	// VkDeviceSize	dstOffset;
-			128u,	// VkDeviceSize	size;
+			12u,	// VkDeviceSize	srcOffset;
+			4u,		// VkDeviceSize	dstOffset;
+			1u,		// VkDeviceSize	size;
 		};
 		CopyRegion copyRegion;
 		copyRegion.bufferCopy = bufferCopy;
 
 		params.regions.push_back(copyRegion);
 
-		copiesAndBlittingTests->addChild(new BufferToBufferTestCase(testCtx, "bufferToBuffer_partial", description.str(), params));
+		copiesAndBlittingTests->addChild(new BufferToBufferTestCase(testCtx, "bufferToBuffer_small", description.str(), params));
+	}
+
+	{
+		std::ostringstream	description;
+		description << "Copy from buffer to buffer: more regions.";
+
+		const deUint32 size = 16;
+
+		TestParams params;
+		params.src.buffer.size = size;
+		params.dst.buffer.size = size * (size + 1);
+
+		// Copy region with size 0..size
+		for (unsigned int i = 0; i <= size; i++)
+		{
+			const VkBufferCopy bufferCopy = {
+				0,		// VkDeviceSize	srcOffset;
+				i*size,	// VkDeviceSize	dstOffset;
+				i,		// VkDeviceSize	size;
+			};
+			CopyRegion copyRegion;
+			copyRegion.bufferCopy = bufferCopy;
+			params.regions.push_back(copyRegion);
+		}
+		copiesAndBlittingTests->addChild(new BufferToBufferTestCase(testCtx, "bufferToBuffer_regions", description.str(), params));
 	}
 
 	return copiesAndBlittingTests.release();
