@@ -233,7 +233,7 @@ void glslToSpirV (const glu::ProgramSources& program, std::vector<deUint8>* dst,
 
 			{
 				const deUint64	compileStartTime	= deGetMicroseconds();
-				const int		compileRes			= shader.parse(&builtinRes, 110, false, EShMsgSpvRules);
+				const int		compileRes			= shader.parse(&builtinRes, 110, false, (EShMessages)(EShMsgSpvRules | EShMsgVulkanRules));
 				glu::ShaderInfo	shaderBuildInfo;
 
 				shaderBuildInfo.type			= (glu::ShaderType)shaderType;
@@ -250,7 +250,7 @@ void glslToSpirV (const glu::ProgramSources& program, std::vector<deUint8>* dst,
 
 			{
 				const deUint64	linkStartTime	= deGetMicroseconds();
-				const int		linkRes			= program.link(EShMsgDefault);
+				const int		linkRes			= program.link((EShMessages)(EShMsgSpvRules | EShMsgVulkanRules));
 
 				buildInfo->program.infoLog		= program.getInfoLog(); // \todo [2015-11-05 scygan] Include debug log?
 				buildInfo->program.linkOk		= (linkRes != 0);
