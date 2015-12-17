@@ -1,0 +1,23 @@
+group custom "Custom loop tests"
+
+	case continue_in_fragment_for_loop
+		vertex ""
+			void main()
+			{
+			}
+		""
+		fragment ""
+			void main()
+			{
+				int count1 = 0;
+				for(int i=0;i<4;i++)
+				{
+					if (count1 == 2)
+						continue;
+				}
+				gl_FragColor = vec4(1.0);
+			}
+		""
+	end
+
+end # custom
