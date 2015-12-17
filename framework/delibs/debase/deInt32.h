@@ -284,6 +284,18 @@ DE_INLINE void* deAlignPtr (void* ptr, deUintptr align)
 	return (void*)((val + align - 1) & ~(align - 1));
 }
 
+/*--------------------------------------------------------------------*//*!
+ * \brief Align a size_t value to given power-of-two size.
+ * \param ptr	Input value to align.
+ * \param align	Alignment to check for (power-of-two).
+ * \return The aligned size (larger or equal to input).
+ *//*--------------------------------------------------------------------*/
+DE_INLINE size_t deAlignSize (size_t val, size_t align)
+{
+	DE_ASSERT(deIsPowerOfTwoSize(align));
+	return (val + align - 1) & ~(align - 1);
+}
+
 extern const deInt8 g_clzLUT[256];
 
 /*--------------------------------------------------------------------*//*!

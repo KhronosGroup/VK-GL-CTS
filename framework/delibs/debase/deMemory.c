@@ -35,6 +35,7 @@
 
 #if (DE_OS == DE_OS_UNIX) || ((DE_OS == DE_OS_ANDROID) && (DE_ANDROID_API >= 21))
 #	define DE_ALIGNED_MALLOC DE_ALIGNED_MALLOC_POSIX
+#	include <malloc.h>
 #elif (DE_OS == DE_OS_WIN32)
 #	define DE_ALIGNED_MALLOC DE_ALIGNED_MALLOC_WIN32
 #	include <malloc.h>
@@ -94,48 +95,6 @@ void* deCalloc (size_t numBytes)
 	return ptr;
 }
 
-void* deAlignedMalloc (size_t numBytes, size_t alignBytes)
-{
-#if (DE_ALIGNED_MALLOC == DE_ALIGNED_MALLOC_POSIX)
-	void* ptr = DE_NULL;
-
-	if (posix_memalign(&ptr, alignBytes, numBytes) == 0)
-	{
-		DE_ASSERT(ptr);
-		return ptr;
-	}
-	else
-	{
-		DE_ASSERT(!ptr);
-		return DE_NULL;
-	}
-
-#elif (DE_ALIGNED_MALLOC == DE_ALIGNED_MALLOC_WIN32)
-	return _aligned_malloc(numBytes, alignBytes);
-
-#elif (DE_ALIGNED_MALLOC == DE_ALIGNED_MALLOC_GENERIC)
-	/* Generic implementation */
-	size_t		ptrSize		= sizeof(void*);
-	deUintptr	origPtr		= (deUintptr)deMalloc(numBytes + ptrSize + alignBytes);
-
-	DE_ASSERT((size_t)(deUint32)alignBytes == alignBytes	&&
-			  deInRange32((deUint32)alignBytes, 0, 256)		&&
-			  deIsPowerOfTwo32((deUint32)alignBytes));
-
-	if (origPtr)
-	{
-		deUintptr	alignedPtr	= (deUintptr)deAlignPtr((void*)(origPtr + ptrSize), (deUintptr)alignBytes);
-		deUintptr	ptrPtr		= (alignedPtr - ptrSize);
-		*(deUintptr*)ptrPtr = origPtr;
-		return (void*)alignedPtr;
-	}
-	else
-		return DE_NULL;
-#else
-#	error "Invalid DE_ALIGNED_MALLOC"
-#endif
-}
-
 /*--------------------------------------------------------------------*//*!
  * \brief Reallocate a chunk of memory.
  * \param ptr		Pointer to previously allocated memory block
@@ -156,6 +115,123 @@ void deFree (void* ptr)
 	free(ptr);
 }
 
+#if (DE_ALIGNED_MALLOC == DE_ALIGNED_MALLOC_GENERIC)
+
+typedef struct AlignedAllocHeader_s
+{
+	void*	basePtr;
+	size_t	numBytes;
+} AlignedAllocHeader;
+
+DE_INLINE AlignedAllocHeader* getAlignedAllocHeader (void* ptr)
+{
+	const size_t	hdrSize		= sizeof(AlignedAllocHeader);
+	const deUintptr	hdrAddr		= (deUintptr)ptr - hdrSize;
+
+	return (AlignedAllocHeader*)hdrAddr;
+}
+
+#endif
+
+void* deAlignedMalloc (size_t numBytes, size_t alignBytes)
+{
+#if (DE_ALIGNED_MALLOC == DE_ALIGNED_MALLOC_POSIX)
+	/* posix_memalign() requires that alignment must be 2^N * sizeof(void*) */
+	const size_t	ptrAlignedAlign	= deAlignSize(alignBytes, sizeof(void*));
+	void*			ptr				= DE_NULL;
+
+	DE_ASSERT(deIsPowerOfTwoSize(alignBytes) && deIsPowerOfTwoSize(ptrAlignedAlign / sizeof(void*)));
+
+	if (posix_memalign(&ptr, ptrAlignedAlign, numBytes) == 0)
+	{
+		DE_ASSERT(ptr);
+		return ptr;
+	}
+	else
+	{
+		DE_ASSERT(!ptr);
+		return DE_NULL;
+	}
+
+#elif (DE_ALIGNED_MALLOC == DE_ALIGNED_MALLOC_WIN32)
+	DE_ASSERT(deIsPowerOfTwoSize(alignBytes));
+
+	return _aligned_malloc(numBytes, alignBytes);
+
+#elif (DE_ALIGNED_MALLOC == DE_ALIGNED_MALLOC_GENERIC)
+	void* const	basePtr	= deMalloc(numBytes + alignBytes + sizeof(AlignedAllocHeader));
+
+	DE_ASSERT(deIsPowerOfTwoSize(alignBytes));
+
+	if (basePtr)
+	{
+		void* const					alignedPtr	= deAlignPtr((void*)((deUintptr)basePtr + sizeof(AlignedAllocHeader)), alignBytes);
+		AlignedAllocHeader* const	hdr			= getAlignedAllocHeader(alignedPtr);
+
+		hdr->basePtr	= basePtr;
+		hdr->numBytes	= numBytes;
+
+		return alignedPtr;
+	}
+	else
+		return DE_NULL;
+#else
+#	error "Invalid DE_ALIGNED_MALLOC"
+#endif
+}
+
+void* deAlignedRealloc (void* ptr, size_t numBytes, size_t alignBytes)
+{
+#if (DE_ALIGNED_MALLOC == DE_ALIGNED_MALLOC_WIN32)
+	return _aligned_realloc(ptr, numBytes, alignBytes);
+
+#elif (DE_ALIGNED_MALLOC == DE_ALIGNED_MALLOC_GENERIC) || (DE_ALIGNED_MALLOC == DE_ALIGNED_MALLOC_POSIX)
+	if (ptr)
+	{
+		if (numBytes > 0)
+		{
+#	if (DE_ALIGNED_MALLOC == DE_ALIGNED_MALLOC_GENERIC)
+			const size_t				oldSize	= getAlignedAllocHeader(ptr)->numBytes;
+#	else /* DE_ALIGNED_MALLOC_GENERIC */
+			const size_t				oldSize	= malloc_usable_size(ptr);
+#	endif
+
+			DE_ASSERT(deIsAlignedPtr(ptr, alignBytes));
+
+			if (oldSize < numBytes || oldSize > numBytes*2)
+			{
+				/* Create a new alloc if original is smaller, or more than twice the requested size */
+				void* const	newPtr	= deAlignedMalloc(numBytes, alignBytes);
+
+				if (newPtr)
+				{
+					const size_t	copyBytes	= numBytes < oldSize ? numBytes : oldSize;
+
+					deMemcpy(newPtr, ptr, copyBytes);
+					deAlignedFree(ptr);
+
+					return newPtr;
+				}
+				else
+					return DE_NULL;
+			}
+			else
+				return ptr;
+		}
+		else
+		{
+			deAlignedFree(ptr);
+			return DE_NULL;
+		}
+	}
+	else
+		return deAlignedMalloc(numBytes, alignBytes);
+
+#else
+#	error "Invalid DE_ALIGNED_MALLOC"
+#endif
+}
+
 void deAlignedFree (void* ptr)
 {
 #if (DE_ALIGNED_MALLOC == DE_ALIGNED_MALLOC_POSIX)
@@ -167,11 +243,9 @@ void deAlignedFree (void* ptr)
 #elif (DE_ALIGNED_MALLOC == DE_ALIGNED_MALLOC_GENERIC)
 	if (ptr)
 	{
-		size_t		ptrSize		= sizeof(void*);
-		deUintptr	ptrPtr		= (deUintptr)ptr - ptrSize;
-		deUintptr	origPtr		= *(deUintptr*)ptrPtr;
-		DE_ASSERT(ptrPtr - origPtr < 256);
-		deFree((void*)origPtr);
+		AlignedAllocHeader* const	hdr	= getAlignedAllocHeader(ptr);
+
+		deFree(hdr->basePtr);
 	}
 #else
 #	error "Invalid DE_ALIGNED_MALLOC"
@@ -192,6 +266,91 @@ char* deStrdup (const char* str)
 #else
 	return strdup(str);
 #endif
+}
+
+void deMemory_selfTest (void)
+{
+	static const struct
+	{
+		size_t		numBytes;
+		size_t		alignment;
+	} s_alignedAllocCases[] =
+	{
+		{ 1,		1		},
+		{ 1,		2		},
+		{ 1,		256		},
+		{ 1,		4096	},
+		{ 547389,	1		},
+		{ 547389,	2		},
+		{ 547389,	256		},
+		{ 547389,	4096	},
+		{ 52532,	1<<4	},
+		{ 52532,	1<<10	},
+		{ 52532,	1<<16	},
+	};
+	static const struct
+	{
+		size_t		initialSize;
+		size_t		newSize;
+		size_t		alignment;
+	} s_alignedReallocCases[] =
+	{
+		{ 1,		1,		1		},
+		{ 1,		1,		2		},
+		{ 1,		1,		256		},
+		{ 1,		1,		4096	},
+		{ 1,		1241,	1		},
+		{ 1,		1241,	2		},
+		{ 1,		1241,	256		},
+		{ 1,		1241,	4096	},
+		{ 547389,	234,	1		},
+		{ 547389,	234,	2		},
+		{ 547389,	234,	256		},
+		{ 547389,	234,	4096	},
+		{ 52532,	421523,	1<<4	},
+		{ 52532,	421523,	1<<10	},
+		{ 52532,	421523,	1<<16	},
+	};
+
+	int caseNdx;
+
+	for (caseNdx = 0; caseNdx < DE_LENGTH_OF_ARRAY(s_alignedAllocCases); caseNdx++)
+	{
+		void* const		ptr		= deAlignedMalloc(s_alignedAllocCases[caseNdx].numBytes, s_alignedAllocCases[caseNdx].alignment);
+
+		DE_TEST_ASSERT(ptr);
+		DE_TEST_ASSERT(deIsAlignedPtr(ptr, s_alignedAllocCases[caseNdx].alignment));
+
+		deMemset(ptr, 0xaa, s_alignedAllocCases[caseNdx].numBytes);
+
+		deAlignedFree(ptr);
+	}
+
+	for (caseNdx = 0; caseNdx < DE_LENGTH_OF_ARRAY(s_alignedReallocCases); caseNdx++)
+	{
+		void* const		ptr		= deAlignedMalloc(s_alignedReallocCases[caseNdx].initialSize, s_alignedReallocCases[caseNdx].alignment);
+
+		DE_TEST_ASSERT(ptr);
+		DE_TEST_ASSERT(deIsAlignedPtr(ptr, s_alignedReallocCases[caseNdx].alignment));
+
+		deMemset(ptr, 0xaa, s_alignedReallocCases[caseNdx].initialSize);
+
+		{
+			void* const		newPtr			= deAlignedRealloc(ptr, s_alignedReallocCases[caseNdx].newSize, s_alignedReallocCases[caseNdx].alignment);
+			const size_t	numPreserved	= s_alignedReallocCases[caseNdx].newSize < s_alignedReallocCases[caseNdx].initialSize
+											? s_alignedReallocCases[caseNdx].newSize
+											: s_alignedReallocCases[caseNdx].initialSize;
+			size_t			off;
+
+			DE_TEST_ASSERT(newPtr);
+			DE_TEST_ASSERT(deIsAlignedPtr(ptr, s_alignedReallocCases[caseNdx].alignment));
+
+			for (off = 0; off < numPreserved; off++)
+				DE_TEST_ASSERT(*((const deUint8*)newPtr + off) == 0xaa);
+
+			deAlignedFree(newPtr);
+		}
+	}
 }
 
 DE_END_EXTERN_C

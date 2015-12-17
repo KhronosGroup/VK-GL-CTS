@@ -38,6 +38,7 @@ void*	deRealloc		(void* ptr, size_t numBytes);
 void	deFree			(void* ptr);
 
 void*	deAlignedMalloc	(size_t numBytes, size_t alignBytes);
+void*	deAlignedRealloc(void* ptr, size_t numBytes, size_t alignBytes);
 void	deAlignedFree	(void* ptr);
 
 char*	deStrdup		(const char* str);
@@ -75,6 +76,8 @@ DE_INLINE void* deMemmove (void* dst, const void* src, size_t numBytes)
 {
 	return memmove(dst, src, numBytes);
 }
+
+void	deMemory_selfTest	(void);
 
 DE_END_EXTERN_C
 
