@@ -238,10 +238,11 @@ void CopiesAndBlittingTestInstance::uploadBuffer(tcu::ConstPixelBufferAccess buf
 
 void CopiesAndBlittingTestInstance::uploadImage(tcu::ConstPixelBufferAccess imageAccess, const VkImage &image)
 {
-	const DeviceInterface&		vk				= m_context.getDeviceInterface();
-	const VkDevice				vkDevice		= m_context.getDevice();
-	const VkQueue				queue			= m_context.getUniversalQueue();
-	SimpleAllocator				memAlloc		(vk, vkDevice, getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice()));
+	const DeviceInterface&		vk					= m_context.getDeviceInterface();
+	const VkDevice				vkDevice			= m_context.getDevice();
+	const VkQueue				queue				= m_context.getUniversalQueue();
+	const deUint32				queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
+	SimpleAllocator				memAlloc			(vk, vkDevice, getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice()));
 
 	Move<VkBuffer>				buffer;
 	const deUint32				bufferSize		= calculateSize(imageAccess);
@@ -259,8 +260,8 @@ void CopiesAndBlittingTestInstance::uploadImage(tcu::ConstPixelBufferAccess imag
 			bufferSize,									// VkDeviceSize			size;
 			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,			// VkBufferUsageFlags	usage;
 			VK_SHARING_MODE_EXCLUSIVE,					// VkSharingMode		sharingMode;
-			0u,											// deUint32				queueFamilyIndexCount;
-			DE_NULL,									// const deUint32*		pQueueFamilyIndices;
+			1u,											// deUint32				queueFamilyIndexCount;
+			&queueFamilyIndex,							// const deUint32*		pQueueFamilyIndices;
 		};
 
 		buffer		= createBuffer(vk, vkDevice, &bufferParams);
@@ -470,9 +471,10 @@ de::MovePtr<tcu::TextureLevel> CopiesAndBlittingTestInstance::readImage	(const v
 	de::MovePtr<Allocation>			bufferAlloc;
 	Move<VkCommandBuffer>			cmdBuffer;
 	Move<VkFence>					fence;
-	const tcu::TextureFormat		tcuFormat		= mapVkFormat(format);
-	const VkDeviceSize				pixelDataSize	= imageSize.width * imageSize.height * imageSize.depth * tcu::getPixelSize(tcuFormat);
-	de::MovePtr<tcu::TextureLevel>	resultLevel		(new tcu::TextureLevel(tcuFormat, imageSize.width, imageSize.height, imageSize.depth));
+	const deUint32					queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
+	const tcu::TextureFormat		tcuFormat			= mapVkFormat(format);
+	const VkDeviceSize				pixelDataSize		= imageSize.width * imageSize.height * imageSize.depth * tcu::getPixelSize(tcuFormat);
+	de::MovePtr<tcu::TextureLevel>	resultLevel			(new tcu::TextureLevel(tcuFormat, imageSize.width, imageSize.height, imageSize.depth));
 
 	// Create destination buffer
 	{
@@ -484,8 +486,8 @@ de::MovePtr<tcu::TextureLevel> CopiesAndBlittingTestInstance::readImage	(const v
 			pixelDataSize,								// VkDeviceSize			size;
 			VK_BUFFER_USAGE_TRANSFER_DST_BIT,			// VkBufferUsageFlags	usage;
 			VK_SHARING_MODE_EXCLUSIVE,					// VkSharingMode		sharingMode;
-			0u,											// deUint32				queueFamilyIndexCount;
-			DE_NULL										// const deUint32*		pQueueFamilyIndices;
+			1u,											// deUint32				queueFamilyIndexCount;
+			&queueFamilyIndex,							// const deUint32*		pQueueFamilyIndices;
 		};
 
 		buffer		= createBuffer(vk, device, &bufferParams);
@@ -801,6 +803,8 @@ private:
 	VkDeviceSize			m_size;
 };
 
+// Copy from buffer to buffer.
+
 class CopyBufferToBuffer : public CopiesAndBlittingTestInstance
 {
 public:
@@ -819,6 +823,7 @@ CopyBufferToBuffer::CopyBufferToBuffer (Context& context, TestParams params)
 {
 	const DeviceInterface&		vk					= context.getDeviceInterface();
 	const VkDevice				vkDevice			= context.getDevice();
+	const deUint32				queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
 	SimpleAllocator				memAlloc			(vk, vkDevice, getPhysicalDeviceMemoryProperties(context.getInstanceInterface(), context.getPhysicalDevice()));
 
 	// Create source buffer
@@ -831,8 +836,8 @@ CopyBufferToBuffer::CopyBufferToBuffer (Context& context, TestParams params)
 			m_params.src.buffer.size,					// VkDeviceSize			size;
 			VK_BUFFER_USAGE_TRANSFER_DST_BIT,			// VkBufferUsageFlags	usage;
 			VK_SHARING_MODE_EXCLUSIVE,					// VkSharingMode		sharingMode;
-			0u,											// deUint32				queueFamilyIndexCount;
-			DE_NULL										// const deUint32*		pQueueFamilyIndices;
+			1u,											// deUint32				queueFamilyIndexCount;
+			&queueFamilyIndex,							// const deUint32*		pQueueFamilyIndices;
 		};
 
 		m_source				= createBuffer(vk, vkDevice, &sourceBufferParams);
@@ -854,8 +859,8 @@ CopyBufferToBuffer::CopyBufferToBuffer (Context& context, TestParams params)
 			m_params.dst.buffer.size,					// VkDeviceSize			size;
 			VK_BUFFER_USAGE_TRANSFER_DST_BIT,			// VkBufferUsageFlags	usage;
 			VK_SHARING_MODE_EXCLUSIVE,					// VkSharingMode		sharingMode;
-			0u,											// deUint32				queueFamilyIndexCount;
-			DE_NULL										// const deUint32*		pQueueFamilyIndices;
+			1u,											// deUint32				queueFamilyIndexCount;
+			&queueFamilyIndex,							// const deUint32*		pQueueFamilyIndices;
 		};
 
 		m_destination				= createBuffer(vk, vkDevice, &destinationBufferParams);
@@ -1032,8 +1037,8 @@ CopyImageToBuffer::CopyImageToBuffer (Context &context, TestParams testParams)
 			m_params.dst.buffer.size,					// VkDeviceSize			size;
 			VK_BUFFER_USAGE_TRANSFER_DST_BIT,			// VkBufferUsageFlags	usage;
 			VK_SHARING_MODE_EXCLUSIVE,					// VkSharingMode		sharingMode;
-			0u,											// deUint32				queueFamilyIndexCount;
-			DE_NULL										// const deUint32*		pQueueFamilyIndices;
+			1u,											// deUint32				queueFamilyIndexCount;
+			&queueFamilyIndex,							// const deUint32*		pQueueFamilyIndices;
 		};
 
 		m_destination				= createBuffer(vk, vkDevice, &destinationBufferParams);
@@ -1219,8 +1224,8 @@ CopyBufferToImage::CopyBufferToImage (Context &context, TestParams testParams)
 			m_params.src.buffer.size,					// VkDeviceSize			size;
 			VK_BUFFER_USAGE_TRANSFER_DST_BIT,			// VkBufferUsageFlags	usage;
 			VK_SHARING_MODE_EXCLUSIVE,					// VkSharingMode		sharingMode;
-			0u,											// deUint32				queueFamilyIndexCount;
-			DE_NULL										// const deUint32*		pQueueFamilyIndices;
+			1u,											// deUint32				queueFamilyIndexCount;
+			&queueFamilyIndex,							// const deUint32*		pQueueFamilyIndices;
 		};
 
 		m_source				= createBuffer(vk, vkDevice, &sourceBufferParams);
