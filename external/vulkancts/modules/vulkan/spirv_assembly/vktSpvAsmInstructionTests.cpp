@@ -6721,13 +6721,14 @@ void createOpQuantizeSingleOptionTests(tcu::TestCaseGroup* testCtx)
 	);
 
 	const char*		specDecorations		= "OpDecorate %test_constant SpecId 0\n";
-	const char*		specConstants		= "%test_constant = OpSpecConstant %f32 0.\n";
+	const char*		specConstants		=
+			"%test_constant = OpSpecConstant %f32 0.\n"
+			"%c             = OpSpecConstantOp %f32 QuantizeToF16 %test_constant\n";
 
     StringTemplate	specConstantFunction(
 		"%test_code     = OpFunction %v4f32 None %v4f32_function\n"
 		"%param1        = OpFunctionParameter %v4f32\n"
 		"%label_testfun = OpLabel\n"
-		"%c             = OpSpecConstantOp %f32 QuantizeToF16 %test_constant\n"
 		"${condition}\n"
 		"%retval        = OpSelect %v4f32 %cond %c_v4f32_1_0_0_1 %param1"
 		"                 OpReturnValue %retval\n"
