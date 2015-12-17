@@ -339,6 +339,15 @@ int getDataTypeByteAlignment (glu::DataType type)
 	}
 }
 
+deInt32 getminUniformBufferOffsetAlignment (Context &ctx)
+{
+	VkPhysicalDeviceProperties properties;
+	ctx.getInstanceInterface().getPhysicalDeviceProperties(ctx.getPhysicalDevice(), &properties);
+	VkDeviceSize align = properties.limits.minUniformBufferOffsetAlignment;
+	DE_ASSERT(align == (VkDeviceSize)(deInt32)align);
+	return (deInt32)align;
+}
+
 int getDataTypeArrayStride (glu::DataType type)
 {
 	DE_ASSERT(!glu::isDataTypeMatrix(type));
@@ -1330,6 +1339,8 @@ tcu::TestStatus UniformBlockCaseInstance::iterate (void)
 	vk::Unique<VkBuffer>				indicesBuffer		(createBuffer(m_context, sizeof(indices), vk::VK_BUFFER_USAGE_INDEX_BUFFER_BIT|vk::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT));
 	de::UniquePtr<Allocation>			indicesAlloc		(allocateAndBindMemory(m_context, *indicesBuffer, MemoryRequirement::HostVisible));
 
+	int minUniformBufferOffsetAlignment = getminUniformBufferOffsetAlignment(m_context);
+
 	// Upload attrbiutes data
 	{
 		deMemcpy(positionsAlloc->getHostPtr(), positions, sizeof(positions));
@@ -1385,6 +1396,8 @@ tcu::TestStatus UniformBlockCaseInstance::iterate (void)
 			std::map<int, int> offsets;
 			for (int blockNdx = 0; blockNdx < numBlocks; blockNdx++)
 			{
+				if (minUniformBufferOffsetAlignment > 0)
+					currentOffset = deAlign32(currentOffset, minUniformBufferOffsetAlignment);
 				offsets[blockNdx] = currentOffset;
 				currentOffset += m_layout.blocks[blockNdx].size;
 			}
