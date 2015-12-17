@@ -44,6 +44,7 @@
 #include "vkTypeUtil.hpp"
 #include "vkPlatform.hpp"
 #include "vkStrUtil.hpp"
+#include "vkAllocationCallbackUtil.hpp"
 
 #include "tcuVector.hpp"
 #include "tcuResultCollector.hpp"
@@ -232,12 +233,13 @@ deUint32 getDefaultTestThreadCount (void)
 
 struct Environment
 {
-	const PlatformInterface&	vkp;
-	const DeviceInterface&		vkd;
-	VkDevice					device;
-	deUint32					queueFamilyIndex;
-	const BinaryCollection&		programBinaries;
-	deUint32					maxResourceConsumers;		// Maximum number of objects using same Object::Resources concurrently
+	const PlatformInterface&		vkp;
+	const DeviceInterface&			vkd;
+	VkDevice						device;
+	deUint32						queueFamilyIndex;
+	const BinaryCollection&			programBinaries;
+	const VkAllocationCallbacks*	allocationCallbacks;
+	deUint32						maxResourceConsumers;		// Maximum number of objects using same Object::Resources concurrently
 
 	Environment (Context& context, deUint32 maxResourceConsumers_)
 		: vkp					(context.getPlatformInterface())
@@ -245,21 +247,24 @@ struct Environment
 		, device				(context.getDevice())
 		, queueFamilyIndex		(context.getUniversalQueueFamilyIndex())
 		, programBinaries		(context.getBinaryCollection())
+		, allocationCallbacks	(DE_NULL)
 		, maxResourceConsumers	(maxResourceConsumers_)
 	{
 	}
 
-	Environment (const PlatformInterface&	vkp_,
-				 const DeviceInterface&		vkd_,
-				 VkDevice					device_,
-				 deUint32					queueFamilyIndex_,
-				 const BinaryCollection&	programBinaries_,
-				 deUint32					maxResourceConsumers_)
+	Environment (const PlatformInterface&		vkp_,
+				 const DeviceInterface&			vkd_,
+				 VkDevice						device_,
+				 deUint32						queueFamilyIndex_,
+				 const BinaryCollection&		programBinaries_,
+				 const VkAllocationCallbacks*	allocationCallbacks_,
+				 deUint32						maxResourceConsumers_)
 		: vkp					(vkp_)
 		, vkd					(vkd_)
 		, device				(device_)
 		, queueFamilyIndex		(queueFamilyIndex_)
 		, programBinaries		(programBinaries_)
+		, allocationCallbacks	(allocationCallbacks_)
 		, maxResourceConsumers	(maxResourceConsumers_)
 	{
 	}
@@ -324,7 +329,7 @@ struct Instance
 			DE_NULL,							// ppEnabledExtensionNames
 		};
 
-		return createInstance(env.vkp, &instanceInfo);
+		return createInstance(env.vkp, &instanceInfo, env.allocationCallbacks);
 	}
 };
 
@@ -386,7 +391,7 @@ struct Device
 		}
 	};
 
-	static Move<VkDevice> create (const Environment&, const Resources& res, const Parameters&)
+	static Move<VkDevice> create (const Environment& env, const Resources& res, const Parameters&)
 	{
 		const float	queuePriority	= 1.0;
 
@@ -415,7 +420,7 @@ struct Device
 			DE_NULL,								// pEnabledFeatures
 		};
 
-		return createDevice(res.vki, res.physicalDevice, &deviceInfo);
+		return createDevice(res.vki, res.physicalDevice, &deviceInfo, env.allocationCallbacks);
 	}
 };
 
@@ -453,7 +458,7 @@ struct DeviceMemory
 			params.memoryTypeIndex
 		};
 
-		return allocateMemory(env.vkd, env.device, &allocInfo);
+		return allocateMemory(env.vkd, env.device, &allocInfo, env.allocationCallbacks);
 	}
 };
 
@@ -509,7 +514,7 @@ struct Buffer
 			&env.queueFamilyIndex
 		};
 
-		return createBuffer(env.vkd, env.device, &bufferInfo);
+		return createBuffer(env.vkd, env.device, &bufferInfo, env.allocationCallbacks);
 	}
 };
 
@@ -563,7 +568,7 @@ struct BufferView
 			params.range
 		};
 
-		return createBufferView(env.vkd, env.device, &bufferViewInfo);
+		return createBufferView(env.vkd, env.device, &bufferViewInfo, env.allocationCallbacks);
 	}
 };
 
@@ -635,7 +640,7 @@ struct Image
 			params.initialLayout
 		};
 
-		return createImage(env.vkd, env.device, &imageInfo);
+		return createImage(env.vkd, env.device, &imageInfo, env.allocationCallbacks);
 	}
 };
 
@@ -693,7 +698,7 @@ struct ImageView
 			params.subresourceRange,
 		};
 
-		return createImageView(env.vkd, env.device, &imageViewInfo);
+		return createImageView(env.vkd, env.device, &imageViewInfo, env.allocationCallbacks);
 	}
 };
 
@@ -726,7 +731,7 @@ struct Semaphore
 			params.flags
 		};
 
-		return createSemaphore(env.vkd, env.device, &semaphoreInfo);
+		return createSemaphore(env.vkd, env.device, &semaphoreInfo, env.allocationCallbacks);
 	}
 };
 
@@ -759,7 +764,7 @@ struct Fence
 			params.flags
 		};
 
-		return createFence(env.vkd, env.device, &fenceInfo);
+		return createFence(env.vkd, env.device, &fenceInfo, env.allocationCallbacks);
 	}
 };
 
@@ -792,7 +797,7 @@ struct Event
 			params.flags
 		};
 
-		return createEvent(env.vkd, env.device, &eventInfo);
+		return createEvent(env.vkd, env.device, &eventInfo, env.allocationCallbacks);
 	}
 };
 
@@ -834,7 +839,7 @@ struct QueryPool
 			params.pipelineStatistics
 		};
 
-		return createQueryPool(env.vkd, env.device, &queryPoolInfo);
+		return createQueryPool(env.vkd, env.device, &queryPoolInfo, env.allocationCallbacks);
 	}
 };
 
@@ -915,7 +920,7 @@ struct ShaderModule
 			(const deUint32*)res.binary.getBinary(),
 		};
 
-		return createShaderModule(env.vkd, env.device, &shaderModuleInfo);
+		return createShaderModule(env.vkd, env.device, &shaderModuleInfo, env.allocationCallbacks);
 	}
 };
 
@@ -946,7 +951,7 @@ struct PipelineCache
 			DE_NULL,						// pInitialData
 		};
 
-		return createPipelineCache(env.vkd, env.device, &pipelineCacheInfo);
+		return createPipelineCache(env.vkd, env.device, &pipelineCacheInfo, env.allocationCallbacks);
 	}
 };
 
@@ -1020,7 +1025,7 @@ struct Sampler
 			params.unnormalizedCoordinates
 		};
 
-		return createSampler(env.vkd, env.device, &samplerInfo);
+		return createSampler(env.vkd, env.device, &samplerInfo, env.allocationCallbacks);
 	}
 };
 
@@ -1125,7 +1130,7 @@ struct DescriptorSetLayout
 			(res.bindings.empty() ? DE_NULL : &res.bindings[0])
 		};
 
-		return createDescriptorSetLayout(env.vkd, env.device, &descriptorSetLayoutInfo);
+		return createDescriptorSetLayout(env.vkd, env.device, &descriptorSetLayoutInfo, env.allocationCallbacks);
 	}
 };
 
@@ -1188,7 +1193,7 @@ struct PipelineLayout
 			(params.pushConstantRanges.empty() ? DE_NULL : &params.pushConstantRanges[0]),
 		};
 
-		return createPipelineLayout(env.vkd, env.device, &pipelineLayoutInfo);
+		return createPipelineLayout(env.vkd, env.device, &pipelineLayoutInfo, env.allocationCallbacks);
 	}
 };
 
@@ -1276,7 +1281,7 @@ struct RenderPass
 			DE_NULL											// pDependencies
 		};
 
-		return createRenderPass(env.vkd, env.device, &renderPassInfo);
+		return createRenderPass(env.vkd, env.device, &renderPassInfo, env.allocationCallbacks);
 	}
 };
 
@@ -1490,7 +1495,7 @@ struct GraphicsPipeline
 			0,										// basePipelineIndex
 		};
 
-		return createGraphicsPipeline(env.vkd, env.device, *res.pipelineCache.object, &pipelineInfo);
+		return createGraphicsPipeline(env.vkd, env.device, *res.pipelineCache.object, &pipelineInfo, env.allocationCallbacks);
 	}
 };
 
@@ -1557,7 +1562,7 @@ struct ComputePipeline
 			0u,							// basePipelineIndex
 		};
 
-		return createComputePipeline(env.vkd, env.device, *res.pipelineCache.object, &pipelineInfo);
+		return createComputePipeline(env.vkd, env.device, *res.pipelineCache.object, &pipelineInfo, env.allocationCallbacks);
 	}
 };
 
@@ -1609,7 +1614,7 @@ struct DescriptorPool
 			(params.poolSizes.empty() ? DE_NULL : &params.poolSizes[0])
 		};
 
-		return createDescriptorPool(env.vkd, env.device, &descriptorPoolInfo);
+		return createDescriptorPool(env.vkd, env.device, &descriptorPoolInfo, env.allocationCallbacks);
 	}
 };
 
@@ -1742,7 +1747,7 @@ struct Framebuffer
 			1u											// layers
 		};
 
-		return createFramebuffer(env.vkd, env.device, &framebufferInfo);
+		return createFramebuffer(env.vkd, env.device, &framebufferInfo, env.allocationCallbacks);
 	}
 };
 
@@ -1776,7 +1781,7 @@ struct CommandPool
 			env.queueFamilyIndex,
 		};
 
-		return createCommandPool(env.vkd, env.device, &cmdPoolInfo);
+		return createCommandPool(env.vkd, env.device, &cmdPoolInfo, env.allocationCallbacks);
 	}
 };
 
@@ -1971,10 +1976,16 @@ struct EnvClone
 		: deviceRes	(parent, deviceParams)
 		, device	(Device::create(parent, deviceRes, deviceParams))
 		, vkd		(deviceRes.vki, *device)
-		, env		(parent.vkp, vkd, *device, deviceRes.queueFamilyIndex, parent.programBinaries, maxResourceConsumers)
+		, env		(parent.vkp, vkd, *device, deviceRes.queueFamilyIndex, parent.programBinaries, parent.allocationCallbacks, maxResourceConsumers)
 	{
 	}
 };
+
+Device::Parameters getDefaulDeviceParameters (Context& context)
+{
+	return Device::Parameters(context.getTestContext().getCommandLine().getVKDeviceId()-1u,
+							  VK_QUEUE_GRAPHICS_BIT|VK_QUEUE_COMPUTE_BIT);
+}
 
 template<typename Object>
 tcu::TestStatus multithreadedCreatePerThreadDeviceTest (Context& context, typename Object::Parameters params)
@@ -1983,7 +1994,7 @@ tcu::TestStatus multithreadedCreatePerThreadDeviceTest (Context& context, typena
 	typedef SharedPtr<typename Object::Resources>	ResPtr;
 
 	const deUint32				numThreads		= getDefaultTestThreadCount();
-	const Device::Parameters	deviceParams	(context.getTestContext().getCommandLine().getVKDeviceId()-1u, VK_QUEUE_GRAPHICS_BIT|VK_QUEUE_COMPUTE_BIT);
+	const Device::Parameters	deviceParams	= getDefaulDeviceParameters(context);
 	const Environment			sharedEnv		(context, numThreads);			// For creating Device's
 	vector<EnvPtr>				perThreadEnv	(numThreads);
 	vector<ResPtr>				resources		(numThreads);
@@ -1998,6 +2009,129 @@ tcu::TestStatus multithreadedCreatePerThreadDeviceTest (Context& context, typena
 	}
 
 	return threads.run();
+}
+
+template<typename Object>
+tcu::TestStatus createSingleAllocCallbacksTest (Context& context, typename Object::Parameters params)
+{
+	const deUint32						noCmdScope		= VK_SYSTEM_ALLOCATION_SCOPE_INSTANCE
+														| VK_SYSTEM_ALLOCATION_SCOPE_DEVICE
+														| VK_SYSTEM_ALLOCATION_SCOPE_CACHE
+														| VK_SYSTEM_ALLOCATION_SCOPE_OBJECT;
+
+	// Callbacks used by resources
+	AllocationCallbackRecorder			resCallbacks	(getSystemAllocator(), 128);
+
+	// Root environment still uses default instance and device, created without callbacks
+	const Environment					rootEnv			(context.getPlatformInterface(),
+														 context.getDeviceInterface(),
+														 context.getDevice(),
+														 context.getUniversalQueueFamilyIndex(),
+														 context.getBinaryCollection(),
+														 resCallbacks.getCallbacks(),
+														 1u);
+
+	{
+		// Test env has instance & device created with callbacks
+		const EnvClone						resEnv		(rootEnv, getDefaulDeviceParameters(context), 1u);
+		const typename Object::Resources	res			(resEnv.env, params);
+
+		// Supply a separate callback recorder just for object construction
+		AllocationCallbackRecorder			objCallbacks(getSystemAllocator(), 128);
+		const Environment					objEnv		(resEnv.env.vkp,
+														 resEnv.env.vkd,
+														 resEnv.env.device,
+														 resEnv.env.queueFamilyIndex,
+														 resEnv.env.programBinaries,
+														 objCallbacks.getCallbacks(),
+														 resEnv.env.maxResourceConsumers);
+
+		{
+			Unique<typename Object::Type>	obj	(Object::create(objEnv, res, params));
+
+			// Validate that no command-level allocations are live
+			if (!validateAndLog(context.getTestContext().getLog(), objCallbacks, noCmdScope))
+				return tcu::TestStatus::fail("Invalid allocation callback");
+		}
+
+		// At this point all allocations made against object callbacks must have been freed
+		if (!validateAndLog(context.getTestContext().getLog(), objCallbacks, 0u))
+			return tcu::TestStatus::fail("Invalid allocation callback");
+	}
+
+	if (!validateAndLog(context.getTestContext().getLog(), resCallbacks, 0u))
+		return tcu::TestStatus::fail("Invalid allocation callback");
+
+	return tcu::TestStatus::pass("Ok");
+}
+
+template<typename Object>
+tcu::TestStatus allocCallbackFailTest (Context& context, typename Object::Parameters params)
+{
+	AllocationCallbackRecorder			resCallbacks	(getSystemAllocator(), 128);
+	const Environment					rootEnv			(context.getPlatformInterface(),
+														 context.getDeviceInterface(),
+														 context.getDevice(),
+														 context.getUniversalQueueFamilyIndex(),
+														 context.getBinaryCollection(),
+														 resCallbacks.getCallbacks(),
+														 1u);
+
+	{
+		const EnvClone						resEnv				(rootEnv, getDefaulDeviceParameters(context), 1u);
+		const typename Object::Resources	res					(resEnv.env, params);
+		deUint32							numPassingAllocs	= 0;
+		const deUint32						maxTries			= 1u<<10;
+
+		// Iterate over test until object allocation succeeds
+		for (; numPassingAllocs < maxTries; ++numPassingAllocs)
+		{
+			DeterministicFailAllocator			objAllocator(getSystemAllocator(), numPassingAllocs);
+			AllocationCallbackRecorder			recorder	(objAllocator.getCallbacks(), 128);
+			const Environment					objEnv		(resEnv.env.vkp,
+															 resEnv.env.vkd,
+															 resEnv.env.device,
+															 resEnv.env.queueFamilyIndex,
+															 resEnv.env.programBinaries,
+															 recorder.getCallbacks(),
+															 resEnv.env.maxResourceConsumers);
+			bool								createOk	= false;
+
+			context.getTestContext().getLog()
+				<< TestLog::Message
+				<< "Trying to create object with " << numPassingAllocs << " allocation" << (numPassingAllocs != 1 ? "s" : "") << " passing"
+				<< TestLog::EndMessage;
+
+			try
+			{
+				Unique<typename Object::Type>	obj	(Object::create(objEnv, res, params));
+				createOk = true;
+			}
+			catch (const vk::OutOfMemoryError& e)
+			{
+				if (e.getError() != VK_ERROR_OUT_OF_HOST_MEMORY)
+				{
+					context.getTestContext().getLog() << e;
+					return tcu::TestStatus::fail("Got invalid error code");
+				}
+			}
+
+			if (!validateAndLog(context.getTestContext().getLog(), recorder, 0u))
+				return tcu::TestStatus::fail("Invalid allocation callback");
+
+			if (createOk)
+			{
+				context.getTestContext().getLog()
+					<< TestLog::Message << "Object construction succeeded! " << TestLog::EndMessage;
+				break;
+			}
+		}
+	}
+
+	if (!validateAndLog(context.getTestContext().getLog(), resCallbacks, 0u))
+		return tcu::TestStatus::fail("Invalid allocation callback");
+
+	return tcu::TestStatus::pass("Ok");
 }
 
 // Utilities for creating groups
@@ -2435,6 +2569,64 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 		EMPTY_CASE_DESC(CommandBuffer),			// \note Needs per-thread CommandPool
 	};
 	objectMgmtTests->addChild(createGroup(testCtx, "multithreaded_shared_resources", "Multithreaded object construction with shared resources", s_multithreadedCreateSharedResourcesGroup));
+
+	static const CaseDescriptions	s_createSingleAllocCallbacksGroup	=
+	{
+		CASE_DESC(createSingleAllocCallbacksTest	<Instance>,					s_instanceCases),
+		CASE_DESC(createSingleAllocCallbacksTest	<Device>,					s_deviceCases),
+		CASE_DESC(createSingleAllocCallbacksTest	<DeviceMemory>,				s_deviceMemCases),
+		CASE_DESC(createSingleAllocCallbacksTest	<Buffer>,					s_bufferCases),
+		CASE_DESC(createSingleAllocCallbacksTest	<BufferView>,				s_bufferViewCases),
+		CASE_DESC(createSingleAllocCallbacksTest	<Image>,					s_imageCases),
+		CASE_DESC(createSingleAllocCallbacksTest	<ImageView>,				s_imageViewCases),
+		CASE_DESC(createSingleAllocCallbacksTest	<Semaphore>,				s_semaphoreCases),
+		CASE_DESC(createSingleAllocCallbacksTest	<Event>,					s_eventCases),
+		CASE_DESC(createSingleAllocCallbacksTest	<Fence>,					s_fenceCases),
+		CASE_DESC(createSingleAllocCallbacksTest	<QueryPool>,				s_queryPoolCases),
+		CASE_DESC(createSingleAllocCallbacksTest	<ShaderModule>,				s_shaderModuleCases),
+		CASE_DESC(createSingleAllocCallbacksTest	<PipelineCache>,			s_pipelineCacheCases),
+		CASE_DESC(createSingleAllocCallbacksTest	<PipelineLayout>,			s_pipelineLayoutCases),
+		CASE_DESC(createSingleAllocCallbacksTest	<RenderPass>,				s_renderPassCases),
+		CASE_DESC(createSingleAllocCallbacksTest	<GraphicsPipeline>,			s_graphicsPipelineCases),
+		CASE_DESC(createSingleAllocCallbacksTest	<ComputePipeline>,			s_computePipelineCases),
+		CASE_DESC(createSingleAllocCallbacksTest	<DescriptorSetLayout>,		s_descriptorSetLayoutCases),
+		CASE_DESC(createSingleAllocCallbacksTest	<Sampler>,					s_samplerCases),
+		CASE_DESC(createSingleAllocCallbacksTest	<DescriptorPool>,			s_descriptorPoolCases),
+		CASE_DESC(createSingleAllocCallbacksTest	<DescriptorSet>,			s_descriptorSetCases),
+		CASE_DESC(createSingleAllocCallbacksTest	<Framebuffer>,				s_framebufferCases),
+		CASE_DESC(createSingleAllocCallbacksTest	<CommandPool>,				s_commandPoolCases),
+		CASE_DESC(createSingleAllocCallbacksTest	<CommandBuffer>,			s_commandBufferCases),
+	};
+	objectMgmtTests->addChild(createGroup(testCtx, "single_alloc_callbacks", "Create single object", s_createSingleAllocCallbacksGroup));
+
+	static const CaseDescriptions	s_allocCallbackFailGroup	=
+	{
+		CASE_DESC(allocCallbackFailTest	<Instance>,					s_instanceCases),
+		CASE_DESC(allocCallbackFailTest	<Device>,					s_deviceCases),
+		CASE_DESC(allocCallbackFailTest	<DeviceMemory>,				s_deviceMemCases),
+		CASE_DESC(allocCallbackFailTest	<Buffer>,					s_bufferCases),
+		CASE_DESC(allocCallbackFailTest	<BufferView>,				s_bufferViewCases),
+		CASE_DESC(allocCallbackFailTest	<Image>,					s_imageCases),
+		CASE_DESC(allocCallbackFailTest	<ImageView>,				s_imageViewCases),
+		CASE_DESC(allocCallbackFailTest	<Semaphore>,				s_semaphoreCases),
+		CASE_DESC(allocCallbackFailTest	<Event>,					s_eventCases),
+		CASE_DESC(allocCallbackFailTest	<Fence>,					s_fenceCases),
+		CASE_DESC(allocCallbackFailTest	<QueryPool>,				s_queryPoolCases),
+		CASE_DESC(allocCallbackFailTest	<ShaderModule>,				s_shaderModuleCases),
+		CASE_DESC(allocCallbackFailTest	<PipelineCache>,			s_pipelineCacheCases),
+		CASE_DESC(allocCallbackFailTest	<PipelineLayout>,			s_pipelineLayoutCases),
+		CASE_DESC(allocCallbackFailTest	<RenderPass>,				s_renderPassCases),
+		CASE_DESC(allocCallbackFailTest	<GraphicsPipeline>,			s_graphicsPipelineCases),
+		CASE_DESC(allocCallbackFailTest	<ComputePipeline>,			s_computePipelineCases),
+		CASE_DESC(allocCallbackFailTest	<DescriptorSetLayout>,		s_descriptorSetLayoutCases),
+		CASE_DESC(allocCallbackFailTest	<Sampler>,					s_samplerCases),
+		CASE_DESC(allocCallbackFailTest	<DescriptorPool>,			s_descriptorPoolCases),
+		CASE_DESC(allocCallbackFailTest	<DescriptorSet>,			s_descriptorSetCases),
+		CASE_DESC(allocCallbackFailTest	<Framebuffer>,				s_framebufferCases),
+		CASE_DESC(allocCallbackFailTest	<CommandPool>,				s_commandPoolCases),
+		CASE_DESC(allocCallbackFailTest	<CommandBuffer>,			s_commandBufferCases),
+	};
+	objectMgmtTests->addChild(createGroup(testCtx, "alloc_callback_fail", "Allocation callback failure", s_allocCallbackFailGroup));
 
 	return objectMgmtTests.release();
 }
