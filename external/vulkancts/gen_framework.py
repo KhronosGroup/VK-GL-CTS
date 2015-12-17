@@ -674,16 +674,16 @@ def writeNullDriverImpl (api, filename):
 
 		for function in createFuncs:
 			objectType	= function.arguments[-1].type.replace("*", "").strip()
-			argsStr		= ", ".join([a.name for a in function.arguments[:-2]])
+			argsStr		= ", ".join([a.name for a in function.arguments[:-1]])
 
 			yield "VKAPI_ATTR %s VKAPI_CALL %s (%s)" % (function.returnType, getInterfaceName(function), argListToStr(function.arguments))
 			yield "{"
 			yield "\tDE_UNREF(%s);" % function.arguments[-2].name
 
 			if getHandle(objectType).type == Handle.TYPE_NONDISP:
-				yield "\tVK_NULL_RETURN(*%s = %s((deUint64)(deUintptr)new %s(%s)));" % (function.arguments[-1].name, objectType, objectType[2:], argsStr)
+				yield "\tVK_NULL_RETURN((*%s = allocateNonDispHandle<%s, %s>(%s)));" % (function.arguments[-1].name, objectType[2:], objectType, argsStr)
 			else:
-				yield "\tVK_NULL_RETURN(*%s = reinterpret_cast<%s>(new %s(%s)));" % (function.arguments[-1].name, objectType, objectType[2:], argsStr)
+				yield "\tVK_NULL_RETURN((*%s = allocateHandle<%s, %s>(%s)));" % (function.arguments[-1].name, objectType[2:], objectType, argsStr)
 
 			yield "}"
 			yield ""
@@ -695,12 +695,11 @@ def writeNullDriverImpl (api, filename):
 			yield "{"
 			for arg in function.arguments[:-2]:
 				yield "\tDE_UNREF(%s);" % arg.name
-			yield "\tDE_UNREF(%s);" % function.arguments[-1].name
 
 			if getHandle(objectArg.type).type == Handle.TYPE_NONDISP:
-				yield "\tdelete reinterpret_cast<%s*>((deUintptr)%s.getInternal());" % (objectArg.type[2:], objectArg.name)
+				yield "\tfreeNonDispHandle<%s, %s>(%s, %s);" % (objectArg.type[2:], objectArg.type, objectArg.name, function.arguments[-1].name)
 			else:
-				yield "\tdelete reinterpret_cast<%s*>(%s);" % (objectArg.type[2:], objectArg.name)
+				yield "\tfreeHandle<%s, %s>(%s, %s);" % (objectArg.type[2:], objectArg.type, objectArg.name, function.arguments[-1].name)
 
 			yield "}"
 			yield ""
