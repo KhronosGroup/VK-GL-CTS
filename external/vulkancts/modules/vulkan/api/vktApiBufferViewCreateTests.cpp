@@ -117,7 +117,9 @@ tcu::TestStatus BufferViewTestInstance::iterate (void)
 	{
 		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,													//	VkStructureType			sType;
 		DE_NULL,																				//	const void*				pNext;
-		m_testCase.beforeAllocateMemory == true ? 0 : VK_BUFFER_CREATE_SPARSE_BINDING_BIT,		//	VkBufferCreateFlags		flags;
+		(VkBufferCreateFlags)(m_testCase.beforeAllocateMemory == true
+							  ? 0
+							  : VK_BUFFER_CREATE_SPARSE_BINDING_BIT),							//	VkBufferCreateFlags		flags;
 		size,																					//	VkDeviceSize			size;
 		m_testCase.usage,																		//	VkBufferUsageFlags		usage;
 		VK_SHARING_MODE_EXCLUSIVE,																//	VkSharingMode			sharingMode;

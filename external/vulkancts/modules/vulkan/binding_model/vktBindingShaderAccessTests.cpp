@@ -4042,20 +4042,20 @@ vk::Move<vk::VkSampler> ImageSampleInstanceImages::createSampler (const vk::Devi
 		vk::VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
 		DE_NULL,
 		(vk::VkSamplerCreateFlags)0,
-		vk::mapFilterMode(sampler.magFilter),			// magFilter
-		vk::mapFilterMode(sampler.minFilter),			// minFilter
-		vk::mapMipmapMode(sampler.minFilter),			// mipMode
-		vk::mapWrapMode(sampler.wrapS),					// addressU
-		vk::mapWrapMode(sampler.wrapT),					// addressV
-		vk::mapWrapMode(sampler.wrapR),					// addressW
-		0.0f,											// mipLodBias
-		1,												// maxAnisotropy
-		(compareEnabled ? vk::VK_TRUE : vk::VK_FALSE),	// compareEnable
-		compareOp,										// compareOp
-		0.0f,											// minLod
-		0.0f,											// maxLod
-		borderColor,									// borderColor
-		vk::VK_FALSE,									// unnormalizedCoords
+		vk::mapFilterMode(sampler.magFilter),							// magFilter
+		vk::mapFilterMode(sampler.minFilter),							// minFilter
+		vk::mapMipmapMode(sampler.minFilter),							// mipMode
+		vk::mapWrapMode(sampler.wrapS),									// addressU
+		vk::mapWrapMode(sampler.wrapT),									// addressV
+		vk::mapWrapMode(sampler.wrapR),									// addressW
+		0.0f,															// mipLodBias
+		1,																// maxAnisotropy
+		(vk::VkBool32)(compareEnabled ? vk::VK_TRUE : vk::VK_FALSE),	// compareEnable
+		compareOp,														// compareOp
+		0.0f,															// minLod
+		0.0f,															// maxLod
+		borderColor,													// borderColor
+		vk::VK_FALSE,													// unnormalizedCoords
 	};
 	return vk::createSampler(vki, device, &createInfo);
 }
