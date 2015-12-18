@@ -7079,8 +7079,6 @@ tcu::TestCaseGroup* createLoopTests(tcu::TestContext& testCtx)
 		;
 	createTestsForAllStages("single-block", defaultColors, defaultColors, fragments, testGroup.get());
 
-	fragments["pre_main"] = "%c_f32_neg1 = OpConstant %f32 -1.0\n";
-
 	// Body comprised of multiple basic blocks.
 	const StringTemplate multiBlock(
 		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
@@ -7113,7 +7111,7 @@ tcu::TestCaseGroup* createLoopTests(tcu::TestContext& testCtx)
 		"OpBranch %gather\n"
 
 		"%gather = OpLabel\n"
-		"%delta_next = OpPhi %f32 %c_f32_neg1 %even %c_f32_1 %odd\n"
+		"%delta_next = OpPhi %f32 %c_f32_n1 %even %c_f32_1 %odd\n"
 		"%val = OpFAdd %f32 %val1 %delta\n"
 		"%count__ = OpISub %i32 %count %c_i32_1\n"
 		"%again = OpSGreaterThan %bool %count__ %c_i32_0\n"
