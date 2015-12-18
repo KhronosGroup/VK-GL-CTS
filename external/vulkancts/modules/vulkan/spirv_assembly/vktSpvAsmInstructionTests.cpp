@@ -7177,8 +7177,8 @@ tcu::TestCaseGroup* createLoopTests(tcu::TestContext& testCtx)
 		"OpFunctionEnd\n";
 	createTestsForAllStages("continue", defaultColors, defaultColors, fragments, testGroup.get());
 
-	// A loop with break statement.
-	fragments["testfun"] =
+	// A loop with early exit.  May be specialized with either break or return.
+	StringTemplate earlyExitLoop(
 		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
 		"%param1 = OpFunctionParameter %v4f32\n"
 
@@ -7200,9 +7200,10 @@ tcu::TestCaseGroup* createLoopTests(tcu::TestContext& testCtx)
 
 		"%if = OpLabel\n"
 		";end loop if %count==%two\n"
-		"%eq2 = OpIEqual %bool %count %two\n"
+		"%above2 = OpSGreaterThan %bool %count %two\n"
 		"OpSelectionMerge %continue DontFlatten\n"
-		"OpBranchConditional %eq2 %exit %body\n"
+		// This can either branch to %exit or to another block with OpReturnValue %param1.
+		"OpBranchConditional %above2 %body ${branch_destination}\n"
 
 		"%body = OpLabel\n"
 		"%fcount = OpConvertSToF %f32 %count\n"
@@ -7219,8 +7220,21 @@ tcu::TestCaseGroup* createLoopTests(tcu::TestContext& testCtx)
 		"%same = OpFSub %f32 %val %c_f32_7\n"
 		"%result = OpVectorInsertDynamic %v4f32 %param1 %same %c_i32_0\n"
 		"OpReturnValue %result\n"
-		"OpFunctionEnd\n";
+		"OpFunctionEnd\n");
+
+	map<string, string> branch_destination;
+
+	// A loop with break.
+	branch_destination["branch_destination"] = "%exit";
+	fragments["testfun"] = earlyExitLoop.specialize(branch_destination);
 	createTestsForAllStages("break", defaultColors, defaultColors, fragments, testGroup.get());
+
+	// A loop with return.
+	branch_destination["branch_destination"] = "%early_exit\n"
+		"%early_exit = OpLabel\n"
+		"OpReturnValue %param1\n";
+	fragments["testfun"] = earlyExitLoop.specialize(branch_destination);
+	createTestsForAllStages("return", defaultColors, defaultColors, fragments, testGroup.get());
 
 	return testGroup.release();
 }
