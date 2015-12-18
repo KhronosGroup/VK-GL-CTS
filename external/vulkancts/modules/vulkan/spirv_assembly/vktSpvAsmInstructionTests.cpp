@@ -3326,6 +3326,7 @@ void createPipelineShaderStages (const DeviceInterface& vk, const VkDevice vkDev
 	"%c_f32_0 = OpConstant %f32 0.0\n"															\
 	"%c_f32_0_5 = OpConstant %f32 0.5\n"														\
 	"%c_f32_n1  = OpConstant %f32 -1.\n"														\
+	"%c_f32_7 = OpConstant %f32 7.0\n"															\
 	"%c_f32_8 = OpConstant %f32 8.0\n"															\
 	"%c_i32_0 = OpConstant %i32 0\n"															\
 	"%c_i32_1 = OpConstant %i32 1\n"															\
@@ -7176,8 +7177,50 @@ tcu::TestCaseGroup* createLoopTests(tcu::TestContext& testCtx)
 		"OpFunctionEnd\n";
 	createTestsForAllStages("continue", defaultColors, defaultColors, fragments, testGroup.get());
 
-	// \todo [2015-12-14 dekimir] More cases:
-	// - early exit
+	// A loop with break statement.
+	fragments["testfun"] =
+		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%param1 = OpFunctionParameter %v4f32\n"
+
+		"%entry = OpLabel\n"
+		";param1 components are between 0 and 1, so dot product is 4 or less\n"
+		"%dot = OpDot %f32 %param1 %param1\n"
+		"%div = OpFDiv %f32 %dot %c_f32_5\n"
+		"%zero = OpConvertFToU %u32 %div\n"
+		"%two = OpIAdd %i32 %zero %c_i32_2\n"
+		"%val0 = OpVectorExtractDynamic %f32 %param1 %c_i32_0\n"
+		"OpBranch %loop\n"
+
+		";adds 4 and 3 to %val0 (exits early)\n"
+		"%loop = OpLabel\n"
+		"%count = OpPhi %i32 %c_i32_4 %entry %count__ %continue\n"
+		"%val1 = OpPhi %f32 %val0 %entry %val %continue\n"
+		"OpLoopMerge %exit %continue None\n"
+		"OpBranch %if\n"
+
+		"%if = OpLabel\n"
+		";end loop if %count==%two\n"
+		"%eq2 = OpIEqual %bool %count %two\n"
+		"OpSelectionMerge %continue DontFlatten\n"
+		"OpBranchConditional %eq2 %exit %body\n"
+
+		"%body = OpLabel\n"
+		"%fcount = OpConvertSToF %f32 %count\n"
+		"%val2 = OpFAdd %f32 %val1 %fcount\n"
+		"OpBranch %continue\n"
+
+		"%continue = OpLabel\n"
+		"%val = OpPhi %f32 %val2 %body %val1 %if\n"
+		"%count__ = OpISub %i32 %count %c_i32_1\n"
+		"%again = OpSGreaterThan %bool %count__ %c_i32_0\n"
+		"OpBranchConditional %again %loop %exit\n"
+
+		"%exit = OpLabel\n"
+		"%same = OpFSub %f32 %val %c_f32_7\n"
+		"%result = OpVectorInsertDynamic %v4f32 %param1 %same %c_i32_0\n"
+		"OpReturnValue %result\n"
+		"OpFunctionEnd\n";
+	createTestsForAllStages("break", defaultColors, defaultColors, fragments, testGroup.get());
 
 	return testGroup.release();
 }
