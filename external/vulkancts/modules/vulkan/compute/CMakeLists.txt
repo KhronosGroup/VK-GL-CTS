@@ -9,6 +9,8 @@ set(DEQP_VK_COMPUTE_SRCS
 	vktComputeIndirectComputeDispatchTests.hpp
 	vktComputeShaderBuiltinVarTests.cpp
 	vktComputeShaderBuiltinVarTests.hpp
+	vktComputeTestsUtil.cpp
+	vktComputeTestsUtil.hpp
 	)
 
 set(DEQP_VK_COMPUTE_LIBS

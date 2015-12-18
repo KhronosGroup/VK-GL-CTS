@@ -33,26 +33,33 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktComputeShaderBuiltinVarTests.hpp"
-
 #include "vktTestCaseUtil.hpp"
+#include "vktComputeTestsUtil.hpp"
+
 #include "vkDefs.hpp"
 #include "vkPlatform.hpp"
-#include "vkStrUtil.hpp"
 #include "vkRef.hpp"
+#include "vkPrograms.hpp"
+#include "vkStrUtil.hpp"
 #include "vkRefUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkMemUtil.hpp"
 #include "vkDeviceUtil.hpp"
-#include "vkPrograms.hpp"
 #include "vkTypeUtil.hpp"
+#include "vkBuilderUtil.hpp"
+
 #include "tcuTestLog.hpp"
 #include "tcuFormatUtil.hpp"
+#include "tcuVectorUtil.hpp"
+
+#include "gluShaderUtil.hpp"
+
 #include "deUniquePtr.hpp"
 #include "deSharedPtr.hpp"
-#include "gluShaderUtil.hpp"
-#include "vkBuilderUtil.hpp"
-#include "tcuVectorUtil.hpp"
+
 #include <map>
+#include <string>
+#include <vector>
 
 namespace vkt
 {
@@ -72,7 +79,7 @@ using tcu::IVec3;
 class ComputeBuiltinVarInstance;
 class ComputeBuiltinVarCase;
 
-const string PrefixProgramName ="compute_";
+static const string s_prefixProgramName ="compute_";
 
 static inline bool compareNumComponents (const UVec3& a, const UVec3& b,const int numComps)
 {
@@ -113,218 +120,6 @@ struct SubCase
 						, numWorkGroups	(numWorkGroups_) {}
 };
 
-vk::Move<vk::VkPipelineLayout> makePipelineLayout (const vk::DeviceInterface&		vki,
-												   const vk::VkDevice				device,
-												   const deUint32					numDescriptorSets,
-												   const vk::VkDescriptorSetLayout*	descriptorSetLayouts)
-{
-	const vk::VkPipelineLayoutCreateInfo createInfo =
-	{
-		vk::VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-		DE_NULL,
-		numDescriptorSets,		// descriptorSetCount
-		descriptorSetLayouts,	// pSetLayouts
-		0u,						// pushConstantRangeCount
-		DE_NULL,				// pPushConstantRanges
-	};
-	return vk::createPipelineLayout(vki, device, &createInfo);
-}
-
-vk::Move<vk::VkPipeline> makeComputePipeline (const vk::DeviceInterface&	vki,
-											  const vk::VkDevice			device,
-											  const vk::BinaryCollection&	programCollection,
-											  const string					programName,
-											  const vk::VkPipelineLayout	layout)
-{
-	const vk::Move<vk::VkShaderModule>		computeModule(vk::createShaderModule(vki, device, programCollection.get(programName.c_str()), (vk::VkShaderModuleCreateFlags)0u));
-	const vk::VkShaderCreateInfo			shaderCreateInfo =
-	{
-		vk::VK_STRUCTURE_TYPE_SHADER_CREATE_INFO,
-		DE_NULL,
-		*computeModule,		// module
-		"main",				// pName
-		0u,					// flags
-		vk::VK_SHADER_STAGE_COMPUTE
-	};
-	const vk::Move<vk::VkShader>				computeShader(vk::createShader(vki, device, &shaderCreateInfo));
-
-	const vk::VkPipelineShaderStageCreateInfo	cs =
-	{
-		vk::VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-		DE_NULL,
-		vk::VK_SHADER_STAGE_COMPUTE,	// stage
-		*computeShader,					// shader
-		DE_NULL,						// pSpecializationInfo
-	};
-
-	const vk::VkComputePipelineCreateInfo		createInfo =
-	{
-		vk::VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
-		DE_NULL,
-		cs,								// cs
-		0u,								// flags
-		layout,							// layout
-		(vk::VkPipeline)0,				// basePipelineHandle
-		0u,								// basePipelineIndex
-	};
-	return createComputePipeline(vki, device, (vk::VkPipelineCache)0u, &createInfo);
-}
-
-class BufferObject
-{
-public:
-								BufferObject	(const vk::DeviceInterface&			vki,
-												 const vk::VkDevice					device,
-												 vk::Allocator&						allocator,
-												 const vk::VkDeviceSize				bufferSize,
-												 const vk::VkBufferUsageFlagBits	usage);
-
-	vk::VkBuffer				getVKBuffer		(void) const { return *m_buffer; }
-	deUint8*					mapBuffer		(void);
-	void						unmapBuffer		(void);
-
-protected:
-	const vk::DeviceInterface&	m_device_interface;
-	const vk::VkDevice			m_device;
-	de::MovePtr<vk::Allocation> m_allocation;
-	const vk::VkDeviceSize		m_bufferSize;
-	vk::Move<vk::VkBuffer>		m_buffer;
-};
-
-BufferObject::BufferObject (const vk::DeviceInterface&		device_interface,
-							const vk::VkDevice				device,
-							vk::Allocator&					allocator,
-							const vk::VkDeviceSize			bufferSize,
-							const vk::VkBufferUsageFlagBits	usage)
-	: m_device_interface(device_interface)
-	, m_device			(device)
-	, m_bufferSize		(bufferSize)
-{
-	const vk::VkBufferCreateInfo	bufferCreateInfo =
-	{
-		vk::VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-		DE_NULL,
-		bufferSize,									// size
-		usage,										// usage
-		0u,											// flags
-		vk::VK_SHARING_MODE_EXCLUSIVE,				// sharingMode
-		0u,											// queueFamilyCount
-		DE_NULL,									// pQueueFamilyIndices
-	};
-
-	m_buffer = vk::createBuffer(device_interface, device, &bufferCreateInfo);
-
-	const vk::VkMemoryRequirements requirements = vk::getBufferMemoryRequirements(device_interface, device, *m_buffer);
-
-	m_allocation = allocator.allocate(requirements, vk::MemoryRequirement::HostVisible);
-
-	VK_CHECK(device_interface.bindBufferMemory(device, *m_buffer, m_allocation->getMemory(), m_allocation->getOffset()));
-}
-
-deUint8* BufferObject::mapBuffer (void)
-{
-	invalidateMappedMemoryRange(m_device_interface, m_device, m_allocation->getMemory(), m_allocation->getOffset(), m_bufferSize);
-
-	return (deUint8*)m_allocation->getHostPtr();
-}
-
-void BufferObject::unmapBuffer (void)
-{
-	flushMappedMemoryRange(m_device_interface, m_device, m_allocation->getMemory(), m_allocation->getOffset(), m_bufferSize);
-}
-
-class CommandBuffer
-{
-public:
-								CommandBuffer			(const vk::DeviceInterface&	device_interface,
-														 const vk::VkDevice			device,
-														 const deUint32				queueFamilyIndex);
-
-	vk::VkCmdBuffer				beginRecordingCommands	(void);
-	void						endRecordingCommands	(void);
-
-protected:
-
-	const vk::DeviceInterface&	m_device_interface;
-	const vk::VkDevice			m_device;
-	vk::Move<vk::VkCmdPool>		m_cmdPool;
-	vk::Move<vk::VkCmdBuffer>	m_cmdBuffer;
-};
-
-CommandBuffer::CommandBuffer (const vk::DeviceInterface&	device_interface,
-							  const vk::VkDevice			device,
-							  const deUint32				queueFamilyIndex)
-	: m_device_interface(device_interface)
-	, m_device			(device)
-{
-	const vk::VkCmdPoolCreateInfo cmdPoolCreateInfo =
-	{
-		vk::VK_STRUCTURE_TYPE_CMD_POOL_CREATE_INFO,
-		DE_NULL,
-		queueFamilyIndex,						// queueFamilyIndex
-		vk::VK_CMD_POOL_CREATE_TRANSIENT_BIT,	// flags
-	};
-
-	m_cmdPool = vk::createCommandPool(device_interface, device, &cmdPoolCreateInfo);
-
-	const vk::VkCmdBufferCreateInfo	cmdBufCreateInfo =
-	{
-		vk::VK_STRUCTURE_TYPE_CMD_BUFFER_CREATE_INFO,
-		DE_NULL,
-		*m_cmdPool,							// cmdPool
-		vk::VK_CMD_BUFFER_LEVEL_PRIMARY,	// level
-		0u,									// flags
-	};
-
-	m_cmdBuffer = vk::createCommandBuffer(device_interface, device, &cmdBufCreateInfo);
-}
-
-vk::VkCmdBuffer CommandBuffer::beginRecordingCommands (void)
-{
-	const vk::VkCmdBufferBeginInfo	cmdBufBeginInfo =
-	{
-		vk::VK_STRUCTURE_TYPE_CMD_BUFFER_BEGIN_INFO,
-		DE_NULL,
-		vk::VK_CMD_BUFFER_OPTIMIZE_SMALL_BATCH_BIT | vk::VK_CMD_BUFFER_OPTIMIZE_ONE_TIME_SUBMIT_BIT,	// flags
-		(vk::VkRenderPass)0u,																			// renderPass
-		0u,																								// subpass
-		(vk::VkFramebuffer)0u,																			// framebuffer
-	};
-
-	VK_CHECK(m_device_interface.beginCommandBuffer(*m_cmdBuffer, &cmdBufBeginInfo));
-
-	return *m_cmdBuffer;
-}
-
-void CommandBuffer::endRecordingCommands (void)
-{
-	VK_CHECK(m_device_interface.endCommandBuffer(*m_cmdBuffer));
-}
-
-class Fence
-{
-public:
-							Fence		(const vk::DeviceInterface&	device_interface,
-										 const vk::VkDevice			device);
-
-	vk::VkFence				getVKFence	(void) const { return *m_fence; }
-
-private:
-	vk::Move<vk::VkFence>	m_fence;
-};
-
-Fence::Fence (const vk::DeviceInterface& device_interface, const vk::VkDevice device)
-{
-	const vk::VkFenceCreateInfo fenceCreateInfo =
-	{
-		vk::VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
-		DE_NULL,
-		0u,			// flags
-	};
-
-	m_fence = vk::createFence(device_interface, device, &fenceCreateInfo);
-}
-
 class ComputeBuiltinVarInstance : public vkt::TestInstance
 {
 public:
@@ -338,15 +133,12 @@ public:
 private:
 	const VkDevice					m_device;
 	const DeviceInterface&			m_vki;
-	const vk::VkQueue				m_queue;
+	const VkQueue				m_queue;
 	const deUint32					m_queueFamilyIndex;
 	vector<SubCase>					m_subCases;
 	const ComputeBuiltinVarCase*	m_builtin_var_case;
 	int								m_subCaseNdx;
 	const glu::DataType				m_varType;
-
-	vk::VkDescriptorInfo			createDescriptorInfo		(vk::VkBuffer buffer, vk::VkDeviceSize offset, vk::VkDeviceSize range);
-	vk::VkBufferMemoryBarrier		createResultBufferBarrier	(vk::VkBuffer buffer);
 };
 
 class ComputeBuiltinVarCase : public vkt::TestCase
@@ -360,7 +152,7 @@ public:
 		return new ComputeBuiltinVarInstance(context, m_subCases, m_varType, this);
 	};
 
-	virtual void			initPrograms			(vk::SourceCollections& programCollection) const;
+	virtual void			initPrograms			(SourceCollections& programCollection) const;
 	virtual UVec3			computeReference		(const UVec3& numWorkGroups, const UVec3& workGroupSize, const UVec3& workGroupID, const UVec3& localInvocationID) const = 0;
 
 protected:
@@ -391,13 +183,13 @@ ComputeBuiltinVarCase::~ComputeBuiltinVarCase (void)
 	ComputeBuiltinVarCase::deinit();
 }
 
-void ComputeBuiltinVarCase::initPrograms (vk::SourceCollections& programCollection) const
+void ComputeBuiltinVarCase::initPrograms (SourceCollections& programCollection) const
 {
 	for (int i = 0; i < m_subCases.size(); i++)
 	{
 		const SubCase&	subCase = m_subCases[i];
 		std::ostringstream name;
-		name << PrefixProgramName << i;
+		name << s_prefixProgramName << i;
 		programCollection.glslSources.add(name.str()) << glu::ComputeSource(genBuiltinVarSource(m_varName, m_varType, subCase.localSize).c_str());
 	}
 }
@@ -587,23 +379,10 @@ ComputeBuiltinVarInstance::ComputeBuiltinVarInstance (Context&						context,
 {
 }
 
-vk::VkDescriptorInfo ComputeBuiltinVarInstance::createDescriptorInfo (vk::VkBuffer buffer, vk::VkDeviceSize offset, vk::VkDeviceSize range)
-{
-	const vk::VkDescriptorInfo resultInfo =
-	{
-		0,							// bufferView
-		0,							// sampler
-		0,							// imageView
-		(vk::VkImageLayout)0,		// imageLayout
-		{ buffer, offset, range }	// bufferInfo
-	};
-	return resultInfo;
-}
-
 tcu::TestStatus	ComputeBuiltinVarInstance::iterate (void)
 {
 	std::ostringstream program_name;
-	program_name << PrefixProgramName << m_subCaseNdx;
+	program_name << s_prefixProgramName << m_subCaseNdx;
 
 	const SubCase&				subCase				= m_subCases[m_subCaseNdx];
 	const tcu::UVec3			globalSize			= subCase.localSize*subCase.numWorkGroups;
@@ -631,86 +410,73 @@ tcu::TestStatus	ComputeBuiltinVarInstance::iterate (void)
 
 	const deUint32				resultBufferSize	= numInvocations * resultBufferStride;
 
-	/* Create result buffer */
-	BufferObject uniformBuffer(m_vki, m_device, m_context.getDefaultAllocator(), (vk::VkDeviceSize)sizeOfUniformBuffer, vk::VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
-	BufferObject resultBuffer(m_vki, m_device, m_context.getDefaultAllocator(), (vk::VkDeviceSize)resultBufferSize, vk::VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+	// Create result buffer
+	Buffer uniformBuffer(m_vki, m_device, m_context.getDefaultAllocator(), makeBufferCreateInfo(sizeOfUniformBuffer, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT), MemoryRequirement::HostVisible);
+	Buffer resultBuffer(m_vki, m_device, m_context.getDefaultAllocator(), makeBufferCreateInfo(resultBufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT), MemoryRequirement::HostVisible);
 
-	memcpy(uniformBuffer.mapBuffer(),&stride,sizeOfUniformBuffer);
-	uniformBuffer.unmapBuffer();
-
-	/* Create descriptorSetLayout */
-	vk::DescriptorSetLayoutBuilder layoutBuilder;
-	layoutBuilder.addSingleBinding(vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, vk::VK_SHADER_STAGE_COMPUTE_BIT);
-	layoutBuilder.addSingleBinding(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, vk::VK_SHADER_STAGE_COMPUTE_BIT);
-	const vk::Unique<vk::VkDescriptorSetLayout>	descriptorSetLayout = layoutBuilder.build(m_vki, m_device);
-
-	const Unique<VkPipelineLayout> pipelineLayout(makePipelineLayout(m_vki, m_device, 1, &descriptorSetLayout.get()));
-	const Unique<VkPipeline> pipeline(makeComputePipeline(m_vki, m_device, m_context.getBinaryCollection(), program_name.str(), *pipelineLayout));
-
-	//Create descriptionPool
-	DescriptorPoolBuilder descriptorPool_build;
-	descriptorPool_build.addType(vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-	descriptorPool_build.addType(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-
-	const vk::Unique<vk::VkDescriptorPool>descriptorPool = descriptorPool_build.build(m_vki, m_device, vk::VK_DESCRIPTOR_POOL_USAGE_DYNAMIC, 1);
-
-	const vk::VkBufferMemoryBarrier bufferBarrier =
 	{
-		vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
-		DE_NULL,
-		vk::VK_MEMORY_OUTPUT_SHADER_WRITE_BIT,		// outputMask
-		vk::VK_MEMORY_INPUT_HOST_READ_BIT,			// inputMask
-		vk::VK_QUEUE_FAMILY_IGNORED,				// srcQueueFamilyIndex
-		vk::VK_QUEUE_FAMILY_IGNORED,				// destQueueFamilyIndex
-		resultBuffer.getVKBuffer(),					// buffer
-		(vk::VkDeviceSize)0u,						// offset
-		(vk::VkDeviceSize)resultBufferSize,			// size
-	};
+		const Allocation& alloc = uniformBuffer.getAllocation();
+		memcpy(alloc.getHostPtr(), &stride, sizeOfUniformBuffer);
+		flushMappedMemoryRange(m_vki, m_device, alloc.getMemory(), alloc.getOffset(), sizeOfUniformBuffer);
+	}
+
+	// Create descriptorSetLayout
+	DescriptorSetLayoutBuilder layoutBuilder;
+	layoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT);
+	layoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT);
+	const Unique<VkDescriptorSetLayout>	descriptorSetLayout = layoutBuilder.build(m_vki, m_device);
+
+	const Unique<VkShaderModule> shaderModule(createShaderModule(m_vki, m_device, m_context.getBinaryCollection().get(program_name.str()), 0u));
+	const Unique<VkPipelineLayout> pipelineLayout(makePipelineLayout(m_vki, m_device, *descriptorSetLayout));
+	const Unique<VkPipeline> pipeline(makeComputePipeline(m_vki, m_device, *pipelineLayout, *shaderModule));
+
+	const Unique<VkDescriptorPool> descriptorPool(
+		DescriptorPoolBuilder()
+		.addType(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+		.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
+		.build(m_vki, m_device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
+
+	const VkBufferMemoryBarrier bufferBarrier = makeBufferMemoryBarrier(
+		VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, *resultBuffer, 0ull, resultBufferSize);
 
 	const void* const postBarrier[] = { &bufferBarrier };
 
-	/* Create command buffer */
-	CommandBuffer cmdBuffer(m_vki, m_device, m_queueFamilyIndex);
+	const Unique<VkCommandPool> cmdPool(makeCommandPool(m_vki, m_device, m_queueFamilyIndex));
+	const Unique<VkCommandBuffer> cmdBuffer(makeCommandBuffer(m_vki, m_device, *cmdPool));
 
-	/* Begin recording commands */
-	vk::VkCmdBuffer vkCmdBuffer = cmdBuffer.beginRecordingCommands();
+	// Start recording commands
+	beginCommandBuffer(m_vki, *cmdBuffer);
 
-	/* Bind compute pipeline */
-	m_vki.cmdBindPipeline(vkCmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
+	m_vki.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
 
-	/* Create descriptor set */
-	vk::Move<vk::VkDescriptorSet> descriptorSet = allocDescriptorSet(m_vki, m_device, *descriptorPool, vk::VK_DESCRIPTOR_SET_USAGE_ONE_SHOT, *descriptorSetLayout);
+	// Create descriptor set
+	const Unique<VkDescriptorSet> descriptorSet = makeDescriptorSet(m_vki, m_device, *descriptorPool, *descriptorSetLayout);
 
-	const vk::VkDescriptorInfo		resultDescriptorInfo = createDescriptorInfo(resultBuffer.getVKBuffer(), 0u, (vk::VkDeviceSize)resultBufferSize);
-	const vk::VkDescriptorInfo		uniformDescriptorInfo = createDescriptorInfo(uniformBuffer.getVKBuffer(), 0u, (vk::VkDeviceSize)sizeOfUniformBuffer);
+	const VkDescriptorBufferInfo resultDescriptorInfo = makeDescriptorBufferInfo(*resultBuffer, 0ull, resultBufferSize);
+	const VkDescriptorBufferInfo uniformDescriptorInfo = makeDescriptorBufferInfo(*uniformBuffer, 0ull, sizeOfUniformBuffer);
 
-	vk::DescriptorSetUpdateBuilder	descriptorSetBuilder;
-	descriptorSetBuilder.writeSingle(*descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(0u), vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &uniformDescriptorInfo);
-	descriptorSetBuilder.writeSingle(*descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(1u), vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &resultDescriptorInfo);
-	descriptorSetBuilder.update(m_vki, m_device);
+	DescriptorSetUpdateBuilder()
+		.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &uniformDescriptorInfo)
+		.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(1u), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &resultDescriptorInfo)
+		.update(m_vki, m_device);
 
-	/* Bind descriptor set */
-	m_vki.cmdBindDescriptorSets(vkCmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0, 1, &descriptorSet.get(), 0, DE_NULL);
+	m_vki.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
 
-	/* Dispatch indirect compute command */
-	m_vki.cmdDispatch(vkCmdBuffer, subCase.numWorkGroups[0], subCase.numWorkGroups[1], subCase.numWorkGroups[2]);
+	// Dispatch indirect compute command
+	m_vki.cmdDispatch(*cmdBuffer, subCase.numWorkGroups[0], subCase.numWorkGroups[1], subCase.numWorkGroups[2]);
 
-	m_vki.cmdPipelineBarrier(vkCmdBuffer, vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT, vk::VK_FALSE, 1, postBarrier);
+	m_vki.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, VK_FALSE, 1, postBarrier);
 
-	/* End recording commands */
-	cmdBuffer.endRecordingCommands();
+	// End recording commands
+	endCommandBuffer(m_vki, *cmdBuffer);
 
-	/* Create fence object that will allow to wait for command buffer's execution completion */
-	Fence cmdBufferFence(m_vki, m_device);
+	// Wait for command buffer execution finish
+	submitCommandsAndWait(m_vki, m_device, m_queue, *cmdBuffer);
 
-	/* Submit command buffer to queue */
-	VK_CHECK(m_vki.queueSubmit(m_queue, 1, &vkCmdBuffer, cmdBufferFence.getVKFence()));
+	const Allocation& resultAlloc = resultBuffer.getAllocation();
+	invalidateMappedMemoryRange(m_vki, m_device, resultAlloc.getMemory(), resultAlloc.getOffset(), resultBufferSize);
 
-	/* Wait for command buffer execution finish */
-	const deUint64		infiniteTimeout = ~(deUint64)0u;
-	VK_CHECK(m_vki.waitForFences(m_device, 1, &cmdBufferFence.getVKFence(), 0u, infiniteTimeout));
-
-	const deUint8*	 ptr = resultBuffer.mapBuffer();
+	const deUint8*	 ptr = reinterpret_cast<deUint8*>(resultAlloc.getHostPtr());
 
 	int			numFailed		= 0;
 	const int	maxLogPrints	= 10;
@@ -773,7 +539,7 @@ private:
 };
 
 ComputeShaderBuiltinVarTests::ComputeShaderBuiltinVarTests (tcu::TestContext& context)
-	: TestCaseGroup(context, "compute", "Compute Shader Builtin Variables")
+	: TestCaseGroup(context, "builtin_var", "Shader builtin var tests")
 {
 }
 
@@ -791,11 +557,7 @@ void ComputeShaderBuiltinVarTests::init (void)
 
 tcu::TestCaseGroup* createComputeShaderBuiltinVarTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> computeShaderBuiltinVarTests(new tcu::TestCaseGroup(testCtx, "builtin_var", "Shader builtin var tests"));
-
-	computeShaderBuiltinVarTests->addChild(new ComputeShaderBuiltinVarTests(testCtx));
-
-	return computeShaderBuiltinVarTests.release();
+	return new ComputeShaderBuiltinVarTests(testCtx);
 }
 
 } // compute
