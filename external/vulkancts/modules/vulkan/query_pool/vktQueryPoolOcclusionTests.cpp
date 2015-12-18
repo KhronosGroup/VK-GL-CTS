@@ -675,19 +675,29 @@ tcu::TestStatus OcclusionQueryTestInstance::iterate (void)
 				DE_NULL								// const VkSemaphore*		pSignalSemaphores;
 			};
 			vk.queueSubmit(queue, 1, &submitInfo, DE_NULL);
-
-			VK_CHECK(vk.queueWaitIdle(queue));
 		}
+	}
+
+	if (m_testVector.queryResultsMode == RESULTS_MODE_COPY)
+	{
+		// In case of vkCmdCopyQueryResults is used, test must always wait for it
+		// to complete before we can read the result buffer.
+
+		VK_CHECK(vk.queueWaitIdle(queue));
 	}
 
 	deUint64 queryResults		[NUM_QUERIES_IN_POOL];
 	deUint64 queryAvailability	[NUM_QUERIES_IN_POOL];
-	captureResults(queryResults, queryAvailability, m_testVector.queryWait == WAIT_NONE);
+
+	// Allow not ready results only if nobody waited before getting the query results
+	bool	allowNotReady		= (m_testVector.queryWait == WAIT_NONE);
+
+	captureResults(queryResults, queryAvailability, allowNotReady);
 
 	log << tcu::TestLog::Section("OcclusionQueryResults", "Occlusion query results");
 
 	logResults(queryResults, queryAvailability);
-	bool passed = validateResults(queryResults, queryAvailability, m_testVector.queryWait == WAIT_NONE, m_testVector.primitiveRopology);
+	bool passed = validateResults(queryResults, queryAvailability, allowNotReady, m_testVector.primitiveRopology);
 
 	log << tcu::TestLog::EndSection;
 
