@@ -85,10 +85,8 @@ std::ostream& operator<< (std::ostream& str, const LayoutFlagsFmt& fmt)
 		const char*	token;
 	} bitDesc[] =
 	{
-		//{ LAYOUT_SHARED,		"shared"		},
-		//{ LAYOUT_PACKED,		"packed"		},
 		{ LAYOUT_STD140,		"std140"		},
-		//{ LAYOUT_STD430,		"std430"		},
+		{ LAYOUT_STD430,		"std430"		},
 		{ LAYOUT_ROW_MAJOR,		"row_major"		},
 		{ LAYOUT_COLUMN_MAJOR,	"column_major"	}
 	};
@@ -335,9 +333,47 @@ int computeStd140BaseAlignment (const VarType& type, deUint32 layoutFlags)
 	}
 }
 
+int computeStd430BaseAlignment (const VarType& type, deUint32 layoutFlags)
+{
+	// Otherwise identical to std140 except that alignment of structures and arrays
+	// are not rounded up to alignment of vec4.
+
+	if (type.isBasicType())
+	{
+		glu::DataType basicType = type.getBasicType();
+
+		if (glu::isDataTypeMatrix(basicType))
+		{
+			const bool	isRowMajor	= !!(layoutFlags & LAYOUT_ROW_MAJOR);
+			const int	vecSize		= isRowMajor ? glu::getDataTypeMatrixNumColumns(basicType)
+												 : glu::getDataTypeMatrixNumRows(basicType);
+			const int	vecAlign	= getDataTypeByteAlignment(glu::getDataTypeFloatVec(vecSize));
+
+			return vecAlign;
+		}
+		else
+			return getDataTypeByteAlignment(basicType);
+	}
+	else if (type.isArrayType())
+	{
+		return computeStd430BaseAlignment(type.getElementType(), layoutFlags);
+	}
+	else
+	{
+		DE_ASSERT(type.isStructType());
+
+		int maxBaseAlignment = 0;
+
+		for (StructType::ConstIterator memberIter = type.getStructPtr()->begin(); memberIter != type.getStructPtr()->end(); memberIter++)
+			maxBaseAlignment = de::max(maxBaseAlignment, computeStd430BaseAlignment(memberIter->getType(), layoutFlags));
+
+		return maxBaseAlignment;
+	}
+}
+
 inline deUint32 mergeLayoutFlags (deUint32 prevFlags, deUint32 newFlags)
 {
-	const deUint32	packingMask		= LAYOUT_STD140;
+	const deUint32	packingMask		= LAYOUT_STD430|LAYOUT_STD140;
 	const deUint32	matrixMask		= LAYOUT_ROW_MAJOR|LAYOUT_COLUMN_MAJOR;
 
 	deUint32 mergedFlags = 0;
@@ -357,7 +393,11 @@ int computeReferenceLayout (
 	const VarType&		type,
 	deUint32			layoutFlags)
 {
-	const int	baseAlignment		= computeStd140BaseAlignment(type, layoutFlags);
+	// Reference layout uses std430 rules by default. std140 rules are
+	// choosen only for blocks that have std140 layout.
+	const bool	isStd140			= (layoutFlags & LAYOUT_STD140) != 0;
+	const int	baseAlignment		= isStd140 ? computeStd140BaseAlignment(type, layoutFlags)
+											   : computeStd430BaseAlignment(type, layoutFlags);
 	int			curOffset			= deAlign32(baseOffset, baseAlignment);
 	const int	topLevelArraySize	= 1; // Default values
 	const int	topLevelArrayStride	= 0;
@@ -481,8 +521,10 @@ int computeReferenceLayout (BufferLayout& layout, int curBlockNdx, const std::st
 		// Top-level arrays need special care.
 		const int		topLevelArraySize	= varType.getArraySize() == VarType::UNSIZED_ARRAY ? 0 : varType.getArraySize();
 		const string	prefix				= blockPrefix + bufVar.getName() + "[0]";
+		const bool		isStd140			= (blockLayoutFlags & LAYOUT_STD140) != 0;
 		const int		vec4Align			= (int)sizeof(deUint32)*4;
-		const int		baseAlignment		= computeStd140BaseAlignment(varType, combinedFlags);
+		const int		baseAlignment		= isStd140 ? computeStd140BaseAlignment(varType, combinedFlags)
+													   : computeStd430BaseAlignment(varType, combinedFlags);
 		int				curOffset			= deAlign32(baseOffset, baseAlignment);
 		const VarType&	elemType			= varType.getElementType();
 
@@ -491,7 +533,7 @@ int computeReferenceLayout (BufferLayout& layout, int curBlockNdx, const std::st
 			// Array of scalars or vectors.
 			const glu::DataType		elemBasicType	= elemType.getBasicType();
 			const int				elemBaseAlign	= getDataTypeByteAlignment(elemBasicType);
-			const int				stride			= deAlign32(elemBaseAlign, vec4Align);
+			const int				stride			= isStd140 ? deAlign32(elemBaseAlign, vec4Align) : elemBaseAlign;
 			BufferVarLayoutEntry	entry;
 
 			entry.name					= prefix;
@@ -519,7 +561,7 @@ int computeReferenceLayout (BufferLayout& layout, int curBlockNdx, const std::st
 																 : glu::getDataTypeMatrixNumColumns(elemBasicType);
 			const glu::DataType		vecType			= glu::getDataTypeFloatVec(vecSize);
 			const int				vecBaseAlign	= getDataTypeByteAlignment(vecType);
-			const int				stride			= deAlign32(vecBaseAlign, vec4Align);
+			const int				stride			= isStd140 ? deAlign32(vecBaseAlign, vec4Align) : vecBaseAlign;
 			BufferVarLayoutEntry	entry;
 
 			entry.name					= prefix;
@@ -1975,19 +2017,19 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 	const vk::VkCommandPoolCreateInfo cmdPoolParams =
 	{
 		vk::VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,			// VkStructureType		sType;
-		DE_NULL,										// const void*			pNext;
+		DE_NULL,												// const void*			pNext;
 		vk::VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,	// VkCmdPoolCreateFlags	flags;
-		queueFamilyIndex,								// deUint32				queueFamilyIndex;
+		queueFamilyIndex,										// deUint32				queueFamilyIndex;
 	};
 	vk::Move<vk::VkCommandPool> cmdPool (createCommandPool(vk, device, &cmdPoolParams));
 
 	const vk::VkCommandBufferAllocateInfo cmdBufParams =
 	{
-		vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,		//	VkStructureType			sType;
-		DE_NULL,										//	const void*				pNext;
-		*cmdPool,										//	VkCmdPool				pool;
-		vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY,					//	VkCmdBufferLevel		level;
-		1u,												// deUint32					bufferCount;
+		vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,	// VkStructureType			sType;
+		DE_NULL,											// const void*				pNext;
+		*cmdPool,											// VkCmdPool				pool;
+		vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY,				// VkCmdBufferLevel		level;
+		1u,													// deUint32					bufferCount;
 	};
 	vk::Move<vk::VkCommandBuffer> cmdBuffer (allocateCommandBuffer(vk, device, &cmdBufParams));
 

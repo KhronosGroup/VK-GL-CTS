@@ -772,7 +772,8 @@ void SSBOLayoutTests::init (void)
 		deUint32		flags;
 	} layoutFlags[] =
 	{
-		{ "std140",		LAYOUT_STD140	},
+		{ "std140",	LAYOUT_STD140 },
+		{ "std430",	LAYOUT_STD430 },
 	};
 
 	static const struct
