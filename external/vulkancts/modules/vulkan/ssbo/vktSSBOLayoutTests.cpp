@@ -64,13 +64,11 @@ enum FeatureBits
 	FEATURE_INSTANCE_ARRAYS		= (1<<5),
 	FEATURE_UNUSED_VARS			= (1<<6),
 	FEATURE_UNUSED_MEMBERS		= (1<<7),
-	FEATURE_PACKED_LAYOUT		= (1<<8),
-	FEATURE_SHARED_LAYOUT		= (1<<9),
-	FEATURE_STD140_LAYOUT		= (1<<10),
-	FEATURE_STD430_LAYOUT		= (1<<11),
-	FEATURE_MATRIX_LAYOUT		= (1<<12),	//!< Matrix layout flags.
-	FEATURE_UNSIZED_ARRAYS		= (1<<13),
-	FEATURE_ARRAYS_OF_ARRAYS	= (1<<14)
+	FEATURE_STD140_LAYOUT		= (1<<8),
+	FEATURE_STD430_LAYOUT		= (1<<9),
+	FEATURE_MATRIX_LAYOUT		= (1<<10),	//!< Matrix layout flags.
+	FEATURE_UNSIZED_ARRAYS		= (1<<11),
+	FEATURE_ARRAYS_OF_ARRAYS	= (1<<12)
 };
 
 class RandomSSBOLayoutCase : public SSBOLayoutCase
@@ -103,7 +101,7 @@ RandomSSBOLayoutCase::RandomSSBOLayoutCase (tcu::TestContext& testCtx, const cha
 	, m_features			(features)
 	, m_maxBlocks			(4)
 	, m_maxInstances		((features & FEATURE_INSTANCE_ARRAYS)	? 3 : 0)
-	, m_maxArrayLength		((features & FEATURE_ARRAYS)			? 8 : 0)
+	, m_maxArrayLength		((features & FEATURE_ARRAYS)			? 8 : 1)
 	, m_maxStructDepth		((features & FEATURE_STRUCTS)			? 2 : 0)
 	, m_maxBlockMembers		(5)
 	, m_maxStructMembers	(4)
@@ -166,7 +164,7 @@ void RandomSSBOLayoutCase::generateBlock (de::Random& rnd, deUint32 layoutFlags)
 		{
 			for (int instanceNdx = 0; instanceNdx < (numInstances ? numInstances : 1); instanceNdx++)
 			{
-				const int arrSize = rnd.getInt(0, m_maxArrayLength);
+				const int arrSize = rnd.getInt(1, m_maxArrayLength);
 				block.setLastUnsizedArraySize(instanceNdx, arrSize);
 			}
 		}
@@ -225,8 +223,6 @@ glu::VarType RandomSSBOLayoutCase::generateType (de::Random& rnd, int typeDepth,
 	}
 	else if (typeDepth < m_maxStructDepth && rnd.getFloat() < structWeight)
 	{
-		// \todo [2013-10-14 pyry] Implement unused flags for members!
-//		bool					unusedOk			= (m_features & FEATURE_UNUSED_MEMBERS) != 0;
 		vector<glu::VarType>	memberTypes;
 		int						numMembers = rnd.getInt(1, m_maxStructMembers);
 
@@ -1290,7 +1286,7 @@ void SSBOLayoutTests::init (void)
 
 	// ubo.random
 	{
-		const deUint32	allLayouts		= FEATURE_PACKED_LAYOUT|FEATURE_SHARED_LAYOUT|FEATURE_STD140_LAYOUT;
+		const deUint32	allLayouts		= FEATURE_STD140_LAYOUT;
 		const deUint32	allBasicTypes	= FEATURE_VECTORS|FEATURE_MATRICES;
 		const deUint32	unused			= FEATURE_UNUSED_MEMBERS|FEATURE_UNUSED_VARS;
 		const deUint32	unsized			= FEATURE_UNSIZED_ARRAYS;

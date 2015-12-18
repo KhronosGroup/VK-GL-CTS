@@ -1784,13 +1784,13 @@ vk::Move<vk::VkBuffer> createBuffer (Context& context, vk::VkDeviceSize bufferSi
 	const vk::VkBufferCreateInfo	bufferInfo		=
 	{
 		vk::VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,	// VkStructureType		sType;
-		DE_NULL,								// const void*			pNext;
-		usageFlags,								// VkBufferUsageFlags	usage;
-		bufferSize,								// VkDeviceSize			size;
-		0u,										// VkBufferCreateFlags	flags;
+		DE_NULL,									// const void*			pNext;
+		usageFlags,									// VkBufferUsageFlags	usage;
+		bufferSize,									// VkDeviceSize			size;
+		0u,											// VkBufferCreateFlags	flags;
 		vk::VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode		sharingMode;
-		1u,										// deUint32				queueFamilyCount;
-		&queueFamilyIndex						// const deUint32*		pQueueFamilyIndices;
+		1u,											// deUint32				queueFamilyCount;
+		&queueFamilyIndex							// const deUint32*		pQueueFamilyIndices;
 	};
 
 	return vk::createBuffer(vk, vkDevice, &bufferInfo);
@@ -1815,7 +1815,7 @@ private:
 	const ShaderInterface&		m_interface;
 	const BufferLayout&			m_refLayout;
 	const RefDataStorage&		m_initialData;	// Initial data stored in buffer.
-	const RefDataStorage&		m_writeData;		// Data written by compute shader.
+	const RefDataStorage&		m_writeData;	// Data written by compute shader.
 
 
 	typedef de::SharedPtr<vk::Unique<vk::VkBuffer> >	VkBufferSp;
@@ -1909,6 +1909,8 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 			for (int blockNdx = 0; blockNdx < numBlocks; blockNdx++)
 			{
 				const deUint32 bufferSize = bufferSizes[blockNdx];
+				DE_ASSERT(bufferSize > 0);
+
 				blockLocations[blockNdx] = BlockLocation(blockNdx, 0, bufferSize);
 
 				vk::Move<vk::VkBuffer> 				buffer		= createBuffer(m_context, bufferSize, vk::VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
@@ -1935,6 +1937,7 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 			for (int blockNdx = 0; blockNdx < numBlocks; blockNdx++)
 			{
 				const int bufferSize = bufferSizes[blockNdx];
+				DE_ASSERT(bufferSize > 0);
 
 				if (bindingAlignment > 0)
 					curOffset = deRoundUp32(curOffset, bindingAlignment);
@@ -1953,7 +1956,7 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 			{
 				const deUint32						bufferSize	= bufferSizes[blockNdx];
 				const deUint32						offset		= blockLocations[blockNdx].offset;
-				const vk::VkDescriptorBufferInfo	descriptor	= makeDescriptorBufferInfo(*buffer, offset, bufferSize + 4*sizeof(float));
+				const vk::VkDescriptorBufferInfo	descriptor	= makeDescriptorBufferInfo(*buffer, offset, bufferSize);
 
 				setUpdateBuilder.writeSingle(*descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(blockNdx + 1),
 										vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &descriptor);
@@ -1963,16 +1966,34 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 			m_uniformAllocs.push_back(AllocationSp(alloc.release()));
 		}
 
+		// Copy the initial data to the storage buffers
 		{
 			mappedBlockPtrs = blockLocationsToPtrs(m_refLayout, blockLocations, mapPtrs);
 			copyData(m_refLayout, mappedBlockPtrs, m_refLayout, m_initialData.pointers);
 
-			DE_ASSERT(m_uniformAllocs.size() == bufferSizes.size());
-			for (size_t allocNdx = 0; allocNdx < m_uniformAllocs.size(); allocNdx++)
+			if (m_bufferMode == SSBOLayoutCase::BUFFERMODE_PER_BLOCK)
 			{
-				const int size = bufferSizes[allocNdx];
-				vk::Allocation* alloc = m_uniformAllocs[allocNdx].get();
-				flushMappedMemoryRange(vk, device, alloc->getMemory(), alloc->getOffset(), size);
+				DE_ASSERT(m_uniformAllocs.size() == bufferSizes.size());
+				for (size_t allocNdx = 0; allocNdx < m_uniformAllocs.size(); allocNdx++)
+				{
+					const int size = bufferSizes[allocNdx];
+					vk::Allocation* alloc = m_uniformAllocs[allocNdx].get();
+					flushMappedMemoryRange(vk, device, alloc->getMemory(), alloc->getOffset(), size);
+				}
+			}
+			else
+			{
+				DE_ASSERT(m_bufferMode == SSBOLayoutCase::BUFFERMODE_SINGLE);
+				DE_ASSERT(m_uniformAllocs.size() == 1);
+				int totalSize = 0;
+				for (size_t bufferNdx = 0; bufferNdx < bufferSizes.size(); bufferNdx++)
+				{
+					totalSize += bufferSizes[bufferNdx];
+				}
+
+				DE_ASSERT(totalSize > 0);
+				vk::Allocation* alloc = m_uniformAllocs[0].get();
+				flushMappedMemoryRange(vk, device, alloc->getMemory(), alloc->getOffset(), totalSize);
 			}
 		}
 	}
