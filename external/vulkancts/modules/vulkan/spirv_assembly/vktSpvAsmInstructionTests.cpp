@@ -7232,7 +7232,6 @@ tcu::TestCaseGroup* createFRemTests(tcu::TestContext& testCtx)
 	RGBA								inputColors[4];
 	RGBA								outputColors[4];
 
-	// A barrier inside a function body.
 	fragments["pre_main"]				 =
 		"%c_f32_3 = OpConstant %f32 3.0\n"
 		"%c_f32_n3 = OpConstant %f32 -3.0\n"
@@ -7247,7 +7246,6 @@ tcu::TestCaseGroup* createFRemTests(tcu::TestContext& testCtx)
 	// vec4 result = (param1 * 8.0) - 4.0;
 	// return (frem(result.x,3) + 0.75, frem(result.y, -3) + 0.75, 0, 1)
 	fragments["testfun"]				 =
-		// A %test_code function that returns its argument unchanged.
 		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
 		"%param1 = OpFunctionParameter %v4f32\n"
 		"%label_testfun = OpLabel\n"
