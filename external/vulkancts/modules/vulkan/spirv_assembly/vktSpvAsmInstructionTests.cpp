@@ -449,6 +449,89 @@ tcu::TestCaseGroup* createNoContractionGroup (tcu::TestContext& testCtx)
 	return group.release();
 }
 
+tcu::TestCaseGroup* createOpFRemGroup (tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opfrem", "Test the OpFRem instruction"));
+	ComputeShaderSpec				spec;
+	de::Random						rnd				(deStringHash(group->getName()));
+	const int						numElements		= 200;
+	vector<float>					inputFloats1	(numElements, 0);
+	vector<float>					inputFloats2	(numElements, 0);
+	vector<float>					outputFloats	(numElements, 0);
+
+	fillRandomScalars(rnd, -10000.f, 10000.f, &inputFloats1[0], numElements);
+	fillRandomScalars(rnd, -100.f, 100.f, &inputFloats2[0], numElements);
+
+	for (size_t ndx = 0; ndx < numElements; ++ndx)
+	{
+		// Guard against divisors near zero.
+		if (std::fabs(inputFloats2[ndx]) < 1e-3)
+			inputFloats2[ndx] = 8.f;
+
+		// The return value of std::fmod() has the same sign as its first operand, which is how OpFRem spec'd.
+		outputFloats[ndx] = std::fmod(inputFloats1[ndx], inputFloats2[ndx]);
+	}
+
+	spec.assembly =
+		string(s_ShaderPreamble) +
+
+		"OpName %main           \"main\"\n"
+		"OpName %id             \"gl_GlobalInvocationID\"\n"
+
+		"OpDecorate %id BuiltIn GlobalInvocationId\n"
+
+		"OpDecorate %inbuf1 BufferBlock\n"
+		"OpDecorate %indata1 DescriptorSet 0\n"
+		"OpDecorate %indata1 Binding 0\n"
+		"OpDecorate %inbuf2 BufferBlock\n"
+		"OpDecorate %indata2 DescriptorSet 0\n"
+		"OpDecorate %indata2 Binding 1\n"
+		"OpDecorate %outbuf BufferBlock\n"
+		"OpDecorate %outdata DescriptorSet 0\n"
+		"OpDecorate %outdata Binding 2\n"
+		"OpDecorate %f32arr ArrayStride 4\n"
+		"OpMemberDecorate %inbuf1 0 Offset 0\n"
+		"OpMemberDecorate %inbuf2 0 Offset 0\n"
+		"OpMemberDecorate %outbuf 0 Offset 0\n"
+
+		+ string(s_CommonTypes) +
+
+		"%inbuf1     = OpTypeStruct %f32arr\n"
+		"%inbufptr1  = OpTypePointer Uniform %inbuf1\n"
+		"%indata1    = OpVariable %inbufptr1 Uniform\n"
+		"%inbuf2     = OpTypeStruct %f32arr\n"
+		"%inbufptr2  = OpTypePointer Uniform %inbuf2\n"
+		"%indata2    = OpVariable %inbufptr2 Uniform\n"
+		"%outbuf     = OpTypeStruct %f32arr\n"
+		"%outbufptr  = OpTypePointer Uniform %outbuf\n"
+		"%outdata    = OpVariable %outbufptr Uniform\n"
+
+		"%id        = OpVariable %uvec3ptr Input\n"
+
+		"%main      = OpFunction %void None %voidf\n"
+		"%label     = OpLabel\n"
+		"%idval     = OpLoad %uvec3 %id\n"
+		"%x         = OpCompositeExtract %u32 %idval 0\n"
+		"%inloc1    = OpAccessChain %f32ptr %indata1 %zero %x\n"
+		"%inval1    = OpLoad %f32 %inloc1\n"
+		"%inloc2    = OpAccessChain %f32ptr %indata2 %zero %x\n"
+		"%inval2    = OpLoad %f32 %inloc2\n"
+		"%rem       = OpFRem %f32 %inval1 %inval2\n"
+		"%outloc    = OpAccessChain %f32ptr %outdata %zero %x\n"
+		"             OpStore %outloc %rem\n"
+		"             OpReturn\n"
+		"             OpFunctionEnd\n";
+
+	spec.inputs.push_back(BufferSp(new Float32Buffer(inputFloats1)));
+	spec.inputs.push_back(BufferSp(new Float32Buffer(inputFloats2)));
+	spec.outputs.push_back(BufferSp(new Float32Buffer(outputFloats)));
+	spec.numWorkGroups = IVec3(numElements, 1, 1);
+
+	group->addChild(new SpvAsmComputeShaderCase(testCtx, "all", "", spec));
+
+	return group.release();
+}
+
 // Copy contents in the input buffer to the output buffer.
 tcu::TestCaseGroup* createOpCopyMemoryGroup (tcu::TestContext& testCtx)
 {
@@ -1266,6 +1349,7 @@ tcu::TestCaseGroup* createSpecConstantGroup (tcu::TestContext& testCtx)
 
 	return group.release();
 }
+
 tcu::TestCaseGroup* createOpPhiGroup (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opphi", "Test the OpPhi instruction"));
@@ -7302,6 +7386,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	computeTests->addChild(createOpUndefGroup(testCtx));
 	computeTests->addChild(createOpUnreachableGroup(testCtx));
 	computeTests ->addChild(createOpQuantizeToF16Group(testCtx));
+	computeTests ->addChild(createOpFRemGroup(testCtx));
 
 	RGBA defaultColors[4];
 	getDefaultColors(defaultColors);
