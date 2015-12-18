@@ -55,6 +55,7 @@
 #include "vktRenderPassTests.hpp"
 #include "vktMemoryTests.hpp"
 #include "vktShaderRenderDiscardTests.hpp"
+#include "vktQueryPoolTests.hpp"
 
 #include <vector>
 #include <sstream>
@@ -293,6 +294,7 @@ void TestPackage::init (void)
 	addChild(createGlslTests			(m_testCtx));
 	addChild(createRenderPassTests		(m_testCtx));
 	addChild(memory::createTests		(m_testCtx));
+	addChild(QueryPool::createTests		(m_testCtx));
 }
 
 } // vkt

@@ -34,7 +34,6 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktQueryPoolTests.hpp"
-#include "vktQueryPoolTests.hpp"
 
 #include "deUniquePtr.hpp"
 

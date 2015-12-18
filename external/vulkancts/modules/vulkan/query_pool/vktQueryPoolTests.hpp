@@ -1,4 +1,5 @@
 #ifndef _VKTQUERYPOOLTESTS_HPP
+#define _VKTQUERYPOOLTESTS_HPP
 /*------------------------------------------------------------------------
  * Vulkan Conformance Tests
  * ------------------------

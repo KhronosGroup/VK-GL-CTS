@@ -57,7 +57,7 @@ namespace
 struct StateObjects {
 			StateObjects	(const vk::DeviceInterface&vk, vkt::Context &context, const int numVertices, vk::VkPrimitiveTopology primitive);
 	void	setVertices		(const vk::DeviceInterface&vk, std::vector<tcu::Vec4> vertices);
-	
+
 	enum
 	{
 		WIDTH	= 128,
@@ -81,9 +81,8 @@ struct StateObjects {
 	vk::VkFormat					m_ColorAttachmentFormat;
 };
 
-
 StateObjects::StateObjects (const vk::DeviceInterface&vk, vkt::Context &context, const int numVertices, vk::VkPrimitiveTopology primitive)
-	: m_context(context) 
+	: m_context(context)
 	, m_ColorAttachmentFormat(vk::VK_FORMAT_R8G8B8A8_UNORM)
 
 {
@@ -99,76 +98,68 @@ StateObjects::StateObjects (const vk::DeviceInterface&vk, vkt::Context &context,
 			1		// depth;
 		};
 
-		ImageCreateInfo colorImageCreateInfo(
-			vk::VK_IMAGE_TYPE_2D, m_ColorAttachmentFormat, imageExtent, 1, 1, vk::VK_SAMPLE_COUNT_1_BIT, vk::VK_IMAGE_TILING_OPTIMAL,
-			vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+		const ImageCreateInfo colorImageCreateInfo(vk::VK_IMAGE_TYPE_2D, m_ColorAttachmentFormat, imageExtent, 1, 1, vk::VK_SAMPLE_COUNT_1_BIT, vk::VK_IMAGE_TILING_OPTIMAL,
+												   vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
 
-		m_ColorAttachmentImage = Image::createAndAlloc(vk, device, colorImageCreateInfo, m_context.getDefaultAllocator());
+		m_ColorAttachmentImage	= Image::createAndAlloc(vk, device, colorImageCreateInfo, m_context.getDefaultAllocator());
 
-		ImageViewCreateInfo attachmentViewInfo(m_ColorAttachmentImage->object(), vk::VK_IMAGE_VIEW_TYPE_2D, m_ColorAttachmentFormat);
-		m_AttachmentView = vk::createImageView(vk, device, &attachmentViewInfo);
+		const ImageViewCreateInfo attachmentViewInfo(m_ColorAttachmentImage->object(), vk::VK_IMAGE_VIEW_TYPE_2D, m_ColorAttachmentFormat);
+		m_AttachmentView		= vk::createImageView(vk, device, &attachmentViewInfo);
 
 		ImageCreateInfo depthImageCreateInfo(vk::VK_IMAGE_TYPE_2D, depthFormat, imageExtent, 1, 1, vk::VK_SAMPLE_COUNT_1_BIT, vk::VK_IMAGE_TILING_OPTIMAL,
 			vk::VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
 
-		m_DepthImage = Image::createAndAlloc(vk, device, depthImageCreateInfo, m_context.getDefaultAllocator());
+		m_DepthImage			= Image::createAndAlloc(vk, device, depthImageCreateInfo, m_context.getDefaultAllocator());
 
 		// Construct a depth  view from depth image
-		ImageViewCreateInfo depthViewInfo(m_DepthImage->object(), vk::VK_IMAGE_VIEW_TYPE_2D, depthFormat);
-		m_DepthView = vk::createImageView(vk, device, &depthViewInfo);
+		const ImageViewCreateInfo depthViewInfo(m_DepthImage->object(), vk::VK_IMAGE_VIEW_TYPE_2D, depthFormat);
+		m_DepthView				= vk::createImageView(vk, device, &depthViewInfo);
 	}
 
 	{
 		// Renderpass and Framebuffer
 
 		RenderPassCreateInfo renderPassCreateInfo;
-		renderPassCreateInfo.addAttachment(AttachmentDescription(
-				m_ColorAttachmentFormat,								// format
-				vk::VK_SAMPLE_COUNT_1_BIT,								// samples
-				vk::VK_ATTACHMENT_LOAD_OP_CLEAR,						// loadOp
-				vk::VK_ATTACHMENT_STORE_OP_DONT_CARE,					// storeOp
-				vk::VK_ATTACHMENT_LOAD_OP_DONT_CARE,					// stencilLoadOp
-				vk::VK_ATTACHMENT_STORE_OP_DONT_CARE,					// stencilLoadOp
-				vk::VK_IMAGE_LAYOUT_GENERAL,							// initialLauout
-				vk::VK_IMAGE_LAYOUT_GENERAL								// finalLayout
-			));
+		renderPassCreateInfo.addAttachment(AttachmentDescription(m_ColorAttachmentFormat,									// format
+																 	vk::VK_SAMPLE_COUNT_1_BIT,								// samples
+																 	vk::VK_ATTACHMENT_LOAD_OP_CLEAR,						// loadOp
+																 	vk::VK_ATTACHMENT_STORE_OP_DONT_CARE,					// storeOp
+																 	vk::VK_ATTACHMENT_LOAD_OP_DONT_CARE,					// stencilLoadOp
+																 	vk::VK_ATTACHMENT_STORE_OP_DONT_CARE,					// stencilLoadOp
+																 	vk::VK_IMAGE_LAYOUT_GENERAL,							// initialLauout
+																 	vk::VK_IMAGE_LAYOUT_GENERAL));							// finalLayout
 
-		renderPassCreateInfo.addAttachment(AttachmentDescription(
-				depthFormat,											// format
-				vk::VK_SAMPLE_COUNT_1_BIT,								// samples
-				vk::VK_ATTACHMENT_LOAD_OP_CLEAR,						// loadOp
-				vk::VK_ATTACHMENT_STORE_OP_DONT_CARE,					// storeOp
-				vk::VK_ATTACHMENT_LOAD_OP_DONT_CARE,					// stencilLoadOp
-				vk::VK_ATTACHMENT_STORE_OP_DONT_CARE,					// stencilLoadOp
-				vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,	// initialLauout
-				vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL	// finalLayout
-			));
-
-		vk::VkAttachmentReference colorAttachmentReference =
+		renderPassCreateInfo.addAttachment(AttachmentDescription(depthFormat,												// format
+																 vk::VK_SAMPLE_COUNT_1_BIT,									// samples
+																 vk::VK_ATTACHMENT_LOAD_OP_CLEAR,							// loadOp
+																 vk::VK_ATTACHMENT_STORE_OP_DONT_CARE,						// storeOp
+																 vk::VK_ATTACHMENT_LOAD_OP_DONT_CARE,						// stencilLoadOp
+																 vk::VK_ATTACHMENT_STORE_OP_DONT_CARE,						// stencilLoadOp
+																 vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,		// initialLauout
+																 vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL));	// finalLayout
+			
+		const vk::VkAttachmentReference colorAttachmentReference =
 		{
 			0,															// attachment
 			vk::VK_IMAGE_LAYOUT_GENERAL									// layout
 		};
 
-
-		vk::VkAttachmentReference depthAttachmentReference =
+		const vk::VkAttachmentReference depthAttachmentReference =
 		{
 			1,															// attachment
 			vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL		// layout
 		};
 
-		renderPassCreateInfo.addSubpass(SubpassDescription(
-				vk::VK_PIPELINE_BIND_POINT_GRAPHICS,					// pipelineBindPoint
-				0,														// flags
-				0,														// inputCount
-				DE_NULL,												// pInputAttachments
-				1,														// colorCount
-				&colorAttachmentReference,								// pColorAttachments
-				DE_NULL,												// pResolveAttachments
-				depthAttachmentReference,								// depthStencilAttachment
-				0,														// preserveCount
-				DE_NULL													// preserveAttachments
-			));                                      
+		renderPassCreateInfo.addSubpass(SubpassDescription(vk::VK_PIPELINE_BIND_POINT_GRAPHICS,					// pipelineBindPoint
+														   0,													// flags
+														   0,													// inputCount
+														   DE_NULL,												// pInputAttachments
+														   1,													// colorCount
+														   &colorAttachmentReference,							// pColorAttachments
+														   DE_NULL,												// pResolveAttachments
+														   depthAttachmentReference,							// depthStencilAttachment
+														   0,													// preserveCount
+														   DE_NULL));											// preserveAttachments
 
 		m_RenderPass = vk::createRenderPass(vk, device, &renderPassCreateInfo);
 
@@ -176,7 +167,7 @@ StateObjects::StateObjects (const vk::DeviceInterface&vk, vkt::Context &context,
 		attachments[0] = *m_AttachmentView;
 		attachments[1] = *m_DepthView;
 
-		FramebufferCreateInfo framebufferCreateInfo(*m_RenderPass, attachments, WIDTH, HEIGHT, 0);
+		FramebufferCreateInfo framebufferCreateInfo(*m_RenderPass, attachments, WIDTH, HEIGHT, 1);
 		m_Framebuffer = vk::createFramebuffer(vk, device, &framebufferCreateInfo);
 	}
 
@@ -186,59 +177,63 @@ StateObjects::StateObjects (const vk::DeviceInterface&vk, vkt::Context &context,
 		vk::Unique<vk::VkShaderModule> vs(vk::createShaderModule(vk, device, m_context.getBinaryCollection().get("vert"), 0));
 		vk::Unique<vk::VkShaderModule> fs(vk::createShaderModule(vk, device, m_context.getBinaryCollection().get("frag"), 0));
 
-		PipelineCreateInfo::ColorBlendState::Attachment attachmentState;
+		const PipelineCreateInfo::ColorBlendState::Attachment attachmentState;
 
-
-		PipelineLayoutCreateInfo pipelineLayoutCreateInfo;
+		const PipelineLayoutCreateInfo pipelineLayoutCreateInfo;
 		m_PipelineLayout = vk::createPipelineLayout(vk, device, &pipelineLayoutCreateInfo);
 
-		vk::VkVertexInputBindingDescription vf_binding_desc =		{
-																		0,																// binding;
-																		4 * sizeof(float),												// stride;
-																		vk::VK_VERTEX_INPUT_RATE_VERTEX									// inputRate
-																	};
+		const vk::VkVertexInputBindingDescription vf_binding_desc		=
+		{
+			0,																// binding;
+			4 * sizeof(float),												// stride;
+			vk::VK_VERTEX_INPUT_RATE_VERTEX									// inputRate
+		};
 
-		vk::VkVertexInputAttributeDescription vf_attribute_desc =	{
-																		0,																// location;
-																		0,																// binding;
-																		vk::VK_FORMAT_R32G32B32A32_SFLOAT,								// format;
-																		0																// offset;
-																	};
+		const vk::VkVertexInputAttributeDescription vf_attribute_desc	=
+		{
+			0,																// location;
+			0,																// binding;
+			vk::VK_FORMAT_R32G32B32A32_SFLOAT,								// format;
+			0																// offset;
+		};
 
-		vk::VkPipelineVertexInputStateCreateInfo vf_info = 			{																	// sType;
-																		vk::VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,	// pNext;
-																		NULL,															// flags;
-																		0u,																// vertexBindingDescriptionCount;
-																		1,																// pVertexBindingDescriptions;
-																		&vf_binding_desc,												// vertexAttributeDescriptionCount;
-																		1,																// pVertexAttributeDescriptions;
-																		&vf_attribute_desc
-																	};
+		const vk::VkPipelineVertexInputStateCreateInfo vf_info			=
+		{																	// sType;
+			vk::VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,	// pNext;
+			NULL,															// flags;
+			0u,																// vertexBindingDescriptionCount;
+			1,																// pVertexBindingDescriptions;
+			&vf_binding_desc,												// vertexAttributeDescriptionCount;
+			1,																// pVertexAttributeDescriptions;
+			&vf_attribute_desc
+		};
 
 		PipelineCreateInfo pipelineCreateInfo(*m_PipelineLayout, *m_RenderPass, 0, 0);
 		pipelineCreateInfo.addShader(PipelineCreateInfo::PipelineShaderStage(*vs, "main", vk::VK_SHADER_STAGE_VERTEX_BIT));
 		pipelineCreateInfo.addShader(PipelineCreateInfo::PipelineShaderStage(*fs, "main", vk::VK_SHADER_STAGE_FRAGMENT_BIT));
 		pipelineCreateInfo.addState(PipelineCreateInfo::InputAssemblerState(primitive));
 		pipelineCreateInfo.addState(PipelineCreateInfo::ColorBlendState(1, &attachmentState));
-		vk::VkViewport viewport	=	{
-										0,		// float x;
-										0,		// float y;
-										WIDTH,	// float width;
-										HEIGHT,	// float height;
-										0.0f,	// float minDepth;
-										1.0f	// float maxDepth;
-									};
-		
-		vk::VkRect2D scissor	=	{
-										{
-											0,		// deInt32 x
-											0,		// deInt32 y
-										},		// VkOffset2D	offset;
-										{
-											WIDTH,	// deInt32 width;
-											HEIGHT,	// deInt32 height
-										},		// VkExtent2D	extent;
-									};
+		const vk::VkViewport viewport	=
+		{
+			0,		// float x;
+			0,		// float y;
+			WIDTH,	// float width;
+			HEIGHT,	// float height;
+			0.0f,	// float minDepth;
+			1.0f	// float maxDepth;
+		};
+
+		const vk::VkRect2D scissor		=
+		{
+			{
+				0,		// deInt32 x
+				0,		// deInt32 y
+			},		// VkOffset2D	offset;
+			{
+				WIDTH,	// deInt32 width;
+				HEIGHT,	// deInt32 height
+			},		// VkExtent2D	extent;
+		};
 		pipelineCreateInfo.addState(PipelineCreateInfo::ViewportState(1, std::vector<vk::VkViewport>(1, viewport), std::vector<vk::VkRect2D>(1, scissor)));
 		pipelineCreateInfo.addState(PipelineCreateInfo::DepthStencilState(true, true, vk::VK_COMPARE_OP_GREATER_OR_EQUAL));
 		pipelineCreateInfo.addState(PipelineCreateInfo::RasterizerState());
@@ -277,7 +272,7 @@ enum OcclusionQueryWait
 	WAIT_NONE
 };
 
-enum OcclusionQueryResultsMode	
+enum OcclusionQueryResultsMode
 {
 	RESULTS_MODE_GET,
 	RESULTS_MODE_COPY
@@ -294,7 +289,6 @@ struct OcclusionQueryTestVector
 	vk::VkPrimitiveTopology		primitiveRopology;
 };
 
-
 class BasicOcclusionQueryTestInstance : public vkt::TestInstance
 {
 public:
@@ -303,10 +297,13 @@ public:
 private:
 	tcu::TestStatus	iterate								(void);
 
-	static const int			kNumQueriesInPool			= 2;
-	static const int			kQueryIndexCaptureEmpty		= 0;
-	static const int			kQueryIndexCaptureDrawcall	= 1;
-	static const int			kNumVerticesInDrawCall		= 3;
+	enum 
+	{
+		NUM_QUERIES_IN_POOL				= 2,
+		QUERY_INDEX_CAPTURE_EMPTY		= 0,
+		QUERY_INDEX_CAPTURE_DRAWCALL	= 1,
+		NUM_VERTICES_IN_DRAWCALL		= 3
+	};
 
 	OcclusionQueryTestVector	m_testVector;
 	StateObjects*				m_stateObjects;
@@ -316,7 +313,7 @@ private:
 BasicOcclusionQueryTestInstance::BasicOcclusionQueryTestInstance (vkt::Context &context, const OcclusionQueryTestVector&  testVector)
 	: TestInstance		(context)
 	, m_testVector		(testVector)
-	, m_stateObjects	(new StateObjects(m_context.getDeviceInterface(), m_context, kNumVerticesInDrawCall, m_testVector.primitiveRopology))
+	, m_stateObjects	(new StateObjects(m_context.getDeviceInterface(), m_context, NUM_VERTICES_IN_DRAWCALL, m_testVector.primitiveRopology))
 {
 	DE_ASSERT(testVector.queryResultSize			== RESULT_SIZE_64_BIT
 			&& testVector.queryWait					== WAIT_QUEUE
@@ -329,18 +326,18 @@ BasicOcclusionQueryTestInstance::BasicOcclusionQueryTestInstance (vkt::Context &
 	const vk::VkDevice			device	= m_context.getDevice();
 	const vk::DeviceInterface&	vk		= m_context.getDeviceInterface();
 
-	vk::VkQueryPoolCreateInfo queryPoolCreateInfo =
+	const vk::VkQueryPoolCreateInfo queryPoolCreateInfo =
 	{
 		vk::VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO,
 		DE_NULL,
 		0u,
 		vk::VK_QUERY_TYPE_OCCLUSION,
-		kNumQueriesInPool,
+		NUM_QUERIES_IN_POOL,
 		0
 	};
 	VK_CHECK(vk.createQueryPool(device, &queryPoolCreateInfo, /*pAllocator*/ DE_NULL, &m_queryPool));
 
-	std::vector<tcu::Vec4> vertices(kNumVerticesInDrawCall);
+	std::vector<tcu::Vec4> vertices(NUM_VERTICES_IN_DRAWCALL);
 	vertices[0] = tcu::Vec4(0.5, 0.5, 0.0, 1.0);
 	vertices[1] = tcu::Vec4(0.5, 0.0, 0.0, 1.0);
 	vertices[2] = tcu::Vec4(0.0, 0.5, 0.0, 1.0);
@@ -390,10 +387,12 @@ tcu::TestStatus	BasicOcclusionQueryTestInstance::iterate (void)
 	std::vector<vk::VkClearValue> renderPassClearValues(2);
 	deMemset(&renderPassClearValues[0], static_cast<int>(renderPassClearValues.size()) * sizeof(vk::VkClearValue), 0);
 
-	vk::VkRect2D renderArea = {
-		{ 0, 0 },
-		{ StateObjects::WIDTH, StateObjects::HEIGHT }
+	const vk::VkRect2D renderArea =
+	{
+		{ 0,					0 },
+		{ StateObjects::WIDTH,	StateObjects::HEIGHT }
 	};
+
 	RenderPassBeginInfo renderPassBegin(*m_stateObjects->m_RenderPass, *m_stateObjects->m_Framebuffer, renderArea, renderPassClearValues);
 
 	vk.cmdBeginRenderPass(*cmdBuffer, &renderPassBegin, vk::VK_SUBPASS_CONTENTS_INLINE);
@@ -404,14 +403,14 @@ tcu::TestStatus	BasicOcclusionQueryTestInstance::iterate (void)
 	const vk::VkDeviceSize vertexBufferOffset = 0;
 	vk.cmdBindVertexBuffers(*cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
 
-	vk.cmdResetQueryPool(*cmdBuffer, m_queryPool, 0, kNumQueriesInPool);
+	vk.cmdResetQueryPool(*cmdBuffer, m_queryPool, 0, NUM_QUERIES_IN_POOL);
 
-	vk.cmdBeginQuery(*cmdBuffer, m_queryPool, kQueryIndexCaptureEmpty, m_testVector.queryControlFlags);
-	vk.cmdEndQuery(*cmdBuffer, m_queryPool,	kQueryIndexCaptureEmpty);
+	vk.cmdBeginQuery(*cmdBuffer, m_queryPool, QUERY_INDEX_CAPTURE_EMPTY, m_testVector.queryControlFlags);
+	vk.cmdEndQuery(*cmdBuffer, m_queryPool,	QUERY_INDEX_CAPTURE_EMPTY);
 
-	vk.cmdBeginQuery(*cmdBuffer, m_queryPool, kQueryIndexCaptureDrawcall, m_testVector.queryControlFlags);
-	vk.cmdDraw(*cmdBuffer, kNumVerticesInDrawCall, 1, 0, 0);
-	vk.cmdEndQuery(*cmdBuffer, m_queryPool,	kQueryIndexCaptureDrawcall);
+	vk.cmdBeginQuery(*cmdBuffer, m_queryPool, QUERY_INDEX_CAPTURE_DRAWCALL, m_testVector.queryControlFlags);
+	vk.cmdDraw(*cmdBuffer, NUM_VERTICES_IN_DRAWCALL, 1, 0, 0);
+	vk.cmdEndQuery(*cmdBuffer, m_queryPool,	QUERY_INDEX_CAPTURE_DRAWCALL);
 
 	vk.cmdEndRenderPass(*cmdBuffer);
 
@@ -420,27 +419,28 @@ tcu::TestStatus	BasicOcclusionQueryTestInstance::iterate (void)
 	vk.endCommandBuffer(*cmdBuffer);
 
 	// Submit command buffer
-	vk::VkSubmitInfo submitInfo =
+	const vk::VkSubmitInfo submitInfo =
 	{
 		vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,	// VkStructureType			sType;
 		DE_NULL,							// const void*				pNext;
-		0, 									// deUint32					waitSemaphoreCount;
-		DE_NULL, 							// const VkSemaphore*		pWaitSemaphores;
-		1, 									// deUint32					commandBufferCount;
+		0,									// deUint32					waitSemaphoreCount;
+		DE_NULL,							// const VkSemaphore*		pWaitSemaphores;
+		1,									// deUint32					commandBufferCount;
 		&cmdBuffer.get(),					// const VkCommandBuffer*	pCommandBuffers;
-		0, 									// deUint32					signalSemaphoreCount;
+		0,									// deUint32					signalSemaphoreCount;
 		DE_NULL								// const VkSemaphore*		pSignalSemaphores;
 	};
 	vk.queueSubmit(queue, 1, &submitInfo, DE_NULL);
 
 	VK_CHECK(vk.queueWaitIdle(queue));
 
-	deUint64 queryResults[kNumQueriesInPool] = { 0 };
-	size_t queryResultsSize = sizeof(queryResults);
+	deUint64 queryResults[NUM_QUERIES_IN_POOL] = { 0 };
+	size_t queryResultsSize		= sizeof(queryResults);
 
-	vk::VkResult queryResult = vk.getQueryPoolResults(device, m_queryPool, 0, kNumQueriesInPool, queryResultsSize, queryResults, sizeof(queryResults[0]), vk::VK_QUERY_RESULT_64_BIT);
+	vk::VkResult queryResult	= vk.getQueryPoolResults(device, m_queryPool, 0, NUM_QUERIES_IN_POOL, queryResultsSize, queryResults, sizeof(queryResults[0]), vk::VK_QUERY_RESULT_64_BIT);
 
-	if (queryResult == vk::VK_NOT_READY) {
+	if (queryResult == vk::VK_NOT_READY)
+	{
 		TCU_FAIL("Query result not avaliable, but vkWaitIdle() was called.");
 	}
 
@@ -448,44 +448,51 @@ tcu::TestStatus	BasicOcclusionQueryTestInstance::iterate (void)
 
 	log << tcu::TestLog::Section("OcclusionQueryResults",
 		"Occlusion query results");
-	for (int i = 0; i < DE_LENGTH_OF_ARRAY(queryResults); ++i) {
-		log << tcu::TestLog::Message << "query[ slot == " << i
-			<< "] result == " << queryResults[i] << tcu::TestLog::EndMessage;
+	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(queryResults); ++ndx)
+	{
+		log << tcu::TestLog::Message << "query[ slot == " << ndx
+			<< "] result == " << queryResults[ndx] << tcu::TestLog::EndMessage;
 	}
 
-	qpTestResult result = QP_TEST_RESULT_PASS;
+	bool passed = true;
+	
+	for (int queryNdx = 0; queryNdx < DE_LENGTH_OF_ARRAY(queryResults); ++queryNdx)
+	{
 
-	for (int i = 0; i < DE_LENGTH_OF_ARRAY(queryResults); ++i) {
-		
 		deUint64 expectedValue;
 
-		switch (i) {
-			case kQueryIndexCaptureEmpty:
+		switch (queryNdx)
+		{
+			case QUERY_INDEX_CAPTURE_EMPTY:
 				expectedValue = 0;
 				break;
-			case kQueryIndexCaptureDrawcall:
-				expectedValue = kNumVerticesInDrawCall;
+			case QUERY_INDEX_CAPTURE_DRAWCALL:
+				expectedValue = NUM_VERTICES_IN_DRAWCALL;
 				break;
 		}
 
-		if ((m_testVector.queryControlFlags & vk::VK_QUERY_CONTROL_PRECISE_BIT) || expectedValue == 0) {
+		if ((m_testVector.queryControlFlags & vk::VK_QUERY_CONTROL_PRECISE_BIT) || expectedValue == 0)
+		{
 			// require precise value
-			if (queryResults[i] != expectedValue) {
+			if (queryResults[queryNdx] != expectedValue)
+			{
 				log << tcu::TestLog::Message << "vkGetQueryPoolResults returned "
 					"wrong value of query for index "
-					<< i << ", expected " << expectedValue << ", got "
+					<< queryNdx << ", expected " << expectedValue << ", got "
 					<< queryResults[0] << "." << tcu::TestLog::EndMessage;
-				result = QP_TEST_RESULT_FAIL;
+				passed = false;
 			}
 		}
-		else {
+		else
+		{
 			// require imprecize value > 0
-			if (queryResults[i] == 0) {
+			if (queryResults[queryNdx] == 0)
+			{
 				log << tcu::TestLog::Message << "vkGetQueryPoolResults returned "
 					"wrong value of query for index "
-					<< i << ", expected any non-zero value, got "
+					<< queryNdx << ", expected any non-zero value, got "
 					<< queryResults[0] << "." << tcu::TestLog::EndMessage;
-				result = QP_TEST_RESULT_FAIL;
+				passed = false;
 			}
 		}
 	}
@@ -493,16 +500,18 @@ tcu::TestStatus	BasicOcclusionQueryTestInstance::iterate (void)
 
 	const vk::VkOffset3D zeroOffset = { 0, 0, 0 };
 
-
 	tcu::ConstPixelBufferAccess resultImageAccess = m_stateObjects->m_ColorAttachmentImage->readSurface(
 				queue, m_context.getDefaultAllocator(), vk::VK_IMAGE_LAYOUT_GENERAL,
 				zeroOffset,  StateObjects::HEIGHT, StateObjects::WIDTH, vk::VK_IMAGE_ASPECT_COLOR_BIT);
 
 	log << tcu::TestLog::Image("Result", "Result", resultImageAccess);
 
-	return tcu::TestStatus(result, qpGetTestResultName(result));
+	if (passed)
+	{
+		return tcu::TestStatus(QP_TEST_RESULT_PASS, "Query result verification passed");
+	}
+	return tcu::TestStatus(QP_TEST_RESULT_FAIL, "Query result verification failed");
 }
-
 
 class OcclusionQueryTestInstance : public vkt::TestInstance
 {
@@ -517,21 +526,29 @@ private:
 
 	void							captureResults					(deUint64*			retResults,	deUint64*		retAvailability,	bool	allowNotReady);
 	void							logResults						(const deUint64*	results,	const deUint64* availability);
-	qpTestResult					validateResults					(const deUint64*	results,	const deUint64* availability,		bool	allowUnavailable,	vk::VkPrimitiveTopology primitiveTopology);
+	bool							validateResults					(const deUint64*	results,	const deUint64* availability,		bool	allowUnavailable,	vk::VkPrimitiveTopology primitiveTopology);
 	void							logRenderTarget					(void);
 
-	static const int				kNumQueriesInPool						= 3;
-	static const int				kQueryIndexCaptureAll					= 0;
-	static const int				kQueryIndexCapturePartiallyOccluded		= 1;
-	static const int				kQueryIndexCaptureOccluded				= 2;
-
-	static const int				kNumVerticesInDrawCall					= 3;
-	static const int				kNumVerticesInPartialOccludeDrawCall	= 3;
-	static const int				kNumVerticesInOccludeDrawCall			= 3;
-	static const int				kNumVertices							= kNumVerticesInDrawCall + kNumVerticesInPartialOccludeDrawCall + kNumVerticesInOccludeDrawCall;
-	static const int				kStartVertex							= 0;
-	static const int				kPartialOccludeCallStartVertex			= kStartVertex + kNumVerticesInDrawCall;
-	static const int				kOccludeStartVertex						= kPartialOccludeCallStartVertex + kNumVerticesInPartialOccludeDrawCall;
+	enum 
+	{
+		NUM_QUERIES_IN_POOL							= 3,
+		QUERY_INDEX_CAPTURE_ALL						= 0,
+		QUERY_INDEX_CAPTURE_PARTIALLY_OCCLUDED		= 1,
+		QUERY_INDEX_CAPTURE_OCCLUDED				= 2
+	};
+	enum
+	{
+		NUM_VERTICES_IN_DRAWCALL					= 3,
+		NUM_VERTICES_IN_PARTIALLY_OCCLUDED_DRAWCALL	= 3,
+		NUM_VERTICES_IN_OCCLUDER_DRAWCALL			= 3,
+		NUM_VERTICES								= NUM_VERTICES_IN_DRAWCALL + NUM_VERTICES_IN_PARTIALLY_OCCLUDED_DRAWCALL + NUM_VERTICES_IN_OCCLUDER_DRAWCALL
+	};
+	enum
+	{
+		START_VERTEX								= 0,
+		START_VERTEX_PARTIALLY_OCCLUDED				= START_VERTEX + NUM_VERTICES_IN_DRAWCALL,
+		START_VERTEX_OCCLUDER						= START_VERTEX_PARTIALLY_OCCLUDED + NUM_VERTICES_IN_PARTIALLY_OCCLUDED_DRAWCALL
+	};
 
 	OcclusionQueryTestVector		m_testVector;
 
@@ -549,7 +566,7 @@ private:
 OcclusionQueryTestInstance::OcclusionQueryTestInstance (vkt::Context &context, const OcclusionQueryTestVector& testVector)
 	: vkt::TestInstance		(context)
 	, m_testVector			(testVector)
-	, m_stateObjects		(new StateObjects(m_context.getDeviceInterface(), m_context, kNumVerticesInDrawCall + kNumVerticesInPartialOccludeDrawCall + kNumVerticesInOccludeDrawCall, m_testVector.primitiveRopology))
+	, m_stateObjects		(new StateObjects(m_context.getDeviceInterface(), m_context, NUM_VERTICES_IN_DRAWCALL + NUM_VERTICES_IN_PARTIALLY_OCCLUDED_DRAWCALL + NUM_VERTICES_IN_OCCLUDER_DRAWCALL, m_testVector.primitiveRopology))
 	, m_queryResultFlags	((m_testVector.queryWait == WAIT_QUERY					? vk::VK_QUERY_RESULT_WAIT_BIT				: 0)
 							| (m_testVector.queryResultSize == RESULT_SIZE_64_BIT	? vk::VK_QUERY_RESULT_64_BIT				: 0)
 							| (m_testVector.queryResultsAvailability				? vk::VK_QUERY_RESULT_WITH_AVAILABILITY_BIT	: 0))
@@ -557,23 +574,24 @@ OcclusionQueryTestInstance::OcclusionQueryTestInstance (vkt::Context &context, c
 	const vk::VkDevice			device				= m_context.getDevice();
 	const vk::DeviceInterface&	vk					= m_context.getDeviceInterface();
 
-	vk::VkQueryPoolCreateInfo queryPoolCreateInfo	=	{
-															vk::VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO,
-															DE_NULL,
-															0u,
-															vk::VK_QUERY_TYPE_OCCLUSION,
-															kNumQueriesInPool,
-															0
-														};
+	const vk::VkQueryPoolCreateInfo queryPoolCreateInfo	=
+	{
+		vk::VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO,
+		DE_NULL,
+		0u,
+		vk::VK_QUERY_TYPE_OCCLUSION,
+		NUM_QUERIES_IN_POOL,
+		0
+	};
 
 	VK_CHECK(vk.createQueryPool(device, &queryPoolCreateInfo, /*pAllocator*/ DE_NULL, &m_queryPool));
-		
+
 	if (m_testVector.queryResultsMode == RESULTS_MODE_COPY)
 	{
-		const vk::VkDeviceSize	resultsBufferSize			= m_testVector.queryResultsStride * kNumQueriesInPool;
+		const vk::VkDeviceSize	resultsBufferSize			= m_testVector.queryResultsStride * NUM_QUERIES_IN_POOL;
 								m_queryPoolResultsBuffer	= Buffer::createAndAlloc(vk, device, BufferCreateInfo(resultsBufferSize, vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT), m_context.getDefaultAllocator(), vk::MemoryRequirement::HostVisible);
 	}
-	
+
 	const CmdPoolCreateInfo	cmdPoolCreateInfo		(m_context.getUniversalQueueFamilyIndex());
 							m_commandPool			= vk::createCommandPool(vk, device, &cmdPoolCreateInfo);
 							m_renderCommandBuffer	= recordRender(*m_commandPool);
@@ -592,7 +610,7 @@ OcclusionQueryTestInstance::~OcclusionQueryTestInstance (void)
 		delete m_stateObjects;
 
 	if (m_queryPool != DE_NULL)
-	{	
+	{
 		const vk::DeviceInterface& vk = m_context.getDeviceInterface();
 		vk.destroyQueryPool(device, m_queryPool, /*pAllocator*/ DE_NULL);
 	}
@@ -604,32 +622,32 @@ tcu::TestStatus OcclusionQueryTestInstance::iterate (void)
 	const vk::VkQueue			queue		= m_context.getUniversalQueue();
 	const vk::DeviceInterface&	vk			= m_context.getDeviceInterface();
 	tcu::TestLog&				log			= m_context.getTestContext().getLog();
-	std::vector<tcu::Vec4>		vertices	(kNumVertices);
+	std::vector<tcu::Vec4>		vertices	(NUM_VERTICES);
 
 	// 1st triangle
-	vertices[kStartVertex + 0] = tcu::Vec4( 0.5,  0.5, 0.5, 1.0);
-	vertices[kStartVertex + 1] = tcu::Vec4( 0.5, -0.5, 0.5, 1.0);
-	vertices[kStartVertex + 2] = tcu::Vec4(-0.5,  0.5, 0.5, 1.0);
+	vertices[START_VERTEX + 0] = tcu::Vec4( 0.5,  0.5, 0.5, 1.0);
+	vertices[START_VERTEX + 1] = tcu::Vec4( 0.5, -0.5, 0.5, 1.0);
+	vertices[START_VERTEX + 2] = tcu::Vec4(-0.5,  0.5, 0.5, 1.0);
 	// 2nd triangle - partially occluding the scene
-	vertices[kPartialOccludeCallStartVertex + 0] = tcu::Vec4(-0.5, -0.5, 1.0, 1.0);
-	vertices[kPartialOccludeCallStartVertex + 1] = tcu::Vec4( 0.5, -0.5, 1.0, 1.0);
-	vertices[kPartialOccludeCallStartVertex + 2] = tcu::Vec4(-0.5,  0.5, 1.0, 1.0);
+	vertices[START_VERTEX_PARTIALLY_OCCLUDED + 0] = tcu::Vec4(-0.5, -0.5, 1.0, 1.0);
+	vertices[START_VERTEX_PARTIALLY_OCCLUDED + 1] = tcu::Vec4( 0.5, -0.5, 1.0, 1.0);
+	vertices[START_VERTEX_PARTIALLY_OCCLUDED + 2] = tcu::Vec4(-0.5,  0.5, 1.0, 1.0);
 	// 3nd triangle - fully occluding the scene
-	vertices[kOccludeStartVertex + 0] = tcu::Vec4( 0.5,  0.5, 1.0, 1.0);
-	vertices[kOccludeStartVertex + 1] = tcu::Vec4( 0.5, -0.5, 1.0, 1.0);
-	vertices[kOccludeStartVertex + 2] = tcu::Vec4(-0.5,  0.5, 1.0, 1.0);
+	vertices[START_VERTEX_OCCLUDER + 0] = tcu::Vec4( 0.5,  0.5, 1.0, 1.0);
+	vertices[START_VERTEX_OCCLUDER + 1] = tcu::Vec4( 0.5, -0.5, 1.0, 1.0);
+	vertices[START_VERTEX_OCCLUDER + 2] = tcu::Vec4(-0.5,  0.5, 1.0, 1.0);
 
 	m_stateObjects->setVertices(vk, vertices);
 
-	vk::VkSubmitInfo submitInfo =
+	const vk::VkSubmitInfo submitInfo =
 	{
 		vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,	// VkStructureType			sType;
 		DE_NULL,							// const void*				pNext;
-		0, 									// deUint32					waitSemaphoreCount;
-		DE_NULL, 							// const VkSemaphore*		pWaitSemaphores;
-		1, 									// deUint32					commandBufferCount;
+		0,									// deUint32					waitSemaphoreCount;
+		DE_NULL,							// const VkSemaphore*		pWaitSemaphores;
+		1,									// deUint32					commandBufferCount;
 		&m_renderCommandBuffer.get(),		// const VkCommandBuffer*	pCommandBuffers;
-		0, 									// deUint32					signalSemaphoreCount;
+		0,									// deUint32					signalSemaphoreCount;
 		DE_NULL								// const VkSemaphore*		pSignalSemaphores;
 	};
 	vk.queueSubmit(queue, 1, &submitInfo, DE_NULL);
@@ -640,15 +658,20 @@ tcu::TestStatus OcclusionQueryTestInstance::iterate (void)
 
 		if (m_testVector.queryResultsMode == RESULTS_MODE_COPY)
 		{
-			vk::VkSubmitInfo submitInfo =
+			// In case of WAIT_QUEUE test variant, the previously submitted m_renderCommandBuffer did not
+			// contain vkCmdCopyQueryResults, so additional cmd buffer is needed.
+			
+			// In the case of WAIT_NONE or WAIT_QUERY, vkCmdCopyQueryResults is stored in m_renderCommandBuffer.
+
+			const vk::VkSubmitInfo submitInfo =
 			{
 				vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,	// VkStructureType			sType;
 				DE_NULL,							// const void*				pNext;
-				0, 									// deUint32					waitSemaphoreCount;
-				DE_NULL, 							// const VkSemaphore*		pWaitSemaphores;
-				1, 									// deUint32					commandBufferCount;
+				0,									// deUint32					waitSemaphoreCount;
+				DE_NULL,							// const VkSemaphore*		pWaitSemaphores;
+				1,									// deUint32					commandBufferCount;
 				&m_copyResultsCommandBuffer.get(),	// const VkCommandBuffer*	pCommandBuffers;
-				0, 									// deUint32					signalSemaphoreCount;
+				0,									// deUint32					signalSemaphoreCount;
 				DE_NULL								// const VkSemaphore*		pSignalSemaphores;
 			};
 			vk.queueSubmit(queue, 1, &submitInfo, DE_NULL);
@@ -657,20 +680,24 @@ tcu::TestStatus OcclusionQueryTestInstance::iterate (void)
 		}
 	}
 
-	deUint64 queryResults		[kNumQueriesInPool]; 
-	deUint64 queryAvailability	[kNumQueriesInPool]; 
+	deUint64 queryResults		[NUM_QUERIES_IN_POOL];
+	deUint64 queryAvailability	[NUM_QUERIES_IN_POOL];
 	captureResults(queryResults, queryAvailability, m_testVector.queryWait == WAIT_NONE);
 
 	log << tcu::TestLog::Section("OcclusionQueryResults", "Occlusion query results");
 
 	logResults(queryResults, queryAvailability);
-	qpTestResult result = validateResults(queryResults, queryAvailability, m_testVector.queryWait == WAIT_NONE, m_testVector.primitiveRopology);
+	bool passed = validateResults(queryResults, queryAvailability, m_testVector.queryWait == WAIT_NONE, m_testVector.primitiveRopology);
 
 	log << tcu::TestLog::EndSection;
 
 	logRenderTarget();
 
-	return tcu::TestStatus(result, qpGetTestResultName(result));
+		if (passed)
+	{
+		return tcu::TestStatus(QP_TEST_RESULT_PASS, "Query result verification passed");
+	}
+	return tcu::TestStatus(QP_TEST_RESULT_FAIL, "Query result verification failed");
 }
 
 vk::Move<vk::VkCommandBuffer> OcclusionQueryTestInstance::recordRender (vk::VkCommandPool cmdPool)
@@ -697,10 +724,12 @@ vk::Move<vk::VkCommandBuffer> OcclusionQueryTestInstance::recordRender (vk::VkCo
 
 	std::vector<vk::VkClearValue>	renderPassClearValues(2);
 	deMemset(&renderPassClearValues[0], static_cast<int>(renderPassClearValues.size()) * sizeof(vk::VkClearValue), 0);
-	vk::VkRect2D renderArea =	{
-									{ 0, 0 },
-									{ StateObjects::WIDTH,  StateObjects::HEIGHT }
-								};
+
+	const vk::VkRect2D renderArea =	
+	{
+		{ 0,					0 },
+		{ StateObjects::WIDTH,	StateObjects::HEIGHT }
+	};
 
 	RenderPassBeginInfo renderPassBegin(*m_stateObjects->m_RenderPass, *m_stateObjects->m_Framebuffer, renderArea, renderPassClearValues);
 
@@ -712,35 +741,35 @@ vk::Move<vk::VkCommandBuffer> OcclusionQueryTestInstance::recordRender (vk::VkCo
 	const vk::VkDeviceSize vertexBufferOffset = 0;
 	vk.cmdBindVertexBuffers(*cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
 
-	vk.cmdResetQueryPool(*cmdBuffer, m_queryPool, 0, kNumQueriesInPool);
+	vk.cmdResetQueryPool(*cmdBuffer, m_queryPool, 0, NUM_QUERIES_IN_POOL);
 
 	// Draw un-occluded geometry
-	vk.cmdBeginQuery(*cmdBuffer, m_queryPool, kQueryIndexCaptureAll, m_testVector.queryControlFlags);
-	vk.cmdDraw(*cmdBuffer, kNumVerticesInDrawCall, 1, kStartVertex, 0);
-	vk.cmdEndQuery(*cmdBuffer, m_queryPool,	kQueryIndexCaptureAll);
+	vk.cmdBeginQuery(*cmdBuffer, m_queryPool, QUERY_INDEX_CAPTURE_ALL, m_testVector.queryControlFlags);
+	vk.cmdDraw(*cmdBuffer, NUM_VERTICES_IN_DRAWCALL, 1, START_VERTEX, 0);
+	vk.cmdEndQuery(*cmdBuffer, m_queryPool,	QUERY_INDEX_CAPTURE_ALL);
 
 	// Partially occlude geometry
-	vk.cmdDraw(*cmdBuffer, kNumVerticesInPartialOccludeDrawCall, 1, kPartialOccludeCallStartVertex, 0);
+	vk.cmdDraw(*cmdBuffer, NUM_VERTICES_IN_PARTIALLY_OCCLUDED_DRAWCALL, 1, START_VERTEX_PARTIALLY_OCCLUDED, 0);
 
 	// Draw partially-occluded geometry
-	vk.cmdBeginQuery(*cmdBuffer, m_queryPool, kQueryIndexCapturePartiallyOccluded, m_testVector.queryControlFlags);
-	vk.cmdDraw(*cmdBuffer, kNumVerticesInDrawCall, 1, kStartVertex, 0);
-	vk.cmdEndQuery(*cmdBuffer, m_queryPool, kQueryIndexCapturePartiallyOccluded);
+	vk.cmdBeginQuery(*cmdBuffer, m_queryPool, QUERY_INDEX_CAPTURE_PARTIALLY_OCCLUDED, m_testVector.queryControlFlags);
+	vk.cmdDraw(*cmdBuffer, NUM_VERTICES_IN_DRAWCALL, 1, START_VERTEX, 0);
+	vk.cmdEndQuery(*cmdBuffer, m_queryPool, QUERY_INDEX_CAPTURE_PARTIALLY_OCCLUDED);
 
 	// Occlude geometry
-	vk.cmdDraw(*cmdBuffer, kNumVerticesInOccludeDrawCall, 1, kOccludeStartVertex, 0);
+	vk.cmdDraw(*cmdBuffer, NUM_VERTICES_IN_OCCLUDER_DRAWCALL, 1, START_VERTEX_OCCLUDER, 0);
 
 	// Draw occluded geometry
-	vk.cmdBeginQuery(*cmdBuffer, m_queryPool, kQueryIndexCaptureOccluded, m_testVector.queryControlFlags);
-	vk.cmdDraw(*cmdBuffer, kNumVerticesInDrawCall, 1, kStartVertex, 0);
-	vk.cmdEndQuery(*cmdBuffer, m_queryPool,	kQueryIndexCaptureOccluded);
+	vk.cmdBeginQuery(*cmdBuffer, m_queryPool, QUERY_INDEX_CAPTURE_OCCLUDED, m_testVector.queryControlFlags);
+	vk.cmdDraw(*cmdBuffer, NUM_VERTICES_IN_DRAWCALL, 1, START_VERTEX, 0);
+	vk.cmdEndQuery(*cmdBuffer, m_queryPool,	QUERY_INDEX_CAPTURE_OCCLUDED);
 
 	if (m_testVector.queryWait != WAIT_QUEUE )
 	{
 		//For WAIT_QUEUE another cmdBuffer is issued with cmdCopyQueryPoolResults
 		if (m_testVector.queryResultsMode == RESULTS_MODE_COPY)
 		{
-			vk.cmdCopyQueryPoolResults(*cmdBuffer, m_queryPool, 0, kNumQueriesInPool, m_queryPoolResultsBuffer->object(), /*dstOffset*/ 0, m_testVector.queryResultsStride, m_queryResultFlags);
+			vk.cmdCopyQueryPoolResults(*cmdBuffer, m_queryPool, 0, NUM_QUERIES_IN_POOL, m_queryPoolResultsBuffer->object(), /*dstOffset*/ 0, m_testVector.queryResultsStride, m_queryResultFlags);
 		}
 	}
 
@@ -771,23 +800,22 @@ vk::Move<vk::VkCommandBuffer> OcclusionQueryTestInstance::recordCopyResults (vk:
 	const CmdBufferBeginInfo		beginInfo	(DE_NULL, 0, DE_NULL, 0u, true, m_testVector.queryControlFlags);
 
 	vk.beginCommandBuffer(*cmdBuffer, &beginInfo);
-	vk.cmdCopyQueryPoolResults(*cmdBuffer, m_queryPool, 0, kNumQueriesInPool, m_queryPoolResultsBuffer->object(), /*dstOffset*/ 0, m_testVector.queryResultsStride, m_queryResultFlags);
+	vk.cmdCopyQueryPoolResults(*cmdBuffer, m_queryPool, 0, NUM_QUERIES_IN_POOL, m_queryPoolResultsBuffer->object(), /*dstOffset*/ 0, m_testVector.queryResultsStride, m_queryResultFlags);
 	vk.endCommandBuffer(*cmdBuffer);
 
 	return cmdBuffer;
 }
-
 
 void OcclusionQueryTestInstance::captureResults (deUint64* retResults, deUint64* retAvailAbility, bool allowNotReady)
 {
 
 	const vk::VkDevice			device			= m_context.getDevice();
 	const vk::DeviceInterface&	vk				= m_context.getDeviceInterface();
-	std::vector<deUint8>		resultsBuffer	(m_testVector.queryResultsStride * kNumQueriesInPool);
+	std::vector<deUint8>		resultsBuffer	(m_testVector.queryResultsStride * NUM_QUERIES_IN_POOL);
 
 	if (m_testVector.queryResultsMode == RESULTS_MODE_GET)
 	{
-		const vk::VkResult queryResult = vk.getQueryPoolResults(device, m_queryPool, 0, kNumQueriesInPool, resultsBuffer.size(), &resultsBuffer[0], m_testVector.queryResultsStride, m_queryResultFlags);
+		const vk::VkResult queryResult = vk.getQueryPoolResults(device, m_queryPool, 0, NUM_QUERIES_IN_POOL, resultsBuffer.size(), &resultsBuffer[0], m_testVector.queryResultsStride, m_queryResultFlags);
 		if (queryResult == vk::VK_NOT_READY && !allowNotReady)
 		{
 			TCU_FAIL("getQueryPoolResults returned VK_NOT_READY, but results should be already available.");
@@ -807,29 +835,28 @@ void OcclusionQueryTestInstance::captureResults (deUint64* retResults, deUint64*
 		deMemcpy(&resultsBuffer[0], allocationData, resultsBuffer.size());
 	}
 
-
-	for (int i = 0; i < kNumQueriesInPool; i++)
+	for (int queryNdx = 0; queryNdx < NUM_QUERIES_IN_POOL; queryNdx++)
 	{
-		const void* srcPtr = &resultsBuffer[i * m_testVector.queryResultsStride];
+		const void* srcPtr = &resultsBuffer[queryNdx * m_testVector.queryResultsStride];
 		if (m_testVector.queryResultSize == RESULT_SIZE_32_BIT)
 		{
 			const deUint32* srcPtrTyped = static_cast<const deUint32*>(srcPtr);
-			retResults[i] = *srcPtrTyped;
+			retResults[queryNdx]		= *srcPtrTyped;
 			if (m_testVector.queryResultsAvailability)
 			{
-				retAvailAbility[i] = *(srcPtrTyped + 1);
+				retAvailAbility[queryNdx] = *(srcPtrTyped + 1);
 			}
 		}
 		else if (m_testVector.queryResultSize == RESULT_SIZE_64_BIT)
 		{
 			const deUint64* srcPtrTyped = static_cast<const deUint64*>(srcPtr);
-			retResults[i] = *srcPtrTyped;
+			retResults[queryNdx]		= *srcPtrTyped;
 
 			if (m_testVector.queryResultsAvailability)
 			{
 				if (m_testVector.queryResultsAvailability)
 				{
-					retAvailAbility[i] = *(srcPtrTyped + 1);
+					retAvailAbility[queryNdx] = *(srcPtrTyped + 1);
 				}
 			}
 		}
@@ -844,37 +871,37 @@ void OcclusionQueryTestInstance::logResults (const deUint64* results, const deUi
 {
 	tcu::TestLog& log = m_context.getTestContext().getLog();
 
-	for (int i = 0; i < kNumQueriesInPool; ++i)
+	for (int ndx = 0; ndx < NUM_QUERIES_IN_POOL; ++ndx)
 	{
 		if (!m_testVector.queryResultsAvailability)
 		{
-			log << tcu::TestLog::Message << "query[ slot == " << i	<< "] result == " << results[i] << tcu::TestLog::EndMessage;
+			log << tcu::TestLog::Message << "query[ slot == " << ndx << "] result == " << results[ndx] << tcu::TestLog::EndMessage;
 		}
 		else
 		{
-			log << tcu::TestLog::Message << "query[ slot == " << i	<< "] result == " << results[i] << ", availability	== " << availability[i] << tcu::TestLog::EndMessage;
+			log << tcu::TestLog::Message << "query[ slot == " << ndx << "] result == " << results[ndx] << ", availability	== " << availability[ndx] << tcu::TestLog::EndMessage;
 		}
 	}
 }
 
-qpTestResult OcclusionQueryTestInstance::validateResults (const deUint64* results , const deUint64* availability, bool allowUnavailable, vk::VkPrimitiveTopology primitiveTopology)
+bool OcclusionQueryTestInstance::validateResults (const deUint64* results , const deUint64* availability, bool allowUnavailable, vk::VkPrimitiveTopology primitiveTopology)
 {
-	qpTestResult result = QP_TEST_RESULT_PASS;
+	bool passed			= true;
 	tcu::TestLog& log	= m_context.getTestContext().getLog();
 
-	for (int i = 0; i < kNumQueriesInPool; ++i)
+	for (int queryNdx = 0; queryNdx < NUM_QUERIES_IN_POOL; ++queryNdx)
 	{
 		deUint64 expectedValueMin = 0;
 		deUint64 expectedValueMax = 0;
 
-		if (m_testVector.queryResultsAvailability && availability[i] == 0)
+		if (m_testVector.queryResultsAvailability && availability[queryNdx] == 0)
 		{
 			// query result was not available
 			if (!allowUnavailable)
 			{
 				log << tcu::TestLog::Message << "query results availability was 0 for index "
-					<< i << ", expected any value greater than 0." << tcu::TestLog::EndMessage;
-				result = QP_TEST_RESULT_FAIL;
+					<< queryNdx << ", expected any value greater than 0." << tcu::TestLog::EndMessage;
+				passed = false;
 				continue;
 			}
 		}
@@ -883,30 +910,32 @@ qpTestResult OcclusionQueryTestInstance::validateResults (const deUint64* result
 			// query is available, so expect proper result values
 			if (primitiveTopology == vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST)
 			{
-				switch (i) {
-					case kQueryIndexCaptureOccluded:
+				switch (queryNdx)
+				{
+					case QUERY_INDEX_CAPTURE_OCCLUDED:
 						expectedValueMin = 0;
 						expectedValueMax = 0;
 						break;
-					case kQueryIndexCapturePartiallyOccluded:
+					case QUERY_INDEX_CAPTURE_PARTIALLY_OCCLUDED:
 						expectedValueMin = 1;
 						expectedValueMax = 1;
 						break;
-					case kQueryIndexCaptureAll:
-						expectedValueMin = kNumVerticesInDrawCall;
-						expectedValueMax = kNumVerticesInDrawCall;
+					case QUERY_INDEX_CAPTURE_ALL:
+						expectedValueMin = NUM_VERTICES_IN_DRAWCALL;
+						expectedValueMax = NUM_VERTICES_IN_DRAWCALL;
 						break;
 				}
 			}
 			else if (primitiveTopology == vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
 			{
-				switch (i) {
-					case kQueryIndexCaptureOccluded:
+				switch (queryNdx)
+				{
+					case QUERY_INDEX_CAPTURE_OCCLUDED:
 						expectedValueMin = 0;
 						expectedValueMax = 0;
 						break;
-					case kQueryIndexCapturePartiallyOccluded:
-					case kQueryIndexCaptureAll:
+					case QUERY_INDEX_CAPTURE_PARTIALLY_OCCLUDED:
+					case QUERY_INDEX_CAPTURE_ALL:
 						{
 							const int primWidth		= StateObjects::WIDTH  / 2;
 							const int primHeight	= StateObjects::HEIGHT / 2;
@@ -925,26 +954,27 @@ qpTestResult OcclusionQueryTestInstance::validateResults (const deUint64* result
 		if ((m_testVector.queryControlFlags & vk::VK_QUERY_CONTROL_PRECISE_BIT) || (expectedValueMin == 0 && expectedValueMax == 0))
 		{
 			// require precise value
-			if (results[i] < expectedValueMin || results[i] > expectedValueMax) {
+			if (results[queryNdx] < expectedValueMin || results[queryNdx] > expectedValueMax)
+			{
 				log << tcu::TestLog::Message << "wrong value of query for index "
-					<< i << ", expected the value minimum of " << expectedValueMin << ", maximum of " << expectedValueMax << " got "
-					<< results[i] << "." << tcu::TestLog::EndMessage;
-				result = QP_TEST_RESULT_FAIL;
+					<< queryNdx << ", expected the value minimum of " << expectedValueMin << ", maximum of " << expectedValueMax << " got "
+					<< results[queryNdx] << "." << tcu::TestLog::EndMessage;
+				passed = false;
 			}
 		}
 		else
 		{
 			// require imprecise value greater than 0
-			if (results[i] == 0)
+			if (results[queryNdx] == 0)
 			{
 				log << tcu::TestLog::Message << "wrong value of query for index "
-					<< i << ", expected any non-zero value, got "
-					<< results[i] << "." << tcu::TestLog::EndMessage;
-				result = QP_TEST_RESULT_FAIL;
+					<< queryNdx << ", expected any non-zero value, got "
+					<< results[queryNdx] << "." << tcu::TestLog::EndMessage;
+				passed = false;
 			}
 		}
 	}
-	return result;
+	return passed;
 }
 
 void OcclusionQueryTestInstance::logRenderTarget (void)
@@ -988,15 +1018,13 @@ private:
 																		 "void main() {\n"
 																		 "	gl_Position  = in_Postion;\n"
 																		 "	gl_PointSize = 1.0;\n"
-																		 "}\n");	
+																		 "}\n");
 	}
-
 
 	OcclusionQueryTestVector m_testVector;
 };
 
 } //anonymous
-
 
 namespace vkt
 {
@@ -1017,8 +1045,8 @@ QueryPoolOcclusionTests::~QueryPoolOcclusionTests (void)
 
 void QueryPoolOcclusionTests::init (void)
 {
-	OcclusionQueryTestVector baseTestVector; 
-	baseTestVector.queryControlFlags		= 0; 
+	OcclusionQueryTestVector baseTestVector;
+	baseTestVector.queryControlFlags		= 0;
 	baseTestVector.queryResultSize			= RESULT_SIZE_64_BIT;
 	baseTestVector.queryWait				= WAIT_QUEUE;
 	baseTestVector.queryResultsMode			= RESULTS_MODE_GET;
@@ -1039,7 +1067,7 @@ void QueryPoolOcclusionTests::init (void)
 	{
 		vk::VkQueryControlFlags	controlFlags[]		= { 0,					vk::VK_QUERY_CONTROL_PRECISE_BIT	};
 		const char*				controlFlagsStr[]	= { "conservative",		"precise"							};
-		
+
 		for (int controlFlagIdx = 0; controlFlagIdx < DE_LENGTH_OF_ARRAY(controlFlags); ++controlFlagIdx)
 		{
 
@@ -1053,7 +1081,7 @@ void QueryPoolOcclusionTests::init (void)
 
 				for (int resultSizeIdx = 0; resultSizeIdx < DE_LENGTH_OF_ARRAY(resultSize); ++resultSizeIdx)
 				{
-	
+
 					OcclusionQueryWait	wait[]		= { WAIT_QUEUE, WAIT_QUERY };
 					const char*			waitStr[]	= { "queue",	"query" };
 
@@ -1089,15 +1117,15 @@ void QueryPoolOcclusionTests::init (void)
 
 								testName << resultsModeStr[resultsModeIdx] << "_results"
 										 << "_" << controlFlagsStr[controlFlagIdx]
-										 << "_size_" << resultSizeStr[resultSizeIdx] 
-										 << "_wait_" << waitStr[waitIdx] 
+										 << "_size_" << resultSizeStr[resultSizeIdx]
+										 << "_wait_" << waitStr[waitIdx]
 										 << "_" << testAvailabilityStr[testAvailabilityIdx] << "_availability"
 										 << "_draw_" <<  primitiveTopologyStr[primitiveTopologyIdx];
 
-								testDescr << "draw occluded " << primitiveTopologyStr[primitiveTopologyIdx] 
+								testDescr << "draw occluded " << primitiveTopologyStr[primitiveTopologyIdx]
 										  << "with " << controlFlagsStr[controlFlagIdx] << ", "
 									      << resultsModeStr[resultsModeIdx] << " results "
-									      << testAvailabilityStr[testAvailabilityIdx] << " availability bit as " 
+									      << testAvailabilityStr[testAvailabilityIdx] << " availability bit as "
 										  << resultSizeStr[resultSizeIdx] << "bit variables,"
 									      << "wait for results on" << waitStr[waitIdx];
 
@@ -1116,7 +1144,7 @@ void QueryPoolOcclusionTests::init (void)
 
 		for (int resultsModeIdx = 0; resultsModeIdx < DE_LENGTH_OF_ARRAY(resultsMode); ++resultsModeIdx)
 		{
-			OcclusionQueryResultSize	resultSize[]	= { RESULT_SIZE_32_BIT, RESULT_SIZE_64_BIT };
+			OcclusionQueryResultSize	resultSizes[]	= { RESULT_SIZE_32_BIT, RESULT_SIZE_64_BIT };
 			const char*					resultSizeStr[] = { "32", "64" };
 
 			bool testAvailability[]				= { false,		true	};
@@ -1124,23 +1152,31 @@ void QueryPoolOcclusionTests::init (void)
 
 			for (int testAvailabilityIdx = 0; testAvailabilityIdx < DE_LENGTH_OF_ARRAY(testAvailability); ++testAvailabilityIdx)
 			{
-				for (int resultSizeIdx = 0; resultSizeIdx < DE_LENGTH_OF_ARRAY(resultSize); ++resultSizeIdx)
+				for (int resultSizeIdx = 0; resultSizeIdx < DE_LENGTH_OF_ARRAY(resultSizes); ++resultSizeIdx)
 				{
-					const vk::VkDeviceSize		strides[] = { 4, 5, 8, 9, 13, 1024 };
+					const vk::VkDeviceSize resultSize	= (resultSizes[resultSizeIdx] == RESULT_SIZE_32_BIT ? sizeof(deUint32) : sizeof(deUint64));
+
+					// \todo [2015-12-18 scygan] Ensure only stride values aligned to resultSize are allowed. Otherwise test should be extended.
+					const vk::VkDeviceSize strides[]	=
+					{
+						1 * resultSize,
+						2 * resultSize,
+						3 * resultSize,
+						4 * resultSize,
+						5 * resultSize,
+						13 * resultSize,
+						1024 * resultSize
+					};
 
 					for (int strideIdx = 0; strideIdx < DE_LENGTH_OF_ARRAY(strides); strideIdx++)
 					{
 						OcclusionQueryTestVector testVector		= baseTestVector;
 						testVector.queryResultsMode				= resultsMode[resultsModeIdx];
-						testVector.queryResultSize				= resultSize[resultSizeIdx];
+						testVector.queryResultSize				= resultSizes[resultSizeIdx];
 						testVector.queryResultsAvailability		= testAvailability[testAvailabilityIdx];
 						testVector.queryResultsStride			= strides[strideIdx];
 
-						vk::VkDeviceSize elementSize		= (testVector.queryResultSize == RESULT_SIZE_32_BIT ? sizeof(deUint32) : sizeof(deUint64));
-						if (testVector.queryResultsAvailability)
-						{
-							elementSize *= 2;
-						}
+						const vk::VkDeviceSize elementSize		= (testVector.queryResultsAvailability ? resultSize * 2 : resultSize);
 
 						if (elementSize > testVector.queryResultsStride)
 						{
@@ -1150,13 +1186,13 @@ void QueryPoolOcclusionTests::init (void)
 						std::ostringstream testName;
 						std::ostringstream testDescr;
 
-						testName << resultsModeStr[resultsModeIdx] 
-								 << "_results_size_" << resultSizeStr[resultSizeIdx] 
-								 << "_stride_" << strides[strideIdx] 
+						testName << resultsModeStr[resultsModeIdx]
+								 << "_results_size_" << resultSizeStr[resultSizeIdx]
+								 << "_stride_" << strides[strideIdx]
 								 << "_" << testAvailabilityStr[testAvailabilityIdx] << "_availability";
 
 						testDescr << resultsModeStr[resultsModeIdx] << " results "
-								  << testAvailabilityStr[testAvailabilityIdx] << " availability bit as " 
+								  << testAvailabilityStr[testAvailabilityIdx] << " availability bit as "
 								  << resultSizeStr[resultSizeIdx] << "bit variables, with stride" << strides[strideIdx];
 
 						addChild(new QueryPoolOcclusionTest<OcclusionQueryTestInstance>(m_testCtx, testName.str().c_str(), testDescr.str().c_str(), testVector));
@@ -1164,11 +1200,10 @@ void QueryPoolOcclusionTests::init (void)
 				}
 			}
 		}
-	
+
 	}
 }
 
 } //QueryPool
 } //vkt
-
 

@@ -1,5 +1,5 @@
-#ifndef _VKT_DYNAMIC_STATE_BUFFEROBJECTUTIL_HPP
-#define _VKT_DYNAMIC_STATE_BUFFEROBJECTUTIL_HPP
+#ifndef _VKTQUERYPOOLBUFFEROBJECTUTIL_HPP
+#define _VKTQUERYPOOLBUFFEROBJECTUTIL_HPP
 /*------------------------------------------------------------------------
  * Vulkan Conformance Tests
  * ------------------------
@@ -35,7 +35,6 @@
  * \brief Buffer Object Util
  *//*--------------------------------------------------------------------*/
 
-#include "vkDefs.hpp"
 #include "vkMemUtil.hpp"
 #include "vkRefUtil.hpp"
 
@@ -60,9 +59,7 @@ public:
 
 								Buffer			(const vk::DeviceInterface &vk, vk::VkDevice device, vk::Move<vk::VkBuffer> object);
 
-
 	void						bindMemory		(de::MovePtr<vk::Allocation> allocation);
-
 
 	vk::VkBuffer				object			(void) const								{ return *m_object;		}
 	vk::Allocation				getBoundMemory	(void) const								{ return *m_allocation;	}
@@ -70,17 +67,16 @@ public:
 private:
 
 	Buffer										(const Buffer& other);	// Not allowed!
-	Buffer						&operator=		(const Buffer& other);	// Not allowed!
-
+	Buffer&						operator=		(const Buffer& other);	// Not allowed!
 
 	de::MovePtr<vk::Allocation>		m_allocation;
 	vk::Unique<vk::VkBuffer>		m_object;
 
-	const	vk::DeviceInterface &	m_vk;
-			vk::VkDevice			m_device;
+	const vk::DeviceInterface&		m_vk;
+	vk::VkDevice					m_device;
 };
 
 } //DynamicState
 } //vkt
 
-#endif // _VKT_DYNAMIC_STATE_BUFFEROBJECTUTIL_HPP
+#endif // _VKTQUERYPOOLBUFFEROBJECTUTIL_HPP

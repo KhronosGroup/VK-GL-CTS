@@ -1,3 +1,5 @@
+#ifndef _VKTQUERYPOOLOCCLUSIONTESTS_HPP
+#define _VKTQUERYPOOLOCCLUSIONTESTS_HPP
 /*------------------------------------------------------------------------
  * Vulkan Conformance Tests
  * ------------------------
@@ -33,10 +35,6 @@
  * \brief Vulkan Occlusion Query Tests
  *//*--------------------------------------------------------------------*/
 
-
-#ifndef _VKT_OCCLUSION_QUERY_TEST_HPP
-#define _VKT_OCCLUSION_QUERY_TEST_HPP
-
 #include "vktTestCase.hpp"
 
 namespace vkt
@@ -59,4 +57,4 @@ private:
 } // QueryPool
 } // vkt
 
-#endif // _VKT_OCCLUSION_QUERY_TEST_HPP
+#endif // _VKTQUERYPOOLOCCLUSIONTESTS_HPP

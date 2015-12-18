@@ -1,5 +1,5 @@
-#ifndef _VKT_DYNAMIC_STATE_IMAGEOBJECTUTIL_HPP
-#define _VKT_DYNAMIC_STATE_IMAGEOBJECTUTIL_HPP
+#ifndef _VKTQUERYPOOLIMAGEOBJECTUTIL_HPP
+#define _VKTQUERYPOOLIMAGEOBJECTUTIL_HPP
 /*------------------------------------------------------------------------
  * Vulkan Conformance Tests
  * ------------------------
@@ -35,7 +35,6 @@
  * \brief Image Object Util
  *//*--------------------------------------------------------------------*/
 
-#include "vkDefs.hpp"
 #include "vkMemUtil.hpp"
 #include "vkRefUtil.hpp"
 
@@ -55,8 +54,8 @@ public:
 						 int					width,
 						 int					height,
 						 int					depth,
-						 vk::VkDeviceSize		rowPitch,
-						 vk::VkDeviceSize		depthPitch,
+						 vk::VkDeviceSize		rowPitchOrZero,
+						 vk::VkDeviceSize		depthPitchOrZero,
 						 const void *			srcBuffer,
 						 void *					destBuffer);
 
@@ -64,17 +63,16 @@ public:
 						 int					width,
 						 int					height,
 						 int					depth,
-						 vk::VkDeviceSize		rowPitch,
-						 vk::VkDeviceSize		depthPitch,
+						 vk::VkDeviceSize		rowPitchOrZero,
+						 vk::VkDeviceSize		depthPitchOrZero,
 						 const void *			srcBuffer,
 						 void *					destBuffer);
 };
 
-
 class Image
 {
 public:
-	static de::SharedPtr<Image> create				(const vk::DeviceInterface &vk, vk::VkDevice device, const vk::VkImageCreateInfo &createInfo);
+	static de::SharedPtr<Image> create				(const vk::DeviceInterface& vk, vk::VkDevice device, const vk::VkImageCreateInfo& createInfo);
 
 	static de::SharedPtr<Image> createAndAlloc		(const vk::DeviceInterface&				vk,
 													 vk::VkDevice							device,
@@ -111,7 +109,6 @@ public:
 													 vk::VkImageAspectFlagBits				aspect,
 													 unsigned int							mipLevel = 0,
 													 unsigned int							arrayElement = 0);
-
 
 	tcu::ConstPixelBufferAccess readSurfaceLinear	(vk::VkOffset3D							offset,
 													 int									width,
@@ -257,10 +254,10 @@ private:
 													 deUint32								layerCount,
 													 vk::Move<vk::VkImage>					object);
 
-	Image											(const Image &other);	// Not allowed!
-	Image						 &operator=			(const Image &other);	// Not allowed!
+	Image											(const Image& other);	// Not allowed!
+	Image&						operator=			(const Image& other);	// Not allowed!
 
-	de::MovePtr<vk::Allocation>	m_allocation;	 
+	de::MovePtr<vk::Allocation>	m_allocation;
 	vk::Unique<vk::VkImage>		m_object;
 
 	vk::VkFormat				m_format;
@@ -274,17 +271,17 @@ private:
 	vk::VkDevice				m_device;
 };
 
-void transition2DImage (const vk::DeviceInterface &vk, vk::VkCommandBuffer cmdBuffer, vk::VkImage image, vk::VkImageAspectFlags aspectMask, vk::VkImageLayout oldLayout, vk::VkImageLayout newLayout);
+void transition2DImage (const vk::DeviceInterface& vk, vk::VkCommandBuffer cmdBuffer, vk::VkImage image, vk::VkImageAspectFlags aspectMask, vk::VkImageLayout oldLayout, vk::VkImageLayout newLayout);
 
-void initialTransitionColor2DImage (const vk::DeviceInterface &vk, vk::VkCommandBuffer cmdBuffer, vk::VkImage image, vk::VkImageLayout layout);
+void initialTransitionColor2DImage (const vk::DeviceInterface& vk, vk::VkCommandBuffer cmdBuffer, vk::VkImage image, vk::VkImageLayout layout);
 
-void initialTransitionDepth2DImage (const vk::DeviceInterface &vk, vk::VkCommandBuffer cmdBuffer, vk::VkImage image, vk::VkImageLayout layout);
+void initialTransitionDepth2DImage (const vk::DeviceInterface& vk, vk::VkCommandBuffer cmdBuffer, vk::VkImage image, vk::VkImageLayout layout);
 
-void initialTransitionStencil2DImage (const vk::DeviceInterface &vk, vk::VkCommandBuffer cmdBuffer, vk::VkImage image, vk::VkImageLayout layout);
+void initialTransitionStencil2DImage (const vk::DeviceInterface& vk, vk::VkCommandBuffer cmdBuffer, vk::VkImage image, vk::VkImageLayout layout);
 
-void initialTransitionDepthStencil2DImage (const vk::DeviceInterface &vk, vk::VkCommandBuffer cmdBuffer, vk::VkImage image, vk::VkImageLayout layout);
+void initialTransitionDepthStencil2DImage (const vk::DeviceInterface& vk, vk::VkCommandBuffer cmdBuffer, vk::VkImage image, vk::VkImageLayout layout);
 
 } //QueryPool
 } //vkt
 
-#endif // _VKT_DYNAMIC_STATE_IMAGEOBJECTUTIL_HPP
+#endif // _VKTQUERYPOOLIMAGEOBJECTUTIL_HPP
