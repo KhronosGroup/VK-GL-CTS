@@ -3326,6 +3326,7 @@ void createPipelineShaderStages (const DeviceInterface& vk, const VkDevice vkDev
 	"%c_f32_0 = OpConstant %f32 0.0\n"															\
 	"%c_f32_0_5 = OpConstant %f32 0.5\n"														\
 	"%c_f32_n1  = OpConstant %f32 -1.\n"														\
+	"%c_f32_8 = OpConstant %f32 8.0\n"															\
 	"%c_i32_0 = OpConstant %i32 0\n"															\
 	"%c_i32_1 = OpConstant %i32 1\n"															\
 	"%c_i32_2 = OpConstant %i32 2\n"															\
@@ -6688,7 +6689,7 @@ void createOpQuantizeSingleOptionTests(tcu::TestCaseGroup* testCtx)
 	{
 		const char* name;
 		const char* constant;
-		float       valueAsFloat;
+		float		valueAsFloat;
 		const char* condition;
 		// condition must evaluate to true after %test_constant = OpQuantizeToF16(%constant)
 	}				tests[]				=
@@ -6807,7 +6808,7 @@ void createOpQuantizeSingleOptionTests(tcu::TestCaseGroup* testCtx)
 	const char*		specDecorations		= "OpDecorate %test_constant SpecId 0\n";
 	const char*		specConstants		= "%test_constant = OpSpecConstant %f32 0.\n";
 
-    StringTemplate	specConstantFunction(
+	StringTemplate	specConstantFunction(
 		"%test_code     = OpFunction %v4f32 None %v4f32_function\n"
 		"%param1        = OpFunctionParameter %v4f32\n"
 		"%label_testfun = OpLabel\n"
@@ -7135,8 +7136,47 @@ tcu::TestCaseGroup* createLoopTests(tcu::TestContext& testCtx)
 	fragments["testfun"] = multiBlock.specialize(continue_target);
 	createTestsForAllStages("multi-block-loop-construct", defaultColors, defaultColors, fragments, testGroup.get());
 
+	// A loop with continue statement.
+	fragments["testfun"] =
+		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%param1 = OpFunctionParameter %v4f32\n"
+
+		"%entry = OpLabel\n"
+		"%val0 = OpVectorExtractDynamic %f32 %param1 %c_i32_0\n"
+		"OpBranch %loop\n"
+
+		";adds 4, 3, and 1 to %val0 (skips 2)\n"
+		"%loop = OpLabel\n"
+		"%count = OpPhi %i32 %c_i32_4 %entry %count__ %continue\n"
+		"%val1 = OpPhi %f32 %val0 %entry %val %continue\n"
+		"OpLoopMerge %exit %continue None\n"
+		"OpBranch %if\n"
+
+		"%if = OpLabel\n"
+		";skip if %count==2\n"
+		"%eq2 = OpIEqual %bool %count %c_i32_2\n"
+		"OpSelectionMerge %continue DontFlatten\n"
+		"OpBranchConditional %eq2 %continue %body\n"
+
+		"%body = OpLabel\n"
+		"%fcount = OpConvertSToF %f32 %count\n"
+		"%val2 = OpFAdd %f32 %val1 %fcount\n"
+		"OpBranch %continue\n"
+
+		"%continue = OpLabel\n"
+		"%val = OpPhi %f32 %val2 %body %val1 %if\n"
+		"%count__ = OpISub %i32 %count %c_i32_1\n"
+		"%again = OpSGreaterThan %bool %count__ %c_i32_0\n"
+		"OpBranchConditional %again %loop %exit\n"
+
+		"%exit = OpLabel\n"
+		"%same = OpFSub %f32 %val %c_f32_8\n"
+		"%result = OpVectorInsertDynamic %v4f32 %param1 %same %c_i32_0\n"
+		"OpReturnValue %result\n"
+		"OpFunctionEnd\n";
+	createTestsForAllStages("continue", defaultColors, defaultColors, fragments, testGroup.get());
+
 	// \todo [2015-12-14 dekimir] More cases:
-	// - continue
 	// - early exit
 
 	return testGroup.release();
@@ -7284,7 +7324,7 @@ tcu::TestCaseGroup* createBarrierTests(tcu::TestContext& testCtx)
 		"%val0 = OpVectorExtractDynamic %f32 %param1 %c_i32_0\n"
 		"OpBranch %loop\n"
 
-		";adds 1, 2, 3, and 4 to %val0\n"
+		";adds 4, 3, 2, and 1 to %val0\n"
 		"%loop = OpLabel\n"
 		"%count = OpPhi %i32 %c_i32_4 %entry %count__ %latch\n"
 		"%val1 = OpPhi %f32 %val0 %entry %val %loop\n"
@@ -7317,7 +7357,6 @@ tcu::TestCaseGroup* createFRemTests(tcu::TestContext& testCtx)
 	fragments["pre_main"]				 =
 		"%c_f32_3 = OpConstant %f32 3.0\n"
 		"%c_f32_n3 = OpConstant %f32 -3.0\n"
-		"%c_f32_8 = OpConstant %f32 8.0\n"
 		"%c_f32_n4 = OpConstant %f32 4.0\n"
 		"%c_f32_p75 = OpConstant %f32 0.75\n"
 		"%c_v4f32_p75_p75_p75_p75 = OpConstantComposite %v4f32 %c_f32_p75 %c_f32_p75 %c_f32_p75 %c_f32_p75 \n"
