@@ -4556,8 +4556,6 @@ tcu::TestStatus BuiltinPrecisionCaseTestInstance<In, Out>::iterate (void)
 			  << TestLog::EndMessage;
 	}
 
-	status.setTestContextResult(m_context.getTestContext());
-
 	if (numErrors)
 		return tcu::TestStatus::fail(de::toString(numErrors) + string(" test failed. Check log for the details"));
 	else
