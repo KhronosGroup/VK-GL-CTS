@@ -46,15 +46,14 @@ DynamicStateBaseClass::DynamicStateBaseClass (Context& context, const char* vert
 	: TestInstance				(context)
 	, m_colorAttachmentFormat   (vk::VK_FORMAT_R8G8B8A8_UNORM)
 	, m_topology				(vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
+	, m_vk						(context.getDeviceInterface())
 	, m_vertexShaderName		(vertexShaderName)
 	, m_fragmentShaderName		(fragmentShaderName)
-	, m_vk						(context.getDeviceInterface())
 {
 }
 
 void DynamicStateBaseClass::initialize (void)
 {
-	tcu::TestLog& log				= m_context.getTestContext().getLog();
 	const vk::VkDevice device		= m_context.getDevice();
 	const deUint32 queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
 
@@ -62,7 +61,7 @@ void DynamicStateBaseClass::initialize (void)
 	m_pipelineLayout = vk::createPipelineLayout(m_vk, device, &pipelineLayoutCreateInfo);
 
 	const vk::VkExtent3D targetImageExtent = { WIDTH, HEIGHT, 1 };
-	const ImageCreateInfo targetImageCreateInfo(vk::VK_IMAGE_TYPE_2D, m_colorAttachmentFormat, targetImageExtent, 1, 1, vk::VK_SAMPLE_COUNT_1_BIT, 
+	const ImageCreateInfo targetImageCreateInfo(vk::VK_IMAGE_TYPE_2D, m_colorAttachmentFormat, targetImageExtent, 1, 1, vk::VK_SAMPLE_COUNT_1_BIT,
 												vk::VK_IMAGE_TILING_OPTIMAL, vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
 
 	m_colorTargetImage = Image::createAndAlloc(m_vk, device, targetImageCreateInfo, m_context.getDefaultAllocator());
@@ -145,7 +144,7 @@ void DynamicStateBaseClass::initialize (void)
 	deUint8* ptr = reinterpret_cast<unsigned char *>(m_vertexBuffer->getBoundMemory().getHostPtr());
 	deMemcpy(ptr, &m_data[0], dataSize);
 
-	vk::flushMappedMemoryRange(m_vk, device, 
+	vk::flushMappedMemoryRange(m_vk, device,
 		m_vertexBuffer->getBoundMemory().getMemory(),
 		m_vertexBuffer->getBoundMemory().getOffset(),
 		dataSize);
@@ -243,9 +242,9 @@ void DynamicStateBaseClass::setDynamicViewportState (deUint32 viewportCount, con
 	m_vk.cmdSetScissor(*m_cmdBuffer, viewportCount, pScissors);
 }
 
-void DynamicStateBaseClass::setDynamicRasterizationState (const float lineWidth, 
-														 const float depthBiasConstantFactor, 
-														 const float depthBiasClamp, 
+void DynamicStateBaseClass::setDynamicRasterizationState (const float lineWidth,
+														 const float depthBiasConstantFactor,
+														 const float depthBiasClamp,
 														 const float depthBiasSlopeFactor)
 {
 	m_vk.cmdSetLineWidth(*m_cmdBuffer, lineWidth);
@@ -258,13 +257,13 @@ void DynamicStateBaseClass::setDynamicBlendState (const float const1, const floa
 	m_vk.cmdSetBlendConstants(*m_cmdBuffer, blendConstantsants);
 }
 
-void DynamicStateBaseClass::setDynamicDepthStencilState (const float	minDepthBounds, 
+void DynamicStateBaseClass::setDynamicDepthStencilState (const float	minDepthBounds,
 														 const float	maxDepthBounds,
-														 const deUint32 stencilFrontCompareMask, 
+														 const deUint32 stencilFrontCompareMask,
 														 const deUint32 stencilFrontWriteMask,
-														 const deUint32 stencilFrontReference, 
-														 const deUint32 stencilBackCompareMask, 
-														 const deUint32 stencilBackWriteMask, 
+														 const deUint32 stencilFrontReference,
+														 const deUint32 stencilBackCompareMask,
+														 const deUint32 stencilBackWriteMask,
 														 const deUint32 stencilBackReference)
 {
 	m_vk.cmdSetDepthBounds(*m_cmdBuffer, minDepthBounds, maxDepthBounds);

@@ -32,9 +32,10 @@
  *
  *//*!
  * \file
- * \brief Dynamic State Depth Stencil Tests 
+ * \brief Dynamic State Depth Stencil Tests
  *//*--------------------------------------------------------------------*/
 
+#include "tcuDefs.hpp"
 #include "vktTestCase.hpp"
 
 namespace vkt

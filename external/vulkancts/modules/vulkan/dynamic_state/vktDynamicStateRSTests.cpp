@@ -61,15 +61,15 @@ public:
 		, m_colorAttachmentFormat			(vk::VK_FORMAT_R8G8B8A8_UNORM)
 		, m_depthStencilAttachmentFormat	(vk::VK_FORMAT_D24_UNORM_S8_UINT)
 		, m_topology						(vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
+		, m_vk								(context.getDeviceInterface())
 		, m_vertexShaderName				(vertexShaderName)
 		, m_fragmentShaderName				(fragmentShaderName)
-		, m_vk								(context.getDeviceInterface())
 	{
 	}
 
 protected:
 
-	enum 
+	enum
 	{
 		WIDTH	= 128,
 		HEIGHT	= 128
@@ -109,7 +109,6 @@ protected:
 
 	void initialize (void)
 	{
-		tcu::TestLog &log			= m_context.getTestContext().getLog();
 		const vk::VkDevice device	= m_context.getDevice();
 
 		const PipelineLayoutCreateInfo pipelineLayoutCreateInfo;
@@ -412,11 +411,11 @@ public:
 		{
 			vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,	// VkStructureType			sType;
 			DE_NULL,							// const void*				pNext;
-			0, 									// deUint32					waitSemaphoreCount;
-			DE_NULL, 							// const VkSemaphore*		pWaitSemaphores;
-			1, 									// deUint32					commandBufferCount;
+			0,									// deUint32					waitSemaphoreCount;
+			DE_NULL,							// const VkSemaphore*		pWaitSemaphores;
+			1,									// deUint32					commandBufferCount;
 			&m_cmdBuffer.get(),					// const VkCommandBuffer*	pCommandBuffers;
-			0, 									// deUint32					signalSemaphoreCount;
+			0,									// deUint32					signalSemaphoreCount;
 			DE_NULL								// const VkSemaphore*		pSignalSemaphores;
 		};
 		m_vk.queueSubmit(queue, 1, &submitInfo, DE_NULL);
@@ -517,11 +516,11 @@ public:
 		{
 			vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,	// VkStructureType			sType;
 			DE_NULL,							// const void*				pNext;
-			0, 									// deUint32					waitSemaphoreCount;
-			DE_NULL, 							// const VkSemaphore*		pWaitSemaphores;
-			1, 									// deUint32					commandBufferCount;
+			0,									// deUint32					waitSemaphoreCount;
+			DE_NULL,							// const VkSemaphore*		pWaitSemaphores;
+			1,									// deUint32					commandBufferCount;
 			&m_cmdBuffer.get(),					// const VkCommandBuffer*	pCommandBuffers;
-			0, 									// deUint32					signalSemaphoreCount;
+			0,									// deUint32					signalSemaphoreCount;
 			DE_NULL								// const VkSemaphore*		pSignalSemaphores;
 		};
 		m_vk.queueSubmit(queue, 1, &submitInfo, DE_NULL);
@@ -597,7 +596,7 @@ public:
 		setDynamicViewportState(WIDTH, HEIGHT);
 		setDynamicBlendState();
 		setDynamicDepthStencilState();
-		setDynamicRasterizationState(floor(deviceProperties.limits.lineWidthRange[1]));
+		setDynamicRasterizationState(deFloatFloor(deviceProperties.limits.lineWidthRange[1]));
 
 		m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
 
@@ -614,11 +613,11 @@ public:
 		{
 			vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,	// VkStructureType			sType;
 			DE_NULL,							// const void*				pNext;
-			0, 									// deUint32					waitSemaphoreCount;
-			DE_NULL, 							// const VkSemaphore*		pWaitSemaphores;
-			1, 									// deUint32					commandBufferCount;
+			0,									// deUint32					waitSemaphoreCount;
+			DE_NULL,							// const VkSemaphore*		pWaitSemaphores;
+			1,									// deUint32					commandBufferCount;
 			&m_cmdBuffer.get(),					// const VkCommandBuffer*	pCommandBuffers;
-			0, 									// deUint32					signalSemaphoreCount;
+			0,									// deUint32					signalSemaphoreCount;
 			DE_NULL								// const VkSemaphore*		pSignalSemaphores;
 		};
 		m_vk.queueSubmit(queue, 1, &submitInfo, DE_NULL);

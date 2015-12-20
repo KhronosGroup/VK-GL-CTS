@@ -35,6 +35,7 @@
  * \brief Dynamic State Viewport Tests
  *//*--------------------------------------------------------------------*/
 
+#include "tcuDefs.hpp"
 #include "vktTestCase.hpp"
 
 namespace vkt

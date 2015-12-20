@@ -99,10 +99,10 @@ public:
 								 vk::VkBufferCreateFlags	usage,
 								 vk::VkSharingMode			sharingMode				= vk::VK_SHARING_MODE_EXCLUSIVE,
 								 deUint32					queueFamilyIndexCount	= 0,
-								 const deUint32*			pQueueFamilyIndices		= DE_NULL, 
+								 const deUint32*			pQueueFamilyIndices		= DE_NULL,
 								 vk::VkBufferCreateFlags	flags					= 0);
 
-	BufferCreateInfo			(const BufferCreateInfo&	other);	
+	BufferCreateInfo			(const BufferCreateInfo&	other);
 	BufferCreateInfo& operator=	(const BufferCreateInfo&	other);
 
 private:
@@ -123,7 +123,7 @@ public:
 								 vk::VkSharingMode			sharingMode				= vk::VK_SHARING_MODE_EXCLUSIVE,
 								 deUint32					queueFamilyIndexCount	= 0,
 								 const deUint32*			pQueueFamilyIndices		= DE_NULL,
-								 vk::VkImageCreateFlags		flags					= 0, 
+								 vk::VkImageCreateFlags		flags					= 0,
 								 vk::VkImageLayout			initialLayout			= vk::VK_IMAGE_LAYOUT_UNDEFINED);
 
 private:
@@ -266,7 +266,7 @@ public:
 	CmdBufferBeginInfo (vk::VkRenderPass					renderPass,
 						deUint32							subpass,
 						vk::VkFramebuffer					framebuffer,
-						vk::VkCommandBufferUsageFlags		flags					= 0, 
+						vk::VkCommandBufferUsageFlags		flags					= 0,
 						bool								occlusionQueryEnable	= false,
 						vk::VkQueryControlFlags				queryFlags				= 0u,
 						vk::VkQueryPipelineStatisticFlags	pipelineStatistics		= 0u);
@@ -286,7 +286,7 @@ class DescriptorPoolCreateInfo : public vk::VkDescriptorPoolCreateInfo
 {
 public:
 	DescriptorPoolCreateInfo (const std::vector<vk::VkDescriptorPoolSize>&	poolSizeCounts,
-							  vk::VkDescriptorPoolCreateFlags				flags, 
+							  vk::VkDescriptorPoolCreateFlags				flags,
 							  deUint32										maxSets);
 
 	DescriptorPoolCreateInfo& addDescriptors (vk::VkDescriptorType type, deUint32 count);
@@ -306,7 +306,7 @@ class PipelineLayoutCreateInfo : public vk::VkPipelineLayoutCreateInfo
 public:
 	PipelineLayoutCreateInfo (deUint32										descriptorSetCount,
 							  const vk::VkDescriptorSetLayout*				pSetLayouts,
-						  	  deUint32										pushConstantRangeCount	= 0,
+							  deUint32										pushConstantRangeCount	= 0,
 							  const vk::VkPushConstantRange*				pPushConstantRanges		= DE_NULL);
 
 	PipelineLayoutCreateInfo (const std::vector<vk::VkDescriptorSetLayout>&	setLayouts				= std::vector<vk::VkDescriptorSetLayout>(),
@@ -377,7 +377,7 @@ public:
 		MultiSampleState			(vk::VkSampleCountFlagBits				rasterizationSamples		= vk::VK_SAMPLE_COUNT_1_BIT,
 									 vk::VkBool32							sampleShadingEnable			= false,
 									 float									minSampleShading			= 0.0f,
-									 const std::vector<vk::VkSampleMask>&	sampleMask					= std::vector<vk::VkSampleMask>(1, 0xffffffff), 
+									 const std::vector<vk::VkSampleMask>&	sampleMask					= std::vector<vk::VkSampleMask>(1, 0xffffffff),
 									 bool									alphaToCoverageEnable		= false,
 									 bool									alphaToOneEnable			= false);
 
@@ -518,7 +518,7 @@ public:
 					   vk::VkCompareOp			compareOp				= vk::VK_COMPARE_OP_ALWAYS,
 					   float					minLod					= 0.0f,
 					   float					maxLod					= 16.0f,
-					   vk::VkBorderColor		borderColor				= vk::VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE, 
+					   vk::VkBorderColor		borderColor				= vk::VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE,
 					   vk::VkBool32				unnormalizedCoordinates	= false);
 };
 

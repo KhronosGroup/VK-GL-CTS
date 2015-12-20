@@ -35,6 +35,7 @@
  * \brief Dynamic State Tests - General
  *//*--------------------------------------------------------------------*/
 
+#include "tcuDefs.hpp"
 #include "vktTestCase.hpp"
 
 namespace vkt
@@ -48,8 +49,8 @@ public:
 								DynamicStateGeneralTests	(tcu::TestContext& testCtx);
 								~DynamicStateGeneralTests	(void);
 	void						init						(void);
-								
-private:                        
+
+private:
 	DynamicStateGeneralTests								(const DynamicStateGeneralTests& other);
 	DynamicStateGeneralTests&	operator=					(const DynamicStateGeneralTests& other);
 };

@@ -32,9 +32,10 @@
  *
  *//*!
  * \file
- * \brief Dynamic CB State Tests 
+ * \brief Dynamic CB State Tests
  *//*--------------------------------------------------------------------*/
 
+#include "tcuDefs.hpp"
 #include "vktTestCase.hpp"
 
 namespace vkt

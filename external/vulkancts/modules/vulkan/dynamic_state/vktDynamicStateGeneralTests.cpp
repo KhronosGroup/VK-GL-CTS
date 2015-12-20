@@ -112,11 +112,11 @@ public:
 		{
 			vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,	// VkStructureType			sType;
 			DE_NULL,							// const void*				pNext;
-			0, 									// deUint32					waitSemaphoreCount;
-			DE_NULL, 							// const VkSemaphore*		pWaitSemaphores;
-			1, 									// deUint32					commandBufferCount;
+			0,									// deUint32					waitSemaphoreCount;
+			DE_NULL,							// const VkSemaphore*		pWaitSemaphores;
+			1,									// deUint32					commandBufferCount;
 			&m_cmdBuffer.get(),					// const VkCommandBuffer*	pCommandBuffers;
-			0, 									// deUint32					signalSemaphoreCount;
+			0,									// deUint32					signalSemaphoreCount;
 			DE_NULL								// const VkSemaphore*		pSignalSemaphores;
 		};
 		m_vk.queueSubmit(queue, 1, &submitInfo, DE_NULL);
@@ -221,11 +221,11 @@ public:
 		{
 			vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,	// VkStructureType			sType;
 			DE_NULL,							// const void*				pNext;
-			0, 									// deUint32					waitSemaphoreCount;
-			DE_NULL, 							// const VkSemaphore*		pWaitSemaphores;
-			1, 									// deUint32					commandBufferCount;
+			0,									// deUint32					waitSemaphoreCount;
+			DE_NULL,							// const VkSemaphore*		pWaitSemaphores;
+			1,									// deUint32					commandBufferCount;
 			&m_cmdBuffer.get(),					// const VkCommandBuffer*	pCommandBuffers;
-			0, 									// deUint32					signalSemaphoreCount;
+			0,									// deUint32					signalSemaphoreCount;
 			DE_NULL								// const VkSemaphore*		pSignalSemaphores;
 		};
 		m_vk.queueSubmit(queue, 1, &submitInfo, DE_NULL);
@@ -298,7 +298,7 @@ public:
 		// shaders
 		const vk::Unique<vk::VkShaderModule> vs (createShaderModule(m_vk, device, m_context.getBinaryCollection().get(m_vertexShaderName), 0));
 		const vk::Unique<vk::VkShaderModule> fs (createShaderModule(m_vk, device, m_context.getBinaryCollection().get(m_fragmentShaderName), 0));
-			
+
 		const PipelineCreateInfo::ColorBlendState::Attachment vkCbAttachmentState;
 
 		PipelineCreateInfo pipelineCreateInfo_1(*m_pipelineLayout, *m_renderPass, 0, 0);
@@ -370,11 +370,11 @@ public:
 		{
 			vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,	// VkStructureType			sType;
 			DE_NULL,							// const void*				pNext;
-			0, 									// deUint32					waitSemaphoreCount;
-			DE_NULL, 							// const VkSemaphore*		pWaitSemaphores;
-			1, 									// deUint32					commandBufferCount;
+			0,									// deUint32					waitSemaphoreCount;
+			DE_NULL,							// const VkSemaphore*		pWaitSemaphores;
+			1,									// deUint32					commandBufferCount;
 			&m_cmdBuffer.get(),					// const VkCommandBuffer*	pCommandBuffers;
-			0, 									// deUint32					signalSemaphoreCount;
+			0,									// deUint32					signalSemaphoreCount;
 			DE_NULL								// const VkSemaphore*		pSignalSemaphores;
 		};
 		m_vk.queueSubmit(queue, 1, &submitInfo, DE_NULL);

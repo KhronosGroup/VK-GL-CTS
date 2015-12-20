@@ -84,7 +84,6 @@ public:
 	virtual tcu::TestStatus iterate (void)
 	{
 		tcu::TestLog &log			= m_context.getTestContext().getLog();
-		const vk::VkDevice device	= m_context.getDevice();
 		const vk::VkQueue queue		= m_context.getUniversalQueue();
 
 		beginRenderPass();
@@ -107,11 +106,11 @@ public:
 		{
 			vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,	// VkStructureType			sType;
 			DE_NULL,							// const void*				pNext;
-			0, 									// deUint32					waitSemaphoreCount;
-			DE_NULL, 							// const VkSemaphore*		pWaitSemaphores;
-			1, 									// deUint32					commandBufferCount;
+			0,									// deUint32					waitSemaphoreCount;
+			DE_NULL,							// const VkSemaphore*		pWaitSemaphores;
+			1,									// deUint32					commandBufferCount;
 			&m_cmdBuffer.get(),					// const VkCommandBuffer*	pCommandBuffers;
-			0, 									// deUint32					signalSemaphoreCount;
+			0,									// deUint32					signalSemaphoreCount;
 			DE_NULL								// const VkSemaphore*		pSignalSemaphores;
 		};
 		m_vk.queueSubmit(queue, 1, &submitInfo, DE_NULL);
@@ -302,9 +301,9 @@ public:
 		const vk::VkRect2D scissors[4] =
 		{
 			{ { quarterWidth, quarterHeight }, { quarterWidth, quarterHeight } },
-			{ { halfWidth, quarterHeight }, { quarterWidth, quarterHeight } },
-			{ { halfWidth, halfHeight }, { quarterWidth, quarterHeight } },
-			{ { quarterWidth, halfHeight }, { quarterWidth, quarterHeight } },
+			{ { (deInt32)halfWidth, quarterHeight }, { quarterWidth, quarterHeight } },
+			{ { (deInt32)halfWidth, (deInt32)halfHeight }, { quarterWidth, quarterHeight } },
+			{ { quarterWidth, (deInt32)halfHeight }, { quarterWidth, quarterHeight } },
 		};
 
 		setDynamicViewportState(4, viewports, scissors);
@@ -327,11 +326,11 @@ public:
 		{
 			vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,	// VkStructureType			sType;
 			DE_NULL,							// const void*				pNext;
-			0, 									// deUint32					waitSemaphoreCount;
-			DE_NULL, 							// const VkSemaphore*		pWaitSemaphores;
-			1, 									// deUint32					commandBufferCount;
+			0,									// deUint32					waitSemaphoreCount;
+			DE_NULL,							// const VkSemaphore*		pWaitSemaphores;
+			1,									// deUint32					commandBufferCount;
 			&m_cmdBuffer.get(),					// const VkCommandBuffer*	pCommandBuffers;
-			0, 									// deUint32					signalSemaphoreCount;
+			0,									// deUint32					signalSemaphoreCount;
 			DE_NULL								// const VkSemaphore*		pSignalSemaphores;
 		};
 		m_vk.queueSubmit(queue, 1, &submitInfo, DE_NULL);
@@ -364,7 +363,7 @@ public:
 			const vk::VkOffset3D zeroOffset = { 0, 0, 0 };
 			const tcu::ConstPixelBufferAccess renderedFrame = m_colorTargetImage->readSurface(queue, m_context.getDefaultAllocator(),
 				vk::VK_IMAGE_LAYOUT_GENERAL, zeroOffset, WIDTH, HEIGHT, vk::VK_IMAGE_ASPECT_COLOR_BIT);
-					
+
 			if (!tcu::fuzzyCompare(log, "Result", "Image comparison result",
 				referenceFrame.getLevel(0), renderedFrame, 0.05f,
 				tcu::COMPARE_LOG_RESULT))
@@ -394,7 +393,7 @@ void DynamicStateVPTests::init (void)
 	ShaderMap shaderPaths;
 	shaderPaths[glu::SHADERTYPE_VERTEX] = "vulkan/dynamic_state/VertexFetch.vert";
 	shaderPaths[glu::SHADERTYPE_FRAGMENT] = "vulkan/dynamic_state/VertexFetch.frag";
-		
+
 	addChild(new InstanceFactory<ViewportParamTestInstane>(m_testCtx, "viewport", "Set viewport which is twice bigger than screen size", shaderPaths));
 	addChild(new InstanceFactory<ScissorParamTestInstance>(m_testCtx, "scissor", "Perform a scissor test on 1/4 bottom-left part of the surface", shaderPaths));
 

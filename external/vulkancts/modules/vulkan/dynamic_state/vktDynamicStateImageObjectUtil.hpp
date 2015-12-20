@@ -258,7 +258,7 @@ private:
 	Image											(const Image& other);	// Not allowed!
 	Image&						operator=			(const Image& other);	// Not allowed!
 
-	de::MovePtr<vk::Allocation>	m_allocation;	 
+	de::MovePtr<vk::Allocation>	m_allocation;
 	vk::Unique<vk::VkImage>		m_object;
 
 	vk::VkFormat				m_format;

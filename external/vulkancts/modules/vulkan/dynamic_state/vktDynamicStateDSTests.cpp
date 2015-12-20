@@ -30,7 +30,7 @@
  *
  *//*!
  * \file
- * \brief Dynamic State Depth Stencil Tests 
+ * \brief Dynamic State Depth Stencil Tests
  *//*--------------------------------------------------------------------*/
 
 #include "vktDynamicStateDSTests.hpp"
@@ -69,15 +69,15 @@ public:
 		, m_colorAttachmentFormat			(vk::VK_FORMAT_R8G8B8A8_UNORM)
 		, m_depthStencilAttachmentFormat	(vk::VK_FORMAT_D24_UNORM_S8_UINT)
 		, m_topology						(vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
+		, m_vk								(context.getDeviceInterface())
 		, m_vertexShaderName				(vertexShaderName)
 		, m_fragmentShaderName				(fragmentShaderName)
-		, m_vk								(context.getDeviceInterface())
 	{
 	}
 
 protected:
 
-	enum 
+	enum
 	{
 		WIDTH   = 128,
 		HEIGHT  = 128
@@ -96,7 +96,7 @@ protected:
 
 	de::SharedPtr<Image>							m_colorTargetImage;
 	vk::Move<vk::VkImageView>						m_colorTargetView;
-		
+
 	de::SharedPtr<Image>							m_depthStencilImage;
 	vk::Move<vk::VkImageView>						m_attachmentView;
 
@@ -119,7 +119,6 @@ protected:
 
 	void initialize (void)
 	{
-		tcu::TestLog &log = m_context.getTestContext().getLog();
 		const vk::VkDevice device = m_context.getDevice();
 
 		const PipelineLayoutCreateInfo pipelineLayoutCreateInfo;
@@ -129,7 +128,7 @@ protected:
 		const vk::Unique<vk::VkShaderModule> fs(createShaderModule(m_vk, device, m_context.getBinaryCollection().get(m_fragmentShaderName), 0));
 
 		const vk::VkExtent3D imageExtent = { WIDTH, HEIGHT, 1 };
-		const ImageCreateInfo targetImageCreateInfo(vk::VK_IMAGE_TYPE_2D, m_colorAttachmentFormat, imageExtent, 1, 1, vk::VK_SAMPLE_COUNT_1_BIT, 
+		const ImageCreateInfo targetImageCreateInfo(vk::VK_IMAGE_TYPE_2D, m_colorAttachmentFormat, imageExtent, 1, 1, vk::VK_SAMPLE_COUNT_1_BIT,
 													vk::VK_IMAGE_TILING_OPTIMAL, vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
 
 		m_colorTargetImage = Image::createAndAlloc(m_vk, device, targetImageCreateInfo, m_context.getDefaultAllocator());
@@ -361,13 +360,13 @@ protected:
 		m_vk.cmdSetBlendConstants(*m_cmdBuffer, blendConstantsants);
 	}
 
-	void setDynamicDepthStencilState(const float minDepthBounds = -1.0f, 
+	void setDynamicDepthStencilState(const float minDepthBounds = -1.0f,
 									 const float maxDepthBounds = 1.0f,
-									 const deUint32 stencilFrontCompareMask = 0xffffffffu, 
+									 const deUint32 stencilFrontCompareMask = 0xffffffffu,
 									 const deUint32 stencilFrontWriteMask = 0xffffffffu,
-									 const deUint32 stencilFrontReference = 0, 
+									 const deUint32 stencilFrontReference = 0,
 									 const deUint32 stencilBackCompareMask = 0xffffffffu,
-									 const deUint32 stencilBackWriteMask = 0xffffffffu, 
+									 const deUint32 stencilBackWriteMask = 0xffffffffu,
 									 const deUint32 stencilBackReference = 0)
 	{
 		m_vk.cmdSetDepthBounds(*m_cmdBuffer, minDepthBounds, maxDepthBounds);
@@ -448,11 +447,11 @@ public:
 		{
 			vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,	// VkStructureType			sType;
 			DE_NULL,							// const void*				pNext;
-			0, 									// deUint32					waitSemaphoreCount;
-			DE_NULL, 							// const VkSemaphore*		pWaitSemaphores;
-			1, 									// deUint32					commandBufferCount;
+			0,									// deUint32					waitSemaphoreCount;
+			DE_NULL,							// const VkSemaphore*		pWaitSemaphores;
+			1,									// deUint32					commandBufferCount;
 			&m_cmdBuffer.get(),					// const VkCommandBuffer*	pCommandBuffers;
-			0, 									// deUint32					signalSemaphoreCount;
+			0,									// deUint32					signalSemaphoreCount;
 			DE_NULL								// const VkSemaphore*		pSignalSemaphores;
 		};
 		m_vk.queueSubmit(queue, 1, &submitInfo, DE_NULL);
@@ -510,7 +509,7 @@ protected:
 
 public:
 	StencilParamsBasicTestInstance (Context& context, const char* vertexShaderName, const char* fragmentShaderName,
-									const deUint32 writeMask, const deUint32 readMask, 
+									const deUint32 writeMask, const deUint32 readMask,
 									const deUint32 expectedValue, const tcu::Vec4 expectedColor)
 		: DepthStencilBaseCase  (context, vertexShaderName, fragmentShaderName)
 		, m_expectedColor		(1.0f, 1.0f, 1.0f, 1.0f)
@@ -599,11 +598,11 @@ public:
 		{
 			vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,	// VkStructureType			sType;
 			DE_NULL,							// const void*				pNext;
-			0, 									// deUint32					waitSemaphoreCount;
-			DE_NULL, 							// const VkSemaphore*		pWaitSemaphores;
-			1, 									// deUint32					commandBufferCount;
+			0,									// deUint32					waitSemaphoreCount;
+			DE_NULL,							// const VkSemaphore*		pWaitSemaphores;
+			1,									// deUint32					commandBufferCount;
 			&m_cmdBuffer.get(),					// const VkCommandBuffer*	pCommandBuffers;
-			0, 									// deUint32					signalSemaphoreCount;
+			0,									// deUint32					signalSemaphoreCount;
 			DE_NULL								// const VkSemaphore*		pSignalSemaphores;
 		};
 		m_vk.queueSubmit(queue, 1, &submitInfo, DE_NULL);
@@ -672,7 +671,7 @@ protected:
 
 public:
 	StencilParamsBasicTestCase (tcu::TestContext& context, const char *name, const char *description,
-								const deUint32 writeMask, const deUint32 readMask, 
+								const deUint32 writeMask, const deUint32 readMask,
 								const deUint32 expectedValue, const tcu::Vec4 expectedColor)
 		: TestCase				(context, name, description)
 		, m_writeMask			(writeMask)
@@ -768,11 +767,11 @@ public:
 		{
 			vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,	// VkStructureType			sType;
 			DE_NULL,							// const void*				pNext;
-			0, 									// deUint32					waitSemaphoreCount;
-			DE_NULL, 							// const VkSemaphore*		pWaitSemaphores;
-			1, 									// deUint32					commandBufferCount;
+			0,									// deUint32					waitSemaphoreCount;
+			DE_NULL,							// const VkSemaphore*		pWaitSemaphores;
+			1,									// deUint32					commandBufferCount;
 			&m_cmdBuffer.get(),					// const VkCommandBuffer*	pCommandBuffers;
-			0, 									// deUint32					signalSemaphoreCount;
+			0,									// deUint32					signalSemaphoreCount;
 			DE_NULL								// const VkSemaphore*		pSignalSemaphores;
 		};
 		m_vk.queueSubmit(queue, 1, &submitInfo, DE_NULL);

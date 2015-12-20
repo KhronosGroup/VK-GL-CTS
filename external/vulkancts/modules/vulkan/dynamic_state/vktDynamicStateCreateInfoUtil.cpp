@@ -147,7 +147,7 @@ BufferCreateInfo::BufferCreateInfo (vk::VkDeviceSize		_size,
 									deUint32				_queueFamilyIndexCount,
 									const deUint32*			_pQueueFamilyIndices,
 									vk::VkBufferCreateFlags _flags)
-{   
+{
 	sType = vk::VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
 	pNext = DE_NULL;
 	size					= _size;
@@ -165,7 +165,7 @@ BufferCreateInfo::BufferCreateInfo (vk::VkDeviceSize		_size,
 	else
 	{
 		pQueueFamilyIndices = _pQueueFamilyIndices;
-	}   
+	}
 }
 
 BufferCreateInfo::BufferCreateInfo (const BufferCreateInfo &other)
@@ -262,7 +262,7 @@ ImageCreateInfo::ImageCreateInfo (vk::VkImageType			_imageType,
 }
 
 FramebufferCreateInfo::FramebufferCreateInfo (vk::VkRenderPass						_renderPass,
-											  const std::vector<vk::VkImageView>&	atachments, 
+											  const std::vector<vk::VkImageView>&	atachments,
 											  deUint32								_width,
 											  deUint32								_height,
 											  deUint32								_layers)
@@ -297,7 +297,7 @@ RenderPassCreateInfo::RenderPassCreateInfo (const std::vector<vk::VkAttachmentDe
 {
 	sType = vk::VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
 	pNext = DE_NULL;
-	flags = 0; 
+	flags = 0;
 
 	attachmentCount = static_cast<deUint32>(m_attachments.size());
 	pAttachments	= &m_attachmentsStructs[0];
@@ -786,7 +786,7 @@ PipelineCreateInfo::ViewportState::ViewportState (deUint32						_viewportCount,
 	flags			= 0u;
 	viewportCount	= _viewportCount;
 	scissorCount	= _viewportCount;
-	
+
 	if (!_viewports.size())
 	{
 		m_viewports.resize(viewportCount);
@@ -871,7 +871,7 @@ PipelineCreateInfo::MultiSampleState::MultiSampleState (vk::VkSampleCountFlagBit
 														vk::VkBool32							_sampleShadingEnable,
 														float									_minSampleShading,
 														const std::vector<vk::VkSampleMask>&	_sampleMask,
-														bool									_alphaToCoverageEnable, 
+														bool									_alphaToCoverageEnable,
 														bool									_alphaToOneEnable)
 	: m_sampleMask(_sampleMask)
 {
@@ -893,7 +893,7 @@ PipelineCreateInfo::MultiSampleState::MultiSampleState (const MultiSampleState& 
 	rasterizationSamples	= other.rasterizationSamples;
 	sampleShadingEnable		= other.sampleShadingEnable;
 	minSampleShading		= other.minSampleShading;
-	
+
 	const size_t sampleMaskArrayLen = (sizeof(vk::VkSampleMask) * 8 + other.rasterizationSamples) / (sizeof(vk::VkSampleMask) * 8);
 
 	m_sampleMask	= std::vector<vk::VkSampleMask>(other.pSampleMask, other.pSampleMask + sampleMaskArrayLen);
@@ -922,7 +922,7 @@ PipelineCreateInfo::ColorBlendState::ColorBlendState (const std::vector<vk::VkPi
 	: m_attachments(_attachments)
 {
 	sType = vk::VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-	pNext = DE_NULL; 
+	pNext = DE_NULL;
 	flags					= 0u;
 	logicOpEnable			= _logicOpEnable;
 	logicOp					= _logicOp;
@@ -937,7 +937,7 @@ PipelineCreateInfo::ColorBlendState::ColorBlendState (deUint32											_attach
 	: m_attachments(_attachments, _attachments + _attachmentCount)
 {
 	sType = vk::VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-	pNext	= DE_NULL; 
+	pNext	= DE_NULL;
 	logicOpEnable			= _logicOpEnable;
 	logicOp					= _logicOp;
 	attachmentCount			= static_cast<deUint32>(m_attachments.size());

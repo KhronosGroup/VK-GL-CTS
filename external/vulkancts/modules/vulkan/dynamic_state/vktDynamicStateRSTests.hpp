@@ -35,6 +35,7 @@
  * \brief Dynamic Raster State Tests
  *//*--------------------------------------------------------------------*/
 
+#include "tcuDefs.hpp"
 #include "vktTestCase.hpp"
 
 namespace vkt

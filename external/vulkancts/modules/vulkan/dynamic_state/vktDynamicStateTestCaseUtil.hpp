@@ -52,7 +52,7 @@ namespace DynamicState
 
 struct PositionColorVertex
 {
-	PositionColorVertex(tcu::Vec4 position_, tcu::Vec4 color_)
+	PositionColorVertex(const tcu::Vec4& position_, const tcu::Vec4& color_)
 		: position(position_)
 		, color(color_)
 	{}
@@ -60,9 +60,9 @@ struct PositionColorVertex
 	tcu::Vec4 color;
 };
 
-class ShaderSourceProvider 
+class ShaderSourceProvider
 {
-public: 
+public:
 	static std::string getSource(tcu::Archive& archive, const char* path)
 	{
 		tcu::Resource *resource = archive.getResource(path);
@@ -88,9 +88,9 @@ public:
 	{
 	}
 
-	TestInstance* createInstance (Context& context) const 
-	{ 
-		return new Instance(context, m_shaderPaths); 
+	TestInstance* createInstance (Context& context) const
+	{
+		return new Instance(context, m_shaderPaths);
 	}
 
 	virtual void initPrograms (vk::SourceCollections& programCollection) const
@@ -109,4 +109,4 @@ private:
 } // DynamicState
 } // vkt
 
-#endif
+#endif // _VKTDYNAMICSTATETESTCASEUTIL_HPP

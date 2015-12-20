@@ -30,7 +30,7 @@
  *
  *//*!
  * \file
- * \brief Dynamic CB State Tests 
+ * \brief Dynamic CB State Tests
  *//*--------------------------------------------------------------------*/
 
 #include "vktDynamicStateCBTests.hpp"
@@ -71,7 +71,7 @@ public:
 	{
 		const vk::Unique<vk::VkShaderModule> vs (createShaderModule(m_vk, device, m_context.getBinaryCollection().get(m_vertexShaderName), 0));
 		const vk::Unique<vk::VkShaderModule> fs (createShaderModule(m_vk, device, m_context.getBinaryCollection().get(m_fragmentShaderName), 0));
-		
+
 		const vk::VkPipelineColorBlendAttachmentState VkPipelineColorBlendAttachmentState =
 			PipelineCreateInfo::ColorBlendState::Attachment(vk::VK_TRUE,
 															vk::VK_BLEND_FACTOR_SRC_ALPHA, vk::VK_BLEND_FACTOR_CONSTANT_COLOR, vk::VK_BLEND_OP_ADD,
@@ -121,11 +121,11 @@ public:
 		{
 			vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,	// VkStructureType			sType;
 			DE_NULL,							// const void*				pNext;
-			0, 									// deUint32					waitSemaphoreCount;
-			DE_NULL, 							// const VkSemaphore*		pWaitSemaphores;
-			1, 									// deUint32					commandBufferCount;
+			0,									// deUint32					waitSemaphoreCount;
+			DE_NULL,							// const VkSemaphore*		pWaitSemaphores;
+			1,									// deUint32					commandBufferCount;
 			&m_cmdBuffer.get(),					// const VkCommandBuffer*	pCommandBuffers;
-			0, 									// deUint32					signalSemaphoreCount;
+			0,									// deUint32					signalSemaphoreCount;
 			DE_NULL								// const VkSemaphore*		pSignalSemaphores;
 		};
 		m_vk.queueSubmit(queue, 1, &submitInfo, DE_NULL);

@@ -35,6 +35,7 @@
  * \brief Dynamic State Tests - Base Class
  *//*--------------------------------------------------------------------*/
 
+#include "tcuDefs.hpp"
 #include "vktTestCase.hpp"
 
 #include "vktDynamicStateTestCaseUtil.hpp"
@@ -46,7 +47,7 @@ namespace vkt
 {
 namespace DynamicState
 {
-	
+
 class DynamicStateBaseClass : public TestInstance
 {
 public:
@@ -70,23 +71,23 @@ protected:
 															 const vk::VkViewport*			pViewports,
 															 const vk::VkRect2D*			pScissors);
 
-	void					setDynamicRasterizationState	(const float					lineWidth = 1.0f, 
-															 const float					depthBiasConstantFactor = 0.0f, 
-															 const float					depthBiasClamp = 0.0f, 
+	void					setDynamicRasterizationState	(const float					lineWidth = 1.0f,
+															 const float					depthBiasConstantFactor = 0.0f,
+															 const float					depthBiasClamp = 0.0f,
 															 const float					depthBiasSlopeFactor = 0.0f);
 
-	void					setDynamicBlendState			(const float					const1 = 0.0f, const float const2 = 0.0f, 
+	void					setDynamicBlendState			(const float					const1 = 0.0f, const float const2 = 0.0f,
 															 const float					const3 = 0.0f, const float const4 = 0.0f);
 
-	void					setDynamicDepthStencilState		(const float					minDepthBounds = -1.0f, 
+	void					setDynamicDepthStencilState		(const float					minDepthBounds = -1.0f,
 															 const float					maxDepthBounds = 1.0f,
-															 const deUint32					stencilFrontCompareMask = 0xffffffffu, 
+															 const deUint32					stencilFrontCompareMask = 0xffffffffu,
 															 const deUint32					stencilFrontWriteMask = 0xffffffffu,
-															 const deUint32					stencilFrontReference = 0, 
-															 const deUint32					stencilBackCompareMask = 0xffffffffu, 
-															 const deUint32					stencilBackWriteMask = 0xffffffffu, 
+															 const deUint32					stencilFrontReference = 0,
+															 const deUint32					stencilBackCompareMask = 0xffffffffu,
+															 const deUint32					stencilBackWriteMask = 0xffffffffu,
 															 const deUint32					stencilBackReference = 0);
-	enum 
+	enum
 	{
 		WIDTH       = 128,
 		HEIGHT      = 128
