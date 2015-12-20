@@ -218,9 +218,9 @@ tcu::TestStatus BufferTestInstance::iterate (void)
 	deUint32	maximumValueOfBufferUsageFlags		= (1 << (numberOfBufferUsageFlags - 1)) - 1;
 	deUint32	maximumValueOfBufferCreateFlags		= (1 << (numberOfBufferCreateFlags)) - 1;
 
-	for (deUint32 combinedBufferCreateFlags = 0; combinedBufferCreateFlags < maximumValueOfBufferCreateFlags; combinedBufferCreateFlags++)
+	for (deUint32 combinedBufferCreateFlags = 0; combinedBufferCreateFlags <= maximumValueOfBufferCreateFlags; combinedBufferCreateFlags++)
 	{
-		for (deUint32 combinedBufferUsageFlags = 0; combinedBufferUsageFlags < maximumValueOfBufferUsageFlags; combinedBufferUsageFlags++)
+		for (deUint32 combinedBufferUsageFlags = 0; combinedBufferUsageFlags <= maximumValueOfBufferUsageFlags; combinedBufferUsageFlags++)
 		{
 			BufferCaseParameters	testParams =
 			{
