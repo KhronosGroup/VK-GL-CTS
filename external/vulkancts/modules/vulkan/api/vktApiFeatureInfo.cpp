@@ -100,7 +100,7 @@ bool validateFeatureLimits(VkPhysicalDeviceProperties* properties, TestLog& log)
 		float			floatVal;			//!< Format is FLOAT
 		LimitFormat		format;
 		LimitType		type;
-	} featureLimitTable[] =   //!< From gitlab.khronos.org/vulkan/vulkan.git:doc/specs/vulkan/chapters/features.txt@40de2de5b8167ec277ea2969d621857094323831
+	} featureLimitTable[] =   //!< From gitlab.khronos.org/vulkan/vulkan.git:doc/specs/vulkan/chapters/features.txt@63b23f3bb3ecd211cd6e448e2001ce1088dacd35
 	{
 		{ FEATURE(maxImageDimension1D),									4096, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN },
 		{ FEATURE(maxImageDimension2D),									4096, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN  },
@@ -150,9 +150,9 @@ bool validateFeatureLimits(VkPhysicalDeviceProperties* properties, TestLog& log)
 		{ FEATURE(maxFragmentDualSrcAttachments),						1, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN   },
 		{ FEATURE(maxFragmentCombinedOutputResources),					4, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN   },
 		{ FEATURE(maxComputeSharedMemorySize),							16384, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN    },
-		{ FEATURE(maxComputeWorkGroupCount[0]),							65536, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN    },
-		{ FEATURE(maxComputeWorkGroupCount[1]),							65536, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN    },
-		{ FEATURE(maxComputeWorkGroupCount[2]),							65536,  0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN    },
+		{ FEATURE(maxComputeWorkGroupCount[0]),							65535, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN    },
+		{ FEATURE(maxComputeWorkGroupCount[1]),							65535, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN    },
+		{ FEATURE(maxComputeWorkGroupCount[2]),							65535,  0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN    },
 		{ FEATURE(maxComputeWorkGroupInvocations),						128, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN     },
 		{ FEATURE(maxComputeWorkGroupSize[0]),							128, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN     },
 		{ FEATURE(maxComputeWorkGroupSize[1]),							128, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN     },
