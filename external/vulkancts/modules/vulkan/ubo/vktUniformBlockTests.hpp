@@ -1,5 +1,5 @@
-#ifndef _VKTUNIFORMBUFFERTESTS_HPP
-#define _VKTUNIFORMBUFFERTESTS_HPP
+#ifndef _VKTUNIFORMBLOCKTESTS_HPP
+#define _VKTUNIFORMBLOCKTESTS_HPP
 /*------------------------------------------------------------------------
  * Vulkan Conformance Tests
  * ------------------------
@@ -35,6 +35,7 @@
  * \brief Uniform block tests.
  *//*--------------------------------------------------------------------*/
 
+#include "tcuDefs.hpp"
 #include "tcuTestCase.hpp"
 
 namespace vkt
@@ -47,4 +48,4 @@ tcu::TestCaseGroup*		createTests		(tcu::TestContext& testCtx);
 } // ubo
 } // vkt
 
-#endif // _VKTUNIFORMBUFFERTESTS_HPP
+#endif // _VKTUNIFORMBLOCKTESTS_HPP

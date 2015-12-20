@@ -112,10 +112,10 @@ static std::string generateEmptyFragmentSource ()
 static std::string generatePassthroughVertexShader (const std::vector<Symbol>& inputs, const char* inputPrefix, const char* outputPrefix)
 {
 
-	std::ostringstream 	src;
+	std::ostringstream	src;
 	int					location	= 0;
 
-	src << 	"#version 310 es\n"
+	src <<	"#version 310 es\n"
 			"#extension GL_ARB_separate_shader_objects : enable\n"
 			"#extension GL_ARB_shading_language_420pack : enable\n"
 			"layout(location = " << location << ") in highp vec4 a_position;\n";
@@ -145,7 +145,7 @@ static std::string generateVertexShader (const ShaderSpec& shaderSpec, const std
 
 	std::ostringstream	src;
 
-	src << 	"#version 310 es\n"
+	src <<	"#version 310 es\n"
 		"#extension GL_ARB_separate_shader_objects : enable\n"
 		"#extension GL_ARB_shading_language_420pack : enable\n";
 
@@ -304,7 +304,7 @@ static std::string generatePassthroughFragmentShader (const ShaderSpec& shaderSp
 {
 	std::ostringstream	src;
 
-	src << 	"#version 310 es\n"
+	src <<	"#version 310 es\n"
 		"#extension GL_ARB_separate_shader_objects : enable\n"
 		"#extension GL_ARB_shading_language_420pack : enable\n";
 
@@ -343,7 +343,7 @@ static std::string generateGeometryShader (const ShaderSpec& shaderSpec, const s
 
 	std::ostringstream	src;
 
-	src << 	"#version 310 es\n"
+	src <<	"#version 310 es\n"
 		"#extension GL_EXT_geometry_shader : require\n"
 		"#extension GL_ARB_separate_shader_objects : enable\n"
 		"#extension GL_ARB_shading_language_420pack : enable\n";
@@ -481,8 +481,8 @@ private:
 																				 Allocator&				memAlloc,
 																				 int					numValues,
 																				 const void* const*		inputs);
-																				 
-	void 												addAttribute 			(const Context&			ctx,
+
+	void												addAttribute			(const Context&			ctx,
 																				 Allocator&				memAlloc,
 																				 deUint32				bindingLocation,
 																				 VkFormat				format,
@@ -490,8 +490,8 @@ private:
 																				 deUint32				count,
 																				 const void*			dataPtr);
 	// reinit render data members
-	virtual void										clearRenderData 		(void);
-	
+	virtual void										clearRenderData			(void);
+
 	typedef de::SharedPtr<Unique<VkImage> >				VkImageSp;
 	typedef de::SharedPtr<Unique<VkImageView> >			VkImageViewSp;
 	typedef de::SharedPtr<Unique<VkBuffer> >			VkBufferSp;
@@ -676,7 +676,7 @@ void FragmentOutExecutor::bindAttributes (const Context& ctx, Allocator& memAllo
 		const glu::DataType	basicType		= symbol.varType.getBasicType();
 		const int			vecSize			= glu::getDataTypeScalarSize(basicType);
 		const VkFormat		format			= getAttributeFormat(basicType);
-		int					elementSize 	= 0;
+		int					elementSize		= 0;
 		int					numAttrsToAdd	= 1;
 
 		if (glu::isDataTypeFloatOrVec(basicType))
@@ -727,7 +727,7 @@ void FragmentOutExecutor::execute (const Context& ctx, int numValues, const void
 	const tcu::IVec2									renderSize				(renderSizeX, renderSizeY);
 	std::vector<tcu::Vec2>								positions;
 
-	VkFormat 											colorFormat 			= VK_FORMAT_R32G32B32A32_SFLOAT;
+	VkFormat											colorFormat				= VK_FORMAT_R32G32B32A32_SFLOAT;
 
 	const bool											useGeometryShader		= m_shaderType == glu::SHADERTYPE_GEOMETRY;
 
@@ -886,7 +886,7 @@ void FragmentOutExecutor::execute (const Context& ctx, int numValues, const void
 		{
 			VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,			// VkStructureType					sType;
 			DE_NULL,											// const void*						pNext;
-			(VkRenderPassCreateFlags)0,							// VkRenderPassCreateFlags 			flags;
+			(VkRenderPassCreateFlags)0,							// VkRenderPassCreateFlags			flags;
 			(deUint32)attachments.size(),						// deUint32							attachmentCount;
 			&attachments[0],									// const VkAttachmentDescription*	pAttachments;
 			1u,													// deUint32							subpassCount;
@@ -910,7 +910,7 @@ void FragmentOutExecutor::execute (const Context& ctx, int numValues, const void
 		{
 			VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,			// VkStructureType				sType;
 			DE_NULL,											// const void*					pNext;
-			0u,													// VkFramebufferCreateFlags 	flags;
+			0u,													// VkFramebufferCreateFlags		flags;
 			*renderPass,										// VkRenderPass					renderPass;
 			(deUint32)views.size(),								// deUint32						attachmentCount;
 			&views[0],											// const VkImageView*			pAttachments;
@@ -928,7 +928,7 @@ void FragmentOutExecutor::execute (const Context& ctx, int numValues, const void
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,		// VkStructureType				sType;
 			DE_NULL,											// const void*					pNext;
-			(VkPipelineLayoutCreateFlags)0,						// VkPipelineLayoutCreateFlags 	flags;
+			(VkPipelineLayoutCreateFlags)0,						// VkPipelineLayoutCreateFlags	flags;
 			0u,													// deUint32						descriptorSetCount;
 			DE_NULL,											// const VkDescriptorSetLayout*	pSetLayouts;
 			0u,													// deUint32						pushConstantRangeCount;
@@ -955,23 +955,23 @@ void FragmentOutExecutor::execute (const Context& ctx, int numValues, const void
 
 		const VkPipelineShaderStageCreateInfo vertexShaderStageParams =
 		{
-			VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,		// VkStructureType 						sType;
-			DE_NULL,													// const void* 							pNext;
-			(VkPipelineShaderStageCreateFlags)0,						// VkPipelineShaderStageCreateFlags 	flags;
-			VK_SHADER_STAGE_VERTEX_BIT,									// VkShaderStageFlagBits 				stage;
-			*vertexShaderModule,										// VkShaderModule 						module;
-			"main",														// const char* 							pName;
-			DE_NULL														// const VkSpecializationInfo* 			pSpecializationInfo;
+			VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,		// VkStructureType						sType;
+			DE_NULL,													// const void*							pNext;
+			(VkPipelineShaderStageCreateFlags)0,						// VkPipelineShaderStageCreateFlags		flags;
+			VK_SHADER_STAGE_VERTEX_BIT,									// VkShaderStageFlagBits				stage;
+			*vertexShaderModule,										// VkShaderModule						module;
+			"main",														// const char*							pName;
+			DE_NULL														// const VkSpecializationInfo*			pSpecializationInfo;
 		};
 
 		const VkPipelineShaderStageCreateInfo fragmentShaderStageParams =
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,		// VkStructureType						sType;
 			DE_NULL,													// const void*							pNext;
-			(VkPipelineShaderStageCreateFlags)0,						// VkPipelineShaderStageCreateFlags 	flags;
+			(VkPipelineShaderStageCreateFlags)0,						// VkPipelineShaderStageCreateFlags		flags;
 			VK_SHADER_STAGE_FRAGMENT_BIT,								// VkShaderStageFlagBits				stage;
 			*fragmentShaderModule,										// VkShaderModule						module;
-			"main",														// const char* 							pName;
+			"main",														// const char*							pName;
 			DE_NULL														// const VkSpecializationInfo*			pSpecializationInfo;
 		};
 
@@ -982,9 +982,9 @@ void FragmentOutExecutor::execute (const Context& ctx, int numValues, const void
 		{
 			const VkPipelineShaderStageCreateInfo geometryShaderStageParams =
 			{
-				VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,		// VkStructureType 						sType;
-				DE_NULL,													// const void* 							pNext;
-				(VkPipelineShaderStageCreateFlags)0,						// VkPipelineShaderStageCreateFlags 	flags;
+				VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,		// VkStructureType						sType;
+				DE_NULL,													// const void*							pNext;
+				(VkPipelineShaderStageCreateFlags)0,						// VkPipelineShaderStageCreateFlags		flags;
 				VK_SHADER_STAGE_GEOMETRY_BIT,								// VkShaderStageFlagBits				stage;
 				*geometryShaderModule,										// VkShaderModule						module;
 				"main",														// VkShader								shader;
@@ -998,7 +998,7 @@ void FragmentOutExecutor::execute (const Context& ctx, int numValues, const void
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,	// VkStructureType								sType;
 			DE_NULL,													// const void*									pNext;
-			(VkPipelineVertexInputStateCreateFlags)0,					// VkPipelineVertexInputStateCreateFlags 		flags;
+			(VkPipelineVertexInputStateCreateFlags)0,					// VkPipelineVertexInputStateCreateFlags		flags;
 			(deUint32)m_vertexBindingDescriptions.size(),				// deUint32										bindingCount;
 			&m_vertexBindingDescriptions[0],							// const VkVertexInputBindingDescription*		pVertexBindingDescriptions;
 			(deUint32)m_vertexAttributeDescriptions.size(),				// deUint32										attributeCount;
@@ -1040,7 +1040,7 @@ void FragmentOutExecutor::execute (const Context& ctx, int numValues, const void
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,	// VkStructureType										sType;
 			DE_NULL,												// const void*											pNext;
-			0u,														// VkPipelineViewportStateCreateFlags 					flags;
+			0u,														// VkPipelineViewportStateCreateFlags					flags;
 			1u,														// deUint32												viewportCount;
 			&viewport,												// const VkViewport*									pViewports;
 			1u,														// deUint32												scissorsCount;
@@ -1076,12 +1076,12 @@ void FragmentOutExecutor::execute (const Context& ctx, int numValues, const void
 			VK_FALSE,														// VkBool32									alphaToCoverageEnable;
 			VK_FALSE														// VkBool32									alphaToOneEnable;
 		};
-		
+
 		const VkPipelineColorBlendStateCreateInfo colorBlendStateParams =
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,		// VkStructureType								sType;
 			DE_NULL,														// const void*									pNext;
-			(VkPipelineColorBlendStateCreateFlags)0,						// VkPipelineColorBlendStateCreateFlags 		flags;
+			(VkPipelineColorBlendStateCreateFlags)0,						// VkPipelineColorBlendStateCreateFlags			flags;
 			VK_FALSE,														// VkBool32										logicOpEnable;
 			VK_LOGIC_OP_COPY,												// VkLogicOp									logicOp;
 			(deUint32)colorBlendAttachmentStates.size(),					// deUint32										attachmentCount;
@@ -1156,7 +1156,7 @@ void FragmentOutExecutor::execute (const Context& ctx, int numValues, const void
 			DE_NULL,										// VkRenderPass					renderPass;
 			0u,												// deUint32						subpass;
 			DE_NULL,										// VkFramebuffer				framebuffer;
-			VK_FALSE,										// VkBool32 					occlusionQueryEnable;
+			VK_FALSE,										// VkBool32						occlusionQueryEnable;
 			(VkQueryControlFlags)0u,						//VkQueryControlFlags			queryFlags;
 			(VkQueryPipelineStatisticFlags)0u				//VkQueryPipelineStatisticFlags pipelineStatistics;
 		};
@@ -1199,8 +1199,8 @@ void FragmentOutExecutor::execute (const Context& ctx, int numValues, const void
 	{
 		const VkFenceCreateInfo fenceParams =
 		{
-			VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,	// VkStructureType	 	sType;
-			DE_NULL,								// const void*		 	pNext;
+			VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,	// VkStructureType		sType;
+			DE_NULL,								// const void*			pNext;
 			0u										// VkFenceCreateFlags	flags;
 		};
 
@@ -1271,8 +1271,8 @@ void FragmentOutExecutor::execute (const Context& ctx, int numValues, const void
 			DE_NULL,										// VkRenderPass						renderPass;
 			0u,												// deUint32							subpass;
 			DE_NULL,										// VkFramebuffer					framebuffer;
-			VK_FALSE, 										// VkBool32							occlusionQueryEnable;
-			(VkQueryControlFlags)0, 						// VkQueryControlFlags				queryFlags;
+			VK_FALSE,										// VkBool32							occlusionQueryEnable;
+			(VkQueryControlFlags)0,							// VkQueryControlFlags				queryFlags;
 			(VkQueryPipelineStatisticFlags)0				// VkQueryPipelineStatisticFlags	pipelineStatistics;
 
 		};
@@ -1382,7 +1382,7 @@ public:
 
 	virtual void				log						(tcu::TestLog& dst) const { /* TODO */ (void)dst;}
 
-	virtual void 				setShaderSources		(SourceCollections& programCollection) const;
+	virtual void				setShaderSources		(SourceCollections& programCollection) const;
 
 };
 
@@ -1412,7 +1412,7 @@ public:
 
 	virtual void				log						(tcu::TestLog& dst) const	{ /* TODO */ (void)dst; }
 
-	virtual void 				setShaderSources		(SourceCollections& programCollection) const;
+	virtual void				setShaderSources		(SourceCollections& programCollection) const;
 
 };
 
@@ -1446,7 +1446,7 @@ public:
 
 	virtual void				log						(tcu::TestLog& dst) const { /* TODO */ (void)dst; }
 
-	virtual void 				setShaderSources		(SourceCollections& programCollection) const;
+	virtual void				setShaderSources		(SourceCollections& programCollection) const;
 
 };
 
@@ -1820,7 +1820,7 @@ public:
 						ComputeShaderExecutor	(const ShaderSpec& shaderSpec, glu::ShaderType shaderType);
 	virtual				~ComputeShaderExecutor	(void);
 
-	virtual void 		setShaderSources		(SourceCollections& programCollection) const;
+	virtual void		setShaderSources		(SourceCollections& programCollection) const;
 
 	virtual void		execute					(const Context& ctx, int numValues, const void* const* inputs, void* const* outputs);
 
@@ -1927,8 +1927,8 @@ void ComputeShaderExecutor::execute (const Context& ctx, int numValues, const vo
 		DE_NULL,										// VkRenderPass						renderPass;
 		0u,												// deUint32							subpass;
 		DE_NULL,										// VkFramebuffer					framebuffer;
-		VK_FALSE,										// VkBool32 						occlusionQueryEnable;
-		(VkQueryControlFlags)0, 						// VkQueryControlFlags				queryFlags;
+		VK_FALSE,										// VkBool32							occlusionQueryEnable;
+		(VkQueryControlFlags)0,							// VkQueryControlFlags				queryFlags;
 		(VkQueryPipelineStatisticFlags)0				// VkQueryPipelineStatisticFlags	pipelineStatistics;
 
 	};
@@ -1936,7 +1936,7 @@ void ComputeShaderExecutor::execute (const Context& ctx, int numValues, const vo
 	const VkDescriptorSetLayoutBinding layoutBindings[2] =
 	{
 		{
-			0u, 											// deUint32 				binding;
+			0u,												// deUint32					binding;
 			VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,				// VkDescriptorType			descriptorType;
 			1u,												// deUint32					descriptorCount;
 			VK_SHADER_STAGE_COMPUTE_BIT,					// VkShaderStageFlags		stageFlags;
@@ -1955,7 +1955,7 @@ void ComputeShaderExecutor::execute (const Context& ctx, int numValues, const vo
 	{
 		VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,	// VkStructureType						sType;
 		DE_NULL,												// cost void*							pNexŧ;
-		(VkDescriptorSetLayoutCreateFlags)0,					// VkDescriptorSetLayoutCreateFlags 	flags;
+		(VkDescriptorSetLayoutCreateFlags)0,					// VkDescriptorSetLayoutCreateFlags		flags;
 		DE_LENGTH_OF_ARRAY(layoutBindings),						// deUint32								count;
 		layoutBindings											// const VkDescriptorSetLayoutBinding	pBinding;
 	};
@@ -1977,11 +1977,11 @@ void ComputeShaderExecutor::execute (const Context& ctx, int numValues, const vo
 	const VkDescriptorPoolCreateInfo descriptorPoolParams =
 	{
 		VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,			// VkStructureType					sType;
-		DE_NULL,												// void* 							pNext;
+		DE_NULL,												// void*							pNext;
 		VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,		// VkDescriptorPoolUsage			poolUsage;
 		1u,														// deUint32							maxSets;
 		DE_LENGTH_OF_ARRAY(descriptorPoolSizes),				// deUint32							count;
-		descriptorPoolSizes										// const VkDescriptorPoolSize* 		pPoolSizes;
+		descriptorPoolSizes										// const VkDescriptorPoolSize*		pPoolSizes;
 	};
 
 	descriptorPool = createDescriptorPool(vk, vkDevice, &descriptorPoolParams);
@@ -2003,7 +2003,7 @@ void ComputeShaderExecutor::execute (const Context& ctx, int numValues, const vo
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,		// VkStructureType				sType;
 			DE_NULL,											// const void*					pNext;
-			(VkPipelineLayoutCreateFlags)0,						// VkPipelineLayoutCreateFlags 	flags;
+			(VkPipelineLayoutCreateFlags)0,						// VkPipelineLayoutCreateFlags	flags;
 			0u,													// deUint32						CdescriptorSetCount;
 			DE_NULL,											// const VkDescriptorSetLayout*	pSetLayouts;
 			0u,													// deUint32						pushConstantRangeCount;
@@ -2037,7 +2037,7 @@ void ComputeShaderExecutor::execute (const Context& ctx, int numValues, const vo
 		{
 			VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,		// VkStructureType									sType;
 			DE_NULL,											// const void*										pNext;
-			(VkPipelineCreateFlags)0,							// VkPipelineCreateFlags 							flags;
+			(VkPipelineCreateFlags)0,							// VkPipelineCreateFlags							flags;
 			*shaderStageParams,									// VkPipelineShaderStageCreateInfo					cs;
 			*pipelineLayout,									// VkPipelineLayout									layout;
 			0u,													// VkPipeline										basePipelineHandle;
@@ -2085,15 +2085,15 @@ void ComputeShaderExecutor::execute (const Context& ctx, int numValues, const vo
 		{
 			{
 				VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,		// VkStructureType					sType;
-				DE_NULL,									// const void*		 				pNext;
+				DE_NULL,									// const void*						pNext;
 				*descriptorSet,								// VkDescriptorSet					destSet;
 				0u,											// deUint32							destBinding;
 				0u,											// deUint32							destArrayElement;
-				2u, 										// deUint32							count;
+				2u,											// deUint32							count;
 				VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,			// VkDescriptorType					descriptorType;
-				DE_NULL,									// const VkDescriptorImageInfo* 	pImageInfo;
-				descriptorBufferInfo,						// const VkDescriptorBufferInfo* 	pBufferInfo;
-				DE_NULL										// const VkBufferView* 				pTexelBufferView;
+				DE_NULL,									// const VkDescriptorImageInfo*		pImageInfo;
+				descriptorBufferInfo,						// const VkDescriptorBufferInfo*	pBufferInfo;
+				DE_NULL										// const VkBufferView*				pTexelBufferView;
 			}
 		};
 
@@ -2160,7 +2160,7 @@ public:
 };
 
 TessellationExecutor::TessellationExecutor (const ShaderSpec& shaderSpec, glu::ShaderType shaderType)
-	: BufferIoExecutor 	(shaderSpec, shaderType)
+	: BufferIoExecutor	(shaderSpec, shaderType)
 {
 }
 
@@ -2180,7 +2180,7 @@ void TessellationExecutor::renderTess (const Context& ctx, deUint32 vertexCount)
 
 	Move<VkImage>						colorImage;
 	de::MovePtr<Allocation>				colorImageAlloc;
-	VkFormat 							colorFormat					= VK_FORMAT_R8G8B8A8_UNORM;
+	VkFormat							colorFormat					= VK_FORMAT_R8G8B8A8_UNORM;
 	Move<VkImageView>					colorImageView;
 
 	Move<VkRenderPass>					renderPass;
@@ -2303,7 +2303,7 @@ void TessellationExecutor::renderTess (const Context& ctx, deUint32 vertexCount)
 		{
 			VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,			// VkStructureType					sType;
 			DE_NULL,											// const void*						pNext;
-			0u,												 	// VkRenderPassCreateFlags			flags;
+			0u,													// VkRenderPassCreateFlags			flags;
 			1u,													// deUint32							attachmentCount;
 			attachments,										// const VkAttachmentDescription*	pAttachments;
 			1u,													// deUint32							subpassCount;
@@ -2321,7 +2321,7 @@ void TessellationExecutor::renderTess (const Context& ctx, deUint32 vertexCount)
 		{
 			VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,			// VkStructureType				sType;
 			DE_NULL,											// const void*					pNext;
-			0u,													// VkFramebufferCreateFlags 	flags;
+			0u,													// VkFramebufferCreateFlags		flags;
 			*renderPass,										// VkRenderPass					renderPass;
 			1u,													// deUint32						attachmentCount;
 			&*colorImageView,									// const VkAttachmentBindInfo*	pAttachments;
@@ -2378,8 +2378,8 @@ void TessellationExecutor::renderTess (const Context& ctx, deUint32 vertexCount)
 
 		const VkDescriptorPoolCreateInfo descriptorPoolParams =
 		{
-			VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO, 		// VkStructureType					sType;
-			DE_NULL,											// void* 							pNext;
+			VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,		// VkStructureType					sType;
+			DE_NULL,											// void*							pNext;
 			VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,	//VkDescriptorPoolUsage				poolUsage;
 			1u,													//deUint32							maxSets;
 			DE_LENGTH_OF_ARRAY(descriptorPoolSizes),			// deUint32							count;
@@ -2466,7 +2466,7 @@ void TessellationExecutor::renderTess (const Context& ctx, deUint32 vertexCount)
 				(VkPipelineShaderStageCreateFlags)0,						// VkPipelineShaderStageCreateFlags		flags;
 				VK_SHADER_STAGE_VERTEX_BIT,									// VkShaderStageFlagBit					stage;
 				*vertexShaderModule,										// VkShaderModule						shader;
-				"main",														// const char*	 						pName;
+				"main",														// const char*							pName;
 				DE_NULL														// const VkSpecializationInfo*			pSpecializationInfo;
 			},
 			{
@@ -2475,7 +2475,7 @@ void TessellationExecutor::renderTess (const Context& ctx, deUint32 vertexCount)
 				(VkPipelineShaderStageCreateFlags)0,						// VkPipelineShaderStageCreateFlags		flags;
 				VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,					// VkShaderStageFlagBit					stage;
 				*tessControlShaderModule,									// VkShaderModule						shader;
-				"main",														// const char* 							pName;
+				"main",														// const char*							pName;
 				DE_NULL														// const VkSpecializationInfo*			pSpecializationInfo;
 			},
 			{
@@ -2506,7 +2506,7 @@ void TessellationExecutor::renderTess (const Context& ctx, deUint32 vertexCount)
 			0u,																// deUint32									bindingCount;
 			DE_NULL,														// const VkVertexInputBindingDescription*	pVertexBindingDescriptions;
 			0u,																// deUint32									attributeCount;
-			DE_NULL,													 	// const VkVertexInputAttributeDescription*	pvertexAttributeDescriptions;
+			DE_NULL,														// const VkVertexInputAttributeDescription*	pvertexAttributeDescriptions;
 		};
 
 		const VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateParams =
@@ -2563,7 +2563,7 @@ void TessellationExecutor::renderTess (const Context& ctx, deUint32 vertexCount)
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,		// VkStructureType							sType;
 			DE_NULL,														// const void*								pNext;
-			(VkPipelineRasterizationStateCreateFlags)0,					 	// VkPipelineRasterizationStageCreateFlags	flags;
+			(VkPipelineRasterizationStateCreateFlags)0,						// VkPipelineRasterizationStageCreateFlags	flags;
 			VK_FALSE,														// VkBool32									depthClipEnable;
 			VK_FALSE,														// VkBool32									rasterizerDiscardEnable;
 			VK_POLYGON_MODE_FILL,											// VkPolygonMode							polygonMode;
@@ -2601,7 +2601,7 @@ void TessellationExecutor::renderTess (const Context& ctx, deUint32 vertexCount)
 			(VK_COLOR_COMPONENT_R_BIT |
 			 VK_COLOR_COMPONENT_G_BIT |
 			 VK_COLOR_COMPONENT_B_BIT |
-			 VK_COLOR_COMPONENT_A_BIT)		// VkColorComponentFlags 	colorWriteMask;
+			 VK_COLOR_COMPONENT_A_BIT)		// VkColorComponentFlags	colorWriteMask;
 		};
 
 		const VkPipelineColorBlendStateCreateInfo colorBlendStateParams =
@@ -2684,7 +2684,7 @@ void TessellationExecutor::renderTess (const Context& ctx, deUint32 vertexCount)
 			0u,												// deUint32							subpass;
 			DE_NULL,										// VkFramebuffer					framebuffer;
 			VK_FALSE,										//VkBool32							occlusionQueryEnable;
-			(VkQueryControlFlags)0u, 						// VkQueryControlFlags				queryFlags;
+			(VkQueryControlFlags)0u,						// VkQueryControlFlags				queryFlags;
 			(VkQueryPipelineStatisticFlags)0u				// VkQueryPipelineStatisticFlags	pipelineStatistics;
 
 		};
@@ -2759,7 +2759,7 @@ public:
 						TessControlExecutor			(const ShaderSpec& shaderSpec, glu::ShaderType shaderType);
 	virtual				~TessControlExecutor		(void);
 
-	virtual void 		setShaderSources			(SourceCollections& programCollection) const;
+	virtual void		setShaderSources			(SourceCollections& programCollection) const;
 
 	virtual void		execute						(const Context& ctx, int numValues, const void* const* inputs, void* const* outputs);
 
@@ -2858,7 +2858,7 @@ public:
 						TessEvaluationExecutor	(const ShaderSpec& shaderSpec, glu::ShaderType shaderType);
 	virtual				~TessEvaluationExecutor	(void);
 
-	virtual void 		setShaderSources		(SourceCollections& programCollection) const;
+	virtual void		setShaderSources		(SourceCollections& programCollection) const;
 
 	virtual void		execute					(const Context& ctx, int numValues, const void* const* inputs, void* const* outputs);
 

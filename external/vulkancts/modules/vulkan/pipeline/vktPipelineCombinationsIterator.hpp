@@ -1,5 +1,5 @@
-#ifndef _VKTPIPELINEUNIQUERANDOMITERATOR_HPP
-#define _VKTPIPELINEUNIQUERANDOMITERATOR_HPP
+#ifndef _VKTPIPELINECOMBINATIONSITERATOR_HPP
+#define _VKTPIPELINECOMBINATIONSITERATOR_HPP
 /*------------------------------------------------------------------------
  * Vulkan Conformance Tests
  * ------------------------
@@ -149,4 +149,4 @@ deUint32 CombinationsIterator<T>::factorial (deUint32 x)
 } // pipeline
 } // vkt
 
-#endif // _VKTPIPELINEUNIQUERANDOMITERATOR_HPP
+#endif // _VKTPIPELINECOMBINATIONSITERATOR_HPP

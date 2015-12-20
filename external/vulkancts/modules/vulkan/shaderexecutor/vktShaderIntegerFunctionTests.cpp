@@ -384,7 +384,7 @@ public:
 									, m_executor	(executor)
 								{
 								}
-	virtual tcu::TestStatus		iterate   						(void);
+	virtual tcu::TestStatus		iterate							(void);
 protected:
 	virtual bool						compare					(const void* const* inputs, const void* const* outputs) = 0;
 
@@ -396,7 +396,7 @@ protected:
 
 	const int							m_numValues;
 
-	const char* 						m_name;
+	const char*							m_name;
 
 	std::ostringstream					m_failMsg;				//!< Comparison failure help message.
 

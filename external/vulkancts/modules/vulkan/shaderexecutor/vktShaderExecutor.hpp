@@ -81,7 +81,7 @@ public:
 	//! Execute
 	virtual void			execute				(const Context& ctx, int numValues, const void* const* inputs, void* const* outputs) = 0;
 
-	virtual void 			setShaderSources	(vk::SourceCollections& programCollection) const = 0;
+	virtual void			setShaderSources	(vk::SourceCollections& programCollection) const = 0;
 
 protected:
 							ShaderExecutor		(const ShaderSpec& shaderSpec, glu::ShaderType shaderType);

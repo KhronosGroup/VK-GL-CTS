@@ -1496,7 +1496,7 @@ de::MovePtr<tcu::TestCaseGroup> createSingleAttributeTests (tcu::TestContext& te
 		VK_FORMAT_R16G16B16_SSCALED,
 		VK_FORMAT_R16G16B16A16_USCALED,
 		VK_FORMAT_R16G16B16A16_SSCALED,
-		
+
 		// SRGB formats
 		VK_FORMAT_R8_SRGB,
 		VK_FORMAT_R8G8_SRGB,

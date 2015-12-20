@@ -518,7 +518,7 @@ protected:
 	ShaderSpec							m_spec;
 	const int							m_numValues;
 
-	const char* 						m_name;
+	const char*							m_name;
 
 	std::ostringstream					m_failMsg;					//!< Comparison failure help message.
 

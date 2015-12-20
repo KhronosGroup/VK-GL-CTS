@@ -81,7 +81,7 @@ enum RangeSizeCase
 	SIZE_CASE_128,
 	SIZE_CASE_UNSUPPORTED
 };
-	
+
 struct PushConstantData
 {
 	struct PushConstantRange
@@ -120,13 +120,13 @@ private:
 class PushConstantGraphicsTestInstance : public vkt::TestInstance
 {
 public:
-								PushConstantGraphicsTestInstance	(Context& 					context,
+								PushConstantGraphicsTestInstance	(Context&					context,
 																	 const deUint32				rangeCount,
 																	 const PushConstantData		pushConstantRange[MAX_RANGE_COUNT],
 																	 const deBool				multipleUpdate);
 	virtual						~PushConstantGraphicsTestInstance	(void);
 	virtual tcu::TestStatus		iterate								(void);
-	
+
 	void						createShaderStage					(const DeviceInterface&		vk,
 																	 VkDevice					device,
 																	 const BinaryCollection&	programCollection,
@@ -134,7 +134,7 @@ public:
 																	 VkShaderStageFlagBits		stage,
 																	 Move<VkShaderModule>*		module);
 	std::vector<Vertex4RGBA>	createQuad							(const float size);
-	
+
 private:
 	tcu::TestStatus				verifyImage							(void);
 
@@ -170,7 +170,7 @@ private:
 	Move<VkDescriptorPool>							m_descriptorPool;
 	Move<VkDescriptorSetLayout>						m_descriptorSetLayout;
 	Move<VkDescriptorSet>							m_descriptorSet;
-	
+
 	Move<VkPipelineLayout>							m_pipelineLayout;
 	Move<VkPipeline>								m_graphicsPipelines;
 
@@ -227,7 +227,7 @@ void PushConstantGraphicsTest::initPrograms (SourceCollections& sourceCollection
 	std::ostringstream	geometrySrc;
 	std::ostringstream	tessControlSrc;
 	std::ostringstream	tessEvaluationSrc;
-	
+
 	for (size_t rangeNdx = 0; rangeNdx < m_rangeCount; rangeNdx++)
 	{
 		if (m_pushConstantRange[rangeNdx].range.shaderStage & VK_SHADER_STAGE_VERTEX_BIT)
@@ -237,7 +237,7 @@ void PushConstantGraphicsTest::initPrograms (SourceCollections& sourceCollection
 					  << "layout(location = 1) in highp vec4 color;\n"
 					  << "layout(location = 0) out highp vec4 vtxColor;\n"
 					  << "layout(push_constant) uniform Material {\n";
-		  
+
 			switch (getRangeSizeCase(m_pushConstantRange[rangeNdx].range.size))
 			{
 				case SIZE_CASE_4:
@@ -264,11 +264,11 @@ void PushConstantGraphicsTest::initPrograms (SourceCollections& sourceCollection
 					DE_FATAL("Not implemented yet");
 					break;
 			}
-		  
+
 			vertexSrc << "void main()\n"
 					  << "{\n"
 					  << "	gl_Position = position;\n";
-		  
+
 			switch (getRangeSizeCase(m_pushConstantRange[rangeNdx].range.size))
 			{
 				case SIZE_CASE_4:
@@ -277,7 +277,7 @@ void PushConstantGraphicsTest::initPrograms (SourceCollections& sourceCollection
 							  << "case 1: vtxColor = vec4(0.0, 0.0, 1.0, 1.0); break;\n"
 							  << "case 2: vtxColor = vec4(1.0, 0.0, 0, 1.0); break;\n"
 							  << "default: vtxColor = color; break;}\n"
-							  << "}\n"; 
+							  << "}\n";
 					break;
 				case SIZE_CASE_16:
 					vertexSrc << "vtxColor = (matInst.color + uniformBuf.element) * 0.5;\n"
@@ -300,10 +300,10 @@ void PushConstantGraphicsTest::initPrograms (SourceCollections& sourceCollection
 					DE_FATAL("Not implemented yet");
 					break;
 			}
-			
+
 			sourceCollections.glslSources.add("color_vert") << glu::VertexSource(vertexSrc.str());
 		}
-		
+
 		if (m_pushConstantRange[rangeNdx].range.shaderStage & VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT)
 		{
 			tessControlSrc << "#version 450\n"
@@ -322,10 +322,10 @@ void PushConstantGraphicsTest::initPrograms (SourceCollections& sourceCollection
 						   << "  gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n"
 						   << "  vtxColor[gl_InvocationID] = color[gl_InvocationID];\n"
 						   << "}\n";
-						
+
 			sourceCollections.glslSources.add("color_tesc") << glu::TessellationControlSource(tessControlSrc.str());
 		}
-		
+
 		if (m_pushConstantRange[rangeNdx].range.shaderStage & VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT)
 		{
 			tessEvaluationSrc << "#version 450\n"
@@ -340,10 +340,10 @@ void PushConstantGraphicsTest::initPrograms (SourceCollections& sourceCollection
 							  << "  gl_Position = gl_TessCoord.x * gl_in[0].gl_Position + gl_TessCoord.y * gl_in[1].gl_Position + gl_TessCoord.z * gl_in[2].gl_Position;\n"
 							  << "  vtxColor = matInst.color;\n"
 							  << "}\n";
-						
+
 			sourceCollections.glslSources.add("color_tese") << glu::TessellationEvaluationSource(tessEvaluationSrc.str());
 		}
-		
+
 		if (m_pushConstantRange[rangeNdx].range.shaderStage & VK_SHADER_STAGE_GEOMETRY_BIT)
 		{
 			geometrySrc << "#version 450\n"
@@ -365,17 +365,17 @@ void PushConstantGraphicsTest::initPrograms (SourceCollections& sourceCollection
 						<< "  }\n"
 						<< "  EndPrimitive();\n"
 						<< "}\n";
-						
+
 			sourceCollections.glslSources.add("color_geom") << glu::GeometrySource(geometrySrc.str());
 		}
-		
+
 		if (m_pushConstantRange[rangeNdx].range.shaderStage & VK_SHADER_STAGE_FRAGMENT_BIT)
 		{
 			fragmentSrc << "#version 450\n"
 						<< "layout(location = 0) in highp vec4 vtxColor;\n"
 						<< "layout(location = 0) out highp vec4 fragColor;\n"
 						<< "layout(push_constant) uniform Material {\n";
-						
+
 			if (m_pushConstantRange[rangeNdx].range.shaderStage & VK_SHADER_STAGE_VERTEX_BIT)
 			{
 				fragmentSrc << "    layout(offset = 0) int kind;\n"
@@ -386,7 +386,7 @@ void PushConstantGraphicsTest::initPrograms (SourceCollections& sourceCollection
 				fragmentSrc << "    layout(offset = 16) int kind;\n"
 							<< "} matInst;\n";
 			}
-						
+
 			fragmentSrc << "void main (void)\n"
 						<< "{\n"
 						<< "    switch (matInst.kind) {\n"
@@ -395,11 +395,11 @@ void PushConstantGraphicsTest::initPrograms (SourceCollections& sourceCollection
 						<< "    case 2: fragColor = vtxColor; break;\n"
 						<< "    default: fragColor = vec4(1.0, 1.0, 1.0, 1.0); break;}\n"
 						<< "}\n";
-						
+
 			sourceCollections.glslSources.add("color_frag") << glu::FragmentSource(fragmentSrc.str());
 		}
 	}
-	
+
 	// add a pass through fragment shader if it's not activated in push constant ranges
 	if (fragmentSrc.str().empty())
 	{
@@ -410,7 +410,7 @@ void PushConstantGraphicsTest::initPrograms (SourceCollections& sourceCollection
 					<< "{\n"
 					<< "	fragColor = vtxColor;\n"
 					<< "}\n";
-		    
+
 		sourceCollections.glslSources.add("color_frag") << glu::FragmentSource(fragmentSrc.str());
 	}
 }
@@ -423,7 +423,7 @@ void PushConstantGraphicsTestInstance::createShaderStage (const DeviceInterface&
 														  Move<VkShaderModule>*		module)
 {
 	*module = createShaderModule(vk, device, programCollection.get(name), 0);
-	
+
 	const vk::VkPipelineShaderStageCreateInfo	stageCreateInfo	=
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType						sType;
@@ -434,27 +434,27 @@ void PushConstantGraphicsTestInstance::createShaderStage (const DeviceInterface&
 		"main",													// const char*							pName;
 		DE_NULL													// const VkSpecializationInfo*			pSpecializationInfo;
 	};
-	
+
 	m_shaderStage.push_back(stageCreateInfo);
 }
 
 std::vector<Vertex4RGBA> PushConstantGraphicsTestInstance::createQuad(const float size)
 {
 	std::vector<Vertex4RGBA>	vertices;
-	
+
 	const tcu::Vec4				color				= tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f);
-	const Vertex4RGBA 			lowerLeftVertex		= {tcu::Vec4(-size, -size, 0.0f, 1.0f), color};
-	const Vertex4RGBA 			lowerRightVertex	= {tcu::Vec4(size, -size, 0.0f, 1.0f), color};
-	const Vertex4RGBA 			UpperLeftVertex		= {tcu::Vec4(-size, size, 0.0f, 1.0f), color};
-	const Vertex4RGBA 			UpperRightVertex	= {tcu::Vec4(size, size, 0.0f, 1.0f), color};
-	
+	const Vertex4RGBA			lowerLeftVertex		= {tcu::Vec4(-size, -size, 0.0f, 1.0f), color};
+	const Vertex4RGBA			lowerRightVertex	= {tcu::Vec4(size, -size, 0.0f, 1.0f), color};
+	const Vertex4RGBA			UpperLeftVertex		= {tcu::Vec4(-size, size, 0.0f, 1.0f), color};
+	const Vertex4RGBA			UpperRightVertex	= {tcu::Vec4(size, size, 0.0f, 1.0f), color};
+
 	vertices.push_back(lowerLeftVertex);
 	vertices.push_back(lowerRightVertex);
 	vertices.push_back(UpperLeftVertex);
 	vertices.push_back(UpperLeftVertex);
 	vertices.push_back(lowerRightVertex);
 	vertices.push_back(UpperRightVertex);
-	
+
 	return vertices;
 }
 
@@ -476,7 +476,7 @@ PushConstantGraphicsTestInstance::PushConstantGraphicsTestInstance (Context&				
 	const VkComponentMapping	componentMappingRGBA	= { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
 
 	deMemcpy(m_pushConstantRange, pushConstantRange, sizeof(PushConstantData) * MAX_RANGE_COUNT);
-	
+
 	// Create color image
 	{
 		const VkImageCreateInfo colorImageParams =
@@ -548,7 +548,7 @@ PushConstantGraphicsTestInstance::PushConstantGraphicsTestInstance (Context&				
 			0u,													// deUint32			attachment;
 			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL			// VkImageLayout	layout;
 		};
-		
+
 		const VkAttachmentReference depthAttachmentReference =
 		{
 			VK_ATTACHMENT_UNUSED,								// deUint32			attachment;
@@ -618,13 +618,13 @@ PushConstantGraphicsTestInstance::PushConstantGraphicsTestInstance (Context&				
 			pushConstantRanges[rangeNdx].offset		= m_pushConstantRange[rangeNdx].range.offset;
 			pushConstantRanges[rangeNdx].size		= m_pushConstantRange[rangeNdx].range.size;
 		}
-		
+
 		// create descriptor set layout
 		m_descriptorSetLayout = DescriptorSetLayoutBuilder().addSingleBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT).build(vk, vkDevice);
-		
+
 		// create descriptor pool
 		m_descriptorPool = DescriptorPoolBuilder().addType(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1u).build(vk, vkDevice, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
-		
+
 		// create uniform buffer
 		const VkBufferCreateInfo uniformBufferCreateInfo =
 		{
@@ -637,15 +637,15 @@ PushConstantGraphicsTestInstance::PushConstantGraphicsTestInstance (Context&				
 			1u,															// deUint32				queueFamilyCount;
 			&queueFamilyIndex											// const deUint32*		pQueueFamilyIndices;
 		};
-		
+
 		m_uniformBuffer			= createBuffer(vk, vkDevice, &uniformBufferCreateInfo);
 		m_uniformBufferAlloc	= memAlloc.allocate(getBufferMemoryRequirements(vk, vkDevice, *m_uniformBuffer), MemoryRequirement::HostVisible);
 		VK_CHECK(vk.bindBufferMemory(vkDevice, *m_uniformBuffer, m_uniformBufferAlloc->getMemory(), m_uniformBufferAlloc->getOffset()));
-		
+
 		tcu::Vec4	value	= tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f);
 		deMemcpy(m_uniformBufferAlloc->getHostPtr(), &value, 16u);
 		flushMappedMemoryRange(vk, vkDevice, m_uniformBufferAlloc->getMemory(), m_uniformBufferAlloc->getOffset(), 16u);
-		
+
 		// create and update descriptor set
 		const VkDescriptorSetAllocateInfo allocInfo =
 		{
@@ -656,25 +656,25 @@ PushConstantGraphicsTestInstance::PushConstantGraphicsTestInstance (Context&				
 			&(*m_descriptorSetLayout),									// const VkDescriptorSetLayout*                pSetLayouts;
 		};
 		m_descriptorSet	= allocateDescriptorSet(vk, vkDevice, &allocInfo);
-		
+
 		const VkDescriptorBufferInfo descriptorInfo = makeDescriptorBufferInfo(*m_uniformBuffer, (VkDeviceSize)0u, (VkDeviceSize)16u);
-		
+
 		DescriptorSetUpdateBuilder()
 			.writeSingle(*m_descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &descriptorInfo)
 			.update(vk, vkDevice);
-		
+
 		// create pipeline layout
 		const VkPipelineLayoutCreateInfo	pipelineLayoutParams	=
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,		// VkStructureType				sType;
 			DE_NULL,											// const void*					pNext;
-			0u,													// VkPipelineLayoutCreateFlags 	flags;
+			0u,													// VkPipelineLayoutCreateFlags	flags;
 			1u,													// deUint32						descriptorSetCount;
 			&(*m_descriptorSetLayout),							// const VkDescriptorSetLayout*	pSetLayouts;
 			m_rangeCount,										// deUint32						pushConstantRangeCount;
 			pushConstantRanges									// const VkPushConstantRange*	pPushConstantRanges;
 		};
-		
+
 		m_pipelineLayout = createPipelineLayout(vk, vkDevice, &pipelineLayoutParams);
 	}
 
@@ -695,9 +695,9 @@ PushConstantGraphicsTestInstance::PushConstantGraphicsTestInstance (Context&				
 				m_shaderFlags |= VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
 			}
 		}
-		
+
 		VkPhysicalDeviceFeatures features = m_context.getDeviceFeatures();
-		
+
 		createShaderStage(vk, vkDevice, m_context.getBinaryCollection(), "color_vert", VK_SHADER_STAGE_VERTEX_BIT , &m_vertexShaderModule);
 		if (m_shaderFlags & VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT || m_shaderFlags & VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT)
 		{
@@ -781,7 +781,7 @@ PushConstantGraphicsTestInstance::PushConstantGraphicsTestInstance (Context&				
 			1u,																// deUint32								scissorCount;
 			&scissor,														// const VkRect2D*						pScissors;
 		};
-		
+
 		const VkPipelineRasterizationStateCreateInfo rasterStateParams =
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,		// VkStructureType							sType;
@@ -836,7 +836,7 @@ PushConstantGraphicsTestInstance::PushConstantGraphicsTestInstance (Context&				
 			false,														// VkBool32									alphaToCoverageEnable;
 			false														// VkBool32									alphaToOneEnable;
 		};
-		
+
 		const VkPipelineDynamicStateCreateInfo dynamicStateParams		=
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,		// VkStructureType						sType;
@@ -845,7 +845,7 @@ PushConstantGraphicsTestInstance::PushConstantGraphicsTestInstance (Context&				
 			0u,															// deUint32								dynamicStateCount;
 			DE_NULL														// const VkDynamicState*				pDynamicStates;
 		};
-		
+
 		VkPipelineDepthStencilStateCreateInfo depthStencilStateParams =
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,	// VkStructureType							sType;
@@ -917,7 +917,7 @@ PushConstantGraphicsTestInstance::PushConstantGraphicsTestInstance (Context&				
 	// Create vertex buffer
 	{
 		m_vertices			= createQuad(1.0f);
-		
+
 		const VkBufferCreateInfo vertexBufferParams =
 		{
 			VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,						// VkStructureType		sType;
@@ -929,7 +929,7 @@ PushConstantGraphicsTestInstance::PushConstantGraphicsTestInstance (Context&				
 			1u,															// deUint32				queueFamilyCount;
 			&queueFamilyIndex											// const deUint32*		pQueueFamilyIndices;
 		};
-		
+
 		m_vertexBuffer		= createBuffer(vk, vkDevice, &vertexBufferParams);
 		m_vertexBufferAlloc	= memAlloc.allocate(getBufferMemoryRequirements(vk, vkDevice, *m_vertexBuffer), MemoryRequirement::HostVisible);
 
@@ -1000,28 +1000,28 @@ PushConstantGraphicsTestInstance::PushConstantGraphicsTestInstance (Context&				
 		// update push constant
 		std::vector<tcu::Vec4> color(8, tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f));
 		std::vector<tcu::Vec4> allOnes(8, tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f));
-		
+
 		const deUint32	kind	= 2u;
-		const void* 	value	= DE_NULL;
+		const void*		value	= DE_NULL;
 		for (size_t rangeNdx = 0; rangeNdx < m_rangeCount; rangeNdx++)
 		{
 			value = (m_pushConstantRange[rangeNdx].range.size == 4u) ? (void*)(&kind) : (void*)(&color[0]);
-				
+
 			vk.cmdPushConstants(*m_cmdBuffer, *m_pipelineLayout, m_pushConstantRange[rangeNdx].range.shaderStage, m_pushConstantRange[rangeNdx].range.offset, m_pushConstantRange[rangeNdx].range.size, value);
-			
+
 			if (m_pushConstantRange[rangeNdx].update.size < m_pushConstantRange[rangeNdx].range.size)
 			{
 				value = (void*)(&allOnes[0]);
 				vk.cmdPushConstants(*m_cmdBuffer, *m_pipelineLayout, m_pushConstantRange[rangeNdx].range.shaderStage, m_pushConstantRange[rangeNdx].update.offset, m_pushConstantRange[rangeNdx].update.size, value);
 			}
 		}
-		
+
 		// draw quad
 		const VkDeviceSize	triangleOffset	= (m_vertices.size() / TRIANGLE_COUNT) * sizeof(Vertex4RGBA);
 		for (int triangleNdx = 0; triangleNdx < TRIANGLE_COUNT; triangleNdx++)
 		{
 			VkDeviceSize vertexBufferOffset = triangleOffset * triangleNdx;
-			
+
 			if (m_multipleUpdate)
 			{
 				vk.cmdPushConstants(*m_cmdBuffer, *m_pipelineLayout, m_pushConstantRange[0].range.shaderStage, m_pushConstantRange[0].range.offset, m_pushConstantRange[0].range.size, &triangleNdx);
@@ -1030,7 +1030,7 @@ PushConstantGraphicsTestInstance::PushConstantGraphicsTestInstance (Context&				
 			vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_graphicsPipelines);
 			vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &m_vertexBuffer.get(), &vertexBufferOffset);
 			vk.cmdBindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 0, 1, &(*m_descriptorSet), 0, DE_NULL);
-			
+
 			vk.cmdDraw(*m_cmdBuffer, (deUint32)(m_vertices.size() / TRIANGLE_COUNT), 1, 0, 0);
 		}
 
@@ -1095,7 +1095,7 @@ tcu::TestStatus PushConstantGraphicsTestInstance::verifyImage (void)
 		{
 			m_vertices = createQuad(0.5f);
 		}
-		
+
 		for (size_t rangeNdx = 0; rangeNdx < m_rangeCount; rangeNdx++)
 		{
 			if (m_pushConstantRange[rangeNdx].update.size < m_pushConstantRange[rangeNdx].range.size)
@@ -1106,7 +1106,7 @@ tcu::TestStatus PushConstantGraphicsTestInstance::verifyImage (void)
 				}
 			}
 		}
-		
+
 		if (m_multipleUpdate)
 		{
 			for (size_t vertexNdx = 0; vertexNdx < 3; vertexNdx++)
@@ -1118,11 +1118,11 @@ tcu::TestStatus PushConstantGraphicsTestInstance::verifyImage (void)
 				m_vertices[vertexNdx].color.xyz() = tcu::Vec3(0.0f, 0.0f, 1.0f);
 			}
 		}
-		
+
 		for (int triangleNdx = 0; triangleNdx < TRIANGLE_COUNT; triangleNdx++)
 		{
 			rr::RenderState renderState(refRenderer.getViewportState());
-			
+
 			refRenderer.draw(renderState,
 							 rr::PRIMITIVETYPE_TRIANGLES,
 							 std::vector<Vertex4RGBA>(m_vertices.begin() + triangleNdx * 3,
@@ -1166,7 +1166,7 @@ public:
 	virtual					~PushConstantComputeTest	(void);
 	virtual void			initPrograms				(SourceCollections& sourceCollections) const;
 	virtual TestInstance*	createInstance				(Context& context) const;
-	
+
 private:
 	const PushConstantData	m_pushConstantRange;
 };
@@ -1181,18 +1181,18 @@ public:
 
 private:
 	const PushConstantData			m_pushConstantRange;
-	
+
 	Move<VkBuffer>					m_outBuffer;
 	de::MovePtr<Allocation>			m_outBufferAlloc;
 	Move<VkDescriptorPool>			m_descriptorPool;
 	Move<VkDescriptorSetLayout>		m_descriptorSetLayout;
 	Move<VkDescriptorSet>			m_descriptorSet;
-	
+
 	Move<VkPipelineLayout>			m_pipelineLayout;
 	Move<VkPipeline>				m_computePipelines;
-	
+
 	Move<VkShaderModule>			m_computeShaderModule;
-	
+
 	Move<VkCommandPool>				m_cmdPool;
 	Move<VkCommandBuffer>			m_cmdBuffer;
 
@@ -1220,7 +1220,7 @@ TestInstance* PushConstantComputeTest::createInstance (Context& context) const
 void PushConstantComputeTest::initPrograms (SourceCollections& sourceCollections) const
 {
 	std::ostringstream	computeSrc;
-	
+
 	computeSrc << "#version 450\n"
 			   << "layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
 			   << "layout(std140, set = 0, binding = 0) writeonly buffer Output {\n"
@@ -1233,7 +1233,7 @@ void PushConstantComputeTest::initPrograms (SourceCollections& sourceCollections
 			   << "{\n"
 			   << "  outData.elements[gl_GlobalInvocationID.x] = matInst.element;\n"
 			   << "}\n";
-		    
+
 	sourceCollections.glslSources.add("compute") << glu::ComputeSource(computeSrc.str());
 }
 
@@ -1254,13 +1254,13 @@ PushConstantComputeTestInstance::PushConstantComputeTestInstance (Context&					c
 		pushConstantRanges.stageFlags	= m_pushConstantRange.range.shaderStage;
 		pushConstantRanges.offset		= m_pushConstantRange.range.offset;
 		pushConstantRanges.size			= m_pushConstantRange.range.size;
-		
+
 		// create descriptor set layout
 		m_descriptorSetLayout = DescriptorSetLayoutBuilder().addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT).build(vk, vkDevice);
-		
+
 		// create descriptor pool
 		m_descriptorPool = DescriptorPoolBuilder().addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1u).build(vk, vkDevice, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
-		
+
 		// create uniform buffer
 		const VkDeviceSize			bufferSize			= sizeof(tcu::Vec4) * 8;
 		const VkBufferCreateInfo	bufferCreateInfo	=
@@ -1274,11 +1274,11 @@ PushConstantComputeTestInstance::PushConstantComputeTestInstance (Context&					c
 			1u,															// deUint32				queueFamilyCount;
 			&queueFamilyIndex											// const deUint32*		pQueueFamilyIndices;
 		};
-		
+
 		m_outBuffer			= createBuffer(vk, vkDevice, &bufferCreateInfo);
 		m_outBufferAlloc	= memAlloc.allocate(getBufferMemoryRequirements(vk, vkDevice, *m_outBuffer), MemoryRequirement::HostVisible);
 		VK_CHECK(vk.bindBufferMemory(vkDevice, *m_outBuffer, m_outBufferAlloc->getMemory(), m_outBufferAlloc->getOffset()));
-		
+
 		// create and update descriptor set
 		const VkDescriptorSetAllocateInfo allocInfo =
 		{
@@ -1289,32 +1289,32 @@ PushConstantComputeTestInstance::PushConstantComputeTestInstance (Context&					c
 			&(*m_descriptorSetLayout),									// const VkDescriptorSetLayout*                pSetLayouts;
 		};
 		m_descriptorSet	= allocateDescriptorSet(vk, vkDevice, &allocInfo);
-		
+
 		const VkDescriptorBufferInfo descriptorInfo = makeDescriptorBufferInfo(*m_outBuffer, (VkDeviceSize)0u, bufferSize);
-		
+
 		DescriptorSetUpdateBuilder()
 			.writeSingle(*m_descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &descriptorInfo)
 			.update(vk, vkDevice);
-		
+
 		// create pipeline layout
 		const VkPipelineLayoutCreateInfo	pipelineLayoutParams	=
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,		// VkStructureType				sType;
 			DE_NULL,											// const void*					pNext;
-			0u,													// VkPipelineLayoutCreateFlags 	flags;
+			0u,													// VkPipelineLayoutCreateFlags	flags;
 			1u,													// deUint32						descriptorSetCount;
 			&(*m_descriptorSetLayout),							// const VkDescriptorSetLayout*	pSetLayouts;
 			1u,													// deUint32						pushConstantRangeCount;
 			&pushConstantRanges									// const VkPushConstantRange*	pPushConstantRanges;
 		};
-		
+
 		m_pipelineLayout = createPipelineLayout(vk, vkDevice, &pipelineLayoutParams);
 	}
-	
+
 	// create pipeline
 	{
 		m_computeShaderModule = createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("compute"), 0);
-		
+
 		const VkPipelineShaderStageCreateInfo	stageCreateInfo	=
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType						sType;
@@ -1325,7 +1325,7 @@ PushConstantComputeTestInstance::PushConstantComputeTestInstance (Context&					c
 			"main",													// const char*							pName;
 			DE_NULL													// const VkSpecializationInfo*			pSpecializationInfo;
 		};
-		
+
 		const VkComputePipelineCreateInfo		createInfo	=
 		{
 			VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,			// VkStructureType                             sType;
@@ -1339,7 +1339,7 @@ PushConstantComputeTestInstance::PushConstantComputeTestInstance (Context&					c
 
 		m_computePipelines = createComputePipeline(vk, vkDevice, (vk::VkPipelineCache)0u, &createInfo);
 	}
-	
+
 	// Create command pool
 	{
 		const VkCommandPoolCreateInfo cmdPoolParams =
@@ -1362,7 +1362,7 @@ PushConstantComputeTestInstance::PushConstantComputeTestInstance (Context&					c
 			VK_COMMAND_BUFFER_LEVEL_PRIMARY,				// VkCommandBufferLevel		level;
 			1u												// deUint32					bufferCount;
 		};
-		
+
 		m_cmdBuffer = allocateCommandBuffer(vk, vkDevice, &cmdBufferAllocateInfo);
 
 		const VkCommandBufferBeginInfo cmdBufferBeginInfo =
@@ -1377,18 +1377,18 @@ PushConstantComputeTestInstance::PushConstantComputeTestInstance (Context&					c
 			0u,												// VkQueryControlFlags				queryFlags;
 			0u												// VkQueryPipelineStatisticFlags	pipelineStatistics;
 		};
-		
+
 		VK_CHECK(vk.beginCommandBuffer(*m_cmdBuffer, &cmdBufferBeginInfo));
-		
+
 		vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *m_computePipelines);
 		vk.cmdBindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *m_pipelineLayout, 0, 1, &(*m_descriptorSet), 0, DE_NULL);
-		
+
 		// update push constant
 		tcu::Vec4	value	= tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f);
 		vk.cmdPushConstants(*m_cmdBuffer, *m_pipelineLayout, m_pushConstantRange.range.shaderStage, m_pushConstantRange.range.offset, m_pushConstantRange.range.size, &value);
-		
+
 		vk.cmdDispatch(*m_cmdBuffer, 8, 1, 1);
-		
+
 		VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
 	}
 
@@ -1539,7 +1539,7 @@ tcu::TestCaseGroup* createPushConstantTests (tcu::TestContext& testCtx)
 			true
 		},
 	};
-	
+
 	static const struct
 	{
 		const char*			name;
@@ -1555,18 +1555,18 @@ tcu::TestCaseGroup* createPushConstantTests (tcu::TestContext& testCtx)
 	};
 
 	de::MovePtr<tcu::TestCaseGroup>	pushConstantTests	(new tcu::TestCaseGroup(testCtx, "push_constant", "PushConstant tests"));
-	
+
 	de::MovePtr<tcu::TestCaseGroup>	graphicsTests	(new tcu::TestCaseGroup(testCtx, "graphics_pipeline", "graphics pipeline"));
 	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(graphicsParams); ndx++)
 	{
 		graphicsTests->addChild(new PushConstantGraphicsTest(testCtx, graphicsParams[ndx].name, graphicsParams[ndx].description, graphicsParams[ndx].count, graphicsParams[ndx].range, graphicsParams[ndx].hasMultipleUpdates));
 	}
 	pushConstantTests->addChild(graphicsTests.release());
-	
+
 	de::MovePtr<tcu::TestCaseGroup>	computeTests	(new tcu::TestCaseGroup(testCtx, "compute_pipeline", "compute pipeline"));
 	computeTests->addChild(new PushConstantComputeTest(testCtx, computeParams[0].name, computeParams[0].description, computeParams[0].range));
 	pushConstantTests->addChild(computeTests.release());
-	
+
 	return pushConstantTests.release();
 }
 
