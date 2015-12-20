@@ -202,9 +202,9 @@ DE_INLINE deUint64 deAtomicCompareExchangeUint64 (volatile deUint64* dstAddr, de
 DE_INLINE size_t deAtomicIncrementUSize (volatile size_t* size)
 {
 #if (DE_PTR_SIZE == 8)
-	return deAtomicIncrementUint64(size);
+	return deAtomicIncrementUint64((volatile deUint64*)size);
 #elif (DE_PTR_SIZE == 4)
-	return deAtomicIncrementUint32(size);
+	return deAtomicIncrementUint32((volatile deUint32*)size);
 #else
 #	error "Invalid DE_PTR_SIZE value"
 #endif
@@ -218,9 +218,9 @@ DE_INLINE size_t deAtomicIncrementUSize (volatile size_t* size)
 DE_INLINE size_t deAtomicDecrementUSize (volatile size_t* size)
 {
 #if (DE_PTR_SIZE == 8)
-	return deAtomicDecrementUint64(size);
+	return deAtomicDecrementUint64((volatile deUint64*)size);
 #elif (DE_PTR_SIZE == 4)
-	return deAtomicDecrementUint32(size);
+	return deAtomicDecrementUint32((volatile deUint32*)size);
 #else
 #	error "Invalid DE_PTR_SIZE value"
 #endif
@@ -243,9 +243,9 @@ DE_INLINE size_t deAtomicDecrementUSize (volatile size_t* size)
 DE_INLINE void* deAtomicCompareExchangePtr (void* volatile* dstAddr, void* compare, void* exchange)
 {
 #if (DE_PTR_SIZE == 8)
-	return (void*)deAtomicCompareExchangeUint64((volatile deUintptr*)dstAddr, (deUintptr)compare, (deUintptr)exchange);
+	return (void*)deAtomicCompareExchangeUint64((volatile deUint64*)dstAddr, (deUint64)compare, (deUint64)exchange);
 #elif (DE_PTR_SIZE == 4)
-	return (void*)deAtomicCompareExchangeUint32((volatile deUintptr*)dstAddr, (deUintptr)compare, (deUintptr)exchange);
+	return (void*)deAtomicCompareExchangeUint32((volatile deUint32*)dstAddr, (deUint32)compare, (deUint32)exchange);
 #else
 #	error "Invalid DE_PTR_SIZE value"
 #endif
