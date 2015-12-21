@@ -161,14 +161,14 @@ tcu::TestStatus BufferViewTestInstance::iterate (void)
 			m_testCase.range,							//	VkDeviceSize		range;
 		};
 
-		if (vk.createBufferView(vkDevice, &bufferViewCreateInfo, (const VkAllocationCallbacks*)DE_NULL, &bufferView) != VK_SUCCESS)
-			return tcu::TestStatus::fail("Buffer View creation failed!");
-
 		if (vk.allocateMemory(vkDevice, &memAlloc, (const VkAllocationCallbacks*)DE_NULL, &memory) != VK_SUCCESS)
 			return tcu::TestStatus::fail("Alloc memory failed!");
 
 		if (vk.bindBufferMemory(vkDevice, testBuffer, memory, 0) != VK_SUCCESS)
 			return tcu::TestStatus::fail("Bind buffer memory failed!");
+
+		if (vk.createBufferView(vkDevice, &bufferViewCreateInfo, (const VkAllocationCallbacks*)DE_NULL, &bufferView) != VK_SUCCESS)
+			return tcu::TestStatus::fail("Buffer View creation failed!");
 
 		vk.destroyBufferView(vkDevice, bufferView, (const VkAllocationCallbacks*)DE_NULL);
 	}
