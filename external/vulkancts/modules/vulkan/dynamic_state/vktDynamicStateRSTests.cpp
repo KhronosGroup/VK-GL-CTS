@@ -182,7 +182,7 @@ protected:
 		const vk::VkVertexInputBindingDescription vertexInputBindingDescription =
 		{
 			0,
-			sizeof(tcu::Vec4) * 2,
+			(deUint32)sizeof(tcu::Vec4) * 2,
 			vk::VK_VERTEX_INPUT_RATE_VERTEX,
 		};
 

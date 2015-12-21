@@ -42,9 +42,9 @@ namespace vkt
 namespace QueryPool
 {
 
-Buffer::Buffer (const vk::DeviceInterface& vk, vk::VkDevice device, vk::Move<vk::VkBuffer> object)
-	: m_object		(object)
-	, m_allocation  (DE_NULL)
+Buffer::Buffer (const vk::DeviceInterface& vk, vk::VkDevice device, vk::Move<vk::VkBuffer> object_)
+	: m_allocation  (DE_NULL)
+	, m_object		(object_)
 	, m_vk			(vk)
 	, m_device		(device)
 {
