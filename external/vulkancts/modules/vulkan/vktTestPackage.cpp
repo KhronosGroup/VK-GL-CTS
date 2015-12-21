@@ -64,6 +64,7 @@
 #include "vktShaderExecutorTests.hpp"
 #include "vktUniformBlockTests.hpp"
 #include "vktDynamicStateTests.hpp"
+#include "vktSSBOLayoutTests.hpp"
 
 #include <vector>
 #include <sstream>
@@ -313,6 +314,7 @@ void TestPackage::init (void)
 	addChild(memory::createTests		(m_testCtx));
 	addChild(ubo::createTests			(m_testCtx));
 	addChild(DynamicState::createTests	(m_testCtx));
+	addChild(ssbo::createTests			(m_testCtx));
 }
 
 } // vkt
