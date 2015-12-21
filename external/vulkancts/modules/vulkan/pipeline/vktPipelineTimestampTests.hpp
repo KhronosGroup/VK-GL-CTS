@@ -42,7 +42,7 @@ namespace vkt
 namespace pipeline
 {
 
-tcu::TestCaseGroup* createTimeStampTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup* createTimestampTests (tcu::TestContext& testCtx);
 
 } // pipeline
 } // vkt

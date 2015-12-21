@@ -26,8 +26,8 @@ set(DEQP_VK_PIPELINE_SRCS
 	vktPipelineStencilTests.hpp
 	vktPipelineTests.cpp
 	vktPipelineTests.hpp
-	vktPipelineTimeStampTests.cpp
-	vktPipelineTimeStampTests.hpp
+	vktPipelineTimestampTests.cpp
+	vktPipelineTimestampTests.hpp
 	vktPipelineVertexUtil.cpp
 	vktPipelineVertexUtil.hpp
 	)
