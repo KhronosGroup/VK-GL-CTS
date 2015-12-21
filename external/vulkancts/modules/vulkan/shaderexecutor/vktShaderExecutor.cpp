@@ -1663,13 +1663,13 @@ void BufferIoExecutor::declareBufferBlocks (std::ostream& src, const ShaderSpec&
 
 	if (!spec.inputs.empty())
 	{
-		src	<< "layout(set = 0, binding = " << int(INPUT_BUFFER_BINDING) << ", std140) buffer InBuffer\n"
+		src	<< "layout(set = 0, binding = " << int(INPUT_BUFFER_BINDING) << ", std430) buffer InBuffer\n"
 			<< "{\n"
 			<< "	Inputs inputs[];\n"
 			<< "};\n";
 	}
 
-	src	<< "layout(set = 0, binding = " << int(OUTPUT_BUFFER_BINDING) << ", std140) buffer OutBuffer\n"
+	src	<< "layout(set = 0, binding = " << int(OUTPUT_BUFFER_BINDING) << ", std430) buffer OutBuffer\n"
 		<< "{\n"
 		<< "	Outputs outputs[];\n"
 		<< "};\n"
