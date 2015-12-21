@@ -59,7 +59,6 @@ struct BufferViewCaseParameters
 	VkDeviceSize			range;
 	VkBufferUsageFlags		usage;
 	VkFormatFeatureFlags	features;
-	bool					beforeAllocateMemory;
 };
 
 class BufferViewTestInstance : public TestInstance
@@ -99,8 +98,6 @@ BufferViewTestInstance::BufferViewTestInstance (Context&					ctx,
 	: TestInstance	(ctx)
 	, m_testCase	(createInfo)
 {
-	if (m_context.getDeviceFeatures().sparseBinding == 0 && m_testCase.beforeAllocateMemory == false)
-		throw tcu::NotSupportedError("The test is not supported - it needs missing 'sparseBinding' feature of Vulkan");
 }
 
 tcu::TestStatus BufferViewTestInstance::iterate (void)
@@ -117,9 +114,7 @@ tcu::TestStatus BufferViewTestInstance::iterate (void)
 	{
 		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,													//	VkStructureType			sType;
 		DE_NULL,																				//	const void*				pNext;
-		(VkBufferCreateFlags)(m_testCase.beforeAllocateMemory == true
-							  ? 0
-							  : VK_BUFFER_CREATE_SPARSE_BINDING_BIT),							//	VkBufferCreateFlags		flags;
+		0u,																						//	VkBufferCreateFlags		flags;
 		size,																					//	VkDeviceSize			size;
 		m_testCase.usage,																		//	VkBufferUsageFlags		usage;
 		VK_SHARING_MODE_EXCLUSIVE,																//	VkSharingMode			sharingMode;
@@ -153,16 +148,6 @@ tcu::TestStatus BufferViewTestInstance::iterate (void)
 	};
 
 	{
-		// Testing before attached memory to buffer.
-		if (m_testCase.beforeAllocateMemory)
-		{
-			if (vk.allocateMemory(vkDevice, &memAlloc, (const VkAllocationCallbacks*)DE_NULL, &memory) != VK_SUCCESS)
-				return tcu::TestStatus::fail("Alloc memory failed!");
-
-			if (vk.bindBufferMemory(vkDevice, testBuffer, memory, 0) != VK_SUCCESS)
-				return tcu::TestStatus::fail("Bind buffer memory failed!");
-		}
-
 		// Create buffer view.
 		VkBufferView					bufferView;
 		const VkBufferViewCreateInfo	bufferViewCreateInfo	=
@@ -179,15 +164,11 @@ tcu::TestStatus BufferViewTestInstance::iterate (void)
 		if (vk.createBufferView(vkDevice, &bufferViewCreateInfo, (const VkAllocationCallbacks*)DE_NULL, &bufferView) != VK_SUCCESS)
 			return tcu::TestStatus::fail("Buffer View creation failed!");
 
-		// Testing after attaching memory to buffer.
-		if (!m_testCase.beforeAllocateMemory)
-		{
-			if (vk.allocateMemory(vkDevice, &memAlloc, (const VkAllocationCallbacks*)DE_NULL, &memory) != VK_SUCCESS)
-				return tcu::TestStatus::fail("Alloc memory failed!");
+		if (vk.allocateMemory(vkDevice, &memAlloc, (const VkAllocationCallbacks*)DE_NULL, &memory) != VK_SUCCESS)
+			return tcu::TestStatus::fail("Alloc memory failed!");
 
-			if (vk.bindBufferMemory(vkDevice, testBuffer, memory, 0) != VK_SUCCESS)
-				return tcu::TestStatus::fail("Bind buffer memory failed!");
-		}
+		if (vk.bindBufferMemory(vkDevice, testBuffer, memory, 0) != VK_SUCCESS)
+			return tcu::TestStatus::fail("Bind buffer memory failed!");
 
 		vk.destroyBufferView(vkDevice, bufferView, (const VkAllocationCallbacks*)DE_NULL);
 	}
@@ -239,21 +220,8 @@ tcu::TestStatus BufferViewTestInstance::iterate (void)
 				range,										// VkDeviceSize			range;
 				VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT,	// VkBufferUsageFlags	usage;
 				VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT, // VkFormatFeatureFlags flags;
-				false										// beforeAlloceMemory	bool;
 			};
-			bufferViewTests->addChild(new BufferViewTestCase(testCtx, testName.str() + "_before_uniform", testDescription.str(), testParams));
-		}
-		{
-			BufferViewCaseParameters testParams	=
-			{
-				(VkFormat)format,							// VkFormat				format;
-				0,											// VkDeviceSize			offset;
-				range,										// VkDeviceSize			range;
-				VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT,	// VkBufferUsageFlags	usage;
-				VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT, // VkFormatFeatureFlags flags;
-				true										// beforeAlloceMemory	bool;
-			};
-			bufferViewTests->addChild(new BufferViewTestCase(testCtx, testName.str() + "_after_uniform", testDescription.str(), testParams));
+			bufferViewTests->addChild(new BufferViewTestCase(testCtx, testName.str() + "_uniform", testDescription.str(), testParams));
 		}
 		{
 			BufferViewCaseParameters testParams	=
@@ -263,21 +231,8 @@ tcu::TestStatus BufferViewTestInstance::iterate (void)
 				range,										// VkDeviceSize			range;
 				VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT,	// VkBufferUsageFlags	usage;
 				VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT, // VkFormatFeatureFlags flags;
-				false										// beforeAlloceMemory	bool;
 			};
-			bufferViewTests->addChild(new BufferViewTestCase(testCtx, testName.str() + "_before_storage", testDescription.str(), testParams));
-		}
-		{
-			BufferViewCaseParameters testParams	=
-			{
-				(VkFormat)format,							// VkFormat				format;
-				0,											// VkDeviceSize			offset;
-				range,										// VkDeviceSize			range;
-				VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT,	// VkBufferUsageFlags	usage;
-				VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT, // VkFormatFeatureFlags flags;
-				true										// beforeAlloceMemory	bool;
-			};
-			bufferViewTests->addChild(new BufferViewTestCase(testCtx, testName.str() + "_after_storage", testDescription.str(), testParams));
+			bufferViewTests->addChild(new BufferViewTestCase(testCtx, testName.str() + "_storage", testDescription.str(), testParams));
 		}
 	}
 

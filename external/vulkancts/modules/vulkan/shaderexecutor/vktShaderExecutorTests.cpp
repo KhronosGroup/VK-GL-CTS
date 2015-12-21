@@ -42,6 +42,7 @@
 #include "vktShaderCommonFunctionTests.hpp"
 #include "vktShaderIntegerFunctionTests.hpp"
 #include "vktShaderPackingFunctionTests.hpp"
+#include "vktOpaqueTypeIndexingTests.hpp"
 
 namespace vkt
 {
@@ -57,6 +58,7 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 	shaderExecutorTests->addChild(new ShaderCommonFunctionTests(testCtx));
 	shaderExecutorTests->addChild(new ShaderIntegerFunctionTests(testCtx));
 	shaderExecutorTests->addChild(new ShaderPackingFunctionTests(testCtx));
+	shaderExecutorTests->addChild(new OpaqueTypeIndexingTests(testCtx));
 
 	return shaderExecutorTests.release();
 }

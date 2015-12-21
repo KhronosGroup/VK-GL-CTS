@@ -179,10 +179,10 @@ template<typename T, int Size>	inline Vector<T, Size>			bitwiseAndVecScalar		(co
 template<typename T, int Size>	inline Vector<T, Size>			bitwiseOrVecScalar		(const Vector<T, Size>& v, T s)					{ return bitwiseOr(v, Vector<T, Size>(s)); };
 template<typename T, int Size>	inline Vector<T, Size>			bitwiseXorVecScalar		(const Vector<T, Size>& v, T s)					{ return bitwiseXor(v, Vector<T, Size>(s)); };
 
-template<typename T, int Size> inline Vector<T, Size>			addScalarVec			(T s, const Vector<T, Size>& v) 				{ return s + v; };
-template<typename T, int Size> inline Vector<T, Size>			subScalarVec			(T s, const Vector<T, Size>& v) 				{ return s - v; };
-template<typename T, int Size> inline Vector<T, Size>			mulScalarVec			(T s, const Vector<T, Size>& v) 				{ return s * v; };
-template<typename T, int Size> inline Vector<T, Size>			divScalarVec			(T s, const Vector<T, Size>& v) 				{ return s / v; };
+template<typename T, int Size> inline Vector<T, Size>			addScalarVec			(T s, const Vector<T, Size>& v)					{ return s + v; };
+template<typename T, int Size> inline Vector<T, Size>			subScalarVec			(T s, const Vector<T, Size>& v)					{ return s - v; };
+template<typename T, int Size> inline Vector<T, Size>			mulScalarVec			(T s, const Vector<T, Size>& v)					{ return s * v; };
+template<typename T, int Size> inline Vector<T, Size>			divScalarVec			(T s, const Vector<T, Size>& v)					{ return s / v; };
 template<typename T, int Size> inline Vector<T, Size>			modScalarVec			(T s, const Vector<T, Size>& v)					{ return mod(Vector<T, Size>(s), v); };
 template<typename T, int Size> inline Vector<T, Size>			bitwiseAndScalarVec		(T s, const Vector<T, Size>& v)					{ return bitwiseAnd(Vector<T, Size>(s), v); };
 template<typename T, int Size> inline Vector<T, Size>			bitwiseOrScalarVec		(T s, const Vector<T, Size>& v)					{ return bitwiseOr(Vector<T, Size>(s), v); };
@@ -559,8 +559,8 @@ class ShaderOperatorCaseInstance : public ShaderRenderCaseInstance
 {
 public:
 							ShaderOperatorCaseInstance	(Context&				context,
-														const bool 				isVertexCase,
-														const ShaderEvaluator& 	evaluator,
+														const bool				isVertexCase,
+														const ShaderEvaluator&	evaluator,
 														const UniformSetup&		uniformSetup,
 														const ShaderDataSpec	spec);
 	virtual					~ShaderOperatorCaseInstance	(void);
@@ -589,7 +589,7 @@ ShaderOperatorCaseInstance::ShaderOperatorCaseInstance (Context&				context,
 		const float scale		= rangeMax - rangeMin;
 		const float minBias		= rangeMin;
 		const float maxBias		= rangeMax;
-		Mat4  		attribMatrix;
+		Mat4		attribMatrix;
 
 		for (int rowNdx = 0; rowNdx < 4; rowNdx++)
 		{
@@ -1844,7 +1844,7 @@ void ShaderOperatorTests::init (void)
 
 		for (int funcInfoNdx = 0; funcInfoNdx < (int)outerGroupInfo.funcInfos.size(); funcInfoNdx++)
 		{
-			const BuiltinFuncInfo&	funcInfo 		= outerGroupInfo.funcInfos[funcInfoNdx];
+			const BuiltinFuncInfo&	funcInfo		= outerGroupInfo.funcInfos[funcInfoNdx];
 			const char*				shaderFuncName	= funcInfo.shaderFuncName;
 			const bool				isBoolCase		= (funcInfo.precisionMask == PRECMASK_NA);
 			const bool				isBoolOut		= (funcInfo.outValue & (VALUE_BOOL | VALUE_BOOL_VEC | VALUE_BOOL_GENTYPE)) != 0;
@@ -1895,11 +1895,11 @@ void ShaderOperatorTests::init (void)
 							const bool			isUnaryOp		= (funcInfo.input1.valueType == VALUE_NONE);
 
 							// \note Data type names will be added to description and name in a following loop.
-							std::string 		desc			= std::string("Built-in function ") + shaderFuncName + "(";
+							std::string			desc			= std::string("Built-in function ") + shaderFuncName + "(";
 							std::string			name			= precisionPrefix;
 
 							// Generate shader op.
-							std::string 		shaderOp 		= std::string("res = ");
+							std::string			shaderOp		= std::string("res = ");
 
 							// Setup shader data info.
 							ShaderDataSpec		shaderSpec;
@@ -2060,7 +2060,7 @@ void ShaderOperatorTests::init (void)
 				const char*			shaderTypeName	= getShaderTypeName(shaderType);
 				const bool			isVertexCase	= (ShaderType)shaderType == SHADERTYPE_VERTEX;
 
-				std::string 		name			= precisionPrefix + dataTypeStr + "_" + shaderTypeName;
+				std::string			name			= precisionPrefix + dataTypeStr + "_" + shaderTypeName;
 
 				ShaderDataSpec		shaderSpec;
 				shaderSpec.numInputs		= 3;
@@ -2125,7 +2125,7 @@ void ShaderOperatorTests::init (void)
 				const char*			shaderTypeName	= getShaderTypeName(shaderType);
 				const bool			isVertexCase	= (ShaderType)shaderType == SHADERTYPE_VERTEX;
 
-				std::string 		name			= std::string("") + getPrecisionName((Precision)precision) + "_" + s_sequenceCases[caseNdx].caseName + "_" + shaderTypeName;
+				std::string			name			= std::string("") + getPrecisionName((Precision)precision) + "_" + s_sequenceCases[caseNdx].caseName + "_" + shaderTypeName;
 
 				ShaderDataSpec		shaderSpec;
 				shaderSpec.numInputs		= s_sequenceCases[caseNdx].numInputs;

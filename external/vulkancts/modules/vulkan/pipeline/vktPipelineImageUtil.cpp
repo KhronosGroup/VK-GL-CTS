@@ -589,8 +589,8 @@ std::vector<VkBufferImageCopy> TestTexture::getBufferCopyRegions (void) const
 			for (int layerNdx = 0; layerNdx < getArraySize(); layerNdx++)
 			{
 				const tcu::CompressedTexture& level = getCompressedLevel(levelNdx, layerNdx);
-				tcu::IVec3 blockPixelSize 			= getBlockPixelSize(level.getFormat());
-				layerDataOffset 					= getNextMultiple<4>(layerDataOffset);
+				tcu::IVec3 blockPixelSize			= getBlockPixelSize(level.getFormat());
+				layerDataOffset						= getNextMultiple<4>(layerDataOffset);
 
 				const VkBufferImageCopy layerRegion =
 				{

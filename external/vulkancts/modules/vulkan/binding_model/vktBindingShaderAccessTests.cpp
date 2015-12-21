@@ -1689,7 +1689,7 @@ private:
 	const vk::VkDevice					m_device;
 	const vk::VkPipeline				m_pipeline;
 	const vk::VkPipelineLayout			m_pipelineLayout;
-	const tcu::UVec3&					m_numWorkGroups;
+	const tcu::UVec3					m_numWorkGroups;
 	const int							m_numDescriptorSets;
 	const vk::VkDescriptorSet* const	m_descriptorSets;
 	const int							m_numDynamicOffsets;

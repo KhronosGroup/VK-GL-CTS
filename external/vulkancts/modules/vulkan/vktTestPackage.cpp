@@ -63,6 +63,9 @@
 #include "vktShaderRenderSwitchTests.hpp"
 #include "vktShaderExecutorTests.hpp"
 #include "vktUniformBlockTests.hpp"
+#include "vktDynamicStateTests.hpp"
+#include "vktSSBOLayoutTests.hpp"
+#include "vktQueryPoolTests.hpp"
 
 #include <vector>
 #include <sstream>
@@ -311,6 +314,9 @@ void TestPackage::init (void)
 	addChild(createRenderPassTests		(m_testCtx));
 	addChild(memory::createTests		(m_testCtx));
 	addChild(ubo::createTests			(m_testCtx));
+	addChild(DynamicState::createTests	(m_testCtx));
+	addChild(ssbo::createTests			(m_testCtx));
+	addChild(QueryPool::createTests		(m_testCtx));
 }
 
 } // vkt

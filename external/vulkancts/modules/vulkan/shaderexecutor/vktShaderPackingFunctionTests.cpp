@@ -162,12 +162,12 @@ public:
 											, m_executor	(executor)
 										{
 										}
-	virtual tcu::TestStatus				iterate   							(void) = 0;
+	virtual tcu::TestStatus				iterate								(void) = 0;
 protected:
 	tcu::TestContext&					m_testCtx;
 	const glu::ShaderType				m_shaderType;
 	ShaderSpec							m_spec;
-	const char* 						m_name;
+	const char*							m_name;
 	de::SharedPtr<ShaderExecutor>		m_executor;
 };
 

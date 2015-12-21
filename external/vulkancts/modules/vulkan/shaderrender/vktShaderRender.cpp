@@ -1426,7 +1426,7 @@ void ShaderRenderCaseInstance::render (tcu::Surface& result, const QuadGrid& qua
 			1.0f,															// float			lineWidth;
 		};
 
-		const VkPipelineMultisampleStateCreateInfo 		multisampleStateParams =
+		const VkPipelineMultisampleStateCreateInfo		multisampleStateParams =
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,		// VkStructureType							sType;
 			DE_NULL,														// const void*								pNext;
@@ -1438,7 +1438,7 @@ void ShaderRenderCaseInstance::render (tcu::Surface& result, const QuadGrid& qua
 			VK_FALSE,														// VkBool32									alphaToCoverageEnable;
 			VK_FALSE														// VkBool32									alphaToOneEnable;
 		};
-		
+
 		const VkPipelineColorBlendAttachmentState		colorBlendAttachmentState	=
 		{
 			false,															// VkBool32			blendEnable;

@@ -73,7 +73,7 @@ static BaseUniformType getIntUniformType(int number)
 {
 	switch (number)
 	{
-		case 1: 	return UI_ONE;
+		case 1:		return UI_ONE;
 		case 2:		return UI_TWO;
 		case 3:		return UI_THREE;
 		case 4:		return UI_FOUR;
@@ -109,7 +109,7 @@ static BaseUniformType getFloatFractionUniformType(int number)
 {
 	switch (number)
 	{
-		case 1: 	return UF_ONE;
+		case 1:		return UF_ONE;
 		case 2:		return UF_TWO;
 		case 3:		return UF_THREE;
 		case 4:		return UF_FOUR;
@@ -269,7 +269,7 @@ public:
 	ShaderLoopCase	(tcu::TestContext&	testCtx,
 					 const std::string&	name,
 					 const std::string&	description,
-					 bool 				isVertexCase,
+					 bool				isVertexCase,
 					 ShaderEvalFunc		evalFunc,
 					 UniformSetup*		uniformSetup,
 					 const std::string&	vertexShaderSource,
@@ -293,7 +293,7 @@ public:
 	virtual void					setup				(ShaderRenderCaseInstance& instance, const tcu::Vec4& constCoords) const;
 
 private:
-	std::vector<BaseUniformType> 	m_uniformInformations;
+	std::vector<BaseUniformType>	m_uniformInformations;
 };
 
 void LoopUniformSetup::setup (ShaderRenderCaseInstance& instance, const tcu::Vec4&) const
@@ -589,8 +589,9 @@ static de::MovePtr<ShaderLoopCase> createSpecialLoopCase (tcu::TestContext&	test
 		locationCounter++;
 	}
 
-	struct {
-		char const* 	name;
+	struct
+	{
+		char const*		name;
 		BaseUniformType	type;
 	} uniforms[] =
 	{

@@ -48,4 +48,4 @@ tcu::TestCaseGroup*	createOperatorTests	(tcu::TestContext& testCtx);
 } // sr
 } // vkt
 
-#endif // _VKTFSHADERRENDEROPERATORTESTS_HPP
+#endif // _VKTSHADERRENDEROPERATORTESTS_HPP
