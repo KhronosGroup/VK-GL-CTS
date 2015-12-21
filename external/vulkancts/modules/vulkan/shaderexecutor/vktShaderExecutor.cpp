@@ -2614,7 +2614,7 @@ void TessellationExecutor::renderTess (const Context& ctx, deUint32 vertexCount)
 			DE_NULL,										// const void*				pNext;
 			*cmdPool,										// VkCmdPool				cmdPool;
 			VK_COMMAND_BUFFER_LEVEL_PRIMARY,				// VkCmdBufferLevel			level;
-			1u												// VkCmdBufferCreateFlags	bufferCount;
+			1u												// uint32_t					bufferCount;
 		};
 
 		const VkCommandBufferBeginInfo cmdBufferBeginInfo =
