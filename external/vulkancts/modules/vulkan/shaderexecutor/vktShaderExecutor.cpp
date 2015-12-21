@@ -2089,10 +2089,7 @@ void ComputeShaderExecutor::execute (const Context& ctx, int numValues, const vo
 	}
 
 
-	VkPhysicalDeviceProperties properties;
-	ctx.getInstanceInterface().getPhysicalDeviceProperties(ctx.getPhysicalDevice(), &properties);
-	const int maxValuesPerInvocation = properties.limits.maxComputeWorkGroupSize[0];
-
+	const int maxValuesPerInvocation	= ctx.getDeviceProperties().limits.maxComputeWorkGroupSize[0];
 	int					curOffset		= 0;
 	const deUint32		inputStride		= getInputStride();
 	const deUint32		outputStride	= getOutputStride();
@@ -2175,7 +2172,6 @@ static std::string generateVertexShaderForTess (void)
 {
 	std::ostringstream	src;
 	src <<  "#version 310 es\n"
-
 		<< "void main (void)\n{\n"
 		<< "	gl_Position = vec4(gl_VertexID/2, gl_VertexID%2, 0.0, 1.0);\n"
 		<< "}\n";
@@ -2440,14 +2436,15 @@ void TessellationExecutor::renderTess (const Context& ctx, deUint32 vertexCount)
 
 			descriptorSetUpdateBuilder.writeSingle(*descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding((deUint32)OUTPUT_BUFFER_BINDING), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &outputDescriptorBufferInfo);
 
+			VkDescriptorBufferInfo inputDescriptorBufferInfo =
+			{
+				0,							// VkBuffer			buffer;
+				0u,							// VkDeviceSize		offset;
+				VK_WHOLE_SIZE				// VkDeviceSize		range;
+			};
 			if (inputBufferSize)
 			{
-				const VkDescriptorBufferInfo inputDescriptorBufferInfo =
-				{
-					*m_inputBuffer,				// VkBuffer			buffer;
-					0u,							// VkDeviceSize		offset;
-					VK_WHOLE_SIZE				// VkDeviceSize		range;
-				};
+				inputDescriptorBufferInfo.buffer = *m_inputBuffer;
 
 				descriptorSetUpdateBuilder.writeSingle(*descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding((deUint32)INPUT_BUFFER_BINDING), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &inputDescriptorBufferInfo);
 			}
@@ -2549,7 +2546,7 @@ void TessellationExecutor::renderTess (const Context& ctx, deUint32 vertexCount)
 			VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO,		// VkStructureType							sType;
 			DE_NULL,														// const void*								pNext;
 			(VkPipelineTesselationStateCreateFlags)0,						// VkPipelineTessellationStateCreateFlags	flags;
-			vertexCount														// uint32_t									patchControlPoints;
+			1																// uint32_t									patchControlPoints;
 		};
 
 		const VkViewport viewport =

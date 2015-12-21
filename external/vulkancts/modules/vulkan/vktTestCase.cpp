@@ -106,6 +106,7 @@ public:
 	const VkPhysicalDeviceFeatures&	getDeviceFeatures				(void) const	{ return m_deviceFeatures;				}
 	VkDevice						getDevice						(void) const	{ return *m_device;						}
 	const DeviceInterface&			getDeviceInterface				(void) const	{ return m_deviceInterface;				}
+	const VkPhysicalDeviceProperties& getDeviceProperties			(void) const	{ return m_deviceProperties;			}
 
 	deUint32						getUniversalQueueFamilyIndex	(void) const	{ return m_universalQueueFamilyIndex;	}
 	VkQueue							getUniversalQueue				(void) const;
@@ -118,6 +119,7 @@ private:
 
 	const deUint32					m_universalQueueFamilyIndex;
 	const VkPhysicalDeviceFeatures	m_deviceFeatures;
+	const VkPhysicalDeviceProperties	m_deviceProperties;
 
 	const Unique<VkDevice>			m_device;
 	const DeviceDriver				m_deviceInterface;
@@ -129,6 +131,7 @@ DefaultDevice::DefaultDevice (const PlatformInterface& vkPlatform, const tcu::Co
 	, m_physicalDevice				(chooseDevice(m_instanceInterface, *m_instance, cmdLine))
 	, m_universalQueueFamilyIndex	(findQueueFamilyIndexWithCaps(m_instanceInterface, m_physicalDevice, VK_QUEUE_GRAPHICS_BIT|VK_QUEUE_COMPUTE_BIT))
 	, m_deviceFeatures				(getPhysicalDeviceFeatures(m_instanceInterface, m_physicalDevice)) // \note All supported features are enabled
+	, m_deviceProperties			(getPhysicalDeviceProperties(m_instanceInterface, m_physicalDevice)) // \note All supported features are enabled
 	, m_device						(createDefaultDevice(m_instanceInterface, m_physicalDevice, m_universalQueueFamilyIndex, m_deviceFeatures))
 	, m_deviceInterface				(m_instanceInterface, *m_device)
 {
@@ -176,6 +179,7 @@ vk::VkInstance						Context::getInstance					(void) const { return m_device->get
 const vk::InstanceInterface&		Context::getInstanceInterface			(void) const { return m_device->getInstanceInterface();			}
 vk::VkPhysicalDevice				Context::getPhysicalDevice				(void) const { return m_device->getPhysicalDevice();			}
 const vk::VkPhysicalDeviceFeatures&	Context::getDeviceFeatures				(void) const { return m_device->getDeviceFeatures();			}
+const vk::VkPhysicalDeviceProperties&	Context::getDeviceProperties		(void) const { return m_device->getDeviceProperties();			}
 vk::VkDevice						Context::getDevice						(void) const { return m_device->getDevice();					}
 const vk::DeviceInterface&			Context::getDeviceInterface				(void) const { return m_device->getDeviceInterface();			}
 deUint32							Context::getUniversalQueueFamilyIndex	(void) const { return m_device->getUniversalQueueFamilyIndex();	}
