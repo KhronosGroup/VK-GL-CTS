@@ -2893,6 +2893,7 @@ dEQP-GLES2.functional.shaders.loops.do_while_dynamic_iterations.conditional_body
 dEQP-GLES2.functional.shaders.loops.do_while_dynamic_iterations.conditional_body_fragment
 dEQP-GLES2.functional.shaders.loops.do_while_dynamic_iterations.function_call_return_fragment
 dEQP-GLES2.functional.shaders.loops.do_while_dynamic_iterations.function_call_inout_fragment
+dEQP-GLES2.functional.shaders.loops.custom.continue_in_fragment_for_loop
 dEQP-GLES2.functional.shaders.operator.unary_operator.plus.lowp_float_vertex
 dEQP-GLES2.functional.shaders.operator.unary_operator.plus.lowp_float_fragment
 dEQP-GLES2.functional.shaders.operator.unary_operator.plus.mediump_float_vertex

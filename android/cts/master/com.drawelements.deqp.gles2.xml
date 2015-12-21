@@ -8901,6 +8901,11 @@
 							<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 						</Test>
 					</TestCase>
+					<TestCase name="custom">
+						<Test name="continue_in_fragment_for_loop">
+							<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+						</Test>
+					</TestCase>
 				</TestSuite>
 				<TestSuite name="operator">
 					<TestSuite name="unary_operator">
