@@ -1315,6 +1315,8 @@ void FragmentOutExecutor::execute (const Context& ctx, int numValues, const void
 				// Copy image to buffer
 				{
 
+					Move<VkCommandBuffer> copyCmdBuffer = allocateCommandBuffer(vk, vkDevice, &cmdBufferParams);
+
 					const VkSubmitInfo submitInfo =
 					{
 						VK_STRUCTURE_TYPE_SUBMIT_INFO,
@@ -1322,12 +1324,10 @@ void FragmentOutExecutor::execute (const Context& ctx, int numValues, const void
 						0u,
 						(const VkSemaphore*)DE_NULL,
 						1u,
-						&cmdBuffer.get(),
+						&copyCmdBuffer.get(),
 						0u,
 						(const VkSemaphore*)DE_NULL,
 					};
-
-					Move<VkCommandBuffer> copyCmdBuffer = allocateCommandBuffer(vk, vkDevice, &cmdBufferParams);
 
 					VK_CHECK(vk.beginCommandBuffer(*copyCmdBuffer, &cmdBufferBeginInfo));
 					vk.cmdCopyImageToBuffer(*copyCmdBuffer, colorImages[outLocation + locNdx].get()->get(), VK_IMAGE_LAYOUT_UNDEFINED, *readImageBuffer, 1u, &copyParams);
@@ -1768,7 +1768,8 @@ void BufferIoExecutor::initBuffers (const Context& ctx, int numValues)
 {
 	const deUint32				inputStride			= getLayoutStride(m_inputLayout);
 	const deUint32				outputStride		= getLayoutStride(m_outputLayout);
-	const size_t				inputBufferSize		= numValues * inputStride;
+	// Avoid creating zero-sized buffer/memory
+	const size_t				inputBufferSize		= numValues * inputStride ? (numValues * inputStride) : 1;
 	const size_t				outputBufferSize	= numValues * outputStride;
 
 	// Upload data to buffer
@@ -1966,12 +1967,8 @@ void ComputeShaderExecutor::execute (const Context& ctx, int numValues, const vo
 	{
 		{
 			VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,					// VkDescriptorType		type;
-			1u													// deUint32				count;
+			2u													// deUint32				count;
 		},
-		{
-			VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,					// VkDescriptorType		type;
-			1u													// deUint32				count;
-		}
 	};
 
 	const VkDescriptorPoolCreateInfo descriptorPoolParams =
@@ -2081,7 +2078,7 @@ void ComputeShaderExecutor::execute (const Context& ctx, int numValues, const vo
 			}
 		};
 
-		const VkWriteDescriptorSet writeDescritporSets[] =
+		const VkWriteDescriptorSet writeDescriptorSets[] =
 		{
 			{
 				VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,		// VkStructureType					sType;
@@ -2097,7 +2094,7 @@ void ComputeShaderExecutor::execute (const Context& ctx, int numValues, const vo
 			}
 		};
 
-		vk.updateDescriptorSets(vkDevice, 1, writeDescritporSets, 0u, DE_NULL);
+		vk.updateDescriptorSets(vkDevice, 1, writeDescriptorSets, 0u, DE_NULL);
 
 		cmdBuffer = allocateCommandBuffer(vk, vkDevice, &cmdBufferParams);
 		VK_CHECK(vk.beginCommandBuffer(*cmdBuffer, &cmdBufferBeginInfo));
@@ -2345,7 +2342,7 @@ void TessellationExecutor::renderTess (const Context& ctx, deUint32 vertexCount)
 				DE_NULL											// const VkSampler*			pImmutableSamplers;
 			},
 			{
-				0u,												// deUint32					binding;
+				1u,												// deUint32					binding;
 				VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,				// VkDescriptorType			descriptorType;
 				1u,												// deUint32					arraySize;
 				VK_SHADER_STAGE_ALL,							// VkShaderStageFlags		stageFlags;
@@ -2368,12 +2365,8 @@ void TessellationExecutor::renderTess (const Context& ctx, deUint32 vertexCount)
 		{
 			{
 				VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,				// VkDescriptorType		type;
-				1u												// deUint32				count;
+				2u												// deUint32				count;
 			},
-			{
-				VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,				// VkDescriptorType		type;
-				1u												// deUint32				count;
-			}
 		};
 
 		const VkDescriptorPoolCreateInfo descriptorPoolParams =
@@ -2413,7 +2406,7 @@ void TessellationExecutor::renderTess (const Context& ctx, deUint32 vertexCount)
 			},
 		};
 
-		const VkWriteDescriptorSet writeDescritporSets[] =
+		const VkWriteDescriptorSet writeDescriptorSets[] =
 		{
 			{
 				VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,		// VkStructureType					sType;
@@ -2429,7 +2422,7 @@ void TessellationExecutor::renderTess (const Context& ctx, deUint32 vertexCount)
 			}
 		};
 
-		vk.updateDescriptorSets(vkDevice, 1, writeDescritporSets, 0u, DE_NULL);
+		vk.updateDescriptorSets(vkDevice, 1, writeDescriptorSets, 0u, DE_NULL);
 	}
 
 	// Create pipeline layout
@@ -2672,7 +2665,7 @@ void TessellationExecutor::renderTess (const Context& ctx, deUint32 vertexCount)
 			DE_NULL,										// const void*				pNext;
 			*cmdPool,										// VkCmdPool				cmdPool;
 			VK_COMMAND_BUFFER_LEVEL_PRIMARY,				// VkCmdBufferLevel			level;
-			0u												// VkCmdBufferCreateFlags	flags;
+			1u												// VkCmdBufferCreateFlags	bufferCount;
 		};
 
 		const VkCommandBufferBeginInfo cmdBufferBeginInfo =
