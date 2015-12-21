@@ -62,6 +62,141 @@ Image::Image (const DeviceInterface&	vk,
 	VK_CHECK(vk.bindImageMemory(device, *m_image, m_allocation->getMemory(), m_allocation->getOffset()));
 }
 
+tcu::UVec3 getShaderGridSize (const ImageType imageType, const tcu::UVec3& imageSize)
+{
+	switch (imageType)
+	{
+		case IMAGE_TYPE_1D:
+		case IMAGE_TYPE_BUFFER:
+			return tcu::UVec3(imageSize.x(), 1u, 1u);
+
+		case IMAGE_TYPE_1D_ARRAY:
+			return tcu::UVec3(imageSize.x(), imageSize.z(), 1u);
+
+		case IMAGE_TYPE_2D:
+			return tcu::UVec3(imageSize.x(), imageSize.y(), 1u);
+
+		case IMAGE_TYPE_2D_ARRAY:
+		case IMAGE_TYPE_3D:
+			return tcu::UVec3(imageSize.x(), imageSize.y(), imageSize.z());
+
+		case IMAGE_TYPE_CUBE:
+			return tcu::UVec3(imageSize.x(), imageSize.y(), 6u);
+
+		case IMAGE_TYPE_CUBE_ARRAY:
+			return tcu::UVec3(imageSize.x(), imageSize.y(), 6u * imageSize.z());
+
+		default:
+			DE_FATAL("Unknown image type");
+			return tcu::UVec3(1u, 1u, 1u);
+	}
+}
+
+tcu::UVec3 getLayerSize (const ImageType imageType, const tcu::UVec3& imageSize)
+{
+	switch (imageType)
+	{
+		case IMAGE_TYPE_1D:
+		case IMAGE_TYPE_1D_ARRAY:
+		case IMAGE_TYPE_BUFFER:
+			return tcu::UVec3(imageSize.x(), 1u, 1u);
+
+		case IMAGE_TYPE_2D:
+		case IMAGE_TYPE_2D_ARRAY:
+		case IMAGE_TYPE_CUBE:
+		case IMAGE_TYPE_CUBE_ARRAY:
+			return tcu::UVec3(imageSize.x(), imageSize.y(), 1u);
+
+		case IMAGE_TYPE_3D:
+			return tcu::UVec3(imageSize.x(), imageSize.y(), imageSize.z());
+
+		default:
+			DE_FATAL("Unknown image type");
+			return tcu::UVec3(1u, 1u, 1u);
+	}
+}
+
+deUint32 getNumLayers (const ImageType imageType, const tcu::UVec3& imageSize)
+{
+	switch (imageType)
+	{
+		case IMAGE_TYPE_1D:
+		case IMAGE_TYPE_2D:
+		case IMAGE_TYPE_3D:
+		case IMAGE_TYPE_BUFFER:
+			return 1u;
+
+		case IMAGE_TYPE_1D_ARRAY:
+		case IMAGE_TYPE_2D_ARRAY:
+			return imageSize.z();
+
+		case IMAGE_TYPE_CUBE:
+			return 6u;
+
+		case IMAGE_TYPE_CUBE_ARRAY:
+			return imageSize.z() * 6u;
+
+		default:
+			DE_FATAL("Unknown image type");
+			return 0u;
+	}
+}
+
+deUint32 getNumPixels (const ImageType imageType, const tcu::UVec3& imageSize)
+{
+	const tcu::UVec3 gridSize = getShaderGridSize(imageType, imageSize);
+
+	return gridSize.x() * gridSize.y() * gridSize.z();
+}
+
+deUint32 getDimensions (const ImageType imageType)
+{
+	switch (imageType)
+	{
+		case IMAGE_TYPE_1D:
+		case IMAGE_TYPE_BUFFER:
+			return 1u;
+
+		case IMAGE_TYPE_1D_ARRAY:
+		case IMAGE_TYPE_2D:
+			return 2u;
+
+		case IMAGE_TYPE_2D_ARRAY:
+		case IMAGE_TYPE_CUBE:
+		case IMAGE_TYPE_CUBE_ARRAY:
+		case IMAGE_TYPE_3D:
+			return 3u;
+
+		default:
+			DE_FATAL("Unknown image type");
+			return 0u;
+	}
+}
+
+deUint32 getLayerDimensions (const ImageType imageType)
+{
+	switch (imageType)
+	{
+		case IMAGE_TYPE_1D:
+		case IMAGE_TYPE_BUFFER:
+		case IMAGE_TYPE_1D_ARRAY:
+			return 1u;
+
+		case IMAGE_TYPE_2D:
+		case IMAGE_TYPE_2D_ARRAY:
+		case IMAGE_TYPE_CUBE:
+		case IMAGE_TYPE_CUBE_ARRAY:
+			return 2u;
+
+		case IMAGE_TYPE_3D:
+			return 3u;
+
+		default:
+			DE_FATAL("Unknown image type");
+			return 0u;
+	}
+}
+
 VkBufferCreateInfo makeBufferCreateInfo (const VkDeviceSize			bufferSize,
 										 const VkBufferUsageFlags	usage)
 {

@@ -81,6 +81,16 @@ inline VkComponentMapping makeComponentMappingRGBA (void)
 								VK_COMPONENT_SWIZZLE_A);
 }
 
+inline VkExtent3D makeExtent3D(const tcu::IVec3& vec)
+{
+	return makeExtent3D((deUint32)vec.x(), (deUint32)vec.y(), (deUint32)vec.z());
+}
+
+inline VkExtent3D makeExtent3D(const tcu::UVec3& vec)
+{
+	return makeExtent3D(vec.x(), vec.y(), vec.z());
+}
+
 } // vk
 
 #endif // _VKTYPEUTIL_HPP
