@@ -303,6 +303,9 @@ void Image::readUsingBuffer (vk::VkQueue				queue,
 			case vk::VK_FORMAT_D24_UNORM_S8_UINT:
 				pixelSize = (aspect == vk::VK_IMAGE_ASPECT_DEPTH_BIT) ? 3 : 1;
 				break;
+
+			default:
+				DE_FATAL("Not implemented");
 		}
 		bufferSize = pixelSize*width*height*depth;
 	}
@@ -700,7 +703,10 @@ void Image::uploadUsingBuffer (vk::VkQueue					queue,
 			case vk::VK_FORMAT_X8_D24_UNORM_PACK32:
 			case vk::VK_FORMAT_D24_UNORM_S8_UINT:
 				pixelSize = (aspect == vk::VK_IMAGE_ASPECT_DEPTH_BIT) ? 3 : 1;
-			break;
+				break;
+
+			default:
+				DE_FATAL("Not implemented");
 		}
 		bufferSize = pixelSize*width*height*depth;
 	}

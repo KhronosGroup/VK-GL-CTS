@@ -42,7 +42,8 @@ namespace vkt
 {
 namespace Draw
 {
-	tcu::TestCaseGroup*		createTests (tcu::TestContext& testCtx);
+
+tcu::TestCaseGroup*		createTests (tcu::TestContext& testCtx);
 
 } // Draw
 } // vkt

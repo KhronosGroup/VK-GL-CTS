@@ -162,8 +162,6 @@ tcu::TestStatus DrawIndexed::iterate (void)
 	m_vk.cmdEndRenderPass(*m_cmdBuffer);
 	m_vk.endCommandBuffer(*m_cmdBuffer);
 
-	const vk::VkCommandBuffer cmdBuffer = *m_cmdBuffer;
-
 	vk::VkSubmitInfo submitInfo =
 	{
 		vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,	// VkStructureType			sType;

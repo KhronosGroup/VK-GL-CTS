@@ -44,15 +44,14 @@ DrawTestsBaseClass::DrawTestsBaseClass (Context& context, const char* vertexShad
 	: TestInstance				(context)
 	, m_colorAttachmentFormat	(vk::VK_FORMAT_R8G8B8A8_UNORM)
 	, m_topology				(vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
+	, m_vk						(context.getDeviceInterface())
 	, m_vertexShaderName		(vertexShaderName)
 	, m_fragmentShaderName		(fragmentShaderName)
-	, m_vk						(context.getDeviceInterface())
 {
 }
 
 void DrawTestsBaseClass::initialize (void)
 {
-	tcu::TestLog &log						= m_context.getTestContext().getLog();
 	const vk::VkDevice device				= m_context.getDevice();
 	const deUint32 queueFamilyIndex			= m_context.getUniversalQueueFamilyIndex();
 
