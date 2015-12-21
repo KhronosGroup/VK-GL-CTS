@@ -36,6 +36,8 @@ set(DEQP_VK_PIPELINE_SRCS
 	vktPipelineUniqueRandomIterator.hpp
 	vktPipelineVertexInputTests.cpp
 	vktPipelineVertexInputTests.hpp
+	vktPipelineTimestampTests.cpp
+	vktPipelineTimestampTests.hpp
 	vktPipelineVertexUtil.cpp
 	vktPipelineVertexUtil.hpp
 	)
