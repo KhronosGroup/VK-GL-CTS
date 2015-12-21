@@ -2034,8 +2034,8 @@ void ComputeShaderExecutor::execute (const Context& ctx, int numValues, const vo
 			VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,		// VkStructureType				sType;
 			DE_NULL,											// const void*					pNext;
 			(VkPipelineLayoutCreateFlags)0,						// VkPipelineLayoutCreateFlags	flags;
-			0u,													// deUint32						CdescriptorSetCount;
-			DE_NULL,											// const VkDescriptorSetLayout*	pSetLayouts;
+			1u,													// deUint32						CdescriptorSetCount;
+			&*descriptorSetLayout,								// const VkDescriptorSetLayout*	pSetLayouts;
 			0u,													// deUint32						pushConstantRangeCount;
 			DE_NULL												// const VkPushConstantRange*	pPushConstantRanges;
 		};
