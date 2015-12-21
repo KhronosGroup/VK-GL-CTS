@@ -630,9 +630,9 @@ PushConstantGraphicsTestInstance::PushConstantGraphicsTestInstance (Context&				
 		{
 			VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,						// VkStructureType		sType;
 			DE_NULL,													// const void*			pNext;
+			0u,															// VkBufferCreateFlags	flags
 			16u,														// VkDeviceSize			size;
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,							// VkBufferUsageFlags	usage;
-			0u,															// VkBufferCreateFlags	flags;
 			VK_SHARING_MODE_EXCLUSIVE,									// VkSharingMode		sharingMode;
 			1u,															// deUint32				queueFamilyCount;
 			&queueFamilyIndex											// const deUint32*		pQueueFamilyIndices;
@@ -1267,9 +1267,9 @@ PushConstantComputeTestInstance::PushConstantComputeTestInstance (Context&					c
 		{
 			VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,						// VkStructureType		sType;
 			DE_NULL,													// const void*			pNext;
+			0u,															// VkBufferCreateFlags	flags
 			bufferSize,													// VkDeviceSize			size;
 			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,							// VkBufferUsageFlags	usage;
-			0u,															// VkBufferCreateFlags	flags;
 			VK_SHARING_MODE_EXCLUSIVE,									// VkSharingMode		sharingMode;
 			1u,															// deUint32				queueFamilyCount;
 			&queueFamilyIndex											// const deUint32*		pQueueFamilyIndices;
