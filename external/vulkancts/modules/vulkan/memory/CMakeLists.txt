@@ -9,6 +9,8 @@ set(DEQP_VK_MEMORY_SRCS
 	vktMemoryAllocationTests.hpp
 	vktMemoryMappingTests.cpp
 	vktMemoryMappingTests.hpp
+	vktMemoryPipelineBarrierTests.hpp
+	vktMemoryPipelineBarrierTests.cpp
 	)
 
 set(DEQP_VK_MEMORY_LIBS
