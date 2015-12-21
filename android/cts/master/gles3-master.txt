@@ -5774,6 +5774,7 @@ dEQP-GLES3.functional.shaders.loops.do_while_dynamic_iterations.nested_tricky_da
 dEQP-GLES3.functional.shaders.loops.do_while_dynamic_iterations.nested_tricky_dataflow_1_fragment
 dEQP-GLES3.functional.shaders.loops.do_while_dynamic_iterations.nested_tricky_dataflow_2_vertex
 dEQP-GLES3.functional.shaders.loops.do_while_dynamic_iterations.nested_tricky_dataflow_2_fragment
+dEQP-GLES3.functional.shaders.loops.custom.continue_in_fragment_for_loop
 dEQP-GLES3.functional.shaders.operator.unary_operator.plus.lowp_float_vertex
 dEQP-GLES3.functional.shaders.operator.unary_operator.plus.lowp_float_fragment
 dEQP-GLES3.functional.shaders.operator.unary_operator.plus.mediump_float_vertex

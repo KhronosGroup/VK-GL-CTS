@@ -30,6 +30,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "es2fShaderLoopTests.hpp"
+#include "glsShaderLibrary.hpp"
 #include "glsShaderRenderCase.hpp"
 #include "gluShaderUtil.hpp"
 #include "tcuStringTemplate.hpp"
@@ -1336,6 +1337,11 @@ void ShaderLoopTests::init (void)
 			}
 		}
 	}
+
+	// Additional smaller handwritten tests.
+	const std::vector<tcu::TestNode*> children = gls::ShaderLibrary(m_context.getTestContext(), m_context.getRenderContext(), m_context.getContextInfo()).loadShaderFile("shaders/loops.test");
+	for (int i = 0; i < (int)children.size(); i++)
+		addChild(children[i]);
 }
 
 } // Functional
