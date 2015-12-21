@@ -1965,56 +1965,15 @@ void ComputeShaderExecutor::execute (const Context& ctx, int numValues, const vo
 
 	};
 
+	m_descriptorSetLayoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT);
+	m_descriptorPoolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+	m_descriptorSetLayoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT);
+	m_descriptorPoolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+
 	addUniforms(vkDevice, vk, queueFamilyIndex, memAlloc);
 
-	const VkDescriptorSetLayoutBinding layoutBindings[2] =
-	{
-		{
-			0u,												// deUint32					binding;
-			VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,				// VkDescriptorType			descriptorType;
-			1u,												// deUint32					descriptorCount;
-			VK_SHADER_STAGE_COMPUTE_BIT,					// VkShaderStageFlags		stageFlags;
-			DE_NULL											// const VkSampler*			pImmutableSamplers;
-		},
-		{
-			1u,												// deUint32					binding;
-			VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,				// VkDescriptorType			descriptorType;
-			1u,												// deUint32					descriptorCount;
-			VK_SHADER_STAGE_COMPUTE_BIT,					// VkShaderStageFlags		stageFlags;
-			DE_NULL											// const VkSampler*			pImmutableSamplers;
-		}
-	};
-
-	const VkDescriptorSetLayoutCreateInfo descriptorLayoutParams =
-	{
-		VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,	// VkStructureType						sType;
-		DE_NULL,												// cost void*							pNexŧ;
-		(VkDescriptorSetLayoutCreateFlags)0,					// VkDescriptorSetLayoutCreateFlags		flags;
-		DE_LENGTH_OF_ARRAY(layoutBindings),						// deUint32								count;
-		layoutBindings											// const VkDescriptorSetLayoutBinding	pBinding;
-	};
-
-	descriptorSetLayout = createDescriptorSetLayout(vk, vkDevice, &descriptorLayoutParams);
-
-	const VkDescriptorPoolSize descriptorPoolSizes[] =
-	{
-		{
-			VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,					// VkDescriptorType		type;
-			2u													// deUint32				count;
-		},
-	};
-
-	const VkDescriptorPoolCreateInfo descriptorPoolParams =
-	{
-		VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,			// VkStructureType					sType;
-		DE_NULL,												// void*							pNext;
-		VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,		// VkDescriptorPoolUsage			poolUsage;
-		1u,														// deUint32							maxSets;
-		DE_LENGTH_OF_ARRAY(descriptorPoolSizes),				// deUint32							count;
-		descriptorPoolSizes										// const VkDescriptorPoolSize*		pPoolSizes;
-	};
-
-	descriptorPool = createDescriptorPool(vk, vkDevice, &descriptorPoolParams);
+	descriptorSetLayout = m_descriptorSetLayoutBuilder.build(vk, vkDevice);
+	descriptorPool = m_descriptorPoolBuilder.build(vk, vkDevice, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
 
 	const VkDescriptorSetAllocateInfo allocInfo =
 	{
@@ -2364,55 +2323,15 @@ void TessellationExecutor::renderTess (const Context& ctx, deUint32 vertexCount)
 
 	// Create descriptors
 	{
-		const VkDescriptorSetLayoutBinding layoutBindings[2] =
-		{
-			{
-				0u,												// deUint32					binding;
-				VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,				// VkDescriptorType			descriptorType;
-				1u,												// deUint32					arraySize;
-				VK_SHADER_STAGE_ALL,							// VkShaderStageFlags		stageFlags;
-				DE_NULL											// const VkSampler*			pImmutableSamplers;
-			},
-			{
-				1u,												// deUint32					binding;
-				VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,				// VkDescriptorType			descriptorType;
-				1u,												// deUint32					arraySize;
-				VK_SHADER_STAGE_ALL,							// VkShaderStageFlags		stageFlags;
-				DE_NULL											// const VkSampler*			pImmutableSamplers;
-			}
-		};
-
-		const VkDescriptorSetLayoutCreateInfo descriptorLayoutParams =
-		{
-			VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,	// VkStructureType						sType;
-			DE_NULL,												// cost void*							pNexŧ;
-			(VkDescriptorSetLayoutCreateFlags)0,					// VkDescriptorSetLayoutCreateFlags		flags;
-			DE_LENGTH_OF_ARRAY(layoutBindings),						// deUint32								count;
-			layoutBindings											// const VkDescriptorSetLayoutBinding	pBinding;
-		};
+		m_descriptorSetLayoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_ALL);
+		m_descriptorPoolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+		m_descriptorSetLayoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_ALL);
+		m_descriptorPoolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 
 		addUniforms(vkDevice, vk, queueFamilyIndex, memAlloc);
-		descriptorSetLayout = createDescriptorSetLayout(vk, vkDevice, &descriptorLayoutParams);
 
-		const VkDescriptorPoolSize descriptorPoolSizes[] =
-		{
-			{
-				VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,				// VkDescriptorType		type;
-				2u												// deUint32				count;
-			},
-		};
-
-		const VkDescriptorPoolCreateInfo descriptorPoolParams =
-		{
-			VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,		// VkStructureType					sType;
-			DE_NULL,											// void*							pNext;
-			VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,	//VkDescriptorPoolUsage				poolUsage;
-			1u,													//deUint32							maxSets;
-			DE_LENGTH_OF_ARRAY(descriptorPoolSizes),			// deUint32							count;
-			descriptorPoolSizes									// const VkDescriptorPoolSize*		pTypeCount
-		};
-
-		descriptorPool = createDescriptorPool(vk, vkDevice, &descriptorPoolParams);
+		descriptorSetLayout = m_descriptorSetLayoutBuilder.build(vk, vkDevice);
+		descriptorPool = m_descriptorPoolBuilder.build(vk, vkDevice, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
 
 		const VkDescriptorSetAllocateInfo allocInfo =
 		{
