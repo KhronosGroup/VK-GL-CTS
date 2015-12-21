@@ -1157,7 +1157,7 @@ protected:
 
 private:
 	// Disallow copying
-						Command 	(const Command&);
+						Command		(const Command&);
 	Command&			operator&	(const Command&);
 };
 
@@ -1200,7 +1200,7 @@ public:
 						~UnMap		(void) {}
 	const char*			getName		(void) const { return "UnMap"; }
 
-	void 				logExecute	(TestLog& log, size_t commandIndex) const
+	void				logExecute	(TestLog& log, size_t commandIndex) const
 	{
 		log << TestLog::Message << commandIndex << ": Unmap memory" << TestLog::EndMessage;
 	}
@@ -1230,7 +1230,7 @@ public:
 						~Invalidate	(void) {}
 	const char*			getName		(void) const { return "Invalidate"; }
 
-	void 				logExecute	(TestLog& log, size_t commandIndex) const
+	void				logExecute	(TestLog& log, size_t commandIndex) const
 	{
 		log << TestLog::Message << commandIndex << ": Invalidate mapped memory" << TestLog::EndMessage;
 	}
@@ -1261,7 +1261,7 @@ public:
 						~Flush		(void) {}
 	const char*			getName		(void) const { return "Flush"; }
 
-	void 				logExecute	(TestLog& log, size_t commandIndex) const
+	void				logExecute	(TestLog& log, size_t commandIndex) const
 	{
 		log << TestLog::Message << commandIndex << ": Flush mapped memory" << TestLog::EndMessage;
 	}
