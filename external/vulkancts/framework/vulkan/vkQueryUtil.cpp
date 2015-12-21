@@ -88,6 +88,16 @@ VkPhysicalDeviceFeatures getPhysicalDeviceFeatures (const InstanceInterface& vk,
 	return features;
 }
 
+VkPhysicalDeviceProperties getPhysicalDeviceProperties (const InstanceInterface& vk, VkPhysicalDevice physicalDevice)
+{
+	VkPhysicalDeviceProperties	properties;
+
+	deMemset(&properties, 0, sizeof(properties));
+
+	vk.getPhysicalDeviceProperties(physicalDevice, &properties);
+	return properties;
+}
+
 VkPhysicalDeviceMemoryProperties getPhysicalDeviceMemoryProperties (const InstanceInterface& vk, VkPhysicalDevice physicalDevice)
 {
 	VkPhysicalDeviceMemoryProperties	properties;

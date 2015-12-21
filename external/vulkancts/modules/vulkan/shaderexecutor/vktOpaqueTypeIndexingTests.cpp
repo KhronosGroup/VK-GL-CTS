@@ -181,12 +181,9 @@ static deUint32 getFirstFreeBindingLocation (const glu::ShaderType shaderType, c
 		case glu::SHADERTYPE_TESSELLATION_CONTROL:
 		case glu::SHADERTYPE_TESSELLATION_EVALUATION:
 		case glu::SHADERTYPE_COMPUTE:
-			// 0 - output buffer
-			// 1 - input buffer (if any)
-			if (hasInputParam)
-				location = 2u;
-			else
-				location = 1u;
+			// 0 - input buffer
+			// 1 - output buffer
+			location = 2u;
 			break;
 
 		default:
@@ -952,10 +949,12 @@ void BlockArrayIndexingCase::createShaderSpec (void)
 		global << "const highp int indexBase = 1;\n";
 
 	global <<
-		"layout(set = 0, binding = " << binding++ << ") " << interfaceName << " " << blockName << "\n"
+		"layout(set = 0, binding = " << binding << ") " << interfaceName << " " << blockName << "\n"
 		"{\n"
 		"	highp uint value;\n"
 		"} " << instanceName << "[" << numInstances << "];\n";
+
+	binding += numInstances;
 
 	if (m_indexExprType == INDEX_EXPR_TYPE_DYNAMIC_UNIFORM)
 	{
