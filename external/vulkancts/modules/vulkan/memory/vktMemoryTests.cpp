@@ -36,6 +36,7 @@
 
 #include "vktMemoryAllocationTests.hpp"
 #include "vktMemoryMappingTests.hpp"
+#include "vktMemoryPipelineBarrierTests.hpp"
 
 #include "deUniquePtr.hpp"
 
@@ -48,8 +49,9 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> memoryTests (new tcu::TestCaseGroup(testCtx, "memory", "Memory Tests"));
 
-	memoryTests->addChild(createAllocationTests	(testCtx));
-	memoryTests->addChild(createMappingTests	(testCtx));
+	memoryTests->addChild(createAllocationTests			(testCtx));
+	memoryTests->addChild(createMappingTests			(testCtx));
+	memoryTests->addChild(createPipelineBarrierTests	(testCtx));
 
 	return memoryTests.release();
 }

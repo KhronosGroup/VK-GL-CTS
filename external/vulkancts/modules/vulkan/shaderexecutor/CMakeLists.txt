@@ -16,6 +16,8 @@ set(DEQP_VK_SHADEREXECUTOR_SRCS
    vktShaderPackingFunctionTests.hpp
    vktShaderBuiltinPrecisionTests.cpp
    vktShaderBuiltinPrecisionTests.hpp
+   vktOpaqueTypeIndexingTests.cpp
+   vktOpaqueTypeIndexingTests.hpp
 )
 
 set(DEQP_VK_SHADEREXECUTOR_LIBS

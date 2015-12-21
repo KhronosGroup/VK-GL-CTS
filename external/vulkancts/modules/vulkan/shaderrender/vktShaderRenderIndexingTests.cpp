@@ -515,7 +515,7 @@ static de::MovePtr<ShaderIndexingCase> createUniformArrayCase (tcu::TestContext&
 	return de::MovePtr<ShaderIndexingCase>(new ShaderIndexingCase(context, caseName, description, isVertexCase, evalFunc, vertexShaderSource, fragmentShaderSource, varType, true));
 }
 
-static de::MovePtr<ShaderIndexingCase> createTmpArrayCase (tcu::TestContext& 	context,
+static de::MovePtr<ShaderIndexingCase> createTmpArrayCase (tcu::TestContext&	context,
 														const std::string&		caseName,
 														const std::string&		description,
 														bool					isVertexCase,

@@ -8,6 +8,9 @@ add_subdirectory(shaderrender)
 add_subdirectory(shaderexecutor)
 add_subdirectory(memory)
 add_subdirectory(ubo)
+add_subdirectory(dynamic_state)
+add_subdirectory(ssbo)
+add_subdirectory(query_pool)
 
 include_directories(
 	api
@@ -18,6 +21,9 @@ include_directories(
 	shaderexecutor
 	memory
 	ubo
+	dynamic_state
+	ssbo
+	query_pool
 	)
 
 set(DEQP_VK_COMMON_SRCS
@@ -45,6 +51,9 @@ set(DEQP_VK_COMMON_LIBS
 	deqp-vk-shaderexecutor
 	deqp-vk-memory
 	deqp-vk-ubo
+	deqp-vk-dynamic-state
+	deqp-vk-ssbo
+	deqp-vk-query-pool
 	)
 
 if (DE_OS_IS_WIN32 OR DE_OS_IS_UNIX OR DE_OS_IS_OSX)

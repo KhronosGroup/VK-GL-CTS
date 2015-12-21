@@ -55,6 +55,7 @@
 #include "vkTypeUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkDeviceUtil.hpp"
+#include "vkImageUtil.hpp"
 
 #include "gluShaderUtil.hpp"
 
@@ -112,10 +113,10 @@ static std::string generateEmptyFragmentSource ()
 static std::string generatePassthroughVertexShader (const std::vector<Symbol>& inputs, const char* inputPrefix, const char* outputPrefix)
 {
 
-	std::ostringstream 	src;
+	std::ostringstream	src;
 	int					location	= 0;
 
-	src << 	"#version 310 es\n"
+	src <<	"#version 310 es\n"
 			"#extension GL_ARB_separate_shader_objects : enable\n"
 			"#extension GL_ARB_shading_language_420pack : enable\n"
 			"layout(location = " << location << ") in highp vec4 a_position;\n";
@@ -145,7 +146,7 @@ static std::string generateVertexShader (const ShaderSpec& shaderSpec, const std
 
 	std::ostringstream	src;
 
-	src << 	"#version 310 es\n"
+	src <<	"#version 310 es\n"
 		"#extension GL_ARB_separate_shader_objects : enable\n"
 		"#extension GL_ARB_shading_language_420pack : enable\n";
 
@@ -304,7 +305,7 @@ static std::string generatePassthroughFragmentShader (const ShaderSpec& shaderSp
 {
 	std::ostringstream	src;
 
-	src << 	"#version 310 es\n"
+	src <<	"#version 310 es\n"
 		"#extension GL_ARB_separate_shader_objects : enable\n"
 		"#extension GL_ARB_shading_language_420pack : enable\n";
 
@@ -343,7 +344,7 @@ static std::string generateGeometryShader (const ShaderSpec& shaderSpec, const s
 
 	std::ostringstream	src;
 
-	src << 	"#version 310 es\n"
+	src <<	"#version 310 es\n"
 		"#extension GL_EXT_geometry_shader : require\n"
 		"#extension GL_ARB_separate_shader_objects : enable\n"
 		"#extension GL_ARB_shading_language_420pack : enable\n";
@@ -481,8 +482,8 @@ private:
 																				 Allocator&				memAlloc,
 																				 int					numValues,
 																				 const void* const*		inputs);
-																				 
-	void 												addAttribute 			(const Context&			ctx,
+
+	void												addAttribute			(const Context&			ctx,
 																				 Allocator&				memAlloc,
 																				 deUint32				bindingLocation,
 																				 VkFormat				format,
@@ -490,8 +491,8 @@ private:
 																				 deUint32				count,
 																				 const void*			dataPtr);
 	// reinit render data members
-	virtual void										clearRenderData 		(void);
-	
+	virtual void										clearRenderData			(void);
+
 	typedef de::SharedPtr<Unique<VkImage> >				VkImageSp;
 	typedef de::SharedPtr<Unique<VkImageView> >			VkImageViewSp;
 	typedef de::SharedPtr<Unique<VkBuffer> >			VkBufferSp;
@@ -577,7 +578,6 @@ static tcu::TextureFormat getRenderbufferFormatForOutput (const glu::VarType& ou
 
 	return tcu::TextureFormat(channelOrderMap[numComps-1], channelType);
 }
-
 
 static VkFormat getAttributeFormat (const glu::DataType dataType)
 {
@@ -676,7 +676,7 @@ void FragmentOutExecutor::bindAttributes (const Context& ctx, Allocator& memAllo
 		const glu::DataType	basicType		= symbol.varType.getBasicType();
 		const int			vecSize			= glu::getDataTypeScalarSize(basicType);
 		const VkFormat		format			= getAttributeFormat(basicType);
-		int					elementSize 	= 0;
+		int					elementSize		= 0;
 		int					numAttrsToAdd	= 1;
 
 		if (glu::isDataTypeFloatOrVec(basicType))
@@ -727,7 +727,7 @@ void FragmentOutExecutor::execute (const Context& ctx, int numValues, const void
 	const tcu::IVec2									renderSize				(renderSizeX, renderSizeY);
 	std::vector<tcu::Vec2>								positions;
 
-	VkFormat 											colorFormat 			= VK_FORMAT_R32G32B32A32_SFLOAT;
+	VkFormat											colorFormat				= VK_FORMAT_R32G32B32A32_SFLOAT;
 
 	const bool											useGeometryShader		= m_shaderType == glu::SHADERTYPE_GEOMETRY;
 
@@ -753,6 +753,10 @@ void FragmentOutExecutor::execute (const Context& ctx, int numValues, const void
 	Move<VkCommandBuffer>								cmdBuffer;
 
 	Move<VkFence>										fence;
+
+	Move<VkDescriptorPool>								descriptorPool;
+	Move<VkDescriptorSetLayout>							descriptorSetLayout;
+	Move<VkDescriptorSet>								descriptorSet;
 
 	clearRenderData();
 
@@ -886,7 +890,7 @@ void FragmentOutExecutor::execute (const Context& ctx, int numValues, const void
 		{
 			VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,			// VkStructureType					sType;
 			DE_NULL,											// const void*						pNext;
-			(VkRenderPassCreateFlags)0,							// VkRenderPassCreateFlags 			flags;
+			(VkRenderPassCreateFlags)0,							// VkRenderPassCreateFlags			flags;
 			(deUint32)attachments.size(),						// deUint32							attachmentCount;
 			&attachments[0],									// const VkAttachmentDescription*	pAttachments;
 			1u,													// deUint32							subpassCount;
@@ -910,7 +914,7 @@ void FragmentOutExecutor::execute (const Context& ctx, int numValues, const void
 		{
 			VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,			// VkStructureType				sType;
 			DE_NULL,											// const void*					pNext;
-			0u,													// VkFramebufferCreateFlags 	flags;
+			0u,													// VkFramebufferCreateFlags		flags;
 			*renderPass,										// VkRenderPass					renderPass;
 			(deUint32)views.size(),								// deUint32						attachmentCount;
 			&views[0],											// const VkImageView*			pAttachments;
@@ -922,15 +926,43 @@ void FragmentOutExecutor::execute (const Context& ctx, int numValues, const void
 		framebuffer = createFramebuffer(vk, vkDevice, &framebufferParams);
 	}
 
+	// Create descriptors
+	{
+		addUniforms(vkDevice, vk, queueFamilyIndex, memAlloc);
+
+		descriptorSetLayout = m_descriptorSetLayoutBuilder.build(vk, vkDevice);
+		descriptorPool = m_descriptorPoolBuilder.build(vk, vkDevice, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+
+		const VkDescriptorSetAllocateInfo allocInfo =
+		{
+			VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+			DE_NULL,
+			*descriptorPool,
+			1u,
+			&*descriptorSetLayout
+		};
+
+		descriptorSet = allocateDescriptorSet(vk, vkDevice, &allocInfo);
+
+		// Update descriptors
+		{
+			vk::DescriptorSetUpdateBuilder descriptorSetUpdateBuilder;
+
+			uploadUniforms(descriptorSetUpdateBuilder, *descriptorSet);
+
+			descriptorSetUpdateBuilder.update(vk, vkDevice);
+		}
+	}
+
 	// Create pipeline layout
 	{
 		const VkPipelineLayoutCreateInfo pipelineLayoutParams =
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,		// VkStructureType				sType;
 			DE_NULL,											// const void*					pNext;
-			(VkPipelineLayoutCreateFlags)0,						// VkPipelineLayoutCreateFlags 	flags;
-			0u,													// deUint32						descriptorSetCount;
-			DE_NULL,											// const VkDescriptorSetLayout*	pSetLayouts;
+			(VkPipelineLayoutCreateFlags)0,						// VkPipelineLayoutCreateFlags	flags;
+			1,													// deUint32						descriptorSetCount;
+			&*descriptorSetLayout,								// const VkDescriptorSetLayout*	pSetLayouts;
 			0u,													// deUint32						pushConstantRangeCount;
 			DE_NULL												// const VkPushConstantRange*	pPushConstantRanges;
 		};
@@ -955,23 +987,23 @@ void FragmentOutExecutor::execute (const Context& ctx, int numValues, const void
 
 		const VkPipelineShaderStageCreateInfo vertexShaderStageParams =
 		{
-			VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,		// VkStructureType 						sType;
-			DE_NULL,													// const void* 							pNext;
-			(VkPipelineShaderStageCreateFlags)0,						// VkPipelineShaderStageCreateFlags 	flags;
-			VK_SHADER_STAGE_VERTEX_BIT,									// VkShaderStageFlagBits 				stage;
-			*vertexShaderModule,										// VkShaderModule 						module;
-			"main",														// const char* 							pName;
-			DE_NULL														// const VkSpecializationInfo* 			pSpecializationInfo;
+			VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,		// VkStructureType						sType;
+			DE_NULL,													// const void*							pNext;
+			(VkPipelineShaderStageCreateFlags)0,						// VkPipelineShaderStageCreateFlags		flags;
+			VK_SHADER_STAGE_VERTEX_BIT,									// VkShaderStageFlagBits				stage;
+			*vertexShaderModule,										// VkShaderModule						module;
+			"main",														// const char*							pName;
+			DE_NULL														// const VkSpecializationInfo*			pSpecializationInfo;
 		};
 
 		const VkPipelineShaderStageCreateInfo fragmentShaderStageParams =
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,		// VkStructureType						sType;
 			DE_NULL,													// const void*							pNext;
-			(VkPipelineShaderStageCreateFlags)0,						// VkPipelineShaderStageCreateFlags 	flags;
+			(VkPipelineShaderStageCreateFlags)0,						// VkPipelineShaderStageCreateFlags		flags;
 			VK_SHADER_STAGE_FRAGMENT_BIT,								// VkShaderStageFlagBits				stage;
 			*fragmentShaderModule,										// VkShaderModule						module;
-			"main",														// const char* 							pName;
+			"main",														// const char*							pName;
 			DE_NULL														// const VkSpecializationInfo*			pSpecializationInfo;
 		};
 
@@ -982,9 +1014,9 @@ void FragmentOutExecutor::execute (const Context& ctx, int numValues, const void
 		{
 			const VkPipelineShaderStageCreateInfo geometryShaderStageParams =
 			{
-				VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,		// VkStructureType 						sType;
-				DE_NULL,													// const void* 							pNext;
-				(VkPipelineShaderStageCreateFlags)0,						// VkPipelineShaderStageCreateFlags 	flags;
+				VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,		// VkStructureType						sType;
+				DE_NULL,													// const void*							pNext;
+				(VkPipelineShaderStageCreateFlags)0,						// VkPipelineShaderStageCreateFlags		flags;
 				VK_SHADER_STAGE_GEOMETRY_BIT,								// VkShaderStageFlagBits				stage;
 				*geometryShaderModule,										// VkShaderModule						module;
 				"main",														// VkShader								shader;
@@ -998,7 +1030,7 @@ void FragmentOutExecutor::execute (const Context& ctx, int numValues, const void
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,	// VkStructureType								sType;
 			DE_NULL,													// const void*									pNext;
-			(VkPipelineVertexInputStateCreateFlags)0,					// VkPipelineVertexInputStateCreateFlags 		flags;
+			(VkPipelineVertexInputStateCreateFlags)0,					// VkPipelineVertexInputStateCreateFlags		flags;
 			(deUint32)m_vertexBindingDescriptions.size(),				// deUint32										bindingCount;
 			&m_vertexBindingDescriptions[0],							// const VkVertexInputBindingDescription*		pVertexBindingDescriptions;
 			(deUint32)m_vertexAttributeDescriptions.size(),				// deUint32										attributeCount;
@@ -1040,7 +1072,7 @@ void FragmentOutExecutor::execute (const Context& ctx, int numValues, const void
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,	// VkStructureType										sType;
 			DE_NULL,												// const void*											pNext;
-			0u,														// VkPipelineViewportStateCreateFlags 					flags;
+			0u,														// VkPipelineViewportStateCreateFlags					flags;
 			1u,														// deUint32												viewportCount;
 			&viewport,												// const VkViewport*									pViewports;
 			1u,														// deUint32												scissorsCount;
@@ -1076,12 +1108,12 @@ void FragmentOutExecutor::execute (const Context& ctx, int numValues, const void
 			VK_FALSE,														// VkBool32									alphaToCoverageEnable;
 			VK_FALSE														// VkBool32									alphaToOneEnable;
 		};
-		
+
 		const VkPipelineColorBlendStateCreateInfo colorBlendStateParams =
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,		// VkStructureType								sType;
 			DE_NULL,														// const void*									pNext;
-			(VkPipelineColorBlendStateCreateFlags)0,						// VkPipelineColorBlendStateCreateFlags 		flags;
+			(VkPipelineColorBlendStateCreateFlags)0,						// VkPipelineColorBlendStateCreateFlags			flags;
 			VK_FALSE,														// VkBool32										logicOpEnable;
 			VK_LOGIC_OP_COPY,												// VkLogicOp									logicOp;
 			(deUint32)colorBlendAttachmentStates.size(),					// deUint32										attachmentCount;
@@ -1156,7 +1188,7 @@ void FragmentOutExecutor::execute (const Context& ctx, int numValues, const void
 			DE_NULL,										// VkRenderPass					renderPass;
 			0u,												// deUint32						subpass;
 			DE_NULL,										// VkFramebuffer				framebuffer;
-			VK_FALSE,										// VkBool32 					occlusionQueryEnable;
+			VK_FALSE,										// VkBool32						occlusionQueryEnable;
 			(VkQueryControlFlags)0u,						//VkQueryControlFlags			queryFlags;
 			(VkQueryPipelineStatisticFlags)0u				//VkQueryPipelineStatisticFlags pipelineStatistics;
 		};
@@ -1178,8 +1210,10 @@ void FragmentOutExecutor::execute (const Context& ctx, int numValues, const void
 		vk.cmdBeginRenderPass(*cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
 		vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *graphicsPipeline);
+		vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u, &*descriptorSet, 0u, DE_NULL);
 
 		const deUint32 numberOfVertexAttributes = (deUint32)m_vertexBuffers.size();
+
 		std::vector<VkDeviceSize> offsets(numberOfVertexAttributes, 0);
 
 		std::vector<VkBuffer> buffers(numberOfVertexAttributes);
@@ -1199,8 +1233,8 @@ void FragmentOutExecutor::execute (const Context& ctx, int numValues, const void
 	{
 		const VkFenceCreateInfo fenceParams =
 		{
-			VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,	// VkStructureType	 	sType;
-			DE_NULL,								// const void*		 	pNext;
+			VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,	// VkStructureType		sType;
+			DE_NULL,								// const void*			pNext;
 			0u										// VkFenceCreateFlags	flags;
 		};
 
@@ -1271,8 +1305,8 @@ void FragmentOutExecutor::execute (const Context& ctx, int numValues, const void
 			DE_NULL,										// VkRenderPass						renderPass;
 			0u,												// deUint32							subpass;
 			DE_NULL,										// VkFramebuffer					framebuffer;
-			VK_FALSE, 										// VkBool32							occlusionQueryEnable;
-			(VkQueryControlFlags)0, 						// VkQueryControlFlags				queryFlags;
+			VK_FALSE,										// VkBool32							occlusionQueryEnable;
+			(VkQueryControlFlags)0,							// VkQueryControlFlags				queryFlags;
 			(VkQueryPipelineStatisticFlags)0				// VkQueryPipelineStatisticFlags	pipelineStatistics;
 
 		};
@@ -1382,7 +1416,7 @@ public:
 
 	virtual void				log						(tcu::TestLog& dst) const { /* TODO */ (void)dst;}
 
-	virtual void 				setShaderSources		(SourceCollections& programCollection) const;
+	virtual void				setShaderSources		(SourceCollections& programCollection) const;
 
 };
 
@@ -1399,7 +1433,7 @@ void VertexShaderExecutor::setShaderSources (SourceCollections& programCollectio
 {
 	programCollection.glslSources.add("vert") << glu::VertexSource(generateVertexShader(m_shaderSpec, "a_", "vtx_out_"));
 	/* \todo [2015-09-11 hegedusd] set useIntOutputs parameter if needed. */
-	programCollection.glslSources.add("frag") << glu::FragmentSource(generatePassthroughFragmentShader(m_shaderSpec, false,  m_outputLayout.locationMap, "vtx_out_", "o_"));
+	programCollection.glslSources.add("frag") << glu::FragmentSource(generatePassthroughFragmentShader(m_shaderSpec, false, m_outputLayout.locationMap, "vtx_out_", "o_"));
 }
 
 // GeometryShaderExecutor
@@ -1412,7 +1446,7 @@ public:
 
 	virtual void				log						(tcu::TestLog& dst) const	{ /* TODO */ (void)dst; }
 
-	virtual void 				setShaderSources		(SourceCollections& programCollection) const;
+	virtual void				setShaderSources		(SourceCollections& programCollection) const;
 
 };
 
@@ -1446,7 +1480,7 @@ public:
 
 	virtual void				log						(tcu::TestLog& dst) const { /* TODO */ (void)dst; }
 
-	virtual void 				setShaderSources		(SourceCollections& programCollection) const;
+	virtual void				setShaderSources		(SourceCollections& programCollection) const;
 
 };
 
@@ -1463,7 +1497,7 @@ void FragmentShaderExecutor::setShaderSources (SourceCollections& programCollect
 {
 	programCollection.glslSources.add("vert") << glu::VertexSource(generatePassthroughVertexShader(m_shaderSpec.inputs, "a_", "vtx_out_"));
 	/* \todo [2015-09-11 hegedusd] set useIntOutputs parameter if needed. */
-	programCollection.glslSources.add("frag") << glu::FragmentSource(generateFragmentShader(m_shaderSpec, false,  m_outputLayout.locationMap, "vtx_out_", "o_"));
+	programCollection.glslSources.add("frag") << glu::FragmentSource(generateFragmentShader(m_shaderSpec, false, m_outputLayout.locationMap, "vtx_out_", "o_"));
 }
 
 // Shared utilities for compute and tess executors
@@ -1821,14 +1855,12 @@ public:
 						ComputeShaderExecutor	(const ShaderSpec& shaderSpec, glu::ShaderType shaderType);
 	virtual				~ComputeShaderExecutor	(void);
 
-	virtual void 		setShaderSources		(SourceCollections& programCollection) const;
+	virtual void		setShaderSources		(SourceCollections& programCollection) const;
 
 	virtual void		execute					(const Context& ctx, int numValues, const void* const* inputs, void* const* outputs);
 
 protected:
 	static std::string	generateComputeShader	(const ShaderSpec& spec);
-
-	tcu::IVec3			m_maxWorkSize;
 };
 
 ComputeShaderExecutor::ComputeShaderExecutor	(const ShaderSpec& shaderSpec, glu::ShaderType shaderType)
@@ -1876,12 +1908,11 @@ void ComputeShaderExecutor::execute (const Context& ctx, int numValues, const vo
 {
 	checkSupported(ctx, m_shaderType);
 
-	const int						maxValuesPerInvocation	= m_maxWorkSize[0];
-
 	const VkDevice					vkDevice				= ctx.getDevice();
 	const DeviceInterface&			vk						= ctx.getDeviceInterface();
 	const VkQueue					queue					= ctx.getUniversalQueue();
 	const deUint32					queueFamilyIndex		= ctx.getUniversalQueueFamilyIndex();
+	Allocator&						memAlloc				= ctx.getDefaultAllocator();
 
 	Move<VkShaderModule>			computeShaderModule;
 	Move<VkPipeline>				computePipeline;
@@ -1928,23 +1959,25 @@ void ComputeShaderExecutor::execute (const Context& ctx, int numValues, const vo
 		DE_NULL,										// VkRenderPass						renderPass;
 		0u,												// deUint32							subpass;
 		DE_NULL,										// VkFramebuffer					framebuffer;
-		VK_FALSE,										// VkBool32 						occlusionQueryEnable;
-		(VkQueryControlFlags)0, 						// VkQueryControlFlags				queryFlags;
+		VK_FALSE,										// VkBool32							occlusionQueryEnable;
+		(VkQueryControlFlags)0,							// VkQueryControlFlags				queryFlags;
 		(VkQueryPipelineStatisticFlags)0				// VkQueryPipelineStatisticFlags	pipelineStatistics;
 
 	};
 
+	addUniforms(vkDevice, vk, queueFamilyIndex, memAlloc);
+
 	const VkDescriptorSetLayoutBinding layoutBindings[2] =
 	{
 		{
-			0u, 											// deUint32 				binding;
+			0u,												// deUint32					binding;
 			VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,				// VkDescriptorType			descriptorType;
 			1u,												// deUint32					descriptorCount;
 			VK_SHADER_STAGE_COMPUTE_BIT,					// VkShaderStageFlags		stageFlags;
 			DE_NULL											// const VkSampler*			pImmutableSamplers;
 		},
 		{
-			0u,												// deUint32					binding;
+			1u,												// deUint32					binding;
 			VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,				// VkDescriptorType			descriptorType;
 			1u,												// deUint32					descriptorCount;
 			VK_SHADER_STAGE_COMPUTE_BIT,					// VkShaderStageFlags		stageFlags;
@@ -1956,7 +1989,7 @@ void ComputeShaderExecutor::execute (const Context& ctx, int numValues, const vo
 	{
 		VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,	// VkStructureType						sType;
 		DE_NULL,												// cost void*							pNexŧ;
-		(VkDescriptorSetLayoutCreateFlags)0,					// VkDescriptorSetLayoutCreateFlags 	flags;
+		(VkDescriptorSetLayoutCreateFlags)0,					// VkDescriptorSetLayoutCreateFlags		flags;
 		DE_LENGTH_OF_ARRAY(layoutBindings),						// deUint32								count;
 		layoutBindings											// const VkDescriptorSetLayoutBinding	pBinding;
 	};
@@ -1974,11 +2007,11 @@ void ComputeShaderExecutor::execute (const Context& ctx, int numValues, const vo
 	const VkDescriptorPoolCreateInfo descriptorPoolParams =
 	{
 		VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,			// VkStructureType					sType;
-		DE_NULL,												// void* 							pNext;
+		DE_NULL,												// void*							pNext;
 		VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,		// VkDescriptorPoolUsage			poolUsage;
 		1u,														// deUint32							maxSets;
 		DE_LENGTH_OF_ARRAY(descriptorPoolSizes),				// deUint32							count;
-		descriptorPoolSizes										// const VkDescriptorPoolSize* 		pPoolSizes;
+		descriptorPoolSizes										// const VkDescriptorPoolSize*		pPoolSizes;
 	};
 
 	descriptorPool = createDescriptorPool(vk, vkDevice, &descriptorPoolParams);
@@ -2000,7 +2033,7 @@ void ComputeShaderExecutor::execute (const Context& ctx, int numValues, const vo
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,		// VkStructureType				sType;
 			DE_NULL,											// const void*					pNext;
-			(VkPipelineLayoutCreateFlags)0,						// VkPipelineLayoutCreateFlags 	flags;
+			(VkPipelineLayoutCreateFlags)0,						// VkPipelineLayoutCreateFlags	flags;
 			0u,													// deUint32						CdescriptorSetCount;
 			DE_NULL,											// const VkDescriptorSetLayout*	pSetLayouts;
 			0u,													// deUint32						pushConstantRangeCount;
@@ -2034,7 +2067,7 @@ void ComputeShaderExecutor::execute (const Context& ctx, int numValues, const vo
 		{
 			VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,		// VkStructureType									sType;
 			DE_NULL,											// const void*										pNext;
-			(VkPipelineCreateFlags)0,							// VkPipelineCreateFlags 							flags;
+			(VkPipelineCreateFlags)0,							// VkPipelineCreateFlags							flags;
 			*shaderStageParams,									// VkPipelineShaderStageCreateInfo					cs;
 			*pipelineLayout,									// VkPipelineLayout									layout;
 			0u,													// VkPipeline										basePipelineHandle;
@@ -2055,6 +2088,11 @@ void ComputeShaderExecutor::execute (const Context& ctx, int numValues, const vo
 		fence = createFence(vk, vkDevice, &fenceParams);
 	}
 
+
+	VkPhysicalDeviceProperties properties;
+	ctx.getInstanceInterface().getPhysicalDeviceProperties(ctx.getPhysicalDevice(), &properties);
+	const int maxValuesPerInvocation = properties.limits.maxComputeWorkGroupSize[0];
+
 	int					curOffset		= 0;
 	const deUint32		inputStride		= getInputStride();
 	const deUint32		outputStride	= getOutputStride();
@@ -2064,37 +2102,35 @@ void ComputeShaderExecutor::execute (const Context& ctx, int numValues, const vo
 		Move<VkCommandBuffer>		cmdBuffer;
 		const int numToExec = de::min(maxValuesPerInvocation, numValues-curOffset);
 
-		const VkDescriptorBufferInfo descriptorBufferInfo[] =
+		// Update descriptors
 		{
-			{
-				*m_inputBuffer,					// VkBuffer			buffer;
-				curOffset * inputStride,		// VkDeviceSize		offset;
-				numToExec * inputStride			// VkDeviceSize		range;
-			},
+			DescriptorSetUpdateBuilder descriptorSetUpdateBuilder;
+
+			const VkDescriptorBufferInfo outputDescriptorBufferInfo =
 			{
 				*m_outputBuffer,				// VkBuffer			buffer;
 				curOffset * outputStride,		// VkDeviceSize		offset;
 				numToExec * outputStride		// VkDeviceSize		range;
-			}
-		};
+			};
 
-		const VkWriteDescriptorSet writeDescriptorSets[] =
-		{
+			descriptorSetUpdateBuilder.writeSingle(*descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding((deUint32)OUTPUT_BUFFER_BINDING), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &outputDescriptorBufferInfo);
+
+			if (inputStride)
 			{
-				VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,		// VkStructureType					sType;
-				DE_NULL,									// const void*		 				pNext;
-				*descriptorSet,								// VkDescriptorSet					destSet;
-				0u,											// deUint32							destBinding;
-				0u,											// deUint32							destArrayElement;
-				2u, 										// deUint32							count;
-				VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,			// VkDescriptorType					descriptorType;
-				DE_NULL,									// const VkDescriptorImageInfo* 	pImageInfo;
-				descriptorBufferInfo,						// const VkDescriptorBufferInfo* 	pBufferInfo;
-				DE_NULL										// const VkBufferView* 				pTexelBufferView;
-			}
-		};
+				const VkDescriptorBufferInfo inputDescriptorBufferInfo =
+				{
+					*m_inputBuffer,					// VkBuffer			buffer;
+					curOffset * inputStride,		// VkDeviceSize		offset;
+					numToExec * inputStride			// VkDeviceSize		range;
+				};
 
-		vk.updateDescriptorSets(vkDevice, 1, writeDescriptorSets, 0u, DE_NULL);
+				descriptorSetUpdateBuilder.writeSingle(*descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding((deUint32)INPUT_BUFFER_BINDING), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &inputDescriptorBufferInfo);
+			}
+
+			uploadUniforms(descriptorSetUpdateBuilder, *descriptorSet);
+
+			descriptorSetUpdateBuilder.update(vk, vkDevice);
+		}
 
 		cmdBuffer = allocateCommandBuffer(vk, vkDevice, &cmdBufferParams);
 		VK_CHECK(vk.beginCommandBuffer(*cmdBuffer, &cmdBufferBeginInfo));
@@ -2157,7 +2193,7 @@ public:
 };
 
 TessellationExecutor::TessellationExecutor (const ShaderSpec& shaderSpec, glu::ShaderType shaderType)
-	: BufferIoExecutor 	(shaderSpec, shaderType)
+	: BufferIoExecutor	(shaderSpec, shaderType)
 {
 }
 
@@ -2167,6 +2203,7 @@ TessellationExecutor::~TessellationExecutor (void)
 
 void TessellationExecutor::renderTess (const Context& ctx, deUint32 vertexCount)
 {
+	const size_t						inputBufferSize				= (vertexCount/2) * getInputStride();
 	const VkDevice						vkDevice					= ctx.getDevice();
 	const DeviceInterface&				vk							= ctx.getDeviceInterface();
 	const VkQueue						queue						= ctx.getUniversalQueue();
@@ -2177,7 +2214,7 @@ void TessellationExecutor::renderTess (const Context& ctx, deUint32 vertexCount)
 
 	Move<VkImage>						colorImage;
 	de::MovePtr<Allocation>				colorImageAlloc;
-	VkFormat 							colorFormat					= VK_FORMAT_R8G8B8A8_UNORM;
+	VkFormat							colorFormat					= VK_FORMAT_R8G8B8A8_UNORM;
 	Move<VkImageView>					colorImageView;
 
 	Move<VkRenderPass>					renderPass;
@@ -2295,12 +2332,11 @@ void TessellationExecutor::renderTess (const Context& ctx, deUint32 vertexCount)
 			DE_NULL												// const VkAttachmentReference* pPreserveAttachments;
 		};
 
-
 		const VkRenderPassCreateInfo renderPassParams =
 		{
 			VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,			// VkStructureType					sType;
 			DE_NULL,											// const void*						pNext;
-			0u,												 	// VkRenderPassCreateFlags			flags;
+			0u,													// VkRenderPassCreateFlags			flags;
 			1u,													// deUint32							attachmentCount;
 			attachments,										// const VkAttachmentDescription*	pAttachments;
 			1u,													// deUint32							subpassCount;
@@ -2318,7 +2354,7 @@ void TessellationExecutor::renderTess (const Context& ctx, deUint32 vertexCount)
 		{
 			VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,			// VkStructureType				sType;
 			DE_NULL,											// const void*					pNext;
-			0u,													// VkFramebufferCreateFlags 	flags;
+			0u,													// VkFramebufferCreateFlags		flags;
 			*renderPass,										// VkRenderPass					renderPass;
 			1u,													// deUint32						attachmentCount;
 			&*colorImageView,									// const VkAttachmentBindInfo*	pAttachments;
@@ -2359,6 +2395,7 @@ void TessellationExecutor::renderTess (const Context& ctx, deUint32 vertexCount)
 			layoutBindings											// const VkDescriptorSetLayoutBinding	pBinding;
 		};
 
+		addUniforms(vkDevice, vk, queueFamilyIndex, memAlloc);
 		descriptorSetLayout = createDescriptorSetLayout(vk, vkDevice, &descriptorLayoutParams);
 
 		const VkDescriptorPoolSize descriptorPoolSizes[] =
@@ -2371,8 +2408,8 @@ void TessellationExecutor::renderTess (const Context& ctx, deUint32 vertexCount)
 
 		const VkDescriptorPoolCreateInfo descriptorPoolParams =
 		{
-			VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO, 		// VkStructureType					sType;
-			DE_NULL,											// void* 							pNext;
+			VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,		// VkStructureType					sType;
+			DE_NULL,											// void*							pNext;
 			VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,	//VkDescriptorPoolUsage				poolUsage;
 			1u,													//deUint32							maxSets;
 			DE_LENGTH_OF_ARRAY(descriptorPoolSizes),			// deUint32							count;
@@ -2391,38 +2428,34 @@ void TessellationExecutor::renderTess (const Context& ctx, deUint32 vertexCount)
 		};
 
 		descriptorSet = allocateDescriptorSet(vk, vkDevice, &allocInfo);
-
-		const VkDescriptorBufferInfo descriptorBufferInfo[] =
+		// Update descriptors
 		{
-			{
-				*m_inputBuffer,					// VkBuffer			buffer;
-				0u,								// VkDeviceSize		offset;
-				VK_WHOLE_SIZE					// VkDeviceSize		range;
-			},
+			DescriptorSetUpdateBuilder descriptorSetUpdateBuilder;
+			const VkDescriptorBufferInfo outputDescriptorBufferInfo =
 			{
 				*m_outputBuffer,				// VkBuffer			buffer;
 				0u,								// VkDeviceSize		offset;
 				VK_WHOLE_SIZE					// VkDeviceSize		range;
-			},
-		};
+			};
 
-		const VkWriteDescriptorSet writeDescriptorSets[] =
-		{
+			descriptorSetUpdateBuilder.writeSingle(*descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding((deUint32)OUTPUT_BUFFER_BINDING), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &outputDescriptorBufferInfo);
+
+			if (inputBufferSize)
 			{
-				VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,		// VkStructureType					sType;
-				DE_NULL,									// const void*						pNext;
-				*descriptorSet,								// VkDescriptorSet					destSet;
-				0u,											// deUint32							destBinding;
-				0u,											// deUint32							destArrayElement;
-				2u,											// deUint32							count;
-				VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,			// VkDescriptorType					descriptorType;
-				DE_NULL,									// const VkDescriptorImageInfo*		pImageInfo;
-				descriptorBufferInfo,						// const VkDescriptorBufferInfo*	pBufferInfo;
-				DE_NULL										// const VkBufferView*				pTexelBufferView;
-			}
-		};
+				const VkDescriptorBufferInfo inputDescriptorBufferInfo =
+				{
+					*m_inputBuffer,				// VkBuffer			buffer;
+					0u,							// VkDeviceSize		offset;
+					VK_WHOLE_SIZE				// VkDeviceSize		range;
+				};
 
-		vk.updateDescriptorSets(vkDevice, 1, writeDescriptorSets, 0u, DE_NULL);
+				descriptorSetUpdateBuilder.writeSingle(*descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding((deUint32)INPUT_BUFFER_BINDING), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &inputDescriptorBufferInfo);
+			}
+
+			uploadUniforms(descriptorSetUpdateBuilder, *descriptorSet);
+
+			descriptorSetUpdateBuilder.update(vk, vkDevice);
+		}
 	}
 
 	// Create pipeline layout
@@ -2459,7 +2492,7 @@ void TessellationExecutor::renderTess (const Context& ctx, deUint32 vertexCount)
 				(VkPipelineShaderStageCreateFlags)0,						// VkPipelineShaderStageCreateFlags		flags;
 				VK_SHADER_STAGE_VERTEX_BIT,									// VkShaderStageFlagBit					stage;
 				*vertexShaderModule,										// VkShaderModule						shader;
-				"main",														// const char*	 						pName;
+				"main",														// const char*							pName;
 				DE_NULL														// const VkSpecializationInfo*			pSpecializationInfo;
 			},
 			{
@@ -2468,7 +2501,7 @@ void TessellationExecutor::renderTess (const Context& ctx, deUint32 vertexCount)
 				(VkPipelineShaderStageCreateFlags)0,						// VkPipelineShaderStageCreateFlags		flags;
 				VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,					// VkShaderStageFlagBit					stage;
 				*tessControlShaderModule,									// VkShaderModule						shader;
-				"main",														// const char* 							pName;
+				"main",														// const char*							pName;
 				DE_NULL														// const VkSpecializationInfo*			pSpecializationInfo;
 			},
 			{
@@ -2499,7 +2532,7 @@ void TessellationExecutor::renderTess (const Context& ctx, deUint32 vertexCount)
 			0u,																// deUint32									bindingCount;
 			DE_NULL,														// const VkVertexInputBindingDescription*	pVertexBindingDescriptions;
 			0u,																// deUint32									attributeCount;
-			DE_NULL,													 	// const VkVertexInputAttributeDescription*	pvertexAttributeDescriptions;
+			DE_NULL,														// const VkVertexInputAttributeDescription*	pvertexAttributeDescriptions;
 		};
 
 		const VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateParams =
@@ -2556,7 +2589,7 @@ void TessellationExecutor::renderTess (const Context& ctx, deUint32 vertexCount)
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,		// VkStructureType							sType;
 			DE_NULL,														// const void*								pNext;
-			(VkPipelineRasterizationStateCreateFlags)0,					 	// VkPipelineRasterizationStageCreateFlags	flags;
+			(VkPipelineRasterizationStateCreateFlags)0,						// VkPipelineRasterizationStageCreateFlags	flags;
 			VK_FALSE,														// VkBool32									depthClipEnable;
 			VK_FALSE,														// VkBool32									rasterizerDiscardEnable;
 			VK_POLYGON_MODE_FILL,											// VkPolygonMode							polygonMode;
@@ -2594,7 +2627,7 @@ void TessellationExecutor::renderTess (const Context& ctx, deUint32 vertexCount)
 			(VK_COLOR_COMPONENT_R_BIT |
 			 VK_COLOR_COMPONENT_G_BIT |
 			 VK_COLOR_COMPONENT_B_BIT |
-			 VK_COLOR_COMPONENT_A_BIT)		// VkColorComponentFlags 	colorWriteMask;
+			 VK_COLOR_COMPONENT_A_BIT)		// VkColorComponentFlags	colorWriteMask;
 		};
 
 		const VkPipelineColorBlendStateCreateInfo colorBlendStateParams =
@@ -2677,7 +2710,7 @@ void TessellationExecutor::renderTess (const Context& ctx, deUint32 vertexCount)
 			0u,												// deUint32							subpass;
 			DE_NULL,										// VkFramebuffer					framebuffer;
 			VK_FALSE,										//VkBool32							occlusionQueryEnable;
-			(VkQueryControlFlags)0u, 						// VkQueryControlFlags				queryFlags;
+			(VkQueryControlFlags)0u,						// VkQueryControlFlags				queryFlags;
 			(VkQueryPipelineStatisticFlags)0u				// VkQueryPipelineStatisticFlags	pipelineStatistics;
 
 		};
@@ -2752,7 +2785,7 @@ public:
 						TessControlExecutor			(const ShaderSpec& shaderSpec, glu::ShaderType shaderType);
 	virtual				~TessControlExecutor		(void);
 
-	virtual void 		setShaderSources			(SourceCollections& programCollection) const;
+	virtual void		setShaderSources			(SourceCollections& programCollection) const;
 
 	virtual void		execute						(const Context& ctx, int numValues, const void* const* inputs, void* const* outputs);
 
@@ -2851,7 +2884,7 @@ public:
 						TessEvaluationExecutor	(const ShaderSpec& shaderSpec, glu::ShaderType shaderType);
 	virtual				~TessEvaluationExecutor	(void);
 
-	virtual void 		setShaderSources		(SourceCollections& programCollection) const;
+	virtual void		setShaderSources		(SourceCollections& programCollection) const;
 
 	virtual void		execute					(const Context& ctx, int numValues, const void* const* inputs, void* const* outputs);
 
@@ -2976,6 +3009,322 @@ ShaderExecutor* createExecutor (glu::ShaderType shaderType, const ShaderSpec& sh
 		default:
 			throw tcu::InternalError("Unsupported shader type");
 	}
+}
+
+void ShaderExecutor::setupUniformData (const VkDevice&				vkDevice,
+									   const DeviceInterface&		vk,
+									   const deUint32				queueFamilyIndex,
+									   Allocator&					memAlloc,
+									   deUint32						bindingLocation,
+									   VkDescriptorType				descriptorType,
+									   deUint32						size,
+									   const void*					dataPtr)
+{
+	DE_ASSERT(descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER || descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+
+	VkImageUsageFlags usage = descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER ? VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT : VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+
+	const VkBufferCreateInfo uniformBufferParams =
+	{
+		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,		// VkStructureType		sType;
+		DE_NULL,									// const void*			pNext;
+		0u,											// VkBufferCreateFlags	flags;
+		size,										// VkDeviceSize			size;
+		usage,										// VkBufferUsageFlags	usage;
+		VK_SHARING_MODE_EXCLUSIVE,					// VkSharingMode		sharingMode;
+		1u,											// deUint32				queueFamilyIndexCount;
+		&queueFamilyIndex							// const deUint32*		pQueueFamilyIndices;
+	};
+
+	Move<VkBuffer>					buffer				= createBuffer(vk, vkDevice, &uniformBufferParams);
+	de::MovePtr<Allocation>			alloc				= memAlloc.allocate(getBufferMemoryRequirements(vk, vkDevice, *buffer), MemoryRequirement::HostVisible);
+	VK_CHECK(vk.bindBufferMemory(vkDevice, *buffer, alloc->getMemory(), alloc->getOffset()));
+
+	deMemcpy(alloc->getHostPtr(), dataPtr, size);
+	flushMappedMemoryRange(vk, vkDevice, alloc->getMemory(), alloc->getOffset(), size);
+
+	de::MovePtr<BufferUniform> uniformInfo(new BufferUniform());
+	uniformInfo->type = descriptorType;
+	uniformInfo->descriptor = makeDescriptorBufferInfo(*buffer, 0u, size);
+	uniformInfo->location = bindingLocation;
+	uniformInfo->buffer = VkBufferSp(new Unique<VkBuffer>(buffer));
+	uniformInfo->alloc = AllocationSp(alloc.release());
+
+	m_descriptorSetLayoutBuilder.addSingleBinding(descriptorType, VK_SHADER_STAGE_ALL);
+	m_descriptorPoolBuilder.addType(descriptorType);
+
+	m_uniformInfos.push_back(UniformInfoSp(new de::UniquePtr<UniformInfo>(uniformInfo)));
+}
+
+void ShaderExecutor::setupSamplerData (const VkDevice&				vkDevice,
+									   const DeviceInterface&		vk,
+									   const deUint32				queueFamilyIndex,
+									   Allocator&					memAlloc,
+									   deUint32						bindingLocation,
+									   deUint32						numSamplers,
+									   const tcu::Sampler&			refSampler,
+									   const tcu::TextureFormat&	texFormat,
+									   const tcu::IVec3&			texSize,
+									   VkImageType					imageType,
+									   VkImageViewType				imageViewType,
+									   const void*					data)
+{
+	DE_ASSERT(numSamplers > 0);
+
+	std::vector<VkSampler>				vkSamplers;
+	de::MovePtr<SamplerArrayUniform>	samplers		(new SamplerArrayUniform());
+
+	samplers->type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	samplers->location = bindingLocation;
+
+	for (deUint32 ndx = 0; ndx < numSamplers; ++ndx)
+	{
+		const int						offset			= ndx * texSize.x() * texSize.y() * texSize.z() * texFormat.getPixelSize();
+		const void*						samplerData		= ((deUint8*)data) + offset;
+		de::MovePtr<SamplerUniform>		uniform			= createSamplerUniform(vkDevice, vk, queueFamilyIndex, memAlloc, bindingLocation, refSampler, texFormat, texSize, imageType, imageViewType, samplerData);
+
+		vkSamplers.push_back(uniform->sampler.get()->get());
+
+		samplers->uniforms.push_back(SamplerUniformSp(new de::UniquePtr<SamplerUniform>(uniform)));
+	}
+
+	m_descriptorSetLayoutBuilder.addArraySamplerBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, numSamplers, VK_SHADER_STAGE_ALL, &vkSamplers[0]);
+	m_descriptorPoolBuilder.addType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, numSamplers);
+
+	m_uniformInfos.push_back(UniformInfoSp(new de::UniquePtr<UniformInfo>(samplers)));
+}
+
+void ShaderExecutor::addUniforms (const VkDevice& vkDevice, const DeviceInterface& vk, const deUint32 queueFamilyIndex, Allocator& memAlloc)
+{
+	if (!m_uniformSetup)
+		return;
+
+	for (std::vector<UniformDataSp>::const_iterator it = m_uniformSetup->uniforms().begin(); it != m_uniformSetup->uniforms().end(); ++it)
+	{
+		const UniformDataBase* uniformData = it->get()->get();
+		uniformData->setup(*this, vkDevice, vk, queueFamilyIndex, memAlloc);
+	}
+}
+
+void ShaderExecutor::uploadUniforms (DescriptorSetUpdateBuilder& descriptorSetUpdateBuilder, VkDescriptorSet descriptorSet)
+{
+	for (std::vector<UniformInfoSp>::const_iterator it = m_uniformInfos.begin(); it != m_uniformInfos.end(); ++it)
+	{
+		const UniformInfo* uniformInfo = it->get()->get();
+
+		if (uniformInfo->isSamplerArray())
+		{
+			const SamplerArrayUniform*			arrayInfo		= static_cast<const SamplerArrayUniform*>(uniformInfo);
+			std::vector<VkDescriptorImageInfo>	descriptors;
+
+			for (std::vector<SamplerUniformSp>::const_iterator ait = arrayInfo->uniforms.begin(); ait != arrayInfo->uniforms.end(); ++ait)
+			{
+				descriptors.push_back(ait->get()->get()->descriptor);
+			}
+
+			descriptorSetUpdateBuilder.writeArray(descriptorSet, DescriptorSetUpdateBuilder::Location::binding(uniformInfo->location), uniformInfo->type, (deUint32)descriptors.size(), &descriptors[0]);
+		}
+		else if (uniformInfo->isBufferUniform())
+		{
+			const BufferUniform* bufferUniform = static_cast<const BufferUniform*>(uniformInfo);
+			descriptorSetUpdateBuilder.writeSingle(descriptorSet, DescriptorSetUpdateBuilder::Location::binding(bufferUniform->location), bufferUniform->type, &bufferUniform->descriptor);
+		}
+		else if (uniformInfo->isSamplerUniform())
+		{
+			const SamplerUniform* samplerUniform = static_cast<const SamplerUniform*>(uniformInfo);
+			descriptorSetUpdateBuilder.writeSingle(descriptorSet, DescriptorSetUpdateBuilder::Location::binding(samplerUniform->location), samplerUniform->type, &samplerUniform->descriptor);
+		}
+	}
+}
+
+Move<VkImage> ShaderExecutor::createCombinedImage (const VkDevice&				vkDevice,
+												   const DeviceInterface&		vk,
+												   const deUint32				queueFamilyIndex,
+												   const tcu::IVec3&			texSize,
+												   const VkFormat				format,
+												   const VkImageType			imageType,
+												   const VkImageViewType		imageViewType,
+												   const VkImageUsageFlags		usage,
+												   const VkImageTiling			tiling)
+{
+	const bool					isCube				= imageViewType == vk::VK_IMAGE_VIEW_TYPE_CUBE;
+	const VkImageCreateFlags	flags				= isCube ? (VkImageCreateFlags)VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : (VkImageCreateFlags)0;
+	const deUint32				arraySize			= isCube ? 6u : 1u;
+
+	const VkImageCreateInfo		imageCreateInfo		=
+	{
+		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,						// VkStructureType			sType;
+		DE_NULL,													// const void*				pnext;
+		flags,														// VkImageCreateFlags		flags;
+		imageType,													// VkImageType				imageType;
+		format,														// VkFormat					format;
+		{ texSize.x(), texSize.y(), texSize.z() },					// VkExtend3D				extent;
+		1u,															// deUint32					mipLevels;
+		arraySize,													// deUint32					arraySize;
+		VK_SAMPLE_COUNT_1_BIT,										// VkSampleCountFlagBits	samples;
+		tiling,														// VkImageTiling			tiling;
+		usage,														// VkImageUsageFlags		usage;
+		VK_SHARING_MODE_EXCLUSIVE,									// VkSharingMode			sharingMode;
+		1u,															// deuint32					queueFamilyCount;
+		&queueFamilyIndex,											// const deUint32*			pQueueFamilyIndices;
+		VK_IMAGE_LAYOUT_UNDEFINED,									// VkImageLayout			initialLayout;
+	};
+
+	Move<VkImage>				vkTexture			= createImage(vk, vkDevice, &imageCreateInfo);
+	return vkTexture;
+}
+
+de::MovePtr<Allocation> ShaderExecutor::uploadImage (const VkDevice&				vkDevice,
+													 const DeviceInterface&			vk,
+													 Allocator&						memAlloc,
+													 const tcu::TextureFormat&		texFormat,
+													 const tcu::IVec3&				texSize,
+													 const void*					data,
+													 const VkImage&					vkTexture,
+													 const VkImageAspectFlags		aspectMask)
+{
+	de::MovePtr<Allocation>		allocation			= memAlloc.allocate(getImageMemoryRequirements(vk, vkDevice, vkTexture), MemoryRequirement::HostVisible);
+	VK_CHECK(vk.bindImageMemory(vkDevice, vkTexture, allocation->getMemory(), allocation->getOffset()));
+
+	const VkImageSubresource	subres				=
+	{
+		aspectMask,										// VkImageAspectFlags	aspectMask;
+		0u,												// deUint32				mipLevel;
+		0u												// deUint32				arraySlice
+	};
+
+	VkSubresourceLayout layout;
+	vk.getImageSubresourceLayout(vkDevice, vkTexture, &subres, &layout);
+
+	tcu::ConstPixelBufferAccess	access (texFormat, texSize, data);
+	tcu::PixelBufferAccess		destAccess	(texFormat, texSize, allocation->getHostPtr());
+
+	tcu::copy(destAccess, access);
+
+	flushMappedMemoryRange(vk, vkDevice, allocation->getMemory(), allocation, layout.size);
+
+	return allocation;
+}
+
+de::MovePtr<ShaderExecutor::SamplerUniform> ShaderExecutor::createSamplerUniform (const VkDevice&				vkDevice,
+																				  const DeviceInterface&		vk,
+																				  const deUint32				queueFamilyIndex,
+																				  Allocator&					memAlloc,
+																				  deUint32						bindingLocation,
+																				  const tcu::Sampler&			refSampler,
+																				  const tcu::TextureFormat&		texFormat,
+																				  const tcu::IVec3&				texSize,
+																				  VkImageType					imageType,
+																				  VkImageViewType				imageViewType,
+																				  const void*					data)
+{
+	const VkFormat					format			= mapTextureFormat(texFormat);
+	const bool						isCube			= imageViewType == VK_IMAGE_VIEW_TYPE_CUBE;
+	const bool						isShadowSampler	= texFormat == tcu::TextureFormat(tcu::TextureFormat::D, tcu::TextureFormat::UNORM_INT16);
+	const VkImageUsageFlags			imageUsage		= isShadowSampler ? (VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) : VK_IMAGE_USAGE_SAMPLED_BIT;
+	const VkImageAspectFlags		aspectMask		= isShadowSampler ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
+	const deUint32					arraySize		= isCube ? 6u : 1u;
+	Move<VkImage>					vkTexture;
+	de::MovePtr<Allocation>			allocation;
+
+	vkTexture = createCombinedImage(vkDevice, vk, queueFamilyIndex, texSize, format, imageType, imageViewType, imageUsage, VK_IMAGE_TILING_OPTIMAL);
+	allocation = uploadImage(vkDevice, vk, memAlloc, texFormat, texSize, data, *vkTexture, aspectMask);
+
+	// Create sampler
+	const bool						compareEnabled	= (refSampler.compare != tcu::Sampler::COMPAREMODE_NONE);
+	const VkSamplerCreateInfo		samplerParams	=
+	{
+		VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,			// VkStructureType		sType;
+		DE_NULL,										// const void*			pNext;
+		VkSamplerCreateFlags(0u),						// VkSamplerCreateFlags	flags;
+		mapFilterMode(refSampler.magFilter),			// VkTexFilter			magFilter;
+		mapFilterMode(refSampler.minFilter),			// VkTexFilter			minFilter;
+		mapMipmapMode(refSampler.minFilter),			// VkTexMipmapMode		mipMode;
+		mapWrapMode(refSampler.wrapS),					// VkTexAddressMode		addressModeU;
+		mapWrapMode(refSampler.wrapT),					// VkTexAddressMode		addressModeV;
+		mapWrapMode(refSampler.wrapR),					// VkTexAddressMode		addressModeW;
+		refSampler.lodThreshold,						// float				mipLodBias;
+		1,												// float				maxAnisotropy;
+		compareEnabled,									// VkBool32				compareEnable;
+		mapCompareMode(refSampler.compare),				// VkCompareOp			compareOp;
+		0.0f,											// float				minLod;
+		0.0f,											// float				maxLod;
+		VK_BORDER_COLOR_INT_OPAQUE_WHITE,				// VkBorderColor		boderColor;
+		VK_FALSE,										// VkBool32				unnormalizerdCoordinates;
+	};
+
+	Move<VkSampler>					sampler			= createSampler(vk, vkDevice, &samplerParams);
+
+	const VkImageViewCreateInfo		viewParams		=
+	{
+		VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,	// VkStructureType			sType;
+		NULL,										// const voide*				pNexŧ;
+		0u,											// VkImageViewCreateFlags	flags;
+		*vkTexture,									// VkImage					image;
+		imageViewType,								// VkImageViewType			viewType;
+		format,										// VkFormat					format;
+		{
+			VK_COMPONENT_SWIZZLE_R,						// VkComponentSwizzle		r;
+			VK_COMPONENT_SWIZZLE_G,						// VkComponentSwizzle		g;
+			VK_COMPONENT_SWIZZLE_B,						// VkComponentSwizzle		b;
+			VK_COMPONENT_SWIZZLE_A						// VkComponentSwizzle		a;
+		},											// VkComponentMapping			components;
+		{
+			aspectMask,									// VkImageAspectFlags	aspectMask;
+			0,											// deUint32				baseMipLevel;
+			1,											// deUint32				mipLevels;
+			0,											// deUint32				baseArraySlice;
+			arraySize									// deUint32				arraySize;
+		}											// VkImageSubresourceRange	subresourceRange;
+	};
+
+	Move<VkImageView>				imageView		= createImageView(vk, vkDevice, &viewParams);
+
+	const VkDescriptorImageInfo descriptor			=
+	{
+		sampler.get(),								// VkSampler				sampler;
+		imageView.get(),							// VkImageView				imageView;
+		VK_IMAGE_LAYOUT_GENERAL,					// VkImageLayout			imageLayout;
+	};
+
+	de::MovePtr<SamplerUniform> uniform(new SamplerUniform());
+	uniform->type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	uniform->descriptor = descriptor;
+	uniform->location = bindingLocation;
+	uniform->image = VkImageSp(new Unique<VkImage>(vkTexture));
+	uniform->imageView = VkImageViewSp(new Unique<VkImageView>(imageView));
+	uniform->sampler = VkSamplerSp(new Unique<VkSampler>(sampler));
+	uniform->alloc = AllocationSp(allocation.release());
+
+	return uniform;
+}
+
+SamplerUniformData::SamplerUniformData (deUint32						bindingLocation,
+										deUint32						numSamplers,
+										const tcu::Sampler&				refSampler,
+										const tcu::TextureFormat&		texFormat,
+										const tcu::IVec3&				texSize,
+										VkImageType						imageType,
+										VkImageViewType					imageViewType,
+										const void*						data)
+	: UniformDataBase		(bindingLocation)
+	, m_numSamplers			(numSamplers)
+	, m_refSampler			(refSampler)
+	, m_texFormat			(texFormat)
+	, m_texSize				(texSize)
+	, m_imageType			(imageType)
+	, m_imageViewType		(imageViewType)
+	, m_data				(data)
+{
+}
+
+SamplerUniformData::~SamplerUniformData (void)
+{
+}
+
+void SamplerUniformData::setup (ShaderExecutor& executor, const VkDevice& vkDevice, const DeviceInterface& vk, const deUint32 queueFamilyIndex, Allocator& memAlloc) const
+{
+	executor.setupSamplerData(vkDevice, vk, queueFamilyIndex, memAlloc, m_bindingLocation, m_numSamplers, m_refSampler, m_texFormat, m_texSize, m_imageType, m_imageViewType, m_data);
 }
 
 } // shaderexecutor

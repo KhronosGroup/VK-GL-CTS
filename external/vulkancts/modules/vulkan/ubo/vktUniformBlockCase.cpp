@@ -1881,17 +1881,17 @@ vk::Move<VkPipeline> UniformBlockCaseInstance::createPipeline (vk::VkShaderModul
 		1.0f,														// float									lineWidth;
 	};
 
-	const VkPipelineMultisampleStateCreateInfo 		multisampleStateParams =
+	const VkPipelineMultisampleStateCreateInfo		multisampleStateParams =
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,	// VkStructureType							sType;
 		DE_NULL,													// const void*								pNext;
-	 	0u,															// VkPipelineMultisampleStateCreateFlags	flags;
-	 	VK_SAMPLE_COUNT_1_BIT,										// VkSampleCountFlagBits					rasterizationSamples;
-	 	VK_FALSE,													// VkBool32									sampleShadingEnable;
-	 	0.0f,														// float									minSampleShading;
-	 	DE_NULL,													// const VkSampleMask*						pSampleMask;
-	 	VK_FALSE,													// VkBool32									alphaToCoverageEnable;
-	 	VK_FALSE													// VkBool32									alphaToOneEnable;
+		0u,															// VkPipelineMultisampleStateCreateFlags	flags;
+		VK_SAMPLE_COUNT_1_BIT,										// VkSampleCountFlagBits					rasterizationSamples;
+		VK_FALSE,													// VkBool32									sampleShadingEnable;
+		0.0f,														// float									minSampleShading;
+		DE_NULL,													// const VkSampleMask*						pSampleMask;
+		VK_FALSE,													// VkBool32									alphaToCoverageEnable;
+		VK_FALSE													// VkBool32									alphaToOneEnable;
 	 };
 
 	const VkPipelineColorBlendAttachmentState		colorBlendAttachmentState	=

@@ -1,4 +1,5 @@
 #ifndef _VKTSHADEREXECUTORTESTS_HPP
+#define _VKTSHADEREXECUTORTESTS_HPP
 /*------------------------------------------------------------------------
  * Vulkan Conformance Tests
  * ------------------------

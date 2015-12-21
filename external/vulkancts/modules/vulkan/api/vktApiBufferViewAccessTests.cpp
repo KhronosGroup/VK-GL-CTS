@@ -536,7 +536,7 @@ BufferViewTestInstance::BufferViewTestInstance (Context& context, BufferViewCase
 			1.0f,															// float			lineWidth;
 		};
 
-		const VkPipelineMultisampleStateCreateInfo 		multisampleStateParams =
+		const VkPipelineMultisampleStateCreateInfo		multisampleStateParams =
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,		// VkStructureType							sType;
 			DE_NULL,														// const void*								pNext;
