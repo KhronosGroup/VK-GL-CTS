@@ -449,6 +449,89 @@ tcu::TestCaseGroup* createNoContractionGroup (tcu::TestContext& testCtx)
 	return group.release();
 }
 
+tcu::TestCaseGroup* createOpFRemGroup (tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opfrem", "Test the OpFRem instruction"));
+	ComputeShaderSpec				spec;
+	de::Random						rnd				(deStringHash(group->getName()));
+	const int						numElements		= 200;
+	vector<float>					inputFloats1	(numElements, 0);
+	vector<float>					inputFloats2	(numElements, 0);
+	vector<float>					outputFloats	(numElements, 0);
+
+	fillRandomScalars(rnd, -10000.f, 10000.f, &inputFloats1[0], numElements);
+	fillRandomScalars(rnd, -100.f, 100.f, &inputFloats2[0], numElements);
+
+	for (size_t ndx = 0; ndx < numElements; ++ndx)
+	{
+		// Guard against divisors near zero.
+		if (std::fabs(inputFloats2[ndx]) < 1e-3)
+			inputFloats2[ndx] = 8.f;
+
+		// The return value of std::fmod() has the same sign as its first operand, which is how OpFRem spec'd.
+		outputFloats[ndx] = std::fmod(inputFloats1[ndx], inputFloats2[ndx]);
+	}
+
+	spec.assembly =
+		string(s_ShaderPreamble) +
+
+		"OpName %main           \"main\"\n"
+		"OpName %id             \"gl_GlobalInvocationID\"\n"
+
+		"OpDecorate %id BuiltIn GlobalInvocationId\n"
+
+		"OpDecorate %inbuf1 BufferBlock\n"
+		"OpDecorate %indata1 DescriptorSet 0\n"
+		"OpDecorate %indata1 Binding 0\n"
+		"OpDecorate %inbuf2 BufferBlock\n"
+		"OpDecorate %indata2 DescriptorSet 0\n"
+		"OpDecorate %indata2 Binding 1\n"
+		"OpDecorate %outbuf BufferBlock\n"
+		"OpDecorate %outdata DescriptorSet 0\n"
+		"OpDecorate %outdata Binding 2\n"
+		"OpDecorate %f32arr ArrayStride 4\n"
+		"OpMemberDecorate %inbuf1 0 Offset 0\n"
+		"OpMemberDecorate %inbuf2 0 Offset 0\n"
+		"OpMemberDecorate %outbuf 0 Offset 0\n"
+
+		+ string(s_CommonTypes) +
+
+		"%inbuf1     = OpTypeStruct %f32arr\n"
+		"%inbufptr1  = OpTypePointer Uniform %inbuf1\n"
+		"%indata1    = OpVariable %inbufptr1 Uniform\n"
+		"%inbuf2     = OpTypeStruct %f32arr\n"
+		"%inbufptr2  = OpTypePointer Uniform %inbuf2\n"
+		"%indata2    = OpVariable %inbufptr2 Uniform\n"
+		"%outbuf     = OpTypeStruct %f32arr\n"
+		"%outbufptr  = OpTypePointer Uniform %outbuf\n"
+		"%outdata    = OpVariable %outbufptr Uniform\n"
+
+		"%id        = OpVariable %uvec3ptr Input\n"
+
+		"%main      = OpFunction %void None %voidf\n"
+		"%label     = OpLabel\n"
+		"%idval     = OpLoad %uvec3 %id\n"
+		"%x         = OpCompositeExtract %u32 %idval 0\n"
+		"%inloc1    = OpAccessChain %f32ptr %indata1 %zero %x\n"
+		"%inval1    = OpLoad %f32 %inloc1\n"
+		"%inloc2    = OpAccessChain %f32ptr %indata2 %zero %x\n"
+		"%inval2    = OpLoad %f32 %inloc2\n"
+		"%rem       = OpFRem %f32 %inval1 %inval2\n"
+		"%outloc    = OpAccessChain %f32ptr %outdata %zero %x\n"
+		"             OpStore %outloc %rem\n"
+		"             OpReturn\n"
+		"             OpFunctionEnd\n";
+
+	spec.inputs.push_back(BufferSp(new Float32Buffer(inputFloats1)));
+	spec.inputs.push_back(BufferSp(new Float32Buffer(inputFloats2)));
+	spec.outputs.push_back(BufferSp(new Float32Buffer(outputFloats)));
+	spec.numWorkGroups = IVec3(numElements, 1, 1);
+
+	group->addChild(new SpvAsmComputeShaderCase(testCtx, "all", "", spec));
+
+	return group.release();
+}
+
 // Copy contents in the input buffer to the output buffer.
 tcu::TestCaseGroup* createOpCopyMemoryGroup (tcu::TestContext& testCtx)
 {
@@ -1266,6 +1349,7 @@ tcu::TestCaseGroup* createSpecConstantGroup (tcu::TestContext& testCtx)
 
 	return group.release();
 }
+
 tcu::TestCaseGroup* createOpPhiGroup (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opphi", "Test the OpPhi instruction"));
@@ -3241,6 +3325,8 @@ void createPipelineShaderStages (const DeviceInterface& vk, const VkDevice vkDev
 	"%c_f32_0 = OpConstant %f32 0.0\n"															\
 	"%c_f32_0_5 = OpConstant %f32 0.5\n"														\
 	"%c_f32_n1  = OpConstant %f32 -1.\n"														\
+	"%c_f32_7 = OpConstant %f32 7.0\n"															\
+	"%c_f32_8 = OpConstant %f32 8.0\n"															\
 	"%c_i32_0 = OpConstant %i32 0\n"															\
 	"%c_i32_1 = OpConstant %i32 1\n"															\
 	"%c_i32_2 = OpConstant %i32 2\n"															\
@@ -6603,7 +6689,7 @@ void createOpQuantizeSingleOptionTests(tcu::TestCaseGroup* testCtx)
 	{
 		const char* name;
 		const char* constant;
-		float       valueAsFloat;
+		float		valueAsFloat;
 		const char* condition;
 		// condition must evaluate to true after %test_constant = OpQuantizeToF16(%constant)
 	}				tests[]				=
@@ -6724,7 +6810,7 @@ void createOpQuantizeSingleOptionTests(tcu::TestCaseGroup* testCtx)
 			"%test_constant = OpSpecConstant %f32 0.\n"
 			"%c             = OpSpecConstantOp %f32 QuantizeToF16 %test_constant\n";
 
-    StringTemplate	specConstantFunction(
+	StringTemplate	specConstantFunction(
 		"%test_code     = OpFunction %v4f32 None %v4f32_function\n"
 		"%param1        = OpFunctionParameter %v4f32\n"
 		"%label_testfun = OpLabel\n"
@@ -6995,8 +7081,6 @@ tcu::TestCaseGroup* createLoopTests(tcu::TestContext& testCtx)
 		;
 	createTestsForAllStages("single-block", defaultColors, defaultColors, fragments, testGroup.get());
 
-	fragments["pre_main"] = "%c_f32_neg1 = OpConstant %f32 -1.0\n";
-
 	// Body comprised of multiple basic blocks.
 	const StringTemplate multiBlock(
 		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
@@ -7029,7 +7113,7 @@ tcu::TestCaseGroup* createLoopTests(tcu::TestContext& testCtx)
 		"OpBranch %gather\n"
 
 		"%gather = OpLabel\n"
-		"%delta_next = OpPhi %f32 %c_f32_neg1 %even %c_f32_1 %odd\n"
+		"%delta_next = OpPhi %f32 %c_f32_n1 %even %c_f32_1 %odd\n"
 		"%val = OpFAdd %f32 %val1 %delta\n"
 		"%count__ = OpISub %i32 %count %c_i32_1\n"
 		"%again = OpSGreaterThan %bool %count__ %c_i32_0\n"
@@ -7053,9 +7137,104 @@ tcu::TestCaseGroup* createLoopTests(tcu::TestContext& testCtx)
 	fragments["testfun"] = multiBlock.specialize(continue_target);
 	createTestsForAllStages("multi-block-loop-construct", defaultColors, defaultColors, fragments, testGroup.get());
 
-	// \todo [2015-12-14 dekimir] More cases:
-	// - continue
-	// - early exit
+	// A loop with continue statement.
+	fragments["testfun"] =
+		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%param1 = OpFunctionParameter %v4f32\n"
+
+		"%entry = OpLabel\n"
+		"%val0 = OpVectorExtractDynamic %f32 %param1 %c_i32_0\n"
+		"OpBranch %loop\n"
+
+		";adds 4, 3, and 1 to %val0 (skips 2)\n"
+		"%loop = OpLabel\n"
+		"%count = OpPhi %i32 %c_i32_4 %entry %count__ %continue\n"
+		"%val1 = OpPhi %f32 %val0 %entry %val %continue\n"
+		"OpLoopMerge %exit %continue None\n"
+		"OpBranch %if\n"
+
+		"%if = OpLabel\n"
+		";skip if %count==2\n"
+		"%eq2 = OpIEqual %bool %count %c_i32_2\n"
+		"OpSelectionMerge %continue DontFlatten\n"
+		"OpBranchConditional %eq2 %continue %body\n"
+
+		"%body = OpLabel\n"
+		"%fcount = OpConvertSToF %f32 %count\n"
+		"%val2 = OpFAdd %f32 %val1 %fcount\n"
+		"OpBranch %continue\n"
+
+		"%continue = OpLabel\n"
+		"%val = OpPhi %f32 %val2 %body %val1 %if\n"
+		"%count__ = OpISub %i32 %count %c_i32_1\n"
+		"%again = OpSGreaterThan %bool %count__ %c_i32_0\n"
+		"OpBranchConditional %again %loop %exit\n"
+
+		"%exit = OpLabel\n"
+		"%same = OpFSub %f32 %val %c_f32_8\n"
+		"%result = OpVectorInsertDynamic %v4f32 %param1 %same %c_i32_0\n"
+		"OpReturnValue %result\n"
+		"OpFunctionEnd\n";
+	createTestsForAllStages("continue", defaultColors, defaultColors, fragments, testGroup.get());
+
+	// A loop with early exit.  May be specialized with either break or return.
+	StringTemplate earlyExitLoop(
+		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%param1 = OpFunctionParameter %v4f32\n"
+
+		"%entry = OpLabel\n"
+		";param1 components are between 0 and 1, so dot product is 4 or less\n"
+		"%dot = OpDot %f32 %param1 %param1\n"
+		"%div = OpFDiv %f32 %dot %c_f32_5\n"
+		"%zero = OpConvertFToU %u32 %div\n"
+		"%two = OpIAdd %i32 %zero %c_i32_2\n"
+		"%val0 = OpVectorExtractDynamic %f32 %param1 %c_i32_0\n"
+		"OpBranch %loop\n"
+
+		";adds 4 and 3 to %val0 (exits early)\n"
+		"%loop = OpLabel\n"
+		"%count = OpPhi %i32 %c_i32_4 %entry %count__ %continue\n"
+		"%val1 = OpPhi %f32 %val0 %entry %val %continue\n"
+		"OpLoopMerge %exit %continue None\n"
+		"OpBranch %if\n"
+
+		"%if = OpLabel\n"
+		";end loop if %count==%two\n"
+		"%above2 = OpSGreaterThan %bool %count %two\n"
+		"OpSelectionMerge %continue DontFlatten\n"
+		// This can either branch to %exit or to another block with OpReturnValue %param1.
+		"OpBranchConditional %above2 %body ${branch_destination}\n"
+
+		"%body = OpLabel\n"
+		"%fcount = OpConvertSToF %f32 %count\n"
+		"%val2 = OpFAdd %f32 %val1 %fcount\n"
+		"OpBranch %continue\n"
+
+		"%continue = OpLabel\n"
+		"%val = OpPhi %f32 %val2 %body %val1 %if\n"
+		"%count__ = OpISub %i32 %count %c_i32_1\n"
+		"%again = OpSGreaterThan %bool %count__ %c_i32_0\n"
+		"OpBranchConditional %again %loop %exit\n"
+
+		"%exit = OpLabel\n"
+		"%same = OpFSub %f32 %val %c_f32_7\n"
+		"%result = OpVectorInsertDynamic %v4f32 %param1 %same %c_i32_0\n"
+		"OpReturnValue %result\n"
+		"OpFunctionEnd\n");
+
+	map<string, string> branch_destination;
+
+	// A loop with break.
+	branch_destination["branch_destination"] = "%exit";
+	fragments["testfun"] = earlyExitLoop.specialize(branch_destination);
+	createTestsForAllStages("break", defaultColors, defaultColors, fragments, testGroup.get());
+
+	// A loop with return.
+	branch_destination["branch_destination"] = "%early_exit\n"
+		"%early_exit = OpLabel\n"
+		"OpReturnValue %param1\n";
+	fragments["testfun"] = earlyExitLoop.specialize(branch_destination);
+	createTestsForAllStages("return", defaultColors, defaultColors, fragments, testGroup.get());
 
 	return testGroup.release();
 }
@@ -7202,7 +7381,7 @@ tcu::TestCaseGroup* createBarrierTests(tcu::TestContext& testCtx)
 		"%val0 = OpVectorExtractDynamic %f32 %param1 %c_i32_0\n"
 		"OpBranch %loop\n"
 
-		";adds 1, 2, 3, and 4 to %val0\n"
+		";adds 4, 3, 2, and 1 to %val0\n"
 		"%loop = OpLabel\n"
 		"%count = OpPhi %i32 %c_i32_4 %entry %count__ %latch\n"
 		"%val1 = OpPhi %f32 %val0 %entry %val %loop\n"
@@ -7221,6 +7400,54 @@ tcu::TestCaseGroup* createBarrierTests(tcu::TestContext& testCtx)
 		"OpFunctionEnd\n";
 	addTessCtrlTest(testGroup.get(), "in-loop", fragments);
 
+	return testGroup.release();
+}
+
+// Test for the OpFRem instruction.
+tcu::TestCaseGroup* createFRemTests(tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup>		testGroup(new tcu::TestCaseGroup(testCtx, "frem", "OpFRem"));
+	map<string, string>					fragments;
+	RGBA								inputColors[4];
+	RGBA								outputColors[4];
+
+	fragments["pre_main"]				 =
+		"%c_f32_3 = OpConstant %f32 3.0\n"
+		"%c_f32_n3 = OpConstant %f32 -3.0\n"
+		"%c_f32_n4 = OpConstant %f32 4.0\n"
+		"%c_f32_p75 = OpConstant %f32 0.75\n"
+		"%c_v4f32_p75_p75_p75_p75 = OpConstantComposite %v4f32 %c_f32_p75 %c_f32_p75 %c_f32_p75 %c_f32_p75 \n"
+		"%c_v4f32_4_4_4_4 = OpConstantComposite %v4f32 %c_f32_4 %c_f32_4 %c_f32_4 %c_f32_4\n"
+		"%c_v4f32_3_n3_3_n3 = OpConstantComposite %v4f32 %c_f32_3 %c_f32_n3 %c_f32_3 %c_f32_n3\n";
+
+	// The test does the following.
+	// vec4 result = (param1 * 8.0) - 4.0;
+	// return (frem(result.x,3) + 0.75, frem(result.y, -3) + 0.75, 0, 1)
+	fragments["testfun"]				 =
+		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%param1 = OpFunctionParameter %v4f32\n"
+		"%label_testfun = OpLabel\n"
+		"%v_times_8 = OpVectorTimesScalar %v4f32 %param1 %c_f32_8\n"
+		"%minus_4 = OpFSub %v4f32 %v_times_8 %c_v4f32_4_4_4_4\n"
+		"%frem = OpFRem %v4f32 %minus_4 %c_v4f32_3_n3_3_n3\n"
+		"%added = OpFAdd %v4f32 %frem %c_v4f32_p75_p75_p75_p75\n"
+		"%xyz_1 = OpVectorInsertDynamic %v4f32 %added %c_f32_1 %c_i32_3\n"
+		"%xy_0_1 = OpVectorInsertDynamic %v4f32 %xyz_1 %c_f32_0 %c_i32_2\n"
+		"OpReturnValue %xy_0_1\n"
+		"OpFunctionEnd\n";
+
+
+	inputColors[0]		= RGBA(16,	16,		0, 255);
+	inputColors[1]		= RGBA(232, 232,	0, 255);
+	inputColors[2]		= RGBA(232, 16,		0, 255);
+	inputColors[3]		= RGBA(16,	232,	0, 255);
+
+	outputColors[0]		= RGBA(64,	64,		0, 255);
+	outputColors[1]		= RGBA(255, 255,	0, 255);
+	outputColors[2]		= RGBA(255, 64,		0, 255);
+	outputColors[3]		= RGBA(64,	255,	0, 255);
+
+	createTestsForAllStages("frem", inputColors, outputColors, fragments, testGroup.get());
 	return testGroup.release();
 }
 
@@ -7253,6 +7480,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	computeTests->addChild(createOpUndefGroup(testCtx));
 	computeTests->addChild(createOpUnreachableGroup(testCtx));
 	computeTests ->addChild(createOpQuantizeToF16Group(testCtx));
+	computeTests ->addChild(createOpFRemGroup(testCtx));
 
 	RGBA defaultColors[4];
 	getDefaultColors(defaultColors);
@@ -7304,6 +7532,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	graphicsTests->addChild(createSpecConstantOpQuantizeToF16Group(testCtx));
 	graphicsTests->addChild(createBarrierTests(testCtx));
 	graphicsTests->addChild(createDecorationGroupTests(testCtx));
+	graphicsTests->addChild(createFRemTests(testCtx));
 
 	instructionTests->addChild(computeTests.release());
 	instructionTests->addChild(graphicsTests.release());
