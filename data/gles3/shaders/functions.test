@@ -869,6 +869,37 @@ group datatypes "Function Parameter Data Types"
 		""
 	end
 
+	case struct_constructor_highp_in_fragment
+		version 300 es
+		desc "passing highp vector to struct constructor in fragment shader yields all zeros"
+		vertex ""
+			#version 300 es
+			${VERTEX_DECLARATIONS}
+			void main()
+			{
+				${VERTEX_OUTPUT}
+			}
+		""
+		fragment ""
+			#version 300 es
+			${FRAGMENT_DECLARATIONS}
+			#ifdef GL_FRAGMENT_PRECISION_HIGH
+			#define PRECISION highp
+			#else
+			#define PRECISION mediump
+			#endif
+			struct Test {
+				PRECISION vec3 color;
+			} ;
+			void main() {
+				PRECISION vec3 color = vec3(0.2, 2.0, 0.1);
+				Test test = Test(color);
+				// Bias the color so all components are guaranteed > 1.0.
+				${FRAG_COLOR} = vec4(vec3(0.25, 0.55, 0.65) + vec3(4.0, 0.25, 4.0) * test.color, 1.0);
+			}
+		""
+	end
+
 
 end # datatypes
 
