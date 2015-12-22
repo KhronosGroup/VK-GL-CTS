@@ -202,6 +202,104 @@ group if "If Statements"
 		""
 	end
 
+	case constant_conditional_assignment_to_matrix
+		vertex ""
+                        // This variant doesn't provoke the crash seen in the versions below.
+			${VERTEX_DECLARATIONS}
+			varying mediump float FragVarying;
+			const float in0 = 0.0;
+			void main()
+			{
+				mat2 projectionMatrix = mat2(0.0, 0.0, 0.0, 0.0);
+				if (in0 == 1.0)
+				{
+					projectionMatrix[0][0] = 1.0;
+				}
+
+				FragVarying = 1.0;
+				gl_Position = dEQP_Position + vec4(projectionMatrix[1][0], 0.0, 0.0, 0.0);
+			}
+		""
+		fragment ""
+			precision mediump float;
+			varying float FragVarying;
+			void main()
+			{
+				gl_FragColor = vec4(FragVarying, 1.0, 1.0, 1.0);
+			}
+		""
+	end
+
+	case input_conditional_assignment_to_matrix
+		values
+		{
+			input float in0 = [ 0.0 ];
+		}
+		vertex ""
+			${VERTEX_DECLARATIONS}
+			varying mediump float FragVarying;  // Necessary to reproduce.
+			void main()
+			{
+				// Crashes with mat4 as well. Does not crash with vectors.
+				mat2 projectionMatrix = mat2(0.0, 0.0, 0.0, 0.0);
+				// Testing a non-constant variable is necessary.
+				if (in0 == 1.0)
+				{
+					// Using the matrix variable appears necessary.
+					projectionMatrix[0][0] = 1.0;
+				}
+
+				FragVarying = 1.0;
+				// Referencing the matrix is necessary though clearly the compiler
+				// doesn't realize the assignment is useless.
+				gl_Position = dEQP_Position + vec4(projectionMatrix[1][0], 0.0, 0.0, 0.0);
+			}
+		""
+		fragment ""
+			precision mediump float;
+			varying float FragVarying;
+			void main()
+			{
+				gl_FragColor = vec4(FragVarying, 1.0, 1.0, 1.0);
+			}
+		""
+	end
+
+	case uniform_conditional_assignment_to_matrix
+		values
+		{
+			uniform float uni0 = [ 0.0 ];
+		}
+		vertex ""
+			${VERTEX_DECLARATIONS}
+			varying mediump float FragVarying;  // Necessary to reproduce.
+			void main()
+			{
+				// Crashes with mat4 as well. Does not crash with vectors.
+				mat2 projectionMatrix = mat2(0.0, 0.0, 0.0, 0.0);
+				// Testing a non-constant variable is necessary.
+				if (uni0 == 1.0)
+				{
+					// Using the matrix variable appears necessary.
+					projectionMatrix[0][0] = 1.0;
+				}
+
+				FragVarying = 1.0;
+				// Referencing the matrix is necessary though clearly the compiler
+				// doesn't realize the assignment is useless.
+				gl_Position = dEQP_Position + vec4(projectionMatrix[1][0], 0.0, 0.0, 0.0);
+			}
+		""
+		fragment ""
+			precision mediump float;
+			varying float FragVarying;
+			void main()
+			{
+				gl_FragColor = vec4(FragVarying, 1.0, 1.0, 1.0);
+			}
+		""
+	end
+
 end # if
 
 group invalid_if "Invalid If Conditionals"
