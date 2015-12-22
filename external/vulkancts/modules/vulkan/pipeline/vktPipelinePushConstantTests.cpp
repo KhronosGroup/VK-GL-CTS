@@ -77,6 +77,7 @@ enum RangeSizeCase
 {
 	SIZE_CASE_4	= 0,
 	SIZE_CASE_16,
+	SIZE_CASE_32,
 	SIZE_CASE_40,
 	SIZE_CASE_128,
 	SIZE_CASE_UNSUPPORTED
@@ -210,6 +211,8 @@ RangeSizeCase PushConstantGraphicsTest::getRangeSizeCase (deUint32 rangeSize) co
 			return SIZE_CASE_4;
 		case 16:
 			return SIZE_CASE_16;
+		case 32:
+			return SIZE_CASE_32;
 		case 40:
 			return SIZE_CASE_40;
 		case 128:
@@ -251,6 +254,10 @@ void PushConstantGraphicsTest::initPrograms (SourceCollections& sourceCollection
 							  << "vec4 element;\n"
 							  << "} uniformBuf;\n";
 					break;
+				case SIZE_CASE_32:
+					vertexSrc << "vec4 color[2];\n"
+							  << "} matInst;\n";
+					break;
 				case SIZE_CASE_40:
 					vertexSrc << "int kind;\n"
 							  << "vec4 color;\n"
@@ -281,6 +288,10 @@ void PushConstantGraphicsTest::initPrograms (SourceCollections& sourceCollection
 					break;
 				case SIZE_CASE_16:
 					vertexSrc << "vtxColor = (matInst.color + uniformBuf.element) * 0.5;\n"
+							  << "}\n";
+					break;
+				case SIZE_CASE_32:
+					vertexSrc << "vtxColor = (matInst.color[0] + matInst.color[1]) * 0.5;\n"
 							  << "}\n";
 					break;
 				case SIZE_CASE_40:
@@ -331,7 +342,7 @@ void PushConstantGraphicsTest::initPrograms (SourceCollections& sourceCollection
 			tessEvaluationSrc << "#version 450\n"
 							  << "layout (triangles) in;\n"
 							  << "layout(push_constant) uniform Material {\n"
-							  << "    layout(offset = 28) vec4 color;\n"
+							  << "    layout(offset = 32) vec4 color;\n"
 							  << "} matInst;\n"
 							  << "in highp vec4 color[];\n"
 							  << "out highp vec4 vtxColor;\n"
@@ -1505,7 +1516,7 @@ tcu::TestCaseGroup* createPushConstantTests (tcu::TestContext& testCtx)
 				{ { VK_SHADER_STAGE_FRAGMENT_BIT, 16, 4 }, { 16, 4 } },
 				{ { VK_SHADER_STAGE_GEOMETRY_BIT, 20, 4 }, { 20, 4 } },
 				{ { VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, 24, 4 }, { 24, 4 } },
-				{ { VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, 28, 16 }, { 28, 16 } },
+				{ { VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, 32, 16 }, { 32, 16 } },
 			},
 			false
 		},
@@ -1521,7 +1532,7 @@ tcu::TestCaseGroup* createPushConstantTests (tcu::TestContext& testCtx)
 			"data_update_partial_1",
 			"test partial update of the values",
 			1u,
-			{ { { VK_SHADER_STAGE_VERTEX_BIT, 0, 16 }, { 4, 8 } } },
+			{ { { VK_SHADER_STAGE_VERTEX_BIT, 0, 32 }, { 4, 24 } } },
 			false
 		},
 		{
