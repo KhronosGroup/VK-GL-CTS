@@ -34,6 +34,7 @@
  * \brief Indirect Compute Dispatch tests
  *//*--------------------------------------------------------------------*/
 
+#include "tcuDefs.hpp"
 #include "vktTestCase.hpp"
 
 namespace vkt

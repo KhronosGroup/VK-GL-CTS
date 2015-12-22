@@ -64,8 +64,8 @@ private:
 	de::MovePtr<vk::Allocation>		m_allocation;
 	vk::Move<vk::VkBuffer>			m_buffer;
 
-	Buffer (const Buffer&);
-	Buffer& operator= (const Buffer&);
+									Buffer			(const Buffer&);  // "deleted"
+	Buffer&							operator=		(const Buffer&);
 };
 
 class Image
@@ -85,8 +85,25 @@ private:
 	de::MovePtr<vk::Allocation>		m_allocation;
 	vk::Move<vk::VkImage>			m_image;
 
-	Image (const Image&);
-	Image& operator= (const Image&);
+									Image			(const Image&);  // "deleted"
+	Image&							operator=		(const Image&);
+};
+
+template<typename T>
+class DynArray
+{
+public:
+				DynArray	(std::size_t size)			{ data = new T[size]; }
+				~DynArray	()							{ delete [] data; }
+
+	T&			operator[]	(std::size_t idx)			{ return data[idx]; }
+	const T&	operator[]	(std::size_t idx) const		{ return data[idx]; }
+
+private:
+	T* data;
+
+				DynArray	(const DynArray&);  // "deleted"
+	DynArray&	operator=	(const DynArray&);
 };
 
 vk::Move<vk::VkCommandPool>			makeCommandPool				(const vk::DeviceInterface&			vk,

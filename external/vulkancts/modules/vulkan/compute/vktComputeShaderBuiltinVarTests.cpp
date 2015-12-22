@@ -109,16 +109,25 @@ static inline std::ostream& operator<< (std::ostream& str, const LogComps& c)
 	return c.numComps == 3 ? str << c.v : str << c.v.x();
 }
 
-struct SubCase
+class SubCase
 {
-	const UVec3		localSize;
-	const UVec3		numWorkGroups;
+public:
+	// Use getters instead of public const members, because SubCase must be assignable
+	// in order to be stored in a vector.
+
+	const UVec3&	localSize		(void) const { return m_localSize; }
+	const UVec3&	numWorkGroups	(void) const { return m_numWorkGroups; }
 
 					SubCase			(void) {}
 					SubCase			(const UVec3& localSize_, const UVec3& numWorkGroups_)
-						: localSize		(localSize_)
-						, numWorkGroups	(numWorkGroups_) {}
+						: m_localSize		(localSize_)
+						, m_numWorkGroups	(numWorkGroups_) {}
+
+private:
+	UVec3	m_localSize;
+	UVec3	m_numWorkGroups;
 };
+
 
 class ComputeBuiltinVarInstance : public vkt::TestInstance
 {
@@ -133,7 +142,7 @@ public:
 private:
 	const VkDevice					m_device;
 	const DeviceInterface&			m_vki;
-	const VkQueue				m_queue;
+	const VkQueue					m_queue;
 	const deUint32					m_queueFamilyIndex;
 	vector<SubCase>					m_subCases;
 	const ComputeBuiltinVarCase*	m_builtin_var_case;
@@ -185,12 +194,12 @@ ComputeBuiltinVarCase::~ComputeBuiltinVarCase (void)
 
 void ComputeBuiltinVarCase::initPrograms (SourceCollections& programCollection) const
 {
-	for (int i = 0; i < m_subCases.size(); i++)
+	for (std::size_t i = 0; i < m_subCases.size(); i++)
 	{
 		const SubCase&	subCase = m_subCases[i];
 		std::ostringstream name;
 		name << s_prefixProgramName << i;
-		programCollection.glslSources.add(name.str()) << glu::ComputeSource(genBuiltinVarSource(m_varName, m_varType, subCase.localSize).c_str());
+		programCollection.glslSources.add(name.str()) << glu::ComputeSource(genBuiltinVarSource(m_varName, m_varType, subCase.localSize()).c_str());
 	}
 }
 
@@ -385,11 +394,11 @@ tcu::TestStatus	ComputeBuiltinVarInstance::iterate (void)
 	program_name << s_prefixProgramName << m_subCaseNdx;
 
 	const SubCase&				subCase				= m_subCases[m_subCaseNdx];
-	const tcu::UVec3			globalSize			= subCase.localSize*subCase.numWorkGroups;
+	const tcu::UVec3			globalSize			= subCase.localSize()*subCase.numWorkGroups();
 	const tcu::UVec2			stride				(globalSize[0] * globalSize[1], globalSize[0]);
 	const deUint32				sizeOfUniformBuffer	= sizeof(stride);
 	const int					numScalars			= glu::getDataTypeScalarSize(m_varType);
-	const deUint32				numInvocations		= subCase.localSize[0] * subCase.localSize[1] * subCase.localSize[2] * subCase.numWorkGroups[0] * subCase.numWorkGroups[1] * subCase.numWorkGroups[2];
+	const deUint32				numInvocations		= subCase.localSize()[0] * subCase.localSize()[1] * subCase.localSize()[2] * subCase.numWorkGroups()[0] * subCase.numWorkGroups()[1] * subCase.numWorkGroups()[2];
 
 	deUint32					resultBufferStride = 0;
 	switch (m_varType)
@@ -421,10 +430,11 @@ tcu::TestStatus	ComputeBuiltinVarInstance::iterate (void)
 	}
 
 	// Create descriptorSetLayout
-	DescriptorSetLayoutBuilder layoutBuilder;
-	layoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT);
-	layoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT);
-	const Unique<VkDescriptorSetLayout>	descriptorSetLayout = layoutBuilder.build(m_vki, m_device);
+	const Unique<VkDescriptorSetLayout>	descriptorSetLayout(
+		DescriptorSetLayoutBuilder()
+		.addSingleBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
+		.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
+		.build(m_vki, m_device));
 
 	const Unique<VkShaderModule> shaderModule(createShaderModule(m_vki, m_device, m_context.getBinaryCollection().get(program_name.str()), 0u));
 	const Unique<VkPipelineLayout> pipelineLayout(makePipelineLayout(m_vki, m_device, *descriptorSetLayout));
@@ -450,7 +460,7 @@ tcu::TestStatus	ComputeBuiltinVarInstance::iterate (void)
 	m_vki.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
 
 	// Create descriptor set
-	const Unique<VkDescriptorSet> descriptorSet = makeDescriptorSet(m_vki, m_device, *descriptorPool, *descriptorSetLayout);
+	const Unique<VkDescriptorSet> descriptorSet(makeDescriptorSet(m_vki, m_device, *descriptorPool, *descriptorSetLayout));
 
 	const VkDescriptorBufferInfo resultDescriptorInfo = makeDescriptorBufferInfo(*resultBuffer, 0ull, resultBufferSize);
 	const VkDescriptorBufferInfo uniformDescriptorInfo = makeDescriptorBufferInfo(*uniformBuffer, 0ull, sizeOfUniformBuffer);
@@ -463,7 +473,7 @@ tcu::TestStatus	ComputeBuiltinVarInstance::iterate (void)
 	m_vki.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
 
 	// Dispatch indirect compute command
-	m_vki.cmdDispatch(*cmdBuffer, subCase.numWorkGroups[0], subCase.numWorkGroups[1], subCase.numWorkGroups[2]);
+	m_vki.cmdDispatch(*cmdBuffer, subCase.numWorkGroups()[0], subCase.numWorkGroups()[1], subCase.numWorkGroups()[2]);
 
 	m_vki.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, VK_FALSE, 1, postBarrier);
 
@@ -483,20 +493,20 @@ tcu::TestStatus	ComputeBuiltinVarInstance::iterate (void)
 
 	tcu::TestContext& testCtx	= m_context.getTestContext();
 
-	for (deUint32 groupZ = 0; groupZ < subCase.numWorkGroups.z(); groupZ++)
-	for (deUint32 groupY = 0; groupY < subCase.numWorkGroups.y(); groupY++)
-	for (deUint32 groupX = 0; groupX < subCase.numWorkGroups.x(); groupX++)
-	for (deUint32 localZ = 0; localZ < subCase.localSize.z(); localZ++)
-	for (deUint32 localY = 0; localY < subCase.localSize.y(); localY++)
-	for (deUint32 localX = 0; localX < subCase.localSize.x(); localX++)
+	for (deUint32 groupZ = 0; groupZ < subCase.numWorkGroups().z(); groupZ++)
+	for (deUint32 groupY = 0; groupY < subCase.numWorkGroups().y(); groupY++)
+	for (deUint32 groupX = 0; groupX < subCase.numWorkGroups().x(); groupX++)
+	for (deUint32 localZ = 0; localZ < subCase.localSize().z(); localZ++)
+	for (deUint32 localY = 0; localY < subCase.localSize().y(); localY++)
+	for (deUint32 localX = 0; localX < subCase.localSize().x(); localX++)
 	{
 		const UVec3			refGroupID(groupX, groupY, groupZ);
 		const UVec3			refLocalID(localX, localY, localZ);
-		const UVec3			refGlobalID = refGroupID * subCase.localSize + refLocalID;
+		const UVec3			refGlobalID = refGroupID * subCase.localSize() + refLocalID;
 
 		const deUint32		refOffset = stride.x()*refGlobalID.z() + stride.y()*refGlobalID.y() + refGlobalID.x();
 
-		const UVec3			refValue = m_builtin_var_case->computeReference(subCase.numWorkGroups, subCase.localSize, refGroupID, refLocalID);
+		const UVec3			refValue = m_builtin_var_case->computeReference(subCase.numWorkGroups(), subCase.localSize(), refGroupID, refLocalID);
 
 		const deUint32*		resPtr = (const deUint32*)(ptr + refOffset * resultBufferStride);
 		const UVec3			resValue = readResultVec(resPtr, numScalars);

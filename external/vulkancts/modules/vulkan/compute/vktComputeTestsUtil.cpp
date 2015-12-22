@@ -288,12 +288,15 @@ void beginCommandBuffer (const DeviceInterface& vk, const VkCommandBuffer comman
 {
 	const VkCommandBufferBeginInfo commandBufBeginParams =
 	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	//	VkStructureType					sType;
-		DE_NULL,										//	const void*						pNext;
-		0u,												//	VkCommandBufferOptimizeFlags	flags;
-		DE_NULL,										//	VkRenderPass					renderPass;
-		0u,												//	deUint32						subpass;
-		DE_NULL,										//	VkFramebuffer					framebuffer;
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType					sType;
+		DE_NULL,										// const void*						pNext;
+		0u,												// VkCommandBufferUsageFlags		flags;
+		DE_NULL,										// VkRenderPass					renderPass;
+		0u,												// deUint32						subpass;
+		DE_NULL,										// VkFramebuffer					framebuffer;
+		DE_FALSE,										// VkBool32						occlusionQueryEnable;
+		0u,												// VkQueryControlFlags				queryFlags;
+		0u,												// VkQueryPipelineStatisticFlags	pipelineStatistics;
 	};
 	VK_CHECK(vk.beginCommandBuffer(commandBuffer, &commandBufBeginParams));
 }

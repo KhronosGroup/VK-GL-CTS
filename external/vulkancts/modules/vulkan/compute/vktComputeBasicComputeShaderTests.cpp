@@ -223,7 +223,7 @@ tcu::TestStatus SharedVarTestInstance::iterate (void)
 		.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
 		.build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
 
-	const Unique<VkDescriptorSet> descriptorSet = makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout);
+	const Unique<VkDescriptorSet> descriptorSet(makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout));
 
 	const VkDescriptorBufferInfo descriptorInfo = makeDescriptorBufferInfo(*buffer, 0ull, bufferSizeBytes);
 	DescriptorSetUpdateBuilder()
@@ -395,7 +395,7 @@ tcu::TestStatus SharedVarAtomicOpTestInstance::iterate (void)
 		.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
 		.build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
 
-	const Unique<VkDescriptorSet> descriptorSet = makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout);
+	const Unique<VkDescriptorSet> descriptorSet(makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout));
 
 	const VkDescriptorBufferInfo descriptorInfo = makeDescriptorBufferInfo(*buffer, 0ull, bufferSizeBytes);
 	DescriptorSetUpdateBuilder()
@@ -569,7 +569,7 @@ tcu::TestStatus SSBOLocalBarrierTestInstance::iterate (void)
 		.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
 		.build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
 
-	const Unique<VkDescriptorSet> descriptorSet = makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout);
+	const Unique<VkDescriptorSet> descriptorSet(makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout));
 
 	const VkDescriptorBufferInfo descriptorInfo = makeDescriptorBufferInfo(*buffer, 0ull, bufferSizeBytes);
 	DescriptorSetUpdateBuilder()
@@ -759,7 +759,7 @@ tcu::TestStatus CopyImageToSSBOTestInstance::iterate (void)
 		.addType(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)
 		.build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
 
-	const Unique<VkDescriptorSet> descriptorSet = makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout);
+	const Unique<VkDescriptorSet> descriptorSet(makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout));
 
 	// Set the bindings
 
@@ -973,7 +973,7 @@ tcu::TestStatus CopySSBOToImageTestInstance::iterate (void)
 		.addType(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)
 		.build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
 
-	const Unique<VkDescriptorSet> descriptorSet = makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout);
+	const Unique<VkDescriptorSet> descriptorSet(makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout));
 
 	// Set the bindings
 
@@ -1264,7 +1264,7 @@ tcu::TestStatus BufferToBufferInvertTestInstance::iterate (void)
 		.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
 		.build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
 
-	const Unique<VkDescriptorSet> descriptorSet = makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout);
+	const Unique<VkDescriptorSet> descriptorSet(makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout));
 
 	const VkDescriptorBufferInfo inputBufferDescriptorInfo = makeDescriptorBufferInfo(*inputBuffer, 0ull, bufferSizeBytes);
 	const VkDescriptorBufferInfo outputBufferDescriptorInfo = makeDescriptorBufferInfo(*outputBuffer, 0ull, bufferSizeBytes);
@@ -1355,7 +1355,6 @@ class InvertSSBOInPlaceTestInstance : public vkt::TestInstance
 public:
 									InvertSSBOInPlaceTestInstance	(Context&			context,
 																	 const deUint32		numValues,
-																	 const bool			sized,
 																	 const tcu::IVec3&	localSize,
 																	 const tcu::IVec3&	workSize);
 
@@ -1363,7 +1362,6 @@ public:
 
 private:
 	const deUint32					m_numValues;
-	const bool						m_sized;
 	const tcu::IVec3				m_localSize;
 	const tcu::IVec3				m_workSize;
 };
@@ -1407,17 +1405,15 @@ void InvertSSBOInPlaceTest::initPrograms (SourceCollections& sourceCollections) 
 
 TestInstance* InvertSSBOInPlaceTest::createInstance (Context& context) const
 {
-	return new InvertSSBOInPlaceTestInstance(context, m_numValues, m_sized, m_localSize, m_workSize);
+	return new InvertSSBOInPlaceTestInstance(context, m_numValues, m_localSize, m_workSize);
 }
 
 InvertSSBOInPlaceTestInstance::InvertSSBOInPlaceTestInstance (Context&			context,
 															  const deUint32	numValues,
-															  const bool		sized,
 															  const tcu::IVec3&	localSize,
 															  const tcu::IVec3&	workSize)
 	: TestInstance	(context)
 	, m_numValues	(numValues)
-	, m_sized		(sized)
 	, m_localSize	(localSize)
 	, m_workSize	(workSize)
 {
@@ -1463,7 +1459,7 @@ tcu::TestStatus InvertSSBOInPlaceTestInstance::iterate (void)
 		.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
 		.build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
 
-	const Unique<VkDescriptorSet> descriptorSet = makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout);
+	const Unique<VkDescriptorSet> descriptorSet(makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout));
 
 	const VkDescriptorBufferInfo bufferDescriptorInfo = makeDescriptorBufferInfo(*buffer, 0ull, bufferSizeBytes);
 	DescriptorSetUpdateBuilder()
@@ -1550,7 +1546,6 @@ class WriteToMultipleSSBOTestInstance : public vkt::TestInstance
 public:
 									WriteToMultipleSSBOTestInstance	(Context&			context,
 																	 const deUint32		numValues,
-																	 const bool			sized,
 																	 const tcu::IVec3&	localSize,
 																	 const tcu::IVec3&	workSize);
 
@@ -1558,7 +1553,6 @@ public:
 
 private:
 	const deUint32					m_numValues;
-	const bool						m_sized;
 	const tcu::IVec3				m_localSize;
 	const tcu::IVec3				m_workSize;
 };
@@ -1615,17 +1609,15 @@ void WriteToMultipleSSBOTest::initPrograms (SourceCollections& sourceCollections
 
 TestInstance* WriteToMultipleSSBOTest::createInstance (Context& context) const
 {
-	return new WriteToMultipleSSBOTestInstance(context, m_numValues, m_sized, m_localSize, m_workSize);
+	return new WriteToMultipleSSBOTestInstance(context, m_numValues, m_localSize, m_workSize);
 }
 
 WriteToMultipleSSBOTestInstance::WriteToMultipleSSBOTestInstance (Context&			context,
 																  const deUint32	numValues,
-																  const bool		sized,
 																  const tcu::IVec3&	localSize,
 																  const tcu::IVec3&	workSize)
 	: TestInstance	(context)
 	, m_numValues	(numValues)
-	, m_sized		(sized)
 	, m_localSize	(localSize)
 	, m_workSize	(workSize)
 {
@@ -1658,7 +1650,7 @@ tcu::TestStatus WriteToMultipleSSBOTestInstance::iterate (void)
 		.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 2u)
 		.build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
 
-	const Unique<VkDescriptorSet> descriptorSet = makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout);
+	const Unique<VkDescriptorSet> descriptorSet(makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout));
 
 	const VkDescriptorBufferInfo buffer0DescriptorInfo = makeDescriptorBufferInfo(*buffer0, 0ull, bufferSizeBytes);
 	const VkDescriptorBufferInfo buffer1DescriptorInfo = makeDescriptorBufferInfo(*buffer1, 0ull, bufferSizeBytes);
@@ -1865,7 +1857,7 @@ tcu::TestStatus SSBOBarrierTestInstance::iterate (void)
 		.addType(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
 		.build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
 
-	const Unique<VkDescriptorSet> descriptorSet = makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout);
+	const Unique<VkDescriptorSet> descriptorSet(makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout));
 
 	const VkDescriptorBufferInfo workBufferDescriptorInfo = makeDescriptorBufferInfo(*workBuffer, 0ull, workBufferSizeBytes);
 	const VkDescriptorBufferInfo outputBufferDescriptorInfo = makeDescriptorBufferInfo(*outputBuffer, 0ull, outputBufferSizeBytes);
@@ -2074,7 +2066,7 @@ tcu::TestStatus ImageAtomicOpTestInstance::iterate (void)
 		.addType(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)
 		.build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
 
-	const Unique<VkDescriptorSet> descriptorSet = makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout);
+	const Unique<VkDescriptorSet> descriptorSet(makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout));
 
 	// Set the bindings
 
@@ -2286,7 +2278,7 @@ tcu::TestStatus ImageBarrierTestInstance::iterate (void)
 		.addType(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
 		.build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
 
-	const Unique<VkDescriptorSet> descriptorSet = makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout);
+	const Unique<VkDescriptorSet> descriptorSet(makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout));
 
 	const VkDescriptorImageInfo imageDescriptorInfo = makeDescriptorImageInfo(DE_NULL, *imageView, VK_IMAGE_LAYOUT_GENERAL);
 	const VkDescriptorBufferInfo outputBufferDescriptorInfo = makeDescriptorBufferInfo(*outputBuffer, 0ull, outputBufferSizeBytes);
