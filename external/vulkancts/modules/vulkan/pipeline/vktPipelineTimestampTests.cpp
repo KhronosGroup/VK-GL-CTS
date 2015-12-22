@@ -209,7 +209,7 @@ const std::string TimestampTestParam::generateTestName(void) const
 {
 	std::string result("");
 
-	for (StageFlagVector::const_iterator it = m_stageVec.cbegin(); it != m_stageVec.cend(); it++)
+	for (StageFlagVector::const_iterator it = m_stageVec.begin(); it != m_stageVec.end(); it++)
 	{
 		if(*it != VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT)
 		{
@@ -228,7 +228,7 @@ const std::string TimestampTestParam::generateTestDescription(void) const
 {
 	std::string result("Record timestamp after ");
 
-	for (StageFlagVector::const_iterator it = m_stageVec.cbegin(); it != m_stageVec.cend(); it++)
+	for (StageFlagVector::const_iterator it = m_stageVec.begin(); it != m_stageVec.end(); it++)
 	{
 		if(*it != VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT)
 		{
@@ -273,7 +273,7 @@ const std::string TransferTimestampTestParam::generateTestName(void) const
 {
 	std::string result("");
 
-	for (StageFlagVector::const_iterator it = m_stageVec.cbegin(); it != m_stageVec.cend(); it++)
+	for (StageFlagVector::const_iterator it = m_stageVec.begin(); it != m_stageVec.end(); it++)
 	{
 		if(*it != VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT)
 		{
@@ -291,7 +291,7 @@ const std::string TransferTimestampTestParam::generateTestDescription(void) cons
 {
 	std::string result("");
 
-	for (StageFlagVector::const_iterator it = m_stageVec.cbegin(); it != m_stageVec.cend(); it++)
+	for (StageFlagVector::const_iterator it = m_stageVec.begin(); it != m_stageVec.end(); it++)
 	{
 		if(*it != VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT)
 		{
@@ -787,7 +787,7 @@ void TimestampTestInstance::configCommandBuffer(void)
 	vk.cmdResetQueryPool(*m_cmdBuffer, *m_queryPool, 0u, TimestampTest::ENTRY_COUNT);
 
 	deUint32 timestampEntry = 0;
-	for (StageFlagVector::const_iterator it = m_stages.cbegin(); it != m_stages.cend(); it++)
+	for (StageFlagVector::const_iterator it = m_stages.begin(); it != m_stages.end(); it++)
 	{
 		vk.cmdWriteTimestamp(*m_cmdBuffer, *it, *m_queryPool, timestampEntry++);
 	}
@@ -1285,7 +1285,7 @@ void BasicGraphicsTestInstance::configCommandBuffer(void)
 	if(m_inRenderPass)
 	{
 	  deUint32 timestampEntry = 0u;
-	  for (StageFlagVector::const_iterator it = m_stages.cbegin(); it != m_stages.cend(); it++)
+	  for (StageFlagVector::const_iterator it = m_stages.begin(); it != m_stages.end(); it++)
 	  {
 		  vk.cmdWriteTimestamp(*m_cmdBuffer, *it, *m_queryPool, timestampEntry++);
 	  }
@@ -1296,7 +1296,7 @@ void BasicGraphicsTestInstance::configCommandBuffer(void)
 	if(!m_inRenderPass)
 	{
 	  deUint32 timestampEntry = 0u;
-	  for (StageFlagVector::const_iterator it = m_stages.cbegin(); it != m_stages.cend(); it++)
+	  for (StageFlagVector::const_iterator it = m_stages.begin(); it != m_stages.end(); it++)
 	  {
 		  vk.cmdWriteTimestamp(*m_cmdBuffer, *it, *m_queryPool, timestampEntry++);
 	  }
@@ -1400,7 +1400,7 @@ TestInstance* AdvGraphicsTest::createInstance(Context& context) const
 
 void AdvGraphicsTestInstance::featureSupportCheck(void)
 {
-	for (StageFlagVector::const_iterator it = m_stages.cbegin(); it != m_stages.cend(); it++)
+	for (StageFlagVector::const_iterator it = m_stages.begin(); it != m_stages.end(); it++)
 	{
 		switch(*it)
 		{
@@ -1540,7 +1540,7 @@ void AdvGraphicsTestInstance::configCommandBuffer(void)
 	if(m_inRenderPass)
 	{
 	  deUint32 timestampEntry = 0u;
-	  for (StageFlagVector::const_iterator it = m_stages.cbegin(); it != m_stages.cend(); it++)
+	  for (StageFlagVector::const_iterator it = m_stages.begin(); it != m_stages.end(); it++)
 	  {
 		  vk.cmdWriteTimestamp(*m_cmdBuffer, *it, *m_queryPool, timestampEntry++);
 	  }
@@ -1551,7 +1551,7 @@ void AdvGraphicsTestInstance::configCommandBuffer(void)
 	if(!m_inRenderPass)
 	{
 	  deUint32 timestampEntry = 0u;
-	  for (StageFlagVector::const_iterator it = m_stages.cbegin(); it != m_stages.cend(); it++)
+	  for (StageFlagVector::const_iterator it = m_stages.begin(); it != m_stages.end(); it++)
 	  {
 		  vk.cmdWriteTimestamp(*m_cmdBuffer, *it, *m_queryPool, timestampEntry++);
 	  }
@@ -1769,7 +1769,7 @@ void BasicComputeTestInstance::configCommandBuffer(void)
 	vk.cmdDispatch(*m_cmdBuffer, 128u, 1u, 1u);
 
 	deUint32 timestampEntry = 0u;
-	for (StageFlagVector::const_iterator it = m_stages.cbegin(); it != m_stages.cend(); it++)
+	for (StageFlagVector::const_iterator it = m_stages.begin(); it != m_stages.end(); it++)
 	{
 		vk.cmdWriteTimestamp(*m_cmdBuffer, *it, *m_queryPool, timestampEntry++);
 	}
@@ -2069,7 +2069,7 @@ void TransferTestInstance::configCommandBuffer(void)
 	};
 
 	deUint32 timestampEntry = 0u;
-	for (StageFlagVector::const_iterator it = m_stages.cbegin(); it != m_stages.cend(); it++)
+	for (StageFlagVector::const_iterator it = m_stages.begin(); it != m_stages.end(); it++)
 	{
 		vk.cmdWriteTimestamp(*m_cmdBuffer, *it, *m_queryPool, timestampEntry++);
 	}
