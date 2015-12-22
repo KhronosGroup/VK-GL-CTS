@@ -34,9 +34,10 @@
  * \brief Image load/store Tests
  *//*--------------------------------------------------------------------*/
 
+#include "tcuDefs.hpp"
 #include "vktTestCase.hpp"
-#include "vkImageUtil.hpp"
 #include "deUniquePtr.hpp"
+#include "vktImageTestsUtil.hpp"
 
 namespace vkt
 {
@@ -47,7 +48,7 @@ tcu::TestCaseGroup*		createImageStoreTests				(tcu::TestContext& testCtx);
 tcu::TestCaseGroup*		createImageLoadStoreTests			(tcu::TestContext& testCtx);
 tcu::TestCaseGroup*		createImageFormatReinterpretTests	(tcu::TestContext& testCtx);
 
-de::MovePtr<TestCase>	createImageQualifierRestrictCase	(tcu::TestContext& testCtx, const vk::ImageType imageType, const std::string& name);
+de::MovePtr<TestCase>	createImageQualifierRestrictCase	(tcu::TestContext& testCtx, const ImageType imageType, const std::string& name);
 
 } // image
 } // vkt

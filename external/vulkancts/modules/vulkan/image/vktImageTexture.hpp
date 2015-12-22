@@ -34,7 +34,8 @@
  * \brief Texture utility class
  *//*--------------------------------------------------------------------*/
 
-#include "vkImageUtil.hpp"
+#include "tcuDefs.hpp"
+#include "vktImageTestsUtil.hpp"
 
 namespace vkt
 {
@@ -45,9 +46,9 @@ namespace image
 class Texture
 {
 public:
-						Texture			(const vk::ImageType type, const tcu::IVec3& layerSize, const int layers);
+						Texture			(const ImageType type, const tcu::IVec3& layerSize, const int layers);
 
-	vk::ImageType		type			(void) const { return m_type; }			//!< Texture type
+	ImageType			type			(void) const { return m_type; }			//!< Texture type
 	tcu::IVec3			layerSize		(void) const { return m_layerSize; }	//!< Size of a single layer
 	int					numLayers		(void) const { return m_numLayers; }	//!< Number of array layers (for array and cube types)
 
@@ -57,13 +58,13 @@ public:
 
 private:
 	const tcu::IVec3	m_layerSize;
-	const vk::ImageType	m_type;
+	const ImageType		m_type;
 	const int			m_numLayers;
 };
 
 inline bool isCube (const Texture& texture)
 {
-	return texture.type() == vk::IMAGE_TYPE_CUBE || texture.type() == vk::IMAGE_TYPE_CUBE_ARRAY;
+	return texture.type() == IMAGE_TYPE_CUBE || texture.type() == IMAGE_TYPE_CUBE_ARRAY;
 }
 
 } // image

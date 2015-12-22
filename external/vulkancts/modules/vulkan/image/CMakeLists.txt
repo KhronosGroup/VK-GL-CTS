@@ -11,8 +11,8 @@ set(DEQP_VK_IMAGE_SRCS
 	vktImageQualifiersTests.hpp
 	vktImageSizeTests.cpp
 	vktImageSizeTests.hpp
-	vktTexture.cpp
-	vktTexture.hpp
+	vktImageTexture.cpp
+	vktImageTexture.hpp
 	)
 
 set(DEQP_VK_IMAGE_LIBS

@@ -34,6 +34,7 @@
  * \brief Image size tests
  *//*--------------------------------------------------------------------*/
 
+#include "tcuDefs.hpp"
 #include "vktTestCase.hpp"
 
 namespace vkt

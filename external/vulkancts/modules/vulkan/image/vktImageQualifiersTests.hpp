@@ -35,7 +35,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "tcuDefs.hpp"
-#include "tcuTestCase.hpp"
+#include "vktTestCase.hpp"
 
 namespace vkt
 {

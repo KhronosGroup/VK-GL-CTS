@@ -35,7 +35,7 @@
 #include "vktImageLoadStoreTests.hpp"
 #include "vktTestCaseUtil.hpp"
 #include "vktImageTestsUtil.hpp"
-#include "vktTexture.hpp"
+#include "vktImageTexture.hpp"
 
 #include "vkDefs.hpp"
 #include "vkRef.hpp"
@@ -164,10 +164,11 @@ tcu::ConstPixelBufferAccess getLayerOrSlice (const Texture& texture, const tcu::
 		case IMAGE_TYPE_CUBE_ARRAY:
 		case IMAGE_TYPE_3D:			// 3d texture is treated as if depth was the layers
 			return tcu::getSubregion(access, 0, 0, layer, access.getWidth(), access.getHeight(), 1);
-	}
 
-	DE_FATAL("Internal test error");
-	return tcu::ConstPixelBufferAccess();
+		default:
+			DE_FATAL("Internal test error");
+			return tcu::ConstPixelBufferAccess();
+	}
 }
 
 std::string getFormatCaseName (const VkFormat format)
@@ -433,6 +434,7 @@ void StoreTest::initPrograms (SourceCollections& programCollection) const
 	const float storeColorScale = computeStoreColorScale(m_format, m_texture.size());
 	const float storeColorBias = computeStoreColorBias(m_format);
 	DE_ASSERT(colorScaleAndBiasAreValid(m_format, storeColorScale, storeColorBias));
+	DE_UNREF(colorScaleAndBiasAreValid);
 
 	const std::string xMax = de::toString(m_texture.size().x() - 1);
 	const std::string yMax = de::toString(m_texture.size().y() - 1);
@@ -454,7 +456,7 @@ void StoreTest::initPrograms (SourceCollections& programCollection) const
 	const std::string imageTypeStr = getShaderImageType(mapVkFormat(m_format), usedImageType);
 
 	std::ostringstream src;
-	src << glu::getGLSLVersionDeclaration(glu::GLSLVersion::GLSL_VERSION_440) << "\n"
+	src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_440) << "\n"
 		<< "\n"
 		<< "layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
 		<< "layout (binding = 0, " << formatQualifierStr << ") writeonly uniform highp " << imageTypeStr << " u_image;\n";
@@ -569,9 +571,9 @@ protected:
 	tcu::TestStatus					verifyResult							(void);
 
 	// Add empty implementations for functions that might be not needed
-	void							commandBeforeCompute					(const VkCommandBuffer	cmdBuffer) {}
-	void							commandBetweenShaderInvocations			(const VkCommandBuffer	cmdBuffer) {}
-	void							commandAfterCompute						(const VkCommandBuffer	cmdBuffer) {}
+	void							commandBeforeCompute					(const VkCommandBuffer) {}
+	void							commandBetweenShaderInvocations			(const VkCommandBuffer) {}
+	void							commandAfterCompute						(const VkCommandBuffer) {}
 
 	de::MovePtr<Buffer>				m_imageBuffer;
 	const VkDeviceSize				m_imageSizeBytes;
@@ -635,8 +637,8 @@ protected:
 	const VkDeviceSize					m_constantsBufferChunkSizeBytes;
 	Move<VkDescriptorSetLayout>			m_descriptorSetLayout;
 	Move<VkDescriptorPool>				m_descriptorPool;
-	std::vector<Move<VkDescriptorSet> >	m_allDescriptorSets;
-	std::vector<Move<VkImageView> >		m_allImageViews;
+	DynArray<Move<VkDescriptorSet> >	m_allDescriptorSets;
+	DynArray<Move<VkImageView> >		m_allImageViews;
 };
 
 ImageStoreTestInstance::ImageStoreTestInstance (Context&		context,
@@ -645,10 +647,11 @@ ImageStoreTestInstance::ImageStoreTestInstance (Context&		context,
 												const bool		singleLayerBind)
 	: StoreTestInstance					(context, texture, format, singleLayerBind)
 	, m_constantsBufferChunkSizeBytes	(getOptimalUniformBufferChunkSize(context, sizeof(deUint32)))
+	, m_allDescriptorSets				(texture.numLayers())
+	, m_allImageViews					(texture.numLayers())
 {
  	const DeviceInterface&	vk					= m_context.getDeviceInterface();
 	const VkDevice			device				= m_context.getDevice();
-	const deUint32			queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
 	Allocator&				allocator			= m_context.getDefaultAllocator();
 
 	m_image = de::MovePtr<Image>(new Image(
@@ -699,8 +702,6 @@ VkDescriptorSetLayout ImageStoreTestInstance::prepareDescriptors (void)
 
 	if (m_singleLayerBind)
 	{
-		m_allDescriptorSets.resize(numLayers);
-		m_allImageViews.resize(numLayers);
 		for (int layerNdx = 0; layerNdx < numLayers; ++layerNdx)
 		{
 			m_allDescriptorSets[layerNdx] = makeDescriptorSet(vk, device, *m_descriptorPool, *m_descriptorSetLayout);
@@ -710,8 +711,6 @@ VkDescriptorSetLayout ImageStoreTestInstance::prepareDescriptors (void)
 	}
 	else // bind all layers at once
 	{
-		m_allDescriptorSets.resize(1);
-		m_allImageViews.resize(1);
 		m_allDescriptorSets[0] = makeDescriptorSet(vk, device, *m_descriptorPool, *m_descriptorSetLayout);
 		m_allImageViews[0] = makeImageView(vk, device, m_image->get(), mapImageViewType(m_texture.type()), m_format,
 										   makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, numLayers));
@@ -822,6 +821,7 @@ VkDescriptorSetLayout BufferStoreTestInstance::prepareDescriptors (void)
 void BufferStoreTestInstance::commandBindDescriptorsForLayer (const VkCommandBuffer cmdBuffer, const VkPipelineLayout pipelineLayout, const int layerNdx)
 {
 	DE_ASSERT(layerNdx == 0);
+	DE_UNREF(layerNdx);
 
 	const VkDevice			device	= m_context.getDevice();
 	const DeviceInterface&	vk		= m_context.getDeviceInterface();
@@ -895,7 +895,7 @@ void LoadStoreTest::initPrograms (SourceCollections& programCollection) const
 	const std::string	xMax				= de::toString(m_texture.size().x() - 1);
 
 	std::ostringstream src;
-	src << glu::getGLSLVersionDeclaration(glu::GLSLVersion::GLSL_VERSION_440) << "\n"
+	src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_440) << "\n"
 		<< "\n"
 		<< "layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
 		<< "layout (binding = 0, " << formatQualifierStr << ") " << maybeRestrictStr << "readonly uniform highp " << imageTypeStr << " u_image0;\n"
@@ -934,9 +934,9 @@ protected:
 	tcu::TestStatus					verifyResult						(void);
 
 	// Add empty implementations for functions that might be not needed
-	void							commandBeforeCompute				(const VkCommandBuffer	cmdBuffer) {}
-	void							commandBetweenShaderInvocations		(const VkCommandBuffer	cmdBuffer) {}
-	void							commandAfterCompute					(const VkCommandBuffer	cmdBuffer) {}
+	void							commandBeforeCompute				(const VkCommandBuffer) {}
+	void							commandBetweenShaderInvocations		(const VkCommandBuffer) {}
+	void							commandAfterCompute					(const VkCommandBuffer) {}
 
 	de::MovePtr<Buffer>				m_imageBuffer;		//!< Source data and helper buffer
 	const VkDeviceSize				m_imageSizeBytes;
@@ -1028,7 +1028,7 @@ protected:
 	de::MovePtr<Image>						m_imageDst;
 	Move<VkDescriptorSetLayout>				m_descriptorSetLayout;
 	Move<VkDescriptorPool>					m_descriptorPool;
-	std::vector<de::MovePtr<PerLayerData> >	m_perLayerData;
+	DynArray<de::MovePtr<PerLayerData> >	m_perLayerData;
 };
 
 ImageLoadStoreTestInstance::PerLayerData::PerLayerData (Move<VkDescriptorSet>	descriptorSet_,
@@ -1045,11 +1045,11 @@ ImageLoadStoreTestInstance::ImageLoadStoreTestInstance (Context&		context,
 														const VkFormat	format,
 														const VkFormat	imageFormat,
 														const bool		singleLayerBind)
-	: LoadStoreTestInstance(context, texture, format, imageFormat, singleLayerBind)
+	: LoadStoreTestInstance	(context, texture, format, imageFormat, singleLayerBind)
+	, m_perLayerData		(texture.numLayers())
 {
 	const DeviceInterface&	vk					= m_context.getDeviceInterface();
 	const VkDevice			device				= m_context.getDevice();
-	const deUint32			queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
 	Allocator&				allocator			= m_context.getDefaultAllocator();
 
 	m_imageSrc = de::MovePtr<Image>(new Image(
@@ -1081,7 +1081,6 @@ VkDescriptorSetLayout ImageLoadStoreTestInstance::prepareDescriptors (void)
 
 	if (m_singleLayerBind)
 	{
-		m_perLayerData.resize(numLayers);
 		for (int layerNdx = 0; layerNdx < numLayers; ++layerNdx)
 		{
 			const VkImageViewType viewType = mapImageViewType(getImageTypeForSingleLayer(m_texture.type()));
@@ -1105,7 +1104,6 @@ VkDescriptorSetLayout ImageLoadStoreTestInstance::prepareDescriptors (void)
 			makeImageView(vk, device, m_imageSrc->get(), viewType, m_format, subresourceRange),
 			makeImageView(vk, device, m_imageDst->get(), viewType, m_format, subresourceRange)));
 
-		m_perLayerData.resize(1);
 		m_perLayerData[0] = data;
 	}
 
@@ -1249,6 +1247,7 @@ VkDescriptorSetLayout BufferLoadStoreTestInstance::prepareDescriptors (void)
 void BufferLoadStoreTestInstance::commandBindDescriptorsForLayer (const VkCommandBuffer cmdBuffer, const VkPipelineLayout pipelineLayout, const int layerNdx)
 {
 	DE_ASSERT(layerNdx == 0);
+	DE_UNREF(layerNdx);
 
 	const VkDevice			device	= m_context.getDevice();
 	const DeviceInterface&	vk		= m_context.getDeviceInterface();
@@ -1386,7 +1385,6 @@ tcu::TestCaseGroup* createImageFormatReinterpretTests (tcu::TestContext& testCtx
 	{
 		const Texture& texture = s_textures[textureNdx];
 		de::MovePtr<tcu::TestCaseGroup> groupByImageViewType (new tcu::TestCaseGroup(testCtx, getImageTypeName(texture.type()).c_str(), ""));
-		const bool isLayered = (texture.numLayers() > 1);
 
 		for (int imageFormatNdx = 0; imageFormatNdx < DE_LENGTH_OF_ARRAY(s_formats); ++imageFormatNdx)
 		for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(s_formats); ++formatNdx)

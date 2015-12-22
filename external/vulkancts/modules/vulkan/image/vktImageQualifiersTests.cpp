@@ -67,7 +67,7 @@ namespace image
 namespace
 {
 
-static const tcu::UVec3		g_localWorkGroupSizeBase	= { 8, 8, 2 };
+static const tcu::UVec3		g_localWorkGroupSizeBase	= tcu::UVec3(8, 8, 2);
 static const deInt32		g_ShaderReadOffsetsX[4]		= { 1, 4, 7, 10 };
 static const deInt32		g_ShaderReadOffsetsY[4]		= { 2, 5, 8, 11 };
 static const deInt32		g_ShaderReadOffsetsZ[4]		= { 3, 6, 9, 12 };
@@ -79,16 +79,18 @@ const tcu::UVec3 getComputeGridSize (const ImageType imageType, const tcu::UVec4
 {
 	switch (imageType)
 	{
-		case ImageType::IMAGE_TYPE_1D:
-		case ImageType::IMAGE_TYPE_2D:
-		case ImageType::IMAGE_TYPE_2D_ARRAY:
-		case ImageType::IMAGE_TYPE_3D:
-		case ImageType::IMAGE_TYPE_CUBE:
-		case ImageType::IMAGE_TYPE_CUBE_ARRAY:
-		case ImageType::IMAGE_TYPE_BUFFER:
+		case IMAGE_TYPE_1D:
+		case IMAGE_TYPE_2D:
+		case IMAGE_TYPE_2D_ARRAY:
+		case IMAGE_TYPE_3D:
+		case IMAGE_TYPE_CUBE:
+		case IMAGE_TYPE_CUBE_ARRAY:
+		case IMAGE_TYPE_BUFFER:
 			return tcu::UVec3(imageSize.x(), imageSize.y(), imageSize.z() * imageSize.w());
-		case ImageType::IMAGE_TYPE_1D_ARRAY:
+
+		case IMAGE_TYPE_1D_ARRAY:
 			return tcu::UVec3(imageSize.x(), imageSize.w(), 1);
+
 		default:
 			DE_FATAL("Unknown image type");
 			return tcu::UVec3(1, 1, 1);
@@ -124,13 +126,16 @@ tcu::ConstPixelBufferAccess getLayerOrSlice (const ImageType					imageType,
 		case IMAGE_TYPE_BUFFER:
 			DE_ASSERT(layer == 0);
 			return access;
+
 		case IMAGE_TYPE_1D_ARRAY:
 			return tcu::getSubregion(access, 0, layer, access.getWidth(), 1);
+
 		case IMAGE_TYPE_2D_ARRAY:
 		case IMAGE_TYPE_3D:
 		case IMAGE_TYPE_CUBE:
 		case IMAGE_TYPE_CUBE_ARRAY:
 			return tcu::getSubregion(access, 0, 0, layer, access.getWidth(), access.getHeight(), 1);
+
 		default:
 			DE_FATAL("Unknown image type");
 			return tcu::ConstPixelBufferAccess();
@@ -160,10 +165,12 @@ bool comparePixelBuffers (tcu::TestContext&						testCtx,
 			case IMAGE_TYPE_3D:
 				comparisonDesc = comparisonDesc + "slice " + de::toString(layerNdx);
 				break;
+
 			case IMAGE_TYPE_CUBE:
 			case IMAGE_TYPE_CUBE_ARRAY:
 				comparisonDesc = comparisonDesc + "face " + de::toString(layerNdx % 6) + ", cube " + de::toString(layerNdx / 6);
 				break;
+
 			default:
 				comparisonDesc = comparisonDesc + "layer " + de::toString(layerNdx);
 				break;
@@ -192,17 +199,20 @@ const std::string getCoordStr (const ImageType		imageType,
 {
 	switch (imageType)
 	{
-		case ImageType::IMAGE_TYPE_1D:
-		case ImageType::IMAGE_TYPE_BUFFER:
+		case IMAGE_TYPE_1D:
+		case IMAGE_TYPE_BUFFER:
 			return x;
-		case ImageType::IMAGE_TYPE_1D_ARRAY:
-		case ImageType::IMAGE_TYPE_2D:
+
+		case IMAGE_TYPE_1D_ARRAY:
+		case IMAGE_TYPE_2D:
 			return "ivec2(" + x + "," + y + ")";
-		case ImageType::IMAGE_TYPE_2D_ARRAY:
-		case ImageType::IMAGE_TYPE_3D:
-		case ImageType::IMAGE_TYPE_CUBE:
-		case ImageType::IMAGE_TYPE_CUBE_ARRAY:
+
+		case IMAGE_TYPE_2D_ARRAY:
+		case IMAGE_TYPE_3D:
+		case IMAGE_TYPE_CUBE:
+		case IMAGE_TYPE_CUBE_ARRAY:
 			return "ivec3(" + x + "," + y + "," + z + ")";
+
 		default:
 			DE_ASSERT(false);
 			return "";
@@ -244,14 +254,14 @@ protected:
 	const glu::GLSLVersion		m_glslVersion;
 };
 
-MemoryQualifierTestCase::MemoryQualifierTestCase (	tcu::TestContext&			testCtx,
-													const std::string&			name,
-													const std::string&			description,
-													const Qualifier				qualifier,
-													const ImageType				imageType,
-													const tcu::UVec4&			imageSize,
-													const tcu::TextureFormat&	format,
-													const glu::GLSLVersion		glslVersion)
+MemoryQualifierTestCase::MemoryQualifierTestCase (tcu::TestContext&			testCtx,
+												  const std::string&		name,
+												  const std::string&		description,
+												  const Qualifier			qualifier,
+												  const ImageType			imageType,
+												  const tcu::UVec4&			imageSize,
+												  const tcu::TextureFormat&	format,
+												  const glu::GLSLVersion	glslVersion)
 	: vkt::TestCase(testCtx, name, description)
 	, m_qualifier(qualifier)
 	, m_imageType(imageType)
@@ -362,11 +372,11 @@ protected:
 	Move<VkDescriptorSet>			m_descriptorSet;
 };
 
-MemoryQualifierInstanceBase::MemoryQualifierInstanceBase (	Context&					context,
-															const std::string&			name,
-															const ImageType				imageType,
-															const tcu::UVec4&			imageSize,
-															const tcu::TextureFormat&	format)
+MemoryQualifierInstanceBase::MemoryQualifierInstanceBase (Context&					context,
+														  const std::string&		name,
+														  const ImageType			imageType,
+														  const tcu::UVec4&			imageSize,
+														  const tcu::TextureFormat&	format)
 	: vkt::TestInstance(context)
 	, m_name(name)
 	, m_imageType(imageType)
@@ -381,7 +391,6 @@ tcu::TestStatus	MemoryQualifierInstanceBase::iterate (void)
 	const DeviceInterface&	deviceInterface		= m_context.getDeviceInterface();
 	const VkQueue			queue				= m_context.getUniversalQueue();
 	const deUint32			queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
-	Allocator&				allocator			= m_context.getDefaultAllocator();
 
 	const VkDeviceSize	bufferSizeInBytes = m_imageSize.x() * m_imageSize.y() * m_imageSize.z() * m_imageSize.w() * tcu::getPixelSize(m_format);
 
@@ -574,8 +583,10 @@ void MemoryQualifierInstanceImage::prepareDescriptors (void)
 		.update(deviceInterface, device);
 }
 
-void MemoryQualifierInstanceImage::commandsBeforeCompute (const VkCommandBuffer cmdBuffer, const VkDeviceSize	bufferSizeInBytes) const
+void MemoryQualifierInstanceImage::commandsBeforeCompute (const VkCommandBuffer cmdBuffer, const VkDeviceSize bufferSizeInBytes) const
 {
+	DE_UNREF(bufferSizeInBytes);
+
 	const DeviceInterface&			deviceInterface	 = m_context.getDeviceInterface();
 	const VkImageSubresourceRange	subresourceRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, m_imageSize.w());
 
@@ -637,8 +648,8 @@ public:
 
 	virtual void		prepareDescriptors				(void);
 
-	virtual void		commandsBeforeCompute			(const VkCommandBuffer		cmdBuffer,
-														 const VkDeviceSize			bufferSizeInBytes) const {}
+	virtual void		commandsBeforeCompute			(const VkCommandBuffer,
+														 const VkDeviceSize) const {}
 
 	virtual void		commandsAfterCompute			(const VkCommandBuffer		cmdBuffer,
 														 const VkDeviceSize			bufferSizeInBytes) const;
@@ -723,14 +734,14 @@ tcu::TestCaseGroup* createImageQualifiersTests (tcu::TestContext& testCtx)
 
 	static const ImageParameters imageParametersArray[] =
 	{
-		{ ImageType::IMAGE_TYPE_1D,			tcu::UVec4(64, 1,  1, 1)	},
-		{ ImageType::IMAGE_TYPE_1D_ARRAY,	tcu::UVec4(64, 1,  1, 8)	},
-		{ ImageType::IMAGE_TYPE_2D,			tcu::UVec4(64, 64, 1, 1)	},
-		{ ImageType::IMAGE_TYPE_2D_ARRAY,	tcu::UVec4(64, 64, 1, 8)	},
-		{ ImageType::IMAGE_TYPE_3D,			tcu::UVec4(64, 64, 8, 1)	},
-		{ ImageType::IMAGE_TYPE_CUBE,		tcu::UVec4(64, 64, 1, 6)	},
-		{ ImageType::IMAGE_TYPE_CUBE_ARRAY, tcu::UVec4(64, 64, 1, 6*8)	},
-		{ ImageType::IMAGE_TYPE_BUFFER,		tcu::UVec4(64, 1,  1, 1)	}
+		{ IMAGE_TYPE_1D,			tcu::UVec4(64, 1,  1, 1)	},
+		{ IMAGE_TYPE_1D_ARRAY,		tcu::UVec4(64, 1,  1, 8)	},
+		{ IMAGE_TYPE_2D,			tcu::UVec4(64, 64, 1, 1)	},
+		{ IMAGE_TYPE_2D_ARRAY,		tcu::UVec4(64, 64, 1, 8)	},
+		{ IMAGE_TYPE_3D,			tcu::UVec4(64, 64, 8, 1)	},
+		{ IMAGE_TYPE_CUBE,			tcu::UVec4(64, 64, 1, 6)	},
+		{ IMAGE_TYPE_CUBE_ARRAY,	tcu::UVec4(64, 64, 1, 6*8)	},
+		{ IMAGE_TYPE_BUFFER,		tcu::UVec4(64, 1,  1, 1)	}
 	};
 
 	static const tcu::TextureFormat formats[] =
@@ -758,7 +769,7 @@ tcu::TestCaseGroup* createImageQualifiersTests (tcu::TestContext& testCtx)
 
 			if (memoryQualifier == MemoryQualifierTestCase::QUALIFIER_RESTRICT)
 			{
-				de::MovePtr<tcu::TestCase> restrictCase = createImageQualifierRestrictCase(testCtx, imageType, getImageTypeName(imageType));
+				de::MovePtr<TestCase> restrictCase = createImageQualifierRestrictCase(testCtx, imageType, getImageTypeName(imageType));
 				qualifierGroup->addChild(restrictCase.release());
 			}
 			else

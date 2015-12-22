@@ -32,9 +32,7 @@
  * \brief Texture utility class
  *//*--------------------------------------------------------------------*/
 
-#include "vktTexture.hpp"
-
-using namespace vk;
+#include "vktImageTexture.hpp"
 
 namespace vkt
 {
@@ -82,6 +80,10 @@ Texture::Texture (const ImageType type, const tcu::IVec3& layerSize, const int l
 		case IMAGE_TYPE_3D:
 			DE_ASSERT(m_numLayers == 1);
 			break;
+
+		default:
+			DE_FATAL("Internal error");
+			break;
 	}
 }
 
@@ -102,10 +104,11 @@ tcu::IVec3 Texture::size (void) const
 		case IMAGE_TYPE_CUBE:
 		case IMAGE_TYPE_CUBE_ARRAY:
 			return tcu::IVec3(m_layerSize.x(), m_layerSize.y(), m_numLayers);
-	}
 
-	DE_FATAL("Internal error");
-	return tcu::IVec3();
+		default:
+			DE_FATAL("Internal error");
+			return tcu::IVec3();
+	}
 }
 
 int Texture::dimension (void) const
@@ -125,10 +128,11 @@ int Texture::dimension (void) const
 		case IMAGE_TYPE_CUBE_ARRAY:
 		case IMAGE_TYPE_3D:
 			return 3;
-	}
 
-	DE_FATAL("Internal error");
-	return 0;
+		default:
+			DE_FATAL("Internal error");
+			return 0;
+	}
 }
 
 int Texture::layerDimension (void) const
@@ -148,10 +152,11 @@ int Texture::layerDimension (void) const
 
 		case IMAGE_TYPE_3D:
 			return 3;
-	}
 
-	DE_FATAL("Internal error");
-	return 0;
+		default:
+			DE_FATAL("Internal error");
+			return 0;
+	}
 }
 
 } // image

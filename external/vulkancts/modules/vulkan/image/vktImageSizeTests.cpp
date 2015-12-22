@@ -35,7 +35,7 @@
 #include "vktImageSizeTests.hpp"
 #include "vktTestCaseUtil.hpp"
 #include "vktImageTestsUtil.hpp"
-#include "vktTexture.hpp"
+#include "vktImageTexture.hpp"
 
 #include "vkDefs.hpp"
 #include "vkRef.hpp"
@@ -50,7 +50,6 @@
 #include "deStringUtil.hpp"
 
 #include <string>
-#include <strstream>
 
 using namespace vk;
 
@@ -87,10 +86,11 @@ Texture getTexture (const ImageType imageType, const tcu::IVec3& size)
 
 		case IMAGE_TYPE_3D:
 			return Texture(imageType, size, 1);
-	}
 
-	DE_FATAL("Internal error");
-	return Texture(IMAGE_TYPE_LAST, tcu::IVec3(), 0);
+		default:
+			DE_FATAL("Internal error");
+			return Texture(IMAGE_TYPE_LAST, tcu::IVec3(), 0);
+	}
 }
 
 inline VkImageCreateInfo makeImageCreateInfo (const Texture& texture, const VkFormat format)
@@ -151,10 +151,11 @@ tcu::IVec3 getExpectedImageSizeResult (const Texture& texture)
 
 		case IMAGE_TYPE_CUBE_ARRAY:
 			return tcu::IVec3(size.x(), size.y(), size.z() / numCubeFaces);
-	}
 
-	DE_FATAL("Internal error");
-	return tcu::IVec3();
+		default:
+			DE_FATAL("Internal error");
+			return tcu::IVec3();
+	}
 }
 
 class SizeTest : public TestCase
@@ -212,7 +213,7 @@ void SizeTest::initPrograms (SourceCollections& programCollection) const
 		accessQualifier << " writeonly";
 
 	std::ostringstream src;
-	src << glu::getGLSLVersionDeclaration(glu::GLSLVersion::GLSL_VERSION_440) << "\n"
+	src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_440) << "\n"
 		<< "\n"
 		<< "layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
 		<< "layout (binding = 0, " << formatQualifierStr << ")" << accessQualifier.str() << " uniform highp " << imageTypeStr << " u_image;\n"
@@ -238,8 +239,8 @@ void SizeTest::initPrograms (SourceCollections& programCollection) const
 std::string getCaseName (const Texture& texture, const deUint32 flags)
 {
 	std::ostringstream str;
-	str << ((flags & SizeTest::TestFlags::FLAG_READONLY_IMAGE) != 0 ? "readonly_" : "")
-		<< ((flags & SizeTest::TestFlags::FLAG_WRITEONLY_IMAGE) != 0 ? "writeonly_" : "");
+	str << ((flags & SizeTest::FLAG_READONLY_IMAGE) != 0 ? "readonly_" : "")
+		<< ((flags & SizeTest::FLAG_WRITEONLY_IMAGE) != 0 ? "writeonly_" : "");
 
 	const int numComponents = texture.dimension();
 	for (int i = 0; i < numComponents; ++i)
@@ -432,7 +433,7 @@ public:
 protected:
 	VkDescriptorSetLayout			prepareDescriptors			(void);
 
-	void							commandBeforeCompute		(const VkCommandBuffer	cmdBuffer) {}
+	void							commandBeforeCompute		(const VkCommandBuffer) {}
 	VkDescriptorSet					getDescriptorSet			(void) const { return *m_descriptorSet; }
 
 	de::MovePtr<Buffer>				m_imageBuffer;
@@ -516,9 +517,9 @@ static const tcu::IVec3 s_baseImageSizes[] =
 
 static const deUint32 s_flags[] =
 {
-	SizeTest::TestFlags::FLAG_READONLY_IMAGE,
-	SizeTest::TestFlags::FLAG_WRITEONLY_IMAGE,
-	SizeTest::TestFlags::FLAG_READONLY_IMAGE | SizeTest::TestFlags::FLAG_WRITEONLY_IMAGE,
+	SizeTest::FLAG_READONLY_IMAGE,
+	SizeTest::FLAG_WRITEONLY_IMAGE,
+	SizeTest::FLAG_READONLY_IMAGE | SizeTest::FLAG_WRITEONLY_IMAGE,
 };
 
 } // anonymous ns

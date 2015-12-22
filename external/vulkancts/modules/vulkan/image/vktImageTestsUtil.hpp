@@ -1,5 +1,5 @@
-#ifndef _VKTIMAGETESTS_HPP
-#define _VKTIMAGETESTS_HPP
+#ifndef _VKTIMAGETESTSUTIL_HPP
+#define _VKTIMAGETESTSUTIL_HPP
 /*------------------------------------------------------------------------
  * Vulkan Conformance Tests
  * ------------------------
@@ -47,6 +47,26 @@ namespace vkt
 namespace image
 {
 
+enum ImageType
+{
+	IMAGE_TYPE_1D = 0,
+	IMAGE_TYPE_1D_ARRAY,
+	IMAGE_TYPE_2D,
+	IMAGE_TYPE_2D_ARRAY,
+	IMAGE_TYPE_3D,
+	IMAGE_TYPE_CUBE,
+	IMAGE_TYPE_CUBE_ARRAY,
+	IMAGE_TYPE_BUFFER,
+
+	IMAGE_TYPE_LAST
+};
+
+vk::VkImageType			mapImageType					(const ImageType imageType);
+vk::VkImageViewType		mapImageViewType				(const ImageType imageType);
+std::string				getImageTypeName				(const ImageType imageType);
+std::string				getShaderImageType				(const tcu::TextureFormat& format, const ImageType imageType);
+std::string				getShaderImageFormatQualifier	(const tcu::TextureFormat& format);
+
 class Buffer
 {
 public:
@@ -64,8 +84,8 @@ private:
 	de::MovePtr<vk::Allocation>		m_allocation;
 	vk::Move<vk::VkBuffer>			m_buffer;
 
-	Buffer (const Buffer&);
-	Buffer& operator= (const Buffer&);
+									Buffer			(const Buffer&);  // "deleted"
+	Buffer&							operator=		(const Buffer&);
 };
 
 class Image
@@ -85,15 +105,33 @@ private:
 	de::MovePtr<vk::Allocation>		m_allocation;
 	vk::Move<vk::VkImage>			m_image;
 
-	Image (const Image&);
-	Image& operator= (const Image&);
+									Image			(const Image&);  // "deleted"
+	Image&							operator=		(const Image&);
 };
 
-vk::Move<vk::VkCommandPool>			makeCommandPool				(const vk::DeviceInterface&			vk,
+//! Dynamic size array, used to hold smart pointers like vk::Move which don't work with std::vector.
+template<typename T>
+class DynArray
+{
+public:
+				DynArray	(std::size_t size)			{ data = new T[size]; }
+				~DynArray	(void)						{ delete [] data; }
+
+	T&			operator[]	(std::size_t idx)			{ return data[idx]; }
+	const T&	operator[]	(std::size_t idx) const		{ return data[idx]; }
+
+private:
+	T* data;
+
+				DynArray	(const DynArray&);  // "deleted"
+	DynArray&	operator=	(const DynArray&);
+};
+
+vk::Move<vk::VkCommandPool>		makeCommandPool					(const vk::DeviceInterface&			vk,
 																 const vk::VkDevice					device,
 																 const deUint32						queueFamilyIndex);
 
-vk::Move<vk::VkCommandBuffer>		makeCommandBuffer			(const vk::DeviceInterface&			vk,
+vk::Move<vk::VkCommandBuffer>	makeCommandBuffer				(const vk::DeviceInterface&			vk,
 																 const vk::VkDevice					device,
 																 const vk::VkCommandPool			commandPool);
 
@@ -168,4 +206,4 @@ inline vk::VkDeviceSize getImageSizeBytes (const tcu::IVec3& imageSize, const vk
 } // image
 } // vkt
 
-#endif // _VKTIMAGETESTS_HPP
+#endif // _VKTIMAGETESTSUTIL_HPP

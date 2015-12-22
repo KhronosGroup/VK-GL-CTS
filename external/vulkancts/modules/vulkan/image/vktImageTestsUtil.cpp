@@ -35,6 +35,7 @@
 #include "vktImageTestsUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkTypeUtil.hpp"
+#include "tcuTextureUtil.hpp"
 
 using namespace vk;
 
@@ -272,16 +273,18 @@ void beginCommandBuffer (const DeviceInterface& vk, const VkCommandBuffer comman
 {
 	const VkCommandBufferBeginInfo commandBufBeginParams =
 	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	//	VkStructureType					sType;
-		DE_NULL,										//	const void*						pNext;
-		0u,												//	VkCommandBufferOptimizeFlags	flags;
-		DE_NULL,										//	VkRenderPass					renderPass;
-		0u,												//	deUint32						subpass;
-		DE_NULL,										//	VkFramebuffer					framebuffer;
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType					sType;
+		DE_NULL,										// const void*						pNext;
+		0u,												// VkCommandBufferUsageFlags		flags;
+		DE_NULL,										// VkRenderPass						renderPass;
+		0u,												// deUint32							subpass;
+		DE_NULL,										// VkFramebuffer					framebuffer;
+		DE_FALSE,										// VkBool32							occlusionQueryEnable;
+		0u,												// VkQueryControlFlags				queryFlags;
+		0u,												// VkQueryPipelineStatisticFlags	pipelineStatistics;
 	};
 	VK_CHECK(vk.beginCommandBuffer(commandBuffer, &commandBufBeginParams));
 }
-
 void endCommandBuffer (const DeviceInterface& vk, const VkCommandBuffer commandBuffer)
 {
 	VK_CHECK(vk.endCommandBuffer(commandBuffer));
@@ -314,6 +317,135 @@ void submitCommandsAndWait (const DeviceInterface&	vk,
 
 	VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo, *fence));
 	VK_CHECK(vk.waitForFences(device, 1u, &fence.get(), DE_TRUE, ~0ull));
+}
+
+VkImageType	mapImageType (const ImageType imageType)
+{
+	switch (imageType)
+	{
+		case IMAGE_TYPE_1D:
+		case IMAGE_TYPE_1D_ARRAY:
+		case IMAGE_TYPE_BUFFER:
+			return VK_IMAGE_TYPE_1D;
+
+		case IMAGE_TYPE_2D:
+		case IMAGE_TYPE_2D_ARRAY:
+		case IMAGE_TYPE_CUBE:
+		case IMAGE_TYPE_CUBE_ARRAY:
+			return VK_IMAGE_TYPE_2D;
+
+		case IMAGE_TYPE_3D:
+			return VK_IMAGE_TYPE_3D;
+
+		default:
+			DE_ASSERT(false);
+			return VK_IMAGE_TYPE_LAST;
+	}
+}
+
+VkImageViewType	mapImageViewType (const ImageType imageType)
+{
+	switch (imageType)
+	{
+		case IMAGE_TYPE_1D:			return VK_IMAGE_VIEW_TYPE_1D;
+		case IMAGE_TYPE_1D_ARRAY:	return VK_IMAGE_VIEW_TYPE_1D_ARRAY;
+		case IMAGE_TYPE_2D:			return VK_IMAGE_VIEW_TYPE_2D;
+		case IMAGE_TYPE_2D_ARRAY:	return VK_IMAGE_VIEW_TYPE_2D_ARRAY;
+		case IMAGE_TYPE_3D:			return VK_IMAGE_VIEW_TYPE_3D;
+		case IMAGE_TYPE_CUBE:		return VK_IMAGE_VIEW_TYPE_CUBE;
+		case IMAGE_TYPE_CUBE_ARRAY:	return VK_IMAGE_VIEW_TYPE_CUBE_ARRAY;
+
+		default:
+			DE_ASSERT(false);
+			return VK_IMAGE_VIEW_TYPE_LAST;
+	}
+}
+
+std::string getImageTypeName (const ImageType imageType)
+{
+	switch (imageType)
+	{
+		case IMAGE_TYPE_1D:			return "1d";
+		case IMAGE_TYPE_1D_ARRAY:	return "1d_array";
+		case IMAGE_TYPE_2D:			return "2d";
+		case IMAGE_TYPE_2D_ARRAY:	return "2d_array";
+		case IMAGE_TYPE_3D:			return "3d";
+		case IMAGE_TYPE_CUBE:		return "cube";
+		case IMAGE_TYPE_CUBE_ARRAY:	return "cube_array";
+		case IMAGE_TYPE_BUFFER:		return "buffer";
+
+		default:
+			DE_ASSERT(false);
+			return "";
+	}
+}
+
+std::string getShaderImageType (const tcu::TextureFormat& format, const ImageType imageType)
+{
+	std::string formatPart = tcu::getTextureChannelClass(format.type) == tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER ? "u" :
+							 tcu::getTextureChannelClass(format.type) == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER   ? "i" : "";
+
+	std::string imageTypePart;
+	switch (imageType)
+	{
+		case IMAGE_TYPE_1D:			imageTypePart = "1D";			break;
+		case IMAGE_TYPE_1D_ARRAY:	imageTypePart = "1DArray";		break;
+		case IMAGE_TYPE_2D:			imageTypePart = "2D";			break;
+		case IMAGE_TYPE_2D_ARRAY:	imageTypePart = "2DArray";		break;
+		case IMAGE_TYPE_3D:			imageTypePart = "3D";			break;
+		case IMAGE_TYPE_CUBE:		imageTypePart = "Cube";			break;
+		case IMAGE_TYPE_CUBE_ARRAY:	imageTypePart = "CubeArray";	break;
+		case IMAGE_TYPE_BUFFER:		imageTypePart = "Buffer";		break;
+
+		default:
+			DE_ASSERT(false);
+	}
+
+	return formatPart + "image" + imageTypePart;
+}
+
+std::string getShaderImageFormatQualifier (const tcu::TextureFormat& format)
+{
+	const char* orderPart;
+	const char* typePart;
+
+	switch (format.order)
+	{
+		case tcu::TextureFormat::R:		orderPart = "r";	break;
+		case tcu::TextureFormat::RG:	orderPart = "rg";	break;
+		case tcu::TextureFormat::RGB:	orderPart = "rgb";	break;
+		case tcu::TextureFormat::RGBA:	orderPart = "rgba";	break;
+
+		default:
+			DE_ASSERT(false);
+			orderPart = DE_NULL;
+	}
+
+	switch (format.type)
+	{
+		case tcu::TextureFormat::FLOAT:				typePart = "32f";		break;
+		case tcu::TextureFormat::HALF_FLOAT:		typePart = "16f";		break;
+
+		case tcu::TextureFormat::UNSIGNED_INT32:	typePart = "32ui";		break;
+		case tcu::TextureFormat::UNSIGNED_INT16:	typePart = "16ui";		break;
+		case tcu::TextureFormat::UNSIGNED_INT8:		typePart = "8ui";		break;
+
+		case tcu::TextureFormat::SIGNED_INT32:		typePart = "32i";		break;
+		case tcu::TextureFormat::SIGNED_INT16:		typePart = "16i";		break;
+		case tcu::TextureFormat::SIGNED_INT8:		typePart = "8i";		break;
+
+		case tcu::TextureFormat::UNORM_INT16:		typePart = "16";		break;
+		case tcu::TextureFormat::UNORM_INT8:		typePart = "8";			break;
+
+		case tcu::TextureFormat::SNORM_INT16:		typePart = "16_snorm";	break;
+		case tcu::TextureFormat::SNORM_INT8:		typePart = "8_snorm";	break;
+
+		default:
+			DE_ASSERT(false);
+			typePart = DE_NULL;
+	}
+
+	return std::string() + orderPart + typePart;
 }
 
 } // image
