@@ -1475,6 +1475,8 @@ tcu::TestStatus InputAssemblyInstance::verifyImage (void)
 		const rr::PrimitiveType		topology	= mapVkPrimitiveTopology(m_primitiveTopology);
 		rr::RenderState				renderState	(refRenderer.getViewportState());
 
+		if (m_primitiveTopology == VK_PRIMITIVE_TOPOLOGY_POINT_LIST)
+			renderState.point.pointSize = 3.0f;
 
 		if (m_primitiveRestartEnable)
 		{
