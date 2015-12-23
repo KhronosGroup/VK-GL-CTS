@@ -103,8 +103,8 @@ Move<VkCommandPool> makeCommandPool (const DeviceInterface& vk, const VkDevice d
 	{
 		VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,			// VkStructureType			sType;
 		DE_NULL,											// const void*				pNext;
-		queueFamilyIndex,									// deUint32					queueFamilyIndex;
 		VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,	// VkCommandPoolCreateFlags	flags;
+		queueFamilyIndex,									// deUint32					queueFamilyIndex;
 	};
 	return createCommandPool(vk, device, &commandPoolParams);
 }
