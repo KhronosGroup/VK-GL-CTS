@@ -94,7 +94,7 @@ tcu::TestStatus createSamplerTest (Context& context)
 tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 {
     de::MovePtr<tcu::TestCaseGroup> apiTests    (new tcu::TestCaseGroup(testCtx, "api", "API Tests"));
-    
+
     addFunctionCase(apiTests.get(), "create_sampler",   "", createSamplerTest);
 
     return apiTests.release();
@@ -2406,10 +2406,8 @@ VkResult VKAPI vkResetCommandBuffer(
     VkCmdBufferResetFlags                       flags);
 ----
 
-Command pools
-~~~~~~~~~~~~~
-
-TODO
+Command Pools (6.1 in VK 1.0 Spec)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 [source,c]
 ----
@@ -2442,10 +2440,73 @@ VkResult VKAPI vkResetCommandPool(
     VkCmdPoolResetFlags                         flags);
 ----
 
-2-level command buffers
-~~~~~~~~~~~~~~~~~~~~~~~
+[cols="1,4,8,8", options="header"]
+|===
+|No. | Tested area | Test Description | Relevant specification text
+|1  | Creation | Call vkCreateCommandPool with all parameters that can be NULL having that value | If pAllocator is not NULL, pAllocator must be a pointer to a valid VkAllocationCallbacks structure
+|2  | | ... with pAllocator != NULL |
+|3  | | ... with VK_COMMAND_POOL_CREATE_TRANSIENT_BIT set in pCreateInfo's flags | flags is a combination of bitfield flags indicating usage behavior for the pool and command buffers allocated from it.
+|4  | | ... with VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT set in pCreateInfo's flags |
+|5  | Resetting | Call vkResetCommandPool with VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT set |
+|6  | | ... without any bits set |
+|===
 
-TODO
+Command Buffer Lifetime (6.2 in VK 1.0 Spec)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+[cols="1,4,8,8", options="header"]
+|===
+|No. | Tested area | Test Description | Relevant specification text
+|1  | Allocation | Allocate a single primary  buffer |
+|2  | | Allocate a large number of primare buffers |
+|3  | | Allocate no primary buffers (bufferCount == 0) |
+|4  | | Allocate a single secondary buffer |
+|5  | | Allocate a large number of secondary buffers |
+|6  | | Allocate no secondary buffers (bufferCount == 0) |
+|7  | Execution | Execute a small primary buffer |
+|8  | | Execute a large primary buffer |
+|9  | Resetting - implicit | Reset a command buffer by calling vkBeginCommandBuffer on a buffer that has already been recorded |
+|===
+
+Command Buffer Recording (6.3 in VK 1.0 Spec)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+[cols="1,4,8,8", options="header"]
+|===
+|No. | Tested area | Test Description | Relevant specification text
+|1  | Recording to buffers  | Record a single command in a primary buffer |
+|2  | | Record a large number of commands in a primary buffer |
+|3  | | Record a single command in a secondary buffer |
+|4  | | Record a large number of commands in a secondary buffer |
+|5  | | Record a primary command buffer without VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT. Submit it twice in a row. |
+|6  | | Record a secondary command buffer without VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT. Submit it twice in a row. |
+|7  | Recording for one time usage | Record a primary command buffer with VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT. Submit it, reset, record, and submit again. |
+|8  | | Record a secondary command buffer with VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT. Submit it, reset, record, and submit again. |
+|9  | Render pass ignoring  | if VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT flag is not set, the values of renderPass, framebuffer, and subpass members of the VkCommandBufferBeginInfo should be ignored | If flags has VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT set, the entire secondary command buffer is considered inside a render pass. In this case, the renderPass, framebuffer, and subpass members of the VkCommandBufferBeginInfo structure must be set as described below. Otherwise the renderPass, framebuffer, and subpass members of the VkCommandBufferBeginInfo structure are ignored, and the secondary command buffer may not contain commands that are only allowed inside a render pass.
+|10  | Simultaneous use – primary buffers | Set flag VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT and submit two times simultanously | If flags does not have VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT set, the command buffer must not be pending execution more than once at any given time. A primary command buffer is considered to be pending execution from the time it is submitted via vkQueueSubmit until that submission completes.
+|11  | Simultaneous use – secondary buffers | Set VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT on secondary buffer, and use the secondary buffer twice in primary buffer | If VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT is not set on a secondary command buffer, that command buffer cannot be used more than once in a given primary command buffer.
+|12 | Recording with an active occlusion query | Recond a secondary command buffer with occlusionQueryEnable == VK_TRUE and queryFlags == VK_QUERY_CONTROL_PRECISE_BIT and execute it in a primary buffer with an active precise occlusion query |
+|13 | | ... imprecise occlusion query |
+|14 | | ... queryFlags == 0x00000000, imprecise occlusion query |
+|===
+
+Command Buffer Submission (6.4 in VK 1.0 Spec)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+[cols="1,4,8,8", options="header"]
+|===
+|No. | Tested area | Test Description | Relevant specification text
+|1  | Submission correctness | Call vkQueueSubmit with submitCount equal to the actual count of submits | pSubmits must be an array of submitCount valid VkSubmitInfo structures. If submitCount is 0 though, pSubmits is ignored
+|2  | | ... submitCount == 0 |
+|3  | Submission with semaphores | Call vkQueueSubmit that waits for a single semaphore |
+|4  | | ... for multiple semaphores |
+|5  | | ... notifies a single semaphore |
+|6  | | ... notifies multiple semaphores |
+|7  | Submission without a fence | Call vkQueueSubmit with VK_NULL_HANDLE passed as fence. | If fence is not VK_NULL_HANDLE, fence must be a valid VkFence handle
+|===
+
+Secondary Command Buffer Execution (6.6 in VK 1.0 Spec)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 [source,c]
 ----
@@ -2454,6 +2515,28 @@ void VKAPI vkCmdExecuteCommands(
     uint32_t                                    cmdBuffersCount,
     const VkCmdBuffer*                          pCmdBuffers);
 ----
+
+[cols="1,4,8,8", options="header"]
+|===
+|No. | Tested area | Test Description | Relevant specification text
+|1  | Secondary buffers execution | Check if secondary command buffers are executed | Secondary command buffers may be called from primary command buffers, and are not directly submitted to queues.
+|2  | Simultaneous use | Call vkCmdExecuteCommands with pCommandBuffers such that its element is already pending execution in commandBuffer and was created with the VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT flag | Any given element of pCommandBuffers must not be already pending execution in commandBuffer, or appear twice in pCommandBuffers, unless it was created with the VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT flag
+|3  | | Call vkCmdExecuteCommands with pCommandBuffers such that its element appears twice in pCommandBuffers and was created with the VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT flag |
+|4  | Call from within a VkRenderPass | Call vkCmdExecuteCommands within a VkRenderPass with all elements of pCommandBuffers recorded with the VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT | If vkCmdExecuteCommands is being called within a VkRenderPass, any given element of pCommandBuffers must have been recorded with the VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT
+|===
+
+Commands Allowed Inside Command Buffers (6.7 in VK 1.0 Spec)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+[cols="1,4,8,8", options="header"]
+|===
+|No. | Tested area | Test Description | Relevant specification text
+|1  | Order of execution | Check if vkCmdBindPipeline commands are executed in-order  |
+|2  | | Check if vkCmdBindDescriptorSets commands are executed in-order  |
+|3  | | Check if vkCmdBindIndexBuffer commands are executed in-order |
+|4  | | Check if vkCmdBindVertexBuffers commands are executed in-order |
+|5  | | Check if vkCmdResetQueryPool, vkCmdBeginQuery, vkCmdEndQuery, vkCmdCopyQueryPoolResults commands are executed in-order relative to each other |
+|===
 
 Draw commands
 -------------
