@@ -1809,9 +1809,11 @@ public:
 		{
 			const DepthStencilClear&		depthStencilClear	= *m_renderInfo.getDepthStencilClear();
 			const deUint32					attachmentNdx		= m_renderInfo.getColorAttachmentCount();
+			tcu::TextureFormat				format				= mapVkFormat(m_renderInfo.getDepthStencilAttachment()->getFormat());
 			const VkClearAttachment			attachment			=
 			{
-				VK_IMAGE_ASPECT_DEPTH_BIT|VK_IMAGE_ASPECT_STENCIL_BIT,
+				(VkImageAspectFlags)((hasDepthComponent(format.order) ? VK_IMAGE_ASPECT_DEPTH_BIT : 0)
+					| (hasStencilComponent(format.order) ? VK_IMAGE_ASPECT_STENCIL_BIT : 0)),
 				attachmentNdx,
 				makeClearValueDepthStencil(depthStencilClear.getDepth(), depthStencilClear.getStencil())
 			};
