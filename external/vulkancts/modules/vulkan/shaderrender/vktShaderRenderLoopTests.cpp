@@ -109,7 +109,7 @@ static BaseUniformType getFloatFractionUniformType(int number)
 {
 	switch (number)
 	{
-		case 1: 	return UF_ONE;
+		case 1:		return UF_ONE;
 		case 2:		return UF_HALF;
 		case 3:		return UF_THIRD;
 		case 4:		return UF_FOURTH;

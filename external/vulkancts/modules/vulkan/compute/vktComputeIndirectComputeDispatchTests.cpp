@@ -555,7 +555,7 @@ void IndirectDispatchCaseBufferGenerate::initPrograms (vk::SourceCollections& pr
 	for (DispatchCommandsVec::const_iterator cmdIter = m_dispatchCommands.begin(); cmdIter != m_dispatchCommands.end(); ++cmdIter)
 	{
 		const deUint32 offs = (deUint32)(cmdIter->m_offset / sizeof(deUint32));
-		DE_ASSERT((deIntptr)offs * sizeof(deUint32) == cmdIter->m_offset);
+		DE_ASSERT((size_t)offs * sizeof(deUint32) == (size_t)cmdIter->m_offset);
 
 		computeBuffer
 			<< "\twriteCmd(" << offs << "u, uvec3("

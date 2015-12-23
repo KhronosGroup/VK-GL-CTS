@@ -82,7 +82,7 @@ VkBufferCreateInfo makeBufferCreateInfo (const VkDeviceSize			bufferSize,
 	return bufferCreateInfo;
 }
 
-VkBufferImageCopy makeBufferImageCopy (const VkExtent3D extent, 
+VkBufferImageCopy makeBufferImageCopy (const VkExtent3D extent,
 									   const deUint32	arraySize)
 {
 	const VkBufferImageCopy copyParams =

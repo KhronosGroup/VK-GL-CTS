@@ -50,7 +50,7 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 	computeTests->addChild(createBasicComputeShaderTests(testCtx));
 	computeTests->addChild(createIndirectComputeDispatchTests(testCtx));
 	computeTests->addChild(createComputeShaderBuiltinVarTests(testCtx));
-	
+
 	return computeTests.release();
 }
 

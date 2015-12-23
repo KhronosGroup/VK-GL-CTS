@@ -142,7 +142,7 @@ vk::Move<vk::VkImageView>		makeImageView					(const vk::DeviceInterface&			vk,
 
 vk::Move<vk::VkDescriptorSet>	makeDescriptorSet				(const vk::DeviceInterface&			vk,
 																 const vk::VkDevice					device,
-						 										 const vk::VkDescriptorPool			descriptorPool,
+																 const vk::VkDescriptorPool			descriptorPool,
 																 const vk::VkDescriptorSetLayout	setLayout);
 
 vk::VkBufferCreateInfo			makeBufferCreateInfo			(const vk::VkDeviceSize				bufferSize,
