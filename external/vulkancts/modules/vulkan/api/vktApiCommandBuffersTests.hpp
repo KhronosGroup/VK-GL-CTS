@@ -45,4 +45,4 @@ tcu::TestCaseGroup* createCommandBuffersTests (tcu::TestContext& testCtx);
 } // api
 } // vkt
 
-#endif /* _VKTAPICOMMANDBUFFERSTESTS_HPP */
+#endif // _VKTAPICOMMANDBUFFERSTESTS_HPP

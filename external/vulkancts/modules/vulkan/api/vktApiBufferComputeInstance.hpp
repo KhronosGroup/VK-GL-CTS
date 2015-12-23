@@ -66,4 +66,4 @@ vk::Move<vk::VkDescriptorSet>			createDescriptorSet (vk::VkDescriptorPool pool,
 } // api
 } // vkt
 
-#endif //_VKTAPIBUFFERCOMPUTEINSTANCE_HPP
+#endif // _VKTAPIBUFFERCOMPUTEINSTANCE_HPP

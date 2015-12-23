@@ -60,7 +60,7 @@ public:
 
 	void									readResultContentsTo(tcu::Vec4 (* results)[4]) const;
 
-	inline vk::VkBuffer 					getBuffer(void) const { return *m_buffer; }
+	inline vk::VkBuffer						getBuffer(void) const { return *m_buffer; }
 
 	inline const void *						getResultReadBarrier(void) const { return &m_bufferBarrier; }
 
@@ -83,4 +83,4 @@ private:
 } // api
 } // vkt
 
-#endif //_VKTAPICOMPUTEINSTANCERESULTBUFFER_HPP
+#endif // _VKTAPICOMPUTEINSTANCERESULTBUFFER_HPP

@@ -2924,7 +2924,7 @@ tcu::TestStatus orderBindPipelineTest(Context& context)
 	Unique<VkPipelineLayout>				pipelineLayout			(createPipelineLayout(vk, device, &layoutCreateInfo));
 
 	const Unique<VkShaderModule>			computeModuleGood		(createShaderModule(vk, device, context.getBinaryCollection().get("compute_good"), (VkShaderModuleCreateFlags)0u));
-	const Unique<VkShaderModule>			computeModuleBad 		(createShaderModule(vk, device, context.getBinaryCollection().get("compute_bad"),  (VkShaderModuleCreateFlags)0u));
+	const Unique<VkShaderModule>			computeModuleBad		(createShaderModule(vk, device, context.getBinaryCollection().get("compute_bad"),  (VkShaderModuleCreateFlags)0u));
 
 	const VkPipelineShaderStageCreateInfo	shaderCreateInfoGood	=
 	{
@@ -2970,8 +2970,8 @@ tcu::TestStatus orderBindPipelineTest(Context& context)
 		0u,															// basePipelineIndex
 	};
 
-	const Unique<VkPipeline> 				pipelineGood			(createComputePipeline(vk, device, (VkPipelineCache)0u, &createInfoGood));
-	const Unique<VkPipeline> 				pipelineBad				(createComputePipeline(vk, device, (VkPipelineCache)0u, &createInfoBad));
+	const Unique<VkPipeline>				pipelineGood			(createComputePipeline(vk, device, (VkPipelineCache)0u, &createInfoGood));
+	const Unique<VkPipeline>				pipelineBad				(createComputePipeline(vk, device, (VkPipelineCache)0u, &createInfoBad));
 
 	const VkAccessFlags						inputBit				= (VK_ACCESS_UNIFORM_READ_BIT);
 	const VkBufferMemoryBarrier				bufferBarrierA			=
@@ -3078,7 +3078,7 @@ tcu::TestStatus orderBindPipelineTest(Context& context)
 	VK_CHECK(vk.endCommandBuffer(*cmd));
 
 	// run
- 	// submit second primary buffer, the secondary should be executed too
+	// submit second primary buffer, the secondary should be executed too
 	const VkSubmitInfo						submitInfo				=
 	{
 		VK_STRUCTURE_TYPE_SUBMIT_INFO,								// sType
@@ -3212,21 +3212,21 @@ tcu::TestCaseGroup* createCommandBuffersTests (tcu::TestContext& testCtx)
 	addFunctionCase				(commandBuffersTests.get(), "pool_reset_no_flags_res",			"",	resetPoolNoFlagsTest);
 	/* 19.2. Command Buffer Lifetime (6.2 in VK 1.0 Spec) */
 	addFunctionCase				(commandBuffersTests.get(), "allocate_single_primary",			"", allocatePrimaryBufferTest);
-	addFunctionCase				(commandBuffersTests.get(), "allocate_many_primary", 			"",	allocateManyPrimaryBuffersTest);
+	addFunctionCase				(commandBuffersTests.get(), "allocate_many_primary",			"",	allocateManyPrimaryBuffersTest);
 	addFunctionCase				(commandBuffersTests.get(), "allocate_zero_primary",			"", allocateZeroPrimaryBuffersTest);
-	addFunctionCase				(commandBuffersTests.get(), "allocate_single_secondary", 		"", allocateSecondaryBufferTest);
-	addFunctionCase				(commandBuffersTests.get(), "allocate_many_secondary", 			"", allocateManySecondaryBuffersTest);
+	addFunctionCase				(commandBuffersTests.get(), "allocate_single_secondary",		"", allocateSecondaryBufferTest);
+	addFunctionCase				(commandBuffersTests.get(), "allocate_many_secondary",			"", allocateManySecondaryBuffersTest);
 	addFunctionCase				(commandBuffersTests.get(), "allocate_zero_secondary",			"", allocateZeroSecondaryBuffersTest);
 	addFunctionCase				(commandBuffersTests.get(), "execute_small_primary",			"",	executePrimaryBufferTest);
 	addFunctionCase				(commandBuffersTests.get(), "execute_large_primary",			"",	executeLargePrimaryBufferTest);
 	addFunctionCase				(commandBuffersTests.get(), "reset_implicit",					"", resetBufferImplicitlyTest);
 	/* 19.3. Command Buffer Recording (6.3 in VK 1.0 Spec) */
 	addFunctionCase				(commandBuffersTests.get(), "record_single_primary",			"",	recordSinglePrimaryBufferTest);
-	addFunctionCase				(commandBuffersTests.get(), "record_many_primary", 				"", recordLargePrimaryBufferTest);
+	addFunctionCase				(commandBuffersTests.get(), "record_many_primary",				"", recordLargePrimaryBufferTest);
 	addFunctionCase				(commandBuffersTests.get(), "record_single_secondary",			"",	recordSingleSecondaryBufferTest);
-	addFunctionCase				(commandBuffersTests.get(), "record_many_secondary", 			"", recordLargeSecondaryBufferTest);
+	addFunctionCase				(commandBuffersTests.get(), "record_many_secondary",			"", recordLargeSecondaryBufferTest);
 	addFunctionCase				(commandBuffersTests.get(), "submit_twice_primary",				"",	submitPrimaryBufferTwiceTest);
- 	addFunctionCase				(commandBuffersTests.get(), "submit_twice_secondary",			"",	submitSecondaryBufferTwiceTest);
+	addFunctionCase				(commandBuffersTests.get(), "submit_twice_secondary",			"",	submitSecondaryBufferTwiceTest);
 	addFunctionCase				(commandBuffersTests.get(), "record_one_time_submit_primary",	"",	oneTimeSubmitFlagPrimaryBufferTest);
 	addFunctionCase				(commandBuffersTests.get(), "record_one_time_submit_secondary",	"",	oneTimeSubmitFlagSecondaryBufferTest);
 	addFunctionCase				(commandBuffersTests.get(), "record_simul_use_primary",			"",	simultaneousUsePrimaryBufferTest);
@@ -3239,10 +3239,10 @@ tcu::TestCaseGroup* createCommandBuffersTests (tcu::TestContext& testCtx)
 	addFunctionCase				(commandBuffersTests.get(), "submit_count_equal_zero",			"", submitBufferCountEqualZero);
 	addFunctionCase				(commandBuffersTests.get(), "submit_null_fence",				"", submitBufferNullFence);
 	/* 19.5. Secondary Command Buffer Execution (6.6 in VK 1.0 Spec) */
- 	addFunctionCase				(commandBuffersTests.get(), "secondary_execute",				"",	executeSecondaryBufferTest);
- 	addFunctionCase				(commandBuffersTests.get(), "secondary_execute_twice",			"",	executeSecondaryBufferTwiceTest);
+	addFunctionCase				(commandBuffersTests.get(), "secondary_execute",				"",	executeSecondaryBufferTest);
+	addFunctionCase				(commandBuffersTests.get(), "secondary_execute_twice",			"",	executeSecondaryBufferTwiceTest);
 	/* 19.6. Commands Allowed Inside Command Buffers (6.7 in VK 1.0 Spec) */
-	addFunctionCaseWithPrograms (commandBuffersTests.get(), "order_bind_pipeline", 				"", genComputeSource, orderBindPipelineTest);
+	addFunctionCaseWithPrograms (commandBuffersTests.get(), "order_bind_pipeline",				"", genComputeSource, orderBindPipelineTest);
 
 	return commandBuffersTests.release();
 }

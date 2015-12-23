@@ -57,22 +57,22 @@ Move<VkBuffer> createColorDataBuffer (deUint32 offset,
 
 	DE_ASSERT(offset + sizeof(tcu::Vec4[2]) <= bufferSize);
 
-	const VkBufferUsageFlags 				usageFlags 				= (VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
-	const VkBufferCreateInfo 				createInfo 				=
+	const VkBufferUsageFlags				usageFlags				= (VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
+	const VkBufferCreateInfo				createInfo				=
 	{
 		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
 		DE_NULL,
+		0u,															// flags
 		(VkDeviceSize) bufferSize,									// size
 		usageFlags,													// usage
-		0u,															// flags
 		VK_SHARING_MODE_EXCLUSIVE,									// sharingMode
 		0u,															// queueFamilyCount
 		DE_NULL,													// pQueueFamilyIndices
 	};
 	Move<VkBuffer> buffer(createBuffer(vki, device, &createInfo));
 
-	const VkMemoryRequirements 				requirements 			= getBufferMemoryRequirements(vki, device, *buffer);
-	de::MovePtr<Allocation> 				allocation 				= allocator.allocate(requirements, MemoryRequirement::HostVisible);
+	const VkMemoryRequirements				requirements			= getBufferMemoryRequirements(vki, device, *buffer);
+	de::MovePtr<Allocation>					allocation				= allocator.allocate(requirements, MemoryRequirement::HostVisible);
 
 	VK_CHECK(vki.bindBufferMemory(device, *buffer, allocation->getMemory(), allocation->getOffset()));
 
@@ -99,7 +99,7 @@ Move<VkDescriptorSetLayout> createDescriptorSetLayout (vkt::Context& context)
 	const DeviceInterface&					vki						= context.getDeviceInterface();
 	const VkDevice							device					= context.getDevice();
 
-	DescriptorSetLayoutBuilder 				builder;
+	DescriptorSetLayoutBuilder				builder;
 
 	builder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT);
 	builder.addSingleBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT);
@@ -109,8 +109,8 @@ Move<VkDescriptorSetLayout> createDescriptorSetLayout (vkt::Context& context)
 
 Move<VkDescriptorPool> createDescriptorPool (vkt::Context& context)
 {
-	const DeviceInterface& 					vki 					= context.getDeviceInterface();
-	const VkDevice 							device 					= context.getDevice();
+	const DeviceInterface&					vki						= context.getDeviceInterface();
+	const VkDevice							device					= context.getDevice();
 
 	return vk::DescriptorPoolBuilder()
 		.addType(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)

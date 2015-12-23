@@ -68,21 +68,21 @@ Move<VkBuffer> ComputeInstanceResultBuffer::createResultBuffer(const DeviceInter
 	{
 		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
 		DE_NULL,
+		0u,															// flags
 		(VkDeviceSize) DATA_SIZE,									// size
 		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,							// usage
-		0u,									 						// flags
 		VK_SHARING_MODE_EXCLUSIVE,									// sharingMode
-		0u,									 						// queueFamilyCount
+		0u,															// queueFamilyCount
 		DE_NULL,													// pQueueFamilyIndices
 	};
 
 	Move<VkBuffer> buffer(createBuffer(vki, device, &createInfo));
 
 	const VkMemoryRequirements				requirements			= getBufferMemoryRequirements(vki, device, *buffer);
-	de::MovePtr<Allocation> 				allocation				= allocator.allocate(requirements, MemoryRequirement::HostVisible);
+	de::MovePtr<Allocation>					allocation				= allocator.allocate(requirements, MemoryRequirement::HostVisible);
 
-	const float 							clearValue				= -1.0f;
-	void 									*mapPtr					= allocation->getHostPtr();
+	const float								clearValue				= -1.0f;
+	void*									mapPtr					= allocation->getHostPtr();
 
 	for (size_t offset = 0; offset < DATA_SIZE; offset += sizeof(float))
 		deMemcpy(((deUint8 *) mapPtr) + offset, &clearValue, sizeof(float));
@@ -103,7 +103,7 @@ VkBufferMemoryBarrier ComputeInstanceResultBuffer::createResultBufferBarrier(VkB
 		VK_ACCESS_SHADER_READ_BIT,									// inputMask
 		VK_QUEUE_FAMILY_IGNORED,									// srcQueueFamilyIndex
 		VK_QUEUE_FAMILY_IGNORED,									// destQueueFamilyIndex
-		buffer,						 								// buffer
+		buffer,														// buffer
 		(VkDeviceSize) 0u,											// offset
 		DATA_SIZE,													// size
 	};
