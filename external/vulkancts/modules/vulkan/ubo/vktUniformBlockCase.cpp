@@ -1403,10 +1403,16 @@ tcu::TestStatus UniformBlockCaseInstance::iterate (void)
 			}
 
 			deUint32 totalSize = currentOffset;
-			// The first block index points to the start of the whole data.
-			const void* srcPtr = m_blockPointers.find(0)->second;
 
-			vk::VkBuffer buffer = addUniformData(totalSize, srcPtr).buffer;
+			// Make a copy of the data that satisfies the device's min uniform buffer alignment
+			std::vector<deUint8> data;
+			data.resize(totalSize);
+			for (int blockNdx = 0; blockNdx < numBlocks; blockNdx++)
+			{
+				deMemcpy(&data[offsets[blockNdx]], m_blockPointers.find(blockNdx)->second, m_layout.blocks[blockNdx].size);
+			}
+
+			vk::VkBuffer buffer = addUniformData(totalSize, &data[0]).buffer;
 
 			for (int blockNdx = 0; blockNdx < numBlocks; blockNdx++)
 			{
