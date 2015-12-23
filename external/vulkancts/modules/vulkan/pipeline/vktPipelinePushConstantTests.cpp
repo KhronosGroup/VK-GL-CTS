@@ -78,7 +78,7 @@ enum RangeSizeCase
 	SIZE_CASE_4	= 0,
 	SIZE_CASE_16,
 	SIZE_CASE_32,
-	SIZE_CASE_40,
+	SIZE_CASE_48,
 	SIZE_CASE_128,
 	SIZE_CASE_UNSUPPORTED
 };
@@ -213,8 +213,8 @@ RangeSizeCase PushConstantGraphicsTest::getRangeSizeCase (deUint32 rangeSize) co
 			return SIZE_CASE_16;
 		case 32:
 			return SIZE_CASE_32;
-		case 40:
-			return SIZE_CASE_40;
+		case 48:
+			return SIZE_CASE_48;
 		case 128:
 			return SIZE_CASE_128;
 		default:
@@ -258,10 +258,11 @@ void PushConstantGraphicsTest::initPrograms (SourceCollections& sourceCollection
 					vertexSrc << "vec4 color[2];\n"
 							  << "} matInst;\n";
 					break;
-				case SIZE_CASE_40:
-					vertexSrc << "int kind;\n"
+				case SIZE_CASE_48:
+					vertexSrc << "int dummy1;\n"
+							  << "vec4 dummy2;\n"
 							  << "vec4 color;\n"
-							  << "} matInst[2];\n";
+							  << "} matInst;\n";
 					break;
 				case SIZE_CASE_128:
 					vertexSrc << "vec4 color[8];\n"
@@ -294,8 +295,8 @@ void PushConstantGraphicsTest::initPrograms (SourceCollections& sourceCollection
 					vertexSrc << "vtxColor = (matInst.color[0] + matInst.color[1]) * 0.5;\n"
 							  << "}\n";
 					break;
-				case SIZE_CASE_40:
-					vertexSrc << "vtxColor = matInst[1].color;\n"
+				case SIZE_CASE_48:
+					vertexSrc << "vtxColor = matInst.color;\n"
 							  << "}\n";
 					break;
 				case SIZE_CASE_128:
@@ -322,8 +323,8 @@ void PushConstantGraphicsTest::initPrograms (SourceCollections& sourceCollection
 						   << "layout(push_constant) uniform TessLevel {\n"
 						   << "    layout(offset = 24) int level;\n"
 						   << "} tessLevel;\n"
-						   << "in highp vec4 color[];\n"
-						   << "out highp vec4 vtxColor[];\n"
+						   << "layout(location = 0) in highp vec4 color[];\n"
+						   << "layout(location = 0) out highp vec4 vtxColor[];\n"
 						   << "void main()\n"
 						   << "{\n"
 						   << "  gl_TessLevelInner[0] = tessLevel.level;\n"
@@ -344,8 +345,8 @@ void PushConstantGraphicsTest::initPrograms (SourceCollections& sourceCollection
 							  << "layout(push_constant) uniform Material {\n"
 							  << "    layout(offset = 32) vec4 color;\n"
 							  << "} matInst;\n"
-							  << "in highp vec4 color[];\n"
-							  << "out highp vec4 vtxColor;\n"
+							  << "layout(location = 0) in highp vec4 color[];\n"
+							  << "layout(location = 0) out highp vec4 vtxColor;\n"
 							  << "void main()\n"
 							  << "{\n"
 							  << "  gl_Position = gl_TessCoord.x * gl_in[0].gl_Position + gl_TessCoord.y * gl_in[1].gl_Position + gl_TessCoord.z * gl_in[2].gl_Position;\n"
@@ -363,8 +364,8 @@ void PushConstantGraphicsTest::initPrograms (SourceCollections& sourceCollection
 						<< "layout(push_constant) uniform Material {\n"
 						<< "    layout(offset = 20) int kind;\n"
 						<< "} matInst;\n"
-						<< "in highp vec4 color[];\n"
-						<< "out highp vec4 vtxColor;\n"
+						<< "layout(location = 0) in highp vec4 color[];\n"
+						<< "layout(location = 0) out highp vec4 vtxColor;\n"
 						<< "void main()\n"
 						<< "{\n"
 						<< "  for(int i=0; i<3; i++)\n"
@@ -1539,7 +1540,7 @@ tcu::TestCaseGroup* createPushConstantTests (tcu::TestContext& testCtx)
 			"data_update_partial_2",
 			"test partial update of the values",
 			1u,
-			{ { { VK_SHADER_STAGE_VERTEX_BIT, 0, 40 }, { 24, 16 } } },
+			{ { { VK_SHADER_STAGE_VERTEX_BIT, 0, 48 }, { 32, 16 } } },
 			false
 		},
 		{
