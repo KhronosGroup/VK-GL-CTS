@@ -1857,6 +1857,9 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 	vk::Move<vk::VkBuffer> acBuffer (createBuffer(m_context, acBufferSize, vk:: VK_BUFFER_USAGE_STORAGE_BUFFER_BIT));
 	de::UniquePtr<vk::Allocation> acBufferAlloc (allocateAndBindMemory(m_context, *acBuffer, vk::MemoryRequirement::HostVisible));
 
+	deMemset(acBufferAlloc->getHostPtr(), 0, acBufferSize);
+	flushMappedMemoryRange(vk, device, acBufferAlloc->getMemory(), acBufferAlloc->getOffset(), acBufferSize);
+
 	vk::DescriptorSetLayoutBuilder setLayoutBuilder;
 	vk::DescriptorPoolBuilder poolBuilder;
 
