@@ -4745,7 +4745,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 			vector<VkSpecializationMapEntry>	entries;
 			VkSpecializationInfo				specInfo;
 
-			entries.reserve(numSpecConstants);
+			entries.resize(numSpecConstants);
 
 			// Only support 32-bit integers as spec constants now. And their constant IDs are numbered sequentially starting from 0.
 			for (size_t ndx = 0; ndx < numSpecConstants; ++ndx)

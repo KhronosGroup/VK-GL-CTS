@@ -484,7 +484,7 @@ void MemoryObject::randomFlush (const DeviceInterface& vkd, VkDevice device, de:
 
 	randomRanges(rng, ranges, rangeCount, *m_memory, m_size);
 
-	VK_CHECK(vkd.flushMappedMemoryRanges(device, (deUint32)ranges.size(), &ranges[0]));
+	VK_CHECK(vkd.flushMappedMemoryRanges(device, (deUint32)ranges.size(), ranges.empty() ? DE_NULL : &ranges[0]));
 }
 
 void MemoryObject::randomInvalidate (const DeviceInterface& vkd, VkDevice device, de::Random& rng)
@@ -494,7 +494,7 @@ void MemoryObject::randomInvalidate (const DeviceInterface& vkd, VkDevice device
 
 	randomRanges(rng, ranges, rangeCount, *m_memory, m_size);
 
-	VK_CHECK(vkd.invalidateMappedMemoryRanges(device, (deUint32)ranges.size(), &ranges[0]));
+	VK_CHECK(vkd.invalidateMappedMemoryRanges(device, (deUint32)ranges.size(), ranges.empty() ? DE_NULL : &ranges[0]));
 }
 
 enum
