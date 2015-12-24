@@ -24,6 +24,8 @@
 #include "es31fNegativeFragmentApiTests.hpp"
 
 #include "gluCallLogWrapper.hpp"
+#include "gluContextInfo.hpp"
+#include "gluRenderContext.hpp"
 
 #include "glwDefs.hpp"
 #include "glwEnums.hpp"
@@ -155,6 +157,50 @@ void blend_equation_separate (NegativeTestContext& ctx)
 	ctx.endSection();
 }
 
+void blend_equationi (NegativeTestContext& ctx)
+{
+	glw::GLint maxDrawBuffers = -1;
+
+	if (!contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) && !ctx.getContextInfo().isExtensionSupported("GL_KHR_blend_equation_advanced"))
+		throw tcu::NotSupportedError("GL_KHR_blend_equation_advanced is not supported", DE_NULL, __FILE__, __LINE__);
+
+	ctx.glGetIntegerv(GL_MAX_DRAW_BUFFERS, &maxDrawBuffers);
+	ctx.beginSection("GL_INVALID_ENUM is generated if mode is not GL_FUNC_ADD, GL_FUNC_SUBTRACT, GL_FUNC_REVERSE_SUBTRACT, GL_MAX or GL_MIN.");
+	ctx.glBlendEquationi(0, -1);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.endSection();
+	ctx.beginSection("GL_INVALID_VALUE is generated if buf is not in the range zero to the value of MAX_DRAW_BUFFERS minus one.");
+	ctx.glBlendEquationi(-1, GL_FUNC_ADD);
+	ctx.expectError(GL_INVALID_VALUE);
+	ctx.glBlendEquationi(maxDrawBuffers, GL_FUNC_ADD);
+	ctx.expectError(GL_INVALID_VALUE);
+	ctx.endSection();
+}
+
+void blend_equation_separatei (NegativeTestContext& ctx)
+{
+	glw::GLint maxDrawBuffers = -1;
+
+	if (!contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) && !ctx.getContextInfo().isExtensionSupported("GL_KHR_blend_equation_advanced"))
+		throw tcu::NotSupportedError("GL_KHR_blend_equation_advanced is not supported", DE_NULL, __FILE__, __LINE__);
+
+	ctx.glGetIntegerv(GL_MAX_DRAW_BUFFERS, &maxDrawBuffers);
+	ctx.beginSection("GL_INVALID_ENUM is generated if modeRGB is not GL_FUNC_ADD, GL_FUNC_SUBTRACT, GL_FUNC_REVERSE_SUBTRACT, GL_MAX or GL_MIN.");
+	ctx.glBlendEquationSeparatei(0, -1, GL_FUNC_ADD);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.endSection();
+	ctx.beginSection("GL_INVALID_ENUM is generated if modeAlpha is not GL_FUNC_ADD, GL_FUNC_SUBTRACT, GL_FUNC_REVERSE_SUBTRACT, GL_MAX or GL_MIN.");
+	ctx.glBlendEquationSeparatei(0, GL_FUNC_ADD, -1);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.endSection();
+	ctx.beginSection("GL_INVALID_VALUE is generated if buf is not in the range zero to the value of MAX_DRAW_BUFFERS minus one.");
+	ctx.glBlendEquationSeparatei(-1, GL_FUNC_ADD, GL_FUNC_ADD);
+	ctx.expectError(GL_INVALID_VALUE);
+	ctx.glBlendEquationSeparatei(maxDrawBuffers, GL_FUNC_ADD, GL_FUNC_ADD);
+	ctx.expectError(GL_INVALID_VALUE);
+	ctx.endSection();
+}
+
 void blend_func (NegativeTestContext& ctx)
 {
 	ctx.beginSection("GL_INVALID_ENUM is generated if either sfactor or dfactor is not an accepted value.");
@@ -176,6 +222,54 @@ void blend_func_separate (NegativeTestContext& ctx)
 	ctx.expectError(GL_INVALID_ENUM);
 	ctx.glBlendFuncSeparate(GL_ZERO, GL_ONE, GL_SRC_COLOR, -1);
 	ctx.expectError(GL_INVALID_ENUM);
+	ctx.endSection();
+}
+
+void blend_funci (NegativeTestContext& ctx)
+{
+	glw::GLint maxDrawBuffers = -1;
+
+	if (!contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) && !ctx.getContextInfo().isExtensionSupported("GL_KHR_blend_equation_advanced"))
+		throw tcu::NotSupportedError("GL_KHR_blend_equation_advanced is not supported", DE_NULL, __FILE__, __LINE__);
+
+	ctx.glGetIntegerv(GL_MAX_DRAW_BUFFERS, &maxDrawBuffers);
+	ctx.beginSection("GL_INVALID_ENUM is generated if either sfactor or dfactor is not an accepted value.");
+	ctx.glBlendFunci(0, -1, GL_ONE);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glBlendFunci(0, GL_ONE, -1);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.endSection();
+	ctx.beginSection("GL_INVALID_VALUE is generated if buf is not in the range zero to the value of MAX_DRAW_BUFFERS minus one.");
+	ctx.glBlendFunci(-1, GL_ONE, GL_ONE);
+	ctx.expectError(GL_INVALID_VALUE);
+	ctx.glBlendFunci(maxDrawBuffers, GL_ONE, GL_ONE);
+	ctx.expectError(GL_INVALID_VALUE);
+	ctx.endSection();
+}
+
+void blend_func_separatei (NegativeTestContext& ctx)
+{
+	glw::GLint maxDrawBuffers = -1;
+
+	if (!glu::contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) && !ctx.getContextInfo().isExtensionSupported("GL_KHR_blend_equation_advanced"))
+		throw tcu::NotSupportedError("GL_KHR_blend_equation_advanced is not supported", DE_NULL, __FILE__, __LINE__);
+
+	ctx.glGetIntegerv(GL_MAX_DRAW_BUFFERS, &maxDrawBuffers);
+	ctx.beginSection("GL_INVALID_ENUM is generated if srcRGB, dstRGB, srcAlpha, or dstAlpha is not an accepted value.");
+	ctx.glBlendFuncSeparatei(0, -1, GL_ONE, GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glBlendFuncSeparatei(0, GL_ZERO, -1, GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glBlendFuncSeparatei(0, GL_ZERO, GL_ONE, -1, GL_ONE_MINUS_SRC_COLOR);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.glBlendFuncSeparatei(0, GL_ZERO, GL_ONE, GL_SRC_COLOR, -1);
+	ctx.expectError(GL_INVALID_ENUM);
+	ctx.endSection();
+	ctx.beginSection("GL_INVALID_VALUE is generated if buf is not in the range zero to the value of MAX_DRAW_BUFFERS minus one.");
+	ctx.glBlendFuncSeparatei(-1, GL_ONE, GL_ONE, GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR);
+	ctx.expectError(GL_INVALID_VALUE);
+	ctx.glBlendFuncSeparatei(maxDrawBuffers, GL_ONE, GL_ONE, GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR);
+	ctx.expectError(GL_INVALID_VALUE);
 	ctx.endSection();
 }
 
@@ -380,29 +474,33 @@ std::vector<FunctionContainer> getNegativeFragmentApiTestFunctions ()
 {
 	FunctionContainer funcs[] =
 	{
-		{scissor,					"scissor",					"Invalid glScissor() usage"				 },
-		{depth_func,				"depth_func",				"Invalid glDepthFunc() usage"			 },
-		{viewport,					"viewport",					"Invalid glViewport() usage"			 },
-		{stencil_func,				"stencil_func",				"Invalid glStencilFunc() usage"			 },
-		{stencil_func_separate,		"stencil_func_separate",	"Invalid glStencilFuncSeparate() usage"	 },
-		{stencil_op,				"stencil_op",				"Invalid glStencilOp() usage"			 },
-		{stencil_op_separate,		"stencil_op_separate",		"Invalid glStencilOpSeparate() usage"	 },
-		{stencil_mask_separate,		"stencil_mask_separate",	"Invalid glStencilMaskSeparate() usage"	 },
-		{blend_equation,			"blend_equation",			"Invalid glBlendEquation() usage"		 },
-		{blend_equation_separate,	"blend_equation_separate",	"Invalid glBlendEquationSeparate() usage"},
-		{blend_func,				"blend_func",				"Invalid glBlendFunc() usage"			 },
-		{blend_func_separate,		"blend_func_separate",		"Invalid glBlendFuncSeparate() usage"	 },
-		{cull_face,					"cull_face",				"Invalid glCullFace() usage"			 },
-		{front_face,				"front_face",				"Invalid glFrontFace() usage"			 },
-		{line_width,				"line_width",				"Invalid glLineWidth() usage"			 },
-		{gen_queries,				"gen_queries",				"Invalid glGenQueries() usage"			 },
-		{begin_query,				"begin_query",				"Invalid glBeginQuery() usage"			 },
-		{end_query,					"end_query",				"Invalid glEndQuery() usage"			 },
-		{delete_queries,			"delete_queries",			"Invalid glDeleteQueries() usage"		 },
-		{fence_sync,				"fence_sync",				"Invalid glFenceSync() usage"			 },
-		{wait_sync,					"wait_sync",				"Invalid glWaitSync() usage"			 },
-		{client_wait_sync,			"client_wait_sync",			"Invalid glClientWaitSync() usage"		 },
-		{delete_sync,				"delete_sync",				"Invalid glDeleteSync() usage"			 },
+		{scissor,					"scissor",					"Invalid glScissor() usage"				 	},
+		{depth_func,				"depth_func",				"Invalid glDepthFunc() usage"			 	},
+		{viewport,					"viewport",					"Invalid glViewport() usage"			 	},
+		{stencil_func,				"stencil_func",				"Invalid glStencilFunc() usage"			 	},
+		{stencil_func_separate,		"stencil_func_separate",	"Invalid glStencilFuncSeparate() usage"	 	},
+		{stencil_op,				"stencil_op",				"Invalid glStencilOp() usage"			 	},
+		{stencil_op_separate,		"stencil_op_separate",		"Invalid glStencilOpSeparate() usage"	 	},
+		{stencil_mask_separate,		"stencil_mask_separate",	"Invalid glStencilMaskSeparate() usage"	 	},
+		{blend_equation,			"blend_equation",			"Invalid glBlendEquation() usage"		 	},
+		{blend_equationi,			"blend_equationi",			"Invalid glBlendEquationi() usage"		 	},
+		{blend_equation_separate,	"blend_equation_separate",	"Invalid glBlendEquationSeparate() usage"	},
+		{blend_equation_separatei,	"blend_equation_separatei",	"Invalid glBlendEquationSeparatei() usage"	},
+		{blend_func,				"blend_func",				"Invalid glBlendFunc() usage"			 	},
+		{blend_funci,				"blend_funci",				"Invalid glBlendFunci() usage"			 	},
+		{blend_func_separate,		"blend_func_separate",		"Invalid glBlendFuncSeparate() usage"	 	},
+		{blend_func_separatei,		"blend_func_separatei",		"Invalid glBlendFuncSeparatei() usage"	 	},
+		{cull_face,					"cull_face",				"Invalid glCullFace() usage"			 	},
+		{front_face,				"front_face",				"Invalid glFrontFace() usage"			 	},
+		{line_width,				"line_width",				"Invalid glLineWidth() usage"			 	},
+		{gen_queries,				"gen_queries",				"Invalid glGenQueries() usage"			 	},
+		{begin_query,				"begin_query",				"Invalid glBeginQuery() usage"			 	},
+		{end_query,					"end_query",				"Invalid glEndQuery() usage"			 	},
+		{delete_queries,			"delete_queries",			"Invalid glDeleteQueries() usage"		 	},
+		{fence_sync,				"fence_sync",				"Invalid glFenceSync() usage"			 	},
+		{wait_sync,					"wait_sync",				"Invalid glWaitSync() usage"			 	},
+		{client_wait_sync,			"client_wait_sync",			"Invalid glClientWaitSync() usage"		 	},
+		{delete_sync,				"delete_sync",				"Invalid glDeleteSync() usage"			 	},
 	};
 
 	return std::vector<FunctionContainer>(DE_ARRAY_BEGIN(funcs), DE_ARRAY_END(funcs));

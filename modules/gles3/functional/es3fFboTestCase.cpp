@@ -148,7 +148,7 @@ void FboTestCase::checkError (void)
 		throw glu::Error((int)err, (string("Got ") + glu::getErrorStr(err).toString()).c_str(), DE_NULL, __FILE__, __LINE__);
 }
 
-static bool isRequiredFormat (deUint32 format)
+static bool isRequiredFormat (deUint32 format, glu::RenderContext& renderContext)
 {
 	switch (format)
 	{
@@ -198,16 +198,25 @@ static bool isRequiredFormat (deUint32 format)
 		case GL_STENCIL_INDEX8:
 			return true;
 
+		// Float formats
+		case GL_RGBA32F:
+		case GL_RGB32F:
+		case GL_R11F_G11F_B10F:
+		case GL_RG32F:
+		case GL_R32F:
+			return glu::contextSupports(renderContext.getType(), glu::ApiType::es(3, 2));;
+
 		default:
 			return false;
 	}
 }
 
-static std::vector<std::string> getEnablingExtensions (deUint32 format)
+static std::vector<std::string> getEnablingExtensions (deUint32 format, glu::RenderContext& renderContext)
 {
-	std::vector<std::string> out;
+	const bool 					isES32 = glu::contextSupports(renderContext.getType(), glu::ApiType::es(3, 2));
+	std::vector<std::string>	out;
 
-	DE_ASSERT(!isRequiredFormat(format));
+	DE_ASSERT(!isRequiredFormat(format, renderContext));
 
 	switch (format)
 	{
@@ -225,7 +234,8 @@ static std::vector<std::string> getEnablingExtensions (deUint32 format)
 		case GL_R11F_G11F_B10F:
 		case GL_RG32F:
 		case GL_R32F:
-			out.push_back("GL_EXT_color_buffer_float");
+			if (!isES32)
+				out.push_back("GL_EXT_color_buffer_float");
 
 		default:
 			break;
@@ -249,8 +259,8 @@ static bool isAnyExtensionSupported (Context& context, const std::vector<std::st
 
 void FboTestCase::checkFormatSupport (deUint32 sizedFormat)
 {
-	const bool						isCoreFormat	= isRequiredFormat(sizedFormat);
-	const std::vector<std::string>	requiredExts	= (!isCoreFormat) ? getEnablingExtensions(sizedFormat) : std::vector<std::string>();
+	const bool						isCoreFormat	= isRequiredFormat(sizedFormat, m_context.getRenderContext());
+	const std::vector<std::string>	requiredExts	= (!isCoreFormat) ? getEnablingExtensions(sizedFormat, m_context.getRenderContext()) : std::vector<std::string>();
 
 	// Check that we don't try to use invalid formats.
 	DE_ASSERT(isCoreFormat || !requiredExts.empty());
