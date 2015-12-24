@@ -890,7 +890,10 @@ Move<VkBuffer> TimestampTestInstance::createBufferAndBindMemory(VkDeviceSize siz
 	VK_CHECK(vk.bindBufferMemory(vkDevice, *vertexBuffer, vertexBufferAlloc->getMemory(), vertexBufferAlloc->getOffset()));
 
 	DE_ASSERT(pAlloc);
-	*pAlloc = vertexBufferAlloc;
+    if(pAlloc)
+    {
+        *pAlloc = vertexBufferAlloc;
+    }
 
 	return vertexBuffer;
 }
@@ -1614,7 +1617,7 @@ void BasicComputeTest::initPrograms(SourceCollections& programCollection) const
 		"} output_data;\n"
 		"void main()\n"
 		"{\n"
-		"  deUint32 ident = gl_GlobalInvocationID.x;\n"
+		"  uint ident = gl_GlobalInvocationID.x;\n"
 		"  output_data.elements[ident] = input_data0.elements[ident] * input_data0.elements[ident];\n"
 		"}");
 }
@@ -1636,8 +1639,6 @@ BasicComputeTestInstance::BasicComputeTestInstance(Context&              context
 	const VkDeviceSize          size                = sizeof(tcu::Vec4) * 128u;
 	de::MovePtr<Allocation>     bufferAlloc;
 	m_inputBuf = createBufferAndBindMemory(size, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, &bufferAlloc);
-	m_outputBuf = createBufferAndBindMemory(size, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, DE_NULL);
-
 	// Load vertices into buffer
 	tcu::Vec4* pVec = reinterpret_cast<tcu::Vec4*>(bufferAlloc->getHostPtr());
 	for (deUint32 ndx = 0u; ndx < 128u; ndx++)
@@ -1648,7 +1649,10 @@ BasicComputeTestInstance::BasicComputeTestInstance(Context&              context
 		}
 	}
 	flushMappedMemoryRange(vk, vkDevice, bufferAlloc->getMemory(), bufferAlloc->getOffset(), size);
-
+    
+    de::MovePtr<Allocation>     dummyAlloc;
+    m_outputBuf = createBufferAndBindMemory(size, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, &dummyAlloc);
+        
 	std::vector<VkDescriptorBufferInfo>        descriptorInfos;
 	descriptorInfos.push_back(makeDescriptorBufferInfo(*m_inputBuf, 0u, sizeof(tcu::Vec4) * 128u));
 	descriptorInfos.push_back(makeDescriptorBufferInfo(*m_outputBuf, 0u, sizeof(tcu::Vec4) * 128u));
