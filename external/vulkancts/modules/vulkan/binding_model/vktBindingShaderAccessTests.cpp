@@ -740,7 +740,12 @@ void RenderInstanceShaders::addStage (const vk::DeviceInterface&			vki,
 			*outModule = module;
 		}
 		else
+		{
+			// Wait for the GPU to idle so that throwing the exception
+			// below doesn't free in-use GPU resource.
+			vki.deviceWaitIdle(device);
 			TCU_THROW(NotSupportedError, (de::toString(stage) + " is not supported").c_str());
+		}
 	}
 }
 
