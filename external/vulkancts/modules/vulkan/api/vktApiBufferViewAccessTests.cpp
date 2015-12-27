@@ -180,7 +180,7 @@ BufferViewTestInstance::BufferViewTestInstance (Context& context, BufferViewCase
 			VK_SHARING_MODE_EXCLUSIVE,													// VkSharingMode		sharingMode;
 			1u,																			// deUint32				queueFamilyCount;
 			&queueFamilyIndex,															// const deUint32*		pQueueFamilyIndices;
-			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,									// VkImageLayout		initialLayout;
+			VK_IMAGE_LAYOUT_UNDEFINED,													// VkImageLayout		initialLayout;
 		};
 
 		m_colorImage			= createImage(vk, vkDevice, &colorImageParams);
@@ -695,6 +695,30 @@ BufferViewTestInstance::BufferViewTestInstance (Context& context, BufferViewCase
 		m_cmdBuffer = allocateCommandBuffer(vk, vkDevice, &cmdBufferParams);
 
 		VK_CHECK(vk.beginCommandBuffer(*m_cmdBuffer, &cmdBufferBeginInfo));
+
+		const VkImageMemoryBarrier initialImageBarrier =
+		{
+			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		// VkStructureType			sType;
+			DE_NULL,									// const void*				pNext;
+			0,											// VkMemoryOutputFlags		outputMask;
+			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,		// VkMemoryInputFlags		inputMask;
+			VK_IMAGE_LAYOUT_UNDEFINED,					// VkImageLayout			oldLayout;
+			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,	// VkImageLayout			newLayout;
+			VK_QUEUE_FAMILY_IGNORED,					// deUint32					srcQueueFamilyIndex;
+			VK_QUEUE_FAMILY_IGNORED,					// deUint32					destQueueFamilyIndex;
+			*m_colorImage,								// VkImage					image;
+			{											// VkImageSubresourceRange	subresourceRange;
+				VK_IMAGE_ASPECT_COLOR_BIT,				// VkImageAspectFlags	aspectMask;
+				0u,										// deUint32				baseMipLevel;
+				1u,										// deUint32				mipLevels;
+				0u,										// deUint32				baseArraySlice;
+				1u										// deUint32				arraySize;
+			}
+		};
+		const void* const	initialImageBarrierPtr		= &initialImageBarrier;
+
+		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_FALSE, 1, &initialImageBarrierPtr);
+
 		vk.cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
 		const VkDeviceSize	vertexBufferOffset[1] = { 0 };
