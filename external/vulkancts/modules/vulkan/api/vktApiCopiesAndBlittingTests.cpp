@@ -436,7 +436,6 @@ public:
 							{}
 
 	virtual					~CopiesAndBlittingTestCase	(void) {}
-	virtual	void			initPrograms				(SourceCollections&			programCollection) const;
 
 	virtual TestInstance*	createInstance				(Context&					context) const = 0;
 };
@@ -828,7 +827,6 @@ public:
 							}
 private:
 	TestParams				m_params;
-	VkDeviceSize			m_size;
 };
 
 // Copy from buffer to buffer.
