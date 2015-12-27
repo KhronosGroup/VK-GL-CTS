@@ -1638,7 +1638,7 @@ struct DescriptorSet
 		Dependency<DescriptorPool>		descriptorPool;
 		Dependency<DescriptorSetLayout>	descriptorSetLayout;
 
-		static vector<VkDescriptorPoolSize> computePoolSizes (const DescriptorSetLayout::Parameters& layout)
+		static vector<VkDescriptorPoolSize> computePoolSizes (const DescriptorSetLayout::Parameters& layout, int maxSets)
 		{
 			deUint32						countByType[VK_DESCRIPTOR_TYPE_LAST];
 			vector<VkDescriptorPoolSize>	typeCounts;
@@ -1650,7 +1650,7 @@ struct DescriptorSet
 				 ++cur)
 			{
 				DE_ASSERT((deUint32)cur->descriptorType < VK_DESCRIPTOR_TYPE_LAST);
-				countByType[cur->descriptorType] += cur->descriptorCount;
+				countByType[cur->descriptorType] += cur->descriptorCount * maxSets;
 			}
 
 			for (deUint32 type = 0; type < VK_DESCRIPTOR_TYPE_LAST; ++type)
@@ -1663,7 +1663,7 @@ struct DescriptorSet
 		}
 
 		Resources (const Environment& env, const Parameters& params)
-			: descriptorPool		(env, DescriptorPool::Parameters(VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, env.maxResourceConsumers, computePoolSizes(params.descriptorSetLayout)))
+			: descriptorPool		(env, DescriptorPool::Parameters(VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, env.maxResourceConsumers, computePoolSizes(params.descriptorSetLayout, env.maxResourceConsumers)))
 			, descriptorSetLayout	(env, params.descriptorSetLayout)
 		{
 		}

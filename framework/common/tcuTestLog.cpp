@@ -227,7 +227,7 @@ static Vector<int, Size> computeScaledSize (const Vector<int, Size>& imageSize, 
 
 		Vector<int, Size> res;
 		for (int i = 0; i < Size; i++)
-			res[i] = deRoundFloatToInt32((float)imageSize[i] / d);
+			res[i] = de::max(1, deRoundFloatToInt32((float)imageSize[i] / d));
 
 		return res;
 	}

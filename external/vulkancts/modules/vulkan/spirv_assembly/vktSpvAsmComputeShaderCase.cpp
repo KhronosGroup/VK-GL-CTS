@@ -186,7 +186,7 @@ Move<VkPipeline> createComputePipeline (const DeviceInterface& vkdi, const VkDev
 
 	if (numSpecConstants != 0)
 	{
-		entries.reserve(numSpecConstants);
+		entries.resize(numSpecConstants);
 
 		for (deUint32 ndx = 0; ndx < numSpecConstants; ++ndx)
 		{

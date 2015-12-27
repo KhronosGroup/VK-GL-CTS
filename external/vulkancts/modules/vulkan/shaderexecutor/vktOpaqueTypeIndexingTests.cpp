@@ -172,7 +172,7 @@ OpaqueTypeIndexingTestInstance::~OpaqueTypeIndexingTestInstance (void)
 {
 }
 
-static deUint32 getFirstFreeBindingLocation (const glu::ShaderType shaderType, const bool hasInputParam)
+static deUint32 getFirstFreeBindingLocation (const glu::ShaderType shaderType)
 {
 	deUint32 location;
 
@@ -192,11 +192,6 @@ static deUint32 getFirstFreeBindingLocation (const glu::ShaderType shaderType, c
 	}
 
 	return location;
-}
-
-static deUint32 getFirstFreeBindingLocation (const glu::ShaderType shaderType, const ShaderSpec& shaderSpec)
-{
-	return getFirstFreeBindingLocation(shaderType, !shaderSpec.inputs.empty());
 }
 
 static void declareUniformIndexVars (std::ostream& str, const char* varPrefix, int numVars, deUint32& bindingLocation)
@@ -483,7 +478,7 @@ tcu::TestStatus SamplerIndexingCaseInstance::iterate (void)
 		std::vector<void*>		inputs;
 		std::vector<void*>		outputs;
 		std::vector<int>		expandedIndices;
-		deUint32				bindingLocation		= getFirstFreeBindingLocation(m_shaderType, m_shaderSpec);
+		deUint32				bindingLocation		= getFirstFreeBindingLocation(m_shaderType);
 
 		inputs.push_back(&coords[0]);
 
@@ -684,7 +679,7 @@ TestInstance* SamplerIndexingCase::createInstance (Context& ctx) const
 void SamplerIndexingCase::createShaderSpec (void)
 {
 	de::Random			rnd				(deInt32Hash(m_samplerType) ^ deInt32Hash(m_shaderType) ^ deInt32Hash(m_indexExprType));
-	deUint32			binding			= getFirstFreeBindingLocation(m_shaderType, true);
+	deUint32			binding			= getFirstFreeBindingLocation(m_shaderType);
 	const char*			samplersName	= "texSampler";
 	const char*			coordsName		= "coords";
 	const char*			indicesPrefix	= "index";
@@ -813,7 +808,7 @@ tcu::TestStatus BlockArrayIndexingCaseInstance::iterate (void)
 		std::vector<int>		expandedIndices;
 		std::vector<void*>		inputs;
 		std::vector<void*>		outputs;
-		deUint32				bindingLocation		= getFirstFreeBindingLocation(m_shaderType, m_shaderSpec);
+		deUint32				bindingLocation		= getFirstFreeBindingLocation(m_shaderType);
 		VkDescriptorType		descriptorType		= m_blockType == BLOCKTYPE_UNIFORM ? VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER : VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 
 		for (size_t i = 0 ; i < m_inValues.size(); i++)
@@ -928,7 +923,7 @@ void BlockArrayIndexingCase::createShaderSpec (void)
 	const int			numInstances	= BlockArrayIndexingCaseInstance::NUM_INSTANCES;
 	const int			numReads		= BlockArrayIndexingCaseInstance::NUM_READS;
 	de::Random			rnd				(deInt32Hash(m_shaderType) ^ deInt32Hash(m_blockType) ^ deInt32Hash(m_indexExprType));
-	deUint32			binding			= getFirstFreeBindingLocation(m_shaderType, m_indexExprType == INDEX_EXPR_TYPE_DYNAMIC_UNIFORM && numReads > 0);
+	deUint32			binding			= getFirstFreeBindingLocation(m_shaderType);
 	const char*			blockName		= "Block";
 	const char*			instanceName	= "block";
 	const char*			indicesPrefix	= "index";
@@ -1044,7 +1039,7 @@ tcu::TestStatus AtomicCounterIndexingCaseInstance::iterate (void)
 	std::vector<void*>			inputs;
 	std::vector<void*>			outputs;
 	std::vector<deUint32>		outValues			(numInvocations*numOps);
-	deUint32					bindingLocation		= getFirstFreeBindingLocation(m_shaderType, m_shaderSpec);
+	deUint32					bindingLocation		= getFirstFreeBindingLocation(m_shaderType);
 
 	{
 		DE_ASSERT(numCounters <= 4);
@@ -1205,7 +1200,7 @@ void AtomicCounterIndexingCase::createShaderSpec (void)
 {
 	const int				numCounters		= AtomicCounterIndexingCaseInstance::NUM_COUNTERS;
 	const int				numOps			= AtomicCounterIndexingCaseInstance::NUM_OPS;
-	deUint32				binding			= getFirstFreeBindingLocation(m_shaderType, m_indexExprType == INDEX_EXPR_TYPE_DYNAMIC_UNIFORM && numOps > 0);
+	deUint32				binding			= getFirstFreeBindingLocation(m_shaderType);
 	de::Random				rnd				(deInt32Hash(m_shaderType) ^ deInt32Hash(m_indexExprType));
 
 	for (int opNdx = 0; opNdx < numOps; opNdx++)

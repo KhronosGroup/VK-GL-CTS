@@ -1,7 +1,11 @@
+#ifndef _VKTAPICOMPUTEINSTANCERESULTBUFFER_HPP
+#define _VKTAPICOMPUTEINSTANCERESULTBUFFER_HPP
 /*-------------------------------------------------------------------------
  * Vulkan Conformance Tests
  * ------------------------
  *
+ * Copyright (c) 2015 The Khronos Group Inc.
+ * Copyright (c) 2015 Samsung Electronics Co., Ltd.
  * Copyright (c) 2015 Google Inc.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -27,60 +31,56 @@
  * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
  * MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
  *
- *//*!
- * \file
- * \brief API Tests
  *//*--------------------------------------------------------------------*/
 
-#include "vktApiTests.hpp"
-
+#include "tcuDefs.hpp"
+#include "tcuTestLog.hpp"
 #include "deUniquePtr.hpp"
-
-#include "vktApiSmokeTests.hpp"
-#include "vktApiDeviceInitializationTests.hpp"
-#include "vktApiObjectManagementTests.hpp"
-#include "vktApiBufferTests.hpp"
-#include "vktApiBufferViewCreateTests.hpp"
-#include "vktApiBufferViewAccessTests.hpp"
-#include "vktApiFeatureInfo.hpp"
-#include "vktApiCommandBuffersTests.hpp"
-#include "vktApiCopiesAndBlittingTests.hpp"
+#include "vkRef.hpp"
+#include "vkMemUtil.hpp"
+#include "vkQueryUtil.hpp"
 
 namespace vkt
 {
+
 namespace api
 {
 
-namespace
+class ComputeInstanceResultBuffer
 {
+public:
+	enum
+	{
+		DATA_SIZE = sizeof(tcu::Vec4[4])
+	};
 
-tcu::TestCaseGroup* createBufferViewTests (tcu::TestContext& testCtx)
-{
-	de::MovePtr<tcu::TestCaseGroup>	bufferViewTests	(new tcu::TestCaseGroup(testCtx, "buffer_view", "BufferView tests"));
+											ComputeInstanceResultBuffer (const vk::DeviceInterface &vki,
+																				vk::VkDevice device,
+																				vk::Allocator &allocator);
 
-	bufferViewTests->addChild(createBufferViewCreateTests	(testCtx));
-	bufferViewTests->addChild(createBufferViewAccessTests	(testCtx));
+	void									readResultContentsTo(tcu::Vec4 (* results)[4]) const;
 
-	return bufferViewTests.release();
-}
+	inline vk::VkBuffer						getBuffer(void) const { return *m_buffer; }
 
-} // anonymous
+	inline const void *						getResultReadBarrier(void) const { return &m_bufferBarrier; }
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
-{
-	de::MovePtr<tcu::TestCaseGroup>	apiTests	(new tcu::TestCaseGroup(testCtx, "api", "API Tests"));
+private:
+	static vk::Move<vk::VkBuffer>			createResultBuffer(const vk::DeviceInterface &vki,
+														vk::VkDevice device,
+														vk::Allocator &allocator,
+														de::MovePtr<vk::Allocation>* outAllocation);
 
-	apiTests->addChild(createSmokeTests					(testCtx));
-	apiTests->addChild(api::createFeatureInfoTests		(testCtx));
-	apiTests->addChild(createDeviceInitializationTests	(testCtx));
-	apiTests->addChild(createObjectManagementTests		(testCtx));
-	apiTests->addChild(createBufferTests				(testCtx));
-	apiTests->addChild(createBufferViewTests			(testCtx));
-	apiTests->addChild(createCommandBuffersTests		(testCtx));
-	apiTests->addChild(createCopiesAndBlittingTests		(testCtx));
+	static vk::VkBufferMemoryBarrier		createResultBufferBarrier(vk::VkBuffer buffer);
 
-	return apiTests.release();
-}
+	const vk::DeviceInterface &				m_vki;
+	const vk::VkDevice						m_device;
+
+	de::MovePtr<vk::Allocation>				m_bufferMem;
+	const vk::Unique<vk::VkBuffer>			m_buffer;
+	const vk::VkBufferMemoryBarrier			m_bufferBarrier;
+};
 
 } // api
 } // vkt
+
+#endif // _VKTAPICOMPUTEINSTANCERESULTBUFFER_HPP
