@@ -25,6 +25,8 @@ set(DEQP_VK_API_SRCS
 	vktApiComputeInstanceResultBuffer.hpp
 	vktApiBufferComputeInstance.cpp
 	vktApiBufferComputeInstance.hpp
+	vktApiCopiesAndBlittingTests.cpp
+	vktApiCopiesAndBlittingTests.hpp
 	)
 
 set(DEQP_VK_API_LIBS
