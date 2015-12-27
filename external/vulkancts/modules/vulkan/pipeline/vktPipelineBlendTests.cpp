@@ -739,8 +739,8 @@ BlendTestInstance::BlendTestInstance (Context&									context,
 			VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType					sType;
 			DE_NULL,										// const void*						pNext;
 			0u,												// VkCommandBufferUsageFlags		flags;
-			0u,												// VkRenderPass						renderPass;
-			DE_NULL,										// deUint32							subpass;
+			DE_NULL,										// VkRenderPass						renderPass;
+			0u,												// deUint32							subpass;
 			DE_NULL,										// VkFramebuffer					framebuffer;
 			false,											// VkBool32							occlusionQueryEnable;
 			0u,												// VkQueryControlFlags				queryFlags;
