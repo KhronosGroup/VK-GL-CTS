@@ -696,8 +696,8 @@ VkDescriptorSetLayout ImageStoreTestInstance::prepareDescriptors (void)
 		.build(vk, device);
 
 	m_descriptorPool = DescriptorPoolBuilder()
-		.addType(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)
-		.addType(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+		.addType(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, numLayers)
+		.addType(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, numLayers)
 		.build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, numLayers);
 
 	if (m_singleLayerBind)
@@ -1075,8 +1075,8 @@ VkDescriptorSetLayout ImageLoadStoreTestInstance::prepareDescriptors (void)
 		.build(vk, device);
 
 	m_descriptorPool = DescriptorPoolBuilder()
-		.addType(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)
-		.addType(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)
+		.addType(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, numLayers)
+		.addType(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, numLayers)
 		.build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, numLayers);
 
 	if (m_singleLayerBind)
