@@ -1286,7 +1286,7 @@ public:
 
 	TestInstance* createInstance (Context& ctx) const
 	{
-		return new IsinfCaseInstance(ctx, m_shaderType, m_spec, *m_executor, m_numValues, getName());
+		return new FloatBitsToUintIntCaseInstance(ctx, m_shaderType, m_spec, *m_executor, m_numValues, getName());
 	}
 };
 
