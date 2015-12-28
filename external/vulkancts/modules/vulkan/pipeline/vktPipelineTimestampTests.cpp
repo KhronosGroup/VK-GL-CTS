@@ -890,11 +890,7 @@ Move<VkBuffer> TimestampTestInstance::createBufferAndBindMemory(VkDeviceSize siz
 	VK_CHECK(vk.bindBufferMemory(vkDevice, *vertexBuffer, vertexBufferAlloc->getMemory(), vertexBufferAlloc->getOffset()));
 
 	DE_ASSERT(pAlloc);
-    if(pAlloc)
-    {
-        *pAlloc = vertexBufferAlloc;
-    }
-
+	*pAlloc = vertexBufferAlloc;
 	return vertexBuffer;
 }
 
@@ -932,14 +928,11 @@ Move<VkImage> TimestampTestInstance::createImage2DAndBindMemory(VkFormat        
 	Move<VkImage> image = createImage(vk, vkDevice, &colorImageParams);
 
 	// Allocate and bind image memory
-	de::MovePtr<Allocation> colorImageAlloc       = memAlloc.allocate(getImageMemoryRequirements(vk, vkDevice, *image), MemoryRequirement::Any);
+	de::MovePtr<Allocation> colorImageAlloc = memAlloc.allocate(getImageMemoryRequirements(vk, vkDevice, *image), MemoryRequirement::Any);
 	VK_CHECK(vk.bindImageMemory(vkDevice, *image, colorImageAlloc->getMemory(), colorImageAlloc->getOffset()));
 
 	DE_ASSERT(pAlloc);
-	if(pAlloc)
-	{
-		*pAlloc = colorImageAlloc;
-	}
+	*pAlloc = colorImageAlloc;
 
 	return image;
 }
@@ -1650,8 +1643,8 @@ BasicComputeTestInstance::BasicComputeTestInstance(Context&              context
 	}
 	flushMappedMemoryRange(vk, vkDevice, bufferAlloc->getMemory(), bufferAlloc->getOffset(), size);
     
-    de::MovePtr<Allocation>     dummyAlloc;
-    m_outputBuf = createBufferAndBindMemory(size, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, &dummyAlloc);
+	de::MovePtr<Allocation> dummyAlloc;
+	m_outputBuf = createBufferAndBindMemory(size, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, &dummyAlloc);
         
 	std::vector<VkDescriptorBufferInfo>        descriptorInfos;
 	descriptorInfos.push_back(makeDescriptorBufferInfo(*m_inputBuf, 0u, sizeof(tcu::Vec4) * 128u));
