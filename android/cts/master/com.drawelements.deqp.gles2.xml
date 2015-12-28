@@ -3389,6 +3389,15 @@
 						<Test name="mixed_if_elseif_else_fragment">
 							<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
 						</Test>
+						<Test name="constant_conditional_assignment_to_matrix">
+							<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+						</Test>
+						<Test name="input_conditional_assignment_to_matrix">
+							<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+						</Test>
+						<Test name="uniform_conditional_assignment_to_matrix">
+							<TestInstance glconfig="rgba8888d24s8ms0" rotation="unspecified" surfacetype="window"/>
+						</Test>
 					</TestCase>
 					<TestCase name="invalid_if">
 						<Test name="missing_parenthesis_vertex">

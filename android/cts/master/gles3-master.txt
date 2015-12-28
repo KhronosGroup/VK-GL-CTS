@@ -2757,6 +2757,9 @@ dEQP-GLES3.functional.shaders.conditionals.if.if_elseif_else_vertex
 dEQP-GLES3.functional.shaders.conditionals.if.if_elseif_else_fragment
 dEQP-GLES3.functional.shaders.conditionals.if.mixed_if_elseif_else_vertex
 dEQP-GLES3.functional.shaders.conditionals.if.mixed_if_elseif_else_fragment
+dEQP-GLES3.functional.shaders.conditionals.if.constant_conditional_assignment_to_matrix
+dEQP-GLES3.functional.shaders.conditionals.if.input_conditional_assignment_to_matrix
+dEQP-GLES3.functional.shaders.conditionals.if.uniform_conditional_assignment_to_matrix
 dEQP-GLES3.functional.shaders.conditionals.invalid_if.missing_parenthesis_vertex
 dEQP-GLES3.functional.shaders.conditionals.invalid_if.missing_parenthesis_fragment
 dEQP-GLES3.functional.shaders.conditionals.invalid_if.unclosed_parenthesis_vertex
