@@ -858,7 +858,7 @@ void FragmentOutExecutor::execute (const Context& ctx, int numValues, const void
 					{
 						VK_IMAGE_ASPECT_COLOR_BIT,						// VkImageAspectFlags		aspectMask;
 						0u,												// deUint32					baseMipLevel;
-						0u,												// deUint32					mipLevels;
+						1u,												// deUint32					mipLevels;
 						0u,												// deUint32					baseArraySlice;
 						1u												// deUint32					arraySize;
 					}													// VkImageSubresourceRange	subresourceRange;
