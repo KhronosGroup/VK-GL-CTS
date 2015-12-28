@@ -85,8 +85,10 @@ enum LimitType
 	LIMIT_TYPE_LAST
 };
 
-#define FEATURE(_X_)	DE_OFFSET_OF(VkPhysicalDeviceLimits, _X_),(char*)(#_X_)
-bool validateFeatureLimits(VkPhysicalDeviceProperties* properties, TestLog& log)
+#define LIMIT(_X_)		DE_OFFSET_OF(VkPhysicalDeviceLimits, _X_),(char*)(#_X_)
+#define FEATURE(_X_)	DE_OFFSET_OF(VkPhysicalDeviceFeatures, _X_)
+
+bool validateFeatureLimits(VkPhysicalDeviceProperties* properties, VkPhysicalDeviceFeatures* features, TestLog& log)
 {
 	bool					limitsOk	= true;
 	VkPhysicalDeviceLimits* limits		= &properties->limits;
@@ -100,117 +102,187 @@ bool validateFeatureLimits(VkPhysicalDeviceProperties* properties, TestLog& log)
 		float			floatVal;			//!< Format is FLOAT
 		LimitFormat		format;
 		LimitType		type;
+		deInt32			unsuppTableNdx;
 	} featureLimitTable[] =   //!< From gitlab.khronos.org/vulkan/vulkan.git:doc/specs/vulkan/chapters/features.txt@63b23f3bb3ecd211cd6e448e2001ce1088dacd35
 	{
-		{ FEATURE(maxImageDimension1D),									4096, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN },
-		{ FEATURE(maxImageDimension2D),									4096, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN  },
-		{ FEATURE(maxImageDimension3D),									256, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN   },
-		{ FEATURE(maxImageDimensionCube),								4096, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN  },
-		{ FEATURE(maxImageArrayLayers),									256, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN    },
-		{ FEATURE(maxTexelBufferElements),								65536, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN   },
-		{ FEATURE(maxUniformBufferRange),								16384, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN   },
-		{ FEATURE(maxPushConstantsSize),								128, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN   },
-		{ FEATURE(maxMemoryAllocationCount),							4096, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN  },
-		{ FEATURE(bufferImageGranularity),								0, 0, 131072, 0, LIMIT_FORMAT_DEVICE_SIZE, LIMIT_TYPE_MAX },
-		{ FEATURE(sparseAddressSpaceSize),								0, 0, 2UL*1024*1024*1024, 0, LIMIT_FORMAT_DEVICE_SIZE, LIMIT_TYPE_MIN },
-		{ FEATURE(maxBoundDescriptorSets),								4, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN },
-		{ FEATURE(maxPerStageDescriptorSamplers),						16, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN },
-		{ FEATURE(maxPerStageDescriptorUniformBuffers),					12, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN  },
-		{ FEATURE(maxPerStageDescriptorStorageBuffers),					4, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN  },
-		{ FEATURE(maxPerStageDescriptorSampledImages),					16, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN  },
-		{ FEATURE(maxPerStageDescriptorStorageImages),					4, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN  },
-		{ FEATURE(maxPerStageDescriptorInputAttachments),				4, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN  },
-		{ FEATURE(maxDescriptorSetSamplers),							96, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN },
-		{ FEATURE(maxDescriptorSetUniformBuffers),						72, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN  },
-		{ FEATURE(maxDescriptorSetUniformBuffersDynamic),				8, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN },
-		{ FEATURE(maxDescriptorSetStorageBuffers),						24, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN  },
-		{ FEATURE(maxDescriptorSetStorageBuffersDynamic),				4, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN   },
-		{ FEATURE(maxDescriptorSetSampledImages),						96, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN   },
-		{ FEATURE(maxDescriptorSetStorageImages),						24, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN   },
-		{ FEATURE(maxVertexInputAttributes),							16, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN   },
-		{ FEATURE(maxVertexInputBindings),								16, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN   },
-		{ FEATURE(maxVertexInputAttributeOffset),						2047, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN   },
-		{ FEATURE(maxVertexInputBindingStride),							2048, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN   },
-		{ FEATURE(maxVertexOutputComponents),							64, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN   },
-		{ FEATURE(maxTessellationGenerationLevel),						64, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN   },
-		{ FEATURE(maxTessellationPatchSize),							32, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN  },
-		{ FEATURE(maxTessellationControlPerVertexInputComponents),		64, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN   },
-		{ FEATURE(maxTessellationControlPerVertexOutputComponents),		64, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN   },
-		{ FEATURE(maxTessellationControlPerPatchOutputComponents),		120, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN   },
-		{ FEATURE(maxTessellationControlTotalOutputComponents),			2048, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN   },
-		{ FEATURE(maxTessellationEvaluationInputComponents),			64, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN   },
-		{ FEATURE(maxTessellationEvaluationOutputComponents),			64, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN   },
-		{ FEATURE(maxGeometryShaderInvocations),						32, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN   },
-		{ FEATURE(maxGeometryInputComponents),							64, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN   },
-		{ FEATURE(maxGeometryOutputComponents),							64, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN   },
-		{ FEATURE(maxGeometryOutputVertices),							256, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN   },
-		{ FEATURE(maxGeometryTotalOutputComponents),					1024, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN   },
-		{ FEATURE(maxFragmentInputComponents),							64, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN   },
-		{ FEATURE(maxFragmentOutputAttachments),						4, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN   },
-		{ FEATURE(maxFragmentDualSrcAttachments),						1, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN   },
-		{ FEATURE(maxFragmentCombinedOutputResources),					4, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN   },
-		{ FEATURE(maxComputeSharedMemorySize),							16384, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN    },
-		{ FEATURE(maxComputeWorkGroupCount[0]),							65535, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN    },
-		{ FEATURE(maxComputeWorkGroupCount[1]),							65535, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN    },
-		{ FEATURE(maxComputeWorkGroupCount[2]),							65535,  0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN    },
-		{ FEATURE(maxComputeWorkGroupInvocations),						128, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN     },
-		{ FEATURE(maxComputeWorkGroupSize[0]),							128, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN     },
-		{ FEATURE(maxComputeWorkGroupSize[1]),							128, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN     },
-		{ FEATURE(maxComputeWorkGroupSize[2]),							64, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN     },
-		{ FEATURE(subPixelPrecisionBits),								4, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN     },
-		{ FEATURE(subTexelPrecisionBits),								4, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN     },
-		{ FEATURE(mipmapPrecisionBits),									4, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN     },
-		{ FEATURE(maxDrawIndirectCount),								65535, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN     },
-		{ FEATURE(maxSamplerLodBias),									0, 0, 0, 2.0f, LIMIT_FORMAT_FLOAT, LIMIT_TYPE_MIN },
-		{ FEATURE(maxSamplerAnisotropy),								0, 0, 0, 16.0f, LIMIT_FORMAT_FLOAT, LIMIT_TYPE_MIN },
-		{ FEATURE(maxViewports),										16, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN },
-		{ FEATURE(maxViewportDimensions[0]),							4096, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN  },
-		{ FEATURE(maxViewportDimensions[1]),							4096, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN  },
-		{ FEATURE(viewportBoundsRange[0]),								0, 0, 0, -8192, LIMIT_FORMAT_FLOAT, LIMIT_TYPE_MAX },
-		{ FEATURE(viewportBoundsRange[1]),								0, 0, 0, 8191, LIMIT_FORMAT_FLOAT, LIMIT_TYPE_MIN },
-		{ FEATURE(viewportSubPixelBits),								0, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN },
-		{ FEATURE(minMemoryMapAlignment),								64, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN },
-		{ FEATURE(minTexelBufferOffsetAlignment),						256, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MAX },
-		{ FEATURE(minUniformBufferOffsetAlignment),						256, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MAX },
-		{ FEATURE(minStorageBufferOffsetAlignment),						256, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MAX },
-		{ FEATURE(minTexelOffset),										0, -8, 0, 0, LIMIT_FORMAT_SIGNED_INT, LIMIT_TYPE_MAX },
-		{ FEATURE(maxTexelOffset),										7, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN },
-		{ FEATURE(minTexelGatherOffset),								0, -8, 0, 0, LIMIT_FORMAT_SIGNED_INT, LIMIT_TYPE_MAX },
-		{ FEATURE(maxTexelGatherOffset),								7, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN },
-		{ FEATURE(minInterpolationOffset),								0, 0, 0, -0.5f, LIMIT_FORMAT_FLOAT, LIMIT_TYPE_MAX },
-		{ FEATURE(maxInterpolationOffset),								0, 0, 0, 0.5f, LIMIT_FORMAT_FLOAT, LIMIT_TYPE_MIN },
-		{ FEATURE(subPixelInterpolationOffsetBits),						4, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN },
-		{ FEATURE(maxFramebufferWidth),									4096, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN },
-		{ FEATURE(maxFramebufferHeight),								4096, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN },
-		{ FEATURE(maxFramebufferLayers),								256, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN },
-		{ FEATURE(maxColorAttachments),									4, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN },
-		{ FEATURE(maxSampleMaskWords),									1, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN },
-		{ FEATURE(maxClipDistances),									8, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN },
-		{ FEATURE(maxCullDistances),									8, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN },
-		{ FEATURE(maxCombinedClipAndCullDistances),						8, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN },
-		{ FEATURE(pointSizeRange[0]),									0, 0, 0, 1.0, LIMIT_FORMAT_FLOAT, LIMIT_TYPE_MAX },
-		{ FEATURE(pointSizeRange[1]),									0, 0, 0, 1.0, LIMIT_FORMAT_FLOAT, LIMIT_TYPE_MIN },
-		{ FEATURE(pointSizeRange[0]),									0, 0, 0, 1.0, LIMIT_FORMAT_FLOAT, LIMIT_TYPE_MAX },
-		{ FEATURE(pointSizeRange[1]),									0, 0, 0, 64.0, LIMIT_FORMAT_FLOAT, LIMIT_TYPE_MIN },
-		{ FEATURE(lineWidthRange[0]),									0, 0, 0, 1.0, LIMIT_FORMAT_FLOAT, LIMIT_TYPE_MAX },
-		{ FEATURE(lineWidthRange[1]),									0, 0, 0, 1.0, LIMIT_FORMAT_FLOAT, LIMIT_TYPE_MIN },
-		{ FEATURE(lineWidthRange[0]),									0, 0, 0, 1.0, LIMIT_FORMAT_FLOAT, LIMIT_TYPE_MAX },
-		{ FEATURE(lineWidthRange[1]),									0, 0, 0, 8.0, LIMIT_FORMAT_FLOAT, LIMIT_TYPE_MIN },
-		{ FEATURE(pointSizeGranularity),								0, 0, 0, 1.0, LIMIT_FORMAT_FLOAT, LIMIT_TYPE_MAX },
-		{ FEATURE(lineWidthGranularity),								0, 0, 0, 1.0, LIMIT_FORMAT_FLOAT, LIMIT_TYPE_MAX },
-		{ FEATURE(nonCoherentAtomSize),									0, 0, 128, 0, LIMIT_FORMAT_DEVICE_SIZE, LIMIT_TYPE_MAX },
+		{ LIMIT(maxImageDimension1D),								4096, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN, -1 },
+		{ LIMIT(maxImageDimension2D),								4096, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN , -1 },
+		{ LIMIT(maxImageDimension3D),								256, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN  , -1 },
+		{ LIMIT(maxImageDimensionCube),								4096, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN , -1 },
+		{ LIMIT(maxImageArrayLayers),								256, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN   , -1 },
+		{ LIMIT(maxTexelBufferElements),							65536, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN  , -1 },
+		{ LIMIT(maxUniformBufferRange),								16384, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN  , -1 },
+		{ LIMIT(maxPushConstantsSize),								128, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN  , -1 },
+		{ LIMIT(maxMemoryAllocationCount),							4096, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN , -1 },
+		{ LIMIT(bufferImageGranularity),							0, 0, 131072, 0, LIMIT_FORMAT_DEVICE_SIZE, LIMIT_TYPE_MAX, -1 },
+		{ LIMIT(sparseAddressSpaceSize),							0, 0, 2UL*1024*1024*1024, 0, LIMIT_FORMAT_DEVICE_SIZE, LIMIT_TYPE_MIN, -1 },
+		{ LIMIT(maxBoundDescriptorSets),							4, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN, -1 },
+		{ LIMIT(maxPerStageDescriptorSamplers),						16, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN, -1 },
+		{ LIMIT(maxPerStageDescriptorUniformBuffers),				12, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN , -1 },
+		{ LIMIT(maxPerStageDescriptorStorageBuffers),				4, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN , -1 },
+		{ LIMIT(maxPerStageDescriptorSampledImages),				16, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN , -1 },
+		{ LIMIT(maxPerStageDescriptorStorageImages),				4, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN , -1 },
+		{ LIMIT(maxPerStageDescriptorInputAttachments),				4, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN , -1 },
+		{ LIMIT(maxDescriptorSetSamplers),							96, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN, -1 },
+		{ LIMIT(maxDescriptorSetUniformBuffers),					72, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN , -1 },
+		{ LIMIT(maxDescriptorSetUniformBuffersDynamic),				8, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN, -1 },
+		{ LIMIT(maxDescriptorSetStorageBuffers),					24, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN , -1 },
+		{ LIMIT(maxDescriptorSetStorageBuffersDynamic),				4, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN  , -1 },
+		{ LIMIT(maxDescriptorSetSampledImages),						96, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN  , -1 },
+		{ LIMIT(maxDescriptorSetStorageImages),						24, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN  , -1 },
+		{ LIMIT(maxVertexInputAttributes),							16, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN  , -1 },
+		{ LIMIT(maxVertexInputBindings),							16, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN  , -1 },
+		{ LIMIT(maxVertexInputAttributeOffset),						2047, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN  , -1 },
+		{ LIMIT(maxVertexInputBindingStride),						2048, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN  , -1 },
+		{ LIMIT(maxVertexOutputComponents),							64, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN  , -1 },
+		{ LIMIT(maxTessellationGenerationLevel),					64, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN  , -1 },
+		{ LIMIT(maxTessellationPatchSize),							32, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN , -1 },
+		{ LIMIT(maxTessellationControlPerVertexInputComponents),	64, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN  , -1 },
+		{ LIMIT(maxTessellationControlPerVertexOutputComponents),	64, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN  , -1 },
+		{ LIMIT(maxTessellationControlPerPatchOutputComponents),	120, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN  , -1 },
+		{ LIMIT(maxTessellationControlTotalOutputComponents),		2048, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN  , -1 },
+		{ LIMIT(maxTessellationEvaluationInputComponents),			64, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN  , -1 },
+		{ LIMIT(maxTessellationEvaluationOutputComponents),			64, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN  , -1 },
+		{ LIMIT(maxGeometryShaderInvocations),						32, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN  , -1 },
+		{ LIMIT(maxGeometryInputComponents),						64, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN  , -1 },
+		{ LIMIT(maxGeometryOutputComponents),						64, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN  , -1 },
+		{ LIMIT(maxGeometryOutputVertices),							256, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN  , -1 },
+		{ LIMIT(maxGeometryTotalOutputComponents),					1024, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN  , -1 },
+		{ LIMIT(maxFragmentInputComponents),						64, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN  , -1 },
+		{ LIMIT(maxFragmentOutputAttachments),						4, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN  , -1 },
+		{ LIMIT(maxFragmentDualSrcAttachments),						1, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN  , -1 },
+		{ LIMIT(maxFragmentCombinedOutputResources),				4, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN  , -1 },
+		{ LIMIT(maxComputeSharedMemorySize),						16384, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN   , -1 },
+		{ LIMIT(maxComputeWorkGroupCount[0]),						65535, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN   , -1 },
+		{ LIMIT(maxComputeWorkGroupCount[1]),						65535, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN   , -1 },
+		{ LIMIT(maxComputeWorkGroupCount[2]),						65535,  0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN   , -1 },
+		{ LIMIT(maxComputeWorkGroupInvocations),					128, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN    , -1 },
+		{ LIMIT(maxComputeWorkGroupSize[0]),						128, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN    , -1 },
+		{ LIMIT(maxComputeWorkGroupSize[1]),						128, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN    , -1 },
+		{ LIMIT(maxComputeWorkGroupSize[2]),						64, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN    , -1 },
+		{ LIMIT(subPixelPrecisionBits),								4, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN    , -1 },
+		{ LIMIT(subTexelPrecisionBits),								4, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN    , -1 },
+		{ LIMIT(mipmapPrecisionBits),								4, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN    , -1 },
+		{ LIMIT(maxDrawIndexedIndexValue),							(deUint32)~0, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN, -1 },
+		{ LIMIT(maxDrawIndirectCount),								65535, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN    , -1 },
+		{ LIMIT(maxSamplerLodBias),									0, 0, 0, 2.0f, LIMIT_FORMAT_FLOAT, LIMIT_TYPE_MIN, -1 },
+		{ LIMIT(maxSamplerAnisotropy),								0, 0, 0, 16.0f, LIMIT_FORMAT_FLOAT, LIMIT_TYPE_MIN, -1 },
+		{ LIMIT(maxViewports),										16, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN, -1 },
+		{ LIMIT(maxViewportDimensions[0]),							4096, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN , -1 },
+		{ LIMIT(maxViewportDimensions[1]),							4096, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN , -1 },
+		{ LIMIT(viewportBoundsRange[0]),							0, 0, 0, -8192, LIMIT_FORMAT_FLOAT, LIMIT_TYPE_MAX, -1 },
+		{ LIMIT(viewportBoundsRange[1]),							0, 0, 0, 8191, LIMIT_FORMAT_FLOAT, LIMIT_TYPE_MIN, -1 },
+		{ LIMIT(viewportSubPixelBits),								0, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN, -1 },
+		{ LIMIT(minMemoryMapAlignment),								64, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN, -1 },
+		{ LIMIT(minTexelBufferOffsetAlignment),						256, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MAX, -1 },
+		{ LIMIT(minUniformBufferOffsetAlignment),					256, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MAX, -1 },
+		{ LIMIT(minStorageBufferOffsetAlignment),					256, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MAX, -1 },
+		{ LIMIT(minTexelOffset),									0, -8, 0, 0, LIMIT_FORMAT_SIGNED_INT, LIMIT_TYPE_MAX, -1 },
+		{ LIMIT(maxTexelOffset),									7, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN, -1 },
+		{ LIMIT(minTexelGatherOffset),								0, -8, 0, 0, LIMIT_FORMAT_SIGNED_INT, LIMIT_TYPE_MAX, -1 },
+		{ LIMIT(maxTexelGatherOffset),								7, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN, -1 },
+		{ LIMIT(minInterpolationOffset),							0, 0, 0, -0.5f, LIMIT_FORMAT_FLOAT, LIMIT_TYPE_MAX, -1 },
+		{ LIMIT(maxInterpolationOffset),							0, 0, 0, 0.5f, LIMIT_FORMAT_FLOAT, LIMIT_TYPE_MIN, -1 },
+		{ LIMIT(subPixelInterpolationOffsetBits),					4, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN, -1 },
+		{ LIMIT(maxFramebufferWidth),								4096, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN, -1 },
+		{ LIMIT(maxFramebufferHeight),								4096, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN, -1 },
+		{ LIMIT(maxFramebufferLayers),								256, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN, -1 },
+		{ LIMIT(maxColorAttachments),								4, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN, -1 },
+		{ LIMIT(maxSampleMaskWords),								1, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN, -1 },
+		{ LIMIT(maxClipDistances),									8, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN, -1 },
+		{ LIMIT(maxCullDistances),									8, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN, -1 },
+		{ LIMIT(maxCombinedClipAndCullDistances),					8, 0, 0, 0, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN, -1 },
+		{ LIMIT(pointSizeRange[0]),									0, 0, 0, 1.0, LIMIT_FORMAT_FLOAT, LIMIT_TYPE_MAX, -1 },
+		{ LIMIT(pointSizeRange[1]),									0, 0, 0, 1.0, LIMIT_FORMAT_FLOAT, LIMIT_TYPE_MIN, -1 },
+		{ LIMIT(pointSizeRange[0]),									0, 0, 0, 1.0, LIMIT_FORMAT_FLOAT, LIMIT_TYPE_MAX, -1 },
+		{ LIMIT(pointSizeRange[1]),									0, 0, 0, 64.0, LIMIT_FORMAT_FLOAT, LIMIT_TYPE_MIN, -1 },
+		{ LIMIT(lineWidthRange[0]),									0, 0, 0, 1.0, LIMIT_FORMAT_FLOAT, LIMIT_TYPE_MAX, -1 },
+		{ LIMIT(lineWidthRange[1]),									0, 0, 0, 1.0, LIMIT_FORMAT_FLOAT, LIMIT_TYPE_MIN, -1 },
+		{ LIMIT(lineWidthRange[0]),									0, 0, 0, 1.0, LIMIT_FORMAT_FLOAT, LIMIT_TYPE_MAX, -1 },
+		{ LIMIT(lineWidthRange[1]),									0, 0, 0, 8.0, LIMIT_FORMAT_FLOAT, LIMIT_TYPE_MIN, -1 },
+		{ LIMIT(pointSizeGranularity),								0, 0, 0, 1.0, LIMIT_FORMAT_FLOAT, LIMIT_TYPE_MAX, -1 },
+		{ LIMIT(lineWidthGranularity),								0, 0, 0, 1.0, LIMIT_FORMAT_FLOAT, LIMIT_TYPE_MAX, -1 },
+		{ LIMIT(nonCoherentAtomSize),								0, 0, 128, 0, LIMIT_FORMAT_DEVICE_SIZE, LIMIT_TYPE_MAX, -1 },
+	};
+
+	struct UnsupportedFeatureLimitTable
+	{
+		deUint32		limitOffset;
+		char*			name;
+		deUint32		featureOffset;
+		deUint32		uintVal;			//!< Format is UNSIGNED_INT
+		deInt32			intVal;				//!< Format is SIGNED_INT
+		deUint64		deviceSizeVal;		//!< Format is DEVICE_SIZE
+		float			floatVal;			//!< Format is FLOAT
+	} unsupportedFeatureTable[] =
+	{
+		{ LIMIT(sparseAddressSpaceSize),							FEATURE(sparseBinding),					0, 0, 0, 0 },
+		{ LIMIT(maxTessellationGenerationLevel),					FEATURE(tessellationShader),			0, 0, 0, 0 },
+		{ LIMIT(maxTessellationPatchSize),							FEATURE(tessellationShader),			0, 0, 0, 0 },
+		{ LIMIT(maxTessellationControlPerVertexInputComponents),	FEATURE(tessellationShader),			0, 0, 0, 0 },
+		{ LIMIT(maxTessellationControlPerVertexOutputComponents),	FEATURE(tessellationShader),			0, 0, 0, 0 },
+		{ LIMIT(maxTessellationControlPerPatchOutputComponents),	FEATURE(tessellationShader),			0, 0, 0, 0 },
+		{ LIMIT(maxTessellationControlTotalOutputComponents),		FEATURE(tessellationShader),			0, 0, 0, 0 },
+		{ LIMIT(maxTessellationEvaluationInputComponents),			FEATURE(tessellationShader),			0, 0, 0, 0 },
+		{ LIMIT(maxTessellationEvaluationOutputComponents),			FEATURE(tessellationShader),			0, 0, 0, 0 },
+		{ LIMIT(maxGeometryShaderInvocations),						FEATURE(geometryShader),				0, 0, 0, 0 },
+		{ LIMIT(maxGeometryInputComponents),						FEATURE(geometryShader),				0, 0, 0, 0 },
+		{ LIMIT(maxGeometryOutputComponents),						FEATURE(geometryShader),				0, 0, 0, 0 },
+		{ LIMIT(maxGeometryOutputVertices),							FEATURE(geometryShader),				0, 0, 0, 0 },
+		{ LIMIT(maxGeometryTotalOutputComponents),					FEATURE(geometryShader),				0, 0, 0, 0 },
+		{ LIMIT(maxFragmentDualSrcAttachments),						FEATURE(dualSrcBlend),					0, 0, 0, 0 },
+		{ LIMIT(maxDrawIndexedIndexValue),							FEATURE(fullDrawIndexUint32),			(1<<24)-1, 0, 0, 0 },
+		{ LIMIT(maxDrawIndirectCount),								FEATURE(multiDrawIndirect),				1, 0, 0, 0 },
+		{ LIMIT(maxSamplerAnisotropy),								FEATURE(samplerAnisotropy),				1, 0, 0, 0 },
+		{ LIMIT(maxViewports),										FEATURE(multiViewport),					1, 0, 0, 0 },
+		{ LIMIT(minTexelGatherOffset),								FEATURE(shaderImageGatherExtended),		0, 0, 0, 0 },
+		{ LIMIT(maxTexelGatherOffset),								FEATURE(shaderImageGatherExtended),		0, 0, 0, 0 },
+		{ LIMIT(minInterpolationOffset),							FEATURE(sampleRateShading),				0, 0, 0, 0 },
+		{ LIMIT(maxInterpolationOffset),							FEATURE(sampleRateShading),				0, 0, 0, 0 },
+		{ LIMIT(subPixelInterpolationOffsetBits),					FEATURE(sampleRateShading),				0, 0, 0, 0 },
+		{ LIMIT(storageImageSampleCounts),							FEATURE(shaderStorageImageMultisample),	0, 0, 0, 0 },
+		{ LIMIT(maxClipDistances),									FEATURE(shaderClipDistance),			0, 0, 0, 0 },
+		{ LIMIT(maxCullDistances),									FEATURE(shaderClipDistance),			0, 0, 0, 0 },
+		{ LIMIT(maxCombinedClipAndCullDistances),					FEATURE(shaderClipDistance),			0, 0, 0, 0 },
+		{ LIMIT(pointSizeRange[0]),									FEATURE(largePoints),					0, 0, 0, 0 },
+		{ LIMIT(pointSizeRange[1]),									FEATURE(largePoints),					0, 0, 0, 1.0 },
+		{ LIMIT(lineWidthRange[0]),									FEATURE(wideLines),						0, 0, 0, 1.0 },
+		{ LIMIT(pointSizeGranularity),								FEATURE(largePoints),					0, 0, 0, 0 },
+		{ LIMIT(lineWidthGranularity),								FEATURE(wideLines),						0, 0, 0, 0 }
 	};
 
 	log << TestLog::Message << *limits << TestLog::EndMessage;
+
+	//!< First build a map from limit to unsupported table index
+	for (deUint32 ndx = 0; ndx < DE_LENGTH_OF_ARRAY(featureLimitTable); ndx++)
+	{
+		for (deUint32 unsuppNdx = 0; unsuppNdx < DE_LENGTH_OF_ARRAY(unsupportedFeatureTable); unsuppNdx++)
+		{
+			if (unsupportedFeatureTable[unsuppNdx].limitOffset == featureLimitTable[ndx].offset)
+			{
+				featureLimitTable[ndx].unsuppTableNdx = unsuppNdx;
+				break;
+			}
+		}
+	}
 
 	for (deUint32 ndx = 0; ndx < DE_LENGTH_OF_ARRAY(featureLimitTable); ndx++)
 	{
 		switch (featureLimitTable[ndx].format)
 		{
 			case LIMIT_FORMAT_UNSIGNED_INT:
+			{
+				deUint32 limitToCheck = featureLimitTable[ndx].uintVal;
+				if (featureLimitTable[ndx].unsuppTableNdx != -1)
+				{
+					if (*((VkBool32*)((char*)features+unsupportedFeatureTable[featureLimitTable[ndx].unsuppTableNdx].featureOffset)))
+						limitToCheck = unsupportedFeatureTable[featureLimitTable[ndx].unsuppTableNdx].uintVal;
+				}
+
 				if ( featureLimitTable[ndx].type == LIMIT_TYPE_MIN )
 				{
-					if (*((deUint32*)((char*)limits+featureLimitTable[ndx].offset)) < featureLimitTable[ndx].uintVal)
+
+					if (*((deUint32*)((char*)limits+featureLimitTable[ndx].offset)) < limitToCheck)
 					{
 						log << TestLog::Message << "limit Validation failed " << featureLimitTable[ndx].name
 							<< " not valid-limit type MIN - actual is "
@@ -220,7 +292,7 @@ bool validateFeatureLimits(VkPhysicalDeviceProperties* properties, TestLog& log)
 				}
 				else
 				{
-					if (*((deUint32*)((char*)limits+featureLimitTable[ndx].offset)) > featureLimitTable[ndx].uintVal)
+					if (*((deUint32*)((char*)limits+featureLimitTable[ndx].offset)) > limitToCheck)
 					{
 						log << TestLog::Message << "limit validation failed,  " << featureLimitTable[ndx].name
 							<< " not valid-limit type MAX - actual is "
@@ -229,11 +301,20 @@ bool validateFeatureLimits(VkPhysicalDeviceProperties* properties, TestLog& log)
 					}
 				}
 				break;
+			}
 
 			case LIMIT_FORMAT_FLOAT:
+			{
+				float limitToCheck = featureLimitTable[ndx].floatVal;
+				if (featureLimitTable[ndx].unsuppTableNdx != -1)
+				{
+					if (*((VkBool32*)((char*)features+unsupportedFeatureTable[featureLimitTable[ndx].unsuppTableNdx].featureOffset)))
+						limitToCheck = unsupportedFeatureTable[featureLimitTable[ndx].unsuppTableNdx].floatVal;
+				}
+
 				if ( featureLimitTable[ndx].type == LIMIT_TYPE_MIN )
 				{
-					if (*((float*)((char*)limits+featureLimitTable[ndx].offset)) < featureLimitTable[ndx].floatVal)
+					if (*((float*)((char*)limits+featureLimitTable[ndx].offset)) < limitToCheck)
 					{
 						log << TestLog::Message << "limit validation failed, " << featureLimitTable[ndx].name
 							<< " not valid-limit type MIN - actual is "
@@ -243,7 +324,7 @@ bool validateFeatureLimits(VkPhysicalDeviceProperties* properties, TestLog& log)
 				}
 				else
 				{
-					if (*((float*)((char*)limits+featureLimitTable[ndx].offset)) > featureLimitTable[ndx].floatVal)
+					if (*((float*)((char*)limits+featureLimitTable[ndx].offset)) > limitToCheck)
 					{
 						log << TestLog::Message << "limit validation failed, " << featureLimitTable[ndx].name
 							<< " not valid-limit type MAX actual is "
@@ -252,11 +333,19 @@ bool validateFeatureLimits(VkPhysicalDeviceProperties* properties, TestLog& log)
 					}
 				}
 				break;
+			}
 
 			case LIMIT_FORMAT_SIGNED_INT:
+			{
+				deInt32 limitToCheck = featureLimitTable[ndx].intVal;
+				if (featureLimitTable[ndx].unsuppTableNdx != -1)
+				{
+					if (*((VkBool32*)((char*)features+unsupportedFeatureTable[featureLimitTable[ndx].unsuppTableNdx].featureOffset)))
+						limitToCheck = unsupportedFeatureTable[featureLimitTable[ndx].unsuppTableNdx].intVal;
+				}
 				if (featureLimitTable[ndx].type == LIMIT_TYPE_MIN)
 				{
-					if (*((deInt32*)((char*)limits+featureLimitTable[ndx].offset)) < featureLimitTable[ndx].intVal)
+					if (*((deInt32*)((char*)limits+featureLimitTable[ndx].offset)) < limitToCheck)
 					{
 						log << TestLog::Message <<  "limit validation failed, " << featureLimitTable[ndx].name
 							<< " not valid-limit type MIN actual is "
@@ -266,7 +355,7 @@ bool validateFeatureLimits(VkPhysicalDeviceProperties* properties, TestLog& log)
 				}
 				else
 				{
-					if (*((deInt32*)((char*)limits+featureLimitTable[ndx].offset)) > featureLimitTable[ndx].intVal)
+					if (*((deInt32*)((char*)limits+featureLimitTable[ndx].offset)) > limitToCheck)
 					{
 						log << TestLog::Message << "limit validation failed, " << featureLimitTable[ndx].name
 							<< " not valid-limit type MAX actual is "
@@ -275,11 +364,20 @@ bool validateFeatureLimits(VkPhysicalDeviceProperties* properties, TestLog& log)
 					}
 				}
 				break;
+			}
 
 			case LIMIT_FORMAT_DEVICE_SIZE:
+			{
+				deUint64 limitToCheck = featureLimitTable[ndx].deviceSizeVal;
+				if (featureLimitTable[ndx].unsuppTableNdx != -1)
+				{
+					if (*((VkBool32*)((char*)features+unsupportedFeatureTable[featureLimitTable[ndx].unsuppTableNdx].featureOffset)))
+						limitToCheck = unsupportedFeatureTable[featureLimitTable[ndx].unsuppTableNdx].deviceSizeVal;
+				}
+
 				if ( featureLimitTable[ndx].type == LIMIT_TYPE_MIN )
 				{
-					if (*((deUint64*)((char*)limits+featureLimitTable[ndx].offset)) < featureLimitTable[ndx].deviceSizeVal)
+					if (*((deUint64*)((char*)limits+featureLimitTable[ndx].offset)) < limitToCheck)
 					{
 						log << TestLog::Message << "limit validation failed, " << featureLimitTable[ndx].name
 							<< " not valid-limit type MIN actual is "
@@ -289,7 +387,7 @@ bool validateFeatureLimits(VkPhysicalDeviceProperties* properties, TestLog& log)
 				}
 				else
 				{
-					if (*((deUint64*)((char*)limits+featureLimitTable[ndx].offset)) > featureLimitTable[ndx].deviceSizeVal)
+					if (*((deUint64*)((char*)limits+featureLimitTable[ndx].offset)) > limitToCheck)
 					{
 						log << TestLog::Message << "limit validation failed, " << featureLimitTable[ndx].name
 							<< " not valid-limit type MAX actual is "
@@ -298,6 +396,7 @@ bool validateFeatureLimits(VkPhysicalDeviceProperties* properties, TestLog& log)
 					}
 				}
 				break;
+			}
 
 			default:
 				DE_ASSERT(0);
@@ -435,17 +534,19 @@ tcu::TestStatus deviceProperties (Context& context)
 {
 	TestLog&						log			= context.getTestContext().getLog();
 	VkPhysicalDeviceProperties*		props;
+	VkPhysicalDeviceFeatures		features;
 	deUint8							buffer[sizeof(VkPhysicalDeviceProperties) + GUARD_SIZE];
 
 	props = reinterpret_cast<VkPhysicalDeviceProperties*>(buffer);
 	deMemset(props, GUARD_VALUE, sizeof(buffer));
 
 	context.getInstanceInterface().getPhysicalDeviceProperties(context.getPhysicalDevice(), props);
+	context.getInstanceInterface().getPhysicalDeviceFeatures(context.getPhysicalDevice(), &features);
 
 	log << TestLog::Message << "device = " << context.getPhysicalDevice() << TestLog::EndMessage
 		<< TestLog::Message << *props << TestLog::EndMessage;
 
-	if (!validateFeatureLimits(props, log))
+	if (!validateFeatureLimits(props, &features, log))
 		return tcu::TestStatus::fail("deviceProperties - feature limits failed");
 
 	for (int ndx = 0; ndx < GUARD_SIZE; ndx++)
