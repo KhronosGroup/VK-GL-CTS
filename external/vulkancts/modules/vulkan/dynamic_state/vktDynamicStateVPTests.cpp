@@ -255,6 +255,17 @@ public:
 
 	virtual void initPipeline (const vk::VkDevice device)
 	{
+		// Check geometry shader support
+		{
+			const vk::VkPhysicalDeviceFeatures& deviceFeatures = m_context.getDeviceFeatures();
+
+			if (!deviceFeatures.multiViewport)
+				throw tcu::NotSupportedError("Multi-viewport is not supported");
+
+			if (!deviceFeatures.geometryShader)
+				throw tcu::NotSupportedError("Geometry shaders are not supported");
+		}
+
 		const vk::Unique<vk::VkShaderModule> vs(createShaderModule(m_vk, device, m_context.getBinaryCollection().get(m_vertexShaderName), 0));
 		const vk::Unique<vk::VkShaderModule> gs(createShaderModule(m_vk, device, m_context.getBinaryCollection().get(m_geometryShaderName), 0));
 		const vk::Unique<vk::VkShaderModule> fs(createShaderModule(m_vk, device, m_context.getBinaryCollection().get(m_fragmentShaderName), 0));

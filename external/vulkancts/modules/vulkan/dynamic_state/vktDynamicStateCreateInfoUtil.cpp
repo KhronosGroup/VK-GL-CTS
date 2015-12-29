@@ -56,9 +56,9 @@ ImageSubresourceRange::ImageSubresourceRange (vk::VkImageAspectFlags	_aspectMask
 }
 
 ComponentMapping::ComponentMapping (vk::VkComponentSwizzle _r,
-								    vk::VkComponentSwizzle _g,
-								    vk::VkComponentSwizzle _b,
-								    vk::VkComponentSwizzle _a)
+									vk::VkComponentSwizzle _g,
+									vk::VkComponentSwizzle _b,
+									vk::VkComponentSwizzle _a)
 {
 	r = _r;
 	g = _g;
@@ -127,14 +127,15 @@ ImageViewCreateInfo::ImageViewCreateInfo (vk::VkImage					_image,
 	flags = _flags;
 }
 
-BufferViewCreateInfo::BufferViewCreateInfo (vk::VkBuffer	_buffer,
+BufferViewCreateInfo::BufferViewCreateInfo (vk::VkBuffer		_buffer,
 											vk::VkFormat		_format,
-											vk::VkDeviceSize _offset,
-											vk::VkDeviceSize _range)
+											vk::VkDeviceSize	_offset,
+											vk::VkDeviceSize	_range)
 {
 	sType = vk::VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO;
 	pNext = DE_NULL;
 
+	flags	= 0u;
 	buffer	= _buffer;
 	format	= _format;
 	offset	= _offset;
@@ -714,7 +715,8 @@ PipelineLayoutCreateInfo::PipelineLayoutCreateInfo (const std::vector<vk::VkDesc
 	sType = vk::VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 	pNext = DE_NULL;
 
-	setLayoutCount = static_cast<deUint32>(m_setLayouts.size());
+	flags			= 0u;
+	setLayoutCount	= static_cast<deUint32>(m_setLayouts.size());
 
 	if (setLayoutCount)
 	{
@@ -774,7 +776,8 @@ PipelineCreateInfo::TesselationState::TesselationState (deUint32 _patchControlPo
 {
 	sType = vk::VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO;
 	pNext = DE_NULL;
-	patchControlPoints = _patchControlPoints;
+	flags				= 0u;
+	patchControlPoints	= _patchControlPoints;
 }
 
 PipelineCreateInfo::ViewportState::ViewportState (deUint32						_viewportCount,
@@ -815,6 +818,7 @@ PipelineCreateInfo::ViewportState::ViewportState (const ViewportState& other)
 {
 	sType			= other.sType;
 	pNext			= other.pNext;
+	flags			= other.flags;
 	viewportCount	= other.viewportCount;
 	scissorCount	= other.scissorCount;
 
@@ -829,6 +833,7 @@ PipelineCreateInfo::ViewportState& PipelineCreateInfo::ViewportState::operator= 
 {
 	sType			= other.sType;
 	pNext			= other.pNext;
+	flags			= other.flags;
 	viewportCount	= other.viewportCount;
 	scissorCount	= other.scissorCount;
 
@@ -890,6 +895,7 @@ PipelineCreateInfo::MultiSampleState::MultiSampleState (const MultiSampleState& 
 {
 	sType					= other.sType;
 	pNext					= other.pNext;
+	flags					= other.flags;
 	rasterizationSamples	= other.rasterizationSamples;
 	sampleShadingEnable		= other.sampleShadingEnable;
 	minSampleShading		= other.minSampleShading;
@@ -904,6 +910,7 @@ PipelineCreateInfo::MultiSampleState& PipelineCreateInfo::MultiSampleState::oper
 {
 	sType = other.sType;
 	pNext = other.pNext;
+	flags					= other.flags;
 	rasterizationSamples	= other.rasterizationSamples;
 	sampleShadingEnable		= other.sampleShadingEnable;
 	minSampleShading		= other.minSampleShading;
@@ -938,6 +945,7 @@ PipelineCreateInfo::ColorBlendState::ColorBlendState (deUint32											_attach
 {
 	sType = vk::VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
 	pNext	= DE_NULL;
+	flags					= 0u;
 	logicOpEnable			= _logicOpEnable;
 	logicOp					= _logicOp;
 	attachmentCount			= static_cast<deUint32>(m_attachments.size());
@@ -949,6 +957,7 @@ PipelineCreateInfo::ColorBlendState::ColorBlendState (const vk::VkPipelineColorB
 {
 	sType = createInfo.sType;
 	pNext = createInfo.pNext;
+	flags					= createInfo.flags;
 	logicOpEnable			= createInfo.logicOpEnable;
 	logicOp					= createInfo.logicOp;
 	attachmentCount			= static_cast<deUint32>(m_attachments.size());
@@ -960,6 +969,7 @@ PipelineCreateInfo::ColorBlendState::ColorBlendState (const ColorBlendState& cre
 {
 	sType = createInfo.sType;
 	pNext = createInfo.pNext;
+	flags					= createInfo.flags;
 	logicOpEnable			= createInfo.logicOpEnable;
 	logicOp					= createInfo.logicOp;
 	attachmentCount			= static_cast<deUint32>(m_attachments.size());
@@ -1033,6 +1043,7 @@ PipelineCreateInfo::DynamicState::DynamicState (const std::vector<vk::VkDynamicS
 {
 	sType = vk::VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
 	pNext = DE_NULL;
+	flags = 0u;
 
 	if (!_dynamicStates.size())
 	{
@@ -1052,6 +1063,7 @@ PipelineCreateInfo::DynamicState::DynamicState (const DynamicState &other)
 {
 	sType = other.sType;
 	pNext = other.pNext;
+	flags = other.flags;
 
 	dynamicStateCount = other.dynamicStateCount;
 
@@ -1063,6 +1075,7 @@ PipelineCreateInfo::DynamicState& PipelineCreateInfo::DynamicState::operator= (c
 {
 	sType = other.sType;
 	pNext = other.pNext;
+	flags = other.flags;
 
 	dynamicStateCount = other.dynamicStateCount;
 
