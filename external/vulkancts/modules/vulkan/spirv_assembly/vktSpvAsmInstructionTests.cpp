@@ -7414,7 +7414,7 @@ tcu::TestCaseGroup* createFRemTests(tcu::TestContext& testCtx)
 	fragments["pre_main"]				 =
 		"%c_f32_3 = OpConstant %f32 3.0\n"
 		"%c_f32_n3 = OpConstant %f32 -3.0\n"
-		"%c_f32_n4 = OpConstant %f32 4.0\n"
+		"%c_f32_4 = OpConstant %f32 4.0\n"
 		"%c_f32_p75 = OpConstant %f32 0.75\n"
 		"%c_v4f32_p75_p75_p75_p75 = OpConstantComposite %v4f32 %c_f32_p75 %c_f32_p75 %c_f32_p75 %c_f32_p75 \n"
 		"%c_v4f32_4_4_4_4 = OpConstantComposite %v4f32 %c_f32_4 %c_f32_4 %c_f32_4 %c_f32_4\n"
