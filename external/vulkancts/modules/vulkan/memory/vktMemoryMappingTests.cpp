@@ -539,7 +539,7 @@ public:
 
 	MemoryObject*						allocateRandom	(const DeviceInterface& vkd, VkDevice device, de::Random& rng)
 	{
-		const VkDeviceSize		size	= 1 + (rng.getUint64() % ((m_heap.size / MAX_MEMORY_USAGE_DIV) - m_usage - 1));
+		const VkDeviceSize		size	= 1 + (rng.getUint64() % (de::max((m_heap.size / MAX_MEMORY_USAGE_DIV) - m_usage - 1ull, 1ull)));
 		const deUint32			type	= rng.choose<deUint32>(m_memoryTypes.begin(), m_memoryTypes.end());
 		MemoryObject* const		object	= new MemoryObject(vkd, device, size, type);
 
