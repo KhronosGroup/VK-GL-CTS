@@ -6472,11 +6472,10 @@ tcu::TestCaseGroup* createMemoryAccessTests(tcu::TestContext& testCtx)
 		"                     OpStore %v3 %c_f32_1\n"
 
 		"%v                 = OpVariable %fp_stype Function\n"
-
 		"%vv                = OpVariable %fp_stype Function\n"
 		"%vvv               = OpVariable %fp_f32 Function\n"
 
-		"%p_v4f32          = OpAccessChain %fp_v4_f32 %v %c_u32_0\n"
+		"%p_v4f32          = OpAccessChain %fp_v4f32 %v %c_u32_0\n"
 		"%p_a2f32          = OpAccessChain %fp_a2f32 %v %c_u32_1\n"
 		"%p_f32            = OpAccessChain %fp_f32 %v %c_u32_2\n"
 		"%v1_v             = OpLoad %v4f32 %v1 ${access_type}\n"
