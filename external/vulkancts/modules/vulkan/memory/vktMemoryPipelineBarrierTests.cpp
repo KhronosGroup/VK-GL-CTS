@@ -6181,9 +6181,7 @@ void testCommand (TestLog&											log,
 							throw;
 						}
 					}
-				}
 
-				{
 					ExecuteContext	executeContext	(context);
 
 					log << TestLog::Message << "Begin execution" << TestLog::EndMessage;
@@ -6202,6 +6200,8 @@ void testCommand (TestLog&											log,
 							throw;
 						}
 					}
+
+					VK_CHECK(vkd.deviceWaitIdle(device));
 				}
 
 				{
