@@ -7048,6 +7048,8 @@ tcu::TestCaseGroup* createLoopTests(tcu::TestContext& testCtx)
 	RGBA defaultColors[4];
 	getDefaultColors(defaultColors);
 	map<string, string> fragments;
+	fragments["pre_main"] =
+		"%c_f32_5 = OpConstant %f32 5.\n";
 
 	// A loop with a single block. The Continue Target is the loop block
 	// itself. In SPIR-V terms, the "loop construct" contains no blocks at all
