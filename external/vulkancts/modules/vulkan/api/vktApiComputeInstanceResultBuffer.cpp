@@ -81,6 +81,8 @@ Move<VkBuffer> ComputeInstanceResultBuffer::createResultBuffer(const DeviceInter
 	const VkMemoryRequirements				requirements			= getBufferMemoryRequirements(vki, device, *buffer);
 	de::MovePtr<Allocation>					allocation				= allocator.allocate(requirements, MemoryRequirement::HostVisible);
 
+	VK_CHECK(vki.bindBufferMemory(device, *buffer, allocation->getMemory(), allocation->getOffset()));
+
 	const float								clearValue				= -1.0f;
 	void*									mapPtr					= allocation->getHostPtr();
 

@@ -1077,7 +1077,7 @@ tcu::TestStatus submitPrimaryBufferTwiceTest(Context& context)
 		DE_NULL,													//	const void*				pNext;
 		*cmdPool,													//	VkCommandPool				pool;
 		VK_COMMAND_BUFFER_LEVEL_PRIMARY,							//	VkCommandBufferLevel		level;
-		1u,															//	VkCommandBufferCreateFlags	flags;
+		1u,															//	uint32_t					bufferCount;
 	};
 	const Unique<VkCommandBuffer>			primCmdBuf				(allocateCommandBuffer(vk, vkDevice, &cmdBufParams));
 	const VkCommandBufferBeginInfo			primCmdBufBeginInfo		=
@@ -1195,7 +1195,7 @@ tcu::TestStatus submitSecondaryBufferTwiceTest(Context& context)
 		DE_NULL,													//	const void*				pNext;
 		*cmdPool,													//	VkCommandPool				pool;
 		VK_COMMAND_BUFFER_LEVEL_PRIMARY,							//	VkCommandBufferLevel		level;
-		1u,															//	VkCommandBufferCreateFlags	flags;
+		1u,															//	uint32_t					bufferCount;
 	};
 
 	const Unique<VkCommandBuffer>			primCmdBuf1				(allocateCommandBuffer(vk, vkDevice, &cmdBufParams));
@@ -1208,7 +1208,7 @@ tcu::TestStatus submitSecondaryBufferTwiceTest(Context& context)
 		DE_NULL,													//	const void*				pNext;
 		*cmdPool,													//	VkCommandPool				pool;
 		VK_COMMAND_BUFFER_LEVEL_SECONDARY,							//	VkCommandBufferLevel		level;
-		1u,															//	VkCommandBufferCreateFlags	flags;
+		1u,															//	uint32_t					bufferCount;
 	};
 	const Unique<VkCommandBuffer>			secCmdBuf				(allocateCommandBuffer(vk, vkDevice, &secCmdBufParams));
 
@@ -1376,7 +1376,7 @@ tcu::TestStatus oneTimeSubmitFlagPrimaryBufferTest(Context& context)
 		DE_NULL,													//	const void*					pNext;
 		*cmdPool,													//	VkCommandPool				pool;
 		VK_COMMAND_BUFFER_LEVEL_PRIMARY,							//	VkCommandBufferLevel		level;
-		1u,															//	VkCommandBufferCreateFlags	flags;
+		1u,															//	uint32_t					bufferCount;
 	};
 	const Unique<VkCommandBuffer>				primCmdBuf				(allocateCommandBuffer(vk, vkDevice, &cmdBufParams));
 	const VkCommandBufferBeginInfo				primCmdBufBeginInfo		=
@@ -1506,7 +1506,7 @@ tcu::TestStatus oneTimeSubmitFlagSecondaryBufferTest(Context& context)
 		DE_NULL,													//	const void*				pNext;
 		*cmdPool,													//	VkCommandPool				pool;
 		VK_COMMAND_BUFFER_LEVEL_PRIMARY,							//	VkCommandBufferLevel		level;
-		1u,															//	VkCommandBufferCreateFlags	flags;
+		1u,															//	uint32_t					bufferCount;
 	};
 
 	const Unique<VkCommandBuffer>			primCmdBuf1				(allocateCommandBuffer(vk, vkDevice, &cmdBufParams));
@@ -1519,7 +1519,7 @@ tcu::TestStatus oneTimeSubmitFlagSecondaryBufferTest(Context& context)
 		DE_NULL,													//	const void*				pNext;
 		*cmdPool,													//	VkCommandPool				pool;
 		VK_COMMAND_BUFFER_LEVEL_SECONDARY,							//	VkCommandBufferLevel		level;
-		1u,															//	VkCommandBufferCreateFlags	flags;
+		1u,															//	uint32_t					bufferCount;
 	};
 	const Unique<VkCommandBuffer>			secCmdBuf				(allocateCommandBuffer(vk, vkDevice, &secCmdBufParams));
 
@@ -1699,7 +1699,7 @@ tcu::TestStatus simultaneousUsePrimaryBufferTest(Context& context)
 		DE_NULL,													//	const void*					pNext;
 		*cmdPool,													//	VkCommandPool				pool;
 		VK_COMMAND_BUFFER_LEVEL_PRIMARY,							//	VkCommandBufferLevel		level;
-		1u,															//	VkCommandBufferCreateFlags	flags;
+		1u,															//	uint32_t					bufferCount;
 	};
 	const Unique<VkCommandBuffer>			primCmdBuf				(allocateCommandBuffer(vk, vkDevice, &cmdBufParams));
 	const VkCommandBufferBeginInfo			primCmdBufBeginInfo		=
@@ -1823,7 +1823,7 @@ tcu::TestStatus simultaneousUseSecondaryBufferTest(Context& context)
 		DE_NULL,													//	const void*				pNext;
 		*cmdPool,													//	VkCommandPool				pool;
 		VK_COMMAND_BUFFER_LEVEL_PRIMARY,							//	VkCommandBufferLevel		level;
-		1u,															//	VkCommandBufferCreateFlags	flags;
+		1u,															//	uint32_t					bufferCount;
 	};
 	const Unique<VkCommandBuffer>			primCmdBuf				(allocateCommandBuffer(vk, vkDevice, &cmdBufParams));
 
@@ -1834,7 +1834,7 @@ tcu::TestStatus simultaneousUseSecondaryBufferTest(Context& context)
 		DE_NULL,													//	const void*				pNext;
 		*cmdPool,													//	VkCommandPool				pool;
 		VK_COMMAND_BUFFER_LEVEL_SECONDARY,							//	VkCommandBufferLevel		level;
-		1u,															//	VkCommandBufferCreateFlags	flags;
+		1u,															//	uint32_t					bufferCount;
 	};
 	const Unique<VkCommandBuffer>			secCmdBuf				(allocateCommandBuffer(vk, vkDevice, &secCmdBufParams));
 
@@ -2718,7 +2718,7 @@ tcu::TestStatus executeSecondaryBufferTwiceTest(Context& context)
 		DE_NULL,													//	const void*				pNext;
 		*cmdPool,													//	VkCommandPool				pool;
 		VK_COMMAND_BUFFER_LEVEL_PRIMARY,							//	VkCommandBufferLevel		level;
-		1u,															//	VkCommandBufferCreateFlags	flags;
+		1u,															//	uint32_t					bufferCount;
 	};
 	const Unique<VkCommandBuffer>			primCmdBufOne			(allocateCommandBuffer(vk, vkDevice, &cmdBufParams));
 	const Unique<VkCommandBuffer>			primCmdBufTwo			(allocateCommandBuffer(vk, vkDevice, &cmdBufParams));
@@ -2730,7 +2730,7 @@ tcu::TestStatus executeSecondaryBufferTwiceTest(Context& context)
 		DE_NULL,													//	const void*				pNext;
 		*cmdPool,													//	VkCommandPool				pool;
 		VK_COMMAND_BUFFER_LEVEL_SECONDARY,							//	VkCommandBufferLevel		level;
-		1u,															//	VkCommandBufferCreateFlags	flags;
+		BUFFER_COUNT,												//	uint32_t					bufferCount;
 	};
 	VkCommandBuffer cmdBuffers[BUFFER_COUNT];
 	VK_CHECK(vk.allocateCommandBuffers(vkDevice, &secCmdBufParams, cmdBuffers));
