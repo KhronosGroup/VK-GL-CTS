@@ -114,8 +114,8 @@ protected:
 
 	enum
 	{
-		WIDTH = 128,
-		HEIGHT = 128
+		WIDTH = 256,
+		HEIGHT = 256
 	};
 
 	vk::VkFormat									m_colorAttachmentFormat;
