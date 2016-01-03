@@ -641,7 +641,7 @@ public:
 				for (int x = 0; x < frameWidth; x++)
 				{
 					float xCoord = (float)(x / (0.5*frameWidth)) - 1.0f;
-					float lineHalfWidth = (1.0f / (float)deFloor(deviceProperties.limits.lineWidthRange[1])) * 0.5f;
+					float lineHalfWidth = (float)(deFloor(deviceProperties.limits.lineWidthRange[1]) / frameHeight);
 
 					if (xCoord >= -1.0f && xCoord <= 1.0f && yCoord >= -lineHalfWidth && yCoord <= lineHalfWidth)
 						referenceFrame.getLevel(0).setPixel(tcu::Vec4(0.0f, 1.0f, 0.0f, 1.0f), x, y);

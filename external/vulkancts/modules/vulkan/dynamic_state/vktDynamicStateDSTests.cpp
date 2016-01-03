@@ -261,7 +261,7 @@ protected:
 												m_context.getDefaultAllocator(), vk::MemoryRequirement::HostVisible);
 
 		deUint8* ptr = reinterpret_cast<unsigned char *>(m_vertexBuffer->getBoundMemory().getHostPtr());
-		deMemcpy(ptr, &m_data[0], dataSize);
+		deMemcpy(ptr, &m_data[0], (size_t)dataSize);
 
 		vk::flushMappedMemoryRange(m_vk, device,
 			m_vertexBuffer->getBoundMemory().getMemory(),
@@ -403,6 +403,15 @@ public:
 		m_depthStencilState_1 = PipelineCreateInfo::DepthStencilState(
 			vk::VK_TRUE, vk::VK_TRUE, vk::VK_COMPARE_OP_ALWAYS, vk::VK_FALSE);
 
+
+		// Check if depth bounds test is supported
+		{
+			const vk::VkPhysicalDeviceFeatures& deviceFeatures = m_context.getDeviceFeatures();
+
+			if (!deviceFeatures.depthBounds)
+				throw tcu::NotSupportedError("Depth bounds test is unsupported");
+		}
+
 		// enable depth bounds test
 		m_depthStencilState_2 = PipelineCreateInfo::DepthStencilState(
 			vk::VK_FALSE, vk::VK_FALSE, vk::VK_COMPARE_OP_NEVER, vk::VK_TRUE);
@@ -412,12 +421,6 @@ public:
 
 	virtual tcu::TestStatus iterate (void)
 	{
-		vk::VkPhysicalDeviceFeatures features;
-		m_context.getInstanceInterface().getPhysicalDeviceFeatures(m_context.getPhysicalDevice(), &features);
-
-		if (!features.depthBounds)
-			return tcu::TestStatus(QP_TEST_RESULT_NOT_SUPPORTED, "depthBounds Vulkan feature is not supported");
-
 		tcu::TestLog &log = m_context.getTestContext().getLog();
 		const vk::VkQueue queue = m_context.getUniversalQueue();
 
