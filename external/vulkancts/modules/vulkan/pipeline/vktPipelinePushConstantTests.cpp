@@ -747,6 +747,12 @@ PushConstantGraphicsTestInstance::PushConstantGraphicsTestInstance (Context&				
 				0u,									// deUint32	binding;
 				VK_FORMAT_R32G32B32A32_SFLOAT,		// VkFormat	format;
 				0u									// deUint32	offsetInBytes;
+			},
+			{
+				1u,									// deUint32	location;
+				0u,									// deUint32	binding;
+				VK_FORMAT_R32G32B32A32_SFLOAT,		// VkFormat	format;
+				DE_OFFSET_OF(Vertex4RGBA, color),	// deUint32	offset;
 			}
 		};
 
@@ -757,7 +763,7 @@ PushConstantGraphicsTestInstance::PushConstantGraphicsTestInstance (Context&				
 			0u,																// vkPipelineVertexInputStateCreateFlags	flags;
 			1u,																// deUint32									bindingCount;
 			&vertexInputBindingDescription,									// const VkVertexInputBindingDescription*	pVertexBindingDescriptions;
-			1u,																// deUint32									attributeCount;
+			2u,																// deUint32									attributeCount;
 			vertexInputAttributeDescriptions								// const VkVertexInputAttributeDescription*	pVertexAttributeDescriptions;
 		};
 
