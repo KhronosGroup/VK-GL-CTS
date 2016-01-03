@@ -1607,9 +1607,9 @@ void ShaderMatrixInstance::setupUniforms (const tcu::Vec4&)
 			switch (in.dataType)
 			{
 				case TYPE_FLOAT:		addUniform(uniformBinding, vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, sizeof(float), &s_constInFloat[inNdx]);					break;
-				case TYPE_FLOAT_VEC2:	addUniform(uniformBinding, vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, s_constInVec2[inNdx].getPtr());			break;
-				case TYPE_FLOAT_VEC3:	addUniform(uniformBinding, vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, s_constInVec3[inNdx].getPtr());			break;
-				case TYPE_FLOAT_VEC4:	addUniform(uniformBinding, vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, s_constInVec4[inNdx].getPtr());			break;
+				case TYPE_FLOAT_VEC2:	addUniform(uniformBinding, vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, s_constInVec2[inNdx]);			break;
+				case TYPE_FLOAT_VEC3:	addUniform(uniformBinding, vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, s_constInVec3[inNdx]);			break;
+				case TYPE_FLOAT_VEC4:	addUniform(uniformBinding, vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, s_constInVec4[inNdx]);			break;
 				// \note GLES3 supports transpose in matrix upload.
 				case TYPE_FLOAT_MAT2:	addMatrixUniform(uniformBinding, in.dataType, s_constInMat2x2[inNdx]);	break;
 				case TYPE_FLOAT_MAT2X3:	addMatrixUniform(uniformBinding, in.dataType, s_constInMat2x3[inNdx]);	break;
