@@ -1892,6 +1892,7 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 	const vk::VkDescriptorBufferInfo descriptorInfo = makeDescriptorBufferInfo(*acBuffer, 0ull, acBufferSize);
 
 	vk::DescriptorSetUpdateBuilder setUpdateBuilder;
+	std::vector<vk::VkDescriptorBufferInfo>	descriptors(numBlocks);
 
 	setUpdateBuilder
 		.writeSingle(*descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(0u), vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &descriptorInfo);
@@ -1918,7 +1919,8 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 
 				vk::Move<vk::VkBuffer>				buffer		= createBuffer(m_context, bufferSize, vk::VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 				de::MovePtr<vk::Allocation>			alloc		= allocateAndBindMemory(m_context, *buffer, vk::MemoryRequirement::HostVisible);
-				const vk::VkDescriptorBufferInfo	descriptor	= makeDescriptorBufferInfo(*buffer, 0ull, bufferSize);
+
+				descriptors[blockNdx] = makeDescriptorBufferInfo(*buffer, 0ull, bufferSize);
 
 				mapPtrs[blockNdx] = alloc->getHostPtr();
 
@@ -1926,7 +1928,7 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 				m_uniformAllocs.push_back(AllocationSp(alloc.release()));
 
 				setUpdateBuilder.writeSingle(*descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(blockNdx + 1),
-											vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &descriptor);
+											vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &descriptors[blockNdx]);
 			}
 		}
 		else
@@ -1959,10 +1961,11 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 			{
 				const deUint32						bufferSize	= bufferSizes[blockNdx];
 				const deUint32						offset		= blockLocations[blockNdx].offset;
-				const vk::VkDescriptorBufferInfo	descriptor	= makeDescriptorBufferInfo(*buffer, offset, bufferSize);
+
+				descriptors[blockNdx] = makeDescriptorBufferInfo(*buffer, offset, bufferSize);
 
 				setUpdateBuilder.writeSingle(*descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(blockNdx + 1),
-										vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &descriptor);
+										vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &descriptors[blockNdx]);
 			}
 
 			m_uniformBuffers.push_back(VkBufferSp(new vk::Unique<vk::VkBuffer>(buffer)));
