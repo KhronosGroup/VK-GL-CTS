@@ -44,6 +44,7 @@
 #include "vktPipelinePushConstantTests.hpp"
 #include "vktPipelineMultisampleTests.hpp"
 #include "vktPipelineVertexInputTests.hpp"
+#include "vktPipelineTimestampTests.hpp"
 #include "deUniquePtr.hpp"
 
 namespace vkt
@@ -65,6 +66,7 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 	pipelineTests->addChild(createMultisampleTests	(testCtx));
 	pipelineTests->addChild(createVertexInputTests	(testCtx));
 	pipelineTests->addChild(createInputAssemblyTests(testCtx));
+	pipelineTests->addChild(createTimestampTests	(testCtx));
 
 	return pipelineTests.release();
 }

@@ -186,7 +186,7 @@ StateObjects::StateObjects (const vk::DeviceInterface&vk, vkt::Context &context,
 		const vk::VkVertexInputBindingDescription vf_binding_desc		=
 		{
 			0,																// binding;
-			4 * sizeof(float),												// stride;
+			4 * (deUint32)sizeof(float),									// stride;
 			vk::VK_VERTEX_INPUT_RATE_VERTEX									// inputRate
 		};
 
@@ -385,7 +385,7 @@ tcu::TestStatus	BasicOcclusionQueryTestInstance::iterate (void)
 	transition2DImage(vk, *cmdBuffer, m_stateObjects->m_DepthImage->object(), vk::VK_IMAGE_ASPECT_DEPTH_BIT, vk::VK_IMAGE_LAYOUT_UNDEFINED, vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 
 	std::vector<vk::VkClearValue> renderPassClearValues(2);
-	deMemset(&renderPassClearValues[0], static_cast<int>(renderPassClearValues.size()) * sizeof(vk::VkClearValue), 0);
+	deMemset(&renderPassClearValues[0], 0, static_cast<int>(renderPassClearValues.size()) * sizeof(vk::VkClearValue));
 
 	const vk::VkRect2D renderArea =
 	{
@@ -733,7 +733,7 @@ vk::Move<vk::VkCommandBuffer> OcclusionQueryTestInstance::recordRender (vk::VkCo
 	transition2DImage(vk, *cmdBuffer, m_stateObjects->m_DepthImage->object(), vk::VK_IMAGE_ASPECT_DEPTH_BIT, vk::VK_IMAGE_LAYOUT_UNDEFINED, vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 
 	std::vector<vk::VkClearValue>	renderPassClearValues(2);
-	deMemset(&renderPassClearValues[0], static_cast<int>(renderPassClearValues.size()) * sizeof(vk::VkClearValue), 0);
+	deMemset(&renderPassClearValues[0], 0, static_cast<int>(renderPassClearValues.size()) * sizeof(vk::VkClearValue));
 
 	const vk::VkRect2D renderArea =
 	{

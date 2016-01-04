@@ -732,6 +732,8 @@ void FragmentOutExecutor::execute (const Context& ctx, int numValues, const void
 	const bool											useGeometryShader		= m_shaderType == glu::SHADERTYPE_GEOMETRY;
 
 	std::vector<VkImageSp>								colorImages;
+	std::vector<VkImageMemoryBarrier>					colorImagePreRenderBarriers;
+	std::vector<VkImageMemoryBarrier>					colorImagePostRenderBarriers;
 	std::vector<AllocationSp>							colorImageAllocs;
 	std::vector<VkAttachmentDescription>				attachments;
 	std::vector<VkClearValue>							attachmentClearValues;
@@ -858,7 +860,7 @@ void FragmentOutExecutor::execute (const Context& ctx, int numValues, const void
 					{
 						VK_IMAGE_ASPECT_COLOR_BIT,						// VkImageAspectFlags		aspectMask;
 						0u,												// deUint32					baseMipLevel;
-						0u,												// deUint32					mipLevels;
+						1u,												// deUint32					mipLevels;
 						0u,												// deUint32					baseArraySlice;
 						1u												// deUint32					arraySize;
 					}													// VkImageSubresourceRange	subresourceRange;
@@ -866,6 +868,50 @@ void FragmentOutExecutor::execute (const Context& ctx, int numValues, const void
 
 				Move<VkImageView> colorImageView = createImageView(vk, vkDevice, &colorImageViewParams);
 				colorImageViews.push_back(de::SharedPtr<Unique<VkImageView> >(new Unique<VkImageView>(colorImageView)));
+
+				const VkImageMemoryBarrier	colorImagePreRenderBarrier =
+				{
+					VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,					// sType
+					DE_NULL,												// pNext
+					0u,														// srcAccessMask
+					(VK_ACCESS_COLOR_ATTACHMENT_READ_BIT |
+					VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT),					// dstAccessMask
+					VK_IMAGE_LAYOUT_UNDEFINED,								// oldLayout
+					VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,				// newLayout
+					VK_QUEUE_FAMILY_IGNORED,								// srcQueueFamilyIndex
+					VK_QUEUE_FAMILY_IGNORED,								// dstQueueFamilyIndex
+					colorImages.back().get()->get(),						// image
+					{
+						VK_IMAGE_ASPECT_COLOR_BIT,								// aspectMask
+						0u,														// baseMipLevel
+						1u,														// levelCount
+						0u,														// baseArrayLayer
+						1u,														// layerCount
+					}														// subresourceRange
+				};
+				colorImagePreRenderBarriers.push_back(colorImagePreRenderBarrier);
+
+				const VkImageMemoryBarrier	colorImagePostRenderBarrier =
+				{
+					VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,					// sType
+					DE_NULL,												// pNext
+					(VK_ACCESS_COLOR_ATTACHMENT_READ_BIT |
+					VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT),					// srcAccessMask
+					VK_ACCESS_TRANSFER_READ_BIT,							// dstAccessMask
+					VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,				// oldLayout
+					VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,					// newLayout
+					VK_QUEUE_FAMILY_IGNORED,								// srcQueueFamilyIndex
+					VK_QUEUE_FAMILY_IGNORED,								// dstQueueFamilyIndex
+					colorImages.back().get()->get(),						// image
+					{
+						VK_IMAGE_ASPECT_COLOR_BIT,								// aspectMask
+						0u,														// baseMipLevel
+						1u,														// levelCount
+						0u,														// baseArrayLayer
+						1u,														// layerCount
+					}														// subresourceRange
+				};
+				colorImagePostRenderBarriers.push_back(colorImagePostRenderBarrier);
 			}
 		}
 	}
@@ -1207,6 +1253,17 @@ void FragmentOutExecutor::execute (const Context& ctx, int numValues, const void
 		cmdBuffer = allocateCommandBuffer(vk, vkDevice, &cmdBufferParams);
 
 		VK_CHECK(vk.beginCommandBuffer(*cmdBuffer, &cmdBufferBeginInfo));
+
+		{
+			std::vector<const void*> barriers(colorImagePreRenderBarriers.size());
+			if (!barriers.empty())
+			{
+				for (size_t i = 0; i < barriers.size(); ++i)
+					barriers[i] = &colorImagePreRenderBarriers[i];
+				vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_FALSE, (deUint32)barriers.size(), &barriers[0]);
+			}
+		}
+	
 		vk.cmdBeginRenderPass(*cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
 		vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *graphicsPipeline);
@@ -1226,6 +1283,16 @@ void FragmentOutExecutor::execute (const Context& ctx, int numValues, const void
 		vk.cmdDraw(*cmdBuffer, (deUint32)positions.size(), 1u, 0u, 0u);
 
 		vk.cmdEndRenderPass(*cmdBuffer);
+
+		{
+			std::vector<const void*> barriers(colorImagePostRenderBarriers.size());
+			if (!barriers.empty())
+			{
+				for (size_t i = 0; i < barriers.size(); ++i)
+					barriers[i] = &colorImagePostRenderBarriers[i];
+				vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_FALSE, (deUint32)barriers.size(), &barriers[0]);
+			}
+		}
 		VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
 	}
 
@@ -1349,6 +1416,8 @@ void FragmentOutExecutor::execute (const Context& ctx, int numValues, const void
 				// Copy image to buffer
 				{
 
+					Move<VkCommandBuffer> copyCmdBuffer = allocateCommandBuffer(vk, vkDevice, &cmdBufferParams);
+
 					const VkSubmitInfo submitInfo =
 					{
 						VK_STRUCTURE_TYPE_SUBMIT_INFO,
@@ -1356,15 +1425,13 @@ void FragmentOutExecutor::execute (const Context& ctx, int numValues, const void
 						0u,
 						(const VkSemaphore*)DE_NULL,
 						1u,
-						&cmdBuffer.get(),
+						&copyCmdBuffer.get(),
 						0u,
 						(const VkSemaphore*)DE_NULL,
 					};
 
-					Move<VkCommandBuffer> copyCmdBuffer = allocateCommandBuffer(vk, vkDevice, &cmdBufferParams);
-
 					VK_CHECK(vk.beginCommandBuffer(*copyCmdBuffer, &cmdBufferBeginInfo));
-					vk.cmdCopyImageToBuffer(*copyCmdBuffer, colorImages[outLocation + locNdx].get()->get(), VK_IMAGE_LAYOUT_UNDEFINED, *readImageBuffer, 1u, &copyParams);
+					vk.cmdCopyImageToBuffer(*copyCmdBuffer, colorImages[outLocation + locNdx].get()->get(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *readImageBuffer, 1u, &copyParams);
 					VK_CHECK(vk.endCommandBuffer(*copyCmdBuffer));
 
 					VK_CHECK(vk.resetFences(vkDevice, 1, &fence.get()));
@@ -1663,13 +1730,13 @@ void BufferIoExecutor::declareBufferBlocks (std::ostream& src, const ShaderSpec&
 
 	if (!spec.inputs.empty())
 	{
-		src	<< "layout(set = 0, binding = " << int(INPUT_BUFFER_BINDING) << ", std140) buffer InBuffer\n"
+		src	<< "layout(set = 0, binding = " << int(INPUT_BUFFER_BINDING) << ", std430) buffer InBuffer\n"
 			<< "{\n"
 			<< "	Inputs inputs[];\n"
 			<< "};\n";
 	}
 
-	src	<< "layout(set = 0, binding = " << int(OUTPUT_BUFFER_BINDING) << ", std140) buffer OutBuffer\n"
+	src	<< "layout(set = 0, binding = " << int(OUTPUT_BUFFER_BINDING) << ", std430) buffer OutBuffer\n"
 		<< "{\n"
 		<< "	Outputs outputs[];\n"
 		<< "};\n"
@@ -1802,7 +1869,8 @@ void BufferIoExecutor::initBuffers (const Context& ctx, int numValues)
 {
 	const deUint32				inputStride			= getLayoutStride(m_inputLayout);
 	const deUint32				outputStride		= getLayoutStride(m_outputLayout);
-	const size_t				inputBufferSize		= numValues * inputStride;
+	// Avoid creating zero-sized buffer/memory
+	const size_t				inputBufferSize		= numValues * inputStride ? (numValues * inputStride) : 1;
 	const size_t				outputBufferSize	= numValues * outputStride;
 
 	// Upload data to buffer
@@ -1860,8 +1928,6 @@ public:
 
 protected:
 	static std::string	generateComputeShader	(const ShaderSpec& spec);
-
-	tcu::IVec3			m_maxWorkSize;
 };
 
 ComputeShaderExecutor::ComputeShaderExecutor	(const ShaderSpec& shaderSpec, glu::ShaderType shaderType)
@@ -1908,8 +1974,6 @@ void ComputeShaderExecutor::setShaderSources (SourceCollections& programCollecti
 void ComputeShaderExecutor::execute (const Context& ctx, int numValues, const void* const* inputs, void* const* outputs)
 {
 	checkSupported(ctx, m_shaderType);
-
-	const int						maxValuesPerInvocation	= m_maxWorkSize[0];
 
 	const VkDevice					vkDevice				= ctx.getDevice();
 	const DeviceInterface&			vk						= ctx.getDeviceInterface();
@@ -1968,60 +2032,15 @@ void ComputeShaderExecutor::execute (const Context& ctx, int numValues, const vo
 
 	};
 
+	m_descriptorSetLayoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT);
+	m_descriptorPoolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+	m_descriptorSetLayoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT);
+	m_descriptorPoolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+
 	addUniforms(vkDevice, vk, queueFamilyIndex, memAlloc);
 
-	const VkDescriptorSetLayoutBinding layoutBindings[2] =
-	{
-		{
-			0u,												// deUint32					binding;
-			VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,				// VkDescriptorType			descriptorType;
-			1u,												// deUint32					descriptorCount;
-			VK_SHADER_STAGE_COMPUTE_BIT,					// VkShaderStageFlags		stageFlags;
-			DE_NULL											// const VkSampler*			pImmutableSamplers;
-		},
-		{
-			0u,												// deUint32					binding;
-			VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,				// VkDescriptorType			descriptorType;
-			1u,												// deUint32					descriptorCount;
-			VK_SHADER_STAGE_COMPUTE_BIT,					// VkShaderStageFlags		stageFlags;
-			DE_NULL											// const VkSampler*			pImmutableSamplers;
-		}
-	};
-
-	const VkDescriptorSetLayoutCreateInfo descriptorLayoutParams =
-	{
-		VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,	// VkStructureType						sType;
-		DE_NULL,												// cost void*							pNexŧ;
-		(VkDescriptorSetLayoutCreateFlags)0,					// VkDescriptorSetLayoutCreateFlags		flags;
-		DE_LENGTH_OF_ARRAY(layoutBindings),						// deUint32								count;
-		layoutBindings											// const VkDescriptorSetLayoutBinding	pBinding;
-	};
-
-	descriptorSetLayout = createDescriptorSetLayout(vk, vkDevice, &descriptorLayoutParams);
-
-	const VkDescriptorPoolSize descriptorPoolSizes[] =
-	{
-		{
-			VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,					// VkDescriptorType		type;
-			1u													// deUint32				count;
-		},
-		{
-			VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,					// VkDescriptorType		type;
-			1u													// deUint32				count;
-		}
-	};
-
-	const VkDescriptorPoolCreateInfo descriptorPoolParams =
-	{
-		VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,			// VkStructureType					sType;
-		DE_NULL,												// void*							pNext;
-		VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,		// VkDescriptorPoolUsage			poolUsage;
-		1u,														// deUint32							maxSets;
-		DE_LENGTH_OF_ARRAY(descriptorPoolSizes),				// deUint32							count;
-		descriptorPoolSizes										// const VkDescriptorPoolSize*		pPoolSizes;
-	};
-
-	descriptorPool = createDescriptorPool(vk, vkDevice, &descriptorPoolParams);
+	descriptorSetLayout = m_descriptorSetLayoutBuilder.build(vk, vkDevice);
+	descriptorPool = m_descriptorPoolBuilder.build(vk, vkDevice, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
 
 	const VkDescriptorSetAllocateInfo allocInfo =
 	{
@@ -2041,8 +2060,8 @@ void ComputeShaderExecutor::execute (const Context& ctx, int numValues, const vo
 			VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,		// VkStructureType				sType;
 			DE_NULL,											// const void*					pNext;
 			(VkPipelineLayoutCreateFlags)0,						// VkPipelineLayoutCreateFlags	flags;
-			0u,													// deUint32						CdescriptorSetCount;
-			DE_NULL,											// const VkDescriptorSetLayout*	pSetLayouts;
+			1u,													// deUint32						CdescriptorSetCount;
+			&*descriptorSetLayout,								// const VkDescriptorSetLayout*	pSetLayouts;
 			0u,													// deUint32						pushConstantRangeCount;
 			DE_NULL												// const VkPushConstantRange*	pPushConstantRanges;
 		};
@@ -2095,6 +2114,8 @@ void ComputeShaderExecutor::execute (const Context& ctx, int numValues, const vo
 		fence = createFence(vk, vkDevice, &fenceParams);
 	}
 
+
+	const int maxValuesPerInvocation	= ctx.getDeviceProperties().limits.maxComputeWorkGroupSize[0];
 	int					curOffset		= 0;
 	const deUint32		inputStride		= getInputStride();
 	const deUint32		outputStride	= getOutputStride();
@@ -2177,7 +2198,6 @@ static std::string generateVertexShaderForTess (void)
 {
 	std::ostringstream	src;
 	src <<  "#version 310 es\n"
-
 		<< "void main (void)\n{\n"
 		<< "	gl_Position = vec4(gl_VertexID/2, gl_VertexID%2, 0.0, 1.0);\n"
 		<< "}\n";
@@ -2370,59 +2390,15 @@ void TessellationExecutor::renderTess (const Context& ctx, deUint32 vertexCount)
 
 	// Create descriptors
 	{
-		const VkDescriptorSetLayoutBinding layoutBindings[2] =
-		{
-			{
-				0u,												// deUint32					binding;
-				VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,				// VkDescriptorType			descriptorType;
-				1u,												// deUint32					arraySize;
-				VK_SHADER_STAGE_ALL,							// VkShaderStageFlags		stageFlags;
-				DE_NULL											// const VkSampler*			pImmutableSamplers;
-			},
-			{
-				0u,												// deUint32					binding;
-				VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,				// VkDescriptorType			descriptorType;
-				1u,												// deUint32					arraySize;
-				VK_SHADER_STAGE_ALL,							// VkShaderStageFlags		stageFlags;
-				DE_NULL											// const VkSampler*			pImmutableSamplers;
-			}
-		};
-
-		const VkDescriptorSetLayoutCreateInfo descriptorLayoutParams =
-		{
-			VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,	// VkStructureType						sType;
-			DE_NULL,												// cost void*							pNexŧ;
-			(VkDescriptorSetLayoutCreateFlags)0,					// VkDescriptorSetLayoutCreateFlags		flags;
-			DE_LENGTH_OF_ARRAY(layoutBindings),						// deUint32								count;
-			layoutBindings											// const VkDescriptorSetLayoutBinding	pBinding;
-		};
+		m_descriptorSetLayoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_ALL);
+		m_descriptorPoolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+		m_descriptorSetLayoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_ALL);
+		m_descriptorPoolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 
 		addUniforms(vkDevice, vk, queueFamilyIndex, memAlloc);
-		descriptorSetLayout = createDescriptorSetLayout(vk, vkDevice, &descriptorLayoutParams);
 
-		const VkDescriptorPoolSize descriptorPoolSizes[] =
-		{
-			{
-				VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,				// VkDescriptorType		type;
-				1u												// deUint32				count;
-			},
-			{
-				VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,				// VkDescriptorType		type;
-				1u												// deUint32				count;
-			}
-		};
-
-		const VkDescriptorPoolCreateInfo descriptorPoolParams =
-		{
-			VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,		// VkStructureType					sType;
-			DE_NULL,											// void*							pNext;
-			VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,	//VkDescriptorPoolUsage				poolUsage;
-			1u,													//deUint32							maxSets;
-			DE_LENGTH_OF_ARRAY(descriptorPoolSizes),			// deUint32							count;
-			descriptorPoolSizes									// const VkDescriptorPoolSize*		pTypeCount
-		};
-
-		descriptorPool = createDescriptorPool(vk, vkDevice, &descriptorPoolParams);
+		descriptorSetLayout = m_descriptorSetLayoutBuilder.build(vk, vkDevice);
+		descriptorPool = m_descriptorPoolBuilder.build(vk, vkDevice, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
 
 		const VkDescriptorSetAllocateInfo allocInfo =
 		{
@@ -2446,14 +2422,15 @@ void TessellationExecutor::renderTess (const Context& ctx, deUint32 vertexCount)
 
 			descriptorSetUpdateBuilder.writeSingle(*descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding((deUint32)OUTPUT_BUFFER_BINDING), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &outputDescriptorBufferInfo);
 
+			VkDescriptorBufferInfo inputDescriptorBufferInfo =
+			{
+				0,							// VkBuffer			buffer;
+				0u,							// VkDeviceSize		offset;
+				VK_WHOLE_SIZE				// VkDeviceSize		range;
+			};
 			if (inputBufferSize)
 			{
-				const VkDescriptorBufferInfo inputDescriptorBufferInfo =
-				{
-					*m_inputBuffer,				// VkBuffer			buffer;
-					0u,							// VkDeviceSize		offset;
-					VK_WHOLE_SIZE				// VkDeviceSize		range;
-				};
+				inputDescriptorBufferInfo.buffer = *m_inputBuffer;
 
 				descriptorSetUpdateBuilder.writeSingle(*descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding((deUint32)INPUT_BUFFER_BINDING), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &inputDescriptorBufferInfo);
 			}
@@ -2555,7 +2532,7 @@ void TessellationExecutor::renderTess (const Context& ctx, deUint32 vertexCount)
 			VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO,		// VkStructureType							sType;
 			DE_NULL,														// const void*								pNext;
 			(VkPipelineTesselationStateCreateFlags)0,						// VkPipelineTessellationStateCreateFlags	flags;
-			vertexCount														// uint32_t									patchControlPoints;
+			1																// uint32_t									patchControlPoints;
 		};
 
 		const VkViewport viewport =
@@ -2704,7 +2681,7 @@ void TessellationExecutor::renderTess (const Context& ctx, deUint32 vertexCount)
 			DE_NULL,										// const void*				pNext;
 			*cmdPool,										// VkCmdPool				cmdPool;
 			VK_COMMAND_BUFFER_LEVEL_PRIMARY,				// VkCmdBufferLevel			level;
-			0u												// VkCmdBufferCreateFlags	flags;
+			1u												// uint32_t					bufferCount;
 		};
 
 		const VkCommandBufferBeginInfo cmdBufferBeginInfo =

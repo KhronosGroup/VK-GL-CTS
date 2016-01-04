@@ -1515,74 +1515,74 @@ void ShaderMatrixInstance::addMatrixUniform(deUint32 bindingLocation, DataType d
 	{
 		case TYPE_FLOAT_MAT2:
 		{
-			Mat2 matrix = transpose(Mat2(dataPtr));
-			result.setRow(0, matrix.getRow(0).toWidth<4>());
-			result.setRow(1, matrix.getRow(1).toWidth<4>());
+			Mat2 matrix = Mat2(dataPtr);
+			result.setColumn(0, matrix.getColumn(0).toWidth<4>());
+			result.setColumn(1, matrix.getColumn(1).toWidth<4>());
 			break;
 		}
 		case TYPE_FLOAT_MAT2X3:
 		{
-			Mat3x2 matrix = transpose(Mat2x3(dataPtr));
-			result.setRow(0, matrix.getRow(0).toWidth<4>());
-			result.setRow(1, matrix.getRow(1).toWidth<4>());
+			Mat2x3 matrix = Mat2x3(dataPtr);
+			result.setColumn(0, matrix.getColumn(0).toWidth<4>());
+			result.setColumn(1, matrix.getColumn(1).toWidth<4>());
 			break;
 		}
 		case TYPE_FLOAT_MAT2X4:
 		{
-			Mat4x2 matrix = transpose(Mat2x4(dataPtr));
-			result.setRow(0, matrix.getRow(0).toWidth<4>());
-			result.setRow(1, matrix.getRow(1).toWidth<4>());
+			Mat2x4 matrix = Mat2x4(dataPtr);
+			result.setColumn(0, matrix.getColumn(0).toWidth<4>());
+			result.setColumn(1, matrix.getColumn(1).toWidth<4>());
 			break;
 		}
 		case TYPE_FLOAT_MAT3X2:
 		{
-			Mat2x3 matrix = transpose(Mat3x2(dataPtr));
-			result.setRow(0, matrix.getRow(0).toWidth<4>());
-			result.setRow(1, matrix.getRow(1).toWidth<4>());
-			result.setRow(2, matrix.getRow(2).toWidth<4>());
+			Mat3x2 matrix = Mat3x2(dataPtr);
+			result.setColumn(0, matrix.getColumn(0).toWidth<4>());
+			result.setColumn(1, matrix.getColumn(1).toWidth<4>());
+			result.setColumn(2, matrix.getColumn(2).toWidth<4>());
 			break;
 		}
 		case TYPE_FLOAT_MAT3:
 		{
-			Mat3 matrix = transpose(Mat3(dataPtr));
-			result.setRow(0, matrix.getRow(0).toWidth<4>());
-			result.setRow(1, matrix.getRow(1).toWidth<4>());
-			result.setRow(2, matrix.getRow(2).toWidth<4>());
+			Mat3 matrix = Mat3(dataPtr);
+			result.setColumn(0, matrix.getColumn(0).toWidth<4>());
+			result.setColumn(1, matrix.getColumn(1).toWidth<4>());
+			result.setColumn(2, matrix.getColumn(2).toWidth<4>());
 			break;
 		}
 		case TYPE_FLOAT_MAT3X4:
 		{
-			Mat4x3 matrix = transpose(Mat3x4(dataPtr));
-			result.setRow(0, matrix.getRow(0).toWidth<4>());
-			result.setRow(1, matrix.getRow(1).toWidth<4>());
-			result.setRow(2, matrix.getRow(2).toWidth<4>());
+			Mat3x4 matrix = Mat3x4(dataPtr);
+			result.setColumn(0, matrix.getColumn(0).toWidth<4>());
+			result.setColumn(1, matrix.getColumn(1).toWidth<4>());
+			result.setColumn(2, matrix.getColumn(2).toWidth<4>());
 			break;
 		}
 		case TYPE_FLOAT_MAT4X2:
 		{
-			Mat2x4 matrix = transpose(Mat4x2(dataPtr));
-			result.setRow(0, matrix.getRow(0).toWidth<4>());
-			result.setRow(1, matrix.getRow(1).toWidth<4>());
-			result.setRow(2, matrix.getRow(2).toWidth<4>());
-			result.setRow(3, matrix.getRow(3).toWidth<4>());
+			Mat4x2 matrix = Mat4x2(dataPtr);
+			result.setColumn(0, matrix.getColumn(0).toWidth<4>());
+			result.setColumn(1, matrix.getColumn(1).toWidth<4>());
+			result.setColumn(2, matrix.getColumn(2).toWidth<4>());
+			result.setColumn(3, matrix.getColumn(3).toWidth<4>());
 			break;
 		}
 		case TYPE_FLOAT_MAT4X3:
 		{
-			Mat3x4 matrix = transpose(Mat4x3(dataPtr));
-			result.setRow(0, matrix.getRow(0).toWidth<4>());
-			result.setRow(1, matrix.getRow(1).toWidth<4>());
-			result.setRow(2, matrix.getRow(2).toWidth<4>());
-			result.setRow(3, matrix.getRow(3).toWidth<4>());
+			Mat4x3 matrix = Mat4x3(dataPtr);
+			result.setColumn(0, matrix.getColumn(0).toWidth<4>());
+			result.setColumn(1, matrix.getColumn(1).toWidth<4>());
+			result.setColumn(2, matrix.getColumn(2).toWidth<4>());
+			result.setColumn(3, matrix.getColumn(3).toWidth<4>());
 			break;
 		}
 		case TYPE_FLOAT_MAT4:
 		{
-			Mat4 matrix = transpose(Mat4(dataPtr));
-			result.setRow(0, matrix.getRow(0).toWidth<4>());
-			result.setRow(1, matrix.getRow(1).toWidth<4>());
-			result.setRow(2, matrix.getRow(2).toWidth<4>());
-			result.setRow(3, matrix.getRow(3).toWidth<4>());
+			Mat4 matrix = Mat4(dataPtr);
+			result.setColumn(0, matrix.getColumn(0).toWidth<4>());
+			result.setColumn(1, matrix.getColumn(1).toWidth<4>());
+			result.setColumn(2, matrix.getColumn(2).toWidth<4>());
+			result.setColumn(3, matrix.getColumn(3).toWidth<4>());
 			break;
 		}
 		default:
@@ -1607,9 +1607,9 @@ void ShaderMatrixInstance::setupUniforms (const tcu::Vec4&)
 			switch (in.dataType)
 			{
 				case TYPE_FLOAT:		addUniform(uniformBinding, vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, sizeof(float), &s_constInFloat[inNdx]);					break;
-				case TYPE_FLOAT_VEC2:	addUniform(uniformBinding, vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, s_constInVec2[inNdx].getPtr());			break;
-				case TYPE_FLOAT_VEC3:	addUniform(uniformBinding, vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, s_constInVec3[inNdx].getPtr());			break;
-				case TYPE_FLOAT_VEC4:	addUniform(uniformBinding, vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, s_constInVec4[inNdx].getPtr());			break;
+				case TYPE_FLOAT_VEC2:	addUniform(uniformBinding, vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, s_constInVec2[inNdx]);			break;
+				case TYPE_FLOAT_VEC3:	addUniform(uniformBinding, vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, s_constInVec3[inNdx]);			break;
+				case TYPE_FLOAT_VEC4:	addUniform(uniformBinding, vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, s_constInVec4[inNdx]);			break;
 				// \note GLES3 supports transpose in matrix upload.
 				case TYPE_FLOAT_MAT2:	addMatrixUniform(uniformBinding, in.dataType, s_constInMat2x2[inNdx]);	break;
 				case TYPE_FLOAT_MAT2X3:	addMatrixUniform(uniformBinding, in.dataType, s_constInMat2x3[inNdx]);	break;

@@ -1,4 +1,5 @@
-#version 430
+#version 310 es
+precision highp float;
 
 layout(location = 0) in vec4 in_position;
 layout(location = 1) in vec4 in_color;

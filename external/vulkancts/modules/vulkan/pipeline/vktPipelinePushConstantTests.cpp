@@ -77,7 +77,8 @@ enum RangeSizeCase
 {
 	SIZE_CASE_4	= 0,
 	SIZE_CASE_16,
-	SIZE_CASE_40,
+	SIZE_CASE_32,
+	SIZE_CASE_48,
 	SIZE_CASE_128,
 	SIZE_CASE_UNSUPPORTED
 };
@@ -210,8 +211,10 @@ RangeSizeCase PushConstantGraphicsTest::getRangeSizeCase (deUint32 rangeSize) co
 			return SIZE_CASE_4;
 		case 16:
 			return SIZE_CASE_16;
-		case 40:
-			return SIZE_CASE_40;
+		case 32:
+			return SIZE_CASE_32;
+		case 48:
+			return SIZE_CASE_48;
 		case 128:
 			return SIZE_CASE_128;
 		default:
@@ -251,10 +254,15 @@ void PushConstantGraphicsTest::initPrograms (SourceCollections& sourceCollection
 							  << "vec4 element;\n"
 							  << "} uniformBuf;\n";
 					break;
-				case SIZE_CASE_40:
-					vertexSrc << "int kind;\n"
+				case SIZE_CASE_32:
+					vertexSrc << "vec4 color[2];\n"
+							  << "} matInst;\n";
+					break;
+				case SIZE_CASE_48:
+					vertexSrc << "int dummy1;\n"
+							  << "vec4 dummy2;\n"
 							  << "vec4 color;\n"
-							  << "} matInst[2];\n";
+							  << "} matInst;\n";
 					break;
 				case SIZE_CASE_128:
 					vertexSrc << "vec4 color[8];\n"
@@ -283,8 +291,12 @@ void PushConstantGraphicsTest::initPrograms (SourceCollections& sourceCollection
 					vertexSrc << "vtxColor = (matInst.color + uniformBuf.element) * 0.5;\n"
 							  << "}\n";
 					break;
-				case SIZE_CASE_40:
-					vertexSrc << "vtxColor = matInst[1].color;\n"
+				case SIZE_CASE_32:
+					vertexSrc << "vtxColor = (matInst.color[0] + matInst.color[1]) * 0.5;\n"
+							  << "}\n";
+					break;
+				case SIZE_CASE_48:
+					vertexSrc << "vtxColor = matInst.color;\n"
 							  << "}\n";
 					break;
 				case SIZE_CASE_128:
@@ -311,8 +323,8 @@ void PushConstantGraphicsTest::initPrograms (SourceCollections& sourceCollection
 						   << "layout(push_constant) uniform TessLevel {\n"
 						   << "    layout(offset = 24) int level;\n"
 						   << "} tessLevel;\n"
-						   << "in highp vec4 color[];\n"
-						   << "out highp vec4 vtxColor[];\n"
+						   << "layout(location = 0) in highp vec4 color[];\n"
+						   << "layout(location = 0) out highp vec4 vtxColor[];\n"
 						   << "void main()\n"
 						   << "{\n"
 						   << "  gl_TessLevelInner[0] = tessLevel.level;\n"
@@ -331,10 +343,10 @@ void PushConstantGraphicsTest::initPrograms (SourceCollections& sourceCollection
 			tessEvaluationSrc << "#version 450\n"
 							  << "layout (triangles) in;\n"
 							  << "layout(push_constant) uniform Material {\n"
-							  << "    layout(offset = 28) vec4 color;\n"
+							  << "    layout(offset = 32) vec4 color;\n"
 							  << "} matInst;\n"
-							  << "in highp vec4 color[];\n"
-							  << "out highp vec4 vtxColor;\n"
+							  << "layout(location = 0) in highp vec4 color[];\n"
+							  << "layout(location = 0) out highp vec4 vtxColor;\n"
 							  << "void main()\n"
 							  << "{\n"
 							  << "  gl_Position = gl_TessCoord.x * gl_in[0].gl_Position + gl_TessCoord.y * gl_in[1].gl_Position + gl_TessCoord.z * gl_in[2].gl_Position;\n"
@@ -352,8 +364,8 @@ void PushConstantGraphicsTest::initPrograms (SourceCollections& sourceCollection
 						<< "layout(push_constant) uniform Material {\n"
 						<< "    layout(offset = 20) int kind;\n"
 						<< "} matInst;\n"
-						<< "in highp vec4 color[];\n"
-						<< "out highp vec4 vtxColor;\n"
+						<< "layout(location = 0) in highp vec4 color[];\n"
+						<< "layout(location = 0) out highp vec4 vtxColor;\n"
 						<< "void main()\n"
 						<< "{\n"
 						<< "  for(int i=0; i<3; i++)\n"
@@ -630,9 +642,9 @@ PushConstantGraphicsTestInstance::PushConstantGraphicsTestInstance (Context&				
 		{
 			VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,						// VkStructureType		sType;
 			DE_NULL,													// const void*			pNext;
+			0u,															// VkBufferCreateFlags	flags
 			16u,														// VkDeviceSize			size;
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,							// VkBufferUsageFlags	usage;
-			0u,															// VkBufferCreateFlags	flags;
 			VK_SHARING_MODE_EXCLUSIVE,									// VkSharingMode		sharingMode;
 			1u,															// deUint32				queueFamilyCount;
 			&queueFamilyIndex											// const deUint32*		pQueueFamilyIndices;
@@ -735,6 +747,12 @@ PushConstantGraphicsTestInstance::PushConstantGraphicsTestInstance (Context&				
 				0u,									// deUint32	binding;
 				VK_FORMAT_R32G32B32A32_SFLOAT,		// VkFormat	format;
 				0u									// deUint32	offsetInBytes;
+			},
+			{
+				1u,									// deUint32	location;
+				0u,									// deUint32	binding;
+				VK_FORMAT_R32G32B32A32_SFLOAT,		// VkFormat	format;
+				DE_OFFSET_OF(Vertex4RGBA, color),	// deUint32	offset;
 			}
 		};
 
@@ -745,7 +763,7 @@ PushConstantGraphicsTestInstance::PushConstantGraphicsTestInstance (Context&				
 			0u,																// vkPipelineVertexInputStateCreateFlags	flags;
 			1u,																// deUint32									bindingCount;
 			&vertexInputBindingDescription,									// const VkVertexInputBindingDescription*	pVertexBindingDescriptions;
-			1u,																// deUint32									attributeCount;
+			2u,																// deUint32									attributeCount;
 			vertexInputAttributeDescriptions								// const VkVertexInputAttributeDescription*	pVertexAttributeDescriptions;
 		};
 
@@ -1267,9 +1285,9 @@ PushConstantComputeTestInstance::PushConstantComputeTestInstance (Context&					c
 		{
 			VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,						// VkStructureType		sType;
 			DE_NULL,													// const void*			pNext;
+			0u,															// VkBufferCreateFlags	flags
 			bufferSize,													// VkDeviceSize			size;
 			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,							// VkBufferUsageFlags	usage;
-			0u,															// VkBufferCreateFlags	flags;
 			VK_SHARING_MODE_EXCLUSIVE,									// VkSharingMode		sharingMode;
 			1u,															// deUint32				queueFamilyCount;
 			&queueFamilyIndex											// const deUint32*		pQueueFamilyIndices;
@@ -1505,7 +1523,7 @@ tcu::TestCaseGroup* createPushConstantTests (tcu::TestContext& testCtx)
 				{ { VK_SHADER_STAGE_FRAGMENT_BIT, 16, 4 }, { 16, 4 } },
 				{ { VK_SHADER_STAGE_GEOMETRY_BIT, 20, 4 }, { 20, 4 } },
 				{ { VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, 24, 4 }, { 24, 4 } },
-				{ { VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, 28, 16 }, { 28, 16 } },
+				{ { VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, 32, 16 }, { 32, 16 } },
 			},
 			false
 		},
@@ -1521,14 +1539,14 @@ tcu::TestCaseGroup* createPushConstantTests (tcu::TestContext& testCtx)
 			"data_update_partial_1",
 			"test partial update of the values",
 			1u,
-			{ { { VK_SHADER_STAGE_VERTEX_BIT, 0, 16 }, { 4, 8 } } },
+			{ { { VK_SHADER_STAGE_VERTEX_BIT, 0, 32 }, { 4, 24 } } },
 			false
 		},
 		{
 			"data_update_partial_2",
 			"test partial update of the values",
 			1u,
-			{ { { VK_SHADER_STAGE_VERTEX_BIT, 0, 40 }, { 24, 16 } } },
+			{ { { VK_SHADER_STAGE_VERTEX_BIT, 0, 48 }, { 32, 16 } } },
 			false
 		},
 		{

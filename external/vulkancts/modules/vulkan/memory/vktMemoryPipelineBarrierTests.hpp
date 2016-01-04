@@ -1,5 +1,5 @@
-#ifndef _VKTBUFFERMEMORYTESTS_HPP
-#define _VKTBUFFERMEMORYTESTS_HPP
+#ifndef _VKTMEMORYPIPELINEBARRIERTESTS_HPP
+#define _VKTMEMORYPIPELINEBARRIERTESTS_HPP
 /*-------------------------------------------------------------------------
  * Vulkan Conformance Tests
  * ------------------------
@@ -47,4 +47,4 @@ tcu::TestCaseGroup*		createPipelineBarrierTests		(tcu::TestContext& testCtx);
 } // memory
 } // vkt
 
-#endif // _VKTBUFFERMEMORYTESTS_HPP
+#endif // _VKTMEMORYPIPELINEBARRIERTESTS_HPP

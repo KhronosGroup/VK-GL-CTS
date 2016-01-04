@@ -1372,11 +1372,12 @@ tcu::TestStatus UniformBlockCaseInstance::iterate (void)
 	};
 
 	vk::Unique<VkDescriptorSet>			descriptorSet(vk::allocateDescriptorSet(vk, device, &descriptorSetAllocateInfo));
+	int									numBlocks = (int)m_layout.blocks.size();
+	std::vector<vk::VkDescriptorBufferInfo>	descriptors(numBlocks);
 
 	// Upload uniform data
 	{
 		vk::DescriptorSetUpdateBuilder	descriptorSetUpdateBuilder;
-		int numBlocks = (int)m_layout.blocks.size();
 
 		if (m_bufferMode == UniformBlockCase::BUFFERMODE_PER_BLOCK)
 		{
@@ -1385,9 +1386,9 @@ tcu::TestStatus UniformBlockCaseInstance::iterate (void)
 				const BlockLayoutEntry& block = m_layout.blocks[blockNdx];
 				const void*	srcPtr = m_blockPointers.find(blockNdx)->second;
 
-				vk::VkDescriptorBufferInfo descriptor = addUniformData(block.size, srcPtr);
+				descriptors[blockNdx] = addUniformData(block.size, srcPtr);
 				descriptorSetUpdateBuilder.writeSingle(*descriptorSet, vk::DescriptorSetUpdateBuilder::Location::bindingArrayElement(block.bindingNdx, block.instanceNdx),
-														VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &descriptor);
+														VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &descriptors[blockNdx]);
 			}
 		}
 		else
@@ -1403,10 +1404,16 @@ tcu::TestStatus UniformBlockCaseInstance::iterate (void)
 			}
 
 			deUint32 totalSize = currentOffset;
-			// The first block index points to the start of the whole data.
-			const void* srcPtr = m_blockPointers.find(0)->second;
 
-			vk::VkBuffer buffer = addUniformData(totalSize, srcPtr).buffer;
+			// Make a copy of the data that satisfies the device's min uniform buffer alignment
+			std::vector<deUint8> data;
+			data.resize(totalSize);
+			for (int blockNdx = 0; blockNdx < numBlocks; blockNdx++)
+			{
+				deMemcpy(&data[offsets[blockNdx]], m_blockPointers.find(blockNdx)->second, m_layout.blocks[blockNdx].size);
+			}
+
+			vk::VkBuffer buffer = addUniformData(totalSize, &data[0]).buffer;
 
 			for (int blockNdx = 0; blockNdx < numBlocks; blockNdx++)
 			{
@@ -1420,10 +1427,11 @@ tcu::TestStatus UniformBlockCaseInstance::iterate (void)
 					size,							// VkDeviceSize	range;
 				};
 
+				descriptors[blockNdx] = descriptor;
 				descriptorSetUpdateBuilder.writeSingle(*descriptorSet,
 														vk::DescriptorSetUpdateBuilder::Location::bindingArrayElement(block.bindingNdx, block.instanceNdx),
 														VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-														&descriptor);
+														&descriptors[blockNdx]);
 			}
 		}
 
