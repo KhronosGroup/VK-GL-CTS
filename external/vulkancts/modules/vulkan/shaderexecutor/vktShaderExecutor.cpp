@@ -732,6 +732,8 @@ void FragmentOutExecutor::execute (const Context& ctx, int numValues, const void
 	const bool											useGeometryShader		= m_shaderType == glu::SHADERTYPE_GEOMETRY;
 
 	std::vector<VkImageSp>								colorImages;
+	std::vector<VkImageMemoryBarrier>					colorImagePreRenderBarriers;
+	std::vector<VkImageMemoryBarrier>					colorImagePostRenderBarriers;
 	std::vector<AllocationSp>							colorImageAllocs;
 	std::vector<VkAttachmentDescription>				attachments;
 	std::vector<VkClearValue>							attachmentClearValues;
@@ -866,6 +868,50 @@ void FragmentOutExecutor::execute (const Context& ctx, int numValues, const void
 
 				Move<VkImageView> colorImageView = createImageView(vk, vkDevice, &colorImageViewParams);
 				colorImageViews.push_back(de::SharedPtr<Unique<VkImageView> >(new Unique<VkImageView>(colorImageView)));
+
+				const VkImageMemoryBarrier	colorImagePreRenderBarrier =
+				{
+					VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,					// sType
+					DE_NULL,												// pNext
+					0u,														// srcAccessMask
+					(VK_ACCESS_COLOR_ATTACHMENT_READ_BIT |
+					VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT),					// dstAccessMask
+					VK_IMAGE_LAYOUT_UNDEFINED,								// oldLayout
+					VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,				// newLayout
+					VK_QUEUE_FAMILY_IGNORED,								// srcQueueFamilyIndex
+					VK_QUEUE_FAMILY_IGNORED,								// dstQueueFamilyIndex
+					colorImages.back().get()->get(),						// image
+					{
+						VK_IMAGE_ASPECT_COLOR_BIT,								// aspectMask
+						0u,														// baseMipLevel
+						1u,														// levelCount
+						0u,														// baseArrayLayer
+						1u,														// layerCount
+					}														// subresourceRange
+				};
+				colorImagePreRenderBarriers.push_back(colorImagePreRenderBarrier);
+
+				const VkImageMemoryBarrier	colorImagePostRenderBarrier =
+				{
+					VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,					// sType
+					DE_NULL,												// pNext
+					(VK_ACCESS_COLOR_ATTACHMENT_READ_BIT |
+					VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT),					// srcAccessMask
+					VK_ACCESS_TRANSFER_READ_BIT,							// dstAccessMask
+					VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,				// oldLayout
+					VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,					// newLayout
+					VK_QUEUE_FAMILY_IGNORED,								// srcQueueFamilyIndex
+					VK_QUEUE_FAMILY_IGNORED,								// dstQueueFamilyIndex
+					colorImages.back().get()->get(),						// image
+					{
+						VK_IMAGE_ASPECT_COLOR_BIT,								// aspectMask
+						0u,														// baseMipLevel
+						1u,														// levelCount
+						0u,														// baseArrayLayer
+						1u,														// layerCount
+					}														// subresourceRange
+				};
+				colorImagePostRenderBarriers.push_back(colorImagePostRenderBarrier);
 			}
 		}
 	}
@@ -1207,6 +1253,17 @@ void FragmentOutExecutor::execute (const Context& ctx, int numValues, const void
 		cmdBuffer = allocateCommandBuffer(vk, vkDevice, &cmdBufferParams);
 
 		VK_CHECK(vk.beginCommandBuffer(*cmdBuffer, &cmdBufferBeginInfo));
+
+		{
+			std::vector<const void*> barriers(colorImagePreRenderBarriers.size());
+			if (!barriers.empty())
+			{
+				for (size_t i = 0; i < barriers.size(); ++i)
+					barriers[i] = &colorImagePreRenderBarriers[i];
+				vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_FALSE, (deUint32)barriers.size(), &barriers[0]);
+			}
+		}
+	
 		vk.cmdBeginRenderPass(*cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
 		vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *graphicsPipeline);
@@ -1226,6 +1283,16 @@ void FragmentOutExecutor::execute (const Context& ctx, int numValues, const void
 		vk.cmdDraw(*cmdBuffer, (deUint32)positions.size(), 1u, 0u, 0u);
 
 		vk.cmdEndRenderPass(*cmdBuffer);
+
+		{
+			std::vector<const void*> barriers(colorImagePostRenderBarriers.size());
+			if (!barriers.empty())
+			{
+				for (size_t i = 0; i < barriers.size(); ++i)
+					barriers[i] = &colorImagePostRenderBarriers[i];
+				vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_FALSE, (deUint32)barriers.size(), &barriers[0]);
+			}
+		}
 		VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
 	}
 
@@ -1364,7 +1431,7 @@ void FragmentOutExecutor::execute (const Context& ctx, int numValues, const void
 					};
 
 					VK_CHECK(vk.beginCommandBuffer(*copyCmdBuffer, &cmdBufferBeginInfo));
-					vk.cmdCopyImageToBuffer(*copyCmdBuffer, colorImages[outLocation + locNdx].get()->get(), VK_IMAGE_LAYOUT_UNDEFINED, *readImageBuffer, 1u, &copyParams);
+					vk.cmdCopyImageToBuffer(*copyCmdBuffer, colorImages[outLocation + locNdx].get()->get(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *readImageBuffer, 1u, &copyParams);
 					VK_CHECK(vk.endCommandBuffer(*copyCmdBuffer));
 
 					VK_CHECK(vk.resetFences(vkDevice, 1, &fence.get()));
