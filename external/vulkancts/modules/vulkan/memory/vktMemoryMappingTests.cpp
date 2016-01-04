@@ -479,7 +479,7 @@ void MemoryObject::unmap (void)
 
 void MemoryObject::randomFlush (const DeviceInterface& vkd, VkDevice device, de::Random& rng)
 {
-	const size_t				rangeCount	= (size_t)rng.getInt(0, 10);
+	const size_t				rangeCount	= (size_t)rng.getInt(1, 10);
 	vector<VkMappedMemoryRange>	ranges		(rangeCount);
 
 	randomRanges(rng, ranges, rangeCount, *m_memory, m_size);
@@ -489,7 +489,7 @@ void MemoryObject::randomFlush (const DeviceInterface& vkd, VkDevice device, de:
 
 void MemoryObject::randomInvalidate (const DeviceInterface& vkd, VkDevice device, de::Random& rng)
 {
-	const size_t				rangeCount	= (size_t)rng.getInt(0, 10);
+	const size_t				rangeCount	= (size_t)rng.getInt(1, 10);
 	vector<VkMappedMemoryRange>	ranges		(rangeCount);
 
 	randomRanges(rng, ranges, rangeCount, *m_memory, m_size);
@@ -499,8 +499,8 @@ void MemoryObject::randomInvalidate (const DeviceInterface& vkd, VkDevice device
 
 enum
 {
-	// Use only 1/8 of each memory heap.
-	MAX_MEMORY_USAGE_DIV = 8
+	// Use only 1/16 of each memory heap.
+	MAX_MEMORY_USAGE_DIV = 16
 };
 
 template<typename T>
