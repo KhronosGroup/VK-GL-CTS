@@ -242,6 +242,29 @@ void replaceBadFloatReinterpretValues (const tcu::PixelBufferAccess access)
 	}
 }
 
+//!< replace invalid pixels in the image (-128)
+void replaceSnormReinterpretValues (const tcu::PixelBufferAccess access)
+{
+	DE_ASSERT(tcu::getTextureChannelClass(access.getFormat().type) == tcu::TEXTURECHANNELCLASS_SIGNED_FIXED_POINT);
+
+	for (int z = 0; z < access.getDepth(); ++z)
+	for (int y = 0; y < access.getHeight(); ++y)
+	for (int x = 0; x < access.getWidth(); ++x)
+	{
+		const tcu::IVec4 color(access.getPixelInt(x, y, z));
+		tcu::IVec4 newColor = color;
+	
+		for (int i = 0; i < 4; ++i)
+		{
+			const deInt32 oldColor(color[i]);
+			if (oldColor == -128) newColor[i] = -127;
+		}
+	
+		if (newColor != color)
+		access.setPixel(newColor, x, y, z);
+	}
+}
+
 tcu::TextureLevel generateReferenceImage (const tcu::IVec3& imageSize, const VkFormat imageFormat, const VkFormat readFormat)
 {
 	// Generate a reference image data using the storage format
@@ -272,6 +295,8 @@ tcu::TextureLevel generateReferenceImage (const tcu::IVec3& imageSize, const VkF
 
 	if (isFloatFormat(readFormat) && imageFormat != readFormat)
 		replaceBadFloatReinterpretValues(tcu::PixelBufferAccess(mapVkFormat(readFormat), imageSize, access.getDataPtr()));
+	if (isSnormFormat(readFormat) && imageFormat != readFormat)
+		replaceSnormReinterpretValues(tcu::PixelBufferAccess(mapVkFormat(readFormat), imageSize, access.getDataPtr()));
 
 	return reference;
 }
