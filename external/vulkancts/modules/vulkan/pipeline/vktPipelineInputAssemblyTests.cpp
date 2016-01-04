@@ -344,6 +344,7 @@ void PrimitiveTopologyTest::createBufferData (VkPrimitiveTopology topology, int 
 			break;
 
 		default:
+			primitiveSizeX = 0.0f; // Garbage
 			DE_ASSERT(false);
 	}
 
@@ -684,6 +685,7 @@ void PrimitiveRestartTest::createBufferData (VkPrimitiveTopology topology, int p
 			break;
 
 		default:
+			primitiveSizeX = 0.0f; // Garbage
 			DE_ASSERT(false);
 	}
 

@@ -1214,7 +1214,7 @@ void VertexInputInstance::writeVertexInputValue (deUint8* destPtr, const VertexI
 			case VertexInputTest::GLSL_TYPE_IVEC2:
 			case VertexInputTest::GLSL_TYPE_IVEC3:
 			case VertexInputTest::GLSL_TYPE_IVEC4:
-				writeVertexInputValueSint(destPtr, attribute.vkDescription.format, componentNdx, -(vertexInputIndex + swizzledNdx));
+				writeVertexInputValueSint(destPtr, attribute.vkDescription.format, componentNdx, -(deInt32)(vertexInputIndex + swizzledNdx));
 				break;
 
 			case VertexInputTest::GLSL_TYPE_UINT:
@@ -1237,7 +1237,7 @@ void VertexInputInstance::writeVertexInputValue (deUint8* destPtr, const VertexI
 				}
 				else if (isVertexFormatSscaled(attribute.vkDescription.format))
 				{
-					writeVertexInputValueSint(destPtr, attribute.vkDescription.format, componentNdx, -(vertexInputIndex + swizzledNdx));
+					writeVertexInputValueSint(destPtr, attribute.vkDescription.format, componentNdx, -(deInt32)(vertexInputIndex + swizzledNdx));
 				}
 				else if (isVertexFormatUscaled(attribute.vkDescription.format) || isVertexFormatUnorm(attribute.vkDescription.format) || isVertexFormatSRGB(attribute.vkDescription.format))
 				{

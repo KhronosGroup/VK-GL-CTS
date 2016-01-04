@@ -770,7 +770,7 @@ deUint8 ReferenceMemory::get (size_t pos) const
 
 bool ReferenceMemory::isDefined (size_t pos) const
 {
-	return m_defined[pos / 64] & (0x1ull << (pos % 64));
+	return (m_defined[pos / 64] & (0x1ull << (pos % 64))) != 0;
 }
 
 class Memory

@@ -610,6 +610,7 @@ TestInstance* MultisampleTest::createInstance (Context& context) const
 		}
 
 		default:
+			topology = VK_PRIMITIVE_TOPOLOGY_LAST;
 			DE_ASSERT(false);
 	}
 
@@ -1251,6 +1252,7 @@ tcu::TestStatus AlphaToCoverageInstance::verifyImage (const tcu::ConstPixelBuffe
 			break;
 
 		default:
+			maxColorValue = 0.0f; // Garbage
 			DE_ASSERT(false);
 	}
 

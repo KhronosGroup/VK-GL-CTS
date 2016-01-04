@@ -530,7 +530,7 @@ void MemoryQualifierInstanceImage::prepareResources (const VkDeviceSize bufferSi
 		DE_NULL,																// const void*				pNext;
 		m_imageType == IMAGE_TYPE_CUBE ||
 		m_imageType	== IMAGE_TYPE_CUBE_ARRAY
-		? VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : 0u,								// VkImageCreateFlags		flags;
+		? (VkImageCreateFlags)VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : 0u,			// VkImageCreateFlags		flags;
 		mapImageType(m_imageType),												// VkImageType				imageType;
 		mapTextureFormat(m_format),												// VkFormat					format;
 		vk::makeExtent3D(m_imageSize.x(), m_imageSize.y(), m_imageSize.z()),	// VkExtent3D				extent;

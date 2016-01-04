@@ -70,9 +70,12 @@ namespace compute
 namespace
 {
 
-static const deUint32 s_result_block_base_size			= 4 * sizeof(deUint32); // uvec3 + uint
-static const deUint32 s_result_block_num_passed_offset	= 3 * sizeof(deUint32);
-static const deUint32 s_indirect_command_size			= 3 * sizeof(deUint32);
+enum
+{
+	RESULT_BLOCK_BASE_SIZE			= 4 * (int)sizeof(deUint32), // uvec3 + uint
+	RESULT_BLOCK_NUM_PASSED_OFFSET	= 3 * (int)sizeof(deUint32),
+	INDIRECT_COMMAND_OFFSET			= 3 * (int)sizeof(deUint32),
+};
 
 vk::VkDeviceSize getResultBlockAlignedSize (const vk::InstanceInterface&	instance_interface,
 											const vk::VkPhysicalDevice		physicalDevice,
@@ -193,7 +196,7 @@ void IndirectDispatchInstanceBufferUpload::fillIndirectBufferData (const vk::VkC
 	{
 		DE_ASSERT(cmdIter->m_offset >= 0);
 		DE_ASSERT(cmdIter->m_offset % sizeof(deUint32) == 0);
-		DE_ASSERT(cmdIter->m_offset + s_indirect_command_size <= (deIntptr)m_bufferSize);
+		DE_ASSERT(cmdIter->m_offset + INDIRECT_COMMAND_OFFSET <= (deIntptr)m_bufferSize);
 
 		deUint32* const dstPtr = (deUint32*)&indirectDataPtr[cmdIter->m_offset];
 
@@ -223,7 +226,7 @@ tcu::TestStatus IndirectDispatchInstanceBufferUpload::iterate (void)
 	}
 
 	// Create result buffer
-	const vk::VkDeviceSize resultBlockSize = getResultBlockAlignedSize(m_context.getInstanceInterface(), m_context.getPhysicalDevice(), s_result_block_base_size);
+	const vk::VkDeviceSize resultBlockSize = getResultBlockAlignedSize(m_context.getInstanceInterface(), m_context.getPhysicalDevice(), RESULT_BLOCK_BASE_SIZE);
 	const vk::VkDeviceSize resultBufferSize = resultBlockSize * (deUint32)m_dispatchCommands.size();
 
 	Buffer resultBuffer(
@@ -242,7 +245,7 @@ tcu::TestStatus IndirectDispatchInstanceBufferUpload::iterate (void)
 			*(deUint32*)(dstPtr + 0 * sizeof(deUint32)) = m_dispatchCommands[cmdNdx].m_numWorkGroups[0];
 			*(deUint32*)(dstPtr + 1 * sizeof(deUint32)) = m_dispatchCommands[cmdNdx].m_numWorkGroups[1];
 			*(deUint32*)(dstPtr + 2 * sizeof(deUint32)) = m_dispatchCommands[cmdNdx].m_numWorkGroups[2];
-			*(deUint32*)(dstPtr + s_result_block_num_passed_offset) = 0;
+			*(deUint32*)(dstPtr + RESULT_BLOCK_NUM_PASSED_OFFSET) = 0;
 		}
 
 		vk::flushMappedMemoryRange(m_device_interface, m_device, alloc.getMemory(), alloc.getOffset(), resultBufferSize);
@@ -343,7 +346,7 @@ deBool IndirectDispatchInstanceBufferUpload::verifyResultBuffer (const Buffer&		
 	{
 		const DispatchCommand&	cmd = m_dispatchCommands[cmdNdx];
 		const deUint8* const	srcPtr = (const deUint8*)resultDataPtr + cmdNdx*resultBlockSize;
-		const deUint32			numPassed = *(const deUint32*)(srcPtr + s_result_block_num_passed_offset);
+		const deUint32			numPassed = *(const deUint32*)(srcPtr + RESULT_BLOCK_NUM_PASSED_OFFSET);
 		const deUint32			numInvocationsPerGroup = m_workGroupSize[0] * m_workGroupSize[1] * m_workGroupSize[2];
 		const deUint32			numGroups = cmd.m_numWorkGroups[0] * cmd.m_numWorkGroups[1] * cmd.m_numWorkGroups[2];
 		const deUint32			expectedCount = numInvocationsPerGroup * numGroups;
@@ -624,16 +627,16 @@ tcu::TestCaseGroup* createIndirectComputeDispatchTests (tcu::TestContext& testCt
 {
 	static const DispatchCaseDesc s_dispatchCases[] =
 	{
-		DispatchCaseDesc("single_invocation", "Single invocation only from offset 0", s_indirect_command_size, tcu::UVec3(1, 1, 1),
+		DispatchCaseDesc("single_invocation", "Single invocation only from offset 0", INDIRECT_COMMAND_OFFSET, tcu::UVec3(1, 1, 1),
 			commandsVec(DispatchCommand(0, tcu::UVec3(1, 1, 1)))
         ),
-		DispatchCaseDesc("multiple_groups", "Multiple groups dispatched from offset 0", s_indirect_command_size, tcu::UVec3(1, 1, 1),
+		DispatchCaseDesc("multiple_groups", "Multiple groups dispatched from offset 0", INDIRECT_COMMAND_OFFSET, tcu::UVec3(1, 1, 1),
 			commandsVec(DispatchCommand(0, tcu::UVec3(2, 3, 5)))
 		),
-		DispatchCaseDesc("multiple_groups_multiple_invocations", "Multiple groups of size 2x3x1 from offset 0", s_indirect_command_size, tcu::UVec3(2, 3, 1),
+		DispatchCaseDesc("multiple_groups_multiple_invocations", "Multiple groups of size 2x3x1 from offset 0", INDIRECT_COMMAND_OFFSET, tcu::UVec3(2, 3, 1),
 			commandsVec(DispatchCommand(0, tcu::UVec3(1, 2, 3)))
 		),
-		DispatchCaseDesc("small_offset", "Small offset", 16 + s_indirect_command_size, tcu::UVec3(1, 1, 1),
+		DispatchCaseDesc("small_offset", "Small offset", 16 + INDIRECT_COMMAND_OFFSET, tcu::UVec3(1, 1, 1),
 			commandsVec(DispatchCommand(16, tcu::UVec3(1, 1, 1)))
 		),
 		DispatchCaseDesc("large_offset", "Large offset", (2 << 20), tcu::UVec3(1, 1, 1),
@@ -642,12 +645,12 @@ tcu::TestCaseGroup* createIndirectComputeDispatchTests (tcu::TestContext& testCt
 		DispatchCaseDesc("large_offset_multiple_invocations", "Large offset, multiple invocations", (2 << 20), tcu::UVec3(2, 3, 1),
 			commandsVec(DispatchCommand((1 << 20) + 12, tcu::UVec3(1, 2, 3)))
 		),
-		DispatchCaseDesc("empty_command", "Empty command", s_indirect_command_size, tcu::UVec3(1, 1, 1),
+		DispatchCaseDesc("empty_command", "Empty command", INDIRECT_COMMAND_OFFSET, tcu::UVec3(1, 1, 1),
 			commandsVec(DispatchCommand(0, tcu::UVec3(0, 0, 0)))
 		),
 		DispatchCaseDesc("multi_dispatch", "Dispatch multiple compute commands from single buffer", 1 << 10, tcu::UVec3(3, 1, 2),
 			commandsVec(DispatchCommand(0, tcu::UVec3(1, 1, 1)),
-						DispatchCommand(s_indirect_command_size, tcu::UVec3(2, 1, 1)),
+						DispatchCommand(INDIRECT_COMMAND_OFFSET, tcu::UVec3(2, 1, 1)),
 						DispatchCommand(104, tcu::UVec3(1, 3, 1)),
 						DispatchCommand(40, tcu::UVec3(1, 1, 7)),
 						DispatchCommand(52, tcu::UVec3(1, 1, 4)))

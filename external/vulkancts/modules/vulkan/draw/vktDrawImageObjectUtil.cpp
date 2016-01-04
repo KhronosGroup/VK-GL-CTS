@@ -160,9 +160,9 @@ Image::Image (const vk::DeviceInterface& vk,
 			  const vk::VkExtent3D&		extend,
 			  deUint32					levelCount,
 			  deUint32					layerCount,
-			  vk::Move<vk::VkImage>		object)
+			  vk::Move<vk::VkImage>		object_)
 	: m_allocation		(DE_NULL)
-	, m_object			(object)
+	, m_object			(object_)
 	, m_format			(format)
 	, m_extent			(extend)
 	, m_levelCount		(levelCount)
@@ -414,8 +414,9 @@ void Image::readLinear (vk::VkOffset3D				offset,
 {
 	vk::VkImageSubresource imageSubResource = { aspect, mipLevel, arrayElement };
 
-	vk::VkSubresourceLayout imageLayout = {};
+	vk::VkSubresourceLayout imageLayout;
 
+	deMemset(&imageLayout, 0, sizeof(imageLayout));
 	m_vk.getImageSubresourceLayout(m_device, object(), &imageSubResource, &imageLayout);
 
 	const deUint8* srcPtr = reinterpret_cast<const deUint8*>(getBoundMemory().getHostPtr());

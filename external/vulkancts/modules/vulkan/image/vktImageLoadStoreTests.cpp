@@ -71,21 +71,21 @@ inline VkImageCreateInfo makeImageCreateInfo (const Texture& texture, const VkFo
 {
 	const VkImageCreateInfo imageParams =
 	{
-		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,								// VkStructureType			sType;
-		DE_NULL,															// const void*				pNext;
-		(isCube(texture) ? VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : 0u),		// VkImageCreateFlags		flags;
-		mapImageType(texture.type()),										// VkImageType				imageType;
-		format,																// VkFormat					format;
-		makeExtent3D(texture.layerSize()),									// VkExtent3D				extent;
-		1u,																	// deUint32					mipLevels;
-		texture.numLayers(),												// deUint32					arrayLayers;
-		VK_SAMPLE_COUNT_1_BIT,												// VkSampleCountFlagBits	samples;
-		VK_IMAGE_TILING_OPTIMAL,											// VkImageTiling			tiling;
-		usage,																// VkImageUsageFlags		usage;
-		VK_SHARING_MODE_EXCLUSIVE,											// VkSharingMode			sharingMode;
-		0u,																	// deUint32					queueFamilyIndexCount;
-		DE_NULL,															// const deUint32*			pQueueFamilyIndices;
-		VK_IMAGE_LAYOUT_UNDEFINED,											// VkImageLayout			initialLayout;
+		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,												// VkStructureType			sType;
+		DE_NULL,																			// const void*				pNext;
+		(isCube(texture) ? (VkImageCreateFlags)VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : 0u),	// VkImageCreateFlags		flags;
+		mapImageType(texture.type()),														// VkImageType				imageType;
+		format,																				// VkFormat					format;
+		makeExtent3D(texture.layerSize()),													// VkExtent3D				extent;
+		1u,																					// deUint32					mipLevels;
+		(deUint32)texture.numLayers(),														// deUint32					arrayLayers;
+		VK_SAMPLE_COUNT_1_BIT,																// VkSampleCountFlagBits	samples;
+		VK_IMAGE_TILING_OPTIMAL,															// VkImageTiling			tiling;
+		usage,																				// VkImageUsageFlags		usage;
+		VK_SHARING_MODE_EXCLUSIVE,															// VkSharingMode			sharingMode;
+		0u,																					// deUint32					queueFamilyIndexCount;
+		DE_NULL,																			// const deUint32*			pQueueFamilyIndices;
+		VK_IMAGE_LAYOUT_UNDEFINED,															// VkImageLayout			initialLayout;
 	};
 	return imageParams;
 }
@@ -331,12 +331,14 @@ void flipHorizontally (const tcu::PixelBufferAccess access)
 		}
 }
 
+#if defined(DE_DEBUG)
 inline bool colorScaleAndBiasAreValid (const VkFormat format, const float colorScale, const float colorBias)
 {
 	// Only normalized (fixed-point) formats may have scale/bias
 	const bool integerOrFloatFormat = isIntFormat(format) || isUintFormat(format) || isFloatFormat(format);
 	return !integerOrFloatFormat || (colorScale == 1.0f && colorBias == 0.0f);
 }
+#endif
 
 inline bool formatsAreCompatible (const VkFormat format0, const VkFormat format1)
 {
@@ -459,7 +461,6 @@ void StoreTest::initPrograms (SourceCollections& programCollection) const
 	const float storeColorScale = computeStoreColorScale(m_format, m_texture.size());
 	const float storeColorBias = computeStoreColorBias(m_format);
 	DE_ASSERT(colorScaleAndBiasAreValid(m_format, storeColorScale, storeColorBias));
-	DE_UNREF(colorScaleAndBiasAreValid);
 
 	const std::string xMax = de::toString(m_texture.size().x() - 1);
 	const std::string yMax = de::toString(m_texture.size().y() - 1);

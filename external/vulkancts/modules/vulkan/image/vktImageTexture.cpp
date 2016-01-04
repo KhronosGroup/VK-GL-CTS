@@ -39,14 +39,15 @@ namespace vkt
 namespace image
 {
 
-Texture::Texture (const ImageType type, const tcu::IVec3& layerSize, const int layers)
-	: m_layerSize	(layerSize)
-	, m_type		(type)
+Texture::Texture (const ImageType type_, const tcu::IVec3& layerSize_, const int layers)
+	: m_layerSize	(layerSize_)
+	, m_type		(type_)
 	, m_numLayers	(layers)
 {
 	DE_ASSERT(m_numLayers >= 1);
 	DE_ASSERT(m_layerSize.x() >= 1 && m_layerSize.y() >= 1 && m_layerSize.z() >= 1);
-	switch (type)
+
+	switch (type_)
 	{
 		case IMAGE_TYPE_1D:
 		case IMAGE_TYPE_BUFFER:

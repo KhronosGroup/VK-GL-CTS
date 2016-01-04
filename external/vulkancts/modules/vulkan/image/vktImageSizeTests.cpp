@@ -97,21 +97,21 @@ inline VkImageCreateInfo makeImageCreateInfo (const Texture& texture, const VkFo
 {
 	const VkImageCreateInfo imageParams =
 	{
-		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,								// VkStructureType			sType;
-		DE_NULL,															// const void*				pNext;
-		(isCube(texture) ? VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : 0u),		// VkImageCreateFlags		flags;
-		mapImageType(texture.type()),										// VkImageType				imageType;
-		format,																// VkFormat					format;
-		makeExtent3D(texture.layerSize()),									// VkExtent3D				extent;
-		1u,																	// deUint32					mipLevels;
-		texture.numLayers(),												// deUint32					arrayLayers;
-		VK_SAMPLE_COUNT_1_BIT,												// VkSampleCountFlagBits	samples;
-		VK_IMAGE_TILING_OPTIMAL,											// VkImageTiling			tiling;
-		VK_IMAGE_USAGE_STORAGE_BIT,											// VkImageUsageFlags		usage;
-		VK_SHARING_MODE_EXCLUSIVE,											// VkSharingMode			sharingMode;
-		0u,																	// deUint32					queueFamilyIndexCount;
-		DE_NULL,															// const deUint32*			pQueueFamilyIndices;
-		VK_IMAGE_LAYOUT_UNDEFINED,											// VkImageLayout			initialLayout;
+		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,												// VkStructureType			sType;
+		DE_NULL,																			// const void*				pNext;
+		(isCube(texture) ? (VkImageCreateFlags)VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : 0u),	// VkImageCreateFlags		flags;
+		mapImageType(texture.type()),														// VkImageType				imageType;
+		format,																				// VkFormat					format;
+		makeExtent3D(texture.layerSize()),													// VkExtent3D				extent;
+		1u,																					// deUint32					mipLevels;
+		(deUint32)texture.numLayers(),														// deUint32					arrayLayers;
+		VK_SAMPLE_COUNT_1_BIT,																// VkSampleCountFlagBits	samples;
+		VK_IMAGE_TILING_OPTIMAL,															// VkImageTiling			tiling;
+		VK_IMAGE_USAGE_STORAGE_BIT,															// VkImageUsageFlags		usage;
+		VK_SHARING_MODE_EXCLUSIVE,															// VkSharingMode			sharingMode;
+		0u,																					// deUint32					queueFamilyIndexCount;
+		DE_NULL,																			// const deUint32*			pQueueFamilyIndices;
+		VK_IMAGE_LAYOUT_UNDEFINED,															// VkImageLayout			initialLayout;
 	};
 	return imageParams;
 }

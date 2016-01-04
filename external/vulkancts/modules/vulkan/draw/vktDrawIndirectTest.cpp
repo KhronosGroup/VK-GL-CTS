@@ -160,7 +160,7 @@ tcu::TestStatus IndirectDraw::iterate (void)
 					2,		//firstVertex
 					0		//firstInstance
 				},
-				{ -4, -2, -11, -9 }, // junk (stride)
+				{ (deUint32)-4, (deUint32)-2, (deUint32)-11, (deUint32)-9 }, // junk (stride)
 				{
 					3,		//vertexCount
 					1,		//instanceCount
@@ -183,7 +183,7 @@ tcu::TestStatus IndirectDraw::iterate (void)
 					2,		//firstVertex
 					0		//firstInstance
 				},
-				{ -4, -2, -11, -9 }, // junk (stride)
+				{ (deUint32)-4, (deUint32)-2, (deUint32)-11, (deUint32)-9 }, // junk (stride)
 				{
 					4,		//vertexCount
 					1,		//instanceCount
@@ -213,7 +213,7 @@ tcu::TestStatus IndirectDraw::iterate (void)
 			break;
 	}
 
-	m_strideInBuffer	= 2 * sizeof(m_indirectDrawCmd[0]);
+	m_strideInBuffer	= 2 * (deUint32)sizeof(m_indirectDrawCmd[0]);
 	m_drawCount			= 2;
 	m_offsetInBuffer	= sizeof(m_junkData);
 
@@ -329,7 +329,7 @@ tcu::TestStatus IndirectDrawInstanced::iterate (void)
 					2,		//firstVertex
 					2		//firstInstance
 				},
-				{ -4, -2, -11, -9 }, // junk (stride)
+				{ (deUint32)-4, (deUint32)-2, (deUint32)-11, (deUint32)-9 }, // junk (stride)
 				{
 					3,		//vertexCount
 					4,		//instanceCount
@@ -352,7 +352,7 @@ tcu::TestStatus IndirectDrawInstanced::iterate (void)
 					2,		//firstVertex
 					2		//firstInstance
 				},
-				{ -4, -2, -11, -9 },
+				{ (deUint32)-4, (deUint32)-2, (deUint32)-11, (deUint32)-9 },
 				{
 					4,		//vertexCount
 					4,		//instanceCount
@@ -382,7 +382,7 @@ tcu::TestStatus IndirectDrawInstanced::iterate (void)
 			break;
 	}
 
-	m_strideInBuffer	= 2 * sizeof(m_indirectDrawCmd[0]);
+	m_strideInBuffer	= 2 * (deUint32)sizeof(m_indirectDrawCmd[0]);
 	m_drawCount			= 2;
 	m_offsetInBuffer	= sizeof(m_junkData);
 
