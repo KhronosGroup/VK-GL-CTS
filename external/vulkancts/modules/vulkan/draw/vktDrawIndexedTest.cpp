@@ -141,7 +141,7 @@ tcu::TestStatus DrawIndexed::iterate (void)
 
 	deUint8* ptr = reinterpret_cast<deUint8*>(m_indexBuffer->getBoundMemory().getHostPtr());
 
-	deMemcpy(ptr, &m_indexes[0], dataSize);
+	deMemcpy(ptr, &m_indexes[0], static_cast<size_t>(dataSize));
 
 	vk::flushMappedMemoryRange(m_vk, m_context.getDevice(),
 							   m_vertexBuffer->getBoundMemory().getMemory(),
@@ -241,7 +241,7 @@ tcu::TestStatus DrawInstancedIndexed::iterate (void)
 
 	deUint8* ptr = reinterpret_cast<deUint8*>(m_indexBuffer->getBoundMemory().getHostPtr());
 
-	deMemcpy(ptr, &m_indexes[0], dataSize);
+	deMemcpy(ptr, &m_indexes[0], static_cast<size_t>(dataSize));
 	vk::flushMappedMemoryRange(m_vk, m_context.getDevice(),
 							   m_vertexBuffer->getBoundMemory().getMemory(),
 							   m_vertexBuffer->getBoundMemory().getOffset(),

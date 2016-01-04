@@ -137,7 +137,7 @@ void DrawTestsBaseClass::initialize (void)
 		vk::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT), m_context.getDefaultAllocator(), vk::MemoryRequirement::HostVisible);
 
 	deUint8* ptr = reinterpret_cast<deUint8*>(m_vertexBuffer->getBoundMemory().getHostPtr());
-	deMemcpy(ptr, &m_data[0], dataSize);
+	deMemcpy(ptr, &m_data[0], static_cast<size_t>(dataSize));
 
 	vk::flushMappedMemoryRange(m_vk,
 							   device,

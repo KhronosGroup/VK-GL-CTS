@@ -698,7 +698,7 @@ ImageStoreTestInstance::ImageStoreTestInstance (Context&		context,
 		const Allocation& alloc = m_constantsBuffer->getAllocation();
 		deUint8* const basePtr = static_cast<deUint8*>(alloc.getHostPtr());
 
-		memset(alloc.getHostPtr(), 0, constantsBufferSizeBytes);
+		deMemset(alloc.getHostPtr(), 0, static_cast<size_t>(constantsBufferSizeBytes));
 
 		for (int layerNdx = 0; layerNdx < numLayers; ++layerNdx)
 		{
@@ -994,7 +994,7 @@ LoadStoreTestInstance::LoadStoreTestInstance (Context&			context,
 	// Copy reference data to buffer for subsequent upload to image.
 
 	const Allocation& alloc = m_imageBuffer->getAllocation();
-	memcpy(alloc.getHostPtr(), m_referenceImage.getAccess().getDataPtr(), m_imageSizeBytes);
+	deMemcpy(alloc.getHostPtr(), m_referenceImage.getAccess().getDataPtr(), static_cast<size_t>(m_imageSizeBytes));
 	flushMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), m_imageSizeBytes);
 }
 

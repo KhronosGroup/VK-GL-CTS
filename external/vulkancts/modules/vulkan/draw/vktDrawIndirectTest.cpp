@@ -235,8 +235,8 @@ tcu::TestStatus IndirectDraw::iterate (void)
 
 	deUint8* ptr = reinterpret_cast<deUint8*>(m_indirectBuffer->getBoundMemory().getHostPtr());
 
-	deMemcpy(ptr, &m_junkData, m_offsetInBuffer);
-	deMemcpy((ptr+m_offsetInBuffer), &m_indirectDrawCmd[0], dataSize);
+	deMemcpy(ptr, &m_junkData, static_cast<size_t>(m_offsetInBuffer));
+	deMemcpy((ptr+m_offsetInBuffer), &m_indirectDrawCmd[0], static_cast<size_t>(dataSize));
 
 	vk::flushMappedMemoryRange(m_vk,
 							   m_context.getDevice(),
@@ -404,8 +404,8 @@ tcu::TestStatus IndirectDrawInstanced::iterate (void)
 
 	deUint8* ptr = reinterpret_cast<deUint8*>(m_indirectBuffer->getBoundMemory().getHostPtr());
 
-	deMemcpy(ptr, &m_junkData, m_offsetInBuffer);
-	deMemcpy((ptr + m_offsetInBuffer), &m_indirectDrawCmd[0], dataSize);
+	deMemcpy(ptr, &m_junkData, static_cast<size_t>(m_offsetInBuffer));
+	deMemcpy((ptr + m_offsetInBuffer), &m_indirectDrawCmd[0], static_cast<size_t>(dataSize));
 
 	vk::flushMappedMemoryRange(m_vk,
 							   m_context.getDevice(),

@@ -820,7 +820,7 @@ void OcclusionQueryTestInstance::captureResults (deUint64* retResults, deUint64*
 
 	const vk::VkDevice			device			= m_context.getDevice();
 	const vk::DeviceInterface&	vk				= m_context.getDeviceInterface();
-	std::vector<deUint8>		resultsBuffer	(m_testVector.queryResultsStride * NUM_QUERIES_IN_POOL);
+	std::vector<deUint8>		resultsBuffer	(static_cast<size_t>(m_testVector.queryResultsStride) * NUM_QUERIES_IN_POOL);
 
 	if (m_testVector.queryResultsMode == RESULTS_MODE_GET)
 	{
@@ -846,7 +846,7 @@ void OcclusionQueryTestInstance::captureResults (deUint64* retResults, deUint64*
 
 	for (int queryNdx = 0; queryNdx < NUM_QUERIES_IN_POOL; queryNdx++)
 	{
-		const void* srcPtr = &resultsBuffer[queryNdx * m_testVector.queryResultsStride];
+		const void* srcPtr = &resultsBuffer[queryNdx * static_cast<size_t>(m_testVector.queryResultsStride)];
 		if (m_testVector.queryResultSize == RESULT_SIZE_32_BIT)
 		{
 			const deUint32* srcPtrTyped = static_cast<const deUint32*>(srcPtr);

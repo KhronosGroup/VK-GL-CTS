@@ -988,7 +988,7 @@ void CopyBufferToBuffer::copyRegionToTextureLevel (tcu::ConstPixelBufferAccess s
 {
 	deMemcpy((deUint8*) dst.getDataPtr() + region.bufferCopy.dstOffset,
 				(deUint8*) src.getDataPtr() + region.bufferCopy.srcOffset,
-				region.bufferCopy.size);
+				(size_t)region.bufferCopy.size);
 }
 
 class BufferToBufferTestCase : public vkt::TestCase

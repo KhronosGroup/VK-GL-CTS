@@ -388,7 +388,7 @@ void Image::readUsingBuffer (vk::VkQueue				queue,
 	}
 
 	char* destPtr = reinterpret_cast<char*>(stagingResource->getBoundMemory().getHostPtr());
-	deMemcpy(data, destPtr, bufferSize);
+	deMemcpy(data, destPtr, static_cast<size_t>(bufferSize));
 }
 
 tcu::ConstPixelBufferAccess Image::readSurfaceLinear (vk::VkOffset3D				offset,
@@ -715,7 +715,7 @@ void Image::uploadUsingBuffer (vk::VkQueue					queue,
 	BufferCreateInfo stagingBufferResourceCreateInfo(bufferSize, vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT | vk::VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
 	stagingResource = Buffer::createAndAlloc(m_vk, m_device, stagingBufferResourceCreateInfo, allocator, vk::MemoryRequirement::HostVisible);
 	char* destPtr = reinterpret_cast<char*>(stagingResource->getBoundMemory().getHostPtr());
-	deMemcpy(destPtr, data, bufferSize);
+	deMemcpy(destPtr, data, static_cast<size_t>(bufferSize));
 	vk::flushMappedMemoryRange(m_vk, m_device, stagingResource->getBoundMemory().getMemory(), stagingResource->getBoundMemory().getOffset(), bufferSize);
 	{
 		//todo [scygan] get proper queueFamilyIndex
