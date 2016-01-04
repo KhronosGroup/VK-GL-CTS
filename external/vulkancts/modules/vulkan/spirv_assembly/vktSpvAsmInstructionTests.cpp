@@ -3872,7 +3872,7 @@ void addShaderCodeCustomFragment(vk::SourceCollections& dst, InstanceContext con
 void createCombinedModule(vk::SourceCollections& dst, InstanceContext)
 {
 	// \todo [2015-12-07 awoloszyn] Make tessellation / geometry conditional
-	// \todo [2015-12-07 awoloszyn] Remove OpName and OpMemeberName at some point
+	// \todo [2015-12-07 awoloszyn] Remove OpName and OpMemberName at some point
 	dst.spirvAsmSources.add("module") <<
 		"OpCapability Shader\n"
 		"OpCapability Geometry\n"
@@ -3880,7 +3880,7 @@ void createCombinedModule(vk::SourceCollections& dst, InstanceContext)
 		"OpMemoryModel Logical GLSL450\n"
 
 		"OpEntryPoint Vertex %vert_main \"main\" %vert_Position %vert_vtxColor %vert_color %vert_vtxPosition %vert_vertex_id %vert_instance_id\n"
-		"OpEntryPoint Geometry %geom_main \"main\" %out_gl_position %gl_in %out_color %in_color\n"
+		"OpEntryPoint Geometry %geom_main \"main\" %geom_out_gl_position %geom_gl_in %geom_out_color %geom_in_color\n"
 		"OpEntryPoint TessellationControl %tessc_main \"main\" %tessc_out_color %tessc_gl_InvocationID %tessc_in_color %tessc_out_position %tessc_in_position %tessc_gl_TessLevelOuter %tessc_gl_TessLevelInner\n"
 		"OpEntryPoint TessellationEvaluation %tesse_main \"main\" %tesse_stream %tesse_gl_tessCoord %tesse_in_position %tesse_out_color %tesse_in_color \n"
 		"OpEntryPoint Fragment %frag_main \"main\" %frag_vtxColor %frag_fragColor\n"
@@ -3913,23 +3913,23 @@ void createCombinedModule(vk::SourceCollections& dst, InstanceContext)
 
 		"; Geometry decorations\n"
 		"OpName %geom_main \"main\"\n"
-		"OpName %per_vertex_in \"gl_PerVertex\"\n"
-		"OpMemberName %per_vertex_in 0 \"gl_Position\"\n"
-		"OpMemberName %per_vertex_in 1 \"gl_PointSize\"\n"
-		"OpMemberName %per_vertex_in 2 \"gl_ClipDistance\"\n"
-		"OpMemberName %per_vertex_in 3 \"gl_CullDistance\"\n"
-		"OpName %gl_in \"gl_in\"\n"
-		"OpName %out_color \"out_color\"\n"
-		"OpName %in_color \"in_color\"\n"
-		"OpDecorate %out_gl_position BuiltIn Position\n"
-		"OpMemberDecorate %per_vertex_in 0 BuiltIn Position\n"
-		"OpMemberDecorate %per_vertex_in 1 BuiltIn PointSize\n"
-		"OpMemberDecorate %per_vertex_in 2 BuiltIn ClipDistance\n"
-		"OpMemberDecorate %per_vertex_in 3 BuiltIn CullDistance\n"
-		"OpDecorate %per_vertex_in Block\n"
-		"OpDecorate %out_color Location 1\n"
-		"OpDecorate %out_color Stream 0\n"
-		"OpDecorate %in_color Location 1\n"
+		"OpName %geom_per_vertex_in \"gl_PerVertex\"\n"
+		"OpMemberName %geom_per_vertex_in 0 \"gl_Position\"\n"
+		"OpMemberName %geom_per_vertex_in 1 \"gl_PointSize\"\n"
+		"OpMemberName %geom_per_vertex_in 2 \"gl_ClipDistance\"\n"
+		"OpMemberName %geom_per_vertex_in 3 \"gl_CullDistance\"\n"
+		"OpName %geom_gl_in \"gl_in\"\n"
+		"OpName %geom_out_color \"out_color\"\n"
+		"OpName %geom_in_color \"in_color\"\n"
+		"OpDecorate %geom_out_gl_position BuiltIn Position\n"
+		"OpMemberDecorate %geom_per_vertex_in 0 BuiltIn Position\n"
+		"OpMemberDecorate %geom_per_vertex_in 1 BuiltIn PointSize\n"
+		"OpMemberDecorate %geom_per_vertex_in 2 BuiltIn ClipDistance\n"
+		"OpMemberDecorate %geom_per_vertex_in 3 BuiltIn CullDistance\n"
+		"OpDecorate %geom_per_vertex_in Block\n"
+		"OpDecorate %geom_out_color Location 1\n"
+		"OpDecorate %geom_out_color Stream 0\n"
+		"OpDecorate %geom_in_color Location 1\n"
 
 		"; Tessellation Control decorations\n"
 		"OpName %tessc_main \"main\"\n"
