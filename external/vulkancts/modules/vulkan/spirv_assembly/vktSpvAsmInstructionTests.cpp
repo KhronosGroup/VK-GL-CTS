@@ -3155,12 +3155,14 @@ struct InstanceContext
 	// Concrete SPIR-V code to test via boilerplate specialization.
 	map<string, string>		testCodeFragments;
 	StageToSpecConstantMap	specConstants;
-
 	bool					hasTessellation;
+	VkShaderStageFlagBits	requiredStages;
+
 	InstanceContext (const RGBA (&inputs)[4], const RGBA (&outputs)[4], const map<string, string>& testCodeFragments_, const StageToSpecConstantMap& specConstants_)
-		: testCodeFragments	(testCodeFragments_)
-		, specConstants		(specConstants_)
-		, hasTessellation	(false)
+		: testCodeFragments		(testCodeFragments_)
+		, specConstants			(specConstants_)
+		, hasTessellation		(false)
+		, requiredStages		(static_cast<VkShaderStageFlagBits>(0))
 	{
 		inputColors[0]		= inputs[0];
 		inputColors[1]		= inputs[1];
@@ -3178,6 +3180,7 @@ struct InstanceContext
 		, testCodeFragments	(other.testCodeFragments)
 		, specConstants		(other.specConstants)
 		, hasTessellation	(other.hasTessellation)
+		, requiredStages    (other.requiredStages)
 	{
 		inputColors[0]		= other.inputColors[0];
 		inputColors[1]		= other.inputColors[1];
@@ -3245,17 +3248,13 @@ InstanceContext createInstanceContext (const ShaderElement (&elements)[N], const
 	for (size_t i = 0; i < N; ++i)
 	{
 		ctx.moduleMap[elements[i].moduleName].push_back(std::make_pair(elements[i].entryName, elements[i].stage));
-		if (elements[i].stage == VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT ||
-			elements[i].stage == VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT)
-		{
-			ctx.hasTessellation = true;
-		}
+		ctx.requiredStages = static_cast<VkShaderStageFlagBits>(ctx.requiredStages | elements[i].stage);
 	}
 	return ctx;
 }
 
 template<size_t N>
-inline InstanceContext createInstanceContext (const ShaderElement (&elements)[N], const RGBA (&inputColors)[4], const RGBA (&outputColors)[4], const map<string, string>& testCodeFragments)
+inline InstanceContext createInstanceContext (const ShaderElement (&elements)[N], RGBA (&inputColors)[4], const RGBA (&outputColors)[4], const map<string, string>& testCodeFragments)
 {
 	return createInstanceContext(elements, inputColors, outputColors, testCodeFragments, StageToSpecConstantMap());
 }
@@ -3372,41 +3371,52 @@ string makeVertexShaderAssembly(const map<string, string>& fragments)
 	static const char vertexShaderBoilerplate[] =
 		"OpCapability Shader\n"
 		"OpMemoryModel Logical GLSL450\n"
-		"OpEntryPoint Vertex %main \"main\" %BP_Position %BP_vtxColor %BP_color "
-		"%BP_vtxPosition %BP_vertex_id %BP_instance_id\n"
+		"OpEntryPoint Vertex %main \"main\" %BP_stream %BP_position %BP_vtx_color %BP_color %BP_gl_VertexID %BP_gl_InstanceID\n"
 		"${debug:opt}\n"
 		"OpName %main \"main\"\n"
-		"OpName %BP_vtxPosition \"vtxPosition\"\n"
-		"OpName %BP_Position \"position\"\n"
-		"OpName %BP_vtxColor \"vtxColor\"\n"
-		"OpName %BP_color \"color\"\n"
-		"OpName %BP_vertex_id \"gl_VertexID\"\n"
-		"OpName %BP_instance_id \"gl_InstanceID\"\n"
+		"OpName %BP_gl_PerVertex \"gl_PerVertex\"\n"
+		"OpMemberName %BP_gl_PerVertex 0 \"gl_Position\"\n"
+		"OpMemberName %BP_gl_PerVertex 1 \"gl_PointSize\"\n"
+		"OpMemberName %BP_gl_PerVertex 2 \"gl_ClipDistance\"\n"
+		"OpMemberName %BP_gl_PerVertex 3 \"gl_CullDistance\"\n"
 		"OpName %test_code \"testfun(vf4;\"\n"
-		"OpDecorate %BP_vtxPosition Location 2\n"
-		"OpDecorate %BP_Position Location 0\n"
-		"OpDecorate %BP_vtxColor Location 1\n"
+		"OpName %BP_stream \"\"\n"
+		"OpName %BP_position \"position\"\n"
+		"OpName %BP_vtx_color \"vtxColor\"\n"
+		"OpName %BP_color \"color\"\n"
+		"OpName %BP_gl_VertexID \"gl_VertexID\"\n"
+		"OpName %BP_gl_InstanceID \"gl_InstanceID\"\n"
+		"OpMemberDecorate %BP_gl_PerVertex 0 BuiltIn Position\n"
+		"OpMemberDecorate %BP_gl_PerVertex 1 BuiltIn PointSize\n"
+		"OpMemberDecorate %BP_gl_PerVertex 2 BuiltIn ClipDistance\n"
+		"OpMemberDecorate %BP_gl_PerVertex 3 BuiltIn CullDistance\n"
+		"OpDecorate %BP_gl_PerVertex Block\n"
+		"OpDecorate %BP_position Location 0\n"
+		"OpDecorate %BP_vtx_color Location 1\n"
 		"OpDecorate %BP_color Location 1\n"
-		"OpDecorate %BP_vertex_id BuiltIn VertexId\n"
-		"OpDecorate %BP_instance_id BuiltIn InstanceId\n"
+		"OpDecorate %BP_gl_VertexID BuiltIn VertexId\n"
+		"OpDecorate %BP_gl_InstanceID BuiltIn InstanceId\n"
 		"${decoration:opt}\n"
 		SPIRV_ASSEMBLY_TYPES
 		SPIRV_ASSEMBLY_CONSTANTS
 		SPIRV_ASSEMBLY_ARRAYS
-		"%BP_vtxPosition = OpVariable %op_v4f32 Output\n"
-		"%BP_Position = OpVariable %ip_v4f32 Input\n"
-		"%BP_vtxColor = OpVariable %op_v4f32 Output\n"
+		"%BP_gl_PerVertex = OpTypeStruct %v4f32 %f32 %a1f32 %a1f32\n"
+		"%BP_op_gl_PerVertex = OpTypePointer Output %BP_gl_PerVertex\n"
+		"%BP_stream = OpVariable %BP_op_gl_PerVertex Output\n"
+		"%BP_position = OpVariable %ip_v4f32 Input\n"
+		"%BP_vtx_color = OpVariable %op_v4f32 Output\n"
 		"%BP_color = OpVariable %ip_v4f32 Input\n"
-		"%BP_vertex_id = OpVariable %ip_i32 Input\n"
-		"%BP_instance_id = OpVariable %ip_i32 Input\n"
+		"%BP_gl_VertexID = OpVariable %ip_i32 Input\n"
+		"%BP_gl_InstanceID = OpVariable %ip_i32 Input\n"
 		"${pre_main:opt}\n"
 		"%main = OpFunction %void None %fun\n"
 		"%BP_label = OpLabel\n"
-		"%BP_tmp_position = OpLoad %v4f32 %BP_Position\n"
-		"OpStore %BP_vtxPosition %BP_tmp_position\n"
-		"%BP_tmp_color = OpLoad %v4f32 %BP_color\n"
-		"%BP_clr_transformed = OpFunctionCall %v4f32 %test_code %BP_tmp_color\n"
-		"OpStore %BP_vtxColor %BP_clr_transformed\n"
+		"%BP_pos = OpLoad %v4f32 %BP_position\n"
+		"%BP_gl_pos = OpAccessChain %op_v4f32 %BP_stream %c_i32_0\n"
+		"OpStore %BP_gl_pos %BP_pos\n"
+		"%BP_col = OpLoad %v4f32 %BP_color\n"
+		"%BP_col_transformed = OpFunctionCall %v4f32 %test_code %BP_col\n"
+		"OpStore %BP_vtx_color %BP_col_transformed\n"
 		"OpReturn\n"
 		"OpFunctionEnd\n"
 		"${testfun}\n";
@@ -3423,13 +3433,11 @@ string makeVertexShaderAssembly(const map<string, string>& fragments)
 // #version 450
 // layout(vertices = 3) out;
 // layout(location = 1) in vec4 in_color[];
-// layout(location = 2) in vec4 in_position[];
 // layout(location = 1) out vec4 out_color[];
-// layout(location = 2) out vec4 out_position[];
 //
 // void main() {
 //   out_color[gl_InvocationID] = testfun(in_color[gl_InvocationID]);
-//   out_position[gl_InvocationID] = in_position[gl_InvocationID];
+//   gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;
 //   if (gl_InvocationID == 0) {
 //     gl_TessLevelOuter[0] = 1.0;
 //     gl_TessLevelOuter[1] = 1.0;
@@ -3442,23 +3450,41 @@ string makeTessControlShaderAssembly (const map<string, string>& fragments)
 	static const char tessControlShaderBoilerplate[] =
 		"OpCapability Tessellation\n"
 		"OpMemoryModel Logical GLSL450\n"
-		"OpEntryPoint TessellationControl %BP_main \"main\" %BP_out_color %BP_gl_InvocationID %BP_in_color %BP_out_position %BP_in_position %BP_gl_TessLevelOuter %BP_gl_TessLevelInner\n"
+		"OpEntryPoint TessellationControl %BP_main \"main\" %BP_out_color %BP_gl_InvocationID %BP_in_color %BP_gl_out %BP_gl_in %BP_gl_TessLevelOuter %BP_gl_TessLevelInner\n"
 		"OpExecutionMode %BP_main OutputVertices 3\n"
 		"${debug:opt}\n"
 		"OpName %BP_main \"main\"\n"
+		"OpName %test_code \"testfun(vf4;\"\n"
 		"OpName %BP_out_color \"out_color\"\n"
 		"OpName %BP_gl_InvocationID \"gl_InvocationID\"\n"
 		"OpName %BP_in_color \"in_color\"\n"
-		"OpName %BP_out_position \"out_position\"\n"
-		"OpName %BP_in_position \"in_position\"\n"
+		"OpName %BP_gl_PerVertex \"gl_PerVertex\"\n"
+		"OpMemberName %BP_gl_PerVertex 0 \"gl_Position\"\n"
+		"OpMemberName %BP_gl_PerVertex 1 \"gl_PointSize\"\n"
+		"OpMemberName %BP_gl_PerVertex 2 \"gl_ClipDistance\"\n"
+		"OpMemberName %BP_gl_PerVertex 3 \"gl_CullDistance\"\n"
+		"OpName %BP_gl_out \"gl_out\"\n"
+		"OpName %BP_gl_PVOut \"gl_PerVertex\"\n"
+		"OpMemberName %BP_gl_PVOut 0 \"gl_Position\"\n"
+		"OpMemberName %BP_gl_PVOut 1 \"gl_PointSize\"\n"
+		"OpMemberName %BP_gl_PVOut 2 \"gl_ClipDistance\"\n"
+		"OpMemberName %BP_gl_PVOut 3 \"gl_CullDistance\"\n"
+		"OpName %BP_gl_in \"gl_in\"\n"
 		"OpName %BP_gl_TessLevelOuter \"gl_TessLevelOuter\"\n"
 		"OpName %BP_gl_TessLevelInner \"gl_TessLevelInner\"\n"
-		"OpName %test_code \"testfun(vf4;\"\n"
 		"OpDecorate %BP_out_color Location 1\n"
 		"OpDecorate %BP_gl_InvocationID BuiltIn InvocationId\n"
 		"OpDecorate %BP_in_color Location 1\n"
-		"OpDecorate %BP_out_position Location 2\n"
-		"OpDecorate %BP_in_position Location 2\n"
+		"OpMemberDecorate %BP_gl_PerVertex 0 BuiltIn Position\n"
+		"OpMemberDecorate %BP_gl_PerVertex 1 BuiltIn PointSize\n"
+		"OpMemberDecorate %BP_gl_PerVertex 2 BuiltIn ClipDistance\n"
+		"OpMemberDecorate %BP_gl_PerVertex 3 BuiltIn CullDistance\n"
+		"OpDecorate %BP_gl_PerVertex Block\n"
+		"OpMemberDecorate %BP_gl_PVOut 0 BuiltIn Position\n"
+		"OpMemberDecorate %BP_gl_PVOut 1 BuiltIn PointSize\n"
+		"OpMemberDecorate %BP_gl_PVOut 2 BuiltIn ClipDistance\n"
+		"OpMemberDecorate %BP_gl_PVOut 3 BuiltIn CullDistance\n"
+		"OpDecorate %BP_gl_PVOut Block\n"
 		"OpDecorate %BP_gl_TessLevelOuter Patch\n"
 		"OpDecorate %BP_gl_TessLevelOuter BuiltIn TessLevelOuter\n"
 		"OpDecorate %BP_gl_TessLevelInner Patch\n"
@@ -3470,8 +3496,14 @@ string makeTessControlShaderAssembly (const map<string, string>& fragments)
 		"%BP_out_color = OpVariable %op_a3v4f32 Output\n"
 		"%BP_gl_InvocationID = OpVariable %ip_i32 Input\n"
 		"%BP_in_color = OpVariable %ip_a32v4f32 Input\n"
-		"%BP_out_position = OpVariable %op_a3v4f32 Output\n"
-		"%BP_in_position = OpVariable %ip_a32v4f32 Input\n"
+		"%BP_gl_PerVertex = OpTypeStruct %v4f32 %f32 %a1f32 %a1f32\n"
+		"%BP_a3_gl_PerVertex = OpTypeArray %BP_gl_PerVertex %c_u32_3\n"
+		"%BP_op_a3_gl_PerVertex = OpTypePointer Output %BP_a3_gl_PerVertex\n"
+		"%BP_gl_out = OpVariable %BP_op_a3_gl_PerVertex Output\n"
+		"%BP_gl_PVOut = OpTypeStruct %v4f32 %f32 %a1f32 %a1f32\n"
+		"%BP_a32_gl_PVOut = OpTypeArray %BP_gl_PVOut %c_u32_32\n"
+		"%BP_ip_a32_gl_PVOut = OpTypePointer Input %BP_a32_gl_PVOut\n"
+		"%BP_gl_in = OpVariable %BP_ip_a32_gl_PVOut Input\n"
 		"%BP_gl_TessLevelOuter = OpVariable %op_a4f32 Output\n"
 		"%BP_gl_TessLevelInner = OpVariable %op_a2f32 Output\n"
 		"${pre_main:opt}\n"
@@ -3479,37 +3511,31 @@ string makeTessControlShaderAssembly (const map<string, string>& fragments)
 		"%BP_main = OpFunction %void None %fun\n"
 		"%BP_label = OpLabel\n"
 
-		"%BP_invocation_id = OpLoad %i32 %BP_gl_InvocationID\n"
+		"%BP_gl_Invoc = OpLoad %i32 %BP_gl_InvocationID\n"
 
-		"%BP_in_color_ptr = OpAccessChain %ip_v4f32 %BP_in_color %BP_invocation_id\n"
-		"%BP_in_position_ptr = OpAccessChain %ip_v4f32 %BP_in_position %BP_invocation_id\n"
+		"%BP_in_col_loc = OpAccessChain %ip_v4f32 %BP_in_color %BP_gl_Invoc\n"
+		"%BP_out_col_loc = OpAccessChain %op_v4f32 %BP_out_color %BP_gl_Invoc\n"
+		"%BP_in_col_val = OpLoad %v4f32 %BP_in_col_loc\n"
+		"%BP_clr_transformed = OpFunctionCall %v4f32 %test_code %BP_in_col_val\n"
+		"OpStore %BP_out_col_loc %BP_clr_transformed\n"
 
-		"%BP_in_color_val = OpLoad %v4f32 %BP_in_color_ptr\n"
-		"%BP_in_position_val = OpLoad %v4f32 %BP_in_position_ptr\n"
+		"%BP_in_pos_loc = OpAccessChain %ip_v4f32 %BP_gl_in %BP_gl_Invoc %c_i32_0\n"
+		"%BP_out_pos_loc = OpAccessChain %op_v4f32 %BP_gl_out %BP_gl_Invoc %c_i32_0\n"
+		"%BP_in_pos_val = OpLoad %v4f32 %BP_in_pos_loc\n"
+		"OpStore %BP_out_pos_loc %BP_in_pos_val\n"
 
-		"%BP_clr_transformed = OpFunctionCall %v4f32 %test_code %BP_in_color_val\n"
-
-		"%BP_out_color_ptr = OpAccessChain %op_v4f32 %BP_out_color %BP_invocation_id\n"
-		"%BP_out_position_ptr = OpAccessChain %op_v4f32 %BP_out_position %BP_invocation_id\n"
-
-		"OpStore %BP_out_color_ptr %BP_clr_transformed\n"
-		"OpStore %BP_out_position_ptr %BP_in_position_val\n"
-
-		"%BP_is_first_invocation = OpIEqual %bool %BP_invocation_id %c_i32_0\n"
+		"%BP_cmp = OpIEqual %bool %BP_gl_Invoc %c_i32_0\n"
 		"OpSelectionMerge %BP_merge_label None\n"
-		"OpBranchConditional %BP_is_first_invocation %BP_first_invocation %BP_merge_label\n"
-
-		"%BP_first_invocation = OpLabel\n"
-		"%BP_tess_outer_0 = OpAccessChain %op_f32 %BP_gl_TessLevelOuter %c_i32_0\n"
-		"%BP_tess_outer_1 = OpAccessChain %op_f32 %BP_gl_TessLevelOuter %c_i32_1\n"
-		"%BP_tess_outer_2 = OpAccessChain %op_f32 %BP_gl_TessLevelOuter %c_i32_2\n"
-		"%BP_tess_inner = OpAccessChain %op_f32 %BP_gl_TessLevelInner %c_i32_0\n"
-
-		"OpStore %BP_tess_outer_0 %c_f32_1\n"
-		"OpStore %BP_tess_outer_1 %c_f32_1\n"
-		"OpStore %BP_tess_outer_2 %c_f32_1\n"
-		"OpStore %BP_tess_inner %c_f32_1\n"
-
+		"OpBranchConditional %BP_cmp %BP_if_label %BP_merge_label\n"
+		"%BP_if_label = OpLabel\n"
+		"%BP_gl_TessLevelOuterPos_0 = OpAccessChain %op_f32 %BP_gl_TessLevelOuter %c_i32_0\n"
+		"%BP_gl_TessLevelOuterPos_1 = OpAccessChain %op_f32 %BP_gl_TessLevelOuter %c_i32_1\n"
+		"%BP_gl_TessLevelOuterPos_2 = OpAccessChain %op_f32 %BP_gl_TessLevelOuter %c_i32_2\n"
+		"%BP_gl_TessLevelInnerPos_0 = OpAccessChain %op_f32 %BP_gl_TessLevelInner %c_i32_0\n"
+		"OpStore %BP_gl_TessLevelOuterPos_0 %c_f32_1\n"
+		"OpStore %BP_gl_TessLevelOuterPos_1 %c_f32_1\n"
+		"OpStore %BP_gl_TessLevelOuterPos_2 %c_f32_1\n"
+		"OpStore %BP_gl_TessLevelInnerPos_0 %c_f32_1\n"
 		"OpBranch %BP_merge_label\n"
 		"%BP_merge_label = OpLabel\n"
 		"OpReturn\n"
@@ -3529,7 +3555,6 @@ string makeTessControlShaderAssembly (const map<string, string>& fragments)
 //
 // layout(triangles, equal_spacing, ccw) in;
 // layout(location = 1) in vec4 in_color[];
-// layout(location = 2) in vec4 in_position[];
 // layout(location = 1) out vec4 out_color;
 //
 // #define interpolate(val)
@@ -3537,9 +3562,9 @@ string makeTessControlShaderAssembly (const map<string, string>& fragments)
 //          vec4(gl_TessCoord.z) * val[2]
 //
 // void main() {
-//   gl_Position = vec4(gl_TessCoord.x) * in_position[0] +
-//                  vec4(gl_TessCoord.y) * in_position[1] +
-//                  vec4(gl_TessCoord.z) * in_position[2];
+//   gl_Position = vec4(gl_TessCoord.x) * gl_in[0].gl_Position +
+//                  vec4(gl_TessCoord.y) * gl_in[1].gl_Position +
+//                  vec4(gl_TessCoord.z) * gl_in[2].gl_Position;
 //   out_color = testfun(interpolate(in_color));
 // }
 string makeTessEvalShaderAssembly(const map<string, string>& fragments)
@@ -3547,86 +3572,102 @@ string makeTessEvalShaderAssembly(const map<string, string>& fragments)
 	static const char tessEvalBoilerplate[] =
 		"OpCapability Tessellation\n"
 		"OpMemoryModel Logical GLSL450\n"
-		"OpEntryPoint TessellationEvaluation %BP_main \"main\" %BP_stream %BP_gl_tessCoord %BP_in_position %BP_out_color %BP_in_color \n"
+		"OpEntryPoint TessellationEvaluation %BP_main \"main\" %BP_stream %BP_gl_TessCoord %BP_gl_in %BP_out_color %BP_in_color\n"
 		"OpExecutionMode %BP_main Triangles\n"
+		"OpExecutionMode %BP_main SpacingEqual\n"
+		"OpExecutionMode %BP_main VertexOrderCcw\n"
 		"${debug:opt}\n"
 		"OpName %BP_main \"main\"\n"
-		"OpName %BP_per_vertex_out \"gl_PerVertex\"\n"
-		"OpMemberName %BP_per_vertex_out 0 \"gl_Position\"\n"
-		"OpMemberName %BP_per_vertex_out 1 \"gl_PointSize\"\n"
-		"OpMemberName %BP_per_vertex_out 2 \"gl_ClipDistance\"\n"
-		"OpMemberName %BP_per_vertex_out 3 \"gl_CullDistance\"\n"
+		"OpName %test_code \"testfun(vf4;\"\n"
+		"OpName %BP_gl_PerVertexOut \"gl_PerVertex\"\n"
+		"OpMemberName %BP_gl_PerVertexOut 0 \"gl_Position\"\n"
+		"OpMemberName %BP_gl_PerVertexOut 1 \"gl_PointSize\"\n"
+		"OpMemberName %BP_gl_PerVertexOut 2 \"gl_ClipDistance\"\n"
+		"OpMemberName %BP_gl_PerVertexOut 3 \"gl_CullDistance\"\n"
 		"OpName %BP_stream \"\"\n"
-		"OpName %BP_gl_tessCoord \"gl_TessCoord\"\n"
-		"OpName %BP_in_position \"in_position\"\n"
+		"OpName %BP_gl_TessCoord \"gl_TessCoord\"\n"
+		"OpName %BP_gl_PerVertexIn \"gl_PerVertex\"\n"
+		"OpMemberName %BP_gl_PerVertexIn 0 \"gl_Position\"\n"
+		"OpMemberName %BP_gl_PerVertexIn 1 \"gl_PointSize\"\n"
+		"OpMemberName %BP_gl_PerVertexIn 2 \"gl_ClipDistance\"\n"
+		"OpMemberName %BP_gl_PerVertexIn 3 \"gl_CullDistance\"\n"
+		"OpName %BP_gl_in \"gl_in\"\n"
 		"OpName %BP_out_color \"out_color\"\n"
 		"OpName %BP_in_color \"in_color\"\n"
-		"OpName %test_code \"testfun(vf4;\"\n"
-		"OpMemberDecorate %BP_per_vertex_out 0 BuiltIn Position\n"
-		"OpMemberDecorate %BP_per_vertex_out 1 BuiltIn PointSize\n"
-		"OpMemberDecorate %BP_per_vertex_out 2 BuiltIn ClipDistance\n"
-		"OpMemberDecorate %BP_per_vertex_out 3 BuiltIn CullDistance\n"
-		"OpDecorate %BP_per_vertex_out Block\n"
-		"OpDecorate %BP_gl_tessCoord BuiltIn TessCoord\n"
-		"OpDecorate %BP_in_position Location 2\n"
+		"OpMemberDecorate %BP_gl_PerVertexOut 0 BuiltIn Position\n"
+		"OpMemberDecorate %BP_gl_PerVertexOut 1 BuiltIn PointSize\n"
+		"OpMemberDecorate %BP_gl_PerVertexOut 2 BuiltIn ClipDistance\n"
+		"OpMemberDecorate %BP_gl_PerVertexOut 3 BuiltIn CullDistance\n"
+		"OpDecorate %BP_gl_PerVertexOut Block\n"
+		"OpDecorate %BP_gl_TessCoord BuiltIn TessCoord\n"
+		"OpMemberDecorate %BP_gl_PerVertexIn 0 BuiltIn Position\n"
+		"OpMemberDecorate %BP_gl_PerVertexIn 1 BuiltIn PointSize\n"
+		"OpMemberDecorate %BP_gl_PerVertexIn 2 BuiltIn ClipDistance\n"
+		"OpMemberDecorate %BP_gl_PerVertexIn 3 BuiltIn CullDistance\n"
+		"OpDecorate %BP_gl_PerVertexIn Block\n"
 		"OpDecorate %BP_out_color Location 1\n"
 		"OpDecorate %BP_in_color Location 1\n"
 		"${decoration:opt}\n"
 		SPIRV_ASSEMBLY_TYPES
 		SPIRV_ASSEMBLY_CONSTANTS
 		SPIRV_ASSEMBLY_ARRAYS
-		"%BP_per_vertex_out = OpTypeStruct %v4f32 %f32 %a1f32 %a1f32\n"
-		"%BP_op_per_vertex_out = OpTypePointer Output %BP_per_vertex_out\n"
-		"%BP_stream = OpVariable %BP_op_per_vertex_out Output\n"
-		"%BP_gl_tessCoord = OpVariable %ip_v3f32 Input\n"
-		"%BP_in_position = OpVariable %ip_a32v4f32 Input\n"
+		"%BP_gl_PerVertexOut = OpTypeStruct %v4f32 %f32 %a1f32 %a1f32\n"
+		"%BP_op_gl_PerVertexOut = OpTypePointer Output %BP_gl_PerVertexOut\n"
+		"%BP_stream = OpVariable %BP_op_gl_PerVertexOut Output\n"
+		"%BP_gl_TessCoord = OpVariable %ip_v3f32 Input\n"
+		"%BP_gl_PerVertexIn = OpTypeStruct %v4f32 %f32 %a1f32 %a1f32\n"
+		"%BP_a32_gl_PerVertexIn = OpTypeArray %BP_gl_PerVertexIn %c_u32_32\n"
+		"%BP_ip_a32_gl_PerVertexIn = OpTypePointer Input %BP_a32_gl_PerVertexIn\n"
+		"%BP_gl_in = OpVariable %BP_ip_a32_gl_PerVertexIn Input\n"
 		"%BP_out_color = OpVariable %op_v4f32 Output\n"
 		"%BP_in_color = OpVariable %ip_a32v4f32 Input\n"
 		"${pre_main:opt}\n"
-
 		"%BP_main = OpFunction %void None %fun\n"
 		"%BP_label = OpLabel\n"
-		"%BP_tc_0_ptr = OpAccessChain %ip_f32 %BP_gl_tessCoord %c_u32_0\n"
-		"%BP_tc_1_ptr = OpAccessChain %ip_f32 %BP_gl_tessCoord %c_u32_1\n"
-		"%BP_tc_2_ptr = OpAccessChain %ip_f32 %BP_gl_tessCoord %c_u32_2\n"
+		"%BP_gl_TC_0 = OpAccessChain %ip_f32 %BP_gl_TessCoord %c_u32_0\n"
+		"%BP_gl_TC_1 = OpAccessChain %ip_f32 %BP_gl_TessCoord %c_u32_1\n"
+		"%BP_gl_TC_2 = OpAccessChain %ip_f32 %BP_gl_TessCoord %c_u32_2\n"
+		"%BP_gl_in_gl_Pos_0 = OpAccessChain %ip_v4f32 %BP_gl_in %c_i32_0 %c_i32_0\n"
+		"%BP_gl_in_gl_Pos_1 = OpAccessChain %ip_v4f32 %BP_gl_in %c_i32_1 %c_i32_0\n"
+		"%BP_gl_in_gl_Pos_2 = OpAccessChain %ip_v4f32 %BP_gl_in %c_i32_2 %c_i32_0\n"
 
-		"%BP_tc_0 = OpLoad %f32 %BP_tc_0_ptr\n"
-		"%BP_tc_1 = OpLoad %f32 %BP_tc_1_ptr\n"
-		"%BP_tc_2 = OpLoad %f32 %BP_tc_2_ptr\n"
+		"%BP_gl_OPos = OpAccessChain %op_v4f32 %BP_stream %c_i32_0\n"
+		"%BP_in_color_0 = OpAccessChain %ip_v4f32 %BP_in_color %c_i32_0\n"
+		"%BP_in_color_1 = OpAccessChain %ip_v4f32 %BP_in_color %c_i32_1\n"
+		"%BP_in_color_2 = OpAccessChain %ip_v4f32 %BP_in_color %c_i32_2\n"
 
-		"%BP_in_pos_0_ptr = OpAccessChain %ip_v4f32 %BP_in_position %c_i32_0\n"
-		"%BP_in_pos_1_ptr = OpAccessChain %ip_v4f32 %BP_in_position %c_i32_1\n"
-		"%BP_in_pos_2_ptr = OpAccessChain %ip_v4f32 %BP_in_position %c_i32_2\n"
+		"%BP_TC_W_0 = OpLoad %f32 %BP_gl_TC_0\n"
+		"%BP_TC_W_1 = OpLoad %f32 %BP_gl_TC_1\n"
+		"%BP_TC_W_2 = OpLoad %f32 %BP_gl_TC_2\n"
+		"%BP_v4f32_TC_0 = OpCompositeConstruct %v4f32 %BP_TC_W_0 %BP_TC_W_0 %BP_TC_W_0 %BP_TC_W_0\n"
+		"%BP_v4f32_TC_1 = OpCompositeConstruct %v4f32 %BP_TC_W_1 %BP_TC_W_1 %BP_TC_W_1 %BP_TC_W_1\n"
+		"%BP_v4f32_TC_2 = OpCompositeConstruct %v4f32 %BP_TC_W_2 %BP_TC_W_2 %BP_TC_W_2 %BP_TC_W_2\n"
 
-		"%BP_in_pos_0 = OpLoad %v4f32 %BP_in_pos_0_ptr\n"
-		"%BP_in_pos_1 = OpLoad %v4f32 %BP_in_pos_1_ptr\n"
-		"%BP_in_pos_2 = OpLoad %v4f32 %BP_in_pos_2_ptr\n"
+		"%BP_gl_IP_0 = OpLoad %v4f32 %BP_gl_in_gl_Pos_0\n"
+		"%BP_gl_IP_1 = OpLoad %v4f32 %BP_gl_in_gl_Pos_1\n"
+		"%BP_gl_IP_2 = OpLoad %v4f32 %BP_gl_in_gl_Pos_2\n"
 
-		"%BP_in_pos_0_weighted = OpVectorTimesScalar %v4f32 %BP_tc_0 %BP_in_pos_0\n"
-		"%BP_in_pos_1_weighted = OpVectorTimesScalar %v4f32 %BP_tc_1 %BP_in_pos_1\n"
-		"%BP_in_pos_2_weighted = OpVectorTimesScalar %v4f32 %BP_tc_2 %BP_in_pos_2\n"
+		"%BP_IP_W_0 = OpFMul %v4f32 %BP_v4f32_TC_0 %BP_gl_IP_0\n"
+		"%BP_IP_W_1 = OpFMul %v4f32 %BP_v4f32_TC_1 %BP_gl_IP_1\n"
+		"%BP_IP_W_2 = OpFMul %v4f32 %BP_v4f32_TC_2 %BP_gl_IP_2\n"
 
-		"%BP_out_pos_ptr = OpAccessChain %op_v4f32 %BP_stream %c_i32_0\n"
+		"%BP_pos_sum_0 = OpFAdd %v4f32 %BP_IP_W_0 %BP_IP_W_1\n"
+		"%BP_pos_sum_1 = OpFAdd %v4f32 %BP_pos_sum_0 %BP_IP_W_2\n"
 
-		"%BP_in_pos_0_plus_pos_1 = OpFAdd %v4f32 %BP_in_pos_0_weighted %BP_in_pos_1_weighted\n"
-		"%BP_computed_out = OpFAdd %v4f32 %BP_in_pos_0_plus_pos_1 %BP_in_pos_2_weighted\n"
-		"OpStore %BP_out_pos_ptr %BP_computed_out\n"
+		"OpStore %BP_gl_OPos %BP_pos_sum_1\n"
 
-		"%BP_in_clr_0_ptr = OpAccessChain %ip_v4f32 %BP_in_color %c_i32_0\n"
-		"%BP_in_clr_1_ptr = OpAccessChain %ip_v4f32 %BP_in_color %c_i32_1\n"
-		"%BP_in_clr_2_ptr = OpAccessChain %ip_v4f32 %BP_in_color %c_i32_2\n"
+		"%BP_IC_0 = OpLoad %v4f32 %BP_in_color_0\n"
+		"%BP_IC_1 = OpLoad %v4f32 %BP_in_color_1\n"
+		"%BP_IC_2 = OpLoad %v4f32 %BP_in_color_2\n"
 
-		"%BP_in_clr_0 = OpLoad %v4f32 %BP_in_clr_0_ptr\n"
-		"%BP_in_clr_1 = OpLoad %v4f32 %BP_in_clr_1_ptr\n"
-		"%BP_in_clr_2 = OpLoad %v4f32 %BP_in_clr_2_ptr\n"
+		"%BP_IC_W_0 = OpFMul %v4f32 %BP_v4f32_TC_0 %BP_IC_0\n"
+		"%BP_IC_W_1 = OpFMul %v4f32 %BP_v4f32_TC_1 %BP_IC_1\n"
+		"%BP_IC_W_2 = OpFMul %v4f32 %BP_v4f32_TC_2 %BP_IC_2\n"
 
-		"%BP_in_clr_0_weighted = OpVectorTimesScalar %v4f32 %BP_tc_0 %BP_in_clr_0\n"
-		"%BP_in_clr_1_weighted = OpVectorTimesScalar %v4f32 %BP_tc_1 %BP_in_clr_1\n"
-		"%BP_in_clr_2_weighted = OpVectorTimesScalar %v4f32 %BP_tc_2 %BP_in_clr_2\n"
+		"%BP_col_sum_0 = OpFAdd %v4f32 %BP_IC_W_0 %BP_IC_W_1\n"
+		"%BP_col_sum_1 = OpFAdd %v4f32 %BP_col_sum_0 %BP_IC_W_2\n"
 
-		"%BP_in_clr_0_plus_col_1 = OpFAdd %v4f32 %BP_in_clr_0_weighted %BP_in_clr_1_weighted\n"
-		"%BP_computed_clr = OpFAdd %v4f32 %BP_in_clr_0_plus_col_1 %BP_in_clr_2_weighted\n"
-		"%BP_clr_transformed = OpFunctionCall %v4f32 %test_code %BP_computed_clr\n"
+		"%BP_clr_transformed = OpFunctionCall %v4f32 %test_code %BP_col_sum_1\n"
 
 		"OpStore %BP_out_color %BP_clr_transformed\n"
 		"OpReturn\n"
@@ -3813,9 +3854,6 @@ void addShaderCodeCustomVertex(vk::SourceCollections& dst, InstanceContext conte
 {
 	map<string, string> passthru = passthruFragments();
 	dst.spirvAsmSources.add("vert") << makeVertexShaderAssembly(context.testCodeFragments);
-	dst.spirvAsmSources.add("tessc") << makeTessControlShaderAssembly(passthru);
-	dst.spirvAsmSources.add("tesse") << makeTessEvalShaderAssembly(passthru);
-	dst.spirvAsmSources.add("geom") << makeGeometryShaderAssembly(passthru);
 	dst.spirvAsmSources.add("frag") << makeFragmentShaderAssembly(passthru);
 }
 
@@ -3828,7 +3866,6 @@ void addShaderCodeCustomTessControl(vk::SourceCollections& dst, InstanceContext 
 	dst.spirvAsmSources.add("vert") << makeVertexShaderAssembly(passthru);
 	dst.spirvAsmSources.add("tessc") << makeTessControlShaderAssembly(context.testCodeFragments);
 	dst.spirvAsmSources.add("tesse") << makeTessEvalShaderAssembly(passthru);
-	dst.spirvAsmSources.add("geom") << makeGeometryShaderAssembly(passthru);
 	dst.spirvAsmSources.add("frag") << makeFragmentShaderAssembly(passthru);
 }
 
@@ -3841,7 +3878,6 @@ void addShaderCodeCustomTessEval(vk::SourceCollections& dst, InstanceContext con
 	dst.spirvAsmSources.add("vert") << makeVertexShaderAssembly(passthru);
 	dst.spirvAsmSources.add("tessc") << makeTessControlShaderAssembly(passthru);
 	dst.spirvAsmSources.add("tesse") << makeTessEvalShaderAssembly(context.testCodeFragments);
-	dst.spirvAsmSources.add("geom") << makeGeometryShaderAssembly(passthru);
 	dst.spirvAsmSources.add("frag") << makeFragmentShaderAssembly(passthru);
 }
 
@@ -3851,8 +3887,6 @@ void addShaderCodeCustomGeometry(vk::SourceCollections& dst, InstanceContext con
 {
 	map<string, string> passthru = passthruFragments();
 	dst.spirvAsmSources.add("vert") << makeVertexShaderAssembly(passthru);
-	dst.spirvAsmSources.add("tessc") << makeTessControlShaderAssembly(passthru);
-	dst.spirvAsmSources.add("tesse") << makeTessEvalShaderAssembly(passthru);
 	dst.spirvAsmSources.add("geom") << makeGeometryShaderAssembly(context.testCodeFragments);
 	dst.spirvAsmSources.add("frag") << makeFragmentShaderAssembly(passthru);
 }
@@ -3863,9 +3897,6 @@ void addShaderCodeCustomFragment(vk::SourceCollections& dst, InstanceContext con
 {
 	map<string, string> passthru = passthruFragments();
 	dst.spirvAsmSources.add("vert") << makeVertexShaderAssembly(passthru);
-	dst.spirvAsmSources.add("tessc") << makeTessControlShaderAssembly(passthru);
-	dst.spirvAsmSources.add("tesse") << makeTessEvalShaderAssembly(passthru);
-	dst.spirvAsmSources.add("geom") << makeGeometryShaderAssembly(passthru);
 	dst.spirvAsmSources.add("frag") << makeFragmentShaderAssembly(context.testCodeFragments);
 }
 
@@ -4556,6 +4587,27 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 	map<VkShaderStageFlagBits, VkShaderModule>	moduleByStage;
 	const int									testSpecificSeed		= 31354125;
 	const int									seed					= context.getTestContext().getCommandLine().getBaseSeed() ^ testSpecificSeed;
+	bool										supportsGeometry		= false;
+	bool										supportsTessellation	= false;
+	bool										hasTessellation         = false;
+
+	const VkPhysicalDeviceFeatures&				features				= context.getDeviceFeatures();
+	supportsGeometry		= features.geometryShader;
+	supportsTessellation	= features.tessellationShader;
+	hasTessellation			= (instance.requiredStages & VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT) ||
+								(instance.requiredStages & VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT);
+
+	if (hasTessellation && !supportsTessellation)
+	{
+		throw tcu::NotSupportedError(std::string("Tessellation not supported"));
+	}
+
+	if ((instance.requiredStages & VK_SHADER_STAGE_GEOMETRY_BIT) &&
+		!supportsGeometry)
+	{
+		throw tcu::NotSupportedError(std::string("Geometry not supported"));
+	}
+
 	de::Random(seed).shuffle(instance.inputColors, instance.inputColors+4);
 	de::Random(seed).shuffle(instance.outputColors, instance.outputColors+4);
 	const Vec4								vertexData[]			=
@@ -4856,7 +4908,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		0.0f,														//	float			slopeScaledDepthBias;
 		1.0f,														//	float			lineWidth;
 	};
-	const VkPrimitiveTopology topology = instance.hasTessellation? VK_PRIMITIVE_TOPOLOGY_PATCH_LIST: VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+	const VkPrimitiveTopology topology = hasTessellation? VK_PRIMITIVE_TOPOLOGY_PATCH_LIST: VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 	const VkPipelineInputAssemblyStateCreateInfo	inputAssemblyParams	=
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,	//	VkStructureType		sType;
@@ -4939,7 +4991,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		3u
 	};
 
-	const VkPipelineTessellationStateCreateInfo* tessellationInfo	=	instance.hasTessellation? &tessellationState: DE_NULL;
+	const VkPipelineTessellationStateCreateInfo* tessellationInfo	=	hasTessellation ? &tessellationState: DE_NULL;
 	const VkGraphicsPipelineCreateInfo		pipelineParams			=
 	{
 		VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,		//	VkStructureType									sType;
@@ -5212,11 +5264,23 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 
 void createTestsForAllStages (const std::string& name, const RGBA (&inputColors)[4], const RGBA (&outputColors)[4], const map<string, string>& testCodeFragments, const vector<deInt32>& specConstants, tcu::TestCaseGroup* tests)
 {
-	const ShaderElement		pipelineStages[]				=
+	const ShaderElement		vertFragPipelineStages[]		=
+	{
+		ShaderElement("vert", "main", VK_SHADER_STAGE_VERTEX_BIT),
+		ShaderElement("frag", "main", VK_SHADER_STAGE_FRAGMENT_BIT),
+	};
+
+	const ShaderElement		tessPipelineStages[]			=
 	{
 		ShaderElement("vert", "main", VK_SHADER_STAGE_VERTEX_BIT),
 		ShaderElement("tessc", "main", VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT),
 		ShaderElement("tesse", "main", VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT),
+		ShaderElement("frag", "main", VK_SHADER_STAGE_FRAGMENT_BIT),
+	};
+
+	const ShaderElement		geomPipelineStages[]				=
+	{
+		ShaderElement("vert", "main", VK_SHADER_STAGE_VERTEX_BIT),
 		ShaderElement("geom", "main", VK_SHADER_STAGE_GEOMETRY_BIT),
 		ShaderElement("frag", "main", VK_SHADER_STAGE_FRAGMENT_BIT),
 	};
@@ -5225,27 +5289,27 @@ void createTestsForAllStages (const std::string& name, const RGBA (&inputColors)
 
 	specConstantMap[VK_SHADER_STAGE_VERTEX_BIT] = specConstants;
 	addFunctionCaseWithPrograms<InstanceContext>(tests, name + "_vert", "", addShaderCodeCustomVertex, runAndVerifyDefaultPipeline,
-												 createInstanceContext(pipelineStages, inputColors, outputColors, testCodeFragments, specConstantMap));
+												 createInstanceContext(vertFragPipelineStages, inputColors, outputColors, testCodeFragments, specConstantMap));
 
 	specConstantMap.clear();
 	specConstantMap[VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT] = specConstants;
 	addFunctionCaseWithPrograms<InstanceContext>(tests, name + "_tessc", "", addShaderCodeCustomTessControl, runAndVerifyDefaultPipeline,
-												 createInstanceContext(pipelineStages, inputColors, outputColors, testCodeFragments, specConstantMap));
+												 createInstanceContext(tessPipelineStages, inputColors, outputColors, testCodeFragments, specConstantMap));
 
 	specConstantMap.clear();
 	specConstantMap[VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT] = specConstants;
 	addFunctionCaseWithPrograms<InstanceContext>(tests, name + "_tesse", "", addShaderCodeCustomTessEval, runAndVerifyDefaultPipeline,
-												 createInstanceContext(pipelineStages, inputColors, outputColors, testCodeFragments, specConstantMap));
+												 createInstanceContext(tessPipelineStages, inputColors, outputColors, testCodeFragments, specConstantMap));
 
 	specConstantMap.clear();
 	specConstantMap[VK_SHADER_STAGE_GEOMETRY_BIT] = specConstants;
 	addFunctionCaseWithPrograms<InstanceContext>(tests, name + "_geom", "", addShaderCodeCustomGeometry, runAndVerifyDefaultPipeline,
-												 createInstanceContext(pipelineStages, inputColors, outputColors, testCodeFragments, specConstantMap));
+												 createInstanceContext(geomPipelineStages, inputColors, outputColors, testCodeFragments, specConstantMap));
 
 	specConstantMap.clear();
 	specConstantMap[VK_SHADER_STAGE_FRAGMENT_BIT] = specConstants;
 	addFunctionCaseWithPrograms<InstanceContext>(tests, name + "_frag", "", addShaderCodeCustomFragment, runAndVerifyDefaultPipeline,
-												 createInstanceContext(pipelineStages, inputColors, outputColors, testCodeFragments, specConstantMap));
+												 createInstanceContext(vertFragPipelineStages, inputColors, outputColors, testCodeFragments, specConstantMap));
 }
 
 inline void createTestsForAllStages (const std::string& name, const RGBA (&inputColors)[4], const RGBA (&outputColors)[4], const map<string, string>& testCodeFragments, tcu::TestCaseGroup* tests)
