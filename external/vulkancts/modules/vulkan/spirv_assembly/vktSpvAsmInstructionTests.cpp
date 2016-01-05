@@ -6514,7 +6514,7 @@ tcu::TestCaseGroup* createMemoryAccessTests(tcu::TestContext& testCtx)
 		{ "volatile-aligned",  "Volatile|Aligned 1" },
 		{ "nontemporal-aligned",  "Nontemporal|Aligned 1" },
 		{ "volatile-nontemporal",  "Volatile|Nontemporal" },
-		{ "volatile-nontermporal-aligned",  "Volatile|NonTermporal|Aligned" },
+		{ "volatile-nontermporal-aligned",  "Volatile|Nontemporal|Aligned 1" },
 	};
 
 	getHalfColorsFullAlpha(colors);
@@ -6803,6 +6803,7 @@ void createOpQuantizeSingleOptionTests(tcu::TestCaseGroup* testCtx)
 		"${condition}\n"
 		"%retval        = OpSelect %v4f32 %cond %c_v4f32_1_0_0_1 %param1"
 		"                 OpReturnValue %retval\n"
+		"OpFunctionEnd\n"
 	);
 
 	const char*		specDecorations		= "OpDecorate %test_constant SpecId 0\n";
@@ -6817,6 +6818,7 @@ void createOpQuantizeSingleOptionTests(tcu::TestCaseGroup* testCtx)
 		"${condition}\n"
 		"%retval        = OpSelect %v4f32 %cond %c_v4f32_1_0_0_1 %param1"
 		"                 OpReturnValue %retval\n"
+		"OpFunctionEnd\n"
 	);
 
 	for (size_t idx = 0; idx < (sizeof(tests)/sizeof(tests[0])); ++idx)
@@ -6929,7 +6931,8 @@ void createOpQuantizeTwoPossibilityTests(tcu::TestCaseGroup* testCtx)
 		"%eq_2          = OpFOrdEqual %bool %c %possible_solution2\n"
 		"%cond          = OpLogicalOr %bool %eq_1 %eq_2\n"
 		"%retval        = OpSelect %v4f32 %cond %c_v4f32_1_0_0_1 %param1"
-		"                 OpReturnValue %retval\n";
+		"                 OpReturnValue %retval\n"
+		"OpFunctionEnd\n";
 
 	for(size_t idx = 0; idx < (sizeof(tests)/sizeof(tests[0])); ++idx) {
 		map<string, string>									fragments;
