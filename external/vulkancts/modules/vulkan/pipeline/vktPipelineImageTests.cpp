@@ -154,16 +154,16 @@ void ImageTest::initPrograms (SourceCollections& sourceCollections) const
 
 TestInstance* ImageTest::createInstance (Context& context) const
 {
-	tcu::IVec2 renderSize;
+	tcu::UVec2 renderSize;
 
 	if (m_imageViewType == VK_IMAGE_VIEW_TYPE_1D || m_imageViewType == VK_IMAGE_VIEW_TYPE_2D)
 	{
-		renderSize = tcu::IVec2(m_imageSize.x(), m_imageSize.y());
+		renderSize = tcu::UVec2((deUint32)m_imageSize.x(), (deUint32)m_imageSize.y());
 	}
 	else
 	{
 		// Draw a 3x2 grid of texture layers
-		renderSize = tcu::IVec2(m_imageSize.x() * 3, m_imageSize.y() * 2);
+		renderSize = tcu::UVec2((deUint32)m_imageSize.x() * 3, (deUint32)m_imageSize.y() * 2);
 	}
 
 	const std::vector<Vertex4Tex4>	vertices			= createTestQuadMosaic(m_imageViewType);
@@ -189,6 +189,7 @@ TestInstance* ImageTest::createInstance (Context& context) const
 		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,									// VkSamplerAddressMode		addressModeV;
 		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,									// VkSamplerAddressMode		addressModeW;
 		0.0f,																	// float					mipLodBias;
+		VK_FALSE,																// VkBool32					anisotropyEnable;
 		1.0f,																	// float					maxAnisotropy;
 		false,																	// VkBool32					compareEnable;
 		VK_COMPARE_OP_NEVER,													// VkCompareOp				compareOp;

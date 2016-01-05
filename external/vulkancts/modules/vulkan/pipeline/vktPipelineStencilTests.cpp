@@ -151,7 +151,7 @@ private:
 
 	VkStencilOpState					m_stencilOpStateFront;
 	VkStencilOpState					m_stencilOpStateBack;
-	const tcu::IVec2					m_renderSize;
+	const tcu::UVec2					m_renderSize;
 	const VkFormat						m_colorFormat;
 	const VkFormat						m_stencilFormat;
 
@@ -825,12 +825,7 @@ StencilTestInstance::StencilTestInstance (Context&					context,
 			VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType					sType;
 			DE_NULL,										// const void*						pNext;
 			0u,												// VkCommandBufferUsageFlags		flags;
-			DE_NULL,										// VkRenderPass						renderPass;
-			0u,												// deUint32							subpass;
-			DE_NULL,										// VkFramebuffer					framebuffer;
-			false,											// VkBool32							occlusionQueryEnable;
-			0u,												// VkQueryControlFlags				queryFlags;
-			0u												// VkQueryPipelineStatisticFlags	pipelineStatistics;
+			(const VkCommandBufferInheritanceInfo*)DE_NULL,
 		};
 
 		const VkClearValue attachmentClearValues[2] =
@@ -898,6 +893,7 @@ tcu::TestStatus StencilTestInstance::iterate (void)
 		DE_NULL,						// const void*				pNext;
 		0u,								// deUint32					waitSemaphoreCount;
 		DE_NULL,						// const VkSemaphore*		pWaitSemaphores;
+		(const VkPipelineStageFlags*)DE_NULL,
 		1u,								// deUint32					commandBufferCount;
 		&m_cmdBuffer.get(),				// const VkCommandBuffer*	pCommandBuffers;
 		0u,								// deUint32					signalSemaphoreCount;

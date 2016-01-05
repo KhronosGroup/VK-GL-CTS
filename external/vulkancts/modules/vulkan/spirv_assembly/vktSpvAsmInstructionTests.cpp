@@ -4580,7 +4580,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 	const DeviceInterface&						vk						= context.getDeviceInterface();
 	const VkQueue								queue					= context.getUniversalQueue();
 	const deUint32								queueFamilyIndex		= context.getUniversalQueueFamilyIndex();
-	const tcu::IVec2							renderSize				(256, 256);
+	const tcu::UVec2							renderSize				(256, 256);
 	vector<ModuleHandleSp>						modules;
 	map<VkShaderStageFlagBits, VkShaderModule>	moduleByStage;
 	const int									testSpecificSeed		= 31354125;
@@ -4590,8 +4590,8 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 	bool										hasTessellation         = false;
 
 	const VkPhysicalDeviceFeatures&				features				= context.getDeviceFeatures();
-	supportsGeometry		= features.geometryShader;
-	supportsTessellation	= features.tessellationShader;
+	supportsGeometry		= features.geometryShader == VK_TRUE;
+	supportsTessellation	= features.tessellationShader == VK_TRUE;
 	hasTessellation			= (instance.requiredStages & VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT) ||
 								(instance.requiredStages & VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT);
 
@@ -4985,7 +4985,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO,
 		DE_NULL,
-		(VkPipelineTesselationStateCreateFlags)0,
+		(VkPipelineTessellationStateCreateFlags)0,
 		3u
 	};
 
@@ -5055,12 +5055,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,			//	VkStructureType				sType;
 		DE_NULL,												//	const void*					pNext;
 		(VkCommandBufferUsageFlags)0,
-		DE_NULL,												//	VkRenderPass				renderPass;
-		0u,														//	deUint32					subpass;
-		DE_NULL,												//	VkFramebuffer				framebuffer;
-		VK_FALSE,												//	VkBool32					occlusionQueryEnable;
-		(VkQueryControlFlags)0,
-		(VkQueryPipelineStatisticFlags)0,
+		(const VkCommandBufferInheritanceInfo*)DE_NULL,
 	};
 
 	// Record commands
@@ -5093,8 +5088,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 				1u,											//	deUint32		arraySize;
 			}											//	VkImageSubresourceRange	subresourceRange;
 		};
-		const void*				barriers[]				= { &vertFlushBarrier, &colorAttBarrier };
-		vk.cmdPipelineBarrier(*cmdBuf, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, DE_FALSE, (deUint32)DE_LENGTH_OF_ARRAY(barriers), barriers);
+		vk.cmdPipelineBarrier(*cmdBuf, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, (VkDependencyFlags)0, 1, &vertFlushBarrier, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &colorAttBarrier);
 	}
 
 	{
@@ -5140,8 +5134,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 				1u,											//	deUint32			arraySize;
 			}											//	VkImageSubresourceRange	subresourceRange;
 		};
-		const void*				barriers[]				= { &renderFinishBarrier };
-		vk.cmdPipelineBarrier(*cmdBuf, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, DE_FALSE, (deUint32)DE_LENGTH_OF_ARRAY(barriers), barriers);
+		vk.cmdPipelineBarrier(*cmdBuf, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &renderFinishBarrier);
 	}
 
 	{
@@ -5175,8 +5168,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 			0u,											//	VkDeviceSize		offset;
 			imageSizeBytes								//	VkDeviceSize		size;
 		};
-		const void*				barriers[]				= { &copyFinishBarrier };
-		vk.cmdPipelineBarrier(*cmdBuf, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, DE_FALSE, (deUint32)DE_LENGTH_OF_ARRAY(barriers), barriers);
+		vk.cmdPipelineBarrier(*cmdBuf, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &copyFinishBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
 	}
 
 	VK_CHECK(vk.endCommandBuffer(*cmdBuf));
@@ -5212,6 +5204,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 			DE_NULL,
 			0u,
 			(const VkSemaphore*)DE_NULL,
+			(const VkPipelineStageFlags*)DE_NULL,
 			1u,
 			&cmdBuf.get(),
 			0u,

@@ -374,12 +374,7 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// sType
 		DE_NULL,										// pNext
 		VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
-		(VkRenderPass)0u,								// renderPass
-		0u,												// subpass
-		(VkFramebuffer)0u,								// framebuffer
-		VK_FALSE,										// occlusionQueryEnable
-		(VkQueryControlFlags)0,
-		(VkQueryPipelineStatisticFlags)0,
+		(const VkCommandBufferInheritanceInfo*)DE_NULL,
 	};
 
 	const tcu::IVec3&				numWorkGroups		= m_shaderSpec.numWorkGroups;
@@ -406,6 +401,7 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 		DE_NULL,
 		0u,
 		(const VkSemaphore*)DE_NULL,
+		(const VkPipelineStageFlags*)DE_NULL,
 		1u,
 		&cmdBuffer.get(),
 		0u,

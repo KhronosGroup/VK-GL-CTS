@@ -970,6 +970,7 @@ struct Sampler
 		VkSamplerAddressMode	addressModeV;
 		VkSamplerAddressMode	addressModeW;
 		float					mipLodBias;
+		VkBool32				anisotropyEnable;
 		float					maxAnisotropy;
 		VkBool32				compareEnable;
 		VkCompareOp				compareOp;
@@ -982,11 +983,12 @@ struct Sampler
 		Parameters (void)
 			: magFilter					(VK_FILTER_NEAREST)
 			, minFilter					(VK_FILTER_NEAREST)
-			, mipmapMode				(VK_SAMPLER_MIPMAP_MODE_BASE)
+			, mipmapMode				(VK_SAMPLER_MIPMAP_MODE_NEAREST)
 			, addressModeU				(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE)
 			, addressModeV				(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE)
 			, addressModeW				(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE)
 			, mipLodBias				(0.0f)
+			, anisotropyEnable			(VK_FALSE)
 			, maxAnisotropy				(1.0f)
 			, compareEnable				(VK_FALSE)
 			, compareOp					(VK_COMPARE_OP_ALWAYS)
@@ -1016,6 +1018,7 @@ struct Sampler
 			params.addressModeV,
 			params.addressModeW,
 			params.mipLodBias,
+			params.anisotropyEnable,
 			params.maxAnisotropy,
 			params.compareEnable,
 			params.compareOp,

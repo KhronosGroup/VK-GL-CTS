@@ -175,7 +175,7 @@ public:
 									 const vk::VkAttachmentReference*	resolveAttachments,
 									 vk::VkAttachmentReference			depthStencilAttachment,
 									 deUint32							preserveAttachmentCount,
-									 const vk::VkAttachmentReference*	preserveAttachments);
+									 const deUint32*					preserveAttachments);
 
 	SubpassDescription				(const vk::VkSubpassDescription&	other);
 	SubpassDescription				(const SubpassDescription&			other);
@@ -185,7 +185,7 @@ private:
 	std::vector<vk::VkAttachmentReference>	m_inputAttachments;
 	std::vector<vk::VkAttachmentReference>	m_colorAttachments;
 	std::vector<vk::VkAttachmentReference>	m_resolveAttachments;
-	std::vector<vk::VkAttachmentReference>	m_preserveAttachments;
+	std::vector<deUint32>					m_preserveAttachments;
 
 	vk::VkAttachmentReference				m_depthStencilAttachment;
 };
@@ -261,13 +261,6 @@ class CmdBufferBeginInfo : public vk::VkCommandBufferBeginInfo
 {
 public:
 	CmdBufferBeginInfo (vk::VkCommandBufferUsageFlags		flags					= 0);
-	CmdBufferBeginInfo (vk::VkRenderPass					renderPass,
-						deUint32							subpass,
-						vk::VkFramebuffer					framebuffer,
-						vk::VkCommandBufferUsageFlags		flags					= 0,
-						bool								occlusionQueryEnable	= false,
-						vk::VkQueryControlFlags				queryFlags				= 0u,
-						vk::VkQueryPipelineStatisticFlags	pipelineStatistics		= 0u);
 };
 
 class DescriptorPoolSize : public vk::VkDescriptorPoolSize
@@ -334,10 +327,10 @@ public:
 		InputAssemblerState (vk::VkPrimitiveTopology topology, vk::VkBool32 primitiveRestartEnable = false);
 	};
 
-	class TesselationState : public vk::VkPipelineTessellationStateCreateInfo
+	class TessellationState : public vk::VkPipelineTessellationStateCreateInfo
 	{
 	public:
-		TesselationState (deUint32 patchControlPoints = 0);
+		TessellationState (deUint32 patchControlPoints = 0);
 	};
 
 	class ViewportState : public vk::VkPipelineViewportStateCreateInfo
@@ -511,6 +504,7 @@ public:
 					   vk::VkSamplerAddressMode	addressV				= vk::VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT,
 					   vk::VkSamplerAddressMode	addressW				= vk::VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT,
 					   float					mipLodBias				= 0.0f,
+					   vk::VkBool32				anisotropyEnable		= vk::VK_FALSE,
 					   float					maxAnisotropy			= 1.0f,
 					   vk::VkBool32				compareEnable			= false,
 					   vk::VkCompareOp			compareOp				= vk::VK_COMPARE_OP_ALWAYS,

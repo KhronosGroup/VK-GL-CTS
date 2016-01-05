@@ -1155,7 +1155,7 @@ Move<VkBuffer> createBuffer (Context& context, VkDeviceSize bufferSize, vk::VkBu
 	return vk::createBuffer(vk, vkDevice, &bufferInfo);
 }
 
-Move<vk::VkImage> createImage2D (Context& context, int width, int height, vk::VkFormat format, vk::VkImageTiling tiling, vk::VkImageUsageFlags usageFlags)
+Move<vk::VkImage> createImage2D (Context& context, deUint32 width, deUint32 height, vk::VkFormat format, vk::VkImageTiling tiling, vk::VkImageUsageFlags usageFlags)
 {
 	const deUint32				queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
 	const vk::VkImageCreateInfo	params				=
@@ -1165,7 +1165,7 @@ Move<vk::VkImage> createImage2D (Context& context, int width, int height, vk::Vk
 		0u,											// VkImageCreateFlags		flags
 		vk::VK_IMAGE_TYPE_2D,						// VkImageType				imageType
 		format,										// VkFormat					format
-		{ width, height, 1 },						// VkExtent3D				extent
+		{ width, height, 1u },						// VkExtent3D				extent
 		1u,											// deUint32					mipLevels
 		1u,											// deUint32					arrayLayers
 		VK_SAMPLE_COUNT_1_BIT,						// VkSampleCountFlagBits	samples
@@ -1456,12 +1456,7 @@ tcu::TestStatus UniformBlockCaseInstance::iterate (void)
 		vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType					sType;
 		DE_NULL,											// const void*						pNext;
 		0u,													// VkCommandBufferUsageFlags		flags;
-		(vk::VkRenderPass)0,								// VkRenderPass						renderPass;
-		0u,													// deUint32							subpass;
-		(vk::VkFramebuffer)0,								// VkFramebuffer					framebuffer;
-		false,												// VkBool32							occlusionQueryEnable;
-		0u,													// VkQueryControlFlags				queryFlags;
-		0u													// VkQueryPipelineStatisticFlags	pipelineStatistics;
+		(const vk::VkCommandBufferInheritanceInfo*)DE_NULL,
 	};
 	VK_CHECK(vk.beginCommandBuffer(*cmdBuffer, &beginInfo));
 
@@ -1510,9 +1505,11 @@ tcu::TestStatus UniformBlockCaseInstance::iterate (void)
 				1u,										// deUint32				arraySize;
 			}												// VkImageSubresourceRange	subresourceRange
 		};
-		const void* const barriers[] = { &renderFinishBarrier };
 
-		vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, DE_FALSE, DE_LENGTH_OF_ARRAY(barriers), barriers);
+		vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0,
+							  0, (const vk::VkMemoryBarrier*)DE_NULL,
+							  0, (const vk::VkBufferMemoryBarrier*)DE_NULL,
+							  1, &renderFinishBarrier);
 	}
 
 	// Add Image->Buffer copy command
@@ -1549,9 +1546,11 @@ tcu::TestStatus UniformBlockCaseInstance::iterate (void)
 			0u,													// VkDeviceSize			offset;
 			(vk::VkDeviceSize)(RENDER_WIDTH * RENDER_HEIGHT * 4)// VkDeviceSize			size;
 		};
-		const void* const barriers[] = { &copyFinishBarrier };
 
-		vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT, DE_FALSE, (deUint32)DE_LENGTH_OF_ARRAY(barriers), barriers);
+		vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT, (vk::VkDependencyFlags)0,
+							  0, (const vk::VkMemoryBarrier*)DE_NULL,
+							  1, &copyFinishBarrier,
+							  0, (const vk::VkImageMemoryBarrier*)DE_NULL);
 	}
 
 	VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
@@ -1572,6 +1571,7 @@ tcu::TestStatus UniformBlockCaseInstance::iterate (void)
 			DE_NULL,						// const void*				pNext;
 			0u,								// deUint32					waitSemaphoreCount;
 			DE_NULL,						// const VkSemaphore*		pWaitSemaphores;
+			(const VkPipelineStageFlags*)DE_NULL,
 			1u,								// deUint32					commandBufferCount;
 			&cmdBuffer.get(),				// const VkCommandBuffer*	pCommandBuffers;
 			0u,								// deUint32					signalSemaphoreCount;

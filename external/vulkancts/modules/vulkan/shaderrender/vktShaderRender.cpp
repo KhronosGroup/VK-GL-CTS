@@ -68,10 +68,10 @@ using namespace vk;
 namespace
 {
 
-static const int		s_gridSize			= 2;
-static const int		s_maxRenderWidth	= 128;
-static const int		s_maxRenderHeight	= 128;
-static const tcu::Vec4	s_defaultClearColor	= tcu::Vec4(0.125f, 0.25f, 0.5f, 1.0f);
+static const int		GRID_SIZE			= 2;
+static const deUint32	MAX_RENDER_WIDTH	= 128;
+static const deUint32	MAX_RENDER_HEIGHT	= 128;
+static const tcu::Vec4	DEFAULT_CLEAR_COLOR	= tcu::Vec4(0.125f, 0.25f, 0.5f, 1.0f);
 
 static bool isSupportedLinearTilingFormat (const InstanceInterface& instanceInterface, VkPhysicalDevice device, VkFormat format)
 {
@@ -471,7 +471,7 @@ ShaderRenderCaseInstance::ShaderRenderCaseInstance (Context&					context,
 													const UniformSetup&			uniformSetup,
 													const AttributeSetupFunc	attribFunc)
 	: vkt::TestInstance	(context)
-	, m_clearColor		(s_defaultClearColor)
+	, m_clearColor		(DEFAULT_CLEAR_COLOR)
 	, m_memAlloc		(context.getDefaultAllocator())
 	, m_isVertexCase	(isVertexCase)
 	, m_evaluator		(evaluator)
@@ -491,11 +491,11 @@ tcu::TestStatus ShaderRenderCaseInstance::iterate (void)
 	setup();
 
 	// Create quad grid.
-	const tcu::IVec2	viewportSize	= getViewportSize();
+	const tcu::UVec2	viewportSize	= getViewportSize();
 	const int			width			= viewportSize.x();
 	const int			height			= viewportSize.y();
 
-	QuadGrid			quadGrid		(m_isVertexCase ? s_gridSize : 4, width, height, tcu::Vec4(0.125f, 0.25f, 0.5f, 1.0f), m_userAttribTransforms, m_textures);
+	QuadGrid			quadGrid		(m_isVertexCase ? GRID_SIZE : 4, width, height, tcu::Vec4(0.125f, 0.25f, 0.5f, 1.0f), m_userAttribTransforms, m_textures);
 
 	// Render result.
 	tcu::Surface		resImage		(width, height);
@@ -747,10 +747,10 @@ void ShaderRenderCaseInstance::useUniform (deUint32 bindingLocation, BaseUniform
 	#undef UNIFORM_CASE
 }
 
-const tcu::IVec2 ShaderRenderCaseInstance::getViewportSize (void) const
+const tcu::UVec2 ShaderRenderCaseInstance::getViewportSize (void) const
 {
-	return tcu::IVec2(de::min(m_renderSize.x(), s_maxRenderWidth),
-					  de::min(m_renderSize.y(), s_maxRenderHeight));
+	return tcu::UVec2(de::min(m_renderSize.x(), MAX_RENDER_WIDTH),
+					  de::min(m_renderSize.y(), MAX_RENDER_HEIGHT));
 }
 
 Move<VkImage> ShaderRenderCaseInstance::createImage2D (const tcu::Texture2D&	texture,
@@ -769,7 +769,11 @@ Move<VkImage> ShaderRenderCaseInstance::createImage2D (const tcu::Texture2D&	tex
 		0,															// VkImageCreateFlags		flags;
 		VK_IMAGE_TYPE_2D,											// VkImageType				imageType;
 		format,														// VkFormat					format;
-		{ texture.getWidth(), texture.getHeight(), 1 },				// VkExtend3D				extent;
+		{
+			(deUint32)texture.getWidth(),
+			(deUint32)texture.getHeight(),
+			1u
+		},															// VkExtend3D				extent;
 		1u,															// deUint32					mipLevels;
 		1u,															// deUint32					arraySize;
 		VK_SAMPLE_COUNT_1_BIT,										// deUint32					samples;
@@ -816,8 +820,8 @@ de::MovePtr<Allocation> ShaderRenderCaseInstance::uploadImage2D (const tcu::Text
 
 void ShaderRenderCaseInstance::copyTilingImageToOptimal	(const vk::VkImage&	srcImage,
 														 const vk::VkImage&	dstImage,
-														 deInt32 width,
-														 deInt32 height)
+														 deUint32			width,
+														 deUint32			height)
 {
 	const VkDevice						vkDevice			= m_context.getDevice();
 	const DeviceInterface&				vk					= m_context.getDeviceInterface();
@@ -851,12 +855,7 @@ void ShaderRenderCaseInstance::copyTilingImageToOptimal	(const vk::VkImage&	srcI
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType				sType;
 		DE_NULL,										// const void*					pNext;
 		usageFlags,										// VkCommandBufferUsageFlags	flags;
-		DE_NULL,										// VkRenderPass					renderPass;
-		0u,												// deUint32						subpass;
-		DE_NULL,										// VkFramebuffer				framebuffer;
-		VK_FALSE,										// VkBool32						occlusionQueryEnable;
-		(VkQueryControlFlags)0,
-		(VkQueryPipelineStatisticFlags)0,
+		(const VkCommandBufferInheritanceInfo*)DE_NULL,
 	};
 
 	Move<VkCommandBuffer>				cmdBuffer			= allocateCommandBuffer(vk, vkDevice, &cmdBufferParams);
@@ -870,11 +869,10 @@ void ShaderRenderCaseInstance::copyTilingImageToOptimal	(const vk::VkImage&	srcI
 		createImageMemoryBarrier(dstImage, (VkAccessFlags)0u, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
 	};
 
-	for (deUint32 barrierNdx = 0; barrierNdx < DE_LENGTH_OF_ARRAY(layoutBarriers); barrierNdx++)
-	{
-		const VkImageMemoryBarrier* memoryBarrier = &layoutBarriers[barrierNdx];
-		vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, false, 1, (const void * const*)&memoryBarrier);
-	}
+	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, (VkDependencyFlags)0,
+						  0, (const VkMemoryBarrier*)DE_NULL,
+						  0, (const VkBufferMemoryBarrier*)DE_NULL,
+						  DE_LENGTH_OF_ARRAY(layoutBarriers), layoutBarriers);
 
 	// Add image copy
 	const VkImageCopy				imageCopy			=
@@ -914,8 +912,10 @@ void ShaderRenderCaseInstance::copyTilingImageToOptimal	(const vk::VkImage&	srcI
 	const VkImageMemoryBarrier		dstBarrier			=
 			createImageMemoryBarrier(dstImage, VK_ACCESS_HOST_WRITE_BIT | VK_ACCESS_TRANSFER_WRITE_BIT, 0u, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-	const void* const*				barrier				= (const void* const*)&dstBarrier;
-	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, false, 1, (const void* const*)&barrier);
+	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, (VkDependencyFlags)0,
+						  0, (const VkMemoryBarrier*)DE_NULL,
+						  0, (const VkBufferMemoryBarrier*)DE_NULL,
+						  1, &dstBarrier);
 
 	VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
 
@@ -932,6 +932,7 @@ void ShaderRenderCaseInstance::copyTilingImageToOptimal	(const vk::VkImage&	srcI
 		DE_NULL,
 		0u,
 		(const VkSemaphore*)DE_NULL,
+		(const VkPipelineStageFlags*)DE_NULL,
 		1u,
 		&cmdBuffer.get(),
 		0u,
@@ -985,28 +986,7 @@ void ShaderRenderCaseInstance::useSampler2D (deUint32 bindingLocation, deUint32 
 	}
 
 	// Create sampler
-	const bool						compareEnabled	= (refSampler.compare != tcu::Sampler::COMPAREMODE_NONE);
-	const VkSamplerCreateInfo		samplerParams	=
-	{
-		VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,			// VkStructureType	sType;
-		DE_NULL,										// const void*		pNext;
-		(VkSamplerCreateFlags)0,
-		mapFilterMode(refSampler.magFilter),			// VkTexFilter		magFilter;
-		mapFilterMode(refSampler.minFilter),			// VkTexFilter		minFilter;
-		mapMipmapMode(refSampler.minFilter),			// VkTexMipmapMode	mipMode;
-		mapWrapMode(refSampler.wrapS),					// VkTexAddressMode	addressModeU;
-		mapWrapMode(refSampler.wrapT),					// VkTexAddressMode	addressModeV;
-		mapWrapMode(refSampler.wrapR),					// VkTexAddressMode	addressModeW;
-		refSampler.lodThreshold,						// float			mipLodBias;
-		1,												// float			maxAnisotropy;
-		compareEnabled,									// VkBool32			compareEnable;
-		mapCompareMode(refSampler.compare),				// VkCompareOp		compareOp;
-		0.0f,											// float			minLod;
-		0.0f,											// float			maxLod;
-		VK_BORDER_COLOR_INT_OPAQUE_WHITE,				// VkBorderColor	boderColor;
-		VK_FALSE,										// VkBool32			unnormalizerdCoordinates;
-	};
-
+	const VkSamplerCreateInfo		samplerParams	= mapSampler(refSampler, refTexture.getFormat());
 	Move<VkSampler>					sampler			= createSampler(vk, vkDevice, &samplerParams);
 
 	const VkImageViewCreateInfo		viewParams		=
@@ -1555,12 +1535,7 @@ void ShaderRenderCaseInstance::render (tcu::Surface& result, const QuadGrid& qua
 			VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType			sType;
 			DE_NULL,										// const void*				pNext;
 			0u,												// VkCmdBufferOptimizeFlags	flags;
-			DE_NULL,										// VkRenderPass				renderPass;
-			0u,												// deUint32					subpass;
-			DE_NULL,										// VkFramebuffer			framebuffer;
-			VK_FALSE,
-			(VkQueryControlFlags)0,
-			(VkQueryPipelineStatisticFlags)0,
+			(const VkCommandBufferInheritanceInfo*)DE_NULL,
 		};
 
 		const VkClearValue								clearValues					= makeClearValueColorF32(m_clearColor.x(),
@@ -1585,7 +1560,6 @@ void ShaderRenderCaseInstance::render (tcu::Surface& result, const QuadGrid& qua
 
 		// Add texture barriers
 		std::vector<VkImageMemoryBarrier> barriers;
-		std::vector<void*> barrierPtrs;
 
 		for(deUint32 i = 0; i < m_uniformInfos.size(); i++)
 		{
@@ -1602,10 +1576,12 @@ void ShaderRenderCaseInstance::render (tcu::Surface& result, const QuadGrid& qua
 			const VkImageMemoryBarrier	textureBarrier	= createImageMemoryBarrier(sampler->image->get(), outputMask, 0u, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
 			barriers.push_back(textureBarrier);
-			barrierPtrs.push_back((void*)&barriers.back());
 		}
 
-		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, false, (deUint32)barrierPtrs.size(), (barrierPtrs.size() ? (const void * const*)&barrierPtrs[0] : DE_NULL));
+		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, (VkDependencyFlags)0,
+							  0, (const VkMemoryBarrier*)DE_NULL,
+							  0, (const VkBufferMemoryBarrier*)DE_NULL,
+							  (deUint32)barriers.size(), (barriers.empty() ? (const VkImageMemoryBarrier*)DE_NULL : &barriers[0]));
 
 		vk.cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
@@ -1648,6 +1624,7 @@ void ShaderRenderCaseInstance::render (tcu::Surface& result, const QuadGrid& qua
 			DE_NULL,
 			0u,
 			(const VkSemaphore*)DE_NULL,
+			(const VkPipelineStageFlags*)DE_NULL,
 			1u,
 			&m_cmdBuffer.get(),
 			0u,
@@ -1693,12 +1670,7 @@ void ShaderRenderCaseInstance::render (tcu::Surface& result, const QuadGrid& qua
 			VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType			sType;
 			DE_NULL,										// const void*				pNext;
 			0u,												// VkCmdBufferOptimizeFlags	flags;
-			DE_NULL,										// VkRenderPass				renderPass;
-			0u,												// deUint32					subpass;
-			DE_NULL,										// VkFramebuffer			framebuffer;
-			VK_FALSE,
-			(VkQueryControlFlags)0,
-			(VkQueryPipelineStatisticFlags)0,
+			(const VkCommandBufferInheritanceInfo*)DE_NULL,
 		};
 
 		const Move<VkCommandBuffer>						cmdBuffer					= allocateCommandBuffer(vk, vkDevice, &cmdBufferParams);
@@ -1723,6 +1695,7 @@ void ShaderRenderCaseInstance::render (tcu::Surface& result, const QuadGrid& qua
 			DE_NULL,
 			0u,
 			(const VkSemaphore*)DE_NULL,
+			(const VkPipelineStageFlags*)DE_NULL,
 			1u,
 			&cmdBuffer.get(),
 			0u,

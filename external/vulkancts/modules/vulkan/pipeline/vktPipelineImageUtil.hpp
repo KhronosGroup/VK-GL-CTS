@@ -80,7 +80,7 @@ de::MovePtr<tcu::TextureLevel>	readColorAttachment			 (const vk::DeviceInterface
 															  vk::Allocator&				allocator,
 															  vk::VkImage					image,
 															  vk::VkFormat					format,
-															  const tcu::IVec2&				renderSize);
+															  const tcu::UVec2&				renderSize);
 
 /*--------------------------------------------------------------------*//*!
  * Uploads data from a test texture to a destination VK image.

@@ -183,9 +183,9 @@ void writeTextureLevelPyramidData (void* dst, deUint32 dstLen, const tcu::Textur
 					0,
 				},															// imageOffset
 				{
-					sliceSize.x(),
-					sliceSize.y(),
-					sliceSize.z(),
+					(deUint32)sliceSize.x(),
+					(deUint32)sliceSize.y(),
+					(deUint32)sliceSize.z(),
 				}															// imageExtent
 			};
 			copySlices->push_back(copySlice);
@@ -330,7 +330,7 @@ vk::Move<vk::VkImage> SingleTargetRenderInstance::createColorAttachment (const v
 		(vk::VkImageCreateFlags)0,
 		vk::VK_IMAGE_TYPE_2D,							// imageType
 		vk::mapTextureFormat(format),					// format
-		{ (deInt32)size.x(), (deInt32)size.y(), 1 },	// extent
+		{ size.x(), size.y(), 1u },						// extent
 		1,												// mipLevels
 		1,												// arraySize
 		vk::VK_SAMPLE_COUNT_1_BIT,						// samples
@@ -533,12 +533,7 @@ void SingleTargetRenderInstance::readRenderTarget (tcu::TextureLevel& dst)
 		vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
 		DE_NULL,
 		vk::VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,	// flags
-		(vk::VkRenderPass)0u,								// renderPass
-		0u,													// subpass
-		(vk::VkFramebuffer)0u,								// framebuffer
-		vk::VK_FALSE,										// occlusionQueryEnable
-		(vk::VkQueryControlFlags)0,
-		(vk::VkQueryPipelineStatisticFlags)0,
+		(const vk::VkCommandBufferInheritanceInfo*)DE_NULL,
 	};
 	const vk::VkImageSubresourceLayers		firstSlice					=
 	{
@@ -554,22 +549,26 @@ void SingleTargetRenderInstance::readRenderTarget (tcu::TextureLevel& dst)
 		m_targetSize.y(),								// bufferImageHeight
 		firstSlice,										// imageSubresource
 		{ 0, 0, 0 },									// imageOffset
-		{ (deInt32)m_targetSize.x(), (deInt32)m_targetSize.y(), 1 }		// imageExtent
+		{ m_targetSize.x(), m_targetSize.y(), 1u }		// imageExtent
 	};
 
 	const de::MovePtr<vk::Allocation>		bufferMemory				= allocateAndBindObjectMemory(m_vki, m_device, m_allocator, *buffer, vk::MemoryRequirement::HostVisible);
 
 	const vk::Unique<vk::VkCommandBuffer>	cmd							(vk::allocateCommandBuffer(m_vki, m_device, &cmdBufAllocInfo));
 	const vk::Unique<vk::VkFence>			cmdCompleteFence			(vk::createFence(m_vki, m_device, &fenceCreateInfo));
-	const void* const						imageBarrierPtr				= &imageBarrier;
-	const void* const						bufferBarrierPtr			= &memoryBarrier;
 	const deUint64							infiniteTimeout				= ~(deUint64)0u;
 
 	// copy content to buffer
 	VK_CHECK(m_vki.beginCommandBuffer(*cmd, &cmdBufBeginInfo));
-	m_vki.cmdPipelineBarrier(*cmd, vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_FALSE, 1, &imageBarrierPtr);
+	m_vki.cmdPipelineBarrier(*cmd, vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0,
+							 0, (const vk::VkMemoryBarrier*)DE_NULL,
+							 0, (const vk::VkBufferMemoryBarrier*)DE_NULL,
+							 1, &imageBarrier);
 	m_vki.cmdCopyImageToBuffer(*cmd, *m_colorAttachmentImage, vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *buffer, 1, &copyRegion);
-	m_vki.cmdPipelineBarrier(*cmd, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, vk::VK_FALSE, 1, &bufferBarrierPtr);
+	m_vki.cmdPipelineBarrier(*cmd, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, (vk::VkDependencyFlags)0,
+							 0, (const vk::VkMemoryBarrier*)DE_NULL,
+							 1, &memoryBarrier,
+							 0, (const vk::VkImageMemoryBarrier*)DE_NULL);
 	VK_CHECK(m_vki.endCommandBuffer(*cmd));
 
 	// wait for transfer to complete
@@ -580,6 +579,7 @@ void SingleTargetRenderInstance::readRenderTarget (tcu::TextureLevel& dst)
 			DE_NULL,
 			0u,
 			(const vk::VkSemaphore*)0,
+			(const vk::VkPipelineStageFlags*)DE_NULL,
 			1u,
 			&cmd.get(),
 			0u,
@@ -645,19 +645,16 @@ tcu::TestStatus SingleTargetRenderInstance::iterate (void)
 			vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
 			DE_NULL,
 			vk::VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,	// flags
-			(vk::VkRenderPass)0u,								// renderPass
-			0u,													// subpass
-			(vk::VkFramebuffer)0u,								// framebuffer
-			vk::VK_FALSE,										// occlusionQueryEnable
-			(vk::VkQueryControlFlags)0,
-			(vk::VkQueryPipelineStatisticFlags)0,
+			(const vk::VkCommandBufferInheritanceInfo*)DE_NULL,
 		};
 
 		const vk::Unique<vk::VkCommandBuffer>	cmd					(vk::allocateCommandBuffer(m_vki, m_device, &cmdBufAllocInfo));
-		const void* const						imageBarrierPtr		= &imageBarrier;
 
 		VK_CHECK(m_vki.beginCommandBuffer(*cmd, &cmdBufBeginInfo));
-		m_vki.cmdPipelineBarrier(*cmd, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, vk::VK_FALSE, 1, &imageBarrierPtr);
+		m_vki.cmdPipelineBarrier(*cmd, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, (vk::VkDependencyFlags)0,
+								 0, (const vk::VkMemoryBarrier*)DE_NULL,
+								 0, (const vk::VkBufferMemoryBarrier*)DE_NULL,
+								 1, &imageBarrier);
 		VK_CHECK(m_vki.endCommandBuffer(*cmd));
 
 		{
@@ -667,6 +664,7 @@ tcu::TestStatus SingleTargetRenderInstance::iterate (void)
 				DE_NULL,
 				0u,
 				(const vk::VkSemaphore*)0,
+				(const vk::VkPipelineStageFlags*)DE_NULL,
 				1u,
 				&cmd.get(),
 				0u,
@@ -824,7 +822,7 @@ vk::Move<vk::VkPipeline> SingleCmdRenderInstance::createPipeline (vk::VkPipeline
 	{
 		vk::VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO,
 		DE_NULL,
-		(vk::VkPipelineTesselationStateCreateFlags)0,
+		(vk::VkPipelineTessellationStateCreateFlags)0,
 		3u,											// patchControlPoints
 	};
 	const vk::VkViewport								viewport			=
@@ -838,8 +836,8 @@ vk::Move<vk::VkPipeline> SingleCmdRenderInstance::createPipeline (vk::VkPipeline
 	};
 	const vk::VkRect2D									renderArea			=
 	{
-		{ 0, 0 },													// offset
-		{ (deInt32)m_targetSize.x(), (deInt32)m_targetSize.y() },	// extent
+		{ 0, 0 },									// offset
+		{ m_targetSize.x(), m_targetSize.y() },		// extent
 	};
 	const vk::VkPipelineViewportStateCreateInfo			vpState				=
 	{
@@ -957,8 +955,8 @@ void SingleCmdRenderInstance::renderToTarget (void)
 {
 	const vk::VkRect2D									renderArea						=
 	{
-		{ 0, 0 },													// offset
-		{ (deInt32)m_targetSize.x(), (deInt32)m_targetSize.y() },	// extent
+		{ 0, 0 },								// offset
+		{ m_targetSize.x(), m_targetSize.y() },	// extent
 	};
 	const vk::VkCommandBufferAllocateInfo				mainCmdBufCreateInfo			=
 	{
@@ -973,12 +971,7 @@ void SingleCmdRenderInstance::renderToTarget (void)
 		vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
 		DE_NULL,
 		vk::VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,	// flags
-		(vk::VkRenderPass)0u,								// renderPass
-		0u,													// subpass
-		(vk::VkFramebuffer)0u,								// framebuffer
-		vk::VK_FALSE,										// occlusionQueryEnable
-		(vk::VkQueryControlFlags)0,
-		(vk::VkQueryPipelineStatisticFlags)0,
+		(const vk::VkCommandBufferInheritanceInfo*)DE_NULL,
 	};
 	const vk::VkCommandBufferAllocateInfo				passCmdBufCreateInfo			=
 	{
@@ -988,18 +981,24 @@ void SingleCmdRenderInstance::renderToTarget (void)
 		vk::VK_COMMAND_BUFFER_LEVEL_SECONDARY,	// level
 		1u,										// count
 	};
-	const vk::VkCommandBufferBeginInfo					passCmdBufBeginInfo				=
+	const vk::VkCommandBufferInheritanceInfo			passCmdBufInheritInfo			=
 	{
-		vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+		vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
 		DE_NULL,
-		vk::VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT |
-		vk::VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT,	// flags
 		(vk::VkRenderPass)*m_renderPass,						// renderPass
 		0u,														// subpass
 		(vk::VkFramebuffer)*m_framebuffer,						// framebuffer
 		vk::VK_FALSE,											// occlusionQueryEnable
 		(vk::VkQueryControlFlags)0,
 		(vk::VkQueryPipelineStatisticFlags)0,
+	};
+	const vk::VkCommandBufferBeginInfo					passCmdBufBeginInfo				=
+	{
+		vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+		DE_NULL,
+		vk::VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT |
+		vk::VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT,	// flags
+		&passCmdBufInheritInfo,
 	};
 	const vk::VkFenceCreateInfo							fenceCreateInfo				=
 	{
@@ -1056,6 +1055,7 @@ void SingleCmdRenderInstance::renderToTarget (void)
 			DE_NULL,
 			0u,
 			(const vk::VkSemaphore*)0,
+			(const vk::VkPipelineStageFlags*)DE_NULL,
 			1u,
 			&mainCmd.get(),
 			0u,
@@ -1447,39 +1447,38 @@ void BufferRenderInstance::writeDrawCmdBuffer (vk::VkCommandBuffer cmd) const
 
 	// make host writes device-visible
 	const vk::VkAccessFlags				inputBit			= (isUniformBuffer) ? (vk::VK_ACCESS_UNIFORM_READ_BIT) : (vk::VK_ACCESS_SHADER_READ_BIT);
-	const vk::VkBufferMemoryBarrier		memoryBarrierA		=
+	const vk::VkBufferMemoryBarrier		memoryBarriers[]	=
 	{
-		vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
-		DE_NULL,
-		vk::VK_ACCESS_HOST_WRITE_BIT,				// outputMask
-		inputBit,									// inputMask
-		vk::VK_QUEUE_FAMILY_IGNORED,				// srcQueueFamilyIndex
-		vk::VK_QUEUE_FAMILY_IGNORED,				// destQueueFamilyIndex
-		*m_sourceBufferA,							// buffer
-		0u,											// offset
-		(vk::VkDeviceSize)m_bufferSizeA,			// size
-	};
-	const vk::VkBufferMemoryBarrier		memoryBarrierB		=
-	{
-		vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
-		DE_NULL,
-		vk::VK_ACCESS_HOST_WRITE_BIT,				// outputMask
-		inputBit,									// inputMask
-		vk::VK_QUEUE_FAMILY_IGNORED,				// srcQueueFamilyIndex
-		vk::VK_QUEUE_FAMILY_IGNORED,				// destQueueFamilyIndex
-		*m_sourceBufferB,							// buffer
-		0u,											// offset
-		(vk::VkDeviceSize)m_bufferSizeB,			// size
-	};
-	const void* const					memoryBarriers[2]	=
-	{
-		&memoryBarrierA,
-		&memoryBarrierB,
+		{
+			vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
+			DE_NULL,
+			vk::VK_ACCESS_HOST_WRITE_BIT,				// outputMask
+			inputBit,									// inputMask
+			vk::VK_QUEUE_FAMILY_IGNORED,				// srcQueueFamilyIndex
+			vk::VK_QUEUE_FAMILY_IGNORED,				// destQueueFamilyIndex
+			*m_sourceBufferA,							// buffer
+			0u,											// offset
+			(vk::VkDeviceSize)m_bufferSizeA,			// size
+		},
+		{
+			vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
+			DE_NULL,
+			vk::VK_ACCESS_HOST_WRITE_BIT,				// outputMask
+			inputBit,									// inputMask
+			vk::VK_QUEUE_FAMILY_IGNORED,				// srcQueueFamilyIndex
+			vk::VK_QUEUE_FAMILY_IGNORED,				// destQueueFamilyIndex
+			*m_sourceBufferB,							// buffer
+			0u,											// offset
+			(vk::VkDeviceSize)m_bufferSizeB,			// size
+		}
 	};
 	const deUint32						numMemoryBarriers	= getInterfaceNumResources(m_shaderInterface);
 
 	m_vki.cmdBindDescriptorSets(cmd, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, getPipelineLayout(), 0, 1, &m_descriptorSet.get(), numOffsets, dynamicOffsetPtr);
-	m_vki.cmdPipelineBarrier(cmd, 0u, vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, vk::VK_FALSE, numMemoryBarriers, memoryBarriers);
+	m_vki.cmdPipelineBarrier(cmd, 0u, vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, (vk::VkDependencyFlags)0,
+							 0, (const vk::VkMemoryBarrier*)DE_NULL,
+							 numMemoryBarriers, memoryBarriers,
+							 0, (const vk::VkImageMemoryBarrier*)DE_NULL);
 	m_vki.cmdDraw(cmd, 6 * 4, 1, 0, 0); // render four quads (two separate triangles)
 }
 
@@ -1512,7 +1511,7 @@ public:
 	void									readResultContentsTo		(tcu::Vec4 (*results)[4]) const;
 
 	inline vk::VkBuffer						getBuffer					(void) const { return *m_buffer;			}
-	inline const void*						getResultReadBarrier		(void) const { return &m_bufferBarrier;		}
+	inline const vk::VkBufferMemoryBarrier*	getResultReadBarrier		(void) const { return &m_bufferBarrier;		}
 
 private:
 	static vk::Move<vk::VkBuffer>			createResultBuffer			(const vk::DeviceInterface&		vki,
@@ -1681,51 +1680,51 @@ vk::Move<vk::VkPipeline> ComputePipeline::createPipeline (const vk::DeviceInterf
 class ComputeCommand
 {
 public:
-										ComputeCommand	(const vk::DeviceInterface&	vki,
-														 vk::VkDevice				device,
-														 vk::VkPipeline				pipeline,
-														 vk::VkPipelineLayout		pipelineLayout,
-														 const tcu::UVec3&			numWorkGroups,
-														 int						numDescriptorSets,
-														 const vk::VkDescriptorSet*	descriptorSets,
-														 int						numDynamicOffsets,
-														 const deUint32*			dynamicOffsets,
-														 int						numPreBarriers,
-														 const void* const*			preBarriers,
-														 int						numPostBarriers,
-														 const void* const*			postBarriers);
+											ComputeCommand	(const vk::DeviceInterface&			vki,
+															 vk::VkDevice						device,
+															 vk::VkPipeline						pipeline,
+															 vk::VkPipelineLayout				pipelineLayout,
+															 const tcu::UVec3&					numWorkGroups,
+															 int								numDescriptorSets,
+															 const vk::VkDescriptorSet*			descriptorSets,
+															 int								numDynamicOffsets,
+															 const deUint32*					dynamicOffsets,
+															 int								numPreBarriers,
+															 const vk::VkBufferMemoryBarrier*	preBarriers,
+															 int								numPostBarriers,
+															 const vk::VkBufferMemoryBarrier*	postBarriers);
 
-	void								submitAndWait	(deUint32 queueFamilyIndex, vk::VkQueue queue) const;
+	void									submitAndWait	(deUint32 queueFamilyIndex, vk::VkQueue queue) const;
 
 private:
-	const vk::DeviceInterface&			m_vki;
-	const vk::VkDevice					m_device;
-	const vk::VkPipeline				m_pipeline;
-	const vk::VkPipelineLayout			m_pipelineLayout;
-	const tcu::UVec3					m_numWorkGroups;
-	const int							m_numDescriptorSets;
-	const vk::VkDescriptorSet* const	m_descriptorSets;
-	const int							m_numDynamicOffsets;
-	const deUint32* const				m_dynamicOffsets;
-	const int							m_numPreBarriers;
-	const void* const* const			m_preBarriers;
-	const int							m_numPostBarriers;
-	const void* const* const			m_postBarriers;
+	const vk::DeviceInterface&				m_vki;
+	const vk::VkDevice						m_device;
+	const vk::VkPipeline					m_pipeline;
+	const vk::VkPipelineLayout				m_pipelineLayout;
+	const tcu::UVec3						m_numWorkGroups;
+	const int								m_numDescriptorSets;
+	const vk::VkDescriptorSet* const		m_descriptorSets;
+	const int								m_numDynamicOffsets;
+	const deUint32* const					m_dynamicOffsets;
+	const int								m_numPreBarriers;
+	const vk::VkBufferMemoryBarrier* const	m_preBarriers;
+	const int								m_numPostBarriers;
+	const vk::VkBufferMemoryBarrier* const	m_postBarriers;
 };
 
-ComputeCommand::ComputeCommand (const vk::DeviceInterface&	vki,
-								vk::VkDevice				device,
-								vk::VkPipeline				pipeline,
-								vk::VkPipelineLayout		pipelineLayout,
-								const tcu::UVec3&			numWorkGroups,
-								int							numDescriptorSets,
-								const vk::VkDescriptorSet*	descriptorSets,
-								int							numDynamicOffsets,
-								const deUint32*				dynamicOffsets,
-								int							numPreBarriers,
-								const void* const*			preBarriers,
-								int							numPostBarriers,
-								const void* const*			postBarriers)
+ComputeCommand::ComputeCommand (const vk::DeviceInterface&			vki,
+								vk::VkDevice						device,
+								vk::VkPipeline						pipeline,
+								vk::VkPipelineLayout				pipelineLayout,
+								const tcu::UVec3&					numWorkGroups,
+								int									numDescriptorSets,
+								const vk::VkDescriptorSet*			descriptorSets,
+								int									numDynamicOffsets,
+								const deUint32*						dynamicOffsets,
+								int									numPreBarriers,
+								const vk::VkBufferMemoryBarrier*	preBarriers,
+								int									numPostBarriers,
+								const vk::VkBufferMemoryBarrier*	postBarriers)
 	: m_vki					(vki)
 	, m_device				(device)
 	, m_pipeline			(pipeline)
@@ -1749,7 +1748,7 @@ void ComputeCommand::submitAndWait (deUint32 queueFamilyIndex, vk::VkQueue queue
 		vk::VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
 		DE_NULL,
 		vk::VK_COMMAND_POOL_CREATE_TRANSIENT_BIT,			// flags
-		queueFamilyIndex,									// queueFamilyIndex		
+		queueFamilyIndex,									// queueFamilyIndex
 	};
 	const vk::Unique<vk::VkCommandPool>				cmdPool				(vk::createCommandPool(m_vki, m_device, &cmdPoolCreateInfo));
 
@@ -1773,12 +1772,7 @@ void ComputeCommand::submitAndWait (deUint32 queueFamilyIndex, vk::VkQueue queue
 		vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
 		DE_NULL,
 		vk::VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,	// flags
-		(vk::VkRenderPass)0u,								// renderPass
-		0u,													// subpass
-		(vk::VkFramebuffer)0u,								// framebuffer
-		vk::VK_FALSE,										// occlusionQueryEnable
-		(vk::VkQueryControlFlags)0,
-		(vk::VkQueryPipelineStatisticFlags)0,
+		(const vk::VkCommandBufferInheritanceInfo*)DE_NULL,
 	};
 
 	const vk::Unique<vk::VkFence>					cmdCompleteFence	(vk::createFence(m_vki, m_device, &fenceCreateInfo));
@@ -1791,10 +1785,16 @@ void ComputeCommand::submitAndWait (deUint32 queueFamilyIndex, vk::VkQueue queue
 	m_vki.cmdBindDescriptorSets(*cmd, vk::VK_PIPELINE_BIND_POINT_COMPUTE, m_pipelineLayout, 0, m_numDescriptorSets, m_descriptorSets, m_numDynamicOffsets, m_dynamicOffsets);
 
 	if (m_numPreBarriers)
-		m_vki.cmdPipelineBarrier(*cmd, 0u, vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, vk::VK_FALSE, m_numPreBarriers, m_preBarriers);
+		m_vki.cmdPipelineBarrier(*cmd, 0u, vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, (vk::VkDependencyFlags)0,
+								 0, (const vk::VkMemoryBarrier*)DE_NULL,
+								 m_numPreBarriers, m_preBarriers,
+								 0, (const vk::VkImageMemoryBarrier*)DE_NULL);
 
 	m_vki.cmdDispatch(*cmd, m_numWorkGroups.x(), m_numWorkGroups.y(), m_numWorkGroups.z());
-	m_vki.cmdPipelineBarrier(*cmd, vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, vk::VK_FALSE, m_numPostBarriers, m_postBarriers);
+	m_vki.cmdPipelineBarrier(*cmd, vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, (vk::VkDependencyFlags)0,
+							 0, (const vk::VkMemoryBarrier*)DE_NULL,
+							 m_numPostBarriers, m_postBarriers,
+							 0, (const vk::VkImageMemoryBarrier*)DE_NULL);
 	VK_CHECK(m_vki.endCommandBuffer(*cmd));
 
 	// run
@@ -1805,6 +1805,7 @@ void ComputeCommand::submitAndWait (deUint32 queueFamilyIndex, vk::VkQueue queue
 			DE_NULL,
 			0u,
 			(const vk::VkSemaphore*)0,
+			(const vk::VkPipelineStageFlags*)DE_NULL,
 			1u,
 			&cmd.get(),
 			0u,
@@ -2080,29 +2081,30 @@ tcu::TestStatus BufferComputeInstance::testResourceAccess (void)
 	const ComputePipeline							pipeline			(m_vki, m_device, m_context.getBinaryCollection(), 1, &descriptorSetLayout.get());
 
 	const vk::VkAccessFlags							inputBit			= (isUniformBuffer) ? (vk::VK_ACCESS_UNIFORM_READ_BIT) : (vk::VK_ACCESS_SHADER_READ_BIT);
-	const vk::VkBufferMemoryBarrier					bufferBarrierA		=
+	const vk::VkBufferMemoryBarrier					bufferBarriers[]	=
 	{
-		vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
-		DE_NULL,
-		vk::VK_ACCESS_HOST_WRITE_BIT,				// outputMask
-		inputBit,									// inputMask
-		vk::VK_QUEUE_FAMILY_IGNORED,				// srcQueueFamilyIndex
-		vk::VK_QUEUE_FAMILY_IGNORED,				// destQueueFamilyIndex
-		*bufferA,									// buffer
-		(vk::VkDeviceSize)0u,						// offset
-		(vk::VkDeviceSize)bufferSizeA,				// size
-	};
-	const vk::VkBufferMemoryBarrier					bufferBarrierB		=
-	{
-		vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
-		DE_NULL,
-		vk::VK_ACCESS_HOST_WRITE_BIT,				// outputMask
-		inputBit,									// inputMask
-		vk::VK_QUEUE_FAMILY_IGNORED,				// srcQueueFamilyIndex
-		vk::VK_QUEUE_FAMILY_IGNORED,				// destQueueFamilyIndex
-		*bufferB,									// buffer
-		(vk::VkDeviceSize)0u,						// offset
-		(vk::VkDeviceSize)bufferSizeB,				// size
+		{
+			vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
+			DE_NULL,
+			vk::VK_ACCESS_HOST_WRITE_BIT,				// outputMask
+			inputBit,									// inputMask
+			vk::VK_QUEUE_FAMILY_IGNORED,				// srcQueueFamilyIndex
+			vk::VK_QUEUE_FAMILY_IGNORED,				// destQueueFamilyIndex
+			*bufferA,									// buffer
+			(vk::VkDeviceSize)0u,						// offset
+			(vk::VkDeviceSize)bufferSizeA,				// size
+		},
+		{
+			vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
+			DE_NULL,
+			vk::VK_ACCESS_HOST_WRITE_BIT,				// outputMask
+			inputBit,									// inputMask
+			vk::VK_QUEUE_FAMILY_IGNORED,				// srcQueueFamilyIndex
+			vk::VK_QUEUE_FAMILY_IGNORED,				// destQueueFamilyIndex
+			*bufferB,									// buffer
+			(vk::VkDeviceSize)0u,						// offset
+			(vk::VkDeviceSize)bufferSizeB,				// size
+		}
 	};
 
 	const deUint32									numSrcBuffers		= getInterfaceNumResources(m_shaderInterface);
@@ -2111,10 +2113,10 @@ tcu::TestStatus BufferComputeInstance::testResourceAccess (void)
 	const int										numDescriptorSets	= DE_LENGTH_OF_ARRAY(descriptorSets);
 	const deUint32* const							dynamicOffsets		= (m_setDynamicOffset) ? (bindTimeOffsets) : (DE_NULL);
 	const deUint32									numDynamicOffsets	= (m_setDynamicOffset) ? (numSrcBuffers) : (0);
-	const void* const								preBarriers[]		= { &bufferBarrierA, &bufferBarrierB };
+	const vk::VkBufferMemoryBarrier* const			preBarriers			= bufferBarriers;
 	const int										numPreBarriers		= numSrcBuffers;
-	const void* const								postBarriers[]		= { m_result.getResultReadBarrier() };
-	const int										numPostBarriers		= DE_LENGTH_OF_ARRAY(postBarriers);
+	const vk::VkBufferMemoryBarrier* const			postBarriers		= m_result.getResultReadBarrier();
+	const int										numPostBarriers		= 1;
 
 	const ComputeCommand							compute				(m_vki,
 																		 m_device,
@@ -2879,13 +2881,13 @@ vk::Move<vk::VkImage> ImageInstanceImages::createImage (const vk::DeviceInterfac
 	const vk::VkExtent3D				extent		=
 	{
 		// x
-		(deInt32)baseLevel.getWidth(),
+		(deUint32)baseLevel.getWidth(),
 
 		// y
-		(viewType == vk::VK_IMAGE_VIEW_TYPE_1D || viewType == vk::VK_IMAGE_VIEW_TYPE_1D_ARRAY) ? (1) : (deInt32)baseLevel.getHeight(),
+		(viewType == vk::VK_IMAGE_VIEW_TYPE_1D || viewType == vk::VK_IMAGE_VIEW_TYPE_1D_ARRAY) ? (1u) : (deUint32)baseLevel.getHeight(),
 
 		// z
-		(viewType == vk::VK_IMAGE_VIEW_TYPE_3D) ? ((deInt32)baseLevel.getDepth()) : (1),
+		(viewType == vk::VK_IMAGE_VIEW_TYPE_3D) ? ((deUint32)baseLevel.getDepth()) : (1u),
 	};
 	const vk::VkImageCreateInfo			createInfo	=
 	{
@@ -3099,17 +3101,10 @@ void ImageInstanceImages::uploadImage (const vk::DeviceInterface&		vki,
 		vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
 		DE_NULL,
 		vk::VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,	// flags
-		(vk::VkRenderPass)0u,								// renderPass
-		0u,													// subpass
-		(vk::VkFramebuffer)0u,								// framebuffer
-		vk::VK_FALSE,										// occlusionQueryEnable
-		(vk::VkQueryControlFlags)0,
-		(vk::VkQueryPipelineStatisticFlags)0,
+		(const vk::VkCommandBufferInheritanceInfo*)DE_NULL,
 	};
 
 	const vk::Unique<vk::VkCommandBuffer>	cmd							(vk::allocateCommandBuffer(vki, device, &cmdBufCreateInfo));
-	const void* const						preBarriers[2]				= { &preMemoryBarrier, &preImageBarrier };
-	const void* const						postBarriers[1]				= { &postImageBarrier };
 	const vk::Unique<vk::VkFence>			cmdCompleteFence			(vk::createFence(vki, device, &fenceCreateInfo));
 	const deUint64							infiniteTimeout				= ~(deUint64)0u;
 	std::vector<vk::VkBufferImageCopy>		copySlices;
@@ -3120,9 +3115,15 @@ void ImageInstanceImages::uploadImage (const vk::DeviceInterface&		vki,
 
 	// record command buffer
 	VK_CHECK(vki.beginCommandBuffer(*cmd, &cmdBufBeginInfo));
-	vki.cmdPipelineBarrier(*cmd, 0u, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_FALSE, DE_LENGTH_OF_ARRAY(preBarriers), preBarriers);
+	vki.cmdPipelineBarrier(*cmd, 0u, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0,
+						   0, (const vk::VkMemoryBarrier*)DE_NULL,
+						   1, &preMemoryBarrier,
+						   1, &preImageBarrier);
 	vki.cmdCopyBufferToImage(*cmd, *dataBuffer, image, vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, (deUint32)copySlices.size(), &copySlices[0]);
-	vki.cmdPipelineBarrier(*cmd, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, vk::VK_FALSE, DE_LENGTH_OF_ARRAY(postBarriers), postBarriers);
+	vki.cmdPipelineBarrier(*cmd, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, (vk::VkDependencyFlags)0,
+						   0, (const vk::VkMemoryBarrier*)DE_NULL,
+						   0, (const vk::VkBufferMemoryBarrier*)DE_NULL,
+						   1, &postImageBarrier);
 	VK_CHECK(vki.endCommandBuffer(*cmd));
 
 	// submit and wait for command buffer to complete before killing it
@@ -3133,6 +3134,7 @@ void ImageInstanceImages::uploadImage (const vk::DeviceInterface&		vki,
 			DE_NULL,
 			0u,
 			(const vk::VkSemaphore*)0,
+			(const vk::VkPipelineStageFlags*)DE_NULL,
 			1u,
 			&cmd.get(),
 			0u,
@@ -3734,10 +3736,10 @@ tcu::TestStatus ImageFetchComputeInstance::testResourceAccess (void)
 	const int										numDescriptorSets	= DE_LENGTH_OF_ARRAY(descriptorSets);
 	const deUint32* const							dynamicOffsets		= DE_NULL;
 	const int										numDynamicOffsets	= 0;
-	const void*	const*								preBarriers			= DE_NULL;
+	const vk::VkBufferMemoryBarrier* const			preBarriers			= DE_NULL;
 	const int										numPreBarriers		= 0;
-	const void* const								postBarriers[]		= { m_result.getResultReadBarrier() };
-	const int										numPostBarriers		= DE_LENGTH_OF_ARRAY(postBarriers);
+	const vk::VkBufferMemoryBarrier* const			postBarriers		= m_result.getResultReadBarrier();
+	const int										numPostBarriers		= 1;
 
 	const ComputeCommand							compute				(m_vki,
 																		 m_device,
@@ -4051,31 +4053,8 @@ tcu::Sampler ImageSampleInstanceImages::createRefSampler (bool isFirst)
 
 vk::Move<vk::VkSampler> ImageSampleInstanceImages::createSampler (const vk::DeviceInterface& vki, vk::VkDevice device, const tcu::Sampler& sampler, const tcu::TextureFormat& format)
 {
-	const bool						compareEnabled	= (sampler.compare != tcu::Sampler::COMPAREMODE_NONE);
-	const vk::VkCompareOp			compareOp		= (compareEnabled) ? (vk::mapCompareMode(sampler.compare)) : (vk::VK_COMPARE_OP_ALWAYS);
-	const tcu::TextureChannelClass	channelClass	= tcu::getTextureChannelClass(format.type);
-	const bool						isIntTexture	= channelClass == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER || channelClass == tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER;
-	const vk::VkBorderColor			borderColor		= (isIntTexture) ? (vk::VK_BORDER_COLOR_INT_OPAQUE_WHITE) : (vk::VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE);
-	const vk::VkSamplerCreateInfo	createInfo		=
-	{
-		vk::VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
-		DE_NULL,
-		(vk::VkSamplerCreateFlags)0,
-		vk::mapFilterMode(sampler.magFilter),							// magFilter
-		vk::mapFilterMode(sampler.minFilter),							// minFilter
-		vk::mapMipmapMode(sampler.minFilter),							// mipMode
-		vk::mapWrapMode(sampler.wrapS),									// addressU
-		vk::mapWrapMode(sampler.wrapT),									// addressV
-		vk::mapWrapMode(sampler.wrapR),									// addressW
-		0.0f,															// mipLodBias
-		1,																// maxAnisotropy
-		(vk::VkBool32)(compareEnabled ? vk::VK_TRUE : vk::VK_FALSE),	// compareEnable
-		compareOp,														// compareOp
-		0.0f,															// minLod
-		0.0f,															// maxLod
-		borderColor,													// borderColor
-		vk::VK_FALSE,													// unnormalizedCoords
-	};
+	const vk::VkSamplerCreateInfo	createInfo		= vk::mapSampler(sampler, format);
+
 	return vk::createSampler(vki, device, &createInfo);
 }
 
@@ -4874,10 +4853,10 @@ tcu::TestStatus ImageSampleComputeInstance::testResourceAccess (void)
 	const int										numDescriptorSets	= DE_LENGTH_OF_ARRAY(descriptorSets);
 	const deUint32* const							dynamicOffsets		= DE_NULL;
 	const int										numDynamicOffsets	= 0;
-	const void*	const*								preBarriers			= DE_NULL;
+	const vk::VkBufferMemoryBarrier* const			preBarriers			= DE_NULL;
 	const int										numPreBarriers		= 0;
-	const void* const								postBarriers[]		= { m_result.getResultReadBarrier() };
-	const int										numPostBarriers		= DE_LENGTH_OF_ARRAY(postBarriers);
+	const vk::VkBufferMemoryBarrier* const			postBarriers		= m_result.getResultReadBarrier();
+	const int										numPostBarriers		= 1;
 
 	const ComputeCommand							compute				(m_vki,
 																		 m_device,
@@ -5279,41 +5258,40 @@ vkt::TestInstance* ImageDescriptorCase::createInstance (vkt::Context& context) c
 class TexelBufferInstanceBuffers
 {
 public:
-										TexelBufferInstanceBuffers	(const vk::DeviceInterface&		vki,
-																	 vk::VkDevice					device,
-																	 vk::Allocator&					allocator,
-																	 vk::VkDescriptorType			descriptorType,
-																	 int							numTexelBuffers,
-																	 bool							hasViewOffset);
+											TexelBufferInstanceBuffers	(const vk::DeviceInterface&		vki,
+																		 vk::VkDevice					device,
+																		 vk::Allocator&					allocator,
+																		 vk::VkDescriptorType			descriptorType,
+																		 int							numTexelBuffers,
+																		 bool							hasViewOffset);
 
 private:
-	static vk::Move<vk::VkBuffer>		createBuffer				(const vk::DeviceInterface&		vki,
-																	 vk::VkDevice					device,
-																	 vk::Allocator&					allocator,
-																	 vk::VkDescriptorType			descriptorType,
-																	 de::MovePtr<vk::Allocation>	*outAllocation);
+	static vk::Move<vk::VkBuffer>			createBuffer				(const vk::DeviceInterface&		vki,
+																		 vk::VkDevice					device,
+																		 vk::Allocator&					allocator,
+																		 vk::VkDescriptorType			descriptorType,
+																		 de::MovePtr<vk::Allocation>	*outAllocation);
 
-	static vk::Move<vk::VkBufferView>	createBufferView			(const vk::DeviceInterface&		vki,
-																	 vk::VkDevice					device,
-																	 const tcu::TextureFormat&		textureFormat,
-																	 deUint32						offset,
-																	 vk::VkBuffer					buffer);
+	static vk::Move<vk::VkBufferView>		createBufferView			(const vk::DeviceInterface&		vki,
+																		 vk::VkDevice					device,
+																		 const tcu::TextureFormat&		textureFormat,
+																		 deUint32						offset,
+																		 vk::VkBuffer					buffer);
 
-	static vk::VkBufferMemoryBarrier	createBarrier				(vk::VkDescriptorType descriptorType, vk::VkBuffer buffer);
+	static vk::VkBufferMemoryBarrier		createBarrier				(vk::VkDescriptorType descriptorType, vk::VkBuffer buffer);
 
-	void								populateSourceBuffer		(const tcu::PixelBufferAccess& access);
-	void								uploadData					(const vk::DeviceInterface& vki, vk::VkDevice device, const vk::Allocation& memory, const de::ArrayBuffer<deUint8>& data);
+	void									populateSourceBuffer		(const tcu::PixelBufferAccess& access);
+	void									uploadData					(const vk::DeviceInterface& vki, vk::VkDevice device, const vk::Allocation& memory, const de::ArrayBuffer<deUint8>& data);
 
 public:
-	static int							getFetchPos					(int fetchPosNdx);
-	tcu::Vec4							fetchTexelValue				(int fetchPosNdx) const;
+	static int								getFetchPos					(int fetchPosNdx);
+	tcu::Vec4								fetchTexelValue				(int fetchPosNdx) const;
 
-	inline int							getNumTexelBuffers			(void) const { return m_numTexelBuffers;	}
-	const tcu::TextureFormat&			getTextureFormat			(void) const { return m_imageFormat;		}
-	inline vk::VkBufferView				getBufferViewA				(void) const { return *m_bufferViewA;		}
-	inline vk::VkBufferView				getBufferViewB				(void) const { return *m_bufferViewB;		}
-	inline const void*					getBufferInitBarrierA		(void) const { return &m_bufferBarrierA;	}
-	inline const void*					getBufferInitBarrierB		(void) const { return &m_bufferBarrierB;	}
+	inline int								getNumTexelBuffers			(void) const { return m_numTexelBuffers;	}
+	const tcu::TextureFormat&				getTextureFormat			(void) const { return m_imageFormat;		}
+	inline vk::VkBufferView					getBufferViewA				(void) const { return *m_bufferViewA;		}
+	inline vk::VkBufferView					getBufferViewB				(void) const { return *m_bufferViewB;		}
+	inline const vk::VkBufferMemoryBarrier*	getBufferInitBarriers		(void) const { return m_bufferBarriers;		}
 
 private:
 	enum
@@ -5332,23 +5310,22 @@ private:
 		SAMPLE_POINT_3 = 25,
 	};
 
-	const deUint32						m_numTexelBuffers;
-	const tcu::TextureFormat			m_imageFormat;
-	const deUint32						m_viewOffset;
+	const deUint32							m_numTexelBuffers;
+	const tcu::TextureFormat				m_imageFormat;
+	const deUint32							m_viewOffset;
 
-	de::ArrayBuffer<deUint8>			m_sourceBufferA;
-	de::ArrayBuffer<deUint8>			m_sourceBufferB;
-	const tcu::ConstPixelBufferAccess	m_sourceViewA;
-	const tcu::ConstPixelBufferAccess	m_sourceViewB;
+	de::ArrayBuffer<deUint8>				m_sourceBufferA;
+	de::ArrayBuffer<deUint8>				m_sourceBufferB;
+	const tcu::ConstPixelBufferAccess		m_sourceViewA;
+	const tcu::ConstPixelBufferAccess		m_sourceViewB;
 
-	de::MovePtr<vk::Allocation>			m_bufferMemoryA;
-	de::MovePtr<vk::Allocation>			m_bufferMemoryB;
-	const vk::Unique<vk::VkBuffer>		m_bufferA;
-	const vk::Unique<vk::VkBuffer>		m_bufferB;
-	const vk::Unique<vk::VkBufferView>	m_bufferViewA;
-	const vk::Unique<vk::VkBufferView>	m_bufferViewB;
-	const vk::VkBufferMemoryBarrier		m_bufferBarrierA;
-	const vk::VkBufferMemoryBarrier		m_bufferBarrierB;
+	de::MovePtr<vk::Allocation>				m_bufferMemoryA;
+	de::MovePtr<vk::Allocation>				m_bufferMemoryB;
+	const vk::Unique<vk::VkBuffer>			m_bufferA;
+	const vk::Unique<vk::VkBuffer>			m_bufferB;
+	const vk::Unique<vk::VkBufferView>		m_bufferViewA;
+	const vk::Unique<vk::VkBufferView>		m_bufferViewB;
+	vk::VkBufferMemoryBarrier				m_bufferBarriers[2];
 };
 
 TexelBufferInstanceBuffers::TexelBufferInstanceBuffers (const vk::DeviceInterface&		vki,
@@ -5376,8 +5353,6 @@ TexelBufferInstanceBuffers::TexelBufferInstanceBuffers (const vk::DeviceInterfac
 	, m_bufferViewB		((numTexelBuffers == 1)
 							? vk::Move<vk::VkBufferView>()
 							: createBufferView(vki, device, m_imageFormat, m_viewOffset, *m_bufferB))
-	, m_bufferBarrierA	(createBarrier(descriptorType, *m_bufferA))
-	, m_bufferBarrierB	(createBarrier(descriptorType, *m_bufferB))
 {
 	DE_ASSERT(numTexelBuffers == 1 || numTexelBuffers == 2);
 	DE_ASSERT(VIEW_WIDTH * m_imageFormat.getPixelSize() == VIEW_DATA_SIZE);
@@ -5393,6 +5368,9 @@ TexelBufferInstanceBuffers::TexelBufferInstanceBuffers (const vk::DeviceInterfac
 		populateSourceBuffer(tcu::PixelBufferAccess(m_imageFormat, tcu::IVec3(BUFFER_SIZE / m_imageFormat.getPixelSize(), 1, 1), m_sourceBufferB.getPtr()));
 		uploadData(vki, device, *m_bufferMemoryB, m_sourceBufferB);
 	}
+
+	m_bufferBarriers[0] = createBarrier(descriptorType, *m_bufferA);
+	m_bufferBarriers[1] = createBarrier(descriptorType, *m_bufferB);
 }
 
 vk::Move<vk::VkBuffer> TexelBufferInstanceBuffers::createBuffer (const vk::DeviceInterface&		vki,
@@ -5950,10 +5928,10 @@ tcu::TestStatus TexelBufferComputeInstance::testResourceAccess (void)
 	const int										numDescriptorSets	= DE_LENGTH_OF_ARRAY(descriptorSets);
 	const deUint32* const							dynamicOffsets		= DE_NULL;
 	const int										numDynamicOffsets	= 0;
-	const void*	const								preBarriers[]		= { m_texelBuffers.getBufferInitBarrierA(), m_texelBuffers.getBufferInitBarrierB() };
+	const vk::VkBufferMemoryBarrier* const			preBarriers			= m_texelBuffers.getBufferInitBarriers();
 	const int										numPreBarriers		= m_texelBuffers.getNumTexelBuffers();
-	const void* const								postBarriers[]		= { m_result.getResultReadBarrier() };
-	const int										numPostBarriers		= DE_LENGTH_OF_ARRAY(postBarriers);
+	const vk::VkBufferMemoryBarrier* const			postBarriers		= m_result.getResultReadBarrier();
+	const int										numPostBarriers		= 1;
 
 	const ComputeCommand							compute				(m_vki,
 																		 m_device,

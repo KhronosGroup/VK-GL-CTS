@@ -255,6 +255,7 @@ tcu::TestStatus IndirectDraw::iterate (void)
 		DE_NULL,							// const void*				pNext;
 		0,										// deUint32					waitSemaphoreCount;
 		DE_NULL,								// const VkSemaphore*		pWaitSemaphores;
+		(const vk::VkPipelineStageFlags*)DE_NULL,
 		1,										// deUint32					commandBufferCount;
 		&m_cmdBuffer.get(),					// const VkCommandBuffer*	pCommandBuffers;
 		0,										// deUint32					signalSemaphoreCount;
@@ -424,6 +425,7 @@ tcu::TestStatus IndirectDrawInstanced::iterate (void)
 		DE_NULL,							// const void*				pNext;
 		0,										// deUint32					waitSemaphoreCount;
 		DE_NULL,								// const VkSemaphore*		pWaitSemaphores;
+		(const vk::VkPipelineStageFlags*)DE_NULL,
 		1,										// deUint32					commandBufferCount;
 		&m_cmdBuffer.get(),					// const VkCommandBuffer*	pCommandBuffers;
 		0,										// deUint32					signalSemaphoreCount;

@@ -75,13 +75,13 @@ public:
 
 	virtual void			initPrograms			(SourceCollections&				sourceCollections) const;
 	virtual TestInstance*	createInstance			(Context&						context) const;
-	static std::string		getGlslSamplerType		(const tcu::TextureFormat&		format, 
+	static std::string		getGlslSamplerType		(const tcu::TextureFormat&		format,
 													 VkImageViewType				type);
-	static tcu::IVec2		getRenderSize			(VkImageViewType				viewType);
+	static tcu::UVec2		getRenderSize			(VkImageViewType				viewType);
 	static tcu::IVec3		getImageSize			(VkImageViewType				viewType);
 	static int				getArraySize			(VkImageViewType				viewType);
 	static int				getNumLevels			(VkImageViewType				viewType);
-	static tcu::Vec4		swizzle					(tcu::Vec4						inputData, 
+	static tcu::Vec4		swizzle					(tcu::Vec4						inputData,
 													 VkComponentMapping				componentMapping);
 private:
 	VkImageViewType			m_imageViewType;
@@ -141,7 +141,7 @@ void ImageViewTest::initPrograms (SourceCollections& sourceCollections) const
 
 	tcu::Vec4						swizzledScale	= swizzle(formatInfo.lookupScale, m_componentMapping);
 	tcu::Vec4						swizzledBias	= swizzle(formatInfo.lookupBias, m_componentMapping);
-	
+
 	switch (m_imageViewType)
 	{
 		case VK_IMAGE_VIEW_TYPE_1D:
@@ -199,7 +199,7 @@ void ImageViewTest::initPrograms (SourceCollections& sourceCollections) const
 
 TestInstance* ImageViewTest::createInstance (Context& context) const
 {
-	tcu::IVec2						renderSize		= getRenderSize(m_imageViewType);
+	const tcu::UVec2				renderSize		= getRenderSize(m_imageViewType);
 	const tcu::IVec3				imageSize		= getImageSize(m_imageViewType);
 	const int						arraySize		= getArraySize(m_imageViewType);
 	const std::vector<Vertex4Tex4>	vertices		= createTestQuadMosaic(m_imageViewType);
@@ -216,6 +216,7 @@ TestInstance* ImageViewTest::createInstance (Context& context) const
 		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,									// VkSamplerAddressMode		addressModeV;
 		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,									// VkSamplerAddressMode		addressModeW;
 		0.0f,																	// float					mipLodBias;
+		VK_FALSE,																// VkBool32					anisotropyEnable;
 		1.0f,																	// float					maxAnisotropy;
 		false,																	// VkBool32					compareEnable;
 		VK_COMPARE_OP_NEVER,													// VkCompareOp				compareOp;
@@ -275,12 +276,12 @@ std::string ImageViewTest::getGlslSamplerType (const tcu::TextureFormat& format,
 	return samplerType.str();
 }
 
-tcu::IVec2 ImageViewTest::getRenderSize (VkImageViewType viewType)
+tcu::UVec2 ImageViewTest::getRenderSize (VkImageViewType viewType)
 {
 	if (viewType == VK_IMAGE_VIEW_TYPE_1D || viewType == VK_IMAGE_VIEW_TYPE_2D)
-		return tcu::IVec2(16, 16);
+		return tcu::UVec2(16u, 16u);
 	else
-		return tcu::IVec2(16 * 3, 16 * 2);
+		return tcu::UVec2(16u * 3u, 16u * 2u);
 }
 
 tcu::IVec3 ImageViewTest::getImageSize (VkImageViewType viewType)

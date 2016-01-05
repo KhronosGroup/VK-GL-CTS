@@ -324,7 +324,7 @@ static MovePtr<Program> createRefProgram(const tcu::TextureFormat&			renderTarge
 } // anonymous
 
 ImageSamplingInstance::ImageSamplingInstance (Context&							context,
-											  const tcu::IVec2&					renderSize,
+											  const tcu::UVec2&					renderSize,
 											  VkImageViewType					imageViewType,
 											  VkFormat							imageFormat,
 											  const tcu::IVec3&					imageSize,
@@ -377,9 +377,9 @@ ImageSamplingInstance::ImageSamplingInstance (Context&							context,
 			getCompatibleImageType(m_imageViewType),						// VkImageType				imageType;
 			imageFormat,													// VkFormat					format;
 			{																// VkExtent3D				extent;
-				m_imageSize.x(),
-				m_imageSize.y(),
-				m_imageSize.z()
+				(deUint32)m_imageSize.x(),
+				(deUint32)m_imageSize.y(),
+				(deUint32)m_imageSize.z()
 			},
 			(deUint32)m_texture->getNumLevels(),							// deUint32					mipLevels;
 			(deUint32)m_layerCount,											// deUint32					arrayLayers;
@@ -458,7 +458,7 @@ ImageSamplingInstance::ImageSamplingInstance (Context&							context,
 			0u,																			// VkImageCreateFlags		flags;
 			VK_IMAGE_TYPE_2D,															// VkImageType				imageType;
 			m_colorFormat,																// VkFormat					format;
-			{ m_renderSize.x(), m_renderSize.y(), 1u },									// VkExtent3D				extent;
+			{ (deUint32)m_renderSize.x(), (deUint32)m_renderSize.y(), 1u },				// VkExtent3D				extent;
 			1u,																			// deUint32					mipLevels;
 			1u,																			// deUint32					arrayLayers;
 			VK_SAMPLE_COUNT_1_BIT,														// VkSampleCountFlagBits	samples;
@@ -654,7 +654,7 @@ ImageSamplingInstance::ImageSamplingInstance (Context&							context,
 			1.0f						// float	maxDepth;
 		};
 
-		const VkRect2D scissor = { { 0, 0 }, { m_renderSize.x(), m_renderSize.y() } };
+		const VkRect2D scissor = { { 0, 0 }, { (deUint32)m_renderSize.x(), (deUint32)m_renderSize.y() } };
 
 		const VkPipelineViewportStateCreateInfo viewportStateParams =
 		{
@@ -845,12 +845,7 @@ ImageSamplingInstance::ImageSamplingInstance (Context&							context,
 			VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType					sType;
 			DE_NULL,										// const void*						pNext;
 			0u,												// VkCommandBufferUsageFlags		flags;
-			DE_NULL,										// VkRenderPass						renderPass;
-			0u,												// deUint32							subpass;
-			DE_NULL,										// VkFramebuffer					framebuffer;
-			false,											// VkBool32							occlusionQueryEnable;
-			0u,												// VkQueryControlFlags				queryFlags;
-			0u												// VkQueryPipelineStatisticFlags	pipelineStatistics;
+			(const VkCommandBufferInheritanceInfo*)DE_NULL,
 		};
 
 		const VkClearValue attachmentClearValue = defaultClearValue(m_colorFormat);
@@ -861,7 +856,10 @@ ImageSamplingInstance::ImageSamplingInstance (Context&							context,
 			DE_NULL,												// const void*			pNext;
 			*m_renderPass,											// VkRenderPass			renderPass;
 			*m_framebuffer,											// VkFramebuffer		framebuffer;
-			{ { 0, 0 }, { m_renderSize.x(), m_renderSize.y() } },	// VkRect2D				renderArea;
+			{
+				{ 0, 0 },
+				{ (deUint32)m_renderSize.x(), (deUint32)m_renderSize.y() }
+			},														// VkRect2D				renderArea;
 			1,														// deUint32				clearValueCount;
 			&attachmentClearValue									// const VkClearValue*	pClearValues;
 		};
@@ -911,6 +909,7 @@ tcu::TestStatus ImageSamplingInstance::iterate (void)
 		DE_NULL,						// const void*				pNext;
 		0u,								// deUint32					waitSemaphoreCount;
 		DE_NULL,						// const VkSemaphore*		pWaitSemaphores;
+		DE_NULL,
 		1u,								// deUint32					commandBufferCount;
 		&m_cmdBuffer.get(),				// const VkCommandBuffer*	pCommandBuffers;
 		0u,								// deUint32					signalSemaphoreCount;

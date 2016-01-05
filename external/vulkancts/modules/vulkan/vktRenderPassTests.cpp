@@ -283,24 +283,30 @@ Move<VkCommandBuffer> allocateCommandBuffer (const DeviceInterface&	vk,
 void beginCommandBuffer (const DeviceInterface&			vk,
 						 VkCommandBuffer				cmdBuffer,
 						 VkCommandBufferUsageFlags		pBeginInfo_flags,
-						 VkRenderPass					pBeginInfo_renderPass,
-						 deUint32						pBeginInfo_subpass,
-						 VkFramebuffer					pBeginInfo_framebuffer,
-						 VkBool32						pBeginInfo_occlusionQueryEnable,
-						 VkQueryControlFlags			pBeginInfo_queryFlags,
-						 VkQueryPipelineStatisticFlags	pBeginInfo_pipelineStatistics)
+						 VkRenderPass					pInheritanceInfo_renderPass,
+						 deUint32						pInheritanceInfo_subpass,
+						 VkFramebuffer					pInheritanceInfo_framebuffer,
+						 VkBool32						pInheritanceInfo_occlusionQueryEnable,
+						 VkQueryControlFlags			pInheritanceInfo_queryFlags,
+						 VkQueryPipelineStatisticFlags	pInheritanceInfo_pipelineStatistics)
 {
-	const VkCommandBufferBeginInfo pBeginInfo =
+	const VkCommandBufferInheritanceInfo	pInheritanceInfo	=
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
+		DE_NULL,
+		pInheritanceInfo_renderPass,
+		pInheritanceInfo_subpass,
+		pInheritanceInfo_framebuffer,
+		pInheritanceInfo_occlusionQueryEnable,
+		pInheritanceInfo_queryFlags,
+		pInheritanceInfo_pipelineStatistics,
+	};
+	const VkCommandBufferBeginInfo			pBeginInfo			=
 	{
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
 		DE_NULL,
 		pBeginInfo_flags,
-		pBeginInfo_renderPass,
-		pBeginInfo_subpass,
-		pBeginInfo_framebuffer,
-		pBeginInfo_occlusionQueryEnable,
-		pBeginInfo_queryFlags,
-		pBeginInfo_pipelineStatistics,
+		&pInheritanceInfo,
 	};
 	VK_CHECK(vk.beginCommandBuffer(cmdBuffer, &pBeginInfo));
 }
@@ -318,6 +324,7 @@ void queueSubmit (const DeviceInterface& vk, VkQueue queue, deUint32 cmdBufferCo
 		DE_NULL,
 		0u,								// waitSemaphoreCount
 		(const VkSemaphore*)DE_NULL,	// pWaitSemaphores
+		(const VkPipelineStageFlags*)DE_NULL,
 		cmdBufferCount,					// commandBufferCount
 		pCmdBuffers,
 		0u,								// signalSemaphoreCount
@@ -958,13 +965,13 @@ VkAttachmentReference createAttachmentReference (const AttachmentReference& refe
 }
 
 VkSubpassDescription createSubpassDescription (const Subpass&					subpass,
-											   vector<VkAttachmentReference>*	attachmentReferenceLists)
+											   vector<VkAttachmentReference>*	attachmentReferenceLists,
+											   vector<deUint32>*				preserveAttachmentReferences)
 {
 	vector<VkAttachmentReference>&	inputAttachmentReferences			= attachmentReferenceLists[0];
 	vector<VkAttachmentReference>&	colorAttachmentReferences			= attachmentReferenceLists[1];
 	vector<VkAttachmentReference>&	resolveAttachmentReferences			= attachmentReferenceLists[2];
 	vector<VkAttachmentReference>&	depthStencilAttachmentReferences	= attachmentReferenceLists[3];
-	vector<VkAttachmentReference>&	preserveAttachmentReferences		= attachmentReferenceLists[4];
 
 	for (size_t attachmentNdx = 0; attachmentNdx < subpass.getColorAttachments().size(); attachmentNdx++)
 		colorAttachmentReferences.push_back(createAttachmentReference(subpass.getColorAttachments()[attachmentNdx]));
@@ -978,26 +985,26 @@ VkSubpassDescription createSubpassDescription (const Subpass&					subpass,
 	depthStencilAttachmentReferences.push_back(createAttachmentReference(subpass.getDepthStencilAttachment()));
 
 	for (size_t attachmentNdx = 0; attachmentNdx < subpass.getPreserveAttachments().size(); attachmentNdx++)
-		preserveAttachmentReferences.push_back(createAttachmentReference(subpass.getPreserveAttachments()[attachmentNdx]));
+		preserveAttachmentReferences->push_back(subpass.getPreserveAttachments()[attachmentNdx].getAttachment());
 
 	DE_ASSERT(resolveAttachmentReferences.empty() || colorAttachmentReferences.size() == resolveAttachmentReferences.size());
 
 	{
 		const VkSubpassDescription subpassDescription =
 		{
-			subpass.getFlags(),																	// flags;
-			subpass.getPipelineBindPoint(),														// pipelineBindPoint;
+			subpass.getFlags(),																		// flags;
+			subpass.getPipelineBindPoint(),															// pipelineBindPoint;
 
-			(deUint32)inputAttachmentReferences.size(),											// inputCount;
-			inputAttachmentReferences.empty() ? DE_NULL : &inputAttachmentReferences[0],		// inputAttachments;
+			(deUint32)inputAttachmentReferences.size(),												// inputCount;
+			inputAttachmentReferences.empty() ? DE_NULL : &inputAttachmentReferences[0],			// inputAttachments;
 
-			(deUint32)colorAttachmentReferences.size(),											// colorCount;
-			colorAttachmentReferences.empty() ? DE_NULL :  &colorAttachmentReferences[0],		// colorAttachments;
-			resolveAttachmentReferences.empty() ? DE_NULL : &resolveAttachmentReferences[0],	// resolveAttachments;
+			(deUint32)colorAttachmentReferences.size(),												// colorCount;
+			colorAttachmentReferences.empty() ? DE_NULL :  &colorAttachmentReferences[0],			// colorAttachments;
+			resolveAttachmentReferences.empty() ? DE_NULL : &resolveAttachmentReferences[0],		// resolveAttachments;
 
-			&depthStencilAttachmentReferences[0],												// pDepthStencilAttachment;
-			(deUint32)preserveAttachmentReferences.size(),										// preserveCount;
-			preserveAttachmentReferences.empty() ? DE_NULL : &preserveAttachmentReferences[0]	// preserveAttachments;
+			&depthStencilAttachmentReferences[0],													// pDepthStencilAttachment;
+			(deUint32)preserveAttachmentReferences->size(),											// preserveCount;
+			preserveAttachmentReferences->empty() ? DE_NULL : &(*preserveAttachmentReferences)[0]	// preserveAttachments;
 		};
 
 		return subpassDescription;
@@ -1027,17 +1034,18 @@ Move<VkRenderPass> createRenderPass (const DeviceInterface&	vk,
 									 VkDevice				device,
 									 const RenderPass&		renderPassInfo)
 {
-	const size_t							perSubpassAttachmentReferenceLists = 5;
+	const size_t							perSubpassAttachmentReferenceLists = 4;
 	vector<VkAttachmentDescription>			attachments;
 	vector<VkSubpassDescription>			subpasses;
 	vector<VkSubpassDependency>				dependencies;
 	vector<vector<VkAttachmentReference> >	attachmentReferenceLists(renderPassInfo.getSubpasses().size() * perSubpassAttachmentReferenceLists);
+	vector<vector<deUint32> >				preserveAttachments(renderPassInfo.getSubpasses().size());
 
 	for (size_t attachmentNdx = 0; attachmentNdx < renderPassInfo.getAttachments().size(); attachmentNdx++)
 		attachments.push_back(createAttachmentDescription(renderPassInfo.getAttachments()[attachmentNdx]));
 
 	for (size_t subpassNdx = 0; subpassNdx < renderPassInfo.getSubpasses().size(); subpassNdx++)
-		subpasses.push_back(createSubpassDescription(renderPassInfo.getSubpasses()[subpassNdx], &(attachmentReferenceLists[subpassNdx * perSubpassAttachmentReferenceLists])));
+		subpasses.push_back(createSubpassDescription(renderPassInfo.getSubpasses()[subpassNdx], &(attachmentReferenceLists[subpassNdx * perSubpassAttachmentReferenceLists]), &preserveAttachments[subpassNdx]));
 
 	for (size_t depNdx = 0; depNdx < renderPassInfo.getDependencies().size(); depNdx++)
 		dependencies.push_back(createSubpassDependency(renderPassInfo.getDependencies()[depNdx]));
@@ -1078,7 +1086,7 @@ Move<VkImage> createAttachmentImage (const DeviceInterface&	vk,
 									 VkImageUsageFlags		usageFlags,
 									 VkImageLayout			layout)
 {
-	const VkExtent3D size_					= { (deInt32)size.x(), (deInt32)size.y(), 1 };
+	const VkExtent3D size_					= { size.x(), size.y(), 1u };
 	VkImageUsageFlags targetUsageFlags		= 0;
 	const tcu::TextureFormat textureFormat	= mapVkFormat(format);
 
@@ -1592,7 +1600,7 @@ Move<VkPipeline> createSubpassPipeline (const DeviceInterface&		vk,
 	const VkRect2D scissor =
 	{
 		{ (deInt32)renderInfo.getViewportOffset().x(),	(deInt32)renderInfo.getViewportOffset().y() },
-		{ (deInt32)renderInfo.getViewportSize().x(),	(deInt32)renderInfo.getViewportSize().y() }
+		{ renderInfo.getViewportSize().x(),				renderInfo.getViewportSize().y() }
 	};
 	const VkPipelineViewportStateCreateInfo viewportState =
 	{
@@ -1795,7 +1803,7 @@ public:
 				{
 					{
 						{ (deInt32)colorClear.getOffset().x(),	(deInt32)colorClear.getOffset().y()	},
-						{ (deInt32)colorClear.getSize().x(),	(deInt32)colorClear.getSize().y()	}
+						{ colorClear.getSize().x(),				colorClear.getSize().y()			}
 					},					// rect
 					0u,					// baseArrayLayer
 					1u,					// layerCount
@@ -1821,7 +1829,7 @@ public:
 			{
 				{
 					{ (deInt32)depthStencilClear.getOffset().x(),	(deInt32)depthStencilClear.getOffset().y()	},
-					{ (deInt32)depthStencilClear.getSize().x(),		(deInt32)depthStencilClear.getSize().y()	}
+					{ depthStencilClear.getSize().x(),				depthStencilClear.getSize().y()				}
 				},							// rect
 				0u,							// baseArrayLayer
 				1u,							// layerCount
@@ -1898,14 +1906,10 @@ void pushImageInitializationCommands (const DeviceInterface&								vk,
 		}
 
 		if (!initializeLayouts.empty())
-		{
-			vector<VkImageMemoryBarrier*> initializeLayoutPtrs;
-
-			for (size_t ndx = 0; ndx < initializeLayouts.size(); ndx++)
-				initializeLayoutPtrs.push_back(&initializeLayouts[ndx]);
-
-			vk.cmdPipelineBarrier(commandBuffer, 0, 0, VK_FALSE, (deUint32)initializeLayouts.size(), (const void* const*)&initializeLayoutPtrs[0]);
-		}
+			vk.cmdPipelineBarrier(commandBuffer, (VkPipelineStageFlags)0, (VkPipelineStageFlags)0, (VkDependencyFlags)0,
+								  0, (const VkMemoryBarrier*)DE_NULL,
+								  0, (const VkBufferMemoryBarrier*)DE_NULL,
+								  (deUint32)initializeLayouts.size(), &initializeLayouts[0]);
 	}
 
 	for (size_t attachmentNdx = 0; attachmentNdx < attachmentInfo.size(); attachmentNdx++)
@@ -1989,14 +1993,10 @@ void pushImageInitializationCommands (const DeviceInterface&								vk,
 		}
 
 		if (!renderPassLayouts.empty())
-		{
-			vector<VkImageMemoryBarrier*> renderPassLayoutPtrs;
-
-			for (size_t ndx = 0; ndx < renderPassLayouts.size(); ndx++)
-				renderPassLayoutPtrs.push_back(&renderPassLayouts[ndx]);
-
-			vk.cmdPipelineBarrier(commandBuffer, 0, 0, VK_FALSE, (deUint32)renderPassLayouts.size(), (const void* const*)&renderPassLayoutPtrs[0]);
-		}
+			vk.cmdPipelineBarrier(commandBuffer, 0, 0, (VkDependencyFlags)0,
+								  0, (const VkMemoryBarrier*)DE_NULL,
+								  0, (const VkBufferMemoryBarrier*)DE_NULL,
+								  (deUint32)renderPassLayouts.size(), &renderPassLayouts[0]);
 	}
 }
 
@@ -2024,8 +2024,8 @@ void pushRenderPassCommands (const DeviceInterface&								vk,
 	{
 		const VkRect2D renderArea =
 		{
-			{ (deInt32)renderPos.x(),	(deInt32)renderPos.y() },
-			{ (deInt32)renderSize.x(),	(deInt32)renderSize.y() }
+			{ (deInt32)renderPos.x(),	(deInt32)renderPos.y()	},
+			{ renderSize.x(),			renderSize.y()			}
 		};
 
 		for (size_t subpassNdx = 0; subpassNdx < subpassRenderers.size(); subpassNdx++)
@@ -2103,16 +2103,13 @@ void pushReadImagesToBuffers (const DeviceInterface&								vk,
 		}
 
 		if (!imageBarriers.empty())
-		{
-			vector<VkImageMemoryBarrier*> clearLayoutPtrs;
-
-			for (size_t ndx = 0; ndx < imageBarriers.size(); ndx++)
-				clearLayoutPtrs.push_back(&imageBarriers[ndx]);
-
-			vk.cmdPipelineBarrier(commandBuffer, getAllPipelineStageFlags(),
-												 getAllPipelineStageFlags(),
-												 VK_FALSE, (deUint32)imageBarriers.size(), (const void* const*)&clearLayoutPtrs[0]);
-		}
+			vk.cmdPipelineBarrier(commandBuffer,
+								  getAllPipelineStageFlags(),
+								  getAllPipelineStageFlags(),
+								  (VkDependencyFlags)0,
+								  0, (const VkMemoryBarrier*)DE_NULL,
+								  0, (const VkBufferMemoryBarrier*)DE_NULL,
+								  (deUint32)imageBarriers.size(), &imageBarriers[0]);
 	}
 
 	for (size_t attachmentNdx = 0; attachmentNdx < attachmentInfo.size(); attachmentNdx++)
@@ -2133,7 +2130,7 @@ void pushReadImagesToBuffers (const DeviceInterface&								vk,
 				1						// arraySize
 			},
 			{ 0, 0, 0 },				// imageOffset
-			{ (deInt32)targetSize.x(), (deInt32)targetSize.y(), 1 }		// imageExtent
+			{ targetSize.x(), targetSize.y(), 1u }		// imageExtent
 		};
 
 		vk.cmdCopyImageToBuffer(commandBuffer, attachmentResources[attachmentNdx]->getImage(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, attachmentResources[attachmentNdx]->getBuffer(), 1, &rect);
@@ -2152,7 +2149,7 @@ void pushReadImagesToBuffers (const DeviceInterface&								vk,
 					1						// arraySize
 				},
 				{ 0, 0, 0 },				// imageOffset
-				{ (deInt32)targetSize.x(), (deInt32)targetSize.y(), 1 }		// imageExtent
+				{ targetSize.x(), targetSize.y(), 1u }		// imageExtent
 			};
 
 			vk.cmdCopyImageToBuffer(commandBuffer, attachmentResources[attachmentNdx]->getImage(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, attachmentResources[attachmentNdx]->getSecondaryBuffer(), 1, &stencilRect);
@@ -2211,16 +2208,13 @@ void pushReadImagesToBuffers (const DeviceInterface&								vk,
 		}
 
 		if (!bufferBarriers.empty())
-		{
-			vector<VkBufferMemoryBarrier*> clearLayoutPtrs;
-
-			for (size_t ndx = 0; ndx < bufferBarriers.size(); ndx++)
-				clearLayoutPtrs.push_back(&bufferBarriers[ndx]);
-
-			vk.cmdPipelineBarrier(commandBuffer, getAllPipelineStageFlags(),
-												 getAllPipelineStageFlags(),
-												 VK_FALSE, (deUint32)bufferBarriers.size(), (const void* const*)&clearLayoutPtrs[0]);
-		}
+			vk.cmdPipelineBarrier(commandBuffer,
+								  getAllPipelineStageFlags(),
+								  getAllPipelineStageFlags(),
+								  (VkDependencyFlags)0,
+								  0, (const VkMemoryBarrier*)DE_NULL,
+								  (deUint32)bufferBarriers.size(), &bufferBarriers[0],
+								  0, (const VkImageMemoryBarrier*)DE_NULL);
 	}
 }
 

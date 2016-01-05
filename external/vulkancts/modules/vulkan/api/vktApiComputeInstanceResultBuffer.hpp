@@ -62,7 +62,7 @@ public:
 
 	inline vk::VkBuffer						getBuffer(void) const { return *m_buffer; }
 
-	inline const void *						getResultReadBarrier(void) const { return &m_bufferBarrier; }
+	inline const vk::VkBufferMemoryBarrier*	getResultReadBarrier(void) const { return &m_bufferBarrier; }
 
 private:
 	static vk::Move<vk::VkBuffer>			createResultBuffer(const vk::DeviceInterface &vki,

@@ -409,7 +409,7 @@ protected:
 	virtual void										setup						(void);
 	virtual void										setupUniforms				(const tcu::Vec4& constCoords);
 
-	const tcu::IVec2									getViewportSize				(void) const;
+	const tcu::UVec2									getViewportSize				(void) const;
 
 	std::vector<tcu::Mat4>								m_userAttribTransforms;
 	const tcu::Vec4										m_clearColor;
@@ -428,8 +428,8 @@ private:
 																					 const vk::VkImageTiling		tiling);
 	void												copyTilingImageToOptimal	(const vk::VkImage&				srcImage,
 																					 const vk::VkImage&				dstImage,
-																					 deInt32						width,
-																					 deInt32						height);
+																					 deUint32						width,
+																					 deUint32						height);
 
 	void												setupUniformData			(deUint32 bindingLocation, size_t size, const void* dataPtr);
 	void												setupDefaultInputs			(const QuadGrid& quadGrid);
@@ -453,7 +453,7 @@ private:
 	};
 	std::vector<EnabledBaseAttribute>					m_enabledBaseAttributes;
 
-	const tcu::IVec2									m_renderSize;
+	const tcu::UVec2									m_renderSize;
 	const vk::VkFormat									m_colorFormat;
 
 	vk::Move<vk::VkImage>								m_colorImage;

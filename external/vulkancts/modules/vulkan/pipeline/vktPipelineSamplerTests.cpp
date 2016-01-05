@@ -74,7 +74,7 @@ public:
 
 	virtual void						initPrograms			(SourceCollections& sourceCollections) const;
 	virtual TestInstance*				createInstance			(Context& context) const;
-	virtual tcu::IVec2					getRenderSize			(VkImageViewType viewType) const;
+	virtual tcu::UVec2					getRenderSize			(VkImageViewType viewType) const;
 	virtual std::vector<Vertex4Tex4>	createVertices			(void) const;
 	virtual VkSamplerCreateInfo			getSamplerCreateInfo	(void) const;
 
@@ -159,7 +159,7 @@ public:
 																	 VkSamplerAddressMode	addressW,
 																	 VkBorderColor			borderColor);
 	virtual								~SamplerAddressModesTest	(void) {}
-	virtual tcu::IVec2					getRenderSize (VkImageViewType viewType) const;
+	virtual tcu::UVec2					getRenderSize				(VkImageViewType viewType) const;
 	virtual std::vector<Vertex4Tex4>	createVertices				(void) const;
 	virtual VkSamplerCreateInfo			getSamplerCreateInfo		(void) const;
 
@@ -254,7 +254,7 @@ void SamplerTest::initPrograms (SourceCollections& sourceCollections) const
 
 TestInstance* SamplerTest::createInstance (Context& context) const
 {
-	const tcu::IVec2				renderSize			= getRenderSize(m_imageViewType);
+	const tcu::UVec2				renderSize			= getRenderSize(m_imageViewType);
 	const std::vector<Vertex4Tex4>	vertices			= createVertices();
 	const VkSamplerCreateInfo		samplerParams		= getSamplerCreateInfo();
 	const VkComponentMapping		componentMapping	= getFormatComponentMapping(m_imageFormat);
@@ -276,15 +276,15 @@ TestInstance* SamplerTest::createInstance (Context& context) const
 									 samplerParams, m_samplerLod,vertices);
 }
 
-tcu::IVec2 SamplerTest::getRenderSize (VkImageViewType viewType) const
+tcu::UVec2 SamplerTest::getRenderSize (VkImageViewType viewType) const
 {
 	if (viewType == VK_IMAGE_VIEW_TYPE_1D || viewType == VK_IMAGE_VIEW_TYPE_2D)
 	{
-		return tcu::IVec2(16, 16);
+		return tcu::UVec2(16u, 16u);
 	}
 	else
 	{
-		return tcu::IVec2(16 * 3, 16 * 2);
+		return tcu::UVec2(16u * 3u, 16u * 2u);
 	}
 }
 
@@ -309,16 +309,17 @@ VkSamplerCreateInfo SamplerTest::getSamplerCreateInfo (void) const
 		0u,																		// VkSamplerCreateFlags		flags;
 		VK_FILTER_NEAREST,														// VkFilter					magFilter;
 		VK_FILTER_NEAREST,														// VkFilter					minFilter;
-		VK_SAMPLER_MIPMAP_MODE_BASE,											// VkSamplerMipmapMode		mipmapMode;
+		VK_SAMPLER_MIPMAP_MODE_NEAREST,											// VkSamplerMipmapMode		mipmapMode;
 		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,									// VkSamplerAddressMode		addressModeU;
 		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,									// VkSamplerAddressMode		addressModeV;
 		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,									// VkSamplerAddressMode		addressModeW;
 		0.0f,																	// float					mipLodBias;
+		VK_FALSE,																// VkBool32					anisotropyEnable;
 		1.0f,																	// float					maxAnisotropy;
 		false,																	// VkBool32					compareEnable;
 		VK_COMPARE_OP_NEVER,													// VkCompareOp				compareOp;
 		0.0f,																	// float					minLod;
-		(float)deLog2Floor32(m_imageSize) + 1,									// float					maxLod;
+		0.25f,																	// float					maxLod;
 		getFormatBorderColor(BORDER_COLOR_TRANSPARENT_BLACK, m_imageFormat),	// VkBorderColor			borderColor;
 		false																	// VkBool32					unnormalizedCoordinates;
 	};
@@ -509,9 +510,9 @@ SamplerAddressModesTest::SamplerAddressModesTest (tcu::TestContext&		testContext
 {
 }
 
-tcu::IVec2 SamplerAddressModesTest::getRenderSize (VkImageViewType viewType) const
+tcu::UVec2 SamplerAddressModesTest::getRenderSize (VkImageViewType viewType) const
 {
-	return 4 * SamplerTest::getRenderSize(viewType);
+	return 4u * SamplerTest::getRenderSize(viewType);
 }
 
 std::vector<Vertex4Tex4> SamplerAddressModesTest::createVertices (void) const

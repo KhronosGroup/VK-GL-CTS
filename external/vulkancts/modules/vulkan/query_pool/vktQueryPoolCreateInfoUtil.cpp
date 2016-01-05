@@ -473,21 +473,19 @@ SubpassDescription::SubpassDescription (vk::VkPipelineBindPoint				_pipelineBind
 										const vk::VkAttachmentReference*	_resolveAttachments,
 										vk::VkAttachmentReference			depthStencilAttachment,
 										deUint32							_preserveAttachmentCount,
-										const vk::VkAttachmentReference*	_preserveAttachments)
+										const deUint32*						_preserveAttachments)
 {
 	m_inputAttachments = std::vector<vk::VkAttachmentReference>(_inputAttachments, _inputAttachments + _inputAttachmentCount);
 	m_colorAttachments = std::vector<vk::VkAttachmentReference>(_colorAttachments, _colorAttachments + _colorAttachmentCount);
 
 	if (_resolveAttachments)
-	{
 		m_resolveAttachments = std::vector<vk::VkAttachmentReference>(_resolveAttachments, _resolveAttachments + _colorAttachmentCount);
-	}
 
-	m_preserveAttachments = std::vector<vk::VkAttachmentReference>(_preserveAttachments, _preserveAttachments + _preserveAttachmentCount);
+	m_preserveAttachments = std::vector<deUint32>(_preserveAttachments, _preserveAttachments + _preserveAttachmentCount);
 
 	m_depthStencilAttachment = depthStencilAttachment;
 
-	flags = _flags;
+	flags					= _flags;
 	pipelineBindPoint		= _pipelineBindPoint;
 	inputAttachmentCount	= _inputAttachmentCount;
 	pInputAttachments		= DE_NULL;
@@ -498,25 +496,17 @@ SubpassDescription::SubpassDescription (vk::VkPipelineBindPoint				_pipelineBind
 	pPreserveAttachments	= DE_NULL;
 	preserveAttachmentCount	= _preserveAttachmentCount;
 
-	if (m_inputAttachments.size())
-	{
+	if (!m_inputAttachments.empty())
 		pInputAttachments = &m_inputAttachments[0];
-	}
 
-	if (m_colorAttachments.size())
-	{
+	if (!m_colorAttachments.empty())
 		pColorAttachments = &m_colorAttachments[0];
-	}
 
-	if (m_resolveAttachments.size())
-	{
+	if (!m_resolveAttachments.empty())
 		pResolveAttachments = &m_resolveAttachments[0];
-	}
 
-	if (m_preserveAttachments.size())
-	{
+	if (!m_preserveAttachments.empty())
 		pPreserveAttachments = &m_preserveAttachments[0];
-	}
 }
 
 SubpassDescription::SubpassDescription (const vk::VkSubpassDescription& rhs)
@@ -530,42 +520,31 @@ SubpassDescription::SubpassDescription (const vk::VkSubpassDescription& rhs)
 		rhs.pColorAttachments, rhs.pColorAttachments + rhs.colorAttachmentCount);
 
 	if (rhs.pResolveAttachments)
-	{
 		m_resolveAttachments = std::vector<vk::VkAttachmentReference>(
 			rhs.pResolveAttachments, rhs.pResolveAttachments + rhs.colorAttachmentCount);
-	}
-	m_preserveAttachments = std::vector<vk::VkAttachmentReference>(
+
+	m_preserveAttachments = std::vector<deUint32>(
 		rhs.pPreserveAttachments, rhs.pPreserveAttachments + rhs.preserveAttachmentCount);
 
 	if (rhs.pDepthStencilAttachment)
-	{
 		m_depthStencilAttachment = *rhs.pDepthStencilAttachment;
-	}
 
-	if (m_inputAttachments.size())
-	{
+	if (!m_inputAttachments.empty())
 		pInputAttachments = &m_inputAttachments[0];
-	}
-	if (m_colorAttachments.size())
-	{
-		pColorAttachments = &m_colorAttachments[0];
-	}
 
-	if (m_resolveAttachments.size())
-	{
+	if (!m_colorAttachments.empty())
+		pColorAttachments = &m_colorAttachments[0];
+
+	if (!m_resolveAttachments.empty())
 		pResolveAttachments = &m_resolveAttachments[0];
-	}
 
 	pDepthStencilAttachment = &m_depthStencilAttachment;
 
-	if (m_preserveAttachments.size())
-	{
+	if (!m_preserveAttachments.empty())
 		pPreserveAttachments = &m_preserveAttachments[0];
-	}
 }
 
-SubpassDescription::SubpassDescription (const SubpassDescription& rhs)
-{
+SubpassDescription::SubpassDescription (const SubpassDescription& rhs) {
 	*this = rhs;
 }
 
@@ -579,26 +558,19 @@ SubpassDescription& SubpassDescription::operator= (const SubpassDescription& rhs
 	m_preserveAttachments	= rhs.m_preserveAttachments;
 	m_depthStencilAttachment = rhs.m_depthStencilAttachment;
 
-	if (m_inputAttachments.size())
-	{
+	if (!m_inputAttachments.empty())
 		pInputAttachments = &m_inputAttachments[0];
-	}
-	if (m_colorAttachments.size())
-	{
-		pColorAttachments = &m_colorAttachments[0];
-	}
 
-	if (m_resolveAttachments.size())
-	{
+	if (!m_colorAttachments.empty())
+		pColorAttachments = &m_colorAttachments[0];
+
+	if (!m_resolveAttachments.empty())
 		pResolveAttachments = &m_resolveAttachments[0];
-	}
 
 	pDepthStencilAttachment = &m_depthStencilAttachment;
 
-	if (m_preserveAttachments.size())
-	{
+	if (!m_preserveAttachments.empty())
 		pPreserveAttachments = &m_preserveAttachments[0];
-	}
 
 	return *this;
 }
@@ -633,35 +605,10 @@ SubpassDependency::SubpassDependency (const vk::VkSubpassDependency& rhs)
 
 CmdBufferBeginInfo::CmdBufferBeginInfo (vk::VkCommandBufferUsageFlags _flags)
 {
-	sType = vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-	pNext = DE_NULL;
-	renderPass				= DE_NULL;
-	subpass					= 0;
-	framebuffer				= DE_NULL;
-	flags					= _flags;
-	occlusionQueryEnable	= false;
-	queryFlags				= 0u;
-	pipelineStatistics		= 0u;
-}
-
-CmdBufferBeginInfo::CmdBufferBeginInfo (vk::VkRenderPass					_renderPass,
-										deUint32							_subpass,
-										vk::VkFramebuffer					_framebuffer,
-										vk::VkCommandBufferUsageFlags		_flags,
-										bool								_occlusionQueryEnable,
-										vk::VkQueryControlFlags				_queryFlags,
-										vk::VkQueryPipelineStatisticFlags	_pipelineStatistics)
-{
-
-	sType = vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-	pNext = DE_NULL;
-	renderPass				= _renderPass;
-	subpass					= _subpass;
-	framebuffer				= _framebuffer;
-	flags					= _flags;
-	occlusionQueryEnable	= _occlusionQueryEnable;
-	queryFlags				= _queryFlags;
-	pipelineStatistics		= _pipelineStatistics;
+	sType				= vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	pNext				= DE_NULL;
+	flags				= _flags;
+	pInheritanceInfo	= DE_NULL;
 }
 
 DescriptorPoolCreateInfo::DescriptorPoolCreateInfo (const std::vector<vk::VkDescriptorPoolSize>&	poolSizeCounts,
@@ -694,7 +641,7 @@ DescriptorSetLayoutCreateInfo::DescriptorSetLayoutCreateInfo (deUint32 _bindingC
 	pNext = DE_NULL;
 	flags = 0;
 	bindingCount = _bindingCount;
-	pBinding	 = _pBindings;
+	pBindings	 = _pBindings;
 }
 
 PipelineLayoutCreateInfo::PipelineLayoutCreateInfo (deUint32							_descriptorSetCount,
@@ -793,7 +740,7 @@ PipelineCreateInfo::InputAssemblerState::InputAssemblerState (vk::VkPrimitiveTop
 	primitiveRestartEnable	= _primitiveRestartEnable;
 }
 
-PipelineCreateInfo::TesselationState::TesselationState (deUint32 _patchControlPoints)
+PipelineCreateInfo::TessellationState::TessellationState (deUint32 _patchControlPoints)
 {
 	sType = vk::VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO;
 	pNext = DE_NULL;
@@ -1224,6 +1171,7 @@ SamplerCreateInfo::SamplerCreateInfo (vk::VkFilter				_magFilter,
 									  vk::VkSamplerAddressMode	_addressModeV,
 									  vk::VkSamplerAddressMode	_addressModeW,
 									  float						_mipLodBias,
+									  vk::VkBool32				_anisotropyEnable,
 									  float						_maxAnisotropy,
 									  vk::VkBool32				_compareEnable,
 									  vk::VkCompareOp			_compareOp,
@@ -1242,6 +1190,7 @@ SamplerCreateInfo::SamplerCreateInfo (vk::VkFilter				_magFilter,
 	addressModeV			= _addressModeV;
 	addressModeW			= _addressModeW;
 	mipLodBias				= _mipLodBias;
+	anisotropyEnable		= _anisotropyEnable;
 	maxAnisotropy			= _maxAnisotropy;
 	compareEnable			= _compareEnable;
 	compareOp				= _compareOp;

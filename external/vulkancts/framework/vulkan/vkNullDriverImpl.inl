@@ -446,11 +446,11 @@ VKAPI_ATTR VkResult VKAPI_CALL resetEvent (VkDevice device, VkEvent event)
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL getQueryPoolResults (VkDevice device, VkQueryPool queryPool, deUint32 startQuery, deUint32 queryCount, deUintptr dataSize, void* pData, VkDeviceSize stride, VkQueryResultFlags flags)
+VKAPI_ATTR VkResult VKAPI_CALL getQueryPoolResults (VkDevice device, VkQueryPool queryPool, deUint32 firstQuery, deUint32 queryCount, deUintptr dataSize, void* pData, VkDeviceSize stride, VkQueryResultFlags flags)
 {
 	DE_UNREF(device);
 	DE_UNREF(queryPool);
-	DE_UNREF(startQuery);
+	DE_UNREF(firstQuery);
 	DE_UNREF(queryCount);
 	DE_UNREF(dataSize);
 	DE_UNREF(pData);
@@ -536,16 +536,18 @@ VKAPI_ATTR void VKAPI_CALL cmdBindPipeline (VkCommandBuffer commandBuffer, VkPip
 	DE_UNREF(pipeline);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdSetViewport (VkCommandBuffer commandBuffer, deUint32 viewportCount, const VkViewport* pViewports)
+VKAPI_ATTR void VKAPI_CALL cmdSetViewport (VkCommandBuffer commandBuffer, deUint32 firstViewport, deUint32 viewportCount, const VkViewport* pViewports)
 {
 	DE_UNREF(commandBuffer);
+	DE_UNREF(firstViewport);
 	DE_UNREF(viewportCount);
 	DE_UNREF(pViewports);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdSetScissor (VkCommandBuffer commandBuffer, deUint32 scissorCount, const VkRect2D* pScissors)
+VKAPI_ATTR void VKAPI_CALL cmdSetScissor (VkCommandBuffer commandBuffer, deUint32 firstScissor, deUint32 scissorCount, const VkRect2D* pScissors)
 {
 	DE_UNREF(commandBuffer);
+	DE_UNREF(firstScissor);
 	DE_UNREF(scissorCount);
 	DE_UNREF(pScissors);
 }
@@ -618,10 +620,10 @@ VKAPI_ATTR void VKAPI_CALL cmdBindIndexBuffer (VkCommandBuffer commandBuffer, Vk
 	DE_UNREF(indexType);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdBindVertexBuffers (VkCommandBuffer commandBuffer, deUint32 startBinding, deUint32 bindingCount, const VkBuffer* pBuffers, const VkDeviceSize* pOffsets)
+VKAPI_ATTR void VKAPI_CALL cmdBindVertexBuffers (VkCommandBuffer commandBuffer, deUint32 firstBinding, deUint32 bindingCount, const VkBuffer* pBuffers, const VkDeviceSize* pOffsets)
 {
 	DE_UNREF(commandBuffer);
-	DE_UNREF(startBinding);
+	DE_UNREF(firstBinding);
 	DE_UNREF(bindingCount);
 	DE_UNREF(pBuffers);
 	DE_UNREF(pOffsets);
@@ -803,7 +805,7 @@ VKAPI_ATTR void VKAPI_CALL cmdResetEvent (VkCommandBuffer commandBuffer, VkEvent
 	DE_UNREF(stageMask);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdWaitEvents (VkCommandBuffer commandBuffer, deUint32 eventCount, const VkEvent* pEvents, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, deUint32 memoryBarrierCount, const void* const* ppMemoryBarriers)
+VKAPI_ATTR void VKAPI_CALL cmdWaitEvents (VkCommandBuffer commandBuffer, deUint32 eventCount, const VkEvent* pEvents, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, deUint32 memoryBarrierCount, const VkMemoryBarrier* pMemoryBarriers, deUint32 bufferMemoryBarrierCount, const VkBufferMemoryBarrier* pBufferMemoryBarriers, deUint32 imageMemoryBarrierCount, const VkImageMemoryBarrier* pImageMemoryBarriers)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(eventCount);
@@ -811,55 +813,63 @@ VKAPI_ATTR void VKAPI_CALL cmdWaitEvents (VkCommandBuffer commandBuffer, deUint3
 	DE_UNREF(srcStageMask);
 	DE_UNREF(dstStageMask);
 	DE_UNREF(memoryBarrierCount);
-	DE_UNREF(ppMemoryBarriers);
+	DE_UNREF(pMemoryBarriers);
+	DE_UNREF(bufferMemoryBarrierCount);
+	DE_UNREF(pBufferMemoryBarriers);
+	DE_UNREF(imageMemoryBarrierCount);
+	DE_UNREF(pImageMemoryBarriers);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdPipelineBarrier (VkCommandBuffer commandBuffer, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkDependencyFlags dependencyFlags, deUint32 memoryBarrierCount, const void* const* ppMemoryBarriers)
+VKAPI_ATTR void VKAPI_CALL cmdPipelineBarrier (VkCommandBuffer commandBuffer, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkDependencyFlags dependencyFlags, deUint32 memoryBarrierCount, const VkMemoryBarrier* pMemoryBarriers, deUint32 bufferMemoryBarrierCount, const VkBufferMemoryBarrier* pBufferMemoryBarriers, deUint32 imageMemoryBarrierCount, const VkImageMemoryBarrier* pImageMemoryBarriers)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(srcStageMask);
 	DE_UNREF(dstStageMask);
 	DE_UNREF(dependencyFlags);
 	DE_UNREF(memoryBarrierCount);
-	DE_UNREF(ppMemoryBarriers);
+	DE_UNREF(pMemoryBarriers);
+	DE_UNREF(bufferMemoryBarrierCount);
+	DE_UNREF(pBufferMemoryBarriers);
+	DE_UNREF(imageMemoryBarrierCount);
+	DE_UNREF(pImageMemoryBarriers);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdBeginQuery (VkCommandBuffer commandBuffer, VkQueryPool queryPool, deUint32 entry, VkQueryControlFlags flags)
+VKAPI_ATTR void VKAPI_CALL cmdBeginQuery (VkCommandBuffer commandBuffer, VkQueryPool queryPool, deUint32 query, VkQueryControlFlags flags)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(queryPool);
-	DE_UNREF(entry);
+	DE_UNREF(query);
 	DE_UNREF(flags);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdEndQuery (VkCommandBuffer commandBuffer, VkQueryPool queryPool, deUint32 entry)
+VKAPI_ATTR void VKAPI_CALL cmdEndQuery (VkCommandBuffer commandBuffer, VkQueryPool queryPool, deUint32 query)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(queryPool);
-	DE_UNREF(entry);
+	DE_UNREF(query);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdResetQueryPool (VkCommandBuffer commandBuffer, VkQueryPool queryPool, deUint32 startQuery, deUint32 queryCount)
+VKAPI_ATTR void VKAPI_CALL cmdResetQueryPool (VkCommandBuffer commandBuffer, VkQueryPool queryPool, deUint32 firstQuery, deUint32 queryCount)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(queryPool);
-	DE_UNREF(startQuery);
+	DE_UNREF(firstQuery);
 	DE_UNREF(queryCount);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdWriteTimestamp (VkCommandBuffer commandBuffer, VkPipelineStageFlagBits pipelineStage, VkQueryPool queryPool, deUint32 entry)
+VKAPI_ATTR void VKAPI_CALL cmdWriteTimestamp (VkCommandBuffer commandBuffer, VkPipelineStageFlagBits pipelineStage, VkQueryPool queryPool, deUint32 query)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(pipelineStage);
 	DE_UNREF(queryPool);
-	DE_UNREF(entry);
+	DE_UNREF(query);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdCopyQueryPoolResults (VkCommandBuffer commandBuffer, VkQueryPool queryPool, deUint32 startQuery, deUint32 queryCount, VkBuffer dstBuffer, VkDeviceSize dstOffset, VkDeviceSize stride, VkQueryResultFlags flags)
+VKAPI_ATTR void VKAPI_CALL cmdCopyQueryPoolResults (VkCommandBuffer commandBuffer, VkQueryPool queryPool, deUint32 firstQuery, deUint32 queryCount, VkBuffer dstBuffer, VkDeviceSize dstOffset, VkDeviceSize stride, VkQueryResultFlags flags)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(queryPool);
-	DE_UNREF(startQuery);
+	DE_UNREF(firstQuery);
 	DE_UNREF(queryCount);
 	DE_UNREF(dstBuffer);
 	DE_UNREF(dstOffset);
@@ -895,10 +905,10 @@ VKAPI_ATTR void VKAPI_CALL cmdEndRenderPass (VkCommandBuffer commandBuffer)
 	DE_UNREF(commandBuffer);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdExecuteCommands (VkCommandBuffer commandBuffer, deUint32 commandBuffersCount, const VkCommandBuffer* pCommandBuffers)
+VKAPI_ATTR void VKAPI_CALL cmdExecuteCommands (VkCommandBuffer commandBuffer, deUint32 commandBufferCount, const VkCommandBuffer* pCommandBuffers)
 {
 	DE_UNREF(commandBuffer);
-	DE_UNREF(commandBuffersCount);
+	DE_UNREF(commandBufferCount);
 	DE_UNREF(pCommandBuffers);
 }
 

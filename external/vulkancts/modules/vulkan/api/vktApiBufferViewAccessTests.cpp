@@ -171,7 +171,7 @@ BufferViewTestInstance::BufferViewTestInstance (Context& context, BufferViewCase
 			0u,																			// VkImageCreateFlags	flags;
 			VK_IMAGE_TYPE_2D,															// VkImageType			imageType;
 			m_colorFormat,																// VkFormat				format;
-			{ m_renderSize.x(), m_renderSize.y(), 1u },									// VkExtent3D			extent;
+			{ (deUint32)m_renderSize.x(), (deUint32)m_renderSize.y(), 1u },				// VkExtent3D			extent;
 			1u,																			// deUint32				mipLevels;
 			1u,																			// deUint32				arraySize;
 			VK_SAMPLE_COUNT_1_BIT,														// deUint32				samples;
@@ -505,8 +505,8 @@ BufferViewTestInstance::BufferViewTestInstance (Context& context, BufferViewCase
 		};
 		const VkRect2D scissor =
 		{
-			{ 0, 0 },												// VkOffset2D  offset;
-			{ m_renderSize.x(), m_renderSize.y() }					// VkExtent2D  extent;
+			{ 0, 0 },													// VkOffset2D  offset;
+			{ (deUint32)m_renderSize.x(), (deUint32)m_renderSize.y() }	// VkExtent2D  extent;
 		};
 		const VkPipelineViewportStateCreateInfo viewportStateParams =
 		{
@@ -666,12 +666,7 @@ BufferViewTestInstance::BufferViewTestInstance (Context& context, BufferViewCase
 			VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType			sType;
 			DE_NULL,										// const void*				pNext;
 			0u,												// VkCmdBufferOptimizeFlags	flags;
-			DE_NULL,										// VkRenderPass				renderPass;
-			0u,												// deUint32					subpass;
-			DE_NULL,											// VkFramebuffer			framebuffer;
-			VK_FALSE,
-			(VkQueryControlFlags)0,
-			(VkQueryPipelineStatisticFlags)0,
+			(const VkCommandBufferInheritanceInfo*)DE_NULL,
 		};
 
 		const VkClearValue clearValue = makeClearValueColorF32(0.0, 0.0, 0.0, 0.0);
@@ -687,7 +682,10 @@ BufferViewTestInstance::BufferViewTestInstance (Context& context, BufferViewCase
 			DE_NULL,												// const void*			pNext;
 			*m_renderPass,											// VkRenderPass			renderPass;
 			*m_framebuffer,											// VkFramebuffer		framebuffer;
-			{ { 0, 0 }, { m_renderSize.x(), m_renderSize.y() } },	// VkRect2D				renderArea;
+			{
+				{ 0, 0 },
+				{ (deUint32)m_renderSize.x(), (deUint32)m_renderSize.y() }
+			},														// VkRect2D				renderArea;
 			1u,														// deUint32				clearValueCount;
 			attachmentClearValues									// const VkClearValue*	pClearValues;
 		};
@@ -715,9 +713,8 @@ BufferViewTestInstance::BufferViewTestInstance (Context& context, BufferViewCase
 				1u										// deUint32				arraySize;
 			}
 		};
-		const void* const	initialImageBarrierPtr		= &initialImageBarrier;
 
-		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_FALSE, 1, &initialImageBarrierPtr);
+		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &initialImageBarrier);
 
 		vk.cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
@@ -768,15 +765,16 @@ BufferViewTestInstance::BufferViewTestInstance (Context& context, BufferViewCase
 			(deUint32)m_renderSize.y(),					// deUint32					bufferImageHeight;
 			{ VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u },	// VkImageSubresourceCopy	imageSubresource;
 			{ 0, 0, 0 },								// VkOffset3D				imageOffset;
-			{ m_renderSize.x(), m_renderSize.y(), 1 }	// VkExtent3D				imageExtent;
+			{
+				(deUint32)m_renderSize.x(),
+				(deUint32)m_renderSize.y(),
+				1u
+			}											// VkExtent3D				imageExtent;
 		};
 
-		const void* const	imageBarrierPtr		= &imageBarrier;
-		const void* const	bufferBarrierPtr	= &bufferBarrier;
-
-		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_FALSE, 1, &imageBarrierPtr);
+		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &imageBarrier);
 		vk.cmdCopyImageToBuffer(*m_cmdBuffer, *m_colorImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *m_resultBuffer, 1, &copyRegion);
-		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_FALSE, 1, &bufferBarrierPtr);
+		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &bufferBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
 
 		vk.cmdEndRenderPass(*m_cmdBuffer);
 		VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
@@ -833,6 +831,7 @@ tcu::TestStatus BufferViewTestInstance::iterate (void)
 		DE_NULL,
 		0u,
 		(const VkSemaphore*)DE_NULL,
+		(const VkPipelineStageFlags*)DE_NULL,
 		1u,
 		&m_cmdBuffer.get(),
 		0u,

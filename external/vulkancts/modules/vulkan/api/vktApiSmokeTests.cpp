@@ -78,11 +78,12 @@ tcu::TestStatus createSamplerTest (Context& context)
 			0u,											// flags
 			VK_FILTER_NEAREST,							// magFilter
 			VK_FILTER_NEAREST,							// minFilter
-			VK_SAMPLER_MIPMAP_MODE_BASE,				// mipmapMode
+			VK_SAMPLER_MIPMAP_MODE_NEAREST,				// mipmapMode
 			VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,		// addressModeU
 			VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,		// addressModeV
 			VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,		// addressModeW
 			0.0f,										// mipLodBias
+			VK_FALSE,									// anisotropyEnable
 			1.0f,										// maxAnisotropy
 			DE_FALSE,									// compareEnable
 			VK_COMPARE_OP_ALWAYS,						// compareOp
@@ -254,7 +255,7 @@ tcu::TestStatus renderTriangleTest (Context& context)
 		0u,																		// flags
 		VK_IMAGE_TYPE_2D,														// imageType
 		VK_FORMAT_R8G8B8A8_UNORM,												// format
-		{ renderSize.x(), renderSize.y(), 1 },									// extent
+		{ (deUint32)renderSize.x(), (deUint32)renderSize.y(), 1 },				// extent
 		1u,																		// mipLevels
 		1u,																		// arraySize
 		VK_SAMPLE_COUNT_1_BIT,													// samples
@@ -432,8 +433,8 @@ tcu::TestStatus renderTriangleTest (Context& context)
 			0u,															// y
 		},															// offset
 		{
-			renderSize.x(),												// width
-			renderSize.y(),												// height
+			(deUint32)renderSize.x(),									// width
+			(deUint32)renderSize.y(),									// height
 		},															// extent;
 	};
 	const VkPipelineViewportStateCreateInfo		viewportParams			=
@@ -604,12 +605,7 @@ tcu::TestStatus renderTriangleTest (Context& context)
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,			// sType
 		DE_NULL,												// pNext
 		0u,														// flags
-		DE_NULL,												// renderPass
-		0u,														// subpass
-		DE_NULL,												// framebuffer
-		VK_FALSE,												// occlusionQueryEnable
-		(VkQueryControlFlags)0u,								// queryFlags
-		(VkQueryPipelineStatisticFlags)0u,						// pipelineStatistics
+		(const VkCommandBufferInheritanceInfo*)DE_NULL,
 	};
 
 	// Record commands
@@ -643,8 +639,7 @@ tcu::TestStatus renderTriangleTest (Context& context)
 				1u,											// layerCount
 			}											// subresourceRange
 		};
-		const void*				barriers[]				= { &vertFlushBarrier, &colorAttBarrier };
-		vk.cmdPipelineBarrier(*cmdBuf, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, DE_FALSE, (deUint32)DE_LENGTH_OF_ARRAY(barriers), barriers);
+		vk.cmdPipelineBarrier(*cmdBuf, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, (VkDependencyFlags)0, 1, &vertFlushBarrier, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &colorAttBarrier);
 	}
 
 	{
@@ -655,7 +650,10 @@ tcu::TestStatus renderTriangleTest (Context& context)
 			DE_NULL,											// pNext
 			*renderPass,										// renderPass
 			*framebuffer,										// framebuffer
-			{ { 0, 0 }, { renderSize.x(), renderSize.y() } },	// renderArea
+			{
+				{ 0, 0 },
+				{ (deUint32)renderSize.x(), (deUint32)renderSize.y() }
+			},													// renderArea
 			1u,													// clearValueCount
 			&clearValue,										// pClearValues
 		};
@@ -690,8 +688,7 @@ tcu::TestStatus renderTriangleTest (Context& context)
 				1u,											// arraySize
 			}											// subresourceRange
 		};
-		const void*				barriers[]				= { &renderFinishBarrier };
-		vk.cmdPipelineBarrier(*cmdBuf, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, DE_FALSE, (deUint32)DE_LENGTH_OF_ARRAY(barriers), barriers);
+		vk.cmdPipelineBarrier(*cmdBuf, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &renderFinishBarrier);
 	}
 
 	{
@@ -707,7 +704,11 @@ tcu::TestStatus renderTriangleTest (Context& context)
 				1u,										// layerCount
 			},										// imageSubresource
 			{ 0u, 0u, 0u },							// imageOffset
-			{ renderSize.x(), renderSize.y(), 1u }	// imageExtent
+			{
+				(deUint32)renderSize.x(),
+				(deUint32)renderSize.y(),
+				1u
+			}										// imageExtent
 		};
 		vk.cmdCopyImageToBuffer(*cmdBuf, *image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *readImageBuffer, 1u, &copyParams);
 	}
@@ -725,8 +726,7 @@ tcu::TestStatus renderTriangleTest (Context& context)
 			0u,											// offset
 			imageSizeBytes								// size
 		};
-		const void*				barriers[]				= { &copyFinishBarrier };
-		vk.cmdPipelineBarrier(*cmdBuf, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, DE_FALSE, (deUint32)DE_LENGTH_OF_ARRAY(barriers), barriers);
+		vk.cmdPipelineBarrier(*cmdBuf, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &copyFinishBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
 	}
 
 	VK_CHECK(vk.endCommandBuffer(*cmdBuf));
@@ -761,6 +761,7 @@ tcu::TestStatus renderTriangleTest (Context& context)
 			DE_NULL,								// pNext
 			0u,										// waitSemaphoreCount
 			DE_NULL,								// pWaitSemaphores
+			(const VkPipelineStageFlags*)DE_NULL,
 			1u,										// commandBufferCount
 			&cmdBuf.get(),							// pCommandBuffers
 			0u,										// signalSemaphoreCount

@@ -226,20 +226,20 @@ void DynamicStateBaseClass::setDynamicViewportState (const deUint32 width, const
 	viewport.minDepth = 0.0f;
 	viewport.maxDepth = 1.0f;
 
-	m_vk.cmdSetViewport(*m_cmdBuffer, 1, &viewport);
+	m_vk.cmdSetViewport(*m_cmdBuffer, 0, 1, &viewport);
 
 	vk::VkRect2D scissor;
 	scissor.offset.x = 0;
 	scissor.offset.y = 0;
 	scissor.extent.width = width;
 	scissor.extent.height = height;
-	m_vk.cmdSetScissor(*m_cmdBuffer, 1, &scissor);
+	m_vk.cmdSetScissor(*m_cmdBuffer, 0, 1, &scissor);
 }
 
 void DynamicStateBaseClass::setDynamicViewportState (deUint32 viewportCount, const vk::VkViewport* pViewports, const vk::VkRect2D* pScissors)
 {
-	m_vk.cmdSetViewport(*m_cmdBuffer, viewportCount, pViewports);
-	m_vk.cmdSetScissor(*m_cmdBuffer, viewportCount, pScissors);
+	m_vk.cmdSetViewport(*m_cmdBuffer, 0, viewportCount, pViewports);
+	m_vk.cmdSetScissor(*m_cmdBuffer, 0, viewportCount, pScissors);
 }
 
 void DynamicStateBaseClass::setDynamicRasterizationState (const float lineWidth,

@@ -139,7 +139,7 @@ private:
 
 	VkPipelineColorBlendAttachmentState	m_blendStates[BlendTest::QUAD_COUNT];
 
-	const tcu::IVec2					m_renderSize;
+	const tcu::UVec2					m_renderSize;
 	const VkFormat						m_colorFormat;
 
 	VkImageCreateInfo					m_colorImageCreateInfo;
@@ -739,12 +739,7 @@ BlendTestInstance::BlendTestInstance (Context&									context,
 			VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType					sType;
 			DE_NULL,										// const void*						pNext;
 			0u,												// VkCommandBufferUsageFlags		flags;
-			DE_NULL,										// VkRenderPass						renderPass;
-			0u,												// deUint32							subpass;
-			DE_NULL,										// VkFramebuffer					framebuffer;
-			false,											// VkBool32							occlusionQueryEnable;
-			0u,												// VkQueryControlFlags				queryFlags;
-			0u												// VkQueryPipelineStatisticFlags	pipelineStatistics;
+			(const VkCommandBufferInheritanceInfo*)DE_NULL,
 		};
 
 		const VkClearValue attachmentClearValue = defaultClearValue(m_colorFormat);
@@ -808,6 +803,7 @@ tcu::TestStatus BlendTestInstance::iterate (void)
 		DE_NULL,						// const void*				pNext;
 		0u,								// deUint32					waitSemaphoreCount;
 		DE_NULL,						// const VkSemaphore*		pWaitSemaphores;
+		(const VkPipelineStageFlags*)DE_NULL,
 		1u,								// deUint32					commandBufferCount;
 		&m_cmdBuffer.get(),				// const VkCommandBuffer*	pCommandBuffers;
 		0u,								// deUint32					signalSemaphoreCount;

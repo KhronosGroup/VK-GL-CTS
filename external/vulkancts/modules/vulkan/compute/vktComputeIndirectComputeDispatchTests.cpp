@@ -272,7 +272,6 @@ tcu::TestStatus IndirectDispatchInstanceBufferUpload::iterate (void)
 
 	const vk::VkBufferMemoryBarrier ssboPostBarrier = makeBufferMemoryBarrier(
 		vk::VK_ACCESS_SHADER_WRITE_BIT, vk::VK_ACCESS_HOST_READ_BIT, *resultBuffer, 0ull, resultBufferSize);
-	const void* const postBarriers[] = { &ssboPostBarrier };
 
 	// Create command buffer
 	const vk::Unique<vk::VkCommandPool> cmdPool(makeCommandPool(m_device_interface, m_device, m_queueFamilyIndex));
@@ -317,7 +316,10 @@ tcu::TestStatus IndirectDispatchInstanceBufferUpload::iterate (void)
 	}
 
 	// Insert memory barrier
-	m_device_interface.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT, vk::VK_FALSE, DE_LENGTH_OF_ARRAY(postBarriers), postBarriers);
+	m_device_interface.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT, (vk::VkDependencyFlags)0,
+										  0, (const vk::VkMemoryBarrier*)DE_NULL,
+										  1, &ssboPostBarrier,
+										  0, (const vk::VkImageMemoryBarrier*)DE_NULL);
 
 	// End recording commands
 	endCommandBuffer(m_device_interface, *cmdBuffer);
@@ -496,8 +498,6 @@ void IndirectDispatchInstanceBufferGenerate::fillIndirectBufferData (const vk::V
 	const vk::VkBufferMemoryBarrier bufferBarrier = makeBufferMemoryBarrier(
 		vk::VK_ACCESS_SHADER_WRITE_BIT, vk::VK_ACCESS_INDIRECT_COMMAND_READ_BIT, *indirectBuffer, 0ull, m_bufferSize);
 
-	const void* const postBarriers[] = { &bufferBarrier };
-
 	// Bind compute pipeline
 	m_device_interface.cmdBindPipeline(commandBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *m_computePipeline);
 
@@ -508,7 +508,10 @@ void IndirectDispatchInstanceBufferGenerate::fillIndirectBufferData (const vk::V
 	m_device_interface.cmdDispatch(commandBuffer, 1u, 1u, 1u);
 
 	// Insert memory barrier
-	m_device_interface.cmdPipelineBarrier(commandBuffer, vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, vk::VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT, vk::VK_FALSE, DE_LENGTH_OF_ARRAY(postBarriers), postBarriers);
+	m_device_interface.cmdPipelineBarrier(commandBuffer, vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, vk::VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT, (vk::VkDependencyFlags)0,
+										  0, (const vk::VkMemoryBarrier*)DE_NULL,
+										  1, &bufferBarrier,
+										  0, (const vk::VkImageMemoryBarrier*)DE_NULL);
 }
 
 class IndirectDispatchCaseBufferGenerate : public IndirectDispatchCaseBufferUpload

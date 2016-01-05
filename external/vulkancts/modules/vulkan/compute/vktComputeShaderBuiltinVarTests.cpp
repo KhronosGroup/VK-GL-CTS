@@ -449,8 +449,6 @@ tcu::TestStatus	ComputeBuiltinVarInstance::iterate (void)
 	const VkBufferMemoryBarrier bufferBarrier = makeBufferMemoryBarrier(
 		VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, *resultBuffer, 0ull, resultBufferSize);
 
-	const void* const postBarrier[] = { &bufferBarrier };
-
 	const Unique<VkCommandPool> cmdPool(makeCommandPool(m_vki, m_device, m_queueFamilyIndex));
 	const Unique<VkCommandBuffer> cmdBuffer(makeCommandBuffer(m_vki, m_device, *cmdPool));
 
@@ -475,7 +473,10 @@ tcu::TestStatus	ComputeBuiltinVarInstance::iterate (void)
 	// Dispatch indirect compute command
 	m_vki.cmdDispatch(*cmdBuffer, subCase.numWorkGroups()[0], subCase.numWorkGroups()[1], subCase.numWorkGroups()[2]);
 
-	m_vki.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, VK_FALSE, 1, postBarrier);
+	m_vki.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0,
+							 0, (const VkMemoryBarrier*)DE_NULL,
+							 1, &bufferBarrier,
+							 0, (const VkImageMemoryBarrier*)DE_NULL);
 
 	// End recording commands
 	endCommandBuffer(m_vki, *cmdBuffer);

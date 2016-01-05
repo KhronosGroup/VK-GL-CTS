@@ -64,7 +64,7 @@ Move<VkPipeline> createComputePipeline (const DeviceInterface&				vk,
 Move<VkCommandBuffer> allocateCommandBuffer (const DeviceInterface& vk, VkDevice device, const VkCommandBufferAllocateInfo* pAllocateInfo)
 {
 	VkCommandBuffer object = 0;
-	DE_ASSERT(pAllocateInfo->bufferCount == 1u);
+	DE_ASSERT(pAllocateInfo->commandBufferCount == 1u);
 	VK_CHECK(vk.allocateCommandBuffers(device, pAllocateInfo, &object));
 	return Move<VkCommandBuffer>(check<VkCommandBuffer>(object), Deleter<VkCommandBuffer>(vk, device, pAllocateInfo->commandPool));
 }
@@ -72,7 +72,7 @@ Move<VkCommandBuffer> allocateCommandBuffer (const DeviceInterface& vk, VkDevice
 Move<VkDescriptorSet> allocateDescriptorSet (const DeviceInterface& vk, VkDevice device, const VkDescriptorSetAllocateInfo* pAllocateInfo)
 {
 	VkDescriptorSet object = 0;
-	DE_ASSERT(pAllocateInfo->setLayoutCount == 1u);
+	DE_ASSERT(pAllocateInfo->descriptorSetCount == 1u);
 	VK_CHECK(vk.allocateDescriptorSets(device, pAllocateInfo, &object));
 	return Move<VkDescriptorSet>(check<VkDescriptorSet>(object), Deleter<VkDescriptorSet>(vk, device, pAllocateInfo->descriptorPool));
 }

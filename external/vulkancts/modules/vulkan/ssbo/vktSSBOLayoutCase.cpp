@@ -2065,12 +2065,7 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 		vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	//	VkStructureType				sType;
 		DE_NULL,											//	const void*					pNext;
 		0u,													//	VkCmdBufferOptimizeFlags	flags;
-		DE_NULL,											//	VkRenderPass				renderPass;
-		0u,													//	deUint32					subpass;
-		DE_NULL,											//	VkFramebuffer				framebuffer;
-		vk::VK_FALSE,
-		(vk::VkQueryControlFlags)0,
-		(vk::VkQueryPipelineStatisticFlags)0,
+		(const vk::VkCommandBufferInheritanceInfo*)DE_NULL,
 	};
 	VK_CHECK(vk.beginCommandBuffer(*cmdBuffer, &cmdBufBeginParams));
 
@@ -2095,6 +2090,7 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 		DE_NULL,
 		0u,
 		(const vk::VkSemaphore*)DE_NULL,
+		(const vk::VkPipelineStageFlags*)DE_NULL,
 		1u,
 		&cmdBuffer.get(),
 		0u,

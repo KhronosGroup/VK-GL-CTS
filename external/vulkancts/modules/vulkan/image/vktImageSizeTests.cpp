@@ -303,8 +303,6 @@ tcu::TestStatus SizeTestInstance::iterate (void)
 		VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT,
 		m_resultBuffer->get(), 0ull, m_resultBufferSizeBytes);
 
-	const void* const barriersAfter[] = { &shaderWriteBarrier };
-
 	// Create the pipeline.
 
 	const Unique<VkShaderModule> shaderModule(createShaderModule(vk, device, m_context.getBinaryCollection().get("comp"), 0));
@@ -325,7 +323,7 @@ tcu::TestStatus SizeTestInstance::iterate (void)
 
 	commandBeforeCompute(*cmdBuffer);
 	vk.cmdDispatch(*cmdBuffer, 1, 1, 1);
-	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, DE_FALSE, DE_LENGTH_OF_ARRAY(barriersAfter), barriersAfter);
+	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &shaderWriteBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
 
 	endCommandBuffer(vk, *cmdBuffer);
 
@@ -418,9 +416,7 @@ void ImageSizeTestInstance::commandBeforeCompute (const VkCommandBuffer cmdBuffe
 		VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL,
 		m_image->get(), subresourceRange);
 
-	const void* const barriers[] = { &barrierSetImageLayout };
-
-	vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, DE_FALSE, DE_LENGTH_OF_ARRAY(barriers), barriers);
+	vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &barrierSetImageLayout);
 }
 
 class BufferSizeTestInstance : public SizeTestInstance
