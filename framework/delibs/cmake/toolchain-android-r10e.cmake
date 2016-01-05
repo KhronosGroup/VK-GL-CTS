@@ -140,7 +140,17 @@ if (DE_COMPILER STREQUAL "DE_COMPILER_GCC")
 	set(TARGET_C_FLAGS		"-mandroid ${TARGET_C_FLAGS}")
 
 elseif (DE_COMPILER STREQUAL "DE_COMPILER_CLANG")
-	set(LLVM_PATH "${ANDROID_NDK_PATH}/toolchains/llvm-3.6/prebuilt/${ANDROID_NDK_HOST_OS}/")
+	if (NOT DEFINED LLVM_VERSION)
+		if (ANDROID_NDK_HOST_OS STREQUAL "windows" OR
+			ANDROID_NDK_HOST_OS STREQUAL "windows-x86_64")
+			# Windows NDK prebuilts don't include llvm-ar tool in version 3.6
+			set(LLVM_VERSION "3.5")
+		else ()
+			set(LLVM_VERSION "3.6")
+		endif ()
+	endif ()
+
+	set(LLVM_PATH "${ANDROID_NDK_PATH}/toolchains/llvm-${LLVM_VERSION}/prebuilt/${ANDROID_NDK_HOST_OS}/")
 
 	if (ANDROID_NDK_HOST_OS STREQUAL "linux-x86" OR
 		ANDROID_NDK_HOST_OS STREQUAL "linux-x86_64" OR
@@ -150,7 +160,8 @@ elseif (DE_COMPILER STREQUAL "DE_COMPILER_CLANG")
 		cmake_force_cxx_compiler("${LLVM_PATH}bin/clang++"		Clang)
 		set(CMAKE_AR "${LLVM_PATH}/bin/llvm-ar" CACHE FILEPATH "Archiver")
 		set(CMAKE_RANLIB "${CROSS_COMPILE}ranlib" CACHE FILEPATH "Indexer")
-	elseif (ANDROID_NDK_HOST_OS STREQUAL "windows")
+	elseif (ANDROID_NDK_HOST_OS STREQUAL "windows" OR
+			ANDROID_NDK_HOST_OS STREQUAL "windows-x86_64")
 		cmake_force_c_compiler("${LLVM_PATH}bin/clang.exe"		Clang)
 		cmake_force_cxx_compiler("${LLVM_PATH}bin/clang++.exe"	Clang)
 		set(CMAKE_AR "${LLVM_PATH}bin/llvm-ar.exe" CACHE FILEPATH "Archiver")

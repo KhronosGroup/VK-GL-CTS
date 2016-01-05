@@ -211,7 +211,7 @@ def getExtraBuildArgs (generator):
 
 NDK_HOST_OS_NAMES = [
 	"windows",
-	"windows_x86-64",
+	"windows-x86_64",
 	"darwin-x86",
 	"darwin-x86_64",
 	"linux-x86",
