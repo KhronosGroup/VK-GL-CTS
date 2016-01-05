@@ -832,6 +832,14 @@ vk::VkDeviceSize findMaxBufferSize (const vk::DeviceInterface&		vkd,
 	vk::VkDeviceSize lastSuccess = 0;
 	vk::VkDeviceSize currentSize = memorySize / 2;
 
+	{
+		const vk::Unique<vk::VkBuffer>  buffer			(createBuffer(vkd, device, memorySize, usage, sharingMode, queueFamilies));
+		const vk::VkMemoryRequirements  requirements	(vk::getBufferMemoryRequirements(vkd, device, *buffer));
+
+		if (requirements.size == memorySize && requirements.memoryTypeBits & (0x1u << memoryTypeIndex))
+			return memorySize;
+	}
+
 	for (vk::VkDeviceSize stepSize = memorySize / 4; currentSize > 0; stepSize /= 2)
 	{
 		const vk::Unique<vk::VkBuffer>	buffer			(createBuffer(vkd, device, currentSize, usage, sharingMode, queueFamilies));
@@ -2111,9 +2119,9 @@ void FillBuffer::verify (VerifyContext& context, size_t)
 	for (size_t ndx = 0; ndx < m_bufferSize; ndx++)
 	{
 #if (DE_ENDIANNESS == DE_LITTLE_ENDIAN)
-		reference.set(ndx, (deUint8)(0xffu & (m_value >> (ndx % 4))));
+		reference.set(ndx, (deUint8)(0xffu & (m_value >> (8*(ndx % 4)))));
 #else
-		reference.set(ndx, (deUint8)(0xffu & (m_value >> (3 - (ndx % 4)))));
+		reference.set(ndx, (deUint8)(0xffu & (m_value >> (8*(3 - (ndx % 4))))));
 #endif
 	}
 }
@@ -4738,7 +4746,7 @@ void RenderBuffer::prepare (PrepareRenderPassContext& context)
 			{
 				0,
 				0,
-				vk::VK_FORMAT_R8G8B8_UNORM,
+				vk::VK_FORMAT_R8G8_UNORM,
 				0
 			}
 		};
@@ -6371,7 +6379,7 @@ struct AddPrograms
 				"layout(location = 0) in highp vec2 a_position;\n"
 				"void main (void) {\n"
 				"\tgl_PointSize = 1.0;\n"
-				"\tgl_Position = vec4(2.0 * a_position - vec2(1.0), 0.0, 1.0);\n"
+				"\tgl_Position = vec4(1.999 * a_position - vec2(0.999), 0.0, 1.0);\n"
 				"}\n";
 
 			sources.glslSources.add("vertex-buffer.vert")
@@ -6387,7 +6395,7 @@ struct AddPrograms
 				"void main (void) {\n"
 				"\tgl_PointSize = 1.0;\n"
 				"\thighp vec2 pos = vec2(gl_VertexID % 256, gl_VertexID / 256) / vec2(255.0);\n"
-				"\tgl_Position = vec4(2.0 * pos - vec2(1.0), 0.0, 1.0);\n"
+				"\tgl_Position = vec4(1.999 * pos - vec2(0.999), 0.0, 1.0);\n"
 				"}\n";
 
 			sources.glslSources.add("index-buffer.vert")
