@@ -4505,10 +4505,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 	bool										supportsTessellation	= false;
 	bool										hasTessellation         = false;
 
-	VkPhysicalDeviceFeatures features;
-	memset(&features, 0x0, sizeof(VkPhysicalDeviceFeatures));
-
-	context.getInstanceInterface().getPhysicalDeviceFeatures(context.getPhysicalDevice(), &features);
+	const VkPhysicalDeviceFeatures&				features				= context.getDeviceFeatures();
 	supportsGeometry		= features.geometryShader;
 	supportsTessellation	= features.tessellationShader;
 	hasTessellation			= (instance.requiredStages & VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT) ||
