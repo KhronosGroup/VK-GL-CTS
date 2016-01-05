@@ -3158,39 +3158,34 @@ void getInvertedDefaultColors (RGBA (&colors)[4])
 // by setting up the mapping of modules to their contained shaders and stages.
 // The inputs and expected outputs are given by inputColors and outputColors
 template<size_t N>
-InstanceContext createInstanceContext (const ShaderElement (&elements)[N], VkShaderStageFlagBits requiredStages, const RGBA (&inputColors)[4], const RGBA (&outputColors)[4], const map<string, string>& testCodeFragments, const StageToSpecConstantMap& specConstants)
+InstanceContext createInstanceContext (const ShaderElement (&elements)[N], const RGBA (&inputColors)[4], const RGBA (&outputColors)[4], const map<string, string>& testCodeFragments, const StageToSpecConstantMap& specConstants)
 {
 	InstanceContext ctx (inputColors, outputColors, testCodeFragments, specConstants);
 	for (size_t i = 0; i < N; ++i)
 	{
 		ctx.moduleMap[elements[i].moduleName].push_back(std::make_pair(elements[i].entryName, elements[i].stage));
-		if (elements[i].stage == VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT ||
-			elements[i].stage == VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT)
-		{
-			ctx.hasTessellation = true;
-		}
+		ctx.requiredStages = static_cast<VkShaderStageFlagBits>(ctx.requiredStages | elements[i].stage);
 	}
-	ctx.requiredStages = requiredStages;
 	return ctx;
 }
 
 template<size_t N>
-inline InstanceContext createInstanceContext (const ShaderElement (&elements)[N], VkShaderStageFlagBits requiredStages,	const RGBA (&inputColors)[4], const RGBA (&outputColors)[4], const map<string, string>& testCodeFragments)
+inline InstanceContext createInstanceContext (const ShaderElement (&elements)[N], RGBA (&inputColors)[4], const RGBA (&outputColors)[4], const map<string, string>& testCodeFragments)
 {
-	return createInstanceContext(elements, requiredStages, inputColors, outputColors, testCodeFragments, StageToSpecConstantMap());
+	return createInstanceContext(elements, inputColors, outputColors, testCodeFragments, StageToSpecConstantMap());
 }
 
 // The same as createInstanceContext above, but with default colors.
 template<size_t N>
-InstanceContext createInstanceContext (const ShaderElement (&elements)[N], VkShaderStageFlagBits requiredStages, const map<string, string>& testCodeFragments)
+InstanceContext createInstanceContext (const ShaderElement (&elements)[N], const map<string, string>& testCodeFragments)
 {
 	RGBA defaultColors[4];
 	getDefaultColors(defaultColors);
-	return createInstanceContext(elements, requiredStages, defaultColors, defaultColors, testCodeFragments);
+	return createInstanceContext(elements, defaultColors, defaultColors, testCodeFragments);
 }
 
 // For the current InstanceContext, constructs the required modules and shader stage create infos.
-void createPipelineShaderStages (const DeviceInterface& vk, const VkDevice vkDevice, bool supportsGeometry, bool supportsTessellation, InstanceContext& instance, Context& context, vector<ModuleHandleSp>& modules, vector<VkPipelineShaderStageCreateInfo>& createInfos)
+void createPipelineShaderStages (const DeviceInterface& vk, const VkDevice vkDevice, InstanceContext& instance, Context& context, vector<ModuleHandleSp>& modules, vector<VkPipelineShaderStageCreateInfo>& createInfos)
 {
 	for (ModuleMap::const_iterator moduleNdx = instance.moduleMap.begin(); moduleNdx != instance.moduleMap.end(); ++moduleNdx)
 	{
@@ -3199,24 +3194,6 @@ void createPipelineShaderStages (const DeviceInterface& vk, const VkDevice vkDev
 		for (vector<EntryToStage>::const_iterator shaderNdx = moduleNdx->second.begin(); shaderNdx != moduleNdx->second.end(); ++shaderNdx)
 		{
 			const EntryToStage&						stage			= *shaderNdx;
-
-			if (!supportsGeometry)
-			{
-				if (stage.second == VK_SHADER_STAGE_GEOMETRY_BIT)
-				{
-					continue;
-				}
-			}
-
-			if (!supportsTessellation)
-			{
-				if (stage.second == VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT ||
-					stage.second == VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT)
-				{
-					continue;
-				}
-			}
-			
 			const VkPipelineShaderStageCreateInfo	shaderParam		=
 			{
 				VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	//	VkStructureType			sType;
@@ -3791,9 +3768,6 @@ void addShaderCodeCustomVertex(vk::SourceCollections& dst, InstanceContext conte
 {
 	map<string, string> passthru = passthruFragments();
 	dst.spirvAsmSources.add("vert") << makeVertexShaderAssembly(context.testCodeFragments);
-	dst.spirvAsmSources.add("tessc") << makeTessControlShaderAssembly(passthru);
-	dst.spirvAsmSources.add("tesse") << makeTessEvalShaderAssembly(passthru);
-	dst.spirvAsmSources.add("geom") << makeGeometryShaderAssembly(passthru);
 	dst.spirvAsmSources.add("frag") << makeFragmentShaderAssembly(passthru);
 }
 
@@ -3806,7 +3780,6 @@ void addShaderCodeCustomTessControl(vk::SourceCollections& dst, InstanceContext 
 	dst.spirvAsmSources.add("vert") << makeVertexShaderAssembly(passthru);
 	dst.spirvAsmSources.add("tessc") << makeTessControlShaderAssembly(context.testCodeFragments);
 	dst.spirvAsmSources.add("tesse") << makeTessEvalShaderAssembly(passthru);
-	dst.spirvAsmSources.add("geom") << makeGeometryShaderAssembly(passthru);
 	dst.spirvAsmSources.add("frag") << makeFragmentShaderAssembly(passthru);
 }
 
@@ -3819,7 +3792,6 @@ void addShaderCodeCustomTessEval(vk::SourceCollections& dst, InstanceContext con
 	dst.spirvAsmSources.add("vert") << makeVertexShaderAssembly(passthru);
 	dst.spirvAsmSources.add("tessc") << makeTessControlShaderAssembly(passthru);
 	dst.spirvAsmSources.add("tesse") << makeTessEvalShaderAssembly(context.testCodeFragments);
-	dst.spirvAsmSources.add("geom") << makeGeometryShaderAssembly(passthru);
 	dst.spirvAsmSources.add("frag") << makeFragmentShaderAssembly(passthru);
 }
 
@@ -3829,8 +3801,6 @@ void addShaderCodeCustomGeometry(vk::SourceCollections& dst, InstanceContext con
 {
 	map<string, string> passthru = passthruFragments();
 	dst.spirvAsmSources.add("vert") << makeVertexShaderAssembly(passthru);
-	dst.spirvAsmSources.add("tessc") << makeTessControlShaderAssembly(passthru);
-	dst.spirvAsmSources.add("tesse") << makeTessEvalShaderAssembly(passthru);
 	dst.spirvAsmSources.add("geom") << makeGeometryShaderAssembly(context.testCodeFragments);
 	dst.spirvAsmSources.add("frag") << makeFragmentShaderAssembly(passthru);
 }
@@ -3841,9 +3811,6 @@ void addShaderCodeCustomFragment(vk::SourceCollections& dst, InstanceContext con
 {
 	map<string, string> passthru = passthruFragments();
 	dst.spirvAsmSources.add("vert") << makeVertexShaderAssembly(passthru);
-	dst.spirvAsmSources.add("tessc") << makeTessControlShaderAssembly(passthru);
-	dst.spirvAsmSources.add("tesse") << makeTessEvalShaderAssembly(passthru);
-	dst.spirvAsmSources.add("geom") << makeGeometryShaderAssembly(passthru);
 	dst.spirvAsmSources.add("frag") << makeFragmentShaderAssembly(context.testCodeFragments);
 }
 
@@ -4536,6 +4503,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 	const int									seed					= context.getTestContext().getCommandLine().getBaseSeed() ^ testSpecificSeed;
 	bool										supportsGeometry		= false;
 	bool										supportsTessellation	= false;
+	bool										hasTessellation         = false;
 
 	VkPhysicalDeviceFeatures features;
 	memset(&features, 0x0, sizeof(VkPhysicalDeviceFeatures));
@@ -4543,13 +4511,17 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 	context.getInstanceInterface().getPhysicalDeviceFeatures(context.getPhysicalDevice(), &features);
 	supportsGeometry		= features.geometryShader;
 	supportsTessellation	= features.tessellationShader;
+	hasTessellation			= (instance.requiredStages & VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT) ||
+								(instance.requiredStages & VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT);
 
-	if (((instance.requiredStages & VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT) ||
-		(instance.requiredStages & VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT)) && !supportsTessellation) {
+	if (hasTessellation && !supportsTessellation)
+	{
 		throw tcu::NotSupportedError(std::string("Tessellation not supported"));
 	}
+
 	if ((instance.requiredStages & VK_SHADER_STAGE_GEOMETRY_BIT) &&
-		!supportsGeometry) {
+		!supportsGeometry)
+	{
 		throw tcu::NotSupportedError(std::string("Geometry not supported"));
 	}
 
@@ -4725,7 +4697,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 	// We need these vectors to make sure that information about specialization constants for each stage can outlive createGraphicsPipeline().
 	vector<vector<VkSpecializationMapEntry> >	specConstantEntries;
 	vector<VkSpecializationInfo>				specializationInfos;
-	createPipelineShaderStages(vk, vkDevice, supportsGeometry, supportsTessellation, instance, context, modules, shaderStageParams);
+	createPipelineShaderStages(vk, vkDevice, instance, context, modules, shaderStageParams);
 
 	// And we don't want the reallocation of these vectors to invalidate pointers pointing to their contents.
 	specConstantEntries.reserve(shaderStageParams.size());
@@ -4853,7 +4825,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		0.0f,														//	float			slopeScaledDepthBias;
 		1.0f,														//	float			lineWidth;
 	};
-	const VkPrimitiveTopology topology = (instance.hasTessellation && supportsTessellation)? VK_PRIMITIVE_TOPOLOGY_PATCH_LIST: VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+	const VkPrimitiveTopology topology = hasTessellation? VK_PRIMITIVE_TOPOLOGY_PATCH_LIST: VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 	const VkPipelineInputAssemblyStateCreateInfo	inputAssemblyParams	=
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,	//	VkStructureType		sType;
@@ -4936,7 +4908,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		3u
 	};
 
-	const VkPipelineTessellationStateCreateInfo* tessellationInfo	=	(instance.hasTessellation && supportsTessellation) ? &tessellationState: DE_NULL;
+	const VkPipelineTessellationStateCreateInfo* tessellationInfo	=	hasTessellation ? &tessellationState: DE_NULL;
 	const VkGraphicsPipelineCreateInfo		pipelineParams			=
 	{
 		VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,		//	VkStructureType									sType;
@@ -5209,11 +5181,23 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 
 void createTestsForAllStages (const std::string& name, const RGBA (&inputColors)[4], const RGBA (&outputColors)[4], const map<string, string>& testCodeFragments, const vector<deInt32>& specConstants, tcu::TestCaseGroup* tests)
 {
-	const ShaderElement		pipelineStages[]				=
+	const ShaderElement		vertFragPipelineStages[]		=
+	{
+		ShaderElement("vert", "main", VK_SHADER_STAGE_VERTEX_BIT),
+		ShaderElement("frag", "main", VK_SHADER_STAGE_FRAGMENT_BIT),
+	};
+
+	const ShaderElement		tessPipelineStages[]			=
 	{
 		ShaderElement("vert", "main", VK_SHADER_STAGE_VERTEX_BIT),
 		ShaderElement("tessc", "main", VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT),
 		ShaderElement("tesse", "main", VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT),
+		ShaderElement("frag", "main", VK_SHADER_STAGE_FRAGMENT_BIT),
+	};
+
+	const ShaderElement		geomPipelineStages[]				=
+	{
+		ShaderElement("vert", "main", VK_SHADER_STAGE_VERTEX_BIT),
 		ShaderElement("geom", "main", VK_SHADER_STAGE_GEOMETRY_BIT),
 		ShaderElement("frag", "main", VK_SHADER_STAGE_FRAGMENT_BIT),
 	};
@@ -5222,27 +5206,27 @@ void createTestsForAllStages (const std::string& name, const RGBA (&inputColors)
 
 	specConstantMap[VK_SHADER_STAGE_VERTEX_BIT] = specConstants;
 	addFunctionCaseWithPrograms<InstanceContext>(tests, name + "-vert", "", addShaderCodeCustomVertex, runAndVerifyDefaultPipeline,
-												 createInstanceContext(pipelineStages, VK_SHADER_STAGE_VERTEX_BIT, inputColors, outputColors, testCodeFragments, specConstantMap));
+												 createInstanceContext(vertFragPipelineStages, inputColors, outputColors, testCodeFragments, specConstantMap));
 
 	specConstantMap.clear();
 	specConstantMap[VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT] = specConstants;
 	addFunctionCaseWithPrograms<InstanceContext>(tests, name + "-tessc", "", addShaderCodeCustomTessControl, runAndVerifyDefaultPipeline,
-												 createInstanceContext(pipelineStages, (VkShaderStageFlagBits)(VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT | VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT), inputColors, outputColors, testCodeFragments, specConstantMap));
+												 createInstanceContext(tessPipelineStages, inputColors, outputColors, testCodeFragments, specConstantMap));
 
 	specConstantMap.clear();
 	specConstantMap[VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT] = specConstants;
 	addFunctionCaseWithPrograms<InstanceContext>(tests, name + "-tesse", "", addShaderCodeCustomTessEval, runAndVerifyDefaultPipeline,
-												 createInstanceContext(pipelineStages, (VkShaderStageFlagBits)(VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT | VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT), inputColors, outputColors, testCodeFragments, specConstantMap));
+												 createInstanceContext(tessPipelineStages, inputColors, outputColors, testCodeFragments, specConstantMap));
 
 	specConstantMap.clear();
 	specConstantMap[VK_SHADER_STAGE_GEOMETRY_BIT] = specConstants;
 	addFunctionCaseWithPrograms<InstanceContext>(tests, name + "-geom", "", addShaderCodeCustomGeometry, runAndVerifyDefaultPipeline,
-												 createInstanceContext(pipelineStages, VK_SHADER_STAGE_GEOMETRY_BIT, inputColors, outputColors, testCodeFragments, specConstantMap));
+												 createInstanceContext(geomPipelineStages, inputColors, outputColors, testCodeFragments, specConstantMap));
 
 	specConstantMap.clear();
 	specConstantMap[VK_SHADER_STAGE_FRAGMENT_BIT] = specConstants;
 	addFunctionCaseWithPrograms<InstanceContext>(tests, name + "-frag", "", addShaderCodeCustomFragment, runAndVerifyDefaultPipeline,
-												 createInstanceContext(pipelineStages, VK_SHADER_STAGE_FRAGMENT_BIT, inputColors, outputColors, testCodeFragments, specConstantMap));
+												 createInstanceContext(vertFragPipelineStages, inputColors, outputColors, testCodeFragments, specConstantMap));
 }
 
 inline void createTestsForAllStages (const std::string& name, const RGBA (&inputColors)[4], const RGBA (&outputColors)[4], const map<string, string>& testCodeFragments, tcu::TestCaseGroup* tests)
@@ -7006,7 +6990,7 @@ tcu::TestCaseGroup* createModuleTests(tcu::TestContext& testCtx)
 
 	getDefaultColors(defaultColors);
 	getInvertedDefaultColors(invertedColors);
-	addFunctionCaseWithPrograms<InstanceContext>(moduleTests.get(), "same-module", "", createCombinedModule, runAndVerifyDefaultPipeline, createInstanceContext(combinedPipeline, VK_SHADER_STAGE_ALL_GRAPHICS, map<string, string>()));
+	addFunctionCaseWithPrograms<InstanceContext>(moduleTests.get(), "same-module", "", createCombinedModule, runAndVerifyDefaultPipeline, createInstanceContext(combinedPipeline, map<string, string>()));
 
 	const char* numbers[] =
 	{
@@ -7030,11 +7014,11 @@ tcu::TestCaseGroup* createModuleTests(tcu::TestContext& testCtx)
 		// If there are an odd number, the color should be flipped.
 		if ((permutation.vertexPermutation + permutation.geometryPermutation + permutation.tesscPermutation + permutation.tessePermutation + permutation.fragmentPermutation) % 2 == 0)
 		{
-			addFunctionCaseWithPrograms<InstanceContext>(moduleTests.get(), name, "", createMultipleEntries, runAndVerifyDefaultPipeline, createInstanceContext(pipeline, VK_SHADER_STAGE_ALL_GRAPHICS, defaultColors, defaultColors, map<string, string>()));
+			addFunctionCaseWithPrograms<InstanceContext>(moduleTests.get(), name, "", createMultipleEntries, runAndVerifyDefaultPipeline, createInstanceContext(pipeline, defaultColors, defaultColors, map<string, string>()));
 		}
 		else
 		{
-			addFunctionCaseWithPrograms<InstanceContext>(moduleTests.get(), name, "", createMultipleEntries, runAndVerifyDefaultPipeline, createInstanceContext(pipeline, VK_SHADER_STAGE_ALL_GRAPHICS, defaultColors, invertedColors, map<string, string>()));
+			addFunctionCaseWithPrograms<InstanceContext>(moduleTests.get(), name, "", createMultipleEntries, runAndVerifyDefaultPipeline, createInstanceContext(pipeline, defaultColors, invertedColors, map<string, string>()));
 		}
 	}
 	return moduleTests.release();
@@ -7161,7 +7145,7 @@ void addTessCtrlTest(tcu::TestCaseGroup* group, const char* name, const map<stri
 
 	addFunctionCaseWithPrograms<InstanceContext>(group, name, "", addShaderCodeCustomTessControl,
 												 runAndVerifyDefaultPipeline, createInstanceContext(
-													 pipelineStages, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, defaultColors, defaultColors, fragments, StageToSpecConstantMap()));
+													 pipelineStages, defaultColors, defaultColors, fragments, StageToSpecConstantMap()));
 }
 
 // A collection of tests putting OpControlBarrier in places GLSL forbids but SPIR-V allows.
