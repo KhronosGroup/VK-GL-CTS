@@ -35,6 +35,7 @@
  * \brief Opaque type (sampler, buffer, atomic counter, ...) indexing tests.
  *//*--------------------------------------------------------------------*/
 
+#include "tcuDefs.hpp"
 #include "tcuTestCase.hpp"
 
 namespace vkt
@@ -42,18 +43,7 @@ namespace vkt
 namespace shaderexecutor
 {
 
-class OpaqueTypeIndexingTests : public tcu::TestCaseGroup
-{
-public:
-								OpaqueTypeIndexingTests		(tcu::TestContext& testCtx);
-	virtual						~OpaqueTypeIndexingTests	(void);
-
-	virtual void				init						(void);
-
-private:
-								OpaqueTypeIndexingTests		(const OpaqueTypeIndexingTests&);
-	OpaqueTypeIndexingTests&	operator=					(const OpaqueTypeIndexingTests&);
-};
+tcu::TestCaseGroup*		createOpaqueTypeIndexingTests	(tcu::TestContext& testCtx);
 
 } // shaderexecutor
 } // vkt

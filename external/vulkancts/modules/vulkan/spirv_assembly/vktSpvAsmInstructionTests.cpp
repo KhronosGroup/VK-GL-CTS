@@ -5224,27 +5224,27 @@ void createTestsForAllStages (const std::string& name, const RGBA (&inputColors)
 	StageToSpecConstantMap	specConstantMap;
 
 	specConstantMap[VK_SHADER_STAGE_VERTEX_BIT] = specConstants;
-	addFunctionCaseWithPrograms<InstanceContext>(tests, name + "-vert", "", addShaderCodeCustomVertex, runAndVerifyDefaultPipeline,
+	addFunctionCaseWithPrograms<InstanceContext>(tests, name + "_vert", "", addShaderCodeCustomVertex, runAndVerifyDefaultPipeline,
 												 createInstanceContext(pipelineStages, inputColors, outputColors, testCodeFragments, specConstantMap));
 
 	specConstantMap.clear();
 	specConstantMap[VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT] = specConstants;
-	addFunctionCaseWithPrograms<InstanceContext>(tests, name + "-tessc", "", addShaderCodeCustomTessControl, runAndVerifyDefaultPipeline,
+	addFunctionCaseWithPrograms<InstanceContext>(tests, name + "_tessc", "", addShaderCodeCustomTessControl, runAndVerifyDefaultPipeline,
 												 createInstanceContext(pipelineStages, inputColors, outputColors, testCodeFragments, specConstantMap));
 
 	specConstantMap.clear();
 	specConstantMap[VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT] = specConstants;
-	addFunctionCaseWithPrograms<InstanceContext>(tests, name + "-tesse", "", addShaderCodeCustomTessEval, runAndVerifyDefaultPipeline,
+	addFunctionCaseWithPrograms<InstanceContext>(tests, name + "_tesse", "", addShaderCodeCustomTessEval, runAndVerifyDefaultPipeline,
 												 createInstanceContext(pipelineStages, inputColors, outputColors, testCodeFragments, specConstantMap));
 
 	specConstantMap.clear();
 	specConstantMap[VK_SHADER_STAGE_GEOMETRY_BIT] = specConstants;
-	addFunctionCaseWithPrograms<InstanceContext>(tests, name + "-geom", "", addShaderCodeCustomGeometry, runAndVerifyDefaultPipeline,
+	addFunctionCaseWithPrograms<InstanceContext>(tests, name + "_geom", "", addShaderCodeCustomGeometry, runAndVerifyDefaultPipeline,
 												 createInstanceContext(pipelineStages, inputColors, outputColors, testCodeFragments, specConstantMap));
 
 	specConstantMap.clear();
 	specConstantMap[VK_SHADER_STAGE_FRAGMENT_BIT] = specConstants;
-	addFunctionCaseWithPrograms<InstanceContext>(tests, name + "-frag", "", addShaderCodeCustomFragment, runAndVerifyDefaultPipeline,
+	addFunctionCaseWithPrograms<InstanceContext>(tests, name + "_frag", "", addShaderCodeCustomFragment, runAndVerifyDefaultPipeline,
 												 createInstanceContext(pipelineStages, inputColors, outputColors, testCodeFragments, specConstantMap));
 }
 
@@ -5322,7 +5322,7 @@ tcu::TestCaseGroup* createOpSourceContinuedTests (tcu::TestContext& testCtx)
 tcu::TestCaseGroup* createOpNoLineTests(tcu::TestContext& testCtx)
 {
 	RGBA								 defaultColors[4];
-	de::MovePtr<tcu::TestCaseGroup>		 opLineTests		 (new tcu::TestCaseGroup(testCtx, "opNoLine", "OpNoLine instruction"));
+	de::MovePtr<tcu::TestCaseGroup>		 opLineTests		 (new tcu::TestCaseGroup(testCtx, "opnoline", "OpNoLine instruction"));
 	map<string, string>					 fragments;
 	getDefaultColors(defaultColors);
 	fragments["debug"]			=
@@ -5369,7 +5369,7 @@ tcu::TestCaseGroup* createOpNoLineTests(tcu::TestContext& testCtx)
 		"OpLine %name 1 1\n"
 		"OpNoLine\n";
 
-	createTestsForAllStages("opNoLine", defaultColors, defaultColors, fragments, opLineTests.get());
+	createTestsForAllStages("opnoline", defaultColors, defaultColors, fragments, opLineTests.get());
 
 	return opLineTests.release();
 }
@@ -5378,7 +5378,7 @@ tcu::TestCaseGroup* createOpNoLineTests(tcu::TestContext& testCtx)
 tcu::TestCaseGroup* createOpLineTests(tcu::TestContext& testCtx)
 {
 	RGBA													defaultColors[4];
-	de::MovePtr<tcu::TestCaseGroup>							opLineTests			(new tcu::TestCaseGroup(testCtx, "opLine", "OpLine instruction"));
+	de::MovePtr<tcu::TestCaseGroup>							opLineTests			(new tcu::TestCaseGroup(testCtx, "opline", "OpLine instruction"));
 	map<string, string>										fragments;
 	std::vector<std::pair<std::string, std::string> >		problemStrings;
 
@@ -5431,7 +5431,7 @@ tcu::TestCaseGroup* createOpLineTests(tcu::TestContext& testCtx)
 	{
 		map<string, string> testFragments = fragments;
 		testFragments["debug"] += "%file_name = OpString \"" + problemStrings[i].second + "\"\n";
-		createTestsForAllStages(string("opLine") + "-" + problemStrings[i].first, defaultColors, defaultColors, testFragments, opLineTests.get());
+		createTestsForAllStages(string("opline") + "_" + problemStrings[i].first, defaultColors, defaultColors, testFragments, opLineTests.get());
 	}
 
 	return opLineTests.release();
@@ -5439,7 +5439,7 @@ tcu::TestCaseGroup* createOpLineTests(tcu::TestContext& testCtx)
 
 tcu::TestCaseGroup* createOpConstantNullTests(tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> opConstantNullTests		(new tcu::TestCaseGroup(testCtx, "opConstantNull", "OpConstantNull instruction"));
+	de::MovePtr<tcu::TestCaseGroup> opConstantNullTests		(new tcu::TestCaseGroup(testCtx, "opconstantnull", "OpConstantNull instruction"));
 	RGBA							colors[4];
 
 
@@ -5555,7 +5555,7 @@ tcu::TestCaseGroup* createOpConstantNullTests(tcu::TestContext& testCtx)
 }
 tcu::TestCaseGroup* createOpConstantCompositeTests(tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> opConstantCompositeTests		(new tcu::TestCaseGroup(testCtx, "opConstantComposite", "OpConstantComposite instruction"));
+	de::MovePtr<tcu::TestCaseGroup> opConstantCompositeTests		(new tcu::TestCaseGroup(testCtx, "opconstantcomposite", "OpConstantComposite instruction"));
 	RGBA							inputColors[4];
 	RGBA							outputColors[4];
 
@@ -6451,7 +6451,7 @@ tcu::TestCaseGroup* createNoContractionTests(tcu::TestContext& testCtx)
 
 tcu::TestCaseGroup* createMemoryAccessTests(tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> memoryAccessTests (new tcu::TestCaseGroup(testCtx, "opMemoryAccess", "Memory Semantics"));
+	de::MovePtr<tcu::TestCaseGroup> memoryAccessTests (new tcu::TestCaseGroup(testCtx, "opmemoryaccess", "Memory Semantics"));
 	RGBA							colors[4];
 
 	const char						constantsAndTypes[]	 =
@@ -6510,10 +6510,10 @@ tcu::TestCaseGroup* createMemoryAccessTests(tcu::TestContext& testCtx)
 		{ "none", "" },
 		{ "volatile", "Volatile" },
 		{ "aligned",  "Aligned 1" },
-		{ "volatile-aligned",  "Volatile|Aligned 1" },
-		{ "nontemporal-aligned",  "Nontemporal|Aligned 1" },
-		{ "volatile-nontemporal",  "Volatile|Nontemporal" },
-		{ "volatile-nontermporal-aligned",  "Volatile|Nontemporal|Aligned 1" },
+		{ "volatile_aligned",  "Volatile|Aligned 1" },
+		{ "nontemporal_aligned",  "Nontemporal|Aligned 1" },
+		{ "volatile_nontemporal",  "Volatile|Nontemporal" },
+		{ "volatile_nontermporal_aligned",  "Volatile|Nontemporal|Aligned 1" },
 	};
 
 	getHalfColorsFullAlpha(colors);
@@ -7011,7 +7011,7 @@ tcu::TestCaseGroup* createModuleTests(tcu::TestContext& testCtx)
 
 	getDefaultColors(defaultColors);
 	getInvertedDefaultColors(invertedColors);
-	addFunctionCaseWithPrograms<InstanceContext>(moduleTests.get(), "same-module", "", createCombinedModule, runAndVerifyDefaultPipeline, createInstanceContext(combinedPipeline, map<string, string>()));
+	addFunctionCaseWithPrograms<InstanceContext>(moduleTests.get(), "same_module", "", createCombinedModule, runAndVerifyDefaultPipeline, createInstanceContext(combinedPipeline, map<string, string>()));
 
 	const char* numbers[] =
 	{
@@ -7021,7 +7021,7 @@ tcu::TestCaseGroup* createModuleTests(tcu::TestContext& testCtx)
 	for (deInt8 idx = 0; idx < 32; ++idx)
 	{
 		ShaderPermutation			permutation		= getShaderPermutation(idx);
-		string						name			= string("vert") + numbers[permutation.vertexPermutation] + "-geom" + numbers[permutation.geometryPermutation] + "-tessc" + numbers[permutation.tesscPermutation] + "-tesse" + numbers[permutation.tessePermutation] + "-frag" + numbers[permutation.fragmentPermutation];
+		string						name			= string("vert") + numbers[permutation.vertexPermutation] + "_geom" + numbers[permutation.geometryPermutation] + "_tessc" + numbers[permutation.tesscPermutation] + "_tesse" + numbers[permutation.tessePermutation] + "_frag" + numbers[permutation.fragmentPermutation];
 		const ShaderElement			pipeline[]		=
 		{
 			ShaderElement("vert",	string("vert") +	numbers[permutation.vertexPermutation],		VK_SHADER_STAGE_VERTEX_BIT),
@@ -7083,7 +7083,7 @@ tcu::TestCaseGroup* createLoopTests(tcu::TestContext& testCtx)
 
 		"OpFunctionEnd\n"
 		;
-	createTestsForAllStages("single-block", defaultColors, defaultColors, fragments, testGroup.get());
+	createTestsForAllStages("single_block", defaultColors, defaultColors, fragments, testGroup.get());
 
 	// Body comprised of multiple basic blocks.
 	const StringTemplate multiBlock(
@@ -7134,12 +7134,12 @@ tcu::TestCaseGroup* createLoopTests(tcu::TestContext& testCtx)
 	// The Continue Target is the loop block itself.
 	continue_target["continue_target"] = "%loop";
 	fragments["testfun"] = multiBlock.specialize(continue_target);
-	createTestsForAllStages("multi-block-continue-construct", defaultColors, defaultColors, fragments, testGroup.get());
+	createTestsForAllStages("multi_block_continue_construct", defaultColors, defaultColors, fragments, testGroup.get());
 
 	// The Continue Target is at the end of the loop.
 	continue_target["continue_target"] = "%gather";
 	fragments["testfun"] = multiBlock.specialize(continue_target);
-	createTestsForAllStages("multi-block-loop-construct", defaultColors, defaultColors, fragments, testGroup.get());
+	createTestsForAllStages("multi_block_loop_construct", defaultColors, defaultColors, fragments, testGroup.get());
 
 	// A loop with continue statement.
 	fragments["testfun"] =
@@ -7281,7 +7281,7 @@ tcu::TestCaseGroup* createBarrierTests(tcu::TestContext& testCtx)
 		"OpControlBarrier %Workgroup %Workgroup %SequentiallyConsistent\n"
 		"OpReturnValue %param1\n"
 		"OpFunctionEnd\n";
-	addTessCtrlTest(testGroup.get(), "in-function", fragments);
+	addTessCtrlTest(testGroup.get(), "in_function", fragments);
 
 	// Common setup code for the following tests.
 	fragments["pre_main"] =
@@ -7323,7 +7323,7 @@ tcu::TestCaseGroup* createBarrierTests(tcu::TestContext& testCtx)
 		"%ret = OpPhi %v4f32 %param1 %case0 %wrong_branch_alert1 %case1 %wrong_branch_alert2 %switch_default\n"
 		"OpReturnValue %ret\n"
 		"OpFunctionEnd\n";
-	addTessCtrlTest(testGroup.get(), "in-switch", fragments);
+	addTessCtrlTest(testGroup.get(), "in_switch", fragments);
 
 	// Barriers inside if-then-else.
 	fragments["testfun"] =
@@ -7346,7 +7346,7 @@ tcu::TestCaseGroup* createBarrierTests(tcu::TestContext& testCtx)
 		"%ret = OpPhi %v4f32 %param1 %then %wrong_branch_alert %else\n"
 		"OpReturnValue %ret\n"
 		"OpFunctionEnd\n";
-	addTessCtrlTest(testGroup.get(), "in-if", fragments);
+	addTessCtrlTest(testGroup.get(), "in_if", fragments);
 
 	// A barrier after control-flow reconvergence, tempting the compiler to attempt something like this:
 	// http://lists.llvm.org/pipermail/llvm-dev/2009-October/026317.html.
@@ -7371,7 +7371,7 @@ tcu::TestCaseGroup* createBarrierTests(tcu::TestContext& testCtx)
 		"%ret = OpVectorInsertDynamic %v4f32 %param1 %val %zero\n"
 		"OpReturnValue %ret\n"
 		"OpFunctionEnd\n";
-	addTessCtrlTest(testGroup.get(), "after-divergent-if", fragments);
+	addTessCtrlTest(testGroup.get(), "after_divergent_if", fragments);
 
 	// A barrier inside a loop.
 	fragments["pre_main"] =
@@ -7402,7 +7402,7 @@ tcu::TestCaseGroup* createBarrierTests(tcu::TestContext& testCtx)
 		"%ret = OpVectorInsertDynamic %v4f32 %param1 %same %c_i32_0\n"
 		"OpReturnValue %ret\n"
 		"OpFunctionEnd\n";
-	addTessCtrlTest(testGroup.get(), "in-loop", fragments);
+	addTessCtrlTest(testGroup.get(), "in_loop", fragments);
 
 	return testGroup.release();
 }

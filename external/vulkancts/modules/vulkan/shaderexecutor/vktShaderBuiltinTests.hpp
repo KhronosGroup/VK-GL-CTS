@@ -1,3 +1,5 @@
+#ifndef _VKTSHADERBUILTINTESTS_HPP
+#define _VKTSHADERBUILTINTESTS_HPP
 /*------------------------------------------------------------------------
  * Vulkan Conformance Tests
  * ------------------------
@@ -30,38 +32,20 @@
  *
  *//*!
  * \file
- * \brief Vulkan shader render test cases
+ * \brief GLSL built-in tests
  *//*--------------------------------------------------------------------*/
 
-#include "vktShaderExecutorTests.hpp"
-
-#include "deUniquePtr.hpp"
-
-#include "vktShaderBuiltinConstantTests.hpp"
-#include "vktShaderBuiltinPrecisionTests.hpp"
-#include "vktShaderCommonFunctionTests.hpp"
-#include "vktShaderIntegerFunctionTests.hpp"
-#include "vktShaderPackingFunctionTests.hpp"
-#include "vktOpaqueTypeIndexingTests.hpp"
+#include "tcuDefs.hpp"
+#include "tcuTestCase.hpp"
 
 namespace vkt
 {
 namespace shaderexecutor
 {
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
-{
-	de::MovePtr<tcu::TestCaseGroup> shaderExecutorTests (new tcu::TestCaseGroup(testCtx, "ShaderExecutor", "shaderExecutor Tests"));
-
-	shaderExecutorTests->addChild(new BuiltinPrecisionTests(testCtx));
-	shaderExecutorTests->addChild(new ShaderBuiltinConstantTests(testCtx));
-	shaderExecutorTests->addChild(new ShaderCommonFunctionTests(testCtx));
-	shaderExecutorTests->addChild(new ShaderIntegerFunctionTests(testCtx));
-	shaderExecutorTests->addChild(new ShaderPackingFunctionTests(testCtx));
-	shaderExecutorTests->addChild(new OpaqueTypeIndexingTests(testCtx));
-
-	return shaderExecutorTests.release();
-}
+tcu::TestCaseGroup*		createBuiltinTests	(tcu::TestContext& testCtx);
 
 } // shaderexecutor
 } // vkt
+
+#endif // _VKTSHADERBUILTINTESTS_HPP

@@ -3,9 +3,8 @@ include_directories(..)
 set(DEQP_VK_SHADEREXECUTOR_SRCS
    vktShaderExecutor.cpp
    vktShaderExecutor.hpp
-   vktShaderExecutorTests.cpp
-   vktShaderExecutorTests.hpp
-
+   vktShaderBuiltinTests.cpp
+   vktShaderBuiltinTests.hpp
    vktShaderBuiltinConstantTests.cpp
    vktShaderBuiltinConstantTests.hpp
    vktShaderCommonFunctionTests.cpp

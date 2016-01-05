@@ -36,6 +36,7 @@
  *
  *//*--------------------------------------------------------------------*/
 
+#include "tcuDefs.hpp"
 #include "vktTestCase.hpp"
 
 namespace vkt
@@ -55,7 +56,6 @@ private:
 									BuiltinPrecisionTests				(const BuiltinPrecisionTests&);		// not allowed!
 	BuiltinPrecisionTests&			operator=							(const BuiltinPrecisionTests&);		// not allowed!
 };
-
 
 } // shaderexecutor
 } // vkt

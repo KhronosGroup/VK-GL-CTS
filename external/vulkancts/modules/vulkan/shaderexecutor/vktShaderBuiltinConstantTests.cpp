@@ -281,7 +281,7 @@ void createShaderBuiltinConstantCase(tcu::TestCaseGroup* group, tcu::TestContext
 } // anonymous
 
 ShaderBuiltinConstantTests::ShaderBuiltinConstantTests (tcu::TestContext& testCtx)
-	: TestCaseGroup(testCtx, "builtin_constants", "Built-in Constant Tests")
+	: TestCaseGroup(testCtx, "constant", "Built-in Constant Tests")
 {
 }
 

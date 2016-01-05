@@ -1256,7 +1256,18 @@ void AtomicCounterIndexingCase::createShaderSpec (void)
 	}
 }
 
-} // anonymous
+class OpaqueTypeIndexingTests : public tcu::TestCaseGroup
+{
+public:
+								OpaqueTypeIndexingTests		(tcu::TestContext& testCtx);
+	virtual						~OpaqueTypeIndexingTests	(void);
+
+	virtual void				init						(void);
+
+private:
+								OpaqueTypeIndexingTests		(const OpaqueTypeIndexingTests&);
+	OpaqueTypeIndexingTests&	operator=					(const OpaqueTypeIndexingTests&);
+};
 
 OpaqueTypeIndexingTests::OpaqueTypeIndexingTests (tcu::TestContext& testCtx)
 	: tcu::TestCaseGroup(testCtx, "opaque_type_indexing", "Opaque Type Indexing Tests")
@@ -1374,6 +1385,13 @@ void OpaqueTypeIndexingTests::init (void)
 			}
 		}
 	}
+}
+
+} // anonymous
+
+tcu::TestCaseGroup* createOpaqueTypeIndexingTests (tcu::TestContext& testCtx)
+{
+	return new OpaqueTypeIndexingTests(testCtx);
 }
 
 } // shaderexecutor

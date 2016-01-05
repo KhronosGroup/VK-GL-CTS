@@ -61,7 +61,8 @@
 #include "vktShaderRenderReturnTests.hpp"
 #include "vktShaderRenderStructTests.hpp"
 #include "vktShaderRenderSwitchTests.hpp"
-#include "vktShaderExecutorTests.hpp"
+#include "vktShaderBuiltinTests.hpp"
+#include "vktOpaqueTypeIndexingTests.hpp"
 #include "vktUniformBlockTests.hpp"
 #include "vktDynamicStateTests.hpp"
 #include "vktSSBOLayoutTests.hpp"
@@ -286,7 +287,8 @@ tcu::TestCaseGroup* createGlslTests (tcu::TestContext& testCtx)
 	glslTests->addChild(sr::createSwitchTests	(testCtx));
 
 	// ShaderExecutor-based tests
-	glslTests->addChild(shaderexecutor::createTests(testCtx));
+	glslTests->addChild(shaderexecutor::createBuiltinTests				(testCtx));
+	glslTests->addChild(shaderexecutor::createOpaqueTypeIndexingTests	(testCtx));
 
 	return glslTests.release();
 }
