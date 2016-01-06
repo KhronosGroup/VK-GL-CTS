@@ -507,6 +507,7 @@ tcu::TestCaseGroup* createOpFRemGroup (tcu::TestContext& testCtx)
 		"%outdata    = OpVariable %outbufptr Uniform\n"
 
 		"%id        = OpVariable %uvec3ptr Input\n"
+		"%zero      = OpConstant %i32 0\n"
 
 		"%main      = OpFunction %void None %voidf\n"
 		"%label     = OpLabel\n"
@@ -873,7 +874,7 @@ tcu::TestCaseGroup* createOpUnreachableGroup (tcu::TestContext& testCtx)
 		string(s_ShaderPreamble) +
 
 		"OpSource GLSL 430\n"
-		"OpName %func_main            \"main\"\n"
+		"OpName %main            \"main\"\n"
 		"OpName %func_not_called_func \"not_called_func(\"\n"
 		"OpName %func_modulo4         \"modulo4(u1;\"\n"
 		"OpName %func_const5          \"const5(\"\n"
@@ -900,7 +901,7 @@ tcu::TestCaseGroup* createOpUnreachableGroup (tcu::TestContext& testCtx)
 		+ string(s_InputOutputBuffer) +
 
 		// Main()
-		"%func_main   = OpFunction %void None %voidf\n"
+		"%main   = OpFunction %void None %voidf\n"
 		"%main_entry  = OpLabel\n"
 		"%idval       = OpLoad %uvec3 %id\n"
 		"%x           = OpCompositeExtract %u32 %idval 0\n"
@@ -1707,14 +1708,14 @@ tcu::TestCaseGroup* createMultipleShaderGroup (tcu::TestContext& testCtx)
 		outputFloats2[ndx] = -inputFloats[ndx];
 	}
 
-	const string assembly =
+	const string assembly(
 		"OpCapability Shader\n"
 		"OpMemoryModel Logical GLSL450\n"
 		"OpEntryPoint GLCompute %comp_main1 \"entrypoint1\" %id\n"
 		"OpEntryPoint GLCompute %comp_main2 \"entrypoint2\" %id\n"
 		// A module cannot have two OpEntryPoint instructions with the same Execution Model and the same Name string.
 		"OpEntryPoint Vertex    %vert_main  \"entrypoint2\" %vert_builtins %vertexID %instanceID\n"
-		"OpExecutionMode %main LocalSize 1 1 1\n";
+		"OpExecutionMode %vert_main LocalSize 1 1 1\n"
 
 		"OpName %comp_main1              \"entrypoint1\"\n"
 		"OpName %comp_main2              \"entrypoint2\"\n"
@@ -1785,7 +1786,7 @@ tcu::TestCaseGroup* createMultipleShaderGroup (tcu::TestContext& testCtx)
 		"%outloc2     = OpAccessChain %f32ptr %outdata %zero %x2\n"
 		"               OpStore %outloc2 %neg\n"
 		"               OpReturn\n"
-		"               OpFunctionEnd\n";
+		"               OpFunctionEnd\n");
 
 	spec1.assembly = assembly;
 	spec1.inputs.push_back(BufferSp(new Float32Buffer(inputFloats)));
@@ -4025,7 +4026,7 @@ void createCombinedModule(vk::SourceCollections& dst, InstanceContext)
 		"; Geometry Variables\n"
 		"%geom_per_vertex_in = OpTypeStruct %v4f32 %f32 %a1f32 %a1f32\n"
 		"%geom_a3_per_vertex_in = OpTypeArray %geom_per_vertex_in %c_u32_3\n"
-		"%geom_ip_a3_per_vertex_in = OpTypePointer Input %a3_per_vertex_in\n"
+		"%geom_ip_a3_per_vertex_in = OpTypePointer Input %geom_a3_per_vertex_in\n"
 		"%geom_gl_in = OpVariable %geom_ip_a3_per_vertex_in Input\n"
 		"%geom_out_color = OpVariable %op_v4f32 Output\n"
 		"%geom_in_color = OpVariable %ip_a3v4f32 Input\n"
@@ -4135,9 +4136,9 @@ void createCombinedModule(vk::SourceCollections& dst, InstanceContext)
 		"%tesse_in_pos_0 = OpLoad %v4f32 %tesse_in_pos_0_ptr\n"
 		"%tesse_in_pos_1 = OpLoad %v4f32 %tesse_in_pos_1_ptr\n"
 		"%tesse_in_pos_2 = OpLoad %v4f32 %tesse_in_pos_2_ptr\n"
-		"%tesse_in_pos_0_weighted = OpVectorTimesScalar %v4f32 %BP_tc_0 %tesse_in_pos_0\n"
-		"%tesse_in_pos_1_weighted = OpVectorTimesScalar %v4f32 %BP_tc_1 %tesse_in_pos_1\n"
-		"%tesse_in_pos_2_weighted = OpVectorTimesScalar %v4f32 %BP_tc_2 %tesse_in_pos_2\n"
+		"%tesse_in_pos_0_weighted = OpVectorTimesScalar %v4f32 %tesse_tc_0 %tesse_in_pos_0\n"
+		"%tesse_in_pos_1_weighted = OpVectorTimesScalar %v4f32 %tesse_tc_1 %tesse_in_pos_1\n"
+		"%tesse_in_pos_2_weighted = OpVectorTimesScalar %v4f32 %tesse_tc_2 %tesse_in_pos_2\n"
 		"%tesse_out_pos_ptr = OpAccessChain %op_v4f32 %tesse_stream %c_i32_0\n"
 		"%tesse_in_pos_0_plus_pos_1 = OpFAdd %v4f32 %tesse_in_pos_0_weighted %tesse_in_pos_1_weighted\n"
 		"%tesse_computed_out = OpFAdd %v4f32 %tesse_in_pos_0_plus_pos_1 %tesse_in_pos_2_weighted\n"
@@ -4186,7 +4187,6 @@ void createMultipleEntries(vk::SourceCollections& dst, InstanceContext)
 		"OpName %color \"color\"\n"
 		"OpName %vertex_id \"gl_VertexID\"\n"
 		"OpName %instance_id \"gl_InstanceID\"\n"
-		"OpName %test_code \"testfun(vf4;\"\n"
 
 		"OpDecorate %vtxPosition Location 2\n"
 		"OpDecorate %Position Location 0\n"
@@ -4419,7 +4419,7 @@ void createMultipleEntries(vk::SourceCollections& dst, InstanceContext)
 		"%tessc1_tess_outer_0 = OpAccessChain %op_f32 %gl_TessLevelOuter %c_i32_0\n"
 		"%tessc1_tess_outer_1 = OpAccessChain %op_f32 %gl_TessLevelOuter %c_i32_1\n"
 		"%tessc1_tess_outer_2 = OpAccessChain %op_f32 %gl_TessLevelOuter %c_i32_2\n"
-		"%tessc1_tess_inner = OpAccessChain %op_f32 %tessc1_gl_TessLevelInner %c_i32_0\n"
+		"%tessc1_tess_inner = OpAccessChain %op_f32 %gl_TessLevelInner %c_i32_0\n"
 		"OpStore %tessc1_tess_outer_0 %c_f32_1\n"
 		"OpStore %tessc1_tess_outer_1 %c_f32_1\n"
 		"OpStore %tessc1_tess_outer_2 %c_f32_1\n"
@@ -4448,7 +4448,7 @@ void createMultipleEntries(vk::SourceCollections& dst, InstanceContext)
 		"%tessc2_tess_outer_0 = OpAccessChain %op_f32 %gl_TessLevelOuter %c_i32_0\n"
 		"%tessc2_tess_outer_1 = OpAccessChain %op_f32 %gl_TessLevelOuter %c_i32_1\n"
 		"%tessc2_tess_outer_2 = OpAccessChain %op_f32 %gl_TessLevelOuter %c_i32_2\n"
-		"%tessc2_tess_inner = OpAccessChain %op_f32 %tessc2_gl_TessLevelInner %c_i32_0\n"
+		"%tessc2_tess_inner = OpAccessChain %op_f32 %gl_TessLevelInner %c_i32_0\n"
 		"OpStore %tessc2_tess_outer_0 %c_f32_1\n"
 		"OpStore %tessc2_tess_outer_1 %c_f32_1\n"
 		"OpStore %tessc2_tess_outer_2 %c_f32_1\n"
@@ -4525,9 +4525,9 @@ void createMultipleEntries(vk::SourceCollections& dst, InstanceContext)
 		"%tesse1_in_clr_0 = OpLoad %v4f32 %tesse1_in_clr_0_ptr\n"
 		"%tesse1_in_clr_1 = OpLoad %v4f32 %tesse1_in_clr_1_ptr\n"
 		"%tesse1_in_clr_2 = OpLoad %v4f32 %tesse1_in_clr_2_ptr\n"
-		"%tesse1_in_clr_0_weighted = OpVectorTimesScalar %v4f32 %tesse1_tc_0 %in_clr_0\n"
-		"%tesse1_in_clr_1_weighted = OpVectorTimesScalar %v4f32 %tesse1_tc_1 %in_clr_1\n"
-		"%tesse1_in_clr_2_weighted = OpVectorTimesScalar %v4f32 %tesse1_tc_2 %in_clr_2\n"
+		"%tesse1_in_clr_0_weighted = OpVectorTimesScalar %v4f32 %tesse1_tc_0 %tesse1_in_clr_0\n"
+		"%tesse1_in_clr_1_weighted = OpVectorTimesScalar %v4f32 %tesse1_tc_1 %tesse1_in_clr_1\n"
+		"%tesse1_in_clr_2_weighted = OpVectorTimesScalar %v4f32 %tesse1_tc_2 %tesse1_in_clr_2\n"
 		"%tesse1_in_clr_0_plus_col_1 = OpFAdd %v4f32 %tesse1_in_clr_0_weighted %tesse1_in_clr_1_weighted\n"
 		"%tesse1_computed_clr = OpFAdd %v4f32 %tesse1_in_clr_0_plus_col_1 %tesse1_in_clr_2_weighted\n"
 		"OpStore %out_color %tesse1_computed_clr\n"
@@ -4561,9 +4561,9 @@ void createMultipleEntries(vk::SourceCollections& dst, InstanceContext)
 		"%tesse2_in_clr_0 = OpLoad %v4f32 %tesse2_in_clr_0_ptr\n"
 		"%tesse2_in_clr_1 = OpLoad %v4f32 %tesse2_in_clr_1_ptr\n"
 		"%tesse2_in_clr_2 = OpLoad %v4f32 %tesse2_in_clr_2_ptr\n"
-		"%tesse2_in_clr_0_weighted = OpVectorTimesScalar %v4f32 %tesse2_tc_0 %in_clr_0\n"
-		"%tesse2_in_clr_1_weighted = OpVectorTimesScalar %v4f32 %tesse2_tc_1 %in_clr_1\n"
-		"%tesse2_in_clr_2_weighted = OpVectorTimesScalar %v4f32 %tesse2_tc_2 %in_clr_2\n"
+		"%tesse2_in_clr_0_weighted = OpVectorTimesScalar %v4f32 %tesse2_tc_0 %tesse2_in_clr_0\n"
+		"%tesse2_in_clr_1_weighted = OpVectorTimesScalar %v4f32 %tesse2_tc_1 %tesse2_in_clr_1\n"
+		"%tesse2_in_clr_2_weighted = OpVectorTimesScalar %v4f32 %tesse2_tc_2 %tesse2_in_clr_2\n"
 		"%tesse2_in_clr_0_plus_col_1 = OpFAdd %v4f32 %tesse2_in_clr_0_weighted %tesse2_in_clr_1_weighted\n"
 		"%tesse2_computed_clr = OpFAdd %v4f32 %tesse2_in_clr_0_plus_col_1 %tesse2_in_clr_2_weighted\n"
 		"%tesse2_clr_transformed = OpFSub %v4f32 %cval %tesse2_computed_clr\n"
@@ -6821,7 +6821,7 @@ void createOpQuantizeSingleOptionTests(tcu::TestCaseGroup* testCtx)
 
 			"%gz = OpFOrdLessThan %bool %c %c_f32_0\n"
 			"%inf = OpIsInf %bool %c\n"
-			"%comp = OpLogicalAnd %bool %gz %inf\n"
+			"%cond = OpLogicalAnd %bool %gz %inf\n"
 		},     // round to -inf
 		{
 			"round_to_inf",
@@ -6988,7 +6988,7 @@ void createOpQuantizeTwoPossibilityTests(tcu::TestCaseGroup* testCtx)
 		"%a             = OpVectorExtractDynamic %f32 %param1 %c_i32_0\n"
 		// For the purposes of this test we assume that 0.f will always get
 		// faithfully passed through the pipeline stages.
-		"%b             = OpFAdd %f32 %test_constant %a\n"
+		"%b             = OpFAdd %f32 %input_const %a\n"
 		"%c             = OpQuantizeToF16 %f32 %b\n"
 		"%eq_1          = OpFOrdEqual %bool %c %possible_solution1\n"
 		"%eq_2          = OpFOrdEqual %bool %c %possible_solution2\n"
@@ -7416,7 +7416,7 @@ tcu::TestCaseGroup* createBarrierTests(tcu::TestContext& testCtx)
 	// http://lists.llvm.org/pipermail/llvm-dev/2009-October/026317.html.
 	fragments["testfun"] =
 		setupPercentZero +
-		"%thread_id = OpLoad %i32 %gl_InvocationID\n"
+		"%thread_id = OpLoad %i32 %BP_gl_InvocationID\n"
 		"%thread0 = OpIEqual %bool %thread_id %c_i32_0\n"
 		"OpSelectionMerge %exit DontFlatten\n"
 		"OpBranchConditional %thread0 %then %else\n"
@@ -7451,7 +7451,7 @@ tcu::TestCaseGroup* createBarrierTests(tcu::TestContext& testCtx)
 
 		";adds 4, 3, 2, and 1 to %val0\n"
 		"%loop = OpLabel\n"
-		"%count = OpPhi %i32 %c_i32_4 %entry %count__ %latch\n"
+		"%count = OpPhi %i32 %c_i32_4 %entry %count__ %loop\n"
 		"%val1 = OpPhi %f32 %val0 %entry %val %loop\n"
 		"OpControlBarrier %Workgroup %Workgroup %SequentiallyConsistent\n"
 		"%fcount = OpConvertSToF %f32 %count\n"
