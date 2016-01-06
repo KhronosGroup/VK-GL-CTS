@@ -737,11 +737,17 @@ tcu::TestCaseGroup* createImageViewTests (tcu::TestContext& testCtx)
 
 		for (size_t formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats); formatNdx++)
 		{
-			const VkFormat					format		= formats[formatNdx];
+			const VkFormat		format		= formats[formatNdx];
 
-			if (isCompressedFormat(format) && (viewType == VK_IMAGE_VIEW_TYPE_1D || viewType == VK_IMAGE_VIEW_TYPE_1D_ARRAY))
+			if (isCompressedFormat(format))
 			{
-				break;
+				// Do not use compressed formats with 1D and 1D array textures.
+				if (viewType == VK_IMAGE_VIEW_TYPE_1D || viewType == VK_IMAGE_VIEW_TYPE_1D_ARRAY)
+					break;
+
+				// 3D ASTC textures are not supported.
+				if (tcu::isAstcFormat(mapVkCompressedFormat(format)) && viewType == VK_IMAGE_VIEW_TYPE_3D)
+					break;
 			}
 
 			de::MovePtr<tcu::TestCaseGroup>	formatGroup	(new tcu::TestCaseGroup(testCtx,
