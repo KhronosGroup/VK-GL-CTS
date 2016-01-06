@@ -987,7 +987,7 @@ struct Sampler
 			, addressModeV				(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE)
 			, addressModeW				(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE)
 			, mipLodBias				(0.0f)
-			, maxAnisotropy				(0.0f)
+			, maxAnisotropy				(1.0f)
 			, compareEnable				(VK_FALSE)
 			, compareOp					(VK_COMPARE_OP_ALWAYS)
 			, minLod					(-1000.f)

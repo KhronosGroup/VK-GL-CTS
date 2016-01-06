@@ -83,7 +83,7 @@ tcu::TestStatus createSamplerTest (Context& context)
 			VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,		// addressModeV
 			VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,		// addressModeW
 			0.0f,										// mipLodBias
-			0.0f,										// maxAnisotropy
+			1.0f,										// maxAnisotropy
 			DE_FALSE,									// compareEnable
 			VK_COMPARE_OP_ALWAYS,						// compareOp
 			0.0f,										// minLod
