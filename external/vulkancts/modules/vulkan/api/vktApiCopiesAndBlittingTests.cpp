@@ -803,7 +803,9 @@ void CopyImageToImage::copyRegionToTextureLevel(tcu::ConstPixelBufferAccess src,
 	VkExtent3D extent		= region.imageCopy.extent;
 
 	const tcu::ConstPixelBufferAccess	srcSubRegion = tcu::getSubregion(src, srcOffset.x, srcOffset.y, extent.width, extent.height);
-	const tcu::PixelBufferAccess		dstSubRegion = tcu::getSubregion(dst, dstOffset.x, dstOffset.y, extent.width, extent.height);
+	// CopyImage acts like a memcpy. Replace the destination format with the srcformat to use a memcpy.
+	const tcu::PixelBufferAccess		dstWithSrcFormat(srcSubRegion.getFormat(), dst.getSize(), dst.getDataPtr());
+	const tcu::PixelBufferAccess		dstSubRegion = tcu::getSubregion(dstWithSrcFormat, dstOffset.x, dstOffset.y, extent.width, extent.height);
 
 	tcu::copy(dstSubRegion, srcSubRegion);
 }
@@ -1316,7 +1318,7 @@ CopyBufferToImage::CopyBufferToImage (Context& context, TestParams testParams)
 		};
 
 		m_destination			= createImage(vk, vkDevice, &destinationImageParams);
-		m_destinationImageAlloc	= memAlloc.allocate(getImageMemoryRequirements(vk, vkDevice, *m_destination), MemoryRequirement::HostVisible);
+		m_destinationImageAlloc	= memAlloc.allocate(getImageMemoryRequirements(vk, vkDevice, *m_destination), MemoryRequirement::Any);
 		VK_CHECK(vk.bindImageMemory(vkDevice, *m_destination, m_destinationImageAlloc->getMemory(), m_destinationImageAlloc->getOffset()));
 	}
 }
