@@ -727,7 +727,8 @@ LOCAL_SHARED_LIBRARIES := \
 		libdl
 
 LOCAL_CFLAGS += \
-	$(deqp_compile_flags)
+	$(deqp_compile_flags) \
+	-Wno-date-time
 
 LOCAL_SDK_VERSION := 9
 LOCAL_CPPFLAGS += -Wno-non-virtual-dtor
