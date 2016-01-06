@@ -845,9 +845,6 @@ vk::VkDeviceSize findMaxBufferSize (const vk::DeviceInterface&		vkd,
 		const vk::Unique<vk::VkBuffer>	buffer			(createBuffer(vkd, device, currentSize, usage, sharingMode, queueFamilies));
 		const vk::VkMemoryRequirements	requirements	(vk::getBufferMemoryRequirements(vkd, device, *buffer));
 
-		if (stepSize == 0)
-			break;
-
 		if (requirements.size <= memorySize && requirements.memoryTypeBits & (0x1u << memoryTypeIndex))
 		{
 			lastSuccess = currentSize;
@@ -855,9 +852,57 @@ vk::VkDeviceSize findMaxBufferSize (const vk::DeviceInterface&		vkd,
 		}
 		else
 			currentSize -= stepSize;
+
+		if (stepSize == 0)
+			break;
 	}
 
 	return lastSuccess;
+}
+
+// Round size down maximum W * H * 4, where W and H < 4096
+vk::VkDeviceSize roundBufferSizeToWxHx4 (vk::VkDeviceSize size)
+{
+	const vk::VkDeviceSize	maxTextureSize	= 4096;
+	vk::VkDeviceSize		maxTexelCount	= size / 4;
+	vk::VkDeviceSize		bestW			= de::max(maxTexelCount, maxTextureSize);
+	vk::VkDeviceSize		bestH			= maxTexelCount / bestW;
+
+	// \todo Could probably be faster?
+	for (vk::VkDeviceSize w = 1; w * w < maxTexelCount && w < maxTextureSize && bestW * bestH * 4 < size; w++)
+	{
+		const vk::VkDeviceSize h = maxTexelCount / w;
+
+		if (bestW * bestH < w * h)
+		{
+			bestW = w;
+			bestH = h;
+		}
+	}
+
+	return bestW * bestH * 4;
+}
+
+// Find RGBA8 image size that has exactly "size" of number of bytes.
+// "size" must be W * H * 4 where W and H < 4096
+IVec2 findImageSizeWxHx4 (vk::VkDeviceSize size)
+{
+	const vk::VkDeviceSize	maxTextureSize	= 4096;
+	vk::VkDeviceSize		texelCount		= size / 4;
+
+	DE_ASSERT((size % 4) == 0);
+
+	// \todo Could probably be faster?
+	for (vk::VkDeviceSize w = 1; w < maxTextureSize && w < texelCount; w++)
+	{
+		const vk::VkDeviceSize	h	= texelCount / w;
+
+		if ((texelCount  % w) == 0 && h < maxTextureSize)
+			return IVec2((int)w, (int)h);
+	}
+
+	DE_FATAL("Invalid size");
+	return IVec2(-1, -1);
 }
 
 IVec2 findMaxRGBA8ImageSize (const vk::DeviceInterface&	vkd,
@@ -882,7 +927,7 @@ IVec2 findMaxRGBA8ImageSize (const vk::DeviceInterface&	vkd,
 		currentSize[1] = deMinu32(width, height);
 	}
 
-	for (deInt32 stepSize = currentSize[0] / 2; stepSize >= 1 && currentSize[0] > 0; stepSize /= 2)
+	for (deInt32 stepSize = currentSize[0] / 2; currentSize[0] > 0; stepSize /= 2)
 	{
 		const vk::VkImageCreateInfo	createInfo		=
 		{
@@ -920,6 +965,9 @@ IVec2 findMaxRGBA8ImageSize (const vk::DeviceInterface&	vkd,
 			currentSize[0] -= stepSize;
 			currentSize[1] -= stepSize;
 		}
+
+		if (stepSize == 0)
+			break;
 	}
 
 	return lastSuccess;
@@ -1944,8 +1992,8 @@ void PipelineBarrier::logSubmit (TestLog& log, size_t commandIndex) const
 
 void PipelineBarrier::submit (SubmitContext& context)
 {
-	const vk::DeviceInterface&	vkd			= context.getContext().getDeviceInterface();
-	const vk::VkCommandBuffer	cmd			= context.getCommandBuffer();
+	const vk::DeviceInterface&	vkd	= context.getContext().getDeviceInterface();
+	const vk::VkCommandBuffer	cmd	= context.getCommandBuffer();
 
 	switch (m_type)
 	{
@@ -2431,13 +2479,10 @@ void BufferCopyToImage::prepare (PrepareContext& context)
 	const vk::VkQueue				queue			= context.getContext().getQueue();
 	const vk::VkCommandPool			commandPool		= context.getContext().getCommandPool();
 	const vector<deUint32>&			queueFamilies	= context.getContext().getQueueFamilies();
+	const IVec2						imageSize		= findImageSizeWxHx4(context.getBufferSize());
 
-	{
-		const vk::VkDeviceSize	texelCount	= context.getBufferSize() / 4;
-
-		m_imageWidth	= 0x1u << ((32u - deClz32((deUint32)texelCount)) / 2u);
-		m_imageHeight	= (deInt32)(context.getBufferSize() / 4) / m_imageWidth;
-	}
+	m_imageWidth	= imageSize[0];
+	m_imageHeight	= imageSize[1];
 
 	{
 		const vk::VkImageCreateInfo	createInfo =
@@ -2693,13 +2738,10 @@ void BufferCopyFromImage::prepare (PrepareContext& context)
 	const vk::VkQueue				queue			= context.getContext().getQueue();
 	const vk::VkCommandPool			commandPool		= context.getContext().getCommandPool();
 	const vector<deUint32>&			queueFamilies	= context.getContext().getQueueFamilies();
+	const IVec2						imageSize		= findImageSizeWxHx4(context.getBufferSize());
 
-	{
-		const vk::VkDeviceSize	texelCount	= context.getBufferSize() / 4;
-
-		m_imageWidth	= 0x1u << ((32u - deClz32((deUint32)texelCount)) / 2u);
-		m_imageHeight	= (deInt32)(context.getBufferSize() / 4) / m_imageWidth;
-	}
+	m_imageWidth	= imageSize[0];
+	m_imageHeight	= imageSize[1];
 
 	{
 		const vk::VkImageCreateInfo	createInfo =
@@ -2819,8 +2861,8 @@ void BufferCopyFromImage::prepare (PrepareContext& context)
 					data[ndx] = rng.getUint8();
 			}
 
-			vk::flushMappedMemoryRange(vkd, device, *m_memory, 0, 4 * m_imageWidth * m_imageHeight);
-			vkd.unmapMemory(device, *m_memory);
+			vk::flushMappedMemoryRange(vkd, device, *memory, 0, 4 * m_imageWidth * m_imageHeight);
+			vkd.unmapMemory(device, *memory);
 		}
 
 		vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 1, &preBarriers[0]);
@@ -3264,8 +3306,8 @@ void ImageCopyFromImage::prepare (PrepareContext& context)
 					data[ndx] = rng.getUint8();
 			}
 
-			vk::flushMappedMemoryRange(vkd, device, *m_memory, 0, 4 * m_imageWidth * m_imageHeight);
-			vkd.unmapMemory(device, *m_memory);
+			vk::flushMappedMemoryRange(vkd, device, *memory, 0, 4 * m_imageWidth * m_imageHeight);
+			vkd.unmapMemory(device, *memory);
 		}
 
 		vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 1, &preBarriers[0]);
@@ -3765,8 +3807,8 @@ void ImageBlitFromImage::prepare (PrepareContext& context)
 					data[ndx] = rng.getUint8();
 			}
 
-			vk::flushMappedMemoryRange(vkd, device, *m_memory, 0, 4 * m_srcImageWidth * m_srcImageHeight);
-			vkd.unmapMemory(device, *m_memory);
+			vk::flushMappedMemoryRange(vkd, device, *memory, 0, 4 * m_srcImageWidth * m_srcImageHeight);
+			vkd.unmapMemory(device, *memory);
 		}
 
 		vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 1, &preBarriers[0]);
@@ -6114,6 +6156,19 @@ void createCommands (vector<Command*>&			commands,
 			}
 		}
 	}
+
+	// Clean up resources
+	if (state.hasBuffer && state.hasImage)
+	{
+		if (!state.queueIdle)
+			commands.push_back(new QueueWaitIdle());
+
+		if (state.hasBuffer)
+			commands.push_back(new DestroyBuffer());
+
+		if (state.hasImage)
+			commands.push_back(new DestroyImage());
+	}
 }
 
 void testCommand (TestLog&											log,
@@ -6347,8 +6402,12 @@ tcu::TestStatus MemoryTestInstance::iterate (void)
 			{
 				const vk::VkBufferUsageFlags	bufferUsage		= usageToBufferUsageFlags(m_config.usage);
 				const vk::VkImageUsageFlags		imageUsage		= usageToImageUsageFlags(m_config.usage);
-				const vk::VkDeviceSize			maxBufferSize	= findMaxBufferSize(vkd, device, bufferUsage, m_config.sharing, queues, m_config.size, m_memoryTypeNdx);
-				const IVec2						maxImageSize	= findMaxRGBA8ImageSize(vkd, device, imageUsage, m_config.sharing, queues, m_config.size, m_memoryTypeNdx);
+				const vk::VkDeviceSize			maxBufferSize	= bufferUsage != 0
+																? roundBufferSizeToWxHx4(findMaxBufferSize(vkd, device, bufferUsage, m_config.sharing, queues, m_config.size, m_memoryTypeNdx))
+																: 0;
+				const IVec2						maxImageSize	= imageUsage != 0
+																? findMaxRGBA8ImageSize(vkd, device, imageUsage, m_config.sharing, queues, m_config.size, m_memoryTypeNdx)
+																: IVec2(0, 0);
 
 				log << TestLog::Message << "Max buffer size: " << maxBufferSize << TestLog::EndMessage;
 				log << TestLog::Message << "Max RGBA8 image size: " << maxImageSize << TestLog::EndMessage;
