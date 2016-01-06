@@ -477,7 +477,7 @@ ShaderRenderCaseInstance::ShaderRenderCaseInstance (Context&					context,
 	, m_evaluator		(evaluator)
 	, m_uniformSetup	(uniformSetup)
 	, m_attribFunc		(attribFunc)
-	, m_renderSize		(100, 100)
+	, m_renderSize		(128, 128)
 	, m_colorFormat		(VK_FORMAT_R8G8B8A8_UNORM)
 {
 }
