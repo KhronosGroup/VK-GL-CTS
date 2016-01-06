@@ -256,10 +256,9 @@ public:
 				const tcu::Vec4	vtxTexCoord	= rr::readVarying<float>(packet, context, 1, fragNdx);
 				const tcu::Vec4	texColor	= sampleTexture(m_texture, m_sampler, vtxTexCoord, m_lod);
 				const tcu::Vec4 swizColor	= swizzle(texColor, m_swizzle);
-				const tcu::Vec4	normColor	= swizColor * m_textureFormatInfo.lookupScale + m_textureFormatInfo.lookupBias;
+				const tcu::Vec4	normColor	= swizColor * swizzle(m_textureFormatInfo.lookupScale, m_swizzle) + swizzle(m_textureFormatInfo.lookupBias, m_swizzle);
 				const tcu::Vec4	color		= (normColor - m_colorFormatInfo.lookupBias) / m_colorFormatInfo.lookupScale;
-
-				rr::writeFragmentOutput(context, packetNdx, fragNdx, 0, color);
+ 				rr::writeFragmentOutput(context, packetNdx, fragNdx, 0, color);
 			}
 		}
 	}
