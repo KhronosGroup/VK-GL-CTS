@@ -73,13 +73,16 @@ public:
 													 const VkImageSubresourceRange&	subresourceRange);
 	virtual					~ImageViewTest			(void) {}
 
-	virtual void			initPrograms			(SourceCollections& sourceCollections) const;
-	virtual TestInstance*	createInstance			(Context& context) const;
-	static std::string		getGlslSamplerType		(const tcu::TextureFormat& format, VkImageViewType type);
-	static tcu::IVec2		getRenderSize			(VkImageViewType viewType);
-	static tcu::IVec3		getImageSize			(VkImageViewType viewType);
-	static int				getArraySize			(VkImageViewType viewType);
-	static int				getNumLevels			(VkImageViewType viewType);
+	virtual void			initPrograms			(SourceCollections&				sourceCollections) const;
+	virtual TestInstance*	createInstance			(Context&						context) const;
+	static std::string		getGlslSamplerType		(const tcu::TextureFormat&		format, 
+													 VkImageViewType				type);
+	static tcu::IVec2		getRenderSize			(VkImageViewType				viewType);
+	static tcu::IVec3		getImageSize			(VkImageViewType				viewType);
+	static int				getArraySize			(VkImageViewType				viewType);
+	static int				getNumLevels			(VkImageViewType				viewType);
+	static tcu::Vec4		swizzle					(tcu::Vec4						inputData, 
+													 VkComponentMapping				componentMapping);
 private:
 	VkImageViewType			m_imageViewType;
 	VkFormat				m_imageFormat;
@@ -106,6 +109,27 @@ ImageViewTest::ImageViewTest (tcu::TestContext&					testContext,
 {
 }
 
+tcu::Vec4 ImageViewTest::swizzle (tcu::Vec4 inputData, VkComponentMapping componentMapping)
+{
+	// array map with enum VkComponentSwizzle
+	const float channelValues[] =
+	{
+		-1.0f,
+		0.0f,
+		1.0f,
+		inputData.x(),
+		inputData.y(),
+		inputData.z(),
+		inputData.w(),
+		-1.0f
+	};
+
+	return tcu::Vec4(channelValues[componentMapping.r],
+					 channelValues[componentMapping.g],
+					 channelValues[componentMapping.b],
+					 channelValues[componentMapping.a]);
+}
+
 void ImageViewTest::initPrograms (SourceCollections& sourceCollections) const
 {
 	std::ostringstream				vertexSrc;
@@ -115,6 +139,9 @@ void ImageViewTest::initPrograms (SourceCollections& sourceCollections) const
 																						  : mapVkFormat(m_imageFormat);
 	const tcu::TextureFormatInfo	formatInfo		= tcu::getTextureFormatInfo(format);
 
+	tcu::Vec4						swizzledScale	= swizzle(formatInfo.lookupScale, m_componentMapping);
+	tcu::Vec4						swizzledBias	= swizzle(formatInfo.lookupBias, m_componentMapping);
+	
 	switch (m_imageViewType)
 	{
 		case VK_IMAGE_VIEW_TYPE_1D:
@@ -163,7 +190,7 @@ void ImageViewTest::initPrograms (SourceCollections& sourceCollections) const
 	else
 		fragmentSrc << "texture(texSampler, vtxTexCoords." << texCoordSwizzle << ")" << std::fixed;
 
-	fragmentSrc << " * vec4" << std::scientific << formatInfo.lookupScale << " + vec4" << formatInfo.lookupBias << ";\n"
+	fragmentSrc << " * vec4" << std::scientific << swizzledScale << " + vec4" << swizzledBias << ";\n"
 				<< "}\n";
 
 	sourceCollections.glslSources.add("tex_vert") << glu::VertexSource(vertexSrc.str());
@@ -737,11 +764,17 @@ tcu::TestCaseGroup* createImageViewTests (tcu::TestContext& testCtx)
 
 		for (size_t formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats); formatNdx++)
 		{
-			const VkFormat					format		= formats[formatNdx];
+			const VkFormat		format		= formats[formatNdx];
 
-			if (isCompressedFormat(format) && (viewType == VK_IMAGE_VIEW_TYPE_1D || viewType == VK_IMAGE_VIEW_TYPE_1D_ARRAY))
+			if (isCompressedFormat(format))
 			{
-				break;
+				// Do not use compressed formats with 1D and 1D array textures.
+				if (viewType == VK_IMAGE_VIEW_TYPE_1D || viewType == VK_IMAGE_VIEW_TYPE_1D_ARRAY)
+					break;
+
+				// 3D ASTC textures are not supported.
+				if (tcu::isAstcFormat(mapVkCompressedFormat(format)) && viewType == VK_IMAGE_VIEW_TYPE_3D)
+					break;
 			}
 
 			de::MovePtr<tcu::TestCaseGroup>	formatGroup	(new tcu::TestCaseGroup(testCtx,
