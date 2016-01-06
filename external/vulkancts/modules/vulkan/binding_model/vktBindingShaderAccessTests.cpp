@@ -116,6 +116,14 @@ vk::VkImageType viewTypeToImageType (vk::VkImageViewType type)
 	}
 }
 
+vk::VkImageLayout getImageLayoutForDescriptorType (vk::VkDescriptorType descType)
+{
+	if (descType == vk::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)
+		return vk::VK_IMAGE_LAYOUT_GENERAL;
+	else
+		return vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+}
+
 deUint32 getTextureLevelPyramidDataSize (const tcu::TextureLevelPyramid& srcImage)
 {
 	deUint32 dataSize = 0;
@@ -2783,6 +2791,7 @@ private:
 																 vk::VkQueue						queue,
 																 vk::Allocator&						allocator,
 																 vk::VkImage						image,
+																 vk::VkImageLayout					layout,
 																 const tcu::TextureLevelPyramid&	data);
 
 protected:
@@ -2832,19 +2841,21 @@ ImageInstanceImages::ImageInstanceImages (const vk::DeviceInterface&	vki,
 	, m_imageViewA		(vk::Move<vk::VkImageView>())
 	, m_imageViewB		(vk::Move<vk::VkImageView>())
 {
+	const vk::VkImageLayout	layout	= getImageLayoutForDescriptorType(descriptorType);
+
 	DE_ASSERT(numImages == 1 || numImages == 2);
 
 	populateSourceImage(&m_sourceImageA, true);
 	m_imageA = createImage(vki, device, allocator, descriptorType, viewType, m_sourceImageA, &m_imageMemoryA);
 	m_imageViewA = createImageView(vki, device, viewType, m_sourceImageA, *m_imageA, m_baseMipLevel, m_baseArraySlice);
-	uploadImage(vki, device, queueFamilyIndex, queue, allocator, *m_imageA, m_sourceImageA);
+	uploadImage(vki, device, queueFamilyIndex, queue, allocator, *m_imageA, layout, m_sourceImageA);
 
 	if (numImages == 2)
 	{
 		populateSourceImage(&m_sourceImageB, false);
 		m_imageB = createImage(vki, device, allocator, descriptorType, viewType, m_sourceImageB, &m_imageMemoryB);
 		m_imageViewB = createImageView(vki, device, viewType, m_sourceImageB, *m_imageB, m_baseMipLevel, m_baseArraySlice);
-		uploadImage(vki, device, queueFamilyIndex, queue, allocator, *m_imageB, m_sourceImageB);
+		uploadImage(vki, device, queueFamilyIndex, queue, allocator, *m_imageB, layout, m_sourceImageB);
 	}
 }
 
@@ -2995,6 +3006,7 @@ void ImageInstanceImages::uploadImage (const vk::DeviceInterface&		vki,
 									   vk::VkQueue						queue,
 									   vk::Allocator&					allocator,
 									   vk::VkImage						image,
+									   vk::VkImageLayout				layout,
 									   const tcu::TextureLevelPyramid&	data)
 {
 	const deUint32						arraySize					= (m_viewType == vk::VK_IMAGE_VIEW_TYPE_3D) ? (1) :
@@ -3060,7 +3072,7 @@ void ImageInstanceImages::uploadImage (const vk::DeviceInterface&		vki,
 		vk::VK_ACCESS_TRANSFER_WRITE_BIT,					// outputMask
 		vk::VK_ACCESS_SHADER_READ_BIT,						// inputMask
 		vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,			// oldLayout
-		vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,		// newLayout
+		layout,												// newLayout
 		vk::VK_QUEUE_FAMILY_IGNORED,						// srcQueueFamilyIndex
 		vk::VK_QUEUE_FAMILY_IGNORED,						// destQueueFamilyIndex
 		image,												// image
@@ -3402,10 +3414,11 @@ vk::Move<vk::VkDescriptorSet> ImageFetchRenderInstance::createDescriptorSet (con
 																			 vk::VkImageView				viewA,
 																			 vk::VkImageView				viewB)
 {
+	const vk::VkImageLayout					imageLayout		= getImageLayoutForDescriptorType(descriptorType);
 	const vk::VkDescriptorImageInfo			imageInfos[2]	=
 	{
-		makeDescriptorImageInfo(viewA, vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL),
-		makeDescriptorImageInfo(viewB, vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL),
+		makeDescriptorImageInfo(viewA, imageLayout),
+		makeDescriptorImageInfo(viewB, imageLayout),
 	};
 	const vk::VkDescriptorSetAllocateInfo	allocInfo		=
 	{
@@ -3622,10 +3635,11 @@ vk::Move<vk::VkDescriptorPool> ImageFetchComputeInstance::createDescriptorPool (
 vk::Move<vk::VkDescriptorSet> ImageFetchComputeInstance::createDescriptorSet (vk::VkDescriptorPool pool, vk::VkDescriptorSetLayout layout) const
 {
 	const vk::VkDescriptorBufferInfo		resultInfo		= vk::makeDescriptorBufferInfo(m_result.getBuffer(), 0u, (vk::VkDeviceSize)ComputeInstanceResultBuffer::DATA_SIZE);
+	const vk::VkImageLayout					imageLayout		= getImageLayoutForDescriptorType(m_descriptorType);
 	const vk::VkDescriptorImageInfo			imageInfos[2]	=
 	{
-		makeDescriptorImageInfo(m_images.getImageViewA(), vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL),
-		makeDescriptorImageInfo(m_images.getImageViewB(), vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL),
+		makeDescriptorImageInfo(m_images.getImageViewA(), imageLayout),
+		makeDescriptorImageInfo(m_images.getImageViewB(), imageLayout),
 	};
 	const vk::VkDescriptorSetAllocateInfo	allocInfo		=
 	{
