@@ -3771,11 +3771,9 @@ tcu::TestStatus renderPassTest (Context& context, TestConfig config)
 	}
 }
 
-// \todo Fill with actually required formats in the future
-static const VkFormat s_colorFormats[] =
+static const VkFormat s_coreColorFormats[] =
 {
 	VK_FORMAT_R5G6B5_UNORM_PACK16,
-	VK_FORMAT_R5G5B5A1_UNORM_PACK16,
 	VK_FORMAT_R8_UNORM,
 	VK_FORMAT_R8_SNORM,
 	VK_FORMAT_R8_UINT,
@@ -3784,16 +3782,21 @@ static const VkFormat s_colorFormats[] =
 	VK_FORMAT_R8G8_SNORM,
 	VK_FORMAT_R8G8_UINT,
 	VK_FORMAT_R8G8_SINT,
-	VK_FORMAT_R8G8B8_UNORM,
-	VK_FORMAT_R8G8B8_SNORM,
-	VK_FORMAT_R8G8B8_UINT,
-	VK_FORMAT_R8G8B8_SINT,
-	VK_FORMAT_R8G8B8_SRGB,
 	VK_FORMAT_R8G8B8A8_UNORM,
 	VK_FORMAT_R8G8B8A8_SNORM,
 	VK_FORMAT_R8G8B8A8_UINT,
 	VK_FORMAT_R8G8B8A8_SINT,
 	VK_FORMAT_R8G8B8A8_SRGB,
+	VK_FORMAT_A8B8G8R8_UNORM_PACK32,
+	VK_FORMAT_A8B8G8R8_SNORM_PACK32,
+	VK_FORMAT_A8B8G8R8_UINT_PACK32,
+	VK_FORMAT_A8B8G8R8_SINT_PACK32,
+	VK_FORMAT_A8B8G8R8_SRGB_PACK32,
+	VK_FORMAT_B8G8R8A8_UNORM,
+	VK_FORMAT_B8G8R8A8_SRGB,
+	VK_FORMAT_A2R10G10B10_UNORM_PACK32,
+	VK_FORMAT_A2B10G10R10_UNORM_PACK32,
+	VK_FORMAT_A2B10G10R10_UINT_PACK32,
 	VK_FORMAT_R16_UNORM,
 	VK_FORMAT_R16_SNORM,
 	VK_FORMAT_R16_UINT,
@@ -3804,11 +3807,6 @@ static const VkFormat s_colorFormats[] =
 	VK_FORMAT_R16G16_UINT,
 	VK_FORMAT_R16G16_SINT,
 	VK_FORMAT_R16G16_SFLOAT,
-	VK_FORMAT_R16G16B16_UNORM,
-	VK_FORMAT_R16G16B16_SNORM,
-	VK_FORMAT_R16G16B16_UINT,
-	VK_FORMAT_R16G16B16_SINT,
-	VK_FORMAT_R16G16B16_SFLOAT,
 	VK_FORMAT_R16G16B16A16_UNORM,
 	VK_FORMAT_R16G16B16A16_SNORM,
 	VK_FORMAT_R16G16B16A16_UINT,
@@ -3820,21 +3818,20 @@ static const VkFormat s_colorFormats[] =
 	VK_FORMAT_R32G32_UINT,
 	VK_FORMAT_R32G32_SINT,
 	VK_FORMAT_R32G32_SFLOAT,
-	VK_FORMAT_R32G32B32_UINT,
-	VK_FORMAT_R32G32B32_SINT,
-	VK_FORMAT_R32G32B32_SFLOAT,
 	VK_FORMAT_R32G32B32A32_UINT,
 	VK_FORMAT_R32G32B32A32_SINT,
 	VK_FORMAT_R32G32B32A32_SFLOAT
 };
 
-static const VkFormat s_depthStencilFormats[] =
+static const VkFormat s_coreDepthStencilFormats[] =
 {
 	VK_FORMAT_D16_UNORM,
+
 	VK_FORMAT_X8_D24_UNORM_PACK32,
 	VK_FORMAT_D32_SFLOAT,
-	VK_FORMAT_S8_UINT,
-	VK_FORMAT_D24_UNORM_S8_UINT
+
+	VK_FORMAT_D24_UNORM_S8_UINT,
+	VK_FORMAT_D32_SFLOAT_S8_UINT
 };
 
 de::MovePtr<tcu::TestCaseGroup> createAttachmentTestCaseGroup (tcu::TestContext& testCtx)
@@ -3943,7 +3940,7 @@ de::MovePtr<tcu::TestCaseGroup> createAttachmentTestCaseGroup (tcu::TestContext&
 			for (size_t attachmentNdx = 0; attachmentNdx < attachmentCount; attachmentNdx++)
 			{
 				const VkSampleCountFlagBits	sampleCount		= VK_SAMPLE_COUNT_1_BIT;
-				const VkFormat				format			= rng.choose<VkFormat>(DE_ARRAY_BEGIN(s_colorFormats), DE_ARRAY_END(s_colorFormats));
+				const VkFormat				format			= rng.choose<VkFormat>(DE_ARRAY_BEGIN(s_coreColorFormats), DE_ARRAY_END(s_coreColorFormats));
 				const VkAttachmentLoadOp	loadOp			= rng.choose<VkAttachmentLoadOp>(DE_ARRAY_BEGIN(loadOps), DE_ARRAY_END(loadOps));
 				const VkAttachmentStoreOp	storeOp			= rng.choose<VkAttachmentStoreOp>(DE_ARRAY_BEGIN(storeOps), DE_ARRAY_END(storeOps));
 
@@ -3960,8 +3957,8 @@ de::MovePtr<tcu::TestCaseGroup> createAttachmentTestCaseGroup (tcu::TestContext&
 
 			if (useDepthStencil)
 			{
-				const VkSampleCountFlagBits	sampleCount		= VK_SAMPLE_COUNT_1_BIT;
-				const VkFormat				format				= rng.choose<VkFormat>(DE_ARRAY_BEGIN(s_depthStencilFormats), DE_ARRAY_END(s_depthStencilFormats));
+				const VkSampleCountFlagBits	sampleCount			= VK_SAMPLE_COUNT_1_BIT;
+				const VkFormat				format				= rng.choose<VkFormat>(DE_ARRAY_BEGIN(s_coreDepthStencilFormats), DE_ARRAY_END(s_coreDepthStencilFormats));
 				const VkAttachmentLoadOp	loadOp				= rng.choose<VkAttachmentLoadOp>(DE_ARRAY_BEGIN(loadOps), DE_ARRAY_END(loadOps));
 				const VkAttachmentStoreOp	storeOp				= rng.choose<VkAttachmentStoreOp>(DE_ARRAY_BEGIN(storeOps), DE_ARRAY_END(storeOps));
 
@@ -4117,7 +4114,7 @@ de::MovePtr<tcu::TestCaseGroup> createAttachmentAllocationTestGroup (tcu::TestCo
 			for (size_t attachmentNdx = 0; attachmentNdx < attachmentCount; attachmentNdx++)
 			{
 				const VkSampleCountFlagBits	sampleCount		= VK_SAMPLE_COUNT_1_BIT;
-				const VkFormat				format			= rng.choose<VkFormat>(DE_ARRAY_BEGIN(s_colorFormats), DE_ARRAY_END(s_colorFormats));
+				const VkFormat				format			= rng.choose<VkFormat>(DE_ARRAY_BEGIN(s_coreColorFormats), DE_ARRAY_END(s_coreColorFormats));
 				const VkAttachmentLoadOp	loadOp			= rng.choose<VkAttachmentLoadOp>(DE_ARRAY_BEGIN(loadOps), DE_ARRAY_END(loadOps));
 				const VkAttachmentStoreOp	storeOp			= rng.choose<VkAttachmentStoreOp>(DE_ARRAY_BEGIN(storeOps), DE_ARRAY_END(storeOps));
 
@@ -4499,9 +4496,10 @@ de::MovePtr<tcu::TestCaseGroup> createFormatTestGroup(tcu::TestContext& testCtx)
 		{ "clear_draw",	TestConfig::RENDERTYPES_CLEAR|TestConfig::RENDERTYPES_DRAW	}
 	};
 
-	for (size_t formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(s_colorFormats); formatNdx++)
+	// Color formats
+	for (size_t formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(s_coreColorFormats); formatNdx++)
 	{
-		const VkFormat					format		= s_colorFormats[formatNdx];
+		const VkFormat					format		= s_coreColorFormats[formatNdx];
 		de::MovePtr<tcu::TestCaseGroup>	formatGroup	(new tcu::TestCaseGroup(testCtx, formatToName(format).c_str(), de::toString(format).c_str()));
 
 		for (size_t loadOpNdx = 0; loadOpNdx < DE_LENGTH_OF_ARRAY(loadOps); loadOpNdx++)
@@ -4525,6 +4523,45 @@ de::MovePtr<tcu::TestCaseGroup> createFormatTestGroup(tcu::TestContext& testCtx)
 																			vector<AttachmentReference>(1, AttachmentReference(0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)),
 																			vector<AttachmentReference>(),
 																			AttachmentReference(VK_ATTACHMENT_UNUSED, VK_IMAGE_LAYOUT_GENERAL),
+																			vector<AttachmentReference>())),
+												 vector<SubpassDependency>());
+
+				addFunctionCaseWithPrograms<TestConfig>(loadOpGroup.get(), renderTypes[renderTypeNdx].str, renderTypes[renderTypeNdx].str, createTestShaders, renderPassTest, TestConfig(renderPass, renderTypes[renderTypeNdx].types, TestConfig::COMMANDBUFFERTYPES_INLINE, TestConfig::IMAGEMEMORY_STRICT, targetSize, renderPos, renderSize, 90239));
+			}
+
+			formatGroup->addChild(loadOpGroup.release());
+		}
+
+		group->addChild(formatGroup.release());
+	}
+
+	// Depth stencil formats
+	for (size_t formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(s_coreDepthStencilFormats); formatNdx++)
+	{
+		const VkFormat					format		= s_coreDepthStencilFormats[formatNdx];
+		de::MovePtr<tcu::TestCaseGroup>	formatGroup	(new tcu::TestCaseGroup(testCtx, formatToName(format).c_str(), de::toString(format).c_str()));
+
+		for (size_t loadOpNdx = 0; loadOpNdx < DE_LENGTH_OF_ARRAY(loadOps); loadOpNdx++)
+		{
+			const VkAttachmentLoadOp		loadOp	= loadOps[loadOpNdx].op;
+			de::MovePtr<tcu::TestCaseGroup>	loadOpGroup	(new tcu::TestCaseGroup(testCtx, loadOps[loadOpNdx].str, loadOps[loadOpNdx].str));
+
+			for (size_t renderTypeNdx = 0; renderTypeNdx < DE_LENGTH_OF_ARRAY(renderTypes); renderTypeNdx++)
+			{
+				const RenderPass	renderPass	(vector<Attachment>(1, Attachment(format,
+																				  VK_SAMPLE_COUNT_1_BIT,
+																				  VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+																				  VK_ATTACHMENT_STORE_OP_DONT_CARE,
+																				  loadOp,
+																				  VK_ATTACHMENT_STORE_OP_STORE,
+																				  VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+																				  VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)),
+												 vector<Subpass>(1, Subpass(VK_PIPELINE_BIND_POINT_GRAPHICS,
+																			0u,
+																			vector<AttachmentReference>(),
+																			vector<AttachmentReference>(),
+																			vector<AttachmentReference>(),
+																			AttachmentReference(0, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL),
 																			vector<AttachmentReference>())),
 												 vector<SubpassDependency>());
 
