@@ -6470,7 +6470,7 @@ struct AddPrograms
 				"}\n";
 
 			sources.glslSources.add("render-white.frag")
-				<< glu::VertexSource(fragmentShader);
+				<< glu::FragmentSource(fragmentShader);
 		}
 	}
 };

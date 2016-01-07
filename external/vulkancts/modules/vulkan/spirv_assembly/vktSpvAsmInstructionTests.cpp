@@ -2744,6 +2744,7 @@ tcu::TestCaseGroup* createLoopControlGroup (tcu::TestContext& testCtx)
 
 		"%id          = OpVariable %uvec3ptr Input\n"
 		"%zero        = OpConstant %i32 0\n"
+		"%uzero       = OpConstant %u32 0\n"
 		"%one         = OpConstant %i32 1\n"
 		"%constf1     = OpConstant %f32 1.0\n"
 		"%four        = OpConstant %u32 4\n"
@@ -2751,7 +2752,7 @@ tcu::TestCaseGroup* createLoopControlGroup (tcu::TestContext& testCtx)
 		"%main        = OpFunction %void None %voidf\n"
 		"%entry       = OpLabel\n"
 		"%i           = OpVariable %u32ptr Function\n"
-		"               OpStore %i %zero\n"
+		"               OpStore %i %uzero\n"
 
 		"%idval       = OpLoad %uvec3 %id\n"
 		"%x           = OpCompositeExtract %u32 %idval 0\n"
@@ -3115,7 +3116,6 @@ tcu::TestCaseGroup* createOpUndefGroup (tcu::TestContext& testCtx)
 	cases.push_back(CaseParameter("runtimearray",	"%type = OpTypeRuntimeArray %f32"));
 	cases.push_back(CaseParameter("struct",			"%type = OpTypeStruct %f32 %i32 %u32"));
 	cases.push_back(CaseParameter("pointer",		"%type = OpTypePointer Function %i32"));
-	cases.push_back(CaseParameter("function",		"%type = OpTypeFunction %void %i32 %f32"));
 
 	fillRandomScalars(rnd, 1.f, 100.f, &positiveFloats[0], numElements);
 
@@ -6616,7 +6616,6 @@ tcu::TestCaseGroup* createOpUndefTests(tcu::TestContext& testCtx)
 		{"image", "%type = OpTypeImage %f32 2D 0 0 0 0 Unknown"},
 		{"sampler", "%type = OpTypeSampler"},
 		{"sampledimage", "%img = OpTypeImage %f32 2D 0 0 0 0 Unknown\n" "%type = OpTypeSampledImage %img"},
-		{"function", "%type = OpTypeFunction %void %i32 %f32"},
 		{"pointer", "%type = OpTypePointer Function %i32"},
 		{"runtimearray", "%type = OpTypeRuntimeArray %f32"},
 		{"array", "%c_u32_100 = OpConstant %u32 100\n" "%type = OpTypeArray %i32 %c_u32_100"},
@@ -6749,10 +6748,9 @@ void createOpQuantizeSingleOptionTests(tcu::TestCaseGroup* testCtx)
 	const struct SingleFP16Possibility
 	{
 		const char* name;
-		const char* constant;
+		const char* constant;  // Value to assign to %test_constant.
 		float		valueAsFloat;
-		const char* condition;
-		// condition must evaluate to true after %test_constant = OpQuantizeToF16(%constant)
+		const char* condition; // Must assign to %cond an expression that evaluates to true after %c = OpQuantizeToF16(%test_constant + 0).
 	}				tests[]				=
 	{
 		{
@@ -6786,18 +6784,17 @@ void createOpQuantizeSingleOptionTests(tcu::TestCaseGroup* testCtx)
 			"0x1.0p-16\n",
 			std::ldexp(1.0f, -16),
 			"%cond = OpFOrdEqual %bool %c %c_f32_0\n"
-		},      // too small negative
+		},     // too small positive
 		{
 			"negative_too_small",
 			"-0x1.0p-32\n",
 			-std::ldexp(1.0f, -32),
 			"%cond = OpFOrdEqual %bool %c %c_f32_0\n"
-		},     // too small positive
+		},      // too small negative
 		{
 			"negative_inf",
 			"-0x1.0p128\n",
 			-std::ldexp(1.0f, 128),
-			"%cond = OpFOrdEqual %bool %c %c_f32_0\n"
 
 			"%gz = OpFOrdLessThan %bool %c %c_f32_0\n"
 			"%inf = OpIsInf %bool %c\n"
@@ -6835,8 +6832,10 @@ void createOpQuantizeSingleOptionTests(tcu::TestCaseGroup* testCtx)
 			"0x1.1p128\n",
 			std::numeric_limits<float>::quiet_NaN(),
 
-			"%nan = OpIsNan %bool %c\n"
-			"%as_int = OpBitcast %i32 %c\n"
+			// Can't use %c, because NaN+0 isn't necessarily a NaN (Vulkan spec A.4).
+			"%direct_quant = OpQuantizeToF16 %f32 %test_constant\n"
+			"%nan = OpIsNan %bool %direct_quant\n"
+			"%as_int = OpBitcast %i32 %direct_quant\n"
 			"%positive = OpSGreaterThan %bool %as_int %c_i32_0\n"
 			"%cond = OpLogicalAnd %bool %nan %positive\n"
 		}, // nan
@@ -6845,14 +6844,16 @@ void createOpQuantizeSingleOptionTests(tcu::TestCaseGroup* testCtx)
 			"-0x1.0001p128\n",
 			std::numeric_limits<float>::quiet_NaN(),
 
-			"%nan = OpIsNan %bool %c\n"
-			"%as_int = OpBitcast %i32 %c\n"
+			// Can't use %c, because NaN+0 isn't necessarily a NaN (Vulkan spec A.4).
+			"%direct_quant = OpQuantizeToF16 %f32 %test_constant\n"
+			"%nan = OpIsNan %bool %direct_quant\n"
+			"%as_int = OpBitcast %i32 %direct_quant\n"
 			"%negative = OpSLessThan %bool %as_int %c_i32_0\n"
 			"%cond = OpLogicalAnd %bool %nan %negative\n"
 		} // -nan
 	};
 	const char*		constants			=
-		"%test_constant = OpConstant %f32\n";
+		"%test_constant = OpConstant %f32 ";  // The value will be test.constant.
 
 	StringTemplate	function			(
 		"%test_code     = OpFunction %v4f32 None %v4f32_function\n"

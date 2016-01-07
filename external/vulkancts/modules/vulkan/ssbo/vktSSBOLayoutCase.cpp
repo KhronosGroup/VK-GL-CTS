@@ -1785,9 +1785,9 @@ vk::Move<vk::VkBuffer> createBuffer (Context& context, vk::VkDeviceSize bufferSi
 	{
 		vk::VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,	// VkStructureType		sType;
 		DE_NULL,									// const void*			pNext;
-		usageFlags,									// VkBufferUsageFlags	usage;
-		bufferSize,									// VkDeviceSize			size;
 		0u,											// VkBufferCreateFlags	flags;
+		bufferSize,									// VkDeviceSize			size;
+		usageFlags,									// VkBufferUsageFlags	usage;
 		vk::VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode		sharingMode;
 		1u,											// deUint32				queueFamilyCount;
 		&queueFamilyIndex							// const deUint32*		pQueueFamilyIndices;

@@ -395,6 +395,8 @@ tcu::TestStatus	BasicOcclusionQueryTestInstance::iterate (void)
 
 	RenderPassBeginInfo renderPassBegin(*m_stateObjects->m_renderPass, *m_stateObjects->m_framebuffer, renderArea, renderPassClearValues);
 
+	vk.cmdResetQueryPool(*cmdBuffer, m_queryPool, 0, NUM_QUERIES_IN_POOL);
+
 	vk.cmdBeginRenderPass(*cmdBuffer, &renderPassBegin, vk::VK_SUBPASS_CONTENTS_INLINE);
 
 	vk.cmdBindPipeline(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_stateObjects->m_pipeline);
@@ -402,8 +404,6 @@ tcu::TestStatus	BasicOcclusionQueryTestInstance::iterate (void)
 	vk::VkBuffer vertexBuffer = m_stateObjects->m_vertexBuffer->object();
 	const vk::VkDeviceSize vertexBufferOffset = 0;
 	vk.cmdBindVertexBuffers(*cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
-
-	vk.cmdResetQueryPool(*cmdBuffer, m_queryPool, 0, NUM_QUERIES_IN_POOL);
 
 	vk.cmdBeginQuery(*cmdBuffer, m_queryPool, QUERY_INDEX_CAPTURE_EMPTY, m_testVector.queryControlFlags);
 	vk.cmdEndQuery(*cmdBuffer, m_queryPool,	QUERY_INDEX_CAPTURE_EMPTY);
@@ -743,6 +743,8 @@ vk::Move<vk::VkCommandBuffer> OcclusionQueryTestInstance::recordRender (vk::VkCo
 
 	RenderPassBeginInfo renderPassBegin(*m_stateObjects->m_renderPass, *m_stateObjects->m_framebuffer, renderArea, renderPassClearValues);
 
+	vk.cmdResetQueryPool(*cmdBuffer, m_queryPool, 0, NUM_QUERIES_IN_POOL);
+
 	vk.cmdBeginRenderPass(*cmdBuffer, &renderPassBegin, vk::VK_SUBPASS_CONTENTS_INLINE);
 
 	vk.cmdBindPipeline(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS,	*m_stateObjects->m_pipeline);
@@ -750,8 +752,6 @@ vk::Move<vk::VkCommandBuffer> OcclusionQueryTestInstance::recordRender (vk::VkCo
 	vk::VkBuffer vertexBuffer = m_stateObjects->m_vertexBuffer->object();
 	const vk::VkDeviceSize vertexBufferOffset = 0;
 	vk.cmdBindVertexBuffers(*cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
-
-	vk.cmdResetQueryPool(*cmdBuffer, m_queryPool, 0, NUM_QUERIES_IN_POOL);
 
 	// Draw un-occluded geometry
 	vk.cmdBeginQuery(*cmdBuffer, m_queryPool, QUERY_INDEX_CAPTURE_ALL, m_testVector.queryControlFlags);
