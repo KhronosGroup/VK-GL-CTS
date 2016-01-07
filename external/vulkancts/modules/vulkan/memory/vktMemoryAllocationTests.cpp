@@ -147,7 +147,7 @@ tcu::TestStatus AllocateFreeTestInstance::iterate (void)
 			log << TestLog::Message << "Memory type: " << memoryType << TestLog::EndMessage;
 			log << TestLog::Message << "Memory heap: " << memoryHeap << TestLog::EndMessage;
 
-			if (allocationSize * m_config.memoryAllocationCount * 4 > memoryHeap.size)
+			if (allocationSize * m_config.memoryAllocationCount * 8 > memoryHeap.size)
 				TCU_THROW(NotSupportedError, "Memory heap doesn't have enough memory.");
 
 			try
@@ -300,7 +300,7 @@ RandomAllocFreeTestInstance::RandomAllocFreeTestInstance	(Context& context, deUi
 	{
 		m_heaps[heapNdx].heap			= memoryProperties.memoryHeaps[heapNdx];
 		m_heaps[heapNdx].memoryUsage	= 0;
-		m_heaps[heapNdx].maxMemoryUsage	= m_heaps[heapNdx].heap.size / 4;
+		m_heaps[heapNdx].maxMemoryUsage	= m_heaps[heapNdx].heap.size / 8;
 
 		m_heaps[heapNdx].objects.reserve(100);
 
@@ -348,7 +348,7 @@ tcu::TestStatus RandomAllocFreeTestInstance::iterate (void)
 	if (m_opNdx == 0)
 	{
 		log << TestLog::Message << "Performing " << m_opCount << " random VkAllocMemory() / VkFreeMemory() calls before freeing all memory." << TestLog::EndMessage;
-		log << TestLog::Message << "Using max one fourth of the memory in each memory heap." << TestLog::EndMessage;
+		log << TestLog::Message << "Using max 1/8 of the memory in each memory heap." << TestLog::EndMessage;
 	}
 
 	if (m_opNdx >= m_opCount)
@@ -477,7 +477,7 @@ tcu::TestCaseGroup* createAllocationTests (tcu::TestContext& testCtx)
 
 	const float allocationPercents[] =
 	{
-		0.01f, 0.1f, 0.25f
+		0.01f
 	};
 
 	const int allocationCounts[] =
@@ -566,7 +566,7 @@ tcu::TestCaseGroup* createAllocationTests (tcu::TestContext& testCtx)
 				{
 					const int allocationCount = allocationCounts[allocationCountNdx];
 
-					if ((allocationCount != -1) && ((float)allocationCount * allocationPercent > 0.25f))
+					if ((allocationCount != -1) && ((float)allocationCount * allocationPercent >= 1.00f / 8.00f))
 						continue;
 
 					TestConfig config;
@@ -576,7 +576,7 @@ tcu::TestCaseGroup* createAllocationTests (tcu::TestContext& testCtx)
 
 					if (allocationCount == -1)
 					{
-						config.memoryAllocationCount	= (int)(0.25f / allocationPercent);
+						config.memoryAllocationCount	= (int)((1.00f / 8.00f) / allocationPercent);
 
 						if (config.memoryAllocationCount == 0
 							|| config.memoryAllocationCount == 1
