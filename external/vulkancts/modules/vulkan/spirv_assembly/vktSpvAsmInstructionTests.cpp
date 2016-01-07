@@ -6786,18 +6786,17 @@ void createOpQuantizeSingleOptionTests(tcu::TestCaseGroup* testCtx)
 			"0x1.0p-16\n",
 			std::ldexp(1.0f, -16),
 			"%cond = OpFOrdEqual %bool %c %c_f32_0\n"
-		},      // too small negative
+		},     // too small positive
 		{
 			"negative_too_small",
 			"-0x1.0p-32\n",
 			-std::ldexp(1.0f, -32),
 			"%cond = OpFOrdEqual %bool %c %c_f32_0\n"
-		},     // too small positive
+		},      // too small negative
 		{
 			"negative_inf",
 			"-0x1.0p128\n",
 			-std::ldexp(1.0f, 128),
-			"%cond = OpFOrdEqual %bool %c %c_f32_0\n"
 
 			"%gz = OpFOrdLessThan %bool %c %c_f32_0\n"
 			"%inf = OpIsInf %bool %c\n"
