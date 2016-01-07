@@ -480,7 +480,7 @@ MultisampleTest::MultisampleTest (tcu::TestContext&								testContext,
 	{
 		// Copy pSampleMask to avoid dependencies with other classes
 
-		const deUint32 maskCount = m_multisampleStateParams.rasterizationSamples / 32;
+		const deUint32 maskCount = deCeilFloatToInt32(float(m_multisampleStateParams.rasterizationSamples) / 32);
 
 		for (deUint32 maskNdx = 0; maskNdx < maskCount; maskNdx++)
 			m_sampleMask.push_back(m_multisampleStateParams.pSampleMask[maskNdx]);
