@@ -1740,8 +1740,8 @@ void ComputeCommand::submitAndWait (deUint32 queueFamilyIndex, vk::VkQueue queue
 	{
 		vk::VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
 		DE_NULL,
-		queueFamilyIndex,									// queueFamilyIndex
 		vk::VK_COMMAND_POOL_CREATE_TRANSIENT_BIT,			// flags
+		queueFamilyIndex,									// queueFamilyIndex		
 	};
 	const vk::Unique<vk::VkCommandPool>				cmdPool				(vk::createCommandPool(m_vki, m_device, &cmdPoolCreateInfo));
 
@@ -6279,7 +6279,7 @@ tcu::TestCaseGroup* createShaderAccessTests (tcu::TestContext& testCtx)
 	} s_bindTypes[] =
 	{
 		{ true,		"primary_cmd_buf",	"Bind in primary command buffer"	},
-		{ false,	"seconday_cmd_buf",	"Bind in secondary command buffer"	},
+		{ false,	"secondary_cmd_buf",	"Bind in secondary command buffer"	},
 	};
 	static const struct
 	{
