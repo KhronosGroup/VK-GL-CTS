@@ -698,6 +698,16 @@ TimestampTestInstance::TimestampTestInstance(Context&                context,
 	const VkDevice              vkDevice            = context.getDevice();
 	const deUint32              queueFamilyIndex    = context.getUniversalQueueFamilyIndex();
 
+	// Check support for timestamp queries
+	{
+		const std::vector<VkQueueFamilyProperties>   queueProperties = vk::getPhysicalDeviceQueueFamilyProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice());
+
+		DE_ASSERT(queueFamilyIndex < (deUint32)queueProperties.size());
+
+		if (!queueProperties[queueFamilyIndex].timestampValidBits)
+			throw tcu::NotSupportedError("Universal queue does not support timestamps");
+	}
+
 	// Create Query Pool
 	{
 		const VkQueryPoolCreateInfo queryPoolParams =
