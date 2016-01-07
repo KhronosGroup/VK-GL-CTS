@@ -3116,7 +3116,6 @@ tcu::TestCaseGroup* createOpUndefGroup (tcu::TestContext& testCtx)
 	cases.push_back(CaseParameter("runtimearray",	"%type = OpTypeRuntimeArray %f32"));
 	cases.push_back(CaseParameter("struct",			"%type = OpTypeStruct %f32 %i32 %u32"));
 	cases.push_back(CaseParameter("pointer",		"%type = OpTypePointer Function %i32"));
-	cases.push_back(CaseParameter("function",		"%type = OpTypeFunction %void %i32 %f32"));
 
 	fillRandomScalars(rnd, 1.f, 100.f, &positiveFloats[0], numElements);
 
@@ -6617,7 +6616,6 @@ tcu::TestCaseGroup* createOpUndefTests(tcu::TestContext& testCtx)
 		{"image", "%type = OpTypeImage %f32 2D 0 0 0 0 Unknown"},
 		{"sampler", "%type = OpTypeSampler"},
 		{"sampledimage", "%img = OpTypeImage %f32 2D 0 0 0 0 Unknown\n" "%type = OpTypeSampledImage %img"},
-		{"function", "%type = OpTypeFunction %void %i32 %f32"},
 		{"pointer", "%type = OpTypePointer Function %i32"},
 		{"runtimearray", "%type = OpTypeRuntimeArray %f32"},
 		{"array", "%c_u32_100 = OpConstant %u32 100\n" "%type = OpTypeArray %i32 %c_u32_100"},
