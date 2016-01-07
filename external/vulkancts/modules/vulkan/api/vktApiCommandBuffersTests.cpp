@@ -2406,6 +2406,344 @@ tcu::TestStatus submitBufferCountEqualZero(Context& context)
 	return testResult;
 }
 
+tcu::TestStatus submitBufferWaitSingleSemaphore(Context& context)
+{
+	const VkDevice							vkDevice				= context.getDevice();
+	const DeviceInterface&					vk						= context.getDeviceInterface();
+	const VkQueue							queue					= context.getUniversalQueue();
+	const deUint32							queueFamilyIndex		= context.getUniversalQueueFamilyIndex();
+
+	const VkCommandPoolCreateInfo			cmdPoolParams			=
+	{
+		VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,					// VkStructureType				sType;
+		DE_NULL,													// const void*					pNext;
+		VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,			// VkCommandPoolCreateFlags		flags;
+		queueFamilyIndex,											// deUint32						queueFamilyIndex;
+	};
+	const Unique<VkCommandPool>				cmdPool					(createCommandPool(vk, vkDevice, &cmdPoolParams));
+
+	// Command buffer
+	const VkCommandBufferAllocateInfo		cmdBufParams			=
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,				// VkStructureType				sType;
+		DE_NULL,													// const void*					pNext;
+		*cmdPool,													// VkCommandPool				pool;
+		VK_COMMAND_BUFFER_LEVEL_PRIMARY,							// VkCommandBufferLevel			level;
+		1u,															// uint32_t						bufferCount;
+	};
+
+	// Create two command buffers
+	const Unique<VkCommandBuffer>			primCmdBuf1				(allocateCommandBuffer(vk, vkDevice, &cmdBufParams));
+	const Unique<VkCommandBuffer>			primCmdBuf2				(allocateCommandBuffer(vk, vkDevice, &cmdBufParams));
+
+	const VkCommandBufferBeginInfo			primCmdBufBeginInfo		=
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,				// sType
+		DE_NULL,													// pNext
+		0,															// flags
+		(VkRenderPass)0u,											// renderPass
+		0u,															// subpass
+		(VkFramebuffer)0u,											// framebuffer
+		VK_FALSE,													// occlusionQueryEnable
+		(VkQueryControlFlags)0u,									// queryFlags
+		(VkQueryPipelineStatisticFlags)0u,							// pipelineStatistics
+	};
+
+	// Fill create info struct for event
+	const VkEventCreateInfo					eventCreateInfo			=
+	{
+		VK_STRUCTURE_TYPE_EVENT_CREATE_INFO,
+		DE_NULL,
+		0u,
+	};
+
+	// create two events that will be used to check if command buffers has been executed
+	const Unique<VkEvent>					event1					(createEvent(vk, vkDevice, &eventCreateInfo));
+	const Unique<VkEvent>					event2					(createEvent(vk, vkDevice, &eventCreateInfo));
+
+	// reset events
+	VK_CHECK(vk.resetEvent(vkDevice, *event1));
+	VK_CHECK(vk.resetEvent(vkDevice, *event2));
+
+	// record first command buffer
+	VK_CHECK(vk.beginCommandBuffer(*primCmdBuf1, &primCmdBufBeginInfo));
+	{
+		// allow execution of event during every stage of pipeline
+		VkPipelineStageFlags stageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+
+		// record setting event
+		vk.cmdSetEvent(*primCmdBuf1, *event1,stageMask);
+	}
+	VK_CHECK(vk.endCommandBuffer(*primCmdBuf1));
+
+	// record second command buffer
+	VK_CHECK(vk.beginCommandBuffer(*primCmdBuf2, &primCmdBufBeginInfo));
+	{
+		// allow execution of event during every stage of pipeline
+		VkPipelineStageFlags stageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+
+		// record setting event
+		vk.cmdSetEvent(*primCmdBuf2, *event2,stageMask);
+	}
+	VK_CHECK(vk.endCommandBuffer(*primCmdBuf2));
+
+	const VkFenceCreateInfo					fenceCreateInfo			=
+	{
+		VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+		DE_NULL,
+		0u,															// flags
+	};
+
+	// create fence to wait for execution of queue
+	const Unique<VkFence>					fence					(createFence(vk, vkDevice, &fenceCreateInfo));
+
+	// create semaphore for use in this test
+	const VkSemaphoreCreateInfo				semaphoreCreateInfo		=
+	{
+		VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,					// sType;
+		DE_NULL,													// pNext;
+		0,															// flags;
+	};
+
+	const Unique <VkSemaphore> 				semaphore 				(createSemaphore(vk, vkDevice, &semaphoreCreateInfo));
+
+	// create submit info for first buffer - signalling semaphore
+	const VkSubmitInfo						submitInfo1				=
+	{
+		VK_STRUCTURE_TYPE_SUBMIT_INFO,								// sType
+		DE_NULL,													// pNext
+		0u,															// waitSemaphoreCount
+		DE_NULL,													// pWaitSemaphores
+		// TODO: The following field is in api spec 1.0 37bedec32143807010323f126ad685ab5e9d98de
+		// TODO: but not in the header Loader and Tools 69d4893b673bd552e445ba999ad0e73463d35007
+		// DE_NULL,													// pWaitDstStageMask
+		1,															// commandBufferCount
+		&primCmdBuf1.get(),											// pCommandBuffers
+		1u,															// signalSemaphoreCount
+		&semaphore.get(),											// pSignalSemaphores
+	};
+
+	// Submit the command buffer to the queue
+	VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo1, *fence));
+
+	// wait for end of execution of queue
+	VK_CHECK(vk.waitForFences(vkDevice, 1, &fence.get(), 0u, INFINITE_TIMEOUT));
+
+	// check if buffer has been executed
+	VkResult result = vk.getEventStatus(vkDevice,*event1);
+	if (result != VK_EVENT_SET)
+		return tcu::TestStatus::fail("Submit Buffer and Wait for Single Semaphore Test FAILED");
+
+	// create submit info for second buffer - waiting for semaphore
+	const VkSubmitInfo						submitInfo2				=
+	{
+		VK_STRUCTURE_TYPE_SUBMIT_INFO,								// sType
+		DE_NULL,													// pNext
+		1u,															// waitSemaphoreCount
+		&semaphore.get(),											// pWaitSemaphores
+		// TODO: The following field is in api spec 1.0 37bedec32143807010323f126ad685ab5e9d98de
+		// TODO: but not in the header Loader and Tools 69d4893b673bd552e445ba999ad0e73463d35007
+		// DE_NULL,													// pWaitDstStageMask
+		1,															// commandBufferCount
+		&primCmdBuf2.get(),											// pCommandBuffers
+		0u,															// signalSemaphoreCount
+		DE_NULL,													// pSignalSemaphores
+	};
+
+	// reset fence, so it can be used again
+	VK_CHECK(vk.resetFences(vkDevice, 1u, &fence.get()));
+
+	// Submit the second command buffer to the queue
+	VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo2, *fence));
+
+	// wait for end of execution of queue
+	VK_CHECK(vk.waitForFences(vkDevice, 1, &fence.get(), 0u, INFINITE_TIMEOUT));
+
+	// check if second buffer has been executed
+	// if it has been executed, it means that the semaphore was signalled - so test if passed
+	result = vk.getEventStatus(vkDevice,*event1);
+	if (result != VK_EVENT_SET)
+		return tcu::TestStatus::fail("Submit Buffer and Wait for Single Semaphore Test FAILED");
+
+	return tcu::TestStatus::pass("Submit Buffer and Wait for Single Semaphore Test succeeded");
+}
+
+tcu::TestStatus submitBufferWaitManySemaphores(Context& context)
+{
+	// This test will create numSemaphores semaphores, and signal them in NUM_SEMAPHORES submits to queue
+	// After that the numSubmissions queue submissions will wait for each semaphore
+
+	const deUint32  						numSemaphores			= 10u;
+	const deUint32  						numSubmissions			= 10u;
+	const VkDevice							vkDevice				= context.getDevice();
+	const DeviceInterface&					vk						= context.getDeviceInterface();
+	const VkQueue							queue					= context.getUniversalQueue();
+	const deUint32							queueFamilyIndex		= context.getUniversalQueueFamilyIndex();
+
+	const VkCommandPoolCreateInfo			cmdPoolParams			=
+	{
+		VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,					// VkStructureType				sType;
+		DE_NULL,													// const void*					pNext;
+		VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,			// VkCommandPoolCreateFlags		flags;
+		queueFamilyIndex,											// deUint32						queueFamilyIndex;
+	};
+	const Unique<VkCommandPool>				cmdPool					(createCommandPool(vk, vkDevice, &cmdPoolParams));
+
+	// Command buffer
+	const VkCommandBufferAllocateInfo		cmdBufParams			=
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,				// VkStructureType				sType;
+		DE_NULL,													// const void*					pNext;
+		*cmdPool,													// VkCommandPool				pool;
+		VK_COMMAND_BUFFER_LEVEL_PRIMARY,							// VkCommandBufferLevel			level;
+		1u,															// uint32_t						bufferCount;
+	};
+
+	// Create command buffer
+	const Unique<VkCommandBuffer>			primCmdBuf				(allocateCommandBuffer(vk, vkDevice, &cmdBufParams));
+
+	const VkCommandBufferBeginInfo			primCmdBufBeginInfo		=
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,				// sType
+		DE_NULL,													// pNext
+		0,															// flags
+		(VkRenderPass)0u,											// renderPass
+		0u,															// subpass
+		(VkFramebuffer)0u,											// framebuffer
+		VK_FALSE,													// occlusionQueryEnable
+		(VkQueryControlFlags)0u,									// queryFlags
+		(VkQueryPipelineStatisticFlags)0u,							// pipelineStatistics
+	};
+
+	// Fill create info struct for event
+	const VkEventCreateInfo					eventCreateInfo			=
+	{
+		VK_STRUCTURE_TYPE_EVENT_CREATE_INFO,
+		DE_NULL,
+		0u,
+	};
+
+	// create event that will be used to check if command buffers has been executed
+	const Unique<VkEvent>					event					(createEvent(vk, vkDevice, &eventCreateInfo));
+
+	// reset event - at creation state is undefined
+	VK_CHECK(vk.resetEvent(vkDevice, *event));
+
+	// record command buffer
+	VK_CHECK(vk.beginCommandBuffer(*primCmdBuf, &primCmdBufBeginInfo));
+	{
+		// allow execution of event during every stage of pipeline
+		VkPipelineStageFlags stageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+
+		// record setting event
+		vk.cmdSetEvent(*primCmdBuf, *event,stageMask);
+	}
+	VK_CHECK(vk.endCommandBuffer(*primCmdBuf));
+
+	const VkFenceCreateInfo					fenceCreateInfo			=
+	{
+		VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+		DE_NULL,
+		0u,															// flags
+	};
+
+	// create fence to wait for execution of queue
+	const Unique<VkFence>					fence					(createFence(vk, vkDevice, &fenceCreateInfo));
+
+	// numSemaphores is declared const, so this array can be static
+	// the semaphores will be destroyed automatically at end of scope
+	Move <VkSemaphore>						semaphoreArray[numSemaphores];
+
+	// prepare create info for semaphores - same for all
+	const VkSemaphoreCreateInfo				semaphoreCreateInfo		=
+	{
+		VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,					// sType;
+		DE_NULL,													// pNext;
+		0,															// flags;
+	};
+
+	for (deUint32 idx = 0; idx < numSemaphores; ++idx) {
+
+		// create semaphores for use in this test
+		semaphoreArray[idx] = createSemaphore(vk, vkDevice, &semaphoreCreateInfo);
+
+		// create submit info for buffer - signal semaphore
+		const VkSubmitInfo submitInfo1 =
+		{
+			VK_STRUCTURE_TYPE_SUBMIT_INFO,							// sType
+			DE_NULL,												// pNext
+			0u,														// waitSemaphoreCount
+			DE_NULL,												// pWaitSemaphores
+			// TODO: The following field is in api spec 1.0 37bedec32143807010323f126ad685ab5e9d98de
+			// TODO: but not in the header Loader and Tools 69d4893b673bd552e445ba999ad0e73463d35007
+			// DE_NULL,												// pWaitDstStageMask
+			1,														// commandBufferCount
+			&primCmdBuf.get(),										// pCommandBuffers
+			1u,														// signalSemaphoreCount
+			&semaphoreArray[idx].get(),								// pSignalSemaphores
+		};
+
+		// Submit the command buffer to the queue
+		VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo1, *fence));
+
+		// wait for end of execution of queue
+		VK_CHECK(vk.waitForFences(vkDevice, 1, &fence.get(), 0u, INFINITE_TIMEOUT));
+
+		// check if buffer has been executed
+		VkResult result = vk.getEventStatus(vkDevice,*event);
+		if (result != VK_EVENT_SET)
+			return tcu::TestStatus::fail("Submit Buffer and Wait for Many Semaphores Test FAILED");
+
+		// reset event, so next buffers can set it again
+		VK_CHECK(vk.resetEvent(vkDevice, *event));
+
+		// reset fence, so it can be used again
+		VK_CHECK(vk.resetFences(vkDevice, 1u, &fence.get()));
+	};
+
+	// the following code waits for the semaphores set above - numSubmissions queues will wait for each semaphore from above
+	for (deUint32 idxSemaphore = 0; idxSemaphore < numSemaphores; ++idxSemaphore) {
+		for (deUint32 idxSubmission = 0; idxSubmission < numSubmissions; ++idxSubmission) {
+
+			// create submit info for buffer - waiting for semaphore
+			const VkSubmitInfo				submitInfo2				=
+			{
+				VK_STRUCTURE_TYPE_SUBMIT_INFO,						// sType
+				DE_NULL,											// pNext
+				1u,													// waitSemaphoreCount
+				&semaphoreArray[idxSemaphore].get(),				// pWaitSemaphores
+				// TODO: The following field is in api spec 1.0 37bedec32143807010323f126ad685ab5e9d98de
+				// TODO: but not in the header Loader and Tools 69d4893b673bd552e445ba999ad0e73463d35007
+				// DE_NULL,											// pWaitDstStageMask
+				1,													// commandBufferCount
+				&primCmdBuf.get(),									// pCommandBuffers
+				0u,													// signalSemaphoreCount
+				DE_NULL,											// pSignalSemaphores
+			};
+
+			// Submit the second command buffer to the queue
+			VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo2, *fence));
+
+			// wait for end of execution of queue
+			VK_CHECK(vk.waitForFences(vkDevice, 1, &fence.get(), 0u, INFINITE_TIMEOUT));
+
+			// check if second buffer has been executed
+			// if it has been executed, it means that the semaphore was signalled - so test if passed
+			VkResult result = vk.getEventStatus(vkDevice,*event);
+			if (result != VK_EVENT_SET)
+				return tcu::TestStatus::fail("Submit Buffer and Wait for Many Semaphores Test FAILED");
+
+			// reset fence, so it can be used again
+			VK_CHECK(vk.resetFences(vkDevice, 1u, &fence.get()));
+
+			// reset event, so next buffers can set it again
+			VK_CHECK(vk.resetEvent(vkDevice, *event));
+		};
+	};
+
+	return tcu::TestStatus::pass("Submit Buffer and Wait for Many Semaphores Test succeeded");
+}
+
 tcu::TestStatus submitBufferNullFence(Context& context)
 {
 	const VkDevice							vkDevice				= context.getDevice();
@@ -3193,6 +3531,8 @@ tcu::TestCaseGroup* createCommandBuffersTests (tcu::TestContext& testCtx)
 	/* 19.4. Command Buffer Submission (6.4 in VK 1.0 Spec) */
 	addFunctionCase				(commandBuffersTests.get(), "submit_count_non_zero",			"", submitBufferCountNonZero);
 	addFunctionCase				(commandBuffersTests.get(), "submit_count_equal_zero",			"", submitBufferCountEqualZero);
+	addFunctionCase				(commandBuffersTests.get(), "submit_wait_single_semaphore",		"", submitBufferWaitSingleSemaphore);
+	addFunctionCase				(commandBuffersTests.get(), "submit_wait_many_sepaphores",		"", submitBufferWaitManySemaphores);
 	addFunctionCase				(commandBuffersTests.get(), "submit_null_fence",				"", submitBufferNullFence);
 	/* 19.5. Secondary Command Buffer Execution (6.6 in VK 1.0 Spec) */
 	addFunctionCase				(commandBuffersTests.get(), "secondary_execute",				"",	executeSecondaryBufferTest);
