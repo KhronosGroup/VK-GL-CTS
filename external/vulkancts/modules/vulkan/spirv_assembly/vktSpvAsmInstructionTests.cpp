@@ -2745,6 +2745,7 @@ tcu::TestCaseGroup* createLoopControlGroup (tcu::TestContext& testCtx)
 
 		"%id          = OpVariable %uvec3ptr Input\n"
 		"%zero        = OpConstant %i32 0\n"
+		"%uzero       = OpConstant %u32 0\n"
 		"%one         = OpConstant %i32 1\n"
 		"%constf1     = OpConstant %f32 1.0\n"
 		"%four        = OpConstant %u32 4\n"
@@ -2752,7 +2753,7 @@ tcu::TestCaseGroup* createLoopControlGroup (tcu::TestContext& testCtx)
 		"%main        = OpFunction %void None %voidf\n"
 		"%entry       = OpLabel\n"
 		"%i           = OpVariable %u32ptr Function\n"
-		"               OpStore %i %zero\n"
+		"               OpStore %i %uzero\n"
 
 		"%idval       = OpLoad %uvec3 %id\n"
 		"%x           = OpCompositeExtract %u32 %idval 0\n"
