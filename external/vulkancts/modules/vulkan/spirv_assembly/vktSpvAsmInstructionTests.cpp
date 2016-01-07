@@ -6749,10 +6749,9 @@ void createOpQuantizeSingleOptionTests(tcu::TestCaseGroup* testCtx)
 	const struct SingleFP16Possibility
 	{
 		const char* name;
-		const char* constant;
+		const char* constant;  // Value to assign to %test_constant.
 		float		valueAsFloat;
-		const char* condition;
-		// condition must evaluate to true after %test_constant = OpQuantizeToF16(%constant)
+		const char* condition; // Must assign to %cond an expression that evaluates to true after %c = OpQuantizeToF16(%test_constant + 0).
 	}				tests[]				=
 	{
 		{
@@ -6834,8 +6833,10 @@ void createOpQuantizeSingleOptionTests(tcu::TestCaseGroup* testCtx)
 			"0x1.1p128\n",
 			std::numeric_limits<float>::quiet_NaN(),
 
-			"%nan = OpIsNan %bool %c\n"
-			"%as_int = OpBitcast %i32 %c\n"
+			// Can't use %c, because NaN+0 isn't necessarily a NaN (Vulkan spec A.4).
+			"%direct_quant = OpQuantizeToF16 %f32 %test_constant\n"
+			"%nan = OpIsNan %bool %direct_quant\n"
+			"%as_int = OpBitcast %i32 %direct_quant\n"
 			"%positive = OpSGreaterThan %bool %as_int %c_i32_0\n"
 			"%cond = OpLogicalAnd %bool %nan %positive\n"
 		}, // nan
@@ -6844,14 +6845,16 @@ void createOpQuantizeSingleOptionTests(tcu::TestCaseGroup* testCtx)
 			"-0x1.0001p128\n",
 			std::numeric_limits<float>::quiet_NaN(),
 
-			"%nan = OpIsNan %bool %c\n"
-			"%as_int = OpBitcast %i32 %c\n"
+			// Can't use %c, because NaN+0 isn't necessarily a NaN (Vulkan spec A.4).
+			"%direct_quant = OpQuantizeToF16 %f32 %test_constant\n"
+			"%nan = OpIsNan %bool %direct_quant\n"
+			"%as_int = OpBitcast %i32 %direct_quant\n"
 			"%negative = OpSLessThan %bool %as_int %c_i32_0\n"
 			"%cond = OpLogicalAnd %bool %nan %negative\n"
 		} // -nan
 	};
 	const char*		constants			=
-		"%test_constant = OpConstant %f32\n";
+		"%test_constant = OpConstant %f32 ";  // The value will be test.constant.
 
 	StringTemplate	function			(
 		"%test_code     = OpFunction %v4f32 None %v4f32_function\n"
