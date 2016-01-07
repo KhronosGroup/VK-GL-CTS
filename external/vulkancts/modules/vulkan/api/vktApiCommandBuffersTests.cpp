@@ -2395,7 +2395,8 @@ tcu::TestStatus submitBufferCountEqualZero(Context& context)
 		DE_NULL,													// pNext;
 		0u,															// flags
 	};
-	const Unique<VkFence>					fence					(createFence(vk, vkDevice, &fenceCreateInfo));
+	const Unique<VkFence>					fenceZero				(createFence(vk, vkDevice, &fenceCreateInfo));
+	const Unique<VkFence>					fenceOne				(createFence(vk, vkDevice, &fenceCreateInfo));
 
 	const VkSubmitInfo						submitInfoCountZero		=
 	{
@@ -2427,11 +2428,17 @@ tcu::TestStatus submitBufferCountEqualZero(Context& context)
 	// Submit the command buffers to the queue
 	// We're performing two submits to make sure that the first one has
 	// a chance to be processed before we check the event's status
-	VK_CHECK(vk.queueSubmit(queue, 0, &submitInfoCountZero, fence.get()));
-	VK_CHECK(vk.queueSubmit(queue, 1, &submitInfoCountOne, fence.get()));
+	VK_CHECK(vk.queueSubmit(queue, 0, &submitInfoCountZero, fenceZero.get()));
+	VK_CHECK(vk.queueSubmit(queue, 1, &submitInfoCountOne, fenceOne.get()));
+
+	const VkFence							fences[]				= 
+	{
+		fenceZero.get(),
+		fenceOne.get(),
+	};
 
 	// Wait for the queue
-	VK_CHECK(vk.waitForFences(vkDevice, 1u, &fence.get(), VK_TRUE, INFINITE_TIMEOUT));
+	VK_CHECK(vk.waitForFences(vkDevice, (deUint32)DE_LENGTH_OF_ARRAY(fences), fences, VK_TRUE, INFINITE_TIMEOUT));
 
 	// Check if the first buffer was executed
 	if (vk.getEventStatus(vkDevice, events[0]) == VK_EVENT_SET)
