@@ -67,7 +67,6 @@ public:
 	DepthStencilBaseCase (Context& context, const char* vertexShaderName, const char* fragmentShaderName)
 		: TestInstance						(context)
 		, m_colorAttachmentFormat			(vk::VK_FORMAT_R8G8B8A8_UNORM)
-		, m_depthStencilAttachmentFormat	(vk::VK_FORMAT_D24_UNORM_S8_UINT)
 		, m_topology						(vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
 		, m_vk								(context.getDeviceInterface())
 		, m_vertexShaderName				(vertexShaderName)
@@ -120,6 +119,25 @@ protected:
 	void initialize (void)
 	{
 		const vk::VkDevice device = m_context.getDevice();
+
+		vk::VkFormatProperties formatProperties;
+		// check for VK_FORMAT_D24_UNORM_S8_UINT support
+		m_context.getInstanceInterface().getPhysicalDeviceFormatProperties(m_context.getPhysicalDevice(), vk::VK_FORMAT_D24_UNORM_S8_UINT, &formatProperties);
+		if (formatProperties.optimalTilingFeatures & vk::VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT)
+		{
+			m_depthStencilAttachmentFormat = vk::VK_FORMAT_D24_UNORM_S8_UINT;
+		}
+		else
+		{
+			// check for VK_FORMAT_D32_SFLOAT_S8_UINT support
+			m_context.getInstanceInterface().getPhysicalDeviceFormatProperties(m_context.getPhysicalDevice(), vk::VK_FORMAT_D32_SFLOAT_S8_UINT, &formatProperties);
+			if (formatProperties.optimalTilingFeatures & vk::VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT)
+			{
+				m_depthStencilAttachmentFormat = vk::VK_FORMAT_D32_SFLOAT_S8_UINT;
+			}
+			else
+				throw tcu::NotSupportedError("No valid depth stencil attachment available");
+		}
 
 		const PipelineLayoutCreateInfo pipelineLayoutCreateInfo;
 		m_pipelineLayout = vk::createPipelineLayout(m_vk, device, &pipelineLayoutCreateInfo);
@@ -385,6 +403,14 @@ public:
 	DepthBoundsParamTestInstance (Context &context, ShaderMap shaders)
 		: DepthStencilBaseCase (context, shaders[glu::SHADERTYPE_VERTEX], shaders[glu::SHADERTYPE_FRAGMENT])
 	{
+		// Check if depth bounds test is supported
+		{
+			const vk::VkPhysicalDeviceFeatures& deviceFeatures = m_context.getDeviceFeatures();
+
+			if (!deviceFeatures.depthBounds)
+				throw tcu::NotSupportedError("Depth bounds test is unsupported");
+		}
+
 		m_data.push_back(PositionColorVertex(tcu::Vec4(-1.0f, 1.0f, 0.375f, 1.0f), tcu::RGBA::green().toVec()));
 		m_data.push_back(PositionColorVertex(tcu::Vec4(0.0f, 1.0f, 0.375f, 1.0f), tcu::RGBA::green().toVec()));
 		m_data.push_back(PositionColorVertex(tcu::Vec4(-1.0f, -1.0f, 0.375f, 1.0f), tcu::RGBA::green().toVec()));
@@ -402,15 +428,6 @@ public:
 
 		m_depthStencilState_1 = PipelineCreateInfo::DepthStencilState(
 			vk::VK_TRUE, vk::VK_TRUE, vk::VK_COMPARE_OP_ALWAYS, vk::VK_FALSE);
-
-
-		// Check if depth bounds test is supported
-		{
-			const vk::VkPhysicalDeviceFeatures& deviceFeatures = m_context.getDeviceFeatures();
-
-			if (!deviceFeatures.depthBounds)
-				throw tcu::NotSupportedError("Depth bounds test is unsupported");
-		}
 
 		// enable depth bounds test
 		m_depthStencilState_2 = PipelineCreateInfo::DepthStencilState(

@@ -242,6 +242,17 @@ public:
 		: DynamicStateBaseClass	(context, shaders[glu::SHADERTYPE_VERTEX], shaders[glu::SHADERTYPE_FRAGMENT])
 		, m_geometryShaderName	(shaders[glu::SHADERTYPE_GEOMETRY])
 	{
+		// Check geometry shader support
+		{
+			const vk::VkPhysicalDeviceFeatures& deviceFeatures = m_context.getDeviceFeatures();
+
+			if (!deviceFeatures.multiViewport)
+				throw tcu::NotSupportedError("Multi-viewport is not supported");
+
+			if (!deviceFeatures.geometryShader)
+				throw tcu::NotSupportedError("Geometry shaders are not supported");
+		}
+
 		for (int i = 0; i < 4; i++)
 		{
 			m_data.push_back(PositionColorVertex(tcu::Vec4(-1.0f, 1.0f, (float)i / 3.0f, 1.0f), tcu::RGBA::green().toVec()));
@@ -255,17 +266,6 @@ public:
 
 	virtual void initPipeline (const vk::VkDevice device)
 	{
-		// Check geometry shader support
-		{
-			const vk::VkPhysicalDeviceFeatures& deviceFeatures = m_context.getDeviceFeatures();
-
-			if (!deviceFeatures.multiViewport)
-				throw tcu::NotSupportedError("Multi-viewport is not supported");
-
-			if (!deviceFeatures.geometryShader)
-				throw tcu::NotSupportedError("Geometry shaders are not supported");
-		}
-
 		const vk::Unique<vk::VkShaderModule> vs(createShaderModule(m_vk, device, m_context.getBinaryCollection().get(m_vertexShaderName), 0));
 		const vk::Unique<vk::VkShaderModule> gs(createShaderModule(m_vk, device, m_context.getBinaryCollection().get(m_geometryShaderName), 0));
 		const vk::Unique<vk::VkShaderModule> fs(createShaderModule(m_vk, device, m_context.getBinaryCollection().get(m_fragmentShaderName), 0));
