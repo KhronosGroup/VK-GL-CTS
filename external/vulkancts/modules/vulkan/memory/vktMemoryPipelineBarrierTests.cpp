@@ -2046,7 +2046,7 @@ void PipelineBarrier::submit (SubmitContext& context)
 		{
 			const vk::VkImageMemoryBarrier	barrier		=
 			{
-				vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
+				vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
 				DE_NULL,
 
 				m_srcAccesses,
