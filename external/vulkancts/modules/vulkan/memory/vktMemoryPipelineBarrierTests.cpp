@@ -908,7 +908,7 @@ IVec2 findImageSizeWxHx4 (vk::VkDeviceSize size)
 IVec2 findMaxRGBA8ImageSize (const vk::DeviceInterface&	vkd,
 							 vk::VkDevice				device,
 
-							 vk::VkBufferUsageFlags		usage,
+							 vk::VkImageUsageFlags		usage,
 							 vk::VkSharingMode			sharingMode,
 							 const vector<deUint32>&	queueFamilies,
 
