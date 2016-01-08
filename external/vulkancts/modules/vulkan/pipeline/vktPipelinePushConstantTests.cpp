@@ -250,7 +250,7 @@ void PushConstantGraphicsTest::initPrograms (SourceCollections& sourceCollection
 				case SIZE_CASE_16:
 					vertexSrc << "vec4 color;\n"
 							  << "} matInst;\n"
-							  << "layout(location = 0) uniform UniformBuf {\n"
+							  << "layout(std140, binding = 0) uniform UniformBuf {\n"
 							  << "vec4 element;\n"
 							  << "} uniformBuf;\n";
 					break;
