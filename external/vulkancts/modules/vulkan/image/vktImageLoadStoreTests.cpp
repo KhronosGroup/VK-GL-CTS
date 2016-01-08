@@ -67,25 +67,25 @@ namespace image
 namespace
 {
 
-inline VkImageCreateInfo makeImageCreateInfo (const Texture& texture, const VkFormat format, const VkImageUsageFlags usage)
+inline VkImageCreateInfo makeImageCreateInfo (const Texture& texture, const VkFormat format, const VkImageUsageFlags usage, const VkImageCreateFlags flags)
 {
 	const VkImageCreateInfo imageParams =
 	{
-		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,												// VkStructureType			sType;
-		DE_NULL,																			// const void*				pNext;
-		(isCube(texture) ? (VkImageCreateFlags)VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : 0u),	// VkImageCreateFlags		flags;
-		mapImageType(texture.type()),														// VkImageType				imageType;
-		format,																				// VkFormat					format;
-		makeExtent3D(texture.layerSize()),													// VkExtent3D				extent;
-		1u,																					// deUint32					mipLevels;
-		(deUint32)texture.numLayers(),														// deUint32					arrayLayers;
-		VK_SAMPLE_COUNT_1_BIT,																// VkSampleCountFlagBits	samples;
-		VK_IMAGE_TILING_OPTIMAL,															// VkImageTiling			tiling;
-		usage,																				// VkImageUsageFlags		usage;
-		VK_SHARING_MODE_EXCLUSIVE,															// VkSharingMode			sharingMode;
-		0u,																					// deUint32					queueFamilyIndexCount;
-		DE_NULL,																			// const deUint32*			pQueueFamilyIndices;
-		VK_IMAGE_LAYOUT_UNDEFINED,															// VkImageLayout			initialLayout;
+		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,														// VkStructureType			sType;
+		DE_NULL,																					// const void*				pNext;
+		(isCube(texture) ? (VkImageCreateFlags)VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : 0u) | flags,	// VkImageCreateFlags		flags;
+		mapImageType(texture.type()),																// VkImageType				imageType;
+		format,																						// VkFormat					format;
+		makeExtent3D(texture.layerSize()),															// VkExtent3D				extent;
+		1u,																							// deUint32					mipLevels;
+		(deUint32)texture.numLayers(),																// deUint32					arrayLayers;
+		VK_SAMPLE_COUNT_1_BIT,																		// VkSampleCountFlagBits	samples;
+		VK_IMAGE_TILING_OPTIMAL,																	// VkImageTiling			tiling;
+		usage,																						// VkImageUsageFlags		usage;
+		VK_SHARING_MODE_EXCLUSIVE,																	// VkSharingMode			sharingMode;
+		0u,																							// deUint32					queueFamilyIndexCount;
+		DE_NULL,																					// const deUint32*			pQueueFamilyIndices;
+		VK_IMAGE_LAYOUT_UNDEFINED,																	// VkImageLayout			initialLayout;
 	};
 	return imageParams;
 }
@@ -682,7 +682,7 @@ ImageStoreTestInstance::ImageStoreTestInstance (Context&		context,
 
 	m_image = de::MovePtr<Image>(new Image(
 		vk, device, allocator,
-		makeImageCreateInfo(m_texture, m_format, VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT),
+		makeImageCreateInfo(m_texture, m_format, VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, 0u),
 		MemoryRequirement::Any));
 
 	// This buffer will be used to pass constants to the shader
@@ -1074,18 +1074,19 @@ ImageLoadStoreTestInstance::ImageLoadStoreTestInstance (Context&		context,
 	: LoadStoreTestInstance	(context, texture, format, imageFormat, singleLayerBind)
 	, m_perLayerData		(texture.numLayers())
 {
-	const DeviceInterface&	vk					= m_context.getDeviceInterface();
-	const VkDevice			device				= m_context.getDevice();
-	Allocator&				allocator			= m_context.getDefaultAllocator();
+	const DeviceInterface&		vk					= m_context.getDeviceInterface();
+	const VkDevice				device				= m_context.getDevice();
+	Allocator&					allocator			= m_context.getDefaultAllocator();
+	const VkImageCreateFlags	imageFlags			= (m_format == m_imageFormat ? 0u : VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT);
 
 	m_imageSrc = de::MovePtr<Image>(new Image(
 		vk, device, allocator,
-		makeImageCreateInfo(m_texture, m_imageFormat, VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT),
+		makeImageCreateInfo(m_texture, m_imageFormat, VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, imageFlags),
 		MemoryRequirement::Any));
 
 	m_imageDst = de::MovePtr<Image>(new Image(
 		vk, device, allocator,
-		makeImageCreateInfo(m_texture, m_imageFormat, VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT),
+		makeImageCreateInfo(m_texture, m_imageFormat, VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, imageFlags),
 		MemoryRequirement::Any));
 }
 
