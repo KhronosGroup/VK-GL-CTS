@@ -1176,7 +1176,7 @@ public:
 						 const UVec2&				size,
 						 const Attachment&			attachmentInfo,
 						 bool						lazy)
-		: m_image			(createAttachmentImage(vk, device, queueIndex, size, attachmentInfo.getFormat(), attachmentInfo.getSamples(), lazy ? VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT : 0, VK_IMAGE_LAYOUT_UNDEFINED))
+		: m_image			(createAttachmentImage(vk, device, queueIndex, size, attachmentInfo.getFormat(), attachmentInfo.getSamples(), lazy ? VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT : VK_IMAGE_USAGE_TRANSFER_SRC_BIT, VK_IMAGE_LAYOUT_UNDEFINED))
 		, m_imageMemory		(createImageMemory(vk, device, allocator, *m_image, lazy))
 		, m_attachmentView	(createImageAttachmentView(vk, device, *m_image, attachmentInfo.getFormat(), getImageAspectFlags(attachmentInfo.getFormat())))
 	{
