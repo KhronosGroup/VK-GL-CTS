@@ -6332,7 +6332,18 @@ tcu::TestStatus MemoryTestInstance::iterate (void)
 
 				log << TestLog::Message << "Max buffer size: " << maxBufferSize << TestLog::EndMessage;
 				log << TestLog::Message << "Max RGBA8 image size: " << maxImageSize << TestLog::EndMessage;
-				testCommand(log, m_resultCollector, m_context.getBinaryCollection(), vki, vkd, physicalDevice, device, m_config.size, m_memoryTypeNdx, m_config.usage, m_config.sharing, queue, queueFamilyIndex, queues, maxBufferSize, maxImageSize);
+
+				// Skip tests if there are no supported operations
+				if (maxBufferSize == 0
+					&& maxImageSize[0] == 0
+					&& (m_config.usage & (USAGE_HOST_READ|USAGE_HOST_WRITE)) == 0)
+				{
+					log << TestLog::Message << "Skipping memory type. None of the usages are supported." << TestLog::EndMessage;
+				}
+				else
+				{
+					testCommand(log, m_resultCollector, m_context.getBinaryCollection(), vki, vkd, physicalDevice, device, m_config.size, m_memoryTypeNdx, m_config.usage, m_config.sharing, queue, queueFamilyIndex, queues, maxBufferSize, maxImageSize);
+				}
 			}
 			catch (const tcu::TestError& e)
 			{
@@ -6403,8 +6414,10 @@ tcu::TestCaseGroup* createPipelineBarrierTests (tcu::TestContext& testCtx)
 	de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "pipeline_barrier", "Pipeline barrier tests."));
 	const vk::VkDeviceSize			sizes[]			=
 	{
-		1024,
-		1024*1024,
+		1024,			// 1K
+		8*1024,			// 8K
+		64*1024,		// 64K
+		1024*1024,		// 1M
 	};
 	const Usage						usages[]		=
 	{
