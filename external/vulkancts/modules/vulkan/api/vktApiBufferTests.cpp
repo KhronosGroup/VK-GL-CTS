@@ -99,15 +99,15 @@ private:
 
  tcu::TestStatus BufferTestInstance::bufferCreateAndAllocTest (VkDeviceSize size)
 {
-	const VkDevice			vkDevice	= m_context.getDevice();
-	const DeviceInterface&	vk			= m_context.getDeviceInterface();
+	const VkDevice			vkDevice			= m_context.getDevice();
+	const DeviceInterface&	vk					= m_context.getDeviceInterface();
 	VkBuffer				testBuffer;
 	VkMemoryRequirements	memReqs;
 	VkDeviceMemory			memory;
+	const deUint32			queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
 
 	// Create buffer
 	{
-		const deUint32					queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
 		const VkBufferCreateInfo		bufferParams		=
 		{
 			VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
@@ -146,8 +146,52 @@ private:
 		if (vk.allocateMemory(vkDevice, &memAlloc, (const VkAllocationCallbacks*)DE_NULL, &memory) != VK_SUCCESS)
 			return tcu::TestStatus::fail("Alloc memory failed! (requested memory size: " + de::toString(size) + ")");
 
-		if (vk.bindBufferMemory(vkDevice, testBuffer, memory, 0) != VK_SUCCESS)
-			return tcu::TestStatus::fail("Bind buffer memory failed! (requested memory size: " + de::toString(size) + ")");
+		
+		if ((m_testCase.flags | VK_BUFFER_CREATE_SPARSE_BINDING_BIT ) ||
+			(m_testCase.flags | VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT) ||
+			(m_testCase.flags | VK_BUFFER_CREATE_SPARSE_ALIASED_BIT))
+		{
+			VkQueue queue												= 0;
+
+			vk.getDeviceQueue(vkDevice, queueFamilyIndex, 0, &queue);
+
+			const VkSparseMemoryBind			sparseMemoryBind		=
+			{
+				0,										// VkDeviceSize								resourceOffset;
+				memReqs.size,							// VkDeviceSize								size;
+				memory,									// VkDeviceMemory							memory;
+				0,										// VkDeviceSize								memoryOffset;
+				0										// VkSparseMemoryBindFlags					flags;
+			};
+			
+			const VkSparseBufferMemoryBindInfo	sparseBufferMemoryBindInfo	=
+			{
+				testBuffer,								// VkBuffer									buffer;
+				1u,										// deUint32									bindCount;
+				&sparseMemoryBind						// const VkSparseMemoryBind*				pBinds;
+			};
+
+			const VkBindSparseInfo				bindSparseInfo			=
+			{
+				VK_STRUCTURE_TYPE_BIND_SPARSE_INFO,		// VkStructureType							sType;
+				DE_NULL,								// const void*								pNext;
+				0,										// deUint32									waitSemaphoreCount;
+				DE_NULL,								// const VkSemaphore*						pWaitSemaphores;
+				1u,										// deUint32									bufferBindCount;
+				&sparseBufferMemoryBindInfo,			// const VkSparseBufferMemoryBindInfo*		pBufferBinds;
+				0,										// deUint32									imageOpaqueBindCount;
+				DE_NULL,								// const VkSparseImageOpaqueMemoryBindInfo*	pImageOpaqueBinds;
+				0,										// deUint32									imageBindCount;
+				DE_NULL,								// const VkSparseImageMemoryBindInfo*		pImageBinds;
+				0,										// deUint32									signalSemaphoreCount;
+				DE_NULL,								// const VkSemaphore*						pSignalSemaphores;
+			};
+
+			if (vk.queueBindSparse(queue, 1, &bindSparseInfo, DE_NULL) != VK_SUCCESS)
+				return tcu::TestStatus::fail("Bind sparse buffer memory failed! (requested memory size: " + de::toString(size) + ")");
+		} else
+			if (vk.bindBufferMemory(vkDevice, testBuffer, memory, 0) != VK_SUCCESS)
+				return tcu::TestStatus::fail("Bind buffer memory failed! (requested memory size: " + de::toString(size) + ")");
 	}
 
 	vk.freeMemory(vkDevice, memory, (const VkAllocationCallbacks*)DE_NULL);
