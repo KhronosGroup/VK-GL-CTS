@@ -78,9 +78,9 @@ public:
 Context::Context (const glu::RenderContext& ctx)
 	: gl						(ctx.getFunctions())
 	, vendor					("drawElements")
-	, version					("OpenGL ES 3.1")
+	, version					("OpenGL ES 3.2")
 	, renderer					((const char*)gl.getString(GL_RENDERER))
-	, shadingLanguageVersion	("OpenGL ES GLSL ES 3.1")
+	, shadingLanguageVersion	("OpenGL ES GLSL ES 3.2")
 	, primitiveRestartEnabled	(false)
 	, defaultVAO				(0)
 	, defaultVAOBound			(false)
@@ -343,7 +343,7 @@ static void translateShaderSource (deUint32 shaderType, std::ostream& dst, const
 			}
 		}
 
-		if (line == "#version 310 es")
+		if (line == "#version 310 es" || line == "#version 320 es")
 		{
 			foundVersion = true;
 			dst << glu::getGLSLVersionDeclaration(version) << "\n";
@@ -629,8 +629,8 @@ ES3PlusWrapperContext::ES3PlusWrapperContext (const ContextFactory& factory, con
 		ContextType(ApiType::core(4,3), config.type.getFlags() & validContextFlags),
 	};
 
-	if (config.type.getAPI() != ApiType::es(3,1))
-		throw tcu::NotSupportedError("Unsupported context type (ES3.1 wrapper supports only ES3.1)");
+	if (config.type.getAPI() != ApiType::es(3,2))
+		throw tcu::NotSupportedError("Unsupported context type (ES3.2 wrapper supports only ES3.2)");
 
 	// try to create any wrappable context
 
@@ -677,7 +677,7 @@ ES3PlusWrapperContext::~ES3PlusWrapperContext (void)
 
 ContextType ES3PlusWrapperContext::getType (void) const
 {
-	return ContextType(ApiType::es(3,1), m_context->getType().getFlags());
+	return ContextType(ApiType::es(3,2), m_context->getType().getFlags());
 }
 
 } // glu
