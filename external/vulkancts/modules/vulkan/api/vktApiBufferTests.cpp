@@ -147,9 +147,9 @@ private:
 			return tcu::TestStatus::fail("Alloc memory failed! (requested memory size: " + de::toString(size) + ")");
 
 		
-		if ((m_testCase.flags | VK_BUFFER_CREATE_SPARSE_BINDING_BIT ) ||
-			(m_testCase.flags | VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT) ||
-			(m_testCase.flags | VK_BUFFER_CREATE_SPARSE_ALIASED_BIT))
+		if ((m_testCase.flags & VK_BUFFER_CREATE_SPARSE_BINDING_BIT ) ||
+			(m_testCase.flags & VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT) ||
+			(m_testCase.flags & VK_BUFFER_CREATE_SPARSE_ALIASED_BIT))
 		{
 			VkQueue queue												= 0;
 
@@ -202,6 +202,19 @@ private:
 
 tcu::TestStatus BufferTestInstance::iterate (void)
 {
+	VkPhysicalDeviceFeatures		physicalDeviceFeatures;
+	
+	m_context.getInstanceInterface().getPhysicalDeviceFeatures(m_context.getPhysicalDevice(), &physicalDeviceFeatures);
+	
+	if ((m_testCase.flags & VK_BUFFER_CREATE_SPARSE_BINDING_BIT ) && !physicalDeviceFeatures.sparseBinding)
+		return tcu::TestStatus::pass("Sparse bindings feature is not enabled");
+
+	if ((m_testCase.flags & VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT ) && !physicalDeviceFeatures.sparseResidencyBuffer)
+		return tcu::TestStatus::pass("Sparse buffer residency feature is not enabled");
+
+	if ((m_testCase.flags & VK_BUFFER_CREATE_SPARSE_ALIASED_BIT ) && !physicalDeviceFeatures.sparseResidencyAliased)
+		return tcu::TestStatus::pass("Sparse aliased residency feature is not enabled");
+	
 	const VkDeviceSize testSizes[] =
 	{
 		1,
@@ -209,7 +222,7 @@ tcu::TestStatus BufferTestInstance::iterate (void)
 		15991,
 		16384
 	};
-	tcu::TestStatus	testStatus					= tcu::TestStatus::pass("Buffer test");
+	tcu::TestStatus					testStatus			= tcu::TestStatus::pass("Buffer test");
 
 	for (int i = 0; i < DE_LENGTH_OF_ARRAY(testSizes); i++)
 	{
