@@ -1713,7 +1713,8 @@ tcu::TestCaseGroup* createMultipleShaderGroup (tcu::TestContext& testCtx)
 		"OpEntryPoint GLCompute %comp_main2 \"entrypoint2\" %id\n"
 		// A module cannot have two OpEntryPoint instructions with the same Execution Model and the same Name string.
 		"OpEntryPoint Vertex    %vert_main  \"entrypoint2\" %vert_builtins %vertexID %instanceID\n"
-		"OpExecutionMode %vert_main LocalSize 1 1 1\n"
+		"OpExecutionMode %comp_main1 LocalSize 1 1 1\n"
+		"OpExecutionMode %comp_main2 LocalSize 1 1 1\n"
 
 		"OpName %comp_main1              \"entrypoint1\"\n"
 		"OpName %comp_main2              \"entrypoint2\"\n"
@@ -1736,6 +1737,10 @@ tcu::TestCaseGroup* createMultipleShaderGroup (tcu::TestContext& testCtx)
 
 		+ string(s_InputOutputBufferTraits) + string(s_CommonTypes) + string(s_InputOutputBuffer) +
 
+		"%zero       = OpConstant %i32 0\n"
+		"%one        = OpConstant %u32 1\n"
+		"%c_f32_1    = OpConstant %f32 1\n"
+
 		"%i32ptr              = OpTypePointer Input %i32\n"
 		"%vec4                = OpTypeVector %f32 4\n"
 		"%vec4ptr             = OpTypePointer Output %vec4\n"
@@ -1747,9 +1752,6 @@ tcu::TestCaseGroup* createMultipleShaderGroup (tcu::TestContext& testCtx)
 		"%id         = OpVariable %uvec3ptr Input\n"
 		"%vertexID   = OpVariable %i32ptr Input\n"
 		"%instanceID = OpVariable %i32ptr Input\n"
-		"%zero       = OpConstant %i32 0\n"
-		"%one        = OpConstant %u32 1\n"
-		"%c_f32_1    = OpConstant %f32 1\n"
 		"%c_vec4_1   = OpConstantComposite %vec4 %c_f32_1 %c_f32_1 %c_f32_1 %c_f32_1\n"
 
 		// gl_Position = vec4(1.);
