@@ -39,6 +39,7 @@
 #include "gluVarType.hpp"
 #include "tcuTestLog.hpp"
 #include "vkPrograms.hpp"
+#include "vkQueryUtil.hpp"
 #include "vktTestCase.hpp"
 
 namespace vkt
@@ -230,13 +231,16 @@ tcu::TestStatus BufferTestInstance::iterate (void)
 
 	if (m_testCase.usage & (VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT))
 	{
-		const VkPhysicalDevice		vkPhysicalDevice	= m_context.getPhysicalDevice();
-		const InstanceInterface&	vkInstance			= m_context.getInstanceInterface();
+		const VkPhysicalDevice					vkPhysicalDevice	= m_context.getPhysicalDevice();
+		const InstanceInterface&				vkInstance			= m_context.getInstanceInterface();
+		const VkPhysicalDeviceMemoryProperties	memoryProperties	= getPhysicalDeviceMemoryProperties(vkInstance, vkPhysicalDevice);
 		VkPhysicalDeviceProperties	props;
 
 		vkInstance.getPhysicalDeviceProperties(vkPhysicalDevice, &props);
 
-		testStatus = bufferCreateAndAllocTest(props.limits.maxTexelBufferElements);
+		const VkDeviceSize maxTestBufferSize = de::min((VkDeviceSize) props.limits.maxTexelBufferElements, memoryProperties.memoryHeaps[0].size / 16);
+
+		testStatus = bufferCreateAndAllocTest(maxTestBufferSize);
 	}
 
 	return testStatus;
