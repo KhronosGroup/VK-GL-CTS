@@ -2031,7 +2031,6 @@ tcu::TestCaseGroup* createOpConstantNullGroup (tcu::TestContext& testCtx)
 	cases.push_back(CaseParameter("matrix",			"%type = OpTypeMatrix %fvec3 3"));
 	cases.push_back(CaseParameter("array",			"%100 = OpConstant %u32 100\n"
 													"%type = OpTypeArray %i32 %100"));
-	cases.push_back(CaseParameter("runtimearray",	"%type = OpTypeRuntimeArray %f32"));
 	cases.push_back(CaseParameter("struct",			"%type = OpTypeStruct %f32 %i32 %u32"));
 	cases.push_back(CaseParameter("pointer",		"%type = OpTypePointer Function %i32"));
 
