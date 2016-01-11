@@ -275,7 +275,7 @@ bool validateFeatureLimits(VkPhysicalDeviceProperties* properties, VkPhysicalDev
 				deUint32 limitToCheck = featureLimitTable[ndx].uintVal;
 				if (featureLimitTable[ndx].unsuppTableNdx != -1)
 				{
-					if (*((VkBool32*)((char*)features+unsupportedFeatureTable[featureLimitTable[ndx].unsuppTableNdx].featureOffset)))
+					if (*((VkBool32*)((char*)features+unsupportedFeatureTable[featureLimitTable[ndx].unsuppTableNdx].featureOffset)) == VK_FALSE)
 						limitToCheck = unsupportedFeatureTable[featureLimitTable[ndx].unsuppTableNdx].uintVal;
 				}
 
@@ -308,7 +308,7 @@ bool validateFeatureLimits(VkPhysicalDeviceProperties* properties, VkPhysicalDev
 				float limitToCheck = featureLimitTable[ndx].floatVal;
 				if (featureLimitTable[ndx].unsuppTableNdx != -1)
 				{
-					if (*((VkBool32*)((char*)features+unsupportedFeatureTable[featureLimitTable[ndx].unsuppTableNdx].featureOffset)))
+					if (*((VkBool32*)((char*)features+unsupportedFeatureTable[featureLimitTable[ndx].unsuppTableNdx].featureOffset)) == VK_FALSE)
 						limitToCheck = unsupportedFeatureTable[featureLimitTable[ndx].unsuppTableNdx].floatVal;
 				}
 
@@ -340,7 +340,7 @@ bool validateFeatureLimits(VkPhysicalDeviceProperties* properties, VkPhysicalDev
 				deInt32 limitToCheck = featureLimitTable[ndx].intVal;
 				if (featureLimitTable[ndx].unsuppTableNdx != -1)
 				{
-					if (*((VkBool32*)((char*)features+unsupportedFeatureTable[featureLimitTable[ndx].unsuppTableNdx].featureOffset)))
+					if (*((VkBool32*)((char*)features+unsupportedFeatureTable[featureLimitTable[ndx].unsuppTableNdx].featureOffset)) == VK_FALSE)
 						limitToCheck = unsupportedFeatureTable[featureLimitTable[ndx].unsuppTableNdx].intVal;
 				}
 				if (featureLimitTable[ndx].type == LIMIT_TYPE_MIN)
@@ -371,7 +371,7 @@ bool validateFeatureLimits(VkPhysicalDeviceProperties* properties, VkPhysicalDev
 				deUint64 limitToCheck = featureLimitTable[ndx].deviceSizeVal;
 				if (featureLimitTable[ndx].unsuppTableNdx != -1)
 				{
-					if (*((VkBool32*)((char*)features+unsupportedFeatureTable[featureLimitTable[ndx].unsuppTableNdx].featureOffset)))
+					if (*((VkBool32*)((char*)features+unsupportedFeatureTable[featureLimitTable[ndx].unsuppTableNdx].featureOffset)) == VK_FALSE)
 						limitToCheck = unsupportedFeatureTable[featureLimitTable[ndx].unsuppTableNdx].deviceSizeVal;
 				}
 
