@@ -145,6 +145,7 @@ static const char* const s_CommonTypes =
 	"%i32       = OpTypeInt 32 1\n"
 	"%f32       = OpTypeFloat 32\n"
 	"%uvec3     = OpTypeVector %u32 3\n"
+	"%fvec3     = OpTypeVector %f32 3\n"
 	"%uvec3ptr  = OpTypePointer Input %uvec3\n"
 	"%f32ptr    = OpTypePointer Uniform %f32\n"
 	"%f32arr    = OpTypeRuntimeArray %f32\n";
@@ -2027,7 +2028,7 @@ tcu::TestCaseGroup* createOpConstantNullGroup (tcu::TestContext& testCtx)
 	cases.push_back(CaseParameter("vec4float32",	"%type = OpTypeVector %f32 4"));
 	cases.push_back(CaseParameter("vec3bool",		"%type = OpTypeVector %bool 3"));
 	cases.push_back(CaseParameter("vec2uint32",		"%type = OpTypeVector %u32 2"));
-	cases.push_back(CaseParameter("matrix",			"%type = OpTypeMatrix %uvec3 3"));
+	cases.push_back(CaseParameter("matrix",			"%type = OpTypeMatrix %fvec3 3"));
 	cases.push_back(CaseParameter("array",			"%100 = OpConstant %u32 100\n"
 													"%type = OpTypeArray %i32 %100"));
 	cases.push_back(CaseParameter("runtimearray",	"%type = OpTypeRuntimeArray %f32"));
@@ -2095,11 +2096,11 @@ tcu::TestCaseGroup* createOpConstantCompositeGroup (tcu::TestContext& testCtx)
 
 	cases.push_back(CaseParameter("vector",			"%five = OpConstant %u32 5\n"
 													"%const = OpConstantComposite %uvec3 %five %zero %five"));
-	cases.push_back(CaseParameter("matrix",			"%m3uvec3 = OpTypeMatrix %uvec3 3\n"
+	cases.push_back(CaseParameter("matrix",			"%m3uvec3 = OpTypeMatrix %fvec3 3\n"
 													"%ten = OpConstant %u32 10\n"
 													"%vec = OpConstantComposite %uvec3 %ten %zero %ten\n"
 													"%mat = OpConstantComposite %m3uvec3 %vec %vec %vec"));
-	cases.push_back(CaseParameter("struct",			"%m2vec3 = OpTypeMatrix %uvec3 2\n"
+	cases.push_back(CaseParameter("struct",			"%m2vec3 = OpTypeMatrix %fvec3 2\n"
 													"%struct = OpTypeStruct %u32 %f32 %uvec3 %m2vec3\n"
 													"%one = OpConstant %u32 1\n"
 													"%point5 = OpConstant %f32 0.5\n"
@@ -3108,7 +3109,7 @@ tcu::TestCaseGroup* createOpUndefGroup (tcu::TestContext& testCtx)
 	cases.push_back(CaseParameter("float32",		"%type = OpTypeFloat 32"));
 	cases.push_back(CaseParameter("vec4float32",	"%type = OpTypeVector %f32 4"));
 	cases.push_back(CaseParameter("vec2uint32",		"%type = OpTypeVector %u32 2"));
-	cases.push_back(CaseParameter("matrix",			"%type = OpTypeMatrix %uvec3 3"));
+	cases.push_back(CaseParameter("matrix",			"%type = OpTypeMatrix %fvec3 3"));
 	cases.push_back(CaseParameter("image",			"%type = OpTypeImage %f32 2D 0 0 0 0 Unknown"));
 	cases.push_back(CaseParameter("sampler",		"%type = OpTypeSampler"));
 	cases.push_back(CaseParameter("sampledimage",	"%img = OpTypeImage %f32 2D 0 0 0 0 Unknown\n"
