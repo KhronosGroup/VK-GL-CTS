@@ -977,7 +977,23 @@ void FragmentOutExecutor::execute (const Context& ctx, int numValues, const void
 		addUniforms(vkDevice, vk, queueFamilyIndex, memAlloc);
 
 		descriptorSetLayout = m_descriptorSetLayoutBuilder.build(vk, vkDevice);
-		descriptorPool = m_descriptorPoolBuilder.build(vk, vkDevice, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+		if (!m_uniformInfos.empty())
+			descriptorPool = m_descriptorPoolBuilder.build(vk, vkDevice, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+		else 
+		{
+			const VkDescriptorPoolSize 			poolSizeCount 	= { vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1 };
+			const VkDescriptorPoolCreateInfo	createInfo 		=
+			{
+				VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+				DE_NULL,
+				VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
+				1u,
+				1u,
+				&poolSizeCount,
+			};
+
+			descriptorPool = createDescriptorPool(vk, vkDevice, &createInfo);
+		}
 
 		const VkDescriptorSetAllocateInfo allocInfo =
 		{
