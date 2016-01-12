@@ -1244,9 +1244,9 @@ void ShaderRenderCaseInstance::render (tcu::Surface& result, const QuadGrid& qua
 		setupUniforms(quadGrid.getConstCoords());
 
 		m_descriptorSetLayout = m_descriptorSetLayoutBuilder.build(vk, vkDevice);
-		m_descriptorPool = m_descriptorPoolBuilder.build(vk, vkDevice, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
-
+		if (!m_uniformInfos.empty())
 		{
+			m_descriptorPool 								= m_descriptorPoolBuilder.build(vk, vkDevice, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
 			const VkDescriptorSetAllocateInfo	allocInfo	=
 			{
 				VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
