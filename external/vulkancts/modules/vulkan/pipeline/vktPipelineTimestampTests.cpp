@@ -839,13 +839,13 @@ tcu::TestStatus TimestampTestInstance::iterate(void)
 	}
 	else
 	{
-		timestampMask = (1 << queueProperties[0].timestampValidBits) - 1u;
+		timestampMask = ((deUint64)1 << queueProperties[0].timestampValidBits) - 1;
 	}
 
 	// Get timestamp value from query pool
 	deUint32                    stageSize = (deUint32)m_stages.size();
 
-	vk.getQueryPoolResults(vkDevice, *m_queryPool, 0u, stageSize, sizeof(m_timestampValues), (void*)m_timestampValues, sizeof(deUint64), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
+	vk.getQueryPoolResults(vkDevice, *m_queryPool, 0u, stageSize, sizeof(deUint64) * stageSize, (void*)m_timestampValues, sizeof(deUint64), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
 
 	for (deUint32 ndx = 0; ndx < stageSize; ndx++)
 	{
@@ -1794,27 +1794,37 @@ protected:
 class TransferTestInstance : public TimestampTestInstance
 {
 public:
-					TransferTestInstance  (Context&              context,
-										   const StageFlagVector stages,
-										   const bool            inRenderPass,
-										   const TransferMethod  method);
-	virtual         ~TransferTestInstance (void);
-	virtual void    configCommandBuffer   (void);
+					TransferTestInstance	(Context&					context,
+											 const StageFlagVector		stages,
+											 const bool					inRenderPass,
+											 const TransferMethod		method);
+	virtual         ~TransferTestInstance	(void);
+	virtual void    configCommandBuffer		(void);
+	virtual void	initialImageTransition	(VkCommandBuffer			cmdBuffer,
+											 VkImage					image,
+											 VkImageSubresourceRange	subRange,
+											 VkImageLayout				layout);
 protected:
-	TransferMethod  m_method;
+	TransferMethod			m_method;
 
-	VkDeviceSize    m_bufSize;
-	Move<VkBuffer>  m_srcBuffer;
-	Move<VkBuffer>  m_dstBuffer;
+	VkDeviceSize			m_bufSize;
+	Move<VkBuffer>			m_srcBuffer;
+	Move<VkBuffer>			m_dstBuffer;
+	de::MovePtr<Allocation> m_srcBufferAlloc;
+	de::MovePtr<Allocation> m_dstBufferAlloc;
 
-	VkFormat        m_imageFormat;
-	deUint32        m_imageWidth;
-	deUint32        m_imageHeight;
-	VkDeviceSize    m_imageSize;
-	Move<VkImage>   m_srcImage;
-	Move<VkImage>   m_dstImage;
-	Move<VkImage>   m_depthImage;
-	Move<VkImage>   m_msImage;
+	VkFormat				m_imageFormat;
+	deInt32					m_imageWidth;
+	deInt32					m_imageHeight;
+	VkDeviceSize			m_imageSize;
+	Move<VkImage>			m_srcImage;
+	Move<VkImage>			m_dstImage;
+	Move<VkImage>			m_depthImage;
+	Move<VkImage>			m_msImage;
+	de::MovePtr<Allocation>	m_srcImageAlloc;
+	de::MovePtr<Allocation>	m_dstImageAlloc;
+	de::MovePtr<Allocation>	m_depthImageAlloc;
+	de::MovePtr<Allocation>	m_msImageAlloc;
 };
 
 TransferTest::TransferTest(tcu::TestContext&                 testContext,
@@ -1853,35 +1863,33 @@ TransferTestInstance::TransferTestInstance(Context&              context,
 	const VkDevice              vkDevice            = context.getDevice();
 
 	// Create src buffer
-	de::MovePtr<Allocation>     bufferAlloc;
-	m_srcBuffer = createBufferAndBindMemory(m_bufSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, &bufferAlloc);
+	m_srcBuffer = createBufferAndBindMemory(m_bufSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, &m_srcBufferAlloc);
 
 	// Init the source buffer memory
-	char* pBuf = reinterpret_cast<char*>(bufferAlloc->getHostPtr());
+	char* pBuf = reinterpret_cast<char*>(m_srcBufferAlloc->getHostPtr());
 	memset(pBuf, 0xFF, sizeof(char)*(size_t)m_bufSize);
-	flushMappedMemoryRange(vk, vkDevice, bufferAlloc->getMemory(), bufferAlloc->getOffset(), m_bufSize);
+	flushMappedMemoryRange(vk, vkDevice, m_srcBufferAlloc->getMemory(), m_srcBufferAlloc->getOffset(), m_bufSize);
 
 	// Create dst buffer
-	de::MovePtr<Allocation>     dummyAlloc;
-	m_dstBuffer = createBufferAndBindMemory(m_bufSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, &dummyAlloc);
+	m_dstBuffer = createBufferAndBindMemory(m_bufSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, &m_dstBufferAlloc);
 
 	// Create src/dst/depth image
 	m_srcImage   = createImage2DAndBindMemory(m_imageFormat, m_imageWidth, m_imageHeight,
-											  VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+											  VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
 											  VK_SAMPLE_COUNT_1_BIT,
-											  &dummyAlloc);
+											  &m_srcImageAlloc);
 	m_dstImage   = createImage2DAndBindMemory(m_imageFormat, m_imageWidth, m_imageHeight,
 											  VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
 											  VK_SAMPLE_COUNT_1_BIT,
-											  &dummyAlloc);
+											  &m_dstImageAlloc);
 	m_depthImage = createImage2DAndBindMemory(VK_FORMAT_D16_UNORM, m_imageWidth, m_imageHeight,
 											  VK_IMAGE_USAGE_TRANSFER_DST_BIT,
 											  VK_SAMPLE_COUNT_1_BIT,
-											  &dummyAlloc);
+											  &m_depthImageAlloc);
 	m_msImage    = createImage2DAndBindMemory(m_imageFormat, m_imageWidth, m_imageHeight,
-											  VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+											  VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
 											  VK_SAMPLE_COUNT_4_BIT,
-											  &dummyAlloc);
+											  &m_msImageAlloc);
 }
 
 TransferTestInstance::~TransferTestInstance(void)
@@ -1913,18 +1921,28 @@ void TransferTestInstance::configCommandBuffer(void)
 	{
 		{0.0f, 0.0f, 0.0f, 0.0f}
 	};
-	struct VkImageSubresourceRange subRange =
+	const struct VkImageSubresourceRange subRangeColor =
 	{
-		VK_IMAGE_ASPECT_COLOR_BIT,     // VkImageAspectFlags  aspectMask;
-		0u,                            // deUint32            baseMipLevel;
-		1u,                            // deUint32            mipLevels;
-		0u,                            // deUint32            baseArrayLayer;
-		1u,                            // deUint32            arraySize;
+		VK_IMAGE_ASPECT_COLOR_BIT,  // VkImageAspectFlags  aspectMask;
+		0u,                         // deUint32            baseMipLevel;
+		1u,                         // deUint32            mipLevels;
+		0u,                         // deUint32            baseArrayLayer;
+		1u,                         // deUint32            arraySize;
+	};
+	const struct VkImageSubresourceRange subRangeDepth =
+	{
+		VK_IMAGE_ASPECT_DEPTH_BIT,  // VkImageAspectFlags  aspectMask;
+		0u,                  // deUint32            baseMipLevel;
+		1u,                  // deUint32            mipLevels;
+		0u,                  // deUint32            baseArrayLayer;
+		1u,                  // deUint32            arraySize;
 	};
 
-	vk.cmdClearColorImage(*m_cmdBuffer, *m_srcImage, VK_IMAGE_LAYOUT_GENERAL, &srcClearValue, 1u, &subRange);
-	vk.cmdClearColorImage(*m_cmdBuffer, *m_dstImage, VK_IMAGE_LAYOUT_GENERAL, &dstClearValue, 1u, &subRange);
+	initialImageTransition(*m_cmdBuffer, *m_srcImage, subRangeColor, VK_IMAGE_LAYOUT_GENERAL);
+	initialImageTransition(*m_cmdBuffer, *m_dstImage, subRangeColor, VK_IMAGE_LAYOUT_GENERAL);
 
+	vk.cmdClearColorImage(*m_cmdBuffer, *m_srcImage, VK_IMAGE_LAYOUT_GENERAL, &srcClearValue, 1u, &subRangeColor);
+	vk.cmdClearColorImage(*m_cmdBuffer, *m_dstImage, VK_IMAGE_LAYOUT_GENERAL, &dstClearValue, 1u, &subRangeColor);
 
 	vk.cmdResetQueryPool(*m_cmdBuffer, *m_queryPool, 0u, TimestampTest::ENTRY_COUNT);
 
@@ -2015,18 +2033,18 @@ void TransferTestInstance::configCommandBuffer(void)
 			}
 		case TRANSFER_METHOD_CLEAR_COLOR_IMAGE:
 			{
-				vk.cmdClearColorImage(*m_cmdBuffer, *m_dstImage, VK_IMAGE_LAYOUT_GENERAL, &srcClearValue, 1u, &subRange);
+				vk.cmdClearColorImage(*m_cmdBuffer, *m_dstImage, VK_IMAGE_LAYOUT_GENERAL, &srcClearValue, 1u, &subRangeColor);
 				break;
 			}
 		case TRANSFER_METHOD_CLEAR_DEPTH_STENCIL_IMAGE:
 			{
+				initialImageTransition(*m_cmdBuffer, *m_depthImage, subRangeDepth, VK_IMAGE_LAYOUT_GENERAL);
 				const VkClearDepthStencilValue clearDSValue =
 				{
 					1.0f,                                   // float       depth;
 					0u,                                     // deUint32    stencil;
 				};
-				subRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-				vk.cmdClearDepthStencilImage(*m_cmdBuffer, *m_depthImage, VK_IMAGE_LAYOUT_GENERAL, &clearDSValue, 1u, &subRange);
+				vk.cmdClearDepthStencilImage(*m_cmdBuffer, *m_depthImage, VK_IMAGE_LAYOUT_GENERAL, &clearDSValue, 1u, &subRangeDepth);
 				break;
 			}
 		case TRANSFER_METHOD_FILL_BUFFER:
@@ -2060,6 +2078,8 @@ void TransferTestInstance::configCommandBuffer(void)
 					nullOffset,                                 // VkOffset3D                destOffset;
 					imageExtent,                                // VkExtent3D                extent;
 				};
+				initialImageTransition(*m_cmdBuffer, *m_msImage, subRangeColor, VK_IMAGE_LAYOUT_GENERAL);
+				vk.cmdClearColorImage(*m_cmdBuffer, *m_msImage, VK_IMAGE_LAYOUT_GENERAL, &srcClearValue, 1u, &subRangeColor);
 				vk.cmdResolveImage(*m_cmdBuffer, *m_msImage, VK_IMAGE_LAYOUT_GENERAL, *m_dstImage, VK_IMAGE_LAYOUT_GENERAL, 1u, &imageResolve);
 				break;
 			}
@@ -2075,6 +2095,26 @@ void TransferTestInstance::configCommandBuffer(void)
 	}
 
 	VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
+}
+
+void TransferTestInstance::initialImageTransition (VkCommandBuffer cmdBuffer, VkImage image, VkImageSubresourceRange subRange, VkImageLayout layout)
+{
+	const DeviceInterface&		vk				= m_context.getDeviceInterface();
+	const VkImageMemoryBarrier	imageMemBarrier	=
+	{
+		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType          sType;
+		DE_NULL,                                // const void*              pNext;
+		0u,                                     // VkAccessFlags            srcAccessMask;
+		0u,                                     // VkAccessFlags            dstAccessMask;
+		VK_IMAGE_LAYOUT_UNDEFINED,              // VkImageLayout            oldLayout;
+		layout,                                 // VkImageLayout            newLayout;
+		VK_QUEUE_FAMILY_IGNORED,                // uint32_t                 srcQueueFamilyIndex;
+		VK_QUEUE_FAMILY_IGNORED,                // uint32_t                 dstQueueFamilyIndex;
+		image,                                  // VkImage                  image;
+		subRange                                // VkImageSubresourceRange  subresourceRange;
+	};
+
+	vk.cmdPipelineBarrier(cmdBuffer, 0, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0, 0, DE_NULL, 0, DE_NULL, 1, &&imageMemBarrier);
 }
 
 } // anonymous
