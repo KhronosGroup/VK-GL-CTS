@@ -147,7 +147,7 @@ private:
 			return tcu::TestStatus::fail("Alloc memory failed! (requested memory size: " + de::toString(size) + ")");
 
 		
-		if ((m_testCase.flags & VK_BUFFER_CREATE_SPARSE_BINDING_BIT ) ||
+		if ((m_testCase.flags & VK_BUFFER_CREATE_SPARSE_BINDING_BIT) ||
 			(m_testCase.flags & VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT) ||
 			(m_testCase.flags & VK_BUFFER_CREATE_SPARSE_ALIASED_BIT))
 		{
@@ -202,9 +202,7 @@ private:
 
 tcu::TestStatus BufferTestInstance::iterate (void)
 {
-	VkPhysicalDeviceFeatures		physicalDeviceFeatures;
-	
-	m_context.getInstanceInterface().getPhysicalDeviceFeatures(m_context.getPhysicalDevice(), &physicalDeviceFeatures);
+	const VkPhysicalDeviceFeatures&	physicalDeviceFeatures	= m_context.getDeviceFeatures();
 	
 	if ((m_testCase.flags & VK_BUFFER_CREATE_SPARSE_BINDING_BIT ) && !physicalDeviceFeatures.sparseBinding)
 		return tcu::TestStatus::pass("Sparse bindings feature is not enabled");
