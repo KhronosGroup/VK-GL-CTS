@@ -658,7 +658,7 @@ tcu::TestCaseGroup* createOpCopyMemoryGroup (tcu::TestContext& testCtx)
 	fillRandomScalars(rnd, -200.f, 200.f, &inputFloats3[0], 16);
 
 	for (size_t ndx = 0; ndx < 16; ++ndx)
-		outputFloats3[ndx] = -inputFloats3[ndx];
+		outputFloats3[ndx] = inputFloats3[ndx];
 
 	spec3.assembly =
 		string(s_ShaderPreamble) +
@@ -667,6 +667,14 @@ tcu::TestCaseGroup* createOpCopyMemoryGroup (tcu::TestContext& testCtx)
 		"OpName %id             \"gl_GlobalInvocationID\"\n"
 
 		"OpDecorate %id BuiltIn GlobalInvocationId\n"
+		"OpMemberDecorate %inbuf 0 Offset 0\n"
+		"OpMemberDecorate %inbuf 1 Offset 16\n"
+		"OpMemberDecorate %inbuf 2 Offset 32\n"
+		"OpMemberDecorate %inbuf 3 Offset 48\n"
+		"OpMemberDecorate %outbuf 0 Offset 0\n"
+		"OpMemberDecorate %outbuf 1 Offset 16\n"
+		"OpMemberDecorate %outbuf 2 Offset 32\n"
+		"OpMemberDecorate %outbuf 3 Offset 48\n"
 
 		+ string(s_InputOutputBufferTraits) + string(s_CommonTypes) +
 
