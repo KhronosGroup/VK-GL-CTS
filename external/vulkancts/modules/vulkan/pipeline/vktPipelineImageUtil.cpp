@@ -48,26 +48,38 @@ namespace pipeline
 
 using namespace vk;
 
-/*! Gets the next multiple of M */
-template<deUint32 M>
-static int getNextMultiple(deUint32 value)
+/*! Gets the next multiple of a given divisor */
+static deUint32 getNextMultiple (deUint32 divisor, deUint32 value)
 {
-	if (value % M == 0)
+	if (value % divisor == 0)
 	{
 		return value;
 	}
-	return value + M - (value % M);
+	return value + divisor - (value % divisor);
 }
 
-static int getNextMultiple (deUint32 M, deUint32 value)
+/*! Gets the next value that is multiple of all given divisors */
+static deUint32 getNextMultiple (const std::vector<deUint32>& divisors, deUint32 value)
 {
-	if (value % M == 0)
-	{
-		return value;
-	}
-	return value + M - (value % M);
-}
+	deUint32	nextMultiple		= value;
+	bool		nextMultipleFound	= false;
 
+	while (true)
+	{
+		nextMultipleFound = true;
+
+		for (size_t divNdx = 0; divNdx < divisors.size(); divNdx++)
+			nextMultipleFound = nextMultipleFound && (nextMultiple % divisors[divNdx] == 0);
+
+		if (nextMultipleFound)
+			break;
+
+		DE_ASSERT(nextMultiple < ~((deUint32)0u));
+		nextMultiple = getNextMultiple(divisors[0], nextMultiple + 1);
+	}
+
+	return nextMultiple;
+}
 
 bool isSupportedSamplableFormat (const InstanceInterface& instanceInterface, VkPhysicalDevice device, VkFormat format)
 {
@@ -527,14 +539,18 @@ TestTexture::~TestTexture (void)
 
 deUint32 TestTexture::getSize (void) const
 {
-	deUint32 textureSize = 0;
+	std::vector<deUint32>	offsetMultiples;
+	deUint32				textureSize = 0;
+
+	offsetMultiples.push_back(4);
+	offsetMultiples.push_back(getLevel(0, 0).getFormat().getPixelSize());
 
 	for (int levelNdx = 0; levelNdx < getNumLevels(); levelNdx++)
 	{
 		for (int layerNdx = 0; layerNdx < getArraySize(); layerNdx++)
 		{
 			const tcu::ConstPixelBufferAccess level = getLevel(levelNdx, layerNdx);
-			textureSize = getNextMultiple<4>(textureSize);
+			textureSize = getNextMultiple(offsetMultiples, textureSize);
 			textureSize += level.getWidth() * level.getHeight() * level.getDepth() * level.getFormat().getPixelSize();
 		}
 	}
@@ -547,13 +563,17 @@ deUint32 TestTexture::getCompressedSize (void) const
 	if (!isCompressed())
 		throw tcu::InternalError("Texture is not compressed");
 
-	deUint32 textureSize = 0;
+	std::vector<deUint32>	offsetMultiples;
+	deUint32				textureSize			= 0;
+
+	offsetMultiples.push_back(4);
+	offsetMultiples.push_back(tcu::getBlockSize(getCompressedLevel(0, 0).getFormat()));
 
 	for (int levelNdx = 0; levelNdx < getNumLevels(); levelNdx++)
 	{
 		for (int layerNdx = 0; layerNdx < getArraySize(); layerNdx++)
 		{
-			textureSize = getNextMultiple<4>(textureSize);
+			textureSize = getNextMultiple(offsetMultiples, textureSize);
 			textureSize += getCompressedLevel(levelNdx, layerNdx).getDataSize();
 		}
 	}
@@ -579,18 +599,23 @@ const tcu::CompressedTexture& TestTexture::getCompressedLevel (int level, int la
 
 std::vector<VkBufferImageCopy> TestTexture::getBufferCopyRegions (void) const
 {
+	std::vector<deUint32>			offsetMultiples;
 	std::vector<VkBufferImageCopy>	regions;
 	deUint32						layerDataOffset	= 0;
 
+	offsetMultiples.push_back(4);
+
 	if (isCompressed())
 	{
+		offsetMultiples.push_back(tcu::getBlockSize(getCompressedLevel(0, 0).getFormat()));
+
 		for (int levelNdx = 0; levelNdx < getNumLevels(); levelNdx++)
 		{
 			for (int layerNdx = 0; layerNdx < getArraySize(); layerNdx++)
 			{
 				const tcu::CompressedTexture& level = getCompressedLevel(levelNdx, layerNdx);
 				tcu::IVec3 blockPixelSize			= getBlockPixelSize(level.getFormat());
-				layerDataOffset						= getNextMultiple<4>(layerDataOffset);
+				layerDataOffset						= getNextMultiple(offsetMultiples, layerDataOffset);
 
 				const VkBufferImageCopy layerRegion =
 				{
@@ -618,13 +643,15 @@ std::vector<VkBufferImageCopy> TestTexture::getBufferCopyRegions (void) const
 	}
 	else
 	{
+		offsetMultiples.push_back(getLevel(0, 0).getFormat().getPixelSize());
+
 		for (int levelNdx = 0; levelNdx < getNumLevels(); levelNdx++)
 		{
 			for (int layerNdx = 0; layerNdx < getArraySize(); layerNdx++)
 			{
 				const tcu::ConstPixelBufferAccess level = getLevel(levelNdx, layerNdx);
 
-				layerDataOffset = getNextMultiple<4>(layerDataOffset);
+				layerDataOffset = getNextMultiple(offsetMultiples, layerDataOffset);
 
 				const VkBufferImageCopy layerRegion =
 				{
@@ -656,15 +683,20 @@ std::vector<VkBufferImageCopy> TestTexture::getBufferCopyRegions (void) const
 
 void TestTexture::write (deUint8* destPtr) const
 {
-	deUint32 levelOffset = 0;
+	std::vector<deUint32>	offsetMultiples;
+	deUint32				levelOffset		= 0;
+
+	offsetMultiples.push_back(4);
 
 	if (isCompressed())
 	{
+		offsetMultiples.push_back(tcu::getBlockSize(getCompressedLevel(0, 0).getFormat()));
+
 		for (int levelNdx = 0; levelNdx < getNumLevels(); levelNdx++)
 		{
 			for (int layerNdx = 0; layerNdx < getArraySize(); layerNdx++)
 			{
-				levelOffset = getNextMultiple<4>(levelOffset);
+				levelOffset = getNextMultiple(offsetMultiples, levelOffset);
 
 				const tcu::CompressedTexture&		compressedTex	= getCompressedLevel(levelNdx, layerNdx);
 
@@ -675,11 +707,13 @@ void TestTexture::write (deUint8* destPtr) const
 	}
 	else
 	{
+		offsetMultiples.push_back(getLevel(0, 0).getFormat().getPixelSize());
+
 		for (int levelNdx = 0; levelNdx < getNumLevels(); levelNdx++)
 		{
 			for (int layerNdx = 0; layerNdx < getArraySize(); layerNdx++)
 			{
-				levelOffset = getNextMultiple<4>(levelOffset);
+				levelOffset = getNextMultiple(offsetMultiples, levelOffset);
 
 				const tcu::ConstPixelBufferAccess	srcAccess		= getLevel(levelNdx, layerNdx);
 				const tcu::PixelBufferAccess		destAccess		(srcAccess.getFormat(), srcAccess.getSize(), srcAccess.getPitch(), destPtr + levelOffset);
