@@ -1150,7 +1150,7 @@ void BufferToBufferInvertTest::initPrograms (SourceCollections& sourceCollection
 			<< "layout(binding = 0) readonly uniform Input {\n"
 			<< "    uint values[" << m_numValues << "];\n"
 			<< "} ub_in;\n"
-			<< "layout(binding = 1) writeonly buffer Output {\n"
+			<< "layout(binding = 1, std140) writeonly buffer Output {\n"
 			<< "    uint values[" << m_numValues << "];\n"
 			<< "} sb_out;\n"
 			<< "void main (void) {\n"
@@ -1167,10 +1167,10 @@ void BufferToBufferInvertTest::initPrograms (SourceCollections& sourceCollection
 	{
 		src << "#version 310 es\n"
 			<< "layout (local_size_x = " << m_localSize.x() << ", local_size_y = " << m_localSize.y() << ", local_size_z = " << m_localSize.z() << ") in;\n"
-			<< "layout(binding = 0) readonly buffer Input {\n"
+			<< "layout(binding = 0, std140) readonly buffer Input {\n"
 			<< "    uint values[" << m_numValues << "];\n"
 			<< "} sb_in;\n"
-			<< "layout (binding = 1) writeonly buffer Output {\n"
+			<< "layout (binding = 1, std140) writeonly buffer Output {\n"
 			<< "    uint values[" << m_numValues << "];\n"
 			<< "} sb_out;\n"
 			<< "void main (void) {\n"
@@ -1221,16 +1221,16 @@ tcu::TestStatus BufferToBufferInvertTestInstance::iterate (void)
 
 	// Create an input buffer
 
-	const VkDeviceSize bufferSizeBytes = sizeof(deUint32) * m_numValues;
+	const VkDeviceSize bufferSizeBytes = sizeof(tcu::UVec4) * m_numValues;
 	const Buffer inputBuffer(vk, device, allocator, makeBufferCreateInfo(bufferSizeBytes, inputBufferUsageFlags), MemoryRequirement::HostVisible);
 
 	// Fill the input buffer with data
 	{
 		de::Random rnd(randomSeed);
 		const Allocation& inputBufferAllocation = inputBuffer.getAllocation();
-		deUint32* bufferPtr = static_cast<deUint32*>(inputBufferAllocation.getHostPtr());
+		tcu::UVec4* bufferPtr = static_cast<tcu::UVec4*>(inputBufferAllocation.getHostPtr());
 		for (deUint32 i = 0; i < m_numValues; ++i)
-			*bufferPtr++ = rnd.getUint32();
+			bufferPtr[i].x() = rnd.getUint32();
 
 		flushMappedMemoryRange(vk, device, inputBufferAllocation.getMemory(), inputBufferAllocation.getOffset(), bufferSizeBytes);
 	}
@@ -1297,13 +1297,13 @@ tcu::TestStatus BufferToBufferInvertTestInstance::iterate (void)
 	const Allocation& outputBufferAllocation = outputBuffer.getAllocation();
 	invalidateMappedMemoryRange(vk, device, outputBufferAllocation.getMemory(), outputBufferAllocation.getOffset(), bufferSizeBytes);
 
-	const deUint32* bufferPtr = static_cast<deUint32*>(outputBufferAllocation.getHostPtr());
-	const deUint32* refBufferPtr = static_cast<deUint32*>(inputBuffer.getAllocation().getHostPtr());
+	const tcu::UVec4* bufferPtr = static_cast<tcu::UVec4*>(outputBufferAllocation.getHostPtr());
+	const tcu::UVec4* refBufferPtr = static_cast<tcu::UVec4*>(inputBuffer.getAllocation().getHostPtr());
 
 	for (deUint32 ndx = 0; ndx < m_numValues; ++ndx)
 	{
-		const deUint32 res = bufferPtr[ndx];
-		const deUint32 ref = ~refBufferPtr[ndx];
+		const deUint32 res = bufferPtr[ndx].x();
+		const deUint32 ref = ~refBufferPtr[ndx].x();
 
 		if (res != ref)
 		{
@@ -2226,6 +2226,12 @@ tcu::TestStatus ImageBarrierTestInstance::iterate (void)
 	const VkDeviceSize outputBufferSizeBytes = sizeof(deUint32);
 	const Buffer outputBuffer(vk, device, allocator, makeBufferCreateInfo(outputBufferSizeBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT), MemoryRequirement::HostVisible);
 
+	// Initialize atomic counter value to zero
+	const Allocation& outputBufferAllocation = outputBuffer.getAllocation();
+	deUint32* outputBufferPtr = static_cast<deUint32*>(outputBufferAllocation.getHostPtr());
+	*outputBufferPtr = 0;
+	flushMappedMemoryRange(vk, device, outputBufferAllocation.getMemory(), outputBufferAllocation.getOffset(), outputBufferSizeBytes);
+
 	// Create a uniform buffer (to pass uniform constants)
 
 	const VkDeviceSize uniformBufferSizeBytes = sizeof(deUint32);
@@ -2321,7 +2327,6 @@ tcu::TestStatus ImageBarrierTestInstance::iterate (void)
 
 	// Validate the results
 
-	const Allocation& outputBufferAllocation = outputBuffer.getAllocation();
 	invalidateMappedMemoryRange(vk, device, outputBufferAllocation.getMemory(), outputBufferAllocation.getOffset(), outputBufferSizeBytes);
 
 	const int		numValues = multiplyComponents(m_imageSize);
