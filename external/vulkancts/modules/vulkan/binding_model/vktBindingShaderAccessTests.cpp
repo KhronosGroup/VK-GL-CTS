@@ -4304,9 +4304,8 @@ vk::Move<vk::VkDescriptorPool> ImageSampleRenderInstance::createDescriptorPool (
 		// separate samplers need image to sample
 		builder.addType(vk::VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE);
 
-		// samplers needed only if they are specified in the descriptor set
-		if (!isImmutable)
-			builder.addType(vk::VK_DESCRIPTOR_TYPE_SAMPLER, getInterfaceNumResources(shaderInterface));
+		// also need sample to use, indifferent of whether immutable or not
+		builder.addType(vk::VK_DESCRIPTOR_TYPE_SAMPLER, getInterfaceNumResources(shaderInterface));
 	}
 	else if (descriptorType == vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
 	{
