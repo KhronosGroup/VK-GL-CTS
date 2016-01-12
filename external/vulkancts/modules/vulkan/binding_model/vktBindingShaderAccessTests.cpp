@@ -4158,8 +4158,7 @@ private:
 	static vk::Move<vk::VkDescriptorPool>			createDescriptorPool			(const vk::DeviceInterface&	vki,
 																					 vk::VkDevice				device,
 																					 vk::VkDescriptorType		descriptorType,
-																					 ShaderInputInterface		shaderInterface,
-																					 bool						isImmutable);
+																					 ShaderInputInterface		shaderInterface);
 
 	static vk::Move<vk::VkDescriptorSet>			createDescriptorSet				(const vk::DeviceInterface&			vki,
 																					 vk::VkDevice						device,
@@ -4227,7 +4226,7 @@ ImageSampleRenderInstance::ImageSampleRenderInstance (vkt::Context&				context,
 	, m_images					(m_vki, m_device, m_queueFamilyIndex, m_queue, m_allocator, m_descriptorType, m_shaderInterface, m_viewType, m_baseMipLevel, m_baseArraySlice, isImmutable)
 	, m_descriptorSetLayout		(createDescriptorSetLayout(m_vki, m_device, m_descriptorType, m_shaderInterface, m_stageFlags, m_images))
 	, m_pipelineLayout			(createPipelineLayout(m_vki, m_device, *m_descriptorSetLayout))
-	, m_descriptorPool			(createDescriptorPool(m_vki, m_device, m_descriptorType, m_shaderInterface, isImmutable))
+	, m_descriptorPool			(createDescriptorPool(m_vki, m_device, m_descriptorType, m_shaderInterface))
 	, m_descriptorSet			(createDescriptorSet(m_vki, m_device, m_descriptorType, m_shaderInterface, *m_descriptorSetLayout, *m_descriptorPool, isImmutable, m_images))
 {
 }
@@ -4294,8 +4293,7 @@ vk::Move<vk::VkPipelineLayout> ImageSampleRenderInstance::createPipelineLayout (
 vk::Move<vk::VkDescriptorPool> ImageSampleRenderInstance::createDescriptorPool (const vk::DeviceInterface&	vki,
 																				vk::VkDevice				device,
 																				vk::VkDescriptorType		descriptorType,
-																				ShaderInputInterface		shaderInterface,
-																				bool						isImmutable)
+																				ShaderInputInterface		shaderInterface)
 {
 	vk::DescriptorPoolBuilder builder;
 

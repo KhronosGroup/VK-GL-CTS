@@ -776,21 +776,21 @@ VkSamplerCreateInfo mapSampler (const tcu::Sampler& sampler, const tcu::TextureF
 		VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
 		DE_NULL,
 		(VkSamplerCreateFlags)0,
-		mapFilterMode(sampler.magFilter),					// magFilter
-		mapFilterMode(sampler.minFilter),					// minFilter
-		mapMipmapMode(sampler.minFilter),					// mipMode
-		mapWrapMode(sampler.wrapS),							// addressU
-		mapWrapMode(sampler.wrapT),							// addressV
-		mapWrapMode(sampler.wrapR),							// addressW
-		0.0f,												// mipLodBias
-		VK_FALSE,											// anisotropyEnable
-		1.0f,												// maxAnisotropy
-		(VkBool32)(compareEnabled ? VK_TRUE : VK_FALSE),	// compareEnable
-		compareOp,											// compareOp
-		0.0f,												// minLod
-		(isMipmapEnabled ? 1000.0f : 0.25f),				// maxLod
-		borderColor,										// borderColor
-		(sampler.normalizedCoords ? VK_FALSE : VK_TRUE),	// unnormalizedCoords
+		mapFilterMode(sampler.magFilter),							// magFilter
+		mapFilterMode(sampler.minFilter),							// minFilter
+		mapMipmapMode(sampler.minFilter),							// mipMode
+		mapWrapMode(sampler.wrapS),									// addressU
+		mapWrapMode(sampler.wrapT),									// addressV
+		mapWrapMode(sampler.wrapR),									// addressW
+		0.0f,														// mipLodBias
+		VK_FALSE,													// anisotropyEnable
+		1.0f,														// maxAnisotropy
+		(VkBool32)(compareEnabled ? VK_TRUE : VK_FALSE),			// compareEnable
+		compareOp,													// compareOp
+		0.0f,														// minLod
+		(isMipmapEnabled ? 1000.0f : 0.25f),						// maxLod
+		borderColor,												// borderColor
+		(VkBool32)(sampler.normalizedCoords ? VK_FALSE : VK_TRUE),	// unnormalizedCoords
 	};
 
 	return createInfo;
