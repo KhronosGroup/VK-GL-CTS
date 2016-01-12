@@ -915,7 +915,7 @@ IVec2 findImageSizeWxHx4 (vk::VkDeviceSize size)
 IVec2 findMaxRGBA8ImageSize (const vk::DeviceInterface&	vkd,
 							 vk::VkDevice				device,
 
-							 vk::VkBufferUsageFlags		usage,
+							 vk::VkImageUsageFlags		usage,
 							 vk::VkSharingMode			sharingMode,
 							 const vector<deUint32>&	queueFamilies,
 
@@ -2048,7 +2048,7 @@ void PipelineBarrier::submit (SubmitContext& context)
 		{
 			const vk::VkImageMemoryBarrier	barrier		=
 			{
-				vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
+				vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
 				DE_NULL,
 
 				m_srcAccesses,
