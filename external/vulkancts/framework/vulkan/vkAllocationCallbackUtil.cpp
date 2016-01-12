@@ -500,7 +500,7 @@ void validateAllocationCallbacks (const AllocationCallbackRecorder& recorder, Al
 					size_t* const		totalAllocSizePtr	= &results->internalAllocationTotal[record.data.internalAllocation.type][record.data.internalAllocation.scope];
 					const size_t		size				= record.data.internalAllocation.size;
 
-					if (record.type == AllocationCallbackRecord::TYPE_FREE)
+					if (record.type == AllocationCallbackRecord::TYPE_INTERNAL_FREE)
 					{
 						if (*totalAllocSizePtr < size)
 						{
