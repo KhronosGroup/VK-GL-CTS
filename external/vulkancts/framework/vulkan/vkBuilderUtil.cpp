@@ -50,13 +50,28 @@ DescriptorSetLayoutBuilder& DescriptorSetLayoutBuilder::addBinding (VkDescriptor
 																	VkShaderStageFlags	stageFlags,
 																	const VkSampler*	pImmutableSamplers)
 {
+	if (pImmutableSamplers)
+	{
+		const ImmutableSamplerInfo immutableSamplerInfo =
+		{
+			(deUint32)m_bindings.size(),
+			(deUint32)m_immutableSamplers.size()
+		};
+
+		m_immutableSamplerInfos.push_back(immutableSamplerInfo);
+
+		for (size_t descriptorNdx = 0; descriptorNdx < descriptorCount; descriptorNdx++)
+			m_immutableSamplers.push_back(pImmutableSamplers[descriptorNdx]);
+	}
+
+	// pImmutableSamplers will be updated at build time
 	const VkDescriptorSetLayoutBinding binding =
 	{
 		(deUint32)m_bindings.size(),	// binding
 		descriptorType,					// descriptorType
 		descriptorCount,				// descriptorCount
 		stageFlags,						// stageFlags
-		pImmutableSamplers,				// pImmutableSamplers
+		DE_NULL,						// pImmutableSamplers
 	};
 	m_bindings.push_back(binding);
 	return *this;
@@ -64,14 +79,23 @@ DescriptorSetLayoutBuilder& DescriptorSetLayoutBuilder::addBinding (VkDescriptor
 
 Move<VkDescriptorSetLayout> DescriptorSetLayoutBuilder::build (const DeviceInterface& vk, VkDevice device) const
 {
-	const VkDescriptorSetLayoutBinding* const	bindingPtr	= (m_bindings.empty()) ? (DE_NULL) : (&m_bindings[0]);
+	// Create new layout bindings with pImmutableSamplers updated
+	std::vector<VkDescriptorSetLayoutBinding>	bindings	= m_bindings;
+
+	for (size_t samplerInfoNdx = 0; samplerInfoNdx < m_immutableSamplerInfos.size(); samplerInfoNdx++)
+	{
+		const ImmutableSamplerInfo&	samplerInfo	= m_immutableSamplerInfos[samplerInfoNdx];
+
+		bindings[samplerInfo.bindingIndex].pImmutableSamplers	= &m_immutableSamplers[samplerInfo.samplerBaseIndex];
+	}
+
 	const VkDescriptorSetLayoutCreateInfo		createInfo	=
 	{
 		VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
 		DE_NULL,
-		(VkDescriptorSetLayoutCreateFlags)0,	// flags
-		(deUint32)m_bindings.size(),			// bindingCount
-		bindingPtr,								// pBinding
+		(VkDescriptorSetLayoutCreateFlags)0,					// flags
+		(deUint32)bindings.size(),								// bindingCount
+		(bindings.empty()) ? (DE_NULL) : (bindings.data()),		// pBinding
 	};
 
 	return createDescriptorSetLayout(vk, device, &createInfo);
@@ -147,6 +171,7 @@ DescriptorSetUpdateBuilder& DescriptorSetUpdateBuilder::write (VkDescriptorSet		
 															   const VkDescriptorBufferInfo*	pBufferInfo,
 															   const VkBufferView*				pTexelBufferView)
 {
+	// pImageInfo, pBufferInfo and pTexelBufferView will be updated when calling update()
 	const VkWriteDescriptorSet writeParams =
 	{
 		VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
@@ -156,11 +181,27 @@ DescriptorSetUpdateBuilder& DescriptorSetUpdateBuilder::write (VkDescriptorSet		
 		destArrayElement,	//!< destArrayElement
 		count,				//!< count
 		descriptorType,		//!< descriptorType
-		pImageInfo,
-		pBufferInfo,
-		pTexelBufferView
+		DE_NULL,
+		DE_NULL,
+		DE_NULL
 	};
+
 	m_writes.push_back(writeParams);
+
+	// Store a copy of pImageInfo, pBufferInfo and pTexelBufferView
+	WriteDescriptorInfo	writeInfo;
+
+	if (pImageInfo)
+		writeInfo.imageInfos.insert(writeInfo.imageInfos.end(), pImageInfo, pImageInfo + count);
+
+	if (pBufferInfo)
+		writeInfo.bufferInfos.insert(writeInfo.bufferInfos.end(), pBufferInfo, pBufferInfo + count);
+
+	if (pTexelBufferView)
+		writeInfo.texelBufferViews.insert(writeInfo.texelBufferViews.end(), pTexelBufferView, pTexelBufferView + count);
+
+	m_writeDescriptorInfos.push_back(writeInfo);
+
 	return *this;
 }
 
@@ -190,10 +231,27 @@ DescriptorSetUpdateBuilder& DescriptorSetUpdateBuilder::copy (VkDescriptorSet	sr
 
 void DescriptorSetUpdateBuilder::update (const DeviceInterface& vk, VkDevice device) const
 {
-	const VkWriteDescriptorSet* const	writePtr	= (m_writes.empty()) ? (DE_NULL) : (&m_writes[0]);
+	// Update VkWriteDescriptorSet structures with stored info
+	std::vector<VkWriteDescriptorSet> writes	= m_writes;
+
+	for (size_t writeNdx = 0; writeNdx < m_writes.size(); writeNdx++)
+	{
+		const WriteDescriptorInfo& writeInfo = m_writeDescriptorInfos[writeNdx];
+
+		if (!writeInfo.imageInfos.empty())
+			writes[writeNdx].pImageInfo			= &writeInfo.imageInfos[0];
+
+		if (!writeInfo.bufferInfos.empty())
+			writes[writeNdx].pBufferInfo		= &writeInfo.bufferInfos[0];
+
+		if (!writeInfo.texelBufferViews.empty())
+			writes[writeNdx].pTexelBufferView	= &writeInfo.texelBufferViews[0];
+	}
+
+	const VkWriteDescriptorSet* const	writePtr	= (m_writes.empty()) ? (DE_NULL) : (&writes[0]);
 	const VkCopyDescriptorSet* const	copyPtr		= (m_copies.empty()) ? (DE_NULL) : (&m_copies[0]);
 
-	vk.updateDescriptorSets(device, (deUint32)m_writes.size(), writePtr, (deUint32)m_copies.size(), copyPtr);
+	vk.updateDescriptorSets(device, (deUint32)writes.size(), writePtr, (deUint32)m_copies.size(), copyPtr);
 }
 
 } // vk

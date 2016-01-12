@@ -88,6 +88,15 @@ private:
 	DescriptorSetLayoutBuilder&					operator=					(const DescriptorSetLayoutBuilder&); // delete
 
 	std::vector<VkDescriptorSetLayoutBinding>	m_bindings;
+
+	struct ImmutableSamplerInfo
+	{
+		deUint32 bindingIndex;
+		deUint32 samplerBaseIndex;
+	};
+
+	std::vector<ImmutableSamplerInfo>			m_immutableSamplerInfos;
+	std::vector<VkSampler>						m_immutableSamplers;
 };
 
 class DescriptorPoolBuilder
@@ -229,9 +238,14 @@ private:
 										DescriptorSetUpdateBuilder	(const DescriptorSetUpdateBuilder&); // delete
 	DescriptorSetUpdateBuilder&			operator=					(const DescriptorSetUpdateBuilder&); // delete
 
-	std::vector<VkDescriptorImageInfo>	m_imageInfos;
-	std::vector<VkDescriptorBufferInfo>	m_bufferInfos;
-	std::vector<VkBufferView>			m_texelBufferViews;
+	struct WriteDescriptorInfo
+	{
+		std::vector<VkDescriptorImageInfo>	imageInfos;
+		std::vector<VkDescriptorBufferInfo>	bufferInfos;
+		std::vector<VkBufferView>			texelBufferViews;
+	};
+
+	std::vector<WriteDescriptorInfo>	m_writeDescriptorInfos;
 
 	std::vector<VkWriteDescriptorSet>	m_writes;
 	std::vector<VkCopyDescriptorSet>	m_copies;
