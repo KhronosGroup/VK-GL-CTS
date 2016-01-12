@@ -106,7 +106,7 @@ tcu::TestStatus BufferViewTestInstance::iterate (void)
 	const VkDevice				vkDevice				= m_context.getDevice();
 	const DeviceInterface&		vk						= m_context.getDeviceInterface();
 	const deUint32				queueFamilyIndex		= m_context.getUniversalQueueFamilyIndex();
-	const VkDeviceSize			size					= 16 * 1024;
+	const VkDeviceSize			size					= 3 * 5 * 7 * 64;
 	VkBuffer					testBuffer;
 	VkMemoryRequirements		memReqs;
 	VkFormatProperties			properties;
@@ -205,7 +205,7 @@ tcu::TestStatus BufferViewTestInstance::iterate (void)
 {
 	de::MovePtr<tcu::TestCaseGroup>	bufferViewTests	(new tcu::TestCaseGroup(testCtx, "create", "BufferView Construction Tests"));
 
-	const VkDeviceSize range = 96;
+	const VkDeviceSize range = VK_WHOLE_SIZE;
 	for (deUint32 format = VK_FORMAT_UNDEFINED + 1; format < VK_FORMAT_LAST; format++)
 	{
 		std::ostringstream	testName;
