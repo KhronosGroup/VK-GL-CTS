@@ -100,7 +100,7 @@ ShaderReturnCase::ShaderReturnCase (tcu::TestContext&			testCtx,
 	{
 		m_vertShaderSource = shaderSource;
 		m_fragShaderSource =
-			"#version 140\n"
+			"#version 310 es\n"
 			"#extension GL_ARB_separate_shader_objects : enable\n"
 			"#extension GL_ARB_shading_language_420pack : enable\n"
 			"layout(location = 0) in mediump vec4 v_color;\n"
@@ -114,7 +114,7 @@ ShaderReturnCase::ShaderReturnCase (tcu::TestContext&			testCtx,
 	{
 		m_fragShaderSource = shaderSource;
 		m_vertShaderSource =
-			"#version 140\n"
+			"#version 310 es\n"
 			"#extension GL_ARB_separate_shader_objects : enable\n"
 			"#extension GL_ARB_shading_language_420pack : enable\n"
 			"layout(location = 0) in  highp   vec4 a_position;\n"
@@ -152,7 +152,7 @@ private:
 de::MovePtr<ShaderReturnCase> makeConditionalReturnInFuncCase (tcu::TestContext& context, const std::string& name, const std::string& description, ReturnMode returnMode, bool isVertex)
 {
 	tcu::StringTemplate tmpl(
-		"#version 140\n"
+		"#version 310 es\n"
 		"#extension GL_ARB_separate_shader_objects : enable\n"
 		"#extension GL_ARB_shading_language_420pack : enable\n"
 		"layout(location = ${COORDLOC}) in ${COORDPREC} vec4 ${COORDS};\n"
@@ -196,7 +196,7 @@ de::MovePtr<ShaderReturnCase> makeOutputWriteReturnCase (tcu::TestContext& conte
 	tcu::StringTemplate tmpl(
 		inFunction
 		?
-			"#version 140\n"
+			"#version 310 es\n"
 			"#extension GL_ARB_separate_shader_objects : enable\n"
 			"#extension GL_ARB_shading_language_420pack : enable\n"
 			"layout(location = ${COORDLOC}) in ${COORDPREC} vec4 ${COORDS};\n"
@@ -214,7 +214,7 @@ de::MovePtr<ShaderReturnCase> makeOutputWriteReturnCase (tcu::TestContext& conte
 			"    myfunc();\n"
 			"}\n"
 		:
-			"#version 140\n"
+			"#version 310 es\n"
 			"#extension GL_ARB_separate_shader_objects : enable\n"
 			"#extension GL_ARB_shading_language_420pack : enable\n"
 			"layout(location = ${COORDLOC}) in ${COORDPREC} vec4 ${COORDS};\n"
@@ -253,7 +253,7 @@ de::MovePtr<ShaderReturnCase> makeOutputWriteReturnCase (tcu::TestContext& conte
 de::MovePtr<ShaderReturnCase> makeReturnInLoopCase (tcu::TestContext& context, const std::string& name, const std::string& description, bool isDynamicLoop, ReturnMode returnMode, bool isVertex)
 {
 	tcu::StringTemplate tmpl(
-		"#version 140\n"
+		"#version 310 es\n"
 		"#extension GL_ARB_separate_shader_objects : enable\n"
 		"#extension GL_ARB_shading_language_420pack : enable\n"
 		"layout(location = ${COORDLOC}) in ${COORDPREC} vec4 ${COORDS};\n"
@@ -349,7 +349,7 @@ ShaderReturnTests::~ShaderReturnTests (void)
 void ShaderReturnTests::init (void)
 {
 	addChild(new ShaderReturnCase(m_testCtx, "single_return_vertex", "Single return statement in function", true,
-		"#version 140\n"
+		"#version 310 es\n"
 		"#extension GL_ARB_separate_shader_objects : enable\n"
 		"#extension GL_ARB_shading_language_420pack : enable\n"
 		"layout(location = 0) in highp vec4 a_position;\n"
@@ -365,7 +365,7 @@ void ShaderReturnTests::init (void)
 		"    v_color = getColor();\n"
 		"}\n", evalReturnAlways, DE_NULL));
 	addChild(new ShaderReturnCase(m_testCtx, "single_return_fragment", "Single return statement in function", false,
-		"#version 140\n"
+		"#version 310 es\n"
 		"#extension GL_ARB_separate_shader_objects : enable\n"
 		"#extension GL_ARB_shading_language_420pack : enable\n"
 		"layout(location = 0) in mediump vec4 v_coords;\n"
@@ -393,7 +393,7 @@ void ShaderReturnTests::init (void)
 
 	// Unconditional double return in function.
 	addChild(new ShaderReturnCase(m_testCtx, "double_return_vertex", "Unconditional double return in function", true,
-		"#version 140\n"
+		"#version 310 es\n"
 		"#extension GL_ARB_separate_shader_objects : enable\n"
 		"#extension GL_ARB_shading_language_420pack : enable\n"
 		"layout(location = 0) in highp vec4 a_position;\n"
@@ -410,7 +410,7 @@ void ShaderReturnTests::init (void)
 		"    v_color = getColor();\n"
 		"}\n", evalReturnAlways, DE_NULL));
 	addChild(new ShaderReturnCase(m_testCtx, "double_return_fragment", "Unconditional double return in function", false,
-		"#version 140\n"
+		"#version 310 es\n"
 		"#extension GL_ARB_separate_shader_objects : enable\n"
 		"#extension GL_ARB_shading_language_420pack : enable\n"
 		"layout(location = 0) in mediump vec4 v_coords;\n"
@@ -427,7 +427,7 @@ void ShaderReturnTests::init (void)
 
 	// Last statement in main.
 	addChild(new ShaderReturnCase(m_testCtx, "last_statement_in_main_vertex", "Return as a final statement in main()", true,
-		"#version 140\n"
+		"#version 310 es\n"
 		"#extension GL_ARB_separate_shader_objects : enable\n"
 		"#extension GL_ARB_shading_language_420pack : enable\n"
 		"layout(location = 0) in highp vec4 a_position;\n"
@@ -440,7 +440,7 @@ void ShaderReturnTests::init (void)
 		"    return;\n"
 		"}\n", evalReturnAlways, DE_NULL));
 	addChild(new ShaderReturnCase(m_testCtx, "last_statement_in_main_fragment", "Return as a final statement in main()", false,
-		"#version 140\n"
+		"#version 310 es\n"
 		"#extension GL_ARB_separate_shader_objects : enable\n"
 		"#extension GL_ARB_shading_language_420pack : enable\n"
 		"layout(location = 0) in mediump vec4 v_coords;\n"
@@ -483,7 +483,7 @@ void ShaderReturnTests::init (void)
 
 	// Unconditional return in infinite loop.
 	addChild(new ShaderReturnCase(m_testCtx, "return_in_infinite_loop_vertex", "Return in infinite loop", true,
-		"#version 140\n"
+		"#version 310 es\n"
 		"#extension GL_ARB_separate_shader_objects : enable\n"
 		"#extension GL_ARB_shading_language_420pack : enable\n"
 		"layout(location = 0) in highp vec4 a_position;\n"
@@ -503,7 +503,7 @@ void ShaderReturnTests::init (void)
 		"    return;\n"
 		"}\n", evalReturnAlways, new ReturnTestUniformSetup(UI_ZERO)));
 	addChild(new ShaderReturnCase(m_testCtx, "return_in_infinite_loop_fragment", "Return in infinite loop", false,
-		"#version 140\n"
+		"#version 310 es\n"
 		"#extension GL_ARB_separate_shader_objects : enable\n"
 		"#extension GL_ARB_shading_language_420pack : enable\n"
 		"layout(location = 0) in mediump vec4 v_coords;\n"
