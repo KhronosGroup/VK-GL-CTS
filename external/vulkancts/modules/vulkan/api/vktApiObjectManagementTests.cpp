@@ -2017,10 +2017,10 @@ tcu::TestStatus multithreadedCreatePerThreadDeviceTest (Context& context, typena
 template<typename Object>
 tcu::TestStatus createSingleAllocCallbacksTest (Context& context, typename Object::Parameters params)
 {
-	const deUint32						noCmdScope		= VK_SYSTEM_ALLOCATION_SCOPE_INSTANCE
-														| VK_SYSTEM_ALLOCATION_SCOPE_DEVICE
-														| VK_SYSTEM_ALLOCATION_SCOPE_CACHE
-														| VK_SYSTEM_ALLOCATION_SCOPE_OBJECT;
+	const deUint32						noCmdScope		= (1u << VK_SYSTEM_ALLOCATION_SCOPE_INSTANCE)
+														| (1u << VK_SYSTEM_ALLOCATION_SCOPE_DEVICE)
+														| (1u << VK_SYSTEM_ALLOCATION_SCOPE_CACHE)
+														| (1u << VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 
 	// Callbacks used by resources
 	AllocationCallbackRecorder			resCallbacks	(getSystemAllocator(), 128);
