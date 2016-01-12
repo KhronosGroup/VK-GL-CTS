@@ -359,7 +359,15 @@ TestInstance* VertexInputTest::createInstance (Context& context) const
 			bindingDescriptions[attributeBinding].stride += inputSize;
 			attributeOffsets[attributeBinding] += inputSize;
 
-			attributeLocation++;
+			//double formats with more than 2 components will take 2 locations
+			const GlslType type = attributeInfo.glslType;
+			if ((type == GLSL_TYPE_DMAT2 || type == GLSL_TYPE_DMAT3 || type == GLSL_TYPE_DMAT4) &&
+				(attributeInfo.vkType == VK_FORMAT_R64G64B64_SFLOAT || attributeInfo.vkType == VK_FORMAT_R64G64B64A64_SFLOAT))
+			{
+				attributeLocation += 2;
+			}
+			else
+				attributeLocation++;
 
 			attributeDescriptions.push_back(attributeDescription);
 		}
