@@ -724,6 +724,7 @@ BufferViewTestInstance::BufferViewTestInstance (Context& context, BufferViewCase
 		vk.cmdBindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 0u, 1, &*m_descriptorSet, 0u, DE_NULL);
 		vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &m_vertexBuffer.get(), vertexBufferOffset);
 		vk.cmdDraw(*m_cmdBuffer, (deUint32)m_vertices.size(), 1, 0, 0);
+		vk.cmdEndRenderPass(*m_cmdBuffer);
 
 		const VkImageMemoryBarrier imageBarrier =
 		{
@@ -776,7 +777,6 @@ BufferViewTestInstance::BufferViewTestInstance (Context& context, BufferViewCase
 		vk.cmdCopyImageToBuffer(*m_cmdBuffer, *m_colorImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *m_resultBuffer, 1, &copyRegion);
 		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &bufferBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
 
-		vk.cmdEndRenderPass(*m_cmdBuffer);
 		VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
 	}
 
