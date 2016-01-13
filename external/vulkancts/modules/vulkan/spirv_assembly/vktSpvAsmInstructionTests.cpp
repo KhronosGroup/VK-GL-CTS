@@ -1191,6 +1191,7 @@ tcu::TestCaseGroup* createSpecConstantGroup (tcu::TestContext& testCtx)
 		"OpDecorate %id BuiltIn GlobalInvocationId\n"
 		"OpDecorate %sc_0  SpecId 0\n"
 		"OpDecorate %sc_1  SpecId 1\n"
+		"OpDecorate %i32arr ArrayStride 4\n"
 
 		+ string(s_InputOutputBufferTraits) + string(s_CommonTypes) +
 
@@ -1304,6 +1305,7 @@ tcu::TestCaseGroup* createSpecConstantGroup (tcu::TestContext& testCtx)
 		"OpDecorate %sc_0  SpecId 0\n"
 		"OpDecorate %sc_1  SpecId 1\n"
 		"OpDecorate %sc_2  SpecId 2\n"
+		"OpDecorate %i32arr ArrayStride 4\n"
 
 		+ string(s_InputOutputBufferTraits) + string(s_CommonTypes) +
 
