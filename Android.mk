@@ -734,9 +734,11 @@ LOCAL_SHARED_LIBRARIES := \
 		liblog \
 		libm \
 		libc \
-		libpng \
 		libz \
 		libdl
+
+LOCAL_STATIC_LIBRARIES := \
+		libpng_ndk \
 
 LOCAL_CFLAGS += \
 	$(deqp_compile_flags) \
