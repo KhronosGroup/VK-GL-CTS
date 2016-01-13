@@ -2278,6 +2278,7 @@ tcu::TestCaseGroup* createOpQuantizeToF16Group (tcu::TestContext& testCtx)
 			}
 		}
 
+		spec.assembly = shader;
 		spec.inputs.push_back(BufferSp(new Float32Buffer(infinities)));
 		spec.outputs.push_back(BufferSp(new Float32Buffer(results)));
 		spec.numWorkGroups = IVec3(numElements, 1, 1);
@@ -2305,6 +2306,7 @@ tcu::TestCaseGroup* createOpQuantizeToF16Group (tcu::TestContext& testCtx)
 			}
 		}
 
+		spec.assembly = shader;
 		spec.inputs.push_back(BufferSp(new Float32Buffer(nans)));
 		spec.outputs.push_back(BufferSp(new Float32Buffer(nans)));
 		spec.numWorkGroups = IVec3(numElements, 1, 1);
@@ -2354,6 +2356,7 @@ tcu::TestCaseGroup* createOpQuantizeToF16Group (tcu::TestContext& testCtx)
 			}
 		}
 
+		spec.assembly = shader;
 		spec.inputs.push_back(BufferSp(new Float32Buffer(small)));
 		spec.outputs.push_back(BufferSp(new Float32Buffer(zeros)));
 		spec.numWorkGroups = IVec3(numElements, 1, 1);
@@ -2372,6 +2375,7 @@ tcu::TestCaseGroup* createOpQuantizeToF16Group (tcu::TestContext& testCtx)
 		for (size_t idx = 0; idx < numElements; ++idx)
 			exact.push_back(static_cast<float>(idx - 100));
 
+		spec.assembly = shader;
 		spec.inputs.push_back(BufferSp(new Float32Buffer(exact)));
 		spec.outputs.push_back(BufferSp(new Float32Buffer(exact)));
 		spec.numWorkGroups = IVec3(numElements, 1, 1);
@@ -2390,6 +2394,7 @@ tcu::TestCaseGroup* createOpQuantizeToF16Group (tcu::TestContext& testCtx)
 		inputs.push_back(constructNormalizedFloat(2,	0x01E000));
 		inputs.push_back(constructNormalizedFloat(1,	0xFFE000));
 
+		spec.assembly = shader;
 		spec.verifyIO = &compareOpQuantizeF16ComputeExactCase;
 		spec.inputs.push_back(BufferSp(new Float32Buffer(inputs)));
 		spec.outputs.push_back(BufferSp(new Float32Buffer(inputs)));
