@@ -2805,6 +2805,7 @@ void checkColorRenderQuad (const ConstPixelBufferAccess&	result,
 
 				if (pixelStatus.getColorStatus() == PixelStatus::STATUS_UNDEFINED)
 				{
+					const Vec4	minDiff		= Vec4(1.0f) / (IVec4(1) << tcu::getTextureFormatMantissaBitDepth(format)).cast<float>();
 					const Vec4	minUvs		= computeUvs(posA, posB, IVec2(x-1, y-1));
 					const Vec4	maxUvs		= computeUvs(posA, posB, IVec2(x+1, y+1));
 					const bool	softCheck	= std::abs(x - posA.x()) <= 1 || std::abs(x - posB.x()) <= 1
@@ -2812,10 +2813,22 @@ void checkColorRenderQuad (const ConstPixelBufferAccess&	result,
 
 					const Vec4	resColor	(result.getPixel(x, y));
 
-					const Vec4	minRefColor	= srgb ? tcu::linearToSRGB(valueMax * minUvs + valueMin * (Vec4(1.0f) - minUvs))
-													 : valueMax * minUvs + valueMin * (Vec4(1.0f) - minUvs) - threshold;
-					const Vec4	maxRefColor	= srgb ? tcu::linearToSRGB(valueMax * maxUvs + valueMin * (Vec4(1.0f) - maxUvs))
-													 : valueMax * maxUvs + valueMin * (Vec4(1.0f) - maxUvs) + threshold;
+					Vec4	minRefColor	= srgb ? tcu::linearToSRGB(valueMax * minUvs + valueMin * (Vec4(1.0f) - minUvs))
+											 : valueMax * minUvs + valueMin * (Vec4(1.0f) - minUvs) - threshold;
+					Vec4	maxRefColor	= srgb ? tcu::linearToSRGB(valueMax * maxUvs + valueMin * (Vec4(1.0f) - maxUvs))
+											 : valueMax * maxUvs + valueMin * (Vec4(1.0f) - maxUvs) + threshold;
+
+					// Take into account rounding and quantization
+					if (channelClass == tcu::TEXTURECHANNELCLASS_FLOATING_POINT)
+					{
+						minRefColor = tcu::min(minRefColor * (Vec4(1.0f) - minDiff), minRefColor * (Vec4(1.0f) + minDiff));
+						maxRefColor = tcu::max(maxRefColor * (Vec4(1.0f) - minDiff), maxRefColor * (Vec4(1.0f) + minDiff));
+					}
+					else
+					{
+						minRefColor = minRefColor - minDiff;
+						maxRefColor = maxRefColor + minDiff;
+					}
 
 					DE_ASSERT(minRefColor[0] <= maxRefColor[0]);
 					DE_ASSERT(minRefColor[1] <= maxRefColor[1]);
@@ -3703,6 +3716,18 @@ tcu::TestStatus renderPassTest (Context& context, TestConfig config)
 	checkTextureFormatSupport(log, context.getInstanceInterface(), context.getPhysicalDevice(), config.renderPass.getAttachments());
 
 	{
+		const vk::VkPhysicalDeviceProperties properties = vk::getPhysicalDeviceProperties(context.getInstanceInterface(), context.getPhysicalDevice());
+
+		log << TestLog::Message << "Max color attachments: " << properties.limits.maxColorAttachments << TestLog::EndMessage;
+
+		for (size_t subpassNdx = 0; subpassNdx < renderPassInfo.getSubpasses().size(); subpassNdx++)
+		{
+			 if (renderPassInfo.getSubpasses()[subpassNdx].getColorAttachments().size() > (size_t)properties.limits.maxColorAttachments)
+				 TCU_THROW(NotSupportedError, "Subpass uses more than maxColorAttachments.");
+		}
+	}
+
+	{
 		const VkDevice								device								= context.getDevice();
 		const DeviceInterface&						vk									= context.getDeviceInterface();
 		const VkQueue								queue								= context.getUniversalQueue();
@@ -3830,7 +3855,7 @@ static const VkFormat s_coreDepthStencilFormats[] =
 
 de::MovePtr<tcu::TestCaseGroup> createAttachmentTestCaseGroup (tcu::TestContext& testCtx)
 {
-	const deUint32 attachmentCounts[] = { 1, 3, 8 };
+	const deUint32 attachmentCounts[] = { 1, 3, 4, 8 };
 	const VkAttachmentLoadOp loadOps[] =
 	{
 		VK_ATTACHMENT_LOAD_OP_LOAD,
