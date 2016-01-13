@@ -2149,7 +2149,7 @@ float constructNormalizedFloat (deInt32 exponent, deUint32 significand)
 
 	for (deInt32 idx = 0; idx < 23; ++idx)
 	{
-		f += ((significand & 0x800000) == 0) ? 0.f : std::ldexp(1.0f, -idx);
+		f += ((significand & 0x800000) == 0) ? 0.f : std::ldexp(1.0f, -(idx + 1));
 		significand <<= 1;
 	}
 
