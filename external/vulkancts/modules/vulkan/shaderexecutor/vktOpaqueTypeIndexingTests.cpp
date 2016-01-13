@@ -1041,10 +1041,13 @@ tcu::TestStatus AtomicCounterIndexingCaseInstance::iterate (void)
 	std::vector<deUint32>		outValues			(numInvocations*numOps);
 	deUint32					bindingLocation		= getFirstFreeBindingLocation(m_shaderType);
 
+
+	const deUint32 atomicCounterLocation = bindingLocation++;
+
 	{
 		DE_ASSERT(numCounters <= 4);
 		// Add the atomic counters' base value, all zero.
-		m_uniformSetup->addData(new UniformData<tcu::Mat4>(bindingLocation++, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, tcu::Mat4(0.0)));
+		m_uniformSetup->addData(new UniformData<tcu::Mat4>(atomicCounterLocation, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, tcu::Mat4(0.0)));
 
 		if (m_indexExprType == INDEX_EXPR_TYPE_DYNAMIC_UNIFORM)
 		{
@@ -1079,6 +1082,13 @@ tcu::TestStatus AtomicCounterIndexingCaseInstance::iterate (void)
 
 		for (int opNdx = 0; opNdx < numOps; opNdx++)
 			numHits[m_opIndices[opNdx]] += 1;
+
+		// Read counter values
+		{
+			const void* mapPtr = m_executor.getBufferPtr(atomicCounterLocation);
+			DE_ASSERT(mapPtr != DE_NULL);
+			std::copy((const deUint32*)mapPtr, (const deUint32*)mapPtr + numCounters, &counterValues[0]);
+		}
 
 		// Verify counter values
 		for (int counterNdx = 0; counterNdx < numCounters; counterNdx++)

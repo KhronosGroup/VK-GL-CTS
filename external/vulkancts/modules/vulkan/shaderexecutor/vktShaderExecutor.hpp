@@ -146,6 +146,8 @@ public:
 												 VkImageViewType			imageViewType,
 												 const void*				data);
 
+	const void*				getBufferPtr		(const deUint32 bindingLocation) const;
+
 protected:
 							ShaderExecutor		(const ShaderSpec& shaderSpec, glu::ShaderType shaderType);
 
