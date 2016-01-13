@@ -755,9 +755,9 @@ static VkBorderColor mapBorderColor (tcu::TextureChannelClass channelClass, cons
 	{
 		const tcu::Vec4		fColor	= color.get<float>();
 
-		if (fColor		== tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f)) return VK_BORDER_COLOR_INT_TRANSPARENT_BLACK;
-		else if (fColor	== tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f)) return VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-		else if (fColor == tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f)) return VK_BORDER_COLOR_INT_OPAQUE_WHITE;
+		if (fColor		== tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f)) return VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK;
+		else if (fColor == tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f)) return VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK;
+		else if (fColor == tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f)) return VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
 	}
 
 	DE_FATAL("Unsupported border color");
