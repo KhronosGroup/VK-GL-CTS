@@ -92,6 +92,7 @@ namespace
 enum
 {
 	ALL_PIPELINE_STAGES = vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT
+						| vk::VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT
 						| vk::VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT
 						| vk::VK_PIPELINE_STAGE_VERTEX_INPUT_BIT
 						| vk::VK_PIPELINE_STAGE_VERTEX_SHADER_BIT
@@ -215,6 +216,7 @@ enum Access
 enum PipelineStage
 {
 	PIPELINESTAGE_TOP_OF_PIPE_BIT = 0,
+	PIPELINESTAGE_BOTTOM_OF_PIPE_BIT,
 	PIPELINESTAGE_DRAW_INDIRECT_BIT,
 	PIPELINESTAGE_VERTEX_INPUT_BIT,
 	PIPELINESTAGE_VERTEX_SHADER_BIT,
@@ -237,6 +239,7 @@ PipelineStage pipelineStageFlagToPipelineStage (vk::VkPipelineStageFlagBits flag
 	switch (flags)
 	{
 		case vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT:						return PIPELINESTAGE_TOP_OF_PIPE_BIT;
+		case vk::VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT:					return PIPELINESTAGE_BOTTOM_OF_PIPE_BIT;
 		case vk::VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT:					return PIPELINESTAGE_DRAW_INDIRECT_BIT;
 		case vk::VK_PIPELINE_STAGE_VERTEX_INPUT_BIT:					return PIPELINESTAGE_VERTEX_INPUT_BIT;
 		case vk::VK_PIPELINE_STAGE_VERTEX_SHADER_BIT:					return PIPELINESTAGE_VERTEX_SHADER_BIT;
@@ -2084,6 +2087,7 @@ public:
 						~ImageTransition	(void) {}
 	const char*			getName				(void) const { return "ImageTransition"; }
 
+	void				prepare				(PrepareContext& context);
 	void				logSubmit			(TestLog& log, size_t commandIndex) const;
 	void				submit				(SubmitContext& context);
 };
@@ -2091,6 +2095,11 @@ public:
 void ImageTransition::logSubmit (TestLog& log, size_t commandIndex) const
 {
 	log << TestLog::Message << commandIndex << ":" << getName() << " Use pipeline barrier to trasition to VK_IMAGE_LAYOUT_GENERAL." << TestLog::EndMessage;
+}
+
+void ImageTransition::prepare (PrepareContext& context)
+{
+	context.setImageLayout(vk::VK_IMAGE_LAYOUT_GENERAL);
 }
 
 void ImageTransition::submit (SubmitContext& context)
@@ -5379,6 +5388,7 @@ void getAvailableOps (const State& state, bool supportsBuffers, bool supportsIma
 					&& usage & USAGE_HOST_WRITE
 					&& state.memoryDefined
 					&& state.hostInvalidated
+					&& state.queueIdle
 					&& state.cache.isValid(vk::VK_PIPELINE_STAGE_HOST_BIT, vk::VK_ACCESS_HOST_WRITE_BIT)
 					&& state.cache.isValid(vk::VK_PIPELINE_STAGE_HOST_BIT, vk::VK_ACCESS_HOST_READ_BIT))
 				{
@@ -5388,6 +5398,7 @@ void getAvailableOps (const State& state, bool supportsBuffers, bool supportsIma
 				if (usage & USAGE_HOST_READ
 					&& state.memoryDefined
 					&& state.hostInvalidated
+					&& state.queueIdle
 					&& state.cache.isValid(vk::VK_PIPELINE_STAGE_HOST_BIT, vk::VK_ACCESS_HOST_READ_BIT))
 				{
 					ops.push_back(OP_MAP_READ);
@@ -5395,6 +5406,7 @@ void getAvailableOps (const State& state, bool supportsBuffers, bool supportsIma
 
 				if (usage & USAGE_HOST_WRITE
 					&& state.hostInvalidated
+					&& state.queueIdle
 					&& state.cache.isValid(vk::VK_PIPELINE_STAGE_HOST_BIT, vk::VK_ACCESS_HOST_WRITE_BIT))
 				{
 					ops.push_back(OP_MAP_WRITE);
