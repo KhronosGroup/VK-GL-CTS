@@ -293,7 +293,10 @@ struct Instance
 {
 	typedef VkInstance Type;
 
-	enum { MAX_CONCURRENT = 32 };
+	static deUint32 getMaxConcurrent (Context&)
+	{
+		return 32;
+	}
 
 	struct Parameters
 	{
@@ -337,7 +340,10 @@ struct Device
 {
 	typedef VkDevice Type;
 
-	enum { MAX_CONCURRENT = 32 };
+	static deUint32 getMaxConcurrent (Context&)
+	{
+		return 32;
+	}
 
 	struct Parameters
 	{
@@ -428,7 +434,10 @@ struct DeviceMemory
 {
 	typedef VkDeviceMemory Type;
 
-	enum { MAX_CONCURRENT = DEFAULT_MAX_CONCURRENT_OBJECTS };
+	static deUint32 getMaxConcurrent (Context& context)
+	{
+		return context.getDeviceProperties().limits.maxMemoryAllocationCount;
+	}
 
 	struct Parameters
 	{
@@ -481,7 +490,10 @@ struct Buffer
 {
 	typedef VkBuffer Type;
 
-	enum { MAX_CONCURRENT = DEFAULT_MAX_CONCURRENT_OBJECTS };
+	static deUint32 getMaxConcurrent (Context&)
+	{
+		return DEFAULT_MAX_CONCURRENT_OBJECTS;
+	}
 
 	struct Parameters
 	{
@@ -522,7 +534,10 @@ struct BufferView
 {
 	typedef VkBufferView Type;
 
-	enum { MAX_CONCURRENT = DEFAULT_MAX_CONCURRENT_OBJECTS };
+	static deUint32 getMaxConcurrent (Context&)
+	{
+		return DEFAULT_MAX_CONCURRENT_OBJECTS;
+	}
 
 	struct Parameters
 	{
@@ -576,7 +591,10 @@ struct Image
 {
 	typedef VkImage Type;
 
-	enum { MAX_CONCURRENT = DEFAULT_MAX_CONCURRENT_OBJECTS };
+	static deUint32 getMaxConcurrent (Context&)
+	{
+		return DEFAULT_MAX_CONCURRENT_OBJECTS;
+	}
 
 	struct Parameters
 	{
@@ -648,7 +666,10 @@ struct ImageView
 {
 	typedef VkImageView Type;
 
-	enum { MAX_CONCURRENT = DEFAULT_MAX_CONCURRENT_OBJECTS };
+	static deUint32 getMaxConcurrent (Context&)
+	{
+		return DEFAULT_MAX_CONCURRENT_OBJECTS;
+	}
 
 	struct Parameters
 	{
@@ -706,7 +727,10 @@ struct Semaphore
 {
 	typedef VkSemaphore Type;
 
-	enum { MAX_CONCURRENT = 100 };
+	static deUint32 getMaxConcurrent (Context&)
+	{
+		return 100;
+	}
 
 	struct Parameters
 	{
@@ -739,7 +763,10 @@ struct Fence
 {
 	typedef VkFence Type;
 
-	enum { MAX_CONCURRENT = 100 };
+	static deUint32 getMaxConcurrent (Context&)
+	{
+		return 100;
+	}
 
 	struct Parameters
 	{
@@ -772,7 +799,10 @@ struct Event
 {
 	typedef VkEvent Type;
 
-	enum { MAX_CONCURRENT = 100 };
+	static deUint32 getMaxConcurrent (Context&)
+	{
+		return 100;
+	}
 
 	struct Parameters
 	{
@@ -805,7 +835,10 @@ struct QueryPool
 {
 	typedef VkQueryPool Type;
 
-	enum { MAX_CONCURRENT = DEFAULT_MAX_CONCURRENT_OBJECTS };
+	static deUint32 getMaxConcurrent (Context&)
+	{
+		return DEFAULT_MAX_CONCURRENT_OBJECTS;
+	}
 
 	struct Parameters
 	{
@@ -847,7 +880,10 @@ struct ShaderModule
 {
 	typedef VkShaderModule Type;
 
-	enum { MAX_CONCURRENT = DEFAULT_MAX_CONCURRENT_OBJECTS };
+	static deUint32 getMaxConcurrent (Context&)
+	{
+		return DEFAULT_MAX_CONCURRENT_OBJECTS;
+	}
 
 	struct Parameters
 	{
@@ -928,7 +964,10 @@ struct PipelineCache
 {
 	typedef VkPipelineCache Type;
 
-	enum { MAX_CONCURRENT = DEFAULT_MAX_CONCURRENT_OBJECTS };
+	static deUint32 getMaxConcurrent (Context&)
+	{
+		return DEFAULT_MAX_CONCURRENT_OBJECTS;
+	}
 
 	struct Parameters
 	{
@@ -959,7 +998,10 @@ struct Sampler
 {
 	typedef VkSampler Type;
 
-	enum { MAX_CONCURRENT = DEFAULT_MAX_CONCURRENT_OBJECTS };
+	static deUint32 getMaxConcurrent (Context& context)
+	{
+		return context.getDeviceProperties().limits.maxSamplerAllocationCount;
+	}
 
 	struct Parameters
 	{
@@ -1036,7 +1078,10 @@ struct DescriptorSetLayout
 {
 	typedef VkDescriptorSetLayout Type;
 
-	enum { MAX_CONCURRENT = DEFAULT_MAX_CONCURRENT_OBJECTS };
+	static deUint32 getMaxConcurrent (Context&)
+	{
+		return DEFAULT_MAX_CONCURRENT_OBJECTS;
+	}
 
 	struct Parameters
 	{
@@ -1141,7 +1186,10 @@ struct PipelineLayout
 {
 	typedef VkPipelineLayout Type;
 
-	enum { MAX_CONCURRENT = DEFAULT_MAX_CONCURRENT_OBJECTS };
+	static deUint32 getMaxConcurrent (Context&)
+	{
+		return DEFAULT_MAX_CONCURRENT_OBJECTS;
+	}
 
 	struct Parameters
 	{
@@ -1204,7 +1252,10 @@ struct RenderPass
 {
 	typedef VkRenderPass Type;
 
-	enum { MAX_CONCURRENT = DEFAULT_MAX_CONCURRENT_OBJECTS };
+	static deUint32 getMaxConcurrent (Context&)
+	{
+		return DEFAULT_MAX_CONCURRENT_OBJECTS;
+	}
 
 	// \todo [2015-09-17 pyry] More interesting configurations
 	struct Parameters
@@ -1292,7 +1343,10 @@ struct GraphicsPipeline
 {
 	typedef VkPipeline Type;
 
-	enum { MAX_CONCURRENT = DEFAULT_MAX_CONCURRENT_OBJECTS };
+	static deUint32 getMaxConcurrent (Context&)
+	{
+		return DEFAULT_MAX_CONCURRENT_OBJECTS;
+	}
 
 	// \todo [2015-09-17 pyry] More interesting configurations
 	struct Parameters
@@ -1506,7 +1560,10 @@ struct ComputePipeline
 {
 	typedef VkPipeline Type;
 
-	enum { MAX_CONCURRENT = DEFAULT_MAX_CONCURRENT_OBJECTS };
+	static deUint32 getMaxConcurrent (Context&)
+	{
+		return DEFAULT_MAX_CONCURRENT_OBJECTS;
+	}
 
 	// \todo [2015-09-17 pyry] More interesting configurations
 	struct Parameters
@@ -1573,7 +1630,10 @@ struct DescriptorPool
 {
 	typedef VkDescriptorPool Type;
 
-	enum { MAX_CONCURRENT = DEFAULT_MAX_CONCURRENT_OBJECTS };
+	static deUint32 getMaxConcurrent (Context&)
+	{
+		return DEFAULT_MAX_CONCURRENT_OBJECTS;
+	}
 
 	struct Parameters
 	{
@@ -1625,7 +1685,10 @@ struct DescriptorSet
 {
 	typedef VkDescriptorSet Type;
 
-	enum { MAX_CONCURRENT = DEFAULT_MAX_CONCURRENT_OBJECTS };
+	static deUint32 getMaxConcurrent (Context&)
+	{
+		return DEFAULT_MAX_CONCURRENT_OBJECTS;
+	}
 
 	struct Parameters
 	{
@@ -1691,7 +1754,10 @@ struct Framebuffer
 {
 	typedef VkFramebuffer Type;
 
-	enum { MAX_CONCURRENT = DEFAULT_MAX_CONCURRENT_OBJECTS };
+	static deUint32 getMaxConcurrent (Context&)
+	{
+		return DEFAULT_MAX_CONCURRENT_OBJECTS;
+	}
 
 	struct Parameters
 	{
@@ -1758,7 +1824,10 @@ struct CommandPool
 {
 	typedef VkCommandPool Type;
 
-	enum { MAX_CONCURRENT = DEFAULT_MAX_CONCURRENT_OBJECTS };
+	static deUint32 getMaxConcurrent (Context&)
+	{
+		return DEFAULT_MAX_CONCURRENT_OBJECTS;
+	}
 
 	struct Parameters
 	{
@@ -1792,7 +1861,10 @@ struct CommandBuffer
 {
 	typedef VkCommandBuffer Type;
 
-	enum { MAX_CONCURRENT = DEFAULT_MAX_CONCURRENT_OBJECTS };
+	static deUint32 getMaxConcurrent (Context&)
+	{
+		return DEFAULT_MAX_CONCURRENT_OBJECTS;
+	}
 
 	struct Parameters
 	{
@@ -1886,7 +1958,7 @@ tcu::TestStatus createMaxConcurrentTest (Context& context, typename Object::Para
 	typedef Unique<typename Object::Type>	UniqueObject;
 	typedef SharedPtr<UniqueObject>			ObjectPtr;
 
-	const deUint32						numObjects	= Object::MAX_CONCURRENT;
+	const deUint32						numObjects	= Object::getMaxConcurrent(context);
 	const Environment					env			(context, numObjects);
 	const typename Object::Resources	res			(env, params);
 	vector<ObjectPtr>					objects		(numObjects);
