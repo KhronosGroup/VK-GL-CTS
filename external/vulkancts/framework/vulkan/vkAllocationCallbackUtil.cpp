@@ -480,8 +480,11 @@ void validateAllocationCallbacks (const AllocationCallbackRecorder& recorder, Al
 					{
 						const size_t	slotNdx		= ptrToSlotIndex[record.data.free.mem];
 
-						if (allocations[slotNdx].isLive)
+						if (allocations[slotNdx].isLive) 
+						{
 							allocations[slotNdx].isLive = false;
+							ptrToSlotIndex.erase(record.data.free.mem);
+						}
 						else
 							results->violations.push_back(AllocationCallbackViolation(record, AllocationCallbackViolation::REASON_DOUBLE_FREE));
 					}
