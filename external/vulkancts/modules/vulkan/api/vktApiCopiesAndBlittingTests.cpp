@@ -616,6 +616,23 @@ CopyImageToImage::CopyImageToImage (Context& context, TestParams params)
 	const deUint32				queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
 	SimpleAllocator				memAlloc			(vk, vkDevice, getPhysicalDeviceMemoryProperties(context.getInstanceInterface(), context.getPhysicalDevice()));
 
+	VkImageFormatProperties properties;
+	if ((context.getInstanceInterface().getPhysicalDeviceImageFormatProperties (context.getPhysicalDevice(),
+																				m_params.src.image.format,
+																				VK_IMAGE_TYPE_2D,
+																				VK_IMAGE_TILING_OPTIMAL,
+																				VK_IMAGE_USAGE_TRANSFER_SRC_BIT, 0,
+																				&properties) == VK_ERROR_FORMAT_NOT_SUPPORTED) ||
+		(context.getInstanceInterface().getPhysicalDeviceImageFormatProperties (context.getPhysicalDevice(),
+																				m_params.dst.image.format,
+																				VK_IMAGE_TYPE_2D,
+																				VK_IMAGE_TILING_OPTIMAL,
+																				VK_FORMAT_FEATURE_BLIT_DST_BIT, 0,
+																				&properties) == VK_ERROR_FORMAT_NOT_SUPPORTED))
+	{
+		TCU_THROW(NotSupportedError, "Format not supported");
+	}
+
 	// Create source image
 	{
 		const VkImageCreateInfo sourceImageParams =
@@ -874,10 +891,13 @@ CopyBufferToBuffer::CopyBufferToBuffer (Context& context, TestParams params)
 
 tcu::TestStatus CopyBufferToBuffer::iterate()
 {
-	m_sourceTextureLevel		= de::MovePtr<tcu::TextureLevel>(new tcu::TextureLevel(mapVkFormat(VK_FORMAT_R32_UINT), (int)m_params.src.buffer.size, 1));
-	generateBuffer(m_sourceTextureLevel->getAccess(), (int)m_params.src.buffer.size, 1, 1, FILL_MODE_RED);
-	m_destinationTextureLevel	= de::MovePtr<tcu::TextureLevel>(new tcu::TextureLevel(mapVkFormat(VK_FORMAT_R32_UINT), (int)m_params.dst.buffer.size, 1));
-	generateBuffer(m_destinationTextureLevel->getAccess(), (int)m_params.dst.buffer.size, 1, 1, FILL_MODE_WHITE);
+	const int srcLevelWidth = (int)(m_params.src.buffer.size/4); // Here the format is VK_FORMAT_R32_UINT, we need to divide the buffer size by 4
+	m_sourceTextureLevel		= de::MovePtr<tcu::TextureLevel>(new tcu::TextureLevel(mapVkFormat(VK_FORMAT_R32_UINT), srcLevelWidth, 1));
+	generateBuffer(m_sourceTextureLevel->getAccess(), srcLevelWidth, 1, 1, FILL_MODE_RED);
+
+	const int dstLevelWidth = (int)(m_params.dst.buffer.size/4);
+	m_destinationTextureLevel	= de::MovePtr<tcu::TextureLevel>(new tcu::TextureLevel(mapVkFormat(VK_FORMAT_R32_UINT), dstLevelWidth, 1));
+	generateBuffer(m_destinationTextureLevel->getAccess(), dstLevelWidth, 1, 1, FILL_MODE_WHITE);
 
 	generateExpectedResult();
 
@@ -950,7 +970,7 @@ tcu::TestStatus CopyBufferToBuffer::iterate()
 	VK_CHECK(vk.waitForFences(vkDevice, 1, &m_fence.get(), true, ~(0ull) /* infinity */));
 
 	// Read buffer data
-	de::MovePtr<tcu::TextureLevel>	resultLevel		(new tcu::TextureLevel(mapVkFormat(VK_FORMAT_R32_UINT), (int)m_params.dst.buffer.size, 1));
+	de::MovePtr<tcu::TextureLevel>	resultLevel		(new tcu::TextureLevel(mapVkFormat(VK_FORMAT_R32_UINT), dstLevelWidth, 1));
 	invalidateMappedMemoryRange(vk, vkDevice, m_destinationBufferAlloc->getMemory(), m_destinationBufferAlloc->getOffset(), m_params.dst.buffer.size);
 	tcu::copy(*resultLevel, tcu::ConstPixelBufferAccess(resultLevel->getFormat(), resultLevel->getSize(), m_destinationBufferAlloc->getHostPtr()));
 	deFree(bufferCopies);
