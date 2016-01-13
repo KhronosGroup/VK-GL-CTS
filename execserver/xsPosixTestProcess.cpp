@@ -200,7 +200,7 @@ void PosixTestProcess::start (const char* name, const char* params, const char* 
 	}
 
 	// Construct command line.
-	string cmdLine = de::FilePath(name).isAbsolutePath() ? name : de::FilePath::join(workingDir, name).normalize().getPath();
+	string cmdLine = de::FilePath(name).isAbsolutePath() ? name : de::FilePath::join(workingDir, name).getPath();
 	cmdLine += string(" --deqp-log-filename=") + logFilePath.getBaseName();
 
 	if (hasCaseList)
