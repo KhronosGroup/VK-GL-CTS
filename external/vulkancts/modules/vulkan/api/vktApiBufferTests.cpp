@@ -238,7 +238,7 @@ tcu::TestStatus BufferTestInstance::iterate (void)
 
 		vkInstance.getPhysicalDeviceProperties(vkPhysicalDevice, &props);
 
-		const VkDeviceSize maxTestBufferSize = de::min((VkDeviceSize) props.limits.maxTexelBufferElements, memoryProperties.memoryHeaps[0].size / 16);
+		const VkDeviceSize maxTestBufferSize = de::min((VkDeviceSize) props.limits.maxTexelBufferElements, memoryProperties.memoryHeaps[memoryProperties.memoryTypes[0].heapIndex].size / 16);
 
 		testStatus = bufferCreateAndAllocTest(maxTestBufferSize);
 	}
