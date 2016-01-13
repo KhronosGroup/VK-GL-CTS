@@ -2752,7 +2752,7 @@ void BufferCopyFromImage::prepare (PrepareContext& context)
 	m_memory = bindImageMemory(vki, vkd, physicalDevice, device, *m_srcImage, 0);
 
 	{
-		const vk::Unique<vk::VkBuffer>			srcBuffer		(createBuffer(vkd, device, 4 * m_imageWidth * m_imageHeight, vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT, vk::VK_SHARING_MODE_EXCLUSIVE, queueFamilies));
+		const vk::Unique<vk::VkBuffer>			srcBuffer		(createBuffer(vkd, device, 4 * m_imageWidth * m_imageHeight, vk::VK_BUFFER_USAGE_TRANSFER_SRC_BIT, vk::VK_SHARING_MODE_EXCLUSIVE, queueFamilies));
 		const vk::Unique<vk::VkDeviceMemory>	memory			(bindBufferMemory(vki, vkd, physicalDevice, device, *srcBuffer, vk::VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT));
 		const vk::Unique<vk::VkCommandBuffer>	commandBuffer	(createBeginCommandBuffer(vkd, device, commandPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 		const vk::VkImageMemoryBarrier			preImageBarrier	=
@@ -3184,7 +3184,7 @@ void ImageCopyFromImage::prepare (PrepareContext& context)
 	m_memory = bindImageMemory(vki, vkd, physicalDevice, device, *m_srcImage, 0);
 
 	{
-		const vk::Unique<vk::VkBuffer>			srcBuffer		(createBuffer(vkd, device, 4 * m_imageWidth * m_imageHeight, vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT, vk::VK_SHARING_MODE_EXCLUSIVE, queueFamilies));
+		const vk::Unique<vk::VkBuffer>			srcBuffer		(createBuffer(vkd, device, 4 * m_imageWidth * m_imageHeight, vk::VK_BUFFER_USAGE_TRANSFER_SRC_BIT, vk::VK_SHARING_MODE_EXCLUSIVE, queueFamilies));
 		const vk::Unique<vk::VkDeviceMemory>	memory			(bindBufferMemory(vki, vkd, physicalDevice, device, *srcBuffer, vk::VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT));
 		const vk::Unique<vk::VkCommandBuffer>	commandBuffer	(createBeginCommandBuffer(vkd, device, commandPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 		const vk::VkImageMemoryBarrier			preImageBarrier	=
