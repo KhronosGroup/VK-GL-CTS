@@ -269,7 +269,7 @@ static de::MovePtr<ShaderIndexingCase> createVaryingArrayCase (tcu::TestContext&
 															IndexAccessType			fragAccess)
 {
 	std::ostringstream vtx;
-	vtx << "#version 140\n";
+	vtx << "#version 310 es\n";
 	vtx << "#extension GL_ARB_separate_shader_objects : enable\n";
 	vtx << "#extension GL_ARB_shading_language_420pack : enable\n";
 	vtx << "layout(location = 0) in highp vec4 a_position;\n";
@@ -324,7 +324,7 @@ static de::MovePtr<ShaderIndexingCase> createVaryingArrayCase (tcu::TestContext&
 	vtx << "}\n";
 
 	std::ostringstream frag;
-	frag << "#version 140\n";
+	frag << "#version 310 es\n";
 	frag << "#extension GL_ARB_separate_shader_objects : enable\n";
 	frag << "#extension GL_ARB_shading_language_420pack : enable\n";
 	frag << "precision mediump int;\n";
@@ -406,10 +406,10 @@ static de::MovePtr<ShaderIndexingCase> createUniformArrayCase (tcu::TestContext&
 	std::ostringstream frag;
 	std::ostringstream& op = isVertexCase ? vtx : frag;
 
-	vtx << "#version 140\n";
+	vtx << "#version 310 es\n";
 	vtx << "#extension GL_ARB_separate_shader_objects : enable\n";
 	vtx << "#extension GL_ARB_shading_language_420pack : enable\n";
-	frag << "#version 140\n";
+	frag << "#version 310 es\n";
 	frag << "#extension GL_ARB_separate_shader_objects : enable\n";
 	frag << "#extension GL_ARB_shading_language_420pack : enable\n";
 
@@ -527,10 +527,10 @@ static de::MovePtr<ShaderIndexingCase> createTmpArrayCase (tcu::TestContext&	con
 	std::ostringstream frag;
 	std::ostringstream& op = isVertexCase ? vtx : frag;
 
-	vtx << "#version 140\n";
+	vtx << "#version 310 es\n";
 	vtx << "#extension GL_ARB_separate_shader_objects : enable\n";
 	vtx << "#extension GL_ARB_shading_language_420pack : enable\n";
-	frag << "#version 140\n";
+	frag << "#version 310 es\n";
 	frag << "#extension GL_ARB_separate_shader_objects : enable\n";
 	frag << "#extension GL_ARB_shading_language_420pack : enable\n";
 
@@ -705,10 +705,10 @@ static de::MovePtr<ShaderIndexingCase> createVectorSubscriptCase (tcu::TestConte
 	int			vecLen		= getDataTypeScalarSize(varType);
 	const char*	vecLenName	= getIntUniformName(vecLen);
 
-	vtx << "#version 140\n";
+	vtx << "#version 310 es\n";
 	vtx << "#extension GL_ARB_separate_shader_objects : enable\n";
 	vtx << "#extension GL_ARB_shading_language_420pack : enable\n";
-	frag << "#version 140\n";
+	frag << "#version 310 es\n";
 	frag << "#extension GL_ARB_separate_shader_objects : enable\n";
 	frag << "#extension GL_ARB_shading_language_420pack : enable\n";
 
@@ -916,10 +916,10 @@ static de::MovePtr<ShaderIndexingCase> createMatrixSubscriptCase (tcu::TestConte
 	const char*	matSizeName	= getIntUniformName(numCols);
 	DataType	vecType		= getDataTypeFloatVec(numRows);
 
-	vtx << "#version 140\n";
+	vtx << "#version 310 es\n";
 	vtx << "#extension GL_ARB_separate_shader_objects : enable\n";
 	vtx << "#extension GL_ARB_shading_language_420pack : enable\n";
-	frag << "#version 140\n";
+	frag << "#version 310 es\n";
 	frag << "#extension GL_ARB_separate_shader_objects : enable\n";
 	frag << "#extension GL_ARB_shading_language_420pack : enable\n";
 

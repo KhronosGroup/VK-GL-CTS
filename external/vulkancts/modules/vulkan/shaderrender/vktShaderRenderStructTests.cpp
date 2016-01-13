@@ -84,7 +84,7 @@ ShaderStructCase::~ShaderStructCase (void)
 static de::MovePtr<ShaderStructCase> createStructCase (tcu::TestContext& testCtx, const std::string& name, const std::string& description, bool isVertexCase, ShaderEvalFunc evalFunc, UniformSetupFunc uniformFunc, const LineStream& shaderSrc)
 {
 	static std::string defaultVertSrc =
-		"#version 140\n"
+		"#version 310 es\n"
 		"#extension GL_ARB_separate_shader_objects : enable\n"
 		"#extension GL_ARB_shading_language_420pack : enable\n"
 		"layout(location = 0) in highp vec4 a_position;\n"
@@ -96,7 +96,7 @@ static de::MovePtr<ShaderStructCase> createStructCase (tcu::TestContext& testCtx
 		"	gl_Position = a_position;\n"
 		"}\n";
 	static std::string defaultFragSrc =
-		"#version 140\n"
+		"#version 310 es\n"
 		"#extension GL_ARB_separate_shader_objects : enable\n"
 		"#extension GL_ARB_shading_language_420pack : enable\n"
 		"layout(location = 0) in mediump vec4 v_color;\n"
@@ -114,7 +114,7 @@ static de::MovePtr<ShaderStructCase> createStructCase (tcu::TestContext& testCtx
 	if (isVertexCase)
 	{
 		spParams["HEADER"] =
-			"#version 140\n"
+			"#version 310 es\n"
 			"#extension GL_ARB_separate_shader_objects : enable\n"
 			"#extension GL_ARB_shading_language_420pack : enable\n"
 			"layout(location = 0) in highp vec4 a_position;\n"
@@ -130,7 +130,7 @@ static de::MovePtr<ShaderStructCase> createStructCase (tcu::TestContext& testCtx
 	else
 	{
 		spParams["HEADER"]	=
-			"#version 140\n"
+			"#version 310 es\n"
 			"#extension GL_ARB_separate_shader_objects : enable\n"
 			"#extension GL_ARB_shading_language_420pack : enable\n"
 			"layout(location = 0) in mediump vec4 v_coords;\n"

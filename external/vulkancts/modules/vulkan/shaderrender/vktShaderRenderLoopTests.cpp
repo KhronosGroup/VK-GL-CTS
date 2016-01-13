@@ -319,11 +319,11 @@ static de::MovePtr<ShaderLoopCase> createGenericLoopCase (tcu::TestContext&	test
 	std::ostringstream frag;
 	std::ostringstream& op = isVertexCase ? vtx : frag;
 
-	vtx << "#version 140\n";
+	vtx << "#version 310 es\n";
 	vtx << "#extension GL_ARB_separate_shader_objects : enable\n";
 	vtx << "#extension GL_ARB_shading_language_420pack : enable\n";
 
-	frag << "#version 140\n";
+	frag << "#version 310 es\n";
 	frag << "#extension GL_ARB_separate_shader_objects : enable\n";
 	frag << "#extension GL_ARB_shading_language_420pack : enable\n";
 
@@ -549,11 +549,11 @@ static de::MovePtr<ShaderLoopCase> createSpecialLoopCase (tcu::TestContext&	test
 	std::vector<BaseUniformType>	uniformInformations;
 	deUint32						locationCounter = 0;
 
-	vtx << "#version 140\n";
+	vtx << "#version 310 es\n";
 	vtx << "#extension GL_ARB_separate_shader_objects : enable\n";
 	vtx << "#extension GL_ARB_shading_language_420pack : enable\n";
 
-	frag << "#version 140\n";
+	frag << "#version 310 es\n";
 	frag << "#extension GL_ARB_separate_shader_objects : enable\n";
 	frag << "#extension GL_ARB_shading_language_420pack : enable\n";
 
