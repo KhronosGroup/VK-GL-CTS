@@ -1970,11 +1970,11 @@ tcu::TestStatus recordBufferQueryPreciseWithFlagTest(Context& context)
 
 	VK_CHECK(vk.beginCommandBuffer(primCmdBuf.get(), &primBufferBeginInfo));
 	{
-		vk.cmdBeginQuery(primCmdBuf.get(), queryPool.get(), 1u, VK_QUERY_CONTROL_PRECISE_BIT);
+		vk.cmdBeginQuery(primCmdBuf.get(), queryPool.get(), 0u, VK_QUERY_CONTROL_PRECISE_BIT);
 		{
 			vk.cmdExecuteCommands(primCmdBuf.get(), 1u, &secCmdBuf.get());
 		}
-		vk.cmdEndQuery(primCmdBuf.get(), queryPool.get(), 1u);
+		vk.cmdEndQuery(primCmdBuf.get(), queryPool.get(), 0u);
 	}
 	VK_CHECK(vk.endCommandBuffer(primCmdBuf.get()));
 
@@ -2062,11 +2062,11 @@ tcu::TestStatus recordBufferQueryImpreciseWithFlagTest(Context& context)
 
 	VK_CHECK(vk.beginCommandBuffer(primCmdBuf.get(), &primBufferBeginInfo));
 	{
-		vk.cmdBeginQuery(primCmdBuf.get(), queryPool.get(), 1u, VK_QUERY_CONTROL_PRECISE_BIT);
+		vk.cmdBeginQuery(primCmdBuf.get(), queryPool.get(), 0u, VK_QUERY_CONTROL_PRECISE_BIT);
 		{
 			vk.cmdExecuteCommands(primCmdBuf.get(), 1u, &secCmdBuf.get());
 		}
-		vk.cmdEndQuery(primCmdBuf.get(), queryPool.get(), 1u);
+		vk.cmdEndQuery(primCmdBuf.get(), queryPool.get(), 0u);
 	}
 	VK_CHECK(vk.endCommandBuffer(primCmdBuf.get()));
 
@@ -2154,11 +2154,11 @@ tcu::TestStatus recordBufferQueryImpreciseWithoutFlagTest(Context& context)
 
 	VK_CHECK(vk.beginCommandBuffer(primCmdBuf.get(), &primBufferBeginInfo));
 	{
-		vk.cmdBeginQuery(primCmdBuf.get(), queryPool.get(), 1u, VK_QUERY_CONTROL_PRECISE_BIT);
+		vk.cmdBeginQuery(primCmdBuf.get(), queryPool.get(), 0u, VK_QUERY_CONTROL_PRECISE_BIT);
 		{
 			vk.cmdExecuteCommands(primCmdBuf.get(), 1u, &secCmdBuf.get());
 		}
-		vk.cmdEndQuery(primCmdBuf.get(), queryPool.get(), 1u);
+		vk.cmdEndQuery(primCmdBuf.get(), queryPool.get(), 0u);
 	}
 	VK_CHECK(vk.endCommandBuffer(primCmdBuf.get()));
 
