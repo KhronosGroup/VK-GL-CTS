@@ -2175,7 +2175,7 @@ static std::string generateVertexShaderForTess (void)
 	std::ostringstream	src;
 	src <<  "#version 310 es\n"
 		<< "void main (void)\n{\n"
-		<< "	gl_Position = vec4(gl_VertexID/2, gl_VertexID%2, 0.0, 1.0);\n"
+		<< "	gl_Position = vec4(gl_VertexIndex/2, gl_VertexIndex%2, 0.0, 1.0);\n"
 		<< "}\n";
 
 	return src.str();
