@@ -14,7 +14,7 @@ inline VkAllocationCallbacks makeAllocationCallbacks (void* pUserData, PFN_vkAll
 	return res;
 }
 
-inline VkExtent3D makeExtent3D (deInt32 width, deInt32 height, deInt32 depth)
+inline VkExtent3D makeExtent3D (deUint32 width, deUint32 height, deUint32 depth)
 {
 	VkExtent3D res;
 	res.width	= width;
@@ -88,12 +88,13 @@ inline VkSparseImageMemoryBindInfo makeSparseImageMemoryBindInfo (VkImage image,
 	return res;
 }
 
-inline VkSubresourceLayout makeSubresourceLayout (VkDeviceSize offset, VkDeviceSize size, VkDeviceSize rowPitch, VkDeviceSize depthPitch)
+inline VkSubresourceLayout makeSubresourceLayout (VkDeviceSize offset, VkDeviceSize size, VkDeviceSize rowPitch, VkDeviceSize arrayPitch, VkDeviceSize depthPitch)
 {
 	VkSubresourceLayout res;
 	res.offset		= offset;
 	res.size		= size;
 	res.rowPitch	= rowPitch;
+	res.arrayPitch	= arrayPitch;
 	res.depthPitch	= depthPitch;
 	return res;
 }
@@ -177,7 +178,7 @@ inline VkOffset2D makeOffset2D (deInt32 x, deInt32 y)
 	return res;
 }
 
-inline VkExtent2D makeExtent2D (deInt32 width, deInt32 height)
+inline VkExtent2D makeExtent2D (deUint32 width, deUint32 height)
 {
 	VkExtent2D res;
 	res.width	= width;
@@ -281,7 +282,7 @@ inline VkAttachmentReference makeAttachmentReference (deUint32 attachment, VkIma
 	return res;
 }
 
-inline VkSubpassDescription makeSubpassDescription (VkSubpassDescriptionFlags flags, VkPipelineBindPoint pipelineBindPoint, deUint32 inputAttachmentCount, const VkAttachmentReference* pInputAttachments, deUint32 colorAttachmentCount, const VkAttachmentReference* pColorAttachments, const VkAttachmentReference* pResolveAttachments, const VkAttachmentReference* pDepthStencilAttachment, deUint32 preserveAttachmentCount, const VkAttachmentReference* pPreserveAttachments)
+inline VkSubpassDescription makeSubpassDescription (VkSubpassDescriptionFlags flags, VkPipelineBindPoint pipelineBindPoint, deUint32 inputAttachmentCount, const VkAttachmentReference* pInputAttachments, deUint32 colorAttachmentCount, const VkAttachmentReference* pColorAttachments, const VkAttachmentReference* pResolveAttachments, const VkAttachmentReference* pDepthStencilAttachment, deUint32 preserveAttachmentCount, const deUint32* pPreserveAttachments)
 {
 	VkSubpassDescription res;
 	res.flags					= flags;
@@ -364,21 +365,5 @@ inline VkDrawIndirectCommand makeDrawIndirectCommand (deUint32 vertexCount, deUi
 	res.instanceCount	= instanceCount;
 	res.firstVertex		= firstVertex;
 	res.firstInstance	= firstInstance;
-	return res;
-}
-
-inline VkSurfaceFormatKHR makeSurfaceFormatKHR (VkFormat format, VkColorSpaceKHR colorSpace)
-{
-	VkSurfaceFormatKHR res;
-	res.format		= format;
-	res.colorSpace	= colorSpace;
-	return res;
-}
-
-inline VkDisplayPlanePropertiesKHR makeDisplayPlanePropertiesKHR (VkDisplayKHR currentDisplay, deUint32 currentStackIndex)
-{
-	VkDisplayPlanePropertiesKHR res;
-	res.currentDisplay		= currentDisplay;
-	res.currentStackIndex	= currentStackIndex;
 	return res;
 }

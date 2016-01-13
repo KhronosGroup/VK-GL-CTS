@@ -722,9 +722,9 @@ void FragmentOutExecutor::execute (const Context& ctx, int numValues, const void
 	const deUint32										queueFamilyIndex		= ctx.getUniversalQueueFamilyIndex();
 	Allocator&											memAlloc				= ctx.getDefaultAllocator();
 
-	const deInt32										renderSizeX				= de::min(static_cast<int>(DEFAULT_RENDER_WIDTH), numValues);
-	const deInt32										renderSizeY				= (numValues / renderSizeX) + ((numValues % renderSizeX != 0) ? 1 : 0);
-	const tcu::IVec2									renderSize				(renderSizeX, renderSizeY);
+	const deUint32										renderSizeX				= de::min(static_cast<deUint32>(DEFAULT_RENDER_WIDTH), (deUint32)numValues);
+	const deUint32										renderSizeY				= ((deUint32)numValues / renderSizeX) + (((deUint32)numValues % renderSizeX != 0) ? 1u : 0u);
+	const tcu::UVec2									renderSize				(renderSizeX, renderSizeY);
 	std::vector<tcu::Vec2>								positions;
 
 	VkFormat											colorFormat				= VK_FORMAT_R32G32B32A32_SFLOAT;
@@ -763,7 +763,7 @@ void FragmentOutExecutor::execute (const Context& ctx, int numValues, const void
 	clearRenderData();
 
 	// Compute positions - 1px points are used to drive fragment shading.
-	positions = computeVertexPositions(numValues, renderSize);
+	positions = computeVertexPositions(numValues, renderSize.cast<int>());
 
 	// Bind attributes
 	addAttribute(ctx, memAlloc, 0u, VK_FORMAT_R32G32_SFLOAT, sizeof(tcu::Vec2), (deUint32)positions.size(), &positions[0]);
@@ -1231,12 +1231,7 @@ void FragmentOutExecutor::execute (const Context& ctx, int numValues, const void
 			VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType				sType;
 			DE_NULL,										// const void*					pNext;
 			0u,												// VkCmdBufferOptimizeFlags		flags;
-			DE_NULL,										// VkRenderPass					renderPass;
-			0u,												// deUint32						subpass;
-			DE_NULL,										// VkFramebuffer				framebuffer;
-			VK_FALSE,										// VkBool32						occlusionQueryEnable;
-			(VkQueryControlFlags)0u,						//VkQueryControlFlags			queryFlags;
-			(VkQueryPipelineStatisticFlags)0u				//VkQueryPipelineStatisticFlags pipelineStatistics;
+			(const VkCommandBufferInheritanceInfo*)DE_NULL,
 		};
 
 		const VkRenderPassBeginInfo renderPassBeginInfo =
@@ -1254,16 +1249,11 @@ void FragmentOutExecutor::execute (const Context& ctx, int numValues, const void
 
 		VK_CHECK(vk.beginCommandBuffer(*cmdBuffer, &cmdBufferBeginInfo));
 
-		{
-			std::vector<const void*> barriers(colorImagePreRenderBarriers.size());
-			if (!barriers.empty())
-			{
-				for (size_t i = 0; i < barriers.size(); ++i)
-					barriers[i] = &colorImagePreRenderBarriers[i];
-				vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_FALSE, (deUint32)barriers.size(), &barriers[0]);
-			}
-		}
-	
+
+		vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, (VkDependencyFlags)0,
+							  0, (const VkMemoryBarrier*)DE_NULL,
+							  0, (const VkBufferMemoryBarrier*)DE_NULL,
+							  (deUint32)colorImagePreRenderBarriers.size(), colorImagePreRenderBarriers.empty() ? DE_NULL : &colorImagePreRenderBarriers[0]);
 		vk.cmdBeginRenderPass(*cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
 		vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *graphicsPipeline);
@@ -1283,16 +1273,11 @@ void FragmentOutExecutor::execute (const Context& ctx, int numValues, const void
 		vk.cmdDraw(*cmdBuffer, (deUint32)positions.size(), 1u, 0u, 0u);
 
 		vk.cmdEndRenderPass(*cmdBuffer);
+		vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, (VkDependencyFlags)0,
+							  0, (const VkMemoryBarrier*)DE_NULL,
+							  0, (const VkBufferMemoryBarrier*)DE_NULL,
+							  (deUint32)colorImagePostRenderBarriers.size(), colorImagePostRenderBarriers.empty() ? DE_NULL : &colorImagePostRenderBarriers[0]);
 
-		{
-			std::vector<const void*> barriers(colorImagePostRenderBarriers.size());
-			if (!barriers.empty())
-			{
-				for (size_t i = 0; i < barriers.size(); ++i)
-					barriers[i] = &colorImagePostRenderBarriers[i];
-				vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_FALSE, (deUint32)barriers.size(), &barriers[0]);
-			}
-		}
 		VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
 	}
 
@@ -1317,6 +1302,7 @@ void FragmentOutExecutor::execute (const Context& ctx, int numValues, const void
 			DE_NULL,								// pNext
 			0u,										// waitSemaphoreCount
 			DE_NULL,								// pWaitSemaphores
+			(const VkPipelineStageFlags*)DE_NULL,
 			1u,										// commandBufferCount
 			&cmdBuffer.get(),						// pCommandBuffers
 			0u,										// signalSemaphoreCount
@@ -1369,13 +1355,7 @@ void FragmentOutExecutor::execute (const Context& ctx, int numValues, const void
 			VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType					sType;
 			DE_NULL,										// const void*						pNext;
 			0u,												// VkCmdBufferOptimizeFlags			flags;
-			DE_NULL,										// VkRenderPass						renderPass;
-			0u,												// deUint32							subpass;
-			DE_NULL,										// VkFramebuffer					framebuffer;
-			VK_FALSE,										// VkBool32							occlusionQueryEnable;
-			(VkQueryControlFlags)0,							// VkQueryControlFlags				queryFlags;
-			(VkQueryPipelineStatisticFlags)0				// VkQueryPipelineStatisticFlags	pipelineStatistics;
-
+			(const VkCommandBufferInheritanceInfo*)DE_NULL,
 		};
 
 		const VkBufferImageCopy copyParams =
@@ -1424,6 +1404,7 @@ void FragmentOutExecutor::execute (const Context& ctx, int numValues, const void
 						DE_NULL,
 						0u,
 						(const VkSemaphore*)DE_NULL,
+						(const VkPipelineStageFlags*)DE_NULL,
 						1u,
 						&copyCmdBuffer.get(),
 						0u,
@@ -2023,13 +2004,7 @@ void ComputeShaderExecutor::execute (const Context& ctx, int numValues, const vo
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType					sType;
 		DE_NULL,										// const void*						pNext;
 		0u,												// VkCmdBufferOptimizeFlags			flags;
-		DE_NULL,										// VkRenderPass						renderPass;
-		0u,												// deUint32							subpass;
-		DE_NULL,										// VkFramebuffer					framebuffer;
-		VK_FALSE,										// VkBool32							occlusionQueryEnable;
-		(VkQueryControlFlags)0,							// VkQueryControlFlags				queryFlags;
-		(VkQueryPipelineStatisticFlags)0				// VkQueryPipelineStatisticFlags	pipelineStatistics;
-
+		(const VkCommandBufferInheritanceInfo*)DE_NULL,
 	};
 
 	m_descriptorSetLayoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT);
@@ -2177,6 +2152,7 @@ void ComputeShaderExecutor::execute (const Context& ctx, int numValues, const vo
 				DE_NULL,
 				0u,
 				(const VkSemaphore*)DE_NULL,
+				(const VkPipelineStageFlags*)DE_NULL,
 				1u,
 				&cmdBuffer.get(),
 				0u,
@@ -2232,7 +2208,7 @@ void TessellationExecutor::renderTess (const Context& ctx, deUint32 vertexCount)
 	const deUint32						queueFamilyIndex			= ctx.getUniversalQueueFamilyIndex();
 	Allocator&							memAlloc					= ctx.getDefaultAllocator();
 
-	const tcu::IVec2					renderSize					(DEFAULT_RENDER_WIDTH, DEFAULT_RENDER_HEIGHT);
+	const tcu::UVec2					renderSize					(DEFAULT_RENDER_WIDTH, DEFAULT_RENDER_HEIGHT);
 
 	Move<VkImage>						colorImage;
 	de::MovePtr<Allocation>				colorImageAlloc;
@@ -2531,7 +2507,7 @@ void TessellationExecutor::renderTess (const Context& ctx, deUint32 vertexCount)
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO,		// VkStructureType							sType;
 			DE_NULL,														// const void*								pNext;
-			(VkPipelineTesselationStateCreateFlags)0,						// VkPipelineTessellationStateCreateFlags	flags;
+			(VkPipelineTessellationStateCreateFlags)0,						// VkPipelineTessellationStateCreateFlags	flags;
 			1																// uint32_t									patchControlPoints;
 		};
 
@@ -2689,13 +2665,7 @@ void TessellationExecutor::renderTess (const Context& ctx, deUint32 vertexCount)
 			VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType					sType;
 			DE_NULL,										// const void*						pNext;
 			0u,												// VkCmdBufferOptimizeFlags			flags;
-			DE_NULL,										// VkRenderPass						renderPass;
-			0u,												// deUint32							subpass;
-			DE_NULL,										// VkFramebuffer					framebuffer;
-			VK_FALSE,										//VkBool32							occlusionQueryEnable;
-			(VkQueryControlFlags)0u,						// VkQueryControlFlags				queryFlags;
-			(VkQueryPipelineStatisticFlags)0u				// VkQueryPipelineStatisticFlags	pipelineStatistics;
-
+			(const VkCommandBufferInheritanceInfo*)DE_NULL,
 		};
 
 		const VkClearValue clearValues[1] =
@@ -2750,6 +2720,7 @@ void TessellationExecutor::renderTess (const Context& ctx, deUint32 vertexCount)
 			DE_NULL,
 			0u,
 			(const VkSemaphore*)0,
+			(const VkPipelineStageFlags*)DE_NULL,
 			1u,
 			&cmdBuffer.get(),
 			0u,
@@ -3136,21 +3107,21 @@ Move<VkImage> ShaderExecutor::createCombinedImage (const VkDevice&				vkDevice,
 
 	const VkImageCreateInfo		imageCreateInfo		=
 	{
-		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,						// VkStructureType			sType;
-		DE_NULL,													// const void*				pnext;
-		flags,														// VkImageCreateFlags		flags;
-		imageType,													// VkImageType				imageType;
-		format,														// VkFormat					format;
-		{ texSize.x(), texSize.y(), texSize.z() },					// VkExtend3D				extent;
-		1u,															// deUint32					mipLevels;
-		arraySize,													// deUint32					arraySize;
-		VK_SAMPLE_COUNT_1_BIT,										// VkSampleCountFlagBits	samples;
-		tiling,														// VkImageTiling			tiling;
-		usage,														// VkImageUsageFlags		usage;
-		VK_SHARING_MODE_EXCLUSIVE,									// VkSharingMode			sharingMode;
-		1u,															// deuint32					queueFamilyCount;
-		&queueFamilyIndex,											// const deUint32*			pQueueFamilyIndices;
-		VK_IMAGE_LAYOUT_UNDEFINED,									// VkImageLayout			initialLayout;
+		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,										// VkStructureType			sType;
+		DE_NULL,																	// const void*				pnext;
+		flags,																		// VkImageCreateFlags		flags;
+		imageType,																	// VkImageType				imageType;
+		format,																		// VkFormat					format;
+		{ (deUint32)texSize.x(), (deUint32)texSize.y(), (deUint32)texSize.z() },	// VkExtend3D				extent;
+		1u,																			// deUint32					mipLevels;
+		arraySize,																	// deUint32					arraySize;
+		VK_SAMPLE_COUNT_1_BIT,														// VkSampleCountFlagBits	samples;
+		tiling,																		// VkImageTiling			tiling;
+		usage,																		// VkImageUsageFlags		usage;
+		VK_SHARING_MODE_EXCLUSIVE,													// VkSharingMode			sharingMode;
+		1u,																			// deuint32					queueFamilyCount;
+		&queueFamilyIndex,															// const deUint32*			pQueueFamilyIndices;
+		VK_IMAGE_LAYOUT_UNDEFINED,													// VkImageLayout			initialLayout;
 	};
 
 	Move<VkImage>				vkTexture			= createImage(vk, vkDevice, &imageCreateInfo);
@@ -3214,28 +3185,7 @@ de::MovePtr<ShaderExecutor::SamplerUniform> ShaderExecutor::createSamplerUniform
 	allocation = uploadImage(vkDevice, vk, memAlloc, texFormat, texSize, data, *vkTexture, aspectMask);
 
 	// Create sampler
-	const bool						compareEnabled	= (refSampler.compare != tcu::Sampler::COMPAREMODE_NONE);
-	const VkSamplerCreateInfo		samplerParams	=
-	{
-		VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,			// VkStructureType		sType;
-		DE_NULL,										// const void*			pNext;
-		VkSamplerCreateFlags(0u),						// VkSamplerCreateFlags	flags;
-		mapFilterMode(refSampler.magFilter),			// VkTexFilter			magFilter;
-		mapFilterMode(refSampler.minFilter),			// VkTexFilter			minFilter;
-		mapMipmapMode(refSampler.minFilter),			// VkTexMipmapMode		mipMode;
-		mapWrapMode(refSampler.wrapS),					// VkTexAddressMode		addressModeU;
-		mapWrapMode(refSampler.wrapT),					// VkTexAddressMode		addressModeV;
-		mapWrapMode(refSampler.wrapR),					// VkTexAddressMode		addressModeW;
-		refSampler.lodThreshold,						// float				mipLodBias;
-		1,												// float				maxAnisotropy;
-		compareEnabled,									// VkBool32				compareEnable;
-		mapCompareMode(refSampler.compare),				// VkCompareOp			compareOp;
-		0.0f,											// float				minLod;
-		0.0f,											// float				maxLod;
-		VK_BORDER_COLOR_INT_OPAQUE_WHITE,				// VkBorderColor		boderColor;
-		VK_FALSE,										// VkBool32				unnormalizerdCoordinates;
-	};
-
+	const VkSamplerCreateInfo		samplerParams	= mapSampler(refSampler, texFormat);
 	Move<VkSampler>					sampler			= createSampler(vk, vkDevice, &samplerParams);
 
 	const VkImageViewCreateInfo		viewParams		=

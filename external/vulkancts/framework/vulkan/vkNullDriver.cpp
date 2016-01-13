@@ -547,7 +547,7 @@ VKAPI_ATTR VkResult VKAPI_CALL allocateDescriptorSets (VkDevice, const VkDescrip
 {
 	DescriptorPool* const	poolImpl	= reinterpret_cast<DescriptorPool*>((deUintptr)pAllocateInfo->descriptorPool.getInternal());
 
-	for (deUint32 ndx = 0; ndx < pAllocateInfo->setLayoutCount; ++ndx)
+	for (deUint32 ndx = 0; ndx < pAllocateInfo->descriptorSetCount; ++ndx)
 	{
 		try
 		{
@@ -593,7 +593,7 @@ VKAPI_ATTR VkResult VKAPI_CALL allocateCommandBuffers (VkDevice device, const Vk
 {
 	if (pAllocateInfo && pCommandBuffers)
 	{
-		for (deUint32 ndx = 0; ndx < pAllocateInfo->bufferCount; ++ndx)
+		for (deUint32 ndx = 0; ndx < pAllocateInfo->commandBufferCount; ++ndx)
 		{
 			pCommandBuffers[ndx] = reinterpret_cast<VkCommandBuffer>(new CommandBuffer(device, pAllocateInfo->commandPool, pAllocateInfo->level));
 		}

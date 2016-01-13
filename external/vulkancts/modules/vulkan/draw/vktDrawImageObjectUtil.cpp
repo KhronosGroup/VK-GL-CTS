@@ -352,10 +352,10 @@ void Image::readUsingBuffer (vk::VkQueue				queue,
 			barrier.subresourceRange.baseArrayLayer = 0;
 			barrier.subresourceRange.layerCount = m_layerCount;
 
-			void* barriers[] = { &barrier };
-
-			m_vk.cmdPipelineBarrier(*copyCmdBuffer, vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-				false, DE_LENGTH_OF_ARRAY(barriers), barriers);
+			m_vk.cmdPipelineBarrier(*copyCmdBuffer, vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, (vk::VkDependencyFlags)0,
+									0, (const vk::VkMemoryBarrier*)DE_NULL,
+									0, (const vk::VkBufferMemoryBarrier*)DE_NULL,
+									1, &barrier);
 		}
 
 		vk::VkBufferImageCopy region =
@@ -363,7 +363,7 @@ void Image::readUsingBuffer (vk::VkQueue				queue,
 			0, 0, 0,
 			{ aspect, mipLevel, arrayElement, 1 },
 			offset,
-			{ width, height, depth }
+			{ (deUint32)width, (deUint32)height, (deUint32)depth }
 		};
 
 		m_vk.cmdCopyImageToBuffer(*copyCmdBuffer, object(), layout, stagingResource->object(), 1, &region);
@@ -375,6 +375,7 @@ void Image::readUsingBuffer (vk::VkQueue				queue,
 			DE_NULL,							// const void*				pNext;
 			0,										// deUint32					waitSemaphoreCount;
 			DE_NULL,								// const VkSemaphore*		pWaitSemaphores;
+			(const vk::VkPipelineStageFlags*)DE_NULL,
 			1,										// deUint32					commandBufferCount;
 			&copyCmdBuffer.get(),				// const VkCommandBuffer*	pCommandBuffers;
 			0,										// deUint32					signalSemaphoreCount;
@@ -440,7 +441,7 @@ de::SharedPtr<Image> Image::copyToLinearImage (vk::VkQueue					queue,
 {
 	de::SharedPtr<Image> stagingResource;
 	{
-		vk::VkExtent3D stagingExtent = {width, height, depth};
+		vk::VkExtent3D stagingExtent = {(deUint32)width, (deUint32)height, (deUint32)depth};
 		ImageCreateInfo stagingResourceCreateInfo(type, m_format, stagingExtent, 1, 1, vk::VK_SAMPLE_COUNT_1_BIT,
 												  vk::VK_IMAGE_TILING_LINEAR, vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT);
 
@@ -467,7 +468,7 @@ de::SharedPtr<Image> Image::copyToLinearImage (vk::VkQueue					queue,
 		transition2DImage(m_vk, *copyCmdBuffer, stagingResource->object(), aspect, vk::VK_IMAGE_LAYOUT_UNDEFINED, vk::VK_IMAGE_LAYOUT_GENERAL);
 
 		const vk::VkOffset3D zeroOffset = { 0, 0, 0 };
-		vk::VkImageCopy region = { {aspect, mipLevel, arrayElement, 1}, offset, {aspect, 0, 0, 1}, zeroOffset, {width, height, depth} };
+		vk::VkImageCopy region = { {aspect, mipLevel, arrayElement, 1}, offset, {aspect, 0, 0, 1}, zeroOffset, {(deUint32)width, (deUint32)height, (deUint32)depth} };
 
 		m_vk.cmdCopyImage(*copyCmdBuffer, object(), layout, stagingResource->object(), vk::VK_IMAGE_LAYOUT_GENERAL, 1, &region);
 		VK_CHECK(m_vk.endCommandBuffer(*copyCmdBuffer));
@@ -478,6 +479,7 @@ de::SharedPtr<Image> Image::copyToLinearImage (vk::VkQueue					queue,
 			DE_NULL,							// const void*				pNext;
 			0,										// deUint32					waitSemaphoreCount;
 			DE_NULL,								// const VkSemaphore*		pWaitSemaphores;
+			(const vk::VkPipelineStageFlags*)DE_NULL,
 			1,										// deUint32					commandBufferCount;
 			&copyCmdBuffer.get(),				// const VkCommandBuffer*	pCommandBuffers;
 			0,										// deUint32					signalSemaphoreCount;
@@ -585,7 +587,7 @@ void Image::upload (vk::VkQueue					queue,
 	DE_ASSERT(layout == vk::VK_IMAGE_LAYOUT_GENERAL || layout == vk::VK_IMAGE_LAYOUT_UNDEFINED || layout == vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
 	de::SharedPtr<Image> stagingResource;
-	vk::VkExtent3D extent = {width, height, depth};
+	vk::VkExtent3D extent = {(deUint32)width, (deUint32)height, (deUint32)depth};
 	ImageCreateInfo stagingResourceCreateInfo(
 		type, m_format, extent, 1, 1, vk::VK_SAMPLE_COUNT_1_BIT,
 		vk::VK_IMAGE_TILING_LINEAR, vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
@@ -636,9 +638,10 @@ void Image::upload (vk::VkQueue					queue,
 			barrier.subresourceRange.baseArrayLayer = 0;
 			barrier.subresourceRange.layerCount = m_layerCount;
 
-			void* barriers[] = { &barrier };
-
-			m_vk.cmdPipelineBarrier(*copyCmdBuffer, vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, false, DE_LENGTH_OF_ARRAY(barriers), barriers);
+			m_vk.cmdPipelineBarrier(*copyCmdBuffer, vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, (vk::VkDependencyFlags)0,
+									0, (const vk::VkMemoryBarrier*)DE_NULL,
+									0, (const vk::VkBufferMemoryBarrier*)DE_NULL,
+									1, &barrier);
 		}
 
 		transition2DImage(m_vk, *copyCmdBuffer, stagingResource->object(), aspect, vk::VK_IMAGE_LAYOUT_UNDEFINED, vk::VK_IMAGE_LAYOUT_GENERAL);
@@ -647,7 +650,7 @@ void Image::upload (vk::VkQueue					queue,
 									zeroOffset,
 									{aspect, mipLevel, arrayElement, 1},
 									offset,
-									{width, height, depth}};
+									{(deUint32)width, (deUint32)height, (deUint32)depth}};
 
 		m_vk.cmdCopyImage(*copyCmdBuffer, stagingResource->object(),
 								vk::VK_IMAGE_LAYOUT_GENERAL, object(), layout, 1, &region);
@@ -659,6 +662,7 @@ void Image::upload (vk::VkQueue					queue,
 			DE_NULL,							// const void*				pNext;
 			0,										// deUint32					waitSemaphoreCount;
 			DE_NULL,								// const VkSemaphore*		pWaitSemaphores;
+			(const vk::VkPipelineStageFlags*)DE_NULL,
 			1,										// deUint32					commandBufferCount;
 			&copyCmdBuffer.get(),				// const VkCommandBuffer*	pCommandBuffers;
 			0,										// deUint32					signalSemaphoreCount;
@@ -755,16 +759,17 @@ void Image::uploadUsingBuffer (vk::VkQueue					queue,
 			barrier.subresourceRange.baseArrayLayer = 0;
 			barrier.subresourceRange.layerCount = m_layerCount;
 
-			void* barriers[] = { &barrier };
-
-			m_vk.cmdPipelineBarrier(*copyCmdBuffer, vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, false, DE_LENGTH_OF_ARRAY(barriers), barriers);
+			m_vk.cmdPipelineBarrier(*copyCmdBuffer, vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, (vk::VkDependencyFlags)0,
+									0, (const vk::VkMemoryBarrier*)DE_NULL,
+									0, (const vk::VkBufferMemoryBarrier*)DE_NULL,
+									1, &barrier);
 		}
 
 		vk::VkBufferImageCopy region = {
 			0, 0, 0,
 			{ aspect, mipLevel, arrayElement, 1 },
 			offset,
-			{ width, height, depth }
+			{ (deUint32)width, (deUint32)height, (deUint32)depth }
 		};
 
 		m_vk.cmdCopyBufferToImage(*copyCmdBuffer, stagingResource->object(),
@@ -777,6 +782,7 @@ void Image::uploadUsingBuffer (vk::VkQueue					queue,
 			DE_NULL,							// const void*				pNext;
 			0,										// deUint32					waitSemaphoreCount;
 			DE_NULL,								// const VkSemaphore*		pWaitSemaphores;
+			(const vk::VkPipelineStageFlags*)DE_NULL,
 			1,										// deUint32					commandBufferCount;
 			&copyCmdBuffer.get(),				// const VkCommandBuffer*	pCommandBuffers;
 			0,										// deUint32					signalSemaphoreCount;
@@ -888,24 +894,25 @@ void transition2DImage (const vk::DeviceInterface&	vk,
 						vk::VkImageLayout			newLayout)
 {
 	vk::VkImageMemoryBarrier barrier;
-	barrier.sType					= vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-	barrier.pNext					= DE_NULL;
-	barrier.srcAccessMask				= 0;
-	barrier.dstAccessMask				= 0;
-	barrier.oldLayout				= oldLayout;
-	barrier.newLayout				= newLayout;
-	barrier.srcQueueFamilyIndex		= vk::VK_QUEUE_FAMILY_IGNORED;
-	barrier.dstQueueFamilyIndex	= vk::VK_QUEUE_FAMILY_IGNORED;
-	barrier.image					= image;
+	barrier.sType							= vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+	barrier.pNext							= DE_NULL;
+	barrier.srcAccessMask					= 0;
+	barrier.dstAccessMask					= 0;
+	barrier.oldLayout						= oldLayout;
+	barrier.newLayout						= newLayout;
+	barrier.srcQueueFamilyIndex				= vk::VK_QUEUE_FAMILY_IGNORED;
+	barrier.dstQueueFamilyIndex				= vk::VK_QUEUE_FAMILY_IGNORED;
+	barrier.image							= image;
 	barrier.subresourceRange.aspectMask		= aspectMask;
 	barrier.subresourceRange.baseMipLevel	= 0;
 	barrier.subresourceRange.levelCount		= 1;
 	barrier.subresourceRange.baseArrayLayer = 0;
 	barrier.subresourceRange.layerCount		= 1;
 
-	void* barriers[] = { &barrier };
-
-	vk.cmdPipelineBarrier(cmdBuffer, vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, false, DE_LENGTH_OF_ARRAY(barriers), barriers);
+	vk.cmdPipelineBarrier(cmdBuffer, vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, (vk::VkDependencyFlags)0,
+						  0, (const vk::VkMemoryBarrier*)DE_NULL,
+						  0, (const vk::VkBufferMemoryBarrier*)DE_NULL,
+						  1, &barrier);
 }
 
 void initialTransitionColor2DImage (const vk::DeviceInterface &vk, vk::VkCommandBuffer cmdBuffer, vk::VkImage image, vk::VkImageLayout layout)

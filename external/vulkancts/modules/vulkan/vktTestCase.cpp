@@ -84,9 +84,9 @@ Move<VkDevice> createDefaultDevice (const InstanceInterface& vki, VkPhysicalDevi
 	deviceInfo.pNext						= DE_NULL;
 	deviceInfo.queueCreateInfoCount			= 1u;
 	deviceInfo.pQueueCreateInfos			= &queueInfo;
-	deviceInfo.enabledExtensionNameCount	= 0u;
+	deviceInfo.enabledExtensionCount		= 0u;
 	deviceInfo.ppEnabledExtensionNames		= DE_NULL;
-	deviceInfo.enabledLayerNameCount		= 0u;
+	deviceInfo.enabledLayerCount			= 0u;
 	deviceInfo.ppEnabledLayerNames			= DE_NULL;
 	deviceInfo.pEnabledFeatures				= &enabledFeatures;
 
@@ -96,33 +96,33 @@ Move<VkDevice> createDefaultDevice (const InstanceInterface& vki, VkPhysicalDevi
 class DefaultDevice
 {
 public:
-									DefaultDevice					(const PlatformInterface& vkPlatform, const tcu::CommandLine& cmdLine);
-									~DefaultDevice					(void);
+										DefaultDevice					(const PlatformInterface& vkPlatform, const tcu::CommandLine& cmdLine);
+										~DefaultDevice					(void);
 
-	VkInstance						getInstance						(void) const	{ return *m_instance;					}
-	const InstanceInterface&		getInstanceInterface			(void) const	{ return m_instanceInterface;			}
+	VkInstance							getInstance						(void) const	{ return *m_instance;					}
+	const InstanceInterface&			getInstanceInterface			(void) const	{ return m_instanceInterface;			}
 
-	VkPhysicalDevice				getPhysicalDevice				(void) const	{ return m_physicalDevice;				}
-	const VkPhysicalDeviceFeatures&	getDeviceFeatures				(void) const	{ return m_deviceFeatures;				}
-	VkDevice						getDevice						(void) const	{ return *m_device;						}
-	const DeviceInterface&			getDeviceInterface				(void) const	{ return m_deviceInterface;				}
-	const VkPhysicalDeviceProperties& getDeviceProperties			(void) const	{ return m_deviceProperties;			}
+	VkPhysicalDevice					getPhysicalDevice				(void) const	{ return m_physicalDevice;				}
+	const VkPhysicalDeviceFeatures&		getDeviceFeatures				(void) const	{ return m_deviceFeatures;				}
+	VkDevice							getDevice						(void) const	{ return *m_device;						}
+	const DeviceInterface&				getDeviceInterface				(void) const	{ return m_deviceInterface;				}
+	const VkPhysicalDeviceProperties&	getDeviceProperties				(void) const	{ return m_deviceProperties;			}
 
-	deUint32						getUniversalQueueFamilyIndex	(void) const	{ return m_universalQueueFamilyIndex;	}
-	VkQueue							getUniversalQueue				(void) const;
+	deUint32							getUniversalQueueFamilyIndex	(void) const	{ return m_universalQueueFamilyIndex;	}
+	VkQueue								getUniversalQueue				(void) const;
 
 private:
-	const Unique<VkInstance>		m_instance;
-	const InstanceDriver			m_instanceInterface;
+	const Unique<VkInstance>			m_instance;
+	const InstanceDriver				m_instanceInterface;
 
-	const VkPhysicalDevice			m_physicalDevice;
+	const VkPhysicalDevice				m_physicalDevice;
 
-	const deUint32					m_universalQueueFamilyIndex;
-	const VkPhysicalDeviceFeatures	m_deviceFeatures;
+	const deUint32						m_universalQueueFamilyIndex;
+	const VkPhysicalDeviceFeatures		m_deviceFeatures;
 	const VkPhysicalDeviceProperties	m_deviceProperties;
 
-	const Unique<VkDevice>			m_device;
-	const DeviceDriver				m_deviceInterface;
+	const Unique<VkDevice>				m_device;
+	const DeviceDriver					m_deviceInterface;
 };
 
 DefaultDevice::DefaultDevice (const PlatformInterface& vkPlatform, const tcu::CommandLine& cmdLine)

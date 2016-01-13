@@ -786,7 +786,7 @@ Move<vk::VkBuffer> createBuffer (Context& context, vk::VkDeviceSize size, vk::Vk
 	return vk::createBuffer(context.getDeviceInterface(), context.getDevice(), &params);
 }
 
-Move<vk::VkImage> createImage2D (Context& context, int width, int height, vk::VkFormat format, vk::VkImageTiling tiling, vk::VkImageUsageFlags usageFlags)
+Move<vk::VkImage> createImage2D (Context& context, deUint32 width, deUint32 height, vk::VkFormat format, vk::VkImageTiling tiling, vk::VkImageUsageFlags usageFlags)
 {
 	const deUint32					queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
 	const vk::VkImageCreateInfo		params				=
@@ -796,7 +796,7 @@ Move<vk::VkImage> createImage2D (Context& context, int width, int height, vk::Vk
 		0u,											// flags
 		vk::VK_IMAGE_TYPE_2D,						// imageType
 		format,										// format
-		{ width, height, 1 },						// extent
+		{ width, height, 1u },						// extent
 		1u,											// mipLevels
 		1u,											// arraySize
 		vk::VK_SAMPLE_COUNT_1_BIT,					// samples
@@ -996,7 +996,7 @@ Move<vk::VkPipeline> createPipeline (Context&					context,
 									 const PipelineProgram&		program,
 									 vk::VkRenderPass			renderPass,
 									 vk::VkPipelineLayout		pipelineLayout,
-									 tcu::IVec2					renderSize)
+									 tcu::UVec2					renderSize)
 {
 	const vector<vk::VkPipelineShaderStageCreateInfo>	shaderStageParams		(getPipelineShaderStageCreateInfo(program));
 	const vector<vk::VkVertexInputAttributeDescription>	vertexAttribParams		(getVertexAttributeDescriptions(inputValues, inputLayout));
@@ -1365,7 +1365,7 @@ ShaderCaseInstance::ShaderCaseInstance (Context& context, const ShaderCaseSpecif
 	, m_program				(context, spec)
 	, m_descriptorSetLayout	(createDescriptorSetLayout(context, m_program.getStages()))
 	, m_pipelineLayout		(createPipelineLayout(context, *m_descriptorSetLayout))
-	, m_pipeline			(createPipeline(context, spec.values.inputs, m_inputLayout, m_program, *m_renderPass, *m_pipelineLayout, tcu::IVec2(RENDER_WIDTH, RENDER_HEIGHT)))
+	, m_pipeline			(createPipeline(context, spec.values.inputs, m_inputLayout, m_program, *m_renderPass, *m_pipelineLayout, tcu::UVec2(RENDER_WIDTH, RENDER_HEIGHT)))
 
 	, m_descriptorPool		(createDescriptorPool(context))
 	, m_descriptorSet		(allocateDescriptorSet(context, *m_descriptorPool, *m_descriptorSetLayout))
@@ -1439,12 +1439,7 @@ ShaderCaseInstance::ShaderCaseInstance (Context& context, const ShaderCaseSpecif
 			vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// sType
 			DE_NULL,											// pNext
 			0u,													// flags
-			(vk::VkRenderPass)0,								// renderPass
-			0u,													// subpass
-			(vk::VkFramebuffer)0,								// framebuffer
-			vk::VK_FALSE,										// occlusionQueryEnable
-			(vk::VkQueryControlFlags)0,
-			(vk::VkQueryPipelineStatisticFlags)0
+			(const vk::VkCommandBufferInheritanceInfo*)DE_NULL,
 		};
 
 		VK_CHECK(vkd.beginCommandBuffer(*m_cmdBuffer, &beginInfo));
@@ -1477,10 +1472,11 @@ ShaderCaseInstance::ShaderCaseInstance (Context& context, const ShaderCaseSpecif
 				1u,												// arraySize
 			}												// subresourceRange
 		};
-		const void* const				barriers[]			= { &vertFlushBarrier, &colorAttBarrier };
 
-		vkd.cmdPipelineBarrier(*m_cmdBuffer, vk::VK_PIPELINE_STAGE_HOST_BIT, vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
-							   DE_FALSE, (deUint32)DE_LENGTH_OF_ARRAY(barriers), barriers);
+		vkd.cmdPipelineBarrier(*m_cmdBuffer, vk::VK_PIPELINE_STAGE_HOST_BIT, vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, (vk::VkDependencyFlags)0,
+							   1, &vertFlushBarrier,
+							   0, (const vk::VkBufferMemoryBarrier*)DE_NULL,
+							   1, &colorAttBarrier);
 	}
 
 	{
@@ -1533,10 +1529,11 @@ ShaderCaseInstance::ShaderCaseInstance (Context& context, const ShaderCaseSpecif
 				1u,												// arraySize
 			}												// subresourceRange
 		};
-		const void* const				barriers[]			= { &renderFinishBarrier };
 
-		vkd.cmdPipelineBarrier(*m_cmdBuffer, vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
-							   DE_FALSE, DE_LENGTH_OF_ARRAY(barriers), barriers);
+		vkd.cmdPipelineBarrier(*m_cmdBuffer, vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0,
+							   0, (const vk::VkMemoryBarrier*)DE_NULL,
+							   0, (const vk::VkBufferMemoryBarrier*)DE_NULL,
+							   1, &renderFinishBarrier);
 	}
 
 	{
@@ -1571,10 +1568,11 @@ ShaderCaseInstance::ShaderCaseInstance (Context& context, const ShaderCaseSpecif
 			0u,													// offset
 			(vk::VkDeviceSize)(RENDER_WIDTH*RENDER_HEIGHT*4)	// size
 		};
-		const void* const				barriers[]			= { &copyFinishBarrier };
 
-		vkd.cmdPipelineBarrier(*m_cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT,
-							   DE_FALSE, (deUint32)DE_LENGTH_OF_ARRAY(barriers), barriers);
+		vkd.cmdPipelineBarrier(*m_cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT, (vk::VkDependencyFlags)0,
+							   0, (const vk::VkMemoryBarrier*)DE_NULL,
+							   1, &copyFinishBarrier,
+							   0, (const vk::VkImageMemoryBarrier*)DE_NULL);
 	}
 
 	VK_CHECK(vkd.endCommandBuffer(*m_cmdBuffer));
@@ -1632,6 +1630,7 @@ TestStatus ShaderCaseInstance::iterate (void)
 			DE_NULL,
 			0u,											// waitSemaphoreCount
 			(const vk::VkSemaphore*)0,					// pWaitSemaphores
+			(const vk::VkPipelineStageFlags*)DE_NULL,
 			1u,
 			&m_cmdBuffer.get(),
 			0u,											// signalSemaphoreCount

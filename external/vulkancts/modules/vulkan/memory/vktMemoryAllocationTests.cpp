@@ -118,7 +118,7 @@ tcu::TestStatus AllocateFreeTestInstance::iterate (void)
 	if (m_memoryTypeIndex == 0)
 	{
 		log << TestLog::Message << "Memory allocation count: " << m_config.memoryAllocationCount << TestLog::EndMessage;
-		log << TestLog::Message << "Single allocation size: " << (m_config.memorySize ? de::toString(*m_config.memorySize) : de::toString(100.0f * (*m_config.memoryPercentage)) + " of heap size.D") << TestLog::EndMessage;
+		log << TestLog::Message << "Single allocation size: " << (m_config.memorySize ? de::toString(*m_config.memorySize) : de::toString(100.0f * (*m_config.memoryPercentage)) + " percent of the heap size.") << TestLog::EndMessage;
 
 		if (m_config.order == TestConfig::ALLOC_REVERSE_FREE)
 			log << TestLog::Message << "Memory is freed in reversed order. " << TestLog::EndMessage;
@@ -475,9 +475,9 @@ tcu::TestCaseGroup* createAllocationTests (tcu::TestContext& testCtx)
 		{ "1MiB", 1*MiB }
 	};
 
-	const float allocationPercents[] =
+	const int allocationPercents[] =
 	{
-		0.01f
+		1
 	};
 
 	const int allocationCounts[] =
@@ -552,8 +552,8 @@ tcu::TestCaseGroup* createAllocationTests (tcu::TestContext& testCtx)
 
 		for (size_t allocationPercentNdx = 0; allocationPercentNdx < DE_LENGTH_OF_ARRAY(allocationPercents); allocationPercentNdx++)
 		{
-			const float						allocationPercent	= allocationPercents[allocationPercentNdx];
-			de::MovePtr<tcu::TestCaseGroup>	percentGroup		(new tcu::TestCaseGroup(testCtx, ("percent_" + de::toString((int)(100.0f * allocationPercent))).c_str(), ("Test different allocation percents " + de::toString(allocationPercent * 100.0f)).c_str()));
+			const int						allocationPercent	= allocationPercents[allocationPercentNdx];
+			de::MovePtr<tcu::TestCaseGroup>	percentGroup		(new tcu::TestCaseGroup(testCtx, ("percent_" + de::toString(allocationPercent)).c_str(), ("Test different allocation percents " + de::toString(allocationPercent)).c_str()));
 
 			for (size_t orderNdx = 0; orderNdx < DE_LENGTH_OF_ARRAY(orders); orderNdx++)
 			{
@@ -566,17 +566,17 @@ tcu::TestCaseGroup* createAllocationTests (tcu::TestContext& testCtx)
 				{
 					const int allocationCount = allocationCounts[allocationCountNdx];
 
-					if ((allocationCount != -1) && ((float)allocationCount * allocationPercent >= 1.00f / 8.00f))
+					if ((allocationCount != -1) && ((float)allocationCount * (float)allocationPercent >= 1.00f / 8.00f))
 						continue;
 
 					TestConfig config;
 
-					config.memoryPercentage			= allocationPercent;
+					config.memoryPercentage			= (float)allocationPercent / 100.0f;
 					config.order					= order;
 
 					if (allocationCount == -1)
 					{
-						config.memoryAllocationCount	= (int)((1.00f / 8.00f) / allocationPercent);
+						config.memoryAllocationCount	= (int)((1.00f / 8.00f) / ((float)allocationPercent / 100.0f));
 
 						if (config.memoryAllocationCount == 0
 							|| config.memoryAllocationCount == 1

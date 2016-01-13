@@ -148,7 +148,7 @@ de::MovePtr<tcu::TextureLevel> readColorAttachment (const vk::DeviceInterface&	v
 													vk::Allocator&				allocator,
 													vk::VkImage					image,
 													vk::VkFormat				format,
-													const tcu::IVec2&			renderSize)
+													const tcu::UVec2&			renderSize)
 {
 	Move<VkBuffer>					buffer;
 	de::MovePtr<Allocation>			bufferAlloc;
@@ -254,33 +254,25 @@ de::MovePtr<tcu::TextureLevel> readColorAttachment (const vk::DeviceInterface&	v
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,			// VkStructureType					sType;
 		DE_NULL,												// const void*						pNext;
 		VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,			// VkCommandBufferUsageFlags		flags;
-		DE_NULL,												// VkRenderPass						renderPass;
-		0u,														// deUint32							subpass;
-		DE_NULL,												// VkFramebuffer					framebuffer;
-		false,													// VkBool32							occlusionQueryEnable;
-		0u,														// VkQueryControlFlags				queryFlags;
-		0u														// VkQueryPipelineStatisticFlags	pipelineStatistics;
+		(const VkCommandBufferInheritanceInfo*)DE_NULL,
 	};
-
-	const void* const	imageBarrierPtr		= &imageBarrier;
-	const void* const	bufferBarrierPtr	= &bufferBarrier;
 
 	// Copy image to buffer
 
 	const VkBufferImageCopy copyRegion =
 	{
-		0u,											// VkDeviceSize				bufferOffset;
-		(deUint32)renderSize.x(),					// deUint32					bufferRowLength;
-		(deUint32)renderSize.y(),					// deUint32					bufferImageHeight;
-		{ VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u },	// VkImageSubresourceLayers	imageSubresource;
-		{ 0, 0, 0 },								// VkOffset3D				imageOffset;
-		{ renderSize.x(), renderSize.y(), 1 }		// VkExtent3D				imageExtent;
+		0u,												// VkDeviceSize				bufferOffset;
+		(deUint32)renderSize.x(),						// deUint32					bufferRowLength;
+		(deUint32)renderSize.y(),						// deUint32					bufferImageHeight;
+		{ VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u },		// VkImageSubresourceLayers	imageSubresource;
+		{ 0, 0, 0 },									// VkOffset3D				imageOffset;
+		{ renderSize.x(), renderSize.y(), 1u }			// VkExtent3D				imageExtent;
 	};
 
 	VK_CHECK(vk.beginCommandBuffer(*cmdBuffer, &cmdBufferBeginInfo));
-	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_FALSE, 1, &imageBarrierPtr);
+	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &imageBarrier);
 	vk.cmdCopyImageToBuffer(*cmdBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *buffer, 1, &copyRegion);
-	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_FALSE, 1, &bufferBarrierPtr);
+	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &bufferBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
 	VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
 
 	const VkSubmitInfo submitInfo =
@@ -289,6 +281,7 @@ de::MovePtr<tcu::TextureLevel> readColorAttachment (const vk::DeviceInterface&	v
 		DE_NULL,						// const void*				pNext;
 		0u,								// deUint32					waitSemaphoreCount;
 		DE_NULL,						// const VkSemaphore*		pWaitSemaphores;
+		DE_NULL,
 		1u,								// deUint32					commandBufferCount;
 		&cmdBuffer.get(),				// const VkCommandBuffer*	pCommandBuffers;
 		0u,								// deUint32					signalSemaphoreCount;
@@ -438,21 +431,9 @@ void uploadTestTexture (const DeviceInterface&			vk,
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType					sType;
 		DE_NULL,										// const void*						pNext;
 		VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,	// VkCommandBufferUsageFlags		flags;
-		DE_NULL,										// VkRenderPass						renderPass;
-		0u,												// deUint32							subpass;
-		DE_NULL,										// VkFramebuffer					framebuffer;
-		false,											// VkBool32							occlusionQueryEnable;
-		0u,												// VkQueryControlFlags				queryFlags;
-		0u												// VkQueryPipelineStatisticFlags	pipelineStatistics;
+		(const VkCommandBufferInheritanceInfo*)DE_NULL,
 	};
 
-	const void* preCopyBarriers[2] =
-	{
-		&preBufferBarrier,
-		&preImageBarrier
-	};
-
-	const void* const						postCopyBarrier	= &postImageBarrier;
 	const std::vector<VkBufferImageCopy>	copyRegions		= srcTexture.getBufferCopyRegions();
 
 	// Write buffer data
@@ -461,9 +442,9 @@ void uploadTestTexture (const DeviceInterface&			vk,
 
 	// Copy buffer to image
 	VK_CHECK(vk.beginCommandBuffer(*cmdBuffer, &cmdBufferBeginInfo));
-	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_FALSE, 2, preCopyBarriers);
+	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &preBufferBarrier, 1, &preImageBarrier);
 	vk.cmdCopyBufferToImage(*cmdBuffer, *buffer, destImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, (deUint32)copyRegions.size(), copyRegions.data());
-	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_FALSE, 1, &postCopyBarrier);
+	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &postImageBarrier);
 
 	VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
 
@@ -473,6 +454,7 @@ void uploadTestTexture (const DeviceInterface&			vk,
 		DE_NULL,						// const void*				pNext;
 		0u,								// deUint32					waitSemaphoreCount;
 		DE_NULL,						// const VkSemaphore*		pWaitSemaphores;
+		DE_NULL,
 		1u,								// deUint32					commandBufferCount;
 		&cmdBuffer.get(),				// const VkCommandBuffer*	pCommandBuffers;
 		0u,								// deUint32					signalSemaphoreCount;
@@ -630,9 +612,9 @@ std::vector<VkBufferImageCopy> TestTexture::getBufferCopyRegions (void) const
 					},
 					{ 0u, 0u, 0u },							// VkOffset3D				imageOffset;
 					{										// VkExtent3D				imageExtent;
-						level.getWidth(),
-						level.getHeight(),
-						level.getDepth()
+						(deUint32)level.getWidth(),
+						(deUint32)level.getHeight(),
+						(deUint32)level.getDepth()
 					}
 				};
 
@@ -666,9 +648,9 @@ std::vector<VkBufferImageCopy> TestTexture::getBufferCopyRegions (void) const
 					},
 					{ 0u, 0u, 0u },							// VkOffset3D			imageOffset;
 					{										// VkExtent3D			imageExtent;
-						level.getWidth(),
-						level.getHeight(),
-						level.getDepth()
+						(deUint32)level.getWidth(),
+						(deUint32)level.getHeight(),
+						(deUint32)level.getDepth()
 					}
 				};
 

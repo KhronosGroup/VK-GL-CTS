@@ -500,17 +500,23 @@ vk::Move<vk::VkCommandBuffer> createBeginCommandBuffer (const vk::DeviceInterfac
 														vk::VkCommandPool			pool,
 														vk::VkCommandBufferLevel	level)
 {
-	const vk::VkCommandBufferBeginInfo beginInfo =
+	const vk::VkCommandBufferInheritanceInfo	inheritInfo	=
 	{
-		vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+		vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
 		DE_NULL,
-		0u,
 		0,
 		0,
 		0,
 		vk::VK_FALSE,
 		0u,
 		0u
+	};
+	const vk::VkCommandBufferBeginInfo			beginInfo =
+	{
+		vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+		DE_NULL,
+		0u,
+		(level == vk::VK_COMMAND_BUFFER_LEVEL_SECONDARY ? &inheritInfo : (const vk::VkCommandBufferInheritanceInfo*)DE_NULL),
 	};
 
 	vk::Move<vk::VkCommandBuffer> commandBuffer (createCommandBuffer(vkd, device, pool, level));
@@ -687,6 +693,7 @@ void queueRun (const vk::DeviceInterface&	vkd,
 
 		0,
 		DE_NULL,
+		(const vk::VkPipelineStageFlags*)DE_NULL,
 
 		1,
 		&commandBuffer,
@@ -908,7 +915,7 @@ IVec2 findImageSizeWxHx4 (vk::VkDeviceSize size)
 IVec2 findMaxRGBA8ImageSize (const vk::DeviceInterface&	vkd,
 							 vk::VkDevice				device,
 
-							 vk::VkBufferUsageFlags		usage,
+							 vk::VkImageUsageFlags		usage,
 							 vk::VkSharingMode			sharingMode,
 							 const vector<deUint32>&	queueFamilies,
 
@@ -938,9 +945,9 @@ IVec2 findMaxRGBA8ImageSize (const vk::DeviceInterface&	vkd,
 			vk::VK_IMAGE_TYPE_2D,
 			vk::VK_FORMAT_R8G8B8A8_UNORM,
 			{
-				currentSize[0],
-				currentSize[1],
-				1,
+				(deUint32)currentSize[0],
+				(deUint32)currentSize[1],
+				1u,
 			},
 			1u, 1u,
 			vk::VK_SAMPLE_COUNT_1_BIT,
@@ -1642,9 +1649,9 @@ void CreateImage::prepare (PrepareContext& context)
 			vk::VK_IMAGE_TYPE_2D,
 			vk::VK_FORMAT_R8G8B8A8_UNORM,
 			{
-				m_imageWidth,
-				m_imageHeight,
-				1,
+				(deUint32)m_imageWidth,
+				(deUint32)m_imageHeight,
+				1u,
 			},
 			1u, 1u,
 			vk::VK_SAMPLE_COUNT_1_BIT,
@@ -1900,6 +1907,7 @@ void SubmitCommandBuffer::execute (ExecuteContext& context)
 
 		0,
 		DE_NULL,
+		(const vk::VkPipelineStageFlags*)DE_NULL,
 
 		1,
 		&cmd,
@@ -1995,6 +2003,8 @@ void PipelineBarrier::submit (SubmitContext& context)
 	const vk::DeviceInterface&	vkd	= context.getContext().getDeviceInterface();
 	const vk::VkCommandBuffer	cmd	= context.getCommandBuffer();
 
+	// \todo [2016-01-08 pyry] This could be cleaned up thanks to latest API changes
+
 	switch (m_type)
 	{
 		case TYPE_GLOBAL:
@@ -2007,12 +2017,8 @@ void PipelineBarrier::submit (SubmitContext& context)
 				m_srcAccesses,
 				m_dstAccesses
 			};
-			const void* const			barriers[]	=
-			{
-				&barrier
-			};
 
-			vkd.cmdPipelineBarrier(cmd, m_srcStages, m_dstStages, 0, 1, &barriers[0]);
+			vkd.cmdPipelineBarrier(cmd, m_srcStages, m_dstStages, (vk::VkDependencyFlags)0, 1, &barrier, 0, (const vk::VkBufferMemoryBarrier*)DE_NULL, 0, (const vk::VkImageMemoryBarrier*)DE_NULL);
 			break;
 		}
 
@@ -2033,12 +2039,8 @@ void PipelineBarrier::submit (SubmitContext& context)
 				0,
 				vk::VK_WHOLE_SIZE
 			};
-			const void* const			barriers[]	=
-			{
-				&barrier
-			};
 
-			vkd.cmdPipelineBarrier(cmd, m_srcStages, m_dstStages, 0, 1, &barriers[0]);
+			vkd.cmdPipelineBarrier(cmd, m_srcStages, m_dstStages, (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier*)DE_NULL, 1, &barrier, 0, (const vk::VkImageMemoryBarrier*)DE_NULL);
 			break;
 		}
 
@@ -2046,7 +2048,7 @@ void PipelineBarrier::submit (SubmitContext& context)
 		{
 			const vk::VkImageMemoryBarrier	barrier		=
 			{
-				vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
+				vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
 				DE_NULL,
 
 				m_srcAccesses,
@@ -2065,12 +2067,8 @@ void PipelineBarrier::submit (SubmitContext& context)
 					0, 1
 				}
 			};
-			const void* const			barriers[]	=
-			{
-				&barrier
-			};
 
-			vkd.cmdPipelineBarrier(cmd, m_srcStages, m_dstStages, 0, 1, &barriers[0]);
+			vkd.cmdPipelineBarrier(cmd, m_srcStages, m_dstStages, (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier*)DE_NULL, 0, (const vk::VkBufferMemoryBarrier*)DE_NULL, 1, &barrier);
 			break;
 		}
 
@@ -2120,12 +2118,8 @@ void ImageTransition::submit (SubmitContext& context)
 			0u, 1u
 		}
 	};
-	const void* const				barriers[]	=
-	{
-		&barrier
-	};
 
-	vkd.cmdPipelineBarrier(cmd, ALL_PIPELINE_STAGES, ALL_PIPELINE_STAGES, 0, 1, &barriers[0]);
+	vkd.cmdPipelineBarrier(cmd, ALL_PIPELINE_STAGES, ALL_PIPELINE_STAGES, (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier*)DE_NULL, 0, (const vk::VkBufferMemoryBarrier*)DE_NULL, 1, &barrier);
 }
 
 class FillBuffer : public CmdCommand
@@ -2317,12 +2311,7 @@ void BufferCopyToBuffer::verify (VerifyContext& context, size_t commandIndex)
 		vk::VK_WHOLE_SIZE
 	};
 
-	const void* barriers[] =
-	{
-		&barrier
-	};
-
-	vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT, 0, 1, &barriers[0]);
+	vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT, (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier*)DE_NULL, 1, &barrier, 0, (const vk::VkImageMemoryBarrier*)DE_NULL);
 
 	VK_CHECK(vkd.endCommandBuffer(*commandBuffer));
 	queueRun(vkd, queue, *commandBuffer);
@@ -2494,9 +2483,9 @@ void BufferCopyToImage::prepare (PrepareContext& context)
 			vk::VK_IMAGE_TYPE_2D,
 			vk::VK_FORMAT_R8G8B8A8_UNORM,
 			{
-				m_imageWidth,
-				m_imageHeight,
-				1,
+				(deUint32)m_imageWidth,
+				(deUint32)m_imageHeight,
+				1u,
 			},
 			1, 1, // mipLevels, arrayLayers
 			vk::VK_SAMPLE_COUNT_1_BIT,
@@ -2540,12 +2529,8 @@ void BufferCopyToImage::prepare (PrepareContext& context)
 				1	// Layer count
 			}
 		};
-		const void*								barriers[]		=
-		{
-			&barrier
-		};
 
-		vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 1, &barriers[0]);
+		vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier*)DE_NULL, 0, (const vk::VkBufferMemoryBarrier*)DE_NULL, 1, &barrier);
 
 		VK_CHECK(vkd.endCommandBuffer(*commandBuffer));
 		queueRun(vkd, queue, *commandBuffer);
@@ -2573,9 +2558,9 @@ void BufferCopyToImage::submit (SubmitContext& context)
 		},
 		{ 0, 0, 0 },
 		{
-			m_imageWidth,
-			m_imageHeight,
-			1
+			(deUint32)m_imageWidth,
+			(deUint32)m_imageHeight,
+			1u
 		}
 	};
 
@@ -2635,10 +2620,6 @@ void BufferCopyToImage::verify (VerifyContext& context, size_t commandIndex)
 			vk::VK_WHOLE_SIZE
 		};
 
-		const void* preBarriers[] =
-		{
-			&imageBarrier
-		};
 		const vk::VkBufferImageCopy	region =
 		{
 			0,
@@ -2651,19 +2632,15 @@ void BufferCopyToImage::verify (VerifyContext& context, size_t commandIndex)
 			},
 			{ 0, 0, 0 },
 			{
-				m_imageWidth,
-				m_imageHeight,
-				1
+				(deUint32)m_imageWidth,
+				(deUint32)m_imageHeight,
+				1u
 			}
 		};
-		const void* postBarriers[] =
-		{
-			&bufferBarrier
-		};
 
-		vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 1, &preBarriers[0]);
+		vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier*)DE_NULL, 0, (const vk::VkBufferMemoryBarrier*)DE_NULL, 1, &imageBarrier);
 		vkd.cmdCopyImageToBuffer(*commandBuffer, *m_dstImage, vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *dstBuffer, 1, &region);
-		vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT, 0, 1, &postBarriers[0]);
+		vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT, (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier*)DE_NULL, 1, &bufferBarrier, 0, (const vk::VkImageMemoryBarrier*)DE_NULL);
 	}
 
 	VK_CHECK(vkd.endCommandBuffer(*commandBuffer));
@@ -2753,9 +2730,9 @@ void BufferCopyFromImage::prepare (PrepareContext& context)
 			vk::VK_IMAGE_TYPE_2D,
 			vk::VK_FORMAT_R8G8B8A8_UNORM,
 			{
-				m_imageWidth,
-				m_imageHeight,
-				1,
+				(deUint32)m_imageWidth,
+				(deUint32)m_imageHeight,
+				1u,
 			},
 			1, 1, // mipLevels, arrayLayers
 			vk::VK_SAMPLE_COUNT_1_BIT,
@@ -2824,14 +2801,6 @@ void BufferCopyFromImage::prepare (PrepareContext& context)
 				1	// Layer count
 			}
 		};
-		const void*								preBarriers[]		=
-		{
-			&preImageBarrier
-		};
-		const void*								postBarriers[]		=
-		{
-			&postImageBarrier
-		};
 		const vk::VkBufferImageCopy				region				=
 		{
 			0,
@@ -2844,9 +2813,9 @@ void BufferCopyFromImage::prepare (PrepareContext& context)
 			},
 			{ 0, 0, 0 },
 			{
-				m_imageWidth,
-				m_imageHeight,
-				1
+				(deUint32)m_imageWidth,
+				(deUint32)m_imageHeight,
+				1u
 			}
 		};
 
@@ -2865,9 +2834,9 @@ void BufferCopyFromImage::prepare (PrepareContext& context)
 			vkd.unmapMemory(device, *memory);
 		}
 
-		vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 1, &preBarriers[0]);
+		vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier*)DE_NULL, 0, (const vk::VkBufferMemoryBarrier*)DE_NULL, 1, &preImageBarrier);
 		vkd.cmdCopyBufferToImage(*commandBuffer, *srcBuffer, *m_srcImage, vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
-		vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 1, &postBarriers[0]);
+		vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier*)DE_NULL, 0, (const vk::VkBufferMemoryBarrier*)DE_NULL, 1, &postImageBarrier);
 
 		VK_CHECK(vkd.endCommandBuffer(*commandBuffer));
 		queueRun(vkd, queue, *commandBuffer);
@@ -2895,9 +2864,9 @@ void BufferCopyFromImage::submit (SubmitContext& context)
 		},
 		{ 0, 0, 0 },
 		{
-			m_imageWidth,
-			m_imageHeight,
-			1
+			(deUint32)m_imageWidth,
+			(deUint32)m_imageHeight,
+			1u
 		}
 	};
 
@@ -2977,9 +2946,9 @@ void ImageCopyToBuffer::submit (SubmitContext& context)
 		},
 		{ 0, 0, 0 },
 		{
-			m_imageWidth,
-			m_imageHeight,
-			1
+			(deUint32)m_imageWidth,
+			(deUint32)m_imageHeight,
+			1u
 		}
 	};
 
@@ -3010,12 +2979,7 @@ void ImageCopyToBuffer::verify (VerifyContext& context, size_t commandIndex)
 		vk::VK_WHOLE_SIZE
 	};
 
-	const void* barriers[] =
-	{
-		&barrier
-	};
-
-	vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT, 0, 1, &barriers[0]);
+	vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT, (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier*)DE_NULL, 1, &barrier, 0, (const vk::VkImageMemoryBarrier*)DE_NULL);
 
 	VK_CHECK(vkd.endCommandBuffer(*commandBuffer));
 	queueRun(vkd, queue, *commandBuffer);
@@ -3115,9 +3079,9 @@ void ImageCopyFromBuffer::submit (SubmitContext& context)
 		},
 		{ 0, 0, 0 },
 		{
-			m_imageWidth,
-			m_imageHeight,
-			1
+			(deUint32)m_imageWidth,
+			(deUint32)m_imageHeight,
+			1u
 		}
 	};
 
@@ -3198,9 +3162,9 @@ void ImageCopyFromImage::prepare (PrepareContext& context)
 			vk::VK_IMAGE_TYPE_2D,
 			vk::VK_FORMAT_R8G8B8A8_UNORM,
 			{
-				m_imageWidth,
-				m_imageHeight,
-				1,
+				(deUint32)m_imageWidth,
+				(deUint32)m_imageHeight,
+				1u,
 			},
 			1, 1, // mipLevels, arrayLayers
 			vk::VK_SAMPLE_COUNT_1_BIT,
@@ -3269,14 +3233,6 @@ void ImageCopyFromImage::prepare (PrepareContext& context)
 				1	// Layer count
 			}
 		};
-		const void*								preBarriers[]		=
-		{
-			&preImageBarrier
-		};
-		const void*								postBarriers[]		=
-		{
-			&postImageBarrier
-		};
 		const vk::VkBufferImageCopy				region				=
 		{
 			0,
@@ -3289,9 +3245,9 @@ void ImageCopyFromImage::prepare (PrepareContext& context)
 			},
 			{ 0, 0, 0 },
 			{
-				m_imageWidth,
-				m_imageHeight,
-				1
+				(deUint32)m_imageWidth,
+				(deUint32)m_imageHeight,
+				1u
 			}
 		};
 
@@ -3310,9 +3266,9 @@ void ImageCopyFromImage::prepare (PrepareContext& context)
 			vkd.unmapMemory(device, *memory);
 		}
 
-		vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 1, &preBarriers[0]);
+		vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier*)DE_NULL, 0, (const vk::VkBufferMemoryBarrier*)DE_NULL, 1, &preImageBarrier);
 		vkd.cmdCopyBufferToImage(*commandBuffer, *srcBuffer, *m_srcImage, vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
-		vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 1, &postBarriers[0]);
+		vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier*)DE_NULL, 0, (const vk::VkBufferMemoryBarrier*)DE_NULL, 1, &postImageBarrier);
 
 		VK_CHECK(vkd.endCommandBuffer(*commandBuffer));
 		queueRun(vkd, queue, *commandBuffer);
@@ -3346,9 +3302,9 @@ void ImageCopyFromImage::submit (SubmitContext& context)
 		},
 		{ 0, 0, 0 },
 		{
-			m_imageWidth,
-			m_imageHeight,
-			1
+			(deUint32)m_imageWidth,
+			(deUint32)m_imageHeight,
+			1u
 		}
 	};
 
@@ -3428,9 +3384,9 @@ void ImageCopyToImage::prepare (PrepareContext& context)
 			vk::VK_IMAGE_TYPE_2D,
 			vk::VK_FORMAT_R8G8B8A8_UNORM,
 			{
-				m_imageWidth,
-				m_imageHeight,
-				1,
+				(deUint32)m_imageWidth,
+				(deUint32)m_imageHeight,
+				1u,
 			},
 			1, 1, // mipLevels, arrayLayers
 			vk::VK_SAMPLE_COUNT_1_BIT,
@@ -3474,12 +3430,8 @@ void ImageCopyToImage::prepare (PrepareContext& context)
 				1	// Layer count
 			}
 		};
-		const void*								barriers[]		=
-		{
-			&barrier
-		};
 
-		vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 1, &barriers[0]);
+		vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier*)DE_NULL, 0, (const vk::VkBufferMemoryBarrier*)DE_NULL, 1, &barrier);
 
 		VK_CHECK(vkd.endCommandBuffer(*commandBuffer));
 		queueRun(vkd, queue, *commandBuffer);
@@ -3513,9 +3465,9 @@ void ImageCopyToImage::submit (SubmitContext& context)
 		},
 		{ 0, 0, 0 },
 		{
-			m_imageWidth,
-			m_imageHeight,
-			1
+			(deUint32)m_imageWidth,
+			(deUint32)m_imageHeight,
+			1u
 		}
 	};
 
@@ -3573,11 +3525,6 @@ void ImageCopyToImage::verify (VerifyContext& context, size_t commandIndex)
 			0,
 			vk::VK_WHOLE_SIZE
 		};
-
-		const void* preBarriers[] =
-		{
-			&imageBarrier
-		};
 		const vk::VkBufferImageCopy	region =
 		{
 			0,
@@ -3590,19 +3537,15 @@ void ImageCopyToImage::verify (VerifyContext& context, size_t commandIndex)
 			},
 			{ 0, 0, 0 },
 			{
-				m_imageWidth,
-				m_imageHeight,
-				1
+				(deUint32)m_imageWidth,
+				(deUint32)m_imageHeight,
+				1u
 			}
 		};
-		const void* postBarriers[] =
-		{
-			&bufferBarrier
-		};
 
-		vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 1, &preBarriers[0]);
+		vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier*)DE_NULL, 0, (const vk::VkBufferMemoryBarrier*)DE_NULL, 1, &imageBarrier);
 		vkd.cmdCopyImageToBuffer(*commandBuffer, *m_dstImage, vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *dstBuffer, 1, &region);
-		vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT, 0, 1, &postBarriers[0]);
+		vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT, (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier*)DE_NULL, 1, &bufferBarrier, 0, (const vk::VkImageMemoryBarrier*)DE_NULL);
 	}
 
 	VK_CHECK(vkd.endCommandBuffer(*commandBuffer));
@@ -3699,9 +3642,9 @@ void ImageBlitFromImage::prepare (PrepareContext& context)
 			vk::VK_IMAGE_TYPE_2D,
 			vk::VK_FORMAT_R8G8B8A8_UNORM,
 			{
-				m_srcImageWidth,
-				m_srcImageHeight,
-				1,
+				(deUint32)m_srcImageWidth,
+				(deUint32)m_srcImageHeight,
+				1u,
 			},
 			1, 1, // mipLevels, arrayLayers
 			vk::VK_SAMPLE_COUNT_1_BIT,
@@ -3770,14 +3713,6 @@ void ImageBlitFromImage::prepare (PrepareContext& context)
 				1	// Layer count
 			}
 		};
-		const void*								preBarriers[]		=
-		{
-			&preImageBarrier
-		};
-		const void*								postBarriers[]		=
-		{
-			&postImageBarrier
-		};
 		const vk::VkBufferImageCopy				region				=
 		{
 			0,
@@ -3790,9 +3725,9 @@ void ImageBlitFromImage::prepare (PrepareContext& context)
 			},
 			{ 0, 0, 0 },
 			{
-				m_srcImageWidth,
-				m_srcImageHeight,
-				1
+				(deUint32)m_srcImageWidth,
+				(deUint32)m_srcImageHeight,
+				1u
 			}
 		};
 
@@ -3811,9 +3746,9 @@ void ImageBlitFromImage::prepare (PrepareContext& context)
 			vkd.unmapMemory(device, *memory);
 		}
 
-		vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 1, &preBarriers[0]);
+		vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier*)DE_NULL, 0, (const vk::VkBufferMemoryBarrier*)DE_NULL, 1, &preImageBarrier);
 		vkd.cmdCopyBufferToImage(*commandBuffer, *srcBuffer, *m_srcImage, vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
-		vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 1, &postBarriers[0]);
+		vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier*)DE_NULL, 0, (const vk::VkBufferMemoryBarrier*)DE_NULL, 1, &postImageBarrier);
 
 		VK_CHECK(vkd.endCommandBuffer(*commandBuffer));
 		queueRun(vkd, queue, *commandBuffer);
@@ -3838,11 +3773,13 @@ void ImageBlitFromImage::submit (SubmitContext& context)
 			0,	// arrayLayer
 			1	// layerCount
 		},
-		{ 0, 0, 0 },
 		{
-			m_srcImageWidth,
-			m_srcImageHeight,
-			1
+			{ 0, 0, 0 },
+			{
+				m_srcImageWidth,
+				m_srcImageHeight,
+				1
+			},
 		},
 
 		// Dst
@@ -3852,11 +3789,13 @@ void ImageBlitFromImage::submit (SubmitContext& context)
 			0,	// arrayLayer
 			1	// layerCount
 		},
-		{ 0, 0, 0 },
 		{
-			m_imageWidth,
-			m_imageHeight,
-			1
+			{ 0, 0, 0 },
+			{
+				m_imageWidth,
+				m_imageHeight,
+				1u
+			}
 		}
 	};
 	vkd.cmdBlitImage(commandBuffer, *m_srcImage, vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, context.getImage(), context.getImageLayout(), 1, &region, vk::VK_FILTER_NEAREST);
@@ -3975,9 +3914,9 @@ void ImageBlitToImage::prepare (PrepareContext& context)
 			vk::VK_IMAGE_TYPE_2D,
 			vk::VK_FORMAT_R8G8B8A8_UNORM,
 			{
-				m_dstImageWidth,
-				m_dstImageHeight,
-				1,
+				(deUint32)m_dstImageWidth,
+				(deUint32)m_dstImageHeight,
+				1u,
 			},
 			1, 1, // mipLevels, arrayLayers
 			vk::VK_SAMPLE_COUNT_1_BIT,
@@ -4021,12 +3960,8 @@ void ImageBlitToImage::prepare (PrepareContext& context)
 				1	// Layer count
 			}
 		};
-		const void*								barriers[]		=
-		{
-			&barrier
-		};
 
-		vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 1, &barriers[0]);
+		vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier*)DE_NULL, 0, (const vk::VkBufferMemoryBarrier*)DE_NULL, 1, &barrier);
 
 		VK_CHECK(vkd.endCommandBuffer(*commandBuffer));
 		queueRun(vkd, queue, *commandBuffer);
@@ -4051,11 +3986,13 @@ void ImageBlitToImage::submit (SubmitContext& context)
 			0,	// arrayLayer
 			1	// layerCount
 		},
-		{ 0, 0, 0 },
 		{
-			m_imageWidth,
-			m_imageHeight,
-			1
+			{ 0, 0, 0 },
+			{
+				m_imageWidth,
+				m_imageHeight,
+				1
+			},
 		},
 
 		// Dst
@@ -4065,11 +4002,13 @@ void ImageBlitToImage::submit (SubmitContext& context)
 			0,	// arrayLayer
 			1	// layerCount
 		},
-		{ 0, 0, 0 },
 		{
-			m_dstImageWidth,
-			m_dstImageHeight,
-			1
+			{ 0, 0, 0 },
+			{
+				m_dstImageWidth,
+				m_dstImageHeight,
+				1u
+			}
 		}
 	};
 	vkd.cmdBlitImage(commandBuffer, context.getImage(), context.getImageLayout(), *m_dstImage, vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region, vk::VK_FILTER_NEAREST);
@@ -4126,11 +4065,6 @@ void ImageBlitToImage::verify (VerifyContext& context, size_t commandIndex)
 			0,
 			vk::VK_WHOLE_SIZE
 		};
-
-		const void* preBarriers[] =
-		{
-			&imageBarrier
-		};
 		const vk::VkBufferImageCopy	region =
 		{
 			0,
@@ -4143,19 +4077,15 @@ void ImageBlitToImage::verify (VerifyContext& context, size_t commandIndex)
 			},
 			{ 0, 0, 0 },
 			{
-				m_dstImageWidth,
-				m_dstImageHeight,
+				(deUint32)m_dstImageWidth,
+				(deUint32)m_dstImageHeight,
 				1
 			}
 		};
-		const void* postBarriers[] =
-		{
-			&bufferBarrier
-		};
 
-		vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 1, &preBarriers[0]);
+		vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier*)DE_NULL, 0, (const vk::VkBufferMemoryBarrier*)DE_NULL, 1, &imageBarrier);
 		vkd.cmdCopyImageToBuffer(*commandBuffer, *m_dstImage, vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *dstBuffer, 1, &region);
-		vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT, 0, 1, &postBarriers[0]);
+		vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT, (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier*)DE_NULL, 1, &bufferBarrier, 0, (const vk::VkImageMemoryBarrier*)DE_NULL);
 	}
 
 	VK_CHECK(vkd.endCommandBuffer(*commandBuffer));
@@ -4398,7 +4328,7 @@ void SubmitRenderPass::prepare (PrepareContext& context)
 
 			vk::VK_IMAGE_TYPE_2D,
 			vk::VK_FORMAT_R8G8B8A8_UNORM,
-			{ m_targetWidth, m_targetHeight, 1 },
+			{ (deUint32)m_targetWidth, (deUint32)m_targetHeight, 1u },
 			1u,
 			1u,
 			vk::VK_SAMPLE_COUNT_1_BIT,
@@ -4509,7 +4439,7 @@ void SubmitRenderPass::submit (SubmitContext& context)
 		*m_renderPass,
 		*m_framebuffer,
 
-		{ { 0, 0 },  { m_targetWidth, m_targetHeight } },
+		{ { 0, 0 },  { (deUint32)m_targetWidth, (deUint32)m_targetHeight } },
 		1u,
 		&clearValue
 	};
@@ -4591,11 +4521,6 @@ void SubmitRenderPass::verify (VerifyContext& context, size_t commandIndex)
 				0,
 				vk::VK_WHOLE_SIZE
 			};
-
-			const void* preBarriers[] =
-			{
-				&imageBarrier
-			};
 			const vk::VkBufferImageCopy	region =
 			{
 				0,
@@ -4608,19 +4533,15 @@ void SubmitRenderPass::verify (VerifyContext& context, size_t commandIndex)
 				},
 				{ 0, 0, 0 },
 				{
-					m_targetWidth,
-					m_targetHeight,
-					1
+					(deUint32)m_targetWidth,
+					(deUint32)m_targetHeight,
+					1u
 				}
 			};
-			const void* postBarriers[] =
-			{
-				&bufferBarrier
-			};
 
-			vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 1, &preBarriers[0]);
+			vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier*)DE_NULL, 0, (const vk::VkBufferMemoryBarrier*)DE_NULL, 1, &imageBarrier);
 			vkd.cmdCopyImageToBuffer(*commandBuffer, *m_colorTarget, vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *dstBuffer, 1, &region);
-			vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT, 0, 1, &postBarriers[0]);
+			vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT, (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier*)DE_NULL, 1, &bufferBarrier, 0, (const vk::VkImageMemoryBarrier*)DE_NULL);
 		}
 
 		VK_CHECK(vkd.endCommandBuffer(*commandBuffer));
@@ -4818,7 +4739,7 @@ void RenderBuffer::prepare (PrepareRenderPassContext& context)
 		};
 		const vk::VkRect2D									scissors[]						=
 		{
-			{ { 0, 0 }, { context.getTargetWidth(), context.getTargetHeight() } }
+			{ { 0, 0 }, { (deUint32)context.getTargetWidth(), (deUint32)context.getTargetHeight() } }
 		};
 		const vk::VkPipelineViewportStateCreateInfo			viewportState					=
 		{
@@ -6411,7 +6332,18 @@ tcu::TestStatus MemoryTestInstance::iterate (void)
 
 				log << TestLog::Message << "Max buffer size: " << maxBufferSize << TestLog::EndMessage;
 				log << TestLog::Message << "Max RGBA8 image size: " << maxImageSize << TestLog::EndMessage;
-				testCommand(log, m_resultCollector, m_context.getBinaryCollection(), vki, vkd, physicalDevice, device, m_config.size, m_memoryTypeNdx, m_config.usage, m_config.sharing, queue, queueFamilyIndex, queues, maxBufferSize, maxImageSize);
+
+				// Skip tests if there are no supported operations
+				if (maxBufferSize == 0
+					&& maxImageSize[0] == 0
+					&& (m_config.usage & (USAGE_HOST_READ|USAGE_HOST_WRITE)) == 0)
+				{
+					log << TestLog::Message << "Skipping memory type. None of the usages are supported." << TestLog::EndMessage;
+				}
+				else
+				{
+					testCommand(log, m_resultCollector, m_context.getBinaryCollection(), vki, vkd, physicalDevice, device, m_config.size, m_memoryTypeNdx, m_config.usage, m_config.sharing, queue, queueFamilyIndex, queues, maxBufferSize, maxImageSize);
+				}
 			}
 			catch (const tcu::TestError& e)
 			{
@@ -6482,8 +6414,10 @@ tcu::TestCaseGroup* createPipelineBarrierTests (tcu::TestContext& testCtx)
 	de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "pipeline_barrier", "Pipeline barrier tests."));
 	const vk::VkDeviceSize			sizes[]			=
 	{
-		1024,
-		1024*1024,
+		1024,			// 1K
+		8*1024,			// 8K
+		64*1024,		// 64K
+		1024*1024,		// 1M
 	};
 	const Usage						usages[]		=
 	{

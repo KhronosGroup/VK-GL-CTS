@@ -377,7 +377,7 @@ tcu::TestStatus	BasicOcclusionQueryTestInstance::iterate (void)
 		1u,													// deUint32					bufferCount;
 	};
 	vk::Unique<vk::VkCommandBuffer> cmdBuffer			(vk::allocateCommandBuffer(vk, device, &cmdBufferAllocateInfo));
-	const CmdBufferBeginInfo		beginInfo			(DE_NULL, 0, DE_NULL, 0u, true, m_testVector.queryControlFlags);
+	const CmdBufferBeginInfo		beginInfo			(0u);
 
 	vk.beginCommandBuffer(*cmdBuffer, &beginInfo);
 
@@ -425,6 +425,7 @@ tcu::TestStatus	BasicOcclusionQueryTestInstance::iterate (void)
 		DE_NULL,							// const void*				pNext;
 		0,									// deUint32					waitSemaphoreCount;
 		DE_NULL,							// const VkSemaphore*		pWaitSemaphores;
+		(const vk::VkPipelineStageFlags*)DE_NULL,
 		1,									// deUint32					commandBufferCount;
 		&cmdBuffer.get(),					// const VkCommandBuffer*	pCommandBuffers;
 		0,									// deUint32					signalSemaphoreCount;
@@ -645,6 +646,7 @@ tcu::TestStatus OcclusionQueryTestInstance::iterate (void)
 			DE_NULL,							// const void*				pNext;
 			0,									// deUint32					waitSemaphoreCount;
 			DE_NULL,							// const VkSemaphore*		pWaitSemaphores;
+			(const vk::VkPipelineStageFlags*)DE_NULL,
 			1,									// deUint32					commandBufferCount;
 			&m_renderCommandBuffer.get(),		// const VkCommandBuffer*	pCommandBuffers;
 			0,									// deUint32					signalSemaphoreCount;
@@ -670,6 +672,7 @@ tcu::TestStatus OcclusionQueryTestInstance::iterate (void)
 				DE_NULL,							// const void*				pNext;
 				0,									// deUint32					waitSemaphoreCount;
 				DE_NULL,							// const VkSemaphore*		pWaitSemaphores;
+				(const vk::VkPipelineStageFlags*)DE_NULL,
 				1,									// deUint32					commandBufferCount;
 				&m_copyResultsCommandBuffer.get(),	// const VkCommandBuffer*	pCommandBuffers;
 				0,									// deUint32					signalSemaphoreCount;
@@ -725,7 +728,7 @@ vk::Move<vk::VkCommandBuffer> OcclusionQueryTestInstance::recordRender (vk::VkCo
 		1u,													// deUint32					bufferCount;
 	};
 	vk::Move<vk::VkCommandBuffer>	cmdBuffer	(vk::allocateCommandBuffer(vk, device, &cmdBufferAllocateInfo));
-	CmdBufferBeginInfo				beginInfo	(DE_NULL, 0, DE_NULL, 0u, true, m_testVector.queryControlFlags);
+	CmdBufferBeginInfo				beginInfo	(0u);
 
 	vk.beginCommandBuffer(*cmdBuffer, &beginInfo);
 
@@ -806,7 +809,7 @@ vk::Move<vk::VkCommandBuffer> OcclusionQueryTestInstance::recordCopyResults (vk:
 		1u,													// deUint32					bufferCount;
 	};
 	vk::Move<vk::VkCommandBuffer>	cmdBuffer	(vk::allocateCommandBuffer(vk, device, &cmdBufferAllocateInfo));
-	const CmdBufferBeginInfo		beginInfo	(DE_NULL, 0, DE_NULL, 0u, true, m_testVector.queryControlFlags);
+	const CmdBufferBeginInfo		beginInfo	(0u);
 
 	vk.beginCommandBuffer(*cmdBuffer, &beginInfo);
 	vk.cmdCopyQueryPoolResults(*cmdBuffer, m_queryPool, 0, NUM_QUERIES_IN_POOL, m_queryPoolResultsBuffer->object(), /*dstOffset*/ 0, m_testVector.queryResultsStride, m_queryResultFlags);

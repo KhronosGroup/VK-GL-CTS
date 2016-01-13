@@ -258,7 +258,7 @@ public:
 				const tcu::Vec4 swizColor	= swizzle(texColor, m_swizzle);
 				const tcu::Vec4	normColor	= swizColor * swizzle(m_textureFormatInfo.lookupScale, m_swizzle) + swizzle(m_textureFormatInfo.lookupBias, m_swizzle);
 				const tcu::Vec4	color		= (normColor - m_colorFormatInfo.lookupBias) / m_colorFormatInfo.lookupScale;
- 				rr::writeFragmentOutput(context, packetNdx, fragNdx, 0, color);
+				rr::writeFragmentOutput(context, packetNdx, fragNdx, 0, color);
 			}
 		}
 	}

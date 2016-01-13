@@ -53,7 +53,7 @@ class ImageSamplingInstance : public vkt::TestInstance
 {
 public:
 												ImageSamplingInstance	(Context&							context,
-																		 const tcu::IVec2&					renderSize,
+																		 const tcu::UVec2&					renderSize,
 																		 vk::VkImageViewType				imageViewType,
 																		 vk::VkFormat						imageFormat,
 																		 const tcu::IVec3&					imageSize,
@@ -87,7 +87,7 @@ private:
 	vk::Move<vk::VkSampler>						m_sampler;
 	de::MovePtr<TestTexture>					m_texture;
 
-	const tcu::IVec2							m_renderSize;
+	const tcu::UVec2							m_renderSize;
 	const vk::VkFormat							m_colorFormat;
 
 	vk::Move<vk::VkDescriptorPool>				m_descriptorPool;

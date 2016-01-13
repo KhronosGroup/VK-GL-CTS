@@ -418,12 +418,7 @@ tcu::TestStatus executePrimaryBufferTest(Context& context)
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
 		DE_NULL,
 		0,															// flags
-		(VkRenderPass)0u,											// renderPass
-		0u,															// subpass
-		(VkFramebuffer)0u,											// framebuffer
-		VK_FALSE,													// occlusionQueryEnable
-		(VkQueryControlFlags)0u,									// queryFlags
-		(VkQueryPipelineStatisticFlags)0u,							// pipelineStatistics
+		(const VkCommandBufferInheritanceInfo*)DE_NULL,
 	};
 
 	// Fill create info struct for event
@@ -467,9 +462,7 @@ tcu::TestStatus executePrimaryBufferTest(Context& context)
 		DE_NULL,													// pNext
 		0u,															// waitSemaphoreCount
 		DE_NULL,													// pWaitSemaphores
-		// TODO: The following field is in api spec 1.0 37bedec32143807010323f126ad685ab5e9d98de
-		// TODO: but not in the header Loader and Tools 69d4893b673bd552e445ba999ad0e73463d35007
-		// DE_NULL,													// pWaitDstStageMask
+		(const VkPipelineStageFlags*)DE_NULL,						// pWaitDstStageMask
 		1,															// commandBufferCount
 		&primCmdBuf.get(),											// pCommandBuffers
 		0u,															// signalSemaphoreCount
@@ -522,12 +515,7 @@ tcu::TestStatus executeLargePrimaryBufferTest(Context& context)
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
 		DE_NULL,
 		0,															// flags
-		(VkRenderPass)0u,											// renderPass
-		0u,															// subpass
-		(VkFramebuffer)0u,											// framebuffer
-		VK_FALSE,													// occlusionQueryEnable
-		(VkQueryControlFlags)0u,									// queryFlags
-		(VkQueryPipelineStatisticFlags)0u,							// pipelineStatistics
+		(const VkCommandBufferInheritanceInfo*)DE_NULL,
 	};
 
 	// Fill create info struct for event
@@ -570,9 +558,7 @@ tcu::TestStatus executeLargePrimaryBufferTest(Context& context)
 		DE_NULL,													// pNext
 		0u,															// waitSemaphoreCount
 		DE_NULL,													// pWaitSemaphores
-		// TODO: The following field is in api spec 1.0 37bedec32143807010323f126ad685ab5e9d98de
-		// TODO: but not in the header Loader and Tools 69d4893b673bd552e445ba999ad0e73463d35007
-		// DE_NULL,													// pWaitDstStageMask
+		(const VkPipelineStageFlags*)DE_NULL,						// pWaitDstStageMask
 		1,															// commandBufferCount
 		&primCmdBuf.get(),											// pCommandBuffers
 		0u,															// signalSemaphoreCount
@@ -628,12 +614,7 @@ tcu::TestStatus resetBufferImplicitlyTest(Context& context)
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,				// sType
 		DE_NULL,													// pNext
 		0u,															// flags
-		DE_NULL,													// renderPass
-		0u,															// subpass
-		DE_NULL,													// framebuffer
-		VK_FALSE,													// occlusionQueryEnable
-		(VkQueryControlFlags)0u,									// queryFlags
-		(VkQueryPipelineStatisticFlags)0u,							// pipelineStatistics
+		(const VkCommandBufferInheritanceInfo*)DE_NULL,
 	};
 
 	const VkEventCreateInfo					eventCreateInfo			=
@@ -667,9 +648,7 @@ tcu::TestStatus resetBufferImplicitlyTest(Context& context)
 		DE_NULL,													// pNext
 		0u,															// waitSemaphoreCount
 		DE_NULL,													// pWaitSemaphores
-		// TODO: The following field is in api spec 1.0 37bedec32143807010323f126ad685ab5e9d98de
-		// TODO: but not in the header Loader and Tools 69d4893b673bd552e445ba999ad0e73463d35007
-		// DE_NULL,													// pWaitDstStageMask
+		(const VkPipelineStageFlags*)DE_NULL,						// pWaitDstStageMask
 		1u,															// commandBufferCount
 		&cmdBuf.get(),												// pCommandBuffers
 		0u,															// signalSemaphoreCount
@@ -743,12 +722,7 @@ tcu::TestStatus recordSinglePrimaryBufferTest(Context& context)
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
 		DE_NULL,
 		0,															// flags
-		(VkRenderPass)0u,											// renderPass
-		0u,															// subpass
-		(VkFramebuffer)0u,											// framebuffer
-		VK_FALSE,													// occlusionQueryEnable
-		(VkQueryControlFlags)0u,									// queryFlags
-		(VkQueryPipelineStatisticFlags)0u,							// pipelineStatistics
+		(const VkCommandBufferInheritanceInfo*)DE_NULL,
 	};
 
 	// Fill create info struct for event
@@ -805,12 +779,7 @@ tcu::TestStatus recordLargePrimaryBufferTest(Context &context)
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
 		DE_NULL,
 		0,															// flags
-		(VkRenderPass)0u,											// renderPass
-		0u,															// subpass
-		(VkFramebuffer)0u,											// framebuffer
-		VK_FALSE,													// occlusionQueryEnable
-		(VkQueryControlFlags)0u,									// queryFlags
-		(VkQueryPipelineStatisticFlags)0u,							// pipelineStatistics
+		(const VkCommandBufferInheritanceInfo*)DE_NULL,
 	};
 
 	// Fill create info struct for event
@@ -864,9 +833,7 @@ tcu::TestStatus recordLargePrimaryBufferTest(Context &context)
 		DE_NULL,													// pNext
 		0u,															// waitSemaphoreCount
 		DE_NULL,													// pWaitSemaphores
-		// TODO: The following field is in api spec 1.0 37bedec32143807010323f126ad685ab5e9d98de
-		// TODO: but not in the header Loader and Tools 69d4893b673bd552e445ba999ad0e73463d35007
-		// DE_NULL,													// pWaitDstStageMask
+		(const VkPipelineStageFlags*)DE_NULL,						// pWaitDstStageMask
 		1,															// commandBufferCount
 		&primCmdBuf.get(),											// pCommandBuffers
 		0u,															// signalSemaphoreCount
@@ -908,17 +875,23 @@ tcu::TestStatus recordSingleSecondaryBufferTest(Context& context)
 	};
 	const Unique<VkCommandBuffer>			secCmdBuf				(allocateCommandBuffer(vk, vkDevice, &cmdBufParams));
 
-	const VkCommandBufferBeginInfo			secCmdBufBeginInfo		=
+	const VkCommandBufferInheritanceInfo	secCmdBufInheritInfo	=
 	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
 		DE_NULL,
-		0,															// flags
 		(VkRenderPass)0u,											// renderPass
 		0u,															// subpass
 		(VkFramebuffer)0u,											// framebuffer
 		VK_FALSE,													// occlusionQueryEnable
 		(VkQueryControlFlags)0u,									// queryFlags
 		(VkQueryPipelineStatisticFlags)0u,							// pipelineStatistics
+	};
+	const VkCommandBufferBeginInfo			secCmdBufBeginInfo		=
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+		DE_NULL,
+		0,															// flags
+		&secCmdBufInheritInfo,
 	};
 
 	// Fill create info struct for event
@@ -975,12 +948,7 @@ tcu::TestStatus recordLargeSecondaryBufferTest(Context &context)
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
 		DE_NULL,
 		0,															// flags
-		(VkRenderPass)0u,											// renderPass
-		0u,															// subpass
-		(VkFramebuffer)0u,											// framebuffer
-		VK_FALSE,													// occlusionQueryEnable
-		(VkQueryControlFlags)0u,									// queryFlags
-		(VkQueryPipelineStatisticFlags)0u,							// pipelineStatistics
+		(const VkCommandBufferInheritanceInfo*)DE_NULL,
 	};
 
 	// Fill create info struct for event
@@ -1035,9 +1003,7 @@ tcu::TestStatus recordLargeSecondaryBufferTest(Context &context)
 		DE_NULL,													// pNext
 		0u,															// waitSemaphoreCount
 		DE_NULL,													// pWaitSemaphores
-		// TODO: The following field is in api spec 1.0 37bedec32143807010323f126ad685ab5e9d98de
-		// TODO: but not in the header Loader and Tools 69d4893b673bd552e445ba999ad0e73463d35007
-		// DE_NULL,													// pWaitDstStageMask
+		(const VkPipelineStageFlags*)DE_NULL,						// pWaitDstStageMask
 		1,															// commandBufferCount
 		&primCmdBuf.get(),											// pCommandBuffers
 		0u,															// signalSemaphoreCount
@@ -1085,12 +1051,7 @@ tcu::TestStatus submitPrimaryBufferTwiceTest(Context& context)
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
 		DE_NULL,
 		0,															// flags
-		(VkRenderPass)0u,											// renderPass
-		0u,															// subpass
-		(VkFramebuffer)0u,											// framebuffer
-		VK_FALSE,													// occlusionQueryEnable
-		(VkQueryControlFlags)0u,									// queryFlags
-		(VkQueryPipelineStatisticFlags)0u,							// pipelineStatistics
+		(const VkCommandBufferInheritanceInfo*)DE_NULL,
 	};
 
 	// Fill create info struct for event
@@ -1134,9 +1095,7 @@ tcu::TestStatus submitPrimaryBufferTwiceTest(Context& context)
 		DE_NULL,													// pNext
 		0u,															// waitSemaphoreCount
 		DE_NULL,													// pWaitSemaphores
-		// TODO: The following field is in api spec 1.0 37bedec32143807010323f126ad685ab5e9d98de
-		// TODO: but not in the header Loader and Tools 69d4893b673bd552e445ba999ad0e73463d35007
-		// DE_NULL,													// pWaitDstStageMask
+		(const VkPipelineStageFlags*)DE_NULL,						// pWaitDstStageMask
 		1,															// commandBufferCount
 		&primCmdBuf.get(),											// pCommandBuffers
 		0u,															// signalSemaphoreCount
@@ -1217,6 +1176,13 @@ tcu::TestStatus submitSecondaryBufferTwiceTest(Context& context)
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
 		DE_NULL,
 		0,															// flags
+		(const VkCommandBufferInheritanceInfo*)DE_NULL,
+	};
+
+	const VkCommandBufferInheritanceInfo	secCmdBufInheritInfo	=
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
+		DE_NULL,
 		(VkRenderPass)0u,											// renderPass
 		0u,															// subpass
 		(VkFramebuffer)0u,											// framebuffer
@@ -1224,18 +1190,12 @@ tcu::TestStatus submitSecondaryBufferTwiceTest(Context& context)
 		(VkQueryControlFlags)0u,									// queryFlags
 		(VkQueryPipelineStatisticFlags)0u,							// pipelineStatistics
 	};
-
 	const VkCommandBufferBeginInfo			secCmdBufBeginInfo		=
 	{
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
 		DE_NULL,
 		0u,															// flags
-		(VkRenderPass)0u,											// renderPass
-		0u,															// subpass
-		(VkFramebuffer)0u,											// framebuffer
-		VK_FALSE,													// occlusionQueryEnable
-		(VkQueryControlFlags)0u,									// queryFlags
-		(VkQueryPipelineStatisticFlags)0u,							// pipelineStatistics
+		&secCmdBufInheritInfo,
 	};
 
 	// Fill create info struct for event
@@ -1289,9 +1249,7 @@ tcu::TestStatus submitSecondaryBufferTwiceTest(Context& context)
 		DE_NULL,													// pNext
 		0u,															// waitSemaphoreCount
 		DE_NULL,													// pWaitSemaphores
-		// TODO: The following field is in api spec 1.0 37bedec32143807010323f126ad685ab5e9d98de
-		// TODO: but not in the header Loader and Tools 69d4893b673bd552e445ba999ad0e73463d35007
-		// DE_NULL,													// pWaitDstStageMask
+		(const VkPipelineStageFlags*)DE_NULL,						// pWaitDstStageMask
 		1,															// commandBufferCount
 		&primCmdBuf1.get(),											// pCommandBuffers
 		0u,															// signalSemaphoreCount
@@ -1331,9 +1289,7 @@ tcu::TestStatus submitSecondaryBufferTwiceTest(Context& context)
 		DE_NULL,													// pNext
 		0u,															// waitSemaphoreCount
 		DE_NULL,													// pWaitSemaphores
-		// TODO: The following field is in api spec 1.0 37bedec32143807010323f126ad685ab5e9d98de
-		// TODO: but not in the header Loader and Tools 69d4893b673bd552e445ba999ad0e73463d35007
-		// DE_NULL,													// pWaitDstStageMask
+		(const VkPipelineStageFlags*)DE_NULL,						// pWaitDstStageMask
 		1,															// commandBufferCount
 		&primCmdBuf2.get(),											// pCommandBuffers
 		0u,															// signalSemaphoreCount
@@ -1384,12 +1340,7 @@ tcu::TestStatus oneTimeSubmitFlagPrimaryBufferTest(Context& context)
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
 		DE_NULL,
 		VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,				// flags
-		(VkRenderPass)0u,											// renderPass
-		0u,															// subpass
-		(VkFramebuffer)0u,											// framebuffer
-		VK_FALSE,													// occlusionQueryEnable
-		(VkQueryControlFlags)0u,									// queryFlags
-		(VkQueryPipelineStatisticFlags)0u,							// pipelineStatistics
+		(const VkCommandBufferInheritanceInfo*)DE_NULL,
 	};
 
 	// Fill create info struct for event
@@ -1433,9 +1384,7 @@ tcu::TestStatus oneTimeSubmitFlagPrimaryBufferTest(Context& context)
 		DE_NULL,													// pNext
 		0u,															// waitSemaphoreCount
 		DE_NULL,													// pWaitSemaphores
-		// TODO: The following field is in api spec 1.0 37bedec32143807010323f126ad685ab5e9d98de
-		// TODO: but not in the header Loader and Tools 69d4893b673bd552e445ba999ad0e73463d35007
-		// DE_NULL,													// pWaitDstStageMask
+		(const VkPipelineStageFlags*)DE_NULL,						// pWaitDstStageMask
 		1,															// commandBufferCount
 		&primCmdBuf.get(),											// pCommandBuffers
 		0u,															// signalSemaphoreCount
@@ -1528,6 +1477,13 @@ tcu::TestStatus oneTimeSubmitFlagSecondaryBufferTest(Context& context)
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
 		DE_NULL,
 		0,															// flags
+		(const VkCommandBufferInheritanceInfo*)DE_NULL,
+	};
+
+	const VkCommandBufferInheritanceInfo	secCmdBufInheritInfo	=
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
+		DE_NULL,
 		(VkRenderPass)0u,											// renderPass
 		0u,															// subpass
 		(VkFramebuffer)0u,											// framebuffer
@@ -1535,18 +1491,12 @@ tcu::TestStatus oneTimeSubmitFlagSecondaryBufferTest(Context& context)
 		(VkQueryControlFlags)0u,									// queryFlags
 		(VkQueryPipelineStatisticFlags)0u,							// pipelineStatistics
 	};
-
 	const VkCommandBufferBeginInfo			secCmdBufBeginInfo		=
 	{
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
 		DE_NULL,
 		VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,				// flags
-		(VkRenderPass)0u,											// renderPass
-		0u,															// subpass
-		(VkFramebuffer)0u,											// framebuffer
-		VK_FALSE,													// occlusionQueryEnable
-		(VkQueryControlFlags)0u,									// queryFlags
-		(VkQueryPipelineStatisticFlags)0u,							// pipelineStatistics
+		&secCmdBufInheritInfo,
 	};
 
 	// Fill create info struct for event
@@ -1600,9 +1550,7 @@ tcu::TestStatus oneTimeSubmitFlagSecondaryBufferTest(Context& context)
 		DE_NULL,													// pNext
 		0u,															// waitSemaphoreCount
 		DE_NULL,													// pWaitSemaphores
-		// TODO: The following field is in api spec 1.0 37bedec32143807010323f126ad685ab5e9d98de
-		// TODO: but not in the header Loader and Tools 69d4893b673bd552e445ba999ad0e73463d35007
-		// DE_NULL,													// pWaitDstStageMask
+		(const VkPipelineStageFlags*)DE_NULL,						// pWaitDstStageMask
 		1,															// commandBufferCount
 		&primCmdBuf1.get(),											// pCommandBuffers
 		0u,															// signalSemaphoreCount
@@ -1654,9 +1602,7 @@ tcu::TestStatus oneTimeSubmitFlagSecondaryBufferTest(Context& context)
 		DE_NULL,													// pNext
 		0u,															// waitSemaphoreCount
 		DE_NULL,													// pWaitSemaphores
-		// TODO: The following field is in api spec 1.0 37bedec32143807010323f126ad685ab5e9d98de
-		// TODO: but not in the header Loader and Tools 69d4893b673bd552e445ba999ad0e73463d35007
-		// DE_NULL,													// pWaitDstStageMask
+		(const VkPipelineStageFlags*)DE_NULL,						// pWaitDstStageMask
 		1,															// commandBufferCount
 		&primCmdBuf2.get(),											// pCommandBuffers
 		0u,															// signalSemaphoreCount
@@ -1707,12 +1653,7 @@ tcu::TestStatus simultaneousUsePrimaryBufferTest(Context& context)
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
 		DE_NULL,
 		VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT,				// flags
-		(VkRenderPass)0u,											// renderPass
-		0u,															// subpass
-		(VkFramebuffer)0u,											// framebuffer
-		VK_FALSE,													// occlusionQueryEnable
-		(VkQueryControlFlags)0u,									// queryFlags
-		(VkQueryPipelineStatisticFlags)0u,							// pipelineStatistics
+		(const VkCommandBufferInheritanceInfo*)DE_NULL,
 	};
 
 	// Fill create info struct for event
@@ -1737,7 +1678,7 @@ tcu::TestStatus simultaneousUsePrimaryBufferTest(Context& context)
 		VkPipelineStageFlags stageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
 
 		// wait for event
-		vk.cmdWaitEvents(*primCmdBuf, 1u, &eventOne.get(), stageMask, stageMask, 0u, DE_NULL);
+		vk.cmdWaitEvents(*primCmdBuf, 1u, &eventOne.get(), stageMask, stageMask, 0u, DE_NULL, 0u, DE_NULL, 0u, DE_NULL);
 
 		// Set the second event
 		vk.cmdSetEvent(*primCmdBuf, eventTwo.get(), stageMask);
@@ -1762,9 +1703,7 @@ tcu::TestStatus simultaneousUsePrimaryBufferTest(Context& context)
 		DE_NULL,													// pNext
 		0u,															// waitSemaphoreCount
 		DE_NULL,													// pWaitSemaphores
-		// TODO: The following field is in api spec 1.0 37bedec32143807010323f126ad685ab5e9d98de
-		// TODO: but not in the header Loader and Tools 69d4893b673bd552e445ba999ad0e73463d35007
-		// DE_NULL,													// pWaitDstStageMask
+		(const VkPipelineStageFlags*)DE_NULL,						// pWaitDstStageMask
 		1,															// commandBufferCount
 		&primCmdBuf.get(),											// pCommandBuffers
 		0u,															// signalSemaphoreCount
@@ -1843,6 +1782,13 @@ tcu::TestStatus simultaneousUseSecondaryBufferTest(Context& context)
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
 		DE_NULL,
 		0,															// flags
+		(const VkCommandBufferInheritanceInfo*)DE_NULL,
+	};
+
+	const VkCommandBufferInheritanceInfo	secCmdBufInheritInfo	=
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
+		DE_NULL,
 		(VkRenderPass)0u,											// renderPass
 		0u,															// subpass
 		(VkFramebuffer)0u,											// framebuffer
@@ -1850,18 +1796,12 @@ tcu::TestStatus simultaneousUseSecondaryBufferTest(Context& context)
 		(VkQueryControlFlags)0u,									// queryFlags
 		(VkQueryPipelineStatisticFlags)0u,							// pipelineStatistics
 	};
-
 	const VkCommandBufferBeginInfo			secCmdBufBeginInfo		=
 	{
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
 		DE_NULL,
 		VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT,				// flags
-		(VkRenderPass)0u,											// renderPass
-		0u,															// subpass
-		(VkFramebuffer)0u,											// framebuffer
-		VK_FALSE,													// occlusionQueryEnable
-		(VkQueryControlFlags)0u,									// queryFlags
-		(VkQueryPipelineStatisticFlags)0u,							// pipelineStatistics
+		&secCmdBufInheritInfo,
 	};
 
 	// Fill create info struct for event
@@ -1887,7 +1827,7 @@ tcu::TestStatus simultaneousUseSecondaryBufferTest(Context& context)
 		VkPipelineStageFlags stageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
 
 		// wait for event
-		vk.cmdWaitEvents(*secCmdBuf, 1, &eventOne.get(), stageMask, stageMask, 0, DE_NULL);
+		vk.cmdWaitEvents(*secCmdBuf, 1, &eventOne.get(), stageMask, stageMask, 0, DE_NULL, 0u, DE_NULL, 0u, DE_NULL);
 
 		// reset event
 		vk.cmdSetEvent(*secCmdBuf, *eventTwo, stageMask);
@@ -1919,9 +1859,7 @@ tcu::TestStatus simultaneousUseSecondaryBufferTest(Context& context)
 		DE_NULL,													// pNext
 		0u,															// waitSemaphoreCount
 		DE_NULL,													// pWaitSemaphores
-		// TODO: The following field is in api spec 1.0 37bedec32143807010323f126ad685ab5e9d98de
-		// TODO: but not in the header Loader and Tools 69d4893b673bd552e445ba999ad0e73463d35007
-		// DE_NULL,													// pWaitDstStageMask
+		(const VkPipelineStageFlags*)DE_NULL,						// pWaitDstStageMask
 		1,															// commandBufferCount
 		&primCmdBuf.get(),											// pCommandBuffers
 		0u,															// signalSemaphoreCount
@@ -1993,25 +1931,26 @@ tcu::TestStatus recordBufferQueryPreciseWithFlagTest(Context& context)
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,				// sType
 		DE_NULL,													// pNext
 		0u,															// flags
-		0u,															// renderPass
-		0u,															// subpass
-		0u,															// framebuffer
-		DE_FALSE,													// occlusionQueryEnable
-		0u,															// queryFlags
-		(VkQueryPipelineStatisticFlags)0u,							// pipelineStatistics
+		(const VkCommandBufferInheritanceInfo*)DE_NULL,
 	};
 
-	const VkCommandBufferBeginInfo			secBufferBeginInfo		=
+	const VkCommandBufferInheritanceInfo	secBufferInheritInfo	=
 	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,				// sType
-		DE_NULL,													// pNext
-		0u,															// flags
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
+		DE_NULL,
 		0u,															// renderPass
 		0u,															// subpass
 		0u,															// framebuffer
 		VK_TRUE,													// occlusionQueryEnable
 		VK_QUERY_CONTROL_PRECISE_BIT,								// queryFlags
 		(VkQueryPipelineStatisticFlags)0u,							// pipelineStatistics
+	};
+	const VkCommandBufferBeginInfo			secBufferBeginInfo		=
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,				// sType
+		DE_NULL,													// pNext
+		0u,															// flags
+		&secBufferInheritInfo,
 	};
 
 	// Create an occlusion query with VK_QUERY_CONTROL_PRECISE_BIT set
@@ -2084,25 +2023,26 @@ tcu::TestStatus recordBufferQueryImpreciseWithFlagTest(Context& context)
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,				// sType
 		DE_NULL,													// pNext
 		0u,															// flags
-		0u,															// renderPass
-		0u,															// subpass
-		0u,															// framebuffer
-		DE_FALSE,													// occlusionQueryEnable
-		0u,															// queryFlags
-		(VkQueryPipelineStatisticFlags)0u,							// pipelineStatistics
+		(const VkCommandBufferInheritanceInfo*)DE_NULL,
 	};
 
-	const VkCommandBufferBeginInfo			secBufferBeginInfo		=
+	const VkCommandBufferInheritanceInfo	secBufferInheritInfo	=
 	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,				// sType
-		DE_NULL,													// pNext
-		0u,															// flags
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
+		DE_NULL,
 		0u,															// renderPass
 		0u,															// subpass
 		0u,															// framebuffer
 		VK_TRUE,													// occlusionQueryEnable
 		VK_QUERY_CONTROL_PRECISE_BIT,								// queryFlags
 		(VkQueryPipelineStatisticFlags)0u,							// pipelineStatistics
+	};
+	const VkCommandBufferBeginInfo			secBufferBeginInfo		=
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,				// sType
+		DE_NULL,													// pNext
+		0u,															// flags
+		&secBufferInheritInfo,
 	};
 
 	// Create an occlusion query with VK_QUERY_CONTROL_PRECISE_BIT set
@@ -2175,6 +2115,13 @@ tcu::TestStatus recordBufferQueryImpreciseWithoutFlagTest(Context& context)
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,				// sType
 		DE_NULL,													// pNext
 		0u,															// flags
+		(const VkCommandBufferInheritanceInfo*)DE_NULL,
+	};
+
+	const VkCommandBufferInheritanceInfo	secBufferInheritInfo	=
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
+		DE_NULL,
 		0u,															// renderPass
 		0u,															// subpass
 		0u,															// framebuffer
@@ -2182,18 +2129,12 @@ tcu::TestStatus recordBufferQueryImpreciseWithoutFlagTest(Context& context)
 		0u,															// queryFlags
 		(VkQueryPipelineStatisticFlags)0u,							// pipelineStatistics
 	};
-
 	const VkCommandBufferBeginInfo			secBufferBeginInfo		=
 	{
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,				// sType
 		DE_NULL,													// pNext
 		0u,															// flags
-		0u,															// renderPass
-		0u,															// subpass
-		0u,															// framebuffer
-		VK_TRUE,													// occlusionQueryEnable
-		0u,															// queryFlags
-		(VkQueryPipelineStatisticFlags)0u,							// pipelineStatistics
+		&secBufferInheritInfo,
 	};
 
 	// Create an occlusion query with VK_QUERY_CONTROL_PRECISE_BIT set
@@ -2260,12 +2201,7 @@ tcu::TestStatus submitBufferCountNonZero(Context& context)
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,				// sType
 		DE_NULL,													// pNext
 		0u,															// flags
-		DE_NULL,													// renderPass
-		0u,															// subpass
-		DE_NULL,													// framebuffer
-		VK_FALSE,													// occlusionQueryEnable
-		(VkQueryControlFlags)0u,									// queryFlags
-		(VkQueryPipelineStatisticFlags)0u,							// pipelineStatistics
+		(const VkCommandBufferInheritanceInfo*)DE_NULL,
 	};
 
 	const VkEventCreateInfo					eventCreateInfo			=
@@ -2303,9 +2239,7 @@ tcu::TestStatus submitBufferCountNonZero(Context& context)
 		DE_NULL,													// pNext
 		0u,															// waitSemaphoreCount
 		DE_NULL,													// pWaitSemaphores
-		// TODO: The following field is in api spec 1.0 37bedec32143807010323f126ad685ab5e9d98de
-		// TODO: but not in the header Loader and Tools 69d4893b673bd552e445ba999ad0e73463d35007
-		// DE_NULL,													// pWaitDstStageMask
+		(const VkPipelineStageFlags*)DE_NULL,						// pWaitDstStageMask
 		BUFFER_COUNT,												// commandBufferCount
 		cmdBuffers,													// pCommandBuffers
 		0u,															// signalSemaphoreCount
@@ -2360,12 +2294,7 @@ tcu::TestStatus submitBufferCountEqualZero(Context& context)
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,				// sType
 		DE_NULL,													// pNext
 		0u,															// flags
-		DE_NULL,													// renderPass
-		0u,															// subpass
-		DE_NULL,													// framebuffer
-		VK_FALSE,													// occlusionQueryEnable
-		(VkQueryControlFlags)0u,									// queryFlags
-		(VkQueryPipelineStatisticFlags)0u,							// pipelineStatistics
+		(const VkCommandBufferInheritanceInfo*)DE_NULL,
 	};
 
 	const VkEventCreateInfo					eventCreateInfo			=
@@ -2404,9 +2333,7 @@ tcu::TestStatus submitBufferCountEqualZero(Context& context)
 		DE_NULL,													// pNext
 		0u,															// waitSemaphoreCount
 		DE_NULL,													// pWaitSemaphores
-		// TODO: The following field is in api spec 1.0 37bedec32143807010323f126ad685ab5e9d98de
-		// TODO: but not in the header Loader and Tools 69d4893b673bd552e445ba999ad0e73463d35007
-		// DE_NULL,													// pWaitDstStageMask
+		(const VkPipelineStageFlags*)DE_NULL,						// pWaitDstStageMask
 		1u,															// commandBufferCount
 		&cmdBuffers[0],												// pCommandBuffers
 		0u,															// signalSemaphoreCount
@@ -2419,6 +2346,7 @@ tcu::TestStatus submitBufferCountEqualZero(Context& context)
 		DE_NULL,													// pNext
 		0u,															// waitSemaphoreCount
 		DE_NULL,													// pWaitSemaphores
+		(const VkPipelineStageFlags*)DE_NULL,						// pWaitDstStageMask
 		1u,															// commandBufferCount
 		&cmdBuffers[1],												// pCommandBuffers
 		0u,															// signalSemaphoreCount
@@ -2431,7 +2359,7 @@ tcu::TestStatus submitBufferCountEqualZero(Context& context)
 	VK_CHECK(vk.queueSubmit(queue, 0, &submitInfoCountZero, fenceZero.get()));
 	VK_CHECK(vk.queueSubmit(queue, 1, &submitInfoCountOne, fenceOne.get()));
 
-	const VkFence							fences[]				= 
+	const VkFence							fences[]				=
 	{
 		fenceZero.get(),
 		fenceOne.get(),
@@ -2483,12 +2411,7 @@ tcu::TestStatus submitBufferNullFence(Context& context)
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,				// sType
 		DE_NULL,													// pNext
 		0u,															// flags
-		DE_NULL,													// renderPass
-		0u,															// subpass
-		DE_NULL,													// framebuffer
-		VK_FALSE,													// occlusionQueryEnable
-		(VkQueryControlFlags)0u,									// queryFlags
-		(VkQueryPipelineStatisticFlags)0u,							// pipelineStatistics
+		(const VkCommandBufferInheritanceInfo*)DE_NULL,
 	};
 
 	const VkEventCreateInfo					eventCreateInfo			=
@@ -2526,9 +2449,7 @@ tcu::TestStatus submitBufferNullFence(Context& context)
 		DE_NULL,													// pNext
 		0u,															// waitSemaphoreCount
 		DE_NULL,													// pWaitSemaphores
-		// TODO: The following field is in api spec 1.0 37bedec32143807010323f126ad685ab5e9d98de
-		// TODO: but not in the header Loader and Tools 69d4893b673bd552e445ba999ad0e73463d35007
-		// DE_NULL,													// pWaitDstStageMask
+		(const VkPipelineStageFlags*)DE_NULL,						// pWaitDstStageMask
 		1u,															// commandBufferCount
 		&cmdBuffers[0],												// pCommandBuffers
 		0u,															// signalSemaphoreCount
@@ -2541,9 +2462,7 @@ tcu::TestStatus submitBufferNullFence(Context& context)
 		DE_NULL,													// pNext
 		0u,															// waitSemaphoreCount
 		DE_NULL,													// pWaitSemaphores
-		// TODO: The following field is in api spec 1.0 37bedec32143807010323f126ad685ab5e9d98de
-		// TODO: but not in the header Loader and Tools 69d4893b673bd552e445ba999ad0e73463d35007
-		// DE_NULL,													// pWaitDstStageMask
+		(const VkPipelineStageFlags*)DE_NULL,						// pWaitDstStageMask
 		1u,															// commandBufferCount
 		&cmdBuffers[1],												// pCommandBuffers
 		0u,															// signalSemaphoreCount
@@ -2609,6 +2528,13 @@ tcu::TestStatus executeSecondaryBufferTest(Context& context)
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,				// sType
 		DE_NULL,													// pNext
 		0u,															// flags
+		(const VkCommandBufferInheritanceInfo*)DE_NULL,
+	};
+
+	const VkCommandBufferInheritanceInfo	secCmdBufInheritInfo	=
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
+		DE_NULL,
 		DE_NULL,													// renderPass
 		0u,															// subpass
 		DE_NULL,													// framebuffer
@@ -2616,18 +2542,12 @@ tcu::TestStatus executeSecondaryBufferTest(Context& context)
 		(VkQueryControlFlags)0u,									// queryFlags
 		(VkQueryPipelineStatisticFlags)0u,							// pipelineStatistics
 	};
-
 	const VkCommandBufferBeginInfo			secCmdBufBeginInfo		=
 	{
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,				// sType
 		DE_NULL,													// pNext
 		0u,															// flags
-		DE_NULL,													// renderPass
-		0u,															// subpass
-		DE_NULL,													// framebuffer
-		VK_FALSE,													// occlusionQueryEnable
-		(VkQueryControlFlags)0u,									// queryFlags
-		(VkQueryPipelineStatisticFlags)0u,							// pipelineStatistics
+		&secCmdBufInheritInfo,
 	};
 
 	// Fill create info struct for event
@@ -2678,9 +2598,7 @@ tcu::TestStatus executeSecondaryBufferTest(Context& context)
 		DE_NULL,													// pNext
 		0u,															// waitSemaphoreCount
 		DE_NULL,													// pWaitSemaphores
-		// TODO: The following field is in api spec 1.0 37bedec32143807010323f126ad685ab5e9d98de
-		// TODO: but not in the header Loader and Tools 69d4893b673bd552e445ba999ad0e73463d35007
-		// DE_NULL,													// pWaitDstStageMask
+		(const VkPipelineStageFlags*)DE_NULL,						// pWaitDstStageMask
 		1u,															// commandBufferCount
 		&primCmdBuf.get(),											// pCommandBuffers
 		0u,															// signalSemaphoreCount
@@ -2747,6 +2665,13 @@ tcu::TestStatus executeSecondaryBufferTwiceTest(Context& context)
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
 		DE_NULL,
 		0,															// flags
+		(const VkCommandBufferInheritanceInfo*)DE_NULL,
+	};
+
+	const VkCommandBufferInheritanceInfo	secCmdBufInheritInfo	=
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
+		DE_NULL,
 		(VkRenderPass)0u,											// renderPass
 		0u,															// subpass
 		(VkFramebuffer)0u,											// framebuffer
@@ -2754,18 +2679,12 @@ tcu::TestStatus executeSecondaryBufferTwiceTest(Context& context)
 		(VkQueryControlFlags)0u,									// queryFlags
 		(VkQueryPipelineStatisticFlags)0u,							// pipelineStatistics
 	};
-
 	const VkCommandBufferBeginInfo			secCmdBufBeginInfo		=
 	{
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
 		DE_NULL,
 		VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT,				// flags
-		(VkRenderPass)0u,											// renderPass
-		0u,															// subpass
-		(VkFramebuffer)0u,											// framebuffer
-		VK_FALSE,													// occlusionQueryEnable
-		(VkQueryControlFlags)0u,									// queryFlags
-		(VkQueryPipelineStatisticFlags)0u,							// pipelineStatistics
+		&secCmdBufInheritInfo,
 	};
 
 	// Fill create info struct for event
@@ -2791,7 +2710,7 @@ tcu::TestStatus executeSecondaryBufferTwiceTest(Context& context)
 			VkPipelineStageFlags stageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
 
 			// wait for event
-			vk.cmdWaitEvents(cmdBuffers[ndx], 1, &eventOne.get(), stageMask, stageMask, 0, DE_NULL);
+			vk.cmdWaitEvents(cmdBuffers[ndx], 1, &eventOne.get(), stageMask, stageMask, 0, DE_NULL, 0u, DE_NULL, 0u, DE_NULL);
 		}
 		// end recording of secondary buffers
 		VK_CHECK(vk.endCommandBuffer(cmdBuffers[ndx]));
@@ -2830,9 +2749,7 @@ tcu::TestStatus executeSecondaryBufferTwiceTest(Context& context)
 		DE_NULL,													// pNext
 		0u,															// waitSemaphoreCount
 		DE_NULL,													// pWaitSemaphores
-		// TODO: The following field is in api spec 1.0 37bedec32143807010323f126ad685ab5e9d98de
-		// TODO: but not in the header Loader and Tools 69d4893b673bd552e445ba999ad0e73463d35007
-		// DE_NULL,													// pWaitDstStageMask
+		(const VkPipelineStageFlags*)DE_NULL,						// pWaitDstStageMask
 		1,															// commandBufferCount
 		&primCmdBufOne.get(),										// pCommandBuffers
 		0u,															// signalSemaphoreCount
@@ -2851,9 +2768,7 @@ tcu::TestStatus executeSecondaryBufferTwiceTest(Context& context)
 		DE_NULL,													// pNext
 		0u,															// waitSemaphoreCount
 		DE_NULL,													// pWaitSemaphores
-		// TODO: The following field is in api spec 1.0 37bedec32143807010323f126ad685ab5e9d98de
-		// TODO: but not in the header Loader and Tools 69d4893b673bd552e445ba999ad0e73463d35007
-		// DE_NULL,													// pWaitDstStageMask
+		(const VkPipelineStageFlags*)DE_NULL,						// pWaitDstStageMask
 		1,															// commandBufferCount
 		&primCmdBufTwo.get(),										// pCommandBuffers
 		0u,															// signalSemaphoreCount
@@ -2981,40 +2896,39 @@ tcu::TestStatus orderBindPipelineTest(Context& context)
 	const Unique<VkPipeline>				pipelineBad				(createComputePipeline(vk, device, (VkPipelineCache)0u, &createInfoBad));
 
 	const VkAccessFlags						inputBit				= (VK_ACCESS_UNIFORM_READ_BIT);
-	const VkBufferMemoryBarrier				bufferBarrierA			=
+	const VkBufferMemoryBarrier				bufferBarriers[]		=
 	{
-		VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
-		DE_NULL,
-		VK_ACCESS_HOST_WRITE_BIT,									// outputMask
-		inputBit,													// inputMask
-		VK_QUEUE_FAMILY_IGNORED,									// srcQueueFamilyIndex
-		VK_QUEUE_FAMILY_IGNORED,									// destQueueFamilyIndex
-		*bufferA,													// buffer
-		(VkDeviceSize)0u,											// offset
-		(VkDeviceSize)bufferSizeA,									// size
-	};
-
-	const VkBufferMemoryBarrier				bufferBarrierB			=
-	{
-		VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
-		DE_NULL,
-		VK_ACCESS_HOST_WRITE_BIT,									// outputMask
-		inputBit,													// inputMask
-		VK_QUEUE_FAMILY_IGNORED,									// srcQueueFamilyIndex
-		VK_QUEUE_FAMILY_IGNORED,									// destQueueFamilyIndex
-		*bufferB,													// buffer
-		(VkDeviceSize)0u,											// offset
-		(VkDeviceSize)bufferSizeB,									// size
+		{
+			VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
+			DE_NULL,
+			VK_ACCESS_HOST_WRITE_BIT,									// outputMask
+			inputBit,													// inputMask
+			VK_QUEUE_FAMILY_IGNORED,									// srcQueueFamilyIndex
+			VK_QUEUE_FAMILY_IGNORED,									// destQueueFamilyIndex
+			*bufferA,													// buffer
+			(VkDeviceSize)0u,											// offset
+			(VkDeviceSize)bufferSizeA,									// size
+		},
+		{
+			VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
+			DE_NULL,
+			VK_ACCESS_HOST_WRITE_BIT,									// outputMask
+			inputBit,													// inputMask
+			VK_QUEUE_FAMILY_IGNORED,									// srcQueueFamilyIndex
+			VK_QUEUE_FAMILY_IGNORED,									// destQueueFamilyIndex
+			*bufferB,													// buffer
+			(VkDeviceSize)0u,											// offset
+			(VkDeviceSize)bufferSizeB,									// size
+		}
 	};
 
 	const deUint32							numSrcBuffers			= 1u;
 
 	const deUint32* const					dynamicOffsets			= (DE_NULL);
 	const deUint32							numDynamicOffsets		= (0);
-	const void* const						preBarriers[]			= { &bufferBarrierA, &bufferBarrierB };
 	const int								numPreBarriers			= numSrcBuffers;
-	const void* const						postBarriers[]			= { result.getResultReadBarrier() };
-	const int								numPostBarriers			= DE_LENGTH_OF_ARRAY(postBarriers);
+	const vk::VkBufferMemoryBarrier* const	postBarriers			= result.getResultReadBarrier();
+	const int								numPostBarriers			= 1;
 	const tcu::Vec4							refQuadrantValue14		= (colorA2);
 	const tcu::Vec4							refQuadrantValue23		= (colorA1);
 	const tcu::Vec4							references[4]			=
@@ -3060,12 +2974,7 @@ tcu::TestStatus orderBindPipelineTest(Context& context)
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,				// sType
 		DE_NULL,													// pNext
 		0u,															// flags
-		DE_NULL,													// renderPass
-		0u,															// subpass
-		DE_NULL,													// framebuffer
-		VK_FALSE,													// occlusionQueryEnable
-		(VkQueryControlFlags)0u,									// queryFlags
-		(VkQueryPipelineStatisticFlags)0u,							// pipelineStatistics
+		(const VkCommandBufferInheritanceInfo*)DE_NULL,
 	};
 
 	const Unique<VkFence>					cmdCompleteFence		(createFence(vk, device, &fenceCreateInfo));
@@ -3078,10 +2987,16 @@ tcu::TestStatus orderBindPipelineTest(Context& context)
 	vk.cmdBindDescriptorSets(*cmd, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0, numDescriptorSets, descriptorSets, numDynamicOffsets, dynamicOffsets);
 
 	if (numPreBarriers)
-		vk.cmdPipelineBarrier(*cmd, 0u, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_FALSE, numPreBarriers, preBarriers);
+		vk.cmdPipelineBarrier(*cmd, 0u, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, (VkDependencyFlags)0,
+							  0, (const VkMemoryBarrier*)DE_NULL,
+							  numPreBarriers, bufferBarriers,
+							  0, (const VkImageMemoryBarrier*)DE_NULL);
 
 	vk.cmdDispatch(*cmd, numWorkGroups.x(), numWorkGroups.y(), numWorkGroups.z());
-	vk.cmdPipelineBarrier(*cmd, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_FALSE, numPostBarriers, postBarriers);
+	vk.cmdPipelineBarrier(*cmd, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, (VkDependencyFlags)0,
+						  0, (const VkMemoryBarrier*)DE_NULL,
+						  numPostBarriers, postBarriers,
+						  0, (const VkImageMemoryBarrier*)DE_NULL);
 	VK_CHECK(vk.endCommandBuffer(*cmd));
 
 	// run
@@ -3092,9 +3007,7 @@ tcu::TestStatus orderBindPipelineTest(Context& context)
 		DE_NULL,													// pNext
 		0u,															// waitSemaphoreCount
 		DE_NULL,													// pWaitSemaphores
-		// TODO: The following field is in api spec 1.0 37bedec32143807010323f126ad685ab5e9d98de
-		// TODO: but not in the header Loader and Tools 69d4893b673bd552e445ba999ad0e73463d35007
-		// DE_NULL,													// pWaitDstStageMask
+		(const VkPipelineStageFlags*)DE_NULL,						// pWaitDstStageMask
 		1,															// commandBufferCount
 		&cmd.get(),													// pCommandBuffers
 		0u,															// signalSemaphoreCount

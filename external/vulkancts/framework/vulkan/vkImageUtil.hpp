@@ -70,6 +70,7 @@ VkSamplerMipmapMode			mapMipmapMode				(tcu::Sampler::FilterMode filterMode);
 VkSamplerAddressMode		mapWrapMode					(tcu::Sampler::WrapMode wrapMode);
 VkCompareOp					mapCompareMode				(tcu::Sampler::CompareMode mode);
 VkFormat					mapTextureFormat			(const tcu::TextureFormat& format);
+VkSamplerCreateInfo			mapSampler					(const tcu::Sampler& sampler, const tcu::TextureFormat& format);
 
 void						imageUtilSelfTest			(void);
 

@@ -253,13 +253,13 @@ void replaceSnormReinterpretValues (const tcu::PixelBufferAccess access)
 	{
 		const tcu::IVec4 color(access.getPixelInt(x, y, z));
 		tcu::IVec4 newColor = color;
-	
+
 		for (int i = 0; i < 4; ++i)
 		{
 			const deInt32 oldColor(color[i]);
 			if (oldColor == -128) newColor[i] = -127;
 		}
-	
+
 		if (newColor != color)
 		access.setPixel(newColor, x, y, z);
 	}
@@ -355,9 +355,7 @@ void commandImageWriteBarrierBetweenShaderInvocations (Context& context, const V
 		VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL,
 		image, fullImageSubresourceRange);
 
-	const void* const barriers[] = { &shaderWriteBarrier };
-
-	vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, DE_FALSE, DE_LENGTH_OF_ARRAY(barriers), barriers);
+	vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &shaderWriteBarrier);
 }
 
 void commandBufferWriteBarrierBeforeHostRead (Context& context, const VkCommandBuffer cmdBuffer, const VkBuffer buffer, const VkDeviceSize bufferSizeBytes)
@@ -368,9 +366,7 @@ void commandBufferWriteBarrierBeforeHostRead (Context& context, const VkCommandB
 		VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT,
 		buffer, 0ull, bufferSizeBytes);
 
-	const void* const barriers[] = { &shaderWriteBarrier };
-
-	vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, DE_FALSE, DE_LENGTH_OF_ARRAY(barriers), barriers);
+	vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &shaderWriteBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
 }
 
 //! Copy all layers of an image to a buffer.
@@ -389,19 +385,15 @@ void commandCopyImageToBuffer (Context&					context,
 		VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
 		image, fullImageSubresourceRange);
 
-	const void* const barriersBeforeCopy[] = { &prepareForTransferBarrier };
-
 	const VkBufferImageCopy copyRegion = makeBufferImageCopy(texture);
 
 	const VkBufferMemoryBarrier copyBarrier = makeBufferMemoryBarrier(
 		VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT,
 		buffer, 0ull, bufferSizeBytes);
 
-	const void* const barriersAfterCopy[] = { &copyBarrier };
-
-	vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, DE_FALSE, DE_LENGTH_OF_ARRAY(barriersBeforeCopy), barriersBeforeCopy);
+	vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &prepareForTransferBarrier);
 	vk.cmdCopyImageToBuffer(cmdBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, buffer, 1u, &copyRegion);
-	vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, DE_FALSE, DE_LENGTH_OF_ARRAY(barriersAfterCopy), barriersAfterCopy);
+	vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &copyBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
 }
 
 //! Minimum chunk size is determined by the offset alignment requirements.
@@ -781,9 +773,7 @@ void ImageStoreTestInstance::commandBeforeCompute (const VkCommandBuffer cmdBuff
 		VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
 		m_constantsBuffer->get(), 0ull, constantsBufferSize);
 
-	const void* const barriersBefore[] = { &writeConstantsBarrier, &setImageLayoutBarrier };
-
-	vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, DE_FALSE, DE_LENGTH_OF_ARRAY(barriersBefore), barriersBefore);
+	vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &writeConstantsBarrier, 1, &setImageLayoutBarrier);
 }
 
 void ImageStoreTestInstance::commandBetweenShaderInvocations (const VkCommandBuffer cmdBuffer)
@@ -1160,24 +1150,24 @@ void ImageLoadStoreTestInstance::commandBeforeCompute (const VkCommandBuffer cmd
 
 	const VkImageSubresourceRange fullImageSubresourceRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, m_texture.numLayers());
 	{
-		const VkImageMemoryBarrier barrierSetSrcImageLayout = makeImageMemoryBarrier(
-			0u, 0u,
-			VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-			m_imageSrc->get(), fullImageSubresourceRange);
-
-		const VkImageMemoryBarrier barrierSetDstImageLayout = makeImageMemoryBarrier(
-			0u, 0u,
-			VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL,
-			m_imageDst->get(), fullImageSubresourceRange);
+		const VkImageMemoryBarrier preCopyImageBarriers[] =
+		{
+			makeImageMemoryBarrier(
+				0u, 0u,
+				VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+				m_imageSrc->get(), fullImageSubresourceRange),
+			makeImageMemoryBarrier(
+				0u, 0u,
+				VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL,
+				m_imageDst->get(), fullImageSubresourceRange)
+		};
 
 		const VkBufferMemoryBarrier barrierFlushHostWriteBeforeCopy = makeBufferMemoryBarrier(
 			VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
 			m_imageBuffer->get(), 0ull, m_imageSizeBytes);
 
-		const void* const barriers[] = { &barrierSetSrcImageLayout, &barrierSetDstImageLayout, &barrierFlushHostWriteBeforeCopy };
-
 		vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_TRANSFER_BIT,
-			DE_FALSE, DE_LENGTH_OF_ARRAY(barriers), barriers);
+			(VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &barrierFlushHostWriteBeforeCopy, DE_LENGTH_OF_ARRAY(preCopyImageBarriers), preCopyImageBarriers);
 	}
 	{
 		const VkImageMemoryBarrier barrierAfterCopy = makeImageMemoryBarrier(
@@ -1185,12 +1175,10 @@ void ImageLoadStoreTestInstance::commandBeforeCompute (const VkCommandBuffer cmd
 			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 			m_imageSrc->get(), fullImageSubresourceRange);
 
-		const void* const barriers[] = { &barrierAfterCopy };
-
 		const VkBufferImageCopy copyRegion = makeBufferImageCopy(m_texture);
 
 		vk.cmdCopyBufferToImage(cmdBuffer, m_imageBuffer->get(), m_imageSrc->get(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1u, &copyRegion);
-		vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, DE_FALSE, DE_LENGTH_OF_ARRAY(barriers), barriers);
+		vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &barrierAfterCopy);
 	}
 }
 

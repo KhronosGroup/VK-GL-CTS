@@ -170,7 +170,7 @@ private:
 	std::vector<deUint32>				m_indices;
 	de::MovePtr<Allocation>				m_indexBufferAlloc;
 
-	const tcu::IVec2					m_renderSize;
+	const tcu::UVec2					m_renderSize;
 
 	const VkFormat						m_colorFormat;
 	VkImageCreateInfo					m_colorImageCreateInfo;
@@ -927,7 +927,7 @@ InputAssemblyInstance::InputAssemblyInstance (Context&							context,
 	, m_indexType				(indexType)
 	, m_vertices				(vertexBufferData)
 	, m_indices					(indexBufferData)
-	, m_renderSize				((primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN) ? tcu::IVec2(32, 32) : tcu::IVec2(64, 16))
+	, m_renderSize				((primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN) ? tcu::UVec2(32, 32) : tcu::UVec2(64, 16))
 	, m_colorFormat				(VK_FORMAT_R8G8B8A8_UNORM)
 {
 	const DeviceInterface&			vk						= context.getDeviceInterface();
@@ -1384,12 +1384,7 @@ InputAssemblyInstance::InputAssemblyInstance (Context&							context,
 			VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType					sType;
 			DE_NULL,										// const void*						pNext;
 			0u,												// VkCommandBufferUsageFlags		flags;
-			DE_NULL,										// VkRenderPass						renderPass;
-			0u,												// deUint32							subpass;
-			DE_NULL,										// VkFramebuffer					framebuffer;
-			false,											// VkBool32							occlusionQueryEnable;
-			0u,												// VkQueryControlFlags				queryFlags;
-			0u												// VkQueryPipelineStatisticFlags	pipelineStatistics;
+			(const VkCommandBufferInheritanceInfo*)DE_NULL,
 		};
 
 		const VkClearValue attachmentClearValue = defaultClearValue(m_colorFormat);
@@ -1449,6 +1444,7 @@ tcu::TestStatus InputAssemblyInstance::iterate (void)
 		DE_NULL,						// const void*				pNext;
 		0u,								// deUint32					waitSemaphoreCount;
 		DE_NULL,						// const VkSemaphore*		pWaitSemaphores;
+		(const VkPipelineStageFlags*)DE_NULL,
 		1u,								// deUint32					commandBufferCount;
 		&m_cmdBuffer.get(),				// const VkCommandBuffer*	pCommandBuffers;
 		0u,								// deUint32					signalSemaphoreCount;

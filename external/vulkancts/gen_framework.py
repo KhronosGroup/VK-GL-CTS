@@ -261,6 +261,9 @@ def parseCompositeTypes (src):
 	types	= []
 
 	for type, structname, contents, typename in matches:
+		if typename[-3:] == "KHR":
+			continue # \todo [2016-01-05 pyry] Figure out how to handle platform-specific types
+
 		types.append(parseCompositeType(typeMap[type], typename, contents))
 
 	return types

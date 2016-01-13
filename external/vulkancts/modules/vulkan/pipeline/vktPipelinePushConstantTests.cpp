@@ -140,7 +140,7 @@ private:
 	tcu::TestStatus				verifyImage							(void);
 
 private:
-	const tcu::IVec2								m_renderSize;
+	const tcu::UVec2								m_renderSize;
 	const VkFormat									m_colorFormat;
 	const deUint32									m_rangeCount;
 	PushConstantData								m_pushConstantRange[MAX_RANGE_COUNT];
@@ -902,7 +902,7 @@ PushConstantGraphicsTestInstance::PushConstantGraphicsTestInstance (Context&				
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO,		// VkStructureType                             sType;
 			DE_NULL,														// const void*                                 pNext;
-			0u,																// VkPipelineTesselationStateCreateFlags       flags;
+			0u,																// VkPipelineTessellationStateCreateFlags      flags;
 			3u,																// uint32_t                                    patchControlPoints;
 		};
 
@@ -986,12 +986,7 @@ PushConstantGraphicsTestInstance::PushConstantGraphicsTestInstance (Context&				
 			VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType					sType;
 			DE_NULL,										// const void*						pNext;
 			0u,												// VkCommandBufferUsageFlags		flags;
-			DE_NULL,										// VkRenderPass						renderPass;
-			0u,												// deUint32							subpass;
-			DE_NULL,										// VkFramebuffer					framebuffer;
-			false,											// VkBool32							occlusionQueryEnable;
-			0u,												// VkQueryControlFlags				queryFlags;
-			0u												// VkQueryPipelineStatisticFlags	pipelineStatistics;
+			(const VkCommandBufferInheritanceInfo*)DE_NULL,
 		};
 
 		const VkClearValue attachmentClearValues[] =
@@ -1084,6 +1079,7 @@ tcu::TestStatus PushConstantGraphicsTestInstance::iterate (void)
 		DE_NULL,						// const void*				pNext;
 		0u,								// deUint32					waitSemaphoreCount;
 		DE_NULL,						// const VkSemaphore*		pWaitSemaphores;
+		(const VkPipelineStageFlags*)DE_NULL,
 		1u,								// deUint32					commandBufferCount;
 		&m_cmdBuffer.get(),				// const VkCommandBuffer*	pCommandBuffers;
 		0u,								// deUint32					signalSemaphoreCount;
@@ -1388,12 +1384,7 @@ PushConstantComputeTestInstance::PushConstantComputeTestInstance (Context&					c
 			VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType					sType;
 			DE_NULL,										// const void*						pNext;
 			0u,												// VkCommandBufferUsageFlags		flags;
-			DE_NULL,										// VkRenderPass						renderPass;
-			0u,												// deUint32							subpass;
-			DE_NULL,										// VkFramebuffer					framebuffer;
-			false,											// VkBool32							occlusionQueryEnable;
-			0u,												// VkQueryControlFlags				queryFlags;
-			0u												// VkQueryPipelineStatisticFlags	pipelineStatistics;
+			(const VkCommandBufferInheritanceInfo*)DE_NULL,
 		};
 
 		VK_CHECK(vk.beginCommandBuffer(*m_cmdBuffer, &cmdBufferBeginInfo));
@@ -1438,6 +1429,7 @@ tcu::TestStatus PushConstantComputeTestInstance::iterate (void)
 		DE_NULL,						// const void*				pNext;
 		0u,								// deUint32					waitSemaphoreCount;
 		DE_NULL,						// const VkSemaphore*		pWaitSemaphores;
+		(const VkPipelineStageFlags*)DE_NULL,
 		1u,								// deUint32					commandBufferCount;
 		&m_cmdBuffer.get(),				// const VkCommandBuffer*	pCommandBuffers;
 		0u,								// deUint32					signalSemaphoreCount;

@@ -314,7 +314,7 @@ public:
 													 const char*           source_name,
 													 const char*           entry_name);
 	void             enableTessellationStage        (deUint32              patchControlPoints);
-	Move<VkPipeline> buildPipeline                  (tcu::IVec2            renderSize,
+	Move<VkPipeline> buildPipeline                  (tcu::UVec2            renderSize,
 													 VkRenderPass          renderPass);
 protected:
 	enum
@@ -376,7 +376,7 @@ void SimpleGraphicsPipelineBuilder::bindShaderStage(VkShaderStageFlagBits stage,
 	m_shaderStageCount++;
 }
 
-Move<VkPipeline> SimpleGraphicsPipelineBuilder::buildPipeline(tcu::IVec2 renderSize, VkRenderPass renderPass)
+Move<VkPipeline> SimpleGraphicsPipelineBuilder::buildPipeline(tcu::UVec2 renderSize, VkRenderPass renderPass)
 {
 	const DeviceInterface&      vk                  = m_context.getDeviceInterface();
 	const VkDevice              vkDevice            = m_context.getDevice();
@@ -573,7 +573,7 @@ Move<VkPipeline> SimpleGraphicsPipelineBuilder::buildPipeline(tcu::IVec2 renderS
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO,  // VkStructureType                          sType;
 			DE_NULL,                                                    // const void*                              pNext;
-			0u,                                                         // VkPipelineTesselationStateCreateFlags    flags;
+			0u,                                                         // VkPipelineTessellationStateCreateFlags   flags;
 			m_patchControlPoints,                                       // deUint32                                 patchControlPoints;
 		};
 
@@ -661,9 +661,9 @@ protected:
 														VkBufferUsageFlags       usage,
 														de::MovePtr<Allocation>* pAlloc);
 	Move<VkImage>           createImage2DAndBindMemory (VkFormat                 format,
-														deInt32                  width,
-														deInt32                  height,
-														VkBufferUsageFlags       usage,
+														deUint32                 width,
+														deUint32                 height,
+														VkImageUsageFlags        usage,
 														VkSampleCountFlagBits    sampleCount,
 														de::MovePtr<Allocation>* pAlloc);
 protected:
@@ -784,12 +784,7 @@ void TimestampTestInstance::configCommandBuffer(void)
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,    // VkStructureType                  sType;
 		DE_NULL,                                        // const void*                      pNext;
 		0u,                                             // VkCommandBufferUsageFlags        flags;
-		DE_NULL,                                        // VkRenderPass                     renderPass;
-		0u,                                             // deUint32                         subpass;
-		DE_NULL,                                        // VkFramebuffer                    framebuffer;
-		VK_FALSE,                                       // VkBool32                         occlusionQueryEnable;
-		0u,                                             // VkQueryControlFlags              queryFlags;
-		0u,                                             // VkQueryPipelineStatisticFlags    pipelineStatistics;
+		(const VkCommandBufferInheritanceInfo*)DE_NULL,
 	};
 
 	VK_CHECK(vk.beginCommandBuffer(*m_cmdBuffer, &cmdBufferBeginInfo));
@@ -821,6 +816,7 @@ tcu::TestStatus TimestampTestInstance::iterate(void)
 		DE_NULL,                                            // const void*             pNext;
 		0u,                                                 // deUint32                waitSemaphoreCount;
 		DE_NULL,                                            // const VkSemaphore*      pWaitSemaphores;
+		(const VkPipelineStageFlags*)DE_NULL,
 		1u,                                                 // deUint32                commandBufferCount;
 		&m_cmdBuffer.get(),                                 // const VkCommandBuffer*  pCommandBuffers;
 		0u,                                                 // deUint32                signalSemaphoreCount;
@@ -905,8 +901,8 @@ Move<VkBuffer> TimestampTestInstance::createBufferAndBindMemory(VkDeviceSize siz
 }
 
 Move<VkImage> TimestampTestInstance::createImage2DAndBindMemory(VkFormat                          format,
-																deInt32                           width,
-																deInt32                           height,
+																deUint32                          width,
+																deUint32                          height,
 																VkImageUsageFlags                 usage,
 																VkSampleCountFlagBits             sampleCount,
 																de::details::MovePtr<Allocation>* pAlloc)
@@ -991,11 +987,11 @@ protected:
 	virtual void buildVertexBuffer          (void);
 	virtual void buildRenderPass            (VkFormat colorFormat,
 											 VkFormat depthFormat);
-	virtual void buildFrameBuffer           (tcu::IVec2 renderSize,
+	virtual void buildFrameBuffer           (tcu::UVec2 renderSize,
 											 VkFormat colorFormat,
 											 VkFormat depthFormat);
 protected:
-	const tcu::IVec2                    m_renderSize;
+	const tcu::UVec2                    m_renderSize;
 	const VkFormat                      m_colorFormat;
 	const VkFormat                      m_depthFormat;
 
@@ -1143,7 +1139,7 @@ void BasicGraphicsTestInstance::buildRenderPass(VkFormat colorFormat, VkFormat d
 
 }
 
-void BasicGraphicsTestInstance::buildFrameBuffer(tcu::IVec2 renderSize, VkFormat colorFormat, VkFormat depthFormat)
+void BasicGraphicsTestInstance::buildFrameBuffer(tcu::UVec2 renderSize, VkFormat colorFormat, VkFormat depthFormat)
 {
 	const DeviceInterface&      vk                   = m_context.getDeviceInterface();
 	const VkDevice              vkDevice             = m_context.getDevice();
@@ -1264,12 +1260,7 @@ void BasicGraphicsTestInstance::configCommandBuffer(void)
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,    // VkStructureType                  sType;
 		DE_NULL,                                        // const void*                      pNext;
 		0u,                                             // VkCommandBufferUsageFlags        flags;
-		DE_NULL,                                        // VkRenderPass                     renderPass;
-		0u,                                             // deUint32                         subpass;
-		DE_NULL,                                        // VkFramebuffer                    framebuffer;
-		VK_FALSE,                                       // VkBool32                         occlusionQueryEnable;
-		0u,                                             // VkQueryControlFlags              queryFlags;
-		0u,                                             // VkQueryPipelineStatisticFlags    pipelineStatistics;
+		(const VkCommandBufferInheritanceInfo*)DE_NULL,
 	};
 
 	const VkClearValue attachmentClearValues[2] =
@@ -1517,12 +1508,7 @@ void AdvGraphicsTestInstance::configCommandBuffer(void)
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,    // VkStructureType              sType;
 		DE_NULL,                                        // const void*                  pNext;
 		0u,                                             // VkCommandBufferUsageFlags    flags;
-		DE_NULL,                                        // VkRenderPass                 renderPass;
-		0u,                                             // deUint32                     subpass;
-		DE_NULL,                                        // VkFramebuffer                framebuffer;
-		VK_FALSE,                                       // VkBool32                     occlusionQueryEnable;
-		0u,                                             // VkQueryControlFlags          queryFlags;
-		0u,                                             // VkQueryPipelineStatisticFlags   pipelineStatistics;
+		(const VkCommandBufferInheritanceInfo*)DE_NULL,
 	};
 
 	const VkClearValue attachmentClearValues[2] =
@@ -1666,10 +1652,10 @@ BasicComputeTestInstance::BasicComputeTestInstance(Context&              context
 		}
 	}
 	flushMappedMemoryRange(vk, vkDevice, bufferAlloc->getMemory(), bufferAlloc->getOffset(), size);
-    
+
 	de::MovePtr<Allocation> dummyAlloc;
 	m_outputBuf = createBufferAndBindMemory(size, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, &dummyAlloc);
-        
+
 	std::vector<VkDescriptorBufferInfo>        descriptorInfos;
 	descriptorInfos.push_back(makeDescriptorBufferInfo(*m_inputBuf, 0u, sizeof(tcu::Vec4) * 128u));
 	descriptorInfos.push_back(makeDescriptorBufferInfo(*m_outputBuf, 0u, sizeof(tcu::Vec4) * 128u));
@@ -1772,12 +1758,7 @@ void BasicComputeTestInstance::configCommandBuffer(void)
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,    // VkStructureType          sType;
 		DE_NULL,                                        // const void*              pNext;
 		0u,                                             // VkCmdBufferOptimizeFlags flags;
-		DE_NULL,                                        // VkRenderPass             renderPass;
-		0u,                                             // deUint32                 subpass;
-		DE_NULL,                                        // VkFramebuffer            framebuffer;
-		VK_FALSE,                                       // VkBool32                         occlusionQueryEnable;
-		0u,                                             // VkQueryControlFlags              queryFlags;
-		0u,                                             // VkQueryPipelineStatisticFlags    pipelineStatistics;
+		(const VkCommandBufferInheritanceInfo*)DE_NULL,
 
 	};
 
@@ -1831,8 +1812,8 @@ protected:
 	Move<VkBuffer>  m_dstBuffer;
 
 	VkFormat        m_imageFormat;
-	deInt32         m_imageWidth;
-	deInt32         m_imageHeight;
+	deUint32        m_imageWidth;
+	deUint32        m_imageHeight;
 	VkDeviceSize    m_imageSize;
 	Move<VkImage>   m_srcImage;
 	Move<VkImage>   m_dstImage;
@@ -1920,12 +1901,7 @@ void TransferTestInstance::configCommandBuffer(void)
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,    // VkStructureType                  sType;
 		DE_NULL,                                        // const void*                      pNext;
 		0u,                                             // VkCmdBufferOptimizeFlags         flags;
-		DE_NULL,                                        // VkRenderPass                     renderPass;
-		0u,                                             // deUint32                         subpass;
-		DE_NULL,                                        // VkFramebuffer                    framebuffer;
-		VK_FALSE,                                       // VkBool32                         occlusionQueryEnable;
-		0u,                                             // VkQueryControlFlags              queryFlags;
-		0u,                                             // VkQueryPipelineStatisticFlags    pipelineStatistics;
+		(const VkCommandBufferInheritanceInfo*)DE_NULL,
 	};
 
 	VK_CHECK(vk.beginCommandBuffer(*m_cmdBuffer, &cmdBufferBeginInfo));
@@ -1967,6 +1943,7 @@ void TransferTestInstance::configCommandBuffer(void)
 
 	const VkOffset3D nullOffset  = {0u, 0u, 0u};
 	const VkExtent3D imageExtent = {m_imageWidth, m_imageHeight, 1u};
+	const VkOffset3D imageOffset = {(int)m_imageWidth, (int)m_imageHeight, 1};
 	switch(m_method)
 	{
 		case TRANSFER_METHOD_COPY_BUFFER:
@@ -2027,11 +2004,15 @@ void TransferTestInstance::configCommandBuffer(void)
 				const VkImageBlit imageBlt =
 				{
 					imgSubResCopy,                          // VkImageSubresourceCopy  srcSubresource;
-					nullOffset,                             // VkOffset3D              srcOffset;
-					imageExtent,                            // VkExtent3D              srcExtent;
+					{
+						nullOffset,
+						imageOffset,
+					},
 					imgSubResCopy,                          // VkImageSubresourceCopy  destSubresource;
-					nullOffset,                             // VkOffset3D              destOffset;
-					imageExtent,                            // VkExtent3D              destExtent;
+					{
+						nullOffset,
+						imageOffset,
+					}
 				};
 				vk.cmdBlitImage(*m_cmdBuffer, *m_srcImage, VK_IMAGE_LAYOUT_GENERAL, *m_dstImage, VK_IMAGE_LAYOUT_GENERAL, 1u, &imageBlt, VK_FILTER_NEAREST);
 				break;

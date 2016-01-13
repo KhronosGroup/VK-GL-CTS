@@ -379,7 +379,7 @@ protected:
 	const std::vector<Vertex4RGBA>				m_vertices;
 	const VkPipelineMultisampleStateCreateInfo	m_multisampleStateParams;
 	const VkPipelineColorBlendAttachmentState	m_colorBlendState;
-	const GeometryType			m_geometryType;
+	const GeometryType							m_geometryType;
 };
 
 
@@ -1307,7 +1307,7 @@ MultisampleRenderer::MultisampleRenderer (Context&										context,
 			0u,																			// VkImageCreateFlags		flags;
 			VK_IMAGE_TYPE_2D,															// VkImageType				imageType;
 			m_colorFormat,																// VkFormat					format;
-			{ m_renderSize.x(), m_renderSize.y(), 1u },									// VkExtent3D				extent;
+			{ (deUint32)m_renderSize.x(), (deUint32)m_renderSize.y(), 1u },				// VkExtent3D				extent;
 			1u,																			// deUint32					mipLevels;
 			1u,																			// deUint32					arrayLayers;
 			m_multisampleStateParams.rasterizationSamples,								// VkSampleCountFlagBits	samples;
@@ -1335,7 +1335,7 @@ MultisampleRenderer::MultisampleRenderer (Context&										context,
 			0u,																				// VkImageCreateFlags		flags;
 			VK_IMAGE_TYPE_2D,																// VkImageType				imageType;
 			m_colorFormat,																	// VkFormat					format;
-			{ m_renderSize.x(), m_renderSize.y(), 1u },										// VkExtent3D				extent;
+			{ (deUint32)m_renderSize.x(), (deUint32)m_renderSize.y(), 1u },					// VkExtent3D				extent;
 			1u,																				// deUint32					mipLevels;
 			1u,																				// deUint32					arrayLayers;
 			VK_SAMPLE_COUNT_1_BIT,															// VkSampleCountFlagBits	samples;
@@ -1581,8 +1581,8 @@ MultisampleRenderer::MultisampleRenderer (Context&										context,
 
 		const VkRect2D scissor =
 		{
-			{ 0, 0 },												// VkOffset2D  offset;
-			{ m_renderSize.x(), m_renderSize.y() }					// VkExtent2D  extent;
+			{ 0, 0 },													// VkOffset2D  offset;
+			{ (deUint32)m_renderSize.x(), (deUint32)m_renderSize.y() }	// VkExtent2D  extent;
 		};
 
 		const VkPipelineViewportStateCreateInfo viewportStateParams =
@@ -1747,12 +1747,7 @@ MultisampleRenderer::MultisampleRenderer (Context&										context,
 			VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType					sType;
 			DE_NULL,										// const void*						pNext;
 			0u,												// VkCommandBufferUsageFlags		flags;
-			DE_NULL,										// VkRenderPass						renderPass;
-			0u,												// deUint32							subpass;
-			DE_NULL,										// VkFramebuffer					framebuffer;
-			false,											// VkBool32							occlusionQueryEnable;
-			0u,												// VkQueryControlFlags				queryFlags;
-			0u												// VkQueryPipelineStatisticFlags	pipelineStatistics;
+			(const VkCommandBufferInheritanceInfo*)DE_NULL,
 		};
 
 		VkClearValue colorClearValue;
@@ -1773,7 +1768,10 @@ MultisampleRenderer::MultisampleRenderer (Context&										context,
 			DE_NULL,												// const void*			pNext;
 			*m_renderPass,											// VkRenderPass			renderPass;
 			*m_framebuffer,											// VkFramebuffer		framebuffer;
-			{ { 0, 0 }, { m_renderSize.x(), m_renderSize.y() } },	// VkRect2D				renderArea;
+			{
+				{ 0, 0 },
+				{ (deUint32)m_renderSize.x(), (deUint32)m_renderSize.y() }
+			},														// VkRect2D				renderArea;
 			2,														// deUint32				clearValueCount;
 			clearValues												// const VkClearValue*	pClearValues;
 		};
@@ -1824,6 +1822,7 @@ de::MovePtr<tcu::TextureLevel> MultisampleRenderer::render (void)
 		DE_NULL,						// const void*				pNext;
 		0u,								// deUint32					waitSemaphoreCount;
 		DE_NULL,						// const VkSemaphore*		pWaitSemaphores;
+		(const VkPipelineStageFlags*)DE_NULL,
 		1u,								// deUint32					commandBufferCount;
 		&m_cmdBuffer.get(),				// const VkCommandBuffer*	pCommandBuffers;
 		0u,								// deUint32					signalSemaphoreCount;
@@ -1834,7 +1833,7 @@ de::MovePtr<tcu::TextureLevel> MultisampleRenderer::render (void)
 	VK_CHECK(vk.queueSubmit(queue, 1, &submitInfo, *m_fence));
 	VK_CHECK(vk.waitForFences(vkDevice, 1, &m_fence.get(), true, ~(0ull) /* infinity*/));
 
-	return readColorAttachment(vk, vkDevice, queue, queueFamilyIndex, allocator, *m_resolveImage, m_colorFormat, m_renderSize);
+	return readColorAttachment(vk, vkDevice, queue, queueFamilyIndex, allocator, *m_resolveImage, m_colorFormat, m_renderSize.cast<deUint32>());
 }
 
 } // anonymous

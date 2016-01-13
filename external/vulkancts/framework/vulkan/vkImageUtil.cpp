@@ -662,7 +662,7 @@ VkFilter mapFilterMode (tcu::Sampler::FilterMode filterMode)
 {
 	DE_STATIC_ASSERT(tcu::Sampler::FILTERMODE_LAST == 6);
 
-	switch(filterMode)
+	switch (filterMode)
 	{
 		case tcu::Sampler::NEAREST:					return VK_FILTER_NEAREST;
 		case tcu::Sampler::LINEAR:					return VK_FILTER_LINEAR;
@@ -681,10 +681,14 @@ VkSamplerMipmapMode mapMipmapMode (tcu::Sampler::FilterMode filterMode)
 {
 	DE_STATIC_ASSERT(tcu::Sampler::FILTERMODE_LAST == 6);
 
-	switch(filterMode)
+	// \note VkSamplerCreateInfo doesn't have a flag for disabling mipmapping. Instead
+	//		 minLod = 0 and maxLod = 0.25 should be used to match OpenGL NEAREST and LINEAR
+	//		 filtering mode behavior.
+
+	switch (filterMode)
 	{
-		case tcu::Sampler::NEAREST:					return VK_SAMPLER_MIPMAP_MODE_BASE;
-		case tcu::Sampler::LINEAR:					return VK_SAMPLER_MIPMAP_MODE_BASE;
+		case tcu::Sampler::NEAREST:					return VK_SAMPLER_MIPMAP_MODE_NEAREST;
+		case tcu::Sampler::LINEAR:					return VK_SAMPLER_MIPMAP_MODE_NEAREST;
 		case tcu::Sampler::NEAREST_MIPMAP_NEAREST:	return VK_SAMPLER_MIPMAP_MODE_NEAREST;
 		case tcu::Sampler::NEAREST_MIPMAP_LINEAR:	return VK_SAMPLER_MIPMAP_MODE_LINEAR;
 		case tcu::Sampler::LINEAR_MIPMAP_NEAREST:	return VK_SAMPLER_MIPMAP_MODE_NEAREST;
@@ -697,7 +701,7 @@ VkSamplerMipmapMode mapMipmapMode (tcu::Sampler::FilterMode filterMode)
 
 VkSamplerAddressMode mapWrapMode (tcu::Sampler::WrapMode wrapMode)
 {
-	switch(wrapMode)
+	switch (wrapMode)
 	{
 		case tcu::Sampler::CLAMP_TO_EDGE:		return VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
 		case tcu::Sampler::CLAMP_TO_BORDER:		return VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
@@ -712,7 +716,7 @@ VkSamplerAddressMode mapWrapMode (tcu::Sampler::WrapMode wrapMode)
 
 vk::VkCompareOp mapCompareMode (tcu::Sampler::CompareMode mode)
 {
-	switch(mode)
+	switch (mode)
 	{
 		case tcu::Sampler::COMPAREMODE_NONE:				return vk::VK_COMPARE_OP_NEVER;
 		case tcu::Sampler::COMPAREMODE_LESS:				return vk::VK_COMPARE_OP_LESS;
@@ -729,8 +733,74 @@ vk::VkCompareOp mapCompareMode (tcu::Sampler::CompareMode mode)
 	}
 }
 
+static VkBorderColor mapBorderColor (tcu::TextureChannelClass channelClass, const rr::GenericVec4& color)
+{
+	if (channelClass == tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER)
+	{
+		const tcu::UVec4	uColor	= color.get<deUint32>();
+
+		if (uColor		== tcu::UVec4(0, 0, 0, 0)) return VK_BORDER_COLOR_INT_TRANSPARENT_BLACK;
+		else if (uColor	== tcu::UVec4(0, 0, 0, 1)) return VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+		else if (uColor == tcu::UVec4(1, 1, 1, 1)) return VK_BORDER_COLOR_INT_OPAQUE_WHITE;
+	}
+	else if (channelClass == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER)
+	{
+		const tcu::IVec4	sColor	= color.get<deInt32>();
+
+		if (sColor		== tcu::IVec4(0, 0, 0, 0)) return VK_BORDER_COLOR_INT_TRANSPARENT_BLACK;
+		else if (sColor	== tcu::IVec4(0, 0, 0, 1)) return VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+		else if (sColor == tcu::IVec4(1, 1, 1, 1)) return VK_BORDER_COLOR_INT_OPAQUE_WHITE;
+	}
+	else
+	{
+		const tcu::Vec4		fColor	= color.get<float>();
+
+		if (fColor		== tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f)) return VK_BORDER_COLOR_INT_TRANSPARENT_BLACK;
+		else if (fColor	== tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f)) return VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+		else if (fColor == tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f)) return VK_BORDER_COLOR_INT_OPAQUE_WHITE;
+	}
+
+	DE_FATAL("Unsupported border color");
+	return VK_BORDER_COLOR_LAST;
+}
+
+VkSamplerCreateInfo mapSampler (const tcu::Sampler& sampler, const tcu::TextureFormat& format)
+{
+	const bool					compareEnabled	= (sampler.compare != tcu::Sampler::COMPAREMODE_NONE);
+	const VkCompareOp			compareOp		= (compareEnabled) ? (mapCompareMode(sampler.compare)) : (VK_COMPARE_OP_ALWAYS);
+	const VkBorderColor			borderColor		= mapBorderColor(getTextureChannelClass(format.type), sampler.borderColor);
+	const bool					isMipmapEnabled	= (sampler.minFilter != tcu::Sampler::NEAREST && sampler.minFilter != tcu::Sampler::LINEAR);
+
+	const VkSamplerCreateInfo	createInfo		=
+	{
+		VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+		DE_NULL,
+		(VkSamplerCreateFlags)0,
+		mapFilterMode(sampler.magFilter),							// magFilter
+		mapFilterMode(sampler.minFilter),							// minFilter
+		mapMipmapMode(sampler.minFilter),							// mipMode
+		mapWrapMode(sampler.wrapS),									// addressU
+		mapWrapMode(sampler.wrapT),									// addressV
+		mapWrapMode(sampler.wrapR),									// addressW
+		0.0f,														// mipLodBias
+		VK_FALSE,													// anisotropyEnable
+		1.0f,														// maxAnisotropy
+		(VkBool32)(compareEnabled ? VK_TRUE : VK_FALSE),			// compareEnable
+		compareOp,													// compareOp
+		0.0f,														// minLod
+		(isMipmapEnabled ? 1000.0f : 0.25f),						// maxLod
+		borderColor,												// borderColor
+		(VkBool32)(sampler.normalizedCoords ? VK_FALSE : VK_TRUE),	// unnormalizedCoords
+	};
+
+	return createInfo;
+}
+
 tcu::Sampler mapVkSampler (const VkSamplerCreateInfo& samplerCreateInfo)
 {
+	// \note minLod & maxLod are not supported by tcu::Sampler. LOD must be clamped
+	//       before passing it to tcu::Texture*::sample*()
+
 	tcu::Sampler sampler(mapVkSamplerAddressMode(samplerCreateInfo.addressModeU),
 						 mapVkSamplerAddressMode(samplerCreateInfo.addressModeV),
 						 mapVkSamplerAddressMode(samplerCreateInfo.addressModeW),
@@ -744,30 +814,33 @@ tcu::Sampler mapVkSampler (const VkSamplerCreateInfo& samplerCreateInfo)
 						 tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f),
 						 true);
 
+	if (samplerCreateInfo.anisotropyEnable)
+		TCU_THROW(InternalError, "Anisotropic filtering is not supported by tcu::Sampler");
+
 	switch (samplerCreateInfo.borderColor)
 	{
-	case VK_BORDER_COLOR_INT_OPAQUE_BLACK:
-		sampler.borderColor = tcu::UVec4(0,0,0,1);
-		break;
-	case VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK:
-		sampler.borderColor = tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f);
-		break;
-	case VK_BORDER_COLOR_INT_OPAQUE_WHITE:
-		sampler.borderColor = tcu::UVec4(1, 1, 1, 1);
-		break;
-	case VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE:
-		sampler.borderColor = tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f);
-		break;
-	case VK_BORDER_COLOR_INT_TRANSPARENT_BLACK:
-		sampler.borderColor = tcu::UVec4(0,0,0,0);
-		break;
-	case VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK:
-		sampler.borderColor = tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f);
-		break;
+		case VK_BORDER_COLOR_INT_OPAQUE_BLACK:
+			sampler.borderColor = tcu::UVec4(0,0,0,1);
+			break;
+		case VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK:
+			sampler.borderColor = tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f);
+			break;
+		case VK_BORDER_COLOR_INT_OPAQUE_WHITE:
+			sampler.borderColor = tcu::UVec4(1, 1, 1, 1);
+			break;
+		case VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE:
+			sampler.borderColor = tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f);
+			break;
+		case VK_BORDER_COLOR_INT_TRANSPARENT_BLACK:
+			sampler.borderColor = tcu::UVec4(0,0,0,0);
+			break;
+		case VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK:
+			sampler.borderColor = tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f);
+			break;
 
-	default:
-		DE_ASSERT(false);
-		break;
+		default:
+			DE_ASSERT(false);
+			break;
 	}
 
 	return sampler;
@@ -817,7 +890,6 @@ tcu::Sampler::FilterMode mapVkMinTexFilter (VkFilter filter, VkSamplerMipmapMode
 		case VK_FILTER_LINEAR:
 			switch (mipMode)
 			{
-				case VK_SAMPLER_MIPMAP_MODE_BASE:		return tcu::Sampler::LINEAR;
 				case VK_SAMPLER_MIPMAP_MODE_LINEAR:		return tcu::Sampler::LINEAR_MIPMAP_LINEAR;
 				case VK_SAMPLER_MIPMAP_MODE_NEAREST:	return tcu::Sampler::LINEAR_MIPMAP_NEAREST;
 				default:
@@ -828,7 +900,6 @@ tcu::Sampler::FilterMode mapVkMinTexFilter (VkFilter filter, VkSamplerMipmapMode
 		case VK_FILTER_NEAREST:
 			switch (mipMode)
 			{
-				case VK_SAMPLER_MIPMAP_MODE_BASE:		return tcu::Sampler::NEAREST;
 				case VK_SAMPLER_MIPMAP_MODE_LINEAR:		return tcu::Sampler::NEAREST_MIPMAP_LINEAR;
 				case VK_SAMPLER_MIPMAP_MODE_NEAREST:	return tcu::Sampler::NEAREST_MIPMAP_NEAREST;
 				default:

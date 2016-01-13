@@ -598,8 +598,7 @@ void MemoryQualifierInstanceImage::commandsBeforeCompute (const VkCommandBuffer 
 								 m_image->get(),
 								 subresourceRange);
 
-	const void* preComputeBarriers[] = { &imageLayoutBarrier };
-	deviceInterface.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, DE_FALSE, DE_LENGTH_OF_ARRAY(preComputeBarriers), preComputeBarriers);
+	deviceInterface.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &imageLayoutBarrier);
 }
 
 void MemoryQualifierInstanceImage::commandsAfterCompute (const VkCommandBuffer cmdBuffer, const VkDeviceSize	bufferSizeInBytes) const
@@ -615,8 +614,7 @@ void MemoryQualifierInstanceImage::commandsAfterCompute (const VkCommandBuffer c
 								 m_image->get(),
 								 subresourceRange);
 
-	const void* preCopyBarriers[] = { &imagePreCopyBarrier };
-	deviceInterface.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, DE_FALSE, DE_LENGTH_OF_ARRAY(preCopyBarriers), preCopyBarriers);
+	deviceInterface.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &imagePreCopyBarrier);
 
 	const VkBufferImageCopy copyParams = makeBufferImageCopy(vk::makeExtent3D(m_imageSize.x(), m_imageSize.y(), m_imageSize.z()), m_imageSize.w());
 	deviceInterface.cmdCopyImageToBuffer(cmdBuffer, m_image->get(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_buffer->get(), 1u, &copyParams);
@@ -628,8 +626,7 @@ void MemoryQualifierInstanceImage::commandsAfterCompute (const VkCommandBuffer c
 								  0ull,
 								  bufferSizeInBytes);
 
-	const void* postCopyBarriers[] = { &bufferPostCopyBarrier };
-	deviceInterface.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, DE_FALSE, DE_LENGTH_OF_ARRAY(postCopyBarriers), postCopyBarriers);
+	deviceInterface.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &bufferPostCopyBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
 }
 
 class MemoryQualifierInstanceBuffer : public MemoryQualifierInstanceBase
@@ -708,8 +705,7 @@ void MemoryQualifierInstanceBuffer::commandsAfterCompute (const VkCommandBuffer 
 								  0ull,
 								  bufferSizeInBytes);
 
-	const void* barriers[] = { &shaderWriteBarrier };
-	deviceInterface.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, DE_FALSE, DE_LENGTH_OF_ARRAY(barriers), barriers);
+	deviceInterface.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &shaderWriteBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
 }
 
 TestInstance* MemoryQualifierTestCase::createInstance (Context& context) const
