@@ -5670,9 +5670,9 @@ tcu::TestCaseGroup* createOpConstantCompositeTests(tcu::TestContext& testCtx)
 
 			"%v                 = OpVariable %fp_stype Function %cval\n"
 			"%vec_ptr           = OpAccessChain %fp_v4f32 %v %c_u32_0\n"
-			"%f32_ptr           = OpAccessChain %fp_v4f32 %v %c_u32_1\n"
+			"%f32_ptr           = OpAccessChain %fp_f32 %v %c_u32_1\n"
 			"%vec_val           = OpLoad %v4f32 %vec_ptr\n"
-			"%f32_val           = OpLoad %v4f32 %f32_ptr\n"
+			"%f32_val           = OpLoad %f32 %f32_ptr\n"
 			"%tmp1              = OpVectorTimesScalar %v4f32 %c_v4f32_1_1_1_1 %f32_val\n" // vec4(-1)
 			"%tmp2              = OpFAdd %v4f32 %tmp1 %param1\n" // param1 + vec4(-1)
 			"%transformed_param = OpFAdd %v4f32 %tmp2 %vec_val\n" // param1 + vec4(-1) + vec4(1.5, 1.5, 1.5, 1.0)
