@@ -400,12 +400,25 @@ void validateAllocationCallbacks (const AllocationCallbackRecorder& recorder, Al
 		{
 			case AllocationCallbackRecord::TYPE_ALLOCATION:
 			{
-				DE_ASSERT(!de::contains(ptrToSlotIndex, record.data.allocation.returnedPtr));
-
 				if (record.data.allocation.returnedPtr)
-				{
-					ptrToSlotIndex[record.data.allocation.returnedPtr] = allocations.size();
-					allocations.push_back(AllocationSlot(record, true));
+				{ 
+					if (!de::contains(ptrToSlotIndex, record.data.allocation.returnedPtr)) {
+						ptrToSlotIndex[record.data.allocation.returnedPtr] = allocations.size();
+						allocations.push_back(AllocationSlot(record, true));
+					} 
+					else 
+					{
+						const size_t		slotNdx		= ptrToSlotIndex[record.data.allocation.returnedPtr];
+						if (!allocations[slotNdx].isLive) {
+							allocations[slotNdx].isLive = true;
+							allocations[slotNdx].record = record;
+						} 
+						else 
+						{
+							// we should not have multiple live allocations with the same pointer
+							DE_ASSERT(false);
+						}
+					}
 				}
 
 				break;
@@ -480,11 +493,8 @@ void validateAllocationCallbacks (const AllocationCallbackRecorder& recorder, Al
 					{
 						const size_t	slotNdx		= ptrToSlotIndex[record.data.free.mem];
 
-						if (allocations[slotNdx].isLive) 
-						{
+						if (allocations[slotNdx].isLive)
 							allocations[slotNdx].isLive = false;
-							ptrToSlotIndex.erase(record.data.free.mem);
-						}
 						else
 							results->violations.push_back(AllocationCallbackViolation(record, AllocationCallbackViolation::REASON_DOUBLE_FREE));
 					}
