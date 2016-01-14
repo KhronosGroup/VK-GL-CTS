@@ -147,7 +147,7 @@ private:
 		if (vk.allocateMemory(vkDevice, &memAlloc, (const VkAllocationCallbacks*)DE_NULL, &memory) != VK_SUCCESS)
 			return tcu::TestStatus::fail("Alloc memory failed! (requested memory size: " + de::toString(size) + ")");
 
-		
+
 		if ((m_testCase.flags & VK_BUFFER_CREATE_SPARSE_BINDING_BIT) ||
 			(m_testCase.flags & VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT) ||
 			(m_testCase.flags & VK_BUFFER_CREATE_SPARSE_ALIASED_BIT))
@@ -164,7 +164,7 @@ private:
 				0,										// VkDeviceSize								memoryOffset;
 				0										// VkSparseMemoryBindFlags					flags;
 			};
-			
+
 			const VkSparseBufferMemoryBindInfo	sparseBufferMemoryBindInfo	=
 			{
 				testBuffer,								// VkBuffer									buffer;
@@ -204,16 +204,16 @@ private:
 tcu::TestStatus BufferTestInstance::iterate (void)
 {
 	const VkPhysicalDeviceFeatures&	physicalDeviceFeatures	= m_context.getDeviceFeatures();
-	
+
 	if ((m_testCase.flags & VK_BUFFER_CREATE_SPARSE_BINDING_BIT ) && !physicalDeviceFeatures.sparseBinding)
-		return tcu::TestStatus::pass("Sparse bindings feature is not enabled");
+		TCU_THROW(NotSupportedError, "Sparse bindings feature is not supported");
 
 	if ((m_testCase.flags & VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT ) && !physicalDeviceFeatures.sparseResidencyBuffer)
-		return tcu::TestStatus::pass("Sparse buffer residency feature is not enabled");
+		TCU_THROW(NotSupportedError, "Sparse buffer residency feature is not supported");
 
 	if ((m_testCase.flags & VK_BUFFER_CREATE_SPARSE_ALIASED_BIT ) && !physicalDeviceFeatures.sparseResidencyAliased)
-		return tcu::TestStatus::pass("Sparse aliased residency feature is not enabled");
-	
+		TCU_THROW(NotSupportedError, "Sparse aliased residency feature is not supported");
+
 	const VkDeviceSize testSizes[] =
 	{
 		1,
