@@ -31,9 +31,14 @@
 #include "gluShaderProgram.hpp"
 #include "glwFunctions.hpp"
 #include "glwEnums.hpp"
+#include "tcuStringTemplate.hpp"
 
 namespace deqp
 {
+
+using std::string;
+using std::map;
+
 namespace gles31
 {
 namespace Functional
@@ -57,6 +62,258 @@ static const char* getVerifierSuffix (QueryType type)
 	}
 }
 
+class GeometryShaderCase : public TestCase
+{
+public:
+						GeometryShaderCase		(Context& context, QueryType verifier, const char* name, const char* desc);
+	IterateResult		iterate					(void);
+
+private:
+	const QueryType		m_verifier;
+};
+
+GeometryShaderCase::GeometryShaderCase (Context& context, QueryType verifier, const char* name, const char* desc)
+	: TestCase		(context, name, desc)
+	, m_verifier	(verifier)
+{
+}
+
+GeometryShaderCase::IterateResult GeometryShaderCase::iterate (void)
+{
+	const bool isES32 = glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+
+	if (!isES32 && !m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader"))
+		TCU_THROW(NotSupportedError, "Geometry shader tests require GL_EXT_geometry_shader extension or an OpenGL ES 3.2 or higher context.");
+
+
+	static const char* const	s_vtxFragTemplate	=	"${GLSL_VERSION_STRING}\n"
+														"void main()\n"
+														"{\n"
+														"}\n";
+
+	static const char* const	s_geometryTemplate1	=	"${GLSL_VERSION_STRING}\n"
+														"${GLSL_EXTENSION_STRING}\n"
+														"layout(triangles) in;"
+														"layout(triangle_strip, max_vertices = 3) out;\n"
+														"void main()\n"
+														"{\n"
+											    		"   EndPrimitive();\n"
+														"}\n";
+
+	static const char* const	s_geometryTemplate2	=	"${GLSL_VERSION_STRING}\n"
+														"${GLSL_EXTENSION_STRING}\n"
+														"layout(points) in;"
+														"layout(line_strip, max_vertices = 5) out;\n"
+														"void main()\n"
+														"{\n"
+											    		"   EndPrimitive();\n"
+														"}\n";
+
+	static const char* const	s_geometryTemplate3	=	"${GLSL_VERSION_STRING}\n"
+														"${GLSL_EXTENSION_STRING}\n"
+														"layout(points) in;"
+														"layout(points, max_vertices = 50) out;\n"
+														"void main()\n"
+														"{\n"
+											    		"   EndPrimitive();\n"
+														"}\n";
+
+	map<string, string> 		args;
+	args["GLSL_VERSION_STRING"] 						= isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
+	args["GLSL_EXTENSION_STRING"] 						= isES32 ? "" : "#extension GL_EXT_geometry_shader : enable";
+
+	glu::CallLogWrapper			gl						(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
+	tcu::ResultCollector		result					(m_testCtx.getLog(), " // ERROR: ");
+
+	gl.enableLogging(true);
+
+	{
+		const tcu::ScopedLogSection	section		(m_testCtx.getLog(), "Layout", "triangles in, triangle strip out, 3 vertices");
+		glu::ShaderProgram			program		(m_context.getRenderContext(), glu::ProgramSources()
+			<< glu::VertexSource(tcu::StringTemplate(s_vtxFragTemplate).specialize(args))
+			<< glu::FragmentSource(tcu::StringTemplate(s_vtxFragTemplate).specialize(args))
+			<< glu::GeometrySource(tcu::StringTemplate(s_geometryTemplate1).specialize(args)));
+
+		TCU_CHECK_MSG(program.isOk(), "Compile failed");
+
+		m_testCtx.getLog() << program;
+
+		verifyStateProgramInteger(result, gl, program.getProgram(), GL_GEOMETRY_VERTICES_OUT, 3, m_verifier);
+		verifyStateProgramInteger(result, gl, program.getProgram(), GL_GEOMETRY_INPUT_TYPE, GL_TRIANGLES, m_verifier);
+		verifyStateProgramInteger(result, gl, program.getProgram(), GL_GEOMETRY_OUTPUT_TYPE, GL_TRIANGLE_STRIP, m_verifier);
+		verifyStateProgramInteger(result, gl, program.getProgram(), GL_GEOMETRY_SHADER_INVOCATIONS, 1, m_verifier);
+	}
+
+	{
+		const tcu::ScopedLogSection	section		(m_testCtx.getLog(), "Layout", "points in, line strip out, 5 vertices");
+		glu::ShaderProgram			program		(m_context.getRenderContext(), glu::ProgramSources()
+			<< glu::VertexSource(tcu::StringTemplate(s_vtxFragTemplate).specialize(args))
+			<< glu::FragmentSource(tcu::StringTemplate(s_vtxFragTemplate).specialize(args))
+			<< glu::GeometrySource(tcu::StringTemplate(s_geometryTemplate2).specialize(args)));
+
+		TCU_CHECK_MSG(program.isOk(), "Compile failed");
+
+		m_testCtx.getLog() << program;
+
+		verifyStateProgramInteger(result, gl, program.getProgram(), GL_GEOMETRY_VERTICES_OUT, 5, m_verifier);
+		verifyStateProgramInteger(result, gl, program.getProgram(), GL_GEOMETRY_INPUT_TYPE, GL_POINTS, m_verifier);
+		verifyStateProgramInteger(result, gl, program.getProgram(), GL_GEOMETRY_OUTPUT_TYPE, GL_LINE_STRIP, m_verifier);
+	}
+
+	{
+		const tcu::ScopedLogSection	section		(m_testCtx.getLog(), "Layout", "points in, points out, 50 vertices");
+		glu::ShaderProgram			program		(m_context.getRenderContext(), glu::ProgramSources()
+			<< glu::VertexSource(tcu::StringTemplate(s_vtxFragTemplate).specialize(args))
+			<< glu::FragmentSource(tcu::StringTemplate(s_vtxFragTemplate).specialize(args))
+			<< glu::GeometrySource(tcu::StringTemplate(s_geometryTemplate3).specialize(args)));
+
+		TCU_CHECK_MSG(program.isOk(), "Compile failed");
+
+		m_testCtx.getLog() << program;
+
+		verifyStateProgramInteger(result, gl, program.getProgram(), GL_GEOMETRY_VERTICES_OUT, 50, m_verifier);
+		verifyStateProgramInteger(result, gl, program.getProgram(), GL_GEOMETRY_INPUT_TYPE, GL_POINTS, m_verifier);
+		verifyStateProgramInteger(result, gl, program.getProgram(), GL_GEOMETRY_OUTPUT_TYPE, GL_POINTS, m_verifier);
+	}
+
+	result.setTestContextResult(m_testCtx);
+	return STOP;
+}
+
+class TessellationShaderCase : public TestCase
+{
+public:
+						TessellationShaderCase		(Context& context, QueryType verifier, const char* name, const char* desc);
+	IterateResult		iterate					(void);
+
+private:
+	const QueryType		m_verifier;
+};
+
+TessellationShaderCase::TessellationShaderCase (Context& context, QueryType verifier, const char* name, const char* desc)
+	: TestCase		(context, name, desc)
+	, m_verifier	(verifier)
+{
+}
+
+TessellationShaderCase::IterateResult TessellationShaderCase::iterate (void)
+{
+	const bool isES32 = glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+
+	if (!isES32 && !m_context.getContextInfo().isExtensionSupported("GL_EXT_tessellation_shader"))
+		TCU_THROW(NotSupportedError, "Tessellation shader tests require GL_EXT_tessellation_shader extension or an OpenGL ES 3.2 or higher context.");
+
+
+	static const char* const	s_vtxFragTemplate 	=	"${GLSL_VERSION_STRING}\n"
+														"void main()\n"
+														"{\n"
+														"}\n";
+
+	static const char* const	s_tessCtrlTemplate1	=	"${GLSL_VERSION_STRING}\n"
+														"${GLSL_EXTENSION_STRING}\n"
+														"layout(vertices = 3) out;\n"
+														"void main()\n"
+														"{\n"
+														"}\n";
+
+	static const char* const	s_tessEvalTemplate1	= 	"${GLSL_VERSION_STRING}\n"
+														"${GLSL_EXTENSION_STRING}\n"
+														"layout(triangles, equal_spacing, cw) in;\n"
+														"void main()\n"
+														"{\n"
+														"}\n";
+
+	static const char* const	s_tessCtrlTemplate2	=	"${GLSL_VERSION_STRING}\n"
+														"${GLSL_EXTENSION_STRING}\n"
+														"layout(vertices = 5) out;\n"
+														"void main()\n"
+														"{\n"
+														"}\n";
+
+	static const char* const	s_tessEvalTemplate2	=	"${GLSL_VERSION_STRING}\n"
+														"${GLSL_EXTENSION_STRING}\n"
+														"layout(quads, fractional_even_spacing, ccw) in;\n"
+														"void main()\n"
+														"{\n"
+														"}\n";
+
+	static const char* const	s_tessEvalTemplate3	=	"${GLSL_VERSION_STRING}\n"
+														"${GLSL_EXTENSION_STRING}\n"
+														"layout(isolines, fractional_odd_spacing, ccw, point_mode) in;\n"
+														"void main()\n"
+														"{\n"
+														"}\n";
+
+	map<string, string> 		args;
+	args["GLSL_VERSION_STRING"] 						= isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
+	args["GLSL_EXTENSION_STRING"] 						= isES32 ? "" : "#extension GL_EXT_tessellation_shader : enable";
+
+	glu::CallLogWrapper			gl						(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
+	tcu::ResultCollector		result					(m_testCtx.getLog(), " // ERROR: ");
+
+	gl.enableLogging(true);
+
+	{
+		const tcu::ScopedLogSection	section		(m_testCtx.getLog(), "Query State", "3 vertices, triangles, equal_spacing, cw");
+		glu::ShaderProgram			program		(m_context.getRenderContext(), glu::ProgramSources()
+			<< glu::VertexSource(tcu::StringTemplate(s_vtxFragTemplate).specialize(args))
+			<< glu::FragmentSource(tcu::StringTemplate(s_vtxFragTemplate).specialize(args))
+			<< glu::TessellationControlSource(tcu::StringTemplate(s_tessCtrlTemplate1).specialize(args))
+			<< glu::TessellationEvaluationSource(tcu::StringTemplate(s_tessEvalTemplate1).specialize(args)));
+
+		TCU_CHECK_MSG(program.isOk(), "Compile failed");
+
+		m_testCtx.getLog() << program;
+
+		verifyStateProgramInteger(result, gl, program.getProgram(), GL_TESS_CONTROL_OUTPUT_VERTICES, 3, m_verifier);
+		verifyStateProgramInteger(result, gl, program.getProgram(), GL_TESS_GEN_MODE, GL_TRIANGLES, m_verifier);
+		verifyStateProgramInteger(result, gl, program.getProgram(), GL_TESS_GEN_SPACING, GL_EQUAL, m_verifier);
+		verifyStateProgramInteger(result, gl, program.getProgram(), GL_TESS_GEN_VERTEX_ORDER, GL_CW, m_verifier);
+		verifyStateProgramInteger(result, gl, program.getProgram(), GL_TESS_GEN_POINT_MODE, GL_FALSE, m_verifier);
+	}
+
+	{
+		const tcu::ScopedLogSection	section		(m_testCtx.getLog(), "Query State", "5 vertices, quads, fractional_even_spacing, ccw");
+		glu::ShaderProgram			program		(m_context.getRenderContext(), glu::ProgramSources()
+			<< glu::VertexSource(tcu::StringTemplate(s_vtxFragTemplate).specialize(args))
+			<< glu::FragmentSource(tcu::StringTemplate(s_vtxFragTemplate).specialize(args))
+			<< glu::TessellationControlSource(tcu::StringTemplate(s_tessCtrlTemplate2).specialize(args))
+			<< glu::TessellationEvaluationSource(tcu::StringTemplate(s_tessEvalTemplate2).specialize(args)));
+
+		TCU_CHECK_MSG(program.isOk(), "Compile failed");
+
+		m_testCtx.getLog() << program;
+
+		verifyStateProgramInteger(result, gl, program.getProgram(), GL_TESS_CONTROL_OUTPUT_VERTICES, 5, m_verifier);
+		verifyStateProgramInteger(result, gl, program.getProgram(), GL_TESS_GEN_MODE, GL_QUADS, m_verifier);
+		verifyStateProgramInteger(result, gl, program.getProgram(), GL_TESS_GEN_SPACING, GL_FRACTIONAL_EVEN, m_verifier);
+		verifyStateProgramInteger(result, gl, program.getProgram(), GL_TESS_GEN_VERTEX_ORDER, GL_CCW, m_verifier);
+		verifyStateProgramInteger(result, gl, program.getProgram(), GL_TESS_GEN_POINT_MODE, GL_FALSE, m_verifier);
+	}
+
+	{
+		const tcu::ScopedLogSection	section		(m_testCtx.getLog(), "Query State", "5 vertices, isolines, fractional_odd_spacing, ccw, point_mode");
+		glu::ShaderProgram			program		(m_context.getRenderContext(), glu::ProgramSources()
+			<< glu::VertexSource(tcu::StringTemplate(s_vtxFragTemplate).specialize(args))
+			<< glu::FragmentSource(tcu::StringTemplate(s_vtxFragTemplate).specialize(args))
+			<< glu::TessellationControlSource(tcu::StringTemplate(s_tessCtrlTemplate2).specialize(args))
+			<< glu::TessellationEvaluationSource(tcu::StringTemplate(s_tessEvalTemplate3).specialize(args)));
+
+		TCU_CHECK_MSG(program.isOk(), "Compile failed");
+
+		m_testCtx.getLog() << program;
+
+		verifyStateProgramInteger(result, gl, program.getProgram(), GL_TESS_CONTROL_OUTPUT_VERTICES, 5, m_verifier);
+		verifyStateProgramInteger(result, gl, program.getProgram(), GL_TESS_GEN_MODE, GL_ISOLINES, m_verifier);
+		verifyStateProgramInteger(result, gl, program.getProgram(), GL_TESS_GEN_SPACING, GL_FRACTIONAL_ODD, m_verifier);
+		verifyStateProgramInteger(result, gl, program.getProgram(), GL_TESS_GEN_VERTEX_ORDER, GL_CCW, m_verifier);
+		verifyStateProgramInteger(result, gl, program.getProgram(), GL_TESS_GEN_POINT_MODE, GL_TRUE, m_verifier);
+	}
+
+	result.setTestContextResult(m_testCtx);
+	return STOP;
+}
+
 class ProgramSeparableCase : public TestCase
 {
 public:
@@ -75,14 +332,16 @@ ProgramSeparableCase::ProgramSeparableCase (Context& context, QueryType verifier
 
 ProgramSeparableCase::IterateResult ProgramSeparableCase::iterate (void)
 {
-	static const char* const s_vertexSource = 	"#version 310 es\n"
+	const bool 					isES32 			= 	glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+
+	const string				vtxTemplate	= 	string(isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES)) + "\n"
 												"out highp vec4 v_color;\n"
 												"void main()\n"
 												"{\n"
 												"	gl_Position = vec4(float(gl_VertexID) * 0.5, float(gl_VertexID+1) * 0.5, 0.0, 1.0);\n"
 												"	v_color = vec4(float(gl_VertexID), 1.0, 0.0, 1.0);\n"
 												"}\n";
-	static const char* const s_fragmentSource = "#version 310 es\n"
+	const string				fragTemplate	=	string(isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES)) + "\n"
 												"in highp vec4 v_color;\n"
 												"layout(location=0) out highp vec4 o_color;\n"
 												"void main()\n"
@@ -90,13 +349,17 @@ ProgramSeparableCase::IterateResult ProgramSeparableCase::iterate (void)
 												"	o_color = v_color;\n"
 												"}\n";
 
-	glu::CallLogWrapper		gl			(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
-	tcu::ResultCollector	result		(m_testCtx.getLog(), " // ERROR: ");
-	glu::Shader				vtxShader	(m_context.getRenderContext(), glu::SHADERTYPE_VERTEX);
-	glu::Shader				frgShader	(m_context.getRenderContext(), glu::SHADERTYPE_FRAGMENT);
+	glu::CallLogWrapper			gl				(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
+	tcu::ResultCollector		result			(m_testCtx.getLog(), " // ERROR: ");
+	glu::Shader					vtxShader		(m_context.getRenderContext(), glu::SHADERTYPE_VERTEX);
+	glu::Shader					frgShader		(m_context.getRenderContext(), glu::SHADERTYPE_FRAGMENT);
 
-	vtxShader.setSources(1, &s_vertexSource, DE_NULL);
-	frgShader.setSources(1, &s_fragmentSource, DE_NULL);
+	static const char* const	s_vtxSource		= vtxTemplate.c_str();
+	static const char* const	s_fragSource	= fragTemplate.c_str();
+
+
+	vtxShader.setSources(1, &s_vtxSource, DE_NULL);
+	frgShader.setSources(1, &s_fragSource, DE_NULL);
 
 	vtxShader.compile();
 	frgShader.compile();
@@ -111,8 +374,7 @@ ProgramSeparableCase::IterateResult ProgramSeparableCase::iterate (void)
 		m_testCtx.getLog() << frgShader;
 	}
 
-	if (!vtxShader.getCompileStatus() || !frgShader.getCompileStatus())
-		throw tcu::TestError("failed to build shaders");
+	TCU_CHECK_MSG(vtxShader.getCompileStatus() && frgShader.getCompileStatus(), "failed to build shaders");
 
 	gl.enableLogging(true);
 
@@ -137,8 +399,7 @@ ProgramSeparableCase::IterateResult ProgramSeparableCase::iterate (void)
 		gl.glGetProgramiv(program.getProgram(), GL_LINK_STATUS, &linkStatus);
 		GLU_EXPECT_NO_ERROR(gl.glGetError(), "query link status");
 
-		if (linkStatus == GL_FALSE)
-			throw tcu::TestError("failed to link program");
+		TCU_CHECK_MSG(linkStatus == GL_TRUE, "failed to link program");
 
 		verifyStateProgramInteger(result, gl, program.getProgram(), GL_PROGRAM_SEPARABLE, 0, m_verifier);
 	}
@@ -157,8 +418,7 @@ ProgramSeparableCase::IterateResult ProgramSeparableCase::iterate (void)
 		gl.glGetProgramiv(program.getProgram(), GL_LINK_STATUS, &linkStatus);
 		GLU_EXPECT_NO_ERROR(gl.glGetError(), "query link status");
 
-		if (linkStatus == GL_FALSE)
-			throw tcu::TestError("failed to link program");
+		TCU_CHECK_MSG(linkStatus == GL_TRUE, "failed to link program");
 
 		verifyStateProgramInteger(result, gl, program.getProgram(), GL_PROGRAM_SEPARABLE, GL_TRUE, m_verifier);
 	}
@@ -185,74 +445,80 @@ ComputeWorkGroupSizeCase::ComputeWorkGroupSizeCase (Context& context, QueryType 
 
 ComputeWorkGroupSizeCase::IterateResult ComputeWorkGroupSizeCase::iterate (void)
 {
-	static const char* const s_computeSource1D =	"#version 310 es\n"
-													"layout (local_size_x = 3) in;\n"
-													"layout(binding = 0) buffer Output\n"
-													"{\n"
-													"	highp float val;\n"
-													"} sb_out;\n"
-													"\n"
-													"void main (void)\n"
-													"{\n"
-													"	sb_out.val = 1.0;\n"
-													"}\n";
-	static const char* const s_computeSource2D =	"#version 310 es\n"
-													"layout (local_size_x = 3, local_size_y = 2) in;\n"
-													"layout(binding = 0) buffer Output\n"
-													"{\n"
-													"	highp float val;\n"
-													"} sb_out;\n"
-													"\n"
-													"void main (void)\n"
-													"{\n"
-													"	sb_out.val = 1.0;\n"
-													"}\n";
-	static const char* const s_computeSource3D =	"#version 310 es\n"
-													"layout (local_size_x = 3, local_size_y = 2, local_size_z = 4) in;\n"
-													"layout(binding = 0) buffer Output\n"
-													"{\n"
-													"	highp float val;\n"
-													"} sb_out;\n"
-													"\n"
-													"void main (void)\n"
-													"{\n"
-													"	sb_out.val = 1.0;\n"
-													"}\n";
+	const bool 					isES32				=	glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
 
-	glu::CallLogWrapper		gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
-	tcu::ResultCollector	result	(m_testCtx.getLog(), " // ERROR: ");
+
+	static const char* const	s_computeTemplate1D =	"${GLSL_VERSION_STRING}\n"
+														"layout (local_size_x = 3) in;\n"
+														"layout(binding = 0) buffer Output\n"
+														"{\n"
+														"	highp float val;\n"
+														"} sb_out;\n"
+														"\n"
+														"void main (void)\n"
+														"{\n"
+														"	sb_out.val = 1.0;\n"
+														"}\n";
+	static const char* const	s_computeTemplate2D =	"${GLSL_VERSION_STRING}\n"
+														"layout (local_size_x = 3, local_size_y = 2) in;\n"
+														"layout(binding = 0) buffer Output\n"
+														"{\n"
+														"	highp float val;\n"
+														"} sb_out;\n"
+														"\n"
+														"void main (void)\n"
+														"{\n"
+														"	sb_out.val = 1.0;\n"
+														"}\n";
+	static const char* const	s_computeTemplate3D =	"${GLSL_VERSION_STRING}\n"
+														"layout (local_size_x = 3, local_size_y = 2, local_size_z = 4) in;\n"
+														"layout(binding = 0) buffer Output\n"
+														"{\n"
+														"	highp float val;\n"
+														"} sb_out;\n"
+														"\n"
+														"void main (void)\n"
+														"{\n"
+														"	sb_out.val = 1.0;\n"
+														"}\n";
+
+	glu::CallLogWrapper			gl						(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
+	tcu::ResultCollector		result					(m_testCtx.getLog(), " // ERROR: ");
+
+	map<string, string> 		args;
+	args["GLSL_VERSION_STRING"] 						= isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
 
 	gl.enableLogging(true);
 
 	{
 		const tcu::ScopedLogSection section		(m_testCtx.getLog(), "OneDimensional", "1D");
-		glu::ShaderProgram			program		(m_context.getRenderContext(), glu::ProgramSources() << glu::ComputeSource(s_computeSource1D));
+		glu::ShaderProgram			program		(m_context.getRenderContext(), glu::ProgramSources() << glu::ComputeSource(tcu::StringTemplate(s_computeTemplate1D).specialize(args)));
 
 		m_testCtx.getLog() << program;
-		if (!program.isOk())
-			throw tcu::TestError("failed to build program");
+
+		TCU_CHECK_MSG(program.isOk(), "failed to build program");
 
 		verifyStateProgramIntegerVec3(result, gl, program.getProgram(), GL_COMPUTE_WORK_GROUP_SIZE, tcu::IVec3(3, 1, 1), m_verifier);
 	}
 
 	{
 		const tcu::ScopedLogSection section		(m_testCtx.getLog(), "TwoDimensional", "2D");
-		glu::ShaderProgram			program		(m_context.getRenderContext(), glu::ProgramSources() << glu::ComputeSource(s_computeSource2D));
+		glu::ShaderProgram			program		(m_context.getRenderContext(), glu::ProgramSources() << glu::ComputeSource(tcu::StringTemplate(s_computeTemplate2D).specialize(args)));
 
 		m_testCtx.getLog() << program;
-		if (!program.isOk())
-			throw tcu::TestError("failed to build program");
+
+		TCU_CHECK_MSG(program.isOk(), "failed to build program");
 
 		verifyStateProgramIntegerVec3(result, gl, program.getProgram(), GL_COMPUTE_WORK_GROUP_SIZE, tcu::IVec3(3, 2, 1), m_verifier);
 	}
 
 	{
 		const tcu::ScopedLogSection section		(m_testCtx.getLog(), "TreeDimensional", "3D");
-		glu::ShaderProgram			program		(m_context.getRenderContext(), glu::ProgramSources() << glu::ComputeSource(s_computeSource3D));
+		glu::ShaderProgram			program		(m_context.getRenderContext(), glu::ProgramSources() << glu::ComputeSource(tcu::StringTemplate(s_computeTemplate3D).specialize(args)));
 
 		m_testCtx.getLog() << program;
-		if (!program.isOk())
-			throw tcu::TestError("failed to build program");
+
+		TCU_CHECK_MSG(program.isOk(), "failed to build program");
 
 		verifyStateProgramIntegerVec3(result, gl, program.getProgram(), GL_COMPUTE_WORK_GROUP_SIZE, tcu::IVec3(3, 2, 4), m_verifier);
 	}
@@ -279,32 +545,37 @@ ActiveAtomicCounterBuffersCase::ActiveAtomicCounterBuffersCase (Context& context
 
 ActiveAtomicCounterBuffersCase::IterateResult ActiveAtomicCounterBuffersCase::iterate (void)
 {
-	static const char* const s_computeSource0 =	"#version 310 es\n"
-												"layout (local_size_x = 3) in;\n"
-												"layout(binding = 0) buffer Output\n"
-												"{\n"
-												"	highp float val;\n"
-												"} sb_out;\n"
-												"\n"
-												"void main (void)\n"
-												"{\n"
-												"	sb_out.val = 1.0;\n"
-												"}\n";
-	static const char* const s_computeSource1 =	"#version 310 es\n"
-												"layout (local_size_x = 3) in;\n"
-												"layout(binding = 0) uniform highp atomic_uint u_counters[2];\n"
-												"layout(binding = 0) buffer Output\n"
-												"{\n"
-												"	highp float val;\n"
-												"} sb_out;\n"
-												"\n"
-												"void main (void)\n"
-												"{\n"
-												"	sb_out.val = float(atomicCounterIncrement(u_counters[0])) + float(atomicCounterIncrement(u_counters[1]));\n"
-												"}\n";
+	const bool 					isES32				=	glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
 
-	glu::CallLogWrapper		gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
-	tcu::ResultCollector	result	(m_testCtx.getLog(), " // ERROR: ");
+	static const char* const	s_computeTemplate0	=	"${GLSL_VERSION_STRING}\n"
+														"layout (local_size_x = 3) in;\n"
+														"layout(binding = 0) buffer Output\n"
+														"{\n"
+														"	highp float val;\n"
+														"} sb_out;\n"
+														"\n"
+														"void main (void)\n"
+														"{\n"
+														"	sb_out.val = 1.0;\n"
+														"}\n";
+	static const char* const	s_computeTemplate1	=	"${GLSL_VERSION_STRING}\n"
+														"layout (local_size_x = 3) in;\n"
+														"layout(binding = 0) uniform highp atomic_uint u_counters[2];\n"
+														"layout(binding = 0) buffer Output\n"
+														"{\n"
+														"	highp float val;\n"
+														"} sb_out;\n"
+														"\n"
+														"void main (void)\n"
+														"{\n"
+														"	sb_out.val = float(atomicCounterIncrement(u_counters[0])) + float(atomicCounterIncrement(u_counters[1]));\n"
+														"}\n";
+
+	map<string, string> 		args;
+	args["GLSL_VERSION_STRING"] 						= isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
+
+	glu::CallLogWrapper			gl						(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
+	tcu::ResultCollector		result					(m_testCtx.getLog(), " // ERROR: ");
 
 	gl.enableLogging(true);
 
@@ -317,22 +588,22 @@ ActiveAtomicCounterBuffersCase::IterateResult ActiveAtomicCounterBuffersCase::it
 
 	{
 		const tcu::ScopedLogSection	section		(m_testCtx.getLog(), "NoBuffers", "No buffers");
-		glu::ShaderProgram			program		(m_context.getRenderContext(), glu::ProgramSources() << glu::ComputeSource(s_computeSource0));
+		glu::ShaderProgram			program		(m_context.getRenderContext(), glu::ProgramSources() << glu::ComputeSource(tcu::StringTemplate(s_computeTemplate0).specialize(args)));
 
 		m_testCtx.getLog() << program;
-		if (!program.isOk())
-			throw tcu::TestError("failed to build program");
+
+		TCU_CHECK_MSG(program.isOk(), "failed to build program");
 
 		verifyStateProgramInteger(result, gl, program.getProgram(), GL_ACTIVE_ATOMIC_COUNTER_BUFFERS, 0, m_verifier);
 	}
 
 	{
 		const tcu::ScopedLogSection	section		(m_testCtx.getLog(), "OneBuffer", "One buffer");
-		glu::ShaderProgram			program		(m_context.getRenderContext(), glu::ProgramSources() << glu::ComputeSource(s_computeSource1));
+		glu::ShaderProgram			program		(m_context.getRenderContext(), glu::ProgramSources() << glu::ComputeSource(tcu::StringTemplate(s_computeTemplate1).specialize(args)));
 
 		m_testCtx.getLog() << program;
-		if (!program.isOk())
-			throw tcu::TestError("failed to build program");
+
+		TCU_CHECK_MSG(program.isOk(), "failed to build program");
 
 		verifyStateProgramInteger(result, gl, program.getProgram(), GL_ACTIVE_ATOMIC_COUNTER_BUFFERS, 1, m_verifier);
 	}
@@ -377,13 +648,13 @@ void ProgramLogCase::init (void)
 			break;
 
 		case BUILDERROR_GEOMETRY:
-			if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader"))
-				throw tcu::NotSupportedError("Test requires GL_EXT_geometry_shader extension");
+			if (!contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)) && !m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader"))
+				TCU_THROW(NotSupportedError, "Test requires GL_EXT_geometry_shader extension");
 			break;
 
 		case BUILDERROR_TESSELLATION:
-			if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_tessellation_shader"))
-				throw tcu::NotSupportedError("Test requires GL_EXT_tessellation_shader extension");
+			if (!contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)) && !m_context.getContextInfo().isExtensionSupported("GL_EXT_tessellation_shader"))
+				TCU_THROW(NotSupportedError, "Test requires GL_EXT_tessellation_shader extension");
 			break;
 
 		default:
@@ -417,97 +688,102 @@ ProgramLogCase::IterateResult ProgramLogCase::iterate (void)
 
 glu::ProgramSources ProgramLogCase::getProgramSources (void) const
 {
+	const char* const	vertexTemplate1 = 	"${GLSL_VERSION_STRING}\n"
+						 					"in highp vec4 a_pos;\n"
+						 					"uniform highp vec4 u_uniform;\n"
+						 					"void main()\n"
+						 					"{\n"
+						 					"	gl_Position = a_pos + u_uniform;\n"
+						 					"}\n";
+	const char* const	vertexTemplate2 =	"${GLSL_VERSION_STRING}\n"
+	 										"in highp vec4 a_pos;\n"
+	 										"void main()\n"
+	 										"{\n"
+	 										"	gl_Position = a_pos;\n"
+	 										"}\n";
+	const char* const	fragmentTemplate1 =	"${GLSL_VERSION_STRING}\n"
+											"in highp vec4 v_missingVar;\n"
+											"uniform highp int u_uniform;\n"
+											"layout(location = 0) out mediump vec4 fragColor;\n"
+											"void main()\n"
+											"{\n"
+											"	fragColor = v_missingVar + vec4(float(u_uniform));\n"
+											"}\n";
+
+	const char* const	fragmentTemplate2 =	"${GLSL_VERSION_STRING}\n"
+						   					"layout(location = 0) out mediump vec4 fragColor;\n"
+						   					"void main()\n"
+						   					"{\n"
+						   					"	fragColor = vec4(1.0);\n"
+						   					"}\n";
+	const char* const	computeTemplate1 =	"${GLSL_VERSION_STRING}\n"
+											"layout (binding = 0) buffer IOBuffer { highp float buf_var; };\n"
+											"uniform highp vec4 u_uniform;\n"
+											"void main()\n"
+											"{\n"
+											"	buf_var = u_uniform.x;\n"
+											"}\n";
+	const char* const	geometryTemplate1 =	"${GLSL_VERSION_STRING}\n"
+											"${GLSL_GEOMETRY_EXT_STRING}\n"
+											"layout(triangles) in;\n"
+											"layout(max_vertices=1, points) out;\n"
+											"in highp vec4 v_missingVar[];\n"
+											"uniform highp int u_uniform;\n"
+											"void main()\n"
+											"{\n"
+											"	gl_Position = gl_in[0].gl_Position + v_missingVar[2] + vec4(float(u_uniform));\n"
+											"	EmitVertex();\n"
+											"}\n";
+	const char* const	tessCtrlTemplate1 =	"${GLSL_VERSION_STRING}\n"
+					   						"${GLSL_TESSELLATION_EXT_STRING}\n"
+					   						"layout(vertices=2) out;"
+					   						"patch out highp vec2 vp_var;\n"
+					   						"void main()\n"
+					   						"{\n"
+					   						"	gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position\n"
+					   						"	gl_TessLevelOuter[0] = 0.8;\n"
+					   						"	gl_TessLevelOuter[1] = 0.8;\n"
+					   						"	if (gl_InvocationID == 0)\n"
+					   						"		vp_var = gl_in[gl_InvocationID].gl_Position.xy;\n"
+					   						"}\n";
+	const char* const	tessEvalTemplate1 =	"${GLSL_VERSION_STRING}\n"
+											"${GLSL_TESSELLATION_EXT_STRING}\n"
+											"layout(isolines) in;"
+											"in highp float vp_var[];\n"
+											"void main()\n"
+											"{\n"
+											"	gl_Position = gl_in[gl_InvocationID].gl_Position + vec4(vp_var[1]);\n"
+											"}\n";
+
+	const bool 			isES32				=	glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	map<string, string>	args;
+	args["GLSL_VERSION_STRING"] 			= isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
+	args["GLSL_GEOMETRY_EXT_STRING"] 		= isES32 ? "" : "#extension GL_EXT_geometry_shader : require";
+	args["GLSL_TESSELLATION_EXT_STRING"] 	= isES32 ? "" : "#extension GL_EXT_tessellation_shader : require";
+
 	switch (m_buildErrorType)
 	{
 		case BUILDERROR_VERTEX_FRAGMENT:
 			return glu::ProgramSources()
-					<< glu::VertexSource("#version 310 es\n"
-										 "in highp vec4 a_pos;\n"
-										 "uniform highp vec4 u_uniform;\n"
-										 "void main()\n"
-										 "{\n"
-										 "	gl_Position = a_pos + u_uniform;\n"
-										 "}\n")
-					<< glu::FragmentSource("#version 310 es\n"
-										   "in highp vec4 v_missingVar;\n"
-										   "uniform highp int u_uniform;\n"
-										   "layout(location = 0) out mediump vec4 fragColor;\n"
-										   "void main()\n"
-										   "{\n"
-										   "	fragColor = v_missingVar + vec4(float(u_uniform));\n"
-										   "}\n");
+					<< glu::VertexSource(tcu::StringTemplate(vertexTemplate1).specialize(args))
+					<< glu::FragmentSource(tcu::StringTemplate(fragmentTemplate1).specialize(args));
 
 		case BUILDERROR_COMPUTE:
 			return glu::ProgramSources()
-					<< glu::ComputeSource("#version 310 es\n"
-										 "layout (binding = 0) buffer IOBuffer { highp float buf_var; };\n"
-										 "uniform highp vec4 u_uniform;\n"
-										 "void main()\n"
-										 "{\n"
-										 "	buf_var = u_uniform.x;\n"
-										 "}\n");
+					<< glu::ComputeSource(tcu::StringTemplate(computeTemplate1).specialize(args));
 
 		case BUILDERROR_GEOMETRY:
 			return glu::ProgramSources()
-					<< glu::VertexSource("#version 310 es\n"
-										 "in highp vec4 a_pos;\n"
-										 "uniform highp vec4 u_uniform;\n"
-										 "void main()\n"
-										 "{\n"
-										 "	gl_Position = a_pos + u_uniform;\n"
-										 "}\n")
-					<< glu::GeometrySource("#version 310 es\n"
-										   "#extension GL_EXT_geometry_shader : require\n"
-										   "layout(triangles) in;\n"
-										   "layout(max_vertices=1, points) out;\n"
-										   "in highp vec4 v_missingVar[];\n"
-										   "uniform highp int u_uniform;\n"
-										   "void main()\n"
-										   "{\n"
-										   "	gl_Position = gl_in[0].gl_Position + v_missingVar[2] + vec4(float(u_uniform));\n"
-										   "	EmitVertex();\n"
-										   "}\n")
-					<< glu::FragmentSource("#version 310 es\n"
-										   "layout(location = 0) out mediump vec4 fragColor;\n"
-										   "void main()\n"
-										   "{\n"
-										   "	fragColor = vec4(1.0);\n"
-										   "}\n");
+					<< glu::VertexSource(tcu::StringTemplate(vertexTemplate1).specialize(args))
+					<< glu::GeometrySource(tcu::StringTemplate(geometryTemplate1).specialize(args))
+					<< glu::FragmentSource(tcu::StringTemplate(fragmentTemplate2).specialize(args));
 
 		case BUILDERROR_TESSELLATION:
 			return glu::ProgramSources()
-					<< glu::VertexSource("#version 310 es\n"
-										 "in highp vec4 a_pos;\n"
-										 "void main()\n"
-										 "{\n"
-										 "	gl_Position = a_pos;\n"
-										 "}\n")
-					<< glu::TessellationControlSource("#version 310 es\n"
-													  "#extension GL_EXT_tessellation_shader : require\n"
-													  "layout(vertices=2) out;"
-													  "patch out highp vec2 vp_var;\n"
-													  "void main()\n"
-													  "{\n"
-													  "	gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position\n"
-													  "	gl_TessLevelOuter[0] = 0.8;\n"
-													  "	gl_TessLevelOuter[1] = 0.8;\n"
-													  "	if (gl_InvocationID == 0)\n"
-													  "		vp_var = gl_in[gl_InvocationID].gl_Position.xy;\n"
-													  "}\n")
-					<< glu::TessellationEvaluationSource("#version 310 es\n"
-														 "#extension GL_EXT_tessellation_shader : require\n"
-														 "layout(isolines) in;"
-														 "in highp float vp_var[];\n"
-														 "void main()\n"
-														 "{\n"
-														 "	gl_Position = gl_in[gl_InvocationID].gl_Position + vec4(vp_var[1]);\n"
-														 "}\n")
-					<< glu::FragmentSource("#version 310 es\n"
-										   "layout(location = 0) out mediump vec4 fragColor;\n"
-										   "void main()\n"
-										   "{\n"
-										   "	fragColor = vec4(1.0);\n"
-										   "}\n");
+					<< glu::VertexSource(tcu::StringTemplate(vertexTemplate2).specialize(args))
+					<< glu::TessellationControlSource(tcu::StringTemplate(tessCtrlTemplate1).specialize(args))
+					<< glu::TessellationEvaluationSource(tcu::StringTemplate(tessEvalTemplate1).specialize(args))
+					<< glu::FragmentSource(tcu::StringTemplate(fragmentTemplate2).specialize(args));
 
 		default:
 			DE_ASSERT(false);
@@ -556,6 +832,8 @@ void ProgramStateQueryTests::init (void)
 	FOR_EACH_INT_VERIFIER(new ProgramSeparableCase				(m_context, verifier, (std::string("program_separable_") + verifierSuffix).c_str(),				"Test PROGRAM_SEPARABLE"));
 	FOR_EACH_VEC_VERIFIER(new ComputeWorkGroupSizeCase			(m_context, verifier, (std::string("compute_work_group_size_") + verifierSuffix).c_str(),		"Test COMPUTE_WORK_GROUP_SIZE"));
 	FOR_EACH_INT_VERIFIER(new ActiveAtomicCounterBuffersCase	(m_context, verifier, (std::string("active_atomic_counter_buffers_") + verifierSuffix).c_str(),	"Test ACTIVE_ATOMIC_COUNTER_BUFFERS"));
+	FOR_EACH_INT_VERIFIER(new GeometryShaderCase				(m_context, verifier, (std::string("geometry_shader_state_") + verifierSuffix).c_str(),			"Test Geometry Shader State"));
+	FOR_EACH_INT_VERIFIER(new TessellationShaderCase			(m_context, verifier, (std::string("tesselation_shader_state_") + verifierSuffix).c_str(),		"Test Tesselation Shader State"));
 
 #undef FOR_EACH_INT_VERIFIER
 #undef FOR_EACH_VEC_VERIFIER
