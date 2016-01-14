@@ -1268,9 +1268,7 @@ void BasicGraphicsTestInstance::configCommandBuffer(void)
 
 	VK_CHECK(vk.beginCommandBuffer(*m_cmdBuffer, &cmdBufferBeginInfo));
 
-	deUint32 stage_count = (deUint32)m_stages.size();
-
-	vk.cmdResetQueryPool(*m_cmdBuffer, *m_queryPool, 0u, stage_count);
+	vk.cmdResetQueryPool(*m_cmdBuffer, *m_queryPool, 0u, TimestampTest::ENTRY_COUNT);
 
 	vk.cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
@@ -1516,9 +1514,7 @@ void AdvGraphicsTestInstance::configCommandBuffer(void)
 
 	VK_CHECK(vk.beginCommandBuffer(*m_cmdBuffer, &cmdBufferBeginInfo));
 
-	deUint32 stage_count = (deUint32)m_stages.size();
-
-	vk.cmdResetQueryPool(*m_cmdBuffer, *m_queryPool, 0u, stage_count);
+	vk.cmdResetQueryPool(*m_cmdBuffer, *m_queryPool, 0u, TimestampTest::ENTRY_COUNT);
 
 	vk.cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
@@ -1750,7 +1746,7 @@ void BasicComputeTestInstance::configCommandBuffer(void)
 
 	VK_CHECK(vk.beginCommandBuffer(*m_cmdBuffer, &cmdBufferBeginInfo));
 
-	vk.cmdResetQueryPool(*m_cmdBuffer, *m_queryPool, 0u, 1u);
+	vk.cmdResetQueryPool(*m_cmdBuffer, *m_queryPool, 0u, TimestampTest::ENTRY_COUNT);
 
 	vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *m_computePipelines);
 	vk.cmdBindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *m_pipelineLayout, 0u, 1u, &m_descriptorSet.get(), 0u, DE_NULL);
@@ -1916,7 +1912,7 @@ void TransferTestInstance::configCommandBuffer(void)
 	vk.cmdClearColorImage(*m_cmdBuffer, *m_dstImage, VK_IMAGE_LAYOUT_GENERAL, &dstClearValue, 1u, &subRange);
 
 
-	vk.cmdResetQueryPool(*m_cmdBuffer, *m_queryPool, 0u, 1u);
+	vk.cmdResetQueryPool(*m_cmdBuffer, *m_queryPool, 0u, TimestampTest::ENTRY_COUNT);
 
 	// Copy Operations
 	const VkImageSubresourceLayers imgSubResCopy =
@@ -2036,6 +2032,7 @@ void TransferTestInstance::configCommandBuffer(void)
 			{
 				vk.cmdWriteTimestamp(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, *m_queryPool, 0u);
 				vk.cmdCopyQueryPoolResults(*m_cmdBuffer, *m_queryPool, 0u, 1u, *m_dstBuffer, 0u, 8u, VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
+				vk.cmdResetQueryPool(*m_cmdBuffer, *m_queryPool, 0u, 1u);
 				break;
 			}
 		case TRANSFER_METHOD_RESOLVE_IMAGE:

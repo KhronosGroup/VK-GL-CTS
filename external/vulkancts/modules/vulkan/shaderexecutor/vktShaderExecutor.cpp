@@ -2175,7 +2175,7 @@ static std::string generateVertexShaderForTess (void)
 	std::ostringstream	src;
 	src <<  "#version 310 es\n"
 		<< "void main (void)\n{\n"
-		<< "	gl_Position = vec4(gl_VertexID/2, gl_VertexID%2, 0.0, 1.0);\n"
+		<< "	gl_Position = vec4(gl_VertexIndex/2, gl_VertexIndex%2, 0.0, 1.0);\n"
 		<< "}\n";
 
 	return src.str();
@@ -3046,6 +3046,22 @@ void ShaderExecutor::setupSamplerData (const VkDevice&				vkDevice,
 	m_descriptorPoolBuilder.addType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, numSamplers);
 
 	m_uniformInfos.push_back(UniformInfoSp(new de::UniquePtr<UniformInfo>(samplers)));
+}
+
+const void*	ShaderExecutor::getBufferPtr (const deUint32 bindingLocation) const
+{
+	std::vector<UniformInfoSp>::const_iterator it = m_uniformInfos.begin();
+	for (; it != m_uniformInfos.end(); it++)
+	{
+		const UniformInfo* uniformInfo = it->get()->get();
+		if (uniformInfo->isBufferUniform() && uniformInfo->location == bindingLocation)
+		{
+			const BufferUniform* bufferUniform = static_cast<const BufferUniform*>(uniformInfo);
+			return bufferUniform->alloc->getHostPtr();
+		}
+	}
+
+	return DE_NULL;
 }
 
 void ShaderExecutor::addUniforms (const VkDevice& vkDevice, const DeviceInterface& vk, const deUint32 queueFamilyIndex, Allocator& memAlloc)

@@ -145,6 +145,7 @@ static const char* const s_CommonTypes =
 	"%i32       = OpTypeInt 32 1\n"
 	"%f32       = OpTypeFloat 32\n"
 	"%uvec3     = OpTypeVector %u32 3\n"
+	"%fvec3     = OpTypeVector %f32 3\n"
 	"%uvec3ptr  = OpTypePointer Input %uvec3\n"
 	"%f32ptr    = OpTypePointer Uniform %f32\n"
 	"%f32arr    = OpTypeRuntimeArray %f32\n";
@@ -557,6 +558,7 @@ tcu::TestCaseGroup* createOpCopyMemoryGroup (tcu::TestContext& testCtx)
 		"OpName %id             \"gl_GlobalInvocationID\"\n"
 
 		"OpDecorate %id BuiltIn GlobalInvocationId\n"
+		"OpDecorate %vec4arr ArrayStride 16\n"
 
 		+ string(s_InputOutputBufferTraits) + string(s_CommonTypes) +
 
@@ -616,6 +618,7 @@ tcu::TestCaseGroup* createOpCopyMemoryGroup (tcu::TestContext& testCtx)
 		"OpName %id             \"gl_GlobalInvocationID\"\n"
 
 		"OpDecorate %id BuiltIn GlobalInvocationId\n"
+		"OpDecorate %f32arr100 ArrayStride 4\n"
 
 		+ string(s_InputOutputBufferTraits) + string(s_CommonTypes) +
 
@@ -657,7 +660,7 @@ tcu::TestCaseGroup* createOpCopyMemoryGroup (tcu::TestContext& testCtx)
 	fillRandomScalars(rnd, -200.f, 200.f, &inputFloats3[0], 16);
 
 	for (size_t ndx = 0; ndx < 16; ++ndx)
-		outputFloats3[ndx] = -inputFloats3[ndx];
+		outputFloats3[ndx] = inputFloats3[ndx];
 
 	spec3.assembly =
 		string(s_ShaderPreamble) +
@@ -666,6 +669,14 @@ tcu::TestCaseGroup* createOpCopyMemoryGroup (tcu::TestContext& testCtx)
 		"OpName %id             \"gl_GlobalInvocationID\"\n"
 
 		"OpDecorate %id BuiltIn GlobalInvocationId\n"
+		"OpMemberDecorate %inbuf 0 Offset 0\n"
+		"OpMemberDecorate %inbuf 1 Offset 16\n"
+		"OpMemberDecorate %inbuf 2 Offset 32\n"
+		"OpMemberDecorate %inbuf 3 Offset 48\n"
+		"OpMemberDecorate %outbuf 0 Offset 0\n"
+		"OpMemberDecorate %outbuf 1 Offset 16\n"
+		"OpMemberDecorate %outbuf 2 Offset 32\n"
+		"OpMemberDecorate %outbuf 3 Offset 48\n"
 
 		+ string(s_InputOutputBufferTraits) + string(s_CommonTypes) +
 
@@ -909,7 +920,8 @@ tcu::TestCaseGroup* createOpUnreachableGroup (tcu::TestContext& testCtx)
 		"%inval       = OpLoad %f32 %inloc\n"
 		"%outloc      = OpAccessChain %f32ptr %outdata %zero %x\n"
 		"%ret_const5  = OpFunctionCall %u32 %func_const5\n"
-		"%ret_modulo4 = OpFunctionCall %u32 %func_modulo4 %thousand\n"
+		"%v_thousand  = OpVariable %u32ptr Function %thousand\n"
+		"%ret_modulo4 = OpFunctionCall %u32 %func_modulo4 %v_thousand\n"
 		"%cmp_gt      = OpUGreaterThan %bool %ret_const5 %ret_modulo4\n"
 		"               OpSelectionMerge %if_end None\n"
 		"               OpBranchConditional %cmp_gt %if_true %if_false\n"
@@ -1180,6 +1192,7 @@ tcu::TestCaseGroup* createSpecConstantGroup (tcu::TestContext& testCtx)
 		"OpDecorate %id BuiltIn GlobalInvocationId\n"
 		"OpDecorate %sc_0  SpecId 0\n"
 		"OpDecorate %sc_1  SpecId 1\n"
+		"OpDecorate %i32arr ArrayStride 4\n"
 
 		+ string(s_InputOutputBufferTraits) + string(s_CommonTypes) +
 
@@ -1293,6 +1306,7 @@ tcu::TestCaseGroup* createSpecConstantGroup (tcu::TestContext& testCtx)
 		"OpDecorate %sc_0  SpecId 0\n"
 		"OpDecorate %sc_1  SpecId 1\n"
 		"OpDecorate %sc_2  SpecId 2\n"
+		"OpDecorate %i32arr ArrayStride 4\n"
 
 		+ string(s_InputOutputBufferTraits) + string(s_CommonTypes) +
 
@@ -1712,29 +1726,34 @@ tcu::TestCaseGroup* createMultipleShaderGroup (tcu::TestContext& testCtx)
 		"OpEntryPoint GLCompute %comp_main1 \"entrypoint1\" %id\n"
 		"OpEntryPoint GLCompute %comp_main2 \"entrypoint2\" %id\n"
 		// A module cannot have two OpEntryPoint instructions with the same Execution Model and the same Name string.
-		"OpEntryPoint Vertex    %vert_main  \"entrypoint2\" %vert_builtins %vertexID %instanceID\n"
-		"OpExecutionMode %vert_main LocalSize 1 1 1\n"
+		"OpEntryPoint Vertex    %vert_main  \"entrypoint2\" %vert_builtins %vertexIndex %instanceIndex\n"
+		"OpExecutionMode %comp_main1 LocalSize 1 1 1\n"
+		"OpExecutionMode %comp_main2 LocalSize 1 1 1\n"
 
 		"OpName %comp_main1              \"entrypoint1\"\n"
 		"OpName %comp_main2              \"entrypoint2\"\n"
 		"OpName %vert_main               \"entrypoint2\"\n"
 		"OpName %id                      \"gl_GlobalInvocationID\"\n"
 		"OpName %vert_builtin_st         \"gl_PerVertex\"\n"
-		"OpName %vertexID                \"gl_VertexID\"\n"
-		"OpName %instanceID              \"gl_InstanceID\"\n"
+		"OpName %vertexIndex             \"gl_VertexIndex\"\n"
+		"OpName %instanceIndex           \"gl_InstanceIndex\"\n"
 		"OpMemberName %vert_builtin_st 0 \"gl_Position\"\n"
 		"OpMemberName %vert_builtin_st 1 \"gl_PointSize\"\n"
 		"OpMemberName %vert_builtin_st 2 \"gl_ClipDistance\"\n"
 
 		"OpDecorate %id                      BuiltIn GlobalInvocationId\n"
-		"OpDecorate %vertexID                BuiltIn VertexId\n"
-		"OpDecorate %instanceID              BuiltIn InstanceId\n"
+		"OpDecorate %vertexIndex             BuiltIn VertexIndex\n"
+		"OpDecorate %instanceIndex           BuiltIn InstanceIndex\n"
 		"OpDecorate %vert_builtin_st         Block\n"
 		"OpMemberDecorate %vert_builtin_st 0 BuiltIn Position\n"
 		"OpMemberDecorate %vert_builtin_st 1 BuiltIn PointSize\n"
 		"OpMemberDecorate %vert_builtin_st 2 BuiltIn ClipDistance\n"
 
 		+ string(s_InputOutputBufferTraits) + string(s_CommonTypes) + string(s_InputOutputBuffer) +
+
+		"%zero       = OpConstant %i32 0\n"
+		"%one        = OpConstant %u32 1\n"
+		"%c_f32_1    = OpConstant %f32 1\n"
 
 		"%i32ptr              = OpTypePointer Input %i32\n"
 		"%vec4                = OpTypeVector %f32 4\n"
@@ -1745,11 +1764,8 @@ tcu::TestCaseGroup* createMultipleShaderGroup (tcu::TestContext& testCtx)
 		"%vert_builtins       = OpVariable %vert_builtin_st_ptr Output\n"
 
 		"%id         = OpVariable %uvec3ptr Input\n"
-		"%vertexID   = OpVariable %i32ptr Input\n"
-		"%instanceID = OpVariable %i32ptr Input\n"
-		"%zero       = OpConstant %i32 0\n"
-		"%one        = OpConstant %u32 1\n"
-		"%c_f32_1    = OpConstant %f32 1\n"
+		"%vertexIndex = OpVariable %i32ptr Input\n"
+		"%instanceIndex = OpVariable %i32ptr Input\n"
 		"%c_vec4_1   = OpConstantComposite %vec4 %c_f32_1 %c_f32_1 %c_f32_1 %c_f32_1\n"
 
 		// gl_Position = vec4(1.);
@@ -2025,10 +2041,9 @@ tcu::TestCaseGroup* createOpConstantNullGroup (tcu::TestContext& testCtx)
 	cases.push_back(CaseParameter("vec4float32",	"%type = OpTypeVector %f32 4"));
 	cases.push_back(CaseParameter("vec3bool",		"%type = OpTypeVector %bool 3"));
 	cases.push_back(CaseParameter("vec2uint32",		"%type = OpTypeVector %u32 2"));
-	cases.push_back(CaseParameter("matrix",			"%type = OpTypeMatrix %uvec3 3"));
+	cases.push_back(CaseParameter("matrix",			"%type = OpTypeMatrix %fvec3 3"));
 	cases.push_back(CaseParameter("array",			"%100 = OpConstant %u32 100\n"
 													"%type = OpTypeArray %i32 %100"));
-	cases.push_back(CaseParameter("runtimearray",	"%type = OpTypeRuntimeArray %f32"));
 	cases.push_back(CaseParameter("struct",			"%type = OpTypeStruct %f32 %i32 %u32"));
 	cases.push_back(CaseParameter("pointer",		"%type = OpTypePointer Function %i32"));
 
@@ -2093,11 +2108,11 @@ tcu::TestCaseGroup* createOpConstantCompositeGroup (tcu::TestContext& testCtx)
 
 	cases.push_back(CaseParameter("vector",			"%five = OpConstant %u32 5\n"
 													"%const = OpConstantComposite %uvec3 %five %zero %five"));
-	cases.push_back(CaseParameter("matrix",			"%m3uvec3 = OpTypeMatrix %uvec3 3\n"
+	cases.push_back(CaseParameter("matrix",			"%m3uvec3 = OpTypeMatrix %fvec3 3\n"
 													"%ten = OpConstant %u32 10\n"
 													"%vec = OpConstantComposite %uvec3 %ten %zero %ten\n"
 													"%mat = OpConstantComposite %m3uvec3 %vec %vec %vec"));
-	cases.push_back(CaseParameter("struct",			"%m2vec3 = OpTypeMatrix %uvec3 2\n"
+	cases.push_back(CaseParameter("struct",			"%m2vec3 = OpTypeMatrix %fvec3 2\n"
 													"%struct = OpTypeStruct %u32 %f32 %uvec3 %m2vec3\n"
 													"%one = OpConstant %u32 1\n"
 													"%point5 = OpConstant %f32 0.5\n"
@@ -2149,7 +2164,7 @@ float constructNormalizedFloat (deInt32 exponent, deUint32 significand)
 
 	for (deInt32 idx = 0; idx < 23; ++idx)
 	{
-		f += ((significand & 0x800000) == 0) ? 0.f : std::ldexp(1.0f, -idx);
+		f += ((significand & 0x800000) == 0) ? 0.f : std::ldexp(1.0f, -(idx + 1));
 		significand <<= 1;
 	}
 
@@ -2278,6 +2293,7 @@ tcu::TestCaseGroup* createOpQuantizeToF16Group (tcu::TestContext& testCtx)
 			}
 		}
 
+		spec.assembly = shader;
 		spec.inputs.push_back(BufferSp(new Float32Buffer(infinities)));
 		spec.outputs.push_back(BufferSp(new Float32Buffer(results)));
 		spec.numWorkGroups = IVec3(numElements, 1, 1);
@@ -2305,6 +2321,7 @@ tcu::TestCaseGroup* createOpQuantizeToF16Group (tcu::TestContext& testCtx)
 			}
 		}
 
+		spec.assembly = shader;
 		spec.inputs.push_back(BufferSp(new Float32Buffer(nans)));
 		spec.outputs.push_back(BufferSp(new Float32Buffer(nans)));
 		spec.numWorkGroups = IVec3(numElements, 1, 1);
@@ -2354,6 +2371,7 @@ tcu::TestCaseGroup* createOpQuantizeToF16Group (tcu::TestContext& testCtx)
 			}
 		}
 
+		spec.assembly = shader;
 		spec.inputs.push_back(BufferSp(new Float32Buffer(small)));
 		spec.outputs.push_back(BufferSp(new Float32Buffer(zeros)));
 		spec.numWorkGroups = IVec3(numElements, 1, 1);
@@ -2372,6 +2390,7 @@ tcu::TestCaseGroup* createOpQuantizeToF16Group (tcu::TestContext& testCtx)
 		for (size_t idx = 0; idx < numElements; ++idx)
 			exact.push_back(static_cast<float>(idx - 100));
 
+		spec.assembly = shader;
 		spec.inputs.push_back(BufferSp(new Float32Buffer(exact)));
 		spec.outputs.push_back(BufferSp(new Float32Buffer(exact)));
 		spec.numWorkGroups = IVec3(numElements, 1, 1);
@@ -2390,6 +2409,7 @@ tcu::TestCaseGroup* createOpQuantizeToF16Group (tcu::TestContext& testCtx)
 		inputs.push_back(constructNormalizedFloat(2,	0x01E000));
 		inputs.push_back(constructNormalizedFloat(1,	0xFFE000));
 
+		spec.assembly = shader;
 		spec.verifyIO = &compareOpQuantizeF16ComputeExactCase;
 		spec.inputs.push_back(BufferSp(new Float32Buffer(inputs)));
 		spec.outputs.push_back(BufferSp(new Float32Buffer(inputs)));
@@ -3106,7 +3126,7 @@ tcu::TestCaseGroup* createOpUndefGroup (tcu::TestContext& testCtx)
 	cases.push_back(CaseParameter("float32",		"%type = OpTypeFloat 32"));
 	cases.push_back(CaseParameter("vec4float32",	"%type = OpTypeVector %f32 4"));
 	cases.push_back(CaseParameter("vec2uint32",		"%type = OpTypeVector %u32 2"));
-	cases.push_back(CaseParameter("matrix",			"%type = OpTypeMatrix %uvec3 3"));
+	cases.push_back(CaseParameter("matrix",			"%type = OpTypeMatrix %fvec3 3"));
 	cases.push_back(CaseParameter("image",			"%type = OpTypeImage %f32 2D 0 0 0 0 Unknown"));
 	cases.push_back(CaseParameter("sampler",		"%type = OpTypeSampler"));
 	cases.push_back(CaseParameter("sampledimage",	"%img = OpTypeImage %f32 2D 0 0 0 0 Unknown\n"
@@ -3370,7 +3390,7 @@ string makeVertexShaderAssembly(const map<string, string>& fragments)
 	static const char vertexShaderBoilerplate[] =
 		"OpCapability Shader\n"
 		"OpMemoryModel Logical GLSL450\n"
-		"OpEntryPoint Vertex %main \"main\" %BP_stream %BP_position %BP_vtx_color %BP_color %BP_gl_VertexID %BP_gl_InstanceID\n"
+		"OpEntryPoint Vertex %main \"main\" %BP_stream %BP_position %BP_vtx_color %BP_color %BP_gl_VertexIndex %BP_gl_InstanceIndex\n"
 		"${debug:opt}\n"
 		"OpName %main \"main\"\n"
 		"OpName %BP_gl_PerVertex \"gl_PerVertex\"\n"
@@ -3383,8 +3403,8 @@ string makeVertexShaderAssembly(const map<string, string>& fragments)
 		"OpName %BP_position \"position\"\n"
 		"OpName %BP_vtx_color \"vtxColor\"\n"
 		"OpName %BP_color \"color\"\n"
-		"OpName %BP_gl_VertexID \"gl_VertexID\"\n"
-		"OpName %BP_gl_InstanceID \"gl_InstanceID\"\n"
+		"OpName %BP_gl_VertexIndex \"gl_VertexIndex\"\n"
+		"OpName %BP_gl_InstanceIndex \"gl_InstanceIndex\"\n"
 		"OpMemberDecorate %BP_gl_PerVertex 0 BuiltIn Position\n"
 		"OpMemberDecorate %BP_gl_PerVertex 1 BuiltIn PointSize\n"
 		"OpMemberDecorate %BP_gl_PerVertex 2 BuiltIn ClipDistance\n"
@@ -3393,8 +3413,8 @@ string makeVertexShaderAssembly(const map<string, string>& fragments)
 		"OpDecorate %BP_position Location 0\n"
 		"OpDecorate %BP_vtx_color Location 1\n"
 		"OpDecorate %BP_color Location 1\n"
-		"OpDecorate %BP_gl_VertexID BuiltIn VertexId\n"
-		"OpDecorate %BP_gl_InstanceID BuiltIn InstanceId\n"
+		"OpDecorate %BP_gl_VertexIndex BuiltIn VertexIndex\n"
+		"OpDecorate %BP_gl_InstanceIndex BuiltIn InstanceIndex\n"
 		"${decoration:opt}\n"
 		SPIRV_ASSEMBLY_TYPES
 		SPIRV_ASSEMBLY_CONSTANTS
@@ -3405,8 +3425,8 @@ string makeVertexShaderAssembly(const map<string, string>& fragments)
 		"%BP_position = OpVariable %ip_v4f32 Input\n"
 		"%BP_vtx_color = OpVariable %op_v4f32 Output\n"
 		"%BP_color = OpVariable %ip_v4f32 Input\n"
-		"%BP_gl_VertexID = OpVariable %ip_i32 Input\n"
-		"%BP_gl_InstanceID = OpVariable %ip_i32 Input\n"
+		"%BP_gl_VertexIndex = OpVariable %ip_i32 Input\n"
+		"%BP_gl_InstanceIndex = OpVariable %ip_i32 Input\n"
 		"${pre_main:opt}\n"
 		"%main = OpFunction %void None %fun\n"
 		"%BP_label = OpLabel\n"
@@ -3932,14 +3952,14 @@ void createCombinedModule(vk::SourceCollections& dst, InstanceContext)
 		"OpName %vert_Position \"position\"\n"
 		"OpName %vert_vtxColor \"vtxColor\"\n"
 		"OpName %vert_color \"color\"\n"
-		"OpName %vert_vertex_id \"gl_VertexID\"\n"
-		"OpName %vert_instance_id \"gl_InstanceID\"\n"
+		"OpName %vert_vertex_id \"gl_VertexIndex\"\n"
+		"OpName %vert_instance_id \"gl_InstanceIndex\"\n"
 		"OpDecorate %vert_vtxPosition Location 2\n"
 		"OpDecorate %vert_Position Location 0\n"
 		"OpDecorate %vert_vtxColor Location 1\n"
 		"OpDecorate %vert_color Location 1\n"
-		"OpDecorate %vert_vertex_id BuiltIn VertexId\n"
-		"OpDecorate %vert_instance_id BuiltIn InstanceId\n"
+		"OpDecorate %vert_vertex_id BuiltIn VertexIndex\n"
+		"OpDecorate %vert_instance_id BuiltIn InstanceIndex\n"
 
 		"; Geometry decorations\n"
 		"OpName %geom_main \"main\"\n"
@@ -4183,15 +4203,15 @@ void createMultipleEntries(vk::SourceCollections& dst, InstanceContext)
 		"OpName %Position \"position\"\n"
 		"OpName %vtxColor \"vtxColor\"\n"
 		"OpName %color \"color\"\n"
-		"OpName %vertex_id \"gl_VertexID\"\n"
-		"OpName %instance_id \"gl_InstanceID\"\n"
+		"OpName %vertex_id \"gl_VertexIndex\"\n"
+		"OpName %instance_id \"gl_InstanceIndex\"\n"
 
 		"OpDecorate %vtxPosition Location 2\n"
 		"OpDecorate %Position Location 0\n"
 		"OpDecorate %vtxColor Location 1\n"
 		"OpDecorate %color Location 1\n"
-		"OpDecorate %vertex_id BuiltIn VertexId\n"
-		"OpDecorate %instance_id BuiltIn InstanceId\n"
+		"OpDecorate %vertex_id BuiltIn VertexIndex\n"
+		"OpDecorate %instance_id BuiltIn InstanceIndex\n"
 		SPIRV_ASSEMBLY_TYPES
 		SPIRV_ASSEMBLY_CONSTANTS
 		SPIRV_ASSEMBLY_ARRAYS
@@ -5651,9 +5671,9 @@ tcu::TestCaseGroup* createOpConstantCompositeTests(tcu::TestContext& testCtx)
 
 			"%v                 = OpVariable %fp_stype Function %cval\n"
 			"%vec_ptr           = OpAccessChain %fp_v4f32 %v %c_u32_0\n"
-			"%f32_ptr           = OpAccessChain %fp_v4f32 %v %c_u32_1\n"
+			"%f32_ptr           = OpAccessChain %fp_f32 %v %c_u32_1\n"
 			"%vec_val           = OpLoad %v4f32 %vec_ptr\n"
-			"%f32_val           = OpLoad %v4f32 %f32_ptr\n"
+			"%f32_val           = OpLoad %f32 %f32_ptr\n"
 			"%tmp1              = OpVectorTimesScalar %v4f32 %c_v4f32_1_1_1_1 %f32_val\n" // vec4(-1)
 			"%tmp2              = OpFAdd %v4f32 %tmp1 %param1\n" // param1 + vec4(-1)
 			"%transformed_param = OpFAdd %v4f32 %tmp2 %vec_val\n" // param1 + vec4(-1) + vec4(1.5, 1.5, 1.5, 1.0)
@@ -6940,21 +6960,21 @@ void createOpQuantizeTwoPossibilityTests(tcu::TestCaseGroup* testCtx)
 		{
 			"negative_round_up_or_round_down",
 			"-0x1.6008p-7",
-			-constructNormalizedFloat(8, 0x600800),
+			-constructNormalizedFloat(-7, 0x600800),
 			"-0x1.6p-7",
 			"-0x1.604p-7"
 		},
 		{
 			"carry_bit",
 			"0x1.01ep2",
-			constructNormalizedFloat(8, 0x01e000),
+			constructNormalizedFloat(2, 0x01e000),
 			"0x1.01cp2",
 			"0x1.02p2"
 		},
 		{
 			"carry_to_exponent",
-			"0x1.feep1",
-			constructNormalizedFloat(8, 0xfee000),
+			"0x1.ffep1",
+			constructNormalizedFloat(1, 0xffe000),
 			"0x1.ffcp1",
 			"0x1.0p2"
 		},

@@ -466,7 +466,7 @@ tcu::CompressedTexFormat mapVkCompressedFormat (VkFormat format)
 		case VK_FORMAT_ASTC_4x4_UNORM_BLOCK:		return tcu::COMPRESSEDTEXFORMAT_ASTC_4x4_RGBA;
 		case VK_FORMAT_ASTC_4x4_SRGB_BLOCK:			return tcu::COMPRESSEDTEXFORMAT_ASTC_4x4_SRGB8_ALPHA8;
 		case VK_FORMAT_ASTC_5x4_UNORM_BLOCK:		return tcu::COMPRESSEDTEXFORMAT_ASTC_5x4_RGBA;
-		case VK_FORMAT_ASTC_5x4_SRGB_BLOCK:			return tcu::COMPRESSEDTEXFORMAT_ASTC_5x5_SRGB8_ALPHA8;
+		case VK_FORMAT_ASTC_5x4_SRGB_BLOCK:			return tcu::COMPRESSEDTEXFORMAT_ASTC_5x4_SRGB8_ALPHA8;
 		case VK_FORMAT_ASTC_5x5_UNORM_BLOCK:		return tcu::COMPRESSEDTEXFORMAT_ASTC_5x5_RGBA;
 		case VK_FORMAT_ASTC_5x5_SRGB_BLOCK:			return tcu::COMPRESSEDTEXFORMAT_ASTC_5x5_SRGB8_ALPHA8;
 		case VK_FORMAT_ASTC_6x5_UNORM_BLOCK:		return tcu::COMPRESSEDTEXFORMAT_ASTC_6x5_RGBA;
@@ -474,7 +474,7 @@ tcu::CompressedTexFormat mapVkCompressedFormat (VkFormat format)
 		case VK_FORMAT_ASTC_6x6_UNORM_BLOCK:		return tcu::COMPRESSEDTEXFORMAT_ASTC_6x6_RGBA;
 		case VK_FORMAT_ASTC_6x6_SRGB_BLOCK:			return tcu::COMPRESSEDTEXFORMAT_ASTC_6x6_SRGB8_ALPHA8;
 		case VK_FORMAT_ASTC_8x5_UNORM_BLOCK:		return tcu::COMPRESSEDTEXFORMAT_ASTC_8x5_RGBA;
-		case VK_FORMAT_ASTC_8x5_SRGB_BLOCK:			return tcu::COMPRESSEDTEXFORMAT_ASTC_8x6_SRGB8_ALPHA8;
+		case VK_FORMAT_ASTC_8x5_SRGB_BLOCK:			return tcu::COMPRESSEDTEXFORMAT_ASTC_8x5_SRGB8_ALPHA8;
 		case VK_FORMAT_ASTC_8x6_UNORM_BLOCK:		return tcu::COMPRESSEDTEXFORMAT_ASTC_8x6_RGBA;
 		case VK_FORMAT_ASTC_8x6_SRGB_BLOCK:			return tcu::COMPRESSEDTEXFORMAT_ASTC_8x6_SRGB8_ALPHA8;
 		case VK_FORMAT_ASTC_8x8_UNORM_BLOCK:		return tcu::COMPRESSEDTEXFORMAT_ASTC_8x8_RGBA;
@@ -755,9 +755,9 @@ static VkBorderColor mapBorderColor (tcu::TextureChannelClass channelClass, cons
 	{
 		const tcu::Vec4		fColor	= color.get<float>();
 
-		if (fColor		== tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f)) return VK_BORDER_COLOR_INT_TRANSPARENT_BLACK;
-		else if (fColor	== tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f)) return VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-		else if (fColor == tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f)) return VK_BORDER_COLOR_INT_OPAQUE_WHITE;
+		if (fColor		== tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f)) return VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK;
+		else if (fColor == tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f)) return VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK;
+		else if (fColor == tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f)) return VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
 	}
 
 	DE_FATAL("Unsupported border color");

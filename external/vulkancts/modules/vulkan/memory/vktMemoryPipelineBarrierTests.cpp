@@ -2761,7 +2761,7 @@ void BufferCopyFromImage::prepare (PrepareContext& context)
 	m_memory = bindImageMemory(vki, vkd, physicalDevice, device, *m_srcImage, 0);
 
 	{
-		const vk::Unique<vk::VkBuffer>			srcBuffer		(createBuffer(vkd, device, 4 * m_imageWidth * m_imageHeight, vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT, vk::VK_SHARING_MODE_EXCLUSIVE, queueFamilies));
+		const vk::Unique<vk::VkBuffer>			srcBuffer		(createBuffer(vkd, device, 4 * m_imageWidth * m_imageHeight, vk::VK_BUFFER_USAGE_TRANSFER_SRC_BIT, vk::VK_SHARING_MODE_EXCLUSIVE, queueFamilies));
 		const vk::Unique<vk::VkDeviceMemory>	memory			(bindBufferMemory(vki, vkd, physicalDevice, device, *srcBuffer, vk::VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT));
 		const vk::Unique<vk::VkCommandBuffer>	commandBuffer	(createBeginCommandBuffer(vkd, device, commandPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 		const vk::VkImageMemoryBarrier			preImageBarrier	=
@@ -3193,7 +3193,7 @@ void ImageCopyFromImage::prepare (PrepareContext& context)
 	m_memory = bindImageMemory(vki, vkd, physicalDevice, device, *m_srcImage, 0);
 
 	{
-		const vk::Unique<vk::VkBuffer>			srcBuffer		(createBuffer(vkd, device, 4 * m_imageWidth * m_imageHeight, vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT, vk::VK_SHARING_MODE_EXCLUSIVE, queueFamilies));
+		const vk::Unique<vk::VkBuffer>			srcBuffer		(createBuffer(vkd, device, 4 * m_imageWidth * m_imageHeight, vk::VK_BUFFER_USAGE_TRANSFER_SRC_BIT, vk::VK_SHARING_MODE_EXCLUSIVE, queueFamilies));
 		const vk::Unique<vk::VkDeviceMemory>	memory			(bindBufferMemory(vki, vkd, physicalDevice, device, *srcBuffer, vk::VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT));
 		const vk::Unique<vk::VkCommandBuffer>	commandBuffer	(createBeginCommandBuffer(vkd, device, commandPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 		const vk::VkImageMemoryBarrier			preImageBarrier	=
@@ -6397,7 +6397,7 @@ struct AddPrograms
 				"highp float;\n"
 				"void main (void) {\n"
 				"\tgl_PointSize = 1.0;\n"
-				"\thighp vec2 pos = vec2(gl_VertexID % 256, gl_VertexID / 256) / vec2(255.0);\n"
+				"\thighp vec2 pos = vec2(gl_VertexIndex % 256, gl_VertexIndex / 256) / vec2(255.0);\n"
 				"\tgl_Position = vec4(1.999 * pos - vec2(0.999), 0.0, 1.0);\n"
 				"}\n";
 
