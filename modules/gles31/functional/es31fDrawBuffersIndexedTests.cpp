@@ -43,11 +43,13 @@
 #include "tcuImageCompare.hpp"
 #include "tcuMaybe.hpp"
 #include "tcuResultCollector.hpp"
+#include "tcuStringTemplate.hpp"
 #include "tcuTestLog.hpp"
 #include "tcuTexture.hpp"
 #include "tcuTextureUtil.hpp"
 #include "tcuVector.hpp"
 #include "tcuVectorUtil.hpp"
+#include "tcuFloat.hpp"
 
 #include "deRandom.hpp"
 #include "deArrayUtil.hpp"
@@ -58,6 +60,7 @@
 
 #include <string>
 #include <vector>
+#include <map>
 
 using tcu::BVec4;
 using tcu::Either;
@@ -74,6 +77,7 @@ using tcu::just;
 
 using std::string;
 using std::vector;
+using std::map;
 
 using sglr::rr_util::mapGLBlendEquation;
 using sglr::rr_util::mapGLBlendFunc;
@@ -94,21 +98,21 @@ bool isAdvancedBlendEq (BlendEq eq)
 {
 	switch (eq)
 	{
-		case GL_MULTIPLY_KHR:		return true;
-		case GL_SCREEN_KHR:			return true;
-		case GL_OVERLAY_KHR:		return true;
-		case GL_DARKEN_KHR:			return true;
-		case GL_LIGHTEN_KHR:		return true;
-		case GL_COLORDODGE_KHR:		return true;
-		case GL_COLORBURN_KHR:		return true;
-		case GL_HARDLIGHT_KHR:		return true;
-		case GL_SOFTLIGHT_KHR:		return true;
-		case GL_DIFFERENCE_KHR:		return true;
-		case GL_EXCLUSION_KHR:		return true;
-		case GL_HSL_HUE_KHR:		return true;
-		case GL_HSL_SATURATION_KHR:	return true;
-		case GL_HSL_COLOR_KHR:		return true;
-		case GL_HSL_LUMINOSITY_KHR:	return true;
+		case GL_MULTIPLY:		return true;
+		case GL_SCREEN:			return true;
+		case GL_OVERLAY:		return true;
+		case GL_DARKEN:			return true;
+		case GL_LIGHTEN:		return true;
+		case GL_COLORDODGE:		return true;
+		case GL_COLORBURN:		return true;
+		case GL_HARDLIGHT:		return true;
+		case GL_SOFTLIGHT:		return true;
+		case GL_DIFFERENCE:		return true;
+		case GL_EXCLUSION:		return true;
+		case GL_HSL_HUE:		return true;
+		case GL_HSL_SATURATION:	return true;
+		case GL_HSL_COLOR:		return true;
+		case GL_HSL_LUMINOSITY:	return true;
 		default:
 			return false;
 	}
@@ -384,10 +388,10 @@ void clearRenderbuffer (const glw::Functions&			gl,
 }
 
 void genRenderbuffers (const glw::Functions&			gl,
-					   const vector<DrawBufferInfo>&	drawBuffers,
-					   const glu::Framebuffer&			framebuffer,
-					   const glu::RenderbufferVector&	renderbuffers,
-					   vector<TextureLevel>&			refRenderbuffers)
+						const vector<DrawBufferInfo>&	drawBuffers,
+						const glu::Framebuffer&			framebuffer,
+						const glu::RenderbufferVector&	renderbuffers,
+						vector<TextureLevel>&			refRenderbuffers)
 {
 	vector<deUint32> bufs;
 
@@ -445,6 +449,19 @@ Vec4 getFixedPointFormatThreshold (const tcu::TextureFormat& sourceFormat, const
 	return Vec4(3.0f) / ((tcu::Vector<deUint64, 4>(1) << (tcu::min(srcBits, readBits).cast<deUint64>())) - tcu::Vector<deUint64, 4>(1)).cast<float>();
 }
 
+UVec4 getFloatULPThreshold (const tcu::TextureFormat& sourceFormat, const tcu::TextureFormat& readPixelsFormat)
+{
+	const tcu::IVec4	srcMantissaBits		= tcu::getTextureFormatMantissaBitDepth(sourceFormat);
+	const tcu::IVec4	readMantissaBits	= tcu::getTextureFormatMantissaBitDepth(readPixelsFormat);
+	tcu::IVec4			ULPDiff(0);
+
+	for (int i = 0; i < 4; i++)
+		if (readMantissaBits[i] >= srcMantissaBits[i])
+			ULPDiff[i] = readMantissaBits[i] - srcMantissaBits[i];
+
+	return UVec4(4) * (UVec4(1) << (ULPDiff.cast<deUint32>()));
+}
+
 void verifyRenderbuffer (TestLog&					log,
 						 tcu::ResultCollector&		results,
 						 const tcu::TextureFormat&	format,
@@ -458,7 +475,7 @@ void verifyRenderbuffer (TestLog&					log,
 		{
 			const string	name		= "Renderbuffer" + de::toString(renderbufferNdx);
 			const string	desc		= "Compare renderbuffer " + de::toString(renderbufferNdx);
-			const UVec4		threshold	(1, 1, 1, 1);
+			const UVec4		threshold	= getFloatULPThreshold(format, result.getFormat());
 
 			if (!tcu::floatUlpThresholdCompare(log, name.c_str(), desc.c_str(), refRenderbuffer, result, threshold, tcu::COMPARE_LOG_RESULT))
 				results.fail("Verification of renderbuffer " + de::toString(renderbufferNdx) + " failed.");
@@ -492,7 +509,6 @@ void verifyRenderbuffer (TestLog&					log,
 			break;
 		}
 
-
 		default:
 			DE_ASSERT(DE_FALSE);
 	}
@@ -512,6 +528,9 @@ TextureFormat getReadPixelFormat (const TextureFormat& format)
 		case tcu::TEXTURECHANNELCLASS_SIGNED_FIXED_POINT:
 			return TextureFormat(TextureFormat::RGBA, TextureFormat::UNORM_INT8);
 
+		case tcu::TEXTURECHANNELCLASS_FLOATING_POINT:
+			return TextureFormat(TextureFormat::RGBA, TextureFormat::FLOAT);
+
 		default:
 			DE_ASSERT(false);
 			return TextureFormat(TextureFormat::RGBA, TextureFormat::UNORM_INT8);
@@ -519,11 +538,11 @@ TextureFormat getReadPixelFormat (const TextureFormat& format)
 }
 
 void verifyRenderbuffers (TestLog&							log,
-						  tcu::ResultCollector&				results,
-						  glu::RenderContext&				renderContext,
-						  const glu::RenderbufferVector&	renderbuffers,
-						  const glu::Framebuffer&			framebuffer,
-						  const vector<TextureLevel>&		refRenderbuffers)
+							tcu::ResultCollector&				results,
+							glu::RenderContext&				renderContext,
+							const glu::RenderbufferVector&	renderbuffers,
+							const glu::Framebuffer&			framebuffer,
+							const vector<TextureLevel>&		refRenderbuffers)
 {
 	const glw::Functions& gl = renderContext.getFunctions();
 
@@ -836,10 +855,12 @@ bool requiresAdvancedBlendEq (const BlendState& pre, const BlendState post, cons
 	return requiresAdvancedBlendEq;
 }
 
-glu::VertexSource genVertexSource (void)
+glu::VertexSource genVertexSource (glu::RenderContext& renderContext)
 {
+	const bool isES32 = glu::contextSupports(renderContext.getType(), glu::ApiType::es(3, 2));
+
 	const char* const vertexSource =
-		"#version 310 es\n"
+		"${GLSL_VERSION_DECL}\n"
 		"layout(location=0) in highp vec2 i_coord;\n"
 		"out highp vec2 v_color;\n"
 		"void main (void)\n"
@@ -848,18 +869,22 @@ glu::VertexSource genVertexSource (void)
 		"\tgl_Position = vec4(i_coord, 0.0, 1.0);\n"
 		"}";
 
-	return glu::VertexSource(vertexSource);
+	map<string, string> args;
+	args["GLSL_VERSION_DECL"] = isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
+
+	return glu::VertexSource(tcu::StringTemplate(vertexSource).specialize(args));
 }
 
-glu::FragmentSource genFragmentSource (const BlendState& preCommonBlendState, const BlendState& postCommonBlendState, const vector<DrawBufferInfo>& drawBuffers)
+glu::FragmentSource genFragmentSource (const BlendState& preCommonBlendState, const BlendState& postCommonBlendState, const vector<DrawBufferInfo>& drawBuffers, glu::RenderContext& renderContext)
 {
 	std::ostringstream stream;
+	const bool isES32 = glu::contextSupports(renderContext.getType(), glu::ApiType::es(3, 2));
 
-	stream << "#version 310 es\n";
+	stream << "${GLSL_VERSION_DECL}\n";
 
 	if (requiresAdvancedBlendEq(preCommonBlendState, postCommonBlendState, drawBuffers))
 	{
-		stream << "#extension GL_KHR_blend_equation_advanced : require\n"
+		stream << "${GLSL_EXTENSION}"
 			   <<  "layout(blend_support_all_equations) out;\n";
 	}
 
@@ -944,12 +969,16 @@ glu::FragmentSource genFragmentSource (const BlendState& preCommonBlendState, co
 
 	stream << "}";
 
-	return glu::FragmentSource(stream.str());
+	map<string, string> args;
+	args["GLSL_VERSION_DECL"] = isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
+	args["GLSL_EXTENSION"] = isES32 ? "\n" : "#extension GL_KHR_blend_equation_advanced : require\n";
+
+	return glu::FragmentSource(tcu::StringTemplate(stream.str()).specialize(args));
 }
 
-glu::ProgramSources genShaderSources (const BlendState& preCommonBlendState, const BlendState& postCommonBlendState, const vector<DrawBufferInfo>& drawBuffers)
+glu::ProgramSources genShaderSources (const BlendState& preCommonBlendState, const BlendState& postCommonBlendState, const vector<DrawBufferInfo>& drawBuffers, glu::RenderContext& renderContext)
 {
-	return glu::ProgramSources() << genVertexSource() << genFragmentSource(preCommonBlendState, postCommonBlendState, drawBuffers);
+	return glu::ProgramSources() << genVertexSource(renderContext) << genFragmentSource(preCommonBlendState, postCommonBlendState, drawBuffers, renderContext);
 }
 
 void renderGLQuad (glu::RenderContext&			renderContext,
@@ -972,7 +1001,7 @@ void renderQuad (TestLog&						log,
 				 vector<TextureLevel>&			refRenderbuffers)
 {
 	const glw::Functions&		gl						= renderContext.getFunctions();
-	const glu::ShaderProgram	program					(gl, genShaderSources(preCommonBlendState, postCommonBlendState, drawBuffers));
+	const glu::ShaderProgram	program					(gl, genShaderSources(preCommonBlendState, postCommonBlendState, drawBuffers, renderContext));
 	const IVec2					size					= drawBuffers[0].getSize();
 	const bool					requiresBlendBarriers	= requiresAdvancedBlendEq(preCommonBlendState, postCommonBlendState, drawBuffers);
 
@@ -1032,7 +1061,6 @@ void logBlendState (TestLog&			log,
 
 		log << TestLog::Message << "Set color mask: " << mask << "." << TestLog::EndMessage;
 	}
-
 
 	if (blend.blendEq)
 	{
@@ -1160,11 +1188,16 @@ DrawBuffersIndexedTest::DrawBuffersIndexedTest (Context&						context,
 
 void DrawBuffersIndexedTest::init (void)
 {
-	if (requiresAdvancedBlendEq(m_preCommonBlendState, m_postCommonBlendState, m_drawBuffers) && !m_context.getContextInfo().isExtensionSupported("GL_KHR_blend_equation_advanced"))
-		throw tcu::NotSupportedError("Extension GL_KHR_blend_equation_advanced not supported", "", __FILE__, __LINE__);
+	const bool isES32 = glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
 
-	if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_draw_buffers_indexed"))
-		throw tcu::NotSupportedError("Extension GL_EXT_draw_buffers_indexed not supported", "", __FILE__, __LINE__);
+	if (!isES32)
+	{
+		if (requiresAdvancedBlendEq(m_preCommonBlendState, m_postCommonBlendState, m_drawBuffers) && !m_context.getContextInfo().isExtensionSupported("GL_KHR_blend_equation_advanced"))
+			TCU_THROW(NotSupportedError, "Extension GL_KHR_blend_equation_advanced not supported");
+
+		if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_draw_buffers_indexed"))
+			TCU_THROW(NotSupportedError, "Extension GL_EXT_draw_buffers_indexed not supported");
+	}
 }
 
 TestCase::IterateResult DrawBuffersIndexedTest::iterate (void)
@@ -1262,8 +1295,10 @@ void genRandomBlendState (de::Random& rng, BlendState& blendState)
 	}
 }
 
-TextureFormat getRandomFormat (de::Random& rng)
+TextureFormat getRandomFormat (de::Random& rng, Context& context)
 {
+	const bool isES32 = glu::contextSupports(context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+
 	const deUint32 glFormats[] =
 	{
 		GL_R8,
@@ -1292,13 +1327,22 @@ TextureFormat getRandomFormat (de::Random& rng)
 		GL_RGBA16I,
 		GL_RGBA16UI,
 		GL_RGBA32I,
-		GL_RGBA32UI
+		GL_RGBA32UI,
+		GL_RGB16F,
+		GL_RGBA16F,
+		GL_R32F,
+		GL_RG32F,
+		GL_RGBA32F,
+		GL_R11F_G11F_B10F
 	};
 
-	return glu::mapGLInternalFormat(de::getArrayElement(glFormats, rng.getUint32() % DE_LENGTH_OF_ARRAY(glFormats)));
+	if (isES32)
+		return glu::mapGLInternalFormat(de::getArrayElement(glFormats, rng.getUint32() % DE_LENGTH_OF_ARRAY(glFormats)));
+	else
+		return glu::mapGLInternalFormat(de::getArrayElement(glFormats, rng.getUint32() % DE_LENGTH_OF_ARRAY(glFormats) - 6));
 }
 
-void genRandomTest (de::Random& rng, BlendState& preCommon, BlendState& postCommon, vector<DrawBufferInfo>& drawBuffers, int maxDrawBufferCount)
+void genRandomTest (de::Random& rng, BlendState& preCommon, BlendState& postCommon, vector<DrawBufferInfo>& drawBuffers, int maxDrawBufferCount, Context& context)
 {
 	genRandomBlendState(rng, preCommon);
 	genRandomBlendState(rng, postCommon);
@@ -1307,7 +1351,7 @@ void genRandomTest (de::Random& rng, BlendState& preCommon, BlendState& postComm
 	{
 		const bool			render		= rng.getFloat() > 0.1f;
 		const IVec2			size		(64, 64);
-		const TextureFormat	format		(getRandomFormat(rng));
+		const TextureFormat	format		(getRandomFormat(rng, context));
 		BlendState			blendState;
 
 		genRandomBlendState(rng, blendState);
@@ -1335,8 +1379,10 @@ MaxDrawBuffersIndexedTest::MaxDrawBuffersIndexedTest (Context& context, int seed
 
 void MaxDrawBuffersIndexedTest::init (void)
 {
-	if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_draw_buffers_indexed"))
-		throw tcu::NotSupportedError("Extension GL_EXT_draw_buffers_indexed not supported", "", __FILE__, __LINE__);
+	const bool isES32 = glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+
+	if (!isES32 && !m_context.getContextInfo().isExtensionSupported("GL_EXT_draw_buffers_indexed"))
+		TCU_THROW(NotSupportedError, "Extension GL_EXT_draw_buffers_indexed not supported");
 }
 
 TestCase::IterateResult MaxDrawBuffersIndexedTest::iterate (void)
@@ -1348,7 +1394,7 @@ TestCase::IterateResult MaxDrawBuffersIndexedTest::iterate (void)
 	BlendState				postCommonBlendState;
 	vector<DrawBufferInfo>	drawBuffers;
 
-	genRandomTest(rng, preCommonBlendState, postCommonBlendState, drawBuffers, 4);
+	genRandomTest(rng, preCommonBlendState, postCommonBlendState, drawBuffers, 4, m_context);
 
 	runTest(log, results, m_context.getRenderContext(), preCommonBlendState, postCommonBlendState, drawBuffers);
 
@@ -1377,8 +1423,10 @@ ImplMaxDrawBuffersIndexedTest::ImplMaxDrawBuffersIndexedTest (Context& context, 
 
 void ImplMaxDrawBuffersIndexedTest::init (void)
 {
-	if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_draw_buffers_indexed"))
-		throw tcu::NotSupportedError("Extension GL_EXT_draw_buffers_indexed not supported", "", __FILE__, __LINE__);
+	const bool isES32 = glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+
+	if (!isES32 && !m_context.getContextInfo().isExtensionSupported("GL_EXT_draw_buffers_indexed"))
+		TCU_THROW(NotSupportedError, "Extension GL_EXT_draw_buffers_indexed not supported");
 }
 
 TestCase::IterateResult ImplMaxDrawBuffersIndexedTest::iterate (void)
@@ -1397,7 +1445,7 @@ TestCase::IterateResult ImplMaxDrawBuffersIndexedTest::iterate (void)
 
 	TCU_CHECK(maxDrawBuffers > 0);
 
-	genRandomTest(rng, preCommonBlendState, postCommonBlendState, drawBuffers, maxDrawBuffers);
+	genRandomTest(rng, preCommonBlendState, postCommonBlendState, drawBuffers, maxDrawBuffers, m_context);
 
 	runTest(log, results, m_context.getRenderContext(), preCommonBlendState, postCommonBlendState, drawBuffers);
 
@@ -1505,8 +1553,8 @@ void addDrawBufferCommonTests (TestCaseGroup* root, PrePost prepost)
 		const BlendState	separateEqStateA	= BlendState(tcu::nothing<bool>(), Maybe<Either<BlendEq, SeparateBlendEq> >(SeparateBlendEq(GL_FUNC_ADD, GL_FUNC_SUBTRACT)), Maybe<Either<BlendFunc, SeparateBlendFunc> >(), Maybe<BVec4>());
 		const BlendState	separateEqStateB	= BlendState(tcu::nothing<bool>(), Maybe<Either<BlendEq, SeparateBlendEq> >(SeparateBlendEq(GL_FUNC_SUBTRACT, GL_FUNC_ADD)), Maybe<Either<BlendFunc, SeparateBlendFunc> >(), Maybe<BVec4>());
 
-		const BlendState	advancedEqStateA	= BlendState(tcu::nothing<bool>(), Maybe<Either<BlendEq, SeparateBlendEq> >(GL_DIFFERENCE_KHR), Maybe<Either<BlendFunc, SeparateBlendFunc> >(), Maybe<BVec4>());
-		const BlendState	advancedEqStateB	= BlendState(tcu::nothing<bool>(), Maybe<Either<BlendEq, SeparateBlendEq> >(GL_SCREEN_KHR), Maybe<Either<BlendFunc, SeparateBlendFunc> >(), Maybe<BVec4>());
+		const BlendState	advancedEqStateA	= BlendState(tcu::nothing<bool>(), Maybe<Either<BlendEq, SeparateBlendEq> >(GL_DIFFERENCE), Maybe<Either<BlendFunc, SeparateBlendFunc> >(), Maybe<BVec4>());
+		const BlendState	advancedEqStateB	= BlendState(tcu::nothing<bool>(), Maybe<Either<BlendEq, SeparateBlendEq> >(GL_SCREEN), Maybe<Either<BlendFunc, SeparateBlendFunc> >(), Maybe<BVec4>());
 
 		root->addChild(createDiffTest(root->getContext(), prepost, "common_blend_eq_buffer_blend_eq", eqStateA, eqStateB));
 		root->addChild(createDiffTest(root->getContext(), prepost, "common_blend_eq_buffer_separate_blend_eq", eqStateA, separateEqStateB));
@@ -1561,7 +1609,7 @@ TestCaseGroup* createDrawBuffersIndexedTests (Context& context)
 	TestCaseGroup* const	group			= new TestCaseGroup(context, "draw_buffers_indexed", "Test for indexed draw buffers. GL_EXT_draw_buffers_indexed.");
 
 	TestCaseGroup* const	preGroup		= new TestCaseGroup(context, "overwrite_common", "Set common state and overwrite it with draw buffer blend state.");
-	TestCaseGroup* const	postGroup		= new TestCaseGroup(context, "overwrite_indexed", "Set indexed blend state and overwrite it ith common state.");
+	TestCaseGroup* const	postGroup		= new TestCaseGroup(context, "overwrite_indexed", "Set indexed blend state and overwrite it with common state.");
 	TestCaseGroup* const	randomGroup		= new TestCaseGroup(context, "random", "Random indexed blend state tests.");
 	TestCaseGroup* const	maxGroup		= new TestCaseGroup(context, "max_required_draw_buffers", "Random tests using minimum maximum number of draw buffers.");
 	TestCaseGroup* const	maxImplGroup	= new TestCaseGroup(context, "max_implementation_draw_buffers", "Random tests using maximum number of draw buffers reported by implementation.");
