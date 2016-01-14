@@ -267,7 +267,7 @@ tcu::TestStatus IndirectDispatchInstanceBufferUpload::iterate (void)
 	// Create descriptor pool
 	const vk::Unique<vk::VkDescriptorPool> descriptorPool(
 		vk::DescriptorPoolBuilder()
-		.addType(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
+		.addType(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, (deUint32)m_dispatchCommands.size())
 		.build(m_device_interface, m_device, vk::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, static_cast<deUint32>(m_dispatchCommands.size())));
 
 	const vk::VkBufferMemoryBarrier ssboPostBarrier = makeBufferMemoryBarrier(
