@@ -2164,7 +2164,7 @@ float constructNormalizedFloat (deInt32 exponent, deUint32 significand)
 
 	for (deInt32 idx = 0; idx < 23; ++idx)
 	{
-		f += ((significand & 0x800000) == 0) ? 0.f : std::ldexp(1.0f, -idx);
+		f += ((significand & 0x800000) == 0) ? 0.f : std::ldexp(1.0f, -(idx + 1));
 		significand <<= 1;
 	}
 
@@ -6960,21 +6960,21 @@ void createOpQuantizeTwoPossibilityTests(tcu::TestCaseGroup* testCtx)
 		{
 			"negative_round_up_or_round_down",
 			"-0x1.6008p-7",
-			-constructNormalizedFloat(8, 0x600800),
+			-constructNormalizedFloat(-7, 0x600800),
 			"-0x1.6p-7",
 			"-0x1.604p-7"
 		},
 		{
 			"carry_bit",
 			"0x1.01ep2",
-			constructNormalizedFloat(8, 0x01e000),
+			constructNormalizedFloat(2, 0x01e000),
 			"0x1.01cp2",
 			"0x1.02p2"
 		},
 		{
 			"carry_to_exponent",
-			"0x1.feep1",
-			constructNormalizedFloat(8, 0xfee000),
+			"0x1.ffep1",
+			constructNormalizedFloat(1, 0xffe000),
 			"0x1.ffcp1",
 			"0x1.0p2"
 		},
