@@ -647,7 +647,8 @@ CopyImageToImage::CopyImageToImage (Context& context, TestParams params)
 			1u,										// deUint32				arraySize;
 			VK_SAMPLE_COUNT_1_BIT,					// deUint32				samples;
 			VK_IMAGE_TILING_OPTIMAL,				// VkImageTiling		tiling;
-			VK_IMAGE_USAGE_TRANSFER_SRC_BIT,		// VkImageUsageFlags	usage;
+			VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+			    VK_IMAGE_USAGE_TRANSFER_DST_BIT,	// VkImageUsageFlags	usage;
 			VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode		sharingMode;
 			1u,										// deUint32				queueFamilyCount;
 			&queueFamilyIndex,						// const deUint32*		pQueueFamilyIndices;
@@ -673,7 +674,8 @@ CopyImageToImage::CopyImageToImage (Context& context, TestParams params)
 			1u,										// deUint32				arraySize;
 			VK_SAMPLE_COUNT_1_BIT,					// deUint32				samples;
 			VK_IMAGE_TILING_OPTIMAL,				// VkImageTiling		tiling;
-			VK_IMAGE_USAGE_TRANSFER_DST_BIT,		// VkImageUsageFlags	usage;
+			VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+			    VK_IMAGE_USAGE_TRANSFER_DST_BIT,	// VkImageUsageFlags	usage;
 			VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode		sharingMode;
 			1u,										// deUint32				queueFamilyCount;
 			&queueFamilyIndex,						// const deUint32*		pQueueFamilyIndices;
@@ -858,7 +860,7 @@ CopyBufferToBuffer::CopyBufferToBuffer (Context& context, TestParams params)
 			DE_NULL,									// const void*			pNext;
 			0u,											// VkBufferCreateFlags	flags;
 			m_params.src.buffer.size,					// VkDeviceSize			size;
-			VK_BUFFER_USAGE_TRANSFER_DST_BIT,			// VkBufferUsageFlags	usage;
+			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,			// VkBufferUsageFlags	usage;
 			VK_SHARING_MODE_EXCLUSIVE,					// VkSharingMode		sharingMode;
 			1u,											// deUint32				queueFamilyIndexCount;
 			&queueFamilyIndex,							// const deUint32*		pQueueFamilyIndices;
