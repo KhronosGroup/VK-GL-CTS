@@ -145,6 +145,7 @@ static const char* const s_CommonTypes =
 	"%i32       = OpTypeInt 32 1\n"
 	"%f32       = OpTypeFloat 32\n"
 	"%uvec3     = OpTypeVector %u32 3\n"
+	"%fvec3     = OpTypeVector %f32 3\n"
 	"%uvec3ptr  = OpTypePointer Input %uvec3\n"
 	"%f32ptr    = OpTypePointer Uniform %f32\n"
 	"%f32arr    = OpTypeRuntimeArray %f32\n";
@@ -557,6 +558,7 @@ tcu::TestCaseGroup* createOpCopyMemoryGroup (tcu::TestContext& testCtx)
 		"OpName %id             \"gl_GlobalInvocationID\"\n"
 
 		"OpDecorate %id BuiltIn GlobalInvocationId\n"
+		"OpDecorate %vec4arr ArrayStride 16\n"
 
 		+ string(s_InputOutputBufferTraits) + string(s_CommonTypes) +
 
@@ -616,6 +618,7 @@ tcu::TestCaseGroup* createOpCopyMemoryGroup (tcu::TestContext& testCtx)
 		"OpName %id             \"gl_GlobalInvocationID\"\n"
 
 		"OpDecorate %id BuiltIn GlobalInvocationId\n"
+		"OpDecorate %f32arr100 ArrayStride 4\n"
 
 		+ string(s_InputOutputBufferTraits) + string(s_CommonTypes) +
 
@@ -657,7 +660,7 @@ tcu::TestCaseGroup* createOpCopyMemoryGroup (tcu::TestContext& testCtx)
 	fillRandomScalars(rnd, -200.f, 200.f, &inputFloats3[0], 16);
 
 	for (size_t ndx = 0; ndx < 16; ++ndx)
-		outputFloats3[ndx] = -inputFloats3[ndx];
+		outputFloats3[ndx] = inputFloats3[ndx];
 
 	spec3.assembly =
 		string(s_ShaderPreamble) +
@@ -666,6 +669,14 @@ tcu::TestCaseGroup* createOpCopyMemoryGroup (tcu::TestContext& testCtx)
 		"OpName %id             \"gl_GlobalInvocationID\"\n"
 
 		"OpDecorate %id BuiltIn GlobalInvocationId\n"
+		"OpMemberDecorate %inbuf 0 Offset 0\n"
+		"OpMemberDecorate %inbuf 1 Offset 16\n"
+		"OpMemberDecorate %inbuf 2 Offset 32\n"
+		"OpMemberDecorate %inbuf 3 Offset 48\n"
+		"OpMemberDecorate %outbuf 0 Offset 0\n"
+		"OpMemberDecorate %outbuf 1 Offset 16\n"
+		"OpMemberDecorate %outbuf 2 Offset 32\n"
+		"OpMemberDecorate %outbuf 3 Offset 48\n"
 
 		+ string(s_InputOutputBufferTraits) + string(s_CommonTypes) +
 
@@ -1180,6 +1191,7 @@ tcu::TestCaseGroup* createSpecConstantGroup (tcu::TestContext& testCtx)
 		"OpDecorate %id BuiltIn GlobalInvocationId\n"
 		"OpDecorate %sc_0  SpecId 0\n"
 		"OpDecorate %sc_1  SpecId 1\n"
+		"OpDecorate %i32arr ArrayStride 4\n"
 
 		+ string(s_InputOutputBufferTraits) + string(s_CommonTypes) +
 
@@ -1293,6 +1305,7 @@ tcu::TestCaseGroup* createSpecConstantGroup (tcu::TestContext& testCtx)
 		"OpDecorate %sc_0  SpecId 0\n"
 		"OpDecorate %sc_1  SpecId 1\n"
 		"OpDecorate %sc_2  SpecId 2\n"
+		"OpDecorate %i32arr ArrayStride 4\n"
 
 		+ string(s_InputOutputBufferTraits) + string(s_CommonTypes) +
 
@@ -1713,7 +1726,8 @@ tcu::TestCaseGroup* createMultipleShaderGroup (tcu::TestContext& testCtx)
 		"OpEntryPoint GLCompute %comp_main2 \"entrypoint2\" %id\n"
 		// A module cannot have two OpEntryPoint instructions with the same Execution Model and the same Name string.
 		"OpEntryPoint Vertex    %vert_main  \"entrypoint2\" %vert_builtins %vertexID %instanceID\n"
-		"OpExecutionMode %vert_main LocalSize 1 1 1\n"
+		"OpExecutionMode %comp_main1 LocalSize 1 1 1\n"
+		"OpExecutionMode %comp_main2 LocalSize 1 1 1\n"
 
 		"OpName %comp_main1              \"entrypoint1\"\n"
 		"OpName %comp_main2              \"entrypoint2\"\n"
@@ -1736,6 +1750,10 @@ tcu::TestCaseGroup* createMultipleShaderGroup (tcu::TestContext& testCtx)
 
 		+ string(s_InputOutputBufferTraits) + string(s_CommonTypes) + string(s_InputOutputBuffer) +
 
+		"%zero       = OpConstant %i32 0\n"
+		"%one        = OpConstant %u32 1\n"
+		"%c_f32_1    = OpConstant %f32 1\n"
+
 		"%i32ptr              = OpTypePointer Input %i32\n"
 		"%vec4                = OpTypeVector %f32 4\n"
 		"%vec4ptr             = OpTypePointer Output %vec4\n"
@@ -1747,9 +1765,6 @@ tcu::TestCaseGroup* createMultipleShaderGroup (tcu::TestContext& testCtx)
 		"%id         = OpVariable %uvec3ptr Input\n"
 		"%vertexID   = OpVariable %i32ptr Input\n"
 		"%instanceID = OpVariable %i32ptr Input\n"
-		"%zero       = OpConstant %i32 0\n"
-		"%one        = OpConstant %u32 1\n"
-		"%c_f32_1    = OpConstant %f32 1\n"
 		"%c_vec4_1   = OpConstantComposite %vec4 %c_f32_1 %c_f32_1 %c_f32_1 %c_f32_1\n"
 
 		// gl_Position = vec4(1.);
@@ -2025,10 +2040,9 @@ tcu::TestCaseGroup* createOpConstantNullGroup (tcu::TestContext& testCtx)
 	cases.push_back(CaseParameter("vec4float32",	"%type = OpTypeVector %f32 4"));
 	cases.push_back(CaseParameter("vec3bool",		"%type = OpTypeVector %bool 3"));
 	cases.push_back(CaseParameter("vec2uint32",		"%type = OpTypeVector %u32 2"));
-	cases.push_back(CaseParameter("matrix",			"%type = OpTypeMatrix %uvec3 3"));
+	cases.push_back(CaseParameter("matrix",			"%type = OpTypeMatrix %fvec3 3"));
 	cases.push_back(CaseParameter("array",			"%100 = OpConstant %u32 100\n"
 													"%type = OpTypeArray %i32 %100"));
-	cases.push_back(CaseParameter("runtimearray",	"%type = OpTypeRuntimeArray %f32"));
 	cases.push_back(CaseParameter("struct",			"%type = OpTypeStruct %f32 %i32 %u32"));
 	cases.push_back(CaseParameter("pointer",		"%type = OpTypePointer Function %i32"));
 
@@ -2093,11 +2107,11 @@ tcu::TestCaseGroup* createOpConstantCompositeGroup (tcu::TestContext& testCtx)
 
 	cases.push_back(CaseParameter("vector",			"%five = OpConstant %u32 5\n"
 													"%const = OpConstantComposite %uvec3 %five %zero %five"));
-	cases.push_back(CaseParameter("matrix",			"%m3uvec3 = OpTypeMatrix %uvec3 3\n"
+	cases.push_back(CaseParameter("matrix",			"%m3uvec3 = OpTypeMatrix %fvec3 3\n"
 													"%ten = OpConstant %u32 10\n"
 													"%vec = OpConstantComposite %uvec3 %ten %zero %ten\n"
 													"%mat = OpConstantComposite %m3uvec3 %vec %vec %vec"));
-	cases.push_back(CaseParameter("struct",			"%m2vec3 = OpTypeMatrix %uvec3 2\n"
+	cases.push_back(CaseParameter("struct",			"%m2vec3 = OpTypeMatrix %fvec3 2\n"
 													"%struct = OpTypeStruct %u32 %f32 %uvec3 %m2vec3\n"
 													"%one = OpConstant %u32 1\n"
 													"%point5 = OpConstant %f32 0.5\n"
@@ -3111,7 +3125,7 @@ tcu::TestCaseGroup* createOpUndefGroup (tcu::TestContext& testCtx)
 	cases.push_back(CaseParameter("float32",		"%type = OpTypeFloat 32"));
 	cases.push_back(CaseParameter("vec4float32",	"%type = OpTypeVector %f32 4"));
 	cases.push_back(CaseParameter("vec2uint32",		"%type = OpTypeVector %u32 2"));
-	cases.push_back(CaseParameter("matrix",			"%type = OpTypeMatrix %uvec3 3"));
+	cases.push_back(CaseParameter("matrix",			"%type = OpTypeMatrix %fvec3 3"));
 	cases.push_back(CaseParameter("image",			"%type = OpTypeImage %f32 2D 0 0 0 0 Unknown"));
 	cases.push_back(CaseParameter("sampler",		"%type = OpTypeSampler"));
 	cases.push_back(CaseParameter("sampledimage",	"%img = OpTypeImage %f32 2D 0 0 0 0 Unknown\n"
