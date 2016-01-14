@@ -716,7 +716,7 @@ void TestTexture::populateCompressedLevels (const tcu::CompressedTexFormat& form
 		m_compressedLevels.push_back(compressedLevel);
 
 		// Store decompressed data
-		compressedLevel->decompress(level);
+		compressedLevel->decompress(level, tcu::TexDecompressionParams::ASTCMODE_LDR);
 	}
 }
 
