@@ -777,7 +777,6 @@ tcu::TestCaseGroup* createOpCopyObjectGroup (tcu::TestContext& testCtx)
 
 		+ string(s_InputOutputBufferTraits) + string(s_CommonTypes) +
 
-		"%fvec3    = OpTypeVector %f32 3\n"
 		"%fmat     = OpTypeMatrix %fvec3 3\n"
 		"%three    = OpConstant %u32 3\n"
 		"%farr     = OpTypeArray %f32 %three\n"
@@ -2664,7 +2663,6 @@ tcu::TestCaseGroup* createOpConstantUsageGroup (tcu::TestContext& testCtx)
 
 		+ string(s_InputOutputBufferTraits) + string(s_CommonTypes) +
 
-		"%fvec3     = OpTypeVector %f32 3\n"
 		"%fmat      = OpTypeMatrix %fvec3 3\n"
 		"%ten       = OpConstant %u32 10\n"
 		"%f32arr10  = OpTypeArray %f32 %ten\n"
