@@ -1726,7 +1726,7 @@ tcu::TestCaseGroup* createMultipleShaderGroup (tcu::TestContext& testCtx)
 		"OpEntryPoint GLCompute %comp_main1 \"entrypoint1\" %id\n"
 		"OpEntryPoint GLCompute %comp_main2 \"entrypoint2\" %id\n"
 		// A module cannot have two OpEntryPoint instructions with the same Execution Model and the same Name string.
-		"OpEntryPoint Vertex    %vert_main  \"entrypoint2\" %vert_builtins %vertexID %instanceID\n"
+		"OpEntryPoint Vertex    %vert_main  \"entrypoint2\" %vert_builtins %vertexIndex %instanceIndex\n"
 		"OpExecutionMode %comp_main1 LocalSize 1 1 1\n"
 		"OpExecutionMode %comp_main2 LocalSize 1 1 1\n"
 
@@ -1735,15 +1735,15 @@ tcu::TestCaseGroup* createMultipleShaderGroup (tcu::TestContext& testCtx)
 		"OpName %vert_main               \"entrypoint2\"\n"
 		"OpName %id                      \"gl_GlobalInvocationID\"\n"
 		"OpName %vert_builtin_st         \"gl_PerVertex\"\n"
-		"OpName %vertexID                \"gl_VertexIndex\"\n"
-		"OpName %instanceID              \"gl_InstanceIndex\"\n"
+		"OpName %vertexIndex             \"gl_VertexIndex\"\n"
+		"OpName %instanceIndex           \"gl_InstanceIndex\"\n"
 		"OpMemberName %vert_builtin_st 0 \"gl_Position\"\n"
 		"OpMemberName %vert_builtin_st 1 \"gl_PointSize\"\n"
 		"OpMemberName %vert_builtin_st 2 \"gl_ClipDistance\"\n"
 
 		"OpDecorate %id                      BuiltIn GlobalInvocationId\n"
-		"OpDecorate %vertexID                BuiltIn VertexIndex\n"
-		"OpDecorate %instanceID              BuiltIn InstanceIndex\n"
+		"OpDecorate %vertexIndex             BuiltIn VertexIndex\n"
+		"OpDecorate %instanceIndex           BuiltIn InstanceIndex\n"
 		"OpDecorate %vert_builtin_st         Block\n"
 		"OpMemberDecorate %vert_builtin_st 0 BuiltIn Position\n"
 		"OpMemberDecorate %vert_builtin_st 1 BuiltIn PointSize\n"
@@ -1764,8 +1764,8 @@ tcu::TestCaseGroup* createMultipleShaderGroup (tcu::TestContext& testCtx)
 		"%vert_builtins       = OpVariable %vert_builtin_st_ptr Output\n"
 
 		"%id         = OpVariable %uvec3ptr Input\n"
-		"%vertexID   = OpVariable %i32ptr Input\n"
-		"%instanceID = OpVariable %i32ptr Input\n"
+		"%vertexIndex = OpVariable %i32ptr Input\n"
+		"%instanceIndex = OpVariable %i32ptr Input\n"
 		"%c_vec4_1   = OpConstantComposite %vec4 %c_f32_1 %c_f32_1 %c_f32_1 %c_f32_1\n"
 
 		// gl_Position = vec4(1.);

@@ -431,7 +431,7 @@ std::string VertexInputTest::getGlslVertexCheck (void) const
 	glslCode <<
 		"	if (okCount == " << totalInputComponentCount << ")\n"
 		"	{\n"
-		"		if (gl_InstanceID == 0)\n"
+		"		if (gl_InstanceIndex == 0)\n"
 		"			vtxColor = vec4(1.0, 0.0, 0.0, 1.0);\n"
 		"		else\n"
 		"			vtxColor = vec4(0.0, 0.0, 1.0, 1.0);\n"
@@ -440,20 +440,20 @@ std::string VertexInputTest::getGlslVertexCheck (void) const
 		"	{\n"
 		"		vtxColor = vec4(okCount / float(" << totalInputComponentCount << "), 0.0f, 0.0f, 1.0);\n" <<
 		"	}\n\n"
-		"	if (gl_InstanceID == 0)\n"
+		"	if (gl_InstanceIndex == 0)\n"
 		"	{\n"
-		"		if (gl_VertexID == 0) gl_Position = vec4(-1.0, -1.0, 0.0, 1.0);\n"
-		"		else if (gl_VertexID == 1) gl_Position = vec4(0.0, -1.0, 0.0, 1.0);\n"
-		"		else if (gl_VertexID == 2) gl_Position = vec4(-1.0, 1.0, 0.0, 1.0);\n"
-		"		else if (gl_VertexID == 3) gl_Position = vec4(0.0, 1.0, 0.0, 1.0);\n"
+		"		if (gl_VertexIndex == 0) gl_Position = vec4(-1.0, -1.0, 0.0, 1.0);\n"
+		"		else if (gl_VertexIndex == 1) gl_Position = vec4(0.0, -1.0, 0.0, 1.0);\n"
+		"		else if (gl_VertexIndex == 2) gl_Position = vec4(-1.0, 1.0, 0.0, 1.0);\n"
+		"		else if (gl_VertexIndex == 3) gl_Position = vec4(0.0, 1.0, 0.0, 1.0);\n"
 		"		else gl_Position = vec4(0.0);\n"
 		"	}\n"
 		"	else\n"
 		"	{\n"
-		"		if (gl_VertexID == 0) gl_Position = vec4(0.0, -1.0, 0.0, 1.0);\n"
-		"		else if (gl_VertexID == 1) gl_Position = vec4(1.0, -1.0, 0.0, 1.0);\n"
-		"		else if (gl_VertexID == 2) gl_Position = vec4(0.0, 1.0, 0.0, 1.0);\n"
-		"		else if (gl_VertexID == 3) gl_Position = vec4(1.0, 1.0, 0.0, 1.0);\n"
+		"		if (gl_VertexIndex == 0) gl_Position = vec4(0.0, -1.0, 0.0, 1.0);\n"
+		"		else if (gl_VertexIndex == 1) gl_Position = vec4(1.0, -1.0, 0.0, 1.0);\n"
+		"		else if (gl_VertexIndex == 2) gl_Position = vec4(0.0, 1.0, 0.0, 1.0);\n"
+		"		else if (gl_VertexIndex == 3) gl_Position = vec4(1.0, 1.0, 0.0, 1.0);\n"
 		"		else gl_Position = vec4(0.0);\n"
 		"	}\n";
 
@@ -464,7 +464,7 @@ std::string VertexInputTest::getGlslAttributeConditions (const AttributeInfo& at
 {
 	std::ostringstream	glslCode;
 	std::ostringstream	attributeVar;
-	const std::string	indexId				= (attributeInfo.inputRate == VK_VERTEX_INPUT_RATE_VERTEX) ? "gl_VertexID" : "gl_InstanceID";
+	const std::string	indexId				= (attributeInfo.inputRate == VK_VERTEX_INPUT_RATE_VERTEX) ? "gl_VertexIndex" : "gl_InstanceIndex";
 	const int			componentCount		= VertexInputTest::s_glslTypeDescriptions[attributeInfo.glslType].vertexInputComponentCount;
 	const int			vertexInputCount	= VertexInputTest::s_glslTypeDescriptions[attributeInfo.glslType].vertexInputCount;
 	const deUint32		totalComponentCount	= componentCount * vertexInputCount;

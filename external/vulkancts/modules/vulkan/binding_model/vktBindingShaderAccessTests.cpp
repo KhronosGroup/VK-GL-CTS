@@ -78,12 +78,12 @@ enum ResourceFlag
 	RESOURCE_FLAG_LAST				= (1u << 1u)
 };
 
-static const char* const s_quadrantGenVertexPosSource =	"	highp int quadPhase = gl_VertexID % 6;\n"
+static const char* const s_quadrantGenVertexPosSource =	"	highp int quadPhase = gl_VertexIndex % 6;\n"
 														"	highp int quadXcoord = int(quadPhase == 1 || quadPhase == 4 || quadPhase == 5);\n"
 														"	highp int quadYcoord = int(quadPhase == 2 || quadPhase == 3 || quadPhase == 5);\n"
-														"	highp int quadOriginX = (gl_VertexID / 6) % 2;\n"
-														"	highp int quadOriginY = (gl_VertexID / 6) / 2;\n"
-														"	quadrant_id = gl_VertexID / 6;\n"
+														"	highp int quadOriginX = (gl_VertexIndex / 6) % 2;\n"
+														"	highp int quadOriginY = (gl_VertexIndex / 6) / 2;\n"
+														"	quadrant_id = gl_VertexIndex / 6;\n"
 														"	result_position = vec4(float(quadOriginX + quadXcoord - 1), float(quadOriginY + quadYcoord - 1), 0.0, 1.0);\n";
 
 bool isUniformDescriptorType (vk::VkDescriptorType type)
