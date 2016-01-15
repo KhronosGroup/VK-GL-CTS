@@ -4195,8 +4195,8 @@ void createMultipleEntries(vk::SourceCollections& dst, InstanceContext)
 		"OpEntryPoint Vertex %main \"vert1\" %Position %vtxColor %color %vtxPosition %vertex_id %instance_id\n"
 		"OpEntryPoint Vertex %main2 \"vert2\" %Position %vtxColor %color %vtxPosition %vertex_id %instance_id\n"
 
-		"OpName %main \"frag1\"\n"
-		"OpName %main2 \"frag2\"\n"
+		"OpName %main \"vert1\"\n"
+		"OpName %main2 \"vert2\"\n"
 		"OpName %vtxPosition \"vtxPosition\"\n"
 		"OpName %Position \"position\"\n"
 		"OpName %vtxColor \"vtxColor\"\n"
