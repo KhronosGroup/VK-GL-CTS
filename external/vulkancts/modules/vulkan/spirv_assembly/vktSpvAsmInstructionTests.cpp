@@ -801,8 +801,8 @@ tcu::TestCaseGroup* createOpCopyObjectGroup (tcu::TestContext& testCtx)
 		"%c_fst_copy    = OpCopyObject %fst   %c_fst\n"
 		"%fvec3_elem    = OpCompositeExtract %f32 %c_fvec3_copy 0\n"
 		"%fmat_elem     = OpCompositeExtract %f32 %c_fmat_copy 1 2\n"
-		"%farr_elem     = OpCompositeExtract %f32 %c_fmat_copy 2\n"
-		"%fst_elem      = OpCompositeExtract %f32 %c_fmat_copy 1\n"
+		"%farr_elem     = OpCompositeExtract %f32 %c_farr_copy 2\n"
+		"%fst_elem      = OpCompositeExtract %f32 %c_fst_copy 1\n"
 		// Add up. 1.5 * 5 = 7.5.
 		"%add1          = OpFAdd %f32 %c_f_copy %fvec3_elem\n"
 		"%add2          = OpFAdd %f32 %add1     %fmat_elem\n"
