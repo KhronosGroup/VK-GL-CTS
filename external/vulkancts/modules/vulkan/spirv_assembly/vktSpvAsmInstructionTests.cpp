@@ -2190,16 +2190,19 @@ bool compareOpQuantizeF16ComputeExactCase (const std::vector<BufferSp>&, const v
 		*outputAsFloat != constructNormalizedFloat(8, 0x300000)) {
 		return false;
 	}
+	outputAsFloat++;
 
 	if (*outputAsFloat != -constructNormalizedFloat(-7, 0x600000) &&
 		*outputAsFloat != -constructNormalizedFloat(-7, 0x604000)) {
 		return false;
 	}
+	outputAsFloat++;
 
 	if (*outputAsFloat != constructNormalizedFloat(2, 0x01C000) &&
 		*outputAsFloat != constructNormalizedFloat(2, 0x020000)) {
 		return false;
 	}
+	outputAsFloat++;
 
 	if (*outputAsFloat != constructNormalizedFloat(1, 0xFFC000) &&
 		*outputAsFloat != constructNormalizedFloat(2, 0x000000)) {
@@ -2388,7 +2391,7 @@ tcu::TestCaseGroup* createOpQuantizeToF16Group (tcu::TestContext& testCtx)
 		exact.reserve(numElements);
 
 		for (size_t idx = 0; idx < numElements; ++idx)
-			exact.push_back(static_cast<float>(idx - 100));
+			exact.push_back(static_cast<float>(static_cast<int>(idx) - 100));
 
 		spec.assembly = shader;
 		spec.inputs.push_back(BufferSp(new Float32Buffer(exact)));
@@ -2515,7 +2518,8 @@ tcu::TestCaseGroup* createSpecConstantOpQuantizeToF16Group (tcu::TestContext& te
 		vector<float>		inputs		(numCases, 0.f);
 		vector<float>		outputs;
 
-		spec.numWorkGroups = IVec3(numCases, 1, 1);
+		spec.assembly		= shader;
+		spec.numWorkGroups	= IVec3(numCases, 1, 1);
 
 		spec.specConstants.push_back(bitwiseCast<deUint32>(std::numeric_limits<float>::infinity()));
 		spec.specConstants.push_back(bitwiseCast<deUint32>(-std::numeric_limits<float>::infinity()));
@@ -2540,6 +2544,7 @@ tcu::TestCaseGroup* createSpecConstantOpQuantizeToF16Group (tcu::TestContext& te
 		vector<float>		inputs		(numCases, 0.f);
 		vector<float>		outputs;
 
+		spec.assembly		= shader;
 		spec.numWorkGroups	= IVec3(numCases, 1, 1);
 		spec.verifyIO		= &compareNan;
 
@@ -2562,6 +2567,7 @@ tcu::TestCaseGroup* createSpecConstantOpQuantizeToF16Group (tcu::TestContext& te
 		vector<float>		inputs		(numCases, 0.f);
 		vector<float>		outputs;
 
+		spec.assembly		= shader;
 		spec.numWorkGroups	= IVec3(numCases, 1, 1);
 
 		spec.specConstants.push_back(bitwiseCast<deUint32>(0.f));
@@ -2591,6 +2597,7 @@ tcu::TestCaseGroup* createSpecConstantOpQuantizeToF16Group (tcu::TestContext& te
 		vector<float>		inputs		(numCases, 0.f);
 		vector<float>		outputs;
 
+		spec.assembly		= shader;
 		spec.numWorkGroups	= IVec3(numCases, 1, 1);
 
 		for (deUint8 idx = 0; idx < 6; ++idx)
@@ -2613,6 +2620,7 @@ tcu::TestCaseGroup* createSpecConstantOpQuantizeToF16Group (tcu::TestContext& te
 		vector<float>		inputs		(numCases, 0.f);
 		vector<float>		outputs;
 
+		spec.assembly		= shader;
 		spec.numWorkGroups	= IVec3(numCases, 1, 1);
 		spec.verifyIO		= &compareOpQuantizeF16ComputeExactCase;
 
