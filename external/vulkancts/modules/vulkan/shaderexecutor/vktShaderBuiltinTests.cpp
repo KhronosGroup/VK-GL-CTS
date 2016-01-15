@@ -38,7 +38,6 @@
 #include "deUniquePtr.hpp"
 
 #include "vktShaderBuiltinPrecisionTests.hpp"
-#include "vktShaderBuiltinConstantTests.hpp"
 #include "vktShaderCommonFunctionTests.hpp"
 #include "vktShaderIntegerFunctionTests.hpp"
 #include "vktShaderPackingFunctionTests.hpp"
@@ -58,7 +57,6 @@ tcu::TestCaseGroup* createBuiltinTests (tcu::TestContext& testCtx)
 	builtinFunctionTests->addChild(new ShaderPackingFunctionTests(testCtx));
 
 	builtinTests->addChild(builtinFunctionTests.release());
-	builtinTests->addChild(new ShaderBuiltinConstantTests(testCtx));
 	builtinTests->addChild(new BuiltinPrecisionTests(testCtx));
 
 	return builtinTests.release();
