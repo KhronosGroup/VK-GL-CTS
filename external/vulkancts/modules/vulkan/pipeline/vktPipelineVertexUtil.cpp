@@ -670,6 +670,30 @@ bool isVertexFormatUscaled (VkFormat format)
 
 }
 
+bool isVertexFormatDouble (VkFormat format)
+{
+	switch (format)
+	{
+		case VK_FORMAT_R64_UINT:
+		case VK_FORMAT_R64_SINT:
+		case VK_FORMAT_R64_SFLOAT:
+		case VK_FORMAT_R64G64_UINT:
+		case VK_FORMAT_R64G64_SINT:
+		case VK_FORMAT_R64G64_SFLOAT:
+		case VK_FORMAT_R64G64B64_UINT:
+		case VK_FORMAT_R64G64B64_SINT:
+		case VK_FORMAT_R64G64B64_SFLOAT:
+		case VK_FORMAT_R64G64B64A64_UINT:
+		case VK_FORMAT_R64G64B64A64_SINT:
+		case VK_FORMAT_R64G64B64A64_SFLOAT:
+			return true;
+
+		default:
+			break;
+	}
+	return false;
+}
+
 std::vector<Vertex4RGBA> createOverlappingQuads (void)
 {
 	using tcu::Vec2;

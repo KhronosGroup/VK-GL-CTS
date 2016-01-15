@@ -71,6 +71,7 @@ bool						isVertexFormatSnorm				(vk::VkFormat format);
 bool						isVertexFormatSRGB				(vk::VkFormat format);
 bool						isVertexFormatSscaled			(vk::VkFormat format);
 bool						isVertexFormatUscaled			(vk::VkFormat format);
+bool						isVertexFormatDouble			(vk::VkFormat format);
 
 /*! \brief Creates a pattern of 4 overlapping quads.
  *
