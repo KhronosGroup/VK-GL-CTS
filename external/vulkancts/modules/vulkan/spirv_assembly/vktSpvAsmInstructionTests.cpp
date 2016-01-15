@@ -5998,7 +5998,7 @@ tcu::TestCaseGroup* createDecorationGroupTests(tcu::TestContext& testCtx)
 		"             OpStore %v_struct1 %c_struct1\n"
 		"%v_struct2 = OpVariable %fp_struct2 Function\n"
 		"             OpStore %v_struct2 %c_struct2\n"
-		"%ptr1      = OpAccessChain %fp_f32 %v_struct1 %c_i32_0 %c_i32_1\n"
+		"%ptr1      = OpAccessChain %fp_f32 %v_struct1 %c_i32_0 %c_i32_2\n"
 		"%val1      = OpLoad %f32 %ptr1\n"
 		"%ptr2      = OpAccessChain %fp_f32 %v_struct2 %c_i32_0 %c_i32_2\n"
 		"%val2      = OpLoad %f32 %ptr2\n"
