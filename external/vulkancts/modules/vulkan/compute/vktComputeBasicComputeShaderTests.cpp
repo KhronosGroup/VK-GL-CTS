@@ -935,7 +935,7 @@ tcu::TestStatus CopySSBOToImageTestInstance::iterate (void)
 	const deUint32 imageArea = multiplyComponents(m_imageSize);
 	const VkDeviceSize bufferSizeBytes = sizeof(deUint32) * imageArea;
 
-	const Buffer inputBuffer(vk, device, allocator, makeBufferCreateInfo(bufferSizeBytes, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER), MemoryRequirement::HostVisible);
+	const Buffer inputBuffer(vk, device, allocator, makeBufferCreateInfo(bufferSizeBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT), MemoryRequirement::HostVisible);
 
 	// Populate the buffer with test data
 	{
@@ -1813,6 +1813,14 @@ tcu::TestStatus SSBOBarrierTestInstance::iterate (void)
 	const VkDeviceSize outputBufferSizeBytes = sizeof(deUint32);
 	const Buffer outputBuffer(vk, device, allocator, makeBufferCreateInfo(outputBufferSizeBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT), MemoryRequirement::HostVisible);
 
+	// Initialize atomic counter value to zero
+	{
+		const Allocation& outputBufferAllocation = outputBuffer.getAllocation();
+		deUint32* outputBufferPtr = static_cast<deUint32*>(outputBufferAllocation.getHostPtr());
+		*outputBufferPtr = 0;
+		flushMappedMemoryRange(vk, device, outputBufferAllocation.getMemory(), outputBufferAllocation.getOffset(), outputBufferSizeBytes);
+	}
+
 	// Create a uniform buffer (to pass uniform constants)
 
 	const VkDeviceSize uniformBufferSizeBytes = sizeof(deUint32);
@@ -2227,10 +2235,12 @@ tcu::TestStatus ImageBarrierTestInstance::iterate (void)
 	const Buffer outputBuffer(vk, device, allocator, makeBufferCreateInfo(outputBufferSizeBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT), MemoryRequirement::HostVisible);
 
 	// Initialize atomic counter value to zero
-	const Allocation& outputBufferAllocation = outputBuffer.getAllocation();
-	deUint32* outputBufferPtr = static_cast<deUint32*>(outputBufferAllocation.getHostPtr());
-	*outputBufferPtr = 0;
-	flushMappedMemoryRange(vk, device, outputBufferAllocation.getMemory(), outputBufferAllocation.getOffset(), outputBufferSizeBytes);
+	{
+		const Allocation& outputBufferAllocation = outputBuffer.getAllocation();
+		deUint32* outputBufferPtr = static_cast<deUint32*>(outputBufferAllocation.getHostPtr());
+		*outputBufferPtr = 0;
+		flushMappedMemoryRange(vk, device, outputBufferAllocation.getMemory(), outputBufferAllocation.getOffset(), outputBufferSizeBytes);
+	}
 
 	// Create a uniform buffer (to pass uniform constants)
 
@@ -2327,6 +2337,7 @@ tcu::TestStatus ImageBarrierTestInstance::iterate (void)
 
 	// Validate the results
 
+	const Allocation& outputBufferAllocation = outputBuffer.getAllocation();
 	invalidateMappedMemoryRange(vk, device, outputBufferAllocation.getMemory(), outputBufferAllocation.getOffset(), outputBufferSizeBytes);
 
 	const int		numValues = multiplyComponents(m_imageSize);
