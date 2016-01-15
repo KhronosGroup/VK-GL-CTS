@@ -6006,7 +6006,7 @@ tcu::TestCaseGroup* createDecorationGroupTests(tcu::TestContext& testCtx)
 		"             OpStore %v_struct1 %c_struct1\n"
 		"%v_struct2 = OpVariable %fp_struct2 Function\n"
 		"             OpStore %v_struct2 %c_struct2\n"
-		"%ptr1      = OpAccessChain %fp_f32 %v_struct1 %c_i32_0 %c_i32_1\n"
+		"%ptr1      = OpAccessChain %fp_f32 %v_struct1 %c_i32_0 %c_i32_2\n"
 		"%val1      = OpLoad %f32 %ptr1\n"
 		"%ptr2      = OpAccessChain %fp_f32 %v_struct2 %c_i32_0 %c_i32_2\n"
 		"%val2      = OpLoad %f32 %ptr2\n"
@@ -6305,7 +6305,7 @@ tcu::TestCaseGroup* createOpPhiTests(tcu::TestContext& testCtx)
 	//     float operand;
 	//     switch (i) {
 	//       case 0: operand = .2; break;
-	//       case 1: operand = .6; break;
+	//       case 1: operand = .5; break;
 	//       case 2: operand = .4; break;
 	//       case 3: operand = .0; break;
 	//       default: break; // unreachable
@@ -6367,10 +6367,10 @@ tcu::TestCaseGroup* createOpPhiTests(tcu::TestContext& testCtx)
 
 	getHalfColorsFullAlpha(inputColors);
 
-	outputColors1[0]		= RGBA(178, 180, 229, 255);
-	outputColors1[1]		= RGBA(178, 153, 102, 255);
-	outputColors1[2]		= RGBA(51,  180, 102, 255);
-	outputColors1[3]		= RGBA(51,  153, 229, 255);
+	outputColors1[0]		= RGBA(178, 255, 229, 255);
+	outputColors1[1]		= RGBA(178, 127, 102, 255);
+	outputColors1[2]		= RGBA(51,  255, 102, 255);
+	outputColors1[3]		= RGBA(51,  127, 229, 255);
 
 	createTestsForAllStages("out_of_order", inputColors, outputColors1, fragments1, group.get());
 
