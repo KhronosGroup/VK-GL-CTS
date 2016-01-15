@@ -402,18 +402,20 @@ void validateAllocationCallbacks (const AllocationCallbackRecorder& recorder, Al
 			{
 				if (record.data.allocation.returnedPtr)
 				{ 
-					if (!de::contains(ptrToSlotIndex, record.data.allocation.returnedPtr)) {
+					if (!de::contains(ptrToSlotIndex, record.data.allocation.returnedPtr))
+					{
 						ptrToSlotIndex[record.data.allocation.returnedPtr] = allocations.size();
 						allocations.push_back(AllocationSlot(record, true));
-					} 
-					else 
+					}
+					else
 					{
 						const size_t		slotNdx		= ptrToSlotIndex[record.data.allocation.returnedPtr];
-						if (!allocations[slotNdx].isLive) {
+						if (!allocations[slotNdx].isLive) 
+						{
 							allocations[slotNdx].isLive = true;
 							allocations[slotNdx].record = record;
-						} 
-						else 
+						}
+						else
 						{
 							// we should not have multiple live allocations with the same pointer
 							DE_ASSERT(false);
@@ -451,13 +453,28 @@ void validateAllocationCallbacks (const AllocationCallbackRecorder& recorder, Al
 						}
 						else
 						{
-							DE_ASSERT(!de::contains(ptrToSlotIndex, record.data.reallocation.returnedPtr));
-
 							if (record.data.reallocation.returnedPtr)
 							{
 								allocations[origSlotNdx].isLive = false;
-								ptrToSlotIndex[record.data.reallocation.returnedPtr] = allocations.size();
-								allocations.push_back(AllocationSlot(record, true));
+								if (!de::contains(ptrToSlotIndex, record.data.reallocation.returnedPtr))
+								{
+									ptrToSlotIndex[record.data.reallocation.returnedPtr] = allocations.size();
+									allocations.push_back(AllocationSlot(record, true));
+								}
+								else
+								{
+									const size_t slotNdx = ptrToSlotIndex[record.data.reallocation.returnedPtr];
+									if (!allocations[slotNdx].isLive)
+									{
+										allocations[slotNdx].isLive = true;
+										allocations[slotNdx].record = record;
+									}
+									else
+									{
+										// we should not have multiple live allocations with the same pointer
+										DE_ASSERT(false);
+									}
+								}
 							}
 							// else original ptr remains valid and live
 						}
