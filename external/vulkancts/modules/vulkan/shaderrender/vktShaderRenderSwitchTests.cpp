@@ -120,13 +120,9 @@ static de::MovePtr<ShaderSwitchCase> makeSwitchCase (tcu::TestContext& testCtx, 
 	std::ostringstream&	op		= isVertex ? vtx : frag;
 
 	vtx << "#version 310 es\n"
-		<< "#extension GL_ARB_separate_shader_objects : enable\n"
-		<< "#extension GL_ARB_shading_language_420pack : enable\n"
 		<< "layout(location = 0) in highp vec4 a_position;\n"
 		<< "layout(location = 1) in highp vec4 a_coords;\n\n";
 	frag	<< "#version 310 es\n"
-			<< "#extension GL_ARB_separate_shader_objects : enable\n"
-			<< "#extension GL_ARB_shading_language_420pack : enable\n"
 			<< "layout(location = 0) out mediump vec4 o_color;\n";
 
 	if (isVertex)

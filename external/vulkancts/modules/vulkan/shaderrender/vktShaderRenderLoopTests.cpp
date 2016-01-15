@@ -320,12 +320,7 @@ static de::MovePtr<ShaderLoopCase> createGenericLoopCase (tcu::TestContext&	test
 	std::ostringstream& op = isVertexCase ? vtx : frag;
 
 	vtx << "#version 310 es\n";
-	vtx << "#extension GL_ARB_separate_shader_objects : enable\n";
-	vtx << "#extension GL_ARB_shading_language_420pack : enable\n";
-
 	frag << "#version 310 es\n";
-	frag << "#extension GL_ARB_separate_shader_objects : enable\n";
-	frag << "#extension GL_ARB_shading_language_420pack : enable\n";
 
 	vtx << "layout(location=0) in highp vec4 a_position;\n";
 	vtx << "layout(location=1) in highp vec4 a_coords;\n";
@@ -550,12 +545,7 @@ static de::MovePtr<ShaderLoopCase> createSpecialLoopCase (tcu::TestContext&	test
 	deUint32						locationCounter = 0;
 
 	vtx << "#version 310 es\n";
-	vtx << "#extension GL_ARB_separate_shader_objects : enable\n";
-	vtx << "#extension GL_ARB_shading_language_420pack : enable\n";
-
 	frag << "#version 310 es\n";
-	frag << "#extension GL_ARB_separate_shader_objects : enable\n";
-	frag << "#extension GL_ARB_shading_language_420pack : enable\n";
 
 	vtx << "layout(location=0) in highp vec4 a_position;\n";
 	vtx << "layout(location=1) in highp vec4 a_coords;\n";

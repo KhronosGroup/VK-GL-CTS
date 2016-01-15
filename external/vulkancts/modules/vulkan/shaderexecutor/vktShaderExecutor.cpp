@@ -99,8 +99,6 @@ static std::string generateEmptyFragmentSource ()
 	std::ostringstream src;
 
 	src <<	"#version 310 es\n"
-			"#extension GL_ARB_separate_shader_objects : enable\n"
-			"#extension GL_ARB_shading_language_420pack : enable\n"
 			"layout(location=0) out highp vec4 o_color;\n";
 
 	src << "void main (void)\n{\n";
@@ -117,8 +115,6 @@ static std::string generatePassthroughVertexShader (const std::vector<Symbol>& i
 	int					location	= 0;
 
 	src <<	"#version 310 es\n"
-			"#extension GL_ARB_separate_shader_objects : enable\n"
-			"#extension GL_ARB_shading_language_420pack : enable\n"
 			"layout(location = " << location << ") in highp vec4 a_position;\n";
 
 	for (vector<Symbol>::const_iterator input = inputs.begin(); input != inputs.end(); ++input)
@@ -146,9 +142,7 @@ static std::string generateVertexShader (const ShaderSpec& shaderSpec, const std
 
 	std::ostringstream	src;
 
-	src <<	"#version 310 es\n"
-		"#extension GL_ARB_separate_shader_objects : enable\n"
-		"#extension GL_ARB_shading_language_420pack : enable\n";
+	src <<	"#version 310 es\n";
 
 	if (!shaderSpec.globalDeclarations.empty())
 		src << shaderSpec.globalDeclarations << "\n";
@@ -305,9 +299,7 @@ static std::string generatePassthroughFragmentShader (const ShaderSpec& shaderSp
 {
 	std::ostringstream	src;
 
-	src <<	"#version 310 es\n"
-		"#extension GL_ARB_separate_shader_objects : enable\n"
-		"#extension GL_ARB_shading_language_420pack : enable\n";
+	src <<	"#version 310 es\n";
 
 	if (!shaderSpec.globalDeclarations.empty())
 		src << shaderSpec.globalDeclarations << "\n";
@@ -345,9 +337,7 @@ static std::string generateGeometryShader (const ShaderSpec& shaderSpec, const s
 	std::ostringstream	src;
 
 	src <<	"#version 310 es\n"
-		"#extension GL_EXT_geometry_shader : require\n"
-		"#extension GL_ARB_separate_shader_objects : enable\n"
-		"#extension GL_ARB_shading_language_420pack : enable\n";
+		"#extension GL_EXT_geometry_shader : require\n";
 
 	if (!shaderSpec.globalDeclarations.empty())
 		src << shaderSpec.globalDeclarations << "\n";
@@ -424,9 +414,7 @@ static std::string generateGeometryShader (const ShaderSpec& shaderSpec, const s
 static std::string generateFragmentShader (const ShaderSpec& shaderSpec, bool useIntOutputs, const std::map<std::string, int>& outLocationMap, const std::string& inputPrefix, const std::string& outputPrefix)
 {
 	std::ostringstream src;
-	src <<  "#version 310 es\n"
-			"#extension GL_ARB_separate_shader_objects : enable\n"
-			"#extension GL_ARB_shading_language_420pack : enable\n";
+	src <<  "#version 310 es\n";
 	if (!shaderSpec.globalDeclarations.empty())
 		src << shaderSpec.globalDeclarations << "\n";
 
@@ -1923,9 +1911,7 @@ ComputeShaderExecutor::~ComputeShaderExecutor	(void)
 std::string ComputeShaderExecutor::generateComputeShader (const ShaderSpec& spec)
 {
 	std::ostringstream src;
-	src <<  "#version 310 es\n"
-			"#extension GL_ARB_separate_shader_objects : enable\n"
-			"#extension GL_ARB_shading_language_420pack : enable\n";
+	src <<  "#version 310 es\n";
 
 	if (!spec.globalDeclarations.empty())
 		src << spec.globalDeclarations << "\n";
@@ -2760,9 +2746,7 @@ std::string TessControlExecutor::generateTessControlShader (const ShaderSpec& sh
 {
 	std::ostringstream src;
 	src <<  "#version 310 es\n"
-			"#extension GL_EXT_tessellation_shader : require\n\n"
-			"#extension GL_ARB_separate_shader_objects : enable\n"
-			"#extension GL_ARB_shading_language_420pack : enable\n";
+			"#extension GL_EXT_tessellation_shader : require\n\n";
 
 	if (!shaderSpec.globalDeclarations.empty())
 		src << shaderSpec.globalDeclarations << "\n";
@@ -2794,9 +2778,7 @@ static std::string generateEmptyTessEvalShader ()
 	std::ostringstream src;
 
 	src <<  "#version 310 es\n"
-			"#extension GL_EXT_tessellation_shader : require\n\n"
-			"#extension GL_ARB_separate_shader_objects : enable\n"
-			"#extension GL_ARB_shading_language_420pack : enable\n";
+			"#extension GL_EXT_tessellation_shader : require\n\n";
 
 	src << "layout(triangles, ccw) in;\n";
 
@@ -2860,9 +2842,7 @@ static std::string generatePassthroughTessControlShader (void)
 	std::ostringstream src;
 
 	src <<  "#version 310 es\n"
-			"#extension GL_EXT_tessellation_shader : require\n\n"
-			"#extension GL_ARB_separate_shader_objects : enable\n"
-			"#extension GL_ARB_shading_language_420pack : enable\n";
+			"#extension GL_EXT_tessellation_shader : require\n\n";
 
 	src << "layout(vertices = 1) out;\n\n";
 
@@ -2884,9 +2864,7 @@ std::string TessEvaluationExecutor::generateTessEvalShader (const ShaderSpec& sh
 	std::ostringstream src;
 
 	src <<  "#version 310 es\n"
-			"#extension GL_EXT_tessellation_shader : require\n\n"
-			"#extension GL_ARB_separate_shader_objects : enable\n"
-			"#extension GL_ARB_shading_language_420pack : enable\n";
+			"#extension GL_EXT_tessellation_shader : require\n\n";
 
 	if (!shaderSpec.globalDeclarations.empty())
 		src << shaderSpec.globalDeclarations << "\n";

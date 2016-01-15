@@ -1756,9 +1756,7 @@ void ShaderMatrixCase::setupShader (void)
 	}
 
 	static const std::string header =
-		"#version 310 es\n"
-		"#extension GL_ARB_separate_shader_objects : enable\n"
-		"#extension GL_ARB_shading_language_420pack : enable\n";
+		"#version 310 es\n";
 
 	vtx << header;
 	frag << header;
