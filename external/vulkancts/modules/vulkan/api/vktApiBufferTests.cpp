@@ -281,6 +281,12 @@ tcu::TestStatus BufferTestInstance::iterate (void)
 	{
 		for (deUint32 combinedBufferUsageFlags = 1; combinedBufferUsageFlags <= maximumValueOfBufferUsageFlags; combinedBufferUsageFlags++)
 		{
+			if (combinedBufferCreateFlags == VK_BUFFER_CREATE_SPARSE_ALIASED_BIT)
+			{
+				// spec says: If flags contains VK_BUFFER_CREATE_SPARSE_ALIASED_BIT, it must also contain at least one of
+				// VK_BUFFER_CREATE_SPARSE_BINDING_BIT or VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT
+				continue;
+			}
 			BufferCaseParameters	testParams =
 			{
 				combinedBufferUsageFlags,
