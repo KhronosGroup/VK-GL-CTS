@@ -3125,9 +3125,9 @@ tcu::TestCaseGroup* createOpUndefGroup (tcu::TestContext& testCtx)
 	cases.push_back(CaseParameter("vec4float32",	"%type = OpTypeVector %f32 4"));
 	cases.push_back(CaseParameter("vec2uint32",		"%type = OpTypeVector %u32 2"));
 	cases.push_back(CaseParameter("matrix",			"%type = OpTypeMatrix %fvec3 3"));
-	cases.push_back(CaseParameter("image",			"%type = OpTypeImage %f32 2D 0 0 0 0 Unknown"));
+	cases.push_back(CaseParameter("image",			"%type = OpTypeImage %f32 2D 0 0 0 1 Unknown"));
 	cases.push_back(CaseParameter("sampler",		"%type = OpTypeSampler"));
-	cases.push_back(CaseParameter("sampledimage",	"%img = OpTypeImage %f32 2D 0 0 0 0 Unknown\n"
+	cases.push_back(CaseParameter("sampledimage",	"%img = OpTypeImage %f32 2D 0 0 0 1 Unknown\n"
 													"%type = OpTypeSampledImage %img"));
 	cases.push_back(CaseParameter("array",			"%100 = OpConstant %u32 100\n"
 													"%type = OpTypeArray %i32 %100"));
@@ -6624,9 +6624,9 @@ tcu::TestCaseGroup* createOpUndefTests(tcu::TestContext& testCtx)
 	{
 		{"bool", "%type = OpTypeBool"},
 		{"vec2uint32", "%type = OpTypeVector %u32 2"},
-		{"image", "%type = OpTypeImage %f32 2D 0 0 0 0 Unknown"},
+		{"image", "%type = OpTypeImage %f32 2D 0 0 0 1 Unknown"},
 		{"sampler", "%type = OpTypeSampler"},
-		{"sampledimage", "%img = OpTypeImage %f32 2D 0 0 0 0 Unknown\n" "%type = OpTypeSampledImage %img"},
+		{"sampledimage", "%img = OpTypeImage %f32 2D 0 0 0 1 Unknown\n" "%type = OpTypeSampledImage %img"},
 		{"pointer", "%type = OpTypePointer Function %i32"},
 		{"runtimearray", "%type = OpTypeRuntimeArray %f32"},
 		{"array", "%c_u32_100 = OpConstant %u32 100\n" "%type = OpTypeArray %i32 %c_u32_100"},
