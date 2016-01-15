@@ -450,6 +450,28 @@ tcu::TestCaseGroup* createNoContractionGroup (tcu::TestContext& testCtx)
 	return group.release();
 }
 
+bool compareFRem(const std::vector<BufferSp>&, const vector<AllocationSp>& outputAllocs, const std::vector<BufferSp>& expectedOutputs)
+{
+	if (outputAllocs.size() != 1)
+		return false;
+
+	const BufferSp& expectedOutput = expectedOutputs[0];
+	const float *expectedOutputAsFloat = static_cast<const float*>(expectedOutput->data());
+	const float* outputAsFloat = static_cast<const float*>(outputAllocs[0]->getHostPtr());;
+
+	for (size_t idx = 0; idx < expectedOutput->getNumBytes() / sizeof(float); ++idx)
+	{
+		const float f0 = expectedOutputAsFloat[idx];
+		const float f1 = outputAsFloat[idx];
+		// \todo relative error needs to be fairly high because FRem may be implemented as
+		// (roughly) frac(a/b)*b, so LSB errors can be magnified. But this should be fine for now.
+		if (deFloatAbs((f1 - f0) / f0) > 0.02)
+			return false;
+	}
+
+	return true;
+}
+
 tcu::TestCaseGroup* createOpFRemGroup (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opfrem", "Test the OpFRem instruction"));
@@ -528,6 +550,7 @@ tcu::TestCaseGroup* createOpFRemGroup (tcu::TestContext& testCtx)
 	spec.inputs.push_back(BufferSp(new Float32Buffer(inputFloats2)));
 	spec.outputs.push_back(BufferSp(new Float32Buffer(outputFloats)));
 	spec.numWorkGroups = IVec3(numElements, 1, 1);
+	spec.verifyIO = &compareFRem;
 
 	group->addChild(new SpvAsmComputeShaderCase(testCtx, "all", "", spec));
 
