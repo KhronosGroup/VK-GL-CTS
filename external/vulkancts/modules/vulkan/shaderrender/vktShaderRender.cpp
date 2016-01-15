@@ -813,7 +813,7 @@ de::MovePtr<Allocation> ShaderRenderCaseInstance::uploadImage2D (const tcu::Text
 
 	tcu::copy(destAccess, access);
 
-	flushMappedMemoryRange(vk, vkDevice, allocation->getMemory(), allocation, layout.size);
+	flushMappedMemoryRange(vk, vkDevice, allocation->getMemory(), allocation->getOffset(), layout.size);
 
 	return allocation;
 }
