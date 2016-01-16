@@ -1175,12 +1175,14 @@ void writeVertexInputValueSfloat (deUint8* destPtr, VkFormat format, int compone
 
 	switch (componentSize)
 	{
-		case 2:
-			*((deFloat16*)destFormatPtr) = deFloat32To16(value);
+		case 2: {
+			deFloat16 f16 = deFloat32To16(value);
+			memcpy(destFormatPtr, &f16, sizeof(f16));
 			break;
+		}
 
 		case 4:
-			*((float*)destFormatPtr) = value;
+			memcpy(destFormatPtr, &value, sizeof(value));
 			break;
 
 		default:
