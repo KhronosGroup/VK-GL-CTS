@@ -67,11 +67,14 @@ using namespace vk;
 namespace
 {
 
-bool isSupportedVertexFormat (const InstanceInterface& instanceInterface, VkPhysicalDevice device, VkFormat format)
+bool isSupportedVertexFormat (Context& context, VkFormat format)
 {
+	if (isVertexFormatDouble(format) && !context.getDeviceFeatures().shaderFloat64)
+		return false;
+
 	VkFormatProperties  formatProps;
 	deMemset(&formatProps, 0, sizeof(VkFormatProperties));
-	instanceInterface.getPhysicalDeviceFormatProperties(device, format, &formatProps);
+	context.getInstanceInterface().getPhysicalDeviceFormatProperties(context.getPhysicalDevice(), format, &formatProps);
 
 	return (formatProps.bufferFeatures & VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT) != 0u;
 }
@@ -88,6 +91,14 @@ float getRepresentableDifferenceSnorm (VkFormat format)
 	DE_ASSERT(isVertexFormatSnorm(format));
 
 	return 1.0f / float((1 << (getVertexFormatComponentSize(format) * 8 - 1)) - 1);
+}
+
+deUint32 getNextMultipleOffset (deUint32 divisor, deUint32 value)
+{
+	if (value % divisor == 0)
+		return 0;
+	else
+		return divisor - (value % divisor);
 }
 
 class VertexInputTest : public vkt::TestCase
@@ -174,6 +185,7 @@ private:
 
 	const std::vector<AttributeInfo>		m_attributeInfos;
 	const BindingMapping					m_bindingMapping;
+	bool									m_usesDoubleType;
 };
 
 class GlslTypeCombinationsIterator : public CombinationsIterator< std::vector<VertexInputTest::GlslType> >
@@ -282,6 +294,16 @@ VertexInputTest::VertexInputTest (tcu::TestContext&						testContext,
 	, m_attributeInfos		(attributeInfos)
 	, m_bindingMapping		(bindingMapping)
 {
+	m_usesDoubleType = false;
+
+	for (size_t attributeNdx = 0; attributeNdx < m_attributeInfos.size(); attributeNdx++)
+	{
+		if (s_glslTypeDescriptions[m_attributeInfos[attributeNdx].glslType].basicType == GLSL_BASIC_TYPE_DOUBLE)
+		{
+			m_usesDoubleType = true;
+			break;
+		}
+	}
 }
 
 TestInstance* VertexInputTest::createInstance (Context& context) const
@@ -310,7 +332,7 @@ TestInstance* VertexInputTest::createInstance (Context& context) const
 	// Create attribute descriptions, assign them to bindings and update .strideInBytes
 	std::vector<VertexInputInstance::VertexInputAttributeDescription>	attributeDescriptions;
 	deUint32															attributeLocation		= 0;
-	std::vector<deUint32>												attributeOffsets			(bindingDescriptions.size(), 0);
+	std::vector<deUint32>												attributeOffsets		(bindingDescriptions.size(), 0);
 
 	for (size_t attributeNdx = 0; attributeNdx < m_attributeInfos.size(); attributeNdx++)
 	{
@@ -344,6 +366,11 @@ TestInstance* VertexInputTest::createInstance (Context& context) const
 
 		for (int descNdx = 0; descNdx < glslTypeDescription.vertexInputCount; descNdx++)
 		{
+			const deUint32	offsetToComponentAlignment	= getNextMultipleOffset(getVertexFormatComponentSize(attributeInfo.vkType),
+																				(deUint32)bindingOffsets[attributeBinding] + attributeOffsets[attributeBinding]);
+
+			attributeOffsets[attributeBinding] += offsetToComponentAlignment;
+
 			const VertexInputInstance::VertexInputAttributeDescription attributeDescription =
 			{
 				attributeInfo.glslType,							// GlslType	glslType;
@@ -356,8 +383,8 @@ TestInstance* VertexInputTest::createInstance (Context& context) const
 				},
 			};
 
-			bindingDescriptions[attributeBinding].stride += inputSize;
-			attributeOffsets[attributeBinding] += inputSize;
+			bindingDescriptions[attributeBinding].stride	+= offsetToComponentAlignment + inputSize;
+			attributeOffsets[attributeBinding]				+= inputSize;
 
 			//double formats with more than 2 components will take 2 locations
 			const GlslType type = attributeInfo.glslType;
@@ -385,9 +412,13 @@ void VertexInputTest::initPrograms (SourceCollections& programCollection) const
 			  << "layout(location = 0) out highp vec4 vtxColor;\n"
 			  << "out gl_PerVertex {\n"
 			  << "  vec4 gl_Position;\n"
-			  << "};\n"
-			  << "double abs (double x) { if (x < 0.0LF) return -x; else return x; }\n" // NOTE: Currently undefined in glslang ??
-			  << "void main (void)\n"
+			  << "};\n";
+
+	// NOTE: double abs(double x) undefined in glslang ??
+	if (m_usesDoubleType)
+		vertexSrc << "double abs (double x) { if (x < 0.0LF) return -x; else return x; }\n";
+
+	vertexSrc << "void main (void)\n"
 			  << "{\n"
 			  << getGlslVertexCheck()
 			  << "}\n";
@@ -785,7 +816,7 @@ VertexInputInstance::VertexInputInstance (Context&												context,
 		{
 			const VkVertexInputAttributeDescription& attributeDescription = attributeDescriptions[attributeNdx].vkDescription;
 
-			if (!isSupportedVertexFormat(context.getInstanceInterface(), context.getPhysicalDevice(), attributeDescription.format))
+			if (!isSupportedVertexFormat(context, attributeDescription.format))
 				throw tcu::NotSupportedError(std::string("Unsupported format for vertex input: ") + getFormatName(attributeDescription.format));
 
 			vkAttributeDescriptions.push_back(attributeDescription);
@@ -1103,7 +1134,6 @@ void VertexInputInstance::writeVertexInputData(deUint8* destPtr, const VkVertexI
 	deUint8* destOffsetPtr = ((deUint8 *)destPtr) + bindingOffset;
 	for (deUint32 vertexNdx = 0; vertexNdx < vertexCount; vertexNdx++)
 	{
-		deUint32 vertexInputOffset = 0;
 		for (size_t attributeNdx = 0; attributeNdx < attributes.size(); attributeNdx++)
 		{
 			const VertexInputAttributeDescription& attribDesc = attributes[attributeNdx];
@@ -1111,11 +1141,9 @@ void VertexInputInstance::writeVertexInputData(deUint8* destPtr, const VkVertexI
 			// Only write vertex input data to bindings referenced by attribute descriptions
 			if (attribDesc.vkDescription.binding == bindingDescription.binding)
 			{
-				writeVertexInputValue(destOffsetPtr + vertexInputOffset, attribDesc, vertexNdx);
-				vertexInputOffset += getVertexFormatSize(attribDesc.vkDescription.format);
+				writeVertexInputValue(destOffsetPtr + attribDesc.vkDescription.offset, attribDesc, vertexNdx);
 			}
 		}
-		DE_ASSERT(vertexInputOffset <= bindingDescription.stride);
 		destOffsetPtr += bindingDescription.stride;
 	}
 }
