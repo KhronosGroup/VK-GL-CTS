@@ -1351,8 +1351,8 @@ void AdvGraphicsTest::initPrograms(SourceCollections& programCollection) const
 	programCollection.glslSources.add("basic_tcs") << glu::TessellationControlSource(
 		"#version 450 \n"
 		"layout(vertices = 3) out;\n"
-		"in highp vec4 color[];\n"
-		"out highp vec4 vtxColor[];\n"
+		"layout(location = 0) in highp vec4 color[];\n"
+		"layout(location = 0) out highp vec4 vtxColor[];\n"
 		"void main()\n"
 		"{\n"
 		"  gl_TessLevelOuter[0] = 4.0;\n"
@@ -1366,8 +1366,8 @@ void AdvGraphicsTest::initPrograms(SourceCollections& programCollection) const
 	programCollection.glslSources.add("basic_tes") << glu::TessellationEvaluationSource(
 		"#version 450 \n"
 		"layout(triangles, fractional_even_spacing, ccw) in;\n"
-		"in highp vec4 colors[];\n"
-		"out highp vec4 vtxColor;\n"
+		"layout(location = 0) in highp vec4 colors[];\n"
+		"layout(location = 0) out highp vec4 vtxColor;\n"
 		"void main() \n"
 		"{\n"
 		"  float u = gl_TessCoord.x;\n"
