@@ -573,13 +573,25 @@ tcu::TestStatus executeLargePrimaryBufferTest(Context& context)
 
 	// check if the buffer was executed correctly - all events had their status
 	// changed
+	tcu::TestStatus testResult = tcu::TestStatus::incomplete();
+
 	for (deUint32 ndx = 0; ndx < LARGE_BUFFER_SIZE; ++ndx)
 	{
 		if (vk.getEventStatus(vkDevice, events[ndx]) != VK_EVENT_SET)
-			return tcu::TestStatus::fail("An event was not set.");
+		{
+			testResult = tcu::TestStatus::fail("An event was not set.");
+			break;
+		}
 	}
 
-	return tcu::TestStatus::pass("All events set correctly.");
+	if (!testResult.isComplete())
+		testResult = tcu::TestStatus::pass("All events set correctly.");
+
+	// Free the events
+	for (deUint32 ndx = 0; ndx < LARGE_BUFFER_SIZE; ++ndx)
+		vk.destroyEvent(vkDevice, events[ndx], DE_NULL);
+
+	return testResult;
 }
 
 tcu::TestStatus resetBufferImplicitlyTest(Context& context)
@@ -2252,11 +2264,25 @@ tcu::TestStatus submitBufferCountNonZero(Context& context)
 	VK_CHECK(vk.waitForFences(vkDevice, 1u, &fence.get(), VK_TRUE, INFINITE_TIMEOUT));
 
 	// Check if the buffers were executed
-	for (deUint32 ndx = 0; ndx < BUFFER_COUNT; ++ndx)
-		if (vk.getEventStatus(vkDevice, events[ndx]) != VK_EVENT_SET)
-			return tcu::TestStatus::fail("Failed to set the event.");
+	tcu::TestStatus testResult = tcu::TestStatus::incomplete();
 
-	return tcu::TestStatus::pass("All buffers were submitted and executed correctly.");
+	for (deUint32 ndx = 0; ndx < BUFFER_COUNT; ++ndx)
+	{
+		if (vk.getEventStatus(vkDevice, events[ndx]) != VK_EVENT_SET)
+		{
+			testResult = tcu::TestStatus::fail("Failed to set the event.");
+			break;
+		}
+	}
+
+	if (!testResult.isComplete())
+		testResult = tcu::TestStatus::pass("All buffers were submitted and executed correctly.");
+
+	// Free the events
+	for (deUint32 ndx = 0; ndx < BUFFER_COUNT; ++ndx)
+		vk.destroyEvent(vkDevice, events[ndx], DE_NULL);
+
+	return testResult;
 }
 
 tcu::TestStatus submitBufferCountEqualZero(Context& context)
@@ -2369,10 +2395,18 @@ tcu::TestStatus submitBufferCountEqualZero(Context& context)
 	VK_CHECK(vk.waitForFences(vkDevice, (deUint32)DE_LENGTH_OF_ARRAY(fences), fences, VK_TRUE, INFINITE_TIMEOUT));
 
 	// Check if the first buffer was executed
-	if (vk.getEventStatus(vkDevice, events[0]) == VK_EVENT_SET)
-		return tcu::TestStatus::fail("The first event was signaled.");
+	tcu::TestStatus testResult = tcu::TestStatus::incomplete();
 
-	return tcu::TestStatus::pass("The first submission was ignored.");
+	if (vk.getEventStatus(vkDevice, events[0]) == VK_EVENT_SET)
+		testResult = tcu::TestStatus::fail("The first event was signaled.");
+	else
+		testResult = tcu::TestStatus::pass("The first submission was ignored.");
+
+	// Free the events
+	for (deUint32 ndx = 0; ndx < BUFFER_COUNT; ++ndx)
+		vk.destroyEvent(vkDevice, events[ndx], DE_NULL);
+
+	return testResult;
 }
 
 tcu::TestStatus submitBufferNullFence(Context& context)
@@ -2478,10 +2512,18 @@ tcu::TestStatus submitBufferNullFence(Context& context)
 	// Wait for the queue
 	VK_CHECK(vk.waitForFences(vkDevice, 1u, &fence.get(), VK_TRUE, INFINITE_TIMEOUT));
 
-	if (vk.getEventStatus(vkDevice, events[0]) != VK_EVENT_SET)
-		return tcu::TestStatus::fail("The first event was not signaled -> the buffer was not executed.");
+	tcu::TestStatus testResult = tcu::TestStatus::incomplete();
 
-	return tcu::TestStatus::pass("The first event was signaled -> the buffer with null fence submitted and executed correctly.");
+	if (vk.getEventStatus(vkDevice, events[0]) != VK_EVENT_SET)
+		testResult = tcu::TestStatus::fail("The first event was not signaled -> the buffer was not executed.");
+	else
+		testResult = tcu::TestStatus::pass("The first event was signaled -> the buffer with null fence submitted and executed correctly.");
+
+	// Free the events
+	for (deUint32 ndx = 0; ndx < BUFFER_COUNT; ++ndx)
+		vk.destroyEvent(vkDevice, events[ndx], DE_NULL);
+
+	return testResult;
 }
 
 /******** 19.5. Secondary Command Buffer Execution (6.6 in VK 1.0 Spec) *******/
