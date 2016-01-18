@@ -897,6 +897,7 @@ Move<VkBuffer> TimestampTestInstance::createBufferAndBindMemory(VkDeviceSize siz
 
 	DE_ASSERT(pAlloc);
 	*pAlloc = vertexBufferAlloc;
+
 	return vertexBuffer;
 }
 
@@ -1004,6 +1005,7 @@ protected:
 	Move<VkRenderPass>                  m_renderPass;
 	Move<VkFramebuffer>                 m_framebuffer;
 
+	de::MovePtr<Allocation>             m_vertexBufferAlloc;
 	Move<VkBuffer>                      m_vertexBuffer;
 	std::vector<Vertex4RGBA>            m_vertices;
 
@@ -1046,13 +1048,12 @@ void BasicGraphicsTestInstance::buildVertexBuffer(void)
 
 	// Create vertex buffer
 	{
-		de::MovePtr<Allocation>     bufferAlloc;
-		m_vertexBuffer = createBufferAndBindMemory(1024u,VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,&bufferAlloc);
+		m_vertexBuffer = createBufferAndBindMemory(1024u, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, &m_vertexBufferAlloc);
 
 		m_vertices          = createOverlappingQuads();
 		// Load vertices into vertex buffer
-		deMemcpy(bufferAlloc->getHostPtr(), m_vertices.data(), m_vertices.size() * sizeof(Vertex4RGBA));
-		flushMappedMemoryRange(vk, vkDevice, bufferAlloc->getMemory(), bufferAlloc->getOffset(), 1024u);
+		deMemcpy(m_vertexBufferAlloc->getHostPtr(), m_vertices.data(), m_vertices.size() * sizeof(Vertex4RGBA));
+		flushMappedMemoryRange(vk, vkDevice, m_vertexBufferAlloc->getMemory(), m_vertexBufferAlloc->getOffset(), 1024u);
 	}
 }
 
@@ -1341,6 +1342,7 @@ protected:
 protected:
 	VkPhysicalDeviceFeatures m_features;
 	deUint32                 m_draw_count;
+	de::MovePtr<Allocation>  m_indirectBufferAlloc;
 	Move<VkBuffer>           m_indirectBuffer;
 };
 
@@ -1469,8 +1471,7 @@ AdvGraphicsTestInstance::AdvGraphicsTestInstance(Context&              context,
 	{
 		m_draw_count = 1;
 	}
-	de::MovePtr<Allocation>     bufferAlloc;
-	m_indirectBuffer = createBufferAndBindMemory(32u, VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, &bufferAlloc);
+	m_indirectBuffer = createBufferAndBindMemory(32u, VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, &m_indirectBufferAlloc);
 
 	const VkDrawIndirectCommand indirectCmds[] =
 	{
@@ -1488,8 +1489,8 @@ AdvGraphicsTestInstance::AdvGraphicsTestInstance(Context&              context,
 		},
 	};
 	// Load data into indirect draw buffer
-	deMemcpy(bufferAlloc->getHostPtr(), indirectCmds, m_draw_count * sizeof(VkDrawIndirectCommand));
-	flushMappedMemoryRange(vk, vkDevice, bufferAlloc->getMemory(), bufferAlloc->getOffset(), 32u);
+	deMemcpy(m_indirectBufferAlloc->getHostPtr(), indirectCmds, m_draw_count * sizeof(VkDrawIndirectCommand));
+	flushMappedMemoryRange(vk, vkDevice, m_indirectBufferAlloc->getMemory(), m_indirectBufferAlloc->getOffset(), 32u);
 
 }
 
@@ -1586,7 +1587,9 @@ public:
 	virtual      ~BasicComputeTestInstance (void);
 	virtual void configCommandBuffer       (void);
 protected:
+	de::MovePtr<Allocation>     m_inputBufAlloc;
 	Move<VkBuffer>              m_inputBuf;
+	de::MovePtr<Allocation>     m_outputBufAlloc;
 	Move<VkBuffer>              m_outputBuf;
 
 	Move<VkDescriptorPool>      m_descriptorPool;
@@ -1636,10 +1639,9 @@ BasicComputeTestInstance::BasicComputeTestInstance(Context&              context
 
 	// Create buffer object, allocate storage, and generate input data
 	const VkDeviceSize          size                = sizeof(tcu::Vec4) * 128u;
-	de::MovePtr<Allocation>     bufferAlloc;
-	m_inputBuf = createBufferAndBindMemory(size, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, &bufferAlloc);
+	m_inputBuf = createBufferAndBindMemory(size, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, &m_inputBufAlloc);
 	// Load vertices into buffer
-	tcu::Vec4* pVec = reinterpret_cast<tcu::Vec4*>(bufferAlloc->getHostPtr());
+	tcu::Vec4* pVec = reinterpret_cast<tcu::Vec4*>(m_inputBufAlloc->getHostPtr());
 	for (deUint32 ndx = 0u; ndx < 128u; ndx++)
 	{
 		for (deUint32 component = 0u; component < 4u; component++)
@@ -1647,10 +1649,9 @@ BasicComputeTestInstance::BasicComputeTestInstance(Context&              context
 			pVec[ndx][component]= (float)(ndx * (component + 1u));
 		}
 	}
-	flushMappedMemoryRange(vk, vkDevice, bufferAlloc->getMemory(), bufferAlloc->getOffset(), size);
+	flushMappedMemoryRange(vk, vkDevice, m_inputBufAlloc->getMemory(), m_inputBufAlloc->getOffset(), size);
 
-	de::MovePtr<Allocation> dummyAlloc;
-	m_outputBuf = createBufferAndBindMemory(size, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, &dummyAlloc);
+	m_outputBuf = createBufferAndBindMemory(size, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, &m_outputBufAlloc);
 
 	std::vector<VkDescriptorBufferInfo>        descriptorInfos;
 	descriptorInfos.push_back(makeDescriptorBufferInfo(*m_inputBuf, 0u, sizeof(tcu::Vec4) * 128u));
@@ -2114,7 +2115,7 @@ void TransferTestInstance::initialImageTransition (VkCommandBuffer cmdBuffer, Vk
 		subRange                                // VkImageSubresourceRange  subresourceRange;
 	};
 
-	vk.cmdPipelineBarrier(cmdBuffer, 0, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0, 0, DE_NULL, 0, DE_NULL, 1, &&imageMemBarrier);
+	vk.cmdPipelineBarrier(cmdBuffer, 0, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0, 0, DE_NULL, 0, DE_NULL, 1, &imageMemBarrier);
 }
 
 } // anonymous
