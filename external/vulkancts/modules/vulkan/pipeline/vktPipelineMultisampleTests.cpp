@@ -1244,7 +1244,7 @@ tcu::TestStatus AlphaToCoverageInstance::verifyImage (const tcu::ConstPixelBuffe
 			break;
 
 		case GEOMETRY_TYPE_TRANSLUCENT_QUAD:
-			maxColorValue = 0.5f;
+			maxColorValue = 0.52f;
 			break;
 
 		case GEOMETRY_TYPE_INVISIBLE_QUAD:
@@ -1252,7 +1252,7 @@ tcu::TestStatus AlphaToCoverageInstance::verifyImage (const tcu::ConstPixelBuffe
 			break;
 
 		default:
-			maxColorValue = 0.0f; // Garbage
+			maxColorValue = 0.0f;
 			DE_ASSERT(false);
 	}
 
