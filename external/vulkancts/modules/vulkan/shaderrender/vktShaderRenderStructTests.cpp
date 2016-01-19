@@ -1327,7 +1327,7 @@ void UniformStructTests::init (void)
 			struct T {
 				int				a;
 				float			_padding1[1];
-				tcu::Vec2		b;;
+				tcu::Vec2		b;
 			};
 
 			struct S {
