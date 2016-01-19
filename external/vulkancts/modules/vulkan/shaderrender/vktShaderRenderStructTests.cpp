@@ -1326,9 +1326,8 @@ void UniformStructTests::init (void)
 
 			struct T {
 				int				a;
-				float			_padding1[3];
-				tcu::Vec2		b;
-				float			_padding2[2];
+				float			_padding1[1];
+				tcu::Vec2		b;;
 			};
 
 			struct S {
@@ -1336,6 +1335,7 @@ void UniformStructTests::init (void)
 				float			_padding1[3];
 				T				b;
 				int				c;
+				float			_padding2[3];
 			};
 
 			S s;
