@@ -436,7 +436,7 @@ struct DeviceMemory
 
 	static deUint32 getMaxConcurrent (Context& context)
 	{
-		return context.getDeviceProperties().limits.maxMemoryAllocationCount;
+		return de::min(context.getDeviceProperties().limits.maxMemoryAllocationCount, 4096u);
 	}
 
 	struct Parameters
