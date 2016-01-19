@@ -4425,6 +4425,22 @@ tcu::TestStatus BuiltinPrecisionCaseTestInstance<In, Out>::iterate (void)
 		&outputs.out0.front(), &outputs.out1.front(),
 	};
 
+	// Print out the statement and its definitions
+	testLog << TestLog::Message << "Statement: " << m_stmt << TestLog::EndMessage;
+	{
+		ostringstream	oss;
+		FuncSet			funcs;
+
+		m_stmt->getUsedFuncs(funcs);
+		for (FuncSet::const_iterator it = funcs.begin(); it != funcs.end(); ++it)
+		{
+			(*it)->printDefinition(oss);
+		}
+		if (!funcs.empty())
+			testLog << TestLog::Message << "Reference definitions:\n" << oss.str()
+				  << TestLog::EndMessage;
+	}
+
 	switch (inCount)
 	{
 		case 4: DE_ASSERT(inputs.in3.size() == numValues);
@@ -4580,7 +4596,6 @@ protected:
 	}
 
 	const FloatFormat&	getFormat		(void) const			{ return m_ctx.floatFormat; }
-	TestLog&			log				(void) const			{ return m_testCtx.getLog(); }
 
 	template <typename In, typename Out>
 	void				testStatement	(const Variables<In, Out>& variables, const Statement& stmt);
@@ -4603,22 +4618,6 @@ void PrecisionCase::testStatement (const Variables<In, Out>& variables, const St
 	const int		inCount		= numInputs<In>();
 	const int		outCount	= numOutputs<Out>();
 	Environment		env;		// Hoisted out of the inner loop for optimization.
-
-	// Print out the statement and its definitions
-	log() << TestLog::Message << "Statement: " << stmt << TestLog::EndMessage;
-	{
-		ostringstream	oss;
-		FuncSet			funcs;
-
-		stmt.getUsedFuncs(funcs);
-		for (FuncSet::const_iterator it = funcs.begin(); it != funcs.end(); ++it)
-		{
-			(*it)->printDefinition(oss);
-		}
-		if (!funcs.empty())
-			log() << TestLog::Message << "Reference definitions:\n" << oss.str()
-				  << TestLog::EndMessage;
-	}
 
 	// Initialize ShaderSpec from precision, variables and statement.
 	{
