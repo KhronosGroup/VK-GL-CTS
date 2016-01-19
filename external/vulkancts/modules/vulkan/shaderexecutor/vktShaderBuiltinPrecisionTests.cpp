@@ -5232,7 +5232,7 @@ TestCaseGroup* createFuncGroup (const PrecisionTestContext&	ctx, const CaseFacto
 {
 	TestCaseGroup* const	group	= new TestCaseGroup(ctx.testCtx, factory.getName().c_str(), factory.getDesc().c_str());
 
-	for (int precNdx = 0; precNdx < glu::PRECISION_LAST; ++precNdx)
+	for (int precNdx = glu::PRECISION_MEDIUMP; precNdx < glu::PRECISION_LAST; ++precNdx)
 	{
 		const Precision		precision	= Precision(precNdx);
 		const string		precName	(glu::getPrecisionName(precision));

@@ -2052,7 +2052,6 @@ void ShaderMatrixTests::init (void)
 
 	static const Precision precisions[] =
 	{
-		PRECISION_LOWP,
 		PRECISION_MEDIUMP,
 		PRECISION_HIGHP
 	};
