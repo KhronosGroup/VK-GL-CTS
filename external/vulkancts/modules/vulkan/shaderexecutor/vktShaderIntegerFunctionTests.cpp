@@ -304,7 +304,7 @@ static void addFunctionCases (tcu::TestCaseGroup* parent, const char* functionNa
 
 		for (int vecSize = 1; vecSize <= 4; vecSize++)
 		{
-			for (int prec = glu::PRECISION_LOWP; prec <= glu::PRECISION_HIGHP; prec++)
+			for (int prec = glu::PRECISION_MEDIUMP; prec <= glu::PRECISION_HIGHP; prec++)
 			{
 				if (prec != glu::PRECISION_HIGHP && !allPrec)
 					continue;
@@ -1177,7 +1177,7 @@ public:
 		const glu::DataType	intType		= vecSize == 1 ? glu::TYPE_INT : glu::getDataTypeIntVec(vecSize);
 
 		m_spec.inputs.push_back(Symbol("value", glu::VarType(baseType, precision)));
-		m_spec.outputs.push_back(Symbol("count", glu::VarType(intType, glu::PRECISION_LOWP)));
+		m_spec.outputs.push_back(Symbol("count", glu::VarType(intType, glu::PRECISION_MEDIUMP)));
 		m_spec.source = "count = bitCount(value);";
 		init();
 	}

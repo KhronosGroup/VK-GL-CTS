@@ -436,7 +436,7 @@ static void addFunctionCases (tcu::TestCaseGroup* parent, const char* functionNa
 
 		for (int vecSize = 1; vecSize <= 4; vecSize++)
 		{
-			for (int prec = glu::PRECISION_LOWP; prec <= glu::PRECISION_HIGHP; prec++)
+			for (int prec = glu::PRECISION_MEDIUMP; prec <= glu::PRECISION_HIGHP; prec++)
 			{
 				for (int shaderTypeNdx = 0; shaderTypeNdx < glu::SHADERTYPE_LAST; shaderTypeNdx++)
 				{
