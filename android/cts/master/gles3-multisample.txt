@@ -81,6 +81,7 @@ dEQP-GLES3.functional.shaders.fragdepth.compare.write_in_function
 dEQP-GLES3.functional.shaders.builtin_variable.depth_range_vertex
 dEQP-GLES3.functional.shaders.builtin_variable.depth_range_fragment
 dEQP-GLES3.functional.shaders.builtin_variable.fragcoord_xyz
+dEQP-GLES3.functional.shaders.builtin_variable.fragcoord_w
 dEQP-GLES3.functional.shaders.builtin_variable.pointcoord
 dEQP-GLES3.functional.shaders.derivate.dfdx.constant.float
 dEQP-GLES3.functional.shaders.derivate.dfdx.constant.vec2
