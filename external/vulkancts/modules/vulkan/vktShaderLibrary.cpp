@@ -676,10 +676,27 @@ void copyToLayout (void* dst, const ValueBufferLayout::Entry& entryLayout, const
 
 	DE_ASSERT(size_t((arrayNdx+1)*scalarSize) <= value.elements.size());
 
-	for (int vecNdx = 0; vecNdx < numVecs; vecNdx++)
-		deMemcpy((deUint8*)dst + entryLayout.offset + vecNdx*entryLayout.vecStride,
-				 &value.elements[arrayNdx*scalarSize + vecNdx*numComps],
-				 numComps*sizeof(deUint32));
+	if (isDataTypeBoolOrBVec(basicType))
+	{
+		for (int vecNdx = 0; vecNdx < numVecs; vecNdx++)
+		{
+			for (int compNdx = 0; compNdx < numComps; compNdx++)
+			{
+				const deUint32 data = value.elements[arrayNdx*scalarSize + vecNdx*numComps + compNdx].bool32 ? ~0u : 0u;
+
+				deMemcpy((deUint8*)dst + entryLayout.offset + vecNdx*entryLayout.vecStride + compNdx * sizeof(deUint32),
+						 &data,
+						 sizeof(deUint32));
+			}
+		}
+	}
+	else
+	{
+		for (int vecNdx = 0; vecNdx < numVecs; vecNdx++)
+			deMemcpy((deUint8*)dst + entryLayout.offset + vecNdx*entryLayout.vecStride,
+					 &value.elements[arrayNdx*scalarSize + vecNdx*numComps],
+					 numComps*sizeof(deUint32));
+	}
 }
 
 void copyToLayout (void* dst, const ValueBufferLayout& layout, const vector<Value>& values, int arrayNdx)
@@ -928,16 +945,62 @@ Move<vk::VkPipelineLayout> createPipelineLayout (Context& context, vk::VkDescrip
 	return vk::createPipelineLayout(context.getDeviceInterface(), context.getDevice(), &params);
 }
 
-vk::VkFormat getFloatVecFormat (int scalarSize)
+vk::VkFormat getVecFormat (DataType scalarType, int scalarSize)
 {
-	const vk::VkFormat vecFmts[] =
+	switch (scalarType)
 	{
-		vk::VK_FORMAT_R32_SFLOAT,
-		vk::VK_FORMAT_R32G32_SFLOAT,
-		vk::VK_FORMAT_R32G32B32_SFLOAT,
-		vk::VK_FORMAT_R32G32B32A32_SFLOAT,
-	};
-	return de::getSizedArrayElement<4>(vecFmts, scalarSize-1);
+		case glu::TYPE_FLOAT:
+		{
+			const vk::VkFormat vecFmts[] =
+			{
+				vk::VK_FORMAT_R32_SFLOAT,
+				vk::VK_FORMAT_R32G32_SFLOAT,
+				vk::VK_FORMAT_R32G32B32_SFLOAT,
+				vk::VK_FORMAT_R32G32B32A32_SFLOAT,
+			};
+			return de::getSizedArrayElement<4>(vecFmts, scalarSize-1);
+		}
+
+		case glu::TYPE_INT:
+		{
+			const vk::VkFormat vecFmts[] =
+			{
+				vk::VK_FORMAT_R32_SINT,
+				vk::VK_FORMAT_R32G32_SINT,
+				vk::VK_FORMAT_R32G32B32_SINT,
+				vk::VK_FORMAT_R32G32B32A32_SINT,
+			};
+			return de::getSizedArrayElement<4>(vecFmts, scalarSize-1);
+		}
+
+		case glu::TYPE_UINT:
+		{
+			const vk::VkFormat vecFmts[] =
+			{
+				vk::VK_FORMAT_R32_UINT,
+				vk::VK_FORMAT_R32G32_UINT,
+				vk::VK_FORMAT_R32G32B32_UINT,
+				vk::VK_FORMAT_R32G32B32A32_UINT,
+			};
+			return de::getSizedArrayElement<4>(vecFmts, scalarSize-1);
+		}
+
+		case glu::TYPE_BOOL:
+		{
+			const vk::VkFormat vecFmts[] =
+			{
+				vk::VK_FORMAT_R32_UINT,
+				vk::VK_FORMAT_R32G32_UINT,
+				vk::VK_FORMAT_R32G32B32_UINT,
+				vk::VK_FORMAT_R32G32B32A32_UINT,
+			};
+			return de::getSizedArrayElement<4>(vecFmts, scalarSize-1);
+		}
+
+		default:
+			DE_FATAL("Unknown scalar type");
+			return vk::VK_FORMAT_R8G8B8A8_UINT;
+	}
 }
 
 vector<vk::VkVertexInputAttributeDescription> getVertexAttributeDescriptions (const vector<Value>& inputValues, const ValueBufferLayout& layout)
@@ -969,7 +1032,8 @@ vector<vk::VkVertexInputAttributeDescription> getVertexAttributeDescriptions (co
 		const int						vecSize		= isDataTypeMatrix(basicType)
 													? getDataTypeMatrixNumRows(basicType)
 													: getDataTypeScalarSize(basicType);
-		const vk::VkFormat				vecFmt		= getFloatVecFormat(vecSize);
+		const DataType					scalarType	= getDataTypeScalarType(basicType);
+		const vk::VkFormat				vecFmt		= getVecFormat(scalarType, vecSize);
 
 		for (int vecNdx = 0; vecNdx < numVecs; vecNdx++)
 		{
