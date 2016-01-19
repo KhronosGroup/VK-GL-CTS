@@ -6326,7 +6326,7 @@ tcu::TestCaseGroup* createOpPhiTests(tcu::TestContext& testCtx)
 	const char	typesAndConstants1[]	=
 		"%c_f32_p2  = OpConstant %f32 0.2\n"
 		"%c_f32_p4  = OpConstant %f32 0.4\n"
-		"%c_f32_p6  = OpConstant %f32 0.6\n"
+		"%c_f32_p5  = OpConstant %f32 0.5\n"
 		"%c_f32_p8  = OpConstant %f32 0.8\n";
 
 	// vec4 test_code(vec4 param) {
@@ -6379,7 +6379,7 @@ tcu::TestCaseGroup* createOpPhiTests(tcu::TestContext& testCtx)
 		"             OpUnreachable\n"
 
 		"%phi       = OpLabel\n"
-		"%operand   = OpPhi %f32 %c_f32_p4 %case2 %c_f32_p6 %case1 %c_f32_p2 %case0 %c_f32_0 %case3\n" // not in the order of blocks
+		"%operand   = OpPhi %f32 %c_f32_p4 %case2 %c_f32_p5 %case1 %c_f32_p2 %case0 %c_f32_0 %case3\n" // not in the order of blocks
 		"%add       = OpFAdd %f32 %val %operand\n"
 		"             OpStore %loc %add\n"
 		"%ival_next = OpIAdd %i32 %ival %c_i32_1\n"
