@@ -126,6 +126,7 @@ public:
 
 	void					setupUniformData	(const VkDevice&			vkDevice,
 												 const DeviceInterface&		vk,
+												 const VkQueue				queue,
 												 const deUint32				queueFamilyIndex,
 												 Allocator&					memAlloc,
 												 deUint32					bindingLocation,
@@ -135,6 +136,7 @@ public:
 
 	void					setupSamplerData	(const VkDevice&			vkDevice,
 												 const DeviceInterface&		vk,
+												 const VkQueue				queue,
 												 const deUint32				queueFamilyIndex,
 												 Allocator&					memAlloc,
 												 deUint32					bindingLocation,
@@ -151,7 +153,7 @@ public:
 protected:
 							ShaderExecutor		(const ShaderSpec& shaderSpec, glu::ShaderType shaderType);
 
-	void					addUniforms			(const VkDevice& vkDevice, const DeviceInterface& vk, const deUint32 queueFamilyIndex, Allocator& memAlloc);
+	void					addUniforms			(const VkDevice& vkDevice, const DeviceInterface& vk, const VkQueue queue, const deUint32 queueFamilyIndex, Allocator& memAlloc);
 
 	void					uploadUniforms		(DescriptorSetUpdateBuilder& descriptorSetUpdateBuilder, VkDescriptorSet descriptorSet);
 
@@ -215,27 +217,21 @@ protected:
 		std::vector<SamplerUniformSp>		uniforms;
 	};
 
-	Move<VkImage>							createCombinedImage			(const VkDevice&				vkDevice,
+	void									uploadImage					(const VkDevice&				vkDevice,
 																		 const DeviceInterface&			vk,
+																		 const VkQueue					queue,
 																		 const deUint32					queueFamilyIndex,
-																		 const tcu::IVec3&				texSize,
-																		 const VkFormat					format,
-																		 const VkImageType				imageType,
-																		 const VkImageViewType			imageViewType,
-																		 const VkImageUsageFlags		usage,
-																		 const VkImageTiling			tiling);
-
-	de::MovePtr<Allocation>					uploadImage					(const VkDevice&				vkDevice,
-																		 const DeviceInterface&			vk,
 																		 Allocator&						memAlloc,
 																		 const tcu::TextureFormat&		texFormat,
 																		 const tcu::IVec3&				texSize,
 																		 const void*					data,
-																		 const VkImage&					vkTexture,
-																		 const VkImageAspectFlags		aspectMask);
+																		 const deUint32					arraySize,
+																		 const VkImageAspectFlags		aspectMask,
+																		 VkImage						destImage);
 
 	de::MovePtr<SamplerUniform>				createSamplerUniform		(const VkDevice&				vkDevice,
 																		 const DeviceInterface&			vk,
+																		 const VkQueue					queue,
 																		 const deUint32					queueFamilyIndex,
 																		 Allocator&						memAlloc,
 																		 deUint32						bindingLocation,
@@ -269,7 +265,7 @@ public:
 												{
 												}
 	virtual					~UniformDataBase	(void) {}
-	virtual void			setup				(ShaderExecutor&, const VkDevice&, const DeviceInterface&, const deUint32, Allocator&) const = 0;
+	virtual void			setup				(ShaderExecutor&, const VkDevice&, const DeviceInterface&, const VkQueue, const deUint32, Allocator&) const = 0;
 
 protected:
 	const deUint32			m_bindingLocation;
@@ -281,7 +277,7 @@ class UniformData : public UniformDataBase
 public:
 							UniformData			(deUint32 bindingLocation, VkDescriptorType descriptorType, const T data);
 	virtual					~UniformData		(void);
-	virtual void			setup				(ShaderExecutor& executor, const VkDevice& vkDevice, const DeviceInterface& vk, const deUint32 queueFamilyIndex, Allocator& memAlloc) const;
+	virtual void			setup				(ShaderExecutor& executor, const VkDevice& vkDevice, const DeviceInterface& vk, const VkQueue queue, const deUint32 queueFamilyIndex, Allocator& memAlloc) const;
 
 private:
 	VkDescriptorType		m_descriptorType;
@@ -302,9 +298,9 @@ UniformData<T>::~UniformData (void)
 }
 
 template<typename T>
-void UniformData<T>::setup (ShaderExecutor& executor, const VkDevice& vkDevice, const DeviceInterface& vk, const deUint32 queueFamilyIndex, Allocator& memAlloc) const
+void UniformData<T>::setup (ShaderExecutor& executor, const VkDevice& vkDevice, const DeviceInterface& vk, const VkQueue queue, const deUint32 queueFamilyIndex, Allocator& memAlloc) const
 {
-	executor.setupUniformData(vkDevice, vk, queueFamilyIndex, memAlloc, m_bindingLocation, m_descriptorType, sizeof(T), &m_data);
+	executor.setupUniformData(vkDevice, vk, queue, queueFamilyIndex, memAlloc, m_bindingLocation, m_descriptorType, sizeof(T), &m_data);
 }
 
 class SamplerUniformData : public UniformDataBase
@@ -319,7 +315,7 @@ public:
 												 VkImageViewType				imageViewType,
 												 const void*					data);
 	virtual					~SamplerUniformData	(void);
-	virtual void			setup				(ShaderExecutor& executor, const VkDevice& vkDevice, const DeviceInterface& vk, const deUint32 queueFamilyIndex, Allocator& memAlloc) const;
+	virtual void			setup				(ShaderExecutor& executor, const VkDevice& vkDevice, const DeviceInterface& vk, const VkQueue queue, const deUint32 queueFamilyIndex, Allocator& memAlloc) const;
 
 private:
 	deUint32					m_numSamplers;
