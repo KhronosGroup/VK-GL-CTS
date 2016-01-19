@@ -6881,24 +6881,18 @@ void createOpQuantizeSingleOptionTests(tcu::TestCaseGroup* testCtx)
 			"0x1.1p128\n",
 			std::numeric_limits<float>::quiet_NaN(),
 
-			// Can't use %c, because NaN+0 isn't necessarily a NaN (Vulkan spec A.4).
+			// Test for any NaN value, as NaNs are not preserved
 			"%direct_quant = OpQuantizeToF16 %f32 %test_constant\n"
-			"%nan = OpIsNan %bool %direct_quant\n"
-			"%as_int = OpBitcast %i32 %direct_quant\n"
-			"%positive = OpSGreaterThan %bool %as_int %c_i32_0\n"
-			"%cond = OpLogicalAnd %bool %nan %positive\n"
+			"%cond = OpIsNan %bool %direct_quant\n"
 		}, // nan
 		{
 			"negative_nan",
 			"-0x1.0001p128\n",
 			std::numeric_limits<float>::quiet_NaN(),
 
-			// Can't use %c, because NaN+0 isn't necessarily a NaN (Vulkan spec A.4).
+			// Test for any NaN value, as NaNs are not preserved
 			"%direct_quant = OpQuantizeToF16 %f32 %test_constant\n"
-			"%nan = OpIsNan %bool %direct_quant\n"
-			"%as_int = OpBitcast %i32 %direct_quant\n"
-			"%negative = OpSLessThan %bool %as_int %c_i32_0\n"
-			"%cond = OpLogicalAnd %bool %nan %negative\n"
+			"%cond = OpIsNan %bool %direct_quant\n"
 		} // -nan
 	};
 	const char*		constants			=
