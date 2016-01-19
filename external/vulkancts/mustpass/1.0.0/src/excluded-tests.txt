@@ -1,0 +1,10 @@
+# Issue 218: Excluded built-in function precision tests
+dEQP-VK.glsl.builtin.precision.clamp.highp_compute.*
+dEQP-VK.glsl.builtin.precision.cos.mediump_*
+dEQP-VK.glsl.builtin.precision.div.highp_compute.*
+dEQP-VK.glsl.builtin.precision.max.highp_compute.*
+dEQP-VK.glsl.builtin.precision.min.highp_compute.*
+dEQP-VK.glsl.builtin.precision.mod.highp_compute.*
+dEQP-VK.glsl.builtin.precision.reflect.highp_compute.vec4
+dEQP-VK.glsl.builtin.precision.sin.mediump_compute.*
+dEQP-VK.glsl.builtin.precision.tan.mediump_compute.*
