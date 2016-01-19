@@ -459,6 +459,26 @@ tcu::TestStatus SamplerIndexingCaseInstance::iterate (void)
 
 	coords.resize(numInvocations * getDataTypeScalarSize(coordType));
 
+	if (texType == TEXTURE_TYPE_CUBE)
+	{
+		if (isShadowSampler(m_samplerType))
+		{
+			for (int i = 0; i < coords.size() / 4; i++)
+			{
+				coords[4 * i] = 1.0f;
+				coords[4 * i + 1] = coords[4 * i + 2] = coords[4 * i + 3] = 0.0f;
+			}
+		}
+		else
+		{
+			for (int i = 0; i < coords.size() / 3; i++)
+			{
+				coords[3 * i] = 1.0f;
+				coords[3 * i + 1] = coords[3 * i + 2] = 0.0f;
+			}
+		}
+	}
+
 	if (isShadowSampler(m_samplerType))
 	{
 		// Use different comparison value per invocation.
