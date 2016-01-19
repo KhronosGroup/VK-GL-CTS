@@ -627,7 +627,7 @@ CopyImageToImage::CopyImageToImage (Context& context, TestParams params)
 																				m_params.dst.image.format,
 																				VK_IMAGE_TYPE_2D,
 																				VK_IMAGE_TILING_OPTIMAL,
-																				VK_FORMAT_FEATURE_BLIT_DST_BIT, 0,
+																				VK_IMAGE_USAGE_TRANSFER_DST_BIT, 0,
 																				&properties) == VK_ERROR_FORMAT_NOT_SUPPORTED))
 	{
 		TCU_THROW(NotSupportedError, "Format not supported");
