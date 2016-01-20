@@ -6382,7 +6382,7 @@ struct AddPrograms
 				"layout(location = 0) in highp vec2 a_position;\n"
 				"void main (void) {\n"
 				"\tgl_PointSize = 1.0;\n"
-				"\tgl_Position = vec4(1.999 * a_position - vec2(0.999), 0.0, 1.0);\n"
+				"\tgl_Position = vec4(1.998 * a_position - vec2(0.999), 0.0, 1.0);\n"
 				"}\n";
 
 			sources.glslSources.add("vertex-buffer.vert")
@@ -6398,7 +6398,7 @@ struct AddPrograms
 				"void main (void) {\n"
 				"\tgl_PointSize = 1.0;\n"
 				"\thighp vec2 pos = vec2(gl_VertexIndex % 256, gl_VertexIndex / 256) / vec2(255.0);\n"
-				"\tgl_Position = vec4(1.999 * pos - vec2(0.999), 0.0, 1.0);\n"
+				"\tgl_Position = vec4(1.998 * pos - vec2(0.999), 0.0, 1.0);\n"
 				"}\n";
 
 			sources.glslSources.add("index-buffer.vert")
