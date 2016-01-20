@@ -323,6 +323,9 @@ BasicOcclusionQueryTestInstance::BasicOcclusionQueryTestInstance (vkt::Context &
 			&& testVector.queryResultsAvailability	== false
 			&& testVector.primitiveRopology			== vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST);
 
+	if ((m_testVector.queryControlFlags & vk::VK_QUERY_CONTROL_PRECISE_BIT) && !m_context.getDeviceFeatures().occlusionQueryPrecise)
+		throw tcu::NotSupportedError("Precise occlusion queries are not supported");
+
 	const vk::VkDevice			device	= m_context.getDevice();
 	const vk::DeviceInterface&	vk		= m_context.getDeviceInterface();
 
@@ -574,6 +577,9 @@ OcclusionQueryTestInstance::OcclusionQueryTestInstance (vkt::Context &context, c
 {
 	const vk::VkDevice			device				= m_context.getDevice();
 	const vk::DeviceInterface&	vk					= m_context.getDeviceInterface();
+
+	if ((m_testVector.queryControlFlags & vk::VK_QUERY_CONTROL_PRECISE_BIT) && !m_context.getDeviceFeatures().occlusionQueryPrecise)
+		throw tcu::NotSupportedError("Precise occlusion queries are not supported");
 
 	const vk::VkQueryPoolCreateInfo queryPoolCreateInfo	=
 	{
