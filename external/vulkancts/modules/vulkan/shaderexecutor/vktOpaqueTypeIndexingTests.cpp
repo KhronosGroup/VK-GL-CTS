@@ -463,7 +463,7 @@ tcu::TestStatus SamplerIndexingCaseInstance::iterate (void)
 	{
 		if (isShadowSampler(m_samplerType))
 		{
-			for (int i = 0; i < coords.size() / 4; i++)
+			for (size_t i = 0; i < coords.size() / 4; i++)
 			{
 				coords[4 * i] = 1.0f;
 				coords[4 * i + 1] = coords[4 * i + 2] = coords[4 * i + 3] = 0.0f;
@@ -471,7 +471,7 @@ tcu::TestStatus SamplerIndexingCaseInstance::iterate (void)
 		}
 		else
 		{
-			for (int i = 0; i < coords.size() / 3; i++)
+			for (size_t i = 0; i < coords.size() / 3; i++)
 			{
 				coords[3 * i] = 1.0f;
 				coords[3 * i + 1] = coords[3 * i + 2] = 0.0f;
