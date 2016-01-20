@@ -1895,7 +1895,7 @@ void UniformStructTests::init (void)
 		<< "	T				b[3];"
 		<< "	int				c;"
 		<< "};"
-		<< "layout (std140, set = 0, binding = 10) uniform buffer11 { S s[2]; };"
+		<< "layout (std140, set = 0, binding = 11) uniform buffer11 { S s[2]; };"
 		<< ""
 		<< "void main (void)"
 		<< "{"
