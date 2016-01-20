@@ -1877,7 +1877,7 @@ void ShaderOperatorTests::init (void)
 				if (evalFunc == DE_NULL)
 					continue;
 
-				for (int precision = 0; precision < PRECISION_LAST; precision++)
+				for (int precision = PRECISION_MEDIUMP; precision < PRECISION_LAST; precision++)
 				{
 					if ((funcInfo.precisionMask & (1<<precision)) ||
 						(funcInfo.precisionMask == PRECMASK_NA && precision == PRECISION_MEDIUMP)) // use mediump interpolators for booleans
@@ -2044,7 +2044,7 @@ void ShaderOperatorTests::init (void)
 		DE_ASSERT(isBoolCase || isFloatCase || isIntCase || isUintCase);
 		DE_UNREF(isIntCase);
 
-		for (int precision = 0; precision < (int)PRECISION_LAST; precision++)
+		for (int precision = (int)PRECISION_MEDIUMP; precision < (int)PRECISION_LAST; precision++)
 		{
 			if (isBoolCase && precision != PRECISION_MEDIUMP) // Use mediump interpolators for booleans.
 				continue;
@@ -2115,7 +2115,7 @@ void ShaderOperatorTests::init (void)
 
 	for (int caseNdx = 0; caseNdx < DE_LENGTH_OF_ARRAY(s_sequenceCases); caseNdx++)
 	{
-		for (int precision = 0; precision < (int)PRECISION_LAST; precision++)
+		for (int precision = (int)PRECISION_MEDIUMP; precision < (int)PRECISION_LAST; precision++)
 		{
 			for (int shaderTypeNdx = 0; shaderTypeNdx < DE_LENGTH_OF_ARRAY(s_shaderTypes); shaderTypeNdx++)
 			{

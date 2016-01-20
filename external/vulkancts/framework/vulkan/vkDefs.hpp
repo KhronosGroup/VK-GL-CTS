@@ -36,12 +36,8 @@
 
 #include "tcuDefs.hpp"
 
-#if (DE_OS == DE_OS_ANDROID)
-#	include <sys/cdefs.h>
-#	if !defined(__NDK_FPABI__)
-#		define __NDK_FPABI__
-#	endif
-#	define VKAPI_ATTR __NDK_FPABI__
+#if (DE_OS == DE_OS_ANDROID) && defined(__ARM_ARCH_7A__)
+#	define VKAPI_ATTR __attribute__((pcs("aapcs-vfp")))
 #else
 #	define VKAPI_ATTR
 #endif

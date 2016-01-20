@@ -232,9 +232,18 @@ void replaceBadFloatReinterpretValues (const tcu::PixelBufferAccess access)
 
 		for (int i = 0; i < 4; ++i)
 		{
-			const tcu::Float32 f(color[i]);
-			if (f.isDenorm() || f.isInf() || f.isNaN())
-				newColor[i] = 0.0f;
+			if (access.getFormat().type == tcu::TextureFormat::HALF_FLOAT)
+			{
+				const tcu::Float16 f(color[i]);
+				if (f.isDenorm() || f.isInf() || f.isNaN())
+					newColor[i] = 0.0f;
+			}
+			else
+			{
+				const tcu::Float32 f(color[i]);
+				if (f.isDenorm() || f.isInf() || f.isNaN())
+					newColor[i] = 0.0f;
+			}
 		}
 
 		if (newColor != color)

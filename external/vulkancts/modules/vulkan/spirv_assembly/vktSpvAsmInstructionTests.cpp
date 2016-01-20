@@ -3156,9 +3156,9 @@ tcu::TestCaseGroup* createOpUndefGroup (tcu::TestContext& testCtx)
 	cases.push_back(CaseParameter("vec4float32",	"%type = OpTypeVector %f32 4"));
 	cases.push_back(CaseParameter("vec2uint32",		"%type = OpTypeVector %u32 2"));
 	cases.push_back(CaseParameter("matrix",			"%type = OpTypeMatrix %fvec3 3"));
-	cases.push_back(CaseParameter("image",			"%type = OpTypeImage %f32 2D 0 0 0 0 Unknown"));
+	cases.push_back(CaseParameter("image",			"%type = OpTypeImage %f32 2D 0 0 0 1 Unknown"));
 	cases.push_back(CaseParameter("sampler",		"%type = OpTypeSampler"));
-	cases.push_back(CaseParameter("sampledimage",	"%img = OpTypeImage %f32 2D 0 0 0 0 Unknown\n"
+	cases.push_back(CaseParameter("sampledimage",	"%img = OpTypeImage %f32 2D 0 0 0 1 Unknown\n"
 													"%type = OpTypeSampledImage %img"));
 	cases.push_back(CaseParameter("array",			"%100 = OpConstant %u32 100\n"
 													"%type = OpTypeArray %i32 %100"));
@@ -6326,7 +6326,7 @@ tcu::TestCaseGroup* createOpPhiTests(tcu::TestContext& testCtx)
 	const char	typesAndConstants1[]	=
 		"%c_f32_p2  = OpConstant %f32 0.2\n"
 		"%c_f32_p4  = OpConstant %f32 0.4\n"
-		"%c_f32_p6  = OpConstant %f32 0.6\n"
+		"%c_f32_p5  = OpConstant %f32 0.5\n"
 		"%c_f32_p8  = OpConstant %f32 0.8\n";
 
 	// vec4 test_code(vec4 param) {
@@ -6379,7 +6379,7 @@ tcu::TestCaseGroup* createOpPhiTests(tcu::TestContext& testCtx)
 		"             OpUnreachable\n"
 
 		"%phi       = OpLabel\n"
-		"%operand   = OpPhi %f32 %c_f32_p4 %case2 %c_f32_p6 %case1 %c_f32_p2 %case0 %c_f32_0 %case3\n" // not in the order of blocks
+		"%operand   = OpPhi %f32 %c_f32_p4 %case2 %c_f32_p5 %case1 %c_f32_p2 %case0 %c_f32_0 %case3\n" // not in the order of blocks
 		"%add       = OpFAdd %f32 %val %operand\n"
 		"             OpStore %loc %add\n"
 		"%ival_next = OpIAdd %i32 %ival %c_i32_1\n"
@@ -6662,9 +6662,9 @@ tcu::TestCaseGroup* createOpUndefTests(tcu::TestContext& testCtx)
 	{
 		{"bool", "%type = OpTypeBool"},
 		{"vec2uint32", "%type = OpTypeVector %u32 2"},
-		{"image", "%type = OpTypeImage %f32 2D 0 0 0 0 Unknown"},
+		{"image", "%type = OpTypeImage %f32 2D 0 0 0 1 Unknown"},
 		{"sampler", "%type = OpTypeSampler"},
-		{"sampledimage", "%img = OpTypeImage %f32 2D 0 0 0 0 Unknown\n" "%type = OpTypeSampledImage %img"},
+		{"sampledimage", "%img = OpTypeImage %f32 2D 0 0 0 1 Unknown\n" "%type = OpTypeSampledImage %img"},
 		{"pointer", "%type = OpTypePointer Function %i32"},
 		{"runtimearray", "%type = OpTypeRuntimeArray %f32"},
 		{"array", "%c_u32_100 = OpConstant %u32 100\n" "%type = OpTypeArray %i32 %c_u32_100"},
@@ -6881,24 +6881,18 @@ void createOpQuantizeSingleOptionTests(tcu::TestCaseGroup* testCtx)
 			"0x1.1p128\n",
 			std::numeric_limits<float>::quiet_NaN(),
 
-			// Can't use %c, because NaN+0 isn't necessarily a NaN (Vulkan spec A.4).
+			// Test for any NaN value, as NaNs are not preserved
 			"%direct_quant = OpQuantizeToF16 %f32 %test_constant\n"
-			"%nan = OpIsNan %bool %direct_quant\n"
-			"%as_int = OpBitcast %i32 %direct_quant\n"
-			"%positive = OpSGreaterThan %bool %as_int %c_i32_0\n"
-			"%cond = OpLogicalAnd %bool %nan %positive\n"
+			"%cond = OpIsNan %bool %direct_quant\n"
 		}, // nan
 		{
 			"negative_nan",
 			"-0x1.0001p128\n",
 			std::numeric_limits<float>::quiet_NaN(),
 
-			// Can't use %c, because NaN+0 isn't necessarily a NaN (Vulkan spec A.4).
+			// Test for any NaN value, as NaNs are not preserved
 			"%direct_quant = OpQuantizeToF16 %f32 %test_constant\n"
-			"%nan = OpIsNan %bool %direct_quant\n"
-			"%as_int = OpBitcast %i32 %direct_quant\n"
-			"%negative = OpSLessThan %bool %as_int %c_i32_0\n"
-			"%cond = OpLogicalAnd %bool %nan %negative\n"
+			"%cond = OpIsNan %bool %direct_quant\n"
 		} // -nan
 	};
 	const char*		constants			=
@@ -7293,8 +7287,8 @@ tcu::TestCaseGroup* createLoopTests(tcu::TestContext& testCtx)
 		"OpFunctionEnd\n";
 	createTestsForAllStages("continue", defaultColors, defaultColors, fragments, testGroup.get());
 
-	// A loop with early exit.  May be specialized with either break or return.
-	StringTemplate earlyExitLoop(
+	// A loop with break.
+	fragments["testfun"] =
 		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
 		"%param1 = OpFunctionParameter %v4f32\n"
 
@@ -7310,7 +7304,7 @@ tcu::TestCaseGroup* createLoopTests(tcu::TestContext& testCtx)
 		";adds 4 and 3 to %val0 (exits early)\n"
 		"%loop = OpLabel\n"
 		"%count = OpPhi %i32 %c_i32_4 %entry %count__ %continue\n"
-		"%val1 = OpPhi %f32 %val0 %entry %val %continue\n"
+		"%val1 = OpPhi %f32 %val0 %entry %val2 %continue\n"
 		"OpLoopMerge %exit %continue None\n"
 		"OpBranch %if\n"
 
@@ -7318,8 +7312,7 @@ tcu::TestCaseGroup* createLoopTests(tcu::TestContext& testCtx)
 		";end loop if %count==%two\n"
 		"%above2 = OpSGreaterThan %bool %count %two\n"
 		"OpSelectionMerge %continue DontFlatten\n"
-		// This can either branch to %exit or to another block with OpReturnValue %param1.
-		"OpBranchConditional %above2 %body ${branch_destination}\n"
+		"OpBranchConditional %above2 %body %exit\n"
 
 		"%body = OpLabel\n"
 		"%fcount = OpConvertSToF %f32 %count\n"
@@ -7327,29 +7320,63 @@ tcu::TestCaseGroup* createLoopTests(tcu::TestContext& testCtx)
 		"OpBranch %continue\n"
 
 		"%continue = OpLabel\n"
-		"%val = OpPhi %f32 %val2 %body %val1 %if\n"
 		"%count__ = OpISub %i32 %count %c_i32_1\n"
 		"%again = OpSGreaterThan %bool %count__ %c_i32_0\n"
 		"OpBranchConditional %again %loop %exit\n"
 
 		"%exit = OpLabel\n"
-		"%same = OpFSub %f32 %val %c_f32_7\n"
+		"%val_post = OpPhi %f32 %val2 %continue %val1 %if\n"
+		"%same = OpFSub %f32 %val_post %c_f32_7\n"
 		"%result = OpVectorInsertDynamic %v4f32 %param1 %same %c_i32_0\n"
 		"OpReturnValue %result\n"
-		"OpFunctionEnd\n");
-
-	map<string, string> branch_destination;
-
-	// A loop with break.
-	branch_destination["branch_destination"] = "%exit";
-	fragments["testfun"] = earlyExitLoop.specialize(branch_destination);
+		"OpFunctionEnd\n";
 	createTestsForAllStages("break", defaultColors, defaultColors, fragments, testGroup.get());
 
 	// A loop with return.
-	branch_destination["branch_destination"] = "%early_exit\n"
+	fragments["testfun"] =
+		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%param1 = OpFunctionParameter %v4f32\n"
+
+		"%entry = OpLabel\n"
+		";param1 components are between 0 and 1, so dot product is 4 or less\n"
+		"%dot = OpDot %f32 %param1 %param1\n"
+		"%div = OpFDiv %f32 %dot %c_f32_5\n"
+		"%zero = OpConvertFToU %u32 %div\n"
+		"%two = OpIAdd %i32 %zero %c_i32_2\n"
+		"%val0 = OpVectorExtractDynamic %f32 %param1 %c_i32_0\n"
+		"OpBranch %loop\n"
+
+		";returns early without modifying %param1\n"
+		"%loop = OpLabel\n"
+		"%count = OpPhi %i32 %c_i32_4 %entry %count__ %continue\n"
+		"%val1 = OpPhi %f32 %val0 %entry %val2 %continue\n"
+		"OpLoopMerge %exit %continue None\n"
+		"OpBranch %if\n"
+
+		"%if = OpLabel\n"
+		";return if %count==%two\n"
+		"%above2 = OpSGreaterThan %bool %count %two\n"
+		"OpSelectionMerge %continue DontFlatten\n"
+		"OpBranchConditional %above2 %body %early_exit\n"
+
 		"%early_exit = OpLabel\n"
-		"OpReturnValue %param1\n";
-	fragments["testfun"] = earlyExitLoop.specialize(branch_destination);
+		"OpReturnValue %param1\n"
+
+		"%body = OpLabel\n"
+		"%fcount = OpConvertSToF %f32 %count\n"
+		"%val2 = OpFAdd %f32 %val1 %fcount\n"
+		"OpBranch %continue\n"
+
+		"%continue = OpLabel\n"
+		"%count__ = OpISub %i32 %count %c_i32_1\n"
+		"%again = OpSGreaterThan %bool %count__ %c_i32_0\n"
+		"OpBranchConditional %again %loop %exit\n"
+
+		"%exit = OpLabel\n"
+		";should never get here, so return an incorrect result\n"
+		"%result = OpVectorInsertDynamic %v4f32 %param1 %val2 %c_i32_0\n"
+		"OpReturnValue %result\n"
+		"OpFunctionEnd\n";
 	createTestsForAllStages("return", defaultColors, defaultColors, fragments, testGroup.get());
 
 	return testGroup.release();

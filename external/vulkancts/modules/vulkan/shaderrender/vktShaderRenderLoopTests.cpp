@@ -1319,7 +1319,7 @@ void ShaderLoopTests::init (void)
 
 			// Generic cases.
 
-			for (int precision = 0; precision < glu::PRECISION_LAST; precision++)
+			for (int precision = glu::PRECISION_MEDIUMP; precision < glu::PRECISION_LAST; precision++)
 			{
 				const char* precisionName = getPrecisionName((glu::Precision)precision);
 

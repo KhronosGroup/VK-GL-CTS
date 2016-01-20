@@ -661,9 +661,9 @@ protected:
 														VkBufferUsageFlags       usage,
 														de::MovePtr<Allocation>* pAlloc);
 	Move<VkImage>           createImage2DAndBindMemory (VkFormat                 format,
-														deUint32                  width,
-														deUint32                  height,
-														VkBufferUsageFlags       usage,
+														deUint32                 width,
+														deUint32                 height,
+														VkImageUsageFlags        usage,
 														VkSampleCountFlagBits    sampleCount,
 														de::MovePtr<Allocation>* pAlloc);
 protected:
@@ -903,7 +903,7 @@ Move<VkBuffer> TimestampTestInstance::createBufferAndBindMemory(VkDeviceSize siz
 Move<VkImage> TimestampTestInstance::createImage2DAndBindMemory(VkFormat                          format,
 																deUint32                          width,
 																deUint32                          height,
-																VkBufferUsageFlags                usage,
+																VkImageUsageFlags                 usage,
 																VkSampleCountFlagBits             sampleCount,
 																de::details::MovePtr<Allocation>* pAlloc)
 {
@@ -912,6 +912,20 @@ Move<VkImage> TimestampTestInstance::createImage2DAndBindMemory(VkFormat        
 	const deUint32              queueFamilyIndex    = m_context.getUniversalQueueFamilyIndex();
 	SimpleAllocator             memAlloc            (vk, vkDevice, getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice()));
 
+	// Optimal tiling feature check
+	VkFormatProperties          formatProperty;
+	m_context.getInstanceInterface().getPhysicalDeviceFormatProperties(m_context.getPhysicalDevice(), format, &formatProperty);
+	if((usage & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) && !(formatProperty.optimalTilingFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT))
+	{
+		// Remove color attachment usage if the optimal tiling feature does not support it
+		usage &= ~VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+	}
+	if((usage & VK_IMAGE_USAGE_STORAGE_BIT) && !(formatProperty.optimalTilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT))
+	{
+		// Remove storage usage if the optimal tiling feature does not support it
+		usage &= ~VK_IMAGE_USAGE_STORAGE_BIT;
+	}
+	
 	const VkImageCreateInfo colorImageParams =
 	{
 		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                                        // VkStructureType      sType;
@@ -1351,8 +1365,8 @@ void AdvGraphicsTest::initPrograms(SourceCollections& programCollection) const
 	programCollection.glslSources.add("basic_tcs") << glu::TessellationControlSource(
 		"#version 450 \n"
 		"layout(vertices = 3) out;\n"
-		"in highp vec4 color[];\n"
-		"out highp vec4 vtxColor[];\n"
+		"layout(location = 0) in highp vec4 color[];\n"
+		"layout(location = 0) out highp vec4 vtxColor[];\n"
 		"void main()\n"
 		"{\n"
 		"  gl_TessLevelOuter[0] = 4.0;\n"
@@ -1366,8 +1380,8 @@ void AdvGraphicsTest::initPrograms(SourceCollections& programCollection) const
 	programCollection.glslSources.add("basic_tes") << glu::TessellationEvaluationSource(
 		"#version 450 \n"
 		"layout(triangles, fractional_even_spacing, ccw) in;\n"
-		"in highp vec4 colors[];\n"
-		"out highp vec4 vtxColor;\n"
+		"layout(location = 0) in highp vec4 colors[];\n"
+		"layout(location = 0) out highp vec4 vtxColor;\n"
 		"void main() \n"
 		"{\n"
 		"  float u = gl_TessCoord.x;\n"
@@ -1830,7 +1844,7 @@ TransferTestInstance::TransferTestInstance(Context&              context,
 	: TimestampTestInstance(context, stages, inRenderPass)
 	, m_method(method)
 	, m_bufSize(256u)
-	, m_imageFormat(VK_FORMAT_R32G32B32A32_SFLOAT)
+	, m_imageFormat(VK_FORMAT_R8G8B8A8_UNORM)
 	, m_imageWidth(4u)
 	, m_imageHeight(4u)
 	, m_imageSize(256u)
@@ -1853,19 +1867,19 @@ TransferTestInstance::TransferTestInstance(Context&              context,
 
 	// Create src/dst/depth image
 	m_srcImage   = createImage2DAndBindMemory(m_imageFormat, m_imageWidth, m_imageHeight,
-											  VK_IMAGE_USAGE_STORAGE_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+											  VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
 											  VK_SAMPLE_COUNT_1_BIT,
 											  &dummyAlloc);
 	m_dstImage   = createImage2DAndBindMemory(m_imageFormat, m_imageWidth, m_imageHeight,
-											  VK_IMAGE_USAGE_STORAGE_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+											  VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
 											  VK_SAMPLE_COUNT_1_BIT,
 											  &dummyAlloc);
 	m_depthImage = createImage2DAndBindMemory(VK_FORMAT_D16_UNORM, m_imageWidth, m_imageHeight,
-											  VK_IMAGE_USAGE_STORAGE_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+											  VK_IMAGE_USAGE_TRANSFER_DST_BIT,
 											  VK_SAMPLE_COUNT_1_BIT,
 											  &dummyAlloc);
 	m_msImage    = createImage2DAndBindMemory(m_imageFormat, m_imageWidth, m_imageHeight,
-											  VK_IMAGE_USAGE_STORAGE_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+											  VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
 											  VK_SAMPLE_COUNT_4_BIT,
 											  &dummyAlloc);
 }
@@ -1899,13 +1913,13 @@ void TransferTestInstance::configCommandBuffer(void)
 	{
 		{0.0f, 0.0f, 0.0f, 0.0f}
 	};
-	const struct VkImageSubresourceRange subRange =
+	struct VkImageSubresourceRange subRange =
 	{
-		0u,                  // VkImageAspectFlags  aspectMask;
-		0u,                  // deUint32            baseMipLevel;
-		1u,                  // deUint32            mipLevels;
-		0u,                  // deUint32            baseArrayLayer;
-		1u,                  // deUint32            arraySize;
+		VK_IMAGE_ASPECT_COLOR_BIT,     // VkImageAspectFlags  aspectMask;
+		0u,                            // deUint32            baseMipLevel;
+		1u,                            // deUint32            mipLevels;
+		0u,                            // deUint32            baseArrayLayer;
+		1u,                            // deUint32            arraySize;
 	};
 
 	vk.cmdClearColorImage(*m_cmdBuffer, *m_srcImage, VK_IMAGE_LAYOUT_GENERAL, &srcClearValue, 1u, &subRange);
@@ -2011,6 +2025,7 @@ void TransferTestInstance::configCommandBuffer(void)
 					1.0f,                                   // float       depth;
 					0u,                                     // deUint32    stencil;
 				};
+				subRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
 				vk.cmdClearDepthStencilImage(*m_cmdBuffer, *m_depthImage, VK_IMAGE_LAYOUT_GENERAL, &clearDSValue, 1u, &subRange);
 				break;
 			}

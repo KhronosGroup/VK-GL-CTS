@@ -1386,7 +1386,7 @@ void ShaderPackingFunctionTests::init (void)
 		};
 
 		// packSnorm4x8
-		for (int prec = 0; prec < glu::PRECISION_LAST; prec++)
+		for (int prec = glu::PRECISION_MEDIUMP; prec < glu::PRECISION_LAST; prec++)
 		{
 			for (int shaderTypeNdx = 0; shaderTypeNdx < DE_LENGTH_OF_ARRAY(allShaderTypes); shaderTypeNdx++)
 				addChild(new PackSnorm4x8Case(m_testCtx, allShaderTypes[shaderTypeNdx], glu::Precision(prec)));
@@ -1397,7 +1397,7 @@ void ShaderPackingFunctionTests::init (void)
 			addChild(new UnpackSnorm4x8Case(m_testCtx, allShaderTypes[shaderTypeNdx]));
 
 		// packUnorm4x8
-		for (int prec = 0; prec < glu::PRECISION_LAST; prec++)
+		for (int prec = glu::PRECISION_MEDIUMP; prec < glu::PRECISION_LAST; prec++)
 		{
 			for (int shaderTypeNdx = 0; shaderTypeNdx < DE_LENGTH_OF_ARRAY(allShaderTypes); shaderTypeNdx++)
 				addChild(new PackUnorm4x8Case(m_testCtx, allShaderTypes[shaderTypeNdx], glu::Precision(prec)));
@@ -1417,7 +1417,7 @@ void ShaderPackingFunctionTests::init (void)
 		};
 
 		// packSnorm2x16
-		for (int prec = 0; prec < glu::PRECISION_LAST; prec++)
+		for (int prec = glu::PRECISION_MEDIUMP; prec < glu::PRECISION_LAST; prec++)
 		{
 			for (int shaderTypeNdx = 0; shaderTypeNdx < DE_LENGTH_OF_ARRAY(newShaderTypes); shaderTypeNdx++)
 				addChild(new PackSnorm2x16Case(m_testCtx, newShaderTypes[shaderTypeNdx], glu::Precision(prec)));
@@ -1428,7 +1428,7 @@ void ShaderPackingFunctionTests::init (void)
 			addChild(new UnpackSnorm2x16Case(m_testCtx, newShaderTypes[shaderTypeNdx]));
 
 		// packUnorm2x16
-		for (int prec = 0; prec < glu::PRECISION_LAST; prec++)
+		for (int prec = glu::PRECISION_MEDIUMP; prec < glu::PRECISION_LAST; prec++)
 		{
 			for (int shaderTypeNdx = 0; shaderTypeNdx < DE_LENGTH_OF_ARRAY(newShaderTypes); shaderTypeNdx++)
 				addChild(new PackUnorm2x16Case(m_testCtx, newShaderTypes[shaderTypeNdx], glu::Precision(prec)));

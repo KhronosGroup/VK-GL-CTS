@@ -3480,7 +3480,7 @@ void ImageCopyToImage::submit (SubmitContext& context)
 		}
 	};
 
-	vkd.cmdCopyImage(commandBuffer, context.getImage(), context.getImageLayout(), *m_dstImage, vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, 1, &region);
+	vkd.cmdCopyImage(commandBuffer, context.getImage(), context.getImageLayout(), *m_dstImage, vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 }
 
 void ImageCopyToImage::verify (VerifyContext& context, size_t commandIndex)
@@ -3673,7 +3673,7 @@ void ImageBlitFromImage::prepare (PrepareContext& context)
 	m_memory = bindImageMemory(vki, vkd, physicalDevice, device, *m_srcImage, 0);
 
 	{
-		const vk::Unique<vk::VkBuffer>			srcBuffer		(createBuffer(vkd, device, 4 * m_srcImageWidth * m_srcImageHeight, vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT, vk::VK_SHARING_MODE_EXCLUSIVE, queueFamilies));
+		const vk::Unique<vk::VkBuffer>			srcBuffer		(createBuffer(vkd, device, 4 * m_srcImageWidth * m_srcImageHeight, vk::VK_BUFFER_USAGE_TRANSFER_SRC_BIT, vk::VK_SHARING_MODE_EXCLUSIVE, queueFamilies));
 		const vk::Unique<vk::VkDeviceMemory>	memory			(bindBufferMemory(vki, vkd, physicalDevice, device, *srcBuffer, vk::VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT));
 		const vk::Unique<vk::VkCommandBuffer>	commandBuffer	(createBeginCommandBuffer(vkd, device, commandPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 		const vk::VkImageMemoryBarrier			preImageBarrier	=
@@ -3807,7 +3807,7 @@ void ImageBlitFromImage::submit (SubmitContext& context)
 			}
 		}
 	};
-	vkd.cmdBlitImage(commandBuffer, *m_srcImage, vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, context.getImage(), context.getImageLayout(), 1, &region, vk::VK_FILTER_NEAREST);
+	vkd.cmdBlitImage(commandBuffer, *m_srcImage, vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, context.getImage(), context.getImageLayout(), 1, &region, vk::VK_FILTER_NEAREST);
 }
 
 void ImageBlitFromImage::verify (VerifyContext& context, size_t)
