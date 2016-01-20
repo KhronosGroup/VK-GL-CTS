@@ -1326,9 +1326,8 @@ void UniformStructTests::init (void)
 
 			struct T {
 				int				a;
-				float			_padding1[3];
+				float			_padding1[1];
 				tcu::Vec2		b;
-				float			_padding2[2];
 			};
 
 			struct S {
@@ -1336,6 +1335,7 @@ void UniformStructTests::init (void)
 				float			_padding1[3];
 				T				b;
 				int				c;
+				float			_padding2[3];
 			};
 
 			S s;
@@ -1895,7 +1895,7 @@ void UniformStructTests::init (void)
 		<< "	T				b[3];"
 		<< "	int				c;"
 		<< "};"
-		<< "layout (std140, set = 0, binding = 10) uniform buffer11 { S s[2]; };"
+		<< "layout (std140, set = 0, binding = 11) uniform buffer11 { S s[2]; };"
 		<< ""
 		<< "void main (void)"
 		<< "{"
