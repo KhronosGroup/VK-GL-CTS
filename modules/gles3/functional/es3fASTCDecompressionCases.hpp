@@ -26,6 +26,7 @@
 #include "deDefs.h"
 #include "tes3TestCase.hpp"
 #include "tcuCompressedTexture.hpp"
+#include "tcuAstcUtil.hpp"
 #include "deUniquePtr.hpp"
 
 #include <vector>
@@ -44,24 +45,6 @@ class ASTCRenderer2D;
 
 }
 
-enum ASTCBlockTestType
-{
-	ASTCBLOCKTESTTYPE_VOID_EXTENT_LDR = 0,
-	ASTCBLOCKTESTTYPE_VOID_EXTENT_HDR,
-	ASTCBLOCKTESTTYPE_WEIGHT_GRID,
-	ASTCBLOCKTESTTYPE_WEIGHT_ISE,
-	ASTCBLOCKTESTTYPE_CEMS,
-	ASTCBLOCKTESTTYPE_PARTITION_SEED,
-	ASTCBLOCKTESTTYPE_ENDPOINT_VALUE_LDR,
-	ASTCBLOCKTESTTYPE_ENDPOINT_VALUE_HDR_NO_15,
-	ASTCBLOCKTESTTYPE_ENDPOINT_VALUE_HDR_15,
-	ASTCBLOCKTESTTYPE_ENDPOINT_ISE,
-	ASTCBLOCKTESTTYPE_CCS,
-	ASTCBLOCKTESTTYPE_RANDOM,
-
-	ASTCBLOCKTESTTYPE_LAST
-};
-
 // General ASTC block test class.
 class ASTCBlockCase2D : public TestCase
 {
@@ -69,7 +52,7 @@ public:
 																	ASTCBlockCase2D			(Context&						context,
 																							 const char*					name,
 																							 const char*					description,
-																							 ASTCBlockTestType				testType,
+																							 tcu::astc::BlockTestType		testType,
 																							 tcu::CompressedTexFormat		format);
 																	~ASTCBlockCase2D		(void);
 
@@ -78,12 +61,10 @@ public:
 	IterateResult													iterate					(void);
 
 private:
-	static void														generateDummyBlocks		(deUint8* dst, int num);
-
 																	ASTCBlockCase2D			(const ASTCBlockCase2D& other);
 	ASTCBlockCase2D&												operator=				(const ASTCBlockCase2D& other);
 
-	const ASTCBlockTestType											m_testType;
+	const tcu::astc::BlockTestType									m_testType;
 	const tcu::CompressedTexFormat									m_format;
 	std::vector<deUint8>											m_blockData;
 
@@ -114,8 +95,6 @@ private:
 		MAX_NUM_BLOCKS_Y = 5
 	};
 
-	static void														generateDefaultBlockData		(deUint8* dst, int numBlocks, int blockWidth, int blockHeight);
-
 																	ASTCBlockSizeRemainderCase2D	(const ASTCBlockSizeRemainderCase2D& other);
 	ASTCBlockSizeRemainderCase2D&									operator=						(const ASTCBlockSizeRemainderCase2D& other);
 
@@ -125,10 +104,6 @@ private:
 
 	de::UniquePtr<ASTCDecompressionCaseInternal::ASTCRenderer2D>	m_renderer;
 };
-
-const char*		getBlockTestTypeName			(ASTCBlockTestType testType);
-const char*		getBlockTestTypeDescription		(ASTCBlockTestType testType);
-bool			isBlockTestTypeHDROnly			(ASTCBlockTestType testType);
 
 } // Functional
 } // gles3

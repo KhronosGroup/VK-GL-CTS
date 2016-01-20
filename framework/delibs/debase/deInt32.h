@@ -452,6 +452,11 @@ DE_INLINE deInt32 deSafeAdd32 (deInt32 a, deInt32 b)
 	return (a + b);
 }
 
+DE_INLINE deInt32 deDivRoundUp32 (deInt32 a, deInt32 b)
+{
+	return a/b + ((a%b) ? 1 : 0);
+}
+
 /* \todo [petri] Move to deInt64.h? */
 
 DE_INLINE deInt32 deMulAsr32 (deInt32 a, deInt32 b, int shift)
