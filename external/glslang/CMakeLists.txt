@@ -73,6 +73,7 @@ if (BISON_FOUND AND EXISTS ${GLSLANG_ABS_PATH}/glslang/GenericCodeGen/CodeGen.cp
 		${GLSLANG_ABS_PATH}/OGLCompilersDLL/InitializeDll.cpp
 
 		${GLSLANG_ABS_PATH}/SPIRV/GlslangToSpv.cpp
+		${GLSLANG_ABS_PATH}/SPIRV/InReadableOrder.cpp
 		${GLSLANG_ABS_PATH}/SPIRV/SpvBuilder.cpp
 		${GLSLANG_ABS_PATH}/SPIRV/SPVRemapper.cpp
 		${GLSLANG_ABS_PATH}/SPIRV/doc.cpp
