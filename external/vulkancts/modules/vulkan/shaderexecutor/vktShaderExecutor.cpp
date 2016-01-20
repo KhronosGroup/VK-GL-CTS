@@ -715,8 +715,6 @@ void FragmentOutExecutor::execute (const Context& ctx, int numValues, const void
 	const tcu::UVec2									renderSize				(renderSizeX, renderSizeY);
 	std::vector<tcu::Vec2>								positions;
 
-	VkFormat											colorFormat				= VK_FORMAT_R32G32B32A32_SFLOAT;
-
 	const bool											useGeometryShader		= m_shaderType == glu::SHADERTYPE_GEOMETRY;
 
 	std::vector<VkImageSp>								colorImages;
@@ -759,38 +757,6 @@ void FragmentOutExecutor::execute (const Context& ctx, int numValues, const void
 
 	// Create color images
 	{
-		const VkImageCreateInfo	 colorImageParams =
-		{
-			VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,										// VkStructureType				sType;
-			DE_NULL,																	// const void*					pNext;
-			0u,																			// VkImageCreateFlags			flags;
-			VK_IMAGE_TYPE_2D,															// VkImageType					imageType;
-			colorFormat,																// VkFormat						format;
-			{ renderSize.x(), renderSize.y(), 1u },										// VkExtent3D					extent;
-			1u,																			// deUint32						mipLevels;
-			1u,																			// deUint32						arraySize;
-			VK_SAMPLE_COUNT_1_BIT,														// VkSampleCountFlagBits		samples;
-			VK_IMAGE_TILING_OPTIMAL,													// VkImageTiling				tiling;
-			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,		// VkImageUsageFlags			usage;
-			VK_SHARING_MODE_EXCLUSIVE,													// VkSharingMode				sharingMode;
-			1u,																			// deUint32						queueFamilyCount;
-			&queueFamilyIndex,															// const deUint32*				pQueueFamilyIndices;
-			VK_IMAGE_LAYOUT_UNDEFINED,													// VkImageLayout				initialLayout;
-		};
-
-		const VkAttachmentDescription colorAttachmentDescription =
-		{
-			0u,																			// VkAttachmentDescriptorFlags	flags;
-			colorFormat,																// VkFormat						format;
-			VK_SAMPLE_COUNT_1_BIT,														// VkSampleCountFlagBits		samples;
-			VK_ATTACHMENT_LOAD_OP_CLEAR,												// VkAttachmentLoadOp			loadOp;
-			VK_ATTACHMENT_STORE_OP_STORE,												// VkAttachmentStoreOp			storeOp;
-			VK_ATTACHMENT_LOAD_OP_DONT_CARE,											// VkAttachmentLoadOp			stencilLoadOp;
-			VK_ATTACHMENT_STORE_OP_DONT_CARE,											// VkAttachmentStoreOp			stencilStoreOp;
-			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,									// VkImageLayout				initialLayout;
-			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,									// VkImageLayout				finalLayout;
-		};
-
 		const VkPipelineColorBlendAttachmentState colorBlendAttachmentState =
 		{
 			VK_FALSE,																	// VkBool32						blendEnable;
@@ -808,6 +774,42 @@ void FragmentOutExecutor::execute (const Context& ctx, int numValues, const void
 
 		for (int outNdx = 0; outNdx < (int)m_outputLayout.locationSymbols.size(); ++outNdx)
 		{
+			bool												isFloat = isDataTypeFloatOrVec(m_shaderSpec.outputs[outNdx].varType.getBasicType());
+			bool												isSigned = isDataTypeIntOrIVec(m_shaderSpec.outputs[outNdx].varType.getBasicType());
+			VkFormat											colorFormat = isFloat ? VK_FORMAT_R32G32B32A32_SFLOAT : (isSigned ? VK_FORMAT_R32G32B32A32_SINT : VK_FORMAT_R32G32B32A32_UINT);
+
+			const VkImageCreateInfo	 colorImageParams =
+			{
+				VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,										// VkStructureType				sType;
+				DE_NULL,																	// const void*					pNext;
+				0u,																			// VkImageCreateFlags			flags;
+				VK_IMAGE_TYPE_2D,															// VkImageType					imageType;
+				colorFormat,																// VkFormat						format;
+				{ renderSize.x(), renderSize.y(), 1u },										// VkExtent3D					extent;
+				1u,																			// deUint32						mipLevels;
+				1u,																			// deUint32						arraySize;
+				VK_SAMPLE_COUNT_1_BIT,														// VkSampleCountFlagBits		samples;
+				VK_IMAGE_TILING_OPTIMAL,													// VkImageTiling				tiling;
+				VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,		// VkImageUsageFlags			usage;
+				VK_SHARING_MODE_EXCLUSIVE,													// VkSharingMode				sharingMode;
+				1u,																			// deUint32						queueFamilyCount;
+				&queueFamilyIndex,															// const deUint32*				pQueueFamilyIndices;
+				VK_IMAGE_LAYOUT_UNDEFINED,													// VkImageLayout				initialLayout;
+			};
+
+			const VkAttachmentDescription colorAttachmentDescription =
+			{
+				0u,																			// VkAttachmentDescriptorFlags	flags;
+				colorFormat,																// VkFormat						format;
+				VK_SAMPLE_COUNT_1_BIT,														// VkSampleCountFlagBits		samples;
+				VK_ATTACHMENT_LOAD_OP_CLEAR,												// VkAttachmentLoadOp			loadOp;
+				VK_ATTACHMENT_STORE_OP_STORE,												// VkAttachmentStoreOp			storeOp;
+				VK_ATTACHMENT_LOAD_OP_DONT_CARE,											// VkAttachmentLoadOp			stencilLoadOp;
+				VK_ATTACHMENT_STORE_OP_DONT_CARE,											// VkAttachmentStoreOp			stencilStoreOp;
+				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,									// VkImageLayout				initialLayout;
+				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,									// VkImageLayout				finalLayout;
+			};
+
 			Move<VkImage> colorImage = createImage(vk, vkDevice, &colorImageParams);
 			colorImages.push_back(de::SharedPtr<Unique<VkImage> >(new Unique<VkImage>(colorImage)));
 			attachmentClearValues.push_back(getDefaultClearColor());
