@@ -66,7 +66,7 @@ endif ()
 include_directories(${ZLIB_INCLUDE_PATH})
 
 # libpng
-find_path(PNG_INCLUDE_PATH	libpng.h)
+find_path(PNG_INCLUDE_PATH	png.h)
 find_library(PNG_LIBRARY	png)
 
 if (NOT PNG_INCLUDE_PATH OR NOT PNG_LIBRARY)
