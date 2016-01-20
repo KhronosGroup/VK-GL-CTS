@@ -158,3 +158,6 @@ dEQP-GLES3.functional.dither.disabled.gradient_red
 dEQP-GLES3.functional.dither.disabled.gradient_green
 dEQP-GLES3.functional.dither.disabled.gradient_blue
 dEQP-GLES3.functional.dither.disabled.gradient_alpha
+
+# Bug 26651667
+dEQP-GLES3.functional.draw.draw_elements_instanced.indices.buffer.index_byte
