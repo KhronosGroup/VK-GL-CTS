@@ -13,3 +13,9 @@ dEQP-VK.glsl.builtin.precision.acos.mediump_compute.*
 dEQP-VK.glsl.builtin.precision.atan.mediump_compute.*
 dEQP-VK.glsl.builtin.precision.inverse.highp_compute.mat2
 dEQP-VK.glsl.builtin.precision.refract.*
+
+# Issue 233: Negative zero flat varying issue
+dEQP-VK.glsl.builtin.function.common.frexp.float_highp_vertex
+dEQP-VK.glsl.builtin.function.common.frexp.vec2_highp_vertex
+dEQP-VK.glsl.builtin.function.common.frexp.vec3_highp_vertex
+dEQP-VK.glsl.builtin.function.common.frexp.vec4_highp_vertex
