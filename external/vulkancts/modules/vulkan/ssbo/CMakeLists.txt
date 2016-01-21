@@ -10,6 +10,7 @@ set(DEQP_VK_SSBO_SRCS
 )
 
 set(DEQP_VK_SSBO_LIBS
+	deqp-vk-common
 	tcutil
 	vkutil
 )

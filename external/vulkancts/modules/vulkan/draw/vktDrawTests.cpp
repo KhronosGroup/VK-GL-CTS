@@ -38,23 +38,30 @@
 #include "vktDrawSimpleTest.hpp"
 #include "vktDrawIndexedTest.hpp"
 #include "vktDrawIndirectTest.hpp"
-
-#include "deUniquePtr.hpp"
+#include "vktTestGroupUtil.hpp"
 
 namespace vkt
 {
 namespace Draw
 {
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+namespace
 {
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "draw", "Spimple Draw tests"));
+
+void createChildren (tcu::TestCaseGroup* group)
+{
+	tcu::TestContext&	testCtx		= group->getTestContext();
 
 	group->addChild(new SimpleDrawTests(testCtx));
 	group->addChild(new DrawIndexedTests(testCtx));
 	group->addChild(new IndirectDrawTests(testCtx));
+}
 
-	return group.release();
+} // anonymous
+
+tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+{
+	return createTestGroup(testCtx, "draw", "Spimple Draw tests", createChildren);
 }
 
 } // Draw

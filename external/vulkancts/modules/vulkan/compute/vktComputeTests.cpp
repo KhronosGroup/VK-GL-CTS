@@ -36,22 +36,30 @@
 #include "vktComputeBasicComputeShaderTests.hpp"
 #include "vktComputeIndirectComputeDispatchTests.hpp"
 #include "vktComputeShaderBuiltinVarTests.hpp"
-#include "deUniquePtr.hpp"
+#include "vktTestGroupUtil.hpp"
 
 namespace vkt
 {
 namespace compute
 {
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+namespace
 {
-	de::MovePtr<tcu::TestCaseGroup> computeTests (new tcu::TestCaseGroup(testCtx, "compute", "Compute shader tests"));
+
+void createChildren (tcu::TestCaseGroup* computeTests)
+{
+	tcu::TestContext&	testCtx		= computeTests->getTestContext();
 
 	computeTests->addChild(createBasicComputeShaderTests(testCtx));
 	computeTests->addChild(createIndirectComputeDispatchTests(testCtx));
 	computeTests->addChild(createComputeShaderBuiltinVarTests(testCtx));
+}
 
-	return computeTests.release();
+} // anonymous
+
+tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+{
+	return createTestGroup(testCtx, "compute", "Compute shader tests", createChildren);
 }
 
 } // compute

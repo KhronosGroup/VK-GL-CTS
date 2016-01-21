@@ -34,25 +34,32 @@
 
 #include "vktSpvAsmTests.hpp"
 
-#include "deUniquePtr.hpp"
-
 #include "vktSpvAsmInstructionTests.hpp"
+#include "vktTestGroupUtil.hpp"
 
 namespace vkt
 {
 namespace SpirVAssembly
 {
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+namespace
 {
-	de::MovePtr<tcu::TestCaseGroup> spirVAssemblyTests (new tcu::TestCaseGroup(testCtx, "spirv_assembly", "SPIR-V Assembly tests"));
+
+void createChildren (tcu::TestCaseGroup* spirVAssemblyTests)
+{
+	tcu::TestContext&	testCtx		= spirVAssemblyTests->getTestContext();
 
 	spirVAssemblyTests->addChild(createInstructionTests(testCtx));
 	// \todo [2015-09-28 antiagainst] control flow
 	// \todo [2015-09-28 antiagainst] multiple entry points for the same shader stage
 	// \todo [2015-09-28 antiagainst] multiple shaders in the same module
+}
 
-	return spirVAssemblyTests.release();
+} // anonymous
+
+tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+{
+	return createTestGroup(testCtx, "spirv_assembly", "SPIR-V Assembly tests", createChildren);
 }
 
 } // SpirVAssembly

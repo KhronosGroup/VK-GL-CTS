@@ -46,6 +46,7 @@
 
 #include "deUniquePtr.hpp"
 
+#include "vktTestGroupUtil.hpp"
 #include "vktApiTests.hpp"
 #include "vktPipelineTests.hpp"
 #include "vktBindingModelTests.hpp"
@@ -248,9 +249,9 @@ tcu::TestNode::IterateResult TestCaseExecutor::iterate (tcu::TestCase*)
 
 // GLSL shader tests
 
-tcu::TestCaseGroup* createGlslTests (tcu::TestContext& testCtx)
+void createGlslTests (tcu::TestCaseGroup* glslTests)
 {
-	de::MovePtr<tcu::TestCaseGroup>	glslTests	(new tcu::TestCaseGroup(testCtx, "glsl", "GLSL shader execution tests"));
+	tcu::TestContext&	testCtx		= glslTests->getTestContext();
 
 	// ShaderLibrary-based tests
 	static const struct
@@ -289,8 +290,6 @@ tcu::TestCaseGroup* createGlslTests (tcu::TestContext& testCtx)
 	// ShaderExecutor-based tests
 	glslTests->addChild(shaderexecutor::createBuiltinTests				(testCtx));
 	glslTests->addChild(shaderexecutor::createOpaqueTypeIndexingTests	(testCtx));
-
-	return glslTests.release();
 }
 
 // TestPackage
@@ -315,7 +314,7 @@ void TestPackage::init (void)
 	addChild(pipeline::createTests		(m_testCtx));
 	addChild(BindingModel::createTests	(m_testCtx));
 	addChild(SpirVAssembly::createTests	(m_testCtx));
-	addChild(createGlslTests			(m_testCtx));
+	addChild(createTestGroup			(m_testCtx, "glsl", "GLSL shader execution tests", createGlslTests));
 	addChild(createRenderPassTests		(m_testCtx));
 	addChild(memory::createTests		(m_testCtx));
 	addChild(ubo::createTests			(m_testCtx));

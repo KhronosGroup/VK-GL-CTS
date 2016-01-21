@@ -18,6 +18,7 @@ set(DEQP_VK_SHADEREXECUTOR_SRCS
 )
 
 set(DEQP_VK_SHADEREXECUTOR_LIBS
+   deqp-vk-common
    tcutil
    vkutil
 )

@@ -25,6 +25,7 @@ set(DEQP_VK_DYNAMIC_STATE_SRCS
 )
 
 set(DEQP_VK_DYNAMIC_STATE_LIBS
+	deqp-vk-common
 	tcutil
 	vkutil
 )

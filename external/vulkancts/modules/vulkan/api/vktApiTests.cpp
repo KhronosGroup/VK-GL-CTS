@@ -34,8 +34,7 @@
 
 #include "vktApiTests.hpp"
 
-#include "deUniquePtr.hpp"
-
+#include "vktTestGroupUtil.hpp"
 #include "vktApiSmokeTests.hpp"
 #include "vktApiDeviceInitializationTests.hpp"
 #include "vktApiObjectManagementTests.hpp"
@@ -54,32 +53,33 @@ namespace api
 namespace
 {
 
-tcu::TestCaseGroup* createBufferViewTests (tcu::TestContext& testCtx)
+void createBufferViewTests (tcu::TestCaseGroup* bufferViewTests)
 {
-	de::MovePtr<tcu::TestCaseGroup>	bufferViewTests	(new tcu::TestCaseGroup(testCtx, "buffer_view", "BufferView tests"));
+	tcu::TestContext&	testCtx		= bufferViewTests->getTestContext();
 
 	bufferViewTests->addChild(createBufferViewCreateTests	(testCtx));
 	bufferViewTests->addChild(createBufferViewAccessTests	(testCtx));
-
-	return bufferViewTests.release();
 }
 
-} // anonymous
-
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+void createApiTests (tcu::TestCaseGroup* apiTests)
 {
-	de::MovePtr<tcu::TestCaseGroup>	apiTests	(new tcu::TestCaseGroup(testCtx, "api", "API Tests"));
+	tcu::TestContext&	testCtx		= apiTests->getTestContext();
 
 	apiTests->addChild(createSmokeTests					(testCtx));
 	apiTests->addChild(api::createFeatureInfoTests		(testCtx));
 	apiTests->addChild(createDeviceInitializationTests	(testCtx));
 	apiTests->addChild(createObjectManagementTests		(testCtx));
 	apiTests->addChild(createBufferTests				(testCtx));
-	apiTests->addChild(createBufferViewTests			(testCtx));
+	apiTests->addChild(createTestGroup					(testCtx, "buffer_view", "BufferView tests", createBufferViewTests));
 	apiTests->addChild(createCommandBuffersTests		(testCtx));
 	apiTests->addChild(createCopiesAndBlittingTests		(testCtx));
+}
 
-	return apiTests.release();
+} // anonymous
+
+tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+{
+	return createTestGroup(testCtx, "api", "API Tests", createApiTests);
 }
 
 } // api
