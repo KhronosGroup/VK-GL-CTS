@@ -287,7 +287,7 @@ struct OcclusionQueryTestVector
 	OcclusionQueryResultsMode	queryResultsMode;
 	vk::VkDeviceSize			queryResultsStride;
 	bool						queryResultsAvailability;
-	vk::VkPrimitiveTopology		primitiveRopology;
+	vk::VkPrimitiveTopology		primitiveTopology;
 };
 
 class BasicOcclusionQueryTestInstance : public vkt::TestInstance
@@ -314,17 +314,18 @@ private:
 BasicOcclusionQueryTestInstance::BasicOcclusionQueryTestInstance (vkt::Context &context, const OcclusionQueryTestVector&  testVector)
 	: TestInstance		(context)
 	, m_testVector		(testVector)
-	, m_stateObjects	(new StateObjects(m_context.getDeviceInterface(), m_context, NUM_VERTICES_IN_DRAWCALL, m_testVector.primitiveRopology))
 {
 	DE_ASSERT(testVector.queryResultSize			== RESULT_SIZE_64_BIT
 			&& testVector.queryWait					== WAIT_QUEUE
 			&& testVector.queryResultsMode			== RESULTS_MODE_GET
 			&& testVector.queryResultsStride		== sizeof(deUint64)
 			&& testVector.queryResultsAvailability	== false
-			&& testVector.primitiveRopology			== vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST);
+			&& testVector.primitiveTopology			== vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST);
 
 	if ((m_testVector.queryControlFlags & vk::VK_QUERY_CONTROL_PRECISE_BIT) && !m_context.getDeviceFeatures().occlusionQueryPrecise)
 		throw tcu::NotSupportedError("Precise occlusion queries are not supported");
+
+	m_stateObjects = new StateObjects(m_context.getDeviceInterface(), m_context, NUM_VERTICES_IN_DRAWCALL, m_testVector.primitiveTopology);
 
 	const vk::VkDevice			device	= m_context.getDevice();
 	const vk::DeviceInterface&	vk		= m_context.getDeviceInterface();
@@ -573,13 +574,14 @@ OcclusionQueryTestInstance::OcclusionQueryTestInstance (vkt::Context &context, c
 	, m_queryResultFlags	((m_testVector.queryWait == WAIT_QUERY					? vk::VK_QUERY_RESULT_WAIT_BIT				: 0)
 							| (m_testVector.queryResultSize == RESULT_SIZE_64_BIT	? vk::VK_QUERY_RESULT_64_BIT				: 0)
 							| (m_testVector.queryResultsAvailability				? vk::VK_QUERY_RESULT_WITH_AVAILABILITY_BIT	: 0))
-	, m_stateObjects		(new StateObjects(m_context.getDeviceInterface(), m_context, NUM_VERTICES_IN_DRAWCALL + NUM_VERTICES_IN_PARTIALLY_OCCLUDED_DRAWCALL + NUM_VERTICES_IN_OCCLUDER_DRAWCALL, m_testVector.primitiveRopology))
 {
 	const vk::VkDevice			device				= m_context.getDevice();
 	const vk::DeviceInterface&	vk					= m_context.getDeviceInterface();
 
 	if ((m_testVector.queryControlFlags & vk::VK_QUERY_CONTROL_PRECISE_BIT) && !m_context.getDeviceFeatures().occlusionQueryPrecise)
 		throw tcu::NotSupportedError("Precise occlusion queries are not supported");
+
+	m_stateObjects  = new StateObjects(m_context.getDeviceInterface(), m_context, NUM_VERTICES_IN_DRAWCALL + NUM_VERTICES_IN_PARTIALLY_OCCLUDED_DRAWCALL + NUM_VERTICES_IN_OCCLUDER_DRAWCALL, m_testVector.primitiveTopology);
 
 	const vk::VkQueryPoolCreateInfo queryPoolCreateInfo	=
 	{
@@ -707,7 +709,7 @@ tcu::TestStatus OcclusionQueryTestInstance::iterate (void)
 	log << tcu::TestLog::Section("OcclusionQueryResults", "Occlusion query results");
 
 	logResults(queryResults, queryAvailability);
-	bool passed = validateResults(queryResults, queryAvailability, allowNotReady, m_testVector.primitiveRopology);
+	bool passed = validateResults(queryResults, queryAvailability, allowNotReady, m_testVector.primitiveTopology);
 
 	log << tcu::TestLog::EndSection;
 
@@ -1070,7 +1072,7 @@ void QueryPoolOcclusionTests::init (void)
 	baseTestVector.queryResultsMode			= RESULTS_MODE_GET;
 	baseTestVector.queryResultsStride		= sizeof(deUint64);
 	baseTestVector.queryResultsAvailability = false;
-	baseTestVector.primitiveRopology		= vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
+	baseTestVector.primitiveTopology		= vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
 
 	//Basic tests
 	{
@@ -1123,7 +1125,7 @@ void QueryPoolOcclusionTests::init (void)
 								testVector.queryResultsMode					= resultsMode[resultsModeIdx];
 								testVector.queryResultsStride				= (testVector.queryResultSize == RESULT_SIZE_32_BIT ? sizeof(deUint32) : sizeof(deUint64));
 								testVector.queryResultsAvailability			= testAvailability[testAvailabilityIdx];
-								testVector.primitiveRopology				= primitiveTopology[primitiveTopologyIdx];
+								testVector.primitiveTopology				= primitiveTopology[primitiveTopologyIdx];
 
 								if (testVector.queryResultsAvailability)
 								{
