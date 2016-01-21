@@ -2130,17 +2130,19 @@ tcu::TestCaseGroup* createOpConstantCompositeGroup (tcu::TestContext& testCtx)
 
 	cases.push_back(CaseParameter("vector",			"%five = OpConstant %u32 5\n"
 													"%const = OpConstantComposite %uvec3 %five %zero %five"));
-	cases.push_back(CaseParameter("matrix",			"%m3uvec3 = OpTypeMatrix %fvec3 3\n"
-													"%ten = OpConstant %u32 10\n"
-													"%vec = OpConstantComposite %uvec3 %ten %zero %ten\n"
-													"%mat = OpConstantComposite %m3uvec3 %vec %vec %vec"));
+	cases.push_back(CaseParameter("matrix",			"%m3fvec3 = OpTypeMatrix %fvec3 3\n"
+													"%ten = OpConstant %f32 10.\n"
+													"%fzero = OpConstant %f32 0.\n"
+													"%vec = OpConstantComposite %fvec3 %ten %fzero %ten\n"
+													"%mat = OpConstantComposite %m3fvec3 %vec %vec %vec"));
 	cases.push_back(CaseParameter("struct",			"%m2vec3 = OpTypeMatrix %fvec3 2\n"
-													"%struct = OpTypeStruct %u32 %f32 %uvec3 %m2vec3\n"
-													"%one = OpConstant %u32 1\n"
+													"%struct = OpTypeStruct %i32 %f32 %fvec3 %m2vec3\n"
+													"%fzero = OpConstant %f32 0.\n"
+													"%one = OpConstant %f32 1.\n"
 													"%point5 = OpConstant %f32 0.5\n"
-													"%vec = OpConstantComposite %uvec3 %one %one %zero\n"
+													"%vec = OpConstantComposite %fvec3 %one %one %fzero\n"
 													"%mat = OpConstantComposite %m2vec3 %vec %vec\n"
-													"%const = OpConstantComposite %struct %one %point5 %vec %mat"));
+													"%const = OpConstantComposite %struct %zero %point5 %vec %mat"));
 	cases.push_back(CaseParameter("nested_struct",	"%st1 = OpTypeStruct %u32 %f32\n"
 													"%st2 = OpTypeStruct %i32 %i32\n"
 													"%struct = OpTypeStruct %st1 %st2\n"
