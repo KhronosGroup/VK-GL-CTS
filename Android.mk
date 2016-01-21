@@ -33,6 +33,7 @@ LOCAL_SRC_FILES := \
 	executor/xeXMLWriter.cpp \
 	framework/common/tcuApp.cpp \
 	framework/common/tcuArray.cpp \
+	framework/common/tcuAstcUtil.cpp \
 	framework/common/tcuBilinearImageCompare.cpp \
 	framework/common/tcuCommandLine.cpp \
 	framework/common/tcuCompressedTexture.cpp \
@@ -661,6 +662,7 @@ LOCAL_SRC_FILES := \
 	modules/glshared/glsTextureTestUtil.cpp \
 	modules/glshared/glsUniformBlockCase.cpp \
 	modules/glshared/glsVertexArrayTests.cpp \
+	modules/internal/ditAstcTests.cpp \
 	modules/internal/ditBuildInfoTests.cpp \
 	modules/internal/ditSRGB8ConversionTest.cpp \
 	modules/internal/ditDelibsTests.cpp \

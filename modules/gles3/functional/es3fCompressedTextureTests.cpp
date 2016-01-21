@@ -70,10 +70,10 @@ void CompressedTextureTests::init (void)
 
 		// Block test cases.
 
-		for (int astcTestTypeI = 0; astcTestTypeI < ASTCBLOCKTESTTYPE_LAST; astcTestTypeI++)
+		for (int astcTestTypeI = 0; astcTestTypeI < tcu::astc::BLOCK_TEST_TYPE_LAST; astcTestTypeI++)
 		{
-			const ASTCBlockTestType		astcTestType	= (ASTCBlockTestType)astcTestTypeI;
-			TestCaseGroup* const		testTypeGroup	= new TestCaseGroup(m_context, getBlockTestTypeName(astcTestType), getBlockTestTypeDescription(astcTestType));
+			const tcu::astc::BlockTestType	astcTestType	= (tcu::astc::BlockTestType)astcTestTypeI;
+			TestCaseGroup* const			testTypeGroup	= new TestCaseGroup(m_context, getBlockTestTypeName(astcTestType), getBlockTestTypeDescription(astcTestType));
 			astcGroup->addChild(testTypeGroup);
 
 			for (int formatI = 0; formatI < tcu::COMPRESSEDTEXFORMAT_LAST; formatI++)
@@ -82,7 +82,7 @@ void CompressedTextureTests::init (void)
 
 				if (!tcu::isAstcFormat(format))
 					continue;
-				if (tcu::isAstcSRGBFormat(format) && isBlockTestTypeHDROnly(astcTestType))
+				if (tcu::isAstcSRGBFormat(format) && tcu::astc::isBlockTestTypeHDROnly(astcTestType))
 					continue;
 
 				testTypeGroup->addChild(new ASTCBlockCase2D(m_context, getASTCFormatShortName(format).c_str(), glu::getCompressedTextureFormatName(glu::getGLFormat(format)), astcTestType, format));

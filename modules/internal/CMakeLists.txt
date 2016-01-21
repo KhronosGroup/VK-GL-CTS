@@ -23,6 +23,8 @@ set(DE_INTERNAL_TESTS_SRCS
 	ditSRGB8ConversionTest.cpp
 	ditTextureFormatTests.cpp
 	ditTextureFormatTests.hpp
+	ditAstcTests.cpp
+	ditAstcTests.hpp
 	ditVulkanTests.cpp
 	ditVulkanTests.hpp
 	)
