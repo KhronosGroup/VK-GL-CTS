@@ -136,7 +136,7 @@ Texture2D::Texture2D (const RenderContext& context, const ContextInfo& contextIn
 	const glw::Functions& gl = context.getFunctions();
 
 	if (!contextInfo.isCompressedTextureFormatSupported(m_format))
-		throw tcu::NotSupportedError("Compressed texture format not supported", "", __FILE__, __LINE__);
+		TCU_THROW(NotSupportedError, "Compressed texture format not supported");
 
 	gl.genTextures(1, &m_glTexture);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glGenTextures() failed");
