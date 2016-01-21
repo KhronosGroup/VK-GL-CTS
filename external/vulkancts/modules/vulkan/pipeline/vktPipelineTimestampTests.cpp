@@ -1957,7 +1957,7 @@ void TransferTestInstance::configCommandBuffer(void)
 	};
 
 	const VkOffset3D nullOffset  = {0u, 0u, 0u};
-	const VkExtent3D imageExtent = {m_imageWidth, m_imageHeight, 1u};
+	const VkExtent3D imageExtent = {(deUint32)m_imageWidth, (deUint32)m_imageHeight, 1u};
 	const VkOffset3D imageOffset = {(int)m_imageWidth, (int)m_imageHeight, 1};
 	switch(m_method)
 	{

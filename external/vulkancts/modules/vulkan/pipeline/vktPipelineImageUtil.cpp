@@ -772,12 +772,14 @@ int TestTexture1D::getNumLevels (void) const
 tcu::PixelBufferAccess TestTexture1D::getLevel (int level, int layer)
 {
 	DE_ASSERT(layer == 0);
+	DE_UNREF(layer);
 	return m_texture.getLevel(level);
 }
 
 const tcu::ConstPixelBufferAccess TestTexture1D::getLevel (int level, int layer) const
 {
 	DE_ASSERT(layer == 0);
+	DE_UNREF(layer);
 	return m_texture.getLevel(level);
 }
 
@@ -879,12 +881,14 @@ int TestTexture2D::getNumLevels (void) const
 tcu::PixelBufferAccess TestTexture2D::getLevel (int level, int layer)
 {
 	DE_ASSERT(layer == 0);
+	DE_UNREF(layer);
 	return m_texture.getLevel(level);
 }
 
 const tcu::ConstPixelBufferAccess TestTexture2D::getLevel (int level, int layer) const
 {
 	DE_ASSERT(layer == 0);
+	DE_UNREF(layer);
 	return m_texture.getLevel(level);
 }
 
@@ -986,12 +990,14 @@ int TestTexture3D::getNumLevels (void) const
 tcu::PixelBufferAccess TestTexture3D::getLevel (int level, int layer)
 {
 	DE_ASSERT(layer == 0);
+	DE_UNREF(layer);
 	return m_texture.getLevel(level);
 }
 
 const tcu::ConstPixelBufferAccess TestTexture3D::getLevel (int level, int layer) const
 {
 	DE_ASSERT(layer == 0);
+	DE_UNREF(layer);
 	return m_texture.getLevel(level);
 }
 
