@@ -361,7 +361,7 @@ GLW_APICALL void GLW_APIENTRY glGetIntegerv (GLenum pname, GLint* params)
 			break;
 
 		case GL_COMPRESSED_TEXTURE_FORMATS:
-			deMemcpy(params, &ctx->compressedTextureList[0], (int)ctx->compressedTextureList.size());
+			deMemcpy(params, &ctx->compressedTextureList[0], ctx->compressedTextureList.size()*sizeof(deUint32));
 			break;
 
 		case GL_MAX_TRANSFORM_FEEDBACK_SEPARATE_ATTRIBS:
