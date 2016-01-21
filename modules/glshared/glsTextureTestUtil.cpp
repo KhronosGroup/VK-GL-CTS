@@ -718,8 +718,8 @@ static void sampleTextureNonProjected (const SurfaceAccess& dst, const tcu::Text
 	tcu::Vec3									triS[2]				= { sq.swizzle(0, 1, 2), sq.swizzle(3, 2, 1) };
 	tcu::Vec3									triT[2]				= { tq.swizzle(0, 1, 2), tq.swizzle(3, 2, 1) };
 	tcu::Vec3									triR[2]				= { rq.swizzle(0, 1, 2), rq.swizzle(3, 2, 1) };
-	float										triLod[2]			= { computeNonProjectedTriLod(params.lodMode, dstSize, srcSize, triS[0], triT[0]) + lodBias,
-																		computeNonProjectedTriLod(params.lodMode, dstSize, srcSize, triS[1], triT[1]) + lodBias};
+	float										triLod[2]			= { de::clamp(computeNonProjectedTriLod(params.lodMode, dstSize, srcSize, triS[0], triT[0]) + lodBias, params.minLod, params.maxLod),
+																		de::clamp(computeNonProjectedTriLod(params.lodMode, dstSize, srcSize, triS[1], triT[1]) + lodBias, params.minLod, params.maxLod) };
 
 	for (int y = 0; y < dst.getHeight(); y++)
 	{
