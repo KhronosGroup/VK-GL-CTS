@@ -47,6 +47,8 @@ std::vector<VkQueueFamilyProperties>	getPhysicalDeviceQueueFamilyProperties	(con
 VkPhysicalDeviceFeatures				getPhysicalDeviceFeatures				(const InstanceInterface& vk, VkPhysicalDevice physicalDevice);
 VkPhysicalDeviceProperties				getPhysicalDeviceProperties				(const InstanceInterface& vk, VkPhysicalDevice physicalDevice);
 VkPhysicalDeviceMemoryProperties		getPhysicalDeviceMemoryProperties		(const InstanceInterface& vk, VkPhysicalDevice physicalDevice);
+VkFormatProperties						getPhysicalDeviceFormatProperties		(const InstanceInterface& vk, VkPhysicalDevice physicalDevice, VkFormat format);
+VkImageFormatProperties					getPhysicalDeviceImageFormatProperties	(const InstanceInterface& vk, VkPhysicalDevice physicalDevice, VkFormat format, VkImageType type, VkImageTiling tiling, VkImageUsageFlags usage, VkImageCreateFlags flags);
 
 VkMemoryRequirements					getBufferMemoryRequirements				(const DeviceInterface& vk, VkDevice device, VkBuffer buffer);
 VkMemoryRequirements					getImageMemoryRequirements				(const DeviceInterface& vk, VkDevice device, VkImage image);

@@ -108,12 +108,33 @@ VkPhysicalDeviceMemoryProperties getPhysicalDeviceMemoryProperties (const Instan
 	return properties;
 }
 
+VkFormatProperties getPhysicalDeviceFormatProperties (const InstanceInterface& vk, VkPhysicalDevice physicalDevice, VkFormat format)
+{
+	VkFormatProperties	properties;
+
+	deMemset(&properties, 0, sizeof(properties));
+
+	vk.getPhysicalDeviceFormatProperties(physicalDevice, format, &properties);
+	return properties;
+}
+
+VkImageFormatProperties getPhysicalDeviceImageFormatProperties (const InstanceInterface& vk, VkPhysicalDevice physicalDevice, VkFormat format, VkImageType type, VkImageTiling tiling, VkImageUsageFlags usage, VkImageCreateFlags flags)
+{
+	VkImageFormatProperties	properties;
+
+	deMemset(&properties, 0, sizeof(properties));
+
+	vk.getPhysicalDeviceImageFormatProperties(physicalDevice, format, type, tiling, usage, flags, &properties);
+	return properties;
+}
+
 VkMemoryRequirements getBufferMemoryRequirements (const DeviceInterface& vk, VkDevice device, VkBuffer buffer)
 {
 	VkMemoryRequirements req;
 	vk.getBufferMemoryRequirements(device, buffer, &req);
 	return req;
 }
+
 VkMemoryRequirements getImageMemoryRequirements (const DeviceInterface& vk, VkDevice device, VkImage image)
 {
 	VkMemoryRequirements req;
