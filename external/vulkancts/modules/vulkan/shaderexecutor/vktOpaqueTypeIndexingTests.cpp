@@ -115,6 +115,9 @@ public:
 	virtual tcu::TestStatus				iterate								(void) = 0;
 
 protected:
+	void								checkSupported						(const VkDescriptorType descriptorType);
+
+protected:
 	tcu::TestContext&					m_testCtx;
 	const glu::ShaderType				m_shaderType;
 	const ShaderSpec&					m_shaderSpec;
@@ -170,6 +173,35 @@ OpaqueTypeIndexingTestInstance::OpaqueTypeIndexingTestInstance (Context&					con
 
 OpaqueTypeIndexingTestInstance::~OpaqueTypeIndexingTestInstance (void)
 {
+}
+
+void OpaqueTypeIndexingTestInstance::checkSupported (const VkDescriptorType descriptorType)
+{
+	const VkPhysicalDeviceFeatures& deviceFeatures = m_context.getDeviceFeatures();
+
+	if (m_indexExprType != INDEX_EXPR_TYPE_CONST_LITERAL && m_indexExprType != INDEX_EXPR_TYPE_CONST_EXPRESSION)
+	{
+		switch (descriptorType)
+		{
+			case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
+				if (!deviceFeatures.shaderSampledImageArrayDynamicIndexing)
+					TCU_THROW(NotSupportedError, "Dynamic indexing of sampler arrays is not supported");
+				break;
+
+			case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
+				if (!deviceFeatures.shaderUniformBufferArrayDynamicIndexing)
+					TCU_THROW(NotSupportedError, "Dynamic indexing of uniform buffer arrays is not supported");
+				break;
+
+			case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
+				if (!deviceFeatures.shaderStorageBufferArrayDynamicIndexing)
+					TCU_THROW(NotSupportedError, "Dynamic indexing of storage buffer arrays is not supported");
+				break;
+
+			default:
+				break;
+		}
+	}
 }
 
 static deUint32 getFirstFreeBindingLocation (const glu::ShaderType shaderType)
@@ -456,6 +488,8 @@ tcu::TestStatus SamplerIndexingCaseInstance::iterate (void)
 																				tcu::Sampler::COMPAREMODE_LESS)
 																: tcu::Sampler(tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::CLAMP_TO_EDGE,
 																				tcu::Sampler::LINEAR, tcu::Sampler::LINEAR);
+
+	checkSupported(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 
 	coords.resize(numInvocations * getDataTypeScalarSize(coordType));
 
@@ -831,6 +865,8 @@ tcu::TestStatus BlockArrayIndexingCaseInstance::iterate (void)
 		deUint32				bindingLocation		= getFirstFreeBindingLocation(m_shaderType);
 		VkDescriptorType		descriptorType		= m_blockType == BLOCKTYPE_UNIFORM ? VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER : VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 
+		checkSupported(descriptorType);
+
 		for (size_t i = 0 ; i < m_inValues.size(); i++)
 			m_uniformSetup->addData(new UniformData<deUint32>(bindingLocation++, descriptorType, m_inValues[i]));
 
@@ -1061,8 +1097,9 @@ tcu::TestStatus AtomicCounterIndexingCaseInstance::iterate (void)
 	std::vector<deUint32>		outValues			(numInvocations*numOps);
 	deUint32					bindingLocation		= getFirstFreeBindingLocation(m_shaderType);
 
-
 	const deUint32 atomicCounterLocation = bindingLocation++;
+
+	checkSupported(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 
 	{
 		DE_ASSERT(numCounters <= 4);
