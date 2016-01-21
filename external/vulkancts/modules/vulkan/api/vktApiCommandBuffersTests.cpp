@@ -45,6 +45,7 @@
 #include "vktApiCommandBuffersTests.hpp"
 #include "vktApiBufferComputeInstance.hpp"
 #include "vktApiComputeInstanceResultBuffer.hpp"
+#include "deSharedPtr.hpp"
 #include <sstream>
 
 namespace vkt
@@ -55,6 +56,8 @@ namespace
 {
 
 using namespace vk;
+
+typedef de::SharedPtr<vk::Unique<vk::VkEvent> >	VkEventSp;
 
 // Global variables
 const deUint64								INFINITE_TIMEOUT		= ~(deUint64)0u;
@@ -525,19 +528,18 @@ tcu::TestStatus executeLargePrimaryBufferTest(Context& context)
 		DE_NULL,
 		0u,
 	};
-	VkEvent events[LARGE_BUFFER_SIZE];
+
+	std::vector<VkEventSp>					events;
 	for (deUint32 ndx = 0; ndx < LARGE_BUFFER_SIZE; ++ndx)
-	{
-		VK_CHECK(vk.createEvent(vkDevice, &eventCreateInfo, DE_NULL, &events[ndx]));
-	}
+		events.push_back(VkEventSp(new vk::Unique<VkEvent>(createEvent(vk, vkDevice, &eventCreateInfo, DE_NULL))));
 
 	// record primary command buffer
 	VK_CHECK(vk.beginCommandBuffer(*primCmdBuf, &primCmdBufBeginInfo));
 	{
-		// set all the events in the array
+		// set all the events
 		for (deUint32 ndx = 0; ndx < LARGE_BUFFER_SIZE; ++ndx)
 		{
-			vk.cmdSetEvent(*primCmdBuf, events[ndx], VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
+			vk.cmdSetEvent(*primCmdBuf, events[ndx]->get(), VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
 		}
 	}
 	VK_CHECK(vk.endCommandBuffer(*primCmdBuf));
@@ -577,7 +579,7 @@ tcu::TestStatus executeLargePrimaryBufferTest(Context& context)
 
 	for (deUint32 ndx = 0; ndx < LARGE_BUFFER_SIZE; ++ndx)
 	{
-		if (vk.getEventStatus(vkDevice, events[ndx]) != VK_EVENT_SET)
+		if (vk.getEventStatus(vkDevice, events[ndx]->get()) != VK_EVENT_SET)
 		{
 			testResult = tcu::TestStatus::fail("An event was not set.");
 			break;
@@ -586,10 +588,6 @@ tcu::TestStatus executeLargePrimaryBufferTest(Context& context)
 
 	if (!testResult.isComplete())
 		testResult = tcu::TestStatus::pass("All events set correctly.");
-
-	// Free the events
-	for (deUint32 ndx = 0; ndx < LARGE_BUFFER_SIZE; ++ndx)
-		vk.destroyEvent(vkDevice, events[ndx], DE_NULL);
 
 	return testResult;
 }
@@ -2222,16 +2220,19 @@ tcu::TestStatus submitBufferCountNonZero(Context& context)
 		DE_NULL,													// pNext;
 		0u,															// flags;
 	};
-	VkEvent events[BUFFER_COUNT];
+
+	std::vector<VkEventSp>					events;
 	for (deUint32 ndx = 0; ndx < BUFFER_COUNT; ++ndx)
-		VK_CHECK(vk.createEvent(vkDevice, &eventCreateInfo, DE_NULL, &events[ndx]));
+	{
+		events.push_back(VkEventSp(new vk::Unique<VkEvent>(createEvent(vk, vkDevice, &eventCreateInfo, DE_NULL))));
+	}
 
 	// Record the command buffers
 	for (deUint32 ndx = 0; ndx < BUFFER_COUNT; ++ndx)
 	{
 		VK_CHECK(vk.beginCommandBuffer(cmdBuffers[ndx], &cmdBufBeginInfo));
 		{
-			vk.cmdSetEvent(cmdBuffers[ndx], events[ndx], VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
+			vk.cmdSetEvent(cmdBuffers[ndx], events[ndx]->get(), VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
 		}
 		VK_CHECK(vk.endCommandBuffer(cmdBuffers[ndx]));
 	}
@@ -2268,7 +2269,7 @@ tcu::TestStatus submitBufferCountNonZero(Context& context)
 
 	for (deUint32 ndx = 0; ndx < BUFFER_COUNT; ++ndx)
 	{
-		if (vk.getEventStatus(vkDevice, events[ndx]) != VK_EVENT_SET)
+		if (vk.getEventStatus(vkDevice, events[ndx]->get()) != VK_EVENT_SET)
 		{
 			testResult = tcu::TestStatus::fail("Failed to set the event.");
 			break;
@@ -2277,10 +2278,6 @@ tcu::TestStatus submitBufferCountNonZero(Context& context)
 
 	if (!testResult.isComplete())
 		testResult = tcu::TestStatus::pass("All buffers were submitted and executed correctly.");
-
-	// Free the events
-	for (deUint32 ndx = 0; ndx < BUFFER_COUNT; ++ndx)
-		vk.destroyEvent(vkDevice, events[ndx], DE_NULL);
 
 	return testResult;
 }
@@ -2329,16 +2326,17 @@ tcu::TestStatus submitBufferCountEqualZero(Context& context)
 		DE_NULL,													// pNext;
 		0u,															// flags;
 	};
-	VkEvent events[BUFFER_COUNT];
+
+	std::vector<VkEventSp>					events;
 	for (deUint32 ndx = 0; ndx < BUFFER_COUNT; ++ndx)
-		VK_CHECK(vk.createEvent(vkDevice, &eventCreateInfo, DE_NULL, &events[ndx]));
+		events.push_back(VkEventSp(new vk::Unique<VkEvent>(createEvent(vk, vkDevice, &eventCreateInfo, DE_NULL))));
 
 	// Record the command buffers
 	for (deUint32 ndx = 0; ndx < BUFFER_COUNT; ++ndx)
 	{
 		VK_CHECK(vk.beginCommandBuffer(cmdBuffers[ndx], &cmdBufBeginInfo));
 		{
-			vk.cmdSetEvent(cmdBuffers[ndx], events[ndx], VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
+			vk.cmdSetEvent(cmdBuffers[ndx], events[ndx]->get(), VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
 		}
 		VK_CHECK(vk.endCommandBuffer(cmdBuffers[ndx]));
 	}
@@ -2397,14 +2395,10 @@ tcu::TestStatus submitBufferCountEqualZero(Context& context)
 	// Check if the first buffer was executed
 	tcu::TestStatus testResult = tcu::TestStatus::incomplete();
 
-	if (vk.getEventStatus(vkDevice, events[0]) == VK_EVENT_SET)
+	if (vk.getEventStatus(vkDevice, events[0]->get()) == VK_EVENT_SET)
 		testResult = tcu::TestStatus::fail("The first event was signaled.");
 	else
 		testResult = tcu::TestStatus::pass("The first submission was ignored.");
-
-	// Free the events
-	for (deUint32 ndx = 0; ndx < BUFFER_COUNT; ++ndx)
-		vk.destroyEvent(vkDevice, events[ndx], DE_NULL);
 
 	return testResult;
 }
@@ -2454,16 +2448,17 @@ tcu::TestStatus submitBufferNullFence(Context& context)
 		DE_NULL,													// pNext;
 		0u,															// flags;
 	};
-	VkEvent events[BUFFER_COUNT];
+
+	std::vector<VkEventSp>					events;
 	for (deUint32 ndx = 0; ndx < BUFFER_COUNT; ++ndx)
-		VK_CHECK(vk.createEvent(vkDevice, &eventCreateInfo, DE_NULL, &events[ndx]));
+		events.push_back(VkEventSp(new vk::Unique<VkEvent>(createEvent(vk, vkDevice, &eventCreateInfo, DE_NULL))));
 
 	// Record the command buffers
 	for (deUint32 ndx = 0; ndx < BUFFER_COUNT; ++ndx)
 	{
 		VK_CHECK(vk.beginCommandBuffer(cmdBuffers[ndx], &cmdBufBeginInfo));
 		{
-			vk.cmdSetEvent(cmdBuffers[ndx], events[ndx], VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
+			vk.cmdSetEvent(cmdBuffers[ndx], events[ndx]->get(), VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
 		}
 		VK_CHECK(vk.endCommandBuffer(cmdBuffers[ndx]));
 	}
@@ -2514,14 +2509,10 @@ tcu::TestStatus submitBufferNullFence(Context& context)
 
 	tcu::TestStatus testResult = tcu::TestStatus::incomplete();
 
-	if (vk.getEventStatus(vkDevice, events[0]) != VK_EVENT_SET)
+	if (vk.getEventStatus(vkDevice, events[0]->get()) != VK_EVENT_SET)
 		testResult = tcu::TestStatus::fail("The first event was not signaled -> the buffer was not executed.");
 	else
 		testResult = tcu::TestStatus::pass("The first event was signaled -> the buffer with null fence submitted and executed correctly.");
-
-	// Free the events
-	for (deUint32 ndx = 0; ndx < BUFFER_COUNT; ++ndx)
-		vk.destroyEvent(vkDevice, events[ndx], DE_NULL);
 
 	return testResult;
 }
