@@ -1308,12 +1308,12 @@ class RandomArrayGenerator
 {
 public:
 	static char*	generateArray			(int seed, GLValue min, GLValue max, int count, int componentCount, int stride, Array::InputType type);
-	static char*	generateQuads			(int seed, int count, int componentCount, int offset, int stride, Array::Primitive primitive, Array::InputType type, GLValue min, GLValue max);
+	static char*	generateQuads			(int seed, int count, int componentCount, int offset, int stride, Array::Primitive primitive, Array::InputType type, GLValue min, GLValue max, float gridSize);
 	static char*	generatePerQuad			(int seed, int count, int componentCount, int stride, Array::Primitive primitive, Array::InputType type, GLValue min, GLValue max);
 
 private:
 	template<typename T>
-	static char*	createQuads		(int seed, int count, int componentCount, int offset, int stride, Array::Primitive primitive, T min, T max);
+	static char*	createQuads		(int seed, int count, int componentCount, int offset, int stride, Array::Primitive primitive, T min, T max, float gridSize);
 	template<typename T>
 	static char*	createPerQuads	(int seed, int count, int componentCount, int stride, Array::Primitive primitive, T min, T max);
 	static char*	createQuadsPacked (int seed, int count, int componentCount, int offset, int stride, Array::Primitive primitive);
@@ -1413,50 +1413,50 @@ char* RandomArrayGenerator::generateArray (int seed, GLValue min, GLValue max, i
 	return data;
 }
 
-char* RandomArrayGenerator::generateQuads (int seed, int count, int componentCount, int offset, int stride, Array::Primitive primitive, Array::InputType type, GLValue min, GLValue max)
+char* RandomArrayGenerator::generateQuads (int seed, int count, int componentCount, int offset, int stride, Array::Primitive primitive, Array::InputType type, GLValue min, GLValue max, float gridSize)
 {
 	char* data = DE_NULL;
 
 	switch (type)
 	{
 		case Array::INPUTTYPE_FLOAT:
-			data = createQuads<GLValue::Float>(seed, count, componentCount, offset, stride, primitive, min.fl, max.fl);
+			data = createQuads<GLValue::Float>(seed, count, componentCount, offset, stride, primitive, min.fl, max.fl, gridSize);
 			break;
 
 		case Array::INPUTTYPE_FIXED:
-			data = createQuads<GLValue::Fixed>(seed, count, componentCount, offset, stride, primitive, min.fi, max.fi);
+			data = createQuads<GLValue::Fixed>(seed, count, componentCount, offset, stride, primitive, min.fi, max.fi, gridSize);
 			break;
 
 		case Array::INPUTTYPE_DOUBLE:
-			data = createQuads<GLValue::Double>(seed, count, componentCount, offset, stride, primitive, min.d, max.d);
+			data = createQuads<GLValue::Double>(seed, count, componentCount, offset, stride, primitive, min.d, max.d, gridSize);
 			break;
 
 		case Array::INPUTTYPE_BYTE:
-			data = createQuads<GLValue::Byte>(seed, count, componentCount, offset, stride, primitive, min.b, max.b);
+			data = createQuads<GLValue::Byte>(seed, count, componentCount, offset, stride, primitive, min.b, max.b, gridSize);
 			break;
 
 		case Array::INPUTTYPE_SHORT:
-			data = createQuads<GLValue::Short>(seed, count, componentCount, offset, stride, primitive, min.s, max.s);
+			data = createQuads<GLValue::Short>(seed, count, componentCount, offset, stride, primitive, min.s, max.s, gridSize);
 			break;
 
 		case Array::INPUTTYPE_UNSIGNED_BYTE:
-			data = createQuads<GLValue::Ubyte>(seed, count, componentCount, offset, stride, primitive, min.ub, max.ub);
+			data = createQuads<GLValue::Ubyte>(seed, count, componentCount, offset, stride, primitive, min.ub, max.ub, gridSize);
 			break;
 
 		case Array::INPUTTYPE_UNSIGNED_SHORT:
-			data = createQuads<GLValue::Ushort>(seed, count, componentCount, offset, stride, primitive, min.us, max.us);
+			data = createQuads<GLValue::Ushort>(seed, count, componentCount, offset, stride, primitive, min.us, max.us, gridSize);
 			break;
 
 		case Array::INPUTTYPE_UNSIGNED_INT:
-			data = createQuads<GLValue::Uint>(seed, count, componentCount, offset, stride, primitive, min.ui, max.ui);
+			data = createQuads<GLValue::Uint>(seed, count, componentCount, offset, stride, primitive, min.ui, max.ui, gridSize);
 			break;
 
 		case Array::INPUTTYPE_INT:
-			data = createQuads<GLValue::Int>(seed, count, componentCount, offset, stride, primitive, min.i, max.i);
+			data = createQuads<GLValue::Int>(seed, count, componentCount, offset, stride, primitive, min.i, max.i, gridSize);
 			break;
 
 		case Array::INPUTTYPE_HALF:
-			data = createQuads<GLValue::Half>(seed, count, componentCount, offset, stride, primitive, min.h, max.h);
+			data = createQuads<GLValue::Half>(seed, count, componentCount, offset, stride, primitive, min.h, max.h, gridSize);
 			break;
 
 		case Array::INPUTTYPE_INT_2_10_10_10:
@@ -1545,13 +1545,20 @@ char* RandomArrayGenerator::createQuadsPacked (int seed, int count, int componen
 }
 
 template<typename T>
-char* RandomArrayGenerator::createQuads (int seed, int count, int componentCount, int offset, int stride, Array::Primitive primitive, T min, T max)
+T roundTo (const T& step, const T& value)
+{
+	return value - (value % step);
+}
+
+template<typename T>
+char* RandomArrayGenerator::createQuads (int seed, int count, int componentCount, int offset, int stride, Array::Primitive primitive, T min, T max, float gridSize)
 {
 	int componentStride = sizeof(T);
 	int quadStride = 0;
 
 	if (stride == 0)
 		stride = componentCount * componentStride;
+
 	DE_ASSERT(stride >= componentCount * componentStride);
 
 	switch (primitive)
@@ -1576,6 +1583,11 @@ char* RandomArrayGenerator::createQuads (int seed, int count, int componentCount
 	{
 		case Array::PRIMITIVE_TRIANGLES:
 		{
+			const T	minQuadSize	= T::fromFloat(deFloatAbs(max.template to<float>() - min.template to<float>()) * gridSize);
+			const T	minDiff		= minValue<T>() > minQuadSize
+								? minValue<T>()
+								: minQuadSize;
+
 			for (int quadNdx = 0; quadNdx < count; ++quadNdx)
 			{
 				T x1, x2;
@@ -1585,22 +1597,22 @@ char* RandomArrayGenerator::createQuads (int seed, int count, int componentCount
 				// attempt to find a good (i.e not extremely small) quad
 				for (int attemptNdx = 0; attemptNdx < 4; ++attemptNdx)
 				{
-					x1 = getRandom<T>(rnd, min, max);
-					x2 = getRandom<T>(rnd, minValue<T>(), abs<T>(max - x1));
+					x1 = roundTo(minDiff, getRandom<T>(rnd, min, max));
+					x2 = roundTo(minDiff, getRandom<T>(rnd, minDiff, abs<T>(max - x1)));
 
-					y1 = getRandom<T>(rnd, min, max);
-					y2 = getRandom<T>(rnd, minValue<T>(), abs<T>(max - y1));
+					y1 = roundTo(minDiff, getRandom<T>(rnd, min, max));
+					y2 = roundTo(minDiff, getRandom<T>(rnd, minDiff, abs<T>(max - y1)));
 
-					z = (componentCount > 2) ? (getRandom<T>(rnd, min, max)) : (T::create(0));
-					w = (componentCount > 3) ? (getRandom<T>(rnd, min, max)) : (T::create(1));
+					z = (componentCount > 2) ? roundTo(minDiff, (getRandom<T>(rnd, min, max))) : (T::create(0));
+					w = (componentCount > 3) ? roundTo(minDiff, (getRandom<T>(rnd, min, max))) : (T::create(1));
 
 					// no additional components, all is good
 					if (componentCount <= 2)
 						break;
 
 					// The result quad is too thin?
-					if ((deFloatAbs(x2.template to<float>() + z.template to<float>()) < minValue<T>().template to<float>()) ||
-						(deFloatAbs(y2.template to<float>() + w.template to<float>()) < minValue<T>().template to<float>()))
+					if ((deFloatAbs(x2.template to<float>() + z.template to<float>()) < minDiff.template to<float>()) ||
+						(deFloatAbs(y2.template to<float>() + w.template to<float>()) < minDiff.template to<float>()))
 						continue;
 
 					// all ok
@@ -2075,6 +2087,8 @@ MultiVertexArrayTest::IterateResult MultiVertexArrayTest::iterate (void)
 			const char*		data			= DE_NULL;
 			const size_t	stride			= (arraySpec.stride == 0) ? (arraySpec.componentCount * Array::inputTypeSize(arraySpec.inputType)) : (arraySpec.stride);
 			const size_t	bufferSize		= arraySpec.offset + stride * (m_spec.drawCount * primitiveSize - 1) + arraySpec.componentCount  * Array::inputTypeSize(arraySpec.inputType);
+			// Snap values to at least 3x3 grid
+			const float		gridSize		= 3.0f / (float)(de::min(m_renderCtx.getRenderTarget().getWidth(), m_renderCtx.getRenderTarget().getHeight()) - 1);
 
 			switch (m_spec.primitive)
 			{
@@ -2084,7 +2098,7 @@ MultiVertexArrayTest::IterateResult MultiVertexArrayTest::iterate (void)
 				case Array::PRIMITIVE_TRIANGLES:
 					if (arrayNdx == 0)
 					{
-						data = RandomArrayGenerator::generateQuads(seed, m_spec.drawCount, arraySpec.componentCount, arraySpec.offset, arraySpec.stride, m_spec.primitive, arraySpec.inputType, arraySpec.min, arraySpec.max);
+						data = RandomArrayGenerator::generateQuads(seed, m_spec.drawCount, arraySpec.componentCount, arraySpec.offset, arraySpec.stride, m_spec.primitive, arraySpec.inputType, arraySpec.min, arraySpec.max, gridSize);
 					}
 					else
 					{
