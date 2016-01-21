@@ -513,7 +513,7 @@ VKAPI_ATTR void VKAPI_CALL getBufferMemoryRequirements (VkDevice, VkBuffer buffe
 	requirements->alignment			= (VkDeviceSize)1u;
 }
 
-VKAPI_ATTR VkDeviceSize VKAPI_CALL getPackedImageDataSize (VkFormat format, VkExtent3D extent, VkSampleCountFlagBits samples)
+VkDeviceSize getPackedImageDataSize (VkFormat format, VkExtent3D extent, VkSampleCountFlagBits samples)
 {
 	return (VkDeviceSize)getPixelSize(mapVkFormat(format))
 			* (VkDeviceSize)extent.width
@@ -522,13 +522,36 @@ VKAPI_ATTR VkDeviceSize VKAPI_CALL getPackedImageDataSize (VkFormat format, VkEx
 			* (VkDeviceSize)samples;
 }
 
+VkDeviceSize getCompressedImageDataSize (VkFormat format, VkExtent3D extent)
+{
+	try
+	{
+		const tcu::CompressedTexFormat	tcuFormat		= mapVkCompressedFormat(format);
+		const size_t					blockSize		= tcu::getBlockSize(tcuFormat);
+		const tcu::IVec3				blockPixelSize	= tcu::getBlockPixelSize(tcuFormat);
+		const int						numBlocksX		= deDivRoundUp32((int)extent.width, blockPixelSize.x());
+		const int						numBlocksY		= deDivRoundUp32((int)extent.height, blockPixelSize.y());
+		const int						numBlocksZ		= deDivRoundUp32((int)extent.depth, blockPixelSize.z());
+
+		return blockSize*numBlocksX*numBlocksY*numBlocksZ;
+	}
+	catch (...)
+	{
+		return 0; // Unsupported compressed format
+	}
+}
+
 VKAPI_ATTR void VKAPI_CALL getImageMemoryRequirements (VkDevice, VkImage imageHandle, VkMemoryRequirements* requirements)
 {
 	const Image*	image	= reinterpret_cast<const Image*>(imageHandle.getInternal());
 
 	requirements->memoryTypeBits	= 1u;
-	requirements->alignment			= 4u;
-	requirements->size				= getPackedImageDataSize(image->getFormat(), image->getExtent(), image->getSamples());
+	requirements->alignment			= 16u;
+
+	if (isCompressedFormat(image->getFormat()))
+		requirements->size = getCompressedImageDataSize(image->getFormat(), image->getExtent());
+	else
+		requirements->size = getPackedImageDataSize(image->getFormat(), image->getExtent(), image->getSamples());
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL mapMemory (VkDevice, VkDeviceMemory memHandle, VkDeviceSize offset, VkDeviceSize size, VkMemoryMapFlags flags, void** ppData)
