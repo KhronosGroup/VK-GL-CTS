@@ -132,7 +132,8 @@ typedef enum qpImageFormat_e
 /* Test log flags. */
 typedef enum qpTestLogFlag_e
 {
-	QP_TEST_LOG_EXCLUDE_IMAGES	= (1<<0)		/*!< Do not log images. This reduces log size considerably.		*/
+	QP_TEST_LOG_EXCLUDE_IMAGES			= (1<<0),		/*!< Do not log images. This reduces log size considerably.			*/
+	QP_TEST_LOG_EXCLUDE_SHADER_SOURCES	= (1<<1)		/*!< Do not log shader sources. Helps to reduce log size further.	*/
 } qpTestLogFlag;
 
 /* Shader type. */

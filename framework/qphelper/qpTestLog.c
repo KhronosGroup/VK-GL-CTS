@@ -1024,6 +1024,7 @@ deBool qpTestLog_endShaderProgram (qpTestLog* log)
 deBool qpTestLog_writeShader (qpTestLog* log, qpShaderType type, const char* source, deBool compileOk, const char* infoLog)
 {
 	const char*		tagName				= QP_LOOKUP_STRING(s_qpShaderTypeMap, type);
+	const char*		sourceStr			= ((log->flags & QP_TEST_LOG_EXCLUDE_SHADER_SOURCES) == 0 || !compileOk) ? source : "";
 	int				numShaderAttribs	= 0;
 	qpXmlAttribute	shaderAttribs[4];
 
@@ -1034,7 +1035,7 @@ deBool qpTestLog_writeShader (qpTestLog* log, qpShaderType type, const char* sou
 	shaderAttribs[numShaderAttribs++]	= qpSetStringAttrib("CompileStatus", compileOk ? "OK" : "Fail");
 
 	if (!qpXmlWriter_startElement(log->writer, tagName, numShaderAttribs, shaderAttribs) ||
-		!qpXmlWriter_writeStringElement(log->writer, "ShaderSource", source) ||
+		!qpXmlWriter_writeStringElement(log->writer, "ShaderSource", sourceStr) ||
 		!qpXmlWriter_writeStringElement(log->writer, "InfoLog", infoLog) ||
 		!qpXmlWriter_endElement(log->writer, tagName))
 	{
@@ -1216,10 +1217,12 @@ deBool qpTestLog_endSection (qpTestLog* log)
  *//*--------------------------------------------------------------------*/
 deBool qpTestLog_writeKernelSource (qpTestLog* log, const char* source)
 {
+	const char*		sourceStr	= (log->flags & QP_TEST_LOG_EXCLUDE_SHADER_SOURCES) != 0 ? "" : source;
+
 	DE_ASSERT(log);
 	deMutex_lock(log->lock);
 
-	if (!qpXmlWriter_writeStringElement(log->writer, "KernelSource", source))
+	if (!qpXmlWriter_writeStringElement(log->writer, "KernelSource", sourceStr))
 	{
 		qpPrintf("qpTestLog_writeKernelSource(): Writing XML failed\n");
 		deMutex_unlock(log->lock);
