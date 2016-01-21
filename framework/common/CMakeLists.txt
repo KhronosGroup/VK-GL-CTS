@@ -87,6 +87,8 @@ set(TCUTIL_SRCS
 	tcuTestHierarchyIterator.hpp
 	tcuTestHierarchyUtil.cpp
 	tcuTestHierarchyUtil.hpp
+	tcuAstcUtil.cpp
+	tcuAstcUtil.hpp
 	)
 
 set(TCUTIL_LIBS

@@ -23,6 +23,8 @@
 
 #include "ditFrameworkTests.hpp"
 #include "ditTextureFormatTests.hpp"
+#include "ditAstcTests.hpp"
+
 #include "tcuFloatFormat.hpp"
 #include "tcuEither.hpp"
 #include "tcuTestLog.hpp"
@@ -911,6 +913,7 @@ void FrameworkTests::init (void)
 	addChild(new CaseListParserTests	(m_testCtx));
 	addChild(new ReferenceRendererTests	(m_testCtx));
 	addChild(createTextureFormatTests	(m_testCtx));
+	addChild(createAstcTests			(m_testCtx));
 }
 
 } // dit
