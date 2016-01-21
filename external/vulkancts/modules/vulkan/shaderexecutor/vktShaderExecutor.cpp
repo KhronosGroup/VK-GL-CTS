@@ -3021,7 +3021,6 @@ void ShaderExecutor::setupSamplerData (const VkDevice&				vkDevice,
 {
 	DE_ASSERT(numSamplers > 0);
 
-	std::vector<VkSampler>				vkSamplers;
 	de::MovePtr<SamplerArrayUniform>	samplers		(new SamplerArrayUniform());
 
 	samplers->type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -3033,12 +3032,10 @@ void ShaderExecutor::setupSamplerData (const VkDevice&				vkDevice,
 		const void*						samplerData		= ((deUint8*)data) + offset;
 		de::MovePtr<SamplerUniform>		uniform			= createSamplerUniform(vkDevice, vk, queue, queueFamilyIndex, memAlloc, bindingLocation, refSampler, texFormat, texSize, imageType, imageViewType, samplerData);
 
-		vkSamplers.push_back(uniform->sampler.get()->get());
-
 		samplers->uniforms.push_back(SamplerUniformSp(new de::UniquePtr<SamplerUniform>(uniform)));
 	}
 
-	m_descriptorSetLayoutBuilder.addArraySamplerBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, numSamplers, VK_SHADER_STAGE_ALL, &vkSamplers[0]);
+	m_descriptorSetLayoutBuilder.addArraySamplerBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, numSamplers, VK_SHADER_STAGE_ALL, DE_NULL);
 	m_descriptorPoolBuilder.addType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, numSamplers);
 
 	m_uniformInfos.push_back(UniformInfoSp(new de::UniquePtr<UniformInfo>(samplers)));
