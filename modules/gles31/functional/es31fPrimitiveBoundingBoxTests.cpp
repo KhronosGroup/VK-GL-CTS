@@ -4461,6 +4461,9 @@ void ViewportCallOrderCase::init (void)
 	if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_primitive_bounding_box"))
 		throw tcu::NotSupportedError("Test requires GL_EXT_primitive_bounding_box extension");
 
+	if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_tessellation_shader"))
+		throw tcu::NotSupportedError("Test requires GL_EXT_tessellation_shader extension");
+
 	m_testCtx.getLog()
 		<< tcu::TestLog::Message
 		<< "Testing call order of state setting functions have no effect on the rendering.\n"
