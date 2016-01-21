@@ -371,6 +371,12 @@ ImageSamplingInstance::ImageSamplingInstance (Context&							context,
 	if (!isSupportedSamplableFormat(context.getInstanceInterface(), context.getPhysicalDevice(), imageFormat))
 		throw tcu::NotSupportedError(std::string("Unsupported format for sampling: ") + getFormatName(imageFormat));
 
+	if ((samplerParams.minFilter == VK_FILTER_LINEAR ||
+		 samplerParams.magFilter == VK_FILTER_LINEAR ||
+		 samplerParams.mipmapMode == VK_SAMPLER_MIPMAP_MODE_LINEAR) &&
+		!isLinearFilteringSupported(context.getInstanceInterface(), context.getPhysicalDevice(), imageFormat, VK_IMAGE_TILING_OPTIMAL))
+		throw tcu::NotSupportedError(std::string("Unsupported format for linear filtering: ") + getFormatName(imageFormat));
+
 	// Create texture image, view and sampler
 	{
 		VkImageCreateFlags			imageFlags			= 0u;

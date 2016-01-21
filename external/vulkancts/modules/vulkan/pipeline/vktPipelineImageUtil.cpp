@@ -113,6 +113,39 @@ bool isSupportedSamplableFormat (const InstanceInterface& instanceInterface, VkP
 	return (formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT) != 0u;
 }
 
+// \todo [2016-01-21 pyry] Update this to just rely on vkDefs.hpp once
+//						   CTS has been updated to 1.0.2.
+enum
+{
+	VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT = 0x00001000,
+};
+
+bool isLinearFilteringSupported (const InstanceInterface& vki, VkPhysicalDevice physicalDevice, VkFormat format, VkImageTiling tiling)
+{
+	const VkFormatProperties	formatProperties	= getPhysicalDeviceFormatProperties(vki, physicalDevice, format);
+	const VkFormatFeatureFlags	formatFeatures		= tiling == VK_IMAGE_TILING_LINEAR
+													? formatProperties.linearTilingFeatures
+													: formatProperties.optimalTilingFeatures;
+
+	switch (format)
+	{
+		case VK_FORMAT_R32_SFLOAT:
+		case VK_FORMAT_R32G32_SFLOAT:
+		case VK_FORMAT_R32G32B32_SFLOAT:
+		case VK_FORMAT_R32G32B32A32_SFLOAT:
+		case VK_FORMAT_R64_SFLOAT:
+		case VK_FORMAT_R64G64_SFLOAT:
+		case VK_FORMAT_R64G64B64_SFLOAT:
+		case VK_FORMAT_R64G64B64A64_SFLOAT:
+			return (formatFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT) != 0;
+
+		default:
+			// \todo [2016-01-21 pyry] Check for all formats once drivers have been updated to 1.0.2
+			//						   and we have tests to verify format properties.
+			return true;
+	}
+}
+
 VkBorderColor getFormatBorderColor (BorderColor color, VkFormat format)
 {
 	if (!isCompressedFormat(format) && (isIntFormat(format) || isUintFormat(format)))
