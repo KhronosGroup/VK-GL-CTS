@@ -81,6 +81,7 @@ DE_DECLARE_COMMAND_LINE_OPT(EGLDisplayType,				std::string);
 DE_DECLARE_COMMAND_LINE_OPT(EGLWindowType,				std::string);
 DE_DECLARE_COMMAND_LINE_OPT(EGLPixmapType,				std::string);
 DE_DECLARE_COMMAND_LINE_OPT(LogImages,					bool);
+DE_DECLARE_COMMAND_LINE_OPT(LogShaderSources,			bool);
 DE_DECLARE_COMMAND_LINE_OPT(TestOOM,					bool);
 DE_DECLARE_COMMAND_LINE_OPT(VKDeviceID,					int);
 
@@ -166,6 +167,7 @@ void registerOptions (de::cmdline::Parser& parser)
 		<< Option<EGLPixmapType>		(DE_NULL,	"deqp-egl-pixmap-type",			"EGL native pixmap type")
 		<< Option<VKDeviceID>			(DE_NULL,	"deqp-vk-device-id",			"Vulkan device ID (IDs start from 1)",									"1")
 		<< Option<LogImages>			(DE_NULL,	"deqp-log-images",				"Enable or disable logging of result images",		s_enableNames,		"enable")
+		<< Option<LogShaderSources>		(DE_NULL,	"deqp-log-shader-sources",		"Enable or disable logging of shader sources",		s_enableNames,		"enable")
 		<< Option<TestOOM>				(DE_NULL,	"deqp-test-oom",				"Run tests that exhaust memory on purpose",			s_enableNames,		TEST_OOM_DEFAULT);
 }
 
@@ -719,6 +721,9 @@ bool CommandLine::parse (int argc, const char* const* argv)
 
 	if (!m_cmdLine.getOption<opt::LogImages>())
 		m_logFlags |= QP_TEST_LOG_EXCLUDE_IMAGES;
+
+	if (!m_cmdLine.getOption<opt::LogShaderSources>())
+		m_logFlags |= QP_TEST_LOG_EXCLUDE_SHADER_SOURCES;
 
 	if ((m_cmdLine.hasOption<opt::CasePath>()?1:0) +
 		(m_cmdLine.hasOption<opt::CaseList>()?1:0) +
