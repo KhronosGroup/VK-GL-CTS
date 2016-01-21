@@ -100,6 +100,7 @@ Following command line options MUST be used when running CTS:
 
 	--deqp-caselist-file=<vulkancts>/external/vulkancts/mustpass/1.0.0/vk-default.txt
 	--deqp-log-images=disable
+	--deqp-log-shader-sources=disable
 
 In addition on multi-device systems the device for which conformance is claimed
 can be selected with:
