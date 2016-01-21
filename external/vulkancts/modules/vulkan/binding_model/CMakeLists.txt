@@ -10,6 +10,7 @@ set(DEQP_VK_BINDING_MODEL_SRCS
 	)
 
 set(DEQP_VK_BINDING_MODEL_LIBS
+	deqp-vk-common
 	tcutil
 	vkutil
 	)

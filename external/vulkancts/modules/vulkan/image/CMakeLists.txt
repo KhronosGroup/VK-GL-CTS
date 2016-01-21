@@ -16,6 +16,7 @@ set(DEQP_VK_IMAGE_SRCS
 	)
 
 set(DEQP_VK_IMAGE_LIBS
+	deqp-vk-common
 	tcutil
 	vkutil
 	)

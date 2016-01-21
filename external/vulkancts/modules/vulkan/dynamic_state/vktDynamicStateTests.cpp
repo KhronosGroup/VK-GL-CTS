@@ -40,25 +40,32 @@
 #include "vktDynamicStateCBTests.hpp"
 #include "vktDynamicStateDSTests.hpp"
 #include "vktDynamicStateGeneralTests.hpp"
-
-#include "deUniquePtr.hpp"
+#include "vktTestGroupUtil.hpp"
 
 namespace vkt
 {
 namespace DynamicState
 {
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+namespace
 {
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "dynamic_state", "Dynamic State Tests"));
+
+void createChildren (tcu::TestCaseGroup* group)
+{
+	tcu::TestContext&	testCtx		= group->getTestContext();
 
 	group->addChild(new DynamicStateVPTests(testCtx));
 	group->addChild(new DynamicStateRSTests(testCtx));
 	group->addChild(new DynamicStateCBTests(testCtx));
 	group->addChild(new DynamicStateDSTests(testCtx));
 	group->addChild(new DynamicStateGeneralTests(testCtx));
+}
 
-	return group.release();
+} // anonymous
+
+tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+{
+	return createTestGroup(testCtx, "dynamic_state", "Dynamic State Tests", createChildren);
 }
 
 } // DynamicState

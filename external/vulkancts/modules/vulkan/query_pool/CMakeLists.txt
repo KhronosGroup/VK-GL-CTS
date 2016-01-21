@@ -14,6 +14,7 @@ set(DEQP_VK_QUERY_POOL_SRCS
 )
 
 set(DEQP_VK_QUERY_POOL_LIBS
+	deqp-vk-common
 	tcutil
 	vkutil
 )

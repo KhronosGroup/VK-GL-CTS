@@ -37,23 +37,30 @@
 #include "vktMemoryAllocationTests.hpp"
 #include "vktMemoryMappingTests.hpp"
 #include "vktMemoryPipelineBarrierTests.hpp"
-
-#include "deUniquePtr.hpp"
+#include "vktTestGroupUtil.hpp"
 
 namespace vkt
 {
 namespace memory
 {
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+namespace
 {
-	de::MovePtr<tcu::TestCaseGroup> memoryTests (new tcu::TestCaseGroup(testCtx, "memory", "Memory Tests"));
+
+void createChildren (tcu::TestCaseGroup* memoryTests)
+{
+	tcu::TestContext&	testCtx		= memoryTests->getTestContext();
 
 	memoryTests->addChild(createAllocationTests			(testCtx));
 	memoryTests->addChild(createMappingTests			(testCtx));
 	memoryTests->addChild(createPipelineBarrierTests	(testCtx));
+}
 
-	return memoryTests.release();
+} // anonymous
+
+tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+{
+	return createTestGroup(testCtx, "memory", "Memory Tests", createChildren);
 }
 
 } // memory

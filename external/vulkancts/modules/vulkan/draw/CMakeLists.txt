@@ -21,6 +21,7 @@ set(DEQP_VK_DRAW_SRCS
 )
 
 set(DEQP_VK_DRAW_LIBS
+	deqp-vk-common
 	tcutil
 	vkutil
 )

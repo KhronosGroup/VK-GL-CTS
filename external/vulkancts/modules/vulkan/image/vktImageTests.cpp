@@ -36,24 +36,32 @@
 #include "vktImageLoadStoreTests.hpp"
 #include "vktImageQualifiersTests.hpp"
 #include "vktImageSizeTests.hpp"
-#include "deUniquePtr.hpp"
+#include "vktTestGroupUtil.hpp"
 
 namespace vkt
 {
 namespace image
 {
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+namespace
 {
-	de::MovePtr<tcu::TestCaseGroup> imageTests (new tcu::TestCaseGroup(testCtx, "image", "Image tests"));
+
+void createChildren (tcu::TestCaseGroup* imageTests)
+{
+	tcu::TestContext&	testCtx		= imageTests->getTestContext();
 
 	imageTests->addChild(createImageStoreTests(testCtx));
 	imageTests->addChild(createImageLoadStoreTests(testCtx));
 	imageTests->addChild(createImageFormatReinterpretTests(testCtx));
 	imageTests->addChild(createImageQualifiersTests(testCtx));
 	imageTests->addChild(createImageSizeTests(testCtx));
+}
 
-	return imageTests.release();
+} // anonymous
+
+tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+{
+	return createTestGroup(testCtx, "image", "Image tests", createChildren);
 }
 
 } // image

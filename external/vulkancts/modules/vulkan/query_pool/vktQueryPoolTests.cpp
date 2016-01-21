@@ -35,8 +35,7 @@
 
 #include "vktQueryPoolTests.hpp"
 
-#include "deUniquePtr.hpp"
-
+#include "vktTestGroupUtil.hpp"
 #include "vktQueryPoolOcclusionTests.hpp"
 
 namespace vkt
@@ -44,13 +43,21 @@ namespace vkt
 namespace QueryPool
 {
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+namespace
 {
-	de::MovePtr<tcu::TestCaseGroup> queryPoolTests (new tcu::TestCaseGroup(testCtx, "query_pool", "query pool tests"));
+
+void createChildren (tcu::TestCaseGroup* queryPoolTests)
+{
+	tcu::TestContext&	testCtx		= queryPoolTests->getTestContext();
 
 	queryPoolTests->addChild(new QueryPoolOcclusionTests(testCtx));
+}
 
-	return queryPoolTests.release();
+} // anonymous
+
+tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+{
+	return createTestGroup(testCtx, "query_pool", "query pool tests", createChildren);
 }
 
 } // QueryPool

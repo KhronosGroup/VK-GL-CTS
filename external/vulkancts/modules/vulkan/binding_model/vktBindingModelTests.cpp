@@ -35,25 +35,32 @@
 #include "vktBindingModelTests.hpp"
 
 #include "vktBindingShaderAccessTests.hpp"
-
-#include "deUniquePtr.hpp"
+#include "vktTestGroupUtil.hpp"
 
 namespace vkt
 {
 namespace BindingModel
 {
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+namespace
 {
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "binding_model", "Resource binding tests"));
+
+void createChildren (tcu::TestCaseGroup* group)
+{
+	tcu::TestContext&	testCtx		= group->getTestContext();
 
 	group->addChild(createShaderAccessTests(testCtx));
 
 	// \todo [2015-07-30 jarkko] .change_binding.{between_renderpasses, within_pass}
 	// \todo [2015-07-30 jarkko] .descriptor_set_chain
 	// \todo [2015-07-30 jarkko] .update_descriptor_set
+}
 
-	return group.release();
+} // anonymous
+
+tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+{
+	return createTestGroup(testCtx, "binding_model", "Resource binding tests", createChildren);
 }
 
 } // BindingModel

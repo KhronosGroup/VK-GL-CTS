@@ -45,16 +45,19 @@
 #include "vktPipelineMultisampleTests.hpp"
 #include "vktPipelineVertexInputTests.hpp"
 #include "vktPipelineTimestampTests.hpp"
-#include "deUniquePtr.hpp"
+#include "vktTestGroupUtil.hpp"
 
 namespace vkt
 {
 namespace pipeline
 {
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+namespace
 {
-	de::MovePtr<tcu::TestCaseGroup> pipelineTests (new tcu::TestCaseGroup(testCtx, "pipeline", "Pipeline Tests"));
+
+void createChildren (tcu::TestCaseGroup* pipelineTests)
+{
+	tcu::TestContext&	testCtx	= pipelineTests->getTestContext();
 
 	pipelineTests->addChild(createStencilTests		(testCtx));
 	pipelineTests->addChild(createBlendTests		(testCtx));
@@ -67,8 +70,13 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 	pipelineTests->addChild(createVertexInputTests	(testCtx));
 	pipelineTests->addChild(createInputAssemblyTests(testCtx));
 	pipelineTests->addChild(createTimestampTests	(testCtx));
+}
 
-	return pipelineTests.release();
+} // anonymous
+
+tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+{
+	return createTestGroup(testCtx, "pipeline", "Pipeline Tests", createChildren);
 }
 
 } // pipeline
