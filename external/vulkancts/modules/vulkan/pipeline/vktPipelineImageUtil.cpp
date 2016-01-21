@@ -39,6 +39,7 @@
 #include "vkQueryUtil.hpp"
 #include "vkRefUtil.hpp"
 #include "tcuTextureUtil.hpp"
+#include "tcuAstcUtil.hpp"
 #include "deRandom.hpp"
 
 namespace vkt
@@ -713,7 +714,7 @@ void TestTexture::populateLevels (const std::vector<tcu::PixelBufferAccess>& lev
 		TestTexture::fillWithGradient(levels[levelNdx]);
 }
 
-void TestTexture::populateCompressedLevels (const tcu::CompressedTexFormat& format, const std::vector<tcu::PixelBufferAccess>& decompressedLevels)
+void TestTexture::populateCompressedLevels (tcu::CompressedTexFormat format, const std::vector<tcu::PixelBufferAccess>& decompressedLevels)
 {
 	// Generate random compressed data and update decompressed data
 
@@ -725,14 +726,23 @@ void TestTexture::populateCompressedLevels (const tcu::CompressedTexFormat& form
 		tcu::CompressedTexture*			compressedLevel		= new tcu::CompressedTexture(format, level.getWidth(), level.getHeight(), level.getDepth());
 		deUint8* const					compressedData		= (deUint8*)compressedLevel->getData();
 
-		// Generate random compressed data
-		for (int byteNdx = 0; byteNdx < compressedLevel->getDataSize(); byteNdx++)
-			compressedData[byteNdx] = 0xFF & random.getUint32();
+		if (tcu::isAstcFormat(format))
+		{
+			// \todo [2016-01-20 pyry] Comparison doesn't currently handle invalid blocks correctly so we use only valid blocks
+			tcu::astc::generateRandomValidBlocks(compressedData, compressedLevel->getDataSize()/tcu::astc::BLOCK_SIZE_BYTES,
+												 format, tcu::TexDecompressionParams::ASTCMODE_LDR, random.getUint32());
+		}
+		else
+		{
+			// Generate random compressed data
+			for (int byteNdx = 0; byteNdx < compressedLevel->getDataSize(); byteNdx++)
+				compressedData[byteNdx] = 0xFF & random.getUint32();
+		}
 
 		m_compressedLevels.push_back(compressedLevel);
 
 		// Store decompressed data
-		compressedLevel->decompress(level, tcu::TexDecompressionParams::ASTCMODE_LDR);
+		compressedLevel->decompress(level, tcu::TexDecompressionParams(tcu::TexDecompressionParams::ASTCMODE_LDR));
 	}
 }
 

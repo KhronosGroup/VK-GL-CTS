@@ -197,7 +197,22 @@ static MovePtr<Program> createRefProgram(const tcu::TextureFormat&			renderTarge
 										  const VkImageSubresourceRange&	subresource)
 {
 	MovePtr<Program>	program;
-	const VkImageType	imageType	= getCompatibleImageType(viewType);
+	const VkImageType	imageType		= getCompatibleImageType(viewType);
+	tcu::Vec4			lookupScale		(1.0f);
+	tcu::Vec4			lookupBias		(0.0f);
+
+	if (!testTexture.isCompressed())
+	{
+		const tcu::TextureFormatInfo	fmtInfo	= tcu::getTextureFormatInfo(testTexture.getLevel(0, 0).getFormat());
+
+		// Needed to normalize various formats to 0..1 range for writing into RT
+		lookupScale	= fmtInfo.lookupScale;
+		lookupBias	= fmtInfo.lookupBias;
+	}
+	// else: All supported compressed formats are fine with no normalization.
+	//		 ASTC LDR blocks decompress to f16 so querying normalization parameters
+	//		 based on uncompressed formats would actually lead to massive precision loss
+	//		 and complete lack of coverage in case of R8G8B8A8_UNORM RT.
 
 	switch (imageType)
 	{
@@ -205,7 +220,7 @@ static MovePtr<Program> createRefProgram(const tcu::TextureFormat&			renderTarge
 			if (layerCount == 1)
 			{
 				const tcu::Texture1D& texture = dynamic_cast<const TestTexture1D&>(testTexture).getTexture();
-				program = MovePtr<Program>(new SamplerProgram<tcu::Texture1D>(renderTargetFormat, texture, sampler, samplerLod, componentMapping));
+				program = MovePtr<Program>(new SamplerProgram<tcu::Texture1D>(renderTargetFormat, texture, sampler, samplerLod, lookupScale, lookupBias, componentMapping));
 			}
 			else
 			{
@@ -219,11 +234,11 @@ static MovePtr<Program> createRefProgram(const tcu::TextureFormat&			renderTarge
 
 					copySubresourceRange(textureView, texture, subresource);
 
-					program = MovePtr<Program>(new SamplerProgram<tcu::Texture1DArray>(renderTargetFormat, textureView, sampler, samplerLod, componentMapping));
+					program = MovePtr<Program>(new SamplerProgram<tcu::Texture1DArray>(renderTargetFormat, textureView, sampler, samplerLod, lookupScale, lookupBias, componentMapping));
 				}
 				else
 				{
-					program = MovePtr<Program>(new SamplerProgram<tcu::Texture1DArray>(renderTargetFormat, texture, sampler, samplerLod, componentMapping));
+					program = MovePtr<Program>(new SamplerProgram<tcu::Texture1DArray>(renderTargetFormat, texture, sampler, samplerLod, lookupScale, lookupBias, componentMapping));
 				}
 			}
 			break;
@@ -232,7 +247,7 @@ static MovePtr<Program> createRefProgram(const tcu::TextureFormat&			renderTarge
 			if (layerCount == 1)
 			{
 				const tcu::Texture2D& texture = dynamic_cast<const TestTexture2D&>(testTexture).getTexture();
-				program = MovePtr<Program>(new SamplerProgram<tcu::Texture2D>(renderTargetFormat, texture, sampler, samplerLod, componentMapping));
+				program = MovePtr<Program>(new SamplerProgram<tcu::Texture2D>(renderTargetFormat, texture, sampler, samplerLod, lookupScale, lookupBias, componentMapping));
 			}
 			else
 			{
@@ -241,7 +256,7 @@ static MovePtr<Program> createRefProgram(const tcu::TextureFormat&			renderTarge
 					if (layerCount == tcu::CUBEFACE_LAST)
 					{
 						const tcu::TextureCube& texture = dynamic_cast<const TestTextureCube&>(testTexture).getTexture();
-						program = MovePtr<Program>(new SamplerProgram<tcu::TextureCube>(renderTargetFormat, texture, sampler, samplerLod, componentMapping));
+						program = MovePtr<Program>(new SamplerProgram<tcu::TextureCube>(renderTargetFormat, texture, sampler, samplerLod, lookupScale, lookupBias, componentMapping));
 					}
 					else
 					{
@@ -259,12 +274,12 @@ static MovePtr<Program> createRefProgram(const tcu::TextureFormat&			renderTarge
 
 							copySubresourceRange(textureView, texture, subresource);
 
-							program = MovePtr<Program>(new SamplerProgram<tcu::TextureCubeArray>(renderTargetFormat, textureView, sampler, samplerLod, componentMapping));
+							program = MovePtr<Program>(new SamplerProgram<tcu::TextureCubeArray>(renderTargetFormat, textureView, sampler, samplerLod, lookupScale, lookupBias, componentMapping));
 						}
 						else
 						{
 							// Use all array layers
-							program = MovePtr<Program>(new SamplerProgram<tcu::TextureCubeArray>(renderTargetFormat, texture, sampler, samplerLod, componentMapping));
+							program = MovePtr<Program>(new SamplerProgram<tcu::TextureCubeArray>(renderTargetFormat, texture, sampler, samplerLod, lookupScale, lookupBias, componentMapping));
 						}
 					}
 				}
@@ -282,12 +297,12 @@ static MovePtr<Program> createRefProgram(const tcu::TextureFormat&			renderTarge
 
 						copySubresourceRange(textureView, texture, subresource);
 
-						program = MovePtr<Program>(new SamplerProgram<tcu::Texture2DArray>(renderTargetFormat, textureView, sampler, samplerLod, componentMapping));
+						program = MovePtr<Program>(new SamplerProgram<tcu::Texture2DArray>(renderTargetFormat, textureView, sampler, samplerLod, lookupScale, lookupBias, componentMapping));
 					}
 					else
 					{
 						// Use all array layers
-						program = MovePtr<Program>(new SamplerProgram<tcu::Texture2DArray>(renderTargetFormat, texture, sampler, samplerLod, componentMapping));
+						program = MovePtr<Program>(new SamplerProgram<tcu::Texture2DArray>(renderTargetFormat, texture, sampler, samplerLod, lookupScale, lookupBias, componentMapping));
 					}
 				}
 			}
@@ -305,11 +320,11 @@ static MovePtr<Program> createRefProgram(const tcu::TextureFormat&			renderTarge
 
 					copySubresourceRange(textureView, texture, subresource);
 
-					program = MovePtr<Program>(new SamplerProgram<tcu::Texture3D>(renderTargetFormat, textureView, sampler, samplerLod, componentMapping));
+					program = MovePtr<Program>(new SamplerProgram<tcu::Texture3D>(renderTargetFormat, textureView, sampler, samplerLod, lookupScale, lookupBias, componentMapping));
 				}
 				else
 				{
-					program = MovePtr<Program>(new SamplerProgram<tcu::Texture3D>(renderTargetFormat, texture, sampler, samplerLod, componentMapping));
+					program = MovePtr<Program>(new SamplerProgram<tcu::Texture3D>(renderTargetFormat, texture, sampler, samplerLod, lookupScale, lookupBias, componentMapping));
 				}
 			}
 			break;

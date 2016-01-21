@@ -180,20 +180,22 @@ private:
 	const tcu::TextureFormat		m_colorFormat;
 	const tcu::TextureFormatInfo	m_colorFormatInfo;
 	const TextureType				m_texture;
-	const tcu::TextureFormatInfo	m_textureFormatInfo;
 	const tcu::Sampler				m_sampler;
 	const float						m_lod;
+	const tcu::Vec4					m_lookupScale;
+	const tcu::Vec4					m_lookupBias;
 	const tcu::UVec4				m_swizzle;
 
 public:
-	SamplerFragmentShader (const tcu::TextureFormat& colorFormat, const TextureType& texture, const tcu::Sampler& sampler, float lod, const tcu::UVec4& swizzle)
+	SamplerFragmentShader (const tcu::TextureFormat& colorFormat, const TextureType& texture, const tcu::Sampler& sampler, float lod, const tcu::Vec4& lookupScale, const tcu::Vec4& lookupBias, const tcu::UVec4& swizzle)
 		: rr::FragmentShader	(2, 1)
 		, m_colorFormat			(colorFormat)
 		, m_colorFormatInfo		(tcu::getTextureFormatInfo(m_colorFormat))
 		, m_texture				(texture)
-		, m_textureFormatInfo	(tcu::getTextureFormatInfo(m_texture.getFormat()))
 		, m_sampler				(sampler)
 		, m_lod					(lod)
+		, m_lookupScale			(lookupScale)
+		, m_lookupBias			(lookupBias)
 		, m_swizzle				(swizzle)
 	{
 		const tcu::TextureChannelClass channelClass = tcu::getTextureChannelClass(m_colorFormat.type);
@@ -255,9 +257,9 @@ public:
 			{
 				const tcu::Vec4	vtxTexCoord	= rr::readVarying<float>(packet, context, 1, fragNdx);
 				const tcu::Vec4	texColor	= sampleTexture(m_texture, m_sampler, vtxTexCoord, m_lod);
-				const tcu::Vec4 swizColor	= swizzle(texColor, m_swizzle);
-				const tcu::Vec4	normColor	= swizColor * swizzle(m_textureFormatInfo.lookupScale, m_swizzle) + swizzle(m_textureFormatInfo.lookupBias, m_swizzle);
-				const tcu::Vec4	color		= (normColor - m_colorFormatInfo.lookupBias) / m_colorFormatInfo.lookupScale;
+				const tcu::Vec4	normColor	= texColor * m_lookupScale + m_lookupBias;
+				const tcu::Vec4 swizColor	= swizzle(normColor, m_swizzle);
+				const tcu::Vec4	color		= (swizColor + m_colorFormatInfo.lookupBias) / m_colorFormatInfo.lookupScale;
 				rr::writeFragmentOutput(context, packetNdx, fragNdx, 0, color);
 			}
 		}
@@ -279,9 +281,9 @@ private:
 	TexCoordVertexShader				m_vertexShader;
 	SamplerFragmentShader<TextureType>	m_fragmentShader;
 public:
-	SamplerProgram (const tcu::TextureFormat& colorFormat, const TextureType& texture, const tcu::Sampler& sampler, float lod, const tcu::UVec4& swizzle)
+	SamplerProgram (const tcu::TextureFormat& colorFormat, const TextureType& texture, const tcu::Sampler& sampler, float lod, const tcu::Vec4& lookupScale, const tcu::Vec4& lookupBias, const tcu::UVec4& swizzle)
 		: m_vertexShader	()
-		, m_fragmentShader	(colorFormat, texture, sampler, lod, swizzle)
+		, m_fragmentShader	(colorFormat, texture, sampler, lod, lookupScale, lookupBias, swizzle)
 	{
 	}
 

@@ -121,7 +121,7 @@ public:
 
 protected:
 	void										populateLevels				(const std::vector<tcu::PixelBufferAccess>& levels);
-	void										populateCompressedLevels	(const tcu::CompressedTexFormat& format, const std::vector<tcu::PixelBufferAccess>& decompressedLevels);
+	void										populateCompressedLevels	(tcu::CompressedTexFormat format, const std::vector<tcu::PixelBufferAccess>& decompressedLevels);
 
 	static void									fillWithGradient			(const tcu::PixelBufferAccess& levelAccess);
 
