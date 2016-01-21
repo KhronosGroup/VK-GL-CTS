@@ -43,6 +43,8 @@ set(DEQP_VK_COMMON_SRCS
 	vktShaderLibrary.hpp
 	vktRenderPassTests.cpp
 	vktRenderPassTests.hpp
+	vktTestGroupUtil.cpp
+	vktTestGroupUtil.hpp
 	)
 
 set(DEQP_VK_COMMON_LIBS
@@ -65,21 +67,16 @@ set(DEQP_VK_COMMON_LIBS
 	deqp-vk-image
 	)
 
-if (DE_OS_IS_WIN32 OR DE_OS_IS_UNIX OR DE_OS_IS_OSX)
-	add_library(deqp-vk-common STATIC ${DEQP_VK_COMMON_SRCS})
-	target_link_libraries(deqp-vk-common ${DEQP_VK_COMMON_LIBS})
+add_library(deqp-vk-common STATIC ${DEQP_VK_COMMON_SRCS})
+target_link_libraries(deqp-vk-common ${DEQP_VK_COMMON_LIBS})
 
+set(DEQP_VK_SRCS	)
+set(DEQP_VK_LIBS	deqp-vk-common)
+
+if (DE_OS_IS_WIN32 OR DE_OS_IS_UNIX OR DE_OS_IS_OSX)
 	add_executable(vk-build-programs vktBuildPrograms.cpp)
 	target_link_libraries(vk-build-programs deqp-vk-common)
 	add_dependencies(vk-build-programs deqp-vk-data)
-
-	set(DEQP_VK_SRCS	)
-	set(DEQP_VK_LIBS	deqp-vk-common)
-
-else ()
-	set(DEQP_VK_SRCS	${DEQP_VK_COMMON_SRCS})
-	set(DEQP_VK_LIBS	${DEQP_VK_COMMON_LIBS})
-
 endif ()
 
 add_deqp_module(deqp-vk "${DEQP_VK_SRCS}" "${DEQP_VK_LIBS}" vktTestPackageEntry.cpp)
