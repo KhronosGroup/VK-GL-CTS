@@ -60,9 +60,13 @@ enum BorderColor
 	BORDER_COLOR_COUNT
 };
 
-bool							isSupportedSamplableFormat	(const vk::InstanceInterface& instanceInterface,
-															 vk::VkPhysicalDevice device,
-															 vk::VkFormat format);
+bool							isSupportedSamplableFormat	(const vk::InstanceInterface&	instanceInterface,
+															 vk::VkPhysicalDevice			device,
+															 vk::VkFormat					format);
+bool							isLinearFilteringSupported	(const vk::InstanceInterface&	instanceInterface,
+															 vk::VkPhysicalDevice			device,
+															 vk::VkFormat					format,
+															 vk::VkImageTiling				tiling);
 
 vk::VkBorderColor				getFormatBorderColor		(BorderColor color, vk::VkFormat format);
 
