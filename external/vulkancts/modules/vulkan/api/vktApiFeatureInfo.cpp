@@ -1121,6 +1121,189 @@ void createFormatTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "compressed_formats",	"",	testCompressedFormatsSupported);
 }
 
+VkImageUsageFlags getValidImageUsageFlags (VkFormat, VkFormatFeatureFlags supportedFeatures)
+{
+	VkImageUsageFlags	flags	= (VkImageUsageFlags)0;
+
+	// If format is supported at all, it must be valid transfer src+dst
+	if (supportedFeatures != 0)
+		flags |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT|VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+
+	if ((supportedFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT) != 0)
+		flags |= VK_IMAGE_USAGE_SAMPLED_BIT;
+
+	if ((supportedFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT) != 0)
+		flags |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT|VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT|VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
+
+	if ((supportedFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) != 0)
+		flags |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+
+	if ((supportedFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT) != 0)
+		flags |= VK_IMAGE_USAGE_STORAGE_BIT;
+
+	return flags;
+}
+
+bool isValidImageUsageFlagCombination (VkImageUsageFlags usage)
+{
+	return usage != 0;
+}
+
+VkImageCreateFlags getValidImageCreateFlags (const VkPhysicalDeviceFeatures& deviceFeatures, VkFormat, VkFormatFeatureFlags, VkImageType type, VkImageUsageFlags usage)
+{
+	VkImageCreateFlags	flags	= (VkImageCreateFlags)0;
+
+	if ((usage & VK_IMAGE_USAGE_SAMPLED_BIT) != 0)
+	{
+		flags |= VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT;
+
+		if (type == VK_IMAGE_TYPE_2D)
+			flags |= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+	}
+
+	if ((usage & (VK_IMAGE_USAGE_SAMPLED_BIT|VK_IMAGE_USAGE_STORAGE_BIT)) != 0 &&
+		(usage & VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT) == 0)
+	{
+		if (deviceFeatures.sparseBinding)
+			flags |= VK_IMAGE_CREATE_SPARSE_BINDING_BIT|VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT;
+
+		if (deviceFeatures.sparseResidencyAliased)
+			flags |= VK_IMAGE_CREATE_SPARSE_ALIASED_BIT;
+	}
+
+	return flags;
+}
+
+bool isValidImageCreateFlagCombination (VkImageCreateFlags)
+{
+	return true;
+}
+
+struct ImageFormatPropertyCase
+{
+	VkFormat		format;
+	VkImageType		imageType;
+	VkImageTiling	tiling;
+
+	ImageFormatPropertyCase (VkFormat format_, VkImageType imageType_, VkImageTiling tiling_)
+		: format	(format_)
+		, imageType	(imageType_)
+		, tiling	(tiling_)
+	{}
+
+	ImageFormatPropertyCase (void)
+		: format	(VK_FORMAT_LAST)
+		, imageType	(VK_IMAGE_TYPE_LAST)
+		, tiling	(VK_IMAGE_TILING_LAST)
+	{}
+};
+
+tcu::TestStatus imageFormatProperties (Context& context, ImageFormatPropertyCase params)
+{
+	TestLog&						log					= context.getTestContext().getLog();
+	const VkFormat					format				= params.format;
+	const VkImageType				imageType			= params.imageType;
+	const VkImageTiling				tiling				= params.tiling;
+	const VkPhysicalDeviceFeatures&	deviceFeatures		= context.getDeviceFeatures();
+	const VkFormatProperties		formatProperties	= getPhysicalDeviceFormatProperties(context.getInstanceInterface(), context.getPhysicalDevice(), format);
+
+	const VkFormatFeatureFlags		supportedFeatures	= tiling == VK_IMAGE_TILING_LINEAR ? formatProperties.linearTilingFeatures : formatProperties.optimalTilingFeatures;
+	const VkImageUsageFlags			usageFlagSet		= getValidImageUsageFlags(format, supportedFeatures);
+
+	for (VkImageUsageFlags curUsageFlags = 0; curUsageFlags <= usageFlagSet; curUsageFlags++)
+	{
+		if ((curUsageFlags & ~usageFlagSet) != 0 ||
+			!isValidImageUsageFlagCombination(curUsageFlags))
+			continue;
+
+		const VkImageCreateFlags	createFlagSet		= getValidImageCreateFlags(deviceFeatures, format, supportedFeatures, imageType, curUsageFlags);
+
+		for (VkImageCreateFlags curCreateFlags = 0; curCreateFlags <= createFlagSet; curCreateFlags++)
+		{
+			if ((curCreateFlags & ~createFlagSet) != 0 ||
+				!isValidImageCreateFlagCombination(curCreateFlags))
+				continue;
+
+			log << TestLog::Message << "Testing " << getImageTypeStr(imageType) << ", "
+									<< getImageTilingStr(tiling) << ", "
+									<< getImageUsageFlagsStr(curUsageFlags) << ", "
+									<< getImageCreateFlagsStr(curCreateFlags)
+				<< TestLog::EndMessage;
+
+			try
+			{
+				const VkImageFormatProperties	properties	= getPhysicalDeviceImageFormatProperties(context.getInstanceInterface(),
+																										context.getPhysicalDevice(),
+																										format,
+																										imageType,
+																										tiling,
+																										curUsageFlags,
+																										curCreateFlags);
+				log << TestLog::Message << properties << "\n" << TestLog::EndMessage;
+
+				if (properties.maxExtent.width != 0 || properties.maxExtent.height != 0 || properties.maxExtent.depth != 0)
+				{
+					TCU_CHECK(properties.maxResourceSize > 0);
+					TCU_CHECK(properties.maxMipLevels > 0);
+					TCU_CHECK(properties.maxArrayLayers > 0);
+					TCU_CHECK((properties.sampleCounts & VK_SAMPLE_COUNT_1_BIT) != 0);
+					TCU_CHECK(imageType != VK_IMAGE_TYPE_1D || (properties.maxExtent.width >= 1 && properties.maxExtent.height == 1 && properties.maxExtent.depth == 1));
+					TCU_CHECK(imageType != VK_IMAGE_TYPE_2D || (properties.maxExtent.width >= 1 && properties.maxExtent.height >= 1 && properties.maxExtent.depth == 1));
+					TCU_CHECK(imageType != VK_IMAGE_TYPE_3D || (properties.maxExtent.width >= 1 && properties.maxExtent.height >= 1 && properties.maxExtent.depth >= 1));
+				}
+				else
+				{
+					TCU_CHECK(properties.sampleCounts == 0);
+					TCU_CHECK(properties.maxArrayLayers == 0);
+					TCU_CHECK(properties.maxMipLevels == 0);
+					TCU_CHECK(properties.maxResourceSize == 0);
+				}
+			}
+			catch (const Error& error)
+			{
+				// \todo [2016-01-22 pyry] Check if this is indeed optional image type / flag combination
+				if (error.getError() == VK_ERROR_FORMAT_NOT_SUPPORTED)
+					log << TestLog::Message << "Got VK_ERROR_FORMAT_NOT_SUPPORTED" << TestLog::EndMessage;
+				else
+					throw;
+			}
+		}
+	}
+
+	return tcu::TestStatus::pass("All queries succeeded");
+}
+
+void createImageFormatTypeTilingTests (tcu::TestCaseGroup* testGroup, ImageFormatPropertyCase params)
+{
+	DE_ASSERT(params.format == VK_FORMAT_LAST);
+
+	for (deUint32 formatNdx = VK_FORMAT_UNDEFINED+1; formatNdx < VK_FORMAT_LAST; ++formatNdx)
+	{
+		const VkFormat		format			= (VkFormat)formatNdx;
+		const char* const	enumName		= getFormatName(format);
+		const string		caseName		= de::toLower(string(enumName).substr(10));
+
+		params.format = format;
+
+		addFunctionCase(testGroup, caseName, enumName, imageFormatProperties, params);
+	}
+}
+
+void createImageFormatTypeTests (tcu::TestCaseGroup* testGroup, ImageFormatPropertyCase params)
+{
+	DE_ASSERT(params.tiling == VK_IMAGE_TILING_LAST);
+
+	testGroup->addChild(createTestGroup(testGroup->getTestContext(), "optimal",	"",	createImageFormatTypeTilingTests, ImageFormatPropertyCase(VK_FORMAT_LAST, params.imageType, VK_IMAGE_TILING_OPTIMAL)));
+	testGroup->addChild(createTestGroup(testGroup->getTestContext(), "linear",	"",	createImageFormatTypeTilingTests, ImageFormatPropertyCase(VK_FORMAT_LAST, params.imageType, VK_IMAGE_TILING_LINEAR)));
+}
+
+void createImageFormatTests (tcu::TestCaseGroup* testGroup)
+{
+	testGroup->addChild(createTestGroup(testGroup->getTestContext(), "1d", "", createImageFormatTypeTests, ImageFormatPropertyCase(VK_FORMAT_LAST, VK_IMAGE_TYPE_1D, VK_IMAGE_TILING_LAST)));
+	testGroup->addChild(createTestGroup(testGroup->getTestContext(), "2d", "", createImageFormatTypeTests, ImageFormatPropertyCase(VK_FORMAT_LAST, VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_LAST)));
+	testGroup->addChild(createTestGroup(testGroup->getTestContext(), "3d", "", createImageFormatTypeTests, ImageFormatPropertyCase(VK_FORMAT_LAST, VK_IMAGE_TYPE_3D, VK_IMAGE_TILING_LAST)));
+}
+
 } // anonymous
 
 tcu::TestCaseGroup* createFeatureInfoTests (tcu::TestContext& testCtx)
@@ -1150,7 +1333,8 @@ tcu::TestCaseGroup* createFeatureInfoTests (tcu::TestContext& testCtx)
 		infoTests->addChild(deviceInfoTests.release());
 	}
 
-	infoTests->addChild(createTestGroup(testCtx, "format_properties", "VkGetPhysicalDeviceFormatProperties() Tests", createFormatTests));
+	infoTests->addChild(createTestGroup(testCtx, "format_properties",		"VkGetPhysicalDeviceFormatProperties() Tests",		createFormatTests));
+	infoTests->addChild(createTestGroup(testCtx, "image_format_properties",	"VkGetPhysicalDeviceImageFormatProperties() Tests",	createImageFormatTests));
 
 	return infoTests.release();
 }
