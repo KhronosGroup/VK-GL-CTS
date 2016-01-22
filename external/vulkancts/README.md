@@ -131,7 +131,7 @@ Android:
 
 In device shell:
 
-	$ am start -n com.drawelements.deqp/android.app.NativeActivity -e cmdLine "deqp --deqp-caselist-file=/sdcard/vk-default.txt --deqp-log-images=disable --deqp-log-filename=/sdcard/TestResults.qpa"
+	$ am start -n com.drawelements.deqp/android.app.NativeActivity -e cmdLine "deqp --deqp-caselist-file=/sdcard/vk-default.txt --deqp-log-images=disable --deqp-log-shader-sources=disable --deqp-log-filename=/sdcard/TestResults.qpa"
 
 Process can be followed by running:
 
