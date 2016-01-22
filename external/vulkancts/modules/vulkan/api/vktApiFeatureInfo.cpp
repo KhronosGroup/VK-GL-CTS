@@ -523,12 +523,6 @@ tcu::TestStatus deviceFeatures (Context& context)
 		}
 	}
 
-	if (!validateInitComplete(context.getPhysicalDevice(), &InstanceInterface::getPhysicalDeviceFeatures, context.getInstanceInterface()))
-	{
-		log << TestLog::Message << "deviceFeatures - VkPhysicalDeviceFeatures not completely initialized" << TestLog::EndMessage;
-		return tcu::TestStatus::fail("deviceFeatures incomplete initialization");
-	}
-
 	return tcu::TestStatus::pass("Query succeeded");
 }
 
@@ -558,12 +552,6 @@ tcu::TestStatus deviceProperties (Context& context)
 			log << TestLog::Message << "deviceProperties - Guard offset " << ndx << " not valid" << TestLog::EndMessage;
 			return tcu::TestStatus::fail("deviceProperties buffer overflow");
 		}
-	}
-
-	if (!validateInitComplete(context.getPhysicalDevice(), &InstanceInterface::getPhysicalDeviceProperties, context.getInstanceInterface()))
-	{
-		log << TestLog::Message << "deviceProperties - VkPhysicalDeviceProperties not completely initialized" << TestLog::EndMessage;
-		return tcu::TestStatus::fail("deviceProperties incomplete initialization");
 	}
 
 	return tcu::TestStatus::pass("DeviceProperites query succeeded");

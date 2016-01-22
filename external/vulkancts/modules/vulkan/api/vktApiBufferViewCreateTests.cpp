@@ -39,6 +39,7 @@
 #include "gluVarType.hpp"
 #include "tcuTestLog.hpp"
 #include "vkPrograms.hpp"
+#include "vkRefUtil.hpp"
 #include "vktTestCase.hpp"
 
 namespace vkt
@@ -107,7 +108,7 @@ tcu::TestStatus BufferViewTestInstance::iterate (void)
 	const DeviceInterface&		vk						= m_context.getDeviceInterface();
 	const deUint32				queueFamilyIndex		= m_context.getUniversalQueueFamilyIndex();
 	const VkDeviceSize			size					= 3 * 5 * 7 * 64;
-	VkBuffer					testBuffer;
+	Move<VkBuffer>				testBuffer;
 	VkMemoryRequirements		memReqs;
 	VkFormatProperties			properties;
 	const VkBufferCreateInfo	bufferParams =
@@ -126,10 +127,16 @@ tcu::TestStatus BufferViewTestInstance::iterate (void)
 	if (!(properties.bufferFeatures & m_testCase.features))
 		TCU_THROW(NotSupportedError, "Format not supported");
 
-	if (vk.createBuffer(vkDevice, &bufferParams, (const VkAllocationCallbacks*)DE_NULL, &testBuffer) != VK_SUCCESS)
-		return tcu::TestStatus::fail("Buffer creation failed!");
+	try
+	{
+		testBuffer = createBuffer(vk, vkDevice, &bufferParams, (const VkAllocationCallbacks*)DE_NULL);
+	}
+	catch (const vk::Error& error)
+	{
+		return tcu::TestStatus::fail("Buffer creation failed! (Error code: " + de::toString(error.getMessage()) + ")");
+	}
 
-	vk.getBufferMemoryRequirements(vkDevice, testBuffer, &memReqs);
+	vk.getBufferMemoryRequirements(vkDevice, *testBuffer, &memReqs);
 
 	if (size > memReqs.size)
 	{
@@ -138,7 +145,7 @@ tcu::TestStatus BufferViewTestInstance::iterate (void)
 		return tcu::TestStatus::fail(errorMsg.str());
 	}
 
-	VkDeviceMemory				memory;
+	Move<VkDeviceMemory>		memory;
 	const VkMemoryAllocateInfo	memAlloc				=
 	{
 		VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,		//	VkStructureType		sType
@@ -149,52 +156,63 @@ tcu::TestStatus BufferViewTestInstance::iterate (void)
 
 	{
 		// Create buffer view.
-		VkBufferView					bufferView;
+		Move<VkBufferView>				bufferView;
 		const VkBufferViewCreateInfo	bufferViewCreateInfo	=
 		{
 			VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO,	//	VkStructureType		sType;
 			NULL,										//	const void*			pNext;
 			(VkBufferViewCreateFlags)0,
-			testBuffer,									//	VkBuffer			buffer;
+			*testBuffer,								//	VkBuffer			buffer;
 			m_testCase.format,							//	VkFormat			format;
 			m_testCase.offset,							//	VkDeviceSize		offset;
 			m_testCase.range,							//	VkDeviceSize		range;
 		};
 
-		if (vk.allocateMemory(vkDevice, &memAlloc, (const VkAllocationCallbacks*)DE_NULL, &memory) != VK_SUCCESS)
-			return tcu::TestStatus::fail("Alloc memory failed!");
+		try
+		{
+			memory = allocateMemory(vk, vkDevice, &memAlloc, (const VkAllocationCallbacks*)DE_NULL);
+		}
+		catch (const vk::Error& error)
+		{
+			return tcu::TestStatus::fail("Alloc memory failed! (Error code: " + de::toString(error.getMessage()) + ")");
+		}
 
-		if (vk.bindBufferMemory(vkDevice, testBuffer, memory, 0) != VK_SUCCESS)
+		if (vk.bindBufferMemory(vkDevice, *testBuffer, *memory, 0) != VK_SUCCESS)
 			return tcu::TestStatus::fail("Bind buffer memory failed!");
 
-		if (vk.createBufferView(vkDevice, &bufferViewCreateInfo, (const VkAllocationCallbacks*)DE_NULL, &bufferView) != VK_SUCCESS)
-			return tcu::TestStatus::fail("Buffer View creation failed!");
-
-		vk.destroyBufferView(vkDevice, bufferView, (const VkAllocationCallbacks*)DE_NULL);
+		try
+		{
+			bufferView = createBufferView(vk, vkDevice, &bufferViewCreateInfo, (const VkAllocationCallbacks*)DE_NULL);
+		}
+		catch (const vk::Error& error)
+		{
+			return tcu::TestStatus::fail("Buffer View creation failed! (Error code: " + de::toString(error.getMessage()) + ")");
+		}
 	}
 
 	// Testing complete view size.
 	{
-		VkBufferView			completeBufferView;
+		Move<VkBufferView>		completeBufferView;
 		VkBufferViewCreateInfo	completeBufferViewCreateInfo	=
 		{
 			VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO,	//	VkStructureType		sType;
 			NULL,										//	const void*			pNext;
 			(VkBufferViewCreateFlags)0,
-			testBuffer,									//	VkBuffer			buffer;
+			*testBuffer,								//	VkBuffer			buffer;
 			m_testCase.format,							//	VkFormat			format;
 			m_testCase.offset,							//	VkDeviceSize		offset;
 			size,										//	VkDeviceSize		range;
 		};
 
-		if (vk.createBufferView(vkDevice, &completeBufferViewCreateInfo, (const VkAllocationCallbacks*)DE_NULL, &completeBufferView) != VK_SUCCESS)
-			return tcu::TestStatus::fail("Buffer View creation failed!");
-
-		vk.destroyBufferView(vkDevice, completeBufferView, (const VkAllocationCallbacks*)DE_NULL);
+		try
+		{
+			completeBufferView = createBufferView(vk, vkDevice, &completeBufferViewCreateInfo, (const VkAllocationCallbacks*)DE_NULL);
+		}
+		catch (const vk::Error& error)
+		{
+			return tcu::TestStatus::fail("Buffer View creation failed! (Error code: " + de::toString(error.getMessage()) + ")");
+		}
 	}
-
-	vk.freeMemory(vkDevice, memory, (const VkAllocationCallbacks*)DE_NULL);
-	vk.destroyBuffer(vkDevice, testBuffer, (const VkAllocationCallbacks*)DE_NULL);
 
 	return tcu::TestStatus::pass("BufferView test");
 }

@@ -40,6 +40,7 @@
 #include "tcuTestLog.hpp"
 #include "vkPrograms.hpp"
 #include "vkQueryUtil.hpp"
+#include "vkRefUtil.hpp"
 #include "vktTestCase.hpp"
 
 namespace vkt
@@ -102,9 +103,9 @@ private:
 {
 	const VkDevice			vkDevice			= m_context.getDevice();
 	const DeviceInterface&	vk					= m_context.getDeviceInterface();
-	VkBuffer				testBuffer;
+	Move<VkBuffer>			testBuffer;
 	VkMemoryRequirements	memReqs;
-	VkDeviceMemory			memory;
+	Move<VkDeviceMemory>	memory;
 	const deUint32			queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
 
 	// Create buffer
@@ -121,10 +122,16 @@ private:
 			&queueFamilyIndex,
 		};
 
-		if (vk.createBuffer(vkDevice, &bufferParams, (const VkAllocationCallbacks*)DE_NULL, &testBuffer) != VK_SUCCESS)
-			return tcu::TestStatus::fail("Buffer creation failed! (requested memory size: " + de::toString(size) + ")");
+		try
+		{
+			testBuffer = createBuffer(vk, vkDevice, &bufferParams, (const VkAllocationCallbacks*)DE_NULL);
+		}
+		catch (const vk::Error& error)
+		{
+			return tcu::TestStatus::fail("Buffer creation failed! (requested memory size: " + de::toString(size) + ", Error code: " + de::toString(error.getMessage()) + ")");
+		}
 
-		vk.getBufferMemoryRequirements(vkDevice, testBuffer, &memReqs);
+		vk.getBufferMemoryRequirements(vkDevice, *testBuffer, &memReqs);
 
 		if (size > memReqs.size)
 		{
@@ -144,9 +151,14 @@ private:
 			0										//	deUint32		memoryTypeIndex
 		};
 
-		if (vk.allocateMemory(vkDevice, &memAlloc, (const VkAllocationCallbacks*)DE_NULL, &memory) != VK_SUCCESS)
-			return tcu::TestStatus::fail("Alloc memory failed! (requested memory size: " + de::toString(size) + ")");
-
+		try
+		{
+			memory = allocateMemory(vk, vkDevice, &memAlloc, (const VkAllocationCallbacks*)DE_NULL);
+		}
+		catch (const vk::Error& error)
+		{
+			return tcu::TestStatus::fail("Alloc memory failed! (requested memory size: " + de::toString(size) + ", Error code: " + de::toString(error.getMessage()) + ")");
+		}
 
 		if ((m_testCase.flags & VK_BUFFER_CREATE_SPARSE_BINDING_BIT) ||
 			(m_testCase.flags & VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT) ||
@@ -160,14 +172,14 @@ private:
 			{
 				0,										// VkDeviceSize								resourceOffset;
 				memReqs.size,							// VkDeviceSize								size;
-				memory,									// VkDeviceMemory							memory;
+				*memory,								// VkDeviceMemory							memory;
 				0,										// VkDeviceSize								memoryOffset;
 				0										// VkSparseMemoryBindFlags					flags;
 			};
 
 			const VkSparseBufferMemoryBindInfo	sparseBufferMemoryBindInfo	=
 			{
-				testBuffer,								// VkBuffer									buffer;
+				*testBuffer,							// VkBuffer									buffer;
 				1u,										// deUint32									bindCount;
 				&sparseMemoryBind						// const VkSparseMemoryBind*				pBinds;
 			};
@@ -188,15 +200,24 @@ private:
 				DE_NULL,								// const VkSemaphore*						pSignalSemaphores;
 			};
 
-			if (vk.queueBindSparse(queue, 1, &bindSparseInfo, DE_NULL) != VK_SUCCESS)
+			const VkFenceCreateInfo fenceParams =
+			{
+				VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,	// VkStructureType		sType;
+				DE_NULL,								// const void*			pNext;
+				0u										// VkFenceCreateFlags	flags;
+			};
+
+			const vk::Unique<vk::VkFence> fence = vk::createFence(vk, vkDevice, &fenceParams);
+
+			VK_CHECK(vk.resetFences(vkDevice, 1, &fence.get()));
+			if (vk.queueBindSparse(queue, 1, &bindSparseInfo, *fence) != VK_SUCCESS)
 				return tcu::TestStatus::fail("Bind sparse buffer memory failed! (requested memory size: " + de::toString(size) + ")");
+
+			VK_CHECK(vk.waitForFences(vkDevice, 1, &fence.get(), VK_TRUE, ~(0ull) /* infinity */));
 		} else
-			if (vk.bindBufferMemory(vkDevice, testBuffer, memory, 0) != VK_SUCCESS)
+			if (vk.bindBufferMemory(vkDevice, *testBuffer, *memory, 0) != VK_SUCCESS)
 				return tcu::TestStatus::fail("Bind buffer memory failed! (requested memory size: " + de::toString(size) + ")");
 	}
-
-	vk.freeMemory(vkDevice, memory, (const VkAllocationCallbacks*)DE_NULL);
-	vk.destroyBuffer(vkDevice, testBuffer, (const VkAllocationCallbacks*)DE_NULL);
 
 	return tcu::TestStatus::pass("Buffer test");
 }
