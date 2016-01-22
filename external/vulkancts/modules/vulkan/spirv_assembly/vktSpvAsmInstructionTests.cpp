@@ -366,7 +366,7 @@ bool compareNoContractCase(const std::vector<BufferSp>&, const vector<Allocation
 	const BufferSp&	expectedOutput	= expectedOutputs[0];
 	const float*	outputAsFloat	= static_cast<const float*>(outputAllocs[0]->getHostPtr());;
 
-	for(size_t i = 0; i < expectedOutput->getNumBytes() / 4; ++i) {
+	for(size_t i = 0; i < expectedOutput->getNumBytes() / sizeof(float); ++i) {
 		if (outputAsFloat[i] != 0.f &&
 			outputAsFloat[i] != -ldexp(1, -24)) {
 			return false;
@@ -6526,7 +6526,7 @@ tcu::TestCaseGroup* createNoContractionTests(tcu::TestContext& testCtx)
 
 	// With NoContraction, (1 + 2^-23) * (1 - 2^-23) - 1 should be conducted as a multiplication and an addition separately.
 	// For the multiplication, the result is 1 - 2^-46, which is out of the precision range for 32-bit float. (32-bit float
-	// only have 23-bit fraction.) So it will be rounded to 1. Or 0x1.fffffc. Then the final result is 0 or -1xp-24.
+	// only have 23-bit fraction.) So it will be rounded to 1. Or 0x1.fffffc. Then the final result is 0 or -0x1p-24.
 	// On the contrary, the result will be 2^-46, which is a normalized number perfectly representable as 32-bit float.
 	const char						constantsAndTypes[]	 =
 		"%c_vec4_0       = OpConstantComposite %v4f32 %c_f32_0 %c_f32_0 %c_f32_0 %c_f32_1\n"
@@ -6550,8 +6550,8 @@ tcu::TestCaseGroup* createNoContractionTests(tcu::TestContext& testCtx)
 		"%mul            = OpFMul %f32 %val1 %val2\n"
 		"%add            = OpFAdd %f32 %mul %c_f32_n1\n"
 		"%is0            = OpFOrdEqual %bool %add %c_f32_0\n"
-		"%is1n24         = OpFOrdEqual %bool %add %c_f32_n1pn24\n"
-		"%success        = OpLogicalOr %bool %is0 %is1n24\n"
+		"%isn1n24         = OpFOrdEqual %bool %add %c_f32_n1pn24\n"
+		"%success        = OpLogicalOr %bool %is0 %isn1n24\n"
 		"%ret            = OpSelect %v4f32 %success %c_vec4_0 %c_vec4_1\n"
 		"                  OpReturnValue %ret\n"
 		"                  OpFunctionEnd\n";
