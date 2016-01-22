@@ -1434,6 +1434,13 @@ AsyncCase::IterateResult AsyncCase::iterate (void)
 	const int				maxWait		= 10000; // ms
 	const int				warnWait	= 100;
 
+	// Clear log from earlier messages
+	{
+		GLint numMessages = 0;
+		gl.getIntegerv(GL_DEBUG_LOGGED_MESSAGES, &numMessages);
+		gl.getDebugMessageLog(numMessages, 0, DE_NULL, DE_NULL, DE_NULL, DE_NULL, DE_NULL, DE_NULL);
+	}
+
 	gl.enable(GL_DEBUG_OUTPUT);
 	gl.enable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 	gl.debugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, DE_NULL, false);
