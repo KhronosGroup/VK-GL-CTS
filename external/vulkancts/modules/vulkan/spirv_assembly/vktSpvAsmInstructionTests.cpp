@@ -355,6 +355,27 @@ tcu::TestCaseGroup* createOpNoLineGroup (tcu::TestContext& testCtx)
 	return group.release();
 }
 
+// Compare instruction for the contraction compute case.
+// Returns true if the output is what is expected from the test case.
+bool compareNoContractCase(const std::vector<BufferSp>&, const vector<AllocationSp>& outputAllocs, const std::vector<BufferSp>& expectedOutputs)
+{
+	if (outputAllocs.size() != 1)
+		return false;
+
+	// We really just need this for size because we are not comparing the exact values.
+	const BufferSp&	expectedOutput	= expectedOutputs[0];
+	const float*	outputAsFloat	= static_cast<const float*>(outputAllocs[0]->getHostPtr());;
+
+	for(size_t i = 0; i < expectedOutput->getNumBytes() / sizeof(float); ++i) {
+		if (outputAsFloat[i] != 0.f &&
+			outputAsFloat[i] != -ldexp(1, -24)) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
 tcu::TestCaseGroup* createNoContractionGroup (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "nocontraction", "Test the NoContraction decoration"));
@@ -427,7 +448,8 @@ tcu::TestCaseGroup* createNoContractionGroup (tcu::TestContext& testCtx)
 		inputFloats1[ndx]	= 1.f + std::ldexp(1.f, -23); // 1 + 2^-23.
 		inputFloats2[ndx]	= 1.f - std::ldexp(1.f, -23); // 1 - 2^-23.
 		// Result for (1 + 2^-23) * (1 - 2^-23) - 1. With NoContraction, the multiplication will be
-		// conducted separately and the result is rounded to 1. So the final result will be 0.f.
+		// conducted separately and the result is rounded to 1, or 0x1.fffffcp-1 
+		// So the final result will be 0.f or 0x1p-24.
 		// If the operation is combined into a precise fused multiply-add, then the result would be
 		// 2^-46 (0xa8800000).
 		outputFloats[ndx]	= 0.f;
@@ -444,6 +466,8 @@ tcu::TestCaseGroup* createNoContractionGroup (tcu::TestContext& testCtx)
 		spec.inputs.push_back(BufferSp(new Float32Buffer(inputFloats2)));
 		spec.outputs.push_back(BufferSp(new Float32Buffer(outputFloats)));
 		spec.numWorkGroups = IVec3(numElements, 1, 1);
+		// Check against the two possible answers based on rounding mode.
+		spec.verifyIO = &compareNoContractCase;
 
 		group->addChild(new SpvAsmComputeShaderCase(testCtx, cases[caseNdx].name, cases[caseNdx].name, spec));
 	}
@@ -6502,13 +6526,14 @@ tcu::TestCaseGroup* createNoContractionTests(tcu::TestContext& testCtx)
 
 	// With NoContraction, (1 + 2^-23) * (1 - 2^-23) - 1 should be conducted as a multiplication and an addition separately.
 	// For the multiplication, the result is 1 - 2^-46, which is out of the precision range for 32-bit float. (32-bit float
-	// only have 23-bit fraction.) So it will be rounded to 1. Then the final result is 0. On the contrary, the result will
-	// be 2^-46, which is a normalized number perfectly representable as 32-bit float.
+	// only have 23-bit fraction.) So it will be rounded to 1. Or 0x1.fffffc. Then the final result is 0 or -0x1p-24.
+	// On the contrary, the result will be 2^-46, which is a normalized number perfectly representable as 32-bit float.
 	const char						constantsAndTypes[]	 =
 		"%c_vec4_0       = OpConstantComposite %v4f32 %c_f32_0 %c_f32_0 %c_f32_0 %c_f32_1\n"
 		"%c_vec4_1       = OpConstantComposite %v4f32 %c_f32_1 %c_f32_1 %c_f32_1 %c_f32_1\n"
 		"%c_f32_1pl2_23  = OpConstant %f32 0x1.000002p+0\n" // 1 + 2^-23
 		"%c_f32_1mi2_23  = OpConstant %f32 0x1.fffffcp-1\n" // 1 - 2^-23
+		"%c_f32_n1pn24   = OpConstant %f32 -0x1p-24\n"
 		;
 
 	const char						function[]	 =
@@ -6525,7 +6550,9 @@ tcu::TestCaseGroup* createNoContractionTests(tcu::TestContext& testCtx)
 		"%mul            = OpFMul %f32 %val1 %val2\n"
 		"%add            = OpFAdd %f32 %mul %c_f32_n1\n"
 		"%is0            = OpFOrdEqual %bool %add %c_f32_0\n"
-		"%ret            = OpSelect %v4f32 %is0 %c_vec4_0 %c_vec4_1\n"
+		"%isn1n24         = OpFOrdEqual %bool %add %c_f32_n1pn24\n"
+		"%success        = OpLogicalOr %bool %is0 %isn1n24\n"
+		"%ret            = OpSelect %v4f32 %success %c_vec4_0 %c_vec4_1\n"
 		"                  OpReturnValue %ret\n"
 		"                  OpFunctionEnd\n";
 
