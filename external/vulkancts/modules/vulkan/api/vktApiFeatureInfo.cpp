@@ -35,6 +35,7 @@
 #include "vktApiFeatureInfo.hpp"
 
 #include "vktTestCaseUtil.hpp"
+#include "vktTestGroupUtil.hpp"
 
 #include "vkPlatform.hpp"
 #include "vkStrUtil.hpp"
@@ -46,6 +47,8 @@
 #include "tcuFormatUtil.hpp"
 
 #include "deUniquePtr.hpp"
+#include "deStringUtil.hpp"
+#include "deSTLUtil.hpp"
 #include "deMemory.h"
 #include "deMath.h"
 
@@ -596,6 +599,528 @@ tcu::TestStatus deviceMemoryProperties (Context& context)
 	return tcu::TestStatus::pass("Querying memory properties succeeded");
 }
 
+// \todo [2016-01-22 pyry] Optimize by doing format -> flags mapping instead
+
+VkFormatFeatureFlags getRequiredOptimalTilingFeatures (VkFormat format)
+{
+	static const VkFormat s_requiredSampledImageBlitSrcFormats[] =
+	{
+		VK_FORMAT_B4G4R4A4_UNORM_PACK16,
+		VK_FORMAT_R5G6B5_UNORM_PACK16,
+		VK_FORMAT_R5G5B5A1_UNORM_PACK16,
+		VK_FORMAT_A1R5G5B5_UNORM_PACK16,
+		VK_FORMAT_R8_UNORM,
+		VK_FORMAT_R8_SNORM,
+		VK_FORMAT_R8_UINT,
+		VK_FORMAT_R8_SINT,
+		VK_FORMAT_R8G8_UNORM,
+		VK_FORMAT_R8G8_SNORM,
+		VK_FORMAT_R8G8_UINT,
+		VK_FORMAT_R8G8_SINT,
+		VK_FORMAT_R8G8B8A8_UNORM,
+		VK_FORMAT_R8G8B8A8_SNORM,
+		VK_FORMAT_R8G8B8A8_UINT,
+		VK_FORMAT_R8G8B8A8_SINT,
+		VK_FORMAT_R8G8B8A8_SRGB,
+		VK_FORMAT_B8G8R8A8_UNORM,
+		VK_FORMAT_B8G8R8A8_SRGB,
+		VK_FORMAT_A8B8G8R8_UNORM_PACK32,
+		VK_FORMAT_A8B8G8R8_SNORM_PACK32,
+		VK_FORMAT_A8B8G8R8_UINT_PACK32,
+		VK_FORMAT_A8B8G8R8_SINT_PACK32,
+		VK_FORMAT_A8B8G8R8_SRGB_PACK32,
+		VK_FORMAT_A2R10G10B10_UNORM_PACK32,
+		VK_FORMAT_A2B10G10R10_UNORM_PACK32,
+		VK_FORMAT_A2B10G10R10_UINT_PACK32,
+		VK_FORMAT_R16_UNORM,
+		VK_FORMAT_R16_SNORM,
+		VK_FORMAT_R16_UINT,
+		VK_FORMAT_R16_SINT,
+		VK_FORMAT_R16_SFLOAT,
+		VK_FORMAT_R16G16_UNORM,
+		VK_FORMAT_R16G16_SNORM,
+		VK_FORMAT_R16G16_UINT,
+		VK_FORMAT_R16G16_SINT,
+		VK_FORMAT_R16G16_SFLOAT,
+		VK_FORMAT_R16G16B16A16_UNORM,
+		VK_FORMAT_R16G16B16A16_SNORM,
+		VK_FORMAT_R16G16B16A16_UINT,
+		VK_FORMAT_R16G16B16A16_SINT,
+		VK_FORMAT_R16G16B16A16_SFLOAT,
+		VK_FORMAT_R32_UINT,
+		VK_FORMAT_R32_SINT,
+		VK_FORMAT_R32_SFLOAT,
+		VK_FORMAT_R32G32_UINT,
+		VK_FORMAT_R32G32_SINT,
+		VK_FORMAT_R32G32_SFLOAT,
+		VK_FORMAT_R32G32B32A32_UINT,
+		VK_FORMAT_R32G32B32A32_SINT,
+		VK_FORMAT_R32G32B32A32_SFLOAT,
+		VK_FORMAT_B10G11R11_UFLOAT_PACK32,
+		VK_FORMAT_E5B9G9R9_UFLOAT_PACK32,
+		VK_FORMAT_D16_UNORM,
+		VK_FORMAT_D32_SFLOAT
+	};
+	static const VkFormat s_requiredStorageImageFormats[] =
+	{
+		VK_FORMAT_R8G8B8A8_UNORM,
+		VK_FORMAT_R8G8B8A8_SNORM,
+		VK_FORMAT_R8G8B8A8_UINT,
+		VK_FORMAT_R8G8B8A8_SINT,
+		VK_FORMAT_R16G16B16A16_UINT,
+		VK_FORMAT_R16G16B16A16_SINT,
+		VK_FORMAT_R16G16B16A16_SFLOAT,
+		VK_FORMAT_R32_UINT,
+		VK_FORMAT_R32_SINT,
+		VK_FORMAT_R32_SFLOAT,
+		VK_FORMAT_R32G32_UINT,
+		VK_FORMAT_R32G32_SINT,
+		VK_FORMAT_R32G32_SFLOAT,
+		VK_FORMAT_R32G32B32A32_UINT,
+		VK_FORMAT_R32G32B32A32_SINT,
+		VK_FORMAT_R32G32B32A32_SFLOAT
+	};
+	static const VkFormat s_requiredStorageImageAtomicFormats[] =
+	{
+		VK_FORMAT_R32_UINT,
+		VK_FORMAT_R32_SINT
+	};
+	static const VkFormat s_requiredColorAttachmentBlitDstFormats[] =
+	{
+		VK_FORMAT_R5G6B5_UNORM_PACK16,
+		VK_FORMAT_A1R5G5B5_UNORM_PACK16,
+		VK_FORMAT_R8_UNORM,
+		VK_FORMAT_R8_SNORM,
+		VK_FORMAT_R8_UINT,
+		VK_FORMAT_R8_SINT,
+		VK_FORMAT_R8G8_UNORM,
+		VK_FORMAT_R8G8_SNORM,
+		VK_FORMAT_R8G8_UINT,
+		VK_FORMAT_R8G8_SINT,
+		VK_FORMAT_R8G8B8A8_UNORM,
+		VK_FORMAT_R8G8B8A8_SNORM,
+		VK_FORMAT_R8G8B8A8_UINT,
+		VK_FORMAT_R8G8B8A8_SINT,
+		VK_FORMAT_R8G8B8A8_SRGB,
+		VK_FORMAT_B8G8R8A8_UNORM,
+		VK_FORMAT_B8G8R8A8_SRGB,
+		VK_FORMAT_A8B8G8R8_UNORM_PACK32,
+		VK_FORMAT_A8B8G8R8_SNORM_PACK32,
+		VK_FORMAT_A8B8G8R8_UINT_PACK32,
+		VK_FORMAT_A8B8G8R8_SINT_PACK32,
+		VK_FORMAT_A8B8G8R8_SRGB_PACK32,
+		VK_FORMAT_A2R10G10B10_UNORM_PACK32,
+		VK_FORMAT_A2B10G10R10_UNORM_PACK32,
+		VK_FORMAT_A2B10G10R10_UINT_PACK32,
+		VK_FORMAT_R16_UNORM,
+		VK_FORMAT_R16_SNORM,
+		VK_FORMAT_R16_UINT,
+		VK_FORMAT_R16_SINT,
+		VK_FORMAT_R16_SFLOAT,
+		VK_FORMAT_R16G16_UNORM,
+		VK_FORMAT_R16G16_SNORM,
+		VK_FORMAT_R16G16_UINT,
+		VK_FORMAT_R16G16_SINT,
+		VK_FORMAT_R16G16_SFLOAT,
+		VK_FORMAT_R16G16B16A16_UNORM,
+		VK_FORMAT_R16G16B16A16_SNORM,
+		VK_FORMAT_R16G16B16A16_UINT,
+		VK_FORMAT_R16G16B16A16_SINT,
+		VK_FORMAT_R16G16B16A16_SFLOAT,
+		VK_FORMAT_R32_UINT,
+		VK_FORMAT_R32_SINT,
+		VK_FORMAT_R32_SFLOAT,
+		VK_FORMAT_R32G32_UINT,
+		VK_FORMAT_R32G32_SINT,
+		VK_FORMAT_R32G32_SFLOAT,
+		VK_FORMAT_R32G32B32A32_UINT,
+		VK_FORMAT_R32G32B32A32_SINT,
+		VK_FORMAT_R32G32B32A32_SFLOAT
+	};
+	static const VkFormat s_requiredColorAttachmentBlendFormats[] =
+	{
+		VK_FORMAT_R5G6B5_UNORM_PACK16,
+		VK_FORMAT_A1R5G5B5_UNORM_PACK16,
+		VK_FORMAT_R8_UNORM,
+		VK_FORMAT_R8_SNORM,
+		VK_FORMAT_R8G8_UNORM,
+		VK_FORMAT_R8G8_SNORM,
+		VK_FORMAT_R8G8B8A8_UNORM,
+		VK_FORMAT_R8G8B8A8_SNORM,
+		VK_FORMAT_R8G8B8A8_SRGB,
+		VK_FORMAT_B8G8R8A8_UNORM,
+		VK_FORMAT_B8G8R8A8_SRGB,
+		VK_FORMAT_A8B8G8R8_UNORM_PACK32,
+		VK_FORMAT_A8B8G8R8_SNORM_PACK32,
+		VK_FORMAT_A8B8G8R8_SRGB_PACK32,
+		VK_FORMAT_A2B10G10R10_UNORM_PACK32,
+		VK_FORMAT_A2R10G10B10_UNORM_PACK32,
+		VK_FORMAT_R16_UNORM,
+		VK_FORMAT_R16_SNORM,
+		VK_FORMAT_R16_SFLOAT,
+		VK_FORMAT_R16G16_UNORM,
+		VK_FORMAT_R16G16_SNORM,
+		VK_FORMAT_R16G16_SFLOAT,
+		VK_FORMAT_R16G16B16A16_UNORM,
+		VK_FORMAT_R16G16B16A16_SNORM,
+		VK_FORMAT_R16G16B16A16_SFLOAT
+	};
+	static const VkFormat s_requiredDepthStencilAttachmentFormats[] =
+	{
+		VK_FORMAT_D16_UNORM
+	};
+
+	VkFormatFeatureFlags	flags	= (VkFormatFeatureFlags)0;
+
+	if (de::contains(DE_ARRAY_BEGIN(s_requiredSampledImageBlitSrcFormats), DE_ARRAY_END(s_requiredSampledImageBlitSrcFormats), format))
+		flags |= VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT|VK_FORMAT_FEATURE_BLIT_SRC_BIT;
+
+	if (de::contains(DE_ARRAY_BEGIN(s_requiredStorageImageFormats), DE_ARRAY_END(s_requiredStorageImageFormats), format))
+		flags |= VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT;
+
+	if (de::contains(DE_ARRAY_BEGIN(s_requiredStorageImageAtomicFormats), DE_ARRAY_END(s_requiredStorageImageAtomicFormats), format))
+		flags |= VK_FORMAT_FEATURE_STORAGE_IMAGE_ATOMIC_BIT;
+
+	if (de::contains(DE_ARRAY_BEGIN(s_requiredColorAttachmentBlitDstFormats), DE_ARRAY_END(s_requiredColorAttachmentBlitDstFormats), format))
+		flags |= VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT|VK_FORMAT_FEATURE_BLIT_DST_BIT;
+
+	if (de::contains(DE_ARRAY_BEGIN(s_requiredColorAttachmentBlendFormats), DE_ARRAY_END(s_requiredColorAttachmentBlendFormats), format))
+		flags |= VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT;
+
+	if (de::contains(DE_ARRAY_BEGIN(s_requiredDepthStencilAttachmentFormats), DE_ARRAY_END(s_requiredDepthStencilAttachmentFormats), format))
+		flags |= VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT;
+
+	return flags;
+}
+
+VkFormatFeatureFlags getRequiredBufferFeatures (VkFormat format)
+{
+	static const VkFormat s_requiredVertexBufferFormats[] =
+	{
+		VK_FORMAT_R8_UNORM,
+		VK_FORMAT_R8_SNORM,
+		VK_FORMAT_R8_UINT,
+		VK_FORMAT_R8_SINT,
+		VK_FORMAT_R8G8_UNORM,
+		VK_FORMAT_R8G8_SNORM,
+		VK_FORMAT_R8G8_UINT,
+		VK_FORMAT_R8G8_SINT,
+		VK_FORMAT_R8G8B8A8_UNORM,
+		VK_FORMAT_R8G8B8A8_SNORM,
+		VK_FORMAT_R8G8B8A8_UINT,
+		VK_FORMAT_R8G8B8A8_SINT,
+		VK_FORMAT_B8G8R8A8_UNORM,
+		VK_FORMAT_A8B8G8R8_UNORM_PACK32,
+		VK_FORMAT_A8B8G8R8_SNORM_PACK32,
+		VK_FORMAT_A8B8G8R8_UINT_PACK32,
+		VK_FORMAT_A8B8G8R8_SINT_PACK32,
+		VK_FORMAT_A2R10G10B10_UNORM_PACK32,
+		VK_FORMAT_A2R10G10B10_SNORM_PACK32,
+		VK_FORMAT_A2R10G10B10_UINT_PACK32,
+		VK_FORMAT_A2R10G10B10_SINT_PACK32,
+		VK_FORMAT_A2B10G10R10_UNORM_PACK32,
+		VK_FORMAT_A2B10G10R10_UINT_PACK32,
+		VK_FORMAT_R16_UNORM,
+		VK_FORMAT_R16_SNORM,
+		VK_FORMAT_R16_UINT,
+		VK_FORMAT_R16_SINT,
+		VK_FORMAT_R16_SFLOAT,
+		VK_FORMAT_R16G16_UNORM,
+		VK_FORMAT_R16G16_SNORM,
+		VK_FORMAT_R16G16_UINT,
+		VK_FORMAT_R16G16_SINT,
+		VK_FORMAT_R16G16_SFLOAT,
+		VK_FORMAT_R16G16B16A16_UNORM,
+		VK_FORMAT_R16G16B16A16_SNORM,
+		VK_FORMAT_R16G16B16A16_UINT,
+		VK_FORMAT_R16G16B16A16_SINT,
+		VK_FORMAT_R16G16B16A16_SFLOAT,
+		VK_FORMAT_R32_UINT,
+		VK_FORMAT_R32_SINT,
+		VK_FORMAT_R32_SFLOAT,
+		VK_FORMAT_R32G32_UINT,
+		VK_FORMAT_R32G32_SINT,
+		VK_FORMAT_R32G32_SFLOAT,
+		VK_FORMAT_R32G32B32_UINT,
+		VK_FORMAT_R32G32B32_SINT,
+		VK_FORMAT_R32G32B32_SFLOAT,
+		VK_FORMAT_R32G32B32A32_UINT,
+		VK_FORMAT_R32G32B32A32_SINT,
+		VK_FORMAT_R32G32B32A32_SFLOAT
+	};
+	static const VkFormat s_requiredUniformTexelBufferFormats[] =
+	{
+		VK_FORMAT_R8_UNORM,
+		VK_FORMAT_R8_SNORM,
+		VK_FORMAT_R8_UINT,
+		VK_FORMAT_R8_SINT,
+		VK_FORMAT_R8G8_UNORM,
+		VK_FORMAT_R8G8_SNORM,
+		VK_FORMAT_R8G8_UINT,
+		VK_FORMAT_R8G8_SINT,
+		VK_FORMAT_R8G8B8A8_UNORM,
+		VK_FORMAT_R8G8B8A8_SNORM,
+		VK_FORMAT_R8G8B8A8_UINT,
+		VK_FORMAT_R8G8B8A8_SINT,
+		VK_FORMAT_B8G8R8A8_UNORM,
+		VK_FORMAT_A8B8G8R8_UNORM_PACK32,
+		VK_FORMAT_A8B8G8R8_SNORM_PACK32,
+		VK_FORMAT_A8B8G8R8_UINT_PACK32,
+		VK_FORMAT_A8B8G8R8_SINT_PACK32,
+		VK_FORMAT_A2B10G10R10_UNORM_PACK32,
+		VK_FORMAT_A2B10G10R10_UINT_PACK32,
+		VK_FORMAT_R16_UNORM,
+		VK_FORMAT_R16_SNORM,
+		VK_FORMAT_R16_UINT,
+		VK_FORMAT_R16_SINT,
+		VK_FORMAT_R16_SFLOAT,
+		VK_FORMAT_R16G16_UNORM,
+		VK_FORMAT_R16G16_SNORM,
+		VK_FORMAT_R16G16_UINT,
+		VK_FORMAT_R16G16_SINT,
+		VK_FORMAT_R16G16_SFLOAT,
+		VK_FORMAT_R16G16B16A16_UNORM,
+		VK_FORMAT_R16G16B16A16_SNORM,
+		VK_FORMAT_R16G16B16A16_UINT,
+		VK_FORMAT_R16G16B16A16_SINT,
+		VK_FORMAT_R16G16B16A16_SFLOAT,
+		VK_FORMAT_R32_UINT,
+		VK_FORMAT_R32_SINT,
+		VK_FORMAT_R32_SFLOAT,
+		VK_FORMAT_R32G32_UINT,
+		VK_FORMAT_R32G32_SINT,
+		VK_FORMAT_R32G32_SFLOAT,
+		VK_FORMAT_R32G32B32A32_UINT,
+		VK_FORMAT_R32G32B32A32_SINT,
+		VK_FORMAT_R32G32B32A32_SFLOAT,
+		VK_FORMAT_B10G11R11_UFLOAT_PACK32
+	};
+	static const VkFormat s_requiredStorageTexelBufferFormats[] =
+	{
+		VK_FORMAT_R8G8B8A8_UNORM,
+		VK_FORMAT_R8G8B8A8_SNORM,
+		VK_FORMAT_R8G8B8A8_UINT,
+		VK_FORMAT_R8G8B8A8_SINT,
+		VK_FORMAT_A8B8G8R8_UNORM_PACK32,
+		VK_FORMAT_A8B8G8R8_SNORM_PACK32,
+		VK_FORMAT_A8B8G8R8_UINT_PACK32,
+		VK_FORMAT_A8B8G8R8_SINT_PACK32,
+		VK_FORMAT_R16G16B16A16_UINT,
+		VK_FORMAT_R16G16B16A16_SINT,
+		VK_FORMAT_R16G16B16A16_SFLOAT,
+		VK_FORMAT_R32_UINT,
+		VK_FORMAT_R32_SINT,
+		VK_FORMAT_R32_SFLOAT,
+		VK_FORMAT_R32G32_UINT,
+		VK_FORMAT_R32G32_SINT,
+		VK_FORMAT_R32G32_SFLOAT,
+		VK_FORMAT_R32G32B32A32_UINT,
+		VK_FORMAT_R32G32B32A32_SINT,
+		VK_FORMAT_R32G32B32A32_SFLOAT
+	};
+	static const VkFormat s_requiredStorageTexelBufferAtomicFormats[] =
+	{
+		VK_FORMAT_R32_UINT,
+		VK_FORMAT_R32_SINT
+	};
+
+	VkFormatFeatureFlags	flags	= (VkFormatFeatureFlags)0;
+
+	if (de::contains(DE_ARRAY_BEGIN(s_requiredVertexBufferFormats), DE_ARRAY_END(s_requiredVertexBufferFormats), format))
+		flags |= VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT;
+
+	if (de::contains(DE_ARRAY_BEGIN(s_requiredUniformTexelBufferFormats), DE_ARRAY_END(s_requiredUniformTexelBufferFormats), format))
+		flags |= VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT;
+
+	if (de::contains(DE_ARRAY_BEGIN(s_requiredStorageTexelBufferFormats), DE_ARRAY_END(s_requiredStorageTexelBufferFormats), format))
+		flags |= VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT;
+
+	if (de::contains(DE_ARRAY_BEGIN(s_requiredStorageTexelBufferAtomicFormats), DE_ARRAY_END(s_requiredStorageTexelBufferAtomicFormats), format))
+		flags |= VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_ATOMIC_BIT;
+
+	return flags;
+}
+
+tcu::TestStatus formatProperties (Context& context, VkFormat format)
+{
+	TestLog&					log				= context.getTestContext().getLog();
+	const VkFormatProperties	properties		= getPhysicalDeviceFormatProperties(context.getInstanceInterface(), context.getPhysicalDevice(), format);
+	bool						allOk			= true;
+
+	const struct
+	{
+		VkFormatFeatureFlags VkFormatProperties::*	field;
+		const char*									fieldName;
+		VkFormatFeatureFlags						requiredFeatures;
+	} fields[] =
+	{
+		{ &VkFormatProperties::linearTilingFeatures,	"linearTilingFeatures",		(VkFormatFeatureFlags)0						},
+		{ &VkFormatProperties::optimalTilingFeatures,	"optimalTilingFeatures",	getRequiredOptimalTilingFeatures(format)	},
+		{ &VkFormatProperties::bufferFeatures,			"buffeFeatures",			getRequiredBufferFeatures(format)			}
+	};
+
+	log << TestLog::Message << properties << TestLog::EndMessage;
+
+	for (int fieldNdx = 0; fieldNdx < DE_LENGTH_OF_ARRAY(fields); fieldNdx++)
+	{
+		const char* const				fieldName	= fields[fieldNdx].fieldName;
+		const VkFormatFeatureFlags		supported	= properties.*fields[fieldNdx].field;
+		const VkFormatFeatureFlags		required	= fields[fieldNdx].requiredFeatures;
+
+		if ((supported & required) != required)
+		{
+			log << TestLog::Message << "ERROR in " << fieldName << ":\n"
+								    << "  required: " << getFormatFeatureFlagsStr(required) << "\n  "
+									<< "  missing: " << getFormatFeatureFlagsStr(~supported & required)
+				<< TestLog::EndMessage;
+			allOk = false;
+		}
+	}
+
+	if (allOk)
+		return tcu::TestStatus::pass("Query and validation passed");
+	else
+		return tcu::TestStatus::fail("Required features not supported");
+}
+
+bool optimalTilingFeaturesSupported (Context& context, VkFormat format, VkFormatFeatureFlags features)
+{
+	const VkFormatProperties	properties	= getPhysicalDeviceFormatProperties(context.getInstanceInterface(), context.getPhysicalDevice(), format);
+
+	return (properties.optimalTilingFeatures & features) == features;
+}
+
+bool optimalTilingFeaturesSupportedForAll (Context& context, const VkFormat* begin, const VkFormat* end, VkFormatFeatureFlags features)
+{
+	for (const VkFormat* cur = begin; cur != end; ++cur)
+	{
+		if (!optimalTilingFeaturesSupported(context, *cur, features))
+			return false;
+	}
+
+	return true;
+}
+
+tcu::TestStatus testDepthStencilSupported (Context& context)
+{
+	if (!optimalTilingFeaturesSupported(context, VK_FORMAT_X8_D24_UNORM_PACK32, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) &&
+		!optimalTilingFeaturesSupported(context, VK_FORMAT_D32_SFLOAT, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT))
+		return tcu::TestStatus::fail("Doesn't support one of VK_FORMAT_X8_D24_UNORM_PACK32 or VK_FORMAT_D32_SFLOAT");
+
+	if (!optimalTilingFeaturesSupported(context, VK_FORMAT_D24_UNORM_S8_UINT, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) &&
+		!optimalTilingFeaturesSupported(context, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT))
+		return tcu::TestStatus::fail("Doesn't support one of VK_FORMAT_D24_UNORM_S8_UINT or VK_FORMAT_D32_SFLOAT_S8_UINT");
+
+	return tcu::TestStatus::pass("Required depth/stencil formats supported");
+}
+
+tcu::TestStatus testCompressedFormatsSupported (Context& context)
+{
+	static const VkFormat s_allBcFormats[] =
+	{
+		VK_FORMAT_BC1_RGB_UNORM_BLOCK,
+		VK_FORMAT_BC1_RGB_SRGB_BLOCK,
+		VK_FORMAT_BC1_RGBA_UNORM_BLOCK,
+		VK_FORMAT_BC1_RGBA_SRGB_BLOCK,
+		VK_FORMAT_BC2_UNORM_BLOCK,
+		VK_FORMAT_BC2_SRGB_BLOCK,
+		VK_FORMAT_BC3_UNORM_BLOCK,
+		VK_FORMAT_BC3_SRGB_BLOCK,
+		VK_FORMAT_BC4_UNORM_BLOCK,
+		VK_FORMAT_BC4_SNORM_BLOCK,
+		VK_FORMAT_BC5_UNORM_BLOCK,
+		VK_FORMAT_BC5_SNORM_BLOCK,
+		VK_FORMAT_BC6H_UFLOAT_BLOCK,
+		VK_FORMAT_BC6H_SFLOAT_BLOCK,
+		VK_FORMAT_BC7_UNORM_BLOCK,
+		VK_FORMAT_BC7_SRGB_BLOCK,
+	};
+	static const VkFormat s_allEtcEacFormats[] =
+	{
+		VK_FORMAT_ETC2_R8G8B8_UNORM_BLOCK,
+		VK_FORMAT_ETC2_R8G8B8_SRGB_BLOCK,
+		VK_FORMAT_ETC2_R8G8B8A1_UNORM_BLOCK,
+		VK_FORMAT_ETC2_R8G8B8A1_SRGB_BLOCK,
+		VK_FORMAT_ETC2_R8G8B8A8_UNORM_BLOCK,
+		VK_FORMAT_ETC2_R8G8B8A8_SRGB_BLOCK,
+		VK_FORMAT_EAC_R11_UNORM_BLOCK,
+		VK_FORMAT_EAC_R11_SNORM_BLOCK,
+		VK_FORMAT_EAC_R11G11_UNORM_BLOCK,
+		VK_FORMAT_EAC_R11G11_SNORM_BLOCK,
+	};
+	static const VkFormat s_allAstcFormats[] =
+	{
+		VK_FORMAT_ASTC_4x4_UNORM_BLOCK,
+		VK_FORMAT_ASTC_4x4_SRGB_BLOCK,
+		VK_FORMAT_ASTC_5x4_UNORM_BLOCK,
+		VK_FORMAT_ASTC_5x4_SRGB_BLOCK,
+		VK_FORMAT_ASTC_5x5_UNORM_BLOCK,
+		VK_FORMAT_ASTC_5x5_SRGB_BLOCK,
+		VK_FORMAT_ASTC_6x5_UNORM_BLOCK,
+		VK_FORMAT_ASTC_6x5_SRGB_BLOCK,
+		VK_FORMAT_ASTC_6x6_UNORM_BLOCK,
+		VK_FORMAT_ASTC_6x6_SRGB_BLOCK,
+		VK_FORMAT_ASTC_8x5_UNORM_BLOCK,
+		VK_FORMAT_ASTC_8x5_SRGB_BLOCK,
+		VK_FORMAT_ASTC_8x6_UNORM_BLOCK,
+		VK_FORMAT_ASTC_8x6_SRGB_BLOCK,
+		VK_FORMAT_ASTC_8x8_UNORM_BLOCK,
+		VK_FORMAT_ASTC_8x8_SRGB_BLOCK,
+		VK_FORMAT_ASTC_10x5_UNORM_BLOCK,
+		VK_FORMAT_ASTC_10x5_SRGB_BLOCK,
+		VK_FORMAT_ASTC_10x6_UNORM_BLOCK,
+		VK_FORMAT_ASTC_10x6_SRGB_BLOCK,
+		VK_FORMAT_ASTC_10x8_UNORM_BLOCK,
+		VK_FORMAT_ASTC_10x8_SRGB_BLOCK,
+		VK_FORMAT_ASTC_10x10_UNORM_BLOCK,
+		VK_FORMAT_ASTC_10x10_SRGB_BLOCK,
+		VK_FORMAT_ASTC_12x10_UNORM_BLOCK,
+		VK_FORMAT_ASTC_12x10_SRGB_BLOCK,
+		VK_FORMAT_ASTC_12x12_UNORM_BLOCK,
+		VK_FORMAT_ASTC_12x12_SRGB_BLOCK,
+	};
+
+	const bool	bcFormatsSupported		= optimalTilingFeaturesSupportedForAll(context,
+																			   DE_ARRAY_BEGIN(s_allBcFormats),
+																			   DE_ARRAY_END(s_allBcFormats),
+																			   VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT);
+	const bool	etcEacFormatsSupported	= optimalTilingFeaturesSupportedForAll(context,
+																			   DE_ARRAY_BEGIN(s_allEtcEacFormats),
+																			   DE_ARRAY_END(s_allEtcEacFormats),
+																			   VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT);
+	const bool	astcFormatsSupported	= optimalTilingFeaturesSupportedForAll(context,
+																			   DE_ARRAY_BEGIN(s_allAstcFormats),
+																			   DE_ARRAY_END(s_allAstcFormats),
+																			   VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT);
+	TestLog&	log						= context.getTestContext().getLog();
+
+	log << TestLog::Message << "All BC* formats supported: " << (bcFormatsSupported ? "true" : "false") << TestLog::EndMessage;
+	log << TestLog::Message << "All ETC2/EAC formats supported: " << (etcEacFormatsSupported ? "true" : "false") << TestLog::EndMessage;
+	log << TestLog::Message << "All ASTC formats supported: " << (astcFormatsSupported ? "true" : "false") << TestLog::EndMessage;
+
+	if (bcFormatsSupported || etcEacFormatsSupported || astcFormatsSupported)
+		return tcu::TestStatus::pass("At least one set of compressed formats supported");
+	else
+		return tcu::TestStatus::fail("Compressed formats not supported");
+}
+
+void createFormatTests (tcu::TestCaseGroup* testGroup)
+{
+	DE_STATIC_ASSERT(VK_FORMAT_UNDEFINED == 0);
+
+	for (deUint32 formatNdx = VK_FORMAT_UNDEFINED+1; formatNdx < VK_FORMAT_LAST; ++formatNdx)
+	{
+		const VkFormat		format			= (VkFormat)formatNdx;
+		const char* const	enumName		= getFormatName(format);
+		const string		caseName		= de::toLower(string(enumName).substr(10));
+
+		addFunctionCase(testGroup, caseName, enumName, formatProperties, format);
+	}
+
+	addFunctionCase(testGroup, "depth_stencil",			"",	testDepthStencilSupported);
+	addFunctionCase(testGroup, "compressed_formats",	"",	testCompressedFormatsSupported);
+}
+
 } // anonymous
 
 tcu::TestCaseGroup* createFeatureInfoTests (tcu::TestContext& testCtx)
@@ -624,6 +1149,8 @@ tcu::TestCaseGroup* createFeatureInfoTests (tcu::TestContext& testCtx)
 
 		infoTests->addChild(deviceInfoTests.release());
 	}
+
+	infoTests->addChild(createTestGroup(testCtx, "format_properties", "VkGetPhysicalDeviceFormatProperties() Tests", createFormatTests));
 
 	return infoTests.release();
 }
