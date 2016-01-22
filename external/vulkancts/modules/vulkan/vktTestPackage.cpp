@@ -71,6 +71,7 @@
 #include "vktDrawTests.hpp"
 #include "vktComputeTests.hpp"
 #include "vktImageTests.hpp"
+#include "vktInfoTests.hpp"
 
 #include <vector>
 #include <sstream>
@@ -310,6 +311,7 @@ tcu::TestCaseExecutor* TestPackage::createExecutor (void) const
 
 void TestPackage::init (void)
 {
+	addChild(createTestGroup			(m_testCtx, "info", "Build and Device Info Tests", createInfoTests));
 	addChild(api::createTests			(m_testCtx));
 	addChild(pipeline::createTests		(m_testCtx));
 	addChild(BindingModel::createTests	(m_testCtx));
