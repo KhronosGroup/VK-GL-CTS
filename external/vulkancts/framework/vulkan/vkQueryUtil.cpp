@@ -124,7 +124,7 @@ VkImageFormatProperties getPhysicalDeviceImageFormatProperties (const InstanceIn
 
 	deMemset(&properties, 0, sizeof(properties));
 
-	vk.getPhysicalDeviceImageFormatProperties(physicalDevice, format, type, tiling, usage, flags, &properties);
+	VK_CHECK(vk.getPhysicalDeviceImageFormatProperties(physicalDevice, format, type, tiling, usage, flags, &properties));
 	return properties;
 }
 
