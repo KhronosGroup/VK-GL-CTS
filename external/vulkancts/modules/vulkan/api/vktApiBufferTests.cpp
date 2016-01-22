@@ -200,8 +200,20 @@ private:
 				DE_NULL,								// const VkSemaphore*						pSignalSemaphores;
 			};
 
-			if (vk.queueBindSparse(queue, 1, &bindSparseInfo, DE_NULL) != VK_SUCCESS)
+			const VkFenceCreateInfo fenceParams =
+			{
+				VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,	// VkStructureType		sType;
+				DE_NULL,								// const void*			pNext;
+				0u										// VkFenceCreateFlags	flags;
+			};
+
+			const vk::Unique<vk::VkFence> fence = vk::createFence(vk, vkDevice, &fenceParams);
+
+			VK_CHECK(vk.resetFences(vkDevice, 1, &fence.get()));
+			if (vk.queueBindSparse(queue, 1, &bindSparseInfo, *fence) != VK_SUCCESS)
 				return tcu::TestStatus::fail("Bind sparse buffer memory failed! (requested memory size: " + de::toString(size) + ")");
+
+			VK_CHECK(vk.waitForFences(vkDevice, 1, &fence.get(), VK_TRUE, ~(0ull) /* infinity */));
 		} else
 			if (vk.bindBufferMemory(vkDevice, *testBuffer, *memory, 0) != VK_SUCCESS)
 				return tcu::TestStatus::fail("Bind buffer memory failed! (requested memory size: " + de::toString(size) + ")");
