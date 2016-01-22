@@ -40224,7 +40224,6 @@ dEQP-GLES3.functional.draw.draw_elements_instanced.indices.user_ptr.index_short
 dEQP-GLES3.functional.draw.draw_elements_instanced.indices.user_ptr.index_int
 dEQP-GLES3.functional.draw.draw_elements_instanced.indices.unaligned_user_ptr.index_short
 dEQP-GLES3.functional.draw.draw_elements_instanced.indices.unaligned_user_ptr.index_int
-dEQP-GLES3.functional.draw.draw_elements_instanced.indices.buffer.index_byte
 dEQP-GLES3.functional.draw.draw_elements_instanced.indices.buffer.index_short
 dEQP-GLES3.functional.draw.draw_elements_instanced.indices.buffer.index_int
 dEQP-GLES3.functional.draw.draw_elements_instanced.points.single_attribute

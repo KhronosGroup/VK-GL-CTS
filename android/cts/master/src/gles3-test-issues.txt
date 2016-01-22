@@ -166,3 +166,6 @@ dEQP-GLES3.functional.dither.disabled.gradient_alpha
 dEQP-GLES3.functional.shaders.texture_functions.texturegrad.samplercubeshadow_vertex
 dEQP-GLES3.functional.shaders.texture_functions.texturegrad.samplercubeshadow_fragment
 dEQP-GLES3.functional.shaders.texture_functions.texturegrad.isamplercube_fragment
+
+# Bug 26651667
+dEQP-GLES3.functional.draw.draw_elements_instanced.indices.buffer.index_byte
