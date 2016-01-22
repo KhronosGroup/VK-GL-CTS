@@ -28,6 +28,7 @@
 #include "vkPlatform.hpp"
 #include "tcuX11.hpp"
 #include "tcuFunctionLibrary.hpp"
+#include "deMemory.h"
 
 #if defined (DEQP_SUPPORT_GLX)
 #	include "tcuX11GlxPlatform.hpp"
@@ -36,6 +37,7 @@
 #	include "tcuX11EglPlatform.hpp"
 #endif
 
+#include <sys/utsname.h>
 
 namespace tcu
 {
@@ -76,6 +78,19 @@ public:
 	vk::Library* createLibrary (void) const
 	{
 		return new VulkanLibrary();
+	}
+
+	void describePlatform (std::ostream& dst) const
+	{
+		utsname		sysInfo;
+
+		deMemset(&sysInfo, 0, sizeof(sysInfo));
+
+		if (uname(&sysInfo) != 0)
+			throw std::runtime_error("uname() failed");
+
+		dst << "OS: " << sysInfo.sysname << " " << sysInfo.release << " " << sysInfo.version << "\n";
+		dst << "CPU: " << sysInfo.machine << "\n";
 	}
 };
 
