@@ -146,17 +146,12 @@ IndirectDraw::IndirectDraw (Context &context, ShaderMap shaders, vk::VkPrimitive
 	initialize();
 
 	// Check device for multidraw support:
-	const vk::VkPhysicalDeviceFeatures&	    deviceFeatures = m_context.getDeviceFeatures();
-	const vk::VkPhysicalDeviceProperties&	deviceProperties = m_context.getDeviceProperties();
-
-	m_context.getInstanceInterface().getPhysicalDeviceProperties(m_context.getPhysicalDevice(), &deviceProperties);
-	m_context.getInstanceInterface().getPhysicalDeviceFeatures(m_context.getPhysicalDevice(), &deviceFeatures);
-	if (deviceFeatures.multiDrawIndirect)
+	if (m_context.getDeviceFeatures().multiDrawIndirect)
 		m_isMultiDrawEnabled = true;	
 	else
 		m_isMultiDrawEnabled = false;
 	
-	m_drawIndirectMaxCount = deviceProperties.limits.maxDrawIndirectCount;
+	m_drawIndirectMaxCount = m_context.getDeviceProperties().limits.maxDrawIndirectCount;
 
 }
 
