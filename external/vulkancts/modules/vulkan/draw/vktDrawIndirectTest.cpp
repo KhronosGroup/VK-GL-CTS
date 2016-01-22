@@ -146,8 +146,8 @@ IndirectDraw::IndirectDraw (Context &context, ShaderMap shaders, vk::VkPrimitive
 	initialize();
 
 	// Check device for multidraw support:
-	vk::VkPhysicalDeviceFeatures	deviceFeatures;
-	vk::VkPhysicalDeviceProperties	deviceProperties;
+	const vk::VkPhysicalDeviceFeatures&	    deviceFeatures = m_context.getDeviceFeatures();
+	const vk::VkPhysicalDeviceProperties&	deviceProperties = m_context.getDeviceProperties();
 
 	m_context.getInstanceInterface().getPhysicalDeviceProperties(m_context.getPhysicalDevice(), &deviceProperties);
 	m_context.getInstanceInterface().getPhysicalDeviceFeatures(m_context.getPhysicalDevice(), &deviceFeatures);
@@ -264,9 +264,10 @@ tcu::TestStatus IndirectDraw::iterate (void)
 	m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
 	if (m_isMultiDrawEnabled && m_drawCount <= m_drawIndirectMaxCount)
 		m_vk.cmdDrawIndirect(*m_cmdBuffer, m_indirectBuffer->object(), m_offsetInBuffer, m_drawCount, m_strideInBuffer);
-	else{
-		for(deUint32 i = 0; i < m_drawCount; i++){
-			m_vk.cmdDrawIndirect(*m_cmdBuffer, m_indirectBuffer->object(), m_offsetInBuffer + i*m_strideInBuffer, 1, m_strideInBuffer);
+	else
+	{
+		for(deUint32 drawNdx = 0; drawNdx < m_drawCount; drawNdx++){
+			m_vk.cmdDrawIndirect(*m_cmdBuffer, m_indirectBuffer->object(), m_offsetInBuffer + drawNdx*m_strideInBuffer, 1, m_strideInBuffer);
 		}
 	}
 	m_vk.cmdEndRenderPass(*m_cmdBuffer);
@@ -440,9 +441,10 @@ tcu::TestStatus IndirectDrawInstanced::iterate (void)
 	m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
 	if (m_isMultiDrawEnabled && m_drawCount <= m_drawIndirectMaxCount)
 		m_vk.cmdDrawIndirect(*m_cmdBuffer, m_indirectBuffer->object(), m_offsetInBuffer, m_drawCount, m_strideInBuffer);
-	else{
-		for (deUint32 i = 0; i < m_drawCount; i++){
-			m_vk.cmdDrawIndirect(*m_cmdBuffer, m_indirectBuffer->object(), m_offsetInBuffer + i*m_strideInBuffer, 1, m_strideInBuffer);
+	else
+	{
+		for (deUint32 drawNdx = 0; drawNdx < m_drawCount; drawNdx++){
+			m_vk.cmdDrawIndirect(*m_cmdBuffer, m_indirectBuffer->object(), m_offsetInBuffer + drawNdx*m_strideInBuffer, 1, m_strideInBuffer);
 		}
 	}
 	m_vk.cmdEndRenderPass(*m_cmdBuffer);
