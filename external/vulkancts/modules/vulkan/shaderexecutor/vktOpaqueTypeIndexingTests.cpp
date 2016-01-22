@@ -38,6 +38,7 @@
 #include "tcuTexture.hpp"
 #include "tcuTestLog.hpp"
 #include "tcuVectorUtil.hpp"
+#include "tcuTextureUtil.hpp"
 
 #include "deStringUtil.hpp"
 #include "deRandom.hpp"
@@ -465,6 +466,14 @@ SamplerIndexingCaseInstance::~SamplerIndexingCaseInstance (void)
 {
 }
 
+bool isIntegerFormat (const tcu::TextureFormat& format)
+{
+	const tcu::TextureChannelClass	chnClass	= tcu::getTextureChannelClass(format.type);
+
+	return chnClass == tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER ||
+		   chnClass == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER;
+}
+
 tcu::TestStatus SamplerIndexingCaseInstance::iterate (void)
 {
 	const int						numInvocations		= SamplerIndexingCaseInstance::NUM_INVOCATIONS;
@@ -482,12 +491,13 @@ tcu::TestStatus SamplerIndexingCaseInstance::iterate (void)
 	const TextureType				texType				= getTextureType(m_samplerType);
 	const vk::VkImageType			imageType			= getVkImageType(texType);
 	const vk::VkImageViewType		imageViewType		= getVkImageViewType(texType);
+	const tcu::Sampler::FilterMode	filterMode			= (isShadowSampler(m_samplerType) || isIntegerFormat(texFormat)) ? tcu::Sampler::NEAREST : tcu::Sampler::LINEAR;
 	const tcu::Sampler				refSampler			= isShadowSampler(m_samplerType)
 																? tcu::Sampler(tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::CLAMP_TO_EDGE,
-																				tcu::Sampler::NEAREST, tcu::Sampler::NEAREST, 0.0f, false /* non-normalized */,
+																				filterMode, filterMode, 0.0f, false /* non-normalized */,
 																				tcu::Sampler::COMPAREMODE_LESS)
 																: tcu::Sampler(tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::CLAMP_TO_EDGE,
-																				tcu::Sampler::LINEAR, tcu::Sampler::LINEAR);
+																				filterMode, filterMode);
 
 	checkSupported(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 
