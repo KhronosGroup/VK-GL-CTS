@@ -377,6 +377,30 @@ ImageSamplingInstance::ImageSamplingInstance (Context&							context,
 		!isLinearFilteringSupported(context.getInstanceInterface(), context.getPhysicalDevice(), imageFormat, VK_IMAGE_TILING_OPTIMAL))
 		throw tcu::NotSupportedError(std::string("Unsupported format for linear filtering: ") + getFormatName(imageFormat));
 
+	if (isCompressedFormat(imageFormat) && imageViewType == VK_IMAGE_VIEW_TYPE_3D)
+	{
+		// \todo [2016-01-22 pyry] Mandate VK_ERROR_FORMAT_NOT_SUPPORTED
+		try
+		{
+			const VkImageFormatProperties	formatProperties	= getPhysicalDeviceImageFormatProperties(context.getInstanceInterface(),
+																										 context.getPhysicalDevice(),
+																										 imageFormat,
+																										 VK_IMAGE_TYPE_3D,
+																										 VK_IMAGE_TILING_OPTIMAL,
+																										 VK_IMAGE_USAGE_SAMPLED_BIT,
+																										 (VkImageCreateFlags)0);
+
+			if (formatProperties.maxExtent.width == 0 &&
+				formatProperties.maxExtent.height == 0 &&
+				formatProperties.maxExtent.depth == 0)
+				TCU_THROW(NotSupportedError, "3D compressed format not supported");
+		}
+		catch (const Error&)
+		{
+			TCU_THROW(NotSupportedError, "3D compressed format not supported");
+		}
+	}
+
 	// Create texture image, view and sampler
 	{
 		VkImageCreateFlags			imageFlags			= 0u;
