@@ -45,6 +45,8 @@ set(DEQP_VK_COMMON_SRCS
 	vktRenderPassTests.hpp
 	vktTestGroupUtil.cpp
 	vktTestGroupUtil.hpp
+	vktInfoTests.cpp
+	vktInfoTests.hpp
 	)
 
 set(DEQP_VK_COMMON_LIBS
