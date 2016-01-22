@@ -432,12 +432,13 @@ Move<VkPipeline> SimpleGraphicsPipelineBuilder::buildPipeline(tcu::UVec2 renderS
 		vertexInputAttributeDescriptions,                               // const VkVertexInputAttributeDescription* pVertexAttributeDescriptions;
 	};
 
+	VkPrimitiveTopology primitiveTopology = (m_patchControlPoints > 0) ? VK_PRIMITIVE_TOPOLOGY_PATCH_LIST : VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 	const VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateParams =
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,    // VkStructureType                          sType;
 		DE_NULL,                                                        // const void*                              pNext;
 		0u,                                                             // VkPipelineInputAssemblyStateCreateFlags  flags;
-		VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,                            // VkPrimitiveTopology                      topology;
+		primitiveTopology,                                              // VkPrimitiveTopology                      topology;
 		VK_FALSE,                                                       // VkBool32                                 primitiveRestartEnable;
 	};
 
@@ -567,9 +568,10 @@ Move<VkPipeline> SimpleGraphicsPipelineBuilder::buildPipeline(tcu::UVec2 renderS
 	};
 
 	const VkPipelineTessellationStateCreateInfo* pTessCreateInfo = DE_NULL;
+	VkPipelineTessellationStateCreateInfo        tessStateCreateInfo;
 	if(m_patchControlPoints > 0)
 	{
-		const VkPipelineTessellationStateCreateInfo tessStateCreateInfo =
+		tessStateCreateInfo =
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO,  // VkStructureType                          sType;
 			DE_NULL,                                                    // const void*                              pNext;
