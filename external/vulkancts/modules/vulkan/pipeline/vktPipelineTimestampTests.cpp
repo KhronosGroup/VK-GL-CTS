@@ -568,9 +568,10 @@ Move<VkPipeline> SimpleGraphicsPipelineBuilder::buildPipeline(tcu::UVec2 renderS
 	};
 
 	const VkPipelineTessellationStateCreateInfo* pTessCreateInfo = DE_NULL;
+	VkPipelineTessellationStateCreateInfo        tessStateCreateInfo;
 	if(m_patchControlPoints > 0)
 	{
-		const VkPipelineTessellationStateCreateInfo tessStateCreateInfo =
+		tessStateCreateInfo =
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO,  // VkStructureType                          sType;
 			DE_NULL,                                                    // const void*                              pNext;
