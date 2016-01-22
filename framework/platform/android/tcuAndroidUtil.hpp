@@ -27,6 +27,7 @@
 #include "tcuCommandLine.hpp"
 
 #include <string>
+#include <ostream>
 
 #include <android/native_activity.h>
 
@@ -48,6 +49,8 @@ std::string			getIntentStringExtra		(ANativeActivity* activity, const char* name
 void				setRequestedOrientation		(ANativeActivity* activity, ScreenOrientation orientation);
 
 ScreenOrientation	mapScreenRotation			(ScreenRotation rotation);
+
+void				describePlatform			(ANativeActivity* activity, std::ostream& dst);
 
 } // Android
 } // tcu

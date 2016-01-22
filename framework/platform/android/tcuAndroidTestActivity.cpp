@@ -41,6 +41,7 @@ namespace Android
 TestThread::TestThread (NativeActivity& activity, const CommandLine& cmdLine)
 	: RenderThread	(activity)
 	, m_cmdLine		(cmdLine)
+	, m_platform	(activity)
 	, m_archive		(activity.getNativeActivity()->assetManager)
 	, m_log			(m_cmdLine.getLogFileName(), m_cmdLine.getLogFlags())
 	, m_app			(m_platform, m_archive, m_log, m_cmdLine)

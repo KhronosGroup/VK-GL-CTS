@@ -75,4 +75,9 @@ DeviceDriver::~DeviceDriver (void)
 #include "vkInstanceDriverImpl.inl"
 #include "vkDeviceDriverImpl.inl"
 
+void Platform::describePlatform (std::ostream& dst) const
+{
+	dst << "vk::Platform::describePlatform() not implemented";
+}
+
 } // vk

@@ -29,6 +29,7 @@
 #include "gluPlatform.hpp"
 #include "vkPlatform.hpp"
 #include "tcuAndroidWindow.hpp"
+#include "tcuAndroidNativeActivity.hpp"
 
 namespace tcu
 {
@@ -38,7 +39,7 @@ namespace Android
 class Platform : public tcu::Platform, private eglu::Platform, private glu::Platform, private vk::Platform
 {
 public:
-									Platform			(void);
+									Platform			(NativeActivity& activity);
 	virtual							~Platform			(void);
 
 	virtual bool					processEvents		(void);
@@ -50,8 +51,10 @@ public:
 	WindowRegistry&					getWindowRegistry	(void) { return m_windowRegistry; }
 
 	vk::Library*					createLibrary		(void) const;
+	void							describePlatform	(std::ostream& dst) const;
 
 private:
+	NativeActivity&					m_activity;
 	WindowRegistry					m_windowRegistry;
 };
 

@@ -36,6 +36,8 @@
 
 #include "vkDefs.hpp"
 
+#include <ostream>
+
 namespace tcu
 {
 class FunctionLibrary;
@@ -110,11 +112,13 @@ protected:
 class Platform
 {
 public:
-						Platform		(void) {}
-						~Platform		(void) {}
+						Platform			(void) {}
+						~Platform			(void) {}
 
 	// \todo [2015-01-05 pyry] Parametrize this to select for example debug library / interface?
-	virtual Library*	createLibrary	(void) const = 0;
+	virtual Library*	createLibrary		(void) const = 0;
+
+	virtual void		describePlatform	(std::ostream& dst) const;
 };
 
 } // vk

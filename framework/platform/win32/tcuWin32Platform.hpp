@@ -59,6 +59,7 @@ public:
 
 private:
 	vk::Library*			createLibrary		(void) const;
+	void					describePlatform	(std::ostream& dst) const;
 
 	HINSTANCE				m_instance;
 };

@@ -21,9 +21,16 @@
  * \brief Win32 platform port.
  *//*--------------------------------------------------------------------*/
 
+// \todo [2016-01-22 pyry] GetVersionEx() used by getOSInfo() is deprecated.
+//						   Find a way to get version info without using deprecated APIs.
+#pragma warning(disable : 4996)
+
 #include "tcuWin32Platform.hpp"
 #include "tcuWGLContextFactory.hpp"
 #include "tcuFunctionLibrary.hpp"
+#include "tcuFormatUtil.hpp"
+
+#include "deMemory.h"
 
 #if defined(DEQP_SUPPORT_EGL)
 #	include "tcuWin32EGLNativeDisplayFactory.hpp"
@@ -37,7 +44,7 @@ class VulkanLibrary : public vk::Library
 {
 public:
 	VulkanLibrary (void)
-		: m_library	("vulkan-1.dll")
+		: m_library	("nv-vk64.dll")
 		, m_driver	(m_library)
 	{
 	}
@@ -109,6 +116,84 @@ bool Win32Platform::processEvents (void)
 vk::Library* Win32Platform::createLibrary (void) const
 {
 	return new VulkanLibrary();
+}
+
+const char* getProductTypeName (WORD productType)
+{
+	switch (productType)
+	{
+		case VER_NT_DOMAIN_CONTROLLER:	return "Windows Server (domain controller)";
+		case VER_NT_SERVER:				return "Windows Server";
+		case VER_NT_WORKSTATION:		return "Windows NT";
+		default:						return DE_NULL;
+	}
+}
+
+static void getOSInfo (std::ostream& dst)
+{
+	OSVERSIONINFOEX	osInfo;
+
+	deMemset(&osInfo, 0, sizeof(osInfo));
+	osInfo.dwOSVersionInfoSize = (DWORD)sizeof(osInfo);
+
+	GetVersionEx((OSVERSIONINFO*)&osInfo);
+
+	{
+		const char* const	productName	= getProductTypeName(osInfo.wProductType);
+
+		if (productName)
+			dst << productName;
+		else
+			dst << "unknown product " << tcu::toHex(osInfo.wProductType);
+	}
+
+	dst << " " << osInfo.dwMajorVersion << "." << osInfo.dwMinorVersion
+		<< ", service pack " << osInfo.wServicePackMajor << "." << osInfo.wServicePackMinor
+		<< ", build " << osInfo.dwBuildNumber;
+}
+
+const char* getProcessorArchitectureName (WORD arch)
+{
+	switch (arch)
+	{
+		case PROCESSOR_ARCHITECTURE_AMD64:		return "AMD64";
+		case PROCESSOR_ARCHITECTURE_ARM:		return "ARM";
+		case PROCESSOR_ARCHITECTURE_IA64:		return "IA64";
+		case PROCESSOR_ARCHITECTURE_INTEL:		return "INTEL";
+		case PROCESSOR_ARCHITECTURE_UNKNOWN:	return "UNKNOWN";
+		default:								return DE_NULL;
+	}
+}
+
+static void getProcessorInfo (std::ostream& dst)
+{
+	SYSTEM_INFO	sysInfo;
+
+	deMemset(&sysInfo, 0, sizeof(sysInfo));
+	GetSystemInfo(&sysInfo);
+
+	dst << "arch ";
+	{
+		const char* const	archName	= getProcessorArchitectureName(sysInfo.wProcessorArchitecture);
+
+		if (archName)
+			dst << archName;
+		else
+			dst << tcu::toHex(sysInfo.wProcessorArchitecture);
+	}
+
+	dst << ", level " << tcu::toHex(sysInfo.wProcessorLevel) << ", revision " << tcu::toHex(sysInfo.wProcessorRevision);
+}
+
+void Win32Platform::describePlatform (std::ostream& dst) const
+{
+	dst << "OS: ";
+	getOSInfo(dst);
+	dst << "\n";
+
+	dst << "CPU: ";
+	getProcessorInfo(dst);
+	dst << "\n";
 }
 
 } // tcu
