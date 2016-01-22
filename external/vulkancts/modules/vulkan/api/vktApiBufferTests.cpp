@@ -207,7 +207,7 @@ private:
 				0u										// VkFenceCreateFlags	flags;
 			};
 
-			const vk::Unique<vk::VkFence> fence = vk::createFence(vk, vkDevice, &fenceParams);
+			const vk::Unique<vk::VkFence> fence(vk::createFence(vk, vkDevice, &fenceParams));
 
 			VK_CHECK(vk.resetFences(vkDevice, 1, &fence.get()));
 			if (vk.queueBindSparse(queue, 1, &bindSparseInfo, *fence) != VK_SUCCESS)

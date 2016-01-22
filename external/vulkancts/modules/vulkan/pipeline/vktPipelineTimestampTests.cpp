@@ -567,20 +567,17 @@ Move<VkPipeline> SimpleGraphicsPipelineBuilder::buildPipeline(tcu::UVec2 renderS
 		+1.0f,                                                      // float                                    maxDepthBounds;
 	};
 
-	const VkPipelineTessellationStateCreateInfo* pTessCreateInfo = DE_NULL;
-	VkPipelineTessellationStateCreateInfo        tessStateCreateInfo;
-	if(m_patchControlPoints > 0)
+	const VkPipelineTessellationStateCreateInfo*	pTessCreateInfo		= DE_NULL;
+	const VkPipelineTessellationStateCreateInfo		tessStateCreateInfo	=
 	{
-		tessStateCreateInfo =
-		{
 			VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO,  // VkStructureType                          sType;
 			DE_NULL,                                                    // const void*                              pNext;
 			0u,                                                         // VkPipelineTessellationStateCreateFlags   flags;
 			m_patchControlPoints,                                       // deUint32                                 patchControlPoints;
-		};
+	};
 
+	if (m_patchControlPoints > 0)
 		pTessCreateInfo = &tessStateCreateInfo;
-	}
 
 	const VkGraphicsPipelineCreateInfo graphicsPipelineParams =
 	{
