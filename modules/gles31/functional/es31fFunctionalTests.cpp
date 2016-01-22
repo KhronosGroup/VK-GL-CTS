@@ -172,6 +172,7 @@ public:
 		addChild(new ShaderLibraryTest(m_context, "linkage_tessellation_geometry.test", "tessellation_geometry", "Tessellation and geometry shader"));
 		addChild(new ShaderLibraryTest(m_context, "linkage_shader_storage_block.test", "shader_storage_block", "Shader storage blocks"));
 		addChild(new ShaderLibraryTest(m_context, "linkage_io_block.test", "io_block", "Shader io blocks"));
+		addChild(new ShaderLibraryTest(m_context, "linkage_uniform.test", "uniform", "Uniform linkage"));
 	}
 };
 

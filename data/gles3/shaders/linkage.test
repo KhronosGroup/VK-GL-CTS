@@ -3607,43 +3607,6 @@ group uniform "Uniform linkage"
 	end
 
 	group block "Uniform blocks"
-		case differing_precision
-			version 300 es
-			expect build_successful
-			vertex ""
-				#version 300 es
-
-				uniform Block
-				{
-					highp vec4 val;
-				};
-
-				${VERTEX_DECLARATIONS}
-				out mediump float res;
-				void main()
-				{
-					res = val.x;
-					${VERTEX_OUTPUT}
-				}
-			""
-			fragment ""
-				#version 300 es
-
-				uniform Block
-				{
-					mediump vec4 val;
-				};
-
-				precision mediump float;
-				${FRAGMENT_DECLARATIONS}
-				in mediump float res;
-				void main()
-				{
-					dEQP_FragColor = val;
-				}
-			""
-		end
-
 		case type_mismatch
 			version 300 es
 			expect link_fail
