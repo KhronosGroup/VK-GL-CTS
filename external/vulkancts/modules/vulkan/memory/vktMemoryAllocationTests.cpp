@@ -378,6 +378,11 @@ tcu::TestStatus RandomAllocFreeTestInstance::iterate (void)
 		const MemoryType&	memoryType		= m_rng.choose<MemoryType>(heap.types.begin(), heap.types.end());
 		const VkDeviceSize	allocationSize	= 1 + (m_rng.getUint64() % (deUint64)(heap.maxMemoryUsage - heap.memoryUsage));
 
+
+		if ((allocationSize > (deUint64)(heap.maxMemoryUsage - heap.memoryUsage)) && (allocationSize != 1))
+			TCU_THROW(InternalError, "Test Error: trying to allocate memory more than the available heap size.");
+
+
 		const MemoryObject object =
 		{
 			(VkDeviceMemory)0,
