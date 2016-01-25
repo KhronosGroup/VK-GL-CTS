@@ -1241,23 +1241,11 @@ tcu::TestStatus imageFormatProperties (Context& context, ImageFormatPropertyCase
 																										curCreateFlags);
 				log << TestLog::Message << properties << "\n" << TestLog::EndMessage;
 
-				if (properties.maxExtent.width != 0 || properties.maxExtent.height != 0 || properties.maxExtent.depth != 0)
-				{
-					TCU_CHECK(properties.maxResourceSize > 0);
-					TCU_CHECK(properties.maxMipLevels > 0);
-					TCU_CHECK(properties.maxArrayLayers > 0);
-					TCU_CHECK((properties.sampleCounts & VK_SAMPLE_COUNT_1_BIT) != 0);
-					TCU_CHECK(imageType != VK_IMAGE_TYPE_1D || (properties.maxExtent.width >= 1 && properties.maxExtent.height == 1 && properties.maxExtent.depth == 1));
-					TCU_CHECK(imageType != VK_IMAGE_TYPE_2D || (properties.maxExtent.width >= 1 && properties.maxExtent.height >= 1 && properties.maxExtent.depth == 1));
-					TCU_CHECK(imageType != VK_IMAGE_TYPE_3D || (properties.maxExtent.width >= 1 && properties.maxExtent.height >= 1 && properties.maxExtent.depth >= 1));
-				}
-				else
-				{
-					TCU_CHECK(properties.sampleCounts == 0);
-					TCU_CHECK(properties.maxArrayLayers == 0);
-					TCU_CHECK(properties.maxMipLevels == 0);
-					TCU_CHECK(properties.maxResourceSize == 0);
-				}
+				// \todo [2016-01-24 pyry] Expand validation
+				TCU_CHECK((properties.sampleCounts & VK_SAMPLE_COUNT_1_BIT) != 0);
+				TCU_CHECK(imageType != VK_IMAGE_TYPE_1D || (properties.maxExtent.width >= 1 && properties.maxExtent.height == 1 && properties.maxExtent.depth == 1));
+				TCU_CHECK(imageType != VK_IMAGE_TYPE_2D || (properties.maxExtent.width >= 1 && properties.maxExtent.height >= 1 && properties.maxExtent.depth == 1));
+				TCU_CHECK(imageType != VK_IMAGE_TYPE_3D || (properties.maxExtent.width >= 1 && properties.maxExtent.height >= 1 && properties.maxExtent.depth >= 1));
 			}
 			catch (const Error& error)
 			{
