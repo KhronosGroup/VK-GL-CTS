@@ -88,7 +88,7 @@ static bool isSupportedOptimalTilingFormat (const InstanceInterface& instanceInt
 
 	instanceInterface.getPhysicalDeviceFormatProperties(device, format, &formatProps);
 
-	return (formatProps.linearTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT) != 0u;
+	return (formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT) != 0u;
 }
 
 static VkImageMemoryBarrier createImageMemoryBarrier (const VkImage&	image,
