@@ -252,8 +252,8 @@ tcu::TestStatus IndirectDraw::iterate (void)
 
 	vk::flushMappedMemoryRange(m_vk,
 							   m_context.getDevice(),
-							   m_vertexBuffer->getBoundMemory().getMemory(),
-							   m_vertexBuffer->getBoundMemory().getOffset(),
+							   m_indirectBuffer->getBoundMemory().getMemory(),
+							   m_indirectBuffer->getBoundMemory().getOffset(),
 							   dataSize);
 
 	m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
@@ -429,8 +429,8 @@ tcu::TestStatus IndirectDrawInstanced::iterate (void)
 
 	vk::flushMappedMemoryRange(m_vk,
 							   m_context.getDevice(),
-							   m_vertexBuffer->getBoundMemory().getMemory(),
-							   m_vertexBuffer->getBoundMemory().getOffset(),
+							   m_indirectBuffer->getBoundMemory().getMemory(),
+							   m_indirectBuffer->getBoundMemory().getOffset(),
 							   dataSize);
 
 	m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
