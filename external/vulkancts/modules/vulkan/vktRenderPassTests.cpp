@@ -2673,9 +2673,9 @@ public:
 	};
 
 			PixelStatus			(Status color, Status depth, Status stencil)
-		: m_status	((deUint8)(color << COLOR_OFFSET)
-					| (deUint8)((deUint8)depth << DEPTH_OFFSET)
-					| (deUint8)((deUint8)stencil << STENCIL_OFFSET))
+				: m_status	((deUint8)((color << COLOR_OFFSET)
+					| (depth << DEPTH_OFFSET)
+					| (stencil << STENCIL_OFFSET)))
 	{
 	}
 
@@ -2686,7 +2686,8 @@ public:
 	void	setColorStatus		(Status status)
 	{
 		DE_ASSERT(getColorStatus() == STATUS_UNDEFINED);
-		m_status |= (deUint8)(status << COLOR_OFFSET);
+		deUint8 statusFlags = (deUint8)(status << COLOR_OFFSET);
+		m_status |= statusFlags;
 	}
 
 	void	setDepthStatus		(Status status)
