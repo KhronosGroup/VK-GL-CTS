@@ -81,8 +81,21 @@ Linux 64-bit Debug:
 
 Android:
 
+Following command will build CTS into android/package/bin/dEQP-debug.apk.
+
 	$ python android/scripts/build.py
+
+The package can be installed by either running:
+
 	$ python android/scripts/install.py
+
+By default the CTS package will contain libdeqp.so built for armeabi-v7a, arm64-v8a,
+and x86 ABIs, but that can be changed in android/scripts/common.py script.
+
+To pick which ABI to use at install time, following commands must be used
+instead:
+
+	$ adb install --abi <ABI name> android/package/bin/dEQP-debug.apk /data/local/tmp/dEQP-debug.apk
 
 
 Building Mustpass
@@ -188,6 +201,9 @@ as part of the submission package (3). This can be done by running:
 In general bugfixes and changes to platform-specific code (mostly under
 framework/platform) are allowed.
 
+Note: When cherry-picking patches on top of release tag, please use "git cherry-pick -x"
+to include original commit hash in the commit message.
+
 Conformance statement (4) must be included in a file called STATEMENT-<adopter>
 and must contain following:
 
@@ -198,6 +214,23 @@ and must contain following:
 
 Note that product/cpu/os information is also captured in dEQP-VK.info.* tests
 if vk::Platform::describePlatform() is implemented.
+
+
+Conformance Criteria
+--------------------
+
+Conformance run is considered passing if all tests finish with allowed result
+codes. The test results are contained in the TestResults.qpa log. Each
+test case section contains XML tag Result, for example:
+
+	<Result StatusCode="Pass">Not validated</Result>
+
+The result code is the value of the StatusCode attribute. Following status
+codes are allowed:
+
+	Pass, NotSupported, QualityWarning, CompatibilityWarning
+
+TODO: Create script for verifying logs.
 
 
 Vulkan platform port
