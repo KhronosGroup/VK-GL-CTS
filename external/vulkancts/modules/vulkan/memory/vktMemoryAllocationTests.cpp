@@ -64,6 +64,12 @@ namespace memory
 {
 namespace
 {
+enum
+{
+	// The min max for allocation count is 4096. Use 4000 to take into account
+	// possible memory allocations made by layers etc.
+	MAX_ALLOCATION_COUNT = 4000
+};
 
 struct TestConfig
 {
@@ -114,6 +120,8 @@ tcu::TestStatus AllocateFreeTestInstance::iterate (void)
 	TestLog&								log					= m_context.getTestContext().getLog();
 	const VkDevice							device				= m_context.getDevice();
 	const DeviceInterface&					vkd					= m_context.getDeviceInterface();
+
+	DE_ASSERT(m_config.memoryAllocationCount <= MAX_ALLOCATION_COUNT);
 
 	if (m_memoryTypeIndex == 0)
 	{
@@ -271,6 +279,7 @@ public:
 
 private:
 	const size_t		m_opCount;
+	deUint32			m_memoryObjectCount;
 	size_t				m_opNdx;
 	de::Random			m_rng;
 	vector<Heap>		m_heaps;
@@ -279,10 +288,11 @@ private:
 };
 
 RandomAllocFreeTestInstance::RandomAllocFreeTestInstance	(Context& context, deUint32 seed)
-	: TestInstance	(context)
-	, m_opCount		(128)
-	, m_opNdx		(0)
-	, m_rng			(seed)
+	: TestInstance			(context)
+	, m_opCount				(128)
+	, m_memoryObjectCount	(0)
+	, m_opNdx				(0)
+	, m_rng					(seed)
 {
 	const VkPhysicalDevice					physicalDevice		= context.getPhysicalDevice();
 	const InstanceInterface&				vki					= context.getInstanceInterface();
@@ -358,7 +368,7 @@ tcu::TestStatus RandomAllocFreeTestInstance::iterate (void)
 		else
 			allocateMore = false;
 	}
-	else if (!m_nonEmptyHeaps.empty() && !m_nonFullHeaps.empty())
+	else if (!m_nonEmptyHeaps.empty() && !m_nonFullHeaps.empty() && (m_memoryObjectCount < MAX_ALLOCATION_COUNT))
 		allocateMore = m_rng.getBool(); // Randomize if both operations are doable.
 	else if (m_nonEmptyHeaps.empty())
 		allocateMore = true; // Allocate more if there are no objects to free.
@@ -401,6 +411,7 @@ tcu::TestStatus RandomAllocFreeTestInstance::iterate (void)
 
 		VK_CHECK(vkd.allocateMemory(device, &alloc, (const VkAllocationCallbacks*)DE_NULL, &heap.objects.back().memory));
 		TCU_CHECK(!!heap.objects.back().memory);
+		m_memoryObjectCount++;
 
 		// If heap was empty add to the non empty heaps.
 		if (heap.memoryUsage == 0)
@@ -430,6 +441,7 @@ tcu::TestStatus RandomAllocFreeTestInstance::iterate (void)
 
 		vkd.freeMemory(device, memoryObject.memory, (const VkAllocationCallbacks*)DE_NULL);
 		memoryObject.memory = (VkDeviceMemory)0;
+		m_memoryObjectCount--;
 
 		if (heap.memoryUsage >= heap.maxMemoryUsage && heap.memoryUsage - memoryObject.size < heap.maxMemoryUsage)
 			m_nonFullHeaps.push_back(heapNdx);
@@ -534,7 +546,7 @@ tcu::TestCaseGroup* createAllocationTests (tcu::TestContext& testCtx)
 						if (allocationSize < 4096)
 							continue;
 
-						config.memoryAllocationCount	= (deUint32)(50 * MiB / allocationSize);
+						config.memoryAllocationCount	= de::min((deUint32)(50 * MiB / allocationSize), (deUint32)MAX_ALLOCATION_COUNT);
 
 						if (config.memoryAllocationCount == 0
 							|| config.memoryAllocationCount == 1
@@ -581,7 +593,7 @@ tcu::TestCaseGroup* createAllocationTests (tcu::TestContext& testCtx)
 
 					if (allocationCount == -1)
 					{
-						config.memoryAllocationCount	= (int)((1.00f / 8.00f) / ((float)allocationPercent / 100.0f));
+						config.memoryAllocationCount	= de::min((deUint32)((1.00f / 8.00f) / ((float)allocationPercent / 100.0f)), (deUint32)MAX_ALLOCATION_COUNT);
 
 						if (config.memoryAllocationCount == 0
 							|| config.memoryAllocationCount == 1
