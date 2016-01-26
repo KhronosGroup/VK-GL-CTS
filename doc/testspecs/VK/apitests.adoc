@@ -575,7 +575,7 @@ Tests for various rendering features will provide significant coverage for comma
  * Various optimize flags combined with various command buffer sizes and contents
  ** Forcing optimize flags in other tests might be useful for finding cases that may break
 
-Command Pools (6.1 in VK 1.0 Spec)
+Command Pools (5.1 in VK 1.0 Spec)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 [cols="1,4,8,8", options="header"]
@@ -589,14 +589,14 @@ Command Pools (6.1 in VK 1.0 Spec)
 |6  | | ... without any bits set |
 |===
 
-Command Buffer Lifetime (6.2 in VK 1.0 Spec)
+Command Buffer Lifetime (5.2 in VK 1.0 Spec)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 [cols="1,4,8,8", options="header"]
 |===
 |No. | Tested area | Test Description | Relevant specification text
 |1  | Allocation | Allocate a single primary  buffer |
-|2  | | Allocate a large number of primare buffers |
+|2  | | Allocate a large number of primary buffers |
 |3  | | Allocate no primary buffers (bufferCount == 0) |
 |4  | | Allocate a single secondary buffer |
 |5  | | Allocate a large number of secondary buffers |
@@ -606,7 +606,7 @@ Command Buffer Lifetime (6.2 in VK 1.0 Spec)
 |9  | Resetting - implicit | Reset a command buffer by calling vkBeginCommandBuffer on a buffer that has already been recorded |
 |===
 
-Command Buffer Recording (6.3 in VK 1.0 Spec)
+Command Buffer Recording (5.3 in VK 1.0 Spec)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 [cols="1,4,8,8", options="header"]
@@ -620,7 +620,7 @@ Command Buffer Recording (6.3 in VK 1.0 Spec)
 |6  | | Record a secondary command buffer without VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT. Submit it twice in a row. |
 |7  | Recording for one time usage | Record a primary command buffer with VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT. Submit it, reset, record, and submit again. |
 |8  | | Record a secondary command buffer with VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT. Submit it, reset, record, and submit again. |
-|9  | Render pass ignoring  | if VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT flag is not set, the values of renderPass, framebuffer, and subpass members of the VkCommandBufferBeginInfo should be ignored | If flags has VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT set, the entire secondary command buffer is considered inside a render pass. In this case, the renderPass, framebuffer, and subpass members of the VkCommandBufferBeginInfo structure must be set as described below. Otherwise the renderPass, framebuffer, and subpass members of the VkCommandBufferBeginInfo structure are ignored, and the secondary command buffer may not contain commands that are only allowed inside a render pass.
+|9  | Render pass in seconday command buffer  | if VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT flag is not set, the values of renderPass, framebuffer, and subpass members of the VkCommandBufferBeginInfo should be ignored | If flags has VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT set, the entire secondary command buffer is considered inside a render pass. In this case, the renderPass, framebuffer, and subpass members of the VkCommandBufferBeginInfo structure must be set as described below. Otherwise the renderPass, framebuffer, and subpass members of the VkCommandBufferBeginInfo structure are ignored, and the secondary command buffer may not contain commands that are only allowed inside a render pass.
 |10  | Simultaneous use – primary buffers | Set flag VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT and submit two times simultanously | If flags does not have VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT set, the command buffer must not be pending execution more than once at any given time. A primary command buffer is considered to be pending execution from the time it is submitted via vkQueueSubmit until that submission completes.
 |11  | Simultaneous use – secondary buffers | Set VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT on secondary buffer, and use the secondary buffer twice in primary buffer | If VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT is not set on a secondary command buffer, that command buffer cannot be used more than once in a given primary command buffer.
 |12 | Recording with an active occlusion query | Recond a secondary command buffer with occlusionQueryEnable == VK_TRUE and queryFlags == VK_QUERY_CONTROL_PRECISE_BIT and execute it in a primary buffer with an active precise occlusion query |
@@ -628,7 +628,7 @@ Command Buffer Recording (6.3 in VK 1.0 Spec)
 |14 | | ... queryFlags == 0x00000000, imprecise occlusion query |
 |===
 
-Command Buffer Submission (6.4 in VK 1.0 Spec)
+Command Buffer Submission (5.4 in VK 1.0 Spec)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 [cols="1,4,8,8", options="header"]
@@ -643,7 +643,7 @@ Command Buffer Submission (6.4 in VK 1.0 Spec)
 |7  | Submission without a fence | Call vkQueueSubmit with VK_NULL_HANDLE passed as fence. | If fence is not VK_NULL_HANDLE, fence must be a valid VkFence handle
 |===
 
-Secondary Command Buffer Execution (6.6 in VK 1.0 Spec)
+Secondary Command Buffer Execution (5.6 in VK 1.0 Spec)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 [cols="1,4,8,8", options="header"]
@@ -655,7 +655,7 @@ Secondary Command Buffer Execution (6.6 in VK 1.0 Spec)
 |4  | Call from within a VkRenderPass | Call vkCmdExecuteCommands within a VkRenderPass with all elements of pCommandBuffers recorded with the VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT | If vkCmdExecuteCommands is being called within a VkRenderPass, any given element of pCommandBuffers must have been recorded with the VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT
 |===
 
-Commands Allowed Inside Command Buffers (6.7 in VK 1.0 Spec)
+Commands Allowed Inside Command Buffers
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 [cols="1,4,8,8", options="header"]
