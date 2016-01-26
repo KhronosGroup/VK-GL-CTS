@@ -1459,9 +1459,9 @@ void HostMemoryAccess::verify (VerifyContext& context, size_t commandIndex)
 							+ de::toString(pos));
 					break;
 				}
-			}
 
-			reference.set(pos, value ^ mask);
+				reference.set(pos, reference.get(pos) ^ mask);
+			}
 		}
 	}
 	else if (m_read)
@@ -1485,8 +1485,6 @@ void HostMemoryAccess::verify (VerifyContext& context, size_t commandIndex)
 					break;
 				}
 			}
-
-			reference.set(pos, value);
 		}
 	}
 	else if (m_write)
@@ -2090,16 +2088,21 @@ public:
 	void				prepare				(PrepareContext& context);
 	void				logSubmit			(TestLog& log, size_t commandIndex) const;
 	void				submit				(SubmitContext& context);
+	void				verify				(VerifyContext& context, size_t);
+
+private:
+	vk::VkDeviceSize	m_imageMemorySize;
 };
 
 void ImageTransition::logSubmit (TestLog& log, size_t commandIndex) const
 {
-	log << TestLog::Message << commandIndex << ":" << getName() << " Use pipeline barrier to trasition to VK_IMAGE_LAYOUT_GENERAL." << TestLog::EndMessage;
+	log << TestLog::Message << commandIndex << ":" << getName() << " Use pipeline barrier to transition to VK_IMAGE_LAYOUT_GENERAL." << TestLog::EndMessage;
 }
 
 void ImageTransition::prepare (PrepareContext& context)
 {
 	context.setImageLayout(vk::VK_IMAGE_LAYOUT_GENERAL);
+	m_imageMemorySize = context.getImageMemorySize();
 }
 
 void ImageTransition::submit (SubmitContext& context)
@@ -2129,6 +2132,11 @@ void ImageTransition::submit (SubmitContext& context)
 	};
 
 	vkd.cmdPipelineBarrier(cmd, ALL_PIPELINE_STAGES, ALL_PIPELINE_STAGES, (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier*)DE_NULL, 0, (const vk::VkBufferMemoryBarrier*)DE_NULL, 1, &barrier);
+}
+
+void ImageTransition::verify (VerifyContext& context, size_t)
+{
+	context.getReference().setUndefined(0, (size_t)m_imageMemorySize);
 }
 
 class FillBuffer : public CmdCommand
@@ -2351,8 +2359,6 @@ void BufferCopyToBuffer::verify (VerifyContext& context, size_t commandIndex)
 						break;
 					}
 				}
-				else
-					reference.set(pos, data[pos]);
 			}
 		}
 
@@ -2680,8 +2686,6 @@ void BufferCopyToImage::verify (VerifyContext& context, size_t commandIndex)
 						break;
 					}
 				}
-				else
-					reference.set(pos, data[pos]);
 			}
 		}
 
@@ -5596,6 +5600,7 @@ void applyOp (State& state, const Memory& memory, Op op)
 				state.hostFlushed = false;
 
 			state.memoryDefined = true;
+			state.imageDefined = false;
 			state.rng.getUint32();
 			break;
 
@@ -5712,6 +5717,7 @@ void applyOp (State& state, const Memory& memory, Op op)
 
 			state.commandBufferIsEmpty = false;
 			state.memoryDefined = true;
+			state.imageDefined = false;
 			state.cache.perform(vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_ACCESS_TRANSFER_WRITE_BIT);
 			break;
 
@@ -5732,8 +5738,8 @@ void applyOp (State& state, const Memory& memory, Op op)
 			DE_ASSERT(state.stage == STAGE_COMMAND_BUFFER);
 
 			state.commandBufferIsEmpty = false;
-			state.imageDefined = true;
 			state.memoryDefined = false;
+			state.imageDefined = true;
 			state.cache.perform(vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_ACCESS_TRANSFER_WRITE_BIT);
 			break;
 
