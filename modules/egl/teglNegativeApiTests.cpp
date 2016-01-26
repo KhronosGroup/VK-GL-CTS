@@ -456,24 +456,27 @@ void NegativeApiTests::init (void)
 
 			log << TestLog::EndSection;
 
-			log << TestLog::Section("Test2", "EGL_BAD_CONFIG or EGL_BAD_PARAMETER is generated if config is not an EGL frame buffer configuration and if buffer is not valid OpenVG image");
+			if (isAPISupported(EGL_OPENVG_API))
+			{
+				log << TestLog::Section("Test2", "EGL_BAD_CONFIG or EGL_BAD_PARAMETER is generated if config is not an EGL frame buffer configuration and if buffer is not valid OpenVG image");
 
-			expectNoSurface(eglCreatePbufferFromClientBuffer(display, EGL_OPENVG_IMAGE, (EGLClientBuffer)-1, (EGLConfig)-1, DE_NULL));
-			expectEitherError(EGL_BAD_CONFIG, EGL_BAD_PARAMETER);
+				expectNoSurface(eglCreatePbufferFromClientBuffer(display, EGL_OPENVG_IMAGE, (EGLClientBuffer)-1, (EGLConfig)-1, DE_NULL));
+				expectEitherError(EGL_BAD_CONFIG, EGL_BAD_PARAMETER);
 
-			log << TestLog::EndSection;
+				log << TestLog::EndSection;
 
-			log << TestLog::Section("Test3", "EGL_BAD_PARAMETER is generated if buftype is not EGL_OPENVG_IMAGE");
+				log << TestLog::Section("Test3", "EGL_BAD_PARAMETER is generated if buftype is not EGL_OPENVG_IMAGE");
 
-			log << TestLog::EndSection;
+				expectTrue(eglGetConfigs(display, &anyConfig, 1, &unused));
 
-			expectTrue(eglGetConfigs(display, &anyConfig, 1, &unused));
+				log << TestLog::EndSection;
 
-			log << TestLog::Section("Test4", "EGL_BAD_PARAMETER is generated if buffer is not valid OpenVG image");
-			expectNoSurface(eglCreatePbufferFromClientBuffer(display, EGL_OPENVG_IMAGE, (EGLClientBuffer)-1, anyConfig, DE_NULL));
-			expectError(EGL_BAD_PARAMETER);
+				log << TestLog::Section("Test4", "EGL_BAD_PARAMETER is generated if buffer is not valid OpenVG image");
+				expectNoSurface(eglCreatePbufferFromClientBuffer(display, EGL_OPENVG_IMAGE, (EGLClientBuffer)-1, anyConfig, DE_NULL));
+				expectError(EGL_BAD_PARAMETER);
 
-			log << TestLog::EndSection;
+				log << TestLog::EndSection;
+			}
 		});
 
 	static const EGLint s_validGenericPbufferAttrib[] = { EGL_WIDTH, 64, EGL_HEIGHT, 64, EGL_NONE };
