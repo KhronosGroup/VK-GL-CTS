@@ -539,8 +539,12 @@ public:
 
 	MemoryObject*						allocateRandom	(const DeviceInterface& vkd, VkDevice device, de::Random& rng)
 	{
-		const VkDeviceSize		size	= 1 + (rng.getUint64() % (de::max((m_heap.size / MAX_MEMORY_USAGE_DIV) - m_usage - 1ull, 1ull)));
+		const VkDeviceSize		size	= 1 + (rng.getUint64() % (de::max((deInt64)((m_heap.size / MAX_MEMORY_USAGE_DIV) - m_usage - 1ull), (deInt64)1)));
 		const deUint32			type	= rng.choose<deUint32>(m_memoryTypes.begin(), m_memoryTypes.end());
+
+		if ( (size > (VkDeviceSize)((m_heap.size / MAX_MEMORY_USAGE_DIV) - m_usage)) && (size != 1))
+			TCU_THROW(InternalError, "Test Error: trying to allocate memory more than the available heap size.");
+
 		MemoryObject* const		object	= new MemoryObject(vkd, device, size, type);
 
 		m_usage += size;
