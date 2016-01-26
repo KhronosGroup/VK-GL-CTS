@@ -207,6 +207,18 @@ bool isIntFormat (deUint32 format)
 		return tcu::getTextureChannelClass(glu::mapGLInternalFormat(format).type) == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER;
 }
 
+bool isFixedPointFormat (deUint32 format)
+{
+	if (glu::isCompressedFormat(format))
+		return false;
+	else
+	{
+		const tcu::TextureChannelClass channelClass = tcu::getTextureChannelClass(glu::mapGLInternalFormat(format).type);
+
+		return channelClass == tcu::TEXTURECHANNELCLASS_SIGNED_FIXED_POINT || channelClass == tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT;
+	}
+}
+
 bool isTextureTarget (deUint32 target)
 {
 	return target != GL_RENDERBUFFER;
@@ -652,7 +664,21 @@ void genRenderbufferImage (const glw::Functions&			gl,
 	{
 		vector<deUint8> texelBlock(format.getPixelSize());
 
-		genTexel(rng, moreRestrictiveFormat, format.getPixelSize(), 1, &(texelBlock[0]));
+		if (isFixedPointFormat(info.getFormat()))
+		{
+			// All zeroes is only bit pattern that fixed point values can be
+			// cleared to and that is valid floating point value.
+			if (isFloatFormat(moreRestrictiveFormat))
+				deMemset(&texelBlock[0], 0x0, texelBlock.size());
+			else
+			{
+				// Fixed point values can be only cleared to all 0 or 1.
+				const deInt32 fill = rng.getBool() ? 0xFF : 0x0;
+				deMemset(&texelBlock[0], fill, texelBlock.size());
+			}
+		}
+		else
+			genTexel(rng, moreRestrictiveFormat, format.getPixelSize(), 1, &(texelBlock[0]));
 
 		{
 			const tcu::ConstPixelBufferAccess texelAccess (format, 1, 1, 1, &(texelBlock[0]));
@@ -708,8 +734,6 @@ void genRenderbufferImage (const glw::Functions&			gl,
 	gl.bindFramebuffer(GL_FRAMEBUFFER, 0);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to unbind renderbufer and framebuffer.");
 }
-
-
 
 void genImage (const glw::Functions&			gl,
 			   de::Random&						rng,
