@@ -35,6 +35,32 @@
 namespace glu
 {
 
+static int getNumDepthBits (const tcu::TextureFormat& format)
+{
+	if (format.order == tcu::TextureFormat::DS)
+	{
+		const tcu::TextureFormat	depthOnlyFormat		= tcu::getEffectiveDepthStencilTextureFormat(format, tcu::Sampler::MODE_DEPTH);
+		return tcu::getTextureFormatBitDepth(depthOnlyFormat).x();
+	}
+	else if (format.order == tcu::TextureFormat::D)
+		return tcu::getTextureFormatBitDepth(format).x();
+	else
+		return 0;
+}
+
+static int getNumStencilBits (const tcu::TextureFormat& format)
+{
+	if (format.order == tcu::TextureFormat::DS)
+	{
+		const tcu::TextureFormat	stencilOnlyFormat		= tcu::getEffectiveDepthStencilTextureFormat(format, tcu::Sampler::MODE_STENCIL);
+		return tcu::getTextureFormatBitDepth(stencilOnlyFormat).x();
+	}
+	else if (format.order == tcu::TextureFormat::S)
+		return tcu::getTextureFormatBitDepth(format).x();
+	else
+		return 0;
+}
+
 static tcu::PixelFormat getPixelFormat (deUint32 colorFormat)
 {
 	const tcu::IVec4 bits = tcu::getTextureFormatBitDepth(glu::mapGLInternalFormat(colorFormat));
@@ -43,9 +69,10 @@ static tcu::PixelFormat getPixelFormat (deUint32 colorFormat)
 
 static void getDepthStencilBits (deUint32 depthStencilFormat, int* depthBits, int* stencilBits)
 {
-	const tcu::IVec4 bits = tcu::getTextureFormatBitDepth(glu::mapGLInternalFormat(depthStencilFormat));
-	*depthBits		= bits[0];
-	*stencilBits	= bits[3];
+	const tcu::TextureFormat	combinedFormat	= glu::mapGLInternalFormat(depthStencilFormat);
+
+	*depthBits		= getNumDepthBits(combinedFormat);
+	*stencilBits	= getNumStencilBits(combinedFormat);
 }
 
 deUint32 chooseColorFormat (const glu::RenderConfig& config)
@@ -103,15 +130,17 @@ deUint32 chooseDepthStencilFormat (const glu::RenderConfig& config)
 
 	for (int fmtNdx = 0; fmtNdx < DE_LENGTH_OF_ARRAY(s_formats); fmtNdx++)
 	{
-		const deUint32		format	= s_formats[fmtNdx];
-		const tcu::IVec4	bits	= tcu::getTextureFormatBitDepth(glu::mapGLInternalFormat(format));
+		const deUint32				format			= s_formats[fmtNdx];
+		const tcu::TextureFormat	combinedFormat	= glu::mapGLInternalFormat(format);
+		const int					depthBits		= getNumDepthBits(combinedFormat);
+		const int					stencilBits		= getNumStencilBits(combinedFormat);
 
 		if (config.depthBits != glu::RenderConfig::DONT_CARE &&
-			config.depthBits != bits[0])
+			config.depthBits != depthBits)
 			continue;
 
 		if (config.stencilBits != glu::RenderConfig::DONT_CARE &&
-			config.stencilBits != bits[3])
+			config.stencilBits != stencilBits)
 			continue;
 
 		return format;
