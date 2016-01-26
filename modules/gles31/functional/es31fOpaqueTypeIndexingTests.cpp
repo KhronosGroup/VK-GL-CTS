@@ -705,7 +705,7 @@ void BlockArrayIndexingCase::init (void)
 		gl.getIntegerv(limitPnames[m_shaderType], &maxBlocks);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glGetIntegerv()");
 
-		if (maxBlocks < m_numInstances)
+		if (maxBlocks < 2 + m_numInstances)
 			throw tcu::NotSupportedError("Not enough shader storage blocks supported for shader type");
 	}
 }
