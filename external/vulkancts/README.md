@@ -174,32 +174,34 @@ Test log will be written into /sdcard/TestResults.qpa
 Conformance Submission Package Requirements
 -------------------------------------------
 
-Conformance submission package must contain following:
+The conformance submission package must contain the following:
 
 1) Full test logs (TestResults.qpa) from CTS runs against all driver builds
 2) Result of "git status" and "git log" from CTS source directory
 3) Any patches used on top of release tag
 4) Conformance statement
 
-Test logs (1) should be named TestResults-<driver build type>.qpa, for example
-TestResults-armeabi-v7a.qpa. On platforms where multiple different driver
-builds (for example 64-bit and 32-bit) are present, CTS must be ran against
-all of them.
+Test logs (1) should be named <submission pkg dir>/TestResults-<driver build type>.qpa,
+for example TestResults-armeabi-v7a.qpa. On platforms where multiple different driver
+builds (for example 64-bit and 32-bit) are present, CTS logs must be provided
+for each driver build.
 
-CTS build must always be done from clean git repository that doesn't have any
+The CTS build must always be done from clean git repository that doesn't have any
 uncommitted changes. Thus it is necessary to run and capture output of "git
 status" and "git log" (2) in the source directory:
 
 	git status > <submission pkg dir>/git-status.txt
 	git log <release tag>..HEAD > <submission pkg dir>/git-log.txt
 
-Any changes made to CTS must be committed to the repository, and provided
+Any changes made to CTS must be committed to the local repository, and provided
 as part of the submission package (3). This can be done by running:
 
 	git format-patch -o <submission pkg dir> <release tag>..HEAD
 
-In general bugfixes and changes to platform-specific code (mostly under
-framework/platform) are allowed.
+In general, bugfixes and changes to platform-specific code (mostly under
+framework/platform) are allowed. The commit message for each change must
+include a clear description of the change and why it is necessary. Non-porting
+related changes must be accompanied by a waiver (see below).
 
 Note: When cherry-picking patches on top of release tag, please use "git cherry-pick -x"
 to include original commit hash in the commit message.
@@ -215,6 +217,32 @@ and must contain following:
 Note that product/cpu/os information is also captured in dEQP-VK.info.* tests
 if vk::Platform::describePlatform() is implemented.
 
+The actual submission package consists of the above set of files which must
+be bundled into a gzipped tar file named VK10_<adopter><_info>.tgz. <adopter>
+is the name of the Adopting member company, or some recognizable abbreviation.
+The <_info> field is optional. It may be used to uniquely identify a submission
+by OS, platform, date, or other criteria when making multiple submissions.
+
+One way to create a suiteable gzipped tar file is to execute the command:
+
+$ tar -cvzf <filename.tgz> -C <submission pkg dir> .
+
+where <submission pkg dir> is the directory containing the files from (1)-(4)
+from above. A submission package must contain all of the files listed above,
+and only those files.
+
+
+Waivers
+-------
+
+The process for requesting a waiver is to report the issue by filing a bug
+report in the Gitlab VulkanCTS project (TODO Github?). When creating the
+submission package, include references to the wiaver in the commit message of
+the relevant change. Including as much information as possible in your bug
+report (including a unified diff or a merge request of suggested file changes)
+will ensure the issue can be progressed as rapidly as possible. Issues must
+be labeled "Waiver" (TODO!) and identify the version of the CTS and affected
+tests.
 
 Conformance Criteria
 --------------------
