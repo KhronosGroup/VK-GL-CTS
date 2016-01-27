@@ -1071,6 +1071,16 @@ tcu::TestCaseGroup* createDecorationGroupGroup (tcu::TestContext& testCtx)
 	fillRandomScalars(rnd, -300.f, 300.f, &inputFloats3[0], numElements);
 	fillRandomScalars(rnd, -300.f, 300.f, &inputFloats4[0], numElements);
 
+
+	for (size_t ndx = 0; ndx < numElements; ++ndx)
+	{
+		inputFloats0[ndx] = deFloatFloor(inputFloats0[ndx]);
+		inputFloats1[ndx] = deFloatFloor(inputFloats1[ndx]);
+		inputFloats2[ndx] = deFloatFloor(inputFloats2[ndx]);
+		inputFloats3[ndx] = deFloatFloor(inputFloats3[ndx]);
+		inputFloats4[ndx] = deFloatFloor(inputFloats4[ndx]);
+	}
+
 	for (size_t ndx = 0; ndx < numElements; ++ndx)
 		outputFloats[ndx] = inputFloats0[ndx] + inputFloats1[ndx] + inputFloats2[ndx] + inputFloats3[ndx] + inputFloats4[ndx];
 
@@ -1625,6 +1635,9 @@ tcu::TestCaseGroup* createBlockOrderGroup (tcu::TestContext& testCtx)
 	vector<float>					outputFloats	(numElements, 0);
 
 	fillRandomScalars(rnd, -100.f, 100.f, &inputFloats[0], numElements);
+
+	for (size_t ndx = 0; ndx < numElements; ++ndx)
+		inputFloats[ndx] = deFloatFloor(inputFloats[ndx]);
 
 	for (size_t ndx = 0; ndx <= 50; ++ndx)
 		outputFloats[ndx] = -inputFloats[ndx];

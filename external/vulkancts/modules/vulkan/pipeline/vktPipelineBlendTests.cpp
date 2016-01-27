@@ -360,7 +360,7 @@ BlendTestInstance::BlendTestInstance (Context&									context,
 			*m_colorImage,										// VkImage					image;
 			VK_IMAGE_VIEW_TYPE_2D,								// VkImageViewType			viewType;
 			m_colorFormat,										// VkFormat					format;
-			getFormatComponentMapping(m_colorFormat),			// VkComponentMapping		components;
+			{VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
 			{ VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u }		// VkImageSubresourceRange	subresourceRange;
 		};
 

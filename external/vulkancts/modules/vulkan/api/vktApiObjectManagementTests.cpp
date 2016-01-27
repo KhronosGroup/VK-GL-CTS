@@ -1345,7 +1345,8 @@ struct GraphicsPipeline
 
 	static deUint32 getMaxConcurrent (Context&)
 	{
-		return DEFAULT_MAX_CONCURRENT_OBJECTS;
+		// \todo [2016-01-26 pyry] Scale this based on pipeline memory usage and available system memory
+		return 256;
 	}
 
 	// \todo [2015-09-17 pyry] More interesting configurations
@@ -1562,7 +1563,8 @@ struct ComputePipeline
 
 	static deUint32 getMaxConcurrent (Context&)
 	{
-		return DEFAULT_MAX_CONCURRENT_OBJECTS;
+		// \todo [2016-01-26 pyry] Scale this based on pipeline memory usage and available system memory
+		return 256;
 	}
 
 	// \todo [2015-09-17 pyry] More interesting configurations
