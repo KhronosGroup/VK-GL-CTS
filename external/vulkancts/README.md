@@ -237,7 +237,7 @@ Waivers
 
 The process for requesting a waiver is to report the issue by filing a bug
 report in the Gitlab VulkanCTS project (TODO Github?). When creating the
-submission package, include references to the wiaver in the commit message of
+submission package, include references to the waiver in the commit message of
 the relevant change. Including as much information as possible in your bug
 report (including a unified diff or a merge request of suggested file changes)
 will ensure the issue can be progressed as rapidly as possible. Issues must
