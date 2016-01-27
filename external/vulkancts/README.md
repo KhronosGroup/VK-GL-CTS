@@ -169,10 +169,10 @@ Conformance Submission Package Requirements
 
 The conformance submission package must contain the following:
 
-1) Full test logs (`TestResults.qpa`) from CTS runs against all driver builds
-2) Result of `git status` and `git log` from CTS source directory
-3) Any patches used on top of release tag
-4) Conformance statement
+1. Full test logs (`TestResults.qpa`) from CTS runs against all driver builds
+2. Result of `git status` and `git log` from CTS source directory
+3. Any patches used on top of release tag
+4. Conformance statement
 
 Test logs (1) should be named `<submission pkg dir>/TestResults-<driver build type>.qpa`,
 for example `TestResults-armeabi-v7a.qpa`. On platforms where multiple different driver
@@ -209,6 +209,14 @@ and must contain following:
 
 Note that product/cpu/os information is also captured in `dEQP-VK.info.*` tests
 if `vk::Platform::describePlatform()` is implemented.
+
+If the submission package covers multiple products, you can list them by appending
+additional `PRODUCT:` lines to the conformance statement. For example:
+
+	CONFORM_VERSION:         vulkan-cts-1.0.0-internal
+	PRODUCT:                 Product A
+	PRODUCT:                 Product B
+	...
 
 The actual submission package consists of the above set of files which must
 be bundled into a gzipped tar file named `VK10_<adopter><_info>.tgz`. `<adopter>`
