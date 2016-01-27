@@ -42,7 +42,7 @@ To download sources, run:
 
 	python external/fetch_sources.py
 
-You may need to re-run fetch_sources.py to update to the latest glslang and
+You may need to re-run `fetch_sources.py` to update to the latest glslang and
 spirv-tools revisions occasionally.
 
 NOTE: glslang integration is not yet available on Android due to a toolchain
@@ -196,7 +196,7 @@ In general, bugfixes and changes to platform-specific code (mostly under
 include a clear description of the change and why it is necessary. Non-porting
 related changes must be accompanied by a waiver (see below).
 
-Note: When cherry-picking patches on top of release tag, please use `git cherry-pick -x`
+NOTE: When cherry-picking patches on top of release tag, please use `git cherry-pick -x`
 to include original commit hash in the commit message.
 
 Conformance statement (4) must be included in a file called `STATEMENT-<adopter>`
@@ -259,7 +259,7 @@ Conformance Criteria
 --------------------
 
 Conformance run is considered passing if all tests finish with allowed result
-codes. The test results are contained in the TestResults.qpa log. Each
+codes. Test results are contained in the TestResults.qpa log. Each
 test case section contains XML tag Result, for example:
 
 	<Result StatusCode="Pass">Not validated</Result>
@@ -267,7 +267,10 @@ test case section contains XML tag Result, for example:
 The result code is the value of the StatusCode attribute. Following status
 codes are allowed:
 
-	Pass, NotSupported, QualityWarning, CompatibilityWarning
+	Pass
+	NotSupported
+	QualityWarning
+	CompatibilityWarning
 
 TODO: Create script for verifying logs.
 
@@ -276,7 +279,7 @@ Vulkan platform port
 --------------------
 
 Vulkan support from Platform implementation requires providing
-getVulkanPlatform() method in tcu::Platform class implementation.
+`getVulkanPlatform()` method in `tcu::Platform` class implementation.
 
 See `framework/common/tcuPlatform.hpp` and examples in
 `framework/platform/win32/tcuWin32Platform.cpp` and
