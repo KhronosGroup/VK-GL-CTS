@@ -177,7 +177,7 @@ The conformance submission package must contain the following:
 Test logs (1) should be named `<submission pkg dir>/TestResults-<driver build type>.qpa`,
 for example `TestResults-armeabi-v7a.qpa`. On platforms where multiple different driver
 builds (for example 64-bit and 32-bit) are present, CTS logs must be provided
-for each driver build.
+for each driver build as part of the submission package.
 
 The CTS build must always be done from clean git repository that doesn't have any
 uncommitted changes. Thus it is necessary to run and capture output of `git
@@ -231,6 +231,16 @@ One way to create a suiteable gzipped tar file is to execute the command:
 where `<submission pkg dir>` is the directory containing the files from (1)-(4)
 from above. A submission package must contain all of the files listed above,
 and only those files.
+
+As an example submission package could contain:
+
+	STATEMENT-Khronos
+	git-log.txt
+	git-status.txt
+	0001-Remove-Waived-Filtering-Tests.patch
+	0002-Fix-Pipeline-Parameters.patch
+	TestResults-armeabi-v7a.qpa
+	TestResults-arm64-v8a.qpa
 
 
 Waivers
