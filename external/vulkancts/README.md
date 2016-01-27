@@ -10,24 +10,24 @@ at http://source.android.com/devices/graphics/testing.html
 Requirements
 ------------
 
-Common:
+### Common
+
  * Git (for checking out sources)
  * Python 2.7.x (all recent versions in 2.x should work, 3.x is not supported)
  * CMake 2.8 or newer
 
-Win32:
+### Win32
+
  * Visual Studio 2013 or newer (glslang uses several C++11 features)
 
-Linux:
+### Linux
+
  * Standard toolchain (make, gcc/clang)
 
-Android:
+### Android
+
  * Android NDK r10e
- * Android SDK with following packages:
-   + SDK Tools
-   + SDK Platform-tools
-   + SDK Build-tools
-   + API 22
+ * Android SDK with: SDK Tools, SDK Platform-tools, SDK Build-tools, and API 22
  * Apache Ant
  * Windows: either NMake or JOM in PATH
 
@@ -40,7 +40,7 @@ and spirv-tools.
 
 To download sources, run:
 
-$ python external/fetch_sources.py
+	$ python external/fetch_sources.py
 
 You may need to re-run fetch_sources.py to update to the latest glslang and
 spirv-tools revisions occasionally.
@@ -53,33 +53,29 @@ of your choosing, and in that directory generate Makefiles or IDE project
 using cmake.
 
 
-Windows x86-32:
+### Windows x86-32
 
 	> cmake <path to vulkancts> -G"Visual Studio 12"
 	> start dEQP-Core-default.sln
 
-
-Windows x86-64:
+### Windows x86-64
 
 	> cmake <path to vulkancts> -G"Visual Studio 12 Win64"
 	> start dEQP-Core-default.sln
 
-
-Linux 32-bit Debug:
+### Linux 32-bit Debug
 
 	$ cmake <path to vulkancts> -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS=-m32 -DCMAKE_CXX_FLAGS=-m32
 	$ make -j
 
 Release build can be done by using -DCMAKE_BUILD_TYPE=Release
 
-
-Linux 64-bit Debug:
+### Linux 64-bit Debug
 
 	$ cmake <path to vulkancts> -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS=-m64 -DCMAKE_CXX_FLAGS=-m64
 	$ make -j
 
-
-Android:
+### Android
 
 Following command will build CTS into android/package/bin/dEQP-debug.apk.
 
@@ -118,7 +114,7 @@ SPIR-V binaries must be pre-built with following command:
 
 	$ python external/vulkancts/build_spirv_binaries.py
 
-Binaries will be written to external/vulkancts/data/vulkan/prebuilt/.
+Binaries will be written to `external/vulkancts/data/vulkan/prebuilt/`.
 
 Test modules (or in case of Android, the APK) must be re-built after building
 SPIR-V programs in order for the binaries to be available.
@@ -140,22 +136,19 @@ can be selected with:
 
 No other command line options are allowed.
 
-
-Win32:
+### Win32
 
 	> cd <builddir>/external/vulkancts/modules/vulkan
 	> Debug/deqp-vk.exe --deqp-caselist-file=...
 
 Test log will be written into TestResults.qpa
 
-
-Linux:
+### Linux
 
 	$ cd <builddir>/external/vulkancts/modules/vulkan
 	$ ./deqp-vk --deqp-vk-caselist-file=...
 
-
-Android:
+### Android
 
 	$ adb push <vulkancts>/external/vulkancts/mustpass/1.0.0/vk-default.txt /sdcard/vk-default.txt
 	$ adb shell
@@ -164,11 +157,11 @@ In device shell:
 
 	$ am start -n com.drawelements.deqp/android.app.NativeActivity -e cmdLine "deqp --deqp-caselist-file=/sdcard/vk-default.txt --deqp-log-images=disable --deqp-log-shader-sources=disable --deqp-log-filename=/sdcard/TestResults.qpa"
 
-Process can be followed by running:
+Test progress will be written to device log and can be displayed with:
 
 	$ adb logcat -s dEQP
 
-Test log will be written into /sdcard/TestResults.qpa
+Test log will be written into `/sdcard/TestResults.qpa`.
 
 
 Conformance Submission Package Requirements
@@ -176,19 +169,19 @@ Conformance Submission Package Requirements
 
 The conformance submission package must contain the following:
 
-1) Full test logs (TestResults.qpa) from CTS runs against all driver builds
-2) Result of "git status" and "git log" from CTS source directory
+1) Full test logs (`TestResults.qpa`) from CTS runs against all driver builds
+2) Result of `git status` and `git log` from CTS source directory
 3) Any patches used on top of release tag
 4) Conformance statement
 
-Test logs (1) should be named <submission pkg dir>/TestResults-<driver build type>.qpa,
-for example TestResults-armeabi-v7a.qpa. On platforms where multiple different driver
+Test logs (1) should be named `<submission pkg dir>/TestResults-<driver build type>.qpa`,
+for example `TestResults-armeabi-v7a.qpa`. On platforms where multiple different driver
 builds (for example 64-bit and 32-bit) are present, CTS logs must be provided
 for each driver build.
 
 The CTS build must always be done from clean git repository that doesn't have any
-uncommitted changes. Thus it is necessary to run and capture output of "git
-status" and "git log" (2) in the source directory:
+uncommitted changes. Thus it is necessary to run and capture output of `git
+status` and `git log` (2) in the source directory:
 
 	git status > <submission pkg dir>/git-status.txt
 	git log <release tag>..HEAD > <submission pkg dir>/git-log.txt
@@ -199,14 +192,14 @@ as part of the submission package (3). This can be done by running:
 	git format-patch -o <submission pkg dir> <release tag>..HEAD
 
 In general, bugfixes and changes to platform-specific code (mostly under
-framework/platform) are allowed. The commit message for each change must
+`framework/platform`) are allowed. The commit message for each change must
 include a clear description of the change and why it is necessary. Non-porting
 related changes must be accompanied by a waiver (see below).
 
-Note: When cherry-picking patches on top of release tag, please use "git cherry-pick -x"
+Note: When cherry-picking patches on top of release tag, please use `git cherry-pick -x`
 to include original commit hash in the commit message.
 
-Conformance statement (4) must be included in a file called STATEMENT-<adopter>
+Conformance statement (4) must be included in a file called `STATEMENT-<adopter>`
 and must contain following:
 
 	CONFORM_VERSION:         <git tag of CTS release>
@@ -214,20 +207,20 @@ and must contain following:
 	CPU:                     <string-value>
 	OS:                      <string-value>
 
-Note that product/cpu/os information is also captured in dEQP-VK.info.* tests
-if vk::Platform::describePlatform() is implemented.
+Note that product/cpu/os information is also captured in `dEQP-VK.info.*` tests
+if `vk::Platform::describePlatform()` is implemented.
 
 The actual submission package consists of the above set of files which must
-be bundled into a gzipped tar file named VK10_<adopter><_info>.tgz. <adopter>
+be bundled into a gzipped tar file named `VK10_<adopter><_info>.tgz`. `<adopter>`
 is the name of the Adopting member company, or some recognizable abbreviation.
-The <_info> field is optional. It may be used to uniquely identify a submission
+The `<_info>` field is optional. It may be used to uniquely identify a submission
 by OS, platform, date, or other criteria when making multiple submissions.
 
 One way to create a suiteable gzipped tar file is to execute the command:
 
-$ tar -cvzf <filename.tgz> -C <submission pkg dir> .
+	$ tar -cvzf <filename.tgz> -C <submission pkg dir> .
 
-where <submission pkg dir> is the directory containing the files from (1)-(4)
+where `<submission pkg dir>` is the directory containing the files from (1)-(4)
 from above. A submission package must contain all of the files listed above,
 and only those files.
 
@@ -267,9 +260,9 @@ Vulkan platform port
 Vulkan support from Platform implementation requires providing
 getVulkanPlatform() method in tcu::Platform class implementation.
 
-See framework/common/tcuPlatform.hpp and examples in
-framework/platform/win32/tcuWin32Platform.cpp and
-framework/platform/android/tcuAndroidPlatform.cpp.
+See `framework/common/tcuPlatform.hpp` and examples in
+`framework/platform/win32/tcuWin32Platform.cpp` and
+`framework/platform/android/tcuAndroidPlatform.cpp`.
 
 
 Null (dummy) driver
@@ -277,8 +270,8 @@ Null (dummy) driver
 
 For testing and development purposes it might be useful to be able to run
 tests on dummy Vulkan implementation. One such implementation is provided in
-vkNullDriver.cpp. To use that, implement vk::Platform::createLibrary() with
-vk::createNullDriver().
+vkNullDriver.cpp. To use that, implement `vk::Platform::createLibrary()` with
+`vk::createNullDriver()`.
 
 
 Cherry GUI
@@ -292,8 +285,8 @@ instructions in README to get started.
 To enable support for Vulkan tests, dEQP-VK module must be added to list of
 test packages.
 
-In cherry/testrunner.go, add following line to testPackageDescriptors list
-(line 608 in NewTestRunner function):
+In `cherry/testrunner.go`, add following line to `testPackageDescriptors` list
+(line 645 in `NewTestRunner` function):
 
 	{"dEQP-VK", "deqp-vk", "../external/vulkancts/modules/vulkan", dataDir + "dEQP-VK-cases.xml"},
 
