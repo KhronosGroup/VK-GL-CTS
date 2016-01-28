@@ -448,7 +448,7 @@ tcu::TestCaseGroup* createNoContractionGroup (tcu::TestContext& testCtx)
 		inputFloats1[ndx]	= 1.f + std::ldexp(1.f, -23); // 1 + 2^-23.
 		inputFloats2[ndx]	= 1.f - std::ldexp(1.f, -23); // 1 - 2^-23.
 		// Result for (1 + 2^-23) * (1 - 2^-23) - 1. With NoContraction, the multiplication will be
-		// conducted separately and the result is rounded to 1, or 0x1.fffffcp-1 
+		// conducted separately and the result is rounded to 1, or 0x1.fffffcp-1
 		// So the final result will be 0.f or 0x1p-24.
 		// If the operation is combined into a precise fused multiply-add, then the result would be
 		// 2^-46 (0xa8800000).
@@ -3792,7 +3792,7 @@ string makeTessEvalShaderAssembly(const map<string, string>& fragments)
 string makeGeometryShaderAssembly(const map<string, string>& fragments)
 {
 	static const char geometryShaderBoilerplate[] =
-		"OpCapability Geometry\n"
+		"OpCapability GeometryStreams\n"
 		"OpMemoryModel Logical GLSL450\n"
 		"OpEntryPoint Geometry %BP_main \"main\" %BP_out_gl_position %BP_gl_in %BP_out_color %BP_in_color\n"
 		"OpExecutionMode %BP_main Triangles\n"
@@ -3993,7 +3993,7 @@ void createCombinedModule(vk::SourceCollections& dst, InstanceContext)
 	// \todo [2015-12-07 awoloszyn] Remove OpName and OpMemberName at some point
 	dst.spirvAsmSources.add("module") <<
 		"OpCapability Shader\n"
-		"OpCapability Geometry\n"
+		"OpCapability GeometryStreams\n"
 		"OpCapability Tessellation\n"
 		"OpMemoryModel Logical GLSL450\n"
 
@@ -4353,7 +4353,7 @@ void createMultipleEntries(vk::SourceCollections& dst, InstanceContext)
 		"OpFunctionEnd\n";
 
 	dst.spirvAsmSources.add("geom") <<
-		"OpCapability Geometry\n"
+		"OpCapability GeometryStreams\n"
 		"OpMemoryModel Logical GLSL450\n"
 		"OpEntryPoint Geometry %geom1_main \"geom1\" %out_gl_position %gl_in %out_color %in_color\n"
 		"OpEntryPoint Geometry %geom2_main \"geom2\" %out_gl_position %gl_in %out_color %in_color\n"
