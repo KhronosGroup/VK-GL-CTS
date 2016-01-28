@@ -31,6 +31,7 @@
 #include "tcuTestLog.hpp"
 #include "gluShaderProgram.hpp"
 #include "deFloat16.h"
+#include "deMath.h"
 #include "tcuFloat.hpp"
 #include "tcuPixelFormat.hpp"
 #include "sglrContext.hpp"
@@ -236,17 +237,18 @@ private:
 class GLValue
 {
 public:
-
 	template<class Type>
 	class WrappedType
 	{
 	public:
 		static WrappedType<Type>	create			(Type value)							{ WrappedType<Type> v; v.m_value = value; return v; }
+		static WrappedType<Type>	fromFloat		(float value)							{ WrappedType<Type> v; v.m_value = (Type)value; return v; }
 		inline Type					getValue		(void) const							{ return m_value; }
 
 		inline WrappedType<Type>	operator+		(const WrappedType<Type>& other) const	{ return WrappedType<Type>::create((Type)(m_value + other.getValue())); }
 		inline WrappedType<Type>	operator*		(const WrappedType<Type>& other) const	{ return WrappedType<Type>::create((Type)(m_value * other.getValue())); }
 		inline WrappedType<Type>	operator/		(const WrappedType<Type>& other) const	{ return WrappedType<Type>::create((Type)(m_value / other.getValue())); }
+		inline WrappedType<Type>	operator%		(const WrappedType<Type>& other) const	{ return WrappedType<Type>::create((Type)(m_value % other.getValue())); }
 		inline WrappedType<Type>	operator-		(const WrappedType<Type>& other) const	{ return WrappedType<Type>::create((Type)(m_value - other.getValue())); }
 
 		inline WrappedType<Type>&	operator+=		(const WrappedType<Type>& other)		{ m_value += other.getValue(); return *this; }
@@ -268,27 +270,62 @@ public:
 		Type	m_value;
 	};
 
-	typedef WrappedType<deInt16>	Short;
-	typedef WrappedType<deUint16>	Ushort;
+	template<class Type>
+	class WrappedFloatType
+	{
+	public:
+		static WrappedFloatType<Type>	create			(Type value)							{ WrappedFloatType<Type> v; v.m_value = value; return v; }
+		static WrappedFloatType<Type>	fromFloat		(float value)							{ WrappedFloatType<Type> v; v.m_value = (Type)value; return v; }
+		inline Type						getValue		(void) const							{ return m_value; }
 
-	typedef WrappedType<deInt8>		Byte;
-	typedef WrappedType<deUint8>	Ubyte;
+		inline WrappedFloatType<Type>	operator+		(const WrappedFloatType<Type>& other) const	{ return WrappedFloatType<Type>::create((Type)(m_value + other.getValue())); }
+		inline WrappedFloatType<Type>	operator*		(const WrappedFloatType<Type>& other) const	{ return WrappedFloatType<Type>::create((Type)(m_value * other.getValue())); }
+		inline WrappedFloatType<Type>	operator/		(const WrappedFloatType<Type>& other) const	{ return WrappedFloatType<Type>::create((Type)(m_value / other.getValue())); }
+		inline WrappedFloatType<Type>	operator%		(const WrappedFloatType<Type>& other) const	{ return WrappedFloatType<Type>::create((Type)(deMod(m_value, other.getValue()))); }
+		inline WrappedFloatType<Type>	operator-		(const WrappedFloatType<Type>& other) const	{ return WrappedFloatType<Type>::create((Type)(m_value - other.getValue())); }
 
-	typedef WrappedType<float>		Float;
-	typedef WrappedType<double>		Double;
+		inline WrappedFloatType<Type>&	operator+=		(const WrappedFloatType<Type>& other)		{ m_value += other.getValue(); return *this; }
+		inline WrappedFloatType<Type>&	operator*=		(const WrappedFloatType<Type>& other)		{ m_value *= other.getValue(); return *this; }
+		inline WrappedFloatType<Type>&	operator/=		(const WrappedFloatType<Type>& other)		{ m_value /= other.getValue(); return *this; }
+		inline WrappedFloatType<Type>&	operator-=		(const WrappedFloatType<Type>& other)		{ m_value -= other.getValue(); return *this; }
 
-	typedef WrappedType<deInt32>	Int;
-	typedef WrappedType<deUint32>	Uint;
+		inline bool						operator==		(const WrappedFloatType<Type>& other) const	{ return m_value == other.m_value; }
+		inline bool						operator!=		(const WrappedFloatType<Type>& other) const	{ return m_value != other.m_value; }
+		inline bool						operator<		(const WrappedFloatType<Type>& other) const	{ return m_value < other.m_value; }
+		inline bool						operator>		(const WrappedFloatType<Type>& other) const	{ return m_value > other.m_value; }
+		inline bool						operator<=		(const WrappedFloatType<Type>& other) const	{ return m_value <= other.m_value; }
+		inline bool						operator>=		(const WrappedFloatType<Type>& other) const	{ return m_value >= other.m_value; }
+
+		inline							operator Type	(void) const							{ return m_value; }
+		template<class T>
+		inline T						to				(void) const							{ return (T)m_value; }
+	private:
+		Type	m_value;
+	};
+
+	typedef WrappedType<deInt16>		Short;
+	typedef WrappedType<deUint16>		Ushort;
+
+	typedef WrappedType<deInt8>			Byte;
+	typedef WrappedType<deUint8>		Ubyte;
+
+	typedef WrappedFloatType<float>		Float;
+	typedef WrappedFloatType<double>	Double;
+
+	typedef WrappedType<deInt32>		Int;
+	typedef WrappedType<deUint32>		Uint;
 
 	class Half
 	{
 	public:
 		static Half			create			(float value)				{ Half h; h.m_value = floatToHalf(value); return h; }
+		static Half			fromFloat		(float value)				{ Half h; h.m_value = floatToHalf(value); return h; }
 		inline deFloat16	getValue		(void) const				{ return m_value; }
 
 		inline Half			operator+		(const Half& other) const	{ return create(halfToFloat(m_value) + halfToFloat(other.getValue())); }
 		inline Half			operator*		(const Half& other) const	{ return create(halfToFloat(m_value) * halfToFloat(other.getValue())); }
 		inline Half			operator/		(const Half& other) const	{ return create(halfToFloat(m_value) / halfToFloat(other.getValue())); }
+		inline Half			operator%		(const Half& other) const	{ return create(deFloatMod(halfToFloat(m_value), halfToFloat(other.getValue()))); }
 		inline Half			operator-		(const Half& other) const	{ return create(halfToFloat(m_value) - halfToFloat(other.getValue())); }
 
 		inline Half&		operator+=		(const Half& other)			{ m_value = floatToHalf(halfToFloat(other.getValue()) + halfToFloat(m_value)); return *this; }
@@ -316,11 +353,13 @@ public:
 	{
 	public:
 		static Fixed		create			(deInt32 value)				{ Fixed v; v.m_value = value; return v; }
+		static Fixed		fromFloat		(float value)				{ Fixed v; v.m_value = (deInt32)(value * 32768.0f); return v; }
 		inline deInt32		getValue		(void) const				{ return m_value; }
 
 		inline Fixed		operator+		(const Fixed& other) const	{ return create(m_value + other.getValue()); }
 		inline Fixed		operator*		(const Fixed& other) const	{ return create(m_value * other.getValue()); }
 		inline Fixed		operator/		(const Fixed& other) const	{ return create(m_value / other.getValue()); }
+		inline Fixed		operator%		(const Fixed& other) const	{ return create(m_value % other.getValue()); }
 		inline Fixed		operator-		(const Fixed& other) const	{ return create(m_value - other.getValue()); }
 
 		inline Fixed&		operator+=		(const Fixed& other)		{ m_value += other.getValue(); return *this; }
