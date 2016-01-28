@@ -716,6 +716,7 @@ tcu::TestCaseGroup* createOpCopyMemoryGroup (tcu::TestContext& testCtx)
 		"OpName %id             \"gl_GlobalInvocationID\"\n"
 
 		"OpDecorate %id BuiltIn GlobalInvocationId\n"
+		"OpDecorate %vec4arr ArrayStride 16\n"
 		"OpMemberDecorate %inbuf 0 Offset 0\n"
 		"OpMemberDecorate %inbuf 1 Offset 16\n"
 		"OpMemberDecorate %inbuf 2 Offset 32\n"
@@ -770,6 +771,7 @@ tcu::TestCaseGroup* createOpCopyMemoryGroup (tcu::TestContext& testCtx)
 		"OpName %id             \"gl_GlobalInvocationID\"\n"
 
 		"OpDecorate %id BuiltIn GlobalInvocationId\n"
+		"OpDecorate %f32arr100 ArrayStride 4\n"
 
 		+ string(s_InputOutputBufferTraits) + string(s_CommonTypes) + string(s_InputOutputBuffer) +
 
