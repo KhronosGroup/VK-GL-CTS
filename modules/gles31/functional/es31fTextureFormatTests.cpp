@@ -288,7 +288,14 @@ void TextureBufferFormatCase::init (void)
 	tcu::Vec4				colorA	(spec.valueMin.x(), spec.valueMax.y(), spec.valueMin.z(), spec.valueMax.w());
 	tcu::Vec4				colorB	(spec.valueMax.x(), spec.valueMin.y(), spec.valueMax.z(), spec.valueMin.w());
 
+	if (!m_context.getContextInfo().isExtensionSupported("GL_OES_texture_buffer")
+		&& !m_context.getContextInfo().isExtensionSupported("GL_EXT_texture_buffer"))
+	{
+		TCU_THROW(NotSupportedError, "Texture buffers not supported");
+	}
+
 	m_maxTextureBufferSize = m_context.getContextInfo().getInt(GL_MAX_TEXTURE_BUFFER_SIZE);
+
 	if (m_maxTextureBufferSize <= 0)
 		TCU_THROW(NotSupportedError, "GL_MAX_TEXTURE_BUFFER_SIZE > 0 required");
 
