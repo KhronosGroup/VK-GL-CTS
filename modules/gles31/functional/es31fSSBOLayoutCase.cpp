@@ -1641,7 +1641,7 @@ bool compareComponents (glu::DataType scalarType, const void* ref, const void* r
 			const float		refVal		= *((const float*)ref + ndx);
 			const float		resVal		= *((const float*)res + ndx);
 
-			if (deFloatAbs(resVal - refVal) >= threshold)
+			if (!(deFloatAbs(resVal - refVal) <= threshold))
 				return false;
 		}
 	}
