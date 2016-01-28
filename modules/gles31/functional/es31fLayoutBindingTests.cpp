@@ -201,8 +201,8 @@ class LayoutBindingRenderCase : public TestCase
 public:
 	enum
 	{
-		TEST_RENDER_WIDTH	= 256,
-		TEST_RENDER_HEIGHT	= 256,
+		MAX_TEST_RENDER_WIDTH	= 256,
+		MAX_TEST_RENDER_HEIGHT	= 256,
 		TEST_TEXTURE_SIZE	= 1,
 	};
 
@@ -221,6 +221,8 @@ public:
 	virtual void 						init							(void);
 	virtual void 						deinit							(void);
 
+	int									getRenderWidth					(void) const { return de::min((int)MAX_TEST_RENDER_WIDTH, m_context.getRenderTarget().getWidth()); }
+	int									getRenderHeight					(void) const { return de::min((int)MAX_TEST_RENDER_HEIGHT, m_context.getRenderTarget().getHeight()); }
 protected:
 	virtual glu::ShaderProgram*			generateShaders					(void) const = 0;
 
@@ -519,7 +521,7 @@ void LayoutBindingRenderCase::initRenderState (void)
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
 
 	gl.useProgram(m_program->getProgram());
-	gl.viewport(0, 0, TEST_RENDER_WIDTH, TEST_RENDER_HEIGHT);
+	gl.viewport(0, 0, getRenderWidth(), getRenderHeight());
 	gl.clearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to set render state");
 }
@@ -527,7 +529,7 @@ void LayoutBindingRenderCase::initRenderState (void)
 bool LayoutBindingRenderCase::drawAndVerifyResult (const Vec4& expectedColor)
 {
 	const glw::Functions&	gl					= m_context.getRenderContext().getFunctions();
-	tcu::Surface			reference			(TEST_RENDER_WIDTH, TEST_RENDER_HEIGHT);
+	tcu::Surface			reference			(getRenderWidth(), getRenderHeight());
 
 	// the point of these test is to check layout_binding. For this purpose, we can use quite
 	// large thresholds.
@@ -544,7 +546,7 @@ bool LayoutBindingRenderCase::drawAndVerifyResult (const Vec4& expectedColor)
 	GLU_EXPECT_NO_ERROR(gl.getError(), "Drawing failed");
 
 	// Verify
-	tcu::Surface result(TEST_RENDER_WIDTH, TEST_RENDER_HEIGHT);
+	tcu::Surface result(getRenderWidth(), getRenderHeight());
 	m_testCtx.getLog() << TestLog::Message << "Reading pixels" << TestLog::EndMessage;
 	glu::readPixels(m_context.getRenderContext(), 0, 0, result.getAccess());
 	GLU_EXPECT_NO_ERROR(gl.getError(), "Read pixels failed");
