@@ -1104,9 +1104,6 @@ void CompressedTexture::setStorage (CompressedTexFormat format, int width, int h
 	m_height	= height;
 	m_depth		= depth;
 
-	if (isAstcFormat(m_format) && m_depth > 1)
-		throw InternalError("3D ASTC textures not currently supported");
-
 	if (m_format != COMPRESSEDTEXFORMAT_LAST)
 	{
 		const IVec3	blockPixelSize	= getBlockPixelSize(m_format);

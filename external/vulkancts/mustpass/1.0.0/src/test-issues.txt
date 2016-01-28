@@ -1,0 +1,21 @@
+# Issue 217: Built-in function precision test issues
+dEQP-VK.glsl.builtin.precision.dot.highp_compute.*
+dEQP-VK.glsl.builtin.precision.smoothstep.mediump_compute.*
+dEQP-VK.glsl.builtin.precision.smoothstep.highp_compute.*
+dEQP-VK.glsl.builtin.precision.atan2.mediump_compute.*
+dEQP-VK.glsl.builtin.precision.atan2.highp_compute.*
+dEQP-VK.glsl.builtin.precision.acosh.highp_compute.*
+dEQP-VK.glsl.builtin.precision.atanh.highp_compute.*
+dEQP-VK.glsl.builtin.precision.atanh.mediump_compute.*
+dEQP-VK.glsl.builtin.precision.reflect.mediump_compute.scalar
+dEQP-VK.glsl.builtin.precision.reflect.highp_compute.scalar
+dEQP-VK.glsl.builtin.precision.acos.mediump_compute.*
+dEQP-VK.glsl.builtin.precision.atan.mediump_compute.*
+dEQP-VK.glsl.builtin.precision.inverse.highp_compute.mat2
+dEQP-VK.glsl.builtin.precision.refract.*
+
+# Issue 233: Negative zero flat varying issue
+dEQP-VK.glsl.builtin.function.common.frexp.float_highp_vertex
+dEQP-VK.glsl.builtin.function.common.frexp.vec2_highp_vertex
+dEQP-VK.glsl.builtin.function.common.frexp.vec3_highp_vertex
+dEQP-VK.glsl.builtin.function.common.frexp.vec4_highp_vertex

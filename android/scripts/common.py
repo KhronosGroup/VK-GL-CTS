@@ -211,7 +211,7 @@ def getExtraBuildArgs (generator):
 
 NDK_HOST_OS_NAMES = [
 	"windows",
-	"windows_x86-64",
+	"windows-x86_64",
 	"darwin-x86",
 	"darwin-x86_64",
 	"linux-x86",
@@ -236,7 +236,7 @@ NATIVE_LIBS				= [
 		NativeLib(21,		"arm64-v8a",	'android-arm64'),	# ARM64 v8a ABI
 	]
 
-ANDROID_JAVA_API		= "android-13"
+ANDROID_JAVA_API		= "android-22"
 NATIVE_LIB_NAME			= "libdeqp.so"
 
 def selectNDKPath ():

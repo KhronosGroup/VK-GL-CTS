@@ -22,6 +22,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "tcuAndroidPlatform.hpp"
+#include "tcuAndroidUtil.hpp"
 #include "gluRenderContext.hpp"
 #include "egluNativeDisplay.hpp"
 #include "egluNativeWindow.hpp"
@@ -29,6 +30,7 @@
 #include "egluUtil.hpp"
 #include "eglwLibrary.hpp"
 #include "eglwEnums.hpp"
+#include "tcuFunctionLibrary.hpp"
 
 // Assume no call translation is needed
 #include <android/native_window.h>
@@ -158,7 +160,6 @@ eglu::NativeWindow* NativeWindowFactory::createWindow (eglu::NativeDisplay* nati
 	return createWindow(params, format);
 }
 
-
 eglu::NativeWindow* NativeWindowFactory::createWindow (const eglu::WindowParams& params, int32_t format) const
 {
 	Window* window = m_windowRegistry.tryAcquireWindow();
@@ -183,9 +184,31 @@ eglu::NativeDisplay* NativeDisplayFactory::createDisplay (const EGLAttrib* attri
 	return new NativeDisplay();
 }
 
+// Vulkan
+
+class VulkanLibrary : public vk::Library
+{
+public:
+	VulkanLibrary (void)
+		: m_library	("libvulkan.so")
+		, m_driver	(m_library)
+	{
+	}
+
+	const vk::PlatformInterface& getPlatformInterface (void) const
+	{
+		return m_driver;
+	}
+
+private:
+	const tcu::DynamicFunctionLibrary	m_library;
+	const vk::PlatformDriver			m_driver;
+};
+
 // Platform
 
-Platform::Platform (void)
+Platform::Platform (NativeActivity& activity)
+	: m_activity(activity)
 {
 	m_nativeDisplayFactoryRegistry.registerFactory(new NativeDisplayFactory(m_windowRegistry));
 	m_contextFactoryRegistry.registerFactory(new eglu::GLContextFactory(m_nativeDisplayFactoryRegistry));
@@ -199,6 +222,16 @@ bool Platform::processEvents (void)
 {
 	m_windowRegistry.garbageCollect();
 	return true;
+}
+
+vk::Library* Platform::createLibrary (void) const
+{
+	return new VulkanLibrary();
+}
+
+void Platform::describePlatform (std::ostream& dst) const
+{
+	tcu::Android::describePlatform(m_activity.getNativeActivity(), dst);
 }
 
 } // Android

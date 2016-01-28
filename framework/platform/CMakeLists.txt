@@ -98,6 +98,10 @@ if (NOT DEFINED TCUTIL_PLATFORM_SRCS)
 endif ()
 
 add_library(tcutil-platform STATIC ${TCUTIL_PLATFORM_SRCS})
+
+# Add vkutil to the deps before tcutil so that it picks up the c++11 dependencies
+target_link_libraries(tcutil-platform vkutil)
+
 target_link_libraries(tcutil-platform tcutil ${TCUTIL_PLATFORM_LIBS})
 
 # Always link to glutil as some platforms such as Win32 always support GL

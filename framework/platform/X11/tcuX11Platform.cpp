@@ -25,7 +25,10 @@
 
 #include "deUniquePtr.hpp"
 #include "gluPlatform.hpp"
+#include "vkPlatform.hpp"
 #include "tcuX11.hpp"
+#include "tcuFunctionLibrary.hpp"
+#include "deMemory.h"
 
 #if defined (DEQP_SUPPORT_GLX)
 #	include "tcuX11GlxPlatform.hpp"
@@ -34,6 +37,7 @@
 #	include "tcuX11EglPlatform.hpp"
 #endif
 
+#include <sys/utsname.h>
 
 namespace tcu
 {
@@ -49,16 +53,59 @@ public:
 	}
 };
 
+class VulkanLibrary : public vk::Library
+{
+public:
+	VulkanLibrary (void)
+		: m_library	("libvulkan-1.so")
+		, m_driver	(m_library)
+	{
+	}
+
+	const vk::PlatformInterface& getPlatformInterface (void) const
+	{
+		return m_driver;
+	}
+
+private:
+	const tcu::DynamicFunctionLibrary	m_library;
+	const vk::PlatformDriver			m_driver;
+};
+
+class X11VulkanPlatform : public vk::Platform
+{
+public:
+	vk::Library* createLibrary (void) const
+	{
+		return new VulkanLibrary();
+	}
+
+	void describePlatform (std::ostream& dst) const
+	{
+		utsname		sysInfo;
+
+		deMemset(&sysInfo, 0, sizeof(sysInfo));
+
+		if (uname(&sysInfo) != 0)
+			throw std::runtime_error("uname() failed");
+
+		dst << "OS: " << sysInfo.sysname << " " << sysInfo.release << " " << sysInfo.version << "\n";
+		dst << "CPU: " << sysInfo.machine << "\n";
+	}
+};
+
 class X11Platform : public tcu::Platform
 {
 public:
-							X11Platform		(void);
-	bool					processEvents	(void) { return !m_eventState.getQuitFlag(); }
-	const glu::Platform&	getGLPlatform	(void) const { return m_glPlatform; }
+							X11Platform			(void);
+	bool					processEvents		(void) { return !m_eventState.getQuitFlag(); }
+	const glu::Platform&	getGLPlatform		(void) const { return m_glPlatform; }
 
 #if defined (DEQP_SUPPORT_EGL)
-	const eglu::Platform&	getEGLPlatform	(void) const { return m_eglPlatform; }
+	const eglu::Platform&	getEGLPlatform		(void) const { return m_eglPlatform; }
 #endif // DEQP_SUPPORT_EGL
+
+	const vk::Platform&		getVulkanPlatform	(void) const { return m_vkPlatform; }
 
 private:
 	EventState				m_eventState;
@@ -66,6 +113,7 @@ private:
 	x11::egl::Platform		m_eglPlatform;
 #endif // DEQP_SPPORT_EGL
 	X11GLPlatform			m_glPlatform;
+	X11VulkanPlatform		m_vkPlatform;
 };
 
 X11Platform::X11Platform (void)

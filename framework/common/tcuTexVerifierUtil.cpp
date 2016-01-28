@@ -157,6 +157,5 @@ int wrap (Sampler::WrapMode mode, int c, int size)
 			return 0;
 	}
 }
-
 } // TexVerifierUtil
 } // tcu

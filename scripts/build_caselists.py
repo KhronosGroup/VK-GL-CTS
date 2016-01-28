@@ -38,11 +38,12 @@ class Module:
 		self.binName	= binName
 
 MODULES = [
-	Module("dE-IT",			"internal",		"de-internal-tests"),
-	Module("dEQP-EGL",		"egl",			"deqp-egl"),
-	Module("dEQP-GLES2",	"gles2",		"deqp-gles2"),
-	Module("dEQP-GLES3",	"gles3",		"deqp-gles3"),
-	Module("dEQP-GLES31",	"gles31",		"deqp-gles31"),
+	Module("dE-IT",			"internal",								"de-internal-tests"),
+	Module("dEQP-EGL",		"egl",									"deqp-egl"),
+	Module("dEQP-GLES2",	"gles2",								"deqp-gles2"),
+	Module("dEQP-GLES3",	"gles3",								"deqp-gles3"),
+	Module("dEQP-GLES31",	"gles31",								"deqp-gles31"),
+	Module("dEQP-VK",		"../external/vulkancts/modules/vulkan",	"deqp-vk"),
 ]
 
 DEFAULT_BUILD_DIR	= os.path.join(tempfile.gettempdir(), "deqp-caselists", "{targetName}-{buildType}")

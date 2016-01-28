@@ -41,12 +41,17 @@ bool Platform::processEvents (void)
 
 const glu::Platform& Platform::getGLPlatform (void) const
 {
-	throw tcu::NotSupportedError("OpenGL (ES) is not supported", DE_NULL, __FILE__, __LINE__);
+	TCU_THROW(NotSupportedError, "OpenGL (ES) is not supported");
 }
 
 const eglu::Platform& Platform::getEGLPlatform (void) const
 {
-	throw tcu::NotSupportedError("EGL is not supported", DE_NULL, __FILE__, __LINE__);
+	TCU_THROW(NotSupportedError, "EGL is not supported");
+}
+
+const vk::Platform& Platform::getVulkanPlatform (void) const
+{
+	TCU_THROW(NotSupportedError, "Vulkan is not supported");
 }
 
 } // tcu
