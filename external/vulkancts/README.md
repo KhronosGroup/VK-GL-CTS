@@ -272,7 +272,11 @@ codes are allowed:
 	QualityWarning
 	CompatibilityWarning
 
-TODO: Create script for verifying logs.
+Submission package can be verified using `external/vulkancts/verify_submission.py`
+script. The script takes two arguments: path to extracted submission package
+and path to current mustpass list. For example:
+
+	python external/vulkancts/verify_submission.py VK_10_Khronos_1/ external/vulkancts/mustpass/1.0.0/vk-default.txt
 
 
 Vulkan platform port
