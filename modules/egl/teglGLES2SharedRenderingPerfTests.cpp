@@ -495,7 +495,7 @@ TestContext::TestContext (EglTestContext& testCtx, EGLDisplay eglDisplay, EGLCon
 		|| m_config.textureType == TestConfig::TEXTURETYPE_SHARED_IMAGE
 		|| m_config.textureType == TestConfig::TEXTURETYPE_SHARED_IMAGE_TEXTURE)
 	{
-		const vector<string> extensions = eglu::getClientExtensions(egl, m_eglDisplay);
+		const vector<string> extensions = eglu::getDisplayExtensions(egl, m_eglDisplay);
 
 		if (!de::contains(extensions.begin(), extensions.end(), "EGL_KHR_image_base") ||
 			!de::contains(extensions.begin(), extensions.end(), "EGL_KHR_gl_texture_2D_image"))

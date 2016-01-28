@@ -83,12 +83,12 @@ bool hasExtension (const Library& egl, EGLDisplay display, const string& str)
 	return de::contains(extensions.begin(), extensions.end(), str);
 }
 
-vector<string> getPlatformExtensions (const Library& egl)
+vector<string> getClientExtensions (const Library& egl)
 {
 	return getExtensions(egl, EGL_NO_DISPLAY);
 }
 
-vector<string> getClientExtensions (const Library& egl, EGLDisplay display)
+vector<string> getDisplayExtensions (const Library& egl, EGLDisplay display)
 {
 	DE_ASSERT(display != EGL_NO_DISPLAY);
 
@@ -236,7 +236,7 @@ EGLDisplay getDisplay (NativeDisplay& nativeDisplay)
 
 	if (supportsPlatformGetDisplay)
 	{
-		const vector<string> platformExts = getPlatformExtensions(egl);
+		const vector<string> platformExts = getClientExtensions(egl);
 		usePlatformExt = de::contains(platformExts.begin(), platformExts.end(), string("EGL_EXT_platform_base")) &&
 						 de::contains(platformExts.begin(), platformExts.end(), string(nativeDisplay.getPlatformExtensionName()));
 	}
@@ -289,7 +289,7 @@ EGLSurface createWindowSurface (NativeDisplay& nativeDisplay, NativeWindow& wind
 
 	if (supportsPlatformCreate)
 	{
-		const vector<string> platformExts = getPlatformExtensions(egl);
+		const vector<string> platformExts = getClientExtensions(egl);
 		usePlatformExt = de::contains(platformExts.begin(), platformExts.end(), string("EGL_EXT_platform_base")) &&
 						 de::contains(platformExts.begin(), platformExts.end(), string(nativeDisplay.getPlatformExtensionName()));
 	}
@@ -330,7 +330,7 @@ EGLSurface createPixmapSurface (NativeDisplay& nativeDisplay, NativePixmap& pixm
 
 	if (supportsPlatformCreate)
 	{
-		const vector<string> platformExts = getPlatformExtensions(egl);
+		const vector<string> platformExts = getClientExtensions(egl);
 		usePlatformExt = de::contains(platformExts.begin(), platformExts.end(), string("EGL_EXT_platform_base")) &&
 						 de::contains(platformExts.begin(), platformExts.end(), string(nativeDisplay.getPlatformExtensionName()));
 	}

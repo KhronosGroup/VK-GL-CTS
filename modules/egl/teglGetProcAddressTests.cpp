@@ -127,7 +127,7 @@ void GetProcAddressCase::init (void)
 	DE_ASSERT(m_display == EGL_NO_DISPLAY);
 
 	m_display	= eglu::getAndInitDisplay(m_eglTestCtx.getNativeDisplay());
-	m_supported	= eglu::getClientExtensions(m_eglTestCtx.getLibrary(), m_display);
+	m_supported	= eglu::getDisplayExtensions(m_eglTestCtx.getLibrary(), m_display);
 
 	m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
 }

@@ -56,8 +56,8 @@ std::vector<eglw::EGLint>		attribMapToList				(const AttribMap& map);
 
 Version							getVersion					(const eglw::Library& egl, eglw::EGLDisplay display);
 
-std::vector<std::string>		getPlatformExtensions		(const eglw::Library& egl);
-std::vector<std::string>		getClientExtensions			(const eglw::Library& egl, eglw::EGLDisplay display);
+std::vector<std::string>		getClientExtensions			(const eglw::Library& egl);
+std::vector<std::string>		getDisplayExtensions		(const eglw::Library& egl, eglw::EGLDisplay display);
 bool							hasExtension				(const eglw::Library& egl, eglw::EGLDisplay display, const std::string& extName);
 
 std::vector<eglw::EGLConfig>	getConfigs					(const eglw::Library& egl, eglw::EGLDisplay display);

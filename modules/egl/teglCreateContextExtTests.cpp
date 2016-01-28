@@ -369,7 +369,7 @@ void CreateContextExtCase::checkRequiredExtensions (void)
 {
 	bool			isOk = true;
 	set<string>		requiredExtensions;
-	vector<string>	extensions			= eglu::getClientExtensions(m_eglTestCtx.getLibrary(), m_display);
+	vector<string>	extensions			= eglu::getDisplayExtensions(m_eglTestCtx.getLibrary(), m_display);
 
 	{
 		const EGLint* iter = &(m_attribList[0]);

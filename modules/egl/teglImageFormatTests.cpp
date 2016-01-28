@@ -923,7 +923,7 @@ void ImageFormatCase::checkExtensions (void)
 	const EGLDisplay		dpy		= m_display;
 	set<string>				exts;
 	const vector<string>	glExts	= de::splitString((const char*) m_gl.getString(GL_EXTENSIONS));
-	const vector<string>	eglExts	= eglu::getClientExtensions(egl, dpy);
+	const vector<string>	eglExts	= eglu::getDisplayExtensions(egl, dpy);
 
 	exts.insert(glExts.begin(), glExts.end());
 	exts.insert(eglExts.begin(), eglExts.end());
