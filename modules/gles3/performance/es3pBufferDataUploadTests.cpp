@@ -2334,7 +2334,7 @@ void BasicUploadCase<SampleType>::deinit (void)
 		m_dummyBufferID = 0;
 	}
 
-	m_zeroData.clear();
+	m_zeroData = std::vector<deUint8>();
 
 	BasicBufferCase<SampleType>::deinit();
 }
@@ -2534,7 +2534,7 @@ void ReferenceMemcpyCase::init (void)
 
 void ReferenceMemcpyCase::deinit (void)
 {
-	m_dstBuf.clear();
+	m_dstBuf = std::vector<deUint8>();
 	BasicUploadCase<SingleOperationDuration>::deinit();
 }
 
@@ -3246,7 +3246,7 @@ void ModifyAfterBasicCase<SampleType>::init (void)
 template <typename SampleType>
 void ModifyAfterBasicCase<SampleType>::deinit (void)
 {
-	m_zeroData.clear();
+	m_zeroData = std::vector<deUint8>();
 
 	BasicBufferCase<SampleType>::deinit();
 }
