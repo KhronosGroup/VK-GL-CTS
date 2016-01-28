@@ -124,10 +124,25 @@ GetProcAddressCase::~GetProcAddressCase (void)
 
 void GetProcAddressCase::init (void)
 {
+	try
+	{
+		m_supported = eglu::getClientExtensions(m_eglTestCtx.getLibrary());
+	}
+	catch (const eglu::Error& error)
+	{
+		// EGL_BAD_DISPLAY is generated if client extensions are not supported.
+		if (error.getError() != EGL_BAD_DISPLAY)
+			throw;
+	}
+
 	DE_ASSERT(m_display == EGL_NO_DISPLAY);
 
-	m_display	= eglu::getAndInitDisplay(m_eglTestCtx.getNativeDisplay());
-	m_supported	= eglu::getDisplayExtensions(m_eglTestCtx.getLibrary(), m_display);
+	m_display = eglu::getAndInitDisplay(m_eglTestCtx.getNativeDisplay());
+
+	{
+		const std::vector<std::string> displayExtensios = eglu::getDisplayExtensions(m_eglTestCtx.getLibrary(), m_display);
+		m_supported.insert(m_supported.end(), displayExtensios.begin(), displayExtensios.end());
+	}
 
 	m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
 }
