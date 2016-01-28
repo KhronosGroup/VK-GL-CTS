@@ -56,7 +56,7 @@ namespace
 
 void checkEGLPlatformSupport (const Library& egl, const char* platformExt)
 {
-	std::vector<std::string> extensions = eglu::getPlatformExtensions(egl);
+	std::vector<std::string> extensions = eglu::getClientExtensions(egl);
 
 	if (!de::contains(extensions.begin(), extensions.end(), platformExt))
 		throw tcu::NotSupportedError((std::string("Platform extension '") + platformExt + "' not supported").c_str(), "", __FILE__, __LINE__);

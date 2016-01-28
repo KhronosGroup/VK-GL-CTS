@@ -149,7 +149,7 @@ public:
 	IterateResult iterate (void)
 	{
 		const Library&	egl			= m_eglTestCtx.getLibrary();
-		vector<string>	extensions	= eglu::getClientExtensions(egl, m_display);
+		vector<string>	extensions	= eglu::getDisplayExtensions(egl, m_display);
 
 		for (vector<string>::const_iterator i = extensions.begin(); i != extensions.end(); i++)
 			m_testCtx.getLog() << tcu::TestLog::Message << *i << tcu::TestLog::EndMessage;
