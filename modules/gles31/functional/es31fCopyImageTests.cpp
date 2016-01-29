@@ -963,6 +963,8 @@ void decompressTexture (vector<ArrayBuffer<deUint8> >&			levelDatas,
 	const tcu::CompressedTexFormat	compressedFormat	= glu::mapGLCompressedTexFormat(info.getFormat());
 	const tcu::TextureFormat		decompressedFormat	= tcu::getUncompressedFormat(compressedFormat);
 	const IVec3						size				= info.getSize();
+	const bool						isES32				= glu::contextSupports(renderContext.getType(), glu::ApiType::es(3, 2));
+
 	de::UniquePtr<glu::ContextInfo>	ctxInfo				(glu::ContextInfo::create(renderContext));
 	tcu::TexDecompressionParams		decompressParams;
 
@@ -970,7 +972,7 @@ void decompressTexture (vector<ArrayBuffer<deUint8> >&			levelDatas,
 	{
 		if (ctxInfo->isExtensionSupported("GL_KHR_texture_compression_astc_hdr"))
 			decompressParams = tcu::TexDecompressionParams(tcu::TexDecompressionParams::ASTCMODE_HDR);
-		else if (ctxInfo->isExtensionSupported("GL_KHR_texture_compression_astc_ldr"))
+		else if (isES32 || ctxInfo->isExtensionSupported("GL_KHR_texture_compression_astc_ldr"))
 			decompressParams = tcu::TexDecompressionParams(tcu::TexDecompressionParams::ASTCMODE_LDR);
 		else
 			DE_ASSERT(false);
@@ -1229,6 +1231,8 @@ void verifyTextureCubemap (tcu::TestContext&					testContext,
 		const int						texelBlockSize		= getTexelBlockSize(info.getFormat());
 		const IVec3						texelBlockPixelSize = getTexelBlockPixelSize(info.getFormat());
 
+		const bool						isES32				= glu::contextSupports(renderContext.getType(), glu::ApiType::es(3, 2));
+
 		vector<tcu::PixelBufferAccess>	levelAccesses[6];
 		vector<ArrayBuffer<deUint8> >	levelDatas[6];
 		de::UniquePtr<glu::ContextInfo>	ctxInfo				(glu::ContextInfo::create(renderContext));
@@ -1238,7 +1242,7 @@ void verifyTextureCubemap (tcu::TestContext&					testContext,
 		{
 			if (ctxInfo->isExtensionSupported("GL_KHR_texture_compression_astc_hdr"))
 				decompressParams = tcu::TexDecompressionParams(tcu::TexDecompressionParams::ASTCMODE_HDR);
-			else if (ctxInfo->isExtensionSupported("GL_KHR_texture_compression_astc_ldr"))
+			else if (isES32 || ctxInfo->isExtensionSupported("GL_KHR_texture_compression_astc_ldr"))
 				decompressParams = tcu::TexDecompressionParams(tcu::TexDecompressionParams::ASTCMODE_LDR);
 			else
 				DE_ASSERT(false);
@@ -1659,8 +1663,10 @@ CopyImageTest::~CopyImageTest (void)
 	deinit();
 }
 
-void checkFormatSupport (glu::ContextInfo& info, deUint32 format, deUint32 target)
+void checkFormatSupport (glu::ContextInfo& info, deUint32 format, deUint32 target, glu::RenderContext& ctx)
 {
+	const bool isES32 = glu::contextSupports(ctx.getType(), glu::ApiType::es(3, 2));
+
 	if (glu::isCompressedFormat(format))
 	{
 		if (isAstcFormat(glu::mapGLCompressedTexFormat(format)))
@@ -1671,7 +1677,7 @@ void checkFormatSupport (glu::ContextInfo& info, deUint32 format, deUint32 targe
 			{
 				if (target == GL_TEXTURE_3D)
 					TCU_THROW(NotSupportedError, "TEXTURE_3D target requires HDR astc support.");
-				if (!info.isExtensionSupported("GL_KHR_texture_compression_astc_ldr"))
+				if (!isES32 && !info.isExtensionSupported("GL_KHR_texture_compression_astc_ldr"))
 					TCU_THROW(NotSupportedError, "Compressed astc texture not supported.");
 			}
 		}
@@ -1686,12 +1692,13 @@ void checkFormatSupport (glu::ContextInfo& info, deUint32 format, deUint32 targe
 void CopyImageTest::init (void)
 {
 	de::UniquePtr<glu::ContextInfo> ctxInfo(glu::ContextInfo::create(m_context.getRenderContext()));
+	const bool 						isES32 = glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
 
-	if (!ctxInfo->isExtensionSupported("GL_EXT_copy_image"))
+	if (!isES32 && !ctxInfo->isExtensionSupported("GL_EXT_copy_image"))
 		throw tcu::NotSupportedError("Extension GL_EXT_copy_image not supported.", "", __FILE__, __LINE__);
 
-	checkFormatSupport(*ctxInfo, m_srcImageInfo.getFormat(), m_srcImageInfo.getTarget());
-	checkFormatSupport(*ctxInfo, m_dstImageInfo.getFormat(), m_dstImageInfo.getTarget());
+	checkFormatSupport(*ctxInfo, m_srcImageInfo.getFormat(), m_srcImageInfo.getTarget(), m_context.getRenderContext());
+	checkFormatSupport(*ctxInfo, m_dstImageInfo.getFormat(), m_dstImageInfo.getTarget(), m_context.getRenderContext());
 
 	{
 		SeedBuilder builder;
@@ -2245,60 +2252,60 @@ void CopyImageTests::init (void)
 	compressedTextureFormatViewClasses[VIEWCLASS_ETC2_EAC_RGBA].push_back(GL_COMPRESSED_SRGB8_ALPHA8_ETC2_EAC);
 
 	// VIEWCLASS_ASTC_4x4_RGBA
-	compressedTextureFormatViewClasses[VIEWCLASS_ASTC_4x4_RGBA].push_back(GL_COMPRESSED_RGBA_ASTC_4x4_KHR);
-	compressedTextureFormatViewClasses[VIEWCLASS_ASTC_4x4_RGBA].push_back(GL_COMPRESSED_SRGB8_ALPHA8_ASTC_4x4_KHR);
+	compressedTextureFormatViewClasses[VIEWCLASS_ASTC_4x4_RGBA].push_back(GL_COMPRESSED_RGBA_ASTC_4x4);
+	compressedTextureFormatViewClasses[VIEWCLASS_ASTC_4x4_RGBA].push_back(GL_COMPRESSED_SRGB8_ALPHA8_ASTC_4x4);
 
 	// VIEWCLASS_ASTC_5x4_RGBA
-	compressedTextureFormatViewClasses[VIEWCLASS_ASTC_5x4_RGBA].push_back(GL_COMPRESSED_RGBA_ASTC_5x4_KHR);
-	compressedTextureFormatViewClasses[VIEWCLASS_ASTC_5x4_RGBA].push_back(GL_COMPRESSED_SRGB8_ALPHA8_ASTC_5x4_KHR);
+	compressedTextureFormatViewClasses[VIEWCLASS_ASTC_5x4_RGBA].push_back(GL_COMPRESSED_RGBA_ASTC_5x4);
+	compressedTextureFormatViewClasses[VIEWCLASS_ASTC_5x4_RGBA].push_back(GL_COMPRESSED_SRGB8_ALPHA8_ASTC_5x4);
 
 	// VIEWCLASS_ASTC_5x5_RGBA
-	compressedTextureFormatViewClasses[VIEWCLASS_ASTC_5x5_RGBA].push_back(GL_COMPRESSED_RGBA_ASTC_5x5_KHR);
-	compressedTextureFormatViewClasses[VIEWCLASS_ASTC_5x5_RGBA].push_back(GL_COMPRESSED_SRGB8_ALPHA8_ASTC_5x5_KHR);
+	compressedTextureFormatViewClasses[VIEWCLASS_ASTC_5x5_RGBA].push_back(GL_COMPRESSED_RGBA_ASTC_5x5);
+	compressedTextureFormatViewClasses[VIEWCLASS_ASTC_5x5_RGBA].push_back(GL_COMPRESSED_SRGB8_ALPHA8_ASTC_5x5);
 
 	// VIEWCLASS_ASTC_6x5_RGBA
-	compressedTextureFormatViewClasses[VIEWCLASS_ASTC_6x5_RGBA].push_back(GL_COMPRESSED_RGBA_ASTC_6x5_KHR);
-	compressedTextureFormatViewClasses[VIEWCLASS_ASTC_6x5_RGBA].push_back(GL_COMPRESSED_SRGB8_ALPHA8_ASTC_6x5_KHR);
+	compressedTextureFormatViewClasses[VIEWCLASS_ASTC_6x5_RGBA].push_back(GL_COMPRESSED_RGBA_ASTC_6x5);
+	compressedTextureFormatViewClasses[VIEWCLASS_ASTC_6x5_RGBA].push_back(GL_COMPRESSED_SRGB8_ALPHA8_ASTC_6x5);
 
 	// VIEWCLASS_ASTC_6x6_RGBA
-	compressedTextureFormatViewClasses[VIEWCLASS_ASTC_6x6_RGBA].push_back(GL_COMPRESSED_RGBA_ASTC_6x6_KHR);
-	compressedTextureFormatViewClasses[VIEWCLASS_ASTC_6x6_RGBA].push_back(GL_COMPRESSED_SRGB8_ALPHA8_ASTC_6x6_KHR);
+	compressedTextureFormatViewClasses[VIEWCLASS_ASTC_6x6_RGBA].push_back(GL_COMPRESSED_RGBA_ASTC_6x6);
+	compressedTextureFormatViewClasses[VIEWCLASS_ASTC_6x6_RGBA].push_back(GL_COMPRESSED_SRGB8_ALPHA8_ASTC_6x6);
 
 	// VIEWCLASS_ASTC_8x5_RGBA
-	compressedTextureFormatViewClasses[VIEWCLASS_ASTC_8x5_RGBA].push_back(GL_COMPRESSED_RGBA_ASTC_8x5_KHR);
-	compressedTextureFormatViewClasses[VIEWCLASS_ASTC_8x5_RGBA].push_back(GL_COMPRESSED_SRGB8_ALPHA8_ASTC_8x5_KHR);
+	compressedTextureFormatViewClasses[VIEWCLASS_ASTC_8x5_RGBA].push_back(GL_COMPRESSED_RGBA_ASTC_8x5);
+	compressedTextureFormatViewClasses[VIEWCLASS_ASTC_8x5_RGBA].push_back(GL_COMPRESSED_SRGB8_ALPHA8_ASTC_8x5);
 
 	// VIEWCLASS_ASTC_8x6_RGBA
-	compressedTextureFormatViewClasses[VIEWCLASS_ASTC_8x6_RGBA].push_back(GL_COMPRESSED_RGBA_ASTC_8x6_KHR);
-	compressedTextureFormatViewClasses[VIEWCLASS_ASTC_8x6_RGBA].push_back(GL_COMPRESSED_SRGB8_ALPHA8_ASTC_8x6_KHR);
+	compressedTextureFormatViewClasses[VIEWCLASS_ASTC_8x6_RGBA].push_back(GL_COMPRESSED_RGBA_ASTC_8x6);
+	compressedTextureFormatViewClasses[VIEWCLASS_ASTC_8x6_RGBA].push_back(GL_COMPRESSED_SRGB8_ALPHA8_ASTC_8x6);
 
 	// VIEWCLASS_ASTC_8x8_RGBA
-	compressedTextureFormatViewClasses[VIEWCLASS_ASTC_8x8_RGBA].push_back(GL_COMPRESSED_RGBA_ASTC_8x8_KHR);
-	compressedTextureFormatViewClasses[VIEWCLASS_ASTC_8x8_RGBA].push_back(GL_COMPRESSED_SRGB8_ALPHA8_ASTC_8x8_KHR);
+	compressedTextureFormatViewClasses[VIEWCLASS_ASTC_8x8_RGBA].push_back(GL_COMPRESSED_RGBA_ASTC_8x8);
+	compressedTextureFormatViewClasses[VIEWCLASS_ASTC_8x8_RGBA].push_back(GL_COMPRESSED_SRGB8_ALPHA8_ASTC_8x8);
 
 	// VIEWCLASS_ASTC_10x5_RGBA
-	compressedTextureFormatViewClasses[VIEWCLASS_ASTC_10x5_RGBA].push_back(GL_COMPRESSED_RGBA_ASTC_10x5_KHR);
-	compressedTextureFormatViewClasses[VIEWCLASS_ASTC_10x5_RGBA].push_back(GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x5_KHR);
+	compressedTextureFormatViewClasses[VIEWCLASS_ASTC_10x5_RGBA].push_back(GL_COMPRESSED_RGBA_ASTC_10x5);
+	compressedTextureFormatViewClasses[VIEWCLASS_ASTC_10x5_RGBA].push_back(GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x5);
 
 	// VIEWCLASS_ASTC_10x6_RGBA
-	compressedTextureFormatViewClasses[VIEWCLASS_ASTC_10x6_RGBA].push_back(GL_COMPRESSED_RGBA_ASTC_10x6_KHR);
-	compressedTextureFormatViewClasses[VIEWCLASS_ASTC_10x6_RGBA].push_back(GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x6_KHR);
+	compressedTextureFormatViewClasses[VIEWCLASS_ASTC_10x6_RGBA].push_back(GL_COMPRESSED_RGBA_ASTC_10x6);
+	compressedTextureFormatViewClasses[VIEWCLASS_ASTC_10x6_RGBA].push_back(GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x6);
 
 	// VIEWCLASS_ASTC_10x8_RGBA
-	compressedTextureFormatViewClasses[VIEWCLASS_ASTC_10x8_RGBA].push_back(GL_COMPRESSED_RGBA_ASTC_10x8_KHR);
-	compressedTextureFormatViewClasses[VIEWCLASS_ASTC_10x8_RGBA].push_back(GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x8_KHR);
+	compressedTextureFormatViewClasses[VIEWCLASS_ASTC_10x8_RGBA].push_back(GL_COMPRESSED_RGBA_ASTC_10x8);
+	compressedTextureFormatViewClasses[VIEWCLASS_ASTC_10x8_RGBA].push_back(GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x8);
 
 	// VIEWCLASS_ASTC_10x10_RGBA
-	compressedTextureFormatViewClasses[VIEWCLASS_ASTC_10x10_RGBA].push_back(GL_COMPRESSED_RGBA_ASTC_10x10_KHR);
-	compressedTextureFormatViewClasses[VIEWCLASS_ASTC_10x10_RGBA].push_back(GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x10_KHR);
+	compressedTextureFormatViewClasses[VIEWCLASS_ASTC_10x10_RGBA].push_back(GL_COMPRESSED_RGBA_ASTC_10x10);
+	compressedTextureFormatViewClasses[VIEWCLASS_ASTC_10x10_RGBA].push_back(GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x10);
 
 	// VIEWCLASS_ASTC_12x10_RGBA
-	compressedTextureFormatViewClasses[VIEWCLASS_ASTC_12x10_RGBA].push_back(GL_COMPRESSED_RGBA_ASTC_12x10_KHR);
-	compressedTextureFormatViewClasses[VIEWCLASS_ASTC_12x10_RGBA].push_back(GL_COMPRESSED_SRGB8_ALPHA8_ASTC_12x10_KHR);
+	compressedTextureFormatViewClasses[VIEWCLASS_ASTC_12x10_RGBA].push_back(GL_COMPRESSED_RGBA_ASTC_12x10);
+	compressedTextureFormatViewClasses[VIEWCLASS_ASTC_12x10_RGBA].push_back(GL_COMPRESSED_SRGB8_ALPHA8_ASTC_12x10);
 
 	// VIEWCLASS_ASTC_12x12_RGBA
-	compressedTextureFormatViewClasses[VIEWCLASS_ASTC_12x12_RGBA].push_back(GL_COMPRESSED_RGBA_ASTC_12x12_KHR);
-	compressedTextureFormatViewClasses[VIEWCLASS_ASTC_12x12_RGBA].push_back(GL_COMPRESSED_SRGB8_ALPHA8_ASTC_12x12_KHR);
+	compressedTextureFormatViewClasses[VIEWCLASS_ASTC_12x12_RGBA].push_back(GL_COMPRESSED_RGBA_ASTC_12x12);
+	compressedTextureFormatViewClasses[VIEWCLASS_ASTC_12x12_RGBA].push_back(GL_COMPRESSED_SRGB8_ALPHA8_ASTC_12x12);
 
 	// Mixed view classes
 	mixedViewClasses[VIEWCLASS_128_BITS] = pair<vector<deUint32>, vector<deUint32> >();
@@ -2316,34 +2323,34 @@ void CopyImageTests::init (void)
 	mixedViewClasses[VIEWCLASS_128_BITS].second.push_back(GL_COMPRESSED_SRGB8_ALPHA8_ETC2_EAC);
 	mixedViewClasses[VIEWCLASS_128_BITS].second.push_back(GL_COMPRESSED_RG11_EAC);
 	mixedViewClasses[VIEWCLASS_128_BITS].second.push_back(GL_COMPRESSED_SIGNED_RG11_EAC);
-	mixedViewClasses[VIEWCLASS_128_BITS].second.push_back(GL_COMPRESSED_RGBA_ASTC_4x4_KHR);
-	mixedViewClasses[VIEWCLASS_128_BITS].second.push_back(GL_COMPRESSED_RGBA_ASTC_5x4_KHR);
-	mixedViewClasses[VIEWCLASS_128_BITS].second.push_back(GL_COMPRESSED_RGBA_ASTC_5x5_KHR);
-	mixedViewClasses[VIEWCLASS_128_BITS].second.push_back(GL_COMPRESSED_RGBA_ASTC_6x5_KHR);
-	mixedViewClasses[VIEWCLASS_128_BITS].second.push_back(GL_COMPRESSED_RGBA_ASTC_6x6_KHR);
-	mixedViewClasses[VIEWCLASS_128_BITS].second.push_back(GL_COMPRESSED_RGBA_ASTC_8x5_KHR);
-	mixedViewClasses[VIEWCLASS_128_BITS].second.push_back(GL_COMPRESSED_RGBA_ASTC_8x6_KHR);
-	mixedViewClasses[VIEWCLASS_128_BITS].second.push_back(GL_COMPRESSED_RGBA_ASTC_8x8_KHR);
-	mixedViewClasses[VIEWCLASS_128_BITS].second.push_back(GL_COMPRESSED_RGBA_ASTC_10x5_KHR);
-	mixedViewClasses[VIEWCLASS_128_BITS].second.push_back(GL_COMPRESSED_RGBA_ASTC_10x6_KHR);
-	mixedViewClasses[VIEWCLASS_128_BITS].second.push_back(GL_COMPRESSED_RGBA_ASTC_10x8_KHR);
-	mixedViewClasses[VIEWCLASS_128_BITS].second.push_back(GL_COMPRESSED_RGBA_ASTC_10x10_KHR);
-	mixedViewClasses[VIEWCLASS_128_BITS].second.push_back(GL_COMPRESSED_RGBA_ASTC_12x10_KHR);
-	mixedViewClasses[VIEWCLASS_128_BITS].second.push_back(GL_COMPRESSED_RGBA_ASTC_12x12_KHR);
-	mixedViewClasses[VIEWCLASS_128_BITS].second.push_back(GL_COMPRESSED_SRGB8_ALPHA8_ASTC_4x4_KHR);
-	mixedViewClasses[VIEWCLASS_128_BITS].second.push_back(GL_COMPRESSED_SRGB8_ALPHA8_ASTC_5x4_KHR);
-	mixedViewClasses[VIEWCLASS_128_BITS].second.push_back(GL_COMPRESSED_SRGB8_ALPHA8_ASTC_5x5_KHR);
-	mixedViewClasses[VIEWCLASS_128_BITS].second.push_back(GL_COMPRESSED_SRGB8_ALPHA8_ASTC_6x5_KHR);
-	mixedViewClasses[VIEWCLASS_128_BITS].second.push_back(GL_COMPRESSED_SRGB8_ALPHA8_ASTC_6x6_KHR);
-	mixedViewClasses[VIEWCLASS_128_BITS].second.push_back(GL_COMPRESSED_SRGB8_ALPHA8_ASTC_8x5_KHR);
-	mixedViewClasses[VIEWCLASS_128_BITS].second.push_back(GL_COMPRESSED_SRGB8_ALPHA8_ASTC_8x6_KHR);
-	mixedViewClasses[VIEWCLASS_128_BITS].second.push_back(GL_COMPRESSED_SRGB8_ALPHA8_ASTC_8x8_KHR);
-	mixedViewClasses[VIEWCLASS_128_BITS].second.push_back(GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x5_KHR);
-	mixedViewClasses[VIEWCLASS_128_BITS].second.push_back(GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x6_KHR);
-	mixedViewClasses[VIEWCLASS_128_BITS].second.push_back(GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x8_KHR);
-	mixedViewClasses[VIEWCLASS_128_BITS].second.push_back(GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x10_KHR);
-	mixedViewClasses[VIEWCLASS_128_BITS].second.push_back(GL_COMPRESSED_SRGB8_ALPHA8_ASTC_12x10_KHR);
-	mixedViewClasses[VIEWCLASS_128_BITS].second.push_back(GL_COMPRESSED_SRGB8_ALPHA8_ASTC_12x12_KHR);
+	mixedViewClasses[VIEWCLASS_128_BITS].second.push_back(GL_COMPRESSED_RGBA_ASTC_4x4);
+	mixedViewClasses[VIEWCLASS_128_BITS].second.push_back(GL_COMPRESSED_RGBA_ASTC_5x4);
+	mixedViewClasses[VIEWCLASS_128_BITS].second.push_back(GL_COMPRESSED_RGBA_ASTC_5x5);
+	mixedViewClasses[VIEWCLASS_128_BITS].second.push_back(GL_COMPRESSED_RGBA_ASTC_6x5);
+	mixedViewClasses[VIEWCLASS_128_BITS].second.push_back(GL_COMPRESSED_RGBA_ASTC_6x6);
+	mixedViewClasses[VIEWCLASS_128_BITS].second.push_back(GL_COMPRESSED_RGBA_ASTC_8x5);
+	mixedViewClasses[VIEWCLASS_128_BITS].second.push_back(GL_COMPRESSED_RGBA_ASTC_8x6);
+	mixedViewClasses[VIEWCLASS_128_BITS].second.push_back(GL_COMPRESSED_RGBA_ASTC_8x8);
+	mixedViewClasses[VIEWCLASS_128_BITS].second.push_back(GL_COMPRESSED_RGBA_ASTC_10x5);
+	mixedViewClasses[VIEWCLASS_128_BITS].second.push_back(GL_COMPRESSED_RGBA_ASTC_10x6);
+	mixedViewClasses[VIEWCLASS_128_BITS].second.push_back(GL_COMPRESSED_RGBA_ASTC_10x8);
+	mixedViewClasses[VIEWCLASS_128_BITS].second.push_back(GL_COMPRESSED_RGBA_ASTC_10x10);
+	mixedViewClasses[VIEWCLASS_128_BITS].second.push_back(GL_COMPRESSED_RGBA_ASTC_12x10);
+	mixedViewClasses[VIEWCLASS_128_BITS].second.push_back(GL_COMPRESSED_RGBA_ASTC_12x12);
+	mixedViewClasses[VIEWCLASS_128_BITS].second.push_back(GL_COMPRESSED_SRGB8_ALPHA8_ASTC_4x4);
+	mixedViewClasses[VIEWCLASS_128_BITS].second.push_back(GL_COMPRESSED_SRGB8_ALPHA8_ASTC_5x4);
+	mixedViewClasses[VIEWCLASS_128_BITS].second.push_back(GL_COMPRESSED_SRGB8_ALPHA8_ASTC_5x5);
+	mixedViewClasses[VIEWCLASS_128_BITS].second.push_back(GL_COMPRESSED_SRGB8_ALPHA8_ASTC_6x5);
+	mixedViewClasses[VIEWCLASS_128_BITS].second.push_back(GL_COMPRESSED_SRGB8_ALPHA8_ASTC_6x6);
+	mixedViewClasses[VIEWCLASS_128_BITS].second.push_back(GL_COMPRESSED_SRGB8_ALPHA8_ASTC_8x5);
+	mixedViewClasses[VIEWCLASS_128_BITS].second.push_back(GL_COMPRESSED_SRGB8_ALPHA8_ASTC_8x6);
+	mixedViewClasses[VIEWCLASS_128_BITS].second.push_back(GL_COMPRESSED_SRGB8_ALPHA8_ASTC_8x8);
+	mixedViewClasses[VIEWCLASS_128_BITS].second.push_back(GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x5);
+	mixedViewClasses[VIEWCLASS_128_BITS].second.push_back(GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x6);
+	mixedViewClasses[VIEWCLASS_128_BITS].second.push_back(GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x8);
+	mixedViewClasses[VIEWCLASS_128_BITS].second.push_back(GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x10);
+	mixedViewClasses[VIEWCLASS_128_BITS].second.push_back(GL_COMPRESSED_SRGB8_ALPHA8_ASTC_12x10);
+	mixedViewClasses[VIEWCLASS_128_BITS].second.push_back(GL_COMPRESSED_SRGB8_ALPHA8_ASTC_12x12);
 
 	// 64 bits
 

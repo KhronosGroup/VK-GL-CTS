@@ -1585,8 +1585,10 @@ enum ASTCSupportLevel
 	ASTCSUPPORTLEVEL_FULL
 };
 
-static inline ASTCSupportLevel getASTCSupportLevel (const glu::ContextInfo& contextInfo)
+static inline ASTCSupportLevel getASTCSupportLevel (const glu::ContextInfo& contextInfo, const glu::RenderContext& renderCtx)
 {
+	const bool isES32 = glu::contextSupports(renderCtx.getType(), glu::ApiType::es(3, 2));
+
 	const vector<string>& extensions = contextInfo.getExtensions();
 
 	ASTCSupportLevel maxLevel = ASTCSUPPORTLEVEL_NONE;
@@ -1594,11 +1596,19 @@ static inline ASTCSupportLevel getASTCSupportLevel (const glu::ContextInfo& cont
 	for (int extNdx = 0; extNdx < (int)extensions.size(); extNdx++)
 	{
 		const string& ext = extensions[extNdx];
-
-		maxLevel = de::max(maxLevel, ext == "GL_KHR_texture_compression_astc_ldr"	? ASTCSUPPORTLEVEL_LDR
-								   : ext == "GL_KHR_texture_compression_astc_hdr"	? ASTCSUPPORTLEVEL_HDR
-								   : ext == "GL_OES_texture_compression_astc"		? ASTCSUPPORTLEVEL_FULL
-								   : ASTCSUPPORTLEVEL_NONE);
+		if (isES32)
+		{
+			maxLevel = 	de::max(maxLevel, ext == "GL_KHR_texture_compression_astc_hdr"	? ASTCSUPPORTLEVEL_HDR
+										: ext == "GL_OES_texture_compression_astc"		? ASTCSUPPORTLEVEL_FULL
+										: ASTCSUPPORTLEVEL_LDR);
+		}
+		else
+		{
+			maxLevel = 	de::max(maxLevel, ext == "GL_KHR_texture_compression_astc_ldr"	? ASTCSUPPORTLEVEL_LDR
+										: ext == "GL_KHR_texture_compression_astc_hdr"	? ASTCSUPPORTLEVEL_HDR
+										: ext == "GL_OES_texture_compression_astc"		? ASTCSUPPORTLEVEL_FULL
+										: ASTCSUPPORTLEVEL_NONE);
+		}
 	}
 
 	return maxLevel;
@@ -1673,7 +1683,7 @@ void ASTCRenderer2D::initialize (int minRenderWidth, int minRenderHeight, const 
 	const tcu::RenderTarget&	renderTarget	= m_context.getRenderTarget();
 	TestLog&					log				= m_context.getTestContext().getLog();
 
-	m_astcSupport	= getASTCSupportLevel(m_context.getContextInfo());
+	m_astcSupport	= getASTCSupportLevel(m_context.getContextInfo(), m_context.getRenderContext());
 	m_colorScale	= colorScale;
 	m_colorBias		= colorBias;
 
